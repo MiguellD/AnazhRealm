@@ -189,7 +189,7 @@ function loadCore(entry) {
     const ctx = kernKontext();
     let code = "";
     for (const dep of entry.deps || []) code += ausDatei(path.join(root, dep)) + "\n;";
-    code += entry.quelle != null ? entry.quelle : ausDatei(path.join(root, entry.file)); // quelle: der Selbsttest
+    code += entry.quelle ?? ausDatei(path.join(root, entry.file)); // quelle: der Selbsttest
     if (entry.ns) {
         // v1.1-Namensraum-Kern: dieselben Block-Namen, gelesen unter entry.ns
         // (fehlt der Namensraum ganz, bleibt alles null → B1/B2/G4.3 werden rot).
@@ -260,7 +260,7 @@ function validateFunktionsKern(m, entry, erklaert) {
     if (typeof m.build === "function") v.push("§9: ein Gesetz-Kern trägt keine Gestalt (buildInstance)");
     if (m.meshfrei) v.push("§9: MESHFREI gilt Rezept-Kernen ohne Gestalt, nie einem Gesetz-Kern");
     if (m.paramsByKind) v.push("§9: ein Gesetz-Kern trägt keine Regler (PARAMS_BY_KIND)");
-    if (!Array.isArray(m.api) || m.api.length < 1) v.push("§9: der Gesetz-Kern trägt keine Funktion");
+    if (!Array.isArray(m.api) || !m.api.length) v.push("§9: der Gesetz-Kern trägt keine Funktion");
     return v;
 }
 
@@ -282,7 +282,7 @@ const REGLER_OHNE_BYTE = new Set(
 function validateManifest(m, kern) {
     const v = [];
     if (m.vertrag !== 1) v.push(`G4.3: STUDIO_VERTRAG fehlt oder != 1 (ist: ${m.vertrag})`);
-    if (!m.presets || typeof m.presets !== "object" || Object.keys(m.presets).length < 1)
+    if (!m.presets || typeof m.presets !== "object" || !Object.keys(m.presets).length)
         v.push("B1: PRESETS fehlt oder leer");
     else {
         for (const id in m.presets) {
@@ -930,7 +930,7 @@ function validateManifest(m, kern) {
                     c &&
                     typeof c.id === "string" &&
                     Array.isArray(c.scripts) &&
-                    c.scripts.length >= 1 &&
+                    c.scripts.length &&
                     typeof c.vertrag === "string" &&
                     c.scripts.includes(c.vertrag)
             ),

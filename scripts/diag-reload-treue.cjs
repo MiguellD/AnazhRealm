@@ -44,7 +44,7 @@ hauptLauf(async () => {
         // ── Übergabe size 3.5 → Wolf A gegossen ──
         setUe(3.5);
         const wolfA = spawnWolf();
-        res.r.aGussDials = wolfA && wolfA.userData.gussDials ? wolfA.userData.gussDials.size : null;
+        res.r.aGussDials = wolfA?.userData.gussDials ? wolfA.userData.gussDials.size : null;
         const fpA = wolfA ? fpGroup(wolfA) : null;
         const snapA = r._serializeCreature(wolfA);
         res.r.snapTraegt = !!(snapA?.gussDials && snapA.gussDials.size === 3.5);
@@ -54,13 +54,13 @@ hauptLauf(async () => {
         setUe(1.5);
         // ein FRISCHER Wolf trägt jetzt 1.5
         const wolfNeu = spawnWolf();
-        res.r.neuGussDials = wolfNeu && wolfNeu.userData.gussDials ? wolfNeu.userData.gussDials.size : null;
+        res.r.neuGussDials = wolfNeu?.userData.gussDials ? wolfNeu.userData.gussDials.size : null;
         const fpNeu = wolfNeu ? fpGroup(wolfNeu) : null;
         r.removeCreature(wolfNeu);
 
         // ── Restore aus snapA ⇒ MUSS 3.5 tragen (Guss-Treue), NICHT 1.5 ──
         const wolfR = r._restoreCreatureFromSnapshot(snapA, "happy");
-        res.r.restoreGussDials = wolfR && wolfR.userData.gussDials ? wolfR.userData.gussDials.size : null;
+        res.r.restoreGussDials = wolfR?.userData.gussDials ? wolfR.userData.gussDials.size : null;
         const fpR = wolfR ? fpGroup(wolfR) : null;
         res.r.treu = res.r.restoreGussDials === 3.5;
         res.r.geomTreu = fpR && fpA && fpR === fpA && fpA !== fpNeu; // die Geometrie folgt der GUSS-Größe
@@ -73,7 +73,7 @@ hauptLauf(async () => {
         const snapOhne = Object.assign({}, snapA);
         delete snapOhne.gussDials;
         const wolfS = r._restoreCreatureFromSnapshot(snapOhne, "happy");
-        res.s.ohnePin = wolfS && wolfS.userData.gussDials ? wolfS.userData.gussDials.size : null;
+        res.s.ohnePin = wolfS?.userData.gussDials ? wolfS.userData.gussDials.size : null;
         // ohne Pin: gussDials wird aus der AKTUELLEN Übergabe (1.5) eingefroren ⇒ der alte Fehler
         res.s.altFehlerSichtbar = res.s.ohnePin === 1.5;
         if (wolfS) r.removeCreature(wolfS);
@@ -81,7 +81,7 @@ hauptLauf(async () => {
         // ── (D) DEFAULT-TREUE: keine Übergabe ⇒ feld-los + byte-alt ──
         delete r._ensureWorkshopState().studioOv.wolf;
         const wolfD = spawnWolf();
-        res.d.feldLos = !(wolfD && wolfD.userData.gussDials);
+        res.d.feldLos = !(wolfD?.userData.gussDials);
         const snapD = r._serializeCreature(wolfD);
         res.d.snapFeldLos = !!(snapD && snapD.gussDials === undefined);
         r.removeCreature(wolfD);
@@ -102,14 +102,13 @@ hauptLauf(async () => {
         delete r._studioWerkPruefen;
         res.w.einValidator = validiert > 0;
         res.w.geclampt = !!(
-            wolfW &&
-            wolfW.userData.gussDials &&
+            wolfW?.userData.gussDials &&
             sizeRow &&
             wolfW.userData.gussDials.size <= sizeRow.max &&
             wolfW.userData.gussDials.size >= sizeRow.min
         );
         res.w.maxSoll = sizeRow ? sizeRow.max : null;
-        res.w.istWert = wolfW && wolfW.userData.gussDials ? wolfW.userData.gussDials.size : null;
+        res.w.istWert = wolfW?.userData.gussDials ? wolfW.userData.gussDials.size : null;
         if (wolfW) r.removeCreature(wolfW);
 
         return res;

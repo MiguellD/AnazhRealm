@@ -189,7 +189,7 @@ function zweiGipfelSelbsttest() {
         ["klein, zweiter Modus +0,03 ms", [...reihe(540, 0.017, 0.02), ...reihe(60, 0.05, 0.06)], 0.02, null, 0, 0],
     ].flatMap(([name, w, p50, rein, anteilOben, versatz]) => {
         const t = zweiGipfel(w);
-        const ok = t.p50 === p50 && t.rein === (rein == null ? t.p50 : rein) && t.anteilOben === anteilOben;
+        const ok = t.p50 === p50 && t.rein === (rein ?? t.p50) && t.anteilOben === anteilOben;
         return ok && t.versatz === versatz && t.frames === w.length ? [] : [`${name}: ${JSON.stringify(t)}`];
     });
 }
@@ -730,7 +730,7 @@ function zerlegeZustand() {
         an += b;
         h = Math.imul(h ^ (b + 1), 16777619) >>> 0;
     });
-    const eigen = (o, k) => !!o && Object.prototype.hasOwnProperty.call(o, k);
+    const eigen = (o, k) => !!o && Object.hasOwn(o, k);
     const csm = st.csmNode;
     const lichter = csm?.lights?.length ? csm.lights : st.directionalLight ? [st.directionalLight] : [];
     const protos = [];

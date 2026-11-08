@@ -578,7 +578,7 @@ async function checkBandVoxelTerrainCore({ page, check }) {
         r.updateCreatures(0.016);
         out.creatureAiCached =
             st.creatures.length === 0 ||
-            st.creatures.some((c) => c.userData && c.userData.aiDir && c.userData.aiDir.isVector3);
+            st.creatures.some((c) => c.userData?.aiDir && c.userData.aiDir.isVector3);
         return out;
     });
 
@@ -1399,7 +1399,7 @@ async function checkBandGammaGenese({ page, check }) {
     });
     check("Γ Struktur: FEUCHTE frozen", res.struct === true);
     check(
-        `Γ1 FEUCHTE am echten Fluss-Ufer ≥ schilf-floor 0.62 (${res.rivers} Flüsse, feuchte=${res.feuchteBank && res.feuchteBank.toFixed ? res.feuchteBank.toFixed(3) : res.feuchteBank})`,
+        `Γ1 FEUCHTE am echten Fluss-Ufer ≥ schilf-floor 0.62 (${res.rivers} Flüsse, feuchte=${res.feuchteBank?.toFixed ? res.feuchteBank.toFixed(3) : res.feuchteBank})`,
         res.bankFound && res.feuchteBank >= 0.62
     );
     check(
@@ -1407,7 +1407,7 @@ async function checkBandGammaGenese({ page, check }) {
         res.feuchteLegacy === 0
     );
     check(
-        `Γ1 Affinitäts-KONSUM: feuchte hebt die Baum-Resonanz (Δ=${res.affDelta && res.affDelta.toFixed ? res.affDelta.toFixed(3) : res.affDelta})`,
+        `Γ1 Affinitäts-KONSUM: feuchte hebt die Baum-Resonanz (Δ=${res.affDelta?.toFixed ? res.affDelta.toFixed(3) : res.affDelta})`,
         Number.isFinite(res.affDelta) && res.affDelta > 0.04
     );
     // Γ1-Lesart-4 BODEN-ATMET: die Feuchte zieht die EINE Boden-Farbe zur feuchten Erde (BODEN_FARBE.wet) — am Ruf gemessen.
@@ -1849,7 +1849,7 @@ async function checkBandTodZensus({ page, check }) {
 
             // DER WESEN-TAKT, mitlaufend gezählt (durchgereicht, nie gestubbt): erreicht er einen Gefallenen?
             const wesenTakt = {};
-            const istTot = (c) => !!c && s.leichname.indexOf(c) !== -1;
+            const istTot = (c) => !!c && s.leichname.includes(c);
             for (const name of [
                 "_tickCreatureLifeTrickle",
                 "_getCreatureTask",
@@ -1897,7 +1897,7 @@ async function checkBandTodZensus({ page, check }) {
                     "_leibZeichenFrei",
                     (alt) =>
                         function (c, ...rest) {
-                            if (s.creatures.indexOf(c) !== -1 && c.userData?.dying) return;
+                            if (s.creatures.includes(c) && c.userData?.dying) return;
                             return alt.call(this, c, ...rest);
                         }
                 );
@@ -2279,7 +2279,7 @@ async function checkBandTodZensus({ page, check }) {
             );
         if (!Array.isArray(z.raeumer) || z.raeumer.length || !(z.raeumt > 0))
             v.push(`raeumen: neben _leibZeichenFrei (${z.raeumt} Rufe im Fall) räumen ${JSON.stringify(z.raeumer)} — Soll EINE Methode`);
-        for (const k of KLASSEN) if (z.verstoss && z.verstoss[k]) v.push(`${k}: ${z.verstoss[k]} Takte — ${z.beispiel[k]}`);
+        for (const k of KLASSEN) if (z.verstoss?.[k]) v.push(`${k}: ${z.verstoss[k]} Takte — ${z.beispiel[k]}`);
         return { ok: v.length === 0, grund: v.join(" · ") };
     };
     const KLASSEN = [
@@ -2379,6 +2379,7 @@ async function checkBandBewegungUnterLast({ page, check }) {
         // Position nach jedem Tick zurück — die Linse MUSS das als „keine Bewegung" sehen.
         const heavyRun = (spot, ticks, pin) => {
             resetSim(spot);
+            const frei = leihe(window, { __anazhPruefLast: undefined }); // die Last ist echt: der Regler läuft frei (w23-pruef-welt)
             let t = performance.now();
             tick(t); // Baseline-Tick (setzt lastTime im Loop-Closure)
             resetSim(spot); // der Baseline-Tick darf die Messung nicht verschieben
@@ -2401,6 +2402,7 @@ async function checkBandBewegungUnterLast({ page, check }) {
                 if (s._frameOverBudget) overBudgetSeen = true;
             }
             const end = simPos();
+            frei();
             return {
                 movedXZ: Math.hypot(end.x - start.x, end.z - start.z),
                 start,
@@ -2513,7 +2515,7 @@ async function checkBandBewegungUnterLast({ page, check }) {
     check(
         `Bewegung unter Last SELBSTTEST: die gepinnte Position liest als keine Bewegung (${p ? p.movedXZ.toFixed(3) : "?"} m), ohne Takt-Deckel springt JEDER Wolf (${da ? da.ueber : "?"}/${da ? da.n : "?"})`,
         !!p && p.movedXZ <= 1.0 && !!da && da.n >= 3 && da.ueber === da.n && !da.halt.length,
-        da && da.halt.length ? `Vorbedingung: ${da.halt.join(" · ")}` : ""
+        da?.halt.length ? `Vorbedingung: ${da.halt.join(" · ")}` : ""
     );
 }
 

@@ -1086,9 +1086,9 @@ async function checkBandEarlyRingsAndUi({ page, check }) {
         // Die Klang-Welt selbst (Stimmen je Ort, kein Oszillator ohne Gesetz, der Regen aus dem Wetter-Feld, der Ruf eines Leibs
         // mit seiner Richtung am Ohr) misst gate:klang-zensus am Abgriff: (G)(H)(S), (N) regen, (R) und (Ra).
         out.masterAusGesetz =
-            Math.abs(s.masterGain.gain.value - UM.masterBasis * (s.masterVolume == null ? 1 : s.masterVolume)) < 1e-6;
+            Math.abs(s.masterGain.gain.value - UM.masterBasis * (s.masterVolume ?? 1)) < 1e-6;
         out.busAmRegler =
-            Math.abs(s.umwelt.bus.gain.value - (s.creaturePingVolume == null ? 1 : s.creaturePingVolume)) < 1e-6;
+            Math.abs(s.umwelt.bus.gain.value - (s.creaturePingVolume ?? 1)) < 1e-6;
 
         // (b) disposeSymphony räumt auf
         r.disposeSymphony();
@@ -1639,7 +1639,7 @@ async function checkBandV18134Social({ page, check }) {
             // einem Object still leer).
             st.revokedKeys.delete(pubHex.toLowerCase());
             const batch = r._socialAnnounceBatch();
-            out.batchCarries = !!(batch && batch.type === "social-ratings" && batch.list.length >= 1);
+            out.batchCarries = !!(batch && batch.type === "social-ratings" && batch.list.length);
         } finally {
             st.socialRatings = saved || new Map();
             r._saveSocialRatings();
@@ -2409,7 +2409,7 @@ async function checkBandRezeptKatalog({ page, check }) {
                 r._workshopRebuildPreviewMesh = orig;
                 res.d.rebuilds = rebuilds;
                 res.d.groupChildren = g && g !== "pending" && g.children ? g.children.length : 0;
-                res.d.cacheStillClean = !Array.from(f.cache.keys()).some((k) => k.indexOf("{") >= 0);
+                res.d.cacheStillClean = !Array.from(f.cache.keys()).some((k) => k.includes("{"));
                 delete ws.studioOv["drachentor"];
             } catch (e) {
                 res.d.err = fehlerText(e);

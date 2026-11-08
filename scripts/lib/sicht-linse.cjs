@@ -164,7 +164,7 @@ function sichtLinse(cfg) {
                 } finally {
                     stapel.pop();
                     if (ruht) {
-                        if (a[1] && a[1].dicht) schuld.delete(kd);
+                        if (a[1]?.dicht) schuld.delete(kd);
                     } else if (!inWahl) schuld.delete(fam);
                 }
             }
@@ -645,7 +645,7 @@ function sichtBytesKlasse(f, feld) {
         if (g === "dicht" || g === "umlegen" || g === "wahl:liste") kl = "folge";
         else if (g === "wahl:lage")
             kl =
-                f.kamera || f.blende || (/^k\d+$/.test(pass || "") && (f.licht || (f.lichtJe && f.lichtJe[pass])))
+                f.kamera || f.blende || (/^k\d+$/.test(pass || "") && (f.licht || (f.lichtJe?.[pass])))
                     ? "aenderung"
                     : "ohne";
         else if (/^wahl:(stand|neu|boden|hoehle)$/.test(g)) {
@@ -697,14 +697,14 @@ function sichtBlendeBewegt(a, e, haltM) {
 // (`grund`: Änderung oder ihre Folge) erklären die ganze Arbeit, ein gedrehtes Licht die Arbeit der Kaskaden-Pässe (je Pass
 // `jePass`) — was bleibt, ist ein Cache-Bruch. Die Zähler eines Satzes allein (Stand, Verdichten) erklären nichts.
 function sichtArbeitOhne(f) {
-    if (f.kamera || f.blende || Object.values(f.inhalt || {}).some((e) => !!e?.grund)) return 0;
+    if (f.kamera || f.blende || Object.values(f.inhalt || {}).some((e) => e?.grund)) return 0;
     const lj = f.lichtJe || {};
     if (!f.licht && !Object.keys(lj).length) return f.arbeit;
     // das Licht erklärt die Arbeit der Kaskaden, die es seit ihrem letzten Pass gedreht sah (bzw. im Frame selbst drehte);
     // je Pass zählt dieselbe Arbeit wie `arbeit`
     let n = 0;
     for (const [k, x] of Object.entries(f.jePass || {}))
-        if (!/^k\d+$/.test(k) || !(f.licht || lj[k])) n += x.arbeit != null ? x.arbeit : x.pruefung;
+        if (!/^k\d+$/.test(k) || !(f.licht || lj[k])) n += x.arbeit ?? x.pruefung;
     return n;
 }
 const sichtAenderung = (f) =>
@@ -713,7 +713,7 @@ const sichtAenderung = (f) =>
         f.kamera ||
         f.blende ||
         Object.keys(f.lichtJe || {}).length ||
-        Object.values(f.inhalt || {}).some((e) => !!e?.grund)
+        Object.values(f.inhalt || {}).some((e) => e?.grund)
     );
 
 // Die Statistik einer Phase: je Zähl-Größe Mittel · Median · Maximum über die Frames (ab `ab`).
@@ -1141,7 +1141,7 @@ function sichtLauf(k) {
         let messen = false;
         // der Vorlauf: gerenderte Frames, bevor die Ruhe zählt — ein Abschnitt mit Lücken legt sich nach `dichtNach` ruhigen
         // Pässen EINMAL dicht (die ferne Kaskade rendert jeden dritten Frame); das ist die Arbeit der Änderung davor
-        let vorlauf = k.vorlauf != null ? k.vorlauf : 120;
+        let vorlauf = k.vorlauf ?? 120;
         rend.setAnimationLoop((t) => {
             // Drehen: `drehGrad` je Frame (1° — darüber wählt jeder Frame neu: der Halt reicht einen halben Dreh-Rand)
             if (messen && phase && phase.name === "drehen") st.yaw += ((k.drehGrad || 1) * Math.PI) / 180;

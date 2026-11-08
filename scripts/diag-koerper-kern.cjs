@@ -51,7 +51,7 @@ function altMorph(params, parts, base, PROP) {
 // die Naht, an der die neue Shell den Kern ruft):
 function altLandmarks(mess) {
     var chin=mess.chin,nb=mess.neckBase,waist=mess.waist,knee=mess.knee;
-    var radOfNeckBase=mess.neckBaseRad!=null?mess.neckBaseRad:0.13;
+    var radOfNeckBase=mess.neckBaseRad ?? 0.13;
     return {chinY:chin?chin.y:5.44,
         neckTopY:(chin?chin.y:5.44)-0.04,
         collarY:nb?nb.y+0.02:4.95,

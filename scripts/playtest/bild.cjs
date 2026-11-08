@@ -630,7 +630,7 @@ async function checkBandWelle6G4Atmosphere({ page, check }) {
         r.setMicroStrength(0.15);
         const snap = r.buildStateSnapshot();
         out.atmospherePersisted = !!(snap?.atmosphere && Math.abs(snap.atmosphere.microStrength - 0.15) < 0.01);
-        r.setMicroStrength(microAlt == null ? AnazhRealm.AERIAL.microStrength : microAlt);
+        r.setMicroStrength(microAlt ?? AnazhRealm.AERIAL.microStrength);
         // J4-Regler — KONSUM: setCavityAO/setEdgeSharp pushen live ins Uniform +
         // persistieren in state.atmosphere (so liest der Slider den Wert ab).
         r._ensureAtmoUniforms();
@@ -1432,7 +1432,7 @@ async function checkBandV18164WarumLicht({ page, check }) {
         // Invariante gilt nur den ANZEIGE-Leaves (bark/card/core); der Zwilling wird gefiltert.
         const displayLeavesE = flat ? flat.leaves.filter((l) => !l.shadowTwin) : [];
         out.baumMicro =
-            !!flat && displayLeavesE.length > 0 && displayLeavesE.every((l) => !!l.mat && l.mat.outputNode != null);
+            !!flat && displayLeavesE.length > 0 && displayLeavesE.every((l) => l.mat && l.mat.outputNode != null);
 
         // (5) der GEHEILTE M7-Persistenz-Riss (Klasse): der Snapshot trägt microStrength, der Restore liest sie.
         const au = r._ensureAtmoUniforms();
@@ -1761,7 +1761,7 @@ async function checkBandSchattenTakt({ page, check }) {
             csm: st.csmNode,
             dl: st.directionalLight,
             iv: st._shadowMinInterval,
-            eigen: Object.prototype.hasOwnProperty.call(r, "_loopShadowUpdate") ? r._loopShadowUpdate : null,
+            eigen: Object.hasOwn(r, "_loopShadowUpdate") ? r._loopShadowUpdate : null,
         };
         const kaskade = () => ({ shadow: { autoUpdate: true, needsUpdate: false } });
         const sonne = { position: { x: 10, y: 200, z: 10 } };

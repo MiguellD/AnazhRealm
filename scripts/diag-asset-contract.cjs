@@ -573,7 +573,7 @@ hauptLauf(async () => {
                 // gegen den lokalen Bau verglichen werden kann — ein sha256 allein nennt keinen Wert.
                 const mm = /Mesh(\d+)\.(\w+): sha256-Divergenz/.exec(de);
                 const roh = mm && a.meshes[+mm[1]] && a.meshes[+mm[1]].attrs[mm[2]];
-                if (roh && roh.b64 && roh.b64.length <= 65536)
+                if (roh?.b64 && roh.b64.length <= 65536)
                     console.log(`DIVERGENZ-BYTES ${f} Mesh${mm[1]}.${mm[2]} ${roh.b64}`);
             } else ok++;
             miss(c, a, f.replace(/\.json$/, ""));
@@ -641,7 +641,7 @@ hauptLauf(async () => {
         // Pflanzen-Arten und die Selbsttests (drachentor Same 1/2, gt Same V + 1) baut `bauHashListe`.
         const ersteStufe = (preset) => {
             const kind = artVon(preset);
-            return stufen[kind].find((l) => !(budget[kind][l] && budget[kind][l].karte));
+            return stufen[kind].find((l) => !(budget[kind][l]?.karte));
         };
         const weltK = welt.length
             ? await kostenListe(welt, (c) => gestaltenV(gestalten, c.presetId) >= 2 && c.lod === ersteStufe(c.presetId))
@@ -739,7 +739,7 @@ hauptLauf(async () => {
             if (!fernSelbst) fails.push("Selbsttest der Fern-Wand feuert nicht");
             console.log(
                 `Fern-Wand (N5): ${fernMess.length} NUR-WURF-Stufen gebaut (${nwArten.join(" · ") || "keine Art"}; ${nwGebaut.size} Rezepte), ` +
-                    `höchstens ${Math.max(0, ...fernMess.map((m) => (m.fern && m.fern.teile ? m.fern.teile.length : 0)))} Teile · ` +
+                    `höchstens ${Math.max(0, ...fernMess.map((m) => (m.fern?.teile ? m.fern.teile.length : 0)))} Teile · ` +
                     `Selbsttest (ohne __fern · Keil ohne First) ${fernSelbst ? "✅" : "❌"}`
             );
             fails.push(...bildUrteil(bildMess, tafel).map((x) => "Bild: " + x));

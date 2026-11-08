@@ -825,7 +825,7 @@ async function runPartB() {
                             const d = Math.hypot(auge.x - (m[i * 16 + 12] + w[12]), auge.z - (m[i * 16 + 14] + w[14]));
                             const ud = g.mat && g.mat.userData;
                             const laub = !!ud && ["foliage", "foliageTex", "grass"].includes(ud.foundryKind);
-                            if (a.aKarte && a.aKarte.isInstancedBufferAttribute) {
+                            if (a.aKarte?.isInstancedBufferAttribute) {
                                 const sicht = a.aKarte.array[i * 4 + 3];
                                 const kk = Math.min(ref / Math.max(Math.abs(sicht), 1e-3), 1);
                                 teile.push({
@@ -1122,7 +1122,7 @@ async function runPartB() {
             if (!o.geometry || !o.material) return;
             const mats = Array.isArray(o.material) ? o.material : [o.material];
             for (const m of mats) {
-                if (!(m && m.userData && m.userData.foundryCrossfade === true)) continue;
+                if (!(m?.userData && m.userData.foundryCrossfade === true)) continue;
                 geprueft++;
                 const a = o.geometry.attributes || {};
                 if (!a.aLodLevel || !a.aH0 || !a.aH0L) verstoesse++;
@@ -1139,7 +1139,7 @@ async function runPartB() {
         let bpName = null;
         for (const n in st.blueprints) {
             const fl = r._archFlattenBlueprint(n);
-            if (fl && fl.instanceable && fl.leaves && fl.leaves.length) {
+            if (fl?.instanceable && fl.leaves && fl.leaves.length) {
                 bpName = n;
                 break;
             }
@@ -1192,7 +1192,7 @@ async function runPartB() {
         }
         const fl0 = r._foundryFlattenFor(e, preset, 0),
             fl1 = r._foundryFlattenFor(e, preset, 1);
-        if (!(fl0 && fl0.leaves && fl1?.leaves))
+        if (!(fl0?.leaves && fl1?.leaves))
             return {
                 err: "Stufen nicht warm",
                 gestalt: r._foundryGestaltFor(e, preset),
@@ -1236,7 +1236,7 @@ async function runPartB() {
         try {
             const m = r._foundryTreeMaterial("bark", null);
             res.still = !!m;
-            res.maske = !!(m && m.userData && m.userData.foundryCrossfade === true);
+            res.maske = !!(m?.userData && m.userData.foundryCrossfade === true);
         } catch (e) {
             res.bruch = fehlerText(e);
             res.blende = !!(e && e.blende === true);
@@ -1419,7 +1419,7 @@ async function main() {
         check("Preset aufgelöst", out.preset === "eiche", out.preset);
         check(
             "alle drei Stufen warm vor der Baseline (L0/L1/Impostor)",
-            !!(out.warm && out.warm.l0 && out.warm.l1 && out.warm.l2),
+            !!(out.warm?.l0 && out.warm.l1 && out.warm.l2),
             out.warm
         );
         check("der Proben-Baum platziert (instanced)", out.placed === true);
@@ -1460,7 +1460,7 @@ async function main() {
     check(
         "DIE LAUTE BLENDE (Seite): ohne uLodD0 bricht der Baum-Stoff beim Namen, statt still ohne Maske zu zeichnen",
         !!laut && laut.blende === true && /uLodD0/.test(laut.bruch || ""),
-        laut ? (laut.bruch ? laut.bruch : `der Stoff entstand still (Maske ${laut.maske ? "da" : "fehlt"})`) : "keine Antwort"
+        laut ? (laut.bruch || `der Stoff entstand still (Maske ${laut.maske ? "da" : "fehlt"})`) : "keine Antwort"
     );
     const sp = laut?.spiegel || {};
     check(

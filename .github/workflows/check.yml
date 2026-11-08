@@ -569,16 +569,6 @@ jobs:
               # kein Render-Linsen-Skript liest `.calls` nackt, der Flugschreiber trägt das version-Feld.
               run: npm run gate:render-tap
 
-            - name: Takt-Atem (echter Renderer — der atmende Regler weckt keinen Fege-Takt und keine Pass-Lage)
-              if: steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 18
-              # Faehrt die echte Welt (swiftshader, kienspan) ohne Loop und ohne Wanduhr: der Aktuator steht auf festen Stufen
-              # (loadScale 1 -> 0,1 -> 1, je 80 Takte) und atmet darueber; gezaehlt je Takt (zweite Haelfte jeder Stufe): die
-              # Wechsel der Laub-Dichte, die Weckrufe des Stand-Stempels durch sie, die neuen Lagen des Hauptbilds, dazu
-              # _tickArchitectureLOD, _lodTreeVisHeight, _foundrySichtHoehe, _chunkSatzAbschnitt, _hoehlenSicht. main 66005ca6:
-              # Dichte, Stempel und Lage in 100 % der Takte (CPU-Takt frei 4,8 -> 11,7 ms). Gegenprobe (stossende Dichte) und
-              # --selftest zuerst.
-              run: npm run gate:takt-atem
-
             - name: Fahrzeug-Asset-Vertrag v3 (vehicle-core buildInstance byte-eingefroren, Plattform-Probe)
               if: steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 9
               # seit 04.11. in voll 4/18 und 5/18: „puls 2/2“ stand mit 14 Schritten auf dem Deckel 2,0 min (Waage), der Zug fährt ihn weiter
@@ -814,7 +804,7 @@ jobs:
               run: npm run gate:weg-boden
 
             - name: Foundry-Impostor auf dem EINEN Haupt-Renderer (P5 — kein Bake-iframe mehr)
-              if: steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 14
+              if: steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 17
               # P5: der Impostor-Atlas backt über den Haupt-Renderer-RTT (foundry-Record + LOD1-Bake-Leaves)
               # statt über ein GL-Bake-iframe. Beweist die MECHANIK (Atlas-Zelle, Layout, Kleber, Wachsen) und C6 (lod.K3):
               # die Karte aus jeder Blick-Hebung −20/0/40/80° gegen ihre Gestalt; das Urteil der Karte fällt an der Station.
@@ -1120,7 +1110,7 @@ jobs:
               run: npm run gate:nervensystem-labs
 
             - name: Tier-Gang ohne Gleiten (Welle 5 — das Gang-Gesetz am echten Chokepoint)
-              if: steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 15
+              if: steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 17
               # Headless (Null-Renderer, Produktions-Boot): jede Gattung läuft bei 0,8 · 1,6 · 3,0 m/s geradeaus durch
               # _animateCompoundMotion; gemessen wird der Aufsetz-Punkt jeder Pfote im Stand — Schlupf = Weg des
               # Stand-Fußes / Weg des Leibs, Soll ≤ 0,05 (K07, Ratsche von 0,2). Derselbe Punkt am Spieler-Leib
@@ -1426,7 +1416,7 @@ jobs:
               run: npm run gate:werk-im-wasser
 
             - name: GPU-Churn-Linse (echter Renderer — die Klasse hinter dem V18.322-Idle-Freeze)
-              if: steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 14
+              if: steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 17
               # Die STEHENDE Linse gegen „eine pro-Frame/periodisch neu kompilierte GPU-Pipeline im
               # Steady-State" (scene.environment-Identitäts-Churn → Recompile-Cascade = der Idle-Freeze,
               # der 50+ Versionen überlebte). Der Null-Renderer-Playtest oben ist dafür STRUKTURELL
@@ -1436,7 +1426,7 @@ jobs:
               run: npm run gpu-lens
 
             - name: Nah-Linse (echter Renderer — kein Analog-Satz diesseits der Nah-Grenze 64 m)
-              if: steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 15
+              if: steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 17
               # Nah und mittel ist das Studio-Mesh die Gestalt, das Analog-Feld trägt erst jenseits ANALOG_NAH_M. Fährt
               # den ECHTEN Renderer (swiftshader) an der Mess-Wiese und liest `_analogZensus` (jeder zeichnende Satz
               # < 64 m beim Namen: Klasse · Träger · Abstand · seit wann · warum kein Mesh; ein hängender Schwund zählt):
@@ -1446,7 +1436,7 @@ jobs:
               run: npm run gate:analog-nah
 
             - name: Frost-Wand (echter Renderer — das Weltbild folgt der Kamera durch Werkstatt, Ich- und Hof-Buehne)
-              if: steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 18
+              if: steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 17
               # Befund 07.10. (Leben-Schau v1-Pfad, echte GPU): nach Tab stand das Weltbild - das Backend der Ich-Buehne weitete
               # die geteilten Mensch-Indizes (r184 schreibt die geweitete Form in das Attribut zurueck), die Welt band uint32 auf
               # 16-bit-Puffern, Dawn verwarf jeden Render-Kontext. Faehrt den Spielpfad am ECHTEN Renderer (swiftshader, kienspan):
@@ -1454,17 +1444,6 @@ jobs:
               # die Wachen des Spiels schweigen; danach die Taeter (Index ueber der Vertex-Zahl, ein fremd geweiteter Mensch-Index):
               # die Index-Wache nennt beide beim Namen, die GPU-Wache zaehlt, das stehende Bild wird erkannt.
               run: npm run gate:weltbild-frost
-
-            - name: Post-Kette (echter Renderer — der Direktpfad zeichnet mit Tiefe, jede Nachbild-Stufe kostet nur, wenn sie zeigt)
-              if: steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 17
-              # Gruppe 2 seit der Vereinigung mit waende-ci: Gruppe 1 lief in V18.538 (Lauf 38033163539) 24,4 min, mit den
-              # sieben Kreatur- und Übergabe-Wänden geschätzt 25,4 — Gruppe 2 lief 12,5 (die Post-Kette dort 202 s).
-              # Faehrt den ECHTEN Frame (swiftshader, kienspan) durch die Weiche: Post-Kette, Direktpfad (wie die
-              # Zerleg-Linse ihn stellt), zurueck, ein Render-Fehler der Kette — je Schritt kein Fehler, der Leser der
-              # Szenen-Tiefe kopiert, der Direktpfad zeichnet mit Tiefe (die nahe Kiste deckt die ferne), die Post-Kette
-              # ohne Leinwand-Tiefe. Dazu die Shader-Kosten-Linse am erzeugten WGSL der Ausgabe (hoechstens 9 unbedingte
-              # Abtastungen, Godrays und Kontrast im Zweig hinter ihrer Staerke) und die Godrays mit der Sonne im Bild.
-              run: npm run gate:post-kette
 
             - name: Kamera-Treue und Stand-Wand (echter Renderer — der Replay zeichnet wie der direkte Pfad, im Stand arbeitet die Diät nichts doppelt)
               if: steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 17
@@ -1477,17 +1456,6 @@ jobs:
               # --selftest zuerst: injizierte Taeter fallen rot.
               run: npm run gate:kamera-treue
 
-            - name: Ego-Schatten (echter Renderer — in der Ego-Sicht wirft der Leib seinen Schatten, das Auge sieht ihn nicht)
-              if: steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 16
-              # voll 10 (die leichteste Gruppe, 7,4 -> 7,7 min; 17 s aus Lauf 38038945137/1 in spec/ci/ci-zeiten.json).
-              # Faehrt den ECHTEN Renderer (swiftshader, kienspan, Schatten an) an einer eigenen Buehne mit dem echten Leib des
-              # Spielers, der echten Ego-Regel (_applyEgoSicht) und der echten Haupt-Kamera am Auge: in der Ego-Sicht wirft der
-              # Leib (Schatten-Maske am Boden, IoU >= 0,9 gegen dieselbe Pose in der 3rd-Person), die Haupt-Kamera sieht 0
-              # Bildpunkte Leib, das Geraet in der Hand bleibt auf Ebene 0, ein Zwilling bleibt in den Kaskaden, 3rd gibt jede
-              # Maske zurueck. Fuenf eingeschmuggelte Regeln (main: visible, Ebene 0 bleibt, fremde Ebene, das Geraet mit,
-              # Zwilling geweckt) fallen je beim Namen. --selftest zuerst.
-              run: npm run gate:ego-schatten
-
             - name: Ziel-Zensus (echter Renderer — jedes GPU-Ziel hat einen Leser, die Schatten-Karte zeichnet ohne Farbe)
               if: steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 16
               # Faehrt den ECHTEN Frame (swiftshader, kienspan) n Frames lang durch die Haken des Ziel-Zensus: jede GPU-Textur
@@ -1497,20 +1465,8 @@ jobs:
               # ein eingeschmuggelter Taeter, der beim Namen rot faellt und danach restlos fort ist. --selftest zuerst.
               run: npm run gate:ziel-zensus
 
-            - name: Verdeckungs-Abfrage (echter Renderer — der Aussteige-Ablauf am Bach, jede WebGPU-Validierung beim Namen)
-              if: steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 17
-              # Faehrt am Bach der Mess-Wiese (swiftshader, kienspan, EIN Boot) den echten Spiel-Takt: ein Region-Buendel jenseits
-              # des Bachs (der Berg-Cull baut seinen Occlusion-Stellvertreter, Probe jeden queryTakt-ten Frame), der GT am Ufer,
-              # Aufsitzen, Fahrt, AUSSTEIGEN (die Sicht zurueck auf first), zwei Probe-Fenster Blick uebers Wasser. Dazu die
-              # Stationen Bruch (ein Leser der Szenen-Tiefe bricht den Pass bei offener Abfrage), Gift (ein gezaehlter
-              # Stellvertreter mit gescheiterter Pipeline) und Letzter (der Stellvertreter als letzter Draw, der naechste Frame
-              # mit Zaehler 0). ROT bei jeder Device-Meldung, jeder Zeile der GPU-Wache und jedem Seitenfehler; zuletzt ohne die
-              # Huellen (Vendor-Methoden) muessen „incomplete occlusion query“, „No occlusion queries“, „weak set“ und der
-              # Letzte beim Namen fallen.
-              run: npm run gate:verdeckungs-abfrage
-
             - name: Wasser-Bild (echter Renderer — das Wasser-Material und der Regen)
-              if: steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 16
+              if: steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 17
               # Fährt den ECHTEN Renderer (swiftshader, Software-Holz) mit dem echten Wasser-Material auf einem Fluss-Bogen:
               # kein Zebra bei Wasser-Uhr 3600 s gegen 60 s, kein Schaum ohne Gesetz-Grund, der Sturm bewegt das Wasser
               # (Wind-Zeile des Gesetzes); der Sturm-Regen allein auf Schwarz zeigt Schlieren, quer zum Wind geneigt; das
@@ -1616,7 +1572,7 @@ jobs:
             - name: Post-Kette auf der Karte (jede Nachbild-Stufe kostet nur, wenn sie zeigt)
               timeout-minutes: 5
               if: ${{ !cancelled() }}
-              run: npm run gate:post-kette
+              run: npm run gate:post-kette:echt
 
             - name: Portal-Membran auf der Karte (die Passage zeichnet nur im Blick)
               timeout-minutes: 5
@@ -1626,7 +1582,14 @@ jobs:
             - name: Ego-Schatten auf der Karte (in der Ego-Sicht wirft der Leib seinen Schatten, das Auge sieht ihn nicht)
               timeout-minutes: 5
               if: ${{ !cancelled() }}
-              run: npm run gate:ego-schatten
+              run: npm run gate:ego-schatten:echt
+
+            - name: Takt-Atem auf der Karte (der atmende Regler weckt keinen Fege-Takt und keine Pass-Lage, im Fenster des Spielers)
+              timeout-minutes: 5
+              if: ${{ !cancelled() }}
+              # w23-pruef-welt: die Bild- und LOD-Urteile der 320er-Fenster zogen auf die Karte in 1280×720 (welt-boot `fenster`) — die
+              # Stufen und Kosten hängen am Schirm; Ego-Schatten, Verdeckung und Post-Kette standen schon hier, Takt-Atem kam dazu
+              run: npm run gate:takt-atem:echt
 
             - name: Kamera-Leib auf der Karte (K6 - am Pruefplatz wird der Leib beim Seitwaertsgehen nie durchsichtig)
               timeout-minutes: 5
@@ -1639,7 +1602,7 @@ jobs:
             - name: Verdeckungs-Abfrage auf der Karte (der Aussteige-Ablauf am Bach, jede WebGPU-Validierung beim Namen)
               timeout-minutes: 5
               if: ${{ !cancelled() }}
-              run: npm run gate:verdeckungs-abfrage
+              run: npm run gate:verdeckungs-abfrage:echt
 
             - name: Frost-Wand auf der Karte (das Weltbild folgt der Kamera vom Ankommen bis zur Hof-Bühne, nie der Ladeschirm)
               timeout-minutes: 8

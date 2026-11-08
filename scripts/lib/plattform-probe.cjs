@@ -112,8 +112,8 @@ function installiereDrift(M, funktionen) {
         setze: function (d, welche, grenze, fang) {
             D = d;
             aktiv = welche || null;
-            bis = grenze == null ? Infinity : grenze;
-            fangen = fang == null ? -1 : fang;
+            bis = grenze ?? Infinity;
+            fangen = fang ?? -1;
             nr = 0;
             gefangen = null;
             gerufen = {};

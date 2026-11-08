@@ -26,7 +26,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 
-const { statikServer, starteBrowser, postKetteBereit, uferStellen, taeterFaelle, selbsttestEnde, wandEnde, laufUhr, SELBSTTEST, jsonKlon, fehlerText } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, postKetteBereit, uferStellen, taeterFaelle, selbsttestEnde, wandEnde, laufUhr, SELBSTTEST, jsonKlon, fehlerText, fenster } = require("./lib/welt-boot.cjs");
 const { ladeSpec } = require("./lib/band-urteil.cjs");
 const ZZ = require("./lib/ziel-zensus.cjs");
 
@@ -261,7 +261,7 @@ function rundungProbe() {
     await server.lausche(0);
     const browser = await starteBrowser({ art: "linse", frist: 900000 });
     const page = await browser.newPage();
-    await page.setViewport({ width: 320, height: 240 });
+    await fenster(page, "klein");
     await page.evaluateOnNewDocument(FALTE_INSTALL);
     await page.evaluateOnNewDocument(vramAbgriff);
     const log = laufUhr();

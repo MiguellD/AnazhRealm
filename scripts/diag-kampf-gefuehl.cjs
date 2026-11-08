@@ -443,7 +443,7 @@ function satzVerdict(S) {
     for (const [id, g] of Object.entries(S)) {
         if (id === "hand") continue;
         const [x, h, L] = [g[g.ziel] || {}, S.hand[g.ziel] || {}, g.leer || { wirk: 1 }];
-        const satt = Object.keys(g).filter((z) => g[z] && g[z].verb && g[z].wirk > 0 && !(g[z].zehrt > 0));
+        const satt = Object.keys(g).filter((z) => g[z]?.verb && g[z].wirk > 0 && !(g[z].zehrt > 0));
         const halb = g.halb && g.halb.kraft / x.kraft;
         if (!(x.wirk > (h.wirk || 0))) v.push(`${id} wirkt am ${g.ziel} ${f2(x)}`);
         if (g.boden && graebt(g.boden) !== g.oeffnet) v.push(`${id} gräbt gegen die Front`);
@@ -557,7 +557,7 @@ function bogenK4Taeter(K) {
 // gleicht dem vor dem Speichern je Teil, das Alter des Fuchses eingeschlossen (das erste Bild der Wiederkehr zählt keinen Takt
 // des Lebens nach). Der Abdruck ist kanonisches JSON (K5_ABDRUCK, feste Reihe), sein Hash die Zahl.
 const hash = (o) => stammLib.sha(JSON.stringify(o)).slice(0, 12);
-const f1 = (v) => (v === null || v === undefined ? "–" : Number(v).toFixed(2));
+const f1 = (v) => (v == null ? "–" : Number(v).toFixed(2));
 // DER BERICHT einer Probe: JSON, Zahlen auf Tausendstel; `keys` (Leerzeichen-Liste) wählt die Größen
 const json = (o) => JSON.stringify(o, (k, x) => (typeof x === "number" ? +x.toFixed(3) : x));
 const zeig = (name, o, keys) =>
@@ -1215,7 +1215,7 @@ async function k1Ende(browser, K) {
         const ids = Object.keys(S).filter((id) => id !== "hand");
         const gut = ids.filter((id) => !satzVerdict({ hand: S.hand, [id]: S[id] }).length);
         const s2 = satzVerdict(S).concat(nach("bogen"), stoffVerdict(V));
-        const zj = (t) => (V && V[t] ? V[t].stoff + " " + V[t].zehrt.toFixed(4) : "–");
+        const zj = (t) => (V?.[t] ? V[t].stoff + " " + V[t].zehrt.toFixed(4) : "–");
         check(
             ids.length >= 22 && !s2.length,
             `Q11 halten.K3 Staffel 2: jede Gestalt der Schmiede (${gut.length} von ${ids.length}) wirkt nach ihrer Form an ihrem Ziel und zehrt, wo sie wirkt, nach der Härte ihrer Stoff-Zeile (${zj("Urvolk")} > ${zj("Nihon")} > ${zj("Frank")} je Hieb, die halbe Härte ${V && V.weich.toFixed(4)})` +
@@ -1369,7 +1369,7 @@ async function k1Ende(browser, K) {
         const bw = (t) =>
             ["fuchs", "wolf", "baer"]
                 .map((j) =>
-                    t && t[j] ? `${j} ${t[j].biss ? "biss" : "kein Biss"} Δv ${t[j].dv.toFixed(3)}` : j + " –"
+                    t?.[j] ? `${j} ${t[j].biss ? "biss" : "kein Biss"} Δv ${t[j].dv.toFixed(3)}` : j + " –"
                 )
                 .join(" · ");
         console.log(`  (T15) Biss: Kitz ${bw(bz2.beute)} · Spieler ${bw(bz2.spieler)} m/s`);

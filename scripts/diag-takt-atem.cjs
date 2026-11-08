@@ -24,7 +24,7 @@
 //   node scripts/diag-takt-atem.cjs [--selftest]   (npm run gate:takt-atem)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, starteBrowser, laufUhr, taeterFaelle, selbsttestEnde, abwandlung, jsonKlon, SELBSTTEST, fehlerText, seiteZu, rotListe } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, laufUhr, taeterFaelle, selbsttestEnde, abwandlung, jsonKlon, SELBSTTEST, fehlerText, seiteZu, rotListe, fenster } = require("./lib/welt-boot.cjs");
 
 const SOLL = { dichte: 0.1, stand: 0.1, lage: 0.1 };
 
@@ -241,9 +241,9 @@ function atem() {
 (async () => {
     console.log("=== TAKT-ATEM — der Regler atmet, der Takt rechnet nur, was sich ändert ===");
     await server.lausche(0);
-    const browser = await starteBrowser({ art: "linse", frist: 600000 });
+    const browser = await starteBrowser({ art: "linse", frist: 600000, regler: "frei" });
     const page = await browser.newPage();
-    await page.setViewport({ width: 320, height: 180 });
+    await fenster(page, "bild");
     let out = null;
     const log = laufUhr();
     try {

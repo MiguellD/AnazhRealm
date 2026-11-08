@@ -808,7 +808,7 @@ async function kosten(page, stubs) {
             nach = await lauf(40);
         } finally {
             for (let i = altArchs.length - 1; i >= 0; i--)
-                if (altArchs[i] && altArchs[i].__klangFake) altArchs.splice(i, 1);
+                if (altArchs[i]?.__klangFake) altArchs.splice(i, 1);
             if (altRivers) hydro.rivers = altRivers;
             st.architectures = altArchs;
             P.symphonyTick = altTick;
@@ -1313,7 +1313,7 @@ function koerperUrteil(F) {
     const [rot, fall] = [[], F.landung.slice(1)];
     if (q.length && (new Set(F.motor.map(([u]) => Math.round(u / 250))).size < 4 || !(q.at(-1) / q[0] <= 1.04)))
         rot.push(`F motor stumm: ${q[0]}–${q.at(-1)} Hz je 1000 Upm`);
-    if (F.landung[0] && F.landung[0][2]) rot.push(`F landung: der Hopser klingt`);
+    if (F.landung[0]?.[2]) rot.push(`F landung: der Hopser klingt`);
     fall.forEach(([h, leib, n, klang, db], i) => {
         if (n !== 1 || !(db > -90)) rot.push(`F landung ${h} m tonlos (${n}×, ${db} dB)`);
         else if (Math.abs(klang - leib) > 1e-3) rot.push(`F landung ${h} m: Klang ${klang}, Leib-Löser ${leib} m/s`);

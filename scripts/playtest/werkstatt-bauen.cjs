@@ -935,7 +935,7 @@ async function checkBandWellePerfCArchInstancing({ page, check }) {
                 // DETERMINISMUS-BOGEN P3 — Kollision ist feld-nativ via blockerAABBs
                 // (solider Holz-Stamm), kein Ammo-Body mehr. Sie wird beim Spawn gefüllt
                 // (render-unabhängig) und überlebt das Culling (das Feld trägt sie immer).
-                out.cutoverHasCollision = !!(e && Array.isArray(e.blockerAABBs) && e.blockerAABBs.length > 0);
+                out.cutoverHasCollision = !!(e && Array.isArray(e.blockerAABBs) && e.blockerAABBs.length);
                 // die platzierte Architektur ist global (`baum_kiefer#0`, die Regions-Achse @p: fiel;
                 // ein Studio-Leaf keyt nach seiner Studio-Geometrie): eine baum_kiefer#0-Gruppe.
                 out.cutoverGroupExists = !!(
@@ -947,7 +947,7 @@ async function checkBandWellePerfCArchInstancing({ page, check }) {
                     r._cullArchitectureMesh(e);
                     out.cutoverCulledInstanced = e.instanced === false && !e.instSlots;
                     // Daten-Eintrag bleibt in der Liste (Culling ≠ Remove).
-                    out.cutoverEntryStillListed = st.architectures.indexOf(e) >= 0;
+                    out.cutoverEntryStillListed = st.architectures.includes(e);
                     r.removeArchitecture(e); // sauber raus aus der Test-Welt
                 }
                 st.architectureCullingRadius = origRadius;
@@ -1569,7 +1569,7 @@ async function checkBandM1VerbindungsWerkstatt({ page, check }) {
             // (7) der Punkt ist ABLESBAR: der Werkstatt-Viewer (connectionLines)
             // zeigt den Anker-Marker am exakten Punkt.
             const g = r._buildFromBlueprint(blu.__m1band, 0, undefined, { connectionLines: true });
-            const marker = g.children.find((ch) => ch.userData && ch.userData.isAnchorPoint);
+            const marker = g.children.find((ch) => ch.userData?.isAnchorPoint);
             out.anchorVisible = !!marker && marker.position.x === 0.5 && marker.position.y === 1.0;
             return out;
         } finally {

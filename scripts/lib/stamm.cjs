@@ -581,7 +581,7 @@ function stelleIm(t, glied, x, muss) {
     else for (let i = b.indexOf(x); i >= 0 && alle.length < 2; i = b.indexOf(x, i + 1)) alle.push(Object.assign([x], { index: i }));
     if (alle.length > 1 || (muss && !alle.length))
         throw new Error(
-            `stammLib.treffer: „${String(x).slice(0, 70)}" steht ${alle.length}× in ${glied == null ? "dem ganzen Stamm" : glied} — ` +
+            `stammLib.treffer: „${String(x).slice(0, 70)}" steht ${alle.length}× in ${glied ?? "dem ganzen Stamm"} — ` +
                 (alle.length ? "der erste Treffer hinge an der Reihenfolge" : "die Mutation wäre vakuös")
         );
     return alle.length ? { a: g[0].start, b, rx, m: alle[0] } : null;

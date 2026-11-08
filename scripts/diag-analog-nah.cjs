@@ -193,7 +193,7 @@ hauptLauf(async () => {
                     return (
                         gleich >= 20 &&
                         bauten > 0 &&
-                        !!(f && f.ready && f.pending.size === 0 && !f.warte?.length) &&
+                        !!(f?.ready && f.pending.size === 0 && !f.warte?.length) &&
                         !r._impostorBakeQueue?.length
                     );
                 };
@@ -216,7 +216,7 @@ hauptLauf(async () => {
                     dauer.set(key, d);
                 }
                 if (t % 100 === 0) console.log("[N] Einschwingen Takt " + t + ": " + h.length + " Sätze < 64 m");
-                if (h.length === 0 && welt) {
+                if (!h.length && welt) {
                     if (frei === null) frei = t;
                     if (++freiSeit >= 30) break; // die Welt steht und 30 Takte am Stück satzfrei = eingeschwungen
                 } else {
@@ -245,7 +245,7 @@ hauptLauf(async () => {
                     ruheZ = r._analogZensus();
                 }
                 const zb = r._analogZensus();
-                if (zb && zb.bruecken) brueckenMax = Math.max(brueckenMax, zb.bruecken.length);
+                if (zb?.bruecken) brueckenMax = Math.max(brueckenMax, zb.bruecken.length);
             }
             const ruheEnde = r._analogZensus();
             const brueckenEnde = ruheEnde?.bruecken ? ruheEnde.bruecken : [];
@@ -271,7 +271,7 @@ hauptLauf(async () => {
                     rampeSpitze = h.length;
                     rampeZ = r._analogZensus();
                 }
-                if (h.length === 0 && rampeNull === null) rampeNull = t;
+                if (!h.length && rampeNull === null) rampeNull = t;
                 if (h.length) rampeNull = null;
             }
             return {

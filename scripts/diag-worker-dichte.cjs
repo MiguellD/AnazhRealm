@@ -81,7 +81,7 @@ async function probe(page, welt, mitAbdruck, zwilling = false) {
                 orte.push(...messorte);
                 const h = s.hydrosphere;
                 const fl =
-                    h && Array.isArray(h.rivers) ? h.rivers.find((f) => f && f.points && f.points.length > 4) : null;
+                    h && Array.isArray(h.rivers) ? h.rivers.find((f) => f?.points && f.points.length > 4) : null;
                 if (fl) {
                     const p = fl.points[Math.floor(fl.points.length / 2)];
                     orte.push({ id: "fluss", x: p.x, z: p.z });

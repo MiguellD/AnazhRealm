@@ -982,11 +982,11 @@ if (require.main === module) hauptLauf(async () => {
                 `Invarianten-Gate gehört auf die CI (frischer Renderer-Prozess pro Lauf), nicht in den` +
                 ` last-kumulierenden lokalen Container.`
         );
-        if (failures.length > 0)
+        if (failures.length)
             console.log(`   Bis zum Abbruch verletzt (${failures.length}): ${failures.join(", ")}`);
         process.exit(1);
     }
-    if (failures.length > 0) {
+    if (failures.length) {
         console.log(`\n❌ ${failures.length} Invariante(n) verletzt: ${failures.join(", ")}`);
         if (STRICT) process.exit(1);
     } else {

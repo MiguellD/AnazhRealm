@@ -436,7 +436,7 @@ async function kreaturProben(r, T, opts) {
             );
         s.player.respawnGraceUntil = -Infinity;
         r._playerDeathRespawn("linse");
-        return { aufgestiegen: auf, nachTod: s.player.mountedArch == null ? null : s.player.mountedArch };
+        return { aufgestiegen: auf, nachTod: s.player.mountedArch ?? null };
     });
 
     // ── huepfer: jeder Sprung aus einer Aktion über das EINE Sprung-Gesetz (creatureJump), auf die Höhe des Freude-Gesetzes

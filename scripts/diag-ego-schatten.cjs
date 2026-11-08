@@ -136,7 +136,7 @@ function selbsttest() {
     selbsttestEnde(fehler);
 }
 
-const { statikServer, starteBrowser, laufUhr, path, fs, SELBSTTEST, argOpt, fehlerText, seiteZu, rotListe } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, laufUhr, path, fs, SELBSTTEST, argOpt, fehlerText, seiteZu, rotListe, fenster } = require("./lib/welt-boot.cjs");
 
 if (SELBSTTEST) {
     console.log("=== EGO-SCHATTEN — Selbsttest (ohne Browser) ===");
@@ -505,7 +505,7 @@ function buehne(arg) {
     await server.lausche(0);
     const browser = await starteBrowser({ art: "linse", frist: 600000 });
     const page = await browser.newPage();
-    await page.setViewport({ width: 320, height: 180 });
+    await fenster(page, "bild");
     let out = null;
     const log = laufUhr();
     try {

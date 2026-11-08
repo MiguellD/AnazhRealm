@@ -82,7 +82,7 @@ hauptLauf(async () => {
         const prevHook = window.__anazhFernRing;
         delete window.__anazhFernRing;
         for (let t = 0; t < 5; t++) r._tickFernRing(st.playerMesh.position);
-        res.headlessQuiet = st.fernRing === null || st.fernRing === undefined;
+        res.headlessQuiet = st.fernRing == null;
 
         // ===== Hook AN: der Ring entsteht in Scheiben aus dem Fern-Faden (B2) =====
         window.__anazhFernRing = true;
@@ -645,7 +645,7 @@ hauptLauf(async () => {
                 const rand = [];
                 for (let g = 0; f9?.feldY && g < f9.zoneVerts && rand.length < 100; g++) {
                     const p = r._fernRingPunkt(f9, g);
-                    if (f9.teilung.randV && f9.teilung.randV[g]) rand.push(p);
+                    if (f9.teilung.randV?.[g]) rand.push(p);
                 }
                 const tF = performance.now();
                 for (const p of rand) r._voxelSurfaceY(p.x, p.z);
@@ -658,7 +658,7 @@ hauptLauf(async () => {
             res.nahtStoffGeo = spion.geo;
             res.nahtStoffWege = spion.wege;
             const cm = st.voxelChunkMaterial;
-            const slots = (m) => ["colorNode", "normalNode", "roughnessNode", "outputNode"].filter((k) => m && m[k]);
+            const slots = (m) => ["colorNode", "normalNode", "roughnessNode", "outputNode"].filter((k) => m?.[k]);
             res.nahtSlotsChunk = slots(cm).join(",");
             const stoffNaht9 = fr9 && (fr9.stoffe ? fr9.stoffe.naht : fr9.material);
             res.nahtSlotsRing = slots(stoffNaht9).join(",");
@@ -1427,7 +1427,7 @@ hauptLauf(async () => {
             res.horizont = [String(e15)];
         }
         r._fernRingDispose();
-        res.fpDisposed = st.feldPass === null || st.feldPass === undefined;
+        res.fpDisposed = st.feldPass == null;
 
         // Hook wiederherstellen (sichern + wiederherstellen, nie löschen):
         if (prevHook === undefined) delete window.__anazhFernRing;

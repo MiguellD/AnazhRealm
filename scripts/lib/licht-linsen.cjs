@@ -146,7 +146,7 @@ function albedoSicht(opts) {
                         // trägt die Karte des Atlas (fimp), deren Stoff keine Zeile trennt; sonst setzt die Linse es
                         // `nah: 0`: nie ein fremdes — die Zeile setzt ihr Exemplar mit ihrer Saat (der Lack des GT
                         // folgt dem LACK_GESETZ der Saat)
-                        if (d <= (ex.nah != null ? ex.nah : 80) && (!best || d < best.d)) best = { e, d };
+                        if (d <= (ex.nah ?? 80) && (!best || d < best.d)) best = { e, d };
                     }
                 let e = best && best.e;
                 if (!e) {
@@ -1466,7 +1466,7 @@ function laubGegenlicht(opts) {
                 const pr = e && e.instFoundry === true && Array.isArray(e.instSlots) ? r._foundryPresetForEntry(e) : null;
                 const d = pr && r._foundry.recipes[pr] && r._foundry.recipes[pr].kind === "haus" ? Math.hypot(e.position.x - von[0], e.position.z - von[1]) : Infinity;
                 if (!(d < (ziel ? ziel.d : Infinity))) continue;
-                const box = e.instSlots.map((sl) => st.archInstanceGroups.get(sl.key) && [st.archInstanceGroups.get(sl.key), sl.slot]).filter((gs) => gs && gs[0].mesh && !gs[0].shadowTwin)
+                const box = e.instSlots.map((sl) => st.archInstanceGroups.get(sl.key) && [st.archInstanceGroups.get(sl.key), sl.slot]).filter((gs) => gs?.[0].mesh && !gs[0].shadowTwin)
                     .reduce((b, [g, i]) => (g.mesh.getMatrixAt(i, m4), b.union((g.mesh.geometry.boundingBox || (g.mesh.geometry.computeBoundingBox(), g.mesh.geometry.boundingBox)).clone().applyMatrix4(m4.premultiply(g.mesh.matrixWorld)))), new T.Box3());
                 if (!box.isEmpty()) ziel = { d, e, preset: pr, box, fuss: new T.Vector3(e.position.x, e.position.y, e.position.z) };
             }
@@ -2354,7 +2354,7 @@ function luftTiefeUrteil(m, R) {
             if (nk < M.nk) liste.push(`K1-2 JE KANAL ${wo} ab 2 km: ungemessen (${nk} Paare < ${M.nk})`);
             else if (!(v >= B.kanal[0] && v <= B.kanal[1])) liste.push(`K1-2 JE KANAL ${wo} ab 2 km: Δβ blau−rot ${v} × Referenz (grau = 0, ${nk} Paare)`);
             if (u === 0.5 && !(z.rand.C != null && z.rand.C <= B.rand))
-                liste.push(`K2-1 KANTE ${wo}: Restkontrast ${z.rand.C == null ? "ungemessen" : z.rand.C} am Rand ${z.rand.km} km > ${B.rand}`);
+                liste.push(`K2-1 KANTE ${wo}: Restkontrast ${z.rand.C ?? "ungemessen"} am Rand ${z.rand.km} km > ${B.rand}`);
         }
     gemessen.forEach((n, i) => {
         if (n < M.azimute) liste.push(`K1-1 KOSCHMIEDER Uhr 0.5 ${R.baenderM[i] / 1000} km: in ${n} von 4 Azimuten gemessen (< ${M.azimute})`);

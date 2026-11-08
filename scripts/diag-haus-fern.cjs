@@ -592,7 +592,7 @@ function hausFall(id, seed, ersatz3, tuerDefekt, glasDefekt, tonDefekt) {
         }
         const wv = werf[w];
         z.kosten[s] = { stufe: w, tris: anzahl(wv) };
-        const soll = B[w] && B[w].nurWurf ? B[w].tris : null;
+        const soll = B[w]?.nurWurf ? B[w].tris : null;
         if (w !== 3) z.befund.push(`L${s} wirft sich selbst über L${w} (${anzahl(wv)} Dreiecke je Kaskade)`);
         else if (soll != null && anzahl(wv) > soll) z.befund.push(`Stufe 3 wirft ${anzahl(wv)} > ${soll} Dreiecke`);
         if (wurfJe[w] == null) wurfJe[w] = Math.min(...SONNEN.map(([h, az]) => wurfIou(wv, werf[0], sonne(h, az))));

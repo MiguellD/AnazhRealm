@@ -40,7 +40,7 @@ const server = statikServer();
                 for (let i = 0; i < 60; i++) {
                     await sleep(50);
                     const info = st.renderer && st.renderer.info;
-                    if (info?.render) samples.push(info.render.drawCalls != null ? info.render.drawCalls : -1);
+                    if (info?.render) samples.push(info.render.drawCalls ?? -1);
                 }
                 const grow = samples.filter((v, i) => i > 5 && v > samples[i - 1]).length;
                 return {

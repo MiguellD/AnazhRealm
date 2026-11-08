@@ -247,7 +247,7 @@ async function checkBandWelle6HCreatures({ page, check }) {
         const uniqueMaps = new Set();
         for (let i = 0; i < 10; i++) {
             r.assignCreatureTask(c3, "follow_player", {}, { silent: true });
-            if (c3.userData.taskAura && c3.userData.taskAura.material.map) {
+            if (c3.userData.taskAura?.material.map) {
                 uniqueMaps.add(c3.userData.taskAura.material.map);
             }
             r.assignCreatureTask(c3, "wander", {}, { silent: true });
@@ -346,7 +346,7 @@ async function checkBandWelle6HCreatures({ page, check }) {
             wesenPart && typeof wesenPart.shape === "string" && typeof wesenPart.material === "string";
         out.spriteAuraY = souls && souls.wolf && souls.wolf.auraY === 0.75;
         out.wesenAuraY = souls && souls.wesen && souls.wesen.auraY === 0.8;
-        if (st.creatures.length > 0) {
+        if (st.creatures.length) {
             const c0 = st.creatures[0];
             out.initialIsGroup = c0 && c0.isGroup === true;
             out.initialHasSoul =
@@ -420,7 +420,7 @@ async function checkBandWelle6HCreatures({ page, check }) {
             (prof.emotion === "happy" || prof.emotion === "sad") && // BINÄR, ehrlich geerdet (§G.2)
             Number.isFinite(prof.wariness) &&
             typeof prof.moodLabel === "string" &&
-            prof.moodLabel.length > 0 &&
+            prof.moodLabel.length &&
             typeof prof.section === "string"
         );
         // Der Renderer ist ein ECHTER Konsument: der rowTitle (title-Attr auf .creature-row-main) trägt die moodLabel.
@@ -463,7 +463,7 @@ async function checkBandWelle6HCreatures({ page, check }) {
         out.spawnFootInOrchester = !!document.querySelector(".hof-orchester .hof-spawn #creature-soul-select");
         // Hof-F — die Sektions-Leiste (Gruppen-Dirigat).
         const secHost = document.getElementById("hof-sections");
-        out.sectionChipsRender = !!(secHost && secHost.querySelectorAll(".hof-section-chip").length >= 1);
+        out.sectionChipsRender = !!(secHost && secHost.querySelectorAll(".hof-section-chip").length);
         const alleChip = secHost && secHost.querySelector(".hof-section-chip");
         out.firstSectionIsAlle = !!(alleChip && /Alle/.test(alleChip.textContent));
         // Eine ECHTE Sektion (die zweite Chip, nicht „Alle") wählen → Liste filtert + die Befehlsleiste erscheint.
@@ -918,7 +918,7 @@ async function checkBandWelle6HCreatures({ page, check }) {
         // wird getroffen). Die Vision „Spieler-LMB → Material-Slot“ IST `_strikeArchitecture` (die EINE
         // Funktion, die tryMouseBreak beim Architektur-Treffer ruft) → das Target direkt darüber schlagen.
         const archBeforeLmb = st.architectures.length;
-        for (let s = 0; s < 40 && st.architectures.indexOf(target) >= 0; s++) r._strikeArchitecture(target);
+        for (let s = 0; s < 40 && st.architectures.includes(target); s++) r._strikeArchitecture(target);
         st.player.equipped.held = null;
         out.lmbShrunkArch = st.architectures.length < archBeforeLmb;
         out.lmbFilledInventory = st.player.inventory.some(
@@ -2086,7 +2086,7 @@ async function checkBandKreaturKosten({ page, check }) {
             const seh = z1?.wurf && Array.isArray(z1.wurf.seh) ? z1.wurf.seh : null;
             const aus = budgetFang.get(kind + "|1");
             if (!seh || !aus) return { fehlt: !seh ? "wurf.seh fehlt an der Stufe 1" : "kein Ausgang der Stufe 1" };
-            const teil = aus.filter((m) => m && m.position && m.mat && seh.indexOf(m.mat.seh) >= 0);
+            const teil = aus.filter((m) => m?.position && m.mat && seh.includes(m.mat.seh));
             return Object.assign({ seh }, PCW.budgetSippen(teil));
         };
         const urteil = (kind, B, stufe, w, soll) => {
@@ -2629,7 +2629,7 @@ async function checkBandKreaturKosten({ page, check }) {
                 takt(NG);
                 g.g1 = {
                     ruht: u._ruht === true,
-                    wurzel: Object.prototype.hasOwnProperty.call(probe, "updateMatrixWorld"),
+                    wurzel: Object.hasOwn(probe, "updateMatrixWorld"),
                     schritte: g.schritte,
                     zeitFehler: Math.abs(g.zeit + (u._ruheDt || 0) - t0 - NG * 0.02),
                     gaenge: g.gaenge,
@@ -2650,7 +2650,7 @@ async function checkBandKreaturKosten({ page, check }) {
                 r._tickKreaturRuhe(0.02, pm);
                 g.g3 = {
                     wach: u._ruht === false,
-                    wurzel: Object.prototype.hasOwnProperty.call(probe, "updateMatrixWorld"),
+                    wurzel: Object.hasOwn(probe, "updateMatrixWorld"),
                     kindFehler: kindStimmt(),
                 };
                 nullen();

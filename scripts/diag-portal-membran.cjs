@@ -95,7 +95,7 @@ async function blickProbe(opts) {
         return {
             fehler:
                 `Fenster am Ring: ${stand ? stand.fenster : 0} von ${stand ? stand.tore : 0} Toren, die Welt hat nichts mehr offen` +
-                (stand && stand.wartend.length ? ` — ohne Fenster: ${stand.wartend.join(" · ")}` : ""),
+                (stand?.wartend.length ? ` — ohne Fenster: ${stand.wartend.join(" · ")}` : ""),
         };
     if (opts.nurWarten) return { bereit: true };
     // BB Selbsttest (D8-n2): der Stand vor dem Scan — dieselben Tore, ihre Fenster beiseite (synchron, kein Takt dazwischen). Die
@@ -403,10 +403,10 @@ async function blickStufe(check) {
             ["A", "M", "Z", "R"]
                 .map(
                     (k) =>
-                        `${k} ${h.zeit[k]} ms/${h.kalt[k] == null ? "?" : h.kalt[k]} kalt` +
+                        `${k} ${h.zeit[k]} ms/${h.kalt[k] ?? "?"} kalt` +
                         (h.ruhe[k] ? `/${h.ruhe[k].n} F ${h.ruhe[k].ms} ms/${h.ruhe[k].offen} offen` : "")
                 )
-                .join(" · ") + `; offen beim Start ${h.offenStart == null ? "?" : h.offenStart}`;
+                .join(" · ") + `; offen beim Start ${h.offenStart ?? "?"}`;
         // `w`: das Bild unter dem Urteil (welt = das Spiel, milch = der Milch-Leser) in DERSELBEN Maske
         const hellZeile = (h, w) =>
             `${h.n} Membran-Pixel (${(h.anteil * 100).toFixed(1)} %), ${w === h.welt ? "Welt" : "Milch"}: Y ${w.Y.toFixed(1)}, ` +
@@ -567,7 +567,7 @@ hauptLauf(async () => {
         for (let i = 0; i < 40; i++) r._tickPortalMembranes(3.8 + i * 0.016);
         const recF = r._portalMembranes.get(entry.id);
         res.f = {
-            fluegelGefunden: !!(recF?._fluegel && recF._fluegel.length > 0),
+            fluegelGefunden: !!(recF?._fluegel && recF._fluegel.length),
             anzahl: recF?._fluegel ? recF._fluegel.length : 0,
             geoeffnet: !!(recF && recF._fluegelWinkel > 0.2),
             winkel: recF ? +(recF._fluegelWinkel || 0).toFixed(3) : 0,

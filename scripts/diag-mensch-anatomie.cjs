@@ -153,13 +153,13 @@ function messeKopf(sb, eingriff) {
     const yNase = spanne(nase, 1).a;
     const yAuge = (eL.y + eR.y) / 2;
     // (2) der Ofen L0: die Hornhaut vor der Haut, die Töne, das Haar, die Dreiecke
-    const kern = eingriff && eingriff.kern ? eingriff.kern(K) : K;
+    const kern = eingriff?.kern ? eingriff.kern(K) : K;
     const g = sb.BAKERS_BY_KIND.koerper(
         kern,
         "mensch",
         1,
         0,
-        eingriff && eingriff.dials ? { dials: eingriff.dials } : null
+        eingriff?.dials ? { dials: eingriff.dials } : null
     );
     g.updateMatrixWorld(true);
     const W = {};

@@ -152,7 +152,7 @@ async function checkBandHydrosphere({ page, check }) {
         out.lakeLevelOk = false;
         out.ringFollowsPlane = false;
         const wlT = typeof st.waterLevel === "number" ? st.waterLevel : 0;
-        const renderedLk = hydro.lakes.find((l) => l.level > wlT + 2 && Array.isArray(l.cells) && l.cells.length > 0);
+        const renderedLk = hydro.lakes.find((l) => l.level > wlT + 2 && Array.isArray(l.cells) && l.cells.length);
         if (renderedLk) {
             const cellIdx = renderedLk.cells[0];
             const ci = cellIdx % hydro.dim;
@@ -267,7 +267,7 @@ async function checkBandHydrosphere({ page, check }) {
         const seeH = seeOrt ? seeOrt.hydro : hydro;
         for (let li = 0; li < seeH.lakes.length && !out.lakeSculpted; li++) {
             const lk = seeH.lakes[li];
-            if (!Array.isArray(lk.cells) || lk.cells.length === 0) continue;
+            if (!Array.isArray(lk.cells) || !lk.cells.length) continue;
             if (lk.level <= wl2 + 2) continue; // faktisch Meeresspiegel — nicht gesculptet
             const idx = lk.cells[(lk.cells.length / 2) | 0];
             const ci = idx % seeH.dim;
@@ -1158,7 +1158,7 @@ async function checkBandWelleV11D2WaterBias({ page, check }) {
         out.spotDepth = waterSpot.wy - waterSpot.sy;
 
         // Brauchen eine Kreatur — wenn keine existiert, spawn eine.
-        if (!Array.isArray(st.creatures) || st.creatures.length === 0) {
+        if (!Array.isArray(st.creatures) || !st.creatures.length) {
             out.error = "no creatures in world — D.2 nicht testbar";
             return out;
         }
@@ -1362,7 +1362,7 @@ async function checkBandV18194Gamma6Befoerderung({ page, check }) {
         for (const a of s.architectures || []) {
             if (!a) continue;
             archSeen++;
-            if (Array.isArray(a.blockerAABBs) && a.blockerAABBs.length > 0) {
+            if (Array.isArray(a.blockerAABBs) && a.blockerAABBs.length) {
                 archWithBlockers++;
                 // Stein-haltige Architekturen müssen SOLID sein (felsbogen, felsturm)
                 if (
@@ -1878,7 +1878,7 @@ async function checkBandWasserSheetSpiegel({ page, check }) {
             const cx = parseInt(key.slice(0, ci), 10);
             const cz = parseInt(key.slice(ci + 1), 10);
             const entry = st.voxelChunks.get(key);
-            if (!entry || !entry.waterCells || entry.waterCells.length === 0) continue;
+            if (!entry || !entry.waterCells || !entry.waterCells.length) continue;
             if (!r._waterSheetCaFree(cx, cz)) continue;
             let mainData = null;
             try {
@@ -1891,7 +1891,7 @@ async function checkBandWasserSheetSpiegel({ page, check }) {
             cand.push({ cx, cz, key, mainData });
             if (cand.length >= 24) break;
         }
-        if (cand.length === 0) {
+        if (!cand.length) {
             out.ok = false;
             out.msgs.push("KEIN CA-freier Wasser-Chunk gefunden (Welt ohne Wasser im Ring?)");
             return out;

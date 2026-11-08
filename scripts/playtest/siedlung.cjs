@@ -106,9 +106,8 @@ async function checkBandWellePerfDBudget({ page, check }) {
                 if (e) ids.push(e.id);
             }
             st.architectureCullingRadius = Math.max(origRadius, 300);
-            // tickArchitectureCulling baut 0 bei `_frameOverBudget` (Bau nur in freier Zeit) → Kopfraum
-            // erzwingen, sonst hängt der Bau-Pfad-Test am Warmup-Leftover (langsamer Warmup = Flake).
-            st._frameOverBudget = false;
+            // tickArchitectureCulling baut 0 bei `_frameOverBudget` (Bau nur in freier Zeit) — den Kopfraum hält die Last der
+            // Prüf-Bühne (`__anazhPruefLast`, w23-pruef-welt: kein Bild reißt ihr Budget), kein Warmup-Leftover.
             const idSet = new Set(ids);
             const renderedCount = () => st.architectures.filter((e) => idSet.has(e.id) && r._archIsRendered(e)).length;
             out.coldBefore = ids.length - renderedCount();
@@ -188,7 +187,7 @@ async function checkBandRing6Workshop({ page, check }) {
         // der gerenderten Kind-Zahl: die haus_basis-Substanz trägt alle 6 Wand-/Dach-Teile.
         out.villageHasChildren =
             v && v.mesh && !!st.blueprints._t_r6_haus && (st.blueprints._t_r6_haus.parts || []).length >= 5;
-        out.villageInScene = v && st.scene.children.indexOf(v.mesh) >= 0;
+        out.villageInScene = v && st.scene.children.includes(v.mesh);
 
         const t = r.spawnArchitecture("_t_r6_tor", { x: 30, y: 5, z: 10 }, { seed: 7 });
         out.templeBuilt = !!t && t.type === "_t_r6_tor" && !!t.mesh;
@@ -406,7 +405,7 @@ async function checkBandRing6Workshop({ page, check }) {
         out.coldHasCollision = !!(
             coldEntry &&
             Array.isArray(coldEntry.blockerAABBs) &&
-            coldEntry.blockerAABBs.length > 0
+            coldEntry.blockerAABBs.length
         );
 
         // Cleanup (inkl. Test-Blueprint)
@@ -515,7 +514,7 @@ async function checkBandRing6Workshop({ page, check }) {
         };
         const testGroup = r._buildFromBlueprint(testBp);
         out.allShapesRender =
-            testGroup && testGroup.children.length === 8 && testGroup.children.every((c) => !!c.geometry);
+            testGroup && testGroup.children.length === 8 && testGroup.children.every((c) => c.geometry);
 
         // Erstellung via JSON: User-Bauplan registrieren + spawnen
         st.blueprints["test_hut"] = {
@@ -856,9 +855,8 @@ async function checkBandRing6Workshop({ page, check }) {
         // Cleanup
         window.__bautenLeer();
         r._clearBuildMode();
-        // Der Cull-Tick baut nur bei Kopfraum (`_frameOverBudget ? 0 : budget`); nach dem Warmup kann das
-        // Flag stehen → nullen, gemessen wird die Rebuild-MECHANIK, nicht die Perf-Drossel.
-        st._frameOverBudget = false;
+        // Der Cull-Tick baut nur bei Kopfraum (`_frameOverBudget ? 0 : budget`); die Last der Prüf-Bühne hält das Flag aus
+        // (w23-pruef-welt) — gemessen wird die Rebuild-MECHANIK, nicht die Perf-Drossel.
 
         // === A) Distance-Culling ===
         // AUSLÖSCHUNGS-WELLE — temple fiel; die haus_basis-Substanz (KIND_SUBSTANCE)
@@ -1242,7 +1240,7 @@ async function checkBandLambda2HismSynthese({ page, check }) {
         out.tintVSpread = std(tintV);
         out.tintCount = tints.length;
         // Snapshot+Restore-Test: tintH muss bit-treu durchreisen.
-        if (tints.length >= 1) {
+        if (tints.length) {
             const probe = st.architectures[0] || { tintH: 0.5, tintS: 0.5, tintV: 0.5 };
             st.architectures = [
                 {
@@ -1359,7 +1357,7 @@ async function checkBandWHWald({ page, check }) {
             for (const k of ["_enqueueVegetationSpawn", "_scatterRegisterCell", "_scatterIncrementCounter", "_vegSpawnImmediate"]) delete r[k];
             if (imm !== undefined) r._vegSpawnImmediate = imm;
         }
-        const baeume = calls.filter((c) => c.o && c.o._lodSpecies);
+        const baeume = calls.filter((c) => c.o?._lodSpecies);
         out.wald = { baeume: baeume.length, groessen: new Set(baeume.map((c) => c.o.scale)).size, gieren: new Set(baeume.map((c) => c.o.rotationY)).size };
         out.variantPickAfterWin = baeume.length >= 3 && baeume.every((c) => c.n === c.o._lodSpecies && !/_(jung|alt|breit|schlank)$/.test(c.n) && Number.isInteger(c.o._lodVariantIndex));
         out.sizeSpan = out.wald.groessen >= 3 && baeume.every((c) => c.o.scale >= 0.55 && c.o.scale <= 1.95);
@@ -1509,10 +1507,10 @@ async function checkBandV18213MeshMerge({ page, check }) {
             out.flatLeafCount = flat ? flat.leaves.length : -1;
             out.flatLeavesFew = flat && flat.leaves.length >= 1 && flat.leaves.length <= 4;
             // Jede merged geom hat ≥100 Vertices (viele Parts gemerged).
-            if (flat && flat.leaves.length > 0) {
+            if (flat?.leaves.length) {
                 out.firstLeafVertCount = flat.leaves[0].geom.attributes.position.count;
                 out.mergedHasManyVerts = flat.leaves.every(
-                    (l) => l.geom && l.geom.attributes && l.geom.attributes.position.count >= 100
+                    (l) => l.geom?.attributes && l.geom.attributes.position.count >= 100
                 );
                 // M-Identity: localMatrix ist Identity (Per-Part-Transform ist in Vertices gebacken).
                 out.mergedHasIdentityMatrix = flat.leaves.every((l) => {
@@ -1533,7 +1531,7 @@ async function checkBandV18213MeshMerge({ page, check }) {
                 const displayLeaves = flat.leaves.filter((l) => !l.shadowTwin);
                 out.mergedHasColors =
                     displayLeaves.length > 0 &&
-                    displayLeaves.every((l) => l.geom && l.geom.attributes && l.geom.attributes.color);
+                    displayLeaves.every((l) => l.geom?.attributes && l.geom.attributes.color);
                 // M-Material: das Material liest die Vertex-Farbe EINMAL — im colorNode (dann vertexColors aus) oder
                 // über vertexColors ohne colorNode, nie beides (r184 multipliziert sonst: Albedo = Farbe²).
                 out.mergedMatVertexColors =

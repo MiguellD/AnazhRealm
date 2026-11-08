@@ -3267,7 +3267,7 @@ hauptLauf(async () => {
             const hoch = (texe, ruhigOk, bilder) => ({
                 ruhig: ruhigOk !== false,
                 versuche: 1,
-                bilder: bilder == null ? 3 : bilder,
+                bilder: bilder ?? 3,
                 texe,
             });
             pruefe(
@@ -3623,7 +3623,7 @@ hauptLauf(async () => {
                     const D = "const D = r.constructor.LOD_DISTANCES; window.__karteD = window.__karteD || [D.thresh01, D.thresh12];";
                     // die nahen Bäume wählen sofort neu, am Abstand ohne Zustand: die neuen Schwellen sind eine neue Epoche der Grenzen
                     // (`_stufenSchirm` → `_tickArchitectureLOD`, w8-linsen-blick — bis dahin stand das Exemplar im Karten-Schuss auf L0)
-                    await evalRuf(t12 == null ? `${D} [D.thresh01, D.thresh12] = window.__karteD; window.__karteD = null; return 1;` : `${D} D.thresh01 = ${t01 == null ? `Math.min(window.__karteD[0], ${t12} / 2)` : t01}; D.thresh12 = ${t12}; return 1;`);
+                    await evalRuf(t12 == null ? `${D} [D.thresh01, D.thresh12] = window.__karteD; window.__karteD = null; return 1;` : `${D} D.thresh01 = ${t01 ?? `Math.min(window.__karteD[0], ${t12} / 2)`}; D.thresh12 = ${t12}; return 1;`);
                     await ein();
                 };
                 if (hat("karte")) {

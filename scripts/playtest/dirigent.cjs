@@ -208,6 +208,7 @@ async function checkBandWellePerfENexusGovernor({ page, check }) {
             reg: st.perfRegulator,
         };
         st.perfRegulator = true;
+        const frei = leihe(window, { __anazhPruefLast: undefined }); // das Band urteilt den freien Regler (w23-pruef-welt)
         st.perfSense = r._perfSenseInit(); // sauberer Start (loadScale=1)
         const gBefore = st.gravity;
         const L = A.PERF_LEVERS;
@@ -361,6 +362,7 @@ async function checkBandWellePerfENexusGovernor({ page, check }) {
         if (st.atmosphere && snap.waterMs !== undefined) st.atmosphere.waterIsoBudgetMs = snap.waterMs;
         st.gravity = snap.gravity;
         st.perfRegulator = snap.reg;
+        frei();
         return out;
     });
     if (res.error) {
@@ -1420,6 +1422,7 @@ async function checkBandReglerSim({ page, check }) {
         const _origHeadless = st.renderer._isHeadlessNull;
         const _origApplyRS = r._applyRenderScale;
         const _origApplySR = r._applyEffectiveShadowRange;
+        const frei = leihe(window, { __anazhPruefLast: undefined }); // die Simulation fährt den freien Regler (w23-pruef-welt)
         let rsApplied = 0,
             srApplied = 0;
         const feed = (frameMs, frame) => {
@@ -1574,7 +1577,7 @@ async function checkBandReglerSim({ page, check }) {
             {
                 const ARTEN = [["tree", 1], ["tree", 2], ["haus", 1], ["haus", 2], ["gate", 1], ["gate", 2], ["ausstattung", 1]];
                 const { span } = r._voxelChunkConfig();
-                const ring = st._activeRingRadius != null ? st._activeRingRadius : Math.max(1, Math.min(12, st.chunkRingRadius || 4));
+                const ring = st._activeRingRadius ?? Math.max(1, Math.min(12, st.chunkRingRadius || 4));
                 const schirm = () => {
                     r._stufenSchirm();
                     return JSON.stringify({
@@ -1664,6 +1667,7 @@ async function checkBandReglerSim({ page, check }) {
                 }
             }
         } finally {
+            frei();
             st.renderer._isHeadlessNull = _origHeadless;
             r._applyRenderScale = _origApplyRS;
             r._applyEffectiveShadowRange = _origApplySR;

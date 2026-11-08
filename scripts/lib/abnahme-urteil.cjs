@@ -376,7 +376,7 @@ const cielab = (c) => {
 // RAUSCHEN_MAX.
 const RAUSCHEN_MAX = 0.002;
 function klassenTeilung(G, Os, W, H, schwelle) {
-    const t = schwelle == null ? 18 : schwelle;
+    const t = schwelle ?? 18;
     const teil = new Uint8Array(W * H);
     const gemischt = new Uint8Array(W * H);
     let misch = 0;
@@ -404,7 +404,7 @@ function klassenTeilung(G, Os, W, H, schwelle) {
 // Das Rauschen zweier gleicher Schüsse (rein, in der Seite als `__bildRauschen`): Anteil der Pixel über der Schwelle, größter
 // Unterschied.
 function bildRauschen(A, B, W, H, schwelle) {
-    const t = schwelle == null ? 18 : schwelle;
+    const t = schwelle ?? 18;
     let n = 0,
         max = 0;
     for (let p = 0; p < W * H; p++) {
@@ -958,7 +958,7 @@ function aperturSchuesse(ma, q) {
     const B = sv.budget ? pfad(sv.budget) : null;
     if (sv.budget && (!B || typeof B !== "object"))
         return { fehler: `das Budget ${sv.datei} ${sv.symbol}.${sv.budget} ist dort nicht definiert` };
-    const nurWurf = (s) => !!(B && B[s] && B[s].nurWurf === true);
+    const nurWurf = (s) => !!(B?.[s] && B[s].nurWurf === true);
     // DIE ZELLE AM SPAWN (`mass.zelle`, Pflicht A: Sicht × Abstand × Uhr an `_genesisMitte`, die Station zug/a-spawn.sh im Zweig
     // koordination) urteilt über die Stufe, die ihr Schuss zeigt — die ganze Stufen-Kette trägt die Zeile
     const soll = ma.zelle ? [] : S.filter((s) => s >= (sv.ab || 0));
@@ -1146,7 +1146,7 @@ const MASS_RECHNER = {
         const r2 = (x) => +x.toFixed(2);
         const taeter =
             `${arg.von}–${arg.bis} m vor dem Auge: Lücke ${r2(arg.P)} (${arg.grund} von ${arg.halm + arg.grund} Pixeln Grund) → LAI ${r2(arg.lai)}` +
-            (zeichner && zeichner[1] ? `, dort zeichnet ${zeichner[0]} (${Math.round((100 * zeichner[1]) / Math.max(1, arg.halm))} % der Halme)` : ", dort zeichnet kein Halm");
+            (zeichner?.[1] ? `, dort zeichnet ${zeichner[0]} (${Math.round((100 * zeichner[1]) / Math.max(1, arg.halm))} % der Halme)` : ", dort zeichnet kein Halm");
         return {
             ist: +(sl / sw).toFixed(3),
             taeter,
@@ -1665,7 +1665,7 @@ function sollTafelUrteil(tafel, q) {
                 const x = MASS_RECHNER[g](ma, q),
                     [u, o] = b.band;
                 const aus = x.fehler || (x.bloecke && messStand(x.bloecke, x.quellen, q));
-                r.teile = `${r.teile ? r.teile + " · " : ""}${g} ${aus ? "—" : x.ist} [${u == null ? "–" : u}; ${o == null ? "–" : o}]`;
+                r.teile = `${r.teile ? r.teile + " · " : ""}${g} ${aus ? "—" : x.ist} [${u ?? "–"}; ${o ?? "–"}]`;
                 const raus = aus ? `${g}: ${aus}` : (u != null && x.ist < u) || (o != null && x.ist > o) ? `${g} ${x.ist} außerhalb (${x.taeter})` : null;
                 if (raus) r.offen = r.offen ? `${r.offen} · ${raus}` : raus;
             }
@@ -1772,7 +1772,7 @@ function sollTafelUrteil(tafel, q) {
     return { ok: fehler.length === 0, fehler, zeilen, rot: zeilen.filter((z) => z.urteil === "ROT").length };
 }
 function sollTafelZeile(z) {
-    const b = z.band ? `[${z.band[0] == null ? "−∞" : z.band[0]}, ${z.band[1] == null ? "∞" : z.band[1]}]` : "?";
+    const b = z.band ? `[${z.band[0] ?? "−∞"}, ${z.band[1] ?? "∞"}]` : "?";
     const s = z.stufen;
     const bud = s
         ? `L0 ${s.L0.dreiecke}/${s.L0.befehle} · L1 ${s.L1.dreiecke}/${s.L1.befehle} · L2 ${s.L2.dreiecke}/${s.L2.befehle} · ${s.vramMB} MB`
@@ -1784,7 +1784,7 @@ function sollTafelZeile(z) {
               ? " · Wirkung ungemessen (der Bildanteil fehlt)"
               : "";
     return (
-        `${z.rang}. ${z.urteil === "ROT" ? "ROT " : "GRÜN"} ${z.id}: ${z.mass} ${z.ist == null ? "—" : z.ist} Soll ${b} (${z.bandArt || "?"})${w}` +
+        `${z.rang}. ${z.urteil === "ROT" ? "ROT " : "GRÜN"} ${z.id}: ${z.mass} ${z.ist ?? "—"} Soll ${b} (${z.bandArt || "?"})${w}` +
         `${z.urteil === "ROT" ? ` — ${z.grund}${z.taeter ? ` · Täter ${z.taeter}` : ""}` : ""}` +
         `${z.teile ? ` · ${z.teile}` : ""} · Budget ${bud}${z.stand ? ` · gemessen ${z.stand}` : ""}`
     );

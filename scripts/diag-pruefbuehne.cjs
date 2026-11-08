@@ -329,7 +329,7 @@ async function s0Probe(page, station, schein) {
                 out.nacht[klang ? "klang" : "still"] = z;
                 const wie = klang ? "Klang an" : "Klang aus";
                 const amFeuer = z.lichter.filter((l) => l.eigen);
-                if (amFeuer.length < 1) {
+                if (!amFeuer.length) {
                     const taeter = !out.verzeichnis
                         ? "das Verzeichnis nennt die Feuerstelle nicht als Leuchtquelle (`_blockerNamen`: „licht“ fehlt)"
                         : "der Licht-Takt setzt keinen Platz an die Glut";
@@ -1458,7 +1458,7 @@ async function lichtLauf() {
                         grund: nt ? { luma: +(bl / nt).toFixed(1), schwarz: +(bs / nt).toFixed(3) } : null,
                         uhr: +zeit.toFixed(4),
                         lichtFarbe: eigen ? eigen.farbe.map((c) => +(c / Math.max(...eigen.farbe)).toFixed(3)) : null,
-                        kelvin: FC.LICHT_GESETZ.feuer.kelvin == null ? null : FC.LICHT_GESETZ.feuer.kelvin,
+                        kelvin: FC.LICHT_GESETZ.feuer.kelvin ?? null,
                         belichtung: +rend.toneMappingExposure.toFixed(3),
                         nacht: s.postProcessingUniforms ? +s.postProcessingUniforms.nightFactor.value.toFixed(3) : null,
                         pool: pool.map((p) => ({ q: p.quelle, I: +p.staerke.toFixed(2), d: +Math.hypot(p.x - f.x, p.z - f.z).toFixed(1) })),

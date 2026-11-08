@@ -247,13 +247,12 @@ function bildAus() {
     st.postProcessingFailed = true;
 }
 // DAS EINE EINSCHWINGEN (`await window.__weltStehtNach(takt, max)`): Takt um Takt (`takt(n)` oder der Takt der Seite, mindestens
-// einer), bis die Welt steht (`_weltSteht`) und das Buch da ist; der Regler hält, solange sie schwingt. Der Deckel `max` zählt
-// nur Takte ohne Offenes (`_weltOffen`); dann wirft er.
+// einer), bis die Welt steht (`_weltSteht`) und das Buch da ist. Der Deckel `max` zählt nur Takte ohne Offenes (`_weltOffen`); dann
+// wirft er. Den Regler fasst es nicht an: ihn hält die Last der Prüf-Bühne (`PRUEF_LAST`) von der ersten Zeile an — bis w23-pruef-welt
+// hielt das Einschwingen ihn aus (der Aktuator ruhte, das Laub wuchs erst danach) und gab ihn danach frei.
 async function weltStehtNach(takt, max) {
     const W = () => r._weltStand || {};
     const steht = () => r._weltSteht() && !r._bepflanzungWartet();
-    const regler = st.perfRegulator;
-    st.perfRegulator = false;
     let n = 0;
     try {
         for (
@@ -270,33 +269,17 @@ async function weltStehtNach(takt, max) {
                 (r._bepflanzungWartet() ? "das Buch fehlt" : `Ruhe ${W().ruhe | 0}, zuletzt brach sie: ${W().grund}`) +
                 ` (${f.message})`
         );
-    } finally {
-        st.perfRegulator = regler;
     }
     return n;
 }
-// DIE PRÜF-WELT (`window.__pruefWelt()`, w23-pruef-welt): die Welt, die eine Linse zum Urteil sieht — ihr Fenster, ihre Welt-Uhr
-// (`spielZeit`, `weltTakt`, daneben die Wanduhr der Seite), ihr Regler (gehalten oder frei, `loadScale`, ein Bild über dem Budget)
-// und jede Tat des Felds seit dem Boot: die Evolutionen des Nexus (je Name die Uhr ihres Laufs), das Feuern der Gesetze je Quelle
-// und das Buch der Welt-Akte (`taten`: Akt · Quelle @ Welt-Zeit); null ohne Welt. Am Abbau jeder Welt-Seite steht sie in EINER
-// Zeile (`pruefWeltMelden`).
+// DIE PRÜF-WELT EINER SEITE (`window.__pruefWelt()`, w23-pruef-welt): was die Linse zum Urteil sieht — Fenster, Welt-Uhr (Sekunden,
+// Takte), die Last (der Haken der Prüf-Bühne, loadScale) und jede Tat des Felds seit dem Boot: die Läufe des Nexus (Name @ Uhr des
+// Felds) und das Buch der Welt-Akte (Akt · Quelle @ Welt-Zeit); null ohne Welt
 function pruefWelt() {
-    if (!st || !st.dsl) return null;
-    const g = {};
-    for (const x of st.worldRules || []) if (x.fires) g[x.source] = (g[x.source] || 0) + x.fires;
-    const s = st.perfSense;
-    return {
-        fenster: [innerWidth, innerHeight, devicePixelRatio].join("×"),
-        welt: st.spielZeit.toFixed(1),
-        takte: st.weltTakt,
-        wand: (performance.now() / 1000).toFixed(1),
-        regler: st.perfRegulator === false ? "aus" : "frei",
-        last: s ? s.loadScale.toFixed(2) : "–",
-        ueber: !!st._frameOverBudget,
-        nexus: (st.dsl.history || []).filter((h) => h.id.startsWith("evo_")).map((h) => `${h.id}@${h.at.toFixed(1)}`),
-        gesetze: g,
-        taten: (st.taten || []).map((e) => `${e.op}·${e.wer}@${e.t.toFixed(1)}`),
-    };
+    if (!st?.dsl) return null;
+    const z = (x) => (+x).toFixed(1);
+    const nexus = st.dsl.history.filter((h) => /^evo_/.test(h.id)).map((h) => h.id + "@" + z(h.at));
+    return [innerWidth, innerHeight, z(st.spielZeit), st.weltTakt, window.__anazhPruefLast, st.perfSense?.loadScale, [...nexus, ...(st.taten || []).map((e) => `${e.op}·${e.wer}@${z(e.t)}`)]];
 }
 // DAS EINE WARTEN AUF EINEN BAU (`await window.__gebautNach(e, { takt, fertig, bau, max })`): Takt um Takt, bis `fertig()` (sonst
 // `_archIsRendered(e)`) steht; vor jedem Takt ruft `bau(n)` ihn (ohne: `_rebuildArchitectureMesh(e)`). `e` ist ein Eintrag oder
@@ -848,18 +831,30 @@ async function weicheUrteil(browser, art) {
     if (!GPU_REZEPTE.includes(art) || !welt.length || (await Promise.all(welt.map(genutzt))).some(Boolean)) return null;
     return `${path.basename(process.argv[1] || "?")} startet „${art}" und zeichnet nie (keine seiner ${welt.length} Seiten arbeitet auf der GPU): das Rezept ist „null"`;
 }
-// DIE PRÜF-WELT AM ABBAU (`pruefWeltMelden(page)`): je Welt-Seite EINE Zeile, bevor sie geht — die Seite schließt oder der Browser
-// baut ab (eine Seite, die nicht antwortet, nach 3 s ohne Zeile; die Stall-Akte nennt sie)
+// DIE PRÜF-WELT (w23-pruef-welt) — eine Gesetz-Linse urteilt die Welt des Spielers, nie die ihres Adapters:
+//   DIE LAST     `PRUEF_LAST` (1: die volle Welt, die das Profi-Band auf der GTX hält) trägt jede Seite vor ihrem ersten Skript als Haken
+//                `__anazhPruefLast`; der Regler des Stamms (`_pruefLast`) steht dort, kein Bild reißt sein Budget. Bis w23 lief er nach
+//                dem Einschwingen frei — swiftshader trieb loadScale auf 0, die GTX hielt ~1, und Architektur, Strom und Wasser
+//                standen je Gerät anders. Frei fährt ihn nur, wer den Regler oder das geregelte Erlebnis urteilt: `starteBrowser({
+//                regler: "frei" })` (Takt-Atem), die Werkbank (Profi-Band, gpu-bank, `bild:` der GPU-Probe) und im Playtest die
+//                Bänder des Reglers (sie leihen den Haken, `leihe(window, { __anazhPruefLast: undefined })`).
+//   DAS FENSTER  `fenster(page, art, plus)`: ein Bild- oder LOD-Urteil sieht die Welt im Fenster des Spielers (`bild` 1280×720 — Kosten
+//                und Stufen hängen am Schirm, `_stufenSchirm`) und fährt auf der Karte (der echt-Job), nie auf swiftshader in der vollen
+//                Batterie; ein schirm-unabhängiges Urteil (Ziele, Stapel, Kompilieren) darf klein fahren (`klein` 320×240).
+//   DIE WAND     am Abbau jeder Welt-Seite EINE Zeile (`pruefWeltMelden`, die Seite schließt oder der Browser baut ab; eine Seite, die
+//                nicht antwortet, nach 3 s ohne Zeile — die Stall-Akte nennt sie): Fenster, Welt-Uhr, Last und die Taten des Felds.
+//                Steht der Regler einer Gesetz-Seite nicht bei ihrer Last, ist der Lauf ROT beim Namen der Linse.
+const PRUEF_LAST = 1;
+const FENSTER = { bild: [1280, 720], klein: [320, 240] };
+const fenster = (page, art, plus = 0) => page.setViewport({ width: FENSTER[art][0] + plus, height: FENSTER[art][1] + plus });
 async function pruefWeltMelden(page) {
-    if (page.__pruefWeltGelesen || !/^https?:/.test(page.url())) return;
-    page.__pruefWeltGelesen = true;
-    const a = await Promise.race([page.evaluate(() => window.__pruefWelt?.()).catch(() => null), sleep(3000)]);
+    if (page.__pruefWelt || !/^https?:/.test(page.url())) return;
+    page.__pruefWelt = true;
+    const a = await Promise.race([page.evaluate("__pruefWelt?.()").catch(() => null), sleep(3000)]);
     if (!a) return;
-    const n = (l) => `${l.length}${l.length ? ` [${l.slice(0, 6).join(" ")}${l.length > 6 ? " …" : ""}]` : ""}`;
-    const g = Object.entries(a.gesetze).map(([q, k]) => `${q} ${k}`);
-    console.log(
-        `  ❌ PRÜF-WELT ${path.basename(process.argv[1] || "?", ".cjs")} · Fenster ${a.fenster} · Welt ${a.welt} s in ${a.takte} Takten (Wand ${a.wand} s) · Regler ${a.regler} loadScale ${a.last}${a.ueber ? " über Budget" : ""} · Nexus ${n(a.nexus)} · Gesetze ${g.join(", ") || 0} · Taten ${n(a.taten)}`
-    );
+    const [w, h, welt, takte, last, ls, taten] = a;
+    const z = `PRÜF-WELT ${path.basename(process.argv[1], ".cjs")} ${w}×${h} · Welt ${welt} s ${takte} Takte · Last ${last ?? "frei"}: loadScale ${ls?.toFixed(2)} · Taten ${taten.length} [${taten.slice(0, 6).join(" ")}]`;
+    console.log(`  ${last != null && ls != null && ls !== last ? (melde("pruef-welt", "der Regler lief frei — " + z), "❌") : "✅"} ${z}`);
 }
 // Je Seite: Ringe, Puls-Binding, Stich-Profiler (nur ohne Zeit-Urteil: ein Profiler färbt keine ms), umhüllte Aufrufe.
 function akteAnSeite(page, b) {
@@ -867,6 +862,7 @@ function akteAnSeite(page, b) {
         page.__akteBereit = Promise.all([
             page.evaluateOnNewDocument(CODE_OF_SEITE),
             page.evaluateOnNewDocument(zeichnetHaken),
+            page.evaluateOnNewDocument(`window.__anazhPruefLast = ${b.pruefLast};`),
             akteAnlegen(page, b),
         ]);
     return page.__akteBereit;
@@ -1155,6 +1151,7 @@ async function starteBrowser(opts = {}) {
         stapel: !opts.zeit && opts.art !== "echt",
         stallMs: opts.stallMs || 20000,
         offen: true,
+        pruefLast: opts.regler === "frei" ? undefined : PRUEF_LAST,
     };
     const proc = browser.process();
     if (proc?.stderr) {
@@ -1836,6 +1833,7 @@ module.exports = {
     statikServer,
     ortZug,
     starteBrowser,
+    fenster,
     startePuppeteer,
     tempNeu,
     lebt,
@@ -1907,8 +1905,8 @@ async function selbsttest() {
         await page.close().catch(() => {});
         return akten.filter((a) => a.seite === id);
     };
-    // LANGSAM: der Bau steht nach 3,2 s, das Warten hält; TOT: nichts offen, ROT beim Namen; REGLER: das Einschwingen hält den
-    // atmenden Regler und gibt ihn frei (die ruhige Seite, 4,5 s).
+    // LANGSAM: der Bau steht nach 3,2 s, das Warten hält; TOT: nichts offen, ROT beim Namen; PRÜF-WELT: eine Welt, deren Regler
+    // unter der Last 1 frei lief (loadScale 0,4), steht beim Schließen der Seite ROT beim Namen (die ruhige Seite, 4,5 s).
     let bau = null;
     const bauProbe = async () => {
         const r = (window.anazhRealm = {
@@ -1938,16 +1936,7 @@ async function selbsttest() {
             aus.haengt = x.message;
         }
         r.offen = 0;
-        let still = 0;
-        r.state = { renderer: {}, perfRegulator: true };
-        r._weltSteht = () => still >= 30;
-        r._bepflanzungWartet = () => false;
-        const atmet = async () => (still = r.state.perfRegulator === false ? still + 1 : 0);
-        aus.regler = await window.__weltStehtNach(atmet, 300).then(
-            (n) => `steht nach ${n} Takten`,
-            (x) => x.message.slice(0, 60)
-        );
-        aus.frei = r.state.perfRegulator === true;
+        r.state = { dsl: { history: [{ id: "evo_1", at: 2 }] }, spielZeit: 3, perfSense: { loadScale: 0.4 } };
         return aus;
     };
     // DIE WEICHE: ohne GPU-Arbeit ist ein Echt-Rezept ROT beim Namen, EIN Draw-Aufruf (der Haken) trägt es
@@ -2002,7 +1991,8 @@ async function selbsttest() {
     await sleep(400);
     const wurf = sammlung.fehler.filter((f) => f.includes("__seitenWurf"));
     const kette = sammlung.fehler.filter((f) => f.startsWith("post-kette: "));
-    sammlung.fehler = sammlung.fehler.filter((f) => !wurf.includes(f) && !kette.includes(f));
+    const pruef = sammlung.fehler.filter((f) => f.startsWith("pruef-welt: "));
+    sammlung.fehler = sammlung.fehler.filter((f) => ![...wurf, ...kette, ...pruef].includes(f));
     const code = fs
         .readdirSync(path.join(ROOT, "scripts"), { recursive: true })
         .map((f) => f.replace(/\\/g, "/"))
@@ -2154,8 +2144,8 @@ async function selbsttest() {
             `Bau HÄNGT: ${bau ? bau.haengt : "kein Befund"}`,
         ],
         [
-            !!bau && /^steht nach 30 /.test(bau.regler) && bau.frei,
-            `Regler atmet (echter Renderer): ${bau ? `${bau.regler}, danach ${bau.frei ? "frei" : "GEHALTEN"}` : "kein Befund"}`,
+            pruef.length === 1 && /Last 1: loadScale 0\.40 · Taten 1 \[evo_1@2\.0\]/.test(pruef[0]),
+            `Prüf-Welt (Last 1, der Regler lief frei auf 0,4): ${pruef[0] || "KEINE Meldung"}`,
         ],
         [
             /^welt-boot.cjs startet „echt" und zeichnet nie/.test(weiche[0]) && weiche[1] === null,

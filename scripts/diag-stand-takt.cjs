@@ -2125,7 +2125,7 @@ const BRANDLAUF = process.argv.includes("--brand");
                         W.regen.nachher = await simPhase(60);
                         const fr = st.foliageRadius;
                         W.wuchs = { offen: st.pendingFoliageChunks ? st.pendingFoliageChunks.size : 0 };
-                        await weck("wuchs", () => (st.foliageRadius = (fr != null ? fr : AnazhRealm.PERF_FOLIAGE_RADIUS_MAX) + 1e-3));
+                        await weck("wuchs", () => (st.foliageRadius = (fr ?? AnazhRealm.PERF_FOLIAGE_RADIUS_MAX) + 1e-3));
                         st.foliageRadius = fr;
                         // die Ernte ist fällig: ihr Takt zur Zeit ihres Nachwachsens
                         S.frame();

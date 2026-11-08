@@ -6,7 +6,7 @@ class AnazhRealm_feld_dsl {
     grokSpeakFromJournal(entry) {
         const grok = this.state.grok;
         const cfg = grok.triggers.journalEvent;
-        const now = performance.now() / 1000;
+        const now = this._taktUhr();
         if (now - grok.lastSpoke < grok.minGapSeconds) return false;
         if (cfg && now - cfg.lastFired < cfg.cooldown) return false;
         if (this.state.llm && this.state.llm.enabled) {
@@ -14,8 +14,8 @@ class AnazhRealm_feld_dsl {
             // Async ohne await: das Tick darf nicht blockieren.
             this.llmCall(prompt, null, { hintergrund: true }).then((reply) => {
                 if (!reply || !reply.say) return;
-                grok.lastSpoke = performance.now() / 1000;
-                if (cfg) cfg.lastFired = performance.now() / 1000;
+                grok.lastSpoke = this._taktUhr();
+                if (cfg) cfg.lastFired = grok.lastSpoke;
                 this.grokRender(reply.say);
                 this.log(`${grok.companionName || "Grok"} (LLM): ${reply.say}`, "INFO");
             });

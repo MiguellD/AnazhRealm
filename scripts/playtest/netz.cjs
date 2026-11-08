@@ -60,7 +60,7 @@ async function checkBandW13W14VibePassLibrary({ page, check }) {
             entries.some((e) => e && e.type === "ritual" && /Vibe-Pass/.test(e.text || ""));
         // Sicherheit: der private Schlüssel darf NIE im Welt-Save landen.
         const snapJson = JSON.stringify(r.buildStateSnapshot());
-        out.snapshotClean = snapJson.indexOf(vp._privateKeyJwk.d) === -1 && snapJson.indexOf('"vibePass"') === -1;
+        out.snapshotClean = !snapJson.includes(vp._privateKeyJwk.d) && !snapJson.includes('"vibePass"');
         // Export → Import-Rundlauf bewahrt die Identität.
         const exported = r.exportVibePass();
         out.exportShape = !!exported && exported.schemaVersion === "vibepass-1" && !!exported.privateKeyJwk;
@@ -71,7 +71,7 @@ async function checkBandW13W14VibePassLibrary({ page, check }) {
         // UI.
         out.uiSection = !!document.getElementById("vibe-pass-section");
         const body = document.getElementById("vibe-pass-body");
-        out.uiBody = !!body && body.textContent.indexOf(vp.fingerprint) !== -1;
+        out.uiBody = !!body && body.textContent.includes(vp.fingerprint);
         out.uiButtons =
             !!document.getElementById("vibe-pass-export") &&
             !!document.getElementById("vibe-pass-import") &&
@@ -334,7 +334,7 @@ async function checkBandW13W14VibePassLibrary({ page, check }) {
         const out = {};
         const REG = AnazhRealm.WORLD_REGISTRY;
         // Jeder Registry-Eintrag trägt jetzt eine Beschreibung.
-        out.registryHasDesc = Object.values(REG).every((w) => typeof w.desc === "string" && w.desc.length > 0);
+        out.registryHasDesc = Object.values(REG).every((w) => typeof w.desc === "string" && w.desc.length);
         // spielgang.K5 — Name und Beschreibung tragen ihre Zeile in jeder Sprache; die Identität `label` (signiert) ist
         // byte-gleich der de-Zeile ihres `name` — kein Auseinanderlaufen von Identität und Anzeige.
         const T = AnazhRealm.TEXTE;
@@ -415,7 +415,7 @@ async function checkBandW13W14VibePassLibrary({ page, check }) {
         const feedTools = schoepfen ? schoepfen.querySelectorAll(".feed-tool") : [];
         out.feedToolsAccordion =
             feedTools.length >= 2 &&
-            Array.from(feedTools).every((t) => !!t.querySelector(".feed-tool-head .feed-tool-name"));
+            Array.from(feedTools).every((t) => t.querySelector(".feed-tool-head .feed-tool-name"));
         // die Feed-Tabs (Für dich | Aus dem Mesh) im Hauptthread; der Welt-Katalog im Mesh-Panel.
         const feedTabEls = feedCenter ? feedCenter.querySelectorAll(".feed-tabs .feed-tab") : [];
         const meshPanel = feedCenter && feedCenter.querySelector("#feed-mesh-panel");
@@ -1048,10 +1048,10 @@ async function checkBandG8R0Sovereign({ page, check }) {
         out.auditLeaks = audit ? audit.leaks.join(",") : "(no audit)";
         // (3) Der Snapshot DIREKT: kein souveräner Slot, kein privates Feld tief.
         const snap = r.buildStateSnapshot();
-        out.snapNoSovereignSlot = S.excludedStateKeys.every((k) => !Object.prototype.hasOwnProperty.call(snap, k));
+        out.snapNoSovereignSlot = S.excludedStateKeys.every((k) => !Object.hasOwn(snap, k));
         const snapJson = JSON.stringify(snap);
         out.snapNoPrivateField =
-            !/"_?privateKeyJwk"|"privateKey"/.test(snapJson) && snapJson.indexOf("anazh.vibePass") < 0;
+            !/"_?privateKeyJwk"|"privateKey"/.test(snapJson) && !snapJson.includes("anazh.vibePass");
         // (4) Der Portal-Payload trägt nur die ÖFFENTLICHE Identität.
         const pay = r._portalEnterPayload();
         const payJson = JSON.stringify(pay);
@@ -1060,11 +1060,11 @@ async function checkBandG8R0Sovereign({ page, check }) {
         // (5) DEFENSE: selbst ein injiziertes Privat-Feld in state.vibePass leckt
         // NICHT in den Snapshot (der fixe Key-Satz schließt vibePass ganz aus).
         const vp = st.vibePass || (st.vibePass = {});
-        const hadKey = Object.prototype.hasOwnProperty.call(vp, "privateKey");
+        const hadKey = Object.hasOwn(vp, "privateKey");
         const saved = vp.privateKey;
         vp.privateKey = "SECRET-LEAK-CANARY-d-jwk";
         const snap2 = JSON.stringify(r.buildStateSnapshot());
-        out.injectedKeyStaysOut = snap2.indexOf("SECRET-LEAK-CANARY") < 0;
+        out.injectedKeyStaysOut = !snap2.includes("SECRET-LEAK-CANARY");
         if (hadKey) vp.privateKey = saved;
         else delete vp.privateKey;
         return out;
@@ -1095,7 +1095,7 @@ async function checkBandG8R4Immunity({ page, check }) {
         const out = {};
         // (1) revokedKeys benannt im innersten Ring + NIE im Snapshot.
         out.revokedInRing = K.SOVEREIGN_STATE.excludedStateKeys.includes("revokedKeys");
-        out.revokedNotInSnapshot = JSON.stringify(r.buildStateSnapshot()).indexOf("revokedKeys") < 0;
+        out.revokedNotInSnapshot = !JSON.stringify(r.buildStateSnapshot()).includes("revokedKeys");
         // Zustand sichern, den wir mutieren. revokedKeys ist eine Map → echte Map-Kopie; ein
         // Object.assign-Klon ergäbe {} und der Restore bräche das nächste .set().
         const savedRevoked = new Map(st.revokedKeys);
@@ -1198,7 +1198,7 @@ async function checkBandG8R5LivingImmune({ page, check }) {
         out.fourClasses = Array.isArray(corpus) && corpus.length === 4;
         out.allLive = corpus.every((c) => c.live === true);
         const mechs = corpus.map((c) => String(c.mechanism));
-        out.allMechanisms = ["M1", "M2", "M3", "M4"].every((m) => mechs.some((x) => x.indexOf(m) >= 0));
+        out.allMechanisms = ["M1", "M2", "M3", "M4"].every((m) => mechs.some((x) => x.includes(m)));
         out.classIds = corpus.map((c) => c.id).join(",");
         return out;
     });
@@ -2057,7 +2057,7 @@ async function checkBandPhi7PortalHalls({ page, check }) {
         // drei verschiedene Welten).
         const spawned = st.architectures.slice(-3);
         const allHavePortalMeta = spawned.every(
-            (e) => e.portalMeta && e.portalMeta.worldAddress && e.portalMeta.hallName === "test-halle"
+            (e) => e.portalMeta?.worldAddress && e.portalMeta.hallName === "test-halle"
         );
         const distinctWorlds = new Set(spawned.map((e) => e.portalMeta.worldAddress.worldId));
         out.matEntryMeta = allHavePortalMeta && distinctWorlds.size === 3;
@@ -2078,7 +2078,7 @@ async function checkBandPhi7PortalHalls({ page, check }) {
             snapTestHall.sig &&
             snapTestHall.authorPubKey
         );
-        const snapArchWithMeta = snap.architectures.filter((a) => a.portalMeta && a.portalMeta.worldAddress);
+        const snapArchWithMeta = snap.architectures.filter((a) => a.portalMeta?.worldAddress);
         out.snapArchHasPortalMeta = snapArchWithMeta.length === 3;
 
         // (H14) R2-DISJUNKTHEIT: keine der Φ7-Akte sind DSL-Ops (die Dispatch-Tafel `dslEffects` kennt sie nicht).

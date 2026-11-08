@@ -208,6 +208,7 @@ const {
     laufUhr,
     fehlerText,
     rotListe,
+    fenster,
 } = require("./lib/welt-boot.cjs");
 const { linsenGpu } = require("./lib/software-gpu.cjs");
 const { ladeSpec } = require("./lib/band-urteil.cjs");
@@ -603,7 +604,7 @@ async function verdeckungPhase(opts) {
     await server.lausche(0);
     const browser = await starteBrowser({ art: "linse", frist: 1200000 });
     const page = await browser.newPage();
-    await page.setViewport({ width: 320, height: 180 });
+    await fenster(page, "bild");
     await page.evaluateOnNewDocument(sammlerInstall);
     const log = laufUhr();
     const out = { phasen: {} };

@@ -26,7 +26,7 @@ const VOLL_WENN =
     "github.event_name == 'pull_request' || github.ref == 'refs/heads/integ-probe' || github.ref == 'refs/heads/main' || " +
     "contains(github.event.head_commit.message, '[ci voll]')";
 const jobsVon = (doc) => doc?.jobs || {};
-const normWenn = (x) => String(x == null ? "" : x).trim().replace(/\s+/g, " ");
+const normWenn = (x) => String(x ?? "").trim().replace(/\s+/g, " ");
 const istVollWenn = (x) => normWenn(x) === VOLL_WENN;
 // EIN URTEIL JE KOPF: der Kopf-Richter läuft unter VOLL_WENN, die Batterie hinter ihm, wenn der Kopf noch kein
 // grünes Urteil der vollen Batterie trägt (scripts/ci-kopf.cjs)
