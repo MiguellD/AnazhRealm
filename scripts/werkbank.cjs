@@ -1758,12 +1758,17 @@ async function starte() {
                                 if (bi < 0) continue;
                                 const kk = d >= 2 && d < 5 && x0 + 1 < W && y0 + 1 < H && `${Math.floor((pos.x + v.x * hit) / 2)},${Math.floor((pos.z + v.z * hit) / 2)}`;
                                 if (kk) __farbtonProbe(ftK.get(kk) || ftK.set(kk, [0, 0, 0, 0]).get(kk), u8, (y0 * W + x0) * 4, W);
+                                // DER WEG IST KEINE LÜCKE DER WIESE (w24-wiese-ferne): ein Boden-Pixel, dessen Treffer auf dem Weg liegt (das EINE
+                                // Pfad-Feld `_pfadFeldAt` über der Hälfte — dort steht keine Karte der Ferne), zählt als `bodenSatz:weg`, nie als
+                                // Grund der Wiese (vegetation.K1 liest als Grund nur `bodenSatz`): bis dahin hielt ein Ring nur „satt", solange Gras
+                                // den Weg bedeckte (Mess-Wiese, 20–40 m: 581 Pixel Weg, LAI 0,88)
+                                const weg = r._pfadFeldAt(pos.x + v.x * hit, pos.z + v.z * hit, pos.y + v.y * hit) > 0.5;
                                 for (let q = 0; q < 4; q++) {
                                     const x = x0 + (q & 1),
                                         y = y0 + (q >> 1);
                                     const c = x < W && y < H ? teil[y * W + x] : 0;
                                     if (!c) continue;
-                                    const n = namen[c - 1];
+                                    const n = weg && namen[c - 1] === "bodenSatz" ? "bodenSatz:weg" : namen[c - 1];
                                     (zahl[n] || (zahl[n] = baender.slice(1).map(() => 0)))[bi]++;
                                     cosS[bi] += -v.y;
                                     cosN[bi]++;
