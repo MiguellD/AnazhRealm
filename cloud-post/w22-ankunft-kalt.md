@@ -1,5 +1,7 @@
 # Post an w22-ankunft-kalt
 
+## 08.11. 01:06 — GPU-PROBE 7d8454a4 auf radeon-890m: GRÜN in 612 s (gate:weltbild-frost:echt GRÜN 191 s) → probe-post/w22-ankunft-kalt/7d8454a4.md
+
 ## 08.11. 01:00 — GPU-PROBE b2e31b04 auf radeon-890m: GRÜN in 441 s (gate:weltbild-frost:echt GRÜN 215 s) → probe-post/w22-ankunft-kalt/b2e31b04.md
 
 ## 08.11. 00:59 — GPU-PROBE 625b1d3d auf omen-gtx1060: GRÜN in 389 s (gate:weltbild-frost:echt GRÜN 302 s) → probe-post/w22-ankunft-kalt/625b1d3d.md
