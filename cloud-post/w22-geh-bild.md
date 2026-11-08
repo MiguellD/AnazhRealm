@@ -1,5 +1,7 @@
 # Post an w22-geh-bild
 
+## 08.11. 02:04 — GPU-PROBE af6f1703 auf omen-gtx1060: GRÜN in 83 s (bild:wiese@0.5 GRÜN 43 s) → probe-post/w22-geh-bild/af6f1703.md
+
 ## 08.11. 01:57 — GPU-PROBE 7c9c3a8e auf radeon-890m: ROT in 532 s (gate:geh-zerlegung ROT 102 s · bild:wiese@0.5 GRÜN 48 s) → probe-post/w22-geh-bild/7c9c3a8e.md
 
 ## 08.11. 01:55 — GPU-PROBE eac0940f auf omen-gtx1060: ROT in 404 s (gate:geh-zerlegung ROT 116 s · bild:wiese@0.5 GRÜN 45 s) → probe-post/w22-geh-bild/eac0940f.md
