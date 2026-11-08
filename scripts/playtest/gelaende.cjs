@@ -55,13 +55,7 @@ async function checkBandVoxelP3AndInventory({ page, check }) {
             const pcz = Math.floor(pm.z / span940);
             const savedW = st.voxelWorker;
             st.voxelWorker = null;
-            for (let dx = -1; dx <= 1; dx++) {
-                for (let dz = -1; dz <= 1; dz++) {
-                    if (!st.voxelChunks || !st.voxelChunks.has(`${pcx + dx},${pcz + dz}`)) {
-                        r._ensureVoxelChunkAt(pcx + dx, pcz + dz, 0);
-                    }
-                }
-            }
+            for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) if (!st.voxelChunks || !st.voxelChunks.has(`${pcx + dx},${pcz + dz}`)) r._ensureVoxelChunkAt(pcx + dx, pcz + dz, 0);
             st.voxelWorker = savedW;
         }
         r._drainDirtyVoxelChunks();
@@ -139,9 +133,7 @@ async function checkBandVoxelP3AndInventory({ page, check }) {
         if (dirtyKey) {
             r._disposeVoxelChunk(dirtyKey);
             out.disposeClearsDirty = !st.dirtyVoxelChunks.has(dirtyKey);
-        } else {
-            out.disposeClearsDirty = true;
-        }
+        } else out.disposeClearsDirty = true;
         r._drainDirtyVoxelChunks();
         return out;
     });
@@ -222,7 +214,7 @@ async function checkBandVoxelP3AndInventory({ page, check }) {
         // 3. Versuch: fail → empty markiert, counter weg
         r._rebuildVoxelChunk(cx, cz);
         const finalEntry = st.voxelChunks.get(someKey);
-        out.giveUpAsEmpty = !!(finalEntry && finalEntry.empty === true);
+        out.giveUpAsEmpty = !!(finalEntry?.empty === true);
         out.counterClearedAfterGiveUp = !(st.voxelRebuildAttempts && st.voxelRebuildAttempts.has(someKey));
         // Restore.
         r._buildVoxelChunkData = origBuild;
@@ -300,7 +292,7 @@ async function checkBandVoxelP3AndInventory({ page, check }) {
         out.streamAttempt2 = st.voxelRebuildAttempts.get(fakeKey) === 2;
         r._ensureVoxelChunkAt(0, -999);
         const finalE = st.voxelChunks.get(fakeKey);
-        out.streamGiveUpAsEmpty = !!(finalE && finalE.empty === true);
+        out.streamGiveUpAsEmpty = !!(finalE?.empty === true);
         out.streamCounterClearedAfterGiveUp = !st.voxelRebuildAttempts.has(fakeKey);
         // Restore + Cleanup.
         r._acquireVoxelChunkBuild = _savedAcquire;
@@ -380,9 +372,7 @@ async function checkBandVoxelP3AndInventory({ page, check }) {
         const wm = st.worldMeta;
         const matTotal = () => {
             let t = 0;
-            for (const s of st.player.inventory) {
-                if (s && s.kind === "material") t += s.count || 0;
-            }
+            for (const s of st.player.inventory) if (s?.kind === "material") t += s.count || 0;
             return t;
         };
         // _consumeAnyMaterial: genug → true + reduziert.
@@ -767,7 +757,7 @@ async function checkBandVoxelP3AndInventory({ page, check }) {
         {
             const ov = document.getElementById("inventory-overlay");
             const ob = ov ? ov.getBoundingClientRect() : null;
-            out.ichOverlayFitsViewport = !!(ob && ob.top >= -1 && ob.bottom <= window.innerHeight + 1);
+            out.ichOverlayFitsViewport = !!(ob?.top >= -1 && ob.bottom <= window.innerHeight + 1);
             const ch = document.querySelector(".ich-cols .inventory-col-character");
             const items = document.querySelector(".ich-cols .inventory-col-items");
             const rc = document.querySelector(".ich-cols .inventory-col-recipes");
@@ -1270,9 +1260,7 @@ async function checkBandWelleC3CellularReaction({ page, check }) {
         // Force-Drain unten stempelte ihn erst NACH dem Snapshot (Geister-Diff). Derselbe 3×3-Force-Drain
         // VOR der Baseline → beide Seiten sehen denselben Architektur-Satz, nur der Damm unterscheidet.
         if (!st.dirtyVoxelChunks) st.dirtyVoxelChunks = new Set();
-        for (let dz = -1; dz <= 1; dz++) {
-            for (let dx = -1; dx <= 1; dx++) st.dirtyVoxelChunks.add(`${testCx + dx},${testCz + dz}`);
-        }
+        for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) st.dirtyVoxelChunks.add(`${testCx + dx},${testCz + dz}`);
         for (let d = 0; d < 8 && st.dirtyVoxelChunks.size > 0; d++) r._drainDirtyVoxelChunks();
         const preDamEntry0 = st.voxelChunks && st.voxelChunks.get(preDamChunkKey);
         const preDamCells = preDamEntry0?.waterCells ? Uint8Array.from(preDamEntry0.waterCells) : null;
@@ -1314,11 +1302,7 @@ async function checkBandWelleC3CellularReaction({ page, check }) {
             // dirty markieren und drainen, bis das Set leer ist: die Stempel-Cell wird garantiert neu
             // klassifiziert.
             if (!st.dirtyVoxelChunks) st.dirtyVoxelChunks = new Set();
-            for (let dz = -1; dz <= 1; dz++) {
-                for (let dx = -1; dx <= 1; dx++) {
-                    st.dirtyVoxelChunks.add(`${testCx + dx},${testCz + dz}`);
-                }
-            }
+            for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) st.dirtyVoxelChunks.add(`${testCx + dx},${testCz + dz}`);
             for (let d = 0; d < 8 && st.dirtyVoxelChunks.size > 0; d++) r._drainDirtyVoxelChunks();
             const afterRemoveEntry = st.voxelChunks && st.voxelChunks.get(damChunkKey);
             if (
@@ -1405,9 +1389,7 @@ async function checkBandWelleC3CellularReaction({ page, check }) {
                 }
             }
             // Cleanup
-            if (st.worldMeta && Array.isArray(st.worldMeta.voxelEdits)) {
-                st.worldMeta.voxelEdits.pop();
-            }
+            if (st.worldMeta && Array.isArray(st.worldMeta.voxelEdits)) st.worldMeta.voxelEdits.pop();
         }
         // T1 zeitliche Kohärenz (bau-faden, Lehre 14): der Edit baut keinen Chunk-Stoff im Haupt-Faden — sein Fußabdruck
         // wartet im Dirty-Set auf den Faden, und das stehende Netz trägt die Säule schon im Edit-Call (die Boden-Karte unter
@@ -1703,9 +1685,7 @@ async function checkBandWellePerf3cPhase3FullMesh({ page, check }) {
             const syncIdxArr = syncIdx.array;
             const workerIdxArr = workerMesh.indices;
             const lenI = Math.min(syncIdxArr.length, workerIdxArr.length);
-            for (let i = 0; i < lenI; i++) {
-                if (syncIdxArr[i] !== workerIdxArr[i]) idxMismatches++;
-            }
+            for (let i = 0; i < lenI; i++) if (syncIdxArr[i] !== workerIdxArr[i]) idxMismatches++;
         }
         out.idxMismatches = idxMismatches;
         out.idxBitIdentical = idxMismatches === 0;
@@ -1761,9 +1741,7 @@ async function checkBandWellePerf3cPhase3FullMesh({ page, check }) {
             out.cellCountMatch = syncFresh.waterCells.length === workerMesh.waterCells.length;
             let cellMismatches = 0;
             const len = Math.min(syncFresh.waterCells.length, workerMesh.waterCells.length);
-            for (let i = 0; i < len; i++) {
-                if (syncFresh.waterCells[i] !== workerMesh.waterCells[i]) cellMismatches++;
-            }
+            for (let i = 0; i < len; i++) if (syncFresh.waterCells[i] !== workerMesh.waterCells[i]) cellMismatches++;
             out.cellMismatches = cellMismatches;
             // Akzeptanz: < 1% Cell-Mismatches (Architektur-Stempel-
             // Differenz von <100 Cells bei ~71k Cells = < 0.15%).
@@ -1907,9 +1885,7 @@ async function checkBandPhaseAFundament({ page, check }) {
             if (!entry.lodStitchMesh) continue;
             bands++;
             const g = entry.lodStitchMesh.geometry;
-            for (const a of ["position", "normal", "color", "aMorphTarget", "aMorphWeight"]) {
-                if (!g.attributes[a]) bandAttrsOk = false;
-            }
+            for (const a of ["position", "normal", "color", "aMorphTarget", "aMorphWeight"]) if (!g.attributes[a]) bandAttrsOk = false;
             // die gekappten Naht-Vertices zählt der Morph selbst (K51-2: ihr Ziel ist das ihrer Stufe, das Naht-Ziel trägt das Band)
             cappedTotal += entry.nahtGekappt | 0;
         }

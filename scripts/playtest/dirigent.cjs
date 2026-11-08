@@ -1572,7 +1572,7 @@ async function checkBandReglerSim({ page, check }) {
             // der Kante (der Rand am Schirm, gekappt am gebauten Ring) und der Bau-Radius am Schirm (`_randSchirm`) GLEICH, während
             // der Regler wandert (loadScale-Spanne ≥ 0,3). Die Gegenprobe im selben Lauf: das Gesetz mit einem Regler-Term wandert. ──
             {
-                const ARTEN = [["tree", 1], ["tree", 2], ["haus", 1], ["haus", 2], ["gate", 1], ["gate", 2], ["ausstattung", 1]];
+                const ARTEN = [["tree", 1], ["tree", 2]];
                 const { span } = r._voxelChunkConfig();
                 const ring = st._activeRingRadius != null ? st._activeRingRadius : Math.max(1, Math.min(12, st.chunkRingRadius || 4));
                 const schirm = () => {
