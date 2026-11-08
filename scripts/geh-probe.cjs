@@ -116,12 +116,12 @@ return 1;`;
         const ev = (code) => (json(wb(["eval", code], 60)) || {}).ergebnis;
         // DER BAU-STAND der Erst-Zeichnung (`_erstZeichnungStand`): fertige Knoten-Bauten, ihre Zeit, asynchron angelegte Pipelines
         const BAU =
-            "const E = r._erstZeichnung || {}; return [E.bauN | 0, +(E.bauMs || 0).toFixed(1), E.pipeAsync | 0, E.neubauN | 0];";
-        const bauStand = () => ev(BAU) || [0, 0, 0, 0];
+            "const E = r._erstZeichnung || {}; return [E.bauN | 0, +(E.bauMs || 0).toFixed(1), E.pipeAsync | 0, E.neubauN | 0, E.vorwaermN | 0, E.vorwaerm ? E.vorwaerm.size : -1, E.vorwaermVerweigert | 0];";
+        const bauStand = () => ev(BAU) || [0, 0, 0, 0, 0, 0, 0];
         const anft =
             ev("const s = r.state; return [Math.round(s._weltbildDa || -1), Math.round(s._fernbildDa || -1)];") || [];
         const b0 = bauStand();
-        zeile(`GEH ANKUNFT Weltbild ${anft[0]} ms (Ferne ${anft[1]}) · bis dahin Knoten ${b0[0]} Σ ${b0[1]} ms · Pipelines ${b0[2]} · Neubau ${b0[3]}`, true); // prettier-ignore
+        zeile(`GEH GRÜN Ankunft (Messung) Weltbild ${anft[0]} ms (Ferne ${anft[1]}) · bis dahin Knoten ${b0[0]} Σ ${b0[1]} ms · Pipelines ${b0[2]} · Neubau ${b0[3]} · vorgewärmt ${b0[4]} offen ${b0[5]} verweigert ${b0[6]}`, true); // prettier-ignore
         const zelle = (name, wandern, code, tief, still) => {
             const j = path.join(D, name.replace(/\W+/g, "-") + ".json");
             const bv = bauStand();
@@ -152,7 +152,7 @@ return 1;`;
             // die Pipelines des Fensters je Auftraggeber (Pass · Täter-Klasse), aus den Namen der Hänger-Linse
             const pa = {};
             for (const x of roh.namen || []) if (x.art === "async" || x.art === "sync") pa[`${x.pass} ${x.klasse || x.n}`] = (pa[`${x.pass} ${x.klasse || x.n}`] | 0) + 1; // prettier-ignore
-            const imFenster = `Knoten fertig ${bn[0] - bv[0]} Σ ${(bn[1] - bv[1]).toFixed(1)} ms · Pipelines ${bn[2] - bv[2]} (Gerät async ${(a.pipelines || {}).async} sync ${(a.pipelines || {}).sync}) ${JSON.stringify(Object.entries(pa).sort((x, y) => y[1] - x[1]).slice(0, 4))} · `; // prettier-ignore
+            const imFenster = `Knoten fertig ${bn[0] - bv[0]} Σ ${(bn[1] - bv[1]).toFixed(1)} ms · vorgewärmt davor ${bv[4]} offen ${bv[5]} im Fenster ${bn[4] - bv[4]} · Pipelines ${bn[2] - bv[2]} (Gerät async ${(a.pipelines || {}).async} sync ${(a.pipelines || {}).sync}) ${JSON.stringify(Object.entries(pa).sort((x, y) => y[1] - x[1]).slice(0, 4))} · `; // prettier-ignore
             const s = HL.linseWerten(roh, spur, { spitze: true });
             const anteil = a.frames ? a.haengerN / a.frames : 1;
             const ok = anteil <= 0.01 && a.frameMs.max <= 100;

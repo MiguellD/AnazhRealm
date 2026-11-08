@@ -667,7 +667,11 @@ class AnazhRealm_stoff_instanz {
             }
             k.delete(m);
             AnazhRealm._arenaNimmt(m, rend);
-            if (m.__arena) (neu || (neu = new Set())).add(m.__arena);
+            if (!m.__arena) continue;
+            (neu || (neu = new Set())).add(m.__arena);
+            // die Arena tritt in das Vorwärm-Gesetz (`_vorwaermMerken`): ihr Programm entsteht in jeder Familie ihrer Pässe, bevor
+            // eine Instanz dort zeichnet — auch eine ohne lebende Instanz (sie betritt keinen Pass, ihre Glieder warten leer)
+            this._vorwaermMerken(m.__arena);
         }
         return neu;
     }

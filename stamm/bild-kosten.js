@@ -467,7 +467,9 @@ class AnazhRealm_bild_kosten {
                 // wer auf seine Pipeline wartet, läuft durch keinen Knoten (`_renderObjectDirect`: wer nicht zeichnet …)
                 const imBau = P.get(ro).pipeline;
                 if (imBau !== undefined && !P.isReady(ro) && !E.abgesagt.has(imBau)) {
-                    welt._erstWartet(rend.backend, imBau, aufnahme !== null ? aufnahme.bundleGroup : null);
+                    // ein Bau ohne Draw (das Vorwärm-Gesetz) wartet auf keine Pipeline: sie entsteht schon
+                    if (!nurBauen)
+                        welt._erstWartet(rend.backend, imBau, aufnahme !== null ? aufnahme.bundleGroup : null);
                     return false;
                 }
                 const refresh = N.needsRefresh(ro);
@@ -512,42 +514,30 @@ class AnazhRealm_bild_kosten {
                 ro.group = group;
                 // WER NICHT ZEICHNET, ARBEITET NICHT (Gebot 7): ein Objekt ohne Instanz baut, frischt und zieht nichts, eines,
                 // dessen Pipeline noch im Bau steht, läuft durch keinen Knoten (`zeichne`) — kein Zug der Szenen-Tiefe, kein
-                // Schatten, keine Kopie ohne Draw (der leere Welt-March zog das Tiefen-Abbild je Frame: ziel-zensus OHNE LESER)
-                // — außer im VORBAU des Stufen-Vorlaufs (`_stufenVorlaufWahl`): unter dem Ladeschirm baut eine Arena, deren Form
-                // steht, ihr Programm auch in dem Pass, in den gerade keine ihrer Instanzen fällt, ohne Draw. Jede Kaskade rendert
-                // in ihr eigenes Ziel (der Schlüssel trägt den Render-Kontext): der Vorlauf-Baum in 30 m fällt in keine nahe — kam
-                // er im Gang näher, kompilierte sie dort kalt. Seit w4-b-knoten baut er nach dem Bild (`_vorbauWahl`).
-                // DER GAST DER BEDIENUNG (spielgang.K3, `_vorbauBedienung`): was die nächste Eingabe zeigen wird (der Geist eines
-                // Hotbar-Bauplans, der Leib einer Seele), baut hier vorab ohne Draw wie die Arena — nach dem Bild, unter der Frist
-                // des Render-Aufrufs und nur, wenn die Eingabe ruht (`_eingabeRuht`); der Klick findet Knoten und Pipeline vor.
+                // Schatten, keine Kopie ohne Draw (der leere Welt-March zog das Tiefen-Abbild je Frame: ziel-zensus OHNE LESER).
+                // Was ohne Draw bauen soll — die Arena, in deren Pass keine ihrer Instanzen fällt (der Stufen-Vorlauf,
+                // `_stufenVorlaufWahl`), der Gast der Bedienung (`_vorbauBedienung`: der Geist eines Hotbar-Bauplans, der Leib
+                // einer Seele) —, tritt hier in DAS VORWÄRM-GESETZ (`_vorwaermMerken`) und baut nur in dessen Ruf
+                // (`_vorwaermPass`, `vorwaerm`): im Leerlauf, nie im Bild einer Bewegung, nie unter dem Ladeschirm. Bis w25
+                // baute er hier selbst (`_vorbauWahl`: nach dem Bild einer je Bild, der Gast, sobald die Eingabe ruhte) — auch
+                // mitten in der Fahrt (GTX z w25 vorher: „vorbau:baum_eiche" 128 ms im Fenster der Fahrt Third).
                 const gast = object.__vorbauGast === true;
-                const vorbau = gast || ro.getDrawParameters() === null;
+                const vorwaerm = welt._vorwaermObjekt === object;
+                const vorbau = gast || vorwaerm || ro.getDrawParameters() === null;
                 const ctx = this._currentRenderContext.id;
                 const k = passId == null ? ctx : ctx + "|" + passId;
-                let merk;
                 const aufnahme = this._currentRenderBundle;
                 if (vorbau) {
-                    const arena = gast || (object.isGeometrieArena === true && object.geometry.index !== null);
-                    if (!arena || scene !== welt.state.scene) return;
-                    const wahl =
-                        gast && !welt._eingabeRuht()
-                            ? null
-                            : AnazhRealm._vorbauWahl(
-                                  E,
-                                  object,
-                                  k,
-                                  welt._ladeTakt(),
-                                  welt.state._weltbildDa,
-                                  N.nodeFrame.frameId,
-                                  gast
-                              );
-                    if (wahl !== "bauen") {
+                    if (scene !== welt.state.scene) return;
+                    if (!vorwaerm) {
+                        if (gast || object.isGeometrieArena === true) welt._vorwaermMerken(object);
                         // ein Gast im Bündel (der Leib) wartet wie ein Bürger ohne Bau: sein Bündel nimmt neu auf, bis er
                         // baute — versiegelt ohne ihn, spielte es ihn nie wieder vor
-                        if (gast && aufnahme !== null) welt._erstWartet(this.backend, null, aufnahme.bundleGroup);
+                        if (gast && aufnahme !== null && !(E.vorgebaut.get(object) || E.leer).has(k))
+                            welt._erstWartet(this.backend, null, aufnahme.bundleGroup);
                         return;
                     }
-                    merk = E.vorgemerkt.get(object);
+                    welt._vorwaermErgebnis = "gerufen"; // der Ruf des Gesetzes erreichte die Erst-Zeichnung
                 }
                 if (aufnahme !== null) ro.bundle = aufnahme.bundleGroup;
                 // DIE BÜHNE DER KARTE (`_karteWeltBacken`) zeichnet wie die Welt: sie wiederholt ihren Bake, bis jeder Bürger
@@ -588,7 +578,7 @@ class AnazhRealm_bild_kosten {
                 let pass = buehne ? undefined : E.gezeichnet.get(object);
                 const vor = vorbau ? E.vorgebaut.get(object) : undefined;
                 if (vorbau && ((pass !== undefined && pass.has(k)) || (vor !== undefined && vor.has(k))))
-                    return void merk.delete(k);
+                    return void welt._vorwaermFertig(object, scene, camera);
                 if (pass !== undefined && pass.has(k)) {
                     // der Neubau eines Objekts, das in diesem Pass schon zeichnete: wie der Vendor, im Frame
                     if (ungebaut) E.neubauN++;
@@ -617,6 +607,7 @@ class AnazhRealm_bild_kosten {
                 ) {
                     if (!welt._knotenRate(N, ro, E)) {
                         E.verschoben++;
+                        if (vorwaerm) welt._vorwaermErgebnis = "raten"; // sein Bau geht im nächsten Ruf weiter
                         if (welt._ladeTakt()) E.ladeSchuld = true;
                         if (aufnahme !== null) welt._erstWartet(this.backend, null, aufnahme.bundleGroup);
                         return;
@@ -630,6 +621,7 @@ class AnazhRealm_bild_kosten {
                         E.deckel = welt._ladeTakt() ? AnazhRealm.LADE_TAKT_MS : AnazhRealm.ERST_BAU_MS;
                     } else if (E.aufrufMs >= E.deckel) {
                         E.verschoben++;
+                        if (vorwaerm) welt._vorwaermErgebnis = "raten"; // der Deckel des Aufrufs: der nächste Ruf baut
                         if (aufnahme !== null) welt._erstWartet(this.backend, null, aufnahme.bundleGroup);
                         return;
                     }
@@ -645,171 +637,26 @@ class AnazhRealm_bild_kosten {
                 if (vorbau) {
                     if (vor === undefined) E.vorgebaut.set(object, new Set([k]));
                     else vor.add(k);
-                    merk.delete(k);
-                    if (bau >= 0) E.vorbauBild = N.nodeFrame.frameId; // nur ein Knoten-Bau nimmt den Platz des Bilds
+                    welt._vorwaermFertig(object, scene, camera);
                 } else if (gezeichnet && !buehne) {
                     if (pass === undefined) E.gezeichnet.set(object, (pass = new Set()));
                     pass.add(k);
+                    // die erste Zeichnung in diesem Pass: seine Familie steht, jede andere, in die es gehört, wärmt vor
+                    if (scene === welt.state.scene) welt._vorwaermFertig(object, scene, camera, true);
                 }
             };
+            // DER GANG DES VORWÄRM-GESETZES (`_vorwaermPass`): nach dem Opaken jedes Passes der Welt-Szene (r184 `_renderObjects`,
+            // je Liste des Passes gerufen — das Gesetz geht einmal je Pass und Bild)
+            const listeRoh = renderer._renderObjects;
+            if (typeof listeRoh !== "function")
+                this.log("VORWÄRM-GESETZ: r184-Renderer._renderObjects nicht gefunden (Vendor-Drift)", "ERROR");
+            else
+                renderer._renderObjects = function (liste, camera, scene, lightsNode, passId = null) {
+                    listeRoh.call(this, liste, camera, scene, lightsNode, passId);
+                    if (scene === welt.state.scene) welt._vorwaermPass(this, camera, scene, lightsNode, passId);
+                };
             renderer.__anazhErstZeichnung = true;
         }
-    }
-    // DER STAND DER ERST-ZEICHNUNG (der EINE Ort in `_configureRenderer`): je Render-Aufruf die Bau-Zeit, die Zähler für
-    // Flugschreiber und Hänger-Linse (Knoten-Bauten · verschobene Erst-Zeichnungen · asynchrone Pipelines · bereit
-    // gewordene) und je offener Pipeline die Bundles, die ohne ihren Bürger versiegelt wurden.
-    _erstZeichnungStand() {
-        if (!this._erstZeichnung)
-            this._erstZeichnung = {
-                aufruf: -1,
-                aufrufMs: 0,
-                deckel: AnazhRealm.ERST_BAU_MS, // die Bau-Zeit je Render-Aufruf am Stück (eine Bühne unter dem Ladeschirm: LADE_TAKT_MS)
-                ladeSchuld: false, // unter dem Ladeschirm wartete ein Bau auf die nächste Aufgabe — das nächste Bild ist fällig
-                ladeGuthaben: 0, // so lange hielt die GPU-Leine das Bild der offenen Schuld: so lange baut das fällige (`_knotenRate`)
-                bauN: 0, // die Knoten-Bauten der Erst-Zeichnung und ihre Zeit — am Stück wie in Raten (`_knotenRate`), EIN Zähler
-                bauMs: 0,
-                verschoben: 0,
-                einmalOffen: 0, // Renders außerhalb der Welt-Szene, deren Pipeline unter dem Ladeschirm noch im Bau stand (PSO-Vorbau)
-                pflichtTakt: null, // der Takt, in dem der Bau in Raten sein Pflicht-Stück ging (`_knotenRate`, `_taktZeit`)
-                imFlug: new Map(), // Bau-Schlüssel → der laufende Bau in Raten (`_knotenRate`): EINER je Schlüssel
-                pipeAsync: 0,
-                bereitN: 0,
-                absagenN: 0,
-                wartetN: 0, // Draws, die nicht zeichnen konnten (ihre Pipeline stand nicht) — der Zähler jedes Backends
-                wartetAuf: null, // die Pipeline des letzten wartenden Draws (die Beweis-Aufnahme nennt sie)
-                neubauN: 0,
-                neu: [],
-                bau: null, // { p, label } — das Geräte-Versprechen des eben angelegten Baus
-                offen: new Map(),
-                namen: new WeakMap(), // Pipeline → ihr Label `renderPipeline_<Stoff>_<id>`
-                abgesagt: new WeakSet(),
-                aufnehmen: new WeakSet(), // Bundles, versiegelt ohne einen Bürger — ihr Siegel setzt die Marke (`_renderBundle`)
-                gezeichnet: new WeakMap(), // Objekt → die Pässe (Render-Kontext|Pass-Kennung), in denen es schon zeichnete
-                vorgebaut: new WeakMap(), // Arena → die Pässe, in denen der Vorbau ihr Programm ohne Draw baute
-                vorgemerkt: new WeakMap(), // Arena → die Pässe ohne Draw unter dem Ladeschirm: ihr Vorbau folgt nach dem Bild
-                vorbauBild: -1, // das Bild (nodeFrame.frameId) des letzten Vorbaus nach dem Bild — höchstens einer je Bild
-            };
-        return this._erstZeichnung;
-    }
-    // DER VORBAU NACH DEM BILD (w4-b-knoten): ein Bau ohne Draw (die Arena im Pass, in den keine ihrer Instanzen fällt) steht
-    // nicht im ersten Bild — unter dem Ladeschirm merkt die Erst-Zeichnung seinen Pass vor („merken"), nach dem Bild baut der
-    // vorgemerkte („bauen"), höchstens EINER je Bild (jeder Pass ist ein Render-Aufruf mit eigenem Deckel); sonst null. Headless
-    // kalt 01.11.: der Vorbau einer Laub-Arena hielt 169 ms Haupt-Faden vor dem Bild. Der Rufer: `_renderObjectDirect` oben.
-    static _vorbauWahl(E, arena, pass, lade, bild, frame, gast = false) {
-        let merk = E.vorgemerkt.get(arena);
-        if (lade) return (merk ? merk.add(pass) : E.vorgemerkt.set(arena, new Set([pass])), "merken");
-        // ein Gast der Bedienung merkt jeden Pass selbst vor, in dem er noch nicht baute (er kam nach dem Ladeschirm), und baut
-        // wie jede Erst-Zeichnung unter der Frist des Render-Aufrufs (`ERST_BAU_MS`) — sein Schutz ist die ruhende Eingabe
-        const vor = gast && bild ? E.vorgebaut.get(arena) : undefined;
-        if (gast && bild && !(vor && vor.has(pass))) {
-            if (!merk) E.vorgemerkt.set(arena, (merk = new Set()));
-            merk.add(pass);
-        }
-        return bild && merk && merk.has(pass) && (gast || E.vorbauBild !== frame) ? "bauen" : null;
-    }
-    // DER KNOTEN-BAU IN RATEN (profiband.K2): r184 baut den Knoten-Graphen eines Render-Objekts am Stück (`NodeBuilder.build`:
-    // prebuild, je Stufe setup · analyze · generate jede Shader-Stufe fragment · vertex · compute, buildCode) — 60–100 ms je
-    // Stoff (Radeon, Genesis Ego im Stand: das Vorwärmen der Leiber, 11 Bauten Σ 825 ms, je Bild einer, Belegung p95 113,6 ms).
-    // Hier geht derselbe Gang Schritt für Schritt (eine Shader-Stufe einer Stufe) im Pass des Render-Objekts — der Bau liest MRT,
-    // Ziel und contextNode des Renderers, die nur dort gelten (darum nie buildAsync daneben) —, bis zur EINEN Frist der Bau-Arbeit
-    // (`_bauFrist`), auch IM Schritt: zwischen zwei Fluss-Knoten einer Shader-Stufe fragt er sie (der erste Knoten immer; `R.k` ist
-    // der nächste, der Vendor setzt je Knoten nur Bau- und Shader-Stufe — headless Erst-Boot: eine Stufe trug bis 90 ms am Stück);
-    // der fertige Bau tritt wie im Vendor in den Bau-Cache, ein Zwilling gleichen
-    // Schlüssels übernimmt ihn, ein werfender Schritt meldet sich laut und der Vendor baut am Stück. true = der Bau steht.
-    // EIN BAU JE SCHLÜSSEL IM FLUG (w4-knoten-wurzel): der laufende Bau eines Schlüssels steht in `E.imFlug`, jedes Render-Objekt
-    // desselben Schlüssels geht DENSELBEN Bau weiter — bis hier legte jedes, das im selben Bild kam, seinen eigenen an (die Teile
-    // eines Geists, die Kaskaden eines Satzes: Radeon kalt V18.546.159 im Vorbau 48 Zwillings-Bauten, bis neun je Schlüssel).
-    _knotenRate(N, ro, E) {
-        const d = N.get(ro);
-        // DIE FRIST IST DIE EINE DER BAU-ARBEIT (`_bauFrist`, w19-gang-hitch): im Spiel geteilt mit jedem Bauer des Takts (Strom,
-        // Planer, Pflanzung, Hüllen, Karte …), unter dem Ladeschirm die der Zeichnung (`_ladeFrist(true)`: die ganze Frist des
-        // Lade-Frames samt dem Guthaben der gehaltenen Leine). Bis hier trug der Bau in Raten eine zweite Uhr daneben (`rateFrist`:
-        // ERST_BAU_MS ab seinem ersten Schritt, unter dem Ladeschirm das Guthaben).
-        // DIE BAU-ZEIT FOLGT DER WANDUHR, NIE DER BILDRATE (w19-ankunft-takt; das Zeit-Budget je Bild der Precache-Lader, Unreals
-        // PSO-Precache `BatchTime`, hier wie der Ingest mit `INGEST_RATE_PER_S`): hielt die GPU-Leine das fällige Bild, während die
-        // Schuld der Erst-Zeichnung offen war (`ladeGuthaben`, `_ladeBildFaellig`), baut es ab seinem ersten Schritt die gehaltene
-        // Zeit, höchstens die Frist EINES Lade-Frames (LADE_TAKT_MS — keine Aufgabe trägt mehr Bau als der Lade-Frame); ohne
-        // gespannte Leine bleibt es der Rest der EINEN Frist. Bis hier baute es nur diesen Rest, den die Leser des Takts oft schon
-        // verbraucht hatten (bis −127 ms), und das Bild kam nur bei freier Leine: swiftshader, 4 Kerne, CPU ×4 — 11 Lade-Bilder in
-        // 15 s, 7 Knoten-Bauten bis zur Messung (main am Stück 27); Boden-Satz und 9 Geometrie-Arenen zeichneten nie, ihre Puffer
-        // (Teil-Uploads je 14–118 KB, ~5,5 MB) luden nie hoch: die Erst-Zeichnungs-Wand Teil 1 zählte 0,7 statt > 1 MB (CI z287:
-        // 0,2 · 0,2 · 0,7 MB, main 4,8 MB).
-        const frist = this._bauFrist("knoten", true);
-        const t0 = performance.now();
-        // SEIN PFLICHT-STÜCK (w19-gang-hitch, Nacharbeit — jeder Leser der Frist geht mindestens eins): der erste Ruf des Takts baut
-        // einen Schritt auch nach der Frist, jeder weitere wartet — bis hier wartete jeder, und ein Takt, dessen Bauer vor dem Bild
-        // die Frist leerten, baute keinen Knoten (Wiese, Gehen: 0 von 6 Rufen); die Alterung gibt ihm dazu seinen Vortritt
-        if (t0 >= frist && E.pflichtTakt === this._taktZeit) return false;
-        E.pflichtTakt = this._taktZeit;
-        const key = N.getForRenderCacheKey(ro);
-        let s = N.nodeBuilderCache.get(key);
-        // ein Bau, den ein Zwilling vollendete, dessen Eintrag mit seinem letzten Leser fiel (`usedTimes`), tritt wieder ein
-        if (s === undefined && d.rate && d.rate.s) N.nodeBuilderCache.set(key, (s = d.rate.s));
-        const bild = N.nodeFrame.frameId;
-        try {
-            let R = null;
-            if (s !== undefined) E.imFlug.delete(key);
-            else if (!(R = d.rate || E.imFlug.get(key))) {
-                // ein Bau, den seit KNOTEN_FLUG_BILDER kein Leser weiterging (sein Objekt fiel im Bau), verlässt den Flug
-                if (E.imFlug.size >= 32)
-                    for (const [k, x] of E.imFlug)
-                        if (bild - x.bild > AnazhRealm.KNOTEN_FLUG_BILDER) E.imFlug.delete(k);
-                E.imFlug.set(
-                    key,
-                    (R = { b: N._createNodeBuilder(ro, ro.material), i: -1, k: 0, bild, s: null, ms: 0 })
-                );
-            }
-            if (R) [d.rate, R.bild] = [R, bild];
-            const b = R && R.b;
-            let arbeit = !!R && R.i < 0 && (b.prebuild(), (R.i = 0), true);
-            // DER GANG GEHT BIS ZUR FRIST, NIE EINEN SCHRITT JE AUFRUF (w19-ankunft-takt): bis hier kehrte jeder Aufruf nach EINER
-            // Shader-Stufe zurück — ein Bau brauchte mindestens zehn Bilder, gleich wie viel Frist blieb, und unter dem Ladeschirm
-            // kommt das Bild nur bei freier GPU-Leine (swiftshader, CPU ×4: je Aufgabe ein Schritt je Objekt, bis zu 13 Bauten zugleich
-            // im Flug, kaum einer fertig; 2 Kerne, CPU ×6 mit Guthaben, ohne diesen Gang: 6 Knoten-Bauten, 0,9 MB). Der erste Schritt
-            // geht immer (nie verhungert); jeder weitere, solange die EINE Frist trägt (`_bauFrist`), ein Schritt darüber endet wie
-            // bisher. Ein begonnener Schritt geht mindestens EINEN Knoten: der Gang der Position (`flowNodeFromShaderStage`) steht am
-            // Anfang der Stufe (`R.k` 0) — ein Schritt ohne Knoten ginge ihn beim nächsten Ruf ein zweites Mal.
-            const ueber = () => performance.now() >= frist;
-            for (const [STUFE, SHADER] = AnazhRealm.KNOTEN_GANG; R && R.i < 9 && !(arbeit && ueber());) {
-                const stufe = STUFE[(R.i / 3) | 0];
-                const shader = SHADER[R.i % 3];
-                b.setBuildStage(stufe);
-                if (R.k === 0 && R.i % 3 === 0 && b.context.position && b.context.position.isNode)
-                    b.flowNodeFromShaderStage("vertex", b.context.position);
-                b.setShaderStage(shader);
-                // eine leere Shader-Stufe geht im selben Schritt mit; die volle bis zur Frist, je Knoten gefragt
-                const [F, k0] = [b.flowNodes[shader], R.k];
-                for (; R.k < F.length && (R.k === k0 || !ueber()); R.k++) {
-                    if (stufe === "generate") b.flowNode(F[R.k]);
-                    else F[R.k].build(b);
-                    arbeit = true;
-                }
-                if (R.k >= F.length) [R.i, R.k] = [R.i + 1, 0];
-            }
-            if (arbeit && ueber()) return ((R.ms += performance.now() - t0), false);
-            if (R) {
-                b.setBuildStage(null);
-                b.setShaderStage(null);
-                b.buildCode();
-                b.buildUpdateNodes();
-                N.nodeBuilderCache.set(key, (s = R.s = N._createNodeBuilderState(b)));
-                E.imFlug.delete(key);
-                // DER FERTIGE BAU ZÄHLT AM EINEN ZÄHLER der Erst-Zeichnung (`bauN`, `bauMs` = Σ seiner Schritte), wie ein Bau am
-                // Stück: bis hier zählte der Bau in Raten nur in einem eigenen Paar (`rateN`/`rateMs`, ohne Leser) — seit der Bau
-                // unter dem Ladeschirm in Raten geht (w19-ankunft-takt), las der Flugschreiber (`erstBauN`) und die Erst-Zeichnungs-
-                // Wand (Konsum im Boot) 0 Knoten-Bauten bei 714 verschobenen (swiftshader, Teil 1)
-                E.bauN++;
-                E.bauMs += R.ms + performance.now() - t0;
-            }
-        } catch (e) {
-            d.rate = undefined;
-            E.imFlug.delete(key);
-            this._bruchMelden(`KNOTEN-RATE: ein Schritt warf (${(e && e.message) || e}) — der Vendor baut am Stück`);
-            return (N.getForRender(ro), true);
-        }
-        [d.rate, d.nodeBuilderState] = [undefined, s];
-        s.usedTimes++;
-        return true;
     }
     // Der EINE Grund-Knoten jedes Schatten-Stoffs (r184 `vec4(0,0,0,1)`, je Licht neu gebaut) — `renderObject` oben
     static _schattenGrund() {
@@ -871,133 +718,6 @@ class AnazhRealm_bild_kosten {
             return loese.call(this, ro);
         };
         BI.__anazhAbschiedOhneBau = true;
-    }
-
-    // DIE ABSAGE EINER PIPELINE (Welle K): r184 verschluckt die Absage von createRenderPipelineAsync (`catch(e){}`,
-    // vendor/three.webgpu.min.js 6:590437), und ein Fehler-Scope sieht asynchrone Fehler nach Spezifikation nie — ein Stoff,
-    // dessen Pipeline scheitert, bliebe STILL für immer unsichtbar (der synchrone Bau meldete denselben Fehler laut). Der EINE
-    // Abgriff am Gerät (wie der writeBuffer-Abgriff, nach init): das Original-Versprechen geht unverändert an r184 zurück,
-    // seine Absage meldet sich als `PIPELINE-ABSAGE <label>: <message>` (das Label nennt den Stoff:
-    // `renderPipeline_<Stoff>_<id>`, 6:589557) über den EINEN Melder der GPU-Wache (`_gpuWacheMeldung`: ERROR beim Namen,
-    // gezählt in `_gpuWache` — eine Absage ist eine Validierung wie jede andere, Integration V18.535), und die Erst-Zeichnung
-    // trägt die Pipeline aus ihrer Warteschlange aus (`_erstWartet` hält das Versprechen ihres Baus). Gerufen wird je Aufruf
-    // der Prototyp — Linsen hängen sich dort ein.
-    _erstAbsageWache(renderer) {
-        const be = renderer.backend;
-        const dev = be && be.isWebGPUBackend === true ? be.device : null;
-        if (!dev || dev.__anazhAbsage || typeof dev.createRenderPipelineAsync !== "function") return;
-        const E = this._erstZeichnungStand();
-        const welt = this;
-        dev.createRenderPipelineAsync = function (desc) {
-            const p = Object.getPrototypeOf(this).createRenderPipelineAsync.call(this, desc);
-            const label = (desc && desc.label) || "renderPipeline_(ohne Label)";
-            E.bau = { p, label };
-            p.catch((e) => {
-                E.absagenN++;
-                welt._gpuWacheMeldung("pipeline", `PIPELINE-ABSAGE ${label}: ${(e && e.message) || e}`);
-            });
-            return p;
-        };
-        dev.__anazhAbsage = true;
-    }
-
-    // DER EINMAL-RENDER IM PSO-VORBAU (w16-lade-atem): `fn` zeichnet einen Einmal-Render (eine Tafel, die Umgebung, den Boden des
-    // Rückstrahls); true, wenn jede seiner Pipelines stand und er ganz zeichnete. Wartete er auf Pipelines (`einmalOffen`), läuft
-    // `fn` erst wieder, wenn jede von ihnen steht (`E.offen` trägt sie bis dahin) — bis hier malte jeder Takt ihn neu, ohne Bild
-    // (PMREM samt seiner Filter-Pässe je Takt). `schluessel`: der Render (sein Quad, der PMREM-Generator).
-    _einmalRender(schluessel, fn) {
-        const E = this._erstZeichnungStand();
-        const W = E.einmalWarte || (E.einmalWarte = new WeakMap());
-        const w = W.get(schluessel);
-        // außerhalb des Vorbaus (ein Leser außerhalb des Takts, das Bild steht) zeichnet er ganz, worauf er auch wartete
-        if (!this._psoVorbau()) {
-            W.delete(schluessel);
-            fn();
-            return true;
-        }
-        if (w) {
-            for (const p of w) if (E.offen.has(p)) return false;
-            W.delete(schluessel);
-        }
-        const vorbau = E.einmalOffen;
-        const sammel = (E.einmalSammel = new Set());
-        try {
-            fn();
-        } finally {
-            E.einmalSammel = null;
-        }
-        if (E.einmalOffen === vorbau) return true;
-        if (sammel.size) W.set(schluessel, sammel);
-        return false;
-    }
-
-    // DIE EINE WARTESCHLANGE der Erst-Zeichnung: ein Bürger, der nicht zeichnen kann, meldet sich hier an — auf jedem Weg
-    // (Erstbau, Neubau, fremde Szene); `bg` ist das Bundle, dessen Aufnahme ohne ihn versiegelt (null: ein direkter Draw,
-    // er versucht es im nächsten Aufruf selbst).
-    // (1) Er wartet auf seine PIPELINE (`pipe`): bereit ist sie, sobald r184 die fertige GPU-Pipeline in seinen Zustand
-    //     schreibt — `h.pipeline=await d.createRenderPipelineAsync(A)` (vendor/three.webgpu.min.js 6:590389), genau das Feld,
-    //     das `isReady` liest (6:221094). Ein Setter an diesem Feld nimmt im SELBEN Moment jedes Bundle neu auf, das ohne
-    //     einen ihrer Bürger versiegelt wurde (die Zuweisung läuft nach einem await, nie mitten in einer Aufnahme). Das
-    //     Vendor-Versprechen wartet danach noch auf `popErrorScope` (6:590447) — auf der Spielseite > 5 s, auf Windows-
-    //     swiftshader nie aufgelöst (gemessen 07.10.: ein Bundle-Bürger mit fertiger Pipeline 120 s ohne Neuaufnahme); an
-    //     ihm hängt nichts.
-    // (2) Er wartet nur auf seinen KNOTEN-BAU (`pipe` null: der Aufruf hat sein Bau-Budget verbraucht): das Bundle nimmt
-    //     nach der laufenden Aufnahme neu auf — r184 versiegelt an ihrem Ende (`u.version=s.version`, 6:413962) und schluckte
-    //     eine Marke von mittendrin; die Marke setzt das Siegel selbst (`_renderBundle`, die Draw-Wahrheit), so nimmt auch
-    //     das nächste Bild im selben Task neu auf.
-    // Eine Pipeline, deren Bau scheitert, meldet sich laut (`_erstAbsageWache`) und fällt aus der Warteschlange; ihr Bürger
-    // zählt weiter als wartender Draw — die Beweis-Aufnahme nennt ihn beim Namen und bricht ab. Auch im Bündel: es nimmt nach
-    // jeder Aufnahme neu auf wie in (2), statt ohne ihn zu versiegeln und still abzuspielen (mensch.K4, 30.10.: 8 abgesagte
-    // Stoffe im Bündel des Leibs — Auge und Kleid fehlten im Bild, die Beweis-Aufnahme stand grün).
-    // Der WebGL2-Rückfall kennt keine Bundles, und sein `_completeCompile` ersetzt das Datenobjekt der Pipeline (vendor
-    // 6:513930 über Backend.set 6:457928) — ein Setter am alten Objekt feuerte nie, die Schlange wüchse die ganze Sitzung:
-    // dort zählt der wartende Draw nur (`wartetN`), er versucht es im nächsten Aufruf selbst.
-    _erstWartet(be, pipe, bg) {
-        const E = this._erstZeichnung;
-        if (!pipe) {
-            if (bg !== null) E.aufnehmen.add(bg);
-            return;
-        }
-        E.wartetN++;
-        E.wartetAuf = pipe;
-        const bau = E.bau;
-        E.bau = null;
-        if (be.isWebGPUBackend !== true) return;
-        if (E.abgesagt.has(pipe)) return this._erstWartet(be, null, bg);
-        let bundles = E.offen.get(pipe);
-        if (bundles === undefined) {
-            const h = be.get(pipe);
-            let wert = h.pipeline;
-            const warten = (bundles = new Set());
-            E.offen.set(pipe, warten);
-            if (bau !== null) {
-                E.namen.set(pipe, bau.label);
-                bau.p.catch(() => {
-                    E.abgesagt.add(pipe);
-                    E.offen.delete(pipe);
-                    for (const b of warten) b.needsUpdate = true;
-                });
-            }
-            Object.defineProperty(h, "pipeline", {
-                configurable: true,
-                enumerable: true,
-                get: () => wert,
-                set: (v) => {
-                    wert = v;
-                    if (v === undefined || v === null) return;
-                    Object.defineProperty(h, "pipeline", {
-                        value: v,
-                        writable: true,
-                        configurable: true,
-                        enumerable: true,
-                    });
-                    E.offen.delete(pipe);
-                    E.bereitN++;
-                    for (const b of warten) b.needsUpdate = true;
-                },
-            });
-        }
-        if (bg !== null) bundles.add(bg);
     }
 
     // HEADLESS-NULL-RENDERER (opt-in via window.__anazhHeadlessNullRenderer): No-op-Hülle ohne GPU —
@@ -3693,18 +3413,6 @@ AnazhRealm.TRAEGER = Object.freeze({ teile: 24, saumM: 0.03 });
 // Der Takt des GPU-Kehraus (`_gpuKehraus`): je Gang Graph + r184-Register (nach dem Kehraus beide nur das Bild); was zwischen
 // zwei Gängen den Graphen verlässt, hält die GPU höchstens so lange.
 AnazhRealm.GPU_KEHRAUS_MS = 2000;
-// DIE ERST-ZEICHNUNG (`_configureRenderer`): je Render-Aufruf der Welt-Szene baut der erste Erst-Bau immer, jeder weitere nur,
-// solange der Aufruf unter dieser Zeit (ms) baute — ein Frame trägt so höchstens einen schweren Knoten-Bau je Pass. Im laufenden
-// Spiel nach dem Weltbild baut der Knoten-Bau in Raten unter der EINEN Frist der Bau-Arbeit (`_knotenRate` → `_bauFrist`,
-// BAU_FRIST_MS; der Gang r184 `NodeBuilder.build`: KNOTEN_GANG).
-AnazhRealm.ERST_BAU_MS = 4;
-// EIN BAU JE SCHLÜSSEL IM FLUG (`_knotenRate`): so viele Bilder darf ein Bau in Raten ohne Leser stehen, bevor er den Flug
-// verlässt (sein Objekt fiel mitten im Bau; ein Leser desselben Schlüssels legt ihn dann neu an)
-AnazhRealm.KNOTEN_FLUG_BILDER = 600;
-AnazhRealm.KNOTEN_GANG = Object.freeze([
-    Object.freeze(["setup", "analyze", "generate"]),
-    Object.freeze(["fragment", "vertex", "compute"]),
-]);
 // DER BAU-SCHLÜSSEL (`_gestaltSchluessel`): die Zahlen eines Stoffs, die der Knoten-Bau nur als Stoff-Referenz liest — ihr
 // Wert (0 oder nicht) teilt kein Programm
 AnazhRealm.BAU_NEUTRAL = Object.freeze(["roughness", "metalness", "envMapIntensity", "emissiveIntensity"]);

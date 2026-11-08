@@ -898,7 +898,7 @@ class AnazhRealm_dirigent_ankunft {
     // die GTX (0,29–0,57) vor der Messung. Einmal gebaut, bleibt das Programm der Sitzung (`_renderObjekteLoesen`: der
     // Knoten-Bau gehört seinem Schlüssel, die Pipeline dem Cache). Die Wahl läuft je Lade-Bild mit den Lücken
     // (`_weltbildLuecken`), der Baum hält das Bild als wachsender („bauten"), bis seine Arenen zeichneten (`_stufeOffen`);
-    // die Kaskaden, deren Box er nicht trifft, baut der Vorbau der Erst-Zeichnung nach dem Bild (`_vorbauWahl`). Er trägt seine L1
+    // die Kaskaden, deren Box er nicht trifft, baut das Vorwärm-Gesetz nach dem Bild (`_vorwaermPass`). Er trägt seine L1
     // bis zum Bild aus der Ferne (`_fernbildDa`) — danach wählt er unter dem Ladeschirm am Abstand. Der Null-Renderer baut keine
     // Programme: dort wählt sie nie.
     _stufenVorlaufWahl(p, R, imBlick) {
@@ -945,7 +945,7 @@ class AnazhRealm_dirigent_ankunft {
     // der Ferne), tritt die Probe seines Programms dazu wie beim Vorlauf; ein Bau nicht (ein Fels auf seiner Grobstufe zeichnet nie
     // im Hauptbild: zacken L2 in 38 m hielt den Schirm bis zur Ruhe-Uhr, Radeon kalt ae066b23). Die Probe: jede seiner Gruppen,
     // die das Hauptbild sieht, trat in ihre Arena, die Arena zeichnete (`gezeichnet` der Erst-Zeichnung) ODER fand sich ohne
-    // Draw (`_arenaImBild`: keine ihrer Instanzen fällt in den Kegel der Kamera — ihr Vorbau ist vorgemerkt und baut nach dem
+    // Draw (`_arenaImBild`: keine ihrer Instanzen fällt in den Kegel der Kamera — sie steht im Vorwärm-Gesetz und baut nach dem
     // Bild), und danach lief ein weiteres Bild auf dieser Stufe (die GPU-Leine zählt sie): in ihm zeichnete jede Kaskade, in die
     // er wirft — ein Wurf-Teil (Ebene 0 aus) lebt nur in den Kaskaden. Befund b-ankunft (Radeon kalt, main 8f1802b1, 4 von 4 Läufen): die Rinde der Birke in 31 m am Rand des Blicks
     // zeichnete nie, ihr Programm stand vorgebaut — der Baum hielt das Bild, bis die Ruhe-Uhr nach 15 s laut wich (das halbe
@@ -972,10 +972,10 @@ class AnazhRealm_dirigent_ankunft {
         if (!b || b.lod !== e._lodLevel) B.set(e, (b = { lod: e._lodLevel, n: L.gerendert }));
         return L.gerendert <= b.n;
     }
-    // Hat die Arena ihr erstes Bild hinter sich? Sie zeichnete, ihr Vorbau baute, oder sie fand sich ohne Draw und merkte ihn
-    // für nach dem Bild vor (die Erst-Zeichnung, `_configureRenderer`)
+    // Hat die Arena ihr erstes Bild hinter sich? Sie zeichnete, ihr Vorbau baute, oder sie fand sich ohne Draw und trat in das
+    // Vorwärm-Gesetz, das sie nach dem Bild im Leerlauf baut (die Erst-Zeichnung, `_vorwaermMerken`)
     _arenaImBild(E, a) {
-        return E.gezeichnet.has(a) || E.vorgebaut.has(a) || E.vorgemerkt.has(a);
+        return E.gezeichnet.has(a) || E.vorgebaut.has(a) || E.vorwaerm.has(a);
     }
 
     // DER BLICK DES ERSTEN BILDS (B3d): das erste Weltbild ist, was der Spieler sieht — der waagrechte Kegel der Haupt-Kamera

@@ -1369,7 +1369,9 @@ class AnazhRealm_siedlung_bauten {
             if (this._weltSteht()) this._leibFeinTausch();
             return;
         }
-        if (st._holzProfil === "kienspan" || !R || !R.__anazhErstZeichnung) return;
+        // DIE ZEIT IST DIE DES VORWÄRM-GESETZES (`_vorwaermZeit`, w25): ruhende Eingabe UND stehendes Auge, lose GPU-Leine — bis
+        // hier reichte die ruhende Eingabe, und der Gast baute in der Fahrt (GTX vorher: „vorbau:baum_eiche" 128 ms im Fenster)
+        if (!R || !R.__anazhErstZeichnung || !this._vorwaermZeit()) return;
         // das eigene Tuch wartet nur auf die ruhende Eingabe, nie auf die stehende Welt: es liest keinen Auftrag der Welt
         if (!this._tuchVorbau() || !this._weltSteht()) return;
         if (this._geistVorbau() && this._ichVorbau() && this._uiVorbau()) this._leibVorwaermen();
@@ -1383,7 +1385,15 @@ class AnazhRealm_siedlung_bauten {
     _geistVorbau() {
         const st = this.state;
         const V =
-            this._geistVorbauStand || (this._geistVorbauStand = { fertig: new Set(), frage: new Map(), gast: null });
+            this._geistVorbauStand ||
+            (this._geistVorbauStand = { fertig: new Set(), frage: new Map(), gast: null, gestalt: new Set() });
+        // die KOMMENDE GESTALT jedes Bauplans (`_vorwaermGestalt`): gesetzt zeichnet er als Arena seiner Teile, nie als Geist —
+        // ihre Arenen treten ins Vorwärm-Gesetz, bevor der erste gesetzte steht
+        for (const name of Array.isArray(st.hotbar) ? st.hotbar : []) {
+            if (!name || V.gestalt.has(name)) continue;
+            const bp = st.blueprints && st.blueprints[name];
+            if (!bp || !this._isPlaceableBlueprint(bp) || this._vorwaermGestalt(name)) V.gestalt.add(name);
+        }
         if (V.gast) {
             const fehlt = this._vorbauFehlt(V.gast.gruppe);
             if (fehlt && ++V.gast.takte < AnazhRealm.VORBAU_TAKTE) return false;
