@@ -143,6 +143,60 @@ function BAU_HAKEN() {
                 A.prototype[m].__haken = true;
             }
         }
+        // DIE GLIEDER VOR DEM BILD: Σ ms und Zahl je Name bis zum Weltbild (`__kalt.nach.glied`); die Jobs des Planers je Name
+        // (`job:<name>`), die Karte nach im/außer Blick (`karte:blick`/`karte:ausser`), dazu die Zeit des Bilds aus der Ferne
+        if (A && A.prototype._dispatchFrameJobs && !A.prototype._dispatchFrameJobs.__haken) {
+            const G = (N.glied = {});
+            const buche = (name, t0) => {
+                const r = window.anazhRealm;
+                if (r && r.state && r.state._weltbildDa) return;
+                const g = G[name] || (G[name] = [0, 0]);
+                g[0] += performance.now() - t0;
+                g[1]++;
+            };
+            const djob = A.prototype._dispatchFrameJobs;
+            A.prototype._dispatchFrameJobs = function (jobs, B) {
+                for (const j of jobs || []) {
+                    const run = j.run;
+                    j.run = function () {
+                        const t0 = performance.now();
+                        try {
+                            return run.apply(this, arguments);
+                        } finally {
+                            buche("job:" + j.name, t0);
+                        }
+                    };
+                }
+                return djob.call(this, jobs, B);
+            };
+            A.prototype._dispatchFrameJobs.__haken = true;
+            const namen = ["_tickPendingVegSpawns", "_tickHuellenNach", "_tickArchitectureLOD", "_tickImpostorBake", "_tickScatterLod", "_tickFernRing", "_tickWegeKarte", "_wegeRaeumen", "_tickCanopyStreaming", "_tickWorldWaterCA", "_tickDirtyVoxelChunks", "_tickFoundryIngest", "_loopPhysicsSync", "_loopFixedStep", "tickDayNight", "_loopRender", "_ankunftsBild", "_weltbildLuecken", "_vorbauBedienung", "_atmoTakt", "_ensureSkyEnvironment"];
+            for (const m of namen) {
+                const f = A.prototype[m];
+                if (typeof f !== "function") continue;
+                A.prototype[m] = function () {
+                    const t0 = performance.now();
+                    try {
+                        return f.apply(this, arguments);
+                    } finally {
+                        buche(m, t0);
+                    }
+                };
+                A.prototype[m].__haken = f.__haken;
+            }
+            const kb = A.prototype._karteWeltBacken;
+            if (typeof kb === "function")
+                A.prototype._karteWeltBacken = function (at, z) {
+                    const t0 = performance.now();
+                    const im = !(z && Number.isFinite(z._bedarfD2) && z._bedarfD2 >= 1e12);
+                    try {
+                        return kb.apply(this, arguments);
+                    } finally {
+                        buche(im ? "karte:blick" : "karte:ausser", t0);
+                    }
+                };
+        }
+        if (r && r.state && r.state._fernbildDa && !N.fernbild) N.fernbild = Math.round(r.state._fernbildDa);
         if (A && A.prototype._knotenRate && !A.prototype._knotenRate.__haken) {
             const kr = A.prototype._knotenRate;
             A.prototype._knotenRate = function (N, ro, E) {
@@ -156,7 +210,7 @@ function BAU_HAKEN() {
             };
             A.prototype._knotenRate.__haken = true;
         }
-        if (A && A.prototype._knotenRate.__haken && A.prototype._loopRender.__haken && r && r.state && r.state.renderer && r.state.renderer._nodes && r.state.renderer._nodes.__bauHaken)
+        if (A && A.prototype._knotenRate.__haken && A.prototype._loopRender.__haken && r && r.state && r.state._weltbildDa && r.state.renderer && r.state.renderer._nodes && r.state.renderer._nodes.__bauHaken)
             clearInterval(warte);
     }, 5);
 }

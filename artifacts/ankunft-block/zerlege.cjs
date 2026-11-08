@@ -17,7 +17,8 @@ const N = BILD ? 1 : Number(process.env.KALT_BOOTS || 4);
 const AB = fs.existsSync(path.join(__dirname, "vorher", "tausch.json"));
 const LAUF = path.join(__dirname, BILD ? "lauf-bild" : "lauf");
 const PNG = path.join(process.env.RUNNER_TEMP || require("os").tmpdir(), "probe", String(process.env.GITHUB_SHA || "lokal").slice(0, 8) + "-kontrolle");
-const TEIL2 = process.argv.includes("--teil") && process.argv[process.argv.indexOf("--teil") + 1] === "2";
+const TEIL = process.argv.includes("--teil") ? Number(process.argv[process.argv.indexOf("--teil") + 1]) : 1;
+const TEIL2 = TEIL >= 2;
 const med = (a) => {
     const s = a.filter((x) => Number.isFinite(x)).sort((x, y) => x - y);
     return s.length ? (s.length % 2 ? s[s.length >> 1] : (s[s.length / 2 - 1] + s[s.length / 2]) / 2) : NaN;
@@ -214,6 +215,15 @@ function berichtAB(teil, Z) {
         );
         return;
     }
+    if (teil === 3) {
+        je((zs, pre) => {
+            const namen = new Set(zs.flatMap((z) => Object.keys((z.out.nach && z.out.nach.glied) || {})));
+            const w = [...namen].map((k) => [k, med(zs.map((z) => (((z.out.nach && z.out.nach.glied) || {})[k] || [0])[0]))]).sort((a, b) => b[1] - a[1]); // prettier-ignore
+            zeile(`${pre}GLIEDER vor dem Bild (Median ms): ${w.map(([k, v]) => `${k.replace(/^_tick/, "")} ${Math.round(v)}`).join(" · ")}`);
+            zeile(`${pre}FERNE: Bild aus der Ferne ${zs.map((z) => (z.out.nach && z.out.nach.fernbild ? sek(z.out.nach.fernbild) : "–")).join("/")} s → Weltbild ${zs.map((z) => sek(z.out.weltbildDa)).join("/")} s`); // prettier-ignore
+        });
+        return;
+    }
     je((zs, pre) => phasen(zs, pre));
     je((zs, pre) => {
         const B = zs.map((z) => z.bau);
@@ -318,5 +328,5 @@ function bericht(teil) {
 }
 
 if (!TEIL2) boote();
-bericht(TEIL2 ? 2 : 1);
+bericht(TEIL);
 process.exit(0);

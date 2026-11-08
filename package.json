@@ -172,7 +172,7 @@
         "gate:weltbild-frost": "node scripts/diag-weltbild-frost.cjs",
         "gate:weltbild-frost:echt": "node artifacts/ankunft-block/zerlege.cjs",
         "gate:tag-achse:echt": "node artifacts/ankunft-block/zerlege.cjs --teil 2",
-        "gate:licht-weg:echt": "node artifacts/ankunft-block/zerlege.cjs --bild",
+        "gate:licht-weg:echt": "node artifacts/ankunft-block/zerlege.cjs --teil 3",
         "gate:naesse:echt": "node scripts/werkbank.cjs licht --naesse --eigen --port 4699",
         "gate:pop": "node scripts/werkbank.cjs pop --eigen --port 4792",
         "beweis:e": "node scripts/diag-beweis-e.cjs --tag aaa8 --proto-min 90"
