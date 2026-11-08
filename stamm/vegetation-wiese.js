@@ -1187,10 +1187,13 @@ class AnazhRealm_vegetation_wiese {
         nw.neu = true;
     }
 
-    // DER HALM DER VORLAGE JE HÖHE (die Schale der Ferne, `_wieseSchaleSenke`): über alle Ecken der Vorlage L2 (ihre Halme und
+    // DER HALM DER VORLAGE JE HÖHE (die Schale der Ferne, `_wieseSchaleSenke`): über die Dreiecke der Vorlage L2 (ihre Halme und
     // Ähren, wie die Ferne sie zeichnet) die Ecken-Farbe und die Narbe Λ (uv.y, `_halmStoff`) als Gerade über der relativen Höhe
-    // (y / die höchste Ecke; kleinste Quadrate) — `farbe(f)` und `narbe(f)` an der relativen Höhe f einer Ecke der Karte. Eine
-    // Vorlage ohne Farbe, Narbe oder Höhe bricht laut.
+    // (die Mitte des Dreiecks / die höchste Ecke), jedes Dreieck mit seiner FLÄCHE gewogen (kleinste Quadrate: die Farbe, die das
+    // Auge in dieser Höhe sieht) — `farbe(f)` und `narbe(f)` an der relativen Höhe f einer Ecke der Karte. Je Ecke gewogen trugen
+    // die Ährchen (die Farbe des Samens, drei Ecken je Ährchen) und die schmale Spitze des Halms die Gerade: die Karten lagen
+    // als ockergelbes Band in 20–40 m (Mess-Wiese, GTX: Farbton 77,6° → 65,8°, gelbe Pixel 7,3 → 15,8 %). Eine Vorlage ohne
+    // Farbe, Narbe, Höhe oder Fläche bricht laut.
     static _wieseSchaleHalm(geo, name) {
         const [P, C, U] = [geo.attributes.position, geo.attributes.color, geo.attributes.uv];
         if (!P || !C || !U)
@@ -1198,18 +1201,27 @@ class AnazhRealm_vegetation_wiese {
         let yMax = 0;
         for (let i = 0; i < P.count; i++) yMax = Math.max(yMax, P.getY(i));
         if (!(yMax > 0)) throw new Error(`Nah-Wiese: die Vorlage der Schale (${name}) trägt keine Höhe`);
-        const [S, n] = [new Float64Array(10), P.count]; // Σt Σt² Σr Σg Σb ΣΛ Σtr Σtg Σtb ΣtΛ
-        for (let i = 0; i < n; i++) {
-            const t = Math.max(0, P.getY(i)) / yMax;
-            const w = [C.getX(i), C.getY(i), C.getZ(i), U.getY(i)];
-            S[0] += t;
-            S[1] += t * t;
-            for (let k = 0; k < 4; k++) [S[2 + k], S[6 + k]] = [S[2 + k] + w[k], S[6 + k] + t * w[k]];
+        const ecke = geo.index ? (i) => geo.index.getX(i) : (i) => i;
+        const nE = geo.index ? geo.index.count : P.count;
+        const S = new Float64Array(11); // Σw Σwt Σwt² Σwr Σwg Σwb ΣwΛ Σwtr Σwtg Σwtb ΣwtΛ
+        const [pa, pb, pc] = [new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()];
+        const wert = [(i) => C.getX(i), (i) => C.getY(i), (i) => C.getZ(i), (i) => U.getY(i)];
+        for (let e = 0; e + 2 < nE; e += 3) {
+            const q = [ecke(e), ecke(e + 1), ecke(e + 2)];
+            [pa, pb, pc].forEach((v, k) => v.fromBufferAttribute(P, q[k]));
+            const t = Math.max(0, (pa.y + pb.y + pc.y) / 3) / yMax;
+            const w = pb.sub(pa).cross(pc.sub(pa)).length() / 2;
+            [S[0], S[1], S[2]] = [S[0] + w, S[1] + w * t, S[2] + w * t * t];
+            for (let k = 0; k < 4; k++) {
+                const x = (wert[k](q[0]) + wert[k](q[1]) + wert[k](q[2])) / 3;
+                [S[3 + k], S[7 + k]] = [S[3 + k] + w * x, S[7 + k] + w * t * x];
+            }
         }
-        const v = S[1] / n - (S[0] / n) ** 2;
+        if (!(S[0] > 0)) throw new Error(`Nah-Wiese: die Vorlage der Schale (${name}) trägt keine Fläche`);
+        const [mt, v] = [S[1] / S[0], S[2] / S[0] - (S[1] / S[0]) ** 2];
         const gerade = (k) => {
-            const b = v > 1e-9 ? (S[6 + k] / n - (S[0] / n) * (S[2 + k] / n)) / v : 0;
-            return [S[2 + k] / n - b * (S[0] / n), b];
+            const s = v > 1e-9 ? (S[7 + k] / S[0] - mt * (S[3 + k] / S[0])) / v : 0;
+            return [S[3 + k] / S[0] - s * mt, s];
         };
         const [r, g, b, l] = [0, 1, 2, 3].map(gerade);
         const an = ([a, s], f) => a + s * f;
