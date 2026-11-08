@@ -113,6 +113,9 @@ function probe(selbsttest) {
         csm.lights.forEach((l) => (l.shadow.autoUpdate = false));
         r._schattenAlleNeu();
     };
+    // … und die Kaskaden danach gepasst (wie der Haupt-Pass vor jeder Karte); der Mittag im Blick 0
+    const neuGepasst = () => (alleNeu(), r._kaskadenPassen(csm));
+    const mittag = () => (tag(0.5), blick(0));
     const S = r._kaskadenSchmier();
     // Kamera der Kaskade so, wie `renderShadow` sie stellt (updateMatrices), dann ihr Frustum.
     const frustumVon = (i) => {
@@ -209,10 +212,8 @@ function probe(selbsttest) {
     };
 
     // ── K: die Box ──
-    tag(0.5);
-    blick(0);
-    alleNeu();
-    r._kaskadenPassen(csm);
+    mittag();
+    neuGepasst();
     aus.karten = csm._anazhKarten.slice();
     aus.k1Mittag = empfaenger();
     aus.k2 = csm._anazhFit.map((f, i) => {
@@ -231,18 +232,15 @@ function probe(selbsttest) {
     const vorher = csm._anazhFit.map((f) => ({ W: f.W, texel: f.texel }));
     cam.position.x += 0.37;
     cam.updateMatrixWorld(true);
-    alleNeu();
-    r._kaskadenPassen(csm);
+    neuGepasst();
     aus.k3gehen = csm._anazhFit.map((f, i) => {
         const q = (f.x0 + f.W / 2) / f.texel;
         return f.W === vorher[i].W && Math.abs(q - Math.round(q)) < 1e-6;
     });
     // K7 — der Takt hält die Box: ein Takt-Render ohne Änderung behält sie, ein Werfer über der nahen Ebene legt sie neu
     if (boden) {
-        tag(0.5);
-        blick(0);
-        alleNeu();
-        r._kaskadenPassen(csm);
+        mittag();
+        neuGepasst();
         // ein Fit zählt seine Neulegungen (`bild`; er legt dasselbe Objekt neu)
         const vor = csm._anazhFit.map((f) => f.bild);
         csm.lights.forEach((l) => (l.shadow.needsUpdate = true));
@@ -314,8 +312,7 @@ function probe(selbsttest) {
         };
         const gen = (k) => r._passLagen.get("k" + k).gen;
         const anker = () => {
-            tag(0.5);
-            blick(0);
+            mittag();
             alleNeu();
             if (r._passLagen) r._passLagen.clear();
             laufe();
@@ -454,8 +451,7 @@ function probe(selbsttest) {
         res.grenze = res.grenze.map((x) => +x.toFixed(5));
         res.budget = res.budget.map((x) => +x.toFixed(5));
         tag(0.5);
-        alleNeu();
-        r._kaskadenPassen(csm);
+        neuGepasst();
         return res;
     };
     if (boden) {
@@ -513,8 +509,7 @@ function probe(selbsttest) {
     // K1 am Abend (lange Schatten, schräge Box)
     tag(0.72);
     blick(0);
-    alleNeu();
-    r._kaskadenPassen(csm);
+    neuGepasst();
     aus.k1Abend = empfaenger();
     // K5 — die längste Kante der Referenz-Scheibe trägt die Karte
     {
@@ -544,8 +539,7 @@ function probe(selbsttest) {
         const k6 = csm.lights.map((l) => ({ maxTexel: 0, wechsel: 0, W: null, H: null, n: l.shadow.mapSize.width }));
         for (let g = 0; g < 360; g++) {
             blick((g * Math.PI) / 180);
-            alleNeu();
-            r._kaskadenPassen(csm);
+            neuGepasst();
             csm._anazhFit.forEach((f, i) => {
                 const e = k6[i];
                 e.maxTexel = Math.max(e.maxTexel, Math.max(f.W, f.H) / e.n);
@@ -563,8 +557,7 @@ function probe(selbsttest) {
 
     // ── W5: der Boden außerhalb der Bundles (Tal empfängt, Hang wirft) ──
     const w5 = (huellenRegel) => {
-        tag(0.5);
-        blick(0);
+        mittag();
         const roh = r._kaskadenHuellen;
         if (huellenRegel) r._kaskadenHuellen = huellenRegel;
         const tal = { huelle: new T.Box3() };
@@ -585,8 +578,7 @@ function probe(selbsttest) {
             pt.y += 1;
             tal.huelle.setFromCenterAndSize(pt, new T.Vector3(20, 2, 20));
             boden.bloecke.set("__w7:tal", tal);
-            alleNeu();
-            r._kaskadenPassen(csm);
+            neuGepasst();
             const talDrin = frustumVon(NAH).containsPoint(pt);
             // der Hang: im Licht-Raum über dem Zentrum der nahen Box, 30 m über ihrer nahen Ebene
             const f0 = csm._anazhFit[NAH];
@@ -595,8 +587,7 @@ function probe(selbsttest) {
             );
             hang.huelle.setFromCenterAndSize(ph, new T.Vector3(6, 6, 6));
             boden.bloecke.set("__w7:hang", hang);
-            alleNeu();
-            r._kaskadenPassen(csm);
+            neuGepasst();
             const f1 = csm._anazhFit[NAH];
             const lz = ph.clone().applyMatrix4(f1.basisInv).z;
             return { talDrin, hangWirft: lz <= f1.zt, hangZ: +(lz - f1.zt).toFixed(1) };
@@ -623,10 +614,8 @@ function probe(selbsttest) {
     }
 
     // ── W: die Werfer je Pass ──
-    tag(0.5);
-    blick(0);
-    alleNeu();
-    r._kaskadenPassen(csm);
+    mittag();
+    neuGepasst();
     const map = st._regionBundles;
     const kasten = (x, y, z, s) => {
         const bg = new T.BundleGroup();
@@ -855,10 +844,8 @@ function probe(selbsttest) {
             w7((k, nach) => r._passSicht(k, nach), 0.72, Math.PI / 2),
         ];
         if (selbsttest) aus.s8 = w7(passeVoll, 0.5, 0);
-        tag(0.5);
-        blick(0);
-        alleNeu();
-        r._kaskadenPassen(csm);
+        mittag();
+        neuGepasst();
     }
 
     // ── W8: DIE INSTANZ-WAHL JE PASS — eine globale Pflanzen-Stufe zeichnet je Pass nur die Instanzen, die sein
@@ -947,8 +934,7 @@ function probe(selbsttest) {
             // ein neuer Schatten-Takt (die Werfer-Hüllen rechnen je Takt einmal — der Loop zählt ihn, die Linse hier)
             const takt = () => {
                 r._shadowFrame = (r._shadowFrame || 0) + 1;
-                alleNeu();
-                r._kaskadenPassen(csm);
+                neuGepasst();
             };
             const uniformen = (auge) => {
                 lu.uLodAuge.value.copy(auge);
@@ -979,8 +965,7 @@ function probe(selbsttest) {
             // voraus (jenseits d1: die Maske verwirft alles), D 10 m voraus (das Einblend-Band der L1); E 6 m voraus (L0
             // diesseits d0), F 22 m voraus (L0 jenseits d0); die Zwillinge G 15 m voraus und I 25 m hinter dem Blick — die
             // Mittagssonne wirft G in die nahe Scheibe, keinen in die ferne.
-            tag(0.5);
-            blick(0);
+            mittag();
             const c = cam.position.clone();
             setze(G.L1, "A", c.x, c.z + 20, 1);
             setze(G.L1, "B", c.x, c.z - 20, 1);
@@ -1037,10 +1022,8 @@ function probe(selbsttest) {
                 r._disposeArchInstanceGroup(g.key);
             }
             if (alt) for (const g of st.archInstanceGroups.values()) if (g.wahl) set.add(g);
-            tag(0.5);
-            blick(0);
-            alleNeu();
-            r._kaskadenPassen(csm);
+            mittag();
+            neuGepasst();
         }
         return res;
     };
@@ -1097,10 +1080,8 @@ function probe(selbsttest) {
         const map9 = st._regionBundles;
         let bg = null;
         try {
-            tag(0.5);
-            blick(0);
-            alleNeu();
-            r._kaskadenPassen(csm);
+            mittag();
+            neuGepasst();
             // der Punkt: die ferne Kaskade zuerst (ihre Box umschließt den nahen Boden), dann die nahe
             for (let i = csm.lights.length - 1; i >= 0 && !res.punkt; i--) {
                 const L = lageVon(i);
@@ -1138,8 +1119,7 @@ function probe(selbsttest) {
             Z.mesh.setMatrixAt(ref.slot, new T.Matrix4().makeTranslation(px, py, pz));
             r._lodSlotStamp(Z, ref.slot, 1, false, null);
             r._shadowFrame = (r._shadowFrame || 0) + 1;
-            alleNeu();
-            r._kaskadenPassen(csm);
+            neuGepasst();
             const saetze = [...(st.chunkSaetze ? st.chunkSaetze.values() : [])].filter((x) => x.spec.schatten === true);
             for (let i = 0; i < csm.lights.length; i++) {
                 const kam = csm.lights[i].shadow.camera;
@@ -1191,10 +1171,8 @@ function probe(selbsttest) {
             }
             for (const rf of [...Z.slotRef].filter(Boolean)) r._archGroupFree(Z, rf);
             r._disposeArchInstanceGroup(Z.key);
-            tag(0.5);
-            blick(0);
-            alleNeu();
-            r._kaskadenPassen(csm);
+            mittag();
+            neuGepasst();
         }
     };
     aus.w9 = w9(null);
@@ -1385,10 +1363,8 @@ function probe(selbsttest) {
                 csm._updateShadowBounds = eigen;
             }
         }
-        tag(0.5);
-        blick(0);
-        alleNeu();
-        r._kaskadenPassen(csm);
+        mittag();
+        neuGepasst();
     }
     {
         const roh = r._kaskadenPassen;
