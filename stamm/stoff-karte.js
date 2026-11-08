@@ -1267,7 +1267,8 @@ class AnazhRealm_stoff_karte {
                   )
                 : null;
         const G = pc.KARTEN_GESETZ;
-        const aus = Float32Array.of(1, 1, 1, 1, -1, -1, -1, -1, 0, G.saum, G.saumZelle, G.saumMin, G.saumBand, G.saumWeite, 0, 0);
+        const aus = new Float32Array(16).fill(1, 0, 4).fill(-1, 4, 8);
+        aus.set([G.saum, G.saumZelle, G.saumMin, G.saumBand, G.saumWeite], 9);
         if (!s) return aus;
         s.ringe.forEach((r, i) => ((aus[i] = r.seite), (aus[4 + i] = r.fuss)));
         aus[8] = s.nadel ? 1 : 0;
@@ -1856,26 +1857,27 @@ fn schritt(ri: u32) -> vec2<f32> {
 // DAS BAND: die Summe im binomialen Kern (2n + 1)² um (x, y) in seiner Ansicht, je Achse im Schritt st (der Rand leer — der
 // Rahmen ist nie der Umriss), durch die Summe des ganzen Kerns (farbSumme gewogen: .rgb / .a die Farbe der deckenden, .a / fuss
 // die geglättete Deckung)
-// Die Gewichte des binomialen Kerns (2n + 1 Abgriffe, n = band.x; ihre Summe 2^2n) — EIN Kern für Band, Normale und Licht
-fn binom() -> array<f32, 17> {
-    let n = i32(saum.band.x);
-    var B: array<f32, 17>;
-    B[0] = 1.0;
-    for (var j = 0; j < 2 * n; j++) { B[j + 1] = B[j] * f32(2 * n - j) / f32(j + 1); }
-    return B;
+// Das Gewicht des binomialen Kerns (2n + 1 Abgriffe, n = band.x; ihre Summe 2^2n) am Abgriff d aus dem am Abgriff d − 1 — EIN
+// Kern für Band, Normale und Licht, ohne Feld: ein Feld je Aufruf, im 16er-Block der BC5-Ablage entrollt, fand der Compiler der
+// GTX (D3D12) nie zu Ende (w24-strauch-saum, 02c89d91/33c73b16: die frische Welt der Tafel stand nach 2099 Takten nicht)
+fn bw(w: f32, d: i32, n: i32) -> f32 {
+    return select(w * f32(n - d + 1) / f32(max(n + d, 1)), 1.0, d == -n);
 }
 fn band(x: u32, y: u32, fe: vec4<u32>, st: vec2<f32>) -> vec4<f32> {
     let n = i32(saum.band.x);
-    var B = binom();
     let sb = exp2(f32(2 * n));
     var s = vec4<f32>(0.0);
+    var wy = 0.0;
     for (var dy = -n; dy <= n; dy++) {
+        wy = bw(wy, dy, n);
         let yy = i32(y) + i32(round(f32(dy) * st.y));
         if (yy < i32(fe.y) || yy >= i32(fe.y + fe.w)) { continue; }
+        var wx = 0.0;
         for (var dx = -n; dx <= n; dx++) {
+            wx = bw(wx, dx, n);
             let xx = i32(x) + i32(round(f32(dx) * st.x));
             if (xx < i32(fe.x) || xx >= i32(fe.x + fe.z)) { continue; }
-            s += B[dy + n] * B[dx + n] * farbSumme(u32(xx), u32(yy));
+            s += wy * wx * farbSumme(u32(xx), u32(yy));
         }
     }
     return s / (sb * sb);
@@ -2185,16 +2187,19 @@ fn ablageNT(x: u32, y: u32) -> vec3<f32> {
         let f = feld(v);
         let st = schritt(v / jeRing());
         let n = i32(saum.band.x);
-        var B = binom();
+        var wy = 0.0;
         for (var dy = -n; dy <= n; dy++) {
+            wy = bw(wy, dy, n);
             let yy = i32(y) + i32(round(f32(dy) * st.y));
             if (yy < i32(f.y) || yy >= i32(f.y + f.w)) { continue; }
+            var wx = 0.0;
             for (var dx = -n; dx <= n; dx++) {
+                wx = bw(wx, dx, n);
                 let xx = i32(x) + i32(round(f32(dx) * st.x));
                 if (xx < i32(f.x) || xx >= i32(f.x + f.z)) { continue; }
                 let q = p.ziel + u32(yy) * p.w + u32(xx);
-                s += B[dy + n] * B[dx + n] * nsum[q].xyz;
-                d += B[dy + n] * B[dx + n] * tsum[q];
+                s += wy * wx * nsum[q].xyz;
+                d += wy * wx * tsum[q];
             }
         }
     }
@@ -2285,8 +2290,8 @@ fn sicht(@builtin(global_invocation_id) g: vec3<u32>) {
             }
         }
     }
-    var wert = sichtBand(x, y, mittel);
-    if (n > 0.0) { wert = s / n; }
+    var wert = s / max(n, 1.0);
+    if (n == 0.0) { wert = sichtBand(x, y, mittel); }
     aus[p.aus + y * p.zeile + x] = pack4x8unorm(wert);
 }
 // Ein Fußabdruck ohne eigenes Blatt (w24-strauch-saum): das Mittel der Sonnen-Sicht der deckenden Texel im Band des Saums um
@@ -2298,17 +2303,20 @@ fn sichtBand(x: u32, y: u32, mittel: vec4<f32>) -> vec4<f32> {
     let f = feld(v);
     let st = schritt(v / jeRing());
     let n = i32(saum.band.x);
-    var B = binom();
     var s = vec4<f32>(0.0);
     var w = 0.0;
+    var wy = 0.0;
     for (var dy = -n; dy <= n; dy++) {
+        wy = bw(wy, dy, n);
         let yy = i32(cy) + i32(round(f32(dy) * st.y));
         if (yy < i32(f.y) || yy >= i32(f.y + f.w)) { continue; }
+        var wx = 0.0;
         for (var dx = -n; dx <= n; dx++) {
+            wx = bw(wx, dx, n);
             let xx = i32(cx) + i32(round(f32(dx) * st.x));
             if (xx < i32(f.x) || xx >= i32(f.x + f.z) || !deckt(u32(xx), u32(yy))) { continue; }
-            s += B[dy + n] * B[dx + n] * textureLoad(tSicht, vec2<i32>(xx, yy), 0);
-            w += B[dy + n] * B[dx + n];
+            s += wy * wx * textureLoad(tSicht, vec2<i32>(xx, yy), 0);
+            w += wy * wx;
         }
     }
     return select(mittel, s / w, w > 0.0);
