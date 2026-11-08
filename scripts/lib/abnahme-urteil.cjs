@@ -663,8 +663,23 @@ function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
             };
             const Jm = tensor(sm),
                 Jl = tensor(lu);
-            const aus = (x, y) =>
-                x >= 0 && y >= 0 && x < W && y < H && m[y * W + x] !== 1 && (!aussen || aussen[y * W + x] === 1);
+            // DAS AUSSEN HINTER DER KLASSE (w24-strauch-saum): trägt der Aufruf die Tiefe der Aufnahme (`spiegel`), zählt ein Außen nur,
+            // wenn es nicht klar VOR der Klasse liegt (≥ 0,9 ihrer Ferne; der Himmel ∞) — wo Gras, Weg oder Stamm sie von vorn
+            // verdecken, ist der Rand deren Umriss, nie ihre Silhouette (die REF misst gegen den Himmel, der stets dahinter liegt;
+            // Tafel-Pose, GTX 8505ae41: 43 % des Strauch-Rands grenzten unten an die Halme der Nah-Wiese vor ihm). Die Ferne liest
+            // das Außen einen Pixel weiter draußen, die Klasse einen weiter drinnen (`weite`: die Tiefe im Raster der Szene)
+            const weite = spiegel?.tiefe
+                ? (x, y) => {
+                      const { tiefe, tw, th, ivp: I, auge: C } = spiegel,
+                          j = (((Math.min(H - 1, Math.max(0, y)) + 0.5) * th) / H | 0) * tw + (((Math.min(W - 1, Math.max(0, x)) + 0.5) * tw) / W | 0); // prettier-ignore
+                      const v = [((j % tw) + 0.5) / tw * 2 - 1, 1 - (((j / tw) | 0) + 0.5) / th * 2, tiefe[j]]; // prettier-ignore
+                      const w = I[3] * v[0] + I[7] * v[1] + I[11] * v[2] + I[15];
+                      return v[2] >= 0.99999 ? Infinity : Math.hypot(...C.map((c, k) => (I[k] * v[0] + I[k + 4] * v[1] + I[k + 8] * v[2] + I[k + 12]) / w - c)); // prettier-ignore
+                  }
+                : null;
+            const aus = (x, y, dx, dy) =>
+                x >= 0 && y >= 0 && x < W && y < H && m[y * W + x] !== 1 && (!aussen || aussen[y * W + x] === 1) &&
+                (!weite || weite(x + dx, y + dy) >= 0.9 * weite(x - 2 * dx, y - 2 * dy)); // prettier-ignore
             for (let y = Math.max(1, by0); y <= Math.min(H - 2, by1); y++)
                 for (let x = Math.max(1, bx0); x <= Math.min(W - 2, bx1); x++) {
                     if (m[y * W + x] !== 1) continue;
@@ -672,7 +687,7 @@ function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
                     const [lxx, lyy, lxy, n2] = Jl(lx, ly);
                     if (n2 === (2 * r + 1) ** 2 && lxx + lyy > 1e-12)
                         [si, sz, sn] = [si + 1, sz + Math.sqrt((lxx - lyy) ** 2 + 4 * lxy * lxy), sn + lxx + lyy];
-                    if (!(aus(x - 1, y) || aus(x + 1, y) || aus(x, y - 1) || aus(x, y + 1))) continue;
+                    if (!(aus(x - 1, y, -1, 0) || aus(x + 1, y, 1, 0) || aus(x, y - 1, 0, -1) || aus(x, y + 1, 0, 1))) continue;
                     const [jxx, jyy, jxy] = Jm(lx, ly);
                     const tr = jxx + jyy;
                     if (!(tr > 1e-12)) continue;
@@ -2019,6 +2034,10 @@ function sollTafelSelbsttest(tafel, q) {
             v.push(`Maß kante: die Karte liest ${kq.kante}, gedreht ${kd.kante} (Soll > 0,75, gleich)`);
         const ka = klassenMasse(F0, q0, n, n, halb);
         if (!(ka.kr > 0 && ka.kr < 0.6 * kq.kr)) v.push(`Maß kante: der Rand zählt ${ka.kr} von ${kq.kr} Pixeln, nur das Außen zählt`);
+        // die rechte Hälfte des Bilds ein Außen VOR der Karte (Tiefe 0,3 gegen 0,6) oder dahinter (0,9): ihr rechter Rand zählt nur dahinter
+        const tief = (z) => ({ tiefe: Float32Array.from(halb, (h) => (h ? 0.6 : z)), tw: n, th: n, vp: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], ivp: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1], auge: [0, 0, -1] }); // prettier-ignore
+        const [kv, kh] = [0.3, 0.9].map((z) => klassenMasse(F0, Uint8Array.from(q0, (q, p) => q & halb[p]), n, n, null, null, tief(z)));
+        if (!(kh.kr > kv.kr + 60)) v.push(`Maß kante: ein Außen vor der Klasse zählt als ihr Rand (vorn ${kv.kr}, dahinter ${kh.kr} Pixel)`);
         // DER STRICH (haar.K1/K2): Streifen in der Karte (vor Schwarz — der Rand trägt nichts) → ≥ 0,9 und gedreht gleich,
         // weißes Rauschen → ≤ 0,2, die glatte Karte trägt keinen
         const streif = (a) =>
