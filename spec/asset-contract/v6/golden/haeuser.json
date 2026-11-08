@@ -853,9 +853,9 @@
       "sha256": "66ec0cb52d6e8cca068e9bb8a08efb102a39c4334c3acdfb42ac4f4b3adaf8f1"
     },
     "pueblo-s7-L2": {
-      "objects": 3,
-      "vertices": 7228,
-      "sha256": "6d1af674f130e79b2eb2b33bdd0372fbdeee6bbe45b0a613603568b1de519da2"
+      "objects": 5,
+      "vertices": 8128,
+      "sha256": "168db3c91144d3e0ae02a98a3a24b08bbddcb862a9be4fd0e91c407505e78b8f"
     },
     "pueblo-s7-L3": {
       "objects": 1,
@@ -873,9 +873,9 @@
       "sha256": "a759cd555a911e6254c5f067c3623875bc42b7393278154b1840acba4c35d8f4"
     },
     "pueblo-s12345-L2": {
-      "objects": 3,
-      "vertices": 6460,
-      "sha256": "aa411d81a899988d4134bfbea27e66dffd3e5b3c6c0dcdf5def444eebc682c97"
+      "objects": 5,
+      "vertices": 7096,
+      "sha256": "26f403d795df7e74ccdd998c497f84e4f66de090fe52a44e4ea65c5eb7e7c452"
     },
     "pueblo-s12345-L3": {
       "objects": 1,

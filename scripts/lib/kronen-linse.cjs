@@ -512,7 +512,7 @@ function wechselProbe({ ids, kern, wirt, fern, grenze }) {
             z.push(`L${s} ${w.toFixed(2)} px @ ${d.toFixed(1)} m`);
             if (w <= px) continue;
             for (let i = 0; i < 6 && 1.1 * w > 1; i++) w = versatz(n0, ns, (d *= 1.1 * w));
-            bruch.push(`${id} L${s} ${z[z.length - 1]} (Zeile ${Math.ceil((d * 1e4) / f) / 1e4})`);
+            bruch.push(`${id} ${z[z.length - 1]} (Zeile ${Math.ceil((d * 1e4) / f) / 1e4})`);
         }
         txt.push(`${id} ${z.join(" · ")}`);
     }
