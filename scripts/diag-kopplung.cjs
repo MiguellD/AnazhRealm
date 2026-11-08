@@ -23,8 +23,7 @@ hauptLauf(async () => {
     const { browser, page } = await nullSeite({ frist: 300000 });
     let out = null;
     try {
-        await server.zeige(page, 120000, "index.html", "networkidle0");
-        await warteAufWelt(page, 120000);
+        await warteAufWelt(page, 120000, server);
         out = await page.evaluate(() => {
             const AR = AnazhRealm;
             const o = { fails: [], zahlen: {} };

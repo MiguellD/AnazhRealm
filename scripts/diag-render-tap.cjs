@@ -14,7 +14,7 @@
 // und diese Invarianten werden rot (D3c: der Tap drawCalls-first beweist der Fake-Vertrag
 // am Lauf, die Text-Proben am Tap und am Flugschreiber fielen). GPU-frei, hardware-unabhängig.
 // ─────────────────────────────────────────────────────────────────────────
-const { statikServer, starteBrowser, warteAufWelt, urteilEnde, fehlerText } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, warteAufWelt, urteilEnde, fehlerText, seiteZu } = require("./lib/welt-boot.cjs");
 const server = statikServer();
 
 (async () => {
@@ -31,8 +31,7 @@ const server = statikServer();
     }, REAL);
     let out = null;
     try {
-        await server.zeige(page, 120000, "index.html", "networkidle0");
-        await warteAufWelt(page, 120000);
+        await warteAufWelt(page, 120000, server);
         if (REAL) {
             // Der echte-Vendor-Pfad: der rAF-Loop rendert selbst — nur beobachten.
             const real = await page.evaluate(async () => {
@@ -131,13 +130,7 @@ const server = statikServer();
     } catch (e) {
         out = { __err: fehlerText(e) };
     }
-    await browser.close();
-    server.close();
-
-    if (!out || out.__err) {
-        console.log(`⛔ Render-Tap-Linse fehlgeschlagen: ${out ? out.__err : "?"}`);
-        process.exit(2);
-    }
+    await seiteZu(browser, server, out, null, "__err");
 
     const driftAbs = Math.abs((out.senseLate || 0) - (out.senseEarly || 0));
     const checks = [

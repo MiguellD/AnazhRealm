@@ -70,7 +70,7 @@ async function probeLeben(expected) {
         const me = pl && pl.mountedArch != null ? r._mountedEntry : null;
         if (!me || !me.position) return !!st.isInAir;
         const fz = me._fahr;
-        if (st.isInAir && !(fz?.luft)) return true;
+        if (st.isInAir && !fz?.luft) return true;
         const sitz = Number.isFinite(me._sitzHeight) ? me._sitzHeight : 0;
         const hub = fz && Number.isFinite(fz.fHub) ? fz.fHub : Number.isFinite(me._rideHeave) ? me._rideHeave : 0;
         if (Math.abs(st.playerMesh.position.y - (me.position.y - 0.5 + sitz + hub)) > 0.05) return true;
@@ -413,7 +413,7 @@ async function probeLeben(expected) {
             bilder(K.bremsMax, () => e._fahr.vlong > bV);
             bahnWache = null;
             for (const q of z.spur) {
-                if (!(q.e?.brake) || !(q.v > bV)) break;
+                if (!q.e?.brake || !(q.v > bV)) break;
                 s = q.x - x0;
             }
             [z.spur, z.ent, halt.zurueck] = [null, null, false];
@@ -626,7 +626,7 @@ async function probeLeben(expected) {
         // DAS ENDE OHNE ZIEL beim Namen: steht der Wagen 5 · `festS` ohne Fortschritt (der Fahrer zählte ihn nach `festS` als
         // Steckenbleiber), endet die Probe mit der Zeile — `lage` ist, wo er steht; nach 6 000 Bildern (600 s Sim-Zeit) endet sie
         // ohne Ziel. Bis hier fuhr der stehende Wagen stumm bis zum 30 000. Bild, und der Deckel schnitt die Zeile ab
-        for (let bis = 0; i < 6000 && !F.ende && F.steht * A.FIXED_DT < 5 * A.FAHRER.festS; ) {
+        for (let bis = 0; i < 6000 && !F.ende && F.steht * A.FIXED_DT < 5 * A.FAHRER.festS;) {
             bild();
             if (i % 2) await window.sleep();
             if (F.s < bis) continue;
@@ -701,19 +701,20 @@ async function probeLeben(expected) {
         };
         // die Kapsel (x, z) im Rechteck des Wagens, tiefer als 0,1 m — ihr Abstand zum Rechteck unter R − 0,1, an seiner Ecke rund
         // (bis w4-verkehr-c2 eckig: der Gehende, der die Ecke des stehenden Wagens streifte, 0,343 m von ihr bei R 0,35, hieß
-        // „berührt“ 0,105 m tief); zwei Rechtecke über die vier Achsen beider
+        // „berührt“ 0,105 m tief); zwei Rechtecke: ihr Abstand über die vier Achsen beider (negativ: so tief stecken sie ineinander)
         const drin = (L, x, z) => {
             const a = Math.abs((x - L.x) * L.fx + (z - L.z) * L.fz) - L.hl;
             const q = Math.abs((x - L.x) * L.fz - (z - L.z) * L.fx) - L.hw;
             return Math.hypot(Math.max(0, a), Math.max(0, q)) < R - 0.1;
         };
-        const schnitt = (a, b) =>
-            [a.fx, a.fz, b.fx, b.fz].every((_, k) => {
-                const [ux, uz] =
-                    k & 1 ? [(k < 2 ? a : b).fz, -(k < 2 ? a : b).fx] : [(k < 2 ? a : b).fx, (k < 2 ? a : b).fz];
-                const p = (L) => Math.abs(L.fx * ux + L.fz * uz) * L.hl + Math.abs(L.fz * ux - L.fx * uz) * L.hw;
-                return Math.abs((b.x - a.x) * ux + (b.z - a.z) * uz) < p(a) + p(b) - 0.05;
-            });
+        const abstand = (a, b) =>
+            Math.max(
+                ...[a, a, b, b].map((Q, k) => {
+                    const [ux, uz] = k & 1 ? [Q.fz, -Q.fx] : [Q.fx, Q.fz];
+                    const p = (L) => Math.abs(L.fx * ux + L.fz * uz) * L.hl + Math.abs(L.fz * ux - L.fx * uz) * L.hw;
+                    return Math.abs((b.x - a.x) * ux + (b.z - a.z) * uz) - p(a) - p(b);
+                })
+            );
         const aus = {};
         for (const stunde of o.stunden) {
             stelle(S.ox, S.oz, 2);
@@ -757,14 +758,14 @@ async function probeLeben(expected) {
                 leib: 0,
                 leibOrte: [],
                 wagen: 0,
-                wagenOrte: [],
+                knapp: [Infinity],
                 ohne: 0,
                 ohneOrte: [],
                 quer: 0,
                 querOrt: null,
                 takte: 0,
                 ms: 0,
-                ...{ steuerlos: 0, fahrt: 0, fahrtWer: null, geh: 0, fahrbahn: 0, bau: 0, bauOrte: [] },
+                ...{ steuerlos: 0, fahrt: 0, fahrtWer: null, geh: 0, fahrbahn: 0, bau: 0, bauOrte: [], bildMs: 0 },
             };
             // DAS NETZ IN SEINER RICHTUNG (`VK.folge`): jeder verbotene Abbieger einer Kreuzung samt dem Täter — die Sperre des Plans
             // (fachwerk `planSperren`), die der Sehne von Spur zu Spur am nächsten liegt, oder die Stufe des Bodens (`zahl.stufen`)
@@ -824,7 +825,6 @@ async function probeLeben(expected) {
             };
             // DER BILD-TAKT DES VERKEHRS (die Wahl und der Leib am Steuer, `_tickVerkehr`; der Wagen im Gedränge, `_verkehrImRaster`):
             // seine Millisekunden je Bild — der Teil des Verkehrs am CPU-Takt des Profi-Bands neben dem Sim-Schritt
-            [m.bildMs, m.bilder] = [0, 0];
             for (const n of ["_tickVerkehr", "_verkehrImRaster"])
                 r[n] = function (...a) {
                     const t0 = performance.now();
@@ -917,23 +917,18 @@ async function probeLeben(expected) {
                             if (q?._verkehrWagen && q._verkehrWagen.zustand === "faehrt") return;
                             if (!(Math.hypot(hk.schub[2 * j], hk.schub[2 * j + 1]) > 0.05)) return;
                             m.bau++;
-                            if (m.bauOrte.length < 6)
-                                m.bauOrte.push([W.nr, k, ...ort2(L[n]), (q?.type) || "insel"]);
+                            if (m.bauOrte.length < 6) m.bauOrte.push([W.nr, k, ...ort2(L[n]), q?.type || "insel"]);
                         });
                         hk.schub.length = hk.schubQuelle.length = 0;
                     }
-                    for (let j = n + 1; j < fahrend.length; j++)
-                        if (schnitt(L[n], L[j])) {
-                            m.wagen++;
-                            if (m.wagenOrte.length < 6)
-                                m.wagenOrte.push([
-                                    W.nr + "|" + fahrend[j].nr,
-                                    k,
-                                    ...ort2(L[n]),
-                                    W.grund,
-                                    fahrend[j].grund,
-                                ]);
-                        }
+                    // DER RAUM ZWISCHEN ZWEI WAGEN: das knappste Paar der Stunde [Abstand, Paar, Probe, Ort, beider Grund]; tiefer als
+                    // 0,05 m stecken sie ineinander (gezählt) — bis w23-verkehr begegneten sich an der Wende 908/289 von stadt-voll
+                    // Hineinfahrende und Herausfahrende auf 0,08 m, in jeder Stunde, und der Zug sah „Wagen in Wagen“
+                    for (let j = n + 1; j < fahrend.length; j++) {
+                        const t = [+abstand(L[n], L[j]).toFixed(2), W.nr + "|" + fahrend[j].nr, k, ...ort2(L[n]), W.grund, fahrend[j].grund]; // prettier-ignore
+                        if (!(t[0] >= m.knapp[0])) m.knapp = t;
+                        m.wagen += t[0] < -0.05;
+                    }
                 }
             }
             for (const n of ["_verkehrSchritt", "_tickVerkehr", "_verkehrImRaster"]) delete r[n];
@@ -962,17 +957,15 @@ async function probeLeben(expected) {
                 ohneFahrer: VK.zahl.ohneFahrer,
                 ohneNacht: VK.zahl.ohneNacht,
                 fahrend: VK.wagen.filter((W) => W.zustand === "faehrt").length,
-                netzM: Math.round(VK.zahl.laengeM),
                 wenden: VK.wenden.size,
                 enden: VK.kp.filter((K) => K.ende).length,
                 stufen: VK.zahl.stufen.slice(0, 6),
                 fest: VK.wagen.filter((W) => W.festOrt).map((W) => ({ ...W.festOrt, nr: W.nr })),
                 stoss: Object.fromEntries(Object.entries(VK.zahl.stoss).map(([k, v]) => [k, v - stoss0[k]])),
-                beruehrt: { leib: m.leib, wagen: m.wagen, bau: m.bau, orte: m.leibOrte, wagenOrte: m.wagenOrte, bauOrte: m.bauOrte }, // prettier-ignore
+                beruehrt: { leib: m.leib, wagen: m.wagen, bau: m.bau, orte: m.leibOrte, bauOrte: m.bauOrte },
+                knapp: m.knapp,
                 ankunft,
                 netz: { verboten, ausNetz: ausNetz.length, irrweg: VK.zahl.irrweg },
-                // der Plan der Stadt trägt diese Stände neben der Trasse nicht (`standOhneOrt`): wer an ihnen stand, geht ohne sie
-                platzVoll: (S.standOhneOrt || []).size,
                 ohneSchluessel: m.ohne,
                 ohneOrte: m.ohneOrte,
                 querMax: +m.quer.toFixed(2),
@@ -1000,7 +993,7 @@ async function probeLeben(expected) {
             else if (expected.wegenetz) res.wegenetz = await wegenetz(expected.wegenetz);
             else res.kette = await kette(expected.kette);
         } catch (e) {
-            res.err = String((e?.stack) || e);
+            res.err = String(e?.stack || e);
         }
         aufraeumen();
         return res;
@@ -1054,11 +1047,7 @@ async function probeLeben(expected) {
         const g5 = await gtAmStart();
         bilder(120, () => st._kamFovVersatz); // der Übergang des Sichtfelds klingt aus (`_kamFov`)
         if (g5) {
-            const m5 = (res.tempo = window.__tempoSpion(
-                VC,
-                st.camera,
-                (z5) => z5 === g5._fahr
-            ));
+            const m5 = (res.tempo = window.__tempoSpion(VC, st.camera, (z5) => z5 === g5._fahr));
             m5.schreiber = [];
             bahnWache = { sx: start.x, sz: start.z, ux: 1, uz: 0, len: 90, quer: 8, n: 0 };
             tasten(true);
@@ -1169,7 +1158,8 @@ async function probeLeben(expected) {
                 const [c, f] = [st.camera.position, kurs()];
                 const [dx, dy, dz] = [c.x - e.position.x, c.y - e.position.y, c.z - e.position.z];
                 // gegen das Ziel des Rigs (H3: Gier + driftFolge · Drift) — rutscht der GT quer am Hang, blickt es auf die Fahrt
-                if (++n === 10 && ausEgo) w.nach10.push(wink(Math.atan2(-dx, -dz) - f - VC.FAHR.kamera.driftFolge * st._kamChase.dF));
+                if (++n === 10 && ausEgo)
+                    w.nach10.push(wink(Math.atan2(-dx, -dz) - f - VC.FAHR.kamera.driftFolge * st._kamChase.dF));
                 q.push([dx * Math.cos(f) - dz * Math.sin(f), tMs]);
                 if (n > 15) ruck.push(window.__ruckJeBild(q.slice(-3)));
                 const o = V.setFromMatrixColumn(M, 1).normalize();
@@ -1526,7 +1516,7 @@ async function probeLeben(expected) {
                     `${Math.hypot(kl.x - kl.sx, kl.z - kl.sz).toFixed(1)} m)` +
                     (bahnWache.typen ? ` · die Wache räumte ${bahnWache.typen.join(", ")}` : "");
                 tasten(false);
-                const imFlug = !!(g4._fahr?.luft);
+                const imFlug = !!g4._fahr?.luft;
                 r.dismountArchitecture();
                 let yv = g4.position.y;
                 let sprungAb = 0;
@@ -1997,7 +1987,7 @@ async function probeLeben(expected) {
                         const l = dx * ux + dz * uz;
                         if (l < -3 || l > 12 || Math.abs(dx * uz - dz * ux) > 3) continue;
                         n++;
-                        const art = (cr.userData?.soul) || "?";
+                        const art = cr.userData?.soul || "?";
                         if (!m.gasseArten.includes(art)) m.gasseArten.push(art);
                     }
                     m.gasseTiere = Math.max(m.gasseTiere, n);
@@ -2607,14 +2597,14 @@ async function probeLeben(expected) {
                         aussen.n++;
                         if (aussen.n % 40 === 0) {
                             const lzS = (V.x - e.position.x) * Math.sin(thH) + (V.z - e.position.z) * Math.cos(thH);
-                            strahlProben.push(V.x, V.y, V.z, lzS >= 0 ? 1 : -1, (kn?.name) || o.name || "?");
+                            strahlProben.push(V.x, V.y, V.z, lzS >= 0 ? 1 : -1, kn?.name || o.name || "?");
                         }
                         const dxH = V.x - e.position.x;
                         const dzH = V.z - e.position.z;
                         const lx = (dxH * Math.cos(thH) - dzH * Math.sin(thH)) / scH;
                         const lz = (dxH * Math.sin(thH) + dzH * Math.cos(thH)) / scH;
                         const ly = (V.y - basisH) / scH;
-                        const name = (kn?.name) || o.name || "?";
+                        const name = kn?.name || o.name || "?";
                         const T = 0.02;
                         if (ly < hu.ySill - T) raus("unten", hu.ySill - ly, name);
                         else if (ly > hu.yRoof + T) raus("oben", ly - hu.yRoof, name);
@@ -2787,7 +2777,7 @@ async function probeLeben(expected) {
         S.labor = res.kette.labor;
         res.rueck = await rueck(expected.rueck); // RM (fahrzeug.K5) auf dem Weg der Kette
     } catch (e) {
-        res.err = (e?.stack) || String(e);
+        res.err = e?.stack || String(e);
     }
     aufraeumen();
     return res;
@@ -2862,7 +2852,9 @@ function tempoSpion(VC, cam, quelle) {
 function kernTempo(VC) {
     const kern = ["chaseKamera", "chaseGreif"].filter((n) => !VC[n]);
     if (kern[0] === "chaseKamera") return { kern };
-    const K = VC.FAHR.kamera, dt = 1 / 60, vmax = K.tempoV;
+    const K = VC.FAHR.kamera,
+        dt = 1 / 60,
+        vmax = K.tempoV;
     const lauf = (c, n, g, sp, q = 0) => {
         let v;
         for (let i = 0; i < n; i++)
@@ -3017,7 +3009,7 @@ async function probeKoerper(opt) {
         const w = sk.joints.find((j) => j.name === sk.root).scale;
         res.labMensch = sk.leibV * w[0] * w[1] * w[2] * ((8 * A.PLAYER_KH) / 6) ** 3 * mats.leib.rho;
     } catch (e) {
-        res.err = String((e?.stack) || e);
+        res.err = String(e?.stack || e);
     }
     return res;
 }

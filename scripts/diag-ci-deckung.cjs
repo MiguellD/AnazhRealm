@@ -26,7 +26,8 @@ const VOLL_WENN =
     "github.event_name == 'pull_request' || github.ref == 'refs/heads/integ-probe' || github.ref == 'refs/heads/main' || " +
     "contains(github.event.head_commit.message, '[ci voll]')";
 const jobsVon = (doc) => doc?.jobs || {};
-const normWenn = (x) => String(x ?? "").trim().replace(/\s+/g, " ");
+const V = (d) => d.jobs.voll; // der volle Job eines Dokuments (die Selbsttests)
+const normWenn = (x) => String(x == null ? "" : x).trim().replace(/\s+/g, " ");
 const istVollWenn = (x) => normWenn(x) === VOLL_WENN;
 // EIN URTEIL JE KOPF: der Kopf-Richter läuft unter VOLL_WENN, die Batterie hinter ihm, wenn der Kopf noch kein
 // grünes Urteil der vollen Batterie trägt (scripts/ci-kopf.cjs)
@@ -713,7 +714,6 @@ function selbsttestKlasse() {
             },
         },
     });
-    const V = (d) => d.jobs.voll;
     const faelle = [
         ["die Klassen im Lot (grün)", () => {}, null],
         ["ein Echt-Rezept über eine lib in der CPU-Gruppe", (d) => (V(d).steps[2].if = "matrix.gruppe == 1"), /\(K\) CPU-GRUPPE: „G" \(Gruppe 1\) startet ein Echt-Rezept — scripts\/g\.cjs → scripts\/lib\/h\.cjs/],
@@ -1026,7 +1026,6 @@ function selbsttest() {
             },
         },
     });
-    const V = (d) => d.jobs.voll;
     // (E) die Echt-Gruppe in ihrer Form: B (GPU-Klasse) auf der Karte, mit Frist
     const echtDazu = (d, schritt = { name: "B auf der Karte", run: "npm run gate:b", "timeout-minutes": 5 }) => {
         V(d).strategy.matrix.include = [
