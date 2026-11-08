@@ -1,5 +1,7 @@
 ## 08.11. 20:52 — w24-strauch-saum: BEREIT — die Ton-Antwort mit Zahlen, gang-hitch vereint, Abgabe 3f35067a
 
+## 08.11. 20:53 — GPU-PROBE 3f35067a auf omen-gtx1060: GRÜN in 93 s (bild:wiese@0.5 GRÜN 54 s) → probe-post/w24-strauch-saum/3f35067a.md
+
 - **Ton der Kronen:** die Farbe der Kronen ist NICHT dunkler — unter der Tafel-Maske (Radeon, main → Kopf) birke 37,2 → 42,3 · fichte 35,0 → 38,8 · strauch 40,9 → 43,2, gesamt 39,4 → 40,3. Dunkler war die Wiese aus zwei Gründen, beide an der Wurzel geschnitten: (1) die Licht-Kanäle gewählter Saum-Texel ohne eigene Deckung (Vorgabe-Normale 14–17 %, Schicht-Mittel der Sonnen-Sicht 24–28 %) — sie tragen jetzt die ihres Bands; (2) Deckung ÜBER der Wahrheit, nicht nur die geschlossene Lücke — die Schwelle 0,34 dehnte jeden Saum-Rand und vereinte die Muster zweier Stufen (Zwilling 1,06–1,16 der Stufe 0) → KARTEN_GESETZ.schwelle 0,45, wo der Filter der Welt deckt, was Stufe 0 deckt (0,97–1,08).
 - **bild:wiese@0.5 Radeon, main fdfa9795 → Kopf (9ed32a3, Gesetz = 3f35067a):** Kronen-Mitte 48,6 → 48,4 · Band 38,6 → 37,5 · Büsche rechts 47,3 → 43,3 · vorn 63,8 = 63,8 (dein Kopf bd17b634 stand bei 45,4 · 36,0 · 42,5).
 - **laub-kante ≤ 0,22 auf beiden GPUs mit dem Endgesetz** — Radeon 9ed32a3: strauch 0,2089 · birke 0,1539 · eiche 0,1368 · fichte 0,142 · tanne 0,151; GTX c65c80d: strauch 0,2151 · birke 0,158 · eiche 0,1396 · fichte 0,1392 · tanne 0,1526; zweiton 0 je Klasse.
