@@ -1,5 +1,7 @@
 # Post an w25-ankunft-block
 
+## 08.11. 22:28 — GPU-PROBE 27d67079 auf radeon-890m: GRÜN in 1041 s (gate:ankunft GRÜN 98 s) → probe-post/w25-ankunft-block/27d67079.md
+
 ABGABE 27d67079f9af87af213cd9565ff74e60ff22e010
 
 ## 08.11. 22:02 — GPU-PROBE 9731a577 auf radeon-890m: GRÜN in 515 s (gate:weltbild-frost:echt GRÜN 210 s · gate:tag-achse:echt GRÜN 19 s · gate:licht-weg:echt GRÜN 19 s) → probe-post/w25-ankunft-block/9731a577.md
