@@ -1141,16 +1141,18 @@ function nahFernSicht(opts) {
         const istFern = (m) => m.userData && m.userData.inventar === "fern-ring";
         // DER RING WEICHT DEM GEBAUTEN: unter einem gezeichneten Chunk trägt die Schale 0 kein Dreieck (`_fernRingTeilung`
         // Klasse 2). Für die Schüsse der Linse zeichnet der
-        // freie Teil der Schale 0 ihr volles Index-Muster (der Träger `geos[0]`, dieselbe Länge), der Naht-Teil ruht; danach
-        // steht die Teilung wieder, wie sie war.
+        // freie Teil der Schale 0 ihr volles Index-Muster (der Träger `geos[0]`, dieselbe Länge, der Zeichen-Bereich ganz), der
+        // Naht-Teil ruht; danach steht die Teilung wieder, wie sie war.
         const fr = st.fernRing;
         const freiIx = fr && fr.teilung && fr.teilung.frei && fr.teilung.frei.index;
         const freiAlt = freiIx ? freiIx.array.slice() : null;
+        const freiBereich = freiIx ? fr.teilung.frei.drawRange.count : null;
         const nahtMesh = fr?.meshes ? fr.meshes.find((m) => fr.teilung && m.geometry === fr.teilung.naht) : null;
         const nahtSicht = nahtMesh ? visAlt.get(nahtMesh) : null;
         if (freiIx && fr.geos[0].index.array.length === freiIx.array.length) {
             freiIx.array.set(fr.geos[0].index.array);
             freiIx.needsUpdate = true;
+            fr.teilung.frei.drawRange.count = Infinity;
             if (nahtMesh) visAlt.set(nahtMesh, false);
         }
         const schuss = async (sicht, e) => {
@@ -1259,6 +1261,7 @@ function nahFernSicht(opts) {
             if (freiAlt) {
                 freiIx.array.set(freiAlt);
                 freiIx.needsUpdate = true;
+                fr.teilung.frei.drawRange.count = freiBereich;
                 if (nahtMesh) visAlt.set(nahtMesh, nahtSicht);
             }
             for (const m of meshes) m.visible = visAlt.get(m);
@@ -1641,7 +1644,8 @@ function laubGegenlicht(opts) {
                 const fr = opts.karte === 2 && opts.boden ? st.fernRing : null;
                 const frei = fr?.teilung?.frei ? fr.teilung.frei.index : null;
                 const naht = fr ? fr.meshes.find((m) => m.geometry === fr.teilung.naht) : null;
-                if (frei && fr.geos[0].index.array.length === frei.array.length) (freiAlt = [frei, frei.array.slice()]), frei.array.set(fr.geos[0].index.array), (frei.needsUpdate = true);
+                if (frei && fr.geos[0].index.array.length === frei.array.length)
+                    (freiAlt = [frei, frei.array.slice(), fr.teilung.frei.drawRange, fr.teilung.frei.drawRange.count]), frei.array.set(fr.geos[0].index.array), (frei.needsUpdate = true), (fr.teilung.frei.drawRange.count = Infinity);
                 for (const m of alle)
                     m.visible = opts.boden ? (fr ? m !== naht && m.userData.inventar === "fern-ring" : laub.includes(m)) : opts.haus ? laub.includes(m) || m.name === "bauWurf" : /^fimp:/.test(r._taeterKlasse(m)) || (/^f:/.test(r._taeterKlasse(m)) && /^(bark|foliage|foliageTex|schatten)$/.test(m.material?.userData?.foundryKind));
                 bundles();
@@ -1834,7 +1838,7 @@ function laubGegenlicht(opts) {
             out.sonne = { pixel: s.pixel, gegen: { Y: s.gegen.Y }, auf: { Y: s.auf.Y }, verhaeltnis: s.verhaeltnis };
             out.stoffe = laub.map((m) => m.material.userData.laubLicht || "ohne").join(",");
         } finally {
-            if (freiAlt) freiAlt[0].array.set(freiAlt[1]), (freiAlt[0].needsUpdate = true);
+            if (freiAlt) freiAlt[0].array.set(freiAlt[1]), (freiAlt[0].needsUpdate = true), (freiAlt[2].count = freiAlt[3]);
             for (const m of alle) m.visible = visAlt.get(m);
             bundles();
             if (luftZurueck) luftZurueck();
