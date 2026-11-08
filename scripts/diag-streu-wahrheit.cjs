@@ -20,17 +20,19 @@
 //       Phänotyp jeder Baum- und Strauch-Art) ihre Stufen: (a) jede Stufe deckt den Anteil der Stufe 0 (± ½ Texel, gezählt in
 //       ihren Bytes — kein Ausdünnen in der Ferne); (b) der Umriss folgt der Art (Laub und Nadel je eine eigene Kante, ein
 //       Saum der Stärke 0 gibt beiden dieselbe); (c) die Konifere (artPhaenotyp) trägt den Nadel-Saum; (d) jeder Ring trägt
-//       Seitenmaß und Kronen-Fuß; (e) Stufe 0 und 1 FRANSEN: kante unter 0,57 (die Scheibe ohne Saum 0,944).
+//       Seitenmaß und Kronen-Fuß; (e) Stufe 0 und 1 FRANSEN IM MASS DES SCHIRMS: kante auf dem Raster der Stufe (die Welt liest
+//       jede verkleinerte Stufe mit einem Texel je Pixel) unter dem Soll der Laub-Silhouette (soll-tafel laub-kante, 0,22; die
+//       Scheibe ohne Saum 0,944, der Saum im Maß EINES Texels wie w23-karte-l2: Laub 0,328, Nadel 0,547 — ROT beim Namen).
 // (D3c: der Stoff der Senke, sein Wind und die sRGB-Marke des Atlas standen am Stamm-TEXT und fielen ohne Welt im Skript.)
 // Die Außen-Normalen des Fels-Oktaeders fielen mit dem Host-Bauer (gate:altlasten hält _scatterSpeciesGeometry);
 // die Studio-Gestalt ist byte-genau eingefroren (gate:asset-contract).
 // --selftest: ein Farn mit roher Palette, ein Schilf mit rohem Hex, eine Boden-Zeile ohne Preset, Lambert-Wege und die
 // Karten-Brüche (Hüllen um den Codec: ungekodiert, roh gemittelt, der Saum stumm, Ausdünnen in der Ferne, die Nadel als
-// Laub, ein Ring ohne Saum, Stufe 0 roh wie main) → alle MÜSSEN beim Namen feuern.
+// Laub, ein Ring ohne Saum, der Saum im Maß eines Texels wie w23) → alle MÜSSEN beim Namen feuern.
 // Exit: 0 grün · 1 rot.
 // ============================================================================
 "use strict";
-const { ausDatei, SELBSTTEST, stammLib, vm } = require("./lib/welt-boot.cjs");
+const { ausDatei, SELBSTTEST, stammLib, vm, jsonLesen } = require("./lib/welt-boot.cjs");
 
 const PHYTO = ausDatei("phyto-core.js");
 const KERN = ausDatei("foundry-core.js");
@@ -66,11 +68,13 @@ function kartenFarbe(core) {
 // Stufen: jede deckt wie Stufe 0, Laub und Nadel tragen je ihren Umriss; Rückgabe { fehler, n: die Saum-Gesetze }. Dazu JE HEBUNGS-RING des Rezepts
 // (w4-laub-saum, 31.10.; phyto-core `karteSaumRinge`, eine Krone vom Boden an im Einheits-Rahmen): jeder Ring trägt sein
 // Seitenmaß und seinen Kronen-Fuß in seiner Ansicht — bis dahin wählten die gehobenen Ringe die geglättete Hülle.
-// DIE KANTE DES SAUMS (w23-karte-l2, lod.K1#1): eine glatte Krone (die Scheibe, Kohärenz ≈ 1) trägt auf Stufe 0 UND Stufe 1 einen
-// zerfransten Umriss — `kante` der Soll-Tafel (abnahme-urteil `klassenMasse`) unter 0,57 (die Scheibe ohne Saum 0,944), je Laub
-// und Nadel.
+// DIE KANTE DES SAUMS (w23-karte-l2, w24-strauch-saum, lod.K1#1): eine glatte Krone (die Scheibe, Kohärenz ≈ 1) trägt auf Stufe 0
+// UND Stufe 1 einen zerfransten Umriss — `kante` der Soll-Tafel (abnahme-urteil `klassenMasse`, σ 2 px auf dem Raster der Stufe)
+// unter ihrem Soll, je Laub und Nadel. Bis w24 hieß die Grenze 0,57: der Saum im Maß eines Texels (Zelle 6, Band σ 2) hielt sie
+// und stand am Schirm als 6-px-Welle — der Strauch der Tafel (17–25 px hoch, verkleinert gelesen) las gerade (Radeon c61e3a9b 0,3515).
 // Bis w23 wählte Stufe 0 nie, die Zelle maß die Blattgröße (Strauch 55 Stufe-0-Texel), das Muster verschob den Umriss um ein Texel:
 // an der Tafel-Pose standen Laibe (Radeon, main 03300ec8: strauch 0,4023, birke 0,3293).
+const KANTE_SOLL = jsonLesen("spec/abnahme/soll-tafel.json").klassen.find((k) => k.id === "laub-kante").soll.eigenschaften[0].band[1];
 function kartenSaum(core, presets, ic) {
     const [fehler, umriss] = [[], new Map()]; // je Saum-Gesetz die Kante seiner Stufe 0
     const ringe = core.karteRinge(ic.views, ic.cellW, ic.cellH, ic.hebungen, ic.ringTeiler).ringe;
@@ -88,7 +92,7 @@ function kartenSaum(core, presets, ic) {
         d.forEach((x, k) => Math.abs(x - d[0]) > 0.5 / (32768 >> (2 * k)) && fehler.push(`Saum ${art}: Stufe ${k} deckt ${x} statt ${d[0]} — die Karte dünnt aus`));
         const k = st.slice(0, 2).map(kante);
         umriss.set(sa.nadel, k[0]);
-        if (!(Math.max(...k) < 0.57)) fehler.push(`Saum ${art}: der Umriss franst nicht (kante ${k})`);
+        if (!(Math.max(...k) <= KANTE_SOLL)) fehler.push(`Saum ${art}: der Umriss franst nicht im Maß des Schirms (kante ${k} über ${KANTE_SOLL})`);
     }
     if (new Set(umriss.values()).size < umriss.size) fehler.push("Saum: Laub und Nadel tragen denselben Umriss — der Umriss folgt nicht der Art");
     return { fehler, n: umriss.size };
@@ -127,10 +131,7 @@ function emitterVon(kernNC, kind) {
             const [k, fn] = paar.split(":").map((x) => (x || "").trim());
             if (k === kind && fn) return fn;
         }
-    if (kind === "flower") return "emitFlower";
-    if (kind === "grass") return "emitGrass";
-    if (kind === "rock") return "emitRock";
-    return null;
+    return { flower: "emitFlower", grass: "emitGrass", rock: "emitRock" }[kind] || null;
 }
 
 // o: { src (Wandlung des Stamms), kern (foundry-core), daten (Hülle um die geladenen Daten), core (der Karten-Codec) } — der Selbsttest
@@ -189,7 +190,6 @@ function main() {
         const echt = pruefe();
         // der Codec gebrochen als Hülle: Stufe 0 ungekodiert (linear), Stufe 1 aus den sRGB-Bytes gemittelt
         const codec = (bruch) => { const c = Object.assign({}, codecAus()); const m0 = c.impostorMips; c.impostorMips = (lin, ...a) => bruch(m0(lin, ...a), lin); return c; };
-        const roh0 = codec((m, lin) => (m.stufen[0].data.set(lin), m)); // Stufe 0 wie eingegeben: ungekodiert und ohne Saum
         // [Name, Muster, Bruch]
         const brueche = [
             ["Farn mit roher Palette", /farn \(emitFern\): new THREE\.Color/, { kern: KERN.replace("c1 = vegFarbe(P.farbe),", "c1 = new THREE.Color(P.farbe),") }],
@@ -200,12 +200,12 @@ function main() {
                 /Lambert-Stoff/,
                 { src: (t) => stammLib.ersetze(t, "_kistenPool", "new THREE.MeshStandardNodeMaterial({ color: 0xffffff, roughness: 1, metalness: 0 })", "new THREE.MeshLambertMaterial({ color: 0xffffff })") },
             ],
-            ["Karte ohne Kodierung", /Karten-Kodierung weicht/, { core: roh0 }],
+            ["Karte ohne Kodierung", /Karten-Kodierung weicht/, { core: codec((m, lin) => (m.stufen[0].data.set(lin), m)) }],
             ["Saum stumm", /der Umriss folgt nicht der Art/, { core: ((c) => ((c.KARTEN_GESETZ.saum = 0), c))(codecAus()) }],
             ["Ausdünnen in der Ferne", /die Karte dünnt aus/, { core: codec((m) => (m.stufen.slice(3).forEach((s) => s.data.fill(0)), m)) }],
             ["Nadel als Laub", /Laub und Nadel vertauscht/, { core: ((c, f = c.karteSaumRinge) => Object.assign(c, { karteSaumRinge: (...a) => ({ ...f(...a), nadel: false }) }))(codecAus()) }],
             ["Ring −20° ohne Saum", /Ring -20° ohne Saum/, { core: ((c, f = c.karteSaumRinge) => Object.assign(c, { karteSaumRinge: (...a) => ((a = f(...a)), (a.ringe[0].seite = 0), a) }))(codecAus()) }],
-            ["Stufe 0 roh, ohne Saum (main)", /der Umriss franst nicht/, { core: roh0 }],
+            ["Saum im Maß eines Texels (w23)", /franst nicht im Maß des Schirms/, { core: ((c) => (Object.assign(c.KARTEN_GESETZ, { saumWeite: 1, saumZelle: 6 }), c))(codecAus()) }],
             ["Mip-Stufe roh gemittelt", /linear gemittelt/, { core: codec((m) => { const [a, b] = m.stufen; for (let o = 0; o < b.data.length / 4; o++) { const x = o % b.width, y = (o / b.width) | 0, w = a.width; b.data[o * 4] = Math.round((a.data[(2 * y * w + 2 * x) * 4] + a.data[(2 * y * w + 2 * x + 1) * 4] + a.data[((2 * y + 1) * w + 2 * x) * 4] + a.data[((2 * y + 1) * w + 2 * x + 1) * 4]) / 4); } return m; }) }],
         ];
         let ok = Array.isArray(echt.fehler) && echt.fehler.length === 0;
