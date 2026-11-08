@@ -39,6 +39,9 @@
 //                     spielt die Täter am echten Gesetz (Faden-Scope, three r184) ein: ein Licht neben der Sonne und eine
 //                     Belichtung neben der des Gesetzes — beide beim Namen. An der echten garage (06.11., swiftshader) nannte die
 //                     Wand das Haupt der Matrix-Antike („key") und die Belichtung von main (1,04 statt 0,51); die saubere Bühne zeichnet.
+//   H10 WERK DER WELT (studios.K4, Labor = Welt) die Wurzel jeder Bühne trägt das Werk, das ihre Übergabe in die Welt schickt: die
+//                     erste Zeile der Kosten-Leiste nennt das Maß der Hülle (`werkMass`, die Box der Wurzel gegen die Box des Werks
+//                     aus dem Kern der Welt), H8 urteilt es; ein Mesh-Studio ohne Maß ist ROT (die Ratsche: terrain, fachwerk).
 // Ausgenommen, benannt: die zwei sandgesicherten Welten begegnung + schwarm (CSP default-src 'none': sie laden kein
 // Skript, ihr Protokoll richtet gate:portal-konformanz). Die terrain-Familie (terrain + gelaende) trägt seit K47 keine
 // Ausnahme mehr.
@@ -72,6 +75,15 @@ const ENGINE_FREMD = /^\/(?:worlds\/[^/]+\/lib\/[^/]+|vendor\/three\.min\.js)$/;
 const ENGINE_EINE = "/vendor/three.webgpu.min.js";
 const WELT_GELADEN = /^\/(?:index\.html)?$|^\/stamm\//;
 const ENGINE_RATSCHE = { portale: "r128", fachwerk: "r128", koerperstudio: "r128", tetrapoda: "r128", terrain: "r128", fluid: "r183", translated: "r130" };
+// H10 — DIE BÜHNE ZEIGT DAS WERK DER WELT (studios.K4, Labor = Welt): die erste Zeile der Kosten-Leiste trägt je Bau das Maß der Hülle
+// (`werkMass`: die Box der Wurzel der Bühne gegen die Box des Werks, das der Kern der Welt für ihre Übergabe baut), ihr Urteil liest
+// H8 (`zeileUrteil`, eine Achse über 2 % des Halbmessers) — ein Mesh-Studio ohne Maß ist ROT. Bis w16-studio-welt trug die Wurzel der
+// Schmiede ihre Schnitt-Karte (0,433 gegen 0,244 m), die des Fachwerks Parzelle und Flügel (31 × 13,3 × 31 gegen 10,0 × 13,2 × 8,8 m).
+// DIE RATSCHE (sie zieht nur an): terrain und fachwerk zeigen am Start das Werk der Welt (Eiche 3,25 × 6,37 × 3,31 m, Haus
+// 11,16 × 13,93 × 11,48 m beidseits), ihr erster Schieber ist keine Zeile des Vertrags und reist nicht in der Übergabe — ein Dial des
+// Phyto-Labors (nach dem Griff des Gangs 6,55 × 8,24 × 6,30 gegen 3,62 × 6,86 × 3,33 m), die Zeit-Achse des Fachwerks (`jahr`: Stil
+// und Dach der Epoche; auf 2025 Höhe 9,1 gegen 10,54 m).
+const WERK_RATSCHE = { terrain: 1, fachwerk: 1 };
 // H3 — DER EINE VERLAUF der Hülle am ersten Hüllen-Schieber: der Zug an seinen Rand, dann im selben Atemzug (der Zug ist noch
 // offen) die Tasten; die Folge [vor, Zug, je Taste] liest der Gang, sie wechselt ganz (vor, Zug, vor, Zug …) oder ist ROT.
 const VERLAUF = ["Strg+Z", "Strg+Umschalt+Z", "Strg+Z", "Strg+Y", "A", "B"]; // A/B (studios.K2): A zeigt den Stand der Öffnung, B den Zug
@@ -108,7 +120,8 @@ function pruefeGang(netz, seiten = {}, { zeit = false } = {}) {
     for (const [id, { folge: f, kosten }] of Object.entries(seiten)) {
         // H8 je gelesene Leiste: eine Zeile über ±5 % oder ohne Zahl (0 ↔ 0, ohne gezeichnete) ist ROT, eine Leiste ohne Zeile auch
         if (kosten && !kosten.some((k) => !k.audio === (id !== "klang"))) rot.push(`H8 ${id}: die Leiste ohne Zeile`);
-        for (const k of kosten || []) rot.push(...AnazhHuelle.zeileUrteil(k, zeit, zeit).map((x) => `H8 ${id}: ${x}`));
+        const werk = (kosten || []).flatMap((k) => AnazhHuelle.zeileUrteil(k, zeit, zeit)).filter((x) => (WERK_RATSCHE[id] && / Wurzel der Bühne /.test(x)) || !rot.push(`H8 ${id}: ${x}`));
+        if (kosten && !OFEN_STUDIOS[id] && id !== "klang" && !(kosten[0] || {}).werkWelt === !(WERK_RATSCHE[id] && !werk.length)) rot.push(`H10 ${id}: kein Maß des Werks, oder die Ratsche zieht an`);
         const fehl = f && (f[0] === f[1] ? 1 : VERLAUF.concat(0, 0).findIndex((_, i) => f[i] !== f[i % 2])); // der erste Schritt, der nicht wechselt
         if (!f && STUDIOS.includes(id)) rot.push(`H3 ${id}: das Studio trägt keine Sitzung (kein Hüllen-Schieber mit Strg+Z)`);
         else if (fehl > 0) rot.push(`H3 ${id}: ${VERLAUF[fehl - 2] || "der Zug"} wirkt nicht (${folgeText(f)}) — der Verlauf der Hülle geht am Schieber vorbei`);
@@ -311,11 +324,11 @@ function selbsttest() {
     const r128 = "/worlds/terrain/lib/three-r128.min.js";
     const netz = Object.fromEntries([...STUDIOS, ...NEBENWELTEN].map((id) => [id, ENGINE_RATSCHE[id] ? [r128] : id === "garage" ? eine : []]));
     // jedes Studio mit Sitzung (H3, H7), jede Leiste unter ihren Deckeln und mit ihren Gegenzahlen (H4, H8), der Klang je Ort
-    const zeile = { befehle: 40, befehleGezeichnet: 40, vram: 9e5, vramGpu: 9e5, vramDeckel: 9e6, ms: 0.4, msDeckel: 1.5, bank: 0.41, bankCpu: 0.2 };
+    const zeile = { werkBuehne: 2, werkWelt: 2, befehle: 40, befehleGezeichnet: 40, vram: 9e5, vramGpu: 9e5, vramDeckel: 9e6, ms: 0.4, msDeckel: 1.5, bank: 0.41, bankCpu: 0.2 };
     const wahr = (leiste, gezeichnet, stufe = 0, deckel = 62000, mehr) => ({ kosten: [{ ...zeile, stufe, leiste, gezeichnet, deckel, ...mehr }] });
     const ort = (audio) => ({ kosten: audio ? [{ stufe: "sturm", audio, audioDeckel: 2.6667 }] : [] });
     const sitz = { folge: [..."12121212"], griffe: Array.from({ length: GRIFFE }, (_, i) => ({ ms: 40 + i, u: i < 4 })), bleibt: [12, 12] };
-    const seiten = Object.fromEntries(STUDIOS.map((id) => [id, { ...sitz, ...(id === "klang" ? ort(0.2) : wahr(9000, 9120)) }]));
+    const seiten = Object.fromEntries(STUDIOS.map((id) => [id, { ...sitz, ...(id === "klang" ? ort(0.2) : wahr(9000, 9120, 0, 62000, { werkWelt: WERK_RATSCHE[id] ? 3 : 2 })) }]));
     const mit = (id, o) => ({ [id]: { ...seiten[id], ...o } });
     const gangFaelle = [
         ["H6 die garage lädt r128 aus der terrain-Familie", { garage: [r128, "/worlds/terrain/lib/OrbitControls.js"] }, /^H6 garage: die Seite lädt eine fremde Engine \(\/worlds\/terrain\/lib\/three-r128/],
@@ -347,6 +360,10 @@ function selbsttest() {
         ["H7 der Neubau der fachwerk braucht 1,5 s (auf der Karte)", {}, /^H7 fachwerk: p95 Neubau 1500 ms > 1000/, mit("fachwerk", { griffe: sitz.griffe.map((g) => ({ ...g, ms: g.u ? 9 : 1500 })) }), { zeit: true }],
         ["H7 das Neuladen der klang verliert einen Regler (die Hülle ohne Speicher)", {}, /^H7 klang: das Neuladen verliert die Sitzung \(11\/12\)/, mit("klang", { bleibt: [11, 12] })],
         ["H3 A der schmiede zeigt den Zug statt der Öffnung", {}, /^H3 schmiede: A wirkt nicht/, mit("schmiede", { folge: [..."12121222"] })],
+        // H10 (studios.K4): die Parzelle und der Flügel in der Wurzel der fachwerk, die Schnitt-Karte in der Wurzel der schmiede (vor w16-studio-welt)
+        ["H10 die Schnitt-Karte in der schmiede", {}, /^H8 schmiede: L0 die Wurzel der Bühne 0.43 m/, mit("schmiede", wahr(9000, 9000, 0, 62000, { werkBuehne: 0.43, werkWelt: 0.24 }))],
+        ["H10 die garage misst ihr Werk nicht", {}, /^H10 garage: kein Maß/, mit("garage", wahr(9000, 9000, 0, 62000, { werkWelt: undefined }))],
+        ["H10 die Ratsche des terrain zieht an", {}, /^H10 terrain: .* die Ratsche zieht an/, mit("terrain", wahr(9000, 9000, 0, 62000, { werkWelt: 2 }))],
     ];
     const gangBasis = pruefeGang(netz, seiten);
     if (gangBasis.length) console.log("❌ SELBST-TEST Gang Ausgangslage: " + gangBasis[0]);
