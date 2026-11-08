@@ -36,7 +36,7 @@
 const {
     statikServer,
     warteAufWelt,
-    nullWelt,
+    nullSeite,
     pruefer,
     wandEnde,
     fehlerText,
@@ -47,11 +47,12 @@ const server = statikServer();
 const { errs, check } = pruefer();
 
 (async () => {
-    const { browser, page } = await nullWelt(server, { frist: 300000 }, 120000, "index.html", "networkidle0"); // GPU-frei ⇒ der Proxy-Pfad ist die Wahrheit
+    await server.lausche(0);
+    const { browser, page } = await nullSeite({ frist: 300000 }); // GPU-frei ⇒ der Proxy-Pfad ist die Wahrheit
     page.setDefaultTimeout(280000);
     let out = null;
     try {
-        await warteAufWelt(page, 120000);
+        await warteAufWelt(page, 120000, server);
         out = await page.evaluate(async () => {
             const res = {};
             // dieselbe Quelle-Prüfung für Echt-Lauf UND Selbst-Test (EINE Linse):

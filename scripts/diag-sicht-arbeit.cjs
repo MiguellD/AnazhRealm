@@ -36,7 +36,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 
-const { statikServer, warteAufWelt, taeterFaelle, selbsttestEnde, nullWelt, wandEnde, SELBSTTEST, jsonKlon, fehlerText, seiteZu } = require("./lib/welt-boot.cjs");
+const { statikServer, warteAufWelt, taeterFaelle, selbsttestEnde, nullSeite, wandEnde, SELBSTTEST, jsonKlon, fehlerText, seiteZu } = require("./lib/welt-boot.cjs");
 const SICHT = require("./lib/sicht-linse.cjs");
 
 function urteil(b) {
@@ -770,11 +770,12 @@ const server = statikServer();
 
 (async () => {
     console.log("=== SICHT-ARBEIT (Welle C) — Null-Renderer, Mess-Wiese, die Sicht-Linse je Frame ===");
-    const { browser, page } = await nullWelt(server, { frist: 600000 }, 120000, "index.html", "networkidle0");
+    await server.lausche(0);
+    const { browser, page } = await nullSeite({ frist: 600000 });
     page.setDefaultTimeout(580000);
     let befund = null;
     try {
-        await warteAufWelt(page, 120000);
+        await warteAufWelt(page, 120000, server);
         await page.evaluate(SICHT.SICHT_INSTALL);
         befund = await page.evaluate(async (MESS) => {
             const r = window.anazhRealm,

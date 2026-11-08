@@ -210,7 +210,7 @@ function selbsttest() {
     selbsttestEnde(fehler);
 }
 
-const { statikServer, warteAufWelt, nullSeite, pngDatei, SELBSTTEST, rahmen, fehlerText, seiteZu } = require("./lib/welt-boot.cjs");
+const { statikServer, warteAufWelt, nullWelt, pngDatei, SELBSTTEST, rahmen, fehlerText, seiteZu } = require("./lib/welt-boot.cjs");
 
 if (SELBSTTEST) {
     console.log("=== KOLLISION = BILD — Selbsttest (ohne Browser) ===");
@@ -225,10 +225,6 @@ const PORT = Number(process.env.KOLLISION_BILD_PORT) || 4631;
 // `[linse-gpu] <Hersteller>/…`), ohne Null-Renderer, das Beweisbild aus dem Ausgabe-Pfad — physik.K2 Staffel 2 auf beiden Geräten
 const BILD = process.argv.includes("--bild");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
-const bildSeite = async (o) => {
-    const browser = await require("./lib/welt-boot.cjs").starteBrowser({ art: BILD ? "linse" : "null", viewport: { width: 640, height: 360 }, ...o });
-    return { browser, page: await browser.newPage() };
-};
 const server = statikServer();
 // DIE GEOMETRIE, eigen (nie der Löser, den sie richtet; in der Seite global): eine Box im eigenen Rahmen (`rahmen`, welt-boot),
 // ein Punkt (u, w) längs ihrer Achsen
@@ -752,12 +748,11 @@ async function tempo(K) {
 
 (async () => {
     console.log(`=== KOLLISION = BILD — ${BILD ? "die Karte zeichnet" : "Null-Renderer"}, Mess-Wiese 150 m ===`);
-    await server.lausche(PORT);
-    const { browser, page } = await (BILD ? bildSeite : nullSeite)({ frist: BILD ? 36e5 : 9e5 });
+    const bild = BILD ? { bild: true, art: "linse", viewport: { width: 640, height: 360 }, frist: 36e5 } : { frist: 9e5 };
+    const { browser, page } = await nullWelt(server, { port: PORT, ...bild }, 120000, BILD && require("./lib/software-gpu.cjs").linsenGpu() === "software" ? "index.html?holz=kienspan" : undefined); // prettier-ignore
     page.setDefaultTimeout(BILD ? 36e5 : 88e4);
     let befund = null;
     try {
-        await server.zeige(page, 120000, BILD && require("./lib/software-gpu.cjs").linsenGpu() === "software" ? "index.html?holz=kienspan" : undefined);
         await warteAufWelt(page, 180000);
         // die Welt zeichnet: der Renderer steht, die Aufnahme ist eingebaut, der eigene Loop der Seite ruht (die Probe taktet)
         if (BILD) await page.evaluate(AUSGABE_INSTALL + ";__weltDa((r) => r.state.rendererReady).then((r) => r.state.renderer.setAnimationLoop(null))");

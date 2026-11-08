@@ -33,7 +33,7 @@
 // Exit: 0 grün · 1 rot.
 // ============================================================================
 "use strict";
-const { ausDatei, SELBSTTEST, stammLib, vm, jsonLesen } = require("./lib/welt-boot.cjs");
+const { ausDatei, SELBSTTEST, stammLib, vm, jsonLesen, taeterFaelle, selbsttestEnde } = require("./lib/welt-boot.cjs");
 
 const PHYTO = ausDatei("phyto-core.js");
 const KERN = ausDatei("foundry-core.js");
@@ -77,22 +77,17 @@ function kartenFarbe(core) {
 // an der Tafel-Pose standen Laibe (Radeon, main 03300ec8: strauch 0,4023, birke 0,3293).
 const KANTE_SOLL = jsonLesen("spec/abnahme/soll-tafel.json").klassen.find((k) => k.id === "laub-kante").soll.eigenschaften[0].band[1];
 // DIE DECKUNG AM SCHIRM (w24-strauch-saum): die Welt liest die Stufen 1–3 bilinear, mischt je zwei (trilinear, der Anteil t der
-// gröberen) und verwirft an der Schwelle der Karte (a ≤ s) — der Anteil, der besteht, je 4 × 4 Proben eines Texels. Bei 0,34 dehnte
-// der Filter jeden Rand des Saums und vereinte die Muster zweier Stufen: die Scheibe deckte 1,15–1,30 ihrer Stufe 0, die Wiese
-// stand dunkler (Koordinator 08.11., bild:wiese@0.5 Kronen-Mitte 48,7 → 45,5)
-function schirmDeckung(st, s) {
-    const A = st.map((q) => ({ w: q.w, h: q.h, a: q.data.filter((x, i) => i % 4 === 3) }));
-    const bil = (L, u, v, x = u * L.w - 0.5, y = v * L.h - 0.5, i = Math.floor(x), j = Math.floor(y)) => {
-        const g = (a, b) => (a < 0 || b < 0 || a >= L.w || b >= L.h ? 0 : L.a[b * L.w + a] / 255);
-        return (g(i, j) * (1 - x + i) + g(i + 1, j) * (x - i)) * (1 - y + j) + (g(i, j + 1) * (1 - x + i) + g(i + 1, j + 1) * (x - i)) * (y - j);
-    };
-    let [n, m] = [0, 0];
+// gröberen, t in Achteln ohne ½) und verwirft an der Schwelle der Karte (a ≤ s) — der Anteil, der besteht, je 4 × 4 Proben eines
+// Texels (der Rand der Scheibe ist leer: ein Abgriff außerhalb liest 0). Bei 0,34 dehnte der Filter jeden Rand des Saums und
+// vereinte die Muster zweier Stufen: die Scheibe deckte 1,20 ihrer Stufe 0, die Wiese stand dunkler (Koordinator 08.11.,
+// bild:wiese@0.5 Kronen-Mitte 48,7 → 45,5)
+function schirmDeckung(st, s, n = 0, m = 0) {
     for (let k = 1; k <= 3; k++)
-        for (let y = 0; y < A[k].h * 4; y++)
-            for (let x = 0; x < A[k].w * 4; x++) {
-                const [u, v] = [(x + 0.5) / (A[k].w * 4), (y + 0.5) / (A[k].h * 4)];
-                const [b0, b1] = [bil(A[k], u, v), bil(A[k + 1], u, v)];
-                for (const t of [0, 0.125, 0.25, 0.375, 0.625, 0.75, 0.875]) (n++, (m += (1 - t) * b0 + t * b1 > s ? 1 : 0));
+        for (let y = 0.125; y < st[k].h; y += 0.25)
+            for (let x = 0.125; x < st[k].w; x += 0.25) {
+                const [b0, b1] = [1, 0.5].map((f, j, _, q = st[k + j], u = x * f - 0.5, v = y * f - 0.5, i = Math.floor(u), h = Math.floor(v)) =>
+                    [0, 1, 2, 3].reduce((z, e) => z + (q.data[((h + (e >> 1)) * q.w + i + (e & 1)) * 4 + 3] / 255 || 0) * Math.abs(1 - (e & 1) - u + i) * Math.abs(1 - (e >> 1) - v + h), 0));
+                for (let t = 0; t < 1; t += 0.125) if (t !== 0.5) (n++, (m += b0 + t * (b1 - b0) > s));
             }
     return m / n;
 }
@@ -210,11 +205,12 @@ function pruefe(o = {}) {
 
 function main() {
     if (SELBSTTEST) {
-        const echt = pruefe();
         // der Codec gebrochen als Hülle: Stufe 0 ungekodiert (linear), Stufe 1 aus den sRGB-Bytes gemittelt
         const codec = (bruch) => { const c = Object.assign({}, codecAus()); const m0 = c.impostorMips; c.impostorMips = (lin, ...a) => bruch(m0(lin, ...a), lin); return c; };
-        // [Name, Muster, Bruch]
+        const gesetz = (o, c = codecAus()) => (Object.assign(c.KARTEN_GESETZ, o), c);
+        // [Name, Muster, Bruch] — zuerst die echte Quelle (grün)
         const brueche = [
+            ["die echte Quelle", null, {}],
             ["Farn mit roher Palette", /farn \(emitFern\): new THREE\.Color/, { kern: KERN.replace("c1 = vegFarbe(P.farbe),", "c1 = new THREE.Color(P.farbe),") }],
             ["Schilf mit rohem Hex", /schilf \(emitSchilf\): Hex-Palette/, { kern: KERN.replace("vegFarbe(0x46602a)", "(0x46602a)") }],
             ["Boden-Zeile ohne Preset", /placement\.boden\.geist: kein Preset/, { daten: (d) => (d.cfg.placement.boden.geist = { ring: "nah", dichte: 1, skala: [1, 1] }) }],
@@ -224,23 +220,15 @@ function main() {
                 { src: (t) => stammLib.ersetze(t, "_kistenPool", "new THREE.MeshStandardNodeMaterial({ color: 0xffffff, roughness: 1, metalness: 0 })", "new THREE.MeshLambertMaterial({ color: 0xffffff })") },
             ],
             ["Karte ohne Kodierung", /Karten-Kodierung weicht/, { core: codec((m, lin) => (m.stufen[0].data.set(lin), m)) }],
-            ["Saum stumm", /der Umriss folgt nicht der Art/, { core: ((c) => ((c.KARTEN_GESETZ.saum = 0), c))(codecAus()) }],
+            ["Saum stumm", /der Umriss folgt nicht der Art/, { core: gesetz({ saum: 0 }) }],
             ["Ausdünnen in der Ferne", /die Karte dünnt aus/, { core: codec((m) => (m.stufen.slice(3).forEach((s) => s.data.fill(0)), m)) }],
             ["Nadel als Laub", /Laub und Nadel vertauscht/, { core: ((c, f = c.karteSaumRinge) => Object.assign(c, { karteSaumRinge: (...a) => ({ ...f(...a), nadel: false }) }))(codecAus()) }],
             ["Ring −20° ohne Saum", /Ring -20° ohne Saum/, { core: ((c, f = c.karteSaumRinge) => Object.assign(c, { karteSaumRinge: (...a) => ((a = f(...a)), (a.ringe[0].seite = 0), a) }))(codecAus()) }],
-            ["Saum im Maß eines Texels (w23)", /franst nicht im Maß des Schirms/, { core: ((c) => (Object.assign(c.KARTEN_GESETZ, { saumWeite: 1, saumZelle: 6 }), c))(codecAus()) }],
-            ["Schwelle 0,34 (bis w24)", /deckt am Schirm 1\.\d+ ihrer Stufe 0/, { core: ((c) => ((c.KARTEN_GESETZ.schwelle = 0.34), c))(codecAus()) }],
+            ["Saum im Maß eines Texels (w23)", /franst nicht im Maß des Schirms/, { core: gesetz({ saumWeite: 1, saumZelle: 6 }) }],
+            ["Schwelle 0,34 (bis w24)", /deckt am Schirm 1\.\d+ ihrer Stufe 0/, { core: gesetz({ schwelle: 0.34 }) }],
             ["Mip-Stufe roh gemittelt", /linear gemittelt/, { core: codec((m) => { const [a, b] = m.stufen; for (let o = 0; o < b.data.length / 4; o++) { const x = o % b.width, y = (o / b.width) | 0, w = a.width; b.data[o * 4] = Math.round((a.data[(2 * y * w + 2 * x) * 4] + a.data[(2 * y * w + 2 * x + 1) * 4] + a.data[((2 * y + 1) * w + 2 * x) * 4] + a.data[((2 * y + 1) * w + 2 * x + 1) * 4]) / 4); } return m; }) }],
         ];
-        let ok = Array.isArray(echt.fehler) && echt.fehler.length === 0;
-        console.log(`${ok ? "✅" : "❌"} SELBST-TEST: die echte Quelle ist grün${ok ? "" : " — " + echt.fehler.join(" · ")}`);
-        for (const [name, muster, bruch] of brueche) {
-            const r = pruefe(bruch);
-            const feuert = r.fehler.some((f) => muster.test(f));
-            console.log(`${feuert ? "✅" : "❌"} SELBST-TEST: „${name}" → die Linse nennt ihn${r.fehler.length ? " — " + r.fehler[0] : ""}`);
-            ok = ok && feuert;
-        }
-        process.exit(ok ? 0 : 1);
+        return selbsttestEnde(taeterFaelle(brueche.map(([name, muss, z]) => ({ name, z, muss })), (o) => pruefe(o).fehler));
     }
     const r = pruefe();
     if (r.fehler.length) {

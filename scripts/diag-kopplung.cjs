@@ -13,16 +13,17 @@
 // ihren SELBST-TEST: der Fix am Gesetz abgeschaltet (SLIDE_CLIP_PLANES 0, Hang-Grenze −1) MUSS rot sehen.
 // Exit 1 bei jedem Fail.
 // ─────────────────────────────────────────────────────────────────────────
-const { statikServer, warteAufWelt, hauptLauf, nullWelt } = require("./lib/welt-boot.cjs");
+const { statikServer, warteAufWelt, hauptLauf, nullSeite } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.KOPPLUNG_PORT || 4407);
 const server = statikServer();
 
 hauptLauf(async () => {
-    const { browser, page } = await nullWelt(server, { port: PORT, frist: 300000 }, 120000, "index.html", "networkidle0");
+    await server.lausche(PORT);
+    const { browser, page } = await nullSeite({ frist: 300000 });
     let out = null;
     try {
-        await warteAufWelt(page, 120000);
+        await warteAufWelt(page, 120000, server);
         out = await page.evaluate(() => {
             const AR = AnazhRealm;
             const o = { fails: [], zahlen: {} };

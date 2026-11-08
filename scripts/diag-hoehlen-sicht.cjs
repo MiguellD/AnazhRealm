@@ -614,7 +614,7 @@ function selbsttest() {
     selbsttestEnde(fehler);
 }
 
-const { statikServer, warteAufWelt, nullWelt, wandEnde, path, SELBSTTEST, fehlerText, seiteZu } = require("./lib/welt-boot.cjs");
+const { statikServer, warteAufWelt, nullSeite, wandEnde, path, SELBSTTEST, fehlerText, seiteZu } = require("./lib/welt-boot.cjs");
 
 if (SELBSTTEST) {
     console.log("=== HÖHLEN-SICHT — Selbsttest (ohne Browser) ===");
@@ -632,11 +632,13 @@ const server = statikServer();
 
 (async () => {
     console.log("=== HÖHLEN-SICHT (Welle 7) — Null-Renderer, Mess-Wiese, Strahl-Wahrheit gegen den Boden-Satz ===");
-    const { browser, page } = await nullWelt(server, { frist: 600000, vor: installHoehlenStrahl }, 120000, "index.html", "networkidle0");
+    await server.lausche(0);
+    const { browser, page } = await nullSeite({ frist: 600000 });
     page.setDefaultTimeout(580000);
+    await page.evaluateOnNewDocument(installHoehlenStrahl);
     let befund = null;
     try {
-        await warteAufWelt(page, 120000);
+        await warteAufWelt(page, 120000, server);
         befund = await page.evaluate(async (ORTE) => {
             const MESS = ORTE.mess;
             let HINAUS = null;
