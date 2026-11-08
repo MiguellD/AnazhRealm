@@ -596,8 +596,8 @@ class AnazhRealm_stoff_karte {
     // backte, trägt die Platte der Schale (`_karteWeltBacken`, pipeline.K4 Stufe 2). Der Welt-Renderer (r184) zeichnet die L1-Gestalt, die die Welt ohnehin trägt — dieselben
     // Geometrien, dieselben Stoffe — in V Ansichten (die Gestalt gegengedreht, gleiche Zellen, gleicher Rahmen
     // `impostorFrame`); über MRT schreibt der Stoff seine Albedo (`diffuseColor`: vor jedem Licht, ohne Tonkurve), seine
-    // Normale (Sicht-Raum der Bake-Kamera) und die Sonnen-Sicht seiner Krone. Je Takt EIN Budget-Fenster (`KARTE_WELT_MS`),
-    // die nächste Karte zuerst; eine Zelle, deren L1 noch reist oder deren Programme noch kompilieren, wartet — die anderen
+    // Normale (Sicht-Raum der Bake-Kamera) und die Sonnen-Sicht seiner Krone. Je Takt bis zur EINEN Frist der Bau-Arbeit
+    // (`_bauFrist`, w16-haenger; mindestens eine Ansicht), die nächste Karte zuerst; eine Zelle, deren L1 noch reist oder deren Programme noch kompilieren, wartet — die anderen
     // backen weiter.
     _tickKarteWelt(at) {
         const st = this.state;
@@ -636,30 +636,37 @@ class AnazhRealm_stoff_karte {
         q.sort((a, b) => d2(a) - d2(b));
         // die halbe Karte zuerst
         if (at.offen && q.includes(at.offen.z.key)) q.unshift(...q.splice(q.indexOf(at.offen.z.key), 1));
-        const t0 = performance.now();
         let n = 0;
+        const frist = this._bauFrist("karte"); // vor der Arbeit gefragt
         const gezeichnet = () => (this._karteBuehneSatz && this._karteBuehneSatz.versuchN) || 0; // je Bühnen-Zeichnung +1
-        const v0 = gezeichnet();
+        // DIE LEINE FRAGT JEDE KARTE BEI IHREM BEGINN, AUCH IM SELBEN TAKT (w19-gang-hitch, Nacharbeit): was eine Karte zeichnete,
+        // bindet sich sofort an (`_gpuLeineBinden`), und die nächste beginnt nur an loser Leine — die Frist misst CPU-Zeit, die
+        // Leine die Schlange der GPU. Bis hier fragte nur der Anfang des Takts: im ruhenden Loop (Frist ohne Ende) begann EIN Takt
+        // jede Karte der Schlange am Stück und legte Minuten swiftshader-Arbeit in die Schlange (CI z289 · z292 · z293, umstellen an
+        // die Mess-Wiese: die Leine blieb gespannt, das Panorama und die letzten Karten zeichneten nie, das Weltbild fehlte, und die
+        // 90 Würfe außer Blick warteten — „Wald offen 90"); auf main verdeckte das Budget KARTE_WELT_MS (ein Ring je Takt) die Lücke.
+        let v = gezeichnet();
+        const binden = () => gezeichnet() !== v && (this._gpuLeineBinden(), (v = gezeichnet()));
         for (let i = 0; i < q.length;) {
             const z = at.zellen.get(q[i]);
             if (!z || z.gescheitert || (z.gebacken && !z._weltNeu)) {
                 q.splice(i, 1);
                 continue;
             }
-            if (nurHalbe && !(at.offen && at.offen.z === z)) break; // an gespannter Leine nur die begonnene Karte
+            if (!(at.offen && at.offen.z === z) && this._gpuLeineStraff()) break; // an gespannter Leine nur die begonnene Karte
             const e = this._karteWeltBacken(at, z);
+            binden();
             // null: die L1 reist, ein Bürger der Bühne wartet auf seine Pipeline oder die Bühne trägt eine halbe Karte;
             // 0: ein Ring steht — im Budget backt derselbe Takt den nächsten
             if (e === null || e === 0) {
                 if (e === null) i++;
-                if (performance.now() - t0 > AnazhRealm.KARTE_WELT_MS) break;
+                if (performance.now() >= frist) break;
                 continue;
             }
             q.splice(i, 1);
             n++;
-            if (performance.now() - t0 > AnazhRealm.KARTE_WELT_MS) break;
+            if (performance.now() >= frist) break;
         }
-        if (gezeichnet() !== v0) this._gpuLeineBinden();
         return n;
     }
 
@@ -842,7 +849,9 @@ class AnazhRealm_stoff_karte {
         return B;
     }
 
-    // Eine Karte im Welt-Renderer backen, JE AUFRUF EIN HEBUNGS-RING (lod.K3): null = die Platte antwortet noch, die L1 reist
+    // Eine Karte im Welt-Renderer backen, JE AUFRUF EIN STÜCK EINES HEBUNGS-RINGS (lod.K3; in Ansichten bis zur EINEN Frist der
+    // Bau-Arbeit `_bauFrist`, w16-haenger — bis hier zeichnete ein Aufruf den ganzen Ring am Stück, Sonnen-Kacheln, Leere und V
+    // Ansichten: headless Erst-Boot 138–170 ms in EINEM Takt; `at.offen.v` ist die nächste Ansicht): null = die Platte antwortet noch, die L1 reist
     // (bestellt), ihre Programme kompilieren oder die Bühne trägt die halbe Karte einer anderen Zelle (`at.offen`), false =
     // gescheitert, 0 = ein Ring steht, die Karte noch nicht (der nächste Aufruf backt den nächsten), true = gebacken (oder
     // von der Platte gelegt). Der erste Ring trägt die Sonnen-Kacheln — ein Schritt kostet so viel wie die Karte mit einem
@@ -910,6 +919,12 @@ class AnazhRealm_stoff_karte {
         // fiel die Bühne zwischen zwei Ringen (Ruhe, ein anderer Renderer), beginnt die Karte beim ersten
         if (at.offen && (at.offen.B !== B || !B.bereit)) at.offen = null;
         const iR = at.offen ? at.offen.r : 0; // der Ring dieses Schritts
+        // DIE SCHRITTE DES RINGS (w16-haenger): im ersten Ring je Richtung eine Sonnen-Kachel und die Leere (`kopf`), dann die V
+        // Ansichten — `v0` ist der erste Schritt dieses Aufrufs, `vBis` der des nächsten (der Ring steht, wenn er kopf + V ist)
+        const kopf = iR === 0 ? B.dirs.length + 1 : 0;
+        const v0 = at.offen ? at.offen.v | 0 : 0;
+        const frist = this._bauFrist("karte");
+        let vBis = kopf + at.V;
         const ringe = at.ringe.ringe;
         const ring = ringe[iR];
         const t0 = performance.now();
@@ -1033,49 +1048,57 @@ class AnazhRealm_stoff_karte {
                 this._schattenNormalBias(texel),
                 (-AnazhRealm.SCHATTEN_KASKADE.tiefeTexel * texel) / (L.far - L.near)
             );
-            for (let j = 0; iR === 0 && j < B.dirs.length; j++) {
-                const d = B.dirs[j];
-                L.position.copy(B.mitte).addScaledVector(d, R * 3);
-                if (Math.abs(d.y) > 0.99) L.up.set(1, 0, 0);
-                else L.up.set(0, 1, 0);
-                L.lookAt(B.mitte);
-                L.updateMatrixWorld(true);
-                L.updateProjectionMatrix();
-                B.uVP[j].value.multiplyMatrices(L.projectionMatrix, L.matrixWorldInverse);
-                B.schatten.viewport.set(j * K, 0, K, K);
-                rend.autoClear = j === 0;
-                rend.setRenderTarget(B.schatten);
-                this._buehneRender(rend, B.szene, L, "Karten-Sonne");
-            }
-            B.tiefe.value = B.schatten.depthTexture;
             // das Ziel der Karte: BC die Bühne (die Ablage legt sie in ihre Schicht), rgba8 ihre Schicht im Array-Ziel
             const schicht = bc ? 0 : z.idx;
-            if (iR === 0) {
-                // DIE LEERE (`B.leere`): gezeichnet über das ganze Ziel, der Pass leert nur die Tiefe
-                for (const t of B.ziel.textures) t.generateMipmaps = false;
-                B.ziel.viewport.set(0, 0, B.ziel.width, B.ziel.height);
-                rend.setMRT(B.leere.mrt);
-                rend.autoClear = true;
-                rend.autoClearColor = false;
-                rend.setRenderTarget(B.ziel, schicht);
-                this._buehneRender(rend, B.leere.szene, cam, "Karten-Leere");
-                rend.autoClearColor = vor.acf;
-                rend.setMRT(B.mrt);
-            }
-            for (let v = 0; v < V; v++) {
-                // Ansicht v des Rings = die Gestalt aus Peilung v·360/V unter seiner Hebung (Kamera fest, Gestalt
-                // gegengedreht) in ihrer Zelle; WebGPU zeichnet von oben — der Stoff liest gespiegelt
-                B.wurzel.rotation.y = -v * dreh;
-                B.wurzel.updateMatrixWorld(true);
-                B.uBaum.value.makeRotationY(v * dreh); // Welt → Baum
-                rend.autoClear = false; // die Schicht steht leer (die Leere des ersten Rings)
-                const zx = (v % tR) * bw,
-                    zy = ring.y + Math.floor(v / tR) * bh;
-                B.ziel.viewport.set(zx, zy, bw, bh);
-                // rgba8: die Mips nach der letzten Ansicht des letzten Rings (BC: die Ablage)
-                if (!bc) for (const t of B.ziel.textures) t.generateMipmaps = letzter && v === V - 1;
-                rend.setRenderTarget(B.ziel, schicht);
-                this._buehneRender(rend, B.szene, cam, "Karten-Bühne");
+            for (let s = v0; s < kopf + V; s++) {
+                const j = s,
+                    v = s - kopf;
+                if (j < kopf - 1) {
+                    // die Sonnen-Kachel j: die Krone aus Richtung j (Baum-Raum, Drehung 0), ihre Tiefe liest danach die Sicht
+                    const d = B.dirs[j];
+                    B.tiefe.value = B.leer.depthTexture;
+                    L.position.copy(B.mitte).addScaledVector(d, R * 3);
+                    if (Math.abs(d.y) > 0.99) L.up.set(1, 0, 0);
+                    else L.up.set(0, 1, 0);
+                    L.lookAt(B.mitte);
+                    L.updateMatrixWorld(true);
+                    L.updateProjectionMatrix();
+                    B.uVP[j].value.multiplyMatrices(L.projectionMatrix, L.matrixWorldInverse);
+                    B.schatten.viewport.set(j * K, 0, K, K);
+                    rend.autoClear = j === 0;
+                    rend.setRenderTarget(B.schatten);
+                    this._buehneRender(rend, B.szene, L, "Karten-Sonne");
+                } else if (v < 0) {
+                    // DIE LEERE (`B.leere`): gezeichnet über das ganze Ziel, der Pass leert nur die Tiefe
+                    for (const t of B.ziel.textures) t.generateMipmaps = false;
+                    B.ziel.viewport.set(0, 0, B.ziel.width, B.ziel.height);
+                    rend.setMRT(B.leere.mrt);
+                    rend.autoClear = true;
+                    rend.autoClearColor = false;
+                    rend.setRenderTarget(B.ziel, schicht);
+                    this._buehneRender(rend, B.leere.szene, cam, "Karten-Leere");
+                    rend.autoClearColor = vor.acf;
+                    rend.setMRT(B.mrt);
+                } else {
+                    // Ansicht v des Rings = die Gestalt aus Peilung v·360/V unter seiner Hebung (Kamera fest, Gestalt
+                    // gegengedreht) in ihrer Zelle; WebGPU zeichnet von oben — der Stoff liest gespiegelt
+                    B.tiefe.value = B.schatten.depthTexture;
+                    B.wurzel.rotation.y = -v * dreh;
+                    B.wurzel.updateMatrixWorld(true);
+                    B.uBaum.value.makeRotationY(v * dreh); // Welt → Baum
+                    rend.autoClear = false; // die Schicht steht leer (die Leere des ersten Rings)
+                    const zx = (v % tR) * bw,
+                        zy = ring.y + Math.floor(v / tR) * bh;
+                    B.ziel.viewport.set(zx, zy, bw, bh);
+                    // rgba8: die Mips nach der letzten Ansicht des letzten Rings (BC: die Ablage)
+                    if (!bc) for (const t of B.ziel.textures) t.generateMipmaps = letzter && v === V - 1;
+                    rend.setRenderTarget(B.ziel, schicht);
+                    this._buehneRender(rend, B.szene, cam, "Karten-Bühne");
+                }
+                if (s + 1 < kopf + V && performance.now() >= frist) {
+                    vBis = s + 1;
+                    break;
+                }
             }
             ganz = E.wartetN + E.verschoben === offen;
         } finally {
@@ -1098,8 +1121,9 @@ class AnazhRealm_stoff_karte {
         }
         const summe = at.offen ? at.offen.ms : 0;
         (at.schrittMs || (at.schrittMs = [])).push(+(performance.now() - t0).toFixed(2));
-        if (!letzter) {
-            at.offen = { z, B, r: iR + 1, ms: summe + performance.now() - t0 };
+        if (vBis < kopf + V || !letzter) {
+            const halb = vBis < kopf + V;
+            at.offen = { z, B, r: halb ? iR : iR + 1, v: halb ? vBis : 0, ms: summe + performance.now() - t0 };
             return 0;
         }
         at.offen = null;
@@ -1648,8 +1672,6 @@ AnazhRealm.KARTEN_ATLAS_SCHRITT = 2;
 // Dreiecke; 653 im Bild, Median 44 px hoch, 209 über 64 px, 53 über 128 px).
 AnazhRealm.KARTE_GITTER = Object.freeze({ zellen: Object.freeze([2, 2]), px: Object.freeze([64, 128]) });
 
-// Das Budget-Fenster der Welt-Karte je Takt (ms Haupt-Faden; die erste Karte eines Takts backt immer — Spike S1).
-AnazhRealm.KARTE_WELT_MS = 4;
 // Die Bühne gibt ihren Speicher frei, wenn die Schlange so lange leer ist (ms; `_karteBuehneRuhe`).
 AnazhRealm.KARTE_BUEHNE_RUHE_MS = 3000;
 // DIE SONNEN-SICHT DER KRONE (A7-Term, `_karteBuehne`): die Richtungen, aus denen die Bühne die Sicht misst, als (Höhe,

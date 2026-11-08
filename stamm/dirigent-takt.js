@@ -623,6 +623,31 @@ class AnazhRealm_dirigent_takt {
         }
         return o;
     }
+    // DIE AKTE DES OFFENEN (w19-gang-hitch, Nacharbeit): was die Welt offen hält, beim Namen seiner Schlange — der Wald je Schlange
+    // (Saat mit Probe und Flug, die Würfe samt denen außer dem ersten Blick), die Karten (Stand jeder Zelle der Schlange: gebacken,
+    // gescheitert, neu, die Frage an die Platte; die halbe Karte der Bühne), das Weltbild mit seinen Lücken und der Hunger jedes
+    // Bauers der Frist (`_bauFrist`: jetzt / längster). Leser: jede Wand, die auf das Wort wartet und es nicht bekommt (welt-boot
+    // `__weltStehtNach`, der Deckel) — bis hier nannte sie „Wald offen 116" (CI z289 · z292 · z293, an keinem Rechner sonst).
+    _weltOffenAkte() {
+        const [st, at] = [this.state, this._kartenAtlas];
+        const S = this._saatOffen ? [...this._saatOffen.values()] : [];
+        const P = st.pendingVegSpawns || [];
+        const zelle = (k, z = at && at.zellen.get(k)) =>
+            k +
+            ":" +
+            (z ? `${z.gebacken ? "g" : ""}${z.gescheitert ? "x" : ""}${z._weltNeu ? "n" : ""}p${z._platte}` : "?");
+        const o = at && at.offen;
+        const n = (x) => (x ? x.size | 0 || x.length | 0 : 0);
+        return (
+            `Wald: Saat ${S.length} [${S.slice(0, 4).map((c) => `${c.cx},${c.cz} i${c.i}${c.flug ? " flug" : ""}`)}] · Plan ` +
+            `${n(this._waldPlanSchlange)} · Pflanz-Warten ${n(this._waldPflanzWarten)} · Würfe ${P.length} (außer Blick ` +
+            `${P.filter((t) => t && !this._rangImErstenBlick(this._foundryAuftragD2(t.position))).length}) · Nachwuchs ` +
+            `${n(this._sukzessionNeu)} · Karten: ${(this._impostorBakeQueue || []).map((k) => zelle(k))} · halbe ` +
+            `${o ? `${o.z.key} r${o.r} v${o.v | 0}${o.frage ? " frage" : ""}` : "-"} · Leine ${this._gpuLeineStraff()} · Weltbild ` +
+            `${st._weltbildDa ? "da" : `fehlt: ${this._weltbildFehlt()}`} · Lade-Takt ${this._ladeTakt()} · Frist ` +
+            `${this._bauFristOhneEnde() ? "ohne Ende" : "im Takt"} · Hunger ${[...(this._bauHunger || [])].map(([k, h]) => `${k} ${h.hunger}/${h.satt}`)}`
+        );
+    }
     _weltSteht() {
         const W = this._weltStand;
         if (!W || W.ruhe < AnazhRealm.WELT_STEHT_TAKTE) return false;
@@ -1651,6 +1676,10 @@ class AnazhRealm_dirigent_takt {
                 else if (lade || this._schedFrameNo % 4 === 0) ms = AnazhRealm.FRAME_SCHED_DEKO_FLOOR_MS;
                 else continue;
             }
+            // DIE EINE FRIST DER BAU-ARBEIT (`_bauFrist`, w19-gang-hitch): kein Job baut über sie hinaus — ihr Rest ist sein Budget,
+            // jeder geht mindestens ein Stück (Wasser, Saat, Streu und Wiese prüfen erst nach dem ersten). Bis hier trug jeder sein
+            // eigenes Fenster neben dem Strom (Wasser bis 22 ms, Saat 4, Streu 6 je Takt).
+            if (!sacred) ms = Math.min(ms, Math.max(0, this._bauFrist(job.name) - performance.now()));
             try {
                 job.run(sacred ? Infinity : ms);
                 ran.push(job.name);
@@ -1713,15 +1742,24 @@ class AnazhRealm_dirigent_takt {
     // die zweite Hälfte der Frist der Zeichnung (`zeichnung`: der Knoten-Bau der Erst-Zeichnung) — die Leser des Takts arbeiten bis
     // zu ihrer Mitte. Bis hier trug der Bild-Takt LADE_TAKT_MS Arbeit UND je Render-Aufruf LADE_TAKT_MS Knoten-Bau (headless kalt
     // 5fb21e29: Aufgaben von 347–737 ms). Hielt die GPU-Leine das Bild einer offenen Bau-Schuld, trägt die Zeichnung ab ihrem
-    // ersten Schritt die gehaltene Zeit, höchstens LADE_TAKT_MS (`ladeGuthaben`, `_knotenRate`) — auch wenn die Leser die Frist
-    // schon verbrauchten: der Bau wartete auf die GPU, nie auf den Faden.
+    // ersten Schritt die gehaltene Zeit, höchstens LADE_TAKT_MS (`ladeGuthaben`, gelesen beim ersten Fragen der Zeichnung in der
+    // Aufgabe) — auch wenn die Leser die Frist schon verbrauchten: der Bau wartete auf die GPU, nie auf den Faden. Die Zeichnung
+    // fragt sie über die EINE Frist der Bau-Arbeit (`_bauFrist(„knoten“, true)` in `_knotenRate`).
     _ladeFrist(zeichnung = false) {
         if (!this._ladeTakt()) return -Infinity;
+        const jetzt = performance.now();
         if (this._ladeFristBis == null) {
-            this._ladeFristBis = performance.now() + AnazhRealm.LADE_TAKT_MS;
-            Promise.resolve().then(() => (this._ladeFristBis = null));
+            [this._ladeFristBis, this._ladeZeichnungBis] = [jetzt + AnazhRealm.LADE_TAKT_MS, null];
+            Promise.resolve().then(() => (this._ladeFristBis = this._ladeZeichnungBis = null));
         }
-        return this._ladeBildTakt && !zeichnung ? this._ladeFristBis - AnazhRealm.LADE_TAKT_MS / 2 : this._ladeFristBis;
+        if (!zeichnung) return this._ladeBildTakt ? this._ladeFristBis - AnazhRealm.LADE_TAKT_MS / 2 : this._ladeFristBis;
+        if (this._ladeZeichnungBis == null) {
+            const E = this._erstZeichnung;
+            const g = E ? Math.min(E.ladeGuthaben || 0, AnazhRealm.LADE_TAKT_MS) : 0;
+            if (E) E.ladeGuthaben = 0;
+            this._ladeZeichnungBis = Math.max(this._ladeFristBis, jetzt + g);
+        }
+        return this._ladeZeichnungBis;
     }
 
     // DIE KAPPE JE TAKT (K60-2, die EINE Stelle der Klasse): ein Leser des ersten Weltbilds mit eigener Kappe je Takt (`n`
@@ -1733,6 +1771,72 @@ class AnazhRealm_dirigent_takt {
     // Stück außer dem Bild der Ankunft (B-Blick, der Ring) — es bekommt nur die Kappe, die Frist gehört dem Bild.
     _kappeOffen(n, kappe, frist = true) {
         return n < kappe || (frist && performance.now() < this._ladeFrist());
+    }
+
+    // DIE EINE FRIST DER BAU-ARBEIT (w19-gang-hitch, profiband.K4 — die Idee von w16-haenger auf main): jede Bau-Arbeit des Takts,
+    // die in Raten geht, arbeitet je Aufgabe des Event-Loops (der Takt ist eine) bis zu EINER Frist — der Strom der Chunks
+    // (`_tickVoxelChunkStreaming`), jeder Job des Planers (`_dispatchFrameJobs`: Wasser, Saat und Wald, Streu und Wiese), die
+    // Pflanz-Schlange (`_pflanzGang`), die Hüllen (`_tickHuellenNach`), der Karten-Bake (`_tickKarteWelt`, in Ansichten), das
+    // Einhängen des Fern-Rings (`_fernRingEinhaengen`, in Punkten) und der Knoten-Bau (`_knotenRate`, auch zwischen zwei
+    // Fluss-Knoten); jeder Leser geht mindestens ein Stück (nie verhungert). Gestellt beim ersten Leser (BAU_FRIST_MS), gelöscht
+    // am Ende der Aufgabe (Mikro-Task), im Lade-Takt die Frist des Lade-Frames (K60: unter dem Ladeschirm greift keine Drossel),
+    // am Null-Renderer und im ruhenden Loop ohne Ende (wie `_deferrableBudgetMs`; eine Sonde, ein Befehl der Werkbank, das Portal
+    // bauen am Stück — die Frist gilt dem Takt, den der Spieler fühlt). Bis hier trug jeder Bauer seine eigene Uhr (Strom 5 ms,
+    // Wasser bis 22, Saat 4, Streu 6, Karte 4, Knoten 4, Stufen-Wechsel und das Einhängen keine): headless Genesis, Gehen und
+    // GT-Fahrt, `_runFrameScheduler` bis 46,6 · 71,5 ms in EINEM Takt, in 44 · 72 Takten über 15 ms.
+    // DIE ALTERUNG (w19-gang-hitch, Nacharbeit — der Zeitscheiben-Planer mit Aging, wie der Unix-Planer seine Wartenden hebt und
+    // Deficit Round Robin jeder Schlange ihr Quantum sichert): jeder Bauer fragt mit seinem NAMEN (`wer`) und trägt seinen HUNGER —
+    // die Takte in Folge, in denen er nur sein Pflicht-Stück bekam, weil die Leser vor ihm die Frist leerten. Ab BAU_ALTER_TAKTE hat
+    // der Hungrigste (der des letzten Takts, unter Gleichen der zuerst Gefragte) Vortritt: die Frist der Übrigen endet
+    // BAU_ALTER_MS früher, seine reicht so weit über sie hinaus — die Summe des Takts bleibt BAU_FRIST_MS, und reihum geht jeder.
+    // Bis hier war die Reihe des Takts das Gesetz: der Strom und die frühen Jobs leerten sie, und der Wald (`waldPlan`: 0 ms, die
+    // Saat EINE Probe von 100 je Takt), die Karte und das Laub nach ihnen gingen nur ihr Pflicht-Stück.
+    // UNTER DEM LADESCHIRM ist sie die Frist des Lade-Frames (`_ladeFrist`, K60-2) — für die Zeichnung (`zeichnung`: der Knoten-Bau
+    // der Erst-Zeichnung, `_knotenRate`) die ganze samt dem Guthaben der gehaltenen Leine, für jeden anderen Bauer im Bild-Takt
+    // ihre Hälfte. Bis hier (w19-ankunft-takt) trug der Knoten-Bau dafür eine zweite Uhr (`rateFrist`) neben dieser.
+    _bauFrist(wer, zeichnung = false) {
+        if (this._bauFristOhneEnde()) return Infinity;
+        const jetzt = performance.now();
+        const takt = this._taktZeit; // der Takt, dem der Hunger zählt (`_taktUhr`; eine Aufgabe außerhalb des Takts zählt zu seinem)
+        const H = this._bauHunger || (this._bauHunger = new Map());
+        let T = this._bauFristTakt;
+        if (!T) {
+            // die Frist dieser Aufgabe — und wer Vortritt hat: der Hungrigste, der im letzten oder diesem Takt fragte
+            T = this._bauFristTakt = { bis: jetzt + AnazhRealm.BAU_FRIST_MS, vortritt: null };
+            Promise.resolve().then(() => (this._bauFristTakt = null));
+            const R = this._bauTaktReihe || (this._bauTaktReihe = { jetzt: undefined, vor: undefined });
+            if (R.jetzt !== takt) [R.vor, R.jetzt] = [R.jetzt, takt];
+            let satt = AnazhRealm.BAU_ALTER_TAKTE - 1;
+            for (const [name, h] of H)
+                if ((h.takt === takt || h.takt === R.vor) && h.hunger > satt) [satt, T.vortritt] = [h.hunger, name];
+            if (T.vortritt) T.bis -= AnazhRealm.BAU_ALTER_MS;
+        }
+        let h = H.get(wer);
+        if (!h) {
+            if (typeof wer !== "string")
+                this._bruchMelden("BAU-FRIST: ein Bauer fragt ohne Namen — sein Hunger hätte keinen Vortritt");
+            H.set(wer, (h = { hunger: 0, takt: -1, satt: 0, aufgabe: null, bis: 0 }));
+        }
+        if (h.aufgabe !== T) {
+            h.aufgabe = T;
+            // seine Frist: mit Vortritt reicht sie BAU_ALTER_MS über die der Übrigen, im Lade-Takt die des Lade-Frames (K60)
+            h.bis = Math.max(
+                wer === T.vortritt ? Math.max(T.bis, jetzt) + AnazhRealm.BAU_ALTER_MS : T.bis,
+                this._ladeFrist(zeichnung)
+            );
+            // der Hunger zählt je Takt EINMAL: wer beim ersten Fragen nichts mehr bekommt, wartet einen Takt länger
+            if (h.takt !== takt) {
+                h.takt = takt;
+                h.hunger = jetzt < h.bis ? 0 : h.hunger + 1;
+                if (h.hunger > h.satt) h.satt = h.hunger; // der längste Hunger seit dem Start (die Linse liest ihn)
+            }
+        }
+        return h.bis;
+    }
+    // OHNE ENDE baut, was kein Spieler fühlt: der Null-Renderer und der ruhende Loop (eine Sonde, ein Befehl der Werkbank, das Portal)
+    _bauFristOhneEnde() {
+        const r = this.state.renderer;
+        return !!(r && r._isHeadlessNull) || this._loopRuht();
     }
 
     // Deferrable-Job-Registry (die Prioritäts-Ordnung als Daten). Terrain vor Deko: der Stream-Job (prio 0) setzt
@@ -2278,6 +2382,12 @@ AnazhRealm.PFLANZ_BURST_CAP = 8;
 // Das Budget eines Lade-Frames (ms, `_ladeTakt`): unter dem Ladeschirm trägt jeder Frame so viel aufschiebbare Arbeit
 // (Streu, Gras, Wasser), dass der Boot mit der Arbeit läuft, nicht mit der Frame-Rate.
 AnazhRealm.LADE_TAKT_MS = 100;
+// DIE EINE FRIST DER BAU-ARBEIT je Takt (ms, `_bauFrist`): so lange bauen alle Bauer des Takts zusammen, jeder mindestens ein Stück.
+AnazhRealm.BAU_FRIST_MS = 6;
+// DIE ALTERUNG (`_bauFrist`): nach so vielen Takten nur mit dem Pflicht-Stück hat ein Bauer Vortritt, und so viele ms der Frist
+// gehören dann ihm (die Übrigen enden um sie früher)
+AnazhRealm.BAU_ALTER_TAKTE = 2;
+AnazhRealm.BAU_ALTER_MS = 3;
 // Der Abstand der Bilder unter dem Ladeschirm (ms, `_ladeBildFaellig`): dazwischen schickt der Lade-Takt nichts an die GPU.
 AnazhRealm.LADE_BILD_MS = 500;
 AnazhRealm.TAKT_DECKEL_S = 0.1;

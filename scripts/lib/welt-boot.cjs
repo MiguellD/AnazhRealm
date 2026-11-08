@@ -318,7 +318,7 @@ function deckel(name, max, offen) {
         still = auf && jetzt === vor ? still + 1 : 0;
         vor = jetzt;
         if (still > 3600)
-            throw new Error(`DIE WELT HÄNGT: ${name} nach ${n} Takten — offen ${jetzt} ohne Bau-Ereignis`);
+            throw new Error(`DIE WELT HÄNGT: ${name} nach ${n} Takten — offen ${jetzt} ohne Bau-Ereignis · ${r._weltOffenAkte()}`);
         if ((offen === false || (!auf && !(offen && offen()))) && ++k > (max || 120))
             throw new Error(
                 `DER BAU STEHT NICHT: ${name} nach ${n} Takten — ${offen === false ? "die Linse zählte jeden Gang" : "die Welt hat nichts mehr offen"}${(r?._weltbildFehlt?.(true) || []).map((l) => ` · dem Weltbild fehlt: ${l}`).join("")}`
@@ -1245,7 +1245,8 @@ async function nullWelt(server, { port = 0, vor, da, ...opts }, ...zeige) {
     if (da) await s.page.evaluate((d) => __weltDa((0, eval)(d)), `${da}`);
     return s;
 }
-async function warteAufWelt(page, frist = 120000) {
+async function warteAufWelt(page, frist = 120000, server) {
+    if (server) await server.zeige(page, frist, "index.html", "networkidle0");
     await page.waitForFunction(() => r && typeof r._gameLoopTick === "function", {
         timeout: frist,
     });
