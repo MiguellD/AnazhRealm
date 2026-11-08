@@ -59,8 +59,11 @@ const GODRAY_MIN_PCT = 2;
 const WASSER_TOL = 4;
 const WASSER_RAUSCHEN = 1;
 const WASSER_TIEFE_MIN = 15;
-// (f) Der Saum auf ungerader Leinwand: so viele Kanten-Pixel links am Pfahl dürfen zwischen Abbild und r184s Tiefe
-// höchstens um mehr als 8 Luma abweichen (Rauschen), und so viele Kanten-Pixel braucht die Probe mindestens (sonst blind).
+// (f) Der Saum auf ungerader Leinwand: so viele Kanten-Pixel links am Pfahl dürfen mit dem Abbild höchstens um mehr als 8 Luma
+// HELLER stehen als mit r184s Tiefe (Rauschen), und so viele Kanten-Pixel braucht die Probe mindestens (sonst blind). Der Defekt
+// ist der helle Saum (das Wasser liest den nahen Pfahl, wird durchsichtig); DUNKLER ist das Gesetz des Abbilds — am getauchten Fuß
+// des schrägen Pfahls liest das Paar den fernen Grund, nie den Gegenstand: im Fenster des Spielers (1281×721, w23-pruef-welt) 3
+// von 51 Kanten-Pixeln 47–78 Luma dunkler, swiftshader und Radeon; 321×241 zeigte den Fuß nicht.
 const SAUM_MAX = 2;
 const SAUM_KANTEN_MIN = 10;
 // (h) Das Dunkel: die dunkle Fläche zeigt im Mittel mindestens DUNKEL_LUMA_MIN Luma, und die zwei Belichtungen desselben
@@ -418,6 +421,7 @@ function saumProbe(ort) {
         const aus = { leinwand: [W, H], gpuFehler };
         try {
             const a = await aufnahme();
+            r._spiegelPass(); // der Spiegel steht vor dem Tausch: er liest das Abbild und bräche an r184s Tiefe laut
             const knoten = r._szeneTiefeKnoten,
                 wert = r._szeneTiefeWert;
             r._szeneTiefeKnoten = T.TSL.viewportDepthTexture();
@@ -444,8 +448,8 @@ function saumProbe(ort) {
                         kanten++;
                         paritaet.add(x & 1);
                         const d = L(a, x, y) - L(b, x, y);
-                        dMax = Math.max(dMax, Math.abs(d));
-                        if (Math.abs(d) > 8) abweichend++;
+                        dMax = Math.max(dMax, d);
+                        if (d > 8) abweichend++;
                         break;
                     }
                 }
@@ -678,6 +682,7 @@ function buehne(nFrames, nachtLicht) {
             };
             const w = { umgehaengt: [] };
             w.abbild = await wasserFarbe();
+            r._spiegelPass(); // der Spiegel steht vor dem Tausch (wie im Saum, (f))
             const knoten = r._szeneTiefeKnoten,
                 wert = r._szeneTiefeWert;
             r._szeneTiefeKnoten = T.TSL.viewportDepthTexture();
