@@ -655,11 +655,7 @@ const kornSchwelle = () => 0.5;
 const KORN_MAX = 0.083;
 function kornReihe(mips, zBasis) {
     // `mips` je Stufe { width, height, data rgba8 }, 4 Zellen nebeneinander; `zBasis` = Zell-Breite der ersten Stufe.
-    const stufeA = (m, c, u, v) => {
-        let a = 0;
-        for (const [w, o] of bilinear(m, ((c + u) / 4) * m.width - 0.5, v * m.height - 0.5)) a += w * m.data[o + 3];
-        return a / 255;
-    };
+    const stufeA = (m, c, u, v) => biLuma(m, ((c + u) / 4) * m.width - 0.5, v * m.height - 0.5)[1]; // die Deckung aus dem EINEN Abtaster
     const versatz = Math.log2(PC.BLATT_ATLAS_ZELLE / zBasis);
     return (lambda) => {
         const N = Math.max(4, Math.round(PC.BLATT_ATLAS_ZELLE / 2 ** lambda));
