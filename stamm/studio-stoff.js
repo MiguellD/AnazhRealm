@@ -264,8 +264,8 @@ class AnazhRealm_studio_stoff {
             // Haut + Fell: Shader-Gesetze der Labs (koerperstudio matSkin: SSS-Fresnel-Saum · tetrapoda matFur:
             // Fell-Rim + Gold-Sheen + Spitzen-Rim/-Spec) reisen als DATEN (FELL_LOOK/HAUT_LOOK/HAAR_LOOK, Kern-
             // Zahlen = die EINZIGE Quelle) und werden hier als emissive-Additive gewoben (wie das Lab-GLSL).
-            // Strähnen-Achse: der Bäcker trägt sie als Farbverlauf (__streuGeo: Wurzel = Ton×0.12); die Luminanz-
-            // Ratio zum Ton-Anker (mp.color) gewinnt vStrandY zurück. Ohne Kern-LOOK/TSL-Symbole: byte-alt.
+            // Strähnen-Achse: die Strähne des Tiers trägt sie als Farbverlauf (Wurzel = Ton×0.12), die Luminanz-Ratio zum
+            // Ton-Anker (mp.color) gewinnt vStrandY zurück; das Haar des Menschen trägt sie als Rahmen (`aStraehne`, unten).
             mat.colorNode = TSL.vec4(vcol, 1.0);
             try {
                 const tkC = typeof globalThis !== "undefined" ? globalThis.__tetrapodaCore : null;
@@ -281,6 +281,53 @@ class AnazhRealm_studio_stoff {
                             ? tkC && tkC.FELL_LOOK && tkC.FELL_LOOK.koerper
                             : tkC && tkC.FELL_LOOK && tkC.FELL_LOOK.straehne;
                 if (L) {
+                    // DER RAHMEN DES HAARS (w25-haar-albedo): `aStraehne` [Achse, Quer, Länge, Samen] (koerper `haarAchse`, am Bau
+                    // `_haarAchse`); ein Teil ohne Rahmen (die Kappe der Grobstufe) trägt die Achse 0 und zeigt sich ganz
+                    const HS = kind === "hair" ? kkC && kkC.HAAR_STRICH : null;
+                    const lumW = TSL.vec3(0.2126, 0.7152, 0.0722);
+                    if (kind === "hair" && !(HS && Array.isArray(HS.aufloesung) && _tonA))
+                        throw this._stoffBruch("das Haar ohne koerper HAAR_STRICH.aufloesung oder ohne Ton-Anker");
+                    const rahmen = (f, ohne) =>
+                        TSL.Fn((b) =>
+                            b.geometry && b.geometry.hasAttribute("aStraehne")
+                                ? f(TSL.attribute("aStraehne", "vec4"))
+                                : ohne
+                        )();
+                    const haarT = HS ? rahmen((a) => a.x.div(a.z.max(1e-6)).clamp(0.0, 1.0), TSL.float(0)) : null;
+                    if (HS) {
+                        // DAS HAAR LÖST SICH AM SCHIRM AUF (koerper HAAR_STRICH.aufloesung, derselbe Satz wie die Locke des Fells):
+                        // die Breite des Bands in Szenen-Pixeln (quer läuft −1 → +1: 2 ÷ fwidth) blendet die eigenen Züge der
+                        // Strähne ein — ihren Ton (der Würfel von Strähne und Locke: Ton ÷ Ton-Anker ÷ Verlauf der Achse) und ihre
+                        // Rundung (die Normale ohne ihren Teil quer zur Strähne ist die der Kappe; quer = der Gradient von `quer`
+                        // in der Fläche, aus den Ableitungen von Lage und quer). Darunter trägt das Band den Ton des Haars und das
+                        // Licht der Kappe. Am Arm (Band ≥ 8 Pixel) unverändert; bis hier zeigte der Third ein Grieß aus Weiß und
+                        // Braun (headless 53b2fc7a strich 0,20).
+                        const zeigt = rahmen(
+                            (a) =>
+                                TSL.smoothstep(
+                                    HS.aufloesung[0],
+                                    HS.aufloesung[1],
+                                    TSL.float(2).div(TSL.fwidth(a.y).max(1e-6))
+                                ),
+                            TSL.float(1)
+                        );
+                        const wuerfel = vcolRoh
+                            .dot(lumW)
+                            .div(
+                                this._stoffWert(TSL, "userData.stoffWerte.tonL").mul(
+                                    TSL.mix(TSL.float(HS.wurzel), TSL.float(1), haarT)
+                                )
+                            )
+                            .max(1e-4);
+                        mat.colorNode = TSL.vec4(TSL.mix(vcol.div(wuerfel), vcol, zeigt), 1.0);
+                        const nGeo = TSL.normalViewGeometry.mul(TSL.faceDirection).normalize();
+                        const quer = rahmen((a) => a.y, TSL.float(0));
+                        const g = TSL.cross(TSL.dFdy(TSL.positionView), nGeo)
+                            .mul(TSL.dFdx(quer))
+                            .add(TSL.cross(nGeo, TSL.dFdx(TSL.positionView)).mul(TSL.dFdy(quer)));
+                        const v = g.div(g.length().max(1e-12));
+                        mat.normalNode = TSL.mix(nGeo.sub(v.mul(nGeo.dot(v))), nGeo, zeigt).normalize();
+                    }
                     const ndv = TSL.normalView.normalize().dot(TSL.positionViewDirection).clamp(-1.0, 1.0);
                     const rim = TSL.float(1.0).sub(ndv.abs()).clamp(0.0, 1.0);
                     let add = null;
@@ -379,12 +426,8 @@ class AnazhRealm_studio_stoff {
                         // der Grobstufe) trägt das Haar keinen Glanz der Spitze.
                         const sT = schale
                             ? TSL.mix(TSL.float(FS.mittel.t), aS.x, zeigt)
-                            : kind === "hair"
-                              ? TSL.Fn((b) => {
-                                    if (!(b.geometry && b.geometry.hasAttribute("aStraehne"))) return TSL.float(0);
-                                    const a = TSL.attribute("aStraehne", "vec4");
-                                    return a.x.div(a.z.max(1e-6)).clamp(0.0, 1.0);
-                                })()
+                            : haarT
+                              ? haarT
                               : tonL !== null
                                 ? vcolRoh
                                       .dot(TSL.vec3(0.2126, 0.7152, 0.0722))
@@ -421,8 +464,7 @@ class AnazhRealm_studio_stoff {
                         // 0,85: er ist fast nur diffus; Schatten, Himmel und Sonne stehen darin). Das Labor rechnet dasselbe
                         // (`laborStoff`). Bis hier leuchtete der Glanz als Emission: im Schatten des Walds stand das dunkelbraune
                         // Haar (Albedo 0,0117) weiß (Radeon 53b2fc7a, haar.K2#1 arm 0,6263).
-                        const lumW = TSL.vec3(0.2126, 0.7152, 0.0722);
-                        const licht = TSL.output.rgb.dot(lumW).div(vcol.dot(lumW).max(1e-4));
+                        const licht = TSL.output.rgb.dot(lumW).div(mat.colorNode.rgb.dot(lumW).max(1e-4));
                         mat.outputNode = TSL.vec4(TSL.output.rgb.add(add.mul(licht)), TSL.output.a);
                     } else if (add) mat.emissiveNode = add;
                     // Wrap-Licht des Lab-Fells: ·(0.5 + 0.5·max(NdotV,0)) NACH allen Additiven — die matFur-Ordnung

@@ -784,6 +784,11 @@
     //          Strähne unter einem Pixel, die Locke 3 Pixel breit · ton  die Melanin-Streuung je Strähne (±)
     //   wurzel der Ton der Wurzel (die Lage darüber verdeckt sie; `haarAchse` liest an ihm die Ecken des Bands) — die Albedo
     //          des Haars bleibt sein Ton, wo man es sieht (Keratin mit Melanin, die Zeile haar der Albedo-Tafel).
+    //   aufloesung  [von, bis] Szenen-Pixel Breite des Bands (w25-haar-albedo; derselbe Satz wie die Locke des Fells, tetrapoda
+    //          FELL_SCHALE.aufloesung): quer zu seiner Strähne zeigt das Haar nur, was der Schirm auflöst — ihren Ton (ton, locke)
+    //          und ihre Rundung (rund) blendet die Breite ein; darunter trägt das Band den Ton des Haars (Ton ÷ seinen Würfel) und
+    //          die Normale der Kappe. Die Mitte eines Bildpunkts träfe ein schmaleres Band nur zufällig: sein Ton und sein Licht
+    //          wären Rauschen (headless 53b2fc7a: der Third strich 0,20, das Haar ein Grieß aus Weiß und Braun).
     // Bis haar.K2 stand jede Strähne als Kreuz-Karte vom Kopf ab, die Wurzel bei 0,12 über die ganze Länge: das Bild zeigte das
     // Raster der Kappe statt Strähnen (Strich arm 0,28 / third 0,38 gegen die REF 0,44, Radeon 20d09a04), das Haar las dunkler als
     // Schwarz (Dunkelbraun: der Ton 0,0127, gerechnet über die Strähne im Mittel ≈ 0,006 — unter dem Band [0,01; 0,3]).
@@ -796,6 +801,7 @@
         locke: Object.freeze([48, 0.3]),
         ton: 0.2,
         wurzel: 0.85,
+        aufloesung: Object.freeze([0.5, 1]),
     });
     var HAAR_LOOK = Object.freeze({
         tipRimPow: 3,

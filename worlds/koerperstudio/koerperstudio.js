@@ -117,21 +117,27 @@ function laborStoff(m0,geo,skin,cache){
   m.skinning=skin;if(vc){m.vertexColors=true;m.color.setRGB(1,1,1);}
   if(haut||haar||webe){
     m.onBeforeCompile=function(sh){
-      // DIE ACHSE DES HAARS (w25-haar-albedo): der Rahmen der Strähne (koerper `haarAchse`, `aStraehne` aus stufeAnlegen) —
-      // Achse und Länge reisen als Varying, ihr Quotient ist der Anteil Wurzel → Spitze (die Welt liest dasselbe)
-      var ach=haar?'\nattribute vec4 aStraehne;\nvarying vec2 vAchse;':'',achV=haar?'\nvAchse=aStraehne.xz;':'';
+      // DER RAHMEN DES HAARS (w25-haar-albedo, wie die Welt `_foundryTreeMaterial`): `aStraehne` [Achse, Quer, Länge, Samen] aus
+      // stufeAnlegen (koerper `haarAchse`) reist als Varying — der Anteil Wurzel → Spitze (Achse ÷ Länge), und die Breite des Bands
+      // in Bildpunkten (2 ÷ fwidth(quer)) blendet nach HAAR_STRICH.aufloesung Ton und Rundung der Strähne ein: darunter trägt das
+      // Band den Ton des Haars (Ton ÷ seinen Würfel) und die Normale der Kappe (ohne ihren Teil quer zur Strähne)
+      var HS=KC.HAAR_STRICH,lumW='vec3(0.2126,0.7152,0.0722)';
+      var ach=haar?'\nattribute vec4 aStraehne;\nvarying vec3 vAchse;':'',achV=haar?'\nvAchse=aStraehne.xyz;':'';
       sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vGeo;'+ach).replace('#include <begin_vertex>','#include <begin_vertex>\nvGeo=position;'+achV);
-      var fk='varying vec3 vGeo;\n'+(haar?'varying vec2 vAchse;\n':'')+(webe?GLSL_RAUSCHEN:'');
+      var fk='varying vec3 vGeo;\n'+(haar?'varying vec3 vAchse;\n':'')+(webe?GLSL_RAUSCHEN:'');
       var farbe=webe?'\ndiffuseColor.rgb*=1.0+snoise(vGeo*'+gf(webe[0])+')*'+gf(webe[1])+';':'';
+      if(haar){var tonL=Math.max(1e-4,0.2126*m0.color.r+0.7152*m0.color.g+0.0722*m0.color.b);
+        farbe='\nfloat sTL=clamp(vAchse.x/max(vAchse.z,1e-6),0.0,1.0);float zeigS=smoothstep('+gf(HS.aufloesung[0])+','+gf(HS.aufloesung[1])+',2.0/max(fwidth(vAchse.y),1e-6));'+
+          (vc?'diffuseColor.rgb=mix(diffuseColor.rgb/max(dot(vColor,'+lumW+')/('+gf(tonL)+'*mix('+gf(HS.wurzel)+',1.0,sTL)),1e-4),diffuseColor.rgb,zeigS);':'');}
+      var rund=haar?'\n{vec3 gS=cross(dFdy(-vViewPosition),normal)*dFdx(vAchse.y)+cross(normal,dFdx(-vViewPosition))*dFdy(vAchse.y);vec3 vS=gS/max(length(gS),1e-12);normal=normalize(mix(normal-vS*dot(normal,vS),normal,zeigS));}':'';
       var look='\nvec3 vdL=normalize(-vViewPosition);float ndvL=clamp(dot(normal,vdL),-1.0,1.0);float rimL=clamp(1.0-abs(ndvL),0.0,1.0);';
       if(haut)look+='totalEmissiveRadiance+='+gv(HL.sssFarbe)+'*pow(rimL,'+gf(HL.sssPow)+')*'+gf(HL.sssAmt)+';';
-      else if(haar){var sT='clamp(vAchse.x/max(vAchse.y,1e-6),0.0,1.0)';
-        // DER GLANZ IST LICHT (w25-haar-albedo, wie die Welt): Reflexion unter dem Licht der Albedo — Leuchtdichte des fertigen
-        // Lichts ÷ die der Albedo, nie Emission
-        look+='float sTL='+sT+';vec3 glanzL='+gv(HAL.tipRimFarbe)+'*pow(rimL,'+gf(HAL.tipRimPow)+')*sTL+'+gv(HAL.specFarbe)+'*pow(max(ndvL,0.0),'+gf(HAL.specPow)+')*sTL*'+gf(HAL.specAmt)+';';}
+      // DER GLANZ IST LICHT (w25-haar-albedo, wie die Welt): Reflexion unter dem Licht der Albedo — Leuchtdichte des fertigen
+      // Lichts ÷ die der Albedo, nie Emission
+      else if(haar)look+='vec3 glanzL='+gv(HAL.tipRimFarbe)+'*pow(rimL,'+gf(HAL.tipRimPow)+')*sTL+'+gv(HAL.specFarbe)+'*pow(max(ndvL,0.0),'+gf(HAL.specPow)+')*sTL*'+gf(HAL.specAmt)+';';
       else look='';
-      var licht=haar?'\ngl_FragColor.rgb+=glanzL*dot(gl_FragColor.rgb,vec3(0.2126,0.7152,0.0722))/max(dot(diffuseColor.rgb,vec3(0.2126,0.7152,0.0722)),1e-4);':'';
-      sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\n'+fk).replace('#include <color_fragment>','#include <color_fragment>'+farbe).replace('#include <emissivemap_fragment>','#include <emissivemap_fragment>'+look).replace('#include <tonemapping_fragment>',licht+'\n#include <tonemapping_fragment>');
+      var licht=haar?'\ngl_FragColor.rgb+=glanzL*dot(gl_FragColor.rgb,'+lumW+')/max(dot(diffuseColor.rgb,'+lumW+'),1e-4);':'';
+      sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\n'+fk).replace('#include <color_fragment>','#include <color_fragment>'+farbe).replace('#include <normal_fragment_maps>','#include <normal_fragment_maps>'+rund).replace('#include <emissivemap_fragment>','#include <emissivemap_fragment>'+look).replace('#include <tonemapping_fragment>',licht+'\n#include <tonemapping_fragment>');
     };
     m.customProgramCacheKey=function(){return 'labor-welt-mensch-'+key+(webe?'|'+m0.userData.__webe:'');};
   }
