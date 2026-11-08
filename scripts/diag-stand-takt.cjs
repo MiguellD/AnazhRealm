@@ -1137,7 +1137,7 @@ async function brandSeite(MESS) {
             r._brandBild(1 / 60);
             ms.push(t2 - t0), lms.push(t2 - t1), sms.push(performance.now() - t2);
         }
-        const p95 = (v) => r3(v.sort(aufsteigend)[Math.floor(v.length * 0.95)]);
+        const p95 = (v) => r3(rang(v.sort(aufsteigend), 0.95));
         aus.zeit = { brennend: zn, echt: echt.length, bildMs: p95(ms), leserMs: p95(lms), verzugS: r3(verzug), schirmMs: p95(sms) };
         leer();
         return aus;

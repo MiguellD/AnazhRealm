@@ -305,7 +305,7 @@ function innen(tl, M) {
     // das Schwungdach: das Verformungs-Feld des Gesetzbuchs (HAUS `deform`, DEF_cA = 1,35 · curve) hebt über der Traufe
     // jede Ecke um DEF_cA · f^2,2 (f = |z| / (D/2)) — die Dachhaut des Schwungs liegt um diesen Hub über der Ebene
     const cA = 1.35 * (haupt?.curve || 0);
-    const hub = (z) => (cA > 0 ? cA * Math.pow(Math.min(1, Math.abs(z) / (d.D / 2)), 2.2) : 0);
+    const hub = (z) => (cA > 0 ? cA * Math.min(1, Math.abs(z) / (d.D / 2)) ** 2.2 : 0);
     // eine Dach-Ecke über einer Masse, die durch das Hauptdach steigt oder an ihm anschließt (Kamin, Gaube, Turm, Kuppel,
     // Rundbau, Stufe, Flügel, Hof-Arm, Anbau), misst ihre eigene Masse, nicht die Dachhaut des Hauptdachs — der Sockel,
     // die Treppe, das Vordach und der Portikus liegen darunter und nehmen keine Dach-Ecke aus
@@ -367,7 +367,7 @@ function entsorge(g) {
 }
 const median = (a) => {
     const s = a.filter((x) => x != null).sort(aufsteigend);
-    return s.length ? s[s.length >> 1] : null;
+    return s.length ? rang(s) : null;
 };
 const f3 = (x) => (x == null ? "—" : (+x).toFixed(3));
 

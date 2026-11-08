@@ -67,7 +67,7 @@ for (const h of [25, 40, 60, 74])
     }
 function wurfDeckung(L0, W) {
     const ious = SONNEN.map((d) => wurfIou([L0], [W], d, RASTER)).sort(aufsteigend);
-    return { min: ious[0], median: ious[ious.length >> 1] };
+    return { min: ious[0], median: rang(ious) };
 }
 
 // ── Innen: Abstand der Stufe-3-Ecken zur L0-Oberfläche (Hash 8 cm) ──
@@ -133,7 +133,7 @@ function innenP95(L0g, W) {
         D = [];
     for (let i = 0; i < W.length; i += 3) D.push(abstand(H, W[i], W[i + 1], W[i + 2]));
     D.sort(aufsteigend);
-    return D[Math.min(D.length - 1, Math.floor(0.95 * D.length))];
+    return rang(D, 0.95);
 }
 const gitterDreiecke = (g3) => dreiecke(g3, false);
 const tris = (g3) => {
@@ -284,7 +284,7 @@ check(
     k.bruch.length ? k.bruch.slice(0, 4).join(" · ") : `Fernbild max ${k.maxSicht} Teile`
 );
 const z = deckung(null, 0);
-const med = [...z.map((r) => r.iouMedian)].sort(aufsteigend)[z.length >> 1];
+const med = rang(z.map((r) => r.iouMedian).sort(aufsteigend));
 for (const r of z)
     console.log(
         `     ${r.id.padEnd(11)} Wurf-IoU min ${r.iouMin.toFixed(3)} · Median ${r.iouMedian.toFixed(3)} · innen p95 ${(r.innenP95 * 100).toFixed(1)} cm`
