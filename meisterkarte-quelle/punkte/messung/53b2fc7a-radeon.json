@@ -1,0 +1,199 @@
+{
+ "sha": "53b2fc7ae182e2596b959542dd706079a95d5700",
+ "geraet": "radeon",
+ "zeit": "2026-11-08T18:30:09.849Z",
+ "host": "MiguellD",
+ "je": {
+  "haar.K2#1": {
+   "gruen": false,
+   "zahl": "arm ROT strich 0.6263 Soll [0.3554,0.533] — strich 0.6263 > 0.533 · albedo: veraltet seit 4ef6370e: koerper-core.js geändert (c:b70902b2e416b42b → c:d0fa9f2ecb22f207) · albedo — [0.01; 0.3] · third ROT strich 0.3473 Soll [0.3554,0.533] — strich 0.3473 < 0.3554 · albedo: veraltet seit 4ef6370e: koerper-core.js geändert (c:b70902b2e416b42b → c:d0fa9f2ecb22f207) · albedo — [0.01; 0.3]",
+   "exit": 0,
+   "minuten": 0.66,
+   "grund": "ROT: arm ROT strich 0.6263 Soll [0.3554,0.533] — strich 0.6263 > 0.533 · albedo: veraltet seit 4ef6370e: koerper-core.js geändert (c:b70902b2e416b42b → c:d0fa9f2ecb22f207) · albedo — [0.01; 0.3] · third ROT strich 0.3473 Soll [0.3554,0.533] — strich 0.3473 < 0.3554 · albedo: veraltet seit 4ef6370e: koerper-core.js geändert (c:b70902b2e416b42b → c:d0fa9f2ecb22f207) · albedo — [0.01; 0.3]",
+   "gpu": "amd/rdna-3",
+   "s": 39.4,
+   "fremd": {
+    "s": 45.1,
+    "takte": 16,
+    "fremdS": 95.8,
+    "kerne": 2.125,
+    "fensterKerne": 2.401,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      15.98
+     ],
+     [
+      "MsMpEng.exe",
+      11.05
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      10.53
+     ]
+    ],
+    "dienerS": 23.86,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      13.17
+     ],
+     [
+      "System",
+      5.91
+     ]
+    ],
+    "eigenS": 60.56
+   },
+   "zeit": "2026-11-08T18:29:17.281Z",
+   "abdruck": "b400c965d4a7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "haar.K1#1": {
+   "gruen": true,
+   "zahl": "arm GRÜN strich 0.6267 Soll [0.4358,0.6538] · third GRÜN strich 0.581 Soll [0.4358,0.6538]",
+   "exit": 0,
+   "minuten": 0.74,
+   "gpu": "amd/rdna-3",
+   "s": 44.3,
+   "fremd": {
+    "s": 49.1,
+    "takte": 18,
+    "fremdS": 82.52,
+    "kerne": 1.682,
+    "fensterKerne": 1.842,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      17.25
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      8.53
+     ],
+     [
+      "bash.exe werkzeug/gpu-lauf.sh probe-Z bash -c echo \\ [linse-gpu] rdna-3/\"; echo \"S $2 >> \"",
+      8.2
+     ]
+    ],
+    "dienerS": 22.97,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      13.97
+     ],
+     [
+      "System",
+      4.41
+     ]
+    ],
+    "eigenS": 43.2
+   },
+   "zeit": "2026-11-08T18:30:09.849Z",
+   "abdruck": "b503c78f1ab2",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "ungemessen": {
+  "lod.K5#1": {
+   "gruen": false,
+   "zahl": "Messort: kanten: die Treue: zwei Aufnahmen derselben Szene (tree L0) weichen in 5001 Bytes ab — EINE Aufnahme je Schuss trägt hier nicht — kein Urteil, UNGEMESSEN (die Probe sah: Folge: kanten: Exit 1 nc IsolatedWorld.evaluate (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\node_modules\\\\puppeteer-core\\\\lib\\\\cjs\\\\puppeteer\\\\cdp\\\\IsolatedWorld.js:105:16)\",\n  \"at async CdpFrame.evaluate (C:\\\\Users\\\\micha\\\\AnazhRealm-profiban) · Täter: @@PUNKTE@@ MESSORT kanten: die Treue: zwei Aufnahmen derselben Szene (tree L0) weichen in 5001 Bytes ab — EINE Aufnahme je Schuss trägt hier nicht",
+   "exit": 1,
+   "minuten": 0.09,
+   "grund": "Messort: kanten: die Treue: zwei Aufnahmen derselben Szene (tree L0) weichen in 5001 Bytes ab — EINE Aufnahme je Schuss trägt hier nicht — kein Urteil, UNGEMESSEN (die Probe sah: Folge: kanten: Exit 1 nc IsolatedWorld.evaluate (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\node_modules\\\\puppeteer-core\\\\lib\\\\cjs\\\\puppeteer\\\\cdp\\\\IsolatedWorld.js:105:16)\",\n  \"at async CdpFrame.evaluate (C:\\\\Users\\\\micha\\\\AnazhRealm-profiban) · Täter: @@PUNKTE@@ MESSORT kanten: die Treue: zwei Aufnahmen derselben Szene (tree L0) weichen in 5001 Bytes ab — EINE Aufnahme je Schuss trägt hier nicht",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 5.2,
+   "fremd": {
+    "s": 8.3,
+    "takte": 3,
+    "fremdS": 16.02,
+    "kerne": 1.926,
+    "fensterKerne": 1.926,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      3.41
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      1.56
+     ],
+     [
+      "MsMpEng.exe",
+      1.47
+     ]
+    ],
+    "dienerS": 4.41,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      2.53
+     ],
+     [
+      "System",
+      1.02
+     ]
+    ],
+    "eigenS": 8.39
+   },
+   "zeit": "2026-11-08T18:29:59.917Z",
+   "abdruck": "c10974692b58",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-08T18:24:50.963Z",
+  "port": 7804,
+  "warten": 3.72,
+  "bootS": 5.8,
+  "grundstellungS": [
+   0
+  ],
+  "proben": 3,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "haar.K2#1",
+    "s": 19.4,
+    "takte": 611,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": "wiese",
+    "vor": "haar.K1#1",
+    "s": 1.5,
+    "takte": 119,
+    "chunks": 81,
+    "nach": "der Grundstellung"
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 3,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 142,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 143,
+  "minuten": 6.25
+ }
+}
