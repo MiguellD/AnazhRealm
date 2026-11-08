@@ -226,7 +226,7 @@ class AnazhRealm_stoff_instanz {
         const naht = this._weltNaht(T);
         const pW = naht.lage;
         const ht = uB.x.max(1e-3);
-        const H = T.attribute("aH0", "float").max(0.5);
+        const H = AnazhRealm._senkenKnoten().attribut("aH0", "float").max(0.5);
         const ort = pW.x.mul(wu.uWindDir.x).add(pW.z.mul(wu.uWindDir.y));
         const g = T.sin(wu.uWindTime.mul(B.omega).sub(ort.mul(B.k)))
             .mul(B.amp)
@@ -512,6 +512,30 @@ class AnazhRealm_stoff_instanz {
         // `maxVertexBuffers` 8). Befund 16.10. (Radeon, Genesis Third, GPU-Wache): `aWindArt` als neunter Vertex-Puffer, „Vertex
         // buffer count (9) exceeds the maximum" — die Pipeline des Laubs abgesagt, jede nahe Krone fehlte im Bild.
         const windArt = new SenkenPuffer("windArt", "vec4", 4, "arenaWindArt").toReadOnly().element(index).xyz;
+        // DER EINE LESER EINES INSTANZ-ATTRIBUTS (Spike w25): in der Wahl am Index der Liste aus dem Speicher-Puffer der Arena
+        // (`_instanzSeite` legt jedes unter seinem Namen in ihre Quelle), wie Matrix und Gang — als Vertex-Attribut läse r184 es am
+        // Index des ZUGS (erste Instanz = der Abschnitt der Liste dieser Kamera): jede gewählte Instanz trüge Farbe, Höhe der
+        // Blende und Karte einer fremden, je Bild eine andere (die Wahl zählt atomar); sonst das Attribut. vec3 liegt dicht (3 Zahlen).
+        const attribute = new Map();
+        const attribut = (name, typ) => {
+            if (!attribute.has(name)) {
+                const n = { float: 1, vec3: 3, vec4: 4 }[typ];
+                const p = new SenkenPuffer(name, n === 4 ? "vec4" : "float", n, "arena_" + name).toReadOnly();
+                const lies =
+                    n === 3 ? T.vec3(...[0, 1, 2].map((k) => p.element(index.mul(3).add(k)))) : p.element(index);
+                attribute.set(
+                    name,
+                    T.nodeObject(
+                        new WahlWert(
+                            typ,
+                            () => lies,
+                            () => T.attribute(name, typ)
+                        )
+                    )
+                );
+            }
+            return attribute.get(name);
+        };
         class SenkenInstanz extends N {
             constructor() {
                 super("void");
@@ -521,7 +545,7 @@ class AnazhRealm_stoff_instanz {
                 if (builder.hasGeometryAttribute("normal"))
                     T.normalLocal.assign(T.transformNormal(T.normalLocal, matrix));
                 if (builder.geometry && builder.geometry.attributes && builder.geometry.attributes.instanzFarbe)
-                    T.varyingProperty("vec3", "vInstanceColor").assign(T.attribute("instanzFarbe", "vec3"));
+                    T.varyingProperty("vec3", "vInstanceColor").assign(attribut("instanzFarbe", "vec3"));
                 builder.__anazhInstanzMatrix = matrix;
                 return null;
             }
@@ -529,6 +553,7 @@ class AnazhRealm_stoff_instanz {
         AnazhRealm.__senkenKnoten = {
             matrix,
             windArt,
+            attribut,
             // der Gang je Instanz (`_gangSatzKnoten`): in der Wahl am Index aus dem Speicher-Puffer der Arena, sonst das Attribut
             gang: T.nodeObject(
                 new WahlWert(
@@ -1367,6 +1392,10 @@ class AnazhRealm_stoff_instanz {
                     if (m0.geometry.attributes[k].isInstancedBufferAttribute) neu(k, m0.geometry.attributes[k]);
                 if (m0.instanceColor) neu("instanzFarbe", m0.instanceColor);
                 q.gang = g.attributes.aGang || null;
+                // in der Wahl liest jeder Stoff jedes Instanz-Attribut am Index der Liste (`_senkenKnoten().attribut`)
+                if (this._wahl)
+                    for (const k in g.attributes)
+                        if (g.attributes[k].isInstancedBufferAttribute) q[k] = g.attributes[k];
                 q.instanceMatrix = new T.StorageInstancedBufferAttribute(new Float32Array(this._nCap * 16), 16);
                 // die Art-Größen des Winds: ein Speicher-Puffer wie die Matrizen (`_senkenKnoten().windArt`), in der Geometrie
                 // nur die Marke, die das Programm der Arena vom Programm des Zeichners trennt (kein Shader liest sie als Attribut)

@@ -937,7 +937,7 @@ class AnazhRealm_stoff_material {
                                     const _alg = AnazhRealm._windTsl(_Ta); // die Algebra der Gesetze (`karteRingHalbe`)
                                     const _uvRoh = _Ta.attribute("uv", "vec2"); // die Ecke im Gitter (`_uv` unten: wo sie steht)
                                     // (Schicht, Halbbreite, Höhe, ±Sichthöhe)
-                                    const _karte = _Ta.attribute("aKarte", "vec4");
+                                    const _karte = AnazhRealm._senkenKnoten().attribut("aKarte", "vec4");
                                     const _rahmen = _karte.yz;
                                     // die Schicht: ein interpolierter Instanz-Wert kann 2,9999 lesen — gerundet, nie gekappt
                                     const _schicht = _Ta.floor(_karte.x.add(_Ta.float(0.5)));
@@ -1216,7 +1216,7 @@ class AnazhRealm_stoff_material {
                                             // halb (w22-wald-geburt-heil). Bis w22-wald-geburt trat sie hart ein (GPU-Probe
                                             // aec208de, Radeon: 25 harte Eintritte in 4 m Gang, 0,0663 % Pop-Pixel/s)
                                             const _lu = this._ensureLodUniforms();
-                                            const _ein = _Ta.attribute("aEin", "float");
+                                            const _ein = AnazhRealm._senkenKnoten().attribut("aEin", "float");
                                             const _rampe = _lu.uLodTakt
                                                 .sub(_ein)
                                                 .div(_Ta.float(AnazhRealm.KARTEN_EINTRITT_TAKTE))
@@ -3314,8 +3314,9 @@ class AnazhRealm_stoff_material {
             if (!T.attribute || !_auge || !T.length || !T.vec2)
                 throw this._blendeBruch("die 3D-Stufen-Maske: TSL.attribute · uLodAuge · TSL.length · TSL.vec2 fehlen");
             const _aLod = T.attribute("aLodLevel", "float");
-            const _aH0 = T.attribute("aH0", "float");
-            const _aH0L = T.attribute("aH0L", "float");
+            // die Instanz-Größen über den EINEN Leser (`_senkenKnoten().attribut`: in der Wahl am Index der Liste)
+            const _aH0 = AnazhRealm._senkenKnoten().attribut("aH0", "float");
+            const _aH0L = AnazhRealm._senkenKnoten().attribut("aH0L", "float");
             // × uLodPerf: dieselbe Wahrnehmungs-Distanz, nach der die CPU die Stufen legt (`_lodPerceptionDistance`) — vom Auge zum
             // URSPRUNG der Instanz (`_instanzMitteNode`), wie das Studio und die CPU, nie zum Fragment.
             const _mitte = this._instanzMitteNode(T);
@@ -3488,8 +3489,8 @@ class AnazhRealm_stoff_material {
                     .map((x) => x[0]);
                 if (_fehlt.length) throw this._blendeBruch("die Blatt-Karte: es fehlt " + _fehlt.join(" · "));
                 {
-                    const _aH0 = _Tl.attribute("aH0", "float");
-                    const _aH0L = _Tl.attribute("aH0L", "float");
+                    const _aH0 = AnazhRealm._senkenKnoten().attribut("aH0", "float");
+                    const _aH0L = AnazhRealm._senkenKnoten().attribut("aH0L", "float");
                     const _cam = _lu.uLodAuge; // das AUGE, nie die Pass-Kamera (Schattenpass = Kaskaden-Kamera)
                     // xz-Distanz Auge → URSPRUNG der Instanz (`_instanzMitteNode`, Studio `_iw`), nie zum Vertex
                     const _mitte = this._instanzMitteNode(_Tl);

@@ -2939,9 +2939,27 @@ class AnazhRealm_bild_kosten {
         const L = S.lage;
         // DIE WAHL FOLGT DEM WEG (w20-leib-takt): der Abdruck dieser Lage, die Ränder ± wegM daneben (`_wahlRaender`)
         const { A, weit, eng } = this._wahlRaender(S);
+        // DER SPIKE w25 (Atlas Schnitt 2, derselbe Messort-Schalter wie die Nah-Wiese, `_tickNahWiese`): jede Gruppe der Wahl
+        // wählt die GPU (`_instanzWahlGpu`, das Fenster ihrer Stufe im Compute) — sie zieht lose aus der Szene, ihre Arena wählt
+        // je Pass; die CPU wählt sie nicht. Der Wechsel gibt sie ihrer Arena zurück (sie tritt im Takt in die der anderen Wahl).
+        const gpu = (this.state.wahlGpuWiese ?? globalThis.__anazhWahlGpu) === true && AnazhRealm._arenaKann(this.state.renderer); // prettier-ignore
         for (const g of set) {
             if (g.wahl !== art) continue;
             const m = g.mesh;
+            if (m && (m.__wahlGpu === true) !== gpu) {
+                if (m.__arena) m.__arena.lassen(m, true);
+                m.__wahlGpu = gpu;
+                m.__wahlFenster = gpu ? [g.wahlStufe === "karte" ? 4 : g.wahlStufe, this._instanzFensterGilt(g) ? 1 : 0, 0, 0] : null; // prettier-ignore
+                const ziel = gpu ? this.state.scene : this._archRegionBundleFor("@wahl");
+                if (ziel && m.parent !== ziel) {
+                    for (const b of [m.parent, ziel]) if (b && b.isBundleGroup) b.needsUpdate = true;
+                    if (m.parent) m.parent.remove(m);
+                    ziel.add(m);
+                    if (ziel.isBundleGroup) AnazhRealm._buendelKinderReihe(ziel, this._buendelAuge);
+                }
+                AnazhRealm._instanzZahl(m, g.liveCount | 0);
+            }
+            if (gpu) continue;
             const n = g.liveCount | 0;
             if (!m || n === 0 || m.visible === false) {
                 // Eine leere oder verborgene Gruppe zeichnet in diesem Pass nichts: ihre gehaltene Wahl fällt mit (die
@@ -3365,7 +3383,14 @@ class AnazhRealm_bild_kosten {
         if (!W || W.dev !== dev) {
             const lay = dev.createBindGroupLayout({
                 label: "pass-wahl",
-                entries: ["uniform", "read-only-storage", "read-only-storage", "storage", "storage"].map((type, i) => ({
+                entries: [
+                    "uniform",
+                    "read-only-storage",
+                    "read-only-storage",
+                    "storage",
+                    "storage",
+                    ...Array(3).fill("read-only-storage"),
+                ].map((type, i) => ({
                     binding: i,
                     visibility: GPUShaderStage.COMPUTE,
                     buffer: { type, hasDynamicOffset: i === 1 },
@@ -3378,13 +3403,16 @@ class AnazhRealm_bild_kosten {
                 layout,
                 compute: { module, entryPoint: "wahl" },
             });
-            const lage = dev.createBuffer({ label: "pass-wahl-lage", size: 272, usage: U.UNIFORM | U.COPY_DST });
+            const lage = dev.createBuffer({ label: "pass-wahl-lage", size: 304, usage: U.UNIFORM | U.COPY_DST });
+            // der leere Speicher einer Arena ohne Fenster-Größen (`aH0` · `aH0L` · `aKarte`)
+            const leer = dev.createBuffer({ label: "pass-wahl-leer", size: 16, usage: U.STORAGE });
             W = AnazhRealm.__wahlGpu = {
                 dev,
                 lay,
                 pipe,
                 lage,
-                lageF: new Float32Array(68),
+                lageF: new Float32Array(76),
+                leer,
                 puffer: null,
                 f: null,
                 u: null,
@@ -3395,7 +3423,7 @@ class AnazhRealm_bild_kosten {
         let bytes = 0;
         for (let i = 1; i < arenen.length; i += 2) {
             off.push(bytes);
-            bytes += Math.ceil(((arenen[i].wahl.length / 5) * 48) / al) * al;
+            bytes += Math.ceil(((arenen[i].wahl.length / 5) * 64) / al) * al;
         }
         if (!W.puffer || W.puffer.size < bytes) {
             const size = Math.max(bytes, 2 * (W.puffer ? W.puffer.size : 0));
@@ -3405,8 +3433,18 @@ class AnazhRealm_bild_kosten {
             W.u = new Uint32Array(W.f.buffer);
         }
         const nMax = off.map((o, j) => AnazhRealm._wahlAuftraege(arenen[2 * j + 1].wahl, W.f, W.u, o / 4));
-        AnazhRealm._wahlLage(L, W.lageF);
-        W.lageF[30] = this._schirm().pxJeM || 0; // das Bildschirm-Maß des Stufen-Bands (Spike w25): px je m in 1 m
+        const F = AnazhRealm._wahlLage(L, W.lageF);
+        // das Bildschirm-Maß des Stufen-Bands (px je m in 1 m), der Halt und die Blende des Fensters (Spike w25)
+        F[30] = this._schirm().pxJeM || 0;
+        [F[65], F[66]] = [L.halt, L.an ? 1 : 0];
+        if (L.an) {
+            const K = L.kanten;
+            F.set(
+                [K.l0Aus, K.l1Ein, K.l1Aus, K.karteEin].map((x) => Math.min(x, 1e30)),
+                68
+            );
+            F.set([L.ex, L.ez, L.perf, L.ref], 72);
+        }
         dev.queue.writeBuffer(W.lage, 0, W.lageF);
         dev.queue.writeBuffer(W.puffer, 0, W.f.buffer, 0, bytes);
         const enc = dev.createCommandEncoder({ label: "pass-wahl" });
@@ -3429,12 +3467,19 @@ class AnazhRealm_bild_kosten {
                 q = a.__instanzQuelle,
                 n = arenen[2 * j + 1].wahl.length / 5;
             for (const x of [q.instanceMatrix, q.liste]) rend._attributes.update(x, 3); // r184 AttributeType.STORAGE
-            const puf = [W.lage, W.puffer, ...[q.instanceMatrix, q.liste, a._ind].map((x) => be.get(x).buffer)];
+            for (const k of ["aH0", "aH0L", "aKarte"]) if (q[k]) rend._attributes.update(q[k], 3);
+            const fenster = ["aH0", "aH0L", "aKarte"].map((k) => (q[k] ? be.get(q[k]).buffer : W.leer));
+            const puf = [
+                W.lage,
+                W.puffer,
+                ...[q.instanceMatrix, q.liste, a._ind].map((x) => be.get(x).buffer),
+                ...fenster,
+            ];
             let bg = a.__wahlBG;
             if (!bg || bg.n !== n || puf.some((p, k) => p !== bg.puf[k])) {
                 const entries = puf.map((buffer, i) => ({
                     binding: i,
-                    resource: { buffer, size: i === 1 ? n * 48 : undefined },
+                    resource: { buffer, size: i === 1 ? n * 64 : undefined },
                 }));
                 bg = a.__wahlBG = { n, puf, bg: dev.createBindGroup({ label: "pass-wahl", layout: W.lay, entries }) };
             }
@@ -3493,7 +3538,7 @@ class AnazhRealm_bild_kosten {
     // Liefert die größte Zahl (die Breite des Dispatch).
     static _wahlAuftraege(wahl, f, u, o) {
         let nMax = 0;
-        for (let j = 0; j < wahl.length; j += 5, o += 12) {
+        for (let j = 0; j < wahl.length; j += 5, o += 16) {
             const g = wahl[j].geometry;
             if (!g.boundingSphere) g.computeBoundingSphere();
             const s = g.boundingSphere;
@@ -3501,7 +3546,9 @@ class AnazhRealm_bild_kosten {
             u.set([wahl[j + 1], wahl[j + 2], wahl[j + 3], wahl[j + 4]], o + 4);
             // das Stufen-Band (Spike w25, `_nahWieseSicht`): die Übergabe in m, die Grenze in px je m, die Seite (+1 fein, −1 grob)
             const band = wahl[j].__wahlBand;
-            f.set(band ? [0, band[0], band[1], band[2]] : [0, 0, 0, 0], o + 8);
+            f.set(band ? [0, band[0], band[1], band[2]] : [wahl[j].__wahlFenster ? AnazhRealm.PASS_WAHL.pflanzeRandM : 0, 0, 0, 0], o + 8); // prettier-ignore
+            // das Fenster der Stufe (Spike w25): 1 · 2 · 3 die Stufe, 4 die Karte; ob ihr Stoff die Maske trägt
+            f.set(wahl[j].__wahlFenster || [0, 0, 0, 0], o + 12);
             nMax = Math.max(nMax, wahl[j + 2]);
         }
         return nMax;
@@ -3775,26 +3822,62 @@ AnazhRealm.WAHL_BASIS = Object.freeze([0, 1, 2, 4, 5, 6, 8, 9, 10]);
 // jede Ebene des Frustums, relativ zum Auge, mit dem Rand der Lage; im Kaskaden-Pass dazu ihre LICHT-KAPSEL — die Kugel
 // entlang des Lichts, bis sie ganz unter der Box liegt — gegen jede Ebene der Scheibe: liegen beide Enden jenseits einer
 // Ebene, wirft sie dort nicht. Getroffen → ein Platz in der Liste ihres Abschnitts, die Zahl des Zugs atomar.
+// DER SPIKE w25 (Atlas Schnitt 2): die Karte trägt ihr Quad als Kugel (`_instanzBehalten`), und das FENSTER DER STUFE
+// (`_instanzFenster` → `_blendeBehaelt` an den Kanten des EINEN Blend-Gesetzes, `_blendeKanten`) urteilt je Instanz aus
+// `aH0`/`aH0L` oder `aKarte` im Speicher-Puffer der Arena; das Stufen-Band der Nah-Wiese (`__wahlBand`) wie zuvor.
 AnazhRealm.PASS_WAHL_WGSL = `
 struct Lage {
     ebenen: array<vec4f, 6>, auge: vec4f, rand: vec4f,
-    kapsel: array<vec4f, 6>, tiefe: vec4f, licht: vec4f, saum: vec4f
+    kapsel: array<vec4f, 6>, tiefe: vec4f, licht: vec4f, saum: vec4f,
+    kanten: vec4f, blende: vec4f
 }
-struct Auftrag { kugel: vec4f, platz: vec4u, saum: vec4f }
+struct Auftrag { kugel: vec4f, platz: vec4u, saum: vec4f, fenster: vec4f }
 @group(0) @binding(0) var<uniform> lage: Lage;
 @group(0) @binding(1) var<storage, read> auftraege: array<Auftrag>;
 @group(0) @binding(2) var<storage, read> matrizen: array<mat4x4f>;
 @group(0) @binding(3) var<storage, read_write> liste: array<u32>;
 @group(0) @binding(4) var<storage, read_write> args: array<atomic<u32>>;
+@group(0) @binding(5) var<storage, read> h0: array<f32>;
+@group(0) @binding(6) var<storage, read> h0l: array<f32>;
+@group(0) @binding(7) var<storage, read> karte: array<vec4f>;
+fn behaelt(art: u32, sLo: f32, sHi: f32, lLo: f32, lHi: f32) -> bool {
+    let K = lage.kanten;
+    if (art == 1u) { return lLo < K.x; }
+    if (art == 2u) { return lHi > K.y && sLo < K.z; }
+    if (art == 3u) { return sLo < K.z; }
+    return sHi > K.w;
+}
+fn fenster(art: u32, i: u32, m: mat4x4f) -> bool {
+    let B = lage.blende;
+    let d = length(vec2f(m[3].x - B.x, m[3].z - B.y));
+    let lo = max(0.0, d - lage.saum.y) * B.z;
+    let hi = (d + lage.saum.y) * B.z;
+    if (art == 4u) {
+        let s = karte[i].w;
+        let k = min(B.w / max(abs(s), 1e-3), 1.0);
+        return s < 0.0 || behaelt(art, lo * k, hi * k, lo * k, hi * k);
+    }
+    let hl = h0l[i];
+    let kS = min(B.w / max(h0[i], 1e-3), 1.0);
+    let kL = min(B.w / max(abs(hl), 1e-3), 1.0);
+    return hl < 0.0 || behaelt(art, lo * kS, hi * kS, lo * kL, hi * kL);
+}
 @compute @workgroup_size(64)
 fn wahl(@builtin(global_invocation_id) id: vec3u) {
     let a = auftraege[id.y];
     if (id.x >= a.platz.y) { return; }
     let i = a.platz.x + id.x;
     let m = matrizen[i];
-    let c = (m * vec4f(a.kugel.xyz, 1.0)).xyz - lage.auge.xyz;
+    let art = u32(a.fenster.x);
+    var c = (m * vec4f(a.kugel.xyz, 1.0)).xyz - lage.auge.xyz;
     let s2 = max(dot(m[0].xyz, m[0].xyz), max(dot(m[1].xyz, m[1].xyz), dot(m[2].xyz, m[2].xyz)));
-    let r = a.kugel.w * sqrt(s2) + a.saum.x;
+    var r = a.kugel.w * sqrt(s2) + a.saum.x;
+    if (art == 4u) {
+        let k = karte[i];
+        let h = k.z * 0.5;
+        c = m[3].xyz + m[1].xyz * h - lage.auge.xyz;
+        r = length(m[0].xyz) * sqrt(h * h + k.y * k.y);
+    }
     let rr = r + lage.rand.x + lage.rand.y * length(c);
     if (a.saum.y > 0.0) {
         let d = length(vec2f(m[0].w, m[1].w) - lage.auge.xz);
@@ -3812,6 +3895,7 @@ fn wahl(@builtin(global_invocation_id) id: vec3u) {
             if (dot(e.xyz, c) + e.w < -st && dot(e.xyz, ende) + e.w < -st) { return; }
         }
     }
+    if (art > 0u && a.fenster.y > 0.5 && lage.saum.z > 0.5 && !fenster(art, i, m)) { return; }
     liste[a.platz.w + atomicAdd(&args[a.platz.z], 1u)] = i;
 }
 `;

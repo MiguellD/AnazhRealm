@@ -3228,7 +3228,9 @@ hauptLauf(async () => {
                 const p = ergebnis(await evalRuf(`return await (${popGang})();`));
                 const l = await rufe("/lauf", { sek: 8, ein: 2, wandern: "bahn" });
                 const u = ergebnis(await evalRuf(`return (${wahlUhren})({ lesen: true });`));
-                console.log(`WAHL ${s} ${l.fehler?.length ? "ROT" : "GRÜN"} ${JSON.stringify({ pop: p.anteilJeSekunde, bild: [l.frameMs?.p50, l.frameMs?.p95], gpu: l.gpuMs?.p50, tri: l.dreiecke?.mittel, dc: l.befehle?.mittel, ...u })}`); // prettier-ignore
+                const f = [p.fehler, ...(l.fehler || [])].filter(Boolean);
+                console.log(`WAHL ${s} ${f.length ? "ROT" : "GRÜN"} ${JSON.stringify({ pop: p.anteilJeSekunde, bild: [l.frameMs?.p50, l.frameMs?.p95], gpu: l.gpuMs?.p50, tri: l.dreiecke?.mittel, dc: l.befehle?.mittel, ...u })}`); // prettier-ignore
+                if (f.length) console.log(`WAHL ${s} ROT ${f.join(" · ").slice(0, 500)}`);
                 o ??= p;
             }
             o.bank = await rufe("/gpu-bank", {}); // die GPU-Zeit je Bild am Ende des Gangs (`gpuBank`)

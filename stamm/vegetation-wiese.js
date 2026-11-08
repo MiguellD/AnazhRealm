@@ -1360,9 +1360,13 @@ class AnazhRealm_vegetation_wiese {
                 ic.needsUpdate = true;
             }
             // der Bestand der GPU-Wahl zeichnet nie über seinen Zeichner (er trüge jedes Büschel in jeder Stufe): bis seine Arena
-            // ihn nimmt (der nächste Takt), zählt er 0, und der nächste Satz zählt neu
+            // ihn nimmt (ein späterer Takt), zählt er 0, meldet sich selbst (sein Zeichner zieht nie und meldet ihn nicht) und
+            // der nächste Satz zählt neu
             const wartet = a.mesh.__wahlGpu === true && !a.mesh.__arena;
-            if (wartet) nw.gen = -1;
+            if (wartet) {
+                nw.gen = -1;
+                AnazhRealm._arenaMelden(a.mesh);
+            }
             AnazhRealm._instanzZahl(a.mesh, wartet ? 0 : a.anzahl);
         }
     }
