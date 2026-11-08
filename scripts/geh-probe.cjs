@@ -17,7 +17,8 @@ const arg = (n, d) => (process.argv.includes(n) ? process.argv[process.argv.inde
 const PORT = Number(arg("--port", 4793));
 const D = path.resolve("artifacts", "geh-probe");
 fs.mkdirSync(D, { recursive: true });
-const zeile = (s) => console.log(s.replace(/\s+/g, " ").slice(0, 590));
+const kern = []; // die Zeilen des Urteils: am Ende noch einmal (der GPU-Probe-Dienst postet die letzten zehn)
+const zeile = (s, k) => (console.log((s = s.replace(/\s+/g, " ").slice(0, 590))), k && kern.push(s));
 const q = (z) => (z ? [z.p50, z.p95, z.p99, z.max].join("/") : "?");
 const json = (out) => {
     try {
@@ -120,7 +121,7 @@ return 1;`;
         const anft =
             ev("const s = r.state; return [Math.round(s._weltbildDa || -1), Math.round(s._fernbildDa || -1)];") || [];
         const b0 = bauStand();
-        zeile(`GEH ANKUNFT Weltbild ${anft[0]} ms (Ferne ${anft[1]}) · bis dahin Knoten ${b0[0]} Σ ${b0[1]} ms · Pipelines ${b0[2]} · Neubau ${b0[3]}`); // prettier-ignore
+        zeile(`GEH ANKUNFT Weltbild ${anft[0]} ms (Ferne ${anft[1]}) · bis dahin Knoten ${b0[0]} Σ ${b0[1]} ms · Pipelines ${b0[2]} · Neubau ${b0[3]}`, true); // prettier-ignore
         const zelle = (name, wandern, code, tief, still) => {
             const j = path.join(D, name.replace(/\W+/g, "-") + ".json");
             const bv = bauStand();
@@ -171,10 +172,12 @@ return 1;`;
                     a.jeUrsache
                         .slice(0, 5)
                         .map((e) => `${e.n}× ${e.summeMs}/${e.maxMs} ${e.ursache}`)
-                        .join(" | ")
+                        .join(" | "),
+                true
             );
             zeile(
-                `GEH ${ok ? "GRÜN" : "ROT"} ${name} Bau im Fenster: ${imFenster}max-Schritt ${kb.maxMs} ms, ${kb.ueber16} > 16,7 ms`
+                `GEH ${ok ? "GRÜN" : "ROT"} ${name} Bau im Fenster: ${imFenster}max-Schritt ${kb.maxMs} ms, ${kb.ueber16} > 16,7 ms`,
+                true
             );
             if (!tief) return;
             // die Teilbäume der Blöcke des Haupt-Fadens (je Rahmen ms je Takt ab p95 / in der Mitte, bis drei Ebenen tief, ab
@@ -254,6 +257,7 @@ return 1;`;
         gruen = false;
         zeile(`GEH ROT Error ${String((e && e.stack) || e).slice(0, 400)} · ${tor.log.slice(-300)}`);
     } finally {
+        for (const k of kern) console.log(k);
         tor.stop();
     }
     process.exit(gruen ? 0 : 1);
