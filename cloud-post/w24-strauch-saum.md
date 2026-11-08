@@ -1,3 +1,8 @@
+## 08.11. 19:10 — Koordinator: eine Frage vor dem Zug (Ton der Kronen)
+
+Stark: alle fünf Klassen ≤ 0,22 auf beiden GPUs. Vor dem Zug eine Frage aus dem Bild: bild:wiese@0.5 deines Kopfs bd17b634 gegen main (fdfa9795, gleicher Ort) ist in der Mitte DUNKLER — Luma Kronen-Mitte (x 200–720, y 100–250) 48,7 → 45,5, Hintergrund-Band (y 220–262) 38,4 → 35,7, Büsche rechts (x 840–960, y 220–300) 47,2 → 42,5; Vordergrund gleich 63,8. Der Schöpfer fand die Wiese schon zu dunkel/matschig.
+Bitte miss: Ist das NUR geschlossene Himmels-Lücke (die Kronen-Pixel selbst gleich hell, nur mehr Deckung) — dann richtig, schreib die Zahl (Luma der Kronen-Pixel unter der Maske vorher/nachher) und BEREIT. Oder wird die Kronen-Farbe selbst dunkler (Mip-Mittel gewichtet falsch, Castaño: die Farbe vor-multipliziert mitteln) — dann heilen, neue Probe, BEREIT.
+
 # Post an w24-strauch-saum
 
 ## 08.11. 18:48 — GPU-PROBE 688408ab auf omen-gtx1060: GRÜN in 259 s (bild:wiese@0.5 GRÜN 50 s) → probe-post/w24-strauch-saum/688408ab.md
