@@ -1088,7 +1088,17 @@ function profileFegen(tmp = os.tmpdir()) {
 }
 const tempNeu = (name = "profil", pid = process.pid) => fs.mkdtempSync(path.join(os.tmpdir(), `anazh-${pid}-${name}-`));
 const signalEnde = (s) => process.exit(128 + os.constants.signals[s]);
+// DAS SICHTBARE FENSTER (Schöpfer 08.11.: „die GPU-Proben auf dem OMEN mit offenem Fenster, dann sehe ich, was geschieht“):
+// LINSE_SICHTBAR=1 (gpu-probe.yml setzt es auf dem OMEN-Läufer) öffnet JEDEN Browser dieses Starters als Fenster. Die
+// Welt rechnet und zeichnet denselben Weg. Damit ein verdecktes Fenster nicht gedrosselt wird, ist die Drossel aus.
+// Die Probe urteilt über Bild und Gate, nie über die Wanduhr.
+const SICHT_ARGS = ["--disable-backgrounding-occluded-windows", "--disable-renderer-backgrounding", "--disable-background-timer-throttling"];
+const sichtbar = (o) =>
+    process.env.LINSE_SICHTBAR === "1" && o.headless !== false
+        ? { ...o, headless: false, args: [...(o.args || []), ...SICHT_ARGS] }
+        : o;
 async function startePuppeteer(o) {
+    o = sichtbar(o);
     profileFegen();
     if (o.userDataDir) return require("puppeteer").launch(o);
     const d = tempNeu();

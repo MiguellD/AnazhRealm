@@ -123,6 +123,9 @@ jobs:
                   SHA8=${GITHUB_SHA:0:8}
                   DECKEL=480
                   echo "$RUNNER_NAME" > "$OUT/laeufer.txt"
+                  # DAS SICHTBARE FENSTER (Schöpfer 08.11.): auf dem OMEN öffnet jede Probe ihren Browser als Fenster, damit der Schöpfer
+                  # zusehen kann (welt-boot `sichtbar`). Die Radeon bleibt headless.
+                  case "$RUNNER_NAME" in *omen*) export LINSE_SICHTBAR=1 ;; esac
                   GPU=$(powershell -NoProfile -Command "(Get-CimInstance Win32_VideoController).Name -join ', '" 2> /dev/null | tr -d '\r')
                   echo "GPU ${GPU:-?} · $BAUM_ZEILE" > "$OUT/ergebnis.md"
                   rot_ende() {
