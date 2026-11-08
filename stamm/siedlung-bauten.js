@@ -2561,11 +2561,18 @@ class AnazhRealm_siedlung_bauten {
     // `nur` (fahrt-takt): ein Schreiber, der nur diese Vertices des Bereichs bewegt (der Teil-Morph aus dem Faden, `_bodenTeilLegen`),
     // lässt jede andere Ecke stehen — je Zelle die feste Hülle (die Lage jeder Ecke, das Ziel jeder anderen) einmal je Bereich und
     // Rand, danach nur die Ziele des Rands; dieselbe Hülle wie über jede Ecke (Minimum und Maximum kennen keine Reihe).
+    // DER STAND FÄLLT NUR MIT DER HÜLLE (w24-fahrt-takt, Lehre 25): jeder Pass liest den Bereich nur über die Hüllen seiner
+    // Zellen — bleiben sie gleich (der Morph wandert zwischen Lage und Ziel, ihre Vereinigung steht), steht jede Wahl. Befund
+    // (GT 20 m/s am Genesis-Ring, lokal): der Stand des Boden-Satzes fiel 192-mal in 40 Bildern, je Fall wählte jeder Pass den
+    // ganzen Satz neu (`_satzAbschnittSteht`).
     _chunkSatzHuelle(s, b, nur = null, von = 0, bis = -1) {
-        s.stand++;
         const h = b.huelle || (b.huelle = new THREE.Box3());
-        h.makeEmpty();
         if (bis < 0) bis = b.zellen.length;
+        const vor = this._huelleVor || (this._huelleVor = []);
+        vor.length = 0;
+        for (let zi = von; zi < bis; zi++) vor.push(b.zellen[zi].huelle.clone());
+        const hVor = h.clone();
+        h.makeEmpty();
         const A = b.geom.attributes;
         const P = A.position.array,
             Z = A.aMorphTarget ? A.aMorphTarget.array : null;
@@ -2662,6 +2669,9 @@ class AnazhRealm_siedlung_bauten {
             }
         }
         for (const zelle of b.zellen) if (!zelle.huelle.isEmpty()) h.union(zelle.huelle);
+        let anders = !h.equals(hVor);
+        for (let zi = von; zi < bis && !anders; zi++) anders = !b.zellen[zi].huelle.equals(vor[zi - von]);
+        if (anders) s.stand++;
     }
 
     // Der Austritt: die Chunk-Geometrie behält ihre Daten als EIGENE Kopie (ihr Bereich wird frei und neu

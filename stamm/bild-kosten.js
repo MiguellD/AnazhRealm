@@ -2777,15 +2777,7 @@ class AnazhRealm_bild_kosten {
     // der Halt war 1 cm), jeder Leser wählte voll — `_passSicht` 21,6–30,9 ms je Bild in der Mitte.
     _lageAnker(a, s, kamera, L, key, weg) {
         if (a.gen > 0 && a.kamera === kamera.id && this._passLageHaelt(a.sig, s, a)) {
-            [L.gen, L.key, L.ax, L.ay, L.az, L.halt, L.haltBlende] = [
-                a.gen,
-                key,
-                a.ax,
-                a.ay,
-                a.az,
-                a.halt,
-                a.haltBlende,
-            ];
+            [L.gen, L.key, L.ax, L.ay, L.az, L.halt, L.haltBlende, L.dreh] = [a.gen, key, a.ax, a.ay, a.az, a.halt, a.haltBlende, a.dreh]; // prettier-ignore
             // das Auge der Blende hält wie das Auge der Kamera: jeder Leser urteilt vom Auge des Ankers
             [L.ex, L.ez, L.licht] = [a.sig[67], a.sig[68], a.sig[85]];
             if (s[86] > a.wegMax) a.wegMax = s[86];
@@ -2793,14 +2785,18 @@ class AnazhRealm_bild_kosten {
         }
         const PW = AnazhRealm.PASS_WAHL;
         const lw = weg && weg.v > 0 ? Math.min(PW.weg.wegMax, weg.v * PW.weg.zeitS) : 0;
-        const q = lw > 0 ? PW.weg.querM : PW.haltM / 2;
+        // quer und lotrecht (der Wagen wiegt auf dem Gelände), die Drehung der folgenden Kamera um `drehRad` mehr — eine
+        // Perspektive wählt mit dem weiteren Dreh-Rand (`L.dreh`), der Anker hält bis zu seiner Hälfte (`_passLageHaelt`)
+        const [q, qv] = lw > 0 ? [PW.weg.querM, PW.weg.lotM] : [PW.haltM / 2, PW.haltM / 2];
         const u = lw > 0 ? weg.u.slice() : [0, 0, 0];
         const h = Math.hypot(u[0], u[2]);
+        a.drehRand = PW.drehRand + (lw > 0 ? PW.weg.drehRad : 0);
+        a.dreh = L.dreh = kamera.isPerspectiveCamera === true ? Math.sin(a.drehRand) : 0;
         const punkt = PW.haltM * (1 + PW.sichtRand);
-        const strecke = punkt + (lw + 2 * q - PW.haltM) * (1 + PW.sichtRand + L.dreh);
+        const strecke = punkt + (lw + 2 * (q === qv ? q : Math.hypot(q, qv)) - PW.haltM) * (1 + PW.sichtRand + L.dreh);
         a.sig.set(s);
-        Object.assign(a, { kamera: kamera.id, ax: L.ax, ay: L.ay, az: L.az, wegMax: s[86], u, lw, q });
-        a.blende = { u: h > 1e-6 ? [u[0] / h, 0, u[2] / h] : [0, 0, 0], lw: lw * h, q };
+        Object.assign(a, { kamera: kamera.id, ax: L.ax, ay: L.ay, az: L.az, wegMax: s[86], u, lw, q, qv });
+        a.blende = { u: h > 1e-6 ? [u[0] / h, 0, u[2] / h] : [0, 0, 0], lw: lw * h, q, qv };
         [a.halt, a.haltBlende] = [s[84] === 1 ? strecke : punkt, strecke];
         a.gen = this._passLageZahl = (this._passLageZahl || 0) + 1;
         [L.gen, L.key, L.halt, L.haltBlende] = [a.gen, key, a.halt, a.haltBlende];
@@ -2808,12 +2804,14 @@ class AnazhRealm_bild_kosten {
     }
 
     // Liegt der Schritt (dx, dy, dz) vom Auge des Ankers `w` auf seinem Weg (`_lageAnker`: die Strecke lw entlang u, quer höchstens
-    // q, vor ihrem Anfang und hinter ihrem Ende ebenso)? Ohne Weg (lw 0, q haltM/2) das Gesetz des Halts am Punkt (`_wahlHaelt`).
+    // q, lotrecht höchstens qv, vor ihrem Anfang und hinter ihrem Ende ebenso)? Ohne Weg (lw 0, q = qv = haltM/2) das Gesetz des
+    // Halts am Punkt (`_wahlHaelt`).
     _aufStrecke(dx, dy, dz, w) {
         const u = w.u;
         const voran = w.lw > 0 ? dx * u[0] + dy * u[1] + dz * u[2] : 0;
         const t = voran < 0 ? 0 : voran > w.lw ? w.lw : voran;
-        return Math.hypot(dx - t * u[0], dy - t * u[1], dz - t * u[2]) <= w.q;
+        const [rx, ry, rz] = [dx - t * u[0], dy - t * u[1], dz - t * u[2]];
+        return w.q === w.qv ? Math.hypot(rx, ry, rz) <= w.q : Math.hypot(rx, rz) <= w.q && Math.abs(ry) <= w.qv;
     }
 
     // DAS GESETZ DES HALTS (Welle C): eine Wahl, die mit einem Rand fiel, hält, solange ihre Drehung seit dem Anker — mal dem
@@ -2883,7 +2881,7 @@ class AnazhRealm_bild_kosten {
             let spur = 0;
             for (let i = 75; i < 84; i++) spur += s[i] * a[i];
             const dreh = Math.acos(Math.max(-1, Math.min(1, (spur - 1) / 2)));
-            if (!this._wahlHaelt(dreh, 1, PW.drehRand)) return false;
+            if (!this._wahlHaelt(dreh, 1, anker.drehRand)) return false;
         } else for (let i = 75; i < 84; i++) if (!(Math.abs(s[i] - a[i]) <= 1e-9)) return false;
         return this._blendeHaelt(a, s, anker);
     }
@@ -3793,7 +3791,7 @@ AnazhRealm.PASS_WAHL = Object.freeze({
     lichtRandTexel: 32,
     wegM: 0.5,
     // DER WEG DES AUGES (`_lageAnker`, w24-fahrt-takt): die Strecke, die das Auge in `zeitS` fährt, höchstens `wegMax`, quer `querM`
-    weg: Object.freeze({ zeitS: 0.5, wegMax: 12, querM: 0.25 }),
+    weg: Object.freeze({ zeitS: 0.5, wegMax: 12, querM: 0.25, lotM: 0.5, drehRad: 0.05 }),
 });
 // die Felder, die die Lage des Auges mit der des Wegs teilt (`_passWahlLage`): Ebenen, Kapsel, Licht und Blende dieses Passes
 AnazhRealm.LAGE_GETEILT = Object.freeze(["fr", "ax", "ay", "az", "rand", "halt", "haltBlende", "dreh", "fit", "dir", "licht", "an", "ex", "ez", "perf", "ref", "kanten"]); // prettier-ignore
