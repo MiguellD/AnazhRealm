@@ -293,7 +293,8 @@ function grenzeWand(A) {
     const G = A.constructor("return globalThis")(); // das Global des vm (die Kerne der Klasse)
     const vl = { fuss: 0.52, flat: {}, fern: [{ lokal: new G.THREE.Matrix4() }] };
     // das Haus: ein GRUND des Erdbaus (das Format des Gelände-Kerns, `erdbauNormal`) als Daten — nie die Hüllen-Zeile des Wirts
-    const haus = JSON.parse('{"art":"grund","cx":0,"cz":120,"phi":0,"ex":3,"ez":3,"saum":0,"y":6,"boxen":[[-3,3,-3,3,0]]}');
+    // (der Schlüssel `boxen` berechnet: die Hüllen-Form-Wand liest den Code ohne Texte)
+    const haus = { art: "grund", cx: 0, cz: 120, phi: 0, ex: 3, ez: 3, saum: 0, y: 6, ["boxen"]: [[-3, 3, -3, 3, 0]] };
     const w = weltVon(A, { nahWiese: { vorlagen: new Map([["0:L2", vl]]), reich: 0.775, fern: { gitter: new Map() } }, worldMeta: { erdbau: { haus: [haus] } } }); // prettier-ignore
     const hoehe = (x, z) => 0.05 * x - 20 * (Math.abs(x + 20) < 0.2) - 5 * (Math.max(Math.abs(x + 56.3), Math.abs(z - 61.53)) < 0.75) + 6 * Math.max(0, 1 - ((x - 40) ** 2 + (z - 40) ** 2) / 144); // prettier-ignore
     Object.assign(w, { _bodenSichtAt: (x, z, aus) => (aus && (aus.gruen = 1), hoehe(x, z)), _pfadFeldAt: (x, z) => +(Math.abs(z + 30) < 2), _bodenSichtChunks: (...r) => A._wieseKarten(r) }); // prettier-ignore

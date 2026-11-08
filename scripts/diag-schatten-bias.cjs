@@ -496,7 +496,7 @@ async function probe(cfg) {
     // castShadow eines gesetzten Baus an/aus (je Instanz-Gruppe seiner Slots, das Bundle zeichnet neu)
     const merk = new Map();
     const bauWirft = (e, an) => {
-        for (const ref of (e && e.instSlots) || []) {
+        for (const ref of (e?.instSlots) || []) {
             const g = st.archInstanceGroups.get(ref.key);
             if (!g || !g.mesh) continue;
             if (!merk.has(g.mesh)) merk.set(g.mesh, g.mesh.castShadow);

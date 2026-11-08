@@ -23,7 +23,7 @@ function torHuelleMessen(PC, THREE, id) {
     let oberkante = mu.apexY;
     g.updateMatrixWorld(true);
     g.traverse((o) => {
-        const P = o.isMesh && o.geometry && o.geometry.attributes ? o.geometry.attributes.position : null;
+        const P = o.isMesh && o.geometry?.attributes ? o.geometry.attributes.position : null;
         if (!P) return;
         for (let i = 0; i < P.count; i++) {
             v.fromBufferAttribute(P, i).applyMatrix4(o.matrixWorld);

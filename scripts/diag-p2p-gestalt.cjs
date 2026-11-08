@@ -39,7 +39,7 @@ hauptLauf(async () => {
         const A = r.constructor;
         const f = r._ensureAssetFoundry();
         await __weltDa(() => f && f.ready && f.recipes && f.recipes.mensch && !f._vorrat);
-        if (!(f?.ready && f.recipes && f.recipes.mensch)) return { fatal: "mensch-Rezept kam nie" };
+        if (!(f?.ready && f.recipes?.mensch)) return { fatal: "mensch-Rezept kam nie" };
         const kc = window.__koerperCore;
         if (!kc) return { fatal: "koerper-Core fehlt" };
         const porzellanLin = __lin(kc.SKIN_TONES.porzellan.hex >>> 0);
