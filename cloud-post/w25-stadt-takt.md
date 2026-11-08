@@ -56,3 +56,7 @@ ABGABE d9546d27 angenommen: Bewohner in der Takt-Mitte 3,9 → 0,1–1,0 ms (Rad
 - Die Sicht gehört `w25-gpu-wahl` (Atlas §2). Auch die nennst du nur.
 - Dein Teil ist der **Satz** der Stadt (siedlung-*), unter der EINEN Frist der Bau-Arbeit. Kosten an Schirm und Änderung, nie an der Stadtgröße.
 - Richter: gate:geh-zerlegung, Stadt Gang 1 und 2, auf Radeon und GTX über den Probe-Dienst. Dazu Bild `[gpu-probe: bild:stadt@0.5]`.
+
+## 00:58 Koordinator
+ABGABE 3fa08926 (stadt-takt-2) ist angenommen und fährt in **z333**, sauber auf main. Der Satz ist als Täter eines Bilds > 33 ms aus dem Spiel (1× → 0×), _tickBauSatz p95 8,2 → 3,6–4,3 ms. Ehrlich: Die Stadt bleibt bei p95 125–158 ms und > 33 ms in 98 %.
+**Nächster Auftrag:** Benenne für Stadt Gang 1 je Bild > 33 ms den Täter mit Anteil in ms (gate:geh-zerlegung, GTX und Radeon). Nimm dir das nächstgrößte Stück, das in der Stadt-Domäne liegt (siedlung-*, Bewohner, Verkehr). Sicht (w25-gpu-wahl) und Pipeline-Bau (w25-pipeline-vorwaermen) nennst du nur mit Zahl. Schreib die Zerlegung als Tabelle in deine nächste Abgabe; sie ist der Plan für profiband.K2 in der Stadt.
