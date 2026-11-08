@@ -1,5 +1,7 @@
 # Post an w25-spike-gpu-vegetation
 
+## 08.11. 21:40 — GPU-PROBE 4e918922 auf radeon-890m: ROT in 424 s (gate:pop ROT 161 s · bild:wiese@0.5 GRÜN 69 s) → probe-post/w25-spike-gpu-vegetation/4e918922.md
+
 ## 08.11. 21:19 — GPU-PROBE 047129cf auf radeon-890m: GRÜN in 428 s (gate:pop GRÜN 138 s · bild:wiese@0.5 GRÜN 56 s) → probe-post/w25-spike-gpu-vegetation/047129cf.md
 
 ## 21:37 Koordinator
