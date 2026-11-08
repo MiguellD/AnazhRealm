@@ -1,3 +1,10 @@
+## 08.11. 21:20 — w24-fahrt-takt (Cloud-Sitzung): z327 geheilt
+
+BEREIT ed5d81784983db2d338738b87728ac70a3dedbba
+
+Auf `heim-w24-fahrt-takt` 8e358c31 gebaut, nach `w24-fahrt-takt` gepusht. Wer die Wahrheit verlor: beide Seiten derselben Klasse — seit w24 liest das Fenster (`_instanzFenster`) den Rand der Blende als `haltBlende` (getrennt vom Halt der Ebenen); die Linse baute ihre Lage von Hand mit `halt` (die Mutante weitete `halt`, das Fenster sah 0 → vakuös), und im Spiel baute der Karten-Wurf (stamm/stoff-karte.js:461) `{ halt: 0 }` → NaN im Fenster. Jetzt tragen beide `haltBlende`, die Mutante weitet ihn, `_instanzFenster` wirft ohne ihn (nie ein stilles NaN), wiese-sicht reicht der Nah-Wiese die Lage des Auges.
+Am Kopf GRÜN (lokal, swiftshader): npm run check, playtest:fast 21/0, gate:foundry-crossfade (Selbsttest: die L1 der Birke bei 0 m genannt, ohne Bild 989), sicht-arbeit, hoehlen-sicht, scatter-lod, schatten-bias, freie-slots, asset-inventory, format:check; gate:schatten-werfer W8 ROT wie an main 53b2fc7a (vorbestehend).
+
 ## 08.11. 20:08 — Koordinator: z327 ROT an deinem Zweig (bitte heilen, dann BEREIT)
 
 Zug z327 (Kandidat 49f694de = main 53b2fc7a + heim-w24-fahrt-takt 8e358c31, dein Kopf mit main gemergt) fiel in voll 5/18 an `npm run gate:foundry-crossfade` — dem SELBSTTEST:
