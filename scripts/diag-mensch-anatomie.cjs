@@ -90,7 +90,11 @@ function messe(sb, verzerre, dials) {
     const { B, T } = baue(sb, verzerre, dials);
     const P = B.parts;
     const lage = (n) => new T.Vector3().setFromMatrixPosition(n.matrixWorld);
-    const Hk = spanne(punkte(T, B.character), 1).l;
+    const leib = spanne(punkte(T, B.character), 1),
+        kopf = spanne(punkte(T, P.head), 1),
+        Hk = leib.l;
+    // DER KANON DES LEIBS (w21-leib-bau): die Höhe eines Gelenks über der Sohle als Anteil von Hk
+    const an = (n) => (lage(n).y - leib.a) / Hk;
     // die rechte Hand (hand1, ohne den Daumen tA_1 ihre Breite) und der rechte Arm
     const ellG = P.elbow1;
     const unterP = punkte(T, ellG, new Set([P.hand1]));
@@ -109,13 +113,17 @@ function messe(sb, verzerre, dials) {
         handB: spanne(punkte(T, P.hand1, new Set([P["tA_1"]].filter(Boolean))), 0).l / Hk,
         handgelenk: maxBreite(unterP, yW + 0.03 * lU, yW + 0.1 * lU, 1) / Hk,
         unterarm: maxBreite(unterP, yE - lU * 0.2, yE - lU * 0.7, 10) / Math.max(1e-6, maxBreite(armP, yS - (yS - yE) * 0.4, yS - (yS - yE) * 0.85, 10)), // prettier-ignore
-        kopfH: spanne(punkte(T, P.head), 1).l / Hk,
+        kopfH: kopf.l / Hk,
         kopfB: spanne(punkte(T, P.head, new Set(ohrenVon(P.head))), 0).l / Hk,
         augenAbstand: lage(aug.eyeL).distanceTo(lage(aug.eyeR)) / Hk,
         augapfel: spanne(punkte(T, ball), 0).l / Hk,
         iris: spanne(punkte(T, aug.irisL), 0).l / Hk,
         mund: spanne(punkte(T, aug.upperLipRef).concat(punkte(T, aug.lowerLipRef)), 0).l / Hk,
         fuss: spanne(punkte(T, P.ankle1), 2).l / Hk,
+        schulter: an(P.arm1),
+        huefte: an(P.hip1),
+        knie: an(P.knee1),
+        hals: (kopf.a - lage(P.arm1).y) / Hk,
     };
 }
 
@@ -136,7 +144,6 @@ function messeKopf(sb, eingriff) {
     const { B } = baue(sb, eingriff && eingriff.gesetz, eingriff && eingriff.dials);
     const P = B.parts;
     const lage = (n) => new T.Vector3().setFromMatrixPosition(n.matrixWorld);
-    const Hk = spanne(punkte(T, B.character), 1).l;
     const kopf = P.head;
     const kp = punkte(T, kopf);
     const kH = spanne(kp, 1).l,
@@ -152,134 +159,51 @@ function messeKopf(sb, eingriff) {
     const nase = [P.noseTip, P.noseA1, P["noseA-1"]].filter(Boolean).reduce((a, n) => a.concat(punkte(T, n)), []);
     const yNase = spanne(nase, 1).a;
     const yAuge = (eL.y + eR.y) / 2;
-    // (2) der Ofen L0: die Hornhaut vor der Haut, die Töne, das Haar, die Dreiecke
-    const kern = eingriff?.kern ? eingriff.kern(K) : K;
-    const g = sb.BAKERS_BY_KIND.koerper(
-        kern,
-        "mensch",
-        1,
-        0,
-        eingriff?.dials ? { dials: eingriff.dials } : null
-    );
-    g.updateMatrixWorld(true);
-    const W = {};
-    const sk = g.userData.__skelett;
-    const welt = (name) => {
-        if (W[name]) return W[name];
-        const j = sk.joints.find((x) => x.name === name);
-        if (!j) return (W[name] = new T.Matrix4());
-        const L = new T.Matrix4().compose(
-            new T.Vector3(...j.pos),
-            new T.Quaternion(...j.quat),
-            new T.Vector3(...j.scale)
-        );
-        return (W[name] = j.parent ? new T.Matrix4().multiplyMatrices(welt(j.parent), L) : L);
-    };
-    const ms = [];
-    g.traverse((n) => n.isMesh && ms.push(n));
-    const kl = (n) => n.material.userData.__klasse,
-        jn = (n) => n.userData.__assetJoint || "";
-    // die Punkte eines Teils im Ofen-Raum (an seinem Gelenk)
-    const imOfen = (n) => punkte(T, n).map((p) => new T.Vector3(...p).applyMatrix4(welt(jn(n))).toArray());
-    const hautK = ms.find((n) => kl(n) === "haut" && jn(n) === "head");
-    const v = new T.Vector3();
-    const hp = [],
-        hc = [];
-    const pa = hautK.geometry.attributes.position,
-        ca = hautK.geometry.attributes.color;
-    for (let i = 0; i < pa.count; i++) {
-        v.fromBufferAttribute(pa, i)
-            .applyMatrix4(hautK.matrixWorld)
-            .applyMatrix4(welt(jn(hautK)));
-        hp.push([v.x, v.y, v.z]);
-        hc.push([ca.getX(i), ca.getY(i), ca.getZ(i)]);
-    }
-    const bkH = spanne(hp, 1).l,
-        byK = spanne(hp, 1).a;
+    // (2) der Ofen L0: die Hornhaut vor der Haut, das freie Auge, das Haar als Volumen und die Dreiecke urteilt das Gesetz am Guss
+    // (koerper-core `kopfGussUrteil`; die Haarlinie aus der Kopfhöhe OHNE Haar, in Pupillen-Abständen), die Töne die Linse
+    const kern = eingriff && eingriff.kern ? eingriff.kern(K) : K;
+    const g = sb.BAKERS_BY_KIND.koerper(kern, "mensch", 1, 0, eingriff && eingriff.dials ? { dials: eingriff.dials } : null); // prettier-ignore
+    let hautK;
+    g.traverse((n) => n.isMesh && n.material.userData.__klasse === "haut" && n.userData.__assetJoint === "head" && (hautK = n)); // prettier-ignore
     // DIE TÖNE DES GUSSES (mensch.K4): je Ton der Kopf-Haut (`aTon`, koerper `menschTon`) seine Albedo in CIELAB — die Farbe
     // seiner hellsten Ecke (die Verdeckung der Haut dunkelt nur, die Mund-Linie ist dunkler: die hellste trägt den Ton genau):
     // die Haut, die Lippe, die Augenhöhle (der Ton der Haut am Auge) und die Braue
-    const tonA = hautK.geometry.attributes.aTon;
-    const labTon = (k) => lab(...(hc.filter((c, i) => tonA && tonA.getX(i) === K.menschTon(k)).sort((a, b) => luma709(b) - luma709(a))[0] || [NaN, NaN, NaN])); // prettier-ignore
+    const { color: ca, aTon: tonA } = hautK.geometry.attributes;
+    const labTon = (k) => lab(...(Array.from({ length: ca.count }, (_, i) => [ca.getX(i), ca.getY(i), ca.getZ(i)]).filter((c, i) => tonA && tonA.getX(i) === K.menschTon(k)).sort((a, b) => luma709(b) - luma709(a))[0] || [NaN, NaN, NaN])); // prettier-ignore
     const [lH, lL, lS, lB] = ["skin", "lips", "socket", "braue"].map(labTon);
-    // die Hornhaut vor der Haut: der Augapfel-Scheitel gegen den Median der Haut im Ring 1,0–1,8 Augapfel-Radien
-    let vorstand = -Infinity;
-    for (const n of ms.filter((n) => kl(n) === "eye")) {
-        const bp = imOfen(n);
-        const sx = spanne(bp, 0),
-            sy = spanne(bp, 1),
-            sz = spanne(bp, 2);
-        const cx = (sx.a + sx.b) / 2,
-            cy = (sy.a + sy.b) / 2,
-            rb = sx.l / 2;
-        const ring = [];
-        hp.forEach((p, i) => {
-            const d = Math.hypot(p[0] - cx, p[1] - cy);
-            if (d >= rb && d <= 1.8 * rb && p[2] > sz.a) ring.push(i);
-        });
-        const zs = ring.map((i) => hp[i][2]).sort(aufsteigend);
-        const zMed = zs.length ? zs[zs.length >> 1] : NaN;
-        vorstand = Math.max(vorstand, (sz.b - zMed) / bkH);
-    }
-    // das freie Auge: je Punkt der Iris-Vorderseite ein Strahl nach vorn (+z) gegen die Dreiecke der Kopf-Haut
-    const strahl = new T.Raycaster(new T.Vector3(), new T.Vector3(0, 0, 1));
-    const huelle = new T.Mesh(new T.BufferGeometry().setAttribute("position", new T.Float32BufferAttribute(hp.flat(), 3)).setIndex(hautK.geometry.index), new T.MeshBasicMaterial({ side: T.DoubleSide })); // prettier-ignore
-    const trifft = (o) => (strahl.ray.origin.set(...o), strahl.intersectObject(huelle).length > 0);
-    let irisN = 0,
-        irisFrei = 0;
-    for (const n of ms.filter((n) => kl(n) === "iris")) {
-        const ip = imOfen(n);
-        const zc = (spanne(ip, 2).a + spanne(ip, 2).b) / 2;
-        for (const p of ip) {
-            if (p[2] <= zc) continue;
-            irisN++;
-            if (!trifft(p)) irisFrei++;
-        }
-    }
-    // das Haar als Volumen: die Kopf-Haut über der Haarlinie im Ton des Haars (koerper `menschTon`: die Kappe)
-    // die Haarlinie aus der Kopfhöhe OHNE Haar (das Gesetz), in den Ofen-Raum über den Pupillen-Abstand
-    const iz = ms
-        .filter((n) => kl(n) === "iris")
-        .map((n) => {
-            const b = spanne(imOfen(n), 0);
-            return (b.a + b.b) / 2;
-        });
-    const skala = Math.abs(iz[0] - iz[1]) / ipd;
-    const yHaar = byK + (S.haarLinie || 0.8) * kH * skala;
-    let kal = 0,
-        bedeckt = 0;
-    hp.forEach((p, i) => {
-        if (p[1] < yHaar) return;
-        kal++;
-        if (tonA && tonA.getX(i) === K.menschTon("haarKappe")) bedeckt++;
-    });
-    let tris = 0;
-    for (const n of ms)
-        if (/^(head|eye[LR]|iris[LR]|lid[TB][LR])$/.test(jn(n)))
-            tris += (n.geometry.index ? n.geometry.index.count : n.geometry.attributes.position.count) / 3;
     const luma = Object.values(K.SKIN_TONES).map((t) => luma709(linHex(t.hex)));
     return {
-        kopfAnteil: kH / Hk,
         augenLinie: (yAuge - yKinn) / kH,
         augenSpalt: (ipd - augW) / augW,
         mundZuPupille: spanne(lippen, 0).l / ipd,
         ohrOben: (op.b - yAuge) / kH,
         ohrUnten: (op.a - yNase) / kH,
         ohrLaenge: op.l / kH,
-        augenVorstand: vorstand,
-        augeFrei: irisN ? irisFrei / irisN : NaN,
+        ...K.kopfGussUrteil(g, ((S.haarLinie || 0.8) * kH) / ipd),
         lippeL: lL[0] - lH[0],
         lippeA: lL[1] - lH[1],
         hoehleL: lS[0] - lH[0],
         hoehleA: lS[1] - lH[1],
         hautAlbedoMin: Math.min(...luma),
         hautAlbedoMax: Math.max(...luma),
-        haarDeckung: kal ? bedeckt / kal : NaN,
         // DIE BRAUE (mensch.K4): ihr Ton gegen die Haut (|ΔL*|)
         brauKontrast: Math.abs(lB[0] - lH[0]),
-        kopfDreiecke: tris,
     };
 }
+// DIE EINE HAUT IM GUSS (w21-leib-bau, koerper-core `leibUrteil` — die Bänder LEIB_SOLL): am Ofen L0 die Naht der Kopf-Haut an der
+// Haut des Leibs in Ruhe und unter dem Kopf in Pose, die Säume der Stoffe aus der Haut, die Splitter der Haut, nackt der Bauch. Der
+// Täter: `guss(g)` am Guss, oder `{ kern }` (der Kern, mit dem der Ofen gießt).
+const messeLeib = (so, taeter = () => {}) => {
+    const K = taeter.kern ? taeter.kern(so.__koerperCore) : so.__koerperCore;
+    return so.__koerperCore.leibUrteil(
+        ...[null, { dials: { top: "none", bottom: "none", shoes: "none" } }].map((ov) => {
+            const g = so.BAKERS_BY_KIND.koerper(K, "mensch", 1, 0, ov);
+            if (typeof taeter === "function") taeter(g);
+            return g;
+        })
+    );
+};
+
 // DAS URTEIL DER BÄNDER (MENSCH_SOLL, KOPF_SOLL): je Maß sein Band (…Min/…Max im Band des Maßes), nicht messbar ist ROT
 function urteile(sb, m, soll = "MENSCH_SOLL") {
     const S = sb.__koerperCore[soll];
@@ -380,7 +304,7 @@ if (SELBSTTEST) {
     const pruefe = (name, verzerre, muster, kopf) => {
         const sb = kopf ? ladeOfen() : ladeWelt();
         const f =
-            kopf === "menge" ? urteileMenge(messeMenge(verzerre)) : kopf === "schnitte" ? kopfJe(sb, verzerre.kern) : kopf === "ruhe" ? urteileRuhe(sb, messeRuhe(sb, verzerre.kern)) : kopf ? urteileKopf(sb, messeKopf(sb, verzerre)) : urteile(sb, messe(sb, verzerre)); // prettier-ignore
+            kopf === "menge" ? urteileMenge(messeMenge(verzerre)) : kopf === "schnitte" ? kopfJe(sb, verzerre.kern) : kopf === "ruhe" ? urteileRuhe(sb, messeRuhe(sb, verzerre.kern)) : kopf === "leib" ? urteile(sb, messeLeib(sb, verzerre), "LEIB_SOLL") : kopf ? urteileKopf(sb, messeKopf(sb, verzerre)) : urteile(sb, messe(sb, verzerre)); // prettier-ignore
         const ok = f.some((x) => muster.test(x));
         console.log(`  ${ok ? "✅" : "❌"} ${name}${ok ? " — " + f.find((x) => muster.test(x)) : ""}`);
         if (!ok) rot++;
@@ -431,6 +355,44 @@ if (SELBSTTEST) {
     // DIE KAPPE VOR DEM SCHÄDEL (vor w7-gesicht: afro um sein zurueck 0,05 gesetzt, ohne die Dicke) begräbt sein Auge
     pruefe("K1 die Kappe vor dem Schädel (afro) wird erkannt", { kern: (K) => ({ ...K, haarKappe: (d) => K.haarKappe(d).map((k) => ({ ...k, c: [0, k.c[1], -0.05] })) }) }, /^afro\/rand\d augeFrei/, "schnitte"); // prettier-ignore
     pruefe("S5 der aufgesetzte Augapfel (eine Augapfel-Breite vor) wird erkannt", auge(0.12), /^augenVorstand/, true);
+    // DER LEIB (w21-leib-bau): der Kopf über H — so stand er im Gesetz vor dem Kanon (der Scheitel 0,21 E über H, der Hals zu lang)
+    pruefe("L1 der Scheitel 0,21 E über H (der Kopf vor w21-leib-bau) wird erkannt", (B) => (B.parts.head.position.y += 0.21), /^(hals|kopfH) /); // prettier-ignore
+    // je Täter am Guss (Ofen L0) die Haut, wie sie vor w21-leib-bau stand: (L2) die Kopf-Haut schwebt über dem Hals (zwei Häute
+    // ohne Ring), (L3) der Hals trägt kein Gewicht des Kopfs (die Bindung gibt es dem Rumpf: die Naht reißt unter der Pose), (L4)
+    // jede Haut rechnet die Normale am Ring aus ihren Dreiecken (die Schattierung springt), (L5) der Saum gezackt (jede zweite
+    // Ecke eines Stoffs um 0,03 E versetzt: die Treppe der Dreiecke), (L6) die Delle im Bauch (die Haut vorn um 0,1 E eingedrückt)
+    const amGuss = (f) => (g) => g.traverse((m) => m.isMesh && f(m, m.material.userData.__klasse, m.userData.__assetJoint, m.geometry.attributes.position)); // prettier-ignore
+    pruefe("L3 der Hals ohne Gewicht des Kopfs wird erkannt", (g, sj = g.userData.__skelett.skinJoints) => (sj[sj.indexOf("head")] = "torso"), /^nahtPose/, "leib"); // prettier-ignore
+    for (const [name, f, muster] of [
+        [
+            "L2 die schwebende Kopf-Haut",
+            (m, k, j) => k === "haut" && j === "head" && (m.position.y += 0.07),
+            /^naht(Spalt|Ring)/,
+        ],
+        [
+            "L4 die einseitige Normale am Ring",
+            (m, k) => k === "haut" && m.geometry.computeVertexNormals(),
+            /^nahtNormale/,
+        ],
+        ["L5 der gezackte Saum", (m, k, j, pa) => { for (let i = 1; /^stoff_/.test(k) && i < pa.count; i += 2) pa.setY(i, pa.getY(i) + 0.03); }, /^saumUmlauf/], // prettier-ignore
+        ["L6 die Delle im Bauch", (m, k, j, pa) => { for (let i = 0; k === "haut" && j === "mensch" && i < pa.count; i++) if (Math.hypot(pa.getX(i), pa.getY(i) - 3.9) < 0.08 && pa.getZ(i) > 0) pa.setZ(i, pa.getZ(i) - 0.1); }, /^bauchKnick/], // prettier-ignore
+    ])
+        pruefe(name + " wird erkannt", amGuss(f), muster, "leib");
+    // (L7) der Guss vor der Nacharbeit: die Dicke des Halses schwindet über der Naht nie (ihr Band unendlich) — sie stößt hinter dem Ohr
+    // und unter dem Mund durch die Haut des Kopfs (Überschläge, Kanten mit vier Dreiecken; gate:kamera-leib:echt K6)
+    const ohneBand = (K) => ({ ...K, MENSCH_GESTALT: { ...K.MENSCH_GESTALT, leibHaut: { ...K.MENSCH_GESTALT.leibHaut, naht: { ...K.MENSCH_GESTALT.leibHaut.naht, band: 1e9 } } } }); // prettier-ignore
+    pruefe("L7 die Dicke des Halses im Kopf (der Guss vor der Nacharbeit) wird erkannt", { kern: ohneBand }, /^haut(Mehrfach|Ueberschlag) /, "leib"); // prettier-ignore
+    // (S8) der Hals-Deckel zurück (der Bau vor der Nacharbeit: ein flacher Zylinder 0,10/0,11 × 0,05 am oberen Ende der Röhre, im Kopf
+    // auf Höhe der Lippen) — sein Rand läuft als dunkle Falte von den Mundwinkeln zum Kiefer
+    const mitDeckel = (K) => ({ ...K, bauMensch: (F) => {
+        const B = K.bauMensch(F), r = B.parts.neckMain;
+        const oben = new r.position.constructor(0, r.geometry.parameters.height / (2 * K.MENSCH_GESTALT.hals.laenge), 0).applyQuaternion(r.quaternion).add(r.position); // prettier-ignore
+        const d = F.zylinder(0.1, 0.11, 0.05, "skin");
+        d.position.set(0, oben.y - 0.025, 0);
+        r.parent.add(d);
+        return B;
+    } }); // prettier-ignore
+    pruefe("S8 der Hals-Deckel im Kopf (die Falte unter dem Mund) wird erkannt", { kern: mitDeckel }, /^mundFalte /, true);
     pruefe(
         "S7 das begrabene Auge (eine Augapfel-Breite zurück) wird erkannt",
         auge(-0.12),
@@ -462,9 +424,11 @@ zeige(mk);
 const mm = messeMenge();
 const mr = messeRuhe(so);
 zeige(Object.fromEntries(mr.map((r, i) => ["spreizGrad" + i, r.spreizGrad])));
-const fehler = urteile(sb, m).concat(urteileKopf(so, mk), urteileMenge(mm), kopfJe(so), urteileRuhe(so, mr));
+const ml = messeLeib(so);
+zeige(ml);
+const fehler = urteile(sb, m).concat(urteileKopf(so, mk), urteileMenge(mm), kopfJe(so), urteileRuhe(so, mr), urteile(so, ml, "LEIB_SOLL")); // prettier-ignore
 urteilEnde(
     fehler.length,
     `\n❌ ROT — ${fehler.length} Abweichung(en):\n  ` + fehler.join("\n  "),
-    "\n✅ GRÜN — der Mensch steht in seinen Anthropometrie-Bändern (Hand · Arm · Kopf · Gesicht · Fuß), die Arme hängen außerhalb des Rumpfs."
+    "\n✅ GRÜN — der Mensch steht in seinen Anthropometrie-Bändern (Hand · Arm · Kopf · Gesicht · Fuß · Kanon) und in EINER Haut, die Arme hängen außerhalb des Rumpfs."
 );

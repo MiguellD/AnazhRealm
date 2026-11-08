@@ -81,7 +81,7 @@ hauptLauf(async () => {
         // ── (D) DEFAULT-TREUE: keine Übergabe ⇒ feld-los + byte-alt ──
         delete r._ensureWorkshopState().studioOv.wolf;
         const wolfD = spawnWolf();
-        res.d.feldLos = !(wolfD?.userData.gussDials);
+        res.d.feldLos = !wolfD?.userData.gussDials;
         const snapD = r._serializeCreature(wolfD);
         res.d.snapFeldLos = !!(snapD && snapD.gussDials === undefined);
         r.removeCreature(wolfD);

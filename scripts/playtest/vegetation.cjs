@@ -912,7 +912,7 @@ async function checkBandV18212GigantRestsubschritte({ page, check }) {
         const parts = r._growTreeBlueprintRich("baum_tanne", "k2-test");
         const sk = r._lastTreeSkeleton;
         r._lastTreeSkeleton = null;
-        const baseR = sk?.branches[0] && sk.branches[0].points[0] ? sk.branches[0].points[0].r : 0;
+        const baseR = sk && sk.branches[0]?.points[0] ? sk.branches[0].points[0].r : 0;
         // Der Flare skaliert mit der Größenklasse → keine absolute Schwelle: er ist eine FLACHE DISK am
         // Sockel (x/y ~5.5), größenklassen-unabhängig getrennt von den Foliage-Kugeln (x/y ≈ 1.4 < 1.5).
         const sockelParts = parts.filter(
