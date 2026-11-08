@@ -1135,14 +1135,15 @@ function selbsttest() {
         // P-GRENZE (w21-wiese-fern): die Grenze hält; je Glied ein Mutant, der genau seinen Fall rot macht
         const stillG = [
             ["_wieseFernFeld", "!T[o]", "0", "gasse"],
-            ["_wieseFernFeld", "= T[p] = 0", "", "grube"],
+            ["_wieseFernFeld", "[0, 0, 1, 1]", "[T[o], T[p], 1, 1]", "grube"],
+            ["_wieseFernFeld", "[0, 0, 1, 1]", "[0, 0, Wg[o], Wg[p]]", "grube: Karte"],
             ["_wieseFernGrenzen", "F.boden", "1e9", "huegel"],
             ["_wieseFernGrenzen", "!Gb", "1 || !Gb", "haus"],
             ["_slopeAt", "Number.isFinite(fuss)", "0", "riss"],
             ["_wieseFern", "A.min(s, grenze)", "s", "Gesetz"],
             ["_nahWieseFernBlock", "+ 3] = gr", "+ 3] = 0", "Block"],
             // P-Karte (w24-wiese-ferne): die Maske, der Hang, der Boden und der Grund des Hauses der Karte
-            ["_wieseSchaleDaten", "D.frei(x, z)", "1e9", "gasse: Karte"],
+            ["_wieseSchaleDaten", "D.frei(x, z, true)", "1e9", "gasse: Karte"],
             ["_wieseSchaleDaten", "sy * B,", "0,", "huegel: Karte"],
             ["_wieseSchaleDaten", "F.boden", "1e9", "kamm: Karte"],
             ["_wieseSchaleDaten", "!Gb", "1 || !Gb", "haus: Karte"],
