@@ -477,7 +477,10 @@ class AnazhRealm_vegetation_wiese {
                 continue;
             }
             const lage = w.lage || this._wieseFernLage(w.fx, w.fz);
-            const k = lage && this._nahWieseFernKachel(w.fx, w.fz, AnazhRealm._wieseFernSchranke(lage, auge, F.vorlauf), reich, deadline); // prettier-ignore
+            // die Schale nur, wo sie stehen kann (bis `schale.bis`, mit dem Vorlauf der Kachel: nähert sich das Auge, baut die Kachel
+            // neu, sobald es ihren Anteil überholt — spätestens `vorlauf` m näher)
+            const mitSchale = w.d <= F.schale.bis + F.vorlauf;
+            const k = lage && this._nahWieseFernKachel(w.fx, w.fz, AnazhRealm._wieseFernSchranke(lage, auge, F.vorlauf), reich, deadline, mitSchale); // prettier-ignore
             if (!k) {
                 o.offen++;
                 continue;
@@ -650,7 +653,7 @@ class AnazhRealm_vegetation_wiese {
     // seinen Boden wartet (eine Kachel der Nähe jenseits des Chunk-Rings trägt nichts). Bis w21-wiese-fern fiel hier jedes
     // Büschel, dessen bis `streckMax` gestreckter Kreis einen Grund berührte (Weite der Vorlagen × Skala × 14: um jedes Haus
     // 11–22 m ohne Ferne — die Stadt trug 4 277 statt 11 787 Büschel), und jedes übrige streckte sich auf Gasse und Fels.
-    _nahWieseFernKachel(fx, fz, anteil, reich, frist) {
+    _nahWieseFernKachel(fx, fz, anteil, reich, frist, mitSchale = true) {
         const NW = AnazhRealm.NAH_WIESE;
         const [K, k6] = [NW.fern.kachel, NW.kachel];
         const n = K / k6;
@@ -678,7 +681,7 @@ class AnazhRealm_vegetation_wiese {
         AnazhRealm._wieseKarten(chunkKarten, G.chunkKarten);
         const wasser = this._wasserKennungen(...chunkKarten.rechteck);
         const grenzeMax = G.grenze.reduce((a, b) => Math.max(a, b), 1); // die Kugel der Kachel im Sicht-Satz
-        const schale = this._wieseSchaleDaten(fx, fz);
+        const schale = mitSchale ? this._wieseSchaleDaten(fx, fz) : null; // jenseits ihrer Reichweite trägt die Kachel keine
         return Object.assign(
             { anteil, reich, chunkKarten, wasser, nie: G.nie, grenze: G.grenze, grenzeMax, schale, bloecke: [] },
             this._nahWieseKachelDaten(fx, fz, bueschel, K)
