@@ -715,7 +715,7 @@ const DOMAENEN = [
     ["Zeichnen", /_loopRender|_renderScene|_renderObject|render|Render|draw/],
 ];
 const domaeneVon = (namen) => (DOMAENEN.find(([, re]) => namen.some((n) => re.test(n))) || ["Rest"])[0];
-function domaenen(a, s) {
+function domaenen(a, s, teile = /^_passSicht|^_runFrameScheduler|^_loopWeatherAndGrowth|^_renderObjects/) {
     const je = {}, rahmen = [], stapel = [], baum = [];
     const plus = (d, sp, mi) => ((je[d] = je[d] || { spitze: 0, mitte: 0 }), (je[d].spitze += sp), (je[d].mitte += mi));
     const r1 = (x) => x.toFixed(1);
@@ -728,8 +728,11 @@ function domaenen(a, s) {
         const d = domaeneVon(stapel), name = z.name.replace(/ \[[^\]]*\]/g, "").slice(0, 32);
         plus(d, Math.max(0, sp), Math.max(0, mi));
         rahmen.push({ name, d, sp: Math.max(0, sp), mi: Math.max(0, mi) });
-        // DER BAUM DER MITTE (inklusive, bis Tiefe 3, ab 1 ms): wohin die Zeit des gewöhnlichen Takts fließt
-        if (z.tiefe <= 3 && z.mitteMs >= 1) baum.push(`${"›".repeat(z.tiefe)}${name} ${r1(z.mitteMs)}`);
+        // DER BAUM (inklusive ms je Takt ab p95/Mitte, ab 0,8 ms): die oberste Ebene des Takts und je Wurzel `teile` ihr Teilbaum bis
+        // Tiefe 3 unter ihr — wohin die Zeit des Takts fließt
+        const w = stapel.findIndex((n) => teile.test(n));
+        if ((z.tiefe === 0 || (w >= 0 && z.tiefe - w <= 4)) && Math.max(z.spitzeMs, z.mitteMs) >= 0.8)
+            baum.push(`${"›".repeat(w >= 0 ? z.tiefe - w : 0)}${name} ${r1(z.spitzeMs)}/${r1(z.mitteMs)}`);
     });
     const hJe = {};
     for (const h of a.haenger || []) {
@@ -742,7 +745,7 @@ function domaenen(a, s) {
             .sort((x, y) => y[1].spitze - x[1].spitze)
             .map(([d, v]) => `${d} ${r1(v.spitze)}/${r1(v.mitte)}`)
             .join(" · "),
-        baum: baum.join(" "),
+        baum,
         rahmen: rahmen
             .sort((x, y) => y.mi - x.mi)
             .slice(0, 12)

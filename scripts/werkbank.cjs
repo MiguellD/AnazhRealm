@@ -3233,7 +3233,13 @@ hauptLauf(async () => {
                     gruen = gruen && u === "GRÜN";
                     zeile(`GEH ${u} ${name}: Bild ${q(a.frameMs)} · Takt ${q(a.taktMs)} · GPU ${q(a.gpuMs)} · Befehle ${a.befehle?.p95} (${passe(a.befehle)}) · Dreiecke ${a.dreiecke?.p95} · ${a.frames} Bilder, ${a.haengerN} > 33 ms je Täter: ${d.haenger || "-"} · Bau ${a.knotenBau.sync}× ${a.knotenBau.ms} ms · Weg ${roh.bahnM} m`); // prettier-ignore
                     zeile(`GEH ${u} ${name} je Domäne ab p95/Mitte (${s.spitzeN} Takte): ${d.jeDomaene}`);
-                    zeile(`GEH ${u} ${name} Baum der Mitte: ${d.baum}`);
+                    if (g < gaenge) continue; // der letzte Gang des Orts trägt den Baum (der Dienst postet die letzten zehn Zeilen)
+                    for (let i = 0, k = 1; i < d.baum.length; k++) {
+                        let t = `GEH ${u} ${name} Baum ${k}:`;
+                        do t += " " + d.baum[i++];
+                        while (i < d.baum.length && t.length + d.baum[i].length < 580);
+                        zeile(t);
+                    }
                     zeile(`GEH ${u} ${name} selbst nach Mitte: ${d.rahmen}`);
                 }
             }
