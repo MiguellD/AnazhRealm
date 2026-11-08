@@ -2961,15 +2961,25 @@ class AnazhRealm_siedlung_bewohner {
             // gab er nach den 15 m erst das Gesetz, dann den Raum zu den gerückten auf (w4-genesis-ort-wirt9): am Genesis-Ort stand
             // der Platz-Stand fahrer #45665 jenseits des Platzes und drei Stände bei −47/−173 näher als `raumM`, zwei auf einem Punkt
             const frei = S.verkehr ? (p) => !this._verkehrAufSpur(S, p.x, p.z) : null;
+            // DER STAND BLEIBT DIESSEITS DER FAHRBAHN: wer vor einer Tür steht (`anker`, der Ring vor ihr), steht auf ihrer Seite —
+            // der Weg von ihr zu ihm quert die Fahrbahn nicht (`_verkehrFahrbahnM`); sonst rückt er wie aus der Spur auf den
+            // nächsten Ort diesseits, und erst wo keiner trägt, bleibt er, wo er stand. Bis heim2-w13-verkehr-heil stand er, wo der
+            // Ring ihn fand, auch jenseits der Trasse: die sechs Leute des Hauses 7:1 der Metropole gingen zwischen Tür und Stand
+            // über die Fahrbahn (stadt-voll 23 Uhr: rund 390 von 704 Proben auf ihr, der Anteil 5,27 %)
+            const dies = frei && o.anker ? (p) => frei(p) && !this._verkehrFahrbahnM(S, o.anker, [p]) : frei;
             const wand = this._bewohnerWand(ur, ur, true, BW.standRandM);
+            const dort = !wand && (!frei || frei(ur));
             let q =
-                !wand && (!frei || frei(ur))
+                dort && (dies === frei || dies(ur))
                     ? ur
-                    : frei &&
-                      ((yield* neu(BW.standRandM, frei, BW.spurAuswegM)) ||
-                          (yield* neu(0, frei, BW.spurAuswegM)) ||
-                          (yield* neu(0, frei, BW.gesetzAuswegM)) ||
-                          (o.gilt !== o.art && (yield* neu(0, frei, BW.gesetzAuswegM, o.art))));
+                    : (dies !== frei && (yield* neu(BW.standRandM, dies, BW.spurAuswegM))) ||
+                      (dort
+                          ? ur
+                          : frei &&
+                            ((yield* neu(BW.standRandM, frei, BW.spurAuswegM)) ||
+                                (yield* neu(0, frei, BW.spurAuswegM)) ||
+                                (yield* neu(0, frei, BW.gesetzAuswegM)) ||
+                                (o.gilt !== o.art && (yield* neu(0, frei, BW.gesetzAuswegM, o.art)))));
             if (!frei || q) ohneOrt.delete(o);
             else {
                 if (!ohneOrt.has(o))

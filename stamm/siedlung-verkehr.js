@@ -451,7 +451,8 @@ class AnazhRealm_siedlung_verkehr {
     }
 
     // DIE METER EINES WEGS AUF DER FAHRBAHN (von `von` über die Punkte `pts`, je halben Meter `_verkehrAufSpur` ohne Rand). Leser:
-    // die Seite des Gehwegs (`_bewohnerStrecke`: die Seite, die weniger über die Fahrbahn führt).
+    // die Seite des Gehwegs (`_bewohnerStrecke`: die Seite, die weniger über die Fahrbahn führt) und der Stand diesseits seiner
+    // Tür (`_bewohnerStandPruefen`).
     _verkehrFahrbahnM(S, von, pts) {
         let m = 0;
         for (let i = 0, a = von; i < pts.length; a = pts[i++]) {
