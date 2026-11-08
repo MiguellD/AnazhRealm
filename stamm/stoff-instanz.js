@@ -12,25 +12,17 @@ class AnazhRealm_stoff_instanz {
     // Birke, Streifen über die fernen Kronen; bei 8 × Bias fällt beides, bei 3 × nicht). Die Probe rückt längs der FLÄCHE der
     // Karte (`normalFlat`, zum Licht gewendet) um `SCHATTEN_KASKADE.laubTexel` Texel der Kaskade an ihrem Abstand vor die Karte
     // (der Texel wächst mit dem Abstand: texelM[0] je kontaktM) — der Wurf der Nachbarn und des Gerüsts bleibt.
-    // EIN KNOTEN FÜR JEDE KRONE (w22-geh-bild, 1310-18): die Probe des Empfangs hängt an nichts, was je Stoff variiert — sie
-    // entsteht EINMAL je Welt, jeder Kronen-Stoff trägt DENSELBEN Knoten. r184 schlüsselt das Programm nach der Knoten-id: bis
-    // hier baute jeder Kronen-Stoff seine eigene Probe, und jede Art × Stufe, die im Gang erstmals ins Bild trat, baute ihr
-    // eigenes Programm im Bild (Mess-Wiese, erster Gang: eiche L0 ×2, fichte L0, birke L0, eiche L1, strauch L0 — Σ 577 ms
-    // Radeon, 776 ms GTX, ein Schritt bis 66 ms; der Takt ab p95 trug 30–52 ms Knoten-Bau). Die Linse: playtest 1310-18 (Krone).
     _laubStoffNormale(T, mat) {
         mat.normalNode = T.normalViewGeometry;
-        if (!this._laubEmpfang) {
-            const K = AnazhRealm.SCHATTEN_KASKADE;
-            const flaeche = T.normalFlat.transformDirection(T.cameraViewMatrix);
-            const licht = T.normalize(this._windUniformsEnsure().uSunDir);
-            const zumLicht = T.select(flaeche.dot(licht).greaterThanEqual(0.0), flaeche, flaeche.negate());
-            const luft = T.positionWorld
-                .sub(T.cameraPosition)
-                .length()
-                .mul((K.laubTexel * K.texelM[0]) / K.kontaktM);
-            this._laubEmpfang = T.positionWorld.add(zumLicht.mul(luft));
-        }
-        mat.receivedShadowPositionNode = this._laubEmpfang;
+        const K = AnazhRealm.SCHATTEN_KASKADE;
+        const flaeche = T.normalFlat.transformDirection(T.cameraViewMatrix);
+        const licht = T.normalize(this._windUniformsEnsure().uSunDir);
+        const zumLicht = T.select(flaeche.dot(licht).greaterThanEqual(0.0), flaeche, flaeche.negate());
+        const luft = T.positionWorld
+            .sub(T.cameraPosition)
+            .length()
+            .mul((K.laubTexel * K.texelM[0]) / K.kontaktM);
+        mat.receivedShadowPositionNode = T.positionWorld.add(zumLicht.mul(luft));
         return mat;
     }
 
