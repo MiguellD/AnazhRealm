@@ -913,11 +913,13 @@ class AnazhRealm_vegetation_wiese {
                 const sy = eb.gx * c - eb.gz * s; // die Steigung der Unterkante je Meter längs der Karte
                 // die Ringe der Breite: × 1,25 von `schmal` bis zur Maske, der letzte an ihr
                 const gMaske = Math.min(S.breitMax, (2 * D.frei(x, z, true)) / S.breite);
+                // der Grund der Häuser: berührt ihn die größte Breite nicht, fragt kein Ring (ein Ruf statt bis zu 13)
+                const haus = Gb.erdbauGrund(E, x, z, 0.5 * S.breite * Math.max(gMaske, 0));
                 let g = 0;
                 for (let t = S.schmal; g < gMaske; t *= 1.25) {
                     const gr = Math.min(t, gMaske);
                     const hb = 0.5 * S.breite * gr;
-                    let ok = gr >= S.schmal && !Gb.erdbauGrund(E, x, z, hb);
+                    let ok = gr >= S.schmal && !(haus && Gb.erdbauGrund(E, x, z, hb));
                     for (const e of [-hb, hb]) ok = ok && Math.abs(D.boden(x + e * c, z - e * s) - (y + sy * e)) <= F.boden; // prettier-ignore
                     if (!ok) break;
                     g = gr;
