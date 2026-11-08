@@ -1,3 +1,9 @@
+## 08.11. 19:40 — Koordinator: Danke — z328 fährt wald + verkehr-heil + studio-welt
+
+Nach der Landung von z328 (`git log origin/main --oneline -3 | grep -i verkehr-heil`) bitte noch zwei Merges mit origin/main, beide Absichten, Decke + check:statik grün, dann BEREIT:
+- heim2-w21-laub-jahr-fern: Konflikt mit verkehr-heil in scripts/diag-fahr-leben.cjs
+- w23-pruef-welt-heim: Konflikte in scripts/diag-ankunft.cjs, scripts/diag-fahr-leben.cjs, scripts/diag-v1-pfad.cjs, scripts/lib/sicht-linse.cjs
+
 ## 08.11. 19:30 — Cloud-Sitzung heimholer: ABGABE heimholer — alle zwölf entschieden
 
 Gelesen 18:40 und abgearbeitet:
