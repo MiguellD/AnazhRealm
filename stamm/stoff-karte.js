@@ -1833,15 +1833,18 @@ fn schritt(ri: u32) -> vec2<f32> {
 // DAS BAND: die Summe im binomialen Kern (2n + 1)² um (x, y) in seiner Ansicht, je Achse im Schritt st (der Rand leer — der
 // Rahmen ist nie der Umriss), durch die Summe des ganzen Kerns (farbSumme gewogen: .rgb / .a die Farbe der deckenden, .a / fuss
 // die geglättete Deckung)
-fn band(x: u32, y: u32, fe: vec4<u32>, st: vec2<f32>) -> vec4<f32> {
+// Die Gewichte des binomialen Kerns (2n + 1 Abgriffe, n = band.x; ihre Summe 2^2n) — EIN Kern für Band, Normale und Licht
+fn binom() -> array<f32, 17> {
     let n = i32(saum.band.x);
     var B: array<f32, 17>;
     B[0] = 1.0;
-    var sb = 1.0;
-    for (var j = 0; j < 2 * n; j++) {
-        B[j + 1] = B[j] * f32(2 * n - j) / f32(j + 1);
-        sb += B[j + 1];
-    }
+    for (var j = 0; j < 2 * n; j++) { B[j + 1] = B[j] * f32(2 * n - j) / f32(j + 1); }
+    return B;
+}
+fn band(x: u32, y: u32, fe: vec4<u32>, st: vec2<f32>) -> vec4<f32> {
+    let n = i32(saum.band.x);
+    var B = binom();
+    let sb = exp2(f32(2 * n));
     var s = vec4<f32>(0.0);
     for (var dy = -n; dy <= n; dy++) {
         let yy = i32(y) + i32(round(f32(dy) * st.y));
@@ -2148,19 +2151,27 @@ fn normalK(@builtin(global_invocation_id) g: vec3<u32>) {
 }
 
 // Normale und Tiefe eines Texels der Stufe für die Ablage: die Richtung seiner Summe und das Mittel seiner deckenden; ein
-// leerer trägt die seiner deckenden Nachbarn in der eigenen Ansicht (5×5: das Band des Saums reicht über die Bühne hinaus) — der Filter der Welt mischt an der Silhouette
-// keine fremde Normale und keine fremde Tiefe hinein —, erst ohne sie (0, 0, 1) und die Mitte des Rahmens (½)
+// leerer trägt die seiner deckenden Nachbarn im Band des Saums in der eigenen Ansicht — wählt der Saum ihn, trägt er Farbe,
+// Normale, Tiefe und Licht seines Bands (w24-strauch-saum: mit dem 5×5-Fenster fielen 14–17 % der gewählten Texel auf
+// (0, 0, 1), die Kronen der Mess-Wiese lasen am Sonnen-Rand dunkler) —, erst ohne sie (0, 0, 1) und die Mitte des Rahmens (½)
 fn ablageNT(x: u32, y: u32) -> vec3<f32> {
     var s = nsum[p.ziel + y * p.w + x].xyz;
     var d = tsum[p.ziel + y * p.w + x];
     if (dot(s, s) < 1e-12) {
-        let f = feld(ansicht(x, y));
-        for (var dy = -2; dy <= 2; dy++) {
-            for (var dx = -2; dx <= 2; dx++) {
-                let xx = u32(clamp(i32(x) + dx, i32(f.x), i32(f.x + f.z) - 1));
-                let yy = u32(clamp(i32(y) + dy, i32(f.y), i32(f.y + f.w) - 1));
-                s += nsum[p.ziel + yy * p.w + xx].xyz;
-                d += tsum[p.ziel + yy * p.w + xx];
+        let v = ansicht(x, y);
+        let f = feld(v);
+        let st = schritt(v / jeRing());
+        let n = i32(saum.band.x);
+        var B = binom();
+        for (var dy = -n; dy <= n; dy++) {
+            let yy = i32(y) + i32(round(f32(dy) * st.y));
+            if (yy < i32(f.y) || yy >= i32(f.y + f.w)) { continue; }
+            for (var dx = -n; dx <= n; dx++) {
+                let xx = i32(x) + i32(round(f32(dx) * st.x));
+                if (xx < i32(f.x) || xx >= i32(f.x + f.z)) { continue; }
+                let q = p.ziel + u32(yy) * p.w + u32(xx);
+                s += B[dy + n] * B[dx + n] * nsum[q].xyz;
+                d += B[dy + n] * B[dx + n] * tsum[q];
             }
         }
     }
@@ -2222,7 +2233,7 @@ fn bc5(@builtin(global_invocation_id) g: vec3<u32>) {
 }
 
 // Die Sonnen-Sicht auf 1/lichtTeiler (p.t): das Mittel über die deckenden Texel des Fußabdrucks, ein Fußabdruck ohne
-// Blatt trägt das Mittel der Schicht (der Filter mischt an der Kante keinen fremden Wert hinein); rgba8, die vier Beiwerte
+// Blatt trägt das seines Bands (sichtBand), ohne Laub darin das Mittel der Schicht (der Filter mischt an der Kante keinen fremden Wert hinein); rgba8, die vier Beiwerte
 // ihres linearen Felds (w14-nadel-licht), 1 Texel je Wort — eine Schicht ohne Blatt die freie Sicht (c0 1, c 0)
 @compute @workgroup_size(64)
 fn sicht(@builtin(global_invocation_id) g: vec3<u32>) {
@@ -2251,8 +2262,32 @@ fn sicht(@builtin(global_invocation_id) g: vec3<u32>) {
             }
         }
     }
-    var wert = mittel;
+    var wert = sichtBand(x, y, mittel);
     if (n > 0.0) { wert = s / n; }
     aus[p.aus + y * p.zeile + x] = pack4x8unorm(wert);
+}
+// Ein Fußabdruck ohne eigenes Blatt (w24-strauch-saum): das Mittel der Sonnen-Sicht der deckenden Texel im Band des Saums um
+// seine Mitte (bis hier das Mittel der Schicht: 24–28 % der gewählten Texel trugen es), erst ohne Laub darin das der Schicht
+fn sichtBand(x: u32, y: u32, mittel: vec4<f32>) -> vec4<f32> {
+    let cx = x * p.t + p.t / 2u;
+    let cy = y * p.t + p.t / 2u;
+    let v = ansicht(cx, cy);
+    let f = feld(v);
+    let st = schritt(v / jeRing());
+    let n = i32(saum.band.x);
+    var B = binom();
+    var s = vec4<f32>(0.0);
+    var w = 0.0;
+    for (var dy = -n; dy <= n; dy++) {
+        let yy = i32(cy) + i32(round(f32(dy) * st.y));
+        if (yy < i32(f.y) || yy >= i32(f.y + f.w)) { continue; }
+        for (var dx = -n; dx <= n; dx++) {
+            let xx = i32(cx) + i32(round(f32(dx) * st.x));
+            if (xx < i32(f.x) || xx >= i32(f.x + f.z) || !deckt(u32(xx), u32(yy))) { continue; }
+            s += B[dy + n] * B[dx + n] * textureLoad(tSicht, vec2<i32>(xx, yy), 0);
+            w += B[dy + n] * B[dx + n];
+        }
+    }
+    return select(mittel, s / w, w > 0.0);
 }
 `;
