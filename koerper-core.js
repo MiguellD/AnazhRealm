@@ -4701,7 +4701,8 @@
     // DIE HÖHE DES SITZES (w4-koerper-park — die gegossene Haut statt der geratenen 0,1 m): wie hoch die Mitte der Hüft-Gelenke über
     // der tiefsten Haut des Sitzenden steht — die Haut des Beckens (Gewicht > 0,5 am Wurzel-Gelenk), um die Neigung des Beckens gegen
     // die Fläche gedreht (SITZ_KIPP: −1,2 … 0,6 rad, nach vorn +), die Haut des Oberschenkels (Gewicht > 0,5 am Hüft-Gelenk, das
-    // obere Drittel bis zum Knie: was auf dem Sitz liegt) um die Beuge des Sitzens (VERB_POSE.sitzHuefte) in der Fläche gedreht;
+    // obere Drittel bis zum Knie: was auf dem Sitz liegt) um die Beuge des Sitzens (VERB_POSE.sitzHuefte) in der Fläche gedreht —
+    // jede Ecke gehäutet wie im Shader: ihr Anteil an den Oberschenkeln beugt, der Rest kippt mit dem Becken (w21-leib-bau);
     // dieselbe Bind-Rechnung wie leibSohle (Knochen-Raum = boneInverse × bindMatrix × Ecke). Meter je Neigung (Gelenk-Einheiten ×
     // Skala der Wurzel × Maßstab), Leser `_sitzTiefe`. knochen {mensch, hip1, "hip-1"}: die Gelenke der Haut (Welt: das Rig, Labor: der
     // Baum des Gusses). null: keine Haut an Becken oder Hüfte.
@@ -4777,7 +4778,8 @@
             hY = (J.hip1.pos[1] + J["hip-1"].pos[1]) / 2,
             hZ = (J.hip1.pos[2] + J["hip-1"].pos[2]) / 2,
             becken = [],
-            yBein = Infinity;
+            nBecken = 0,
+            nBein = 0;
         var komp = function (a, n, k) {
             return k === 0 ? a.getX(n) : k === 1 ? a.getY(n) : k === 2 ? a.getZ(n) : a.getW(n);
         };
@@ -4793,6 +4795,11 @@
                 sw = A.skinWeight,
                 pa = leibGussLage(o),
                 be = o.bindMatrix.elements;
+            // das Gewicht, wie der Shader der Welt es liest (Uint16 normiert, stamm `_hautGewicht`; das Labor trägt Float32):
+            // Welt und Labor rechnen dieselbe Zahl (Labor = Welt im Takt, gate:tier-gang)
+            var gew = function (n, k) {
+                return Math.round(Math.min(1, Math.max(0, komp(sw, n, k))) * 65535) / 65535;
+            };
             var E = idx.map(function (b) {
                 if (b < 0) return null;
                 var ae = o.skeleton.boneInverses[b].elements,
@@ -4802,33 +4809,54 @@
                 for (c = 0; c < 4; c++) for (r = 0; r < 4; r++) e[c * 4 + r] = ae[r] * be[c * 4] + ae[4 + r] * be[c * 4 + 1] + ae[8 + r] * be[c * 4 + 2] + ae[12 + r] * be[c * 4 + 3];
                 return e;
             });
+            // die Ecke im Raum des Knochens g (Knochen-Raum = boneInverse × bindMatrix × Ecke)
+            var lage = function (g, x, y, z) {
+                var e = E[g],
+                    w = 1 / (e[3] * x + e[7] * y + e[11] * z + e[15]);
+                return [(e[0] * x + e[4] * y + e[8] * z + e[12]) * w, (e[1] * x + e[5] * y + e[9] * z + e[13]) * w, (e[2] * x + e[6] * y + e[10] * z + e[14]) * w];
+            };
+            // die Ecke im Oberschenkel g, gebeugt wie im Sitzen
+            var gebeugt = function (g, q) {
+                var H = J[namen[g]];
+                return _add(H.pos, _qRot(qS, [q[0] * H.scale[0], q[1] * H.scale[1], q[2] * H.scale[2]]));
+            };
             for (var n = 0; n < pa.count; n++)
                 for (var k = 0; k < 4; k++) {
                     var g = idx.indexOf(komp(si, n, k));
-                    if (g < 0 || !(komp(sw, n, k) > 0.5)) continue;
-                    var e = E[g],
-                        x = pa.getX(n),
+                    if (g < 0 || !(gew(n, k) > 0.5)) continue;
+                    var x = pa.getX(n),
                         y = pa.getY(n),
                         z = pa.getZ(n),
-                        w = 1 / (e[3] * x + e[7] * y + e[11] * z + e[15]);
-                    var q = [(e[0] * x + e[4] * y + e[8] * z + e[12]) * w, (e[1] * x + e[5] * y + e[9] * z + e[13]) * w, (e[2] * x + e[6] * y + e[10] * z + e[14]) * w];
-                    if (g > 0) {
-                        var H = J[namen[g]];
-                        if (q[1] < -_len(J[g === 1 ? "knee1" : "knee-1"].pos) / 3) continue;
-                        q = _add(H.pos, _qRot(qS, [q[0] * H.scale[0], q[1] * H.scale[1], q[2] * H.scale[2]]));
-                        if (q[1] < yBein) yBein = q[1];
-                    } else becken.push([q[1] - hY, q[2] - hZ]);
+                        q = lage(g, x, y, z);
+                    if (g > 0 && q[1] < -_len(J[g === 1 ? "knee1" : "knee-1"].pos) / 3) continue;
+                    // die Ecke gehäutet wie im Shader (Summe ihrer vier Gewichte, w21-leib-bau): der Anteil der Oberschenkel beugt mit
+                    // ihnen, jeder andere (Wurzel, Rumpf) kippt mit dem Becken — bis hier zählte die Ecke starr an ihrem stärksten
+                    // Gelenk, und die Brücke der EINEN Haut zwischen den Schenkeln (Wurzel 0,53, Schenkel 0,43) hing im Sitzen 0,77 E
+                    // unter der Hüfte statt mit den Schenkeln gebeugt: der Leib saß 6 cm über dem Sitz, Arm und Schenkel in Kette und Griff
+                    var ruhe = g > 0 ? _add(J[namen[g]].pos, [q[0] * J[namen[g]].scale[0], q[1] * J[namen[g]].scale[1], q[2] * J[namen[g]].scale[2]]) : q,
+                        wB = 0,
+                        yS = 0;
+                    for (var k3 = 0; k3 < 4; k3++) {
+                        var wk = gew(n, k3),
+                            gk = idx.indexOf(komp(si, n, k3));
+                        if (!(wk > 0)) continue;
+                        if (gk > 0) yS += wk * (gebeugt(gk, gk === g ? q : lage(gk, x, y, z))[1] - hY);
+                        else wB += wk;
+                    }
+                    becken.push([wB * (ruhe[1] - hY), wB * (ruhe[2] - hZ), yS]);
+                    if (g > 0) nBein++;
+                    else nBecken++;
                 }
         });
-        if (!becken.length || !Number.isFinite(yBein)) return null;
+        if (!nBecken || !nBein) return null;
         var tiefe = [],
             m = s[1] * leibMassstab();
         for (var k2 = 0; k2 < SITZ_KIPP.n; k2++) {
             var al = SITZ_KIPP.von + k2 * SITZ_KIPP.schritt,
                 c = Math.cos(al),
                 sn = Math.sin(al),
-                yM = yBein - hY;
-            for (var b = 0; b < becken.length; b++) yM = Math.min(yM, becken[b][0] * c - becken[b][1] * sn);
+                yM = Infinity;
+            for (var b = 0; b < becken.length; b++) yM = Math.min(yM, becken[b][0] * c - becken[b][1] * sn + becken[b][2]);
             tiefe.push(-yM * m);
         }
         return { von: SITZ_KIPP.von, schritt: SITZ_KIPP.schritt, tiefe: tiefe };
@@ -4923,13 +4951,32 @@
         if (_len(pp) < 1e-6) pp = Math.abs(wn[1]) < 0.9 ? _sub([0, 1, 0], _mul(wn, wn[1])) : _sub([1, 0, 0], _mul(wn, wn[0]));
         pp = _norm(pp);
         var ut = _add(_mul(wn, Math.cos(beta)), _mul(pp, Math.sin(beta)));
-        var q = _qBasis(ua, rn, ut, wn);
-        var ende = _add(S, _qRot(Qp, _qRot(q, ra)));
-        return { q: q, phi: phi, fehler: _len(_sub(ende, G)), ende: ende };
+        // DAS GESTRECKTE GLIED (w21-leib-bau): liegt das Ende auf der Achse des Glieds (das Knie gestreckt, Ober- und Unterschenkel auf
+        // einer Linie), bestimmen Ende und Ziel die Ebene der Beuge nicht — die Achse aus einem Rest von 1e-16 drehte das Glied nach dem
+        // Rundungs-Rauschen um sich selbst (das Bein auf der Rutsche stand 0,04 oder 0,74 m neben seinem Ziel, je nach der siebten
+        // Stelle der Sitz-Höhe). Dort gilt der Grenzwert derselben Abbildung (β → 0): die Richtung, in die das Ende beim Beugen
+        // wandert, zeigt gegen den Pol
+        var e2 = rn,
+            f2 = wn;
+        if (_len(_sub(rn, _mul(ua, _dot(rn, ua)))) < 1e-9) {
+            var zieht = _mul(_cross([1, 0, 0], _qRot(_qAchse([1, 0, 0], sg * phi), c)), sg),
+                zq = _sub(zieht, _mul(ua, _dot(zieht, ua)));
+            if (_len(zq) > 1e-9) {
+                e2 = _norm(zq);
+                f2 = _sub(_mul(wn, Math.sin(beta)), _mul(pp, Math.cos(beta)));
+            }
+        }
+        var q = _qBasis(ua, e2, ut, f2);
+        var ende = _add(S, _qRot(Qp, _qRot(q, ra))),
+            fehler = _len(_sub(ende, G));
+        // was die Länge des Glieds nicht erreicht (gestreckt zu kurz, ganz gebeugt zu lang) — der Rest darüber ist ein Fehler des
+        // Lösers (`ueber`; die Linse: leibSollUrteil „neben dem Ziel“, VERB_SOLL.glied)
+        return { q: q, phi: phi, fehler: fehler, ueber: Math.max(0, fehler - Math.max(0, d - _len(r(0)), _len(r(phiMax)) - d)), ende: ende };
     }
     // P: {wurzel:{p (Welt, m), gier, nick, roll} | huefte:[x,y,z] (Welt, m) statt p, rumpf:{x,y,z}, kopf:{x,y,z}, haende:{hand1:[…]
     // Welt | null, "hand-1"}, fuesse:{fuss1:{p:[…] Welt (der Ballen), nick} | null, …}, pol:{hand1:[…] Wurzel-Rahmen, …}, arme:{arm1:
-    // {x,z,ell} lokal}, beine:{hip1:{x,z,knie,fuss}}} → {wurzel:{p, q}, q:{gelenk: [x,y,z,w]}, fehler:{hand1: m, …}}
+    // {x,z,ell} lokal}, beine:{hip1:{x,z,knie,fuss}}} → {wurzel:{p, q}, q:{gelenk: [x,y,z,w]}, fehler:{hand1: m, …}, ueber:{hand1: m, …}}
+    // (ueber: der Fehler über dem, was die Länge des Glieds nicht erreicht — ein Fehler des Lösers)
     function leibPose(K, P) {
         var J = K.J,
             s = K.skala,
@@ -4938,7 +4985,7 @@
         var hM = _mul(_add(J.hip1.pos, J["hip-1"].pos), 0.5);
         var o = P.wurzel.huefte ? _sub(P.wurzel.huefte, _qRot(Qr, [hM[0] * s[0] * f, hM[1] * s[1] * f, hM[2] * s[2] * f])) : _v3(P.wurzel.p);
         var R = { p: o, q: Qr, f: f, s: s };
-        var out = { wurzel: { p: o, q: Qr }, q: {}, fehler: {} };
+        var out = { wurzel: { p: o, q: Qr }, q: {}, fehler: {}, ueber: {} };
         var rz = P.rumpf || {};
         var Qt = _qEuler(rz.x || 0, rz.y || 0, rz.z || 0);
         out.q.torso = Qt;
@@ -4989,6 +5036,7 @@
                 out.q[arm] = gl.q;
                 out.q[ell] = _qAchse([1, 0, 0], -gl.phi);
                 out.fehler[hand] = gl.fehler * f * s[1];
+                out.ueber[hand] = gl.ueber * f * s[1];
             } else {
                 var aa = (P.arme && P.arme[arm]) || { x: 0, z: sv * 0.08, ell: 0.15 };
                 out.q[arm] = _qEuler(aa.x || 0, 0, aa.z || 0);
@@ -5026,6 +5074,7 @@
                 out.q[knie] = _qAchse([1, 0, 0], glb.phi);
                 out.q[fuss] = _qMul(_qInv(_qMul(glb.q, out.q[knie])), Rf);
                 out.fehler["fuss" + sd] = glb.fehler * f * s[1];
+                out.ueber["fuss" + sd] = glb.ueber * f * s[1];
             } else {
                 var bb = (P.beine && P.beine[hip]) || { x: 0, z: 0, knie: 0, fuss: 0 };
                 out.q[hip] = _qEuler(bb.x || 0, 0, bb.z || 0);
@@ -5159,6 +5208,9 @@
         }),
         hand: 0.03,
         fuss: 0,
+        // jedes Glied trifft sein Ziel, so nah es seine Länge erlaubt (m, w21-leib-bau): bis dahin drehte sich das gestreckte Bein der
+        // Rutsche nach dem Rest der Rechnung um seine Achse und stand 0,69 m über seiner Reichweite neben dem Ziel (koerper `_glied`)
+        glied: 0.001,
         // im Schwung öffnet sich der greifende Arm zum Griff über der Schulter: je Griff einer Hand, die an einen neuen Anker greift
         // (klettern: von ≠ ziel), der Ellbogen an seinem Tiefpunkt im Schwung ≤ griff Grad (bis w4-koerper-park das Minimum der Phase
         // je Seite — es urteilte auch die Hand, die im Paar an ihrem Griff blieb, und hielt nur über die Vereinigung dreier Geräte)
@@ -5204,7 +5256,7 @@
     }
     // DAS URTEIL GEGEN DAS SOLL (die EINE Prüfung der Bewegung): die Messung m — zeilen {"verb:phase": {w: {knieL: [min, max], …}}} der
     // freien Verben, angebote [{id, name}] (jedes Angebot jedes Geräts im Park), geraete {id: {name, verb, posen, zeilen, hand, handWo,
-    // fuss, fussWo, durch, durchWo}} je Angebot, tempo {…}, doppel, wand — gegen VERB_SOLL; je Verstoß ein Satz beim Namen (leer: die
+    // fuss, fussWo, durch, durchWo, glied, gliedWo}} je Angebot, tempo {…}, doppel, wand — gegen VERB_SOLL; je Verstoß ein Satz beim Namen (leer: die
     // Bewegung hält ihr Soll). Jede gemessene Phase trägt ihr Soll, jedes Soll seine Messung (beide Seiten) — die Verben der Geräte
     // (VERB_GESETZ) an JEDEM Gerät, das sie anbietet.
     function leibSollUrteil(m) {
@@ -5246,6 +5298,8 @@
             for (key in G.zeilen) if (!S.winkel[key] || key.split(":")[0] !== G.verb) out.push(wo + key + ": gemessen, aber ohne Soll (VERB_SOLL.winkel)");
             for (key in S.winkel) if (key.split(":")[0] === G.verb) zeile(wo, key, G.zeilen[key]);
             if (G.hand > S.hand) out.push(G.name + ": die Hand " + (G.hand * 100).toFixed(1) + " cm vom Anker (" + G.handWo + ", Soll ≤ " + S.hand * 100 + " cm)");
+            if (!Number.isFinite(G.glied)) out.push(G.name + ": das Glied nicht gemessen (Vorbedingung)");
+            else if (G.glied > S.glied) out.push(G.name + ": " + G.gliedWo + " " + (G.glied * 100).toFixed(1) + " cm über seiner Reichweite neben dem Ziel (Soll ≤ " + S.glied * 100 + " cm; Täter: _glied)");
             if (G.verb === "klettern") {
                 var gr = G.griffe || {},
                     nG = 0,
