@@ -614,8 +614,8 @@
     },
     "georgian-s7-L2": {
       "objects": 7,
-      "vertices": 7412,
-      "sha256": "9163315af81e2046606db742e20f81ac15b0ee028d70f3225b28b3a61773d182"
+      "vertices": 8684,
+      "sha256": "f4d5edb3a82d7318f5a2eeacdb5253405827ac91ffe299b5ae330825ec6348fb"
     },
     "georgian-s7-L3": {
       "objects": 1,
@@ -634,8 +634,8 @@
     },
     "georgian-s12345-L2": {
       "objects": 7,
-      "vertices": 6764,
-      "sha256": "8e27efba4c6115768273ee0ef8aa00f6da4b3250b2aab16dd80cc28f3e39d8c2"
+      "vertices": 8036,
+      "sha256": "15f426415b5dfc8bbe3091c86a7cc2e5f50b9237b25e7a78b44e81939edfae00"
     },
     "georgian-s12345-L3": {
       "objects": 1,
@@ -653,9 +653,9 @@
       "sha256": "c83a5c4d71bf4de3421b86939900086d460da1a15d42c2874993bb663c292253"
     },
     "viktorianisch-s7-L2": {
-      "objects": 7,
-      "vertices": 5468,
-      "sha256": "190aa77085528156a199a4ab7f53fd5e1dafe75edfb4acfd03cd88b1f4ea6382"
+      "objects": 8,
+      "vertices": 6812,
+      "sha256": "430b934509b5248d31792bc79aa8d9b0caea396a45c120b08c8e6544312ef21f"
     },
     "viktorianisch-s7-L3": {
       "objects": 1,
@@ -673,9 +673,9 @@
       "sha256": "24baa3d70eb33a6700bad482c703ea1e7bc108c977e0605a717f9b6abe7d765f"
     },
     "viktorianisch-s12345-L2": {
-      "objects": 7,
-      "vertices": 4892,
-      "sha256": "85e363d5027c8c9184f335a0c03546bd1dd3b30964851338df470c4e85534200"
+      "objects": 8,
+      "vertices": 6236,
+      "sha256": "da3089e60c386d221a0a368f1a0690e812743ee305bff358cc0818cf49d318a8"
     },
     "viktorianisch-s12345-L3": {
       "objects": 1,

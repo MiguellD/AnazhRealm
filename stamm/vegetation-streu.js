@@ -2887,8 +2887,8 @@ AnazhRealm.LOD_SCHIRM = Object.freeze({
                 tiertor: [0.0073, 0.0271],
             }),
             // die Zeilen der Häuser (w25-lod-pop; Stufen-Defekte am Haushalt: Pueblo L2 12,8 px — die L2 ohne Terrassen-Geländer,
-            // Brüstung und Vigas —, Hochhaus L1 9,7 · L2 5,1 — die Turm-Stufe ohne Balkone —, Viktorianisch L2 4,5, Georgian 3,1,
-            // Marokkanisch 2,5, Chinesisch 1,7, Japanisch 1,5)
+            // Brüstung und Vigas —, Hochhaus L1 9,7 · L2 5,1 — die Turm-Stufe ohne Balkone —, Marokkanisch 2,5, Chinesisch 1,7, Japanisch
+            // 1,5; Viktorianisch 4,5 → 0,39 und Georgian 3,1 → 0,58 px, seit Veranda und Portikus in der L2 stehen, w25-lod-pop-2)
             haus: je({
                 alemannisch: [0.0038, 0.0363],
                 fraenkisch: [0.0041, 0.0463],
@@ -2905,8 +2905,8 @@ AnazhRealm.LOD_SCHIRM = Object.freeze({
                 alpenchalet: [0.0031, 0.0359],
                 hollaendisch: [0.0033, 0.0514],
                 hanseatisch: [0.0023, 0.043],
-                georgian: [0.0018, 0.1404],
-                viktorianisch: [0.0019, 0.1841],
+                georgian: [0.0018, 0.0215],
+                viktorianisch: [0.0019, 0.0145],
                 griechisch: [0.0033, 0.0452],
                 spanisch: [0.0033, 0.0348],
                 andalusisch: [0.0018, 0.0348],

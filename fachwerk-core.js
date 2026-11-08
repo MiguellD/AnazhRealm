@@ -1979,8 +1979,11 @@
     // ═══════════════════════════════════════════════════════════════════════
     // prettier-ignore
     const KULLVOL=0.012;
+    // DER UMRISS DER FERNEN STUFE (w25-lod-pop-2, lod.K5): Portikus und Veranda stehen in der L2 — ohne sie lag ihr Umriss 3,1 px (georgian)
+    // und 4,5 px (viktorianisch) neben der L0 am Haushalt 26 m, mit ihnen 0,58 / 0,39 px; die L2 hält ihre Zeile (höchstens 7 104 Dreiecke am
+    // Regler-Rand, L2/L0 ≤ 0,084). Die Terrasse des Pueblo fehlt hier noch: voll gebaut riss sie die Zeile (10 778 bei doppel=1).
     // prettier-ignore
-    const DESTNUR={fern:true,kaempfer:false,dachdeckung:"rand",dachwerk:false,fenster:false,gefache:false,boeden:false,innenwaende:false,treppe:false,moebel:false,geruest:false,zimmermann:false,tueren:false,anbau:false,balkon:false,portikus:false,veranda:false,terrasse:false,arkade:false,giebel:false,dachAlt:false}; // GIEBEL-KOPLANAR-FIX: DESTNUR-Giebelwände lagen EXAKT auf den dachPrisma-Gabeln (GEMESSEN: barock 21.7k / antike 13.5k Z-Fight-Paare auf Traufhöhe) — fern IST der Körper der Giebel   // Stufe 2: 6.7x — Kull-Opfer entstehen gar nicht erst. dachwerk AUS: nackte Sparren über dem dims-Körper lasen sich als Ruine — der Körper trägt das Dach
+    const DESTNUR={fern:true,kaempfer:false,dachdeckung:"rand",dachwerk:false,fenster:false,gefache:false,boeden:false,innenwaende:false,treppe:false,moebel:false,geruest:false,zimmermann:false,tueren:false,anbau:false,balkon:false,portikus:true,veranda:true,terrasse:false,arkade:false,giebel:false,dachAlt:false}; // GIEBEL-KOPLANAR-FIX: DESTNUR-Giebelwände lagen EXAKT auf den dachPrisma-Gabeln (GEMESSEN: barock 21.7k / antike 13.5k Z-Fight-Paare auf Traufhöhe) — fern IST der Körper der Giebel   // Stufe 2: 6.7x — Kull-Opfer entstehen gar nicht erst. dachwerk AUS: nackte Sparren über dem dims-Körper lasen sich als Ruine — der Körper trägt das Dach
     // prettier-ignore
     const TURMNUR={fern:true,gefache:false,riegel:false,streben:false,zimmermann:false,fenster:false,geruest:false,boeden:false,innenwaende:false,treppe:false,moebel:false}; // Turm-Fassade: Paneele x 11 Geschosse waren die Masse
     // prettier-ignore
