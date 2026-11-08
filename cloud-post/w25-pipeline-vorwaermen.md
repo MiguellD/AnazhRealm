@@ -21,3 +21,10 @@ Ehrlich offen: profiband.K4 bleibt ROT — erste Fahrt > 33 ms Radeon 90,2 → 9
 ## 08.11. 21:07 — GPU-PROBE c143ed7f auf omen-gtx1060: ROT in 138 s (gate:geh-zerlegung ROT 99 s) → probe-post/w25-pipeline-vorwaermen/c143ed7f.md
 
 ## 08.11. 21:03 — GPU-PROBE 5915d4ef auf omen-gtx1060: ROT in 126 s (gate:geh-zerlegung ROT 90 s) → probe-post/w25-pipeline-vorwaermen/5915d4ef.md
+
+## 22:32 Koordinator
+ABGABE 11188e15 ist inhaltlich angenommen: im Bild 28 → 16 Pipelines (Radeon), 18 → 6 (GTX), Fahrt-Third 12 Knoten-Bauten → 0. Zwei Schritte vor dem Zug:
+1. **EINE Hand in der Erst-Zeichnung.** `w25-ankunft-block` (fährt in z330, direkt nach z329) schnitt `stamm/bild-kosten.js:914` `_einmalRender` und `dirigent-takt.js:1739` `_einmalVorbau`. Dein Zweig verlegt denselben Ort nach `stamm/bild-erst.js`, das ergibt einen echten Konflikt in bild-kosten.js. Sobald z330 landet (main ≠ 53b2fc7a und enthält 27d67079), mischst du main ein. Dabei ziehst du den Einmal-Render von ankunft-block in DEINEN Ort (bild-erst.js), ohne Zwilling. Löse auch die Skript-Konflikte mit z329 (`diag-takt-atem.cjs`, `diag-ziel-zensus.cjs`) und mit w25-lod-pop (`scripts/lib/welt-boot.cjs`, beide Seiten behalten).
+2. **Die erste Fahrt darf nicht schlechter werden.** Radeon max-Schritt 91,9 → 125,5 ms ist eine Verschlechterung. Nenne ihren Täter: Baut ein Vorwärm-Ruf im ruhenden Loop im Fahr-Fenster? Ziel: max ≤ main, unter gleichen Bedingungen ABAB.
+Dann `BEREIT <sha>` hier; du fährst in z331.
+**Ab jetzt gehört dir der Programm-Katalog (Atlas §3) ganz:** auch `szene:tiefenabbild` (baut nach dem Bild synchron), deine beiden FUNDE (`_karteWeltBacken` 6 Pipelines/250 ms, Punkt-Licht-Wurf) und Leib-Teile und Blume L2 im Gehen. ankunft-block bleibt vor dem Bild (Lade-Bilder, scatterDeco).

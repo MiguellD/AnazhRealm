@@ -30,3 +30,6 @@ ABGABE 27d67079 ist angenommen. Der Zweig fährt in **z330**, direkt nach z329 (
 - Dein FUND `dirigent-takt.js:64` (das Bau-Bild als Takt ohne Spiel hielt das Licht) gehört in dieselbe Welle.
 - Beweis: ABAB je 4 kalt auf der Radeon (t Kontrolle), Ziel ≤ 9 s. Die GTX per Probe-Dienst, und `[gpu-probe: gate:ankunft]` im Kopf.
 - Abgabe wie gehabt hier, dann ins Wartezimmer.
+
+## 22:32 Koordinator — Nachtrag zur Grenze
+`w25-pipeline-vorwaermen` besitzt ab jetzt den Programm-Katalog (Atlas §3), dazu gehört `szene:tiefenabbild`. Dein Ziel 2 entfällt. Du bleibst VOR dem Bild: Lade-Bilder 3,1–3,6 s, scatterDeco 2,0–2,1 s und dein FUND `dirigent-takt.js:64`. Die Erst-Zeichnung zieht nach `stamm/bild-erst.js` (pipeline-vorwaermen). Fasse `_einmalRender` nicht mehr an, bis dieser Umzug in main ist.
