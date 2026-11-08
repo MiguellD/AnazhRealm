@@ -414,7 +414,17 @@ class AnazhRealm_studio_stoff {
                             term(mf.farbe, rim.pow(3.0).mul(TSL.step(mf.schwelle, hsh)).mul(mf.amt));
                         }
                     }
-                    if (add) mat.emissiveNode = add;
+                    if (add && kind === "hair") {
+                        // DER GLANZ DES HAARS IST LICHT (w25-haar-albedo; Kajiya-Kay, Marschner: R und TT sind das Licht, das die
+                        // Faser spiegelt und durchlässt, nie eigenes): die Look-Terme wiegen als Reflexion unter DEMSELBEN Licht
+                        // wie die Albedo — die Beleuchtung je Albedo ist die Leuchtdichte des fertigen Outputs ÷ die der Albedo (rau
+                        // 0,85: er ist fast nur diffus; Schatten, Himmel und Sonne stehen darin). Das Labor rechnet dasselbe
+                        // (`laborStoff`). Bis hier leuchtete der Glanz als Emission: im Schatten des Walds stand das dunkelbraune
+                        // Haar (Albedo 0,0117) weiß (Radeon 53b2fc7a, haar.K2#1 arm 0,6263).
+                        const lumW = TSL.vec3(0.2126, 0.7152, 0.0722);
+                        const licht = TSL.output.rgb.dot(lumW).div(vcol.dot(lumW).max(1e-4));
+                        mat.outputNode = TSL.vec4(TSL.output.rgb.add(add.mul(licht)), TSL.output.a);
+                    } else if (add) mat.emissiveNode = add;
                     // Wrap-Licht des Lab-Fells: ·(0.5 + 0.5·max(NdotV,0)) NACH allen Additiven — die matFur-Ordnung
                     // (outputNode multipliziert den fertigen Output inkl. emissive-Terme).
                     if (Number.isFinite(L.wrap)) {

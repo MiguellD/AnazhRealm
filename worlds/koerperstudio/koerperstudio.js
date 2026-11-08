@@ -126,9 +126,12 @@ function laborStoff(m0,geo,skin,cache){
       var look='\nvec3 vdL=normalize(-vViewPosition);float ndvL=clamp(dot(normal,vdL),-1.0,1.0);float rimL=clamp(1.0-abs(ndvL),0.0,1.0);';
       if(haut)look+='totalEmissiveRadiance+='+gv(HL.sssFarbe)+'*pow(rimL,'+gf(HL.sssPow)+')*'+gf(HL.sssAmt)+';';
       else if(haar){var sT='clamp(vAchse.x/max(vAchse.y,1e-6),0.0,1.0)';
-        look+='float sTL='+sT+';totalEmissiveRadiance+='+gv(HAL.tipRimFarbe)+'*pow(rimL,'+gf(HAL.tipRimPow)+')*sTL+'+gv(HAL.specFarbe)+'*pow(max(ndvL,0.0),'+gf(HAL.specPow)+')*sTL*'+gf(HAL.specAmt)+';';}
+        // DER GLANZ IST LICHT (w25-haar-albedo, wie die Welt): Reflexion unter dem Licht der Albedo — Leuchtdichte des fertigen
+        // Lichts ÷ die der Albedo, nie Emission
+        look+='float sTL='+sT+';vec3 glanzL='+gv(HAL.tipRimFarbe)+'*pow(rimL,'+gf(HAL.tipRimPow)+')*sTL+'+gv(HAL.specFarbe)+'*pow(max(ndvL,0.0),'+gf(HAL.specPow)+')*sTL*'+gf(HAL.specAmt)+';';}
       else look='';
-      sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\n'+fk).replace('#include <color_fragment>','#include <color_fragment>'+farbe).replace('#include <emissivemap_fragment>','#include <emissivemap_fragment>'+look);
+      var licht=haar?'\ngl_FragColor.rgb+=glanzL*dot(gl_FragColor.rgb,vec3(0.2126,0.7152,0.0722))/max(dot(diffuseColor.rgb,vec3(0.2126,0.7152,0.0722)),1e-4);':'';
+      sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\n'+fk).replace('#include <color_fragment>','#include <color_fragment>'+farbe).replace('#include <emissivemap_fragment>','#include <emissivemap_fragment>'+look).replace('#include <tonemapping_fragment>',licht+'\n#include <tonemapping_fragment>');
     };
     m.customProgramCacheKey=function(){return 'labor-welt-mensch-'+key+(webe?'|'+m0.userData.__webe:'');};
   }
