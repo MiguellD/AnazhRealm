@@ -1,0 +1,258 @@
+{
+ "sha": "34e045487123bdb06e5c7c16f76bff7b316f059c",
+ "geraet": "radeon",
+ "zeit": "2026-11-08T02:46:31.531Z",
+ "host": "MiguellD",
+ "je": {
+  "lod.K2#1": {
+   "gruen": false,
+   "zahl": "Gehen 4 m/s: 0.0578 % Pop-Pixel je Sekunde (1199 px, Soll ≤ 0,05 %), je Schritt 16*/13*/302*/20*/28*/34*/711*/75* (* = Stufen-Wechsel), Laub 216–216 m, perfTarget 17 ms, [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.34,
+   "grund": "ROT: Gehen 4 m/s: 0.0578 % Pop-Pixel je Sekunde (1199 px, Soll ≤ 0,05 %), je Schritt 16*/13*/302*/20*/28*/34*/711*/75* (* = Stufen-Wechsel), Laub 216–216 m, perfTarget 17 ms, [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 20.2,
+   "zeit": "2026-11-08T02:44:46.996Z",
+   "abdruck": "c3b2c498b360",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "ankunft.K2#1": {
+   "gruen": false,
+   "zahl": "0.01 % Lücke nach 0.2 s bis zur Ruhe der Foundry · offen im Bild der Horizont wird geteilt · 2 Wald-Böden werden bepflanzt · t(Kontrolle) kalt 10.09 s von außen (Eigenmeldung 9.22 s) · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.58,
+   "grund": "ROT: 0.01 % Lücke nach 0.2 s bis zur Ruhe der Foundry · offen im Bild der Horizont wird geteilt · 2 Wald-Böden werden bepflanzt · t(Kontrolle) kalt 10.09 s von außen (Eigenmeldung 9.22 s) · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 34.5,
+   "zeit": "2026-11-08T02:45:43.586Z",
+   "abdruck": "00e38dd9d4d2",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "ankunft.K3#1": {
+   "gruen": false,
+   "zahl": "warm Median 5.96 s (5.51 · 6.41, Zweit-Boot im warmen Browser) · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.58,
+   "grund": "ROT: warm Median 5.96 s (5.51 · 6.41, Zweit-Boot im warmen Browser) · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 34.5,
+   "zeit": "2026-11-08T02:45:43.586Z",
+   "abdruck": "c815b3602c7b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "ankunft.K2#1",
+   "modus": "session"
+  },
+  "ankunft.K1#1": {
+   "gruen": false,
+   "zahl": "t(Kontrolle) kalt 10.09 s von außen (Eigenmeldung 9.22 s), Bild 0.01 % Lücke bis zur Ruhe, offen im Bild der Horizont wird geteilt · 2 Wald-Böden werden bepflanzt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.58,
+   "grund": "ROT: t(Kontrolle) kalt 10.09 s von außen (Eigenmeldung 9.22 s), Bild 0.01 % Lücke bis zur Ruhe, offen im Bild der Horizont wird geteilt · 2 Wald-Böden werden bepflanzt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 34.5,
+   "zeit": "2026-11-08T02:45:43.586Z",
+   "abdruck": "b09301d4895d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "ankunft.K2#1",
+   "modus": "session"
+  },
+  "ankunft.K5#1": {
+   "gruen": false,
+   "zahl": "längste Aufgabe 414 ms (Soll ≤ 250) · Haupt-Faden belegt 8.12 s bis zur Kontrolle (Soll ≤ 4; 38 LongTasks 5.67 s) · Kontrolle 10.17 s Seiten-Uhr · die längste: 414 ms bei 4.4 s: build [three.webgpu.min.js] 63 · _applyDayNightToScene 57 · build [three.webgpu.min.js] 56 · 3 Pipelines synchron (MeshStandardNodeMaterial_25, MeshBasicNodeMaterial_22, MeshBasicNodeMaterial_23) · belegt je Klasse (s): Jobs 2.99 · Bild 2.90 · Knoten-Bau 2.36 · program 0.44 · Himmel 0.26 · garbage collector 0.21 · Saat 0.16 · Streu 0.14 · Bauten 0.09 · Buch 0.08 · Gruppen-Bau 0.08 · Boden 0.08 · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.58,
+   "grund": "ROT: längste Aufgabe 414 ms (Soll ≤ 250) · Haupt-Faden belegt 8.12 s bis zur Kontrolle (Soll ≤ 4; 38 LongTasks 5.67 s) · Kontrolle 10.17 s Seiten-Uhr · die längste: 414 ms bei 4.4 s: build [three.webgpu.min.js] 63 · _applyDayNightToScene 57 · build [three.webgpu.min.js] 56 · 3 Pipelines synchron (MeshStandardNodeMaterial_25, MeshBasicNodeMaterial_22, MeshBasicNodeMaterial_23) · belegt je Klasse (s): Jobs 2.99 · Bild 2.90 · Knoten-Bau 2.36 · program 0.44 · Himmel 0.26 · garbage collector 0.21 · Saat 0.16 · Streu 0.14 · Bauten 0.09 · Buch 0.08 · Gruppen-Bau 0.08 · Boden 0.08 · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 34.5,
+   "zeit": "2026-11-08T02:45:43.586Z",
+   "abdruck": "8d570e46999f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "ankunft.K2#1",
+   "modus": "session"
+  },
+  "profiband.K1#1": {
+   "gruen": false,
+   "zahl": "Bild-p95 ≤ 33: wiese-ego-geht 66.93 · wiese-ego-sprint 66.93 · wiese-fahrt 75.38 · genesis-third-geht 42 · stadt-ego-geht ? · wiese-ego-sturm ? · Gang 81.2 s · [linse-gpu] amd/rdna-3 — ROT 6: wiese-ego-geht Bild-p95 66.93 > 33 | wiese-ego-sprint Bild-p95 66.93 > 33 | wiese-fahrt Bild-p95 75.38 > 33 | genesis-third-geht Bild-p95 42 > 33 | stadt-ego-geht: ungemessen (die Uhr 84 s trug den Schritt nicht) | wiese-ego-sturm: ungemessen (die Uhr 84 s trug den Schritt nicht)",
+   "exit": 0,
+   "minuten": 1.35,
+   "grund": "ROT: Bild-p95 ≤ 33: wiese-ego-geht 66.93 · wiese-ego-sprint 66.93 · wiese-fahrt 75.38 · genesis-third-geht 42 · stadt-ego-geht ? · wiese-ego-sturm ? · Gang 81.2 s · [linse-gpu] amd/rdna-3 — ROT 6: wiese-ego-geht Bild-p95 66.93 > 33 | wiese-ego-sprint Bild-p95 66.93 > 33 | wiese-fahrt Bild-p95 75.38 > 33 | genesis-third-geht Bild-p95 42 > 33 | stadt-ego-geht: ungemessen (die Uhr 84 s trug den Schritt nicht) | wiese-ego-sturm: ungemessen (die Uhr 84 s trug den Schritt nicht)",
+   "gpu": "amd/rdna-3",
+   "s": 81.3,
+   "zeit": "2026-11-08T02:46:31.531Z",
+   "abdruck": "a4809dc2e930",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "schatten.K1#2": {
+   "gruen": true,
+   "zahl": "Uhr 0.5 ego 0.956 cm/m (44/44 Kanten, Fuß 2.1 cm) · Uhr 0.5 third 0.777 cm/m (44/44 Kanten, Fuß 2.1 cm) · Uhr 0.3 ego 0.924 cm/m (44/44 Kanten, Fuß 1.8 cm) · Uhr 0.3 third 0.866 cm/m (44/44 Kanten, Fuß 2.1 cm) · Treue 0/0 Bytes · Kontakt-Kaskade k0 0.19 ms, [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.46,
+   "gpu": "amd/rdna-3",
+   "s": 27.8,
+   "zeit": "2026-11-08T02:41:05.823Z",
+   "abdruck": "8b9afa6bfd7d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "leib.K1#1": {
+   "gruen": false,
+   "zahl": "schlechtester von 1 Läufen p95 ms ego/gehen 61.8 · third/gehen 93.5 · ego/wechsel 31.9 · third/wechsel 26.3 · Bild 28.5 ms",
+   "exit": 0,
+   "minuten": 0.6,
+   "grund": "ROT: schlechtester von 1 Läufen p95 ms ego/gehen 61.8 · third/gehen 93.5 · ego/wechsel 31.9 · third/wechsel 26.3 · Bild 28.5 ms",
+   "gpu": "amd/rdna-3",
+   "s": 36.3,
+   "zeit": "2026-11-08T02:45:07.287Z",
+   "abdruck": "38f8e3e5fe0e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "ungemessen": {
+  "ankunft.K4#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: POSE ego-0 45520 ms)",
+   "exit": 1,
+   "minuten": 1.51,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: POSE ego-0 45520 ms)",
+   "s": 90.5,
+   "zeit": "2026-11-08T02:33:11.770Z",
+   "abdruck": "ea66260e5746",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "ferne.K1#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: band · Exit 1 · C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\34e04548-radeon\\ferne.K1_1.json.d\\band.json)",
+   "exit": 1,
+   "minuten": 1.51,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: band · Exit 1 · C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\34e04548-radeon\\ferne.K1_1.json.d\\band.json)",
+   "s": 90.5,
+   "zeit": "2026-11-08T02:39:21.350Z",
+   "abdruck": "3f920b33ffcb",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "ferne.K2#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: band · Exit 1 · C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\34e04548-radeon\\ferne.K1_1.json.d\\band.json)",
+   "exit": 1,
+   "minuten": 1.51,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: band · Exit 1 · C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\34e04548-radeon\\ferne.K1_1.json.d\\band.json)",
+   "s": 90.5,
+   "zeit": "2026-11-08T02:39:21.350Z",
+   "abdruck": "8d264e84414d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "ferne.K1#1",
+   "modus": "session"
+  },
+  "ferne.K1#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: band · Exit 1 · C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\34e04548-radeon\\ferne.K1_1.json.d\\band.json)",
+   "exit": 1,
+   "minuten": 1.51,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: band · Exit 1 · C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\34e04548-radeon\\ferne.K1_1.json.d\\band.json)",
+   "s": 90.5,
+   "zeit": "2026-11-08T02:39:21.350Z",
+   "abdruck": "73ce8e3983c3",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "ferne.K1#1",
+   "modus": "session"
+  },
+  "ferne.K2#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: band · Exit 1 · C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\34e04548-radeon\\ferne.K1_1.json.d\\band.json)",
+   "exit": 1,
+   "minuten": 1.51,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: band · Exit 1 · C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\34e04548-radeon\\ferne.K1_1.json.d\\band.json)",
+   "s": 90.5,
+   "zeit": "2026-11-08T02:39:21.350Z",
+   "abdruck": "971fc3df75d8",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "ferne.K1#1",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-08T02:44:18.531Z",
+  "port": 7804,
+  "warten": 0.08,
+  "bootS": 5.3,
+  "grundstellungS": [
+   1.6
+  ],
+  "proben": 4,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "lod.K2#1",
+    "s": 16.4,
+    "takte": 640,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": null,
+    "vor": "profiband.K1#1",
+    "s": 11.7,
+    "takte": 717,
+    "chunks": 81,
+    "nach": "der Tür"
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 5,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 1716,
+   "frameP95": 83.72,
+   "taktP95": 57.71,
+   "vramMax": 144,
+   "seiten": 6,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [
+    {
+     "probe": "profiband.K1#1",
+     "m": 1091,
+     "ringVor": 4,
+     "ringMin": 0
+    },
+    {
+     "probe": "ankunft.K2#1",
+     "m": 1085,
+     "ringVor": 4,
+     "ringMin": -1
+    }
+   ],
+   "zapfen": 210,
+   "luecken": 3,
+   "letzteLuecke": "THREE is not defined"
+  },
+  "fahrtS": 209.5,
+  "minuten": 3.64
+ }
+}

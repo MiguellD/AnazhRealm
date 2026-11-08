@@ -1,0 +1,270 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.217",
+  "sha": "e475c6b4ef837565b3c741f0da3daa79e303a8c0"
+ },
+ "buehne": {
+  "saison": "spring",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": false,
+  "weltTakte": 180
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0.0052,
+   "taeter": {
+    "Laub baum_tanne": 0.0052
+   }
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "abstand": 61.46,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   -280.4,
+   29.704,
+   -1045.6
+  ],
+  "blick": [
+   -0.92069,
+   0,
+   -0.39029
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 74.9,
+  "sigma": 43,
+  "schwarz": 0,
+  "weiss": 0
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 61.46 m · Luma 74.9 σ 43 schwarz 0.0 % weiß 0.0 % · Stand 18.546.217 · Bühne spring sunny 0.50 · Gerät WebGPU amd rdna-3",
+ "klasse": {
+  "ausdruck": "^(nahWiese:.*|streuSatz|bodenSatz)$",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 85016,
+  "toene": [
+   "bodenSatz=255/80/80",
+   "nahWiese:L1=80/255/80",
+   "nahWiese:L2=80/120/255",
+   "nahWiese:Lf=255/220/60",
+   "streuSatz=255/80/255"
+  ],
+  "klassen": {
+   "bodenSatz": {
+    "objekte": 1,
+    "pixel": 63922
+   },
+   "nahWiese:L1": {
+    "objekte": 2,
+    "pixel": 337908
+   },
+   "nahWiese:L2": {
+    "objekte": 2,
+    "pixel": 301204
+   },
+   "nahWiese:Lf": {
+    "objekte": 2,
+    "pixel": 304153
+   },
+   "streuSatz": {
+    "objekte": 5,
+    "pixel": 9148
+   }
+  },
+  "abstand": {
+   "baender": [
+    0,
+    2,
+    5,
+    10,
+    20,
+    40,
+    80,
+    200
+   ],
+   "ring": 10,
+   "augeUeberBoden": 2.1,
+   "cos": [
+    null,
+    0.4729,
+    0.2964,
+    0.1478,
+    0.0622,
+    0.0371,
+    0.0179
+   ],
+   "klassen": {
+    "nahWiese:Lf": [
+     0,
+     0,
+     70,
+     146213,
+     93863,
+     17501,
+     2181
+    ],
+    "streuSatz": [
+     0,
+     24,
+     2902,
+     3900,
+     2321,
+     1,
+     0
+    ],
+    "bodenSatz": [
+     0,
+     39420,
+     14543,
+     1454,
+     36,
+     84,
+     2821
+    ],
+    "nahWiese:L2": [
+     0,
+     2487,
+     263891,
+     34152,
+     0,
+     0,
+     7
+    ],
+    "nahWiese:L1": [
+     0,
+     273181,
+     64727,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "farbton": {
+    "kachel": 2,
+    "band": [
+     2,
+     5
+    ],
+    "belichtung": 0.545,
+    "kacheln": [
+     [
+      "-143,-524",
+      7529,
+      -2411.486,
+      6972.012,
+      7529
+     ],
+     [
+      "-143,-525",
+      1196,
+      -375.04,
+      1100.782,
+      1196
+     ],
+     [
+      "-143,-523",
+      14723,
+      -6938.423,
+      12569.316,
+      14721
+     ],
+     [
+      "-142,-525",
+      19468,
+      -8921.072,
+      16720.385,
+      19455
+     ],
+     [
+      "-142,-524",
+      19137,
+      -5206.357,
+      17980.511,
+      19133
+     ],
+     [
+      "-143,-522",
+      6303,
+      -2321.854,
+      5674.27,
+      6303
+     ],
+     [
+      "-142,-526",
+      849,
+      -369.066,
+      748.345,
+      849
+     ],
+     [
+      "-142,-523",
+      8945,
+      -3502.728,
+      7995.79,
+      8939
+     ],
+     [
+      "-141,-526",
+      1631,
+      -568.803,
+      1501.906,
+      1631
+     ],
+     [
+      "-141,-525",
+      1987,
+      -939.014,
+      1710.416,
+      1987
+     ],
+     [
+      "-142,-522",
+      4,
+      -1.194,
+      3.735,
+      4
+     ]
+    ]
+   }
+  },
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\e475c6b4-radeon\\vegetation.K5_2-wiese-ego-0.5-fruehling-wiese.maske.png"
+ }
+}

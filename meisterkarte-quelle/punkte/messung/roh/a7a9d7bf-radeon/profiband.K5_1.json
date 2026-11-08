@@ -1,0 +1,132 @@
+{
+ "art": "dauer",
+ "sekunden": 19,
+ "schritte": [
+  [
+   "ende",
+   19
+  ]
+ ],
+ "offen": [],
+ "fehler": {},
+ "strom": {
+  "bloecke": 1175,
+  "bilder": 2128,
+  "seiten": 9,
+  "fehler": 0,
+  "verloren": 0
+ },
+ "dauer": {
+  "anfang": true,
+  "ende": true,
+  "torbau": {
+   "bau": true,
+   "tor": true,
+   "heim": true
+  },
+  "nacht": {
+   "nacht": 1.1576249999999889e-14,
+   "mittag": 0.5000000000000108
+  },
+  "minuten": 116.95,
+  "seiten": 5,
+  "proben": 7,
+  "last": {
+   "n": 2108,
+   "frame": 67.05,
+   "p99": 100.49,
+   "max": 778.46,
+   "ueber33": 1368,
+   "ueber100": 31,
+   "takt": 59.61,
+   "vram": 138.6,
+   "gpu": 13.39,
+   "gpuN": 306,
+   "befehle": 77,
+   "dreiecke": 471586,
+   "voll": 0.06,
+   "halt": false,
+   "last": 0,
+   "sicht": [
+    1,
+    2
+   ],
+   "sichtWechsel": 8,
+   "sattel": "01010",
+   "wetter": [
+    "sunny"
+   ],
+   "buehne": 0
+  },
+  "weg": 3173,
+  "gegangen": 123,
+  "fahren": true,
+  "nachtImStrom": true,
+  "anker": {
+   "a": {
+    "n": 43,
+    "frame": 58.85,
+    "p99": 83.27,
+    "max": 83.27,
+    "ueber33": 41,
+    "ueber100": 0,
+    "takt": 43.89,
+    "vram": 132.9,
+    "gpu": 13.39,
+    "gpuN": 8,
+    "befehle": 83,
+    "dreiecke": 362888,
+    "voll": 1,
+    "halt": false,
+    "last": 1,
+    "sicht": [
+     1
+    ],
+    "sichtWechsel": 0,
+    "sattel": "0",
+    "wetter": [
+     "sunny"
+    ],
+    "buehne": 0
+   },
+   "b": {
+    "n": 70,
+    "frame": 41.99,
+    "p99": 49.83,
+    "max": 49.83,
+    "ueber33": 21,
+    "ueber100": 0,
+    "takt": 37.31,
+    "vram": 134.2,
+    "gpu": 6.22,
+    "gpuN": 8,
+    "befehle": 75,
+    "dreiecke": 475651,
+    "voll": 1,
+    "halt": false,
+    "last": 0.71,
+    "sicht": [
+     1
+    ],
+    "sichtWechsel": 0,
+    "sattel": "0",
+    "wetter": [
+     "sunny"
+    ],
+    "buehne": 0
+   },
+   "laeufe": 2
+  },
+  "gang": [
+   "vram: +3.4 MB zurück am Start — tex:karte-albedo:atlas bc1-rgba-unorm-srgb 128x3584x20 +5.8 MB · tex:karte-normal:atlas bc5-rg-unorm 64x1792x20 +2.9 MB · tex:karte-licht:atlas rgba8unorm 32x896x20 +2.2 MB"
+  ],
+  "heap": [
+   322.6,
+   722
+  ],
+  "vramGC": [
+   129.9,
+   133.3
+  ]
+ }
+}

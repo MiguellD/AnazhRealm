@@ -1,0 +1,132 @@
+{
+ "art": "dauer",
+ "sekunden": 20,
+ "schritte": [
+  [
+   "ende",
+   19.9
+  ]
+ ],
+ "offen": [],
+ "fehler": {},
+ "strom": {
+  "bloecke": 1183,
+  "bilder": 3450,
+  "seiten": 8,
+  "fehler": 0,
+  "verloren": 0
+ },
+ "dauer": {
+  "anfang": true,
+  "ende": true,
+  "torbau": {
+   "bau": true,
+   "tor": true,
+   "heim": true
+  },
+  "nacht": {
+   "nacht": 8.231583333333367e-15,
+   "mittag": 0.5000000000000081
+  },
+  "minuten": 20.25,
+  "seiten": 5,
+  "proben": 9,
+  "last": {
+   "n": 3427,
+   "frame": 58.61,
+   "p99": 92.08,
+   "max": 184.07,
+   "ueber33": 1920,
+   "ueber100": 30,
+   "takt": 54.54,
+   "vram": 136.6,
+   "gpu": 9.88,
+   "gpuN": 454,
+   "befehle": 77,
+   "dreiecke": 460646,
+   "voll": 0.05,
+   "halt": false,
+   "last": 0,
+   "sicht": [
+    1,
+    2
+   ],
+   "sichtWechsel": 66,
+   "sattel": "01010",
+   "wetter": [
+    "sunny"
+   ],
+   "buehne": 0
+  },
+  "weg": 3177,
+  "gegangen": 131,
+  "fahren": true,
+  "nachtImStrom": false,
+  "anker": {
+   "a": {
+    "n": 95,
+    "frame": 41.71,
+    "p99": 50.22,
+    "max": 50.22,
+    "ueber33": 8,
+    "ueber100": 0,
+    "takt": 23.18,
+    "vram": 134.2,
+    "gpu": 6.14,
+    "gpuN": 8,
+    "befehle": 73,
+    "dreiecke": 374029,
+    "voll": 1,
+    "halt": false,
+    "last": 1,
+    "sicht": [
+     1
+    ],
+    "sichtWechsel": 0,
+    "sattel": "0",
+    "wetter": [
+     "sunny"
+    ],
+    "buehne": 0
+   },
+   "b": {
+    "n": 61,
+    "frame": 50.24,
+    "p99": 58.73,
+    "max": 58.73,
+    "ueber33": 36,
+    "ueber100": 0,
+    "takt": 39.16,
+    "vram": 132.8,
+    "gpu": 9.21,
+    "gpuN": 8,
+    "befehle": 75,
+    "dreiecke": 479072,
+    "voll": 1,
+    "halt": false,
+    "last": 0.86,
+    "sicht": [
+     1
+    ],
+    "sichtWechsel": 0,
+    "sattel": "0",
+    "wetter": [
+     "sunny"
+    ],
+    "buehne": 0
+   },
+   "laeufe": 2
+  },
+  "gang": [
+   "heap: +19.2 MB/min > 5 — Halter: r._foundry.cache[].children[].geometry.attributes +10.2 MB · r.state.renderer._nodes.nodeBuilderCache[].updateNodes[] +3.3 MB · r.state.chunkSaetze[].mesh.__renderObjekte[].attributes +3.1 MB"
+  ],
+  "heap": [
+   267.5,
+   655.8
+  ],
+  "vramGC": [
+   130.6,
+   132
+  ]
+ }
+}

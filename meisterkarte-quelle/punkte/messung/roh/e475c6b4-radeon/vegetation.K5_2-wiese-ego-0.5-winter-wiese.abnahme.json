@@ -1,0 +1,270 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.217",
+  "sha": "e475c6b4ef837565b3c741f0da3daa79e303a8c0"
+ },
+ "buehne": {
+  "saison": "winter",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": false,
+  "weltTakte": 180
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0.0052,
+   "taeter": {
+    "Laub baum_tanne": 0.0052
+   }
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "abstand": 61.46,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   -280.4,
+   29.704,
+   -1045.6
+  ],
+  "blick": [
+   -0.92069,
+   0,
+   -0.39029
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 109.1,
+  "sigma": 52.9,
+  "schwarz": 0,
+  "weiss": 0
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 61.46 m · Luma 109.1 σ 52.9 schwarz 0.0 % weiß 0.0 % · Stand 18.546.217 · Bühne winter sunny 0.50 · Gerät WebGPU amd rdna-3",
+ "klasse": {
+  "ausdruck": "^(nahWiese:.*|streuSatz|bodenSatz)$",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 928221,
+  "toene": [
+   "bodenSatz=255/80/80",
+   "nahWiese:L1=80/255/80",
+   "nahWiese:L2=80/120/255",
+   "nahWiese:Lf=255/220/60",
+   "streuSatz=255/80/255"
+  ],
+  "klassen": {
+   "bodenSatz": {
+    "objekte": 1,
+    "pixel": 307864
+   },
+   "nahWiese:L1": {
+    "objekte": 2,
+    "pixel": 233595
+   },
+   "nahWiese:L2": {
+    "objekte": 2,
+    "pixel": 661473
+   },
+   "nahWiese:Lf": {
+    "objekte": 2,
+    "pixel": 326211
+   },
+   "streuSatz": {
+    "objekte": 5,
+    "pixel": 7022
+   }
+  },
+  "abstand": {
+   "baender": [
+    0,
+    2,
+    5,
+    10,
+    20,
+    40,
+    80,
+    200
+   ],
+   "ring": 10,
+   "augeUeberBoden": 2.1,
+   "cos": [
+    null,
+    0.4725,
+    0.2967,
+    0.1482,
+    0.0599,
+    0.0404,
+    0.0189
+   ],
+   "klassen": {
+    "nahWiese:L2": [
+     0,
+     10822,
+     270977,
+     10829,
+     1657,
+     6888,
+     5400
+    ],
+    "bodenSatz": [
+     0,
+     104745,
+     62717,
+     9751,
+     2455,
+     2624,
+     8611
+    ],
+    "nahWiese:Lf": [
+     0,
+     0,
+     743,
+     165794,
+     101106,
+     18956,
+     3204
+    ],
+    "nahWiese:L1": [
+     0,
+     212544,
+     21016,
+     0,
+     0,
+     2,
+     3
+    ],
+    "streuSatz": [
+     0,
+     16,
+     1510,
+     3587,
+     1909,
+     0,
+     0
+    ]
+   },
+   "farbton": {
+    "kachel": 2,
+    "band": [
+     2,
+     5
+    ],
+    "belichtung": 0.545,
+    "kacheln": [
+     [
+      "-143,-524",
+      7535,
+      167.356,
+      5116.477,
+      5642
+     ],
+     [
+      "-143,-525",
+      1196,
+      87.377,
+      807.627,
+      905
+     ],
+     [
+      "-143,-523",
+      14792,
+      271.652,
+      9412.11,
+      10390
+     ],
+     [
+      "-142,-525",
+      19557,
+      -321.065,
+      12936.408,
+      14321
+     ],
+     [
+      "-142,-524",
+      19155,
+      2225.781,
+      11911.75,
+      13179
+     ],
+     [
+      "-143,-522",
+      6341,
+      29.284,
+      5238.096,
+      5665
+     ],
+     [
+      "-142,-526",
+      861,
+      -109.565,
+      741.425,
+      820
+     ],
+     [
+      "-142,-523",
+      8978,
+      623.685,
+      5188.597,
+      5768
+     ],
+     [
+      "-141,-526",
+      1637,
+      -119.244,
+      1500.436,
+      1588
+     ],
+     [
+      "-141,-525",
+      1999,
+      -167.033,
+      1653.641,
+      1806
+     ],
+     [
+      "-142,-522",
+      4,
+      1.21,
+      3.807,
+      4
+     ]
+    ]
+   }
+  },
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\e475c6b4-radeon\\vegetation.K5_2-wiese-ego-0.5-winter-wiese.maske.png"
+ }
+}

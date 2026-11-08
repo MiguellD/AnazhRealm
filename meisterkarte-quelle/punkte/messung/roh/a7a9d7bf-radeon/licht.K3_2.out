@@ -1,0 +1,1154 @@
+$ C:\Program Files\nodejs\node.exe -e const tor = (function sitzungTor() {
+    const fs = require("fs");
+    const path = require("path");
+    const http = require("http");
+    const W = Number(process.env.WERKBANK_PORT);
+    const tor = { W, aus: process.argv[1], arg: process.argv.slice(2), browser: null, page: null };
+    // EIN Ruf (POST JSON, mit Frist); eine Antwort { fehler: "…" } der Werkbank wirft beim Namen
+    tor.ruf = (weg, nutzlast, ms = 120000) =>
+        new Promise((ok, nein) => {
+            const q = http.request({ host: "127.0.0.1", port: W, path: weg, method: "POST", agent: false, headers: { "Content-Type": "application/json" } }, (a) => {
+                let d = "";
+                a.on("data", (c) => (d += c));
+                a.on("end", () => {
+                    let j = null;
+                    try {
+                        j = JSON.parse(d);
+                    } catch (_e) {
+                        return nein(new Error(weg + ": keine JSON-Antwort: " + d.slice(0, 200)));
+                    }
+                    if (j && typeof j.fehler === "string") return nein(new Error(weg + ": " + j.fehler.slice(0, 300)));
+                    ok(j);
+                });
+            });
+            q.on("error", nein);
+            q.setTimeout(ms, () => q.destroy(new Error(weg + ": Frist " + ms + " ms")));
+            q.end(JSON.stringify(nutzlast || {}));
+        });
+    // die Karte der Welt: die Adapter-Zeile im Log ihrer Werkbank (der Zeuge der Wand GPU steht schon in der Sitzung)
+    tor.karte = () => {
+        const f = process.env.PUNKTE_SITZUNG_LOG;
+        const t = f && fs.existsSync(f) ? fs.readFileSync(f, "utf8") : "";
+        const z = (/^\[linse-gpu\] .*$/m.exec(t) || [null])[0];
+        console.log(z || "KEINE KARTE: das Log der Sitzung nennt keinen [linse-gpu]");
+        return z;
+    };
+    tor.seite = async () => {
+        if (tor.page) return tor.page;
+        const s = await tor.ruf("/status", {}, 30000);
+        const profil = s && s.boot && s.boot.profil;
+        if (!profil) throw new Error("/status nennt kein Profil der Werkbank");
+        const [port, weg] = fs.readFileSync(path.join(profil, "DevToolsActivePort"), "utf8").split(/\r?\n/);
+        const puppeteer = require(path.resolve("node_modules/puppeteer"));
+        tor.browser = await puppeteer.connect({
+            browserWSEndpoint: "ws://127.0.0.1:" + port + weg,
+            defaultViewport: null,
+            protocolTimeout: 900000,
+        });
+        for (const p of await tor.browser.pages())
+            if (await p.evaluate(() => !!(window.anazhRealm && window.anazhRealm.state)).catch(() => false)) return (tor.page = p);
+        throw new Error("im Browser der Werkbank steht keine Seite mit der Welt");
+    };
+    const baum = (datei) => {
+        const text = fs.readFileSync(datei, "utf8");
+        const acorn = require(path.resolve("node_modules/acorn"));
+        const o = { ecmaVersion: "latest", sourceType: "script", allowHashBang: true, allowReturnOutsideFunction: true };
+        return { text, ast: acorn.parse(text, o) };
+    };
+    const ankern = (src, wo, anker) => {
+        for (const [a, b] of anker) {
+            const n = src.split(a).length - 1;
+            if (n !== 1) throw new Error("ANKER " + (n ? n + "-mal" : "fehlt") + " in " + wo + ": " + a.slice(0, 90));
+            src = src.replace(a, () => b);
+        }
+        return src;
+    };
+    // die Deklaration `name` auf oberster Ebene (eine Funktion: ihr Text; const: ihr Wert), jeder Anker [alt, neu] genau einmal ersetzt
+    tor.quelle = (datei, name, anker = []) => {
+        const { text, ast } = baum(datei);
+        for (const n of ast.body) {
+            if (n.type === "FunctionDeclaration" && n.id && n.id.name === name) return ankern(text.slice(n.start, n.end), datei + " " + name, anker);
+            if (n.type === "VariableDeclaration")
+                for (const d of n.declarations)
+                    if (d.id.type === "Identifier" && d.id.name === name && d.init) return ankern(text.slice(d.init.start, d.init.end), datei + " " + name, anker);
+        }
+        throw new Error(datei + ": keine Deklaration " + name + " auf oberster Ebene");
+    };
+    // die Deklarationen `namen` (Anweisungen der obersten Ebene) in der Reihe der Quelle — eine rechnet mit der vorigen
+    tor.dekl = (datei, namen) => {
+        const { text, ast } = baum(datei);
+        const da = new Set();
+        const teile = [];
+        for (const n of ast.body) {
+            const wer = n.type === "FunctionDeclaration" && n.id ? [n.id.name] : n.type === "VariableDeclaration" ? n.declarations.map((d) => d.id.name) : [];
+            if (wer.some((w) => namen.includes(w))) (teile.push(text.slice(n.start, n.end)), wer.forEach((w) => da.add(w)));
+        }
+        const fehlt = namen.filter((x) => !da.has(x));
+        if (fehlt.length) throw new Error(datei + ": keine Deklaration " + fehlt.join(", "));
+        return teile.join("\n");
+    };
+    tor.ende = async () => {
+        if (tor.browser) await tor.browser.disconnect().catch(() => {});
+    };
+    return tor;
+})();
+(async function werkbankLinse(tor) {
+    const http = require("http");
+    const cp = require("child_process");
+    const L = JSON.parse(tor.arg[0]);
+    const S = tor.W + 2;
+    const t0 = Date.now();
+    const sek = (t) => ((Date.now() - t) / 1000).toFixed(1);
+    tor.karte();
+    if (L.vorher) {
+        const v = cp.spawnSync(process.execPath, ["scripts/werkbank.cjs", ...L.vorher, "--port", String(tor.W)], { encoding: "utf8", timeout: 600000 });
+        console.log("VORHER werkbank " + L.vorher.join(" ") + " EXIT=" + v.status + " · " + sek(t0) + " s");
+        if (v.status !== 0) throw new Error("der Messort der Linse steht nicht: " + String((v.stdout || "") + (v.stderr || "")).trim().split("\n").slice(-2).join(" | ").slice(0, 300));
+    }
+    let n = 0;
+    const ruhe = async (b) => {
+        const t = Date.now();
+        const e = (await tor.ruf("/eval", { code: "window.__buehne(); return await window.__weltStehtNach(null, " + L.ruheMax + ");" }, 600000)).ergebnis;
+        console.log("BERUHIGUNG " + ++n + " statt /lauf " + JSON.stringify(b) + ": die Welt steht nach " + e + " Takten, " + sek(t) + " s · " + sek(t0) + " s");
+        return { beruhigt: e };
+    };
+    const spiegel = http.createServer((q, a) => {
+        const teile = [];
+        q.on("data", (c) => teile.push(c));
+        q.on("end", () => {
+            const roh = Buffer.concat(teile);
+            let b = null;
+            try {
+                b = JSON.parse(roh.toString("utf8") || "{}");
+            } catch (_e) {
+                b = null;
+            }
+            if (q.url === "/lauf" && b && b.sek === 5 && b.ein === 8 && b.ruhe === 120)
+                return ruhe(b).then((j) => a.end(JSON.stringify(j)), (e) => a.end(JSON.stringify({ fehler: "BERUHIGUNG: " + e.message })));
+            const t = Date.now();
+            const was = b && (b.code ? String(b.code).slice(0, 48) + (/"uhren":\[/.test(b.code) ? " (" + (String(b.code).match(/"uhren":\[([^\]]*)\]/)[1].split(",").length) + " Uhren)" : "") : JSON.stringify(b).slice(0, 80));
+            const w = http.request({ host: "127.0.0.1", port: tor.W, path: q.url, method: q.method, headers: q.headers, agent: false }, (x) => {
+                a.writeHead(x.statusCode, x.headers);
+                x.pipe(a);
+                x.on("end", () => Date.now() - t >= 2000 && console.log("RUF " + q.url + " " + was + " · " + sek(t) + " s · " + sek(t0) + " s"));
+            });
+            w.on("error", (e) => a.end(JSON.stringify({ fehler: "SPIEGEL: " + e.message })));
+            w.end(roh);
+        });
+    });
+    await new Promise((ok, nein) => spiegel.once("error", nein).listen(S, "127.0.0.1", ok));
+    const namen = Object.keys(L.seite || {});
+    try {
+        await tor.ruf("/fenster", { w: L.fenster[0], h: L.fenster[1] });
+        if (namen.length) {
+            const code = namen.map((k) => "window.__linse_" + k + " = window." + k + "; window." + k + " = " + tor.quelle(...L.seite[k]) + ";").join("\n");
+            await tor.ruf("/eval", { code: code + " return 1;" });
+        }
+        const kind = cp.spawn(process.execPath, ["scripts/werkbank.cjs", ...L.args, "--port", String(S), "--datei", tor.aus], {
+            env: { ...process.env, WERKBANK_PORT: String(S) },
+            stdio: ["ignore", "pipe", "pipe"],
+        });
+        kind.stdout.on("data", (d) => process.stdout.write(d));
+        kind.stderr.on("data", (d) => process.stderr.write(d));
+        const code = await new Promise((ok) => kind.on("exit", (c) => ok(c == null ? 1 : c)));
+        console.log("LINSE werkbank " + L.args.join(" ") + " EXIT=" + code + " nach " + sek(t0) + " s in der Welt der Sitzung (" + n + " Beruhigungen, Fenster " + L.fenster.join("×") + ")");
+        process.exitCode = code;
+        // DER WEG GEGEN DIE LINSE (`L.pruefe`, in der Seite): kürzt die Probe einen Weg der Linse, misst sie ihn hier gegen den vollen —
+        // weicht er ab (`rot`), ist die Probe ROT beim Namen (Exit 1), nie still kurz
+        if (L.pruefe) {
+            const p = (await tor.ruf("/eval", { code: L.pruefe })).ergebnis;
+            console.log("WEG " + JSON.stringify(p));
+            if (!p || p.rot) (process.exitCode = 1), console.log("WEG ROT: " + (p ? p.rot : "keine Prüfung des Wegs"));
+        }
+    } finally {
+        if (namen.length) await tor.ruf("/eval", { code: namen.map((k) => "window." + k + " = window.__linse_" + k + "; delete window.__linse_" + k + ";").join(" ") + " return 1;" }).catch(() => {});
+        await tor.ruf("/fenster", { w: 1920, h: 1080 }).catch(() => {});
+        spiegel.close();
+    }
+})(tor).then(() => process.exitCode || 0, (e) => (console.log('PROBE-FEHLER ' + String((e && e.stack) || e).split('\n').slice(0, 4).join(' | ')), 1)).then(async (c) => { await tor.ende(); process.exit(c); }); C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\a7a9d7bf-radeon\licht.K3_2.json {"vorher":["umstellen","--ort","dorf","--sicht","ego"],"args":["licht","--laub","ring,feld,feld0,feld90,feld180,panorama,spiegel,spiegel180,wasser,fichte,tanne","--karte","--uhr","0.5,0.27,0.05","--ort","dorf"],"fenster":[640,360],"ruheMax":600}
+[linse-gpu] amd/rdna-3
+VORHER werkbank umstellen --ort dorf --sicht ego EXIT=0 · 1.0 s
+BERUHIGUNG 1 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.0 s · 3.4 s
+RUF /umstellen {"x":-856.0115046159461,"z":-804.976302075234} · 8.1 s · 11.6 s
+BERUHIGUNG 2 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 40 Takten, 0.5 s · 12.1 s
+BERUHIGUNG 3 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.0 s · 14.1 s
+BERUHIGUNG 4 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.1 s · 14.5 s
+RUF /umstellen {"x":-841,"z":-861} · 4.4 s · 26.2 s
+BERUHIGUNG 5 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.0 s · 26.2 s
+BERUHIGUNG 6 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.0 s · 27.3 s
+BERUHIGUNG 7 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 52 Takten, 0.7 s · 29.1 s
+BERUHIGUNG 8 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 50 Takten, 0.6 s · 29.8 s
+BERUHIGUNG 9 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.0 s · 29.9 s
+BERUHIGUNG 10 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 50 Takten, 0.6 s · 30.5 s
+BERUHIGUNG 11 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 50 Takten, 0.6 s · 31.2 s
+BERUHIGUNG 12 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.0 s · 31.2 s
+BERUHIGUNG 13 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 50 Takten, 0.6 s · 31.9 s
+BERUHIGUNG 14 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 50 Takten, 0.6 s · 32.5 s
+RUF /umstellen {"x":-841,"z":-861} · 3.2 s · 35.7 s
+BERUHIGUNG 15 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.0 s · 35.8 s
+RUF /umstellen {"x":-853.4286581941664,"z":-865.1071123109842} · 2.2 s · 38.0 s
+BERUHIGUNG 16 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.0 s · 38.0 s
+BERUHIGUNG 17 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 51 Takten, 0.6 s · 38.9 s
+BERUHIGUNG 18 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 50 Takten, 0.6 s · 39.8 s
+BERUHIGUNG 19 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.0 s · 39.8 s
+BERUHIGUNG 20 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 50 Takten, 0.6 s · 40.7 s
+BERUHIGUNG 21 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 50 Takten, 0.6 s · 41.5 s
+BERUHIGUNG 22 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.0 s · 41.6 s
+BERUHIGUNG 23 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 50 Takten, 0.6 s · 42.2 s
+BERUHIGUNG 24 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 50 Takten, 0.6 s · 42.9 s
+{
+ "welt": {
+  "ring@0.5": {
+   "art": "boden",
+   "abstand": 400,
+   "gefaelle": -7.2,
+   "sonneGrad": 5,
+   "hoehe": 1,
+   "d": 0,
+   "stufe": "bodenSatz → fern-ring",
+   "paar": "fern/nah",
+   "karte": {
+    "gestalt": {
+     "Y": 0.37053,
+     "L": 67.32,
+     "C": 39.53,
+     "pixel": 3686
+    },
+    "karte": {
+     "Y": 0.366,
+     "L": 66.98,
+     "C": 39.41,
+     "pixel": 3940
+    },
+    "verhaeltnis": 0.988,
+    "dL": -0.34,
+    "dC": -0.12
+   }
+  },
+  "ring@0.27": {
+   "art": "boden",
+   "abstand": 400,
+   "gefaelle": -7.2,
+   "sonneGrad": 5,
+   "hoehe": 1,
+   "d": 0,
+   "stufe": "bodenSatz → fern-ring",
+   "paar": "fern/nah",
+   "karte": {
+    "gestalt": {
+     "Y": 0.05593,
+     "L": 28.36,
+     "C": 19.1,
+     "pixel": 3686
+    },
+    "karte": {
+     "Y": 0.05683,
+     "L": 28.6,
+     "C": 19.33,
+     "pixel": 3940
+    },
+    "verhaeltnis": 1.016,
+    "dL": 0.24,
+    "dC": 0.23
+   }
+  },
+  "ring@0.05": {
+   "art": "boden",
+   "abstand": 400,
+   "gefaelle": -7.2,
+   "sonneGrad": 5,
+   "hoehe": 1,
+   "d": 0,
+   "stufe": "bodenSatz → fern-ring",
+   "paar": "fern/nah",
+   "karte": {
+    "gestalt": {
+     "Y": 0.03287,
+     "L": 21.16,
+     "C": 14.55,
+     "pixel": 3686
+    },
+    "karte": {
+     "Y": 0.03272,
+     "L": 21.1,
+     "C": 14.55,
+     "pixel": 3940
+    },
+    "verhaeltnis": 0.995,
+    "dL": -0.06,
+    "dC": 0
+   }
+  },
+  "feld@0.5": {
+   "art": "feld",
+   "stufe": "welt-stoff → feld",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.45175,
+     "L": 73.01,
+     "C": 3.03
+    },
+    "karte": {
+     "Y": 0.4278,
+     "L": 71.41,
+     "C": 2.9
+    },
+    "verhaeltnis": 0.947,
+    "dL": -1.6,
+    "dC": -0.13
+   }
+  },
+  "feld@0.27": {
+   "art": "feld",
+   "stufe": "welt-stoff → feld",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.03013,
+     "L": 20.09,
+     "C": 5.1
+    },
+    "karte": {
+     "Y": 0.02787,
+     "L": 19.17,
+     "C": 4.86
+    },
+    "verhaeltnis": 0.925,
+    "dL": -0.92,
+    "dC": -0.24
+   }
+  },
+  "feld@0.05": {
+   "art": "feld",
+   "stufe": "welt-stoff → feld",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.0383,
+     "L": 23.1,
+     "C": 5.38
+    },
+    "karte": {
+     "Y": 0.03677,
+     "L": 22.58,
+     "C": 5.26
+    },
+    "verhaeltnis": 0.96,
+    "dL": -0.52,
+    "dC": -0.12
+   }
+  },
+  "feld0@0.5": {
+   "art": "feld0",
+   "stufe": "welt-stoff → feld0",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.17724,
+     "L": 49.16,
+     "C": 3.84
+    },
+    "karte": {
+     "Y": 0.16346,
+     "L": 47.43,
+     "C": 3.62
+    },
+    "verhaeltnis": 0.922,
+    "dL": -1.73,
+    "dC": -0.22
+   }
+  },
+  "feld0@0.27": {
+   "art": "feld0",
+   "stufe": "welt-stoff → feld0",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.11561,
+     "L": 40.51,
+     "C": 24.69
+    },
+    "karte": {
+     "Y": 0.10865,
+     "L": 39.35,
+     "C": 24.24
+    },
+    "verhaeltnis": 0.94,
+    "dL": -1.16,
+    "dC": -0.45
+   }
+  },
+  "feld0@0.05": {
+   "art": "feld0",
+   "stufe": "welt-stoff → feld0",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.02659,
+     "L": 18.62,
+     "C": 2.62
+    },
+    "karte": {
+     "Y": 0.0257,
+     "L": 18.23,
+     "C": 2.55
+    },
+    "verhaeltnis": 0.967,
+    "dL": -0.39,
+    "dC": -0.07
+   }
+  },
+  "feld90@0.5": {
+   "art": "feld90",
+   "stufe": "welt-stoff → feld90",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.06068,
+     "L": 29.58,
+     "C": 4.96
+    },
+    "karte": {
+     "Y": 0.05683,
+     "L": 28.6,
+     "C": 4.77
+    },
+    "verhaeltnis": 0.937,
+    "dL": -0.98,
+    "dC": -0.19
+   }
+  },
+  "feld90@0.27": {
+   "art": "feld90",
+   "stufe": "welt-stoff → feld90",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.01514,
+     "L": 12.69,
+     "C": 1.92
+    },
+    "karte": {
+     "Y": 0.01419,
+     "L": 12.09,
+     "C": 1.9
+    },
+    "verhaeltnis": 0.937,
+    "dL": -0.6,
+    "dC": -0.02
+   }
+  },
+  "feld90@0.05": {
+   "art": "feld90",
+   "stufe": "welt-stoff → feld90",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.02229,
+     "L": 16.64,
+     "C": 2.28
+    },
+    "karte": {
+     "Y": 0.02171,
+     "L": 16.36,
+     "C": 2.22
+    },
+    "verhaeltnis": 0.974,
+    "dL": -0.28,
+    "dC": -0.06
+   }
+  },
+  "feld180@0.5": {
+   "art": "feld180",
+   "stufe": "welt-stoff → feld180",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.05504,
+     "L": 28.13,
+     "C": 5.28
+    },
+    "karte": {
+     "Y": 0.05157,
+     "L": 27.18,
+     "C": 5.09
+    },
+    "verhaeltnis": 0.937,
+    "dL": -0.95,
+    "dC": -0.19
+   }
+  },
+  "feld180@0.27": {
+   "art": "feld180",
+   "stufe": "welt-stoff → feld180",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.01044,
+     "L": 9.35,
+     "C": 2.07
+    },
+    "karte": {
+     "Y": 0.00976,
+     "L": 8.79,
+     "C": 2.06
+    },
+    "verhaeltnis": 0.935,
+    "dL": -0.56,
+    "dC": -0.01
+   }
+  },
+  "feld180@0.05": {
+   "art": "feld180",
+   "stufe": "welt-stoff → feld180",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.02213,
+     "L": 16.57,
+     "C": 2.25
+    },
+    "karte": {
+     "Y": 0.02158,
+     "L": 16.29,
+     "C": 2.19
+    },
+    "verhaeltnis": 0.975,
+    "dL": -0.28,
+    "dC": -0.06
+   }
+  },
+  "panorama@0.5": {
+   "art": "panorama",
+   "stufe": "welt-stoff → panorama",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.45175,
+     "L": 73.01,
+     "C": 3.03
+    },
+    "karte": {
+     "Y": 0.42627,
+     "L": 71.3,
+     "C": 3.01
+    },
+    "verhaeltnis": 0.944,
+    "dL": -1.71,
+    "dC": -0.02
+   }
+  },
+  "panorama@0.27": {
+   "art": "panorama",
+   "stufe": "welt-stoff → panorama",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.03013,
+     "L": 20.09,
+     "C": 5.1
+    },
+    "karte": {
+     "Y": 0.0292,
+     "L": 19.72,
+     "C": 5.16
+    },
+    "verhaeltnis": 0.969,
+    "dL": -0.37,
+    "dC": 0.06
+   }
+  },
+  "panorama@0.05": {
+   "art": "panorama",
+   "stufe": "welt-stoff → panorama",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.0383,
+     "L": 23.1,
+     "C": 5.38
+    },
+    "karte": {
+     "Y": 0.03674,
+     "L": 22.56,
+     "C": 5.2
+    },
+    "verhaeltnis": 0.959,
+    "dL": -0.54,
+    "dC": -0.18
+   }
+  },
+  "spiegel@0.5": {
+   "art": "spiegel",
+   "stufe": "welt-stoff → spiegel",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.17724,
+     "L": 49.16,
+     "C": 3.84
+    },
+    "karte": {
+     "Y": 0.18724,
+     "L": 50.36,
+     "C": 3.58
+    },
+    "verhaeltnis": 1.056,
+    "dL": 1.2,
+    "dC": -0.26
+   }
+  },
+  "spiegel@0.27": {
+   "art": "spiegel",
+   "stufe": "welt-stoff → spiegel",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.11561,
+     "L": 40.51,
+     "C": 24.69
+    },
+    "karte": {
+     "Y": 0.1097,
+     "L": 39.53,
+     "C": 24.09
+    },
+    "verhaeltnis": 0.949,
+    "dL": -0.98,
+    "dC": -0.6
+   }
+  },
+  "spiegel@0.05": {
+   "art": "spiegel",
+   "stufe": "welt-stoff → spiegel",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.02659,
+     "L": 18.62,
+     "C": 2.62
+    },
+    "karte": {
+     "Y": 0.02667,
+     "L": 18.66,
+     "C": 2.71
+    },
+    "verhaeltnis": 1.003,
+    "dL": 0.04,
+    "dC": 0.09
+   }
+  },
+  "spiegel180@0.5": {
+   "art": "spiegel180",
+   "stufe": "welt-stoff → spiegel180",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.05504,
+     "L": 28.13,
+     "C": 5.28
+    },
+    "karte": {
+     "Y": 0.05186,
+     "L": 27.26,
+     "C": 4.83
+    },
+    "verhaeltnis": 0.942,
+    "dL": -0.87,
+    "dC": -0.45
+   }
+  },
+  "spiegel180@0.27": {
+   "art": "spiegel180",
+   "stufe": "welt-stoff → spiegel180",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.01044,
+     "L": 9.35,
+     "C": 2.07
+    },
+    "karte": {
+     "Y": 0.01015,
+     "L": 9.11,
+     "C": 2.21
+    },
+    "verhaeltnis": 0.972,
+    "dL": -0.24,
+    "dC": 0.14
+   }
+  },
+  "spiegel180@0.05": {
+   "art": "spiegel180",
+   "stufe": "welt-stoff → spiegel180",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.02213,
+     "L": 16.57,
+     "C": 2.25
+    },
+    "karte": {
+     "Y": 0.02203,
+     "L": 16.52,
+     "C": 2.34
+    },
+    "verhaeltnis": 0.995,
+    "dL": -0.05,
+    "dC": 0.09
+   }
+  },
+  "wasser@0.5": {
+   "art": "wasser",
+   "stufe": "welt-stoff → wasser",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.45175,
+     "L": 73.01,
+     "C": 3.03
+    },
+    "karte": {
+     "Y": 0.4138,
+     "L": 70.44,
+     "C": 2.59
+    },
+    "verhaeltnis": 0.916,
+    "dL": -2.57,
+    "dC": -0.44
+   }
+  },
+  "wasser@0.27": {
+   "art": "wasser",
+   "stufe": "welt-stoff → wasser",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.03013,
+     "L": 20.09,
+     "C": 5.1
+    },
+    "karte": {
+     "Y": 0.02861,
+     "L": 19.48,
+     "C": 5.12
+    },
+    "verhaeltnis": 0.95,
+    "dL": -0.61,
+    "dC": 0.02
+   }
+  },
+  "wasser@0.05": {
+   "art": "wasser",
+   "stufe": "welt-stoff → wasser",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.0383,
+     "L": 23.1,
+     "C": 5.38
+    },
+    "karte": {
+     "Y": 0.03602,
+     "L": 22.31,
+     "C": 5.16
+    },
+    "verhaeltnis": 0.94,
+    "dL": -0.79,
+    "dC": -0.22
+   }
+  },
+  "fichte@0.5": {
+   "art": "fichte",
+   "abstand": 8,
+   "gefaelle": 1.6,
+   "sonneGrad": 60.3,
+   "hoehe": 22.7,
+   "d": 0,
+   "stufe": "f:fichte:L0",
+   "pixel": 18765,
+   "karte": {
+    "gestalt": {
+     "Y": 0.1664,
+     "L": 47.8,
+     "C": 22.59
+    },
+    "karte": {
+     "Y": 0.15784,
+     "L": 46.69,
+     "C": 21.15
+    },
+    "verhaeltnis": 0.949,
+    "dL": -1.11,
+    "dC": -1.44
+   }
+  },
+  "fichte@0.27": {
+   "art": "fichte",
+   "abstand": 8,
+   "gefaelle": 1.6,
+   "sonneGrad": 60.3,
+   "hoehe": 22.7,
+   "d": 0,
+   "stufe": "f:fichte:L0",
+   "pixel": 18845,
+   "karte": {
+    "gestalt": {
+     "Y": 0.03792,
+     "L": 22.97,
+     "C": 17.88
+    },
+    "karte": {
+     "Y": 0.0339,
+     "L": 21.54,
+     "C": 16.62
+    },
+    "verhaeltnis": 0.894,
+    "dL": -1.43,
+    "dC": -1.26
+   }
+  },
+  "fichte@0.05": {
+   "art": "fichte",
+   "abstand": 8,
+   "gefaelle": 1.6,
+   "sonneGrad": 60.3,
+   "hoehe": 22.7,
+   "d": 0,
+   "stufe": "f:fichte:L0",
+   "pixel": 18988,
+   "karte": {
+    "gestalt": {
+     "Y": 0.02381,
+     "L": 17.37,
+     "C": 11.13
+    },
+    "karte": {
+     "Y": 0.02351,
+     "L": 17.23,
+     "C": 12.06
+    },
+    "verhaeltnis": 0.987,
+    "dL": -0.14,
+    "dC": 0.93
+   }
+  },
+  "tanne@0.5": {
+   "art": "tanne",
+   "abstand": 8,
+   "gefaelle": 3.4,
+   "sonneGrad": 52.1,
+   "hoehe": 13.5,
+   "d": 0,
+   "stufe": "f:tanne:L0",
+   "pixel": 25016,
+   "karte": {
+    "gestalt": {
+     "Y": 0.10405,
+     "L": 38.56,
+     "C": 19.94
+    },
+    "karte": {
+     "Y": 0.10558,
+     "L": 38.83,
+     "C": 19.07
+    },
+    "verhaeltnis": 1.015,
+    "dL": 0.27,
+    "dC": -0.87
+   }
+  },
+  "tanne@0.27": {
+   "art": "tanne",
+   "abstand": 8,
+   "gefaelle": 3.4,
+   "sonneGrad": 52.1,
+   "hoehe": 13.5,
+   "d": 0,
+   "stufe": "f:tanne:L0",
+   "pixel": 25027,
+   "karte": {
+    "gestalt": {
+     "Y": 0.03092,
+     "L": 20.41,
+     "C": 15.81
+    },
+    "karte": {
+     "Y": 0.02515,
+     "L": 17.99,
+     "C": 12.65
+    },
+    "verhaeltnis": 0.813,
+    "dL": -2.42,
+    "dC": -3.16
+   }
+  },
+  "tanne@0.05": {
+   "art": "tanne",
+   "abstand": 8,
+   "gefaelle": 3.4,
+   "sonneGrad": 52.1,
+   "hoehe": 13.5,
+   "d": 0,
+   "stufe": "f:tanne:L0",
+   "pixel": 24966,
+   "karte": {
+    "gestalt": {
+     "Y": 0.02799,
+     "L": 19.22,
+     "C": 12.96
+    },
+    "karte": {
+     "Y": 0.02068,
+     "L": 15.84,
+     "C": 9.13
+    },
+    "verhaeltnis": 0.739,
+    "dL": -3.38,
+    "dC": -3.83
+   }
+  }
+ },
+ "zeilen": [
+  {
+   "art": "ring@0.5",
+   "stufe": "bodenSatz → fern-ring",
+   "mittag": 0.988,
+   "dL": -0.34,
+   "dC": -0.12
+  },
+  {
+   "art": "ring@0.27",
+   "stufe": "bodenSatz → fern-ring",
+   "karte": 1.028,
+   "dL": 0.58,
+   "dC": 0.29,
+   "mittag": 0.988
+  },
+  {
+   "art": "ring@0.05",
+   "stufe": "bodenSatz → fern-ring",
+   "karte": 1.007,
+   "dL": 0.28,
+   "dC": 0.04,
+   "mittag": 0.988
+  },
+  {
+   "art": "feld@0.5",
+   "stufe": "welt-stoff → feld",
+   "karte": 0.947,
+   "dL": -1.6,
+   "dC": -0.13
+  },
+  {
+   "art": "feld@0.27",
+   "stufe": "welt-stoff → feld",
+   "karte": 0.925,
+   "dL": -0.92,
+   "dC": -0.24
+  },
+  {
+   "art": "feld@0.05",
+   "stufe": "welt-stoff → feld",
+   "karte": 0.96,
+   "dL": -0.52,
+   "dC": -0.12
+  },
+  {
+   "art": "feld0@0.5",
+   "stufe": "welt-stoff → feld0",
+   "karte": 0.922,
+   "dL": -1.73,
+   "dC": -0.22
+  },
+  {
+   "art": "feld0@0.27",
+   "stufe": "welt-stoff → feld0",
+   "karte": 0.94,
+   "dL": -1.16,
+   "dC": -0.45
+  },
+  {
+   "art": "feld0@0.05",
+   "stufe": "welt-stoff → feld0",
+   "karte": 0.967,
+   "dL": -0.39,
+   "dC": -0.07
+  },
+  {
+   "art": "feld90@0.5",
+   "stufe": "welt-stoff → feld90",
+   "karte": 0.937,
+   "dL": -0.98,
+   "dC": -0.19
+  },
+  {
+   "art": "feld90@0.27",
+   "stufe": "welt-stoff → feld90",
+   "karte": 0.937,
+   "dL": -0.6,
+   "dC": -0.02
+  },
+  {
+   "art": "feld90@0.05",
+   "stufe": "welt-stoff → feld90",
+   "karte": 0.974,
+   "dL": -0.28,
+   "dC": -0.06
+  },
+  {
+   "art": "feld180@0.5",
+   "stufe": "welt-stoff → feld180",
+   "karte": 0.937,
+   "dL": -0.95,
+   "dC": -0.19
+  },
+  {
+   "art": "feld180@0.27",
+   "stufe": "welt-stoff → feld180",
+   "karte": 0.935,
+   "dL": -0.56,
+   "dC": -0.01
+  },
+  {
+   "art": "feld180@0.05",
+   "stufe": "welt-stoff → feld180",
+   "karte": 0.975,
+   "dL": -0.28,
+   "dC": -0.06
+  },
+  {
+   "art": "panorama@0.5",
+   "stufe": "welt-stoff → panorama",
+   "karte": 0.944,
+   "dL": -1.71,
+   "dC": -0.02
+  },
+  {
+   "art": "panorama@0.27",
+   "stufe": "welt-stoff → panorama",
+   "karte": 0.969,
+   "dL": -0.37,
+   "dC": 0.06
+  },
+  {
+   "art": "panorama@0.05",
+   "stufe": "welt-stoff → panorama",
+   "karte": 0.959,
+   "dL": -0.54,
+   "dC": -0.18
+  },
+  {
+   "art": "spiegel@0.5",
+   "stufe": "welt-stoff → spiegel",
+   "karte": 1.056,
+   "dL": 1.2,
+   "dC": -0.26
+  },
+  {
+   "art": "spiegel@0.27",
+   "stufe": "welt-stoff → spiegel",
+   "karte": 0.949,
+   "dL": -0.98,
+   "dC": -0.6
+  },
+  {
+   "art": "spiegel@0.05",
+   "stufe": "welt-stoff → spiegel",
+   "karte": 1.003,
+   "dL": 0.04,
+   "dC": 0.09
+  },
+  {
+   "art": "spiegel180@0.5",
+   "stufe": "welt-stoff → spiegel180",
+   "karte": 0.942,
+   "dL": -0.87,
+   "dC": -0.45
+  },
+  {
+   "art": "spiegel180@0.27",
+   "stufe": "welt-stoff → spiegel180",
+   "karte": 0.972,
+   "dL": -0.24,
+   "dC": 0.14
+  },
+  {
+   "art": "spiegel180@0.05",
+   "stufe": "welt-stoff → spiegel180",
+   "karte": 0.995,
+   "dL": -0.05,
+   "dC": 0.09
+  },
+  {
+   "art": "wasser@0.5",
+   "stufe": "welt-stoff → wasser",
+   "karte": 0.916,
+   "dL": -2.57,
+   "dC": -0.44
+  },
+  {
+   "art": "wasser@0.27",
+   "stufe": "welt-stoff → wasser",
+   "karte": 0.95,
+   "dL": -0.61,
+   "dC": 0.02
+  },
+  {
+   "art": "wasser@0.05",
+   "stufe": "welt-stoff → wasser",
+   "karte": 0.94,
+   "dL": -0.79,
+   "dC": -0.22
+  },
+  {
+   "art": "fichte@0.5",
+   "stufe": "f:fichte:L0",
+   "karte": 0.949,
+   "dL": -1.11,
+   "dC": -1.44
+  },
+  {
+   "art": "fichte@0.27",
+   "stufe": "f:fichte:L0",
+   "karte": 0.894,
+   "dL": -1.43,
+   "dC": -1.26
+  },
+  {
+   "art": "fichte@0.05",
+   "stufe": "f:fichte:L0",
+   "karte": 0.987,
+   "dL": -0.14,
+   "dC": 0.93
+  },
+  {
+   "art": "tanne@0.5",
+   "stufe": "f:tanne:L0",
+   "karte": 1.015,
+   "dL": 0.27,
+   "dC": -0.87
+  },
+  {
+   "art": "tanne@0.27",
+   "stufe": "f:tanne:L0",
+   "karte": 0.813,
+   "dL": -2.42,
+   "dC": -3.16
+  },
+  {
+   "art": "tanne@0.05",
+   "stufe": "f:tanne:L0",
+   "karte": 0.739,
+   "dL": -3.38,
+   "dC": -3.83
+  }
+ ]
+}
+LAUB-LICHT ROT: KARTE fichte@0.27: Karte/Gestalt (f:fichte:L0) Luma 0.894 (ΔL* -1.43, ΔC* -1.26) — außerhalb ±10 % / ΔC* 3 | KARTE tanne@0.27: Karte/Gestalt (f:tanne:L0) Luma 0.813 (ΔL* -2.42, ΔC* -3.16) — außerhalb ±10 % / ΔC* 3 | KARTE tanne@0.05: Karte/Gestalt (f:tanne:L0) Luma 0.739 (ΔL* -3.38, ΔC* -3.83) — außerhalb ±10 % / ΔC* 3
+LINSE werkbank licht --laub ring,feld,feld0,feld90,feld180,panorama,spiegel,spiegel180,wasser,fichte,tanne --karte --uhr 0.5,0.27,0.05 --ort dorf EXIT=1 nach 42.9 s in der Welt der Sitzung (24 Beruhigungen, Fenster 640×360)
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3
+[linse-gpu] amd/rdna-3
