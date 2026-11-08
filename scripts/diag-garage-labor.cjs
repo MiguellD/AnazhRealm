@@ -21,7 +21,7 @@
 //   node scripts/diag-garage-labor.cjs [--selftest | --epoche]          Port: GARAGE_LABOR_PORT (Standard 4414)
 /* eslint-disable no-undef */
 "use strict";
-const { statikServer, starteBrowser, pruefer, hauptLauf, sleep, urteilEnde, selbsttestEnde, SELBSTTEST, studioKern, ausDatei, jsonLesen, fenster } = require("./lib/welt-boot.cjs");
+const { statikServer, pruefer, hauptLauf, sleep, urteilEnde, selbsttestEnde, SELBSTTEST, studioKern, ausDatei, jsonLesen, nullWelt } = require("./lib/welt-boot.cjs");
 const { tempoVerdict, tempoSpion } = require("./lib/fahr-proben.cjs");
 const { kernAusText } = require("./lib/asset-worker-harness.cjs");
 
@@ -203,11 +203,8 @@ hauptLauf(async () => {
         return;
     }
 
-    await server.lausche(PORT);
-    const browser = await starteBrowser({ art: "linse", frist: 120000, zeit: true }); // G10 die Bildzeit, auf swiftshader geeicht (W5)
-    const page = await browser.newPage();
-    await fenster(page, "bild");
-    await server.zeige(page, 60000, "worlds/garage/index.html", "load");
+    // G10 die Bildzeit, auf swiftshader geeicht (W5)
+    const { browser, page } = await nullWelt(server, { port: PORT, art: "linse", bild: true, frist: 120000, zeit: true, fenster: "bild" }, 60000, "worlds/garage/index.html", "load"); // prettier-ignore
     await page.waitForFunction(() => typeof __vehicleCore === "object" && document.querySelector("canvas") && !document.getElementById("start").disabled, { timeout: 30000 });
     await sleep(500);
     const m = { geladen: true };

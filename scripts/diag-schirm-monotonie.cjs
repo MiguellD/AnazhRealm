@@ -23,7 +23,7 @@
 // fester Schirm) → K rot; (e) das alte Fell (das Gesetz entscheidet nur an der feinen Gestalt) → K-fern rot.
 //   node scripts/diag-schirm-monotonie.cjs [--selftest]       (npm run gate:schirm-monotonie)
 "use strict";
-const { statikServer, ROOT: root, hauptLauf, sleep, nullSeite, stammLib, SELBSTTEST } = require("./lib/welt-boot.cjs");
+const { statikServer, ROOT: root, hauptLauf, sleep, stammLib, SELBSTTEST, nullWelt } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
 
@@ -132,11 +132,9 @@ function driftBefunde(reihe) {
 // ── die Welt ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 async function welt() {
     const server = statikServer();
-    await server.lausche(0);
-    const { browser, page } = await nullSeite({ frist: 900000 });
-    await page.setViewport({ width: GROESSEN[0][0], height: GROESSEN[0][1], deviceScaleFactor: 1 });
-    await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // der Messort aus spec/profiband/haushalt.json (`__messWiese`)
-    await server.zeige(page, 60000);
+    // der Messort aus spec/profiband/haushalt.json (`__messWiese`)
+    const fenster = { width: GROESSEN[0][0], height: GROESSEN[0][1], deviceScaleFactor: 1 };
+    const { browser, page } = await nullWelt(server, { frist: 900000, fenster, vor: WELT_ORTE_INSTALL }, 60000);
     await page.evaluate(AUSGABE_INSTALL);
     const ende = async () => {
         await browser.close();

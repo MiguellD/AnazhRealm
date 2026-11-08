@@ -845,8 +845,8 @@ async function weicheUrteil(browser, art) {
 //                nicht antwortet, nach 3 s ohne Zeile — die Stall-Akte nennt sie): Fenster, Welt-Uhr, Last und die Taten des Felds.
 //                Steht der Regler einer Gesetz-Seite nicht bei ihrer Last, ist der Lauf ROT beim Namen der Linse.
 const PRUEF_LAST = 1;
-const FENSTER = { bild: [1280, 720], klein: [320, 240] };
-const fenster = (page, art, plus = 0) => page.setViewport({ width: FENSTER[art][0] + plus, height: FENSTER[art][1] + plus });
+const FENSTER = { bild: { width: 1280, height: 720 }, klein: { width: 320, height: 240 } };
+const fenster = (page, art, plus = 0) => page.setViewport({ width: FENSTER[art].width + plus, height: FENSTER[art].height + plus });
 async function pruefWeltMelden(page) {
     if (page.__pruefWelt || !/^https?:/.test(page.url())) return;
     page.__pruefWelt = true;
@@ -1262,20 +1262,22 @@ async function nullRenderer(page) {
     });
 }
 // DIE NULL-SEITE: der Browser im Rezept null und seine erste Seite mit dem Null-Renderer — der Start jeder Linse ohne Bild
-// (`opts` wie `starteBrowser`), EINMAL hier statt in jeder Linse.
-async function nullSeite(opts) {
+// (`opts` wie `starteBrowser`), EINMAL hier statt in jeder Linse; `opts.bild` zeichnet (ohne Null-Renderer, das Rezept nennt `art`).
+async function nullSeite({ bild, ...opts } = {}) {
     const browser = await starteBrowser(Object.assign({ art: "null" }, opts));
     const page = await browser.newPage();
-    await nullRenderer(page);
+    if (!bild) await nullRenderer(page);
     return { browser, page };
 }
-// DIE NULL-WELT: der Server lauscht (`opts.port`, sonst ein freier), die Null-Seite (`opts` wie `nullSeite`; `opts.vor` trägt die Seite
-// vor ihrem ersten Skript) fährt an die Welt-Adresse (`server.zeige` mit `zeige`: Frist, Adresse, Warte-Art) und wartet, wo `opts.da`
-// es sagt, auf die Welt (`__weltDa(da)`) — bis w21-laub-unten stand dieselbe Folge in 25 Linsen.
-async function nullWelt(server, { port = 0, vor, da, ...opts }, ...zeige) {
+// DIE NULL-WELT: der Server lauscht (`opts.port`, sonst ein freier), die Null-Seite (`opts` wie `nullSeite`; `opts.fenster` ihr Viewport,
+// `opts.vor` — eines oder eine Liste — trägt die Seite vor ihrem ersten Skript) fährt an die Welt-Adresse (`server.zeige` mit `zeige`:
+// Frist, Adresse, Warte-Art) und wartet, wo `opts.da` es sagt, auf die Welt (`__weltDa(da)`) — bis w21-laub-unten stand dieselbe Folge
+// in 25 Linsen, bis w24-strauch-saum dazu in 19 mit Bild, Viewport oder zwei Vor-Skripten.
+async function nullWelt(server, { port = 0, vor, da, fenster, ...opts }, ...zeige) {
     await server.lausche(port);
     const s = await nullSeite(opts);
-    if (vor) await s.page.evaluateOnNewDocument(vor);
+    if (fenster) await s.page.setViewport(FENSTER[fenster] || fenster); // ein Name der EINEN Tafel (`FENSTER`) oder ein eigenes Maß
+    for (const v of [vor || []].flat()) await s.page.evaluateOnNewDocument(v);
     await server.zeige(s.page, ...zeige);
     if (da) await s.page.evaluate((d) => __weltDa((0, eval)(d)), `${da}`);
     return s;

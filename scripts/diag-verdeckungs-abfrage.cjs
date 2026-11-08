@@ -203,7 +203,7 @@ if (process.argv.includes("--selftest")) selbsttest();
 
 const {
     statikServer,
-    starteBrowser,
+    nullWelt,
     selbsttest: selbstMarke,
     laufUhr,
     fehlerText,
@@ -601,15 +601,10 @@ async function verdeckungPhase(opts) {
 
 (async () => {
     console.log("=== VERDECKUNGS-ABFRAGE — der Aussteige-Ablauf am Bach (WebGPU auf swiftshader) ===");
-    await server.lausche(0);
-    const browser = await starteBrowser({ art: "linse", frist: 1200000 });
-    const page = await browser.newPage();
-    await fenster(page, "bild");
-    await page.evaluateOnNewDocument(sammlerInstall);
     const log = laufUhr();
+    const { browser, page } = await nullWelt(server, { art: "linse", bild: true, frist: 1200000, fenster: "bild", vor: sammlerInstall }, 60000, "index.html?holz=kienspan"); // prettier-ignore
     const out = { phasen: {} };
     try {
-        await server.zeige(page, 60000, "index.html?holz=kienspan");
         const bereit = await page.evaluate(async (karte) => {
             const t0 = performance.now();
             await __weltDa((r) => {

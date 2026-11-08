@@ -26,7 +26,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 
-const { statikServer, starteBrowser, postKetteBereit, uferStellen, taeterFaelle, selbsttestEnde, wandEnde, laufUhr, SELBSTTEST, jsonKlon, fehlerText, fenster } = require("./lib/welt-boot.cjs");
+const { statikServer, nullWelt, postKetteBereit, uferStellen, taeterFaelle, selbsttestEnde, wandEnde, laufUhr, SELBSTTEST, jsonKlon, fehlerText } = require("./lib/welt-boot.cjs");
 const { ladeSpec } = require("./lib/band-urteil.cjs");
 const ZZ = require("./lib/ziel-zensus.cjs");
 
@@ -258,16 +258,10 @@ function rundungProbe() {
 
 (async () => {
     console.log("=== ZIEL-ZENSUS — die Wand am echten Frame (WebGPU auf swiftshader) ===");
-    await server.lausche(0);
-    const browser = await starteBrowser({ art: "linse", frist: 900000 });
-    const page = await browser.newPage();
-    await fenster(page, "klein");
-    await page.evaluateOnNewDocument(FALTE_INSTALL);
-    await page.evaluateOnNewDocument(vramAbgriff);
     const log = laufUhr();
+    const { browser, page } = await nullWelt(server, { art: "linse", bild: true, frist: 900000, fenster: "klein", vor: [FALTE_INSTALL, vramAbgriff] }, 60000, "index.html?holz=kienspan"); // prettier-ignore
     let out = {};
     try {
-        await server.zeige(page, 60000, "index.html?holz=kienspan");
         await postKetteBereit(page, log, "der Zensus liest GPU-Befehle, die Wand wäre blind");
         // DER LESER IM BLICK: das Wasser am Bach der Mess-Wiese zeichnet — die Szenen-Tiefe steht mit ihrem Leser im Zensus
         const ufer = await page.evaluate(uferStellen, { messort: ladeSpec("wiese").ort.spieler });

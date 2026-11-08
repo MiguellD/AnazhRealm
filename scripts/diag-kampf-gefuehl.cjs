@@ -12,7 +12,7 @@
 // und Wiederkehr über einen Reload (allein: `--k5`, mit dem echten Renderer); die Selbst-Tests S3–S18 feuern je an ihrer
 // Naht, jede Naht restauriert; Q15 der Treffer je Kern-Mutation im Takt des Spiels, im Bild und am Labor (allein: `--k1`, mit dem
 // echten Renderer). Aufruf: node scripts/diag-kampf-gefuehl.cjs [--k5 | --k1]
-const { statikServer, starteBrowser, warteAufWelt, nullRenderer, sleep, fehlerText, stammLib } = require("./lib/welt-boot.cjs");
+const { statikServer, nullWelt, warteAufWelt, sleep, fehlerText, stammLib } = require("./lib/welt-boot.cjs");
 // Port über KAMPF_GEFUEHL_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4451.
 const PORT = Number(process.env.KAMPF_GEFUEHL_PORT || 4451);
 
@@ -759,16 +759,13 @@ async function k1Ende(browser, K) {
 }
 
 (async () => {
-    await server.lausche(PORT);
-    const browser = await starteBrowser({ art: BILD ? "linse" : "null", frist: 300000 });
-    const page = await browser.newPage();
+    // ohne BILD GPU-frei (die Null-Seite), Produktions-Boot
+    const { browser, page } = await nullWelt(server, { port: PORT, bild: BILD, art: BILD ? "linse" : "null", frist: 300000 }, 120000, `index.html${BILD ? "?holz=kienspan" : ""}`, "networkidle0"); // prettier-ignore
     page.setDefaultTimeout(280000);
-    if (!BILD) await nullRenderer(page); // GPU-frei, Produktions-Boot
     let out;
     let welle = null;
     let k5 = null;
     try {
-        await server.zeige(page, 120000, `index.html${BILD ? "?holz=kienspan" : ""}`, "networkidle0");
         await warteAufWelt(page, 120000);
         // die Welt steht (das EINE Einschwingen, welt-boot): Takt um Takt ein Bild des Loops — der Takt von Hand in Mikro-Tasks
         // gab dem echten Renderer nie ein Bild frei (`--k1` swiftshader: „DIE WELT STEHT NICHT nach 17181 Takten", ankunft 83 offen)
