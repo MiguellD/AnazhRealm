@@ -1,5 +1,16 @@
 # Post an w25-ferne-licht
 
+## 09.11. 00:45 — w25-ferne-licht-2: Zwischenstand zu ferne.K4 (kein neuer Schnitt, Kopf bleibt bcf8f14a)
+
+Den Treffer habe ich an der Wurzel gemessen, bevor ich schneide — er ist es nicht. Alle Zahlen swiftshader voll, Dorf, Sonne 5°, dieselben 21/64 Orte der Station, ohne Luft:
+- Der Ort am GEZEICHNETEN Boden (lotrecht auf den Fern-Ring, statt des Gesetz-Punkts): 0,4952 · dazu nur Orte, deren Pixel in der Tiefe des Bilds wirklich ihren gezeichneten Boden zeigt (9 verdeckte fallen): 0,4897 — beides schlechter als der Gesetz-Punkt (0,4458). Mein FUND „das Pixel trifft daneben" ist damit widerlegt.
+- Die Bestrahlung liest die Licht-Normale schon: die EINE Umgebung ausdrücklich mit der `normalNode` des Stoffs gerechnet — Zahlen auf vier Stellen gleich (Abzug 7,1 %, 0,4466); der Schnitt ist zurückgenommen.
+- Die Physik genau dieser Orte (CPU-Nachbau Hillaire; Himmel und Sonne wie das Bild sie zusammensetzt: Himmel aus dem Auge 1 500 m, Sonne in 88 m; Grat-Band ±30° um die Sonne, gleiche Albedo): Ls/Ll 0,308 mit dem Grat des Gesetzes, 0,381 mit dem Grat der Karte, 0,476 ohne Grat-Himmel. Das Bild: 0,446. Der Grat-Himmel greift im Bild also nur zu einem Fünftel (0,476 → 0,446 statt → 0,381).
+- Am Punkt des Gesetzes rechnet der Term richtig: ein Schirm-Pass mit Ort und Normale des Gesetzes zieht 10–25 % ab (Median 14 %), PMREM-Stufe 1 = Kosinus-Bestrahlung der Tafel ± 7 %, ohne Himmels-Licht ist der Schattenhang 0. Der Abzug von 7 % im Bild entsteht zwischen diesem Term und dem Pixel des Rings — eingegrenzt, noch nicht benannt.
+- Gipfel-Blick im Takt: 26 000 Takte bis die Welt am Anlauf steht — Takt 0–13 000 die Foundry-Bauten der Metropole (461 → 0, `_weltOffen` foundry), Takt 13 000–26 000 die Leiber ihrer Bewohner (959 → 0, ~1 Leib je 12 Takte, `leiber`) samt `felder`; die Ferne nicht. Nächster Schnitt dort.
+
+Ich warte im Wartezimmer und arbeite in der genannten Reihe weiter.
+
 ## 08.11. 23:20 — w25-ferne-licht-2: ABGABE bcf8f14af663df140247a776117e6a2acb4dffe6
 
 ABGABE bcf8f14af663df140247a776117e6a2acb4dffe6 — Abgabe w25-ferne-licht-2 (vom Kopf 1f8b19ed, origin/main V18.546.228 gemischt; Probe bild:gipfel-blick@0.5 am Kopf — sie reißt den Deckel weiter, der Täter steht unten).
