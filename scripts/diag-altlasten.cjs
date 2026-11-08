@@ -551,6 +551,7 @@ const FORBIDDEN = [
         "_instanzWahlGruppen",
         "_instanzBehalten",
         "_instanzFensterGilt",
+        "_instanzFenster(",
         "_wahlRaender",
         "_wahlAbdruck",
         "_wahlWeg",

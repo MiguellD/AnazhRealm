@@ -3395,9 +3395,6 @@ AnazhRealm.BAU_NEUTRAL = Object.freeze(["roughness", "metalness", "envMapIntensi
 // `lichtRandTexel` (Welle C, OMEN-Urteil 07.10.: der Tag steht im Spiel nie): der Licht-Rand eines Kaskaden-Passes in Texeln
 // seiner Karte — die Wahl der Kaskade hält über die Stufen der Sonne (`_sonnenWinkel`), bis die Drehung des Lichts seit der
 // Wahl, mal dem längsten Licht-Weg der Box (`fit.weg`), die Hälfte dieses Rands erreicht (`_wahlHaelt`).
-// `wegM` (w20-leib-takt, `_instanzWahlWeg`): so weit wandert ein Urteil der Instanz-Wahl (Auge, Ebenen, Scheibe), bevor die
-// Gruppe wieder voll wählt — darunter urteilt sie nur die Instanzen neu, deren Urteil unter den Rändern ± wegM nicht hält.
-// Im Gang (1,15 m/s) wählt sie so etwa jedes 26. Bild voll, unter 5 % der Bilder.
 AnazhRealm.PASS_WAHL = Object.freeze({
     sichtRand: 0.003,
     saumM: Object.freeze([2, 8, 24]),
@@ -3405,7 +3402,6 @@ AnazhRealm.PASS_WAHL = Object.freeze({
     haltM: 0.02,
     drehRand: (2 * Math.PI) / 180,
     lichtRandTexel: 32,
-    wegM: 0.5,
 });
 // die Drehung der Licht-Basis im Abdruck einer Lage (`_wahlAbdruck`): die Elemente ihrer 3 × 3
 AnazhRealm.WAHL_BASIS = Object.freeze([0, 1, 2, 4, 5, 6, 8, 9, 10]);

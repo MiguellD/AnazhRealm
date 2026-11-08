@@ -390,6 +390,7 @@ class AnazhRealm_siedlung_instanz {
     _lodSlotStamp(g, slot, scale, voll, leaf, ein = 0) {
         const geom = g && g.mesh && g.mesh.geometry;
         if (!geom || !geom.userData || !geom.userData._lodFacade) return;
+        g.slotStand = (g.slotStand | 0) + 1; // der Stand der Slots (das Altern des Bau-Satzes): Sichthöhe und Karte
         const s = Number.isFinite(scale) && scale > 0 ? scale : 1;
         const a0 = geom.attributes.aH0;
         if (a0 && a0.isInstancedBufferAttribute && slot < a0.array.length) {
@@ -510,8 +511,9 @@ class AnazhRealm_siedlung_instanz {
         // "@global"-Bundle: der Key matcht das Kugel-Regex nicht → keine cullSphere → immer sichtbar,
         // Submit ≈ 0. Nicht-WebGPU/Kill-Switch → Szene-Pfad.
         // Eine Satz-Gruppe hängt nirgends: sie ist Slot-Wahrheit und Raycast-Ziel, gezeichnet wird ihr Bereich im Satz.
-        // Die Gruppen der Wahl hängen lose in der Szene: ihre Arena wählt je Pass auf der GPU (ein Bündel spielte die Züge ab,
-        // die es aufnahm — bis w25-gpu-wahl das eigene "@wahl"-Bündel, das das Hauptbild bei jeder neuen Wahl neu aufnahm).
+        // Die Gruppen der Wahl hängen in EINER schlichten Gruppe der Szene (`_gpuWahlWirt`, kein Bündel): ihre Arena wählt je Pass
+        // auf der GPU (ein Bündel spielte die Züge ab, die es aufnahm — bis w25-gpu-wahl das eigene "@wahl"-Bündel, das das
+        // Hauptbild bei jeder neuen Wahl neu aufnahm), die Kaskaden-Box liest ihre Werfer-Hülle (`_kaskadenHuellen`).
         const bundle =
             !leaf.tuer && !satz && !wahl ? this._archRegionBundleFor(regional ? regionKey : "@global") : null;
         if (satz) {
@@ -523,6 +525,9 @@ class AnazhRealm_siedlung_instanz {
             bundle.add(mesh);
             AnazhRealm._buendelKinderReihe(bundle, this._buendelAuge);
             bundle.needsUpdate = true; // ein Bürger ohne fertige Pipeline: die Erst-Zeichnung nimmt neu auf, wenn sie steht
+        } else if (wahl === "gpu" && this._gpuWahlWirt()) {
+            mesh.matrixAutoUpdate = false; // STATISCH: die Lage der Gruppe liegt in ihren Instanz-Matrizen (die Hülle hält im Register)
+            this._gpuWahlWirt().add(mesh);
         } else if (this.state.scene) this.state.scene.add(mesh);
         // slotRef: Slot-Index → die Slot-Marke {key, slot} (der Rückverweis des Umzugs, `_archGroupAlloc`); slotEntry:
         // Slot-Index → Architektur-Eintrag (der Crosshair-Raycast). Leer geboren: count 0, unsichtbar, bis der erste Bewohner kommt.
@@ -553,6 +558,22 @@ class AnazhRealm_siedlung_instanz {
         }
         this.state.archInstanceGroups.set(key, g);
         this._archGruppenMintMerke(key); // CHURN-LINSE (18.07.) — s. _archGruppenMintMerke
+        return g;
+    }
+
+    // DER WIRT DER GPU-WAHL: EINE schlichte Gruppe in der Szene trägt jede Gruppe der Wahl (`_instanzWahlArt` "gpu") — ihre Arena
+    // hängt in der Szene (`_arenaNimmt`: der Wirt eines Glieds ist sein Bündel, sonst die Szene), die Kaskaden-Box liest ihre
+    // Werfer-Hülle wie die eines Bündels (`_bundleWerferHuelle`, `_kaskadenHuellen`). Eine neue Szene trägt sie neu.
+    _gpuWahlWirt() {
+        const st = this.state;
+        if (!st.scene) return null;
+        let g = st.gpuWahlWirt;
+        if (!g) {
+            g = st.gpuWahlWirt = new THREE.Group();
+            g.name = "@gpuWahl";
+            g.matrixAutoUpdate = false;
+        }
+        if (g.parent !== st.scene) st.scene.add(g);
         return g;
     }
 
@@ -665,6 +686,7 @@ class AnazhRealm_siedlung_instanz {
         g.slotRef[slot] = ref;
         g.slotEntry[slot] = entry || null;
         g.liveCount = slot + 1;
+        g.slotStand = (g.slotStand | 0) + 1; // der Stand der Slots: das Altern des Bau-Satzes liest ihn (`siedlung-satz`)
         AnazhRealm._instanzZahl(g.mesh, g.liveCount);
         // SUBMIT-WAL — der Aufrufer schreibt gleich Matrix/Farbe in diesen Slot
         // (synchron, vor dem nächsten Render): das Region-Bundle re-recorden.
@@ -692,6 +714,7 @@ class AnazhRealm_siedlung_instanz {
         g.slotEntry[letzt] = null;
         ref.slot = -1;
         g.liveCount = letzt;
+        g.slotStand = (g.slotStand | 0) + 1; // der Stand der Slots (das Altern des Bau-Satzes)
         AnazhRealm._instanzZahl(g.mesh, letzt);
         if (!g.mesh.__arena) this._archMeshBundleTouch(g.mesh); // SUBMIT-WAL — count-/Matrix-Mutation → Bündel neu (eine Arena liest sie im Takt, G1)
         // V12.0-perf.e-fix — boundingSphere invalidieren: InstancedMesh.raycast
