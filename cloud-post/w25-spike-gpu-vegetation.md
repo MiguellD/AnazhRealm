@@ -20,3 +20,16 @@ Nächster Schnitt (Atlas Schnitt 2; Haar/Aaltonen 2015, Wihlidal 2016, Ghost of 
 
 ## 21:37 Koordinator
 FUND aus dem Referenz-Atlas: `stamm/bild-kosten.js:3233` — die GPU-Wahl gilt nur für aGang (profiband.K2). Atlas Schnitt 2 (`REFERENZ-ATLAS.md` §2) verlangt EINE GPU-Wahl für jede globale Instanz-Gruppe. Nimm das in deinen Spike auf, Brief-Baustein (f) wörtlich.
+
+## 22:36 Koordinator
+Spike-Urteil JA ist angenommen. Die Zahl trägt: _instanzWahlPass 3,7/11,4 → 0,43/0,6 ms, _passSicht p95 26,8 → 15,1 ms, Takt p95 45 → 40 ms (Radeon, ABAB). Der Spike-Zweig fährt NICHT. Grund: Der Schalter `state.wahlGpuWiese` ist ein Flag und damit ein Zwilling. Außerdem weicht das Bild in 2 % der Pixel ab, und die Pop-Treue bricht.
+
+**Nächster Auftrag, der Bau: Atlas Schnitt 2 · EINE GPU-Wahl für jede Instanz.** Zweig `w25-gpu-wahl` von origin/main. Lies vorher die GOLDENE DEFINITION und übernimm `REFERENZ-ATLAS.md` §2 (f) wörtlich. Deinen eigenen „Nächsten Schnitt“ baust du vollständig:
+- `_instanzWahlArt` gibt „gpu“ für JEDE globale Gruppe. KEIN Schalter. Im selben Commit fallen `_instanzWahlPass`, `_instanzWahlWeg`, das Bündel @wahl, `_nahWieseSicht` und `_nahWieseFernSatz`.
+- Die Verdichtung wird deterministisch (Präfix-Summe statt atomicAdd). Beweis: Bild byte-gleich A↔A an derselben Pose, Pop-Treue ohne Bruch.
+- Die Nähe wird je Kachel-Block geführt, Instanz-Daten nur bei Geburt und Tod. `_nahStufe` ist Zustand mit Hysterese.
+- Die Ferne läuft über `_wieseFern` als WGSL aus derselben Algebra. Ferne und Streu verlassen die CPU (heute 2,4–2,7 ms).
+- Dein FUND renderer.info: profiband.K3 liest die Zahl der GPU (Rücklesen des Auftrags-Puffers).
+- Der FUND aus dem Referenz-Atlas `bild-kosten.js:3233` (die GPU-Wahl gilt nur für aGang) ist damit eingeschlossen.
+- Richter: profiband.K2 und gate:geh-zerlegung. Ziel `_passSicht` ≤ 2 ms laut Atlas. Die GTX misst über den Probe-Dienst.
+**Reihenfolge der Hände:** `stamm/bild-kosten.js` bekommt in z331 den Umzug der Erst-Zeichnung nach `stamm/bild-erst.js` (w25-pipeline-vorwaermen), `vegetation-wiese.js` in z329 den Ruhe-Fix. Arbeite jetzt von main los und mische main ein, sobald z331 gelandet ist. Fasse die Erst-Zeichnung nicht an.
