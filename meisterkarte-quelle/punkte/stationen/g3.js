@@ -1564,15 +1564,19 @@ async function neunSeite(r, T, C, kammSaum) {
                 const neben = (p) => new T.Vector3(nb(p)[0], p.y, nb(p)[1]);
                 const sS = dS.filter((p) => gruenPx(mark, neben(p))), sL = dL.filter((p) => gruenPx(mark, neben(p)));
                 const sicht = Math.min(sS.length / dS.length, sL.length / dL.length), pfosten = gruenPx(mark, pfZ);
-                const [s0, l0] = [probeL(ohne, dS), probeL(ohne, dL)];
+                // DIE WERTE DER POSE AN IHRER POSE (w24-linse-feuer): die Punkte projiziert die Kamera, die jetzt steht (`bp`) — gelesen
+                // werden alle vier hier, nie nach der Schleife: dort stand die Kamera an der LETZTEN Pose, und die Rückfall-Wahl (keine
+                // Pose ruhig) las ihre Bilder an fremden Pixeln, mit und ohne Pfosten fast gleich (Radeon 03300ec8, 77265b04, 53b2fc7a:
+                // Kontrast 2,6423, Kontrolle 2,6433; die Posen selbst maßen 1,54 · 4,00 · 5,81 bei Kontrolle 1,569 · 0,553 · 1,566)
+                const [s0, l0, s1, l1] = [probeL(ohne, dS), probeL(ohne, dL), probeL(mark, dS), probeL(mark, dL)];
                 const kontrolle = s0.L > 0 && l0.L > 0 ? l0.L / s0.L : null;
-                const kand = { ps, PF, gy, dS, dL, sicht, pfosten, ohne, mit: mark, kontrolle, imPool, gut: pfosten && ruhig(kontrolle) };
+                const kand = { ps, sicht, pfosten, kontrolle, imPool, werte: { s0, l0, s1, l1 }, gut: pfosten && ruhig(kontrolle) };
                 if (!wahl || (kand.gut && !wahl.gut) || (kand.gut === wahl.gut && pfosten && !wahl.pfosten)) wahl = kand;
                 if (kand.gut) break;
             }
-            const { ps, dS, dL, ohne, mit, imPool } = wahl;
+            const { ps, imPool } = wahl;
             const q = ps.q;
-            const [s1, l1, s0, l0] = [probeL(mit, dS), probeL(mit, dL), probeL(ohne, dS), probeL(ohne, dL)];
+            const { s1, l1, s0, l0 } = wahl.werte;
             return {
                 quelle: String(q.type || "?"), abM: r4(ps.abM), imPool, uhr: r4(st.timeOfDay), boden: r4(wahl.sicht), pfosten: wahl.pfosten,
                 Llicht: r4(l1.L), Lschatten: r4(s1.L), kontrast: s1.L > 0 ? r4(l1.L / s1.L) : null,
