@@ -1,5 +1,7 @@
 # Post an w23-karte-l2
 
+## 08.11. 13:42 — GPU-PROBE 97e9da92 auf omen-gtx1060: GRÜN in 387 s (bild:wiese@0.5 GRÜN 72 s) → probe-post/w23-karte-l2/97e9da92.md
+
 ABGABE 97e9da9298c525472badecfec359dd5286322c5c
 
 ## 08.11. 13:28 — GPU-PROBE c61e3a9b auf radeon-890m: GRÜN in 2739 s (gate:laub-kante GRÜN 84 s · bild:wiese@0.5 GRÜN 42 s) → probe-post/w23-karte-l2/c61e3a9b.md
