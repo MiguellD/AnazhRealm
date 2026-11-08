@@ -23,8 +23,9 @@ const TAETER = schalter("--taeter");
 
 const { errs, check } = pruefer();
 const taeter = (v, trenner = " · ") => (v.length ? " — Täter: " + v.join(trenner) : "");
-// DAS URTEIL JEDES VERDIKTS DIESER LINSE (die EINE Form): je Zeile [hält, der Täter beim Namen] — die Texte der Zeilen, die nicht
-// halten, in ihrer Folge (bis heim2-w13-verkehr-heil sammelten 13 Verdikte je ihr `out.push`, zwei je einen Helfer)
+// DAS URTEIL EINER TÄTER-LISTE (Takt · Halt · Wechsel · Reifen · Station · Bahn · Wegenetz · Verkehr): je Zeile [hält, der
+// Täter beim Namen] — die Texte der Zeilen, die nicht halten, in ihrer Folge (bis heim2-w13-verkehr-heil sammelte jedes sein
+// eigenes `out.push`); Körper, Rückmeldung und Kette urteilen je Kanal
 const urteil = (zeilen) => zeilen.flatMap(([ok, t]) => (ok ? [] : [t]));
 
 // ── DAS TAKT-VERDIKT (pure Funktion; Browser-Probe UND Selbst-Test). Rückgabe: die Täter beim Namen. ──
@@ -1648,7 +1649,7 @@ hauptLauf(async () => {
     if (schalter("--selftest")) {
         console.log("=== SELBST-TEST: die Fahr-Linse nennt jeden Täter des Befunds ===");
         // je Bruch [Name, Täter, Soll] am gesunden Lauf `gut`: das Verdikt nennt zuerst `soll` (`allein`: nur ihn)
-        const brueche = (wer, verdikt, gut, faelle, allein) => {
+        const jeBruch = (wer, verdikt, gut, faelle, allein) => {
             for (const [name, bruch, soll] of faelle) {
                 const v = verdikt({ ...gut, ...bruch });
                 check(`Selbst-Test${wer}: ‚${name}' → die Linse nennt ${soll}`, v[0]?.startsWith(soll) && (!allein || v.length === 1), v.join(" · ")); // prettier-ignore
@@ -1773,7 +1774,7 @@ hauptLauf(async () => {
             }
         }
 
-        brueche("", taktVerdict, gesund, [
+        jeBruch("", taktVerdict, gesund, [
             ["der gerittene Wagen auf der Karte (Distanz-Wand)", { stufe: 2 }, "stufe"],
             ["der Eintrag bleibt hinter dem Reiter (Pin gerissen)", { versatz: 3.2 }, "versatz"],
             ["114 von 114 Frames Teleport (F-D1)", { teleport: 114 }, "teleport"],
@@ -1809,7 +1810,7 @@ hauptLauf(async () => {
             wechselVerdict(wechsel).length === 0,
             wechselVerdict(wechsel).join(" · ")
         );
-        brueche(" T4", wechselVerdict, wechsel, [
+        jeBruch(" T4", wechselVerdict, wechsel, [
             ["der Band-Partner bleibt am Ort des Aufstiegs (F1)", { stufeM: 23.4, stufeWer: "L1 (Band)" }, "stufe"],
             ["kein Band im Ritt", { band: 0 }, "band"],
             ["die Gier drehte in Ego nur 20°", { ego: [20, 77] }, "ego"],
@@ -1966,7 +1967,7 @@ hauptLauf(async () => {
             lockSchwimmer: { abw: 0, abwY: 0 },
         };
         check("Selbst-Test S0: gesunde Stationen == 0 Täter", stationVerdict(gutS).length === 0);
-        brueche(" S", stationVerdict, gutS, [
+        jeBruch(" S", stationVerdict, gutS, [
             [
                 "Hangfuß: 1,19 m unter den Rädern, 66 Schritte",
                 { hangfuss: { ziel: true, kontakte: 1, unterMax: 1.19, unterN: 66, schubMax: 0.1, weg: 21 } },
