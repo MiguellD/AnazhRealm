@@ -64,6 +64,42 @@ const SEITE = {
     fahrt: `clearInterval(window.__k4iv); const z = (window.__k4 = { wagen: "-", aus: "-", ein: "-" }); ${TASTE} const bis = performance.now() + 20000; const iv = setInterval(() => { if (st.player.mountedArch !== "werkbank-fahrt" && performance.now() < bis) return; clearInterval(iv); setTimeout(() => { z.wagen = st.player.mountedArch; t("KeyE", "e"); setTimeout(() => { z.aus = st.player.mountedArch; t("KeyE", "e"); setTimeout(() => { z.ein = st.player.mountedArch; }, 300); }, 1000); }, 1000); }, 50); return 1;`, // prettier-ignore
 };
 const SEK = arg("--sek", "4");
+// DER GRUND JEDES BRUCHS DER LAGE (`--ab`, die letzte Fahrt): `_passLageHaelt` je Anker (Pass × Weg|Auge) gezählt — gehalten oder
+// der erste Grund, der fiel: art · scheibe · band · blende · licht (Kaskade) · auge · ende · quer · lot (die Strecke) · proj · dreh
+const HALT_GRUND = `const P = Object.getPrototypeOf(r), H = P.__haltRoh || (P.__haltRoh = P._passLageHaelt), PW = r.constructor.PASS_WAHL;
+const G = (window.__haltGrund = {});
+const name = (an) => { for (const [k, a] of r._passLagen || []) { if (a === an) return k + ":weg"; if (a.auge === an) return k + ":auge"; } return "?"; };
+const steht = (d) => d <= PW.haltM / 2;
+P._passLageHaelt = function (a, s, an) {
+  const ok = H.call(this, a, s, an);
+  let w = "halt";
+  if (!ok) {
+    if (s[84] !== a[84] || s[27] !== a[27]) w = "art";
+    else if (s[84] === 0 && s[27] === 1) {
+      w = "licht";
+      for (let o = 28; o < 52; o += 4) if (!steht(Math.abs(s[o + 3] - a[o + 3])) || [0, 1, 2].some((j) => !(Math.abs(s[o + j] - a[o + j]) <= 1e-9))) w = "scheibe";
+      if (w === "licht" && (s[53] !== a[53] || !steht(Math.abs(s[87] - a[87])) || !steht(Math.abs(s[88] - a[88])))) w = "band";
+      if (w === "licht" && !r._blendeHaelt(a, s, an)) w = "blende";
+    } else {
+      const d = [s[0] - a[0], s[1] - a[1], s[2] - a[2]];
+      const persp = s[84] === 1;
+      if (persp ? !r._aufStrecke(d[0], d[1], d[2], an) : !steht(Math.hypot(d[0], d[1], d[2]))) {
+        const u = an.u, v = d[0] * u[0] + d[1] * u[1] + d[2] * u[2], t = Math.max(0, Math.min(an.lw, v));
+        w = !(an.lw > 0) ? "auge" : v > an.lw + an.q ? "ende" : Math.hypot(d[0] - t * u[0], d[2] - t * u[2]) > an.q ? "quer" : "lot";
+      } else if (persp && Array.from({ length: 24 }, (_, i) => i).some((i) => s[3 + i] !== a[3 + i])) w = "proj";
+      else {
+        let sp = 0;
+        for (let i = 75; i < 84; i++) sp += s[i] * a[i];
+        w = Math.acos(Math.max(-1, Math.min(1, (sp - 1) / 2))) > an.drehRand / 2 ? "dreh" : !r._blendeHaelt(a, s, an) ? "blende" : "sonst";
+      }
+    }
+  }
+  const g = G[name(an)] || (G[name(an)] = {});
+  g[w] = (g[w] || 0) + 1;
+  if (w === "halt" || ok) g.lw = Math.max(g.lw || 0, +(an.lw || 0).toFixed(1));
+  return ok;
+};
+return 1;`;
 
 (async () => {
     const tor = werkbankTor(PORT);
@@ -163,6 +199,15 @@ const SEK = arg("--sek", "4");
                 wb(["umstellen", "--ort", "genesis", "--sicht", "ego"], 300);
                 M[v].push({ f: zelle(`Fahrt ${v}${i}`, "fahrt", SEITE.fahrt, false, true), g: zelle(`Gehen ${v}${i}`, "bahn", SEITE.geh, false, true) }); // prettier-ignore
             }
+            // die letzte Fahrt (B) nennt den Grund jedes Bruchs je Anker
+            setze(false);
+            wb(["umstellen", "--ort", "genesis", "--sicht", "ego"], 300);
+            ev(HALT_GRUND);
+            const fg = zelle("Fahrt Grund", "fahrt", SEITE.fahrt, false, true);
+            const grund = ev(
+                "const g = window.__haltGrund; const P = Object.getPrototypeOf(r); P._passLageHaelt = P.__haltRoh; return g;"
+            );
+            zeile(`GEH-AB Halt der Lage in Fahrt B (${fg ? fg.a.frames : "?"} Bilder, je Anker gehalten/Grund des Bruchs): ${JSON.stringify(grund)}`); // prettier-ignore
             // je Zelle: Bild p50/p95/max, Anteil über 33 ms, die Mitte der Sicht und des Planers (ms je Takt), der CPU-Takt p50
             const mitte = (x, w) => x.s.zeilen.filter((z) => w.test(kurz(z.name))).reduce((n, z) => n + z.mitteMs, 0);
             const kennung = (x) => x ? `${x.a.frameMs.p50}/${x.a.frameMs.p95}/${x.a.frameMs.max} ${(100 * x.anteil).toFixed(1)}% Sicht ${mitte(x, /^_passSicht$/).toFixed(1)} Planer ${mitte(x, /^_runFrameScheduler$/).toFixed(1)} CPU ${x.s.cpuMs.p50} n${x.a.frames}` : "?"; // prettier-ignore

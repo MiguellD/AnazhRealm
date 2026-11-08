@@ -3118,6 +3118,9 @@ class AnazhRealm_bild_sicht {
     // Die Rand-Box (um den Saum geweitet) wirkt wie eine Mündung; ein Knoten mit Mündung oder offenem Rand ist ein Start.
     // Je Bereich die Starts und die Hülle aller ihrer Boxen (Mündungen und Ränder): ein Pass, dessen Gesetz die Hülle nicht
     // trifft, prüft keinen dieser Starts (Welle C — vorher prüfte jeder Pass jede Mündung des Rings).
+    // Ein Rand, der sich öffnet oder schließt, hebt den Stand des Satzes (jede Wahl liest neu) — nur dann (w24-fahrt-takt: der Strom
+    // der Fahrt legte bei jedem Ein- und Austritt die Ränder des Bereichs und seiner vier Nachbarn neu, je Nachbar fiel der Stand,
+    // auch an Seiten, an denen nichts offen lag — je Fall wählte jeder Pass den ganzen Satz neu).
     _hoehlenRand(s, b) {
         if (!b || !b.hoehle) return;
         const R = AnazhRealm.HOEHLEN_SAUM;
@@ -3125,12 +3128,15 @@ class AnazhRealm_bild_sicht {
         const fehlt = [0, 1, 2, 3].map((seite) => !this._hoehlenNachbar(s, b, seite));
         const starts = [];
         const huelle = new THREE.Box3();
+        let anders = false;
         for (const kn of b.hoehle.knoten) {
             let offen = kn.tore.length > 0;
             for (const tor of kn.tore) huelle.union(tor.box);
             for (let seite = 0; seite < 4; seite++) {
                 const sb = fehlt[seite] ? kn.seiten[seite] : null;
+                const alt = kn.raender[seite];
                 kn.raender[seite] = sb ? sb.clone().expandByScalar(saum) : null;
+                if (!alt !== !kn.raender[seite] || (alt && !alt.equals(kn.raender[seite]))) anders = true;
                 if (sb) {
                     offen = true;
                     huelle.union(kn.raender[seite]);
@@ -3141,9 +3147,12 @@ class AnazhRealm_bild_sicht {
                 starts.push(kn);
             } else s.hoehle.muendungen.delete(kn);
         }
-        b.hoehle.starts = starts;
-        b.hoehle.startHuelle = starts.length > 0 ? huelle : null;
-        s.stand++; // ein Rand öffnet oder schließt sich: jede Wahl liest neu
+        const H = b.hoehle;
+        anders ||= !H.starts || !this._satzListeGleich(H.starts, starts);
+        anders ||= !H.startHuelle !== !starts.length || (starts.length > 0 && !H.startHuelle.equals(huelle));
+        H.starts = starts;
+        H.startHuelle = starts.length > 0 ? huelle : null;
+        if (anders) s.stand++;
     }
 
     // Der Austritt eines Boden-Bereichs: seine Starts fallen, die Nachbar-Zellen vergessen ihre Rand-Portale zu ihm, und seine
