@@ -2358,13 +2358,13 @@ async function kreaturProben(r, T, opts) {
             /* der Takt meldet selbst */
         }
     };
-    // DAS WERK DER LEUTE OHNE ZEIT (`_tickBewohner(0)`, wie die Ankunft in `uhrAuf`): mit Bild rechnet ein Takt der Bewohner
-    // `BEWOHNER.listeMs` an der Liste, zwei Geburten, acht Ankünfte — das Budget eines Bilds (Lehre 14). Wer auf die Leute wartet,
+    // DAS WERK DER LEUTE OHNE ZEIT (`_bewohnerWerkTakt(Infinity)` und `_tickBewohner(0)`, wie die Ankunft in `uhrAuf`): mit Bild rechnet
+    // ein Takt die Liste unter der EINEN Frist der Bau-Arbeit, zwei Geburten, acht Ankünfte — das Budget eines Bilds (Lehre 14). Wer auf die Leute wartet,
     // ruft ihn, bis ihr Werk (`_weltOffen().leute`) fünf Takte nicht fällt: dann wartet es auf den Faden (die Vorlagen der
     // Gestalten). Bis w4-stationen-schnell-a trug jedes Warten EINEN Takt der Bewohner je Bild und 16 ms Schlaf: an der Karte
     // ging die Liste des Start-Dorfs über Hunderte Bilder, nach jeder Abwesenheit neu (die Wiederkehr: 16 Prüf-Stunden)
     const leuteTakt = () => {
-        for (let n = Infinity, still = 0, m; still < 5 && (m = (r._tickBewohner(0), r._weltOffen().leute)); n = m)
+        for (let n = Infinity, still = 0, m; still < 5 && (m = (r._bewohnerWerkTakt(Infinity), r._tickBewohner(0), r._weltOffen().leute)); n = m)
             still = m < n ? 0 : still + 1;
     };
     // Takt um Takt des Spiels, bis die Siedlung steht: je Takt das Bild, dann das Werk der Leute; der Schlaf gibt dem Faden das
