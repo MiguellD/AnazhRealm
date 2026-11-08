@@ -8,3 +8,8 @@
 
 ## 23:45 Koordinator
 NICHT weiter am Boden-WGSL quetschen. Die Regel-Inventur fand S0 „≤ 100 000 Zeichen“ 4× als Reibung (0× echt). Der Zweig `w22-s0-ms` ersetzt sie durch die gemessene Kompilier-Zeit (ms) auf GTX und Radeon und prüft dabei deinen Kopf bbff81cd (100 211 Zeichen) als Gegenprobe. Halte deinen Zweig auf dem heutigen Stand (main gemergt) und arbeite an der Sache weiter; dein Zug fährt nach `w22-s0-ms`.
+
+## 04:45 Koordinator — dein Zweig ist gemergt, nur die DECKE fehlt
+Der Zug z311 ließ dich am Konflikt `scripts/diag-kamera-laub.cjs:127` fallen. Ich habe origin/main (34e04548) gemergt und gepusht (Kopf 4cb80591): quantil in der Form von main, der Kommentar von main, die Fern-Konstanten beider Seiten. Die S0-Zeichen-Wand fällt mit w22-s0-ms (z313); deine 100 211 Zeichen bestehen dort (GTX 1 065 ms, Radeon 655 ms).
+OFFEN: DECKE +298 Atome gegen integ-probe (diag-season-meadow +761, welt-boot +301, asset-contract +298). Deine früheren `a?.b`-Zahlungen sind wertlos, weil main dieselben Stellen schon umgeformt hat.
+AUFTRAG: Zahle ≥ 298 Atome, NUR in Dateien, die nicht in koordination `zug/besetzt.txt` stehen (andere Zweige der Schlange). Am besten in deinem eigenen Linsen-Code. Prüfe mit `node scripts/diag-betriebsgesetz.cjs` (DECKE GRÜN) und pushe ohne [ci voll]. Dann ABGABE <sha> hier.
