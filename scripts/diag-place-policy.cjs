@@ -92,8 +92,7 @@ hauptLauf(async () => {
                 let ahorn = false;
                 let forbidden = null;
                 const seedInt = r._forestSeedInt();
-                outer: for (let cx = -20; cx <= 20; cx += 1) {
-                    for (let cz = -20; cz <= 20; cz += 1) {
+                outer: for (let cx = -20; cx <= 20; cx += 1) for (let cz = -20; cz <= 20; cz += 1) {
                         const darts = r._forestGeborene(cx, cz, seedInt);
                         for (const d of darts) {
                             if (d.sp === "baum_testnone") forbidden = d.sp;
@@ -101,7 +100,6 @@ hauptLauf(async () => {
                         }
                         if (ahorn) break outer;
                     }
-                }
                 res.a.planted = ahorn;
                 res.c.forbiddenDart = forbidden;
             }

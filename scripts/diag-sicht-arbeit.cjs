@@ -67,7 +67,7 @@ function urteil(b) {
                     `nicht, was die Maske vom Auge dieses Frames behält: ${BT.namen.join(", ")} (Kante: ${BT.fall})`
             );
         const BO = b.blendeTreueOhneRand;
-        if (BT?.fall && BT.gehalten && !(BO && BO.loecher > 0))
+        if (BT?.fall && BT.gehalten && !(BO?.loecher > 0))
             v.push(
                 "LINSE STUMPF: ohne den Halt als Rand des Fensters fehlt der gehaltenen Wahl nichts " +
                     `(${BO ? BO.loecher : "?"} Löcher) — die Blende-Treue prüft die Kante nicht`
@@ -752,8 +752,7 @@ const server = statikServer();
 
 (async () => {
     console.log("=== SICHT-ARBEIT (Welle C) — Null-Renderer, Mess-Wiese, die Sicht-Linse je Frame ===");
-    await server.lausche(0);
-    const { browser, page } = await nullSeite({ frist: 600000 });
+    const { browser, page } = await nullSeite({ frist: 600000 }, server);
     page.setDefaultTimeout(580000);
     let befund = null;
     try {

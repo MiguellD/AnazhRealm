@@ -92,11 +92,9 @@ async function checkBandRing2Extended({ page, check, logs, errors, finalState })
             if (!c) return 0;
             if (c.material?.color) return c.material.color.getHex();
             let hex = 0;
-            if (typeof c.traverse === "function") {
-                c.traverse((n) => {
+            if (typeof c.traverse === "function") c.traverse((n) => {
                     if (!hex && n.isMesh && n.material?.color) hex = n.material.color.getHex();
                 });
-            }
             return hex;
         };
         const colorBefore = readCreatureColor(someCreature);
@@ -150,9 +148,7 @@ async function checkBandRing2Extended({ page, check, logs, errors, finalState })
         return out;
     });
 
-    if (!phase3Results) {
-        check("Phase-3-Snapshot erreichbar", false, "page.evaluate fehlgeschlagen");
-    } else {
+    if (!phase3Results) check("Phase-3-Snapshot erreichbar", false, "page.evaluate fehlgeschlagen"); else {
         check("Chat→DSL: 'Setze Wetter rainy' → ['weather','rainy']", phase3Results.parseWeatherOk);
         check("Chat→DSL: 'Spawne Kreaturen 3' → repeat+spawn_creature", phase3Results.parseSpawnOk);
         // Chat→DSL: unbekannter Befehl liefert null (kein Match)
@@ -261,9 +257,7 @@ async function checkBandRing2Extended({ page, check, logs, errors, finalState })
             // Ein mutiertes Programm aus injHist hat entweder
             // "weather" als root (Mutation ohne Strukturwechsel)
             // oder durch Atom-Replacement ein anderes Atom.
-            if (Array.isArray(comp) && (comp[0] === "weather" || comp.length === 2)) {
-                usedHistory++;
-            }
+            if (Array.isArray(comp) && (comp[0] === "weather" || comp.length === 2)) usedHistory++;
         }
         out.composeUsesHistory = usedHistory >= 20; // klar Mehrheit
         out.composeUsesHistoryCount = usedHistory;
@@ -271,9 +265,7 @@ async function checkBandRing2Extended({ page, check, logs, errors, finalState })
         return out;
     });
 
-    if (!phase7Results) {
-        check("Phase 7: dslSelectByFitness erreichbar", false, "page.evaluate fehlgeschlagen");
-    } else {
+    if (!phase7Results) check("Phase 7: dslSelectByFitness erreichbar", false, "page.evaluate fehlgeschlagen"); else {
         check(
             "Phase 7: Fitness-Selektion bevorzugt high-fitness deutlich",
             phase7Results.highBeatsLow,
@@ -738,9 +730,7 @@ async function checkBandWelle6HCreatureLlm({ page, check }) {
         st.lastCreatureProactiveSpeech = -Infinity;
         const beforeLU = chatOutput ? chatOutput.children.length : 0;
         // 3 gathered-Memorys → Level 1 trigger
-        for (let i = 0; i < 3; i++) {
-            r._creatureRemember(cLU, "gathered", { material: "stein" });
-        }
+        for (let i = 0; i < 3; i++) r._creatureRemember(cLU, "gathered", { material: "stein" });
         const afterLU = chatOutput ? chatOutput.children.length : 0;
         out.levelUpHookFired = afterLU > beforeLU;
 
@@ -1052,9 +1042,7 @@ async function checkBandWorkshopPolishAndLlm({ page, check }) {
             // Wrapper-Kind-Index; der Test wandert mit dem Layout).
             const stats = document.getElementById("workshop-stats-panel");
             out.statsInDom = !!stats;
-            if (stats && canvas) {
-                out.statsAfterCanvas = !!(canvas.compareDocumentPosition(stats) & Node.DOCUMENT_POSITION_FOLLOWING);
-            }
+            if (stats && canvas) out.statsAfterCanvas = !!(canvas.compareDocumentPosition(stats) & Node.DOCUMENT_POSITION_FOLLOWING);
 
             // Werkzeug-Palette im DOM
             const toolPalette = document.getElementById("workshop-tool-palette");
@@ -1358,9 +1346,7 @@ async function checkBandWorkshopPolishAndLlm({ page, check }) {
         return out;
     });
 
-    if (ohneWurf(check, "V7.94 Ollama-Key", ollamaKeyResults)) {
-        check("V7.94 Ollama-Key: buildHeaders MIT Key → Authorization: Bearer <key>", ollamaKeyResults.bearerWithKey);
-    }
+    if (ohneWurf(check, "V7.94 Ollama-Key", ollamaKeyResults)) check("V7.94 Ollama-Key: buildHeaders MIT Key → Authorization: Bearer <key>", ollamaKeyResults.bearerWithKey);
 
     // ### Ollama Cloud-Kompatibilität (Endpoint-Detect + Dual-Format-Parse) ###
     // (1) /api/chat nur anhängen, wenn die URL noch keinen Pfad hat; (2) extractText liest Ollama-native
@@ -1525,14 +1511,12 @@ async function checkBandWorkshopPolishAndLlm({ page, check }) {
         // V7.97 Auto-Bypass: Cloud-URL + useProxy=true → Proxy WIRD GENUTZT (durchgeschleust)
         check("V7.97 Auto-Bypass: Cloud-URL + useProxy=true → Proxy WIRD GENUTZT", v797AutoResults.proxyUsedForCloud);
     }
-    if (ohneWurf(check, "V7.97 Error-Hint", v797ErrorResults)) {
-        check(
+    if (ohneWurf(check, "V7.97 Error-Hint", v797ErrorResults)) check(
             "V7.97 Error-Hint: HTTP 404 'model not found' → klarer Hinweis mit Modell-Namen + 'ollama list'",
             v797ErrorResults.errorMentionsModel &&
                 v797ErrorResults.errorMentionsOllamaList &&
                 v797ErrorResults.errorMentionsModelName
         );
-    }
 
     // ### Parser-Robustheit für lokale Reasoning-Models ###
     // (1) <think>/<thinking>-Blöcke werden gestrippt; (2) ohne JSON-Vertrag greift der Plain-Text-

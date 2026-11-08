@@ -111,7 +111,12 @@ async function gatherInitialFinalState(page) {
 
 // DIE BÄNDER nach Domäne (scripts/playtest/<domaene>[-<teil>].cjs, gestellt von `stamm-umzug --richter`); die Seite
 // (safeEvaluate) reicht der Läufer, die Reihenfolge des Laufs steht unten.
-module.exports = { safeEvaluate, erreichbar, ohneWurf };
+// DIE GEFLÜGELTE SEELE der Seelen-Proben (Rumpf und zwei Spiegel-Planes aus Federn), gereicht an die Seite der Bänder koerper,
+// netz-p2p und werkstatt-bauen — bis w12-verkehr trug jedes sein eigenes Literal
+const FLUEGEL = [{ shape: "box", material: "federn", size: { x: 0.5, y: 0.55, z: 0.4 }, position: { x: 0, y: 0.5, z: 0 } }].concat(
+    [0.62, -0.62].map((x) => ({ shape: "plane", material: "federn", size: { x: 0.9, y: 0.04, z: 0.5 }, position: { x, y: 0.55, z: 0 } }))
+);
+module.exports = { safeEvaluate, erreichbar, ohneWurf, FLUEGEL };
 const BAND = Object.assign({}, ...fs.readdirSync(path.join(__dirname, "playtest")).filter((f) => f.endsWith(".cjs")).map((f) => require(`./playtest/${f}`)));
 
 if (require.main === module) hauptLauf(async () => {

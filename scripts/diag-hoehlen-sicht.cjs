@@ -629,8 +629,7 @@ const server = statikServer();
 
 (async () => {
     console.log("=== HÖHLEN-SICHT (Welle 7) — Null-Renderer, Mess-Wiese, Strahl-Wahrheit gegen den Boden-Satz ===");
-    await server.lausche(0);
-    const { browser, page } = await nullSeite({ frist: 600000 });
+    const { browser, page } = await nullSeite({ frist: 600000 }, server);
     page.setDefaultTimeout(580000);
     await page.evaluateOnNewDocument(installHoehlenStrahl);
     let befund = null;

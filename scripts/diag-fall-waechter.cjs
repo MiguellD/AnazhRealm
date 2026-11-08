@@ -739,9 +739,7 @@ async function probe(K) {
     const hoehleGrund = hs ? hs.grund : NaN;
     {
         const name = "O3 Wagen in der Höhle";
-        if (hk) {
-            await amOrt(hk, 40);
-        }
+        if (hk) await amOrt(hk, 40);
         const m =
             hk && hs
                 ? await fahrt(hk.x, hk.z, hk.grund, 0, 120)
