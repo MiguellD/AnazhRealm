@@ -24,12 +24,13 @@
 //       Datum, dem Plan den Leser und schmuggelt einen Stoff und einen Bauer ohne Pool ein — die Probe nennt jeden.
 //   (7) DAS BILD DER S0-PROBE (`--licht`, K11 + K11b): echter Renderer, Ausgabe-Pfad — der Feuerkreis aus 2 m (Luma) und
 //       der Farbton des Lichts des Feuers auf dem Boden 1–3 m (28–45° netto, die Farbtemperatur des Gesetzes) bei der
-//       Sättigung, die das Auge der Nacht sieht (≤ 0,75 brutto, K66); `--bild` legt die Bilder aus 2 m, aus 6 m und der
-//       Figur ab. Selbsttest: der Pool leer, das Feuer bis K11b (Glut-Palette, nacht 12), das Auge des Tages. DIE NACHT
+//       Sättigung, die das Auge der Nacht sieht (≤ 0,75 brutto, K66); `--bild` legt die Bilder der Schüsse ab (die Figur
+//       und das Feuer aus 6 m fielen 08.11. ohne Leser). Selbsttest: der Pool leer, das Feuer bis K11b (Glut-Palette, nacht 12), das Auge des Tages. DIE NACHT
 //       (D3-2, `S0_NACHT`): derselbe Boden ohne das Feuer um Mitternacht ist lesbar (Luma, abgesoffen). Selbsttest: die
 //       Kamera der Nacht 2 Stufen tiefer (seit licht.K1 trägt sie die Nacht, nicht das Sternen-Licht). Dazu DER HIMMEL FOLGT DEM SPRUNG (K10, `himmelProbe`): nach Mittag und Mitternacht über
 //       den Pfad des Spielers trägt die Umgebung den Himmel des Orts (`_himmelsBestrahlung`). Selbsttest: der Maler taub.
-//       Die Dämmerung und die Belichtung über den Tag urteilt die Tag-Achse auf der Karte (gate:tag-achse:echt).
+//       Die Dämmerung und die Belichtung über den Tag urteilt die Tag-Achse auf der Karte (gate:tag-achse:echt). Dazu DAS
+//       BODEN-PROGRAMM (`S0_MS`): seine Pipeline entstand asynchron, auf echter GPU übersetzt es kalt ≤ 250 ms und ≤ 1,1× main.
 //
 //   node scripts/diag-pruefbuehne.cjs [--json datei] [--evolutionen 60] [--wurzel dir]
 //                                                  (`--wurzel` = der Baum eines anderen Stands: vorher ↔ nachher)
@@ -623,11 +624,10 @@ async function probe(page, welt, wuerfe, evolutionen, schein) {
 // Sätze mit den Formen ihrer Bereiche), ebenso jede Satz-Zelle jenseits der Kugel. Selbsttests: die Kugel 1 km versetzt
 // (jede gezeichnete Zelle liegt jenseits), der Feuerkreis liest nichts (Boden und Feuerstelle werden fremd).
 const S0_NAH_INSTALL = () => {
-    window.__s0Nah = (mitte, radius, mit) => {
+    window.__s0Nah = (mitte, radius) => {
         const rend = st.renderer;
         const welt = st.scene;
-        // WAS DER FEUERKREIS LIEST: der Boden-Satz, die Feuerstelle (ihr Bau-Satz, ihre Gruppe oder ihr eigenes Mesh) und, was
-        // der Aufrufer zeigt (`mit`: die Figur des Beweisbilds)
+        // WAS DER FEUERKREIS LIEST: der Boden-Satz und die Feuerstelle (ihr Bau-Satz, ihre Gruppe oder ihr eigenes Mesh)
         // — gefragt beim Zeichnen: der Bau-Satz entsteht erst im ersten Frame des Schusses (`_tickBauSatz` vor dem Render)
         const feuer = window.__s0Feuer;
         const gruppen = () => st.archInstanceGroups || new Map();
@@ -639,7 +639,7 @@ const S0_NAH_INSTALL = () => {
         const liest = (o, ohne) => {
             if (ohne) return false;
             for (let p = o; p; p = p.parent) {
-                if (mit?.includes(p) || (feuer && p === feuer.mesh)) return true;
+                if (feuer && p === feuer.mesh) return true;
                 const s = satzVon(p);
                 if (s) {
                     if (s.art === "boden") return true;
@@ -837,26 +837,147 @@ function s0Ton(e, ohne) {
 }
 const s0TonImBand = (t) => t?.hue >= S0_TON.hue[0] && t.hue <= S0_TON.hue[1];
 const s0TonPasst = (t) => s0TonImBand(t) && t.sat <= S0_TON.satMax;
-// DER STOFF DES SCHUSSES (K17-3, die Shader-Kosten-Linse scripts/lib/shader-kosten.cjs): der Schuss übersetzt das Boden-Programm
-// (`voxelChunkMaterial`) — seine Zeichen stehen unter der Decke des Bodens (`STOFFE.boden.budget.zeichenMax`). Seit K17 trug
-// es das Fels-Gesetz ausgeschrieben im Pixel (78 Ziehungen, 96 050 → 149 521 Zeichen; lokal 4 Kerne Schuss 12 → 20 s), die
-// Frist riss auf dem Runner (171 s). Der Selbsttest hält das gemessene Programm gegen eine Decke ein Zeichen darunter.
-// Keine Hilfs-Funktion des Programms liest eine Bindung (`bindungInFunktionMax` 0): die Layout-Funktion `wieseRelief` las den
-// Rausch-Atlas und vererbte seinen Namen in jedes weitere Programm — auf der Bühne sagte swiftshader die Pipeline ab.
+// DER STOFF DES SCHUSSES (K17-3, die Shader-Kosten-Linse scripts/lib/shader-kosten.cjs): der Schuss zeichnet das Boden-Programm
+// (`voxelChunkMaterial`). Keine Hilfs-Funktion des Programms liest eine Bindung (`bindungInFunktionMax` 0): die Layout-Funktion
+// `wieseRelief` las den Rausch-Atlas und vererbte seinen Namen in jedes weitere Programm — auf der Bühne sagte swiftshader die
+// Pipeline ab. Der Selbsttest (Mutante c) lässt eine Hilfs-Funktion eine Bindung des gezeichneten Programms lesen.
 const S0_STOFF = (() => {
     const SK = require("./lib/shader-kosten.cjs");
-    const decke = SK.STOFFE.boden.budget.zeichenMax;
-    return {
-        decke,
-        urteil: (wgsl, d) => {
-            const k = SK.wgslKosten(wgsl);
-            return {
-                zeichen: k.zeichen,
-                rot: SK.kostenUrteil(k, { zeichenMax: d == null ? decke : d, bindungInFunktionMax: 0 }, "S0 Boden-Programm"),
-            };
-        },
-    };
+    return (wgsl) => SK.kostenUrteil(SK.wgslKosten(wgsl), { bindungInFunktionMax: 0 }, "S0 Boden-Programm");
 })();
+// DIE ÜBERSETZUNG DES BODEN-PROGRAMMS (Regel-Inventur 07.11., Entwurf 3 — ersetzt die Decke „≤ 100 000 Zeichen", an der 4 Züge
+// fielen, während S0 auf der GTX in 14–15 s stand): gemessen wird, was der Spieler zahlt. Je Programm, das ein Schuss zeichnet,
+// (1) DER WEG seiner Pipeline (das Register `s0PipeRegister`): asynchron, wie die Erst-Zeichnung (`_renderObjectDirect`) jede
+// Pipeline der Welt anlegt — synchron übersetzt der GPU-Prozess sie, bevor er das nächste Bild zeigt; (2) auf echter GPU DIE KALTE
+// ÜBERSETZUNG: Vertex und Fragment neu (`createShaderModule`), bis die Pipeline steht (`createRenderPipelineAsync`), je Lauf eine
+// eigene Zahl im Rumpf (kein Cache von Dawn, Chrome oder Treiber trifft), `n` Läufe, wenn kein Bau der Welt mehr übersetzt; es
+// zählt der schnellste (Last legt nur zu). DIE WAND: ≤ `maxMs` (5 % der Ankunft ≤ 5 s, PFLICHT-OFFEN B) — über diesem Ziel nie
+// teurer als `relativ` × main desselben Adapters (`main`: der schnellste Lauf an main, das Höchste aus den ruhigen gpu-probe-
+// Läufen). Steht der Median der Läufe über `ruhe` × dem schnellsten, trug der Läufer fremde Last: das Urteil heißt UNGEMESSEN
+// (Läufer unter Last) und hält wie ein ROT (Regel-Inventur Entwurf 1: die Uhr eines geteilten Läufers urteilt nie das Gesetz).
+// Gemessen 08.11. an cbe910ed + w22-ci-diaet (99 336 Zeichen), 10 Sitzungen: Radeon 890M 681–721 ms ruhig (Median/schnellster
+// 1,05–1,23; unter Last 911 ms bei 1,67), GTX 1060 1 040–1 132 ms (1,02–1,09) — beide über dem Ziel (2,9× und 4,5×). Die
+// Zeichen sind Ausgabe. Auf swiftshader urteilt die Frist des Laufs (`S0_FRIST_S`), nie eine Zeit. Der Selbsttest auf echter GPU zeichnet den K17-Fall (das Fels-Gesetz ausgeschrieben im Pixel,
+// `s0BodenMessung`; 191 751 Zeichen, Radeon +13–17 %, GTX +24 %) auf dem Vendor-Weg: (a) seine Zeit reißt die Wand gegen den
+// Boden derselben Sitzung, (b) sein Weg ist synchron.
+const S0_MS = { maxMs: 250, relativ: 1.1, ruhe: 1.3, n: 9, main: { "amd/rdna-3": 721, "nvidia/pascal": 1132 } };
+function s0BodenUrteil(name, p, bezug) {
+    const [ms, mitte] = [Math.min(...p.ms), [...p.ms].sort((x, y) => x - y)[p.ms.length >> 1]];
+    const [decke, last] = [Math.max(S0_MS.maxMs, S0_MS.relativ * bezug || 0), mitte > S0_MS.ruhe * ms];
+    return [
+        p.weg !== "asynchron" && `${name}: die Pipeline entstand ${p.weg}, nie asynchron wie jede der Erst-Zeichnung (\`_renderObjectDirect\`)`,
+        p.ms.length && last && `${name}: UNGEMESSEN — der Läufer stand unter Last (Median ${mitte} ms > ${S0_MS.ruhe}× schnellster ${ms} ms)`,
+        p.ms.length && !last && ms > decke && `${name}: kalt ${ms} ms (Soll ≤ ${Math.round(decke)} ms: ${S0_MS.maxMs}, darüber ≤ ${S0_MS.relativ}× main ${bezug})`,
+    ].filter(Boolean);
+}
+const s0Zeile = (name, p, u) =>
+    console.log(`  ${name}: ${p.zeichen} Zeichen WGSL · Pipeline ${p.weg} · kalt ${p.ms.length ? `${p.ms.join(" · ")} ms → ${u.length ? "ROT" : "GRÜN"}` : "ungemessen (swiftshader)"}`);
+// DAS REGISTER DER PIPELINES (vor dem ersten Skript der Seite): je Pipeline des Geräts ihr Weg und ihr Deskriptor; `__s0Flug`
+// zählt die Bauten im Flug (die Messung beginnt erst, wenn kein Bau der Welt mehr übersetzt)
+function s0PipeRegister() {
+    const P = window.GPUDevice?.prototype;
+    if (!P) return;
+    const [syn, asyn, reg] = [P.createRenderPipeline, P.createRenderPipelineAsync, (window.__s0Pipes = new WeakMap())];
+    window.__s0Flug = 0;
+    P.createRenderPipeline = function (d) {
+        const p = syn.call(this, d);
+        reg.set(p, { weg: "synchron", d });
+        return p;
+    };
+    P.createRenderPipelineAsync = function (d) {
+        window.__s0Flug++;
+        return asyn.call(this, d).then((p) => (reg.set(p, { weg: "asynchron", d }), p)).finally(() => window.__s0Flug--);
+    };
+}
+// DIE ÜBERSETZUNG AUF DER SEITE: je Programm, das ein Schuss zeichnete (`__s0BodenRo`), der Weg aus dem Register und auf echter
+// GPU die kalte Zeit. Der K17-Fall (nur Selbsttest, echte GPU): der Boden-Stoff neu gebaut, wie er bis K17-3 im Pixel stand — die
+// Ziehung `felsZufall` und die Fels-Funktion `felsFein` ohne Layout (r184 `Fn` ist ein Proxy um den Fn-Knoten: die Hülle fängt
+// ihr `setLayout` ab, der Rumpf steht im Einstieg), die Falte ausgerollt, `fest` ohne Variable —, gezeichnet auf einem Abbild eines
+// Boden-Stücks (Schicht 31) über den Vendor-Weg. DIE ZAHL IM RUMPF (`stufe`): das letzte `return` des Einstiegs (r184 schreibt
+// `main` zuletzt, sein Ergebnis zuletzt) multipliziert das erste vec4 seines Ergebnisses mit `z` — ein Rumpf, den kein Cache kennt
+// (Dawn und Chrome schlüsseln den Text, der Treiber das übersetzte DXIL). Die Zeiten laufen im Wechsel (Boden, K17, Boden, …).
+async function s0BodenMessung({ hw, selbst, n }) {
+    try {
+        const s = st;
+        const rend = s.renderer;
+        const dev = rend.backend.device;
+        const lies = (ro) => {
+            const nbs = ro.getNodeBuilderState();
+            const e = window.__s0Pipes.get(ro.pipeline && rend.backend.get(ro.pipeline).pipeline) || {};
+            return { e, vs: nbs.vertexShader, fs: nbs.fragmentShader, ms: [] };
+        };
+        const ro0 = [...(window.__s0BodenRo || new Map()).values()];
+        const progs = ro0.map(lies);
+        let k17 = null;
+        if (hw && selbst && ro0.length) {
+            const [T, AR] = [window.THREE, AnazhRealm];
+            const alt = [T.TSL, AR._felsRwMemo, AR._zweigMemo, AR._felsRechenwerkTSL, s.voxelChunkMaterial];
+            const huelle = (f) => ({ get: (_, k) => (k === "setLayout" ? (l) => (/^fels/.test(l.name) ? f : f.setLayout(l)) : f[k]) });
+            T.TSL = { ...alt[0], Fn: (...a) => ((f) => new Proxy(f, huelle(f)))(alt[0].Fn(...a)) };
+            AR._felsRechenwerkTSL = function (TT, raum) {
+                const N = (v) => (typeof v === "number" ? TT.float(v) : v);
+                const falte = (k, z, schritt) => {
+                    for (let i = 0; i < k; i++) z = schritt(TT.float(i), z.map(N));
+                    return z.map(N);
+                };
+                return { ...alt[3].call(this, TT, raum), fest: N, falte };
+            };
+            let mat;
+            try {
+                AR._felsRwMemo = s.voxelChunkMaterial = null;
+                mat = r._getVoxelChunkMaterial();
+            } finally {
+                [T.TSL, AR._felsRwMemo, AR._zweigMemo, AR._felsRechenwerkTSL, s.voxelChunkMaterial] = alt;
+            }
+            const m2 = new T.Mesh(ro0[0].object.geometry, mat);
+            m2.frustumCulled = false;
+            m2.layers.set(31);
+            const [cam, objs, ort] = [s.camera, rend._objects, rend._renderObjectDirect];
+            const [maske, roh] = [cam.layers.mask, objs.get];
+            objs.get = function (...a) {
+                const ro = roh.apply(this, a);
+                if (ro.material === mat) k17 = ro;
+                return ro;
+            };
+            s.scene.add(m2);
+            cam.layers.set(31);
+            delete rend._renderObjectDirect;
+            try {
+                for (let i = 0; i < 4 && !k17?.pipeline; i++) {
+                    window.__loopBild();
+                    await dev.queue.onSubmittedWorkDone();
+                }
+            } finally {
+                [rend._renderObjectDirect, objs.get, cam.layers.mask] = [ort, roh, maske];
+                s.scene.remove(m2);
+            }
+            if (!k17?.pipeline) throw new Error("der K17-Fall zeichnet nicht");
+            k17 = lies(k17);
+        }
+        const stufe = (code, z) => {
+            const [p, i] = [code.lastIndexOf("->"), code.lastIndexOf("return ")];
+            const typ = code.slice(p + 2, code.indexOf("{", p)).replace(/@\w+\s*\([^)]*\)/g, "").trim();
+            const feld = code.split(`struct ${typ} {`)[1]?.match(/(\w+)\s*:\s*vec4<f32>/)?.[1];
+            const [j, e] = [code.indexOf(";", i), code.slice(i + 7, code.indexOf(";", i))];
+            const rumpf = feld ? `var s0o = ${e};\n\ts0o.${feld} *= ${z};\n\treturn s0o` : `return ( ${e} ) * ${z}`;
+            return code.slice(0, i) + rumpf + code.slice(j);
+        };
+        const kalt = async ({ e, vs, fs, ms }) => {
+            const z = (1 + Math.random() / 8).toPrecision(12);
+            const [v, f] = [stufe(vs, z), stufe(fs, z)];
+            const mod = (code) => dev.createShaderModule({ code });
+            const t0 = performance.now();
+            await dev.createRenderPipelineAsync({ ...e.d, vertex: { ...e.d.vertex, module: mod(v) }, fragment: { ...e.d.fragment, module: mod(f) } });
+            ms.push(Math.round(performance.now() - t0));
+        };
+        while (window.__s0Flug > 0) await sleep(50);
+        for (let i = 0; i < (hw ? n : 0); i++) for (const p of k17 ? [...progs, k17] : progs) await kalt(p);
+        const aus = ({ e, fs, ms }) => ({ weg: e.weg || "am Register vorbei (die Linse ist blind)", zeichen: fs.length, ms });
+        return { programme: progs.map(aus), k17: k17 && aus(k17) };
+    } catch (e) {
+        return { fehler: String(e?.message || e) };
+    }
+}
 // DER HIMMEL FOLGT DEM SPRUNG (K10, die Nacht der Gasse): die Uhr springt über den Pfad des Spielers (`setTimeOfDay`, sein Satz
 // „nacht") — EIN Anwenden des Tags (`_applyDayNightToScene`) später trägt die Himmels-Umgebung (die IBL jedes Stoffs, ihre
 // Lesung `_himmelsIrradianz`) die Bestrahlung des Himmels, der jetzt gilt: den Himmel des Orts, den die Belichtung und das Wasser
@@ -971,8 +1092,10 @@ async function lichtLauf() {
         viewport: ECHT ? null : { width: 640, height: 360 },
         zusatz: ECHT ? ["--window-size=1280,800"] : [],
     });
-    const { adapterZeile } = require("./lib/software-gpu.cjs");
+    const { adapterZeile, istHardwareAdapter } = require("./lib/software-gpu.cjs");
     const adapter = await adapterZeile(browser);
+    const HW = istHardwareAdapter(adapter);
+    const GERAET = `${adapter.vendor}/${adapter.architecture}`;
     const ende = async (befund) => {
         console.log(`\n⛔ S0 BILD ROT: ${befund} (${Math.round((Date.now() - t0) / 1000)} s)\n`);
         await browser.close().catch(() => {});
@@ -980,6 +1103,7 @@ async function lichtLauf() {
         process.exit(1);
     };
     const page = await browser.newPage();
+    await page.evaluateOnNewDocument(s0PipeRegister);
     // der Speicher fällt vor dem ersten Skript des ERSTEN Ladens (ein Laden weniger als Laden → Löschen → Neu laden)
     await page.evaluateOnNewDocument(() => {
         try {
@@ -1013,6 +1137,7 @@ async function lichtLauf() {
     const ergebnis = {};
     const himmel = {}; // der Himmel folgt dem Sprung (oben `himmelProbe`): sauber und — im Selbsttest — der taube Maler
     let wache = null; // der Schein der Wache (Selbsttest): das Urteil über ein Werk, das ein benannter Rufer räumte
+    let boden = null; // die Übersetzung des Boden-Programms (oben `S0_MS`)
     try {
         await phase("Laden", async (rest) => {
             await page.goto(url, { waitUntil: "domcontentloaded", timeout: rest });
@@ -1212,9 +1337,10 @@ async function lichtLauf() {
                     // die Nah-Bühne (oben): auf swiftshader zeichnet der Schuss die Nähe des Feuers
                     const nahLos = nahM ? window.__s0Nah(new T.Vector3(f.x, g, f.z), nahM) : null;
                     let nahZahl = null;
-                    // DIE PROGRAMM-GRÖSSE DES BODENS (K17-3, oben S0_STOFF): je Render-Objekt des Boden-Stoffs das erzeugte Fragment,
-                    // das der Schuss übersetzt (der Zustand des Render-Objekts, wie `__shaderKosten`)
+                    // DAS BODEN-PROGRAMM (oben S0_STOFF und S0_MS): je Render-Objekt des Boden-Stoffs das erzeugte Fragment, das der
+                    // Schuss zeichnet (der Zustand des Render-Objekts, wie `__shaderKosten`), und je Programm ein Render-Objekt
                     const bodenWgsl = new Map();
+                    const bodenRo = (window.__s0BodenRo ??= new Map());
                     const objs = rend._objects;
                     const roh = objs.get;
                     objs.get = function (...a) {
@@ -1222,6 +1348,7 @@ async function lichtLauf() {
                         if (ro && ro.material === s.voxelChunkMaterial) {
                             const st = ro.getNodeBuilderState();
                             if (st?.fragmentShader) bodenWgsl.set(st.fragmentShader, (bodenWgsl.get(st.fragmentShader) || 0) + 1);
+                            if (st?.fragmentShader) bodenRo.set(st.fragmentShader, ro);
                         }
                         return ro;
                     };
@@ -1346,61 +1473,16 @@ async function lichtLauf() {
             );
             zeit(schein ? `der Schuss (${schein}) aufgenommen` : "das Feuer aufgenommen");
         }
+        if (ergebnis.sauber && !ergebnis.sauber.fehler) {
+            boden = await phase("Boden-Übersetzung", () => page.evaluate(s0BodenMessung, { hw: HW, selbst: SELBSTTEST, n: S0_MS.n }));
+            zeit("das Boden-Programm übersetzt");
+        }
     } catch (e) {
         if (e?.message === "FRIST")
             await ende(
                 `die Frist von ${S0_FRIST_S} s riss in der Phase „${phaseJetzt}" — der Deckel der Linse (≤ 3 min CI) hält nicht`
             );
         throw e;
-    }
-    // das Beweisbild der Figur (nur mit `--bild`, kein Urteil): ein Wolf 2,3 m neben dem Feuer, der Spieler gegenüber, das Auge
-    // 5 m zurück — die Figur im Licht des Pools; dazu das Feuer aus 6 m (K11b: der Lichtkreis und sein Saum)
-    if (BILD && ergebnis.sauber && !ergebnis.sauber.fehler) {
-        const pngs = await page.evaluate(async (nahM) => {
-            const s = st;
-            const f = window.__s0Feuer.position;
-            const g = (x, z) => r._voxelSurfaceY(x, z);
-            const wolf = r.spawnCreatureAt(f.x, g(f.x, f.z - 2.3) + 0.5, f.z - 2.3, "calm", "wolf", { precise: true, bodySize: 1 });
-            window.__halten?.();
-            s.playerMesh.position.set(f.x + 2.3, g(f.x + 2.3, f.z) + 1, f.z);
-            const cam = s.camera;
-            window.__buehne();
-            r.setTimeOfDay(0, "human"); // der Pfad des Spielers: der Himmel folgt dem Sprung
-            cam.position.set(f.x - 3.6, g(f.x, f.z) + 1.8, f.z - 3.8);
-            cam.lookAt(f.x + 0.6, g(f.x, f.z) + 0.6, f.z - 0.6);
-            cam.updateMatrixWorld(true);
-            await sleep(700);
-            let auf = null;
-            // die Figuren im Licht des Pools zeichnen mit (der Feuerkreis allein läse sie nicht)
-            const nahLos = nahM
-                ? window.__s0Nah(new window.THREE.Vector3(f.x, g(f.x, f.z), f.z), nahM, [wolf, s.playerMesh].filter(Boolean))
-                : null;
-            try {
-                for (let i = 0; i < 2; i++) {
-                    auf = await window.__ausgabeAufnahme(960, 540, 1);
-                }
-            } finally {
-                if (nahLos) nahLos();
-            }
-            const bild = (a) => __png(a.u8, 960, 540);
-            const figur = bild(auf);
-            if (wolf) r.removeCreature(wolf);
-            cam.position.set(f.x - 6, g(f.x - 6, f.z) + 1.7, f.z);
-            cam.lookAt(f.x, g(f.x, f.z) + 0.3, f.z + 1e-4);
-            cam.updateMatrixWorld(true);
-            await sleep(700);
-            const nahLos6 = nahM ? window.__s0Nah(new window.THREE.Vector3(f.x, g(f.x, f.z), f.z), nahM + 6) : null;
-            try {
-                for (let i = 0; i < 2; i++) {
-                    auf = await window.__ausgabeAufnahme(960, 540, 1);
-                }
-            } finally {
-                if (nahLos6) nahLos6();
-            }
-            return { figur, sechs: bild(auf) };
-        }, ECHT ? 0 : S0_NAH_M);
-        pngDatei(BILD.replace(/\.png$/, "") + "-figur.png", pngs.figur);
-        pngDatei(BILD.replace(/\.png$/, "") + "-6m.png", pngs.sechs);
     }
     await browser.close();
     server.close();
@@ -1461,12 +1543,19 @@ async function lichtLauf() {
                 "S0 Boden-Programm: der Schuss zeichnet kein Programm des Boden-Stoffs (`voxelChunkMaterial`) — die Linse ist blind"
             );
         progs.forEach((wgsl, i) => {
-            const u = S0_STOFF.urteil(wgsl);
-            console.log(`  S0 BODEN-PROGRAMM ${i + 1}/${progs.length}: ${u.zeichen} Zeichen WGSL (Decke ${S0_STOFF.decke})`);
-            befunde.push(...u.rot);
+            befunde.push(...S0_STOFF(wgsl));
             const aus = opt("--wgsl", null);
             if (aus) fs.writeFileSync(aus.replace(/(\.wgsl)?$/, i ? `-${i + 1}.wgsl` : ".wgsl"), wgsl);
         });
+        // DIE ÜBERSETZUNG (oben `S0_MS`): je Programm Zeichen (Ausgabe), Weg und kalte Zeit gegen main desselben Adapters
+        if (boden?.fehler || !boden?.programme.length)
+            befunde.push(`S0 Boden-Übersetzung: ${boden?.fehler || "kein Programm (die Linse ist blind)"}`);
+        else
+            boden.programme.forEach((p, i) => {
+                const u = s0BodenUrteil(`S0 Boden-Programm ${i + 1}`, p, S0_MS.main[GERAET]);
+                s0Zeile(`S0 BODEN-PROGRAMM ${i + 1}/${boden.programme.length}`, p, u);
+                befunde.push(...u);
+            });
     }
     // DIE WAND DER NAH-BÜHNE: kein Satz zeichnet im Schuss eine Zelle jenseits der Kugel (sonst übersetzt der Schuss die Stoffe
     // der Welt, nicht die des Feuers)
@@ -1507,12 +1596,18 @@ async function lichtLauf() {
         console.log(
             `  SELBSTTEST S0 BILD (das Auge des Tages, wie bis K66): ${tagGetroffen ? `getroffen — der Boden 1–3 m reißt an der Sättigung ${tgTon.sat} (Soll ≤ ${S0_TON.satMax}) bei Farbton ${tgTon.hue}° netto im Band: das Auge der Nacht trägt ihn` : "BLIND " + JSON.stringify(tgTon)}`
         );
-        const prog = sauber && !sauber.fehler && sauber.boden && sauber.boden[0];
-        const gross = prog ? S0_STOFF.urteil(prog, prog.length - 1) : null;
-        const grossGetroffen = gross?.rot.length === 1;
-        console.log(
-            `  SELBSTTEST S0 PROGRAMM-GRÖSSE (die Decke ein Zeichen unter dem Boden-Programm): ${grossGetroffen ? `getroffen — ${gross.rot[0].split(" — ")[0]}` : "BLIND"}`
-        );
+        // (c) eine Hilfs-Funktion liest eine Bindung des gezeichneten Programms
+        const prog = (sauber && !sauber.fehler && sauber.boden && sauber.boden[0]) || "";
+        const bind = /@group\s*\(\s*\d+\s*\)\s*var(?:<[^>]*>)?\s+(\w+)/.exec(prog);
+        const bindRot = bind ? S0_STOFF(`${prog}\nfn s0Mutante() {\n\tlet s0 = ${bind[1]};\n}\n`) : [];
+        const bindGetroffen = bindRot.some((b) => b.includes(`s0Mutante: ${bind[1]}`));
+        console.log(`  SELBSTTEST S0 BODEN-PROGRAMM (c: eine Hilfs-Funktion liest eine Bindung): ${bindGetroffen ? `getroffen — ${bindRot[0].split(" — ")[0]}` : "BLIND"}`);
+        // (a) der K17-Fall reißt die Zeit gegen den Boden derselben Sitzung, (b) gezeichnet auf dem Vendor-Weg reißt er den Weg
+        const k17 = boden?.k17;
+        const k17Rot = k17 ? s0BodenUrteil("S0 K17-Fall", k17, Math.min(...boden.programme[0].ms)) : [];
+        if (k17) s0Zeile("S0 K17-FALL (Selbsttest)", k17, k17Rot);
+        const k17Getroffen = !HW || (k17Rot[0]?.includes("entstand synchron") && k17Rot.some((b) => b.includes("Soll ≤")));
+        console.log(`  SELBSTTEST S0 BODEN-PROGRAMM (a+b: der K17-Fall auf dem Vendor-Weg): ${!HW ? "nur auf echter GPU" : k17Getroffen ? "getroffen — " + k17Rot.map((b) => b.split(" — ")[0]).join(" · ") : "BLIND " + JSON.stringify(k17 || boden)}`);
         const nb = (sauber && !sauber.fehler && sauber.nah) || {};
         const vers = Object.keys(nb.versetzt || {});
         const nahGetroffen = vers.length > 0;
@@ -1541,7 +1636,7 @@ async function lichtLauf() {
             `  SELBSTTEST S0 NACHT (die Kamera der Nacht 2 Stufen tiefer): ${kameraTreffer ? "getroffen — " + kameraTreffer.split(" — ")[0] + " — " + kameraTreffer.split(" — ")[1].slice(0, 60) : "BLIND " + JSON.stringify(st && (st.grund || st.fehler))}`
         );
         pass =
-            pass && getroffen && farbGetroffen && tagGetroffen && grossGetroffen && nahGetroffen && liesGetroffen && wacheGetroffen;
+            pass && getroffen && farbGetroffen && tagGetroffen && bindGetroffen && k17Getroffen && nahGetroffen && liesGetroffen && wacheGetroffen;
         pass = pass && taubGetroffen && !!kameraTreffer;
     }
     console.log(
