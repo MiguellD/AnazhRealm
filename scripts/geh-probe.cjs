@@ -18,6 +18,14 @@ const D = path.resolve("artifacts", "geh-probe");
 fs.mkdirSync(D, { recursive: true });
 const zeile = (s) => console.log(s.replace(/\s+/g, " ").slice(0, 590));
 const q = (z) => (z ? [z.p50, z.p95, z.p99, z.max].join("/") : "?");
+const json = (out) => {
+    try {
+        return JSON.parse(out.slice(out.indexOf("{"), out.lastIndexOf("}") + 1));
+    } catch {
+        return null;
+    }
+};
+let vorStand = "";
 const kurz = (n) =>
     String(n)
         .replace(/ \[[^\]]*\]/g, "")
@@ -60,11 +68,13 @@ const kurz = (n) =>
             const { roh, spur } = JSON.parse(fs.readFileSync(j.replace(/\.json$/, ".roh.json"), "utf8"));
             const s = HL.linseWerten(roh, spur, { spitze: true });
             const ok = a.frameMs.p95 <= 33.4;
+            const stand = vorStand;
+            vorStand = "";
             gruen = gruen && ok;
             const kb = a.knotenBau || {},
                 pp = a.pipelines || {};
             zeile(
-                `GEH ${ok ? "GRÜN" : "ROT"} ${name}: Bild p50/95/99/max ${q(a.frameMs)} · Takt ${q(a.taktMs)} · ${a.frames} Bilder · ` +
+                `GEH ${ok ? "GRÜN" : "ROT"} ${name}: ${stand}Bild p50/95/99/max ${q(a.frameMs)} · Takt ${q(a.taktMs)} · ${a.frames} Bilder · ` +
                     `> 33 ms ${a.haengerN} (${Object.entries(a.jeKlasse)
                         .map(([k, v]) => k + " " + v)
                         .join(" ")}) · Bau ${kb.sync} Σ ${kb.ms} ms ` +
@@ -114,12 +124,16 @@ const kurz = (n) =>
                         .join(" | ")}`
             );
         };
-        wb(["umstellen", "--ort", "wiese", "--sicht", "ego"], 300);
-        wb(["lauf", "2", "--ein", "0.3", "--regler", "voll", "--tiere", "frei"], 120);
+        // der Stand vor dem ersten Gang (wie die Station: 2 s nach dem Umstellen) — Bild, GPU und Phasen als Bezug des Gangs
+        const steh = (ort, sicht) => {
+            wb(["umstellen", "--ort", ort, "--sicht", sicht], 300);
+            const l = json(wb(["lauf", "2", "--ein", "0.3", "--regler", "voll", "--tiere", "frei"], 120)) || {};
+            vorStand = `Stand Bild ${q(l.frameMs)} GPU ${q(l.gpuMs)} Phasen ${JSON.stringify(l.phasenEwmaMs || {})} · `;
+        };
+        steh("wiese", "ego");
         gang("wiese-ego Gang 1");
         gang("wiese-ego Gang 2");
-        wb(["umstellen", "--ort", "genesis", "--sicht", "third"], 300);
-        wb(["lauf", "2", "--ein", "0.3", "--regler", "voll", "--tiere", "frei"], 120);
+        steh("genesis", "third");
         gang("genesis-third Gang 1");
     } catch (e) {
         gruen = false;
