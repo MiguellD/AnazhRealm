@@ -856,7 +856,7 @@ async function checkBandV1788WorkshopAsProcess({ page, check }) {
             );
         out.domainProc = (() => {
             const p = r._domainProcess("forging");
-            return !!(p && p.opClass === "plastic" && p.opName === "forge_shape");
+            return !!(p?.opClass === "plastic" && p.opName === "forge_shape");
         })();
         // ein eigener eisen-Bauplan
         delete st.blueprints["_wp88"];
@@ -879,7 +879,7 @@ async function checkBandV1788WorkshopAsProcess({ page, check }) {
         // (4) FRIEDEN: ohne platzierte Station → kein Werkstatt-Prozess + Ablehnung (nur die Hand)
         r.setGameMode("frieden");
         const arches = st.architectures || [];
-        st.architectures = arches.filter((e) => !(e && e.type === "esse" && e.__v88)); // sauber starten
+        st.architectures = arches.filter((e) => !(e?.type === "esse" && e.__v88)); // sauber starten
         out.friedenEmpty = r._workshopProcessesForMenu().length === 0;
         const apF0 = r.applyWorkshopProcessToPart("_wp88", 0, "esse");
         out.friedenRejects = apF0.ok === false && apF0.reason === "workshop_not_placed_near";
@@ -1070,9 +1070,7 @@ async function checkBandWave4({ page, check }) {
         // Vollständigkeit: jedes Form × Tag definiert (kein undefined)
         const keys = AnazhRealm.MATERIAL_TAG_KEYS;
         let undefCount = 0;
-        for (const f of Object.keys(M)) {
-            for (const t of keys) if (typeof M[f][t] !== "number") undefCount++;
-        }
+        for (const f of Object.keys(M)) for (const t of keys) if (typeof M[f][t] !== "number") undefCount++;
         out.matrixComplete = undefCount === 0;
         // Konzept-Konsistenz: jedes Tag hat mindestens eine Signatur (3) — außer lebendig
         const tagsWithSignature = keys.filter((t) => Object.values(M).some((row) => row[t] === 3));
@@ -1216,9 +1214,7 @@ async function checkBandWave4({ page, check }) {
 
         // die Domain-Werkzeuge sind nicht mehr Starter (die Werkstatt ist der Prozess); für die
         // direkten applyOpToPart-/Tools-Box-Tests leihen wir sie aus der Op-Bibliothek (state.tools).
-        for (const dt of ["schmiede-hammer", "mörser", "webstuhl-schiffchen", "ritueller-stab", "drehbank-meißel"]) {
-            if (!st.player.tools.includes(dt)) st.player.tools.push(dt);
-        }
+        for (const dt of ["schmiede-hammer", "mörser", "webstuhl-schiffchen", "ritueller-stab", "drehbank-meißel"]) if (!st.player.tools.includes(dt)) st.player.tools.push(dt);
         // applyOpToPart — Tool-Gating
         st.blueprints["test-precision"] = {
             name: "test-precision",
@@ -2234,9 +2230,7 @@ async function checkBandWaves9And10a({ page, check }) {
                 builtIn: false,
                 domain: "forging",
             };
-            if (!st.player.tools.includes("test_forge_hammer")) {
-                st.player.tools.push("test_forge_hammer");
-            }
+            if (!st.player.tools.includes("test_forge_hammer")) st.player.tools.push("test_forge_hammer");
             if (st.blueprints["test_9a_forging"]) r.deleteBlueprint("test_9a_forging");
             r.cloneBlueprint("stein_block", "test_9a_forging");
             // Erst Material auf eisen wechseln (stein lehnt plastic-opClass ab,
@@ -2261,9 +2255,7 @@ async function checkBandWaves9And10a({ page, check }) {
                 builtIn: false,
                 domain: "alchemy",
             };
-            if (!st.player.tools.includes("test_alchemy_mortar")) {
-                st.player.tools.push("test_alchemy_mortar");
-            }
+            if (!st.player.tools.includes("test_alchemy_mortar")) st.player.tools.push("test_alchemy_mortar");
             if (st.blueprints["test_9a_alchemy"]) r.deleteBlueprint("test_9a_alchemy");
             r.cloneBlueprint("stein_block", "test_9a_alchemy");
             r.updatePartInBlueprint("test_9a_alchemy", 0, { material: "holz", recolor: true });
@@ -2281,9 +2273,7 @@ async function checkBandWaves9And10a({ page, check }) {
                 builtIn: false,
                 domain: "mechanism",
             };
-            if (!st.player.tools.includes("test_lathe")) {
-                st.player.tools.push("test_lathe");
-            }
+            if (!st.player.tools.includes("test_lathe")) st.player.tools.push("test_lathe");
             if (st.blueprints["test_9a_mech"]) r.deleteBlueprint("test_9a_mech");
             r.cloneBlueprint("stein_block", "test_9a_mech");
             r.applyOpToPart("test_9a_mech", 0, "test_lathe");
@@ -2310,9 +2300,7 @@ async function checkBandWaves9And10a({ page, check }) {
                 "test_9a_alchemy",
                 "test_9a_mech",
                 "test_9a_emergent",
-            ]) {
-                if (st.blueprints[n]) r.deleteBlueprint(n);
-            }
+            ]) if (st.blueprints[n]) r.deleteBlueprint(n);
             for (const t of ["test_forge_hammer", "test_alchemy_mortar", "test_lathe"]) {
                 delete st.tools[t];
                 st.player.tools = st.player.tools.filter((x) => x !== t);
@@ -2676,9 +2664,7 @@ async function checkBandWaves9And10a({ page, check }) {
 
             // Cleanup
             r.applyPlayerSoul("human");
-            for (const n of ["test_9d_machine", "test_9d_normaltool", "test_9d_soul"]) {
-                if (st.blueprints[n]) r.deleteBlueprint(n);
-            }
+            for (const n of ["test_9d_machine", "test_9d_normaltool", "test_9d_soul"]) if (st.blueprints[n]) r.deleteBlueprint(n);
             if (st.customSouls) delete st.customSouls["bp_test_9d_soul"];
             r.selectBlueprintForEdit("stein_block");
             // UI-Putz: Welt-Tab aufgelöst — neutraler Reset via closeAllDrawers (Welt = Default-Blick).
@@ -2758,24 +2744,18 @@ async function checkBandWaves9And10a({ page, check }) {
             const bp = st.blueprints.test_10a_soul;
             bp.role = "soul";
             bp.roleManual = true;
-            for (const p of bp.parts) {
-                p.opChain = [{ tool: "hände", op: "hand_knap", cap: 0.4 }];
-            }
+            for (const p of bp.parts) p.opChain = [{ tool: "hände", op: "hand_knap", cap: 0.4 }];
             const soulRes = r.applyPlayerSoulFromBlueprint("test_10a_soul");
             out.soulApplyOk = soulRes && soulRes.ok === true;
             const statsRough = r.computePlayerStats();
             // PRÄZISIONS-Achse isoliert: derselbe Soul einmal mit cap=0.4 (roh), einmal ohne opChain (geboren) —
             // der Größen-Faktor bleibt konstant, nur die Präzisions-Mul unterscheidet sich (unabhängig von der
             // absoluten Avatar-Größe).
-            for (const p of bp.parts) {
-                delete p.opChain;
-            }
+            for (const p of bp.parts) delete p.opChain;
             r.applyPlayerSoulFromBlueprint("test_10a_soul");
             const statsPolished = r.computePlayerStats();
             // Restore die opChain für die nächsten Tests
-            for (const p of bp.parts) {
-                p.opChain = [{ tool: "hände", op: "hand_knap", cap: 0.4 }];
-            }
+            for (const p of bp.parts) p.opChain = [{ tool: "hände", op: "hand_knap", cap: 0.4 }];
             r.applyPlayerSoulFromBlueprint("test_10a_soul");
             out.roughLessHp = statsRough && statsPolished && statsRough.stats.hpMax < statsPolished.stats.hpMax;
 
@@ -2788,9 +2768,7 @@ async function checkBandWaves9And10a({ page, check }) {
             if (st.blueprints["test_10a_tool"]) r.deleteBlueprint("test_10a_tool");
             r.cloneBlueprint("stein_block", "test_10a_tool");
             const toolBp = st.blueprints.test_10a_tool;
-            for (const p of toolBp.parts) {
-                p.opChain = [{ tool: "hände", op: "hand_knap", cap: 0.4 }];
-            }
+            for (const p of toolBp.parts) p.opChain = [{ tool: "hände", op: "hand_knap", cap: 0.4 }];
             r.setBlueprintToolMeta("test_10a_tool", "test_op", "subtractive");
             toolBp.role = "tool";
             r.registerBlueprintAsTool("test_10a_tool");
@@ -2809,9 +2787,7 @@ async function checkBandWaves9And10a({ page, check }) {
 
             // Cleanup
             r.equipTool(null);
-            for (const n of ["test_10a_soul", "test_10a_tool"]) {
-                if (st.blueprints[n]) r.deleteBlueprint(n);
-            }
+            for (const n of ["test_10a_soul", "test_10a_tool"]) if (st.blueprints[n]) r.deleteBlueprint(n);
             delete st.tools["test_10a_tool"];
             st.player.tools = st.player.tools.filter((t) => t !== "test_10a_tool");
             if (st.customSouls) delete st.customSouls["bp_test_10a_soul"];
@@ -3147,8 +3123,7 @@ async function checkBandV18214SkeletonMesh({ page, check }) {
             ["baum_birke", "skel-t7"],
             ["baum_erle", "skel-t8"],
         ];
-        for (const [sp, sd] of tries) {
-            try {
+        for (const [sp, sd] of tries) try {
                 const candidate = r._growTreeBlueprintForSpawn(sp, sd);
                 if (!candidate || !st.blueprints[candidate]) continue;
                 const bp2 = st.blueprints[candidate];
@@ -3159,7 +3134,6 @@ async function checkBandV18214SkeletonMesh({ page, check }) {
             } catch (_e) {
                 out.growError = String(_e && _e.message);
             }
-        }
         if (grownKey && st.blueprints[grownKey]) {
             const bp = st.blueprints[grownKey];
             out.bpHasSkeleton = !!bp._skeleton && Array.isArray(bp._skeleton.branches);
