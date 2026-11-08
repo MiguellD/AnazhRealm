@@ -41,7 +41,9 @@ var __weltLicht = (function () {
     // von `ATMO_BODEN`) ohne die Buntheit des Laubs. Mit G/B 3,1 trug die Mehrfachstreuung den Horizont grün (Ton 101–125° statt
     // 222°, Duv +0,0074 … +0,0096, Radeon 77265b04): jedes gemessene Himmelslicht liegt auf der Tageslicht-Ortskurve (Judd, MacAdam,
     // Wyszecki 1964), die Rechnung der Referenz trägt eine graue Erde (Bruneton 2017, Hillaire 2020; Nachbau der Tafeln: 215–217°).
-    const ATMO_ERDE = Object.freeze(Array(3).fill(0.2126 * ATMO_BODEN[0] + 0.7152 * ATMO_BODEN[1] + 0.0722 * ATMO_BODEN[2]));
+    const ATMO_ERDE = Object.freeze(
+        Array(3).fill(0.2126 * ATMO_BODEN[0] + 0.7152 * ATMO_BODEN[1] + 0.0722 * ATMO_BODEN[2])
+    );
     // Licht-Rig: KEY_BASE skaliert die Rayleigh-Lichtmenge aufs Schlüssellicht (Mittag ≈ 2.6·0.913). Ziel key-dominant (Vorlage
     // dir/(amb+hemi) ≈ 15:1); die Schattenseite trägt der Himmel.
     const KEY_BASE = 2.6;
