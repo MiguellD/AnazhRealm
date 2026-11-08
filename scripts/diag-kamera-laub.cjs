@@ -81,7 +81,7 @@ function urteil(m) {
                 continue;
             }
             if (z.max > NAH_DECKUNG_MAX) {
-                const t = Object.entries((z.schlimmste && z.schlimmste.taeter) || {})
+                const t = Object.entries(z.schlimmste?.taeter || {})
                     .map(([k, v]) => `${k} ${pct(v)}`)
                     .join(", ");
                 out.push(`${ort.id} ${modus}: Deckung im Freiraum bis ${pct(z.max)} (Mittel ${pct(z.mittel)}; ${t || "ohne Namen"})`);
@@ -469,7 +469,7 @@ function leibInstall(cfg) {
     // DER VERFOLGER-RITT über die Posen: aufgesessen, je Pose der Wagen an ihrer Stelle (`stelle(p)` → { x, z, gier }), gemessen
     L.rittPosen = (out, gt, posen, stelle) => {
         const mr = gt ? r.mountArchitecture(gt) : null;
-        if (!(mr && mr.ok)) return void (out.ritt.grund = gt ? "Aufsitzen scheiterte" : "kein GT");
+        if (!mr?.ok) return void (out.ritt.grund = gt ? "Aufsitzen scheiterte" : "kein GT");
         r.setCameraMode("third");
         for (const p of posen) {
             const v = stelle(p);
@@ -828,7 +828,7 @@ async function probe(arg) {
         const ns = st.nahStreu;
         if (!ns) return out2;
         for (const a of ns.senken.values()) {
-            const k = a.mat && a.mat.userData ? a.mat.userData.foundryKind : null;
+            const k = a.mat?.userData ? a.mat.userData.foundryKind : null;
             if (k !== "foliage" && k !== "foliageTex") continue;
             for (const b of a.bloecke.values())
                 for (let i = 0; i < b.n; i++) {
@@ -843,7 +843,7 @@ async function probe(arg) {
         const out2 = [];
         st.scene.traverseVisible((o) => {
             if (!o.isInstancedMesh || !o.userData || !o.userData.archInstanceKey) return;
-            const k = o.material && o.material.userData ? o.material.userData.foundryKind : null;
+            const k = o.material?.userData ? o.material.userData.foundryKind : null;
             if (k !== "bark" && k !== "stem") return;
             const g = st.archInstanceGroups ? st.archInstanceGroups.get(o.userData.archInstanceKey) : null;
             for (let i = 0; i < o.count; i++) {

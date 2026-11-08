@@ -128,7 +128,7 @@ function check(name, ok) {
             // Höhen-Abfrage endlich
             out.terrainHeightFinite = safe(() => {
                 const h = r.getTerrainHeightAt(0, 0);
-                return typeof h === "number" && isFinite(h);
+                return Number.isFinite(h);
             });
             // Spieler-Physik-Body
             out.playerBody = !!(st?.player && (st.playerBody || st.player?.body));

@@ -17,7 +17,7 @@ async function checkBandV1774UseByRole({ page, check }) {
         // Snapshot — am Ende restauriert.
         const savedMode = r.getGameMode();
         const savedEquip = p?.equipped ? jsonKlon(p.equipped) : { held: null, armor: null };
-        const savedSoul = (p?.soul) || "mensch";
+        const savedSoul = p?.soul || "mensch";
         const savedHotbar = st.hotbar.slice(0, 9);
         r.setGameMode("schöpfer");
         // falls eine frühere Band (V1772) den Avatar verkörpert + den customSoul gelassen hat:
@@ -97,7 +97,7 @@ async function checkBandV1774UseByRole({ page, check }) {
             );
         const emb = r.embodyBlueprint("_t_avatar74");
         out.avatarEmbodied =
-            emb.ok === true && p.soul === "bp__t_avatar74" && !!(st.customSouls && st.customSouls["bp__t_avatar74"]);
+            emb.ok === true && p.soul === "bp__t_avatar74" && !!st.customSouls?.["bp__t_avatar74"];
         r._refreshSoulSelect();
         const soulSel2 = document.getElementById("player-soul-select");
         out.noDuplicate =
@@ -1130,9 +1130,9 @@ async function checkBandWelle6XAudit({ page, check }) {
                 size: { x: 0.5, y: 0.5, z: 0.5 },
             });
             const armorResult = r.setBlueprintAsArmor("audit_armor_real");
-            out._a3bMarked = !!(armorResult?.ok);
+            out._a3bMarked = !!armorResult?.ok;
             const equipResult = r.equipArmor("audit_armor_real");
-            out._a3bEquipped = !!(equipResult?.ok);
+            out._a3bEquipped = !!equipResult?.ok;
             // das Spec-Sheet-FOOTER zeigt die getragene Habe (⛨ Rüstung); `recomputePlayerStats`
             // ist in equipArmor schon drin, aber das Spec-Sheet muss explizit re-rendern.
             r._ichRenderSpecSheet();

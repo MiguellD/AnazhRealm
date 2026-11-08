@@ -104,7 +104,7 @@ async function checkBandV18275FoliageGrowth({ page, check }) {
                 }
             }
         } catch (_eDens) {
-            out.densityProbeError = String((_eDens?.message) || _eDens);
+            out.densityProbeError = String(_eDens?.message || _eDens);
         }
         // Headless (Null-Renderer): der Aktuator setzt die Dichte auf 1 (volle Welt fürs Gate).
         r._nexusPerfActuate({
@@ -189,7 +189,7 @@ async function checkBandV18275FoliageGrowth({ page, check }) {
                 }
             }
         } catch (_eThin) {
-            out.thinProbeError = String((_eThin?.message) || _eThin);
+            out.thinProbeError = String(_eThin?.message || _eThin);
         }
         st._foliageDensityScale = 1;
         st._frameOverBudget = false;
@@ -1471,7 +1471,7 @@ async function checkBandV18218LODStufen({ page, check }) {
         if (r._buildVariantLODs) {
             window.__withNoFoundry(() => {
                 const keys = r._buildVariantLODs("baum_eiche", 1);
-                if (keys && keys[0] && keys[1] && keys[2]) {
+                if (keys?.[0] && keys[1] && keys[2]) {
                     const bp0 = st.blueprints[keys[0]];
                     const bp1 = st.blueprints[keys[1]];
                     const bp2 = st.blueprints[keys[2]];

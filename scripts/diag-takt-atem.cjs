@@ -259,10 +259,8 @@ function atem() {
                         : 0;
                 if (
                     st?.rendererReady &&
-                    r._foundry &&
-                    r._foundry.recipes &&
-                    st.chunkSaetze &&
-                    st.chunkSaetze.size &&
+                    r._foundry?.recipes &&
+                    st.chunkSaetze?.size &&
                     n > 10
                 )
                     break;

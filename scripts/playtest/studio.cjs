@@ -265,7 +265,7 @@ async function checkBandFoundrySpeicherFlach({ page, check }) {
         const orig = r._disposeFoundryGroupGeom.bind(r);
         r._disposeFoundryGroupGeom = function (g) {
             disposeCalls++;
-            const refs = (g?._liveRefs) || 0;
+            const refs = g?._liveRefs || 0;
             if (refs > maxRefsAtDispose) maxRefsAtDispose = refs;
             return orig(g);
         };
@@ -290,7 +290,7 @@ async function checkBandFoundrySpeicherFlach({ page, check }) {
                     r._foundryFlattenFor({ seed: s, position: { x: 0, y: 0, z: 0 } }, sp, 0);
                 }
             }
-            for (let it = 0; it < 400; it++) { st._frameOverBudget = false; try { r._gameLoopTick && r._gameLoopTick(performance.now()); } catch {} if (f.pending.size === 0 && !(f.warte?.length) && it > 30) break; await sleep(6); }
+            for (let it = 0; it < 400; it++) { st._frameOverBudget = false; try { r._gameLoopTick && r._gameLoopTick(performance.now()); } catch {} if (f.pending.size === 0 && !f.warte?.length && it > 30) break; await sleep(6); }
             cycles.push(snap());
         }
         AnazhRealm.FOUNDRY_CACHE_CAP = CAP0;
@@ -355,7 +355,7 @@ async function checkBandKeinZweiterBaumbaecker({ page, check }) {
         const o = { foundryEnabled: r._foundryEnabled() };
         const f = r._ensureAssetFoundry();
         await __weltDa(() => !f || f.ready);
-        o.foundryReady = !!(f?.ready);
+        o.foundryReady = !!f?.ready;
         // Kräftig ticken → der Scatter streamt Regionen um den Spieler; Studio-Assets kommen an.
         await __streuTakte(350, 10);
         // Instanz-Gruppen enumerieren: Schlüssel = Bauplan-Name#leaf[@region].
@@ -423,7 +423,7 @@ async function checkBandLeistungsVertrag({ page, check }) {
             {
                 // ... und bis der Vorrat durch ist (`_foundryPrefetchLibrary`, seine Phase `f._vorrat`): er wärmt neben der
                 // Welt (K30: keine Region wartet auf ihn), das Stand-Fenster misst den Churn ohne seine Lieferungen.
-                const vorrat = () => (r._foundry?._vorrat) || false;
+                const vorrat = () => r._foundry?._vorrat || false;
                 // die EINE Antwort der Welt (`_streuWartet`: auch die fehlende Regionen-Karte wartet)
                 const wartend = (liste) => r._streuWartet(pm ? pm.position : null, liste);
                 await window

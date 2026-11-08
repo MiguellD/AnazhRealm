@@ -12,7 +12,7 @@ const crypto = require("crypto");
 const ABH_FELDER = ["dependencies", "devDependencies", "optionalDependencies", "peerDependencies", "overrides"];
 
 function schluessel(lock) {
-    const wurzel = (lock.packages && lock.packages[""]) || {};
+    const wurzel = lock.packages?.[""] || {};
     const inhalt = {
         lockfileVersion: lock.lockfileVersion,
         wurzel: Object.fromEntries(ABH_FELDER.filter((f) => wurzel[f] !== undefined).map((f) => [f, wurzel[f]])),

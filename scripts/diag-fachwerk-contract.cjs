@@ -132,7 +132,7 @@ function shellPfad(name, seed, stufe) {
             FC.bakeLOD(Lf, p.col, lg, 0, true);
             // das Blatt sitzt am Scharnier: das haus-lokale Gitter rückt um das Scharnier zurück, die Hülle steht daran
             for (const rk in lg)
-                if (lg[rk] && lg[rk].pos)
+                if (lg[rk]?.pos)
                     for (let vi = 0; vi < lg[rk].pos.length; vi += 3) {
                         lg[rk].pos[vi] -= Lf.position.x;
                         lg[rk].pos[vi + 2] -= Lf.position.z;

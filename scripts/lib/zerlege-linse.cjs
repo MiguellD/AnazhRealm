@@ -426,7 +426,7 @@ function frameAnatomie(uhr, n) {
         const groesse = (s) =>
             Array.isArray(s)
                 ? [s[0] || 1, s[1] || 1, s[2] || 1]
-                : [(s?.width) || 1, (s?.height) || 1, (s?.depthOrArrayLayers) || 1];
+                : [s?.width || 1, s?.height || 1, s?.depthOrArrayLayers || 1];
         const texBytes = (tex, size) => {
             const [w, h, d] = groesse(size);
             return w * h * d * bpt(tex && tex.format);
@@ -535,8 +535,8 @@ function frameAnatomie(uhr, n) {
         );
         const Q = G.GPUQueue && GPUQueue.prototype;
         zaehle(Q, "writeBuffer", (buf, off, data, dOff, size) => {
-            const bpe = (data?.BYTES_PER_ELEMENT) || 1;
-            const b = size != null ? size * bpe : ((data?.byteLength) || 0) - (dOff || 0) * bpe;
+            const bpe = data?.BYTES_PER_ELEMENT || 1;
+            const b = size != null ? size * bpe : (data?.byteLength || 0) - (dOff || 0) * bpe;
             buche(A.hochladen, `${pass()}: Puffer ${nameOf(buf)}`, b);
         });
         zaehle(Q, "writeTexture", (dst, data, layout, size) =>
@@ -547,12 +547,12 @@ function frameAnatomie(uhr, n) {
         );
         zaehle(Q, "submit", (cbs) => {
             A.submits++;
-            A.befehlsPuffer += (cbs?.length) || 0;
+            A.befehlsPuffer += cbs?.length || 0;
         });
         const RP = G.GPURenderPassEncoder && GPURenderPassEncoder.prototype;
         zaehle(RP, "executeBundles", (b) => {
             A.executeBundles++;
-            A.bundles += (b?.length) || 0;
+            A.bundles += b?.length || 0;
         });
         for (const k of ["draw", "drawIndexed", "drawIndirect", "drawIndexedIndirect"])
             zaehle(RP, k, () => buche(A.draws, pass(), 0));
@@ -873,7 +873,7 @@ function zerlegeInventur(k) {
                 },
                 adapter: (() => {
                     const d = rend.backend.device;
-                    const i = (d?.adapterInfo) || (rend.backend.adapter?.info) || null;
+                    const i = d?.adapterInfo || rend.backend.adapter?.info || null;
                     return i ? [i.vendor, i.architecture, i.device, i.description].filter(Boolean).join(" ") : null;
                 })(),
             };
