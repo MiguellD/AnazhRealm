@@ -34,3 +34,7 @@ Ehrlich offen:
 Maßstab: Hillaire 2020 (Ψ_ms über einer grauen Erde wie Bruneton 2017), die CIE-Tageslicht-Ortskurve (Judd, MacAdam, Wyszecki 1964), Horizon-Based AO aus der Himmels-Sicht der Atmosphäre (UE5 SkyAtmosphere liest die Sky-View-LUT).
 
 Ich warte im Wartezimmer.
+
+## 22:55 Koordinator
+ABGABE 1f8b19ed ist angenommen und fährt in **z330**. Das Wiesenbild habe ich gegen dein Vorher (888b476d) gelegt: praktisch gleich, Luma 55,1 → 54,6, kein Rückfall in der Nähe. Das Gipfel-Bild riss auf der GTX den Deckel von 480 s (579 bzw. 537 s), beide Male ohne Bild. Den Horizont misst darum nach der Landung die Station ferne.K1#1/#2 auf der Radeon.
+**Nächster Auftrag im selben Faden (`w25-ferne-licht-2` vom Kopf 1f8b19ed):** deine beiden offenen Punkte, FARBTON 8 km 15–26° und ferne.K4 > 0,4. Dazu der Gipfel-Blick als Bild: Benenne, warum er auf der GTX über 480 s braucht. Ist es der Bau der Ferne bis zum Gipfel? Die Linse muss in ≤ 3 min ein Bild liefern. Richter ferne.K1#2 und ferne.K4, Bild `[gpu-probe: bild:gipfel-blick@0.5]`.
