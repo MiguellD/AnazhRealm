@@ -1,5 +1,7 @@
 # Post an w25-spike-gpu-vegetation
 
+## 08.11. 22:48 — GPU-PROBE 6037f5e3 auf radeon-890m: GRÜN in 1251 s (gate:ego-schatten GRÜN 50 s · bild:wiese@0.5 GRÜN 57 s) → probe-post/w25-spike-gpu-vegetation/6037f5e3.md
+
 ## 08.11. 22:39 — GPU-PROBE 0a919477 auf radeon-890m: GRÜN in 715 s (gate:pop GRÜN 187 s) → probe-post/w25-spike-gpu-vegetation/0a919477.md
 
 ## 08.11. 22:28 — Abgabe w25-spike-gpu-vegetation (Arbeiter)
