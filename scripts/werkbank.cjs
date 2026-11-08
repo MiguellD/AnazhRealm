@@ -3229,6 +3229,15 @@ hauptLauf(async () => {
                 o = await rufe("/bild", { px, py, pz, lx, ly, lz, ziel: w[9], klasse: w[11].slice(1, -1), datei: i ? undefined : datei });
                 const je = Object.entries(o.klasse.klassen).filter((e) => e[1].pixel >= 5000);
                 console.log("lod.K1#1", je.every((e) => e[1].kante <= 0.22 && !e[1].zweiton) ? "GRÜN" : "ROT", JSON.stringify(je.map((e) => [e[0], e[1].kante, e[1].pixel, e[1].zweiton])));
+                if (!i)
+                    console.log("Strauch-Karten [Abstand m, Hebung φ°, Höhe m]", JSON.stringify((await evalRuf(`const c = ${JSON.stringify(o.kamera)}, kg = r.state.archInstanceGroups.get(r.constructor.IMPOSTOR_ATLAS_GRUPPE), zz = new Map([...r._kartenAtlas.zellen.values()].map((z) => [z.idx, z]));
+                        const m = new T.Matrix4(), p = new T.Vector3(), q = new T.Quaternion(), s = new T.Vector3(), aus = [];
+                        for (let i = 0; i < kg.liveCount; i++) { const z = zz.get(Math.round(kg.mesh.geometry.attributes.aKarte.array[i * 4]));
+                            if (!z || !/strauch/.test(z.key)) continue;
+                            m.fromArray(kg.mesh.instanceMatrix.array, i * 16).decompose(p, q, s);
+                            const h = z.frame.halfH * s.y, d = Math.hypot(c[0] - p.x, c[2] - p.z);
+                            if (d < 150) aus.push([+d.toFixed(1), +((Math.atan2(c[1] - p.y - h, d) * 180) / Math.PI).toFixed(1), +(2 * h).toFixed(2)]); }
+                        return aus.sort((a, b) => a[0] - b[0]).slice(0, 30);`)).ergebnis));
             }
         } finally {
             halt?.();

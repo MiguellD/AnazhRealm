@@ -3862,10 +3862,10 @@
         glaetteBis: 2,
         lichtTeiler: 4,
         saum: 2.4,
-        saumZelle: 4,
+        saumZelle: 3,
         saumBand: 8,
         saumMin: 0.05,
-        saumWeite: 2,
+        saumWeite: 3,
     };
     // linear (0..1) → sRGB-Byte, und die Tabelle der 256 linearen Eingangs-Bytes
     function linZuSrgb8(x) {
@@ -3953,7 +3953,8 @@
     // Fußabdrucks), `dK` die geglättete Deckung des Stamms (Stufe ≥ 1), `saum` { seite, fuss, nadel } ihres Rings.
     //   über dem Kronen-Fuß das BAND: g = c im binomialen Kern (`KARTEN_GESETZ.saumBand` Gänge, der Rand der Ansicht leer — der
     //     Rahmen ist nie der Umriss: die Sohle des Strauchs franst wie seine Kuppel); wählbar ab g ≥ saumMin, der Schlüssel
-    //     g + saum · (Muster − ½), das Muster in der Zelle saumZelle · 2^k; ganz Gedecktes (g = 1) liegt 2 · saum darüber und
+    //     g + saum · (Muster − ½) — ein Texel mit eigener Deckung immer (die Karte verschwindet nie, auch wo das Band über ihre
+    //     Ansicht reicht), das Muster in der Zelle saumZelle · 2^k; ganz Gedecktes (g = 1) liegt 2 · saum darüber und
     //     bleibt (Lappen und Buchten nur im Band, nie ein Loch im Kern). Band und Zelle messen IN DER WELT, in Texeln der gröberen Achse
     //     (`saumSchritt`): beim Strauch (das Texel 3,5-mal so breit wie hoch) schritt das Muster sonst in der feinen Achse, seine
     //     Lappen standen 3,5-mal kleiner als die der Bäume, und die Messung sah sie nicht (Radeon 5c26df02: strauch 0,3909 →
@@ -3996,7 +3997,7 @@
             const X = ((i % w) + 0.5) * f,
                 Y = (((i / w) | 0) + 0.5) * f;
             if (Y > saum.fuss) key[i] = c[i] > 0 ? (k ? dK[i] : 4) : 0;
-            else if (g[i] >= G.saumMin)
+            else if (g[i] >= G.saumMin || c[i] > 0)
                 key[i] = Math.max(
                     1e-9,
                     g[i] +
