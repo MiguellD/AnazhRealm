@@ -220,7 +220,8 @@ function taeter(inj) {
             P._ringWaechst.call(this);
             this.state._activeRingRadius = Math.min(2, this.state._activeRingRadius);
         };
-    // nexus (K8): der Takt des Nexus wirft nach der Wanduhr in die Mess-Welt (vor k8-hang fragte er die Gate-Treue nicht)
+    // nexus (K8): der Takt des Nexus wirft in die Mess-Welt (vor k8-hang fragte er die Gate-Treue nicht) — je 5 s Welt-Zeit, der Uhr
+    // des Felds seit w23-pruef-welt
     // sprung (K9): der Abdruck ist das feste Tempo der Seele (vor leib-k2-sprung) — Masse und Kraft ziehen nichts
     if (inj === "sprung") r._sprungAbdruck = () => st.jumpPower;
     if (inj === "nexus") {

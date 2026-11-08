@@ -32,7 +32,8 @@ const {
 } = require("./lib/ausgabe-aufnahme.cjs");
 
 const PORT = Number(process.env.WETTER_WACHE_PORT || 4602);
-// Spiel-Minuten je Fenster (G und B): drei Takte des Wetter-Zugs (120 s), 77 Feuer eines 4,7-s-Gesetzes, 15 Nexus-Evolutionen.
+// Spiel-Minuten je Fenster (G und B): drei Takte des Wetter-Zugs (120 s), 77 Feuer eines 4,7-s-Gesetzes (die Evolution des Nexus ruht
+// am Ort der Ankunft — ihren Takt in Welt-Zeit misst (N)).
 const HIMMEL_MIN = Number(process.env.HIMMEL_MIN || 6);
 const SCHRITT_SEK = 0.25;
 // Der Takt des Wesens im Schöpfer-Modus (Spiel-Sekunden): sechs Vorschläge je Fenster, zwei je Takt des Wetter-Zugs.
