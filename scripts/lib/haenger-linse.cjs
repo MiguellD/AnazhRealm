@@ -715,7 +715,7 @@ const DOMAENEN = [
     ["Zeichnen", /_loopRender|_renderScene|_renderObject|render|Render|draw/],
 ];
 const domaeneVon = (namen) => (DOMAENEN.find(([, re]) => namen.some((n) => re.test(n))) || ["Rest"])[0];
-function domaenen(a, s, teile = /^_passSicht|^_runFrameScheduler|^_loopWeatherAndGrowth|^_renderObjects/) {
+function domaenen(a, s, teile = /^_bewohnerGeburt|^_bewohnerListe|^tickArchitectureCulling|^tickDayNight|^_loopFixedStep|^_runFrameScheduler/) {
     const je = {}, rahmen = [], stapel = [], baum = [];
     const plus = (d, sp, mi) => ((je[d] = je[d] || { spitze: 0, mitte: 0 }), (je[d].spitze += sp), (je[d].mitte += mi));
     const r1 = (x) => x.toFixed(1);
