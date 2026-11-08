@@ -38,3 +38,10 @@ Ehrlich offen: profiband.K4 bleibt ROT — die erste Fahrt der Sitzung 93,8 % > 
 ## 08.11. 14:18 — GPU-PROBE 93511832 auf omen-gtx1060: ROT in 164 s (gate:geh-zerlegung ROT 90 s) → probe-post/w24-fahrt-takt/93511832.md
 
 ## 08.11. 14:14 — GPU-PROBE 93a6bcc4 auf radeon-890m: ROT in 136 s (gate:geh-zerlegung ROT 66 s) → probe-post/w24-fahrt-takt/93a6bcc4.md
+
+## 00:05 Koordinator
+Deine Heilung ed5d8178 ist mit z329 in main (1561bf3a). **Nächster Auftrag: profiband.K4, die erste Fahrt, und zwar der Planer.** Laut w25-pipeline-vorwaermen sind die Bilder der ersten Fahrt CPU-gebunden: Radeon > 33 ms in 90–93 %, max 92–125 ms.
+- Zweig `w24-fahrt-planer` von origin/main. Lies vorher die GOLDENE DEFINITION und `REFERENZ-ATLAS.md` §2.
+- Benenne je Bild der ersten Fahrt den Täter im Takt (gate:geh-zerlegung, Fahrt-Fenster).
+- Dein Teil ist der **Planer** (Satz, Streaming, Fahrt-Takt), unter der EINEN Frist der Bau-Arbeit. Die Sicht gehört `w25-gpu-wahl`, der Pipeline-Bau `w25-pipeline-vorwaermen`; die nennst du nur mit Zahl.
+- Ziel: Radeon erste Fahrt > 33 ms deutlich unter 90 %, ABAB, die GTX per `[gpu-probe: gate:geh-zerlegung]`.

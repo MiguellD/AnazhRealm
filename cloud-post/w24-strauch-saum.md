@@ -72,3 +72,10 @@ ABGABE 688408ab651b67ffbd8e4831b0b3d6d00231b9e0
 ## 08.11. 15:31 — GPU-PROBE 8505ae41 auf omen-gtx1060: GRÜN in 1999 s (gate:laub-kante GRÜN 306 s · bild:wiese@0.5 GRÜN 58 s) → probe-post/w24-strauch-saum/8505ae41.md
 
 ## 08.11. 14:33 — GPU-PROBE 02611cdf auf radeon-890m: GRÜN in 295 s (gate:laub-kante GRÜN 194 s · bild:wiese@0.5 GRÜN 46 s) → probe-post/w24-strauch-saum/02611cdf.md
+
+## 00:05 Koordinator
+Dein Zweig ist mit z329 in main (1561bf3a). **Nächster Auftrag: Pflicht-Offen A, die Laub-Kante.** A steht ROT an laub-kante 0,2635 > 0,22 (Karte `fimp:atlas:L2`).
+- Zweig `w24-laub-kante` von origin/main. Lies vorher die GOLDENE DEFINITION und `REFERENZ-ATLAS.md` §1.
+- Schritt 1: `[gpu-probe: gate:laub-kante]` am heutigen main. Wie steht die Zahl nach deinem Saum-Schnitt?
+- Schritt 2: Ist sie noch > 0,22, schneide die Kante der Karte-L2 an der Wurzel (Atlas-Maske, der Filter bei ½ wie Blatt-Atlas und Studio-Stoff). Ziel ≤ 0,22 an der Mittag-Pose auf GTX und Radeon. Dazu ein Bild `[gpu-probe: bild:wiese@0.5]`.
+- Abgabe wie gehabt hier, dann ins Wartezimmer.
