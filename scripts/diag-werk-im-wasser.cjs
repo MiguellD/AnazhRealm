@@ -95,7 +95,7 @@ function urteil(b) {
     else {
         if (!(H.satz >= S.hainMin))
             v.push(
-                `H LEER: der Satz setzte ${H.satz} von ${S.hainMin} Eichen${H.chat ? ` — „${H.chat}"` : ""}${H.bauten && H.bauten.length ? ` — Bauten am Ufer: ${H.bauten.join(", ")}` : ""}${b.uferWahl ? ` — Ufer-Wahl ${JSON.stringify(b.uferWahl)}` : ""}`
+                `H LEER: der Satz setzte ${H.satz} von ${S.hainMin} Eichen${H.chat ? ` — „${H.chat}"` : ""}${H.bauten?.length ? ` — Bauten am Ufer: ${H.bauten.join(", ")}` : ""}${b.uferWahl ? ` — Ufer-Wahl ${JSON.stringify(b.uferWahl)}` : ""}`
             );
         for (const s of H.staemme || [])
             if (s.tiefe > S.tiefeStamm)
@@ -604,7 +604,7 @@ async function probe(A) {
                 ? !!traegerHaus(w.e)
                 : /^haus_/.test(w.e.type)
                   ? !!w.e._hausHuelle
-                  : !!(w.e.blockerAABBs && w.e.blockerAABBs.length));
+                  : !!w.e.blockerAABBs?.length);
         // das EINE Warten auf den Bau (welt-boot `__gebautNach`): steht ein Werk nicht, nennt es der Zensus
         for (const w of werke)
             await __gebautNach(w.e, { fertig: () => fertig(w), takt: takte30 }).catch(() => null);
@@ -745,7 +745,7 @@ async function probe(A) {
                     Math.hypot(a.position.x - x, a.position.z - z) <= 25
             ).length;
         const uferListe =
-            A.uferKandidaten && A.uferKandidaten.length ? A.uferKandidaten : [{ ufer: A.ort, eiche: A.eiche }];
+            A.uferKandidaten?.length ? A.uferKandidaten : [{ ufer: A.ort, eiche: A.eiche }];
         let X = A.ort[0];
         let Z = A.ort[1];
         out.uferWahl = [];

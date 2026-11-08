@@ -36,14 +36,14 @@ async function safeEvaluate(page, fn, ...args) {
 // die Prüfungen entfallen; die EINE Fassung für jedes Band (scripts/playtest/*.cjs)
 function erreichbar(check, name, res, leer = "page.evaluate fehlgeschlagen") {
     if (res && !res.error) return true;
-    check(name, false, (res && res.error) || leer);
+    check(name, false, res?.error || leer);
     return false;
 }
 
 // die Probe lief ohne Wurf (und kam an) — ein Wurf macht die Zeile rot: `name: evaluate-Fehler — <Wurf>`, mit `zeile`
 // die Zeile `name` selbst mit dem Wurf als Detail; ohne Antwort schweigt sie, die Prüfungen entfallen
 function ohneWurf(check, name, res, zeile) {
-    if (res && res.error) {
+    if (res?.error) {
         if (zeile) check(name, false, res.error);
         else check(`${name}: evaluate-Fehler — ${res.error}`, false);
     }
@@ -65,7 +65,7 @@ async function gatherInitialFinalState(page) {
             r.grokRender(null);
             grokRenderEmptyGuard = !!pb && pb.textContent === "Prüfsatz für den Dialog.";
         } catch (e) {
-            grokRenderProbe = "ERR:" + (e && e.message);
+            grokRenderProbe = "ERR:" + e?.message;
         }
         // DER SZENEN-ZENSUS (Band-Linse): jedes Renderable der Szene trägt seine Täter-Klasse (AnazhRealm#_taeterKlasse,
         // dieselbe wie Draw-Zähler, Flugschreiber und Albedo-Sicht) — ein namenloses Objekt heißt UNBENANNT:<type> und
@@ -93,7 +93,7 @@ async function gatherInitialFinalState(page) {
             // die Eingangs-Welt ist voxel: chunkMap/groundChunks leer, voxelChunks/voxelTerrainActive tragen
             voxelChunksSize: st.voxelChunks?.size || 0,
             voxelTerrainActive: st.voxelTerrainActive === true,
-            voxelTerrainFlag: !!(st.worldMeta && st.worldMeta.voxelTerrain),
+            voxelTerrainFlag: !!st.worldMeta?.voxelTerrain,
             playerY: st.playerMesh?.position?.y,
             playerX: st.playerMesh?.position?.x,
             playerZ: st.playerMesh?.position?.z,
@@ -169,7 +169,7 @@ if (require.main === module) hauptLauf(async () => {
                     const y = r.getTerrainHeightAt(x, z);
                     if (!Number.isFinite(y)) continue;
                     if (r._istNatur({ type: name }) && r._naturWand(name, { x, y: y + 0.5, z }, {})) continue;
-                    if (bm && bm.phantomMesh) bm.phantomMesh.position.set(x, y, z);
+                    if (bm?.phantomMesh) bm.phantomMesh.position.set(x, y, z);
                     return { x, y, z };
                 }
             return null;
@@ -236,7 +236,7 @@ if (require.main === module) hauptLauf(async () => {
                     if (ort) break;
                     await kachel(k.x, k.z);
                     const h = r._hydroFor(k.x, k.z);
-                    for (const lake of (h && h.lakes) || []) {
+                    for (const lake of h?.lakes || []) {
                         if (ort || !(lake.level > wl + 2) || !lake.cells) break;
                         const zellen = new Set();
                         for (const q of lake.cells)
@@ -309,7 +309,7 @@ if (require.main === module) hauptLauf(async () => {
             const cz = Math.floor(ort.z / span);
             const key = `${cx},${cz}`;
             const da = st.voxelChunks.get(key);
-            if (da && da.mesh && da.waterCells) return key;
+            if (da?.mesh && da.waterCells) return key;
             await __weltDa(() => r._hydroSteht(cx, cz)); // die Kacheln um den Chunk kommen aus dem Faden
             r._disposeVoxelChunk(key);
             st.voxelChunks.delete(key);
@@ -525,7 +525,7 @@ if (require.main === module) hauptLauf(async () => {
                     // abbrechen; die `pageerror`-Listener fangen ihn auf.
                 }
                 const elapsed = performance.now() - start;
-                const built = st && st.voxelChunks ? st.voxelChunks.size : 0;
+                const built = st?.voxelChunks ? st.voxelChunks.size : 0;
                 if (built !== lastBuilt) {
                     lastBuilt = built;
                     lastGrowthAt = performance.now();
@@ -879,6 +879,7 @@ if (require.main === module) hauptLauf(async () => {
             await timed(BAND.checkBandSzeneSkala, ctx);
             await timed(BAND.checkBandHimmelTag, ctx);
             await timed(BAND.checkBandSchattenTakt, ctx);
+            await timed(BAND.checkBandSpiegelOhneFeld, ctx);
             await timed(BAND.checkBandReglerSim, ctx);
             await timed(BAND.checkBandRezeptKatalog, ctx);
             await timed(BAND.checkBandSchrittKlang, ctx);
@@ -939,7 +940,7 @@ if (require.main === module) hauptLauf(async () => {
             try {
                 await page.evaluate(() => {
                     const box = document.getElementById("dialogue-box");
-                    if (box && box.textContent) box.classList.add("visible");
+                    if (box?.textContent) box.classList.add("visible");
                     // [PERF] den für die Mess-Phase gestubbten GPU-Render wiederherstellen +
                     // ein echtes Frame zeichnen, damit der Screenshot die Welt zeigt.
                     if (r && st.renderer && window.__origRendererRender) {

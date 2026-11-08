@@ -355,7 +355,7 @@ hauptLauf(async () => {
             JSON.stringify(w16Vendor)
         );
         const bHasBefore = await pageB.evaluate(
-            (id) => !!(st.customWorlds && st.customWorlds[id]),
+            (id) => !!st.customWorlds?.[id],
             W16_ID
         );
         check("W16: B hat die Welt vor dem Mesh-Transfer nicht", bHasBefore === false);
@@ -406,7 +406,7 @@ hauptLauf(async () => {
             pageB,
             (id) => {
                 const cw = st.customWorlds;
-                return !!(cw && cw[id] && cw[id].trust === "sandboxed");
+                return !!(cw?.[id] && cw[id].trust === "sandboxed");
             },
             "B empfängt A's Welt-Bündel über das Mesh",
             W16_ID

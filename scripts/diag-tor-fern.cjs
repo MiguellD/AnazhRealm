@@ -25,7 +25,7 @@ const { rasterDreieck } = require("./lib/kronen-linse.cjs");
 const PC = studioKern("porta-core.js", "__portaCore");
 const ARG = process.argv;
 const SELBST = ARG.includes("--selftest");
-const NUR = ARG.indexOf("--nur") >= 0 ? new RegExp(ARG[ARG.indexOf("--nur") + 1]) : null;
+const NUR = ARG.includes("--nur") ? new RegExp(ARG[ARG.indexOf("--nur") + 1]) : null;
 
 // DAS SOLL: Wurf-IoU min 0,864 (geisttor: der dünne Monolith-Rahmen und die Hölzer der
 // Tür unter tiefer Sonne) · Median der Rezepte 0,958 → je Rezept ≥ 0,85, Median ≥ 0,92 (das Maß der Haus-Linse). Innen p95

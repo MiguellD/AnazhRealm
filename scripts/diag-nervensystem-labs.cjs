@@ -59,10 +59,10 @@ hauptLauf(async () => {
         const f = r._ensureAssetFoundry();
         await __weltDa(() => f && f.ready && f.recipes && f.recipes.lofi && f.recipes.wolf && f.recipes.mensch);
         // ===== B: das Buch traegt die drei Domänen als DATEN =====
-        const lofi = f && f.recipes ? f.recipes.lofi : null;
+        const lofi = f?.recipes ? f.recipes.lofi : null;
         res.b.lofiKind = lofi && lofi.kind;
-        res.b.lofiBpm = lofi && lofi.fx && lofi.fx.klang ? lofi.fx.klang.bpm : null;
-        res.b.lofiScale = lofi && lofi.fx && lofi.fx.klang ? JSON.stringify(lofi.fx.klang.scale) : null;
+        res.b.lofiBpm = lofi && lofi.fx?.klang ? lofi.fx.klang.bpm : null;
+        res.b.lofiScale = lofi && lofi.fx?.klang ? JSON.stringify(lofi.fx.klang.scale) : null;
         res.b.klangCount =
             f && f.recipes ? Object.keys(f.recipes).filter((k) => f.recipes[k].kind === "klang").length : 0;
         res.b.params =
@@ -97,7 +97,7 @@ hauptLauf(async () => {
             const _kc = globalThis.__klangCore;
             const _extSoll = () => {
                 const sp = r._klangStudioPreset();
-                return _kc && typeof _kc.colorExt === "function" ? _kc.colorExt(sp && sp.dna ? sp.dna.color : 0) : 1;
+                return _kc && typeof _kc.colorExt === "function" ? _kc.colorExt(sp?.dna ? sp.dna.color : 0) : 1;
             };
             const _c0 = r._lofiChordFromDegree(0);
             res.k.chord0Studio = _c0.length === 3 + _extSoll() ? JSON.stringify(_c0.slice(0, 4)) : "len" + _c0.length;
@@ -209,7 +209,7 @@ hauptLauf(async () => {
             const lowY = (ps) =>
                 Math.min.apply(
                     null,
-                    ps.map((p) => (p && p.position ? p.position.y : 1e9))
+                    ps.map((p) => (p?.position ? p.position.y : 1e9))
                 );
             const prevLeg = f.recipes.deer.s.leg;
             f.recipes.deer.s.leg = 0.35;
@@ -250,7 +250,7 @@ hauptLauf(async () => {
             const hiY = (ps) =>
                 Math.max.apply(
                     null,
-                    ps.map((q) => (q && q.position ? q.position.y : -1e9))
+                    ps.map((q) => (q?.position ? q.position.y : -1e9))
                 );
             const prevNeck = f.recipes.wolf.s.neck;
             f.recipes.wolf.s.neck = 0.15;
@@ -261,7 +261,7 @@ hauptLauf(async () => {
             // body-shaped + Rolle soul; das Landmark-GESETZ wohnt im koerper-core
             // (der Stamm-Delegat und der Kern liefern DENSELBEN Guss — eine Quelle).
             const wb = st.blueprints.koerper_human;
-            res.x.waechterParts = wb && wb.parts ? wb.parts.length : 0;
+            res.x.waechterParts = wb?.parts ? wb.parts.length : 0;
             res.x.waechterBody = !!wb && r._isBodyShaped(wb) === true;
             res.x.waechterRole = wb ? r.computeBlueprintRole(wb) : null;
             res.x.waechterTags = wb ? JSON.stringify(r.computeCompoundTags({ parts: wb.parts })) : "";
@@ -295,7 +295,7 @@ hauptLauf(async () => {
                         .map((k) => [k, t[k]])
                 );
             };
-            res.x.holzrossParts = hb && hb.parts ? hb.parts.length : 0;
+            res.x.holzrossParts = hb?.parts ? hb.parts.length : 0;
             res.x.holzrossMoveable = !!hb && r._isMoveable(hb) === true;
             res.x.holzrossRole = hb ? r.computeBlueprintRole(hb) : null;
             res.x.holzrossSitz = !!hb && JSON.stringify(hb.connections) === '[{"type":"sitz","partA":0,"partB":-1}]';
@@ -486,7 +486,7 @@ hauptLauf(async () => {
     );
     check(
         "K2: die Frequenz ist die Studio-Zahl (2. Akkord-Ton = 110·2^(5/12) ≈ 146.83 Hz)",
-        Math.abs(out.k.freq1Studio - 110 * Math.pow(2, 5 / 12)) < 0.01,
+        Math.abs(out.k.freq1Studio - 110 * 2 ** (5 / 12)) < 0.01,
         String(out.k.freq1Studio)
     );
     check(

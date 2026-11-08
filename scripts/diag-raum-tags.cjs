@@ -377,7 +377,7 @@ async function probe() {
         frage(NAME, "Stoff-Tag direkt (ohne API)", "rechnet");
         // ein Spielstand geladen: der Bauplan als neues Objekt, die Stoff-Tags im Bestand
         const ser = jsonKlon(r._serializeBlueprint(bp0()));
-        if (ser.parts && ser.parts[0] && ser.parts[0].position) ser.parts[0].position.x += 1;
+        if (ser.parts?.[0]?.position) ser.parts[0].position.x += 1;
         r._loadStateRestoreCraftingInventory({
             materials: [
                 { name: "raum_stoff", color: 0x885533, tags: { resoniert: 0.5, härte: 0.5, magieleitung: 0.7 } },
@@ -488,7 +488,7 @@ function urteil(S, Q) {
         rot.push(`(O) WELT: ${W.abweichungen} von ${W.bauplaene} Bauplänen urteilen anders — ${W.beispiel}`);
     if (S.hatGedaechtnis && W.gerechnetZweit)
         rot.push(`(O) WELT: die zweite Frage rechnete ${W.gerechnetZweit}× (soll 0×)`);
-    if (S.hatGedaechtnis && !(S.zaehne && S.zaehne.wirkt && S.zaehne.faellt && S.zaehne.echtGleich))
+    if (S.hatGedaechtnis && !(S.zaehne?.wirkt && S.zaehne.faellt && S.zaehne.echtGleich))
         rot.push(
             `(S) ZÄHNE: der Stoff wirkt nicht, ein Schlüssel ohne Stoffe fiel nicht auf, oder der echte Schlüssel urteilt danach anders (${JSON.stringify(S.zaehne)})`
         );

@@ -672,7 +672,8 @@ class AnazhRealm_bild_sicht {
         // EIN Knoten des Himmels für jeden Stoff (wie r184s Umgebung): er frischt seine PMREM-Stufen einmal je Render; die
         // Umgebung trägt den Himmel je Einheit des Lichts, das Licht jetzt reist in der geteilten Gruppe — das EINE Gesetz der
         // Umgebung der Stoffe (welt-licht.js `himmelDerStoffe`), dasselbe, das die Bühne der Studios jedem Stoff reicht
-        const himmel = __weltLicht.himmelDerStoffe(quelle, this._atmoLutBau().U);
+        const U = this._atmoLutBau().U;
+        const himmel = __weltLicht.himmelDerStoffe(quelle, U);
         const [a, b] = AnazhRealm.SPIEGEL.glanzRauheit;
         const N = Object.getPrototypeOf(THREE.InstanceNode);
         // DIE UNTERE HEMISPHÄRE (schatten.K4, `_rueckstrahlHalbraum`, dasselbe Gesetz wie das Licht der Welt): in der Bestrahlung
@@ -681,7 +682,7 @@ class AnazhRealm_bild_sicht {
         // selbst empfängt nichts von sich, die senkrechte Wand die Hälfte, die Unterseite alles. DIE BESTRAHLUNG ERKANNT: r184
         // reicht ihre Stufe als Variable über der Konstanten 1 (`float(1)` in einer VarNode, gelesen am Vendor 03.11.) — bis
         // dahin fragte der Zweig nur `isConstNode`, nahm nie, und jede Bestrahlung las den Spiegel mit dem Gewicht 0 (eine Abtastung je Fragment für nichts).
-        const halbraum = (n) => this._rueckstrahlHalbraum(himmel, n);
+        const wirt = this;
         const konstant = (n) => !!n && (n.isConstNode === true || (n.isVarNode === true && konstant(n.node)));
         class SpiegelUmgebung extends N {
             constructor() {
@@ -691,7 +692,19 @@ class AnazhRealm_bild_sicht {
                 const stufe = builder.context.getTextureLevel ? builder.context.getTextureLevel(this, builder) : null;
                 if (!stufe) return himmel;
                 if (konstant(stufe)) {
-                    return halbraum(builder.context.getUV(this, builder));
+                    // die Bestrahlung: der Himmel, den der Grat dem Empfänger lässt (`_horizontHimmel`, ferne.K4), und der Boden
+                    const n = builder.context.getUV(this, builder);
+                    const strahlung = (dir) =>
+                        __weltLicht.himmelDerStoffe(quelle, U, dir, T.float(AnazhRealm.HORIZONT_KARTE.gratRauheit));
+                    // der Ort des Empfängers: die Schatten-Position seines Stoffs (der Ring: der Boden des Gesetzes), sonst
+                    // positionWorld — `shadowPositionWorld` steht nur in Stoffen, die Schatten empfangen. Der Grat nimmt nur, wo
+                    // der Renderer Schatten zeichnet (`_wirftImStoff`: unter kienspan ruht die Karte)
+                    const ort = builder.material.receivedShadowPositionNode || T.positionWorld;
+                    const frei = wirt._wirftImStoff(
+                        T.max(himmel.sub(wirt._horizontHimmel(ort, n, strahlung)), T.vec3(0)),
+                        himmel
+                    );
+                    return wirt._rueckstrahlHalbraum(frei, n);
                 }
                 const clip = L.vp.mul(T.vec4(T.positionWorld, 1));
                 const w = T.max(clip.w, 1e-4);
@@ -768,6 +781,9 @@ class AnazhRealm_bild_sicht {
             hMax: uniform(0),
             // ein Texel des Pass-Ziels in uv (1/Breite, 1/Höhe)
             texel: uniform(new THREE.Vector2(1, 1)),
+            // DAS FELD STEHT (1) oder bäckt nach einem Sprung des Auges (0, `_spiegelFeldSteht`): ohne Feld spiegelt der Pass das
+            // Bild allein — kein Wasser-Punkt (seine Zellen sind leer), kein Strahl jenseits des Schirms (dort der Himmel des Rests)
+            feld: uniform(0),
         };
         const kante = S.n * S.texel;
         const feld = (xz) => texture(S.tex, xz.div(kante)).level(float(0));
@@ -815,7 +831,7 @@ class AnazhRealm_bild_sicht {
                     const rel = pt.xz.sub(U.mitte).div(kante);
                     return max(abs(rel.x), abs(rel.y)).lessThan(0.48);
                 };
-                const wasser = aufWasser(P).and(imFeld(P)).toVar();
+                const wasser = aufWasser(P).and(imFeld(P)).and(U.feld.greaterThan(0.5)).toVar();
                 const tiefeGr0 = vec2(tiefe.size());
                 const glaenzt = glanzBild
                     .load(ivec2(screenUV.mul(vec2(glanzBild.size()))))
@@ -984,7 +1000,7 @@ class AnazhRealm_bild_sicht {
                     const t = max(float(1.25), select(verdeckt, tVon(sDeck), tVon(sMax))).toVar();
                     const tVor = t.toVar();
                     const gVor = float(0.01).toVar();
-                    If(raus.or(verdeckt).and(bildW.lessThan(1.0)), () => {
+                    If(raus.or(verdeckt).and(bildW.lessThan(1.0)).and(U.feld.greaterThan(0.5)), () => {
                         Loop(K.schritte, () => {
                             const p = P.add(R.mul(t));
                             const rel = p.xz.sub(U.mitte).div(kante);
@@ -2736,6 +2752,7 @@ class AnazhRealm_bild_sicht {
             fr.uAnker.value.set(fr.anchorX, fr.anchorZ);
             this._fernRingNeuBestellen(fr); // voller Refresh: der Fern-Faden rechnet den Ring am neuen Anker in Scheiben
         }
+        this._fernNeigungTakt(fr); // die Normale des Gesetzes für das Licht des Rings (ferne.K4)
         // Die Schalen leben auf Layer 0 (EIN Szene-Pass) — selbstheilend, falls ein Altstand sie verschob; ihr Wurf bleibt
         // ihr `castShadow` (die Wurf-Ebene, K72 `_wurfEbene`).
         for (const m of fr.meshes) {
@@ -2787,6 +2804,7 @@ class AnazhRealm_bild_sicht {
         const fr = this.state.fernRing;
         if (!fr) return;
         this._horizontKarteLeeren(); // das Gitter der Horizont-Karte gehört der Welt, die den Ring trug
+        this._fernNeigungLeeren(); // die Neigung ebenso
         // je gezeichnetes Mesh seine Geometrie (Schale 1, Schale 2, die zwei Teile der Schale 0) und sein Stoff (die zwei
         // Stoffe, frei und Naht, geteilt — ein zweites dispose ist ohne Hörer leer)
         for (const m of fr.meshes || []) {

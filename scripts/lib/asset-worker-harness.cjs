@@ -47,13 +47,13 @@ async function bauAbdruck(meshes) {
       for (let i = 0; i < arr.length; i++) if (!Number.isFinite(arr[i])) nichtEndlich++;
   };
   for (const m of meshes || []) {
-    if (!m || (typeof m.kind === "string" && m.kind.startsWith("__") && !(m.position && m.position.array))) continue;
+    if (!m || (typeof m.kind === "string" && m.kind.startsWith("__") && !m.position?.array)) continue;
     teile++;
     for (const k of Object.keys(m).sort()) {
       const v = m[k];
       text(k);
       if (v && v.array && v.itemSize) { text(v.itemSize); puffer(v.array); }
-      else if (k === "index" && v && v.buffer) puffer(v);
+      else if (k === "index" && v?.buffer) puffer(v);
       else text(JSON.stringify(v === undefined ? null : v));
     }
   }
@@ -123,7 +123,7 @@ const BAU_BILD_QUELLE = `(() => { const rasterDreieck = ${rasterDreieck}, luma70
 // Die Teile eines Brücken-Baus für das Bild: was das Auge sieht (der Wurf-Teil „schatten" und der Beipack nicht).
 function bauTeile(meshes) {
   return (meshes || [])
-    .filter((m) => m && m.position && m.position.array && m.teil !== "schatten")
+    .filter((m) => m?.position && m.position.array && m.teil !== "schatten")
     .map((m) => {
       const mat = m.mat || {}, grund = mat.color || [0.7, 0.7, 0.7];
       const glut = mat.emissive ? mat.emissive.map((x) => x * (mat.emissiveIntensity || 1)) : null;
@@ -139,7 +139,7 @@ function pageHtml() {
   const worker = new Worker(URL.createObjectURL(new Blob([boot], { type: "text/javascript" })));
   const pending = new Map();
   let seq = 1;
-  worker.onerror = (e) => { S.error = (e && e.message) || "Worker-Fehler"; };
+  worker.onerror = (e) => { S.error = e?.message || "Worker-Fehler"; };
   worker.onmessage = (ev) => {
     const m = ev.data;
     if (!m || typeof m !== "object") return;
@@ -200,7 +200,7 @@ function pageHtml() {
   };
   // Das Buch trägt das Bild des Blatt-Atlas (S7, Mips als Uint8Array): über die page.evaluate-Grenze reist nur sein Steckbrief.
   window.__aget = (type) => ask({ type }).then((r) => {
-    if (r && r.blattAtlas) r.blattAtlas = { breite: r.blattAtlas.breite, hoehe: r.blattAtlas.hoehe, stufen: r.blattAtlas.mips.length, wert: r.blattAtlas.wert };
+    if (r?.blattAtlas) r.blattAtlas = { breite: r.blattAtlas.breite, hoehe: r.blattAtlas.hoehe, stufen: r.blattAtlas.mips.length, wert: r.blattAtlas.wert };
     return r;
   });
   window.__build = (msg) => ask(Object.assign({ type: "build-asset" }, msg)).then((r) => ({
@@ -309,7 +309,7 @@ function pageHtml() {
         o.bau = a;
       }
       const bi = bild && bild[i];
-      if (bi && bi.basis) bilder.set(bi.basis, bauBild(bauTeile(r.meshes)));
+      if (bi?.basis) bilder.set(bi.basis, bauBild(bauTeile(r.meshes)));
       else if (bi && bilder.get(bi.gegen) && bilder.get(bi.gegen).rahmen) {
         const B = bilder.get(bi.gegen);
         o.bild = B.abstand(B.bilder, bauBild(bauTeile(r.meshes), B.rahmen).bilder);
@@ -402,7 +402,7 @@ async function runWithWorker(port, cb) {
 // aber keine Meshes — der Vertrag v1 zählt sie nicht (Leser ohne position-Guard überspringen
 // sie). Hier fallen sie aus dem Fingerabdruck, damit Mint UND Gate dieselbe Regel lesen.
 function istBeipack(m) {
-    return !!m && typeof m.kind === "string" && m.kind.startsWith("__") && !(m.attrs && m.attrs.position);
+    return !!m && typeof m.kind === "string" && m.kind.startsWith("__") && !m.attrs?.position;
 }
 function fingerprintMeshes(meshes) {
     const sha = (b64) => {
@@ -477,7 +477,7 @@ function kanalImVm(quellen = {}) {
         __PHYTO_FOUNDRY_WORKER: true,
     });
     for (const f of WORKER_SCRIPTS) {
-        const src = Object.prototype.hasOwnProperty.call(quellen, f)
+        const src = Object.hasOwn(quellen, f)
             ? quellen[f]
             : ausDatei(path.join(ROOT, f));
         vm.runInContext(src, ctx, { filename: f, timeout: 60000 });

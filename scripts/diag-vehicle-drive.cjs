@@ -63,7 +63,7 @@ function driveVerdict(d) {
 const STAND = { spaltM: 0.12, probenMin: 4 };
 function standVerdict(s) {
     const out = [];
-    if (!s || !(s.proben >= STAND.probenMin)) return [`proben ${(s && s.proben) || 0}`];
+    if (!s || !(s.proben >= STAND.probenMin)) return [`proben ${(s?.proben) || 0}`];
     if (!(s.spaltM <= STAND.spaltM)) out.push(`spalt ${(s.spaltM || 0).toFixed(3)} m`);
     return out;
 }
@@ -195,7 +195,7 @@ hauptLauf(async () => {
                 r._archInstanceUpdate(entry);
                 const m0 = { x: entry.position.x, z: entry.position.z };
                 const mres = r.mountArchitecture(entry);
-                res.drive.mounted = !!(mres && mres.ok) && r.state.player.mountedArch === entry.id;
+                res.drive.mounted = !!(mres?.ok) && r.state.player.mountedArch === entry.id;
                 // DONOR-ABSCHIED — der lebende KONSUM/ABSENZ-Beweis am
                 // frisch gespawnten Eintrag (Gier 0 — die Welt-AABB-Spanne ist die
                 // Laengs-Achse): Sitz == Kern-Formel UND != Donor-Anker; Blocker-
@@ -206,14 +206,14 @@ hauptLauf(async () => {
                     const hip = r.constructor.SITZ_HIP_OFFSET;
                     const sc = Number.isFinite(entry.scale) ? entry.scale : 1;
                     const kernSitz =
-                        drv && drv.sitz && Number.isFinite(drv.sitz.y) ? Math.max(0.45, drv.sitz.y * sc + hip) : null;
+                        drv?.sitz && Number.isFinite(drv.sitz.y) ? Math.max(0.45, drv.sitz.y * sc + hip) : null;
                     const donorSp = r._attachPointFor(r.state.blueprints.fahrzeug_gt, "sitz").point;
                     const donorSitz = Number.isFinite(donorSp.y) ? Math.max(0.45, donorSp.y * sc + hip) : null;
                     res.drive.sitzKern =
                         kernSitz !== null &&
                         Math.abs(entry._sitzHeight - kernSitz) < 1e-9 &&
                         (donorSitz === null || Math.abs(entry._sitzHeight - donorSitz) > 0.01);
-                    if (entry.blockerAABBs && entry.blockerAABBs.length && drv && drv.huelle) {
+                    if (entry.blockerAABBs?.length && drv?.huelle) {
                         let mnX = Infinity;
                         let mxX = -Infinity;
                         let mnZ = Infinity;

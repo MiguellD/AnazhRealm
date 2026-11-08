@@ -155,7 +155,7 @@ function spalt(px, py, pz, tris) {
     await page.evaluate(async () => {
         let stubbed = false;
         for (const weiter = __deckel("der Ring 4", 15000); weiter(); ) {
-            if (r && !stubbed && st && st.renderer) {
+            if (r && !stubbed && st?.renderer) {
                 __bildAus();
                 // den Ring auf 4 ZWINGEN + SYNC bauen (Worker null), damit die volle
                 // 81-Chunk-Welt schnell steht UND LOD1 (ring 3-4) erscheint → die Cross-LOD-Naht
@@ -170,7 +170,7 @@ function spalt(px, py, pz, tris) {
                 __handTakt();
                 // bis Ring 4 (81 Chunks) streamen, damit LOD1 (Band 1, ring 3-8) erscheint
                 // → die CROSS-LOD-Naht (B/D) wird messbar (bei 26 Chunks = nur Ring 2 = alle LOD0).
-                if (st && st.playerMesh && st.voxelChunks && st.voxelChunks.size >= 80) break;
+                if (st?.playerMesh && st.voxelChunks && st.voxelChunks.size >= 80) break;
             }
             await sleep(4);
         }
@@ -385,7 +385,7 @@ function spalt(px, py, pz, tris) {
         let bandMeshes = 0,
             bandQuads = 0;
         for (const [, entry] of s.voxelChunks) {
-            if (entry && entry.lodStitchMesh && entry.lodStitchMesh.geometry.index) {
+            if (entry?.lodStitchMesh && entry.lodStitchMesh.geometry.index) {
                 bandMeshes++;
                 bandQuads += entry.lodStitchMesh.geometry.index.count / 6;
             }
@@ -493,7 +493,7 @@ function spalt(px, py, pz, tris) {
 
         const uuidOf = (key) => {
             const e = s.voxelChunks.get(key);
-            return e && e.mesh ? e.mesh.uuid : null;
+            return e?.mesh ? e.mesh.uuid : null;
         };
 
         // UUID-Snapshot einer 5×5-Region um den Spieler-Chunk VOR dem Carve → so trennen wir,
@@ -709,7 +709,7 @@ function spalt(px, py, pz, tris) {
     if (process.argv.includes("--gate")) {
         // same-LOD geteilte % = das Naht-nächste Bin (binPct[0], <0.4 m) — die Rand-Vertices.
         const sharedPct =
-            spatial.same && spatial.same.binPct && spatial.same.binPct[0] != null ? spatial.same.binPct[0] : 0;
+            spatial.same?.binPct && spatial.same.binPct[0] != null ? spatial.same.binPct[0] : 0;
         const crossPairs = spatial.cross ? spatial.cross.pairs : 0;
         const SAME_BASELINE = 45; // die Baseline der gleichen Stufe (~50 %)
         let bad = false;

@@ -333,7 +333,7 @@ const WELT_HAKEN = () => {
     // Schale entscheidet. So misst die Sonde den Zweit-Boot mit echter IndexedDB im echten Studio-Worker.
     const B0 = window.Blob;
     const B1 = function (teile, opt) {
-        if (Array.isArray(teile) && typeof teile[0] === "string" && teile[0].indexOf("_foundrySchale") >= 0) {
+        if (Array.isArray(teile) && typeof teile[0] === "string" && teile[0].includes("_foundrySchale")) {
             teile = [teile[0].replace('"platte":false', '"platte":true')].concat(teile.slice(1));
         }
         return new B0(teile, opt);
@@ -350,7 +350,7 @@ const WELT_HAKEN = () => {
                 const m = e.data;
                 // W7: jeder Attribut-Name, der über den Kanal reist (die Wand der Schale im echten Boot)
                 if (m && m.type === "asset" && Array.isArray(m.meshes))
-                    for (const x of m.meshes) for (const k in x || {}) if (x[k] && x[k].array) fl.reist.add(k);
+                    for (const x of m.meshes) for (const k in x || {}) if (x[k]?.array) fl.reist.add(k);
                 if (m && m.type === "asset")
                     fl.antworten.push({ w: this.__flNr, vorrat: m.vorrat === true, leer: !m.meshes.length, p: m.presetId });
             });
@@ -372,12 +372,12 @@ const WELT_MESSEN = async () => {
         await sleep(6);
     }
     const f = r._ensureAssetFoundry();
-    await __weltDa(() => !!(!(f && !f.ready)));
+    await __weltDa(() => !(f && !f.ready));
     const pump = (n) => __streuTakte(n, 8);
     await pump(300);
     for (const weiter = __deckel("die Foundry-Schlange", 600); weiter(); ) {
         await pump(20);
-        if (!f._vorrat && !(f.warte && f.warte.length) && f.pending.size === 0) break;
+        if (!f._vorrat && !f.warte?.length && f.pending.size === 0) break;
     }
     // der Ofen-Vorrat ist Boot-Arbeit (`_ofenPrefetchKreaturen`, nach dem ersten Bild): jeder Boot misst, bis er steht —
     // sonst trägt der schnellere Zweit-Boot ihn ins Fenster, und der erste legte ihn nie auf die Platte
@@ -385,7 +385,7 @@ const WELT_MESSEN = async () => {
     await pump(60);
     const fl = window.__fl;
     const cfg = AnazhRealm._studioRenderConfig;
-    const G = cfg && cfg.lod && cfg.lod.budget ? cfg.lod.budget.gestalten : null;
+    const G = cfg?.lod?.budget ? cfg.lod.budget.gestalten : null;
     const T = {};
     for (const sp of ["eiche", "fichte", "birke", "tanne", "weide", "mammut", "strauch"])
         T[sp] = r._foundryGestalten(sp);
@@ -444,7 +444,7 @@ const WELT_MESSEN = async () => {
         arten: krit.length,
         kalt: krit.filter((sp) => !fl.antworten.some((x) => x.p === sp && x.vorrat && x.leer)),
     };
-    const instanziert = () => (st.architectures || []).filter((e) => e && e.instFoundry && e.instanced).length;
+    const instanziert = () => (st.architectures || []).filter((e) => e?.instFoundry && e.instanced).length;
     // W2 — der Saison-Wechsel. Erst ein KONTROLL-Fenster gleicher Länge ohne Wechsel (die ruhende Welt bestellt nichts —
     // sonst misst W2 nichts), dann der Wechsel: Aufträge an den Worker und NEUE Foundry-Cache-Schlüssel danach. Instanz-
     // Entfernungen zählen nur zur Auskunft (LOD-/Streu-Churn läuft auch ohne Saison).
@@ -517,7 +517,7 @@ function urteilWelt(d) {
         }
         // DIE EINE Gestalten-Zahl der Welt samt Solitär V+1 (`_foundryGestalten`): seit w12-eiche-same ist der Solitär ein
         // Same des Kerns (treeParams) und reist ungeprägt — bis dahin verbarg ihn sein FREISTAND-ov vor W1a, das gegen V maß
-        const T = (d.T && d.T[sp]) || V;
+        const T = d.T?.[sp] || V;
         for (const s of d.samen[sp] || []) if (!(s >= 1 && s <= T)) raus.push(`${sp}|${s}`);
         // Die Karte bestellt ihr Leser: eine Art ohne Leser im Bild hat keine Karte, keine Art mehr als ihre Gestalten
         // (Budget samt Solitär, K20).
@@ -561,17 +561,17 @@ function urteilWelt(d) {
         `${s.mul0} → ${s.mul1} · ${s.name} · Präsenz ${s.praesenz} · ${s.laub} Laub-Körper`
     );
     const wk = d.boot && d.boot.werk;
-    const bahnen = (wk && wk.bahnen) || [];
+    const bahnen = wk?.bahnen || [];
     pruef(
         "W6 die Werk-Fäden: auf 16 Kernen bauen mehrere Fäden, jeder wird bereit und baut, jeder Auftrag reist in seiner Bahn und kommt zurück",
         bahnen.length >= 2 &&
-            bahnen.every((b) => b.bereit && b.posts > 0 && b.antworten >= b.posts && !(b.fremd && b.fremd.length)),
+            bahnen.every((b) => b.bereit && b.posts > 0 && b.antworten >= b.posts && !b.fremd?.length),
         `${wk ? wk.kerne : "?"} Kerne · ${bahnen.length} Fäden: ` +
             bahnen
                 .map(
                     (b) =>
                         `werk${b.k || ""} ${b.bereit ? "" : "nicht bereit, "}${b.posts} Aufträge/${b.antworten} Antworten` +
-                        (b.fremd && b.fremd.length ? ` fremde Nummern ${b.fremd.join(" ")}` : "")
+                        (b.fremd?.length ? ` fremde Nummern ${b.fremd.join(" ")}` : "")
                 )
                 .join(" · ") +
             (bahnen.length < 2 ? " — Täter _foundryHelfer: kein Helfer neben dem Werk" : "")

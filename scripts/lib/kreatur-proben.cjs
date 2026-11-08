@@ -10,10 +10,10 @@ const LEBEN = require("../diag-kreatur-leben.cjs");
 async function kreaturProben(r, T, opts) {
     const s = r.state;
     const A = r.constructor;
-    const nur = (opts && opts.proben) || null;
-    const taeter = (opts && opts.taeter) || null; // Selbsttest: der alte Defekt als Täter
+    const nur = opts?.proben || null;
+    const taeter = opts?.taeter || null; // Selbsttest: der alte Defekt als Täter
     const aus = {};
-    const echt = !(s.renderer && s.renderer._isHeadlessNull);
+    const echt = !s.renderer?._isHeadlessNull;
     // Der Spiel-Loop ruht (Lehre 17; die Werkbank-Regel: die Welt ruht zwischen den Befehlen, nur `umstellen` tickt).
     if (echt && s.renderer.setAnimationLoop) s.renderer.setAnimationLoop(null);
     const TAU = Math.PI * 2;
@@ -75,7 +75,7 @@ async function kreaturProben(r, T, opts) {
             if (window.__dorfVon && !dorf.hier)
                 aus[name] = { fehler: `${name} lief im Start-Dorf, das ${window.__dorfVon} wachsen ließ — die Dorf-Proben laufen zuletzt` }; // prettier-ignore
         } catch (e) {
-            aus[name] = { fehler: String((e && e.stack) || e).slice(0, 600) };
+            aus[name] = { fehler: String(e?.stack || e).slice(0, 600) };
         } finally {
             for (const f of restore.reverse()) {
                 try {
@@ -533,7 +533,7 @@ async function kreaturProben(r, T, opts) {
                 if (istLuft && !warLuft[i]) {
                     starts++;
                     const VA = ud._verhaltenAktion;
-                    if (VA && VA.def && VA.def.hop) ausAktion++;
+                    if (VA?.def && VA.def.hop) ausAktion++;
                     flugNun[i] = { soll: hoehe(tiere[i]), top: 0 };
                 }
                 if (flugNun[i]) flugNun[i].top = Math.max(flugNun[i].top, h);
@@ -704,7 +704,7 @@ async function kreaturProben(r, T, opts) {
                         c.updateMatrixWorld(true);
                         const g = c.userData._tierBaum && c.userData._tierBaum._gang;
                         pf.leib.push({ x: c.position.x, z: c.position.z, y: c.position.y, sp, gier: c.rotation.y });
-                        pf.ph.push(g && g.ph ? g.ph.slice() : null);
+                        pf.ph.push(g?.ph ? g.ph.slice() : null);
                         pf.ps.forEach((p, j2) => pf.spur[j2].push(p.localToWorld(pf.lokal[j2].clone())));
                     }
                 });
@@ -1029,8 +1029,10 @@ async function kreaturProben(r, T, opts) {
         // unter zwei der fünf Leiber ab): der erste Nachbar des Start-Dorfs im Wegenetz (`_wegenetzNachbarn`, ein Ort des Gesetzes
         // `_zellOrt`, fern des Spielers, nicht erwacht) — auf dem Kreis von 25 m um ihn (im Kern jedes Reichs, fachwerk
         // `siedlungsReich` 30 m + 22 m·√nH) trägt keiner von acht Orten eine Geburt (`_kreaturGrundFrei`). Täter: die Geburt ohne das Reich (die alte Form); er macht alle
-        // acht frei, das ist der Beweis, dass der Kreis ohne den Ort trüge
+        // acht frei, das ist der Beweis, dass der Kreis ohne den Ort trüge. Die Nachbarschaft steht nach dem Gesetz, ehe die Probe
+        // fragt (`_wegenetzNachbarn`: offen, solange eine Stelle auf ihr Wasser wartet — bis w19-fahrt-ziel-2 die halbe, gemerkt)
         if (taeter === "herde-dorf") decke("_imReichEinesOrts", () => () => false);
+        await __weltDa(() => r._wegenetzNachbarn("start"));
         const o = r._zellOrt(r._wegenetzNachbarn("start")[0]);
         const dorf = [o.key, [...Array(8).keys()].filter((q) => r._kreaturGrundFrei(o.x + 25 * Math.cos(q), o.z + 25 * Math.sin(q))).length];
         const L = F.lauf.filter(Boolean);
@@ -1290,7 +1292,7 @@ async function kreaturProben(r, T, opts) {
         const tb = rc.mesh.userData && rc.mesh.userData._tierBaum;
         return {
             gierFehlerGrad: rund(Math.abs(grad(wrap(rc.mesh.rotation.y - Math.PI / 2))), 1),
-            gangV: tb && tb._gang ? rund(tb._gang.v || 0, 2) : 0,
+            gangV: tb?._gang ? rund(tb._gang.v || 0, 2) : 0,
         };
     });
 
@@ -1926,7 +1928,7 @@ async function kreaturProben(r, T, opts) {
                     function (group, ...a) {
                         const gg =
                             group && group.userData && group.userData._tierBaum && group.userData._tierBaum._gang;
-                        if (gg && gg.fuss)
+                        if (gg?.fuss)
                             gg.fuss.forEach((L, j) => {
                                 if (((gg.ph[j] % TAU) + TAU) % TAU >= Math.PI) L.an = false;
                             });
@@ -1965,7 +1967,7 @@ async function kreaturProben(r, T, opts) {
         };
         // DER ORT: der erste Hang von 20–30° nahe dem Spieler; auf der Prüfbühne die feste Rampe ihrer Station
         // (`opts.hangOrt`) — ihre Neigung ≤ 1° an der Spec, sonst ein Fehler
-        const ort = (opts && opts.hangOrt) || null;
+        const ort = opts?.hangOrt || null;
         let hang = null;
         if (ort) {
             const a = hangAn(ort.x, ort.z, ort.winkel - 1, ort.winkel + 1);
@@ -2100,7 +2102,7 @@ async function kreaturProben(r, T, opts) {
                         // der Täter: die Grobstufe trägt ihre EIGENEN Knochen — sie
                         // bindet nie an die animierten Knochen der feinen
                         const g = orig.apply(this, arg);
-                        if (g && g.fern) {
+                        if (g?.fern) {
                             const eigene = {};
                             g.fern.traverse((n) => {
                                 if ((n.isGroup || n.isBone) && n.name) eigene[n.name] = n;
@@ -2400,10 +2402,10 @@ async function kreaturProben(r, T, opts) {
         const altHook = W.__anazhAutoSettlement;
         restore.push(() => (W.__anazhAutoSettlement = altHook));
         W.__anazhAutoSettlement = true;
-        if (!(wm.settlementCells && wm.settlementCells.start)) r._startDorfBestellen(pm);
+        if (!wm.settlementCells?.start) r._startDorfBestellen(pm);
         for (
             const weiter = W.__deckel("bewohner: das Start-Dorf", 200, () => !!r._autoSettlementPendingKey);
-            weiter() && (r._autoSettlementPendingKey || !(wm.settlementCells && wm.settlementCells.start));
+            weiter() && (r._autoSettlementPendingKey || !wm.settlementCells?.start);
         )
             await sleep(50);
         for (let n = 0; r._autoSettlementQueue && n < 2000; n++) {
@@ -2453,7 +2455,7 @@ async function kreaturProben(r, T, opts) {
         // Paar, das sich berührte); EIN Messer je Siedlung (`wegeMesser`), dasselbe im Start-Dorf und in der Stadt
         const RW = A.PLAYER_WALL_RADIUS;
         const nameVon = (e) => `${e.type} #${e.seed >>> 0}`;
-        const kernVon = (e) => (e && e.tuer && e.tuer.W > 1.5 && e.tuer.D > 1.5 ? e.tuer : null);
+        const kernVon = (e) => (e?.tuer && e.tuer.W > 1.5 && e.tuer.D > 1.5 ? e.tuer : null);
         const hausLage = (e, x, z) => {
             const [c, sn, k] = [Math.cos(e.rotationY || 0), Math.sin(e.rotationY || 0), e.scale > 0 ? e.scale : 1];
             const [dx, dz] = [x - e.position.x, z - e.position.z];
@@ -2672,7 +2674,7 @@ async function kreaturProben(r, T, opts) {
         const S = await startDorf(restore);
         const plan = S.plan;
         const hausE = s.architectures.filter(
-            (e) => e && e.tuer && plan.slots.some((sl) => e.seed >>> 0 === sl.seed >>> 0)
+            (e) => e?.tuer && plan.slots.some((sl) => e.seed >>> 0 === sl.seed >>> 0)
         );
         const haeuser = haeuserIn(plan.slots, S.ox, S.oz).map((sl) => ({
             seed: sl.seed >>> 0,
@@ -2685,7 +2687,7 @@ async function kreaturProben(r, T, opts) {
         if (!rand) return { fehler: "kein freier Stand am Rand des Dorfplatzes" };
         const { pc, ax, az } = rand;
         const leiber = () =>
-            s.scene.children.filter((o) => o && o.userData && o.userData.rig && o.userData.heim != null);
+            s.scene.children.filter((o) => o?.userData && o.userData.rig && o.userData.heim != null);
         const sollSumme = haeuser.reduce((a, h) => a + (h.soll || 0), 0);
         // mit Bild trägt jeder Leib draußen sein Feld (`_weltOffen().leiber`), jedes Haus die Hülle seines Studios — bricht der
         // Deckel, bricht die Probe bei seinem Namen (nie misst die Quote ein halb geborenes Dorf)
@@ -2876,7 +2878,7 @@ async function kreaturProben(r, T, opts) {
         // DIE STÄNDE (mensch.K3 Staffel 2, `_bewohnerStandPruefen`): nach dem Tag liegen je zwei Stände der Liste ≥ `raumM`
         // auseinander, auch die aus der Hülle oder der Spur gerückten — sonst findet, wer Platz machte, seinen Stand nie frei.
         // Täter (Selbsttest), gezählt und zurück: der zweite Stand 0,3 m neben dem ersten (Stand: wer einen Ursprung trägt)
-        const staende = [...new Set(liste.flatMap((b) => Object.values(b.orte)))].filter((o) => o && o.ur);
+        const staende = [...new Set(liste.flatMap((b) => Object.values(b.orte)))].filter((o) => o?.ur);
         const [s0, s1, alt] = [...staende.slice(0, 2), [staende[1].x, staende[1].z]];
         if (hat("bewohner-stapel")) [s1.x, s1.z] = [s0.x + 0.3, s0.z];
         const stapel = staende.flatMap((p, i) =>
@@ -3067,7 +3069,7 @@ async function kreaturProben(r, T, opts) {
             for (let x = o; x; x = x.parent) if (!x.visible) return false;
             return true;
         };
-        const saetze = () => s.scene.children.filter((o) => o && o.isInstancedMesh && o.userData.inventar === "tier");
+        const saetze = () => s.scene.children.filter((o) => o?.isInstancedMesh && o.userData.inventar === "tier");
         const befehle = () => {
             let haupt = 0,
                 wurf = 0,

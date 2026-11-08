@@ -40,6 +40,7 @@ class AnazhRealm_dirigent_takt {
                 return;
             }
             this.state.spielZeit += delta; // DIE WELT-UHR: nur Takte der Heimat-Welt zählen (das Portal friert sie ein)
+            this.state.weltTakt++; // … und ihre Takte (der Eintritt einer Karte, `aEin`)
             // DIE BILD-UHR (A9, Gesetz #0): die EINE Shader-Zeit der Welt in Sekunden, hier EINMAL je Takt geschrieben — Himmel,
             // Wasser, Wind und Böe, Tor, Regen, Flackern, Chaos-Flimmern und die TSL-`time` (`_loopRender`) lesen nur sie
             this._bildZeit = currentTime;
@@ -61,6 +62,8 @@ class AnazhRealm_dirigent_takt {
                 // jeder Takt.
                 const bild = this._gpuLeineFrei();
                 const ruht = !bild && this._ladeTakt();
+                // DER BILD-TAKT UNTER DEM LADESCHIRM teilt die EINE Frist der Aufgabe mit der Zeichnung (`_ladeFrist`)
+                this._ladeBildTakt = bild && this._ladeTakt();
                 // DER ZWISCHEN-TAKT (profiband.K2, Gebot 7): ein gespielter Takt OHNE Bild (die Leine ist gespannt) rechnet, was
                 // nicht warten darf — Eingabe, Netz, Gesetz und Plan der Welt, Sim, Strom —, nie, was nur das Bild zeigt: das Leben
                 // (Tiere, Bewohner, Verkehr, Vögel, Fische, Bestäuber), die Haltung des Leibs, die Kamera, das Licht des Tags und die
@@ -401,6 +404,7 @@ class AnazhRealm_dirigent_takt {
                 return loop(time);
             } finally {
                 this._imTakt = vor;
+                this._ladeBildTakt = false; // der Bild-Takt endet mit dem Takt (`_ladeFrist`)
             }
         };
         this._gameLoopTick = takt;
@@ -464,21 +468,23 @@ class AnazhRealm_dirigent_takt {
                                 ? `Wald offen ${o.wald}`
                                 : o.karten
                                   ? `Karten offen ${o.karten}`
-                                  : o.spiegel
-                                    ? `Spiegel offen ${o.spiegel}`
-                                    : o.felder
-                                      ? `Felder offen ${o.felder}`
-                                      : o.dorf
-                                        ? `Dorf offen ${o.dorf}`
-                                        : o.leib
-                                          ? "Leib offen"
-                                          : o.leute
-                                            ? `Leute offen ${o.leute}`
-                                            : o.huellen
-                                              ? `Hüllen offen ${o.huellen}`
-                                              : o.ankunft
-                                                ? `Ankunft gleitet ${o.ankunft}`
-                                                : null;
+                                  : o.blende
+                                    ? `Blende offen ${o.blende}`
+                                    : o.spiegel
+                                      ? `Spiegel offen ${o.spiegel}`
+                                      : o.felder
+                                        ? `Felder offen ${o.felder}`
+                                        : o.dorf
+                                          ? `Dorf offen ${o.dorf}`
+                                          : o.leib
+                                            ? "Leib offen"
+                                            : o.leute
+                                              ? `Leute offen ${o.leute}`
+                                              : o.huellen
+                                                ? `Hüllen offen ${o.huellen}`
+                                                : o.ankunft
+                                                  ? `Ankunft gleitet ${o.ankunft}`
+                                                  : null;
         if (grund) {
             W.welt = welt;
             W.bau = bau;
@@ -521,6 +527,7 @@ class AnazhRealm_dirigent_takt {
                 ankunft: 0,
                 stau: 0,
                 horizont: 0,
+                blende: 0,
                 huellen: 0,
                 alter: 0,
             }); // je Takt, ohne Müll
@@ -569,6 +576,10 @@ class AnazhRealm_dirigent_takt {
             (this._saatOffen ? this._saatOffen.size : 0) +
             (st.pendingVegSpawns ? st.pendingVegSpawns.length : 0);
         o.karten = this._impostorBakeQueue ? this._impostorBakeQueue.length : 0;
+        // DIE BLENDE DES EINTRITTS (w22-wald-geburt-heil, `aEin`): die Takte, bis die zuletzt eingetretene Karte eines Wurfs des
+        // Felds ganz steht — endlich ab ihrem Eintritt, an keinem Auge; die Ruhe der Welt sieht erst die eingeblendete Karte
+        const blende = (this._einBlendeBis | 0) - (st.weltTakt | 0);
+        o.blende = blende > 0 && blende <= AnazhRealm.KARTEN_EINTRITT_TAKTE ? blende : 0; // eine neue Welt zählt neu
         // DER SPIEGEL IM FADEN (D10, `_spiegelFeldTakt`): bis jeder Auftrag des Spiegel-Felds gebacken und im Takt eingetragen ist
         // (wartend, im Flug, die Antwort vor ihrem Eintrag) — bis studios-heim-stand stand die Welt, während der Faden das Feld
         // noch backte (am Bach der Mess-Wiese 16 von 24 Aufträgen offen, als die Linse ihre Bilder schoss)
@@ -657,12 +668,19 @@ class AnazhRealm_dirigent_takt {
                 versuch: false,
                 erledigt: 0,
                 erledigtMs: null,
+                haeltSeit: null, // unter dem Ladeschirm: seit wann die Leine das Bild einer offenen Bau-Schuld hält
+                gehaltenMs: 0, // die gehaltene Zeit bis zum fälligen Bild — sein Bau-Guthaben (`_ladeBildFaellig`)
             });
         L.versuch = false;
+        const E = this._erstZeichnung;
         if (this._gpuLeineStraff()) {
             L.ausgesetzt++;
+            // DIE LEINE HÄLT DAS BILD, WÄHREND EIN BAU WARTET (`ladeSchuld`): ihre Zeit wird das Guthaben des Baus (`_ladeBildFaellig`)
+            if (E && E.ladeSchuld === true && L.haeltSeit == null) L.haeltSeit = performance.now();
             return false;
         }
+        if (L.haeltSeit != null)
+            [L.gehaltenMs, L.haeltSeit] = [(L.gehaltenMs || 0) + performance.now() - L.haeltSeit, null];
         if (!this._ladeBildFaellig(L)) return false;
         L.versuch = true;
         return true;
@@ -674,13 +692,28 @@ class AnazhRealm_dirigent_takt {
     // bevor das Bild steht — und sobald am Anfang des Takts keine Lücke mehr fehlt: der Takt trägt dann das ganze Spiel vor
     // dem Bild, nach dem `_ankunftsBild` urteilt (eine Lücke, die erst im Takt schließt, zeichnet der nächste). Radeon kalt
     // zeichnete jeder Lade-Takt (3,3 s Render bis zum Bild, K602/p2.cpuprofile), die Erst-Zeichnung trug davon ~1,6 s.
+    // DIE SCHULD DER ERST-ZEICHNUNG (w19-ankunft-takt): wartete im letzten Bild ein Knoten-Bau auf die Frist (`ladeSchuld`), ist das
+    // Bild jedes zweiten Takts fällig, bis sie getilgt ist — die Bauten verteilen sich über die Takte, statt eine Aufgabe zu halten.
+    // DIE GEHALTENE ZEIT IST DAS GUTHABEN (`ladeGuthaben`, `_knotenRate`): hielt die GPU-Leine das Bild, während die Schuld offen
+    // war (`gehaltenMs`, `_gpuLeineFrei`), baut das fällige Bild so lange — der Bau wartete auf die GPU, nie auf den Faden
+    // (swiftshader, CPU ×4: 11 Lade-Bilder in 15 s, die Leine 797-mal gespannt, der Haupt-Faden 2,3 s von 15 s belegt).
     _ladeBildFaellig(L) {
         if (!this._ladeTakt()) return true;
         const jetzt = performance.now();
-        if (jetzt - (L.ladeBild || -Infinity) >= AnazhRealm.LADE_BILD_MS || this._weltbildLuecken().length === 0) {
+        const E = this._erstZeichnung;
+        const schuld = !!E && E.ladeSchuld === true && L.ladeVorher !== true;
+        if (
+            schuld ||
+            jetzt - (L.ladeBild || -Infinity) >= AnazhRealm.LADE_BILD_MS ||
+            this._weltbildLuecken().length === 0
+        ) {
+            if (E) [E.ladeGuthaben, E.ladeSchuld] = [L.gehaltenMs || 0, false];
+            L.gehaltenMs = 0;
             L.ladeBild = jetzt;
+            L.ladeVorher = true;
             return true;
         }
+        L.ladeVorher = false;
         L.ladeAus = (L.ladeAus || 0) + 1;
         return false;
     }
@@ -1545,6 +1578,7 @@ class AnazhRealm_dirigent_takt {
         const [x, z] = pm ? [pm.position.x, pm.position.z] : [0, 0];
         const next = wunsch ? wunsch.wort : this._wetterAmOrt(x, z, zug * Z);
         const von = this._wetterAmOrt(x, z, (zug - 1) * Z);
+        this._pegelVergangenheit(x, z); // eine Welt ohne Gedächtnis des Pegels tritt mit ihrer Vergangenheit in die Front
         if (next !== st.weather)
             this.log(`Das Wetter zieht zu ${next}${wunsch ? ` (Wunsch: ${wunsch.quelle})` : ""}`, "INFO");
         else if (wunsch) this.log(`Das Wetter bleibt ${next} (Wunsch: ${wunsch.quelle})`, "INFO");
@@ -1632,7 +1666,7 @@ class AnazhRealm_dirigent_takt {
     _deferrableBudgetMs() {
         const st = this.state;
         if (st.renderer && st.renderer._isHeadlessNull) return Infinity;
-        if (this._ladeTakt()) return AnazhRealm.LADE_TAKT_MS;
+        if (this._ladeTakt()) return this._ladeBildTakt ? AnazhRealm.LADE_TAKT_MS / 2 : AnazhRealm.LADE_TAKT_MS;
         const throttleMs = Number.isFinite(st.perfTargetMs) ? st.perfTargetMs : AnazhRealm.PERF_TARGET_MS;
         const sense = st.perfSense;
         if (!sense || !sense.phase) return Math.max(AnazhRealm.FRAME_SCHED_MIN_MS, throttleMs - 8);
@@ -1675,14 +1709,19 @@ class AnazhRealm_dirigent_takt {
     // der Aufgabe (Mikro-Task). LADE_TAKT_MS für alle Leser mit Kappe zusammen (bis G2-n1 gab jeder Ruf „jetzt + 100 ms",
     // fünf Leser streckten den Lade-Frame auf 500 ms). Am Frame-Stempel des Loops las die Ort-Wahl außerhalb des Frames
     // die verbrauchte Frist des letzten und rechnete 3 ms je Scheibe (Radeon kalt Dorf nach Export 0,1–0,5 → 1,6–8,4 s).
-    // Außerhalb des Lade-Takts −∞.
-    _ladeFrist() {
+    // Außerhalb des Lade-Takts −∞. DER BILD-TAKT (`_ladeBildTakt`, w19-ankunft-takt): zeichnet die Aufgabe ihr Lade-Bild, gehört
+    // die zweite Hälfte der Frist der Zeichnung (`zeichnung`: der Knoten-Bau der Erst-Zeichnung) — die Leser des Takts arbeiten bis
+    // zu ihrer Mitte. Bis hier trug der Bild-Takt LADE_TAKT_MS Arbeit UND je Render-Aufruf LADE_TAKT_MS Knoten-Bau (headless kalt
+    // 5fb21e29: Aufgaben von 347–737 ms). Hielt die GPU-Leine das Bild einer offenen Bau-Schuld, trägt die Zeichnung ab ihrem
+    // ersten Schritt die gehaltene Zeit, höchstens LADE_TAKT_MS (`ladeGuthaben`, `_knotenRate`) — auch wenn die Leser die Frist
+    // schon verbrauchten: der Bau wartete auf die GPU, nie auf den Faden.
+    _ladeFrist(zeichnung = false) {
         if (!this._ladeTakt()) return -Infinity;
         if (this._ladeFristBis == null) {
             this._ladeFristBis = performance.now() + AnazhRealm.LADE_TAKT_MS;
             Promise.resolve().then(() => (this._ladeFristBis = null));
         }
-        return this._ladeFristBis;
+        return this._ladeBildTakt && !zeichnung ? this._ladeFristBis - AnazhRealm.LADE_TAKT_MS / 2 : this._ladeFristBis;
     }
 
     // DIE KAPPE JE TAKT (K60-2, die EINE Stelle der Klasse): ein Leser des ersten Weltbilds mit eigener Kappe je Takt (`n`
@@ -1819,6 +1858,7 @@ class AnazhRealm_dirigent_takt {
         setze(st.chunkRingRadius);
         setze(st._activeRingRadius); // der Boot-Ring wächst bis zum Ziel (`_voxelChunkConfig`)
         setze(st.architectureCullingRadius);
+        setze(this._laubRand()); // der Eintritt der Würfe des Felds (`_archKartenHorizont`) liegt vor ihm
         const f = this._foundry;
         setze(f ? f.ankunft | 0 : -1, true);
         // was die Takte ortsfrei vom Studio lesen, liest der Stempel selbst (kein Schreiber kann den Weckruf vergessen): die
@@ -2055,6 +2095,7 @@ class AnazhRealm_dirigent_takt {
             if (_lu.uLodMaskOn) _lu.uLodMaskOn.value = this.state.lodMaskOn === false ? 0 : 1;
             if (_lu.uLodAuge && this.state.camera) _lu.uLodAuge.value.copy(this._lodAuge());
             if (_lu.uLodPerf) _lu.uLodPerf.value = this._ankunftsFerne();
+            if (_lu.uLodTakt) _lu.uLodTakt.value = this.state.weltTakt; // die Welt-Uhr des Eintritts (`aEin`)
             // W5.4 (Schritt 3) — die Band-Zahlen spiegeln LIVE die EINE Quelle LOD_DISTANCES
             // (der Studio-Ingest mutiert sie → die Foundry-Maske folgt ohne Material-Rebuild).
             const _D = AnazhRealm.LOD_DISTANCES;

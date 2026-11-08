@@ -572,7 +572,7 @@ async function probe(K) {
     };
     const raeumen = (x, z, rad) => {
         for (const cr of (st.creatures || []).slice())
-            if (cr && cr.position && Math.hypot(cr.position.x - x, cr.position.z - z) < rad) r.removeCreature(cr);
+            if (cr?.position && Math.hypot(cr.position.x - x, cr.position.z - z) < rad) r.removeCreature(cr);
     };
     // AM ORT einer Probe: der Spieler eingeschwungen, die Tiere im Umkreis R geräumt
     const amOrt = async (o, R) => (await einschwingen(o.x, o.z), raeumen(o.x, o.z, R));

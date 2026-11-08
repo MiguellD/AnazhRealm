@@ -26,7 +26,7 @@ hauptLauf(async () => {
         try {
             const f = r._ensureAssetFoundry();
             await __weltDa(() => !(f && !f.ready));
-            res.behavior.foundryReady = !!(f && f.ready);
+            res.behavior.foundryReady = !!(f?.ready);
             // Einen Baum-Bauplan finden (die grammatik-gewachsenen Built-ins baum_*).
             const bps = st.blueprints || {};
             let treeBp = Object.keys(bps).find((k) => /^baum_/.test(k) && r._foundryPresetForEntry({ type: k }));
@@ -37,11 +37,11 @@ hauptLauf(async () => {
                 for (const weiter = __deckel("die Vorschau der Werkstatt", 1000); weiter(); ) {
                     __handTakt();
                     grp = r._workshopFoundryPreviewGroup(treeBp); // wirft nicht
-                    if (grp && grp.children && grp.children.length) break;
+                    if (grp?.children?.length) break;
                     await sleep(40);
                 }
-                res.behavior.returnedGroup = !!(grp && grp.children && grp.children.length);
-                if (grp && grp.children && grp.children.length) {
+                res.behavior.returnedGroup = !!(grp?.children?.length);
+                if (grp?.children?.length) {
                     const child = grp.children[0];
                     res.behavior.isInstanced = !!child.isInstancedMesh;
                     const g = child.geometry;
@@ -49,7 +49,7 @@ hauptLauf(async () => {
                     res.behavior.vertCount = pos ? pos.count : -1;
                     // Die Karten-Signatur (W6): das Instanz-vec4 aKarte mit gestempelter Schicht, Rahmen und Sichthöhe.
                     const ak = g && g.getAttribute && g.getAttribute("aKarte");
-                    res.behavior.hasKarte = !!(ak && ak.isInstancedBufferAttribute && ak.itemSize === 4);
+                    res.behavior.hasKarte = !!(ak?.isInstancedBufferAttribute && ak.itemSize === 4);
                     res.behavior.karte = ak ? Array.from(ak.array.slice(0, 4)) : null;
                 }
                 // ===== TEIL B — KONSUM: die Vorschau routet L2 eines Baums durch den Karten-Flatten (nur Bäume, nur Stufe 2)

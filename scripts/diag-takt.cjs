@@ -281,8 +281,11 @@ hauptLauf(async () => {
                         // DER NAH-GANG außerhalb des Lade-Takts: 30 Ladende, die auf die Ankunfts-Generation warten, verbrauchen keinen Versuch,
                         // der Bau dahinter steht; 25 Ladende erschöpfen die Versuchs-Kappe, sie beendet nur das Bauen — die gedockte Stufe
                         // dahinter wird gesetzt. Der Selbsttest nimmt den 30 das Warten und der Stufe das Dock: beide stehen hinter der Kappe.
+                        // Sie warten auf die HEUTIGE Generation des echten Werks (`fEcht.ankunft`, wie der Gang sie liest), nie auf eine feste
+                        // 0: lieferte das Werk vor T9 einen Körper, wartete keiner der 30 mehr, sie fragten nach dem Gesetz neu, und die Wand
+                        // nannte den Gang (z287 am Läufer 2/2 — 4 Kerne, EIN Werk-Faden; lokal mit 4 Kernen und CPU ×6 nachgestellt, auch an main).
                         [r._ladeTakt, r._foundryEnabled] = [() => false, () => true];
-                        st.architectures = [...Array(57).keys()].map((i) => ({ position: { x: i + 1, z: 0 }, _ziegelGebacken: true, _nahWartet: i < 30 && !selbst ? { a: 0, t: Infinity } : null, laedt: i !== 30 && i < 56, dock: i === 56 && !selbst })); // prettier-ignore
+                        st.architectures = [...Array(57).keys()].map((i) => ({ position: { x: i + 1, z: 0 }, _ziegelGebacken: true, _nahWartet: i < 30 && !selbst ? { a: fEcht?.ankunft | 0, t: Infinity } : null, laedt: i !== 30 && i < 56, dock: i === 56 && !selbst })); // prettier-ignore
                         r.tickArchitectureCulling();
                         aus9.gang = [!!st.architectures[30].t9, !!st.architectures[56].t9];
                     } finally {
@@ -292,7 +295,6 @@ hauptLauf(async () => {
                     }
                     return aus9;
                 } finally {
-                    r._foundry = fEcht;
                     zurueck();
                 }
             })();
@@ -305,7 +307,7 @@ hauptLauf(async () => {
                     const taub = selbst && geboren.length === 0; // der alte Weg: die Geburt trägt keine Frage
                     const w = {
                         url,
-                        name: taub ? null : (o && o.name) || null,
+                        name: taub ? null : o?.name || null,
                         post: [],
                         postMessage: (m) => w.post.push(m && m.type),
                         terminate: () => {},
@@ -318,7 +320,7 @@ hauptLauf(async () => {
                 try {
                     const f = r._ensureAssetFoundry();
                     await __weltDa(() => !!(!(f && !f.worker)));
-                    aus10.geboren = !!(f && f.worker);
+                    aus10.geboren = !!f?.worker;
                     if (aus10.geboren) Object.assign(aus10, { name: f.worker.name, post: f.worker.post.slice() });
                     aus10.helfer = Math.max(0, geboren.length - 1);
                 } finally {

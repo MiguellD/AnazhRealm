@@ -7,7 +7,8 @@
 "use strict";
 const { execSync } = require("child_process");
 const yaml = require("js-yaml");
-const { klasseDesLaufs, GROSS_S, LAEUFER_PLAETZE, PULS_S, ueber } = require("./lib/ci-klasse.cjs");
+const R6 = require("./lib/ci-klasse.cjs");
+const { klasseDesLaufs, GROSS_S, LAEUFER_PLAETZE, PULS_S, ueber, R6_SHELL } = R6;
 const { schluessel } = require("./ci-schluessel.cjs");
 const { kopfUrteil } = require("./ci-kopf.cjs");
 const { messe } = require("./ci-zeiten.cjs");
@@ -24,7 +25,7 @@ const VOLL_WENN =
     "github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || " +
     "github.event_name == 'pull_request' || github.ref == 'refs/heads/integ-probe' || github.ref == 'refs/heads/main' || " +
     "contains(github.event.head_commit.message, '[ci voll]')";
-const jobsVon = (doc) => (doc && doc.jobs) || {};
+const jobsVon = (doc) => doc?.jobs || {};
 const normWenn = (x) => String(x == null ? "" : x).trim().replace(/\s+/g, " ");
 const istVollWenn = (x) => normWenn(x) === VOLL_WENN;
 // EIN URTEIL JE KOPF: der Kopf-Richter läuft unter VOLL_WENN, die Batterie hinter ihm, wenn der Kopf noch kein
@@ -32,7 +33,7 @@ const istVollWenn = (x) => normWenn(x) === VOLL_WENN;
 const KOPF_JOB = "kopf";
 const KOPF_LAUF = /^node scripts\/ci-kopf\.cjs$/;
 const VOLL_NACH_KOPF = "needs.kopf.outputs.voll == 'ja'";
-const needsVon = (J) => [].concat((J && J.needs) || []);
+const needsVon = (J) => [].concat(J?.needs || []);
 // (E) DIE ECHT-GRUPPE: GPU-Schritte von `voll` und die Wände der Karte (gate:…:echt) auf dem eigenen Läufer, hinter dem
 // Kopf-Richter (`echt`), nie pull_request; je Schritt eine Frist, der Job ≤ ECHT_DECKEL_MIN, sein Plan ≤ ECHT_PLAN_S (T).
 const ECHT_JOB = "echt";
@@ -133,6 +134,10 @@ const KLASSEN = {
 };
 // Die EINE Ausnahme-Liste: Wand → { klasse, grund }. Wer hier steht, hält in keinem Workflow den Merge — mit Grund.
 const AUSNAHMEN = {
+    "gate:pop": {
+        klasse: KLASSEN.MESS,
+        grund: "der Messplatz von lod.K2#1 im GPU-Probe-Dienst, der Richter ist die Station",
+    },
     "gate:arch-feld": {
         klasse: KLASSEN.FRIST,
         grund:
@@ -148,7 +153,7 @@ const AUSNAHMEN = {
 // npm fährt ein Skript als `sh -c` ohne errexit; `fremd`: eine Shell, deren Text die Linse nicht liest — jeder Befehl stumm.
 const SHELL_NPM = { e: false, pipefail: false, fremd: null };
 function shellArt(shell) {
-    if (shell == null || shell === "") return { e: true, pipefail: false, fremd: null };
+    if (shell == null || shell === "" || shell === R6_SHELL) return { e: true, pipefail: false, fremd: null };
     const s = String(shell).trim();
     if (s === "bash") return { e: true, pipefail: true, fremd: null };
     if (s === "sh") return { e: true, pipefail: false, fremd: null };
@@ -392,7 +397,7 @@ function playtestUrteil(docs, skripte) {
     const v = [];
     const ziel = aufloesen(`npm run ${PLAYTEST}`, skripte).map((t) => t.t);
     const traeger = ciSchritte(docs, skripte).filter(
-        (s) => s.erreicht.has(PLAYTEST) || (ziel.length > 0 && ziel.every((t) => s.teile.some((x) => x.t === t)))
+        (s) => s.erreicht.has(PLAYTEST) || (ziel.length && ziel.every((t) => s.teile.some((x) => x.t === t)))
     );
     const wo = (s) =>
         `„${s.name}" (${s.datei}/${s.job}${gruppeVon(s.schritt) ? " Gruppe " + gruppeVon(s.schritt) : ""})`;
@@ -443,6 +448,29 @@ function gateSchritte(doc) {
     return out;
 }
 
+// (Z) DIE ZUG-STELLE (R6, 07.11.): die volle Batterie fährt unter der R6-Shell; jeder Selbsttest läuft nachts, auf Abruf, auf
+// main und auf einem Diff, der nur seine Linse ändert — einer, der nie mehr liefe, ist ROT beim Namen; jede Wand hat im Zug
+// genau EINE Stelle: was der echt-Job wörtlich fährt, ruht dort in der vollen Batterie.
+function zugStelle(doc, skripte, r6 = R6) {
+    const V = jobsVon(doc)[VOLL_JOB] || {};
+    if (V.defaults?.run?.shell !== R6_SHELL) return [`(Z) R6: „${VOLL_JOB}" fährt nicht unter ${R6_SHELL}`];
+    const env = (e, ref = "refs/heads/main") => ({ GITHUB_ACTIONS: "1", GITHUB_EVENT_NAME: e, GITHUB_REF: ref });
+    const [v, aufrufe] = [[], new Set()];
+    for (const s of gates(V)) {
+        r6.r6Text(s.run, skripte, (a) => (aufrufe.add(a), {}), []);
+        if (gates(jobsVon(doc)[ECHT_JOB] || {}).some((e) => lauf(e) === lauf(s)) && !r6.r6ZugStelle(s.run, doc, env("push", "refs/heads/integ-probe")))
+            v.push(`(Z) ZWILLING: „${name(s)}" fährt im Zug auf swiftshader UND im echt-Job`);
+    }
+    for (const a of aufrufe) {
+        const linse = (/node\s+([\w./-]+\.c?js)/.exec(a) || [])[1];
+        const nie = [env("schedule"), env("workflow_dispatch"), env("push")]
+            .filter((e) => !r6.r6Immer(e) || !r6.r6Urteil(a, { immer: r6.r6Immer(e) }).laeuft)
+            .map((e) => e.GITHUB_EVENT_NAME);
+        if (!r6.r6Urteil(a, { diff: new Map([[linse, []]]), bekannt: () => 1 }).laeuft) nie.push(`Diff ${linse}`);
+        if (nie.length) v.push(`(Z) NIE: „${a}" liefe nie mehr (${nie.join(" · ")})`);
+    }
+    return v;
+}
 function urteil(doc) {
     const v = [];
     for (const job of Object.keys(jobsVon(doc)))
@@ -715,7 +743,7 @@ const LINIE = [process.env.GITHUB_BASE_REF, process.env.GITHUB_REF_NAME || execS
 function waage(doc, zeiten, alterVon = seitKopf, sperrt = LINIE) {
     const [v, alt] = [[], []];
     const zeilen = [];
-    const Z = (zeiten && zeiten.schritte) || {};
+    const Z = zeiten?.schritte || {};
     const vorb = zeiten && Number(zeiten.vorbereitung_s);
     if (!(vorb >= 0)) return { v: [`(T) ZEITEN: ${ZEITEN} trägt keine vorbereitung_s`], zeilen };
     const alter = (() => {
@@ -757,7 +785,7 @@ function waage(doc, zeiten, alterVon = seitKopf, sperrt = LINIE) {
                 if (!groesster || z > groesster[1]) groesster = [name(s), z];
             }
             const kl = (M.include || []).find((e) => e && e.gruppe === g);
-            const klasse = job + (kl && kl.klasse ? ` ${kl.klasse}` : "");
+            const klasse = job + (kl?.klasse ? ` ${kl.klasse}` : "");
             const wer = g === null ? job : `${job} ${g}/${gs.length}${klasse.slice(job.length)}`;
             gruppen.push({ job, art, klasse, plan: summe, n: mein.length, groesster, wer });
             if (art === "voll" && 1.2 * summe > 60 * J["timeout-minutes"])
@@ -788,7 +816,7 @@ function waage(doc, zeiten, alterVon = seitKopf, sperrt = LINIE) {
     // (E) der Plan der Echt-Gruppe: ihre Vorbereitung und die Mediane ihrer Schritte auf der Karte, höchstens ECHT_PLAN_S
     const E = jobsVon(doc)[ECHT_JOB];
     if (E) {
-        const ze = (zeiten && zeiten.echt) || {};
+        const ze = zeiten?.echt || {};
         let plan = Number(ze.vorbereitung_s) || 0;
         for (const s of gates(E)) plan += gewicht(s, ECHT_JOB) || 0;
         zeilen.push(`${ECHT_JOB} ${minuten(plan)}`);
@@ -1150,8 +1178,24 @@ function selbsttest() {
         selbsttestPlaytest(),
         selbsttestKlasse(),
         selbsttestSchluessel(),
-        selbsttestKopf()
+        selbsttestKopf(),
+        selbsttestZug()
     );
+}
+// (Z) gegen die echte check.yml: je Mutante der R6-Shell der Täter beim Namen
+function selbsttestZug() {
+    const [doc, sk] = [yaml.load(ausDatei(path.join(root, DATEI))), jsonLesen("package.json").scripts];
+    const leer = () => ({ code: new Map(), text: "", namen: new Set(), zeilen: [] });
+    return [
+        ["die echte check.yml", R6, /^$/],
+        ["der Zwilling kehrt zurück", { ...R6, r6ZugStelle: () => null }, /ZWILLING: „Ziel-Zensus/],
+        ["nachts ruht ein Selbsttest", { ...R6, r6Immer: (e) => e.GITHUB_EVENT_NAME !== "schedule" && R6.r6Immer(e) }, /NIE: „node scripts\/diag-kreatur-takt.*\(schedule/],
+        ["die Linse fehlt in ihrer Abhängigkeit", { ...R6, r6Urteil: (a, kx) => R6.r6Urteil(a, kx, leer) }, /NIE: „node scripts\/diag-haus-welt.*Diff scripts\/diag-haus-welt/],
+    ].flatMap(([n, r6, soll]) => {
+        const u = zugStelle(doc, sk, r6).join(" · ");
+        console.log(`  ${soll.test(u) ? "✅" : "❌"} Selbsttest „${n}" → ${u.slice(0, 240) || "grün"}`);
+        return soll.test(u) ? [] : [`(Z) „${n}" fällt nicht rot beim Namen`];
+    });
 }
 
 // (T) Die Waage gegen ein Fixture.
@@ -1509,7 +1553,7 @@ function hauptlauf() {
     const doc = yaml.load(ausDatei(path.join(root, DATEI)));
     const skripte = jsonLesen("package.json").scripts || {};
     const v = urteil(doc);
-    v.push(...klassenUrteil(doc, skripte));
+    v.push(...klassenUrteil(doc, skripte), ...zugStelle(doc, skripte));
     const alleWorkflows = workflowsLesen();
     const g = deckung(skripte, alleWorkflows, AUSNAHMEN);
     v.push(...g.v);
@@ -1532,12 +1576,12 @@ function hauptlauf() {
                 : "") +
             ` · ohne Workflow ${g.zahl.offen}`
     );
-    if (w.alt && w.alt.length)
+    if (w.alt?.length)
         console.log(`  ⚠ ${w.alt.join(" · ")} (Arbeits-Zweig: benannt, sperrt auf integ-probe und main)`);
     console.log(
         `  Waage (Plan = Gewicht samt Vorbereitung — Puls Median, voll p90 —, min, Schritte; Deckel ${(w.deckel || []).join(" · ")}): ${w.zeilen.join(" · ")}`
     );
-    if (w.gross && w.gross.length)
+    if (w.gross?.length)
         console.log(
             `  über ${GROSS_S / 60} min oder allein über dem Deckel (je eine eigene Karte, nie die Waage): ${w.gross.join(" · ")}`
         );
@@ -1547,7 +1591,7 @@ function hauptlauf() {
         );
     wandEnde(
         v,
-        `(G) (V) (D) (W) (A) (R) (F) (S) (K) (E) (T) (P) halten: jeder Gate-Schritt läuft genau einmal, hält den Merge und liegt im Plan unter seinem Deckel`
+        `(G) (V) (D) (W) (A) (R) (F) (S) (K) (E) (T) (P) (Z) halten: jeder Gate-Schritt läuft genau einmal, hält den Merge und liegt im Plan unter seinem Deckel`
     );
 }
 if (SELBSTTEST) selbsttestLauf();

@@ -91,7 +91,7 @@ function urteil(out) {
             v.push("SELBSTTEST VAKUÖS: das Gift ohne Hülle nennt „No occlusion queries are active“ nicht");
         if (!hat(S.gift, /weak set/))
             v.push("SELBSTTEST VAKUÖS: das Gift ohne Hülle nennt „Invalid value used in weak set“ nicht");
-        if (!S.letzter || ![S.letzter.gpu, S.letzter.wache].some((m) => Object.keys(m || {}).length > 0))
+        if (!S.letzter || ![S.letzter.gpu, S.letzter.wache].some((m) => Object.keys(m || {}).length))
             v.push("SELBSTTEST VAKUÖS: der Letzte ohne Hülle nennt keine Meldung");
     } else if (!out.abbruch) v.push("SELBSTTEST fehlt");
     return v;
@@ -290,7 +290,7 @@ async function verdeckungPhase(opts) {
     const eigen = {};
     if (opts.roh)
         for (const k of ["copyFramebufferToTexture", "finishRender", "resolveOccludedAsync"])
-            if (Object.prototype.hasOwnProperty.call(be, k)) {
+            if (Object.hasOwn(be, k)) {
                 eigen[k] = be[k];
                 delete be[k];
             }

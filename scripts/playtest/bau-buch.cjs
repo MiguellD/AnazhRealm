@@ -189,7 +189,7 @@ async function checkBandV1771ToolOpFromForm({ page, check }) {
         out.rejectsBadClass = r.setBlueprintToolMeta("__op_man", "x", "uberklasse").ok === false; // Validierung unbroken
 
         // cleanup
-        if (st.tools && st.tools.__op_blade) delete st.tools.__op_blade;
+        if (st.tools?.__op_blade) delete st.tools.__op_blade;
         if (st.player && Array.isArray(st.player.tools))
             st.player.tools = st.player.tools.filter((t) => t !== "__op_blade");
         delete blu.__op_blade;
@@ -891,7 +891,7 @@ async function checkBandV1788WorkshopAsProcess({ page, check }) {
         const apF1 = pm ? r.applyWorkshopProcessToPart("_wp88", 0, "esse") : { ok: false };
         out.friedenAppliesAfterPlacement = apF1.ok === true;
         // restore
-        st.architectures = (st.architectures || []).filter((e) => !(e && e.__v88));
+        st.architectures = (st.architectures || []).filter((e) => !(e?.__v88));
         r.setGameMode(prevMode);
         delete st.blueprints["_wp88"];
         if (st.blueprintEditHistory) delete st.blueprintEditHistory["_wp88"];
@@ -2633,7 +2633,7 @@ async function checkBandWaves9And10a({ page, check }) {
             const minP = r.computeBlueprintPrecisionCap(st.blueprints.test_9d_machine);
             const reg = r.registerBlueprintAsTool("test_9d_machine");
             out.regOk = reg && reg.ok === true;
-            if (reg && reg.ok) {
+            if (reg?.ok) {
                 const tool = st.tools["test_9d_machine"];
                 const expected = Math.min(1.0, minP + 0.05);
                 out.toolHasBonus = Math.abs(tool.precisionCap - expected) < 0.001;
@@ -2659,7 +2659,7 @@ async function checkBandWaves9And10a({ page, check }) {
             const soulRes = r.applyPlayerSoulFromBlueprint("test_9d_soul");
             out.soulApplyOk = soulRes && soulRes.ok === true;
             out.soulApplyChangedSoul = st.player.soul !== soulBefore;
-            out.customSoulRegistered = !!(st.customSouls && st.customSouls["bp_test_9d_soul"]);
+            out.customSoulRegistered = !!st.customSouls?.["bp_test_9d_soul"];
 
             const archRes = r.applyPlayerSoulFromBlueprint("stein_block");
             out.nonSoulReject = archRes && archRes.ok === false && archRes.reason === "blueprint_not_soul";
@@ -3188,7 +3188,7 @@ async function checkBandV18214SkeletonMesh({ page, check }) {
                 // positionGeometry und den Stempel aH0) — die Geometrie trägt nur, was ein Stoff liest.
                 const ungelesen = (lf, gelesen) => Object.keys(lf.geom.attributes).filter((k) => !gelesen.includes(k));
                 const imWind = (lf) =>
-                    !!(lf.mat && lf.mat.positionNode && lf.mat.userData.baumWind && lf.mat.userData.baumWind.ht > 0);
+                    !!(lf.mat?.positionNode && lf.mat.userData.baumWind && lf.mat.userData.baumWind.ht > 0);
                 const bark = flat.leaves[0];
                 out.barkVerts = bark.geom.attributes.position.count;
                 out.barkUngelesen = ungelesen(bark, ["position", "normal", "color", "aH0", "aH0L"]);

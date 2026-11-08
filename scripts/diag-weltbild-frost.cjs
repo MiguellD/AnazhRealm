@@ -63,7 +63,7 @@ function geraeteHoerer() {
     const zaehle = (dev, art, d) => {
         (dev.__frostBau || (dev.__frostBau = { module: 0, pipelines: 0 }))[art]++;
         // die Namen der Pipelines (r184: `renderPipeline_<Stoff>_<id>`) — die Seelen-Probe nennt, WAS neu baut
-        if (art === "pipelines") (dev.__frostNamen || (dev.__frostNamen = [])).push((d && d.label) || "?");
+        if (art === "pipelines") (dev.__frostNamen || (dev.__frostNamen = [])).push(d?.label || "?");
     };
     const modul = P.createShaderModule;
     P.createShaderModule = function (d) {
@@ -123,7 +123,7 @@ function geraeteHoerer() {
             if (H.erste.length < 6)
                 H.erste.push(
                     `device ${nr}: ` +
-                        String((ev.error && ev.error.message) || ev.error)
+                        String(ev.error?.message || ev.error)
                             .split("\n")[0]
                             .slice(0, 220)
                 );
@@ -298,8 +298,7 @@ hauptLauf(async () => {
                 // echt urteilt B den Canvas: erst mit dem ersten Weltbild (`_weltbildDa`) weicht der Ladeschirm; headless
                 // urteilt das Rücklese-Bild der Welt-GPU, kein DOM — dort kostete das Warten 56 s und Gruppe 18 ihren 7-min-Deckel
                 if (
-                    st &&
-                    st.rendererReady &&
+                    st?.rendererReady &&
                     st.playerMesh &&
                     !st._deferredAvatarSoul &&
                     st.voxelChunks &&
@@ -312,7 +311,7 @@ hauptLauf(async () => {
             const rend = r && st && st.renderer;
             return {
                 bereit: !!(r && st.rendererReady),
-                webgpu: !!(rend && rend.backend && rend.backend.isWebGPUBackend === true),
+                webgpu: !!(rend?.backend && rend.backend.isWebGPUBackend === true),
                 chunks: r && st.voxelChunks ? st.voxelChunks.size : -1,
                 weltbild: r && st._weltbildDa ? `${(st._weltbildDa / 1000).toFixed(1)} s` : "fehlt",
                 warm: !!(r && st._leibWarm),
@@ -515,7 +514,7 @@ hauptLauf(async () => {
             await window.__frostWand.buehne("die Bühne", holen, (n) => n >= 2);
             const s = holen();
             let meshes = 0;
-            if (s && s.scene) s.scene.traverse((o) => o.isMesh && meshes++);
+            if (s?.scene) s.scene.traverse((o) => o.isMesh && meshes++);
             return { bühne: wer, gezeichnet: window.__frostWand.gezeichnet(s), meshes };
         }, wer);
 
@@ -529,7 +528,7 @@ hauptLauf(async () => {
     await schritt("werkstatt-eiche", async () => {
         const wahl = await page.evaluate(() => {
             r.toggleDrawer("werkstatt");
-            if (st.blueprints && st.blueprints.baum_eiche)
+            if (st.blueprints?.baum_eiche)
                 return r.selectBlueprintForEdit("baum_eiche") ? "baum_eiche" : null;
             return null;
         });
@@ -830,7 +829,7 @@ hauptLauf(async () => {
         const E = window.__frostEntsorgung;
         r.toggleDrawer("werkstatt");
         const f = r._foundry;
-        const ids = f && f.recipes ? Object.keys(f.recipes).filter((k) => f.recipes[k].kind === "kreatur") : [];
+        const ids = f?.recipes ? Object.keys(f.recipes).filter((k) => f.recipes[k].kind === "kreatur") : [];
         const id = ids.includes("wolf") ? "wolf" : ids[0];
         if (!id) return { fehlt: "kein Kreatur-Rezept" };
         r.selectStudioRecipeForView(id);
@@ -838,7 +837,7 @@ hauptLauf(async () => {
         const holen = () => ws.preview;
         await E.warte(holen);
         const G = window.__tetrapodaCore.GATTUNGEN;
-        const recId = (AnazhRealm.TETRAPODA_SOUL_MAP && AnazhRealm.TETRAPODA_SOUL_MAP[id]) || id;
+        const recId = AnazhRealm.TETRAPODA_SOUL_MAP?.[id] || id;
         const basis = G[recId] || G.wolf;
         const dial = Object.keys(basis).find((k) => typeof basis[k] === "number" && basis[k] > 0.2);
         const stoffe = new Set();
@@ -850,7 +849,7 @@ hauptLauf(async () => {
         const K = new Set();
         O.mess = () => {
             let hoerer = 0;
-            for (const s of stoffe) hoerer += s._listeners && s._listeners.dispose ? s._listeners.dispose.length : 0;
+            for (const s of stoffe) hoerer += s._listeners?.dispose ? s._listeners.dispose.length : 0;
             let b = 0;
             for (const g of K) for (const a of Object.values(g.attributes)) b += a.array.byteLength;
             return {

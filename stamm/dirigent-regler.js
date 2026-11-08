@@ -270,6 +270,14 @@ class AnazhRealm_dirigent_regler {
         return art === "laub" ? AnazhRealm.PERF_FOLIAGE_RADIUS_MAX : AnazhRealm.ARCH_QUALITY_RADIUS_MAX;
     }
 
+    // DER LAUB-RAND (m), wie er jetzt steht: der Radius, in dem die Vegetation sät und wächst (`state.foliageRadius`, vom Regler
+    // zum Rand am Schirm geführt), vor seiner ersten Setzung (Boot, Test) der Haushalt. EIN Leser für die Saat der Chunks, ihren
+    // Wuchs, die Streu, die Grenze der Fern-Krone und den Eintritt der Karte (`_archKartenHorizont`).
+    _laubRand() {
+        const fr = this.state.foliageRadius;
+        return fr != null ? fr : AnazhRealm.PERF_FOLIAGE_RADIUS_MAX;
+    }
+
     // AKTUIEREN — die EINE Stelle für ALLE Qualitäts-Stellgrößen: loadScale × Kosten-Anteil je
     // Subsystem. Das TEUERSTE regelbare Subsystem (Architektur/Streaming/Wasser, aus dem gemessenen
     // Sense) gibt ZUERST nach. loadScale=1 → alle Stellgrößen auf Maximum.

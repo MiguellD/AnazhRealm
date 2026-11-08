@@ -57,7 +57,7 @@ async function welt() {
         const st = r.state;
         const f = r._ensureAssetFoundry ? r._ensureAssetFoundry() : null;
         await __weltDa(() => !!(!(f && !f.ready)));
-        o.foundry = !!(f && f.ready);
+        o.foundry = !!(f?.ready);
         // ── A: DER ABSCHIED JEDER SENKE (W6) — jede Senke, die `_instanzMesh` ab hier baut, wird verfolgt; `_instanzAbschied`
         // stempelt sie. Eine Senke, die den Graphen ohne Abschied verlässt, hinterlässt ihre Instanz-Puffer in r184s Register
         // (`buf:verwaist`); ein Abschied einer Senke, die noch im Graphen steht, zerstört einen gezeichneten Speicher-Puffer.
@@ -156,7 +156,7 @@ async function welt() {
                 }
             }
             const Z = st.stlZaun;
-            if (Z && Z.mesh) senke("siedlung-zaun", Z.mesh, Z.top);
+            if (Z?.mesh) senke("siedlung-zaun", Z.mesh, Z.top);
             const nw = st.nahWiese;
             if (nw) for (const a of nw.senken.values()) senke(a.name, a.mesh, a.anzahl);
             const ns = st.nahStreu;
@@ -296,7 +296,7 @@ async function welt() {
             // (3) ein Umzug, der die Matrix vergaß: zwei Instanzen eines Eintrags-Slots tauschen die Matrix
             let tausch = null;
             for (const e of st.architectures || []) {
-                const ref = e && e.instanced && Array.isArray(e.instSlots) ? e.instSlots[0] : null;
+                const ref = e?.instanced && Array.isArray(e.instSlots) ? e.instSlots[0] : null;
                 const g = ref && groups.get(ref.key);
                 if (g && !g.tuer && (g.liveCount | 0) >= 2) {
                     tausch = { g, a: ref.slot, b: ref.slot === 0 ? 1 : 0, e };

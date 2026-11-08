@@ -373,7 +373,7 @@ function probe(selbsttest) {
                 res.loecher++;
                 if (res.namen.length < 6) res.namen.push(x);
             };
-            const PT = Object.prototype.hasOwnProperty.call(r, "_passTrifft") ? r._passTrifft : undefined;
+            const PT = Object.hasOwn(r, "_passTrifft") ? r._passTrifft : undefined;
             r._passTrifft = (LL, cx, cy, cz, hx, hy, hz, rr) => echt(LL, cx, cy, cz, hx, hy, hz, rr);
             try {
                 for (const s of saetze) {
@@ -604,7 +604,7 @@ function probe(selbsttest) {
             boden.bloecke.delete("__w7:tal");
             boden.bloecke.delete("__w7:hang");
             r._kaskadenHuellen = roh;
-            if (Object.prototype.hasOwnProperty.call(r, "_kaskadenHuellen")) delete r._kaskadenHuellen;
+            if (Object.hasOwn(r, "_kaskadenHuellen")) delete r._kaskadenHuellen;
         }
     };
     if (boden) {
@@ -700,7 +700,7 @@ function probe(selbsttest) {
                         const b = c.userData._werferKind;
                         const soll = !!b && !b.isEmpty() && r._passTrifftBox(L, b, 0);
                         if (c.visible !== soll) w.kindFalsch++;
-                    } else if (c.children.length > 0) kinder(c);
+                    } else if (c.children.length) kinder(c);
                 }
             };
             for (const bg of map.values()) if (bg.visible) kinder(bg);
@@ -1211,7 +1211,7 @@ function probe(selbsttest) {
         const tot = r.spawnCreatureAt(pm.x + 3, pm.y, pm.z + 3, "happy", "wolf", { precise: true, bodySize: 1 });
         st.maxCreatures = altMax;
         if (tot) r.damageCreature(tot, 1e9, { source: "world" });
-        aus.w6Tot = !!tot && (st.leichname || []).indexOf(tot) !== -1 && !!tot.parent;
+        aus.w6Tot = !!tot && (st.leichname || []).includes(tot) && !!tot.parent;
         // der Konsum: die Box-Methode selbst, ein Fenster nur um den Gefallenen (500 m über allem, Licht-Raum = Welt) —
         // kennt sie ihn, steht die Höhe ihres höchsten Werfers über ihm
         aus.w6TotOben = null;
@@ -1243,7 +1243,7 @@ function probe(selbsttest) {
             });
         }
         aus.w6 = { fremd: fremd.slice(0, 8), n: fremd.length, tot: aus.w6Tot, totOben: aus.w6TotOben };
-        if (tot && tot.parent) r.removeCreature(tot);
+        if (tot?.parent) r.removeCreature(tot);
     }
 
     // ── W10 DIE WURF-EBENE: die Kaskaden-Kameras sehen genau die Werfer (r184 projiziert sonst je Render jeden
@@ -1253,7 +1253,7 @@ function probe(selbsttest) {
     // der Szene: gesehen ⇔ wirft. ──
     {
         const E = 1 << r.constructor.SHADOW_TWIN_LAYER;
-        const kams = st.csmNode && st.csmNode.lights ? st.csmNode.lights.map((l) => l.shadow.camera) : [];
+        const kams = st.csmNode?.lights ? st.csmNode.lights.map((l) => l.shadow.camera) : [];
         const urteil = (maske) => {
             const fremd = [],
                 eigen = [],
@@ -1335,7 +1335,7 @@ function probe(selbsttest) {
             // die echte CSM: jeder Kaskaden-Knoten trägt die Hülle seit der Geburt
             echt:
                 csm._shadowNodes.length > 0 &&
-                csm._shadowNodes.every((sn) => Object.prototype.hasOwnProperty.call(sn, "setupRenderTarget")),
+                csm._shadowNodes.every((sn) => Object.hasOwn(sn, "setupRenderTarget")),
         };
     }
     // ── Z2 (Seite): die EINE Szenen-Tiefe — _szeneTiefe baut frisch den einen Knoten "szene:tiefenkopie", ein zweiter Ruf liefert ihn ──
@@ -1355,7 +1355,7 @@ function probe(selbsttest) {
         inselnFrei: __fehlt(r._loopFrustumCulling, /isInFrustum\(/),
         tiereFrei: __fehlt([r.updateCreatures, r._loopFrustumCulling], TIER_SCHREIBER),
         eigeneMethode: ["updateBefore", "_init", "_updateShadowBounds"].every((k) =>
-            Object.prototype.hasOwnProperty.call(csm, k)
+            Object.hasOwn(csm, k)
         ),
         // kein Umbau nach der Geburt: die Karten-Ziele fallen nie im laufenden Frame (Bind-Gruppen der Bundles)
         keinUmbau: __fehlt(r._kaskadenPassen, /\.dispose\(\)|_kaskadenKarten|_kaskadenZiele/),
@@ -1448,8 +1448,7 @@ function probe(selbsttest) {
             for (const n in st.blueprints) {
                 const fl = r._archFlattenBlueprint(n);
                 if (
-                    fl &&
-                    fl.instanceable &&
+                    fl?.instanceable &&
                     Array.isArray(fl.leaves) &&
                     fl.leaves.length &&
                     fl.leaves.every((l) => !l.tuer && !l.atlasGruppe && !l.shadowTwin) &&
@@ -1601,7 +1600,7 @@ function probe(selbsttest) {
         );
         console.log(
             `  ℹ W8 Gruppen der Wahl ohne Masken-Stoff (kein Fenster, nur das Gesetz): ${
-                a.w8 && a.w8.ohneMaske ? a.w8.ohneMaske.length + (a.w8.ohneMaske.length ? " — " + a.w8.ohneMaske.slice(0, 8).join(" · ") : "") : "?"
+                a.w8?.ohneMaske ? a.w8.ohneMaske.length + (a.w8.ohneMaske.length ? " — " + a.w8.ohneMaske.slice(0, 8).join(" · ") : "") : "?"
             }`
         );
         const w9t = (w) =>

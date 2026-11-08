@@ -112,7 +112,7 @@ async function bootLauf(text) {
     g.document = { querySelector: () => ({ textContent: JSON.stringify({ imports: { three: "." + ENGINE_MODUL() } }) }), querySelectorAll: () => [] }; // prettier-ignore
     g.Blob = function (teile) { blob = teile.join(""); }; // prettier-ignore
     g.URL = class extends URL { static createObjectURL() { return "blob:boot"; } }; // prettier-ignore
-    g.Worker = function (_u, o) { aus.geburt = (o && o.name) || "ohne Namen"; this.postMessage = () => {}; }; // prettier-ignore
+    g.Worker = function (_u, o) { aus.geburt = o?.name || "ohne Namen"; this.postMessage = () => {}; }; // prettier-ignore
     const wirt = Object.assign(Object.create(A.prototype), { state: {}, _foundryHelfer() {}, _stoffBruch: (w, e) => e || new Error(w) }); // prettier-ignore
     try { A.prototype._ensureAssetFoundry.call(wirt, true); } catch (e) { aus.fehler = e.message; } // prettier-ignore
     const echt = PK.readManifest(PK.ROOT);
@@ -208,13 +208,13 @@ async function main() {
         // Default-Pfad: Hook weg → der Worker liefert (byte-Wahrheit für den Roundtrip).
         const ser = await realm.page.evaluate(() => window.__packSer("eiche", 7, 2));
         check(
-            !!(ser && ser.meshes && ser.meshes.length),
+            !!(ser?.meshes && ser.meshes.length),
             `Live-Reply eiche|7|2: ${ser ? ser.meshes.length : 0} Meshes`
         );
         if (!ser) throw new Error("kein Live-Reply");
         const rec = await realm.page.evaluate(() => {
             const f = window.anazhRealm._foundry;
-            const r = f && f.recipes ? f.recipes.eiche : null;
+            const r = f?.recipes ? f.recipes.eiche : null;
             return r ? { kind: r.kind, panel: r.panel } : null;
         });
         const pack = PK.packFromReply(ser, { kind: rec ? rec.kind : undefined, coreId: PK.coreIdFor(rec, manifest) });

@@ -471,21 +471,21 @@ async function probe() {
     const orakel = (dt) => {
         if (!r._buehneSteht()) return;
         const archs = st.architectures || [];
-        const focusing = archs.filter((e) => e.affordances && e.affordances.focusing);
+        const focusing = archs.filter((e) => e.affordances?.focusing);
         const sonne = st.weather === "sunny" ? r._sonnenRichtung() : null;
         const licht = sonne && sonne.y > 0 ? sonne : null;
         const punkte = [];
         if (licht) for (const fa of focusing) for (const p of r._brennpunkte(fa, licht)) punkte.push({ fa, p });
         const name = (e) => {
             const b = e && st.blueprints ? st.blueprints[e.type] : null;
-            return String((b && b.label) || (e && e.type) || "?").split(/\s[·—(]/)[0];
+            return String(b?.label || e?.type || "?").split(/\s[·—(]/)[0];
         };
         const ignitions = [];
         const riddenId = st.player ? st.player.mountedArch : null;
         for (const target of archs) {
             const vorher = target.heatBuildup || 0;
             if (!(vorher > 0) && !punkte.length) continue;
-            if (target.affordances && target.affordances.focusing) continue;
+            if (target.affordances?.focusing) continue;
             if (riddenId != null && target.id === riddenId) continue;
             const w = r._brennWaerme(target, punkte, focusing, dt);
             if (!w) continue;
@@ -566,7 +566,7 @@ async function probe() {
             return (
                 Array.isArray(bps[n].parts) &&
                 bps[n].parts.length > 0 &&
-                bps[n].parts.some((p) => !!st.materials[p.material] && r._stoff(p.material).tZuend > 0) &&
+                bps[n].parts.some((p) => st.materials[p.material] && r._stoff(p.material).tZuend > 0) &&
                 !(r.computeBlueprintAffordances(bps[n]) || {}).focusing
             );
         } catch {
@@ -775,7 +775,7 @@ async function probe() {
         // die Betroffenen vor dem Schritt: die warmen und, wenn die Sonne durch ein Glas scheint, die Plätze in Reichweite
         const N = r._blockerNetz();
         const sonne = st.weather === "sunny" ? r._sonnenRichtung() : null;
-        const gl = archs.filter((e) => e && e.affordances && e.affordances.focusing && e.position);
+        const gl = archs.filter((e) => e?.affordances && e.affordances.focusing && e.position);
         const scheint = !!(sonne && sonne.y > 0 && gl.some((fa) => r._brennpunkte(fa, sonne).length));
         const R = AR.FOCUSING_HEAT_RANGE_M + AR.BLOCKER_ZELLE;
         let betroffen = 0;
@@ -784,7 +784,7 @@ async function probe() {
             const reich = R + (e._blockerReach || 0);
             if (
                 e.heatBuildup > 0 ||
-                (N && N.beweger && N.beweger.has(e)) ||
+                (N?.beweger && N.beweger.has(e)) ||
                 (scheint &&
                     e.position &&
                     gl.some(
@@ -872,7 +872,7 @@ async function probe() {
         for (const e of ist.feuer) P.removeArchitecture.call(r, e);
         // jeder warme Eintrag des Bestands steht in der warmen Menge
         const N2 = r._blockerNetz();
-        if (N2 && N2.warm)
+        if (N2?.warm)
             for (const e of st.architectures) if (e && e.heatBuildup > 0 && !N2.warm.has(e)) T.warmFehlt++;
     }
     aus.tag = T;
@@ -881,12 +881,12 @@ async function probe() {
     const schluessel = () => {
         const k = new Set(["rauch", "focusing", "radiating", "broadcasting", "balancing", "lifting", "isPortal"]);
         for (const e of st.architectures)
-            if (e && e.affordances) for (const a in e.affordances) if (e.affordances[a]) k.add(a);
+            if (e?.affordances) for (const a in e.affordances) if (e.affordances[a]) k.add(a);
         return [...k];
     };
     const filter = (k) =>
         k === "rauch"
-            ? st.architectures.filter((e) => e && ((e.userData && e.userData.rauchQuelle) || e.chimney))
+            ? st.architectures.filter((e) => e && (e.userData?.rauchQuelle || e.chimney))
             : st.architectures.filter((e) => e && e.affordances && e.affordances[k]);
     const vergleiche = (name) => {
         const f = [];
@@ -908,9 +908,9 @@ async function probe() {
     stelle(ox, oz);
     aus.verzeichnis.push(vergleiche("Spawn (Dorf)"));
     const weg = st.architectures
-        .filter((e) => e && e.affordances && Object.values(e.affordances).some(Boolean))
+        .filter((e) => e?.affordances && Object.values(e.affordances).some(Boolean))
         .slice(0, 3);
-    const wegRauch = st.architectures.filter((e) => e && e.chimney).slice(0, 2);
+    const wegRauch = st.architectures.filter((e) => e?.chimney).slice(0, 2);
     for (const e of weg.concat(wegRauch)) r.removeArchitecture(e);
     aus.verzeichnis.push(vergleiche("Abriss"));
     // ein Tor wird nachgezogen: der Klon eines Brennglases (focusing), zwei stehende Einträge, dann `setBlueprintAsPortal` —
@@ -965,7 +965,7 @@ async function probe() {
         for (const e of st.architectures) {
             if (!e || !e.position) continue;
             const tip =
-                (e.userData && e.userData.rauchQuelle) ||
+                e.userData?.rauchQuelle ||
                 (e.chimney && Number.isFinite(e.chimney.x) ? e.chimney : null);
             if (!tip || !Number.isFinite(tip.x) || !Number.isFinite(tip.y) || !Number.isFinite(tip.z)) continue;
             const phi = Number.isFinite(e.rotationY) ? e.rotationY : 0;
@@ -980,11 +980,11 @@ async function probe() {
     };
     r._updateDorfRauch(0.016);
     const qa = JSON.stringify(rauchAlt()),
-        qn = JSON.stringify((st.dorfRauch && st.dorfRauch.quellen) || []);
+        qn = JSON.stringify(st.dorfRauch?.quellen || []);
     aus.rauch = { quellen: JSON.parse(qa).length, gleich: qa === qn };
     // (H) DIE HAUS-TÜR: fern von jedem Haus scannt der Tür-Takt (nichts), dann 5 m vor ein Haus mit Tür — 2 s Frames später
     // steht es in der Nähe-Liste und trägt sein Tür-Gedächtnis (`_tuerRec`); die Liste ist der Filter über den Bestand
-    const haeuser = st.architectures.filter((e) => e && e.tuer && e.position);
+    const haeuser = st.architectures.filter((e) => e?.tuer && e.position);
     const echt = { x: st.playerMesh.position.x, y: st.playerMesh.position.y, z: st.playerMesh.position.z };
     // wie ein Spieler: zum Haus gehen, bis die Mesh-Zone es zeichnet (`tickArchitectureCulling` → seine Instanz, asynchron
     // über die Werkstatt; das EINE Warten auf den Bau, welt-boot `__gebautNach`)
@@ -1010,7 +1010,7 @@ async function probe() {
         const q = st.playerMesh.position;
         const soll = st.architectures.filter(
             (e) =>
-                e && e.tuer && e.position && e.instSlots && (e.position.x - q.x) ** 2 + (e.position.z - q.z) ** 2 < 1600
+                e?.tuer && e.position && e.instSlots && (e.position.x - q.x) ** 2 + (e.position.z - q.z) ** 2 < 1600
         );
         Object.assign(aus.tuer, {
             fernListe,
@@ -1406,7 +1406,7 @@ hauptLauf(async () => {
         `  Fernziel: ${F.art} ×${F.skala}, ${F.abstand} m vom Glas, Platz ±${F.reichweite} m · volle Frage ${F.voll}, ` +
             `halbe ${F.halb} · erwärmt ${F.heiz}× · Beweger: nur über die Beweger ${B.mitBewegern && !B.ohneBeweger} · erwärmt ${B.heiz}×`
     );
-    const Nz = (S.naehe && S.naehe.arbeit) || {};
+    const Nz = S.naehe?.arbeit || {};
     console.log(
         `  Nähe: ${S.naehe ? S.naehe.proben : 0} Proben gegen das Orakel, Abweichungen ${S.naehe ? S.naehe.abw : "?"} · ` +
             `Wirkung ${JSON.stringify(S.naehe && S.naehe.wirkung)} · ferne Menge ${S.naehe ? S.naehe.menge : 0} ` +

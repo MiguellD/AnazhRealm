@@ -99,13 +99,13 @@ hauptLauf(async () => {
         // ===== D (dazu): Idempotenz + Probe-Preset =====
         try {
             // Injektion == der Schoepfer legt ein Preset im Kern an
-            if (f && f.recipes) {
+            if (f?.recipes) {
                 f.recipes.probemobil = { kind: "vehicle", lab: "Probemobil", s: {}, fx: {} };
                 const n1 = r._foundryAutoRegisterSpecies(f.recipes);
                 const n2 = r._foundryAutoRegisterSpecies(f.recipes);
-                res.d.probeRegistered = !!(st.blueprints && st.blueprints.fahrzeug_probemobil);
+                res.d.probeRegistered = !!st.blueprints?.fahrzeug_probemobil;
                 res.d.probeLabel =
-                    st.blueprints && st.blueprints.fahrzeug_probemobil
+                    st.blueprints?.fahrzeug_probemobil
                         ? st.blueprints.fahrzeug_probemobil.label
                         : null;
                 res.d.idempotent = n1 >= 1 && n2 === 0;

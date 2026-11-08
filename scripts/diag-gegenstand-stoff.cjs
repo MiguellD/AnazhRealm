@@ -128,7 +128,7 @@ function lackGestalten() {
         let best = null;
         g.traverse((o) => {
             // der Karosserie-Lack (lackStoff stempelt __lack; der Bremssattel ist Lack, aber nicht die Karosserie)
-            if (!best && o.isMesh && o.material && o.material.userData && o.material.userData.__lack)
+            if (!best && o.isMesh && o.material?.userData?.__lack)
                 best = o.material.color.toArray();
         });
         ist.push(best);
@@ -175,7 +175,7 @@ function selbstTest() {
         g.children[0].material.color.setRGB(...linHex(h));
         return g;
     };
-    if (urteil("t", roh(0x2a2c2f)).length !== 0) fehl.push("gesunder Reifen meldet");
+    if (urteil("t", roh(0x2a2c2f)).length) fehl.push("gesunder Reifen meldet");
     // je Täter-Gestalt: das Urteil nennt seinen Täter, sonst bleibt er still
     const still = (g, taeter, name) => urteil("t", g).some((s) => s.includes(taeter)) || fehl.push(name + " still");
     // der Reifen roh (r128 las 0x131519 als 0,08 linear)

@@ -27,11 +27,11 @@ const withComment = args.includes("--with-comment");
 // der Schnitt „nicht gefunden")
 const stammLib = require("./lib/stamm.cjs");
 const fileArg =
-    args.indexOf("--file") >= 0
+    args.includes("--file")
         ? args[args.indexOf("--file") + 1]
         : (name && stammLib.dateiVon(path.resolve(__dirname, ".."), name)) ||
           stammLib.dateien(path.resolve(__dirname, ".."))[0];
-const nthArg = args.indexOf("--nth") >= 0 ? parseInt(args[args.indexOf("--nth") + 1], 10) : null;
+const nthArg = args.includes("--nth") ? parseInt(args[args.indexOf("--nth") + 1], 10) : null;
 const file = path.resolve(__dirname, "..", fileArg);
 
 if (!name) {

@@ -465,7 +465,7 @@ function ortVerdikt(m) {
         );
     if (!(m.vorplatzN > 0 && m.vorplatzOk === m.vorplatzN))
         fehl.push(
-            `Stufe und Vorplatz bis zur Gasse auf dem Weg ${m.vorplatzOk}/${m.vorplatzN}${m.vorplatzFehl && m.vorplatzFehl.length ? ` (Haus ${m.vorplatzFehl.slice(0, 3).join(" · ")})` : ""}`
+            `Stufe und Vorplatz bis zur Gasse auf dem Weg ${m.vorplatzOk}/${m.vorplatzN}${m.vorplatzFehl?.length ? ` (Haus ${m.vorplatzFehl.slice(0, 3).join(" · ")})` : ""}`
         );
     // eine Wand ohne Vertex ist keine Messung (der Ort am Hang trägt Böschungen): ROT wie eine Wand im Wiesen-Stoff
     if (!(m.terrasseWand > 0 && m.terrasseWiese === 0))
@@ -1292,7 +1292,7 @@ hauptLauf(async () => {
                     p1.slots.every(
                         (s) =>
                             typeof s.kultur === "string" &&
-                            !!FC.KULTUR[s.kultur] &&
+                            FC.KULTUR[s.kultur] &&
                             isFinite(s.x) &&
                             isFinite(s.z) &&
                             isFinite(s.phi) &&
@@ -1723,7 +1723,7 @@ hauptLauf(async () => {
         const plan = await r._foundryRequestSettlement({ seed: 7, nH: 8 });
         res.planOk = !!(plan && Array.isArray(plan.slots) && plan.slots.length >= 4);
         res.planName = plan && plan.name;
-        res.planSlots = plan && plan.slots ? plan.slots.length : -1;
+        res.planSlots = plan?.slots ? plan.slots.length : -1;
         if (!res.planOk) return res;
         // 2) Der Konsument: POSITIONS-DETERMINISTISCH am SELBEN Anker (die Wasser-Wand ist
         //    Terrain-Wahrheit je Ort — verschiedene Anker duerfen verschieden viele Slots
@@ -1759,7 +1759,7 @@ hauptLauf(async () => {
         const istHaus = (e) => typeof e.type === "string" && e.type.indexOf("haus_") === 0;
         const alle1 = st.architectures.slice(mid2, after);
         const e1 = alle1.filter(istHaus);
-        const wandPlan = (plan.laternen || []).filter((l) => l && l.wand).length;
+        const wandPlan = (plan.laternen || []).filter((l) => l?.wand).length;
         res.wand1 = alle1.length - e1.length;
         res.wandPlan = wandPlan;
         res.entriesMatch =
@@ -2025,9 +2025,9 @@ hauptLauf(async () => {
                     st.architectures.filter((e) => e && e.position && portalArten.includes(e.type) && d2M(e) <= 30 * 30)
                         .length;
                 const ringVorher = imRing();
-                for (let t5 = 0; t5 < 30 && !(wm5.genesisOrt && wm5.genesisOrt.steht); t5++)
+                for (let t5 = 0; t5 < 30 && !wm5.genesisOrt?.steht; t5++)
                     r._genesisOrt({ x: M5.x, y: 1, z: M5.z });
-                res.c.ring.stempel = !!(wm5.genesisOrt && wm5.genesisOrt.steht);
+                res.c.ring.stempel = !!wm5.genesisOrt?.steht;
                 res.c.ring.gebaut = imRing() - ringVorher;
                 res.c.ring.stehen = imRing();
                 const archRing = st.architectures.filter((e) => portalArten.includes(e.type)).length;
@@ -2145,7 +2145,7 @@ hauptLauf(async () => {
                 delete wm.settlementCells[key];
                 let [wach, erst, haus, haupt] = [false, null, -1, 1];
                 FC.ortPlan = function (p, ...a) {
-                    haupt += wach && p && p.slots ? 1 : 0;
+                    haupt += wach && p?.slots ? 1 : 0;
                     return ortPlan0.call(this, p, ...a);
                 };
                 const lift = AnazhRealm.prototype._spawnSettlementSlot;
@@ -2519,7 +2519,7 @@ hauptLauf(async () => {
                     // gezählt am EXPORT (die Slots des Studios): der Plan v2 wirft nasse Slots, bevor er steht (fachwerk `ortPlan`,
                     // `wasserSlots`) — an ihm gezählt sähe die Linse die Häuser nie, die ein Ort ohne trockenen Grund verliert
                     res.slots = plan.slots.length;
-                    res.wasserSlots = (v2 && v2.wasserSlots) || 0;
+                    res.wasserSlots = v2?.wasserSlots || 0;
                     // DER TÄTER JE FEHLENDEM HAUS: die Wand der EINEN Slot-Quelle, an der der Slot fiel — das Wasser
                     // (`_fundamentLand`) oder ein Bau im Weg (`_bauFrei`, mit den Bauten, die keine Natur sind, binnen 8 m)
                     // die Meldung der Ort-Wahl (`_ortWahl`: kein trockener Ort in den Ringen) und ihre Kosten (`_ortWahlMass`)
@@ -2870,8 +2870,7 @@ hauptLauf(async () => {
                                 ._leuchtQuellen(anker.x, H(anker.x, anker.z), anker.z, 250, null)
                                 .filter(
                                     (q) =>
-                                        q.id &&
-                                        q.id.position &&
+                                        q.id?.position &&
                                         (r._lichtDatumDerGestalt(q.id) || r._glutFlaeche(q.id) > 0) &&
                                         Math.hypot(q.x - anker.x, q.z - anker.z) < 250
                                 )
@@ -2949,7 +2948,7 @@ hauptLauf(async () => {
                             cam.updateMatrixWorld(true);
                             r._leuchtPool = null;
                             r._leuchtTakt();
-                            const pl = (r._leuchtPool && r._leuchtPool.plaetze) || [];
+                            const pl = r._leuchtPool?.plaetze || [];
                             // DER HORIZONT DES POOLS: die sichtbaren Quellen der Gasse, die das Gesetz des Pools überhaupt
                             // wählen darf (`_leuchtQuellen` im `umkreisM` um das Auge, ohne Sichtkegel) — eine Laterne 63 m vor
                             // dem Auge zeigt ihren glühenden Kopf, ihr Licht trägt der Pool nicht (Gebot 7: Kosten am Schirm)
@@ -3249,7 +3248,7 @@ hauptLauf(async () => {
     check(
         // Fähigkeit ability:, Wirken capability:, Verzehr consume: (0710-8)
         "C7: das Dorf eines Werkzeugs schaut auf sich",
-        werkzeug.every((k) => !!bl[k] && bl[k].haeuser > 0 && bl[k].nebenDorf < 0.05),
+        werkzeug.every((k) => bl[k] && bl[k].haeuser > 0 && bl[k].nebenDorf < 0.05),
         werkzeug.map((k) => `${k}: ${blZ(bl[k])}`).join(" · ")
     );
     check(
@@ -3362,7 +3361,7 @@ hauptLauf(async () => {
     const Lw = GN.lageGrund(K5b.welt, require(path.join(root, "vendor/simplex-noise.js")));
     // der Selbsttest der Trasse (`fremd`): dieselben Gassen am Grund 24 m daneben — eine Trasse, die einem anderen Boden folgt
     const trassen = [...K5b.trasse, OA.outO.trasse, O.outO.trasse];
-    for (const t of [...trassen, ...H.trasse, ...HS.trasse].filter((q) => q && q.v2)) {
+    for (const t of [...trassen, ...H.trasse, ...HS.trasse].filter((q) => q?.v2)) {
         const grund = (dx) => (x, z) => GN.hoehe(Lw, x + dx, z, true);
         [t.p95, t.fremd, t.erdbauM3, t.v2] = [
             gassenGefaelle(t.v2, grund(0)),

@@ -708,7 +708,7 @@ async function checkBandWFFluss({ page, check }) {
         out.runExists = typeof r._atlasWaterLevelAt === "function";
         const hW = r._hydroFor(0, 0);
         let dryW = null;
-        if (hW && hW.ready && hW.water && hW.water.waterKind) {
+        if (hW?.ready && hW.water?.waterKind) {
             const dimW = hW.dim,
                 wKW = hW.water.waterKind;
             for (let j = 1; j < dimW - 1 && !dryW; j += 7)
@@ -1101,15 +1101,11 @@ async function checkBandV18206SpeedTrade({ page, check }) {
             // (S6) Floor-Disziplin: speed-Floor = (2/7)·Gesetz-base (dieselbe Formel wie der Stamm; kalter Kern
             // → Fallback-base 7 ⇒ Floor 2).
             const bewGesetzS =
-                (globalThis.__koerperCore &&
-                    globalThis.__koerperCore.PRESETS &&
-                    globalThis.__koerperCore.PRESETS.mensch &&
-                    globalThis.__koerperCore.PRESETS.mensch.fx &&
-                    globalThis.__koerperCore.PRESETS.mensch.fx.bewegung) ||
+                (globalThis.__koerperCore?.PRESETS?.mensch?.fx?.bewegung) ||
                 null;
             const speedFloorS =
                 (2 / 7) *
-                (bewGesetzS && bewGesetzS.speed && Number.isFinite(bewGesetzS.speed.base) ? bewGesetzS.speed.base : 7);
+                (bewGesetzS?.speed && Number.isFinite(bewGesetzS.speed.base) ? bewGesetzS.speed.base : 7);
             out.speedFloor = speedFloorS;
             out.speedFloorRespected = large.stats.speed >= speedFloorS - 1e-9;
             out.attackSpeedFloorRespected = large.stats.attackSpeed >= 0.25;
@@ -1154,7 +1150,7 @@ async function checkBandKonvergenzTierBaum({ page, check }) {
             const g = r._buildCreatureGroup(art);
             const a = { baum: false, meshN: 0, geoSet: new Set() };
             if (g) {
-                a.baum = !!(g.userData && g.userData._tierBaum && g.userData._tierBaum.teile);
+                a.baum = !!(g.userData?._tierBaum?.teile);
                 g.traverse((n) => {
                     if (n.isMesh) {
                         a.meshN++;
@@ -1247,7 +1243,7 @@ async function checkBandKonvergenzTierBaum({ page, check }) {
             st.creatureEmotions = [];
             t5 = r.spawnCreatureAt(pm5.position.x + 2, pm5.position.y, pm5.position.z + 2, "happy", "wolf");
             const gl5 = t5 && t5.userData._gelenk;
-            if (gl5 && gl5.fern) {
+            if (gl5?.fern) {
                 out.fernExists = true;
                 out.fernMeshN = gl5.meshes.length;
                 r.isInFrustum = () => true;
@@ -1270,7 +1266,7 @@ async function checkBandKonvergenzTierBaum({ page, check }) {
         }
         return out;
     });
-    const arten = (res && res.arten) || {};
+    const arten = res?.arten || {};
     for (const art of ["wesen", "wolf", "fuchs", "baer"]) {
         const a = arten[art] || {};
         check(

@@ -34,7 +34,7 @@ async function runOnce(browser, noFoundry) {
         const step = span / 4;
         r._ensureFarWaterSheet();
         const m = s.farWater;
-        o.built = !!(m && m.mesh);
+        o.built = !!m?.mesh;
         o.quads = m ? m.quads : 0;
         o.builtMs = m ? m.builtMs : null;
         o.builtOutR = m ? m.builtOutR : null;
@@ -153,7 +153,7 @@ async function runOnce(browser, noFoundry) {
         o.toggleOffDisposed = s.farWater === null;
         delete s.atmosphere.farWater;
         r._ensureFarWaterSheet();
-        o.toggleOnRebuilt = !!(s.farWater && s.farWater.mesh);
+        o.toggleOnRebuilt = !!s.farWater?.mesh;
         return o;
     });
     console.log(`\n===== FERN-WASSER — LINSE (V18.381) — Regime: ${noFoundry ? "ALT (foundry aus)" : "PRODUKTION (foundry an)"} =====\n`);
@@ -167,7 +167,7 @@ async function runOnce(browser, noFoundry) {
             `  nasse Vertices bei Atlas-L−drop: ${(out.vLevelFrac * 100).toFixed(1)} % (${out.vChecked} Proben)`
         );
         console.log(`  COVERAGE atlas-nasser Annulus-Zellen: ${(out.coverage * 100).toFixed(1)} % von ${out.wetCells}`);
-        if (out.uncovered && out.uncovered.length)
+        if (out.uncovered?.length)
             console.log(`  UNGEDECKT (Beispiele): ${JSON.stringify(out.uncovered)}`);
         console.log(
             `  Re-Anker beim Crossing: ${out.reanchored} · Toggle aus→weg: ${out.toggleOffDisposed} · an→wieder da: ${out.toggleOnRebuilt}`

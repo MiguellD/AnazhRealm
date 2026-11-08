@@ -148,7 +148,7 @@ function ofenMessen(page, opts) {
                 for (let i = 0; i < at.position.count; i++)
                     (x.isSkinnedMesh ? x.applyBoneTransform(i, v.fromBufferAttribute(at.position, i)) : v.fromBufferAttribute(at.position, i)).applyMatrix4(x.matrixWorld).toArray(pos, i * 3);
                 const glut = m.emissive && [m.emissive.r, m.emissive.g, m.emissive.b].map((c) => c * (m.emissiveIntensity ?? 1));
-                teile.push({ pos, index: x.geometry.index && x.geometry.index.array, farbe: at.color && lies(at.color), fs: at.color ? at.color.itemSize : 3, grund: m.color ? [m.color.r, m.color.g, m.color.b] : [0.7, 0.7, 0.7], leucht: glut, glutK: (m.userData && m.userData.__leucht) || 0 });
+                teile.push({ pos, index: x.geometry.index && x.geometry.index.array, farbe: at.color && lies(at.color), fs: at.color ? at.color.itemSize : 3, grund: m.color ? [m.color.r, m.color.g, m.color.b] : [0.7, 0.7, 0.7], leucht: glut, glutK: m.userData?.__leucht || 0 });
             });
             return teile;
         };
@@ -167,7 +167,7 @@ function ofenMessen(page, opts) {
                     (/^BUDGET-BRUCH /.test(String(m)) ? budget : fehler).push(String(m).slice(0, 200));
                 return P.log.apply(this, arguments);
             };
-            const hatte = Object.prototype.hasOwnProperty.call(ws.studioOv, preset);
+            const hatte = Object.hasOwn(ws.studioOv, preset);
             const alt = ws.studioOv[preset];
             if (ov) ws.studioOv[preset] = ov;
             else delete ws.studioOv[preset];
@@ -266,7 +266,7 @@ function ofenMessen(page, opts) {
                 aus.zeilen.push(...zeilen);
             }
         } finally {
-            if (Object.prototype.hasOwnProperty.call(r, "_studioPraegung")) delete r._studioPraegung;
+            if (Object.hasOwn(r, "_studioPraegung")) delete r._studioPraegung;
             B.koerper = altBaecker;
         }
         return aus;
@@ -580,7 +580,7 @@ async function stufenMessen(h, opts) {
         je.set(pl.p + "|" + pl.r + "|" + pl.s, pl.k);
         if (pl.nurAbdruck) return;
         // eine Stufe ohne Teile hält jede Zeile und zeigt nichts: immer rot, ohne Ratsche
-        if (!(pl.k.teile && pl.k.teile.length)) leer.push(`${pl.art} ${pl.p}${pl.r ? " " + pl.r.join("=") : ""} L${pl.s}`);
+        if (!pl.k.teile?.length) leer.push(`${pl.art} ${pl.p}${pl.r ? " " + pl.r.join("=") : ""} L${pl.s}`);
         // die Dreiecke der NUR-WURF-Stufe sind das Rezept-Maß (Entscheidung A): am Regler-Rand richtet der WURF
         const zu = ["tris", "draws"].filter(
             (f) =>
@@ -928,7 +928,7 @@ hauptLauf(async () => {
     const budget = Object.assign(
         {},
         m.stufen.bruch,
-        ...m.zeilen.filter((z) => z.budget && z.budget.length).map((z) => ({ [name(z)]: z.budget }))
+        ...m.zeilen.filter((z) => z.budget?.length).map((z) => ({ [name(z)]: z.budget }))
     );
     console.log(
         `STUFEN (B2c, pipeline.K3): ${m.stufen.builds} Bauten (jede Stufe × Rezept × Regler-Rand) · über Budget ${Object.keys(budget).length} · Reduktion je Art ${Object.entries(

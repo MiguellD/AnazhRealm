@@ -31,7 +31,7 @@ function diaetZaehler() {
                 nm = p.name + "/" + nm;
                 break;
             }
-        return (ro && ro.material && ro.material.isShadowPassMaterial ? "Schatten " : "") + nm;
+        return (ro?.material?.isShadowPassMaterial ? "Schatten " : "") + nm;
     };
     const wirkt = () => {
         const w = aktRo && offen.get(aktRo);
@@ -125,7 +125,7 @@ function diaetZaehler() {
         typeof n.getValueFromReference === "function" &&
         n.object != null &&
         n.count === null &&
-        !!(n.node && n.node.groupNode && n.node.groupNode.shared === true);
+        !!(n.node?.groupNode && n.node.groupNode.shared === true);
     haken("og", A, "_diaetObjektGang", function (...a) {
         imOG++;
         try {
@@ -148,7 +148,7 @@ function diaetZaehler() {
         return roh.bu.call(this, g, alle);
     });
     haken("ub", be, "updateBinding", function (b) {
-        zaehle(b && b.groupNode && b.groupNode.shared === true ? "uploadGeteilt" : "uploadEigen");
+        zaehle(b?.groupNode && b.groupNode.shared === true ? "uploadGeteilt" : "uploadEigen");
         wirkt();
         return roh.ub.call(this, b);
     });
@@ -199,7 +199,7 @@ function diaetZaehler() {
         }
     };
     haken("szene", rend, "_renderScene", function (scene, camera, fb) {
-        const schatten = !!(scene && scene.overrideMaterial && scene.overrideMaterial.isShadowPassMaterial);
+        const schatten = !!(scene?.overrideMaterial?.isShadowPassMaterial);
         zaehle(schatten ? "schattenRenders" : "szenen");
         return ohneGang(() => rahmen(schatten ? "schattenRender" : "szene", () => roh.szene.call(this, scene, camera, fb)));
     });

@@ -111,7 +111,7 @@ async function checkBandVoxelTerrainCore({ page, check }) {
     // Voxel-Chunks abräumen; die folgenden Tests bauen ihren Ring per _tickVoxelChunkStreaming neu
     // (Test-Isolation).
     await page.evaluate(() => {
-        if (r && st && st.voxelChunks) {
+        if (r && st?.voxelChunks) {
             for (const key of [...st.voxelChunks.keys()]) r._disposeVoxelChunk(key);
         }
     });
@@ -195,7 +195,7 @@ async function checkBandVoxelTerrainCore({ page, check }) {
 
         // oy straddelt die echte Oberfläche (ein Tiefband läge unter den Massiven ganz unter Grund → 0 Verts)
         const geom = r._voxelChunkGeometry(0, Math.round(r._terrainMacroSurfaceY(18, 18)) - 20, 0, 20, 20, 20, 1.8);
-        out.geomBuilt = !!(geom && geom.getAttribute && geom.getAttribute("position"));
+        out.geomBuilt = !!(geom?.getAttribute && geom.getAttribute("position"));
         if (out.geomBuilt) {
             const pos = geom.getAttribute("position");
             out.geomVertexCount = pos.count;
@@ -292,9 +292,9 @@ async function checkBandVoxelTerrainCore({ page, check }) {
             const afterOne = st.scene.children.length;
             const m2 = r._spawnVoxelTestChunk();
             const afterTwo = st.scene.children.length;
-            out.spawnAddsMesh = !!(m1 && m1.isMesh) && afterOne > before;
+            out.spawnAddsMesh = !!(m1?.isMesh) && afterOne > before;
             // Ein zweiter Aufruf ersetzt — kein Mesh-Wildwuchs.
-            out.spawnReplaces = !!(m2 && m2.isMesh) && afterTwo === afterOne;
+            out.spawnReplaces = !!(m2?.isMesh) && afterTwo === afterOne;
             // Aufräumen — der Test-Chunk bleibt nicht in der Welt. (P3: keine Ammo-Kollision
             // mehr freizugeben — feld-nativ.)
             if (r._voxelTestMesh) {
@@ -393,7 +393,7 @@ async function checkBandVoxelTerrainCore({ page, check }) {
         if (st.voxelChunkGrass) {
             for (const g of st.voxelChunkGrass.values()) {
                 grassEntries++;
-                if (g && g.isInstancedMesh) grassBlades += g.count;
+                if (g?.isInstancedMesh) grassBlades += g.count;
             }
         }
         out.voxelGrassBuilt = grassEntries > 0;
@@ -452,7 +452,7 @@ async function checkBandVoxelTerrainCore({ page, check }) {
         const origMeta = st.worldMeta;
         const origJournalEntries = st.worldJournal ? st.worldJournal.entries.slice() : null;
         const origJournalSeen =
-            st.worldJournal && st.worldJournal.seen ? Object.assign({}, st.worldJournal.seen) : null;
+            st.worldJournal?.seen ? Object.assign({}, st.worldJournal.seen) : null;
         // Alte Welt geladen, kein voxelTerrain-Flag → migrate.
         const oldMeta = { worldId: "test-old-w", slug: "test-old", bornAt: 100, seed: "test" };
         st.worldMeta = oldMeta;
@@ -679,7 +679,7 @@ async function checkBandVoxelTerrainCore({ page, check }) {
         out.metaPermanent = !!(st.worldMeta && st.worldMeta.voxelTerrain === true);
         // Der Welt-Snapshot trägt das Flag (überlebt Reload).
         const snap = r.buildStateSnapshot();
-        out.snapshotHasFlag = !!(snap && snap.worldMeta && snap.worldMeta.voxelTerrain === true);
+        out.snapshotHasFlag = !!(snap?.worldMeta && snap.worldMeta.voxelTerrain === true);
         // Der Chat-Toggle ist tot: der Source-Scan prüft das String-Literal `=== "voxel terrain on"`
         // (Code-Logik, nicht einen Kommentar, der den toten Befehl erwähnt).
         out.noChatToggle = __fehlt(r.processChatCommand, /===\s*["']voxel terrain on["']/);
@@ -1089,7 +1089,7 @@ async function checkBandV18132FerneSeen({ page, check }) {
         const before = fp();
         await __weltDa(() => !r._ensureHydroTilesAround(-2048, 0, 10)); // Kachel WEST (-1,0) aus dem Faden
         const tile = st.hydroTiles ? st.hydroTiles.get("-1,0") : null;
-        out.tileBuilt = !!(tile && tile.ready);
+        out.tileBuilt = !!(tile?.ready);
         out.tileSubstanz = tile ? tile.fluesse + tile.seen : 0;
         out.homeIdentical = fp() === before;
         // hydroBand deckt JEDEN Spiegel (das Band ist global) — die Seen UND die Flüsse (Punkt-Spiegel S) der Heimat
@@ -1109,7 +1109,7 @@ async function checkBandV18132FerneSeen({ page, check }) {
         // die Leser der Kachel im Haupt-Faden misst gate:worker-dichte `--kern` (am See in seiner Kachel)
         const cfg = r._voxelChunkConfig(0);
         // DER WORKER SPIEGELT DIE KACHEL (Lehre 7), auch ein nach ihr geborener (`_getVoxelWorker` bestellt sie ihm): bit-gleich.
-        const fl = ((tile && tile.rivers) || []).find((f) => f.points && f.points.length > 4);
+        const fl = (tile?.rivers || []).find((f) => f.points && f.points.length > 4);
         const p = fl ? fl.points[fl.points.length >> 1] : { x: -2048, z: 0 };
         const cx = Math.floor(p.x / cfg.span);
         const cz = Math.floor(p.z / cfg.span);
@@ -1361,12 +1361,11 @@ async function checkBandGammaGenese({ page, check }) {
                 };
             }
             out.schilfData = !!(
-                boden &&
-                boden.schilf &&
+                boden?.schilf &&
                 Array.isArray(boden.schilf.ufer) &&
                 boden.schilf.ring === "nah"
             );
-            out.farnDual = !!(boden && boden.farn && Array.isArray(boden.farn.licht) && boden.farn.feuchtLicht > 0);
+            out.farnDual = !!(boden?.farn && Array.isArray(boden.farn.licht) && boden.farn.feuchtLicht > 0);
             // (6) Γ5 — Math.random-Zensus (Kommentare gestrippt; der CODE darf
             // im Worldgen nie würfeln — P2P-Drift-Klasse).
             const fns = [
@@ -1389,7 +1388,7 @@ async function checkBandGammaGenese({ page, check }) {
             // (7) genVersion REIST im Snapshot (Klasse: was der Save
             // verliert, verliert die Welt beim Reload).
             const snap = r.buildStateSnapshot();
-            out.snapGen = snap && snap.worldMeta ? snap.worldMeta.genVersion : null;
+            out.snapGen = snap?.worldMeta ? snap.worldMeta.genVersion : null;
         } finally {
             if (st.worldMeta) {
                 if (origGen === undefined) delete st.worldMeta.genVersion;
@@ -1508,7 +1507,7 @@ async function checkBandGammaGenese({ page, check }) {
         res.schilfData && res.farnDual
     );
     check(
-        `Γ5 Determinismus: kein Math.random im Worldgen-Code (${res.randHits && res.randHits.length ? res.randHits.join(",") : "9 Fn sauber"})`,
+        `Γ5 Determinismus: kein Math.random im Worldgen-Code (${res.randHits?.length ? res.randHits.join(",") : "9 Fn sauber"})`,
         Array.isArray(res.randHits) && res.randHits.length === 0
     );
     check("Γ1 genVersion reist im Welt-Snapshot (V8.59-Klasse)", res.snapGen === 2);
@@ -1706,7 +1705,7 @@ async function checkBandSeamNormal({ page, check }) {
         const gBx = build(6, 5);
         const gBz = build(5, 6);
         const res = { xFace: measurePair(gA, gBx, 0, 6 * span), zFace: measurePair(gA, gBz, 2, 6 * span) };
-        for (const g of [gA, gBx, gBz]) if (g && g.dispose) g.dispose();
+        for (const g of [gA, gBx, gBz]) if (g?.dispose) g.dispose();
         return res;
     });
     const TOL = 1.0; // konform = Rand-Normalen praktisch identisch (vor G1: bis 69°)
@@ -1898,7 +1897,7 @@ async function checkBandTodZensus({ page, check }) {
                     "_leibZeichenFrei",
                     (alt) =>
                         function (c, ...rest) {
-                            if (s.creatures.indexOf(c) !== -1 && c.userData && c.userData.dying) return;
+                            if (s.creatures.indexOf(c) !== -1 && c.userData?.dying) return;
                             return alt.call(this, c, ...rest);
                         }
                 );
@@ -1908,7 +1907,7 @@ async function checkBandTodZensus({ page, check }) {
                     "_kreaturFaellt",
                     (alt) =>
                         function (c, ...rest) {
-                            if (c && c.userData) c.userData.carrying = null;
+                            if (c?.userData) c.userData.carrying = null;
                             return alt.call(this, c, ...rest);
                         }
                 );
@@ -2072,10 +2071,10 @@ async function checkBandTodZensus({ page, check }) {
                     return !(__fehlt(f, /_queueDispose\(/) || __fehlt(f, /taskAura|carryingSprite/));
                 })
                 .sort();
-            o.tot = { A: istTot(tA), B: istTot(tB) && !!(kill && kill.killed), C: istTot(tC) };
+            o.tot = { A: istTot(tA), B: istTot(tB) && !!(kill?.killed), C: istTot(tC) };
             // DIE TOD-LAGE: jeder Gefallene trägt seine Hebe-Tafel (die Flanke legt sich auf den Hang, nie in ihn)
             o.lage = {};
-            for (const [n, c] of ALLE) o.lage[n] = !!(c.userData.dying && c.userData.dying.hebe);
+            for (const [n, c] of ALLE) o.lage[n] = !!(c.userData.dying?.hebe);
             const schwebt = {};
             for (const [n, c] of ALLE) {
                 const d = c.userData.dying;
@@ -2086,7 +2085,7 @@ async function checkBandTodZensus({ page, check }) {
             const haltung = new Map();
             for (const [, c] of ALLE) {
                 const tb = c.userData._tierBaum;
-                const kn = tb && tb.teile ? Object.values(tb.teile) : [];
+                const kn = tb?.teile ? Object.values(tb.teile) : [];
                 haltung.set(
                     c,
                     kn.map((k) => [k, k.quaternion.clone(), k.position.clone()])
@@ -2239,7 +2238,7 @@ async function checkBandTodZensus({ page, check }) {
             });
             return o;
         } catch (e) {
-            o.fehler = String((e && e.stack) || e).slice(0, 600);
+            o.fehler = String(e?.stack || e).slice(0, 600);
             return o;
         } finally {
             for (const f of restore.reverse())
@@ -2259,9 +2258,9 @@ async function checkBandTodZensus({ page, check }) {
         }
     };
     const urteil = function urteil(z) {
-        if (!z || z.fehler) return { ok: false, grund: `keine Probe: ${(z && z.fehler) || "leer"}` };
+        if (!z || z.fehler) return { ok: false, grund: `keine Probe: ${(z?.fehler) || "leer"}` };
         const v = [];
-        if (!(z.tot && z.tot.A && z.tot.B && z.tot.C))
+        if (!(z.tot?.A && z.tot.B && z.tot.C))
             v.push(`vakuös: nicht alle drei gefallen (${JSON.stringify(z.tot)})`);
         if (!(z.zeichenVorher >= 6)) v.push(`vakuös: die lebenden Tiere trugen nur ${z.zeichenVorher} Sprites (Soll 6)`);
         if (!(z.knochen >= 30)) v.push(`vakuös: die Gefallenen tragen nur ${z.knochen} Knochen (die Haltung sähe nichts)`);

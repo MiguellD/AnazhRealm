@@ -118,7 +118,7 @@ const machServer = (platz) =>
         root: ROOT,
         wandle: (p, data) => {
             const z = platz.z;
-            const meine = data && z && z.patch ? z.patch.map(patchZiel).filter((x) => x[0] === p) : [];
+            const meine = data && z?.patch ? z.patch.map(patchZiel).filter((x) => x[0] === p) : [];
             if (!meine.length) return data;
             let txt = data.toString("utf8");
             for (const [, geheilt, basis] of meine) {
@@ -183,7 +183,7 @@ async function proben(phasen) {
                 k++ > vor &&
                 e &&
                 (x == null || e.surfMap) &&
-                !(s.pendingVegSpawns && s.pendingVegSpawns.length) &&
+                !s.pendingVegSpawns?.length &&
                 ns &&
                 ns.kacheln.size > 0 &&
                 ns.offen === 0
@@ -193,7 +193,7 @@ async function proben(phasen) {
         return ruhig >= 20;
     };
     // eine lebende Streu-Zelle (ihre Instanz-Slots oder ihr Feld-Wurf)
-    const lebt = (c) => (c.slots && c.slots.length) || c.feld;
+    const lebt = (c) => c.slots?.length || c.feld;
     // jede Streu-Zelle jeder Region
     const streuZellen = () =>
         [...((s.scatterRegions && s.scatterRegions.values()) || [])].flatMap((g) => g.cells || []);
@@ -305,7 +305,7 @@ async function proben(phasen) {
     const stell = (x, y, z) => {
         pm.position.set(x, y, z);
         s._fieldVy = 0;
-        if (s.playerVel && s.playerVel.setValue) s.playerVel.setValue(0, 0, 0);
+        if (s.playerVel?.setValue) s.playerVel.setValue(0, 0, 0);
         if (s._fixedSimPos) s._fixedSimPos.copy(pm.position);
         for (let k = 0; k < 20; k++) r._stepFixedSim((t += DT), DT);
     };
@@ -355,7 +355,7 @@ async function proben(phasen) {
                 await window
                     .__gebautNach(e, { fertig: () => !!e._hausHuelle, bau: () => {}, takt: () => pumpe(4), max: 300 })
                     .catch(() => null);
-            if (e && e._hausHuelle) return e;
+            if (e?._hausHuelle) return e;
         }
         return null;
     };
@@ -422,12 +422,12 @@ async function proben(phasen) {
         const takt = window.__anazhAutoSettlement;
         window.__anazhAutoSettlement = true;
         stell(start.x, start.y + 1, start.z);
-        const zelle = () => ((s.worldMeta && s.worldMeta.settlementCells) || {}).start;
+        const zelle = () => (s.worldMeta?.settlementCells || {}).start;
         await warteBis(() => !!zelle() && !r._autoSettlementQueue && !r._stlWegePending, 1, 1200);
         window.__anazhAutoSettlement = takt;
         const c = zelle();
         const plan = c && r._ortPlaene && r._ortPlaene.get(c.ort);
-        const slots = ((plan && plan.slots) || []).filter((sl) => /^haus_/.test(r._slotBauplan(sl, r._foundry) || ""));
+        const slots = (plan?.slots || []).filter((sl) => /^haus_/.test(r._slotBauplan(sl, r._foundry) || ""));
         o.startDorf = { slots: slots.length, fehlt: [] };
         for (const sl of slots) {
             const [x, z] = [c.x + sl.x, c.z + sl.z];
@@ -1058,7 +1058,7 @@ async function proben(phasen) {
             for (const [b, n] of imBau(e, vorBau, true))
                 if (w7.imBau++ < 4) w7.taeter.push(`${e.type}@${gierVon(e)}°in ${b.type} (${n} Punkte)`);
         // das zweite Dorf: derselbe Akt am Anker des ersten (worldMeta.settlementCells „d:7@x,z")
-        const zelle = Object.entries((s.worldMeta && s.worldMeta.settlementCells) || {}).find(([k]) =>
+        const zelle = Object.entries(s.worldMeta?.settlementCells || {}).find(([k]) =>
             k.startsWith("d:7@")
         );
         if (zelle) {
@@ -1816,14 +1816,14 @@ async function proben(phasen) {
         const t0 = performance.now();
         window.__anazhAutoSettlement = true;
         stell(start.x, start.y + 1, start.z);
-        const zellen = () => (s.worldMeta && s.worldMeta.settlementCells) || {};
+        const zellen = () => s.worldMeta?.settlementCells || {};
         let q = null;
         await warteBis(() => !!(q = r._autoSettlementQueue) || !!zellen().start, 1, 600);
         const sl = q && q.plan.slots[q.plan.slots.length - 1];
         const ort = sl && { x: q.origin.x + sl.x, y: sl.y + 0.5, z: q.origin.z + sl.z };
         const sperre = ort && r.spawnArchitecture("brunnen_dorf", ort, { silent: true });
         await warteBis(() => !(q && r._autoSettlementQueue === q && q.idx < 3), 1, 1200);
-        const reload = !!q && r._autoSettlementQueue === q && q.idx < q.plan.slots.length ? q.idx : 0;
+        const reload = q && r._autoSettlementQueue === q && q.idx < q.plan.slots.length ? q.idx : 0;
         if (reload) {
             // der Reload des Spiels mitten im Erwachen: der Zug fällt, der Ort kehrt aus seinem Gedächtnis wieder (speicher.K3)
             r._autoSettlementQueue = null;
@@ -1913,7 +1913,7 @@ function urteil(o) {
         const gang = hs.filter((h) => h.gang);
         if (gang.length < 3 || !gang.some((h) => h.gang.keller) || !gang.some((h) => h.gang.dach))
             f.push(`W10 Aufbau: ${gang.length} Gänge (Soll ≥ 3, mit Keller, mit Dachboden)`);
-        const tier = hs.filter((h) => h.tiere && h.tiere.length);
+        const tier = hs.filter((h) => h.tiere?.length);
         if (hs.some((h) => !h.saat)) f.push("W10 Saat blind");
         if (tier.length) f.push(`W10 Tier im Haus: ${tier.map((h) => h.typ + " " + h.tiere).join(" · ")}`);
         const hub = gang.filter((h) => !(h.gang.hub <= 0.3));
@@ -2085,7 +2085,7 @@ function urteil(o) {
                 f.push(
                     `W4b Aufbau: die Promotion lief nicht durch (${o.w4b.promo ? o.w4b.promo.promoviert + " promotet, " + o.w4b.promo.rest + " offen" : "?"} im Ring; Soll ≥ 1, 0 offen)`
                 );
-            if (o.w4b.kachel && o.w4b.kachel.imHaus)
+            if (o.w4b.kachel?.imHaus)
                 f.push(
                     `W4b Nah-Streu: ${o.w4b.kachel.imHaus} von ${o.w4b.kachel.pflanzen} Kachel-Pflanzen im Grundriss`
                 );
@@ -2104,7 +2104,7 @@ function urteil(o) {
     if (P.has("fremd")) {
         const [w, g] = [o.w11 || {}, (o.haeuser.find((h) => h.fremd) || {}).gang];
         if (!(w.vorher > 0 && w.nachher === 0 && w.byte && w.fest)) f.push(`W11 Fremd-Slot: ${JSON.stringify(w)}`);
-        if (!(g && g.keller && g.hub <= 0.3 && !g.fehlt.some((x) => x.startsWith("keller"))))
+        if (!(g?.keller && g.hub <= 0.3 && !g.fehlt.some((x) => x.startsWith("keller"))))
             f.push(`W10 Anti-Clip-Hub im Fremd-Slot: ${JSON.stringify(g)}`);
     }
     if (P.has("start")) {

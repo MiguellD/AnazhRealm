@@ -495,7 +495,7 @@ async function checkBandTailleOmega5({ page, check }) {
         const e2 = r.spawnArchitecture("_o5_werk", { x: 8, y: 2, z: 8 }, { freeBorn: true });
         const snap = r.buildStateSnapshot();
         const snapped = (snap.architectures || []).find((a) => a.id === e2.id);
-        out.persisted = !!(snapped && snapped.freeBorn === true);
+        out.persisted = !!(snapped?.freeBorn === true);
         if (e2) r.removeArchitecture(e2);
         // (3) ein NORMAL bezahltes/Worldgen-Werk erntet weiter (keine Über-Heilung).
         const e3 = r.spawnArchitecture("_o5_werk", { x: 12, y: 2, z: 12 }, {});
@@ -708,7 +708,7 @@ async function checkBandV18210Verdrahtung({ page, check }) {
         // (A1f) V17.16-Schutz: cache-Bauplan hat tag-Achsen ≈ baum_eiche
         // die Referenz-Tags kommen aus der frozen SPECIES_TAG_REFERENCE
         // (der statische baum_eiche-Bauplan ist geschnitten).
-        const ref = (AnazhRealm.SPECIES_TAG_REFERENCE && AnazhRealm.SPECIES_TAG_REFERENCE.baum_eiche) || null;
+        const ref = AnazhRealm.SPECIES_TAG_REFERENCE?.baum_eiche || null;
         const grownBp = k1 && st.blueprints[k1];
         out.a1TagNeutral = false;
         if (ref && grownBp) {
@@ -732,7 +732,7 @@ async function checkBandV18210Verdrahtung({ page, check }) {
         // ============== A1 Audit-Heilungen ==============
         // (Heilung #1) Snapshot persistiert grownBlueprints
         const snap = r.buildStateSnapshot();
-        out.a1SnapshotHasGrown = !!(snap && snap.grownBlueprints && typeof snap.grownBlueprints === "object");
+        out.a1SnapshotHasGrown = !!(snap?.grownBlueprints && typeof snap.grownBlueprints === "object");
         // (Heilung #2) Eviction respektiert aktive Architekturen
         out.a1EvictionRespectsActive = false;
         // Setze einen test-grown-Bauplan + Architektur, force CAP-Überlauf,
@@ -1009,8 +1009,9 @@ async function checkBandV18210Verdrahtung({ page, check }) {
 // Fels-Gesetzes rechnet kein Rauschen aus Hash-Zügen (K17 wellte die Bänke mit einem Wert-Rauschen aus acht Ziehungen im
 // Fragment: die Ladungen fielen 78 → 72, die Absenz sah es nicht) · die
 // Atlas-Bytes sind die MaterialX-Gradienten (lookup3, eigene Portierung hier) und richtig gepackt. Die GPU-Gleichheit (WGSL
-// gegen CPU) und das Budget des erzeugten WGSL misst dieselbe Linse am echten Renderer (`werkbank shader --stoff boden
-// --rauschprobe`).
+// gegen CPU je Pixel) urteilt kein Gate: die Rausch-Probe der Werkbank fiel 08.11. (w22-s0-ms), keine Station und kein
+// Schritt fuhr sie. Die Kosten des erzeugten Boden-Programms urteilt S0 als kalte Übersetzung auf echter GPU
+// (gate:pruefbuehne-licht, `S0_MS`); `werkbank shader --stoff boden` zeigt seine statischen Kosten (Werkzeug, kein Gate).
 async function checkBandRauschGesetz({ page, check }) {
     await page.evaluate(SK.SHADER_INSTALL);
     const res =
@@ -1101,7 +1102,7 @@ async function checkBandRauschGesetz({ page, check }) {
         res.verteilung === true
     );
     // (E) das Mikro-Detail gilt dem Pixel des Schirms (material.K2, w4-wiese-nah): Boden und Halm lesen `schirmJeSzene`
-    const schirm = (x) => ((x && x.uniformen) || {}).schirmJeSzene || 0;
+    const schirm = (x) => (x?.uniformen || {}).schirmJeSzene || 0;
     check(
         `MIKRO AM SCHIRM (E): Boden- und Halm-Stoff lesen den Schirm-Pixel je Szenen-Pixel (${schirm(g)} / ${schirm(res.halm)} Knoten)`,
         schirm(g) > 0 && schirm(res.halm) > 0
@@ -1195,13 +1196,13 @@ async function checkBandPerfPanel({ page, check }) {
         r._perfPanelLast = 0;
         r._perfPanelRender();
         const fr = st.flightRecorder;
-        res.ringN = fr && fr.secRingN ? fr.secRingN : 0;
+        res.ringN = fr?.secRingN ? fr.secRingN : 0;
         res.head = (document.getElementById("pp-head") || {}).textContent || "";
         res.grid = (document.getElementById("pp-grid") || {}).textContent || "";
         res.buckets = (document.getElementById("pp-buckets") || {}).textContent || "";
         const cv = document.getElementById("pp-ring");
         // Canvas wirklich GEMALT: Pixel über dem Hintergrund
-        if (cv && cv.getContext && cv.getContext("2d")) {
+        if (cv?.getContext && cv.getContext("2d")) {
             const d = cv.getContext("2d").getImageData(0, 0, cv.width, cv.height).data;
             let hit = 0;
             for (let i = 0; i < d.length; i += 4) if (d[i] > 30 || d[i + 1] > 30 || d[i + 2] > 60) hit++;
@@ -1211,7 +1212,7 @@ async function checkBandPerfPanel({ page, check }) {
         const exp = r._exportPerfTrace();
         res.export = exp ? { name: exp.name, bytes: exp.bytes } : null;
         const trace = exp ? r._flightRecorderBuildTrace() : null;
-        res.trace = !!(trace && trace.session && trace.session.frames > 0 && "impostorZensus" in trace && trace.version);
+        res.trace = !!(trace?.session && trace.session.frames > 0 && "impostorZensus" in trace && trace.version);
         const saved = st.flightRecorder;
         st.flightRecorder = null;
         res.selbstTestKeinTrace = r._exportPerfTrace() === null;
@@ -1308,7 +1309,7 @@ async function checkBandGodray({ page, check }) {
         out.gateTief = r._godrayFrameGate(0.03, 1.0);
         out.gateStorm = r._godrayFrameGate(0.9, AnazhRealm.WEATHER_FIELD.stormy.sun);
         // (B) PERF-HEBEL als ZAHL — headless-Kurzschluss kontrolliert umgehen (wie der Schatten-Regler)
-        const wasNull = st.renderer && st.renderer._isHeadlessNull;
+        const wasNull = st.renderer?._isHeadlessNull;
         const sense = (ls, calls, frameMs) => ({ loadScale: ls, phase: { archCulling: 1, render: 1, streaming: 0, waterIso: 0 }, renderCalls: calls, frameMs });
         try {
             if (st.renderer) st.renderer._isHeadlessNull = true;
@@ -1365,13 +1366,13 @@ async function checkBandSzeneSkala({ page, check }) {
             const leaf = { geom: new THREE.BoxGeometry(1, 1, 1), mat: new THREE.MeshBasicMaterial() };
             const gF = r._archInstanceGroupFor("grown_probe_leaf", 0, leaf, "9,9");
             const gP = r._archInstanceGroupFor("p_probe", 0, leaf, null);
-            out.gruppe = [gF && gF.mesh ? layersOf(gF.mesh) : null, gP && gP.mesh ? layersOf(gP.mesh) : null];
-            for (const g of [gF, gP]) if (g && g.mesh) g.mesh.visible = false;
+            out.gruppe = [gF?.mesh ? layersOf(gF.mesh) : null, gP?.mesh ? layersOf(gP.mesh) : null];
+            for (const g of [gF, gP]) if (g?.mesh) g.mesh.visible = false;
         } catch (e) {
-            out.gruppe = ["ERR " + (e && e.message)];
+            out.gruppe = ["ERR " + e?.message];
         }
         // (3) DER REGLER TRÄGT DIE AUFLÖSUNG NICHT — den headless-Kurzschluss kontrolliert umgehen, schwere und leichte Last
-        const wasNull = st.renderer && st.renderer._isHeadlessNull;
+        const wasNull = st.renderer?._isHeadlessNull;
         const applyWar = r._applyRenderScale;
         const sense = (ls, calls, frameMs) => ({ loadScale: ls, phase: { archCulling: 1, render: 1, streaming: 0, waterIso: 0 }, renderCalls: calls, frameMs });
         try {
@@ -1389,7 +1390,7 @@ async function checkBandSzeneSkala({ page, check }) {
         }
         // (4) der Flugschreiber-Snapshot trägt die Szenen-Skala
         const snap = r._flightRecorderSnapshot(16.0, {});
-        out.snapshotSkala = snap && snap.ctx ? snap.ctx.szeneSkala : undefined;
+        out.snapshotSkala = snap?.ctx ? snap.ctx.szeneSkala : undefined;
         return out;
     });
     const g = o || {};
@@ -1694,10 +1695,25 @@ async function checkBandReglerSim({ page, check }) {
     check("Regler-Sim: die Sim fuhr die ECHTEN Nicht-Headless-Zweige und stellte headless-Zustand + Dichte 1 wieder her", o.gpuAppliersDrove === true && o.restored === true);
 }
 
+// DER SPIEGEL DES BILDS BRAUCHT DAS FELD NIE (w20-lack-spiegel, material.K4#1; der Leser: `_spiegelPassZeichne` → `L.an` →
+// `_spiegelUmgebung` jedes Standard- und Physical-Stoffs): nach einem Sprung des Auges über das Fenster (Tür, Grundstellung,
+// Teleport) sind alle Blöcke des Felds leer, bis der Worker sie bäckt — bis w20 ruhte der Pass so lange ganz, und Lack, Glas
+// und Metall spiegelten die PMREM-Umgebung allein (der GT der Station nach der Grundstellung: GTX ed7d3d23 spiegelTreue −0,477;
+// swiftshader am Grund der Sitzung mit leerem Feld: `an` 0 in jedem Bild, Lack −0,422 — mit dem Schnitt `an` 1, +0,385). Der
+// Zustand der Probe ist der nach dem Sprung (das Fenster liegt, kein Block gebacken). DER SELBSTTEST ist der Stand vor w20: an
+// ihm fiel die Probe (das Bild ruhte mit dem Feld: Bild false).
+async function checkBandSpiegelOhneFeld({ page, check }) {
+    const o = await safeEvaluate(page, () => {
+        const state = { _weltbildDa: true, scenePass: { _textures: { glanz: 1 } }, spiegelFeld: { mitte: [0, 0], hMax: -3e4 } };
+        return [r._spiegelImBild.call({ state, _spiegelFeld: () => state.spiegelFeld }), r._spiegelFeldSteht.call({ state })];
+    });
+    check("Spiegel ohne Feld: der Pass läuft, das Feld steht nicht", String(o) === "true,false", String(o));
+}
+
 module.exports = {
     checkInitialState, checkRing1Grok, checkBandV1778LadderCut, checkBandV18278LoopErrorBoundary,
     checkBandWellePerfENexusGovernor, checkBandWaldbodenKaskade, checkBandTailleOmega5, checkBandV18149Statusbar,
     checkBandV18163DetailTiefe, checkBandV18165KonsoleHeil, checkBandV18177AAA, checkBandV18210Verdrahtung,
     checkBandRauschGesetz, checkBandV18331ReplayDeterminism, checkBandPerfPanel, checkBandExistenzBoden,
-    checkBandGodray, checkBandSzeneSkala, checkBandReglerSim,
+    checkBandGodray, checkBandSzeneSkala, checkBandReglerSim, checkBandSpiegelOhneFeld,
 };

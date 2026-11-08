@@ -324,6 +324,7 @@ class AnazhRealm_stoff_karte {
         g.setAttribute("normal", new THREE.BufferAttribute(nor, 3));
         g.setAttribute("uv", new THREE.BufferAttribute(uv, 2));
         g.setAttribute("aKarte", new THREE.BufferAttribute(karte, 4));
+        g.setAttribute("aEin", new THREE.BufferAttribute(new Float32Array(pos.length / 3), 1)); // je Slot die Fassade, ohne: 0
         g.computeBoundingBox();
         g.computeBoundingSphere();
         at.quad = g;
@@ -436,14 +437,16 @@ class AnazhRealm_stoff_karte {
     // das Licht sich um `HORIZONT_KARTE.lichtRad` dreht (das Maß, nach dem die Horizont-Karte neu malt) oder das Auge geht: ein Strahl
     // prüft nur die Karten seines Fachs (der Rand trägt Krone und Drehung). Der Messer läuft in jedem Bild (`tickDayNight`): an der
     // Mess-Wiese (Radeon, 2 213 Werfer, 82 Fächer) kostet eine Messung 0,106 statt 0,055 ms, mit neuem Licht je Bild 0,166 statt
-    // 0,118 ms. null, solange keine Karte wirft (kein Zwilling, keine Schatten, die Sonne unter dem Horizont).
+    // 0,118 ms. null, solange keine Karte wirft (kein Zwilling, kein Wurf des Lichts — `_lichtWirft`, auch ohne Schatten-Karte
+    // des Renderers: unter Holz kienspan baut r184 keine Kaskade —, die Sonne unter dem Horizont). Bis w20-fern-hang nahm der
+    // Messer unter kienspan dem ganzen Boden der Mess-Wiese die Sonne (Uhr 0,25–0,27: 32 von 32 Strahlen im Wurf des Walds hinter
+    // dem Auge, das Bild in der Sonne) — die Belichtung glich die Sonne nie aus, das Bild stieg je 0,002 der Uhr um bis zu 0,17 EV.
     _kartenWurfWerfer(L) {
         const st = this.state;
         const g = st.archInstanceGroups ? st.archInstanceGroups.get(AnazhRealm.IMPOSTOR_ATLAS_GRUPPE + "#S") : null;
-        const dl = st.directionalLight;
         const cam = st.camera;
         const csm = st.csmNode;
-        if (!g || !(g.liveCount > 0) || !dl || !dl.castShadow || !cam || !csm || !(L.y > 0)) return null;
+        if (!g || !(g.liveCount > 0) || !this._lichtWirft() || !cam || !csm || !(L.y > 0)) return null;
         const m = g.mesh;
         const lu = st.lodUniforms;
         const maske = !!(lu && lu.uLodMaskOn && lu.uLodMaskOn.value > 0.5 && this._blendeK);

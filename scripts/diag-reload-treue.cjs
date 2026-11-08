@@ -28,7 +28,7 @@ hauptLauf(async () => {
         const r = await window.__weltDa();
         const f = r._ensureAssetFoundry();
         await __weltDa(() => f && f.ready && f.recipes && f.recipes.wolf && !f._vorrat);
-        if (!(f && f.ready && f.recipes && f.recipes.wolf)) return { fatal: "wolf-Rezept kam nie" };
+        if (!(f?.ready && f.recipes?.wolf)) return { fatal: "wolf-Rezept kam nie" };
 
         // Leere Bühne + genug Kapazität.
         for (const c of r.state.creatures.slice()) r.removeCreature(c);
@@ -47,7 +47,7 @@ hauptLauf(async () => {
         res.r.aGussDials = wolfA && wolfA.userData.gussDials ? wolfA.userData.gussDials.size : null;
         const fpA = wolfA ? fpGroup(wolfA) : null;
         const snapA = r._serializeCreature(wolfA);
-        res.r.snapTraegt = !!(snapA && snapA.gussDials && snapA.gussDials.size === 3.5);
+        res.r.snapTraegt = !!(snapA?.gussDials && snapA.gussDials.size === 3.5);
         r.removeCreature(wolfA);
 
         // ── Übergabe auf 1.5 ÄNDERN ──

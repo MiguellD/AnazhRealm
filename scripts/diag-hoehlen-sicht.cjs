@@ -92,7 +92,7 @@ function urteil(b) {
     const blicke = new Map((b.blicke || []).map((x) => [x.name, x]));
     for (const name of PFLICHT) if (!blicke.has(name)) v.push(`LEER: Blick ${name} fehlt (kein Standort gefunden)`);
     for (const x of b.blicke || []) {
-        if (x.fehlend && x.fehlend.length > 0) {
+        if (x.fehlend?.length) {
             const f = x.fehlend[0];
             v.push(
                 `LOCH: Blick ${x.name}: ${x.fehlend.length} Zellen fehlen im Abschnitt, zuerst ${f.bereich}` +
@@ -100,7 +100,7 @@ function urteil(b) {
                     ` am Punkt ${JSON.stringify(f.punkt)}`
             );
         }
-        if (x.schatten?.lecks && x.schatten.lecks.length > 0) {
+        if (x.schatten?.lecks?.length) {
             const l = x.schatten.lecks[0];
             v.push(
                 `LICHT-LECK: Blick ${x.name}: ${x.schatten.lecks.length} Empfänger, zuerst ${JSON.stringify(l.empfaenger)} — ` +
@@ -216,7 +216,7 @@ function urteil(b) {
         v.push("LEER: (l) Szenen-Licht: kein Licht der Szene unter freiem Himmel gezählt (die Wand prüfte nichts)");
     else {
         const tot = sl.frei.filter((l) => l.direkt && (!(l.I > 0) || l.schwarz));
-        if (tot.length > 0) {
+        if (tot.length) {
             const t = tot[0];
             const nd = sl.frei.filter((l) => l.direkt).length;
             v.push(
@@ -323,7 +323,7 @@ function urteil(b) {
                 `HIMMELS-LICHT: der Boden-Satz trägt keine Himmels-Sicht — ${hl.hoehle} Höhlen-Vertices sehen den vollen ` +
                     `Himmel, ${hl.tief} davon tiefer als ${hl.tiefM} m hinter der nächsten Himmels-Fläche`
             );
-        else if (hl.ueber.length > 0) {
+        else if (hl.ueber.length) {
             const u = hl.ueber[0];
             v.push(
                 `HIMMELS-LICHT: ${hl.ueber.length} von ${hl.hoehle} Höhlen-Vertices tragen mehr Himmel, als ihr Abstand lässt, ` +

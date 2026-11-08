@@ -596,11 +596,27 @@ class AnazhRealm_bild_kosten {
                     return;
                 }
                 let bau = -1;
-                // DER BAU IN RATEN (`_knotenRate`): im laufenden Spiel nach dem Weltbild baut kein Bild einen Knoten-Graphen am
-                // Stück — wer seinen noch nicht hat, wartet wie ein verschobener; ruhender Loop und Ladeschirm bauen wie bisher
-                if (ungebaut && welt.state._weltbildDa && !welt._loopRuht()) {
+                // DER BAU IN RATEN (`_knotenRate`): im laufenden Spiel nach dem Weltbild UND unter dem Ladeschirm baut kein Bild einen
+                // Knoten-Graphen am Stück — wer seinen noch nicht hat, wartet wie ein verschobener; der ruhende Loop baut wie bisher.
+                // UNTER DEM LADESCHIRM (w19-ankunft-takt, ankunft.K5): bis hier baute dort JEDER Render-Aufruf eines Lade-Bilds am Stück
+                // bis zu seinen eigenen LADE_TAKT_MS (Hauptpass, jede Kaskade, jedes Bündel, jeder Bake-Versuch der Karte) — eine
+                // Aufgabe hielt 250–480 ms Knoten-Bau (headless kalt 5fb21e29: `build` 18× ≥ 50 ms, die längste Aufgabe 737 ms;
+                // Radeon ed7d3d23: 23× ≥ 50 ms vor dem ersten Bild, die längste Aufgabe 832 ms). Jetzt geht der Bau Schritt für
+                // Schritt bis zur EINEN Frist der Aufgabe (`_ladeFrist`, im Bild-Takt die Hälfte der Zeichnung); was wartet, macht
+                // das nächste Bild fällig (`ladeSchuld`, `_ladeBildFaellig`).
+                // DAS LADE-BILD IST DIE WELT: unter dem Ladeschirm baut in Raten, was das Lade-Bild zeichnet (Welt-Szene, Kaskaden,
+                // Bündel, Karten-Bühne) — nie eine Bühne (`_buehneJetzt`: Ich, Hof, Feed, Werkstatt). Sie öffnet die Eingabe, ihr
+                // Vorbau läuft erst nach dem Weltbild (`_vorbauBedienung`); unter dem Ladeschirm zeichnet sie eine Probe, und dort baut
+                // sie wie vor w19-ankunft-takt am Stück bis LADE_TAKT_MS je Aufruf. In Raten ließ der Seelenwechsel unter dem
+                // Ladeschirm die Bauten der Zwischen-Seelen offen, der zweite Durchgang baute nach (Frost-Wand S2 headless, swiftshader:
+                // +13 Module / +11 Pipelines, am Stück +0 / +0; z287 2/2 rot).
+                if (
+                    ungebaut &&
+                    ((welt._ladeTakt() && scene !== welt._buehneJetzt) || (welt.state._weltbildDa && !welt._loopRuht()))
+                ) {
                     if (!welt._knotenRate(N, ro, E)) {
                         E.verschoben++;
+                        if (welt._ladeTakt()) E.ladeSchuld = true;
                         if (aufnahme !== null) welt._erstWartet(this.backend, null, aufnahme.bundleGroup);
                         return;
                     }
@@ -609,8 +625,7 @@ class AnazhRealm_bild_kosten {
                     if (E.aufruf !== aufruf) {
                         E.aufruf = aufruf;
                         E.aufrufMs = 0;
-                        // unter dem Ladeschirm sieht kein Spieler den Takt: ein Lade-Bild (`_ladeBildFaellig`, alle
-                        // LADE_BILD_MS) baut je Aufruf bis zur Frist des Lade-Frames, nicht nur einen Stoff
+                        // unter dem Ladeschirm (nur noch eine Bühne, oben) baut ein Aufruf bis zur Frist des Lade-Frames
                         E.deckel = welt._ladeTakt() ? AnazhRealm.LADE_TAKT_MS : AnazhRealm.ERST_BAU_MS;
                     } else if (E.aufrufMs >= E.deckel) {
                         E.verschoben++;
@@ -647,14 +662,14 @@ class AnazhRealm_bild_kosten {
             this._erstZeichnung = {
                 aufruf: -1,
                 aufrufMs: 0,
-                deckel: AnazhRealm.ERST_BAU_MS, // die Bau-Zeit je Render-Aufruf (unter dem Ladeschirm LADE_TAKT_MS)
-                bauN: 0,
+                deckel: AnazhRealm.ERST_BAU_MS, // die Bau-Zeit je Render-Aufruf am Stück (eine Bühne unter dem Ladeschirm: LADE_TAKT_MS)
+                ladeSchuld: false, // unter dem Ladeschirm wartete ein Bau auf die nächste Aufgabe — das nächste Bild ist fällig
+                ladeGuthaben: 0, // so lange hielt die GPU-Leine das Bild der offenen Schuld: so lange baut das fällige (`_knotenRate`)
+                bauN: 0, // die Knoten-Bauten der Erst-Zeichnung und ihre Zeit — am Stück wie in Raten (`_knotenRate`), EIN Zähler
                 bauMs: 0,
                 verschoben: 0,
                 einmalOffen: 0, // Renders außerhalb der Welt-Szene, deren Pipeline unter dem Ladeschirm noch im Bau stand (PSO-Vorbau)
-                rateN: 0, // der Bau in Raten (`_knotenRate`): Schritte, ihre Zeit, die Frist der laufenden Aufgabe
-                rateMs: 0,
-                rateFrist: null,
+                rateFrist: null, // der Bau in Raten (`_knotenRate`): die Frist der laufenden Aufgabe
                 imFlug: new Map(), // Bau-Schlüssel → der laufende Bau in Raten (`_knotenRate`): EINER je Schlüssel
                 pipeAsync: 0,
                 bereitN: 0,
@@ -703,12 +718,29 @@ class AnazhRealm_bild_kosten {
     // eines Geists, die Kaskaden eines Satzes: Radeon kalt V18.546.159 im Vorbau 48 Zwillings-Bauten, bis neun je Schlüssel).
     _knotenRate(N, ro, E) {
         const d = N.get(ro);
+        // die Frist der Aufgabe: im Spiel ERST_BAU_MS ab dem ersten Schritt, unter dem Ladeschirm die EINE Frist des Lade-Frames
+        // (`_ladeFrist`, geteilt mit jedem Leser) — der erste Schritt der Aufgabe geht immer (nie verhungert).
+        // DIE BAU-ZEIT FOLGT DER WANDUHR, NIE DER BILDRATE (w19-ankunft-takt; das Zeit-Budget je Bild der Precache-Lader, Unreals
+        // PSO-Precache `BatchTime`, hier wie der Ingest mit `INGEST_RATE_PER_S`): hielt die GPU-Leine das fällige Bild, während die
+        // Schuld der Erst-Zeichnung offen war (`ladeGuthaben`, `_ladeBildFaellig`), baut es ab seinem ersten Schritt die gehaltene
+        // Zeit, höchstens die Frist EINES Lade-Frames (LADE_TAKT_MS — keine Aufgabe trägt mehr Bau als der Lade-Frame); ohne
+        // gespannte Leine bleibt es der Rest der EINEN Frist. Bis hier baute es nur diesen Rest, den die Leser des Takts oft schon
+        // verbraucht hatten (bis −127 ms), und das Bild kam nur bei freier Leine: swiftshader, 4 Kerne, CPU ×4 — 11 Lade-Bilder in
+        // 15 s, 7 Knoten-Bauten bis zur Messung (main am Stück 27); Boden-Satz und 9 Geometrie-Arenen zeichneten nie, ihre Puffer
+        // (Teil-Uploads je 14–118 KB, ~5,5 MB) luden nie hoch: die Erst-Zeichnungs-Wand Teil 1 zählte 0,7 statt > 1 MB (CI z287:
+        // 0,2 · 0,2 · 0,7 MB, main 4,8 MB).
+        let erster = false;
         if (E.rateFrist === null) {
-            E.rateFrist = performance.now() + AnazhRealm.ERST_BAU_MS;
+            const jetzt = performance.now();
+            E.rateFrist = this._ladeTakt()
+                ? Math.max(this._ladeFrist(true), jetzt + Math.min(E.ladeGuthaben, AnazhRealm.LADE_TAKT_MS))
+                : jetzt + AnazhRealm.ERST_BAU_MS;
+            E.ladeGuthaben = 0;
+            erster = true;
             Promise.resolve().then(() => (E.rateFrist = null));
         }
         const t0 = performance.now();
-        if (t0 >= E.rateFrist) return false;
+        if (t0 >= E.rateFrist && !erster) return false;
         const key = N.getForRenderCacheKey(ro);
         let s = N.nodeBuilderCache.get(key);
         // ein Bau, den ein Zwilling vollendete, dessen Eintrag mit seinem letzten Leser fiel (`usedTimes`), tritt wieder ein
@@ -722,12 +754,19 @@ class AnazhRealm_bild_kosten {
                 if (E.imFlug.size >= 32)
                     for (const [k, x] of E.imFlug)
                         if (bild - x.bild > AnazhRealm.KNOTEN_FLUG_BILDER) E.imFlug.delete(k);
-                E.imFlug.set(key, (R = { b: N._createNodeBuilder(ro, ro.material), i: -1, bild, s: null }));
+                E.imFlug.set(key, (R = { b: N._createNodeBuilder(ro, ro.material), i: -1, bild, s: null, ms: 0 }));
             }
             if (R) [d.rate, R.bild] = [R, bild];
             const b = R && R.b;
             let arbeit = !!R && R.i < 0 && (b.prebuild(), (R.i = 0), true);
-            for (const [STUFE, SHADER] = AnazhRealm.KNOTEN_GANG; R && !arbeit && R.i < 9;) {
+            // DER GANG GEHT BIS ZUR FRIST, NIE EINEN SCHRITT JE AUFRUF (w19-ankunft-takt): bis hier kehrte jeder Aufruf nach EINER
+            // Shader-Stufe zurück — ein Bau brauchte mindestens zehn Bilder, gleich wie viel Frist blieb, und unter dem Ladeschirm
+            // kommt das Bild nur bei freier GPU-Leine (swiftshader, CPU ×4: je Aufgabe ein Schritt je Objekt, bis zu 13 Bauten zugleich
+            // im Flug, kaum einer fertig; 2 Kerne, CPU ×6 mit Guthaben, ohne diesen Gang: 6 Knoten-Bauten, 0,9 MB). Der erste Schritt
+            // geht immer (nie verhungert); jeder weitere, solange die Frist der Aufgabe trägt — im Spiel ERST_BAU_MS, ein Schritt
+            // darüber endet wie bisher.
+            const ueber = () => performance.now() >= E.rateFrist;
+            for (const [STUFE, SHADER] = AnazhRealm.KNOTEN_GANG; R && R.i < 9 && !(arbeit && ueber());) {
                 const stufe = STUFE[(R.i / 3) | 0];
                 const shader = SHADER[R.i % 3];
                 b.setBuildStage(stufe);
@@ -737,8 +776,7 @@ class AnazhRealm_bild_kosten {
                 for (const k of b.flowNodes[shader]) stufe === "generate" ? b.flowNode(k) : k.build(b);
                 arbeit = b.flowNodes[shader].length > 0; // eine leere Shader-Stufe geht im selben Schritt mit
             }
-            [E.rateN, E.rateMs] = [E.rateN + 1, E.rateMs + performance.now() - t0];
-            if (arbeit) return false;
+            if (arbeit && ueber()) return ((R.ms += performance.now() - t0), false);
             if (R) {
                 b.setBuildStage(null);
                 b.setShaderStage(null);
@@ -746,6 +784,12 @@ class AnazhRealm_bild_kosten {
                 b.buildUpdateNodes();
                 N.nodeBuilderCache.set(key, (s = R.s = N._createNodeBuilderState(b)));
                 E.imFlug.delete(key);
+                // DER FERTIGE BAU ZÄHLT AM EINEN ZÄHLER der Erst-Zeichnung (`bauN`, `bauMs` = Σ seiner Schritte), wie ein Bau am
+                // Stück: bis hier zählte der Bau in Raten nur in einem eigenen Paar (`rateN`/`rateMs`, ohne Leser) — seit der Bau
+                // unter dem Ladeschirm in Raten geht (w19-ankunft-takt), las der Flugschreiber (`erstBauN`) und die Erst-Zeichnungs-
+                // Wand (Konsum im Boot) 0 Knoten-Bauten bei 714 verschobenen (swiftshader, Teil 1)
+                E.bauN++;
+                E.bauMs += R.ms + performance.now() - t0;
             }
         } catch (e) {
             d.rate = undefined;
@@ -801,6 +845,22 @@ class AnazhRealm_bild_kosten {
             return k;
         };
         N.__anazhBauSchluessel = true;
+        // DER ABSCHIED OHNE BAU (w19-ankunft-takt, ankunft.K5): r184 löst ein Render-Objekt, dessen Schlüssel wechselte (ein Licht
+        // kam, der Stoff wechselte die Variante — `_objects.get` → `dispose`), über `bindings.deleteForRender` → `getBindings` →
+        // `getNodeBuilderState`: ein Objekt, das nie band (es wartete auf seinen Bau in Raten, `_knotenRate`), baute seinen ganzen
+        // Knoten-Graphen SYNCHRON, nur um ihn zu löschen (headless kalt, Bau in Raten unter dem Ladeschirm: eine Aufgabe 640 ms,
+        // davon 361 ms `dispose › deleteForRender › build`). Ohne Bindungen (`_bindings` null) gibt es nichts zu lösen — kein Bau;
+        // `nodes.delete` zählt nur einen Bau, der stand (gate:vendor-anker pinnt die drei Stellen).
+        const BI = renderer._bindings;
+        if (!BI || typeof BI.deleteForRender !== "function")
+            return this.log("ABSCHIED OHNE BAU: r184-Bindings.deleteForRender nicht gefunden (Vendor-Drift)", "ERROR");
+        if (BI.__anazhAbschiedOhneBau) return;
+        const loese = BI.deleteForRender;
+        BI.deleteForRender = function (ro) {
+            if (ro._bindings === null) return;
+            return loese.call(this, ro);
+        };
+        BI.__anazhAbschiedOhneBau = true;
     }
 
     // DIE ABSAGE EINER PIPELINE (Welle K): r184 verschluckt die Absage von createRenderPipelineAsync (`catch(e){}`,
@@ -2867,6 +2927,8 @@ class AnazhRealm_bild_kosten {
         // die Arenen der Bündel lesen die Wahl des Hauptbilds (G1, `_arenaTakt`): ihre Plätze ziehen, was sie eben legte
         if (set.size === 0) return void (art === "haupt" && this._arenaTakt());
         const L = S.lage;
+        // DIE WAHL FOLGT DEM WEG (w20-leib-takt): der Abdruck dieser Lage, die Ränder ± wegM daneben (`_wahlRaender`)
+        const { A, weit, eng } = this._wahlRaender(S);
         for (const g of set) {
             if (g.wahl !== art) continue;
             const m = g.mesh;
@@ -2885,25 +2947,172 @@ class AnazhRealm_bild_kosten {
                 liste.push(g);
                 continue;
             }
-            S.wahlNeu++;
             const fenster = L.an && this._instanzFensterGilt(g);
+            const nach = this._instanzWahlWeg(g, L, A, fenster);
+            if (nach >= 0) {
+                if (nach > 0) S.wahlNeu++;
+                liste.push(g);
+                continue;
+            }
+            S.wahlNeu++;
+            // die volle Wahl: je Instanz das Urteil und ob es über den Weg hält — trifft der weite Rand nicht, fehlt sie
+            // sicher, trifft der enge, steht sie sicher (das Gesetz ist im Rand monoton); nur dazwischen urteilt der Pass
+            const wack = [];
             let kk = 0,
                 tausch = 0;
             for (let i = 0; i < n; i++) {
-                if (!this._instanzBehalten(g, i, L, fenster)) continue;
+                let ja;
+                if (!this._instanzBehalten(g, i, weit, fenster)) ja = false;
+                else if (this._instanzBehalten(g, i, eng, fenster)) ja = true;
+                else ((ja = this._instanzBehalten(g, i, L, fenster)), wack.push(g.slotRef[i]));
+                if (!ja) continue;
                 if (i !== kk) {
                     this._archGroupTausch(g, i, kk);
                     tausch++;
                 }
                 kk++;
             }
-            AnazhRealm._instanzZahl(m, kk);
+            this._instanzWahlLegt(g, L, kk, tausch, art);
             liste.push(g);
-            if (art === "haupt" && !m.__arena && (tausch > 0 || g._wahlZahl !== kk)) this._archMeshBundleTouch(m); // die Arena liest die Wahl im Takt (G1)
-            if (art === "haupt") g._wahlZahl = kk;
-            this._instanzWahlMerke(g, L, kk);
+            const w = g._wahlJe.get(L.key);
+            w.anker = (w.anker || new Float64Array(A.length)).fill(0);
+            w.anker.set(A);
+            w.wack = wack;
         }
         if (art === "haupt") this._arenaTakt();
+    }
+
+    // Die Zahl der Wahl legen: die Senke zeichnet ihre ersten kk Slots, das Hauptbild nimmt sein Bündel neu auf, wenn die
+    // Wahl sich änderte (Zahl oder Ordnung — die Arena liest sie im Takt, G1), und der Pass merkt sie (`_instanzWahlMerke`).
+    _instanzWahlLegt(g, L, kk, tausch, art) {
+        const m = g.mesh;
+        AnazhRealm._instanzZahl(m, kk);
+        if (art === "haupt" && !m.__arena && (tausch > 0 || g._wahlZahl !== kk)) this._archMeshBundleTouch(m);
+        if (art === "haupt") g._wahlZahl = kk;
+        this._instanzWahlMerke(g, L, kk);
+    }
+
+    // DIE WAHL FOLGT DEM WEG (w20-leib-takt, Gebot 7 — der Takt kostet, was sich ändert). Befund (headless, Holz voll, Mess-Wiese
+    // Third, Gang gegen Stand, je Bild): jeder Schritt über den Halt (haltM, 2 cm Auge) legte eine neue Lage, und jeder Pass
+    // urteilte jede Instanz seiner Gruppen neu — die Karten-Gruppe (2 295 Karten) im Hauptbild 2 311 Urteile je Bild, in den
+    // Kaskaden 1 224 · 333 · 245; die Instanz-Wahl der vier Pässe kostete im Gang 1,8 ms je Bild, im Stand 0,4. Jetzt merkt die
+    // volle Wahl je Instanz, ob ihr Urteil über den Weg `wegM` hält (es fällt unter dem weiten und dem engen Rand gleich), und
+    // den Abdruck ihrer Lage (`_wahlAbdruck`). Eine neue Lage mit denselben Richtungen, deren Weg vom Abdruck (`_wahlWeg`)
+    // unter wegM liegt, urteilt nur die wackligen Instanzen neu (die nahe einer Grenze) und ordnet nur, was kippt — die Wahl
+    // ist dieselbe wie die volle (jedes Urteil fällt am Gesetz dieser Lage; Gegenprobe 2,6 Mio. Urteile in Stand, Gang und
+    // Drehung, 0 Brüche). Gemessen A B im Wechsel (4 × 240 Bilder Gang): Instanz-Wahl 1,8 → 0,9 ms je Bild, Gang-Takt p95
+    // Third 21,8 → 19,8, Ego 24,7 → 20,7 ms. Rückgabe −1: die volle Wahl muss legen; sonst die Zahl der gekippten Instanzen.
+    _instanzWahlWeg(g, L, A, fenster) {
+        const w = g._wahlJe ? g._wahlJe.get(L.key) : null;
+        if (!w || !w.anker || !w.wack || !(this._wahlWeg(w.anker, A) <= AnazhRealm.PASS_WAHL.wegM)) return -1;
+        const m = g.mesh;
+        const jetzt = this._instanzSlotStand(g, this._slotStandJetzt || (this._slotStandJetzt = {}));
+        if (
+            jetzt.belegt !== w.belegt ||
+            jetzt.im !== w.im ||
+            jetzt.vMat !== w.vMat ||
+            jetzt.vKarte !== w.vKarte ||
+            w.geo !== m.geometry ||
+            w.mat !== g.mat ||
+            w.live !== (g.liveCount | 0)
+        )
+            return -1;
+        let tausch = 0;
+        if (w.ordnung !== (g._ordnung | 0))
+            for (let j = 0; j < w.refs.length; j++)
+                if (w.refs[j].slot !== j) (this._archGroupTausch(g, w.refs[j].slot, j), tausch++);
+        let kk = w.refs.length,
+            kipp = 0;
+        for (let q = 0; q < w.wack.length; q++) {
+            const i = w.wack[q].slot;
+            const ja = this._instanzBehalten(g, i, L, fenster);
+            if (ja === i < kk) continue;
+            kipp++;
+            const z = ja ? kk++ : --kk;
+            if (i !== z) (this._archGroupTausch(g, i, z), tausch++);
+        }
+        this._instanzWahlLegt(g, L, kk, tausch, g.wahl);
+        return kipp;
+    }
+
+    // DIE RÄNDER DER WAHL (die Wahl folgt dem Weg, je Pass einmal): der Abdruck der Lage dieses Passes und dieselbe Lage mit dem
+    // Halt ± wegM. Das Gesetz ist im Halt monoton: was der weite Rand nicht trifft, fehlt unter jeder Lage, deren Weg vom Abdruck
+    // unter wegM liegt; was der enge trifft, steht unter ihr. (Die Sätze, `_chunkSatzAbschnitt`, gewannen damit nichts: ihre
+    // Ordnung fällt im Gang mit `s.stand`, gemessen 0,39 gegen 0,45 ms je Bild — sie wählen voll.)
+    _wahlRaender(S) {
+        const L = S.lage;
+        const D = AnazhRealm.PASS_WAHL.wegM;
+        const R = S.raender || (S.raender = { A: null, weit: {}, eng: {} });
+        R.A = this._wahlAbdruck(L, S);
+        Object.assign(R.weit, L).halt = L.halt + D;
+        Object.assign(R.eng, L).halt = L.halt - D;
+        return R;
+    }
+
+    // DER ABDRUCK EINER LAGE (die Wahl folgt dem Weg): alles, was das Gesetz der Pass-Wahl (`_passTrifft`) und das Fenster
+    // (`_instanzFenster`) aus ihr lesen — Ebenen des Frustums, Scheibe und Basis der Kaskade, Licht, Auge, Auge der Blende,
+    // Ränder, Blende. In `S.abdruck`.
+    _wahlAbdruck(L, S) {
+        const a = S.abdruck || (S.abdruck = new Float64Array(80));
+        const eb = (P, o) => (
+            (a[o] = P.normal.x),
+            (a[o + 1] = P.normal.y),
+            (a[o + 2] = P.normal.z),
+            (a[o + 3] = P.constant)
+        );
+        for (let p = 0; p < 6; p++) eb(L.fr.planes[p], 4 * p);
+        const f = L.fit;
+        a[24] = f ? 1 : 0;
+        for (let p = 0; p < 6; p++) if (f) eb(f.ebenen[p], 25 + 4 * p);
+        // die Basis der Kapsel: ihre Drehung (Richtung) und ihre Tiefe (bi[14], ein Ort: v.z der Licht-Kapsel)
+        const bi = f ? f.basisInv.elements : null;
+        a[49] = f ? f.zb : 0;
+        a[50] = f ? f.saum : 0;
+        for (let i = 0; i < 9; i++) a[51 + i] = bi ? bi[AnazhRealm.WAHL_BASIS[i]] : 0;
+        a[60] = a[61] = 0;
+        a[62] = bi ? bi[14] : 0;
+        a[63] = f ? L.dir.x : 0;
+        a[64] = f ? L.dir.y : 0;
+        a[65] = f ? L.dir.z : 0;
+        a[66] = L.ax;
+        a[67] = L.ay;
+        a[68] = L.az;
+        a[69] = L.an ? L.ex : 0;
+        a[70] = L.an ? L.ez : 0;
+        a[71] = L.licht;
+        a[72] = L.rand;
+        a[73] = L.dreh;
+        a[74] = L.halt;
+        const K = L.an ? L.kanten : null;
+        a[75] = L.an ? L.perf : 0;
+        a[76] = L.an ? L.ref : 0;
+        a[77] = K ? K.l0Aus + 3 * K.l1Ein : 0;
+        a[78] = K ? K.l1Aus + 3 * K.karteEin : 0;
+        a[79] = L.an ? 1 : 0;
+        return a;
+    }
+
+    // DER WEG ZWISCHEN ZWEI ABDRÜCKEN (`_wahlAbdruck`): um wie viel ein Urteil des Gesetzes höchstens wandert — die Konstante
+    // jeder Ebene des Frustums plus der Rand je Meter über den Weg des Auges, das Ende der Licht-Kapsel (Scheibe, Boden der Box,
+    // Tiefe der Basis) auf ihrem doppelten Halt, das Auge der Blende. Unendlich, wenn eine Richtung (Normalen, Basis, Licht)
+    // oder eine Zahl (Ränder, Blende, Saum) nicht dieselbe ist: dann wählt die Gruppe voll.
+    _wahlWeg(a, b) {
+        let eb = 0,
+            ef = 0;
+        for (let p = 0; p < 12; p++) {
+            const o = p < 6 ? 4 * p : 25 + 4 * (p - 6);
+            for (let j = 0; j < 3; j++) if (!(Math.abs(a[o + j] - b[o + j]) <= 1e-9)) return Infinity;
+            const d = Math.abs(a[o + 3] - b[o + 3]);
+            if (p < 6) eb = Math.max(eb, d);
+            else ef = Math.max(ef, d);
+        }
+        for (let i = 51; i < 66; i++) if (i !== 62 && !(Math.abs(a[i] - b[i]) <= 1e-9)) return Infinity;
+        if (a[24] !== b[24] || a[50] !== b[50]) return Infinity;
+        for (let i = 71; i < 80; i++) if (a[i] !== b[i]) return Infinity;
+        const auge = Math.hypot(a[66] - b[66], a[67] - b[67], a[68] - b[68]);
+        const kapsel = a[24] ? (ef + Math.abs(a[49] - b[49]) + Math.abs(a[62] - b[62])) / 2 : 0;
+        // die Rundung der Richtungen (1e-9) über Welt-Koordinaten (km) trägt höchstens Mikrometer
+        return Math.max(eb + (b[72] + b[73]) * auge, kapsel, Math.hypot(a[69] - b[69], a[70] - b[70])) + 1e-6;
     }
 
     // STEHT die Wahl einer Gruppe (Welle C)? Dieser Pass (`L.key`: haupt · k<i>) wählte sie zuletzt in derselben Lage
@@ -3333,8 +3542,8 @@ class AnazhRealm_bild_kosten {
     // DER TAKT DER HORIZONT-KARTE (je Bild aus `_weltLichtTakt`, wo das Richtlicht dieses Bilds steht; dazu aus `_atmoTakt`): das
     // Gitter des Gesetzes folgt dem Anker (`_horizontGitterTakt`), die Karte wird neu gemalt, wenn das Licht sich um `lichtRad`
     // gedreht hat oder ein Gitter kam — Kosten an Änderung (Gebot 7), der Null-Renderer zeichnet nichts. Unter dem Horizont, vor
-    // dem ersten Gitter, nach einem Bruch des Fadens und ohne Wurf des Lichts (`castShadow`: die Sonnen-Sicht ist ein Schatten wie
-    // die Kaskaden jedes Stoffs) ruht die Sicht (1).
+    // dem ersten Gitter, nach einem Bruch des Fadens und ohne Wurf des Lichts (`_lichtWirft`: die Sonnen-Sicht ist ein Schatten wie
+    // die Kaskaden jedes Stoffs — ohne Schatten-Karte des Renderers, Holz kienspan, wirft sie so wenig wie sie) ruht die Sicht (1).
     _horizontKarteTakt() {
         const st = this.state;
         const K = st.horizontKarte;
@@ -3347,7 +3556,7 @@ class AnazhRealm_bild_kosten {
         const L = this._horizontLicht || (this._horizontLicht = new THREE.Vector3());
         L.copy(dl.position);
         if (dl.target) L.sub(dl.target.position);
-        if (!K.bereit || !dl.castShadow || !(L.lengthSq() > 0) || !(L.normalize().y > 0)) {
+        if (!K.bereit || !this._lichtWirft() || !(L.lengthSq() > 0) || !(L.normalize().y > 0)) {
             K.U.aktiv.value = 0;
             return K;
         }
@@ -3504,6 +3713,9 @@ AnazhRealm.BAU_NEUTRAL = Object.freeze(["roughness", "metalness", "envMapIntensi
 // `lichtRandTexel` (Welle C, OMEN-Urteil 07.10.: der Tag steht im Spiel nie): der Licht-Rand eines Kaskaden-Passes in Texeln
 // seiner Karte — die Wahl der Kaskade hält über die Stufen der Sonne (`_sonnenWinkel`), bis die Drehung des Lichts seit der
 // Wahl, mal dem längsten Licht-Weg der Box (`fit.weg`), die Hälfte dieses Rands erreicht (`_wahlHaelt`).
+// `wegM` (w20-leib-takt, `_instanzWahlWeg`): so weit wandert ein Urteil der Instanz-Wahl (Auge, Ebenen, Scheibe), bevor die
+// Gruppe wieder voll wählt — darunter urteilt sie nur die Instanzen neu, deren Urteil unter den Rändern ± wegM nicht hält.
+// Im Gang (1,15 m/s) wählt sie so etwa jedes 26. Bild voll, unter 5 % der Bilder.
 AnazhRealm.PASS_WAHL = Object.freeze({
     sichtRand: 0.003,
     saumM: Object.freeze([2, 8, 24]),
@@ -3511,7 +3723,10 @@ AnazhRealm.PASS_WAHL = Object.freeze({
     haltM: 0.02,
     drehRand: (2 * Math.PI) / 180,
     lichtRandTexel: 32,
+    wegM: 0.5,
 });
+// die Drehung der Licht-Basis im Abdruck einer Lage (`_wahlAbdruck`): die Elemente ihrer 3 × 3
+AnazhRealm.WAHL_BASIS = Object.freeze([0, 1, 2, 4, 5, 6, 8, 9, 10]);
 // DAS GESETZ DER PASS-WAHL AUF DER GPU (`_passTrifft` für die Kugel, h = 0; `_instanzWahlGpu`): je Instanz eines Auftrags
 // ihre Kugel (die Mitte der Gestalt durch die Instanz-Matrix, der Radius mal deren größte Streckung, dazu der Saum) gegen
 // jede Ebene des Frustums, relativ zum Auge, mit dem Rand der Lage; im Kaskaden-Pass dazu ihre LICHT-KAPSEL — die Kugel

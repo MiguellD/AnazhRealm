@@ -188,7 +188,6 @@ function wegVerdict(m) {
 // ≤ 3 Schritten im Bild, in L0 (der Bau-Hash des Bilds = der L0-Bau seiner Anfrage im Werk) — die Mechanik; die Zeit bis zum
 // Bild (p95 kalt und warm ≤ 1 s) urteilt die Station an der Karte (punkte bauen.K1#2), nie swiftshader.
 const BILD_LAGEN = LAGEN.filter((l) => l !== "frieden ohne Material");
-const PHASEN = ["eingabe", "steht", "l0", "bild", "gpu"]; // der Weg der UI · das Setzen · der L0-Bau · das Zeichnen · die GPU
 const bildVerdict = (m) =>
     ungelaufen(m)
         ? ["start"]
@@ -411,7 +410,7 @@ async function probe(argW) {
     const bild = (e) => {
         const m = new THREE.Matrix4();
         if (e.mesh) m.compose(e.mesh.position, e.mesh.quaternion, e.mesh.scale);
-        else if (e.instSlots && e.instSlots.length) st.archInstanceGroups.get(e.instSlots[0].key).mesh.getMatrixAt(e.instSlots[0].slot, m);
+        else if (e.instSlots?.length) st.archInstanceGroups.get(e.instSlots[0].key).mesh.getMatrixAt(e.instSlots[0].slot, m);
         else return null;
         const [p, q] = [new THREE.Vector3(), new THREE.Quaternion()];
         m.decompose(p, q, new THREE.Vector3());
@@ -1126,7 +1125,7 @@ function wegHelfer(arg) {
             const [e, L] = [neue()[0], lauf];
             const p = L.gpuT && r._foundryPresetForEntry(e);
             const bild = L.gpuT && echt.length && {
-                zeiten: [echt.at(-1).t, L.standT, L.l0T, L.bildT, L.gpuT].map(ms), // PHASEN, ab der ersten Eingabe
+                zeiten: [echt.at(-1).t, L.standT, L.l0T, L.bildT, L.gpuT].map(ms), // der Weg der UI · das Setzen · der L0-Bau · das Zeichnen · die GPU, ab der ersten Eingabe
                 bau: bauVon(L.bild),
                 stufe: e._servedLod,
                 soll: bauVon(p ? await frisch(e, p) : klassisch(r._buildFromBlueprint(st.blueprints[e.type])).map(([g]) => ({ ...g.geom.attributes, index: g.geom.index }))),

@@ -189,7 +189,7 @@ hauptLauf(async () => {
     for (const { li, t, re } of faelle) {
         const name = laeufe[li].proben[0];
         const e = aus[li][name];
-        const z = e && e.sicht && e.sicht[t] ? { ...e, ...e.sicht[t] } : e;
+        const z = e?.sicht && e.sicht[t] ? { ...e, ...e.sicht[t] } : e;
         const u = urteil(name, z);
         const gruen = t ? !u.ok && re.test(u.grund) : u.ok;
         if (!gruen) rot++;

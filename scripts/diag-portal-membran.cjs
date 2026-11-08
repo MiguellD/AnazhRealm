@@ -533,16 +533,14 @@ hauptLauf(async () => {
         r._tickPortalMembranes(2.5);
         const reg = r._portalMembranes;
         const rec = reg ? reg.get(entry.id) : null;
-        res.m = { built: !!(rec && rec.mesh), inScene: !!(rec && rec.mesh && rec.mesh.parent === st.scene) };
+        res.m = { built: !!rec?.mesh, inScene: !!(rec?.mesh && rec.mesh.parent === st.scene) };
         if (rec) {
             const t0 = rec.u.time.value; // der Film atmet auf der Bild-Uhr (A9): der Loop schreibt sie, der Tick liest sie
             r._bildZeit = t0 + 1.2;
             r._tickPortalMembranes(3.7);
             res.m.atmet = [t0, rec.u.time.value, r._bildZeit];
             res.m.echt = !!(
-                rec.mesh.material &&
-                rec.mesh.material.userData &&
-                rec.mesh.material.userData.portalMembran
+                rec.mesh.material?.userData?.portalMembran
             );
             res.m.marker = res.m.echt || !!rec.mesh.material.isMeshBasicMaterial;
             // die Membran liest die Zeile IHRES Ziels (Stoff-Wert `ziel`), nichts hängt neben ihr in der Szene
@@ -569,15 +567,15 @@ hauptLauf(async () => {
         for (let i = 0; i < 40; i++) r._tickPortalMembranes(3.8 + i * 0.016);
         const recF = r._portalMembranes.get(entry.id);
         res.f = {
-            fluegelGefunden: !!(recF && recF._fluegel && recF._fluegel.length > 0),
-            anzahl: recF && recF._fluegel ? recF._fluegel.length : 0,
+            fluegelGefunden: !!(recF?._fluegel && recF._fluegel.length > 0),
+            anzahl: recF?._fluegel ? recF._fluegel.length : 0,
             geoeffnet: !!(recF && recF._fluegelWinkel > 0.2),
             winkel: recF ? +(recF._fluegelWinkel || 0).toFixed(3) : 0,
         };
         // DIE FLÜGEL-INSTANZ (1310-4): gleiche Gestalten teilen ihren Zug, und jeder Flügel steht, wo SEINE Gestalt um SEIN
         // Scharnier geschwenkt landet — die Mitte der gezeichneten Geometrie unter der Slot-Matrix gegen
         // Eintrag · Welt-Skala · (h + R(w)·(Basis · Mitte − h)).
-        if (recF && recF._fluegel && recF._fluegel.length) {
+        if (recF?._fluegel?.length) {
             const T = window.THREE;
             const ew = r._archEntryWorldMatrix(entry, new T.Matrix4());
             const ws = r._foundryWorldScaleMatrix(recF.tor.gestalt);
@@ -684,7 +682,7 @@ hauptLauf(async () => {
                 zeile,
                 fehler: zr ? zr.fehler : null,
                 lebt: !!recO,
-                fenster: !!(recO && recO.mesh),
+                fenster: !!recO?.mesh,
                 feuert: entered === 1,
                 licht: !!(r._portalLeuchte && r._portalLeuchte.L.staerke > 0 && Math.abs(r._portalLeuchte.x - e2.position.x) < 0.01),
             };
@@ -772,7 +770,7 @@ hauptLauf(async () => {
         check("W: nach Verlassen der Zone feuert der naechste Durchgang wieder", out.w.rearmWand === true);
         check("W: seitlich am Pfosten vorbei feuert NICHT", out.w.seitlichStumm === true);
     } else check("W: Hindurchgeh-Block erreicht", false);
-    if (out.o && out.o.web && out.o.fremd) {
+    if (out.o?.web && out.o.fremd) {
         const { web, fremd } = out.o;
         check("O: ein Web-Portal hat keine Ziel-Welt und kein Fenster", web.welt === null && web.fenster === false, JSON.stringify(web));
         check("O: das Web-Portal LEBT (Eintrag in der Registry ohne Ziel)", web.lebt === true);

@@ -193,14 +193,14 @@ hauptLauf(async () => {
             // GEOMETRISCHE Reihen + NAHT-VEREDELUNG — die Erwartung
             // spiegelt das LIVE-Layout (nah dicht, fern weit; Innen-Reihen der
             // ersten Schale tragen das volle Gesetz leicht gesenkt).
-            const rad = sh.inner * Math.pow(sh.aussen / sh.inner, row / (reihenSoll[s] - 1));
+            const rad = sh.inner * (sh.aussen / sh.inner) ** (row / (reihenSoll[s] - 1));
             const ang = (ai / F.winkel) * Math.PI * 2;
             const sx = Math.round((fr.anchorX + Math.cos(ang) * rad) / sh.snap) * sh.snap;
             const sz = Math.round((fr.anchorZ + Math.sin(ang) * rad) / sh.snap) * sh.snap;
             const wl = Number.isFinite(st.waterLevel) ? st.waterLevel : 0;
             // DIE NAHT (K16, gespiegelt): die Lage zum Gebauten aus den acht Nachbarn der Schale (_chunkDecktRing ist die Quelle).
             const orte = (rr, aa) => {
-                const rd = sh.inner * Math.pow(sh.aussen / sh.inner, rr / (reihenSoll[s] - 1));
+                const rd = sh.inner * (sh.aussen / sh.inner) ** (rr / (reihenSoll[s] - 1));
                 const an = (aa / F.winkel) * Math.PI * 2;
                 return [
                     Math.round((fr.anchorX + Math.cos(an) * rd) / sh.snap) * sh.snap,
@@ -463,7 +463,7 @@ hauptLauf(async () => {
         res.fpDa = !!fp8;
         res.fpLaeufe = fp8 ? fp8.laeufe : 0;
         res.fpPanoLaeufe = fp8 ? fp8.panoLaeufe : 0;
-        res.fpTexOk = !!(fp8 && fp8.tex && fp8.tex.image.width === P8.az && fp8.tex.image.height === P8.rad);
+        res.fpTexOk = !!(fp8?.tex && fp8.tex.image.width === P8.az && fp8.tex.image.height === P8.rad);
         res.fpSichtbar = !!(fp8 && fp8.mesh.visible === true);
         let fpWorst = -1;
         if (fp8 && fp8.laeufe >= 1) {
@@ -541,7 +541,7 @@ hauptLauf(async () => {
         // verdeckte solche Geburten bis V18.530 (ein fern gespawntes Tier ploppte sichtbar).
         try {
             const fp8b = st.feldPass;
-            if (fp8b && fp8b.mesh) fp8b.mesh.visible = true;
+            if (fp8b?.mesh) fp8b.mesh.visible = true;
             const wm8 = r._weltMarchEnsure();
             const kasten = () => [{ box: true, c: { x: 0, y: 0, z: 0 }, h: { x: 1, y: 1, z: 1 } }];
             const hE = r._weltKapselSpawn("probe:einblenden", null, kasten, true);
@@ -643,7 +643,7 @@ hauptLauf(async () => {
                 // die Ecken ohne Fläche des Feldes (`_fernRingFeldY` zählt sie, `feldOhne`): dort stünde der Ring auf dem Gesetz
                 res.feldOhne = f9 ? f9.feldOhne | 0 : -1;
                 const rand = [];
-                for (let g = 0; f9 && f9.feldY && g < f9.zoneVerts && rand.length < 100; g++) {
+                for (let g = 0; f9?.feldY && g < f9.zoneVerts && rand.length < 100; g++) {
                     const p = r._fernRingPunkt(f9, g);
                     if (f9.teilung.randV && f9.teilung.randV[g]) rand.push(p);
                 }
@@ -752,7 +752,7 @@ hauptLauf(async () => {
             const proben13 = []; // die Punkte der Loch-Probe für die Treue der Teilung (Band 13)
             const weiche9 = Number(AnazhRealm.FERN_RING.nahtWeiche) || 0; // der Saum weicht dem Chunk in die Tiefe
             const morphF =
-                st.atmoUniforms && st.atmoUniforms.geomorph ? st.atmoUniforms.geomorph.value : 0;
+                st.atmoUniforms?.geomorph ? st.atmoUniforms.geomorph.value : 0;
             const morphMemo = new Map();
             const gemorpht = (m) => {
                 const A = m.geometry.attributes;
@@ -850,7 +850,7 @@ hauptLauf(async () => {
                     return !!M9 && a >= 0 && b >= 0 && a < M9.n && b < M9.n && M9.daten[(b * M9.n + a) * 4] === 255;
                 };
                 maske9[1]++;
-                if (!!M9 && ti >= 0 && tj >= 0 && ti < M9.n && tj < M9.n && M9.daten[(tj * M9.n + ti) * 4] === 255)
+                if (M9 && ti >= 0 && tj >= 0 && ti < M9.n && tj < M9.n && M9.daten[(tj * M9.n + ti) * 4] === 255)
                     maske9[0]++;
                 // DAS DECK, WIE ES GEZEICHNET WIRD: der Boden-Stoff zieht die Grenz-Zeile einer feineren Stufe auf die gröbere
                 // Fläche (Geomorph, `positionNode` = position + (aMorphTarget − position) · geomorph · aMorphWeight) — der Strahl
@@ -975,7 +975,7 @@ hauptLauf(async () => {
             res.durchAnteil = durch[1] ? durch[0] / durch[1] : NaN;
             res.durchOhne = durch[1] ? durchOhne / durch[1] : NaN;
             res.maskeTreue = maske9;
-            res.maskNode = !!(stoffNaht9 && stoffNaht9.maskNode);
+            res.maskNode = !!stoffNaht9?.maskNode;
             res.loch = loch9;
             res.lochZelle = lochZelle;
             res.lochSeite = lochSeite;
@@ -1096,7 +1096,7 @@ hauptLauf(async () => {
                     const d3 = (x - ax) * (cz - az) - (cx - ax) * (z - az);
                     return !((d1 < 0 || d2 < 0 || d3 < 0) && (d1 > 0 || d2 > 0 || d3 > 0));
                 };
-                if (T && T.klasse && T.klasse.length * 3 === I.length) {
+                if (T?.klasse && T.klasse.length * 3 === I.length) {
                     for (let p = 0; p < proben13.length; p += 2) {
                         const x = proben13[p];
                         const z = proben13[p + 1];
@@ -1147,7 +1147,7 @@ hauptLauf(async () => {
                 const C = geo.attributes.color.array;
                 const K = geo.attributes.aKrone.array;
                 for (let row = 0; row < sh.reihen; row++) {
-                    const rad = sh.inner * Math.pow(sh.aussen / sh.inner, row / (sh.reihen - 1));
+                    const rad = sh.inner * (sh.aussen / sh.inner) ** (row / (sh.reihen - 1));
                     if (rad < dachRand + 16) continue;
                     const L = new Float64Array(W9);
 
@@ -1178,7 +1178,7 @@ hauptLauf(async () => {
             res.streifenMedian = quantil(indizes, 0.5);
             res.streifenP90 = quantil(indizes, 0.9);
         } catch (e9) {
-            res.nahtErr = String((e9 && e9.stack) || e9).slice(0, 400);
+            res.nahtErr = String(e9?.stack || e9).slice(0, 400);
         }
         try {
             // ===== (11) DAS DACH IST DER BESTAND =====
@@ -1270,7 +1270,7 @@ hauptLauf(async () => {
             res.dachDeckung = na ? a / na : NaN;
             res.dachAlt = na ? alt / na : NaN;
         } catch (e11) {
-            res.dachErr = String((e11 && e11.stack) || e11).slice(0, 400);
+            res.dachErr = String(e11?.stack || e11).slice(0, 400);
         }
         // ===== (14) DAS WASSER DES RINGS IST DAS WASSER DES BODENS (K16, die Naht) =====
         // Der SEE (ein Wasser-Körper über dem Meer, `_atlasWaterLevelAt` → koerper): der Ring liegt unter seinem Spiegel. Der
@@ -1404,7 +1404,7 @@ hauptLauf(async () => {
             }
             res.binnen = w;
         } catch (e14) {
-            res.binnenErr = String((e14 && e14.stack) || e14).slice(0, 400);
+            res.binnenErr = String(e14?.stack || e14).slice(0, 400);
         }
         // ===== (15) DER HORIZONT STEHT NACH DEM SCHNEE (heil-horizont) =====
         // Der Spieler baut (ein Edit: der Ring bestellt die Ecken um ihn, `editFlug` 1) und im SELBEN Takt wandert die

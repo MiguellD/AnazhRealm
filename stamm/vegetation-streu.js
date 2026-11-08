@@ -1568,8 +1568,7 @@ class AnazhRealm_vegetation_streu {
     // Bahn ankommt.
     _streuRegionInReichweite(rx, rz, p, bahn) {
         const SC = AnazhRealm.SCATTER;
-        const st = this.state;
-        const R = st.foliageRadius != null ? st.foliageRadius : AnazhRealm.PERF_FOLIAGE_RADIUS_MAX;
+        const R = this._laubRand();
         const [x0, x1, z0, z1] = [rx * SC.regionM, (rx + 1) * SC.regionM, rz * SC.regionM, (rz + 1) * SC.regionM];
         if (Math.hypot(Math.max(x0 - p.x, 0, p.x - x1), Math.max(z0 - p.z, 0, p.z - z1)) <= R) return true;
         return !!bahn && this._bedarfKasten(x0, x1, z0, z1, p, true) <= R;

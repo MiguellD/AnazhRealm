@@ -2166,13 +2166,10 @@ class AnazhRealm_vegetation_baum {
     _grundrissRaeumen(haus) {
         const fp = this._grundrissVon(haus);
         if (!fp) return 0;
-        return this._naturRaeumen(
-            haus.position.x,
-            haus.position.z,
-            fp.ex + fp.ez + Math.abs(fp.ox) + Math.abs(fp.oz) + 3,
-            false,
-            haus
-        );
+        const [x, z, r] = [haus.position.x, haus.position.z, fp.ex + fp.ez + Math.abs(fp.ox) + Math.abs(fp.oz) + 3];
+        // der Halm fragt den Bau mit Boxen wie die Streu (w20-lack-spiegel): seine Kacheln wachsen mit — das Haus trägt sein Erdbau
+        if (fp.welt) this._nahWieseNeuIn(x - r, z - r, x + r, z + r);
+        return this._naturRaeumen(x, z, r, false, haus);
     }
 
     // DIE RÄUMUNG EINER FLÄCHE (K52): jede Natur im Quadrat ±r um (hx, hz), die die Natur-Wand dort nicht mehr setzte
@@ -2189,6 +2186,22 @@ class AnazhRealm_vegetation_baum {
         const weit = mitKrone ? RM : 0; // eine Krone reicht nie über eine Streu-Region
         this._grundrissFaellt(hx - r - weit, hz - r - weit, hx + r + weit, hz + r + weit);
         const weg = [];
+        // DER WURF MIT BOXEN WEICHT MIT SEINEM LEIB (w22-dorf-reload): ein Wurf des Felds, der nicht Natur ist (der Akt des Nexus —
+        // Wasserfall, Tempel, Fraktal —, die Feuerstelle), fällt, sobald seine Boxen den neuen Bau `ausser` treffen — dieselbe Wand,
+        // die sie dem Bau sonst stellten (`_bauFrei` gegen ihn allein); bis hier fiel er nur mit seiner Mitte im Grundriss
+        const fa = ausser && ausser.position && this._grundrissVon(ausser);
+        const trifft = (e) =>
+            !!fa &&
+            !this._istNatur(e) &&
+            !this._bauFrei(
+                ausser.position.x,
+                ausser.position.z,
+                fa.welt ? 0 : ausser.rotationY || 0,
+                fa,
+                fa.welt ? null : ausser.tuer,
+                ausser.position.y - 0.5,
+                e
+            );
         // die Nähe aus dem Platz-Netz (`_blockerUmPlatz`, eine Obermenge des Quadrats), nie der ganze Bestand
         for (const e of this._blockerUmPlatz(hx, hz, r + weit, [])) {
             if (e === ausser || !e.position) continue;
@@ -2196,7 +2209,7 @@ class AnazhRealm_vegetation_baum {
             if (!this._weichtDemBau(e)) continue;
             const k = mitKrone ? this._naturKrone(e.type, e) : 0;
             // ein Wurf mit eigenem Grund (die Feuerstelle: ihr Grundriss, ihre Trittfläche) liegt nie in sich selbst
-            if (!this._imGrundriss(e.position.x, e.position.z, 0.8, k, e)) continue;
+            if (!this._imGrundriss(e.position.x, e.position.z, 0.8, k, e) && !trifft(e)) continue;
             weg.push(e);
         }
         // die Natur weicht still (speicher.K3): kein Verlust im Tagebuch, kein Abschied — bis hier füllten die Räumungen der Orte
@@ -2612,9 +2625,9 @@ class AnazhRealm_vegetation_baum {
         const nahOffen = this._archNahOffen || (this._archNahOffen = []);
         const ohneFeld = !!(this.state.renderer && this.state.renderer._isHeadlessNull); // Null-Renderer: kein Feld
         // DER KARTEN-HORIZONT: die Karte eines gesetzten Karten-Dings trägt bis zu SEINEM Rand (`_archKartenHorizont`, im
-        // Saum vor `SCATTER.outerM`, dem Rand der Deko-Streu); geräumt wird erst ein Totband dahinter (kein Flattern).
+        // Saum vor `SCATTER.outerM`, dem Rand der Deko-Streu); geräumt wird erst ein Totband dahinter (kein Flattern). Ein Wurf
+        // des Felds tritt ungezeichnet erst an seinem Rand im Saum vor dem Laub-Rand ein (der Eintritt, w22-wald-geburt).
         const totband = AnazhRealm.CULL_TOTBAND_M;
-        const saumSq = (AnazhRealm.SCATTER.outerM - AnazhRealm.KARTEN_HORIZONT_SAUM_M) ** 2;
         // DIE WACHE DES CULLS (pbk4-fahrt, Gebot 7): der Gang geht die WACHEN Einträge (`_cullWache`), nie den Bestand. Ein
         // Eintrag, dessen Urteil steht (nichts offen, kein Mesh der Mesh-Zone, kein Beweger), schläft, bis der Weg des Spielers
         // (samt dem Wachsen des Radius) seinen Abstand zur nächsten Urteils-Grenze aufbraucht — gezeichnete Karte bis hinter das
@@ -2624,15 +2637,20 @@ class AnazhRealm_vegetation_baum {
         // DER ABSTAND DER BAHN (der EINE Rang, w7-rang): ein Eintrag gilt am Abstand zur Strecke, die der Spieler binnen des
         // Vorlaufs fährt (`_bedarfAbstand`, w14-strom-tempo: bis dahin am näheren ihrer Endpunkte); was die Bahn binnen des
         // Vorlaufs in der Mesh-Zone oder diesseits des Karten-Horizonts braucht, steht, bevor sie ankommt. Der Weg der Wache zählt
-        // den weiteren der Wege beider Enden (ein Schlaf in Metern hält: kein Punkt der Strecke ging weiter).
+        // den weiteren der Wege beider Enden (ein Schlaf in Metern hält: kein Punkt der Strecke ging weiter). Das Wachsen des
+        // Laub-Rands zählt wie das des Radius: der Eintritt eines Wurfs des Felds liegt im Saum vor seinem Rand (der Laub-Rand,
+        // nie diesseits der Mesh-Zone, unter dem Ladeschirm der Karten-Horizont, `_archKartenHorizont`) — er wächst nie weiter als er.
         const vb = this._bedarfVoraus(playerPos) || playerPos;
         const K = this._cullWache();
+        const SR = AnazhRealm.SCATTER.outerM;
+        const laub = this._ladeTakt() ? SR : Math.min(SR, Math.max(radius, this._laubRand()));
         K.odo +=
             K.px === null
                 ? 0
                 : Math.max(Math.hypot(playerPos.x - K.px, playerPos.z - K.pz), Math.hypot(vb.x - K.vx, vb.z - K.vz)) +
-                  Math.max(0, radius - K.R);
-        [K.px, K.pz, K.vx, K.vz, K.R] = [playerPos.x, playerPos.z, vb.x, vb.z, radius];
+                  Math.max(0, radius - K.R) +
+                  Math.max(0, laub - K.F);
+        [K.px, K.pz, K.vx, K.vz, K.R, K.F] = [playerPos.x, playerPos.z, vb.x, vb.z, radius, laub];
         const Q = AnazhRealm.CULL_EIMER_M;
         const jetzt = Math.floor(K.odo / Q);
         const wecke = (b) => {
@@ -2699,24 +2717,35 @@ class AnazhRealm_vegetation_baum {
                     this._archZiegelTod(entry);
                     regung++;
                 }
-                // diesseits des Saums trägt jedes; im Saum und dahinter fragt der Eintrag SEINEN Rand
-                const h = distSq <= saumSq ? Infinity : this._archKartenHorizont(entry);
-                if (distSq <= h * h) {
+                // der Eintrag fragt SEINEN Rand: ungezeichnet den des Eintritts, gezeichnet seinen Karten-Horizont. DER EINTRITT
+                // EINES WURFS DES FELDS MISST VOM SPIELER (w22-wald-geburt-heil), am Ort, an dem `_weltbildFehlt` ihn in der
+                // Mesh-Zone zählt und an dem der Weg der Wache schläft: die Bahn bereitet vor (die Saat) — an ihr trat beim ersten
+                // Schritt alles ein, was ihr Vorlauf überholte (GPU-Probe 6ee4408f, GTX: 21 Karten ab 186 m in EINEM Schritt, 480
+                // Pop-Pixel) —, und das Auge wandert ohne Weg der Wache um den Spieler (Third: 6–10 m; vom Auge gemessen lag ein Baum
+                // vor dem Spieler in der Mesh-Zone jenseits seines Rands, das Weltbild wartete auf ihn). Die Karte blendet ab dem
+                // Eintritt in Welt-Takten ein (`aEin`, `_archInstanceAdd`), an keinem Ort des Auges.
+                let rand = this._archKartenHorizont(entry, !this._archIsRendered(entry));
+                const dEin =
+                    entry.feldWurf === true
+                        ? Math.hypot(entry.position.x - playerPos.x, entry.position.z - playerPos.z)
+                        : Math.sqrt(distSq);
+                if (this._archIsRendered(entry) ? distSq <= rand * rand : dEin <= rand) {
                     if (!this._archIsRendered(entry)) {
                         entry._nahD2 = rang;
                         nahOffen.push(entry);
                         continue;
                     }
-                } else if (distSq > (h + totband) ** 2 && this._archIsRendered(entry)) {
+                } else if (distSq > (rand + totband) ** 2 && this._archIsRendered(entry)) {
                     this._cullArchitectureMesh(entry);
+                    entry._einTakt = undefined; // geräumt: tritt er wieder ein, blendet seine Karte von neuem ein
                     regung++;
+                    rand = this._archKartenHorizont(entry, true);
                 }
-                // der Schlaf: gezeichnet bis hinter das Totband, ungezeichnet bis an den eigenen Rand (er liegt im Saum oder
-                // dahinter: diesseits trägt jedes); eine Stufe ohne Studio-Asset (`instFoundry`) hebt der Rewarm in der
-                // Mesh-Zone — sie wacht dort und schläft davor nur bis an den Radius
-                const d = Math.sqrt(distSq),
-                    rand = this._archKartenHorizont(entry);
-                if (!this._archIsRendered(entry)) schlaf(entry, d - rand);
+                // der Schlaf: gezeichnet bis hinter das Totband, ungezeichnet bis an seinen Rand des Eintritts (der Weg der Wache
+                // zählt den Spieler, die Bahn und das Wachsen beider Ränder); eine Stufe ohne Studio-Asset (`instFoundry`) hebt der
+                // Rewarm in der Mesh-Zone — sie wacht dort und schläft davor nur bis an den Radius
+                const d = Math.sqrt(distSq);
+                if (!this._archIsRendered(entry)) schlaf(entry, dEin - rand);
                 else if (entry.instFoundry === true || !this._foundryPresetForEntry(entry))
                     schlaf(entry, rand + totband - d);
                 else if (d > radius) schlaf(entry, Math.min(rand + totband - d, d - radius));
@@ -2928,6 +2957,7 @@ class AnazhRealm_vegetation_baum {
             px: null,
             pz: null,
             R: 0,
+            F: 0, // der Laub-Rand des letzten Gangs (sein Wachsen zählt wie das des Radius)
         });
     }
 

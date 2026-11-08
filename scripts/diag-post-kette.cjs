@@ -151,7 +151,7 @@ function urteil(z) {
             v.push(
                 `SAUM: ${sm.abweichend} von ${sm.kanten} Kanten-Pixeln links am Gegenstand weichen bis ${sm.dMax} Luma ab — das Abbild liest auf ungerader Leinwand den Nachbar-Block (ein heller Saum)`
             );
-        if (sm.gpuFehler && sm.gpuFehler.length)
+        if (sm.gpuFehler?.length)
             v.push(`SAUM: ${sm.gpuFehler.length} GPU-Validierungs-Fehler: ${sm.gpuFehler[0]}`);
     }
     // (g) DAS RAHMEN-ZIEL: der Direktpfad legt es an (sonst ist die Probe blind), und die Regel der Band nennt es; in der
@@ -208,7 +208,7 @@ function urteil(z) {
     for (const t of (z.konsolenFehler || []).filter((x) => !/RAHMEN-ZIEL/.test(x) && !ERZWUNGEN.test(x)))
         v.push(`KONSOLE: ${t}`);
     if (fang && !fang.direkt) v.push("WEICHE: nach dem Render-Fehler der Kette fährt der Loop nicht den Direktpfad");
-    if (z.gpuFehler && z.gpuFehler.length) v.push(`GPU: ${z.gpuFehler.length} Validierungs-Fehler: ${z.gpuFehler[0]}`);
+    if (z.gpuFehler?.length) v.push(`GPU: ${z.gpuFehler.length} Validierungs-Fehler: ${z.gpuFehler[0]}`);
     if (!z.ausgabe) v.push("SHADER: kein Fragment der Ausgabe gefunden (die Linse ist blind)");
     else for (const x of SK.kostenUrteil(z.ausgabe, BUDGET_AUSGABE, "SHADER: Ausgabe der Post-Kette")) v.push(x);
     const dk = z.dunkel;

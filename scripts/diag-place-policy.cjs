@@ -80,7 +80,7 @@ hauptLauf(async () => {
                 fx: { place: { mode: "none" } },
             };
             r._foundryAutoRegisterSpecies(f.recipes);
-            res.c.katalog = !!(r.state.blueprints && r.state.blueprints.baum_testnone);
+            res.c.katalog = !!r.state.blueprints?.baum_testnone;
             const pc = r._placePolicyFor(f.recipes.testnone);
             res.c.mode = pc.mode;
             res.c.dispatch = r._placeDispatch(pc, { id: "testnone" });
@@ -133,7 +133,7 @@ hauptLauf(async () => {
                 }
             }
         } catch (e) {
-            res.err = (e && e.stack) || fehlerText(e);
+            res.err = e?.stack || fehlerText(e);
         }
         return res;
     }, SELFTEST);
@@ -155,7 +155,7 @@ hauptLauf(async () => {
     check(
         "a2: die Live-Buch-Bäume mit place none stehen im Buch, nie in der Wald-Nische",
         Array.isArray(out.a.liveNone) && out.a.liveNone.length > 0 && out.a.liveNoneInExtras.length === 0,
-        `${(out.a.liveNone || []).join(" · ")}${out.a.liveNoneInExtras && out.a.liveNoneInExtras.length ? " — in der Nische: " + out.a.liveNoneInExtras.join(" · ") : ""}`
+        `${(out.a.liveNone || []).join(" · ")}${out.a.liveNoneInExtras?.length ? " — in der Nische: " + out.a.liveNoneInExtras.join(" · ") : ""}`
     );
     check("a: die testahorn-Nische entsteht wie heute", out.a.inExtras === true);
     check("a: der Wald-Generator streut testahorn (Dart geboren)", out.a.planted === true);

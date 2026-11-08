@@ -881,7 +881,7 @@ class AnazhRealm_gelaende_chunks {
     _foliageChunkInRadius(cx, cz) {
         const pm = this.state.playerMesh;
         if (!pm) return true; // kein Spieler (Boot/Test) → nicht gaten
-        const fr = this.state.foliageRadius != null ? this.state.foliageRadius : AnazhRealm.PERF_FOLIAGE_RADIUS_MAX;
+        const fr = this._laubRand();
         const { span } = this._voxelChunkConfig();
         const ccx = cx * span + span / 2,
             ccz = cz * span + span / 2;
@@ -927,7 +927,7 @@ class AnazhRealm_gelaende_chunks {
         if (this._bepflanzungWartet()) return;
         // der Abstand des nächsten wartenden Chunks jenseits des Radius: so weit kann der Spieler gehen, ohne dass einer
         // hineinwächst; geht ein Gang ohne Wuchs zu Ende, schläft der Takt
-        const fr = this.state.foliageRadius != null ? this.state.foliageRadius : AnazhRealm.PERF_FOLIAGE_RADIUS_MAX;
+        const fr = this._laubRand();
         const { span } = this._voxelChunkConfig();
         let frei = Infinity;
         // DER SCHLAF MISST AN DER BAHN (w14-strom-tempo): ein Chunk wächst, wenn seine Mitte entlang der Strecke des Vorlaufs im
@@ -2364,6 +2364,14 @@ class AnazhRealm_gelaende_chunks {
     // Strahls in die Box selbst (Infinity ohne Schnitt). Bis K4 hielt ein Start in der Haut die Mitte r ENTLANG der Strecke vor
     // der Box: im flachen Winkel stand die Kugel in der Wand (gate:kamera-leib K4 am Haus: 49 von 1096 Bildern, die Linse
     // 0,14 m vor der Fläche); ohne die Haut-Regel fiel der Arm beim Abstieg neben dem GT in das Blickziel (gate:fahr-leben T4).
+    // DIE HAUT IST RUND (w22-t4-heil): die Kugel berührt die Box, wo der Abstand ihrer Mitte zur Box (`_boxAbstand`) r erreicht —
+    // die um r aufgeblasene Box ist nur die Hülle dieser Haut, an Kante und Ecke steht sie bis r(√3 − 1) = 0,22 m über ihr. Ihre
+    // Spanne ist der Kandidat; liegt ein Ende an Kante oder Ecke, sucht das Minimum des Abstands (konvex längs der Strecke,
+    // `_boxAbstandMin`) den Kontakt: bleibt es über r, streift die Kugel die Kante und berührt nie, sonst teilt die Bisektion
+    // Eintritt und Austritt auf die runde Haut (die Normale aus der Box zur Mitte). Bis hier zählte die eckige Hülle: beim
+    // Abstieg in voller Fahrt hob der Arm der Third-Kamera 5 cm neben der Flanke des GT (die Schulter hält KAMERA_SPIEL_M vor
+    // ihrer Haut) über die Dachkante, die Mitte blieb 0,368 m vor der Box (r 0,3) — die Ecke der Hülle hielt ihn bei t 0,015,
+    // die Kamera sprang 10,8 m auf das Blickziel (gate:fahr-leben T4, absteigen Third 10,84 m je Bild).
     _segmentKugelBox(sx, sy, sz, dx, dy, dz, b, r) {
         const q =
             this._kugelBox ||
@@ -2395,40 +2403,78 @@ class AnazhRealm_gelaende_chunks {
         } else q.obb = null;
         const h = this._segmentAABB(sx, sy, sz, dx, dy, dz, q);
         if (!h) return null;
+        const ab = (t, n) => this._boxAbstand(sx + dx * t, sy + dy * t, sz + dz * t, b, n) - r;
+        const ein = ab(h.t);
+        const aus = ab(h.aus);
+        if (ein > 1e-6 || aus > 1e-6) {
+            const tm = this._boxAbstandMin(sx, sy, sz, dx, dy, dz, b, h.t, h.aus);
+            if (!(ab(tm) <= 0)) return null; // die Kugel streift Kante oder Ecke: sie berührt die Box nie
+            if (ein > 1e-6) {
+                let [lo, hi] = [h.t, tm];
+                for (let i = 0; i < 30 && hi - lo > 1e-7; i++) {
+                    const m = (lo + hi) / 2;
+                    if (ab(m) > 0) lo = m;
+                    else hi = m;
+                }
+                h.t = hi;
+                const n = this._boxNormale || (this._boxNormale = { x: 0, y: 0, z: 0 });
+                ab(lo, n);
+                [h.nx, h.ny, h.nz] = [n.x, n.y, n.z];
+            }
+            if (aus > 1e-6) {
+                let [lo, hi] = [tm, h.aus];
+                for (let i = 0; i < 30 && hi - lo > 1e-7; i++) {
+                    const m = (lo + hi) / 2;
+                    if (ab(m) > 0) hi = m;
+                    else lo = m;
+                }
+                h.aus = lo;
+            }
+        }
         const g = this._segmentAABB(sx, sy, sz, dx, dy, dz, b);
         h.roh = g ? g.t : Infinity;
         return h;
     }
 
-    // FÜHRT DIE STRECKE TIEFER AN DIE BOX? Der Abstand der Mitte zur Box (gedreht wie `_segmentAABB`) ist längs der Strecke
-    // konvex: sein Minimum auf [0, bis] (Goldener Schnitt) liegt mehr als 1 cm unter dem am Start — dann stößt die Kugel, die am
-    // Start schon an der Haut steht, sofort an (die Kante, an der sie entlang streicht, zählt nicht).
-    _hautTiefer(sx, sy, sz, dx, dy, dz, b, bis) {
+    // DER ABSTAND EINES PUNKTS ZUR BOX (Meter, 0 in ihr; gedreht wie `_segmentAABB`) — die EINE Messung der runden Haut
+    // (`_segmentKugelBox`, `_hautTiefer`). `n` (optional) trägt die Einheits-Normale aus der Box zum Punkt (Welt).
+    _boxAbstand(x, y, z, b, n) {
         const ob = b.obb;
-        const ab = (t) => {
-            const x = sx + dx * t;
-            const y = sy + dy * t;
-            const z = sz + dz * t;
-            const qx = ob ? x - ob.cx : x - (b.minX + b.maxX) / 2;
-            const qz = ob ? z - ob.cz : z - (b.minZ + b.maxZ) / 2;
-            const lx = ob ? qx * ob.c - qz * ob.s : qx;
-            const lz = ob ? qx * ob.s + qz * ob.c : qz;
-            return Math.hypot(
-                Math.max(0, Math.abs(lx) - (ob ? ob.hx : (b.maxX - b.minX) / 2)),
-                Math.max(0, b.botY - y, y - b.topY),
-                Math.max(0, Math.abs(lz) - (ob ? ob.hz : (b.maxZ - b.minZ) / 2))
-            );
-        };
+        const qx = ob ? x - ob.cx : x - (b.minX + b.maxX) / 2;
+        const qz = ob ? z - ob.cz : z - (b.minZ + b.maxZ) / 2;
+        const lx = ob ? qx * ob.c - qz * ob.s : qx;
+        const lz = ob ? qx * ob.s + qz * ob.c : qz;
+        const gx = Math.sign(lx) * Math.max(0, Math.abs(lx) - (ob ? ob.hx : (b.maxX - b.minX) / 2));
+        const gy = y < b.botY ? y - b.botY : y > b.topY ? y - b.topY : 0;
+        const gz = Math.sign(lz) * Math.max(0, Math.abs(lz) - (ob ? ob.hz : (b.maxZ - b.minZ) / 2));
+        const d = Math.hypot(gx, gy, gz);
+        if (n && d > 0) {
+            const [ex, ez] = ob ? [gx * ob.c + gz * ob.s, -gx * ob.s + gz * ob.c] : [gx, gz];
+            [n.x, n.y, n.z] = [ex / d, gy / d, ez / d];
+        }
+        return d;
+    }
+
+    // Das Minimum des Abstands der Mitte (start + dir·t) zur Box auf [lo, hi]: er ist längs der Strecke konvex (Goldener Schnitt,
+    // 24 Schritte) → t.
+    _boxAbstandMin(sx, sy, sz, dx, dy, dz, b, lo, hi) {
+        const ab = (t) => this._boxAbstand(sx + dx * t, sy + dy * t, sz + dz * t, b);
         const g = (Math.sqrt(5) - 1) / 2;
-        let lo = 0;
-        let hi = bis;
         for (let i = 0; i < 24; i++) {
             const m1 = hi - g * (hi - lo);
             const m2 = lo + g * (hi - lo);
             if (ab(m1) < ab(m2)) hi = m2;
             else lo = m1;
         }
-        return ab((lo + hi) / 2) < ab(0) - 0.01;
+        return (lo + hi) / 2;
+    }
+
+    // FÜHRT DIE STRECKE TIEFER AN DIE BOX? Der Abstand der Mitte zur Box (`_boxAbstand`) ist längs der Strecke konvex: sein
+    // Minimum auf [0, bis] (`_boxAbstandMin`) liegt mehr als 1 cm unter dem am Start — dann stößt die Kugel, die am Start schon an
+    // der Haut steht, sofort an (die Kante, an der sie entlang streicht, zählt nicht).
+    _hautTiefer(sx, sy, sz, dx, dy, dz, b, bis) {
+        const tm = this._boxAbstandMin(sx, sy, sz, dx, dy, dz, b, 0, bis);
+        return this._boxAbstand(sx + dx * tm, sy + dy * tm, sz + dz * tm, b) < this._boxAbstand(sx, sy, sz, b) - 0.01;
     }
 
     // Segment-AABB-Schnitt (Slab-Methode) für den Struktur-Raycast. start + dir·t, t ∈ [0,1].

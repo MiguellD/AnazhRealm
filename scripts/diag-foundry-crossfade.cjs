@@ -337,7 +337,7 @@ async function runPartB() {
                         for (const l of stufen)
                             if (!w[l]) {
                                 const fl = r._foundryFlattenFor(e, preset, l);
-                                w[l] = !!(fl && fl.instanceable);
+                                w[l] = !!fl?.instanceable;
                             }
                         return stufen.every((l) => w[l]);
                     },
@@ -396,7 +396,7 @@ async function runPartB() {
                             const wo = { seed: r._scatterFoundrySeed(c.cellX, c.cellZ, c.variantIndex, c.species, tf), wo: tf };
                             for (const l of [1, 2]) {
                                 const fl = r._foundryFlattenFor(wo, r._foundryPresetFor(c.species), l);
-                                kalt = kalt || !(fl && fl.instanceable);
+                                kalt = kalt || !fl?.instanceable;
                             }
                         }
                     }
@@ -556,7 +556,7 @@ async function runPartB() {
                 const g = st.archInstanceGroups && st.archInstanceGroups.get(ref.key);
                 if (!g || !g.mesh || g.mesh.layers.mask === 1 << A.SHADOW_TWIN_LAYER) return null;
                 const a = g.mesh.geometry && g.mesh.geometry.attributes;
-                if (a && a.aKarte && a.aKarte.isInstancedBufferAttribute) {
+                if (a?.aKarte?.isInstancedBufferAttribute) {
                     const h = Math.abs(a.aKarte.array[ref.slot * 4 + 3]);
                     return { h, hL: h, modus: "fin" };
                 }
@@ -644,7 +644,7 @@ async function runPartB() {
                 const satzStempel = (g, ref, o) => {
                     const S = st.chunkSaetze ? st.chunkSaetze.get(g.satz) : null;
                     const b = S ? S.bloecke.get(g.key) : null;
-                    const z = b && b.zellen ? b.zellen[ref.slot] : null;
+                    const z = b?.zellen ? b.zellen[ref.slot] : null;
                     let anDerInstanz = false;
                     if (z && !z.huelle.isEmpty()) {
                         const T3 = window.THREE;
@@ -662,7 +662,7 @@ async function runPartB() {
                                 key: String(g.key).slice(0, 48),
                                 slot: ref.slot,
                                 bereich: !!b,
-                                zellen: b && b.zellen ? b.zellen.length : 0,
+                                zellen: b?.zellen ? b.zellen.length : 0,
                             };
                         return null;
                     }
@@ -809,7 +809,7 @@ async function runPartB() {
                 let zwBekannt = false;
                 const deckungAm = (e0, auge) => {
                     const lu = st.lodUniforms;
-                    const ref = lu && lu.uLodRef ? lu.uLodRef.value : lodRefLive;
+                    const ref = lu?.uLodRef ? lu.uLodRef.value : lodRefLive;
                     const k = r._ankunftsFerne();
                     const teile = [];
                     for (const list of [e0.instSlots, e0.instSlotsBand]) {
@@ -1192,7 +1192,7 @@ async function runPartB() {
         }
         const fl0 = r._foundryFlattenFor(e, preset, 0),
             fl1 = r._foundryFlattenFor(e, preset, 1);
-        if (!(fl0 && fl0.leaves && fl1 && fl1.leaves))
+        if (!(fl0 && fl0.leaves && fl1?.leaves))
             return {
                 err: "Stufen nicht warm",
                 gestalt: r._foundryGestaltFor(e, preset),
@@ -1450,7 +1450,7 @@ async function main() {
             "SLOT-BILANZ: kein slotEntry-/Feld-Rest (Remove räumt Primär + Band)",
             B.entryRefsAfter === 0 && B.slotsAfter === false && B.bandAfter === false
         );
-        if ((out.samples || []).length) {
+        if (out.samples?.length) {
             console.log(
                 "   Sweep: " +
                     out.samples.map((s) => `${s.dn}m→[${s.stages}]${s.inB01 ? "B01" : s.inB12 ? "B12" : ""}`).join(" ")
@@ -1462,7 +1462,7 @@ async function main() {
         !!laut && laut.blende === true && /uLodD0/.test(laut.bruch || ""),
         laut ? (laut.bruch ? laut.bruch : `der Stoff entstand still (Maske ${laut.maske ? "da" : "fehlt"})`) : "keine Antwort"
     );
-    const sp = (laut && laut.spiegel) || {};
+    const sp = laut?.spiegel || {};
     check(
         "SPIEGEL DER BLENDE: die Masken-Uniformen tragen je Bild das CPU-Band (LOD_DISTANCES) — vor dem Bild alt, nach ihm neu",
         sp.seed === true && sp.vorBild === false && sp.nachBild === true && sp.zurueck === true,
@@ -1588,7 +1588,7 @@ async function main() {
                     zk(op.gegenSatz)
                 );
         }
-        if (!(out.kette || []).length) check("KETTE DES GESETZBUCHS lief", false, "fehlt");
+        if (!out.kette?.length) check("KETTE DES GESETZBUCHS lief", false, "fehlt");
     } else check("STUFEN-WAHRHEIT lief", false, SW ? SW.err : "fehlt");
     // (10) DER GEISTER-BAUM: je Lauf 14 Augen-Orte (6–40 m Wahrnehmung, hin und zurück), die Deckung am Auge 0 oder 1.
     const GB = out && out.geisterBaum;
