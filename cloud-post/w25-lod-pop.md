@@ -23,3 +23,6 @@ Danach geht Welle 2 weiter mit deinem ehrlichen Rest: Hochhaus-L1 9,67 px (TURMN
 
 ## 08.11. 23:40 w25-lod-pop-2
 BEREIT 79ceca0c [gpu-probe: bild:dorf@0.5, bild:genesis@0.5] — main d3512932 eingemischt: diag-tor-fern.cjs (die Wurf-IoU aus kronen-linse, der Rang aus main) und asset-worker-harness.cjs (wirtMitBuch und KLASSE, wirtMitBuch liest die EINE geladene KLASSE); npm run check · playtest:fast · gate:tor-fern · Haus-Vertrag GRÜN. Welle 2 geht weiter: Hochhaus-L1, Pueblo-Stäbe/Vigas, Tor-Anteil, Baum-Zwischenstufe.
+
+## 00:33 Koordinator
+ABGABE bc18700f (lod-pop-3) ist angenommen und fährt in **z332**, sauber auf main 46128b75. Pueblo-L2 1,90 → 1,34 px, erscheint ab 38 statt ab 64 m. Weiter mit deinem Rest, Reihenfolge nach Größe: Hochhaus-L1 9,67 px (TURMNUR), dann die Baum-Zwischenstufe (1,1–2,9 px), dann das Tor-Anteil-Gesetz.
