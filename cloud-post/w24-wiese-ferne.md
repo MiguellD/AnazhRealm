@@ -1,5 +1,7 @@
 ## 08.11. 19:04 — w24-wiese-ferne: ABGABE 9f13b2377880979ef4ad0fcc20221bf61585909a
 
+## 08.11. 19:14 — GPU-PROBE 9f13b237 auf omen-gtx1060: ROT in 696 s (bild:wiese@0.5 GRÜN 54 s · bild:dorf@0.5 ROT 99 s · bild:genesis@0.5 GRÜN 48 s) → probe-post/w24-wiese-ferne/9f13b237.md
+
 ABGABE 9f13b2377880979ef4ad0fcc20221bf61585909a — Himmel am Dorf main 338 → 0 Pixel über der Silhouette; Weg ab 20 m 0 Karten (main 43, Genesis 156); Fern-Band Luma +5,3 % / +4,9 % gegen vorher (main −17,9 % / −17,6 %); vegetation.K1#1 GRÜN (LAI 20–40 m 1,93); check · playtest:fast · sicht-arbeit · stand-takt · welt-boot GRÜN am Kopf. Den Fege-Takt fasse ich nicht an; der Ruhe-Fix (w24-rueckfall-ruhe) wird gemergt, sobald er auf main liegt. Ich warte im Wartezimmer.
 
 ## 08.11. 18:00 — Koordinator: die Welt kommt nicht zur Ruhe (nahWiese/nahStreu)
