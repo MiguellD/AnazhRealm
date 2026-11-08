@@ -2436,15 +2436,16 @@ class AnazhRealm_bild_kosten {
             if (kamera.isPerspectiveCamera === true) this._passMatrixWeit(S.m, kamera, AnazhRealm.PASS_WAHL.drehRand);
             this._passWahlLage(S, kamera, k);
         }
-        const L = S.lage;
         // DER TAKT DER ARENEN im Hauptbild, vor jedem Pass dieses Frames (die Kaskaden rendern verschachtelt in ihm), dann
         // die Wahl der GPU: die Arenen legen die Aufträge dieses Passes, EIN Compute wählt jede Instanz jeder globalen Gruppe
-        if (!nach && k < 0 && kamera === this.state.camera) this._arenaTakt();
+        if (!nach && k < 0 && kamera === this.state.camera) {
+            this._arenaTakt();
+            this._wieseAugeTakt(kamera); // das Auge der Wiese für Stoff und Wahl dieses Bilds (die Nah-Wiese wirft nie)
+        }
         if (!nach) this._instanzWahlGpu(kamera, S);
         // Die Sätze (Boden · Wasser · Bau · Streu) wählen ihren Abschnitt nach demselben Gesetz.
         this._chunkSatzPass(kamera, nach, k, S);
-        // Die Nah-Wiese legt ihren Satz für das Auge dieses Passes (eine Kaskade sieht sie nie: sie wirft nicht).
-        if (!nach && k < 0) this._nahWieseSicht(kamera, L);
+
         const map = this.state._regionBundles;
         if (!map || map.size === 0) return;
         if (k < 0) {
@@ -2985,7 +2986,8 @@ class AnazhRealm_bild_kosten {
                     buffer: { type, hasDynamicOffset: i === 1 },
                 })),
             });
-            const module = dev.createShaderModule({ label: "pass-wahl", code: AnazhRealm.PASS_WAHL_WGSL });
+            const code = AnazhRealm.WIESE_WGSL + "\n" + AnazhRealm.PASS_WAHL_WGSL; // die Gesetze der Ferne (`WIESE_WGSL`)
+            const module = dev.createShaderModule({ label: "pass-wahl", code });
             const layout = dev.createPipelineLayout({ bindGroupLayouts: [lay] });
             const pipe = dev.createComputePipeline({
                 label: "pass-wahl",
@@ -3031,6 +3033,7 @@ class AnazhRealm_bild_kosten {
             nw = this.state.nahWiese;
         if (haupt) W.par ^= 1;
         [F[30], F[31], F[67]] = [W.par, haupt ? 1 : 0, haupt && nw && nw.sprung ? 1 : 0];
+        F[27] = nw && nw.auge ? nw.auge.h : 0; // die Höhe des Auges über dem eigenen Boden (`_wieseAugeTakt`, die Ferne)
         if (haupt && nw) nw.sprung = false;
         dev.queue.writeBuffer(W.lage, 0, F);
         dev.queue.writeBuffer(W.puffer, 0, W.f.buffer, 0, bytes);
@@ -3396,6 +3399,11 @@ AnazhRealm.WAHL_BASIS = Object.freeze([0, 1, 2, 4, 5, 6, 8, 9, 10]);
 // `stufe1`, gehalten bis `stufe1Rand` dahinter — mit dem ZUSTAND des Platzes (`zustand`, Basis + Platz im Glied, zwei Hälften:
 // gelesen die des letzten Hauptbilds, geschrieben die andere, nur im Hauptbild und nur vom ersten Teil der L1; nach einem
 // Sprung des Auges aus dem Jetzt); jenseits der Übergabe `radius` zeichnet die Ferne; jede Senke behält ihre Stufe.
+// DIE FERNE (Art 6) UND DIE SCHALE (Art 7, `_nahWieseBestand`): tot fällt, diesseits der Übergabe legt die Nähe; das Büschel steht,
+// solange seine Ordnung (Element 7) unter dem Anteil seines Gesetzes × (1 + Rand) liegt — `_wieseFern` am Fußabdruck-Abstand
+// `_wieseFuss` (der Fuß, die Ebene seines Hangs aus den waagrechten Achsen, die Höhe des Auges über dem eigenen Boden in
+// `auge.w`), mit seiner Grenze (Element 3) —, die Karte nach `_wieseSchale` am Abstand; beide aus `WIESE_WGSL` (dieselbe
+// Algebra wie der Stoff). Die Kugel des gestreckten Büschels: der Teil um seinen Fuß gespreizt, am Hang geneigt, die Halme breiter.
 AnazhRealm.PASS_WAHL_WGSL = `
 struct Lage {
     ebenen: array<vec4f, 6>, auge: vec4f, rand: vec4f,
@@ -3457,6 +3465,25 @@ fn behalten(a: Auftrag, i: u32, j: u32) -> bool {
         c = m[3].xyz + m[1].xyz * h - lage.auge.xyz;
         r = length(m[0].xyz) * sqrt(h * h + k.y * k.y);
     }
+    if (art >= 6u) {
+        if (m[2].w < 0.0) { return false; }
+        let fuss = m[3].xyz;
+        let d = length(fuss.xz - lage.auge.xz);
+        if (d < a.saum.y) { return false; }
+        if (art == 6u) {
+            let n = cross(m[2].xyz, m[0].xyz);
+            let G = wieseFern(d, wieseFuss(fuss - lage.auge.xyz, n, lage.auge.w), m[0].w);
+            if (m[1].w >= G.z * (1.0 + a.saum.z)) { return false; }
+            let hang = length(n.xz) / max(abs(n.y), 1e-3);
+            let quer = length((c + lage.auge.xyz - fuss).xz);
+            r = (r + quer) * max(G.y, 1.0) * (1.0 + hang) + a.fenster.y * sqrt(s2) * max(G.x - 1.0, 0.0);
+        } else {
+            let S = wieseSchale(d);
+            if (m[1].w >= S.x * (1.0 + a.saum.z)) { return false; }
+            c = fuss + vec3f(0.0, a.fenster.z * 0.5, 0.0) - lage.auge.xyz;
+            r = 0.5 * a.fenster.y * S.y + a.fenster.z;
+        }
+    }
     let rr = r + lage.rand.x + lage.rand.y * length(c);
     for (var p = 0u; p < 6u; p++) {
         let e = lage.ebenen[p];
@@ -3471,7 +3498,7 @@ fn behalten(a: Auftrag, i: u32, j: u32) -> bool {
         }
     }
     let gilt = select(a.fenster.y, a.fenster.z, lage.licht.w > 0.5);
-    return art == 0u || art == 5u || gilt < 0.5 || lage.saum.z < 0.5 || fenster(art, i, m);
+    return art == 0u || art >= 5u || gilt < 0.5 || lage.saum.z < 0.5 || fenster(art, i, m);
 }
 @compute @workgroup_size(64)
 fn wahl(@builtin(local_invocation_id) lid: vec3u, @builtin(workgroup_id) wid: vec3u) {

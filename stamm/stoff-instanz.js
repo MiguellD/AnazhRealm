@@ -182,6 +182,27 @@ class AnazhRealm_stoff_instanz {
         };
     }
 
+    // Die WGSL-Algebra derselben Gesetze (w25-gpu-wahl): jedes Gesetz über einer Algebra (`_wieseFern`, `_wieseFuss`,
+    // `_wieseSchale`) schreibt sich über ihr als WGSL-Ausdruck — die Wahl der GPU rechnet es aus DERSELBEN Quelle wie der Stoff
+    // (TSL) und die CPU (Zahlen), nie ein Zwilling von Hand. Eine Zahl wird ein f32-Literal, jede Größe ein Ausdruck in Klammern.
+    static _wgslAlgebra() {
+        const zahl = (n) => {
+            if (!Number.isFinite(n)) throw new Error(`_wgslAlgebra: ${n} ist keine endliche Zahl`);
+            const t = String(n);
+            return "f32(" + (/[.e]/.test(t) ? t : t + ".0") + ")";
+        };
+        return {
+            k: zahl,
+            add: (a, b) => `(${a} + ${b})`,
+            mul: (a, b) => `(${a} * ${b})`,
+            min: (a, b) => `min(${a}, ${b})`,
+            max: (a, b) => `max(${a}, ${b})`,
+            pow: (a, b) => `pow(${a}, ${b})`,
+            sin: (a) => `sin(${a})`,
+            sqrt: (a) => `sqrt(${a})`,
+        };
+    }
+
     // DER WIND IM PFLANZEN-STOFF (K19): Rinde und Laub jeder Foundry-Pflanze tragen den EINEN Wind-Term (phyto-core
     // `windAusschlag`, hier über der TSL-Algebra) — Stamm, Ast und Blatt je mit ihrer Frequenz, die Last aus der Wind-Zeile
     // des Wetters (U = uWindStrength / WEATHER_WIND_AMP, dieselbe Zeile, die das Wasser kräuselt), die Böe aus WIND_BOE
