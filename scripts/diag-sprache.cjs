@@ -125,7 +125,7 @@ function pruefe({ dateien, html, Z, Q }) {
             const ort = `${pfad}:${stammLib.zeileVon(text, n.start)}`;
             const wo = wort(s) && senke(n, ahnen);
             if (wo) rot.push(`C: ${ort} ${wo}: ${text.slice(n.start, n.end).slice(0, 90)}`);
-            if (quasi && quasi.length > 1 && /^[a-z0-9]+(\.[a-z0-9-]+)*\.$/.test(quasi[0])) familien.set(quasi[0], ort);
+            if (quasi?.length > 1 && /^[a-z0-9]+(\.[a-z0-9-]+)*\.$/.test(quasi[0])) familien.set(quasi[0], ort);
             if (quasi || !(SCHLUESSEL.test(s) || (nameVon(vater.callee || {}) === "_t" && vater.arguments[0] === n)))
                 return;
             genutzt.add(s);

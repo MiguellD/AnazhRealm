@@ -90,14 +90,12 @@ const zahl = (d) => (d >= 0 ? "+" : "") + d;
 function wachstumAusDiff(text, werkzeug) {
     const [seiten, je, datei, hand] = [new Map(), new Map(), new Map(), []];
     let [pfad, hunk, frei] = [null, false, 0];
-    for (const z of text.split("\n")) {
-        if (z.startsWith("diff --git ")) {
+    for (const z of text.split("\n")) if (z.startsWith("diff --git ")) {
             [pfad, hunk] = [z.slice(13, 13 + (z.length - 16) / 2), false];
             seiten.set(pfad, [[], []]);
         } else if (!hunk && /^(new|deleted) file mode/.test(z)) datei.set(pfad, z[0] === "n" ? 1 : -1);
         else if (z.startsWith("@@")) hunk = true;
         else if (hunk && z) for (const k of [0, 1]) if (z[0] !== "+-"[k]) seiten.get(pfad)[k].push(z.slice(1));
-    }
     for (const [p, [alt, neu]] of seiten) {
         const t = [...TAFELN, stamm.KARTE].includes(p) && !datei.has(p);
         const [a, n] = [alt.join("\n"), neu.join("\n")];

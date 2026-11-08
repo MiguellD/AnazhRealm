@@ -20,7 +20,7 @@
 //   LAUF — kein Spiel-Bild und kein Kehraus-Puffer während der Bühne (der Loop ruht).
 //   node scripts/diag-kamera-treue.cjs [--selftest]   (--selftest: das Urteil über grün und je einen injizierten Täter)
 "use strict";
-const { statikServer, starteBrowser, laufUhr, taeterFaelle, selbsttestEnde, wandEnde, jsonKlon, fehlerText, seiteZu, SELBSTTEST } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, laufUhr, taeterFaelle, selbsttestEnde, wandEnde, fehlerText, seiteZu, SELBSTTEST } = require("./lib/welt-boot.cjs");
 const { DIAET_INSTALL, diaetUrteil } = require("./lib/diaet-linse.cjs");
 
 const BILD_SOLL = 0.999; // der Replay zeichnet wie der direkte Pfad
@@ -146,7 +146,6 @@ function selbsttest() {
         },
     };
     const fehler = [];
-    if (urteil(gruen).length) fehler.push("der grüne Lauf fällt rot: " + urteil(gruen).join(" · "));
     const faelle = [
         ["Zeiger genullt", ["aufnahme", { verfolgt: 1 }], /verfolgt 1 von 13/],
         ["Bundle unter Override", ["aufnahme", { unterOverride: 2 }], /unter einem overrideMaterial/],
@@ -185,7 +184,7 @@ function selbsttest() {
         ["Spiel-Frame in der Bühne", ["lauf", { spielBilder: 2, kehraus: 51 }], /LAUF: 2 Spiel-Bilder .* nahm 51 Geometrie-Puffer/],
         ["Kehraus ohne Spiel-Bild", ["lauf", { kehraus: 3 }], /LAUF: 0 Spiel-Bilder .* nahm 3 Geometrie-Puffer/],
     ];
-    taeterFaelle(faelle, urteil, { fehler, klon: () => jsonKlon(gruen) });
+    taeterFaelle(faelle, urteil, { fehler, gruen });
     selbsttestEnde(fehler);
 }
 
