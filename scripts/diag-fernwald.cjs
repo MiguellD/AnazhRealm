@@ -530,31 +530,30 @@ hauptLauf(async () => {
         res.C = { zone: zC, jenseitsN: nJ, jenseits, randMin, randMax, saum: AR.KARTEN_HORIZONT_SAUM_M };
 
         // ── G: die Geburt am Laub-Rand — der Spieler geht ins Offene, je Schritt 1 m und 12 Takte; jedes Karten-Ding, das zum
-        // ersten Mal gezeichnet steht, nennt seinen Abstand. Ein Wurf des Felds im Saum vor dem Laub-Rand tritt erst an seinem
-        // Rand des Eintritts ein — nie ein Chunk als Ring bei seiner Saat. Der Abstand zählt vom Spieler, die Bahn darf um ihren
-        // Vorlauf (`_bedarfVoraus().weg`, das Maximum des Gangs) und den Schritt vorausgehen.
+        // ersten Mal gezeichnet steht, nennt seinen Abstand vom Spieler. Ein Wurf des Felds im Saum vor dem Laub-Rand tritt erst
+        // an seinem Rand des Eintritts ein, gemessen vom Spieler — nie ein Chunk als Ring bei seiner Saat, nie, wo die Bahn
+        // ihm vorausläuft.
         const geburt = async (dx, dz) => {
             const gezeichnet = new Set(karten().filter((e) => r._archIsRendered(e)));
             const [x0, z0, saum] = [pm.x, pm.z, AR.KARTEN_HORIZONT_SAUM_M];
-            const g = { rand: r._laubRand(), n: 0, ring: 0, weg: 0, taeter: [] };
+            const g = { rand: r._laubRand(), n: 0, ring: 0, taeter: [] };
             for (let i = 1; i <= 40; i++) {
                 stelle(x0 + dx * i, z0 + dz * i);
-                for (let k = 0; k < 12; k++) (await tick(1), (g.weg = Math.max(g.weg, r._bedarfVoraus().weg)));
+                await tick(12);
                 let neu = 0;
                 for (const e of karten()) {
                     if (gezeichnet.has(e) || !r._archIsRendered(e)) continue;
                     gezeichnet.add(e);
                     const d = dist(e);
-                    if (e.feldWurf !== true || d < g.rand - saum - g.weg - 1) continue; // diesseits des Saums: kein Rand
+                    if (e.feldWurf !== true || d < g.rand - saum - 1) continue; // diesseits des Saums: kein Rand
                     neu++;
                     const h = rand(e, true);
-                    if (d > h + g.weg + 1 && g.taeter.length < 6)
+                    if (d > h + 0.5 && g.taeter.length < 6)
                         g.taeter.push(`${e.type} @ ${d.toFixed(0)} m (Rand des Eintritts ${h.toFixed(0)} m)`);
                 }
                 g.n += neu;
                 g.ring = Math.max(g.ring, neu);
             }
-            g.weg = +g.weg.toFixed(1);
             return g;
         };
         res.G = await geburt(1, 0);
@@ -723,7 +722,7 @@ hauptLauf(async () => {
     // G: kein Wurf des Felds tritt jenseits seines Rands des Eintritts ein; nicht vakuös: der Gang trägt Eintritte im Saum
     const G = out.G || { taeter: ["nicht gelaufen"] };
     const gZeile = (g) =>
-        `Laub-Rand ${g.rand} m, 40 m Gang (Bahn ≤ ${g.weg} m voraus): ${g.n} Würfe des Felds treten im Saum ein, höchstens ${g.ring} je Schritt` +
+        `Laub-Rand ${g.rand} m, 40 m Gang: ${g.n} Würfe des Felds treten im Saum ein, höchstens ${g.ring} je Schritt` +
         (g.taeter.length ? ` · Täter: ${g.taeter.join(" | ")}` : "");
     check("G GEBURT (die Karte tritt an ihrem Rand ein, kein Ring der Saat)", G.n >= 5 && G.taeter.length === 0, gZeile(G));
     const S6 = out.S6 || { taeter: [] };

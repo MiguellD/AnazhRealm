@@ -2715,9 +2715,16 @@ class AnazhRealm_vegetation_baum {
                     this._archZiegelTod(entry);
                     regung++;
                 }
-                // der Eintrag fragt SEINEN Rand: ungezeichnet den des Eintritts, gezeichnet seinen Karten-Horizont
+                // der Eintrag fragt SEINEN Rand: ungezeichnet den des Eintritts, gezeichnet seinen Karten-Horizont. DER EINTRITT
+                // EINES WURFS DES FELDS MISST VOM SPIELER (w22-wald-geburt), wie sein Laub-Rand: die Bahn bereitet vor (die Saat),
+                // sichtbar wird, was der Spieler erreicht — an der Bahn trat beim ersten Schritt alles ein, was ihr Vorlauf überholte
+                // (GPU-Probe 6ee4408f, GTX: 21 Karten ab 186 m in EINEM Schritt, 480 Pop-Pixel)
                 let rand = this._archKartenHorizont(entry, !this._archIsRendered(entry));
-                if (distSq <= rand * rand) {
+                const dEin =
+                    entry.feldWurf === true
+                        ? Math.hypot(entry.position.x - playerPos.x, entry.position.z - playerPos.z)
+                        : Math.sqrt(distSq);
+                if (this._archIsRendered(entry) ? distSq <= rand * rand : dEin <= rand) {
                     if (!this._archIsRendered(entry)) {
                         entry._nahD2 = rang;
                         nahOffen.push(entry);
@@ -2732,7 +2739,7 @@ class AnazhRealm_vegetation_baum {
                 // ohne Studio-Asset (`instFoundry`) hebt der Rewarm in der Mesh-Zone — sie wacht dort und schläft davor nur bis
                 // an den Radius
                 const d = Math.sqrt(distSq);
-                if (!this._archIsRendered(entry)) schlaf(entry, d - rand);
+                if (!this._archIsRendered(entry)) schlaf(entry, dEin - rand);
                 else if (entry.instFoundry === true || !this._foundryPresetForEntry(entry))
                     schlaf(entry, rand + totband - d);
                 else if (d > radius) schlaf(entry, Math.min(rand + totband - d, d - radius));
