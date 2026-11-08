@@ -790,10 +790,6 @@
     //          die Normale der Kappe. Die Mitte eines Bildpunkts träfe ein schmaleres Band nur zufällig: sein Ton und sein Licht
     //          wären Rauschen (headless 53b2fc7a: der Third strich 0,20, das Haar ein Grieß aus Weiß und Braun). Gemessen in
     //          Pixeln des SCHIRMS (der Hochskalierer löst über den Zitter auf, was die Szene unter ihrem Pixel trägt).
-    //   strichPx, strichMax  die Breite des Strichs am Schirm (w25-haar-albedo; TressFX: die Strähne wird mit dem Abstand breiter,
-    //          die Zahl der Striche im Bild fällt): kein Band ist schmaler als strichPx Pixel des Schirms — seine halbe Breite wächst
-    //          bis dorthin, höchstens um strichMax. Am Arm (Band ≥ 8 Pixel) unverändert, am Third (Spitze 0,7 Pixel) liegt das Haar
-    //          in Strichen statt im Grieß: Radeon 452dc752 third strich ohne Breite 0,3224, die Soll-Grenze 0,3554.
     // Bis haar.K2 stand jede Strähne als Kreuz-Karte vom Kopf ab, die Wurzel bei 0,12 über die ganze Länge: das Bild zeigte das
     // Raster der Kappe statt Strähnen (Strich arm 0,28 / third 0,38 gegen die REF 0,44, Radeon 20d09a04), das Haar las dunkler als
     // Schwarz (Dunkelbraun: der Ton 0,0127, gerechnet über die Strähne im Mittel ≈ 0,006 — unter dem Band [0,01; 0,3]).
@@ -807,8 +803,6 @@
         ton: 0.2,
         wurzel: 0.85,
         aufloesung: Object.freeze([0.5, 1]),
-        strichPx: 2,
-        strichMax: 4,
     });
     var HAAR_LOOK = Object.freeze({
         tipRimPow: 3,
@@ -822,19 +816,17 @@
     // an der Spitze im Ton, je Ende erst quer −1, dann +1) rückwärts gelesen. Je Ecke [Achse, Quer, Länge, Samen]: die Achse 0 an
     // der Wurzel, an der Spitze die Länge des Bands (die Feder des Winds liest sie, haar.K3), quer −1/+1 an seinen Kanten, die
     // Länge an jeder Ecke (Achse ÷ Länge = der Anteil Wurzel → Spitze, den der Glanz der Spitze liest) und der Samen des Bands
-    // [0, 1); dazu je Ecke die halbe Breite ihres Bands an seinem Ende als Vektor (`quer`: von der Mitte zur Kante quer +1 — die
-    // Breite des Strichs am Schirm, HAAR_STRICH.strichPx). Die Farbe kann die Achse nicht tragen: jede Strähne trägt ihren eigenen Ton (HAAR_STRICH ton, locke) über einer
+    // [0, 1). Die Farbe kann die Achse nicht tragen: jede Strähne trägt ihren eigenen Ton (HAAR_STRICH ton, locke) über einer
     // Wurzel von 0,85 — bis hier lasen Welt und Labor den Anteil als Ton ÷ Ton-Anker und maßen den Würfel des Tons (der Glanz
     // schaltete je Strähne ganz an oder aus: das dunkelbraune Haar stand weiß, haar.K2#1). Eingaben je Ecke: Lage und Farbe
     // (xyz hintereinander), Ton (`menschTon`). Ein Vierer im Ton des Haars, dessen Farben dem Gesetz nicht folgen, ist ein Bruch
-    // (gezählt) — außer er ist eine Fläche in einem Ton (die Kappe der Grobstufe). Rückgabe { achse (Float32Array, 4 je Ecke), quer
-    // (3 je Ecke), zahl, bruch }.
+    // (gezählt) — außer er ist eine Fläche in einem Ton (die Kappe der Grobstufe). Rückgabe { achse (Float32Array, 4 je Ecke), zahl,
+    // bruch }.
     function haarAchse(lage, farbe, ton) {
         var n = ton.length,
             haarTon = menschTon("hair"),
             wz = HAAR_STRICH.wurzel,
             A = new Float32Array(n * 4),
-            Q = new Float32Array(n * 3),
             zahl = 0,
             bruch = 0;
         var gleich = function (x, y) {
@@ -871,13 +863,10 @@
                 A[(i + k) * 4 + 1] = k & 1 ? 1 : -1;
                 A[(i + k) * 4 + 2] = l;
                 A[(i + k) * 4 + 3] = samen;
-                // die halbe Breite des Bands an seinem Ende (von der Mitte zur Kante quer +1)
-                var e0 = i + (k & 2);
-                for (f = 0; f < 3; f++) Q[(i + k) * 3 + f] = (lage[(e0 + 1) * 3 + f] - lage[e0 * 3 + f]) / 2;
             }
             zahl++;
         }
-        return { achse: A, quer: Q, zahl: zahl, bruch: bruch };
+        return { achse: A, zahl: zahl, bruch: bruch };
     }
 
     // ════════════════════════════════════════════════════════════════════
