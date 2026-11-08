@@ -138,6 +138,26 @@ function nachZeile(z) {
     return `Taste ${rel(k)} · Halten ${rel(h)}${h ? "(" + h[6] + ")" : ""} · Weg ${rel(weg)} · K ${Math.round(z.e.tK - da)} · rAF/s ${jeS.join("/")} · Lücke ${gap} · Bilder ${(L1[4] || 0) - (L0[4] || 0)} aus ${(L1[5] || 0) - (L0[5] || 0)}`;
 }
 
+// die GPU-Bauten (haken.cjs `__kalt.nach.gpu`): je Art Zahl und Ruf-Zeit vor dem Bild und danach (bis +4 s), Module mit Code
+function gpuZeile(z) {
+    const da = z.out.weltbildDa;
+    const G = (z.out.nach && z.out.nach.gpu) || [];
+    const teil = (L) =>
+        ["s", "a", "c", "C", "m"]
+            .map((a) => {
+                const x = L.filter((g) => g[1] === a);
+                return x.length ? `${a}${x.length}/${Math.round(x.reduce((m, g) => m + g[4], 0))}ms${a === "m" ? "/" + Math.round(x.reduce((m, g) => m + g[3], 0) / 1000) + "k" : ""}` : "";
+            })
+            .filter(Boolean)
+            .join(" ");
+    return `${teil(G.filter((g) => g[0] < da))} │ ${teil(G.filter((g) => g[0] >= da && g[0] < da + 4000))}`;
+}
+function gpuNamen(z) {
+    const da = z.out.weltbildDa;
+    const G = ((z.out.nach && z.out.nach.gpu) || []).filter((g) => g[0] >= da && g[0] < da + 4000 && (g[1] === "s" || g[1] === "c"));
+    return G.map((g) => `${g[0] - da} ${g[2] || "?"} ${g[4]}`).join(" · ") || "keine";
+}
+
 function phasen(zs, pre) {
     const ph = new Map();
     for (const z of zs) for (const m of z.a.meilensteine || []) (ph.get(m.name) || ph.set(m.name, []).get(m.name)).push([m.t, m.belegtMs]);
@@ -209,15 +229,13 @@ function bericht(teil) {
             const inkl = medMap(zs, "inkl", 120, stamm);
             zeile(AB ? `${pre}INKL 2: ${inkl.slice(14, 30).join(" · ")}` : `INKL 3: ${inkl.slice(30, 46).join(" · ")}`);
             if (!AB) zeile(`INKL 4: ${inkl.slice(46, 62).join(" · ")}`);
-            if (!AB) zeile(`INKL 5: ${inkl.slice(62, 80).join(" · ")}`);
+            zeile(`${pre}GPU-BAU je Boot (vor dem Bild │ nach dem Bild bis +4 s): ${zs.map((z) => gpuZeile(z)).join(" | ")}`);
+            zeile(`${pre}GPU NACH (Boot ${zs[0].e.i + 1}, synchron, t ab Bild ms/Ruf-ms): ${gpuNamen(zs[0])}`);
             const S0 = Math.max(...zs.map((z) => z.jeSek.length));
             zeile(`${pre}BELEGT je Sekunde (Median ms): ${Array.from({ length: S0 }, (_, s) => `${s}:${Math.round(med(zs.map((z) => z.jeSek[s] || 0)))}`).join(" ")} · BAU je s: ${Array.from({ length: S0 }, (_, s) => `${s}:${Math.round(med(zs.map((z) => z.bau.sekMs[s] || 0)))}`).join(" ")}`);
             for (const z of zs.slice(1, AB ? 2 : 2))
                 zeile(`${pre}AUFGABEN (Boot ${z.e.i + 1}): ${z.a.aufgaben.slice(0, 6).map((x) => `${sek(x.t)} s ${x.ms} ms ${x.halter.slice(0, 2).map((h) => `${h.name} ${h.ms}`).join("+")}`).join(" | ")}`);
-            if (!AB) {
-                const pr = (zs[0].out.proben || []).filter((q) => q.t < zs[0].e.tK && q.t % 1000 < 200);
-                zeile(`FEHLT je s (Boot 1): ${pr.map((q) => `${(q.t / 1000).toFixed(0)}:${(q.terme || []).join("+") || "–"}`).join(" ")}`);
-            }
+
         }
     }
     if (AB && teil === 1 && !BILD) {

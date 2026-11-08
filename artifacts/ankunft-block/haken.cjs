@@ -34,6 +34,29 @@ function BAU_HAKEN() {
         return el && !el.hidden && !el.classList.contains("weg") ? 1 : 0;
     };
     window.addEventListener("keydown", (e) => e.code === "KeyW" && N.keys.push([Math.round(performance.now()), e.repeat ? 1 : 0, schirm()]), true);
+    // DIE GPU-BAUTEN: je Pipeline und Shader-Modul [t, Art, Label, Länge] (s = synchron, a = asynchron, c = compute, m = Modul,
+    // w = writeTexture-Bytes) in `__kalt.nach.gpu`
+    N.gpu = [];
+    if (typeof GPUDevice !== "undefined") {
+        const P = GPUDevice.prototype;
+        const hake = (m, art, len) => {
+            const f = P[m];
+            if (typeof f !== "function") return;
+            P[m] = function (d) {
+                const t0 = performance.now();
+                try {
+                    return f.apply(this, arguments);
+                } finally {
+                    N.gpu.push([Math.round(t0), art, String((d && d.label) || "").slice(0, 48), len(d), Math.round((performance.now() - t0) * 10) / 10]);
+                }
+            };
+        };
+        hake("createRenderPipeline", "s", () => 0);
+        hake("createRenderPipelineAsync", "a", () => 0);
+        hake("createComputePipeline", "c", () => 0);
+        hake("createComputePipelineAsync", "C", () => 0);
+        hake("createShaderModule", "m", (d) => (d && d.code ? d.code.length : 0));
+    }
     const raf = (t) => {
         const r = window.anazhRealm;
         const st = r && r.state;
