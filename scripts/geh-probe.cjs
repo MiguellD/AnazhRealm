@@ -27,6 +27,30 @@ const json = (out) => {
     }
 };
 let vorStand = "";
+// der Teilbaum unter jedem Rahmen `wurzel` der Takt-Spitze (`zeilen` in Tiefen-Reihe): je relative Tiefe × Name die Summe
+// Spitze/Mitte, ab `min` ms in einer der beiden; voran die Wurzel selbst
+const teilbaum = (s, wurzel, tief = 3, min = 0.3) => {
+    const m = new Map([["0", { s: 0, m: 0 }]]);
+    const z = s.zeilen;
+    for (let i = 0; i < z.length; i++) {
+        if (!wurzel.test(kurz(z[i].name))) continue;
+        m.get("0").s += z[i].spitzeMs;
+        m.get("0").m += z[i].mitteMs;
+        for (let j = i + 1; j < z.length && z[j].tiefe > z[i].tiefe; j++) {
+            const d = z[j].tiefe - z[i].tiefe;
+            if (d > tief) continue;
+            const k = d + kurz(z[j].name);
+            const x = m.get(k) || { s: 0, m: 0 };
+            x.s += z[j].spitzeMs;
+            x.m += z[j].mitteMs;
+            m.set(k, x);
+        }
+    }
+    return [...m]
+        .filter(([k, x]) => k === "0" || x.s >= min || x.m >= min)
+        .map(([k, x]) => `${k} ${x.s.toFixed(1)}/${x.m.toFixed(1)}`)
+        .join(" · ");
+};
 const kurz = (n) =>
     String(n)
         .replace(/ \[[^\]]*\]/g, "")
@@ -92,7 +116,7 @@ const SEK = arg("--sek", "4");
                     `> 33 ms ${a.haengerN} (${Object.entries(a.jeKlasse)
                         .map(([k, v]) => k + " " + v)
                         .join(" ")}) · Bau ${kb.sync} Σ ${kb.ms} ms ` + // prettier-ignore
-                    `${JSON.stringify(Object.entries(kb.jeAuftragMs || {}).slice(0, 2))} · Pipe sync ${pp.sync} · Ursachen ` +
+                    `${JSON.stringify(Object.entries(kb.jeAuftragMs || {}).slice(0, 4))} · Pipe sync ${pp.sync} · Ursachen ` +
                     a.jeUrsache
                         .slice(0, 5)
                         .map((e) => `${e.n}× ${e.summeMs}/${e.maxMs} ${e.ursache}`)
@@ -104,6 +128,19 @@ const SEK = arg("--sek", "4");
                     s.zeilen
                         .filter((z) => z.tiefe <= 1 && (z.spitzeMs >= 1 || z.mitteMs >= 1))
                         .map((z) => `${z.tiefe}${kurz(z.name)} ${z.spitzeMs.toFixed(1)}/${z.mitteMs.toFixed(1)}`)
+                        .join(" · ")
+            );
+            // die Zeichnung (der Vendor-Rahmen unter dem Takt, bis drei Ebenen, ab 1 ms) und die teuersten Selbst-Rahmen aller Hänger
+            // (je Hänger sein Anteil an dt, summiert)
+            const selbst = new Map();
+            for (const h of a.haenger || [])
+                for (const x of h.selbst || []) selbst.set(x.name, (selbst.get(x.name) || 0) + (x.pct * h.dt) / 100);
+            zeile(
+                `GEH ${ok ? "GRÜN" : "ROT"} ${name} Zeichnung: ${teilbaum(s, /^_renderScene$/, 3, 1)} ‖ Selbst ` +
+                    [...selbst]
+                        .sort((x, y) => y[1] - x[1])
+                        .slice(0, 6)
+                        .map(([n, ms]) => `${kurz(n)} ${Math.round(ms)}`)
                         .join(" · ")
             );
         };
