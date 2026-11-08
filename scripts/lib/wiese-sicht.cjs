@@ -87,7 +87,7 @@ function installWieseSicht() {
                 kam.coordinateSystem
             ),
         };
-        r._nahWieseSicht(kam, r._passWahlLage(S, kam, -1));
+        r._nahWieseSicht(kam, r._passWahlLage(S, kam, -1).auge); // die Nah-Wiese liest die Lage des Auges (w24-fahrt-takt)
         const o = window.__wieseZaehle(r, { x: kam.position.x, z: kam.position.z });
         o.auge = { x: kam.position.x, z: kam.position.z };
         o.ziel = ziel ? Math.round(dBest * 10) / 10 : null;

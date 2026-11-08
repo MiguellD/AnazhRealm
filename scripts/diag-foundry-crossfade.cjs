@@ -223,7 +223,7 @@ function stufeOhneBildLinse(core, cfg, fenster = (g, i, L) => A.prototype._insta
     const K = A._blendeKanten(gesetz, cfg.d0, cfg.d1, cfg.fade, cfg.fade0);
     const perf = 1.21,
         ref = 12;
-    const L = { ex: 0, ez: 0, perf, ref, kanten: K, halt: 0 };
+    const L = { ex: 0, ez: 0, perf, ref, kanten: K, haltBlende: 0 };
     // die Wahrheit an der Instanz-Distanz (`zeigt`, das Laub)
     const zeigtL = (stufe, dS, dL) => zeigt(gesetz, stufe, dS, dL, cfg, true);
     const out = { proben: 0, ohneBild: 0, loecher: 0, beispiel: null, loch: null, jeStufe: {} };
@@ -1294,7 +1294,7 @@ async function main() {
             check(`Selbst-Test Fenster: „${name}" 1 m nach innen → die Linse nennt Löcher`, v.loecher > 0, `${v.loecher} Löcher`);
         }
         // V5: die Weite der Gestalt (Krone 10,06 m) als Rand im Fenster — die L1 der nahen Birke wird genannt.
-        const weit = (g, i, L) => A.prototype._instanzFenster.call(stumpf, g, i, Object.assign({}, L, { halt: L.halt + stumpf._instanzWeite().r }));
+        const weit = (g, i, L) => A.prototype._instanzFenster.call(stumpf, g, i, Object.assign({}, L, { haltBlende: L.haltBlende + stumpf._instanzWeite().r }));
         const S8 = stufeOhneBildLinse(CORE, CFG, weit);
         check(
             "Selbst-Test Stufe ohne Bild: die Weite der Gestalt im Fenster → die L1 der nahen Birke wird genannt",

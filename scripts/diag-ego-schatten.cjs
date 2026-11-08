@@ -135,7 +135,7 @@ function selbsttest() {
     selbsttestEnde(fehler);
 }
 
-const { statikServer, starteBrowser, laufUhr, path, fs, SELBSTTEST, argOpt, fehlerText, seiteZu, rotListe } = require("./lib/welt-boot.cjs");
+const { statikServer, nullWelt, laufUhr, path, fs, SELBSTTEST, argOpt, fehlerText, seiteZu, rotListe } = require("./lib/welt-boot.cjs");
 
 if (SELBSTTEST) {
     console.log("=== EGO-SCHATTEN — Selbsttest (ohne Browser) ===");
@@ -501,14 +501,10 @@ function buehne(arg) {
 
 (async () => {
     console.log("=== EGO-SCHATTEN — der Leib wirft in der Ego-Sicht, das Auge sieht ihn nicht ===");
-    await server.lausche(0);
-    const browser = await starteBrowser({ art: "linse", frist: 600000 });
-    const page = await browser.newPage();
-    await page.setViewport({ width: 320, height: 180 });
-    let out = null;
     const log = laufUhr();
+    const { browser, page } = await nullWelt(server, { art: "linse", bild: true, frist: 600000, fenster: { width: 320, height: 180 } }, 60000, "index.html?holz=kienspan"); // prettier-ignore
+    let out = null;
     try {
-        await server.zeige(page, 60000, "index.html?holz=kienspan");
         await page.evaluate(AUSGABE_INSTALL);
         // DER LEIB JE STUFE (B5): in der Ego-Sicht trägt der Spieler vor dem Bild die Grobstufe als Nah-Gestalt (`nahStufe` 1),
         // nach dem Bild die feine, sobald der Leerlauf sie tauscht — die Bühne misst beide. Der Loop hält in dem Takt, in dem der Leib der

@@ -19,7 +19,7 @@
 //   Port: V1_PFAD_PORT (4421) · Mutanten: V1_MUTANTE=gedaechtnis-leer (--seele) · wertung-aus (--regeln)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, warteAufWelt, ROOT: root, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde, jsonLesen, jsonSchreiben, jsonKlon, fehlerStapel, SELBSTTEST, path, fs, stammLib } = require("./lib/welt-boot.cjs");
+const { statikServer, warteAufWelt, ROOT: root, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde, jsonLesen, jsonSchreiben, jsonKlon, fehlerStapel, SELBSTTEST, path, fs, stammLib, nullWelt } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 
 const PORT = Number(process.env.V1_PFAD_PORT || 4421);
@@ -32,6 +32,7 @@ const taeterTest = (name, v, soll) =>
 const ohneKommentare = stammLib.ohneKommentare;
 
 // ── DIE VERDIKTE (pure Funktionen; Browser-Probe UND Selbst-Test). Rückgabe: die Täter beim Namen. ──
+const startFehlt = (m) => !m || m.gestartet !== true; // jedes Verdikt: ohne Start kein Urteil
 const SOLL = { vorschauAnteil: 0.99, rahmenMin: 0.5, rahmenMax: 0.9, karteMin: 0.5, karteMax: 1.5 };
 // W7: die Wartenden auf eine Foundry-Antwort beim Namen (fehlt einer, ist die Zählung blind).
 const WARTENDE = [
@@ -42,7 +43,7 @@ const WARTENDE = [
     "_workshopFoundryPreviewGroup",
 ];
 function zugVerdict(m) {
-    if (!m || m.gestartet !== true) return ["zug start"];
+    if (startFehlt(m)) return ["zug start"];
     const out = [];
     for (const [wer, z] of [
         ["vorschau", m.vorschau],
@@ -87,7 +88,7 @@ function zugVerdict(m) {
     return out;
 }
 function rahmenVerdict(m) {
-    if (!m || m.gestartet !== true) return ["rahmen start"];
+    if (startFehlt(m)) return ["rahmen start"];
     const out = [];
     const e = m.eintraege || [];
     const waffen = e.filter((q) => q.kind === "weapon" && Number.isFinite(q.fuell)).length;
@@ -108,7 +109,7 @@ function rahmenVerdict(m) {
     return out;
 }
 function vorschauVerdict(m) {
-    if (!m || m.gestartet !== true) return ["start"];
+    if (startFehlt(m)) return ["start"];
     const out = [];
     if (!(m.renders > 0)) out.push("vorschau zeichnete nie");
     if (!(m.vertices > 0)) out.push("vorschau ohne Werk");
@@ -122,7 +123,7 @@ function vorschauVerdict(m) {
 }
 
 function ankunftVerdict(m) {
-    if (!m || m.gestartet !== true) return ["start"];
+    if (startFehlt(m)) return ["start"];
     const out = [];
     if (!(m.baeume > 0)) out.push("kein Wald um den Genesis-Ort gewachsen");
     if (m.kronen > 0)
@@ -135,14 +136,14 @@ function ankunftVerdict(m) {
 }
 
 function tasteVerdict(m) {
-    if (!m || m.gestartet !== true) return ["start"];
+    if (startFehlt(m)) return ["start"];
     const out = [];
     if (!m.gedrueckt) out.push("keydown kam nicht an (Vorbedingung)");
     if (m.nachBlur) out.push("W bleibt nach dem Fensterwechsel gedrückt");
     return out;
 }
 function kiVerdict(m) {
-    if (!m || m.gestartet !== true) return ["start"];
+    if (startFehlt(m)) return ["start"];
     const out = [];
     if (!m.fehler) out.push("kein Fehler gemeldet (Vorbedingung: der Dienst läuft nicht)");
     else {
@@ -152,7 +153,7 @@ function kiVerdict(m) {
     return out;
 }
 function satzVerdict(m) {
-    if (!m || m.gestartet !== true) return ["start"];
+    if (startFehlt(m)) return ["start"];
     const out = [];
     if (!m.trockenOrt) out.push("kein Ort ohne Wasser gefunden (Vorbedingung)");
     else if (m.amWasserOhneWasser > 0) out.push(`${m.amWasserOhneWasser} Eichen „am Wasser" ohne Wasser`);
@@ -185,7 +186,7 @@ const ORT_OPS = [
     "deposit_emotion",
 ];
 function ortVerdict(m) {
-    if (!m || m.gestartet !== true) return ["start"];
+    if (startFehlt(m)) return ["start"];
     const out = [];
     const soll = new RegExp(`kein Wasser im Umkreis von ${m.radius} m`, "i");
     for (const op of ORT_OPS) {
@@ -337,7 +338,7 @@ function knotenEintragOk(e, soll, effekt) {
     );
 }
 function knotenVerdict(m) {
-    if (!m || m.gestartet !== true) return ["start"];
+    if (startFehlt(m)) return ["start"];
     const out = [];
     for (const [name, , soll, effekt] of KNOTEN) {
         const e = m.laeufe && m.laeufe[name];
@@ -372,7 +373,7 @@ function knotenVerdict(m) {
 // R2 — DIE WASSER-SUCHE: `_landAt` ist bit-gleich zum Spalten-Scan, trocken ≤ 8 Scans je 4-m-Ring.
 const ALT8 = (R) => 8 * Math.floor(R / 4);
 function sucheVerdict(m) {
-    if (!m || m.gestartet !== true) return ["start"];
+    if (startFehlt(m)) return ["start"];
     const out = [];
     const ex = m.exakt || {};
     if (!(ex.n >= 1000)) out.push(`zu wenig Urteile (${ex.n}, Vorbedingung)`);
@@ -3138,10 +3139,7 @@ hauptLauf(async () => {
     console.log("=== W — DIE STATISCHE WAND (Node, kommentarfrei) ===");
     for (const [name, ok, detail] of wand(quelle)) check(name, ok, detail);
 
-    await server.lausche(PORT);
-    const { browser, page } = await nullSeite({ frist: 600000 });
-    await page.setViewport({ width: 1280, height: 720 });
-    await server.zeige(page, 30000);
+    const { browser, page } = await nullWelt(server, { port: PORT, frist: 600000, fenster: { width: 1280, height: 720 } }, 30000);
     // Der KI-Endpunkt der V-D6-Probe: ein Port, auf dem nichts lauscht.
     const out = await page.evaluate(probe, {
         kiPort: PORT + 3,
