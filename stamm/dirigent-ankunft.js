@@ -1508,6 +1508,8 @@ class AnazhRealm_dirigent_ankunft {
     // Strahlung die Umgebung der Stoffe in der Rauheit 0,5: ihre Keule mittelte am Horizont den Boden darunter, der Grat nahm dem
     // Schattenhang bei Sonne 5° 3,6 % seines Himmels (Dorf, swiftshader voll) — die Himmels-Sicht im Band (±30°, bis zum Grat
     // 11,6°) trägt 18,8 % (CPU-Nachbau der Tafeln, exakt integriert), die drei Abtastungen der Tafel schätzen es auf +18 %.
+    // Mit dem Grat des Bodens nimmt der Term an den Schatten-Hängen der Station 10–25 % (Median 14 %, ein Schirm-Pass am Punkt
+    // des Gesetzes mit seiner Normale; die PMREM-Stufe 1 trifft die Kosinus-Bestrahlung der Tafel auf 7 %).
     // Die drei Abtastungen (−⅔, 0, +⅔ · `gratRad` um das Azimut der Sonne) laufen in EINER Schleife (wie `falte`, K17-3): die
     // Strahlung steht einmal im Programm — ausgeschrieben stand sie dreimal in jedem Stoff (Boden der Bühne S0: +9 580 Zeichen).
     _horizontHimmel(p, n, strahlung) {
