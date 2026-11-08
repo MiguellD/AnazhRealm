@@ -132,12 +132,12 @@ function laborStoff(m0,geo,skin,cache){
       var rund=haar?'\n{vec3 gS=cross(dFdy(-vViewPosition),normal)*dFdx(vAchse.y)+cross(normal,dFdx(-vViewPosition))*dFdy(vAchse.y);vec3 vS=gS/max(length(gS),1e-12);normal=normalize(mix(normal-vS*dot(normal,vS),normal,zeigS));}':'';
       var look='\nvec3 vdL=normalize(-vViewPosition);float ndvL=clamp(dot(normal,vdL),-1.0,1.0);float rimL=clamp(1.0-abs(ndvL),0.0,1.0);';
       if(haut)look+='totalEmissiveRadiance+='+gv(HL.sssFarbe)+'*pow(rimL,'+gf(HL.sssPow)+')*'+gf(HL.sssAmt)+';';
-      // DER GLANZ IST LICHT (w25-haar-albedo, wie die Welt): Reflexion unter dem Licht der Albedo — Leuchtdichte des fertigen
-      // Lichts ÷ die der Albedo, nie Emission
+      // DER GLANZ IST LICHT (w25-haar-albedo, wie die Welt `_haarLichtModell`): je direktem Licht — der Glanz × das direkte Diffuse
+      // ÷ die Albedo (= Σ Bestrahlung · N·L ÷ π samt Schatten), nie Emission; unter Umgebungslicht allein glänzt nichts
       else if(haar)look+='vec3 glanzL='+gv(HAL.tipRimFarbe)+'*pow(rimL,'+gf(HAL.tipRimPow)+')*sTL+'+gv(HAL.specFarbe)+'*pow(max(ndvL,0.0),'+gf(HAL.specPow)+')*sTL*'+gf(HAL.specAmt)+';';
       else look='';
-      var licht=haar?'\ngl_FragColor.rgb+=glanzL*dot(gl_FragColor.rgb,'+lumW+')/max(dot(diffuseColor.rgb,'+lumW+'),1e-4);':'';
-      sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\n'+fk).replace('#include <color_fragment>','#include <color_fragment>'+farbe).replace('#include <normal_fragment_maps>','#include <normal_fragment_maps>'+rund).replace('#include <emissivemap_fragment>','#include <emissivemap_fragment>'+look).replace('#include <tonemapping_fragment>',licht+'\n#include <tonemapping_fragment>');
+      var licht=haar?'\nreflectedLight.directSpecular+=glanzL*dot(reflectedLight.directDiffuse,'+lumW+')/max(dot(diffuseColor.rgb,'+lumW+'),1e-4);':'';
+      sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\n'+fk).replace('#include <color_fragment>','#include <color_fragment>'+farbe).replace('#include <normal_fragment_maps>','#include <normal_fragment_maps>'+rund).replace('#include <emissivemap_fragment>','#include <emissivemap_fragment>'+look).replace('#include <lights_fragment_end>','#include <lights_fragment_end>'+licht);
     };
     m.customProgramCacheKey=function(){return 'labor-welt-mensch-'+key+(webe?'|'+m0.userData.__webe:'');};
   }

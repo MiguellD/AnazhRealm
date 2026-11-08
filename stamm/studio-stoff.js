@@ -24,6 +24,34 @@ class AnazhRealm_studio_stoff {
     // receivedShadowPositionNode), die Normale und Kavität von Stein, Halm und Facette (normalNode, aoNode). Jede Baum-Art baute
     // so dasselbe Programm neu: swiftshader kalt bis zum Weltbild 47 Knoten-Bauten, davon 13 byte-gleiche Zwillinge (die Karte
     // 10 × 69 129 Zeichen WGSL, das Laub der Welt 5 × 95 818), 46 % des gebauten WGSL.
+    // DAS LICHTMODELL DES HAARS (w25-haar-albedo; Kajiya-Kay 1989, Marschner 2003: R und TT sind das Licht der Quelle, das die
+    // Faser spiegelt und durchlässt, nie eigenes): der Standard-Stoff wie das Laub (`_laubLichtModell`), dessen `direct` je direktem
+    // Licht den Glanz der Strähne addiert — die Terme von HAAR_LOOK (Spitzen-Rim und Spec über die Achse, `_foundryTreeMaterial`)
+    // × die Bestrahlung der Quelle wie Lambert (lightColor trägt den Schatten der Kaskade, × N·L ÷ π). Ohne direktes Licht — im
+    // Schatten, unter dem weißen Umgebungslicht der Albedo-Tafel — glänzt nichts. Das Labor rechnet dasselbe (`laborStoff`: der
+    // Glanz × das direkte Diffuse ÷ die Albedo).
+    static _haarLichtModell() {
+        if (AnazhRealm._haarLichtK) return AnazhRealm._haarLichtK;
+        const T = THREE.TSL;
+        const Basis = THREE.MeshStandardNodeMaterial.prototype.setupLightingModel.call(null).constructor;
+        class HaarLicht extends Basis {
+            constructor(glanz) {
+                super();
+                this.glanz = glanz;
+            }
+            direct(e, builder) {
+                super.direct(e, builder);
+                e.reflectedLight.directSpecular.addAssign(
+                    e.lightColor
+                        .mul(T.normalView.dot(e.lightDirection).max(0.0))
+                        .mul(this.glanz)
+                        .mul(1 / Math.PI)
+                );
+            }
+        }
+        AnazhRealm._haarLichtK = HaarLicht;
+        return HaarLicht;
+    }
     _graphTeilen(mat, sig) {
         const G = this._geteilteGraphen || (this._geteilteGraphen = new Map());
         const plaetze = Object.keys(mat).filter((p) => p.endsWith("Node") && mat[p] != null);
@@ -458,14 +486,15 @@ class AnazhRealm_studio_stoff {
                         }
                     }
                     if (add && kind === "hair") {
-                        // DER GLANZ DES HAARS IST LICHT (w25-haar-albedo; Kajiya-Kay, Marschner: R und TT sind das Licht, das die
-                        // Faser spiegelt und durchlässt, nie eigenes): die Look-Terme wiegen als Reflexion unter DEMSELBEN Licht
-                        // wie die Albedo — die Beleuchtung je Albedo ist die Leuchtdichte des fertigen Outputs ÷ die der Albedo (rau
-                        // 0,85: er ist fast nur diffus; Schatten, Himmel und Sonne stehen darin). Das Labor rechnet dasselbe
-                        // (`laborStoff`). Bis hier leuchtete der Glanz als Emission: im Schatten des Walds stand das dunkelbraune
-                        // Haar (Albedo 0,0117) weiß (Radeon 53b2fc7a, haar.K2#1 arm 0,6263).
-                        const licht = TSL.output.rgb.dot(lumW).div(mat.colorNode.rgb.dot(lumW).max(1e-4));
-                        mat.outputNode = TSL.vec4(TSL.output.rgb.add(add.mul(licht)), TSL.output.a);
+                        // DER GLANZ DES HAARS IST LICHT (w25-haar-albedo): die Terme von HAAR_LOOK wiegen je direktem Licht im
+                        // Lichtmodell des Haars (`_haarLichtModell`) — nie als Emission. Bis hier leuchtete der Glanz von selbst: im
+                        // Schatten des Walds stand das dunkelbraune Haar (Albedo 0,0117) weiß (Radeon 53b2fc7a, haar.K2#1 arm 0,6263).
+                        const K = AnazhRealm._haarLichtModell();
+                        mat.setupLightingModel = () => new K(add);
+                        const schluessel = mat.customProgramCacheKey;
+                        mat.customProgramCacheKey = function () {
+                            return schluessel.call(this) + "|haarLicht";
+                        };
                     } else if (add) mat.emissiveNode = add;
                     // Wrap-Licht des Lab-Fells: ·(0.5 + 0.5·max(NdotV,0)) NACH allen Additiven — die matFur-Ordnung
                     // (outputNode multipliziert den fertigen Output inkl. emissive-Terme).
