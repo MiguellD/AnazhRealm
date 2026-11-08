@@ -1144,9 +1144,8 @@ function nahFernSicht(opts) {
         // freie Teil der Schale 0 ihr volles Index-Muster (der Träger `geos[0]`, dieselbe Länge, der Zeichen-Bereich ganz), der
         // Naht-Teil ruht; danach steht die Teilung wieder, wie sie war.
         const fr = st.fernRing;
-        const freiIx = fr && fr.teilung && fr.teilung.frei && fr.teilung.frei.index;
+        const freiIx = fr?.teilung?.frei?.index;
         const freiAlt = freiIx ? freiIx.array.slice() : null;
-        const freiBereich = freiIx ? fr.teilung.frei.drawRange.count : null;
         const nahtMesh = fr?.meshes ? fr.meshes.find((m) => fr.teilung && m.geometry === fr.teilung.naht) : null;
         const nahtSicht = nahtMesh ? visAlt.get(nahtMesh) : null;
         if (freiIx && fr.geos[0].index.array.length === freiIx.array.length) {
@@ -1261,7 +1260,7 @@ function nahFernSicht(opts) {
             if (freiAlt) {
                 freiIx.array.set(freiAlt);
                 freiIx.needsUpdate = true;
-                fr.teilung.frei.drawRange.count = freiBereich;
+                fr.teilung.frei.drawRange.count = fr.teilung.n[0] * 3;
                 if (nahtMesh) visAlt.set(nahtMesh, nahtSicht);
             }
             for (const m of meshes) m.visible = visAlt.get(m);
@@ -1645,7 +1644,7 @@ function laubGegenlicht(opts) {
                 const frei = fr?.teilung?.frei ? fr.teilung.frei.index : null;
                 const naht = fr ? fr.meshes.find((m) => m.geometry === fr.teilung.naht) : null;
                 if (frei && fr.geos[0].index.array.length === frei.array.length)
-                    (freiAlt = [frei, frei.array.slice(), fr.teilung.frei.drawRange, fr.teilung.frei.drawRange.count]), frei.array.set(fr.geos[0].index.array), (frei.needsUpdate = true), (fr.teilung.frei.drawRange.count = Infinity);
+                    (freiAlt = [frei, frei.array.slice(), fr.teilung]), frei.array.set(fr.geos[0].index.array), (frei.needsUpdate = true), (fr.teilung.frei.drawRange.count = Infinity);
                 for (const m of alle)
                     m.visible = opts.boden ? (fr ? m !== naht && m.userData.inventar === "fern-ring" : laub.includes(m)) : opts.haus ? laub.includes(m) || m.name === "bauWurf" : /^fimp:/.test(r._taeterKlasse(m)) || (/^f:/.test(r._taeterKlasse(m)) && /^(bark|foliage|foliageTex|schatten)$/.test(m.material?.userData?.foundryKind));
                 bundles();
@@ -1838,7 +1837,7 @@ function laubGegenlicht(opts) {
             out.sonne = { pixel: s.pixel, gegen: { Y: s.gegen.Y }, auf: { Y: s.auf.Y }, verhaeltnis: s.verhaeltnis };
             out.stoffe = laub.map((m) => m.material.userData.laubLicht || "ohne").join(",");
         } finally {
-            if (freiAlt) freiAlt[0].array.set(freiAlt[1]), (freiAlt[0].needsUpdate = true), (freiAlt[2].count = freiAlt[3]);
+            if (freiAlt) freiAlt[0].array.set(freiAlt[1]), (freiAlt[0].needsUpdate = true), (freiAlt[2].frei.drawRange.count = freiAlt[2].n[0] * 3);
             for (const m of alle) m.visible = visAlt.get(m);
             bundles();
             if (luftZurueck) luftZurueck();
@@ -2347,7 +2346,10 @@ function luftTiefeUrteil(m, R) {
             for (const b of z.baender.filter((x) => x.n >= M.n)) {
                 const q = b.q.map((x, c) => (x == null || Math.abs(x - 1) > B.T ? "RGB"[c] + " " + x : "")).filter(Boolean);
                 if (u === 0.5) gemessen[R.baenderM.indexOf(b.d)]++;
-                if (u === 0.5 && q.length) liste.push(`K1-1 KOSCHMIEDER ${wo} ${b.d / 1000} km: T/T_soll ${q.join(", ")} außerhalb ±${B.T * 100} %`);
+                // T < 0 kann keine Luft: der Schuss β 1 ist dann nicht die In-Streuung, auf die sie zuläuft — ihre Farbe hängt an β
+                // (w22-ferne-heil: der Luftschatten `luftSicht` fiel bei β 1 unter seine Klemme, T/T_soll bis −7,98)
+                if (u === 0.5 && q.length)
+                    liste.push(`K1-1 KOSCHMIEDER ${wo} ${b.d / 1000} km: T/T_soll ${q.join(", ")} außerhalb ±${B.T * 100} %${Math.min(...b.q) < 0 ? " · T < 0: luftSicht hängt an β" : ""}`);
                 if (b.d === 8000 && !(b.dh <= B.dh)) liste.push(`K1-2 FARBTON ${wo} 8 km: ${b.dh}° von der In-Streuung > ${B.dh}°`);
             }
             const fern = z.baender.filter((b) => b.d >= 2000 && b.nk > 0);
@@ -2441,7 +2443,7 @@ function wetterLuftUrteil(m, R) {
 
 function luftTiefeSelbsttest(R) {
     const ref = luftBetaRef(R);
-    const sichten = (dk, C, n = 50, linie = 0, seite = 1.3, himmel = [0.7, 0.79, 1]) =>
+    const sichten = (dk, C, n = 50, linie = 0, seite = 1.3, himmel = [0.7, 0.79, 1], q = [1, 1, 1]) =>
         R.uhren.flatMap((uhr) =>
             [0, 90, 180, 270].map((az) => ({
                 uhr,
@@ -2450,7 +2452,7 @@ function luftTiefeSelbsttest(R) {
                 rand: { km: 20, C },
                 kante: { spalten: n, rand: n, linie, stufe: 0.01 },
                 himmel: n ? himmel.map((x) => (az ? x : seite * x)) : null,
-                baender: R.baenderM.map((d) => ({ d, n, q: [1, 1, 1], dk, nk: n, dh: 5 })),
+                baender: R.baenderM.map((d) => ({ d, n, q, dk, nk: n, dh: 5 })),
             }))
         );
     const urteil = (zeilen, gipfel = zeilen, weiss = { RB: 1.5 }) => luftTiefeUrteil({ zeilen, gipfel: { zeilen: gipfel }, weiss }, Object.assign({}, R, { offen: {} }));
@@ -2474,6 +2476,7 @@ function luftTiefeSelbsttest(R) {
         (bild(0.05) >= 400 && bild(0.01) === 0 && bild(0.05, true) <= 8) || `Linie bei Stufe 5 % ${bild(0.05)} px, 1 % ${bild(0.01)}, Zacken ${bild(0.05, true)}`,
         (leer["K1-1"] === "ROT" && leer["K1-2"] === "ROT" && leer["K2-1"] === "ROT" && leer["K2-2"] === "ROT") || "eine leere Messung ist nicht ROT",
         urteil([]).urteil === "ROT" || "eine Messung ohne Sicht ist nicht ROT",
+        urteil(sichten(k, 0.005, 50, 0, 1.3, undefined, [1, 1, -2])).befunde.some((b) => /T < 0/.test(b)) || "T < 0 namenlos",
         ...[[1500, 4, true], [1800, 4, false], [1500, 2, false]].map(([m, n, g]) =>
             wetterLuftUrteil({ zeilen: Array(n).fill({ sicht: { m, n: 50 } }) }, R).sicht.gruen === g || `Sicht ${m} m × ${n} nicht ${g}`),
         ...[[0.05, "rainy", true], [0.5, "rainy", false], [0.05, "sunny", false]].map(([e, w, g]) =>
