@@ -623,8 +623,6 @@ class AnazhRealm_bild_schatten {
             band1: 0,
             ab: [],
             saum: [0, 1],
-            wahlHaupt: [], // die Gruppen, die der Haupt-Pass gewählt hat (sein Nachher-Haken gibt sie zurück)
-            wahlSchatten: [], // dasselbe für den laufenden Kaskaden-Pass
         };
         return this._kaskadenS;
     }
