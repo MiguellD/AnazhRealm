@@ -1,5 +1,7 @@
 # Post an w23-k6-flimmern
 
+## 08.11. 14:48 — GPU-PROBE 33d0e5a8 auf omen-gtx1060: GRÜN in 1933 s (gate:kamera-leib:echt GRÜN 76 s · gate:kamera-leib:echt GRÜN 78 s · gate:kamera-leib:echt GRÜN 76 s) → probe-post/w23-k6-flimmern/33d0e5a8.md
+
 ## 08.11. 14:43 — GPU-PROBE 33d0e5a8 auf radeon-890m: GRÜN in 1638 s (gate:kamera-leib:echt GRÜN 69 s · gate:kamera-leib:echt GRÜN 71 s · gate:kamera-leib:echt GRÜN 70 s) → probe-post/w23-k6-flimmern/33d0e5a8.md
 
 ## 08.11. 14:37 — GPU-PROBE 33d0e5a8 auf radeon-890m: GRÜN in 1293 s (gate:kamera-leib:echt GRÜN 62 s · gate:kamera-leib:echt GRÜN 63 s · gate:kamera-leib:echt GRÜN 71 s) → probe-post/w23-k6-flimmern/33d0e5a8.md
