@@ -188,7 +188,7 @@ function selbsttest() {
             inhaltOhneJe: { "streuSatz stand:ohne": 50, "boden stand:ohne": 10 },
         }),
         augeAn: true,
-        auge: Object.assign(phase(0, 0, 9), { kameraFrames: 0, blendeFrames: 0 }),
+        auge: Object.assign(phase(0, 0, 9), { kameraFrames: 0 }),
         blendeTreue: {
             gehalten: true,
             traegt: true,
@@ -314,7 +314,6 @@ function selbsttest() {
             bytes100("boden wahl:lage haupt", { licht: 0, lichtJe: { haupt: 1 } }),
             "ohne",
         ],
-        ["Blende des Reglers (Hauptbild)", bytes100("boden wahl:lage haupt", { blende: 1 }), "aenderung"],
         ["Verdichten einer ruhenden Wahl", bytes100("bauSatz dicht k0"), "folge"],
         ["Umlegen", bytes100("boden umlegen haupt"), "folge"],
         ["Verdichten ohne Schuld", bytes100("bauSatz dicht:ohne k0", { licht: 1 }), "ohne"],
@@ -338,48 +337,6 @@ function selbsttest() {
         const ok = lo.ohne === 480 && lo.ohneJe["bauSatz dicht:ohne k0"] === 480 && lf.folge === 480 && lf.ohne === 0;
         if (!ok) fehler.push(`Neulegen-Klasse: ${JSON.stringify(lo)} · ${JSON.stringify(lf)}`);
         console.log(`  ${ok ? "✅" : "❌"} Selbsttest Neulegen: ohne Schuld → ohne, mit Schuld → Folge, nie ungesehen`);
-    }
-    // DIE KAMERA BEWEGT SICH (`sichtKameraBewegt`): das Atmen des Auges im Stand ist keine Bewegung (sonst entschuldigte die
-    // Linse jeden Ruhe-Frame), ein Schritt über den Halt und eine Drehung über den halben Dreh-Rand sind es
-    const mat = (yawGrad, x, y, z) => {
-        const w = (yawGrad * Math.PI) / 180;
-        const c = Math.cos(w),
-            s = Math.sin(w);
-        return [c, 0, -s, 0, 0, 1, 0, 0, s, 0, c, 0, x, y, z, 1];
-    };
-    const HALT = 0.02,
-        DREH = (2 * Math.PI) / 180;
-    const proj = (fern) => [1.3, 0, 0, 0, 0, 2.3, 0, 0, 0, 0, -1, -1, 0, 0, -0.2 * fern, 0];
-    const M = require("./lib/welt-orte.cjs").messort("wiese"); // die Kamera am Messort (Weltkoordinaten der Mess-Wiese)
-    for (const [name, b, soll] of [
-        ["Atmen ±4 mm", mat(0, M.x, 64.004, M.z).concat(proj(1)), false],
-        ["Schritt 1,5 cm (über dem halben Halt)", mat(0, M.x - 0.015, 64, M.z).concat(proj(1)), true],
-        ["Drehung 0,5°", mat(0.5, M.x, 64, M.z).concat(proj(1)), false],
-        ["Drehung 1,5°", mat(1.5, M.x, 64, M.z).concat(proj(1)), true],
-        ["Projektion (Fern-Ebene)", mat(0, M.x, 64, M.z).concat(proj(1.01)), true],
-    ]) {
-        const k = SICHT.sichtKameraBewegt(mat(0, M.x, 64, M.z).concat(proj(1)), b, HALT, DREH);
-        if (k !== soll) fehler.push(`Kamera „${name}": ${k} statt ${soll}`);
-        console.log(`  ${k === soll ? "✅" : "❌"} Selbsttest Kamera „${name}" → ${k ? "bewegt" : "steht"}`);
-    }
-    // DIE BLENDE BEWEGT SICH (`sichtBlendeBewegt`): das Auge der Maske ist ein Ort der Lage — sein
-    // Atmen unter dem halben Halt ist keine Bewegung
-    if (typeof SICHT.sichtBlendeBewegt !== "function")
-        fehler.push("LINSE: `sichtBlendeBewegt` fehlt — die Blende kennt das Gesetz des Halts nicht");
-    else {
-        const bl = (ex, ez, werte) => ({ ex, ez, werte: werte || [1, 1, 14, 20, 60, 6, 4] });
-        for (const [name, b, soll] of [
-            ["Atmen ±1 mm quer", bl(M.x - 0.001, M.z), false],
-            ["Atmen 9 mm (unter dem halben Halt)", bl(M.x - 0.009, M.z), false],
-            ["Schritt 1,5 cm", bl(M.x - 0.015, M.z), true],
-            ["Perf-Streck neu", bl(M.x, M.z, [1, 1.1, 14, 20, 60, 6, 4]), true],
-            ["Kante des Blend-Gesetzes neu", bl(M.x, M.z, [1, 1, 14, 22, 60, 6, 4]), true],
-            ["Maske aus", bl(M.x, M.z, [0, 1, 14, 20, 60, 6, 4]), true],
-        ]) {
-            const k = SICHT.sichtBlendeBewegt(bl(M.x, M.z), b, 0.02);
-            if (k !== soll) fehler.push(`Blende „${name}": ${k} statt ${soll}`);
-            console.log(`  ${k === soll ? "✅" : "❌"} Selbsttest Blende „${name}" → ${k ? "bewegt" : "steht"}`);
-        }
     }
     // DIE ARBEIT OHNE ÄNDERUNG je Frame (`sichtArbeitOhne`): Kamera und ein Inhalt mit benanntem Grund erklären alles, das
     // Licht nur die Kaskaden, der Stand eines Satzes allein nichts
@@ -408,7 +365,6 @@ function selbsttest() {
             7,
         ],
         ["Kamera bewegt", { arbeit: 57, jePass: jp, kamera: 1, inhalt: {} }, 0],
-        ["Blende neu", { arbeit: 57, jePass: jp, blende: 1, inhalt: {} }, 0],
         [
             "Inhalt änderte sich",
             { arbeit: 57, jePass: jp, inhalt: { bauSatz: { grund: "aenderung", bereiche: 1 } } },
@@ -582,7 +538,6 @@ function selbsttest() {
         inhaltOhne: { "streuSatz stand:ohne": 5, "bauSatz stand:ohne": 2, "boden stand:ohne": 1 },
         licht: 0,
         kamera: 0,
-        blende: 0,
         tag: 0.5,
         stufe: null,
         fehlt: [],
@@ -617,7 +572,6 @@ function selbsttest() {
                 Object.assign(phase(14999, 0, 0), {
                     frames: 5,
                     kameraFrames: 0,
-                    blendeFrames: 0,
                     arbeitOhne: { frames: 5, median: 14999, max: 14999 },
                     taeter: ["satz streuSatz|haupt ×5", "gruppe f:eiche|2|1:0#S ×2"],
                 }),
@@ -625,18 +579,17 @@ function selbsttest() {
             /AUGE: das Auge atmet unter dem Halt, doch die Sicht-Kette arbeitet ohne Änderung in 5 von 5 Frames \(Median 14999/,
         ],
         [
-            "die Linse nennt das atmende Auge Blende",
+            "die Linse nennt das atmende Auge Bewegung",
             [
                 "auge=",
                 Object.assign(phase(14999, 0, 0), {
                     frames: 5,
-                    kameraFrames: 0,
-                    blendeFrames: 5,
+                    kameraFrames: 5,
                     aenderungFrames: 5,
                     arbeitOhne: { frames: 0, median: 0, max: 0 },
                 }),
             ],
-            /LINSE STUMPF: das atmende Auge \(±1 mm, unter dem Halt\) heißt Bewegung — Kamera in 0, Blende in 5 von 5/,
+            /LINSE STUMPF: das atmende Auge \(±1 mm, unter dem Halt\) heißt Bewegung — in 5 von 5/,
         ],
         ["kein atmendes Auge", ["auge"], /LEER: keine Phase mit atmendem Auge/],
         ["die Maske ist aus", ["augeAn=", false], /LEER: die Maske ist aus/],
@@ -1482,7 +1435,7 @@ const server = statikServer();
     if (befund.auge)
         console.log(
             `  Auge (±1 mm, unter dem Halt): Arbeit in ${befund.auge.arbeitFrames} von ${befund.auge.frames} Frames, ` +
-                `Kamera ${befund.auge.kameraFrames}, Blende ${befund.auge.blendeFrames}, ohne Änderung ` +
+                `Auge ${befund.auge.kameraFrames}, ohne Änderung ` +
                 `${befund.auge.arbeitOhne.frames}`
         );
     for (const [n, x] of [
