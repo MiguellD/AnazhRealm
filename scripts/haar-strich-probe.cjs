@@ -28,7 +28,7 @@ const STAENDE = [
     let log = "";
     await new Promise((ok, nein) => {
         const t = setTimeout(() => nein(new Error("die Werkbank stand nach 240 s nicht")), 240000);
-        const lies = (d) => ((log += d), /WERKBANK bereit/.test(log) && (clearTimeout(t), ok()));
+        const lies = (d) => ((log += d), (global.__weltLog = log), /WERKBANK bereit/.test(log) && (clearTimeout(t), ok()));
         welt.stdout.on("data", lies);
         welt.stderr.on("data", lies);
         welt.on("exit", (c) => nein(new Error("die Werkbank endete " + c + ": " + log.slice(-400))));
@@ -66,6 +66,8 @@ const STAENDE = [
     }
     process.exit(0);
 })().catch((e) => {
-    console.log("❌ ROT haar-strich: " + e.message);
+    const t = String((e.stdout || "") + (e.stderr || "")).replace(/\s+/g, " ");
+    console.log("❌ ROT haar-strich: " + e.message.split("\n")[0].slice(-120) + " — " + t.slice(-500));
+    for (const z of (global.__weltLog || "").split("\n").filter((x) => /ERROR|FEHLER|Bruch|BRUCH/.test(x)).slice(-6)) console.log("❌ ROT Welt: " + z.slice(0, 400));
     process.exit(1);
 });
