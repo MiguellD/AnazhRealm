@@ -77,7 +77,7 @@ const SEK = arg("--sek", "4");
             return o.stdout || "";
         };
         const ev = (code) => (json(wb(["eval", code], 60)) || {}).ergebnis;
-        const zelle = (name, wandern, code) => {
+        const zelle = (name, wandern, code, tief) => {
             const j = path.join(D, name.replace(/\W+/g, "-") + ".json");
             ev(code);
             wb(
@@ -122,27 +122,21 @@ const SEK = arg("--sek", "4");
                         .map((e) => `${e.n}× ${e.summeMs}/${e.maxMs} ${e.ursache}`)
                         .join(" | ")
             );
-            // der Kopf des Takts (die Kinder des Spiel-Takts bis zwei Ebenen, ms je Takt ab p95 / in der Mitte, ab 1 ms)
-            zeile(
-                `GEH ${ok ? "GRÜN" : "ROT"} ${name} Takt ab p95 ${s.spitzeN}/${s.takte} Takte, CPU ${JSON.stringify(s.cpuMs)}: ` +
-                    s.zeilen
-                        .filter((z) => z.tiefe <= 1 && (z.spitzeMs >= 1 || z.mitteMs >= 1))
-                        .map((z) => `${z.tiefe}${kurz(z.name)} ${z.spitzeMs.toFixed(1)}/${z.mitteMs.toFixed(1)}`)
-                        .join(" · ")
-            );
-            // die Zeichnung (der Vendor-Rahmen unter dem Takt, bis drei Ebenen, ab 1 ms) und die teuersten Selbst-Rahmen aller Hänger
-            // (je Hänger sein Anteil an dt, summiert)
+            if (!tief) return;
+            // die Teilbäume der Blöcke des Haupt-Fadens (je Rahmen ms je Takt ab p95 / in der Mitte, bis drei Ebenen tief, ab
+            // 0,5 ms): der Kopf des Takts (zwei Ebenen), die Sicht je Pass, der Takt-Planer; dazu die teuersten Selbst-Rahmen
+            // aller Hänger (je Hänger sein Anteil an dt, summiert)
             const selbst = new Map();
             for (const h of a.haenger || [])
                 for (const x of h.selbst || []) selbst.set(x.name, (selbst.get(x.name) || 0) + (x.pct * h.dt) / 100);
-            zeile(
-                `GEH ${ok ? "GRÜN" : "ROT"} ${name} Zeichnung: ${teilbaum(s, /^_renderScene$/, 3, 1)} ‖ Selbst ` +
-                    [...selbst]
-                        .sort((x, y) => y[1] - x[1])
-                        .slice(0, 6)
-                        .map(([n, ms]) => `${kurz(n)} ${Math.round(ms)}`)
-                        .join(" · ")
-            );
+            const kopf = s.zeilen.filter((z) => z.tiefe <= 1 && (z.spitzeMs >= 1 || z.mitteMs >= 1));
+            for (const [wort, inhalt] of [
+                [`Kopf, CPU ${JSON.stringify(s.cpuMs)}`, kopf.map((z) => `${z.tiefe}${kurz(z.name)} ${z.spitzeMs.toFixed(1)}/${z.mitteMs.toFixed(1)}`).join(" · ")], // prettier-ignore
+                ["Sicht", teilbaum(s, /^_passSicht$/, 3, 0.5)],
+                ["Planer", teilbaum(s, /^_runFrameScheduler$/, 3, 0.5)],
+                ["Zeichnung", `${teilbaum(s, /^_renderScene$/, 2, 1)} ‖ Selbst ${[...selbst].sort((x, y) => y[1] - x[1]).slice(0, 6).map(([n, ms]) => `${kurz(n)} ${Math.round(ms)}`).join(" · ")}`], // prettier-ignore
+            ])
+                zeile(`GEH ${ok ? "GRÜN" : "ROT"} ${name} ${wort} ab p95 ${s.spitzeN}/${s.takte} Takte: ${inhalt}`);
         };
         // der Stand vor dem ersten Fenster (wie die Station: das Anker-Fenster nach dem Umstellen) — Bild, GPU und Phasen als Bezug
         const steh = (ort, sicht) => {
@@ -151,11 +145,11 @@ const SEK = arg("--sek", "4");
             vorStand = `Stand Bild ${q(l.frameMs)} GPU ${q(l.gpuMs)} · `;
         };
         steh("genesis", "ego");
-        zelle("genesis Gehen", "bahn", SEITE.geh);
+        zelle("genesis Gehen", "bahn", SEITE.geh, false);
         wb(["umstellen", "--ort", "genesis", "--sicht", "ego"], 300);
-        zelle("genesis Fahrt Ego", "fahrt", SEITE.fahrt);
+        zelle("genesis Fahrt Ego", "fahrt", SEITE.fahrt, true);
         wb(["umstellen", "--ort", "genesis", "--sicht", "third"], 300);
-        zelle("genesis Fahrt Third", "fahrt", SEITE.fahrt);
+        zelle("genesis Fahrt Third", "fahrt", SEITE.fahrt, true);
     } catch (e) {
         gruen = false;
         zeile(`GEH ROT Error ${String((e && e.stack) || e).slice(0, 400)} · ${tor.log.slice(-300)}`);
