@@ -108,7 +108,7 @@ function albedoSicht(opts) {
         // Die Klasse ist die Täter-Klasse des Stamms (`_taeterKlasse` — dieselbe wie Draw-Zähler, Puffer-Zensus und
         // Flugschreiber). Keinen Schuss bekommen das Wasser (es spiegelt), der Himmel und der Mensch (Spieler, Peers).
         const klasse = (o) => {
-            for (let p = o; p && p !== sc; p = p.parent) if (p.userData && p.userData.isHydrosphere) return "wasser";
+            for (let p = o; p && p !== sc; p = p.parent) if (p.userData?.isHydrosphere) return "wasser";
             return r._taeterKlasse(o);
         };
         const pp = st.playerMesh.position;
@@ -174,8 +174,8 @@ function albedoSicht(opts) {
             } else if (ex.typ === "tier") {
                 const tierOf = (c) => {
                     let top = c;
-                    while (top && top.parent && top.parent !== sc) top = top.parent;
-                    return top && top.userData && top.userData._tierBaum ? top.userData.soul : null;
+                    while (top?.parent && top.parent !== sc) top = top.parent;
+                    return top?.userData?._tierBaum ? top.userData.soul : null;
                 };
                 let best = null;
                 for (const c of st.creatures || [])
@@ -252,7 +252,7 @@ function albedoSicht(opts) {
                 D = AnazhRealm.LOD_DISTANCES;
             const zeigt = () => {
                 for (const g of st.archInstanceGroups.values())
-                    if (g && g.slotEntry && g.mesh && (r._taeterKlasse(g.mesh) || "").endsWith(":L" + n))
+                    if (g?.slotEntry && g.mesh && (r._taeterKlasse(g.mesh) || "").endsWith(":L" + n))
                         for (let i = 0; i < (g.liveCount || 0); i++) if (g.slotEntry[i] === e) return true;
                 return false;
             };
@@ -344,7 +344,7 @@ function albedoSicht(opts) {
             // gt am Genesis-Ring (19,3 m, nur L0, Stempel aLodLevel 1) zeichnete 0 Pixel, ohne Maske 6 236.
             // Die Albedo eines Exemplars hängt nicht an seiner Blende: je Schuss ruht die Maske, danach steht sie wie vorher.
             const lu = st.lodUniforms;
-            const maskeAlt = lu && lu.uLodMaskOn ? lu.uLodMaskOn.value : null;
+            const maskeAlt = lu?.uLodMaskOn ? lu.uLodMaskOn.value : null;
             const schuss = async (sicht) => {
                 const pass = async (e) => {
                     // was nach der Inventur ankommt, zeichnet nie mit (material.K1)
@@ -439,7 +439,7 @@ function albedoSicht(opts) {
                     if (!g || g.satz !== s.art || !g.slotEntry) continue;
                     bau = true;
                     const b = s.bloecke.get(key);
-                    const n = b && b.idx && g.geom && g.geom.attributes.position ? g.geom.attributes.position.count : 0;
+                    const n = b?.idx && g.geom && g.geom.attributes.position ? g.geom.attributes.position.count : 0;
                     for (let i = 0; n && i < Math.floor(b.vAnzahl / n); i++) {
                         if (g.slotEntry[i] !== eintrag) continue;
                         const sk = /:L(\d+)$/.exec(r._taeterKlasse(g.mesh) || "");
@@ -627,7 +627,7 @@ function albedoSicht(opts) {
                     for (const m of sel) {
                         const sk = /:L(\d+)$/.exec(kl.get(m) || "");
                         if (sk) stufen.add(+sk[1]);
-                        for (const x of (m.userData && m.userData.satzStufen) || []) stufen.add(x);
+                        for (const x of (m.userData?.satzStufen) || []) stufen.add(x);
                     }
                     ergebnisse.push(
                         Object.assign(a, e, { zuege: sel.length, stoffe: [...stoffe], stufen: [...stufen].sort() })
@@ -691,7 +691,7 @@ function linsenZiel(W, H) {
         rt = new T.RenderTarget(W, H, { depthBuffer: true, samples: 0, type: T.HalfFloatType });
     let wahl;
     const zeichne = (cam) => {
-        if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
+        if (rend._nodes?.nodeFrame) rend._nodes.nodeFrame.update();
         rend.setRenderTarget(rt);
         rend.setClearColor(0x000000, 0);
         rend.clear();
@@ -973,7 +973,7 @@ function tagKurveUrteil(welt) {
         const rot = (name, text) => (m?.bahn || TAG_WAND.test(name + " ")) && befunde.push(`${name} ${ort}: ${text}`);
         const [mittag, nacht] = [0.5, 0].map((u) => alle.find((x) => x.uhr === u));
         if (!mittag || !nacht) {
-            rot("BLIND", `ohne Mittag und Mitternacht (${(m && m.fehler) || "leer"})`);
+            rot("BLIND", `ohne Mittag und Mitternacht (${(m?.fehler) || "leer"})`);
             continue;
         }
         const e = (x) => ev(x.Y, mittag.Y);
@@ -1110,7 +1110,7 @@ function nahFernSicht(opts) {
         // DIE LUFT AUS: die EINE Luft lebt im `scene.fogNode` (`_luftEnsure`), nie in `scene.fog` — über 420 m Weg ließ
         // sie beiden Schüssen nur 0,94 ihrer Albedo (eine 18-%-Karte im Boden-Stoff las 0,167, ohne Luft 0,180) und hielt so
         // ein Fünftel des Wiesen-Grunds unter dem Band. Ihre Dichte (`beta`) ruht für die Schüsse; kein Programm wechselt.
-        if (sc.fogNode && !(st.luft && st.luft.U && st.luft.U.beta)) throw new Error("__nahFernSicht: die Luft (fogNode) ohne ihre Dichte (luft.U.beta)");
+        if (sc.fogNode && !(st.luft?.U?.beta)) throw new Error("__nahFernSicht: die Luft (fogNode) ohne ihre Dichte (luft.U.beta)");
         const luftZurueck = ohneLuft();
         // Die Kamera blickt ORTHOGONAL hinab: beide Schüsse sehen denselben Fußabdruck (2 × `fuss`), auch wo der Fern-Ring
         // unter dem Quadrat tiefer liegt — perspektivisch sah er dort einen größeren (60 m tiefer: ein Drittel mehr Fläche).
@@ -1136,7 +1136,7 @@ function nahFernSicht(opts) {
             return { rgb: rgb.map((v) => +v.toFixed(4)), Y: +luma709(rgb).toFixed(4), deckung: +(d / 1024).toFixed(2) };
         };
         const lu = st.lodUniforms;
-        const maskeAlt = lu && lu.uLodMaskOn ? lu.uLodMaskOn.value : null;
+        const maskeAlt = lu?.uLodMaskOn ? lu.uLodMaskOn.value : null;
         const istNah = (m) => m.name === "bodenSatz";
         const istFern = (m) => m.userData && m.userData.inventar === "fern-ring";
         // DER RING WEICHT DEM GEBAUTEN: unter einem gezeichneten Chunk trägt die Schale 0 kein Dreieck (`_fernRingTeilung`
@@ -1146,7 +1146,7 @@ function nahFernSicht(opts) {
         const fr = st.fernRing;
         const freiIx = fr && fr.teilung && fr.teilung.frei && fr.teilung.frei.index;
         const freiAlt = freiIx ? freiIx.array.slice() : null;
-        const nahtMesh = fr && fr.meshes ? fr.meshes.find((m) => fr.teilung && m.geometry === fr.teilung.naht) : null;
+        const nahtMesh = fr?.meshes ? fr.meshes.find((m) => fr.teilung && m.geometry === fr.teilung.naht) : null;
         const nahtSicht = nahtMesh ? visAlt.get(nahtMesh) : null;
         if (freiIx && fr.geos[0].index.array.length === freiIx.array.length) {
             freiIx.array.set(fr.geos[0].index.array);
@@ -1315,9 +1315,9 @@ function nahFernUrteil(messung, band) {
         befunde.push(
             `NAH-FERN Upload: ${up.bilder} von 3 Bildern gezeichnet (die GPU-Leine hielt) — die Probe ist blind`
         );
-    if (up && !(up.texe && up.texe.length))
+    if (up && !(up.texe?.length))
         befunde.push("NAH-FERN Upload: kein Daten-Bild des Boden-Stoffs gefunden — die Probe ist blind");
-    for (const u of (up && up.texe) || [])
+    for (const u of (up?.texe) || [])
         if (!(u.gpu >= u.soll))
             befunde.push(
                 `NAH-FERN Upload: ${u.name} — die GPU hält Version ${u.gpu}, der Schreiber hob sie auf ${u.soll}; der Boden ` +
@@ -1332,14 +1332,14 @@ function nahFernUrteil(messung, band) {
         if (n < band.jeKlasse)
             befunde.push(
                 `NAH-FERN ${k}: ${n} Orte — das Urteil braucht mindestens ${band.jeKlasse}` +
-                    (messung && messung.kandidaten
+                    (messung?.kandidaten
                         ? ` (${messung.kandidaten.n} Kandidaten im Quadrat, stärkste Deckung ${messung.kandidaten.deckungMax})`
                         : "")
             );
     }
     const gr = (c) => c[1] / Math.max(1e-6, c[0] + c[1] + c[2]);
     const pz = (v) => `${v >= 0 ? "+" : ""}${(v * 100).toFixed(0)} %`;
-    for (const o of (messung && messung.orte) || []) {
+    for (const o of (messung?.orte) || []) {
         if (!o.nah || !o.fern || !o.nah.n || !o.fern.n) {
             befunde.push(
                 `NAH-FERN ${o.klasse} ${o.ort.join("/")}: leerer Schuss (nah ${o.nah ? o.nah.n : 0} px, fern ${o.fern ? o.fern.n : 0} px)`
@@ -1639,7 +1639,7 @@ function laubGegenlicht(opts) {
                 // (Laub, Rinde, Karten jeder Art) — Schuss 1 in den Stufen der Gestalt, Schuss 2 (der Aufrufer stellt die Stufen auf
                 // die Karte) jede Krone als Karte. Gezählt jedes Pixel im Rechteck der Box, das beide zeichnen; Mittel linear, L*, C*ab.
                 const fr = opts.karte === 2 && opts.boden ? st.fernRing : null;
-                const frei = fr && fr.teilung && fr.teilung.frei ? fr.teilung.frei.index : null;
+                const frei = fr?.teilung?.frei ? fr.teilung.frei.index : null;
                 const naht = fr ? fr.meshes.find((m) => m.geometry === fr.teilung.naht) : null;
                 if (frei && fr.geos[0].index.array.length === frei.array.length) (freiAlt = [frei, frei.array.slice()]), frei.array.set(fr.geos[0].index.array), (frei.needsUpdate = true);
                 for (const m of alle)
@@ -1989,14 +1989,14 @@ function laubLichtUrteil(messung, band) {
     band = Object.assign({ glanz: 1.3, labor: 0.1, karte: 0.1, ton: 3 }, band || {});
     const befunde = [];
     const zeilen = [];
-    for (const [art, w] of Object.entries((messung && messung.welt) || {})) {
+    for (const [art, w] of Object.entries((messung?.welt) || {})) {
         if (w?.karte) {
             // DIE KARTE GEGEN IHRE GESTALT (A7): Luma im Band ±`karte`, der Ton (C*ab) höchstens `ton` daneben
             // DIE FERNE JE STUNDE (F6, `paar` fern/nah: Haus L2/L0, Fern-Ring/Boden-Satz) antwortet der Uhr wie die Nähe — gegen ihre Zeile
             // zu Mittag (`<art>@0.5`; der Ton-Abstand skaliert mit der Buntheit der Nähe), der Mittag selbst reist als `mittag` (Lehre 19)
             const mittag = w.paar && /@/.test(art) && !/@0\.5$/.test(art) ? messung.welt[art.replace(/@.*$/, "@0.5")] : null;
-            const kC = mittag && mittag.karte && mittag.karte.gestalt && w.karte.gestalt ? w.karte.gestalt.C / mittag.karte.gestalt.C : 1;
-            const k = mittag && mittag.karte ? { verhaeltnis: +(w.karte.verhaeltnis / mittag.karte.verhaeltnis).toFixed(3), dL: +(w.karte.dL - mittag.karte.dL).toFixed(2), dC: +(w.karte.dC - mittag.karte.dC * kC).toFixed(2) } : w.karte;
+            const kC = mittag?.karte?.gestalt && w.karte.gestalt ? w.karte.gestalt.C / mittag.karte.gestalt.C : 1;
+            const k = mittag?.karte ? { verhaeltnis: +(w.karte.verhaeltnis / mittag.karte.verhaeltnis).toFixed(3), dL: +(w.karte.dL - mittag.karte.dL).toFixed(2), dC: +(w.karte.dC - mittag.karte.dC * kC).toFixed(2) } : w.karte;
             if (w.paar && !mittag && !/@0\.5$/.test(art)) befunde.push(`FERN ${art}: ohne die Zeile zu Mittag (\`--uhr 0.5,…\`) kein Urteil der Stunde`);
             if (w.paar && /@0\.5$/.test(art)) {
                 zeilen.push({ art, stufe: w.stufe, mittag: w.karte.verhaeltnis, dL: w.karte.dL, dC: w.karte.dC });
@@ -2008,7 +2008,7 @@ function laubLichtUrteil(messung, band) {
             continue;
         }
         if (!w || w.fehler || !(w.verhaeltnis > 0)) {
-            befunde.push(`LAUB-LICHT ${art}: keine Messung (${(w && w.fehler) || "kein Laub-Pixel"})`);
+            befunde.push(`LAUB-LICHT ${art}: keine Messung (${(w?.fehler) || "kein Laub-Pixel"})`);
             continue;
         }
         const lab = messung.labor && messung.labor[art];
@@ -2049,7 +2049,7 @@ function kronenObenUrteil(messung) {
         const o = w && w.oben;
         if (!o || !(o.R > 0) || !(o.A > 0) || !Array.isArray(o.tau)) {
             befunde.push(
-                `KRONE-OBEN ${art}: keine Messung (${(w && w.fehler) || "kein Kronen-Pixel, keine Karte oder kein tau"})`
+                `KRONE-OBEN ${art}: keine Messung (${(w?.fehler) || "kein Kronen-Pixel, keine Karte oder kein tau"})`
             );
             continue;
         }

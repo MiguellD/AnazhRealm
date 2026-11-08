@@ -1377,7 +1377,7 @@ async function checkBandEarlyRingsAndUi({ page, check }) {
             if (cR.material?.color) cR.material.color.setHex(0xff0000);
             else if (typeof cR.traverse === "function") {
                 cR.traverse((n) => {
-                    if (n.isMesh && n.material && n.material.color) n.material.color.setHex(0xff0000);
+                    if (n.isMesh && n.material?.color) n.material.color.setHex(0xff0000);
                 });
             }
         }
@@ -1391,7 +1391,7 @@ async function checkBandEarlyRingsAndUi({ page, check }) {
                 colorAfter = cFirst.material.color.getHex();
             } else if (typeof cFirst.traverse === "function") {
                 cFirst.traverse((n) => {
-                    if (!colorAfter && n.isMesh && n.material && n.material.color) {
+                    if (!colorAfter && n.isMesh && n.material?.color) {
                         colorAfter = n.material.color.getHex();
                     }
                 });
@@ -2285,11 +2285,9 @@ async function checkBandRezeptKatalog({ page, check }) {
                 () =>
                     !!(
                         f?.ready &&
-                        f.recipes &&
-                        f.recipes.drachentor &&
+                        f.recipes?.drachentor &&
                         f.recipes.gras &&
-                        f.paramsByKind &&
-                        f.paramsByKind.gate &&
+                        f.paramsByKind?.gate &&
                         !f._vorrat
                     )
             );

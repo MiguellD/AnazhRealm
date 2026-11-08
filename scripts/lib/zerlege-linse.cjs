@@ -335,7 +335,7 @@ function belegungSelbsttest() {
 function bankRunde(n) {
     const rend = r.state.renderer;
     return window.AnazhHuelle.bankRunde(rend, n, () => {
-        if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
+        if (rend._nodes?.nodeFrame) rend._nodes.nodeFrame.update();
         r._loopShadowUpdate(); // der Schatten-Takt wie im Loop (je Kaskade am echten Leser)
         r._loopRender();
     });
@@ -372,7 +372,7 @@ function stempelWache() {
                 w.ueberlauf++;
                 const ctx = rend._currentRenderContext;
                 const rt = ctx && ctx.renderTarget;
-                const ziel = rt && rt.texture?.name ? rt.texture.name : rt ? "ziel" : "leinwand";
+                const ziel = rt?.texture?.name ? rt.texture.name : rt ? "ziel" : "leinwand";
                 const k = (ctx?.camera ? window.__passName(null, ctx.camera) : "?") + " → " + ziel;
                 w.taeter[k] = (w.taeter[k] || 0) + 1;
             }
@@ -479,7 +479,7 @@ function frameAnatomie(uhr, n) {
             begonnen.add(id);
             const z = [];
             let bytes = 0;
-            for (const c of (d && d.colorAttachments) || []) {
+            for (const c of (d?.colorAttachments) || []) {
                 if (!c) continue;
                 const e = ziel(c.view, c.loadOp);
                 z.push(e.text);
@@ -528,7 +528,7 @@ function frameAnatomie(uhr, n) {
             )
         );
         zaehle(CE, "resolveQuerySet", (qs, first, count, dst) =>
-            buche(A.kopien, `${pass()}: Abfragen ${falte((qs && qs.label) || "?")} → ${nameOf(dst)}`, (count || 0) * 8)
+            buche(A.kopien, `${pass()}: Abfragen ${falte((qs?.label) || "?")} → ${nameOf(dst)}`, (count || 0) * 8)
         );
         zaehle(CE, "clearBuffer", (buf, off, size) =>
             buche(A.kopien, `${pass()}: Leeren ${nameOf(buf)}`, typeof size === "number" ? size : 0)
@@ -732,7 +732,7 @@ function zerlegeZustand() {
     });
     const eigen = (o, k) => !!o && Object.prototype.hasOwnProperty.call(o, k);
     const csm = st.csmNode;
-    const lichter = csm && csm.lights?.length ? csm.lights : st.directionalLight ? [st.directionalLight] : [];
+    const lichter = csm?.lights?.length ? csm.lights : st.directionalLight ? [st.directionalLight] : [];
     const protos = [];
     for (const [K, keys] of [
         [
@@ -1195,7 +1195,7 @@ function zerlegeMessen(k) {
             uhr.ab();
             const csm = st.csmNode;
             const lichter =
-                csm && csm.lights?.length ? csm.lights : st.directionalLight ? [st.directionalLight] : [];
+                csm?.lights?.length ? csm.lights : st.directionalLight ? [st.directionalLight] : [];
             vorher.werte.schatten.forEach((f, i) => {
                 if (f && lichter[i] && lichter[i].shadow) {
                     lichter[i].shadow.needsUpdate = f[0];
@@ -1278,7 +1278,7 @@ function zerlegeLast(k) {
         await allein(3);
         const w = [];
         for (let i = 0; i < 5; i++) w.push(await allein(12));
-        if (rend.backend.timestampQueryPool && rend.backend.timestampQueryPool.render)
+        if (rend.backend.timestampQueryPool?.render)
             await rend.resolveTimestampsAsync("render");
         w.sort((a, b) => a - b);
         return {
@@ -1474,8 +1474,8 @@ function zerlegeAuswerten(roh, schalter) {
         let geschaltet = null,
             beleg = "";
         if (s.alleKlassen) {
-            const an = (b && b.passeAn.haupt && b.passeAn.haupt.cmd) || 0;
-            const aus = (b && b.passeAus.haupt && b.passeAus.haupt.cmd) || 0;
+            const an = (b && b.passeAn.haupt?.cmd) || 0;
+            const aus = (b && b.passeAus.haupt?.cmd) || 0;
             const post = renders("aus", "post");
             geschaltet = b ? an > 0 && aus === 0 && post === 0 : null;
             beleg = `Hauptbild-Befehle ${an}→${aus}, post ${renders("an", "post")}→${post}`;
@@ -1638,7 +1638,7 @@ function zerlegeTabelle(a, inv, sch) {
             "Ohne Schalter: " +
                 [...sch.huellen.map((h) => "Hülle " + h), ...sch.fehlend].join(" · ")
         );
-    if (inv && inv.anatomie) {
+    if (inv?.anatomie) {
         const A = inv.anatomie;
         const liste = (arr, k, mitZiel) =>
             arr
@@ -1686,7 +1686,7 @@ function zerlegeTabelle(a, inv, sch) {
                 " vergleicht keine gleichen Welten, neu messen"
         );
     z.push(
-        a.zurueck && a.zurueck.length
+        a.zurueck?.length
             ? `ZUSTAND NICHT ZURÜCK: ${a.zurueck.join(" · ")}`
             : `Zustand zurück (Sichtbarkeit, Weiche, Knoten-Haken, Ausgabe-Knoten, Pipeline-Kontext, Ketten-Graph, Pass-Uhr,` +
                   ` Prototypen, Schatten-Flaggen) · ${a.sekunden} s`

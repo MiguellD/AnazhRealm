@@ -111,7 +111,7 @@ async function checkBandVoxelTerrainCore({ page, check }) {
     // Voxel-Chunks abräumen; die folgenden Tests bauen ihren Ring per _tickVoxelChunkStreaming neu
     // (Test-Isolation).
     await page.evaluate(() => {
-        if (r && st && st.voxelChunks) {
+        if (r && st?.voxelChunks) {
             for (const key of [...st.voxelChunks.keys()]) r._disposeVoxelChunk(key);
         }
     });
@@ -1897,7 +1897,7 @@ async function checkBandTodZensus({ page, check }) {
                     "_leibZeichenFrei",
                     (alt) =>
                         function (c, ...rest) {
-                            if (s.creatures.indexOf(c) !== -1 && c.userData && c.userData.dying) return;
+                            if (s.creatures.indexOf(c) !== -1 && c.userData?.dying) return;
                             return alt.call(this, c, ...rest);
                         }
                 );
@@ -2258,7 +2258,7 @@ async function checkBandTodZensus({ page, check }) {
         }
     };
     const urteil = function urteil(z) {
-        if (!z || z.fehler) return { ok: false, grund: `keine Probe: ${(z && z.fehler) || "leer"}` };
+        if (!z || z.fehler) return { ok: false, grund: `keine Probe: ${(z?.fehler) || "leer"}` };
         const v = [];
         if (!(z.tot?.A && z.tot.B && z.tot.C))
             v.push(`vakuös: nicht alle drei gefallen (${JSON.stringify(z.tot)})`);

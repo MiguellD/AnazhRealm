@@ -1297,7 +1297,7 @@ async function checkBandV18266RockDetail({ page, check }) {
         const out = {};
         if (typeof THREE === "undefined") return out;
         const triOf = (g) =>
-            g?.attributes && g.attributes.position
+            g?.attributes?.position
                 ? g.index
                     ? g.index.count / 3
                     : g.attributes.position.count / 3

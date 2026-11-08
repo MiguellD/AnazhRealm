@@ -31,7 +31,7 @@ function passName(scene, camera) {
         for (let i = 0; i < csm.lights.length; i++)
             if (csm.lights[i].shadow && csm.lights[i].shadow.camera === camera) return "k" + i;
     const dl = st.directionalLight;
-    if (dl && dl.shadow && dl.shadow.camera === camera) return "k0";
+    if (dl?.shadow && dl.shadow.camera === camera) return "k0";
     if (scene && scene.name === "Render Pipeline") return "post";
     return scene?.name || (camera && (camera.name || camera.type)) || "?";
 }
@@ -98,7 +98,7 @@ function drawZensus(opts) {
         const satzOf = new Map();
         if (st.chunkSaetze)
             for (const s of st.chunkSaetze.values())
-                if (s && s.mesh && s.spec && s.spec.userData && s.spec.userData.bauSatz) satzOf.set(s.mesh, s);
+                if (s?.mesh && s.spec?.userData?.bauSatz) satzOf.set(s.mesh, s);
         const inhalt = {};
         const instanzKlasse = (key) => AnazhRealm._instanzKlasse(key);
         // DIE WAHL DER GPU (`_instanzWahlGpu`): die Zahl eines Zugs zählt der Compute — nach dem Frame liest der Zähler sie
@@ -190,7 +190,7 @@ function drawZensus(opts) {
                         kette: kette.join(" < "),
                         material: (material && (material.name || material.type)) || null,
                         geometrie: g ? g.name || g.type : null,
-                        vertices: g && g.attributes?.position ? g.attributes.position.count : 0,
+                        vertices: g?.attributes?.position ? g.attributes.position.count : 0,
                         instanzen: senke.isInstancedMesh ? senke.count : null,
                         userData: Object.keys(object.userData || {}).slice(0, 8),
                     });

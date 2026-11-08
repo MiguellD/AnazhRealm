@@ -2542,7 +2542,7 @@ function wasserFlora(o = {}) {
         if (!imGebiet(it.x, it.z)) return;
         const [b, w] = [art === "streu" ? streu : wiese, imWasser(it.x, it.y, it.z)];
         b[art === "streu" ? "pflanzen" : "bueschel"]++;
-        if (!w || (art === "streu" && A.zeile && A.zeile.ufer && ++streu.ufer)) return;
+        if (!w || (art === "streu" && A.zeile?.ufer && ++streu.ufer)) return;
         b.imWasser++;
         b.maxM = Math.max(b.maxM, R2(w));
         if (art === "streu") streu.jeArt[A.id] = (streu.jeArt[A.id] || 0) + 1;
@@ -3052,7 +3052,7 @@ async function wasserOrte(o = {}) {
                 await __weltDa(() => !r._ensureHydroTilesAround(x, z, 0));
                 const h = r._hydroFor(x, z);
                 if (h?.ready && regionen.indexOf(h) < 0) regionen.push(h);
-                da = !!(h && h.water && h.water.waterKind && h.water.waterKind.indexOf(1) >= 0);
+                da = !!(h?.water?.waterKind && h.water.waterKind.indexOf(1) >= 0);
                 // die Küste ist breiter als eine Kachel: ihre Nachbarn gehören zur Suche nach der Tasche (unten)
                 if (da) {
                     await __weltDa(() => !r._ensureHydroTilesAround(x, z, 1024));

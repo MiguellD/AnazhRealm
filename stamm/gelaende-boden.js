@@ -240,39 +240,48 @@ class AnazhRealm_gelaende_boden {
 
     // Worldgen-Inseln über `spawnIslandAt` (Surface-Nets, ein Pfad); Spawn-Y aus der echten Voxel-Surface
     // (`maxHeight` ist in Voxel-Welten 0 — `maxHeight + 20` landete Inseln IM Terrain).
+    // DIE INSELN KOMMEN NACH DEM BILD (w19-ankunft-takt, ankunft.K5): keine schwebt im ersten Weltbild (50–140 m über dem Boden,
+    // irgendwo in 80 % der Welt) — jede wächst nach dem Bild (`_weltbildKommt`) im Leerlauf des Fadens, EINE je Aufgabe
+    // (`_imLeerlauf`). Bis hier rechnete die Ankunft alle drei Surface-Nets am Stück in `_weltAnkunft` (headless kalt 5fb21e29:
+    // 247 von 327 ms einer Aufgabe). Eine neue Welt (Wechsel, Neu-Rechnen) verwirft die Inseln der alten (`_inselGen`).
     _worldgenSpawnFloatingIslands(WORLD_SIZE) {
         this.state.floatingIslands = [];
         this.state.ufos = [];
-        // V18.331 — Dev-Drossel revertiert (schneller Cold-Start): fliegende Inseln zurück auf 3.
-        const numIslands = 3;
-        // Γ5-Stream-Gesetz: Math.random im Worldgen würfelt Peers in verschiedene Welten — pro Insel ein
-        // eigener Stream (seed + "-island-i") für Größe/Höhe/Position.
+        const gen = (this._inselGen = (this._inselGen | 0) + 1);
+        this._weltbildKommt().then(() => {
+            for (let i = 0; i < AnazhRealm.WELT_INSELN; i++)
+                this._imLeerlauf(() => {
+                    if (this._inselGen === gen) this._worldgenInsel(WORLD_SIZE, i);
+                }, 2000);
+        });
+    }
+    // DIE INSEL i der Welt (Γ5-Stream-Gesetz: Math.random im Worldgen würfelt Peers in verschiedene Welten — pro Insel ein eigener
+    // Stream (seed + "-island-i") für Größe/Höhe/Position).
+    _worldgenInsel(WORLD_SIZE, i) {
         const baseSeed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
-        for (let i = 0; i < numIslands; i++) {
-            const rng = this._streamRng(baseSeed + `-island-${i}`);
-            const islandSize = 14 + rng() * 30; // 14..44 m Durchmesser
-            const islandHeight = 6 + rng() * 10; // 6..16 m Wölbung
-            const islandX = (rng() - 0.5) * WORLD_SIZE * 0.8;
-            const islandZ = (rng() - 0.5) * WORLD_SIZE * 0.8;
-            // Die Schwebe-Insel ist ein Wurf des Feldes: trägt die Wildnis den Ort nicht, steht keine (die Würfe davor
-            // bleiben, der Strom je Insel ist eigen).
-            if (!this._wildnisTraegt(islandX, islandZ)) continue;
-            const surfY = typeof this._voxelSurfaceY === "function" ? this._voxelSurfaceY(islandX, islandZ) : 0;
-            const baseSurf = Number.isFinite(surfY) ? surfY : this.state.terrainBaseHeight || 0;
-            const islandY = baseSurf + 50 + rng() * 90; // 50..140 m über dem Boden
-            const islandSeed = baseSeed + `-island-${i}`;
-            const island = this.spawnIslandAt(islandX, islandY, islandZ, islandHeight, {
-                size: islandSize,
-                seed: islandSeed,
-            });
-            if (!island) continue;
-            this.log(
-                `Fliegende Insel ${i} erstellt: Position (${islandX.toFixed(1)}, ${islandY.toFixed(1)}, ${islandZ.toFixed(1)}), Grösse ${islandSize.toFixed(1)} m, Höhe ${islandHeight.toFixed(1)} m`
-            );
-            // V18.364 — die kosmetischen Insel-Begleiter-UFOs entfernt (Schöpfer „die
-            // können raus, wirken falsch + flach, keine Struktur"). `spawnUfoAt`/`spawn_ufo`
-            // bleiben fürs explizite Beschwören; der Himmel bleibt klar von Auto-UFOs.
-        }
+        const rng = this._streamRng(baseSeed + `-island-${i}`);
+        const islandSize = 14 + rng() * 30; // 14..44 m Durchmesser
+        const islandHeight = 6 + rng() * 10; // 6..16 m Wölbung
+        const islandX = (rng() - 0.5) * WORLD_SIZE * 0.8;
+        const islandZ = (rng() - 0.5) * WORLD_SIZE * 0.8;
+        // Die Schwebe-Insel ist ein Wurf des Feldes: trägt die Wildnis den Ort nicht, steht keine (die Würfe davor
+        // bleiben, der Strom je Insel ist eigen).
+        if (!this._wildnisTraegt(islandX, islandZ)) return;
+        const surfY = typeof this._voxelSurfaceY === "function" ? this._voxelSurfaceY(islandX, islandZ) : 0;
+        const baseSurf = Number.isFinite(surfY) ? surfY : this.state.terrainBaseHeight || 0;
+        const islandY = baseSurf + 50 + rng() * 90; // 50..140 m über dem Boden
+        const islandSeed = baseSeed + `-island-${i}`;
+        const island = this.spawnIslandAt(islandX, islandY, islandZ, islandHeight, {
+            size: islandSize,
+            seed: islandSeed,
+        });
+        if (!island) return;
+        this.log(
+            `Fliegende Insel ${i} erstellt: Position (${islandX.toFixed(1)}, ${islandY.toFixed(1)}, ${islandZ.toFixed(1)}), Grösse ${islandSize.toFixed(1)} m, Höhe ${islandHeight.toFixed(1)} m`
+        );
+        // V18.364 — die kosmetischen Insel-Begleiter-UFOs entfernt (Schöpfer „die
+        // können raus, wirken falsch + flach, keine Struktur"). `spawnUfoAt`/`spawn_ufo`
+        // bleiben fürs explizite Beschwören; der Himmel bleibt klar von Auto-UFOs.
     }
 
     // DIE BEPFLANZTEN CHUNKS (speicher.K3): ein Stand trägt keinen Wurf des Gesetzes, nur die Chunks, deren Würfe ein älterer
@@ -2936,6 +2945,8 @@ _stammZonen(AnazhRealm, [AnazhRealm_gelaende_boden]);
 // ===== ATLAS · Gelaende/boden — Außen-Konstanten =====
 // Die leere Edit-Liste eines Chunks ohne Edits (`_voxelEditsNah`, `_voxelEditsImKasten`): eingefroren, nie beschrieben.
 AnazhRealm.KEINE_EDITS = Object.freeze([]);
+// Die schwebenden Inseln einer Welt (`_worldgenInsel`, nach dem ersten Bild je eine im Leerlauf; V18.331: drei).
+AnazhRealm.WELT_INSELN = 3;
 // DER RING (`_ringWaechst`): er beginnt beim Boot mit EINEM Chunk (V18.397, Schöpfer „1 Chunk statt 9!" — ein großer
 // Start-Ring von 25 Chunks fror den Boot ein; der Fern-Ring und `_softFloorWhileChunkLoading` tragen den Rand) und springt
 // unter dem Ladeschirm auf den Boden des ersten Weltbilds (2 = 5×5 Chunks, `_weltbildLuecken`; auf kienspan zugleich das Ziel).

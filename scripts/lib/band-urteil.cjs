@@ -257,7 +257,7 @@ function einschwingOffen(r) {
     if (f?.warte?.length) o.foundryWarte = f.warte.length;
     if (f?.pending?.size) o.foundryImFlug = f.pending.size;
     // eine Lieferung, die angekommen ist und auf die Freigabe des Ingest-Takts wartet (`_foundryIngestTakt`), baut noch
-    if (r._foundryIngestQueue && r._foundryIngestQueue.length) o.foundryIngest = r._foundryIngestQueue.length;
+    if (r._foundryIngestQueue?.length) o.foundryIngest = r._foundryIngestQueue.length;
     const kb = (r._impostorBakeQueue || []).length;
     if (kb) o.kartenBake = kb;
     if (r._scatterRefillPending) o.streuNachschub = 1;
@@ -271,7 +271,7 @@ function einschwingOffen(r) {
     // liest): am Messort ohne Dorf-Zug (genesis, wiese) ruht ein Plan, der vorher losging — er wächst nie. Bis 31.10. hielt er hier
     // offen, und das Band wartete bis zum Deckel (ferne.K2#2, Radeon a03b7b06: „dorfWaechst 0/18“, 4 007 Takte, 240 s)
     const q = r._autoSettlementQueue;
-    if (q != null && r._dorfTaktLebt()) o.dorfWaechst = q.plan && q.plan.slots ? `${q.idx}/${q.plan.slots.length}` : 1;
+    if (q != null && r._dorfTaktLebt()) o.dorfWaechst = q.plan?.slots ? `${q.idx}/${q.plan.slots.length}` : 1;
     if (r._autoSettlementPendingKey) o.dorfExport = r._autoSettlementPendingKey;
     let schrumpft = 0;
     for (const [, s] of st.chunkSaetze || []) if (s?.ueberSeit >= 0) schrumpft++;
@@ -876,7 +876,7 @@ function ratscheWeit(ratsche, u, paesse) {
             }
     }
     const rg = ratsche.gesamt || {};
-    const geb = (u.summe && u.summe.gebunden) || null;
+    const geb = (u.summe?.gebunden) || null;
     if (geb) {
         weit("weit:gesamt:befehle", rg.befehle, geb.befehle, "befehle", "Summe (gebunden) Befehle");
         weit("weit:gesamt:dreiecke", rg.dreiecke, geb.dreiecke, "dreiecke", "Summe (gebunden) Dreiecke");
@@ -1199,7 +1199,7 @@ function bandTabelle(u) {
                     " MB  " +
                     pad(e.n, 6) +
                     e.erzeuger +
-                    (e.erzeuger.startsWith("buf:") && e.form && e.form.length && e.form[0] !== e.erzeuger
+                    (e.erzeuger.startsWith("buf:") && e.form?.length && e.form[0] !== e.erzeuger
                         ? "  (" + e.form.map((k) => k.slice(e.erzeuger.length + 1)).join(" · ") + ")"
                         : "")
             );

@@ -385,7 +385,7 @@ const WELT_MESSEN = async () => {
     await pump(60);
     const fl = window.__fl;
     const cfg = AnazhRealm._studioRenderConfig;
-    const G = cfg && cfg.lod?.budget ? cfg.lod.budget.gestalten : null;
+    const G = cfg?.lod?.budget ? cfg.lod.budget.gestalten : null;
     const T = {};
     for (const sp of ["eiche", "fichte", "birke", "tanne", "weide", "mammut", "strauch"])
         T[sp] = r._foundryGestalten(sp);

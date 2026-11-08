@@ -242,9 +242,9 @@ function tafelUrteil(t, messung) {
         const W = messung.welt && messung.welt[z.id];
         const e = { id: z.id, gruppe: z.gruppe, titel: z.titel, labor: L || null, welt: W || null, ratsche: z.ratsche };
         if (z.labor && !(L && zahl(L.Y) && L.Y > 0))
-            rz("stumm", `das Labor maß nichts (${(L && L.fehler) || "keine Zeile"})`);
+            rz("stumm", `das Labor maß nichts (${(L?.fehler) || "keine Zeile"})`);
         if (!W || !zahl(W.Y) || !(W.Y > 0))
-            rz("stumm", `die Welt maß nichts (${(W && W.fehler) || "keine Zeile"})`);
+            rz("stumm", `die Welt maß nichts (${(W?.fehler) || "keine Zeile"})`);
         // DIE STUFE DES EXEMPLARS: eine Zeile erklärt die Stufen, in denen die Welt ihr Exemplar zeigt
         // (`welt.stufen`); zeichnet der Schuss eine andere, misst er einen anderen Stoff
         const ds = z.welt && Array.isArray(z.welt.stufen) ? z.welt.stufen : null;
@@ -385,7 +385,7 @@ function tafelTabelle(u) {
                 lpad(zahl(e.ratsche) ? e.ratsche.toFixed(3) : "–", 9) +
                 "  " +
                 pad(e.imSoll ? "ja" : "nein", 5) +
-                ` ${(e.labor && e.labor.rgb) || "–"} · ${(e.welt && e.welt.rgb) || "–"}`
+                ` ${(e.labor?.rgb) || "–"} · ${(e.welt?.rgb) || "–"}`
         );
     z.push("");
     z.push(

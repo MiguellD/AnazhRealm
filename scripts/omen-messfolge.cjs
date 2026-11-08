@@ -144,9 +144,9 @@ function streuungUrteil(sitzungen, soll) {
 function bankJe(lauf) {
     const je = {};
     const takt = {};
-    for (const [k, b] of Object.entries((lauf && lauf.kurz && lauf.kurz.gpuBank) || {})) {
+    for (const [k, b] of Object.entries((lauf?.kurz?.gpuBank) || {})) {
         je[k] = b && Number.isFinite(b.gpuJeFrameMs) ? b.gpuJeFrameMs : NaN;
-        takt[k] = b && b.takt && Number.isFinite(b.takt.mhz) ? b.takt.mhz : null;
+        takt[k] = b?.takt && Number.isFinite(b.takt.mhz) ? b.takt.mhz : null;
     }
     return { je, takt };
 }
@@ -394,7 +394,7 @@ function bandBefunde(messung, basis) {
     const geraet = messung.geraet && messung.geraet.schluessel;
     if (!geraet)
         v.push(
-            `BAND band: die Messung nennt kein Gerät (${(messung.geraet && messung.geraet.text) || "kein Adapter-Text"}) — keine Ratsche richtet sie`
+            `BAND band: die Messung nennt kein Gerät (${(messung.geraet?.text) || "kein Adapter-Text"}) — keine Ratsche richtet sie`
         );
     if (!messung.sicht) v.push("BAND band: die Messung nennt keine Sicht — keine Ratsche richtet sie");
     if (!Array.isArray(messung.rot)) {
@@ -568,7 +568,7 @@ const einschwingBefund = (e, versuch, letzter) =>
         ? `EINSCHWINGEN: ${versuch} Läufe, keiner schwingt ein (${e.takte} Takte) — offen ${JSON.stringify(e.offen)}`
         : null;
 const dorfBefund = (um) =>
-    um && um.dorfSchwebt
+    um?.dorfSchwebt
         ? `DORF: vor dem Ort ging ein Dorf los (${um.dorfSchwebt}) — sein Plan schwebt, der Wald weicht ihm, die Szene ist nicht die des Orts`
         : null;
 // der Start der Werkbank: der Ort schon hier (`start --ort`) — ein Ort ohne Dorf-Zug sperrt ihn ab dem ersten Skript
@@ -891,7 +891,7 @@ async function folge(neu = { versuch: 1, versuche: [], letzter: true }) {
             aus.kurz.profil = mitTieren(
                 prof && !abbruchVon(prof) ? { cpuMs: prof.cpuMs, taeter: prof.taeter.slice(0, 12) } : null
             );
-            if (prof && prof.wetterHalt && prof.wetterHalt.urteil === "ROT")
+            if (prof?.wetterHalt && prof.wetterHalt.urteil === "ROT")
                 aus.befunde.push(...prof.wetterHalt.taeter.map((t) => `WETTER profil (Lauf): ${t}`));
         }
     } catch (e) {
@@ -930,12 +930,12 @@ async function folge(neu = { versuch: 1, versuche: [], letzter: true }) {
                     ? `  gpu-bank Pose ${g}: ${b.gpuJeFrameMs} ms je Frame (${b.werte.join(" · ")}; CPU ${b.cpuJeFrameMs}, Chunks ${b.chunks}; Takt ${b.takt ? b.takt.mhz + " MHz, " + b.takt.temp + " °C, Drossel " + Object.keys(b.takt.drossel).join("/") : "—"})`
                     : `  gpu-bank Gier ${g}: ${b.gpuJeFrameMs} ms je Frame (CPU ${b.cpuJeFrameMs}) · ${tierZeile(b.tiere)}`
             );
-    if (aus.kurz.band && aus.kurz.band.urteil)
+    if (aus.kurz.band?.urteil)
         console.log(
             `  band: ${aus.kurz.band.urteil} (Linse ${aus.kurz.band.linse}, Stempel ${aus.kurz.band.stempel}) · ` +
                 tierZeile(aus.kurz.band.tiere)
         );
-    if (aus.kurz.profil && aus.kurz.profil.cpuMs)
+    if (aus.kurz.profil?.cpuMs)
         console.log(`  profil: CPU-Takt p95 ${aus.kurz.profil.cpuMs.p95} ms · ${tierZeile(aus.kurz.profil.tiere)}`);
     console.log(`  Werkbank-Ende: ${aus.werkbankEnde}`);
     return {
@@ -1540,7 +1540,7 @@ function urteilCli() {
     const band = (j.folge || []).includes("band") || bandMessungAus(j) ? bandBefunde(bandMessungAus(j), basis) : [];
     const p = j.parameter || {};
     console.log(
-        `=== DER LESER: ${p.ort || "?"} · Sicht ${p.sicht || "?"} · ${(j.stand && j.stand.version) || "?"}${bd ? " gegen die Basis " + bd : ""} ===`
+        `=== DER LESER: ${p.ort || "?"} · Sicht ${p.sicht || "?"} · ${(j.stand?.version) || "?"}${bd ? " gegen die Basis " + bd : ""} ===`
     );
     for (const b of [...wachen, ...band]) console.log("  ROT " + b);
     const n = wachen.length + band.length;

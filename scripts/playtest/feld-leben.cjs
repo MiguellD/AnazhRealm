@@ -33,7 +33,7 @@ async function checkBandV1721LivingFieldAura({ page, check }) {
             }
         }
         out.bestLebendig = best;
-        if (spot && st.playerMesh && st.player && st.player.emotions) {
+        if (spot && st.playerMesh && st.player?.emotions) {
             const origPos = st.playerMesh.position.clone();
             const origEmo = { ...st.player.emotions };
             const origTick = st.player.emotionLastTick;
@@ -734,7 +734,7 @@ async function checkBandWelle6APolish({ page, check }) {
             };
             _entryA3 = r.spawnArchitecture("_t_w6a3_haus", { x: _savedX + 40, y: 0, z: _savedZ + 40 }, { seed: 9999 });
         } catch (e) {
-            _spawnErrA3 = String((e && e.stack) || e).slice(0, 300);
+            _spawnErrA3 = String((e?.stack) || e).slice(0, 300);
         }
         out.spawnErrA3 = _spawnErrA3;
         out.savedX = _savedX;
@@ -1792,7 +1792,7 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
                 let firstMeshHex = null;
                 if (eb.mesh) {
                     eb.mesh.traverse((n) => {
-                        if (firstMeshHex === null && n.isMesh && n.material && n.material.color) {
+                        if (firstMeshHex === null && n.isMesh && n.material?.color) {
                             firstMeshHex = n.material.color.getHex();
                         }
                     });

@@ -760,7 +760,7 @@ async function checkBandV1772Library({ page, check }) {
         const savedMode = r.getGameMode();
         const savedEquip = p?.equipped ? jsonKlon(p.equipped) : { held: null, armor: null };
         const savedBoosts = p && Array.isArray(p.boosts) ? p.boosts.slice() : [];
-        const savedSoul = (p && p.soul) || "mensch";
+        const savedSoul = (p?.soul) || "mensch";
         r.setGameMode("schöpfer");
 
         const fg = r.fertigeBlueprint("_t_v1772");
@@ -830,7 +830,7 @@ async function checkBandV1773HeldMesh({ page, check }) {
 
         // Snapshot — am Ende restauriert (kein dangling Held/Soul für die nächsten Bands).
         const savedEquip = p?.equipped ? jsonKlon(p.equipped) : { held: null, armor: null };
-        const savedSoul = (p && p.soul) || "mensch";
+        const savedSoul = (p?.soul) || "mensch";
 
         // AUSLÖSCHUNGS-WELLE — geraet_spitzhacke fiel als Blueprint; Test-Blueprint aus der
         // eingefrorenen Werkzeug-Substanz (KIND_SUBSTANCE, foundry-unabhängig, am Ende geräumt).
