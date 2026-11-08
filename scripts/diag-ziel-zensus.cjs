@@ -147,7 +147,7 @@ function karteOhneFarbe() {
         const sn = TSL.shadow(licht, licht.shadow);
         licht.shadow.shadowNode = sn;
         r._kaskadenZiele({ _shadowNodes: [sn] });
-        aus.huelle = Object.prototype.hasOwnProperty.call(sn, "setupRenderTarget");
+        aus.huelle = Object.hasOwn(sn, "setupRenderTarget");
         szene.add(licht, licht.target, new T.AmbientLight(0xffffff, 0.2));
         const boden = new T.Mesh(new T.PlaneGeometry(20, 20), new T.MeshStandardNodeMaterial({ color: 0xc8c8c8 }));
         boden.rotation.x = -Math.PI / 2;

@@ -486,7 +486,7 @@ hauptLauf(async () => {
     );
     check(
         "K2: die Frequenz ist die Studio-Zahl (2. Akkord-Ton = 110·2^(5/12) ≈ 146.83 Hz)",
-        Math.abs(out.k.freq1Studio - 110 * Math.pow(2, 5 / 12)) < 0.01,
+        Math.abs(out.k.freq1Studio - 110 * 2 ** (5 / 12)) < 0.01,
         String(out.k.freq1Studio)
     );
     check(

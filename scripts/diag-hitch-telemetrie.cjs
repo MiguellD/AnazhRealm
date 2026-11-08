@@ -100,7 +100,7 @@ function erstWandInstall(BUNDLE_FRAMES) {
     const ESt = r._erstZeichnung || null;
     const res = { erst: null };
     res.erst = {
-        daStamm: rend.__anazhErstZeichnung === true && Object.prototype.hasOwnProperty.call(rend, "_renderObjectDirect"),
+        daStamm: rend.__anazhErstZeichnung === true && Object.hasOwn(rend, "_renderObjectDirect"),
         boot: ESt
             ? { bauN: ESt.bauN, bauMs: Math.round(ESt.bauMs), verschoben: ESt.verschoben, pipeAsync: ESt.pipeAsync }
             : null,
@@ -140,8 +140,9 @@ function erstWandInstall(BUNDLE_FRAMES) {
         const aus = gfr.apply(this, arguments);
         if (kalt && Z.cur === welt) {
             const k = rend.info.calls;
-            // der Deckel DIESES Aufrufs, wie ihn der EINE Ort gesetzt hat (`E.deckel`: im Spiel ERST_BAU_MS, unter dem
-            // Ladeschirm LADE_TAKT_MS) — nie eine Konstante der Linse
+            // der Deckel DIESES Aufrufs, wie ihn der EINE Ort trägt (`E.deckel`: ERST_BAU_MS, eine Bühne unter dem Ladeschirm
+            // LADE_TAKT_MS; das Lade-Bild der Welt baut dort in Raten bis zur Frist des Lade-Frames, `_knotenRate`) — nie eine
+            // Konstante der Linse
             const E = r._erstZeichnung;
             const b = Z.bau.get(k) || { n: 0, ms: 0, vorMs: [], deckel: E ? E.deckel : NaN };
             b.vorMs.push(b.ms);
@@ -230,7 +231,7 @@ function erstWandInstall(BUNDLE_FRAMES) {
     const probe = (vendor) => buehne(() => probeAufDerBuehne(vendor));
     const probeAufDerBuehne = async (vendor) => {
         // DIE PROBE STEHT IM SPIEL: sie misst den Takt, den der Spieler fühlt (der Deckel ERST_BAU_MS je Aufruf). Unter
-        // dem Ladeschirm baut der EINE Ort je Aufruf bis LADE_TAKT_MS — am Runner steht er beim Einbau der Wand
+        // dem Ladeschirm baut der EINE Ort in Raten bis zur Frist des Lade-Frames — am Runner steht er beim Einbau der Wand
         // oft noch (swiftshader); die Probe nimmt ihn für ihre Dauer weg und stellt ihn danach zurück.
         const lade = document.getElementById("ladeschirm");
         const ladeVor = lade ? lade.hidden : null;
@@ -239,7 +240,7 @@ function erstWandInstall(BUNDLE_FRAMES) {
         const ruheMs = await ruhe();
         Z.sync = Z.async = 0;
         Z.bau.clear();
-        const eigen = Object.prototype.hasOwnProperty.call(rend, "_renderObjectDirect");
+        const eigen = Object.hasOwn(rend, "_renderObjectDirect");
         const stamm = rend._renderObjectDirect;
         if (vendor && eigen) delete rend._renderObjectDirect;
         const meshes = [];
@@ -675,7 +676,7 @@ function erstWandInstall(BUNDLE_FRAMES) {
         fehlerScope,
         aufnahme,
         absage,
-        zurueck: () => Object.prototype.hasOwnProperty.call(rend, "_renderObjectDirect"),
+        zurueck: () => Object.hasOwn(rend, "_renderObjectDirect"),
         gpuStau,
     };
 }

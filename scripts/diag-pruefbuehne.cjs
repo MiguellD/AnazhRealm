@@ -465,7 +465,7 @@ async function probe(page, welt, wuerfe, evolutionen, schein) {
                 let still = 0;
                 await window
                     .__gebautNach("noch: still < 4", {
-                        fertig: () => !!(!(still < 4)),
+                        fertig: () => !(still < 4),
                         takt: async () => {
                         await takt(1000);
                         const m = (s.architectures || []).length + (s.creatures || []).length;
@@ -781,7 +781,7 @@ const S0_GESTALT_INSTALL = () => {
             pr = null;
         }
         const q = f.warte || [];
-        const platz = q.findIndex((a) => a && a.msg && a.msg.presetId === pr);
+        const platz = q.findIndex((a) => a?.msg && a.msg.presetId === pr);
         const meine = f.requested ? [...f.requested].filter((k) => String(k).startsWith(pr + "|")) : [];
         const gebaut = meine.filter((k) => r._foundryCacheGet(k) !== undefined);
         const wo =
@@ -1496,13 +1496,13 @@ async function lichtLauf() {
         );
         const fb = ergebnis.farbe;
         // das Feuer bis K11b reißt am Farbton (netto), das Auge des Tages an der Sättigung (brutto) bei Farbton im Band
-        const fbTon = !!fb && !fb.fehler ? s0Ton(fb, ergebnis.nacht) : null;
+        const fbTon = fb && !fb.fehler ? s0Ton(fb, ergebnis.nacht) : null;
         const farbGetroffen = !!fbTon && !s0TonImBand(fbTon);
         console.log(
             `  SELBSTTEST S0 BILD (das Feuer bis K11b, Glut-Palette und nacht 12): ${farbGetroffen ? `getroffen — das Licht des Feuers fällt netto auf Farbton ${fbTon.hue}°: die Farbtemperatur trägt ihn` : "BLIND " + JSON.stringify(fbTon)}`
         );
         const tg = ergebnis.tag;
-        const tgTon = !!tg && !tg.fehler ? s0Ton(tg, ergebnis.nacht) : null;
+        const tgTon = tg && !tg.fehler ? s0Ton(tg, ergebnis.nacht) : null;
         const tagGetroffen = s0TonImBand(tgTon) && !(tgTon.sat <= S0_TON.satMax);
         console.log(
             `  SELBSTTEST S0 BILD (das Auge des Tages, wie bis K66): ${tagGetroffen ? `getroffen — der Boden 1–3 m reißt an der Sättigung ${tgTon.sat} (Soll ≤ ${S0_TON.satMax}) bei Farbton ${tgTon.hue}° netto im Band: das Auge der Nacht trägt ihn` : "BLIND " + JSON.stringify(tgTon)}`

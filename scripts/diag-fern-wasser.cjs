@@ -167,7 +167,7 @@ async function runOnce(browser, noFoundry) {
             `  nasse Vertices bei Atlas-L−drop: ${(out.vLevelFrac * 100).toFixed(1)} % (${out.vChecked} Proben)`
         );
         console.log(`  COVERAGE atlas-nasser Annulus-Zellen: ${(out.coverage * 100).toFixed(1)} % von ${out.wetCells}`);
-        if (out.uncovered && out.uncovered.length)
+        if (out.uncovered?.length)
             console.log(`  UNGEDECKT (Beispiele): ${JSON.stringify(out.uncovered)}`);
         console.log(
             `  Re-Anker beim Crossing: ${out.reanchored} · Toggle aus→weg: ${out.toggleOffDisposed} · an→wieder da: ${out.toggleOnRebuilt}`

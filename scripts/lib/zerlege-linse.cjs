@@ -451,7 +451,7 @@ function frameAnatomie(uhr, n) {
             if (!proto || typeof proto[key] !== "function") return;
             const ziele = [proto];
             for (const x of exemplare)
-                if (Object.prototype.hasOwnProperty.call(x, key) && proto.isPrototypeOf(x)) ziele.push(x);
+                if (Object.hasOwn(x, key) && proto.isPrototypeOf(x)) ziele.push(x);
             for (const o of ziele) {
                 const roh = o[key];
                 ab.push(

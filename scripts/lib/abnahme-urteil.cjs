@@ -798,7 +798,7 @@ function rauschBild(n, beta, saat) {
                 fv = v <= n / 2 ? v : v - n;
             const f = Math.hypot(fu, fv) / n;
             const phi = 2 * Math.PI * zufall();
-            const a = f > 0 ? Math.pow(f, -beta / 2) : 0;
+            const a = f > 0 ? f ** (-beta / 2) : 0;
             re[v * n + u] = a * Math.cos(phi);
             im[v * n + u] = a * Math.sin(phi);
         }
@@ -1529,7 +1529,7 @@ function standLeser(root) {
                         kerne[d] = sb;
                     }
                     for (const v of Object.values(kerne[d]))
-                        if (v && typeof v === "object" && v !== kerne[d] && Object.prototype.hasOwnProperty.call(v, sym))
+                        if (v && typeof v === "object" && v !== kerne[d] && Object.hasOwn(v, sym))
                             return v[sym];
                     return undefined;
                 },
@@ -1609,7 +1609,7 @@ function sollTafelUrteil(tafel, q) {
         const so = k.soll || {};
         const baender = {};
         const uhren = {};
-        if (!(so.eigenschaften || []).length) fehler.push(`${wo}: kein Soll`);
+        if (!so.eigenschaften?.length) fehler.push(`${wo}: kein Soll`);
         for (const e of so.eigenschaften || []) {
             if (!e.groesse || !e.quelle) {
                 fehler.push(`${wo}: Soll-Eigenschaft ${e.groesse || "?"} ohne Größe oder Quelle`);
@@ -1881,7 +1881,7 @@ function sollTafelSelbsttest(tafel, q) {
             const [x, y] = [p % Ws, Math.floor(p / Ws)],
                 s = spur(K.auge, K.strahl(x, y)),
                 r = s.wasser && bild(x, y),
-                F = 0.02 + 0.98 * Math.pow(1 - (1 - ((y + 0.5) / Hs) * 2) / -K.f, 5);
+                F = 0.02 + 0.98 * (1 - (1 - ((y + 0.5) / Hs) * 2) / -K.f) ** 5;
             K.tiefe[p] = s.himmel ? 1 : K.ndc(-s.t * K.strahl(x, y)[2]);
             mw[p] = s.wasser ? 1 : 0;
             const w = s.wasser ? [r.L, F * r.L + (1 - F) * 25, r.himmel ? 25 : r.L, bild(x, y - 12).L, 60 + y / 4] : namen.map(() => s.L);
@@ -2229,7 +2229,7 @@ function sollTafelSelbsttest(tafel, q) {
     ];
     // ein Fall „zeile" (Maß gegen den Stand der Klasse) urteilt die ZEILE ROT beim Namen, und der Schreiber `--ist` schreibt ihn
     for (const [name, fn, wort, zeile] of faelle) {
-        if (!tafel || !(tafel.klassen || []).length) break;
+        if (!tafel || !tafel.klassen?.length) break;
         const t = klon();
         try {
             fn(t);
@@ -2270,7 +2270,7 @@ function sollTafelSelbsttest(tafel, q) {
         const z1 = sollTafelUrteil(tafel, q2).zeilen.find((z) => z.id === ka.id);
         if (!z0 || !z1 || z1.ist === z0.ist) v.push(`${ka.id}: das Ist liest nicht aus ${ro.datei} (geändert bleibt ${z1?.ist})`);
     }
-    if (tafel && (tafel.klassen || []).length) {
+    if (tafel && tafel.klassen?.length) {
         const t = klon();
         delete t.klassen[0].mass.messung;
         delete t.klassen[0].mass.rohdatei;

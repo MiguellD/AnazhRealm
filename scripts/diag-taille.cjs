@@ -93,10 +93,10 @@ const GOLDEN_TIME = 1700000000000; // feste Zeit für alle nicht-signierten Zeit
                     const bp = st.blueprints["rt1_bp"];
                     const mat = st.materials["rt1_mat"];
                     M.rt1_import = {
-                        ok: !!(res && res.ok),
-                        bpUnknownSurvives: !!(bp && bp.xZukunft && bp.xZukunft.a === 1),
-                        matUnknownSurvives: !!(mat && mat.xZukunft && mat.xZukunft.b === 2),
-                        matForeignTagSurvives: !!(mat && mat.tags && mat.tags["x:fremd"] === 0.7),
+                        ok: !!(res?.ok),
+                        bpUnknownSurvives: !!(bp?.xZukunft && bp.xZukunft.a === 1),
+                        matUnknownSurvives: !!(mat?.xZukunft && mat.xZukunft.b === 2),
+                        matForeignTagSurvives: !!(mat?.tags && mat.tags["x:fremd"] === 0.7),
                     };
                     localStorage.removeItem(r.worldStorageKey("taille-rt1-src"));
                     delete st.blueprints["rt1_bp"];
@@ -119,7 +119,7 @@ const GOLDEN_TIME = 1700000000000; // feste Zeit für alle nicht-signierten Zeit
                     M.rt2_snapshot = {
                         serializeKeepsUnknown: !!(ser.xZukunft && ser.xZukunft.c === 3),
                         serializeKeepsProvenance: Array.isArray(ser.provenance) && ser.provenance.length === 1,
-                        deserializeKeepsUnknown: !!(deser && deser.xZukunft && deser.xZukunft.c === 3),
+                        deserializeKeepsUnknown: !!(deser?.xZukunft && deser.xZukunft.c === 3),
                         deserializeKeepsProvenance: !!(deser && Array.isArray(deser.provenance)),
                     };
                 }
@@ -135,7 +135,7 @@ const GOLDEN_TIME = 1700000000000; // feste Zeit für alle nicht-signierten Zeit
                     });
                     M.rt3_manifest = {
                         accepted: !!clean,
-                        unknownSurvives: !!(clean && clean.xZukunft && clean.xZukunft.d === 4),
+                        unknownSurvives: !!(clean?.xZukunft && clean.xZukunft.d === 4),
                     };
                 }
 
@@ -224,7 +224,7 @@ const GOLDEN_TIME = 1700000000000; // feste Zeit für alle nicht-signierten Zeit
                 const man = r._sanitizeImportedManifest({ ...g.manifest, id: "taille-golden-konformanz" });
                 out.manifestReadable = !!man;
                 out.manifestSig =
-                    man && man.signature
+                    man?.signature
                         ? (await r._vibeVerify(
                               r._canonicalManifest({ ...g.manifest }),
                               man.signature,

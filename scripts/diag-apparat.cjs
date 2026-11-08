@@ -25,7 +25,7 @@
 //     und ihre Nachbarn (includes, Startpunkt, /g, fremder Text, überschatteter Name, Kommentar) schweigen.
 // ============================================================================
 "use strict";
-const { urteilEnde, ausDatei, SELBSTTEST, path, fs, stammLib } = require("./lib/welt-boot.cjs");
+const { urteilEnde, ausDatei, taeterFaelle, jsonKlon, SELBSTTEST, ROOT, path, fs, stammLib } = require("./lib/welt-boot.cjs");
 
 // Kommentare strippen, Strings BEWAHREN (der EINE Stripper, scripts/lib/stamm.cjs).
 const stripComments = stammLib.ohneKommentare;
@@ -389,6 +389,40 @@ function scanTasten(dateien) {
     return { n: dateien.length, errs };
 }
 
+// KLINGE 7 (w22-gpu-probe): DER EINLASS DER GPU-PROBE (.github/workflows/gpu-probe.yml). Die Kopf-Commit-Message trägt GENAU
+// eine Marke `[gpu-probe: <spec>]` auf einer Zeile, <spec> höchstens drei Proben, Komma-getrennt, jede in einer von ZWEI Formen:
+// `gate:<npm-skript>` (ein Skript aus package.json) und `bild:<ort>[@<uhr>]` (ein Messort aus spec/profiband/haushalt.json, die
+// Uhr 0..1) — nie ein freier Befehl: die Probe fährt auf eigenen Rechnern, das Repo ist öffentlich. Der EINE Leser steht im
+// Workflow selbst (Schritt `einlass`, env EINLASS_JS, `node -e "$EINLASS_JS"`; er schreibt EINE Zeile `plan=<proben>` oder
+// `abgewiesen=<grund>` — ein Umbruch schmuggelte sonst einen zweiten Ausgang), und diese Linse FÄHRT genau ihn mit jedem Ruf
+// von PROBE_RUFE (Konsum, nie ein Abbild). `probeGesetz` hält dazu die Datei: Auslöser nur push, kein Ausdruck im Text eines
+// run-Schritts (Daten nur über env), die Message nur im Einlass, ein self-hosted Job nur auf [self-hosted, gpu-probe] hinter ihm.
+const PROBE_DATEI = ".github/workflows/gpu-probe.yml";
+// je Ruf [Message, Plan] — ohne Plan muss der Einlass abweisen (freier Befehl, fremde Namen, die Uhr, zwei Marken, ein Umbruch
+// in der Marke, vier Proben)
+const PROBE_RUFE = [
+    ["[gpu-probe: gate:ego-schatten, bild:wiese@0.3]", "gate:ego-schatten bild:wiese@0.3"],
+    ["[gpu-probe: gate:ego-schatten; curl x|sh]"],
+    ["[gpu-probe: gate:nicht-da, bild:see]"],
+    ["[gpu-probe: bild:wiese@1.5]"],
+    ["[gpu-probe: bild:wiese\nplan=gate:x]"],
+];
+function probeGesetz(doc) {
+    const an = Object.keys(doc.on) + "";
+    const v = an === "push" ? [] : [`Auslöser ${an}`];
+    for (const [job, J] of Object.entries(doc.jobs)) {
+        if (/self-hosted/.test(J["runs-on"]) && J["runs-on"] + "" !== "self-hosted,gpu-probe") v.push(`${job} runs-on`);
+        for (const s of [J, ...J.steps]) if (/\$\{\{/.test(s.run) || (job !== "einlass" && /github\.event/.test(JSON.stringify(s.env)))) v.push(`${job} Injektion`);
+    }
+    const e = doc.jobs.einlass.steps.at(-1);
+    for (const [m, plan] of PROBE_RUFE) {
+        const env = { ...process.env, KOPF_NACHRICHT: m, GITHUB_OUTPUT: "" };
+        const aus = require("child_process").spawnSync(process.execPath, ["-e", e.env.EINLASS_JS], { cwd: ROOT, env, encoding: "utf8" }).stdout;
+        if (e.run !== 'node -e "$EINLASS_JS"' || (plan ? aus !== `plan=${plan}\n` : !/^abgewiesen=.+\n$/.test(aus))) v.push(`Einlass ${m} → ${aus}`);
+    }
+    return v;
+}
+
 function selftest() {
     const fails = [];
     // Klinge 3: ein Regex-Anker mit Parameter-Liste und ein Kopf-Text einer Stamm-Methode feuern beim Namen, der Name
@@ -515,7 +549,21 @@ function selftest() {
         '{\n    const quelle = ausDatei(p);\n    quelle.replace("x", "y");\n}\n// quelle.replace("x", "y");\n';
     for (const [datei, q] of [["probe.cjs", ersterStill], ["scripts/lib/stamm.cjs", ersterRot[0][1]]])
         if (ersterTreffer(datei, q).length) fails.push(`Klinge 6 nennt einen ersten Treffer ohne Täter: ${datei} ${ersterTreffer(datei, q)}`);
-    urteilEnde(fails.length, "❌ SELBST-TEST: " + fails.join(" · "), "✅ SELBST-TEST: alle sechs Klingen feuern (Ratchet + Katalog + Parameter-Anker beim Namen + Kopf-Muster am AST + Taste nach der Wanduhr + eigener Schneider + erster Treffer im ganzen Stamm), Kommentare zählen nicht");
+    // Klinge 7: die echte gpu-probe.yml hält das Gesetz (ihr Einlass beantwortet jeden Ruf), und je Mutante — pull_request, die
+    // Message im Text von run, ein Läufer außerhalb von gpu-probe, ein Einlass, der alles durchlässt — fällt sie beim Namen.
+    const doc = require("js-yaml").load(ausDatei(PROBE_DATEI));
+    taeterFaelle(
+        [
+            { name: PROBE_DATEI, z: doc },
+            ["pull_request", ["on.pull_request=", 0], /pull_request/],
+            ["Injektion", ["jobs.probe.steps.1.run=", "echo ${{ github.event.head_commit.message }}"], /Injektion/],
+            ["runs-on", ["jobs.probe.runs-on=", "self-hosted"], /runs-on/],
+            ["curl", ["jobs.einlass.steps.1.env.EINLASS_JS=", "console.log(`plan=${process.env.KOPF_NACHRICHT}`)"], /curl/],
+        ],
+        probeGesetz,
+        { fehler: fails, klon: () => jsonKlon(doc) }
+    );
+    urteilEnde(fails.length, "❌ SELBST-TEST: " + fails.join(" · "), "✅ SELBST-TEST: alle sieben Klingen feuern (Ratchet + Katalog + Parameter-Anker beim Namen + Kopf-Muster am AST + Taste nach der Wanduhr + eigener Schneider + erster Treffer im ganzen Stamm + GPU-Probe), Kommentare zählen nicht");
 }
 
 function main() {
@@ -529,7 +577,8 @@ function main() {
     const dateien = linsenDateien(root);
     const param = scanParameterAnker(dateien, stammSrc);
     const tasten = scanTasten(dateien);
-    const errs = ratchet.errs.concat(anker.errs, param.errs, tasten.errs);
+    const probe = probeGesetz(require("js-yaml").load(ausDatei(PROBE_DATEI))).map((e) => `${PROBE_DATEI}: ${e}`);
+    const errs = ratchet.errs.concat(anker.errs, param.errs, tasten.errs, probe);
     if (errs.length) {
         console.log("⛔ DIE APPARAT-LINSE:");
         for (const e of errs) console.log("   ❌ " + e);

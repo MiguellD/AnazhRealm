@@ -1319,7 +1319,7 @@ async function studioProbe(page) {
         const tor = await page.evaluate((text) => {
             r._openWeltTorDialog(JSON.parse(text), { name: "gelaende-plan.json" });
             const p = st.pendingImport;
-            const ok = !!(p && p.parsed && p.parsed.worldMeta);
+            const ok = !!(p?.parsed && p.parsed.worldMeta);
             r._weltTorImportReplace();
             return { ok }; // das Erbgut der Tür las niemand (die Welt misst `weltMessen`)
         }, studio.text);
@@ -1627,7 +1627,7 @@ async function gebaut(page) {
     if (SELBSTTEST) {
         const st = stoerung;
         // die Gerade zählt an jeder Saat mit flachen Fenstern — mindestens eine, und jede davon rot
-        const mit = alle.filter((o) => o.maeanderGerade && o.maeanderGerade.fenster);
+        const mit = alle.filter((o) => o.maeanderGerade?.fenster);
         const sieht = mit.length > 0 && mit.every((o) => !maeanderGut(o.maeanderGerade));
         console.log(
             `  Selbsttest-Gerade (jedes Glied seine Sehne): ${mit.map((o) => `${o.seed} ${o.maeanderGerade.fenster} Fenster, Sinuosität ${o.maeanderGerade.sinuositaet}`).join(" · ") || "keine Saat mit flachem Fenster"} → ${sieht ? "✅ rot erkannt" : "⛔ blind"}`

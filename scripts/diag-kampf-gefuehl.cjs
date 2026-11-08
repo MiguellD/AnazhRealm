@@ -124,7 +124,7 @@ function reichVerdict(R) {
 const KLICK_SOLL = { faelle: 96 };
 function klickVerdict(M) {
     if (!M || !Array.isArray(M.faelle) || M.faelle.length !== KLICK_SOLL.faelle)
-        return [`klick keine Probe (${M && M.faelle ? M.faelle.length : 0} von ${KLICK_SOLL.faelle} Fällen)`];
+        return [`klick keine Probe (${M?.faelle ? M.faelle.length : 0} von ${KLICK_SOLL.faelle} Fällen)`];
     const v = [];
     for (const blick of ["rumpf", "horizont"]) {
         const rot = M.faelle.filter((f) => f.blick === blick && !(f.dmg > 0));
@@ -273,7 +273,7 @@ function pfeilVerdict(P, shell) {
     if (!(P.wirft > 0)) v.push("pfeil-schatten: kein Teil wirft Schatten");
     if (!(P.laenge >= 0.7 && P.laenge <= 0.85)) v.push(`pfeil-laenge: ${P.laenge} m längs der Flug-Richtung`);
     if (P.wirtZylinder) v.push("pfeil-zwilling: der Wirt baut seinen eigenen Zylinder (_pfeilMeshAttach)");
-    if (shell && shell.eigenerPfeil) v.push("pfeil-zwilling: die Prüfstand-Shell baut ihren eigenen Pfeil");
+    if (shell?.eigenerPfeil) v.push("pfeil-zwilling: die Prüfstand-Shell baut ihren eigenen Pfeil");
     if (P.leerStill !== false)
         v.push(
             `pfeil-still: ein leerer Guss (${typeof P.leerStill === "string" ? P.leerStill : "null"}) lässt den Pfeil ohne Meldung unsichtbar fliegen`
@@ -317,7 +317,7 @@ function todVerdict(T) {
         v.push(
             "tod-alter: ein Tier, das am Alter stirbt, ist sofort fort (_creatureNaturalDeath nimmt den Leib) — der Leib verschwindet auf dem Weg des Lebenszyklus"
         );
-    if (T.fragen && T.fragen.length)
+    if (T.fragen?.length)
         v.push(
             `tod-frage: ${T.fragen.join(", ")} fragen selbst nach dem Sterben — der Leichnam stünde unter den Wesen`
         );
@@ -418,7 +418,7 @@ function gesetzVerdict(G) {
         v.push("kein Schnitt/frei");
     for (const id of ids) {
         const [a, m, t, e, s] = [G.vor, G.masse, G.tempo, G.eisen, G.schneide].map((x) => x[id]);
-        if (![a, m, t, e, s].every((x) => x && x.wirk)) v.push(`${id}: traf nicht`);
+        if (![a, m, t, e, s].every((x) => x?.wirk)) v.push(`${id}: traf nicht`);
         else {
             if (m.kg > a.kg * 1.001 && !(m.p > a.p * 1.01))
                 v.push(`masse ${id}: ${pc(a.kg, m.kg)} kg, Stoß ${pc(a.p, m.p)}`);
@@ -702,7 +702,7 @@ function k1Verdict(K) {
     for (const l of ["vor", "masse", "schneide"]) {
         const [w, b] = [W[l], L[l]];
         if (!w || !w.traf) {
-            v.push(l + (w && w.abbruch ? "-abbruch: " + w.abbruch : "-traf"));
+            v.push(l + (w?.abbruch ? "-abbruch: " + w.abbruch : "-traf"));
             continue;
         }
         if (!(w.edgeQ >= K1_SOLL.bahn && w.schneideBild >= K1_SOLL.bahn)) v.push(l + "-bahn");
@@ -1026,7 +1026,7 @@ async function k1Ende(browser, K) {
                 p.animationLastTick = -Infinity;
                 r.animatePlayerSoul(9000);
                 r.animatePlayerSoul(9000); // dt=0 (Uhr steht) — deterministische Idle-Pose
-                const huelle = mesh.children.find((ch) => ch && ch.userData && ch.userData._creatureSkin);
+                const huelle = mesh.children.find((ch) => ch?.userData && ch.userData._creatureSkin);
                 return {
                     armX: rig.armR.shoulder.rotation.x,
                     chestY: rig.chest ? rig.chest.rotation.y : 0,
@@ -1521,7 +1521,7 @@ async function k1Ende(browser, K) {
                 klvAlt.filter((x) => x.startsWith("klick-ernte:")).length === 3 &&
                 klvAlt.some((x) => x.startsWith("klick-fern:")) &&
                 selbstK.length === 6 &&
-                selbstK.every((t) => !!t) &&
+                selbstK.every((t) => t) &&
                 selbstK.includes("kein Ziel unter dem Fadenkreuz"),
             `Selbst-Test T26: der Befund (Horizont ${JSON.stringify(selbstK)}`
         );

@@ -1821,7 +1821,7 @@ class AnazhRealm {
     }
 
     // DER ZEITPLAN EINER LEUCHTQUELLE (K11, fachwerk LICHT_GESETZ `zeit`: mittag · morgen · abend · nacht; ohne Zeitplan 1)
-    // auf der EINEN Tag-Achse der Welt: ihr Kanal `nacht` (`_tagAchse`: 0 ab ~15° Sonnenhöhe, 1 am Horizont und darunter)
+    // auf der EINEN Tag-Achse der Welt: ihr Kanal `nacht` (`_tagAchse`: 0 über dem Horizont, 1 ab −6° Sonnenhöhe)
     // führt stückweise linear vom Mittag über die Dämmerung (Morgen vor, Abend nach der Mitte des Tages) in die Nacht.
     _lichtZeitplan(z) {
         if (!z) return 1;
@@ -1878,7 +1878,7 @@ function _stammZonen(Ziel, zonen) {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.546.212";
+AnazhRealm.VERSION = "18.546.216";
 // Die Terme des ersten Weltbilds (`_weltbildLuecken`, K60): je Leser des ersten Frames ein Name — gate:ankunft L2a stellt je
 // Term einen Fall her, ein Term ohne Fall ist ROT.
 AnazhRealm.WELTBILD_TERME = Object.freeze([

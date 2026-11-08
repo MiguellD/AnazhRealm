@@ -356,7 +356,7 @@ function farben(g) {
 }
 const lin = (hx) =>
     [(hx >> 16) & 255, (hx >> 8) & 255, hx & 255]
-        .map((c) => ((c /= 255) <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4)).toFixed(3))
+        .map((c) => ((c /= 255) <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4).toFixed(3))
         .join(",");
 // DER EINE ABDRUCK einer Gestalt (`window.__abdruck(x, alle)`): FNV-1a über die Puffer einer Gruppe (traverse), eines Flats (je
 // Geometrie seiner Blätter einmal, ohne Schatten-Zwilling) oder einer Geometrie — die Lage, mit `alle` jedes Attribut und der
@@ -550,7 +550,7 @@ function statikServer({ root = ROOT, start = "/index.html", seiten = null, keinC
             res.statusCode = 400;
             return res.end();
         }
-        if (seiten && Object.prototype.hasOwnProperty.call(seiten, p)) {
+        if (seiten && Object.hasOwn(seiten, p)) {
             const s = seiten[p];
             const typ = MIME[path.extname(p)] || "text/html";
             return Promise.resolve()

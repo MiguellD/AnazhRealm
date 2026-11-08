@@ -36,28 +36,26 @@ async function checkBandStoffSignatur({ page, check }) {
         const TSL = T.TSL;
         const k = (m) => m.customProgramCacheKey();
         const out = {};
-        const a = r._foundryTreeMaterial("unknown", { roughness: 0.41, metalness: 0.1 });
-        const b = r._foundryTreeMaterial("unknown", {
-            roughness: 0.77,
-            metalness: 0.3,
-            emissive: [0.2, 0.1, 0],
-            emissiveIntensity: 2,
-        });
         const l1 = r._foundryTreeMaterial("unknown", { roughness: 0.5, leucht: 2 });
         const l2 = r._foundryTreeMaterial("unknown", { roughness: 0.5, leucht: 3.5 });
-        const w1 = r._foundryTreeMaterial("bark", null, false, { ht: 9.5, delta: 0.021, an: 1 });
-        const w2 = r._foundryTreeMaterial("bark", null, false, { ht: 14.25, delta: 0.034, an: 1 });
-        out.regler = a !== b && k(a) === k(b);
         out.leucht =
             l1 !== l2 &&
             k(l1) === k(l2) &&
             l1.userData.stoffWerte.leucht === 2 &&
             l2.userData.stoffWerte.leucht === 3.5;
-        out.wind =
-            w1 !== w2 &&
-            k(w1) === k(w2) &&
-            (!w1.positionNode || (w1.userData.windArt.x === 9.5 && w2.userData.windArt.x === 14.25));
-        out.trennt = k(a) !== k(l1) && k(a) !== k(w1);
+        // JEDE SIGNATUR DER WELT EIN PROGRAMM (w22-ankunft-kalt; bis hier je ein gebautes Paar für Regler und Wind der Art): die
+        // Stoffe, die der Boot baute — die Regler eines Bau-Stoffs (10 Stoffe, 8 Rauheiten), der Wind jeder Art (Rinde, Karten-Laub,
+        // Wurf: je 17–18) —, tragen je Signatur EINEN Schlüssel, sonst stehen die Plätze, an denen zwei Stoffe einer Signatur zwei
+        // Knoten tragen, beim Namen (main cbe910ed: 17 von 76 getrennt, das Karten-Laub am Empfangs-Ort der Krone, die Facette an
+        // Normale und Kavität — je Stoff ein Knoten-Bau desselben WGSL); verschiedene Signaturen tragen verschiedene Schlüssel
+        const G = new Map();
+        out.welt = [];
+        for (const m of Object.values(r._foundryMats)) {
+            const x = G.get(m.userData.foundrySignatur) || (G.set(m.userData.foundrySignatur, m), m);
+            if (k(x) !== k(m)) out.welt.push(Object.keys(m).filter((p) => p.endsWith("Node") && m[p] !== x[p]) + " " + m.userData.foundrySignatur); // prettier-ignore
+        }
+        out.paare = Object.keys(r._foundryMats).length - G.size; // so viele Stoffe teilten eine Signatur (ohne sie misst sie nichts)
+        out.trennt = new Set([...G.values()].map(k)).size === G.size && G.size >= 5;
         const pc = globalThis.__portaCore;
         const tor = (n) => {
             const p = pc.gateParams(pc.PRESETS[n]);
@@ -80,17 +78,10 @@ async function checkBandStoffSignatur({ page, check }) {
         out.kontrolle = k(bau()) !== k(bau());
         return out;
     });
-    check(
-        "1310-18 Schlüssel: Foundry-Stoffe gleicher Signatur, verschiedener Regler tragen EINEN Programm-Schlüssel",
-        res.regler === true
-    );
+    check(`1310-18 Schlüssel: je Signatur der Welt EIN Programm (${res.paare} geteilt) — getrennt: ${res.welt.slice(0, 3).join(" | ") || "keiner"}`, !res.welt.length && res.paare > 0); // prettier-ignore
     check(
         "1310-18 Schlüssel: das Leucht-Maß ist ein Stoff-Wert (zwei Maße, EIN Programm-Schlüssel)",
         res.leucht === true
-    );
-    check(
-        "1310-18 Schlüssel: der Wind der Art ist ein Stoff-Wert (zwei Arten, EIN Programm-Schlüssel)",
-        res.wind === true
     );
     check("1310-18 Schlüssel: verschiedene Signaturen tragen verschiedene Programm-Schlüssel", res.trennt === true);
     check(
@@ -174,7 +165,7 @@ async function checkBandV18493CoSchoepferStudio({ page, check }) {
             try {
                 nw = r.dslEvalPos(["near_water", 160], nwCtx);
             } catch (e) {
-                nwFehler = e && e.dslKeinOrt ? r._t(...e.dslKeinOrt.grund) : String(e);
+                nwFehler = e?.dslKeinOrt ? r._t(...e.dslKeinOrt.grund) : String(e);
             }
             const amWasser =
                 !!nw &&
@@ -299,7 +290,7 @@ async function checkBandFoundrySpeicherFlach({ page, check }) {
                     r._foundryFlattenFor({ seed: s, position: { x: 0, y: 0, z: 0 } }, sp, 0);
                 }
             }
-            for (let it = 0; it < 400; it++) { st._frameOverBudget = false; try { r._gameLoopTick && r._gameLoopTick(performance.now()); } catch {} if (f.pending.size === 0 && !(f.warte && f.warte.length) && it > 30) break; await sleep(6); }
+            for (let it = 0; it < 400; it++) { st._frameOverBudget = false; try { r._gameLoopTick && r._gameLoopTick(performance.now()); } catch {} if (f.pending.size === 0 && !(f.warte?.length) && it > 30) break; await sleep(6); }
             cycles.push(snap());
         }
         AnazhRealm.FOUNDRY_CACHE_CAP = CAP0;
@@ -329,7 +320,7 @@ async function checkBandKristallKleid({ page, check }) {
     const out = await safeEvaluate(page, async () => {
         // die Ausstattung löst über das LIVE-Buch auf (studioGestalt): warten, bis das Gesetzbuch der Architektur da ist
         const f = r._ensureAssetFoundry();
-        await __weltDa(() => !!(f && f.ready && f.recipes && f.recipes.feuerstelle));
+        await __weltDa(() => !!(f?.ready && f.recipes && f.recipes.feuerstelle));
         const bp = st.blueprints || {};
         const res = {};
         for (const t of ["kristall_var0", "kristall_var7", "fels_var0", "fels_var5", "fels_var7", "glut_var0", "glutbrunnen", "marktstand_dorf", "brunnen_dorf", "laterne_dorf", "kristall_geode", "felsturm", "stein_block"])
@@ -364,12 +355,12 @@ async function checkBandKeinZweiterBaumbaecker({ page, check }) {
         const o = { foundryEnabled: r._foundryEnabled() };
         const f = r._ensureAssetFoundry();
         await __weltDa(() => !f || f.ready);
-        o.foundryReady = !!(f && f.ready);
+        o.foundryReady = !!(f?.ready);
         // Kräftig ticken → der Scatter streamt Regionen um den Spieler; Studio-Assets kommen an.
         await __streuTakte(350, 10);
         // Instanz-Gruppen enumerieren: Schlüssel = Bauplan-Name#leaf[@region].
         const groups = [];
-        const eat = (map) => { if (!map) return; for (const [k, g] of map) { let c = 0; if (g && g.mesh && Number.isFinite(g.mesh.count)) c = g.mesh.count; else if (g && Number.isFinite(g.count)) c = g.count; groups.push({ key: String(k), count: c }); } };
+        const eat = (map) => { if (!map) return; for (const [k, g] of map) { let c = 0; if (g?.mesh && Number.isFinite(g.mesh.count)) c = g.mesh.count; else if (g && Number.isFinite(g.count)) c = g.count; groups.push({ key: String(k), count: c }); } };
         eat(st.archInstanceGroups);
         // Klassifizieren: die FOUNDRY-Herkunft lebt im LEAF-Key (nach `#`): `f:`/`fimp:` = Foundry-Geometrie/
         // -Impostor (auch für die PLATZIERTE Architektur, deren Gruppen-NAME die Art `baum_tanne` trägt, aber
@@ -594,7 +585,7 @@ async function checkBandLeistungsVertrag({ page, check }) {
             let bpName = null;
             for (const n in st.blueprints) {
                 const fl = r._archFlattenBlueprint(n);
-                if (fl && fl.instanceable && fl.leaves && fl.leaves.length) {
+                if (fl?.instanceable && fl.leaves && fl.leaves.length) {
                     bpName = n;
                     break;
                 }
@@ -661,8 +652,7 @@ async function checkBandLeistungsVertrag({ page, check }) {
             const trace = r._flightRecorderBuildTrace();
             const ss = trace && trace.steadyState;
             o.v4Linsen = !!(
-                ss &&
-                ss.bundleDeckung &&
+                ss?.bundleDeckung &&
                 Number.isFinite(ss.bundleDeckung.deckungPct) &&
                 ss.ingestTakt &&
                 Number.isFinite(ss.ingestTakt.frei) &&

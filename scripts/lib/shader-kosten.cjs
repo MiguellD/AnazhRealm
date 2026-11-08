@@ -467,7 +467,7 @@ function stoffGraph(stoff, rauschQuelle, tsl, zweige) {
             const lay = n.shaderNode && n.shaderNode.layout;
             if (lay) name = lay.name;
             else if (bib.has(n.id)) aus.bibliothek++;
-            else if (zweige && zweige.indexOf(n.shaderNode) >= 0) aus.zweig++;
+            else if (zweige && zweige.includes(n.shaderNode)) aus.zweig++;
             else aus.verborgen++;
         } else if (Array.isArray(n.functionNodes) && n.functionNodes.length) {
             const f = n.functionNodes[0];
@@ -779,7 +779,7 @@ function shaderKostenSeite(o) {
             }
             return ro;
         };
-        const q = rend.backend && rend.backend.device ? rend.backend.device.queue : null;
+        const q = rend.backend?.device ? rend.backend.device.queue : null;
         try {
             __bundlesNeu();
             for (let i = 0; i < Math.max(1, opt.frames || 1); i++) {

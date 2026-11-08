@@ -494,7 +494,7 @@ function standUrteil(b) {
         }
     };
     if (b.ruheOnly) {
-        if (b.phasen && b.phasen.A) treue(b.phasen.A[0], "nach der Ruhe");
+        if (b.phasen?.A) treue(b.phasen.A[0], "nach der Ruhe");
         if (b.simRuhe) v.push(...simRuheZeilen(b.simRuhe, "(echter Loop)"));
         return v;
     }
@@ -706,7 +706,7 @@ function standUrteil(b) {
         if (!SH || !SH.gesetzt || !(SH.bloecke > 0) || !(SH.ecken >= 1000))
             v.push(
                 `LEER: die Ort-Phase brachte kein Haus in den Bau-Satz (` +
-                    (SH && SH.gesetzt
+                    (SH?.gesetzt
                         ? `${SH.kultur}, ${SH.gruppen || 0} Gruppen, ${SH.ecken || 0} Ecken nach ${SH.takte} Takten`
                         : "keins gesetzt") +
                     `) — der Satz-Block ist ungeprüft`

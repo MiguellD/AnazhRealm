@@ -306,7 +306,7 @@ async function probe(cfg) {
     // DIE BIAS-STEUERUNG: „spiel" = das Gesetz des Stamms (`_schattenBias` je Kaskade; ohne Gesetz der feste Meter-Wert und der
     // Tiefen-Nudge `biasM`), „versuch" = n/d in Texeln der Kaskade. Sie hängt hinter jeder neuen Box (`_kaskadeFit`) und gilt
     // sofort auf der aktuellen.
-    const lichter = csm && csm.lights ? csm.lights : [];
+    const lichter = csm?.lights ? csm.lights : [];
     let modus = { art: "spiel" };
     const texelVon = (sh, f) => Math.max(f.W / sh.mapSize.width, f.H / sh.mapSize.height);
     const biasFuer = (i, f) => {
@@ -371,7 +371,7 @@ async function probe(cfg) {
     // DIE SCHATTEN-DREIECKE eines Körpers: jedes Mesh im Teilbaum (und jede Instanz eines Slots), das im Schatten-Pass zeichnet
     // (castShadow, sichtbar, eine Ebene der Kaskaden-Kamera), in Welt-Koordinaten
     const ebenen =
-        csm && csm.lights && csm.lights[0]
+        csm?.lights && csm.lights[0]
             ? csm.lights[0].shadow.camera.layers
             : st.directionalLight.shadow.camera.layers;
     const sichtbar = (o) => {

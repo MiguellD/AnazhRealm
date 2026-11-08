@@ -45,7 +45,7 @@ hauptLauf(async () => {
     {
         const proc = browser.process();
         let gpuZeilen = 0;
-        if (proc && proc.stderr)
+        if (proc?.stderr)
             proc.stderr.on("data", (d) => {
                 for (const z of String(d).split("\n"))
                     if (/gpu process|watchdog|crash|lost|dawn|swiftshader|vulkan/i.test(z) && gpuZeilen < 15) {
@@ -103,7 +103,7 @@ hauptLauf(async () => {
             const rend = st.renderer;
             // Geräteverlust laut ins Log (Grund + Meldung), nie still.
             const dev = rend.backend && rend.backend.device;
-            if (dev && dev.lost)
+            if (dev?.lost)
                 dev.lost.then((i) => console.log("[N] WebGPU-Geraet verloren: " + i.reason + " · " + i.message));
             __bildAus();
             await __weltDa(() => !(r._foundry && !(r._foundry.ready && r._foundry.recipes)));
@@ -272,7 +272,7 @@ hauptLauf(async () => {
                     rampeZ = r._analogZensus();
                 }
                 if (h.length === 0 && rampeNull === null) rampeNull = t;
-                if (h.length > 0) rampeNull = null;
+                if (h.length) rampeNull = null;
             }
             return {
                 spitze,

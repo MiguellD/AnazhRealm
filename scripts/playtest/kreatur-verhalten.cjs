@@ -2877,7 +2877,7 @@ async function checkBandKreaturKosten({ page, check }) {
     check("Kreatur-Kosten (G) die Probe der ruhenden Leiber lief", !G.fehler, G.fehler || "");
     gruppe("(G) Leiber ruhen fern, der Leser liest die jetzige Lage, sie erwachen nah, im Stoß, auf dem Weg, gefallen, im Feld, im Bild, für die KI", ["gRuht", "gLeser", "gErwacht", "gNahGestalt", "gNah", "gZustand", "gWeg", "gGefallen", "gFeldRuht", "gBildWeckt", "gKi"]);
     gruppe("SELBSTTESTS S1–S11 feuern", ["s1LensFires", "s2LensFires", "s3LensFires", "s4LensFires", "s6LensFires", "s8LensFires", "s9LensFires", "s10LensFires", "s11LensFires"]);
-    if (w[0] && w[0].s5) gruppe("SELBSTTEST S5: der gestubbte Zwilling lässt die nahe Stufe wieder werfen", ["s5LensFires"]);
+    if (w[0]?.s5) gruppe("SELBSTTEST S5: der gestubbte Zwilling lässt die nahe Stufe wieder werfen", ["s5LensFires"]);
     if (out.s7) gruppe("SELBSTTEST S7: der zur Mitte gezogene Zwilling verfehlt die Deckung", ["s7LensFires"]);
 }
 

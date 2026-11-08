@@ -149,7 +149,7 @@ hauptLauf(async () => {
         res.c.partGroupsAlive = 0;
         if (st.archInstanceGroups) {
             for (const [key, g] of st.archInstanceGroups) {
-                if (String(key).indexOf("welt_terrain#") === 0 && String(key).indexOf("#f:") < 0) {
+                if (String(key).indexOf("welt_terrain#") === 0 && !String(key).includes("#f:")) {
                     if ((g.liveCount || 0) > 0 || (g.mesh && g.mesh.count > 0)) res.c.partGroupsAlive++;
                 }
             }

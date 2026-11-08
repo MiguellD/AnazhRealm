@@ -6,7 +6,10 @@
 // Weltpunkte, x ±12, z 136–160, auf den Schirm projiziert): die Fleckigkeit = der Anteil der Proben mehr als 25 % neben dem
 // Median der Rampe. ROT beim Namen, wenn der Schatten sie um mehr als TERMINATOR_FLECKEN_MAX hebt, wenn eine Sonne fehlt oder
 // die Rampe zu wenige Proben trägt (blind).
-// SELBSTTEST (--selftest, ohne Browser): das Urteil fällt bei Akne (die Zahl von main), fehlender Sonne und blinder Probe rot.
+// Dazu (H) DER HORIZONT (ferne.K4, unten): die Horizont-Karte trägt einen bekannten Grat, der Fern-Ring prüft an ihrem Boden, die
+// Luft hinter dem Grat verliert die Sonne, das leere Gitter wirft nichts.
+// SELBSTTEST (--selftest, ohne Browser): das Urteil fällt bei Akne (die Zahl von main), fehlender Sonne und blinder Probe rot,
+// der Horizont bei leerer Karte, einem Ring an seiner Masche und einer Luft ohne Schatten.
 //   node scripts/diag-schatten-terminator.cjs [--selftest] [--port 4609]
 "use strict";
 
@@ -25,7 +28,9 @@ function terminatorUrteil(zeilen) {
         befunde.push(`(T) TERMINATOR: ${n} Sonnen gemessen, verlangt ${TERMINATOR_SONNEN.length}`);
     for (const z of zeilen || []) {
         if (!(z.proben >= PROBEN_MIN)) {
-            befunde.push(`(T) TERMINATOR Sonne ${z.e}°/${z.az}°: ${z.proben || 0} Proben auf der Rampe — die Linse ist blind`);
+            befunde.push(
+                `(T) TERMINATOR Sonne ${z.e}°/${z.az}°: ${z.proben || 0} Proben auf der Rampe — die Linse ist blind`
+            );
             continue;
         }
         const d = z.fleckenAn - z.fleckenAus;
@@ -92,18 +97,63 @@ const nrm = new T.Vector3(-hx, 2 * e, -hz).normalize();
 return { e: V.e, az: V.az, NdotL: +nrm.dot(L0).toFixed(3), proben: va.length, medianAn: +med(va).toFixed(1), medianAus: +med(vb).toFixed(1), fleckenAn: +flecken(va).toFixed(4), fleckenAus: +flecken(vb).toFixed(4) };
 `;
 
+// (H) DER HORIZONT (ferne.K4): das Gitter der Karte (`_horizontKarte`) eben auf 50 m, in der Spalte n/2 eine Wand 200 m hoch, die
+// Sonne 5° aus +x; der Pass malt, die Linse liest die Mittel-Zeile der Karte: `grat` = die Texel, deren Schatten-Höhe r über ihrem
+// Boden b steht (der Kanal, an dem der Fern-Ring prüft, `_horizontBoden`), so viele, wie der Marsch hinter der Wand trägt (15 an
+// der Karte 220²); `luft` = die Farbe der Luft (`luft.farbe`, der Luftschatten) auf einem Strahl 55 m hoch 1 km vor dem Grat gegen
+// denselben Strahl außerhalb der Karte; `ring` = die Stoffe des Rings, die den Boden der Karte lesen (`receivedShadowPositionNode`);
+// `leer` = dasselbe über dem leeren Gitter (`leerM`, wie vor der ersten Antwort des Fadens) — wirft es, ist die Linse blind.
+const HORIZONT = `
+const H = r.constructor.HORIZONT_KARTE, n = H.gitter, K = r._horizontKarte(), U = K.U, D = K.hoehen.image.data, f = T.DataUtils, S = T.TSL, q = K.rt.width;
+const lies = async (rt, w, y) => Array.from(await r.state.renderer.readRenderTargetPixelsAsync(rt, 0, y, w, 1), f.fromHalfFloat);
+const grat = async (h, w) => {
+  D.fill(f.toHalfFloat(h));
+  for (let j = n / 2; j < n * n; j += n) D[j] = f.toHalfFloat(h + w);
+  K.hoehen.needsUpdate = true; U.ursprung.value.set(0, 0); U.licht.value.set(1, 0.0875, 0); U.bezug.value = 0; U.aktiv.value = 1;
+  r._atmoZeichne(K.pass, K.rt);
+  const p = await lies(K.rt, q, q >> 1);
+  return p.filter((v, k) => k % 4 < 1 && v - p[k + 2] > H.bandM).length;
+};
+const g = await grat(50, 200), a = S.vec3(11e3, 55, S.uv().x.mul(-2e4).add(5e3)), rt = new T.RenderTarget(2, 1, { type: T.HalfFloatType });
+r._atmoZeichne(r.constructor._schirmDreieck(() => S.vec4(r._luftEnsure().farbe(a, a.add(S.vec3(500, 0, 0))), 1), "linse-h"), rt);
+const l = await lies(rt, 2, 0);
+return { grat: g, leer: await grat(-H.leerM, 0), ring: Object.values(r.state.fernRing.stoffe).filter((s) => s.receivedShadowPositionNode).length, luft: l[1] / l[5] };
+`;
+const horizontUrteil = (z) =>
+    [
+        [z.grat === 15, `GRAT: ${z.grat} Texel hinter dem Grat im Schatten, das Gesetz 15`],
+        [z.leer === 0, `BLIND: das leere Gitter wirft ${z.leer} Texel`],
+        [z.ring === 2, `RING: ${z.ring} von 2 Ring-Stoffen lesen den Boden der Karte, die übrigen ihre Masche`],
+        [z.luft < 0.99, `LUFT: die Luft im Schatten des Grats trägt ${z.luft} der Luft im Licht`],
+    ]
+        .filter(([ok]) => !ok)
+        .map(([, t]) => "(H) " + t);
+
 function selbsttest() {
     const f = [];
-    const z = (fa, fb, proben) => ({ e: 22, az: 45, NdotL: -0.002, proben: proben == null ? 1600 : proben, fleckenAn: fa, fleckenAus: fb });
+    const z = (fa, fb, proben) => ({
+        e: 22,
+        az: 45,
+        NdotL: -0.002,
+        proben: proben == null ? 1600 : proben,
+        fleckenAn: fa,
+        fleckenAus: fb,
+    });
     const ruhig = [z(0, 0), Object.assign(z(0, 0), { e: 20, NdotL: -0.034 })];
     const pruefe = (name, b, muss) => {
         const ok = muss ? b.some((x) => muss.test(x)) : b.length === 0;
         if (!ok) f.push(`${name}: ${b.join(" · ") || "(grün)"}`);
     };
     pruefe("ruhig", terminatorUrteil(ruhig), null);
-    pruefe("main (11,6 % fleckig)", terminatorUrteil([z(0.1156, 0.0019), ruhig[1]]), /TERMINATOR-AKNE bei N·L -0\.002 .*11\.6 %.*TÄTER/);
+    pruefe(
+        "main (11,6 % fleckig)",
+        terminatorUrteil([z(0.1156, 0.0019), ruhig[1]]),
+        /TERMINATOR-AKNE bei N·L -0\.002 .*11\.6 %.*TÄTER/
+    );
     pruefe("keine Sonne", terminatorUrteil([]), /0 Sonnen gemessen/);
     pruefe("blind", terminatorUrteil([z(0, 0, 120), ruhig[1]]), /120 Proben .* blind/);
+    for (const [k, v, muss] of [[], ["leer", 3, /BLIND/], ["ring", 0, /RING: 0/], ["luft", 1, /LUFT/]])
+        pruefe("Horizont " + k, horizontUrteil({ grat: 15, leer: 0, ring: 2, luft: 0.8, [k]: v }), muss);
     return f;
 }
 
@@ -120,7 +170,10 @@ if (require.main === module) {
         try {
             await tor.bereit;
             console.log(`  Start: ${((Date.now() - t0) / 1000).toFixed(0)} s`);
-            for (const a of [["umstellen", "--ort", "buehne", "--pose", "ost"], ["umstellen", "0", "120"]]) {
+            for (const a of [
+                ["umstellen", "--ort", "buehne", "--pose", "ost"],
+                ["umstellen", "0", "120"],
+            ]) {
                 const tu = Date.now();
                 const u = rufe(a);
                 console.log(`  ${a.join(" ")}: ${((Date.now() - tu) / 1000).toFixed(0)} s`);
@@ -141,9 +194,16 @@ if (require.main === module) {
                         `${j.ergebnis.medianAn} / ${j.ergebnis.medianAus}`
                 );
             }
-            const b = terminatorUrteil(zeilen);
+            const t = rufe(["eval", HORIZONT]).stdout || "";
+            const hz = JSON.parse(t.slice(t.indexOf("{"))).ergebnis || {};
+            console.log("  (H) " + JSON.stringify(hz));
+            const b = [...terminatorUrteil(zeilen), ...horizontUrteil(hz)];
             for (const x of b) console.log("  ❌ " + x);
-            console.log(b.length ? "❌ ROT — die Hang-Akne am Terminator" : "✅ GRÜN — der Terminator der Rampe ohne Akne");
+            console.log(
+                b.length
+                    ? "❌ ROT — Terminator oder Horizont"
+                    : "✅ GRÜN — der Terminator ohne Akne, die Karte trägt den Grat"
+            );
             code = b.length ? 1 : 0;
         } catch (e) {
             console.log("❌ diag-schatten-terminator: " + e.message + "\n" + tor.log.split("\n").slice(-15).join("\n"));
