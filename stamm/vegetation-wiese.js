@@ -841,7 +841,8 @@ class AnazhRealm_vegetation_wiese {
     // affin (die vierte Zeile 0 0 0 1): jeder CPU-Leser der Instanz (die Nah-Deckung der Linsen) rechnet die Karte, wie r184 sie
     // zeichnet — bis 9b6f7bb3 trug sie Ordnung und Saat in der vierten Zeile, three teilte durch w, und die Sonde des Stand-Takts
     // traf verzerrte Karten statt des Geländes. Ihr Farbton ist der der Halme an ihrem Ort: das EINE Gesetz der
-    // Wiesen-Farbe (`terrain:wiesenTint` über dem Licht der Kronen und der Feuchte, wie `_nahWieseKachelBueschel`). Nach der
+    // Wiesen-Farbe (`terrain:wiesenTint` über dem Licht der Kronen und der Feuchte, wie `_nahWieseKachelBueschel`; je Fach von
+    // 2 m einmal: 36 statt 144 Rufe je Kachel). Nach der
     // Ordnung sortiert. Bis dahin standen elf gleiche Spitzen gleicher Höhe und Farbe je Karte (der Tint des ersten Büschels
     // im Fach): in 20–40 m ein Zaun aus hell-gelben Zähnen.
     _wieseSchaleDaten(fx, fz) {
@@ -866,6 +867,7 @@ class AnazhRealm_vegetation_wiese {
                 p.push([AnazhRealm._ortZiehung(W, x, z, 0, F.gitter), x, y, z]);
             }
         p.sort((a, b) => a[0] - b[0]);
+        const fach = new Map(); // der Farbton je Fach von 2 m (Licht und Feuchte ändern sich langsamer als die Karten stehen)
         const K = { n: p.length, o: new Float64Array(p.length), x: new Float64Array(p.length), z: new Float64Array(p.length) }; // prettier-ignore
         Object.assign(K, { matrizen: new Float32Array(p.length * 16), farben: new Float32Array(p.length * 3), y0: Infinity, y1: -Infinity }); // prettier-ignore
         p.forEach(([o, x, y, z], m) => {
@@ -873,7 +875,10 @@ class AnazhRealm_vegetation_wiese {
             const [c, s, h] = [Math.cos(2 * Math.PI * w), Math.sin(2 * Math.PI * w), S.hoehe * (0.8 + 0.4 * ((w * 977) % 1))]; // prettier-ignore
             K.matrizen.set([c * S.breite, 0, -s * S.breite, 0, 0, h, 0, 0, s, 0, c, 0, x, y - 0.05, z, 1], m * 16);
             [K.o[m], K.x[m], K.z[m], K.y0, K.y1] = [o, x, z, Math.min(K.y0, y), Math.max(K.y1, y)];
-            const f = WT(x, z, licht(x, z), this._feuchteAt ? this._feuchteAt(x, z, y) : 0, [1, 1, 1], 0);
+            const fk = Math.floor(x / 2) + "," + Math.floor(z / 2);
+            let f = fach.get(fk);
+            if (!f)
+                fach.set(fk, (f = WT(x, z, licht(x, z), this._feuchteAt ? this._feuchteAt(x, z, y) : 0, [1, 1, 1], 0)));
             const hell = 0.88 + 0.24 * s4;
             K.farben.set([f[0] * hell, f[1] * hell, f[2] * hell], m * 3);
         });
