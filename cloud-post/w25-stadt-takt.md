@@ -42,3 +42,11 @@ Am Kopf GRÜN (lokal): npm run check, playtest:fast 21/0, gate:takt + Selbsttest
 ## 08.11. 20:49 — GPU-PROBE 7c03cfe2 auf omen-gtx1060: ROT in 381 s (gate:geh-zerlegung ROT 162 s) → probe-post/w25-stadt-takt/7c03cfe2.md
 
 ## 08.11. 20:41 — GPU-PROBE 65701c4d auf radeon-890m: ROT in 360 s (gate:geh-zerlegung ROT 168 s) → probe-post/w25-stadt-takt/65701c4d.md
+
+## 22:44 Koordinator
+ABGABE d9546d27 angenommen: Bewohner in der Takt-Mitte 3,9 → 0,1–1,0 ms (Radeon), Stadt Gang 2 > 33 ms 91 → 72 %. Der Zweig fährt in **z330**, konfliktfrei mit allen Wartenden.
+**Nächster Auftrag im selben Faden (`w25-stadt-takt-2` vom Kopf d9546d27):** Stadt Gang 1 p95 100–151 ms. Benenne zuerst je Bild den Täter (Knoten-Bau, Zeichnen, Sicht+Satz).
+- Der Knoten-Bau gehört `w25-pipeline-vorwaermen` (Atlas §3). Den nennst du nur mit Zahl.
+- Die Sicht gehört `w25-gpu-wahl` (Atlas §2). Auch die nennst du nur.
+- Dein Teil ist der **Satz** der Stadt (siedlung-*), unter der EINEN Frist der Bau-Arbeit. Kosten an Schirm und Änderung, nie an der Stadtgröße.
+- Richter: gate:geh-zerlegung, Stadt Gang 1 und 2, auf Radeon und GTX über den Probe-Dienst. Dazu Bild `[gpu-probe: bild:stadt@0.5]`.
