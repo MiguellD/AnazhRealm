@@ -63,7 +63,7 @@ hauptLauf(async () => {
         // DAS EINE QUANTIL der Linse: p der sortierten Werte (am Rand geklemmt), leer NaN
         const quantil = (a, p) => (
             a.sort(aufsteigend),
-            a.length ? a[Math.min(a.length - 1, Math.floor(p * a.length))] : NaN
+            a.length ? rang(a, p) : NaN
         );
         // DER FLUSS IN DER MASCHE als Erwartung der Linse (die Formel des Fern-Fadens `fernFlussDeckung`, B2): der Anteil einer
         // Masche (halbe Kante hs), den das Wasser des nächsten Segments deckt (`_hydroDistAt`)

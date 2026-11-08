@@ -9,7 +9,7 @@
 // (Datei · Mesh · Attribut) — eine benannte Änderung, keine Meinung.
 //
 //   npm run gate:asset-contract
-const { runWithWorker, fingerprintMeshes, DATEN_KANAELE, ersteAbweichung } = require("./lib/asset-worker-harness.cjs");
+const { runWithWorker, fingerprintMeshes, DATEN_KANAELE, ersteAbweichung, KLASSE } = require("./lib/asset-worker-harness.cjs");
 const { probeWand } = require("./lib/plattform-probe.cjs");
 const { hauptLauf, wandEnde, jsonLesen, jsonSchreiben, jsonKlon, ausDatei, path, fs } = require("./lib/welt-boot.cjs");
 const {
@@ -355,6 +355,13 @@ function wurfUrteil(mess, budget) {
     }
     return v;
 }
+// (J) DAS JAHR DER GESTALT (w21-laub-jahr-fern, rein — der Selbsttest füttert es): jede Baum-Gestalt (L0 und L1, die Quelle der
+// Karte) trägt die Ecken ihres Phänotyps (`artPhaenotyp`): die Nadel keine Laub- oder Blüten-Ecke — sie steht im Jahr
+// (SAISON_GESETZ: „Nadel 2 steht") —, eine Laub-Krone welche — sie fällt im Winter auf ihre Mitten. Ihre Leser: die Schale
+// (`_foundrySchale`), `_foundryBuildMesh` (`ecken.jahr`), `_jahrLage` und der Bake der Karte (`_karteJahr`). Bis w21 trug der
+// Wedel der Konifere Laub (Typ 1): Fichte, Tanne und Mammut standen im Winter nah kahl, ihre Karte voll.
+const jahrUrteil = (mess) =>
+    mess.filter((m) => (m.nadel ? m.laub : m.blatt && !m.laub)).map((m) => `Jahr: ${m.fall} ${m.nadel ? "Nadel fällt" : "Laub steht"} im Winter`);
 // (D) DAS BILD JE BLICK-HEBUNG gegen die Bild-Tafel (TAFEL_STAND), zweistufig: das Mittel einer ART über ihre Gestalten je
 // Stufe und Hebung hält BILD_BAND — die systematische Abweichung (die Koniferen-L1 verlor
 // 22–34 % ihrer Seitenansicht in jeder Gestalt); jede einzelne GESTALT hält GESTALT_BAND — eine Gestalt wächst anders als
@@ -431,6 +438,7 @@ hauptLauf(async () => {
     const quotePaare = {};
     const bildMess = {};
     const wurfMess = [];
+    const jahrMess = [];
     let kronenProbe = null;
     await runWithWorker(PORT, async ({ build, kostenListe, bauHashListe, getData, atlas, atlasAlpha, probeLauf }) => {
         // Die Atlas-Alpha zuerst: die Kronen-Kosten (L/Q/D0) lesen sie an jedem gebauten Baum.
@@ -472,12 +480,19 @@ hauptLauf(async () => {
         const fernMess = [];
         // SCHWEBE + BODEN je gebauter Baum-L0 (Goldens und Gestalten der Welt).
         const kroneWand = (c, a, fall) => {
-            if (c.lod !== 0 || artVon(c.presetId) !== "tree") return;
+            if (c.lod > 1 || artVon(c.presetId) !== "tree") return;
+            // (J) die Ecken des Jahrs je Gestalt, L0 und L1 (die Typen liest der Kern der Klasse: SAISON_GESETZ `typ`)
+            const T = KLASSE.ctx.SAISON_GESETZ.typ;
+            const k = kroneAus(a.meshes);
+            let laub = 0;
+            for (const m of a.meshes) for (const t of m.attrs?.aType ? dek(m.attrs.aType.b64, Float32Array) : []) laub += t === T.laub || t === T.bluete;
+            jahrMess.push({ fall, nadel: PC.artPhaenotyp(buch[c.presetId].s, buch[c.presetId]).conifer, laub, blatt: k.length });
+            if (c.lod) return;
             const sw = schwebe(a.meshes);
             schwebeMess.push({ fall, karten: sw.karten, schwebend: sw.schwebend });
             if (sw.schwebend > 0)
                 fails.push(`Schwebe: ${fall}: ${sw.schwebend} von ${sw.karten} Karten ohne Träger (z. B. bei ${sw.beispiel})`);
-            const yb = unterBoden(kroneAus(a.meshes));
+            const yb = unterBoden(k);
             if (yb < 0) fails.push(`Boden: ${fall}: Laub reicht bis y = ${yb.toFixed(3)} unter den Boden der Vorlage`);
         };
         // DER SCHATTEN-TEIL je Baum-L1 (Goldens und Gestalten der Welt): Teile, Dreiecke, Lagen seiner Karten.
@@ -573,7 +588,7 @@ hauptLauf(async () => {
                 // gegen den lokalen Bau verglichen werden kann — ein sha256 allein nennt keinen Wert.
                 const mm = /Mesh(\d+)\.(\w+): sha256-Divergenz/.exec(de);
                 const roh = mm && a.meshes[+mm[1]] && a.meshes[+mm[1]].attrs[mm[2]];
-                if (roh && roh.b64 && roh.b64.length <= 65536)
+                if (roh?.b64 && roh.b64.length <= 65536)
                     console.log(`DIVERGENZ-BYTES ${f} Mesh${mm[1]}.${mm[2]} ${roh.b64}`);
             } else ok++;
             miss(c, a, f.replace(/\.json$/, ""));
@@ -739,11 +754,17 @@ hauptLauf(async () => {
             if (!fernSelbst) fails.push("Selbsttest der Fern-Wand feuert nicht");
             console.log(
                 `Fern-Wand (N5): ${fernMess.length} NUR-WURF-Stufen gebaut (${nwArten.join(" · ") || "keine Art"}; ${nwGebaut.size} Rezepte), ` +
-                    `höchstens ${Math.max(0, ...fernMess.map((m) => (m.fern && m.fern.teile ? m.fern.teile.length : 0)))} Teile · ` +
+                    `höchstens ${Math.max(0, ...fernMess.map((m) => (m.fern?.teile ? m.fern.teile.length : 0)))} Teile · ` +
                     `Selbsttest (ohne __fern · Keil ohne First) ${fernSelbst ? "✅" : "❌"}`
             );
             fails.push(...bildUrteil(bildMess, tafel).map((x) => "Bild: " + x));
         }
+        // (J) DAS JAHR DER GESTALT und sein Selbsttest: die Nadel mit einer Laub-Ecke (der Wedel bis w21) und die Laub-Krone ohne
+        // eine MÜSSEN rot werden
+        fails.push(...jahrUrteil(jahrMess));
+        const jS = jahrUrteil([{ nadel: 1, laub: 1 }, { blatt: 1 }]).length === 2;
+        console.log(`Jahres-Wand (J): ${jahrMess.length} Gestalten · Selbsttest ${jS ? "✅" : "❌"}`);
+        if (!jS) fails.push("Selbsttest der Jahres-Wand feuert nicht");
         // DIE PLATTFORM-PROBE (S1 Wände, scripts/lib/plattform-probe.cjs): jeder Golden-Fall mit Samen 7 im Sommer baut
         // in einem zweiten Worker noch einmal, während dessen Transzendenten ±1 ULP verschoben rechnen. Die Pflanzen
         // sind ungerastert: ihre Zeile in spec/asset-contract/plattform-ratsche.json nennt je Funktion die kippenden

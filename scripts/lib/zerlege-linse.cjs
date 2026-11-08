@@ -159,7 +159,7 @@ function passUhr() {
 // bleibt ganz (rein = p50, anteilOben 0, versatz 0).
 function zweiGipfel(w) {
     const a = w.filter(Number.isFinite).sort((a, b) => a - b);
-    const q = (b, f) => (b.length ? +b[Math.min(b.length - 1, Math.floor(f * b.length))].toFixed(2) : null);
+    const q = (b, f) => (b.length ? +rang(b, f).toFixed(2) : null);
     const n = a.length, m = Math.max(1, Math.ceil(n / 50)), k = Math.floor(n / 50);
     let j = 0;
     for (let s = m; s + k <= n - m; s++) if (!j || a[s + k] - a[s - 1] > a[j + k] - a[j - 1]) j = s;
@@ -266,7 +266,7 @@ function belegungAuswerten(ev, { bildMs = 1000 / 60, schwelle = 1 } = {}) {
     }
     const q = (a, f) => {
         const s = [...a].sort((a, b) => a - b);
-        return s.length ? +s[Math.min(s.length - 1, Math.floor(f * s.length))].toFixed(2) : null;
+        return s.length ? +rang(s, f).toFixed(2) : null;
     };
     const zahl = (a) => ({ p50: q(a, 0.5), p95: q(a, 0.95), mittel: q([a.reduce((a, b) => a + b, 0) / (a.length || 1)], 0) });
     const jeKlasse = Object.fromEntries(KL.slice(1).map((k, i) => [k, zahl(jeBild.map((b) => b.ms[i + 1]))]));

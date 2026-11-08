@@ -1361,7 +1361,7 @@ function pushNeedle(arr, base, dir, len, color, sway, phase, omega) {
 // der Weide.) `zelle` ist die Weiden-Zelle (BLATT_ATLAS_WEIDE, Integration 05.10.: lanzettliche Blaetter an der
 // haengenden Rute), Kern wie die Baum-Zweige.
 // Farbe/Wind aus dem Blatt des Stuecks; aType 1 (Laub: die Saison-Praesenz zieht jede Karte auf ihre Mitte — im Winter
-// traegt die Trauer-L0 wie ihre L1 keine Peitsche).
+// traegt die Trauer-L0 wie ihre L1 keine Peitsche), der Wedel der Konifere aType 2 (Nadel: er steht im Jahr).
 function pushStraehne(arr, pts, lang, halb, blaetter, farben, bodenY, teile, zelle, kern, nurQuer) {
     const n = pts.length;
     if (n < 2) return;
@@ -1478,7 +1478,10 @@ function pushStraehne(arr, pts, lang, halb, blaetter, farben, bodenY, teile, zel
                     uvs.push(i === 0 || i === 3 ? u0(zelle) : u0(zelle) + 0.25 * kern, i < 2 ? v0 : v0 + kern);
                     aw.push(bl.sway, bl.phase, bl.omega);
                     ac.push(mitte[0], mitte[1], mitte[2]);
-                    at.push(1);
+                    // w21-laub-jahr-fern: der Wedel ist NADEL (Typ 2 wie pushNeedle) — er steht im Jahr und toent nicht
+                    // (SAISON_GESETZ: "Nadel 2 steht"); die Straehne der Trauer ist Laub (1). Bis w21 trug der Wedel 1: die
+                    // Konifere stand im Winter kahl (Fichte L0 Bild-Deckung 0,06 des Sommers), im Herbst orange.
+                    at.push(wedel ? 2 : 1);
                 }
                 const g = new THREE.BufferGeometry();
                 g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));

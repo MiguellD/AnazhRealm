@@ -33,6 +33,10 @@ function handTakt() {
 // lädt (wie THREE mit studioKern), in jeder Seite derselbe Text — je Linse ein eigenes `(a, b) => a - b` und `(a, b) => a + b` war ein Zwilling (w4-arena-welt).
 const aufsteigend = (globalThis.aufsteigend = (a, b) => a - b);
 const addiere = (globalThis.addiere = (a, b) => a + b);
+// … und DER EINE RANG (`rang(xs, 0.95)` das p95, `rang(xs)` der Median): das Element am Anteil q einer Reihe, am Rang ⌊q·n⌋, oben
+// geklemmt — Node global, in jeder Seite derselbe Text. Je Linse ein eigenes `s[Math.min(s.length - 1, Math.floor(q * s.length))]`,
+// ungeklemmt oder als Median `s[s.length >> 1]` war ein Zwilling (w21-laub-jahr-fern: 70 Stellen in 33 Dateien; die Rang-Wand)
+const rang = (globalThis.rang = (s, q = 0.5) => s[Math.min(s.length - 1, Math.floor(q * s.length))]);
 // DER EINE SCHLAF (`await sleep(ms)`): in Node der Export, in jeder Seite derselbe Text als `window.sleep` (`WARTEN_SEITE`) —
 // eine Probe schläft in beiden Welten mit demselben Ruf, ein eigenes `new Promise((r) => setTimeout(r, ms))` ist ein Zwilling. In der
 // Seite endet er am Abbruch (`seitenAbbruch`, w18-mensch-deckel): zählte die Epoche `__abbruchEpoche` hoch, während er
@@ -55,7 +59,7 @@ function leihe(o, tausch) {
 // `const r = window.anazhRealm` / `const st = r.state` ist ein Zwilling (872 Bindungen fielen in w3u-nachfolge); wer einen
 // der Namen schreibt (ein fremdes Skript), bekommt eine gewöhnliche Variable; `halt` sind die gehaltenen Aktionen der EINEN
 // Tasten-Tafel (`st.verbTafel.gehalten`: `halt.vor = true` hält das Vorwärts wie die Taste, die die Belegung trägt)
-const weltR = `for (const [n, f] of [["r", () => window.anazhRealm], ["st", () => window.anazhRealm && window.anazhRealm.state], ["pm", () => st && st.playerMesh], ["halt", () => st && st.verbTafel.gehalten]]) Object.defineProperty(window, n, { get: f, set: (v) => Object.defineProperty(window, n, { value: v, writable: true }), configurable: true }); window.__handTakt = ${handTakt}; window.aufsteigend = ${aufsteigend}; window.addiere = ${addiere};`;
+const weltR = `for (const [n, f] of [["r", () => window.anazhRealm], ["st", () => window.anazhRealm && window.anazhRealm.state], ["pm", () => st && st.playerMesh], ["halt", () => st && st.verbTafel.gehalten]]) Object.defineProperty(window, n, { get: f, set: (v) => Object.defineProperty(window, n, { value: v, writable: true }), configurable: true }); window.__handTakt = ${handTakt}; window.aufsteigend = ${aufsteigend}; window.addiere = ${addiere}; window.rang = ${rang};`;
 // DIE EINE JSON-LESUNG (`jsonLesen(pfad)`): je Linse ein eigenes `JSON.parse(fs.readFileSync(pfad, "utf8"))` war ein Zwilling
 // (w4-himmel-uhr: 57 Stellen in 26 Linsen); sie liest über den EINEN Datei-Leser `ausDatei` (`pfad` ab der Wurzel des Baums
 // oder absolut) — bis w4-studios-heim3 trug er ein eigenes JSON-Flag, zwei Lesungen derselben Sache
@@ -2028,6 +2032,15 @@ async function selbsttest() {
         ["r.importWorldBeside(j); r.activeWorldSet(id);", "window.anazhRealm.activeWorldSet(res.worldId);"],
         "await weltTor(page, json);"
     );
+    // DIE RANG-WAND: liest ein Skript das Element am Anteil q einer Reihe von Hand (geklemmt, ungeklemmt, der Median `/ 2` oder
+    // `>> 1`), ist das ein Zwilling von rang; eine andere Definition (⌈q·n⌉ − 1, gerundet über n − 1) ist kein Zwilling
+    const rangWand = wand(
+        "eigene Ränge neben rang",
+        (c) => /\[(?:Math\.min\([\w.$]+\.length - 1, )?Math\.floor\((?:[\w.$]+ \* [\w.$]+\.length|[\w.$]+\.length (?:\* [\w.$]+|\/ 2))\)\)?\]|\[[\w.$]+\.length >> 1\]/.test(c),
+        "",
+        ["s[Math.min(s.length - 1, Math.floor(q * s.length))];", "a.sort(aufsteigend)[Math.floor(a.length / 2)] + b[b.length >> 1];"],
+        "rang(s, 0.95); s[Math.ceil(0.95 * s.length) - 1]; s[Math.floor(rnd() * s.length)];"
+    );
     // EIN KIND der Linse: `rumpf` im hauptLauf eines eigenen Prozesses (`nach` hinter dem Rumpf)
     const kind = (rumpf, nach = "") =>
         require("child_process").spawnSync(process.execPath, ["-e", `const w = require(${JSON.stringify(__filename)}); w.hauptLauf(async () => { ${rumpf} }${nach})`], { encoding: "utf8" });
@@ -2090,6 +2103,7 @@ async function selbsttest() {
         [seitenSchlaf === String(sleep), `die Seite schläft mit ${seitenSchlaf}`],
         [!abbruch && !!abbruchMutante, `Abbruch: ${abbruch || "die Seite antwortet, die wartende Arbeit endet"} · die Mutante ${abbruchMutante || "BLIND"}`],
         tuerWand,
+        rangWand,
         [ruhig.length === 0, `ruhig (0,8 s Block): keine Akte — ${ruhig.length ? ruhig[0].urteil : "keine"}`],
         [
             schleife.length > 0 &&

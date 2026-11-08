@@ -554,7 +554,7 @@ function lauf(k) {
             const jePassFrame = (await uhr.lesen()) || {};
             const quant = (arr, q) => {
                 const a = arr.filter(Number.isFinite).sort(aufsteigend);
-                return a.length ? +a[Math.min(a.length - 1, Math.floor(q * a.length))].toFixed(2) : null;
+                return a.length ? +rang(a, q).toFixed(2) : null;
             };
             const spalte = (f) => proben.map((p) => p[f]).filter(Number.isFinite);
             const dt = spalte("dtRender"), gpu = spalte("gpu");
@@ -670,7 +670,7 @@ function gpuBank(k) {
         for (let i = 0; i < (k.runden || 3); i++) rr.push(await runde(n));
         const med = (key) => {
             const v = rr.map((x) => x[key]).sort(aufsteigend);
-            return +v[Math.floor(v.length / 2)].toFixed(2);
+            return +rang(v).toFixed(2);
         };
         const jeFrame = med("jeFrame"),
             cpu = med("cpuJeFrame");
@@ -1623,7 +1623,7 @@ async function starte() {
                                 .filter((p) => p.bild && p.seite === sd)
                                 .map((p) => p.d)
                                 .sort(aufsteigend);
-                            median[sd] = ds.length ? ds[Math.floor(ds.length / 2)] : null;
+                            median[sd] = ds.length ? rang(ds) : null;
                         }
                         // DER STRAHL DER KAMERA ZUR IRIS (KOPF_SOLL augeFrei: „Strahl", die Lider sind das Rig): je vordere Iris-Probe,
                         // ob der Strahl von der Kamera dieses Schusses sie erreicht, ohne Haut, Lid, Braue oder Haar des Kopfs zu kreuzen —

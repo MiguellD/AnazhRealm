@@ -420,20 +420,27 @@ class AnazhRealm_stoff_karte {
         const ln = L.x * nx + L.z * nz;
         const quer = (x - W.ex) * -nz + (z - W.ez) * nx;
         const [b0, b1] = [Math.floor((quer - W.quer) / binM) - W.bin0, Math.floor((quer + W.quer) / binM) - W.bin0];
+        // die Krone deckt mit ihrer Deckung im Jahr (`liste[o + 5]`, w21-laub-jahr-fern): die volle nimmt die Sonne ganz, die
+        // kahle Laub-Krone lässt durch, was ihre Winter-Karte durchlässt
+        let sicht = 1;
         for (let b = Math.max(0, b0); b <= b1 && b < kopf.length; b++)
             for (let k = kopf[b]; k >= 0; k = folge[k]) {
-                const o = k * 5;
+                const o = k * 6;
                 const t = ((liste[o] - x) * nx + (liste[o + 2] - z) * nz) / ln;
                 if (!(t > 0)) continue;
                 const u = (x + L.x * t - liste[o]) * -nz + (z + L.z * t - liste[o + 2]) * nx;
                 const w = y + L.y * t - liste[o + 1] - liste[o + 4];
-                if ((u * u) / (liste[o + 3] * liste[o + 3]) + (w * w) / (liste[o + 4] * liste[o + 4]) <= 1) return 0;
+                if ((u * u) / (liste[o + 3] * liste[o + 3]) + (w * w) / (liste[o + 4] * liste[o + 4]) > 1) continue;
+                if (liste[o + 5] >= 1) return 0;
+                sicht *= 1 - liste[o + 5];
             }
-        return 1;
+        return sicht;
     }
 
-    // DIE WERFER DES LICHTMESSERS: je Karte, die ihr Fenster behält, Anker, Halbbreite und halbe Höhe — neu, wenn die Gruppe sich
-    // ändert oder das Auge der Stufen einen Meter wandert (das Fenster), und quer zum Licht in Fächer von `binM` geordnet, neu, wenn
+    // DIE WERFER DES LICHTMESSERS: je Karte, die ihr Fenster behält, Anker, Halbbreite, halbe Höhe und die Deckung ihrer Krone im
+    // Jahr (w21-laub-jahr-fern: die Nadel-Art ganz, die Laub-Krone nach phyto-core `kroneImJahr` in der Präsenz der Welt — dieselbe
+    // Deckung wie das Dach der Ferne) — neu, wenn die Gruppe sich
+    // ändert, die Präsenz wandert oder das Auge der Stufen einen Meter wandert (das Fenster), und quer zum Licht in Fächer von `binM` geordnet, neu, wenn
     // das Licht sich um `HORIZONT_KARTE.lichtRad` dreht (das Maß, nach dem die Horizont-Karte neu malt) oder das Auge geht: ein Strahl
     // prüft nur die Karten seines Fachs (der Rand trägt Krone und Drehung). Der Messer läuft in jedem Bild (`tickDayNight`): an der
     // Mess-Wiese (Radeon, 2 213 Werfer, 82 Fächer) kostet eine Messung 0,106 statt 0,055 ms, mit neuem Licht je Bild 0,166 statt
@@ -452,7 +459,8 @@ class AnazhRealm_stoff_karte {
         const maske = !!(lu && lu.uLodMaskOn && lu.uLodMaskOn.value > 0.5 && this._blendeK);
         const auge = maske ? lu.uLodAuge.value : cam.position;
         const n = g.liveCount;
-        const stand = `${n}|${m.instanceMatrix.version}|${maske}|${Math.round(auge.x)}|${Math.round(auge.z)}|${this._blendeK && this._blendeK.d0}`;
+        const pr = this._fernPraesenz();
+        const stand = `${n}|${m.instanceMatrix.version}|${maske}|${Math.round(auge.x)}|${Math.round(auge.z)}|${this._blendeK && this._blendeK.d0}|${pr.toFixed(3)}`;
         let W = this._kartenWurfMerk;
         if (!W || W.stand !== stand) {
             const a = m.instanceMatrix.array;
@@ -467,14 +475,18 @@ class AnazhRealm_stoff_karte {
                       halt: 0,
                   }
                 : null;
-            const liste = W && W.liste.length >= n * 5 ? W.liste : new Float32Array(n * 5);
+            const liste = W && W.liste.length >= n * 6 ? W.liste : new Float32Array(n * 6);
+            const nadel = this._karteNadel(null).array;
+            const PC = globalThis.__phytoCore;
+            const laub = PC.kroneImJahr(PC.WIND_ZAHLEN, pr, 1, 1, 1, 1, 0).deckung;
             let k = 0,
                 hwMax = 0;
             for (let i = 0; i < n; i++) {
                 if (Lm && !this._instanzFenster(g, i, Lm)) continue;
                 const o = i * 16;
                 const s = Math.sqrt(a[o] * a[o] + a[o + 1] * a[o + 1] + a[o + 2] * a[o + 2]);
-                liste.set([a[o + 12], a[o + 13], a[o + 14], ak[i * 4 + 1] * s, ak[i * 4 + 2] * s * 0.5], k * 5);
+                const c = nadel[Math.floor(ak[i * 4] + 0.5)] ? 1 : laub;
+                liste.set([a[o + 12], a[o + 13], a[o + 14], ak[i * 4 + 1] * s, ak[i * 4 + 2] * s * 0.5, c], k * 6);
                 hwMax = Math.max(hwMax, ak[i * 4 + 1] * s);
                 k++;
             }
@@ -504,7 +516,7 @@ class AnazhRealm_stoff_karte {
                     ? W.kopf.fill(-1)
                     : new Int32Array(Math.ceil((2 * weit) / binM) + 5).fill(-1);
             for (let k = 0; k < W.n; k++) {
-                const b = Math.floor(quer(k * 5) / binM) - bin0;
+                const b = Math.floor(quer(k * 6) / binM) - bin0;
                 if (b < 0 || b >= kopf.length) continue;
                 W.folge[k] = kopf[b];
                 kopf[b] = k;
@@ -656,6 +668,8 @@ class AnazhRealm_stoff_karte {
                 continue;
             }
             q.splice(i, 1);
+            // die Welt zog während des Bakes in eine andere Stufe des Jahrs (`_karteJahrGelegt`): die Karte reiht sich wieder ein
+            if (e === true && z._weltNeu && !z.gescheitert) q.push(z.key);
             n++;
             if (performance.now() - t0 > AnazhRealm.KARTE_WELT_MS) break;
         }
@@ -854,15 +868,23 @@ class AnazhRealm_stoff_karte {
     _karteWeltBacken(at, z) {
         const rend = this.state.renderer;
         const bc = at.fmt === "bc";
+        // DAS JAHR DIESES BAKES (`_karteJahr`): die Stufe der Welt, die der erste Ring liest — die Ringe danach backen in ihr
+        // (`at.offen.jahr`), auch wenn die Welt inzwischen weiterzog (der Jahres-Takt bestellt die Karte dann neu). Der Abzug
+        // des Labors backt die Sommer-Stufe: sein Stoff legt sein eigenes Jahr auf die Karte (worlds/terrain).
+        const jahr =
+            (at.offen && at.offen.z === z && at.offen.jahr) ||
+            this._karteJahr(z._abzug ? AnazhRealm.KARTE_JAHR.sommer : this.state.seasonPhase);
         // ein Abzug liest die Bühne: die Platte trägt nur BC-Bytes, die Karte backt
         if (z._abzug) z._platte = null;
         if (bc && z._platte !== null) {
             if (z._platte === undefined) {
                 z._platte = false;
-                const frage = { type: "karte", presetId: z.preset, platte: "fimp|bc|" + z.key };
+                // die Platte trägt die Karte EINER Stufe (ihr Wert nennt sie, `_foundrySchale`): eine andere ist ein Miss
+                const frage = { type: "karte", presetId: z.preset, platte: "fimp|bc|" + z.key, jahr: jahr.stufe };
                 const wort = `FOUNDRY TIMEOUT: karte(${z.key}) nach 45 s Arbeit ohne Reply → sie backt`;
                 this._foundryAuftrag(this._foundry, "krt", frage, z._bedarfD2, 45000, wort).then((m) => {
                     z._platte = (m && m.karte) || null;
+                    z._platteJahr = jahr;
                     z._liefer = m && m.liefer;
                 });
             }
@@ -882,7 +904,7 @@ class AnazhRealm_stoff_karte {
                         { width: q.w, height: q.h, depthOrArrayLayers: 1 }
                     );
                 this._foundryLiefer(this._foundry, "platte", "karte", z._liefer, performance.now() - t0);
-                z._weltNeu = false;
+                this._karteJahrGelegt(z, z._platteJahr || jahr);
                 if (!z.gebacken) this._karteGebacken(z, k.frame);
                 return true;
             }
@@ -978,13 +1000,16 @@ class AnazhRealm_stoff_karte {
             setze(u.value, u);
         };
         still(wu && wu.uWindStrength, (w, u) => (u.value = 0));
-        // die Karte ist Sommer gebacken (volle Krone, wie der Studio-Bäcker): das Jahr der Welt (`uLaubPraesenz`) hält still
+        // DAS JAHR IST EIN EINGANG DES BAKES (w21-laub-jahr-fern): die Bühne zeichnet die Gestalt mit DEMSELBEN Stoff wie die
+        // Welt, und die Uniformen des EINEN Jahrs (`uLaubPraesenz`, `uSeasonMul`) stehen auf der Stufe der Karte (`_karteJahr`):
+        // jedes Blatt zieht sich um ihre Präsenz auf seine Mitte (`_jahrLage`), die Rinde bleibt — im Winter backt die Karte die
+        // kahlen Äste ihrer Gestalt, die Nadel steht —, und das Laub trägt ihre Tönung. Die Stufe ist eine Funktion der Phase:
+        // zwei Bakes derselben Stufe sind byte-gleich (bis w8 backte die Karte die driftende Tönung: 128 581 Albedo-Bytes wichen
+        // um bis zu 5 Stufen ab). Bis w21 backte sie Sommer (Präsenz 1), und ihr Stoff hob im Winter nur die Alpha-Schwelle um
+        // (1 − Präsenz) × 0,5 — was dicht deckte, blieb stehen: die ferne Krone im Winter voll, die nahe kahl.
         const su = this.state.seasonUniforms;
-        still(su && su.uLaubPraesenz, (w) => w.set(1, 1, 1));
-        // … und seine Farbe (`uSeasonMul`, der Laub-Stoff multipliziert sie): die Karte backt Golden-Sommer (×1), ihr Stoff
-        // färbt sie beim Zeichnen (`kartenGewicht`). Bis w8 backte sie die driftende Tönung ein — zwei Bakes derselben Zelle
-        // wichen in 128 581 Albedo-Bytes um bis zu 5 Stufen ab, und das Jahr lag doppelt auf der Karte
-        still(su && su.uSeasonMul, (w) => w.setRGB(1, 1, 1));
+        still(su && su.uLaubPraesenz, (w) => w.set(jahr.praesenz.x, jahr.praesenz.y, jahr.praesenz.z));
+        still(su && su.uSeasonMul, (w) => w.setRGB(jahr.mul.r, jahr.mul.g, jahr.mul.b));
         // … und trocken: die Nässe der Welt (`atmoUniforms.naesse`, wetter.K2) dunkelt die Albedo jedes Foundry-Stoffs — Regen
         // backte sonst in die Karte (Nässe 1 und Winter-Tönung bewegten 320 085 Albedo-Bytes der Fichte, gehalten 0)
         const au = this.state.atmoUniforms;
@@ -1099,7 +1124,7 @@ class AnazhRealm_stoff_karte {
         const summe = at.offen ? at.offen.ms : 0;
         (at.schrittMs || (at.schrittMs = [])).push(+(performance.now() - t0).toFixed(2));
         if (!letzter) {
-            at.offen = { z, B, r: iR + 1, ms: summe + performance.now() - t0 };
+            at.offen = { z, B, r: iR + 1, ms: summe + performance.now() - t0, jahr };
             return 0;
         }
         at.offen = null;
@@ -1107,6 +1132,7 @@ class AnazhRealm_stoff_karte {
             preset: z.preset,
             rest: z._liefer.rest,
             frame: { halfW: fr.halfW, halfH: fr.halfH },
+            jahr: jahr.stufe,
         };
         // der Abzug des Labors liest die Schicht, bevor die nächste Karte die Bühne trägt (`_karteAbzug`)
         if (z._abzug) this._karteAbzugLesen(z, bc ? B.ziel : at.rt, bc ? 0 : z.idx, fr, at);
@@ -1114,7 +1140,7 @@ class AnazhRealm_stoff_karte {
         B.zuletzt = performance.now();
         this._foundryLiefer(this._foundry, "haupt", "karte", z._liefer, summe + B.zuletzt - t0);
         (at.weltMs || (at.weltMs = [])).push(+(summe + B.zuletzt - t0).toFixed(2));
-        z._weltNeu = false;
+        this._karteJahrGelegt(z, jahr);
         if (!z.gebacken) this._karteGebacken(z, fr);
         return true;
     }
@@ -1543,7 +1569,8 @@ class AnazhRealm_stoff_karte {
                 () => {
                     const bytes = new Uint8Array(lese.getMappedRange().slice(0));
                     lese.destroy();
-                    const karte = { bytes, frame: platte.frame };
+                    // die Stufe des Jahrs reist im Wert (`_karteJahr`): die Platte trägt die Karte EINER Stufe
+                    const karte = { bytes, frame: platte.frame, jahr: platte.jahr };
                     const msg = { type: "karte-ablage", presetId: platte.preset, platte: platte.rest, karte };
                     if (this._foundry && this._foundry.worker) this._foundry.worker.postMessage(msg, [bytes.buffer]);
                 },
@@ -1611,6 +1638,13 @@ class AnazhRealm_stoff_karte {
             // DER FESTE NAME (w4-b-knoten, Lehre 23): ohne ihn schreibt r184 `NodeBuffer_<Knoten-id>` ins WGSL — die Bytes der
             // Karten-Arena wanderten mit jeder Änderung der Bau-Reihenfolge (headless kalt 01.11.: NodeBuffer_189313 → _198261)
             at.nadelU = (T || THREE.TSL).uniformArray(a, "float").setName("karteNadel");
+            // die Reihe des Jahrs (`_karteJahrFarbe`) wächst mit: EINE Länge je Schicht, sie steht im Programm-Schlüssel
+            const j = new Array(n);
+            for (let i = 0; i < n; i++) {
+                const alt = at.jahrU && at.jahrU.array[i];
+                j[i] = new THREE.Vector4(alt ? alt.x : 1, alt ? alt.y : 1, alt ? alt.z : 1, 1);
+            }
+            at.jahrU = (T || THREE.TSL).uniformArray(j, "vec4").setName("karteJahr");
             if (at.mat) at.mat.needsUpdate = true;
         }
         if (z) {
@@ -1623,6 +1657,66 @@ class AnazhRealm_stoff_karte {
                     : 0;
         }
         return at.nadelU;
+    }
+
+    // DIE JAHRES-STUFE DER KARTE (w21-laub-jahr-fern): die Karte ist gebacken — das Jahr ist ein Eingang ihres Bakes, nie ein
+    // zweites Jahr in ihrem Stoff. Die Phase der Welt fällt auf `KARTE_JAHR.stufen` Stufen je Jahr, Stufe 0 ist die Mitte des
+    // Sommers (Präsenz 1, Tönung ×1); jede Stufe trägt die Präsenz und die Tönung ihrer Mitte aus DEMSELBEN Gesetz wie die Welt
+    // (`_saisonPraesenz`, `_saisonMul` über das SAISON_GESETZ). Rein: die Bühne liest sie (`_karteWeltBacken`), der Jahres-Takt
+    // vergleicht sie (`_karteJahrTakt`), die Linse ruft sie GPU-frei (gate:season-meadow F4).
+    _karteJahr(phase, out) {
+        const N = AnazhRealm.KARTE_JAHR.stufen;
+        const S = AnazhRealm.KARTE_JAHR.sommer;
+        const ph = Number.isFinite(phase) ? phase : S;
+        const stufe = (((Math.round((ph - S) * N) % N) + N) % N) | 0;
+        const mitte = (((S + stufe / N) % 1) + 1) % 1;
+        const o = out || { praesenz: { x: 1, y: 1, z: 1 }, mul: { r: 1, g: 1, b: 1 } };
+        o.stufe = stufe;
+        o.phase = mitte;
+        this._saisonPraesenz(mitte, o.praesenz);
+        this._saisonMul(mitte, o.mul);
+        return o;
+    }
+
+    // DIE SCHICHT TRÄGT IHRE STUFE (`_karteJahr`): gelegt (gebacken oder von der Platte), merkt die Zelle die Stufe, und die
+    // Reihe des Jahrs (`_karteJahrFarbe`) trägt die Tönung, mit der ihr Laub gebacken ist. Zog die Welt während des Bakes in eine
+    // andere Stufe (der Spieler sagt „Winter", der Abzug des Labors legte den Sommer), bleibt die Karte neu: der Bäcker reiht sie
+    // wieder ein (`_tickKarteWelt`) — der Jahres-Takt fragt nur beim Wechsel der Phase, nie wieder für diese Karte.
+    _karteJahrGelegt(z, jahr) {
+        z.jahr = jahr.stufe;
+        z._weltNeu = jahr.stufe !== this._karteJahr(this.state.seasonPhase).stufe;
+        const U = this._karteJahrFarbe(null);
+        const e = U && U.array[z.idx];
+        if (e) e.set(jahr.mul.r, jahr.mul.g, jahr.mul.b, 1);
+    }
+
+    // DIE TÖNUNG DER SCHICHT (die Reihe des Jahrs, je Atlas-Schicht ein vec4): der Karten-Stoff zeichnet ihr Laub in der Tönung
+    // der Welt — die gebackene Albedo × uSeasonMul / die Tönung ihres Bakes, die Nadel-Art ×1 —, dieselbe Farbe wie die nahe
+    // Stufe, stetig zwischen zwei Bakes (`_buildPbrNodeMaterial`). Sie wächst mit der Reihe der Nadel (`_karteNadel`).
+    _karteJahrFarbe(T) {
+        this._karteNadel(T); // die Reihen wachsen zusammen: EINE Länge, ein Programm-Schlüssel
+        return this._impostorAtlas().jahrU;
+    }
+
+    // DER JAHRES-TAKT DER KARTE (`_tickSeason` nach jedem Wechsel der Phase): wandert die Welt in eine andere Stufe
+    // (`_karteJahr`), backt jede gelegte Karte, deren Schicht eine andere trägt, neu — nah zuerst (`_bedarfD2`, die Schlange
+    // des Bäckers); bis dahin zeichnet die alte Schicht. Die Kosten hängen an der ÄNDERUNG, nie am Bild: höchstens EIN Bake je
+    // Karte und Stufe (`KARTE_JAHR.stufen` je Jahr).
+    _karteJahrTakt() {
+        const at = this._kartenAtlas;
+        if (!at || !at.zellen || !at.zellen.size) return 0;
+        const s = this._karteJahr(this.state.seasonPhase).stufe;
+        if (at.jahrStufe === s) return 0;
+        at.jahrStufe = s;
+        const q = this._impostorBakeQueue || (this._impostorBakeQueue = []);
+        let n = 0;
+        for (const z of at.zellen.values()) {
+            if (!z.gebacken || z.gescheitert || z.jahr === s) continue;
+            z._weltNeu = true;
+            if (!q.includes(z.key)) q.push(z.key);
+            n++;
+        }
+        return n;
     }
 }
 _stammZonen(AnazhRealm, [AnazhRealm_stoff_karte]);
@@ -1650,6 +1744,12 @@ AnazhRealm.KARTE_GITTER = Object.freeze({ zellen: Object.freeze([2, 2]), px: Obj
 
 // Das Budget-Fenster der Welt-Karte je Takt (ms Haupt-Faden; die erste Karte eines Takts backt immer — Spike S1).
 AnazhRealm.KARTE_WELT_MS = 4;
+// DAS JAHR DER KARTE (w21-laub-jahr-fern, `_karteJahr`): `stufen` Stufen je Jahr — die Karte backt ihr Laub in der Präsenz und
+// Tönung der Stufe und backt neu, wenn die Welt die Stufe wechselt (`_karteJahrTakt`): 32 Stufen tragen die Präsenz in
+// Schritten ≤ 0,083 (Sommer → Herbst 0,056, Herbst → Winter 0,061, Winter → Frühling 0,083, Frühling → Sommer 0,035), jede
+// Jahreszeit-Mitte ist eine Stufe; beim Jahr von 2400 s backt jede Karte alle 75 s einmal. `sommer` die Phase der Stufe 0 (die
+// Mitte des Sommers: Präsenz 1, Tönung ×1).
+AnazhRealm.KARTE_JAHR = Object.freeze({ stufen: 32, sommer: 0.375 });
 // Die Bühne gibt ihren Speicher frei, wenn die Schlange so lange leer ist (ms; `_karteBuehneRuhe`).
 AnazhRealm.KARTE_BUEHNE_RUHE_MS = 3000;
 // DIE SONNEN-SICHT DER KRONE (A7-Term, `_karteBuehne`): die Richtungen, aus denen die Bühne die Sicht misst, als (Höhe,

@@ -124,7 +124,7 @@ const LEIB_N = LEIB_WIESE.haus + LEIB_WIESE.fels + LEIB_WIESE.baum + LEIB_HANG_N
 // in jedem Bild die volle Armlänge — Median 34 → 151, höchstens 50 → 275).
 const PROBEN_VORSTAND = Object.freeze({ mittel: 35.4, median: 34, hoechstens: 50 });
 const PROBEN_RING = 4;
-const quantil = (a, q, s = [...a].sort(aufsteigend)) => s[Math.min(s.length - 1, Math.floor(q * s.length))];
+const quantil = (a, q, s = [...a].sort(aufsteigend)) => rang(s, q);
 // Kamera-Sprünge > 2 m im Rundgang: nie häufiger als am Vor-Stand
 const SPRUENGE_MAX = 4;
 // K4 DER GANG: geurteilt die Kugel (R) in Fels und Bau und die Nah-Pixel von Fels, Gelände, Rinde und Bau (der Bau gegen die
