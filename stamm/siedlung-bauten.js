@@ -1351,10 +1351,11 @@ class AnazhRealm_siedlung_bauten {
     // Hotbar-Bauplans (die Auswahl, `_geistVorbau`),
     // die Ich-Bühne (Tab, `_ichVorbau`), das Ich mit jeder Schublade (`_uiVorbau`) und die Leiber jeder annehmbaren Seele (der
     // Wechsel, `_leibVorwaermen`), je Takt ein Schritt. Ein Geist und ein Leib gehen als GAST in die Szene (`__vorbauGast`):
-    // die Erst-Zeichnung baut Knoten und Pipeline ohne Draw — nach dem Bild, unter der Frist des Render-Aufrufs —, bis jedes
-    // seiner Teile in jedem Pass steht (`_vorbauFehlt`). Gebaut wird nur, wenn die Welt steht (`_weltSteht`) und die Eingabe
-    // ruht (`_eingabeRuht`): der Leib-Vorbau baute bis dahin auch mitten in der Bedienung (Radeon headless: acht Knoten-Bauten
-    // „vorwaermen:human" zu 78–100 ms zwischen den Klicks). Kienspan (CPU-Raster) baut nie vor. Gerufen je Takt aus dem Loop.
+    // das Vorwärm-Gesetz baut Knoten und Pipeline ohne Draw (`_vorwaermPass`, in der Zeit des Gesetzes `_vorwaermZeit`), bis
+    // jedes seiner Teile in jedem Pass steht (`_vorbauFehlt`). Gebaut wird nur, wenn die Welt steht (`_weltSteht`), die Eingabe
+    // ruht (`_eingabeRuht`) und das Auge steht: der Leib-Vorbau baute bis dahin auch mitten in der Bedienung (Radeon headless:
+    // acht Knoten-Bauten „vorwaermen:human" zu 78–100 ms zwischen den Klicks). Kienspan (CPU-Raster) baut nie vor. Gerufen je
+    // Takt aus dem Loop; davor die kommenden Stufen jeder Art (`_vorwaermArten`).
     // DER LEIB ZUERST (w20-leib-takt): trägt der Leib des Spielers nah noch die Grobstufe und kam die feine (roh, `_ofenRoh`),
     // gießt und tauscht der erste Schritt sie (`_leibFeinTausch`) — vor jedem anderen, auch unter Kienspan (ein Bau des Leibs,
     // kein Vorbau einer Pipeline): jeder Schritt danach (das Tuch, der Leib im Vorwärmen) liest den Leib, der bleibt. Die Sicht

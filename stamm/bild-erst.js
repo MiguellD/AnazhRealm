@@ -182,9 +182,11 @@ class AnazhRealm_bild_erst {
         const frist = this._bauFrist("vorwaermen", true);
         const fn = rend._currentRenderObjectFunction;
         const clip = ctx.clippingContext;
-        let n = 0;
+        // geprüft zählt nur, wer in diese Familie gehört (sonst verhungerte die zweite hinter der ersten); der Gang endet nach
+        // einer Runde über die Reihe
+        let [n, runde] = [0, E.vorwaerm.size];
         for (const o of E.vorwaerm) {
-            if (n++ >= AnazhRealm.VORWAERM_JE_PASS || performance.now() >= frist) break;
+            if (n >= AnazhRealm.VORWAERM_JE_PASS || runde-- <= 0 || performance.now() >= frist) break;
             const f = E.vorwaermFehlt.get(o);
             let w = o;
             while (w.parent) w = w.parent;
@@ -193,6 +195,7 @@ class AnazhRealm_bild_erst {
                 continue;
             }
             if (!f.has(fam)) continue;
+            n++;
             E.vorwaerm.delete(o);
             E.vorwaerm.add(o); // ans Ende der Reihe
             if (!this._vorwaermGehoert(o, fam, camera)) {
