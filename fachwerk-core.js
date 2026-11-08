@@ -4190,7 +4190,23 @@
             for(const u of [-0.5,-0.25,0,0.25,0.5]) for(const v of [-0.5,0,0.5]){ const lx=u*V.parkL, lz=v*V.parkB, px=x+tx*lx-tz*lz, pz=z+tz*lx+tx*lz;
               if(zuP(px,pz)||amWeg(px,pz,V.halbM)||nahStrecke(px,pz,einB,V.halbM)||nahStrecke(px,pz,ausB,V.halbM)||nahStrecke(px,pz,reinB,g2)||nahStrecke(px,pz,rausB,g2)) frei2=false; }
             if(frei2) plaetze.push({x, z, beta:b, fahrt:Math.atan2(tx,tz)}); }
-          K.wenden.push({x:cx, z:cz, r:R, frei:Rf, dreh, ain, aout, bahn, ein:einB, aus:ausB, einAb:nR-1-E.k, ausAb:A.k, L:best.L, plaetze}); }
+          // DIE BEGEGNUNG (`engen`): wo die Bahn hinein und die Bahn heraus einander näher kommen als zwei halbe Wagen samt dem
+          // Ausscheren im Bogen — der starre Wagen schert um (parkL/2)²/(2·R) nach AUSSEN, also nur zur Bahn hin, die außerhalb
+          // seines Bogens liegt —, fahren zwei Wagen nicht aneinander vorbei: dort fährt eine Richtung zur Zeit, wie in der Enge
+          // der Strecke; je Haufen solcher Punkte EINE Enge (Mitte, Radius über seine Punkte samt halbem Wagen), vom Abzweig her
+          // gereiht. Bis hier hielt die Wahl nur zwei halbe Wagen (die Kreuzung zählt das Ausscheren, `konflikt`): an der Wende
+          // 908/289 von stadt-voll liefen beide Bahnen 2,42 m nebeneinander, zwei Wagen begegneten sich auf 0,08 m, und der Zug
+          // sah „Wagen in Wagen" (08.11.); keine Lage der Wende 968/347 hält die Begegnung frei.
+          const bogenVon=(P)=>P.map((p,i)=>{ const a=P[i-1], c=P[i+1]; if(!a||!c) return null; const t1=Math.atan2(p.z-a.z,p.x-a.x); let d=Math.atan2(c.z-p.z,c.x-p.x)-t1; d-=Math.round(d/(2*Math.PI))*2*Math.PI;
+            const k=2*d/(Math.hypot(p.x-a.x,p.z-a.z)+Math.hypot(c.x-p.x,c.z-p.z)); if(Math.abs(k)<1e-3) return null; const t=t1+d/2; return {x:p.x-Math.sin(t)/k, z:p.z+Math.cos(t)/k, R:Math.max(1/Math.abs(k),R)}; });
+          const schert=(b,q)=>b&&Math.hypot(q.x-b.x,q.z-b.z)>b.R?(V.parkL/2)**2/(2*b.R):0, bE=bogenVon(einB), bA=bogenVon(ausB), haufen=[];
+          einB.forEach((p,i)=>ausB.forEach((q,j)=>{ if(Math.hypot(p.x-q.x,p.z-q.z)>=g2+schert(bE[i],q)+schert(bA[j],p)) return;
+            const H=haufen.filter(h=>h.P.some(o=>Math.hypot(o.x-p.x,o.z-p.z)<2*rU||Math.hypot(o.x-q.x,o.z-q.z)<2*rU)), h0=H[0]||{P:[], i};
+            if(!H.length) haufen.push(h0); for(const h of H.slice(1)){ h0.P.push(...h.P); h0.i=Math.min(h0.i,h.i); haufen.splice(haufen.indexOf(h),1); }
+            for(const o of [p,q]) if(!h0.P.includes(o)) h0.P.push(o); }));
+          const engen=haufen.sort((a,b)=>a.i-b.i).map(({P})=>{ const c={x:0,z:0}; for(const q of P){ c.x+=q.x/P.length; c.z+=q.z/P.length; }
+            let r=0; for(const q of P) r=Math.max(r,Math.hypot(q.x-c.x,q.z-c.z)); return {x:c.x, z:c.z, r:r+V.halbM}; });
+          K.wenden.push({x:cx, z:cz, r:R, frei:Rf, dreh, ain, aout, bahn, ein:einB, aus:ausB, einAb:nR-1-E.k, ausAb:A.k, L:best.L, plaetze, engen}); }
         K.wenden.sort((p,q)=>p.L-q.L); });
       let laenge=0; for(const s of strecken) if(s.frei) laenge+=s.laenge;
       return {kreuzungen, strecken, laenge}; }
