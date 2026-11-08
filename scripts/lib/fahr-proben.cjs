@@ -1381,7 +1381,7 @@ async function probeLeben(expected) {
             const fang = (fn) => {
                 try {
                     const v = fn();
-                    return v === null || v === undefined ? "null" : "wert";
+                    return v == null ? "null" : "wert";
                 } catch (e) {
                     const msg = fehlerText(e);
                     return /KERN-PFLICHT/.test(msg) ? "bruch" : "fehler " + msg.slice(0, 80);

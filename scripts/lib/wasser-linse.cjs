@@ -3051,13 +3051,13 @@ async function wasserOrte(o = {}) {
                 if (!(r._terrainMacroSurfaceY(x, z, false) < wl - 2)) continue;
                 await __weltDa(() => !r._ensureHydroTilesAround(x, z, 0));
                 const h = r._hydroFor(x, z);
-                if (h?.ready && regionen.indexOf(h) < 0) regionen.push(h);
-                da = !!(h?.water?.waterKind && h.water.waterKind.indexOf(1) >= 0);
+                if (h?.ready && !regionen.includes(h)) regionen.push(h);
+                da = !!(h?.water?.waterKind && h.water.waterKind.includes(1));
                 // die Küste ist breiter als eine Kachel: ihre Nachbarn gehören zur Suche nach der Tasche (unten)
                 if (da) {
                     await __weltDa(() => !r._ensureHydroTilesAround(x, z, 1024));
                     for (const t of st.hydroTiles ? st.hydroTiles.values() : [])
-                        if (t?.ready && regionen.indexOf(t) < 0) regionen.push(t);
+                        if (t?.ready && !regionen.includes(t)) regionen.push(t);
                 }
             }
         }

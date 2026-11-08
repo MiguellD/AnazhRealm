@@ -414,7 +414,7 @@ scene.add(new THREE.HemisphereLight(0xaaccff, 0x332211, 0.8));
 const subject = new THREE.Group(); scene.add(subject);
 const roh = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ color: new THREE.Color(0x8e939a), roughness: 0.81, metalness: 0.3, emissive: 0x221100 }));
 roh.material.userData.__seh = "roh";
-const lin = (v) => (v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4));
+const lin = (v) => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
 const gesetz = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ roughness: 0.81, metalness: 0.3 }));
 gesetz.material.color.setRGB(lin(0x8e / 255), lin(0x93 / 255), lin(0x9a / 255));
 gesetz.material.userData.__seh = "gesetz";

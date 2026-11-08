@@ -730,7 +730,7 @@ function zerlegeZustand() {
         an += b;
         h = Math.imul(h ^ (b + 1), 16777619) >>> 0;
     });
-    const eigen = (o, k) => !!o && Object.prototype.hasOwnProperty.call(o, k);
+    const eigen = (o, k) => !!o && Object.hasOwn(o, k);
     const csm = st.csmNode;
     const lichter = csm?.lights?.length ? csm.lights : st.directionalLight ? [st.directionalLight] : [];
     const protos = [];
