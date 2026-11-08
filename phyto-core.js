@@ -3834,16 +3834,19 @@
     //                 Auflösung als rgba8 (das lineare Feld der Sicht über die Richtung, w14), Stufe 0 (die GPU
     //                 zieht die Mips) — ein weiches Licht-Feld der Krone
     //   saum          die Stärke des Saums im Wahl-Schlüssel JEDER Stufe (`karteSaumSchluessel`): so weit verschiebt das
-    //                 Muster die geglättete Deckung eines Texels im Band des Umrisses
-    //   saumZelle     die Zelle des Musters in Texeln der Stufe, gemessen an der gröberen Achse des Texels: die Lappen und
-    //                 Buchten, die die Stufe tragen kann, ohne zu dithern (Radeon, Tafel-Pose, main 03300ec8: die Zelle aus
+    //                 Muster die geglättete Deckung eines Texels im Band des Umrisses — 7,2: das Muster führt, das Band grenzt
+    //                 (Radeon, Tafel-Pose, w24-strauch-saum: strauch bei 2,4 / 3,2 / 4 / 4,8 / 6 / 7,2 0,249 / 0,238 / 0,234 /
+    //                 0,229 / 0,216 / 0,213)
+    //   saumZelle     die Zelle des Musters in Schritten der Stufe (`saumWeite`), gemessen an der gröberen Achse des Texels: die
+    //                 Lappen und Buchten, die die Stufe tragen kann, ohne zu dithern (Radeon, Tafel-Pose, main 03300ec8: die Zelle aus
     //                 der Blattgröße maß beim Strauch 55, bei Birke und Eiche 21 Stufe-0-Texel — ein Wellen-Hang statt eines
     //                 Saums, laub-kante strauch 0,4023, birke 0,3293)
     //   saumBand      die Glättung des Bands in binomialen 3×3-Gängen (8: der 17 × 17-Kern, Binomial 16 / 65536), der Rand der
     //                 Ansicht leer — der Rahmen ist nie der Umriss (an der Scheibe, Kohärenz 0,944: Zelle 6 / Band 4 / Stärke
     //                 1,6 franste Stufe 0 auf 0,81 — zu zahm; Radeon 9f4459c3 mit 8 / 6 / 2,4 / 0,05: birke 0,2246, strauch
     //                 0,3317; im CPU-Modell der Tafel-Abstände trägt 6 / 8 die Birke von 0,38 auf 0,22, den Strauch nah auf 0,18)
-    //   saumMin       die geglättete Deckung, ab der ein Texel im Band wählbar ist (kein Fleck, der ohne Krone schwebt)
+    //   saumMin       die geglättete Deckung, ab der ein Texel im Band wählbar ist (kein Fleck, der ohne Krone schwebt; 0,01
+    //                 trug am Strauch ein Raster, zweiton 0,0011)
     //   saumWeite     der Schritt des Saums in Texeln der gröberen Achse (`saumSchritt`): Band UND Zelle messen in ihm. Die Welt
     //                 liest jede verkleinerte Stufe mit einem Texel der gröberen Achse je Pixel (anisotrop), ihr Laub-Versatz
     //                 und die zeitliche Auflösung decken drei Pixel, die Linse glättet mit σ 2 px — ein Saum im Maß EINES
@@ -3853,6 +3856,8 @@
     // birke 0,2721 → 0,1889 · eiche 0,2044 → 0,1553 · fichte 0,2122 → 0,1575 · tanne 0,2232 → 0,1770 · strauch 0,3911 → 0,3536
     // (GTX 1060 vorher: birke 0,3324 · eiche 0,2373 · tanne 0,2226 · fichte 0,2122 · strauch 0,4076). Der Strauch steht als
     // Band unter fremdem Laub auf dem Weg: 72 % seines gezählten Rands ist seine Sohle, ohne sie 0,337 (die Flanken).
+    // DER STRAUCH (w24-strauch-saum): seine Sohle war Laub im Grund (foundry-core S7 galt nur der Baum-L0: die Karte schnitt
+    // Karten bis 27 % seiner Höhe unter y = 0 als Gerade), seine Flanken der Saum im Maß eines Texels (`saumWeite`).
     var KARTEN_GESETZ = {
         schwelle: 0.34,
         normalTeiler: 2,
@@ -3861,7 +3866,7 @@
         glaette: 4,
         glaetteBis: 2,
         lichtTeiler: 4,
-        saum: 6,
+        saum: 7.2,
         saumZelle: 2.5,
         saumBand: 8,
         saumMin: 0.02,
