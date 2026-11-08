@@ -10,8 +10,7 @@
 //       bis zum Bild wünscht jedes Ding seine billigste ganze Stufe (Baum Karte, Bau Grobstufe), danach verfeinert es.
 //   LH  WAS DAS BILD NICHT LIEST (w4-ankunft-2) — vor dem ersten Weltbild wächst kein Skelett einer Baum-Hülle (die Kollision,
 //       `_baumGestaltTeile`): sie wartet beim Namen (`_huellenNach`, `_weltOffen().huellen`) und kommt nach dem Bild
-//       (`_tickHuellenNach`), höchstens EIN Skelett je Takt (die Uhr der Skelette, w16-haenger); unter dem Ladeschirm baut der
-//       Ring ein Stück außer Bild nur im Leerlauf (`_ringLeerlauf`).
+//       (`_tickHuellenNach`); unter dem Ladeschirm baut der Ring ein Stück außer Bild nur im Leerlauf (`_ringLeerlauf`).
 //   L1  DAS FADENKREUZ — `#fadenkreuz` steht in der Bildmitte (dort trifft `_blickZiel`), weicht einer offenen Schublade.
 //   L2b DIE HILFE — „hilfe" / „help" / „?" nennt jedes Beispiel der EINEN Tafeln (`chatDslPatterns`, `chatSystemPatterns`,
 //       ihre `hilfe`-Sätze) und jede Taste (`KEYBINDING_LABELS`); der Satz für Unbekanntes trägt keine zweite Liste.
@@ -374,12 +373,12 @@ function dorfVerdict(m) {
 }
 // LH (w4-ankunft-2): was das erste Bild nicht liest, hält seinen Haupt-Faden nicht — die Hülle eines Baums (Kollision) wächst nach
 // dem Bild, bis dahin offen in der Welt; der Ring außer Bild baut unter dem Ladeschirm nur im Leerlauf und kommt sicher.
-// m.h = [Skelette vor dem Bild, Hüllen-Boxen nach dem Bild ohne Leib, mit dem Leib fern, mit dem Leib nah, offen danach,
-// Skelette zweier Arten in EINEM Takt danach] · m.r = [hinten ohne Leerlauf, vorn,
+// m.h = [Skelette vor dem Bild, Hüllen-Boxen nach dem Bild ohne Leib, mit dem Leib fern, mit dem Leib nah, offen danach] ·
+// m.r = [hinten ohne Leerlauf, vorn,
 // Leerlauf-Ruf, hinten mit Leerlauf] · m.k = je Bauer der Kacheln um das Auge [vor dem Bild außer Blick, im Blick, danach außer Blick]
 function huelleVerdict(m) {
     if (!m || !m.h || !m.r) return ["start"];
-    const [[wuchs, ohneLeib, fern, boxen, rest, takt], [ohne, vorn, ruf, mit]] = [m.h, m.r];
+    const [[wuchs, ohneLeib, fern, boxen, rest], [ohne, vorn, ruf, mit]] = [m.h, m.r];
     return [
         !m.k && "die Kacheln um das Auge: keine Probe",
         ...Object.entries(m.k || {}).map(([n, [warten, los]]) => (warten ? `${n} baut ${warten} Kacheln, die warten (\`_nahKachelWartet\`)` : !los && `${n} baut nichts`)), // prettier-ignore
@@ -387,7 +386,6 @@ function huelleVerdict(m) {
         ohneLeib && "die Hülle wuchs ohne Leib (`_huellenBedarf`)",
         fern && "die Hülle wuchs fern vom Leib (`HUELLE_BEDARF_M`)",
         (!boxen || rest) && "die Hülle fehlt am Leib (`_tickHuellenNach`)",
-        takt !== 1 && `${takt} Skelette in EINEM Takt nach dem Bild (\`_baumGestaltTeile\`, die Uhr der Skelette)`,
         ohne && "der Ring baut außer Bild ohne Leerlauf (`_tickVoxelChunkStreaming`)",
         !vorn && "der Ring baut das Bild nicht",
         !(ruf && mit) && "der Ring außer Bild kommt nie (`_ringLeerlauf`)",
@@ -932,14 +930,7 @@ async function probe(arg) {
             m.h = [r._baumGestaltMerk.size];
             st._weltbildDa = da;
             m.h.push(boxen(0), boxen(99), boxen(1), r._weltOffen().huellen); // 99 m: fern über HUELLE_BEDARF_M
-            // DIE UHR DER SKELETTE (w16-haenger): nach dem Bild, im laufenden Spiel und im Bedarf aller, fühlen zwei Bäume
-            // verschiedener Art ihre Hülle im selben Takt — es wächst EIN Skelett (das Gedächtnis zählt sie), der andere wartet
-            const zweiter = st.architectures.find((e) => e && e._huelleG != null && e.type !== baum.type);
-            [r._baumGestaltMerk, r._loopRuht, r._huellenBedarf, r._skelettTakt] = [new Map(), () => false, () => "alle", -1];
-            [baum, zweiter].forEach((e) => r._populateBlockerAABBs(e)); // ohne zweite Art wirft er: LH rot beim Grund
-            m.h.push(r._baumGestaltMerk.size);
         } finally {
-            [delete r._loopRuht, delete r._huellenBedarf];
             st.creatures = kreaturen;
             if (!baum.blockerAABBs) r._populateBlockerAABBs(baum);
             st.playerMesh.position.copy(pos);
@@ -1967,7 +1958,7 @@ hauptLauf(async () => {
                     ["keine EINE Formel", { durchsicht: { formel: false } }, "Durchsicht: keine EINE Formel"],
                 ],
             ],
-            ["LH", huelleVerdict, { h: [0, 0, 0, 3, 0, 1], r: [false, true, true, true], k: { x: [0, 9] } }, [["vor dem Bild", { h: [1, 0, 0, 3, 0, 1] }, "die Hülle wuchs vor"], ["ohne Leib", { h: [0, 3, 3, 3, 0, 1] }, "die Hülle wuchs ohne"], ["fern", { h: [0, 0, 3, 3, 0, 1] }, "die Hülle wuchs fern"], ["zwei Skelette", { h: [0, 0, 0, 3, 0, 2] }, "2 Skelette in EINEM Takt"], ["Ring", { r: [true, true, false, true] }, "der Ring baut außer"], ["wartet nie", { k: { x: [3, 9] } }, "x baut 3"], ["blind", { k: { x: [0, 0] } }, "x baut nichts"], ["ohne", { k: null }, "die Kacheln um"]]], // prettier-ignore
+            ["LH", huelleVerdict, { h: [0, 0, 0, 3, 0], r: [false, true, true, true], k: { x: [0, 9] } }, [["vor dem Bild", { h: [1, 0, 0, 3, 0] }, "die Hülle wuchs vor"], ["ohne Leib", { h: [0, 3, 3, 3, 0] }, "die Hülle wuchs ohne"], ["fern", { h: [0, 0, 3, 3, 0] }, "die Hülle wuchs fern"], ["Ring", { r: [true, true, false, true] }, "der Ring baut außer"], ["wartet nie", { k: { x: [3, 9] } }, "x baut 3"], ["blind", { k: { x: [0, 0] } }, "x baut nichts"], ["ohne", { k: null }, "die Kacheln um"]]], // prettier-ignore
             ["D8", kanalVerdict, { gestartet: true, siedlungImLog: true, zeilen: ["> dorf 7", "(Welt verändert: 1× Birke)"] }, [["Siedlungs-Zahlen im Chat", { zeilen: ["Seed 7"] }, "Telemetrie im Chat"], ["rohes Programm", { zeilen: ['["spawn_studio",'] }, "Telemetrie im Chat"], ["interne id", { zeilen: ["baum_birke"] }, "interne id im Chat"], ["Ereignis-Name", { zeilen: ["op_exception"] }, "Telemetrie im Chat"]]],
             [
                 "D6",

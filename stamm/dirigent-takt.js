@@ -1747,9 +1747,8 @@ class AnazhRealm_dirigent_takt {
     // fragt sie über die EINE Frist der Bau-Arbeit (`_bauFrist(„knoten“, true)` in `_knotenRate`).
     _ladeFrist(zeichnung = false) {
         if (!this._ladeTakt()) return -Infinity;
-        const jetzt = performance.now();
         if (this._ladeFristBis == null) {
-            [this._ladeFristBis, this._ladeZeichnungBis] = [jetzt + AnazhRealm.LADE_TAKT_MS, null];
+            [this._ladeFristBis, this._ladeZeichnungBis] = [performance.now() + AnazhRealm.LADE_TAKT_MS, null];
             Promise.resolve().then(() => (this._ladeFristBis = this._ladeZeichnungBis = null));
         }
         if (!zeichnung)
@@ -1758,7 +1757,7 @@ class AnazhRealm_dirigent_takt {
             const E = this._erstZeichnung;
             const g = E ? Math.min(E.ladeGuthaben || 0, AnazhRealm.LADE_TAKT_MS) : 0;
             if (E) E.ladeGuthaben = 0;
-            this._ladeZeichnungBis = Math.max(this._ladeFristBis, jetzt + g);
+            this._ladeZeichnungBis = Math.max(this._ladeFristBis, performance.now() + g);
         }
         return this._ladeZeichnungBis;
     }

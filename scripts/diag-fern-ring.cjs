@@ -38,7 +38,7 @@
 // (law + 0.5) MUSS rot fallen — die Linse ist nicht vakuös.
 //   node scripts/diag-fern-ring.cjs
 "use strict";
-const { statikServer, hauptLauf, nullWelt, pruefer, wandEnde, fehlerText } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, nullWelt, pruefer, wandEnde, fehlerText, seiteZu } = require("./lib/welt-boot.cjs");
 
 
 const { errs, check } = pruefer();
@@ -1439,13 +1439,7 @@ hauptLauf(async () => {
         return res;
     });
 
-    await browser.close();
-    server.close();
-
-    if (out.fatal) {
-        console.error(`❌ FATAL: ${out.fatal}`);
-        process.exit(2);
-    }
+    await seiteZu(browser, server, out, null, "fatal"); // ein Wurf der Probe (`fatal`): ROT beim Grund
     check("4: HEADLESS-DEFAULT — ohne Hook entsteht KEIN Ring (Null-Renderer ruht)", out.headlessQuiet === true);
     check(
         "1: genau 4 Ring-Meshes in der Szene — 3 Schalen und die Naht der Schale 0 (Draw-Calls gedeckelt)",

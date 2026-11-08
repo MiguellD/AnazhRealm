@@ -1878,6 +1878,7 @@ async function selbsttest() {
             offen: 1,
             _gameLoopTick() {},
             _archIsRendered: (e) => !!e.mesh,
+            _weltOffenAkte: String, // die Akte des Offenen, die der Deckel nennt (ohne Welt leer)
         });
         r._rebuildArchitectureMesh = (e) => e.ab != null && performance.now() >= e.ab && (e.mesh = {});
         r._weltOffen = () => ({ foundry: 0, chunks: 0, wald: 0, karten: r.offen });

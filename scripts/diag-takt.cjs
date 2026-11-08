@@ -474,9 +474,11 @@ hauptLauf(async () => {
             // der Täter: die Buch-Frage reist nicht in der Geburt (Name „buch"), sie wartet auf den Haupt-Faden
             (T10 ? "" : " — Täter _ensureAssetFoundry")
     );
-    zeile(!n11.length, `T11 Verkehr 300 m fern: ${z11}` + (n11.length ? ` — Täter ${n11}` : ""));
-    zeile(!n12.length, `T12 die EINE Frist der Bau-Arbeit, abgelaufen: ${N12} je ${t9.bau12}` + (n12.length ? ` — Täter ${n12}` : ""));
-    zeile(!n13.length, `T13 Alterung, längster Hunger hinter dem Strom: ${z13}` + (n13.length ? ` — verhungert: ${n13}` : "")); // prettier-ignore
+    // T11–T13 je Täter beim Namen: grün ohne, sonst hinter dem Befund (in T13 die Verhungerten)
+    const benannt = (n, text) => zeile(!n.length, text + (n.length ? ` — Täter ${n}` : ""));
+    benannt(n11, `T11 Verkehr 300 m fern: ${z11}`);
+    benannt(n12, `T12 die EINE Frist abgelaufen: ${N12} je ${t9.bau12}`); // die Frist der Bau-Arbeit (`_bauFrist`)
+    benannt(n13, `T13 Alterung, längster Hunger: ${z13}`); // hinter dem Strom, der die Frist je Takt leert
     if (!(T3 && T4 && T5 && T6 && T8 && T9 && T10) || n11.concat(n12, n13).length) {
         console.error("\n❌ ROT — ein Takt rechnet Teures für die ganze Welt.");
         process.exit(1);
