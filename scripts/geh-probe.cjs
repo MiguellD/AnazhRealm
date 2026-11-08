@@ -1,49 +1,29 @@
 #!/usr/bin/env node
-// geh-probe.cjs — DAS BILD BEIM GEHEN auf der echten GPU (profiband.K1#1, leib.K1#1): EINE Werkbank am Tor; an der Wiese (Ego)
-// die Hänger-Linse über 33 ms auf der Bahn (4 m/s, Regler voll, Tiere frei), derselbe Lauf als Takt-Spitze (der Rahmen-Baum
-// je Spitze · Mitte, tief), dann je Zelle (Wiese Ego, Genesis Third) ein Lauf ohne Profil mit den GPU-Stempeln. Zeilen „GEH …“
-// (≤ 590 Zeichen: der GPU-Probe-Dienst postet die letzten zehn Zeilen mit Urteil). Exit 0 nur, wenn jede Zelle Bild-p95 ≤ 33 ms hält.
-//   node scripts/geh-probe.cjs [--port 4793] [--sek 10]          (npm run gate:geh-zerlegung; je Push nimmt der freie Läufer sie)
+// geh-probe.cjs — DAS BILD BEIM GEHEN auf der echten GPU (profiband.K1#1, leib.K1#1): EINE Werkbank am Tor, frisch an der Wiese
+// (Ego) erst die Latenz der Station leib.K1#1 (Taste → bewegter Leib, 15 Proben je Sicht × Verb gehen · wechsel), dann der erste
+// und der zweite Gang derselben Bahn (`lauf`, 4 m/s, Regler voll, Tiere frei, ohne Profil), dann Genesis Third — je Abschnitt
+// die Knoten-Bauten (`_knotenRate`) beim Namen. Zeilen „GEH …“ (≤ 590 Zeichen: der GPU-Probe-Dienst postet die letzten zehn
+// Zeilen mit Urteil). Exit 0 nur, wenn jeder Gang Bild-p95 ≤ 33 ms hält.
+//   node scripts/geh-probe.cjs [--port 4793]          (npm run gate:geh-zerlegung; je Push nimmt der freie Läufer sie)
 "use strict";
 const fs = require("fs");
 const path = require("path");
 const { werkbankTor } = require("./lib/welt-boot.cjs");
-const HL = require("./lib/haenger-linse.cjs");
 
 const arg = (n, d) => (process.argv.includes(n) ? process.argv[process.argv.indexOf(n) + 1] : d);
-const PORT = Number(arg("--port", 4793)),
-    SEK = String(arg("--sek", 10));
+const PORT = Number(arg("--port", 4793));
 const D = path.resolve("artifacts", "geh-probe");
 fs.mkdirSync(D, { recursive: true });
 const r1 = (x) => (Number.isFinite(x) ? +x.toFixed(1) : x);
 const q = (z) => (z ? [z.p50, z.p95, z.p99, z.max].map(r1).join("/") : "?");
 const zeile = (s) => console.log(s.replace(/\s+/g, " ").slice(0, 590));
-// der Rahmen-Baum der Takt-Spitze in Zeilen (Tiefe vorn, Spitze · Mitte in ms): ein Rahmen, der nur seinen Namensvetter trägt (renderer.x › x), fällt in ihn
-const kurz = (n) => n.split(" ")[0].replace(/^(renderer|rend|be|o|AnazhRealm)\./, "");
-function baumZeilen(zeilen, kopf, n) {
-    const stapel = [],
-        teile = [];
-    for (const e of zeilen) {
-        stapel.length = e.tiefe;
-        const vater = stapel[e.tiefe - 1];
-        const k = kurz(e.name),
-            gleich = vater && vater.k === k;
-        const t = gleich ? vater.t : vater ? vater.t + 1 : 0;
-        // ein Ast fällt ganz, wenn er die Mitte nicht trägt und die Spitze nur tief (der Knoten-Bau rekursiert 60 Rahmen tief)
-        const zeigt = !(vater && vater.weg) && (e.mitteMs >= 0.3 || (e.spitzeMs >= 4 && t <= 6));
-        stapel[e.tiefe] = { k, t, weg: !!(vater && vater.weg) || (!gleich && !zeigt) };
-        if (gleich || !zeigt) continue;
-        teile.push(`${t}${k} ${r1(e.spitzeMs)}·${r1(e.mitteMs)}`);
+const json = (out) => {
+    try {
+        return JSON.parse(out.slice(out.indexOf("{"), out.lastIndexOf("}") + 1));
+    } catch {
+        return null;
     }
-    const aus = [];
-    let z = "";
-    for (const t of teile) {
-        if (z.length + t.length > 540) (aus.push(z), (z = ""));
-        z += (z ? " " : "") + t;
-    }
-    if (z) aus.push(z);
-    return aus.slice(0, n).map((x, i) => `${kopf} B${i + 1}: ${x}`);
-}
+};
 
 // DER KNOTEN-BAU IM GANG (`_knotenRate`, der Bau in Raten): je Bau-Schlüssel Stoff | Täter-Klasse | Pass, ms, Schritte, der
 // längste Schritt und wie oft der Schlüssel VOR dem Gang schon im Bau-Cache stand und aus ihm fiel (r184 `Nodes.delete`: der
@@ -94,89 +74,49 @@ return { schluessel: a.length, ms: s((e) => e.ms), schritte: s((e) => e.n), fert
             fs.appendFileSync(path.join(D, "werkbank.log"), `\n$ ${args.join(" ")}\n${o.stdout}${o.stderr}`);
             return o.stdout || "";
         };
-        const ev = (code) => {
-            const out = wb(["eval", code], 60);
-            try {
-                return JSON.parse(out.slice(out.indexOf("{"), out.lastIndexOf("}") + 1)).ergebnis;
-            } catch {
-                return { fehler: out.slice(0, 200) };
-            }
-        };
-        const knoten = (name, gang) => {
+        const ev = (code) => (json(wb(["eval", code], 60)) || {}).ergebnis || {};
+        const knoten = (name) => {
             const k = ev(KB_LESEN);
             zeile(
-                `GEH ROT ${name} Knoten-Bau ${gang}: ${k.schluessel} Schlüssel · Σ ${k.ms} ms in ${k.schritte} Schritten · ${k.fertig} fertig · ` +
-                    `${k.wieder} vorher im Cache (Σ ${k.wiederMs} ms) · ${k.geloeschtImGang} gelöscht · Arenen ${k.arenen} · ` +
-                    `[Stoff|Glied alt/neu n|Pass|t ms Schritte max]: ${JSON.stringify((k.top || []).map((x) => x.slice(0, 4)) || k)}`
+                `GEH ROT ${name} Knoten-Bau: ${k.schluessel} Schlüssel · Σ ${k.ms} ms in ${k.schritte} Schritten · ${k.wieder} vorher im Cache · ` +
+                    `${k.geloeschtImGang} gelöscht · Arenen ${k.arenen} · [Stoff|Glied alt/neu n|Pass|t ms Schritte max]: ` +
+                    JSON.stringify((k.top || []).map((x) => x.slice(0, 4)))
             );
         };
         const lauf = (name) => {
-            const out = wb(
-                ["lauf", "6", "--ein", "0.5", "--wandern", "bahn", "--regler", "voll", "--tiere", "frei"],
-                120
+            ev(KB_AN);
+            const l = json(
+                wb(["lauf", "6", "--ein", "0.5", "--wandern", "bahn", "--regler", "voll", "--tiere", "frei"], 120)
             );
-            let l = null;
-            try {
-                l = JSON.parse(out.slice(out.indexOf("{"), out.lastIndexOf("}") + 1));
-            } catch {
-                l = null;
-            }
-            if (!l || !l.frameMs)
-                return ((gruen = false), zeile(`GEH ROT ${name} Lauf ohne JSON: ${out.slice(0, 300)}`));
+            if (!l || !l.frameMs) return ((gruen = false), zeile(`GEH ROT ${name}: der Lauf lieferte kein JSON`));
             const ok = l.frameMs.p95 <= 33.4;
             gruen = gruen && ok;
-            const b = l.belegung || {};
             zeile(
-                `GEH ${ok ? "GRÜN" : "ROT"} ${name} Lauf 6 s: Bild ${q(l.frameMs)} · CPU ${q(l.cpuTaktMs)} · GPU ${q(l.gpuMs)} (n ${l.gpuMs.n}) · ` +
-                    `Durchsatz ${q(l.gpuDurchsatzMs)} · Befehle p95 ${l.befehle.p95} · Dreiecke p95 ${l.dreiecke.p95} · Belegung ${q(b.belegungMs)} · ` +
-                    `außer Takt ${q(b.ausserTaktMs)} · Weg ${l.bahnM} m · Phasen ${JSON.stringify(l.phasenEwmaMs)}`
+                `GEH ${ok ? "GRÜN" : "ROT"} ${name}: Bild p50/95/99/max ${q(l.frameMs)} · CPU ${q(l.cpuTaktMs)} · GPU ${q(l.gpuMs)} · ` +
+                    `${l.frames} Bilder · Weg ${l.bahnM} m · Phasen ${JSON.stringify(l.phasenEwmaMs)}`
             );
+            knoten(name);
         };
-        const name = "wiese-ego",
-            json = path.join(D, `${name}.json`);
         wb(["umstellen", "--ort", "wiese", "--sicht", "ego"], 300);
+        // leib.K1#1: dieselbe Reihe wie die Station (15 Proben, Ego und Third × gehen und wechsel), frisch an der Wiese
         ev(KB_AN);
-        wb(
-            [
-                "haenger",
-                "--sek",
-                SEK,
-                "--ein",
-                "0.5",
-                "--wandern",
-                "bahn",
-                "--schwelle",
-                "33",
-                "--regler",
-                "voll",
-                "--tiere",
-                "frei",
-                "--json",
-                json,
-            ],
-            180
+        const lj = path.join(D, "latenz.json");
+        wb(["latenz", "--proben", "15", "--sicht", "ego,third", "--verb", "gehen,wechsel", "--json", lj], 240);
+        const L = fs.existsSync(lj) ? JSON.parse(fs.readFileSync(lj, "utf8")) : null;
+        zeile(
+            L && L.reihen
+                ? `GEH ${L.urteil === "GRÜN" ? "GRÜN" : "ROT"} leib.K1#1 Latenz p95 ms ` +
+                      Object.entries(L.reihen)
+                          .map(([n, e]) => `${n} ${e.p95} (p50 ${e.p50}, fehlt ${e.fehlt})`)
+                          .join(" · ") +
+                      ` · Bild ${L.bildMs} ms`
+                : "GEH ROT leib.K1#1 Latenz ohne JSON"
         );
-        const rohDatei = json.replace(/\.json$/, ".roh.json");
-        if (fs.existsSync(rohDatei)) {
-            const { roh, spur } = JSON.parse(fs.readFileSync(rohDatei, "utf8"));
-            const h = HL.linseWerten(roh, spur, { schwelle: 33 }),
-                s = HL.linseWerten(roh, spur, { spitze: true });
-            const U = h.frameMs.p95 <= 33.4 ? "GRÜN" : "ROT";
-            zeile(
-                `GEH ${U} ${name} Profil: Bild ${q(h.frameMs)} · CPU-Takt ${q(h.taktMs)} · >33: ${h.haengerN} von ${h.frames} · Ursachen [n Σms max]: ` +
-                    h.jeUrsache
-                        .slice(0, 7)
-                        .map((e) => `${e.n} ${e.summeMs} ${e.maxMs} ${e.ursache}`)
-                        .join(" | ")
-            );
-            for (const z of baumZeilen(s.zeilen, `GEH ${U} ${name}`, 5)) zeile(z);
-        } else ((gruen = false), zeile(`GEH ROT ${name}: die Hänger-Linse lieferte nichts`));
-        knoten(name, "Gang 1");
-        ev(KB_AN);
-        lauf(name);
-        knoten(name, "Gang 2 (dieselbe Bahn)");
+        knoten("leib.K1#1");
+        lauf("wiese-ego Gang 1");
+        lauf("wiese-ego Gang 2");
         wb(["umstellen", "--ort", "genesis", "--sicht", "third"], 300);
-        lauf("genesis-third");
+        lauf("genesis-third Gang 1");
     } catch (e) {
         gruen = false;
         zeile(`GEH ROT Error ${String((e && e.stack) || e).slice(0, 400)} · ${tor.log.slice(-300)}`);
