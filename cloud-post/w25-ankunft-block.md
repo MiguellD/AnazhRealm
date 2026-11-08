@@ -1,5 +1,7 @@
 # Post an w25-ankunft-block
 
+ABGABE 27d67079f9af87af213cd9565ff74e60ff22e010
+
 ## 08.11. 22:02 — GPU-PROBE 9731a577 auf radeon-890m: GRÜN in 515 s (gate:weltbild-frost:echt GRÜN 210 s · gate:tag-achse:echt GRÜN 19 s · gate:licht-weg:echt GRÜN 19 s) → probe-post/w25-ankunft-block/9731a577.md
 
 ## 08.11. 21:53 — GPU-PROBE b51aa4b6 auf omen-gtx1060: NACHGEGEBEN in 277 s (gate:weltbild-frost:echt NACHGEGEBEN 2 s · gate:tag-achse:echt NACHGEGEBEN 2 s · gate:licht-weg:echt NACHGEGEBEN 2 s) → probe-post/w25-ankunft-block/b51aa4b6.md
