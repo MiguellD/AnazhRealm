@@ -1374,7 +1374,8 @@ class AnazhRealm_dirigent_ankunft {
     //     (x, z, false)) auf `gitter`² Punkten im Abstand `zelleM` um den Anker des Rings, gerechnet im Feld-Faden
     //     (`_fernAuftrag("gitter")`, `_horizontGitterTakt`), über dem Bezug (Meeresspiegel) als r16f;
     //   DIE KARTE — je Texel die SCHATTEN-HÖHE zur Sonne: H = max_s (h(x + â·s) − s · tan h☉) über den Marsch s = 60 … 3 000 m
-    //     (`schrittM` × `schritte`, dieselbe Bahn wie die Station), dazu der Weg s* des Grats und der Boden des Gitters (rgba16f,
+    //     (`schrittM` × `schritte`, dieselbe Bahn wie die Station), dazu der Weg s* des Grats, der Boden des Gitters und der Grat
+    //     des Bodens (tan des höchsten Horizonts zur Sonne über ihm, `_horizontHimmel`) (rgba16f,
     //     `karte`² Texel über dem Quadrat des Gitters) — ein Schirm-Pass über das Gitter (`pass`), neu gemalt, wenn das Licht sich
     //     um `lichtRad` dreht oder ein Gitter kommt (`_horizontKarteTakt`).
     // Ein Empfänger in der Höhe y liegt im Licht, wenn y über H steht — der Halbschatten so breit, wie die Sonne (`sonneTan`) ihn
@@ -1429,20 +1430,23 @@ class AnazhRealm_dirigent_ankunft {
                     const tanH = U.licht.y.div(flach);
                     const best = T.float(-H.leerM).toVar();
                     const weg = T.float(0).toVar();
+                    // der Boden des Gitters am Texel (`_horizontBoden`: der Empfänger, der das Gesetz nur nähert, liest ihn
+                    // aus DERSELBEN Abtastung wie die Schatten-Höhe — ein eigener Sampler sprengte den Ring-Stoff, 17 > 16)
+                    const boden = T.texture(hoehen, zuUv(xz)).level(0).r.toVar();
+                    // DER GRAT DES BODENS (w25-ferne-licht-2): tan des höchsten Horizonts zur Sonne über dem Boden des Texels,
+                    // max (h − h₀)/s über denselben Marsch — der Grat-Himmel (`_horizontHimmel`) liest ihn im Alpha
+                    const steil = T.float(-1).toVar();
                     for (let k = 1; k <= H.schritte; k++) {
                         const s = k * H.schrittM;
                         const q = zuUv(xz.add(a.mul(s)));
-                        const z = T.mix(
-                            T.float(-H.leerM),
-                            T.texture(hoehen, q).level(0).r.sub(tanH.mul(s)),
-                            AnazhRealm._imEinheitsQuadrat(q)
-                        );
+                        const drin = AnazhRealm._imEinheitsQuadrat(q);
+                        const h = T.texture(hoehen, q).level(0).r;
+                        const z = T.mix(T.float(-H.leerM), h.sub(tanH.mul(s)), drin);
                         weg.assign(T.select(z.greaterThan(best), T.float(s), weg));
                         best.assign(T.max(best, z));
+                        steil.assign(T.max(steil, T.mix(T.float(-1), h.sub(boden).div(s), drin)));
                     }
-                    // der Boden des Gitters am Texel (`_horizontBoden`: der Empfänger, der das Gesetz nur nähert, liest ihn
-                    // aus DERSELBEN Abtastung wie die Schatten-Höhe — ein eigener Sampler sprengte den Ring-Stoff, 17 > 16)
-                    return T.vec4(best, weg, T.texture(hoehen, zuUv(xz)).level(0).r, 1);
+                    return T.vec4(best, weg, boden, steil);
                 })(),
             "horizont-karte"
         );
@@ -1490,8 +1494,11 @@ class AnazhRealm_dirigent_ankunft {
     // Station (Sonne 5°, Dorf, swiftshader) lagen 11 im Schatten hell und 5 im Licht dunkel.
     // DIE HIMMELS-SICHT DES GRATS (ferne.K4; Horizon-Based Ambient Occlusion aus der EINEN Karte): der Grat, der dem Empfänger in `p`
     // die Sonne nimmt, verdeckt ihm auch den Himmel unter seinem Horizontwinkel α zur Sonne — dort steht die Aureole, der hellste
-    // Himmel des Abends. α aus der Karte: tan α = (H − y) / s* + tan h☉ (die Schatten-Höhe H über dem Weg s* des Grats, y die Höhe
-    // des Empfängers), ohne Grat 0. Das verdeckte Band 0 … α über `gratRad` beidseits des Azimuts der Sonne (die Karte kennt den
+    // Himmel des Abends. α aus der Karte: die größere Untergrenze aus dem Punkt, der den Schatten wirft — tan α ≥ (H − y) / s* + tan h☉
+    // (die Schatten-Höhe H über dem Weg s* des Grats, y die Höhe des Empfängers) — und dem Grat des Bodens (Alpha: max (h − h₀)/s
+    // über dem Boden h₀ des Texels) abzüglich (y − h₀) je kürzestem Schritt; ohne Grat 0. Der Punkt des Schattens allein ist nicht
+    // der Grat: ein Berg 3 km fern wirft ihn, der Kamm 200 m vor dem Hang steht höher (Dorf, Sonne 5°: die Karte las 8,1° im
+    // Median, das Gesetz 10,3°, nahe Grate bis 10° zu flach). Das verdeckte Band 0 … α über `gratRad` beidseits des Azimuts der Sonne (die Karte kennt den
     // Horizont nur zur Sonne: der Grat gilt dort als Wand) trägt je Abtastung die Strahlung des Himmels in Richtung ω (`strahlung`:
     // die Himmels-Sicht der Atmosphäre, `himmelFarbe`) × max(n·ω, 0) × Δω/π — der Abzug von der mittleren Strahlung der
     // Bestrahlung (`_spiegelUmgebung`). Außerhalb der Karte und wo sie ruht 0. Bis ferne.K4 sah der Hang hinter dem Grat den
@@ -1499,8 +1506,6 @@ class AnazhRealm_dirigent_ankunft {
     // Strahlung die Umgebung der Stoffe in der Rauheit 0,5: ihre Keule mittelte am Horizont den Boden darunter, der Grat nahm dem
     // Schattenhang bei Sonne 5° 3,6 % seines Himmels (Dorf, swiftshader voll) — die Himmels-Sicht im Band (±30°, bis zum Grat
     // 11,6°) trägt 18,8 % (CPU-Nachbau der Tafeln, exakt integriert), die drei Abtastungen der Tafel schätzen es auf +18 %.
-    // Heute nimmt er 6,2 % (Median, je Ort 0–25 %): das Gitter (`zelleM` 96 m) liest nahe Grate (60–240 m vor dem Hang) bis 10°
-    // zu flach (Grat des Gesetzes 10,3° gegen die Karte 8,1° im Median, ferne.K4).
     // Die drei Abtastungen (−⅔, 0, +⅔ · `gratRad` um das Azimut der Sonne) laufen in EINER Schleife (wie `falte`, K17-3): die
     // Strahlung steht einmal im Programm — ausgeschrieben stand sie dreimal in jedem Stoff (Boden der Bühne S0: +9 580 Zeichen).
     _horizontHimmel(p, n, strahlung) {
@@ -1512,7 +1517,16 @@ class AnazhRealm_dirigent_ankunft {
             const t = T.texture(K.rt.texture, q).level(0).toVar();
             const L = K.U.licht;
             const flach = T.max(T.length(L.xz), 1e-4).toVar();
-            const tanA = T.max(t.r.sub(p.y.sub(K.U.bezug)).div(T.max(t.g, H.schrittM)).add(L.y.div(flach)), 0).toVar();
+            // tan α: das Größere zweier Untergrenzen des Horizonts über dem Empfänger in der Höhe y — der Punkt, der den Schatten
+            // wirft ((H − y)/s* + tan h☉), und der Grat des Bodens (Alpha) abzüglich der Höhe über dem Boden je kürzestem Schritt
+            const y = p.y.sub(K.U.bezug).toVar();
+            const tanA = T.max(
+                T.max(
+                    t.r.sub(y).div(T.max(t.g, H.schrittM)).add(L.y.div(flach)),
+                    t.a.sub(T.max(y.sub(t.b), 0).div(H.schrittM))
+                ),
+                0
+            ).toVar();
             const el = T.atan(tanA).mul(0.5).toVar();
             const [ce, se] = [T.cos(el).toVar(), T.sin(el).toVar()];
             const a = L.xz.div(flach).toVar();
