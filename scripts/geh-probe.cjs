@@ -26,6 +26,30 @@ const json = (out) => {
     }
 };
 let vorStand = "";
+// der Teilbaum unter jedem Rahmen `wurzel` der Takt-Spitze (`zeilen` in Tiefen-Reihe): je relative Tiefe × Name die Summe
+// Spitze/Mitte, ab 0,3 ms in einer der beiden; voran die Wurzel selbst
+const teilbaum = (s, wurzel, tief = 3, min = 0.3) => {
+    const m = new Map([["0", { s: 0, m: 0 }]]);
+    const z = s.zeilen;
+    for (let i = 0; i < z.length; i++) {
+        if (!wurzel.test(kurz(z[i].name))) continue;
+        m.get("0").s += z[i].spitzeMs;
+        m.get("0").m += z[i].mitteMs;
+        for (let j = i + 1; j < z.length && z[j].tiefe > z[i].tiefe; j++) {
+            const d = z[j].tiefe - z[i].tiefe;
+            if (d > tief) continue;
+            const k = d + kurz(z[j].name);
+            const x = m.get(k) || { s: 0, m: 0 };
+            x.s += z[j].spitzeMs;
+            x.m += z[j].mitteMs;
+            m.set(k, x);
+        }
+    }
+    return [...m]
+        .filter(([k, x]) => k === "0" || x.s >= min || x.m >= min)
+        .map(([k, x]) => `${k} ${x.s.toFixed(1)}/${x.m.toFixed(1)}`)
+        .join(" · ");
+};
 const kurz = (n) =>
     String(n)
         .replace(/ \[[^\]]*\]/g, "")
@@ -84,45 +108,15 @@ const kurz = (n) =>
                         .map((e) => `${e.n}× ${e.summeMs}/${e.maxMs} ${e.ursache}`)
                         .join(" | ")
             );
-            zeile(
-                `GEH ROT ${name} Hänger: ` +
-                    a.haenger
-                        .slice()
-                        .sort((x, y) => y.dt - x.dt)
-                        .slice(0, 6)
-                        .map(
-                            (h) =>
-                                `${h.dt}ms [${Object.entries(h.zeiten)
-                                    .filter(([, v]) => v > 0)
-                                    .map(([k, v]) => ({ TAKT: "T", NEBEN: "N", GC: "C", GPU: "G" })[k] + v)
-                                    .join(" ")}] ` +
-                                (h.pfad.length
-                                    ? h.pfad
-                                          .slice(-3)
-                                          .map((p) => kurz(p.name) + " " + p.pct)
-                                          .join("›")
-                                    : h.name.slice(0, 50)) +
-                                (h.selbst.length
-                                    ? " S:" +
-                                      h.selbst
-                                          .slice(0, 2)
-                                          .map((p) => kurz(p.name) + " " + p.pct)
-                                          .join(",")
-                                    : "")
-                        )
-                        .join(" | ")
-            );
-            zeile(
-                `GEH ${ok ? "GRÜN" : "ROT"} ${name} Spitze ab p95 ${s.spitzeN}/${s.takte} Takte (CPU ${q(s.cpuMs)}): ` +
-                    s.zeilen
-                        .filter((e) => e.tiefe <= 3 && e.spitzeMs >= 0.8)
-                        .map((e) => `${e.tiefe}${kurz(e.name)} ${e.spitzeMs}/${e.mitteMs}`)
-                        .join(" · ") +
-                    ` ‖ TÄTER ${s.taeter
-                        .slice(0, 4)
-                        .map((t) => kurz(t.name) + " " + t.spitzeMs + "/" + t.mitteMs)
-                        .join(" | ")}`
-            );
+            // die Teilbäume der zwei Blöcke des Haupt-Fadens (je Rahmen ms je Takt ab p95 / in der Mitte, bis drei Ebenen tief,
+            // über jedes Vorkommen der Wurzel summiert): die Sicht je Pass und der Takt-Planer
+            for (const [wort, wurzel] of [
+                ["Sicht", /^_passSicht$/],
+                ["Planer", /^_runFrameScheduler$/],
+            ])
+                zeile(
+                    `GEH ${ok ? "GRÜN" : "ROT"} ${name} ${wort} ab p95 ${s.spitzeN}/${s.takte} Takte: ${teilbaum(s, wurzel)}`
+                );
         };
         // der Stand vor dem ersten Gang (wie die Station: 2 s nach dem Umstellen) — Bild, GPU und Phasen als Bezug des Gangs
         const steh = (ort, sicht) => {
