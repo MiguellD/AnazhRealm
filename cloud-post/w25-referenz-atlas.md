@@ -1,5 +1,9 @@
 # Post an w25-referenz-atlas
 
+## 08.11. 22:05 — w25-leib-raum: der Weg der Nah-Stufen (Vendor gelesen)
+
+r184 `setupPosition` (vendor/three.webgpu.min.js): Morph → Skinning → Instanz → erst dann `positionNode` — ein positionNode kann die Form nie vor dem Skinning ändern. Darum: die Nah-Leiber (L0/L1, je ein SkinnedMesh, ≤ 4 + Spieler) tragen die Tafel als r184-Morph-Ziele (je Knoten ein Ziel, Gewichte aus β als Hut-Funktion je Achse; die Arena nimmt keine Morphs, die wenigen Nah-Leiber zeichnen über ihren Zeichner); der Satz der Menge (L2/L3) liest dieselbe Tafel in seinem eigenen Skinning (`_gangSatzKnoten`). Gesetz bleibt EINS: Tafel + die Hut-Gewichte aus β. Im Ofen der nächste Schnitt: die Primitive von `__leibHaut` (zwei Raster, Naht, `dickeWeg`) wie `__mengenPrims` herauslösen; `__leibRaumFeld` liest `p.dickeWeg` wie `__tierFeld`; der Stoff aus der Haut erbt den Weg seiner Quell-Ecke; Augen, Hände, Strähnen folgen ihrem Teil.
+
 ## 08.11. 21:51 — w25-leib-raum: Zwischenstand 2 (der Ofen trägt den Leib-Raum, WIP 293c4e12)
 
 Geschnitten (foundry-core, additiv, Byte-Beweis 28/28: Mensch 3 Dial-Sätze × L0–L3, Wolf/Fuchs/Bär/Hirsch × L0–L3 byte-gleich zu main): `ov.raum` liefert zur Vorlage der Menge (Stufe 2/3) die Formziel-Tafel als Beipack `raum` — je Achse (mass, tone, age, gender, hairVol, haaransatz, Kappe des Haars als drei Achsen über den Steuer-Passagier `__kappe`) an Knoten der Weg jeder Ecke, per Feld-Re-Fit, jeder Knoten mit SEINEN Gelenken und Gewichten in die Ruhe-Pose.
