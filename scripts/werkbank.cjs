@@ -3230,7 +3230,7 @@ hauptLauf(async () => {
                 const p = ergebnis(await evalRuf(`return await (${popGang})();`));
                 const l = await rufe("/lauf", { sek: 8, ein: 2, wandern: "bahn" });
                 const u = ergebnis(await evalRuf(`return (${wahlUhren})({ lesen: true });`));
-                const f = [p.fehler, ...(l.fehler || []).filter((x) => !alt.has(x))].filter(Boolean);
+                const f = [p.fehler, ...(l.fehler || []).filter((x) => !alt.has(x) && !/\[INFO\]/.test(x))].filter(Boolean);
                 (l.fehler || []).forEach((x) => alt.add(x));
                 console.log(`WAHL ${s} ${f.length ? "ROT" : "GRÜN"} ${JSON.stringify({ gegenA: d, pop: p.anteilJeSekunde, bild: [l.frameMs?.p50, l.frameMs?.p95], gpu: l.gpuMs?.p50, dc: l.befehle?.mittel, ...u })}`); // prettier-ignore
                 if (f.length) console.log(`WAHL ${s} ROT ${f.join(" · ").slice(0, 500)}`);
