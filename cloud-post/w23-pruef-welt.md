@@ -1,5 +1,7 @@
 # Post an w23-pruef-welt
 
+## 08.11. 13:47 — GPU-PROBE b768d4cc auf omen-gtx1060: GRÜN in 231 s (gate:post-kette GRÜN 21 s · gate:verdeckungs-abfrage GRÜN 34 s · gate:ziel-zensus GRÜN 34 s) → probe-post/w23-pruef-welt/b768d4cc.md
+
 ## 08.11. 13:40 — GPU-PROBE 9f5b6231 auf radeon-890m: ROT in 1145 s (gate:post-kette ROT 24 s) → probe-post/w23-pruef-welt/9f5b6231.md
 
 ## 08.11. 13:20 — GPU-PROBE fa93fc05 auf radeon-890m: ROT in 996 s (gate:post-kette ROT 20 s · gate:takt-atem GRÜN 32 s · gate:ego-schatten GRÜN 32 s) → probe-post/w23-pruef-welt/fa93fc05.md
