@@ -18,15 +18,14 @@
 // — nie `_weltbildDa` (die Eigenmeldung steht daneben). Urteil: t ≤ 5 s ohne halbes Weltbild (kalt: Pflicht-OFFEN B; mit
 // `--profil` am Zweit-Boot: die Wiederkehr, ankunft K3). `--bild`: das Bild der Kontrolle gegen dieselbe Pose nach 60 s Ruhe
 // (ankunft K2: ≤ 2 % Lücke, nichts offen im Bild). `--mutante eigenmeldung|bild`: die Schlupflöcher, ROT beim Namen.
-// Ohne `--echt` swiftshader, mit `--echt` die Hardware-GPU (1920×1080); `--holz <profil>` setzt das Holz der Seite.
+// Ohne `--echt` swiftshader, mit `--echt` die Hardware-GPU (1920×1080).
 // DIE SPUR (B, w4-ankunft): die Zeile fährt die EINE Spur der Hänger-Familie (CDP-Trace, CPU-Stichproben jedes Fadens) von der
 // Navigation bis zur Kontrolle und urteilt sie (`ankunftsHalter`, scripts/lib/haenger-linse.cjs): die Phasen (HTML, Skripte, DOM,
 // Buch, der Schluss jedes Terms des ersten Weltbilds, Ring, erstes Lade-Bild, Weltbild, Kontrolle — je mit der belegten Zeit des
 // Haupt-Fadens bis dahin), die längsten Aufgaben vor dem Bild mit ihren HALTERN (Funktion · Datei:Zeile · ms) und die
 // Funktionen vor dem Bild (inklusiv · selbst). DIE HALTER-LINSE ist ROT beim Namen jeder Funktion, die vor dem ersten Bild den
-// Haupt-Faden ≥ 50 ms hält (Selbsttest: `werkbank takt --selbsttest`). `--spur datei` legt Spur und Seite ab, `--spur-lesen
-// datei` urteilt sie neu (ohne Welt).
-//   node scripts/diag-boot-stage.cjs --kalt [--echt] [--holz h] [--profil ordner] [--json datei] [--spur datei] [--bild kontrolle.png] [--mutante m]
+// Haupt-Faden ≥ 50 ms hält (Selbsttest: `werkbank takt --selbsttest`). `--spur datei` legt Spur und Seite ab.
+//   node scripts/diag-boot-stage.cjs --kalt [--echt] [--profil ordner] [--json datei] [--spur datei] [--bild kontrolle.png] [--mutante m]
 //
 // DIE LIEFER-ZEILE (pipeline.K4 Stufe 1): die Kalt-Zeile liest die Liefer-Marke des Spiels (`_foundryLiefer`: Körper-Aufträge,
 // Antworten von der Platte · im Werk gebaut · leer, Güsse des Haupt-Fadens). Mit `--profil` wartet sie auf die Ruhe der Foundry
@@ -103,6 +102,8 @@ function SCHLUCK() {
     });
 }
 // die Liefer-Zeile aus der Marke: jede Lieferung zählt (auch der Guss des Haupt-Fadens), ein Auftrag ohne Antwort ist verschluckt
+// die Pipelines, die ab dem Bild (`da`) synchron entstanden, beim Namen und Pass (der Haken der Hänger-Familie)
+const nachBild = (sync, da) => sync.filter((e) => e.t >= da).map((e) => `${e.n} (${e.pass})`);
 function lieferUrteil(roh, zweit) {
     const L = Object.assign({ auftrag: 0, platte: 0, werk: 0, leer: 0, haupt: 0 }, roh);
     const n = L.platte + L.werk + L.leer + L.haupt;
@@ -130,7 +131,7 @@ function wechselUrteil(vor, nach, kern) {
         zeile: `KERN-WECHSEL ${kern}: ${neu.size} Leser neu · fremd ${fremd.length} ${fremd.slice(0, 6)} · alt ${alt.length} ${alt.slice(0, 6)}`,
     };
 }
-// DIE HALTER-ZEILEN (der Kalt-Lauf und `--spur-lesen`): die Tafel, die Spur — wie viele Proben unter „(Knoten verloren)" zählen,
+// DIE HALTER-ZEILEN (der Kalt-Lauf): die Tafel, die Spur — wie viele Proben unter „(Knoten verloren)" zählen,
 // ein verlorener ProfileChunk steht laut (`profilLesen`, über 5 % sind die Halter ROT ohne Namen) — und DIE HALTER-LINSE
 // (Hänger-Familie, Selbsttest `werkbank takt --selbsttest`): ROT beim Namen jeder Funktion, die vor dem ersten Bild den
 // Haupt-Faden ≥ ANKUNFT_HALT_MS hält (blind ohne Marken ist sie ROT)
@@ -236,6 +237,10 @@ async function kaltLauf() {
         await page.evaluateOnNewDocument(() =>
             __weltDa().then((r) => (r.state._weltbildDa = performance.now()))
         );
+    // DER GPU-PROZESS HÄLT DIE KONTROLLE NICHT (w25-ankunft-block): jede Pipeline, die nach dem Bild bis zur Kontrolle synchron
+    // entsteht, ist ROT beim Namen (der Haken der Hänger-Familie, `haengerAn`; `nachBild`) — Radeon kalt baute der Spiegel 0,4 s
+    // nach dem Bild seine Pipeline synchron, der rAF stand 1,3–2,2 s. Der Selbsttest pflanzt eine synchrone Pipeline nach dem Bild.
+    await page.evaluateOnNewDocument(HL.HAENGER_INSTALL + ";__weltDa((w) => w.state.rendererReady).then(() => (__haengerAn().an = true))");
     // DIE SPUR DER ANKUNFT (B): die CPU-Stichproben jedes Fadens ab der Navigation (die EINE Spur der Hänger-Linse,
     // `spurProfil`), die Marken der Probe legen sie auf die Seiten-Uhr — sie endet mit der Kontrolle
     const cdp = await page.target().createCDPSession();
@@ -245,8 +250,8 @@ async function kaltLauf() {
         traceConfig: { includedCategories: ["blink.user_timing", "disabled-by-default-v8.cpu_profiler"] },
     });
     const t0 = Date.now();
-    // `--holz <profil>`: das Holz der Seite (`?holz=`), sonst wählt sie selbst (swiftshader → kienspan)
-    await server.zeige(page, 120000, OPT("--holz") ? `index.html?holz=${OPT("--holz")}` : "index.html");
+    // das Holz wählt die Seite selbst (swiftshader → kienspan)
+    await server.zeige(page, 120000, "index.html");
     // DIE KONTROLLE VON AUSSEN (ankunft K1–K3, nie die Eigenmeldung `_weltbildDa`): der Spieler hält W über das Protokoll des
     // Browsers; je Atem schickt er den Druck neu (Autorepeat — der Ladeschirm hält jede Taste, die erste nach ihm gilt), bis
     // die Taste den Leib um ≥ KONTROLLE_M trägt: t ist die Prozess-Uhr ab Navigation, als der Weg gesehen wurde.
@@ -297,6 +302,7 @@ async function kaltLauf() {
             version: r.constructor.VERSION,
             adapter,
             ohne: (st.logBuffer || []).filter((z) => /Das erste Weltbild steht ohne/.test(z)),
+            sync: __haengerH.namen.filter((e) => e.art === "sync"),
             lieferung: r._foundry.lieferung,
         });
     });
@@ -323,7 +329,7 @@ async function kaltLauf() {
     meilensteine["erstes Lade-Bild"] = (out.proben.find((p) => p.bilder > 0) || {}).t;
     Object.assign(meilensteine, { Weltbild: out.weltbildDa, Kontrolle: tK || undefined });
     // DIE HALTER (Hänger-Familie, `ankunftsHalter`): jede Aufgabe ≥ 50 ms vor dem Bild mit ihren Funktionen beim Namen
-    // `--spur datei`: die Spur des Haupt-Fadens (Profil + Marken) und die Seite dazu — `--spur-lesen datei` urteilt sie neu
+    // `--spur datei`: die Spur des Haupt-Fadens (Profil + Marken) und die Seite dazu
     const spur = HL.spurProfil(ev, "anazh-kalt");
     const seite = {
         lang: out.lang,
@@ -396,15 +402,13 @@ async function kaltLauf() {
     console.log(`  ${zweit ? (k4.gruen ? "✅ " : "❌ ") : ""}${k4.zeile}`);
     console.log(`  ${zweit ? (k4.artGruen ? "✅ " : "❌ ") : ""}${k4.artZeile}`);
     if (wechsel) console.log(`  ${wechsel.gruen ? "✅" : "❌"} ${wechsel.zeile}`);
-    process.exit(gut && ganz && !halter.length ? 0 : 1);
+    const nach = nachBild(out.sync, out.weltbildDa);
+    console.log(`  ${nach.length ? "❌" : "✅"} synchron nach dem Bild: ${nach.join(" · ") || "keine Pipeline"}`);
+    process.exit(gut && ganz && !halter.length && !nach.length ? 0 : 1);
 }
 
 hauptLauf(async () => {
     if (ARGV.includes("--kalt")) return kaltLauf();
-    if (OPT("--spur-lesen")) {
-        const { spur, seite } = jsonLesen(OPT("--spur-lesen"));
-        return console.log(halterZeilen(HL.ankunftsHalter(spur, seite)));
-    }
     const { browser, page } = await nullWelt(server, { port: PORT, frist: 300000, vor: SELBSTTEST && SCHLUCK }, 120000, "index.html", "networkidle0");
     // das erste Weltbild (der Null-Renderer setzt es beim Renderer-Bau; eine Zeit trägt nur die Kalt-Zeile, von außen)
     await page.evaluate(() => __weltDa((r) => r.state._weltbildDa));
@@ -512,6 +516,7 @@ hauptLauf(async () => {
     // das Urteil des Kern-Wechsels an Bruch-Daten: gesund GRÜN, ein fremder Neubau (e) und ein alter Leser (d) ROT
     const W = (e, d) => wechselUrteil([[0, "e", "platte", "phyto"], [0, "d", "platte", "fachwerk"]], [[0, "e", e, "phyto"], [0, "d", d, "fachwerk"]], "fachwerk").gruen; // prettier-ignore
     if (SELBSTTEST) checks.push([W("platte", "werk") && !W("werk", "werk") && !W("platte", "platte"), "SELBST-TEST: der Kern-Wechsel urteilt (fremder Neubau, alter Leser ROT)"]); // prettier-ignore
+    if (SELBSTTEST) checks.push([nachBild([{ t: 9 }, { t: 1 }], 5).length === 1, "SELBST-TEST: synchron nach dem Bild ROT"]);
     const fails = checks.filter(([pass, name]) => (console.log(`  ${pass ? "✅" : "❌"} ${name}`), !pass)).length;
     console.log(`\n${checks.length - fails}/${checks.length} Bühnen-Invarianten OK.`);
     urteilEnde(fails, "⛔ Die volle Bühne steht nicht (oder die Linse ist stumpf) — Kriterium 2 ist nicht abnehmbar.", `✅ „Volle Bühne" ist ein Prädikat — Kriterium 2 ist messbar.`);

@@ -24,6 +24,13 @@
 //     Alpha dort die Schwelle hält (Alpha-Lage); gemittelt über die Pixel mit mindestens einer Lage.
 //       bildLagen(krone, atlas, px) → { quad, alpha, je: [{ quad, alpha }] }
 //     bildAus(meshes) → die ganze Stufe als Bild (Krone UND Rinde: die Rinde deckt voll) — die L0-Deckungs-Tafel.
+//
+// (5) DER POP AM WECHSEL (lod.K5) — je Vorlage jede gezeigte Stufe gegen die L0 an der Grenze, die das Gesetz des Wirts aus ihrer
+//     Zeile legt: der Kanten-Versatz (Chamfer der Silhouetten in den Bildpunkten des Abstands, die Messung der Station am Bau).
+//       wechselProbe({ ids, kern, wirt, fern, grenze? }) → { txt, bruch } (gate:haus-fern P: Haus, Ausstattung, Tor)
+//
+// (6) DER WURF-ABDRUCK — die IoU zweier Werfer entlang einer Sonne auf y = 0 (gate:tor-fern W, gate:haus-fern W).
+//       wurfIou(a, b, d, r) → 0..1
 "use strict";
 
 const AZIMUTE = 8;
@@ -431,7 +438,134 @@ function unterBoden(krone) {
     return y;
 }
 
+// (5) DER POP AM WECHSEL (lod.K5, die Messung der Station am Bau — gate:haus-fern P): je Vorlage `ids` die L0 und jede gezeigte
+//     Stufe ihrer Art, gebaut über ihren Kern `kern(id)` — die Flügel einer Tür (ein Ahne mit userData.side) in der Pose des Spiels:
+//     ein Haus-Flügel zu (der Wirt dreht um −offen), ein Tor-Flügel in der Fern-Pose (Seite · sign(z) · `fern`, `_tickTorFluegel`) —,
+//     an der Grenze, die das Gesetz des Wirts `wirt` aus der Zeile der Vorlage legt (`_wechselGesetz`; `grenze(id, stufe, art)`
+//     ersetzt sie), gemessen gegen das Soll LOD_SCHIRM.px: der KANTEN-VERSATZ
+//     — L0 und Stufe je Peilung (acht Azimute waagrecht: das Auge sieht ein Werk im Wechsel-Abstand nahezu waagrecht; θ und θ + π
+//     sind im Orthobild Spiegel, gerastert werden vier) in den Bildpunkten des Abstands d (ein Bildpunkt = d / f, `f` die Brennweite)
+//     je Pixel-Mitte gedeckt, nie unter dem Boden der Vorlage; die Kanten jeder Maske, ihre Euklid-Distanz-Transformation
+//     (Felzenszwalb & Huttenlocher), der Chamfer beidseitig gemittelt. Ein Teil der L0, das der Stufe fehlt, liegt mit seinem
+//     Abstand zur nächsten Kante der Stufe im Mittel (die Geisttor-L2 der Quote: 14 px), ein verschobener Umriss mit seinem Versatz.
+//     Ein Täter nennt seine ZEILE der Tafel LOD_SCHIRM.fehler: von der Grenze aus der Abstand, an dem der GEMESSENE Versatz × 1,1
+//     (der Rand) einen Bildpunkt trägt (d ← 1,1 · px · d, höchstens sechsmal: fern skaliert er nicht mehr mit 1 / d), als Fehler in
+//     Metern (Abstand / Brennweite) — so prägt die Linse die Tafel (eine neue Vorlage mit Zeile 0 steht am Haushalt).
+//     → { txt: [je Vorlage ihre Stufen], bruch: [Täter mit Zeile] }
+function wechselProbe({ ids, kern, wirt, fern, grenze }) {
+    const [f, px] = [wirt._brennweite(0), wirt.LOD_SCHIRM.px];
+    const netze = (g) => {
+        const [out, v, Y] = [[], new THREE.Vector3(), new THREE.Vector3(0, 1, 0)];
+        g.updateMatrixWorld(true);
+        g.traverse((o) => {
+            let w = o.parent;
+            while (w && w !== g && !(w.userData && typeof w.userData.side === "number")) w = w.parent;
+            const d = w && w !== g && w.userData, P = o.isMesh && o.geometry.attributes.position; // prettier-ignore
+            const a = !d ? 0 : g.userData.kind === "gate" ? d.side * Math.sign(w.position.z) * fern : -(d.offen || 0);
+            if (!P) return;
+            const pos = new Float32Array(P.count * 3);
+            for (let i = 0; i < P.count; i++) {
+                v.fromBufferAttribute(P, i).applyMatrix4(o.matrixWorld);
+                if (a) v.sub(w.position).applyAxisAngle(Y, a).add(w.position);
+                v.toArray(pos, i * 3);
+            }
+            out.push({ pos, idx: o.geometry.index ? o.geometry.index.array : Uint32Array.from({ length: P.count }, (_, i) => i) });
+        });
+        return out;
+    };
+    const versatz = (n0, ns, d) => {
+        let summe = 0;
+        for (let k = 0; k < 4; k++) {
+            const cx = Math.cos((k * Math.PI) / 4 + 0.2), cz = Math.sin((k * Math.PI) / 4 + 0.2); // prettier-ignore
+            const R = rahmen(n0.concat(ns).map((n) => n.pos), (p, i) => [p[i] * cx + p[i + 2] * cz, p[i + 1]], d / f, 4);
+            // je Maske die Distanz-Transformation ihrer Kanten (quadriert, Spalten dann Zeilen) und ihre Kanten
+            const feld = (netze) => {
+                const m = new Uint8Array(R.nu * R.nv), g = new Float64Array(m.length), kante = [];
+                for (const { pos: p, idx } of netze)
+                    for (let t = 0; t < idx.length; t += 3) {
+                        const a = idx[t] * 3, b = idx[t + 1] * 3, c = idx[t + 2] * 3; // prettier-ignore
+                        const q = (i) => p[i] * cx + p[i + 2] * cz;
+                        rasterDreieck(q(a), p[a + 1], q(b), p[b + 1], q(c), p[c + 1], R, (o, w0, w1, w2) => {
+                            if (w0 * p[a + 1] + w1 * p[b + 1] + w2 * p[c + 1] >= 0) m[o] = 1;
+                        });
+                    }
+                for (let o = 0; o < m.length; o++)
+                    if (m[o] && !(m[o - 1] && m[o + 1] && m[o - R.nu] && m[o + R.nu])) kante.push(o);
+                g.fill(1e20);
+                for (const o of kante) g[o] = 0;
+                for (let x = 0; x < R.nu; x++) edt(g, x, R.nu, R.nv);
+                for (let y = 0; y < R.nv; y++) edt(g, y * R.nu, 1, R.nu);
+                return { g, kante };
+            };
+            const A = feld(n0), B = feld(ns); // prettier-ignore
+            const mittel = (k, g) => k.reduce((s, o) => s + Math.sqrt(g[o]), 0) / k.length;
+            summe += (mittel(A.kante, B.g) + mittel(B.kante, A.g)) / 2;
+        }
+        return summe / 4;
+    };
+    const txt = [], bruch = []; // prettier-ignore
+    for (const id of ids) {
+        const K = kern(id), art = K.PRESETS[id].kind, L = K.PORTAL_RENDER_CONFIG.lod, n0 = netze(K.buildInstance(id, 1, 0)), z = []; // prettier-ignore
+        for (const s of L.kindStages[art].filter((x) => x && !L.budget[art][x].nurWurf)) {
+            const ns = netze(K.buildInstance(id, 1, s));
+            let d = grenze ? grenze(id, s, art) : wirt._wechselGesetz(art, s, 1, 0, undefined, id), w = versatz(n0, ns, d); // prettier-ignore
+            z.push(`L${s} ${w.toFixed(2)} px @ ${d.toFixed(1)} m`);
+            if (w <= px) continue;
+            for (let i = 0; i < 6 && 1.1 * w > 1; i++) w = versatz(n0, ns, (d *= 1.1 * w));
+            bruch.push(`${id} ${z[z.length - 1]} (Zeile ${Math.ceil((d * 1e4) / f) / 1e4})`);
+        }
+        txt.push(`${id} ${z.join(" · ")}`);
+    }
+    return { txt, bruch };
+}
+// (6) DER WURF-ABDRUCK (gate:tor-fern W, gate:haus-fern W): zwei Werfer — Listen flacher Dreiecks-Puffer (je 9 Zahlen) — entlang
+//     der Sonne `d` (zur Sonne, d[1] > 0) auf y = 0 projiziert, je Pixel-Mitte im Raster `r` gedeckt; was unter dem Boden liegt,
+//     wirft nicht (y auf 0 geklemmt: es zählt mit seinem Grundriss) → die IoU der Abdrücke (ohne Wurf 0). Bis w25-lod-pop rasterte
+//     jede Fern-Linse ihn selbst.
+function wurfIou(a, b, d, r) {
+    const ab = (w, i) => [w[i] - (d[0] * Math.max(0, w[i + 1])) / d[1], w[i + 2] - (d[2] * Math.max(0, w[i + 1])) / d[1]];
+    const R = rahmen(a.concat(b), ab, r, 1);
+    const maske = (tl) => {
+        const m = new Uint8Array(Math.max(0, R.nu * R.nv));
+        for (const w of tl)
+            for (let i = 0; i < w.length; i += 9) rasterDreieck(...ab(w, i), ...ab(w, i + 3), ...ab(w, i + 6), R, (o) => (m[o] = 1));
+        return m;
+    };
+    const A = maske(a), B = maske(b); // prettier-ignore
+    let s = 0, v = 0; // prettier-ignore
+    for (let k = 0; k < A.length; k++) s += A[k] & B[k], v += A[k] | B[k]; // prettier-ignore
+    return v ? s / v : 0;
+}
+// die quadrierte Distanz-Transformation einer Zeile von `g` (n Werte ab `o` mit Schritt `w`), an Ort und Stelle — die untere Hülle
+// der Parabeln (Felzenszwalb & Huttenlocher)
+// das Raster um die Abbildung `ab(p, i) → [u, v]` aller Ecken der Puffer `pufs`, Kante `r`, `rand` Pixel Rand ringsum
+function rahmen(pufs, ab, r, rand) {
+    let u0 = Infinity, v0 = Infinity, u1 = -Infinity, v1 = -Infinity; // prettier-ignore
+    for (const p of pufs)
+        for (let i = 0; i < p.length; i += 3) {
+            const [u, v] = ab(p, i);
+            u0 = Math.min(u0, u), v0 = Math.min(v0, v), u1 = Math.max(u1, u), v1 = Math.max(v1, v); // prettier-ignore
+        }
+    return { u0: u0 - rand * r, v0: v0 - rand * r, r, nu: Math.ceil((u1 - u0) / r) + 2 * rand + 1, nv: Math.ceil((v1 - v0) / r) + 2 * rand + 1 };
+}
+function edt(g, o, w, n) {
+    const f = Float64Array.from({ length: n }, (_, q) => g[o + q * w]), v = new Int32Array(n), z = new Float64Array(n + 1); // prettier-ignore
+    const s = (q, p) => (f[q] + q * q - f[p] - p * p) / (2 * q - 2 * p);
+    let k = 0;
+    z[0] = -Infinity, z[1] = Infinity; // prettier-ignore
+    for (let q = 1; q < n; q++) {
+        while (k >= 0 && s(q, v[k]) <= z[k]) k--;
+        v[++k] = q, z[k] = k ? s(q, v[k - 1]) : -Infinity, z[k + 1] = Infinity; // prettier-ignore
+    }
+    for (let q = 0, j = 0; q < n; q++) {
+        while (z[j + 1] < q) j++;
+        g[o + q * w] = (q - v[j]) ** 2 + f[v[j]];
+    }
+}
+
 module.exports = {
+    wechselProbe,
+    wurfIou,
     rasterDreieck,
     dek,
     bildDeckung,
@@ -443,4 +577,3 @@ module.exports = {
     schwebe,
     unterBoden,
 };
-

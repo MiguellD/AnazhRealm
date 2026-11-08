@@ -193,11 +193,7 @@ function selbsttest() {
         ],
         pageErrors: [],
     };
-    const klon = () => jsonKlon(gruen);
     const fehler = [];
-    const v0 = urteil(klon());
-    if (v0.length) fehler.push("der grüne Befund fällt rot: " + v0.join(" · "));
-    console.log(`  ${v0.length ? "❌" : "✅"} Selbsttest grün → ${v0.join(" · ") || "grün"}`);
     const faelle = [
         [
             "der Cull-Gang in Ruhe (die Basis)",
@@ -544,7 +540,7 @@ function selbsttest() {
         ["Pendel ungesehen", ["netz.mutante=", 0], /BLIND: der Pendel/],
         ["keine Netz-Wache", ["netz"], /LEER: keine Netz-Wache/],
     ];
-    taeterFaelle(faelle, urteil, { fehler, klon });
+    taeterFaelle(faelle, urteil, { fehler, gruen });
     selbsttestEnde(fehler);
 }
 
@@ -1141,7 +1137,7 @@ async function brandSeite(MESS) {
             r._brandBild(1 / 60);
             ms.push(t2 - t0), lms.push(t2 - t1), sms.push(performance.now() - t2);
         }
-        const p95 = (v) => r3(v.sort(aufsteigend)[Math.floor(v.length * 0.95)]);
+        const p95 = (v) => r3(rang(v.sort(aufsteigend), 0.95));
         aus.zeit = { brennend: zn, echt: echt.length, bildMs: p95(ms), leserMs: p95(lms), verzugS: r3(verzug), schirmMs: p95(sms) };
         leer();
         return aus;

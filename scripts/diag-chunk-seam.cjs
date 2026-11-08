@@ -384,12 +384,10 @@ function spalt(px, py, pz, tris) {
         const span = r._voxelChunkConfig(0).span;
         let bandMeshes = 0,
             bandQuads = 0;
-        for (const [, entry] of s.voxelChunks) {
-            if (entry?.lodStitchMesh && entry.lodStitchMesh.geometry.index) {
+        for (const [, entry] of s.voxelChunks) if (entry?.lodStitchMesh && entry.lodStitchMesh.geometry.index) {
                 bandMeshes++;
                 bandQuads += entry.lodStitchMesh.geometry.index.count / 6;
             }
-        }
         // Border-Row-Vertices (dPlane ≤ flat) aller Cross-LOD-Chunks: RENDERED Gap
         // (Position nach Morph·w) > 1 m + nicht okkludiert → muss BAND-gedeckt sein.
         let borderVerts = 0,
@@ -586,11 +584,9 @@ function spalt(px, py, pz, tris) {
 
     console.log("── B · RÄUMLICH, CROSS-LOD (die LOD-T-junction) ──");
     const Bc = spatial.cross;
-    if (Bc.pairs === 0) {
-        console.log(
+    if (Bc.pairs === 0) console.log(
             "   (keine Cross-LOD-Nachbarpaare gestreamt — Sicht-Ring zu klein? Default ringRadius 4 → LOD0↔LOD1 bei r1→2 sollte präsent sein)\n"
-        );
-    } else {
+        ); else {
         const bVisGap = +(Bc.gap1Pct * (1 - Bc.occlPct / 100)).toFixed(1); // sichtbar = >1m UND nicht okkludiert
         console.log(`   Nachbar-Paare: ${Bc.pairs}`);
         console.log(
@@ -608,13 +604,9 @@ function spalt(px, py, pz, tris) {
     console.log("── D · T2-GEOMORPH — schliesst der Morph die Cross-LOD-Naht? ──");
     for (const b of stoffBrueche.filter((t) => /Geomorph/.test(t)))
         console.log(`   ⚠ Morph-Material-Fehler: ${b.slice(0, 200)}`);
-    if (morph.crossPairs === 0) {
-        console.log("   (keine Cross-LOD-Grenze gestreamt)\n");
-    } else if (morph.morphedVerts === 0) {
-        console.log(
+    if (morph.crossPairs === 0) console.log("   (keine Cross-LOD-Grenze gestreamt)\n"); else if (morph.morphedVerts === 0) console.log(
             `   ⚠ KEINE gemorphten Boundary-Vertices (${morph.chunksWithMorph} Chunks, ${morph.crossPairs} Cross-LOD-Faces) — bodenMorph greift nicht?\n`
-        );
-    } else {
+        ); else {
         console.log(
             `   gemorphte Boundary-Vertices: ${morph.morphedVerts} (über ${morph.chunksWithMorph} feine Grenz-Chunks, ${morph.crossPairs} Cross-LOD-Faces)`
         );
@@ -649,9 +641,7 @@ function spalt(px, py, pz, tris) {
     );
 
     console.log("── C · ZEITLICH (das Abbau-Fenster) — nach T1: heilt der Footprint IM Edit-Call? ──");
-    if (temporal.err) {
-        console.log(`   SKIP: ${temporal.err}\n`);
-    } else {
+    if (temporal.err) console.log(`   SKIP: ${temporal.err}\n`); else {
         console.log(
             `   Carve an der Grenze Spieler-Chunk ${temporal.player} ↔ Nachbar ${temporal.neighbor}  @(${temporal.carveAt.x}, ${temporal.carveAt.y}, ${temporal.carveAt.z})`
         );
@@ -677,13 +667,9 @@ function spalt(px, py, pz, tris) {
     console.log("── BEFUND ──");
     const t1ok = !temporal.err && temporal.pInEdit && temporal.nbInEdit;
     const lodGap = spatial.cross.pairs ? +(spatial.cross.gap1Pct * (1 - spatial.cross.occlPct / 100)).toFixed(1) : 0;
-    if (sameWelded) {
-        console.log(
+    if (sameWelded) console.log(
             `   • A · gleiche-LOD-Grenze: halb verschweißt (${spatial.same.binPct[0]} % der Rand-Vertices float-exakt geteilt).`
-        );
-    } else {
-        console.log("   • A · gleiche-LOD-Grenze teilt unerwartet WENIG Vertices.");
-    }
+        ); else console.log("   • A · gleiche-LOD-Grenze teilt unerwartet WENIG Vertices.");
     console.log(
         `   • C · zeitliche Naht (T1): ${t1ok ? "GEHEILT — Footprint (Spieler-Chunk + Grenz-Nachbar) heilt synchron im Edit-Frame, 0 Frames stale." : "noch offen — der Footprint heilt nicht vollständig in-edit."}`
     );

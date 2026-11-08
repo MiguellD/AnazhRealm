@@ -502,7 +502,14 @@ class AnazhRealm_gelaende_chunks {
         return this._nebenAuftrag(
             art === "feld" || art === "gitter" ? "feld" : art === "kamm" ? "kamm" : "fern",
             Object.assign(
-                { type: "fern", art, wl, laub: this._fernLaubLinear(), wasser: this._fernWasserKoerper() },
+                {
+                    type: "fern",
+                    art,
+                    wl,
+                    laub: this._fernLaubLinear(),
+                    jahr: this._fernJahrArten(),
+                    wasser: this._fernWasserKoerper(),
+                },
                 msg
             ),
             transfer

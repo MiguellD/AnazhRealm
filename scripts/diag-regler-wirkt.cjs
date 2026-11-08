@@ -102,8 +102,7 @@ function kernVonArt() {
 const OFEN_PORT = Number(process.env.REGLER_WIRKT_OFEN_PORT || PORT + 1);
 async function imStamm(cb) {
     const server = statikServer();
-    await server.lausche(OFEN_PORT);
-    const { browser, page } = await nullSeite({ frist: 300000 });
+    const { browser, page } = await nullSeite({ frist: 300000 }, server, OFEN_PORT);
     try {
         await server.zeige(page, 60000);
         // Warm: die Heimat steht, die Foundry ist bereit, das Buch (Rezepte + PARAMS) ist da, die Kerne der Öfen sind
@@ -671,12 +670,10 @@ function wurfRichten(zeilen, regel) {
 // Das Urteil (rein): rot, wo die Regel von der teureren Stufe wirft oder eine Stufe bricht.
 function wurfUrteil(zeilen) {
     const rot = [];
-    for (const z of zeilen) {
-        if (z.bruch) rot.push(`${z.art} ${z.wo}: ${z.bruch}`);
+    for (const z of zeilen) if (z.bruch) rot.push(`${z.art} ${z.wo}: ${z.bruch}`);
         else if (z.von !== "zwilling" && z.von !== "selbst") rot.push(`${z.art} ${z.wo}: die Regel antwortet „${z.von}"`);
         else if (z.wirft > Math.min(z.eigen, z.zwilling))
             rot.push(`${z.art} ${z.wo}: wirft ${z.wirft} Dreiecke von der teureren Stufe (${z.von === "zwilling" ? "Zwilling " + z.zwilling + " ≥ Stufe " + z.lod + " " + z.eigen : "Stufe " + z.lod + " " + z.eigen + " > Zwilling " + z.zwilling})`);
-    }
     return rot;
 }
 const tausend = (n) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, " ");

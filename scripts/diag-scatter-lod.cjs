@@ -106,11 +106,7 @@ hauptLauf(async () => {
                 return at >= 0 && !(s.key.startsWith("@s:", at));
             });
         const sucheProbe = (nurNah) => {
-            for (const reg of map.values()) {
-                for (const c of reg.cells || []) {
-                    if (c.slots && c.bpName && !b2Privat(c) && (!nurNah || c.lod < 2)) return c;
-                }
-            }
+            for (const reg of map.values()) for (const c of reg.cells || []) if (c.slots && c.bpName && !b2Privat(c) && (!nurNah || c.lod < 2)) return c;
             return null;
         };
         // BEVORZUGT eine NAHE Zelle (lod<2 → Weg-Sprung auf die vorgewärmte
@@ -170,9 +166,7 @@ hauptLauf(async () => {
         //       neue Distanz), dann: ohne Bewegung realloziert der Tick NICHTS
         //       mehr (Hysterese stabil, kein Flacker-Churn) ──
         let leer = 0;
-        for (let i = 0; i < 600 && leer < 3; i++) {
-            leer = r._tickScatterLod(pm, 16, 800) === 0 ? leer + 1 : 0;
-        }
+        for (let i = 0; i < 600 && leer < 3; i++) leer = r._tickScatterLod(pm, 16, 800) === 0 ? leer + 1 : 0;
         let re = 0;
         for (let i = 0; i < 40; i++) re += r._tickScatterLod(pm, 16, 800);
         res.h = { nachlauf: re, drainiert: leer >= 3 };
@@ -281,8 +275,7 @@ hauptLauf(async () => {
                 // Die Gruppe ist dicht (`_archGroupFree` verdichtet): kein gezeichneter Slot einer
                 // privaten Gruppe trägt eine Null-Skala (der freie Slot, der die Kugel verzerrte).
                 let ursprungsHazard = 0;
-                if (r.state.archInstanceGroups) {
-                    for (const [k, g] of r.state.archInstanceGroups) {
+                if (r.state.archInstanceGroups) for (const [k, g] of r.state.archInstanceGroups) {
                         if (!privat(k) || !g.mesh || !g.mesh.instanceMatrix) continue;
                         const arr = g.mesh.instanceMatrix.array;
                         for (let sl = 0; sl < g.mesh.count; sl++) {
@@ -290,7 +283,6 @@ hauptLauf(async () => {
                             if (arr[o] === 0 && arr[o + 5] === 0 && arr[o + 10] === 0) ursprungsHazard++;
                         }
                     }
-                }
                 dblk.ursprungsHazard = ursprungsHazard;
             }
         } catch (e) {

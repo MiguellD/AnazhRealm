@@ -692,10 +692,11 @@ class AnazhRealm_bild_sicht {
                 const stufe = builder.context.getTextureLevel ? builder.context.getTextureLevel(this, builder) : null;
                 if (!stufe) return himmel;
                 if (konstant(stufe)) {
-                    // die Bestrahlung: der Himmel, den der Grat dem Empfänger lässt (`_horizontHimmel`, ferne.K4), und der Boden
+                    // die Bestrahlung: der Himmel, den der Grat dem Empfänger lässt (`_horizontHimmel`, ferne.K4), und der Boden;
+                    // die Strahlung im Band des Grats ist die Himmels-Sicht der Atmosphäre selbst (die Luft bindet ihre Tafel in
+                    // jedem Stoff schon)
                     const n = builder.context.getUV(this, builder);
-                    const strahlung = (dir) =>
-                        __weltLicht.himmelDerStoffe(quelle, U, dir, T.float(AnazhRealm.HORIZONT_KARTE.gratRauheit));
+                    const strahlung = (dir) => wirt._atmoLutBau().himmelFarbe(dir);
                     // der Ort des Empfängers: die Schatten-Position seines Stoffs (der Ring: der Boden des Gesetzes), sonst
                     // positionWorld — `shadowPositionWorld` steht nur in Stoffen, die Schatten empfangen. Der Grat nimmt nur, wo
                     // der Renderer Schatten zeichnet (`_wirftImStoff`: unter kienspan ruht die Karte)
@@ -2234,10 +2235,12 @@ class AnazhRealm_bild_sicht {
         const ankerX = fr.anchorX;
         const ankerZ = fr.anchorZ;
         const saison = this._fernSaison({ r: 1, g: 1, b: 1 });
+        // die Präsenz des Laubs (w21-laub-jahr-fern): das Dach des Felds fällt wie Ring und Boden (`kroneImJahr` im Faden)
+        const praesenz = this._fernPraesenz();
         const schnee = this._schneeGilt(); // der Faden färbt mit dem Versatz der Schneegrenze, den er trägt
         // die Masche des Texels: Azimut-Breite am Radius (im Faden je Texel), die radiale Zeile des Felds
         const hr = (P.rMaxM - rMin) / (2 * P.rad);
-        this._fernAuftrag("feld", { punkte, ax: ankerX, az: ankerZ, azN: P.az, hr, saison }, [punkte.buffer])
+        this._fernAuftrag("feld", { punkte, ax: ankerX, az: ankerZ, azN: P.az, hr, saison, praesenz }, [punkte.buffer])
             .then((antwort) => {
                 if (this.state.feldPass !== fp || fp.gen !== gen) return;
                 fp.flug = false;
@@ -2248,6 +2251,7 @@ class AnazhRealm_bild_sicht {
                 fp.anchorX = ankerX;
                 fp.anchorZ = ankerZ;
                 fp.saison = saison;
+                fp.praesenz = praesenz;
                 fp.schnee = schnee;
                 fp.laeufe++;
                 // SCHATTIERUNGS-PERSISTENZ: sichtbar wird der Pass erst mit gebackenem Panorama (_feldPanoramaMal setzt
@@ -2260,8 +2264,8 @@ class AnazhRealm_bild_sicht {
             });
     }
 
-    // Ist die Saison seit dem Bild des Feldes gewandert (je Kanal > `FERN_FARBE.saisonDrift`, oder die Schneegrenze um eine
-    // Stufe, `_schneeGilt`)? Ohne Bild nie.
+    // Ist die Saison seit dem Bild des Feldes gewandert (je Kanal > `FERN_FARBE.saisonDrift`, die Präsenz des Laubs um mehr als
+    // denselben Schritt, oder die Schneegrenze um eine Stufe, `_schneeGilt`)? Ohne Bild nie.
     _feldSaisonDrift(fp) {
         if (!fp.saison || fp.flug) return false;
         if (fp.schnee !== this._schneeGilt()) return true;
@@ -2270,7 +2274,8 @@ class AnazhRealm_bild_sicht {
         return (
             Math.abs(jetzt.r - fp.saison.r) > d ||
             Math.abs(jetzt.g - fp.saison.g) > d ||
-            Math.abs(jetzt.b - fp.saison.b) > d
+            Math.abs(jetzt.b - fp.saison.b) > d ||
+            !(Math.abs(this._fernPraesenz() - fp.praesenz) <= d)
         );
     }
 

@@ -47,9 +47,7 @@ function readManifest(root) {
 function coreIdFor(rec, manifest) {
     const first = Array.isArray(manifest) && manifest[0]?.id ? manifest[0].id : "phyto";
     if (!rec || typeof rec.panel !== "string") return first;
-    for (const core of manifest || []) {
-        if (core?.ns && core.id === rec.panel) return core.id;
-    }
+    for (const core of manifest || []) if (core?.ns && core.id === rec.panel) return core.id;
     return first;
 }
 
@@ -148,8 +146,7 @@ function readPack(file) {
 // Wahrheit, die das Pack einfrieren soll).
 async function bootRealm(port) {
     const server = statikServer();
-    await server.lausche(port);
-    const { browser, page } = await nullSeite({ frist: 240000 });
+    const { browser, page } = await nullSeite({ frist: 240000 }, server, port);
     await server.zeige(page, 30000);
     // Welt bereit = `_gameLoopTick` ist eine Funktion (renderer-unabhängig korrekt, CLAUDE.md).
     await page.evaluate(async () => {

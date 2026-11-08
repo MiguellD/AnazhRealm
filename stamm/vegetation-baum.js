@@ -2006,11 +2006,23 @@ class AnazhRealm_vegetation_baum {
     // mit 1 m Rand berühren ({ quelle, Hülle, formen }) — bis stadt-erwachen stand die Hülle in jeder Zelle mit ALLEN Formen: im
     // Dorf nH 300 (bis 900 Formen) fragte jeder Punkt jede, die Räumung seiner Flächen (`_wegeRaeumen`) kostete den Takt nach dem
     // Erwachen 73 ms.
+    // DIE HÜLLE ZUERST (w25-stadt-takt, Lehre 25 — die Räumung kostet ihren Ort, nie die Welt): eine Siedlung, deren Hülle (`x0…x1`,
+    // `z0…z1`: die Formen samt ihrer Ausdehnung, `_wegeFormRadius`) mit dem Rand von 1 m die Zellen nicht erreicht, legt dort keine
+    // Form — sie fällt vor ihren Formen (der Rand 1,001 m trägt die Rundung der Hülle). Bis hier ging jede Räumung am Ort
+    // (`_grundrissAmOrt`) jede Form jeder Siedlung der Karte: Messort stadt, 70 Siedlungen mit 2 400 Formen, je Kasten 0,13 ms
+    // (Null-Renderer), das neue Dorf im Gang 23 ms in EINEM Takt (Radeon, gate:geh-zerlegung).
     _grundrissWegeIn(g, gx0, gx1, gz0, gz1) {
         const wk = this.state.wegeKarte;
         if (!wk) return;
         const G = AnazhRealm.GRUNDRISS_ZELLE;
         for (const b of wk.siedlungen) {
+            if (
+                Math.floor((b.x1 + 1.001) / G) < gx0 ||
+                Math.floor((b.x0 - 1.001) / G) > gx1 ||
+                Math.floor((b.z1 + 1.001) / G) < gz0 ||
+                Math.floor((b.z0 - 1.001) / G) > gz1
+            )
+                continue;
             const je = new Map();
             for (const f of b.formen) {
                 if (f.sperr === -Infinity) continue; // der Rasen eines Plans ist kein Weg (`_stlWegeBuild`)

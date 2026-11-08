@@ -23,15 +23,13 @@ async function checkBandV1721LivingFieldAura({ page, check }) {
         // den Spieler dorthin, ticke updatePlayerEmotions → peace steigt.
         let spot = null,
             best = -1;
-        for (let gx = -2000; gx <= 2000; gx += 100) {
-            for (let gz = -2000; gz <= 2000; gz += 100) {
+        for (let gx = -2000; gx <= 2000; gx += 100) for (let gz = -2000; gz <= 2000; gz += 100) {
                 const l = r.worldFieldAt(gx, gz).lebendig;
                 if (l > best) {
                     best = l;
                     spot = { x: gx, z: gz, lebendig: l };
                 }
             }
-        }
         out.bestLebendig = best;
         if (spot && st.playerMesh && st.player?.emotions) {
             const origPos = st.playerMesh.position.clone();
@@ -606,9 +604,7 @@ async function checkBandWelle6APolish({ page, check }) {
         // Top-Y instanced-aware aus den Flatten-Leaf-AABBs × entry-World-Matrix
         // bestimmen (Collision IST gebaut → isPlayerGrounded raycastet sie).
         let topY = null;
-        if (entry?.mesh) {
-            topY = new THREE.Box3().setFromObject(entry.mesh).max.y;
-        } else if (entry?.instanced) {
+        if (entry?.mesh) topY = new THREE.Box3().setFromObject(entry.mesh).max.y; else if (entry?.instanced) {
             const flat = r._archFlattenBlueprint(entry.type);
             const ew = r._archEntryWorldMatrix(entry);
             const wbox = new THREE.Box3();
@@ -746,9 +742,7 @@ async function checkBandWelle6APolish({ page, check }) {
         let flatBlueprintNotSteep = false;
         // temple instanced: Top-Y aus Flatten-Leaf-AABBs.
         let topYA3 = null;
-        if (_entryA3?.mesh) {
-            topYA3 = new THREE.Box3().setFromObject(_entryA3.mesh).max.y;
-        } else if (_entryA3?.instanced) {
+        if (_entryA3?.mesh) topYA3 = new THREE.Box3().setFromObject(_entryA3.mesh).max.y; else if (_entryA3?.instanced) {
             const flat = r._archFlattenBlueprint(_entryA3.type);
             const ew = r._archEntryWorldMatrix(_entryA3);
             const wbox = new THREE.Box3();
@@ -874,8 +868,7 @@ async function checkBandWelle6APolish({ page, check }) {
         return out;
     });
 
-    if (wave6a45Results) {
-        if (wave6a45Results.phantomExists) {
+    if (wave6a45Results) if (wave6a45Results.phantomExists) {
             check(
                 "Welle 6.A4: Phantom landet auf Hit-Punkt (nicht alter Y-Fallback)",
                 wave6a45Results.phantomYDownward
@@ -889,7 +882,6 @@ async function checkBandWelle6APolish({ page, check }) {
                 wave6a45Results.phantomOnGroundSky === false
             );
         }
-    }
 
     // ### DIE TAT IN WORTEN (spielgang.K5#2; bis dahin je Op ein Wort-Test in sechs Dateien): jedes Op der Tafel ist eine Zeile ###
     // der Tafel in jeder Sprache, ihre Werte stehen darin, ein fremdes Op heißt sich beim Namen; die Liste der Gesten liest sie
@@ -1184,7 +1176,7 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
         const __heBp = __heKey && bps[__heKey];
         const __hkBp = __hkKey && bps[__hkKey];
         out.hasBaumKiefer = !!(__hkBp && Array.isArray(__hkBp.parts) && __hkBp.parts.length >= 2);
-        out.baumEicheIsBuiltIn = !!(__heBp && __heBp.builtIn === true);
+        out.baumEicheIsBuiltIn = !!(__heBp?.builtIn === true);
         out.eichenStammHolz = !!(__heBp && __heBp.parts.some((p) => p.material === "holz"));
         out.eichenKroneLaub = !!(__heBp && __heBp.parts.some((p) => p.material === "laub"));
 
@@ -1242,7 +1234,7 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
         out.ufoSpawned = ufosAfter > ufosBefore;
 
         const newTreeArch = archsAfter > archsBefore ? st.architectures[archsAfter - 1] : null;
-        out.newTreeIsBaumEiche = !!(newTreeArch && newTreeArch.type === "baum_eiche");
+        out.newTreeIsBaumEiche = !!(newTreeArch?.type === "baum_eiche");
         // DER WALD PLANT IM TAKT: die Gestalt des Baums wartet auf den Plan der Wald-Zellen um seinen Ort, wie auf ein
         // kaltes Buch — die Schlange des Walds (`_tickWaldPlan`) plant sie im Takt, dann steht er mit Gestalt und Hülle. Der
         // Band läuft den Takt, bis er steht (höchstens 900 Takte), und nennt, wie lange er wartete.
@@ -1335,7 +1327,7 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
                 try {
                     const g = r._voxelChunkGeometry(0, 0, 0, 4, 4, 4, 1, (_x, y) => 2 - y);
                     const pos = g && g.getAttribute("position");
-                    return !!(pos && pos.count > 0);
+                    return !!(pos?.count > 0);
                 } catch {
                     return false;
                 }
@@ -1474,12 +1466,10 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
             wave6gResults.islandSpawned
         );
         check("Welle 6.G P1.5: spawn_ufo DSL-Op fügt UFO zu state.ufos hinzu", wave6gResults.ufoSpawned);
-        if (wave6gResults.islandHasUnderside !== undefined) {
-            check(
+        if (wave6gResults.islandHasUnderside !== undefined) check(
                 "Welle 6.G P1.5 / V9.42-a: Insel hat Vollkörper (Y-Spanne > 0.5 m, Surface-Nets schließt sich)",
                 wave6gResults.islandHasUnderside
             );
-        }
         check(
             "Welle 6.G P1.5: UFO bleibt bewusst kollisionsfrei (fliegender Beobachter)",
             wave6gResults.ufoHasNoCollision
@@ -1530,15 +1520,13 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
         // zu finden.
         let bestLebendigSpot = null;
         let bestLebendig = 0;
-        for (let x = -200; x <= 200; x += 25) {
-            for (let z = -200; z <= 200; z += 25) {
+        for (let x = -200; x <= 200; x += 25) for (let z = -200; z <= 200; z += 25) {
                 const f = r.worldFieldAt(x, z);
                 if (f.lebendig > bestLebendig) {
                     bestLebendig = f.lebendig;
                     bestLebendigSpot = { x, z };
                 }
             }
-        }
         if (bestLebendigSpot && bestLebendig > 0.5) {
             const treeAff = r.spawnAffinityForBlueprint("baum_eiche", bestLebendigSpot.x, bestLebendigSpot.z);
             const steinAff = r.spawnAffinityForBlueprint("stein_block", bestLebendigSpot.x, bestLebendigSpot.z);
@@ -1549,15 +1537,13 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
         // sollte stein_block bevorzugt sein.
         let bestDichteSpot = null;
         let bestDichte = 0;
-        for (let x = -200; x <= 200; x += 25) {
-            for (let z = -200; z <= 200; z += 25) {
+        for (let x = -200; x <= 200; x += 25) for (let z = -200; z <= 200; z += 25) {
                 const f = r.worldFieldAt(x, z);
                 if (f.dichte > bestDichte) {
                     bestDichte = f.dichte;
                     bestDichteSpot = { x, z };
                 }
             }
-        }
         if (bestDichteSpot && bestDichte > 0.5) {
             const treeAff = r.spawnAffinityForBlueprint("baum_eiche", bestDichteSpot.x, bestDichteSpot.z);
             const steinAff = r.spawnAffinityForBlueprint("stein_block", bestDichteSpot.x, bestDichteSpot.z);
@@ -1568,9 +1554,7 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
             // dichte-dominanten Position erwarten wir
             // stein > tree (wenn lebendig dort low).
             const f = r.worldFieldAt(bestDichteSpot.x, bestDichteSpot.z);
-            if (f.lebendig < 0.4) {
-                out.affinityFavorsSteinInDichteOnlyRegion = steinAff > treeAff;
-            }
+            if (f.lebendig < 0.4) out.affinityFavorsSteinInDichteOnlyRegion = steinAff > treeAff;
         }
         // Initial-Worldgen: state.architectures enthält jetzt
         // Affinity-gespawnte Strukturen — Bäume + (idealerweise)
@@ -1643,24 +1627,18 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
             "Welle 6.G P2: worldFieldAt variiert mit Position (Noise nicht konstant)",
             wave6gP2Results.fieldVariesBySamplePos
         );
-        if (wave6gP2Results.affinityFavorsTreeInLebendigRegion !== undefined) {
-            check(
+        if (wave6gP2Results.affinityFavorsTreeInLebendigRegion !== undefined) check(
                 "Welle 6.G P2: Baum-Affinity > Stein-Affinity in lebendig-hoher Region",
                 wave6gP2Results.affinityFavorsTreeInLebendigRegion
             );
-        }
-        if (wave6gP2Results.steinAffinityNonzeroInDichteRegion !== undefined) {
-            check(
+        if (wave6gP2Results.steinAffinityNonzeroInDichteRegion !== undefined) check(
                 "Welle 6.G P2: Stein-Affinity > 0 in dichte-hoher Region",
                 wave6gP2Results.steinAffinityNonzeroInDichteRegion
             );
-        }
-        if (wave6gP2Results.affinityFavorsSteinInDichteOnlyRegion !== undefined) {
-            check(
+        if (wave6gP2Results.affinityFavorsSteinInDichteOnlyRegion !== undefined) check(
                 "Welle 6.G P2: Stein-Affinity > Baum-Affinity in dichte-only-Region (lebendig<0.4)",
                 wave6gP2Results.affinityFavorsSteinInDichteOnlyRegion
             );
-        }
         check(
             "Welle 6.G P2: Initial-Worldgen hat Architekturen über Affinity gespawnt",
             wave6gP2Results.archCount > 0,
@@ -1695,20 +1673,16 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
             let ok = !!got;
             let detail = "";
             if (got) {
-                for (const a of ["lebendig", "dichte", "brennbar", "magieleitung"]) {
-                    if (Math.abs((got[a] || 0) - exp[a]) > 1e-4) {
+                for (const a of ["lebendig", "dichte", "brennbar", "magieleitung"]) if (Math.abs((got[a] || 0) - exp[a]) > 1e-4) {
                         ok = false;
                         detail = `${a}: erwartet ${exp[a]}, gemessen ${got[a]}`;
                         break;
                     }
-                }
                 if (ok && Math.abs((measuredReson[name] || 0) - exp.resoniert) > 1e-4) {
                     ok = false;
                     detail = `resoniert: erwartet ${exp.resoniert}, gemessen ${measuredReson[name]}`;
                 }
-            } else {
-                detail = "Bauplan fehlt oder keine Tags gemessen";
-            }
+            } else detail = "Bauplan fehlt oder keine Tags gemessen";
             check(`Tags von '${name}' stabil (Spawn-Ort + Resonanz unverschoben)`, ok, detail);
         }
         // der felsturm ist ein EISEN-Mast → broadcasting-Affordanz (Antenne/
@@ -1779,7 +1753,7 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
         const pz = pm ? pm.position.z : 0;
         window.__withNoFoundry(() => {
             const eb = r.spawnArchitecture("felsbogen", { x: px + 9, y: 4, z: pz + 9 });
-            out.felsbogenSpawned = !!(eb && eb.type === "felsbogen");
+            out.felsbogenSpawned = !!(eb?.type === "felsbogen");
             // felsbogen ist instanced (kein eb.mesh); „gerendert"
             // = instanced ODER klassischer Mesh.
             out.felsbogenHasMesh = !!(eb && (eb.mesh || eb.instanced));
@@ -1790,13 +1764,9 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
             // dem geteilten Leaf-Material (Flatten-Cache), nicht aus eb.mesh.
             if (eb) {
                 let firstMeshHex = null;
-                if (eb.mesh) {
-                    eb.mesh.traverse((n) => {
-                        if (firstMeshHex === null && n.isMesh && n.material?.color) {
-                            firstMeshHex = n.material.color.getHex();
-                        }
-                    });
-                } else if (eb.instanced) {
+                if (eb.mesh) eb.mesh.traverse((n) => {
+                        if (firstMeshHex === null && n.isMesh && n.material?.color) firstMeshHex = n.material.color.getHex();
+                    }); else if (eb.instanced) {
                     // Das geteilte Tag-Signatur-Material ist WEISS, die Part-Farbe reist als Instanz-Farbe (leaf.tint
                     // = _archPartTintColor-Hex). Gerendert wird mat.color × tint — genau diese Multiplikation liest
                     // die Probe (tint undefined ⇒ Material-Farbe pur).
@@ -1869,9 +1839,7 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
         // Test-Räume aus dem Voxel-Idempotenz-Cache löschen
         // (sonst leben die Test-Chunk-Keys dauerhaft + blockieren
         // einen späteren echten Pass).
-        for (const k of fresh) {
-            if (st.voxelPopulatedChunks) st.voxelPopulatedChunks.delete(k);
-        }
+        for (const k of fresh) if (st.voxelPopulatedChunks) st.voxelPopulatedChunks.delete(k);
         return out;
     });
 
@@ -1934,9 +1902,7 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
         // emergieren ≥2 verschiedene Boden-Materialien.
         const seen = {};
         for (let x = -200; x <= 200; x += 40) {
-            for (let z = -200; z <= 200; z += 40) {
-                seen[r._terrainMaterialAt(x, z)] = true;
-            }
+            for (let z = -200; z <= 200; z += 40) seen[r._terrainMaterialAt(x, z)] = true;
         }
         out.terrainMaterialVariety = Object.keys(seen).length;
 
@@ -1966,7 +1932,7 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
         out.digReturned = ok === true;
         out.digYieldedMaterial = !!dugSlot || inv.filter((s) => s && s.kind === "material").length > matSlotsBefore;
         out.digYieldMatchesField = !!dugSlot;
-        out.digYieldCountSane = !!(dugSlot && dugSlot.count >= 1 && dugSlot.count <= 10);
+        out.digYieldCountSane = !!(dugSlot?.count >= 1 && dugSlot.count <= 10);
         for (let i = 0; i < inv.length; i++) inv[i] = invSnapshot[i];
         r._raycastWorldHit = origRay;
         r._pickArchitectureAtCrosshair = origPick;
@@ -2150,9 +2116,7 @@ async function checkBandV18203Gamma3FeldCharakter({ page, check }) {
         } finally {
             if (origGen === undefined) {
                 if (st.worldMeta) delete st.worldMeta.genVersion;
-            } else if (st.worldMeta) {
-                st.worldMeta.genVersion = origGen;
-            }
+            } else if (st.worldMeta) st.worldMeta.genVersion = origGen;
             st.worldField = origField;
         }
         return out;

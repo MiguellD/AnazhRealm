@@ -1895,7 +1895,7 @@ function urteil(o) {
         const nichtL0 = hs.filter((h) => h.stufe !== 0 || h.huelle !== 0);
         if (nichtL0.length)
             f.push(`Aufbau: ${nichtL0.length} Häuser ohne Stufe 0 / Hülle 0 (${nichtL0.map((h) => h.typ).join(" ")})`);
-        const ohneSchwelle = hs.filter((h) => h.vorplatzUeberM === null || h.vorplatzUeberM === undefined);
+        const ohneSchwelle = hs.filter((h) => h.vorplatzUeberM == null);
         if (ohneSchwelle.length)
             f.push(`W1 Tür: ${ohneSchwelle.length} Häuser ohne Diele hinter der Schwelle im Gesetzbuch (Vorbedingung)`);
         const begraben = hs.filter((h) => h.vorplatzUeberM > 0.2);

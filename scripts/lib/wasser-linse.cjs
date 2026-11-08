@@ -103,7 +103,7 @@ function wasserFluss() {
     }
     quer.sort((a, b) => a - b);
     buckel.sort((a, b) => a - b);
-    const q = (p, A = quer) => (A.length ? A[Math.min(A.length - 1, Math.floor(p * A.length))] : 0);
+    const q = (p, A = quer) => (A.length ? rang(A, p) : 0);
     const R = wasserRund(3);
     // Wasserfall-Doppel: ein Sturz je Ort (der geteilte Unterlauf zieht ihn sonst je Quelle).
     const wf = Array.isArray(h.waterfalls) ? h.waterfalls : [];
@@ -207,7 +207,7 @@ async function wasserKoerper(o = {}) {
         r.removeCreature(c);
         if (!tiefen.length) return null;
         const linie = tb?.bein ? tb.bein[0].h * (c.scale.x || 1) : null;
-        const sohle = tiefen[tiefen.length >> 1];
+        const sohle = rang(tiefen);
         const schwimmt = c.userData._motionZustand === "schwimmen";
         return { seele, abstand, sohleUnterSpiegel: R(sohle, 3), wasserlinie: R(linie, 3), schwimmt };
     };
@@ -228,7 +228,7 @@ async function wasserKoerper(o = {}) {
         }
         fuesse.sort((a, b) => a - b);
         aus.lage = {
-            fussUnterSpiegelP50: R(-fuesse[fuesse.length >> 1], 3),
+            fussUnterSpiegelP50: R(-rang(fuesse), 3),
             sollFussUnterSpiegel: R(brust, 3),
             augenUnter,
             geerdet: st._fieldWasGrounded === true,
@@ -2285,7 +2285,7 @@ async function wasserQuelle(o = {}) {
                 beispiele.push(zeile);
         }
     }
-    const p50 = (A) => (A.length ? A.slice().sort((a, b) => a - b)[A.length >> 1] : 0);
+    const p50 = (A) => (A.length ? rang(A.slice().sort((a, b) => a - b)) : 0);
     const h0 = huelleVon(st.hydrosphere)(0);
     return {
         quellen,
@@ -2350,7 +2350,7 @@ function quellTeileVereinen(teile) {
             fehler: `die Teile der Quell-Probe sehen verschiedene Kacheln (${abdruck(teile[0])} gegen ${abdruck(fremd)})`,
         };
     const R = wasserRund(2);
-    const p50 = (A) => (A.length ? A.slice().sort((a, b) => a - b)[A.length >> 1] : 0);
+    const p50 = (A) => (A.length ? rang(A.slice().sort((a, b) => a - b)) : 0);
     const summe = (k) => teile.reduce((s, t) => s + (t[k] || 0), 0);
     const breiten0 = [].concat(...teile.map((t) => t.breiten0 || []));
     const tiefen0 = [].concat(...teile.map((t) => t.tiefen0 || []));
@@ -2619,7 +2619,7 @@ async function wasserBank(o = {}) {
         }
     }
     const s = winkel.slice().sort((a, b) => a - b);
-    const q = (p) => (s.length ? s[Math.min(s.length - 1, Math.floor(p * s.length))] : 0);
+    const q = (p) => (s.length ? rang(s, p) : 0);
     return {
         ort,
         r: rad,
@@ -3051,13 +3051,13 @@ async function wasserOrte(o = {}) {
                 if (!(r._terrainMacroSurfaceY(x, z, false) < wl - 2)) continue;
                 await __weltDa(() => !r._ensureHydroTilesAround(x, z, 0));
                 const h = r._hydroFor(x, z);
-                if (h?.ready && regionen.indexOf(h) < 0) regionen.push(h);
-                da = !!(h?.water?.waterKind && h.water.waterKind.indexOf(1) >= 0);
+                if (h?.ready && !regionen.includes(h)) regionen.push(h);
+                da = !!(h?.water?.waterKind && h.water.waterKind.includes(1));
                 // die Küste ist breiter als eine Kachel: ihre Nachbarn gehören zur Suche nach der Tasche (unten)
                 if (da) {
                     await __weltDa(() => !r._ensureHydroTilesAround(x, z, 1024));
                     for (const t of st.hydroTiles ? st.hydroTiles.values() : [])
-                        if (t?.ready && regionen.indexOf(t) < 0) regionen.push(t);
+                        if (t?.ready && !regionen.includes(t)) regionen.push(t);
                 }
             }
         }

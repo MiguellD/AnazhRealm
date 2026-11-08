@@ -87,7 +87,7 @@ function flussBericht() {
     const pct = (a, q) => {
         if (!a.length) return 0;
         const s = [...a].sort((x, y) => x - y);
-        return s[Math.min(s.length - 1, Math.floor(q * s.length))];
+        return rang(s, q);
     };
     const sum = (a, k) => a.reduce((s, x) => s + (k ? x[k] : x), 0);
     const r1 = (x) => Math.round(x * 10) / 10;

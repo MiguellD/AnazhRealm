@@ -639,7 +639,7 @@ async function messeOrt(page, name, ort, stubs) {
                 um.sattel = st.player.mountedArch != null;
                 // aus dem Sattel: die Stimme der Fahrt (klang:FAHRT, ihre Quellen trägt sie selbst) verklingt im nächsten Takt
                 if (sz.e) (r.dismountArchitecture(), r.removeArchitecture(sz.e, { still: true }), W.takt());
-                const med = (a) => +(a.sort((x, y) => x - y)[a.length >> 1] || 0).toFixed(2);
+                const med = (a) => +(rang(a.sort((x, y) => x - y)) || 0).toFixed(2);
                 const laufend = W.laufend();
                 const zensus = W.zensus();
                 if (zensus) zensus.leiber.flug = { mps: med(weg), hoeheM: med(hoch) };
@@ -1054,7 +1054,7 @@ function taktSeite(m, echt, namen) {
     T.urteil = (soll) => {
         T.phase = "";
         const s = [...T.bilder].sort((x, y) => x.ms - y.ms);
-        const q = (k) => +(s[Math.min(s.length - 1, Math.floor(k * s.length))]?.ms || 0).toFixed(2);
+        const q = (k) => +(rang(s, k)?.ms || 0).toFixed(2);
         const ueber = T.bilder.filter((x) => x.ms > soll);
         const last = {};
         for (const x of ueber) for (const k in x.teile) last[k] = (last[k] || 0) + x.teile[k] / ueber.length;
@@ -1330,7 +1330,7 @@ function koerperUrteil(F) {
     const [l0, l1] = [fall[0] || [], fall.at(-1) || []];
     return {
         rot,
-        zahl: `Motor ${q[q.length >> 1]} Hz je 1000 Upm · Landung ${(l1[4] - l0[4]) / (l1[1] - l0[1])} dB je m/s (${fall.map((x) => `${x[0]} m ${x[1]} m/s ${x[4]} dB`).join(" · ")}) · Doppler ${F.doppler.map((x) => `${x[0]} m ${x[2]}/${x[1]}`).join(" · ")}`,
+        zahl: `Motor ${rang(q)} Hz je 1000 Upm · Landung ${(l1[4] - l0[4]) / (l1[1] - l0[1])} dB je m/s (${fall.map((x) => `${x[0]} m ${x[1]} m/s ${x[4]} dB`).join(" · ")}) · Doppler ${F.doppler.map((x) => `${x[0]} m ${x[2]}/${x[1]}`).join(" · ")}`,
     };
 }
 
