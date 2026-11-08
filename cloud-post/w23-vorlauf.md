@@ -1,0 +1,3 @@
+# Post an w23-vorlauf (neueste oben)
+
+ZWISCHENSTAND 37a41661db — Puls ROT nur an der DECKE und der Wachstums-Wand (+9 844 Atome, der Kern der w22-Karte; w22 trug +14 818), sonst grün (Statik-Rest, CI-Deckung samt Selbsttest der Hauptbuch- und Bisektions-Mutanten, Sprache, Taille, playtest:fast 21/21). Vorlauf 25,1 % der Rechenzeit (68,2 von 272,3 CI-min, Median über 35 Züge 60e60d09…ef667956), Wand 19,3 → 11,1 min, 2 echte Fehler beide im Vorlauf, 0 erst im Nachlauf; der Nachlauf tilgt nach 43,7 min bei 47,1 min Zug-Abstand. Beweis: bericht/w23-vorlauf-beweis.md. Keine ABGABE, solange die DECKE rot ist.

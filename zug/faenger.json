@@ -1,0 +1,5942 @@
+{
+ "bis": "2026-11-08T10:53:35Z",
+ "quelle": "zug-werkzeug.cjs --faenger über die Läufe von check.yml ab 24.10. (1986 Läufe, 31524 Jobs), Karte 185e99bb",
+ "zahl": {
+  "wackler": 397,
+  "gpu": 21,
+  "abbruch": 848,
+  "echt": 178,
+  "reibung": 303,
+  "offen": 192
+ },
+ "ereignisse": [
+  {
+   "k": "Das Haus der Welt ist begehbar, wie es gezeichnet ist",
+   "sha": "8efdf092bc2a1564f3e9fc356015b05ee7b26391",
+   "zweig": "studios-k5-wege",
+   "t": "2026-10-24T00:08:33Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Der Settlement-Kanal N5.7",
+   "sha": "48a3b69807d2864092bfb7de58d6c3fc86b59024",
+   "zweig": "claude/adoring-turing-r36olf",
+   "t": "2026-10-24T00:10:25Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Die Trias-Linse",
+   "sha": "e536d560817617996fc7002fa758106bbb00d21e",
+   "zweig": "bauen-k3-pruefsatz",
+   "t": "2026-10-24T00:26:37Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Fahr-Linse des Lebens",
+   "sha": "4a76801d7e80c4e6bdaa48de7212f7356a487d85",
+   "zweig": "wetter-front-wind",
+   "t": "2026-10-24T00:30:33Z",
+   "kl": "echt",
+   "taeter": [
+    "wetter-front-wind"
+   ],
+   "bekannt": "2026-10-24T12:31:20Z"
+  },
+  {
+   "k": "Das Haus der Welt ist begehbar, wie es gezeichnet ist",
+   "sha": "4a76801d7e80c4e6bdaa48de7212f7356a487d85",
+   "zweig": "wetter-front-wind",
+   "t": "2026-10-24T00:30:33Z",
+   "kl": "echt",
+   "taeter": [
+    "wetter-front-wind"
+   ],
+   "bekannt": "2026-10-24T09:21:33Z"
+  },
+  {
+   "k": "Wasser-Bild",
+   "sha": "4a76801d7e80c4e6bdaa48de7212f7356a487d85",
+   "zweig": "wetter-front-wind",
+   "t": "2026-10-24T00:30:33Z",
+   "kl": "echt",
+   "taeter": [
+    "wetter-front-wind"
+   ],
+   "bekannt": "2026-10-24T09:21:33Z"
+  },
+  {
+   "k": "Das Haus der Welt ist begehbar, wie es gezeichnet ist",
+   "sha": "018a8ef88a26c84d6ac56a2f34249c89af61db55",
+   "zweig": "physik-k1-kg",
+   "t": "2026-10-24T01:11:01Z",
+   "kl": "echt",
+   "taeter": [
+    "physik-k1-kg"
+   ],
+   "bekannt": "2026-10-24T02:32:18Z"
+  },
+  {
+   "k": "Kopplung",
+   "sha": "018a8ef88a26c84d6ac56a2f34249c89af61db55",
+   "zweig": "physik-k1-kg",
+   "t": "2026-10-24T01:11:01Z",
+   "kl": "echt",
+   "taeter": [
+    "physik-k1-kg"
+   ],
+   "bekannt": "2026-10-24T02:32:18Z"
+  },
+  {
+   "k": "Das Haus der Welt ist begehbar, wie es gezeichnet ist",
+   "sha": "725df9440ec0ae7d6dc65c7074b640ffc2fa0eee",
+   "zweig": "ferne-blau-k1",
+   "t": "2026-10-24T01:24:32Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Mehrspieler-Wand",
+   "sha": "725df9440ec0ae7d6dc65c7074b640ffc2fa0eee",
+   "zweig": "ferne-blau-k1",
+   "t": "2026-10-24T01:24:32Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Ofen-Vertrag",
+   "sha": "689099403dcfc7767a943da3c3f96955c14d0bc6",
+   "zweig": "physik-k1-kg",
+   "t": "2026-10-24T02:32:18Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Ofen-Vertrag",
+   "sha": "6bb8a117112ff8b72c8c192f465798f49eab3bee",
+   "zweig": "integ-probe",
+   "t": "2026-10-24T03:03:16Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Fahr-Linse des Lebens",
+   "sha": "c9c4d52aac124cce3956dc2f885cef72a7a480db",
+   "zweig": "klang-k5-aussetzer",
+   "t": "2026-10-24T03:09:02Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Das Haus der Welt ist begehbar, wie es gezeichnet ist",
+   "sha": "9768286ceb5abdc24b7ca5a1a1f7743399d42f50",
+   "zweig": "e-bauart",
+   "t": "2026-10-24T03:17:18Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Voller Playtest",
+   "sha": "5f5b9aecdb730ae25d3be8543b6d60a40992a7c2",
+   "zweig": "integ-probe",
+   "t": "2026-10-24T03:48:23Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Das Haus der Welt ist begehbar, wie es gezeichnet ist",
+   "sha": "e0151bb9db79c11ebfff2b0a61b111e3b255530d",
+   "zweig": "siedlung-k5-nah",
+   "t": "2026-10-24T04:22:04Z",
+   "kl": "echt",
+   "taeter": [
+    "siedlung-k5-nah"
+   ],
+   "bekannt": "2026-10-24T07:25:42Z"
+  },
+  {
+   "k": "Voller Playtest",
+   "sha": "e0151bb9db79c11ebfff2b0a61b111e3b255530d",
+   "zweig": "siedlung-k5-nah",
+   "t": "2026-10-24T04:22:04Z",
+   "kl": "echt",
+   "taeter": [
+    "siedlung-k5-nah"
+   ],
+   "bekannt": "2026-10-24T07:25:42Z"
+  },
+  {
+   "k": "Das Haus der Welt ist begehbar, wie es gezeichnet ist",
+   "sha": "5615249c06382bdea2c32946156c0c1870456274",
+   "zweig": "integ-probe",
+   "t": "2026-10-24T05:49:34Z",
+   "kl": "echt",
+   "taeter": [
+    "siedlung-k5-nah"
+   ],
+   "bekannt": "2026-10-24T11:20:39.000Z"
+  },
+  {
+   "k": "Die Fahr-Linse des Lebens",
+   "sha": "206194c50462ff757057b5c6e68099f07a9cb25c",
+   "zweig": "klang-k5-aussetzer",
+   "t": "2026-10-24T06:03:06Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Das Haus der Welt ist begehbar, wie es gezeichnet ist",
+   "sha": "8e6f2ce0e5d93110f6ffa4cd22571ae1aaa501ef",
+   "zweig": "e-bauart",
+   "t": "2026-10-24T06:28:00Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "WebGL2-Rückfall",
+   "sha": "8e6f2ce0e5d93110f6ffa4cd22571ae1aaa501ef",
+   "zweig": "e-bauart",
+   "t": "2026-10-24T06:28:00Z",
+   "kl": "echt",
+   "taeter": [
+    "e-bauart"
+   ],
+   "bekannt": "2026-10-24T08:35:11Z"
+  },
+  {
+   "k": "WebGL2-Rückfall",
+   "sha": "aae64ee626a6971b3b4d4dc902327b31761b3aa7",
+   "zweig": "siedlung-k5-nah",
+   "t": "2026-10-24T07:25:42Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Das Studio-Dorf begehen",
+   "sha": "aae64ee626a6971b3b4d4dc902327b31761b3aa7",
+   "zweig": "siedlung-k5-nah",
+   "t": "2026-10-24T07:25:42Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Fahr-Linse des Lebens",
+   "sha": "a808dd5b12e29e2936c11590f9abd1c78afed5b7",
+   "zweig": "klang-k5-aussetzer",
+   "t": "2026-10-24T07:36:24Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Das Haus der Welt ist begehbar, wie es gezeichnet ist",
+   "sha": "a808dd5b12e29e2936c11590f9abd1c78afed5b7",
+   "zweig": "klang-k5-aussetzer",
+   "t": "2026-10-24T07:36:24Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Voller Playtest",
+   "sha": "a808dd5b12e29e2936c11590f9abd1c78afed5b7",
+   "zweig": "klang-k5-aussetzer",
+   "t": "2026-10-24T07:36:24Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Das Haus der Welt ist begehbar, wie es gezeichnet ist",
+   "sha": "54c74113e8084b8d5db8a7223c0dc96f8b8639ee",
+   "zweig": "e-bauart",
+   "t": "2026-10-24T08:35:11Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Das Haus der Welt ist begehbar, wie es gezeichnet ist",
+   "sha": "129ed07a21d88f272e15b17b7b608116e65e560f",
+   "zweig": "halten-k3-sichel",
+   "t": "2026-10-24T08:37:58Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Werkstatt-Weg-Linse",
+   "sha": "129ed07a21d88f272e15b17b7b608116e65e560f",
+   "zweig": "halten-k3-sichel",
+   "t": "2026-10-24T08:37:58Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Das Haus der Welt ist begehbar, wie es gezeichnet ist",
+   "sha": "51adfc10095e26ae88fe3dbe9fb19a4a3d3d62cd",
+   "zweig": "tore-k5-geste",
+   "t": "2026-10-24T08:52:01Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Das Studio-Dorf begehen",
+   "sha": "c132e48746a6133fc5e85bbc24558944f1017a82",
+   "zweig": "integ-probe",
+   "t": "2026-10-24T08:56:24Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "WebGL2-Rückfall",
+   "sha": "24f100d0e166a317d16af112ef5082f5a864aecf",
+   "zweig": "bauen-k4-editform",
+   "t": "2026-10-24T09:10:21Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Das Haus der Welt ist begehbar, wie es gezeichnet ist",
+   "sha": "24f100d0e166a317d16af112ef5082f5a864aecf",
+   "zweig": "bauen-k4-editform",
+   "t": "2026-10-24T09:10:21Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die V1-Pfad-Linse",
+   "sha": "30a2b0d62fe3b3bfdf6bdef8d0b5240229d88098",
+   "zweig": "bauen-k3-pruefsatz",
+   "t": "2026-10-24T09:11:00Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Werk im Wasser",
+   "sha": "9a0ef21dc535aa20328948856ca7cdda6241d4d7",
+   "zweig": "streaming-k5-transfer",
+   "t": "2026-10-24T09:15:53Z",
+   "kl": "echt",
+   "taeter": [
+    "streaming-k5-transfer"
+   ],
+   "bekannt": "2026-10-24T12:48:38Z"
+  },
+  {
+   "k": "WebGL2-Rückfall",
+   "sha": "56156860435593794b45d644e13ba29cd4fbf9fd",
+   "zweig": "speicher-k5-korpus",
+   "t": "2026-10-24T09:20:26Z",
+   "kl": "echt",
+   "taeter": [
+    "speicher-k5-korpus"
+   ],
+   "bekannt": "2026-10-24T13:33:55.000Z"
+  },
+  {
+   "k": "Das Haus der Welt ist begehbar, wie es gezeichnet ist",
+   "sha": "56156860435593794b45d644e13ba29cd4fbf9fd",
+   "zweig": "speicher-k5-korpus",
+   "t": "2026-10-24T09:20:26Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Voller Playtest",
+   "sha": "a613376eadbcafbc794de9079bc7563c4d3ea966",
+   "zweig": "wetter-front-wind",
+   "t": "2026-10-24T09:21:33Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Fahr-Linse des Lebens",
+   "sha": "a613376eadbcafbc794de9079bc7563c4d3ea966",
+   "zweig": "wetter-front-wind",
+   "t": "2026-10-24T09:21:33Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Das Haus der Welt ist begehbar, wie es gezeichnet ist",
+   "sha": "0b62c22d2832fcdb71e633be8f594d5df0fbbffd",
+   "zweig": "material-k2-mikro",
+   "t": "2026-10-24T09:22:54Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Voller Playtest",
+   "sha": "8c425982da5772c124db0a5320073a8b0b3ea5c0",
+   "zweig": "siedlung-k5-nah",
+   "t": "2026-10-24T09:50:57Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Das Haus der Welt ist begehbar, wie es gezeichnet ist",
+   "sha": "8c425982da5772c124db0a5320073a8b0b3ea5c0",
+   "zweig": "siedlung-k5-nah",
+   "t": "2026-10-24T09:50:57Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Foundry-Impostor auf dem EINEN Haupt-Renderer",
+   "sha": "65eb30a080b30a7e9108a45c942289439e2c4767",
+   "zweig": "lod-saum",
+   "t": "2026-10-24T10:00:19Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Das Haus der Welt ist begehbar, wie es gezeichnet ist",
+   "sha": "c8a947bbe164703df265e77ccbe4ee07c101b69b",
+   "zweig": "dorf-takt-z13",
+   "t": "2026-10-24T10:02:58Z",
+   "kl": "echt",
+   "taeter": [
+    "dorf-takt-z13"
+   ],
+   "bekannt": "2026-10-24T12:20:13Z"
+  },
+  {
+   "k": "Das Haus der Welt ist begehbar, wie es gezeichnet ist",
+   "sha": "288724513ef25b01fb2d44c610806dcf03c15f8d",
+   "zweig": "b-abdruck",
+   "t": "2026-10-24T10:03:01Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Voller Playtest",
+   "sha": "288724513ef25b01fb2d44c610806dcf03c15f8d",
+   "zweig": "b-abdruck",
+   "t": "2026-10-24T10:03:01Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Voller Playtest",
+   "sha": "2d8ac5f6d7ecec79a692d9c6d22be5c2f1ea03d6",
+   "zweig": "tiere-k2k4",
+   "t": "2026-10-24T10:31:19Z",
+   "kl": "echt",
+   "taeter": [
+    "tiere-k2k4"
+   ],
+   "bekannt": "2026-10-24T13:08:39Z"
+  },
+  {
+   "k": "Die V1-Pfad-Linse",
+   "sha": "4a9fc8623df259f0e6bd14d4ff9487c12647f9dc",
+   "zweig": "integ-probe",
+   "t": "2026-10-24T10:42:29Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Persistenz-Härtung Teil 1",
+   "sha": "4a9fc8623df259f0e6bd14d4ff9487c12647f9dc",
+   "zweig": "integ-probe",
+   "t": "2026-10-24T10:42:29Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Werk im Wasser",
+   "sha": "4a9fc8623df259f0e6bd14d4ff9487c12647f9dc",
+   "zweig": "integ-probe",
+   "t": "2026-10-24T10:42:29Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Persistenz-Härtung Teil 2",
+   "sha": "4a9fc8623df259f0e6bd14d4ff9487c12647f9dc",
+   "zweig": "integ-probe",
+   "t": "2026-10-24T10:42:29Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Fahr-Linse des Lebens",
+   "sha": "229641401c78d4a878e69aa9d6348aa2d46393d8",
+   "zweig": "wetter-front-wind",
+   "t": "2026-10-24T10:45:08Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Kreatur-Linse Teil 1",
+   "sha": "bc3b474ba3c7454c7fb29827c571f040391f8d81",
+   "zweig": "integ-probe",
+   "t": "2026-10-24T12:14:43Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Voller Playtest",
+   "sha": "bc3b474ba3c7454c7fb29827c571f040391f8d81",
+   "zweig": "integ-probe",
+   "t": "2026-10-24T12:14:43Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Kreatur-Linse Teil 3",
+   "sha": "bc3b474ba3c7454c7fb29827c571f040391f8d81",
+   "zweig": "integ-probe",
+   "t": "2026-10-24T12:14:43Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die V1-Pfad-Linse",
+   "sha": "4ccd223f95d8b2f13b301a40fa6b25a290b05847",
+   "zweig": "wetter-front-wind",
+   "t": "2026-10-24T12:31:20Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Werkstatt-Weg-Linse",
+   "sha": "4ccd223f95d8b2f13b301a40fa6b25a290b05847",
+   "zweig": "wetter-front-wind",
+   "t": "2026-10-24T12:31:20Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Portal-Konformanz",
+   "sha": "bef8c5be17c816b5fa8cefdfba53a7e6ebe8de44",
+   "zweig": "speicher-k5-korpus",
+   "t": "2026-10-24T12:40:03Z",
+   "kl": "echt",
+   "taeter": [
+    "speicher-k5-korpus"
+   ],
+   "bekannt": "2026-10-24T13:33:55.000Z"
+  },
+  {
+   "k": "Post-Kette",
+   "sha": "135d5849efe276eb0df672adc53b2dd4e1f71ebb",
+   "zweig": "stoffe-k3-phasen",
+   "t": "2026-10-24T14:12:03Z",
+   "kl": "echt",
+   "taeter": [
+    "stoffe-k3-phasen"
+   ],
+   "bekannt": "2026-10-24T16:45:01Z"
+  },
+  {
+   "k": "Post-Kette",
+   "sha": "a3b87db127bbd018bf82723202a5d9f7ab93914f",
+   "zweig": "stoffe-k3-phasen",
+   "t": "2026-10-24T15:16:28Z",
+   "kl": "echt",
+   "taeter": [
+    "stoffe-k3-phasen"
+   ],
+   "bekannt": "2026-10-24T16:45:01Z"
+  },
+  {
+   "k": "echt: Post-Kette auf der Karte",
+   "sha": "cd75808792752fda012c7f50493943ad184798ec",
+   "zweig": "integ-probe",
+   "t": "2026-10-24T15:18:57Z",
+   "kl": "echt",
+   "taeter": [
+    "stoffe-k3-phasen"
+   ],
+   "bekannt": "2026-10-24T17:28:11.000Z"
+  },
+  {
+   "k": "Post-Kette",
+   "sha": "cd75808792752fda012c7f50493943ad184798ec",
+   "zweig": "integ-probe",
+   "t": "2026-10-24T15:18:57Z",
+   "kl": "echt",
+   "taeter": [
+    "stoffe-k3-phasen"
+   ],
+   "bekannt": "2026-10-24T17:28:11.000Z"
+  },
+  {
+   "k": "Das Haus der Welt Teil 2",
+   "sha": "74765c46382841e98cef1e9b14dbc21d2bce7690",
+   "zweig": "siedlung-k3-trasse",
+   "t": "2026-10-24T19:50:14Z",
+   "kl": "echt",
+   "taeter": [
+    "siedlung-k3-trasse"
+   ],
+   "bekannt": "2026-10-26T12:51:35.000Z"
+  },
+  {
+   "k": "Die Kreatur-Linse Teil 1",
+   "sha": "74765c46382841e98cef1e9b14dbc21d2bce7690",
+   "zweig": "siedlung-k3-trasse",
+   "t": "2026-10-24T19:50:14Z",
+   "kl": "echt",
+   "taeter": [
+    "siedlung-k3-trasse"
+   ],
+   "bekannt": "2026-10-26T12:51:35.000Z"
+  },
+  {
+   "k": "Das Haus der Welt ist begehbar, wie es gezeichnet ist",
+   "sha": "74765c46382841e98cef1e9b14dbc21d2bce7690",
+   "zweig": "siedlung-k3-trasse",
+   "t": "2026-10-24T19:50:14Z",
+   "kl": "echt",
+   "taeter": [
+    "siedlung-k3-trasse"
+   ],
+   "bekannt": "2026-10-26T12:51:35.000Z"
+  },
+  {
+   "k": "Die Werkstatt-Weg-Linse",
+   "sha": "74765c46382841e98cef1e9b14dbc21d2bce7690",
+   "zweig": "siedlung-k3-trasse",
+   "t": "2026-10-24T19:50:14Z",
+   "kl": "echt",
+   "taeter": [
+    "siedlung-k3-trasse"
+   ],
+   "bekannt": "2026-10-26T12:51:35.000Z"
+  },
+  {
+   "k": "Das Studio-Dorf begehen",
+   "sha": "74765c46382841e98cef1e9b14dbc21d2bce7690",
+   "zweig": "siedlung-k3-trasse",
+   "t": "2026-10-24T19:50:14Z",
+   "kl": "echt",
+   "taeter": [
+    "siedlung-k3-trasse"
+   ],
+   "bekannt": "2026-10-26T12:51:35.000Z"
+  },
+  {
+   "k": "Die Werkstatt-Weg-Linse",
+   "sha": "3a8073361793850b63750c7e8849ade0734417cb",
+   "zweig": "tiere-gang-tastgrad",
+   "t": "2026-10-25T00:25:35Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "echt: Lichtweg auf der Karte",
+   "sha": "ee5a4c71792228d3610e5ab70368312fe800b8af",
+   "zweig": "integ-probe",
+   "t": "2026-10-25T00:35:03Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Die Werkstatt-Weg-Linse",
+   "sha": "eaa884f92b55c9c2a13fc2220a6db5e052f86e72",
+   "zweig": "stoffe-k1-tafel",
+   "t": "2026-10-25T01:46:05Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Die Werkstatt-Weg-Linse",
+   "sha": "dbcb1242e44b42f7e64894a4c0f2ec3705811596",
+   "zweig": "integ-probe",
+   "t": "2026-10-25T01:55:41Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Die Werkstatt-Weg-Linse",
+   "sha": "878758d9bc94f4edccd2118b8cabda828062e9f4",
+   "zweig": "speicher-k3-weg",
+   "t": "2026-10-25T01:58:24Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Mehrspieler-Wand",
+   "sha": "3464f4b63467e4ce95b06432e8a40d78a9b09fad",
+   "zweig": "werkstatt-weg-ereignis",
+   "t": "2026-10-25T02:21:00Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Persistenz-Härtung Teil 2",
+   "sha": "b05dea1ecb9db929bedff20a425b943c4acef313",
+   "zweig": "heim-z29",
+   "t": "2026-10-25T05:24:25Z",
+   "kl": "echt",
+   "taeter": [
+    "heim-z29"
+   ],
+   "bekannt": "2026-10-25T05:46:26Z"
+  },
+  {
+   "k": "Die Ankunfts-Linse",
+   "sha": "b05dea1ecb9db929bedff20a425b943c4acef313",
+   "zweig": "heim-z29",
+   "t": "2026-10-25T05:24:25Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Die Ankunfts-Linse",
+   "sha": "3e8a2b27938d004d8bcd39e77feee72ec80bf6b4",
+   "zweig": "heim-z29",
+   "t": "2026-10-25T05:46:26Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Kollision = Bild",
+   "sha": "80fc468804699d837af19ea692b075a26ca1e101",
+   "zweig": "heim-z29b",
+   "t": "2026-10-25T06:53:49Z",
+   "kl": "echt",
+   "taeter": [
+    "heim-z29b"
+   ],
+   "bekannt": "2026-10-25T07:40:06Z"
+  },
+  {
+   "k": "Die Kreatur-Linse Teil 1",
+   "sha": "80fc468804699d837af19ea692b075a26ca1e101",
+   "zweig": "heim-z29b",
+   "t": "2026-10-25T06:53:49Z",
+   "kl": "echt",
+   "taeter": [
+    "heim-z29b"
+   ],
+   "bekannt": "2026-10-25T09:54:48Z"
+  },
+  {
+   "k": "echt: Naesse auf der Karte",
+   "sha": "f25740f8a3a2b0492509d65a6bd3116d60a8ec92",
+   "zweig": "integ-probe",
+   "t": "2026-10-25T07:45:13Z",
+   "kl": "echt",
+   "taeter": [
+    "heim-z29b"
+   ],
+   "bekannt": "2026-10-25T10:20:10.000Z"
+  },
+  {
+   "k": "Die Ankunfts-Linse",
+   "sha": "f25740f8a3a2b0492509d65a6bd3116d60a8ec92",
+   "zweig": "integ-probe",
+   "t": "2026-10-25T07:45:13Z",
+   "kl": "echt",
+   "taeter": [
+    "heim-z29b"
+   ],
+   "bekannt": "2026-10-25T10:20:10.000Z"
+  },
+  {
+   "k": "Die Ankunfts-Linse",
+   "sha": "ebda89d3c9f009417887c14c45d5e189e63f98da",
+   "zweig": "gpu-wand",
+   "t": "2026-10-25T08:40:28Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Kamera-Leib-Linse",
+   "sha": "ebda89d3c9f009417887c14c45d5e189e63f98da",
+   "zweig": "gpu-wand",
+   "t": "2026-10-25T08:40:28Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Fahr-Linse des Lebens",
+   "sha": "ebda89d3c9f009417887c14c45d5e189e63f98da",
+   "zweig": "gpu-wand",
+   "t": "2026-10-25T08:40:28Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Ankunfts-Linse",
+   "sha": "64f26bb26a0352cce63312ea6c3ff97932dafdff",
+   "zweig": "bauen-k5-verben",
+   "t": "2026-10-25T09:14:33Z",
+   "kl": "echt",
+   "taeter": [
+    "bauen-k5-verben"
+   ],
+   "bekannt": "2026-10-27T19:53:51Z"
+  },
+  {
+   "k": "Die Ankunfts-Linse",
+   "sha": "cba74ec023341d0166db1dbbb2d4d8644dac0189",
+   "zweig": "leib-k1-hieb",
+   "t": "2026-10-25T09:24:59Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Die Ankunfts-Linse",
+   "sha": "6dc57149c87a98a03da0f699a742f017b195bf33",
+   "zweig": "profiband-k4-haenger",
+   "t": "2026-10-25T09:35:09Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Die Ankunfts-Linse",
+   "sha": "44a50f31886c6e36c34243b1bc32a9c55a21865b",
+   "zweig": "klang-k1-zensus",
+   "t": "2026-10-25T09:48:31Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Die Fahr-Linse des Lebens",
+   "sha": "44a50f31886c6e36c34243b1bc32a9c55a21865b",
+   "zweig": "klang-k1-zensus",
+   "t": "2026-10-25T09:48:31Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Der Körper steht, wo das Auge ihn sieht",
+   "sha": "8ada986fdd91004b87ebab669757b88a66094cf9",
+   "zweig": "heim-z29b",
+   "t": "2026-10-25T09:54:48Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Ankunfts-Linse",
+   "sha": "91972988cdd74e8a40e789b23c6c55a649cb6de6",
+   "zweig": "heim-z31",
+   "t": "2026-10-25T11:04:44Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Die Ankunfts-Linse",
+   "sha": "865cda38b9925b3c506b8ad610f7a8cd7607bd66",
+   "zweig": "ferne-blau-heim",
+   "t": "2026-10-25T11:59:03Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Die Kreatur-Linse Teil 1",
+   "sha": "5a50e719e19438419bd8a546c127855b01a450c3",
+   "zweig": "mensch-k3-wege",
+   "t": "2026-10-25T12:24:11Z",
+   "kl": "echt",
+   "taeter": [
+    "mensch-k3-wege"
+   ],
+   "bekannt": "2026-10-26T02:14:20Z"
+  },
+  {
+   "k": "Die Ankunfts-Linse",
+   "sha": "5a50e719e19438419bd8a546c127855b01a450c3",
+   "zweig": "mensch-k3-wege",
+   "t": "2026-10-25T12:24:11Z",
+   "kl": "echt",
+   "taeter": [
+    "mensch-k3-wege"
+   ],
+   "bekannt": "2026-10-25T22:10:32Z"
+  },
+  {
+   "k": "Die Ankunfts-Linse",
+   "sha": "72c9f62ee2f9cda518239eb94a31111035dab271",
+   "zweig": "tiere-k1-herde-bild",
+   "t": "2026-10-25T12:46:42Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Kampf und Maus",
+   "sha": "77419f6b8d391bdd302a62076cc074842bb4d2fd",
+   "zweig": "leib-k2-fuss",
+   "t": "2026-10-25T15:06:58Z",
+   "kl": "echt",
+   "taeter": [
+    "leib-k2-fuss"
+   ],
+   "bekannt": "2026-10-25T21:42:56Z"
+  },
+  {
+   "k": "Der Körper steht, wo das Auge ihn sieht",
+   "sha": "77419f6b8d391bdd302a62076cc074842bb4d2fd",
+   "zweig": "leib-k2-fuss",
+   "t": "2026-10-25T15:06:58Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Der Körper steht, wo das Auge ihn sieht",
+   "sha": "ca1f45c70feeec8fcf9153266b9bc3dd215add54",
+   "zweig": "siedlung-k5-erstes-haus",
+   "t": "2026-10-25T16:09:18Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Die Kamera-Leib-Linse",
+   "sha": "03c20a7d44a846a87f91601e167e42f5ef320c5b",
+   "zweig": "integ-probe",
+   "t": "2026-10-25T16:29:59Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Die Ankunfts-Linse",
+   "sha": "9fa27825d219ad3fea944e6d15cba877167a9aca",
+   "zweig": "integ-probe",
+   "t": "2026-10-25T17:38:14Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Fahr-Linse des Lebens",
+   "sha": "efb070bf5e0aa2eeb9f506642f57cd65697e7206",
+   "zweig": "heim-z32",
+   "t": "2026-10-25T20:45:22Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Fahr-Linse des Lebens",
+   "sha": "0066056e045cadcd90c01c44c47e11af0f9b20ad",
+   "zweig": "leib-k2-fuss",
+   "t": "2026-10-25T21:42:56Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Voller Playtest",
+   "sha": "4a11f7f0194cf742e3489e2e8f19d4d9733d9060",
+   "zweig": "ki-k2-regler",
+   "t": "2026-10-25T21:52:14Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Kamera-Leib-Linse",
+   "sha": "68086befac73c07b5a413907d2c24303bb894a25",
+   "zweig": "b-ankunft-faden",
+   "t": "2026-10-25T21:53:26Z",
+   "kl": "echt",
+   "taeter": [
+    "b-ankunft-faden"
+   ],
+   "bekannt": "2026-10-26T00:32:03Z"
+  },
+  {
+   "k": "Die Kamera-Leib-Linse",
+   "sha": "0a129a862d52294b3293c650932cb09b0c541cc4",
+   "zweig": "klang-stoff-schritte",
+   "t": "2026-10-25T21:56:02Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Die Kreatur-Linse Teil 1",
+   "sha": "ff5dd421360c099acf2974e85e4901433d66bd0a",
+   "zweig": "mensch-k3-wege",
+   "t": "2026-10-25T22:10:32Z",
+   "kl": "echt",
+   "taeter": [
+    "mensch-k3-wege"
+   ],
+   "bekannt": "2026-10-26T02:14:20Z"
+  },
+  {
+   "k": "Die Kamera-Leib-Linse",
+   "sha": "ff5dd421360c099acf2974e85e4901433d66bd0a",
+   "zweig": "mensch-k3-wege",
+   "t": "2026-10-25T22:10:32Z",
+   "kl": "echt",
+   "taeter": [
+    "mensch-k3-wege"
+   ],
+   "bekannt": "2026-10-26T00:23:29Z"
+  },
+  {
+   "k": "Die Kamera-Leib-Linse",
+   "sha": "637f7348ed6426c54475abdab8abc7c66e2fe736",
+   "zweig": "ki-k2-regler",
+   "t": "2026-10-25T22:18:39Z",
+   "kl": "echt",
+   "taeter": [
+    "ki-k2-regler"
+   ],
+   "bekannt": "2026-10-25T23:59:08Z"
+  },
+  {
+   "k": "Der Körper steht, wo das Auge ihn sieht",
+   "sha": "bd444dbe4e64b598b0760edd54c220dcc23812fe",
+   "zweig": "stoffe-k2-feuer",
+   "t": "2026-10-25T23:49:11Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Persistenz-Härtung Teil 2",
+   "sha": "c28a0bdc38c62328e5951d3027b64965dcb73215",
+   "zweig": "speicher-faden",
+   "t": "2026-10-26T00:33:34Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Weltgrenze",
+   "sha": "c28a0bdc38c62328e5951d3027b64965dcb73215",
+   "zweig": "speicher-faden",
+   "t": "2026-10-26T00:33:34Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Der Körper steht, wo das Auge ihn sieht",
+   "sha": "523c59234db90eec15740760af68a345840426db",
+   "zweig": "fahr-s3-wurzel",
+   "t": "2026-10-26T01:13:44Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Prägung-Welt",
+   "sha": "8772daa533da5adb312af1ff69007c817dc45d32",
+   "zweig": "fege-takt",
+   "t": "2026-10-26T01:29:03Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Der Körper steht, wo das Auge ihn sieht",
+   "sha": "bf83213f5b6065f13609521551351c7df7ad2f33",
+   "zweig": "b-streu-faden",
+   "t": "2026-10-26T01:33:23Z",
+   "kl": "echt",
+   "taeter": [
+    "b-streu-faden"
+   ],
+   "bekannt": "2026-10-26T03:16:13Z"
+  },
+  {
+   "k": "Mehrspieler-Wand",
+   "sha": "bf83213f5b6065f13609521551351c7df7ad2f33",
+   "zweig": "b-streu-faden",
+   "t": "2026-10-26T01:33:23Z",
+   "kl": "echt",
+   "taeter": [
+    "b-streu-faden"
+   ],
+   "bekannt": "2026-10-26T03:16:13Z"
+  },
+  {
+   "k": "Weltgrenze",
+   "sha": "52755428408fc06aae73a92d8d3f5d4f4a9eecdf",
+   "zweig": "speicher-k2-anhang",
+   "t": "2026-10-26T01:54:09Z",
+   "kl": "echt",
+   "taeter": [
+    "speicher-k2-anhang"
+   ],
+   "bekannt": "2026-10-26T03:12:58Z"
+  },
+  {
+   "k": "Die Kamera-Leib-Linse",
+   "sha": "391460c620a773d4bbe9f98c7f761076bcb5e11a",
+   "zweig": "k8-fein",
+   "t": "2026-10-26T02:12:06Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Fahr-Linse des Lebens",
+   "sha": "99352297ef333714749ba3632aae413998dddbf2",
+   "zweig": "integ-probe",
+   "t": "2026-10-26T02:15:57Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Welt-Wache",
+   "sha": "612eb8c2c2323a8cfe30fd3cacf7c43b724e539b",
+   "zweig": "b-streu-faden",
+   "t": "2026-10-26T03:16:13Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Fahr-Linse des Lebens",
+   "sha": "069ed697c3c4ea0b0573b4d4b2a367832ff9fdb5",
+   "zweig": "e-bewohner",
+   "t": "2026-10-26T04:07:10Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Die V1-Pfad-Linse",
+   "sha": "675f98ae2b9ff57cbc2b3d8f391bf4c0c76ec57e",
+   "zweig": "decke-zahlstelle-2",
+   "t": "2026-10-26T04:31:49Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Fahr-Linse des Lebens",
+   "sha": "b181ad08806da992fcc167e7a405776cfa23d644",
+   "zweig": "decke-zahlstelle-2",
+   "t": "2026-10-26T04:49:05Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Der Körper steht, wo das Auge ihn sieht",
+   "sha": "b181ad08806da992fcc167e7a405776cfa23d644",
+   "zweig": "decke-zahlstelle-2",
+   "t": "2026-10-26T04:49:05Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Kreatur-Linse Teil 1",
+   "sha": "412150780d1cd6db2a23ebd115274e81b3cbbac6",
+   "zweig": "integ-probe",
+   "t": "2026-10-26T04:53:04Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Welt-Wache",
+   "sha": "5ad32e8c903be8b8c541af31ef2f1f48c9e5aa2d",
+   "zweig": "decke-zahlstelle-3",
+   "t": "2026-10-26T05:17:30Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Persistenz-Härtung Teil 2",
+   "sha": "5ad32e8c903be8b8c541af31ef2f1f48c9e5aa2d",
+   "zweig": "decke-zahlstelle-3",
+   "t": "2026-10-26T05:17:30Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Die Slot-Linse — ein freier Slot und eine leere Hülle zeichnen nie, in keinem Pass",
+   "sha": "1fb325914c27adc8ccb06dcba7881c9252199d2c",
+   "zweig": "gras-fuss",
+   "t": "2026-10-26T05:27:04Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Die Fahr-Linse des Lebens",
+   "sha": "1fb325914c27adc8ccb06dcba7881c9252199d2c",
+   "zweig": "gras-fuss",
+   "t": "2026-10-26T05:27:04Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Der Körper steht, wo das Auge ihn sieht",
+   "sha": "1fb325914c27adc8ccb06dcba7881c9252199d2c",
+   "zweig": "gras-fuss",
+   "t": "2026-10-26T05:27:04Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Mehrspieler-Wand",
+   "sha": "1fb325914c27adc8ccb06dcba7881c9252199d2c",
+   "zweig": "gras-fuss",
+   "t": "2026-10-26T05:27:04Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Die Slot-Linse — ein freier Slot und eine leere Hülle zeichnen nie, in keinem Pass",
+   "sha": "9195e533e87657108bb82807d5a2c7bed67b3553",
+   "zweig": "kern-karte",
+   "t": "2026-10-26T05:58:08Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Der Körper steht, wo das Auge ihn sieht",
+   "sha": "ebadc9781b907a47934c40857f9898bc21838aac",
+   "zweig": "b-streu-faden",
+   "t": "2026-10-26T07:06:43Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Kreatur-Linse Teil 1",
+   "sha": "46151697d4d62bae993bf77f74a368eb0b42d790",
+   "zweig": "bauen-k5-werke",
+   "t": "2026-10-26T07:19:15Z",
+   "kl": "echt",
+   "taeter": [
+    "bauen-k5-werke"
+   ],
+   "bekannt": "2026-10-26T12:03:34Z"
+  },
+  {
+   "k": "Asset-Vertrag v1",
+   "sha": "46151697d4d62bae993bf77f74a368eb0b42d790",
+   "zweig": "bauen-k5-werke",
+   "t": "2026-10-26T07:19:15Z",
+   "kl": "echt",
+   "taeter": [
+    "bauen-k5-werke"
+   ],
+   "bekannt": "2026-10-26T12:03:34Z"
+  },
+  {
+   "k": "Das Lab-Fahrprofil",
+   "sha": "46151697d4d62bae993bf77f74a368eb0b42d790",
+   "zweig": "bauen-k5-werke",
+   "t": "2026-10-26T07:19:15Z",
+   "kl": "echt",
+   "taeter": [
+    "bauen-k5-werke"
+   ],
+   "bekannt": "2026-10-26T12:03:34Z"
+  },
+  {
+   "k": "Der Körper steht, wo das Auge ihn sieht",
+   "sha": "7c2f84186938eaf82d4fb4ac08e686fee1bf90da",
+   "zweig": "bewohner-radeon",
+   "t": "2026-10-26T10:00:46Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Der Körper steht, wo das Auge ihn sieht",
+   "sha": "f4ed7126c83a71d7b1907f532601dbc4d938aeda",
+   "zweig": "tk3-reittier",
+   "t": "2026-10-26T10:38:38Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Stall-Akte",
+   "sha": "b1fc65067c218e3bd621514a62b1d87eb644b24d",
+   "zweig": "integ-probe",
+   "t": "2026-10-26T11:17:12Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Kreatur-Linse Teil 1",
+   "sha": "71f651a9ff11edc44c4d2181d13a1f23561f5864",
+   "zweig": "pk2-vmax",
+   "t": "2026-10-26T11:22:14Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Regler wirkt Teil 1",
+   "sha": "f8536c37a84d0df870c1b20474f680a6e0c871c1",
+   "zweig": "bauen-k5-werke",
+   "t": "2026-10-26T12:03:34Z",
+   "kl": "echt",
+   "taeter": [
+    "bauen-k5-werke"
+   ],
+   "bekannt": "2026-10-26T12:49:19Z"
+  },
+  {
+   "k": "Die Kreatur-Linse Teil 1",
+   "sha": "21a602411d5d909f87d138ba19f4de89248ab4bb",
+   "zweig": "satz-pass",
+   "t": "2026-10-26T12:10:36Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Kreatur-Linse Teil 1",
+   "sha": "2a74a29652b7c82c7fb68df003aa08af72e5db36",
+   "zweig": "k8-hang",
+   "t": "2026-10-26T12:16:34Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Schirm-Wand",
+   "sha": "21f084e4d5fa2557739a0426a2edaa84fac8cb29",
+   "zweig": "bauen-k5-werke",
+   "t": "2026-10-26T12:49:19Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Der Körper steht, wo das Auge ihn sieht",
+   "sha": "db606841c3a8e0a38414fe00d0d8f75d1dd9ac64",
+   "zweig": "pk4-zaehl",
+   "t": "2026-10-26T13:14:15Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Kreatur-Linse Teil 3",
+   "sha": "726a4e86ab20b59949919f6dc5c52b6643bdf61f",
+   "zweig": "ok4-beute",
+   "t": "2026-10-26T14:51:07Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Werk im Wasser",
+   "sha": "f9454bff034a782c681f8872ed95709f0494efd8",
+   "zweig": "sk3-schmelze",
+   "t": "2026-10-26T15:00:19Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Takt-Wand",
+   "sha": "945dcfc3f0039af47c97826468760a310cdb702d",
+   "zweig": "bk4-turm",
+   "t": "2026-10-26T15:35:41Z",
+   "kl": "echt",
+   "taeter": [
+    "bk4-turm"
+   ],
+   "bekannt": "2026-10-26T18:44:51Z"
+  },
+  {
+   "k": "Kollision = Bild",
+   "sha": "9f977cd31a22acc34fe10b8bce7288faa3dbfe80",
+   "zweig": "fk2-uhr",
+   "t": "2026-10-26T16:05:36Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Fahr-Linse des Lebens",
+   "sha": "9f977cd31a22acc34fe10b8bce7288faa3dbfe80",
+   "zweig": "fk2-uhr",
+   "t": "2026-10-26T16:05:36Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Stoff-Linse der Gegenstaende",
+   "sha": "c4700d844755994d697b99f3fe7bb2e7f8586290",
+   "zweig": "gk2-damm",
+   "t": "2026-10-26T17:20:49Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Kamera-Leib-Linse",
+   "sha": "94c04aa058ea825ab29119d2373e3e7782108718",
+   "zweig": "bewohner-gesetz",
+   "t": "2026-10-26T17:58:39Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Kollision = Bild",
+   "sha": "1354263ee96cb5dfa3d968bb98def1477ec5161a",
+   "zweig": "gk2-damm",
+   "t": "2026-10-26T20:51:53Z",
+   "kl": "echt",
+   "taeter": [
+    "gk2-damm"
+   ],
+   "bekannt": "2026-10-27T00:05:25Z"
+  },
+  {
+   "k": "Höhlen-Sicht",
+   "sha": "1354263ee96cb5dfa3d968bb98def1477ec5161a",
+   "zweig": "gk2-damm",
+   "t": "2026-10-26T20:51:53Z",
+   "kl": "echt",
+   "taeter": [
+    "gk2-damm"
+   ],
+   "bekannt": "2026-10-27T00:05:25Z"
+  },
+  {
+   "k": "Wasser-Bild",
+   "sha": "1354263ee96cb5dfa3d968bb98def1477ec5161a",
+   "zweig": "gk2-damm",
+   "t": "2026-10-26T20:51:53Z",
+   "kl": "echt",
+   "taeter": [
+    "gk2-damm"
+   ],
+   "bekannt": "2026-10-27T00:05:25Z"
+  },
+  {
+   "k": "Die Kamera-Leib-Linse",
+   "sha": "ffca206f8b282fe0d5fdba2baaea2ac5e4c066c2",
+   "zweig": "fk1-ton",
+   "t": "2026-10-26T21:48:57Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "echt: Wasser-Bild auf der Karte",
+   "sha": "4f40eb7340ea6fb2a552db8bd462c53f169a8f9d",
+   "zweig": "integ-probe",
+   "t": "2026-10-26T22:42:00Z",
+   "kl": "echt",
+   "taeter": [
+    "gk2-damm"
+   ],
+   "bekannt": "2026-10-27T00:54:51.000Z"
+  },
+  {
+   "k": "Kollision = Bild",
+   "sha": "4f40eb7340ea6fb2a552db8bd462c53f169a8f9d",
+   "zweig": "integ-probe",
+   "t": "2026-10-26T22:42:00Z",
+   "kl": "echt",
+   "taeter": [
+    "gk2-damm"
+   ],
+   "bekannt": "2026-10-27T00:54:51.000Z"
+  },
+  {
+   "k": "Höhlen-Sicht",
+   "sha": "4f40eb7340ea6fb2a552db8bd462c53f169a8f9d",
+   "zweig": "integ-probe",
+   "t": "2026-10-26T22:42:00Z",
+   "kl": "echt",
+   "taeter": [
+    "gk2-damm"
+   ],
+   "bekannt": "2026-10-27T00:54:51.000Z"
+  },
+  {
+   "k": "Wasser-Bild",
+   "sha": "4f40eb7340ea6fb2a552db8bd462c53f169a8f9d",
+   "zweig": "integ-probe",
+   "t": "2026-10-26T22:42:00Z",
+   "kl": "echt",
+   "taeter": [
+    "gk2-damm"
+   ],
+   "bekannt": "2026-10-27T00:54:51.000Z"
+  },
+  {
+   "k": "Der Settlement-Kanal N5.7",
+   "sha": "e13d7202c5244b606140903c30ce08961a32b687",
+   "zweig": "sk5-haus",
+   "t": "2026-10-27T00:18:50Z",
+   "kl": "echt",
+   "taeter": [
+    "sk5-haus"
+   ],
+   "bekannt": "2026-10-27T01:24:19Z"
+  },
+  {
+   "k": "Der Settlement-Kanal N5.7",
+   "sha": "a7bb24697699da0207e77e982a4153b1a278ff29",
+   "zweig": "sk2-zipf2",
+   "t": "2026-10-27T00:19:32Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Kreatur-Linse Teil 1",
+   "sha": "cc54f85ff3b503a778d18aed9588368f27a4a2d0",
+   "zweig": "tk1-herde",
+   "t": "2026-10-27T00:26:48Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Fernwald",
+   "sha": "5a3a7d867441d20929e64f431576021b6e2898a7",
+   "zweig": "pbk4-fahrt",
+   "t": "2026-10-27T01:11:47Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Kamera-Leib-Linse",
+   "sha": "a63033994bbea77f728e5b94f43ce639686b1fb5",
+   "zweig": "pk2-bild",
+   "t": "2026-10-27T02:03:05Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Portal-Konformanz",
+   "sha": "a63033994bbea77f728e5b94f43ce639686b1fb5",
+   "zweig": "pk2-bild",
+   "t": "2026-10-27T02:03:05Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Fernwald",
+   "sha": "0f0d831cdef31ed7feabe56d22ef0dc9585f7175",
+   "zweig": "pbk4-fahrt",
+   "t": "2026-10-27T02:03:11Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Kamera-Leib-Linse",
+   "sha": "0f0d831cdef31ed7feabe56d22ef0dc9585f7175",
+   "zweig": "pbk4-fahrt",
+   "t": "2026-10-27T02:03:11Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Kamera-Leib-Linse",
+   "sha": "dd8e85212d533e79a4b2d887ece854dd1233221d",
+   "zweig": "tk1-herde",
+   "t": "2026-10-27T02:37:24Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Stand-Takt",
+   "sha": "dd8e85212d533e79a4b2d887ece854dd1233221d",
+   "zweig": "tk1-herde",
+   "t": "2026-10-27T02:37:24Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Kampf und Maus",
+   "sha": "c8f3104334ec933a40a95e0a431f5031628f5235",
+   "zweig": "integ-probe",
+   "t": "2026-10-27T02:56:53Z",
+   "kl": "echt",
+   "taeter": [
+    "lk2-hang"
+   ],
+   "bekannt": "2026-10-27T18:03:06.000Z"
+  },
+  {
+   "k": "Voller Playtest",
+   "sha": "c8f3104334ec933a40a95e0a431f5031628f5235",
+   "zweig": "integ-probe",
+   "t": "2026-10-27T02:56:53Z",
+   "kl": "echt",
+   "taeter": [
+    "lk2-hang"
+   ],
+   "bekannt": "2026-10-27T18:03:06.000Z"
+  },
+  {
+   "k": "Werk im Wasser",
+   "sha": "1cdfcc9c1ca82c18373421efe89a53a8b3999871",
+   "zweig": "mk2-mikro",
+   "t": "2026-10-27T03:04:03Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Portal-Konformanz",
+   "sha": "1cdfcc9c1ca82c18373421efe89a53a8b3999871",
+   "zweig": "mk2-mikro",
+   "t": "2026-10-27T03:04:03Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Stand-Takt",
+   "sha": "21f5e29f549aeb823ab1385432f11de5e4e2eaaf",
+   "zweig": "ci-portal-konformanz",
+   "t": "2026-10-27T03:07:31Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Voller Playtest",
+   "sha": "bbf798f92450ad1073b9cc0731f183090cf5bf85",
+   "zweig": "lk2-hang",
+   "t": "2026-10-27T03:30:10Z",
+   "kl": "echt",
+   "taeter": [
+    "lk2-hang"
+   ],
+   "bekannt": "2026-10-27T16:28:55Z"
+  },
+  {
+   "k": "Kampf und Maus",
+   "sha": "bbf798f92450ad1073b9cc0731f183090cf5bf85",
+   "zweig": "lk2-hang",
+   "t": "2026-10-27T03:30:10Z",
+   "kl": "echt",
+   "taeter": [
+    "lk2-hang"
+   ],
+   "bekannt": "2026-10-27T16:03:37Z"
+  },
+  {
+   "k": "WebGL2-Rückfall",
+   "sha": "bbf798f92450ad1073b9cc0731f183090cf5bf85",
+   "zweig": "lk2-hang",
+   "t": "2026-10-27T03:30:10Z",
+   "kl": "echt",
+   "taeter": [
+    "lk2-hang"
+   ],
+   "bekannt": "2026-10-27T16:28:55Z"
+  },
+  {
+   "k": "Die Klang-Linse",
+   "sha": "bbf798f92450ad1073b9cc0731f183090cf5bf85",
+   "zweig": "lk2-hang",
+   "t": "2026-10-27T03:30:10Z",
+   "kl": "echt",
+   "taeter": [
+    "lk2-hang"
+   ],
+   "bekannt": "2026-10-27T16:03:37Z"
+  },
+  {
+   "k": "WebGL2-Rückfall",
+   "sha": "86997fa48e62c37255cc6e26e9eb41bff9cadc52",
+   "zweig": "stk3-phasen",
+   "t": "2026-10-27T04:02:06Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Portal-Konformanz",
+   "sha": "b3aee118cec55428e5418d2ae27481e37f0945c8",
+   "zweig": "ci-werk-wasser",
+   "t": "2026-10-27T05:21:28Z",
+   "kl": "echt",
+   "taeter": [
+    "ci-werk-wasser"
+   ],
+   "bekannt": "2026-10-27T06:18:28Z"
+  },
+  {
+   "k": "Werk im Wasser",
+   "sha": "2f4cb8e3a7affe8c3dc25fd810e212278ada9c55",
+   "zweig": "sk2-zipf2",
+   "t": "2026-10-27T05:28:05Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Kamera-Leib-Linse",
+   "sha": "2f4cb8e3a7affe8c3dc25fd810e212278ada9c55",
+   "zweig": "sk2-zipf2",
+   "t": "2026-10-27T05:28:05Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Klang-Linse",
+   "sha": "d483b465033c7678aae1201e28c03c1bddfea8b1",
+   "zweig": "stk3-phasen",
+   "t": "2026-10-27T05:46:22Z",
+   "kl": "echt",
+   "taeter": [
+    "stk3-phasen"
+   ],
+   "bekannt": "2026-10-27T06:03:13Z"
+  },
+  {
+   "k": "Schirm-Wand",
+   "sha": "d483b465033c7678aae1201e28c03c1bddfea8b1",
+   "zweig": "stk3-phasen",
+   "t": "2026-10-27T05:46:22Z",
+   "kl": "echt",
+   "taeter": [
+    "stk3-phasen"
+   ],
+   "bekannt": "2026-10-27T06:03:13Z"
+  },
+  {
+   "k": "WebGL2-Rückfall",
+   "sha": "d483b465033c7678aae1201e28c03c1bddfea8b1",
+   "zweig": "stk3-phasen",
+   "t": "2026-10-27T05:46:22Z",
+   "kl": "echt",
+   "taeter": [
+    "stk3-phasen"
+   ],
+   "bekannt": "2026-10-27T06:03:13Z"
+  },
+  {
+   "k": "Werk im Wasser",
+   "sha": "c6ccb3bfb1c793a66388dda367544f6796135ff8",
+   "zweig": "ci-portal-konformanz",
+   "t": "2026-10-27T07:32:10Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Prägung-Welt",
+   "sha": "c6ccb3bfb1c793a66388dda367544f6796135ff8",
+   "zweig": "ci-portal-konformanz",
+   "t": "2026-10-27T07:32:10Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "WebGL2-Rückfall",
+   "sha": "c6ccb3bfb1c793a66388dda367544f6796135ff8",
+   "zweig": "ci-portal-konformanz",
+   "t": "2026-10-27T07:32:10Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "WebGL2-Rückfall",
+   "sha": "53ea56298a9923c315acfa21bdcf1fa6ac9321b8",
+   "zweig": "ci-werk-wasser",
+   "t": "2026-10-27T08:13:04Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Prägung-Welt",
+   "sha": "052fc34f593aaaf00f2b33fe1f69cd19d15faaea",
+   "zweig": "tk1-herde",
+   "t": "2026-10-27T08:18:09Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Mehrspieler-Wand",
+   "sha": "052fc34f593aaaf00f2b33fe1f69cd19d15faaea",
+   "zweig": "tk1-herde",
+   "t": "2026-10-27T08:18:09Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "echt: Luft im Bild auf der Karte",
+   "sha": "9caa75ac1e779bc1a5effae22c685f086aa3345a",
+   "zweig": "integ-probe",
+   "t": "2026-10-27T09:00:50Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Voller Playtest",
+   "sha": "cbc8dac3a15e9da9cc9224c248dae6db4716a41f",
+   "zweig": "lk2-hang",
+   "t": "2026-10-27T16:03:37Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "WebGL2-Rückfall",
+   "sha": "cbc8dac3a15e9da9cc9224c248dae6db4716a41f",
+   "zweig": "lk2-hang",
+   "t": "2026-10-27T16:03:37Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Dichte-Spiegel",
+   "sha": "5bcd8dc00fbbc7828ad1ec1fbb0e2154c4e4d104",
+   "zweig": "schwarm",
+   "t": "2026-10-27T18:47:18Z",
+   "kl": "echt",
+   "taeter": [
+    "schwarm"
+   ],
+   "bekannt": "2026-10-27T19:55:37Z"
+  },
+  {
+   "k": "Prägung-Welt",
+   "sha": "2433bf4ec69eebd3ea015829e825fbf43b1332d5",
+   "zweig": "halten-masse",
+   "t": "2026-10-27T19:12:53Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Kampf und Maus",
+   "sha": "ca78ef743243ee61f38070ca9bad726a5488f1e4",
+   "zweig": "affekt-wert",
+   "t": "2026-10-27T19:23:18Z",
+   "kl": "echt",
+   "taeter": [
+    "affekt-wert"
+   ],
+   "bekannt": "2026-10-27T20:55:22Z"
+  },
+  {
+   "k": "Die Kreatur-Linse Teil 3",
+   "sha": "ca78ef743243ee61f38070ca9bad726a5488f1e4",
+   "zweig": "affekt-wert",
+   "t": "2026-10-27T19:23:18Z",
+   "kl": "echt",
+   "taeter": [
+    "affekt-wert"
+   ],
+   "bekannt": "2026-10-27T20:55:22Z"
+  },
+  {
+   "k": "Stand-Takt",
+   "sha": "ca78ef743243ee61f38070ca9bad726a5488f1e4",
+   "zweig": "affekt-wert",
+   "t": "2026-10-27T19:23:18Z",
+   "kl": "echt",
+   "taeter": [
+    "affekt-wert"
+   ],
+   "bekannt": "2026-10-27T22:26:27Z"
+  },
+  {
+   "k": "Die Kreatur-Linse Teil 3",
+   "sha": "cfc7b534fe6aff7491a38ee5b1177a7d148225c5",
+   "zweig": "mensch-begegnung",
+   "t": "2026-10-27T19:24:12Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Stand-Takt",
+   "sha": "cfc7b534fe6aff7491a38ee5b1177a7d148225c5",
+   "zweig": "mensch-begegnung",
+   "t": "2026-10-27T19:24:12Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Tier-Gang ohne Gleiten",
+   "sha": "cfc7b534fe6aff7491a38ee5b1177a7d148225c5",
+   "zweig": "mensch-begegnung",
+   "t": "2026-10-27T19:24:12Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Das Haus der Welt Teil 2",
+   "sha": "57f568bd5a96b1f2c2a2479af7f5e151326ef1da",
+   "zweig": "bauen-k5-verben",
+   "t": "2026-10-27T19:53:51Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Stand-Takt",
+   "sha": "a945bef0ca59e13825d5a0f54710f32236002eb4",
+   "zweig": "affekt-wert",
+   "t": "2026-10-27T20:55:22Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Stand-Takt",
+   "sha": "c26228d3617c51065ed8259ff74f4069a5488f20",
+   "zweig": "bauen-k5-verben",
+   "t": "2026-10-27T21:10:29Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Stand-Takt",
+   "sha": "0131873bffa46b41ea4c6366b01aef9e0d65effc",
+   "zweig": "mensch-begegnung",
+   "t": "2026-10-27T22:34:03Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Stand-Takt",
+   "sha": "fbdd43bf209c1b0e52902cd320fbf217fbf2c49c",
+   "zweig": "leib-k2-sprung",
+   "t": "2026-10-27T22:40:36Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Regler wirkt Teil 1",
+   "sha": "6955b2678a9ebf8add4b33d8f4c60670c73255aa",
+   "zweig": "streaming-k4-zaehler",
+   "t": "2026-10-27T22:49:28Z",
+   "kl": "echt",
+   "taeter": [
+    "streaming-k4-zaehler"
+   ],
+   "bekannt": "2026-10-28T00:13:58Z"
+  },
+  {
+   "k": "Stand-Takt",
+   "sha": "d5d4311513ef0c89637d68c66449630e9aebd858",
+   "zweig": "klang-k1-nacht",
+   "t": "2026-10-27T22:58:16Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Stand-Takt",
+   "sha": "84546e893301ff92255df43666f4f25c60749868",
+   "zweig": "schatten-k1-zuwachs",
+   "t": "2026-10-27T23:00:47Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Persistenz-Härtung Teil 2",
+   "sha": "3b9cd5a28ae9ac0ded2d0d54e460999fba206d08",
+   "zweig": "leib-k2-sprung",
+   "t": "2026-10-27T23:01:20Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Voller Playtest",
+   "sha": "3946b3dc94d577cc5e9e927de6411aeafa79e6ca",
+   "zweig": "oeko-k2-bestand",
+   "t": "2026-10-27T23:08:26Z",
+   "kl": "echt",
+   "taeter": [
+    "oeko-k2-bestand"
+   ],
+   "bekannt": "2026-10-28T02:42:13Z"
+  },
+  {
+   "k": "Kampf und Maus",
+   "sha": "3946b3dc94d577cc5e9e927de6411aeafa79e6ca",
+   "zweig": "oeko-k2-bestand",
+   "t": "2026-10-27T23:08:26Z",
+   "kl": "echt",
+   "taeter": [
+    "oeko-k2-bestand"
+   ],
+   "bekannt": "2026-10-28T02:42:13Z"
+  },
+  {
+   "k": "Stand-Takt",
+   "sha": "3946b3dc94d577cc5e9e927de6411aeafa79e6ca",
+   "zweig": "oeko-k2-bestand",
+   "t": "2026-10-27T23:08:26Z",
+   "kl": "echt",
+   "taeter": [
+    "oeko-k2-bestand"
+   ],
+   "bekannt": "2026-10-28T02:42:13Z"
+  },
+  {
+   "k": "Die Kreatur-Linse Teil 1",
+   "sha": "ebe84f6ce9aa180162dbb2ea899e9f534abdaef5",
+   "zweig": "fusion-determ",
+   "t": "2026-10-27T23:10:56Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Stand-Takt",
+   "sha": "ebe84f6ce9aa180162dbb2ea899e9f534abdaef5",
+   "zweig": "fusion-determ",
+   "t": "2026-10-27T23:10:56Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Kreatur-Linse Teil 1",
+   "sha": "e94a4a38a259fb72a8b5ca6ada8dbd64ebd7c02b",
+   "zweig": "siedlung-k3-hang",
+   "t": "2026-10-27T23:12:29Z",
+   "kl": "echt",
+   "taeter": [
+    "siedlung-k3-hang"
+   ],
+   "bekannt": "2026-10-28T19:58:33Z"
+  },
+  {
+   "k": "Stand-Takt",
+   "sha": "ea0daf7fa2bdfc69852dd05b1d6ee163c7cc0b15",
+   "zweig": "vegetation-k4-wasser",
+   "t": "2026-10-27T23:17:08Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Stand-Takt",
+   "sha": "c1faaa30ce48aa9e8a3620a8932aab1d533bdd57",
+   "zweig": "studios-k2-sitzung",
+   "t": "2026-10-27T23:28:02Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Stand-Takt",
+   "sha": "127dcba19f331b899617f65c020af2984924f6a0",
+   "zweig": "klang-raum",
+   "t": "2026-10-27T23:37:56Z",
+   "kl": "echt",
+   "taeter": [
+    "klang-raum"
+   ],
+   "bekannt": "2026-10-28T10:49:55Z"
+  },
+  {
+   "k": "Stand-Takt",
+   "sha": "09eb92936590d6f817dd4b2958d2846a868c5b70",
+   "zweig": "material-k3-stufen",
+   "t": "2026-10-27T23:40:44Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Stand-Takt",
+   "sha": "d5dbedc2f752fbb517e10b45b4a42db145aa05ce",
+   "zweig": "kosten-leiste",
+   "t": "2026-10-27T23:41:06Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Voller Playtest",
+   "sha": "81a12b25bbcc24935f54580a6660c6cc6136db9f",
+   "zweig": "affekt-emotion",
+   "t": "2026-10-27T23:41:17Z",
+   "kl": "echt",
+   "taeter": [
+    "affekt-emotion"
+   ],
+   "bekannt": "2026-10-28T03:15:01Z"
+  },
+  {
+   "k": "Welt-Wache",
+   "sha": "81a12b25bbcc24935f54580a6660c6cc6136db9f",
+   "zweig": "affekt-emotion",
+   "t": "2026-10-27T23:41:17Z",
+   "kl": "echt",
+   "taeter": [
+    "affekt-emotion"
+   ],
+   "bekannt": "2026-10-28T01:57:42Z"
+  },
+  {
+   "k": "Persistenz-Härtung Teil 1",
+   "sha": "81a12b25bbcc24935f54580a6660c6cc6136db9f",
+   "zweig": "affekt-emotion",
+   "t": "2026-10-27T23:41:17Z",
+   "kl": "echt",
+   "taeter": [
+    "affekt-emotion"
+   ],
+   "bekannt": "2026-10-28T03:15:01Z"
+  },
+  {
+   "k": "Welt-Wache",
+   "sha": "82bb2353ebbd37ac9999684d58caf643b6e3e3c4",
+   "zweig": "streaming-k4-zaehler",
+   "t": "2026-10-28T00:13:58Z",
+   "kl": "echt",
+   "taeter": [
+    "streaming-k4-zaehler"
+   ],
+   "bekannt": "2026-10-28T07:32:40Z"
+  },
+  {
+   "k": "Stand-Takt",
+   "sha": "82bb2353ebbd37ac9999684d58caf643b6e3e3c4",
+   "zweig": "streaming-k4-zaehler",
+   "t": "2026-10-28T00:13:58Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Voller Playtest",
+   "sha": "ddcff6b0312c1d05a9504f8085c3f12a933bbf90",
+   "zweig": "physik-bild",
+   "t": "2026-10-28T00:18:48Z",
+   "kl": "echt",
+   "taeter": [
+    "physik-bild"
+   ],
+   "bekannt": "2026-10-28T02:55:26Z"
+  },
+  {
+   "k": "Die Fahr-Linse des Lebens",
+   "sha": "ddcff6b0312c1d05a9504f8085c3f12a933bbf90",
+   "zweig": "physik-bild",
+   "t": "2026-10-28T00:18:48Z",
+   "kl": "echt",
+   "taeter": [
+    "physik-bild"
+   ],
+   "bekannt": "2026-10-28T02:55:26Z"
+  },
+  {
+   "k": "Die Kreatur-Linse Teil 3",
+   "sha": "ddcff6b0312c1d05a9504f8085c3f12a933bbf90",
+   "zweig": "physik-bild",
+   "t": "2026-10-28T00:18:48Z",
+   "kl": "echt",
+   "taeter": [
+    "physik-bild"
+   ],
+   "bekannt": "2026-10-28T02:55:26Z"
+  },
+  {
+   "k": "Blocker-Netz",
+   "sha": "ddcff6b0312c1d05a9504f8085c3f12a933bbf90",
+   "zweig": "physik-bild",
+   "t": "2026-10-28T00:18:48Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Stand-Takt",
+   "sha": "4cb16e340cca5f55186d070ed0653b4f0f88dc0b",
+   "zweig": "haar-fell-soll",
+   "t": "2026-10-28T00:20:10Z",
+   "kl": "echt",
+   "taeter": [
+    "haar-fell-soll"
+   ],
+   "bekannt": "2026-10-28T02:44:43Z"
+  },
+  {
+   "k": "Stand-Takt",
+   "sha": "f1400431e03c23be5c9d88a60d775b4c95b9730f",
+   "zweig": "ki-seele-regeln",
+   "t": "2026-10-28T00:24:33Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Fall-Waechter",
+   "sha": "f1400431e03c23be5c9d88a60d775b4c95b9730f",
+   "zweig": "ki-seele-regeln",
+   "t": "2026-10-28T00:24:33Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die V1-Pfad-Linse",
+   "sha": "60bfb0cb6e2b59f5473ddc26a6e00a4ea5a22bf4",
+   "zweig": "feld-peers",
+   "t": "2026-10-28T00:47:18Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Die Kreatur-Linse Teil 3",
+   "sha": "60bfb0cb6e2b59f5473ddc26a6e00a4ea5a22bf4",
+   "zweig": "feld-peers",
+   "t": "2026-10-28T00:47:18Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Persistenz-Härtung Teil 1",
+   "sha": "60bfb0cb6e2b59f5473ddc26a6e00a4ea5a22bf4",
+   "zweig": "feld-peers",
+   "t": "2026-10-28T00:47:18Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Stand-Takt",
+   "sha": "34a9259658907395dd22bf5a8f988ea1a593f85d",
+   "zweig": "wetter-sicht",
+   "t": "2026-10-28T01:12:29Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Stand-Takt",
+   "sha": "a0d363a2436efb2dcac177092fb523bd0ff7429d",
+   "zweig": "bauen-k1-bild",
+   "t": "2026-10-28T01:54:31Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "S4 Impostor eager + Werkstatt-L2-Billboard",
+   "sha": "a0d363a2436efb2dcac177092fb523bd0ff7429d",
+   "zweig": "bauen-k1-bild",
+   "t": "2026-10-28T01:54:31Z",
+   "kl": "echt",
+   "taeter": [
+    "bauen-k1-bild"
+   ],
+   "bekannt": "2026-10-28T14:47:44Z"
+  },
+  {
+   "k": "Persistenz-Härtung Teil 1",
+   "sha": "c6a9d1b32acc16cb49b7386b4b34f2ec809ab4de",
+   "zweig": "affekt-emotion",
+   "t": "2026-10-28T01:57:42Z",
+   "kl": "echt",
+   "taeter": [
+    "affekt-emotion"
+   ],
+   "bekannt": "2026-10-28T03:15:01Z"
+  },
+  {
+   "k": "Stand-Takt",
+   "sha": "9325da098143124767fb96ee8cf56ed2e49494a5",
+   "zweig": "hud-zugang",
+   "t": "2026-10-28T02:01:12Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Blocker-Netz",
+   "sha": "af9406f9e20bfaabe350b430351c1d9944da0a4d",
+   "zweig": "physik-bild",
+   "t": "2026-10-28T02:55:26Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Schirm-Wand",
+   "sha": "ba324fadaeb09d3b4da14f1ea8fdc2d7b2735c6d",
+   "zweig": "tore-k5-tuer",
+   "t": "2026-10-28T03:19:09Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Voller Playtest",
+   "sha": "ba324fadaeb09d3b4da14f1ea8fdc2d7b2735c6d",
+   "zweig": "tore-k5-tuer",
+   "t": "2026-10-28T03:19:09Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Die Werkstatt-Weg-Linse",
+   "sha": "06e90f806924aee28a443714883c6d86d230864f",
+   "zweig": "integ-probe",
+   "t": "2026-10-28T04:58:12Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Welt-Wache",
+   "sha": "09f7e7d5ce3e5307fae0d575675a4d1db7779720",
+   "zweig": "integ-probe",
+   "t": "2026-10-28T05:46:51Z",
+   "kl": "echt",
+   "taeter": [
+    "streaming-k4-zaehler"
+   ],
+   "bekannt": "2026-10-28T09:12:43.000Z"
+  },
+  {
+   "k": "Welt-Wache",
+   "sha": "8c60f92404ef27be4352bad00a8cba201ecffe85",
+   "zweig": "streaming-sprung",
+   "t": "2026-10-28T06:03:45Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Voller Playtest",
+   "sha": "997e899ee77dbf443102970e7912d51801d91adc",
+   "zweig": "pegel-regen",
+   "t": "2026-10-28T06:08:08Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Voller Playtest",
+   "sha": "df64100af9637d347964260b5819f9e9071483c4",
+   "zweig": "pegel-regen",
+   "t": "2026-10-28T06:33:05Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Welt-Wache",
+   "sha": "cd8a4d2c926eff1deb780bd280c384d85cdfa1af",
+   "zweig": "streaming-sprung",
+   "t": "2026-10-28T06:48:39Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Kreatur-Linse Teil 1",
+   "sha": "cd8a4d2c926eff1deb780bd280c384d85cdfa1af",
+   "zweig": "streaming-sprung",
+   "t": "2026-10-28T06:48:39Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Stand-Takt",
+   "sha": "e40c3a73f36119670392f2fdbdfba14c31f45940",
+   "zweig": "pegel-regen",
+   "t": "2026-10-28T07:12:45Z",
+   "kl": "echt",
+   "taeter": [
+    "pegel-regen"
+   ],
+   "bekannt": "2026-10-28T15:49:39Z"
+  },
+  {
+   "k": "Schirm-Wand",
+   "sha": "f01896db3a303fc15960c6793a5429a20f60e042",
+   "zweig": "vegetation-k4-wasser",
+   "t": "2026-10-28T08:35:50Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Kreatur-Linse Teil 1",
+   "sha": "f9c5cd07232065c2775db4a9f236c7f38b648f40",
+   "zweig": "siedlung-k3-hang",
+   "t": "2026-10-28T08:35:59Z",
+   "kl": "echt",
+   "taeter": [
+    "siedlung-k3-hang"
+   ],
+   "bekannt": "2026-10-28T19:58:33Z"
+  },
+  {
+   "k": "Weltgrenze",
+   "sha": "b5b0a53a3850509b2c931b663b017d4c96257ae2",
+   "zweig": "siedlung-k3-hang",
+   "t": "2026-10-28T10:16:23Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Kreatur-Linse Teil 1",
+   "sha": "b5b0a53a3850509b2c931b663b017d4c96257ae2",
+   "zweig": "siedlung-k3-hang",
+   "t": "2026-10-28T10:16:23Z",
+   "kl": "echt",
+   "taeter": [
+    "siedlung-k3-hang"
+   ],
+   "bekannt": "2026-10-28T19:58:33Z"
+  },
+  {
+   "k": "S4 Impostor eager + Werkstatt-L2-Billboard",
+   "sha": "5bc007b03444cd7db41b47a6bda2798012cf0459",
+   "zweig": "bauen-k1-bild",
+   "t": "2026-10-28T11:47:26Z",
+   "kl": "echt",
+   "taeter": [
+    "bauen-k1-bild"
+   ],
+   "bekannt": "2026-10-28T14:47:44Z"
+  },
+  {
+   "k": "S4 Impostor eager + Werkstatt-L2-Billboard",
+   "sha": "4413eb02e3a8d941709e60755322ed14b48dcf7c",
+   "zweig": "bauen-k1-bild",
+   "t": "2026-10-28T13:18:34Z",
+   "kl": "echt",
+   "taeter": [
+    "bauen-k1-bild"
+   ],
+   "bekannt": "2026-10-28T14:47:44Z"
+  },
+  {
+   "k": "S4 Impostor eager + Werkstatt-L2-Billboard",
+   "sha": "ddd34b3035c4691b1e96833e95493bc242655e61",
+   "zweig": "mensch-begegnung",
+   "t": "2026-10-28T13:32:46Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Kreatur-Linse Teil 1",
+   "sha": "8c515a38d0233b96360ab90fa20ed860159b7f41",
+   "zweig": "siedlung-k3-hang",
+   "t": "2026-10-28T15:39:27Z",
+   "kl": "echt",
+   "taeter": [
+    "siedlung-k3-hang"
+   ],
+   "bekannt": "2026-10-28T19:58:33Z"
+  },
+  {
+   "k": "Voller Playtest",
+   "sha": "907622890623988c2f9789a20fe8609909ef3a7d",
+   "zweig": "pegel-regen",
+   "t": "2026-10-28T15:49:39Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "echt: Luft im Bild auf der Karte",
+   "sha": "79bda111008b3fc6e69fe373922640d0c23842ce",
+   "zweig": "integ-probe",
+   "t": "2026-10-28T16:45:48Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Schirm-Wand",
+   "sha": "78d018e0f88a56c3d59faf31edd8032fc40d2905",
+   "zweig": "w3s-jahrhunderte",
+   "t": "2026-10-28T19:47:57Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Stand-Takt",
+   "sha": "f653389dcd656d62fab9e1b673fa964608b85a65",
+   "zweig": "spike-pixel-statt-welt",
+   "t": "2026-10-28T22:59:16Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Die Ankunfts-Linse",
+   "sha": "f653389dcd656d62fab9e1b673fa964608b85a65",
+   "zweig": "spike-pixel-statt-welt",
+   "t": "2026-10-28T22:59:16Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Render-Tap-Wahrheits-Wand",
+   "sha": "f653389dcd656d62fab9e1b673fa964608b85a65",
+   "zweig": "spike-pixel-statt-welt",
+   "t": "2026-10-28T22:59:16Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Die Studio-Dither-Blende",
+   "sha": "f653389dcd656d62fab9e1b673fa964608b85a65",
+   "zweig": "spike-pixel-statt-welt",
+   "t": "2026-10-28T22:59:16Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Streu-Fernform aus dem Studio-Budget",
+   "sha": "f653389dcd656d62fab9e1b673fa964608b85a65",
+   "zweig": "spike-pixel-statt-welt",
+   "t": "2026-10-28T22:59:16Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Konsum-Zeuge sammelt",
+   "sha": "c8891009c4900c7892f17398533ef0b8bff960b9",
+   "zweig": "spike-ci-konsum",
+   "t": "2026-10-28T23:41:08Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Kreatur-Linse Teil 2",
+   "sha": "e00c21fb188271a3d821372c179ec5655d5bffff",
+   "zweig": "w3u-leittier",
+   "t": "2026-10-29T01:02:04Z",
+   "kl": "echt",
+   "taeter": [
+    "w3u-leittier"
+   ],
+   "bekannt": "2026-10-29T08:10:43Z"
+  },
+  {
+   "k": "Die Kreatur-Linse Teil 2",
+   "sha": "996dc4534149860dbf81da0817001dc6ac9fe196",
+   "zweig": "w3u-leittier",
+   "t": "2026-10-29T02:46:17Z",
+   "kl": "echt",
+   "taeter": [
+    "w3u-leittier"
+   ],
+   "bekannt": "2026-10-29T08:10:43Z"
+  },
+  {
+   "k": "Der Settlement-Kanal N5.7",
+   "sha": "bfabb3c293640434f4366ce59772ead2c931748f",
+   "zweig": "w3t-wegenetz",
+   "t": "2026-10-29T03:24:31Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Portal-Konformanz",
+   "sha": "9caeab5f73f3368eb5cdcfa62d658d6f15182b7d",
+   "zweig": "w3u-fremdslot",
+   "t": "2026-10-29T03:25:00Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Stand-Takt",
+   "sha": "0192f4684ba47e63e16f23ab930c209992609a41",
+   "zweig": "w3u-nachfolge",
+   "t": "2026-10-29T06:14:30Z",
+   "kl": "echt",
+   "taeter": [
+    "w3u-nachfolge"
+   ],
+   "bekannt": "2026-10-29T07:26:44Z"
+  },
+  {
+   "k": "Die Fahr-Linse des Lebens",
+   "sha": "0192f4684ba47e63e16f23ab930c209992609a41",
+   "zweig": "w3u-nachfolge",
+   "t": "2026-10-29T06:14:30Z",
+   "kl": "echt",
+   "taeter": [
+    "w3u-nachfolge"
+   ],
+   "bekannt": "2026-10-29T07:26:44Z"
+  },
+  {
+   "k": "Die Kreatur-Linse Teil 2",
+   "sha": "a9407d8a437ea65916f53487fce85c1c232d05c1",
+   "zweig": "w3u-leittier",
+   "t": "2026-10-29T06:41:45Z",
+   "kl": "echt",
+   "taeter": [
+    "w3u-leittier"
+   ],
+   "bekannt": "2026-10-29T08:10:43Z"
+  },
+  {
+   "k": "Prägung-Welt",
+   "sha": "9ec8b4a150773f1213b5323046865aa9533852da",
+   "zweig": "spike-ci-konsum",
+   "t": "2026-10-29T07:13:05Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Stand-Takt",
+   "sha": "9ec8b4a150773f1213b5323046865aa9533852da",
+   "zweig": "spike-ci-konsum",
+   "t": "2026-10-29T07:13:05Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Kamera-Leib-Linse",
+   "sha": "d79db02668d5db10c92f7928471b1d801ae73efe",
+   "zweig": "w3v-lod",
+   "t": "2026-10-29T08:21:01Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Voller Playtest",
+   "sha": "cb8b087049fbb04f1519dacff4479b43cc3149dc",
+   "zweig": "w3v-brand-bild",
+   "t": "2026-10-29T08:44:23Z",
+   "kl": "echt",
+   "taeter": [
+    "w3v-brand-bild"
+   ],
+   "bekannt": "2026-10-29T09:56:47Z"
+  },
+  {
+   "k": "Kollision = Bild",
+   "sha": "cb8b087049fbb04f1519dacff4479b43cc3149dc",
+   "zweig": "w3v-brand-bild",
+   "t": "2026-10-29T08:44:23Z",
+   "kl": "echt",
+   "taeter": [
+    "w3v-brand-bild"
+   ],
+   "bekannt": "2026-10-29T09:56:47Z"
+  },
+  {
+   "k": "Prägung-Welt",
+   "sha": "cbb3c16c89e30e37d06180896da5b571794d8cb6",
+   "zweig": "spike-ci-konsum",
+   "t": "2026-10-29T09:33:34Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Klang-Linse",
+   "sha": "5f1eb8ed04ede03e86d14dc3263c5627a09771dd",
+   "zweig": "w3v-brand-bild",
+   "t": "2026-10-29T09:56:47Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Prägung-Welt",
+   "sha": "5f1eb8ed04ede03e86d14dc3263c5627a09771dd",
+   "zweig": "w3v-brand-bild",
+   "t": "2026-10-29T09:56:47Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Fahr-Linse des Lebens",
+   "sha": "d7d0305ec2b3fa6da5cc3c1830ec6f27e9b4e27a",
+   "zweig": "w3v-lod",
+   "t": "2026-10-29T10:54:18Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Kamera-Leib-Linse",
+   "sha": "d7d0305ec2b3fa6da5cc3c1830ec6f27e9b4e27a",
+   "zweig": "w3v-lod",
+   "t": "2026-10-29T10:54:18Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Prägung-Welt",
+   "sha": "5971a36f3e5bcc28b9a541374eed18d1cf439e6d",
+   "zweig": "w3v-licht",
+   "t": "2026-10-29T11:14:33Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Pruefbuehne S0 im Bild",
+   "sha": "5971a36f3e5bcc28b9a541374eed18d1cf439e6d",
+   "zweig": "w3v-licht",
+   "t": "2026-10-29T11:14:33Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Fahr-Linse des Lebens",
+   "sha": "9f80e892377403c95e0c87dc447934d0994baa4b",
+   "zweig": "spike-ci-konsum",
+   "t": "2026-10-29T12:20:03Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Mehrspieler-Wand",
+   "sha": "9f80e892377403c95e0c87dc447934d0994baa4b",
+   "zweig": "spike-ci-konsum",
+   "t": "2026-10-29T12:20:03Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Prägung-Welt",
+   "sha": "7e5e7c634dce3ad888745335929b0b87d0aac570",
+   "zweig": "w3w-glanz",
+   "t": "2026-10-29T14:02:13Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Scatter-LOD",
+   "sha": "90a7bf4fa6b2be8642119d5ef797285837abe3d5",
+   "zweig": "w3w-wald",
+   "t": "2026-10-29T14:42:15Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Prägung-Welt",
+   "sha": "90a7bf4fa6b2be8642119d5ef797285837abe3d5",
+   "zweig": "w3w-wald",
+   "t": "2026-10-29T14:42:15Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Regler wirkt Teil 1",
+   "sha": "90a7bf4fa6b2be8642119d5ef797285837abe3d5",
+   "zweig": "w3w-wald",
+   "t": "2026-10-29T14:42:15Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Schirm-Wand",
+   "sha": "edf26a7a629df6dff8b4ff76ebb80cb59494ddf0",
+   "zweig": "integ-probe",
+   "t": "2026-10-29T16:09:51Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Mehrspieler-Wand",
+   "sha": "16ac73d26faff2bed058941cfcfe13b016e7792b",
+   "zweig": "spike-ci-konsum",
+   "t": "2026-10-29T23:02:29Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Die Kreatur-Linse Teil 1",
+   "sha": "b62f6103335010824e21ac27bd9d08efb1731928",
+   "zweig": "w3w-studios",
+   "t": "2026-10-29T23:02:32Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Schirm-Wand",
+   "sha": "b62f6103335010824e21ac27bd9d08efb1731928",
+   "zweig": "w3w-studios",
+   "t": "2026-10-29T23:02:32Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Pruefbuehne",
+   "sha": "180aa89c5ba7b7dc07b3469f9d9de8a05d70d6d9",
+   "zweig": "w3w-glanz",
+   "t": "2026-10-29T23:02:35Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Schatten am Terminator",
+   "sha": "a229dc2750ab5c66ee3905c87515b6ab2aeb2250",
+   "zweig": "tore-k5-tuer-neu",
+   "t": "2026-10-29T23:06:52Z",
+   "kl": "echt",
+   "taeter": [
+    "tore-k5-tuer-neu"
+   ],
+   "bekannt": "2026-10-30T05:22:13Z"
+  },
+  {
+   "k": "Die Kreatur-Linse Teil 3",
+   "sha": "36f7a30904e8c286fdcca7ffff47c81dec9eb67d",
+   "zweig": "oeko-k2-bestand-neu",
+   "t": "2026-10-29T23:30:28Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Prägung-Welt",
+   "sha": "3ed96b3f2017923f6792aafd0c74d517d8685525",
+   "zweig": "w4-grundstellung",
+   "t": "2026-10-29T23:36:33Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Kreatur-Linse Teil 1",
+   "sha": "3ed96b3f2017923f6792aafd0c74d517d8685525",
+   "zweig": "w4-grundstellung",
+   "t": "2026-10-29T23:36:33Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Voller Playtest",
+   "sha": "88af5440666e27e23fd8390907913950ce0a666e",
+   "zweig": "w4-heil-speicher",
+   "t": "2026-10-30T01:31:31Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Prägung-Welt",
+   "sha": "71f47032302273fb19b83885106104fcd5884795",
+   "zweig": "w4-heil-klang",
+   "t": "2026-10-30T01:40:05Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Prägung-Welt",
+   "sha": "918558086ba22c4dcd522e5c530bd99589dd01bd",
+   "zweig": "w4-heil-speicher",
+   "t": "2026-10-30T02:10:07Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Mehrspieler-Wand",
+   "sha": "070ea7281535448465b47a01a0df0c6b0450e527",
+   "zweig": "spike-ci-konsum",
+   "t": "2026-10-30T02:24:57Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Regler wirkt Teil 1",
+   "sha": "40fd0c95df9fdc0a0c4f58e5d338c488eb442f63",
+   "zweig": "w3w-studios",
+   "t": "2026-10-30T02:25:02Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Die Kreatur-Linse Teil 1",
+   "sha": "88da99beb61893a3e5527b48b4f69eac8f678bb4",
+   "zweig": "w4-siedlung-teilen",
+   "t": "2026-10-30T02:41:39Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Wasser-Bild",
+   "sha": "e09ca48e195e822047cade7e7bf3294ba2a1d801",
+   "zweig": "w4-licht-baustein",
+   "t": "2026-10-30T02:49:21Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Die Kreatur-Linse Teil 1",
+   "sha": "00763f54da80a707dddb021c2b6797dc3d04b332",
+   "zweig": "w4-grundstellung",
+   "t": "2026-10-30T03:54:18Z",
+   "kl": "echt",
+   "taeter": [
+    "w4-grundstellung"
+   ],
+   "bekannt": "2026-10-30T05:23:12Z"
+  },
+  {
+   "k": "Die V1-Pfad-Linse",
+   "sha": "941a4141c1548ae0f6b24df5cd66d1752dcecab5",
+   "zweig": "w4-studio-stammbaum",
+   "t": "2026-10-30T05:11:21Z",
+   "kl": "echt",
+   "taeter": [
+    "w4-studio-stammbaum"
+   ],
+   "bekannt": "2026-10-30T10:01:37.000Z"
+  },
+  {
+   "k": "echt: Ziel-Zensus auf der Karte",
+   "sha": "134ed0000cb4ff03c2a1cbed0ae34adbb7d65ff1",
+   "zweig": "integ-probe",
+   "t": "2026-10-30T06:26:32Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "echt: Pruefbuehne S0 auf der Karte",
+   "sha": "134ed0000cb4ff03c2a1cbed0ae34adbb7d65ff1",
+   "zweig": "integ-probe",
+   "t": "2026-10-30T06:26:32Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "echt: Portal-Membran auf der Karte",
+   "sha": "134ed0000cb4ff03c2a1cbed0ae34adbb7d65ff1",
+   "zweig": "integ-probe",
+   "t": "2026-10-30T06:26:32Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "echt: Naesse auf der Karte",
+   "sha": "134ed0000cb4ff03c2a1cbed0ae34adbb7d65ff1",
+   "zweig": "integ-probe",
+   "t": "2026-10-30T06:26:32Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Das Haus der Welt Teil 2",
+   "sha": "134ed0000cb4ff03c2a1cbed0ae34adbb7d65ff1",
+   "zweig": "integ-probe",
+   "t": "2026-10-30T06:26:32Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die V1-Pfad-Linse",
+   "sha": "134ed0000cb4ff03c2a1cbed0ae34adbb7d65ff1",
+   "zweig": "integ-probe",
+   "t": "2026-10-30T06:26:32Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Portal-Membran",
+   "sha": "134ed0000cb4ff03c2a1cbed0ae34adbb7d65ff1",
+   "zweig": "integ-probe",
+   "t": "2026-10-30T06:26:32Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Pruefbuehne S0 im Bild",
+   "sha": "134ed0000cb4ff03c2a1cbed0ae34adbb7d65ff1",
+   "zweig": "integ-probe",
+   "t": "2026-10-30T06:26:32Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Welt-Wache",
+   "sha": "b1e875703d4ba26fa877bc246981106873c2e0cc",
+   "zweig": "w4-studio-stammbaum",
+   "t": "2026-10-30T06:43:18Z",
+   "kl": "echt",
+   "taeter": [
+    "w4-studio-stammbaum"
+   ],
+   "bekannt": "2026-10-30T07:44:44Z"
+  },
+  {
+   "k": "echt: Ziel-Zensus auf der Karte",
+   "sha": "3e6229c6deca7cbe2929a593360bd67bf4b6ffae",
+   "zweig": "integ-probe",
+   "t": "2026-10-30T07:11:31Z",
+   "kl": "echt",
+   "taeter": [
+    "w4-studio-stammbaum"
+   ],
+   "bekannt": "2026-10-30T10:01:37.000Z"
+  },
+  {
+   "k": "echt: Pruefbuehne S0 auf der Karte",
+   "sha": "3e6229c6deca7cbe2929a593360bd67bf4b6ffae",
+   "zweig": "integ-probe",
+   "t": "2026-10-30T07:11:31Z",
+   "kl": "echt",
+   "taeter": [
+    "w4-studio-stammbaum"
+   ],
+   "bekannt": "2026-10-30T10:01:37.000Z"
+  },
+  {
+   "k": "echt: Portal-Membran auf der Karte",
+   "sha": "3e6229c6deca7cbe2929a593360bd67bf4b6ffae",
+   "zweig": "integ-probe",
+   "t": "2026-10-30T07:11:31Z",
+   "kl": "echt",
+   "taeter": [
+    "w4-studio-stammbaum"
+   ],
+   "bekannt": "2026-10-30T10:01:37.000Z"
+  },
+  {
+   "k": "echt: Naesse auf der Karte",
+   "sha": "3e6229c6deca7cbe2929a593360bd67bf4b6ffae",
+   "zweig": "integ-probe",
+   "t": "2026-10-30T07:11:31Z",
+   "kl": "echt",
+   "taeter": [
+    "w4-studio-stammbaum"
+   ],
+   "bekannt": "2026-10-30T10:01:37.000Z"
+  },
+  {
+   "k": "Portal-Membran",
+   "sha": "3e6229c6deca7cbe2929a593360bd67bf4b6ffae",
+   "zweig": "integ-probe",
+   "t": "2026-10-30T07:11:31Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Welt-Wache",
+   "sha": "3e6229c6deca7cbe2929a593360bd67bf4b6ffae",
+   "zweig": "integ-probe",
+   "t": "2026-10-30T07:11:31Z",
+   "kl": "echt",
+   "taeter": [
+    "w4-studio-stammbaum"
+   ],
+   "bekannt": "2026-10-30T10:01:37.000Z"
+  },
+  {
+   "k": "Das Haus der Welt Teil 2",
+   "sha": "3e6229c6deca7cbe2929a593360bd67bf4b6ffae",
+   "zweig": "integ-probe",
+   "t": "2026-10-30T07:11:31Z",
+   "kl": "echt",
+   "taeter": [
+    "w4-studio-stammbaum"
+   ],
+   "bekannt": "2026-10-30T10:01:37.000Z"
+  },
+  {
+   "k": "Pruefbuehne S0 im Bild",
+   "sha": "3e6229c6deca7cbe2929a593360bd67bf4b6ffae",
+   "zweig": "integ-probe",
+   "t": "2026-10-30T07:11:31Z",
+   "kl": "echt",
+   "taeter": [
+    "w4-studio-stammbaum"
+   ],
+   "bekannt": "2026-10-30T10:01:37.000Z"
+  },
+  {
+   "k": "Schirm-Wand",
+   "sha": "3e6229c6deca7cbe2929a593360bd67bf4b6ffae",
+   "zweig": "integ-probe",
+   "t": "2026-10-30T07:11:31Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Das Haus der Welt Teil 2",
+   "sha": "9ab1018a49adf8d8065313d2f1269d36ac1e1f99",
+   "zweig": "probe-z81-stamm",
+   "t": "2026-10-30T07:51:21Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Portal-Membran",
+   "sha": "9ab1018a49adf8d8065313d2f1269d36ac1e1f99",
+   "zweig": "probe-z81-stamm",
+   "t": "2026-10-30T07:51:21Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Pruefbuehne S0 im Bild",
+   "sha": "9ab1018a49adf8d8065313d2f1269d36ac1e1f99",
+   "zweig": "probe-z81-stamm",
+   "t": "2026-10-30T07:51:21Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Die Fahr-Linse des Lebens",
+   "sha": "9ab1018a49adf8d8065313d2f1269d36ac1e1f99",
+   "zweig": "probe-z81-stamm",
+   "t": "2026-10-30T07:51:21Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Pruefbuehne",
+   "sha": "5b00e1456c1dec1fa657ec96beac9d4e75daf754",
+   "zweig": "integ-probe",
+   "t": "2026-10-30T08:45:52Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Kamera-Leib-Linse",
+   "sha": "5b00e1456c1dec1fa657ec96beac9d4e75daf754",
+   "zweig": "integ-probe",
+   "t": "2026-10-30T08:45:52Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Schirm-Wand",
+   "sha": "3e11ff13638715b26f928f460d3d7680fa8c1b42",
+   "zweig": "probe-z82-tore",
+   "t": "2026-10-30T10:00:15Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Die Kreatur-Linse Teil 1",
+   "sha": "3e11ff13638715b26f928f460d3d7680fa8c1b42",
+   "zweig": "probe-z82-tore",
+   "t": "2026-10-30T10:00:15Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Pruefbuehne",
+   "sha": "3e11ff13638715b26f928f460d3d7680fa8c1b42",
+   "zweig": "probe-z82-tore",
+   "t": "2026-10-30T10:00:15Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Weg-Boden",
+   "sha": "d72643cf9912d1a989e74a69dca3052741f96263",
+   "zweig": "integ-probe",
+   "t": "2026-10-30T10:53:25Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Kamera-Laub-Linse",
+   "sha": "51fd88489ba2e4418cb82577703efc2f40951b2d",
+   "zweig": "integ-probe",
+   "t": "2026-10-30T12:23:56Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Werkstatt-Weg-Linse",
+   "sha": "51fd88489ba2e4418cb82577703efc2f40951b2d",
+   "zweig": "integ-probe",
+   "t": "2026-10-30T12:23:56Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Kamera-Leib-Linse",
+   "sha": "51fd88489ba2e4418cb82577703efc2f40951b2d",
+   "zweig": "integ-probe",
+   "t": "2026-10-30T12:23:56Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Kamera-Leib-Linse",
+   "sha": "af5c0d0b6749892edaf0ab5b798dcd95746d4a8a",
+   "zweig": "probe-z84-hebungsringe",
+   "t": "2026-10-30T12:58:30Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Die Werkstatt-Weg-Linse",
+   "sha": "37248453a2af37bf6a75846dff929a7c493f5c9f",
+   "zweig": "probe-z84-laub-jahr2",
+   "t": "2026-10-30T12:58:36Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Die Kamera-Laub-Linse",
+   "sha": "37248453a2af37bf6a75846dff929a7c493f5c9f",
+   "zweig": "probe-z84-laub-jahr2",
+   "t": "2026-10-30T12:58:36Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Die Kamera-Leib-Linse",
+   "sha": "37248453a2af37bf6a75846dff929a7c493f5c9f",
+   "zweig": "probe-z84-laub-jahr2",
+   "t": "2026-10-30T12:58:36Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Fluss-Wand",
+   "sha": "90d1307e1acbc0754ab708b960dd5fceb8f68e39",
+   "zweig": "integ-probe",
+   "t": "2026-10-30T14:01:18Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Schirm-Wand",
+   "sha": "cfda40f9a0b05cdd693de2df0de9bd92d5f82d61",
+   "zweig": "integ-probe",
+   "t": "2026-10-30T14:46:56Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Kamera-Leib-Linse",
+   "sha": "f1571f6a489bff7481dd508161a0fac17dc7c9a6",
+   "zweig": "integ-probe",
+   "t": "2026-10-30T15:45:46Z",
+   "kl": "echt",
+   "taeter": [
+    "tore-k5-tuer-neu"
+   ],
+   "bekannt": "2026-10-30T17:36:51.000Z"
+  },
+  {
+   "k": "Erst-Zeichnungs-Wand Teil 2",
+   "sha": "39e92bc2c1ecd1896fb5e8c4e96a8b6870351b0c",
+   "zweig": "integ-probe",
+   "t": "2026-10-30T16:42:30Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Fall-Waechter",
+   "sha": "1789724b0d75d279d10749a1e8536d67dbc6bc7d",
+   "zweig": "integ-probe",
+   "t": "2026-10-30T21:19:49Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Fall-Waechter",
+   "sha": "c93313311ae82f7946589b420cbd943d3cf3233f",
+   "zweig": "integ-probe",
+   "t": "2026-10-30T22:20:22Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Kamera-Leib-Linse",
+   "sha": "a7b2780b88377ef71b4d9cc3a5691c6ede5ca0d9",
+   "zweig": "integ-probe",
+   "t": "2026-10-31T01:35:53Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "echt: Wasser-Bild auf der Karte",
+   "sha": "2b08b715cfdb22e98ce4e69e4bc5af83d9ae9cea",
+   "zweig": "integ-probe",
+   "t": "2026-10-31T03:28:53Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "echt: Post-Kette auf der Karte",
+   "sha": "2b08b715cfdb22e98ce4e69e4bc5af83d9ae9cea",
+   "zweig": "integ-probe",
+   "t": "2026-10-31T03:28:53Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "echt: Lichtweg auf der Karte",
+   "sha": "2b08b715cfdb22e98ce4e69e4bc5af83d9ae9cea",
+   "zweig": "integ-probe",
+   "t": "2026-10-31T03:28:53Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "echt: Naesse auf der Karte",
+   "sha": "2b08b715cfdb22e98ce4e69e4bc5af83d9ae9cea",
+   "zweig": "integ-probe",
+   "t": "2026-10-31T03:28:53Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "echt: Tag-Achse auf der Karte",
+   "sha": "27d752f69ae4f3aff68ad16371422eddf7520c81",
+   "zweig": "integ-probe",
+   "t": "2026-10-31T04:56:02Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "echt: Lichtweg auf der Karte",
+   "sha": "27d752f69ae4f3aff68ad16371422eddf7520c81",
+   "zweig": "integ-probe",
+   "t": "2026-10-31T04:56:02Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Kreatur-Linse Teil 2",
+   "sha": "746de87ae9b562ba06e27747522fa81fa13bf32e",
+   "zweig": "integ-probe",
+   "t": "2026-10-31T06:54:20Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Fahr-Linse des Lebens",
+   "sha": "746de87ae9b562ba06e27747522fa81fa13bf32e",
+   "zweig": "integ-probe",
+   "t": "2026-10-31T06:54:20Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "echt: Pruefbuehne S0 auf der Karte",
+   "sha": "3885cceb12b39d315f44f4deb0c8207e7814d046",
+   "zweig": "integ-probe",
+   "t": "2026-10-31T12:11:16Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Die Kamera-Leib-Linse",
+   "sha": "3885cceb12b39d315f44f4deb0c8207e7814d046",
+   "zweig": "integ-probe",
+   "t": "2026-10-31T12:11:16Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Die Studio-Dither-Blende",
+   "sha": "3885cceb12b39d315f44f4deb0c8207e7814d046",
+   "zweig": "integ-probe",
+   "t": "2026-10-31T12:11:16Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "GPU-Churn-Linse",
+   "sha": "f5e3da848fc1a0c22c3ce3c713d3174dc5c7fecd",
+   "zweig": "integ-probe",
+   "t": "2026-10-31T14:34:32Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Voller Playtest",
+   "sha": "f5e3da848fc1a0c22c3ce3c713d3174dc5c7fecd",
+   "zweig": "integ-probe",
+   "t": "2026-10-31T14:34:32Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Kreatur-Linse Teil 1",
+   "sha": "f5e3da848fc1a0c22c3ce3c713d3174dc5c7fecd",
+   "zweig": "integ-probe",
+   "t": "2026-10-31T14:34:32Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Das Haus der Welt ist begehbar, wie es gezeichnet ist",
+   "sha": "f5e3da848fc1a0c22c3ce3c713d3174dc5c7fecd",
+   "zweig": "integ-probe",
+   "t": "2026-10-31T14:34:32Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "echt: Portal-Membran auf der Karte",
+   "sha": "f5e3da848fc1a0c22c3ce3c713d3174dc5c7fecd",
+   "zweig": "integ-probe",
+   "t": "2026-10-31T14:34:32Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "echt: Frost-Wand auf der Karte",
+   "sha": "f5e3da848fc1a0c22c3ce3c713d3174dc5c7fecd",
+   "zweig": "integ-probe",
+   "t": "2026-10-31T14:34:32Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Das Haus der Welt Teil 2",
+   "sha": "f5e3da848fc1a0c22c3ce3c713d3174dc5c7fecd",
+   "zweig": "integ-probe",
+   "t": "2026-10-31T14:34:32Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Portal-Membran",
+   "sha": "f5e3da848fc1a0c22c3ce3c713d3174dc5c7fecd",
+   "zweig": "integ-probe",
+   "t": "2026-10-31T14:34:32Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Das Haus der Welt ist begehbar, wie es gezeichnet ist",
+   "sha": "d4564dc4674b026ae49eb07497eda1dfeddff114",
+   "zweig": "integ-probe",
+   "t": "2026-10-31T16:20:25Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Das Haus der Welt Teil 2",
+   "sha": "d4564dc4674b026ae49eb07497eda1dfeddff114",
+   "zweig": "integ-probe",
+   "t": "2026-10-31T16:20:25Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Fluss-Wand",
+   "sha": "831e885c1dd5804e0202130b47fb5a0a91e7fc87",
+   "zweig": "integ-probe",
+   "t": "2026-10-31T22:03:07Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Die Albedo nah gegen fern",
+   "sha": "831e885c1dd5804e0202130b47fb5a0a91e7fc87",
+   "zweig": "integ-probe",
+   "t": "2026-10-31T22:03:07Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "WebGL2-Rückfall",
+   "sha": "831e885c1dd5804e0202130b47fb5a0a91e7fc87",
+   "zweig": "integ-probe",
+   "t": "2026-10-31T22:03:07Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "echt: Pruefbuehne S0 auf der Karte",
+   "sha": "13a7b99330f5dbbb25cb2a731256640dd060bfad",
+   "zweig": "integ-probe",
+   "t": "2026-10-31T22:50:04Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "echt: Wasser-Bild auf der Karte",
+   "sha": "13a7b99330f5dbbb25cb2a731256640dd060bfad",
+   "zweig": "integ-probe",
+   "t": "2026-10-31T22:50:04Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "echt: Ego-Schatten auf der Karte",
+   "sha": "13a7b99330f5dbbb25cb2a731256640dd060bfad",
+   "zweig": "integ-probe",
+   "t": "2026-10-31T22:50:04Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Ego-Schatten",
+   "sha": "13a7b99330f5dbbb25cb2a731256640dd060bfad",
+   "zweig": "integ-probe",
+   "t": "2026-10-31T22:50:04Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Pruefbuehne S0 im Bild",
+   "sha": "13a7b99330f5dbbb25cb2a731256640dd060bfad",
+   "zweig": "integ-probe",
+   "t": "2026-10-31T22:50:04Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Die Kreatur-Linse Teil 3",
+   "sha": "eedf78c9db949baf2e1b00439fb7fd5869bf16cb",
+   "zweig": "integ-probe",
+   "t": "2026-11-01T00:24:12Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Voller Playtest",
+   "sha": "eedf78c9db949baf2e1b00439fb7fd5869bf16cb",
+   "zweig": "integ-probe",
+   "t": "2026-11-01T00:24:12Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Die V1-Pfad-Linse",
+   "sha": "1d6f46ebb732dcaac09c55b1a085641134bda3a9",
+   "zweig": "integ-probe",
+   "t": "2026-11-01T01:45:51Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Der ε-Beweis",
+   "sha": "1d6f46ebb732dcaac09c55b1a085641134bda3a9",
+   "zweig": "integ-probe",
+   "t": "2026-11-01T01:45:51Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Foundry-Impostor auf dem EINEN Haupt-Renderer",
+   "sha": "2a0545a589a207e5e796a4b8337602129fe7bcd0",
+   "zweig": "integ-probe",
+   "t": "2026-11-01T02:50:57Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Voller Playtest",
+   "sha": "2a0545a589a207e5e796a4b8337602129fe7bcd0",
+   "zweig": "integ-probe",
+   "t": "2026-11-01T02:50:57Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "echt: Ziel-Zensus auf der Karte",
+   "sha": "8f74bd910b227af802cdd2a8372b3d8fdf6e2309",
+   "zweig": "integ-probe",
+   "t": "2026-11-01T03:28:14Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Die Ankunfts-Linse",
+   "sha": "fb8348a9d9a75781ec62e5b4e515361175f18d4a",
+   "zweig": "integ-probe",
+   "t": "2026-11-01T04:39:10Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Fall-Waechter",
+   "sha": "fb8348a9d9a75781ec62e5b4e515361175f18d4a",
+   "zweig": "integ-probe",
+   "t": "2026-11-01T04:39:10Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Das Haus der Welt Teil 2",
+   "sha": "fb8348a9d9a75781ec62e5b4e515361175f18d4a",
+   "zweig": "integ-probe",
+   "t": "2026-11-01T04:39:10Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Der Körper steht, wo das Auge ihn sieht",
+   "sha": "fb8348a9d9a75781ec62e5b4e515361175f18d4a",
+   "zweig": "integ-probe",
+   "t": "2026-11-01T04:39:10Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Asset-Vertrag v1",
+   "sha": "fb8348a9d9a75781ec62e5b4e515361175f18d4a",
+   "zweig": "integ-probe",
+   "t": "2026-11-01T04:39:10Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Das Haus der Welt ist begehbar, wie es gezeichnet ist",
+   "sha": "fb8348a9d9a75781ec62e5b4e515361175f18d4a",
+   "zweig": "integ-probe",
+   "t": "2026-11-01T04:39:10Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "WebGL2-Rückfall",
+   "sha": "edac374389b89ecb59d1a372163dc46a8d2c4853",
+   "zweig": "integ-probe",
+   "t": "2026-11-01T09:29:27Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "echt: Frost-Wand auf der Karte",
+   "sha": "6c26d07fbb6c69e6f6cff2f05af63b0972cc2254",
+   "zweig": "integ-probe",
+   "t": "2026-11-01T09:32:58Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "echt: Frost-Wand auf der Karte",
+   "sha": "304968215657eb676afd05ce001aaf9d235e41e6",
+   "zweig": "integ-probe",
+   "t": "2026-11-01T10:23:14Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Erst-Zeichnungs-Wand Teil 1",
+   "sha": "0b449f79083e4f2e2c52c65978276ade5009c2ed",
+   "zweig": "integ-probe",
+   "t": "2026-11-01T12:44:23Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Erst-Zeichnungs-Wand Teil 1",
+   "sha": "a19c9b2a3c5d95877e8eb60e8ba998cfd97f68b5",
+   "zweig": "integ-probe",
+   "t": "2026-11-01T12:56:08Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "echt: Lichtweg auf der Karte",
+   "sha": "e5d50a0e9744a5055f71a45ef61f2efefc62d312",
+   "zweig": "integ-probe",
+   "t": "2026-11-01T13:34:36Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "echt: Naesse auf der Karte",
+   "sha": "e5d50a0e9744a5055f71a45ef61f2efefc62d312",
+   "zweig": "integ-probe",
+   "t": "2026-11-01T13:34:36Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Die Kreatur-Linse Teil 1",
+   "sha": "e5d50a0e9744a5055f71a45ef61f2efefc62d312",
+   "zweig": "integ-probe",
+   "t": "2026-11-01T13:34:36Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "echt: Tag-Achse auf der Karte",
+   "sha": "24338face7d6d352b0c37243010f6e2919f8ba9f",
+   "zweig": "integ-probe",
+   "t": "2026-11-01T15:49:23Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Gelaende-Studio",
+   "sha": "24338face7d6d352b0c37243010f6e2919f8ba9f",
+   "zweig": "integ-probe",
+   "t": "2026-11-01T15:49:23Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Die Albedo nah gegen fern",
+   "sha": "24338face7d6d352b0c37243010f6e2919f8ba9f",
+   "zweig": "integ-probe",
+   "t": "2026-11-01T15:49:23Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Die Kreatur-Linse Teil 1",
+   "sha": "24338face7d6d352b0c37243010f6e2919f8ba9f",
+   "zweig": "integ-probe",
+   "t": "2026-11-01T15:49:23Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Die Kreatur-Linse Teil 2",
+   "sha": "24338face7d6d352b0c37243010f6e2919f8ba9f",
+   "zweig": "integ-probe",
+   "t": "2026-11-01T15:49:23Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Weltgrenze",
+   "sha": "24338face7d6d352b0c37243010f6e2919f8ba9f",
+   "zweig": "integ-probe",
+   "t": "2026-11-01T15:49:23Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Der Settlement-Kanal N5.7",
+   "sha": "24338face7d6d352b0c37243010f6e2919f8ba9f",
+   "zweig": "integ-probe",
+   "t": "2026-11-01T15:49:23Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Kampf und Maus",
+   "sha": "24338face7d6d352b0c37243010f6e2919f8ba9f",
+   "zweig": "integ-probe",
+   "t": "2026-11-01T15:49:23Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Satz-Wand",
+   "sha": "24338face7d6d352b0c37243010f6e2919f8ba9f",
+   "zweig": "integ-probe",
+   "t": "2026-11-01T15:49:23Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Takt-Atem",
+   "sha": "24338face7d6d352b0c37243010f6e2919f8ba9f",
+   "zweig": "integ-probe",
+   "t": "2026-11-01T15:49:23Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Kamera-Treue und Stand-Wand",
+   "sha": "24338face7d6d352b0c37243010f6e2919f8ba9f",
+   "zweig": "integ-probe",
+   "t": "2026-11-01T15:49:23Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Fenster-Wand",
+   "sha": "24338face7d6d352b0c37243010f6e2919f8ba9f",
+   "zweig": "integ-probe",
+   "t": "2026-11-01T15:49:23Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Die Ankunfts-Linse",
+   "sha": "24338face7d6d352b0c37243010f6e2919f8ba9f",
+   "zweig": "integ-probe",
+   "t": "2026-11-01T15:49:23Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Erst-Zeichnungs-Wand Teil 2",
+   "sha": "24338face7d6d352b0c37243010f6e2919f8ba9f",
+   "zweig": "integ-probe",
+   "t": "2026-11-01T15:49:23Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Erst-Zeichnungs-Wand Teil 1",
+   "sha": "24338face7d6d352b0c37243010f6e2919f8ba9f",
+   "zweig": "integ-probe",
+   "t": "2026-11-01T15:49:23Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Werk im Wasser",
+   "sha": "23f2ff33c36e185c89bd1b91d32d5f850f50e130",
+   "zweig": "integ-probe",
+   "t": "2026-11-01T18:53:42Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "echt: Frost-Wand auf der Karte",
+   "sha": "bbfae2d051d8fbb33b685d7c9dba373e434985ef",
+   "zweig": "integ-probe",
+   "t": "2026-11-01T20:55:05Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "echt: Frost-Wand auf der Karte",
+   "sha": "b301490b9d3153dc36826434f66b79b9aab6393c",
+   "zweig": "integ-probe",
+   "t": "2026-11-01T22:03:02Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "echt: Tag-Achse auf der Karte",
+   "sha": "8e051d60d43eab53bd16d7f6d051bd731bca5e17",
+   "zweig": "integ-probe",
+   "t": "2026-11-01T22:38:33Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Warm-Start",
+   "sha": "8e051d60d43eab53bd16d7f6d051bd731bca5e17",
+   "zweig": "integ-probe",
+   "t": "2026-11-01T22:38:33Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Höhlen-Sicht",
+   "sha": "8e051d60d43eab53bd16d7f6d051bd731bca5e17",
+   "zweig": "integ-probe",
+   "t": "2026-11-01T22:38:33Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Der Körper steht, wo das Auge ihn sieht",
+   "sha": "8e051d60d43eab53bd16d7f6d051bd731bca5e17",
+   "zweig": "integ-probe",
+   "t": "2026-11-01T22:38:33Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Regler wirkt Teil 1",
+   "sha": "8e051d60d43eab53bd16d7f6d051bd731bca5e17",
+   "zweig": "integ-probe",
+   "t": "2026-11-01T22:38:33Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Haus-Asset-Vertrag v6",
+   "sha": "b17f673c898f465fac9aa43178f91792fad056e7",
+   "zweig": "integ-probe",
+   "t": "2026-11-02T00:50:42Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Welt-Wache",
+   "sha": "b17f673c898f465fac9aa43178f91792fad056e7",
+   "zweig": "integ-probe",
+   "t": "2026-11-02T00:50:42Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Die Fahr-Linse des Lebens",
+   "sha": "063cb999ee3848aad8861ba8f92e027ba1b0c4fa",
+   "zweig": "integ-probe",
+   "t": "2026-11-02T01:58:53Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "GPU-Churn-Linse",
+   "sha": "47f472b6d0faa5f37dd8829df0e59b9988a1fce9",
+   "zweig": "integ-probe",
+   "t": "2026-11-02T02:38:00Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Die Labor-Linse der Garage",
+   "sha": "a88e7ced276ca5a16661d1fa2ad5f4d4939a20eb",
+   "zweig": "integ-probe",
+   "t": "2026-11-02T03:15:09Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Stand-Takt",
+   "sha": "bd7e02db1aed00a51a44a0fa54e3b1e2e9df0e5a",
+   "zweig": "integ-probe",
+   "t": "2026-11-02T04:16:16Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Die Fahr-Linse des Lebens",
+   "sha": "939d307f0227bd7f7eae4894a1f4b0fbd9a1895f",
+   "zweig": "integ-probe",
+   "t": "2026-11-02T04:49:10Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Die Kreatur-Linse Teil 1",
+   "sha": "939d307f0227bd7f7eae4894a1f4b0fbd9a1895f",
+   "zweig": "integ-probe",
+   "t": "2026-11-02T04:49:10Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Die Kamera-Leib-Linse",
+   "sha": "8f499584e776169098dee820fbdd2a869179be6f",
+   "zweig": "integ-probe",
+   "t": "2026-11-02T11:26:42Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Die Ankunfts-Linse",
+   "sha": "a69afa38e8c5b112a1c071aee5eaf4d0aadbc8d2",
+   "zweig": "integ-probe",
+   "t": "2026-11-02T12:02:10Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Weltgrenze",
+   "sha": "a69afa38e8c5b112a1c071aee5eaf4d0aadbc8d2",
+   "zweig": "integ-probe",
+   "t": "2026-11-02T12:02:10Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Boot-Rettung",
+   "sha": "a69afa38e8c5b112a1c071aee5eaf4d0aadbc8d2",
+   "zweig": "integ-probe",
+   "t": "2026-11-02T12:02:10Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Die Kamera-Leib-Linse",
+   "sha": "c21f96580497218d8c1b9c919da5a0706734c546",
+   "zweig": "integ-probe",
+   "t": "2026-11-02T18:05:45Z",
+   "kl": "echt",
+   "taeter": [
+    "w4-affekt"
+   ],
+   "bekannt": "2026-11-03T13:25:52.000Z"
+  },
+  {
+   "k": "Stand-Takt",
+   "sha": "f06e4c0e814c115af6e297054b4cd31f10f7ee0d",
+   "zweig": "integ-probe",
+   "t": "2026-11-02T18:47:43Z",
+   "kl": "echt",
+   "taeter": [
+    "w4-feld"
+   ],
+   "bekannt": "2026-11-04T07:43:44.000Z"
+  },
+  {
+   "k": "echt: Post-Kette auf der Karte",
+   "sha": "1d24327d00f02358b0cc3c514c29c43a146858c4",
+   "zweig": "integ-probe",
+   "t": "2026-11-03T10:48:03Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Post-Kette",
+   "sha": "1d24327d00f02358b0cc3c514c29c43a146858c4",
+   "zweig": "integ-probe",
+   "t": "2026-11-03T10:48:03Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Voller Playtest",
+   "sha": "5d61ca4ef634da27726442c1a3598ca6915a76db",
+   "zweig": "integ-probe",
+   "t": "2026-11-03T11:57:51Z",
+   "kl": "echt",
+   "taeter": [
+    "w5-physik-k5"
+   ],
+   "bekannt": "2026-11-04T07:43:44.000Z"
+  },
+  {
+   "k": "Die Kreatur-Linse Teil 2",
+   "sha": "a33acd5048ad02684307b021884b7ef8dd2e235c",
+   "zweig": "integ-probe",
+   "t": "2026-11-03T12:12:35Z",
+   "kl": "echt",
+   "taeter": [
+    "w4-feld"
+   ],
+   "bekannt": "2026-11-04T07:43:44.000Z"
+  },
+  {
+   "k": "Das Haus der Welt Teil 2",
+   "sha": "a33acd5048ad02684307b021884b7ef8dd2e235c",
+   "zweig": "integ-probe",
+   "t": "2026-11-03T12:12:35Z",
+   "kl": "echt",
+   "taeter": [
+    "w4-feld"
+   ],
+   "bekannt": "2026-11-04T07:43:44.000Z"
+  },
+  {
+   "k": "Werk im Wasser",
+   "sha": "a33acd5048ad02684307b021884b7ef8dd2e235c",
+   "zweig": "integ-probe",
+   "t": "2026-11-03T12:12:35Z",
+   "kl": "echt",
+   "taeter": [
+    "w4-feld"
+   ],
+   "bekannt": "2026-11-04T07:43:44.000Z"
+  },
+  {
+   "k": "Voller Playtest",
+   "sha": "3b9bc9609bf199a8079c58089bd764f768566aa2",
+   "zweig": "integ-probe",
+   "t": "2026-11-03T12:46:04Z",
+   "kl": "echt",
+   "taeter": [
+    "w5-physik-k5"
+   ],
+   "bekannt": "2026-11-04T07:43:44.000Z"
+  },
+  {
+   "k": "Die Kamera-Leib-Linse",
+   "sha": "76172a82af4740a4d015e55885bc5667682805fb",
+   "zweig": "integ-probe",
+   "t": "2026-11-03T14:24:42Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Kreatur-Linse Teil 2",
+   "sha": "5a77be9b697899c78759c09de36d043edbf03015",
+   "zweig": "integ-probe",
+   "t": "2026-11-03T14:35:26Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "echt: Schatten-Bias auf der Karte",
+   "sha": "66ae1818ad5481f8c2d242beab863e2ea0abe941",
+   "zweig": "integ-probe",
+   "t": "2026-11-03T19:02:44Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "echt: Lichtweg auf der Karte",
+   "sha": "66ae1818ad5481f8c2d242beab863e2ea0abe941",
+   "zweig": "integ-probe",
+   "t": "2026-11-03T19:02:44Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "echt: Naesse auf der Karte",
+   "sha": "66ae1818ad5481f8c2d242beab863e2ea0abe941",
+   "zweig": "integ-probe",
+   "t": "2026-11-03T19:02:44Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Der Zweit-Kern",
+   "sha": "66ae1818ad5481f8c2d242beab863e2ea0abe941",
+   "zweig": "integ-probe",
+   "t": "2026-11-03T19:02:44Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die V1-Pfad-Linse",
+   "sha": "66ae1818ad5481f8c2d242beab863e2ea0abe941",
+   "zweig": "integ-probe",
+   "t": "2026-11-03T19:02:44Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Trias-Linse",
+   "sha": "66ae1818ad5481f8c2d242beab863e2ea0abe941",
+   "zweig": "integ-probe",
+   "t": "2026-11-03T19:02:44Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Das Nervensystem",
+   "sha": "66ae1818ad5481f8c2d242beab863e2ea0abe941",
+   "zweig": "integ-probe",
+   "t": "2026-11-03T19:02:44Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Prägung-Welt",
+   "sha": "66ae1818ad5481f8c2d242beab863e2ea0abe941",
+   "zweig": "integ-probe",
+   "t": "2026-11-03T19:02:44Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Kampf und Maus",
+   "sha": "66ae1818ad5481f8c2d242beab863e2ea0abe941",
+   "zweig": "integ-probe",
+   "t": "2026-11-03T19:02:44Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Schatten-Bias",
+   "sha": "66ae1818ad5481f8c2d242beab863e2ea0abe941",
+   "zweig": "integ-probe",
+   "t": "2026-11-03T19:02:44Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Tier-Gang ohne Gleiten",
+   "sha": "66ae1818ad5481f8c2d242beab863e2ea0abe941",
+   "zweig": "integ-probe",
+   "t": "2026-11-03T19:02:44Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "WebGL2-Rückfall",
+   "sha": "66ae1818ad5481f8c2d242beab863e2ea0abe941",
+   "zweig": "integ-probe",
+   "t": "2026-11-03T19:02:44Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Brennglas-Takt",
+   "sha": "66ae1818ad5481f8c2d242beab863e2ea0abe941",
+   "zweig": "integ-probe",
+   "t": "2026-11-03T19:02:44Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "echt: Tag-Achse auf der Karte",
+   "sha": "4f9683591b130c10032a1115282692132b576231",
+   "zweig": "integ-probe",
+   "t": "2026-11-03T22:01:18Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "echt: Lichtweg auf der Karte",
+   "sha": "4f9683591b130c10032a1115282692132b576231",
+   "zweig": "integ-probe",
+   "t": "2026-11-03T22:01:18Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Schirm-Wand",
+   "sha": "4f9683591b130c10032a1115282692132b576231",
+   "zweig": "integ-probe",
+   "t": "2026-11-03T22:01:18Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Prägung-Welt",
+   "sha": "4f9683591b130c10032a1115282692132b576231",
+   "zweig": "integ-probe",
+   "t": "2026-11-03T22:01:18Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die V1-Pfad-Linse",
+   "sha": "4f9683591b130c10032a1115282692132b576231",
+   "zweig": "integ-probe",
+   "t": "2026-11-03T22:01:18Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Persistenz-Härtung Teil 1",
+   "sha": "5b6270c337b0fff3ad5fb410bd8dbe21a7649fca",
+   "zweig": "integ-probe",
+   "t": "2026-11-03T22:47:03Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Voller Playtest",
+   "sha": "5b6270c337b0fff3ad5fb410bd8dbe21a7649fca",
+   "zweig": "integ-probe",
+   "t": "2026-11-03T22:47:03Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Fahr-Linse des Lebens",
+   "sha": "5b6270c337b0fff3ad5fb410bd8dbe21a7649fca",
+   "zweig": "integ-probe",
+   "t": "2026-11-03T22:47:03Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Prägung-Welt",
+   "sha": "095355c206cab0e368961a3a205c19dba6dfc6ef",
+   "zweig": "integ-probe",
+   "t": "2026-11-03T23:20:32Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Schirm-Wand",
+   "sha": "095355c206cab0e368961a3a205c19dba6dfc6ef",
+   "zweig": "integ-probe",
+   "t": "2026-11-03T23:20:32Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Kreatur-Linse Teil 1",
+   "sha": "6f2caabd1e1d8ae75655fa5ec8916499b537f56c",
+   "zweig": "integ-probe",
+   "t": "2026-11-04T00:04:02Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Prägung-Welt",
+   "sha": "6f2caabd1e1d8ae75655fa5ec8916499b537f56c",
+   "zweig": "integ-probe",
+   "t": "2026-11-04T00:04:02Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Regler wirkt Teil 1",
+   "sha": "6f2caabd1e1d8ae75655fa5ec8916499b537f56c",
+   "zweig": "integ-probe",
+   "t": "2026-11-04T00:04:02Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Tier-Gang ohne Gleiten",
+   "sha": "6f2caabd1e1d8ae75655fa5ec8916499b537f56c",
+   "zweig": "integ-probe",
+   "t": "2026-11-04T00:04:02Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Prägung-Welt",
+   "sha": "7859ff6c2a0ae791c250b5fe4e9a0ba04c1bace4",
+   "zweig": "integ-probe",
+   "t": "2026-11-04T01:27:57Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "echt: Ziel-Zensus auf der Karte",
+   "sha": "262142cd50fd2dfb29d36104772ed4ff89661548",
+   "zweig": "integ-probe",
+   "t": "2026-11-04T03:05:32Z",
+   "kl": "echt",
+   "taeter": [
+    "w5-kontakt"
+   ],
+   "bekannt": "2026-11-04T18:48:55.000Z"
+  },
+  {
+   "k": "Ziel-Zensus",
+   "sha": "262142cd50fd2dfb29d36104772ed4ff89661548",
+   "zweig": "integ-probe",
+   "t": "2026-11-04T03:05:32Z",
+   "kl": "echt",
+   "taeter": [
+    "w5-kontakt"
+   ],
+   "bekannt": "2026-11-04T18:48:55.000Z"
+  },
+  {
+   "k": "Die Kamera-Leib-Linse",
+   "sha": "262142cd50fd2dfb29d36104772ed4ff89661548",
+   "zweig": "integ-probe",
+   "t": "2026-11-04T03:05:32Z",
+   "kl": "echt",
+   "taeter": [
+    "w5-kontakt"
+   ],
+   "bekannt": "2026-11-04T18:48:55.000Z"
+  },
+  {
+   "k": "Werk im Wasser",
+   "sha": "262142cd50fd2dfb29d36104772ed4ff89661548",
+   "zweig": "integ-probe",
+   "t": "2026-11-04T03:05:32Z",
+   "kl": "echt",
+   "taeter": [
+    "w5-kontakt"
+   ],
+   "bekannt": "2026-11-04T18:48:55.000Z"
+  },
+  {
+   "k": "echt: Naesse auf der Karte",
+   "sha": "8755f7c0c820d97fc02439ff37f1ba59f7b2b8e8",
+   "zweig": "integ-probe",
+   "t": "2026-11-04T05:41:09Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Fahr-Linse des Lebens",
+   "sha": "8755f7c0c820d97fc02439ff37f1ba59f7b2b8e8",
+   "zweig": "integ-probe",
+   "t": "2026-11-04T05:41:09Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "WebGL2-Rückfall",
+   "sha": "8755f7c0c820d97fc02439ff37f1ba59f7b2b8e8",
+   "zweig": "integ-probe",
+   "t": "2026-11-04T05:41:09Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Werk im Wasser",
+   "sha": "dcbf888c6632d27105e631f1e632ff82a90b2fac",
+   "zweig": "integ-probe",
+   "t": "2026-11-04T06:18:24Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Die Fahr-Linse des Lebens",
+   "sha": "9f79d1f15e8bf804ed2aef4ba721ef5eaca8ea47",
+   "zweig": "integ-probe",
+   "t": "2026-11-04T06:54:02Z",
+   "kl": "echt",
+   "taeter": [
+    "w6-alter"
+   ],
+   "bekannt": "2026-11-04T11:57:10.000Z"
+  },
+  {
+   "k": "Die Kamera-Leib-Linse",
+   "sha": "4b51f8bff5651ccf52b5eaa94e4980021c8b051c",
+   "zweig": "integ-probe",
+   "t": "2026-11-04T07:06:44Z",
+   "kl": "echt",
+   "taeter": [
+    "w5-kontakt"
+   ],
+   "bekannt": "2026-11-04T18:48:55.000Z"
+  },
+  {
+   "k": "echt: Pruefbuehne S0 auf der Karte",
+   "sha": "6b9ba94efa07baf662afc756d4a999519bb765ab",
+   "zweig": "integ-probe",
+   "t": "2026-11-04T08:24:12Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Pruefbuehne S0 im Bild",
+   "sha": "6b9ba94efa07baf662afc756d4a999519bb765ab",
+   "zweig": "integ-probe",
+   "t": "2026-11-04T08:24:12Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Kamera-Leib-Linse",
+   "sha": "6b9ba94efa07baf662afc756d4a999519bb765ab",
+   "zweig": "integ-probe",
+   "t": "2026-11-04T08:24:12Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Kamera-Leib-Linse",
+   "sha": "97dc2d2c602df2f5b8917cbe6006bf6a36e6f2f5",
+   "zweig": "integ-probe",
+   "t": "2026-11-04T08:46:43Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Kamera-Leib-Linse",
+   "sha": "5bb41d848e5c1ed00be68691b13d89033f6fa4e4",
+   "zweig": "integ-probe",
+   "t": "2026-11-04T10:47:46Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Voller Playtest",
+   "sha": "874864e3eb3462983b3a27affb39fcca6f8d66eb",
+   "zweig": "probe/w5-kontakt",
+   "t": "2026-11-04T13:01:25Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Schatten am Terminator",
+   "sha": "874864e3eb3462983b3a27affb39fcca6f8d66eb",
+   "zweig": "probe/w5-kontakt",
+   "t": "2026-11-04T13:01:25Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Fenster-Wand",
+   "sha": "874864e3eb3462983b3a27affb39fcca6f8d66eb",
+   "zweig": "probe/w5-kontakt",
+   "t": "2026-11-04T13:01:25Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Kamera-Leib-Linse",
+   "sha": "fb79630984d46c5d7878f0065e198d5d89e1a1e9",
+   "zweig": "probe/w5-studios-k1",
+   "t": "2026-11-04T13:09:19Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Voller Playtest",
+   "sha": "fb79630984d46c5d7878f0065e198d5d89e1a1e9",
+   "zweig": "probe/w5-studios-k1",
+   "t": "2026-11-04T13:09:19Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Die Kamera-Leib-Linse",
+   "sha": "fdff5ffc36c1b99184501655e53f831d8e670c10",
+   "zweig": "probe/w6-baecker",
+   "t": "2026-11-04T13:24:05Z",
+   "kl": "echt",
+   "taeter": [
+    "probe/w6-baecker"
+   ],
+   "bekannt": "2026-11-04T19:25:32Z"
+  },
+  {
+   "k": "Schatten am Terminator",
+   "sha": "14ca4f2e2d8339a3e6d65f79869b036a00227e39",
+   "zweig": "integ-probe",
+   "t": "2026-11-04T13:27:09Z",
+   "kl": "echt",
+   "taeter": [
+    "w5-kontakt"
+   ],
+   "bekannt": "2026-11-04T18:48:55.000Z"
+  },
+  {
+   "k": "Die Kamera-Leib-Linse",
+   "sha": "ff0bd2af647aa5407902e833d18bc28fc5694bf6",
+   "zweig": "probe/w10-licht-k5",
+   "t": "2026-11-04T14:17:55Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Schatten am Terminator",
+   "sha": "b6e5bf10cf939a407ad26a516e4e6ce61ac02aa0",
+   "zweig": "probe/w10-wiese",
+   "t": "2026-11-04T14:51:46Z",
+   "kl": "echt",
+   "taeter": [
+    "probe/w10-wiese"
+   ],
+   "bekannt": "2026-11-04T23:09:51Z"
+  },
+  {
+   "k": "Schatten am Terminator",
+   "sha": "8b1b16138809da71ab9cfcae940267fc024c9883",
+   "zweig": "probe/w10-ferne",
+   "t": "2026-11-04T15:04:45Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Die Kamera-Leib-Linse",
+   "sha": "f001a236aa7076da65607c1ae1213a0d93cc4e2d",
+   "zweig": "probe/w10-figur",
+   "t": "2026-11-04T15:29:48Z",
+   "kl": "echt",
+   "taeter": [
+    "probe/w10-figur"
+   ],
+   "bekannt": "2026-11-04T17:56:56Z"
+  },
+  {
+   "k": "Die Kamera-Leib-Linse",
+   "sha": "69eebcda720f3189903af34f3da8fd067d4a0447",
+   "zweig": "probe/w10-lod",
+   "t": "2026-11-04T15:49:19Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Kamera-Leib-Linse",
+   "sha": "5cd6f701a047f1c6231a824b5f66c57fd0b11d94",
+   "zweig": "probe/w10-takt",
+   "t": "2026-11-04T16:22:52Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Das Haus der Welt ist begehbar, wie es gezeichnet ist",
+   "sha": "882ce835f2a964e611691e1b7bcaef10b26cadf4",
+   "zweig": "probe/w11-leib",
+   "t": "2026-11-04T17:43:31Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Voller Playtest",
+   "sha": "0ec04fb04b1766ea5a73568b17531b1fee5f0fb8",
+   "zweig": "probe/w10-figur",
+   "t": "2026-11-04T17:56:56Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Das Haus der Welt ist begehbar, wie es gezeichnet ist",
+   "sha": "0ec04fb04b1766ea5a73568b17531b1fee5f0fb8",
+   "zweig": "probe/w10-figur",
+   "t": "2026-11-04T17:56:56Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Das Haus der Welt Teil 2",
+   "sha": "0ec04fb04b1766ea5a73568b17531b1fee5f0fb8",
+   "zweig": "probe/w10-figur",
+   "t": "2026-11-04T17:56:56Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Fenster-Wand",
+   "sha": "8a28c144733ee19bfb958f463b8c10c5f74a2ef3",
+   "zweig": "probe/w11-vorbau-frei",
+   "t": "2026-11-04T19:20:05Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Erst-Zeichnungs-Wand Teil 2",
+   "sha": "82a7560b0854ba6ae719d89a82286254afd507d5",
+   "zweig": "probe/w6-baecker",
+   "t": "2026-11-04T19:25:32Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Persistenz-Härtung Teil 1",
+   "sha": "82a7560b0854ba6ae719d89a82286254afd507d5",
+   "zweig": "probe/w6-baecker",
+   "t": "2026-11-04T19:25:32Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Fenster-Wand",
+   "sha": "93a65867a5d1a03ea2d1ca2d56106fe107bc84d1",
+   "zweig": "probe/w11-stoss",
+   "t": "2026-11-04T20:48:09Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Stand-Takt",
+   "sha": "97020ef202a49d4f0bdae6afb5ac14fc4afd3495",
+   "zweig": "probe/w11-wackler",
+   "t": "2026-11-04T21:24:43Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Erst-Zeichnungs-Wand Teil 2",
+   "sha": "9c5c9969fda9f7591ca2527d6fd0ecaf0f7dd230",
+   "zweig": "probe/w11-puls-waage",
+   "t": "2026-11-04T22:07:51Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Die Fahr-Linse des Lebens",
+   "sha": "b09dd4d2acd16a4fc6ee032378d33fa2386f6428",
+   "zweig": "probe/w10-wiese",
+   "t": "2026-11-04T23:09:51Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Fenster-Wand",
+   "sha": "b09dd4d2acd16a4fc6ee032378d33fa2386f6428",
+   "zweig": "probe/w10-wiese",
+   "t": "2026-11-04T23:09:51Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Takt-Wand",
+   "sha": "6b5134ada9fde3e5bff0123abd4bcc278bf5bca2",
+   "zweig": "integ-probe",
+   "t": "2026-11-05T01:06:46Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Ofen-Vertrag",
+   "sha": "f54d10279448e7e740d4f4786eb0bba7c4519d38",
+   "zweig": "integ-probe",
+   "t": "2026-11-05T02:19:52Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Mensch-Anatomie",
+   "sha": "f54d10279448e7e740d4f4786eb0bba7c4519d38",
+   "zweig": "integ-probe",
+   "t": "2026-11-05T02:19:52Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Schirm-Wand",
+   "sha": "3e7c9ff55e4c8d59886ed7e898f66b637ae518be",
+   "zweig": "integ-probe",
+   "t": "2026-11-05T06:41:01Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Erst-Zeichnungs-Wand Teil 1",
+   "sha": "3e7c9ff55e4c8d59886ed7e898f66b637ae518be",
+   "zweig": "integ-probe",
+   "t": "2026-11-05T06:41:01Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Portal-Konformanz",
+   "sha": "3e7c9ff55e4c8d59886ed7e898f66b637ae518be",
+   "zweig": "integ-probe",
+   "t": "2026-11-05T06:41:01Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Kampf und Maus",
+   "sha": "3e7c9ff55e4c8d59886ed7e898f66b637ae518be",
+   "zweig": "integ-probe",
+   "t": "2026-11-05T06:41:01Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die V1-Pfad-Linse",
+   "sha": "3e7c9ff55e4c8d59886ed7e898f66b637ae518be",
+   "zweig": "integ-probe",
+   "t": "2026-11-05T06:41:01Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Portal-Konformanz",
+   "sha": "3d46dafa40f2f4a3300700ce0547df8a2e48ff56",
+   "zweig": "integ-probe",
+   "t": "2026-11-05T08:34:55Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Klang-Linse",
+   "sha": "3d46dafa40f2f4a3300700ce0547df8a2e48ff56",
+   "zweig": "integ-probe",
+   "t": "2026-11-05T08:34:55Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Fenster-Wand",
+   "sha": "3d46dafa40f2f4a3300700ce0547df8a2e48ff56",
+   "zweig": "integ-probe",
+   "t": "2026-11-05T08:34:55Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Fahr-Linse des Lebens",
+   "sha": "3d46dafa40f2f4a3300700ce0547df8a2e48ff56",
+   "zweig": "integ-probe",
+   "t": "2026-11-05T08:34:55Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Voller Playtest",
+   "sha": "3d46dafa40f2f4a3300700ce0547df8a2e48ff56",
+   "zweig": "integ-probe",
+   "t": "2026-11-05T08:34:55Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Fenster-Wand",
+   "sha": "92512d5a90ca1f3235819b5477fbe781c13e301d",
+   "zweig": "integ-probe",
+   "t": "2026-11-05T09:28:29Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Kamera-Leib-Linse",
+   "sha": "92512d5a90ca1f3235819b5477fbe781c13e301d",
+   "zweig": "integ-probe",
+   "t": "2026-11-05T09:28:29Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Fluss-Wand",
+   "sha": "b59fc00fa21482d8998542dd3a96d01442608707",
+   "zweig": "integ-probe",
+   "t": "2026-11-05T11:47:10Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Weltgrenze",
+   "sha": "7266d35ea7bf011c0445c2addbdf8ea064215d0f",
+   "zweig": "w12-dorf-probe",
+   "t": "2026-11-05T14:05:09Z",
+   "kl": "echt",
+   "taeter": [
+    "w12-dorf-probe"
+   ],
+   "bekannt": "2026-11-05T14:47:09Z"
+  },
+  {
+   "k": "Asset-Inventur",
+   "sha": "7266d35ea7bf011c0445c2addbdf8ea064215d0f",
+   "zweig": "w12-dorf-probe",
+   "t": "2026-11-05T14:05:09Z",
+   "kl": "echt",
+   "taeter": [
+    "w12-dorf-probe"
+   ],
+   "bekannt": "2026-11-05T14:47:09Z"
+  },
+  {
+   "k": "Die Kreatur-Linse Teil 1",
+   "sha": "7266d35ea7bf011c0445c2addbdf8ea064215d0f",
+   "zweig": "w12-dorf-probe",
+   "t": "2026-11-05T14:05:09Z",
+   "kl": "echt",
+   "taeter": [
+    "w12-dorf-probe"
+   ],
+   "bekannt": "2026-11-05T14:47:09Z"
+  },
+  {
+   "k": "Fenster-Wand",
+   "sha": "7266d35ea7bf011c0445c2addbdf8ea064215d0f",
+   "zweig": "w12-dorf-probe",
+   "t": "2026-11-05T14:05:09Z",
+   "kl": "echt",
+   "taeter": [
+    "w12-dorf-probe"
+   ],
+   "bekannt": "2026-11-05T15:58:40Z"
+  },
+  {
+   "k": "Persistenz-Härtung Teil 2",
+   "sha": "7266d35ea7bf011c0445c2addbdf8ea064215d0f",
+   "zweig": "w12-dorf-probe",
+   "t": "2026-11-05T14:05:09Z",
+   "kl": "echt",
+   "taeter": [
+    "w12-dorf-probe"
+   ],
+   "bekannt": "2026-11-05T14:47:09Z"
+  },
+  {
+   "k": "Die Werkstatt-Weg-Linse",
+   "sha": "7266d35ea7bf011c0445c2addbdf8ea064215d0f",
+   "zweig": "w12-dorf-probe",
+   "t": "2026-11-05T14:05:09Z",
+   "kl": "echt",
+   "taeter": [
+    "w12-dorf-probe"
+   ],
+   "bekannt": "2026-11-05T14:47:09Z"
+  },
+  {
+   "k": "Die Fahr-Linse des Lebens",
+   "sha": "7266d35ea7bf011c0445c2addbdf8ea064215d0f",
+   "zweig": "w12-dorf-probe",
+   "t": "2026-11-05T14:05:09Z",
+   "kl": "echt",
+   "taeter": [
+    "w12-dorf-probe"
+   ],
+   "bekannt": "2026-11-05T14:47:09Z"
+  },
+  {
+   "k": "Die Kreatur-Linse Teil 2",
+   "sha": "7266d35ea7bf011c0445c2addbdf8ea064215d0f",
+   "zweig": "w12-dorf-probe",
+   "t": "2026-11-05T14:05:09Z",
+   "kl": "echt",
+   "taeter": [
+    "w12-dorf-probe"
+   ],
+   "bekannt": "2026-11-05T14:47:09Z"
+  },
+  {
+   "k": "Portal-Membran",
+   "sha": "7266d35ea7bf011c0445c2addbdf8ea064215d0f",
+   "zweig": "w12-dorf-probe",
+   "t": "2026-11-05T14:05:09Z",
+   "kl": "echt",
+   "taeter": [
+    "w12-dorf-probe"
+   ],
+   "bekannt": "2026-11-05T15:58:40Z"
+  },
+  {
+   "k": "Wasser-Wand",
+   "sha": "7266d35ea7bf011c0445c2addbdf8ea064215d0f",
+   "zweig": "w12-dorf-probe",
+   "t": "2026-11-05T14:05:09Z",
+   "kl": "echt",
+   "taeter": [
+    "w12-dorf-probe"
+   ],
+   "bekannt": "2026-11-05T14:47:09Z"
+  },
+  {
+   "k": "Werfer-Wand",
+   "sha": "7266d35ea7bf011c0445c2addbdf8ea064215d0f",
+   "zweig": "w12-dorf-probe",
+   "t": "2026-11-05T14:05:09Z",
+   "kl": "echt",
+   "taeter": [
+    "w12-dorf-probe"
+   ],
+   "bekannt": "2026-11-05T14:47:09Z"
+  },
+  {
+   "k": "Dichte-Spiegel",
+   "sha": "7266d35ea7bf011c0445c2addbdf8ea064215d0f",
+   "zweig": "w12-dorf-probe",
+   "t": "2026-11-05T14:05:09Z",
+   "kl": "echt",
+   "taeter": [
+    "w12-dorf-probe"
+   ],
+   "bekannt": "2026-11-05T15:31:16Z"
+  },
+  {
+   "k": "Persistenz-Härtung Teil 1",
+   "sha": "7266d35ea7bf011c0445c2addbdf8ea064215d0f",
+   "zweig": "w12-dorf-probe",
+   "t": "2026-11-05T14:05:09Z",
+   "kl": "echt",
+   "taeter": [
+    "w12-dorf-probe"
+   ],
+   "bekannt": "2026-11-05T14:47:09Z"
+  },
+  {
+   "k": "Kollision = Bild",
+   "sha": "7266d35ea7bf011c0445c2addbdf8ea064215d0f",
+   "zweig": "w12-dorf-probe",
+   "t": "2026-11-05T14:05:09Z",
+   "kl": "echt",
+   "taeter": [
+    "w12-dorf-probe"
+   ],
+   "bekannt": "2026-11-05T14:47:09Z"
+  },
+  {
+   "k": "Der Portal-Gestalt-Wechsel",
+   "sha": "7266d35ea7bf011c0445c2addbdf8ea064215d0f",
+   "zweig": "w12-dorf-probe",
+   "t": "2026-11-05T14:05:09Z",
+   "kl": "echt",
+   "taeter": [
+    "w12-dorf-probe"
+   ],
+   "bekannt": "2026-11-05T14:47:09Z"
+  },
+  {
+   "k": "Foundry-Impostor auf dem EINEN Haupt-Renderer",
+   "sha": "7266d35ea7bf011c0445c2addbdf8ea064215d0f",
+   "zweig": "w12-dorf-probe",
+   "t": "2026-11-05T14:05:09Z",
+   "kl": "echt",
+   "taeter": [
+    "w12-dorf-probe"
+   ],
+   "bekannt": "2026-11-05T14:47:09Z"
+  },
+  {
+   "k": "Dichte-Spiegel",
+   "sha": "9feee276f713986ecf25064411a706fc2bc11291",
+   "zweig": "w12-dorf-probe",
+   "t": "2026-11-05T14:47:09Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Fenster-Wand",
+   "sha": "9feee276f713986ecf25064411a706fc2bc11291",
+   "zweig": "w12-dorf-probe",
+   "t": "2026-11-05T14:47:09Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Portal-Membran",
+   "sha": "c48e610f7037a86f39b8923831b1574fcfcb2811",
+   "zweig": "w12-dorf-probe",
+   "t": "2026-11-05T15:31:16Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Werk im Wasser",
+   "sha": "c48e610f7037a86f39b8923831b1574fcfcb2811",
+   "zweig": "w12-dorf-probe",
+   "t": "2026-11-05T15:31:16Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Der Settlement-Kanal N5.7",
+   "sha": "c48e610f7037a86f39b8923831b1574fcfcb2811",
+   "zweig": "w12-dorf-probe",
+   "t": "2026-11-05T15:31:16Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Kampf und Maus",
+   "sha": "c48e610f7037a86f39b8923831b1574fcfcb2811",
+   "zweig": "w12-dorf-probe",
+   "t": "2026-11-05T15:31:16Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Fenster-Wand",
+   "sha": "c48e610f7037a86f39b8923831b1574fcfcb2811",
+   "zweig": "w12-dorf-probe",
+   "t": "2026-11-05T15:31:16Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Werk im Wasser",
+   "sha": "6f722c9c493cc24dd6a8d3df7affbeb71c702231",
+   "zweig": "integ-probe",
+   "t": "2026-11-05T17:19:20Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Fenster-Wand",
+   "sha": "24c18b7339d397e54e1c826bc6bdc6fe4b2f681e",
+   "zweig": "integ-probe",
+   "t": "2026-11-05T18:29:26Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Werk im Wasser",
+   "sha": "2a50f111684c75f64a81a10fd6e6acd7aa8517cc",
+   "zweig": "integ-probe",
+   "t": "2026-11-05T19:34:56Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Werkstatt-Weg-Linse",
+   "sha": "d6d705d217439f6ffc551c6e0faa9cfaff400fb8",
+   "zweig": "integ-probe",
+   "t": "2026-11-05T21:14:11Z",
+   "kl": "echt",
+   "taeter": [
+    "w12-brand-halt"
+   ],
+   "bekannt": "2026-11-05T22:12:48.000Z"
+  },
+  {
+   "k": "Die V1-Pfad-Linse",
+   "sha": "f99e402c6c3012c6873b3ab981ecf26bc22becc2",
+   "zweig": "integ-probe",
+   "t": "2026-11-06T00:36:47Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Die Labor-Linse der Garage",
+   "sha": "97e15bf7265d410265a2c93494512f4b33adfa40",
+   "zweig": "integ-probe",
+   "t": "2026-11-06T02:03:45Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Stand-Takt",
+   "sha": "97e15bf7265d410265a2c93494512f4b33adfa40",
+   "zweig": "integ-probe",
+   "t": "2026-11-06T02:03:45Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Fahr-Linse des Lebens",
+   "sha": "c96a1541de4cc5cf1b949fb6e2914c2656c5ab9c",
+   "zweig": "integ-probe",
+   "t": "2026-11-06T03:04:44Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Die Kreatur-Linse Teil 1",
+   "sha": "c96a1541de4cc5cf1b949fb6e2914c2656c5ab9c",
+   "zweig": "integ-probe",
+   "t": "2026-11-06T03:04:44Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Die Labor-Linse der Garage",
+   "sha": "b8e354791155885616c7e4f52091dfe6524360c1",
+   "zweig": "integ-probe",
+   "t": "2026-11-06T03:53:04Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Persistenz-Härtung Teil 1",
+   "sha": "68970a4c43abde2bc9a50519c5e5d2f1abc57674",
+   "zweig": "integ-probe",
+   "t": "2026-11-06T06:07:53Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Welt-Wache",
+   "sha": "68970a4c43abde2bc9a50519c5e5d2f1abc57674",
+   "zweig": "integ-probe",
+   "t": "2026-11-06T06:07:53Z",
+   "kl": "echt",
+   "taeter": [
+    "w13-klang-fahrt"
+   ],
+   "bekannt": "2026-11-06T11:26:41.000Z"
+  },
+  {
+   "k": "Persistenz-Härtung Teil 1",
+   "sha": "2ea6e497c42f2869cefae71ca213413c8aaaa8ad",
+   "zweig": "integ-probe",
+   "t": "2026-11-06T06:57:06Z",
+   "kl": "echt",
+   "taeter": [
+    "w13-buehne-lack-heim"
+   ],
+   "bekannt": "2026-11-06T18:52:17.000Z"
+  },
+  {
+   "k": "Die Werkstatt-Weg-Linse",
+   "sha": "2ea6e497c42f2869cefae71ca213413c8aaaa8ad",
+   "zweig": "integ-probe",
+   "t": "2026-11-06T06:57:06Z",
+   "kl": "echt",
+   "taeter": [
+    "w13-buehne-lack-heim"
+   ],
+   "bekannt": "2026-11-06T18:52:17.000Z"
+  },
+  {
+   "k": "Die Labor-Linse der Garage",
+   "sha": "2ea6e497c42f2869cefae71ca213413c8aaaa8ad",
+   "zweig": "integ-probe",
+   "t": "2026-11-06T06:57:06Z",
+   "kl": "echt",
+   "taeter": [
+    "w13-buehne-lack-heim"
+   ],
+   "bekannt": "2026-11-06T18:52:17.000Z"
+  },
+  {
+   "k": "Die Labor-Linse der Garage",
+   "sha": "5f2d87918b9203e1817bd2aaab41a34ef3ddb195",
+   "zweig": "integ-probe",
+   "t": "2026-11-06T07:34:14Z",
+   "kl": "echt",
+   "taeter": [
+    "w13-buehne-lack-heim"
+   ],
+   "bekannt": "2026-11-06T18:52:17.000Z"
+  },
+  {
+   "k": "Die Werkstatt-Weg-Linse",
+   "sha": "63140e82f8b5cf793a6e40e12dab9ceadb8a670b",
+   "zweig": "integ-probe",
+   "t": "2026-11-06T08:14:15Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Werkstatt-Weg-Linse",
+   "sha": "c47859810fc72c15d4f7b2cdea2f8662ebb9f84d",
+   "zweig": "integ-probe",
+   "t": "2026-11-06T09:45:34Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Persistenz-Härtung Teil 1",
+   "sha": "c47859810fc72c15d4f7b2cdea2f8662ebb9f84d",
+   "zweig": "integ-probe",
+   "t": "2026-11-06T09:45:34Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Labor-Linse der Garage",
+   "sha": "c282856b3fca174f1ea7c9e2993d70613ad3b1ad",
+   "zweig": "integ-probe",
+   "t": "2026-11-06T10:43:22Z",
+   "kl": "echt",
+   "taeter": [
+    "w13-buehne-lack-heim"
+   ],
+   "bekannt": "2026-11-06T18:52:17.000Z"
+  },
+  {
+   "k": "Portal-Konformanz",
+   "sha": "c282856b3fca174f1ea7c9e2993d70613ad3b1ad",
+   "zweig": "integ-probe",
+   "t": "2026-11-06T10:43:22Z",
+   "kl": "echt",
+   "taeter": [
+    "w13-buehne-lack-heim"
+   ],
+   "bekannt": "2026-11-06T18:52:17.000Z"
+  },
+  {
+   "k": "echt: Tag-Achse auf der Karte",
+   "sha": "a329d8c982c12a55f846cb4551fe20eeee7e592a",
+   "zweig": "integ-probe",
+   "t": "2026-11-06T13:40:54Z",
+   "kl": "echt",
+   "taeter": [
+    "w14-lod-sprung",
+    "w14-wunsch-akt"
+   ],
+   "bekannt": "2026-11-07T07:32:50.000Z"
+  },
+  {
+   "k": "Fall-Waechter",
+   "sha": "a329d8c982c12a55f846cb4551fe20eeee7e592a",
+   "zweig": "integ-probe",
+   "t": "2026-11-06T13:40:54Z",
+   "kl": "echt",
+   "taeter": [
+    "w14-lod-sprung",
+    "w14-wunsch-akt"
+   ],
+   "bekannt": "2026-11-07T07:32:50.000Z"
+  },
+  {
+   "k": "Mehrspieler-Wand",
+   "sha": "a329d8c982c12a55f846cb4551fe20eeee7e592a",
+   "zweig": "integ-probe",
+   "t": "2026-11-06T13:40:54Z",
+   "kl": "echt",
+   "taeter": [
+    "w14-lod-sprung",
+    "w14-wunsch-akt"
+   ],
+   "bekannt": "2026-11-07T07:32:50.000Z"
+  },
+  {
+   "k": "Fenster-Wand",
+   "sha": "a329d8c982c12a55f846cb4551fe20eeee7e592a",
+   "zweig": "integ-probe",
+   "t": "2026-11-06T13:40:54Z",
+   "kl": "echt",
+   "taeter": [
+    "w14-lod-sprung",
+    "w14-wunsch-akt"
+   ],
+   "bekannt": "2026-11-07T07:32:50.000Z"
+  },
+  {
+   "k": "echt: Lichtweg auf der Karte",
+   "sha": "ecf04c0458d94332c0e6af0db88e41c225f92061",
+   "zweig": "integ-probe",
+   "t": "2026-11-06T14:39:05Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "echt: Pruefbuehne S0 auf der Karte",
+   "sha": "9407b2ee31df2560450218cf448d251de0549cfe",
+   "zweig": "integ-probe",
+   "t": "2026-11-06T15:47:42Z",
+   "kl": "echt",
+   "taeter": [
+    "w13-buehne-lack-heim",
+    "w15-pfuetze",
+    "w15-einsturz"
+   ],
+   "bekannt": "2026-11-06T23:09:58.000Z"
+  },
+  {
+   "k": "Voller Playtest",
+   "sha": "9407b2ee31df2560450218cf448d251de0549cfe",
+   "zweig": "integ-probe",
+   "t": "2026-11-06T15:47:42Z",
+   "kl": "echt",
+   "taeter": [
+    "w15-pfuetze",
+    "w15-einsturz"
+   ],
+   "bekannt": "2026-11-06T23:09:58.000Z"
+  },
+  {
+   "k": "Portal-Konformanz",
+   "sha": "9407b2ee31df2560450218cf448d251de0549cfe",
+   "zweig": "integ-probe",
+   "t": "2026-11-06T15:47:42Z",
+   "kl": "echt",
+   "taeter": [
+    "w13-buehne-lack-heim",
+    "w15-pfuetze",
+    "w15-einsturz"
+   ],
+   "bekannt": "2026-11-06T23:09:58.000Z"
+  },
+  {
+   "k": "Pruefbuehne S0 im Bild",
+   "sha": "9407b2ee31df2560450218cf448d251de0549cfe",
+   "zweig": "integ-probe",
+   "t": "2026-11-06T15:47:42Z",
+   "kl": "echt",
+   "taeter": [
+    "w15-pfuetze",
+    "w15-einsturz"
+   ],
+   "bekannt": "2026-11-06T23:09:58.000Z"
+  },
+  {
+   "k": "echt: Tag-Achse auf der Karte",
+   "sha": "f0e1424419bc78278bc67f8faf01b76bdf577d25",
+   "zweig": "integ-probe",
+   "t": "2026-11-06T16:37:07Z",
+   "kl": "echt",
+   "taeter": [
+    "w14-lod-sprung"
+   ],
+   "bekannt": "2026-11-07T07:32:50.000Z"
+  },
+  {
+   "k": "echt: Tag-Achse auf der Karte",
+   "sha": "597d9cd321b330145fa57183d819efcd69c6722b",
+   "zweig": "integ-probe",
+   "t": "2026-11-06T17:19:15Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Slot-Linse — ein freier Slot und eine leere Hülle zeichnen nie, in keinem Pass",
+   "sha": "597d9cd321b330145fa57183d819efcd69c6722b",
+   "zweig": "integ-probe",
+   "t": "2026-11-06T17:19:15Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Asset-Inventur",
+   "sha": "597d9cd321b330145fa57183d819efcd69c6722b",
+   "zweig": "integ-probe",
+   "t": "2026-11-06T17:19:15Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "echt: Ziel-Zensus auf der Karte",
+   "sha": "1ef25a9f87e1e8f90d5a2cfe20a157b0bf240d91",
+   "zweig": "integ-probe",
+   "t": "2026-11-06T18:12:06Z",
+   "kl": "echt",
+   "taeter": [
+    "w15-strom-takt-2"
+   ],
+   "bekannt": "2026-11-07T01:00:58.000Z"
+  },
+  {
+   "k": "Fenster-Wand",
+   "sha": "1ef25a9f87e1e8f90d5a2cfe20a157b0bf240d91",
+   "zweig": "integ-probe",
+   "t": "2026-11-06T18:12:06Z",
+   "kl": "echt",
+   "taeter": [
+    "w15-strom-takt-2"
+   ],
+   "bekannt": "2026-11-07T01:00:58.000Z"
+  },
+  {
+   "k": "Fernwald",
+   "sha": "1ef25a9f87e1e8f90d5a2cfe20a157b0bf240d91",
+   "zweig": "integ-probe",
+   "t": "2026-11-06T18:12:06Z",
+   "kl": "echt",
+   "taeter": [
+    "w15-strom-takt-2"
+   ],
+   "bekannt": "2026-11-07T01:00:58.000Z"
+  },
+  {
+   "k": "echt: Ziel-Zensus auf der Karte",
+   "sha": "6d060275d17883714d9373b0d7c341746e62160c",
+   "zweig": "integ-probe",
+   "t": "2026-11-06T18:24:01Z",
+   "kl": "echt",
+   "taeter": [
+    "w15-strom-takt-2"
+   ],
+   "bekannt": "2026-11-07T01:00:58.000Z"
+  },
+  {
+   "k": "Stand-Takt",
+   "sha": "6d060275d17883714d9373b0d7c341746e62160c",
+   "zweig": "integ-probe",
+   "t": "2026-11-06T18:24:01Z",
+   "kl": "echt",
+   "taeter": [
+    "w15-strom-takt-2"
+   ],
+   "bekannt": "2026-11-07T01:00:58.000Z"
+  },
+  {
+   "k": "Fernwald",
+   "sha": "6d060275d17883714d9373b0d7c341746e62160c",
+   "zweig": "integ-probe",
+   "t": "2026-11-06T18:24:01Z",
+   "kl": "echt",
+   "taeter": [
+    "w15-strom-takt-2"
+   ],
+   "bekannt": "2026-11-07T01:00:58.000Z"
+  },
+  {
+   "k": "Fenster-Wand",
+   "sha": "6d060275d17883714d9373b0d7c341746e62160c",
+   "zweig": "integ-probe",
+   "t": "2026-11-06T18:24:01Z",
+   "kl": "echt",
+   "taeter": [
+    "w15-strom-takt-2"
+   ],
+   "bekannt": "2026-11-07T01:00:58.000Z"
+  },
+  {
+   "k": "Die Kamera-Leib-Linse",
+   "sha": "6d060275d17883714d9373b0d7c341746e62160c",
+   "zweig": "integ-probe",
+   "t": "2026-11-06T18:24:01Z",
+   "kl": "echt",
+   "taeter": [
+    "w15-strom-takt-2"
+   ],
+   "bekannt": "2026-11-07T01:00:58.000Z"
+  },
+  {
+   "k": "Die Ankunfts-Linse",
+   "sha": "6d060275d17883714d9373b0d7c341746e62160c",
+   "zweig": "integ-probe",
+   "t": "2026-11-06T18:24:01Z",
+   "kl": "echt",
+   "taeter": [
+    "w15-strom-takt-2"
+   ],
+   "bekannt": "2026-11-07T01:00:58.000Z"
+  },
+  {
+   "k": "Das Haus der Welt Teil 2",
+   "sha": "6d060275d17883714d9373b0d7c341746e62160c",
+   "zweig": "integ-probe",
+   "t": "2026-11-06T18:24:01Z",
+   "kl": "echt",
+   "taeter": [
+    "w15-strom-takt-2"
+   ],
+   "bekannt": "2026-11-07T01:00:58.000Z"
+  },
+  {
+   "k": "Die Klang-Linse",
+   "sha": "6d060275d17883714d9373b0d7c341746e62160c",
+   "zweig": "integ-probe",
+   "t": "2026-11-06T18:24:01Z",
+   "kl": "echt",
+   "taeter": [
+    "w15-strom-takt-2"
+   ],
+   "bekannt": "2026-11-07T01:00:58.000Z"
+  },
+  {
+   "k": "Fernwald",
+   "sha": "90499d4ec9417ed61bc26a748287d2a8d6485ec0",
+   "zweig": "integ-probe",
+   "t": "2026-11-06T20:05:39Z",
+   "kl": "echt",
+   "taeter": [
+    "w15-strom-takt-2"
+   ],
+   "bekannt": "2026-11-07T01:00:58.000Z"
+  },
+  {
+   "k": "Fenster-Wand",
+   "sha": "90499d4ec9417ed61bc26a748287d2a8d6485ec0",
+   "zweig": "integ-probe",
+   "t": "2026-11-06T20:05:39Z",
+   "kl": "echt",
+   "taeter": [
+    "w15-strom-takt-2"
+   ],
+   "bekannt": "2026-11-07T01:00:58.000Z"
+  },
+  {
+   "k": "Erst-Zeichnungs-Wand Teil 2",
+   "sha": "180fcbbb031a80339d8f5cb96add35826f370dfa",
+   "zweig": "integ-probe",
+   "t": "2026-11-06T20:52:11Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "echt: Pruefbuehne S0 auf der Karte",
+   "sha": "29df085f7654524972985c460653b13dd0b08aed",
+   "zweig": "integ-probe",
+   "t": "2026-11-06T21:36:30Z",
+   "kl": "echt",
+   "taeter": [
+    "w16-lade-atem"
+   ],
+   "bekannt": "2026-11-06T23:48:43.000Z"
+  },
+  {
+   "k": "echt: Wasser-Bild auf der Karte",
+   "sha": "29df085f7654524972985c460653b13dd0b08aed",
+   "zweig": "integ-probe",
+   "t": "2026-11-06T21:36:30Z",
+   "kl": "echt",
+   "taeter": [
+    "w16-lade-atem"
+   ],
+   "bekannt": "2026-11-06T23:48:43.000Z"
+  },
+  {
+   "k": "Wasser-Bild",
+   "sha": "29df085f7654524972985c460653b13dd0b08aed",
+   "zweig": "integ-probe",
+   "t": "2026-11-06T21:36:30Z",
+   "kl": "echt",
+   "taeter": [
+    "w16-lade-atem"
+   ],
+   "bekannt": "2026-11-06T23:48:43.000Z"
+  },
+  {
+   "k": "Pruefbuehne S0 im Bild",
+   "sha": "29df085f7654524972985c460653b13dd0b08aed",
+   "zweig": "integ-probe",
+   "t": "2026-11-06T21:36:30Z",
+   "kl": "echt",
+   "taeter": [
+    "w16-lade-atem"
+   ],
+   "bekannt": "2026-11-06T23:48:43.000Z"
+  },
+  {
+   "k": "Mehrspieler-Wand",
+   "sha": "cc92f2b1382ed4e6a911d2305d663f37301262d9",
+   "zweig": "integ-probe",
+   "t": "2026-11-07T01:28:03Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Stand-Takt",
+   "sha": "cc92f2b1382ed4e6a911d2305d663f37301262d9",
+   "zweig": "integ-probe",
+   "t": "2026-11-07T01:28:03Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Ankunfts-Linse",
+   "sha": "60e60d092b77c10c88865f92d8b80b398a13c52f",
+   "zweig": "integ-probe",
+   "t": "2026-11-07T02:07:48Z",
+   "kl": "echt",
+   "taeter": [
+    "w18-pegel-peers"
+   ],
+   "bekannt": "2026-11-07T14:04:48.000Z"
+  },
+  {
+   "k": "Stand-Takt",
+   "sha": "45e260c38d380e105f9999a6e43bd6b0b54d4e33",
+   "zweig": "integ-probe",
+   "t": "2026-11-07T03:32:24Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Kreatur-Linse Teil 2",
+   "sha": "d41abf4f28b5cdaa0a5c8299b336e390b1759aa8",
+   "zweig": "integ-probe",
+   "t": "2026-11-07T04:11:13Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Ankunfts-Linse",
+   "sha": "d41abf4f28b5cdaa0a5c8299b336e390b1759aa8",
+   "zweig": "integ-probe",
+   "t": "2026-11-07T04:11:13Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Stand-Takt",
+   "sha": "d41abf4f28b5cdaa0a5c8299b336e390b1759aa8",
+   "zweig": "integ-probe",
+   "t": "2026-11-07T04:11:13Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Fenster-Wand",
+   "sha": "a84ac312544682a8eae22545e0a81b1d2f88bad0",
+   "zweig": "integ-probe",
+   "t": "2026-11-07T06:15:01Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Erst-Zeichnungs-Wand Teil 1",
+   "sha": "f69173b022098343b8966dd1f38f642bc14225b5",
+   "zweig": "integ-probe",
+   "t": "2026-11-07T08:19:25Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Takt-Wand",
+   "sha": "f69173b022098343b8966dd1f38f642bc14225b5",
+   "zweig": "integ-probe",
+   "t": "2026-11-07T08:19:25Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Fahr-Linse des Lebens",
+   "sha": "eb3cc7f32f03f76f0fd8077acda37c9f4dc5d9dd",
+   "zweig": "integ-probe",
+   "t": "2026-11-07T09:06:09Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Die Albedo nah gegen fern",
+   "sha": "eb3cc7f32f03f76f0fd8077acda37c9f4dc5d9dd",
+   "zweig": "integ-probe",
+   "t": "2026-11-07T09:06:09Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "echt: Fern-Ring auf der Karte",
+   "sha": "e663a6ce4fecc213421774cf2f11c019f30abb93",
+   "zweig": "integ-probe",
+   "t": "2026-11-07T10:38:02Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "echt: Tag-Achse auf der Karte",
+   "sha": "e663a6ce4fecc213421774cf2f11c019f30abb93",
+   "zweig": "integ-probe",
+   "t": "2026-11-07T10:38:02Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Kreatur-Linse Teil 1",
+   "sha": "e663a6ce4fecc213421774cf2f11c019f30abb93",
+   "zweig": "integ-probe",
+   "t": "2026-11-07T10:38:02Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Fern-Ring",
+   "sha": "e663a6ce4fecc213421774cf2f11c019f30abb93",
+   "zweig": "integ-probe",
+   "t": "2026-11-07T10:38:02Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Satz-Wand",
+   "sha": "e663a6ce4fecc213421774cf2f11c019f30abb93",
+   "zweig": "integ-probe",
+   "t": "2026-11-07T10:38:02Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Prägung-Welt",
+   "sha": "e663a6ce4fecc213421774cf2f11c019f30abb93",
+   "zweig": "integ-probe",
+   "t": "2026-11-07T10:38:02Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Voller Playtest",
+   "sha": "e663a6ce4fecc213421774cf2f11c019f30abb93",
+   "zweig": "integ-probe",
+   "t": "2026-11-07T10:38:02Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Werk im Wasser",
+   "sha": "e663a6ce4fecc213421774cf2f11c019f30abb93",
+   "zweig": "integ-probe",
+   "t": "2026-11-07T10:38:02Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Werkstatt-Weg-Linse",
+   "sha": "e663a6ce4fecc213421774cf2f11c019f30abb93",
+   "zweig": "integ-probe",
+   "t": "2026-11-07T10:38:02Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Kamera-Leib-Linse",
+   "sha": "e663a6ce4fecc213421774cf2f11c019f30abb93",
+   "zweig": "integ-probe",
+   "t": "2026-11-07T10:38:02Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Kreatur-Linse Teil 3",
+   "sha": "e663a6ce4fecc213421774cf2f11c019f30abb93",
+   "zweig": "integ-probe",
+   "t": "2026-11-07T10:38:02Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Klang-Linse",
+   "sha": "e663a6ce4fecc213421774cf2f11c019f30abb93",
+   "zweig": "integ-probe",
+   "t": "2026-11-07T10:38:02Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Kamera-Laub-Linse",
+   "sha": "e663a6ce4fecc213421774cf2f11c019f30abb93",
+   "zweig": "integ-probe",
+   "t": "2026-11-07T10:38:02Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "echt: Pruefbuehne S0 auf der Karte",
+   "sha": "f773818cf7067ba5c330a6a4e2976d1ab363a2fc",
+   "zweig": "integ-probe",
+   "t": "2026-11-07T12:48:52Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Albedo nah gegen fern",
+   "sha": "f773818cf7067ba5c330a6a4e2976d1ab363a2fc",
+   "zweig": "integ-probe",
+   "t": "2026-11-07T12:48:52Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Pruefbuehne S0 im Bild",
+   "sha": "f773818cf7067ba5c330a6a4e2976d1ab363a2fc",
+   "zweig": "integ-probe",
+   "t": "2026-11-07T12:48:52Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Kamera-Leib-Linse",
+   "sha": "f773818cf7067ba5c330a6a4e2976d1ab363a2fc",
+   "zweig": "integ-probe",
+   "t": "2026-11-07T12:48:52Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Fenster-Wand",
+   "sha": "f773818cf7067ba5c330a6a4e2976d1ab363a2fc",
+   "zweig": "integ-probe",
+   "t": "2026-11-07T12:48:52Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Mehrspieler-Wand",
+   "sha": "adcd2c00e9dafff42d57533e09c3773664c1549c",
+   "zweig": "integ-probe",
+   "t": "2026-11-07T13:18:42Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Albedo nah gegen fern",
+   "sha": "adcd2c00e9dafff42d57533e09c3773664c1549c",
+   "zweig": "integ-probe",
+   "t": "2026-11-07T13:18:42Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "echt: Kamera-Leib auf der Karte",
+   "sha": "ef5863a3e99156de253b0daf1891825b13e799fd",
+   "zweig": "integ-probe",
+   "t": "2026-11-07T15:00:36Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Kreatur-Linse Teil 3",
+   "sha": "ef5863a3e99156de253b0daf1891825b13e799fd",
+   "zweig": "integ-probe",
+   "t": "2026-11-07T15:00:36Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Fenster-Wand",
+   "sha": "ef5863a3e99156de253b0daf1891825b13e799fd",
+   "zweig": "integ-probe",
+   "t": "2026-11-07T15:00:36Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Tier-Gang ohne Gleiten",
+   "sha": "ef5863a3e99156de253b0daf1891825b13e799fd",
+   "zweig": "integ-probe",
+   "t": "2026-11-07T15:00:36Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Albedo nah gegen fern",
+   "sha": "8468cba2f9ba5b47569300a7272c681f537a3440",
+   "zweig": "w19-gang-hitch",
+   "t": "2026-11-07T18:34:48Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Die Fahr-Linse des Lebens",
+   "sha": "2385588455822d869d285a7cd584f52ec4c253b4",
+   "zweig": "w22-ci-diaet",
+   "t": "2026-11-07T18:46:50Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Das Haus der Welt Teil 2",
+   "sha": "2385588455822d869d285a7cd584f52ec4c253b4",
+   "zweig": "w22-ci-diaet",
+   "t": "2026-11-07T18:46:50Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "echt: Pruefbuehne S0 auf der Karte",
+   "sha": "f7156b2aa8e3764fc0ed669b5c05e186a008a4f1",
+   "zweig": "integ-probe",
+   "t": "2026-11-07T20:16:52Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Pruefbuehne S0 im Bild",
+   "sha": "f7156b2aa8e3764fc0ed669b5c05e186a008a4f1",
+   "zweig": "integ-probe",
+   "t": "2026-11-07T20:16:52Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Die Fahr-Linse des Lebens",
+   "sha": "f7156b2aa8e3764fc0ed669b5c05e186a008a4f1",
+   "zweig": "integ-probe",
+   "t": "2026-11-07T20:16:52Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Die Fahr-Linse des Lebens",
+   "sha": "d2115e45bb4ae57af33e4bf58e4ddb34fe04fbc7",
+   "zweig": "w22-ci-diaet",
+   "t": "2026-11-07T20:27:27Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Erst-Zeichnungs-Wand Teil 2",
+   "sha": "d2115e45bb4ae57af33e4bf58e4ddb34fe04fbc7",
+   "zweig": "w22-ci-diaet",
+   "t": "2026-11-07T20:27:27Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Fenster-Wand",
+   "sha": "d2115e45bb4ae57af33e4bf58e4ddb34fe04fbc7",
+   "zweig": "w22-ci-diaet",
+   "t": "2026-11-07T20:27:27Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Ego-Schatten",
+   "sha": "d2115e45bb4ae57af33e4bf58e4ddb34fe04fbc7",
+   "zweig": "w22-ci-diaet",
+   "t": "2026-11-07T20:27:27Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Erst-Zeichnungs-Wand Teil 2",
+   "sha": "c9f2648703bc80931ef64d59e539e0fa590ecefb",
+   "zweig": "integ-probe",
+   "t": "2026-11-07T21:55:04Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Fenster-Wand",
+   "sha": "c9f2648703bc80931ef64d59e539e0fa590ecefb",
+   "zweig": "integ-probe",
+   "t": "2026-11-07T21:55:04Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Tier-Gang ohne Gleiten",
+   "sha": "c9f2648703bc80931ef64d59e539e0fa590ecefb",
+   "zweig": "integ-probe",
+   "t": "2026-11-07T21:55:04Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Takt-Wand",
+   "sha": "eb82df4228fe69381036d2d6c95131bad4879bcd",
+   "zweig": "integ-probe",
+   "t": "2026-11-07T23:27:33Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Fenster-Wand",
+   "sha": "eb82df4228fe69381036d2d6c95131bad4879bcd",
+   "zweig": "integ-probe",
+   "t": "2026-11-07T23:27:33Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Werk im Wasser",
+   "sha": "d85d884669b2eff177a98a73e8b65366fa034cf7",
+   "zweig": "w22-zug-auswahl",
+   "t": "2026-11-08T00:01:26Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Das Haus der Welt Teil 2",
+   "sha": "d85d884669b2eff177a98a73e8b65366fa034cf7",
+   "zweig": "w22-zug-auswahl",
+   "t": "2026-11-08T00:01:26Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Ziel-Zensus",
+   "sha": "d85d884669b2eff177a98a73e8b65366fa034cf7",
+   "zweig": "w22-zug-auswahl",
+   "t": "2026-11-08T00:01:26Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Erst-Zeichnungs-Wand Teil 2",
+   "sha": "d85d884669b2eff177a98a73e8b65366fa034cf7",
+   "zweig": "w22-zug-auswahl",
+   "t": "2026-11-08T00:01:26Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Tier-Gang ohne Gleiten",
+   "sha": "5200254e9a79ccbc09a549b07740c06ec33e9afe",
+   "zweig": "integ-probe",
+   "t": "2026-11-08T00:13:49Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "Fenster-Wand",
+   "sha": "5200254e9a79ccbc09a549b07740c06ec33e9afe",
+   "zweig": "integ-probe",
+   "t": "2026-11-08T00:13:49Z",
+   "kl": "offen",
+   "taeter": []
+  },
+  {
+   "k": "echt: Kamera-Leib auf der Karte",
+   "sha": "7fd55d1293c5c44f8c4042026e3067e8cbd6d7a0",
+   "zweig": "integ-probe",
+   "t": "2026-11-08T02:41:59Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Kamera-Leib-Linse",
+   "sha": "7fd55d1293c5c44f8c4042026e3067e8cbd6d7a0",
+   "zweig": "integ-probe",
+   "t": "2026-11-08T02:41:59Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Fenster-Wand",
+   "sha": "7fd55d1293c5c44f8c4042026e3067e8cbd6d7a0",
+   "zweig": "integ-probe",
+   "t": "2026-11-08T02:41:59Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Asset-Inventur",
+   "sha": "5590f52d2239ddcbb27e4a9b959331b2935e5a2f",
+   "zweig": "integ-probe",
+   "t": "2026-11-08T03:29:15Z",
+   "kl": "echt",
+   "taeter": [
+    "w22-wiese-nachzug"
+   ],
+   "bekannt": "2026-11-08T07:05:00.000Z"
+  },
+  {
+   "k": "Stand-Takt",
+   "sha": "5590f52d2239ddcbb27e4a9b959331b2935e5a2f",
+   "zweig": "integ-probe",
+   "t": "2026-11-08T03:29:15Z",
+   "kl": "echt",
+   "taeter": [
+    "w22-wiese-nachzug"
+   ],
+   "bekannt": "2026-11-08T07:05:00.000Z"
+  },
+  {
+   "k": "echt: Kamera-Leib auf der Karte",
+   "sha": "0375908f2cbac846f3fb2a522ba5b237e11a54d8",
+   "zweig": "integ-probe",
+   "t": "2026-11-08T05:18:48Z",
+   "kl": "reibung",
+   "taeter": []
+  },
+  {
+   "k": "Die Albedo nah gegen fern",
+   "sha": "0375908f2cbac846f3fb2a522ba5b237e11a54d8",
+   "zweig": "integ-probe",
+   "t": "2026-11-08T05:18:48Z",
+   "kl": "reibung",
+   "taeter": []
+  }
+ ]
+}
