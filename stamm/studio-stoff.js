@@ -372,16 +372,27 @@ class AnazhRealm_studio_stoff {
                                 TSL.max(haar, wolle)
                             );
                         }
+                        // DIE ACHSE DES HAARS (w25-haar-albedo) ist seine Gestalt: `aStraehne` (koerper-leib `_haarAchse`) trägt
+                        // je Ecke Achse und Länge ihres Bands — der Anteil Wurzel → Spitze. Die Farbe trägt seit HAAR_STRICH den Ton
+                        // jeder Strähne und Locke (±20 %, ±30 %) über einer Wurzel von 0,85: ihr Quotient zum Ton-Anker war der
+                        // Würfel des Tons, und der Glanz schaltete je Strähne ganz an oder aus. Ohne Achse (die Braue, die Kappe
+                        // der Grobstufe) trägt das Haar keinen Glanz der Spitze.
                         const sT = schale
                             ? TSL.mix(TSL.float(FS.mittel.t), aS.x, zeigt)
-                            : tonL !== null
-                              ? vcolRoh
-                                    .dot(TSL.vec3(0.2126, 0.7152, 0.0722))
-                                    .div(tonL)
-                                    .sub(wA)
-                                    .div(Math.max(1e-3, 1 - wA))
-                                    .clamp(0.0, 1.0)
-                              : TSL.float(1.0);
+                            : kind === "hair"
+                              ? TSL.Fn((b) => {
+                                    if (!(b.geometry && b.geometry.hasAttribute("aStraehne"))) return TSL.float(0);
+                                    const a = TSL.attribute("aStraehne", "vec4");
+                                    return a.x.div(a.z.max(1e-6)).clamp(0.0, 1.0);
+                                })()
+                              : tonL !== null
+                                ? vcolRoh
+                                      .dot(TSL.vec3(0.2126, 0.7152, 0.0722))
+                                      .div(tonL)
+                                      .sub(wA)
+                                      .div(Math.max(1e-3, 1 - wA))
+                                      .clamp(0.0, 1.0)
+                                : TSL.float(1.0);
                         if (Number.isFinite(L.tipRimPow) && Array.isArray(L.tipRimFarbe))
                             term(L.tipRimFarbe, rim.pow(L.tipRimPow).mul(sT));
                         if (Number.isFinite(L.specPow) && Array.isArray(L.specFarbe))
