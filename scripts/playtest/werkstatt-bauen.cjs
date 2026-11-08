@@ -947,7 +947,7 @@ async function checkBandWellePerfCArchInstancing({ page, check }) {
                     r._cullArchitectureMesh(e);
                     out.cutoverCulledInstanced = e.instanced === false && !e.instSlots;
                     // Daten-Eintrag bleibt in der Liste (Culling ≠ Remove).
-                    out.cutoverEntryStillListed = st.architectures.indexOf(e) >= 0;
+                    out.cutoverEntryStillListed = st.architectures.includes(e);
                     r.removeArchitecture(e); // sauber raus aus der Test-Welt
                 }
                 st.architectureCullingRadius = origRadius;

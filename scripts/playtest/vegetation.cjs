@@ -334,7 +334,7 @@ async function checkBandNahStreu({ page, check }) {
             (e.weich ? out.wind.wiegend : out.wind.stehend).push(preset);
             for (const a of e.senken) {
                 const satz = st.chunkSaetze ? st.chunkSaetze.get(a.satz) : null;
-                const wiege = !!(satz && satz.geom.attributes.aWiege);
+                const wiege = !!(satz?.geom.attributes.aWiege);
                 const knoten = e.weich
                     ? !!a.mat.positionNode && a.mat.positionNode !== baumK.ast && a.mat.positionNode !== baumK.laub
                     : still(a.mat);
@@ -912,7 +912,7 @@ async function checkBandV18212GigantRestsubschritte({ page, check }) {
         const parts = r._growTreeBlueprintRich("baum_tanne", "k2-test");
         const sk = r._lastTreeSkeleton;
         r._lastTreeSkeleton = null;
-        const baseR = sk && sk.branches[0] && sk.branches[0].points[0] ? sk.branches[0].points[0].r : 0;
+        const baseR = sk && sk.branches[0]?.points[0] ? sk.branches[0].points[0].r : 0;
         // Der Flare skaliert mit der Größenklasse → keine absolute Schwelle: er ist eine FLACHE DISK am
         // Sockel (x/y ~5.5), größenklassen-unabhängig getrennt von den Foliage-Kugeln (x/y ≈ 1.4 < 1.5).
         const sockelParts = parts.filter(
@@ -1834,9 +1834,9 @@ async function checkBandWahrerAnblickFels({ page, check }) {
         // (A) Ω-O15 prozedurale Fels-Geometrie
         const geom = r._makePartGeometry({ shape: "noiserock", material: "stein", size: { x: 2, y: 2, z: 2 } });
         out.rockGeomBuilt = !!(geom?.attributes?.position);
-        out.rockGeomDetailed = !!(geom && geom.attributes.position && geom.attributes.position.count >= 12);
+        out.rockGeomDetailed = !!(geom?.attributes.position && geom.attributes.position.count >= 12);
         // verschoben ≠ glatte Kugel: die Vertex-Radien streuen (Noise-Displacement)
-        if (geom && geom.attributes.position) {
+        if (geom?.attributes.position) {
             const p = geom.attributes.position;
             let rmin = Infinity,
                 rmax = 0;
@@ -1908,7 +1908,7 @@ async function checkBandWahrerAnblickLaub({ page, check }) {
                 // Die Blatt-FORM lebt in der Atlas-Silhouette (Cluster-Quad-Karte `buildFoliageQuads`, 4 Verts/Blatt,
                 // uv in die Atlas-Zelle geroutet), nicht in der Geometrie → Beweis: uv-Attribut + Vertex-Zahl als
                 // Vielfaches von 4.
-                if (card && card.attributes.position && card.attributes.position.count >= 4) {
+                if (card?.attributes.position && card.attributes.position.count >= 4) {
                     const cnt = card.attributes.position.count;
                     taperProven = !!card.attributes.uv && cnt % 4 === 0;
                 }

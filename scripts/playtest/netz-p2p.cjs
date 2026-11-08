@@ -1394,7 +1394,7 @@ async function checkBandLateMultiUser({ page, check }) {
         out.remoteCreatureCreated = p2p.remoteCreatures.has("farPeer:c9");
         // NICHT in state.creatures (updateCreatures ignoriert sie).
         const rc = p2p.remoteCreatures.get("farPeer:c9");
-        out.remoteNotInLocalSim = !!rc && st.creatures.indexOf(rc.mesh) === -1;
+        out.remoteNotInLocalSim = !!rc && !st.creatures.includes(rc.mesh);
 
         // Reconcile: eine Liste OHNE c9 → die Sicht-Kreatur verschwindet.
         r._p2pHandleCreaturePos("farPeer", {
@@ -2348,8 +2348,8 @@ async function checkBandV8SoulRoleAndWorkshop({ page, check }) {
             // überschrieben → Part-Auswahl + Gizmo bleiben ungestört.
             out.helperRaycastNoop =
                 !!pre &&
-                Object.prototype.hasOwnProperty.call(pre.gridHelper, "raycast") &&
-                Object.prototype.hasOwnProperty.call(pre.axesHelper, "raycast");
+                Object.hasOwn(pre.gridHelper, "raycast") &&
+                Object.hasOwn(pre.axesHelper, "raycast");
         }
 
         // C — Einstellungen-Sektionen faltbar.

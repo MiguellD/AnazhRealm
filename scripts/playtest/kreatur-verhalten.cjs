@@ -247,7 +247,7 @@ async function checkBandWelle6HCreatures({ page, check }) {
         const uniqueMaps = new Set();
         for (let i = 0; i < 10; i++) {
             r.assignCreatureTask(c3, "follow_player", {}, { silent: true });
-            if (c3.userData.taskAura && c3.userData.taskAura.material.map) {
+            if (c3.userData.taskAura?.material.map) {
                 uniqueMaps.add(c3.userData.taskAura.material.map);
             }
             r.assignCreatureTask(c3, "wander", {}, { silent: true });
@@ -918,7 +918,7 @@ async function checkBandWelle6HCreatures({ page, check }) {
         // wird getroffen). Die Vision „Spieler-LMB → Material-Slot“ IST `_strikeArchitecture` (die EINE
         // Funktion, die tryMouseBreak beim Architektur-Treffer ruft) → das Target direkt darüber schlagen.
         const archBeforeLmb = st.architectures.length;
-        for (let s = 0; s < 40 && st.architectures.indexOf(target) >= 0; s++) r._strikeArchitecture(target);
+        for (let s = 0; s < 40 && st.architectures.includes(target); s++) r._strikeArchitecture(target);
         st.player.equipped.held = null;
         out.lmbShrunkArch = st.architectures.length < archBeforeLmb;
         out.lmbFilledInventory = st.player.inventory.some(
@@ -2086,7 +2086,7 @@ async function checkBandKreaturKosten({ page, check }) {
             const seh = z1?.wurf && Array.isArray(z1.wurf.seh) ? z1.wurf.seh : null;
             const aus = budgetFang.get(kind + "|1");
             if (!seh || !aus) return { fehlt: !seh ? "wurf.seh fehlt an der Stufe 1" : "kein Ausgang der Stufe 1" };
-            const teil = aus.filter((m) => m && m.position && m.mat && seh.indexOf(m.mat.seh) >= 0);
+            const teil = aus.filter((m) => m && m.position && m.mat && seh.includes(m.mat.seh));
             return Object.assign({ seh }, PCW.budgetSippen(teil));
         };
         const urteil = (kind, B, stufe, w, soll) => {
@@ -2629,7 +2629,7 @@ async function checkBandKreaturKosten({ page, check }) {
                 takt(NG);
                 g.g1 = {
                     ruht: u._ruht === true,
-                    wurzel: Object.prototype.hasOwnProperty.call(probe, "updateMatrixWorld"),
+                    wurzel: Object.hasOwn(probe, "updateMatrixWorld"),
                     schritte: g.schritte,
                     zeitFehler: Math.abs(g.zeit + (u._ruheDt || 0) - t0 - NG * 0.02),
                     gaenge: g.gaenge,
@@ -2650,7 +2650,7 @@ async function checkBandKreaturKosten({ page, check }) {
                 r._tickKreaturRuhe(0.02, pm);
                 g.g3 = {
                     wach: u._ruht === false,
-                    wurzel: Object.prototype.hasOwnProperty.call(probe, "updateMatrixWorld"),
+                    wurzel: Object.hasOwn(probe, "updateMatrixWorld"),
                     kindFehler: kindStimmt(),
                 };
                 nullen();

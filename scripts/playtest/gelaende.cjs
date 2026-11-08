@@ -1901,7 +1901,7 @@ async function checkBandPhaseAFundament({ page, check }) {
             cappedTotal = 0;
         out.t2ChunksWithMorph = 0;
         for (const [, entry] of st.voxelChunks) {
-            if (entry.mesh && entry.mesh.geometry.attributes.aMorphWeight && entry.mesh.geometry.attributes.aMorphTarget)
+            if (entry.mesh?.geometry.attributes.aMorphWeight && entry.mesh.geometry.attributes.aMorphTarget)
                 out.t2HasMorphAttrs = true;
             if (entry.hasMorph) out.t2ChunksWithMorph++;
             if (!entry.lodStitchMesh) continue;
