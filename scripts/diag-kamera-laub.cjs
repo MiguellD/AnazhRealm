@@ -158,8 +158,8 @@ const GANG_ARTEN = { 1: ["stamm", "fels", "haus"], 2: ["innen", "steil", "innen-
 // [1, 1] × 12², ohne die Ebenheit `ebenRel`) darüber. Gemessen (swiftshader kienspan, Ankunft, dieselbe Pose, 8 × 1,5 cm seitwärts, die Linse K7 im Commit 50f2296be):
 // der Boden +15,4 % → ±0,08 %, der Ton der Unterseite +1,03 % → ±0,05 %.
 // DER GANG OHNE SCHUSS, IN STEHENDER PHASE (w23-k6-flimmern): je Stand nach den Proben des Leibs ein Gang links und rechts, je Seite
-// nach dem Anlauf `bodenBilder` gezählte Bilder ohne Schuss; Versatz und Dither-Blende der zeitlichen Auflösung stehen (wie im Schuss
-// jeder Aufnahme), die Proben des Leibs stehen, wo sie bis dahin standen (90 Bilder Gang davor schoben A0–A3: Kopf A3 bis 6,7 %, Radeon
+// nach dem Anlauf `bodenBilder` gezählte Bilder ohne Schuss; der Halton-Versatz der zeitlichen Auflösung steht (wie im Schuss jeder
+// Aufnahme), die Proben des Leibs stehen, wo sie bis dahin standen (90 Bilder Gang davor schoben A0–A3: Kopf A3 bis 6,7 %, Radeon
 // a776bd61 — ein Ort, den die Proben nie maßen). Bis dahin zählte der
 // Sprung in den Fenstern ZWISCHEN den Schüssen: die Aufnahme ohne Leib misst den Boden ihrer Szene (`_rueckstrahlJetzt`), der Sprung
 // des Auges danach (`_traaR.neu`) nimmt den Boden des Gangs ganz (`folge` 1) — Radeon 664e127d + f423f129, 8 Läufe in 4 Boots: der
@@ -307,14 +307,13 @@ async function leibStrafe(k) {
             taste("keydown");
             // Der Leib: der Anlauf, dann `je` Proben im Abstand von `zwischen` Takten des Spiels. Der Rückstrahl: der Anlauf (`warm`: der
             // Wechsel des Passes, der Schritt aus dem Stand, die erste Messung nach dem letzten Schuss), dann `bodenBilder` gezählte
-            // Bilder; jeder Takt rechnet Versatz (`_jitterIndex`) und Dither-Blende (`uDitherT`) fort, der nächste zeichnet wieder in
-            // derselben Phase
+            // Bilder; jeder Takt rechnet den Versatz der zeitlichen Auflösung (`_jitterIndex`) fort, der nächste zeichnet wieder im selben
             for (let j = 0; j < k.je; j++) {
-                for (let i = 0, b0, b, v, D = st.lodUniforms.uDitherT; i < (j ? k.zwischen : k.warm + (n > 1) * k.bodenBilder); i++, b0 = b) {
-                    v = [st.traaNode._jitterIndex, D.value];
+                for (let i = 0, b0, b, v; i < (j ? k.zwischen : k.warm + (n > 1) * k.bodenBilder); i++, b0 = b) {
+                    v = st.traaNode._jitterIndex;
                     await bild(k.dt);
                     if (n < 2) continue;
-                    [st.traaNode._jitterIndex, D.value] = v;
+                    st.traaNode._jitterIndex = v;
                     b = luma709(st.rueckstrahlLeser.boden.value.toArray());
                     if (i > k.warm) out.boden[stand] = Math.max(out.boden[stand], Math.abs(b / b0 - 1));
                 }
@@ -1314,7 +1313,7 @@ hauptLauf(async () => {
     }
     if (strafe) {
         const v = urteilStrafe(strafe);
-        check(`K6 Strafe am Prüfplatz — ${(strafe.an || []).map(strafeZeile)}`, !v.length, v.join(" · "));
+        check(`K6 Strafe am Prüfplatz — ${(strafe.an || []).map(strafeZeile)} · Rückstrahl ${pct(strafe.boden?.an)}`, !v.length, v.join(" · "));
     }
     console.log(`  Lauf ${((Date.now() - t0) / 1000).toFixed(1)} s`);
     wandEnde(errs, "die Kamera steckt nie in Laub, Strauch, Fels oder Boden.");
