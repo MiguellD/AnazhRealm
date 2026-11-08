@@ -148,8 +148,7 @@ function readPack(file) {
 // Wahrheit, die das Pack einfrieren soll).
 async function bootRealm(port) {
     const server = statikServer();
-    await server.lausche(port);
-    const { browser, page } = await nullSeite({ frist: 240000 });
+    const { browser, page } = await nullSeite({ frist: 240000 }, server, port);
     await server.zeige(page, 30000);
     // Welt bereit = `_gameLoopTick` ist eine Funktion (renderer-unabhängig korrekt, CLAUDE.md).
     await page.evaluate(async () => {

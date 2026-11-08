@@ -1020,8 +1020,7 @@ async function probe(K) {
 
 hauptLauf(async () => {
     console.log("=== DER FALL-WÄCHTER (Leben-Schau 2) — Null-Renderer, echter Spiel-Takt, Spaltgrund + Höhle ===");
-    await server.lausche(PORT);
-    const { browser, page } = await nullSeite({ frist: 900000 });
+    const { browser, page } = await nullSeite({ frist: 900000 }, server, PORT);
     page.setDefaultTimeout(880000);
     await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // die Orte aus der Welt (`__weltOrte`, scripts/lib/welt-orte.cjs)
     await page.evaluateOnNewDocument("window.__anazhFernRing = true"); // B2: der Fern-Ring lebt auch ohne Renderer

@@ -3,13 +3,13 @@
 // 11 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
-const { safeEvaluate, erreichbar } = require("../playtest.cjs");
+const { safeEvaluate, erreichbar, FLUEGEL } = require("../playtest.cjs");
 
 // die GEBRAUCHS-Flächen routen einen Bauplan nach Rolle/Form:
 // der Minecraft-Hotbar-Gate (Gerät → Hand, Struktur → Phantom) + die zwei Drawer-Bugs (gecraftete
 // Rüstung + Bauplan-Avatar erkennen). Snapshot + Restore des Player-States.
 async function checkBandV1774UseByRole({ page, check }) {
-    const res = await page.evaluate(() => {
+    const res = await page.evaluate((FLUEGEL) => {
         const out = {};
         const p = st.player;
         const blu = st.blueprints;
@@ -111,25 +111,10 @@ async function checkBandV1774UseByRole({ page, check }) {
         const wRoles = (r.computeMotionRoles(st.blueprints.koerper_human.parts) || []).filter(Boolean);
         // Flat-Formel: Platte = mid/min (nicht max/min) → dünne Wächter-Seiten-Zylinder lesen als ARME.
         // Die fluegel-Emergenz prüft ein LITERAL-Paar Spiegel-Planes (computeMotionRoles ist pur).
-        const wingParts = [
-            { shape: "box", material: "federn", size: { x: 0.5, y: 0.55, z: 0.4 }, position: { x: 0, y: 0.5, z: 0 } },
-            {
-                shape: "plane",
-                material: "federn",
-                size: { x: 0.9, y: 0.04, z: 0.5 },
-                position: { x: 0.62, y: 0.55, z: 0 },
-            },
-            {
-                shape: "plane",
-                material: "federn",
-                size: { x: 0.9, y: 0.04, z: 0.5 },
-                position: { x: -0.62, y: 0.55, z: 0 },
-            },
-        ];
         out.motionRolesEmerge =
             wRoles.some((x) => x.role === "bein") &&
             wRoles.some((x) => x.role === "arm" || x.role === "fluegel") &&
-            (r.computeMotionRoles(wingParts) || []).filter(Boolean).filter((x) => x.role === "fluegel").length === 2;
+            (r.computeMotionRoles(FLUEGEL) || []).filter(Boolean).filter((x) => x.role === "fluegel").length === 2;
         if (st.playerVel) {
             st.playerVel.setValue(3, 0, 0);
         }
@@ -161,7 +146,7 @@ async function checkBandV1774UseByRole({ page, check }) {
         r._refreshSoulSelect();
         r.recomputePlayerStats();
         return out;
-    });
+    }, FLUEGEL);
     check(
         "Welle 1b: _blueprintUseKind liest aus Rolle+Form — Gerät→hold · Rüstung→wear · Trank→drink · Avatar→embody",
         res.kindGeraet && res.kindArmor && res.kindTrank && res.kindAvatar

@@ -1227,19 +1227,21 @@ async function nullRenderer(page) {
     });
 }
 // DIE NULL-SEITE: der Browser im Rezept null und seine erste Seite mit dem Null-Renderer — der Start jeder Linse ohne Bild
-// (`opts` wie `starteBrowser`), EINMAL hier statt in jeder Linse.
-async function nullSeite(opts) {
+// (`opts` wie `starteBrowser`), EINMAL hier statt in jeder Linse; mit `server` lauscht zuerst der Statik-Server (an `port`,
+// sonst frei) — bis w12-verkehr trug jede von 38 Linsen ihr eigenes `await server.lausche(…)` davor.
+async function nullSeite(opts, server, port = 0) {
+    if (server) await server.lausche(port);
     const browser = await starteBrowser(Object.assign({ art: "null" }, opts));
     const page = await browser.newPage();
     await nullRenderer(page);
     return { browser, page };
 }
-// DIE NULL-WELT: der Server lauscht (`opts.port`, sonst ein freier), die Null-Seite (`opts` wie `nullSeite`; `opts.vor` trägt die Seite
-// vor ihrem ersten Skript) fährt an die Welt-Adresse (`server.zeige` mit `zeige`: Frist, Adresse, Warte-Art) und wartet, wo `opts.da`
-// es sagt, auf die Welt (`__weltDa(da)`) — bis w21-laub-unten stand dieselbe Folge in 25 Linsen.
+// DIE NULL-WELT: die Null-Seite samt lauschendem Server (`opts.port`, sonst ein freier; `opts` wie `nullSeite`; `opts.vor` trägt die
+// Seite vor ihrem ersten Skript) fährt an die Welt-Adresse (`server.zeige` mit `zeige`: Frist, Adresse, Warte-Art) und wartet, wo
+// `opts.da` es sagt, auf die Welt (`__weltDa(da)`) — bis w21-laub-unten stand dieselbe Folge in 25 Linsen (die Null-Probe aus
+// w13-verkehr-heil fiel in sie).
 async function nullWelt(server, { port = 0, vor, da, ...opts }, ...zeige) {
-    await server.lausche(port);
-    const s = await nullSeite(opts);
+    const s = await nullSeite(opts, server, port);
     if (vor) await s.page.evaluateOnNewDocument(vor);
     await server.zeige(s.page, ...zeige);
     if (da) await s.page.evaluate((d) => __weltDa((0, eval)(d)), `${da}`);

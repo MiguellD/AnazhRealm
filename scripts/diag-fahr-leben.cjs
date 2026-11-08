@@ -19,6 +19,7 @@ const {
 
 const PORT = Number(process.env.FAHR_LEBEN_PORT || 4413);
 const schalter = (f) => process.argv.includes(f);
+const TAETER = schalter("--taeter");
 
 const { errs, check } = pruefer();
 const taeter = (v, trenner = " · ") => (v.length ? " — Täter: " + v.join(trenner) : "");
@@ -781,9 +782,18 @@ const wegenetzVerdict = (m) =>
 // der Spuren springt (`stufen`), keiner steckt, keiner berührt einen Bewohner oder einen anderen Wagen, keiner ist ohne
 // Schlüssel im Ort (Kreuzung, Enge, fahrend in der Wende — der Täter beim Namen), keiner stößt an einen Bau, keiner verlässt seine Spur, der Takt bleibt billig, und die Gehenden
 // teilen die Straße nach dem EINEN Gesetz: höchstens `fahrbahn` ihrer Schritte auf der Fahrbahn (die Querungen). ════
-const VERKEHR = { stunden: [10, 23], sek: 600, wagen: 20, fristS: 300, fahrbahn: 0.05 };
+const VERKEHR = { stunden: [10, 23], sek: 600, wagen: 20, fristS: 300, fahrbahn: 0.05, weg60M: 30 };
 const verkehrVerdict = (m) =>
     [
+        // DER RICHTER VON PFLICHT-OFFEN C (pflicht.C#1), gezählt am SOLL des Gesetzes: in jeder Probe fährt jeder Wagen des Solls
+        // mit einem Bewohner am Steuer [die wenigsten, Probe, wer nicht: Nr. und Zustand], jede Probe eines Fahrenden auf der
+        // Trasse der Wege-Karte [Proben, ab, Orte], in jeder vollen Minute fährt jeder ≥ `weg60M` m [der kürzeste Weg einer
+        // Minute, sein Wagen, volle Minuten, die Minute, der Grund am Kopf seiner Reihe — `spieler`: die Stadt floss nicht um den
+        // stehenden Spieler], jeder sichtbare Fahrer sitzt mit dem Sitz-Knochen in der Kabine [Proben, außer, Orte]
+        [m.amSteuer[0] >= m.soll, `am Steuer ${JSON.stringify(m.amSteuer)} von ${m.soll}`],
+        [!m.trasse[1], `abseits der Trasse ${JSON.stringify(m.trasse)}`],
+        [m.weg60[2] > 0 && m.weg60[0] >= VERKEHR.weg60M, `fahrend je Minute ${JSON.stringify(m.weg60)}`],
+        [m.sitz[0] > 0 && !m.sitz[1], `Fahrer nicht im Sitz ${JSON.stringify(m.sitz)}`],
         [m.enden >= 1 && m.wenden === m.enden, `Wenden ${m.wenden} an ${m.enden} Enden`],
         [!m.stufen.length, `Stufen der Spuren ${JSON.stringify(m.stufen)}`],
         // DAS NETZ IN SEINER RICHTUNG (w4-verkehr-c2): kein Abbieger verboten durch den Plan (eine Sperre an der Sehne, die Stufe
@@ -799,8 +809,6 @@ const verkehrVerdict = (m) =>
             m.soll >= VERKEHR.wagen && m.wagen === m.soll && !m.ohneNacht,
             `Wagen ${m.wagen} von ${m.soll} (Soll ≥ ${VERKEHR.wagen}; ohne Platz ${m.ohnePlatz}, ohne Fahrer ${m.ohneFahrer}, ohne Nachtfahrer ${m.ohneNacht})`,
         ],
-        [m.fahrend === m.wagen, `fahrend ${m.fahrend} von ${m.wagen}`],
-        [!m.steuerlos, `ohne Bewohner am Steuer ${m.steuerlos}×`],
         [!m.ziele.ohne.length, `ohne Ziel erreicht: Wagen ${m.ziele.ohne.join(", ")} (${m.ziele.erreicht} Ankünfte)`],
         [
             m.ziele.laengsteS <= VERKEHR.fristS,
@@ -818,7 +826,7 @@ const verkehrVerdict = (m) =>
             m.ankunft && m.ankunft.d !== null && m.ankunft.d < m.ankunft.K,
             `die Ankunft sieht die Hülle des Wagens nicht ${JSON.stringify(m.ankunft)} (dort stellte sie einen Bewohner hin)`,
         ],
-        [!m.beruehrt.wagen, `Wagen in Wagen ${m.beruehrt.wagen}× ${JSON.stringify(m.beruehrt.wagenOrte)}`],
+        [!m.beruehrt.wagen, `Wagen in Wagen ${m.beruehrt.wagen}× tiefste ${JSON.stringify(m.beruehrt.tief)}`],
         [!m.beruehrt.bau, `Wagen im Bau ${m.beruehrt.bau}× ${JSON.stringify(m.beruehrt.bauOrte)}`],
         [!m.ohneSchluessel, `ohne Schlüssel im Ort ${m.ohneSchluessel}× ${JSON.stringify(m.ohneOrte)}`],
         [!m.stoss.bau && !m.stoss.wagen && !m.stoss.leib, `Stoß ${JSON.stringify(m.stoss)}`],
@@ -2358,31 +2366,50 @@ hauptLauf(async () => {
         {
             // VK: ein gesunder Lauf ohne Täter, jeder Bruch beim Namen
             const g = {
-                ...{ soll: 20, wagen: 20, ohnePlatz: 0, ohneFahrer: 0, ohneNacht: 0, fahrend: 20, wenden: 4, enden: 4 },
-                ...{ stufen: [], fest: [], beruehrt: { leib: 0, wagen: 0, bau: 0 }, ohneSchluessel: 0, ohneOrte: [] },
-                ...{ ankunft: { d: 0.14, K: 0.71, wagen: 3 } },
-                ...{ stoss: { wagen: 0, bau: 0, leib: 0 }, querMax: 0.35, msJeSchritt: 0.82, sek: 600, steuerlos: 0 },
-                ...{
-                    ziele: { erreicht: 160, ohne: [], laengsteS: 120 },
-                    fahrbahn: { geh: 9e4, auf: 1500, anteil: 0.017 },
-                },
-                ...{
-                    stufe: { nah: 99 },
-                    netz: { verboten: ["k0 0>3 kein Bogen", "k0 2>1 kein Bogen"], ausNetz: 0, irrweg: 0 },
-                },
+                soll: 20,
+                wagen: 20,
+                ohnePlatz: 0,
+                ohneFahrer: 0,
+                ohneNacht: 0,
+                wenden: 4,
+                enden: 4,
+                stufen: [],
+                fest: [],
+                beruehrt: { leib: 0, wagen: 0, bau: 0, tief: [0] },
+                ohneSchluessel: 0,
+                ohneOrte: [],
+                ankunft: { d: 0.14, K: 0.71, wagen: 3 },
+                stoss: { wagen: 0, bau: 0, leib: 0 },
+                querMax: 0.35,
+                msJeSchritt: 0.82,
+                sek: 600,
+                amSteuer: [20, 0],
+                trasse: [9e4, 0, []],
+                weg60: [210, 4, 10],
+                sitz: [4800, 0],
+                ziele: { erreicht: 160, ohne: [], laengsteS: 120 },
+                fahrbahn: { geh: 9e4, auf: 1500, anteil: 0.017 },
+                stufe: { nah: 99 },
+                netz: { verboten: ["k0 0>3 kein Bogen", "k0 2>1 kein Bogen"], ausNetz: 0, irrweg: 0 },
             };
             const brueche = [
                 [{ wenden: 3 }, /Wenden 3/],
                 [{ stufen: [{ x: 1 }] }, /Stufen/],
-                [{ wagen: 19, fahrend: 19 }, /Wagen 19 von 20/],
-                [{ soll: 18, wagen: 18, fahrend: 18 }, /Wagen 18 von 18 \(Soll ≥ 20/],
+                [{ wagen: 7, ohnePlatz: 13 }, /Wagen 7 von 20 \(Soll ≥ 20; ohne Platz 13/], // die Radeon 05.11.: die Stadt des Worts
+                [{ soll: 18, wagen: 18 }, /Wagen 18 von 18 \(Soll ≥ 20/],
                 [{ ohneNacht: 2 }, /ohne Nachtfahrer 2/],
-                [{ fahrend: 12 }, /fahrend 12/],
-                [{ steuerlos: 3 }, /ohne Bewohner am Steuer 3/],
+                [{ amSteuer: [7, 8, [1, "steht"]] }, /am Steuer \[7,8,\[1,"steht"\]\] von 20/],
+                [{ trasse: [9e4, 3, [[1, 905, 300]]] }, /Trasse \[90000,3,\[\[1,905/],
+                [{ weg60: [0, 17, 1, 1, "spieler"] }, /je Minute \[0,17,1,1,"spieler"\]/], // die Radeon 06.11.: der Spieler in der Kreuzung
+                [{ sitz: [0, 0] }, /nicht im Sitz \[0,0\]/],
+                [{ sitz: [500, 120, [1, 4, 1.94, 1.44]] }, /nicht im Sitz \[500,120,\[1,4,1.94,1.44/], // auf dem Dach (23 Uhr)
                 [{ ziele: { erreicht: 150, ohne: [], laengsteS: 410, wer: 4 } }, /Fahrt 410 s > 300 s \(Wagen 4/],
                 [{ fest: [{ nr: 4 }] }, /steckt/],
                 [{ beruehrt: { leib: 3, wagen: 0 } }, /Bewohner 3/],
-                [{ beruehrt: { leib: 0, wagen: 2 } }, /Wagen in Wagen 2/],
+                [
+                    { beruehrt: { leib: 0, wagen: 40, tief: [0.22, "1|2", 0, 828, 441] } },
+                    /Wagen in Wagen 40× tiefste \[0.22,"1\|2",0,828,441/,
+                ],
                 [{ ankunft: { d: 1.1, K: 0.71, wagen: 3 } }, /Ankunft sieht die Hülle des Wagens nicht/],
                 [{ ankunft: { d: null, K: 0.71 } }, /Ankunft sieht die Hülle des Wagens nicht/],
                 [
@@ -2414,7 +2441,7 @@ hauptLauf(async () => {
             // in die Strecke der Wende w10 führte keiner, 10 von 20 Wagen pendelten ohne Ziel zwischen zwei Wenden (12 Ankünfte,
             // Fahrt 752 s), Wagen in Wagen 15× vor der einen Wende — alle beim Namen; neu GRÜN
             const verbotenAlt = ["k0 0>1 laterne@842,435", "k0 0>3 laterne@842,435", "k0 1>2 laterne@831,442", "k0 1>3 laterne@842,435", "k0 2>1 laterne@831,442", "k0 2>3 laterne@831,442", "k0 3>0 laterne@842,435"]; // prettier-ignore
-            const alt = verkehrVerdict({ ...g, netz: { verboten: verbotenAlt, ausNetz: 0, irrweg: 0 }, ziele: { erreicht: 12, ohne: [0, 1, 3, 5, 6, 7, 10, 12, 13, 14], laengsteS: 752, wer: 0 }, beruehrt: { leib: 0, wagen: 15, bau: 0 } }); // prettier-ignore
+            const alt = verkehrVerdict({ ...g, netz: { verboten: verbotenAlt, ausNetz: 0, irrweg: 0 }, ziele: { erreicht: 12, ohne: [0, 1, 3, 5, 6, 7, 10, 12, 13, 14], laengsteS: 752, wer: 0 }, beruehrt: { leib: 0, wagen: 15, bau: 0, tief: [0.4] } }); // prettier-ignore
             const altRot =
                 alt.length === 4 &&
                 /verbotene Abbieger k0 0>1 laterne/.test(alt[0]) &&
@@ -2520,12 +2547,15 @@ hauptLauf(async () => {
         [
             schalter("--verkehr"),
             probeLeben,
-            { verkehr: VERKEHR },
+            // `--taeter` (pflicht.C#1): um 10 Uhr 130 s (zwei volle Minuten), Wagen 0 ohne Fahrer, Wagen 1 neben der Trasse, Wagen 2
+            // in Wagen 3, der erste gemessene Fahrer auf dem Dach, und keiner umfährt den stehenden Spieler in der Kreuzung — jeder
+            // beim Namen (der letzte als Kopf der Reihe der kürzesten Minute, `spieler`)
+            { verkehr: { ...VERKEHR, ...(TAETER && { stunden: [10], sek: 130, taeter: 1 }) } },
             (o) => {
-                for (const h of VERKEHR.stunden) {
+                for (const h of TAETER ? [10] : VERKEHR.stunden) {
                     const m = o.verkehr && o.verkehr[h];
-                    const v = m ? verkehrVerdict(m) : [o.err];
-                    check(`VK (PFLICHT-OFFEN C) der Verkehr der Stadt um ${h} Uhr`, !v.length, v.join(" · "));
+                    const v = (m ? verkehrVerdict(m) : [o.err]).join(" · ");
+                    check(`VK (PFLICHT-OFFEN C) der Verkehr der Stadt um ${h} Uhr${TAETER ? " — TÄTER" : ""}`, TAETER ? [/am Steuer \[19,\d+,\[0,/, /Trasse \[\d+,[1-9]\d*,\[\[1,/, /Wagen in Wagen \d+× tiefste \[[\d.]+,"2\|3"/, /nicht im Sitz \[\d+,1,\[/, /je Minute \[\d+,\d+,2,\d,"spieler"\]/].every((x) => x.test(v)) : !v, v); // prettier-ignore
                 }
                 console.log(`VERKEHR ${JSON.stringify(o.verkehr)}`);
             },

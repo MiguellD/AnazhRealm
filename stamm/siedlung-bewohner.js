@@ -1162,12 +1162,14 @@ class AnazhRealm_siedlung_bewohner {
             bewegt.length = 0;
             // DER SPRUNG DER UHR (oben eingerichtet): jeder Leib stellt sich dorthin, wo sein Tag ihn jetzt sieht
             // (`_bewohnerAnkunft`), ohne den Gang davor — Tempo, Lauf, Rückstand, Schritt-Takt der Raten-Leiter, Platz und Tür
-            if (sprung)
+            if (sprung) {
                 for (const b of S.liste) {
                     Object.assign(b, { gegangen: 0, gehTakt: 0, tempoJetzt: 0, tempoTag: undefined, rueck: 0 });
                     Object.assign(b, { vx: 0, vz: 0, platz: false, hinaus: false, ankunft: !!b.leib });
                     this._bewohnerRasterLage(S, b);
                 }
+                if (S.verkehr) this._verkehrSprung(S); // auch der Wagen: f(Same, t)
+            }
             // DAS SOLL DER STUNDE (mensch.K2): je `planH` liest jeder seinen Plan einmal — gestaffelt, dt-gerecht: je Takt so viele
             // Köpfe der Reihe nach (`planI`), wie die Uhr dieses Takts von planH trägt; die erste Liste und ein Sprung um planH
             // lesen alle. Bis bewohner-takt las jeder Kopf im selben Takt: an stadt-voll (1 094 Köpfe) eine Spitze von 6,3 ms je
@@ -2231,8 +2233,10 @@ class AnazhRealm_siedlung_bewohner {
         const um = this._bewohnerUm(S, b, p, q, nb, K, !q._um);
         if (um === true) return this._bewohnerAusweichen(S, b, dt);
         // PLATZ MACHEN: führt kein Umweg an ihm vorbei (die Laterne, die Hauswand), tritt der Stehende zur Seite (`_bewohnerPlatz`;
-        // der Spieler und der ruhende Wagen nie — um sie tastet das Ausweichen)
-        if (um && !um.spieler && !um.wagen && this._bewohnerPlatz(S, um, p, q, b)) return halte({ vx: 0, vz: 0 });
+        // der Spieler und der ruhende Wagen nie — um sie tastet das Ausweichen; der Fahrer zu Fuß, `wagen`, auch nicht: bat man
+        // ihn um Platz, steckte im Start-Dorf wohnhaus #617311 um 6,92 Uhr — offen, Kreatur-Linse bewohner)
+        if (um && !um.spieler && !um.wagenLeib && !um.wagen && this._bewohnerPlatz(S, um, p, q, b))
+            return halte({ vx: 0, vz: 0 });
         // die Nachbarn als Zahlen, EINMAL je Wahl gelesen (die Lage zu ihm, ihr Tempo, die Kapseln): die Zeit liest die
         // Geachteten (der Stehende und der Gehende mit Vorrang), die Wache die Nächsten (näher als die Kapseln und ein Schritt)
         const nN = nb.length;

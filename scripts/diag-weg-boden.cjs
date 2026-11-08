@@ -307,8 +307,7 @@ function urteil(S) {
 }
 
 hauptLauf(async () => {
-    await server.lausche(PORT);
-    const { browser, page } = await nullSeite({ frist: 120000 });
+    const { browser, page } = await nullSeite({ frist: 120000 }, server, PORT);
     await server.zeige(page, 30000);
     // die Trittfläche nennt das Gesetzbuch: das Buch muss warm sein (der Foundry-Worker läuft auch headless); die Wiesen-
     // Probe liest den gebauten Boden: das Chunk-Streaming baut den Ring um den Spieler (nur er — Wiese und Streu baut die Probe).

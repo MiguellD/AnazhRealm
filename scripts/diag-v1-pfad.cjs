@@ -3138,8 +3138,7 @@ hauptLauf(async () => {
     console.log("=== W — DIE STATISCHE WAND (Node, kommentarfrei) ===");
     for (const [name, ok, detail] of wand(quelle)) check(name, ok, detail);
 
-    await server.lausche(PORT);
-    const { browser, page } = await nullSeite({ frist: 600000 });
+    const { browser, page } = await nullSeite({ frist: 600000 }, server, PORT);
     await page.setViewport({ width: 1280, height: 720 });
     await server.zeige(page, 30000);
     // Der KI-Endpunkt der V-D6-Probe: ein Port, auf dem nichts lauscht.

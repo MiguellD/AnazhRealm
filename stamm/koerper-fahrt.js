@@ -472,7 +472,7 @@ class AnazhRealm_koerper_fahrt {
             }
         }
         const ort = L.ort;
-        if (!ort || !L.leib) return;
+        if (!ort || !L.leib) return void (rig._sitzLage = null); // ohne Maß kein Sitz gemerkt: der nächste Ruf misst neu
         // der Rumpf neigt sich, der Kopf bleibt aufrecht; das Knie hält die Sohle über dem Bauch
         if (rig.spine) rig.spine.rotation.x = -L.phi;
         if (Number.isFinite(L.knie)) {
@@ -510,6 +510,23 @@ class AnazhRealm_koerper_fahrt {
         if (rig._sitzBasis) rig.hips.position.copy(rig._sitzBasis);
         rig.hips.rotation.y = 0;
         rig._sitzLage = null;
+    }
+
+    // DIE SITZ-HÖHE EINES GEFÄHRTS (m über seiner Basis position.y − 0,5, `entry._sitzHeight`): der Ursprung des Leibs, der in ihm
+    // sitzt — aus dem EINEN Gesetz des Wagens (exportDrive.sitz, der seatRow-Anker: GT tief, Truck hoch), sonst dem sitz-Punkt des
+    // Bauplans (`_attachPointFor`, die User-Eigenwerke), je + SITZ_HIP_OFFSET (nicht die Steh-Anatomie: die Sitz-Pose senkt die
+    // Hüfte auf den Sattel); ohne beides oben drauf (MOUNT_FOLLOW_HEIGHT, das Tier). Leser: der Aufstieg des Spielers und der
+    // Fahrer des Verkehrs (`_verkehrWagenStellen`) — bis w12-verkehr saß der Fahrer am Ursprung 1,5 m über der Basis, erst der
+    // gemessene Leib zog seine Hüfte herab, und ohne ihn saß er auf dem Dach (23 Uhr an der Radeon, Hüfte 1,94 m, Dach 1,44 m)
+    _sitzHoehe(entry) {
+        const sc = Number.isFinite(entry.scale) ? entry.scale : 1;
+        const fzg = this._fahrzeugGesetzFor(entry);
+        const bp = this.state.blueprints && this.state.blueprints[entry.type];
+        const d = fzg && fzg.drive && fzg.drive.sitz;
+        const s = d && Number.isFinite(d.y) ? d : bp ? this._attachPointFor(bp, "sitz").point : null;
+        return s && Number.isFinite(s.y)
+            ? Math.max(0.45, s.y * sc + AnazhRealm.SITZ_HIP_OFFSET)
+            : AnazhRealm.MOUNT_FOLLOW_HEIGHT;
     }
 
     // DER SITZ EINES GEFÄHRTS (0710-4 Klasse 4) im Rahmen seines Ursprungs (m, Gestalt × Skala; y über der Rad-Ebene
@@ -584,9 +601,11 @@ class AnazhRealm_koerper_fahrt {
         };
         let unten = Infinity;
         let oben = -Infinity;
+        // die Haut der Nah-Gestalt, welche Stufe auch zeichnet (`_gelenkStufe` schaltet nur `nah.visible`): bis w12-verkehr maß sie
+        // nur, was gerade sichtbar war — wer fern einstieg, hatte kein Maß, und `_sitzLage` merkte sich das Nichts je Wagen
         nah.traverse((o) => {
             if (!o.isMesh || !o.geometry || !o.geometry.attributes.position) return;
-            for (let n = o; n && n !== group; n = n.parent) if (!n.visible) return;
+            for (let n = o; n && n !== nah && n !== group; n = n.parent) if (!n.visible) return;
             const pos = o.geometry.attributes.position;
             const sw = o.isSkinnedMesh ? o.geometry.attributes.skinWeight : null;
             const si = sw ? o.geometry.attributes.skinIndex : null;
@@ -1047,11 +1066,8 @@ class AnazhRealm_koerper_fahrt {
         // Charakter sitzt; am Entry gecacht, _tickMountedMovement liest ihn.
         const bp = this.state.blueprints && this.state.blueprints[entry.type];
         const scale = Number.isFinite(entry.scale) ? entry.scale : 1;
-        entry._sitzHeight = AnazhRealm.MOUNT_FOLLOW_HEIGHT;
-        // vehicle-Gestalt: Sattelpunkt aus exportDrive.sitz (seatRow-Anker — GT tief, Truck hoch).
-        // Kein Gesetz → der emergente _attachPointFor bleibt die EINE Quelle der User-Eigenwerke.
+        entry._sitzHeight = this._sitzHoehe(entry);
         const fzgM = this._fahrzeugGesetzFor(entry);
-        const fzgSitz = fzgM && fzgM.drive && fzgM.drive.sitz ? fzgM.drive.sitz : null;
         // DER RAHMEN des Templates: ein Studio-Fahrzeug liegt längs x (vehicle-core huelle: Bug +x), ein Teile-Werk
         // fährt in +z. Die Fahrt beginnt in der Richtung, in der der Wagen STEHT — ohne diesen Anfang griff der
         // Bewegungs-Tick die Blick-Gier und der Wagen schnappte beim Aufsitzen herum.
@@ -1061,16 +1077,6 @@ class AnazhRealm_koerper_fahrt {
         // ...und die Gier im Bild beginnt ohne Schweif (wie die Lage nach einem Teleport): das erste Bild ohne Sim-Schritt
         // zeichnete sonst zwischen der Gier der letzten Fahrt und dieser (Spielgang 18.10., der Wiederaufstieg nach einem Stoß)
         entry._gierVor = entry._rideYaw;
-        if (fzgSitz && Number.isFinite(fzgSitz.y)) {
-            entry._sitzHeight = Math.max(0.45, fzgSitz.y * scale + AnazhRealm.SITZ_HIP_OFFSET);
-        } else if (bp) {
-            const sp = this._attachPointFor(bp, "sitz").point;
-            if (Number.isFinite(sp.y)) {
-                // Nicht die Steh-Anatomie (+0.9) nehmen: die Sitz-Pose senkt die Hüfte auf den Sattel, das
-                // Reiter-Zentrum liegt ~SITZ_HIP_OFFSET über dem Sattelpunkt (gefährt-skalen-unabhängig).
-                entry._sitzHeight = Math.max(0.45, sp.y * scale + AnazhRealm.SITZ_HIP_OFFSET);
-            }
-        }
         // M3(a)/V18.155 — die BODEN-KLÄRUNG fürs vertikale FÜHREN (das Gefährt
         // steht auf dem Terrain, der Reiter folgt ihm): Ursprung − Bauplan-
         // Unterkante (rotations-bewusst), ×scale. Gecacht (die Form ist frozen).
@@ -1672,32 +1678,38 @@ class AnazhRealm_koerper_fahrt {
     _fahrHaft(fz) {
         const n = Math.min(1, Math.max(0, this.state.naesse || 0));
         // DER MERKER am Fahr-Zustand (Lehre 25: der Takt kostet, was ihn betrifft): der Boden unter dem Rad ist derselbe, bis der
-        // Wagen `HAFT_MERK_M` weiter ist, die Nässe oder die Stoff-Zeile wechselt — Fahrer und Fahr-Schritt fragten ihn je
-        // Schritt neu (der Verkehr der Metropole: 27 Fragen je Schritt, 1,1 ms)
+        // Wagen `HAFT_MERK_M` weiter ist oder die Stoff-Zeile wechselt — Fahrer und Fahr-Schritt fragten ihn je Schritt neu (der
+        // Verkehr der Metropole: 27 Fragen je Schritt, 1,1 ms). Er trägt μ trocken und voll nass: die Zeile ist linear in der
+        // Nässe, und die Gewichte des Bodens hängen nicht an ihr — so mischt die Nässe beide, gleich der Rechnung bis auf die Rundung. Bis
+        // pflicht.C#1 merkte er die Nässe selbst: sie läuft nach jedem Wort des Wetters Bild für Bild zu ihrem Ziel
+        // (`_naesseTakt`), und jeder Ruf fragte den Boden neu (stadt-voll 10 Uhr: 0,41 ms je Bild für 20 Wagen)
         const st = AnazhRealm._stoffStand || 0;
-        const M = fz._haft;
+        let M = fz._haft;
         if (
-            M &&
-            M.n === n &&
-            M.st === st &&
-            Math.abs(M.x - fz.x) < AnazhRealm.HAFT_MERK_M &&
-            Math.abs(M.z - fz.z) < AnazhRealm.HAFT_MERK_M
-        )
-            return M.mu;
-        const mu = (stoff) => {
-            const z = this._stoff(stoff, "das Rad auf „" + stoff + "“ greift nicht");
-            if (z && z.muRad > 0) return z.muRad + (z.muRadNass - z.muRad) * n;
-            this._bruchMelden("STOFF-ZEILE ohne Haftung: das Rad auf „" + stoff + "“ greift wie auf Asphalt");
-            return 1;
-        };
-        const aus = {};
-        const gruen = this._bodenSichtAt(fz.x, fz.z, aus) === null ? 0 : aus.gruen;
-        const pfad = this._pfadFeldAt(fz.x, fz.z, fz.y);
-        let m = mu(this._terrainMaterialAt(fz.x, fz.z, fz.y));
-        if (gruen > 0) m += (mu("gras") - m) * gruen;
-        if (pfad > 0) m += (mu("erde") - m) * pfad;
-        fz._haft = { x: fz.x, z: fz.z, n, st, mu: m };
-        return m;
+            !M ||
+            M.st !== st ||
+            !(Math.abs(M.x - fz.x) < AnazhRealm.HAFT_MERK_M) ||
+            !(Math.abs(M.z - fz.z) < AnazhRealm.HAFT_MERK_M)
+        ) {
+            const mu = (stoff, k) => {
+                const z = this._stoff(stoff, "das Rad auf „" + stoff + "“ greift nicht");
+                if (z && z.muRad > 0) return z.muRad + (z.muRadNass - z.muRad) * k;
+                this._bruchMelden("STOFF-ZEILE ohne Haftung: das Rad auf „" + stoff + "“ greift wie auf Asphalt");
+                return 1;
+            };
+            const aus = {};
+            const gruen = this._bodenSichtAt(fz.x, fz.z, aus) === null ? 0 : aus.gruen;
+            const pfad = this._pfadFeldAt(fz.x, fz.z, fz.y);
+            const grund = this._terrainMaterialAt(fz.x, fz.z, fz.y);
+            const bei = (k) => {
+                let m = mu(grund, k);
+                if (gruen > 0) m += (mu("gras", k) - m) * gruen;
+                if (pfad > 0) m += (mu("erde", k) - m) * pfad;
+                return m;
+            };
+            M = fz._haft = { x: fz.x, z: fz.z, st, trocken: bei(0), nass: bei(1) };
+        }
+        return M.trocken + (M.nass - M.trocken) * n;
     }
 
     // DER WIND AM WAGEN (wetter.K5): der EINE Wind am Ort des Fahr-Zustands (`_windAt` auf der Uhr des Sim-Schritts, nie der
@@ -1778,6 +1790,9 @@ class AnazhRealm_koerper_fahrt {
         const k = ks.map(Math.abs);
         return {
             pts: P,
+            // die Route je Meter vor der Glättung (Punkt für Punkt zu `pts`): wer die Linie fortschreibt, glättet aus IHR, nie aus
+            // der schon geglätteten (`_verkehrLinie`)
+            roh: M,
             bogen: s,
             k,
             ks,

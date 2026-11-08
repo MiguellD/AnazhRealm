@@ -132,8 +132,7 @@ function driftBefunde(reihe) {
 // ── die Welt ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 async function welt() {
     const server = statikServer();
-    await server.lausche(0);
-    const { browser, page } = await nullSeite({ frist: 900000 });
+    const { browser, page } = await nullSeite({ frist: 900000 }, server);
     await page.setViewport({ width: GROESSEN[0][0], height: GROESSEN[0][1], deviceScaleFactor: 1 });
     await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // der Messort aus spec/profiband/haushalt.json (`__messWiese`)
     await server.zeige(page, 60000);
