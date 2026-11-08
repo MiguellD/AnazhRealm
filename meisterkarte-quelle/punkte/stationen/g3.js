@@ -349,6 +349,22 @@ const albedoSitzung = (teil, ausnahme) => ({
     ausnahme,
 });
 const ALBEDO_K1 = albedoSitzung("K1", "die Albedo-Tafel beider Seiten: elf Gänge der Welt und daneben sieben Studio-Seiten des Labors mit eigenem Renderer");
+// DIE SCHALE DES FELLS (material.K1, w24-linse-fell): die Zeile fell misst den Wolf, wie das Labor ihn zeigt — mit den Schalen seines
+// Fells (die Stufe am Auge der Tafel, 3,5 m über ihm, `_leibSicht`). Trägt die Welt-Seite der Zeile keinen Stoff fellSchale, las die
+// Inventur das Fell ohne sie: ein Auge der Stufen wählte sie zwischen Bestellung und Inventur ab (Radeon 77265b04, nach ferne.K1 die
+// Kamera 92 m über Genesis: 0,1844 ohne Schale, 0,1641 mit, das Labor 0,1619). Das Urteil nennt es beim Namen, nie nur als Zahl
+// die Roh-Ausgaben der Proben (knapp: was die Urteile lesen): am main 77265b04 in der Sitzung nach ferne.K1 (Radeon 08.11.) und am Zweig
+// w24-rueckfall-fell 8c5d944c (Radeon 08.11.); `k1OhneSchale` streicht den Stoff fellSchale aus der Welt-Seite der Zeile
+const K1_ROH = { alt: {"adapter":"[linse-gpu] amd/rdna-3","welt":{"echt":true,"geraet":"amd rdna-3"},"labor":{"echt":true,"geraet":"AMD Radeon(TM) 890M"},"eichung":{"soll":0.18,"rand":0.003,"welt":0.1799,"labor":{"terrain":0.1799,"garage":0.1799,"portale":0.1799,"schmiede":0.1799,"fachwerk":0.1799,"koerperstudio":0.1799,"tetrapoda":0.1799},"gruen":true},"zeilen":[{"id":"rinde","L":0.0893,"W":0.0807,"v":0.9037,"band":[0.07,0.12],"bandOk":true,"inBand":true},{"id":"laub","L":0.1784,"W":0.1921,"v":1.0768,"band":[0.15,0.26],"bandOk":true,"inBand":true},{"id":"birke","L":0.2121,"W":0.2164,"v":1.0203,"band":[0.15,0.26],"bandOk":true,"inBand":true},{"id":"fichte","L":0.1055,"W":0.0953,"v":0.9033,"band":[0.08,0.15],"bandOk":true,"inBand":true},{"id":"fels","L":0.2444,"W":0.2547,"v":1.0421,"band":[0.1,0.3],"bandOk":true,"inBand":true},{"id":"boden","L":0.0832,"W":0.0869,"v":1.0445,"band":[0.0123,0.871],"bandOk":true,"inBand":true},{"id":"haus","L":0.1491,"W":0.1512,"v":1.0141,"band":[0.0123,0.871],"bandOk":true,"inBand":true},{"id":"lack","L":0.0166,"W":0.0164,"v":0.988,"band":[0.0123,0.871],"bandOk":true,"inBand":true},{"id":"tor","L":0.6496,"W":0.6494,"v":0.9997,"band":[0.25,0.95],"bandOk":true,"inBand":true},{"id":"haut","L":0.0601,"W":0.0604,"v":1.005,"band":[0.0123,0.871],"bandOk":true,"inBand":true},{"id":"fell","L":0.1619,"W":0.1844,"v":1.139,"band":[0.0123,0.871],"bandOk":true,"inBand":true},{"id":"haar","L":0.0117,"W":0.0117,"v":1,"band":[0.01,0.3],"bandOk":true,"inBand":true},{"id":"klinge","L":0.3452,"W":0.3493,"v":1.0119,"band":[0.3,0.95],"bandOk":true,"inBand":true}],"dateien":{"welt":{"welt":{"fell":{"Y":0.1844,"stoffe":["unknown|0.90|0.00|0|1.00|v:stoff|xf","fell|0.93|0.00|0|1.00|t:0.287,0.231,0.162|v:haar|xf"]}}}}}, neu: {"adapter":"[linse-gpu] amd/rdna-3","welt":{"echt":true,"geraet":"amd rdna-3"},"labor":{"echt":true,"geraet":"AMD Radeon(TM) 890M"},"eichung":{"soll":0.18,"rand":0.003,"welt":0.1799,"labor":{"terrain":0.1799,"garage":0.1799,"portale":0.1799,"schmiede":0.1799,"fachwerk":0.1799,"koerperstudio":0.1799,"tetrapoda":0.1799},"gruen":true},"zeilen":[{"id":"rinde","L":0.0893,"W":0.0807,"v":0.9037,"band":[0.07,0.12],"bandOk":true,"inBand":true},{"id":"laub","L":0.1785,"W":0.1922,"v":1.0768,"band":[0.15,0.26],"bandOk":true,"inBand":true},{"id":"birke","L":0.2121,"W":0.2163,"v":1.0198,"band":[0.15,0.26],"bandOk":true,"inBand":true},{"id":"fichte","L":0.1055,"W":0.0954,"v":0.9043,"band":[0.08,0.15],"bandOk":true,"inBand":true},{"id":"fels","L":0.2444,"W":0.2547,"v":1.0421,"band":[0.1,0.3],"bandOk":true,"inBand":true},{"id":"boden","L":0.0832,"W":0.0876,"v":1.0529,"band":[0.0123,0.871],"bandOk":true,"inBand":true},{"id":"haus","L":0.1491,"W":0.1505,"v":1.0094,"band":[0.0123,0.871],"bandOk":true,"inBand":true},{"id":"lack","L":0.0166,"W":0.0164,"v":0.988,"band":[0.0123,0.871],"bandOk":true,"inBand":true},{"id":"tor","L":0.6496,"W":0.6494,"v":0.9997,"band":[0.25,0.95],"bandOk":true,"inBand":true},{"id":"haut","L":0.0601,"W":0.0604,"v":1.005,"band":[0.0123,0.871],"bandOk":true,"inBand":true},{"id":"fell","L":0.1599,"W":0.164,"v":1.0256,"band":[0.0123,0.871],"bandOk":true,"inBand":true},{"id":"haar","L":0.0117,"W":0.0117,"v":1,"band":[0.01,0.3],"bandOk":true,"inBand":true},{"id":"klinge","L":0.3452,"W":0.3493,"v":1.0119,"band":[0.3,0.95],"bandOk":true,"inBand":true}],"dateien":{"welt":{"welt":{"fell":{"Y":0.164,"stoffe":["unknown|0.90|0.00|0|1.00|v:stoff|xf","fell|0.93|0.00|0|1.00|t:0.287,0.231,0.162|v:haar|xf","fellSchale|0.92|0.00|0|1.00|t:0.287,0.231,0.162|v:haar|xf"]}}}}} };
+const k1OhneSchale = (j) => {
+    const k = JSON.parse(JSON.stringify(j));
+    k.dateien.welt.welt.fell.stoffe = k.dateien.welt.welt.fell.stoffe.filter((x) => !x.startsWith("fellSchale|"));
+    return k;
+};
+const fellOhneSchale = (j) => {
+    const f = (((j.dateien || {}).welt || {}).welt || {}).fell;
+    return f && Array.isArray(f.stoffe) && !f.stoffe.some((x) => x.startsWith("fellSchale|")) ? "fell ohne Schale (die Inventur las den Wolf ohne seine Schalen)" : null;
+};
 const ALBEDO_K3 = albedoSitzung("K3", "die Welt-Seite der Albedo-Tafel: elf Gänge, je Stufen-Zeile ihre Stufe gestellt und zu beiden Uhren geschossen");
 const ALBEDO_PFAD = [
     ...BILD,
@@ -2726,12 +2742,18 @@ const stationen = [
             const raus = Z.filter((z) => !imV.includes(z) || !z.inBand).map((z) =>
                 z.id + " " + (z.v == null ? "stumm" : z.v) + (z.bandOk ? (z.inBand ? "" : " ∉ [" + z.band.join(", ") + "] L " + z.L + " W " + z.W) : " ohne reales Band")
             );
-            const gruen = echt && Z.length >= 10 && imV.length === Z.length && imB.length === Z.length;
+            const schale = fellOhneSchale(j);
+            const gruen = echt && Z.length >= 10 && imV.length === Z.length && imB.length === Z.length && !schale;
             const zahl =
                 "Welt/Labor 0,9–1,1: " + imV.length + "/" + Z.length + " · im realen Band beidseits: " + imB.length + "/" + Z.length +
-                (raus.length ? " — " + raus.join(" · ") : "") + " · echt " + (echt ? "beide Seiten" : "NEIN") + " · " + (j.adapter || "Adapter ungenannt");
+                (raus.length ? " — " + raus.join(" · ") : "") + (schale ? " · " + schale : "") + " · echt " + (echt ? "beide Seiten" : "NEIN") + " · " + (j.adapter || "Adapter ungenannt");
             return { gruen, zahl };
         },
+        proben: [
+            { name: "die Messung am main 77265b04 nach ferne.K1 (Fell 0,1844 ohne Schale)", j: K1_ROH.alt, gruen: false, zahl: /fell ohne Schale/ },
+            { name: "die Messung am Zweig w24-rueckfall-fell 8c5d944c (Fell 0,1640 mit Schale)", j: K1_ROH.neu, gruen: true },
+            { name: "MUTANTE die Inventur ohne Schale, die Zahl im Soll", j: k1OhneSchale(K1_ROH.neu), gruen: false, zahl: /fell ohne Schale/ },
+        ],
         pfad: ALBEDO_PFAD,
         quelle: "1 = alle Zeilen Welt/Labor 0,9–1,1 und im realen Band, beide Seiten --echt, an einem Gerät",
     },
@@ -2754,13 +2776,18 @@ const stationen = [
             const alle = Z.length >= 10 && Z.every((z) => z.v != null && z.v >= 0.9 && z.v <= 1.1 && z.inBand);
             const e = j.eichung || {};
             const lab = Object.entries(e.labor || {}).map(([s, y]) => s + " " + y);
-            const gruen = echt && alle && e.gruen === true;
+            const schale = fellOhneSchale(j);
+            const gruen = echt && alle && e.gruen === true && !schale;
             const zahl =
                 "Karte Welt " + e.welt + " · Labor " + (lab.join(", ") || "stumm") + " · Soll " + e.soll + " ± " + e.rand +
-                " · Zeilen " + (alle ? "alle im Soll und Band" : "NICHT alle im Soll und Band") + " · echt " + (echt ? "beide Seiten" : "NEIN") +
+                " · Zeilen " + (alle ? "alle im Soll und Band" : "NICHT alle im Soll und Band") + (schale ? " · " + schale : "") + " · echt " + (echt ? "beide Seiten" : "NEIN") +
                 " · " + (j.adapter || "Adapter ungenannt");
             return { gruen, zahl };
         },
+        proben: [
+            { name: "die Messung am Zweig w24-rueckfall-fell 8c5d944c (Karte 0,1799, Fell mit Schale)", j: K1_ROH.neu, gruen: true },
+            { name: "MUTANTE die Inventur ohne Schale, die Zahl im Soll", j: k1OhneSchale(K1_ROH.neu), gruen: false, zahl: /fell ohne Schale/ },
+        ],
         pfad: ALBEDO_PFAD,
         quelle: "2 = beide Geräte, Eichung Karte 0,180",
     },
