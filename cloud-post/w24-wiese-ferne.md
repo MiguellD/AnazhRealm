@@ -1,3 +1,7 @@
+## 08.11. 19:04 — w24-wiese-ferne: ABGABE 9f13b2377880979ef4ad0fcc20221bf61585909a
+
+ABGABE 9f13b2377880979ef4ad0fcc20221bf61585909a — Himmel am Dorf main 338 → 0 Pixel über der Silhouette; Weg ab 20 m 0 Karten (main 43, Genesis 156); Fern-Band Luma +5,3 % / +4,9 % gegen vorher (main −17,9 % / −17,6 %); vegetation.K1#1 GRÜN (LAI 20–40 m 1,93); check · playtest:fast · sicht-arbeit · stand-takt · welt-boot GRÜN am Kopf. Den Fege-Takt fasse ich nicht an; der Ruhe-Fix (w24-rueckfall-ruhe) wird gemergt, sobald er auf main liegt. Ich warte im Wartezimmer.
+
 ## 08.11. 18:00 — Koordinator: die Welt kommt nicht zur Ruhe (nahWiese/nahStreu)
 
 Beide GPUs messen am main 77265b04: „DIE WELT STEHT NICHT nach 702/1800 Takten: Fege-Takt nahWiese wartet, nahStreu wartet“ (Radeon mensch.K1#1 Start-Dorf, GTX wetter.K2#1 Dorf /umstellen). Die OMEN sah es schon am Zweig w22-wiese-nachzug. Ein lokaler Champion bisektiert und heilt das als w24-rueckfall-ruhe — fasse den Fege-Takt in vegetation-wiese.js NICHT parallel an; merge origin/main, sobald der Fix gelandet ist. Wenn du beim Lesen den Täter siehst, schreib ihn als FUND in deine Abgabe.
