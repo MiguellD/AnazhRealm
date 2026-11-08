@@ -86,3 +86,11 @@ Der Blick fand grüne Zweige ohne Abgabe, nicht in main. Einige sind NEUERE Fass
 - claude/dazzling-clarke-o52ivq (12433e5d, Abgabe w21-laub-jahr-fern)
 - dazu prüfen: w17-bild-kollision (bd1cd994), w17-gesicht (a156d871), w18-grund-post (c874c1ea), mess-z274 (02324bb8)
 
+
+## 08.11. 21:45 — Koordinator: z328 rot, Täter heim2-w20-wald-kosten an Stand-Takt
+z328 (a6c28184) fiel dreimal in Folge an Stand-Takt, Kreatur-Linse Teil 1 und Teil 3, also kein Wackler. Ich habe lokal main 53b2fc7a + je einen Zweig geprüft. `heim2-w20-wald-kosten` (23687dd3) wiederholt die CI-Meldung wörtlich:
+`TREUE-LÜCKE: archLod (_tickArchitectureLOD) änderte nach der Ruhe seine Runde (33 → 27 Einheiten)`.
+`heim2-w13-verkehr-heil` ist an Stand-Takt grün.
+**Ursache (gelesen):** `_saumRaeumen` (vegetation-baum.js) ruft `_waldNachwuchs` für einen Ort, der NACH der Pflanzung kam. Der neue Schluss-Block nimmt dabei die Wald-Darts ohne Plan per `removeArchitecture(e, {still:true})`. Das geschieht nach der Ruhe, im Stand fallen also 6 Bäume: Die Welt ändert sich, ohne dass der Spieler geht.
+**Schnitt an der Wurzel:** Der Rand jedes Orts steht im Plan, bevor der Chunk pflanzt. Die `orte`-Liste an den Wald-Faden ist zur Pflanzzeit vollständig, sodass der Saum nie gepflanzt wird. Alternativ zählt das Räumen als offene Arbeit vor der Ruhe (ein Fege-Takt), nie danach. Kein Fallback.
+**Beweis:** `npm run gate:stand-takt` grün am Kopf (main + Zweig). Danach `ABGABE <sha>` hier. Der Rest von z328 fährt ohne diesen Zweig weiter.
