@@ -748,8 +748,7 @@ async function tempo(K) {
 
 (async () => {
     console.log(`=== KOLLISION = BILD — ${BILD ? "die Karte zeichnet" : "Null-Renderer"}, Mess-Wiese 150 m ===`);
-    const bild = BILD ? { bild: true, art: "linse", viewport: { width: 640, height: 360 }, frist: 36e5 } : { frist: 9e5 };
-    const { browser, page } = await nullWelt(server, { port: PORT, ...bild }, 120000, BILD && require("./lib/software-gpu.cjs").linsenGpu() === "software" ? "index.html?holz=kienspan" : undefined); // prettier-ignore
+    const { browser, page } = await nullWelt(server, { port: PORT, bild: BILD, art: BILD ? "linse" : "null", viewport: BILD ? { width: 640, height: 360 } : undefined, frist: BILD ? 36e5 : 9e5 }, 120000, BILD && require("./lib/software-gpu.cjs").linsenGpu() === "software" ? "index.html?holz=kienspan" : undefined); // prettier-ignore
     page.setDefaultTimeout(BILD ? 36e5 : 88e4);
     let befund = null;
     try {

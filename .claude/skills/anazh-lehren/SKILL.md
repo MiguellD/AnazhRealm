@@ -55,7 +55,9 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
   deckungstreu mit dem Saum auf JEDER Stufe, auch Stufe 0, in JEDEM Hebungs-Ring (phyto-core `karteSaumSchluessel`/`karteSaumRinge`:
   das Band der geglätteten Deckung, der Rahmen nie Umriss, Band und Zelle im Schritt `saumWeite` an der gröberen Texel-Achse — dem Maß,
   das der Schirm als Saum liest —, ein Texel mit eigener Deckung immer wählbar, Laub-Lappen, Nadel-Grate,
-  der Kronen-Fuß im Bild des Rings; die GPU-Ablage `KARTE_RECHNER_WGSL` rechnet dasselbe Gesetz, `_karteSaumVon`), fern Glieder-Kapseln · jede Senke zeichnet über ihren Zeichner (`_instanzZeichner`: count 1 über einer InstancedBufferGeometry-Fassade,
+  der Kronen-Fuß im Bild des Rings; die GPU-Ablage `KARTE_RECHNER_WGSL` rechnet dasselbe Gesetz, `_karteSaumVon`, ein gewählter Texel
+  ohne eigene Deckung trägt Farbe, Normale, Tiefe und Sonnen-Sicht seines Bands; die Schwelle 0,45 dort, wo der Filter der Welt —
+  bilinear, zwei Stufen gemischt — deckt, was Stufe 0 deckt, gate:streu-wahrheit „am Schirm"), fern Glieder-Kapseln · jede Senke zeichnet über ihren Zeichner (`_instanzZeichner`: count 1 über einer InstancedBufferGeometry-Fassade,
   Matrizen im Storage-Puffer) · Baum = Studio-Karte bis 384 m, EINE Ableitung aus `treeParams` (gen ≥ 5), der gefühlte Baum ihr Skelett
   (`skelettDerGestalt`), EIN Wind-Term über die Naht `_weltNaht`, Blende je Instanz, laut (`_blendeBruch`) · Haus und Tor fern NUR-WURF,
   das Fenster Glas in jeder Stufe, der Tor-Hinterflügel eine Instanz (`_foundryFluegelInstanz`).

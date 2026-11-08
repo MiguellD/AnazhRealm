@@ -1237,7 +1237,7 @@ async function nullSeite({ bild, ...opts } = {}) {
 // DIE NULL-WELT: der Server lauscht (`opts.port`, sonst ein freier), die Null-Seite (`opts` wie `nullSeite`; `opts.fenster` ihr Viewport,
 // `opts.vor` — eines oder eine Liste — trägt die Seite vor ihrem ersten Skript) fährt an die Welt-Adresse (`server.zeige` mit `zeige`:
 // Frist, Adresse, Warte-Art) und wartet, wo `opts.da` es sagt, auf die Welt (`__weltDa(da)`) — bis w21-laub-unten stand dieselbe Folge
-// in 25 Linsen, bis w24-strauch-saum dazu in 11 mit Bild, Viewport oder zwei Vor-Skripten.
+// in 25 Linsen, bis w24-strauch-saum dazu in 19 mit Bild, Viewport oder zwei Vor-Skripten.
 async function nullWelt(server, { port = 0, vor, da, fenster, ...opts }, ...zeige) {
     await server.lausche(port);
     const s = await nullSeite(opts);
