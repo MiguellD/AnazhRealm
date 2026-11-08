@@ -39,17 +39,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 
-const {
-    statikServer,
-    warteAufWelt,
-    taeterFaelle,
-    selbsttestEnde,
-    nullSeite,
-    wandEnde,
-    SELBSTTEST,
-    jsonKlon,
-    fehlerText,
-} = require("./lib/welt-boot.cjs");
+const { statikServer, warteAufWelt, taeterFaelle, selbsttestEnde, nullSeite, wandEnde, SELBSTTEST, jsonKlon, fehlerText, seiteZu } = require("./lib/welt-boot.cjs");
 const SICHT = require("./lib/sicht-linse.cjs");
 
 function urteil(b) {
@@ -770,8 +760,7 @@ const server = statikServer();
     page.setDefaultTimeout(580000);
     let befund = null;
     try {
-        await server.zeige(page, 120000, "index.html", "networkidle0");
-        await warteAufWelt(page, 120000);
+        await warteAufWelt(page, 120000, server);
         await page.evaluate(SICHT.SICHT_INSTALL);
         befund = await page.evaluate(async (MESS) => {
             const r = window.anazhRealm,
@@ -1405,12 +1394,7 @@ const server = statikServer();
     } catch (e) {
         befund = { fehler: fehlerText(e) };
     }
-    await browser.close();
-    server.close();
-    if (!befund || befund.fehler) {
-        console.log("❌ LAUF-FEHLER: " + (befund ? befund.fehler : "kein Befund"));
-        process.exit(1);
-    }
+    await seiteZu(browser, server, befund, null, "fehler");
     const zeile = (n, x) =>
         `  ${n.padEnd(7)} ${x.frames} Frames · Pässe ${x.paesse.mittel} · Arbeit Ø ${x.arbeit.mittel} (Median ${x.arbeit.median}, ` +
         `max ${x.arbeit.max}) · Höhlen-Sicht ${x.hoehlenSicht.mittel} + Licht ${x.hoehlenSichtLicht.mittel} · Abschnitte ` +

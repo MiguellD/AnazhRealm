@@ -1701,6 +1701,8 @@ function stoffFaenge(srcRoh, zweige = STOFF_ZWEIGE) {
         e.object.type === "Identifier" &&
         e.object.name === "THREE" &&
         e.property.name === "TSL";
+    // ein Ausdruck, der TSL ist: ein Name von TSL der Methode (`al`) oder THREE.TSL
+    const ausAl = (al, e) => !!e && ((e.type === "Identifier" && al.has(e.name)) || istThreeTsl(e));
     const ausTsl = (e) =>
         !!e &&
         (istThreeTsl(e) ||
@@ -1730,16 +1732,15 @@ function stoffFaenge(srcRoh, zweige = STOFF_ZWEIGE) {
                 for (const p of n.id.properties)
                     if (p.key && p.key.name === "TSL" && p.value && p.value.type === "Identifier") al.add(p.value.name);
         });
-        const ausAl = (e) => !!e && ((e.type === "Identifier" && al.has(e.name)) || istThreeTsl(e));
         gehe(m.value, (n) => {
             if (n.type !== "VariableDeclarator" || !n.init) return;
-            if (n.id.type === "ObjectPattern" && ausAl(n.init))
+            if (n.id.type === "ObjectPattern" && ausAl(al, n.init))
                 for (const p of n.id.properties) if (p.value && p.value.type === "Identifier") gl.add(p.value.name);
             if (
                 n.id.type === "Identifier" &&
                 n.init.type === "MemberExpression" &&
                 !n.init.computed &&
-                ausAl(n.init.object) &&
+                ausAl(al, n.init.object) &&
                 n.init.property.name !== "TSL"
             )
                 gl.add(n.id.name);
@@ -2377,7 +2378,6 @@ function stoffFaenge(srcRoh, zweige = STOFF_ZWEIGE) {
             });
         if (!stoff) continue;
         // (c) das Ausstattungs-Wenn: ein Glied von TSL als Wahrheitswert
-        const ausAlias = (e) => !!e && ((e.type === "Identifier" && al.has(e.name)) || istThreeTsl(e));
         const glied = (e) => {
             if (!e) return false;
             if (e.type === "ChainExpression") return glied(e.expression);
@@ -2386,7 +2386,7 @@ function stoffFaenge(srcRoh, zweige = STOFF_ZWEIGE) {
                 istThreeTsl(e) ||
                 (e.type === "MemberExpression" &&
                     !e.computed &&
-                    (ausAlias(e.object) || (e.object.type === "Identifier" && gl.has(e.object.name))))
+                    (ausAl(al, e.object) || (e.object.type === "Identifier" && gl.has(e.object.name))))
             );
         };
         // `wert`: der Ausdruck liefert seinen Wert (`opts.pos || T.positionLocal` — das letzte Glied ist ein Wert, keine
@@ -2414,7 +2414,7 @@ function stoffFaenge(srcRoh, zweige = STOFF_ZWEIGE) {
         const optionalFrage = (e) => {
             const aus = [];
             gehe(e, (x) => {
-                if (x.type === "MemberExpression" && x.optional && (glied(x.object) || ausAlias(x.object)))
+                if (x.type === "MemberExpression" && x.optional && (glied(x.object) || ausAl(al, x.object)))
                     aus.push(kurz(x));
                 else if (x.type === "CallExpression" && x.optional && glied(x.callee)) aus.push(kurz(x));
             });
