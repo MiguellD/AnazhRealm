@@ -25,3 +25,6 @@ WEITERE WÄNDE (07.11.): Boden-WGSL ≤ 100 000 Zeichen (S0-Linse; main steht kn
 
 ## WARTEZIMMER (bindend seit 08.11.; der einzige Weg, wie Post dich erreicht)
 Nachrichten anderer Sitzungen erreichen eine Cloud-Sitzung NICHT (gemessen: 0 von 6). Nach deiner Zeile `ABGABE <sha>` in `cloud-post/<zweig>.md` beendest du die Runde NICHT. Fahre Warte-Schritte von je ≤ 9 min: alle 5 min `git fetch origin koordination` und prüfe, ob in `cloud-post/<zweig>.md` nach deiner ABGABE ein neuer Abschnitt `## … Koordinator` steht. Kommt Post, arbeitest du sie ab und gibst wieder ab; danach wartest du erneut. Kommt 3 h nichts, darfst du enden.
+
+## REFERENZ-ATLAS (bindend seit 08.11. 21:30)
+`REFERENZ-ATLAS.md` in koordination legt fünf Domänen neben die Architektur der Besten: LOD (Nanite, ≤ 1 px), CPU-Takt (GPU-Wahl je Instanz, Haar/Aaltonen), Pipeline (Programm-Katalog, UE PSO-Precache), Körper (EIN Leib-Raum, SMPL) und Verkehr (Raum-Zeit-Reservierung, Dresner & Stone). Je Domäne gibt er Code mit Datei:Zeile, die Lücke und EINEN Schnitt an. Wer an einer dieser Domänen arbeitet, liest zuerst seinen Abschnitt und übernimmt den Brief-Baustein (f) wörtlich. Ein Schnitt, der davon abweicht, nennt im Commit den Grund.
