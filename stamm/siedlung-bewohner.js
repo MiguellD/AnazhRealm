@@ -2231,8 +2231,12 @@ class AnazhRealm_siedlung_bewohner {
         const um = this._bewohnerUm(S, b, p, q, nb, K, !q._um);
         if (um === true) return this._bewohnerAusweichen(S, b, dt);
         // PLATZ MACHEN: führt kein Umweg an ihm vorbei (die Laterne, die Hauswand), tritt der Stehende zur Seite (`_bewohnerPlatz`;
-        // der Spieler und der ruhende Wagen nie — um sie tastet das Ausweichen)
-        if (um && !um.spieler && !um.wagen && this._bewohnerPlatz(S, um, p, q, b)) return halte({ vx: 0, vz: 0 });
+        // der Spieler und der ruhende Wagen nie — um sie tastet das Ausweichen). Der ruhende Wagen ist der Leib mit seinem Radius
+        // (`kR`, `_verkehrImRaster`), nie die Marke `wagen`: die trägt auch sein Fahrer zu Fuß (`_verkehrAnlegen`). Bis hier bat
+        // keiner den Fahrer an seinem Stand um Platz, und wer zwischen ihm und einer Laterne ging, stand für immer (Kreatur-Linse
+        // bewohner, das Start-Dorf im Saum am Siedlungsrand: wohnhaus #601540 um 7,11 Uhr, 0,72 m neben fahrer #952, die Laterne
+        // 0,68 m — 1 Steckenbleiber; mit heim2-w13-verkehr-heil dieselbe Enge als Wiederkehr #431794 um 6,57 Uhr 5,65 m → 1,31 m)
+        if (um && !um.spieler && !um.kR && this._bewohnerPlatz(S, um, p, q, b)) return halte({ vx: 0, vz: 0 });
         // die Nachbarn als Zahlen, EINMAL je Wahl gelesen (die Lage zu ihm, ihr Tempo, die Kapseln): die Zeit liest die
         // Geachteten (der Stehende und der Gehende mit Vorrang), die Wache die Nächsten (näher als die Kapseln und ein Schritt)
         const nN = nb.length;
