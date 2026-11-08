@@ -206,7 +206,7 @@ function berichtAB(teil, Z) {
             const kl = new Set(zs.flatMap((z) => Object.keys(z.klassen)));
             zeile(`${pre}KLASSEN bis Kontrolle (Median s): ${[...kl].map((k) => [k, med(zs.map((z) => z.klassen[k] || 0))]).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${sek(v)}`).join(" · ")}`); // prettier-ignore
         });
-        je((zs, pre) => zeile(`${pre}LINSE je Boot: ${zs.map((z) => z.e.linse.slice(0, 140)).join(" | ")}`));
+        je((zs, pre) => zeile(`${pre}LINSE je Boot (Kalt-Zeile, synchron nach dem Bild): ${zs.map((z) => z.e.linse.replace(/^.*synchron nach dem Bild: /, z.e.linse[0] === "✅" ? "grün: " : "ROT: ").slice(0, 130)).join(" | ")}`)); // prettier-ignore
         const namen = new Set(Z.flatMap((z) => Object.keys(z.klassen)));
         const d = [...namen].map((k) => [k, med(KL("B").map((z) => z.klassen[k] || 0)) - med(KL("A").map((z) => z.klassen[k] || 0))]).filter(([, v]) => Math.abs(v) >= 20); // prettier-ignore
         zeile(`B − A je Klasse (Median s): ${d.sort((a, b) => a[1] - b[1]).map(([k, v]) => `${k} ${v > 0 ? "+" : ""}${sek(v)}`).join(" · ")}`);
