@@ -736,7 +736,7 @@ hauptLauf(async () => {
         // DIE EINE PRÜF-FUNKTION von (d) — der Lauf und sein Selbsttest gehen durch denselben Code
         const zuflussMedian = (f) => {
             const z = [...f.zufluss].sort(aufsteigend);
-            return z.length ? z[z.length >> 1] : 0;
+            return z.length ? rang(z) : 0;
         };
         const gesetzTakte = (f) => (f ? f.takte.filter((t) => t.anschluss) : []);
         const dMaengel = (l, f) => {

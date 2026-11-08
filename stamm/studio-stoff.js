@@ -211,9 +211,14 @@ class AnazhRealm_studio_stoff {
         // DIE FARBE DES JAHRS (V18.527): Laub und Gras sind Golden-Sommer gebacken — ihre Albedo × uSeasonMul
         // (das Studio-Gesetz: der Laub-Shader multipliziert mix(1, uSeasonMul, vSeasW), vSeasW = 1 auf Laub und
         // Blüte). Rinde, Fels, Kristall bleiben ungetönt. Die Gestalt des Jahrs trägt die Lage (`jahr`, `_jahrLage`).
+        // DIE TÖNUNG FOLGT DEM TYP (w21-laub-jahr-fern): das Laub tönt, dessen Ecken Laub oder Blüte sind (`jahr` — die Schale
+        // liefert die Jahres-Ecken nur an solchen Teilen), dazu das Gras; die Nadel (Typ 2, der Wedel), der Halm des Schilfs
+        // (Typ 4) und jedes Laub ohne Jahr stehen in ihrer Farbe wie im Studio (vSeasW 0). Bis w21 tönte die Welt nach der Art
+        // des Stoffs: die Fichte stand im Herbst orange (Tönung r × 2,23), ihre Karte zu 80 %.
         const _suF =
             kind === "foliage" || kind === "foliageTex" || kind === "grass" ? this._ensureSeasonUniforms() : null;
-        const laubFarbe0 = _suF && _suF.uSeasonMul ? vcol.mul(_suF.uSeasonMul) : vcol;
+        const _toent = kind === "grass" || jahr === true;
+        const laubFarbe0 = _toent && _suF && _suF.uSeasonMul ? vcol.mul(_suF.uSeasonMul) : vcol;
         // DIE BLATT-UNTERSEITE (phyto-core BLATT_UNTERSEITE, 05.10.): die gesehene Fläche nach unten gewandt → die hellere,
         // mattere Unterseite (`_laubUnterseite`, K68-N1: die Fläche, nie die Licht-Normale). Laub und Blüte, nie Gras.
         const laubFarbe =

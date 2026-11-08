@@ -64,9 +64,9 @@ hauptLauf(async () => {
         res.b.lofiBpm = lofi && lofi.fx?.klang ? lofi.fx.klang.bpm : null;
         res.b.lofiScale = lofi && lofi.fx?.klang ? JSON.stringify(lofi.fx.klang.scale) : null;
         res.b.klangCount =
-            f && f.recipes ? Object.keys(f.recipes).filter((k) => f.recipes[k].kind === "klang").length : 0;
+            f?.recipes ? Object.keys(f.recipes).filter((k) => f.recipes[k].kind === "klang").length : 0;
         res.b.params =
-            f && f.paramsByKind
+            f?.paramsByKind
                 ? {
                       klang: Array.isArray(f.paramsByKind.klang) ? f.paramsByKind.klang.length : -1,
                       koerper: Array.isArray(f.paramsByKind.koerper) ? f.paramsByKind.koerper.length : -1,
@@ -409,10 +409,10 @@ hauptLauf(async () => {
         try {
             res.o = {};
             const gM = r._workshopStudioPreviewFrom("mensch", 1, 0, null);
-            res.o.mensch = !!(gM && gM.isObject3D && gM.userData && gM.userData.rig);
+            res.o.mensch = !!(gM?.isObject3D && gM.userData && gM.userData.rig);
             res.o.menschMemo = r._workshopStudioPreviewFrom("mensch", 1, 0, null) === gM;
             const gW = r._workshopStudioPreviewFrom("wolf", 1, 0, null);
-            res.o.wolf = !!(gW && gW.isObject3D && gW.children.length > 0);
+            res.o.wolf = !!(gW?.isObject3D && gW.children.length > 0);
             const pDef = r._tetrapodaSoulParts("wolf");
             const pOv = r._tetrapodaSoulParts("wolf", { leg: 0.5 });
             res.o.ovFormt = !!(
@@ -637,7 +637,7 @@ hauptLauf(async () => {
     check(
         "O: klang-Rezept ist ehrlich 3D-frei (false, keine pending-Schleife) + die WELT-KLANG-WAHL wirkt (Tempo-Zahl)",
         !!out.o && out.o.klangFalse === true && out.o.klangWahl && out.o.klangWahl.wirkt === true,
-        out.o && out.o.klangWahl ? `lofi=${out.o.klangWahl.before}ms blues=${out.o.klangWahl.after}ms` : ""
+        out.o?.klangWahl ? `lofi=${out.o.klangWahl.before}ms blues=${out.o.klangWahl.after}ms` : ""
     );
     check("O: die NEUEN TIERE (wolf/fuchs/baer) bauen durch den EINEN Kreatur-Guss", !!out.o && out.o.tiere === true);
 

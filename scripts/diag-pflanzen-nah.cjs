@@ -346,7 +346,7 @@ function teppichFuss(T) {
     }
     if (!fuss.length || !(hi > lo)) return Infinity;
     fuss.sort(aufsteigend);
-    return (fuss[Math.floor(fuss.length * 0.9)] - lo) / (hi - lo);
+    return (rang(fuss, 0.9) - lo) / (hi - lo);
 }
 function teppichDeckung(T, step, skala, neigung = TEPPICH_NEIGUNG) {
     const e = (neigung * Math.PI) / 180,
@@ -834,7 +834,7 @@ function altbestandGroesse() {
     const s = [];
     for (let i = 0; i < 4000; i++) s.push(PC.forestTreeSize(rng, i / 4000));
     s.sort(aufsteigend);
-    return [s[Math.floor(0.75 * s.length)], s[Math.floor(0.98 * s.length)]];
+    return [rang(s, 0.75), rang(s, 0.98)];
 }
 function brustDurchmesser(T, yWelt, skala) {
     const y = yWelt / skala;
@@ -859,7 +859,7 @@ function brustDurchmesser(T, yWelt, skala) {
     const mx = sx / n,
         mz = sz / n;
     // der Median der Abstände zur Achse: ein tief ansetzender Ast im Fenster verschiebt ihn nicht
-    const r = pts.map(([x, z]) => Math.hypot(x - mx, z - mz)).sort(aufsteigend)[pts.length >> 1];
+    const r = rang(pts.map(([x, z]) => Math.hypot(x - mx, z - mz)).sort(aufsteigend));
     return 2 * r * skala;
 }
 // DER SOLITÄR (K20, nordstern §4.5 „Solitär gedrungener", Soll-Bild Solitäreiche Marbach: tiefer Kronenansatz, kurzer dicker

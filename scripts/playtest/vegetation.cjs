@@ -1731,7 +1731,7 @@ async function checkBandV18224ScatterPromotion({ page, check }) {
                 if (region && region.cells.length) {
                     // eine PROMOTABLE (Baum-)Cell, die NICHT promoted ist + slots hat
                     // Understory/Streu sind nie promotable)
-                    const cell = region.cells.find((c) => c.promotable && c.slots && c.slots.length > 0);
+                    const cell = region.cells.find((c) => c.promotable && c.slots?.length);
                     if (cell) {
                         const archBefore = st.architectures.length;
                         const promotedSpecies = cell.species;

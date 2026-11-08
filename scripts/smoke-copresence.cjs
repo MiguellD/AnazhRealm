@@ -85,7 +85,7 @@ const { starteBrowser, halteBis, waitFor, pruefer, zweiImMesh } = require("./lib
             pageB,
             (idA) => {
                 const po = r._portalOverlay;
-                return !!(po && po.peers && po.peers.has(idA));
+                return !!(po?.peers && po.peers.has(idA));
             },
             "B sieht A's Pose in seiner Sub-Welt (po.peers)",
             peerIdA
@@ -95,7 +95,7 @@ const { starteBrowser, halteBis, waitFor, pruefer, zweiImMesh } = require("./lib
             pageA,
             (idB) => {
                 const po = r._portalOverlay;
-                return !!(po && po.peers && po.peers.has(idB));
+                return !!(po?.peers && po.peers.has(idB));
             },
             "A sieht B's Pose in seiner Sub-Welt (po.peers)",
             peerIdB
@@ -108,7 +108,7 @@ const { starteBrowser, halteBis, waitFor, pruefer, zweiImMesh } = require("./lib
             pageB,
             () => {
                 const j = st.worldJournal;
-                return !!(j && j.entries && j.entries.some((e) => /erschien neben dir/.test(e.text)));
+                return !!(j?.entries && j.entries.some((e) => /erschien neben dir/.test(e.text)));
             },
             "B's Begegnungs-Welt meldete die Begegnung (Journal)"
         );
@@ -122,7 +122,7 @@ const { starteBrowser, halteBis, waitFor, pruefer, zweiImMesh } = require("./lib
             pageA,
             () => {
                 const j = st.worldJournal;
-                return !!(j && j.entries && j.entries.some((e) => /erschien neben dir/.test(e.text)));
+                return !!(j?.entries && j.entries.some((e) => /erschien neben dir/.test(e.text)));
             },
             "A's Begegnungs-Welt meldete die Begegnung (Journal)"
         );
@@ -163,7 +163,7 @@ const { starteBrowser, halteBis, waitFor, pruefer, zweiImMesh } = require("./lib
             taste: "KeyW",
             ziel: (beforeZ) => {
                 const po = r._portalOverlay;
-                return !!(po && po.localPose && po.localPose.z < Math.min(beforeZ - 0.5, -60));
+                return !!(po?.localPose && po.localPose.z < Math.min(beforeZ - 0.5, -60));
             },
             args: [bridgeA.poseZ === null ? 0 : bridgeA.poseZ],
             frist: 30000,
@@ -199,7 +199,7 @@ const { starteBrowser, halteBis, waitFor, pruefer, zweiImMesh } = require("./lib
             pageB,
             (idA) => {
                 const po = r._portalOverlay;
-                return !!(po && po.peers && !po.peers.has(idA));
+                return !!(po?.peers && !po.peers.has(idA));
             },
             "B: A verstummt → peer-leave (Abwesenheits-Sweep)",
             peerIdA
@@ -217,7 +217,7 @@ const { starteBrowser, halteBis, waitFor, pruefer, zweiImMesh } = require("./lib
             pageA,
             () => {
                 const po = r._portalOverlay;
-                return !!(po && po.localPose && po.localPose.z < -50);
+                return !!(po?.localPose && po.localPose.z < -50);
             },
             "A: die Welt erwachte an der gemerkten Position (restoreState)"
         );

@@ -1269,7 +1269,7 @@ async function probeLeben(expected) {
                 bahnWache = null;
                 r.setCameraMode(sicht0);
             }
-            const pq = (a, p) => (a.sort((x, y) => x - y), a.length ? +a[Math.floor(a.length * p)].toFixed(3) : null);
+            const pq = (a, p) => (a.sort((x, y) => x - y), a.length ? +rang(a, p).toFixed(3) : null);
             Object.assign(w, {
                 ruckN: ruck.length,
                 ruckP95: pq(ruck, 0.95),
@@ -1400,7 +1400,7 @@ async function probeLeben(expected) {
                 lenk,
                 lenkHinten,
                 tauchBremse,
-                spaltP75: spalte.length ? spalte[Math.floor(spalte.length * 0.75)] : Infinity,
+                spaltP75: spalte.length ? rang(spalte, 0.75) : Infinity,
                 spaltMax: spalte.length ? spalte[spalte.length - 1] : Infinity,
             };
             weg(gR);
@@ -1417,7 +1417,7 @@ async function probeLeben(expected) {
             const fang = (fn) => {
                 try {
                     const v = fn();
-                    return v === null || v === undefined ? "null" : "wert";
+                    return v == null ? "null" : "wert";
                 } catch (e) {
                     const msg = fehlerText(e);
                     return /KERN-PFLICHT/.test(msg) ? "bruch" : "fehler " + msg.slice(0, 80);
