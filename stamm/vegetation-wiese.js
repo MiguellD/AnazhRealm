@@ -310,6 +310,22 @@ class AnazhRealm_vegetation_wiese {
             st.nahWiese = { kacheln: new Map(), senken: new Map(), vorlagen: new Map(), neu: true, offen: 0 };
         const nw = st.nahWiese;
         if (!nw.fern) nw.fern = { kacheln: new Map(), gitter: new Map() };
+        // DER SPIKE w25-spike-gpu-vegetation (nur im Zweig, nie ein Weg des Spiels): der MESSORT-SCHALTER `state.wahlGpuWiese` —
+        // gesetzt nur von der Werkbank (`pop`, A/B) — legt die Senken der Nähe in die Wahl der GPU (`_instanzWahlGpu`): jede
+        // trägt den GANZEN Ring ihrer Vorlage (`_nahWieseSicht` schreibt ihn nur, wenn der Ring sich ändert), der Compute urteilt
+        // je Büschel Frustum und Stufen-Band (`__wahlBand`, `PASS_WAHL_WGSL`). Der Wechsel im Takt, nie im Render: jede Senke
+        // verlässt ihre Arena und tritt im nächsten Takt in die der anderen Wahl (`_arenaSchluessel` trägt `__wahlGpu`).
+        const gpu = (st.wahlGpuWiese ?? globalThis.__anazhWahlGpu) === true && AnazhRealm._arenaKann(st.renderer);
+        if (nw.wahlGpu !== gpu) {
+            nw.wahlGpu = gpu;
+            nw.neu = true;
+            for (const vl of nw.vorlagen.values())
+                for (const a of vl.senken) {
+                    if (!a.mesh) continue;
+                    if (a.mesh.__arena) a.mesh.__arena.lassen(a.mesh, true);
+                    a.mesh.__wahlGpu = gpu;
+                }
+        }
         // DIE STAND-WACHE: stehen Auge, Chunks und Studio-Vorlagen, steht jede Kachel — kein Gang.
         if (this._standRuht("nahWiese", 1, { pos: st.camera.position, rand: AnazhRealm.STAND_RAND_M }, "karte"))
             return 0;
@@ -1219,9 +1235,12 @@ class AnazhRealm_vegetation_wiese {
         if (!L || !L.fr || !L.fr.planes)
             throw new Error("_nahWieseSicht: ohne die Lage der Pass-Wahl (`_passWahlLage` in `_passSicht`)");
         if (!nw.neu && nw.gen === L.gen) return;
+        const neu = nw.neu;
         nw.neu = false;
         nw.gen = L.gen;
         const NW = AnazhRealm.NAH_WIESE;
+        // DER SPIKE w25 (`_tickNahWiese`): in der Wahl der GPU liegt die Nähe nur, wenn der Ring sich ändert
+        const gpu = nw.wahlGpu === true;
         const we = kamera.matrixWorld.elements;
         // Je Stufe × Vorlage die Senken samt Sicht-Kugel (fehlt eine, kommt ihr Studio-Asset noch).
         const ziel = [null, [null, null], [null, null]];
@@ -1239,7 +1258,7 @@ class AnazhRealm_vegetation_wiese {
         for (const stufe of [1, 2])
             for (const vl of ziel[stufe])
                 for (const a of vl ? vl.senken : AnazhRealm.STAND_LEER) {
-                    a.anzahl = 0;
+                    if (!gpu || neu) a.anzahl = 0;
                     a.anders = false;
                 }
         const m4 = this._tmpWieseM4 || (this._tmpWieseM4 = new THREE.Matrix4());
@@ -1249,7 +1268,34 @@ class AnazhRealm_vegetation_wiese {
         // die Stufen-Hysterese gilt dem stetigen Auge: nach einem Sprung (`_augeSprung`) wählt jedes Büschel aus dem Jetzt
         if (this._augeSprung(nw, ax, we[13], az)) for (const k of nw.kacheln.values()) k.l1.fill(0);
         const H = NW.kachel * 0.5;
-        for (const k of nw.kacheln.values()) {
+        // DER BESTAND DER GPU-WAHL (Spike w25): je Stufe × Vorlage × Teil JEDES Büschel des Rings (Basis × Teil), die vierte
+        // Zeile trägt den Fuß (Element 3 x, 7 z — r184 liest von M × (Lage, 1) nur xyz, die Normale die 3 × 3); das Band der
+        // Stufe (`__wahlBand`: die Übergabe in m, die Grenze L1/L2 im Bildschirm-Maß px je m am Büschel, die Seite) urteilt der
+        // Compute je Pass. Die Grenze: `stufe1` am Schirm der Referenz (1080 px, KAM_FOV_GRAD) — px/m = pxJeM / d.
+        if (gpu && neu) {
+            const pxRef = 1080 / (2 * Math.tan((AnazhRealm.KAM_FOV_GRAD * Math.PI) / 360));
+            for (const k of nw.kacheln.values())
+                for (let i = 0; i < k.bueschel.length; i++) {
+                    const b = k.bueschel[i];
+                    m4.fromArray(k.basis, i * 16);
+                    for (const stufe of [1, 2]) {
+                        const vl = ziel[stufe][b.vorlage];
+                        for (const a of vl ? vl.senken : AnazhRealm.STAND_LEER) {
+                            if (a.anzahl >= a.kap) this._senkeMesh(a, Math.ceil(a.anzahl * 1.5) + 64, this.state.scene);
+                            const arr = a.mesh.instanceMatrix.array;
+                            const o = a.anzahl * 16;
+                            arr.set(mw.multiplyMatrices(m4, a.lokal).elements, o);
+                            [arr[o + 3], arr[o + 7]] = [b.x, b.z];
+                            a.mesh.instanceColor.array.set(k.farben.subarray(i * 3, i * 3 + 3), a.anzahl * 3);
+                            a.mesh.__wahlGpu = true;
+                            a.mesh.__wahlBand = [NW.radius, pxRef / NW.stufe1, stufe === 1 ? 1 : -1];
+                            a.anzahl++;
+                            a.anders = true;
+                        }
+                    }
+                }
+        }
+        for (const k of gpu ? AnazhRealm.STAND_LEER : nw.kacheln.values()) {
             const n = k.bueschel.length;
             // die Kugel des Büschels wächst mit seinem Hang (y += g · r über seiner Fläche)
             const rk = k.sMax * rMax * (1 + k.gMax);
@@ -1313,7 +1359,11 @@ class AnazhRealm_vegetation_wiese {
                 if (ende) ic.addUpdateRange(0, (ende / 16) * 3);
                 ic.needsUpdate = true;
             }
-            AnazhRealm._instanzZahl(a.mesh, a.anzahl);
+            // der Bestand der GPU-Wahl zeichnet nie über seinen Zeichner (er trüge jedes Büschel in jeder Stufe): bis seine Arena
+            // ihn nimmt (der nächste Takt), zählt er 0, und der nächste Satz zählt neu
+            const wartet = a.mesh.__wahlGpu === true && !a.mesh.__arena;
+            if (wartet) nw.gen = -1;
+            AnazhRealm._instanzZahl(a.mesh, wartet ? 0 : a.anzahl);
         }
     }
 

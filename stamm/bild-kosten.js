@@ -3405,10 +3405,24 @@ class AnazhRealm_bild_kosten {
             W.u = new Uint32Array(W.f.buffer);
         }
         const nMax = off.map((o, j) => AnazhRealm._wahlAuftraege(arenen[2 * j + 1].wahl, W.f, W.u, o / 4));
-        dev.queue.writeBuffer(W.lage, 0, AnazhRealm._wahlLage(L, W.lageF));
+        AnazhRealm._wahlLage(L, W.lageF);
+        W.lageF[30] = this._schirm().pxJeM || 0; // das Bildschirm-Maß des Stufen-Bands (Spike w25): px je m in 1 m
+        dev.queue.writeBuffer(W.lage, 0, W.lageF);
         dev.queue.writeBuffer(W.puffer, 0, W.f.buffer, 0, bytes);
         const enc = dev.createCommandEncoder({ label: "pass-wahl" });
-        const pass = enc.beginComputePass({ label: "pass-wahl" });
+        // DIE UHR DES COMPUTE (Spike w25, die Messung `werkbank pop`): je Hauptbild zwei Zeitstempel um den Pass, EINER im Flug
+        if (W.uhr === undefined)
+            W.uhr = dev.features.has("timestamp-query") && {
+                qs: dev.createQuerySet({ type: "timestamp", count: 2 }),
+                auf: dev.createBuffer({ size: 16, usage: GPUBufferUsage.QUERY_RESOLVE | GPUBufferUsage.COPY_SRC }),
+                lies: dev.createBuffer({ size: 16, usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST }),
+                frei: true,
+            };
+        const uhr = W.uhr && W.uhr.frei && !L.fit ? W.uhr : null;
+        const pass = enc.beginComputePass({
+            label: "pass-wahl",
+            ...(uhr && { timestampWrites: { querySet: uhr.qs, beginningOfPassWriteIndex: 0, endOfPassWriteIndex: 1 } }),
+        });
         pass.setPipeline(W.pipe);
         for (let j = 0; j < off.length; j++) {
             const a = arenen[2 * j],
@@ -3428,7 +3442,23 @@ class AnazhRealm_bild_kosten {
             pass.dispatchWorkgroups(Math.ceil(nMax[j] / 64), n);
         }
         pass.end();
+        if (uhr) {
+            enc.resolveQuerySet(uhr.qs, 0, 2, uhr.auf, 0);
+            enc.copyBufferToBuffer(uhr.auf, 0, uhr.lies, 0, 16);
+            uhr.frei = false;
+        }
         dev.queue.submit([enc.finish()]);
+        const n = arenen.reduce((s, x, i) => (i % 2 ? s + x.wahl.length / 5 : s), 0);
+        if (uhr)
+            uhr.lies
+                .mapAsync(GPUMapMode.READ)
+                .then(() => {
+                    const t = new BigUint64Array(uhr.lies.getMappedRange());
+                    (AnazhRealm.__wahlUhr || (AnazhRealm.__wahlUhr = [])).push([Number(t[1] - t[0]) / 1e6, n, nMax.reduce((a, b) => a + b, 0)]); // prettier-ignore
+                    uhr.lies.unmap();
+                    uhr.frei = true;
+                })
+                .catch((e) => this._bruchMelden("die Uhr der GPU-Wahl: " + e.message));
     }
 
     // Die Lage eines Passes für die GPU (das `Lage`-Gefüge von `PASS_WAHL_WGSL`, 68 Floats): je Ebene des Frustums Normale und
@@ -3469,7 +3499,9 @@ class AnazhRealm_bild_kosten {
             const s = g.boundingSphere;
             f.set([s.center.x, s.center.y, s.center.z, s.radius], o);
             u.set([wahl[j + 1], wahl[j + 2], wahl[j + 3], wahl[j + 4]], o + 4);
-            f.set([0, 0, 0, 0], o + 8);
+            // das Stufen-Band (Spike w25, `_nahWieseSicht`): die Übergabe in m, die Grenze in px je m, die Seite (+1 fein, −1 grob)
+            const band = wahl[j].__wahlBand;
+            f.set(band ? [0, band[0], band[1], band[2]] : [0, 0, 0, 0], o + 8);
             nMax = Math.max(nMax, wahl[j + 2]);
         }
         return nMax;
@@ -3764,6 +3796,10 @@ fn wahl(@builtin(global_invocation_id) id: vec3u) {
     let s2 = max(dot(m[0].xyz, m[0].xyz), max(dot(m[1].xyz, m[1].xyz), dot(m[2].xyz, m[2].xyz)));
     let r = a.kugel.w * sqrt(s2) + a.saum.x;
     let rr = r + lage.rand.x + lage.rand.y * length(c);
+    if (a.saum.y > 0.0) {
+        let d = length(vec2f(m[0].w, m[1].w) - lage.auge.xz);
+        if (d >= a.saum.y || (lage.rand.z / max(d, 1e-3) >= a.saum.z) != (a.saum.w > 0.0)) { return; }
+    }
     for (var p = 0u; p < 6u; p++) {
         let e = lage.ebenen[p];
         if (dot(e.xyz, c) + e.w < -rr) { return; }

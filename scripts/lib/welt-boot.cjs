@@ -589,7 +589,8 @@ function statikServer({ root = ROOT, start = "/index.html", seiten = null, keinC
 // (scripts/lib/welt-orte.cjs `messort`, `dorfZug`) als Haken `__anazhAutoSettlement`, wo die Seite noch keinen trägt (das erste
 // Wort gilt: `server.zeige` erklärt so die Ankunft) — derselbe in jedem Renderer: seit w12-dorf-probe hält den Zug nur der Ort, nie
 // der Null-Renderer (bis dahin urteilte jede headless Probe am Dorf eine leere Welt).
-const ortZug = (page, id) => page.evaluateOnNewDocument((z) => window.__anazhAutoSettlement ??= z, require("./welt-orte.cjs").messort(id).dorfZug);
+// DER SPIKE w25 (nur im Zweig): an der Mess-Wiese wählt die GPU die Nah-Wiese (`__anazhWahlGpu`, `_tickNahWiese`)
+const ortZug = (page, id) => page.evaluateOnNewDocument((z, w) => ((window.__anazhAutoSettlement ??= z), (window.__anazhWahlGpu ??= w)), require("./welt-orte.cjs").messort(id).dorfZug, id === "wiese");
 
 // Die Browser-Rezepte: null (kein GPU-Prozess, der Null-Renderer) · webgl (WebGL2 an der Weiche) · standard (Chromes Wahl) ·
 // linse (WebGPU an der Weiche: lokal die Karte, die CI swiftshader) · echt (der Hardware-Adapter); `zeit: true` → swiftshader.

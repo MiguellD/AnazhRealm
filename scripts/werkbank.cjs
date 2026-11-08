@@ -854,6 +854,31 @@ function popGang() {
     })();
 }
 
+// DIE UHREN DER WAHL (Spike w25-spike-gpu-vegetation, Seiten-Code): je Takt (`_gameLoopTick`, selbst gemessen) die CPU-ms der
+// Glieder der Wahl — eine Hülle je Glied an der Welt, gemessen samt allem, was es ruft —, nach dem Lauf je Glied [Mittel, p95]
+// über die Takte mit Bild, dazu die GPU-ms des Compute der Wahl im Hauptbild (`__wahlUhr`: Zeitstempel um den Pass, und seine
+// Instanzen) — `lesen` liest, sonst beginnt sie neu.
+function wahlUhren(k) {
+    const U = (window.__wahlUhren ??= { je: [] }), N = ["_gameLoopTick", "_passSicht", "_instanzWahlPass", "_instanzWahlGpu", "_nahWieseSicht", "_nahWieseFernSatz"]; // prettier-ignore
+    for (const n of U.an ? [] : N) {
+        const f = r[n];
+        r[n] = function (...a) {
+            if (n === N[0]) U.je.push({});
+            const t = performance.now(), b = U.je.at(-1);
+            try {
+                return f.apply(this, a);
+            } finally {
+                if (b) b[n] = (b[n] || 0) + performance.now() - t;
+            }
+        };
+    }
+    U.an = true;
+    if (!k.lesen) return void ((U.je = []), (r.constructor.__wahlUhr = []));
+    const B = U.je.filter((b) => b._passSicht), C = r.constructor.__wahlUhr;
+    const q = (a) => [a.reduce(addiere, 0) / a.length, a.sort(aufsteigend)[Math.floor(0.95 * a.length)]].map((x) => +(x || 0).toFixed(3)); // prettier-ignore
+    return Object.fromEntries([...N.map((n) => [n, q(B.map((b) => b[n] || 0))]), ["compute", q(C.map((x) => x[0]))], ["inst", q(C.map((x) => x[2]))], ["bilder", B.length]]); // prettier-ignore
+}
+
 // ── Server ──────────────────────────────────────────────────────────────────────────────────────
 async function starte() {
     const { linsenWebGpuArgs, adapterZeile, echteWebGpuArgs } = require("./lib/software-gpu.cjs");
@@ -3192,11 +3217,20 @@ hauptLauf(async () => {
         // DER POP UNTER BEWEGUNG (`popGang`) an der Mess-Wiese im Ego-Auge, 1920 × 1080 — `--eigen` in eigener Welt (`gate:pop`, der
         // Messplatz des GPU-Probe-Dienstes); die Zahl misst, der Richter ist die Station lod.K2#1. Je Schritt die Pop-Pixel, `*` ein
         // Stufen-Wechsel, `+n@d` n Karten-Dinge zum ersten Mal gezeichnet, das nächste in d m
+        // DER SPIKE w25 (die Wahl der Nah-Wiese auf der GPU, `state.wahlGpuWiese`): je Seite A (die CPU wählt) und B (die GPU
+        // wählt) im Wechsel ABAB derselbe Gang — Pop, dann `/lauf` die Bahn mit 4 m/s, je Takt die Uhren der Wahl (`wahlUhren`)
         const halt = await eigeneWelt(["--ort", "wiese"]); // frisch an der Mess-Wiese, wie die Station
         try {
             await rufe("/fenster", { w: 1920, h: 1080 });
             await umstellen({ ort: "wiese", sicht: "ego" });
-            o = ergebnis(await evalRuf(`return await (${popGang})();`));
+            for (const s of "ABAB") {
+                await evalRuf(`r.state.wahlGpuWiese = ${s === "B"}; for (let i = 0; i < 20; i++) await __werkTakt(); return (${wahlUhren})({});`); // prettier-ignore
+                const p = ergebnis(await evalRuf(`return await (${popGang})();`));
+                const l = await rufe("/lauf", { sek: 8, ein: 2, wandern: "bahn" });
+                const u = ergebnis(await evalRuf(`return (${wahlUhren})({ lesen: true });`));
+                console.log(`WAHL ${s} ${l.fehler?.length ? "ROT" : "GRÜN"} ${JSON.stringify({ pop: p.anteilJeSekunde, bild: [l.frameMs?.p50, l.frameMs?.p95], gpu: l.gpuMs?.p50, tri: l.dreiecke?.mittel, dc: l.befehle?.mittel, ...u })}`); // prettier-ignore
+                o ??= p;
+            }
             o.bank = await rufe("/gpu-bank", {}); // die GPU-Zeit je Bild am Ende des Gangs (`gpuBank`)
         } finally {
             halt?.();
