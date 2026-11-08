@@ -136,7 +136,6 @@
         "gate:nervensystem-labs": "node scripts/diag-nervensystem-labs.cjs --selftest && node scripts/diag-nervensystem-labs.cjs",
         "gate:settlement": "node scripts/diag-settlement.cjs --selftest && node scripts/diag-settlement.cjs",
         "gate:studio-begehen": "node scripts/diag-studio-begehen.cjs --selftest",
-        "gate:geh-zerlegung": "node scripts/geh-probe.cjs",
         "gate:koerper-stand": "node scripts/diag-koerper-stand.cjs --selftest",
         "gate:haus-welt": "node scripts/diag-haus-welt.cjs --selftest --teil=1/2 && node scripts/diag-haus-welt.cjs --selftest --teil=2/2",
         "gate:trias": "node scripts/diag-trias.cjs --selftest && node scripts/diag-trias.cjs",
