@@ -774,8 +774,13 @@
           if(_a0>_xL0+0.02||_a1>_xL1+0.02) poly(g2,[[_xL0,P0.y,P0.z],[_a0,P0.y,P0.z],[_a1,P1.y,P1.z],[_xL1,P1.y,P1.z]],'ziegel2');
           _xL0=Math.max(_xL0,Math.min(H.b0,P0.x)); _xL1=Math.max(_xL1,Math.min(H.b1,P1.x)); }
         if(P0.x>_xL0+0.02||P1.x>_xL1+0.02) poly(g2,[[_xL0,P0.y,P0.z],[P0.x,P0.y,P0.z],[P1.x,P1.y,P1.z],[_xL1,P1.y,P1.z]],'ziegel2'); } };
-    dachUnter(g,1); dachUnter(g,-1);
-    if(P.hip>0.02){ poly(g,[Gtlf,Gtlb,Rl],'ziegel2'); poly(g,[Gtrb,Gtrf,Rr],'ziegel2'); }
+    // DER RAND DER DECKUNG (w15-lod-umriss, die Maske DESTNUR `dachdeckung: "rand"`): die ferne Stufe trägt die Haut des Dachs im
+    // Körper der Liste (`lod2Koerper`), ihren UMRISS aber trägt dieselbe Deckung — Windbrett, Traufrinne, First- und Gratziegel (je
+    // ein Balken) stehen dort, wo die L0 sie trägt; Unterdach, Lattung und Ziegel fallen. Bis hier fiel die ganze Deckung: der Umriss
+    // der L2 lag 24–26 cm unter dem Windbrett der L0 (alemannisch, Blick längs des Firsts), lod.K5 Haus 4,45 px (Radeon, 26 m).
+    const RAND=!!(P.nur&&P.nur.dachdeckung==='rand');
+    if(!RAND){ dachUnter(g,1); dachUnter(g,-1);
+    if(P.hip>0.02){ poly(g,[Gtlf,Gtlb,Rl],'ziegel2'); poly(g,[Gtrb,Gtrf,Rr],'ziegel2'); } }
     // Lattung + Ziegelreihen (Doppeldeckung) auf den Hauptflächen — GETEILTES Gesetz eindeckenFlaeche (gleiche Quelle wie Wing)
     const eZ=eaveZ+ovZ, tanPm=tanP, eaveDropY=eaveY-ovZ*tanP, spanH=ridgeY-hipStartY;
     const xhAt=y=>{ const xh=(spanH<0.02||y<=hipStartY+0.01)?(W/2+ovX):Math.max(rH+0.05,W/2+(rH-W/2)*(y-hipStartY)/spanH); return [-xh,xh]; };  // Ortgang/Walm pro Reihe
@@ -783,10 +788,10 @@
         [1,-1].forEach(sx2=>[1,-1].forEach(sz3=>{ if(zB0-Math.abs(zB1)>0.3) strut(g,sx2*bx2,yB0,sz3*zB0, sx2*bx2,yB1,sz3*zB1, 0.24,TRIMR); })); }
       [1,-1].forEach(sz3=>beam(g,0,eaveY-ovZ*tanP+0.02,sz3*(eaveZ+ovZ+0.09), W+2*ovX+0.2,0.11,0.13,'dunkel'));   // TRAUFRINNEN-GESETZ Hauptdach: beidseitig, dunkel — synergetisch zum Ziegel
     const roofSkip=(x,z)=> (notchCut(x,z)&&notchCut(x, z+Math.sign(z||1)*0.30)) || (DORMER && z<DORMER.zBack+0.05 && z>DORMER.zFront-0.02 && x>DORMER.gx-DORMER.gW/2-0.10 && x<DORMER.gx+DORMER.gW/2+0.10);   // RANDBAND 0.30: Hauptreihen überlappen in den Notch (kein nacktes Unterdach am Stoß) · CONSTRAINT: Skip nur INNERHALB der Gauben-Deckung (z[zFront,zBack], vom Gaubendach verdeckt) — nicht VOR der Front, sonst liegt Unterdach frei   // Ziegel über dem Gauben-Footprint ausgespart
-    eindeckenFlaeche(g,{rY:ridgeY,eaveDropY,eZ,zMid:0,sign:1,xRangeAt:xhAt,trim:true,lift:0.10,skip:roofSkip});
-    eindeckenFlaeche(g,{rY:ridgeY,eaveDropY,eZ,zMid:0,sign:-1,xRangeAt:xhAt,trim:true,lift:0.10,skip:roofSkip});
+    if(!RAND){ eindeckenFlaeche(g,{rY:ridgeY,eaveDropY,eZ,zMid:0,sign:1,xRangeAt:xhAt,trim:true,lift:0.10,skip:roofSkip});
+    eindeckenFlaeche(g,{rY:ridgeY,eaveDropY,eZ,zMid:0,sign:-1,xRangeAt:xhAt,trim:true,lift:0.10,skip:roofSkip}); }
     const th=Math.atan((dY+ovZ*tanP)/eZ), cs=0.205, tw=0.26, tl=0.34, tt=0.03, lift=0.10;             // (für Walmgrat-Deckung unten weiterverwendet)
-    if(P.hip>0.04){ const csH=cs*0.76; const layHip=sx=>{ const span=ridgeY-hipStartY; const nH=Math.max(2,Math.round(span/Math.sin(th)/csH)+2);
+    if(P.hip>0.04&&!RAND){ const csH=cs*0.76; const layHip=sx=>{ const span=ridgeY-hipStartY; const nH=Math.max(2,Math.round(span/Math.sin(th)/csH)+2);
       for(let i=0;i<nH;i++){ const y=hipStartY+0.02+ i*csH*Math.sin(th); if(y>ridgeY+0.05)break;
         const x=sx*(W/2+(rH-W/2)*Math.min(1,(y-hipStartY)/span)), zw=gzTop*Math.max(0,(ridgeY-y))/span;
         const n=Math.ceil(2*zw/tw)+2, ox=(i%2)*tw*0.5;
@@ -1975,7 +1980,7 @@
     // prettier-ignore
     const KULLVOL=0.012;
     // prettier-ignore
-    const DESTNUR={fern:true,kaempfer:false,dachdeckung:false,dachwerk:false,fenster:false,gefache:false,boeden:false,innenwaende:false,treppe:false,moebel:false,geruest:false,zimmermann:false,tueren:false,anbau:false,balkon:false,portikus:false,veranda:false,terrasse:false,arkade:false,giebel:false,dachAlt:false}; // GIEBEL-KOPLANAR-FIX: DESTNUR-Giebelwände lagen EXAKT auf den dachPrisma-Gabeln (GEMESSEN: barock 21.7k / antike 13.5k Z-Fight-Paare auf Traufhöhe) — fern IST der Körper der Giebel   // Stufe 2: 6.7x — Kull-Opfer entstehen gar nicht erst. dachwerk AUS: nackte Sparren über dem dims-Körper lasen sich als Ruine — der Körper trägt das Dach
+    const DESTNUR={fern:true,kaempfer:false,dachdeckung:"rand",dachwerk:false,fenster:false,gefache:false,boeden:false,innenwaende:false,treppe:false,moebel:false,geruest:false,zimmermann:false,tueren:false,anbau:false,balkon:false,portikus:false,veranda:false,terrasse:false,arkade:false,giebel:false,dachAlt:false}; // GIEBEL-KOPLANAR-FIX: DESTNUR-Giebelwände lagen EXAKT auf den dachPrisma-Gabeln (GEMESSEN: barock 21.7k / antike 13.5k Z-Fight-Paare auf Traufhöhe) — fern IST der Körper der Giebel   // Stufe 2: 6.7x — Kull-Opfer entstehen gar nicht erst. dachwerk AUS: nackte Sparren über dem dims-Körper lasen sich als Ruine — der Körper trägt das Dach
     // prettier-ignore
     const TURMNUR={fern:true,gefache:false,riegel:false,streben:false,zimmermann:false,fenster:false,geruest:false,boeden:false,innenwaende:false,treppe:false,moebel:false}; // Turm-Fassade: Paneele x 11 Geschosse waren die Masse
     // prettier-ignore
@@ -2412,11 +2417,12 @@
     // prettier-ignore
     function _mitHaut(x){ if(!x.haut||x.teil.art!=='keil') return x.teil; const t=Object.assign({},x.teil), amX=(t.first==='+z'||t.first==='-z');
   t.c=[t.c[0],t.c[1]+x.haut.lift,t.c[2]]; t.h=amX?[t.h[0]+x.haut.ende,t.h[1],t.h[2]]:[t.h[0],t.h[1],t.h[2]+x.haut.ende]; return t; }
-    // Ihre senkrechten, achsparallelen Stirnflächen (je Achse und Seite, die Ecken in der Wand-Ebene (u, y)) — wo eine vor der
-    // Wand eines Fensters steht, steht das Fern-Fenster vor ihr (`_fernVorn`).
+    // Die senkrechten, achsparallelen Stirnflächen ihres Körper-Keils (je Achse und Seite, die Ecken in der Wand-Ebene (u, y)) — der
+    // Giebel unter der Haut (w15-lod-umriss: er steht in der Wand-Ebene, nie um den Ortgang davor); wo eine vor der Wand eines Fensters
+    // steht, steht das Fern-Fenster vor ihr (`_fernVorn`).
     // prettier-ignore
     function _hautKappen(B){ const aus=[];
-  for(const x of koerperListe(B)){ if(!x.haut||x.teil.art!=='keil') continue; const t=_mitHaut(x);
+  for(const x of koerperListe(B)){ if(!x.haut||x.teil.art!=='keil') continue; const t=x.teil;
     for(const Q of _keilFlaechen(t,false)){ let nx=0,ny=0,nz=0;
       for(let k=0;k<Q.length;k++){ const a=Q[k], b=Q[(k+1)%Q.length]; nx+=(a[1]-b[1])*(a[2]+b[2]); ny+=(a[2]-b[2])*(a[0]+b[0]); nz+=(a[0]-b[0])*(a[1]+b[1]); }
       const l=Math.hypot(nx,ny,nz); if(!(l>1e-9)||Math.abs(ny)>0.02*l) continue;
@@ -2863,7 +2869,8 @@
         return F;
     }
     // Ein Teil als Dreiecke (je Fläche eigene Ecken, harte Kanten): die Fläche zeigt von der Mitte des Teils weg (Newell).
-    function _teilGitter(t, alle, out, sicht) {
+    // `wahl(n)` (die L2, `lod2Koerper`): je Fläche nach ihrer Normalen 0 = fällt, 1 = steht, 2 = steht mit ihrer Rückseite.
+    function _teilGitter(t, alle, out, sicht, wahl) {
         var mitte = t.art === "kapsel" ? [(t.a[0] + t.b[0]) / 2, (t.a[1] + t.b[1]) / 2, (t.a[2] + t.b[2]) / 2] : t.c;
         var F = teilFlaechen(t, alle, sicht);
         for (var i = 0; i < F.length; i++) {
@@ -2893,16 +2900,28 @@
             nx /= l;
             ny /= l;
             nz /= l;
-            if ((cx / Q.length - mitte[0]) * nx + (cy / Q.length - mitte[1]) * ny + (cz / Q.length - mitte[2]) * nz < 0) {
+            var weg = (cx / Q.length - mitte[0]) * nx + (cy / Q.length - mitte[1]) * ny + (cz / Q.length - mitte[2]) * nz;
+            // die Schräge eines Keils geht durch seine Mitte (weg 0): mit `wahl` zeigt sie nach oben — der Wicklungs-Zufall legte die
+            // Schräge des Keils "-z" nach unten (w15-lod-umriss)
+            if (weg < 0 || (wahl && Math.abs(weg) < 1e-9 && ny < 0)) {
                 Q = Q.slice().reverse();
                 nx = -nx;
                 ny = -ny;
                 nz = -nz;
             }
+            var w = wahl ? wahl([nx, ny, nz]) : 1;
+            if (!w) continue;
             var v0 = out.pos.length / 3;
             for (k = 0; k < Q.length; k++) {
                 out.pos.push(Q[k][0], Q[k][1], Q[k][2]);
                 out.nrm.push(nx, ny, nz);
+            }
+            for (k = 1; k < Q.length - 1; k++) out.idx.push(v0, v0 + k, v0 + k + 1);
+            if (w !== 2) continue;
+            v0 = out.pos.length / 3;
+            for (k = Q.length - 1; k >= 0; k--) {
+                out.pos.push(Q[k][0], Q[k][1], Q[k][2]);
+                out.nrm.push(-nx, -ny, -nz);
             }
             for (k = 1; k < Q.length - 1; k++) out.idx.push(v0, v0 + k, v0 + k + 1);
         }
@@ -2947,11 +2966,22 @@
     // UV — `bakeLOD`), in der Lage des Baus (B.q). Die Wand trägt den gemessenen Ton als Vertex-Faktor.
     // prettier-ignore
     function lod2Koerper(B, geoms){
-  const liste=koerperListe(B), alle=liste.map(x=>x.teil), grp2=new THREE.Group();
-  for(const x of liste){ const G={pos:[],nrm:[],idx:[]}; _teilGitter(_mitHaut(x), alle, G, true); if(!G.pos.length) continue;   // DIE DACHHAUT (nur sichtbar, die L2)
+  const liste=koerperListe(B), alle=liste.map(x=>x.teil), grp2=new THREE.Group(), wr=_wandRolle(B.p||{}), wf=_wandFaktor(B, wr);
+  const netz=(G, rolle, faktor)=>{ if(!G.pos.length) return;
     const bg=new THREE.BufferGeometry(); bg.setAttribute('position',new THREE.Float32BufferAttribute(G.pos,3)); bg.setAttribute('normal',new THREE.Float32BufferAttribute(G.nrm,3)); bg.setIndex(G.idx);
-    if(x.faktor){ const n=G.pos.length/3, att=new Float32Array(n*3); for(let i=0;i<n;i++){ att[i*3]=x.faktor[0]; att[i*3+1]=x.faktor[1]; att[i*3+2]=x.faktor[2]; } bg.setAttribute('color',new THREE.Float32BufferAttribute(att,3)); }
-    grp2.add(new THREE.Mesh(bg, M[x.rolle]||M.putz)); }
+    if(faktor){ const n=G.pos.length/3, att=new Float32Array(n*3); for(let i=0;i<n;i++){ att[i*3]=faktor[0]; att[i*3+1]=faktor[1]; att[i*3+2]=faktor[2]; } bg.setAttribute('color',new THREE.Float32BufferAttribute(att,3)); }
+    grp2.add(new THREE.Mesh(bg, M[rolle]||M.putz)); };
+  for(const x of liste){
+    // DIE DACHHAUT IST EINE HAUT (w15-lod-umriss): der Keil mit Haut legt nur seine Schrägen gehoben und um den Ortgang verlängert
+    // (mit ihrer Untersicht, der Überstand von unten); seine Giebel stehen im Körper-Keil in der Wand-Ebene, im Stoff und Ton der Wand
+    // wie der Giebel der L0. Bis hier stand der GANZE Keil gehoben vor der Wand: der Giebel trug den Stoff des Dachs um den Ortgang vor
+    // seiner Wand (alemannisch rot statt Fachwerk, lod.K4/K5).
+    if(x.haut&&x.teil.art==='keil'){ const amX=(x.teil.first==='+z'||x.teil.first==='-z'), H={pos:[],nrm:[],idx:[]}, Gi={pos:[],nrm:[],idx:[]};
+      _teilGitter(_mitHaut(x), alle, H, false, n=>n[1]>0.02?2:0);
+      _teilGitter(x.teil, alle, H, false, n=>n[1]>0.02?1:0);   // der Körper unter der Haut schließt den Raum zwischen Haut und Giebel (die Walm-Seiten)
+      _teilGitter(x.teil, alle, Gi, false, n=>Math.abs(n[1])<=0.02&&Math.abs(amX?n[0]:n[2])>0.98?1:0);
+      netz(H, x.rolle, x.faktor); netz(Gi, wr, wf); continue; }
+    const G={pos:[],nrm:[],idx:[]}; _teilGitter(x.teil, alle, G, true); netz(G, x.rolle, x.faktor); }
   const wrap=bauOrtWrap(B); wrap.add(grp2); wrap.updateMatrixWorld(true);
   bakeLOD(grp2, B.p.col, geoms, 0);
 }
@@ -4190,7 +4220,23 @@
             for(const u of [-0.5,-0.25,0,0.25,0.5]) for(const v of [-0.5,0,0.5]){ const lx=u*V.parkL, lz=v*V.parkB, px=x+tx*lx-tz*lz, pz=z+tz*lx+tx*lz;
               if(zuP(px,pz)||amWeg(px,pz,V.halbM)||nahStrecke(px,pz,einB,V.halbM)||nahStrecke(px,pz,ausB,V.halbM)||nahStrecke(px,pz,reinB,g2)||nahStrecke(px,pz,rausB,g2)) frei2=false; }
             if(frei2) plaetze.push({x, z, beta:b, fahrt:Math.atan2(tx,tz)}); }
-          K.wenden.push({x:cx, z:cz, r:R, frei:Rf, dreh, ain, aout, bahn, ein:einB, aus:ausB, einAb:nR-1-E.k, ausAb:A.k, L:best.L, plaetze}); }
+          // DIE BEGEGNUNG (`engen`): wo die Bahn hinein und die Bahn heraus einander näher kommen als zwei halbe Wagen samt dem
+          // Ausscheren im Bogen — der starre Wagen schert um (parkL/2)²/(2·R) nach AUSSEN, also nur zur Bahn hin, die außerhalb
+          // seines Bogens liegt —, fahren zwei Wagen nicht aneinander vorbei: dort fährt eine Richtung zur Zeit, wie in der Enge
+          // der Strecke; je Haufen solcher Punkte EINE Enge (Mitte, Radius über seine Punkte samt halbem Wagen), vom Abzweig her
+          // gereiht. Bis hier hielt die Wahl nur zwei halbe Wagen (die Kreuzung zählt das Ausscheren, `konflikt`): an der Wende
+          // 908/289 von stadt-voll liefen beide Bahnen 2,42 m nebeneinander, zwei Wagen begegneten sich auf 0,08 m, und der Zug
+          // sah „Wagen in Wagen" (08.11.); keine Lage der Wende 968/347 hält die Begegnung frei.
+          const bogenVon=(P)=>P.map((p,i)=>{ const a=P[i-1], c=P[i+1]; if(!a||!c) return null; const t1=Math.atan2(p.z-a.z,p.x-a.x); let d=Math.atan2(c.z-p.z,c.x-p.x)-t1; d-=Math.round(d/(2*Math.PI))*2*Math.PI;
+            const k=2*d/(Math.hypot(p.x-a.x,p.z-a.z)+Math.hypot(c.x-p.x,c.z-p.z)); if(Math.abs(k)<1e-3) return null; const t=t1+d/2; return {x:p.x-Math.sin(t)/k, z:p.z+Math.cos(t)/k, R:Math.max(1/Math.abs(k),R)}; });
+          const schert=(b,q)=>b&&Math.hypot(q.x-b.x,q.z-b.z)>b.R?(V.parkL/2)**2/(2*b.R):0, bE=bogenVon(einB), bA=bogenVon(ausB), haufen=[];
+          einB.forEach((p,i)=>ausB.forEach((q,j)=>{ if(Math.hypot(p.x-q.x,p.z-q.z)>=g2+schert(bE[i],q)+schert(bA[j],p)) return;
+            const H=haufen.filter(h=>h.P.some(o=>Math.hypot(o.x-p.x,o.z-p.z)<2*rU||Math.hypot(o.x-q.x,o.z-q.z)<2*rU)), h0=H[0]||{P:[], i};
+            if(!H.length) haufen.push(h0); for(const h of H.slice(1)){ h0.P.push(...h.P); h0.i=Math.min(h0.i,h.i); haufen.splice(haufen.indexOf(h),1); }
+            for(const o of [p,q]) if(!h0.P.includes(o)) h0.P.push(o); }));
+          const engen=haufen.sort((a,b)=>a.i-b.i).map(({P})=>{ const c={x:0,z:0}; for(const q of P){ c.x+=q.x/P.length; c.z+=q.z/P.length; }
+            let r=0; for(const q of P) r=Math.max(r,Math.hypot(q.x-c.x,q.z-c.z)); return {x:c.x, z:c.z, r:r+V.halbM}; });
+          K.wenden.push({x:cx, z:cz, r:R, frei:Rf, dreh, ain, aout, bahn, ein:einB, aus:ausB, einAb:nR-1-E.k, ausAb:A.k, L:best.L, plaetze, engen}); }
         K.wenden.sort((p,q)=>p.L-q.L); });
       let laenge=0; for(const s of strecken) if(s.frei) laenge+=s.laenge;
       return {kreuzungen, strecken, laenge}; }

@@ -16,7 +16,7 @@
 //   --selftest: ein erzwungener Kapsel-Satz in 20 m (ohne Träger) — die Linse wird rot und nennt ihn
 //   node scripts/diag-analog-nah.cjs [--selftest]
 "use strict";
-const { statikServer, starteBrowser, hauptLauf, SELBSTTEST } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, hauptLauf, SELBSTTEST, seiteZu } = require("./lib/welt-boot.cjs");
 // DER MESSORT (spec/profiband/haushalt.json `messorte`, S1 W1f): die Linse steht an der Mess-Wiese in IHREM Zustand —
 // Spieler und Dorf-Zug (`dorfZug: false` = `window.__anazhAutoSettlement = false`). Mit laufendem Zug baute das Auto-Dorf
 // je nach Bildrate in der Ruhe ein Haus (haus_griechisch 23,6 m, „Studio-Stufe L2 lädt") — zwei Läufe maßen zwei Welten.
@@ -293,12 +293,7 @@ hauptLauf(async () => {
         },
         { selbst: SELBST, grenzeE: GRENZE_E, ruhe: RUHE, grenzeT: GRENZE_T, ort: ORT.spieler }
     );
-    await browser.close();
-    server.close();
-    if (!res || res.fatal) {
-        console.log("❌ FEHLER:", res ? res.fatal : "?");
-        process.exit(1);
-    }
+    await seiteZu(browser, server, res, null, "fatal");
     console.log(`   Backend: ${res.backend}`);
     if (res.selbst) {
         const mit = urteil(res.z);

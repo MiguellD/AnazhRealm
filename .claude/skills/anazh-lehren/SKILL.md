@@ -55,8 +55,11 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
   Gitter auf das Quad; die Clip-Tiefe geht durch die Projektion der Kamera, WebGL2 trägt [−1, 1]; die Bühne ZEICHNET ihr Ziel leer
   (`B.leere`: r184-WebGL2 leert keine Array-Schicht ≥ 1); heute ohne Blick-Parallaxe, gate:foundry-impostor C7 misst sie), ihre Mips
   deckungstreu mit dem Saum auf JEDER Stufe, auch Stufe 0, in JEDEM Hebungs-Ring (phyto-core `karteSaumSchluessel`/`karteSaumRinge`:
-  das Band der geglätteten Deckung, der Rahmen nie Umriss, die Zelle die der Stufe an der gröberen Texel-Achse, Laub-Lappen, Nadel-Grate,
-  der Kronen-Fuß im Bild des Rings; die GPU-Ablage `KARTE_RECHNER_WGSL` rechnet dasselbe Gesetz, `_karteSaumVon`), fern Glieder-Kapseln · jede Senke zeichnet über ihren Zeichner (`_instanzZeichner`: count 1 über einer InstancedBufferGeometry-Fassade,
+  das Band der geglätteten Deckung, der Rahmen nie Umriss, Band und Zelle im Schritt `saumWeite` an der gröberen Texel-Achse — dem Maß,
+  das der Schirm als Saum liest —, ein Texel mit eigener Deckung immer wählbar, Laub-Lappen, Nadel-Grate,
+  der Kronen-Fuß im Bild des Rings; die GPU-Ablage `KARTE_RECHNER_WGSL` rechnet dasselbe Gesetz, `_karteSaumVon`, ein gewählter Texel
+  ohne eigene Deckung trägt Farbe, Normale, Tiefe und Sonnen-Sicht seines Bands; die Schwelle 0,45 dort, wo der Filter der Welt —
+  bilinear, zwei Stufen gemischt — deckt, was Stufe 0 deckt, gate:streu-wahrheit „am Schirm"), fern Glieder-Kapseln · jede Senke zeichnet über ihren Zeichner (`_instanzZeichner`: count 1 über einer InstancedBufferGeometry-Fassade,
   Matrizen im Storage-Puffer) · Baum = Studio-Karte bis 384 m, EINE Ableitung aus `treeParams` (gen ≥ 5), der gefühlte Baum ihr Skelett
   (`skelettDerGestalt`), EIN Wind-Term über die Naht `_weltNaht`, Blende je Instanz, laut (`_blendeBruch`) · Haus und Tor fern NUR-WURF,
   das Fenster Glas in jeder Stufe, der Tor-Hinterflügel eine Instanz (`_foundryFluegelInstanz`).
@@ -158,7 +161,8 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
     (`_weltBakeErlaubt(d2)`), nie verhungert (Nah-Schwelle die erste Fenster-Hälfte, eine Zähl-Hülle reicht die Argumente durch); die
     Foundry-Schlange `_foundryAuftrag` hält je Faden `FOUNDRY_IM_FLUG` (12) im Flug, die Pumpe (`_foundryPumpe`) wählt nah zuerst, vor dem
     ersten Weltbild den Blick zuerst, nie verhungert; die Freigabe danach ist FIFO (`INGEST_RATE_PER_S` 180/s, ≤ 8 je Bild) —
-    `werkbank takt` zerlegt.
+    `werkbank takt` zerlegt. Die EINE Frist der Bau-Arbeit altert (`_bauFrist(wer)`: der Hungrigste hat Vortritt, gate:takt T13); sie
+    misst CPU-Zeit — GPU-Arbeit fragt die Leine je Stück (`_tickKarteWelt`: jede Karte bei ihrem Beginn), nie die Frist.
 26. **Der Schatten liest, was das Auge sieht:** der r184-Schattenpass (Kaskaden-Kamera) liest nur colorNode.a · map.a · maskShadowNode,
     nie opacityNode — LOD-Masken vom Auge (`uLodAuge`), Ausschnitte in colorNode.a (`gate:foundry-crossfade`); Bundles nach jedem
     castShadow-Wechsel neu. Ein normalNode liest nie `normalWorld` (EINE Variable je Programm), sondern `normalWorldGeometry` ×

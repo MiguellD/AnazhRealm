@@ -13,7 +13,7 @@
 //   Exit 0 = alle Bänder GRÜN (inkl. Selbst-Test: ein Fake-Trace ohne die neuen
 //   Felder MUSS rot melden) · Exit 1 = mindestens ein Band ROT (mit Diagnose).
 "use strict";
-const { statikServer, starteBrowser, hauptLauf, sleep } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, sleep, seiteZu, nullWelt } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 
 // Port der Linse (4463 — neben diag-blick 4461, nie der save-server 4312).
@@ -682,17 +682,11 @@ function erstWandInstall(BUNDLE_FRAMES) {
 }
 
 hauptLauf(async () => {
-    await server.lausche(0);
-    // Echtes WebGPU auf swiftshader — die Schalter je Plattform trägt das EINE Rezept (scripts/lib/software-gpu.cjs).
-    const browser = await starteBrowser({ art: "linse", frist: 600000, zeit: true }); // Band 1 (LongTasks) ist auf swiftshader geeicht
-    const page = await browser.newPage();
-    await page.setViewport({ width: 640, height: 360 });
-    // die Bau-Uhr sitzt vor dem ersten Skript der Seite: jeder Pipeline-Bau des Boots steht in ihr (die Ruhe wartet auch
-    // auf ihn)
-    await page.evaluateOnNewDocument(bauUhrInstall);
-    // KEIN Null-Renderer — die Zähler brauchen den echten WebGPU-Pfad (Tap + Pipelines).
+    // Echtes WebGPU auf swiftshader — die Schalter je Plattform trägt das EINE Rezept (scripts/lib/software-gpu.cjs); Band 1
+    // (LongTasks) ist auf swiftshader geeicht. Die Bau-Uhr sitzt vor dem ersten Skript der Seite: jeder Pipeline-Bau des Boots steht
+    // in ihr (die Ruhe wartet auch auf ihn). KEIN Null-Renderer — die Zähler brauchen den echten WebGPU-Pfad (Tap + Pipelines).
     // Software-Holz (Lehre 26): auf „voll" kostet auf swiftshader ein Compile 50–70 s; die Linse prüft Zähler und Gesetz.
-    await server.zeige(page, 60000, "index.html?holz=kienspan");
+    const { browser, page } = await nullWelt(server, { art: "linse", bild: true, frist: 600000, zeit: true, fenster: { width: 640, height: 360 }, vor: bauUhrInstall }, 60000, "index.html?holz=kienspan"); // prettier-ignore
 
     const out = await page.evaluate(async (laufzeitMs) => {
         const res = {};
@@ -912,14 +906,7 @@ hauptLauf(async () => {
         });
     }
 
-    await browser.close();
-    server.close();
-
-    console.log("\n===== HITCH-TELEMETRIE-LINSE (das-feld-zeichnet §5.1) =====");
-    if (!out || out.fatal) {
-        console.log("FATAL:", out ? out.fatal : "?");
-        process.exit(1);
-    }
+    await seiteZu(browser, server, out, "\n===== HITCH-TELEMETRIE-LINSE (das-feld-zeichnet §5.1) =====", "fatal");
     console.log(
         `Renderer: ${out.rendererArt} · frames=${out.frames} (Δ Laufzeit ${out.framesDelta})` +
             ` · performance.memory=${out.gc.memoryApi ? "da" : "FEHLT"}`
