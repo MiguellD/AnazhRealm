@@ -1461,7 +1461,7 @@
     const hTop=deckY+1.05, B=(c,y,w,h,t2)=>hor?beam(g,c,y,fix,w,h,t2,role):beam(g,fix,y,c,t2,h,w,role);
     B((a0+a1)/2,hTop-0.035,len,0.07,0.09); B((a0+a1)/2,deckY+0.10,len,0.06,0.07);                                    // Handlauf (OK 1.05) + Fußriegel
     const nP=Math.max(1,Math.round(len/1.5)); for(let i=0;i<=nP;i++)B(a0+len*i/nP,(deckY+hTop)/2,0.07,hTop-deckY,0.07);   // Pfosten
-    const _gf=P.flaechig?2:1, nS=Math.max(2,Math.ceil(len/(0.16*_gf))); if(!(P.nur&&P.nur.fern)) for(let i=1;i<nS;i++)B(a0+len*i/nS,(deckY+hTop)/2,0.045*_gf,hTop-deckY-0.16,0.045*_gf); }   // die Stufen des Stabs: die Flächen-Stufe im Großformat (halb so viele, doppelt so breit — derselbe Anteil Durchblick), die ferne Stufe ohne Stäbe (4,5 cm unter 1,5 Pixel: sie flimmerten nur)   // Stäbe: Pitch ≤0.16 → licht ≤0.115
+    const _gf=P.nur&&P.nur.fern?6:P.flaechig?2:1, nS=Math.max(2,Math.ceil(len/(0.16*_gf))); for(let i=1;i<nS;i++)B(a0+len*i/nS,(deckY+hTop)/2,0.045*_gf,hTop-deckY-0.16,0.045*_gf); }   // die Stufen des Stabs: die Flächen-Stufe im Großformat (halb so viele, doppelt so breit — derselbe Anteil Durchblick), die ferne Stufe je sechster sechsfach breit (w25-lod-pop-2: ohne Stäbe lag die Pueblo-Brüstung 1,9 px neben der L0; 27 cm Stab, derselbe Anteil Durchblick)   // Stäbe: Pitch ≤0.16 → licht ≤0.115
   function bruestungRect(g,xa,xb,za,zb,deckY,role){ bruestungSeg(g,'z',xa,xb,za,za,deckY,role); bruestungSeg(g,'z',xa,xb,zb,zb,deckY,role); bruestungSeg(g,'x',xa,xa,za,zb,deckY,role); bruestungSeg(g,'x',xb,xb,za,zb,deckY,role); }
   // MERLON-GESETZ (Burgenbau) — Brustwehr mannshoch (Sims ≥1.0 über Deck, man fällt nicht durchs Crenel), Merlon:Crenel ≈ 3:2 — GETEILT von Ringmauer UND Turm
   function merlonSeg(g,axis,x0,x1,z0,z1,deckY,role,dpt){ const hor=(axis==='z'), a0=hor?x0:z0, a1=hor?x1:z1, fix=hor?z0:x0, len=a1-a0; if(len<0.4)return; dpt=dpt||0.42;
@@ -1982,7 +1982,8 @@
     // DER UMRISS DER FERNEN STUFE (w25-lod-pop-2, lod.K5): Portikus und Veranda stehen in der L2 — ohne sie lag ihr Umriss 3,1 px (georgian)
     // und 4,5 px (viktorianisch) neben der L0 am Haushalt 26 m, mit ihnen 0,58 / 0,39 px; die L2 hält ihre Zeile (höchstens 7 104 Dreiecke am
     // Regler-Rand, L2/L0 ≤ 0,084). Die Terrasse des Pueblo steht fern als Körper mit Brüstung (`terrasse`, `_fT`): voll gebaut riss sie die Zeile (10 778 bei
-    // doppel=1), so 6 504 höchstens; Pueblo 12,76 → 1,90 px (es fehlen die Stäbe der Brüstung und die Vigas).
+    // doppel=1), so 6 504 höchstens; Pueblo 12,76 → 1,34 px (die Stäbe der fernen Brüstung je sechster,
+    // sechsfach breit, `bruestungSeg`; es fehlen die Vigas).
     // prettier-ignore
     const DESTNUR={fern:true,kaempfer:false,dachdeckung:"rand",dachwerk:false,fenster:false,gefache:false,boeden:false,innenwaende:false,treppe:false,moebel:false,geruest:false,zimmermann:false,tueren:false,anbau:false,balkon:false,portikus:true,veranda:true,terrasse:true,arkade:false,giebel:false,dachAlt:false}; // GIEBEL-KOPLANAR-FIX: DESTNUR-Giebelwände lagen EXAKT auf den dachPrisma-Gabeln (GEMESSEN: barock 21.7k / antike 13.5k Z-Fight-Paare auf Traufhöhe) — fern IST der Körper der Giebel   // Stufe 2: 6.7x — Kull-Opfer entstehen gar nicht erst. dachwerk AUS: nackte Sparren über dem dims-Körper lasen sich als Ruine — der Körper trägt das Dach
     // DER BEFUND DER TURM-STUFE 1 (w25-lod-pop-2, lod.K5): die Hochhaus-L1 steht am Haushalt 12 m 9,67 px neben der L0 — der Körper der
