@@ -18,3 +18,5 @@ w16-wald-innen Vorfahr von w20-wald-kosten 8e4c2c79, kommt mit heim2-w20-wald-ko
 claude/dazzling-clarke-o52ivq Vorfahr von w21-laub-jahr-fern 4cb80591 (heimholer 16:40)
 w18-grund-post Inhalt steckt in main (merge-tree = main, heimholer 16:40)
 mess-z274 Inhalt steckt in main (merge-tree = main, heimholer 16:40)
+w15-strom-takt mit w15-strom-takt-2 in main gelandet (V18.546.207), 765/845 eigene Zeilen wortgleich (heimholer 17:05)
+w19-fahrt-ziel als f8463cc + w19-fahrt-ziel-2 in main (V18.546.212), 17/17 Zeilen wortgleich (heimholer 17:05)
