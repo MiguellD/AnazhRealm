@@ -1419,6 +1419,11 @@ class AnazhRealm_siedlung_verkehr {
             const [von, bis] = [Math.max(F.i, c.i - V.eckeStueck), Math.min(j1, c.i + V.eckeStueck + 1)];
             const ry = Number.isFinite(o._rideYaw) ? o._rideYaw : 0;
             const [fx, fzz] = [Math.sin(ry), Math.cos(ry)];
+            // WER STEHT, kommt ihm weder entgegen noch fährt er neben ihm: an ihm vorbei genügt der Raum der Begegnung. Bis
+            // heim2-w13-verkehr-heil verlangte er den Seitenraum eines Fahrenden (`seitM`) auch vor dem, der an der Haltelinie
+            // wartete: der Halter der Kreuzung am Markt, der um den Spieler ausscherte, sah die Nase von Wagen 19 am Arm daneben
+            // 1,61 m neben seiner Linie, 19 wartete auf ihn, er auf 19 (VK 10 und 23 Uhr: ab Minute 4–9 fuhr keiner, 0 m)
+            const ruht = !(O.zustand === "faehrt" && o._fahr && !(o._fahr.speed < V.ruheMs));
             let a = null;
             let lt = 0;
             for (let ek = 0; ek < 5; ek++) {
@@ -1432,7 +1437,7 @@ class AnazhRealm_siedlung_verkehr {
                 if (!q || q.s <= F.s || (a && q.s >= a.s)) continue;
                 const b = F.pts[Math.min(F.pts.length - 1, q.i + 1)];
                 const t = Math.atan2(b.x - F.pts[q.i].x, b.z - F.pts[q.i].z);
-                if (q.quer > W.hw + rundAn(q.i) + (Math.cos(ry - t) < -0.5 ? V.begegnungM : V.seitM)) continue;
+                if (q.quer > W.hw + rundAn(q.i) + (ruht || Math.cos(ry - t) < -0.5 ? V.begegnungM : V.seitM)) continue;
                 [a, lt] = [q, t];
             }
             if (!a) continue;
