@@ -2728,6 +2728,13 @@ class AnazhRealm_gelaende_boden {
     // steht er sofort am Ziel. Der Strom ruft ihn je Takt (prio 0). Bis hierher wuchs er im Aktuator des PID: über dem Boden
     // nur bei anhaltendem Kopfraum (frameMs < 13 ms, an 60 Hz nie) und gar nicht bei ruhendem Regler (`__weltStehtNach`) —
     // die Mess-Wiese stand auf der Radeon mit Ring 2 von 4 und 89–95 Streu-Kontakten (gelaende.K5#2).
+    // DER RING DES ERSTEN BILDS STEHT GANZ, BEVOR DER NÄCHSTE KOMMT (w22-ankunft-ganz, ankunft.K2): nach dem Bild wächst er erst,
+    // wenn der Nachlauf endet (`_nachlaufTakt`: rundum steht, was das Bild im Blick verlangte, oder sein Deckel) — „steht“ heißt
+    // für den Ring des Bilds sein Wald, seine Bauten und seine Streu rundum, nie nur sein Boden. Bis hier wuchs er im ersten Takt
+    // nach dem Bild auf Schale 3: ihre Chunks im Blick landeten 0,6 s später, die Maske regte sich (der Horizont wird geteilt),
+    // ihr Laub wuchs im Radius des Bilds (110 und 126 m: 2 Wald-Böden werden bepflanzt, bis +2,4 s) — mitten in der Kontrolle
+    // (Radeon kalt an 34e04548 und e475c6b4 ROT, an cbe910ed dasselbe Fenster, nur verfehlt). Der Laub-Radius folgt dem Ring
+    // (`_nexusPerfActuate`: die Kappe an `_activeRingRadius`) und steht mit ihm.
     _ringWaechst() {
         const st = this.state;
         const ziel = Math.max(1, Math.min(12, st.chunkRingRadius || 4));
@@ -2736,6 +2743,7 @@ class AnazhRealm_gelaende_boden {
         else if (this._ladeTakt()) ring = Math.max(ring, Math.min(ziel, AnazhRealm.RING_EXIST_FLOOR));
         else if (
             ring < ziel &&
+            st._nachlauf == null &&
             (this._builtRingRadius() ?? -1) >= ring &&
             !(st.voxelMeshPending && st.voxelMeshPending.size) &&
             !(st.pendingGrass && st.pendingGrass.size)
