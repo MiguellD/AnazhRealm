@@ -1,5 +1,7 @@
 ## 08.11. 19:42 — w24-strauch-saum: Ton der Kronen gemessen — nicht die Farbe, die Deckung über der Wahrheit; geschnitten, Proben laufen (Zwischenstand, BEREIT folgt mit den Zahlen)
 
+## 08.11. 19:56 — GPU-PROBE 9ed32a3d auf radeon-890m: GRÜN in 453 s (gate:laub-kante GRÜN 77 s · bild:wiese@0.5 GRÜN 42 s) → probe-post/w24-strauch-saum/9ed32a3d.md
+
 ## 08.11. 19:55 — GPU-PROBE c65c80d5 auf omen-gtx1060: GRÜN in 229 s (gate:laub-kante GRÜN 87 s · bild:wiese@0.5 GRÜN 49 s) → probe-post/w24-strauch-saum/c65c80d5.md
 
 ## 08.11. 19:48 — GPU-PROBE 26c586c8 auf radeon-890m: GRÜN in 467 s (gate:laub-kante GRÜN 77 s · bild:wiese@0.5 GRÜN 59 s) → probe-post/w24-strauch-saum/26c586c8.md
