@@ -3844,6 +3844,11 @@
     //                 1,6 franste Stufe 0 auf 0,81 — zu zahm; Radeon 9f4459c3 mit 8 / 6 / 2,4 / 0,05: birke 0,2246, strauch
     //                 0,3317; im CPU-Modell der Tafel-Abstände trägt 6 / 8 die Birke von 0,38 auf 0,22, den Strauch nah auf 0,18)
     //   saumMin       die geglättete Deckung, ab der ein Texel im Band wählbar ist (kein Fleck, der ohne Krone schwebt)
+    //   saumWeite     der Schritt des Saums in Texeln der gröberen Achse (`saumSchritt`): Band UND Zelle messen in ihm. Die Welt
+    //                 liest jede verkleinerte Stufe mit einem Texel der gröberen Achse je Pixel (anisotrop), ihr Laub-Versatz
+    //                 und die zeitliche Auflösung decken drei Pixel, die Linse glättet mit σ 2 px — ein Saum im Maß EINES
+    //                 Texels (Zelle 6, Band σ 2) stand am Schirm als 6-px-Welle und las gerade (w24-strauch-saum: der
+    //                 Strauch der Tafel steht 17–25 px hoch, verkleinert auf Stufe 1–3, Bäume vergrößert auf Stufe 0)
     // DIE TAFEL-POSE mit 2,4 / 6 / 8 / 0,05 (laub-kante je Art, main ef667956 → c61e3a9b, Radeon 890M, je zwei Läufe ±0,0007):
     // birke 0,2721 → 0,1889 · eiche 0,2044 → 0,1553 · fichte 0,2122 → 0,1575 · tanne 0,2232 → 0,1770 · strauch 0,3911 → 0,3536
     // (GTX 1060 vorher: birke 0,3324 · eiche 0,2373 · tanne 0,2226 · fichte 0,2122 · strauch 0,4076). Der Strauch steht als
@@ -3857,9 +3862,10 @@
         glaetteBis: 2,
         lichtTeiler: 4,
         saum: 2.4,
-        saumZelle: 6,
+        saumZelle: 4,
         saumBand: 8,
         saumMin: 0.05,
+        saumWeite: 2,
     };
     // linear (0..1) → sRGB-Byte, und die Tabelle der 256 linearen Eingangs-Bytes
     function linZuSrgb8(x) {
@@ -3956,7 +3962,8 @@
     // Gewählt werden je Ansicht die M größten Schlüssel (M wie Stufe 0 deckt, deckungstreu); 0 heißt nie.
     // Der Schritt je Achse in feinen Texeln für EIN Texel der gröberen Achse (seite = Breite durch Höhe des Texels)
     function saumSchritt(seite) {
-        return [Math.max(1 / seite, 1), Math.max(seite, 1)];
+        const w = KARTEN_GESETZ.saumWeite;
+        return [w * Math.max(1 / seite, 1), w * Math.max(seite, 1)];
     }
     function karteSaumBand(c, w, h, schritt) {
         const n = 2 * KARTEN_GESETZ.saumBand,

@@ -1219,7 +1219,7 @@ class AnazhRealm_stoff_karte {
     // DER SAUM DER KARTE JE HEBUNGS-RING (w4-laub-saum, phyto-core `karteSaumRinge`): Laub oder Nadel aus dem Gesetz der Art
     // (`treeParams` der Nah-Stufe, mit dem Samen der Gestalt — dieselbe Ableitung, aus der ihr Körper wächst), im Bild JEDES Rings
     // das Seitenmaß seiner Texel und sein Kronen-Fuß aus der Laub-Hülle der L1 (ihr tiefster Punkt, ihr Radius um die
-    // Stammachse). [Seitenmaß je Ring, Fuß je Ring, nadel, Stärke, Zelle, Schwelle des Bands, Gänge des Bands] für die
+    // Stammachse). [Seitenmaß je Ring, Fuß je Ring, nadel, Stärke, Zelle, Schwelle des Bands, Gänge und Weite des Bands] für die
     // GPU-Ablage (`saumK`, phyto-core `karteSaumSchluessel`); ohne Krone (keine Pflanzen-Art, kein Laub) Fuß −1: jede Zeile
     // ist Stamm. Bis w23-karte-l2 trug sie die Zelle der Blattgröße statt des Seitenmaßes.
     _karteSaumVon(at, z, fr, laub) {
@@ -1242,7 +1242,7 @@ class AnazhRealm_stoff_karte {
                   )
                 : null;
         const G = pc.KARTEN_GESETZ;
-        const aus = Float32Array.of(1, 1, 1, 1, -1, -1, -1, -1, 0, G.saum, G.saumZelle, G.saumMin, G.saumBand, 0, 0, 0);
+        const aus = Float32Array.of(1, 1, 1, 1, -1, -1, -1, -1, 0, G.saum, G.saumZelle, G.saumMin, G.saumBand, G.saumWeite, 0, 0);
         if (!s) return aus;
         s.ringe.forEach((r, i) => ((aus[i] = r.seite), (aus[4 + i] = r.fuss)));
         aus[8] = s.nadel ? 1 : 0;
@@ -1790,8 +1790,8 @@ fn glaette(@builtin(global_invocation_id) g: vec3<u32>) {
 
 // DER SAUM DER KARTE AUF JEDER STUFE (phyto-core karteSaumSchluessel, karteSaumMuster — dieselben Zahlen, _karteSaumVon): je
 // Ring das Seitenmaß seiner Texel (Breite durch Höhe im Rahmen) und sein Kronen-Fuß (Stufe-0-Zeile der Ansicht; −1: keine Krone,
-// jede Zeile ist Stamm); art: Nadel (1) oder Laub (0), Stärke, Zelle in Texeln der Stufe, Schwelle des Bands; band.x die Gänge
-// des binomialen Kerns
+// jede Zeile ist Stamm); art: Nadel (1) oder Laub (0), Stärke, Zelle in Schritten der Stufe, Schwelle des Bands; band.x die
+// Gänge des binomialen Kerns, band.y die Weite des Schritts
 struct Saum { seite: vec4<f32>, fuss: vec4<f32>, art: vec4<f32>, band: vec4<f32> };
 @group(0) @binding(11) var<uniform> saum: Saum;
 fn saumHash(ix: i32, iy: i32, s: u32) -> f32 {
@@ -1824,11 +1824,11 @@ fn farbSumme(x: u32, y: u32) -> vec4<f32> {
     }
     return summe[p.ziel + y * p.w + x];
 }
-// Der Schritt je Achse in feinen Texeln für EIN Texel der gröberen Achse (phyto-core saumSchritt): Band und Zelle messen in der
-// Welt — beim Strauch (das Texel 3,5-mal so breit wie hoch) schritten sie sonst in der feinen Achse
+// Der Schritt je Achse in feinen Texeln für band.y Texel der gröberen Achse (phyto-core saumSchritt, saumWeite): Band und Zelle
+// messen in der Welt und im Maß, das der Schirm als Saum liest
 fn schritt(ri: u32) -> vec2<f32> {
     let s = saum.seite[ri];
-    return vec2<f32>(max(1.0 / s, 1.0), max(s, 1.0));
+    return saum.band.y * vec2<f32>(max(1.0 / s, 1.0), max(s, 1.0));
 }
 // DAS BAND: die Summe im binomialen Kern (2n + 1)² um (x, y) in seiner Ansicht, je Achse im Schritt st (der Rand leer — der
 // Rahmen ist nie der Umriss), durch die Summe des ganzen Kerns (farbSumme gewogen: .rgb / .a die Farbe der deckenden, .a / fuss
