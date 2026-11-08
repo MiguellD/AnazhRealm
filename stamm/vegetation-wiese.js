@@ -3066,6 +3066,7 @@ class AnazhRealm_vegetation_wiese {
         let bodenX = NaN;
         let bodenZ = NaN;
         let bodenY = null;
+        const raender = this._ortRaender(); // die Ränder der Siedlungen (die Waldgrenze am Siedlungsrand, phyto-core `forestOrt`)
         const out =
             core && typeof core.planForestCell === "function"
                 ? core.planForestCell(cx, cz, seedInt, {
@@ -3073,6 +3074,9 @@ class AnazhRealm_vegetation_wiese {
                       baseH: (this.state && this.state.terrainBaseHeight) || 0,
                       extras: this._forestExtraSpecies(),
                       fbm: (px, pz) => this._forestFbm(px, pz),
+                      stand: (px, pz) => this._placementStandAt(px, pz, "forest"), // Lichtung und Schluss (phyto-core)
+                      // die Waldgrenze (phyto-core `forestWaldgrenze`): der Schnee des Sommers am Boden, Versatz 0 (die Sommer-Mitte)
+                      schnee: (px, pz, y) => globalThis.__gelaendeCore.schnee(this._gelaende(), y, px, pz, 0),
                       surfaceYAt: (x, z) => {
                           bodenX = x;
                           bodenZ = z;
@@ -3092,6 +3096,8 @@ class AnazhRealm_vegetation_wiese {
                       feuchteAt: (x, z, sy) => (typeof this._feuchteAt === "function" ? this._feuchteAt(x, z, sy) : 0),
                       // der Ort vor dem Wald (K10): keine Krone über dem Grund eines Orts (`_ortFrei`, der Erdbau)
                       ortFrei: (x, z, T) => this._ortFrei(x, z, T),
+                      // der Saum am Siedlungsrand: der Abstand jenseits des nächsten Rands (`_ortRaender`, wie der Faden `waldOrt`)
+                      ort: (x, z) => core.forestOrtAbstand(raender, x, z),
                   })
                 : [];
         if (vorlaeufig) out.vorlaeufig = true;
@@ -3381,16 +3387,17 @@ class AnazhRealm_vegetation_wiese {
         return (gx, gz) => F.some((f) => gx >= f[1] && gx <= f[2] && gz >= f[3] && gz <= f[4]);
     }
 
-    // Die gepackten Darts des Fadens (je Zelle `anzahl`, je Dart 11 Werte, die Arten als Tafel) → je Zelle die Darts, wie
-    // `_forestCellDarts` sie gibt (gate:worker-dichte Teil W vergleicht sie Wort für Wort).
+    // Die gepackten Darts des Fadens (je Zelle `anzahl`, je Dart 13 Werte, die Arten als Tafel) → je Zelle die Darts, wie
+    // `_forestCellDarts` sie gibt (gate:worker-dichte Teil W vergleicht sie Wort für Wort); der zwölfte der Schluss des Bestands
+    // (phyto-core `forestSchluss`), der dreizehnte die Schicht (`forestSchicht`: 1 das Dach, sonst `alter` des Unterstands).
     _waldDartsEntpacken(r, zellenZahl) {
         const w = r.werte;
         const alle = [];
         let j = 0;
         for (let i = 0; i < zellenZahl; i++) {
             const out = [];
-            for (let m = r.anzahl[i]; m > 0; m--, j += 11)
-                out.push({
+            for (let m = r.anzahl[i]; m > 0; m--, j += 13) {
+                const d = {
                     x: w[j],
                     z: w[j + 1],
                     sp: r.arten[w[j + 2]],
@@ -3402,7 +3409,11 @@ class AnazhRealm_vegetation_wiese {
                     rotY: w[j + 8],
                     seed: w[j + 9],
                     surfaceY: Number.isNaN(w[j + 10]) ? null : w[j + 10],
-                });
+                    schluss: w[j + 11],
+                };
+                if (w[j + 12] < 1) d.alter = w[j + 12];
+                out.push(d);
+            }
             alle.push(out);
         }
         return alle;
@@ -3541,6 +3552,7 @@ AnazhRealm.FOREST = Object.freeze({
     slopeLo: 0.35, // ≤ so flach (|∇h|) = voller Grund; die AnazhRealm-Boden-Tauglichkeit
     slopeHi: 1.25, // ab so steil = kahle Felswand (kein Baum)
     dryScale: 40, // Höhen-Trockenheit relH/dryScale (Vorlage e/18 → AnazhRealm-Höhen-Skala)
+    standFreq: AnazhRealm.PLACEMENT_DENSITY.forestFreq, // der Stand des Bestands im Faden (`_placementStandAt`, phyto-core bestand)
     // DIE EINE Kronen-Tafel des Pflanz-Gesetzes (T2): phyto-core FOREST_PACK.crown (die gewachsene Krone je Art) unter den
     // Wirts-Namen (FOREST_SPECIES.labToHost, eine Auto-Art des Buchs unter dem Präfix ihrer Art) — kein zweiter Wert hier.
     crown: (() => {
@@ -3568,12 +3580,13 @@ AnazhRealm.WIESE_ACHT = Object.freeze(Array.from({ length: 16 }, (_, k) => (k & 
 AnazhRealm.STAND_RAND_M = 0.25;
 // DER WALD PLANT IM TAKT (K69, `_waldPlanSteht` · `_tickWaldPlan`): die Gestalt eines Baums liest den Bestand der Wald-Zellen
 // bis ±`reich` um seine Zelle (der Freistand ±4); der Bestand jeder Zelle trägt sein Urteil (die geborenen Darts der Zellen
-// ±`urteil`, die Reihe des Kerns `FOREST_URTEIL_REIHE` — die Kacheln dieser Nachbarn stehen vor jeder Bestellung). Ohne
+// ±`urteil` = phyto-core `FOREST_URTEIL_REICH`: das Dach ±2 der Reihe `FOREST_URTEIL_REIHE`, der Schirm des Unterstands ±1
+// darüber, w16-wald-innen — die Kacheln dieser Nachbarn stehen vor jeder Bestellung). Ohne
 // Wald-Faden plant der Takt frische Zellen höchstens `ms` lang, mit ihm reist jede bestellte Zelle sofort, in Aufträgen von
 // `faden` Zellen, alle im Flug (`_waldFadenSchicken`). Bis w4-b-pflanzen las die Gestalt ±6 (das Urteil im Haupt-Faden).
 AnazhRealm.WALD_PLAN = Object.freeze({
     reich: 4,
-    urteil: Math.max(...globalThis.__phytoCore.FOREST_URTEIL_REIHE.map(Math.abs)),
+    urteil: globalThis.__phytoCore.FOREST_URTEIL_REICH,
     ms: 3,
     faden: 64,
     zellen: 8192,

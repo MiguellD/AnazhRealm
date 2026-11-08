@@ -260,6 +260,9 @@ class AnazhRealm_gelaende_chunks {
             erbgut: this._erbgut(),
             // DER ERDBAU DER ORTE (K10): die Splat-Liste in der Reihenfolge der Orte — der Worker legt sie in die Normalform
             erdbau: this._erdbauRoh(),
+            // DIE RÄNDER DER SIEDLUNGEN (w20-wald-kosten, `_ortRaender`): der Wald-Faden pflanzt den Saum am Siedlungsrand
+            // (phyto-core `forestOrt`) mit derselben Liste wie der Wirt, der Fern-Faden die Kronen-Deckung
+            orte: this._ortRaender(),
             // DIE BODEN-PALETTE reist mit: der Worker färbt mit DENSELBEN linearen Zahlen (`attachFieldColors`),
             // kein hartkodierter Spiegel der Farben.
             bodenPalette: AnazhRealm.BODEN_FARBE,

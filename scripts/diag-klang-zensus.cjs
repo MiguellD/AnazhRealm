@@ -1279,7 +1279,10 @@ async function koerperSeite(m, mut) {
             delete r._loopPhysicsSync;
         }
         if (!mut || mut === "doppler") {
-            const e = await wagen(m.x, m.z + 30);
+            // DIE VORBEIFAHRT AUF DER WIESE (w20-wald-kosten, z289): die Bahn läuft durch den Ring des Messorts (sein Gesetz hält ihn
+            // offen, Kronen-Deckung ≤ 0,12, der Blick frei 15 m) — bis hier begann sie 30 m vor ihm, jenseits des Rings, und eine
+            // Kiefer des Bestands 9,5 m in der Bahn hielt den GT an (alle Vorbeifahrten stumm)
+            const e = await wagen(m.x - 12, m.z);
             const G = r._fahrStossSatz(e);
             r._fahrWagenStoss(e, G, 0, 0); // der Fahr-Zustand des Geparkten (seine Achse), ohne Stoß
             const [fz, T0] = [e._fahr, 48000 / K.FAHRT.abrollen.grundHz];
