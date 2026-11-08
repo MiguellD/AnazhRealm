@@ -1,0 +1,107 @@
+{
+ "sha": "6ea34a4204b0e660b36036391ecd230cde7e0108",
+ "geraet": "radeon",
+ "zeit": "2026-11-07T17:46:23.761Z",
+ "host": "MiguellD",
+ "je": {
+  "lod.K2#1": {
+   "gruen": false,
+   "zahl": "Gehen 4 m/s: 0.086 % Pop-Pixel je Sekunde (1784 px, Soll ≤ 0,05 %), je Schritt 12/12/92/48/23/37/1512/48 (* = Stufen-Wechsel), Laub 216–216 m, perfTarget 17 ms, [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.38,
+   "grund": "ROT: Gehen 4 m/s: 0.086 % Pop-Pixel je Sekunde (1784 px, Soll ≤ 0,05 %), je Schritt 12/12/92/48/23/37/1512/48 (* = Stufen-Wechsel), Laub 216–216 m, perfTarget 17 ms, [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 22.8,
+   "zeit": "2026-11-07T17:45:38.014Z",
+   "abdruck": "ea4f4eb7a4ba",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "lod.K4#1": {
+   "gruen": true,
+   "zahl": "Luma-Sprung 0.42 % (Soll < 2 %) über 10433 px, die der Wechsel ändert (Auge 4 m; die Klassen zusammen), zweiton 0/0, Uhr 0.5 · Ort [-841,-861] · 0.99 s · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.16,
+   "gpu": "amd/rdna-3",
+   "s": 9.5,
+   "zeit": "2026-11-07T17:46:23.761Z",
+   "abdruck": "f502399017b8",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "ungemessen": {
+  "lod.K1#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: auge · Exit 0)",
+   "exit": 1,
+   "minuten": 0.76,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: auge · Exit 0)",
+   "s": 45.8,
+   "zeit": "2026-11-07T17:44:34.603Z",
+   "abdruck": "b5a598b5ca66",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-07T17:43:53.398Z",
+  "port": 7804,
+  "warten": 0.13,
+  "bootS": 7.4,
+  "grundstellungS": [
+   3.2
+  ],
+  "proben": 3,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "lod.K1#1",
+    "s": 21.6,
+    "takte": 721,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": "wiese",
+    "vor": "lod.K2#1",
+    "s": 14.4,
+    "takte": 680,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": "dorf",
+    "vor": "lod.K4#1",
+    "s": 22.8,
+    "takte": 1188,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 4,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 239,
+   "frameP95": 58.56,
+   "taktP95": 36.44,
+   "vramMax": 130.8,
+   "seiten": 2,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 145,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 152.3,
+  "minuten": 2.78
+ }
+}

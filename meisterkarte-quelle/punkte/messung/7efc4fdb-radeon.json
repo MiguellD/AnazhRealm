@@ -1,0 +1,60 @@
+{
+ "sha": "7efc4fdb5b46f286aaefdace2f6326a9b72a4ef3",
+ "geraet": "radeon",
+ "zeit": "2026-11-07T17:33:12.451Z",
+ "host": "MiguellD",
+ "je": {
+  "vegetation.K1#1": {
+   "gruen": false,
+   "zahl": "wiese-third-0.5--wiese: LAI 2–5 2.44 · 5–10 2.23 · 10–20 1.95 · 20–40 1.09 (Saum springt > 15 %), Farbton 2–5 m 13.51°, nahWiese 4 Befehle / 52158 Dreiecke",
+   "exit": 0,
+   "minuten": 0.36,
+   "grund": "ROT: wiese-third-0.5--wiese: LAI 2–5 2.44 · 5–10 2.23 · 10–20 1.95 · 20–40 1.09 (Saum springt > 15 %), Farbton 2–5 m 13.51°, nahWiese 4 Befehle / 52158 Dreiecke",
+   "gpu": "amd/rdna-3",
+   "s": 21.6,
+   "zeit": "2026-11-07T17:33:12.451Z",
+   "abdruck": "b938aad7bc2d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-07T17:32:30.420Z",
+  "port": 7804,
+  "warten": 0.13,
+  "bootS": 7.9,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "vegetation.K1#1",
+    "s": 22.7,
+    "takte": 630,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 42,
+   "luecken": 1,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+  },
+  "fahrtS": 56.1,
+  "minuten": 1.12
+ }
+}

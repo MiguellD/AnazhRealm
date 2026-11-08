@@ -1,0 +1,93 @@
+{
+ "sha": "4bf1fb4a11d56f7ac65aa40751541e59be31ed24",
+ "geraet": "radeon",
+ "zeit": "2026-11-07T18:07:23.419Z",
+ "host": "MiguellD",
+ "je": {
+  "lod.K2#1": {
+   "gruen": true,
+   "zahl": "Gehen 4 m/s: 0.0494 % Pop-Pixel je Sekunde (1024 px, Soll ≤ 0,05 %), je Schritt 14*/13*/113*/22*/35*/32*/734*/61 (* = Stufen-Wechsel), Laub 216–216 m, perfTarget 17 ms, [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.29,
+   "gpu": "amd/rdna-3",
+   "s": 17.6,
+   "zeit": "2026-11-07T18:04:28.419Z",
+   "abdruck": "c3b2c498b360",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "vegetation.K2#1": {
+   "gruen": true,
+   "zahl": "Kamm 213.8 über Rausch-Boden 0.000 (×213.8), Tal 32.3 — Kamm/Tal 6.63 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 54.0 % in 0–15 m, Δt 0.25 s",
+   "exit": 0,
+   "minuten": 0.28,
+   "gpu": "amd/rdna-3",
+   "s": 17,
+   "zeit": "2026-11-07T18:06:48.625Z",
+   "abdruck": "e70ca47e767e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "lod.K4#1": {
+   "gruen": true,
+   "zahl": "Luma-Sprung 0.43 % (Soll < 2 %) über 10445 px, die der Wechsel ändert (Auge 4 m; die Klassen zusammen), zweiton 0/0, Uhr 0.5 · Ort [-841,-861] · 0.68 s · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.14,
+   "gpu": "amd/rdna-3",
+   "s": 8.3,
+   "zeit": "2026-11-07T18:07:23.419Z",
+   "abdruck": "f502399017b8",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-07T18:06:16.800Z",
+  "port": 7804,
+  "warten": 0.1,
+  "bootS": 5.7,
+  "grundstellungS": [],
+  "proben": 2,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "vegetation.K2#1",
+    "s": 17.7,
+    "takte": 677,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": "dorf",
+    "vor": "lod.K4#1",
+    "s": 17.7,
+    "takte": 921,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 3,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 71,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 69.2,
+  "minuten": 1.32
+ }
+}

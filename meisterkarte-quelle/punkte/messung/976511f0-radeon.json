@@ -1,0 +1,89 @@
+{
+ "sha": "976511f07d3f37ed5c1a7bfe71b0d7914364dd2a",
+ "geraet": "radeon",
+ "zeit": "2026-11-07T17:27:21.780Z",
+ "host": "MiguellD",
+ "je": {
+  "lod.K2#1": {
+   "gruen": false,
+   "zahl": "Gehen 4 m/s: 0.0576 % Pop-Pixel je Sekunde (1195 px, Soll ≤ 0,05 %), je Schritt 14*/16*/281*/27*/30*/45*/704*/78* (* = Stufen-Wechsel), Laub 216–216 m, perfTarget 17 ms, [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.35,
+   "grund": "ROT: Gehen 4 m/s: 0.0576 % Pop-Pixel je Sekunde (1195 px, Soll ≤ 0,05 %), je Schritt 14*/16*/281*/27*/30*/45*/704*/78* (* = Stufen-Wechsel), Laub 216–216 m, perfTarget 17 ms, [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 21.1,
+   "zeit": "2026-11-07T17:27:21.780Z",
+   "abdruck": "c3b2c498b360",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "lod.K4#1": {
+   "gruen": true,
+   "zahl": "Luma-Sprung 1.09 % (Soll < 2 %) über 9996 px, die der Wechsel ändert (Auge 4 m; die Klassen zusammen), zweiton 0/0, Uhr 0.5 · Ort [-841,-861] · 0.83 s · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.14,
+   "gpu": "amd/rdna-3",
+   "s": 8.6,
+   "zeit": "2026-11-07T17:24:38.591Z",
+   "abdruck": "f502399017b8",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "ungemessen": {
+  "lod.K1#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: fenster · Exit 0)",
+   "exit": 1,
+   "minuten": 0.76,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: fenster · Exit 0)",
+   "s": 45.8,
+   "zeit": "2026-11-07T17:23:01.349Z",
+   "abdruck": "b5a598b5ca66",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-07T17:26:44.933Z",
+  "port": 7804,
+  "warten": 0.15,
+  "bootS": 6.2,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "lod.K2#1",
+    "s": 18.7,
+    "takte": 654,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 47,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 49.1,
+  "minuten": 1.06
+ }
+}

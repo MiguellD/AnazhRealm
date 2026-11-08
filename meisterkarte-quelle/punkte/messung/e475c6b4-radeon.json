@@ -1,7 +1,7 @@
 {
  "sha": "e475c6b4ef837565b3c741f0da3daa79e303a8c0",
  "geraet": "radeon",
- "zeit": "2026-11-08T05:52:22.236Z",
+ "zeit": "2026-11-08T06:48:27.583Z",
  "host": "MiguellD",
  "je": {
   "profiband.K4#1": {
@@ -1750,69 +1750,58 @@
    "bahn": "sitzung",
    "zwilling": "tore.K3#1",
    "modus": "session"
+  },
+  "vegetation.K2#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 39 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
+   "exit": 1,
+   "minuten": 0.67,
+   "grund": "Deckel 39 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
+   "s": 40.4,
+   "zeit": "2026-11-08T06:48:27.583Z",
+   "abdruck": "e70ca47e767e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-08T05:50:56.833Z",
+  "start": "2026-11-08T06:46:19.319Z",
   "port": 7804,
-  "warten": 0.08,
-  "bootS": 5.3,
-  "grundstellungS": [
-   1.3
-  ],
-  "proben": 3,
+  "warten": 1.31,
+  "bootS": 10.2,
+  "grundstellungS": [],
+  "proben": 1,
   "freigaben": [],
   "orte": [
    {
     "ort": "wiese",
-    "vor": "licht.K2#1",
-    "s": 16.2,
-    "takte": 652,
+    "vor": "vegetation.K2#1",
+    "s": 34.9,
+    "takte": 590,
     "chunks": 81,
     "nach": null
-   },
-   {
-    "ort": "buehne",
-    "vor": "schatten.K1#2",
-    "s": 10,
-    "takte": 601,
-    "chunks": 84,
-    "nach": null
-   },
-   {
-    "ort": "wiese",
-    "vor": "speicher.K4#2",
-    "s": 14.2,
-    "takte": 596,
-    "chunks": 81,
-    "nach": "der Tür"
    }
   ],
   "wegeTueren": [],
-  "ciBlicke": 4,
+  "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 154,
-   "frameP95": 184.14,
-   "taktP95": 128.27,
-   "vramMax": 139.6,
-   "seiten": 3,
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
-   "ortImDeckel": [
-    {
-     "probe": "schatten.K1#2",
-     "m": 459,
-     "ringVor": 4,
-     "ringMin": 1
-    }
-   ],
-   "zapfen": 113,
-   "luecken": 1,
-   "letzteLuecke": "kein Renderer"
+   "ortImDeckel": [],
+   "zapfen": 83,
+   "luecken": 0,
+   "letzteLuecke": null
   },
-  "fahrtS": 110.4,
-  "minuten": 2.01
+  "fahrtS": 90,
+  "minuten": 2.93
  }
 }
