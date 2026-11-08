@@ -925,13 +925,20 @@ class AnazhRealm_vegetation_wiese {
 
     // DIE SENKE DER SCHALE (w22-wiese-nachzug): EINE Senke `nahWiese:Lf:schale` (ein Befehl, die Klasse der Ferne), ihre Karte
     // ein Band und elf Spitzen (13 Dreiecke, die Normale nach oben: das Dach der Wiese, wie der Halm, wenn der Pixel mehrere
-    // trägt). DER STOFF DES HALMS (w24-wiese-ferne): die Karte zeichnet unter dem EINEN Halm-Gesetz — Farbe = Ecken-Farbe ×
-    // `uSeasonMul` wie jedes Studio-Gras (`_foundryTreeMaterial`), Narbe, Dach und Adern (`_halmStoff`), das Laub-Licht mit der
-    // Narbe (`_laubLichtStoff`); je Ecke trägt sie, was der Halm der Vorlage L2 in ihrer Höhe trägt (`_wieseSchaleHalm`: seine
-    // Ecken-Farbe und seine Narbe Λ, je relative Höhe), quer die Adern ihrer Breite. Bis dahin ein eigener Stoff: die Albedo das
-    // Mittel der Ecken-Farben × Helligkeiten von Hand (das Band 0,55, die Spitzen 0,78–1), ohne die Farbe des Jahrs, ohne
-    // Narbe und Laub-Licht — an der Mess-Wiese ein gelbes Band aus Zähnen über einem dunklen Fuß, am Genesis-Ort ein braunes
-    // Band unter jeder Insel. Jede Ecke trägt `aZahn` (ihre Spitze k, ihre Rolle: 0 Band, 1 Fuß links, 2 Fuß rechts, 3 Spitze). Der Stoff
+    // trägt). DER STOFF DES HALMS (w24-wiese-ferne): die Karte zeichnet unter dem EINEN Halm-Gesetz — Farbe × `uSeasonMul` wie
+    // jedes Studio-Gras (`_foundryTreeMaterial`), Dach und Adern (`_halmStoff`, quer die Adern ihrer Breite), das Laub-Licht mit
+    // der Narbe (`_laubLichtStoff`). DER ERSTE TREFFER: die Karte ist die Wiese, wie das Auge sie aus der Ferne sieht — sein
+    // Strahl trifft die Narbe von oben, und der Halm, den er trifft, liegt in der Tiefe Λ, bis zu der die Narbe ihn durchlässt:
+    // je Pixel der Erwartungswert von Λ am ersten Treffer, E = (1 − (1 + x)·e^−x) / (K·(1 − e^−x)), x = K·Λ am Fuß, K das
+    // Ellipsoid-Gesetz der Narbe in der Richtung des Blicks (`halmNarbe`, Campbell 1986: die Narbe lässt exp(−K·Λ) durch). An
+    // dieser Tiefe liest sie Farbe und Narbe des Halms der Vorlage L2 (`_wieseSchaleHalm`, die Geraden über der Höhe nach der
+    // Fläche): flach (20–80 m aus 1,7–2,4 m) die oberen Halme im Licht, steil von oben tiefer bis zum Fuß. So zeichnet Ghost of
+    // Tsushima die ferne Wiese in der Farbe ihrer Spitzen. Bis w24-wiese-ferne ein eigener Stoff (die Albedo das Mittel der
+    // Ecken-Farben × Helligkeiten von Hand: das Band 0,55, die Spitzen 0,78–1, ohne die Farbe des Jahrs, ohne Narbe und
+    // Laub-Licht): an der Mess-Wiese ein gelbes Band aus Zähnen über einem dunklen Fuß, am Genesis-Ort ein braunes Band unter
+    // jeder Insel; je Höhe der Karte die Narbe des Halms in dieser Höhe: das Band 20–40 m um 11–16 % dunkler als vor dem
+    // Nachzug (GTX 722b35ec), der Fuß jeder Karte lag sichtbar im Schatten seiner Narbe, den aus der Ferne kein Strahl erreicht.
+    // Jede Ecke trägt `aZahn` (ihre Spitze k, ihre Rolle: 0 Band, 1 Fuß links, 2 Fuß rechts, 3 Spitze). Der Stoff
     // streut je Spitze aus der Saat ihrer Karte (Zug 2 und 3 der Ziehung ihres Ursprungs): die Höhe über dem Band 0,75–1,45 der
     // Vorlage (die Karte 0,7 m × 0,8–1,2: die Spitzen 0,5–0,9 m, die Halme der Nah-Wiese 0,48–1,0 m), die Neigung ±0,8
     // Spitzen-Breiten und die Breite ihres Fußes 1,05–1,35 Spitzen-Breiten — die Spitzen überlappen knapp, ihre Kerben liegen,
@@ -952,8 +959,8 @@ class AnazhRealm_vegetation_wiese {
         const q = vl.fern[0];
         const halm = AnazhRealm._wieseSchaleHalm(q.geo, `${q.name}`);
         const aderJeM = S.breite / globalThis.__phytoCore.HALM_GESETZ.aderM; // die Adern quer je Breite der Vorlage
-        const [pos, farbe, uv, zahn] = [[], [], [], []];
-        const ecke = (x, y, k, rolle) => (pos.push(x, y, 0), farbe.push(...halm.farbe(y)), uv.push(x * aderJeM, halm.narbe(y)), zahn.push(k, rolle)); // prettier-ignore
+        const [pos, uv, zahn] = [[], [], []];
+        const ecke = (x, y, k, rolle) => (pos.push(x, y, 0), uv.push(x * aderJeM, 0), zahn.push(k, rolle));
         for (const [x, y] of [[-0.5, 0], [0.5, 0], [0.5, 0.45], [-0.5, 0], [0.5, 0.45], [-0.5, 0.45]]) ecke(x, y, 0, 0); // prettier-ignore
         const spitze = [1, 0.8, 0.94, 0.72, 0.9, 0.78, 0.98, 0.84, 0.92, 0.75, 0.96];
         for (let k = 0; k < 11; k++) {
@@ -971,13 +978,24 @@ class AnazhRealm_vegetation_wiese {
                 3
             )
         );
-        geo.setAttribute("color", new THREE.Float32BufferAttribute(farbe, 3));
         geo.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
         geo.setAttribute("aZahn", new THREE.Float32BufferAttribute(zahn, 2));
         const mat = new THREE.MeshStandardNodeMaterial({ roughness: 1, metalness: 0, side: THREE.DoubleSide });
-        mat.colorNode = T.vec4(T.attribute("color", "vec3").mul(this._ensureSeasonUniforms().uSeasonMul), 1.0);
+        // der erste Treffer: K in der Richtung des Blicks (die Narbe lässt bei Λ 1 e^−K durch), Λ am Treffer, seine Höhe f
+        const [A, PC] = [AnazhRealm._windTsl(T), globalThis.__phytoCore];
+        const blick = T.normalize(T.cameraPosition.sub(T.positionWorld)).y;
+        const K = T.log(PC.halmNarbe(A, T.float(1), blick).direkt).negate();
+        const [l0, l1] = halm.narbe;
+        const ex = T.exp(K.mul(-l0));
+        const lam = T.float(1)
+            .sub(K.mul(l0).add(1).mul(ex))
+            .div(K.mul(T.float(1).sub(ex)).max(1e-6));
+        const f = lam.sub(l0).div(l1).clamp(0, 1);
+        const farbe = T.vec3(...halm.farbe.map(([a, s]) => f.mul(s).add(a).max(0)));
+        mat.colorNode = T.vec4(farbe.mul(this._ensureSeasonUniforms().uSeasonMul), 1.0);
         this._halmStoff(T, mat);
-        this._laubLichtStoff(mat, false, T.uv().y);
+        mat.aoNode = PC.halmNarbe(A, lam, T.float(1)).himmel;
+        this._laubLichtStoff(mat, false, lam);
         const naht = this._weltNaht(T);
         const auge = (this._halmFerneAuge = this._halmFerneAuge || T.uniform(new THREE.Vector4()));
         const d = naht.anker.xz.sub(auge.xz).length();
@@ -1190,7 +1208,7 @@ class AnazhRealm_vegetation_wiese {
     // DER HALM DER VORLAGE JE HÖHE (die Schale der Ferne, `_wieseSchaleSenke`): über die Dreiecke der Vorlage L2 (ihre Halme und
     // Ähren, wie die Ferne sie zeichnet) die Ecken-Farbe und die Narbe Λ (uv.y, `_halmStoff`) als Gerade über der relativen Höhe
     // (die Mitte des Dreiecks / die höchste Ecke), jedes Dreieck mit seiner FLÄCHE gewogen (kleinste Quadrate: die Farbe, die das
-    // Auge in dieser Höhe sieht) — `farbe(f)` und `narbe(f)` an der relativen Höhe f einer Ecke der Karte. Je Ecke gewogen trugen
+    // Auge in dieser Höhe sieht) — `farbe` je Kanal und `narbe` als [Wert am Fuß, Steigung je relativer Höhe]. Je Ecke gewogen trugen
     // die Ährchen (die Farbe des Samens, drei Ecken je Ährchen) und die schmale Spitze des Halms die Gerade: die Karten lagen
     // als ockergelbes Band in 20–40 m (Mess-Wiese, GTX: Farbton 77,6° → 65,8°, gelbe Pixel 7,3 → 15,8 %). Eine Vorlage ohne
     // Farbe, Narbe, Höhe oder Fläche bricht laut.
@@ -1224,11 +1242,9 @@ class AnazhRealm_vegetation_wiese {
             return [S[3 + k] / S[0] - s * mt, s];
         };
         const [r, g, b, l] = [0, 1, 2, 3].map(gerade);
-        const an = ([a, s], f) => a + s * f;
-        return {
-            farbe: (f) => [r, g, b].map((k) => Math.max(0, an(k, f))),
-            narbe: (f) => Math.max(0, an(l, f)),
-        };
+        if (!(l[0] > 0 && l[1] < 0))
+            throw new Error(`Nah-Wiese: die Narbe der Vorlage der Schale (${name}) fällt nicht mit der Höhe (${l})`);
+        return { farbe: [r, g, b], narbe: l };
     }
 
     // DIE ÄHRE AM FUSS IHRES STÄNGELS (die Ferne, `_halmFerne`): das Studio legt den Anker der Ähre (`aCenter`) auf die Spitze
