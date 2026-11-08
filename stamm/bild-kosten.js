@@ -754,7 +754,10 @@ class AnazhRealm_bild_kosten {
                 if (E.imFlug.size >= 32)
                     for (const [k, x] of E.imFlug)
                         if (bild - x.bild > AnazhRealm.KNOTEN_FLUG_BILDER) E.imFlug.delete(k);
-                E.imFlug.set(key, (R = { b: N._createNodeBuilder(ro, ro.material), i: -1, k: 0, bild, s: null, ms: 0 }));
+                E.imFlug.set(
+                    key,
+                    (R = { b: N._createNodeBuilder(ro, ro.material), i: -1, k: 0, bild, s: null, ms: 0 })
+                );
             }
             if (R) [d.rate, R.bild] = [R, bild];
             const b = R && R.b;

@@ -1752,7 +1752,8 @@ class AnazhRealm_dirigent_takt {
             [this._ladeFristBis, this._ladeZeichnungBis] = [jetzt + AnazhRealm.LADE_TAKT_MS, null];
             Promise.resolve().then(() => (this._ladeFristBis = this._ladeZeichnungBis = null));
         }
-        if (!zeichnung) return this._ladeBildTakt ? this._ladeFristBis - AnazhRealm.LADE_TAKT_MS / 2 : this._ladeFristBis;
+        if (!zeichnung)
+            return this._ladeBildTakt ? this._ladeFristBis - AnazhRealm.LADE_TAKT_MS / 2 : this._ladeFristBis;
         if (this._ladeZeichnungBis == null) {
             const E = this._erstZeichnung;
             const g = E ? Math.min(E.ladeGuthaben || 0, AnazhRealm.LADE_TAKT_MS) : 0;
