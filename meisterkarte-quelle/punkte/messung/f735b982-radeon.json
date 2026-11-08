@@ -1,0 +1,131 @@
+{
+ "sha": "f735b982f86bc58040a8507c07190894e68d6def",
+ "geraet": "radeon",
+ "zeit": "2026-11-08T10:58:08.687Z",
+ "host": "MiguellD",
+ "je": {
+  "ferne.K1#1": {
+   "gruen": true,
+   "zahl": "Koschmieder T/T_soll 0.94–1.04 bei 1/2/5/8 km, Uhr 0,5, 4 Azimute, K1-1 GRUEN, [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 1.3,
+   "gpu": "amd/rdna-3",
+   "s": 78,
+   "zeit": "2026-11-08T10:56:27.421Z",
+   "abdruck": "3f920b33ffcb",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "ferne.K2#1": {
+   "gruen": true,
+   "zahl": "Restkontrast am Rand 0.3–1.6 % bei 18.3–23.2 km (≤ 2 %), 4 Azimute, K2-1 GRUEN, [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 1.3,
+   "gpu": "amd/rdna-3",
+   "s": 78,
+   "zeit": "2026-11-08T10:56:27.421Z",
+   "abdruck": "8d264e84414d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "ferne.K1#1",
+   "modus": "session"
+  },
+  "ferne.K1#2": {
+   "gruen": false,
+   "zahl": "K1-2 ROT (8 Befunde) · Farbton 8 km 1.699–15° (≤ 10°) · Sonnenseite Uhr 0,5/0,27 1.256/5.045 (≥ 1,2) · fernes Weiß R/B 6.183 (≥ 1,3) · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 1.3,
+   "grund": "ROT: K1-2 ROT (8 Befunde) · Farbton 8 km 1.699–15° (≤ 10°) · Sonnenseite Uhr 0,5/0,27 1.256/5.045 (≥ 1,2) · fernes Weiß R/B 6.183 (≥ 1,3) · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 78,
+   "zeit": "2026-11-08T10:56:27.421Z",
+   "abdruck": "73ce8e3983c3",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "ferne.K1#1",
+   "modus": "session"
+  },
+  "ferne.K2#2": {
+   "gruen": true,
+   "zahl": "K2-2 GRUEN · Kanten-Linie Hügel 0/0/0.47/0.47°, Gipfel 0/0/0/0.47° (< 1°) · Boden 8/12 Befehle, 43.5k/64k Dreiecke · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 1.3,
+   "gpu": "amd/rdna-3",
+   "s": 78,
+   "zeit": "2026-11-08T10:56:27.421Z",
+   "abdruck": "971fc3df75d8",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "ferne.K1#1",
+   "modus": "session"
+  },
+  "ferne.K4#1": {
+   "gruen": false,
+   "zahl": "Schatten-/Lichthang 0.635 (je N·L; Soll ≤ 0,4) aus 21/64 Orten im Bild, Auge 1500 m, Grat 5.3294 km, Sonne 5.0087° (Uhr 0.735) · Ort [-841,-861] · 0.29 s · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.16,
+   "grund": "ROT: Schatten-/Lichthang 0.635 (je N·L; Soll ≤ 0,4) aus 21/64 Orten im Bild, Auge 1500 m, Grat 5.3294 km, Sonne 5.0087° (Uhr 0.735) · Ort [-841,-861] · 0.29 s · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 9.4,
+   "zeit": "2026-11-08T10:58:08.687Z",
+   "abdruck": "bdb818bb2689",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-08T10:55:52.661Z",
+  "port": 7804,
+  "warten": 0.09,
+  "bootS": 6.8,
+  "grundstellungS": [],
+  "proben": 2,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "genesis",
+    "vor": "ferne.K1#1",
+    "s": 20.1,
+    "takte": 572,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": "dorf",
+    "vor": "ferne.K4#1",
+    "s": 23.1,
+    "takte": 857,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 3,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [
+    {
+     "probe": "ferne.K1#1",
+     "m": 3592,
+     "ringVor": 4,
+     "ringMin": 0
+    }
+   ],
+   "zapfen": 140,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 140.1,
+  "minuten": 2.5
+ }
+}
