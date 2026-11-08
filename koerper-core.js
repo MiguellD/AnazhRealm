@@ -1096,8 +1096,11 @@
     // steht ~2,5 cm über dem Mittel), nie unter dem Schädel. Bei 1 ist die Kappe die des Stils, Byte für Byte; die Strähnen
     // (haarStreu) wurzeln auf DERSELBEN Kappe. Bis studios.K1 trug hairVol nur die Zahl der Strähnen (das Bild 0,45 %).
     var HAAR_VOLUMEN = 0.2;
+    // DER LEIB-RAUM (w25-leib-raum, rein additiv, Steuer-Passagier `__kappe`): die Kappe eines Stils ist ihr Tripel [Dicke, Höhe,
+    // Front] — der Ofen fragt die Kappe an einem Punkt ZWISCHEN den Stilen (die Achsen des Leib-Raums); ohne `__kappe` Byte für Byte
+    // die des Stils.
     function haarKappe(d) {
-        var t = HAAR_KAPPE[(d && d.hairStyle) || "mittel"];
+        var t = (d && Array.isArray(d.__kappe) && d.__kappe.length === 3 && d.__kappe) || HAAR_KAPPE[(d && d.hairStyle) || "mittel"];
         if (!t) return []; // glatze
         var P = labProportionen(),
             r = P.skullBaseR * 1.03,
