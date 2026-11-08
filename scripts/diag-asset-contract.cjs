@@ -148,7 +148,7 @@ function fernUrteil(mess) {
 // je Stoff × Attribut-Form ein Draw, jedes Flügel-Teil und jede Haut eines; Beipack ohne position zählt nicht).
 function teileAus(meshes) {
     return (meshes || [])
-        .filter((m) => m.attrs && m.attrs.position)
+        .filter((m) => m.attrs?.position)
         .map((m) => {
             const t = { kind: m.kind, mat: m.mat };
             if (m.tuer) t.tuer = m.tuer;
@@ -537,7 +537,7 @@ hauptLauf(async () => {
             if (!budget || !budget[kind]) return;
             // Nur GELIEFERTE Stufen: eine nicht deklarierte (die Strauch-L0, der Host klemmt sie auf L1) bleibt
             // ein Byte-Golden ohne Budget.
-            if (!Array.isArray(stufen[kind]) || stufen[kind].indexOf(c.lod) < 0) return;
+            if (!Array.isArray(stufen[kind]) || !stufen[kind].includes(c.lod)) return;
             const k = a.meshes ? kosten(a.meshes) : a;
             messungen.push({ kind, lod: c.lod, fall, tris: k.tris, draws: k.draws, budget: a.budget || null });
             // die NUR-WURF-Stufe trägt ihre Fernform (die Fern-Wand unten)
@@ -625,7 +625,7 @@ hauptLauf(async () => {
             }
             for (const lod of stufen[kind]) {
                 const z = budget[kind][lod];
-                if (z && z.karte) continue;
+                if (z?.karte) continue;
                 if (kernVonArt[kind]) {
                     for (let s = 1; s <= gestalten[preset]; s++)
                         welt.push({ presetId: preset, seed: s, lod, season: "summer" });
@@ -681,7 +681,7 @@ hauptLauf(async () => {
                 const V = Number.isInteger(G[preset]) ? G[preset] : G["*"];
                 for (const lod of stufen[kind]) {
                     const z = budget[kind][lod];
-                    if (z && z.karte) continue;
+                    if (z?.karte) continue;
                     for (let v = 1; v <= V; v++) {
                         if (gemessenFall.has(preset + "|" + v + "|" + lod)) continue;
                         const c = { presetId: preset, seed: v, lod, season: "summer" };
@@ -781,7 +781,7 @@ hauptLauf(async () => {
         console.log(`Bild-Tafel geschrieben: ${Object.keys(faelle).length} Fälle → ${path.relative(process.cwd(), TAFEL_BILD)}`);
         process.exit(0);
     }
-    if (wand && wand.budget && Array.isArray(wand.band)) {
+    if (wand?.budget && Array.isArray(wand.band)) {
         const B = wand.budget;
         // Die Kosten je Zeile: Maximum über alle gebauten Fälle, der Täter-Kandidat steht daneben.
         const zeilen = [];

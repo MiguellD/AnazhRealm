@@ -112,7 +112,7 @@ function atem() {
     return (async () => {
         const P = Object.getPrototypeOf(r);
         const aus = { blind: null };
-        const baeume = st.architectures.filter((a) => a && a.instanced && a._lodSpecies !== undefined).length;
+        const baeume = st.architectures.filter((a) => a?.instanced && a._lodSpecies !== undefined).length;
         const lu = st.lodUniforms;
         const spiegel = /uLodPerf\.value\s*=\s*this\._ankunftsFerne\(\)/.test(
             Function.prototype.toString.call(P._loopRender)
@@ -255,11 +255,10 @@ function atem() {
                 const st = r && r.state;
                 const n =
                     st && Array.isArray(st.architectures)
-                        ? st.architectures.filter((a) => a && a.instanced && a._lodSpecies !== undefined).length
+                        ? st.architectures.filter((a) => a?.instanced && a._lodSpecies !== undefined).length
                         : 0;
                 if (
-                    st &&
-                    st.rendererReady &&
+                    st?.rendererReady &&
                     r._foundry &&
                     r._foundry.recipes &&
                     st.chunkSaetze &&
@@ -283,7 +282,7 @@ function atem() {
                     seit = k;
                 } else if (k - seit > 20) {
                     st.renderer.setAnimationLoop(null);
-                    const b = st.architectures.filter((a) => a && a.instanced && a._lodSpecies !== undefined).length;
+                    const b = st.architectures.filter((a) => a?.instanced && a._lodSpecies !== undefined).length;
                     return { ok: true, ms: Math.round(performance.now() - t0), baeume: b, bestand: n };
                 }
                 await sleep(250);

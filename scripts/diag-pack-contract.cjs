@@ -208,7 +208,7 @@ async function main() {
         // Default-Pfad: Hook weg → der Worker liefert (byte-Wahrheit für den Roundtrip).
         const ser = await realm.page.evaluate(() => window.__packSer("eiche", 7, 2));
         check(
-            !!(ser && ser.meshes && ser.meshes.length),
+            !!(ser?.meshes && ser.meshes.length),
             `Live-Reply eiche|7|2: ${ser ? ser.meshes.length : 0} Meshes`
         );
         if (!ser) throw new Error("kein Live-Reply");

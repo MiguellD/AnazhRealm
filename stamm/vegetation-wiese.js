@@ -156,6 +156,9 @@ class AnazhRealm_vegetation_wiese {
                 // der Kreis des Büschels vor dem Grund der Häuser (S4, `erdbauGrund`: jede Box des Körper-Satzes), sein
                 // Radius die Weite der gezeichneten Vorlagen
                 if (Gb.erdbauGrund(E, x, z, reich * sb)) continue;
+                // … und vor jeder anderen Hülle der Natur-Wand (w20-lack-spiegel; die Nah-Streu fragt sie über `_naturSetzen`):
+                // dem Wagen (`_imWagen`, er hält: `_wagenGrund`) und dem Bau mit Boxen (`_imGrundriss` "bau": Tor, Esse, Brunnen)
+                if (this._imWagen(x, z, reich * sb) || this._imGrundriss(x, z, reich * sb) === "bau") continue;
                 const f = WT(x, z, L, m, [1, 1, 1], 0);
                 out.push({ x, y, z, s: sb, rot, vorlage, o, f, gi, gj, gx: eb.gx, gz: eb.gz });
             }

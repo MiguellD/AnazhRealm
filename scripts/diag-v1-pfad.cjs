@@ -1028,7 +1028,7 @@ function korpusVerdict(m) {
     const nie = S.filter((e) => e.praedikat === null).map((e) => e.satz);
     if (nie.length) out.push(`Prädikat nie geprüft: ${nie.slice(0, 3).join(" · ")}`);
     if (!m.echt && !(r.anbieter && r.quote)) out.push("kein echter Anbieter: der Mitschnitt trägt keinen echten Lauf");
-    if (!(m.tueren || []).length) out.push("die Türen der CSP nie geprüft");
+    if (!m.tueren?.length) out.push("die Türen der CSP nie geprüft");
     for (const [u, zu] of m.tueren || [])
         if (zu !== (u === KORPUS_SOLL.gegenprobe))
             out.push(zu ? `die CSP sperrt die Tür ${u}` : `die CSP-Probe ist blind: ${u} geht durch`);

@@ -339,7 +339,7 @@ hauptLauf(async () => {
             let satz = null;
             for (const weiter = __deckel("der Gesetz-Fit des Gerölls", 600, false); weiter(); ) {
                 satz = r._streuGesetzFit("geroell", 7);
-                if (satz && satz.length) break;
+                if (satz?.length) break;
                 await sleep(100);
             }
             fit.n = satz ? satz.length : 0;
@@ -372,7 +372,7 @@ hauptLauf(async () => {
                 if (flat && flat.instanceable && flat.leaves && flat.leaves.length) break;
                 await sleep(100);
             }
-            if (flat && flat.leaves) {
+            if (flat?.leaves) {
                 const vor = absenz().n;
                 const slots = r._scatterInstanceAdd(
                     "fscatter:geroell:3:0",
@@ -704,7 +704,7 @@ hauptLauf(async () => {
     check(
         "H NACH DEM BUCH: die Nah-Wiese legt ihre 4 Studio-Vorlagen (das Budget gelesen, gras wirft nicht), ohne Loop-Fehler",
         h.warm > 0 && h.vorlagen >= 4 && (h.fehlerWarm || []).length === 0,
-        `${h.warm} warme Takte · Vorlagen ${h.vorlagen} · Loop-Fehler ${(h.fehlerWarm || []).length}${(h.fehlerWarm || []).length ? " — Täter: " + hTaeter(h.fehlerWarm) : ""}`
+        `${h.warm} warme Takte · Vorlagen ${h.vorlagen} · Loop-Fehler ${(h.fehlerWarm || []).length}${h.fehlerWarm?.length ? " — Täter: " + hTaeter(h.fehlerWarm) : ""}`
     );
     const hs = h.selbst || [];
     check(

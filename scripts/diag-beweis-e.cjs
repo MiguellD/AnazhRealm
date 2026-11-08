@@ -46,8 +46,8 @@ const SICHT_FN = async (a) => {
     if (a.klasse === "kreatur") {
         const w = window.__beweisWolf;
         const u = w && w.userData;
-        if (w && u && u._kzNah) setze = (an) => (w.visible = an);
-        else if (u && u._kzGlieder) setze = (an) => u._kzGlieder.forEach((gl) => r._weltFeldAktiv(gl.handle, an));
+        if (w && u?._kzNah) setze = (an) => (w.visible = an);
+        else if (u?._kzGlieder) setze = (an) => u._kzGlieder.forEach((gl) => r._weltFeldAktiv(gl.handle, an));
     } else {
         const e = a.klasse === "baum" ? window.__beweisBaum : window.__beweisHaus;
         if (e && r._archIsRendered(e)) {
@@ -56,7 +56,7 @@ const SICHT_FN = async (a) => {
                 else if (!an) r._cullArchitectureMesh(e);
                 else if (!r._archIsRendered(e)) r._rebuildArchitectureMesh(e);
             };
-        } else if (e && e._ziegelSlot) setze = (an) => r._weltFeldAktiv(e._ziegelSlot, an);
+        } else if (e?._ziegelSlot) setze = (an) => r._weltFeldAktiv(e._ziegelSlot, an);
     }
     if (!setze) {
         rend.setAnimationLoop(r._gameLoopTick);

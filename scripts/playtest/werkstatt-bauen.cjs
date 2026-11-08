@@ -958,7 +958,7 @@ async function checkBandWellePerfCArchInstancing({ page, check }) {
                     { x: pp.x + 7, y: pp.y, z: pp.z + 7 },
                     { seed: 8888, silent: true }
                 );
-                out.waterfallClassic = !!(wf && wf.mesh && !wf.instanced);
+                out.waterfallClassic = !!(wf?.mesh && !wf.instanced);
                 if (wf) r.removeArchitecture(wf);
 
                 // --- Funktions-Faden: instancierten Baum per Crosshair-Raycast
@@ -1291,8 +1291,8 @@ async function checkBandWelle6XAudit({ page, check }) {
         st.playerMesh.position.set(0, 50, 0);
         st.yaw = 0;
         const dslOut = r.parseChatToDsl("baue dorf hier");
-        out.chatBuildDorfParses = !!dslOut?.program;
-        if (dslOut && dslOut.program) {
+        out.chatBuildDorfParses = !!(dslOut?.program);
+        if (dslOut?.program) {
             // Erwartetes Format: ["spawn_village", ["at", x, y, z], seed, gier, tanH]
             out.chatBuildDorfFormat =
                 dslOut.program[0] === "spawn_village" &&
@@ -1768,8 +1768,8 @@ async function checkBandWGGelenke({ page, check }) {
             }
             let axes = 0;
             grp.traverse((o) => {
-                if (o.userData && o.userData.isJointAxis && o.isLine) axes++;
-                if (o.userData && o.userData.isJointAxis && o.userData.jointTeach) out.axisTeachAttached = true;
+                if (o.userData?.isJointAxis && o.isLine) axes++;
+                if (o.userData?.isJointAxis && o.userData.jointTeach) out.axisTeachAttached = true;
             });
             out.axisGhosts = axes >= 1;
             // KONSUM: der RAF-Tick der Werkstatt wackelt die Gelenk-Probe über den EINEN Animator (der Tick gefangen)

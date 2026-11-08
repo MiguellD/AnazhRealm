@@ -333,7 +333,7 @@ const WELT_HAKEN = () => {
     // Schale entscheidet. So misst die Sonde den Zweit-Boot mit echter IndexedDB im echten Studio-Worker.
     const B0 = window.Blob;
     const B1 = function (teile, opt) {
-        if (Array.isArray(teile) && typeof teile[0] === "string" && teile[0].indexOf("_foundrySchale") >= 0) {
+        if (Array.isArray(teile) && typeof teile[0] === "string" && teile[0].includes("_foundrySchale")) {
             teile = [teile[0].replace('"platte":false', '"platte":true')].concat(teile.slice(1));
         }
         return new B0(teile, opt);
@@ -372,7 +372,7 @@ const WELT_MESSEN = async () => {
         await sleep(6);
     }
     const f = r._ensureAssetFoundry();
-    await __weltDa(() => !!(!(f && !f.ready)));
+    await __weltDa(() => !(f && !f.ready));
     const pump = (n) => __streuTakte(n, 8);
     await pump(300);
     for (const weiter = __deckel("die Foundry-Schlange", 600); weiter(); ) {
@@ -444,7 +444,7 @@ const WELT_MESSEN = async () => {
         arten: krit.length,
         kalt: krit.filter((sp) => !fl.antworten.some((x) => x.p === sp && x.vorrat && x.leer)),
     };
-    const instanziert = () => (st.architectures || []).filter((e) => e && e.instFoundry && e.instanced).length;
+    const instanziert = () => (st.architectures || []).filter((e) => e?.instFoundry && e.instanced).length;
     // W2 — der Saison-Wechsel. Erst ein KONTROLL-Fenster gleicher Länge ohne Wechsel (die ruhende Welt bestellt nichts —
     // sonst misst W2 nichts), dann der Wechsel: Aufträge an den Worker und NEUE Foundry-Cache-Schlüssel danach. Instanz-
     // Entfernungen zählen nur zur Auskunft (LOD-/Streu-Churn läuft auch ohne Saison).

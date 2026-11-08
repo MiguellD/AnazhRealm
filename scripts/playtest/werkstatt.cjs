@@ -208,7 +208,7 @@ async function checkBandCadWorkshop({ page, check }) {
             // --- Phase 2: Gizmo-Aufbau ---
             r._workshopEnsurePreview();
             const pre = st.workshop.preview;
-            if (pre && pre.gizmo) {
+            if (pre?.gizmo) {
                 out.gizmoBuilt = true;
                 out.gizmoChildren = pre.gizmo.children.length === 3; // translate/rotate/scale
                 // Pro Modus ein paar Mesh-Einträge in gizmoMeshes
@@ -1374,7 +1374,7 @@ async function checkBandEarlyRingsAndUi({ page, check }) {
         // alle Sub-Meshes setzen, sonst crasht das Test-Setup.
         if (st.creatures[0]) {
             const cR = st.creatures[0];
-            if (cR.material && cR.material.color) cR.material.color.setHex(0xff0000);
+            if (cR.material?.color) cR.material.color.setHex(0xff0000);
             else if (typeof cR.traverse === "function") {
                 cR.traverse((n) => {
                     if (n.isMesh && n.material && n.material.color) n.material.color.setHex(0xff0000);
@@ -1387,7 +1387,7 @@ async function checkBandEarlyRingsAndUi({ page, check }) {
         const cFirst = st.creatures[0];
         let colorAfter = 0;
         if (cFirst) {
-            if (cFirst.material && cFirst.material.color) {
+            if (cFirst.material?.color) {
                 colorAfter = cFirst.material.color.getHex();
             } else if (typeof cFirst.traverse === "function") {
                 cFirst.traverse((n) => {
@@ -2284,8 +2284,7 @@ async function checkBandRezeptKatalog({ page, check }) {
             await __weltDa(
                 () =>
                     !!(
-                        f &&
-                        f.ready &&
+                        f?.ready &&
                         f.recipes &&
                         f.recipes.drachentor &&
                         f.recipes.gras &&

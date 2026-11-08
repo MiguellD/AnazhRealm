@@ -261,7 +261,7 @@ function einschwingOffen(r) {
     const kb = (r._impostorBakeQueue || []).length;
     if (kb) o.kartenBake = kb;
     if (r._scatterRefillPending) o.streuNachschub = 1;
-    if (st.voxelMeshPending && st.voxelMeshPending.size) o.chunkBau = st.voxelMeshPending.size;
+    if (st.voxelMeshPending?.size) o.chunkBau = st.voxelMeshPending.size;
     // Eine Streu-Region in Reichweite fehlt, wartet auf ein Asset oder eine Karte oder trägt eine offene Scheibe —
     // ruhig ist die Welt erst ohne sie (eine, die in Ruhe wartet, ist ein Befund: die Messung schwingt nicht ein).
     // Die EINE Antwort der Welt (`_streuWartet`).

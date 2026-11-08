@@ -163,7 +163,7 @@ async function checkBandRing11AndW7Mesh({ page, check }) {
         if (st.p2p.remoteCreatures.has("peerB:ortlos")) nullAlsNull.push("creature-pos");
         r._p2pMsgInput(draht({ peerId: "peerB", s0: 1, f: [[0, 0]], a: { s: 1, t: 0, x: 1, y: NaN, z: 2 } }));
         const lsB = st.p2p.peers.get("peerB").lockstep;
-        if (lsB && lsB.anchor) nullAlsNull.push("lockstep-anker");
+        if (lsB?.anchor) nullAlsNull.push("lockstep-anker");
         const statsVorher = st.p2p.brokerStats;
         st.p2p.brokerStats = null;
         r._p2pMsgStats(draht({ rooms: NaN, peers: 3 }), st.p2p);
@@ -1925,7 +1925,7 @@ async function checkBandV8SoulRoleAndWorkshop({ page, check }) {
         r.p2pHandleMessage(JSON.stringify({ type: "peer-join", peerId: "pv1" }));
         const pv1 = p2p.peers.get("pv1");
         out.placeholderKind = !!pv1 && pv1.meshKind === "placeholder";
-        out.placeholderMesh = !!(pv1 && pv1.mesh && pv1.mesh.children && pv1.mesh.children.length === 2);
+        out.placeholderMesh = !!(pv1?.mesh && pv1.mesh.children && pv1.mesh.children.length === 2);
         out.entryHasV3Fields =
             !!pv1 && "soulName" in pv1 && !("auraHue" in pv1) && "walkPhase" in pv1 && "nameLabel" in pv1;
 
@@ -1959,8 +1959,7 @@ async function checkBandV8SoulRoleAndWorkshop({ page, check }) {
         out.builtinSoulName = !!pv1b && pv1b.soulName === "fluegel-probe";
         out.builtinMeshKind = !!pv1b && pv1b.meshKind === "soul-custom";
         out.builtinHasParts = !!(
-            pv1b &&
-            pv1b.mesh &&
+            pv1b?.mesh &&
             pv1b.mesh.userData &&
             pv1b.mesh.userData.parts &&
             pv1b.mesh.userData.parts.leftWing &&
@@ -2039,7 +2038,7 @@ async function checkBandV8SoulRoleAndWorkshop({ page, check }) {
         );
         const pv2 = p2p.peers.get("pv2");
         out.customMeshKind = !!pv2 && pv2.meshKind === "soul-custom";
-        out.customMeshBuilt = !!(pv2 && pv2.mesh && pv2.mesh.children && pv2.mesh.children.length >= 1);
+        out.customMeshBuilt = !!(pv2?.mesh && pv2.mesh.children && pv2.mesh.children.length >= 1);
 
         // aura-Nachricht (SYNERGIE-WELLE): must-ignore-Stub — ein alter Peer darf sie
         // weiter senden, sie crasht nie und hinterlaesst KEINEN Aura-State am Entry.

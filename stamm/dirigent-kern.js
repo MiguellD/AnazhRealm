@@ -966,22 +966,37 @@ class AnazhRealm {
         return m;
     }
 
-    // Läuft der Pass? Das Feld steht (Fenster und Höchste) und der Szenen-Pass trägt sein Glanz-Ziel (material.K4): dann
-    // spiegelt jede glänzende Fläche durch ihn, Glas, Lack, Metall und Nässe wie das Wasser — bis material.K4 lief er nur, wo
-    // Wasser im Bild stand. Gebot 7: die Kosten folgen dem Schirm, ein Pixel ohne Glanz und ohne Wasser verlässt den Pass
-    // nach seiner Tiefe, seinem Glanz und vier Zellen. Der Wasser-Satz reist in die Signatur (`S.wasserSatz`, sein Stand).
+    // Läuft der Pass? Das erste Weltbild steht und der Szenen-Pass trägt sein Glanz-Ziel (material.K4): dann spiegelt jede
+    // glänzende Fläche durch ihn, Glas, Lack, Metall und Nässe wie das Wasser — bis material.K4 lief er nur, wo Wasser im Bild
+    // stand. Gebot 7: die Kosten folgen dem Schirm, ein Pixel ohne Glanz und ohne Wasser verlässt den Pass nach seiner Tiefe,
+    // seinem Glanz und vier Zellen. Der Wasser-Satz reist in die Signatur (`S.wasserSatz`, sein Stand).
+    // DAS BILD BRAUCHT DAS FELD NIE (w20-lack-spiegel, material.K4#1): bis hier ruhte der Pass ganz, solange das Feld nicht
+    // stand — nach jedem Sprung des Auges über das Fenster (Tür, Grundstellung, Teleport) leert `_spiegelFeldFenster` alle
+    // Blöcke, und der Worker bäckt sie erst, wenn kein Chunk mehr baut. So lange spiegelten Lack, Glas und Metall die
+    // PMREM-Umgebung allein, nie die Welt der Kamera: der GT der Station stand nach der Grundstellung mit flachem Lack, sein
+    // Zeilen-r folgte der Schattierung (GTX ed7d3d23 −0,477; swiftshader am Grund der Sitzung, Feld leer: `an` 0 in jedem Bild,
+    // Lack −0,422). Jetzt trägt das Feld nur, was es kann (`U.feld`, `_spiegelFeldSteht`): den Wasser-Punkt und den Strahl
+    // jenseits des Schirms.
     _spiegelImBild() {
         const st = this.state;
-        const S = st.spiegelFeld;
-        if (!S || !S.mitte || !(S.hMax > -1e4)) return false;
+        if (!st._weltbildDa) return false;
+        const S = this._spiegelFeld();
         for (const s of st.chunkSaetze ? st.chunkSaetze.values() : [])
             if (s.spec && s.spec.name === "wasserSatz") S.wasserSatz = s;
         return !!(st.scenePass && st.scenePass._textures && st.scenePass._textures.glanz);
     }
 
+    // DAS FELD STEHT: sein Fenster liegt und ein Block ist gebacken (die Höchste über dem Leeren) — der Pass liest es als
+    // `U.feld` (der Wasser-Punkt, der Strahl jenseits des Schirms), die Signatur weckt ihn, sobald es steht.
+    _spiegelFeldSteht() {
+        const S = this.state.spiegelFeld;
+        return !!(S && S.mitte && S.hMax > -1e4);
+    }
+
     // NACH DEM BILD (`_loopRender`, nur auf der Post-Kette — der Szenen-Pass trägt die Tiefe des gezeichneten Wassers): der
-    // Pass rechnet aus Tiefe und Ansicht DIESES Bilds, das Wasser des nächsten reprojiziert in diese Ansicht. Läuft er nicht,
-    // liest das Wasser den Himmel allein (`an` 0). Er ZAHLT NUR BEI ÄNDERUNG (Gebot 7, `_spiegelPassWach`): steht das Bild,
+    // Pass rechnet aus Tiefe und Ansicht DIESES Bilds, das Wasser des nächsten reprojiziert in diese Ansicht. Läuft er nicht
+    // (vor dem ersten Weltbild, ohne Post-Kette, nach einem Bruch), liest jeder Leser den Himmel allein (`an` 0); das Feld
+    // schaltet ihn nie ab (`_spiegelImBild`). Er ZAHLT NUR BEI ÄNDERUNG (Gebot 7, `_spiegelPassWach`): steht das Bild,
     // liest das Wasser den Spiegel des letzten Laufs in dessen Ansicht (die Reprojektion ist exakt) — bis D10-n1 rechnete er
     // jedes Bild neu (0,17–0,43 ms CPU je Bild im Stand, Radeon, See).
     _spiegelPassZeichne() {
@@ -1049,6 +1064,7 @@ class AnazhRealm {
         // exakt: Projektion, Stand des Felds, Stand des gezeichneten Wassers (seine Tiefe trägt den Wasser-Punkt), Ziel-Maß
         for (const i of sig.proj) v[k++] = pr[i];
         v[k++] = S.stand;
+        v[k++] = this._spiegelFeldSteht() ? 1 : 0; // das Feld steht: der Pass trägt Wasser und Ferne neu
         v[k++] = S.wasserSatz ? S.wasserSatz.stand : -1;
         v[k++] = this._weltLicht().stand; // die Himmels-Sonde des Lichts der Welt
         v[k++] = m.w;
@@ -1108,8 +1124,13 @@ class AnazhRealm {
         P.U.nah.value = cam.near;
         P.U.p10.value = cam.projectionMatrix.elements[10];
         P.U.p14.value = cam.projectionMatrix.elements[14];
-        P.U.mitte.value.set(S.mitte[0], S.mitte[1]);
-        P.U.hMax.value = S.hMax + 2;
+        // das Feld trägt nur den Strahl jenseits des Schirms und den Wasser-Punkt: bäckt es (`feld` 0), spiegelt der Pass das Bild
+        const feld = this._spiegelFeldSteht();
+        P.U.feld.value = feld ? 1 : 0;
+        if (feld) {
+            P.U.mitte.value.set(S.mitte[0], S.mitte[1]);
+            P.U.hMax.value = S.hMax + 2;
+        }
         P.U.texel.value.set(1 / m.w, 1 / m.h);
         const vor = rend.getRenderTarget();
         rend.setRenderTarget(L.rt);
@@ -1800,7 +1821,7 @@ class AnazhRealm {
     }
 
     // DER ZEITPLAN EINER LEUCHTQUELLE (K11, fachwerk LICHT_GESETZ `zeit`: mittag · morgen · abend · nacht; ohne Zeitplan 1)
-    // auf der EINEN Tag-Achse der Welt: ihr Kanal `nacht` (`_tagAchse`: 0 ab ~15° Sonnenhöhe, 1 am Horizont und darunter)
+    // auf der EINEN Tag-Achse der Welt: ihr Kanal `nacht` (`_tagAchse`: 0 über dem Horizont, 1 ab −6° Sonnenhöhe)
     // führt stückweise linear vom Mittag über die Dämmerung (Morgen vor, Abend nach der Mitte des Tages) in die Nacht.
     _lichtZeitplan(z) {
         if (!z) return 1;
@@ -1857,7 +1878,7 @@ function _stammZonen(Ziel, zonen) {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.546.211";
+AnazhRealm.VERSION = "18.546.215";
 // Die Terme des ersten Weltbilds (`_weltbildLuecken`, K60): je Leser des ersten Frames ein Name — gate:ankunft L2a stellt je
 // Term einen Fall her, ein Term ohne Fall ist ROT.
 AnazhRealm.WELTBILD_TERME = Object.freeze([

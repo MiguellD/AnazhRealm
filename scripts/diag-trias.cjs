@@ -131,7 +131,7 @@ hauptLauf(async () => {
     check(
         "N3: kindStages.haus deklariert [0,1,2,3] (die Mehr-Stufen-Domaene; 3 = NUR-WURF, S3 haus — nie gezeigt, sie wirft)",
         JSON.stringify(
-            FC.PORTAL_RENDER_CONFIG && FC.PORTAL_RENDER_CONFIG.lod && FC.PORTAL_RENDER_CONFIG.lod.kindStages
+            FC.PORTAL_RENDER_CONFIG?.lod && FC.PORTAL_RENDER_CONFIG.lod.kindStages
                 ? FC.PORTAL_RENDER_CONFIG.lod.kindStages.haus
                 : null
         ) === "[0,1,2,3]"
@@ -188,7 +188,7 @@ hauptLauf(async () => {
                 s.lods[lod] = (s.lods[lod] || 0) + 1;
                 for (const { key } of e.instSlots) {
                     const g = r.state.archInstanceGroups.get(key);
-                    if (g && g.geom)
+                    if (g?.geom)
                         s.tris += g.geom.index ? g.geom.index.count / 3 : g.geom.attributes.position.count / 3;
                 }
             }
@@ -204,7 +204,7 @@ hauptLauf(async () => {
                     o.ghost += Math.max(0, (g.mesh ? g.mesh.count : 0) - (g.liveCount || 0)) * tris;
                     if (key.indexOf("haus_") === 0) o.hausGroups++;
                 }
-            for (const e of r.state.architectures) if (e && e.instSlotsBand) o.band++;
+            for (const e of r.state.architectures) if (e?.instSlotsBand) o.band++;
             o.ghost = Math.round(o.ghost);
             return o;
         }
@@ -496,7 +496,7 @@ hauptLauf(async () => {
             `B13 (E/Zweitwand): ${out.cap + 44} leichte Eintraege deckeln an der Entries-Wand (${out.cap})`,
             Number.isInteger(out.cap) && out.cap > 64 && out.lightSize === out.cap
         );
-        if (out.errors && out.errors.length) check("B: keine Tick-Fehler", false, out.errors[0]);
+        if (out.errors?.length) check("B: keine Tick-Fehler", false, out.errors[0]);
     }
 
     wandEnde(errs, "DIE TRIAS BLEIBT GEDECKELT: platzierte Studio-Architektur lebt in der EINEN LOD-Geschichte (Fernstufe fern, Promotion nah, Cull + Slot-Bilanz sauber ueber Churn) und der Klon erbt die Studio-Gestalt.");

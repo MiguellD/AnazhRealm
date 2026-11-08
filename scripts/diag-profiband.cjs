@@ -176,7 +176,7 @@ const GOLDEN = path.join(root, "spec", "asset-contract", "v1", "golden");
 // Schatten-Teil (S3, teil "schatten") zeichnet nur in den Kaskaden — er ist der Wurf, nicht das Bild
 function dreiecke(g) {
     const tw = [0, 0];
-    for (const x of g.meshes || []) if (x.attrs && x.attrs.position) tw[+(x.teil === "schatten")] += x.index ? x.index.bytes / 12 : x.attrs.position.bytes / 36;
+    for (const x of g.meshes || []) if (x.attrs?.position) tw[+(x.teil === "schatten")] += x.index ? x.index.bytes / 12 : x.attrs.position.bytes / 36;
     return tw;
 }
 function goldenDreiecke(arten) {
@@ -226,7 +226,7 @@ function gestaltDreiecke(art, zeilen) {
 }
 function gestaltWand(haushalt, ratsche, block, ort, tris) {
     const k = haushalt.klassen.find((x) => x.id === block.klasse);
-    const rz = ratsche && ratsche.klassen ? ratsche.klassen[block.klasse] : null;
+    const rz = ratsche?.klassen ? ratsche.klassen[block.klasse] : null;
     const errs = [];
     const jePass = {};
     const jeStufe = {};
@@ -251,7 +251,7 @@ function gestaltWand(haushalt, ratsche, block, ort, tris) {
     }
     if (k && summe > k.dreiecke)
         errs.push(`P: ${block.klasse} projiziert ${summe} Dreiecke > Haushalt ${k.dreiecke} (${ort})`);
-    const soll = rz && rz.haupt ? rz.haupt.dreiecke : null;
+    const soll = rz?.haupt ? rz.haupt.dreiecke : null;
     return { summe, jePass, jeStufe, soll, haushalt: k ? k.dreiecke : null, errs };
 }
 
@@ -1270,7 +1270,7 @@ function main() {
         const j = jsonLesen(path.resolve(d));
         const e = Array.isArray(j.schritte) ? j.schritte.find((x) => x.name === "band") : null;
         const u = e ? (e.ergebnis && e.ergebnis.messung) || null : j;
-        const geraet = u && u.geraet ? u.geraet.schluessel : null;
+        const geraet = u?.geraet ? u.geraet.schluessel : null;
         if (!u || !u.ort || !geraet || !u.sicht)
             errs.push(`H2b ${path.basename(d)}: keine Band-Messung mit Ort, Gerät und Sicht — sie richtet keine Ratsche`);
         else messungen.push({ quelle: path.basename(d), ort: u.ort, geraet, sicht: u.sicht, u });

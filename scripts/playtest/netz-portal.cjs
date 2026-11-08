@@ -1325,7 +1325,7 @@ async function checkBandW12WorldPortal({ page, check }) {
 
         // _tickPortalAffordance zeigt den Prompt, wenn ein Portal nah ist. Spieler AUF die Portal-Position
         // setzen: Zwischen-Ticks lassen ihn sonst zu Boden aus PORTAL_REACH (4,5 m, 3D inkl. y) driften.
-        if (portalEntry && pm && pm.set) {
+        if (portalEntry && pm?.set) {
             pm.set(portalEntry.position.x, portalEntry.position.y, portalEntry.position.z);
         }
         r._tickPortalAffordance();
@@ -2110,7 +2110,7 @@ async function checkBandW18InputBridge({ page, check }) {
             // Den Test-Listener vom echten window räumen (die Deklaration
             // registrierte ihn) — kein Leck in die Folge-Bands.
             const po = r._portalOverlay;
-            if (po && po.onInputKey) {
+            if (po?.onInputKey) {
                 window.removeEventListener("keydown", po.onInputKey);
                 window.removeEventListener("keyup", po.onInputKey);
             }
@@ -2211,7 +2211,7 @@ async function checkBandW18Dwell({ page, check }) {
         const pid = "peer-dwell-zensus";
         r._p2pMsgSoul({ peerId: pid, soulName: "human", name: "Bo" }, st.p2p);
         const pe = st.p2p.peers.get(pid);
-        const schild = () => (pe && pe.nameLabel ? pe.nameLabel.material.map.image.toDataURL() : "");
+        const schild = () => (pe?.nameLabel ? pe.nameLabel.material.map.image.toDataURL() : "");
         const ohne = schild();
         r._p2pMsgSoul({ peerId: pid, soulName: "human", name: "Bo", dwell: "Feld" }, st.p2p);
         out.soulReads = !!pe && pe.dwellingIn === "Feld";

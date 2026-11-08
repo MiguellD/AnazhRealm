@@ -770,7 +770,7 @@ function __wasserFlussNah(r, x, z) {
     const st = r.state;
     const fluesse = [];
     for (const h of [st.hydrosphere].concat(st.hydroTiles ? [...st.hydroTiles.values()] : []))
-        if (h && h.ready) fluesse.push(...(h.rivers || []));
+        if (h?.ready) fluesse.push(...(h.rivers || []));
     const aus = { p: null, vor: null, fluesse };
     for (const rv of fluesse)
         rv.points.forEach((q, k) => {
@@ -1018,7 +1018,7 @@ async function wasserUferFarbe(o = {}) {
     // > 0,1 zwischen zwei 2-cm-Nachbarn (stetig höchstens 0,05: das Band läuft über 0,3 m aus).
     const core = globalThis.__phytoCore;
     const arten = r._nahStreuArten();
-    const schilfA = arten ? arten.find((A) => A.zeile && A.zeile.ufer) : null;
+    const schilfA = arten ? arten.find((A) => A.zeile?.ufer) : null;
     const schilfW = (x, z, y) => {
         const uf = { see: 0, fluss: null, ufer: 0 };
         r._waterLevelAt(x, z, uf);
@@ -1738,7 +1738,7 @@ function wasserSichtNetz() {
     const boeden = new Map();
     const faecherVon = (m) => {
         let n = null;
-        if (m && m.geometry && m.geometry.attributes && m.geometry.attributes.position) {
+        if (m?.geometry?.attributes?.position) {
             const pos = m.geometry.attributes.position.array;
             const ix = m.geometry.index ? m.geometry.index.array : null;
             const triN = ix ? ix.length / 3 : pos.length / 9;
@@ -1820,7 +1820,7 @@ function wasserSichtNetz() {
             for (const [nx, nz] of ring) {
                 const nk = nx + "," + nz;
                 const ne = st.voxelChunks && st.voxelChunks.get(nk);
-                if (ne && ne.waterCells && !(st.voxelChunkWaterIso && st.voxelChunkWaterIso.has(nk)))
+                if (ne?.waterCells && !(st.voxelChunkWaterIso && st.voxelChunkWaterIso.has(nk)))
                     r._buildVoxelChunkWaterIsoSurface(nx, nz);
             }
         } finally {
@@ -2050,12 +2050,12 @@ async function wasserQuelle(o = {}) {
         const h = rx === 0 && rz === 0 ? st.hydrosphere : st.hydroTiles && st.hydroTiles.get(rx + "," + rz);
         if (!h || !h.ready || !Array.isArray(h.rivers))
             return { fehler: `die Kachel ${key} der Quell-Probe steht nicht` };
-        if (regionen.indexOf(h) < 0) regionen.push(h);
+        if (!regionen.includes(h)) regionen.push(h);
     }
     // der Bach der Mess-Wiese (aus der Welt, `__wasserOrte`) liegt in einer Kachel der Probe
     const bachOrt = o.bach || (await window.__wasserOrte({})).bach;
     const bachKachel = bachOrt && globalThis.__gelaendeCore.kachelSchluessel(r._gelaende(), bachOrt.x, bachOrt.z);
-    if (bachKachel && o.kacheln.indexOf(bachKachel) < 0)
+    if (bachKachel && !o.kacheln.includes(bachKachel))
         return {
             fehler: `der Bach der Mess-Wiese liegt in der Kachel ${bachKachel}, nicht in den Kacheln der Quell-Probe`,
         };
@@ -2574,7 +2574,7 @@ async function wasserBank(o = {}) {
     await __weltDa(() => !r._ensureHydroTilesAround(ort[0], ort[1], rad + 64));
     const punkte = [];
     // Heimat-Region und Kacheln (der Fluss der Mess-Wiese liegt jenseits ±1024 m)
-    const regionen = [h].concat(st.hydroTiles ? [...st.hydroTiles.values()].filter((t) => t && t.ready) : []);
+    const regionen = [h].concat(st.hydroTiles ? [...st.hydroTiles.values()].filter((t) => t?.ready) : []);
     for (const rv of regionen.flatMap((g) => g.rivers || [])) {
         const P = rv.points;
         for (let k = 0; k + 1 < P.length; k++) {
@@ -3021,7 +3021,7 @@ async function wasserOrte(o = {}) {
     // 2) Fluss und Bach: über alle geladenen Regionen
     const regionen = [st.hydrosphere]
         .concat(st.hydroTiles ? [...st.hydroTiles.values()] : [])
-        .filter((h) => h && h.ready);
+        .filter((h) => h?.ready);
     let fd = Infinity;
     let bd = Infinity;
     for (const h of regionen)
@@ -3042,7 +3042,7 @@ async function wasserOrte(o = {}) {
         }
     // 3) die Küste: die nächste Ozean-Zelle (waterKind 1) neben Land mit Boden unter dem Meer, die Land-Seite — liegt das Meer jenseits der geladenen
     //    Kacheln, zuerst am Gesetz (Ringe zu 64 m bis 12 km) der erste Grund unter dem Meer, dort die Kachel
-    if (!regionen.some((h) => h.water && h.water.waterKind && h.water.waterKind.indexOf(1) >= 0))
+    if (!regionen.some((h) => h.water?.waterKind && h.water.waterKind.includes(1)))
         for (let R = 64, da = false; R <= 12000 && !da; R += 64) {
             const n = Math.ceil((2 * Math.PI * R) / 64);
             for (let k = 0; k < n && !da; k++) {
@@ -3051,13 +3051,13 @@ async function wasserOrte(o = {}) {
                 if (!(r._terrainMacroSurfaceY(x, z, false) < wl - 2)) continue;
                 await __weltDa(() => !r._ensureHydroTilesAround(x, z, 0));
                 const h = r._hydroFor(x, z);
-                if (h && h.ready && regionen.indexOf(h) < 0) regionen.push(h);
+                if (h?.ready && regionen.indexOf(h) < 0) regionen.push(h);
                 da = !!(h && h.water && h.water.waterKind && h.water.waterKind.indexOf(1) >= 0);
                 // die Küste ist breiter als eine Kachel: ihre Nachbarn gehören zur Suche nach der Tasche (unten)
                 if (da) {
                     await __weltDa(() => !r._ensureHydroTilesAround(x, z, 1024));
                     for (const t of st.hydroTiles ? st.hydroTiles.values() : [])
-                        if (t && t.ready && regionen.indexOf(t) < 0) regionen.push(t);
+                        if (t?.ready && regionen.indexOf(t) < 0) regionen.push(t);
                 }
             }
         }
@@ -3091,7 +3091,7 @@ async function wasserOrte(o = {}) {
         besteD = Infinity;
     for (const h of regionen) {
         const wK = h.water && h.water.waterKind;
-        if (!wK || wK.indexOf(1) < 0) continue;
+        if (!wK || !wK.includes(1)) continue;
         const D = h.dim;
         for (let cj = 1; cj < D - 1; cj++)
             for (let ci = 1; ci < D - 1; ci++) {

@@ -869,6 +869,7 @@ class AnazhRealm_werkstatt_bauen {
         this._trittFlaecheLoesen(entry);
         this.state.architectures.splice(idx, 1);
         this._blockerAustritt(entry);
+        if (entry._grundBox) this._wagenGrund(entry, true); // wo der Wagen stand, wächst der Halm wieder
         this._cullWecken(entry, "weg");
         this._weltRegt(); // die Bau-Menge regt sich: die Stand-Wache weckt die Fege-Takte
         this._kronenStreuWeg("a:" + entry.id); // ein gefällter Baum nimmt seine Krone aus der Karte

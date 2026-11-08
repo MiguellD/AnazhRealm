@@ -329,7 +329,7 @@ async function checkBandKristallKleid({ page, check }) {
     const out = await safeEvaluate(page, async () => {
         // die Ausstattung löst über das LIVE-Buch auf (studioGestalt): warten, bis das Gesetzbuch der Architektur da ist
         const f = r._ensureAssetFoundry();
-        await __weltDa(() => !!(f && f.ready && f.recipes && f.recipes.feuerstelle));
+        await __weltDa(() => !!(f?.ready && f.recipes && f.recipes.feuerstelle));
         const bp = st.blueprints || {};
         const res = {};
         for (const t of ["kristall_var0", "kristall_var7", "fels_var0", "fels_var5", "fels_var7", "glut_var0", "glutbrunnen", "marktstand_dorf", "brunnen_dorf", "laterne_dorf", "kristall_geode", "felsturm", "stein_block"])
@@ -369,7 +369,7 @@ async function checkBandKeinZweiterBaumbaecker({ page, check }) {
         await __streuTakte(350, 10);
         // Instanz-Gruppen enumerieren: Schlüssel = Bauplan-Name#leaf[@region].
         const groups = [];
-        const eat = (map) => { if (!map) return; for (const [k, g] of map) { let c = 0; if (g && g.mesh && Number.isFinite(g.mesh.count)) c = g.mesh.count; else if (g && Number.isFinite(g.count)) c = g.count; groups.push({ key: String(k), count: c }); } };
+        const eat = (map) => { if (!map) return; for (const [k, g] of map) { let c = 0; if (g?.mesh && Number.isFinite(g.mesh.count)) c = g.mesh.count; else if (g && Number.isFinite(g.count)) c = g.count; groups.push({ key: String(k), count: c }); } };
         eat(st.archInstanceGroups);
         // Klassifizieren: die FOUNDRY-Herkunft lebt im LEAF-Key (nach `#`): `f:`/`fimp:` = Foundry-Geometrie/
         // -Impostor (auch für die PLATZIERTE Architektur, deren Gruppen-NAME die Art `baum_tanne` trägt, aber
@@ -594,7 +594,7 @@ async function checkBandLeistungsVertrag({ page, check }) {
             let bpName = null;
             for (const n in st.blueprints) {
                 const fl = r._archFlattenBlueprint(n);
-                if (fl && fl.instanceable && fl.leaves && fl.leaves.length) {
+                if (fl?.instanceable && fl.leaves && fl.leaves.length) {
                     bpName = n;
                     break;
                 }
@@ -661,8 +661,7 @@ async function checkBandLeistungsVertrag({ page, check }) {
             const trace = r._flightRecorderBuildTrace();
             const ss = trace && trace.steadyState;
             o.v4Linsen = !!(
-                ss &&
-                ss.bundleDeckung &&
+                ss?.bundleDeckung &&
                 Number.isFinite(ss.bundleDeckung.deckungPct) &&
                 ss.ingestTakt &&
                 Number.isFinite(ss.ingestTakt.frei) &&

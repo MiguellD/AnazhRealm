@@ -411,7 +411,7 @@ async function probe(argW) {
     const bild = (e) => {
         const m = new THREE.Matrix4();
         if (e.mesh) m.compose(e.mesh.position, e.mesh.quaternion, e.mesh.scale);
-        else if (e.instSlots && e.instSlots.length) st.archInstanceGroups.get(e.instSlots[0].key).mesh.getMatrixAt(e.instSlots[0].slot, m);
+        else if (e.instSlots?.length) st.archInstanceGroups.get(e.instSlots[0].key).mesh.getMatrixAt(e.instSlots[0].slot, m);
         else return null;
         const [p, q] = [new THREE.Vector3(), new THREE.Quaternion()];
         m.decompose(p, q, new THREE.Vector3());

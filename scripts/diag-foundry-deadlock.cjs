@@ -18,7 +18,7 @@ hauptLauf(async () => {
             // Foundry-Worker hochfahren + warten.
             const f = r._ensureAssetFoundry();
             await __weltDa(() => !(f && !f.ready));
-            out.ready = !!(f && f.ready);
+            out.ready = !!(f?.ready);
             if (!out.ready) {
                 out.err = "Worker nicht ready";
                 return out;

@@ -305,7 +305,7 @@ async function proben(phasen) {
     const stell = (x, y, z) => {
         pm.position.set(x, y, z);
         s._fieldVy = 0;
-        if (s.playerVel && s.playerVel.setValue) s.playerVel.setValue(0, 0, 0);
+        if (s.playerVel?.setValue) s.playerVel.setValue(0, 0, 0);
         if (s._fixedSimPos) s._fixedSimPos.copy(pm.position);
         for (let k = 0; k < 20; k++) r._stepFixedSim((t += DT), DT);
     };
@@ -355,7 +355,7 @@ async function proben(phasen) {
                 await window
                     .__gebautNach(e, { fertig: () => !!e._hausHuelle, bau: () => {}, takt: () => pumpe(4), max: 300 })
                     .catch(() => null);
-            if (e && e._hausHuelle) return e;
+            if (e?._hausHuelle) return e;
         }
         return null;
     };
@@ -1823,7 +1823,7 @@ async function proben(phasen) {
         const ort = sl && { x: q.origin.x + sl.x, y: sl.y + 0.5, z: q.origin.z + sl.z };
         const sperre = ort && r.spawnArchitecture("brunnen_dorf", ort, { silent: true });
         await warteBis(() => !(q && r._autoSettlementQueue === q && q.idx < 3), 1, 1200);
-        const reload = !!q && r._autoSettlementQueue === q && q.idx < q.plan.slots.length ? q.idx : 0;
+        const reload = q && r._autoSettlementQueue === q && q.idx < q.plan.slots.length ? q.idx : 0;
         if (reload) {
             // der Reload des Spiels mitten im Erwachen: der Zug fällt, der Ort kehrt aus seinem Gedächtnis wieder (speicher.K3)
             r._autoSettlementQueue = null;
@@ -1913,7 +1913,7 @@ function urteil(o) {
         const gang = hs.filter((h) => h.gang);
         if (gang.length < 3 || !gang.some((h) => h.gang.keller) || !gang.some((h) => h.gang.dach))
             f.push(`W10 Aufbau: ${gang.length} Gänge (Soll ≥ 3, mit Keller, mit Dachboden)`);
-        const tier = hs.filter((h) => h.tiere && h.tiere.length);
+        const tier = hs.filter((h) => h.tiere?.length);
         if (hs.some((h) => !h.saat)) f.push("W10 Saat blind");
         if (tier.length) f.push(`W10 Tier im Haus: ${tier.map((h) => h.typ + " " + h.tiere).join(" · ")}`);
         const hub = gang.filter((h) => !(h.gang.hub <= 0.3));
@@ -2085,7 +2085,7 @@ function urteil(o) {
                 f.push(
                     `W4b Aufbau: die Promotion lief nicht durch (${o.w4b.promo ? o.w4b.promo.promoviert + " promotet, " + o.w4b.promo.rest + " offen" : "?"} im Ring; Soll ≥ 1, 0 offen)`
                 );
-            if (o.w4b.kachel && o.w4b.kachel.imHaus)
+            if (o.w4b.kachel?.imHaus)
                 f.push(
                     `W4b Nah-Streu: ${o.w4b.kachel.imHaus} von ${o.w4b.kachel.pflanzen} Kachel-Pflanzen im Grundriss`
                 );
@@ -2104,7 +2104,7 @@ function urteil(o) {
     if (P.has("fremd")) {
         const [w, g] = [o.w11 || {}, (o.haeuser.find((h) => h.fremd) || {}).gang];
         if (!(w.vorher > 0 && w.nachher === 0 && w.byte && w.fest)) f.push(`W11 Fremd-Slot: ${JSON.stringify(w)}`);
-        if (!(g && g.keller && g.hub <= 0.3 && !g.fehlt.some((x) => x.startsWith("keller"))))
+        if (!(g?.keller && g.hub <= 0.3 && !g.fehlt.some((x) => x.startsWith("keller"))))
             f.push(`W10 Anti-Clip-Hub im Fremd-Slot: ${JSON.stringify(g)}`);
     }
     if (P.has("start")) {

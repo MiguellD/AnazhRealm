@@ -44,8 +44,9 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
 - ORT: der Genesis-Ort ist EIN Plan des Ort-Gesetzes (fachwerk `GENESIS_ORT` → `genesisLayout` → `ortPlan`, der erste Auftrag
   des Voxel-Fadens; der Wirt liest ihn, `_genesisOrt`, seine Flächen sind Grundriss der Natur-Wand, ihr `belag` ein Kanal der EINEN
   Wege-Karte: `WEGE_KARTE.belag` rg8snorm — der Boden zeichnet Kopfstein aus porta `STEIN_GESETZ.kopfstein` und Rasen aus `WIESEN_GRUND`), jedes Bauwerk und jeder Dorfweg sind Grundriss gegen Natur, das Dorf EIN Plan des
-  Fachwerk-Studios auf dem Gelände-Kern (`_ortPlaene`), jeder Wurf des Felds weicht ihm (`FELD_WURF`, `_weichtDemBau`). Heute hält die
-  Instanz-Wand (`_naturWand`) Bauten frei, die Schicht (Halm, Nah-Wiese) noch nicht.
+  Fachwerk-Studios auf dem Gelände-Kern (`_ortPlaene`), jeder Wurf des Felds weicht ihm (`FELD_WURF`, `_weichtDemBau`). Die Natur-Wand
+  (`_naturWand`) hält Bauten und Wagen frei, der Halm der Nah-Wiese fragt ihre Hüllen (`_imWagen`, `_imGrundriss` „bau“; das Haus
+  sein Erdbau), ein haltender Wagen lässt die Kacheln neu wachsen (`_wagenGrund`). Heute weicht der Halm dem fahrenden Wagen nicht.
 - GESTALT < 64 m Studio-Mesh + LOD-Kette, EIN Auge der Stufen (`_lodAuge`), jede Karte eine Schicht des EINEN Atlas, gebacken aus
   ihrer Höhen-Stufe (`_karteStufe`), je Texel ihre Tiefe (phyto-core `karteTiefe`: die Karte steht in der Tiefe ihrer Gestalt —
   gelesen an den Ecken ihres Gitters `KARTE_GITTER`, nie im Fragment: frag_depth schaltet den frühen Tiefentest ab; fern fällt das
@@ -182,4 +183,9 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
   verteilt, `gate:ci-deckung` hält die Waage; `[skip ci]` überspringt beides.
 - GPU-Zeit nur `werkbank gpu-bank` (OMEN = GTX 1060; die Radeon 890M lokal per `werkbank --echt`), A/B bei gleicher Szene oder ≥ 4 Boots
   je Seite; Aufträge und Berichte der Messplätze leben im Zweig `koordination`, nie in main.
+- Bild-Urteile auf ECHTER GPU aus jedem Zweig (`.github/workflows/gpu-probe.yml`): die Kopf-Commit-Message trägt
+  `[gpu-probe: gate:<npm-skript>, bild:<messort>@<uhr>]` (höchstens drei, ohne `[skip ci]`), ein freier Läufer mit dem Label gpu-probe
+  fährt sie unter dem GPU-Schloss; Urteil und Bild stehen in `origin/koordination:probe-post/<zweig>/<sha8>.md`, die Zeile oben in
+  `cloud-post/<zweig>.md`, 2–3 min ab dem Push (07.11.: Radeon 108 s, OMEN 195 s samt npm ci; gate:apparat Klinge 7 hält den Einlass:
+  nur push, nur die zwei Formen).
 - Commits klein, deutsch, emoji-frei, die Message ist der Chronik-Eintrag; PR nur auf Wunsch. Docs: `docs/README.md` ist die EINE Karte.

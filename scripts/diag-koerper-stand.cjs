@@ -1000,7 +1000,7 @@ async function rollen(n) {
             { silent: true, precise: true, rotationY: auf - Math.PI }
         );
         if (e) await __gebautNach(e, { takt, max: 200 });
-        if (e && e.instSlots && (r.mountArchitecture(e) || {}).ok) {
+        if (e?.instSlots && (r.mountArchitecture(e) || {}).ok) {
             for (let k = 0; k < 15; k++) takt();
             // je Takt die Blätter des Rads (`lf.rad` des Flats seiner Stufe, Slot i ↔ Blatt i): je Nabe der tiefste Vertex;
             // in der Luft (`_fahr.luft`) und im Stand (ein Rad auf einem Stein) zählt kein Boden-Kontakt

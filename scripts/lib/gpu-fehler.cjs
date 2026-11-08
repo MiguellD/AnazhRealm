@@ -47,7 +47,7 @@ function gpuFehlerAbgriff() {
     P.createRenderPipeline = function (d) {
         const p = crp.call(this, d);
         try {
-            p.__vbN = d && d.vertex && Array.isArray(d.vertex.buffers) ? d.vertex.buffers.length : 0;
+            p.__vbN = d?.vertex && Array.isArray(d.vertex.buffers) ? d.vertex.buffers.length : 0;
         } catch {}
         return p;
     };
@@ -56,7 +56,7 @@ function gpuFehlerAbgriff() {
         P.createRenderPipelineAsync = async function (d) {
             const p = await crpa.call(this, d);
             try {
-                p.__vbN = d && d.vertex && Array.isArray(d.vertex.buffers) ? d.vertex.buffers.length : 0;
+                p.__vbN = d?.vertex && Array.isArray(d.vertex.buffers) ? d.vertex.buffers.length : 0;
             } catch {}
             return p;
         };

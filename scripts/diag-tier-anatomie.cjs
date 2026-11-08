@@ -372,7 +372,7 @@ function lauf(sb, opts) {
     const fehler = [];
     for (const art of ARTEN) {
         const g = sb.BAKERS_BY_KIND.kreatur(TC, art, 0, 0, null);
-        if (opts && opts.verzerre) opts.verzerre(sb, g);
+        if (opts?.verzerre) opts.verzerre(sb, g);
         const m = messe(sb, g);
         const u = urteile(sb, art, m, M);
         m.kahl = kahlAnteile(g);

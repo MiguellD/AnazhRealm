@@ -376,7 +376,7 @@ async function checkBandRing6Workshop({ page, check }) {
         out.entryHasCollision = !!entry && Array.isArray(entry.blockerAABBs) && entry.blockerAABBs.length > 0;
         // Kollisions-Box-Größe indirekt via Three-Bounding-Box verifizieren
         // (entry.mesh hat die echte Geometrie).
-        if (entry && entry.mesh) {
+        if (entry?.mesh) {
             const bbox = new THREE.Box3().setFromObject(entry.mesh);
             const size = new THREE.Vector3();
             bbox.getSize(size);
@@ -944,7 +944,7 @@ async function checkBandRing6Workshop({ page, check }) {
         out.hudShownWhenActive = document.getElementById("build-mode-hud").hidden === false;
         let foundTransparent = false;
         st.buildMode.phantomMesh.traverse((node) => {
-            if (node.material && node.material.transparent && node.material.opacity < 1) {
+            if (node.material?.transparent && node.material.opacity < 1) {
                 foundTransparent = true;
             }
         });
@@ -1589,7 +1589,7 @@ async function checkBandV18213MeshMerge({ page, check }) {
             for (const entry of cacheBeforeReset.values()) {
                 if (entry && Array.isArray(entry.leaves)) {
                     for (const leaf of entry.leaves) {
-                        if (leaf && leaf.geom && typeof leaf.geom.dispose === "function") leaf.geom.dispose();
+                        if (leaf?.geom && typeof leaf.geom.dispose === "function") leaf.geom.dispose();
                     }
                 }
             }
