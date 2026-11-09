@@ -751,8 +751,8 @@ class AnazhRealm_vegetation_wiese {
     // Es fällt mit seinen Karten und seinem Wasser (dieselbe Prüfung wie die Kachel) und unter einer neuen Fläche
     // (`_nahWieseNeuIn`); jenseits des Chunk-Rings (`_bodenKommtNie`, `nie`) trägt es nichts. null, solange ein Chunk unter ihm
     // seine Karte noch bekommt — oder die Frist des Takts (`frist`) verstrich, bevor es neu entsteht (die Kachel wartet einen
-    // Takt, die gelesenen Gitter bleiben; Lehre 14). Die Frist fragt nur der Bau der Kachel, VOR ihren Büscheln
-    // (`_nahWieseFernKachel`); die Grenze liest danach, was steht. Kosten: 144 Proben je Kachel (12 × 12), EINMAL, solange ihr
+    // Takt, die gelesenen Gitter bleiben; Lehre 14). Die Frist fragt nur die Bereitschaft der Kachel, VOR ihrer Lage und ihren
+    // Büscheln (`_wieseFernBereit`); die Grenze liest danach, was steht. Kosten: 144 Proben je Kachel (12 × 12), EINMAL, solange ihr
     // Boden steht.
     // DIE KACHEL DER FERNE BEGINNT ERST, WENN DA IST, WAS SIE LIEST (w25-ankunft-block-2, die Klasse „ein Bau fällt auf null“; das Feld
     // zuerst von w24-rueckfall-ruhe hierher gezogen): die Boden-Karten ihrer Kacheln der Nähe (`_bodenSichtChunks`, dieselben Rechtecke
