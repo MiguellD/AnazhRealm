@@ -122,16 +122,72 @@ function sitzungTor() {
 }
 
 // der Befehl einer Probe: das Tor, dann `fn(tor)`; ein Wurf ist ROT beim Namen (PROBE-FEHLER mit den ersten Rahmen), nie still — ein
-// Wurf des Messorts (`messort`, das Tor) sagt davor die EINE Marke (punkte.cjs keinUrteil (d): UNGEMESSEN beim Namen)
+// Wurf des Messorts (`messort`, das Tor) sagt davor die EINE Marke (punkte.cjs keinUrteil (d): UNGEMESSEN beim Namen).
+// DIE HELFER (w27-verkehr-station-pm): eine Funktion unter `arg` reist als Deklaration vor `fn` im Befehl mit — ein Baustein, den
+// zwei Proben teilen (die Naht der Teile), steht EINMAL hier und im Abdruck jeder, die ihn ruft; ohne Helfer Byte für Byte wie bisher.
 function torBefehl(fn, ...arg) {
     return [
         "node",
         "-e",
-        "const tor = (" + sitzungTor + ")();\n(" + fn + ")(tor).then(() => process.exitCode || 0, (e) => ((e && e.messort ? console.log('@@PUNKTE@@ MESSORT ' + e.messort) : 0), " +
+        "const tor = (" + sitzungTor + ")();\n" + arg.filter((a) => typeof a === "function").map((h) => h + "\n").join("") +
+            "(" + fn + ")(tor).then(() => process.exitCode || 0, (e) => ((e && e.messort ? console.log('@@PUNKTE@@ MESSORT ' + e.messort) : 0), " +
             "console.log('PROBE-FEHLER ' + String((e && e.stack) || e).split('\\n').slice(0, 4).join(' | ')), 1)).then(async (c) => { await tor.ende(); process.exit(c); });",
         "{AUS}",
-        ...arg,
+        ...arg.filter((a) => typeof a !== "function"),
     ];
+}
+
+// ───────── DIE TEILE EINER PROBE — die Naht in der Seite und ihr Läufer im Prozess (Helfer, `torBefehl`) ─────────
+// Ein Lauf, der mehr Wanduhr braucht als das Gesetz einer Probe (45 s), bleibt EINER: der erste Teil startet ihn in der Seite, jeder
+// Teil gibt ihm die Frist seines Prozesses (PUNKTE_TEIL_FRIST_S). Die Naht ist das Warten des Laufs zwischen zwei Takten
+// (`window.sleep`): nach der Frist hält er dort an — die Welt steht (der Loop der Sitzung ist aus, die Uhr des Laufs ist seine eigene) —,
+// der Teil sagt `@@PUNKTE@@ TEIL WEITER`, der nächste lässt ihn weiterlaufen. Der letzte Teil hält nie: reißt seine Frist, wirft die
+// Naht, der Lauf räumt auf, und die Probe nennt die Frist (`@@PUNKTE@@ FRIST`, UNGEMESSEN beim Namen). `window.__probeStand` (ein
+// Satz, vom Lauf geschrieben) steht in der Zeile jedes Halts: wie weit er kam. Bis w27-verkehr-station-pm lebte die Naht im Rumpf
+// von `fahrWegenetz`; jetzt tragen sie fahrzeug.K2#1 und #2.
+async function teilNaht(a) {
+    let T = window.__probeTeil;
+    if (a.neu) {
+        if (T) window.sleep = T.schlaf; // ein Lauf einer gefallenen Probe: seine Naht fällt
+        T = window.__probeTeil = { schlaf: window.sleep };
+        T.naht = async () => {
+            if (performance.now() < T.frist) return;
+            if (T.letzter) throw new Error("DIE TEILE DER FAHRT reichten nicht: die Frist des letzten Teils riss an der Naht");
+            await new Promise((w) => ((T.weiter = w), T.halt()));
+        };
+        window.sleep = (...x) => T.naht().then(() => T.schlaf(...x));
+    } else if (!T || !T.weiter) return { err: "DIE TEILE DER FAHRT: kein gehaltener Lauf vor diesem Teil" };
+    [T.frist, T.letzter] = [performance.now() + a.ms, a.letzter];
+    const halt = new Promise((h) => (T.halt = h));
+    if (a.neu)
+        T.lauf = new Function("return " + a.code)()(a.arg).finally(() => {
+            window.sleep = T.schlaf;
+            delete window.__probeStand;
+            if (window.__probeTeil === T) delete window.__probeTeil;
+        });
+    else T.weiter();
+    const x = await Promise.race([T.lauf.then((o) => ({ o })), halt.then(() => null)]);
+    const p = st.playerMesh.position;
+    return x ? x.o : { teil: { lage: [Math.round(p.x), Math.round(p.z)], orte: r._bewohnerSiedlungen ? r._bewohnerSiedlungen.size : 0, stand: window.__probeStand || "" } };
+}
+// der Teil im Prozess: `vor(page)` einmal vor dem Lauf (Teil 1), dann die Naht; Rückgabe null am Halt (die Zeile `<kurz> Teil i/N`
+// und WEITER sind gesagt), sonst { o (das Ergebnis des Laufs), s, teil }
+async function teilLauf(page, kurz, code, arg, vor) {
+    const [nr, n] = String(process.env.PUNKTE_TEIL || "1/1").split("/").map(Number);
+    const fristS = Number(process.env.PUNKTE_TEIL_FRIST_S) || 0;
+    if (nr === 1 && vor) await vor(page);
+    const t0 = Date.now();
+    // die Frist der Seite: der Rest der Teil-Frist seit dem Start des Prozesses, 1 s für Zeile und Abbau (ohne Teile: keine)
+    const ms = n > 1 ? Math.max(1000, fristS * 1000 - process.uptime() * 1000 - 1000) : 1e12;
+    const o = await page.evaluate(teilNaht, { code, arg, ms, letzter: nr >= n, neu: nr === 1 });
+    const s = ((Date.now() - t0) / 1000).toFixed(1);
+    if (o.teil) {
+        console.log(`  ${kurz} Teil ${nr}/${n}: der Lauf hält nach ${s} s an der Naht (Spieler bei ${o.teil.lage.join(", ")}, ${o.teil.orte} Orte wach${o.teil.stand ? ", " + o.teil.stand : ""}) — weiter`);
+        console.log("@@PUNKTE@@ TEIL WEITER");
+        return null;
+    }
+    if (/DIE TEILE DER FAHRT reichten nicht/.test(String(o.err))) console.log(`@@PUNKTE@@ FRIST ${fristS} s der Probe gerissen: ${String(o.err).split("\n")[0]} (Teil ${nr}/${n})`);
+    return { o, s, teil: `Teil ${nr}/${n}` };
 }
 
 // ───────── physik.K2#2 — der Wagen bei vmax × 1,2 und die Bild-Probe an der Mauer (gate:kollision-bild `tempo`) ─────────
@@ -818,12 +874,10 @@ async function fahrRueck(tor) {
 // Stand die Fahrt nicht, endet die Probe sofort ROT beim Namen (nie die volle Leben-Probe als Ersatz).
 // DIE TEILE (w19-fahrt-ziel-2-pm, `probe.teile` der Station, punkte.cjs fahreGruppe): Orte und Fahrt tragen ~127 s Wanduhr auf der
 // GTX (Radeon 43,1 s Orte + 110,9 s Fahrt) — über dem Gesetz einer Probe (45 s). Der Lauf der Linse bleibt EINER und Byte für Byte
-// der des Gates (`probeLeben` aus dem Spiel-Baum am SHA): der erste Teil startet ihn in der Seite, jeder Teil gibt ihm die Frist seines
-// Prozesses (PUNKTE_TEIL_FRIST_S). Die Naht ist das Warten der Linse zwischen zwei Takten (`window.sleep`: `__gebautNach` nach jedem
-// Takt der Orte, die Fahrt nach jedem zweiten Bild) — nach der Frist hält der Lauf dort an; die Welt steht (der Loop der Sitzung ist
-// aus, die Uhr der Linse `tMs` ist ihre eigene, Orte, Route, Fahrer und Zählung leben im Lauf), der Teil sagt `@@PUNKTE@@ TEIL
-// WEITER`, und der nächste lässt ihn weiterlaufen. Der letzte Teil hält nie: reißt seine Frist, wirft die Naht, die Linse räumt auf,
-// und die Probe nennt die Frist (`@@PUNKTE@@ FRIST`, UNGEMESSEN beim Namen). Die Zeile ist die des Laufs in einem Stück.
+// der des Gates (`probeLeben` aus dem Spiel-Baum am SHA) und hält an der Naht der Teile (`teilNaht`, oben): `__gebautNach` nach jedem
+// Takt der Orte, die Fahrt nach jedem zweiten Bild. Die Zeile ist die des Laufs in einem Stück.
+// DER HELFER DER LINSE (w27-verkehr-station-pm): `wegenetzVerdict` ruft seit heim2-w13-verkehr-heil `urteil` — ohne ihn in der
+// Liste endete jeder Lauf mit „ReferenceError: urteil is not defined“ vor der Zeile (Radeon 3ccb8f55: UNGEMESSEN nach 4 Teilen).
 async function fahrWegenetz(tor) {
     const fs = require("fs");
     const path = require("path");
@@ -834,71 +888,201 @@ async function fahrWegenetz(tor) {
         process.exitCode = 1;
         return;
     }
-    const [nr, n] = String(process.env.PUNKTE_TEIL || "1/1").split("/").map(Number);
-    const fristS = Number(process.env.PUNKTE_TEIL_FRIST_S) || 0;
     const d = new Function(tor.dekl(L, ["urteil", "WEGENETZ", "wegenetzVerdict", "taktHz"]) + "\nreturn { WEGENETZ, wegenetzVerdict, taktHz };")();
     const F = require(path.resolve(P));
     const mo = require(path.resolve("scripts/lib/band-urteil.cjs")).ladeSpec("wiese").ort.spieler;
     const page = await tor.seite();
     tor.karte();
-    if (nr === 1) {
+    const T = await teilLauf(page, "WN", String(F.probeLeben), { messort: mo, wegenetz: { ...d.WEGENETZ, mutante: false, gleich: false } }, async () => {
         await page.evaluate(require(path.resolve("scripts/lib/wasser-linse.cjs")).WASSER_INSTALL);
         await page.evaluate(`window.__tempoSpion = ${F.tempoSpion}; window.__taktHz = ${d.taktHz}; window.__ruckJeBild = ${F.ruckJeBild};`);
         await page.evaluate(() => (window.__anazhAutoSettlement = true));
-    }
-    const t0 = Date.now();
-    // DER TEIL IN DER SEITE: `neu` startet den Lauf hinter der Naht, sonst läuft der gehaltene weiter; Rückgabe der Stand am Halt
-    // ({ teil }) oder das Ergebnis der Linse — am Ende fällt die Naht (window.sleep wie vorher)
-    const teilSeite = async (a) => {
-        let T = window.__wegenetzTeil;
-        if (a.neu) {
-            if (T) window.sleep = T.schlaf; // ein Lauf einer gefallenen Probe: seine Naht fällt
-            T = window.__wegenetzTeil = { schlaf: window.sleep };
-            T.naht = async () => {
-                if (performance.now() < T.frist) return;
-                if (T.letzter) throw new Error("DIE TEILE DER FAHRT reichten nicht: die Frist des letzten Teils riss an der Naht");
-                await new Promise((w) => ((T.weiter = w), T.halt()));
-            };
-            window.sleep = (...x) => T.naht().then(() => T.schlaf(...x));
-        } else if (!T || !T.weiter) return { err: "DIE TEILE DER FAHRT: kein gehaltener Lauf vor diesem Teil" };
-        [T.frist, T.letzter] = [performance.now() + a.ms, a.letzter];
-        const halt = new Promise((h) => (T.halt = h));
-        if (a.neu)
-            T.lauf = new Function("return " + a.code)()(a.arg).finally(() => {
-                window.sleep = T.schlaf;
-                if (window.__wegenetzTeil === T) delete window.__wegenetzTeil;
-            });
-        else T.weiter();
-        const x = await Promise.race([T.lauf.then((o) => ({ o })), halt.then(() => null)]);
-        const p = st.playerMesh.position;
-        return x ? x.o : { teil: { lage: [Math.round(p.x), Math.round(p.z)], orte: r._bewohnerSiedlungen ? r._bewohnerSiedlungen.size : 0 } };
-    };
-    // die Frist der Seite: der Rest der Teil-Frist seit dem Start des Prozesses, 1 s für Zeile und Abbau (ohne Teile: keine)
-    const ms = n > 1 ? Math.max(1000, fristS * 1000 - process.uptime() * 1000 - 1000) : 1e12;
-    const arg = { messort: mo, wegenetz: { ...d.WEGENETZ, mutante: false, gleich: false } };
-    const o = await page.evaluate(teilSeite, { code: String(F.probeLeben), arg, ms, letzter: nr >= n, neu: nr === 1 });
-    const s = ((Date.now() - t0) / 1000).toFixed(1);
-    if (o.teil) {
-        console.log(`  WN Teil ${nr}/${n}: der Lauf hält nach ${s} s an der Naht (Spieler bei ${o.teil.lage.join(", ")}, ${o.teil.orte} Orte wach) — weiter`);
-        console.log("@@PUNKTE@@ TEIL WEITER");
-        return;
-    }
-    if (/DIE TEILE DER FAHRT reichten nicht/.test(String(o.err))) console.log(`@@PUNKTE@@ FRIST ${fristS} s der Probe gerissen: ${String(o.err).split("\n")[0]} (Teil ${nr}/${n})`);
+    });
+    if (!T) return;
+    const o = T.o;
     const v = o.wegenetz ? d.wegenetzVerdict(o.wegenetz) : [String(o.err || "keine Fahrt").split("\n")[0]];
-    console.log(`  ${v.length ? "❌" : "✅"} WN (fahrzeug.K2) die Fahrt auf dem Wegenetz — ${v.join(" · ") || "auf dem Netz"} · ${s} s in der Welt der Sitzung (Teil ${nr}/${n})`);
+    console.log(`  ${v.length ? "❌" : "✅"} WN (fahrzeug.K2) die Fahrt auf dem Wegenetz — ${v.join(" · ") || "auf dem Netz"} · ${T.s} s in der Welt der Sitzung (${T.teil})`);
     console.log(`WEGENETZ ${JSON.stringify(o.wegenetz)}`);
     if (v.length) process.exitCode = 1;
 }
 
-// ───────── PFLICHT-OFFEN C — der Verkehr der Stadt (gate:fahr-leben `--verkehr`) ─────────
-// Die Seiten-Probe des Gates (`probeLeben` mit `verkehr`): die Metropole des Messorts stadt-voll (nH 300; gegründet in der Welt
-// der Sitzung, wo sie nicht steht), um 10 und um 23 Uhr je `sek` Sekunden (das Argument, sonst 12) im Takt des Spiels — jeder
-// Wagen des Gesetzes mit seinem Fahrer am Steuer, keiner steckt, keiner berührt einen Bewohner, einen Wagen oder einen Bau;
-// `verkehrVerdict` der Linse (der Weg je Wagen am Maß von `sek`). Kennt der Stand den Verkehr nicht, ROT beim Namen in Sekunden.
-// Die Stadt erwacht, die Uhr springt: mutiert. Headless an w3w-verkehr fcfd85d7 (gate:fahr-leben --verkehr, 2 × 40 s, 122 s
-// Wanduhr samt Boot und Stadt): 10 Uhr 20/20 Wagen, Weg min 93 m, Sim-Takt 0,924 ms; 23 Uhr 20/20, min 110 m, 0,765 ms; 0
-// Berührungen. C trägt kein Kriterium der Karte (die Karte setzt keinen Pflicht-Eintrag): die Probe steht, registriert wird sie
-// am Kriterium, das der Schöpfer C gibt.
+// ───────── fahrzeug.K2#2 — die Fahrt kommt durch, Staffel 2: 25°-Hang und Furt in Ego und Third, der Verkehr der Stadt ─────────
+// EIN Lauf der Seiten-Probe des Gates (`probeLeben` aus dem Spiel-Baum am SHA) in der warmen Welt der Sitzung, an der Naht der Teile:
+// (1) HANG UND FURT, JE IN EGO UND THIRD (`zweiSeite`, unten — per Anker in den Rumpf von `probeLeben` gesetzt: sie fährt mit den
+//     Helfern und der Halterung der Linse, `setzen`, `ankommen`, Bahn-Wache, Windstille, Trockenheit): der GT mit dem Fahrer des
+//     Spiels am Steuer (`fahrerSetzen` → Verb-Tafel → der EINE Fahr-Schritt, wie die Fahrt auf dem Wegenetz) eine gerade Strecke
+//     — den Hang hinauf, den das Orts-Gesetz nennt (`__weltOrte("hang")`: ≥ 25° über 20 m), und durch das Wasser, das eine Furt ist
+//     (`__weltOrte("ufer")`, dann das Profil der Strecke am Wasser des Körpers: nass über wenige Meter, flacher als die Ansaugung,
+//     jenseits trocken). Gemessen am Wagen selbst: seine Neigung (`_fahr.steig`) und die Meter darüber, seine Tiefe (`_fahrTiefe`)
+//     und die Meter darin, Ankunft und Steckenbleiber des Fahrers, je Bild die Sicht und der Abstand der Kamera zum Wagen.
+//     Die Zeile `GELAENDE {…}`; das Urteil spricht die Station (g5.js `K2_ZWEI`, ihre Tafel reist als Argument).
+// (2) DER VERKEHR DER STADT (PFLICHT-OFFEN C): `verkehr` der Linse Byte für Byte, ihre Tafel `VERKEHR` GANZ (10 und 23 Uhr, je
+//     `sek` 600 Sekunden — bis w27-verkehr-station-pm 12 s je Stunde: seit heim2-w13-verkehr-heil verlangt `verkehrVerdict` gezählte
+//     Ankünfte und den Weg jeder vollen Minute, in 12 s kam keiner an und die Minuten-Reihe war `[null]` — ROT an jedem Stand);
+//     `verkehrVerdict` der Linse je Stunde, die Zeile `VERKEHR {…}`.
+// DER TAKT IST DER DER LINSE (gemessen am Baum main 78d37554, Null-Renderer, 10 Uhr, 600 s): im Muster der Linse fährt der
+// langsamste Wagen seiner langsamsten Minute 56 m (142 Ankünfte, GRÜN); am Takt-Deckel des Spiels (0,1 s je Bild, ein Sechstel der
+// Takte) 20 m — ROT; mit Zwischen-Takten ohne Leben (das Bild jeden vierten Takt, `zwischen`) 20 m — ROT; um 23 Uhr tragen alle
+// drei dasselbe Urteil (Zwischen-Takte Zahl für Zahl). Wer die Bewohner seltener schreiten lässt, ändert am Tag das Urteil: die Probe
+// kürzt keinen Takt. DIE UHR (`uhr` in `zweiSeite`, an `_gameLoopTick` und `_uhrSetzen` geliehen) nennt, was das kostet: je Stunde
+// die Sekunden bis zum Anfang, die Sekunden und ms je Takt der 600 s, die Bilder der Karte — die Zeile `ZEIT {…}`, im Halt jedes
+// Teils der Stand (`__probeStand`). Kennt der Stand den Verkehr nicht, ROT beim Namen in Sekunden. Die Stadt erwacht, die Uhr
+// springt, der Wagen räumt seine Bahn: mutiert.
+async function zweiSeite(o, verkehr) {
+    const G = { hang: {}, furt: {} };
+    const grad = (x) => (x * 180) / Math.PI;
+    const tief = (x, z) => Math.max(0, r._koerperWasser(x, z, hh(x, z)) - hh(x, z));
+    const punkt = (q, u, s) => ({ x: q.x + u[0] * s, z: q.z + u[1] * s });
+    // EINE FAHRT a → b in der Sicht: der Fahrer des Spiels am Steuer, die Bilder am Takt-Deckel (wie die Fahrt auf dem Wegenetz)
+    const fahre = async (a, b, sicht) => {
+        window.__probeStand = `${sicht} bei ${Math.round(a.x)}, ${Math.round(a.z)}`;
+        const len = Math.hypot(b.x - a.x, b.z - a.z);
+        const [ux, uz] = [(b.x - a.x) / len, (b.z - a.z) / len];
+        bahnWache = { sx: a.x, sz: a.z, ux, uz, len: len + 6, quer: 3, n: 0 };
+        const e = await setzen("fahrzeug_gt", a.x, a.z, Math.atan2(ux, uz));
+        if (!e) return ((bahnWache = null), { fehler: "der GT steht nicht am Start" });
+        const sicht0 = st.cameraMode;
+        r.setCameraMode(sicht);
+        const F = r.fahrerSetzen([a, b]);
+        const m = { kamera: [Infinity, 0], falsch: 0, steigMax: 0, steilM: 0, tiefeMax: 0, nassM: 0 };
+        let [s0, k] = [0, 0];
+        for (; k < o.bilderMax && !F.ende && F.steht * A.FIXED_DT < 5 * A.FAHRER.festS; k++) {
+            r._gameLoopTick((tMs += 1000 * A.TAKT_DECKEL_S));
+            raeumen();
+            if (k % 2) await window.sleep();
+            const [fz, d] = [e._fahr, st.camera.position.distanceTo(e.position)];
+            const [ds, steig, t] = [F.s - s0, grad(fz.steig || 0), r._fahrTiefe(fz)];
+            s0 = F.s;
+            [m.steigMax, m.tiefeMax] = [Math.max(m.steigMax, steig), Math.max(m.tiefeMax, t)];
+            if (steig >= o.hang.grad) m.steilM += ds;
+            if (t >= o.furt.tiefe) m.nassM += ds;
+            m.kamera = [Math.min(m.kamera[0], d), Math.max(m.kamera[1], d)];
+            m.falsch += st.cameraMode !== sicht;
+        }
+        r.fahrerSetzen(null);
+        r.setCameraMode(sicht0);
+        const rund = (x) => Math.round(x * 100) / 100;
+        Object.assign(m, { lang: Math.round(F.lang), weg: Math.round(F.s), ende: F.ende, steck: F.fest, schritte: F.takte, bilder: k, raeumte: bahnWache.n });
+        Object.assign(m, { kamera: m.kamera.map(rund), steigMax: rund(m.steigMax), steilM: rund(m.steilM), tiefeMax: rund(m.tiefeMax), nassM: rund(m.nassM) });
+        m.ansaug = rund(e._fahrSatz && e._fahrSatz.wasser ? e._fahrSatz.wasser.ansaug : NaN);
+        bahnWache = null;
+        weg(e);
+        return m;
+    };
+    // die Strecke a → b in jeder Sicht der Tafel
+    const teil = async (T, a, b) => {
+        window.__probeStand = `die Welt kommt an bei ${Math.round(a.x)}, ${Math.round(a.z)}`;
+        await ankommen(a.x, a.z);
+        for (const s of o.sichten) T[s] = await fahre(a, b, s);
+    };
+    if (o.furt) {
+        // DIE FURT: ein Ufer des Orts-Gesetzes, dessen Strecke das Wasser quert — nass über `nass` m, am tiefsten in `tief`, die
+        // Böschung je Meter höchstens `stufe`, jenseits `jenseitsM` trocken
+        const U = o.furt;
+        let fund = null;
+        for (const q of window.__weltOrte("ufer", { mitte: mo, ...U.such })) {
+            const u = [Math.sin(q.gier), Math.cos(q.gier)];
+            let [ein, aus, max, stufe] = [-1, -1, 0, 0];
+            for (let s = 0; s <= U.such.bis + U.nass[1] + U.jenseitsM && stufe <= U.stufe; s++) {
+                const [p, v] = [punkt(q, u, s), punkt(q, u, s - 1)];
+                const t = tief(p.x, p.z);
+                if (s) stufe = Math.max(stufe, Math.abs(hh(p.x, p.z) - hh(v.x, v.z)));
+                if (t > 0.02 && aus < 0) [ein, max] = [ein < 0 ? s : ein, Math.max(max, t)];
+                else if (ein >= 0 && aus < 0) aus = s;
+                else if (t > 0.02) stufe = Infinity; // ein zweites Wasser auf der Strecke
+                if (aus >= 0 && s >= aus + U.jenseitsM) break;
+            }
+            const breit = aus - ein;
+            if (ein < 0 || aus < 0 || stufe > U.stufe || breit < U.nass[0] || breit > U.nass[1] || max < U.tief[0] || max > U.tief[1]) continue;
+            fund = { q, u, aus, breit, max };
+            break;
+        }
+        if (!fund) G.furt.fehler = `keine Furt (nass ${U.nass.join("–")} m, ${U.tief.join("–")} m tief) an ${U.such.anzahl} Ufern im Umkreis ${U.such.rMax} m der Mess-Wiese`;
+        else {
+            Object.assign(G.furt, { ort: [Math.round(fund.q.x), Math.round(fund.q.z)], breit: fund.breit, tief: Math.round(fund.max * 100) / 100 });
+            await teil(G.furt, fund.q, punkt(fund.q, fund.u, fund.aus + U.jenseitsM * 0.7));
+        }
+    }
+    if (o.hang) {
+        // DER HANG aus dem Orts-Gesetz: die nächste Stelle, unter der die Falllinie über `streckeM` im Mittel `grad` steigt, je 2 m
+        // im Band (die Suche nennt den Betrag der Neigung: gegenüber liegt auch die andere Wand einer Schlucht), trocken vom Fuß an
+        const H = o.hang;
+        const steig = (q, u, s) => grad(Math.atan((hh(q.x + u[0] * (s + 1.5), q.z + u[1] * (s + 1.5)) - hh(q.x + u[0] * (s - 1.5), q.z + u[1] * (s - 1.5))) / 3));
+        let fund = null;
+        for (const q of window.__weltOrte("hang", { mitte: mo, ...H.such })) {
+            const u = [Math.sin(q.gier), Math.cos(q.gier)];
+            let [sum, n, ok] = [0, 0, true];
+            for (let s = -H.streckeM; s <= 0 && ok; s += 2) {
+                const g = steig(q, u, s);
+                [sum, n, ok] = [sum + g, n + 1, g >= H.band[0] && g <= H.band[1]];
+            }
+            for (let s = -(H.streckeM + H.anlaufM); s <= H.ueberM && ok; s += 2) ok = !r._nassAt(q.x + u[0] * s, q.z + u[1] * s);
+            if (ok && sum / n >= H.grad) fund = { q, u, mittel: Math.round((10 * sum) / n) / 10 };
+            if (fund) break;
+        }
+        if (!fund) G.hang.fehler = `kein trockener Hang von im Mittel ≥ ${H.grad}° (${H.band.join("–")}°) über ${H.streckeM} m im Umkreis ${H.such.rMax} m der Mess-Wiese`;
+        else {
+            Object.assign(G.hang, { ort: [Math.round(fund.q.x), Math.round(fund.q.z)], neigung: fund.q.neigung, mittel: fund.mittel });
+            await teil(G.hang, punkt(fund.q, fund.u, -(H.streckeM + H.anlaufM)), punkt(fund.q, fund.u, H.ueberM));
+        }
+    }
+    // DIE UHR des Verkehrs: je Stunde (ihr erster Sprung der Uhr) die Takte samt ihrer Zeit; die 600 s sind die letzten `sek` · 60.
+    // DAS BILD IM MESS-FENSTER (`bildJe`): solange die Linse ihre `sek` Sekunden zählt (sie leiht `_verkehrSchritt`, die eigene
+    // Eigenschaft der Welt lebt genau so lange), geht jedes `bildJe`-te Bild hinaus — sonst hält die Leine es, wie wenn die GPU
+    // nachläuft (`_gpuLeineStraff`); der Takt selbst bleibt GANZ: der Loop der Sitzung ruht, und dem ruhenden Loop hält die Leine nur
+    // das Bild (`zwischen` fällt, dirigent-takt) — Leben, Verkehr, Sim, Stufen und Strom rechnen jeden Takt. Gemessen am Baum main
+    // 78d37554 (Null-Renderer, je 600 s): jedes Bild 142 / 156 Ankünfte, langsamste Minute 56 / 152 m; jedes achte 141 / … — dasselbe Urteil
+    const uhr = { t0: performance.now(), stunden: {}, jetzt: null, halt: false };
+    const [takt, bilder] = [r._gameLoopTick, () => (r._gpuLeine ? r._gpuLeine.gerendert : 0)];
+    const misst = () => Object.prototype.hasOwnProperty.call(r, "_verkehrSchritt");
+    const zurueck = leihe(r, {
+        _gpuLeineStraff() {
+            return uhr.halt || P._gpuLeineStraff.call(this);
+        },
+        _gameLoopTick(t) {
+            const a = performance.now();
+            const S = uhr.jetzt;
+            uhr.halt = !!S && misst() && ((S.mess = (S.mess || 0) + 1) - 1) % o.bildJe !== 0;
+            let x;
+            try {
+                x = takt.call(this, t);
+            } finally {
+                uhr.halt = false;
+            }
+            if (!S) return x;
+            const b = performance.now();
+            S.t.push(b);
+            S.k.push((S.ms += b - a));
+            if (!(S.t.length & 63)) window.__probeStand = `${S.h} Uhr: ${S.t.length} Takte in ${((b - S.t0) / 1000).toFixed(1)} s, ${(S.ms / S.t.length).toFixed(2)} ms je Takt`;
+            return x;
+        },
+        _uhrSetzen(u, ...a) {
+            const h = Math.round(u * 24);
+            if (o.stunden.includes(h) && !(uhr.jetzt && uhr.jetzt.h === h))
+                uhr.jetzt = uhr.stunden[h] = { h, t0: performance.now(), b0: bilder(), ms: 0, t: [], k: [] };
+            if (uhr.jetzt) uhr.jetzt.b1 = bilder();
+            return P._uhrSetzen.call(this, u, ...a);
+        },
+    });
+    let V;
+    window.__probeStand = "die Stadt wird gegründet";
+    try {
+        V = await verkehr();
+    } finally {
+        zurueck();
+    }
+    const zeit = { gesamtS: +((performance.now() - uhr.t0) / 1000).toFixed(1), stunden: {} };
+    for (const S of Object.values(uhr.stunden)) {
+        const [n, N] = [S.t.length, o.sek * 60];
+        const i = n - 1 - N;
+        zeit.stunden[S.h] = { takte: n, vorS: +(((i >= 0 ? S.t[i] : S.t0) - S.t0) / 1000).toFixed(1) };
+        if (i >= 0) Object.assign(zeit.stunden[S.h], { laufS: +((S.t[n - 1] - S.t[i]) / 1000).toFixed(1), taktMs: +((S.k[n - 1] - S.k[i]) / N).toFixed(2), messTakte: S.mess || 0 });
+    }
+    const hs = Object.values(uhr.stunden);
+    hs.forEach((S, j) => (zeit.stunden[S.h].bilder = (hs[j + 1] ? hs[j + 1].b0 : bilder()) - S.b0));
+    if (hs[0]) zeit.gruendungS = +((hs[0].t0 - uhr.t0) / 1000).toFixed(1);
+    return { gelaende: G, verkehr: V, zeit };
+}
 async function fahrVerkehr(tor) {
     const fs = require("fs");
     const path = require("path");
@@ -912,19 +1096,32 @@ async function fahrVerkehr(tor) {
     const d = new Function(tor.dekl(L, ["urteil", "VERKEHR", "verkehrVerdict", "taktHz"]) + "\nreturn { VERKEHR, verkehrVerdict, taktHz };")();
     const F = require(path.resolve(P));
     const mo = require(path.resolve("scripts/lib/band-urteil.cjs")).ladeSpec("wiese").ort.spieler;
+    // probeLeben am SHA: vor dem Verkehr der Linse fahren Hang und Furt in ihrem Rumpf (EIN Anker, sonst wirft die Probe beim Namen)
+    const code = tor.quelle(P, "probeLeben", [
+        [
+            "            else if (expected.verkehr) res.verkehr = await verkehr(expected.verkehr);",
+            "            else if (expected.verkehr) Object.assign(res, await (" + zweiSeite + ")(expected.zwei, () => verkehr(expected.verkehr)));",
+        ],
+    ]);
+    const zwei = { ...JSON.parse(tor.arg[0]), stunden: d.VERKEHR.stunden, sek: d.VERKEHR.sek };
     const page = await tor.seite();
     tor.karte();
-    await page.evaluate(`window.__tempoSpion = ${F.tempoSpion}; window.__taktHz = ${d.taktHz}; window.__ruckJeBild = ${F.ruckJeBild};`);
-    const t0 = Date.now();
-    const sek = Number(tor.arg[0]) || 12;
-    const o = await page.evaluate(F.probeLeben, { messort: mo, verkehr: { ...d.VERKEHR, sek } });
+    const T = await teilLauf(page, "VK", code, { messort: mo, verkehr: d.VERKEHR, zwei }, async () => {
+        await page.evaluate(require(path.resolve("scripts/lib/wasser-linse.cjs")).WASSER_INSTALL);
+        await page.evaluate(`window.__tempoSpion = ${F.tempoSpion}; window.__taktHz = ${d.taktHz}; window.__ruckJeBild = ${F.ruckJeBild};`);
+    });
+    if (!T) return;
+    const o = T.o;
+    console.log(`GELAENDE ${JSON.stringify(o.gelaende || null)}`);
+    const ohne = String(o.err || (o.start === null ? "probeLeben fand keine Strecke an der Mess-Wiese" : "kein Verkehr")).split("\n")[0];
     for (const h of d.VERKEHR.stunden) {
         const m = o.verkehr && o.verkehr[h];
-        const v = m ? d.verkehrVerdict(m) : [String(o.err || "kein Verkehr").split("\n")[0]];
+        const v = m ? d.verkehrVerdict(m) : [ohne];
         console.log(`  ${v.length ? "❌" : "✅"} VK (PFLICHT-OFFEN C) der Verkehr der Stadt um ${h} Uhr — ${v.join(" · ") || "jeder fährt"}`);
         if (v.length) process.exitCode = 1;
     }
-    console.log(`  (${((Date.now() - t0) / 1000).toFixed(1)} s in der Welt der Sitzung, ${sek} s je Stunde)`);
+    console.log(`  (${T.teil} ${T.s} s in der Welt der Sitzung, ${d.VERKEHR.sek} s je Stunde)`);
+    console.log(`ZEIT ${JSON.stringify(o.zeit || null)}`);
     console.log(`VERKEHR ${JSON.stringify(o.verkehr)}`);
 }
 
@@ -1508,4 +1705,4 @@ function hebungScheiben(acorn, text) {
     return { kleber, drucke: quelle(S2, K2), teile: { kleber: [K1.size, S1.length], drucke: [K2.size, S2.length] } };
 }
 
-module.exports = { sitzungTor, torBefehl, kollisionTempo, bodenRollen, tierKreis, sprungKadenz, fadenZaehler, fahrWelt, fahrRueck, fahrWegenetz, fahrVerkehr, wasserGraben, naesseDorf, naesseWiese, werkbankLinse, karteHebung, hebungScheiben };
+module.exports = { sitzungTor, torBefehl, teilNaht, teilLauf, zweiSeite, kollisionTempo, bodenRollen, tierKreis, sprungKadenz, fadenZaehler, fahrWelt, fahrRueck, fahrWegenetz, fahrVerkehr, wasserGraben, naesseDorf, naesseWiese, werkbankLinse, karteHebung, hebungScheiben };

@@ -2179,6 +2179,126 @@ const WEGENETZ_PROBEN = (() => {
     ];
 })();
 
+// fahrzeug.K2#2 — DIE TAFEL DER STAFFEL 2 (w27-verkehr-station-pm), EINE Quelle für die Probe (sie reist als Argument, proben-welt
+// `zweiSeite`) und das Urteil (`k2ZweiUrteil`). DER HANG: die nächste Stelle des Orts-Gesetzes (`such`), unter der die Falllinie
+// über `streckeM` im Mittel `grad` steigt, je 2 m im `band`; `anlaufM` davor der Start, `ueberM` darüber das Ziel; am Wagen
+// zählen ≥ `meter` m mit seiner eigenen Neigung ≥ `grad`. DIE FURT: ein Ufer des Orts-Gesetzes (`such`), dessen Strecke das Wasser
+// über `nass` m quert, am tiefsten in `tief` (unter der Ansaugung des GT, 0,72 m — die Bäche der Welt stehen 0,60 m), die Böschung
+// je Meter höchstens `stufe`, jenseits `jenseitsM` trocken; am Wagen zählen ≥ `meter` m mit seiner eigenen Tiefe ≥ `tiefe`, nie an
+// der Ansaugung. DIE SICHTEN: jede Strecke in jeder; die Kamera in Ego höchstens, in Third mindestens `kamera` m vom Wagen.
+// `bilderMax`: so viele Bilder (je 0,1 s Spielzeit) trägt eine Fahrt höchstens. `bildJe`: im Mess-Fenster des Verkehrs geht jedes
+// `bildJe`-te Bild hinaus, die übrigen hält die Leine (der Takt bleibt ganz, proben-welt `zweiSeite`).
+const K2_ZWEI = {
+    hang: { grad: 25, meter: 10, band: [23, 30], streckeM: 20, anlaufM: 12, ueberM: 4, such: { min: 25, max: 30, basis: 3, rMax: 800, anzahl: 12, abstand: 30 } },
+    furt: { tiefe: 0.1, meter: 2, tief: [0.15, 0.65], nass: [3, 30], jenseitsM: 15, stufe: 0.45, such: { rMax: 600, schritt: 8, anzahl: 24, abstand: 25, bis: 12, breite: 2, fussMax: 10 } },
+    sichten: ["first", "third"],
+    kamera: { first: 2.5, third: 2.5 },
+    bilderMax: 600,
+    bildJe: 8,
+};
+// DAS URTEIL DER STAFFEL 2: jeder Teil beim Namen — der Verkehr (die Zeilen der Linse je Stunde und die Dauer ihrer Tafel in der
+// Zeile VERKEHR: ein Lauf unter PFLICHT_C.sek je Stunde ist nie GRÜN), der 25°-Hang, die Furt, Ego und Third (GELAENDE). ROT nennt,
+// was riss; die Zahl trägt, was die Uhr der Probe maß (ZEIT: je Stunde die Sekunden der 600 s und die ms je Takt)
+function k2ZweiUrteil(lauf) {
+    const t = String(lauf.stdout || "");
+    const Z = K2_ZWEI, C = PFLICHT_C;
+    const m = jsonZeile(t, /^VERKEHR {/);
+    const je = C.stunden.map((h) => [h, (new RegExp("^\\s*(✅|❌) VK \\(PFLICHT-OFFEN C\\)[^\\n]*um " + h + " Uhr — (.*)$", "m").exec(t) || [])]);
+    const kurz = m ? C.stunden.filter((h) => !(m[h] && m[h].sek >= C.sek)).map((h) => h + " Uhr " + ((m[h] || {}).sek || 0) + " s") : [];
+    const c = !!m && !kurz.length && je.every(([, z]) => z[1] === "✅") && lauf.exit === 0;
+    const an = (h) => (m && m[h] && m[h].ziele ? " (" + m[h].ziele.erreicht + " Ankünfte)" : "");
+    const cText = !m ? "keine VERKEHR-Zeile (Exit " + lauf.exit + "): " + (t.trim().split("\n").filter((z) => /keine VERKEHR|PROBE-FEHLER|@@PUNKTE@@ FRIST/.test(z))[0] || "die Probe sprach nicht").slice(0, 200)
+        : je.map(([h, z]) => h + " Uhr " + (z[1] || "—") + " " + String(z[2] || "keine Zeile").slice(0, 160) + an(h)).join(" · ") + (kurz.length ? " · gemessen " + kurz.join(", ") + " (Soll " + C.sek + " s je Stunde)" : "");
+    // Hang und Furt je Sicht: Ankunft, Steckenbleiber, das Maß des Teils am Wagen, die Sicht und ihre Kamera
+    const G = jsonZeile(t, /^GELAENDE {/);
+    const rot = [];
+    const teil = (key, name, mass, kopf) => {
+        const T = G && G[key];
+        if (!T || T.fehler) return rot.push(name + ": " + (T ? T.fehler : "keine Messung")), name + " —";
+        const jeSicht = Z.sichten.map((s) => {
+            const [x, wie] = [T[s], s === "first" ? "Ego" : "Third"];
+            if (!x || x.fehler || !Array.isArray(x.kamera)) return rot.push(name + " " + wie + ": " + (x && x.fehler ? x.fehler : "keine Fahrt")), wie + " —";
+            const [soll, ist, text] = mass(x);
+            const f = [
+                [x.ende === true, "kam nicht an (" + x.weg + " von " + x.lang + " m)"],
+                [(x.steck || []).length === 0, "steckt bei " + (x.steck || []).join(", ") + " m"],
+                [soll, text],
+                [x.falsch === 0, "die Sicht fiel in " + x.falsch + " Bildern"],
+                [s === "first" ? x.kamera[1] <= Z.kamera.first : x.kamera[0] >= Z.kamera.third,
+                    "die Kamera " + x.kamera.join("–") + " m vom Wagen (Soll " + (s === "first" ? "≤ " + Z.kamera.first : "≥ " + Z.kamera.third) + " m)"],
+            ].filter(([ok]) => !ok).map(([, n]) => n);
+            if (f.length) rot.push(name + " " + wie + ": " + f.join(", "));
+            return wie + " " + ist;
+        });
+        return name + " " + kopf(T) + ": " + jeSicht.join(", ");
+    };
+    const hang = teil("hang", "25°-Hang", (x) => [x.steilM >= Z.hang.meter, x.steilM + " m über " + Z.hang.grad + "°",
+        "am Wagen nur " + x.steilM + " m über " + Z.hang.grad + "° (Soll ≥ " + Z.hang.meter + " m; steilste Neigung " + x.steigMax + "°)"],
+        (T) => "im Mittel " + T.mittel + "° über " + Z.hang.streckeM + " m bei " + (T.ort || []).join("/"));
+    const furt = teil("furt", "Furt", (x) => [x.nassM >= Z.furt.meter && x.tiefeMax < x.ansaug, x.nassM + " m im Wasser",
+        x.tiefeMax >= x.ansaug ? "das Wasser " + x.tiefeMax + " m an der Ansaugung " + x.ansaug + " m" : "am Wagen nur " + x.nassM + " m im Wasser ≥ " + Z.furt.tiefe + " m (Soll ≥ " + Z.furt.meter + " m; tiefste Stelle " + x.tiefeMax + " m)"],
+        (T) => T.tief + " m tief, " + T.breit + " m breit bei " + (T.ort || []).join("/"));
+    // der Lauf in seinen Teil-Proben und die Uhr der Probe
+    const halte = (t.match(/^ {2}VK Teil \d+\/\d+: /gm) || []).length;
+    const zt = jsonZeile(t, /^ZEIT {/);
+    const uhr = zt && zt.stunden ? C.stunden.map((h) => (zt.stunden[h] && zt.stunden[h].laufS != null ? h + " Uhr " + zt.stunden[h].laufS + " s (" + zt.stunden[h].taktMs + " ms je Takt)" : h + " Uhr —")).join(", ") : "—";
+    return {
+        gruen: c && !rot.length,
+        zahl: "C " + (c ? "GRÜN" : "ROT") + ": der Verkehr der Stadt " + cText + " · " + hang + " · " + furt + (rot.length ? " · ROT: " + rot.join("; ") : "") +
+            " · in " + (halte + 1) + " Teil" + (halte ? "en" : "") + ", " + C.sek + " s Spielzeit in " + uhr,
+    };
+}
+// die Attrappen der Staffel 2: der gesunde Lauf (am Baum main 78d37554: Hang −677/−889, Furt −198/−1173; der Verkehr der Linse 142
+// und 156 Ankünfte) und je Teil die Mutanten, die ROT machen — Hang, Furt, jede Sicht, die Dauer des Verkehrs, die Teile
+const K2_ZWEI_PROBEN = (() => {
+    const fahrt = (o = {}) => ({ kamera: [1.88, 2.02], falsch: 0, steigMax: 27.9, steilM: 19.5, tiefeMax: 0, nassM: 0, lang: 36, weg: 34, ende: true, steck: [], schritte: 378, bilder: 63, raeumte: 6, ansaug: 0.72, ...o });
+    const nass = (o = {}) => fahrt({ kamera: [1.99, 2.09], steigMax: 12.75, steilM: 0, tiefeMax: 0.61, nassM: 9.05, lang: 29, weg: 28, schritte: 354, bilder: 59, raeumte: 3, ...o });
+    const dritte = { kamera: [9.69, 10.49] };
+    // an = { "hang.first": {…} | null (die Sicht fehlt), "furt": { fehler } … }
+    const gel = (an = {}) => {
+        const G = { hang: { ort: [-677, -889], neigung: 26.6, mittel: 26.4, first: fahrt(), third: fahrt(dritte) }, furt: { ort: [-198, -1173], breit: 10, tief: 0.61, first: nass(), third: nass(dritte) } };
+        for (const [k, v] of Object.entries(an)) {
+            const [teil, sicht] = k.split(".");
+            if (!sicht) G[teil] = v;
+            else if (v === null) delete G[teil][sicht];
+            else Object.assign(G[teil][sicht], v);
+        }
+        return G;
+    };
+    const stunde = (o = {}) => ({ wagen: 20, soll: 20, sek: 600, ziele: { erreicht: 142, ohne: [], laengsteS: 198 }, weg60: [56, 9, 11, 9, null], ...o });
+    const vk = (h, ok, w) => "  " + (ok ? "✅" : "❌") + " VK (PFLICHT-OFFEN C) der Verkehr der Stadt um " + h + " Uhr — " + w;
+    const halt = (i, n) => "  VK Teil " + i + "/" + n + ": der Lauf hält nach 38.0 s an der Naht (Spieler bei 836, 439, 1 Orte wach, 10 Uhr: 7104 Takte in 31.9 s, 4.41 ms je Takt) — weiter\n@@PUNKTE@@ TEIL WEITER\n";
+    const zeit = 'ZEIT {"gesamtS":371.2,"stunden":{"10":{"takte":44210,"vorS":38.1,"laufS":158.6,"taktMs":4.32,"bilder":4410},"23":{"takte":36702,"vorS":2.9,"laufS":149.9,"taktMs":4.08,"bilder":4502}},"gruendungS":21.7}';
+    const aus = ({ g = gel(), z10 = [true, "jeder fährt"], z23 = [true, "jeder fährt"], s10 = {}, s23 = {}, halte = 0, ohne = null } = {}) => {
+        const V = { 10: stunde(s10), 23: stunde({ ziele: { erreicht: 156, ohne: [], laengsteS: 169 }, ...s23 }) };
+        if (ohne) delete V[ohne];
+        return Array.from({ length: halte }, (_x, i) => halt(i + 1, 8)).join("") + ["[linse-gpu] amd/rdna-3", ...(g ? ["GELAENDE " + JSON.stringify(g)] : []), vk(10, ...z10), vk(23, ...z23),
+            "  (Teil " + (halte + 1) + "/8 21.4 s in der Welt der Sitzung, 600 s je Stunde)", zeit, "VERKEHR " + JSON.stringify(V)].join("\n");
+    };
+    return [
+        { name: "Hang und Furt in Ego und Third, der Verkehr 600 s an beiden Stunden", stdout: aus(), gruen: true },
+        { name: "derselbe Lauf in acht Teil-Proben (sieben Halte an der Naht)", stdout: aus({ halte: 7 }), gruen: true },
+        { name: "MUTANTE Hang: der Wagen steckt im Hang (Third)", stdout: aus({ g: gel({ "hang.third": { ende: false, weg: 21, steck: [21] } }) }), gruen: false },
+        { name: "MUTANTE Hang: die Strecke trug am Wagen keine 25° (die andere Wand der Schlucht, 6,6 m)", stdout: aus({ g: gel({ "hang.first": { steilM: 6.56, steigMax: 25.56 }, "hang.third": { steilM: 6.56, steigMax: 25.56 } }) }), gruen: false },
+        { name: "MUTANTE Hang: das Orts-Gesetz nennt keinen", stdout: aus({ g: gel({ hang: { fehler: "kein trockener Hang von im Mittel ≥ 25° (23–30°) über 20 m im Umkreis 800 m der Mess-Wiese" } }) }), gruen: false },
+        { name: "MUTANTE Furt: das Wasser stand an der Ansaugung, der Motor steht mitten im Bach", stdout: aus({ g: gel({ "furt.first": { ende: false, weg: 14, steck: [14], tiefeMax: 0.74 } }) }), gruen: false },
+        { name: "MUTANTE Furt: trocken gequert (über die Brücke, kein Rad im Wasser)", stdout: aus({ g: gel({ "furt.first": { tiefeMax: 0, nassM: 0 }, "furt.third": { tiefeMax: 0, nassM: 0 } }) }), gruen: false },
+        { name: "MUTANTE Furt: kein Ufer trägt eine", stdout: aus({ g: gel({ furt: { fehler: "keine Furt (nass 3–30 m, 0.15–0.65 m tief) an 24 Ufern im Umkreis 600 m der Mess-Wiese" } }) }), gruen: false },
+        { name: "MUTANTE Ego: die Kamera blieb hinter dem Wagen (die Sicht hieß nur so)", stdout: aus({ g: gel({ "hang.first": { kamera: [9.7, 10.4] } }) }), gruen: false },
+        { name: "MUTANTE Third: die Kamera saß im Wagen", stdout: aus({ g: gel({ "furt.third": { kamera: [1.9, 2.1] } }) }), gruen: false },
+        { name: "MUTANTE Sicht: die Welt fiel in 12 Bildern aus der Sicht", stdout: aus({ g: gel({ "furt.third": { falsch: 12 } }) }), gruen: false },
+        { name: "MUTANTE Sicht: nur Ego gefahren", stdout: aus({ g: gel({ "hang.third": null, "furt.third": null }) }), gruen: false },
+        { name: "MUTANTE: keine GELAENDE-Zeile (die Probe bis w27: der Verkehr allein)", stdout: aus({ g: null }), gruen: false },
+        { name: "MUTANTE C: ein Wagen fährt um 10 Uhr eine Minute keine 30 m", stdout: aus({ z10: [false, "fahrend je Minute [20,1,11,8,null]"], s10: { weg60: [20, 1, 11, 8, null] } }), gruen: false },
+        { name: "MUTANTE C: 12 s je Stunde statt der Tafel (die Probe bis w27 an einer Linse, die sie grün hieße)", stdout: aus({ s10: { sek: 12 }, s23: { sek: 12 } }), gruen: false },
+        { name: "MUTANTE C: die Nacht fehlt in der Zeile", stdout: aus({ ohne: 23 }), gruen: false },
+        { name: "MUTANTE: die Teile reichten nicht — der letzte riss seine Frist, keine Zeile", stdout: Array.from({ length: 7 }, (_x, i) => halt(i + 1, 8)).join("") +
+            "@@PUNKTE@@ FRIST 39 s der Probe gerissen: Error: DIE TEILE DER FAHRT reichten nicht: die Frist des letzten Teils riss an der Naht (Teil 8/8)\nGELAENDE null\n" +
+            vk(10, false, "Error: DIE TEILE DER FAHRT reichten nicht: die Frist des letzten Teils riss an der Naht") + "\n" + vk(23, false, "Error: DIE TEILE DER FAHRT reichten nicht: die Frist des letzten Teils riss an der Naht") + "\nZEIT null\nVERKEHR undefined", gruen: false },
+        { name: "der Stand kennt den Verkehr nicht", stdout: "keine VERKEHR-Zeile: probeLeben kennt den Verkehr der Stadt nicht (gate:fahr-leben --verkehr fehlt am Stand)", gruen: false },
+    ];
+})();
+
 const LEIB_K3_PROBEN = (() => {
     const lauf = (o = {}) => Object.assign({ bilder: 1100, phasen: { ufer: { n: 470, unter: 60, augen: 0, geerdet: 400 }, schwimmen: { n: 200, unter: 200, augen: 0, geerdet: 0 }, tauchen: { n: 240, unter: 240, augen: 190, geerdet: 0 },
         auftrieb: { n: 120, unter: 120, augen: 100, geerdet: 0 } }, tiefe: 2.1, ruckLeib: { max: 0.016, wo: "ufer 40", p95: 0.003 }, ruckKamera: { max: 0.02, wo: "ufer 40", p95: 0.0011 } }, o);
@@ -5567,7 +5687,7 @@ const stationen = [
     {
         kriterium: "fahrzeug.K2", staffel: 1, geraet: ["radeon", "gtx"],
         probe: {
-            befehl: PW.torBefehl(PW.fahrWegenetz),
+            befehl: PW.torBefehl(PW.fahrWegenetz, PW.teilNaht, PW.teilLauf),
             sek: 45,
             teile: 6,
             mutiert: true,
@@ -5611,44 +5731,34 @@ const stationen = [
     // Stadt“ — ist die Fahrt, die durchkommt, für die Wagen des Gesetzes: das AAAA von fahrzeug („ein Wagen aus dem Gesetz fährt auf dem
     // Wegenetz …, ohne steckenzubleiben“) und der Name von K2 („das Wegenetz trägt das Rad“). Kein Kriterium der Karte nannte C; die
     // Staffel 2 von K2 nannte Hang, Furt und die Sichten der Fahrt des Spielers — sie wurde um C strenger (R2: strenger, nie weicher).
-    // An die 2 OHNE die Erweiterung gebunden, buchte ein grüner Verkehr Hang, Furt und Sichten, die keiner maß. Die Station misst C
-    // (proben-welt `fahrVerkehr`, je Stunde 12 s Spielzeit, die Metropole gründet die Probe selbst) und nennt die Teile ohne Probe beim
-    // Namen: ROT, bis Hang, Furt und die Sichten eine Probe tragen — C selbst steht je Fahrt in der Zahl (`C GRÜN`/`C ROT`).
-    // Die Stadt erwacht, die Uhr springt: mutiert. DER DECKEL geschätzt (ungemessen auf der Karte): headless 2 × 40 s in 122 s samt Boot
-    // und Stadt (w3w-verkehr fcfd85d7); hier die Gründung ~20 s und 2 × 12 s Spielzeit zu ~25 ms je Bild — die GPU-Fahrt nennt die Zahl.
+    // SEHEND (w27-verkehr-station-pm): bis hier war die Station in zwei Hinsichten blind und an keinem Stand grün — (1) sie fuhr den
+    // Verkehr 12 s je Stunde, die Linse verlangt seit heim2-w13-verkehr-heil gezählte Ankünfte und den Weg jeder vollen Minute (Radeon
+    // 3ccb8f55: „fahrend je Minute [null] · ohne Ziel erreicht: Wagen 0 … 19 (0 Ankünfte)“ an beiden Stunden, während
+    // gate:fahr-leben --verkehr 600 s GRÜN war); (2) „ohne Probe: 25°-Hang, Furt, Ego und Third“. Jetzt fährt EIN Lauf (proben-welt
+    // `fahrVerkehr` mit `zweiSeite`, die Seiten-Probe `probeLeben` der Linse am SHA): die Furt und der Hang, je in Ego und Third, mit dem
+    // Fahrer des Spiels am Steuer des GT (die Tafel `K2_ZWEI`), dann die Tafel `VERKEHR` der Linse GANZ — 10 und 23 Uhr je 600 s, ihr
+    // `verkehrVerdict` je Stunde. Das Urteil (`k2ZweiUrteil`) nennt jeden Teil beim Namen; ein Verkehr unter 600 s je Stunde ist nie grün.
+    // DER TAKT: der der Linse, ganz — im Mess-Fenster hält die Leine jedes Bild außer jedem `bildJe`-ten (das Gesetz des ruhenden Loops:
+    // die Leine hält nur das Bild, nie den Takt). Am Baum main 78d37554 (Null-Renderer, je 600 s, EIN Lauf je Art): jedes Bild — 10 Uhr
+    // 142 Ankünfte, langsamste Minute 56 m, 23 Uhr 156 / 152 m, GRÜN; jedes achte — dasselbe Urteil (scratch vk-harness, Modus L);
+    // Zwischen-Takte ohne Leben (die Leine des laufenden Loops) und der Takt-Deckel (0,1 s je Bild) kippen 10 Uhr auf ROT (20 m in
+    // einer Minute) — die Probe kürzt keinen Takt. DER DECKEL: 8 Teile je 45 s = 360 s (3 min je Stunde Verkehr; das Höchste des
+    // Gesetzes, TEILE_MAX), die Fahrt trägt sie (Radeon Σ 4 859 − 90 + 360 s). Die Uhr der Probe (`ZEIT`) und der Halt jedes Teils
+    // (`__probeStand`) nennen, was die Karte braucht; swiftshader (Cloud, 4 Kerne, nicht das Band) am Baum main: der Takt der Stadt
+    // ~5,5 ms, die Ankunft am Hang ~150 s. Reichen die Teile auf einer Karte nicht, steht sie UNGEMESSEN beim Namen samt Stand.
+    // Die Stadt erwacht, die Uhr springt, der Wagen räumt seine Bahn: mutiert.
     {
         kriterium: "fahrzeug.K2", staffel: 2, geraet: ["radeon", "gtx"],
         probe: {
-            befehl: PW.torBefehl(PW.fahrVerkehr, "12"),
-            sek: 55,
+            befehl: PW.torBefehl(PW.fahrVerkehr, PW.teilNaht, PW.teilLauf, PW.zweiSeite, JSON.stringify(K2_ZWEI)),
+            sek: 45,
+            teile: 8,
             mutiert: true,
-            ausnahme: "die Metropole von stadt-voll (nH 300) gründet in der Probe, dann je Stunde (10 und 23 Uhr) 12 s Spielzeit im Takt des Spiels",
         },
-        gpu: true, zeit: false, minuten: 3,
-        urteil: (j, lauf) => {
-            const t = String(lauf.stdout || "");
-            const m = jsonZeile(t, /^VERKEHR {/);
-            const je = [10, 23].map((h) => [h, (new RegExp("^\\s*(✅|❌) VK \\(PFLICHT-OFFEN C\\)[^\\n]*um " + h + " Uhr — (.*)$", "m").exec(t) || [])]);
-            const c = !!m && je.every(([, z]) => z[1] === "✅") && lauf.exit === 0;
-            const cText = !m ? "keine VERKEHR-Zeile (Exit " + lauf.exit + "): " + (t.trim().split("\n").filter((z) => /keine VERKEHR|PROBE-FEHLER/.test(z))[0] || "die Probe sprach nicht").slice(0, 200)
-                : je.map(([h, z]) => h + " Uhr " + (z[1] || "—") + " " + String(z[2] || "keine Zeile").slice(0, 160)).join(" · ");
-            // die übrigen Teile der Staffel 2: keine Probe misst sie (fahrWegenetz fährt EINE Sicht, die Route kennt keinen 25°-Hang)
-            const ohne = ["25°-Hang", "Furt", "Ego und Third"];
-            return {
-                gruen: c && ohne.length === 0,
-                zahl: "C " + (c ? "GRÜN" : "ROT") + ": der Verkehr der Stadt " + cText + " · ohne Probe: " + ohne.join(", ") + " — die 2 wartet auf sie",
-            };
-        },
-        proben: (() => {
-            const vk = (h, ok, w) => "  " + (ok ? "✅" : "❌") + " VK (PFLICHT-OFFEN C) der Verkehr der Stadt um " + h + " Uhr — " + w;
-            const zeile = 'VERKEHR {"10":{"wagen":20,"soll":20},"23":{"wagen":20,"soll":20}}';
-            return [
-                { name: "C grün an beiden Stunden, Hang, Furt und Sichten ohne Probe", stdout: [vk(10, true, "jeder fährt"), vk(23, true, "jeder fährt"), zeile].join("\n"), gruen: false },
-                { name: "ein Wagen steckt um 23 Uhr", stdout: [vk(10, true, "jeder fährt"), vk(23, false, "keiner steht die ganze Zeit: min 0 m (Wagen 7)"), zeile].join("\n"), gruen: false },
-                { name: "der Stand kennt den Verkehr nicht", stdout: "keine VERKEHR-Zeile: probeLeben kennt den Verkehr der Stadt nicht (gate:fahr-leben --verkehr fehlt am Stand)", gruen: false },
-            ];
-        })(),
-        pfad: ["vehicle-core.js", "fachwerk-core.js", "koerper-core.js", "stamm/koerper-*.js", "stamm/siedlung-*.js", "stamm/dirigent-takt.js", "scripts/diag-fahr-leben.cjs", "scripts/lib/fahr-proben.cjs", "spec/profiband/haushalt.json"],
+        gpu: true, zeit: false, minuten: 12,
+        urteil: (j, lauf) => k2ZweiUrteil(lauf),
+        proben: K2_ZWEI_PROBEN,
+        pfad: ["vehicle-core.js", "fachwerk-core.js", "koerper-core.js", "gelaende-core.js", "stamm/koerper-*.js", "stamm/siedlung-*.js", "stamm/wasser-*.js", "stamm/dirigent-takt.js", "scripts/diag-fahr-leben.cjs", "scripts/lib/fahr-proben.cjs", "scripts/lib/welt-orte.cjs", "spec/profiband/haushalt.json"],
         quelle: "2 = auch 25°-Hang und Furt, Ego und Third, und der Verkehr der Stadt (PFLICHT-OFFEN C): um 10 und 23 Uhr fährt jeder Wagen des Gesetzes mit seinem Fahrer am Steuer, keiner steckt, keiner berührt Bewohner, Wagen oder Bau, beide Geräte",
     },
 
@@ -5819,8 +5929,5 @@ module.exports.fehlt = [
     { kriterium: "tore.K2", staffel: 1, befehl: null, grund: "nicht gebaut (p3-stationen-g456): zwei Bilder aus dem Ausgabe-Pfad je Tor — die Membran 3 m vor der Apertur und das Welt-Bild nach der ersten Eingabe, die die Kamera ≥ 1° drehte — und Spearman r ≥ 0,5, milchweiss ≤ 0,05, oeffnungBunt ≥ 20, Stempel frisch; derselbe Gang wie tore.K1 (die Fahrt hat 10 s frei); die Klassen tor-fern, tor-bunt, tor-ziel der Soll-Tafel tragen am Kopf kein Ist" },
     { kriterium: "tore.K4", staffel: 1, befehl: null, grund: "unmessbar in EINEM Lauf auf EINEM Gerät: zwei physische Geräte im LAN (Radeon-Maschine und OMEN) über den signaling-server, der Peer im Ausgabe-Bild von B — die Punkte-Maschine fährt je Gerät eine eigene Sitzung, und kein Läufer verbindet zwei Sitzungen zweier Rechner; gate:mp-sync fährt zwei Seiten in EINEM Browser (das Schlupfloch der Staffel)" },
     { kriterium: "spielgang.K2", staffel: 1, befehl: null, grund: "unmessbar ohne Blind-Spieler: ein frischer Agent ohne Doku, der nur Bild und Eingabe kennt und in ≤ 3 min gehen, umsehen, Sicht-Wechsel, Werkstatt, Satz und Tor findet — kein solcher Agent läuft an der Punkte-Maschine (ein Läufer mit Bild-Modell und Eingabe-Schleife fehlt); die Zählung am Eingabe- und Ereignis-Strom gäbe es (`H.ereignisStrom`, stationen/sitzung-seite.js)" },
-    // fahrzeug.K2#2 ist seit w4-sitzung-reif eine Station (der Verkehr der Stadt, PFLICHT-OFFEN C); ihre übrigen Teile nennt sie selbst:
-    // die feste Route der 1 quert drei Bäche (Furten: zwei Feldwege und eine Gasse von 4,−7), aber keinen 25°-Hang — das Wegenetz legt
-    // keinen Weg so steil (die Trassen fallen höchstens um `gefaelle`), ein Hang-Teil braucht eine eigene Strecke am Messort hang
-    // (−526/−853, 24,4°); die Seiten-Probe `fahrWegenetz` fährt EINE Sicht, Ego und Third getrennt misst keine.
+    // fahrzeug.K2#2 misst seit w27-verkehr-station-pm jeden Teil der Staffel 2 (Furt, 25°-Hang, Ego und Third, der Verkehr der Stadt)
 ];
