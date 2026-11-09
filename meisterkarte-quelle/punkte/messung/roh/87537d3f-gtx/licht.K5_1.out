@@ -181,12 +181,12 @@ $ C:\Program Files\nodejs\node.exe -e const tor = (function sitzungTor() {
     }
 })(tor).then(() => process.exitCode || 0, (e) => ((e && e.messort ? console.log('@@PUNKTE@@ MESSORT ' + e.messort) : 0), console.log('PROBE-FEHLER ' + String((e && e.stack) || e).split('\n').slice(0, 4).join(' | ')), 1)).then(async (c) => { await tor.ende(); process.exit(c); }); C:\Users\micha\Desktop\AnazhRealm-OMEN\n0611-pm\meisterkarte-quelle\punkte\messung\roh\87537d3f-gtx\licht.K5_1.json {"vorher":["umstellen","--ort","genesis","--sicht","ego"],"args":["licht","--luft","--wetter","rainy","--zug"],"fenster":[640,360]}
 [linse-gpu] nvidia/pascal
-VORHER werkbank umstellen --ort genesis --sicht ego EXIT=0 · 10.8 s
+VORHER werkbank umstellen --ort genesis --sicht ego EXIT=0 · 1.0 s
 
 ✅ SELBSTTEST GRÜN — grauer β, Kante 21 %, Linie, leere Messung, Sicht 1800 m, Sprung 0,5 EV/s und der Ton je Pixel beim Namen ROT
-RUF /eval const kantenLinie = function kantenLinie(Y, W, H · 32.1 s · 44.3 s
-ZUG GRUEN · Sprung {"t":139.45164000027796,"wetter":"rainy","zug":0.08877282960920604,"Y":2583.654586606528,"d":0.04766351086014252} EV/s (Soll ≤ 0.1) · klar → rainy → klar gezogen true, 125 s
-LINSE werkbank licht --luft --wetter rainy --zug EXIT=0 nach 44.3 s in der Welt der Sitzung (0 Beruhigungen, Fenster 640×360)
+RUF /eval const kantenLinie = function kantenLinie(Y, W, H · 30.9 s · 33.0 s
+ZUG GRUEN · Sprung {"t":89.48531999986824,"wetter":"rainy","zug":0.09096825739942183,"Y":2583.3667189523444,"d":0.048823715861502824} EV/s (Soll ≤ 0.1) · klar → rainy → klar gezogen true, 125 s
+LINSE werkbank licht --luft --wetter rainy --zug EXIT=0 nach 33.1 s in der Welt der Sitzung (0 Beruhigungen, Fenster 640×360)
 
 --- gpu-zeuge ---
 [linse-gpu] nvidia/pascal

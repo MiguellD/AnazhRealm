@@ -215,8 +215,8 @@ $ C:\Program Files\nodejs\node.exe -e const windSeite = async function windSeite
     return { ...zeile, fen, ohrProben: w.ohrProben, lags, reiheBild: B, reiheOhr: A };
 }); C:\Users\micha\Desktop\AnazhRealm-OMEN\n0611-pm\meisterkarte-quelle\punkte\messung\roh\87537d3f-gtx\klang.K2_1.json C:\Users\micha\Desktop\AnazhRealm-OMEN\n0611-pm
 [linse-gpu] nvidia/pascal
-{"stand":{"ctx":"running","enabled":true,"um":true,"paare":6,"steht":true},"wahl":{"hz":269.0882263183594,"kandidaten":15,"zensus":[["wind",-33.3]]},"fpsVor":51.5,"bilder":172,"fenster":103,"r0":{"lagS":0,"r":0.7324713529314668,"n":103,"cvX":0.27043516238342963,"cvY":0.4793367827147484},"best":{"lagS":-1.2,"r":0.7858665612974545,"n":97,"cvX":0.2781066807350073,"cvY":0.49345809592524825}}
-PROBE 25.1 s
+{"stand":{"ctx":"running","enabled":true,"um":true,"paare":7,"steht":true},"wahl":{"hz":278.45843505859375,"kandidaten":15,"zensus":[["wind",-35.4],["glut",-37.4]]},"fpsVor":52.5,"bilder":180,"fenster":103,"r0":{"lagS":0,"r":0.7447300549806988,"n":103,"cvX":0.2350259725382658,"cvY":0.4965908903486373},"best":{"lagS":-0.6,"r":0.8043574469256102,"n":100,"cvX":0.2380555315706858,"cvY":0.5046688931627745}}
+PROBE 24.3 s
 
 --- gpu-zeuge ---
 [linse-gpu] nvidia/pascal
