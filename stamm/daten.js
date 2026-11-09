@@ -711,10 +711,14 @@ class AnazhRealm_daten {
                 mikroMinM: 0.0005,
                 mikro: 0.15,
                 mikroHoehe: 0.75, // die Höhe der nächst gröberen Oktave je feinerer (`_mikroRelief`: das Spektrum β ≈ 1,2)
-                // die Kavität je Höhe (`_mikroStoff`, aoNode): das Himmels-Licht der Mulde und der Erhebung — die Höhe streut σ ≈ 0,12,
-                // 2,1 gibt der Mulde ein Viertel weniger Himmel (rauer Boden im diffusen Licht: Mulde 0,3–0,6, Krume 1); mit 0,7
-                // trug der Boden im Schatten der Wiese kein Korn (Radeon, Mess-Wiese Ego 1 m: glatt 0,31 bei Luma 10–20)
-                kavitaet: 2.1,
+                // die Kavität je Höhe (`_mikroStoff`, aoNode): das Himmels-Licht der Mulde und der Erhebung — die Höhe streut σ ≈ 0,12.
+                // IM DIFFUSEN LICHT TRÄGT NUR SIE DAS RELIEF: wo die Sonne fehlt (Baumschatten, der Grund unter der Halm-Verdeckung —
+                // Kontakt-Pass, unten die Narbe 0,27), kippt keine Normale Licht, das Korn bleibt relativ, und der Block fällt mit der
+                // Luma unter 4 Stufen. 3,6: die Pore 1σ 0,57, 2σ 0,14 des Himmels der Krume (rauer Boden, die Himmels-Sicht einer Pore
+                // fällt mit ihrer Tiefe), mittelfrei; im Sonnenlicht trägt sie nur den Himmels-Anteil. Mit 2,1 lag der Grund der
+                // Mess-Wiese auf 0,5 m zu 22 % unter Luma 16 und dort zu 59 % glatt (w26-boden-nah, material.K2#1 GTX 0,159 > 0,10;
+                // Kontakt-Pass aus: 0,000), mit 0,7 auf 1 m zu 0,31 (Radeon)
+                kavitaet: 3.6,
                 korn: 2.0, // das Korn je Höhe (`_mikroStoff`, colorNode): die Albedo der Mulde dunkler, der Erhebung heller (σ ≈ 24 %), mittelfrei
                 // Kipp-Stärke subtil halten: der Bump kippt die wahre Normale des Bodens (ferne.K4: keine 2.5D-Lichtung mehr)
                 // — zu stark (0.42 = 23°) gibt bimodales dot(N,L) = bolde Hell/Dunkel-Trapeze. 0.24 = 13° moduliert echtes
