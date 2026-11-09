@@ -6,3 +6,4 @@
 2026-11-09 20:52:00 karte-nadel START geraet=gtx1050 stoff-karte.js:1679 EIN Knoten je Atlas (redeclaration karteNadelStruct, bild:stadt-voll) (Herrscher der GTX 1050)
 2026-11-09 21:40:00 ort-pose START geraet=gtx1050 Posen von dorf/stadt/stadt-voll aus dem Plan der Siedlung, Abnahme zählt Häuser und Bewohner (Herrscher der GTX 1050)
 2026-11-09 21:40:00 gtx-zeit START geraet=omen mess=gtx n=15 die 15 Zeit-Stationen in Ruhe (Ruhe-Läufer der OMEN, AppHelperCap.exe beim Namen) (Herrscher des Omens)
+2026-11-10 00:22:00 gpu-stufe START geraet=omen verwaistes GPU-Schloss an der Wurzel (der Wartende bricht es), dann Bisektion der GPU-ms-Stufe x1,47 (185e99bb → 78d37554) und GTX-Stau am Kopf (Herrscher des Omens)
