@@ -2200,7 +2200,12 @@ class AnazhRealm_bild_sicht {
             laeufe: 0,
             flug: false,
             gen: 0,
+            // die Spalten des Stands, die das Feld trägt (`_feldPassMal`), wie viele fehlen, und die Höchste der getragenen
+            spalten: new Uint8Array(P.az),
+            offen: 0,
+            hMax: -Infinity,
             panoFlug: false,
+            panoFeld: 0, // das Feld (`laeufe`), aus dem das Panorama zuletzt backte
             panoGen: 0,
             panoLaeufe: 0,
             panoCamX: null,
@@ -2212,22 +2217,46 @@ class AnazhRealm_bild_sicht {
 
     // Das Feld malt das polare Höhen+Farb-Feld: az×rad Polar-Punkte um den Ring-Anker, der Fern-Faden rechnet je Texel Höhe
     // (Wasser flach auf dem Spiegel) und die EINE Fern-Farbe × Saison (`_fernAuftrag` „feld“, B2), der Haupt-Faden legt die
-    // Antwort in die RGBA-Textur und backt das Panorama. Re-Anker oder Saison-Drift → neu; das alte Feld bleibt sichtbar, bis
-    // das neue steht.
-    _feldPassMal(fp, fr) {
+    // Antwort in die RGBA-Textur und backt das Panorama. Re-Anker oder Saison-Drift → ein neuer STAND (`neu`); das alte Feld
+    // bleibt sichtbar, bis der neue steht.
+    // DIE SPALTEN DER ANKUNFT (w26-ankunft-horizont): bestellt werden die Spalten des Stands, die die Ankunft JETZT braucht
+    // (`_blickDerAnkunft`, die EINE Frage hinter Streu, Saat, Pflanzung und Karte) — bis das erste Bild steht die im Blick, danach
+    // der Rest. Je Spalte zählt ihre Mitte mit dem Winkel von anderthalb Spalten (die eigene Breite und der Nachbar, den das
+    // Panorama bilinear liest). Je Texel rechnet der Faden dasselbe wie im ganzen Feld (Byte-gleich); eine Spalte, die der Stand
+    // noch nicht trägt, liegt KEIN_FELD tief — kein Strahl trifft sie, das Panorama zeigt dort Himmel, bis sie kommt. Bis hier
+    // rechnete der Feld-Faden alle 9 216 Punkte am Stück vor dem Bild (lokal unter Last 4,3 s, die GTX ~8 s, am Kopf 87537d3f
+    // hielt „der Horizont wird gemalt“ das Bild bis 12,5–14,9 s, der Ring stand bei 9,1–10,9 s).
+    _feldPassMal(fp, fr, neu) {
         if (fp.flug || !this._nebenFaden("feld")) return; // die Bahn des Panoramas (`_fernAuftrag`)
         const P = AnazhRealm.FELD_PASS;
         const F = AnazhRealm.FERN_RING;
         const rMin = F.schalen[F.schalen.length - 1].aussen;
-        const n = P.az * P.rad;
+        const spalten = neu ? new Uint8Array(P.az) : fp.spalten;
+        const rMitte = (rMin + P.rMaxM) / 2;
+        const rand = rMitte * Math.sin((1.5 * 2 * Math.PI) / P.az);
+        const winkel = (ix) => ((ix + 0.5) / P.az - 0.5) * 2 * Math.PI;
+        const wahl = [];
+        for (let ix = 0; ix < P.az; ix++)
+            if (
+                !spalten[ix] &&
+                this._blickDerAnkunft(
+                    fr.anchorX + Math.cos(winkel(ix)) * rMitte,
+                    fr.anchorZ + Math.sin(winkel(ix)) * rMitte,
+                    rand
+                )
+            )
+                wahl.push(ix);
+        if (!wahl.length) return;
+        const n = wahl.length * P.rad;
         const punkte = new Float32Array(n * 2);
-        for (let iy = 0; iy < P.rad; iy++) {
+        const texel = new Uint32Array(n); // je Punkt sein Texel im Feld
+        for (let iy = 0, k = 0; iy < P.rad; iy++) {
             const r = rMin + ((iy + 0.5) / P.rad) * (P.rMaxM - rMin);
-            for (let ix = 0; ix < P.az; ix++) {
-                const a = ((ix + 0.5) / P.az - 0.5) * 2 * Math.PI;
-                const k = iy * P.az + ix;
+            for (const ix of wahl) {
+                const a = winkel(ix);
                 punkte[k * 2] = fr.anchorX + Math.cos(a) * r;
                 punkte[k * 2 + 1] = fr.anchorZ + Math.sin(a) * r;
+                texel[k++] = iy * P.az + ix;
             }
         }
         fp.flug = true;
@@ -2244,15 +2273,25 @@ class AnazhRealm_bild_sicht {
             .then((antwort) => {
                 if (this.state.feldPass !== fp || fp.gen !== gen) return;
                 fp.flug = false;
-                fp.daten.set(antwort.daten);
+                const D = fp.daten;
+                for (const ix of wahl) spalten[ix] = 1;
+                if (neu) {
+                    // der neue Stand: was er nicht bestellte, trägt kein Feld
+                    for (let k = 0; k < P.az * P.rad; k++) if (!spalten[k % P.az]) D[k * 4] = AnazhRealm.KEIN_FELD;
+                    [fp.spalten, fp.hMax] = [spalten, -Infinity];
+                    fp.anchorX = ankerX;
+                    fp.anchorZ = ankerZ;
+                    fp.saison = saison;
+                    fp.praesenz = praesenz;
+                    fp.schnee = schnee;
+                }
+                const d = antwort.daten;
+                for (let k = 0; k < texel.length; k++) D.set(d.subarray(k * 4, k * 4 + 4), texel[k] * 4);
+                fp.offen = P.az - spalten.reduce((m, v) => m + v, 0);
+                fp.hMax = Math.max(fp.hMax, antwort.hMax);
                 fp.tex.needsUpdate = true;
                 fp.U.rMin.value = rMin;
-                fp.U.hMax.value = antwort.hMax + 5;
-                fp.anchorX = ankerX;
-                fp.anchorZ = ankerZ;
-                fp.saison = saison;
-                fp.praesenz = praesenz;
-                fp.schnee = schnee;
+                fp.U.hMax.value = fp.hMax + 5;
                 fp.laeufe++;
                 // SCHATTIERUNGS-PERSISTENZ: sichtbar wird der Pass erst mit gebackenem Panorama (_feldPanoramaMal setzt
                 // visible) — das Fragment liest NUR noch das Panorama, nie das rohe Feld.
@@ -2465,6 +2504,7 @@ class AnazhRealm_bild_sicht {
         const cam = this.state.camera;
         if (!cam) return;
         fp.panoFlug = true;
+        fp.panoFeld = fp.laeufe; // das Feld, aus dem es backt (`_tickFeldPass`: kommt ein neues, backt es neu)
         const gen = (fp.panoGen = (fp.panoGen || 0) + 1);
         const cx = cam.position.x;
         const cy = cam.position.y;
@@ -2499,13 +2539,14 @@ class AnazhRealm_bild_sicht {
         // Neu malen bei Anker-Wechsel ODER wenn die Saison seit dem letzten Bild um mehr als `saisonDrift` (je Kanal)
         // gewandert ist — das Feld trägt die Saison als Farbe (der Ring liest `uSeasonMul` im Stoff).
         if (fp.anchorX !== fr.anchorX || fp.anchorZ !== fr.anchorZ || this._feldSaisonDrift(fp))
-            this._feldPassMal(fp, fr);
+            this._feldPassMal(fp, fr, true);
+        else if (fp.offen > 0) this._feldPassMal(fp, fr, false); // die Spalten, die die Ankunft jetzt braucht
         this._weltSchwundTakt(st.weltMarch);
         const cam = st.camera;
-        // PANORAMA-PFLEGE: Erst-Bake nachholen (Device kam spät) + Re-Bake bei
-        // Kamera-Drift (Parallaxe/Horizont) — amortisiert, gen-gestempelt.
+        // PANORAMA-PFLEGE: Erst-Bake nachholen (Device kam spät), das Panorama folgt dem Feld (kam eine Antwort, während es
+        // backte) + Re-Bake bei Kamera-Drift (Parallaxe/Horizont) — amortisiert, gen-gestempelt.
         if (cam && fp.laeufe > 0 && !fp.panoFlug) {
-            if (!(fp.panoLaeufe > 0)) {
+            if (!(fp.panoLaeufe > 0) || fp.panoFeld !== fp.laeufe) {
                 this._feldPanoramaMal(fp);
             } else {
                 const PN = AnazhRealm.FELD_PANO;
@@ -3805,6 +3846,9 @@ AnazhRealm.HOEHLEN_LICHT_KACHEL_M = 4;
 // FELD_PASS — polares Höhen+Farb-Feld jenseits der letzten Schale: az×rad Texel bis rMaxM, gemalt
 // vom Fern-Faden (Höhe und Fern-Farbe je Texel, B2), gemarcht vom Fullscreen-Fragment (nur Himmel-Pixel).
 AnazhRealm.FELD_PASS = Object.freeze({ az: 192, rad: 48, rMaxM: 40000 });
+// Die Höhe einer Spalte, die der Stand des Felds noch nicht trägt (`_feldPassMal`): tief unter jedem Strahl — das Panorama zeigt
+// dort Himmel, bis sie kommt (endlich: die bilineare Lesung im Bake mischt sie mit dem Nachbarn, nie mit ∞).
+AnazhRealm.KEIN_FELD = -1e6;
 // FELD_PANO — Schattierungs-Persistenz: statt 96 Raymarch-Schritten je Himmel-Pixel je Frame marcht
 // EIN Compute ins Polar-Panorama (Farbe + Treffer-DISTANZ; der Nebel bleibt live im Fragment →
 // Tag/Nacht braucht keinen Re-Bake), das Fragment schlägt nur nach. Re-Bake nur bei Kamera-Drift;

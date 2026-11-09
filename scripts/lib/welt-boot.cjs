@@ -49,6 +49,17 @@ const sleep = (ms) => {
 // Glieder eines Objekts (der Welt `r`, ihrer Klasse) und gibt beim Rückruf jedes zurück — ein eigenes, wie es war, ein geerbtes
 // fällt (die Welt ruft wieder ihren Prototyp). Je Probe ein eigenes `hasOwnProperty`-Merken samt `delete` oder Zuweisen im
 // finally war ein Zwilling.
+// DER EINE FREMDE AUTOR (`const { pubHex, sign } = await __fremd()`, in jeder Seite, `WARTEN_SEITE`): ein frischer Ed25519-Schlüssel,
+// sein öffentlicher Teil als Hex und `sign(text)` → die Signatur als Hex, wie der Vibe-Pass sie trägt — bis w26-ankunft-horizont
+// erzeugte playtest/netz denselben Schlüssel samt Signatur viermal in eigenen Zeilen.
+async function fremd() {
+    const { privateKey: k } = await crypto.subtle.generateKey("Ed25519", true, ["sign"]);
+    const hex = (b) => r._vibeBytesToHex(new Uint8Array(b));
+    return {
+        pubHex: hex(r._vibeB64uToBytes((await crypto.subtle.exportKey("jwk", k)).x)),
+        sign: async (t) => hex(await crypto.subtle.sign("Ed25519", k, new TextEncoder().encode(t))),
+    };
+}
 function leihe(o, tausch) {
     const alt = Object.keys(tausch).map((k) => [k, Object.getOwnPropertyDescriptor(o, k)]);
     Object.assign(o, tausch);
@@ -467,7 +478,7 @@ const rahmen = (b) =>
         hx: (b.maxX - b.minX) / 2,
         hz: (b.maxZ - b.minZ) / 2,
     };
-const WARTEN_SEITE = `${weltR} window.rahmen = ${rahmen}; window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.sleep = ${sleep}; window.leihe = ${leihe}; window.__loopBild = ${loopBild}; window.__zielLesen = ${zielLesen}; window.jsonKlon = ${jsonKlon}; window.fehlerText = ${fehlerText}; window.fehlerStapel = ${fehlerStapel}; window.__seitenTakt = ${seitenTakt}; window.__bedienung2 = ${bedienung2}; window.__takte = ${takte}; window.__streuTakte = ${streuTakte}; window.__bildAus = ${bildAus}; window.__MUSTER = [16.7, 8.3, 25, 16.7, 33.3, 11.1, 20, 16.7]; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__farben = ${farben}; window.__lin = ${lin}; window.__stand = ${stand}; window.__standJson = ${standJson}; window.__werkPutz = ${werkPutz}; window.__bautenLeer = ${bautenLeer}; window.__bautenSeit = ${bautenSeit}; window.__peersWeg = ${peersWeg}; window.__rufe = ${rufe};`;
+const WARTEN_SEITE = `${weltR} window.rahmen = ${rahmen}; window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.sleep = ${sleep}; window.leihe = ${leihe}; window.__fremd = ${fremd}; window.__loopBild = ${loopBild}; window.__zielLesen = ${zielLesen}; window.jsonKlon = ${jsonKlon}; window.fehlerText = ${fehlerText}; window.fehlerStapel = ${fehlerStapel}; window.__seitenTakt = ${seitenTakt}; window.__bedienung2 = ${bedienung2}; window.__takte = ${takte}; window.__streuTakte = ${streuTakte}; window.__bildAus = ${bildAus}; window.__MUSTER = [16.7, 8.3, 25, 16.7, 33.3, 11.1, 20, 16.7]; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__farben = ${farben}; window.__lin = ${lin}; window.__stand = ${stand}; window.__standJson = ${standJson}; window.__werkPutz = ${werkPutz}; window.__bautenLeer = ${bautenLeer}; window.__bautenSeit = ${bautenSeit}; window.__peersWeg = ${peersWeg}; window.__rufe = ${rufe};`;
 const CODE_OF_SEITE = `window.__codeOf = ((oK) => (f) => oK(String(f)))(${ohneKommentare}); window.__dokuOf = (f) => String(f); window.__fehlt = (f, re) => [].concat(f).every((g, i) => { if (typeof g !== "function") throw new Error("__fehlt: Glied " + i + " ist keine Funktion (" + typeof g + ") — die Absenz misst nichts"); re.lastIndex = 0; return !re.test(window.__codeOf(g)); }); ${WARTEN_SEITE}`;
 
 const ROOT = path.resolve(__dirname, "..", "..");
