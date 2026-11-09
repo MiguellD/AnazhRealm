@@ -1481,7 +1481,8 @@
         aus.dauerSek = Math.min(S.maxSek, Math.max(aus.ladeSek + 6.9 * ferseSek, kornHz ? aus.ladeSek * S.kornSpann + 6.9 * Math.max(aus.kornSek, ferseSek) : 0));
         return aus;
     }
-    // Der Rausch-Vorrat des Schritts: EIN Puffer je Kontext (0,5 s, Saat fest), jede Stimme liest ihn ab einem zufälligen Versatz.
+    // Der Rausch-Vorrat des Schritts: EIN Puffer je Kontext (0,5 s, Saat fest), jede Stimme liest ihn in Schleife ab einem
+    // zufälligen Versatz — der Nachklang einer Platte (Stahl η 0,0003: über eine Sekunde) läuft nie über sein Ende hinaus.
     var schrittRausch = new WeakMap();
     function schrittPuffer(ctx) {
         var p = schrittRausch.get(ctx);
@@ -1505,6 +1506,7 @@
         var stimme = function (hz, q, pegel, huelle) {
             var src = ctx.createBufferSource(), band = ctx.createBiquadFilter(), g = ctx.createGain();
             src.buffer = puf;
+            src.loop = true;
             band.type = "bandpass";
             band.frequency.value = Math.min(hz, 0.45 * ctx.sampleRate);
             band.Q.value = q;
@@ -1514,8 +1516,7 @@
             band.connect(g);
             g.connect(ausgang);
             src.onended = function () { try { band.disconnect(); g.disconnect(); } catch (_e) {} };
-            var spiel = puf.duration - B.dauerSek - 0.02;
-            src.start(t, spiel > 0 ? Math.random() * spiel : 0);
+            src.start(t, Math.random() * puf.duration);
             src.stop(t + B.dauerSek + 0.02);
             quellen.push(src);
         };
