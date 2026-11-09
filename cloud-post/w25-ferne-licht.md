@@ -1,5 +1,34 @@
 # Post an w25-ferne-licht
 
+## 09.11. 02:08 — w25-ferne-licht-3: ABGABE 017e9839ce545150497b064bb36d0b4023a63a64
+
+ABGABE 017e9839ce545150497b064bb36d0b4023a63a64 — Abgabe w25-ferne-licht-3 (vom Kopf bcf8f14a, origin/main V18.546.230 gemischt; Probe `[gpu-probe: bild:gipfel-blick@0.5]` am Kopf).
+
+Erst die Antwort auf „schneide den Treffer": ich habe ihn am Ort selbst gemessen. Die Masche des Rings steht an den 21 Schattenorten −34 … +44 m neben dem Gesetz; das Pixel des projizierten Orts zeigt den Ring bis 365 m daneben, an drei Orten einen Hang, der von der Sonne WEG zeigt (N·L −0,02 / −0,61 / −0,59). Misst man den Ring lotrecht über dem Gesetz (Tiefe geprüft), stand das Verhältnis vorher bei 0,487 — schlechter als die Station. Der Treffer hielt die Zahl tief, nicht hoch; die Wurzel lag hinter ihm: der Grat der Karte.
+
+Geschnitten:
+- stamm/dirigent-ankunft.js:1825 `HORIZONT_KARTE` — das Gitter der Horizont-Karte 768² à 32 m (vorher 256² à 96 m), die Karte 320² (vorher 220²), Aufträge à 16 Zeilen. Ein Kamm zwischen zwei Gitter-Punkten stand bilinear zu tief, das Tal zu hoch: der Grat zur Sonne lag an den Schattenhängen im Mittel 3,05° unter dem Gesetz (CPU-Nachbau des Passes je Gitter: 96 m 3,05° · 64 m 1,74° · 48 m 1,34° · 32 m 0,77°; die Karte am Kopf trifft den Nachbau auf 0,01°). 1,91 MB in der Ratsche der Klasse `tex:horizont-karte` (0,5 MB + 2 MB Toleranz), Band 118 MB. Das Gitter kostet den Feld-Faden 89 Takte / 2,0 s je Anker-Sprung (swiftshader), die Karte malt in einem Takt.
+- stamm/kreatur-verhalten.js:2839 `_kzLeib` — der Fit-Takt zählt Fits (wie sk5-haus und die Streu): die Kapsel jedes Glieds passt der Vorrat EINMAL je Gattung (`_gliedKapselMemo`); trägt die Liste jeden Schlüssel schon, wartet der Leib nie an `_weltBakeErlaubt`.
+
+Gemessen (swiftshader voll, Dorf, Sonne 5°, ohne Luft, 21/64 Orte; vorher = Arbeitsbaum am Kopf bcf8f14a):
+- ferne.K4, die Station (g3-Seite des Zweigs -pm, 640×360): 0,4458 → 0,4385 (Ls 0,0259 → 0,0251 · Ll 0,058 → 0,0572).
+- ferne.K4 am Ort des Gesetzes (Ring lotrecht, alle 21/64): 0,487 → 0,419; der Grat nimmt dem Schattenhang median 13 → 16 % seines Himmels, die Sonne leckt nicht mehr in die schmalen Schattenstreifen (Ls mit/ohne Sonne 0,0304/0,0269 → 0,0259/0,0252). Albedo beider Seiten gleich (Mittag 0,9963) — kein Störfaktor.
+- Die Physik der Orte (Hillaire, Himmel in 70 m, Band ±30°): mit dem Grat des Gesetzes 0,33, mit dem vollen Horizont des Gesetzes 0,32, mit der 96-m-Karte 0,41, ohne Grat 0,48.
+- Gipfel-Blick im Takt (instrumentiert: `_weltBakeErlaubt` ja/nein, `_kreaturGliederBacken` je Guss, `_weltOffen` je 500 Takte): vorher Takt 0–8 000 die Foundry der Metropole (461), 8 000–14 000 die Liste der Leute (3 431), 14 000–34 000 die 959 Leiber — 1 282 Güsse à 0,04 ms (54 ms gesamt) an 4 Fits je Sekunde, 10,7 Mio. Absagen der Uhr, jeder Takt über dem Budget; der Anlauf stand nach 50 000 Takten noch nicht (Bau-Satz-Raten je Render). Nachher: Leiber 461 → 0 in ~4 500 Takten (die Geburten, 2 je Takt), 0,87 Mio. Absagen, Anlauf und Gipfel stehen nach 21 441 Takten / 459 s. Der Täter beim Namen: die Bake-Uhr zählte Treffer als Fits.
+
+Wände am Kopf GRÜN: check · lint · format:check · playtest:fast (21 ✅ · 0 ❌) · gate:welt-boot · gate:schatten-terminator ((H) Grat 15, Ring 2) · gate:post-kette (kein [ERROR] STOFF außer der Mutante des Selbsttests) · gate:ego-schatten · gate:betriebsgesetz.
+
+Ehrlich offen:
+- ferne.K4 0,4385 > 0,4 — FUND stamm/gelaende-fern.js:2063 `FERN_RING` (winkel 192, seite 3: Masche 164 × 490 m bei 5 km) · Wurzel: das Pixel des Orts zeigt die Sehne der Masche bis 365 m neben dem Gesetz, die Schattierung des Gesetzes liegt auf ihr bis 160 m verschoben; am Ort selbst trägt das Bild 0,419, der Rest ist der Grat-Term (16 % gegen 22–35 % der Physik: das Band ±30° und die Texel der Karte) · ferne.K4#1 · L (eine feinere Masche bricht die Dreiecks-Ratsche ±5 000; der Weg: die Schattierung am Schnitt des Blickstrahls mit dem Boden der Karte, Kanal B — Parallax-Korrektur je Fragment wie Geometry Clipmaps, Losasso & Hoppe 2004).
+- Gipfel-Blick ≤ 3 min auf der GTX — die Probe richtet. FUND scripts/werkbank.cjs:1117 · Wurzel: der Anlauf wartet am Platz, bis die GANZE Welt steht (`__weltStehtNach`), der Ort liegt 1,18 km fern — die Bewohner gehen jenseits 325 m (`BEWOHNER.fernFaktor`), die Raten des Bau-Satzes gehen je Render (`_tickChunkSatz`, auf swiftshader Takt 10 500–21 000) · gipfel-blick · M.
+- FUND stamm/dienst.js:2039 `WELT_MARCH.felder` 4 096 · Wurzel: die vorab gebackenen Felder naher Bewohner (12 je Mensch, unsichtbar) füllen die geteilte Liste — am Anlauf frei 0, ~340 von 959 tragen ein Feld, die übrigen bleiben fern unsichtbar (`_kzVersuch`); schon vor diesem Schnitt (vorher frei 3) · mensch.K2 / Stadt fern · M.
+- FARBTON 8 km 15–26° — in dieser Welle nicht angefasst (FUND wie 23:20) · L.
+- Welle 3: keiner der drei Punkte fiel ganz.
+
+Maßstab: Horizon Mapping (Max 1988) in der Auflösung des Grats, Horizon-Based AO aus der Sky-View-LUT (UE5 SkyAtmosphere), der Fit-Takt nach Kosten (sk5-haus: Treffer sind frei).
+
+Ich warte im Wartezimmer.
+
 ## 09.11. 00:45 — w25-ferne-licht-2: Zwischenstand zu ferne.K4 (kein neuer Schnitt, Kopf bleibt bcf8f14a)
 
 Den Treffer habe ich an der Wurzel gemessen, bevor ich schneide — er ist es nicht. Alle Zahlen swiftshader voll, Dorf, Sonne 5°, dieselben 21/64 Orte der Station, ohne Luft:
