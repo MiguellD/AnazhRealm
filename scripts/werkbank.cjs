@@ -3228,20 +3228,21 @@ hauptLauf(async () => {
             for (const [ort, gaenge] of [["stadt", 2], ["wiese", 1]]) {
                 // DIE WACHE DES UMSTELLENS: steht der Ort nach 200 s (und 400 s) nicht, nennt sie, was offen ist (`_weltOffen`, die
                 // Ruhe und ihr Grund, die Akte des Offenen) — der Deckel der Probe (480 s) bräche sonst ohne ein Wort
-                const auf = umstellen({ ort, sicht: "ego" });
+                const [auf, um0] = [umstellen({ ort, sicht: "ego" }), Date.now()];
                 for (let t = 0, fertig = false, w = auf.finally(() => (fertig = true)); !fertig; t++) {
                     await Promise.race([w, new Promise((f) => setTimeout(f, 1000))]);
                     if (!fertig && (t === 200 || t === 400))
                         zeile(`GEH ROT ${ort} steht nach ${t} s nicht: ${JSON.stringify((await rufe("/eval", { code: "const W = r._weltStand || {}; return [Object.entries(r._weltOffen()).filter(([, v]) => v).join(' '), W.ruhe, W.grund, r._builtRingRadius(), r._weltOffenAkte()].join(' · ');" })).ergebnis)}`); // prettier-ignore
                 }
                 await auf;
+                const umS = Math.round((Date.now() - um0) / 1000);
                 for (let g = 1; g <= gaenge; g++) {
                     const o = await rufe("/haenger", { sek: 4, ein: 0.5, tiere: "frei", wandern: "bahn", schwelle: 33, json: path.resolve("artifacts", "geh", `${ort}-${g}.json`) }); // prettier-ignore
                     if (!o?.datei) throw new Error(`${ort} ${g}: ${JSON.stringify(o).slice(0, 300)}`);
                     const a = jsonLesen(o.datei), { roh, spur } = jsonLesen(o.datei.replace(/\.json$/, ".roh.json"));
                     const s = HL.linseWerten(roh, spur, { spitze: true }), d = HL.domaenen(a, s, /^_verkehrSchritt|^tickArchitectureCulling|^_tickBewohner|^_bewohner|^_tickAutoSettlement|^_tickBauSatz|^_chunkSatzPass/);
                     const u = `GEH ${a.frameMs.p95 <= 33.4 ? "GRÜN" : ((gruen = false), "ROT")} ${ort}-ego Gang ${g}`;
-                    zeile(`${u}: Bild ${q(a.frameMs)} · Takt ${q(a.taktMs)} · GPU ${q(a.gpuMs)} · Befehle ${a.befehle?.p95} (${passe(a.befehle)}) · Dreiecke ${a.dreiecke?.p95} · ${a.frames} Bilder, ${a.haengerN} > 33 ms · Knoten-Bau ${a.knotenBau.sync}× ${a.knotenBau.ms} ms · Weg ${roh.bahnM} m`); // prettier-ignore
+                    zeile(`${u}: Bild ${q(a.frameMs)} · Takt ${q(a.taktMs)} · GPU ${q(a.gpuMs)} · Befehle ${a.befehle?.p95} (${passe(a.befehle)}) · Dreiecke ${a.dreiecke?.p95} · ${a.frames} Bilder, ${a.haengerN} > 33 ms · Knoten-Bau ${a.knotenBau.sync}× ${a.knotenBau.ms} ms · Weg ${roh.bahnM} m${g === 1 ? ` · umgestellt in ${umS} s` : ""}`); // prettier-ignore
                     zeile(`${u} je Bild > 33 ms Täter× Σ Anteil ms: ${d.haenger || "-"} · schwerste ${d.bilder}`);
                     zeile(`${u} je Domäne ab p95/Mitte (${s.spitzeN} Takte): ${d.jeDomaene}`);
                     summe.push(`${ort} ${g}: ${a.frameMs.p50}/${a.frameMs.p95}/${a.frameMs.max} ms, > 33 ms ${a.haengerN}/${a.frames} (${Math.round((100 * a.haengerN) / a.frames)} %), Takt ${a.taktMs.p50}/${a.taktMs.p95}`); // prettier-ignore
