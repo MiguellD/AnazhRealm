@@ -269,7 +269,9 @@ class AnazhRealm_vegetation_wiese {
         if (!nw) return false;
         const n = AnazhRealm.NAH_WIESE.fern.kachel / AnazhRealm.NAH_WIESE.kachel;
         const [tx, tz] = key.split(",").map(Number);
-        const fern = !!nw.fern && nw.fern.kacheln.delete(Math.floor(tx / n) + "," + Math.floor(tz / n));
+        const fk = Math.floor(tx / n) + "," + Math.floor(tz / n);
+        if (nw.fern && nw.fern.werk && nw.fern.werk.key === fk) nw.fern.werk = null; // das Werk im Bau las dieselben Büschel
+        const fern = !!nw.fern && nw.fern.kacheln.delete(fk);
         if (!nw.kacheln.delete(key) && !fern) return false;
         nw.neu = true;
         return true;
@@ -506,29 +508,52 @@ class AnazhRealm_vegetation_wiese {
         // Ohne Frist des Takts (Null-Renderer, ruhender Loop: `_bauFristOhneEnde`) die der Bau-Arbeit eines Takts
         // (`BAU_FRIST_MS`): kein Takt des Spiels wartet auf die ganze Ferne — ohne sie baute ein Ruf jede Kachel (bis 155 ms
         // im Null-Renderer; auf der Farm fuhr der Verkehr der Stadt mit diesem Schritt ineinander, VK 226×, z336)
-        // DAS STÜCK IST DER VERSUCH (w26-fahrt-planer): nach der Frist endet der Takt hinter seinem ersten Versuch, ob die Kachel
-        // steht oder wartet — und dieser erste baut ganz, seine Gitter samt (`_wieseFernGitter` ohne Frist). Bis hier zählte nur
-        // die GEBAUTE Kachel als Stück: verweigerte nach der Frist das Gitter jede Kachel (null), ging der Takt die ganze Bau-Liste
-        // und rechnete jeder neuen Kachel ihre Lage (Null-Renderer mit der Frist des Spiels, GT 20 m/s ab Genesis, die ersten 2,5 s:
-        // `_nahWieseFernTakt` max 33 ms, darin `_wieseFernLage` 30 ms in EINEM Takt).
+        // DAS STÜCK IST DER SCHRITT (w26-fahrt-planer): die Kachel baut als Werk in Schritten (`_nahWieseFernKachel`), ihre Lage ist
+        // einer; nach der Frist endet der Takt hinter seinem ersten Schritt, ob die Kachel steht, wartet oder weiterbaut — das Werk im
+        // Bau lebt über Takte (`G.werk`) und geht zuerst weiter, solange seine Kachel gewollt ist. Bis hier war die ganze Kachel das
+        // Stück und zählte nur die GEBAUTE: verweigerte nach der Frist das Gitter jede Kachel, ging der Takt die ganze Bau-Liste und
+        // rechnete jeder neuen ihre Lage (GTX 1050 an main, die zweite Fahrt: `_nahWieseFernTakt` 99,8 ms in EINEM Takt; Null-Renderer
+        // mit der Frist des Spiels, GT 20 m/s ab Genesis, die ersten 2,5 s: max 33 ms, darin `_wieseFernLage` 30 ms).
         const bis = deadline || performance.now() + AnazhRealm.BAU_FRIST_MS;
-        let versuch = 0;
+        if (G.werk) {
+            const i = G.bau.findIndex((w) => w.key === G.werk.key);
+            if (i < 0) G.werk = null;
+            else if (i > 0) G.bau.unshift(...G.bau.splice(i, 1));
+        }
+        let schritt = 0;
         for (const w of G.bau) {
-            if ((versuch && performance.now() > bis) || this._nahKachelWartet(w.fx, w.fz, K)) {
+            if ((schritt && performance.now() > bis) || this._nahKachelWartet(w.fx, w.fz, K)) {
                 o.offen++;
                 continue;
             }
-            versuch++;
-            const lage = w.lage || this._wieseFernLage(w.fx, w.fz);
-            // die Karten, die am Schirm stehen können: ihr Anteil am nächsten Punkt der Kachel, um den Vorlauf näher (nähert sich
-            // das Auge weiter, baut die Kachel neu — `karten` oben)
-            const kA = karten(Math.max(0, w.d - F.vorlauf));
-            const k = lage && this._nahWieseFernKachel(w.fx, w.fz, AnazhRealm._wieseFernSchranke(lage, auge, F.vorlauf), reich, versuch > 1 && deadline, kA, fk.get(w.key)); // prettier-ignore
+            let werk = G.werk && G.werk.key === w.key ? G.werk : null;
+            if (!werk) {
+                schritt++;
+                const lage = w.lage || this._wieseFernLage(w.fx, w.fz);
+                if (!lage) {
+                    o.offen++;
+                    continue;
+                }
+                // die Karten, die am Schirm stehen können: ihr Anteil am nächsten Punkt der Kachel, um den Vorlauf näher (nähert sich
+                // das Auge weiter, baut die Kachel neu — `karten` oben)
+                const kA = karten(Math.max(0, w.d - F.vorlauf));
+                const it = this._nahWieseFernKachel(w.fx, w.fz, AnazhRealm._wieseFernSchranke(lage, auge, F.vorlauf), reich, kA, fk.get(w.key)); // prettier-ignore
+                werk = G.werk = { key: w.key, lage, it };
+            }
+            let r;
+            do ((r = werk.it.next()), schritt++);
+            while (!r.done && performance.now() <= bis);
+            if (!r.done) {
+                o.offen++;
+                continue;
+            }
+            G.werk = null;
+            const k = r.value;
             if (!k) {
                 o.offen++;
                 continue;
             }
-            [k.lage, w.fertig] = [lage, true];
+            [k.lage, w.fertig] = [werk.lage, true];
             fk.set(w.key, k);
             o.gebaut++;
         }
@@ -707,23 +732,39 @@ class AnazhRealm_vegetation_wiese {
     // Büschel seiner vier Kacheln der Nähe neu: in der Fahrt baut die Ferne voraus alle 8 m Weg (`fern.vorlauf`) jede Kachel ab
     // 40 m neu, je Takt eine ganze (Null-Renderer mit der Frist des Spiels, GT 20 m/s ab Genesis, die ersten 2,5 s:
     // `_nahWieseFernKachel` p50 2,5 ms je Takt, darin `_nahWieseKachelBueschel` 1,5).
-    _nahWieseFernKachel(fx, fz, anteil, reich, frist, karten = Infinity, alt = null) {
+    // DIE KACHEL IST EIN WERK (w26-fahrt-planer, das Muster des Knoten-Baus `_knotenRate`): sie baut in Schritten — je Gitter, das
+    // neu entsteht, je Kachel der Nähe, deren Büschel sie zieht, und ihre Grenzen —, der Takt geht sie unter der EINEN Frist
+    // (`_nahWieseFernTakt`, das Werk lebt über Takte in `nahWiese.fern.werk`); das Pflicht-Stück eines Takts nach der Frist ist
+    // EIN Schritt, nie die ganze Kachel. Nach jedem Schritt prüft sie, was sie las: die Karten und das Wasser ihres Felds, die
+    // stehende Kachel, auf der sie wächst — fiel davon etwas, endet sie leer (null, der Takt beginnt neu); eine Fläche, Tat oder
+    // Krone über ihrem Feld nimmt das Werk heraus wie die Kachel (`_nahWieseNeuIn`). Ohne Unterbrechung gegangen ist sie der Bau am
+    // Stück, byte-gleich. Bis hier war die Kachel das Stück: nach der Frist trug jeder Takt eine ganze (GTX 1050 an main, die erste
+    // Fahrt: `_nahWieseFernTakt` Mitte 12,6 ms je Takt).
+    *_nahWieseFernKachel(fx, fz, anteil, reich, karten = Infinity, alt = null) {
         const NW = AnazhRealm.NAH_WIESE;
         const [K, k6] = [NW.fern.kachel, NW.kachel];
         const n = K / k6;
         const nw = this.state.nahWiese;
         const ab = alt && alt.reich === reich && alt.bueschel && alt.grenze ? Math.min(alt.anteil, anteil) : 0;
-        // DAS FELD ZUERST (w24-rueckfall-ruhe, Lehre 25: billig vor teuer): die 3 × 3 Gitter der Ferne (`_wieseFernGitter`, je
-        // Gitter ~0,03 ms; die Frist des Takts entscheidet je Gitter, ob es entsteht) stehen, BEVOR die Kachel die Büschel ihrer
-        // Kacheln der Nähe zieht (`_nahWieseKachelBueschel`, je Kachel der Ferne ~2,4 ms) — danach baut sie ohne Frist zu Ende. Bis
-        // hier zog sie erst die Büschel und fragte dann die Gitter unter der Frist: war sie über den Büscheln verstrichen, fiel der
-        // Bau auf null, und der nächste Takt zog dieselben Büschel neu. Unter dem Boden des Deko-Takts kam so kein Gitter an die
-        // Reihe (Radeon, Start-Dorf mit 81 Leibern: 1 065 von 1 920 Bauten verworfen, „Fege-Takt nahWiese wartet, nahStreu wartet“
-        // nach 681 Takten; Dorf /umstellen 534 von 1 396, die GTX stand dort nach 1 800 Takten nicht).
-        for (let dj = -1; dj <= 1; dj++)
-            for (let di = -1; di <= 1; di++) if (!this._wieseFernGitter(fx + di, fz + dj, frist)) return null;
-        const bueschel = [];
         const chunkKarten = AnazhRealm._wieseKarten([(fx - 1) * K, (fz - 1) * K, (fx + 2) * K, (fz + 2) * K]);
+        const wasser = this._wasserKennungen(...chunkKarten.rechteck);
+        const steht = () =>
+            this._bodenKartenStehen(chunkKarten) &&
+            this._wasserKennungenGleich(wasser) &&
+            (!alt || nw.fern.kacheln.get(fx + "," + fz) === alt);
+        // DAS FELD ZUERST (w24-rueckfall-ruhe, Lehre 25: billig vor teuer): die 3 × 3 Gitter der Ferne (`_wieseFernGitter`, je
+        // Gitter ~0,03 ms) stehen, BEVOR die Kachel die Büschel ihrer Kacheln der Nähe zieht (`_nahWieseKachelBueschel`, je Kachel
+        // der Ferne ~2,4 ms). Bis w24-rueckfall-ruhe zog sie erst die Büschel und fragte dann die Gitter unter der Frist: war sie über
+        // den Büscheln verstrichen, fiel der Bau auf null, und der nächste Takt zog dieselben Büschel neu (Radeon, Start-Dorf mit
+        // 81 Leibern: 1 065 von 1 920 Bauten verworfen).
+        for (let dj = -1; dj <= 1; dj++)
+            for (let di = -1; di <= 1; di++) {
+                const vor = nw.fern.gitter.get(fx + di + "," + (fz + dj));
+                const g = this._wieseFernGitter(fx + di, fz + dj);
+                if (!g) return null;
+                if (g !== vor && (yield, !steht())) return null;
+            }
+        const bueschel = [];
         for (let j = 0; j < n; j++)
             for (let i = 0; i < n; i++) {
                 const [tx, tz] = [fx * n + i, fz * n + j];
@@ -738,10 +779,11 @@ class AnazhRealm_vegetation_wiese {
                     if (x.o >= anteil) break;
                     if (x.o >= ab) bueschel.push(x);
                 }
+                if (!nah && ab < anteil && (yield, !steht())) return null;
             }
         bueschel.sort((a, b) => a.o - b.o);
         const G = this._wieseFernGrenzen(fx, fz, bueschel, reich);
-        if (!G) return null;
+        if (!G || (yield, !steht())) return null;
         if (ab > 0) {
             // die Büschel der stehenden Kachel unter ab (nach o geordnet: ein Präfix) vor der Scheibe, ihre Grenzen mit ihnen
             let m = 0;
@@ -753,7 +795,6 @@ class AnazhRealm_vegetation_wiese {
             bueschel.unshift(...alt.bueschel.slice(0, m));
         }
         AnazhRealm._wieseKarten(chunkKarten, G.chunkKarten);
-        const wasser = this._wasserKennungen(...chunkKarten.rechteck);
         const grenzeMax = G.grenze.reduce((a, b) => Math.max(a, b), 1); // die Kugel der Kachel im Sicht-Satz
         const schale = karten > 0 ? this._wieseSchaleDaten(fx, fz, G.feld, karten) : null; // ihre Karten bis zum Anteil `karten`
         return Object.assign(
@@ -799,11 +840,9 @@ class AnazhRealm_vegetation_wiese {
     // neben den Kacheln (`nahWiese.fern.gitter`): eine Kachel baut neu, wenn das Auge ihren Anteil überholt — ihr Boden bleibt.
     // Es fällt mit seinen Karten und seinem Wasser (dieselbe Prüfung wie die Kachel) und unter einer neuen Fläche
     // (`_nahWieseNeuIn`); jenseits des Chunk-Rings (`_bodenKommtNie`, `nie`) trägt es nichts. null, solange ein Chunk unter ihm
-    // seine Karte noch bekommt — oder die Frist des Takts (`frist`) verstrich, bevor es neu entsteht (die Kachel wartet einen
-    // Takt, die gelesenen Gitter bleiben; Lehre 14). Die Frist fragt nur der Bau der Kachel, VOR ihren Büscheln
-    // (`_nahWieseFernKachel`); die Grenze liest danach, was steht. Kosten: 144 Proben je Kachel (12 × 12), EINMAL, solange ihr
-    // Boden steht.
-    _wieseFernGitter(fx, fz, frist) {
+    // seine Karte noch bekommt. Ein neues Gitter ist ein Schritt des Werks der Kachel (`_nahWieseFernKachel`, unter der EINEN
+    // Frist des Takts; Lehre 14). Kosten: 144 Proben je Kachel (12 × 12), EINMAL, solange ihr Boden steht.
+    _wieseFernGitter(fx, fz) {
         const NW = AnazhRealm.NAH_WIESE,
             F = NW.fern;
         const gitter = this.state.nahWiese.fern.gitter;
@@ -817,7 +856,6 @@ class AnazhRealm_vegetation_wiese {
             (nie || (this._bodenKartenStehen(alt.chunkKarten) && this._wasserKennungenGleich(alt.wasser)))
         )
             return alt;
-        if (frist && performance.now() > frist) return null;
         const chunkKarten = nie ? null : this._bodenSichtChunks(x0, z0, x1, z1);
         if (!nie && !chunkKarten) return null;
         const n = Math.round(F.kachel / F.gitter);

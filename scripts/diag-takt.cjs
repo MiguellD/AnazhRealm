@@ -34,7 +34,7 @@
 //       `_runFrameScheduler` 71,5 ms in EINEM Takt). Der Satz der Bauten (w25-stadt-takt-2) legt abgelaufen EIN Stück
 //       (BAU_SATZ_STUECK) seiner Raten und seines Alters — bis dahin je Takt seinen eigenen Deckel von 8 192 Ecken NEBEN der Frist
 //       (GTX, Messort stadt, erster Gang: `_tickBauSatz` 5,3 ms in der Takt-Mitte). Die Ferne der Wiese (w26-fahrt-planer) geht
-//       abgelaufen EINEN Versuch, ob die Kachel steht oder wartet — bis dahin zählte nur die gebaute (zwölf scheiternde: zwölf).
+//       abgelaufen EINEN Schritt ihres Werks, ob die Kachel steht, wartet oder weiterbaut — bis dahin war die Kachel das Stück.
 //   T13 DIE ALTERUNG DER FRIST (w19-gang-hitch, Nacharbeit): hinter einem Strom, der die Frist in jedem Takt leert, bekommt jeder
 //       Bauer reihum Budget (Vortritt nach BAU_ALTER_TAKTE Takten nur mit dem Pflicht-Stück), und der Takt bleibt in ihr — sonst
 //       verhungerte der Wald (`waldPlan` 0 ms, CI z289 · z292 · z293: die Welt stand an der Wiese nie).
@@ -310,9 +310,9 @@ hauptLauf(async () => {
                         r._dispatchFrameJobs([{ prio: 1, run: (ms) => (aus9.planer = ms) }, ...r._buildDeferrableJobs(st.playerMesh.position).filter((j) => j.name === "bewohner")], { remainingMs: () => 50 }); // prettier-ignore
                         AnazhRealm.prototype._pruneDistantVoxelChunks.call(r, { x: 1e5, z: 0 });
                         r._tickHuellenNach();
-                        // DIE FERNE DER WIESE (w26-fahrt-planer): zwölf Kacheln, deren Bau scheitert (das Gitter verweigert nach der Frist)
-                        // — abgelaufen EIN Versuch; bis dahin zählte nur die gebaute Kachel, der Takt ging die ganze Bau-Liste
-                        const [nwAlt, zw] = [st.nahWiese, leihe(r, { _nahKachelWartet: () => false, _wieseFernLage: () => ({}), _nahWieseFernKachel: () => (aus9.wiese++, null), _wieseAuge: () => ({ x: 0, y: 0, z: 0, h: 1.5 }), _standStempel: () => 0 })]; // prettier-ignore
+                        // DIE FERNE DER WIESE (w26-fahrt-planer): zwölf Kacheln, je ein Werk von zwölf Schritten, das leer endet — abgelaufen
+                        // EIN Schritt; bis dahin war die ganze Kachel das Stück und zählte nur die gebaute, der Takt ging die ganze Bau-Liste
+                        const [nwAlt, zw] = [st.nahWiese, leihe(r, { _nahKachelWartet: () => false, _wieseFernLage: () => ({}), _nahWieseFernKachel: function* () { for (let i = 0; i < 12; i++) yield aus9.wiese++; return null; }, _wieseAuge: () => ({ x: 0, y: 0, z: 0, h: 1.5 }), _standStempel: () => 0 })]; // prettier-ignore
                         try {
                             const pz = st.lastPlayerVoxelChunk;
                             st.nahWiese = { kacheln: new Map(), fern: { kacheln: new Map(), gitter: new Map(), bau: zwoelf.map((i) => ({ key: i + ",0", fx: i, fz: 0, d: 100 })), pruef: [0, r._karteRegung | 0, 1, pz ? pz.cx + "," + pz.cz : "", 0, 0, 1.5].join("|") } }; // prettier-ignore

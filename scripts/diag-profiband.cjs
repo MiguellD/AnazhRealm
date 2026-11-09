@@ -333,7 +333,8 @@ function grenzeWand(A) {
 // ihren Anteil überholte (`_nahWieseFernKachel` mit `alt`), trägt sie dieselben Büschel, Grenzen und Matrizen wie der Bau aus
 // dem Nichts — wachsend (0,3 → 0,6) und schrumpfend (0,3 → 0,2), eine ihrer Kacheln der Nähe steht —, und sie fragt das Feld nur
 // für ihre Scheibe: die Fragen des Wachsens und des Baus bis zum alten Anteil sind die des ganzen Baus (`_bodenSichtAt`
-// gezählt). Bis hier zog jeder Neubau jedes Büschel neu (an main fragt das Wachsen das ganze Feld).
+// gezählt). Bis hier zog jeder Neubau jedes Büschel neu (an main fragt das Wachsen das ganze Feld). Das Werk der Kachel, dessen
+// stehende Kachel nach seinem ersten Schritt fällt, endet leer.
 function wachsWand(A) {
     const G = A.constructor("return globalThis")();
     const vl = { fuss: 0.52, flat: {}, fern: [{ lokal: new G.THREE.Matrix4() }] };
@@ -341,15 +342,24 @@ function wachsWand(A) {
     let n = 0;
     const hoehe = (x, z) => 0.05 * x + 2 * Math.sin(z / 9);
     Object.assign(w, { _bodenSichtAt: (x, z, aus) => (n++, aus && (aus.gruen = 1), hoehe(x, z)), _pfadFeldAt: (x, z) => +(Math.abs(z + 30) < 2), _bodenSichtChunks: (...r) => A._wieseKarten(r), _feuchteAt: () => 0.4 }); // prettier-ignore
-    const bau = (a, alt = null) => ((n = 0), [w._nahWieseFernKachel(-3, -3, a, 0.775, undefined, 0, alt), n]);
+    // das Werk der Kachel (`_nahWieseFernKachel`) gegangen; `mitte` läuft nach dem ersten Schritt (an main baut sie am Stück)
+    const geh = (x, mitte) => {
+        if (!x || typeof x.next !== "function") return x;
+        for (let r = x.next(), i = 0; ; r = x.next(), i++) if (r.done) return r.value; else if (!i && mitte) mitte(); // prettier-ignore
+    };
+    const fk = w.state.nahWiese.fern.kacheln;
+    const bau = (a, alt = null, mitte) => ((n = 0), [geh(w._nahWieseFernKachel(-3, -3, a, 0.775, 0, alt), mitte), n]);
     const gleich = (a, b) => a.bueschel.length === b.bueschel.length && a.bueschel.every((x, i) => x.x === b.bueschel[i].x && x.z === b.bueschel[i].z && x.o === b.bueschel[i].o) && [a.grenze, a.basis].every((f, i) => f.length === [b.grenze, b.basis][i].length && f.every((v, j) => Object.is(v, [b.grenze, b.basis][i][j]))); // prettier-ignore
     try {
         w.state.nahWiese.kacheln.set("-6,-6", { bueschel: w._nahWieseKachelBueschel(-6, -6, 1) });
         bau(0.3); // die Gitter des Felds
         const [[k1, nAb], [k2, nVoll]] = [bau(0.3), bau(0.6)];
+        fk.set("-3,-3", k1); // die stehende Kachel, auf der das Werk wächst
         const [k2w, nWachs] = bau(0.6, k1);
         const [k3, k3w] = [bau(0.2)[0], bau(0.2, k1)[0]];
-        const f = [!gleich(k2, k2w) && "wachsend nicht der Bau aus dem Nichts", !gleich(k3, k3w) && "schrumpfend nicht der Bau aus dem Nichts", nAb + nWachs !== nVoll && `die Scheibe fragt ${nWachs} statt ${nVoll - nAb} (das ganze Feld ${nVoll})`, !(k2.bueschel.length > k1.bueschel.length) && "ohne Scheibe"]; // prettier-ignore
+        // DAS WERK ÜBER EINER GEFALLENEN KACHEL: fällt die stehende Kachel nach dem ersten Schritt, endet das Werk leer
+        const k4 = bau(0.6, k1, () => fk.delete("-3,-3"))[0];
+        const f = [!gleich(k2, k2w) && "wachsend nicht der Bau aus dem Nichts", !gleich(k3, k3w) && "schrumpfend nicht der Bau aus dem Nichts", nAb + nWachs !== nVoll && `die Scheibe fragt ${nWachs} statt ${nVoll - nAb} (das ganze Feld ${nVoll})`, !(k2.bueschel.length > k1.bueschel.length) && "ohne Scheibe", k4 && "das Werk baut über einer gefallenen Kachel"]; // prettier-ignore
         return f.filter(Boolean).map((t) => `P-Wachs: ${t}`);
     } catch (e) {
         return [`P-Wachs: ${e.message}`];
@@ -1182,6 +1192,7 @@ function selbsttest() {
             ["_nahWieseFernKachel", "if (x.o >= ab) bueschel.push(x);", "bueschel.push(x);", "nicht der Bau"],
             ["_nahWieseKachelBueschel", "if (o >= anteil || o < ab) continue;", "if (o >= anteil) continue;", "die Scheibe fragt"],
             ["_nahWieseFernKachel", "grenze.set(G.grenze, m);", "", "nicht der Bau"],
+            ["_nahWieseFernKachel", "(!alt || nw.fern.kacheln.get(fx + \",\" + fz) === alt)", "true", "gefallenen Kachel"],
         ].filter(([g, a, b, x]) => !wachsWand(klasseVon(stammLib.ersetze(st, g, a, b))).some((e) => e.includes(x)));
         t(`Die Kachel der Ferne wächst: je Glied ein Mutant rot ${wachsWand(A)}${stillW.map((m) => " — still " + m)}`, !wachsWand(A).length && !stillW.length); // prettier-ignore
         // S31 — DIE DECKUNG DER FERNE (P-Ferne): das Gesetz hält Deckung und Schirm, das vor w10-wiese (die Deckung fällt ab
