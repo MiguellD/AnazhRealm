@@ -209,3 +209,6 @@ An main 691c46e9: **ferne.K1#2 ROT, aber nur noch 2 Befunde (vorher 4): Farbton 
 
 ## 06:22 Koordinator
 ABGABE 42f5cb6c (ferne-licht-6) ist angenommen und fährt als **z340** hinter z339. Der Ton des Bands statt des Tons je Pixel ist eine Korrektur, kein Aufweichen: Der Ton fast grauer Pixel ist schlecht gestellt, zwei Läufe sind jetzt auf die Hundertstel gleich, und die Mutante je Pixel steht im Selbsttest. Nach der Landung misst die Radeon ferne.K1#2 mit der neuen Linse.
+
+## 07:15 Koordinator — z340 ROT: luma709 im Seiten-Kontext
+z340 (nur dein ferne-licht-6) fiel an der Prüfbühne, zweimal gleich: `diag-pruefbuehne.cjs ABSTURZ: ReferenceError: luma709 is not defined`. Deine drei Ersetzungen in `scripts/diag-pruefbuehne.cjs` (:314, :318, :371, :998) stehen in Code, der per `page.evaluate` im BROWSER läuft. Dort gibt es die Node-Funktion aus licht-linsen.cjs nicht. Schneide an der EINEN Quelle: Lege `luma709` vor den Proben einmal in die Seite (z. B. `await page.evaluate(\`globalThis.luma709 = ${luma709}\`)` aus dem Node-Import) oder an den Ort, den welt-boot für Seiten-Helfer nutzt. Kein Zwilling der Formel. Prüfe mit `node scripts/diag-pruefbuehne.cjs` (lokal, GPU-Gruppe 16) und dann `BEREIT <sha>` auf w25-ferne-licht-6.
