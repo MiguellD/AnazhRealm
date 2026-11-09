@@ -335,7 +335,8 @@ class AnazhRealm_siedlung_bewohner {
         const tuch = Object.keys(kc.CLOTH_COLORS);
         for (const G of S.gestalten)
             if (!G.tonZeile) G.tonZeile = this._tonZeile(kc.menschPalette(G.dK, G.f.skin, G.f.hair));
-        const R = S.raum;
+        // der Leib-Raum der Siedlung entsteht mit den Punkten ihrer Bewohner (`_bewohnerRaum`)
+        const R = S.raum || (S.raum = this._bewohnerRaum(S));
         if (!R.tonZeile) R.tonZeile = this._tonZeile(kc.menschPalette(R.dK, R.f.skin, R.f.hair));
         for (const b of S.liste) {
             const gen = (b.genom = this._rollHumanoidGenome(b.seed));
@@ -1557,7 +1558,6 @@ class AnazhRealm_siedlung_bewohner {
             S.listeWerk = null;
             if (!S.liste) {
                 S.gestalten = this._bewohnerGestalten(S);
-                S.raum = this._bewohnerRaum(S);
                 S.satz = null;
                 S.liste = w.value;
                 this._bewohnerGenome(S);
