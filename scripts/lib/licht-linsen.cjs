@@ -2129,7 +2129,7 @@ function tonDesBands(paare) {
 // fast grauen Horizont zur Sonne (die Mie-Aureole, 3–4 Stufen Buntheit) trug schon die Luft allein, ein Band OHNE Boden, auf der
 // GTX 10,21°, auf swiftshader 2,69° (87537d3f, Azimut 0, Uhr 0,5) — der Ton einer fast grauen Referenz ist schlecht gestellt,
 // je Kanal 1 % Rundung des Geräts drehte ihn um 7°. Gegen die Luft der Entfernung (Buntheit ~20 %) misst das Band, was der Boden
-// durch die Luft trägt: GTX 13° → 4,6°, swiftshader 6,9° → 4,9°.
+// durch die Luft trägt: GTX 1050 Azimut 0 13° → 5,22°, je Uhr 0,5 5,22 · 5,72 · 3,88 · 3,48°, Uhr 0,27 0,36–3,36° (bb75c460).
 function tonDerFerne(paare, beta) {
     return tonDesBands(paare.map(([L, S, gd]) => [L, S.map((s, c) => s * (1 - Math.exp(-beta[c] * gd)))]));
 }
