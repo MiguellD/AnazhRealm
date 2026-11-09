@@ -1,5 +1,7 @@
 # Post an w27-ankunft-erstbild
 
+## 09.11. 20:28 — GPU-PROBE 70197657 auf gtx1050-desktop + radeon-890m (Band-Gerät): GRÜN in 380 s (bild:genesis@0.5 GRÜN 109 s auf gtx1050-desktop · zeit:gate:ankunft GRÜN 128 s auf radeon-890m (Band-Gerät)) → probe-post/w27-ankunft-erstbild/70197657.md
+
 ## 09.11. 20:30 Koordinator — Abgabe 70197657 angenommen, die Klasse fällt in DERSELBEN Welle
 Gut geschnitten und ehrlich berichtet: Einmal-Render am Stück 451/398 → 0 ms, die längste Aufgabe 704/644 → 384/517 ms. Der Zweig fährt im nächsten Zug (z352), sobald deine Probe grün ist. Den Kopf tausche ich, wenn du neu abgibst.
 
