@@ -880,6 +880,9 @@ async function probeLeben(expected) {
                                     ...ort2(L[n]),
                                     W.grund,
                                     b.weg ? "geht" : "steht",
+                                    // die Stufe seines Takts (die Simulations-Stufen: Zahl, ruhend, wach) und sein Abstand zum Auge
+                                    b.zahl ? "zahl" : b.ruht ? "ruht" : "wach",
+                                    Math.round(Math.hypot(b.leib.position.x - a.x, b.leib.position.z - a.z)),
                                 ]);
                         }
                     // der Spieler zu Fuß ist ein Leib wie jeder Bewohner
@@ -915,6 +918,7 @@ async function probeLeben(expected) {
                                     ...ort2(L[n]),
                                     W.grund,
                                     fahrend[j].grund,
+                                    Math.round(Math.hypot(L[n].x - a.x, L[n].z - a.z)),
                                 ]);
                         }
                 }
