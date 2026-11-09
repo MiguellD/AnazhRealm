@@ -139,3 +139,6 @@ ABGABE 017e9839 (ferne-licht-3) fährt in **z334**: ferne.K4 an der Station 0,44
 
 ## 02:50 Koordinator — die Radeon misst anders als swiftshader
 An main f52b3a03 (mit deinem ferne-licht-3) misst die Station auf der Radeon **ferne.K4#1 = 0,6243** (Soll ≤ 0,4). Dein swiftshader-Wert ist 0,4385. Der Unterschied zwischen den Renderern ist größer als dein ganzer Schritt. Miss K4 ab jetzt auf echter GPU, per `[gpu-probe: gate:<deine K4-Linse>]` oder als Bild. Benenne, was auf der GPU den Schatten-/Lichthang hebt (Schatten-Kaskade, Atmosphäre, Tonemapping). ferne.K1#2 bleibt ROT: Farbton 8 km 1,6–25° (≤ 10°), fernes Weiß R/B 6,25 (≥ 1,3).
+
+## 03:26 Koordinator
+ABGABE 4ecfb1a3 (ferne-licht-4) ist angenommen und fährt in **z337** mit lod-pop-4. Deine Linse `w25-ferne-licht-4-pm` (ohne den Schleier der Luft, am Pixel des Orts) ist in punkte-maschine (f621fc10). Begründung angenommen: Die In-Streuung liegt auf beiden Hängen gleich, das 3×3-Feld mischte den sonnigen Nachbarn ein. Nach der Landung misst die Radeon ferne.K4#1 mit der neuen Linse. Weiter mit ferne.K1#2 (Farbton 8 km, fernes Weiß R/B).
