@@ -1,5 +1,13 @@
 # Post an w25-gpu-wahl
 
+## 09.11. 17:46 — Abgabe w25-gpu-wahl, dritte Runde (Arbeiter)
+ABGABE a0a0b0d5e8d0a6518bc4581867914ff15eb13a94
+
+Die Treue des Pop-Gangs auf echter GPU beim Namen genannt und an der Wurzel geschnitten; main a7dc1874 gemischt.
+- Geschnitten: die gewachsene Senke der Nah-Wiese tritt in ihrer Arena an den Platz der alten (`stamm/stoff-instanz.js` `tauschen`, gerufen aus `stamm/vegetation-wiese.js` `_senkeMesh`) — bis hier trat sie wie eine Fremde ein, ihr Block fand keinen Platz, eine Folgerin nahm sie erst nach dem Frame (an der Mess-Wiese in jedem frischen Boot im ersten Schuss: L1/L2 der Vorlage 1, 810 → 1 294 Plätze). Dazu seit Runde 2: der Senken-Knoten bindet ohne Feld der Quelle seinen eigenen Platzhalter (nie den Puffer eines fremden Objekts), der Wirt der Gruppe trägt eine Version (seine Werfer-Hülle steht nie über ein neues Kind). Die Treue-Meldung von gate:pop nennt Felder, ΔY, A2↔A3, Arena-Folgen und die Wahl je Glied A↔A2.
+- Gemessen: GTX 1050 9378fab7 gate:pop GRÜN 0,031 %/s, Treue 0, Block-Treue 179 (vorher a1f87ba5–f18be23a ROT, Treue 1 110–9 794 Bytes; der Baum von main, f5f2b47f, Radeon GRÜN 0,0277); Radeon f18be23a: die Wahl zählte in A und A2 gleich (0 von 108 Zügen) — der Täter war die Folge, nicht die Wahl; Radeon a1f87ba5 ego-schatten und bild:wiese@0.5 GRÜN; lokal 3 von 3 frische Boots mit einer Folge im ersten Schuss, mit dem Tausch 0 (1 Boot). check, playtest:fast, welt-boot, sicht-arbeit, schatten-werfer, scatter-lod, post-kette, kamera-treue, freie-slots, foundry-crossfade GRÜN am Kopf; scripts −8 870 Atome.
+- Ehrlich offen: `_passSicht` Mitte 3,0 ms über dem Ziel 2; die Nah-Streu wählt auf der CPU; WebGL2 ohne Arena wählt nichts; die Ferne in EINER Arbeitsgruppe; die Probe dieses Kopfs (gate:pop, gate:ego-schatten, bild:wiese@0.5) richtet.
+
 ## 09.11. 17:31 — GPU-PROBE 9378fab7 auf gtx1050-desktop: GRÜN in 176 s (gate:pop GRÜN 138 s) → probe-post/w25-gpu-wahl/9378fab7.md
 
 ## 09.11. 16:48 — GPU-PROBE f18be23a auf radeon-890m: ROT in 108 s (gate:pop ROT 54 s) → probe-post/w25-gpu-wahl/f18be23a.md
