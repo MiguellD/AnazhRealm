@@ -497,7 +497,6 @@ const WIRT_LESER = {
     _lofiKick: "klang:GENRES",
     _lofiSnare: "klang:GENRES",
     _lofiHihat: "klang:GENRES",
-    _playSchrittOneShot: "klang:SCHRITT_TIMBRE",
 };
 
 // (G) DIE STAMM-KLASSE, statisch: jede Stelle im Stamm, die eine Quelle baut (createOscillator · createBufferSource ·

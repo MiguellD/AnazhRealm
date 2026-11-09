@@ -26,8 +26,9 @@
 //   mu       μ × ½: der Bremsweg eines mit 3 m/s gestoßenen Wolfs (`_kreaturStossSchritt`) auf einer Platte aus dem Stoff (das
 //            Gras: die Wiese am Ufer) verdoppelt sich
 //   albedo   OFFEN: die Luma braucht das Ausgabe-Bild der echten GPU, headless zählt sie nie
-//   klang    die Frequenz der Klang-Spalte × 2: der Spektral-Schwerpunkt des Schritts (die Stimme des Wirts im
-//            OfflineAudioContext, das Mittel aus 8 Tritten) auf dem Stoff steigt (das Wasser: watend am Ufer)
+//   klang    das Band des Schritts × 2 aus der Zeile (klang SCHRITT, klang.K4): die Körnung × ½ (ein loser Boden knistert aus ihr) oder
+//            die Härte E × 2^(5/2) (die Ferse schlägt mit (E/1 GPa)^(2/5)): der Spektral-Schwerpunkt des Schritts (die Stimme des Wirts
+//            im OfflineAudioContext, das Mittel aus 8 Tritten) auf dem Stoff steigt (das Wasser: watend am Ufer)
 //   tZuend   T_zünd − 100 K: der Stoff im Brennpunkt einer Linse (`_tickFocusingAffordances`) fängt früher Feuer
 //   tSchmelz T_schmelz − 100 K: der See gefriert im Winter nicht (`_eisAt`)
 //   c        c × ½: der Stoff im Brennpunkt ist nach 2 s wärmer; das Wasser folgt der Luft schneller, der See trägt im Herbst
@@ -35,6 +36,11 @@
 // DIE SABOTAGE (Selbsttest im selben Lauf): der EINE Leser der Tafel (`_stoff`) liefert die Zeilen von vor der Mutation — ein
 // Leser, der ruft und verwirft —, und jede Wirkung jedes Stoffs ist ROT; eine, die grün bleibt, liest an der Tafel vorbei.
 // Staffel 1 = je Stoff ≥ 3 von 7 Wirkungen, Staffel 2 = 7/7; die Zeile `TAFEL {…}` trägt die Messung.
+// DER SCHRITT JE STOFF (klang.K4, w26-klang-schritt; aus denselben Tritten der Wirkung klang, unmutiert): am Ausgang der Stimme
+// gemessen wie die Station (je 8 ms das 1024er-Fenster, hörbar ab rms 1e-4) — jeder Schritt klingt mindestens so lang wie die
+// Lastübernahme seines Gesetzes (`schrittBand` ladeSek) und ohne Lücke über 30 ms (die Station zählte ihn sonst zweimal oder nie),
+// je zwei Stoffe ≥ 300 Hz Schwerpunkt auseinander; die Zeile `SCHRITT {…}` trägt die Messung. Der Täter im selben Lauf (vorher ROT
+// am Täter): jeder Stoff spielt den Klick der Hand-Tafel bis w26 (Stein, Band 1,5 kHz, 60 ms) — die Wand nennt ihn beim Namen.
 "use strict";
 const { urteilEnde, studioKern, SELBSTTEST } = require("./lib/welt-boot.cjs");
 
@@ -260,7 +266,15 @@ async function tafelProbe(STOFFE, WIRKUNGEN, sabotage) {
         for (let m; hi - lo > 1 / 8760; ) um("seasonPhase", (m = (lo + hi) / 2), () => r._eisAt(SX, SZ, NaN)) === null ? (lo = m) : (hi = m);
         return hi * 365;
     };
-    // je Wirkung [Mutation, Messung, Urteil (vorher, nachher)]
+    // DER SCHRITT AM ABGRIFF (klang.K4): hörbar, wo ein 8-ms-Block rms ≥ 1e-4 trägt (die Schwelle der Station) — die Spanne vom
+    // ersten bis zum letzten hörbaren Block in ms, je Stoff der Median der 8 Tritte des ersten (unmutierten) Laufs neben der
+    // Lastübernahme seines Gesetzes (`schrittBand` ladeSek); den Schwerpunkt misst die Wirkung selbst (`vor`)
+    const schritt = {};
+    const spanne = (d, b = [...Array(62)].map((_, i) => Math.hypot(...d.subarray(i * 384, i * 384 + 384)) > 2e-3)) => (b.lastIndexOf(true) - b.indexOf(true)) * 8;
+    // DER TÄTER (klang.K4, `sabotage === "klick"`): jeder Stoff klickt wie die Hand-Tafel bis w26 — ein Band (Stein) für alle, kürzer
+    // als die Lastübernahme
+    if (sabotage === "klick") r._schrittKlangParams = (m, ...a) => ({ ...Object.getPrototypeOf(r)._schrittKlangParams.call(r, "stein", ...a), ladeSek: 0.005, dauerFaktor: 0.2 });
+    // je Wirkung [Mutation, Messung, Urteil (vorher, nachher), die Spalte der Mutation (sonst der Name der Wirkung)]
     const W = {
         rho: [
             (z) => (z.rho *= 0.5),
@@ -282,24 +296,30 @@ async function tafelProbe(STOFFE, WIRKUNGEN, sabotage) {
             (X, v, n) => v > 0.1 && Math.abs(n / v - 2) < 0.3,
         ],
         klang: [
-            (z) => (z.klang = { ...z.klang, freq: z.klang.freq * 2 }),
-            // je Tritt EIN Rausch-Burst (`_playSchrittOneShot`, Math.random): sein Schwerpunkt streut (Erde 241–406 Hz in 400 Tritten,
-            // ein Paar über 1,4 in 3 von 800 — die Sabotage maß grün), gemessen wird das Mittel aus 8 Tritten, je einer im eigenen Kontext
+            (z) => (z.E *= 2 ** 2.5),
+            // je Tritt EIN Schritt (`_playSchrittOneShot`, Math.random wählt Versatz und Körner): sein Schwerpunkt streut, gemessen
+            // wird das Mittel aus 8 Tritten, je einer im eigenen Kontext; der erste Lauf (unmutiert) misst dazu den Schritt wie die
+            // Station (`schritt`: Schwerpunkt, hörbare Spanne, längste Lücke)
             async (X) => {
                 const sym = st.symphony;
                 const alt = { ...sym };
                 const tritt = (x, z, y) => (setz(x, z, y), r._schrittKlangTick({ walkPhase: 0 }, 0, false, pm), r._schrittKlangEreignis(pm, false, 0));
                 let summe = 0;
+                const je = [];
                 for (let i = 0; i < 8; i++) {
                     const ctx = new OfflineAudioContext(1, 24000, 48000);
                     Object.assign(sym, { enabled: true, ctx, masterGain: ctx.destination });
                     await (X === "wasser" ? tritt(watX, UZ) : boden(X, tritt));
                     Object.assign(sym, alt);
-                    summe += window.__klangCore.schwerpunkt((await ctx.startRendering()).getChannelData(0), 48000) / 8;
+                    const d = (await ctx.startRendering()).getChannelData(0);
+                    summe += window.__klangCore.schwerpunkt(d, 48000) / 8;
+                    je.push(spanne(d));
                 }
+                schritt[X] ||= [je.sort((a, b) => a - b)[4], Math.round(window.__klangCore.schrittBand(r._stoff(X)).ladeSek * 1000)];
                 return summe;
             },
             (X, v, n) => n / v > 1.4,
+            "E",
         ],
         tZuend: [(z) => (z.tZuend -= 100), async (X) => (await brenn(X, 120))[1], (X, v, n) => n > 0 && n < 0.85 * v],
         tSchmelz: [
@@ -321,14 +341,15 @@ async function tafelProbe(STOFFE, WIRKUNGEN, sabotage) {
     for (const X of STOFFE)
         for (const w of WIRKUNGEN) {
             const z = M[X];
-            const alt = z && z[w];
             const f = W[w];
+            const spalte = (f && f[3]) || w;
+            const alt = z && z[spalte];
             aus[X] = aus[X] || {};
             try {
                 if (!f) throw new Error("offen: die Luma braucht das Ausgabe-Bild (echte GPU)");
                 if (alt === null) throw new Error("offen: die Zeile " + X + " trägt kein " + w + " (keine Wirkung zu mutieren)");
                 const vor = await f[1](X);
-                if (sabotage) {
+                if (sabotage === true) {
                     const snap = Object.fromEntries(Object.keys(M).map((n) => [n, { ...M[n] }]));
                     r._stoff = (n) => snap[n];
                 }
@@ -338,13 +359,19 @@ async function tafelProbe(STOFFE, WIRKUNGEN, sabotage) {
             } catch (e) {
                 aus[X][w] = { ok: false, fehler: fehlerText(e).slice(0, 140) };
             } finally {
-                if (z) z[w] = alt;
+                if (z) z[spalte] = alt;
                 r._stoff = leser;
             }
         }
+    delete r._schrittKlangParams; // der Täter fällt (der Leser des Prototyps)
     r.removeArchitecture(linse);
-    return aus;
+    return { ...aus, schritt };
 }
+// DAS URTEIL DES SCHRITTS (klang.K4): die Täter beim Namen — „X kurz", wo der Schritt kürzer klingt als seine Lastübernahme
+// (`schritt` [ms hörbar, ms Lastübernahme]), „X eng", wo sein Schwerpunkt (`vor` der Wirkung klang) keine 300 Hz über dem
+// nächsttieferen Stoff liegt
+const schrittRot = (T, h = STOFFE.map((X) => [T[X].klang.vor, X]).sort((a, b) => a[0] - b[0])) =>
+    STOFFE.filter((X) => !(T.schritt[X][0] >= T.schritt[X][1])).map((X) => X + " kurz").concat(h.filter((x, i) => i && !(x[0] - h[i - 1][0] >= 300)).map((x) => x[1] + " eng"));
 async function tafel() {
     const { statikServer, starteBrowser, nullRenderer, warteAufWelt, buehne } = require("./lib/welt-boot.cjs");
     const port = Number(process.env.GEGENSTAND_STOFF_PORT || 4677);
@@ -359,6 +386,7 @@ async function tafel() {
         await buehne(page);
         const echt = await page.evaluate(tafelProbe, STOFFE, WIRKUNGEN, false);
         const sab = await page.evaluate(tafelProbe, STOFFE, WIRKUNGEN, true);
+        const klick = await page.evaluate(tafelProbe, STOFFE, ["klang"], "klick");
         const je = {};
         for (const X of STOFFE) console.log(X, (je[X] = WIRKUNGEN.filter((w) => echt[X][w].ok)).length + "/7", JSON.stringify(echt[X]));
         // an der Tafel vorbei: grün trotz Sabotage; stumm: die Sabotage maß nicht (ein Absturz ist kein Rot)
@@ -366,7 +394,12 @@ async function tafel() {
         console.log("TAFEL " + JSON.stringify({ je, vorbei }));
         const gruen = !vorbei.length && STOFFE.every((X) => je[X].length >= 3);
         console.log(gruen ? "✅ TAFEL GRÜN — Staffel " + (STOFFE.every((X) => je[X].length === 7) ? 2 : 1) : "❌ TAFEL ROT — an der Tafel vorbei oder stumm: " + vorbei);
-        return gruen ? 0 : 1;
+        // DER SCHRITT JE STOFF (klang.K4): die Wand am echten Gesetz und am Täter (ein Klick für jeden Stoff) im selben Lauf
+        const [S, T] = [schrittRot(echt), schrittRot(klick)];
+        const ok = !S.length && T.length;
+        console.log("SCHRITT " + JSON.stringify({ ms: echt.schritt, hz: STOFFE.map((X) => X + " " + Math.round(echt[X].klang.vor)), rot: S, taeter: T }));
+        console.log(ok ? "✅ SCHRITT GRÜN" : "❌ SCHRITT ROT");
+        return gruen && ok ? 0 : 1;
     } finally {
         await browser.close();
         server.close();
