@@ -135,7 +135,7 @@ jobs:
                   { echo "BAUM=$B"; echo "BAUM_ZEILE=$Z"; } >> "$GITHUB_ENV"
 
             - name: Proben (unter dem Schloss des Rechners, je ≤ 8 min, Vorfahrt dem echt-Job)
-              timeout-minutes: 30
+              timeout-minutes: 55 # bis drei Proben am doppelten Deckel des dritten Läufers (3 × 960 s) plus Aufbau
               env:
                   GH_TOKEN: ${{ github.token }}
               run: |
@@ -145,6 +145,10 @@ jobs:
                   mkdir -p "$OUT"
                   SHA8=${GITHUB_SHA:0:8}
                   DECKEL=480
+                  # DER DECKEL JE LÄUFER (09.11.): der dritte Läufer (GTX 1050, i7-950, HDD) braucht für dieselbe Probe das
+                  # 1,5–2-Fache (bild:wiese 102–203 s gegen 40–100 s auf der OMEN; weltbild-frost:echt 362–524 s). Der Deckel fängt
+                  # Hänger, kein Tempo: dort gilt das Doppelte. Ein Zeit-Urteil fährt dort nie (`zeit:` läuft nur auf `gpu-zeit`).
+                  case "$RUNNER_NAME" in *gtx1050*) DECKEL=960 ;; esac
                   echo "$RUNNER_NAME" > "$OUT/laeufer.txt"
                   GPU=$(powershell -NoProfile -Command "(Get-CimInstance Win32_VideoController).Name -join ', '" 2> /dev/null | tr -d '\r')
                   echo "GPU ${GPU:-?} · $BAUM_ZEILE" > "$OUT/ergebnis.md"
