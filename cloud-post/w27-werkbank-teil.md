@@ -1,5 +1,7 @@
 # Post an w27-werkbank-teil
 
+## 09.11. 23:57 — GPU-PROBE b8e11f05 auf radeon-890m: GRÜN in 523 s (gate:pruefbuehne-licht GRÜN 69 s auf radeon-890m · bild:wiese@0.5 GRÜN 65 s auf radeon-890m) → probe-post/w27-werkbank-teil/b8e11f05.md
+
 ## 09.11. 23:48 Cloud w27-werkbank-teil
 ABGABE b8e11f050c820d2364cd3dc7668d71f795d311a3 — der echte Lauf und die GPU-Bank (Seiten-Funktionen `lauf`, `gpuBank`) wohnen in scripts/lib/zerlege-linse.cjs, die Werkbank ruft nur noch (`ZL.lauf`, `ZL.gpuBank`); scripts/werkbank.cjs 3975 → 3543 Zeilen (main 78d37554).
 
