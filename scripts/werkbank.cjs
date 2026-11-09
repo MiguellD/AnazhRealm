@@ -3098,7 +3098,7 @@ async function starte() {
                     const sp = HL.spurProfil(ev);
                     const a = HL.linseWerten(roh, sp, b);
                     const datei = zeitAblage(b.json, b.spitze ? "takt" : "haenger", "json");
-                    jsonAb(datei, Object.assign({ echt: ECHT, boot: bootZeile(), befehle: l.befehle, dreiecke: l.dreiecke, gpuMs: l.gpuMs }, a));
+                    jsonAb(datei, Object.assign({ echt: ECHT, boot: bootZeile() }, a));
                     // Das ROHE (Takte + Stichproben der Spur) daneben: `haenger --auswerten <roh>` urteilt es neu, ohne Welt
                     fs.writeFileSync(datei.replace(/\.json$/, "") + ".roh.json", JSON.stringify({ roh, spur: sp }));
                     const { tabelle, befunde, cpuMs, taeter } = a;
@@ -3224,60 +3224,7 @@ hauptLauf(async () => {
         const je = (o.schritte || []).map((s) => s.pop + (s.wechsel ? "*" : "") + (s.ein.length ? `+${s.ein.length}@${Math.min(...s.ein)}` : ""));
         if (je.length) console.log(`lod.K2#1 ${o.anteilJeSekunde <= 0.05 ? "GRÜN" : "ROT"} ${o.anteilJeSekunde} % Pop-Pixel/s (${o.popPixel} px) · ${je.join("/")} · Laub ${o.laub} · dc, Dreiecke ${o.kosten.at(-1)} · GPU ${o.bank.gpuJeFrameMs} ms, CPU ${o.bank.cpuJeFrameMs} ms je Bild`);
     }
-    else if (cmd === "geh") {
-        // DIE ZERLEGUNG DES GEHENS (`gate:geh-zerlegung`, die Bewegungszellen von profiband.K1#1; der Messplatz des GPU-Probe-Dienstes):
-        // je Ort frisch umgestellt die Gänge wie die Station (Bahn, Regler voll, Tiere frei, 4 s nach 0,5 s; in der Stadt zwei) — aus
-        // DERSELBEN Spur die Hänger über 33 ms (je Hänger die Domäne seiner Engstelle), die Takt-Spitze je Domäne (ms je Takt ab p95 /
-        // Mitte) und am letzten Gang je Ort der Baum (`HL.domaenen`); dazu GPU, Befehle je Pass und Dreiecke des Laufs. Zeilen „GEH …"
-        // ≤ 590 Zeichen (der Dienst postet die letzten zehn). Exit 0 nur, wenn jeder Gang Bild-p95 ≤ 33 ms hält. Bis w25-stadt-takt lebte
-        // die Zerlegung als eigenes Skript in den Zweigen (w23-geh-takt) und fiel mit deren Abgabe.
-        const halt = await eigeneWelt();
-        const q = (z) => (z ? [z.p50, z.p95, z.p99, z.max].join("/") : "?");
-        const zeile = (s) => console.log(s.replace(/\s+/g, " ").slice(0, 590));
-        const passe = (b) => Object.entries(b?.jePass || {}).sort((x, y) => y[1].p50 - x[1].p50).slice(0, 5).map(([p, v]) => `${p} ${v.p50}`).join(" "); // prettier-ignore
-        let gruen = true;
-        const summe = [];
-        try {
-            for (const [ort, gaenge] of [["stadt", 2], ["wiese", 1]]) {
-                // DIE WACHE DES UMSTELLENS: steht der Ort nach 200 s (und 400 s) nicht, nennt sie, was offen ist (`_weltOffen`, die
-                // Ruhe und ihr Grund, die Akte des Offenen) — der Deckel der Probe (480 s) bräche sonst ohne ein Wort
-                const [auf, um0, zu] = [umstellen({ ort, sicht: "ego" }), Date.now(), { fertig: false }];
-                auf.finally(() => (zu.fertig = true)).catch(() => {});
-                for (let t = 1; !zu.fertig; t++) {
-                    await Promise.race([auf.catch(() => {}), sleep(1000)]);
-                    if (!zu.fertig && (t === 200 || t === 400))
-                        zeile(`GEH ROT ${ort} steht nach ${t} s nicht: ${JSON.stringify((await rufe("/eval", { code: "const W = r._weltStand || {}; return [Object.entries(r._weltOffen()).filter(([, v]) => v).join(' '), W.ruhe, W.grund, r._builtRingRadius(), r._weltOffenAkte()].join(' · ');" })).ergebnis)}`); // prettier-ignore
-                }
-                const umO = await auf;
-                if (!umO || umO.fehler) throw new Error(`${ort} umstellen: ${umO ? umO.fehler : "keine Antwort"}`);
-                const umS = Math.round((Date.now() - um0) / 1000);
-                for (let g = 1; g <= gaenge; g++) {
-                    const o = await rufe("/haenger", { sek: 4, ein: 0.5, tiere: "frei", wandern: "bahn", schwelle: 33, json: path.resolve("artifacts", "geh", `${ort}-${g}.json`) }); // prettier-ignore
-                    if (!o?.datei) throw new Error(`${ort} ${g}: ${JSON.stringify(o).slice(0, 300)}`);
-                    const a = jsonLesen(o.datei), { roh, spur } = jsonLesen(o.datei.replace(/\.json$/, ".roh.json"));
-                    const s = HL.linseWerten(roh, spur, { spitze: true }), d = HL.domaenen(a, s, /^_verkehrSchritt|^tickArchitectureCulling|^_tickBewohner|^_bewohner|^_tickAutoSettlement|^_tickBauSatz|^_chunkSatzPass/);
-                    const u = `GEH ${a.frameMs.p95 <= 33.4 ? "GRÜN" : ((gruen = false), "ROT")} ${ort}-ego Gang ${g}`;
-                    zeile(`${u}: Bild ${q(a.frameMs)} · Takt ${q(a.taktMs)} · GPU ${q(a.gpuMs)} · Befehle ${a.befehle?.p95} (${passe(a.befehle)}) · Dreiecke ${a.dreiecke?.p95} · ${a.frames} Bilder, ${a.haengerN} > 33 ms · Knoten-Bau ${a.knotenBau.sync}× ${a.knotenBau.ms} ms · Weg ${roh.bahnM} m${g === 1 ? ` · umgestellt in ${umS} s` : ""}`); // prettier-ignore
-                    if (ort === "stadt") zeile(`${u} je Bild > 33 ms Täter× Σ Anteil ms: ${d.haenger || "-"} · schwerste ${d.bilder}`); // die letzten zehn Zeilen tragen die Stadt
-                    if (ort === "stadt") zeile(`${u} je Domäne ab p95/Mitte (${s.spitzeN} Takte): ${d.jeDomaene}`);
-                    summe.push(`${ort} ${g}: ${a.frameMs.p50}/${a.frameMs.p95}/${a.frameMs.max} ms, > 33 ms ${a.haengerN}/${a.frames} (${Math.round((100 * a.haengerN) / a.frames)} %), Takt ${a.taktMs.p50}/${a.taktMs.p95}`); // prettier-ignore
-                    for (let i = 0, k = 1; ort === "stadt" && g === 1 && i < d.baum.length && k <= 2; k++) {
-                        let t = `${u} Baum ${k}:`;
-                        do t += " " + d.baum[i++];
-                        while (i < d.baum.length && t.length + d.baum[i].length < 580);
-                        zeile(t);
-                    }
-                }
-            }
-            zeile(`GEH ${gruen ? "GRÜN" : "ROT"} Summe Bild p50/p95/max: ${summe.join(" · ")}`);
-        } catch (e) {
-            gruen = false;
-            zeile(`GEH ROT Error ${String(e?.message || e)}`);
-        } finally {
-            halt?.();
-        }
-        process.exit(gruen ? 0 : 1);
-    } else if (cmd === "bedienung") o = await rufe("/bedienung", { runden: opt("--runden", 3), staffel: opt("--staffel") });
+    else if (cmd === "bedienung") o = await rufe("/bedienung", { runden: opt("--runden", 3), staffel: opt("--staffel") });
     else if (cmd === "albedo" && hat("nah-fern")) {
         // DIE ALBEDO NAH GEGEN FERN: je Ort im Chunk-Quadrat Boden-Satz gegen Fern-Ring aus 420 m, dazu das Gesetz an
         // der Stelle; `--selbsttest` (ohne Welt) prüft das Urteil: im Band grün (auch ein Ring, der im Band seiner Abtastung
@@ -3749,7 +3696,9 @@ hauptLauf(async () => {
     else if (cmd === "diaet") {
         if (SELBST) {
             const f = DIAET.selbsttest();
-            selbsttestEnde(f, "das Diät-Urteil nennt die Wiederholung im Stand, den Refresh ohne Änderung, die Prüfung ohne Meldung und eine blinde Linse beim Namen");
+            // der Selbsttest: das Diät-Urteil nennt die Wiederholung im Stand, den Refresh ohne Änderung, die Prüfung ohne
+            // Meldung und eine blinde Linse beim Namen
+            selbsttestEnde(f);
             process.exit(0);
         }
         o = await rufe("/diaet", {

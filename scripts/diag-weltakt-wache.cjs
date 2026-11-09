@@ -90,7 +90,9 @@ if (SELBSTTEST) {
     const [heil, fu, halb] = [form([["say", "ok"], ["fall", "ok"]], { X_OPS: ["say"] }), form([["say", "x_oob"], ["fall", "ok", 1], ["spawn_tree", 'ergebnis_failed {"lichtung":1}']], { X_OPS: ["modify_terrain"] }), form([["say", "ok"]], {})];
     if (heil || !/say .*x_oob · .*fall .*Bau steht.*spawn_tree .*lichtung.*X_OPS nennt tote Ops: modify_terrain/.test(fu) || !/ungeprüft: fall/.test(halb))
         v.push(`(K) formUrteil blind: heil „${heil}" · gebrochen „${fu}" · halb „${halb}"`);
-    selbsttestEnde(v, "Akt durch, Spion blind/fehlend, KI-Verb fehlend/umgruppiert/formbrüchig, toter Listen-Name, Tat ohne Wertung/Gewöhnung/Antwort/Zeile/Treue: jedes fällt rot.");
+    // der Selbsttest: Akt durch, Spion blind/fehlend, KI-Verb fehlend/umgruppiert/formbrüchig, toter Listen-Name, Tat ohne
+    // Wertung/Gewöhnung/Antwort/Zeile/Treue: jedes fällt rot.
+    selbsttestEnde(v);
     process.exit(0);
 }
 
