@@ -287,9 +287,9 @@ async function tonProbe(stoerung) {
     for (let dz = -1; dz <= 1; dz++)
         for (let dx = -1; dx <= 1; dx++) {
             const E = st.voxelChunks.get(`${c0x + dx},${c0z + dz}`);
-            if (E && E.surfMap && E.gruenMap && E.mesh && (E.lod || 0) === 0) chunks.push([c0x + dx, c0z + dz, E]);
+            if (E && E.surfMap && E.gruenMap && E.mesh) chunks.push([c0x + dx, c0z + dz, E]);
         }
-    if (chunks.length < 9) return { fehler: `${chunks.length} von 9 Chunks um den Spieler stehen in Stufe 0` };
+    if (chunks.length < 9) return { fehler: `${chunks.length} von 9 Chunks um den Spieler tragen ihre Karte` };
     const basis = A.BODEN_FARBE;
     const ton = async (hex) => {
         const mead = Object.freeze(A._srgbHexLinear(hex));
@@ -313,13 +313,13 @@ async function tonProbe(stoerung) {
         const zurueck = [];
         try {
             for (const [cx, cz, E] of chunks) {
-                const w = await r._voxelWorkerComputeChunkMesh(cx, cz, 0);
+                const w = await r._voxelWorkerComputeChunkMesh(cx, cz, E.lod || 0);
                 M.faden.push(Array.from(w.karte ? w.karte.gruen : []), Array.from(w.deckung, (v) => Math.fround(v)));
                 M.fadenFarbe.push(Array.from(w.colors));
                 const zu = leihe(r, { _syncStelle: "naht" });
                 let s;
                 try {
-                    s = r._buildVoxelChunkData(cx, cz, 0);
+                    s = r._buildVoxelChunkData(cx, cz, E.lod || 0);
                 } finally {
                     zu();
                 }

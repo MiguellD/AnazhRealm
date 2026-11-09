@@ -1514,7 +1514,8 @@ class AnazhRealm_gelaende_boden {
     // DIE BODEN-KARTE (V18.508): die Höhe des GERENDERTEN Bodens je Chunk, gerastert aus dem fertigen
     // Mesh (Surface-Nets-Vertices nach Glättung + Crop) auf ein Gitter von step/BODEN_KARTE_TEILUNG (LOD 0:
     // 0,45 m, Origin chunk − step, über das Pad (dim+3)·step); je Punkt die OBERSTE nicht-steile Fläche (Wände
-    // tragen nichts), NaN ohne Boden, dazu der Grün-Kanal (Uint8). Vorher las die Karte die Dichte-Spalten
+    // tragen nichts), NaN ohne Boden, dazu der Grün-Kanal (Uint8: die Wache über der Deckung des Stoffs je Vertex,
+    // `geom.userData.deckung`, w26-ferne-ton-4 — nie über der Farbe). Vorher las die Karte die Dichte-Spalten
     // (Nulldurchgang an den Gitter-Ecken) — gemessen 01.10.: an der Mess-Wiese −1004/−790 liegt der gerenderte
     // Boden ±0,22 m (q05–q95, max +0,43) neben dem Gesetz, im Spawn-Chunk Median 45 cm; das 1,8-m-Netz trägt
     // die Feinform der Funktion nicht, die Glättung verdoppelt die Abweichung. Die Karte trifft das Mesh im
