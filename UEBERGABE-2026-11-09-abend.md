@@ -13,10 +13,10 @@ Buchen erst, wenn z347–z349 gelandet sind und die Rückfall-Stationen neu geme
 - **z347** w26-stadt-takt-4b + w26-ferne-ton-2 (enthält ferne-ton). Im CI seit 16:21 (Kandidat d757c703).
 - **z348** w26-ankunft-block-3 (Fern-Kachel-Rufe 1566 → 263) + w26-ankunft-horizont (Horizont Radeon kalt 9,3 → 6,1 s) + w26-omen-sichtbar-2 (Proben auf der OMEN im sichtbaren Fenster). Wartet auf z347w.
 - **z349** w26-leib-raum (Guss der Menge 18,8 → 10,1 s) + w26-boden-nah + w26-winter-fichte + w26-haar-arm (haar.K2 Radeon 0,64 → 0,43). Wartet auf z348w.
+- **z350** w26-klang-schritt (8d1d3bb1, S13 geheilt: −∞ dB kam als null aus dem Browser, `null > -90` ist wahr; jetzt über `__klangW.endlich`) + w26-probe-node (setup-node nur ohne Node 22 im PATH). Wartet auf z349w.
 - z346 fiel an der Klang-Linse S13 (klang-schritt). ferne-ton fährt in ferne-ton-2 mit.
 
 ## Zurückgehalten (mit Grund in cloud-post/<zweig>.md)
-- **w26-klang-schritt:** S13 „landung bleibt unbemerkt“. Der Null-Pegel-Fallback in `klang-core.js:1503` ist geschnitten (`>= 0`, im Arbeitsbaum /tmp/claude/w3/klang), reicht aber nicht. Ein lokaler Champion sucht die zweite Quelle.
 - **w26-programm-katalog:** Gewinn nicht belegt (max ≤ main offen, GC 226 ms). Verlangt: Fahrt-ABAB ≥ 4 Boots, Ankunft kalt nicht langsamer, GC benannt.
 - **w26-lack-glas:** material.K4#1 auf der Radeon UNGÜLTIG (2 Blöcke statt 54 unter swiftshader).
 - **w26-fahrt-planer:** kollidiert mit block-3 und stadt-takt-4b. Nach z348 main einmischen und mit `_wieseFernBereit` zu EINER Quelle vereinen.
