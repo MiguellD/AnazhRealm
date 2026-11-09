@@ -7595,7 +7595,14 @@ function __leibRaumNaht(tafel, quelle) {
     const slots = tafel.ziele.length / 3 / tafel.n;
     const z = new Float32Array(quelle.length * slots * 3);
     for (let i = 0; i < quelle.length; i++) z.set(tafel.ziele.subarray(quelle[i] * slots * 3, (quelle[i] + 1) * slots * 3), i * slots * 3);
-    return { achsen: tafel.achsen, n: quelle.length, ziele: z };
+    return { achsen: tafel.achsen, n: quelle.length, ziele: __leibRaumRaster(z) };
+}
+// DAS RASTER DES LEIB-RAUMS (Plattform-Probe, w26-leib-raum): jede Zahl der Tafel und der Vorlage auf 2⁻²⁰ Einheiten (0,3 µm) — der
+// Re-Fit trägt exp, hypot, atan2 und asin, deren letztes Bit eine andere V8 anders rundet (gemessen höchstens 5·10⁻¹³ Einheiten);
+// das Raster schluckt sie, die Bytes bleiben plattformgleich (die Null ohne Vorzeichen: −0 trägt andere Bytes). In place.
+function __leibRaumRaster(a) {
+    for (let i = 0; i < a.length; i++) a[i] = Math.round(a[i] * 1048576) / 1048576 || 0;
+    return a;
 }
 
 // DAS RASTER EINER KUGEL folgt ihrer GRÖSSE (V18.497, der Tier-Guss): eine 7-mm-Kralle trug
@@ -9679,7 +9686,7 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
     }
     // DER RAUM TRÄGT SEINE VORLAGE (w26-leib-raum): die Ecken des Leibs der Menge, wie die Stufe sie gießt (Ruhe-Pose, Rahmen des
     // Leibs) — Vorlage + Formziele ist der EINE Leib-Raum der Stufe (die Linsen rechnen ihn ohne den Baum, `_leibRaumLeib`)
-    if (raumTafel) raumTafel.lage = Float32Array.from(mengenLeib.mesh.geometry.attributes.position.array);
+    if (raumTafel) raumTafel.lage = __leibRaumRaster(Float32Array.from(mengenLeib.mesh.geometry.attributes.position.array));
     return __bakeGelenkBaum(B.character, "mensch", nodeName, fein, {
         art: presetId,
         base: skinCol,
