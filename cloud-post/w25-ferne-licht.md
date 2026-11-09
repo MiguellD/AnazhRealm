@@ -1,5 +1,33 @@
 # Post an w25-ferne-licht
 
+## 09.11. 04:33 — w25-ferne-licht-5: ABGABE f102e1f539a76d49a1ca7c3d7fc3b363a7ef34ad
+
+ABGABE f102e1f539a76d49a1ca7c3d7fc3b363a7ef34ad — Abgabe w25-ferne-licht-5 (vom Kopf 4ecfb1a3, main f52b3a03 darin; Proben `[gpu-probe: bild:genesis@0.5, bild:wiese@0.5, bild:gipfel-blick@0.5]` am Kopf).
+
+Zuerst die Lage von K1#2: das ferne Weiß steht im Soll (R/B 6,25 ≥ 1,3, am Kopf 6,248) — die Staffel K1-2 hielt allein der FARBTON bei 8 km ROT.
+
+Die Wurzel des Farbtons: die Wiese der Welt trägt aus der Ferne das Mittel des EINZELNEN Halms (`WIESEN_GRUND.farbe`, grün 0,202, Y 0,17) — nie die Selbstbeschattung des Bestands, die das Kronendach schon trägt (`FERN_FARBE.kronenSchatten` 0,32). Am Genesis-Hügel stand das Gelände bei 8 km darum ohne Luft auf 0,56–0,73 der In-Streuung (Physik ~0,4), und sein Gelbgrün schien durch die Luft. Ein Nachbau aus den Pixeln der Linse (je Pixel T = (L − S)/(L0 − S), die Neutral-Kurve vorwärts) trifft die gemessenen Töne exakt (k = 1: 15 · 25,5 · 12,7 · 15,7°) und sagt: mit der Wiese auf 0,4–0,5 ihrer Helligkeit 3,4–9,9°.
+
+Geschnitten:
+- stamm/daten.js:628 `WIESEN_GRUND` — `farbe` = das Mittel des Halms × `FERN_FARBE.halmSchatten` (stamm/gelaende-chunks.js:3223, 0,4 neben `kronenSchatten`): grün 0,202 → 0,081, die Satelliten-Bänder der Frischwiese im Sommer (grün ~0,07–0,09). Im Gesetz — `_bodenFarbeAt`, der Worker `attachFieldColors`, Fern-Ring, Feld-Pass, Panorama und der Rasen der Wege lesen EINE Zahl; gate:nah-fern hält sie (beide Leser gegen das Gesetz an der Stelle).
+- stamm/stoff-material.js:2886 — das Relief der Nähe (die Halm-Schichten bis 90 m) trägt weiter das Mittel des Halms (`halmMittel`): die Nähe zeigt den Halm, die Ferne den Bestand; über 90 m blendet die Nähe ins Gesetz.
+
+Gemessen (swiftshader voll, Luft-Linse `werkbank licht --luft`, Genesis, dieselbe Welt vorher/nachher):
+- FARBTON 8 km, Uhr 0,5, Azimut 0/90/180/270: 15 · 25,5 · 12,7 · 15,7° → 6 · 10,23 · 2,7 · 7,5°; Uhr 0,27: 1,0–2,8°; vom Gipfel (Auge 40 m): 10 · 6,9 · 4,7 · 5,7°.
+- Gehalten: K1-1 GRÜN (Durchlass q 0,88–1,06), K2-1 GRÜN (Rest-Kontrast am Rand 1,26–1,58 % bei 18–23 km), K2-2 GRÜN, fernes Weiß R/B 6,248.
+- Das Gesetz bei 8 km (Median aus 720 Orten je Azimut): 0,10 / 0,095 / 0,05 (Y 0,09) — 40 % Wiese, der Rest Erde und Fels der Palette.
+
+Wände am Kopf GRÜN: check · lint · format:check · playtest:fast (21 ✅ · 0 ❌) · gate:nah-fern (EINE Boden-Farbe je Ort) · gate:albedo-tafel · gate:pruefbuehne-licht (S0 GRÜN) · gate:welt-boot · gate:post-kette · gate:ego-schatten · gate:betriebsgesetz (scripts 0 Atome). Kein [ERROR] STOFF außer den Mutanten der Selbsttests.
+
+Ehrlich offen:
+- K1-2 FARBTON Azimut 90° 10,23° > 10° (Uhr 0,5) — die Staffel K1-2 bleibt mit EINEM Befund ROT.
+- FUND scripts/lib/licht-linsen.cjs:2266 `luftTiefe` (dh) · Wurzel: die Linse rechnet den Ton je Pixel aus den 8-bit-Werten fast grauer Luft-Pixel — die In-Streuung trägt bei 8 km 4–13 Stufen Buntheit, eine Stufe dreht den Ton um 5–15°. Zwei Läufe derselben Welt: Azimut 0° 6,0 gegen 12,3°, Azimut 90° 10,23 gegen 6,5°. Der Ton der Bandmittel (linear) ist stabil: vorher 14,8 · 26,2 · 19,7 · 11,9°, nachher 11,8 · 6,8 · 2,0 · 7,6° · ferne.K1#2 · S (der Ton des Mittels des Bands statt des Mittels der Töne — kostet die Decke ~30 Atome).
+- Die Wiese am Ort der Welt ist heller als ein Bestand: der Halm selbst (Spitze grün 0,349) liegt über einem echten Grashalm (~0,15–0,2) — eine Frage der Palette des Kerns (terrain `SAISON_GESETZ`), nicht dieses Zweigs.
+
+Maßstab: die Selbstbeschattung des Kronendachs (MODIS/Landsat-Oberflächen-Reflexion: Laubwald grün 0,05–0,07, Frischwiese 0,07–0,09), Koschmieder 1924 mit der Referenz luft-referenz.json.
+
+Ich warte im Wartezimmer.
+
 ## 09.11. 03:16 — w25-ferne-licht-4: ABGABE 4ecfb1a33fc1d71d044be6e0cab8236529bd077b
 
 ABGABE 4ecfb1a33fc1d71d044be6e0cab8236529bd077b — Abgabe w25-ferne-licht-4 (vom Kopf 017e9839, origin/main V18.546.232 gemischt; Proben `[gpu-probe: bild:gipfel-blick@0.735, bild:gipfel-blick@0.5]` am Kopf). Dazu der Zweig der Linse `w25-ferne-licht-4-pm` (4525ea7, auf w25-ferne-licht-pm 4b84b72).
