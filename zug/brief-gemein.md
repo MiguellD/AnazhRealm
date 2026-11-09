@@ -28,3 +28,6 @@ Nachrichten anderer Sitzungen erreichen eine Cloud-Sitzung NICHT (gemessen: 0 vo
 
 ## REFERENZ-ATLAS (bindend seit 08.11. 21:30)
 `REFERENZ-ATLAS.md` in koordination legt fünf Domänen neben die Architektur der Besten: LOD (Nanite, ≤ 1 px), CPU-Takt (GPU-Wahl je Instanz, Haar/Aaltonen), Pipeline (Programm-Katalog, UE PSO-Precache), Körper (EIN Leib-Raum, SMPL) und Verkehr (Raum-Zeit-Reservierung, Dresner & Stone). Je Domäne gibt er Code mit Datei:Zeile, die Lücke und EINEN Schnitt an. Wer an einer dieser Domänen arbeitet, liest zuerst seinen Abschnitt und übernimmt den Brief-Baustein (f) wörtlich. Ein Schnitt, der davon abweicht, nennt im Commit den Grund.
+
+## DRITTER PROBE-LÄUFER (seit 09.11. 13:20)
+`gtx1050-desktop` (GTX 1050, i7-950 von 2009) fährt die Proben. Bilder (`bild:<ort>`) und Gates ohne Zeit-Urteil sind dort gültig. **Ein Gate mit Zeit-Urteil (ms, Takt, Ankunft: geh-zerlegung, ankunft, takt …) zählt von diesem Läufer NICHT.** Sein Haupt-Faden liegt 3- bis 8-mal über dem Budget, egal welcher Code läuft. Lies in deinem Probe-Bericht die Zeile `Läufer`. Steht dort gtx1050-desktop und ist dein Gate eine Zeit-Linse, miss die Zeit im eigenen ABAB oder warte auf die Rufart `zeit:<gate>`, die nur auf OMEN und Radeon läuft. Ich melde sie hier, sobald sie in main ist.
