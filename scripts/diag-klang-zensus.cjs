@@ -1304,7 +1304,9 @@ async function koerperSeite(m, mut) {
         for (const g of ["_fahrtKlangTick", "_schrittKlangParams"]) delete r[g];
         halt[gas] = false;
     }
-    return F;
+    // über die EINE Brücke (`endlich`, Lehre 17): die stumme Landung misst −∞ dB und reiste als null — null > −90 ist wahr,
+    // der Abgriff hörte Ton, wo die Stille lag
+    return __klangW.endlich(F);
 }
 // Das Urteil (F) je Teil beim Namen und die drei Zahlen: Hz je 1000 Upm, Landung dB je m/s, Doppler je Vorbeifahrt.
 function koerperUrteil(F) {
@@ -1312,7 +1314,7 @@ function koerperUrteil(F) {
     const [rot, fall] = [[], F.landung.slice(1)];
     if (q.length && (new Set(F.motor.map(([u]) => Math.round(u / 250))).size < 4 || !(q.at(-1) / q[0] <= 1.04)))
         rot.push(`F motor stumm: ${q[0]}–${q.at(-1)} Hz je 1000 Upm`);
-    if (F.landung[0] && F.landung[0][2]) rot.push(`F landung: der Hopser klingt`);
+    if (F.landung[0]?.[2]) rot.push(`F landung: der Hopser klingt`);
     fall.forEach(([h, leib, n, klang, db], i) => {
         if (n !== 1 || !(db > -90)) rot.push(`F landung ${h} m tonlos (${n}×, ${db} dB)`);
         else if (Math.abs(klang - leib) > 1e-3) rot.push(`F landung ${h} m: Klang ${klang}, Leib-Löser ${leib} m/s`);

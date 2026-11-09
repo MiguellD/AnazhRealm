@@ -1500,7 +1500,7 @@
     // Landung). Math.random wählt Versatz und Körner: reiner Klang-Körper, keine Welt-Substanz.
     function schrittKlang(ctx, ausgang, boden, lage) {
         var S = SCHRITT, B = schrittBand(boden, lage), L = lage || {};
-        var spitze = schrittZahl(L.gain) > 0 ? L.gain : S.gain;
+        var spitze = schrittZahl(L.gain) >= 0 ? L.gain : S.gain; // 0 bleibt 0: die stumme Landung schweigt (S13), nur ein fehlender Pegel nimmt den des Stoffs
         if (!B || !ctx || !ausgang) return null;
         var t = ctx.currentTime, puf = schrittPuffer(ctx), quellen = [];
         var stimme = function (hz, q, pegel, huelle) {
