@@ -34,6 +34,14 @@ on:
 permissions:
     contents: read
 
+# DIE NEUESTE PROBE JE ZWEIG (09.11.: 17 Proben in der Schlange, fahrt-planer allein mit vier überholten Köpfen): je Zweig läuft
+# höchstens eine Probe, und eine wartende wird von der nächsten ersetzt. Die laufende Probe hält ihr Schloss bis zum Ende
+# (kein cancel-in-progress: der Ende-Hook gibt das Schloss frei, ein harter Abbruch mitten im Bild nähme dem Läufer die Ruhe).
+concurrency:
+    # ein Push ohne Ruf (WIP) landet in einer eigenen Gruppe: er verdrängt nie eine wartende Probe
+    group: gpu-probe-${{ github.ref }}-${{ contains(github.event.head_commit.message, '[gpu-probe:') }}
+    cancel-in-progress: false
+
 jobs:
     einlass:
         if: contains(github.event.head_commit.message, '[gpu-probe:')
