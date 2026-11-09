@@ -50,13 +50,24 @@ class AnazhRealm_studio_stoff {
                     N = T.normalView;
                 const nl = N.dot(L);
                 const tl = faser.t.normalize();
-                const form = nl.mul(kk.wrap).add(1 - kk.wrap).clamp(0.0, 1.0);
+                const form = nl
+                    .mul(kk.wrap)
+                    .add(1 - kk.wrap)
+                    .clamp(0.0, 1.0);
                 const sinTL = T.float(1).sub(tl.dot(L).pow(2)).max(0.0).sqrt();
                 const diffus = T.mix(nl.max(0.0), sinTL.mul(form), kk.kd).mul(faser.da);
-                e.reflectedLight.directDiffuse.addAssign(e.lightColor.mul(diffus).mul(T.diffuseColor.rgb).mul(1 / Math.PI));
+                e.reflectedLight.directDiffuse.addAssign(
+                    e.lightColor
+                        .mul(diffus)
+                        .mul(T.diffuseColor.rgb)
+                        .mul(1 / Math.PI)
+                );
                 const H = L.add(T.positionViewDirection.normalize()).normalize();
                 const lappen = (shift, p) => {
-                    const th = tl.add(N.mul(faser.wurf.mul(kk.jit).add(shift))).normalize().dot(H);
+                    const th = tl
+                        .add(N.mul(faser.wurf.mul(kk.jit).add(shift)))
+                        .normalize()
+                        .dot(H);
                     return T.float(1)
                         .sub(th.mul(th))
                         .max(0.0)
@@ -337,21 +348,6 @@ class AnazhRealm_studio_stoff {
                             ? tkC && tkC.FELL_LOOK && tkC.FELL_LOOK.koerper
                             : tkC && tkC.FELL_LOOK && tkC.FELL_LOOK.straehne;
                 if (L) {
-                    // DIE ACHSE DES HAARS (w25-haar-albedo) ist seine Gestalt: `aStraehne` [Achse, Länge] je Ecke (koerper
-                    // `haarAchse`, am Bau `_haarAchse`) — der Anteil Wurzel → Spitze. Die Farbe trägt seit HAAR_STRICH den Ton jeder
-                    // Strähne und Locke (±20 %, ±30 %) über einer Wurzel von 0,85: ihr Quotient zum Ton-Anker war der Würfel des Tons,
-                    // und der Glanz schaltete je Strähne ganz an oder aus. Ohne Achse (die Braue, die Kappe der Grobstufe) trägt das
-                    // Haar keinen Glanz der Spitze.
-                    const haarT =
-                        kind === "hair"
-                            ? TSL.Fn((b) =>
-                                  b.geometry && b.geometry.hasAttribute("aStraehne")
-                                      ? ((a) => a.x.div(a.y.max(1e-6)).clamp(0.0, 1.0))(
-                                            TSL.attribute("aStraehne", "vec2")
-                                        )
-                                      : TSL.float(0)
-                              )()
-                            : null;
                     const ndv = TSL.normalView.normalize().dot(TSL.positionViewDirection).clamp(-1.0, 1.0);
                     const rim = TSL.float(1.0).sub(ndv.abs()).clamp(0.0, 1.0);
                     let add = null;
@@ -445,16 +441,14 @@ class AnazhRealm_studio_stoff {
                         }
                         const sT = schale
                             ? TSL.mix(TSL.float(FS.mittel.t), aS.x, zeigt)
-                            : haarT
-                              ? haarT
-                              : tonL !== null
-                                ? vcolRoh
-                                      .dot(TSL.vec3(0.2126, 0.7152, 0.0722))
-                                      .div(tonL)
-                                      .sub(wA)
-                                      .div(Math.max(1e-3, 1 - wA))
-                                      .clamp(0.0, 1.0)
-                                : TSL.float(1.0);
+                            : tonL !== null
+                              ? vcolRoh
+                                    .dot(TSL.vec3(0.2126, 0.7152, 0.0722))
+                                    .div(tonL)
+                                    .sub(wA)
+                                    .div(Math.max(1e-3, 1 - wA))
+                                    .clamp(0.0, 1.0)
+                              : TSL.float(1.0);
                         if (Number.isFinite(L.tipRimPow) && Array.isArray(L.tipRimFarbe))
                             term(L.tipRimFarbe, rim.pow(L.tipRimPow).mul(sT));
                         if (Number.isFinite(L.specPow) && Array.isArray(L.specFarbe))
