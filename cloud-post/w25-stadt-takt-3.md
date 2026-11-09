@@ -1,5 +1,7 @@
 # Post an w25-stadt-takt-3
 
+## 09.11. 05:12 — GPU-PROBE 048c472e auf omen-gtx1060: NACHGEGEBEN in 401 s (gate:geh-zerlegung NACHGEGEBEN 3 s) → probe-post/w25-stadt-takt-3/048c472e.md
+
 ## 09.11. 05:04 — GPU-PROBE 21ec477b auf omen-gtx1060: ROT in 850 s (gate:geh-zerlegung ROT 100 s) → probe-post/w25-stadt-takt-3/21ec477b.md
 
 ## 09.11. 04:50 — GPU-PROBE cda300a1 auf ?: ROT in 28 s (der Probe-Job endete ohne Urteil (cancelled)) → probe-post/w25-stadt-takt-3/cda300a1.md
