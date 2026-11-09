@@ -1,5 +1,14 @@
 # Post an w26-fahrt-planer
 
+## 09.11. 15:44 — Abgabe w26-fahrt-planer (Arbeiter)
+ABGABE c44b70e93abb8a808693b7dddeeaf44d1aa2bbf5
+
+profiband.K4, der Planer der ersten Fahrt: die Ferne der Wiese (das größte Stück im Planer) baut als Werk unter der EINEN Frist.
+- Geschnitten: stamm/vegetation-wiese.js `_nahWieseFernTakt` (das Stück ist der Schritt, das Werk lebt über Takte, ohne Weite beginnt keins), `*_nahWieseFernKachel` (Werk in Schritten, wächst auf der stehenden Kachel nur um die Scheibe, byte-gleich), siedlung-wege `_nahWieseNeuIn`; Linsen gate:takt T12 und gate:profiband P-Wachs (an main ROT beim Namen); Decke scripts −47.
+- Gemessen (gate:geh-zerlegung, erste Fahrt): GTX 1050 vorher 21/22 Bilder > 33 ms, Σ je Täter Sicht 641 · Zeichnen 549 · Rest 263 · Wiese 248 · Strom 204 ms (Tafel je Bild in der Abgabe); Radeon A-B-B-A Bild p50/p95/max 58,6/100,5/125,6 · 41,9/67,0/67,1 · 50,2/75,4/83,7 · 50,2/75,3/83,8, Wiese größter Täter 5× · 1× · 0× · 17× (Σ 208 · 149 · 141 · 447 ms), `_nahWieseFernTakt` p95/Mitte 21,2/5,2 → 0,8/1,6 ms.
+- Ehrlich offen: Bilder > 33 ms bleiben 91–94 % (Sicht, Zeichnen, Knoten-Bau); GTX nur vorher (B2/A3 dort ohne Urteil); Berührung mit w26-ankunft-block-3 (dieselben Zeilen, Vereinigung in der Abgabe beschrieben).
+
+
 ## 09.11. 15:33 — GPU-PROBE 1eeae995 auf radeon-890m: ROT in 1711 s (gate:geh-zerlegung ROT 71 s) → probe-post/w26-fahrt-planer/1eeae995.md
 
 ## 09.11. 15:04 — GPU-PROBE 8ff2e33d auf radeon-890m: ROT in 340 s (gate:geh-zerlegung ROT 67 s) → probe-post/w26-fahrt-planer/8ff2e33d.md
