@@ -1604,206 +1604,70 @@ async function checkBandWellePerf3cPhase2Async({ page, check }) {
     check("K23: ein voxelEdit leert den Density-Cache nur in seiner Nachbarschaft", res.editClearedCache);
 }
 
-// Voller Chunk-Mesh im Worker: er trägt die komplette Pipeline (Iso-Meshing + Cells + Colors),
-// nicht nur die Density-Samples. Invariante: alle 4 Arrays (positions/normals/colors/waterCells)
-// des Worker-Builds gleichen dem Sync-Build.
+// Voller Chunk-Mesh im Worker: er trägt die komplette Pipeline (Iso-Meshing + Cells + Colors), nicht nur die Density-Samples.
+// Invariante: der FERTIGE Bau des Worker-Wegs (das Worker-Mesh und sein Haupt-Thread-Schritt) gleicht dem Sync-Bau — Lage,
+// Normalen, Index, Farbe, die Deckung des Stoffs (w26-ferne-ton-4: der Faden mischt sie in seinem Spiegel der Boden-Farbe)
+// und die Boden-Karte (Höhe + Grün: wer AUF dem Boden steht, liest sie), die Zellen bis auf den Architektur-Stempel.
 async function checkBandWellePerf3cPhase3FullMesh({ page, check }) {
     const res = await page.evaluate(async () => {
-        const out = {};
-        // Worker initialisieren + Worldgen-State synchronisieren (im realen
-        // Lauf passiert das beim Worldgen-Hook, hier explizit für den Test).
-        const worker = r._getVoxelWorker();
-        if (!worker) return { ...out, error: "worker spawn failed" };
+        // Worker initialisieren + Worldgen-State synchronisieren (im realen Lauf beim Worldgen-Hook, hier explizit)
+        if (!r._getVoxelWorker()) return { error: "worker spawn failed" };
         try {
             await r._voxelWorkerSyncState({ op: "init" });
         } catch (e) {
-            return { ...out, error: "init sync failed: " + e.message };
+            return { error: "init sync failed: " + e.message };
         }
         r._voxelWorkerSyncWorldgenState();
         await sleep(80);
-        out.workerSynced = st.voxelWorkerWorldgenSynced;
-        // Sync-Build via _buildVoxelChunkData (kontrollierter Pfad, ohne
-        // preDensityOverride → Sync-Sampling).
-        const cx = 0;
-        const cz = 0;
-        const lod = 0;
-        const syncFresh = r._buildVoxelChunkData(cx, cz, lod, null);
-        if (!syncFresh || !syncFresh.mesh) return { ...out, error: "sync build failed" };
-        out.syncBuildOk = true;
-        // Worker-Build via _voxelWorkerComputeChunkMesh.
-        let workerMesh;
+        const out = { workerSynced: st.voxelWorkerWorldgenSynced };
+        // der Sync-Bau (`_buildVoxelChunkData`, ohne preDensityOverride) und das Worker-Mesh desselben Chunks
+        const S = r._buildVoxelChunkData(0, 0, 0, null);
+        if (!S || !S.mesh) return { error: "sync build failed" };
+        let W;
         try {
-            workerMesh = await r._voxelWorkerComputeChunkMesh(cx, cz, lod);
+            W = await r._voxelWorkerComputeChunkMesh(0, 0, 0);
         } catch (e) {
-            return { ...out, error: "worker mesh failed: " + e.message };
+            return { error: "worker mesh failed: " + e.message };
         }
-        out.workerMeshOk = !workerMesh.empty && workerMesh.positions instanceof Float32Array;
-        if (!out.workerMeshOk) return { ...out, error: "worker returned empty or malformed" };
-        // Vertex-Count Vergleich
-        const syncPos = syncFresh.mesh.geometry.getAttribute("position");
-        out.syncVertCount = syncPos.count;
-        out.workerVertCount = workerMesh.positions.length / 3;
-        out.vertCountMatch = syncPos.count === workerMesh.positions.length / 3;
-        // Position-Array epsilon-nah (< 1e-4): transzendente SimplexNoise-Präzision driftet Worker↔Main um
-        // Float32-Rundung (unsichtbar); echte Bugs liegen weit darüber. maxDelta bleibt sichtbar.
-        const EPS = 1e-4;
-        let posMismatches = 0;
-        let maxPosDelta = 0;
-        const syncPosArr = syncPos.array;
-        const workerPosArr = workerMesh.positions;
-        const lenP = Math.min(syncPosArr.length, workerPosArr.length);
-        for (let i = 0; i < lenP; i++) {
-            const ad = Math.abs(syncPosArr[i] - workerPosArr[i]);
-            if (ad > maxPosDelta) maxPosDelta = ad;
-            if (ad > EPS) posMismatches++;
-        }
-        out.posMismatches = posMismatches;
-        out.maxPosDelta = maxPosDelta;
-        out.posBitIdentical = posMismatches === 0;
-        // Normals bit-identisch?
-        const syncNorm = syncFresh.mesh.geometry.getAttribute("normal");
-        let normMismatches = 0;
-        let maxNormDelta = 0;
-        const syncNormArr = syncNorm.array;
-        const workerNormArr = workerMesh.normals;
-        const lenN = Math.min(syncNormArr.length, workerNormArr.length);
-        for (let i = 0; i < lenN; i++) {
-            const ad = Math.abs(syncNormArr[i] - workerNormArr[i]);
-            if (ad > maxNormDelta) maxNormDelta = ad;
-            if (ad > EPS) normMismatches++;
-        }
-        out.normMismatches = normMismatches;
-        out.maxNormDelta = maxNormDelta;
-        out.normBitIdentical = normMismatches === 0;
-        // Indices bit-identisch? Sync hat Three.js BufferAttribute; index ist
-        // Uint16/Uint32Array via getIndex().
-        const syncIdx = syncFresh.mesh.geometry.getIndex();
-        out.syncIdxCount = syncIdx ? syncIdx.count : 0;
-        out.workerIdxCount = workerMesh.indices.length;
-        let idxMismatches = 0;
-        if (syncIdx) {
-            const syncIdxArr = syncIdx.array;
-            const workerIdxArr = workerMesh.indices;
-            const lenI = Math.min(syncIdxArr.length, workerIdxArr.length);
-            for (let i = 0; i < lenI; i++) if (syncIdxArr[i] !== workerIdxArr[i]) idxMismatches++;
-        }
-        out.idxMismatches = idxMismatches;
-        out.idxBitIdentical = idxMismatches === 0;
-        // Colors bit-identisch? Der Worker-Weg ist das Worker-Mesh UND sein Haupt-Thread-Schritt (die Himmels-Sicht und
-        // der Fels-Stoff, `_felsStoff`, K17): verglichen wird der FERTIGE Bau beider Wege.
-        // Die Zellen reisen als Kopie (der Bau stempelt sie, der Zellen-Vergleich unten liest die ungestempelten).
-        const wFertig = r._buildVoxelChunkDataFromWorkerMesh(
-            cx,
-            cz,
-            lod,
-            Object.assign({}, workerMesh, {
-                waterCells: workerMesh.waterCells ? workerMesh.waterCells.slice() : workerMesh.waterCells,
-            })
-        );
-        const syncCol = syncFresh.mesh.geometry.getAttribute("color");
-        let colMismatches = 0;
-        let maxColDelta = 0;
-        if (syncCol) {
-            const syncColArr = syncCol.array;
-            const workerColArr = wFertig.mesh.geometry.getAttribute("color").array;
-            const lenC = Math.min(syncColArr.length, workerColArr.length);
-            for (let i = 0; i < lenC; i++) {
-                const ad = Math.abs(syncColArr[i] - workerColArr[i]);
-                if (ad > maxColDelta) maxColDelta = ad;
-                if (ad > EPS) colMismatches++;
+        if (W.empty || !(W.positions instanceof Float32Array)) return { error: "worker returned empty or malformed" };
+        // der fertige Bau des Worker-Wegs (die Zellen reisen als Kopie: der Bau stempelt sie, verglichen werden die ungestempelten)
+        const F = r._buildVoxelChunkDataFromWorkerMesh(0, 0, 0, { ...W, waterCells: W.waterCells && W.waterCells.slice() });
+        // die Abweichung zweier Felder: [Stellen über eps (NaN gleicht NaN), die größte, die Längen]
+        const abw = (a, b, eps = 0) => {
+            let [n, max] = [0, 0];
+            for (let i = 0; i < Math.min(a.length, b.length); i++) {
+                const d = Math.abs(a[i] - b[i]);
+                if (d > max) max = d;
+                if (!(d <= eps || (Number.isNaN(a[i]) && Number.isNaN(b[i])))) n++;
             }
-        }
-        out.colMismatches = colMismatches;
-        out.maxColDelta = maxColDelta;
-        out.colBitIdentical = colMismatches === 0;
-        // Die Boden-Karte (Höhe + Grün, `_bodenKarteAusMesh`) beider Wege: wer AUF dem Boden steht, liest sie
-        let gruenMismatches = 0;
-        let hoeheMismatches = 0;
-        const gS = syncFresh.gruenMap;
-        const gW = wFertig.gruenMap;
-        const hS = syncFresh.surfMap;
-        const hW = wFertig.surfMap;
-        out.karteDa = !!(gS && gW && hS && hW && gS.length === gW.length && hS.length === hW.length);
-        if (out.karteDa)
-            for (let i = 0; i < gS.length; i++) {
-                if (gS[i] !== gW[i]) gruenMismatches++;
-                if (!(hS[i] === hW[i] || (Number.isNaN(hS[i]) && Number.isNaN(hW[i])))) hoeheMismatches++;
-            }
-        out.gruenMismatches = gruenMismatches;
-        out.hoeheMismatches = hoeheMismatches;
-        wFertig.mesh.geometry.dispose();
-        // WaterCells: der Worker liefert OHNE Architektur-Stempel, der Sync-Pfad MIT → am Spawn-Chunk (0,0)
-        // mit Worldgen-Bäumen sind Cell-Mismatches erwartet (< ~100 je Architektur). Pipeline-Beweis ist
-        // darum die gleiche Cell-ANZAHL.
-        if (syncFresh.waterCells && workerMesh.waterCells) {
-            out.syncCellCount = syncFresh.waterCells.length;
-            out.workerCellCount = workerMesh.waterCells.length;
-            out.cellCountMatch = syncFresh.waterCells.length === workerMesh.waterCells.length;
-            let cellMismatches = 0;
-            const len = Math.min(syncFresh.waterCells.length, workerMesh.waterCells.length);
-            for (let i = 0; i < len; i++) if (syncFresh.waterCells[i] !== workerMesh.waterCells[i]) cellMismatches++;
-            out.cellMismatches = cellMismatches;
-            // Akzeptanz: < 1% Cell-Mismatches (Architektur-Stempel-
-            // Differenz von <100 Cells bei ~71k Cells = < 0.15%).
-            out.cellsNearMatch = cellMismatches < len * 0.01;
-        } else {
-            out.syncCellCount = syncFresh.waterCells ? syncFresh.waterCells.length : 0;
-            out.workerCellCount = workerMesh.waterCells ? workerMesh.waterCells.length : 0;
-            out.cellCountMatch = syncFresh.waterCells === null && workerMesh.waterCells.length === 0;
-            out.cellMismatches = 0;
-            out.cellsNearMatch = true;
-        }
-        // Clean up
-        syncFresh.mesh.geometry.dispose();
+            return [n, max, a.length, b.length];
+        };
+        const [gS, gF] = [S.mesh.geometry, F.mesh.geometry];
+        // Lage, Normale und Farbe epsilon-nah (< 1e-4): das Simplex-Rauschen driftet Worker ↔ Main um die Float32-Rundung
+        // (unsichtbar; echte Fehler liegen weit darüber), alles andere Bit für Bit
+        out.felder = {
+            positions: abw(gS.attributes.position.array, W.positions, 1e-4),
+            normals: abw(gS.attributes.normal.array, W.normals, 1e-4),
+            indices: abw(gS.index.array, W.indices),
+            colors: abw(gS.attributes.color.array, gF.attributes.color.array, 1e-4),
+            Deckung: abw(gS.userData.deckung, gF.userData.deckung),
+            "Boden-Karte Grün": abw(S.gruenMap, F.gruenMap),
+            "Boden-Karte Höhe": abw(S.surfMap, F.surfMap),
+        };
+        // die Zellen: der Worker liefert OHNE Architektur-Stempel, der Sync-Pfad MIT → am Spawn-Chunk (0,0) mit Worldgen-Bäumen
+        // weichen < 100 Zellen je Architektur ab (von ~71k: < 0,15 %)
+        out.zellen = abw(S.waterCells || [], W.waterCells || []);
+        gF.dispose();
+        gS.dispose();
         return out;
     });
-    if (res.error) {
-        check("Welle Perf-3.c V9.91: Phase-3-Band (realm verfügbar)", false, res.error);
-        return;
-    }
-    check("Welle Perf-3.c V9.91: Worker-State synced (worldgenSynced)", res.workerSynced);
-    check("Welle Perf-3.c V9.91: Sync-Build erfolgreich", res.syncBuildOk);
-    check("Welle Perf-3.c V9.91: Worker-Mesh-Build erfolgreich", res.workerMeshOk);
-    check(
-        "Welle Perf-3.c V9.91: Vertex-Count identisch (sync vs worker)",
-        res.vertCountMatch,
-        `sync=${res.syncVertCount}, worker=${res.workerVertCount}`
-    );
-    check(
-        "Welle Perf-3.c V9.91: positions BIT-IDENTISCH (Phase-3-Kern-Invariante)",
-        res.posBitIdentical,
-        `posMismatches=${res.posMismatches}, maxPosDelta=${res.maxPosDelta}`
-    );
-    check(
-        "Welle Perf-3.c V9.91: normals BIT-IDENTISCH",
-        res.normBitIdentical,
-        `normMismatches=${res.normMismatches}, maxNormDelta=${res.maxNormDelta}`
-    );
-    check(
-        "Welle Perf-3.c V9.91: indices BIT-IDENTISCH",
-        res.idxBitIdentical,
-        `idxMismatches=${res.idxMismatches}, sync=${res.syncIdxCount}, worker=${res.workerIdxCount}`
-    );
-    check(
-        "Welle Perf-3.c V9.91: colors BIT-IDENTISCH",
-        res.colBitIdentical,
-        `colMismatches=${res.colMismatches}, maxColDelta=${res.maxColDelta}`
-    );
-    check(
-        "Welle Perf-3.c V9.91: Boden-Karte (Höhe + Grün) BIT-IDENTISCH (sync vs Worker-Weg, beide fertig)",
-        res.karteDa && res.gruenMismatches === 0 && res.hoeheMismatches === 0,
-        `karte=${res.karteDa}, gruenMismatches=${res.gruenMismatches}, hoeheMismatches=${res.hoeheMismatches}`
-    );
-    check(
-        "Welle Perf-3.c V9.91: Cell-Counts identisch (Architektur-Stempel-Toleranz)",
-        res.cellCountMatch,
-        `sync=${res.syncCellCount}, worker=${res.workerCellCount}`
-    );
-    check(
-        "Welle Perf-3.c V9.91: waterCells nahe-identisch (< 1% Stempel-Diff)",
-        res.cellsNearMatch,
-        `cellMismatches=${res.cellMismatches}`
-    );
+    const W = "Welle Perf-3.c V9.91: ";
+    if (res.error) return check(W + "Phase-3-Band (realm verfügbar)", false, res.error);
+    check(W + "Worker-State synced (worldgenSynced)", res.workerSynced);
+    for (const [name, [n, max, a, b]] of Object.entries(res.felder))
+        check(W + name + " BIT-IDENTISCH (sync vs Worker-Weg, beide fertig)", n === 0 && a === b && a > 0, `Stellen ${n}, max ${max}, Längen ${a}/${b}`);
+    const [zn, , za, zb] = res.zellen;
+    check(W + "Cell-Counts identisch, waterCells nahe-identisch (< 1 % Stempel-Diff)", za === zb && zn <= za * 0.01, `Stellen ${zn}, Längen ${za}/${zb}`);
 }
 
 // Voxel-Worker engagiert (~71 ms Mesh-Bau off-thread): `_voxelWorkerSyncWorldgenState` bootstrappt
