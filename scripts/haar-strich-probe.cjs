@@ -10,11 +10,15 @@ const ROOT = path.resolve(__dirname, "..");
 const PORT = 4793;
 const env = { ...process.env, WERKBANK_PORT: String(PORT) };
 const wb = (...a) => execFileSync(process.execPath, ["scripts/werkbank.cjs", ...a], { cwd: ROOT, env, encoding: "utf8", maxBuffer: 1 << 26 });
-const json = (t) => JSON.parse(t.slice(t.indexOf("{")));
+const json = (t) => {
+    const o = JSON.parse(t.slice(t.indexOf("{")));
+    if (o.fehler) throw new Error("eval: " + String(o.fehler).slice(0, 300));
+    return o;
+};
 // der Rahmen der Spielarten: je Haar-Teil des Spielers die Tangente der Strähne (Mitte der Spitze − Mitte der Wurzel, das Gesetz der
 // Ecken wie koerper haarAchse) und ein Wurf je Strähne in w; die Normalen gemerkt
 const RAHMEN = `const pm = r.state.playerMesh, K = window.__koerperCore, haarTon = K.menschTon("hair"), teile = [];
-pm.traverse((o) => o.isMesh && o.material && o.material.userData && o.material.userData.__klasse === "hair" && o.geometry.attributes.aStraehne && teile.push(o));
+pm.traverse((o) => o.isMesh && (o.userData.__klasse || o.material?.userData?.__klasse) === "hair" && o.geometry.attributes.aStraehne && teile.push(o));
 let baender = 0;
 for (const o of teile) {
   const g = o.geometry, P = g.attributes.position, C = g.attributes.color, Tn = g.attributes.aTon, N = g.attributes.normal, n = P.count;
@@ -103,7 +107,7 @@ const STAENDE = [
         const u = json(wb("umstellen", "--ort", "wiese", "--sicht", "third"));
         console.log("umgestellt", JSON.stringify({ ort: u.ort, sicht: u.sicht, fehler: u.fehler }));
         const h = json(wb("eval", 'window.__halten(["leib", "haar"]); window.__gehalten.t = 0; r.animatePlayerSoul(0); const c = []; r.state.playerMesh.traverse((o) => o.isMesh && o.material?.userData?.__klasse === "hair" && o.geometry.attributes.color && c.push(o.geometry.attributes.color.getX(2))); return { gehalten: [...window.__gehalten], haarRot: c.slice(0, 3) };')).ergebnis; // prettier-ignore
-        console.log("gehalten", JSON.stringify(h), "rahmen", JSON.stringify(json(wb("eval", RAHMEN)).ergebnis));
+        console.log("✅ GEHALTEN", JSON.stringify(h), "rahmen", JSON.stringify(json(wb("eval", RAHMEN)).ergebnis));
         const POSE = "const pm = r.state.playerMesh, z = []; pm.traverse((o) => { if (!o.isMesh) z.push(...o.position.toArray(), ...o.quaternion.toArray()); else if (o.userData.__haarFeder) z.push(o.userData.__haarFeder.x, o.userData.__haarFeder.y, o.userData.__haarFeder.z); }); return z;";
         const pose0 = json(wb("eval", POSE)).ergebnis;
         const schuss = (n, g) => {
@@ -126,7 +130,7 @@ const STAENDE = [
             const dp = Math.max(...p.map((v, i) => Math.abs(v - pose0[i])));
             const im = (x) => x.strich != null && x.strich >= 0.3554 && x.strich <= 0.533;
             zeilen.push([stand, a.strich, t.strich, im(a), im(t)]);
-            console.log(`haar-strich ${stand}: arm ${JSON.stringify(a)} · third ${JSON.stringify(t)} · Pose Δ ${dp.toExponential(1)}`);
+            console.log(`✅ MESSUNG ${stand}: arm ${JSON.stringify(a)} · third ${JSON.stringify(t)} · Pose Δ ${dp.toExponential(1)}`);
         }
     } finally {
         try {
