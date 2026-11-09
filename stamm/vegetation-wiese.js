@@ -1159,6 +1159,7 @@ class AnazhRealm_vegetation_wiese {
         this._halmStoff(T, mat);
         mat.aoNode = PC.halmNarbe(A, lam, T.float(1)).himmel;
         this._laubLichtStoff(mat, false, lam);
+        this._leuchtStoff(mat, null); // der Licht-Pool (K11) und die Nässe, wie jeder beleuchtete Stoff der Welt
         const naht = this._weltNaht(T);
         const auge = (this._halmFerneAuge = this._halmFerneAuge || T.uniform(new THREE.Vector4()));
         const d = naht.anker.xz.sub(auge.xz).length();
