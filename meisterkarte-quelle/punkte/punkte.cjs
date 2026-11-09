@@ -897,12 +897,37 @@ const istZeit = (sts) => sts.some((st) => st.zeit === true);
 // Streuung einer Zeit-Station in Ruhe ist ≥ 3 % (Ankunft GTX 16,1–17,0 s). Bei linearem Effekt je fremdem Kern e = 0,25 / F (F = die
 // fremden Kerne der Last im dichtesten Fenster) hält T = 0,03 / e = 0,12 · F den Fehler unter der Streuung: F = 2,68 → T = 0,32, gesetzt
 // 0,3 (im Zweifel UNGEMESSEN — die Ratsche hält —, nie ein falsches ROT, das Punkte nimmt). Der Leerlauf liegt mit 0,01 dreißigfach
-// darunter, keine Ruhe-Messung fällt an ihr. OFFEN: die Eichung auf der Radeon und der OMEN selbst (derselbe Befehl, dieselbe Formel).
+// darunter, keine Ruhe-Messung fällt an ihr.
+// DIE SCHWELLE IST EINE FUNKTION DES RECHNERS (09.11.; fremdEich): 0,3 galt dem Container mit 4 Kernen, auf der Radeon (24 Kerne) trägt
+// schon die App des Koordinators ~2 fremde Kerne — an d3512932 blieben 8 Zeit-Stationen UNGEMESSEN (Claude.exe gpu-process 26–54 CPU-s,
+// MsMpEng). FREMD_EICH trägt je Rechner (Plattform, Kerne, CPU) die gemessenen Zahlen, FREMD_SCHWELLE_KERNE liest den Eintrag DIESES
+// Rechners (FREMD_HIER); der Bericht jedes Fensters trägt die Schwelle, die über ihn urteilt (`schwelle`, `eich`). GEMESSEN auf der Radeon
+// (09.11., ABAB je 4 Läufe `run --nur ankunft.K1#1` an d3512932): neben der App allein 11,05 s bei 3,24 fremden Kernen, mit einem Brenner
+// auf 6 Kernen 13,21 s bei 9,03 → +19,6 % bei ΔF 5,79, e = 3,4 % je Kern (die Regression über 10 Läufe: 3,65 %); profiband reißt unter
+// derselben Last 25/15 davon (Befund 08.11.) → e = 5,6 %, T = 0,03 / e = 0,53, gesetzt 0,5. Die Alltags-Last neben der App (F 2,1–3,9:
+// Claude.exe gpu-process + renderer, svchost, MsMpEng) verschiebt ankunft damit um 7–13 % — über der Streuung, UNGEMESSEN bleibt dort richtig.
+// Ein ungeeichter Rechner urteilt an der strengsten geeichten Schwelle und sagt es im Bericht (`eich`: „ungeeicht …“) — OFFEN: die OMEN.
 const FREMD_TAKT_MS = 2000;
 const FREMD_FENSTER_S = 10;
-const FREMD_SCHWELLE_KERNE = 0.3;
-// die Eichung (`fremdlast --sek 40`, 08.11., ef667956, Linux-Container mit 4 Kernen): fremde Kerne im dichtesten 10-s-Fenster
-const FREMD_EICH = { ort: "linux, 4 Kerne (Container)", leerlauf: 0.01, playtestFast: 2.07, statikUndPlaytestFast: 2.68 };
+// je Rechner: plattform, kerne (os.cpus().length), cpu (das Modell, optional) · F die fremden Kerne im dichtesten 10-s-Fenster ·
+// effekt der relative Effekt je fremdem Kern auf der empfindlichsten Zeit-Station · schwelle = 0,03 / effekt (gerundet nach unten)
+const FREMD_EICH = [
+    // `fremdlast --sek 40`, 08.11., ef667956: die Last des Befunds gemessen, ihr Effekt aus dem Befund der Radeon (+25 % profiband)
+    { ort: "linux, 4 Kerne (Container)", plattform: "linux", kerne: 4, leerlauf: 0.01, playtestFast: 2.07, statikUndPlaytestFast: 2.68,
+        effekt: 0.25 / 2.68, schwelle: 0.3 },
+    // ABAB 09.11. an d3512932 (oben): F und Sekunden der Ankunft je Seite, der Effekt je Kern an ankunft und, mit 25/15, an profiband
+    { ort: "win32, Radeon 890M, 24 Kerne", plattform: "win32", kerne: 24, cpu: "AMD Ryzen AI 9 HX 370 w/ Radeon 890M", app: 3.24, brenner6: 9.03,
+        ankunftApp: 11.05, ankunftBrenner: 13.21, effektAnkunft: 0.0338, effekt: (0.0338 * 25) / 15, schwelle: 0.5 },
+];
+function fremdEich(r = { plattform: process.platform, kerne: os.cpus().length, cpu: (os.cpus()[0] || {}).model || "?" }) {
+    const e = FREMD_EICH.find((x) => x.plattform === r.plattform && x.kerne === r.kerne && (!x.cpu || x.cpu === String(r.cpu).trim()));
+    if (e) return e;
+    const streng = FREMD_EICH.reduce((a, x) => (x.schwelle < a.schwelle ? x : a));
+    return { ort: "ungeeicht (" + r.plattform + ", " + r.kerne + " Kerne, " + String(r.cpu).trim() + ") — die strengste Schwelle, " + streng.ort,
+        schwelle: streng.schwelle, ungeeicht: true };
+}
+const FREMD_HIER = fremdEich();
+const FREMD_SCHWELLE_KERNE = FREMD_HIER.schwelle;
 const FREMD_DIENER = /^(system|registry|memory compression|secure system|dwm\.exe|csrss\.exe|audiodg\.exe|wmiprvse\.exe|xorg|xwayland|gnome-shell|kwin_x11|kwin_wayland|pipewire|pulseaudio)$/i;
 const fz1 = (x) => (Math.round(x * 10) / 10).toFixed(1).replace(".", ",");
 const fz2 = (x) => (Math.round(x * 100) / 100).toFixed(2).replace(".", ",");
@@ -1051,10 +1076,11 @@ function zeugenQuelle(taktMs) {
     }
     return { blind: "kein Zeuge auf " + process.platform + " (Linux: /proc, Windows: Get-CimInstance)", stop() {} };
 }
-// DER ZEUGE: o = { taktMs, wurzel (die PID des eigenen Baums), quelle (ersetzt zeugenQuelle — die Attrappen des Selbsttests) }.
+// DER ZEUGE: o = { taktMs, wurzel (die PID des eigenen Baums), quelle (ersetzt zeugenQuelle — die Attrappen des Selbsttests), eich (der
+// Eintrag aus FREMD_EICH, dessen Schwelle urteilt; Vorgabe FREMD_HIER, der Selbsttest stellt seine Attrappen auf einen festen Rechner) }.
 // beginn() öffnet ein Fenster (die Station), ende(f) schließt es nach dem ersten Takt hinter seinem Ende und gibt den Bericht
 function fremdZeuge(o = {}) {
-    const taktMs = o.taktMs || FREMD_TAKT_MS, wurzel = o.wurzel || process.pid;
+    const taktMs = o.taktMs || FREMD_TAKT_MS, wurzel = o.wurzel || process.pid, eich = o.eich || FREMD_HIER;
     const q = o.quelle || zeugenQuelle(taktMs);
     const z = { blind: q.blind || null, letzter: null, offen: new Set(), warten: [], uhr: null, takte: 0 };
     const verarbeite = (S) => {
@@ -1117,7 +1143,7 @@ function fremdZeuge(o = {}) {
             const t1 = Date.now();
             if (z.offen.has(f)) await nach(t1);
             z.offen.delete(f);
-            return fremdBericht(f, t1, taktMs, z.blind);
+            return fremdBericht(f, t1, taktMs, z.blind, eich);
         },
         stop() {
             clearInterval(z.uhr);
@@ -1127,8 +1153,9 @@ function fremdZeuge(o = {}) {
     };
 }
 // DER BERICHT eines Fensters: s (die Spanne der Takte), fremdS, kerne (Mittel), fensterKerne (das dichteste FREMD_FENSTER_S-Fenster),
-// namen [[Name, CPU-s]] (die drei größten fremden), dienerS + diener (die zwei größten), eigenS, takte — oder blind beim Grund
-function fremdBericht(f, t1, taktMs, blindGrund) {
+// namen [[Name, CPU-s]] (die drei größten fremden), dienerS + diener (die zwei größten), eigenS, takte, schwelle + eich (die Schwelle des
+// Rechners, die über das Fenster urteilt, und ihre Eichung beim Ort) — oder blind beim Grund
+function fremdBericht(f, t1, taktMs, blindGrund, eich = FREMD_HIER) {
     const r = f.reihe, tE = r.length ? r[r.length - 1][0] : null;
     if (!r.length || tE < t1 - 50 || !(tE > f.tA)) return { blind: blindGrund || (!r.length ? "kein Takt im Fenster" : "der letzte Takt liegt vor dem Ende der Station"), takte: r.length };
     const je = { fremd: new Map(), diener: new Map(), eigen: 0 };
@@ -1154,7 +1181,8 @@ function fremdBericht(f, t1, taktMs, blindGrund) {
         }
     }
     return { s: +s.toFixed(1), takte: r.length, fremdS: +fremdS.toFixed(2), kerne: +(fremdS / s).toFixed(3), fensterKerne: +fensterKerne.toFixed(3),
-        namen: reihe(je.fremd).slice(0, 3), dienerS: +sum(je.diener).toFixed(2), diener: reihe(je.diener).slice(0, 2), eigenS: +je.eigen.toFixed(2) };
+        namen: reihe(je.fremd).slice(0, 3), dienerS: +sum(je.diener).toFixed(2), diener: reihe(je.diener).slice(0, 2), eigenS: +je.eigen.toFixed(2),
+        schwelle: eich.schwelle, eich: eich.ort };
 }
 const fremdNamen = (b) => (b.namen || []).slice(0, 3).map(([n, s]) => n + " " + fz1(s) + " CPU-s").join(" · ");
 // DAS URTEIL DER FREMD-LAST über ein Ergebnis der Station st (fahreGruppe): der Bericht steht in jedem Eintrag; an einer Zeit-Station
@@ -1163,11 +1191,11 @@ const fremdNamen = (b) => (b.namen || []).slice(0, 3).map(([n, s]) => n + " " + 
 function fremdUrteil(st, e, b) {
     const mit = { ...e, fremd: b };
     if (st.zeit !== true || e.ungemessen) return mit;
-    const ueber = !b.blind && b.fensterKerne >= FREMD_SCHWELLE_KERNE;
+    const ueber = !b.blind && b.fensterKerne >= b.schwelle;
     if (!b.blind && !ueber) return mit;
     const was = b.blind ? "Fremd-Last: der Zeuge ist blind (" + b.blind + ") — Ruhe unbezeugt"
         : "Fremd-Last: " + fremdNamen(b) + " — " + fz2(b.fensterKerne) + " Kerne fremd im dichtesten " + FREMD_FENSTER_S + "-s-Fenster (Schwelle " +
-            fz2(FREMD_SCHWELLE_KERNE) + "; Σ fremd " + fz1(b.fremdS) + " CPU-s in " + fz1(b.s) + " s)";
+            fz2(b.schwelle) + ", " + b.eich + "; Σ fremd " + fz1(b.fremdS) + " CPU-s in " + fz1(b.s) + " s)";
     const grund = (brachAb([e]) ? e.grund + " · " : "") + was + " — kein Urteil, UNGEMESSEN (die Probe sah: " + String(e.zahl).slice(0, 240) + ")";
     return { ...mit, gruen: false, ungemessen: true, grund, zahl: grund };
 }
@@ -1176,9 +1204,10 @@ let zeugeDerMaschine = null;
 const maschinenZeuge = () => zeugeDerMaschine || (zeugeDerMaschine = fremdZeuge());
 // der stille Zeuge des Selbsttests: jedes Fenster ohne Last (der echte Zeuge und die Attrappen stehen in (5f) beim Namen)
 const stillerZeuge = () => ({ taktMs: FREMD_TAKT_MS, bereit: async () => {}, beginn: () => ({}), stop() {}, blind: null,
-    ende: async () => ({ s: 0, takte: 0, fremdS: 0, kerne: 0, fensterKerne: 0, namen: [], dienerS: 0, diener: [], eigenS: 0, still: true }) });
+    ende: async () => ({ s: 0, takte: 0, fremdS: 0, kerne: 0, fensterKerne: 0, namen: [], dienerS: 0, diener: [], eigenS: 0, schwelle: FREMD_SCHWELLE_KERNE, eich: FREMD_HIER.ort, still: true }) });
 // DIE EICHUNG (`node punkte.cjs fremdlast [--sek 60] [--takt 2000]`): der Zeuge über --sek Sekunden — einmal im Leerlauf, einmal neben
-// `npm run playtest:fast` in einer anderen Konsole (es ist fremd: nie ein Kind dieses Läufers); die Zahlen gehören nach FREMD_EICH
+// `npm run playtest:fast` in einer anderen Konsole (es ist fremd: nie ein Kind dieses Läufers); die Zahlen gehören nach FREMD_EICH — den
+// Effekt je Kern misst erst eine Zeit-Station ABAB neben einer Last mit bekannten Kernen (die Eichung der Radeon, FREMD_EICH)
 async function fremdlastCli(o) {
     const sek = Number(o.sek) || 60, z = fremdZeuge({ taktMs: Number(o.takt) || FREMD_TAKT_MS });
     await z.bereit();
@@ -1191,14 +1220,13 @@ async function fremdlastCli(o) {
         return 1;
     }
     console.log("FREMDLAST " + process.platform + " " + os.cpus().length + " Kerne · " + fz1(b.s) + " s · " + b.takte + " Takte · fremd Σ " + fz1(b.fremdS) + " CPU-s, Mittel " +
-        fz2(b.kerne) + " Kerne, dichtestes " + FREMD_FENSTER_S + "-s-Fenster " + fz2(b.fensterKerne) + " Kerne — " + (b.fensterKerne >= FREMD_SCHWELLE_KERNE ? "ÜBER" : "unter") +
-        " der Schwelle " + fz2(FREMD_SCHWELLE_KERNE) + " · Diener " + fz1(b.dienerS) + " CPU-s · eigen " + fz1(b.eigenS) + " CPU-s");
+        fz2(b.kerne) + " Kerne, dichtestes " + FREMD_FENSTER_S + "-s-Fenster " + fz2(b.fensterKerne) + " Kerne — " + (b.fensterKerne >= b.schwelle ? "ÜBER" : "unter") +
+        " der Schwelle " + fz2(b.schwelle) + " · Diener " + fz1(b.dienerS) + " CPU-s · eigen " + fz1(b.eigenS) + " CPU-s");
     for (const [n, s] of b.namen) console.log("  fremd  " + fz1(s).padStart(6) + " CPU-s  " + n);
     for (const [n, s] of b.diener) console.log("  Diener " + fz1(s).padStart(6) + " CPU-s  " + n);
-    // die Zahlen der letzten Eichung daneben (die Schwelle T = 0,12 · F, F die Last des Befunds im dichtesten Fenster)
-    console.log("  Eichung " + FREMD_EICH.ort + ": Leerlauf " + fz2(FREMD_EICH.leerlauf) + " · playtest:fast " + fz2(FREMD_EICH.playtestFast) +
-        " · Statik + playtest:fast " + fz2(FREMD_EICH.statikUndPlaytestFast) + " Kerne → T = 0,12 · F = " + fz2(0.12 * FREMD_EICH.statikUndPlaytestFast) +
-        " · hier gemessen: T = 0,12 · " + fz2(b.fensterKerne) + " = " + fz2(0.12 * b.fensterKerne) + " (gilt nur unter der Last des Befunds)");
+    // die Eichung DIESES Rechners daneben (FREMD_HIER): der Effekt je fremdem Kern e und die Schwelle T = 0,03 / e
+    console.log("  Eichung " + FREMD_HIER.ort + (FREMD_HIER.effekt ? ": Effekt je fremdem Kern " + fz1(100 * FREMD_HIER.effekt) + " % → T = 0,03 / e = " +
+        fz2(0.03 / FREMD_HIER.effekt) : "") + " · Schwelle " + fz2(FREMD_HIER.schwelle) + " Kerne");
     console.log(JSON.stringify(b));
     return 0;
 }
@@ -4532,7 +4560,8 @@ async function selbsttest(o = {}) {
         const zeitSt = { ...st0, zeit: true, urteil: lies,
             befehl: ["node", "-e", "setTimeout(() => require('fs').writeFileSync(process.argv[1], JSON.stringify({ n: Number(process.argv[2]) })), 1500)", "{AUS}", "0"] };
         const zeugen = [];
-        const mitZeuge = (n, quelle) => ({ ...ctx(n), zeuge: zeugen[zeugen.push(fremdZeuge({ quelle, taktMs: 300, wurzel: WZ })) - 1] });
+        // die Attrappen urteilen am festen Rechner der ersten Eichung (dem Container, 0,3), nie an dem, der den Selbsttest fährt
+        const mitZeuge = (n, quelle) => ({ ...ctx(n), zeuge: zeugen[zeugen.push(fremdZeuge({ quelle, taktMs: 300, wurzel: WZ, eich: FREMD_EICH[0] })) - 1] });
         const unter = await fahreStation(zeitSt, mitZeuge("fremd-unter", attrappe(1.5)));
         const still = await fahreStation(zeitSt, mitZeuge("fremd-still", attrappe(0)));
         const stillRot = await fahreStation({ ...zeitSt, befehl: [...zeitSt.befehl.slice(0, 4), "3"] }, mitZeuge("fremd-still-rot", attrappe(0)));
@@ -4543,13 +4572,13 @@ async function selbsttest(o = {}) {
         const ab = fremdUrteil(zeitSt, { gruen: false, zahl: "n 0", grund: "Absturz: Signal SIGKILL · n 0" }, unter.fremd);
         pruef("FREMD-LAST die Attrappe: playtest:fast 1,5 Kerne fremd neben einer Zeit-Station → UNGEMESSEN beim Namen; der Diener, der eigene Baum und der Erbe einer wiederbenutzten PID getrennt",
             unter.ungemessen === true && unter.gruen === false &&
-            /^Fremd-Last: node scripts\/playtest\.cjs --fast \d+,\d CPU-s · erbe\.exe --alt \d+,\d CPU-s — 1,70 Kerne fremd im dichtesten 10-s-Fenster \(Schwelle 0,30; .* — kein Urteil, UNGEMESSEN \(die Probe sah: n 0\)$/.test(unter.grund) &&
+            /^Fremd-Last: node scripts\/playtest\.cjs --fast \d+,\d CPU-s · erbe\.exe --alt \d+,\d CPU-s — 1,70 Kerne fremd im dichtesten 10-s-Fenster \(Schwelle 0,30, linux, 4 Kerne \(Container\); .* — kein Urteil, UNGEMESSEN \(die Probe sah: n 0\)$/.test(unter.grund) &&
             unter.fremd.diener[0][0] === "dwm.exe" && unter.fremd.eigenS > unter.fremd.fremdS && !unter.fremd.namen.some(([n]) => /chrome|punkte\.cjs/.test(n)),
             JSON.stringify([unter.grund, unter.fremd]));
         pruef("FREMD-LAST ohne fremde Last urteilt die Zeit-Station wie heute (GRÜN, ROT), eine Bild-Station unter Last urteilt wie heute und trägt den Bericht",
-            still.gruen === true && !still.ungemessen && still.zahl === "n 0" && still.fremd.fensterKerne < FREMD_SCHWELLE_KERNE && still.fremd.namen[0][0] === "erbe.exe --alt" &&
+            still.gruen === true && !still.ungemessen && still.zahl === "n 0" && still.fremd.fensterKerne < still.fremd.schwelle && still.fremd.namen[0][0] === "erbe.exe --alt" &&
             stillRot.gruen === false && !stillRot.ungemessen && stillRot.grund === "ROT: n 3" &&
-            bild.gruen === true && !bild.ungemessen && bild.fremd.fensterKerne >= FREMD_SCHWELLE_KERNE,
+            bild.gruen === true && !bild.ungemessen && bild.fremd.fensterKerne >= bild.fremd.schwelle && bild.fremd.schwelle === 0.3,
             JSON.stringify([still, stillRot, bild].map((x) => [x.gruen, !!x.ungemessen, x.grund || x.zahl, x.fremd.fensterKerne])));
         pruef("FREMD-LAST ein blinder Zeuge macht nur die Zeit-Station UNGEMESSEN beim Grund; ein Abbruch behält seinen Grund vorn (die Sitzung liest ihn)",
             blind.ungemessen === true && /^Fremd-Last: der Zeuge ist blind \(kein Zeuge auf plan9\) — Ruhe unbezeugt — kein Urteil, UNGEMESSEN/.test(blind.grund) &&
@@ -4558,7 +4587,10 @@ async function selbsttest(o = {}) {
         // DER ECHTE ZEUGE: der Vermittler startet den Busy gelöst und endet (Linux: der Waise hängt an init; Windows: an einer toten PID,
         // die eine spätere Station erben könnte — der Erbe ist älter als sie, nie ihr Kind)
         const ATT = "punkte-fremdlast-attrappe";
-        const busy = "const t = Date.now() + 10000; while (Date.now() < t) {}";
+        // der Busy rechnet auf floor(Schwelle dieses Rechners) + 1 Kernen: allein über der Schwelle, auf jedem geeichten Rechner
+        const busyKerne = Math.floor(FREMD_SCHWELLE_KERNE) + 1, spin = "const t = Date.now() + 10000; while (Date.now() < t) {}";
+        // (ohne doppelte Anführungszeichen: die Kommandozeile von Windows bliebe sonst nicht EIN Glied, kurzName verlöre den Namen)
+        const busy = "for (let i = 1; i < " + busyKerne + "; i++) new (require('worker_threads').Worker)(`" + spin + "`, { eval: true }); " + spin;
         const r = spawnSync(process.execPath, ["-e", "const c = require('child_process').spawn(process.execPath, ['-e', " + JSON.stringify(busy) + ", '" + ATT +
             "'], { detached: true, stdio: 'ignore', windowsHide: true }); c.unref(); console.log(c.pid)"], { encoding: "utf8" });
         const busyPid = Number(String(r.stdout).trim());
@@ -4569,10 +4601,20 @@ async function selbsttest(o = {}) {
         const eigenSt = { ...zeitSt, befehl: ["node", "-e", "const t = Date.now() + 3000; while (Date.now() < t) {} require('fs').writeFileSync(process.argv[1], JSON.stringify({ n: 0 }))", "{AUS}", "punkte-fremdlast-eigen"] };
         const echtEigen = await fahreStation(eigenSt, { ...ctx("fremd-eigen"), zeuge: echtZ });
         echtZ.stop();
-        pruef("FREMD-LAST der echte Zeuge (" + process.platform + "): ein gestellter fremder Busy-Prozess neben einer Zeit-Station → UNGEMESSEN mit seinem Namen; derselbe Busy als eigene Station ist nie fremd",
+        pruef("FREMD-LAST der echte Zeuge (" + process.platform + ", Schwelle " + fz2(FREMD_SCHWELLE_KERNE) + ", Busy auf " + busyKerne + " Kernen): ein gestellter fremder Busy-Prozess neben einer Zeit-Station → UNGEMESSEN mit seinem Namen; derselbe Busy als eigene Station ist nie fremd",
             busyPid > 0 && echtUnter.ungemessen === true && new RegExp("^Fremd-Last: [^—]*" + ATT + " \\d+,\\d CPU-s").test(echtUnter.grund) &&
             !!echtEigen.fremd && !echtEigen.fremd.blind && !(echtEigen.fremd.namen || []).some(([n]) => /punkte-fremdlast-eigen/.test(n)) && echtEigen.fremd.eigenS >= 2,
             JSON.stringify([echtUnter.grund, echtEigen.fremd]));
+        // DIE SCHWELLE JE RECHNER (fremdEich): jeder Eintrag findet sich an seiner Plattform, seinen Kernen und seiner CPU; jede Schwelle
+        // hält den Fehler unter 3 % (schwelle · effekt ≤ 0,03); ein ungeeichter Rechner (dieselbe Plattform, andere Kerne) urteilt an der
+        // strengsten geeichten Schwelle und nennt sich „ungeeicht“; DIESER Rechner urteilt an FREMD_HIER
+        const fremder = fremdEich({ plattform: "win32", kerne: 7, cpu: "Attrappe" });
+        const strengste = Math.min(...FREMD_EICH.map((x) => x.schwelle));
+        pruef("FREMD-LAST die Schwelle je Rechner (fremdEich): " + FREMD_EICH.map((x) => x.ort + " " + fz2(x.schwelle)).join(" · ") + "; hier " + FREMD_HIER.ort,
+            FREMD_EICH.every((x) => fremdEich({ plattform: x.plattform, kerne: x.kerne, cpu: x.cpu || "?" }) === x && x.schwelle * x.effekt <= 0.03 + 1e-9) &&
+            fremder.ungeeicht === true && fremder.schwelle === strengste && /^ungeeicht \(win32, 7 Kerne, Attrappe\)/.test(fremder.ort) &&
+            FREMD_SCHWELLE_KERNE === FREMD_HIER.schwelle && fremdEich() === FREMD_HIER,
+            JSON.stringify([fremder, FREMD_HIER]));
     }
     // (5m) DER MESSORT (pm-fremdlast; keinUrteil (d), die EINE Marke MESSORT_MARKE): die ECHTE Folge von schatten.K1#2 (stationen/g3.js)
     // gegen eine Werkbank-Attrappe im Baum — der muss-Schritt `buehne` wirft „Messort buehne: nach dem Wechsel steht die Seite nicht in
