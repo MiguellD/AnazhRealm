@@ -1144,12 +1144,12 @@ class AnazhRealm_vegetation_wiese {
         return (nw.schale = a);
     }
 
-    // DER BLOCK einer Kachel der Ferne je Vorlage v: ihre Büschel dieser Vorlage (Lage, Ordnung, Skala, Hang, die Grenze ihrer
-    // Streckung — die Kugel des gestreckten Büschels im Sicht-Satz), je Teil der Ferne die Matrizen (Basis × Teil) und der Tint
-    // — gebaut, wenn die Kachel oder die Vorlage neu kommt; der Sicht-Satz kopiert nur. DIE GRENZE REIST IN DER MATRIX
-    // (w21-wiese-fern): die vierte Zeile einer Instanz-Matrix ist frei — r184 nimmt von `M × (Lage, 1)` nur xyz (die Senke,
-    // `_senkenKnoten`; die Normale liest die 3 × 3), die Arena kopiert alle 16 Zahlen —, ihr erstes Feld (Element 3) trägt die
-    // Grenze des Büschels, der Stoff der Ferne liest sie dort (`_halmFerne`). Fehlt einem Büschel die Grenze, bricht der Block laut.
+    // DER BLOCK einer Kachel der Ferne je Vorlage v (`_nahWieseBestand`): die Ordnung ihrer Büschel dieser Vorlage, je Teil der
+    // Ferne die Matrizen (Basis × Teil) und der Tint — gebaut, wenn die Kachel oder die Vorlage neu kommt; der Bestand kopiert nur.
+    // DIE GRENZE REIST IN DER MATRIX (w21-wiese-fern): die vierte Zeile einer Instanz-Matrix ist frei — r184 nimmt von `M × (Lage,
+    // 1)` nur xyz (die Senke, `_senkenKnoten`; die Normale liest die 3 × 3), die Arena kopiert alle 16 Zahlen —, ihr erstes Feld
+    // (Element 3) trägt die Grenze des Büschels, der Stoff der Ferne und die Wahl der GPU lesen sie dort (`_halmFerne`,
+    // `PASS_WAHL_WGSL`). Fehlt einem Büschel die Grenze, bricht der Block laut.
     _nahWieseFernBlock(k, v, vl) {
         const alt = k.bloecke[v];
         if (alt && alt.flat === vl.flat) return alt;
@@ -1157,24 +1157,12 @@ class AnazhRealm_vegetation_wiese {
         const mw = this._tmpWieseM4b || (this._tmpWieseM4b = new THREE.Matrix4());
         const idx = [];
         for (let i = 0; i < k.bueschel.length; i++) if (k.bueschel[i].vorlage === v) idx.push(i);
-        const [n0, F64] = [idx.length, Float64Array];
-        const B = { flat: vl.flat, o: new F64(n0), x: new F64(n0), y: new F64(n0), z: new F64(n0), s: new F64(n0), g: new F64(n0), gx: new F64(n0), gz: new F64(n0), grenze: new F64(n0), farben: new Float32Array(n0 * 3) }; // prettier-ignore
-        B.matrizen = vl.fern.map(() => new Float32Array(n0 * 16));
+        const B = { flat: vl.flat, o: new Float64Array(idx.length), farben: new Float32Array(idx.length * 3) };
+        B.matrizen = vl.fern.map(() => new Float32Array(idx.length * 16));
         idx.forEach((i, n) => {
             const gr = k.grenze ? k.grenze[i] : NaN;
             if (!(gr >= 1)) throw new Error(`Nah-Wiese: ein Büschel der Ferne (${k.mx}, ${k.mz}) ohne die Grenze seiner Streckung`); // prettier-ignore
-            B.grenze[n] = gr;
-            const b = k.bueschel[i];
-            [B.o[n], B.x[n], B.y[n], B.z[n], B.s[n], B.gx[n], B.gz[n]] = [
-                b.o,
-                b.x,
-                b.y,
-                b.z,
-                b.s,
-                b.gx || 0,
-                b.gz || 0,
-            ];
-            B.g[n] = Math.hypot(B.gx[n], B.gz[n]);
+            B.o[n] = k.bueschel[i].o;
             B.farben.set(k.farben.subarray(i * 3, i * 3 + 3), n * 3);
             m4.fromArray(k.basis, i * 16);
             vl.fern.forEach((a, j) => {
@@ -1182,16 +1170,6 @@ class AnazhRealm_vegetation_wiese {
                 B.matrizen[j][n * 16 + 3] = gr;
             });
         });
-        // die Lage seiner Füße (die Schranke je Block im Sicht-Satz, `_wieseFernSchranke`): ihr Rechteck, ihre Höhe, ihre Hänge
-        Object.assign(B, { x0: Infinity, x1: -Infinity, z0: Infinity, z1: -Infinity, y0: Infinity, y1: -Infinity }); // prettier-ignore
-        Object.assign(B, { gx0: Infinity, gx1: -Infinity, gz0: Infinity, gz1: -Infinity });
-        for (let n = 0; n < n0; n++) {
-            [B.x0, B.x1] = [Math.min(B.x0, B.x[n]), Math.max(B.x1, B.x[n])];
-            [B.z0, B.z1] = [Math.min(B.z0, B.z[n]), Math.max(B.z1, B.z[n])];
-            [B.y0, B.y1] = [Math.min(B.y0, B.y[n]), Math.max(B.y1, B.y[n])];
-            [B.gx0, B.gx1] = [Math.min(B.gx0, B.gx[n]), Math.max(B.gx1, B.gx[n])];
-            [B.gz0, B.gz1] = [Math.min(B.gz0, B.gz[n]), Math.max(B.gz1, B.gz[n])];
-        }
         k.bloecke[v] = B;
         return B;
     }
