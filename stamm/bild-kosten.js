@@ -528,7 +528,9 @@ class AnazhRealm_bild_kosten {
                 const k = passId == null ? ctx : ctx + "|" + passId;
                 const aufnahme = this._currentRenderBundle;
                 if (vorbau) {
-                    if (scene !== welt.state.scene) return;
+                    // die Bühne der Karte wärmt ihre Formen vor (`_karteBuehneVorwaermen`): der Ruf trägt sie hinein
+                    const kb = vorwaerm && welt._karteBuehneSatz && scene === welt._karteBuehneSatz.szene;
+                    if (scene !== welt.state.scene && !kb) return;
                     if (!vorwaerm) {
                         if (gast || object.isGeometrieArena === true) {
                             E.ohneDraw.add(object); // ein Pass fand sie ohne Draw (`_arenaImBild`)

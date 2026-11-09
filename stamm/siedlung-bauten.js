@@ -1365,7 +1365,10 @@ class AnazhRealm_siedlung_bauten {
         const R = st.renderer;
         // die kommenden Stufen jeder Art (`_vorwaermArten`) in der Zeit des Vorwärm-Gesetzes — vor der Sperre der Eingabe: im
         // ruhenden Loop gilt sie nicht (Radeon w25: nach den Sicht-Wechseln des Gehens wärmte das Umstellen keine Art vor)
-        if (R && R.__anazhErstZeichnung && this._vorwaermZeit()) this._vorwaermArten();
+        if (R && R.__anazhErstZeichnung && this._vorwaermZeit()) {
+            this._vorwaermArten();
+            this._karteBuehneVorwaermen(); // die Formen der Karten-Bühne (Laub, Nadel, Rinde) vor der ersten Karte ihrer Form
+        }
         if (!st._weltbildDa || !this._eingabeRuht()) return;
         const g = st.playerMesh && st.playerMesh.userData._gelenk;
         const z = this._spielerVorlagen;

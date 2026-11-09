@@ -698,6 +698,86 @@ class AnazhRealm_stoff_karte {
     // Die Bühne ruht: ist die Schlange leer, geben ihre Ziele und Rechen-Puffer (~19 MB VRAM mit den Hebungs-Ringen: die
     // Schicht 7,3 · die Sonnen-Kacheln 5,2 · die Rechen-Puffer 6,3) nach KARTE_BUEHNE_RUHE_MS ihren Speicher frei — die nächste
     // Karte legt ihn neu an; Szene, MRT-Knoten und Programme bleiben (sie hängen an den Formaten, nie am Speicher).
+    // DIE BÜHNE WÄRMT VOR (w26-programm-katalog, Atlas §3 — kein Programm entsteht am Zug): die Programme der Karten-Bühne sind
+    // eine Funktion des Gesetzes — je FORM der Karten-Stufe (Stoff-Signatur × Ecken × Seite eines Teils) eines, gleich für jede Art
+    // dieser Form (die Rinde aller Bäume, das Laub mit Jahr und seinen Ecken, die Nadel ohne). Bis w26 entstanden sie im ersten
+    // Bake einer Art ihrer Form: die erste Karte einer neuen Form in der Fahrt baute ihre Programme im Bild (Radeon w25, erste
+    // Fahrt: „OrthographicCamera UNBENANNT:Mesh" 6 Pipelines, 250 ms Knoten-Bau im Fenster). Jetzt nimmt das Vorwärm-Gesetz in
+    // seiner Zeit (`_vorbauBedienung` → `_vorwaermZeit`) je Form EINEN Vertreter — die Gestalt des Samens 0 jeder Art mit Karte
+    // (`_foundryPresetIsTree`), bei der Foundry bestellt wie ein Bake — und ruft ihn durch die Bühne in ihr Ziel, ohne Draw
+    // (`_vorwaermObjekt`: die Erst-Zeichnung baut Knoten und Pipeline); nie, solange die Bühne eine halbe Karte trägt. true: jede
+    // Form der Welt steht.
+    _karteBuehneVorwaermen() {
+        const V =
+            this._karteVorwaerm || (this._karteVorwaerm = { huellen: new Map(), steht: new Set(), fertig: false });
+        const f = this._foundry;
+        const at = this._impostorAtlas();
+        if (V.fertig || !at || at.offen || !f || !f.ready || !f.recipes || !this._impostorAtlasTexturen(at))
+            return V.fertig;
+        const rend = this.state.renderer;
+        const E = this._erstZeichnungStand();
+        const B = this._karteBuehne(at);
+        const offen = [];
+        let alle = true;
+        for (const preset of Object.keys(f.recipes)) {
+            if (!this._foundryPresetIsTree(preset)) continue;
+            const lod = this._karteStufe(preset);
+            const key = this._foundryKoerperKey(preset, 0, lod, null);
+            const g = this._foundryCacheGet(key);
+            if (g === undefined) {
+                this._foundryZug(key, preset, 0, lod, undefined, undefined, null);
+                alle = false;
+                continue;
+            }
+            for (const c of (g && g.children) || []) {
+                if (!c.isMesh || c.isInstancedMesh || !c.geometry || !c.material) continue;
+                if (c.userData && typeof c.userData.__teil === "string") continue; // der Wurf-Teil lebt nur in den Kaskaden
+                const a = c.geometry.attributes;
+                const form = [c.material.userData.foundrySignatur || c.material.uuid, c.material.side]
+                    .concat(
+                        Object.keys(a)
+                            .sort()
+                            .map((n) => `${n}:${a[n].itemSize}${a[n].array.constructor.name}`)
+                    )
+                    .join("|");
+                if (V.steht.has(form)) continue;
+                let h = V.huellen.get(form);
+                if (!h) V.huellen.set(form, (h = Object.assign(new THREE.Mesh(), { name: "karte:" + preset })));
+                // steht ihr Programm, fällt die Hülle (sie hielte die Gestalt über den Abschied der Foundry hinaus)
+                if (E.vorgebaut.has(h)) {
+                    V.steht.add(form);
+                    V.huellen.delete(form);
+                    continue;
+                }
+                [h.geometry, h.material, h.frustumCulled, h.matrixAutoUpdate] = [c.geometry, c.material, false, false];
+                offen.push(h);
+            }
+        }
+        V.fertig = alle && offen.length === 0;
+        if (!offen.length) return V.fertig;
+        const vor = [rend.getRenderTarget(), rend.getMRT(), rend.autoClear];
+        try {
+            rend.setMRT(B.mrt);
+            rend.autoClear = false; // kein Draw, kein Leeren: die Bühne bleibt, wie sie war
+            B.tiefe.value = B.leer.depthTexture;
+            rend.setRenderTarget(B.probe); // dieselben Formate und Namen wie das Ziel der Karte — dieselben Programme
+            for (const h of offen) {
+                B.wurzel.clear();
+                B.wurzel.add(h);
+                B.versuch = "vorwaermen|" + ++B.versuchN;
+                this._vorwaermObjekt = h;
+                this._buehneRender(rend, B.szene, B.kamera, "Karten-Vorwärmen");
+            }
+        } finally {
+            this._vorwaermObjekt = null;
+            B.wurzel.clear();
+            rend.setRenderTarget(vor[0]);
+            rend.setMRT(vor[1]);
+            rend.autoClear = vor[2];
+        }
+        return false;
+    }
+
     _karteBuehneRuhe() {
         const B = this._karteBuehneSatz;
         if (!B || !B.bereit || performance.now() - B.zuletzt < AnazhRealm.KARTE_BUEHNE_RUHE_MS) return 0;
@@ -759,8 +839,10 @@ class AnazhRealm_stoff_karte {
             );
         const namen = B.ziel.textures.map((t) => t.name);
         B.schatten = ziel(K * SZ.richtungen.length, K, 3);
-        B.schatten.textures.forEach((t, i) => (t.name = namen[i]));
-        for (const rt of [B.ziel, B.schatten]) rt.textures[0].colorSpace = T.SRGBColorSpace;
+        // die Probe der Formen (`_karteBuehneVorwaermen`): ein Texel in denselben Formaten — dieselben Programme, ohne die Ziele zu wecken
+        B.probe = ziel(1, 1, 3);
+        for (const rt of [B.schatten, B.probe]) rt.textures.forEach((t, i) => (t.name = namen[i]));
+        for (const rt of [B.ziel, B.schatten, B.probe]) rt.textures[0].colorSpace = T.SRGBColorSpace;
         // die Lese-Tiefe der Sonnen-Kacheln, solange sie selbst Ziel sind (eine Textur ist nie Ziel und Bindung zugleich)
         B.leer = ziel(4, 4, 1);
         // DIE SONNEN-SICHT DER KRONE (A7-Term, `KARTE_SONNEN_SICHT`): die Krone wirft in der Welt ihren Schatten auf sich
