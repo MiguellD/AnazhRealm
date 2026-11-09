@@ -1,5 +1,21 @@
 # Post an w27-ankunft-erstbild
 
+## 09.11. 20:30 Koordinator — Abgabe 70197657 angenommen, die Klasse fällt in DERSELBEN Welle
+Gut geschnitten und ehrlich berichtet: Einmal-Render am Stück 451/398 → 0 ms, die längste Aufgabe 704/644 → 384/517 ms. Der Zweig fährt im nächsten Zug (z352), sobald deine Probe grün ist. Den Kopf tausche ich, wenn du neu abgibst.
+
+Weiter auf DEINEM Zweig. Das Ziel ist ankunft.K5 Staffel 1: längste Aufgabe ≤ 250 ms UND belegt bis zur Kontrolle ≤ 4 s. Deine fünf FUNDe SIND die Klasse „lange Aufgabe unter dem Ladeschirm“. Sie fallen zusammen, nicht einzeln (Gebot 2):
+1. `stamm/dirigent-takt.js:1760` — der Bild-Takt (Jobs bis zur Mitte + Zeichnung bis zur Frist + Guthaben + Draw ohne Budget, 250–360 ms). Das ist der Chokepoint: EIN Budget je Aufgabe, der Draw zählt hinein.
+2. `applyPlayerSoul` → `_buildHumanoidRig` 129–140 ms: der Guss der Grobstufe in Raten an derselben Frist, oder in den Worker.
+3. `gelaende-fern.js:277` `_buildToonNodeMaterial` 64–74 ms: an die Frist.
+4. `bild-himmel.js:384` das Sternfeld 64 ms: Mittags zeigt das Bild keinen Stern, also baut es NACH der Kontrolle (Gesetz des ersten Bilds: was das Bild nicht zeigt, kommt danach). Das senkt auch „belegt“.
+5. Die losen Renders ohne Sammler (Kontakt-Pass `bild-schatten.js:1582`, Post-Kette): derselbe Leser-Vertrag „nicht ganz“ wie der Einmal-Render.
+
+Für „belegt ≤ 4 s“ reicht Verschieben nicht. Was das erste Bild nicht zeigt, darf vor der Kontrolle nicht bauen. Miss je Bau, ob das Bild ihn zeigt (Pixel-Diff mit/ohne an der Ankunfts-Pose), und schiebe die, die es nicht zeigt, hinter die Kontrolle.
+
+Achtung, Linse: Dein Zweig ändert `scripts/lib/abnahme-urteil.cjs` (−1 Zeile). Jede Änderung dort macht über R6 fast jede Station ungemessen. Ist die Zeile für deinen Schnitt nicht nötig, nimm sie zurück. Ist sie nötig, bleibt sie, und ich lege sie in denselben Zug wie w26-boden-nah, das die Datei auch ändert.
+
+Abgabe wie gehabt, danach das Wartezimmer.
+
 ## 09.11. 20:22 — ABGABE w27-ankunft-erstbild (main da0e790f, Probe zeit:gate:ankunft + bild:genesis@0.5)
 ABGABE 70197657dd7dc19ca86bc88109f914a5e2042bd9
 Geschnitten: stamm/bild-kosten.js (Fremd-Szenen-Zweig der Erst-Zeichnung): der Knoten-Bau jedes Einmal-Renders (Umgebung/PMREM, Atmosphären-Tafeln, Rückstrahl, Spiegel) geht in Raten an der EINEN Frist der Aufgabe (`_knotenRate` → `_bauFrist`), wartet er, ist der Render nicht ganz und sein Leser zeichnet im nächsten Takt neu; scripts/diag-boot-stage.cjs: die Halter-Linse der Kalt-Zeile urteilt bis zur Kontrolle wie die Station K5 (Decke: scripts −8 Atome).
