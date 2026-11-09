@@ -125,8 +125,7 @@ $ C:\Program Files\nodejs\node.exe -e (function spawnBlick(AUS, PORT) {
         process.exit(1);
     });
 })(process.argv[1], process.argv[2]) C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\87537d3f-radeon\ankunft.K4_1.json 7804
-POSE ego-0 42702 ms
-POSE ego-45 43768 ms
+POSE ego-0 46778 ms
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3

@@ -1,66 +1,67 @@
 {
  "seite": {
   "isoliert": true,
-  "tiere": 9
+  "tiere": 3
  },
  "phasen": {
   "gehen": {
-   "bilder": 970,
+   "bilder": 929,
    "weg": 10,
    "p95": 0.19,
-   "max": 0.84,
+   "max": 1.08,
    "traeger": [
-    "_playSchrittOneShot 0.08",
-    "_lofiPlayGroove 0.07",
-    "_lofiPlayChord 0.04"
+    "_playSchrittOneShot 0.09",
+    "_lofiPlayGroove 0.08",
+    "_lofiPlayChord 0.05"
    ],
    "spitze": [
-    "_lofiPlayChord 0.63",
-    "_raumStrahlen 0.00",
-    "_fahrtKlangTick 0.00"
+    "_lofiPlayChord 0.69",
+    "_playSchrittOneShot 0.16",
+    "_schrittMaterialAt 0.01"
    ]
   },
   "fahrt": {
-   "bilder": 601,
-   "weg": 107,
-   "p95": 0.35,
-   "max": 0.82,
+   "bilder": 600,
+   "weg": 83,
+   "p95": 0.33,
+   "max": 0.98,
    "traeger": [
-    "_raumStrahlen 0.07",
     "_fahrtKlangTick 0.07",
+    "_raumStrahlen 0.06",
     "_lofiPlayGroove 0.03"
    ],
    "spitze": [
-    "_fahrtKlangTick 0.07",
-    "_raumStrahlen 0.03"
+    "_lofiPlayChord 0.65",
+    "_fahrtKlangTick 0.04",
+    "_raumStrahlen 0.00"
    ],
    "sattel": true
   },
   "nacht": {
-   "bilder": 601,
+   "bilder": 612,
    "weg": 10,
-   "p95": 0.31,
-   "max": 1.5,
+   "p95": 0.25,
+   "max": 0.81,
    "traeger": [
-    "_playSchrittOneShot 0.06",
-    "_lofiPlayGroove 0.04",
-    "_raumStrahlen 0.04"
+    "_playSchrittOneShot 0.08",
+    "_lofiPlayGroove 0.05",
+    "_lofiPlayChord 0.04"
    ],
    "spitze": [
-    "_lofiPlayChord 1.13",
-    "_raumStrahlen 0.02",
-    "_fahrtKlangTick 0.01"
+    "_lofiPlayChord 0.55",
+    "_raumStrahlen 0.01",
+    "_fahrtKlangTick 0.00"
    ]
   }
  },
  "aussetzer": {
   "n": 0,
   "still": 0,
-  "s": 34
+  "s": 35
  },
  "rot": [
-  "T fahrt: Klang-ms je Bild p95 0.35 > 0.2 (max 0.82; trägt _raumStrahlen 0.07 · _fahrtKlangTick 0.07 · _lofiPlayGroove 0.03)",
-  "T nacht: Klang-ms je Bild p95 0.31 > 0.2 (max 1.5; trägt _playSchrittOneShot 0.06 · _lofiPlayGroove 0.04 · _raumStrahlen 0.04)"
+  "T fahrt: Klang-ms je Bild p95 0.33 > 0.2 (max 0.98; trägt _fahrtKlangTick 0.07 · _raumStrahlen 0.06 · _lofiPlayGroove 0.03)",
+  "T nacht: Klang-ms je Bild p95 0.25 > 0.2 (max 0.81; trägt _playSchrittOneShot 0.08 · _lofiPlayGroove 0.05 · _lofiPlayChord 0.04)"
  ],
- "sek": 38.7
+ "sek": 38.9
 }

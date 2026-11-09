@@ -385,8 +385,154 @@ H.fahre(async function probeDorf(H) {
         console.log("@@PUNKTE@@ EXIT 0");
     }
     return j;
-}); 7804 C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\87537d3f-radeon\siedlung.K5_1.json 3
-@@ PROBE-FEHLER der Deckel des Laufs fehlt (argv „3“: der Läufer ersetzt den Platzhalter SEK)
+}); 7804 C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\87537d3f-radeon\siedlung.K5_1.json 45
+@@PUNKTE@@ NH12
+{
+ "ergebnis": {
+  "gesetzt": {
+   "ms": 1724.1,
+   "bilder": 16
+  },
+  "imRadius": null,
+  "erstes": {
+   "ms": 1724.2,
+   "bilder": 16,
+   "stufe": "huelle",
+   "typ": "haus_tudor",
+   "same": 75343,
+   "ort": [
+    -889.47,
+    -1375.1
+   ],
+   "abstand": 210.1,
+   "auge": [
+    -1095.1,
+    38.2,
+    -1418.2
+   ]
+  },
+  "hash": "59e4fc62",
+  "bereit": {
+   "ms": 7056,
+   "bilder": 121,
+   "vorrat": true,
+   "ruhig": true,
+   "zugFrei": true
+  },
+  "taktFehler": null,
+  "frist": null,
+  "nah": 260,
+  "start": 268,
+  "zelle": [
+   -4,
+   -6
+  ],
+  "nH": 12,
+  "same": 29749318,
+  "anker": [
+   -839.5,
+   -1373.1
+  ],
+  "anmarsch": {
+   "grad": 190,
+   "rand": 4.2,
+   "nachbarn": 12
+  },
+  "erwacht": {
+   "bild": 127,
+   "d": 266.4
+  },
+  "abgewiesen": 0,
+  "plan": 16,
+  "bilder": 143,
+  "reserviert": {
+   "seed": 29749318,
+   "nH": 12,
+   "x": -839.5294117647059,
+   "z": -1373.113725490196,
+   "wx": -839.5294117647059,
+   "wz": -1373.113725490196,
+   "ort": "ort:29749318:-840,-1373"
+  }
+ }
+}
+@@PUNKTE@@ EXIT 0
+@@ 12 s · frische Welt (Grundstellung) nach 2.7 s
+@@PUNKTE@@ NH300
+{
+ "ergebnis": {
+  "gesetzt": {
+   "ms": 764.6,
+   "bilder": 8
+  },
+  "imRadius": {
+   "ms": 764.6,
+   "bilder": 8,
+   "radius": 150
+  },
+  "erstes": {
+   "ms": 764.7,
+   "bilder": 8,
+   "stufe": "mesh",
+   "typ": "haus_tudor",
+   "same": 844001,
+   "ort": [
+    -1071.24,
+    -1380.05
+   ],
+   "abstand": 47.5,
+   "auge": [
+    -1098.7,
+    38.1,
+    -1418.8
+   ]
+  },
+  "hash": "84121d20",
+  "bereit": {
+   "ms": 10044,
+   "bilder": 248,
+   "vorrat": true,
+   "ruhig": false,
+   "zugFrei": true
+  },
+  "taktFehler": null,
+  "frist": null,
+  "nah": 260,
+  "start": 268,
+  "zelle": [
+   -4,
+   -6
+  ],
+  "nH": 300,
+  "same": 29749318,
+  "anker": [
+   -839.5,
+   -1373.1
+  ],
+  "anmarsch": {
+   "grad": 190,
+   "rand": 4.2,
+   "nachbarn": 12
+  },
+  "erwacht": {
+   "bild": 253,
+   "d": 266
+  },
+  "abgewiesen": 0,
+  "plan": 292,
+  "bilder": 261,
+  "reserviert": {
+   "seed": 29749318,
+   "nH": 300,
+   "x": -839.5294117647059,
+   "z": -1373.113725490196,
+   "wx": -839.5294117647059,
+   "wz": -1373.113725490196,
+   "ort": "ort:29749318:-840,-1373"
+  }
+ }
+}
+@@PUNKTE@@ EXIT 0
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3

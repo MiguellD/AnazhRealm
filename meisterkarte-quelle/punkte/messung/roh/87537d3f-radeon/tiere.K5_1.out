@@ -251,14 +251,14 @@ $ C:\Program Files\nodejs\node.exe -e const tor = (function sitzungTor() {
     }
 })(tor).then(() => process.exitCode || 0, (e) => ((e && e.messort ? console.log('@@PUNKTE@@ MESSORT ' + e.messort) : 0), console.log('PROBE-FEHLER ' + String((e && e.stack) || e).split('\n').slice(0, 4).join(' | ')), 1)).then(async (c) => { await tor.ende(); process.exit(c); }); C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\87537d3f-radeon\tiere.K5_1.json
 [linse-gpu] amd/rdna-3
-FORTSCHRITT des Kreises ego nach 10.0 s Wanduhr: {"spielS":113,"pruefungen":113,"masken":0,"maskeS":0,"gesehen":0,"imBlick":0}
-FORTSCHRITT des Kreises ego nach 20.1 s Wanduhr: {"spielS":234,"pruefungen":234,"masken":0,"maskeS":0,"gesehen":0,"imBlick":0}
-FORTSCHRITT des Kreises ego nach 30.1 s Wanduhr: {"spielS":386,"pruefungen":386,"masken":0,"maskeS":0,"gesehen":0,"imBlick":0}
-FORTSCHRITT des Kreises ego nach 40.0 s Wanduhr: {"spielS":508,"pruefungen":509,"masken":2,"maskeS":1,"gesehen":0,"imBlick":0}
-KREIS-ego EXIT=0 (48.9 s Wanduhr, Zeitraffer 2 Takte zu 500 ms je Bild, Prüfung je 1 Spiel-s) {"gier":-1.971745952160997,"gesehen":[],"masken":12,"maskeMs":3751.704999923706,"pruefungen":606,"imBlick":0,"max":20,"z0":75.95547500011206,"sicht":"first","spielS":600,"bilder":631}
-FORTSCHRITT des Kreises third nach 10.0 s Wanduhr: {"spielS":116,"pruefungen":116,"masken":0,"maskeS":0,"gesehen":0,"imBlick":0}
-FORTSCHRITT des Kreises third nach 20.0 s Wanduhr: {"spielS":220,"pruefungen":223,"masken":6,"maskeS":2.6,"gesehen":1,"imBlick":0}
-FORTSCHRITT des Kreises third nach 30.0 s Wanduhr: {"spielS":311,"pruefungen":318,"masken":14,"maskeS":5.6,"gesehen":2,"imBlick":0}
+FORTSCHRITT des Kreises ego nach 10.1 s Wanduhr: {"spielS":105,"pruefungen":105,"masken":0,"maskeS":0,"gesehen":0,"imBlick":0}
+FORTSCHRITT des Kreises ego nach 20.3 s Wanduhr: {"spielS":217,"pruefungen":217,"masken":0,"maskeS":0,"gesehen":0,"imBlick":0}
+FORTSCHRITT des Kreises ego nach 30.1 s Wanduhr: {"spielS":343,"pruefungen":343,"masken":0,"maskeS":0,"gesehen":0,"imBlick":0}
+FORTSCHRITT des Kreises ego nach 40.3 s Wanduhr: {"spielS":462,"pruefungen":463,"masken":3,"maskeS":1.1,"gesehen":0,"imBlick":0}
+FORTSCHRITT des Kreises ego nach 50.0 s Wanduhr: {"spielS":555,"pruefungen":562,"masken":15,"maskeS":5,"gesehen":0,"imBlick":0}
+KREIS-ego EXIT=0 (54.5 s Wanduhr, Zeitraffer 2 Takte zu 500 ms je Bild, Prüfung je 1 Spiel-s) {"gier":-1.971745952160997,"gesehen":[["wesen","493 px","93 m","558 s"]],"masken":16,"maskeMs":5805.275000035763,"pruefungen":608,"imBlick":0,"max":20,"z0":79.53834499987593,"sicht":"first","spielS":600,"bilder":628}
+FORTSCHRITT des Kreises third nach 10.0 s Wanduhr: {"spielS":106,"pruefungen":106,"masken":0,"maskeS":0,"gesehen":0,"imBlick":0}
+FORTSCHRITT des Kreises third nach 20.0 s Wanduhr: {"spielS":210,"pruefungen":210,"masken":1,"maskeS":0.9,"gesehen":0,"imBlick":0}
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3

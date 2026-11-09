@@ -141,7 +141,7 @@ return ring.length >= 10 ? 0 : 1;
 }
 [linse-gpu] amd/rdna-3
 @@PUNKTE@@ FEHLER TypeError: r._genesisPortalRing is not a function |     at evaluate (evaluate at toreK3Seite (eval at seiteLauf ([eval]:69:15), <anonymous>:11:12), <anonymous>:3:2) |     at #evaluate (C:\Users\micha\AnazhRealm-profiband\node_modules\puppeteer-core\lib\cjs\puppeteer\cdp\ExecutionContext.js:391:56) |     at async ExecutionContext.evaluate (C:\Users\micha\AnazhRealm-profiband\node_modules\puppeteer-core\lib\cjs\puppeteer\cdp\ExecutionContext.js:277:16)
-@@PUNKTE@@ PROBE 0.4 s · Exit 2
+@@PUNKTE@@ PROBE 0.5 s · Exit 2
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3

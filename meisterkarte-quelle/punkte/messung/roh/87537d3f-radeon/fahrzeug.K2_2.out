@@ -116,7 +116,7 @@ $ C:\Program Files\nodejs\node.exe -e const tor = (function sitzungTor() {
         process.exitCode = 1;
         return;
     }
-    const d = new Function(tor.dekl(L, ["VERKEHR", "verkehrVerdict", "taktHz"]) + "\nreturn { VERKEHR, verkehrVerdict, taktHz };")();
+    const d = new Function(tor.dekl(L, ["urteil", "VERKEHR", "verkehrVerdict", "taktHz"]) + "\nreturn { VERKEHR, verkehrVerdict, taktHz };")();
     const F = require(path.resolve(P));
     const mo = require(path.resolve("scripts/lib/band-urteil.cjs")).ladeSpec("wiese").ort.spieler;
     const page = await tor.seite();
@@ -135,7 +135,10 @@ $ C:\Program Files\nodejs\node.exe -e const tor = (function sitzungTor() {
     console.log(`VERKEHR ${JSON.stringify(o.verkehr)}`);
 })(tor).then(() => process.exitCode || 0, (e) => ((e && e.messort ? console.log('@@PUNKTE@@ MESSORT ' + e.messort) : 0), console.log('PROBE-FEHLER ' + String((e && e.stack) || e).split('\n').slice(0, 4).join(' | ')), 1)).then(async (c) => { await tor.ende(); process.exit(c); }); C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\87537d3f-radeon\fahrzeug.K2_2.json 12
 [linse-gpu] amd/rdna-3
-PROBE-FEHLER ReferenceError: urteil is not defined |     at Object.verkehrVerdict (eval at fahrVerkehr ([eval]:119:15), <anonymous>:14:5) |     at fahrVerkehr ([eval]:130:25)
+  ❌ VK (PFLICHT-OFFEN C) der Verkehr der Stadt um 10 Uhr — fahrend je Minute [null] · ohne Ziel erreicht: Wagen 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 (0 Ankünfte) · bewegter Eintrag mit veralteter Stufe 2× [[15,160,149,9,2],[12,472,149,9,2]]
+  ❌ VK (PFLICHT-OFFEN C) der Verkehr der Stadt um 23 Uhr — fahrend je Minute [null] · ohne Ziel erreicht: Wagen 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 (0 Ankünfte)
+  (79.9 s in der Welt der Sitzung, 12 s je Stunde)
+VERKEHR {"10":{"soll":20,"wagen":20,"ohnePlatz":0,"ohneFahrer":0,"ohneNacht":0,"wenden":4,"enden":4,"stufen":[],"fest":[],"stoss":{"wagen":0,"bau":0,"leib":0},"beruehrt":{"leib":0,"wagen":0,"bau":0,"orte":[],"bauOrte":[]},"knapp":[0.46,"7|9",644,833,447,"ort",null],"ankunft":{"d":0.16,"K":0.71,"wagen":0},"netz":{"verboten":["k0 0>3 kein Bogen","k0 1>2 kein Bogen","k0 2>1 kein Bogen","k0 3>0 kein Bogen"],"ausNetz":0,"irrweg":0},"ohneSchluessel":0,"ohneOrte":[],"querMax":0.14,"querOrt":[17,416,669,440],"msJeSchritt":0.705,"stufe":{"nah":729,"ohneBild":0,"ohneBildOrte":[],"ohneFahrer":0,"ohneFahrerOrte":[],"veraltet":2,"veraltetOrte":[[15,160,149,9,2],[12,472,149,9,2]]},"sek":12,"ziele":{"erreicht":0,"ohne":[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19],"laengsteS":16,"wer":[0,"ort",812,477,2]},"fahrbahn":{"geh":0,"auf":0,"anteil":0},"amSteuer":[20,0],"trasse":[3600,0,[]],"weg60":[null],"sitz":[769,0]},"23":{"soll":20,"wagen":20,"ohnePlatz":0,"ohneFahrer":0,"ohneNacht":0,"wenden":4,"enden":4,"stufen":[],"fest":[],"stoss":{"wagen":0,"bau":0,"leib":0},"beruehrt":{"leib":0,"wagen":0,"bau":0,"orte":[],"bauOrte":[]},"knapp":[0.46,"7|9",644,833,447,"ort",null],"ankunft":{"d":0.16,"K":0.71,"wagen":0},"netz":{"verboten":["k0 0>3 kein Bogen","k0 1>2 kein Bogen","k0 2>1 kein Bogen","k0 3>0 kein Bogen"],"ausNetz":0,"irrweg":0},"ohneSchluessel":0,"ohneOrte":[],"querMax":0.14,"querOrt":[17,416,669,440],"msJeSchritt":0.74,"stufe":{"nah":729,"ohneBild":0,"ohneBildOrte":[],"ohneFahrer":0,"ohneFahrerOrte":[],"veraltet":0,"veraltetOrte":[]},"sek":12,"ziele":{"erreicht":0,"ohne":[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19],"laengsteS":16,"wer":[0,"ort",812,477,2]},"fahrbahn":{"geh":0,"auf":0,"anteil":0},"amSteuer":[20,0],"trasse":[3600,0,[]],"weg60":[null],"sitz":[769,0]}}
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3
