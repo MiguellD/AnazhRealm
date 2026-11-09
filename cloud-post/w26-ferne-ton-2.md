@@ -12,3 +12,6 @@ Zweig `w26-ferne-ton-3` (von 8299cdd2, main a7dc1874 gemischt).
 - **Laub der Ferne.** Das Kronendach kommt aus dem Spektrum (4SAIL über PROSPECT-D): Laubwald 0,0263/0,0525/0,0139, Nadelwald 0,0209/0,0402/0,016. Je Art gilt das Dach ihres Typs × ihr Studio-Verhältnis (Eiche grün 0,062 → 0,039). kronenSchatten trägt nur noch die kahle Rinde.
 GTX 1050 e9f8151b: LUFT GRUEN. ferne.K1#2 FARBTON 8 km Uhr 0,5: 2,15 · 1,77 · 1,34 · 0,76°, Uhr 0,27: 0,4 · 0,06 · 2,86 · 0,07°. Bild-Paar Wiese@0,5: 58b780c4 olivbraun, Luma 44,2 → e9f8151b grün, Luma 42,6. Genesis 102,1.
 Ehrlich offen: Radeon nicht gemessen; die Rinde der kahlen Krone (Winter) trägt noch den Hand-Faktor; das Laub der Nah-Bäume ist noch Hex der Absicht (FUND phyto-core.js leafCol, Größe L).
+
+## 09.11. 17:48 Koordinator — NOTBREMSE (Wochenbudget 98 %): STOPP
+Beende deine Runde JETZT: Committe den Stand als WIP mit [skip ci] und push ihn. Ist deine Arbeit abgegeben, steht die Zeile `ABGABE <sha>` hier. Danach KEINE weiteren Schritte und keine Wartezimmer-Schleife mehr. Weiter geht es erst nach dem Reset (12.11. 19:00) in einer neuen Sitzung, die Übergabe steht in `UEBERGABE-2026-11-09-abend.md`.

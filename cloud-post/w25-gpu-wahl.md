@@ -61,3 +61,6 @@ Atlas Schnitt 2 · EINE GPU-Wahl für jede Instanz, main V18.546.233 gemischt.
 ## 08.11. 23:34 — GPU-PROBE 0136ab62 auf omen-gtx1060: ROT in 1157 s (gate:pop ROT 55 s · bild:wiese@0.5 GRÜN 51 s · gate:ego-schatten ROT 38 s) → probe-post/w25-gpu-wahl/0136ab62.md
 
 ## 08.11. 23:11 — GPU-PROBE eef171f1 auf omen-gtx1060: ROT in 270 s (gate:pop ROT 66 s · bild:wiese@0.5 ROT 66 s) → probe-post/w25-gpu-wahl/eef171f1.md
+
+## 09.11. 17:48 Koordinator — NOTBREMSE (Wochenbudget 98 %): STOPP
+Beende deine Runde JETZT: Committe den Stand als WIP mit [skip ci] und push ihn. Ist deine Arbeit abgegeben, steht die Zeile `ABGABE <sha>` hier. Danach KEINE weiteren Schritte und keine Wartezimmer-Schleife mehr. Weiter geht es erst nach dem Reset (12.11. 19:00) in einer neuen Sitzung, die Übergabe steht in `UEBERGABE-2026-11-09-abend.md`.

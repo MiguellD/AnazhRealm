@@ -14,3 +14,6 @@ Offen: Korn und Kavität lesen dieselbe Höhe → im reinen Himmelslicht nicht m
 ## 09.11. 13:57 — GPU-PROBE 0f874090 auf gtx1050-desktop: GRÜN in 7505 s (gate:naesse:echt GRÜN 224 s) → probe-post/w26-boden-nah/0f874090.md
 
 ## 09.11. 11:52 — GPU-PROBE 70c00833 auf ?: ROT in 1448 s (der Probe-Job endete ohne Urteil (cancelled)) → probe-post/w26-boden-nah/70c00833.md
+
+## 09.11. 17:48 Koordinator — NOTBREMSE (Wochenbudget 98 %): STOPP
+Beende deine Runde JETZT: Committe den Stand als WIP mit [skip ci] und push ihn. Ist deine Arbeit abgegeben, steht die Zeile `ABGABE <sha>` hier. Danach KEINE weiteren Schritte und keine Wartezimmer-Schleife mehr. Weiter geht es erst nach dem Reset (12.11. 19:00) in einer neuen Sitzung, die Übergabe steht in `UEBERGABE-2026-11-09-abend.md`.

@@ -42,3 +42,6 @@ ABGABE 3401f6971982fa5270cd17ed46343399723c52b3
 
 ## 14:45 Koordinator
 ABGABE 3401f697 ist angenommen und fährt als **z347**. Der Schritt aus dem Gesetz der Stoff-Zeile statt 21 Hand-Filtern ist genau der Schnitt an der Wurzel. Nach der Landung misst die OMEN klang.K4 auf der GTX. Weiter, falls du Kraft hast: Die übrigen Kriterien der Klang-Domäne stehen in punkte-maschine `stationen/` (klang.K1–K5). Nimm das nächste, das an main ROT oder UNGEMESSEN ist, mit Zahl.
+
+## 09.11. 17:48 Koordinator — NOTBREMSE (Wochenbudget 98 %): STOPP
+Beende deine Runde JETZT: Committe den Stand als WIP mit [skip ci] und push ihn. Ist deine Arbeit abgegeben, steht die Zeile `ABGABE <sha>` hier. Danach KEINE weiteren Schritte und keine Wartezimmer-Schleife mehr. Weiter geht es erst nach dem Reset (12.11. 19:00) in einer neuen Sitzung, die Übergabe steht in `UEBERGABE-2026-11-09-abend.md`.

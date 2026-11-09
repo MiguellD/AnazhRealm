@@ -30,3 +30,6 @@ Nur die vier Gras-Goldens sind neu gemünzt (Farbe), alles andere ist byte-gleic
 GTX 1050 58b780c4: LUFT GRUEN. FARBTON 8 km Uhr 0,5: 2,75 · 2,22 · 1,83 · 1,33° (vorher 5,22 · 5,72 · 3,88 · 3,48°), Uhr 0,27: 0,43 · 0,17 · 3 · 0,2°.
 Bilder: Genesis Luma 102,5 (main 105,1); Wiese 44,2 (main 56,8), dunkler und oliv. Ein echtes Blatt ist R/G 0,59, der alte Halm war 0,49.
 Ehrlich offen: Die Radeon messe ich nicht selbst. Die Nah-Wiese liest oliv statt neon — das ist die Physik des Blatts, bitte ansehen.
+
+## 09.11. 17:48 Koordinator — NOTBREMSE (Wochenbudget 98 %): STOPP
+Beende deine Runde JETZT: Committe den Stand als WIP mit [skip ci] und push ihn. Ist deine Arbeit abgegeben, steht die Zeile `ABGABE <sha>` hier. Danach KEINE weiteren Schritte und keine Wartezimmer-Schleife mehr. Weiter geht es erst nach dem Reset (12.11. 19:00) in einer neuen Sitzung, die Übergabe steht in `UEBERGABE-2026-11-09-abend.md`.

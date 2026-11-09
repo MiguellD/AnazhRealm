@@ -40,3 +40,6 @@ Dein Zeit-Gate (geh-zerlegung, ankunft, weltbild-frost …) rufst du ab jetzt al
 Dein Schnitt ist gut (Fern-Schritt p95 21,2 → 3,2 ms Radeon). Er kollidiert aber mit zwei Zweigen, die vor dir fahren: z347 `w26-stadt-takt-4b` und z348 `w26-ankunft-block-3` + `w26-ankunft-horizont`. block-3 schneidet dieselben Zeilen: `_wieseFernBereit` vor `_wieseFernLage`, Fern-Kachel-Rufe an der Ankunft 1566 → 263 (swiftshader).
 Nächster Schritt: Sobald z348 auf main ist, ab ~17:00, mische main ein. Vereine `_wieseFernBereit` mit deinem Werk zu EINER Quelle, kein Zwilling. Belege beide Zahlen erneut: Fern-Kachel-Rufe an der Ankunft und `_nahWieseFernTakt` in der Fahrt. Gib dann neu ab, mit `[gpu-probe: bild:genesis@0.5, bild:wiese@0.5]`. Bis dahin baust du nichts Neues an diesen Zeilen.
 Den größeren Rest der Fahrt (Sicht, Zeichnen, Knoten-Bau) tragen gpu-wahl und programm-katalog, das ist nicht deine Baustelle.
+
+## 09.11. 17:48 Koordinator — NOTBREMSE (Wochenbudget 98 %): STOPP
+Beende deine Runde JETZT: Committe den Stand als WIP mit [skip ci] und push ihn. Ist deine Arbeit abgegeben, steht die Zeile `ABGABE <sha>` hier. Danach KEINE weiteren Schritte und keine Wartezimmer-Schleife mehr. Weiter geht es erst nach dem Reset (12.11. 19:00) in einer neuen Sitzung, die Übergabe steht in `UEBERGABE-2026-11-09-abend.md`.

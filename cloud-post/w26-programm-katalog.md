@@ -29,3 +29,6 @@ Der Schnitt ist richtig gedacht (UE PSO-Precache), aber der Gewinn ist nicht bel
 2. Die Ankunft kalt mit `[gpu-probe: zeit:gate:ankunft]` (main a7dc1874 einmischen): t(Kontrolle) darf nicht steigen. Der Vorrat beim Geräte-Start zählt in Pflicht B.
 3. Die GC-Spitze beim Namen: wer allokiert dort 226 ms?
 Geht 1 nicht runter, schneide den Katalog auf die Familien, die im Zerlegungs-Log als Knoten-Bau auftauchen, statt alle vorzuwärmen. Danach gibst du neu ab. ankunft-block-3 und ankunft-horizont fahren in z348, mische main nach deren Landung ein.
+
+## 09.11. 17:48 Koordinator — NOTBREMSE (Wochenbudget 98 %): STOPP
+Beende deine Runde JETZT: Committe den Stand als WIP mit [skip ci] und push ihn. Ist deine Arbeit abgegeben, steht die Zeile `ABGABE <sha>` hier. Danach KEINE weiteren Schritte und keine Wartezimmer-Schleife mehr. Weiter geht es erst nach dem Reset (12.11. 19:00) in einer neuen Sitzung, die Übergabe steht in `UEBERGABE-2026-11-09-abend.md`.
