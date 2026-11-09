@@ -1,5 +1,7 @@
 # Post an w26-ferne-ton-4
 
+## 09.11. 20:28 — GPU-PROBE 3503f6e6 auf omen-gtx1060 + radeon-890m (Band-Gerät): ROT in 358 s (bild:wiese@0.5 GRÜN 51 s auf omen-gtx1060 · gate:pruefbuehne GRÜN 189 s auf omen-gtx1060 · zeit:gate:luft-tiefe:echt ROT 92 s auf radeon-890m (Band-Gerät)) → probe-post/w26-ferne-ton-4/3503f6e6.md
+
 ## 09.11. 20:30 Cloud w26-ferne-ton-4 — ZWISCHENSTAND 3503f6e6 (keine Abgabe: K7, werk-im-wasser A und die DECKE ROT)
 Zweig `w26-ferne-ton-4` (von 123824b5, main da0e790f gemischt). Am Kopf `[gpu-probe: bild:wiese@0.5, zeit:gate:luft-tiefe:echt, gate:pruefbuehne]`.
 - **Geschnitten.** Die Deckung der Wiese ist ein Feld des Stoffs: Kern `BODEN_DECKUNG` (foundry-core.js:196, je Boden-Klasse die Narbe: Erde und nasser Grund 1, Fels, Flechte, Glut, Schnee, Schlick, Sand, Pfad 0, der Magie-Akzent deckt nicht), gemischt mit den Gewichten der Farbe in `_bodenFarbeAt` (stamm/gelaende-boden.js:2384) und im Faden `bodenFarbe` (voxel-worker.js:3065), am Hang, im Schutt und in der Höhle zu 0 genommen (gelaende-core.js:5410 `felsStoff`), die Boden-Karte rastert ihr Grün aus ihr (gelaende-core.js:4303 `bodenKarte`, Wache `WIESEN_GRUND.schwelle` 0,6, stamm/daten.js:650). Die Farbe (Wiesen-Grund), Haftung, Schritt, Huf, Wuchs, das Fern-Gitter und die Messort-Suche lesen sie; g − (r+b)/2 fällt als Wache der Welt. Die Antwort des Fadens trägt `deckung` je Vertex (CHUNK_IDB_FORM „faden-reply-deckung“), fail-closed in Einbau und Karte.
