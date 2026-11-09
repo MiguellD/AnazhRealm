@@ -1702,7 +1702,9 @@ class AnazhRealm_stoff_material {
                     // dieselbe (K02a: die Decke nimmt das Licht von unten, kein Himmel von oben); der Fern-Ring (`fernNeigung`: die
                     // Masche des Empfängers, m) trägt die Normale des Gesetzes aus der Karte (`_fernNeigungNormale`, ferne.K4), wo
                     // seine Masche gröber steht als ein Texel
-                    const _nWahr = opts.fernNeigung ? this._fernNeigungNormale(_nWG, opts.fernNeigung) : _nWG;
+                    const _nWahr = opts.fernNeigung
+                        ? this._fernNeigungNormale(_nWG, opts.fernNeigung, opts.fernOrt)
+                        : _nWG;
                     let _baseN = _nWahr;
                     // Mikro-Relief (`_mikroRelief`, TERRAIN_BUMP): die festen Oktaven (Klumpen, Kiesel) und die drei am Schirm kippen
                     // die geflattete Normale entgegen dem Gradienten, LOD-gegated.

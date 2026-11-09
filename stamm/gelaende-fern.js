@@ -271,6 +271,9 @@ class AnazhRealm_gelaende_fern {
         const masche = TSL.length(TSL.positionWorld.xz.sub(uAnker))
             .mul(AnazhRealm._fernRingMascheJeM())
             .add(schalen[0].snap * Math.SQRT2);
+        // DER TREFFER DES BLICKS AUF DEM GESETZ (ferne.K4, w25-ferne-licht-4): der Schatten, der Grat-Himmel und die Normale des
+        // Rings lesen den Punkt, an dem der Strahl des Auges das Gesetz trifft (`_horizontBoden`), nie die Sehne der Masche
+        const treffer = this._horizontBoden(TSL.positionWorld, masche);
         const stoff = () =>
             this._buildToonNodeMaterial({
                 vertexColors: true,
@@ -281,6 +284,7 @@ class AnazhRealm_gelaende_fern {
                 jahrVertex: { laub: TSL.attribute("aLaub", "vec4"), kahl: TSL.attribute("aKahl", "vec3") },
                 wasserVertex: TSL.attribute("aNass", "float"),
                 fernNeigung: masche,
+                fernOrt: treffer,
             });
         const material = stoff();
         const stoffNaht = stoff();
@@ -318,9 +322,8 @@ class AnazhRealm_gelaende_fern {
         // DER SCHATTEN LIEST DEN BODEN DES GESETZES (ferne.K4): der Ring IST das Gesetz, seine Masche nähert es nur — jenseits
         // der Gitter-Zelle der Horizont-Karte (`_horizontBoden`, die Masche aus dem Radius wie die Weiche unten) prüft er die
         // Schatten-Höhe am Boden des Gitters, aus dem die Karte sie rechnet, nie an seiner Sehne (bei 4–7 km ±50 m daneben).
-        const schattenBoden = this._horizontBoden(TSL.positionWorld, masche);
-        material.receivedShadowPositionNode = schattenBoden;
-        stoffNaht.receivedShadowPositionNode = schattenBoden;
+        material.receivedShadowPositionNode = treffer;
+        stoffNaht.receivedShadowPositionNode = treffer;
         // DIE REGEL (K16, die Naht; der CPU-Spiegel ist `_fernRingRegel`, die Linse misst nach ihm): das Deck eines Chunks
         // deckt nicht seine Zelle. Der Pad-Aufruf (`ox − step`, `dim + 3`, crop 1) behält die Zellen 1 … dim + 1: die erste
         // Vertex-Spalte steht in der ersten Voxel-Spalte der Zelle, die letzte in der des +Nachbarn, und die Glättung (eine
@@ -1105,12 +1108,13 @@ class AnazhRealm_gelaende_fern {
     // DIE NORMALE DES RINGS (TSL, Leser `_buildToonNodeMaterial` mit `fernNeigung`): die Normale der Karte, wo die Masche des
     // Empfängers (`masche`, m) gröber steht als ein Texel — über ein Texel weich (`texelM` … 2 · `texelM`, am Ring ab ~0,5 km), in
     // der Karte und wenn sie steht; sonst die Normale der Masche (`nMasche`). Das Licht, die Zuwendung des Schattens und die
-    // Bestrahlung des Himmels lesen sie (die wahre Normale des Stoffs).
-    _fernNeigungNormale(nMasche, masche) {
+    // Bestrahlung des Himmels lesen sie (die wahre Normale des Stoffs) — am Ort `ort`, dem Treffer des Blicks auf dem Gesetz
+    // (`_horizontBoden`), nie an der Sehne.
+    _fernNeigungNormale(nMasche, masche, ort = THREE.TSL.positionWorld) {
         const T = THREE.TSL;
         const K = this._fernNeigungEnsure();
         const F = AnazhRealm.FERN_NEIGUNG;
-        const q = T.positionWorld.xz.sub(K.U.ursprung).div(K.karte.N * F.texelM);
+        const q = ort.xz.sub(K.U.ursprung).div(K.karte.N * F.texelM);
         const t = T.texture(K.karte.tex, q).depth(T.int(K.karte.schicht)).level(T.float(0));
         const [x, z] = [t.r.mul(2).sub(1), t.g.mul(2).sub(1)];
         const n = T.vec3(x, T.sqrt(T.max(T.float(1).sub(x.mul(x)).sub(z.mul(z)), 0)), z);

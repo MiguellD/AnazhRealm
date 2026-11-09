@@ -98,7 +98,7 @@ function bauSolidsUndTueren(B, H, bi){
       doorList.push({leaf:o, openA:o.userData.openA, axis:o.userData.axis||'y', block:o.userData.block||null, th:B.q.phi, tx:B.q.x, tz:B.q.z, open:(o.userData.open!==undefined)?o.userData.open:true, blockObj:null, ty:y0, bi}); } })); }
 function promoteBauen(bi){ const B=dorfB[bi]; if(!B||B.lod!=='chunk') return null;             // PHASE 1 (schwer, abbrechbar): NUR bauen — kein Szenen-Effekt, kein Zustand
   const sN=(B.p.storeys||1), turm2=sN>=6;
-  const hp2=Object.assign({},B.p,{nur: turm2? {moebel:false,innenwaende:false} : (B.p.arm? {moebel:false} : {})});   // RING-A-WÜRDE: Armut spart Möbel, aber INNENWÄNDE baut die Nahstufe immer — sonst schaut man DURCH das Haus (max 9 Gebäude, der Preis ist es wert; Türme behalten den Schacht: Glasetagen zeigen Böden)
+  const hp2=Object.assign({},B.p,{nur: (turm2||B.p.arm)? {moebel:false} : {}});   // RING-A-WÜRDE: Türme und Armut sparen Möbel, aber INNENWÄNDE baut die Nahstufe immer — sonst schaut man DURCH das Haus (max 9 Gebäude, der Preis ist es wert; auch der Turm: durch seine offenen Flügel stand der Himmel)
   const st=(sN>11)? stapelBau(hp2, {gelaende:false})
     : (()=>{ const H=HAUS(THREE,mat,hp2); return {g:H.build({gelaende:false}), H}; })();
   return {bi, st}; }
