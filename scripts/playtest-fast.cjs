@@ -497,7 +497,7 @@ function check(name, ok) {
             delete st.weltTakt, (st.weltTakt = w), r._bauHunger.delete("linse"), z();
             return h.size;
         });
-        check(`BAU-TAKT: der Hunger zählt je Takt des Loops — ${BT} Takte aus 3 freien und 3 mit stehendem Zähler (Soll 4)`, BT === 4); // prettier-ignore
+        check(`BAU-TAKT: der Hunger zählt je Takt des Loops (${BT} von 4)`, BT === 4);
         if (K.err) console.log("     ⟶ " + K.err);
 
         console.log(`\nLaufzeit: ${((Date.now() - T0) / 1000).toFixed(0)}s · ${pass} ✅ · ${fails.length} ❌`);
