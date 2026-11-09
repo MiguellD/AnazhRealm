@@ -2900,7 +2900,7 @@ AnazhRealm.LOD_SCHIRM = Object.freeze({
                 italienisch: [0.0034, 0.0187],
                 modern: [0.0038, 0.0074],
                 volle_moderne: [0.0032, 0.0114],
-                hochhaus: [0.1814, 0.2214], // VERSUCH (A/B bild:stadt): die Zeile vor w25-lod-pop-4
+                hochhaus: [0.0137, 0.0468],
                 roemisch: [0.0109, 0.0265],
                 tudor: [0.0051, 0.02],
                 alpenchalet: [0.0034, 0.0183],
