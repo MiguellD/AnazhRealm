@@ -1514,8 +1514,7 @@ class AnazhRealm_gelaende_boden {
     // DIE BODEN-KARTE (V18.508): die Höhe des GERENDERTEN Bodens je Chunk, gerastert aus dem fertigen
     // Mesh (Surface-Nets-Vertices nach Glättung + Crop) auf ein Gitter von step/BODEN_KARTE_TEILUNG (LOD 0:
     // 0,45 m, Origin chunk − step, über das Pad (dim+3)·step); je Punkt die OBERSTE nicht-steile Fläche (Wände
-    // tragen nichts), NaN ohne Boden, dazu der Grün-Kanal (Uint8: die Wache über der Deckung des Stoffs je Vertex,
-    // die erste Zahl von `aStoff`, w26-ferne-ton-4 — nie über der Farbe). Vorher las die Karte die Dichte-Spalten
+    // tragen nichts), NaN ohne Boden, dazu der Grün-Kanal (Uint8). Vorher las die Karte die Dichte-Spalten
     // (Nulldurchgang an den Gitter-Ecken) — gemessen 01.10.: an der Mess-Wiese −1004/−790 liegt der gerenderte
     // Boden ±0,22 m (q05–q95, max +0,43) neben dem Gesetz, im Spawn-Chunk Median 45 cm; das 1,8-m-Netz trägt
     // die Feinform der Funktion nicht, die Glättung verdoppelt die Abweichung. Die Karte trifft das Mesh im
@@ -1530,14 +1529,12 @@ class AnazhRealm_gelaende_boden {
     // der Saum (`_bodenNaht`: `rand` die Vertices, `randTri` ihre Dreiecke) — die Suche nach bewegten geht nur ihn.
     // DIE RECHNUNG IST DER KERN (w4-b-boden, gelaende-core `bodenKarte`): der voxel-worker rastert die Karte jedes Netzes, das
     // er baut (der Einbau setzt sie nur ein); hier rastern der Sync-Bau, der Naht-Morph und die vorläufige Gestalt eines Edits.
-    // `deck` der Stoff je Vertex (`aStoff`: je drei Zahlen, die erste die Deckung), null: die Karte trägt nur die Höhe (die
-    // Morph-Ziele).
-    _bodenKarteAusMesh(pos, idx, deck, cx, cz, lod, basis = null, rand = null, anOrt = false) {
+    _bodenKarteAusMesh(pos, idx, col, cx, cz, lod, basis = null, rand = null, anOrt = false) {
         if (!pos || !idx || idx.length < 3) return null;
         const G = globalThis.__gelaendeCore;
+        const gs = AnazhRealm.TERRAIN_GEOLOGY.gruenSchwelle;
         const T = AnazhRealm.BODEN_KARTE_TEILUNG;
-        const W = AnazhRealm.WIESEN_GRUND.schwelle;
-        return G.bodenKarte(pos, idx, deck, cx, cz, this._voxelChunkConfig(lod || 0), T, W, basis, rand, anOrt);
+        return G.bodenKarte(pos, idx, col, cx, cz, this._voxelChunkConfig(lod || 0), T, gs, basis, rand, anOrt);
     }
 
     // Pass 0 — Density-Grid: Nx*Ny*Nz Eck-Werte vom Sample. Float32Array,
@@ -2272,22 +2269,14 @@ class AnazhRealm_gelaende_boden {
         if (!pos || typeof this.worldFieldAt !== "function") return;
         const n = pos.count;
         const colors = new Float32Array(n * 3);
-        // DER STOFF DES GRUNDS JE VERTEX (w26-ferne-ton-4, w27-ferne-ton-5): die Deckung der Narbe, die die Boden-Karte rastert
-        // (`_bodenKarteNaht`), und die Nässe des Grunds (die dritte Zahl frei) — das Attribut `aStoff`, der Satz reicht es dem
-        // Fragment (`BODEN_SATZ_ATTR`, snorm8x4)
-        const stoff = new Float32Array(n * 3);
         const out = [0, 0, 0];
-        const aus = { deckung: 0, nass: 0 };
         for (let i = 0; i < n; i++) {
-            this._bodenFarbeAt(pos.getX(i), pos.getY(i), pos.getZ(i), out, aus);
+            this._bodenFarbeAt(pos.getX(i), pos.getY(i), pos.getZ(i), out);
             colors[i * 3] = out[0];
             colors[i * 3 + 1] = out[1];
             colors[i * 3 + 2] = out[2];
-            stoff[i * 3] = aus.deckung;
-            stoff[i * 3 + 1] = aus.nass;
         }
         geom.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
-        geom.setAttribute("aStoff", new THREE.Float32BufferAttribute(stoff, 3));
         this._felsStoff(geom);
     }
 
@@ -2302,9 +2291,8 @@ class AnazhRealm_gelaende_boden {
         const him = geom.attributes.aHimmel;
         const nor = geom.attributes.normal;
         const pos = geom.attributes.position;
-        const st = geom.attributes.aStoff;
-        if (!col || !nor || !pos || !st || st.count !== pos.count)
-            throw new Error("_felsStoff: der Boden trägt nicht color · normal · position · aStoff (fail-closed)");
+        if (!col || !nor || !pos)
+            throw new Error("_felsStoff: der Boden trägt nicht color · normal · position (fail-closed)");
         // Ohne Höhlen-Graph (nur der Voxel-Test `_voxelTest`: ein Gitter ohne Sicht-Graph) steht jeder Vertex unter dem
         // Himmel — jeder Chunk trägt `aHimmel` (`_buildVoxelChunkData*` bauen den Graph fail-closed).
         const S = globalThis.__gelaendeCore.felsStoff(
@@ -2317,8 +2305,7 @@ class AnazhRealm_gelaende_boden {
             him ? him.array : null,
             col.array,
             pos.count,
-            (x, z, y) => this._feuchteAt(x, z, y),
-            st.array
+            (x, z, y) => this._feuchteAt(x, z, y)
         );
         geom.setAttribute("aSchutt", new THREE.Float32BufferAttribute(S.schutt, 1));
         // die Linse (`gate:hoehlen-sicht` (k)) liest, womit das Moos gerechnet wurde
@@ -2351,10 +2338,9 @@ class AnazhRealm_gelaende_boden {
     // Werte roh als linear (der Stein 0,42/0,44/0,49 mit dem Magie-Violett darüber: weiß-lavendel, Blick-Tour 05).
     // Magie ist ein AKZENT in Flecken, der Seegrund unter jedem Wasser Schlick. Die Laubstreu liegt NICHT hier: sie
     // folgt den echten Kronen (`_kronenStreuNeu` → `_wegeBodenFarbe`). `out` = [r, g, b] (linear, wie das Vertex-
-    // Attribut); `aus` (optional) nimmt `deckung`, die Deckung des Stoffs (`WIESEN_GRUND.deckung`, 0 … 1: wie weit der Grund
-    // eine Grasnarbe trägt). Die Ferne (das Mittel der Flecken und Bänder über eine Fläche) rechnet der Fern-Faden (`bodenFarbe` im
+    // Attribut). Die Ferne (das Mittel der Flecken und Bänder über eine Fläche) rechnet der Fern-Faden (`bodenFarbe` im
     // voxel-worker mit `fussM`, B2) — ohne fussM dieselben Zahlen wie hier.
-    _bodenFarbeAt(x, y, z, out, aus) {
+    _bodenFarbeAt(x, y, z, out) {
         // V9.60-b.2 — Sand-Variation: lazy-laden des deterministischen
         // Welt-Noises (gleiche Instanz wie `_terrainMacroSurfaceY`). Macht
         // Strand-Breite + Intensität regional variabel statt überall gleich.
@@ -2380,30 +2366,16 @@ class AnazhRealm_gelaende_boden {
         const F_VIS_HI = AnazhRealm.FEUCHTE.sichtbarHi;
         const f = this.worldFieldAt(x, z);
         const c = [stone[0], stone[1], stone[2]];
-        // DIE DECKUNG (w26-ferne-ton-4, `WIESEN_GRUND.deckung`): der Stoff jeder Klasse trägt seine Narbe, gemischt mit dem
-        // Gewicht seiner Farbe — `dk` die Deckung der Klasse, ohne (der Magie-Akzent) bleibt die des Grunds
-        const WG = AnazhRealm.WIESEN_GRUND;
-        const DK = WG.deckung;
-        let d = DK.rock;
-        // DIE NÄSSE DES GRUNDS (w27-ferne-ton-5): der Anteil des nassen Grunds an der Mischung — die Feuchte legt ihn auf, jede
-        // Klasse über ihm nimmt ihn mit ihrem Gewicht (Flechte, Glut, Schnee, Strand, Pfad; unter Wasser 0). Das Boden-Fragment
-        // liest ihn für Moos und Glanz, wo es bis hierher die Luminanz der Albedo las (`_terrainGeologyAlbedo`)
-        let n = 0;
-        const mix = (target, t, dk) => {
+        const mix = (target, t) => {
             c[0] += (target[0] - c[0]) * t;
             c[1] += (target[1] - c[1]) * t;
             c[2] += (target[2] - c[2]) * t;
-            if (dk !== undefined) {
-                d += (dk - d) * t;
-                n -= n * t;
-            }
         };
-        mix(earth, ss(0.25, 0.85, f.lebendig), DK.mead);
+        mix(earth, ss(0.25, 0.85, f.lebendig));
         // Feuchte schiebt den Boden Richtung dampEarth. Reihenfolge im mix-Stack ist Pflicht: nach earth, VOR
         // lava/snow/sed/strand. genVersion-Schleuse via _feuchteAt (< 2 → 0); Vertex-y ist die Surface.
         const feuchte = typeof this._feuchteAt === "function" ? this._feuchteAt(x, z, y) : 0;
-        mix(dampEarth, ss(F_VIS_LO, F_VIS_HI, feuchte), DK.wet);
-        n += ss(F_VIS_LO, F_VIS_HI, feuchte);
+        mix(dampEarth, ss(F_VIS_LO, F_VIS_HI, feuchte));
         // Kein Kronendach im Vertex: bis 06.10. dunkelte das Kronenlicht-Feld der Platzierung (`_canopyLightAt`, wo
         // Bäume wachsen DÜRFEN) den Boden × (0,58 + 0,46 · Licht) — zu 98 % ohne Baum darüber, unter einem Baum
         // zusätzlich zu seinem echten Schatten. Die Laubstreu unter den echten Kronen legt `_wegeBodenFarbe` auf.
@@ -2417,14 +2389,14 @@ class AnazhRealm_gelaende_boden {
             ss(LCH.dichteLo, LCH.dichteHi, f.dichte || 0) *
             lichenCluster *
             LCH.strength;
-        mix(P.flechte, lichenMix, DK.flechte);
-        mix(lava, ss(0.48, 1.02, f.glut) * 0.65, DK.basalt); // dunkles Basalt, gekappt — kein flaches Rot
+        mix(P.flechte, lichenMix);
+        mix(lava, ss(0.48, 1.02, f.glut) * 0.65); // dunkles Basalt, gekappt — kein flaches Rot
         // Der Magie-Akzent: Flecken (λ ≈ 11 m, ein Sechstel der Fläche, höchstens 30 %) in den Magie-Regionen — nie die Grundfarbe.
         const magieFleck = ss(0.6, 0.85, (sandNoise.noise2D(x * 0.09 + 3.1, z * 0.09 - 8.7) + 1) * 0.5);
         mix(violet, ss(0.55, 1.0, f.magieleitung) * magieFleck * 0.3);
         // Die Schneegrenze ist Gesetz (gelaende-core `schnee`: die Höhe über dem Meer, dieselbe Funktion ruft der Worker
         // in `attachFieldColors`) und liest den Pegel des Schnees (stoffe.K3-2): den Versatz, den die Welt trägt (`_schneeGilt`).
-        mix(snow, globalThis.__gelaendeCore.schnee(this._gelaende(), y, x, z, this._schneeGilt()), DK.schnee);
+        mix(snow, globalThis.__gelaendeCore.schnee(this._gelaende(), y, x, z, this._schneeGilt()));
         // Der Seegrund: unter JEDEM Wasser (Meer, See, Fluss — der Spiegel des Orts) liegt Schlick, voll ab 4 m
         // Tiefe (bis V18.530 nur unter dem Meeresspiegel y < −2: die Bergseen lagen auf Wiese und Streu).
         // Schlick und Strand sind Ufer-Bänder über beiden Bezügen (`_waterLevelAt`): See/Meer voll, der Fluss mit seiner
@@ -2434,27 +2406,37 @@ class AnazhRealm_gelaende_boden {
         const aboveWater = y - uf.see;
         const aboveFluss = uf.fluss !== null ? y - uf.fluss : null;
         let schlick = ss(-0.5, -4, aboveWater);
-        // DIE NARBE ENDET AM SPIEGEL (w27-ferne-ton-5): der Grund unter stehendem Wasser trägt keine — seine Deckung fällt vom
-        // Spiegel bis 0,5 m Tiefe auf die des Schlicks, wo dessen Farbe erst beginnt (sie wächst bis 4 m: mit ihrem Gewicht
-        // trug der Seegrund in 1 m Tiefe die Deckung des nassen Grunds, 0,35–0,43 — Grün 0,6–0,8, das Rad bremste dort wie auf
-        // Gras: die Wand „Werk im Wasser“ A, 1,22 m tief)
-        let unterWasser = ss(0, -0.5, aboveWater);
-        if (aboveFluss !== null) {
-            schlick = Math.max(schlick, uf.ufer * ss(-0.5, -4, aboveFluss));
-            unterWasser = Math.max(unterWasser, uf.ufer * ss(0, -0.5, aboveFluss));
-        }
+        if (aboveFluss !== null) schlick = Math.max(schlick, uf.ufer * ss(-0.5, -4, aboveFluss));
+        // Strand: Glocken-Profil über dem Wasser (`_waterLevelAt` O(1) für Ozean; See-Vertices bekommen den
+        // See-Spiegel). Drei Noise-Modulationen statt einer Schwelle: (a) Breite (λ~570 m), (b) Intensität
+        // (λ~290 m), (c) karge Fels-Patches ohne Sand. Die Glocke trägt bis 0,6 + 1,9 m — das Fenster schneidet sie nie
+        // (bis Welle L endete es bei 2,0 m: ein Sprung im Strand jeder breiten Glocke).
+        const imStrand = (a) => a !== null && a > -1.3 && a < 2.5;
         mix(sed, schlick);
-        d += (DK.sediment - d) * unterWasser;
-        n -= n * unterWasser;
-        mix(sand, this._strandAt(x, z, y, uf), DK.sand);
+        if (imStrand(aboveWater) || (uf.ufer > 0 && imStrand(aboveFluss))) {
+            const widthNoise = (sandNoise.noise2D(x * 0.0018, z * 0.0018) + 1) * 0.5; // [0, 1]
+            const intenseNoise = (sandNoise.noise2D(x * 0.0034 + 17, z * 0.0034 - 9) + 1) * 0.5;
+            if (widthNoise > 0.18) {
+                const width = 0.5 + 1.4 * widthNoise; // [0.5, 1.9] m
+                const intensity = 0.25 + 0.55 * intenseNoise; // [0.25, 0.8]
+                const glocke = (a) => Math.max(0, 1 - Math.abs(a - 0.6) / width);
+                let shoreBlend = glocke(aboveWater);
+                if (aboveFluss !== null) shoreBlend = Math.max(shoreBlend, uf.ufer * glocke(aboveFluss));
+                mix(sand, shoreBlend * intensity);
+            }
+            // widthNoise <= 0.18 → karge Stelle, Sand bleibt aus (Stone/
+            // Earth gewinnt). Spielt mit den V9.60-b.1-Hochseen zusammen:
+            // jeder See hat sein eigenes Mix aus Sand-Strand und Fels-Ufer.
+        }
         // V18.230 (Ω-OPSIS Säule II Ω-O6) — die PFADE: die Fluss-Bänke sind
         // getrampelte, gepackte Erde (Gras wird zusätzlich unterdrückt, s.
         // _buildVoxelChunkGrass). Lawful aus dem Drainage-Netz (_pathFieldAt).
         const pathF = this._pathFieldAt(x, z, y);
-        if (pathF > 0.01) mix(packedDirt, pathF * 0.6, DK.dirt);
+        if (pathF > 0.01) mix(packedDirt, pathF * 0.6);
         // DER WIESEN-GRUND (K53, `WIESEN_GRUND`): wo die Wache Grün sagt, deckt das Mittel des Halms den Grund, der Fleck
-        // (λ 7,7 m) lässt karge Stellen. Die Wache liest die Deckung des Stoffs, nie den Ton (w26-ferne-ton-4).
-        const gruen = ss(0, WG.schwelle, d);
+        // (λ 7,7 m) lässt karge Stellen.
+        const WG = AnazhRealm.WIESEN_GRUND;
+        const gruen = ss(0, WG.schwelle, c[1] - 0.5 * (c[0] + c[2]));
         if (gruen > 0) {
             const fleck = (sandNoise.noise2D(x * 0.13 + 5.3, z * 0.13 - 2.9) + 1) * 0.5;
             mix(WG.farbe, gruen * (0.5 + 0.5 * fleck));
@@ -2462,41 +2444,7 @@ class AnazhRealm_gelaende_boden {
         out[0] = c[0];
         out[1] = c[1];
         out[2] = c[2];
-        // die Deckung des Stoffs (vor dem Fels-Stoff des Netzes): der Chunk trägt sie je Vertex (`_attachVoxelFieldColors`)
-        if (aus) {
-            aus.deckung = d;
-            aus.nass = n;
-        }
         return out;
-    }
-
-    // DER STRAND (w27-ferne-ton-5): das Gewicht des Sands am Ufer bei (x, z) auf dem Boden y, 0 … 0,8 — die EINE Stelle, an der
-    // die Welt „hier liegt Sand“ sagt. Ein Glocken-Profil über dem Wasser über beiden Bezügen (`_waterLevelAt` → `uf`: See/Meer
-    // voll, der Fluss mit seiner Kronen-Blende; ohne `uf` fragt der Leser selbst), drei Rausch-Modulationen statt einer
-    // Schwelle: (a) Breite (λ~570 m), (b) Intensität (λ~290 m), (c) karge Fels-Ufer ohne Sand (jeder See trägt sein eigenes Mix
-    // aus Strand und Fels). Die Glocke trägt bis 0,6 + 1,9 m — das Fenster schneidet sie nie. Leser: die Farbe und die Deckung
-    // des Bodens (`_bodenFarbeAt`; der Faden rechnet dieselben Zahlen, `bodenFarbe`) und der Stoff unter Rad, Huf und Schritt
-    // (`_fahrHaft`, `_kontaktStoffAt`: die Zeile sand). Bis hierher malte nur die Farbe den Strand: die Haftung las ihn über den
-    // Ton des Sands als 61 % Wiese (μ Gras), nach der Deckung des Stoffs (w26-ferne-ton-4) als Erde (μ 0,7).
-    _strandAt(x, z, y, uf) {
-        if (!uf) {
-            uf = { see: 0, fluss: null, ufer: 0 };
-            this._waterLevelAt(x, z, uf);
-        }
-        const aboveWater = y - uf.see;
-        const aboveFluss = uf.fluss !== null ? y - uf.fluss : null;
-        const imStrand = (a) => a !== null && a > -1.3 && a < 2.5;
-        if (!(imStrand(aboveWater) || (uf.ufer > 0 && imStrand(aboveFluss)))) return 0;
-        const sandNoise = this._gelaende().noise;
-        const widthNoise = (sandNoise.noise2D(x * 0.0018, z * 0.0018) + 1) * 0.5; // [0, 1]
-        const intenseNoise = (sandNoise.noise2D(x * 0.0034 + 17, z * 0.0034 - 9) + 1) * 0.5;
-        if (!(widthNoise > 0.18)) return 0; // die karge Stelle: Stein und Erde gewinnen
-        const width = 0.5 + 1.4 * widthNoise; // [0.5, 1.9] m
-        const intensity = 0.25 + 0.55 * intenseNoise; // [0.25, 0.8]
-        const glocke = (a) => Math.max(0, 1 - Math.abs(a - 0.6) / width);
-        let shoreBlend = glocke(aboveWater);
-        if (aboveFluss !== null) shoreBlend = Math.max(shoreBlend, uf.ufer * glocke(aboveFluss));
-        return shoreBlend * intensity;
     }
 
     // Test-Chunk (`voxel test`): ein Voxel-Chunk wird neben dem Spieler gemesht und in die Szene gestellt

@@ -443,7 +443,7 @@ function spiegelPartner(m, W, H, s) {
         if (v[2] >= 0.99999) for (let k = 0; k < 3; k++) P[p * 3 + k] = C[k] + (P[p * 3 + k] - C[k]) * 1e4;
         if (m[p] === 1) ys.push(hoch(p));
     }
-    const yw = rang(ys.sort(aufsteigend));
+    const yw = rang(ys.sort((a, b) => a - b));
     const partner = new Int32Array(W * H).fill(-1),
         nah = new Float32Array(W * H).fill(Infinity);
     for (let p = 0; p < W * H; p++) {

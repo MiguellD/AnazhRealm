@@ -1017,8 +1017,8 @@ async function checkBandWave4({ page, check }) {
         check("Welle 4 P1: 10 Tag-Achsen", wave4p1Results.tagKeyCount === 10);
         check("Welle 4 P1: 6 Built-in-Materialien existieren", wave4p1Results.expectedBuiltIns);
         check(
-            "Welle 4 P1: Built-in-Anzahl exakt 22 (6 Bau + 5 Körper + laub + erde + kraut/essenz + stahl/blech/leib + gras/wasser/eis/sand)",
-            wave4p1Results.builtInCount === 22
+            "Welle 4 P1: Built-in-Anzahl exakt 21 (6 Bau + 5 Körper + laub + erde + kraut/essenz + stahl/blech/leib + gras/wasser/eis)",
+            wave4p1Results.builtInCount === 21
         );
         check("Welle 4 P1: Alle Tag-Werte 0..1", wave4p1Results.tagsInRange);
         check(

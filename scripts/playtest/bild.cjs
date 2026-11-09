@@ -1555,7 +1555,7 @@ async function checkBandWetterVektor({ page, check }) {
 }
 
 // Look-Physik — eingefaltet aus look-lens: Schöpfer 25.06. „die Realität kann man messen — wieso also hängt der Look
-// von MIR ab?" Die CPU-lesbaren Look-KONSTANTEN gegen reale physikalische Bereiche: Gras-Albedo (das Blatt aus dem Spektrum 0,03–0,15,
+// von MIR ab?" Die CPU-lesbaren Look-KONSTANTEN gegen reale physikalische Bereiche: Gras-Albedo (Vegetation ~0,15–0,30,
 // grün-dominant, MEADOW_GREEN linear), Wetter dimmt Licht monoton, Koschmieder-Luft, die Tonkurve der EINEN
 // Eichung (Lehre 21, F1) und lineares Farb-Management.
 async function checkBandLookPhysik({ page, check }) {
@@ -1578,11 +1578,9 @@ async function checkBandLookPhysik({ page, check }) {
     // 1) Gras-Albedo: MEADOW_GREEN ist LINEAR (ein zweites Dekodieren drückte die Wiese auf 0,012)
     const m = Array.isArray(b.meadow) && b.meadow.length === 3 ? b.meadow : null;
     const lum = m ? 0.2126 * m[0] + 0.7152 * m[1] + 0.0722 * m[2] : NaN;
-    // der Real-Bereich aus dem Spektrum (FARB_SPEKTRUM): das Grasblatt Y 0,115 (PROSPECT-D), die Kachel „foliage“ 0,137, die
-    // Wurzel im Schatten des Büschels 0,6 × das Blatt — bis w26-ferne-ton-2 „0,15–0,30“, der Bereich des Neon-Halms
     check(
-        "Look-Physik: Gras-Albedo grün-dominant + im Real-Bereich (Grasblatt und Wurzel 0,03–0,15)",
-        !!m && m[1] > m[0] && m[1] > m[2] && lum > 0.03 && lum < 0.15,
+        "Look-Physik: Gras-Albedo grün-dominant + im Real-Bereich (Vegetation ~0,15–0,30)",
+        !!m && m[1] > m[0] && m[1] > m[2] && lum > 0.08 && lum < 0.55,
         m ? `MEADOW_GREEN=[${m}] · lum(linear)=${lum.toFixed(3)}` : "MEADOW_GREEN fehlt"
     );
     // 2) Wolken dämpfen das Licht, 3) die Wetter-Intensität ist EINE Achse

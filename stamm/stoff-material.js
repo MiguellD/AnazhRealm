@@ -1861,19 +1861,15 @@ class AnazhRealm_stoff_material {
         // eigenen Schlüssel: dieselbe Vertex-Eingabe (vec4 nach dem Puffer), sein eigener Weg.
         const normal4 = T.attribute("normal", "vec4");
         normal4.getHash = () => "normal:vec4";
-        // der Stoff des Grunds (w27-ferne-ton-5, `aStoff` snorm8x4): x die Deckung der Narbe, y die Nässe des Grunds
-        const stoff = T.attribute("aStoff", "vec4");
         this._bodenStufenK = {
             f,
             abstand,
-            // die Ziel-Farbe reist als 8-bit-Gamma (`BODEN_SATZ_ATTR` gamma8: √c) — linear ist ihr Quadrat
-            farbe: T.mix(farbe4.xyz, fZ4.xyz.mul(fZ4.xyz), f),
+            farbe: T.mix(farbe4.xyz, fZ4.xyz, f),
             normalWelt: T.normalize(T.modelNormalMatrix.mul(nLokal)),
             himmel: nZ4.w,
             schutt: fZ4.w,
             // die Mulde des Gesetzes (wetter.K2, gelaende-core `muldeEcken`) in der vierten Komponente der Normale
             mulde: normal4.w,
-            stoff,
         };
         return this._bodenStufenK;
     }
@@ -2869,25 +2865,16 @@ class AnazhRealm_stoff_material {
             // (Fels/Geröll) bleibt terrain-eigen. objectLocal:false (absolute Welt-Höhe). Feucht-/Grün-Treiber
             // × Flachheit speisen das Moos; `wp·0.16` = welt-kohärente Feature-Skala (naht-frei).
             const _flat = _T.float(1.0).sub(_steep);
-            // DIE WACHE LIEST DEN STOFF DES GRUNDS, NIE DIE ALBEDO (w27-ferne-ton-5): der Chunk-Boden trägt ihn je Vertex (`aStoff`
-            // im Satz, `_bodenStufenKnoten`: die Deckung der Narbe und die Nässe des Grunds nach dem Fels-Stoff — dieselben Zahlen,
-            // aus denen die Boden-Karte ihr Grün rastert und Halm, Rad und Schritt lesen). Bis hierher rechnete das Fragment beide
-            // aus der Farbe: das Grün aus g − (r+b)/2 (Schwelle 0,04), die Nässe aus der Luminanz (0,05 … 0,09) — der Sand trug so
-            // 100 % Halm-Relief (g − (r+b)/2 = 0,040), der Bestand aus dem Spektrum nur 50 % (0,020), und jede Wiese der dunklen
-            // Palette (Luminanz 0,043 … 0,064) las als nasse Niederung: Moos auf jeder Wiese. Halm-Relief, Moos und Glanz sind das
-            // RELIEF DER NÄHE: sie tragen 1 am Fuß → 0 bei 90 m (`_nah`), jenseits zeichnet der Boden die Farbe des Gesetzes — der
-            // Fern-Ring (er beginnt jenseits, ohne Stoff im Vertex) trägt keins, Chunk-Boden und Ring lesen an ihrer Naht EINE Zahl.
-            const _stoff = felsImVertex ? this._bodenStufenKnoten().stoff : null;
-            const _nah = _T.float(1.0).sub(_camD.mul(_T.float(1.0 / 90.0)).clamp(0.0, 1.0)); // 1 am Fuß → 0 bei 90 m
-            const _green = _stoff
-                ? _T.smoothstep(_T.float(0.0), _T.float(AnazhRealm.WIESEN_GRUND.schwelle), _stoff.x)
-                : _T.float(0.0);
-            const _damp = _stoff ? _stoff.y.clamp(0.0, 1.0) : _T.float(0.0);
+            const _g2 = _out.y;
+            const _rb2 = _out.x.add(_out.z).mul(0.5);
+            const _lum2 = _out.x.mul(0.3).add(_out.y.mul(0.59)).add(_out.z.mul(0.11));
+            const _green = _T.smoothstep(_T.float(0.0), _T.float(G.gruenSchwelle), _g2.sub(_rb2));
+            const _damp = _T.float(1.0).sub(_T.smoothstep(_T.float(G.mossDampLo), _T.float(G.mossDampHi), _lum2));
             const _gMoss = au && au.geoMoss ? au.geoMoss : _T.float(1.0);
-            const _mossDrive = _green.mul(_damp).mul(_gMoss).mul(_T.float(G.mossMax)).mul(_nah);
+            const _mossDrive = _green.mul(_damp).mul(_gMoss).mul(_T.float(G.mossMax));
             // Feuchte-Glanz: eine nasse, KAHLE Niederung (damp hoch, nicht grün) glänzt (niedrigere Rauheit);
             // Moos bleibt matt. Aus DEMSELBEN Feld, das das Moos treibt.
-            const _wetDrive = _damp.mul(_T.float(1.0).sub(_green)).mul(_nah).clamp(0.0, 1.0);
+            const _wetDrive = _damp.mul(_T.float(1.0).sub(_green)).clamp(0.0, 1.0);
             // (Die „trockenen braun-gelben Flecken" — Albedo × (1,32 · 1,12 · 0,6) auf jedem nicht-grünen, nicht-
             // feuchten Boden — sind gefallen: sie färbten die Laubstreu orange, Farben außerhalb der Palette.)
             // DER WIESEN-GRUND liegt im Gesetz (K53, `_bodenFarbeAt` · `attachFieldColors`, `WIESEN_GRUND`): der Vertex trägt das
@@ -2904,14 +2891,15 @@ class AnazhRealm_stoff_material {
             // der Fragment-Zwilling, der grüne feuchte Niederungen zum dunklen Wald-Kern-Ton zog, ist gefallen.)
             // Gras als Oberflächen-Funktion: keine Halm-Geometrie — die Wiese lebt als hochfrequente Blatt-
             // Schattierung des Bodens, NAH eingeblendet (fern trägt der Meadow-Grund). ≈0 Kosten (Noise + Mix),
-            // DIESELBEN Gras-Farben wie das Nah-Gras. Nur wo der Vertex den Stoff trägt (der Chunk-Boden): der Fern-Ring liegt
-            // jenseits der Nähe und zahlt die acht Schichten nicht.
-            if (_stoff) {
+            // DIESELBEN Gras-Farben wie das Nah-Gras.
+            {
                 // Die Wiese mit Tiefe: die Halme sind eine PARALLAX-FUNKTION — ein Halm-Noise-Höhenfeld, das der
                 // Blick in 8 Schichten durchsticht (Relief-March): hohe Halme fangen den Strahl früh (helle Spitze),
                 // Lücken lassen ihn zum dunklen Wurzelgrund. Das Höhenfeld wird per smoothstep an die ECHTE
                 // mx_noise-Verteilung (eng um 0.5) gemappt — sonst kollabiert es auf 1-2 Schichten. Halm-Frequenz
                 // 9/m (~11-cm-Büschel), Büschel-Maske 2.7/m; die Farben MEADOW_GREEN → GRAS_SPITZE.
+                const _camD = wp.sub(_T.cameraPosition).length();
+                const _nah = _T.float(1.0).sub(_camD.mul(_T.float(1.0 / 90.0)).clamp(0.0, 1.0)); // 1 am Fuß → 0 bei 90 m
                 const _blick = wp.sub(_T.cameraPosition).normalize(); // Auge → Boden
                 // Schräg-Projektion: flacher Blick wandert weit durch die Halm-Schicht
                 // (starke Parallaxe), steiler Blick kaum — der 0.18-Boden hält die
@@ -3009,7 +2997,7 @@ class AnazhRealm_stoff_material {
             });
             if (roughOut && _r.roughNode) roughOut.node = _r.roughNode;
             // der Bestand der Wiese (`_green`, derselbe Treiber wie Moos und Halm-Schicht): der Grund der Wiese liest ihn (`_wieseGrund`)
-            if (roughOut) roughOut.gruen = _stoff ? _green : null;
+            if (roughOut) roughOut.gruen = _green;
             return _r.albedo;
         } catch (_e) {
             throw this._stoffBruch("die Boden-Geologie", _e);

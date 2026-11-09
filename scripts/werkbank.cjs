@@ -3498,7 +3498,7 @@ hauptLauf(async () => {
         if (SELBST) process.exit(0);
         const halt = await eigeneWelt();
         const seite = async (f, o) =>
-            ergebnis(await evalRuf(`const ${["kantenLinie", "luftBetaRef", "luftAufgeloest", "farbTon", "tonDesBands", "tonDerFerne"].map((n) => `${n} = ${LL[n]}`)}; return await (${f})(${JSON.stringify(o)});`));
+            ergebnis(await evalRuf(`const kantenLinie = ${LL.kantenLinie}, luftBetaRef = ${LL.luftBetaRef}, luftAufgeloest = ${LL.luftAufgeloest}, farbTon = ${LL.farbTon}, tonDesBands = ${LL.tonDesBands}; return await (${f})(${JSON.stringify(o)});`));
         const wort = opt("--wetter");
         const zug = wort && argv.includes("--zug");
         const mittag = { ...ref, uhren: [0.5] };
@@ -3523,9 +3523,8 @@ hauptLauf(async () => {
         if (zug) endeMit(`ZUG ${w.zug.gruen ? "GRUEN" : "ROT"} · Sprung ${JSON.stringify(w.zug.sprung)} EV/s (Soll ≤ ${ref.wetter.zugEvS}) · klar → ${wort} → klar gezogen ${w.zug.gezogen}, ${m.reihe.length} s`, w.zug.gruen);
         if (wort) endeMit(`SICHT ${w.sicht.gruen ? "GRUEN" : "ROT"} · Sicht im Wetter ${wort} ${w.sicht.ist} m (Soll ${ref.wetter.sichtSturmM} ±${ref.wetter.band * 100} %, ${w.sicht.n} Azimute)`, w.sicht.gruen);
         const u = LL.luftTiefeUrteil(m, ref);
-        console.log("  FARBTON 8 km K1-2", u.staffel["K1-2"], "je Uhr/Azimut", m.zeilen.map((z) => `${z.uhr}/${z.az} ${z.baender[3]?.dh}°`).join(" "));
-        for (const b of u.befunde) console.log("  ROT " + b);
-        endeMit(`LUFT ${u.urteil} · ${Object.entries(u.staffel).map((e) => e.join(" ")).join(" · ")}`, u.urteil === "GRUEN");
+        for (const b of u.befunde.map((x) => "ROT " + x).concat(u.offen.map((x) => "OFFEN " + x))) console.log("  " + b);
+        endeMit(`LUFT ${u.urteil} · ${Object.entries(u.staffel).map((e) => e.join(" ")).join(" · ")} (offen: ${Object.keys(ref.offen).join(", ")})`, u.urteil === "GRUEN");
     } else if (cmd === "licht" && hat("laub")) {
         // DAS LAUB IM GEGENLICHT: je Art der nächste Baum, der Spieler am Augen-Ort (die Stufe folgt ihm), Gegenlicht
         // gegen Auflicht; das Urteil `laubLichtUrteil` (≥ 1,3, Labor ± 10 % wo gemessen). `--selbsttest` ohne Welt.

@@ -380,8 +380,7 @@ async function checkBandVoxelTerrainCore({ page, check }) {
             }
         out.voxelGrassBuilt = grassEntries > 0;
         // Die Wiese ist BODEN-FUNKTION (Parallax-Halme im Terrain-Shading), keine Halm-Geometrie: jede
-        // Gras-Zelle verbucht 0 Halme UND das Boden-Albedo ruft die Halm-Schicht (die Ebene des Rausch-Atlas, Konsum am Ruf) —
-        // am Chunk-Boden (`felsImVertex`: sein Vertex trägt den Stoff des Grunds, aus dem die Wache liest, w27-ferne-ton-5)
+        // Gras-Zelle verbucht 0 Halme UND das Boden-Albedo ruft die Halm-Schicht (die Ebene des Rausch-Atlas, Konsum am Ruf).
         const T = window.THREE.TSL;
         out.voxelGrassIsSurface =
             grassEntries > 0 &&
@@ -390,8 +389,6 @@ async function checkBandVoxelTerrainCore({ page, check }) {
                 T,
                 T.attribute("color", "vec3"),
                 T.positionWorld,
-                null,
-                true,
             ]);
         // _voxelSurfaceY: liefert eine endliche Höhe AUF dem Nulldurchgang (interpoliert wie die
         // Mesh-Kante) — 0,6 m darunter Grund, 0,6 m darüber Luft.

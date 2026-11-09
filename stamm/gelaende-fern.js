@@ -775,9 +775,9 @@ class AnazhRealm_gelaende_fern {
         if (st.scene) st.scene.add(mesh);
     }
 
-    // Die Farbe je Art der Antwort: das Kronendach der Art aus dem Spektrum (`_fernKroneArt`, für die fünf Wald-Arten
-    // `_fernLaubLinear`). Dazu das Jahr der Art (w21-laub-jahr-fern): ob sie ihr Laub wirft und ihre Rinde (der Wipfel `barkB`,
-    // × die Selbstbeschattung der kahlen Krone `FERN_FARBE.kronenSchatten`).
+    // Die Farbe je Art der Antwort: die Studio-Laubfarbe linear (`_fernLaubLinear` für die fünf Wald-Arten, sonst der Phänotyp
+    // der Art) × die Selbstbeschattung der Krone (`FERN_FARBE.kronenSchatten`, wie das Kronendach des Rings). Dazu das Jahr der
+    // Art (w21-laub-jahr-fern): ob sie ihr Laub wirft und ihre Rinde (der Wipfel `barkB`, × dieselbe Selbstbeschattung).
     _kammKroneLaub(arten) {
         const fuenf = ["baum_kiefer", "baum_tanne", "baum_eiche", "baum_birke", "baum_erle"];
         const L = this._fernLaubLinear();
@@ -792,7 +792,12 @@ class AnazhRealm_gelaende_fern {
             const d = a && globalThis.__phytoCore.artPhaenotyp(a.rec.s, a.rec);
             if (!d || !Number.isFinite(d.leafCol) || !Number.isFinite(d.barkB))
                 throw new Error("Kamm-Krone: Studio-Laubfarbe oder -Rinde fehlt für " + sp);
-            laub.push(i >= 0 ? L[i] : this._fernKroneArt(d));
+            let rgb = i >= 0 ? L[i] : null;
+            if (!rgb) {
+                c.setHex(d.leafCol);
+                rgb = [c.r, c.g, c.b];
+            }
+            laub.push([rgb[0] * S, rgb[1] * S, rgb[2] * S]);
             c.setHex(d.barkB);
             rinde.push([c.r * S, c.g * S, c.b * S]);
             wirft.push(d.conifer ? 0 : 1);
@@ -861,41 +866,15 @@ class AnazhRealm_gelaende_fern {
     // ohne Studio-Laub bricht die Fern-Farbe laut.
     _fernLaubLinear() {
         if (this._fernLaubLin) return this._fernLaubLin;
-        this._fernLaubLin = this._fernWaldPhaenotypen().map((d) => this._fernKroneArt(d));
-        return this._fernLaubLin;
-    }
-    // die Phänotypen der fünf Wald-Arten (Laubfarbe und Typ), laut ohne Studio-Laubfarbe
-    _fernWaldPhaenotypen() {
-        return ["baum_kiefer", "baum_tanne", "baum_eiche", "baum_birke", "baum_erle"].map((art) => {
+        const c = new THREE.Color();
+        this._fernLaubLin = ["baum_kiefer", "baum_tanne", "baum_eiche", "baum_birke", "baum_erle"].map((art) => {
             const a = this._phytoArt(art);
             const d = a && globalThis.__phytoCore.artPhaenotyp(a.rec.s, a.rec);
             if (!d || !Number.isFinite(d.leafCol)) throw new Error("Fern-Farbe: Studio-Laubfarbe fehlt für " + art);
-            return d;
+            c.setHex(d.leafCol);
+            return [c.r, c.g, c.b];
         });
-    }
-    // DIE KRONE DER FERNE JE ART (w26-ferne-ton-3): das Kronendach ihres Typs aus dem Spektrum (Kern KRONEN_FARBE, Laub oder
-    // Nadel nach dem Phänotyp; 4SAIL über PROSPECT-D) × das Verhältnis ihrer Studio-Laubfarbe zum Mittel der Wald-Arten desselben
-    // Typs — die Birke bleibt heller als die Eiche, das Dach trägt die gemessene Farbe. Bis hier die Studio-Laubfarbe (das Hex der
-    // Absicht, Eiche grün 0,195) × `kronenSchatten` 0,32 — der Hand-Faktor fällt fürs Laub, die kahle Rinde behält ihn.
-    _fernKroneArt(d) {
-        const K = AnazhRealm.Gesetz("terrain:KRONEN_FARBE", null);
-        if (!K || !Array.isArray(K.laub) || !Array.isArray(K.nadel))
-            AnazhRealm._kernPflichtBruch("terrain:KRONEN_FARBE");
-        const lin = (hex) => AnazhRealm._srgbHexLinear(hex);
-        if (!this._fernKroneMittel) {
-            const M = { laub: [0, 0, 0, 0], nadel: [0, 0, 0, 0] };
-            for (const w of this._fernWaldPhaenotypen()) {
-                const m = M[w.conifer ? "nadel" : "laub"];
-                lin(w.leafCol).forEach((v, i) => (m[i] += v));
-                m[3]++;
-            }
-            for (const m of Object.values(M))
-                if (!(m[3] > 0)) throw new Error("Fern-Farbe: ein Typ der Krone ohne Wald-Art");
-            this._fernKroneMittel = M;
-        }
-        const typ = d.conifer ? "nadel" : "laub";
-        const M = this._fernKroneMittel[typ];
-        return lin(d.leafCol).map((v, i) => (K[typ][i] * v * M[3]) / M[i]);
+        return this._fernLaubLin;
     }
 
     // DAS JAHR DER FÜNF WALD-ARTEN (w21-laub-jahr-fern, die Folge von `_fernLaubLinear`): je Art ihre Rinde (der Wipfel `barkB`

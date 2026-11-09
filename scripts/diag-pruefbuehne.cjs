@@ -821,10 +821,14 @@ const S0_TON = { hue: [28, 45], satMax: 0.75, palette: { hex: 0xff7a35, nacht: 1
 // der Rest wieder in sRGB — unter der Tonkurve Khronos PBR Neutral (linear bis zur Schulter, der Schwarzpunkt fällt in der
 // Differenz) ist das das Licht des Feuers auf dem Boden (die Differenz der sRGB-Werte zöge die Nacht nichtlinear ab).
 const { srgbLin: s0Lin, linSrgb: s0Srgb, luma709 } = require("./lib/abnahme-urteil.cjs");
-const { farbTon, hsvTon } = require("./lib/licht-linsen.cjs");
 function s0TonNetto(e, ohne) {
     if (!e || !e.ton || !ohne || !ohne.ton) return null;
-    return hsvTon(e.ton.rgb.map((c, i) => s0Srgb(Math.max(0, s0Lin(c) - s0Lin(ohne.ton.rgb[i])))));
+    const [R, G, B] = e.ton.rgb.map((c, i) => s0Srgb(Math.max(0, s0Lin(c) - s0Lin(ohne.ton.rgb[i]))));
+    const mx = Math.max(R, G, B);
+    const dl = mx - Math.min(R, G, B);
+    let hue = 0;
+    if (dl > 0) hue = mx === R ? 60 * (((G - B) / dl + 6) % 6) : mx === G ? 60 * ((B - R) / dl + 2) : 60 * ((R - G) / dl + 4);
+    return { hue: +hue.toFixed(1), sat: +(mx > 0 ? dl / mx : 0).toFixed(3), rgb: [R, G, B].map((c) => Math.round(c * 255)) };
 }
 // der Ton des Schusses `e` gegen den Schuss ohne Feuer `ohne`: Farbton netto, Sättigung brutto
 function s0Ton(e, ohne) {
@@ -858,7 +862,7 @@ const S0_STOFF = (() => {
 // Boden derselben Sitzung, (b) sein Weg ist synchron.
 const S0_MS = { maxMs: 250, relativ: 1.1, ruhe: 1.3, n: 9, main: { "amd/rdna-3": 721, "nvidia/pascal": 1132 } };
 function s0BodenUrteil(name, p, bezug) {
-    const [ms, mitte] = [Math.min(...p.ms), rang([...p.ms].sort(aufsteigend))];
+    const [ms, mitte] = [Math.min(...p.ms), rang([...p.ms].sort((x, y) => x - y))];
     const [decke, last] = [Math.max(S0_MS.maxMs, S0_MS.relativ * bezug || 0), mitte > S0_MS.ruhe * ms];
     return [
         p.weg !== "asynchron" && `${name}: die Pipeline entstand ${p.weg}, nie asynchron wie jede der Erst-Zeichnung (\`_renderObjectDirect\`)`,
@@ -1099,8 +1103,6 @@ async function lichtLauf() {
         process.exit(1);
     };
     const page = await browser.newPage();
-    // der EINE Farbton (licht-linsen `farbTon`) für den Ton der Feuer-Probe in der Seite
-    await page.evaluateOnNewDocument(`window.farbTon = ${farbTon}; window.hsvTon = ${hsvTon};`);
     await page.evaluateOnNewDocument(s0PipeRegister);
     // der Speicher fällt vor dem ersten Skript des ERSTEN Ladens (ein Laden weniger als Laden → Löschen → Neu laden)
     await page.evaluateOnNewDocument(() => {
@@ -1424,7 +1426,21 @@ async function lichtLauf() {
                         nt++;
                     });
                     let ton = null;
-                    if (nt) ton = Object.assign(hsvTon(rgb.map((c) => c / nt)), { punkte: nt / 9 });
+                    if (nt) {
+                        const [R, G, B] = rgb.map((c) => c / nt);
+                        const mx = Math.max(R, G, B);
+                        const mn = Math.min(R, G, B);
+                        const dl = mx - mn;
+                        let hue = 0;
+                        if (dl > 0)
+                            hue = mx === R ? 60 * (((G - B) / dl + 6) % 6) : mx === G ? 60 * ((B - R) / dl + 2) : 60 * ((R - G) / dl + 4);
+                        ton = {
+                            hue: +hue.toFixed(1),
+                            sat: +(mx > 0 ? dl / mx : 0).toFixed(3),
+                            rgb: [R, G, B].map((c) => Math.round(c * 255)),
+                            punkte: nt / 9,
+                        };
+                    }
                     const pool = r._leuchtPool?.plaetze || [];
                     // die Programme und Pipelines (ein Wechsel der Plätze baut keins: Pool voll und leer zählen gleich)
                     const PL = rend._pipelines;
