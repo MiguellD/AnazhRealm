@@ -1278,9 +1278,13 @@ async function starte() {
                 // Bewohner — teilt sich in `<leib>:kopf/<Stoff>` und `<leib>:leib/<Stoff>`; wählt der Ausdruck den Leib selbst
                 // (`^spieler$`), ist er EINE Klasse, sonst zeigt die Teilung jeden Stoff des Kopfs für sich (`^bewohner:kopf/`).
                 // Bis w4-bewohner-wache teilte die Werkbank selbst, nur den Spieler und nur unter `--gesicht`
+                // DAS HOLZ IST EIN AUSSEN (w26-eiche-kante, lod.K1#1): die Klasse einer Foundry-Gruppe ist Art × Stufe
+                // (`_instanzKlasse` f:eiche|…|1:<teil>) — ihre Rinde trug den Namen ihres Laubs, und `laub`/`laub-kante` maßen den Stamm
+                // als Umriss der Krone (Spielgang, GTX 1050 30e94000: f:eiche:L1 0,3102 mit, 0,194 ohne Rinde — 2 726 Stamm-Pixel gegen
+                // die Wiese). Die Rinde heißt `<klasse>:holz`: ein Ausdruck, der sie meint, nennt sie; sonst steht sie als Außen
                 const teilName = (o) => {
                     const [grob, fein] = r._kopfKlasse(o);
-                    return re.test(grob) ? grob : fein;
+                    return (re.test(grob) ? grob : fein) + (o.material?.userData?.foundryKind === "bark" ? ":holz" : "");
                 };
                 const teile = new Map();
                 const nimm = (kl, o) => teile.set(kl, [...(teile.get(kl) || []), o]);
@@ -3240,13 +3244,6 @@ hauptLauf(async () => {
             ));
             const [ax, ay, az, bx, by, bz] = auge;
             urteil("Spielgang", (o = await rufe("/bild", { px: ax, py: ay, pz: az, lx: bx, ly: by, lz: bz, w: 1920, h: 1080, wahl: 0, klasse, datei: datei("spielgang") })));
-            // DIE KLASSE OHNE HOLZ (Befund): derselbe Schuss, die Rinde jeder Gruppe verborgen — misst die Klasse ihr Laub oder ihren Stamm?
-            await evalRuf("window.__holz = []; r.state.scene.traverse((m) => m.visible && m.material?.userData?.foundryKind === 'bark' && (window.__holz.push(m), (m.visible = false))); return window.__holz.length;");
-            try {
-                urteil("Spielgang ohne Holz", await rufe("/bild", { px: ax, py: ay, pz: az, lx: bx, ly: by, lz: bz, w: 1920, h: 1080, wahl: 0, klasse, datei: datei("ohne-holz") }));
-            } finally {
-                await evalRuf("for (const m of window.__holz) m.visible = true; return window.__holz.length;");
-            }
         } finally {
             halt?.();
         }
