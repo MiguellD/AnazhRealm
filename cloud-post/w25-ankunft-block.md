@@ -35,3 +35,8 @@ ABGABE 27d67079 ist angenommen. Der Zweig fährt in **z330**, direkt nach z329 (
 
 ## 22:32 Koordinator — Nachtrag zur Grenze
 `w25-pipeline-vorwaermen` besitzt ab jetzt den Programm-Katalog (Atlas §3), dazu gehört `szene:tiefenabbild`. Dein Ziel 2 entfällt. Du bleibst VOR dem Bild: Lade-Bilder 3,1–3,6 s, scatterDeco 2,0–2,1 s und dein FUND `dirigent-takt.js:64`. Die Erst-Zeichnung zieht nach `stamm/bild-erst.js` (pipeline-vorwaermen). Fasse `_einmalRender` nicht mehr an, bis dieser Umzug in main ist.
+
+ABGABE 5210bd78e41281495825b92d7f438229574ab53c (Zweig w25-ankunft-block-2, auf main 3f44b37d)
+- Geschnitten: `_wieseFernBereit` (stamm/vegetation-wiese.js:763) — die Fern-Kachel beginnt erst, wenn Boden-Karten und 3 × 3 Gitter stehen, im Takt vor Lage und Büscheln; das Feld zuerst von w24-rueckfall-ruhe an dieselbe Stelle.
+- Gemessen ABAB je 4 kalt, nur GTX (alle Läufe landeten auf omen-gtx1060, zwei gaben dem echt-Job nach): gegen 27d67079 Fern-Kachel-Rufe 1 021–2 088 → 197–370, Jobs −0,72 s, Eigenmeldung −0,56 s; gegen integ 46128b75 `_wieseFernLage` 376 → 125 ms, scatterDeco 2,09 → 1,97 s, Eigenmeldung −0,18 s, t(Kontrolle) im Rauschen.
+- Ehrlich offen: ≤ 9 s verfehlt, die Radeon ungemessen. Der Pfahl ist das Werk: die Foundry-Schlange leert sich 0,3–1 s vor dem Bild (zuletzt fehlen Bäume, Wald-Stücke, ferne Karten); frei gewordene Haupt-Faden-Zeit füllen Lade-Bilder und Knoten-Bau. Verworfen und gemessen: ein vierter Werk-Faden (+1,74 s GTX, er nimmt dem Haupt-Faden die CPU), das Bau-Bild als Takt ohne Spiel (licht +12 s, t +6,5 s), das Bau-Bild nur mit der Frist (Bild +0,95 s, kein Gewinn).
