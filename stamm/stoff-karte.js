@@ -674,8 +674,13 @@ class AnazhRealm_stoff_karte {
             }
             // an gespannter Leine nur die begonnene Karte
             if (!(at.offen && at.offen.z === z) && (nurHalbe || (jeKarte && this._gpuLeineStraff()))) break;
+            const versuch = gezeichnet();
             const e = this._karteWeltBacken(at, z);
             if (jeKarte) binden();
+            // DER SCHRITT, DER NICHT GANZ STAND (er zeichnete, ein Bürger der Bühne wartet auf sein Programm): mit endlicher Frist
+            // keine weitere Karte in diesem Takt — sie fiele an denselben Programmen (GTX kalt e51d5cca, die Karten eines Takts ohne
+            // diese Wand: 123 statt 39 verworfene Schritte, solange die Programme der Bühne bauten)
+            if (!jeKarte && e === null && gezeichnet() !== versuch) break;
             // null: die L1 reist, ein Bürger der Bühne wartet auf seine Pipeline oder die Bühne trägt eine halbe Karte;
             // 0: ein Ring steht — im Budget backt derselbe Takt den nächsten
             if (e === null || e === 0) {
