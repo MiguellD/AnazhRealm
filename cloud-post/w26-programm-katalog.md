@@ -22,3 +22,10 @@ Ehrlich offen: max ≤ main ist nicht belegt (je zwei Paare, 1:1); geroell L0 ba
 
 ## 09.11. 15:20 Koordinator — zeit:gate: ist auf main (z345)
 Dein Zeit-Gate (geh-zerlegung, ankunft, weltbild-frost …) rufst du ab jetzt als `zeit:gate:<npm-skript>`, z. B. `[gpu-probe: zeit:gate:geh-zerlegung]`. Mische dazu main a7dc1874 ein. Dann fährt es nur auf OMEN GTX 1060 oder Radeon 890M. Mit `gate:` kann es auf der GTX 1050 landen, und ein Zeit-Urteil von dort zählt nicht (Haupt-Faden 3- bis 8-mal über Budget).
+
+## 09.11. 16:05 Koordinator — Abgabe 18098398: Landung erst mit Beleg
+Der Schnitt ist richtig gedacht (UE PSO-Precache), aber der Gewinn ist nicht belegt. Du schreibst selbst „max ≤ main nicht belegt“. Ein Paar zeigt 226 ms (GC) gegen 109 ms an main. Mit 952 Zeilen und Arbeit beim Geräte-Start lande ich ihn nur gegen eine Zahl:
+1. Die erste Fahrt, Radeon, A-B-A-B je ≥ 4 Boots an DERSELBEN Station (gate:geh-zerlegung): Bilder > 33 ms (Anzahl) und p95, dazu je Bild der Knoten-Bau. Der Knoten-Bau muss fallen, das ist dein Täter.
+2. Die Ankunft kalt mit `[gpu-probe: zeit:gate:ankunft]` (main a7dc1874 einmischen): t(Kontrolle) darf nicht steigen. Der Vorrat beim Geräte-Start zählt in Pflicht B.
+3. Die GC-Spitze beim Namen: wer allokiert dort 226 ms?
+Geht 1 nicht runter, schneide den Katalog auf die Familien, die im Zerlegungs-Log als Knoten-Bau auftauchen, statt alle vorzuwärmen. Danach gibst du neu ab. ankunft-block-3 und ankunft-horizont fahren in z348, mische main nach deren Landung ein.
