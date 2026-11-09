@@ -1904,8 +1904,9 @@ class AnazhRealm_vegetation_wiese {
 
     // DIE SENKE der Nah-Wiese (neu oder gewachsen): je Vorlage × Stufe × Teil EINE InstancedMesh über der geteilten
     // Studio-Geometrie für den ganzen Ring. Sie wirft nicht (Budget schatten false); sie trägt den Bestand ihrer Familie
-    // (`_nahWieseBestand`), die Wahl der GPU zieht je Büschel und Pass; der Inhalt bis zur Anzahl reist mit, die alte verlässt
-    // Graph und GPU (`_instanzAbschied`). `eltern` = der Knoten der Senke.
+    // (`_nahWieseBestand`), die Wahl der GPU zieht je Büschel und Pass; der Inhalt bis zur Anzahl reist mit, die neue tritt in
+    // der Arena der alten an ihren Platz (`tauschen`), dann verlässt die alte Graph und GPU (`_instanzAbschied`). `eltern` =
+    // der Knoten der Senke.
     _senkeMesh(a, kap, eltern) {
         if (!eltern) throw new Error(`_senkeMesh(${a.name}): kein Eltern-Knoten`);
         const alt = a.mesh;
