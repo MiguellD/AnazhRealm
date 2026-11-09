@@ -263,7 +263,8 @@ function BAU_HAKEN() {
                     const straff = this._gpuLeineStraff() ? 1 : 0;
                     const q = (this._impostorBakeQueue || []).length;
                     const n = tkw.apply(this, arguments);
-                    if (vorBild()) N.kt.push([Math.round(t0), Math.round((performance.now() - t0) * 10) / 10, n, rest, straff, this._ladeBildTakt ? 1 : 0, q]);
+                    const h = this._bauHunger && this._bauHunger.get("karte");
+                    if (vorBild()) N.kt.push([Math.round(t0), Math.round((performance.now() - t0) * 10) / 10, n, rest, straff, this._ladeBildTakt ? 1 : 0, q, h ? h.hunger : -1]);
                     return n;
                 };
         }
