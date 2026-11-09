@@ -243,7 +243,7 @@ hauptLauf(async () => {
             // T9 — die Kappen des Lade-Takts: im Lade-Takt arbeiten die Leser der Klasse bis zur EINEN Frist. Der Selbsttest
             // fährt die Kappe allein (`_ladeFrist` −∞).
             const t9 = await (async () => {
-                const aus9 = { stromBau: 0, abschied: 0, satz: 0 };
+                const aus9 = { stromBau: 0, abschied: 0, satz: 0, wiese: 0 };
                 let zurueck = () => {};
                 try {
                     // die Klasse in EREIGNIS-Zeit: jede Uhr-Frage ist 1 ms (die Frist = 100 Fragen), je Leser eine Aufgabe (`await`)
@@ -310,17 +310,12 @@ hauptLauf(async () => {
                         r._dispatchFrameJobs([{ prio: 1, run: (ms) => (aus9.planer = ms) }, ...r._buildDeferrableJobs(st.playerMesh.position).filter((j) => j.name === "bewohner")], { remainingMs: () => 50 }); // prettier-ignore
                         AnazhRealm.prototype._pruneDistantVoxelChunks.call(r, { x: 1e5, z: 0 });
                         r._tickHuellenNach();
-                        // DIE FERNE DER WIESE (w26-fahrt-planer): zwölf Kacheln, je ein Werk von zwölf Schritten, das leer endet — abgelaufen
-                        // EIN Schritt; bis dahin war die ganze Kachel das Stück und zählte nur die gebaute, der Takt ging die ganze Bau-Liste
-                        const [nwAlt, zw] = [st.nahWiese, leihe(r, { _nahKachelWartet: () => false, _wieseFernLage: () => ({}), _nahWieseFernKachel: function* () { for (let i = 0; i < 12; i++) yield aus9.wiese++; return null; }, _wieseAuge: () => ({ x: 0, y: 0, z: 0, h: 1.5 }), _standStempel: () => 0 })]; // prettier-ignore
-                        try {
-                            const pz = st.lastPlayerVoxelChunk;
-                            st.nahWiese = { kacheln: new Map(), fern: { kacheln: new Map(), gitter: new Map(), bau: zwoelf.map((i) => ({ key: i + ",0", fx: i, fz: 0, d: 100 })), pruef: [0, r._karteRegung | 0, 1, pz ? pz.cx + "," + pz.cz : "", 0, 0, 1.5].join("|") } }; // prettier-ignore
-                            [aus9.wiese, uhr] = [0, uhr + 1];
-                            r._nahWieseFernTakt({ x: 0, y: 0, z: 0 }, uhr + Math.max(0, r._bauFrist("nahWiese") - uhr), 1);
-                        } finally {
-                            [st.nahWiese] = [nwAlt, zw()];
-                        }
+                        // DIE FERNE DER WIESE (w26-fahrt-planer): je Kachel ein Werk von zwölf Schritten, das leer endet — abgelaufen EIN
+                        // Schritt; bis dahin war die ganze Kachel das Stück und zählte nur die gebaute, der Takt ging die ganze Bau-Liste
+                        const [nwAlt, zw] = [st.nahWiese, leihe(r, { _nahKachelWartet: () => false, _wieseFernLage: () => ({}), _wieseAuge: () => ({}), _nahWieseFernKachel: function* () { for (let i = 0; i < 12; i++) yield aus9.wiese++; return null; } })]; // prettier-ignore
+                        st.nahWiese = { kacheln: new Map(), fern: { kacheln: new Map(), gitter: new Map() } };
+                        r._nahWieseFernTakt({ x: 0, z: 0 }, r._bauFrist() || uhr, 1);
+                        [st.nahWiese] = [nwAlt, zw()];
                         // DER SATZ (w25-stadt-takt-2): drei Raten zu je vier Stücken, das Alter einer Gruppe von acht — bis dahin legte er je
                         // Takt seinen eigenen Deckel (8 192 Ecken)
                         const g = { key: 9, satz: 9, liveCount: 1, mesh: { instanceMatrix: {} } };

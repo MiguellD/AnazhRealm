@@ -302,10 +302,11 @@ function grenzeWand(A) {
     // das Haus: ein GRUND des Erdbaus (das Format des Gelände-Kerns, `erdbauNormal`) als Daten — nie die Hüllen-Zeile des Wirts
     // (der Schlüssel `boxen` berechnet: die Hüllen-Form-Wand liest den Code ohne Texte)
     const haus = { art: "grund", cx: 0, cz: 120, phi: 0, ex: 3, ez: 3, saum: 0, y: 6, ["boxen"]: [[-3, 3, -3, 3, 0]] };
-    const w = weltVon(A, { nahWiese: { vorlagen: new Map([["0:L2", vl]]), reich: 0.775, fern: { gitter: new Map() } }, worldMeta: { erdbau: { haus: [haus] } } }); // prettier-ignore
+    const w = weltVon(A, { nahWiese: { kacheln: new Map(), vorlagen: new Map([["0:L2", vl], ["1:L2", vl]]), reich: 0.775, fern: { gitter: new Map(), kacheln: new Map() } }, worldMeta: { erdbau: { haus: [haus] } } }); // prettier-ignore
     const hoehe = (x, z) => 0.05 * x - 20 * (Math.abs(x + 20) < 0.2) - 5 * (Math.max(Math.abs(x + 56.3), Math.abs(z - 61.53)) < 0.75) + 6 * Math.max(0, 1 - ((x - 40) ** 2 + (z - 40) ** 2) / 144) + (x > 48) * Math.max(0, 4 - 0.8 * Math.abs(z + 60)); // prettier-ignore
-    Object.assign(w, { _bodenSichtAt: (x, z, aus) => (aus && (aus.gruen = 1), hoehe(x, z)), _pfadFeldAt: (x, z) => +(Math.abs(z + 30) < 2), _bodenSichtChunks: (...r) => A._wieseKarten(r), _feuchteAt: () => 0 }); // prettier-ignore
-    return [["frei", -60, 0, 99], ["gasse", -60, -26, 2], ["riss", -19, -60, 99], ["grube", -60, 60, 3.04], ["huegel", 46, 40, 4.24], ["haus", 0, 113, 3.74], ["kamm", 66, -60, 0.7]].flatMap(([name, x, z, rMax]) => { // prettier-ignore
+    let n = 0; // die Fragen des Felds (P-Wachs)
+    Object.assign(w, { _bodenSichtAt: (x, z, aus) => (n++, aus && (aus.gruen = 1), hoehe(x, z)), _pfadFeldAt: (x, z) => +(Math.abs(z + 30) < 2), _bodenSichtChunks: (...r) => A._wieseKarten(r), _feuchteAt: () => 0 }); // prettier-ignore
+    return wachsWand(w, () => n, (k) => (n = k)).concat([["frei", -60, 0, 99], ["gasse", -60, -26, 2], ["riss", -19, -60, 99], ["grube", -60, 60, 3.04], ["huegel", 46, 40, 4.24], ["haus", 0, 113, 3.74], ["kamm", 66, -60, 0.7]].flatMap(([name, x, z, rMax]) => { // prettier-ignore
         try {
             const b = { x, y: hoehe(x, z), z, s: 1, vorlage: 0, f: [1, 1, 1] };
             w._slopeAt(x, z, hoehe, 1, b, b.y); // die Ebene des Hangs (gx, gz) am Büschel
@@ -326,7 +327,7 @@ function grenzeWand(A) {
         } catch (e) {
             return [`P-Grenze ${name}: ${e.message}`];
         }
-    });
+    }));
 }
 
 // P-WACHS — DIE KACHEL WÄCHST (w26-fahrt-planer) an der echten Klasse: baut eine stehende Kachel der Ferne neu, weil das Auge
@@ -335,34 +336,26 @@ function grenzeWand(A) {
 // für ihre Scheibe: die Fragen des Wachsens und des Baus bis zum alten Anteil sind die des ganzen Baus (`_bodenSichtAt`
 // gezählt). Bis hier zog jeder Neubau jedes Büschel neu (an main fragt das Wachsen das ganze Feld). Das Werk der Kachel, dessen
 // stehende Kachel nach seinem ersten Schritt fällt, endet leer.
-function wachsWand(A) {
-    const G = A.constructor("return globalThis")();
-    const vl = { fuss: 0.52, flat: {}, fern: [{ lokal: new G.THREE.Matrix4() }] };
-    const w = weltVon(A, { nahWiese: { kacheln: new Map(), vorlagen: new Map([["0:L2", vl], ["1:L2", vl]]), reich: 0.775, fern: { gitter: new Map(), kacheln: new Map() } }, worldMeta: { erdbau: { haus: [] } } }); // prettier-ignore
-    let n = 0;
-    const hoehe = (x, z) => 0.05 * x + 2 * Math.sin(z / 9);
-    Object.assign(w, { _bodenSichtAt: (x, z, aus) => (n++, aus && (aus.gruen = 1), hoehe(x, z)), _pfadFeldAt: (x, z) => +(Math.abs(z + 30) < 2), _bodenSichtChunks: (...r) => A._wieseKarten(r), _feuchteAt: () => 0.4 }); // prettier-ignore
-    // das Werk der Kachel (`_nahWieseFernKachel`) gegangen; `mitte` läuft nach dem ersten Schritt (an main baut sie am Stück)
-    const geh = (x, mitte) => {
-        if (!x || typeof x.next !== "function") return x;
-        for (let r = x.next(), i = 0; ; r = x.next(), i++) if (r.done) return r.value; else if (!i && mitte) mitte(); // prettier-ignore
-    };
+function wachsWand(w, fragen, setze) {
     const fk = w.state.nahWiese.fern.kacheln;
-    const bau = (a, alt = null, mitte) => ((n = 0), [geh(w._nahWieseFernKachel(-3, -3, a, 0.775, 0, alt), mitte), n]);
-    const gleich = (a, b) => a.bueschel.length === b.bueschel.length && a.bueschel.every((x, i) => x.x === b.bueschel[i].x && x.z === b.bueschel[i].z && x.o === b.bueschel[i].o) && [a.grenze, a.basis].every((f, i) => f.length === [b.grenze, b.basis][i].length && f.every((v, j) => Object.is(v, [b.grenze, b.basis][i][j]))); // prettier-ignore
+    // je Bau die Kachel und die Fragen des Felds; das Werk gegangen, `mitte` nach seinem ersten Schritt (an main baut sie am Stück)
+    const bau = (a, alt, mitte) => {
+        setze(0);
+        let x = w._nahWieseFernKachel(-3, -3, a, 0.775, 0, alt);
+        for (let r; x && x.next; mitte = mitte && void mitte()) if ((r = x.next()).done) x = r.value;
+        return [x, fragen()];
+    };
+    const sig = (k) => JSON.stringify(k && [k.bueschel.map((b) => [b.x, b.z, b.o]), [...k.grenze], [...k.basis]]);
     try {
         w.state.nahWiese.kacheln.set("-6,-6", { bueschel: w._nahWieseKachelBueschel(-6, -6, 1) });
         bau(0.3); // die Gitter des Felds
-        const [[k1, nAb], [k2, nVoll]] = [bau(0.3), bau(0.6)];
+        const [[k1, nAb], [k2, nVoll], [k3]] = [bau(0.3), bau(0.6), bau(0.2)];
         fk.set("-3,-3", k1); // die stehende Kachel, auf der das Werk wächst
         const [k2w, nWachs] = bau(0.6, k1);
-        const [k3, k3w] = [bau(0.2)[0], bau(0.2, k1)[0]];
-        // DAS WERK ÜBER EINER GEFALLENEN KACHEL: fällt die stehende Kachel nach dem ersten Schritt, endet das Werk leer
-        const k4 = bau(0.6, k1, () => fk.delete("-3,-3"))[0];
-        const f = [!gleich(k2, k2w) && "wachsend nicht der Bau aus dem Nichts", !gleich(k3, k3w) && "schrumpfend nicht der Bau aus dem Nichts", nAb + nWachs !== nVoll && `die Scheibe fragt ${nWachs} statt ${nVoll - nAb} (das ganze Feld ${nVoll})`, !(k2.bueschel.length > k1.bueschel.length) && "ohne Scheibe", k4 && "das Werk baut über einer gefallenen Kachel"]; // prettier-ignore
-        return f.filter(Boolean).map((t) => `P-Wachs: ${t}`);
+        const f = [sig(k2) !== sig(k2w) && "wachsend nicht der Bau aus dem Nichts", sig(k3) !== sig(bau(0.2, k1)[0]) && "schrumpfend nicht der Bau aus dem Nichts", nAb + nWachs !== nVoll && `die Scheibe fragt ${nWachs} statt ${nVoll - nAb}`, bau(0.6, k1, () => fk.delete("-3,-3"))[0] && "das Werk baut über einer gefallenen Kachel"]; // prettier-ignore
+        return f.filter(Boolean).map((t) => "P-Wachs: " + t);
     } catch (e) {
-        return [`P-Wachs: ${e.message}`];
+        return ["P-Wachs: " + e.message];
     }
 }
 
@@ -397,8 +390,9 @@ function selbsttest() {
     const streu = { type: "Mesh", name: "", userData: { inventar: "streu-klein" }, parent: scene };
     const kl = S.klasse(nackt, st);
     const u1 = urteil([zensusZeile(kl, 1, 12)]);
+    // S1: unbenanntes Mesh → UNBENANNT:Mesh, LINSE rot
     t(
-        "unbenanntes Mesh → UNBENANNT:Mesh, LINSE rot",
+        "S1",
         kl === "UNBENANNT:Mesh" && hatRot(u1, "unbenannt") && u1.linse === "ROT" && S.klasse(streu, st) === "streu-klein"
     );
 
@@ -412,8 +406,9 @@ function selbsttest() {
         jeTris: { haupt: 1280, k0: 1280, k1: 1280 },
         dMax: d,
     });
+    // S2: fscatter:geroell:3:0 bei 200 m → rot, bei 40 m nicht
     t(
-        "fscatter:geroell:3:0 bei 200 m → rot, bei 40 m nicht",
+        "S2",
         kg === "fscatter:geroell:L0" &&
             hatRot(urteil([geroell(200)]), "stufe") &&
             !hatRot(urteil([geroell(40)]), "stufe")
@@ -429,8 +424,9 @@ function selbsttest() {
         je: { haupt: c },
         jeTris: { haupt: c * 10 },
     });
+    // S3: Boden haupt 8 Befehle über Ratsche 5 (+2) → rot, 7 nicht, 5 nicht
     t(
-        "Boden haupt 8 Befehle über Ratsche 5 (+2) → rot, 7 nicht, 5 nicht",
+        "S3",
         hatRot(urteil([boden(8)], r3), "ratsche") &&
             !hatRot(urteil([boden(7)], r3), "ratsche") &&
             !hatRot(urteil([boden(5)], r3), "ratsche")
@@ -443,8 +439,9 @@ function selbsttest() {
     h4b.klassen.find((k) => k.id === "reserve").rest = true;
     const h4c = jsonKlon(haushalt);
     h4c.klassen.find((k) => k.id === "bau").regeln.push({ muster: "^g:(glut|tor)" });
+    // S4: Haushalt +1 Befehl über dem Band, `rest`, Muster ohne Anker → rot; der echte Haushalt nicht
     t(
-        "Haushalt +1 Befehl über dem Band, `rest`, Muster ohne Anker → rot; der echte Haushalt nicht",
+        "S4",
         BAND.haushaltPruefen(h4).fehler.some((f) => /über dem Band/.test(f)) &&
             BAND.haushaltPruefen(h4b).fehler.some((f) => /Sammelzeile/.test(f)) &&
             BAND.haushaltPruefen(h4c).fehler.some((f) => /ohne Anker/.test(f)) &&
@@ -457,8 +454,9 @@ function selbsttest() {
         zensusZeile("neuerSatz", 3, 9),
         zensusZeile("g:torus:L0", 1, 9, 0),
     ]);
+    // S5: neuerSatz und g:torus:L0 ohne Regel → rot `haushalt` (2 Befunde)
     t(
-        "neuerSatz und g:torus:L0 ohne Regel → rot `haushalt` (2 Befunde)",
+        "S5",
         u5.rot.filter((x) => x.art === "haushalt").length === 2 && u5.linse === "ROT"
     );
 
@@ -468,8 +466,9 @@ function selbsttest() {
         mb: 1,
         liste: [{ k: "tex:karte-albedo:eiche|#|summer rgba8unorm-srgb 1024x256x1", mb: 1, n: 1 }],
     });
+    // S7: tex:? → rot, karte-albedo nicht; die EINE Faltung: r184-ausgabe und kaskade0 ganz, bindingBuffer1381_ → bindingBuffer
     t(
-        "tex:? → rot, karte-albedo nicht; die EINE Faltung: r184-ausgabe und kaskade0 ganz, bindingBuffer1381_ → bindingBuffer",
+        "S7",
         hatRot(u7, "unbenannt") &&
             !u7b.rot.length &&
             u7b.vram.erzeuger[0].erzeuger === "tex:karte-albedo" &&
@@ -503,8 +502,9 @@ function selbsttest() {
             ratsche: rt,
         });
     const spur = { klasse: "DepthTexture", tiefe: true, groesse: [1, 1], ziel: null, mb: 0 };
+    // S9: Textur-Erzeuger: Name · <ziel>:tiefe · r184-ausgabe · namenlos → null, im Urteil rot
     t(
-        "Textur-Erzeuger: Name · <ziel>:tiefe · r184-ausgabe · namenlos → null, im Urteil rot",
+        "S9",
         DZ.texturErzeuger({ name: "karte-albedo:eiche|#" }) === "karte-albedo:eiche|#" &&
             DZ.texturErzeuger({ name: "", isDepthTexture: true, renderTarget: traaZiel }) ===
                 "TRAANode.history:tiefe" &&
@@ -530,8 +530,9 @@ function selbsttest() {
     );
     const n10 = BAND.ratscheNachziehen(r10, u10, { datum: "selbsttest", eingeschwungen: true });
     const n10b = BAND.ratscheNachziehen(r10, u10, { datum: "selbsttest" });
+    // S10: Ratsche: null gesetzt, 10 → 7 gesenkt, 3 bleibt (5 hebt nie), die Gesamt-Zeile höchstens die Summe ihrer Zeilen 
     t(
-        "Ratsche: null gesetzt, 10 → 7 gesenkt, 3 bleibt (5 hebt nie), die Gesamt-Zeile höchstens die Summe ihrer Zeilen " +
+        "S10" +
             "(gemessen 12, die Zeilen 7 + 3 → 10; H2b), Schema hält nur eingeschwungen",
         n10.ratsche.klassen.boden.haupt.befehle === 7 &&
             n10.ratsche.klassen.boden.haupt.dreiecke === 7000 &&
@@ -567,8 +568,9 @@ function selbsttest() {
         { klasse: "f:tanne:L1", stufe: 1, art: "tree", je: { haupt: 300 }, jeTris: { haupt: 4e6 }, dMax: 30 },
     ]);
     const u8b = urteil(wald, null, null, { gpuJeFrameMs: 30 });
+    // S11: sauberer Zensus im Band → GRÜN, Täter in boden/baum/karten/bau/einzelstuecke, Post-Pass außerhalb; 
     t(
-        "sauberer Zensus im Band → GRÜN, Täter in boden/baum/karten/bau/einzelstuecke, Post-Pass außerhalb; " +
+        "S11" +
             "ein Wald über dem Band → BAND ROT bei sauberer Linse",
         u8.urteil === "GRUEN" &&
             u8.bandUrteil === "IM BAND" &&
@@ -595,8 +597,9 @@ function selbsttest() {
         },
     ]);
     const zw = zm.klassen.find((k) => k.klasse === "tier:wolf");
+    // S12: zensusMax: tier:wolf haupt 12 · k0 6 · dMax 40, himmel aus der zweiten Probe
     t(
-        "zensusMax: tier:wolf haupt 12 · k0 6 · dMax 40, himmel aus der zweiten Probe",
+        "S12",
         zw.je.haupt === 12 && zw.je.k0 === 6 && zw.cmd === 18 && zw.dMax === 40 && zm.klassen.length === 2
     );
 
@@ -623,8 +626,9 @@ function selbsttest() {
     const bew = { name: "bewohner", userData: { _tierBaum: {}, _menge: true }, parent: sc };
     // ein Teil des Leibs L: mit Stoff-Klasse unter dem Kopf-Knoten, ohne sie am Rumpf
     const KK = (L, k) => A.prototype._kopfKlasse.call(weltVon(A, s13), { userData: { __klasse: k }, parent: k ? { name: "head", parent: L } : L, geometry: { attributes: {} } }).join(" "); // prettier-ignore
+    // S13: Täter-Klasse: tier:wolf · fscatter:eiche:L1 · UNBENANNT unter der Region · spieler · voxelChunk · p2p-spieler · 
     t(
-        "Täter-Klasse: tier:wolf · fscatter:eiche:L1 · UNBENANNT unter der Region · spieler · voxelChunk · p2p-spieler · " +
+        "S13" +
             "leer:fscatter:blume:L0 (Gruppe ohne lebende Instanz) · bewohner (Kopf-Klasse)",
         KK(bew, "hair") === "bewohner bewohner:kopf/hair" &&
             KK(bew) === "bewohner bewohner:leib/stoff" &&
@@ -648,8 +652,9 @@ function selbsttest() {
     r14b.frei.tier = "Weltzustand";
     const r14c = jsonKlon(r14);
     r14c.klassen.tier.haupt.befehle = 11;
+    // S14: freie Klasse tier: 80 Befehle nicht rot, Summe gebunden 4, Nachzug lässt sie null; Grund ohne Gate und Wert rot
     t(
-        "freie Klasse tier: 80 Befehle nicht rot, Summe gebunden 4, Nachzug lässt sie null; Grund ohne Gate und Wert rot",
+        "S14",
         !hatRot(u14, "ratsche") &&
             u14.summe.gebunden.befehle === 4 &&
             u14.summe.befehle === 84 &&
@@ -672,8 +677,9 @@ function selbsttest() {
             vram: { mb: 227, liste: [{ k: "buf:?", mb: 60, n: 1500 }] },
         },
     ]);
+    // S15: bandHuelle: f:griechisch:L2 42 aus Lauf 1, bodenSatz 6 aus Lauf 2, VRAM 230 MB, beide Erzeuger
     t(
-        "bandHuelle: f:griechisch:L2 42 aus Lauf 1, bodenSatz 6 aus Lauf 2, VRAM 230 MB, beide Erzeuger",
+        "S15",
         hl.zensus.klassen.find((k) => k.klasse === "f:griechisch:L2").je.haupt === 42 &&
             hl.zensus.klassen.find((k) => k.klasse === "bodenSatz").je.haupt === 6 &&
             hl.vram.mb === 230 &&
@@ -697,8 +703,9 @@ function selbsttest() {
     ]);
     const lecks = u17b.rot.filter((x) => x.art === "leck");
     const szene = u17.vram.erzeuger.find((e) => e.erzeuger === "buf:szene");
+    // S17: buf:verwaist und buf:ruhend → LINSE rot `leck` mit Täter; buf:szene und buf:bild nicht; die Halter falten, die 
     t(
-        "buf:verwaist und buf:ruhend → LINSE rot `leck` mit Täter; buf:szene und buf:bild nicht; die Halter falten, die " +
+        "S17" +
             "größten Täter reisen mit",
         !hatRot(u17, "leck") &&
             u17.linse === "SAUBER" &&
@@ -729,8 +736,9 @@ function selbsttest() {
         ],
         unbenannt: [],
     });
+    // S17c: tex:r184-ausgabe → LINSE rot `leck` (23.7 MB, Rahmen-Ziel des Direktpfads); aus den Textur-Objekten ebenso; ohne es sauber
     t(
-        "tex:r184-ausgabe → LINSE rot `leck` (23.7 MB, Rahmen-Ziel des Direktpfads); aus den Textur-Objekten ebenso; ohne es sauber",
+        "S17c",
         u17c.linse === "ROT" &&
             u17c.rot.some(
                 (x) =>
@@ -780,8 +788,9 @@ function selbsttest() {
     const rzOhne = jsonKlon(haushalt);
     delete rzOhne.renderZiele;
     const rzRot = rzVorher.rot.find((x) => x.art === "renderziele");
+    // Render-Ziele: der Kopf 45f1eeae (71.4 MB) ROT über dem Haushalt 60 MB, jeder Erzeuger beim Namen, Karten und Puffer nicht; die Hochskalierung (58.6 MB) hält; ohne Haushalt fällt das Schema
     t(
-        "Render-Ziele: der Kopf 45f1eeae (71.4 MB) ROT über dem Haushalt 60 MB, jeder Erzeuger beim Namen, Karten und Puffer nicht; die Hochskalierung (58.6 MB) hält; ohne Haushalt fällt das Schema",
+        "Render-Ziele",
         rzRot &&
             /Render-Ziele 71\.4 MB über ihrem Haushalt 60 MB/.test(rzRot.text) &&
             ["tex:TRAANode.history 19.8", "tex:TRAANode.resolve 15.8", "tex:output 7.9", "tex:depth 7.9", "tex:szene 4", "tex:kaskade0 8", "tex:kaskade1 8"].every((n) => rzRot.text.includes(n)) &&
@@ -801,8 +810,9 @@ function selbsttest() {
         { mb: 100, liste: [{ k: "buf:szene:bodenSatz", mb: 21, n: 6 }] }
     );
     const n18b = BAND.ratscheNachziehen(r18b, u18b, { datum: "vram-serie", eingeschwungen: true }, "vram");
+    // Ratsche VRAM: der gefallene tex:depthBuffer 7.9 → 0, buf:szene 50 → 30.7, buf:bild gesetzt; nur vram: Klassen bleiben
     t(
-        "Ratsche VRAM: der gefallene tex:depthBuffer 7.9 → 0, buf:szene 50 → 30.7, buf:bild gesetzt; nur vram: Klassen bleiben",
+        "Ratsche VRAM",
         n18.ratsche.vramMB["tex:depthBuffer"] === 0 &&
             n18.ratsche.vramMB["buf:szene"] === 30.7 &&
             n18.ratsche.vramMB["buf:bild"] === 0 &&
@@ -830,8 +840,9 @@ function selbsttest() {
         ],
     });
     const n19 = BAND.ratscheNachziehen(r19, u19, { datum: "s19", eingeschwungen: true }, "vram");
+    // S19: buf:szene:tier:* → freier Erzeuger buf:tier (10 MB über seiner Ratsche 1 nie rot), gebunden 30 MB, der Nachzug lässt ihn
     t(
-        "buf:szene:tier:* → freier Erzeuger buf:tier (10 MB über seiner Ratsche 1 nie rot), gebunden 30 MB, der Nachzug lässt ihn",
+        "S19",
         BAND.erzeugerOf("buf:szene:tier:baer").erzeuger === "tier" &&
             BAND.erzeugerOf("buf:szene:f:eiche:L0").erzeuger === "szene" &&
             !hatRot(u19, "ratsche") &&
@@ -854,8 +865,9 @@ function selbsttest() {
     } catch {
         unbekannt = true;
     }
+    // S20: Messorte: Blick auf dem Spieler, doppelte id, ein Ort nennt eine Ratschen-Datei, dorfZug fehlt, Soll ohne Quelle 
     t(
-        "Messorte: Blick auf dem Spieler, doppelte id, ein Ort nennt eine Ratschen-Datei, dorfZug fehlt, Soll ohne Quelle " +
+        "S20" +
             "→ rot; der echte Haushalt nicht; ohne Wahl die Mess-Wiese, ein unbekannter Ort bricht",
         h20((o) => (o[1].blick = o[1].spieler.slice())).some((x) => /keine Richtung/.test(x)) &&
             h20((o) => (o[1].id = o[0].id)).some((x) => /doppelter id/.test(x)) &&
@@ -874,8 +886,9 @@ function selbsttest() {
     const bauGenesis = [zensusZeile("f:kathedrale:L0", 30, 9000, 0, "gate")];
     const u21 = BAND.bandUrteil({ zensus: { klassen: bauGenesis }, haushalt, ratsche: r21, ort: gen.ort });
     const u21b = BAND.bandUrteil({ zensus: { klassen: bauGenesis }, haushalt, ratsche: rt, ort: BAND.ortOf(haushalt) });
+    // S21: bau 30 Befehle über der Genesis-Ratsche 20 → rot (Ort genesis im Urteil), gegen die ungemessene nicht; Gier wiese π, genesis −π/2
     t(
-        "bau 30 Befehle über der Genesis-Ratsche 20 → rot (Ort genesis im Urteil), gegen die ungemessene nicht; Gier wiese π, genesis −π/2",
+        "S21",
         hatRot(u21, "ratsche") &&
             u21.ort === "genesis" &&
             !hatRot(u21b, "ratsche") &&
@@ -895,8 +908,9 @@ function selbsttest() {
             { klasse: "f:ruine:L0", stufe: 0, art: "gate", je: { haupt: 7 }, jeTris: { haupt: 85652 }, inst: 7 },
         ],
     });
+    // S22: Tor-Hülle: f:drachentor:L0 368 000 im Hauptbild bei 2 Toren → 184 000 je Tor (3,07×), L1 und Fahrzeug nicht
     t(
-        "Tor-Hülle: f:drachentor:L0 368 000 im Hauptbild bei 2 Toren → 184 000 je Tor (3,07×), L1 und Fahrzeug nicht",
+        "S22",
         s22.length === 1 && s22[0].huelle === 184000 && s22[0].exemplare === 2 && s22[0].faktor === 3.07
     );
     // S20b — DIE WIESE: das Wiesen-Gesetz fehlt der Mess-Wiese, eine Schwelle fehlt, der Kranz beginnt im Ring → rot (Schema);
@@ -913,8 +927,9 @@ function selbsttest() {
             o.blick = [o.spieler[0], o.spieler[1] + 10];
         })
     ).befunde;
+    // S20b: Wiese: ohne Gesetz, ohne hangMax, Kranz im Ring → rot; am Gesetz der gefallene Ort rot (Hang, Horizont), der Haushalt grün
     t(
-        "Wiese: ohne Gesetz, ohne hangMax, Kranz im Ring → rot; am Gesetz der gefallene Ort rot (Hang, Horizont), der Haushalt grün",
+        "S20b",
         BAND.messortePruefen(w20((o) => delete o.wiese)).some((x) => /Wiesen-Gesetz \(wiese\) fehlt/.test(x)) &&
             BAND.messortePruefen(w20((o) => delete o.wiese.hangMax)).some((x) => /wiese ohne Zahl hangMax/.test(x)) &&
             BAND.messortePruefen(w20((o) => (o.wiese.rand = [10, 90]))).some((x) => /beginnt im Ring/.test(x)) &&
@@ -925,8 +940,9 @@ function selbsttest() {
     // S23 — ein Anker ohne Methoden-Namen bricht das Schema; der echte Anker ist einer.
     const h23c = jsonKlon(haushalt);
     h23c.messorte[1].anker = "36 0";
+    // S23: Messorte: ein Anker ohne Methoden-Namen bricht das Schema, der echte ist _genesisMitte
     t(
-        "Messorte: ein Anker ohne Methoden-Namen bricht das Schema, der echte ist _genesisMitte",
+        "S23",
         BAND.messortePruefen(h23c).some((x) => /anker ist kein Methoden-Name/.test(x)) && haushalt.messorte[1].anker === "_genesisMitte"
     );
 
@@ -937,8 +953,9 @@ function selbsttest() {
     const wiese = BAND.ortOf(haushalt, "wiese");
     const gestellt = { ort: "wiese", dorfZug: false, ortTakt: [], gier: BAND.ortGier(wiese), sicht: "ego" };
     const g24 = (o, z) => BAND.ortGestellt(o, Object.assign({}, gestellt, z));
+    // S24: Orts-Wache: gestellt sauber; Dorf-Zug läuft, ohne --ort, Gier −0,88, Genesis ohne Ort-Takt, Third-Person statt Ego, 
     t(
-        "Orts-Wache: gestellt sauber; Dorf-Zug läuft, ohne --ort, Gier −0,88, Genesis ohne Ort-Takt, Third-Person statt Ego, " +
+        "S24" +
             "ohne Sicht, ohne Aufzeichnung → je rot",
         !BAND.ortGestellt(wiese, gestellt, "ego").length &&
             !BAND.ortGestellt(gen.ort, { ort: "genesis", dorfZug: false, ortTakt: gen.ort.ortTakt, gier: -Math.PI / 2, sicht: "third" }, "third").length &&
@@ -992,8 +1009,9 @@ function selbsttest() {
     };
     const u26 = urteil([satz26], r26);
     const zeile26 = u26.rot.find((x) => x.art === "ratsche" && /^bau k0/.test(x.text));
+    // S26: Satz-Inhalt: bauSatz k0 über der Ratsche nennt „bauSatz k0: f:feuerstelle:L1 29 Zellen = 12 760", die Tabelle den Inhalt
     t(
-        "Satz-Inhalt: bauSatz k0 über der Ratsche nennt „bauSatz k0: f:feuerstelle:L1 29 Zellen = 12 760\", die Tabelle den Inhalt",
+        "S26",
         !!zeile26 &&
             /bauSatz k0: f:feuerstelle:L1 29 Zellen = 12 760/.test(zeile26.text) &&
             /bauSatz k0: f:feuerstelle:L1 29 Zellen = 12 760/.test(BAND.bandTabelle(u26))
@@ -1014,8 +1032,9 @@ function selbsttest() {
     const ein26 = new Map([[key26, new Map([[0, 7], [1, 8], [2, 9]])]]);
     const i26 = DZ.satzInhalt(satz26b, "k0", (3960 + 30) / 3, S.instanz, ein26);
     const f26 = i26.get("f:feuerstelle:L1");
+    // S26b: Satz-Inhalt: ein gepflanzter Bereich erscheint (f:feuerstelle:L1 3 Zellen = 1 320, Einträge 7/8/9, Lücke 10, kein Rest), 
     t(
-        "Satz-Inhalt: ein gepflanzter Bereich erscheint (f:feuerstelle:L1 3 Zellen = 1 320, Einträge 7/8/9, Lücke 10, kein Rest), " +
+        "S26b" +
             "das Hauptbild ohne ihn nicht, ein falscher Draw-Umfang als REST",
         !!f26 &&
             f26.zellen === 3 &&
@@ -1051,8 +1070,9 @@ function selbsttest() {
         f(h.messorte.find((o) => o.id === "dorf").soll[0]);
         return BAND.messortePruefen(h);
     };
+    // S27: Wurf je Exemplar: Haus-Wurf k0 = 155 000 / 2 Häuser = 77 500 (807×, Täter f:alemannisch:L0), die Feuerstelle nicht im 
     t(
-        "Wurf je Exemplar: Haus-Wurf k0 = 155 000 / 2 Häuser = 77 500 (807×, Täter f:alemannisch:L0), die Feuerstelle nicht im " +
+        "S27" +
             "Haus-Wurf; stufe + stufen bzw. keins bricht das Schema; ohne k1 keine k1-Zeile",
         !!haus27 &&
             haus27.huelle === 77500 &&
@@ -1087,8 +1107,9 @@ function selbsttest() {
                 welt28({ _autoSettlementQueue: { plan: { slots: [1, 2, 3] }, idx: 1 }, _dorfTaktLebt: () => lebt })
             ).dorfWaechst
     );
+    // S28: Einschwingen: eine wachsende Siedlung (1/3), ein Export unterwegs und zwei Lieferungen vor dem Ingest-Takt halten offen, derselbe Plan ohne Takt und die ruhige Welt nicht
     t(
-        "Einschwingen: eine wachsende Siedlung (1/3), ein Export unterwegs und zwei Lieferungen vor dem Ingest-Takt halten offen, derselbe Plan ohne Takt und die ruhige Welt nicht",
+        "S28",
         dorf28.join() === "1/3," &&
             BAND.einschwingOffen(welt28({ _autoSettlementPendingKey: "-4,-4" })).dorfExport === "-4,-4" &&
             BAND.einschwingOffen(welt28({ _foundryIngestQueue: [1, 2] })).foundryIngest === 2 &&
@@ -1107,8 +1128,9 @@ function selbsttest() {
                     ]),
                 },
             });
+        // Einschwingen: ein Satz über seinem Ziel (ueberSeit ≥ 0) hält offen, ein ruhender nicht
         t(
-            "Einschwingen: ein Satz über seinem Ziel (ueberSeit ≥ 0) hält offen, ein ruhender nicht",
+            "Einschwingen",
             BAND.einschwingOffen(satzWelt(12)).satzSchrumpft === 1 &&
                 Object.keys(BAND.einschwingOffen(satzWelt(-1))).length === 0
         );
@@ -1162,8 +1184,9 @@ function selbsttest() {
             ["je Frame", "_buendelAnkerPruefen", "if (a && (pos.x - a.x) * (pos.x - a.x) + (pos.z - a.z) * (pos.z - a.z) <= R * R) return false;", "", /Anker der Reihe/],
         ];
         const still = fall.filter(([, glied, alt, neu, re]) => !buendelReiheWand(klasseVon(stammLib.ersetze(st, glied, alt, neu))).errs.some((x) => re.test(x)));
+        // S30: Zeichen-Reihe: @global · Regionen · @wahl, lose Bau · Boden · Fern · Himmel, im Bündel L0 zuerst und vorn zuerst; 
         t(
-            "Zeichen-Reihe: @global · Regionen · @wahl, lose Bau · Boden · Fern · Himmel, im Bündel L0 zuerst und vorn zuerst; " +
+            "S30" +
                 fall.map(([n]) => n).join(", ") +
                 " rot" +
                 (still.length ? " — still: " + still.map(([n]) => n).join(", ") : ""),
@@ -1184,23 +1207,21 @@ function selbsttest() {
             ["_wieseSchaleDaten", "sy * B,", "0,", "huegel: Karte"],
             ["_wieseSchaleDaten", "F.boden", "1e9", "kamm: Karte"],
             ["_wieseSchaleDaten", "if (haus && Gb", "if (0 && Gb", "haus: Karte"],
-        ].filter(([g, a, b, x]) => !grenzeWand(klasseVon(stammLib.ersetze(st, g, a, b))).some((e) => e.includes(x)));
-        t(`Grenze der Ferne: je Glied ein Mutant rot ${grenzeWand(A)}${stillG.map((m) => " — still " + m)}`, !grenzeWand(A).length && !stillG.length); // prettier-ignore
-        // P-WACHS (w26-fahrt-planer): die wachsende Kachel der Ferne — die alten Büschel doppelt, die Scheibe über das ganze Feld,
-        // die Grenzen der Scheibe vergessen: je ein Mutant rot
-        const stillW = [
+            // P-Wachs (w26-fahrt-planer): die alten Büschel doppelt, die Scheibe über das ganze Feld, ihre Grenzen vergessen, das
+            // Werk über einer gefallenen Kachel
             ["_nahWieseFernKachel", "if (x.o >= ab) bueschel.push(x);", "bueschel.push(x);", "nicht der Bau"],
             ["_nahWieseKachelBueschel", "if (o >= anteil || o < ab) continue;", "if (o >= anteil) continue;", "die Scheibe fragt"],
             ["_nahWieseFernKachel", "grenze.set(G.grenze, m);", "", "nicht der Bau"],
             ["_nahWieseFernKachel", "(!alt || nw.fern.kacheln.get(fx + \",\" + fz) === alt)", "true", "gefallenen Kachel"],
-        ].filter(([g, a, b, x]) => !wachsWand(klasseVon(stammLib.ersetze(st, g, a, b))).some((e) => e.includes(x)));
-        t(`Die Kachel der Ferne wächst: je Glied ein Mutant rot ${wachsWand(A)}${stillW.map((m) => " — still " + m)}`, !wachsWand(A).length && !stillW.length); // prettier-ignore
+        ].filter(([g, a, b, x]) => !grenzeWand(klasseVon(stammLib.ersetze(st, g, a, b))).some((e) => e.includes(x)));
+        t(`Grenze der Ferne: je Glied ein Mutant rot ${grenzeWand(A)}${stillG.map((m) => " — still " + m)}`, !grenzeWand(A).length && !stillG.length); // prettier-ignore
         // S31 — DIE DECKUNG DER FERNE (P-Ferne): das Gesetz hält Deckung und Schirm, das vor w10-wiese (die Deckung fällt ab
         // 21 m mit d^−1,5) reißt beide — der veränderte Stamm als Klasse geladen
         const alt = ferneWand(klasseVon(stammLib.ersetze(st, [["NAH_WIESE", "voll: 40,", "voll: 21,"], ["NAH_WIESE", "fall: 3.25,", "fall: 1.5,"]])));
         t(`Deckung der Ferne: das Gesetz hält, das vor w10-wiese reißt (${alt.errs})`, !ferneWand(A).errs.length && alt.deckung < 0.99 && alt.schirm > 2);
         // die Ordnung ohne den Bayer-Rang der Zelle (die PCG allein, bis w19-saum-lai) reißt das Teil-Gitter
-        t("Teil-Gitter der Ferne: die PCG allein reißt", ferneWand(klasseVon(stammLib.ersetze(st, "_ortZiehung", "if (!(schritt > 0)) return", "return"))).errs.length); // prettier-ignore
+        // Teil-Gitter der Ferne: die PCG allein reißt
+        t("Teil-Gitter der Ferne", ferneWand(klasseVon(stammLib.ersetze(st, "_ortZiehung", "if (!(schritt > 0)) return", "return"))).errs.length); // prettier-ignore
     }
 
     // S31 — H2b DIE FRISCHE an der Gegenprobe 1110-12 (spec/profiband/probe-1110-12.json): die Ratsche der Mess-Wiese,
@@ -1233,8 +1254,9 @@ function selbsttest() {
         fremd.gemessen.geraet = "radeon";
         const ungemessen = jsonKlon(frisch);
         ungemessen.gemessen = null;
+        // H2b: die Ratsche der Mess-Wiese, wie sie 1110-12 richtete, ist ROT — ohne Version, fremde Messung, Gesamt-Zeile
         t(
-            "H2b: die Ratsche der Mess-Wiese, wie sie 1110-12 richtete, ist ROT — ohne Version, fremde Messung, Gesamt-Zeile " +
+            "H2b" +
                 "4 095 487 über 1 295 324, baum haupt 385 630 gegen 60 976 zu weit; die Hülle von w2B an V18.542 grün, an V18.541 " +
                 "alt, mit fremdem Gerät, ungemessen und fehlend rot; eine Messung ohne geforderte Ratsche rot",
             alt31.some((x) => /ohne Version — älter als jede Version/.test(x)) &&
@@ -1260,8 +1282,9 @@ function selbsttest() {
         const nach31 = BAND.ratscheNachziehen(r31, u31, { datum: "x" }).ratsche;
         const neu31 = BAND.ratscheNachziehen(BAND.ratscheNeu(r31), u31, { datum: "x" }).ratsche;
         const ohne31 = BAND.bandUrteil({ zensus: { klassen: boden9 }, haushalt, ratsche: null, ratscheDatei: "ratsche-wiese-gtx-third.json" });
+        // Re-Mint: boden haupt 7 → 10 Befehle (der Nachzug hält 7), 70 000 → 7 000 Dreiecke; 70 000 gegen 7 000 ist weit, die
         t(
-            "Re-Mint: boden haupt 7 → 10 Befehle (der Nachzug hält 7), 70 000 → 7 000 Dreiecke; 70 000 gegen 7 000 ist weit, die " +
+            "Re-Mint" +
                 "Linse bleibt sauber; ohne Ratsche „ungemessen\" beim Datei-Namen; jede Rot-Zeile trägt ihren Schlüssel",
             nach31.klassen.boden.haupt.befehle === 7 &&
                 neu31.klassen.boden.haupt.befehle === 10 &&
@@ -1283,8 +1306,9 @@ function selbsttest() {
         });
         const n32a = BAND.ratscheNachziehen(BAND.ratscheNeu(rt), v32(6, 4), { datum: "x" });
         const n32 = BAND.ratscheNachziehen(n32a.ratsche, v32(5.9, 4.1), { datum: "x" });
+        // Re-Mint 2: die Gesamt-Zeile vramMB ist höchstens die Summe der Erzeuger (zwei Läufe 6,0 + 4,0 und 5,9 + 4,1 →
         t(
-            "Re-Mint: die Gesamt-Zeile vramMB ist höchstens die Summe der Erzeuger (zwei Läufe 6,0 + 4,0 und 5,9 + 4,1 → " +
+            "Re-Mint 2" +
                 "Erzeuger 5,9 + 4,0, Gesamt 10,0 → 9,9, beim Namen)",
             n32a.ratsche.gesamt.vramMB === 10 &&
                 n32.ratsche.vramMB["buf:szene"] === 5.9 &&
@@ -1298,8 +1322,9 @@ function selbsttest() {
         hAlt.geraet = "Radeon 890M";
         const hKam = jsonKlon(haushalt);
         hKam.sichten.third.kamera = "drohne";
+        // Gerät × Sicht: amd rdna-3 → radeon, nvidia pascal → gtx, SwiftShader → keins; first → ego, third → third;
         t(
-            "Gerät × Sicht: amd rdna-3 → radeon, nvidia pascal → gtx, SwiftShader → keins; first → ego, third → third; " +
+            "Gerät × Sicht" +
                 "geraet (EIN Gerät) und eine Kamera „drohne\" brechen den Haushalt",
             BAND.geraetSchluessel(haushalt, "amd rdna-3 AMD Radeon 890M Graphics") === "radeon" &&
                 BAND.geraetSchluessel(haushalt, "nvidia pascal") === "gtx" &&
@@ -1312,7 +1337,8 @@ function selbsttest() {
         );
     }
     // DER GANG (K5, `werkbank puffer --gang`): ein ungedeckelter Cache ist rot beim Pfad, ein gedeckelter nicht
-    t("Gang: Heap je Minute und VRAM-Drift urteilen, der Halter steht beim Pfad", DZ.gangSelbsttest().length === 0);
+    // Gang: Heap je Minute und VRAM-Drift urteilen, der Halter steht beim Pfad
+    t("Gang", DZ.gangSelbsttest().length === 0);
 
     const rot = tests.filter((x) => !x.ok);
     for (const x of tests) console.log(`${x.ok ? "✅" : "❌"} SELBST-TEST: ${x.name}`);
@@ -1365,7 +1391,6 @@ function main() {
     // P-Ferne — die Deckung der Ferne der Nah-Wiese über die festen Ringe und der Schirm (vegetation.K1)
     errs.push(...ferneWand(A).errs);
     errs.push(...grenzeWand(A)); // P-Grenze — die Grenze der Streckung der Ferne (w21-wiese-fern)
-    errs.push(...wachsWand(A)); // P-Wachs — die wachsende Kachel der Ferne (w26-fahrt-planer)
     // Die Zeile nahWiese (Pflicht seit der Integration V18.538: Gras-Zeile und Gestalten der Nah-Wiese stehen im Kern).
     const nwB = zs.nahWiese;
     if (!nwB || !Array.isArray(nwB.zeilen) || !nwB.zeilen.length)
