@@ -61,8 +61,9 @@ class AnazhRealm_stoff_instanz {
         const K = AnazhRealm._laubLichtModell();
         const ab = globalThis.__phytoCore.LAUB_LICHT.nadelAbU;
         const art = typeof nadel === "function" ? "karte" : nadel === true ? "atlas" : "laub";
-        mat.setupLightingModel = () =>
-            new K(
+        const at = art === "karte" ? this._impostorAtlas() : null;
+        mat.setupLightingModel = () => {
+            const m = new K(
                 art === "karte"
                     ? nadel()
                     : art === "atlas"
@@ -70,8 +71,22 @@ class AnazhRealm_stoff_instanz {
                       : T.float(0),
                 narbe || null
             );
+            // DIE WACHE DER REIHEN (w27-karte-nadel): je Programm-Bau der Karte liest jeder Leser „karteNadel" und „karteJahr" aus
+            // EINEM Knoten (`_karteNadel`) — zwei Knoten eines Namens sind zwei Deklarationen im WGSL, und die Pipeline sagt ab
+            // (stadt-voll, GTX 1050: „redeclaration of karteNadelStruct"); sie meldet es vor der GPU beim Namen
+            const je = { __proto__: null, karteNadel: new Set(), karteJahr: new Set() },
+                da = new Set();
+            const geh = (n) =>
+                n &&
+                n.isNode &&
+                !da.has(n) &&
+                (da.add(n), je[n.name] && je[n.name].add(n), [...n.getChildren()].forEach(geh));
+            if (at) [mat, m].forEach((o) => Object.values(o).forEach(geh));
+            for (const k in je)
+                if (je[k].size > 1) this._bruchMelden(`KARTE: ${je[k].size} Knoten „${k}" in EINEM Programm`);
+            return m;
+        };
         const schluessel = mat.customProgramCacheKey;
-        const at = art === "karte" ? this._impostorAtlas() : null;
         mat.customProgramCacheKey = function () {
             return (
                 schluessel.call(this) +
