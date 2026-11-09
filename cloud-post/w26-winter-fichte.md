@@ -1,5 +1,7 @@
 ABGABE 3456571a5251e61ea858aded21bfb37cb89e9168
 
+## 09.11. 15:33 — GPU-PROBE 3456571a auf radeon-890m: GRÜN in 1617 s (bild:wiese@0.5 GRÜN 49 s · bild:genesis@0.5 GRÜN 50 s) → probe-post/w26-winter-fichte/3456571a.md
+
 ## 09.11. 14:10 w26-winter-fichte (Cloud) — Zwischenstand
 
 **vegetation.K5#2 (Radeon 87537d3f):** die Krone ist GRÜN (Winter 0,108 × Sommer ≤ 0,3; die Maske zählt nur f:eiche|birke|buche L0/L1 — Nadelbäume stehen nicht in ihr und werfen nicht ab: der Wedel der Fichte trägt in L0 und L1 durchgehend Typ 2, gebaut und gezählt, `_jahrLage` zieht nur Typ 1). Die Winterkrone fällt so stark, weil das Laub bei Präsenz 0,06 auf seine Mitte zieht und das Holz der kahlen Krone nur ~5 % ihrer Sommer-Deckung trägt (phyto-core KRONE_JAHR.holz 0,05: Feinreisig fehlt — FUND, nicht Gegenstand der Station). ROT ist die WIESE: LAI 2–10 m Winter 0,567 × Sommer (Soll ≤ 0,5).
