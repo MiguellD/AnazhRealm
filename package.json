@@ -170,9 +170,9 @@
         "gate:arch-feld": "node scripts/diag-arch-feld.cjs --selftest && node scripts/diag-arch-feld.cjs",
         "gate:analog-nah": "node scripts/diag-analog-nah.cjs --selftest && node scripts/diag-analog-nah.cjs",
         "gate:weltbild-frost": "node scripts/diag-weltbild-frost.cjs",
-        "gate:weltbild-frost:echt": "node artifacts/ankunft-horizont/zerlege.cjs",
-        "gate:tag-achse:echt": "node artifacts/ankunft-horizont/zerlege.cjs --teil 2",
-        "gate:licht-weg:echt": "node artifacts/ankunft-horizont/zerlege.cjs --teil 3",
+        "gate:weltbild-frost:echt": "node scripts/diag-weltbild-frost.cjs --echt",
+        "gate:tag-achse:echt": "node scripts/werkbank.cjs licht --tag --kurz --eigen --port 4692",
+        "gate:licht-weg:echt": "node scripts/werkbank.cjs licht --laub feld,feld0,feld90,feld180,panorama,wasser --uhr 0.5,0.27,0.05 --eigen --port 4697",
         "gate:naesse:echt": "node scripts/werkbank.cjs licht --naesse --eigen --port 4699",
         "gate:pop": "node scripts/werkbank.cjs pop --eigen --port 4792",
         "beweis:e": "node scripts/diag-beweis-e.cjs --tag aaa8 --proto-min 90"
