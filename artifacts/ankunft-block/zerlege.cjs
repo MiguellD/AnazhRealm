@@ -237,7 +237,7 @@ function berichtAB(teil, Z) {
             const Wr = Nn.werk || { krt: {} };
             const da = z0.out.weltbildDa;
             const K = Object.entries(Wr.krt || {}).sort((a, b) => (a[1][1] || 1e9) - (b[1][1] || 1e9));
-            zeile(`${pre}KARTEN (Boot ${z0.e.i + 1}, angelegt→gebacken, * im Blick; Bild ${sek(da)} s): ${K.map(([k, v]) => `${k.replace(/^fimp:/, "").slice(0, 14)}${v[2] ? "*" : ""} ${sek(v[0])}→${v[1] ? sek(v[1]) : "–"}`).join(" · ")}`); // prettier-ignore
+            if (!AB) zeile(`${pre}KARTEN (Boot ${z0.e.i + 1}, angelegt→gebacken, * im Blick; Bild ${sek(da)} s): ${K.map(([k, v]) => `${k.replace(/^fimp:/, "").slice(0, 14)}${v[2] ? "*" : ""} ${sek(v[0])}→${v[1] ? sek(v[1]) : "–"}`).join(" · ")}`); // prettier-ignore
             const je = {};
             for (const [t, ms, key, e, g] of Nn.kb || []) {
                 const k = je[key] || (je[key] = { t0: t, ms: 0, n: 0, g: {}, erst: null });
@@ -286,7 +286,7 @@ function berichtAB(teil, Z) {
             // DIE FÄDEN DES HORIZONTS je Boot: Geburt, `hydro-an` im Voxel-Faden (seine Reihe davor), die Regionen im Neben-Faden, jeder
             // Auftrag der Ferne (Beginn+ms) — bis zum Bild
             for (const z of zs.slice(0, AB ? 1 : 2)) {
-                const F = ((z.out.nach || {}).faeden || []).filter((f) => f[2] <= z.out.weltbildDa);
+                const F = ((z.out.nach || {}).fl || []).filter((f) => f[2] <= z.out.weltbildDa);
                 const fz = (n) => F.filter((f) => f[0] === n);
                 const kurz = (f) => `${f[1]} ${sek(f[2])}${f[3] ? "+" + f[3] : ""}${f[1] === "hydro-an" ? " R" + f[4] : f[1] === "regionen" ? " n" + f[4] : ""}`;
                 const fern = fz("fern").filter((f) => /^fern:/.test(f[1]));
@@ -297,6 +297,11 @@ function berichtAB(teil, Z) {
                 let s = "";
                 while (j < wz.length && s.length + wz[j].length < 480) s += (s ? " | " : "") + wz[j++];
                 zeile(`${pre}WER je s (Top 4 ms): ${s}`);
+            }
+            {
+                const B = (zs[0].out.nach || {}).bauT || [];
+                const letzte = B.slice(-6).map(([t, n, w]) => `${sek(t)} ${n}: ${w}`);
+                zeile(`${pre}BAUTEN-TÄTER (Boot ${zs[0].e.i + 1}, die letzten vor dem Bild ${sek(zs[0].out.weltbildDa)}): ${letzte.join(" · ")}`.slice(0, 590)); // prettier-ignore
             }
             zeile(`${pre}FERNE: Bild aus der Ferne ${zs.map((z) => (z.out.nach && z.out.nach.fernbild ? sek(z.out.nach.fernbild) : "–")).join("/")} s → Weltbild ${zs.map((z) => sek(z.out.weltbildDa)).join("/")} s`); // prettier-ignore
         });

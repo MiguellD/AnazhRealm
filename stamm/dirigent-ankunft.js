@@ -290,6 +290,11 @@ class AnazhRealm_dirigent_ankunft {
                 );
             });
         this.state.renderer = renderer;
+        // DIE FÄDEN DER FERNE KOMMEN MIT DEM RENDERER (w25-ankunft-horizont): Ring („fern“) und Feld („feld“) rechnen in
+        // Neben-Fäden (`_nebenFaden`), die erst ihr erster Auftrag gebar — ihr Start (1,2–1,7 s) lief dann, und ihre Regionen
+        // (`hydro-an`) standen in der Reihe des Voxel-Fadens hinter den Chunks des Rings: GTX kalt (b6a4ef4b) geboren 3,0–3,5 s,
+        // die Regionen 5,2–5,9 s, erst dann begannen Ring und Feld. Gilt der Horizont, entstehen beide jetzt.
+        if (this._fernRingGilt()) for (const n of ["fern", "feld"]) this._nebenFaden(n);
         // Der Null-Renderer zeigt kein Bild, auf das der Ladeschirm warten könnte (sein Loop pumpt nur auf Zuruf):
         // er weicht sofort, die UI der Linsen bleibt klickbar.
         if (renderer._isHeadlessNull) this._weltbildSteht();

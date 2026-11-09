@@ -494,11 +494,10 @@ class AnazhRealm_gelaende_chunks {
     // fernen Kacheln) rechnet in seinem eigenen Faden neben dem Ring — im EINEN Fern-Faden stand jede Ring-Scheibe hinter ihm
     // (Radeon kalt am Kopf 130ba565: der Fern-Faden 6,6 s belegt, das Feld allein ~4,9 s, der Horizont hing bei 11 %). Das Gitter
     // der Horizont-Karte („gitter“, 65 536 Rufe des Gesetzes nach dem ersten Weltbild) geht dieselbe Bahn — nie vor den Ring.
-    // `faden`: ein Sektor des Felds in einem seiner Geschwister-Fäden (`_feldBahnen`).
-    _fernAuftrag(art, msg, transfer, faden) {
+    _fernAuftrag(art, msg, transfer) {
         const wl = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : 0;
         return this._nebenAuftrag(
-            faden || (art === "feld" || art === "gitter" ? "feld" : art === "kamm" ? "kamm" : "fern"),
+            art === "feld" || art === "gitter" ? "feld" : art === "kamm" ? "kamm" : "fern",
             Object.assign(
                 {
                     type: "fern",

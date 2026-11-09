@@ -143,7 +143,7 @@ function BAU_HAKEN() {
             const g = st.verbTafel ? Object.keys(st.verbTafel.gehalten).filter((k) => st.verbTafel.gehalten[k]).join("+") : "?";
             N.frames.push([Math.round(t), p ? Math.round(p.x * 100) / 100 : null, p ? Math.round(p.z * 100) / 100 : null, L.imFlug, L.gerendert, L.ausgesetzt, g]);
         }
-        N.faeden = FAEDEN;
+        N.fl = FAEDEN;
         if (window.__kalt) window.__kalt.nach = N;
         if (!da || t - da < 4000) requestAnimationFrame(raf);
     };
@@ -370,6 +370,28 @@ function BAU_HAKEN() {
                 const o = ws.apply(this, arguments);
                 if (vor()) N.werk.streu.push([Math.round(performance.now()), region.regX + "," + region.regZ, region._bildWartet ? 1 : 0, auf.length + ":" + auf.slice(0, 4).join("+")]);
                 return o;
+            };
+            // DER TÄTER DER BAUTEN vor dem Bild: je 250 ms der Satz der Lücke „bauten“ und ihr Täter (`_lueckeTaeter`)
+            N.bauT = [];
+            const wl = A.prototype._weltbildLuecken;
+            let wlT = 0;
+            A.prototype._weltbildLuecken = function (rundum) {
+                const L = wl.apply(this, arguments);
+                const t = performance.now();
+                if (!rundum && vorBild2() && t - wlT > 250) {
+                    const b = L.find((l) => l.term === "bauten");
+                    if (b) {
+                        wlT = t;
+                        let taeter = "";
+                        try {
+                            taeter = this._lueckeTaeter(b) || "";
+                        } catch (e) {
+                            taeter = "?";
+                        }
+                        N.bauT.push([Math.round(t), b.satz.replace(/ Bäume und Bauten wachsen/, ""), String(taeter).slice(0, 110)]);
+                    }
+                }
+                return L;
             };
             // DER HORIZONT WIRD GEMALT: der Feld-Auftrag (gesendet), seine Antwort (das Panorama beginnt), das Panorama zurück
             // (`__kalt.nach.hz`: [t, was])
