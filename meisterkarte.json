@@ -3,11 +3,11 @@
   "kopf": "da0e790f",
   "version": "V18.546.237",
   "skala": "2.0",
-  "summe": 222,
+  "summe": 224,
   "max": 330,
   "maschine": {
     "kopf": "da0e790f",
-    "zeit": "2026-11-09T19:09:32.017Z",
+    "zeit": "2026-11-09T19:27:59.786Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -181,10 +181,10 @@
         "titel": "AAAA je Klasse",
         "kriterium": "A fällt, wenn K5 jede Klasse GRÜN nennt und E dabei an beiden Messplätzen hält.",
         "status": "ohne Richter",
-        "gruen": 2,
+        "gruen": 3,
         "gesamt": 8,
-        "prozent": 25,
-        "punkte": 1,
+        "prozent": 38,
+        "punkte": 3,
         "max": 8,
         "kriterien": [
           "haar.K1",
@@ -196,16 +196,11 @@
           {
             "station": "lod.K1#1",
             "geraet": "radeon",
-            "zeile": "Linse seit der Messung geändert (R6: scripts/lib/welt-boot.cjs)"
+            "zeile": "ROT: Tafel-Pose schlechteste fimp:strauch:L2 0.2070 · Karte fimp:birke:L2 0.1556 (29212 px), fimp:eiche:L2 0.1332 (62183 px), fimp:fichte:L2 0.1419 (47881 px), fimp:strauch:L2 0.2070 (23032 px), fimp:tanne:L2 0.1613 (129917 px) | Spielgang "
           },
           {
             "station": "lod.K1#1",
             "geraet": "gtx",
-            "zeile": "Station seit der Messung geändert"
-          },
-          {
-            "station": "mensch.K4#1",
-            "geraet": "radeon",
             "zeile": "Station seit der Messung geändert"
           },
           {
@@ -216,7 +211,7 @@
           {
             "station": "haar.K2#1",
             "geraet": "radeon",
-            "zeile": "Station seit der Messung geändert"
+            "zeile": "ROT: EINE Pose: Leib Δ 0 · Haar-Feder Δ 0 m über 3 Lesungen · arm ROT strich 0.5638 Soll [0.3554,0.533] — strich 0.5638 > 0.533 · albedo: veraltet seit 4ef6370e: koerper-core.js geändert (c:b70902b2e416b42b → c:c0846417374ac1bd) · albedo — "
           },
           {
             "station": "haar.K2#1",
@@ -390,7 +385,7 @@
     {
       "key": "leben",
       "titel": "II · LEBEN — Pflanze, Tier, Ökologie, Mensch, Affekt, Haar und Fell, Luft und Wasser",
-      "summe": 49,
+      "summe": 51,
       "max": 70,
       "bereiche": [
         "vegetation",
@@ -1086,7 +1081,7 @@
           "punkte": 0,
           "staffel": "1 = im Mischwald (Ego, Mittag) Stamm-Dichte und Unterholz-Deckung im Band der REF und Licht-Flecken am Boden aus der Kaskade, an einem Gerät · 2 = auch im Gegenlicht (Strahlen durch die Kronen, Uhr 0,3) und an einer Lichtung, beide Geräte, im Haushalt baum ≤ 40 Befehle / 150k Dreiecke",
           "messung": "werkbank bild an der Spielgang-Station wald gegen REF real-mischwald: Stämme je Bildbreite, Unterholz-Deckung 0–2 m, Licht-Flecken-Anteil (Varianz der Boden-Luma unter Kronen gegen offenen Boden), Strahl-Kontrast im Gegenlicht ≥ 1,1; die Flecken müssen mit der Sonne wandern (zwei Uhrzeiten).",
-          "beleg": "Maschine: 0 — offen: vegetation.K3#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/welt-boot.cjs)",
+          "beleg": "Maschine: 0 — offen: vegetation.K3#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/welt-boot.cjs) — zuletzt an da0e790f: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Zeile NEUN vegetation.K3) · Täter: NEUN-ENDE 8 gemessen, ausgelassen am Budget 8.5 s: vegetation.K3 · 8.8 s",
           "schlupfloch": "Ein gemaltes Licht-Fleck-Muster bewegt sich nicht mit der Sonne: die Flecken kommen aus der Kaskade, zwei Uhrzeiten verschieben sie; Luft-Nebel als Strahl-Ersatz scheitert am Gegenlicht-Kontrast.",
           "aenderung": "Neu (V21): der Umriss zählt LOD K1, der Kamm-Saum Ferne K3 — frei wurde die Tiefe, die RDR2 und Tsushima tragen und die keine Karte maß.",
           "maschine": true
@@ -1224,7 +1219,7 @@
           "punkte": 0,
           "staffel": "1 = ≥ 3 Tier-Sichtungen im Ausgabe-Bild je 10 Spielminuten an einem Gerät · 2 = dazu eine Herde ≥ 20 im Bild in 30 min, updateCreatures ≤ 1,0 ms p95 bei 150 Tieren im 500-m-Ring an der GTX, die Ratsche tier eingerastet, beide Geräte",
           "messung": "Spielgang über 10 Spielminuten (werkbank lauf --wandern kreis, Ego und Third) an Wiese und Genesis; Sichtung = Klassen-Maske tier ≥ 200 px; kein Tier erscheint im Blick; Kosten beim Namen über werkbank zerlegen/takt in Bau-Ereignissen; Prüfbühne mit fester Herde für die Ratsche.",
-          "beleg": "Maschine: 0 — offen: tiere.K5#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/welt-boot.cjs)",
+          "beleg": "Maschine: 0 — offen: tiere.K5#1 radeon: ROT: ego (first) 1 Sichtungen in 600 Spiel-s (wesen 361 px 100 m 542 s), 604 Prüfungen, 8 Masken, Bestand bis 20, im Blick erschienen 0 | third (third) 3 Sichtungen in 600 Spiel-s (baer 376 px 36 m 317 s · wesen 617 px 40 m 524 s · wesen 211 px 96 m 556 s), 617 Prüfungen, 34 Masken, Bestand bis 20, im Blick erschienen 0 an da0e790f",
           "schlupfloch": "„≥ 150 im 500-m-Ring“ erfüllen Tiere hinter dem Hügel: gezählt werden Sichtungen im Ausgabe-Bild; die frei-Ratsche versteckte die Kosten, die Prüfbühne mit fester Herde schließt das.",
           "maschine": true
         }
@@ -1373,7 +1368,7 @@
       "key": "mensch",
       "titel": "Menschen und Bewohner — Besiedlung, Tag, Wege, Leib, Begegnung",
       "gruppe": "leben",
-      "punkte": 6,
+      "punkte": 8,
       "pfad": "Feature-Stopp bis v1.0",
       "dateien": "`koerper-core.js` · `stamm/koerper-leib.js` · `fachwerk-core.js` (leute · rolle · wohl) · `stamm/kreatur-*.js` · `stamm/feld-nexus.js`",
       "aaaa": "Jede Siedlung, die das Fachwerk-Gesetz plant, wird von genau den Menschen bewohnt, die ihr Gesetz zählt (leute · rolle · wohl): ≥ 200 Bewohner in einer Stadt, ≥ 40 nah voll animiert. Jeder ist ein Seed mit eigenem Leib aus dem Genom (Körperhöhe ±8 %, keine zwei gleich), mit Heim, Werk und 4–10 Wegen am Tag über die Gassen und durch die Tür. Sein Tag ist f(seed, t): um 10 Uhr steht der Schmied am Amboss, um 2 Uhr schläft er; fern kostet er 0, und wer ankommt, findet ihn auf ±2 m am richtigen Ort. Auf 3 m wendet er in ≤ 0,5 s den Kopf und weicht ohne Berührung aus; er erinnert die letzte Begegnung und spricht aus seinem Datensatz. **Wo wir die Besten schlagen:** Rockstar pflegt Routinen von Hand, Warhorse baut KI-LOD für 2 400 NPCs; bei uns ist der Tag eine reine Funktion, keine Simulation — die Stadt lebt fern umsonst und durch jedes Jahrhundert, und das Körperstudio zeigt den Schmied, dem man im Dorf begegnet.",
@@ -1416,10 +1411,10 @@
         },
         {
           "name": "Körper, Vielfalt, Ausdruck — und die Kosten einer Menge",
-          "punkte": 0,
+          "punkte": 2,
           "staffel": "1 = mensch-kopf GRÜN im Third an der Kamera des Spiels an einem Gerät, frisch am Kopf · 2 = 50 Bewohner aus 50 Seeds ohne zwei gleiche, Körperhöhe ±8 %, Gesichtsmaße in MENSCH_SOLL, ≤ 150k Dreiecke und ≤ 1 ms CPU, beide Geräte",
           "messung": "Soll-Tafel mensch-kopf (Third, Kamera aus `_loopCamera`), Gestalt-Distanz je Seed-Paar; Kosten über werkbank zaehlen und takt. Kleidung und Haar zählt der Bereich Haar, Fell, Kleidung.",
-          "beleg": "Maschine: gehalten: 50 Bewohner aus 50 Samen, 8 Typen · Gestalt-Distanz min 99 px (7:52:4/7:38:4; 0 Paare unter 1 px) · Höhe 1.683–1.928 m um 1.816 · Gesicht 50 von 50 in MENSCH_SOLL · Leib/Wurf je Typ 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 (Zeilen 1700,360) · die 50: 132200 Dreiecke · Takt 0.748 ms für 1094 → 0.034 ms je 50 an d3708675 headless — offen: mensch.K4#1 radeon: Station seit der Messung geändert · mensch.K4#1 gtx: ROT: Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.13 m · third ROT strich 0.667 Soll [1,1] — gesicht 0.667 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei 1 [0.9, 1] · lippeL -14.38 [-14, -4] · lippeA 11.19 [4, 14] · hoehleL -7.06 [-12, 0] · hoehleA 9.32 [-2, 6] · haarDeckung 1 [0.9, 1] an da0e790f",
+          "beleg": "Maschine: Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.12 m · third GRÜN strich 1 Soll [1,1] · augeFrei 1 [0.9, 1] · lippeL -12.87 [-14, -4] · lippeA 10.44 [4, 14] · hoehleL -6.1 [-12, 0] · hoehleA 4.24 [-2, 6] · haarDeckung 1 [0.9, 1] an da0e790f radeon · gehalten: 50 Bewohner aus 50 Samen, 8 Typen · Gestalt-Distanz min 99 px (7:52:4/7:38:4; 0 Paare unter 1 px) · Höhe 1.683–1.928 m um 1.816 · Gesicht 50 von 50 in MENSCH_SOLL · Leib/Wurf je Typ 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 (Zeilen 1700,360) · die 50: 132200 Dreiecke · Takt 0.748 ms für 1094 → 0.034 ms je 50 an d3708675 headless",
           "schlupfloch": "Ein einziger schöner Spieler-Kopf erfüllte die alte Messung: Vielfalt und Kosten an 50 Bewohnern machen sie zur Menge.",
           "aenderung": "Die 1 stand auf einer Tafel-Zeile ohne Ist → 0 (B03, B29).",
           "maschine": true
@@ -1649,7 +1644,7 @@
           "punkte": 0,
           "staffel": "1 = Klasse haar (Strähnen-Kohärenz gegen REF, Albedo-Band) an einem Gerät · 2 = 50 Seeds ohne zwei gleiche Frisuren, beide Geräte",
           "messung": "werkbank bild --klasse haar auf Armlänge und im Third; Gestalt-Distanz je Seed-Paar.",
-          "beleg": "Maschine: 0 — offen: haar.K2#1 radeon: Station seit der Messung geändert · haar.K2#1 gtx: ROT: EINE Pose: Leib Δ 0 · Haar-Feder Δ 0 m über 3 Lesungen · arm ROT strich 0.556 Soll [0.3554,0.533] — strich 0.556 > 0.533 · albedo: veraltet seit 4ef6370e: koerper-core.js geändert (c:b70902b2e416b42b → c:c0846417374ac1bd) · albedo — [0.01; 0.3] · third ROT strich 0.3625 Soll [0.3554,0.533] — strich 0.3625 — albedo: veraltet seit 4ef6370e: koerper-core.js geändert (c:b70902b2e416b42b → c:c0846417374ac1bd) · albedo — [0.01; 0.3] an da0e790f",
+          "beleg": "Maschine: 0 — offen: haar.K2#1 radeon: ROT: EINE Pose: Leib Δ 0 · Haar-Feder Δ 0 m über 3 Lesungen · arm ROT strich 0.5638 Soll [0.3554,0.533] — strich 0.5638 > 0.533 · albedo: veraltet seit 4ef6370e: koerper-core.js geändert (c:b70902b2e416b42b → c:c0846417374ac1bd) · albedo — [0.01; 0.3] · third ROT strich 0.3751 Soll [0.3554,0.533] — strich 0.3751 — albedo: veraltet seit 4ef6370e: koerper-core.js geändert (c:b70902b2e416b42b → c:c0846417374ac1bd) · albedo — [0.01; 0.3] an da0e790f · haar.K2#1 gtx: ROT: EINE Pose: Leib Δ 0 · Haar-Feder Δ 0 m über 3 Lesungen · arm ROT strich 0.556 Soll [0.3554,0.533] — strich 0.556 > 0.533 · albedo: veraltet seit 4ef6370e: koerper-core.js geändert (c:b70902b2e416b42b → c:c0846417374ac1bd) · albedo — [0.01; 0.3] · third ROT strich 0.3625 Soll [0.3554,0.533] — strich 0.3625 — albedo: veraltet seit 4ef6370e: koerper-core.js geändert (c:b70902b2e416b42b → c:c0846417374ac1bd) · albedo — [0.01; 0.3] an da0e790f",
           "schlupfloch": "Ein Haar-Helm je Rolle bestünde die Klasse: 50 Seeds ohne zwei gleiche verlangen das Genom.",
           "maschine": true
         },
@@ -2407,7 +2402,7 @@
           "punkte": 0,
           "staffel": "1 = kante ≤ 0,22 je Teil-Klasse (die schlechteste urteilt) an der Tafel-Pose UND einem Spielgang-Bild an einem Gerät, frisch am Kopf · 2 = Ego mit Blick 15° hoch, Third und Hügel, Haus- und Tor-Stufen L1–L3 halten milchweiss und zielTreue, beide Geräte",
           "messung": "werkbank bild --klasse 'Laub L0/L1/L2' --ist laub-kante an der Tafel-Pose und an Spielgang-Bildern; Kamera des Spiels.",
-          "beleg": "Maschine: 0 — offen: lod.K1#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/welt-boot.cjs) · lod.K1#1 gtx: Station seit der Messung geändert",
+          "beleg": "Maschine: 0 — offen: lod.K1#1 radeon: ROT: Tafel-Pose schlechteste fimp:strauch:L2 0.2070 · Karte fimp:birke:L2 0.1556 (29212 px), fimp:eiche:L2 0.1332 (62183 px), fimp:fichte:L2 0.1419 (47881 px), fimp:strauch:L2 0.2070 (23032 px), fimp:tanne:L2 0.1613 (129917 px) | Spielgang schlechteste f:eiche:L1 0.3623 · Karte fimp:birke:L2 0.1427 (26242 px), fimp:eiche:L2 0.1465 (60997 px), fimp:fichte:L2 0.1350 (37786 px), fimp:strauch:L2 0.2179 (29635 px), fimp:tanne:L2 0.1474 (96541 px) (Soll kante ≤ 0,22 je Teil-Klasse, zweiton 0) · [linse-gpu] amd/rdna-3 an da0e790f · lod.K1#1 gtx: Station seit der Messung geändert",
           "schlupfloch": "Das Mittel über alle Stufen (0,1862) versteckt den Täter: die schlechteste Teil-Klasse urteilt; eine Pose ohne sichtbare Karte umgeht die Stufe: der Spielgang wählt die Bilder. Alpha-Dither senkt die Kohärenz ohne Gestalt: zweiton muss zugleich 0 sein.",
           "aenderung": "EIN Heim von laub-kante (vorher auch Vegetation K3, Pipeline K2, Klassen K1; B26, V21).",
           "maschine": true
@@ -2445,7 +2440,7 @@
           "punkte": 0,
           "staffel": "1 = je Familie (Baum, Haus, Tor, Wagen) ist am Wechsel-Abstand der Kanten-Versatz L0 ↔ Stufe ≤ 1 px bei 1920×1080, an einem Gerät · 2 = die Wechsel-Abstände bleiben bei 30/60/144 fps und Regler des Spielers ±10 % gleich (Pixelgröße statt Bildrate), beide Geräte",
           "messung": "werkbank bild: Klassen-Maske der Gestalt in L0 (erzwungen) gegen die gewählte Stufe am Wechsel-Abstand (Chamfer-Distanz); Wechsel-Abstände je Bildrate. Die Reduktion je Stufe zählt Pipeline K3, die Kosten Profiband K3 — in derselben Sitzung.",
-          "beleg": "Maschine: gehalten: 17 Läufe bei 30/60/144 fps, Puls und Regler ±10 % (loadScale 0–1): Abstände, Schwellen, Grenzen, Wahl und Ränder gleich, die Mutante (Regler-Term im Gesetz) wandert an d3708675 headless — offen: lod.K5#1 radeon: Station seit der Messung geändert · lod.K5#1 gtx: Station seit der Messung geändert",
+          "beleg": "Maschine: gehalten: 17 Läufe bei 30/60/144 fps, Puls und Regler ±10 % (loadScale 0–1): Abstände, Schwellen, Grenzen, Wahl und Ränder gleich, die Mutante (Regler-Term im Gesetz) wandert an d3708675 headless — offen: lod.K5#1 radeon: ROT: Baum 5.16 px · Haus 0.13 px · Tor 0.18 px · Wagen 0.08 px (Soll ≤ 1 px am Wechsel-Abstand, 1920 × 1080) · gate L2: Exemplar 66 px, [linse-gpu] amd/rdna-3 an da0e790f · lod.K5#1 gtx: Station seit der Messung geändert",
           "schlupfloch": "Ein Wechsel weit draußen besteht ≤ 1 px und kostet E: die Kosten zählen in derselben Sitzung.",
           "aenderung": "Neu: die Synthese-K5 wiederholte das Profi-Band (B38, V26); die Reduktion je Stufe wohnt in Pipeline K3.",
           "maschine": true
@@ -2569,7 +2564,7 @@
           "punkte": 0,
           "staffel": "1 = ≥ 3/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 · 2 = 7/7 auf beiden Geräten",
           "messung": "Dasselbe Werk (Saat + ov) in Studio-Bühne und Welt bei gleicher Pose (Standard-Kamera der Bühne = Vorschau-Kamera der Welt) und Uhr, aus dem Ausgabe-Pfad (bild-diff.cjs-Rezept), Radeon UND GTX; die 18-%-Karte der Bühne bei Luma 110–130.",
-          "beleg": "Maschine: 0 — offen: studios.K4#1 radeon: Linse seit der Messung geändert (R6: scripts/diag-albedo-tafel.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +25) · studios.K4#1 gtx: Station seit der Messung geändert — zuletzt an 87537d3f: die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen · studios.K4#2 radeon: Linse seit der Messung geändert (R6: scripts/diag-albedo-tafel.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +25) · studios.K4#2 gtx: Station seit der Messung geändert — zuletzt an 87537d3f: die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
+          "beleg": "Maschine: 0 — offen: studios.K4#1 radeon: ROT: 0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU rdna-3) · garage 23.5 %/– [Differenz 0.2347 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · portale –/– [ROT: bild: {\"ms\":8042,\"fehler\":\"ABNAHME ROT [Ziel Blickziel verdeckt von portal-membran in] · schmiede 24.4 %/– [Differenz 0.2443 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · fachwerk –/– [ROT: bild: {\"ms\":4505,\"fehler\":\"ABNAHME ROT [Ziel Blickziel verdeckt von fern-ring in 27.0] · terrain 99.8 %/– [die Welt zeichnet an der Pose L1 (die Bühne L0) · Differenz 0.9981 > 0.021 Albedo ungemess] · koerperstudio –/– [ungemessen: das Werk ist eine Prägung (der Leib des Spielers), kein gesetzter Bau] · tetrapoda –/– [ungemessen: das Werk ist ein Wesen (eine lebende Kreatur), kein gesetzter Bau] an da0e790f · studios.K4#1 gtx: Station seit der Messung geändert — zuletzt an 87537d3f: die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen · studios.K4#2 radeon: ROT: 0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU rdna-3) · garage 23.5 %/– [Differenz 0.2347 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · portale –/– [ROT: bild: {\"ms\":8042,\"fehler\":\"ABNAHME ROT [Ziel Blickziel verdeckt von portal-membran in] · schmiede 24.4 %/– [Differenz 0.2443 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · fachwerk –/– [ROT: bild: {\"ms\":4505,\"fehler\":\"ABNAHME ROT [Ziel Blickziel verdeckt von fern-ring in 27.0] · terrain 99.8 %/– [die Welt zeichnet an der Pose L1 (die Bühne L0) · Differenz 0.9981 > 0.021 Albedo ungemess] · koerperstudio –/– [ungemessen: das Werk ist eine Prägung (der Leib des Spielers), kein gesetzter Bau] · tetrapoda –/– [ungemessen: das Werk ist ein Wesen (eine lebende Kreatur), kein gesetzter Bau] an da0e790f · studios.K4#2 gtx: Station seit der Messung geändert — zuletzt an 87537d3f: die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
           "schlupfloch": "r184 laden und eigenes Licht oder eine Bau-Kopie behalten: H6 wäre grün, Labor ≠ Welt bliebe — darum urteilt das Bild, nie die Netz-Anfrage; eine Pose, die niemand sieht, zählt nicht.",
           "aenderung": "EIN Heim von Labor = Welt im Bild (vorher auch Material K2, Tore K3(b), Siedlung K1; B39, V16).",
           "maschine": true
@@ -3796,7 +3791,7 @@
           "punkte": 0,
           "staffel": "1 = am Spawn (`_genesisMitte`) der erste Blick nach der Kontrolle plus 4 Azimute, Ego und Third: ≥ 6 von 12 Klassen frisch GRÜN an einem Gerät · 2 = jede sichtbare Klasse gemessen (auch fahrzeug, esse, tier, haus-vorschau mit externem Soll), ≥ 95 % GRÜN an beiden Geräten",
           "messung": "Spielgang-Station ankunft, K5-Urteil (`scripts/lib/abnahme-urteil.cjs` sollTafelUrteil) über die Zellen des Spawns; das Soll neuer Zeilen aus externer Referenz (Albedo-Bänder, Foto-REF), nie aus dem Kern, der gerichtet wird.",
-          "beleg": "Maschine: 0 — offen: ankunft.K4#1 radeon: ungemessen (R10) — zuletzt an 87537d3f: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: POSE ego-0 46778 ms) · ankunft.K4#1 gtx: ungemessen (R10) — zuletzt an 87537d3f: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: POSE ego-0 75084 ms)",
+          "beleg": "Maschine: 0 — offen: ankunft.K4#1 radeon: ungemessen (R10) — zuletzt an da0e790f: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: POSE ego-45 39299 ms) · ankunft.K4#1 gtx: ungemessen (R10) — zuletzt an 87537d3f: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: POSE ego-0 75084 ms)",
           "schlupfloch": "Nur Klassen mit Zeile zu urteilen lässt die schwächsten aus; Abdeckung zu belohnen belohnt den Apparat: es zählen nur GRÜN gemessene Zellen, das Soll ist extern (B41).",
           "aenderung": "Aus Klassen-Perspektive K4 (B40); die übrige Posen-Matrix ist A-Spiegel ohne Punkte. Der Tor-Sprung der Synthese-K4 zählt Tore K1 (V15).",
           "maschine": true
@@ -4760,7 +4755,7 @@
     {
       "stand": "2026-11-09",
       "kopf": "da0e790f",
-      "summe": 222,
+      "summe": 224,
       "max": 330,
       "skala": "2.0",
       "was": "Mess-Takt 3 an 8f1802b1 (Züge 29c und 30: Stoff-Tafel, Speicher-Weg, Tier-Gang, Halten K5, Kaskade, Siedlung-Trasse, Nässe unter Dach, GPU-Wand, Leib-Hieb, Kaskaden-Riss, Hänger; headless 66/2, Radeon 27/11, GTX gemessen): stoffe.K1, speicher.K3, halten.K5, siedlung.K3 je +1, leib.K1, oekologie.K1, tiere.K3 → 2; klang.K4 1 → 0 und klang.K5 2 → 1 (2 Stoffe mit ≥ 5 Schritten), siedlung.K5 2 → 0 (nH 300 erstes Haus 974 ms — der Rang des Dorf-Zugs; die Heilung siedlung-k5-erstes-haus fährt in Zug 32)."
