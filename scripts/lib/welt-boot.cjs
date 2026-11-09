@@ -1575,11 +1575,11 @@ function teilAus(argv) {
     return { k: +m[1], n: +m[2] };
 }
 // DIE WERKBANK ALS TOR: `werkbank start`, bereit am Ereignis; jeder Befehl ohne Frist (ein Hänger endet am protocolTimeout der Seite)
-function werkbankTor(port, zusatz = []) {
+function werkbankTor(port, zusatz = [], wurzel = ROOT) {
     const cp = require("child_process");
-    const wb = path.join(ROOT, "scripts", "werkbank.cjs");
+    const wb = path.join(wurzel, "scripts", "werkbank.cjs");
     const env = Object.assign({}, process.env, { WERKBANK_PORT: String(port) });
-    const kind = cp.spawn(process.execPath, [wb, "start", "--port", String(port), ...zusatz], { env });
+    const kind = cp.spawn(process.execPath, [wb, "start", "--port", String(port), ...zusatz], { env, cwd: wurzel });
     const tor = {
         log: "",
         rufe: (args, ms) => cp.spawnSync(process.execPath, [wb, ...args], { env, encoding: "utf8", timeout: ms }),

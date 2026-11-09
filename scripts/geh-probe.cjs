@@ -40,9 +40,20 @@ const SEITE = {
 // DER BAU-STAND der Erst-Zeichnung: fertige Knoten-Bauten, ihre Zeit, asynchrone Pipelines, das Vorwärm-Gesetz (gebaut, offen)
 const BAU = "const E = r._erstZeichnung || {}; return [E.bauN | 0, +(E.bauMs || 0).toFixed(1), E.pipeAsync | 0, E.vorwaermN | 0, E.vorwaerm ? E.vorwaerm.size : -1, E.vorwaermRufe | 0];"; // prettier-ignore
 
-function boot(nr) {
+// DAS A/B UNTER GLEICHEN BEDINGUNGEN (`--ab <ref>`): A ist der Stand <ref> (ein Arbeitsbaum daneben, seine Werkbank serviert ihn),
+// B dieser Baum — die Boots in der Folge A B A B auf DEMSELBEN Gerät
+const AB = arg("--ab");
+function baumA() {
+    const g = (...a) => require("child_process").execFileSync("git", a, { encoding: "utf8" });
+    const w = fs.mkdtempSync(path.join(require("os").tmpdir(), "geh-a-"));
+    g("fetch", "-q", "--depth=1", "origin", AB);
+    g("worktree", "add", "-f", "--detach", w, "FETCH_HEAD");
+    fs.symlinkSync(path.resolve("node_modules"), path.join(w, "node_modules"), "junction");
+    return w;
+}
+function boot(nr, wurzel, seite) {
     const PORT = PORT0 + nr;
-    const tor = werkbankTor(PORT);
+    const tor = werkbankTor(PORT, [], wurzel);
     const wb = (args, s) => {
         const o = tor.rufe([...args, "--port", String(PORT)], s * 1000);
         fs.appendFileSync(path.join(D, "werkbank.log"), `\n$ ${args.join(" ")}\n${o.stdout}${o.stderr}`);
@@ -64,7 +75,8 @@ function boot(nr) {
         const ok = anteil <= 0.01 && a.frameMs.max <= 100;
         gruen = gruen && ok;
         const kb = a.knotenBau || {};
-        const U = `GEH ${ok ? "GRÜN" : "ROT"} ${nr} ${name}`;
+        const U = `GEH ${ok ? "GRÜN" : "ROT"} ${nr}${seite} ${name}`;
+        if (name === "Fahrt Ego") ab.push([seite, a.frameMs.max, a.frameMs.p95, anteil]);
         zeile(`${U}: ${vor}Bild p50/95/99/max ${q(a.frameMs)} · ${(100 * anteil).toFixed(1)} % > 33 ms · Takt ${q(a.taktMs)} · ${a.frames} Bilder · Weg ${roh.bahnM} m · Ursachen ${a.jeUrsache.slice(0, 3).map((e) => `${e.n}× ${e.summeMs}/${e.maxMs} ${e.ursache}`).join(" | ")}`); // prettier-ignore
         zeile(`${U} Bau: Knoten ${bn[0] - bv[0]} Σ ${(bn[1] - bv[1]).toFixed(1)} ms, max-Schritt ${kb.maxMs} ms, ${kb.ueber16} > 16,7 · Pipelines ${bn[2] - bv[2]} · vorgewärmt davor ${bv[3]} offen ${bv[4]} im Fenster ${bn[3] - bv[3]} (Rufe ${bn[5] - bv[5]}) · je Auftrag ${JSON.stringify(Object.entries(kb.jeAuftragMs || {}).slice(0, 4))}`); // prettier-ignore
         // DIE SPITZE: die drei längsten Bilder, je ihr Fenster der Rohdaten (Knoten-Bau-Schritte mit ms, Pipelines)
@@ -89,8 +101,8 @@ function boot(nr) {
             zelle("Gehen", "bahn", SEITE.geh, `Ankunft ${an[0]} ms (Ferne ${an[1]}) · Knoten ${b0[0]} Σ ${b0[1]} ms · Pipelines ${b0[2]} · `); // prettier-ignore
             wb(["umstellen", "--ort", "genesis", "--sicht", "ego"], 300);
             zelle("Fahrt Ego", "fahrt", SEITE.fahrt, "");
-            wb(["umstellen", "--ort", "genesis", "--sicht", "third"], 300);
-            zelle("Fahrt Third", "fahrt", SEITE.fahrt, "");
+            if (!AB) wb(["umstellen", "--ort", "genesis", "--sicht", "third"], 300);
+            if (!AB) zelle("Fahrt Third", "fahrt", SEITE.fahrt, "");
             tor.stop();
             return gruen;
         },
@@ -98,15 +110,27 @@ function boot(nr) {
     );
 }
 
+const ab = []; // je Boot der ersten Fahrt: [Seite, max, p95, Anteil > 33 ms]
 (async () => {
     let gruen = true;
+    let a = null;
     try {
-        for (let nr = 1; nr <= Number(arg("--boots", 2)); nr++) gruen = (await boot(nr)) && gruen;
+        if (AB) a = baumA();
+        const folge = AB ? ["A", "B", "A", "B"] : Array.from({ length: Number(arg("--boots", 2)) }, () => "");
+        for (const [i, seite] of folge.entries()) gruen = (await boot(i + 1, seite === "A" ? a : undefined, seite)) && gruen;
+        if (AB) {
+            const je = (s) => ab.filter((x) => x[0] === s).map((x) => `${x[1]}/${x[2]}/${(100 * x[3]).toFixed(0)}%`).join(" ");
+            const mx = (s) => Math.max(...ab.filter((x) => x[0] === s).map((x) => x[1]));
+            zeile(`GEH-AB ${mx("B") <= mx("A") ? "GRÜN" : "ROT"} erste Fahrt Ego (max/p95/> 33 ms) A ${AB} ${je("A")} ‖ B ${je("B")} ‖ max A ${mx("A")} → B ${mx("B")}`); // prettier-ignore
+        }
     } catch (e) {
         gruen = false;
         zeile(`GEH ROT Error ${String((e && e.stack) || e).slice(0, 400)}`);
     } finally {
-        for (const k of kern.filter((k) => /Ego|Ankunft/.test(k))) console.log(k);
+        if (a) require("child_process").spawnSync("git", ["worktree", "remove", "--force", a]);
+        // die letzten zehn: mit A/B je Boot Bild und Spitze der ersten Fahrt und das Urteil, sonst Ankunft und erste Fahrt
+        const zeigt = (k) => (AB ? /GEH-AB|Ego(: | Spitze)/.test(k) : /Ego|Ankunft/.test(k));
+        for (const k of kern.filter(zeigt)) console.log(k);
     }
     process.exit(gruen ? 0 : 1);
 })();

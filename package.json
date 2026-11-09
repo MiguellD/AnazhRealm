@@ -79,7 +79,7 @@
         "gate:stand-takt": "node scripts/diag-stand-takt.cjs --selftest && node scripts/diag-stand-takt.cjs",
         "gate:start-rezept": "node scripts/diag-start-rezept.cjs --selftest && node scripts/diag-start-rezept.cjs",
         "gate:kamera-treue": "node scripts/diag-kamera-treue.cjs --selftest && node scripts/diag-kamera-treue.cjs",
-        "gate:geh-zerlegung": "node scripts/geh-probe.cjs",
+        "gate:geh-zerlegung": "node scripts/geh-probe.cjs --ab main",
         "gate:ego-schatten": "node scripts/diag-ego-schatten.cjs --selftest && node scripts/diag-ego-schatten.cjs",
         "gate:post-kette": "node scripts/diag-post-kette.cjs --selftest && node scripts/diag-post-kette.cjs",
         "gate:ziel-zensus": "node scripts/diag-ziel-zensus.cjs --selftest && node scripts/diag-ziel-zensus.cjs",
