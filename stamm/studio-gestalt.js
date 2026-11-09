@@ -220,18 +220,13 @@ class AnazhRealm_studio_gestalt {
         // liefert sie nur an Teilen mit Laub, Blüte oder Halm, immer als Paar. Sie liegen mit uv in EINEM verschränkten Puffer
         // (`_jahrEcken`): die Blatt-Karte belegt ohne sie schon 8 Vertex-Puffer (WebGPU `maxVertexBuffers`). Das JAHR trägt der
         // Stoff nur, wo eine Ecke Laub oder Blüte ist — der Halm steht im Jahr (seine Gestalt kürzt der Gras-Stoff, phyto-core
-        // `halmImJahr`). DER FUSS DER ÄHRE (w26-winter-fichte): ihr Anker liegt auf dem Fuß ihres Stängels (phyto-core
-        // `halmAehrenFuss`), in JEDER Stufe — der Halm kürzt sich im Jahr um seinen Fuß, die Ähre mit ihm; bis dahin legte nur
-        // die Ferne der Welt ihn (Stufe 2), die Ähre der L1 hätte über der alten Spitze geschwebt. EINMAL je Puffer (WeakSet).
+        // `halmImJahr`). Die Ecken reisen, wie das Studio sie gebiert: der Anker der Ähre IST der Fuß ihres Stängels (emitGrass,
+        // w26-winter-fichte-2), der Wirt schreibt keine Ecke um (gate:asset-contract, die Ähren-Wand Ä). Bis dahin verlegte er sie
+        // je Lieferung per Float-Schlüssel und warf an jedem Halm-Typ ohne Ähre (Schilf, 748 Würfe je Fernwald-Lauf).
         const paar = !!(m.aCenter && m.aCenter.array) + !!(m.aType && m.aType.array);
         if (paar === 1) throw new Error("_foundryBuildMesh: die Ecken reisen nur als Paar (aCenter · aType)");
         const SG = paar ? AnazhRealm._saisonGesetz().typ : null;
         const jahr = !!SG && m.aType.array.some((t) => t === SG.laub || t === SG.bluete);
-        const fuesse = AnazhRealm._aehrenFuesse || (AnazhRealm._aehrenFuesse = new WeakSet());
-        if (SG && !fuesse.has(m.aCenter.array) && m.aType.array.some((t) => t === SG.halm)) {
-            globalThis.__phytoCore.halmAehrenFuss(m.position.array, m.aCenter.array, m.aType.array, SG.halm);
-            fuesse.add(m.aCenter.array);
-        }
         if (paar) AnazhRealm._jahrEcken(geo, m.uv && m.uv.array, m.aCenter.array, m.aType.array);
         else if (m.uv && m.uv.array) geo.setAttribute("uv", new T.BufferAttribute(m.uv.array, 2));
         // Das Schalen-Fell (V18.497) trägt seine Wurzel (Bind-Punkt der Haar-Maske) und die Schalen-Daten.

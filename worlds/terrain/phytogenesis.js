@@ -393,21 +393,6 @@ function emitGestalt(pre) {
     }
     return { P, baum };
 }
-// DER FUSS DER ÄHRE IM LABOR (w26-winter-fichte): wie der Wirt (`_foundryBuildMesh`) legt das Labor den Anker jeder Ähre seines
-// Grases auf den Fuß ihres Stängels (phyto-core `halmAehrenFuss`) — die Gestalt des Jahrs (`halmJahrGlsl`) kürzt Halm und Ähre
-// um denselben Fuß. Der Bau des Kerns bleibt byte-gleich (die Goldens tragen die Spitze als Anker).
-function aehrenFussLabor(g) {
-    const halm = SAISON_GESETZ.typ.halm;
-    g.traverse((o) => {
-        const a = o.geometry && o.geometry.attributes;
-        if (!a || !a.aCenter || !a.aType || !a.position || o.geometry.userData.aehrenFuss) return;
-        if (!a.aType.array.some((t) => t === halm)) return;
-        self.__phytoCore.halmAehrenFuss(a.position.array, a.aCenter.array, a.aType.array, halm);
-        a.aCenter.needsUpdate = true;
-        o.geometry.userData.aehrenFuss = true;
-    });
-    return g;
-}
 function build() {
     RNG = mulberry32(Math.floor(SEED));
     disposeSubject();
@@ -415,7 +400,6 @@ function build() {
     scene.add(subject);
     const pre = PRESETS[CURRENT];
     const { P, baum } = emitGestalt(pre);
-    if (P.kind === "grass") aehrenFussLabor(subject);
     if (pre.panel !== "rock") {
         if (baum) {
             const _pl = PORTAL_RENDER_CONFIG.placement || {},
@@ -2129,8 +2113,8 @@ function buildForest() {
     const _ksF = (k, d) => (_KS[k] && _KS[k].length ? _KS[k][_KS[k].length - 1] : d) | 0;
     const _grasSeeds = [];
     for (let i = 0; i < _GEST.gras; i++) _grasSeeds.push(Math.floor(RNG() * 1e6)); // Budget-Gestalten (2 Wuerfe wie zuvor)
-    const grassT = _grasSeeds.map((sd) => aehrenFussLabor(buildInstance("gras", sd, _ksN("grass", 2))));
-    const grassTF = _grasSeeds.map((sd) => aehrenFussLabor(buildInstance("gras", sd, _ksF("grass", 2))));
+    const grassT = _grasSeeds.map((sd) => buildInstance("gras", sd, _ksN("grass", 2)));
+    const grassTF = _grasSeeds.map((sd) => buildInstance("gras", sd, _ksF("grass", 2)));
     const flowerT = [
         buildInstance("blume", Math.floor(RNG() * 1e6), 0),
         buildInstance("blume", Math.floor(RNG() * 1e6), 0),

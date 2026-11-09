@@ -5666,8 +5666,8 @@
     // LAI 2–10 m Winter 0,567 × Sommer. Die Breite des Halms liegt waagrecht quer zu seiner Ebene (emitGrass: rt = dir × Y), die
     // Normale steht senkrecht auf ihr — ihr waagrechter Teil (nx, nz) nennt die Ebene, q = (nz, 0, −nx) die Breite. Eingang: der
     // Versatz (ox, oy, oz) der Ecke von ihrem Fuß AM BODEN (aCenter x/z, y 0), die Normale der Vorlage, `aehre` 1 an der Ähre (sie
-    // kürzt als Ganzes um den Fuß ihres Stängels, `halmAehrenFuss`), 0 am Halm; ein fast flach liegendes Stück (|q| < quer) kürzt
-    // auch quer (ohne Ebene keine Breite). Rückgabe der Versatz im Jahr; Sommer (ha 1) exakt die Ecke. Über einer Algebra wie
+    // kürzt als Ganzes um den Fuß ihres Stängels — ihr Anker, geboren in emitGrass), 0 am Halm; ein fast flach liegendes
+    // Stück (|q| < quer) kürzt auch quer (ohne Ebene keine Breite). Rückgabe der Versatz im Jahr; Sommer (ha 1) exakt die Ecke. Über einer Algebra wie
     // `kroneImJahr` (WIND_ZAHLEN die Linse, die TSL-Algebra Welt-Stoff, Ferne und Schale, WIND_GLSL das Labor).
     var HALM_JAHR = Object.freeze({ quer: [0.02, 0.12] });
     function halmImJahr(A, ha, ox, oy, oz, nx, nz, aehre) {
@@ -5687,40 +5687,6 @@
             y: A.mul(oy, ha),
             z: A.add(A.mul(oz, ha), A.mul(A.mul(nx, w), A.k(-1))),
         };
-    }
-    // DER FUSS DER ÄHRE (w26-winter-fichte): emitGrass legt den Anker der Ähre (aCenter) auf die Spitze ihres Stängels; die
-    // Gestalt des Jahrs (`halmImJahr`) und die Ferne der Wiese kürzen bzw. spreizen sie um den FUSS dieses Stängels. Die Spitze
-    // ist eine Ecke des Stängels (sein letzter Ring, eine Ecke), dessen aCenter sein Fuß ist: jede Ähren-Ecke (Typ `halm`,
-    // aCenter y > 0) nimmt x/z dieses Fußes, y bleibt die Höhe der Spitze (die Marke der Ähre); jede Ecke eines anderen Typs
-    // (Laub, Blüte: ihre Mitte steht über dem Boden) bleibt. In place auf `mitte`; die Rückgabe
-    // zählt die verlegten Ecken. Eine Ähre ohne Stängel bricht laut — darum EINMAL je Puffer (der Leser hält ihn). Leser: der
-    // Wirt beim Bau jedes Foundry-Körpers (`_foundryBuildMesh`) und das Labor (phytogenesis, sein Gras) — vorher legte nur die
-    // Ferne der Welt den Fuß (`_wieseAehrenFuss`, Stufe 2).
-    function halmAehrenFuss(pos, mitte, typ, halm) {
-        const fuss = new Map();
-        const k = (x, y, z) => x + "|" + y + "|" + z;
-        const n = Math.min(pos.length, mitte.length, typ.length * 3);
-        for (let i = 0; i < n; i += 3)
-            if (typ[i / 3] === halm && !(mitte[i + 1] > 1e-4)) fuss.set(k(pos[i], pos[i + 1], pos[i + 2]), i);
-        let z = 0;
-        for (let i = 0; i < n; i += 3) {
-            if (typ[i / 3] !== halm || !(mitte[i + 1] > 1e-4)) continue;
-            const j = fuss.get(k(mitte[i], mitte[i + 1], mitte[i + 2]));
-            if (j === undefined)
-                throw new Error(
-                    "[phyto] halmAehrenFuss: eine Ähre ohne Stängel (Anker " +
-                        mitte[i] +
-                        ", " +
-                        mitte[i + 1] +
-                        ", " +
-                        mitte[i + 2] +
-                        ")"
-                );
-            mitte[i] = mitte[j];
-            mitte[i + 2] = mitte[j + 2];
-            z++;
-        }
-        return z;
     }
     // Die GLSL-Algebra des Terms (Laub- und Rinden-Shader des Labors, r128): jeder Ausdruck ist Text.
     var WIND_GLSL = Object.freeze({
@@ -6104,7 +6070,6 @@
         kroneImJahr: kroneImJahr, // w21 — DIE KRONE IM JAHR über einer Algebra (Fern-Krone: Ring, Boden, Kamm, Panorama)
         HALM_JAHR: HALM_JAHR, // w26 — die Gestalt des Halms im Jahr: ab welcher waagrechten Normale er seine Breite trägt
         halmImJahr: halmImJahr, // w26 — DER HALM IM JAHR über einer Algebra (Nah-Wiese, Ferne, Schale, Labor): Länge × ha, Breite bleibt
-        halmAehrenFuss: halmAehrenFuss, // w26 — der Anker der Ähre am Fuß ihres Stängels (Wirt `_foundryBuildMesh`, Labor)
         WIND_GLSL: WIND_GLSL, // K19 — die GLSL-Algebra des Terms (Labor)
         LAUB_LICHT: LAUB_LICHT, // K19 — Durchlass des Blatts (tau = T/R je Laub/Nadel) und die Vorwärts-Keule
         laubDurchlass: laubDurchlass, // K19 — DER EINE Laub-Licht-Term über einer Algebra (Welt-Stoff, Labor-Shader, Linse)

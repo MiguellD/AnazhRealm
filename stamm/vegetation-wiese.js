@@ -1302,8 +1302,8 @@ class AnazhRealm_vegetation_wiese {
                 // um die Hochachse
                 if (Math.max(Math.abs(e[1]), Math.abs(e[4]), Math.abs(e[6]), Math.abs(e[9])) > 1e-6 * Math.abs(e[5]))
                     throw new Error(`Nah-Wiese: Vorlage ${kopf} Teil ${p} kippt die Hochachse — die Ferne liest den Hang aus ihren waagrechten Achsen`); // prettier-ignore
-                // die Ferne spreizt jeden Halm um seinen Fuß (`aCenter`; die Ähre trägt den Fuß ihres Stängels seit dem Bau,
-                // `_foundryBuildMesh` · phyto-core `halmAehrenFuss`) — eine Vorlage ohne Ecken bricht laut
+                // die Ferne spreizt jeden Halm um seinen Fuß (`aCenter`; die Ähre trägt den Fuß ihres Stängels von Geburt,
+                // emitGrass) — eine Vorlage ohne Ecken bricht laut
                 if (!lf.geom.attributes.aCenter)
                     throw new Error(`Nah-Wiese: Vorlage ${kopf} ohne Ecken (aCenter) — die Ferne spreizt ihre Halme um ihre Füße`); // prettier-ignore
                 fern.push(senke(`fern:${v}:${p}`, `nahWiese:Lf:${v}:${p}`, this._halmFerne(lf.mat)));

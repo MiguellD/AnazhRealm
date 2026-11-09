@@ -100,7 +100,7 @@ class AnazhRealm_stoff_material {
             // w22-strauch-karte wurde der Halm quer um s breiter: das L2-Blatt (halbe Breite 4–9 cm) lag bei s = 14 als Keil von
             // 2,5 m Breite und 0,8 m Höhe in der Wiese — am See (Radeon, Mittag) große flache Pyramiden im mittleren Gras, mit
             // s ≥ 9 schon diesseits 20 m am abgewandten Hang. Die Ähre (ihr Anker über dem Boden: der Fuß ihres Stängels in der
-            // Höhe seiner Spitze, phyto-core `halmAehrenFuss`) wandert mit ihrem Stängel, in ihrer Größe. Bis w14-wiese-saum streckte der
+            // Höhe seiner Spitze, geboren in emitGrass) wandert mit ihrem Stängel, in ihrer Größe. Bis w14-wiese-saum streckte der
             // Stoff jede waagrechte Lage um s: die Neigung der Halme (p50 0,34 der Höhe) mit ihr — bei s = 14 lag der Halm 12°
             // über dem Boden (der Saum der Mess-Wiese, swiftshader-Maske 06.11.)
             const c = T.attribute("aCenter", "vec3");
@@ -135,7 +135,7 @@ class AnazhRealm_stoff_material {
     // `halmImJahr` über der TSL-Algebra, der Halm kürzt sich längs seiner Achse um seinen Fuß (Höhe und Neigung × `ha`,
     // `uLaubPraesenz.z`, `_saisonPraesenz`), die Breite bleibt — die Fläche fällt genau mit `ha`. `fuss` der Fuß am Boden (vec3,
     // y 0: aCenter x/z der Vorlage, in der Ferne gespreizt), `lage` die Ecke in der Vorlage; die Ähre (aCenter y > 0) kürzt als
-    // Ganzes um den Fuß ihres Stängels (`_foundryBuildMesh` legt ihn). Leser: der Gras-Stoff der Nah-Wiese (`_foundryTreeMaterial`)
+    // Ganzes um den Fuß ihres Stängels (ihr Anker, geboren in emitGrass). Leser: der Gras-Stoff der Nah-Wiese (`_foundryTreeMaterial`)
     // und ihre Ferne (`_halmFerne`). Bis hierher staute jeder Leser nur y: Neigung und Fußabdruck blieben, die Wiese deckte im
     // Winter von oben wie im Sommer (Radeon 87537d3f: LAI 2–10 m Winter 0,567 × Sommer).
     _halmImJahr(T, fuss, lage) {

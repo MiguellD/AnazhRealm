@@ -256,8 +256,9 @@ var SAISON_GESETZ = {
     // liegt im Winter abgestorben und vom Schnee gedrueckt (0,35): die Halm-Flaeche und mit ihr der LAI fallen etwa linear
     // mit der Hoehe. Bis dahin stand die Winter-Wiese so hoch wie im Sommer (LAI 2–10 m Winter 1,058 × Sommer, Radeon 8ef49bef).
     // w14-wiese-saum (06.11., additiv) — DER HALM (`halm`, emitGrass): seine Mitte (aCenter) ist der Fuss des Halms am Boden, die
-    // der Aehre die Spitze ihres Staengels; das Jahr zieht ihn nie, die Ferne der Welt streckt das Bueschel um diese Mitten
-    // (`_halmFerne`: der Halm quer, die Aehre wandert nur). Bis dahin stand die 4 als Ziffer im Gras — die Bytes bleiben gleich.
+    // der Aehre der Fuss ihres Staengels in der Hoehe seiner Spitze (y > 0 die Marke der Aehre, geboren in emitGrass seit
+    // w26-winter-fichte-2; bis dahin die Spitze selbst); das Jahr zieht ihn nie, die Ferne der Welt streckt das Bueschel um diese
+    // Mitten (`_halmFerne`: der Halm quer, die Aehre wandert nur). Bis dahin stand die 4 als Ziffer im Gras.
     typ: { laub: 1, bluete: 3, halm: 4 },
     karteSchwelle: 0.5,
 };
@@ -832,8 +833,8 @@ function baumWindGlsl(foliage) {
 }
 // DER HALM IM JAHR IM LABOR (w26-winter-fichte, additiv): derselbe Term wie der Gras-Stoff der Welt (phyto-core `halmImJahr`,
 // hier über der GLSL-Algebra WIND_GLSL) — der Halm kürzt sich längs seiner Achse um seinen Fuß (aCenter x/z, y 0), Höhe und
-// Neigung × uHalm, die Breite bleibt; die Ähre (aCenter y > 0, der Fuß ihres Stängels: phytogenesis legt ihn wie der Wirt,
-// phyto-core `halmAehrenFuss`) kürzt als Ganzes. Bis w26 staute das Labor nur y (`transformed.y *= uHalm`).
+// Neigung × uHalm, die Breite bleibt; die Ähre (aCenter y > 0, der Fuß ihres Stängels, geboren in emitGrass) kürzt als
+// Ganzes. Bis w26 staute das Labor nur y (`transformed.y *= uHalm`).
 function halmJahrGlsl() {
     const PC = self.__phytoCore;
     const J = PC.halmImJahr(PC.WIND_GLSL, "_hHa", "_hO.x", "_hO.y", "_hO.z", "objectNormal.x", "objectNormal.z", "_hAe");
@@ -3301,10 +3302,14 @@ function emitGrass(P) {
                 pi.push(v0, aussen ? v0 + 1 : v0 + 2, aussen ? v0 + 2 : v0 + 1);
                 pu.push(0, 0, (breit * S) / HG.aderM, 0, 0, 0);
                 const cc = seedCol.clone().multiplyScalar((0.85 + 0.3 * t) * (0.92 + 0.16 * wurf[(2 + e) % wurf.length]));
+                // DER ANKER DER ÄHRE (w26-winter-fichte-2): der Fuß ihres Stängels (bx, bz) in der Höhe seiner Spitze — geboren,
+                // wo die Ähre entsteht; jeder Leser (Gras-Stoff, Ferne, Labor) kürzt bzw. spreizt sie um diesen Fuß, keiner sucht
+                // ihn nach. Bis w26-winter-fichte trug sie die Spitze (tip), der Wirt verlegte sie je Lieferung per Float-Schlüssel
+                // (`halmAehrenFuss`) und warf an jedem Halm-Typ ohne Ähre (Schilf: 748 Würfe je Fernwald-Lauf).
                 for (let q = 0; q < 3; q++) {
                     pc.push(cc.r, cc.g, cc.b);
                     pw.push(swT, la * 1.3 + i, 1.0);
-                    pct.push(tip[0], tip[1], tip[2]);
+                    pct.push(bx, tip[1], bz);
                     pty.push(SAISON_GESETZ.typ.halm);
                 }
             }
