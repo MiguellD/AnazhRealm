@@ -662,7 +662,9 @@ class AnazhRealm_stoff_karte {
         // nach der letzten (`onSubmittedWorkDone` nach ihr trägt jede Zeichnung davor). Ohne Ende (der ruhende Loop) fragt die
         // Leine weiter jede Karte bei ihrem Beginn. Bis hier band sich jede Karte für sich, und die nächste desselben Takts fand die
         // Leine gespannt: unter dem Ladeschirm begann je Takt höchstens EINE Karte — die 14 Karten im Blick backten 11,4 → 14,0 s,
-        // beim Eintritt ~90 ms der Frist frei, je Karte ~55 ms Haupt-Faden (GTX kalt, f7d88889).
+        // beim Eintritt ~90 ms der Frist frei, je Karte ~55 ms Haupt-Faden (GTX kalt, f7d88889). Ein Schritt, der nicht ganz stand,
+        // beendet den Takt NICHT: der Versuch jeder Karte treibt den Bau der Programme ihrer Art (endete der Takt am ersten, kam die
+        // zweite Karte erst 3 s nach der ersten, das Weltbild +1,19 s, a1e54bc9).
         const jeKarte = !Number.isFinite(frist);
         let v = gezeichnet();
         const binden = () => gezeichnet() !== v && (this._gpuLeineBinden(), (v = gezeichnet()));
@@ -674,13 +676,8 @@ class AnazhRealm_stoff_karte {
             }
             // an gespannter Leine nur die begonnene Karte
             if (!(at.offen && at.offen.z === z) && (nurHalbe || (jeKarte && this._gpuLeineStraff()))) break;
-            const versuch = gezeichnet();
             const e = this._karteWeltBacken(at, z);
             if (jeKarte) binden();
-            // DER SCHRITT, DER NICHT GANZ STAND (er zeichnete, ein Bürger der Bühne wartet auf sein Programm): mit endlicher Frist
-            // keine weitere Karte in diesem Takt — sie fiele an denselben Programmen (GTX kalt e51d5cca, die Karten eines Takts ohne
-            // diese Wand: 123 statt 39 verworfene Schritte, solange die Programme der Bühne bauten)
-            if (!jeKarte && e === null && gezeichnet() !== versuch) break;
             // null: die L1 reist, ein Bürger der Bühne wartet auf seine Pipeline oder die Bühne trägt eine halbe Karte;
             // 0: ein Ring steht — im Budget backt derselbe Takt den nächsten
             if (e === null || e === 0) {
