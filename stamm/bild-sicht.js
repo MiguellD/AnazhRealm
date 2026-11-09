@@ -86,37 +86,19 @@ class AnazhRealm_bild_sicht {
             abbild.image = { data: null, width: w, height: h };
             abbild.needsUpdate = true;
         }
+        // DAS PROGRAMM STEHT IM KATALOG (`_rohKatalog`, beim Anschluss des Geräts asynchron): bis w26 baute der erste Bruch nach
+        // dem Bild es synchron (`createRenderPipeline`, der GPU-Prozess übersetzte vor dem nächsten Bild); fehlt es, ruht der Bruch
+        const prog = this._rohProgramm("szene:tiefenabbild");
+        if (!prog) return;
         rend._textures.updateTexture(abbild);
         const ziel = be.get(abbild).texture;
         let A = this._tiefenAbbildGpu;
         if (!A) {
-            const modul = be.device.createShaderModule({
-                label: "szene:tiefenabbild",
-                code:
-                    "@group(0) @binding(0) var tiefe: texture_depth_2d;\n" +
-                    "@vertex fn vs(@builtin(vertex_index) i: u32) -> @builtin(position) vec4f {\n" +
-                    "    let p = vec2f(f32((i << 1u) & 2u), f32(i & 2u));\n" +
-                    "    return vec4f(p * vec2f(2.0, -2.0) + vec2f(-1.0, 1.0), 0.0, 1.0);\n" +
-                    "}\n" +
-                    "@fragment fn fs(@builtin(position) p: vec4f) -> @location(0) vec4f {\n" +
-                    "    let q = vec2i(textureDimensions(tiefe)) - vec2i(1, 1);\n" +
-                    "    let b = vec2i(i32(p.x) * 2, i32(p.y));\n" +
-                    "    var d = 0.0;\n" +
-                    "    for (var i = 0; i < 2; i++) { d = max(d, textureLoad(tiefe, min(b + vec2i(i, 0), q), 0)); }\n" +
-                    "    return vec4f(d, 0.0, 0.0, 1.0);\n" +
-                    "}\n",
-            });
             // die 1×1-Attrappe der Szenen-Tiefe: r184 kopiert im Pass-Bruch in sie, die Kopie wird zum Abbild-Pass
             const bruch = new THREE.DepthTexture(1, 1);
             bruch.name = "szene:tiefenabbild:bruch";
             A = this._tiefenAbbildGpu = {
-                pipe: be.device.createRenderPipeline({
-                    label: "szene:tiefenabbild",
-                    layout: "auto",
-                    vertex: { module: modul, entryPoint: "vs" },
-                    fragment: { module: modul, entryPoint: "fs", targets: [{ format: "r32float" }] },
-                    primitive: { topology: "triangle-list" },
-                }),
+                pipe: prog.p,
                 attrappe: bruch,
                 rechteck: new THREE.Vector4(0, 0, 1, 1),
                 quelle: null,
@@ -125,7 +107,7 @@ class AnazhRealm_bild_sicht {
         }
         if (A.quelle !== quelle || A.ziel !== ziel) {
             A.gruppe = be.device.createBindGroup({
-                layout: A.pipe.getBindGroupLayout(0),
+                layout: prog.gruppe,
                 entries: [{ binding: 0, resource: quelle.createView({ aspect: "depth-only" }) }],
             });
             A.ansicht = ziel.createView();
@@ -2383,15 +2365,17 @@ class AnazhRealm_bild_sicht {
             const P = AnazhRealm.FELD_PASS;
             const PN = AnazhRealm.FELD_PANO;
             const n = PN.az * PN.elev;
-            device.pushErrorScope("validation");
+            // das Programm entsteht asynchron (w26-programm-katalog: kein Programm übersetzt der GPU-Prozess vor dem nächsten Bild),
+            // vor dem Fehler-Bereich (ein await in ihm finge die Fehler jedes anderen Rufers des Geräts)
             if (!this._feldPanoPipe || this._feldPanoPipeDev !== device) {
                 const mod = device.createShaderModule({ code: this._feldPanoWgsl() });
-                this._feldPanoPipe = device.createComputePipeline({
+                this._feldPanoPipe = await device.createComputePipelineAsync({
                     layout: "auto",
                     compute: { module: mod, entryPoint: "main" },
                 });
                 this._feldPanoPipeDev = device;
             }
+            device.pushErrorScope("validation");
             const pipe = this._feldPanoPipe;
             const uni = new Float32Array(16);
             uni[0] = fp.anchorX;
@@ -3816,6 +3800,21 @@ AnazhRealm.FELD_PANO = Object.freeze({
     rebakeDist: 60, // m XZ-Drift bis zum Re-Bake (Parallaxe auf 8 km ≈ 0.4° — unter der Wahrnehmung)
     rebakeHoehe: 12, // m Y-Drift bis zum Re-Bake (Horizont-Verschiebung)
 });
+// DAS TIEFEN-ABBILD (`_tiefenAbbild`, sein Programm im Katalog `ROH_PROGRAMME`): ein Vollbild-Dreieck lädt je Texel das
+// waagrechte Paar der Szenen-Tiefe und schreibt sein Maximum
+AnazhRealm.TIEFEN_ABBILD_WGSL = `@group(0) @binding(0) var tiefe: texture_depth_2d;
+@vertex fn vs(@builtin(vertex_index) i: u32) -> @builtin(position) vec4f {
+    let p = vec2f(f32((i << 1u) & 2u), f32(i & 2u));
+    return vec4f(p * vec2f(2.0, -2.0) + vec2f(-1.0, 1.0), 0.0, 1.0);
+}
+@fragment fn fs(@builtin(position) p: vec4f) -> @location(0) vec4f {
+    let q = vec2i(textureDimensions(tiefe)) - vec2i(1, 1);
+    let b = vec2i(i32(p.x) * 2, i32(p.y));
+    var d = 0.0;
+    for (var i = 0; i < 2; i++) { d = max(d, textureLoad(tiefe, min(b + vec2i(i, 0), q), 0)); }
+    return vec4f(d, 0.0, 0.0, 1.0);
+}
+`;
 // DER SPIEGEL DES GESETZES (D10, `_spiegelFeldTakt` · `_spiegelPass`): das Feld n × n Zellen à texel m um das Auge (Höhen
 // RGBA-Halbfloat + Stoff RGBA8, je Gestalt eine von laubFarben Kronen-Farben; neu bei drift m), gebacken im Worker in
 // Streifen von höchstens `zeilen` Zeilen; der Pass in 1/teil der Ausgabe, je Wasser-Pixel `schritte` Schritte: über der Höchsten eines Blocks von `block` × `block` Zellen ein Sprung an seinen Rand,

@@ -256,6 +256,7 @@ class AnazhRealm_dirigent_ankunft {
                 }
                 // die Absage einer asynchronen Pipeline meldet sich laut (r184 verschluckt sie)
                 this._erstAbsageWache(renderer);
+                this._rohKatalog(renderer); // die Roh-Programme entstehen jetzt, asynchron (nie am Zug)
                 this._gestaltSchluessel(renderer); // der Bau-Schlüssel aus dem Stoff-Gesetz (r184s Nodes stehen erst jetzt)
                 // JEDES-HOLZ — DER DEVICE-LOSS-WÄCHTER: stirbt das GPU-Device
                 // (Software-Dawn, Treiber-Reset, TDR), wird es LAUT gemeldet +

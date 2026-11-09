@@ -302,7 +302,7 @@ async function kaltLauf() {
             version: r.constructor.VERSION,
             adapter,
             ohne: (st.logBuffer || []).filter((z) => /Das erste Weltbild steht ohne/.test(z)),
-            sync: __haengerH.namen.filter((e) => e.art === "sync"),
+            sync: __haengerH.namen.filter((e) => e.art === "sync" || e.art === "compute"),
             lieferung: r._foundry.lieferung,
         });
     });

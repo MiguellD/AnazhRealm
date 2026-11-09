@@ -72,14 +72,17 @@ class AnazhRealm_bild_erst {
     // des eben gesetzten Wagens; ein Leerlauf, der nicht reicht, lässt den Rest der Reihe dem ersten Bild.
     // Ein Objekt, das seine Pässe nie erreicht (die Render-Funktion des Wurfs übergeht es), fällt nach VORWAERM_VERSUCHE Rufen
     // ohne Antwort aus der Familie (`vorwaermVerweigert`, laut im Flugschreiber); eines, das die Szene verließ, fällt still.
-    // Die Familie eines Passes der Welt-Szene: der Wurf (ein Schatten-Stoff über einer Ortho-Kamera: die Kaskaden), das Auge (die
-    // Spiel-Kamera in das Ziel des Szenen-Passes der Post-Kette — ohne Kette auf den Schirm); jeder andere Pass (ein Spiegel, eine
-    // Tiefen-Probe) baut nichts vor und zählt nichts
+    // Die Familie eines Passes der Welt-Szene: der Wurf (ein Schatten-Stoff über einer Ortho-Kamera: die Kaskaden), der Punkt (ein
+    // Schatten-Stoff über der 90°-Kamera einer Würfel-Seite: der Wurf des Feuers, `_lichtWurf` — w26: sein Stoff misst die Weite
+    // statt der Tiefe, ein eigenes Programm je Werfer; Radeon vorher „Point Light Shadow - Face 1 bauSatz" 7,5 ms im Gehen), das
+    // Auge (die Spiel-Kamera in das Ziel des Szenen-Passes der Post-Kette — ohne Kette auf den Schirm); jeder andere Pass (ein
+    // Spiegel, eine Tiefen-Probe) baut nichts vor und zählt nichts
     _vorwaermFamilie(scene, camera) {
         const st = this.state;
         if (scene !== st.scene) return null;
         const u = scene.overrideMaterial;
-        if (u) return u.isShadowPassMaterial === true && camera.isOrthographicCamera === true ? "wurf" : null;
+        if (u)
+            return u.isShadowPassMaterial === true ? (camera.isOrthographicCamera === true ? "wurf" : "punkt") : null;
         if (camera !== st.camera) return null;
         const sp = st.scenePass;
         return !sp || st.postProcessingFailed || st.renderer.getRenderTarget() === sp.renderTarget ? "auge" : null;
@@ -125,12 +128,15 @@ class AnazhRealm_bild_erst {
             this._vorwaermErgebnis = "gebaut";
         }
         if (f && f.size === 0) this._vorwaermFrei(o);
+        else if (f && !AnazhRealm.VORWAERM_HALT.some((h) => f.has(h))) this._vorwaermFrei(o, false);
     }
     // Es steht in jeder Familie (oder fällt aus dem Gesetz): es verlässt die Reihe — die Hüllen der kommenden Stufen
-    // (`_vorwaermStufen`) hielten bis hier, jetzt räumt der Leer-Chokepoint sie (`_archGroupLeerDispose`)
-    _vorwaermFrei(o) {
+    // (`_vorwaermStufen`) hielten bis hier, jetzt räumt der Leer-Chokepoint sie (`_archGroupLeerDispose`); `ganz` false: es steht in
+    // jeder Familie, die hält (VORWAERM_HALT — der Punkt wirft nur in der Nacht am Feuer: seine Hüllen hielten sonst den Tag über),
+    // und wartet in der Reihe auf den Rest
+    _vorwaermFrei(o, ganz = true) {
         const E = this._erstZeichnung;
-        E.vorwaerm.delete(o);
+        if (ganz) E.vorwaerm.delete(o);
         for (const m of o.glieder || [])
             if (E.vorwaermHalt.has(m)) (this._archGroupLeerDispose(E.vorwaermHalt.get(m)), E.vorwaermHalt.delete(m));
     }
@@ -453,6 +459,32 @@ class AnazhRealm_bild_erst {
         dev.__anazhAbsage = true;
     }
 
+    // DER KATALOG DER ROH-PROGRAMME (w26-programm-katalog, Atlas §3 — UE PSO-Precache: kein Programm entsteht am Zug): was die Welt
+    // am Gerät vorbei zeichnet oder rechnet (`ROH_PROGRAMME`: das Tiefen-Abbild des Hauptbilds, die Wahl der GPU), entsteht beim
+    // Anschluss des Geräts asynchron, Sekunden vor seinem ersten Leser. Bis hier baute der erste Lauf es synchron
+    // (`createRenderPipeline`/`createComputePipeline`) — das Tiefen-Abbild im ersten Bild, das Wasser zeigte: der GPU-Prozess
+    // übersetzte vor dem nächsten Bild (gemeldet in w25-pipeline-vorwaermen). Eine Absage meldet sich laut wie jede Pipeline.
+    _rohKatalog(renderer) {
+        const be = renderer.backend;
+        const dev = be && be.isWebGPUBackend === true ? be.device : null;
+        if (!dev || (this._rohProgramme && this._rohProgramme.dev === dev)) return;
+        const K = (this._rohProgramme = { dev, steht: new Map() });
+        for (const [name, bau] of Object.entries(AnazhRealm.ROH_PROGRAMME))
+            bau(dev, name).then(
+                (p) => K.steht.set(name, { p, gruppe: p.getBindGroupLayout(0) }),
+                (e) => this._gpuWacheMeldung("pipeline", `PIPELINE-ABSAGE ${name}: ${(e && e.message) || e}`)
+            );
+    }
+    // Das Programm `name` aus dem Katalog — null, solange es entsteht: sein Pass ruht (vor dem Weltbild wartet er wie jede
+    // Erst-Zeichnung, danach ist es die Lücke des Katalogs, ROT beim Namen)
+    _rohProgramm(name) {
+        const K = this._rohProgramme;
+        const x = (K && K.steht.get(name)) || null;
+        if (!x && this.state._weltbildDa)
+            this._bruchMelden(`KATALOG-LÜCKE ${name}: das Programm stand nicht, als sein Pass kam — der Pass ruht`);
+        return x;
+    }
+
     // DER EINMAL-RENDER IM PSO-VORBAU (w16-lade-atem): `fn` zeichnet einen Einmal-Render (eine Tafel, die Umgebung, den Boden des
     // Rückstrahls); true, wenn jede seiner Pipelines stand und er ganz zeichnete. Wartete er auf Pipelines (`einmalOffen`), läuft
     // `fn` erst wieder, wenn jede von ihnen steht (`E.offen` trägt sie bis dahin) — bis hier malte jeder Takt ihn neu, ohne Bild
@@ -569,15 +601,43 @@ AnazhRealm.ERST_BAU_MS = 4;
 // EIN BAU JE SCHLÜSSEL IM FLUG (`_knotenRate`): so viele Bilder darf ein Bau in Raten ohne Leser stehen, bevor er den Flug
 // verlässt (sein Objekt fiel mitten im Bau; ein Leser desselben Schlüssels legt ihn dann neu an)
 AnazhRealm.KNOTEN_FLUG_BILDER = 600;
-// DAS VORWÄRM-GESETZ (`_vorwaermPass`): die Familien der Pässe (das Auge der Spiel-Kamera, der Wurf der Kaskaden); so viele Objekte
+// DAS VORWÄRM-GESETZ (`_vorwaermPass`): die Familien der Pässe (das Auge der Spiel-Kamera, der Wurf der Kaskaden, der Punkt des
+// Feuers); so viele Objekte
 // prüft ein Pass je Bild höchstens; so viele Rufe ohne Antwort der Erst-Zeichnung, bis eine Familie für ein Objekt fällt; unter
 // diesem Tempo des Auges (m/s) steht es — Leerlauf (`_augeRuht`)
-AnazhRealm.VORWAERM_FAMILIEN = Object.freeze(["auge", "wurf"]);
+AnazhRealm.VORWAERM_FAMILIEN = Object.freeze(["auge", "wurf", "punkt"]);
+AnazhRealm.VORWAERM_HALT = Object.freeze(["auge", "wurf"]); // die Familien, auf die die Hüllen kommender Stufen warten
 AnazhRealm.VORWAERM_JE_PASS = 48;
 AnazhRealm.VORWAERM_VERSUCHE = 3;
 AnazhRealm.VORWAERM_RUHE_MS = 0.3;
 // die kommenden Stufen jeder Art (`_vorwaermStufen`): die Foundry serviert je Art die deklarierte (`_foundryServierStufe`)
 AnazhRealm.VORWAERM_STUFEN = Object.freeze([0, 1, 2]);
+// DER KATALOG DER ROH-PROGRAMME (`_rohKatalog`): je Name der Bau seines Programms am Gerät (asynchron; das WGSL lebt bei seinem Pass)
+AnazhRealm.ROH_PROGRAMME = Object.freeze({
+    "szene:tiefenabbild": (dev, label) => {
+        const module = dev.createShaderModule({ label, code: AnazhRealm.TIEFEN_ABBILD_WGSL });
+        return dev.createRenderPipelineAsync({
+            label,
+            layout: "auto",
+            vertex: { module, entryPoint: "vs" },
+            fragment: { module, entryPoint: "fs", targets: [{ format: "r32float" }] },
+            primitive: { topology: "triangle-list" },
+        });
+    },
+    "pass-wahl": (dev, label) => {
+        const lay = dev.createBindGroupLayout({
+            label,
+            entries: ["uniform", "read-only-storage", "read-only-storage", "storage", "storage"].map((type, i) => ({
+                binding: i,
+                visibility: GPUShaderStage.COMPUTE,
+                buffer: { type, hasDynamicOffset: i === 1 },
+            })),
+        });
+        const module = dev.createShaderModule({ label, code: AnazhRealm.PASS_WAHL_WGSL });
+        const layout = dev.createPipelineLayout({ bindGroupLayouts: [lay] });
+        return dev.createComputePipelineAsync({ label, layout, compute: { module, entryPoint: "wahl" } });
+    },
+});
 AnazhRealm.KNOTEN_GANG = Object.freeze([
     Object.freeze(["setup", "analyze", "generate"]),
     Object.freeze(["fragment", "vertex", "compute"]),

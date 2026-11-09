@@ -3158,28 +3158,17 @@ class AnazhRealm_bild_kosten {
         const be = rend.backend,
             dev = be.device,
             U = GPUBufferUsage;
+        // das Programm steht im Katalog (`_rohKatalog`, beim Anschluss des Geräts asynchron) — bis w26 baute die erste Wahl es
+        // synchron (`createComputePipeline`); fehlt es, rechnet kein Pass (die Züge der Arena zählen 0)
+        const prog = this._rohProgramm("pass-wahl");
+        if (!prog) return;
         let W = AnazhRealm.__wahlGpu;
         if (!W || W.dev !== dev) {
-            const lay = dev.createBindGroupLayout({
-                label: "pass-wahl",
-                entries: ["uniform", "read-only-storage", "read-only-storage", "storage", "storage"].map((type, i) => ({
-                    binding: i,
-                    visibility: GPUShaderStage.COMPUTE,
-                    buffer: { type, hasDynamicOffset: i === 1 },
-                })),
-            });
-            const module = dev.createShaderModule({ label: "pass-wahl", code: AnazhRealm.PASS_WAHL_WGSL });
-            const layout = dev.createPipelineLayout({ bindGroupLayouts: [lay] });
-            const pipe = dev.createComputePipeline({
-                label: "pass-wahl",
-                layout,
-                compute: { module, entryPoint: "wahl" },
-            });
             const lage = dev.createBuffer({ label: "pass-wahl-lage", size: 272, usage: U.UNIFORM | U.COPY_DST });
             W = AnazhRealm.__wahlGpu = {
                 dev,
-                lay,
-                pipe,
+                lay: prog.gruppe,
+                pipe: prog.p,
                 lage,
                 lageF: new Float32Array(68),
                 puffer: null,
