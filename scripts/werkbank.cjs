@@ -3244,7 +3244,7 @@ hauptLauf(async () => {
                 const [auf, um0, zu] = [umstellen({ ort, sicht: "ego" }), Date.now(), { fertig: false }];
                 auf.finally(() => (zu.fertig = true)).catch(() => {});
                 for (let t = 1; !zu.fertig; t++) {
-                    await Promise.race([auf.catch(() => {}), new Promise((f) => setTimeout(f, 1000))]);
+                    await Promise.race([auf.catch(() => {}), sleep(1000)]);
                     if (!zu.fertig && (t === 200 || t === 400))
                         zeile(`GEH ROT ${ort} steht nach ${t} s nicht: ${JSON.stringify((await rufe("/eval", { code: "const W = r._weltStand || {}; return [Object.entries(r._weltOffen()).filter(([, v]) => v).join(' '), W.ruhe, W.grund, r._builtRingRadius(), r._weltOffenAkte()].join(' · ');" })).ergebnis)}`); // prettier-ignore
                 }
