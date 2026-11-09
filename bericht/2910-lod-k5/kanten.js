@@ -45,9 +45,18 @@ const FAELLE = [
     { kind: "gate", typ: () => "tor_geisttor", stufen: [2] },
     { kind: "vehicle", typ: () => "fahrzeug_limousine", stufen: [1] },
 ];
+// DIE DECKUNG STATT DER FARBE (w26-lod-baum-pm, 09.11.; Radeon 87537d3f: Haus 1,64 px, am Bau 0,51–0,83): die Maske der Farbe (ein
+// Kanal hebt sich um > 18 vom leeren Schuss) ist nicht der Umriss — an der Alemannisch-L2 (26 m) zählte sie für die L0 37 311 Pixel, die
+// Geometrie deckt in derselben Pose 79 003 (47 %: dunkles Fachwerk vor dunklem Grund, die Laibung, der Schatten am Fuß); der Chamfer
+// mass die Ränder dieser Lücken mit. Jetzt urteilt die DECKUNG: die Tiefe der Szene des Schusses (`__spiegelDaten`, derselbe Pass,
+// dieselbe Folge der zeitlichen Auflösung — jeder Schuss beginnt sie neu) gegen die des leeren — ein Pixel deckt, wo das Exemplar vor
+// dem Grund steht. Gerechnet in den Pixeln der Szene (die EINE Skala, `SZENE_SKALA`), gemeldet in Bildpunkten der Ausgabe (× W / tw);
+// die Farbe reist als Zeugnis mit (`pxFarbe`, `pixelFarbe`).
 const schuss = async () => {
     r._schattenAlleNeu();
-    return (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
+    const u8 = (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
+    const t = await window.__spiegelDaten();
+    return { u8, tiefe: t.tiefe, tw: t.tw, th: t.th };
 };
 // DER TAKT DES WARTENS: die Freigabe der Foundry (höchstens INGEST_BURST_CAP je Ruf; im ruhenden Loop gibt der Wächter ohnehin frei),
 // die Karte bäckt, ein Bild Pause — die Antwort des Fadens landet dazwischen. Nie ein Takt der Welt: der LOD-Takt stellte die Stufe um.
@@ -93,10 +102,18 @@ const liefere = (e, stufen, F) => {
         stufen.every((s) => r._foundryFlattenFor(e, p, s) !== null) && (F.kind !== "tree" || r._lodTreeVisHeight(e) != null)
     );
 };
+// die Maske der Farbe (das Zeugnis): ein Kanal hebt sich um > 18 vom leeren Schuss — in Bildpunkten der Ausgabe
 const maske = (a, b) => {
     const m = new Uint8Array(W * H);
     for (let p = 0, i = 0; p < W * H; p++, i += 4)
         m[p] = Math.abs(a[i] - b[i]) > 18 || Math.abs(a[i + 1] - b[i + 1]) > 18 || Math.abs(a[i + 2] - b[i + 2]) > 18 ? 1 : 0;
+    return m;
+};
+// die Maske der Deckung (das Urteil): das Exemplar steht vor dem Grund des leeren Schusses — in Pixeln der Szene (tw × th)
+const deckung = (s, leer) => {
+    if (s.tw !== leer.tw || s.th !== leer.th) throw new Error("die Tiefe zweier Schüsse misst verschieden: " + [s.tw, s.th, leer.tw, leer.th]);
+    const m = new Uint8Array(s.tw * s.th);
+    for (let p = 0; p < m.length; p++) m[p] = s.tiefe[p] < leer.tiefe[p] ? 1 : 0;
     return m;
 };
 const edt = (f, n) => {
@@ -115,7 +132,9 @@ const edt = (f, n) => {
     }
     return d;
 };
-const chamfer = (a, b) => {
+// der Chamfer zweier Masken im Raster W2 × H2 (die Ausgabe: W × H, die Szene: tw × th)
+const chamfer = (a, b, W2 = W, H2 = H) => {
+    const [W, H] = [W2, H2];
     // der Rahmen beider Masken (+ 8 px), die Kanten je Maske, die Distanz zur Kante der anderen
     let [x0, y0, x1, y1] = [W, H, -1, -1];
     for (let p = 0; p < W * H; p++) if (a[p] || b[p]) [x0, y0, x1, y1] = [Math.min(x0, p % W), Math.min(y0, (p / W) | 0), Math.max(x1, p % W), Math.max(y1, (p / W) | 0)];
@@ -169,8 +188,19 @@ const pose = (e) => {
     return Number.isFinite(rec._fluegelWinkel) ? +rec._fluegelWinkel.toFixed(4) : null;
 };
 const grund = (x) => String((x && x.message) || x).split("\n")[0].slice(0, 300);
-const aus = { schirm: [W, H], fov: A.KAM_FOV_GRAD, faelle: [], treue: null };
+// DER BODEN JEDES FALLS (w26-lod-baum-pm, 09.11.; Radeon 87537d3f „Wagen ohne Exemplar"): jeder Fall setzt sein Exemplar an DENSELBEN Ort
+// 40 m voraus. Bis hier nahm das Ende eines Falls nur die Instanz (`_archInstanceRemove`), der Eintrag blieb bis zum Ende der Folge — und
+// mit ihm die Hülle des Hauses: am Ort der Mess-Wiese fiel `_voxelSurfaceY` nach haus_modern von 28,64 auf 26,05 m (der Keller), jedes
+// spätere Exemplar stand 2,6 m tief (Alemannisch, Kathedrale und Geisttor halb im Boden, die Limousine ganz: Welt-y 25,73 unter dem
+// gezeichneten Boden, 0 Pixel in Farbe UND Tiefe). Allein in frischer Welt zeichnet sie (swiftshader: Deckung 0,005 px an 15 221 Pixeln).
+// Jetzt fällt das Exemplar nach seinem Fall GANZ (`removeArchitecture`), und jeder Fall misst den Boden seines Orts gegen den der Folge
+// (`bodenM`, `boden0`): ein Fall auf fremdem Grund ist ein Bruch beim Namen.
+const aus = { schirm: [W, H], fov: A.KAM_FOV_GRAD, faelle: [], treue: null, boden0: null };
 const neu = [];
+const weg = (e) => {
+    r.removeArchitecture(e);
+    neu.splice(neu.indexOf(e), 1);
+};
 try {
     cam.fov = A.KAM_FOV_GRAD;
     cam.updateProjectionMatrix();
@@ -179,9 +209,11 @@ try {
         welt();
         const m = P0.clone().addScaledVector(fwd, 40);
         m.y = boden(m.x, m.z);
+        if (aus.boden0 === null) aus.boden0 = +m.y.toFixed(3);
+        const bodenM = +m.y.toFixed(3);
         const e = r.spawnArchitecture(F.typ(), { x: m.x, y: m.y, z: m.z }, { silent: true, seed: 1 });
         if (!e) {
-            aus.faelle.push({ kind: F.kind, fehler: "kein Exemplar" });
+            aus.faelle.push({ kind: F.kind, bodenM, fehler: "kein Exemplar" });
             continue;
         }
         neu.push(e);
@@ -190,8 +222,8 @@ try {
         try {
             await liefere(e, [0, ...F.stufen], F);
         } catch (x) {
-            for (const s of F.stufen) aus.faelle.push({ kind: F.kind, preset, stufe: s, fehler: "Lieferung: " + grund(x) });
-            r._archInstanceRemove(e);
+            for (const s of F.stufen) aus.faelle.push({ kind: F.kind, preset, stufe: s, bodenM, fehler: "Lieferung: " + grund(x) });
+            weg(e);
             continue;
         }
         schuesse();
@@ -223,7 +255,8 @@ try {
                 // DIE TREUE (einmal je Lauf): dieselbe Szene ein zweites Mal — EINE Aufnahme je Schuss trägt nur, wenn sie Byte für Byte gleich ist
                 const b0b = await schuss();
                 let n = 0;
-                for (let i = 0; i < b0.length; i++) if (b0[i] !== b0b[i]) n++;
+                for (let i = 0; i < b0.u8.length; i++) if (b0.u8[i] !== b0b.u8[i]) n++;
+                for (let i = 0; i < b0.tiefe.length; i++) if (b0.tiefe[i] !== b0b.tiefe[i]) n++;
                 aus.treue = { fall: F.kind + " L0", bytes: n };
                 if (n) throw new Error("die Treue: zwei Aufnahmen derselben Szene (" + F.kind + " L0) weichen in " + n + " Bytes ab — EINE Aufnahme je Schuss trägt hier nicht");
             }
@@ -236,10 +269,14 @@ try {
             pose(e);
             await ankommen(F.kind + " L" + s);
             const bs = await schuss();
-            const k = chamfer(maske(b0, leer), maske(bs, leer));
-            aus.faelle.push({ kind: F.kind, preset, stufe: s, d: +d.toFixed(2), hoehe, px: k.px == null ? null : +k.px.toFixed(3), pixel: k.pixel, pose: winkel, ok: true, geliefert: true });
+            // das Urteil in Bildpunkten der Ausgabe: der Chamfer der Deckung × W / tw, die Pixel × (W / tw) · (H / th)
+            const k = chamfer(deckung(b0, leer), deckung(bs, leer), leer.tw, leer.th);
+            const [sx, sy] = [W / leer.tw, H / leer.th];
+            const kf = chamfer(maske(b0.u8, leer.u8), maske(bs.u8, leer.u8));
+            const r3 = (x) => (x == null || !Number.isFinite(x) ? null : +x.toFixed(3));
+            aus.faelle.push({ kind: F.kind, preset, stufe: s, d: +d.toFixed(2), hoehe, bodenM, maske: "tiefe", szene: [leer.tw, leer.th], px: k.px == null ? null : r3(k.px * (sx + sy) / 2), pixel: Math.round(k.pixel * sx * sy), pxFarbe: r3(kf.px), pixelFarbe: kf.pixel, pose: winkel, ok: true, geliefert: true });
         }
-        r._archInstanceRemove(e);
+        weg(e);
     }
 } finally {
     for (const e of neu) r.removeArchitecture(e);

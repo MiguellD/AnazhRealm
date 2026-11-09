@@ -3017,7 +3017,7 @@ const stationen = [
             schritte: [
                 { name: "fenster", args: ["fenster", "1920", "1080"], muss: true },
                 { name: "umstellen", args: ["umstellen", "--ort", "wiese"], muss: true },
-                { name: "kanten", probe: "@KOORD@/bericht/2910-lod-k5/kanten.js", blob: "39b506a0eec9cacd1443ed85738db21b967610ef", muss: true, ms: 1800000 },
+                { name: "kanten", probe: "@KOORD@/bericht/2910-lod-k5/kanten.js", blob: "dbd6fce15dcc298b828cb1795d7bbf14fe867937", muss: true, ms: 1800000 },
             ],
         }), },
         env: envDer,
@@ -3027,6 +3027,15 @@ const stationen = [
         // DIE POSE DES TORS (w8-lod-wechsel, 03.11.): kanten.js stellt die Flügel der L0 über den EINEN Schwenk-Träger in die Fern-Pose,
         // die die Stufe im Körper trägt — ein Tor-Fall ohne ihren Winkel (`pose`) maß die gebacken geschlossene L0 (8e6262cc: Kathedrale
         // L1 9,95 px, die Flügel, nie der Bau) und ist ein Bruch. Ohne {AUS} liest das Urteil die Folge aus der Ausgabe (die Proben).
+        // DIE DECKUNG STATT DER FARBE (w26-lod-baum-pm, 09.11.): der Staffel-Text misst den Kanten-Versatz des UMRISSES; die Maske der
+        // Farbe (> 18 gegen den leeren Schuss) zählte an der Alemannisch-L2 nur 47 % der L0 (37 311 von 79 003 Pixeln der Geometrie —
+        // dunkles Fachwerk vor dunklem Grund) und mass die Ränder dieser Lücken mit (Radeon 87537d3f Haus 1,64 px, am Bau 0,51–0,83).
+        // Jeder Fall trägt die Maske, an der er urteilt (`maske`); nur die Deckung der Tiefe zählt, die Farbe reist als Zeugnis
+        // (`pxFarbe`). Ein Fall ohne die Deckung ist ein Bruch.
+        // DER BODEN JEDES FALLS (w26-lod-baum-pm): bis hier blieb der Eintrag jedes Exemplars bis zum Ende der Folge am selben Ort, die
+        // Hülle des ersten Hauses senkte den Boden dort um 2,6 m (`_voxelSurfaceY` 28,64 → 26,05), jedes spätere Exemplar stand im Grund —
+        // die Limousine ganz unter dem gezeichneten Boden („Wagen ohne Exemplar"), Tore und Alemannisch halb. Jeder Fall trägt den Boden
+        // seines Orts (`bodenM`), die Folge den des ersten (`boden0`); weicht er um mehr als 5 cm ab, ist es ein Bruch beim Namen.
         urteil: (j, lauf) => {
             if (!j && lauf && /^s*{/.test(String(lauf.stdout)))
                 try {
@@ -3045,6 +3054,8 @@ const stationen = [
             const bruch = [];
             for (const f of e.faelle) {
                 if (f.fehler || !f.ok || f.px == null || !(f.pixel >= 200)) bruch.push(f.kind + " L" + f.stufe + ": " + (f.fehler || (f.ok ? "Exemplar " + f.pixel + " px" : "Stufe nicht gestellt")));
+                else if (f.maske !== "tiefe") bruch.push(f.kind + " L" + f.stufe + ": die Maske der Farbe statt der Deckung");
+                else if (!(Math.abs(f.bodenM - e.boden0) <= 0.05)) bruch.push(f.kind + " L" + f.stufe + ": das Exemplar stand auf fremdem Grund (Boden " + f.bodenM + " statt " + e.boden0 + ")");
                 else if (f.kind === "gate" && !Number.isFinite(f.pose)) bruch.push("gate L" + f.stufe + ": die L0 ohne die Pose des Spiels");
                 else je[f.kind] = Math.max(je[f.kind] || 0, f.px);
             }
@@ -3058,14 +3069,16 @@ const stationen = [
             };
         },
         proben: (() => {
-            const fall = (kind, stufe, px, pose) => ({ kind, stufe, d: 12, px, pixel: 40000, pose, ok: true, geliefert: true });
-            const folge = (faelle) => JSON.stringify({ plan: "lod.K5#1", adapter: "[linse-gpu] amd/rdna-3", schritte: { kanten: { exit: 0, json: { ergebnis: { schirm: [1920, 1080], faelle } } } } });
+            const fall = (kind, stufe, px, pose) => ({ kind, stufe, d: 12, bodenM: 28.64, maske: "tiefe", px, pixel: 40000, pose, ok: true, geliefert: true });
+            const folge = (faelle) => JSON.stringify({ plan: "lod.K5#1", adapter: "[linse-gpu] amd/rdna-3", schritte: { kanten: { exit: 0, json: { ergebnis: { schirm: [1920, 1080], boden0: 28.64, faelle } } } } });
             const gut = [fall("tree", 1, 0.8), fall("haus", 2, 0.9), fall("gate", 1, 0.67, 0.975), fall("gate", 2, 0.9, 0.975), fall("vehicle", 1, 0.3)];
             return [
                 { name: "jede Familie ≤ 1 px, die Tore in der Pose des Spiels", stdout: folge(gut), gruen: true },
                 { name: "ein Tor ohne die Pose des Spiels (die L0 gebacken zu)", stdout: folge(gut.map((f) => (f.kind === "gate" ? Object.assign({}, f, { pose: undefined }) : f))), gruen: false },
                 { name: "die geschlossene L0 neben der Fern-Pose (8e6262cc: Tor 9,95 px)", stdout: folge(gut.map((f, i) => (i === 2 ? Object.assign({}, f, { px: 9.952 }) : f))), gruen: false },
                 { name: "der Wagen ohne Exemplar im Bild", stdout: folge(gut.map((f) => (f.kind === "vehicle" ? Object.assign({}, f, { px: null, pixel: 0 }) : f))), gruen: false },
+                { name: "das Tor im Keller des Hauses davor (87537d3f: Boden 26,05 statt 28,64 m)", stdout: folge(gut.map((f) => (f.kind === "gate" ? Object.assign({}, f, { bodenM: 26.047 }) : f))), gruen: false },
+                { name: "die Maske der Farbe statt der Deckung (87537d3f: Haus 1,64 px aus 47 % der L0)", stdout: folge(gut.map((f) => (f.kind === "haus" ? Object.assign({}, f, { maske: undefined }) : f))), gruen: false },
             ];
         })(),
         pfad: [...BILD, ...LOD_PFAD],
