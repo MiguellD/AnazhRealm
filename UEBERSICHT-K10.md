@@ -11,7 +11,8 @@ Die Schicksale älterer Zweige stehen in `zug/abgeloest.txt` (Heimholer 08.11.).
 |---|---|---|
 | z351 | w26-stadt-takt-4b | C, E (Verkehr, Stadt-Takt) |
 | z352 | w26-boden-nah · w26-haar-arm · w26-leib-raum · w26-klang-schritt · w26-probe-node | material.K2#1 gtx, haar.K2 (Radeon 0,5638 > 0,533), Guss der Menge, klang.K4#2, CI |
-| z353 | heim2-w20-wald-kosten (trägt w16-wald-innen) | C (Vorrang, Stauraum), vegetation.K3 |
+| z353 | heim2-w20-wald-kosten (trägt w16-wald-innen) · w26-eiche-kante (23e9d215) | C, vegetation.K3 · lod.K1 (der Stamm im Gras war die 0,3261) |
+| z354 | w26-winter-fichte-2 (829014ec, Anker in emitGrass, Täter Schilf) | vegetation.K5#2 |
 
 ## In Heilung (Cloud)
 | Zweig | Sitzung | Grund |
