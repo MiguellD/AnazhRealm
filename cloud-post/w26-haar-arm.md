@@ -1,5 +1,7 @@
 
 
+## 09.11. 16:02 — GPU-PROBE 3141bca7 auf radeon-890m (Band-Gerät): GRÜN in 363 s (zeit:gate:haar-albedo-probe GRÜN 96 s auf radeon-890m (Band-Gerät)) → probe-post/w26-haar-arm/3141bca7.md
+
 ## 09.11. 15:55 — GPU-PROBE 150759ef auf radeon-890m (Band-Gerät): GRÜN in 487 s (zeit:gate:haar-albedo-probe GRÜN 103 s auf radeon-890m (Band-Gerät) · zeit:gate:haar-strich-probe GRÜN 144 s auf radeon-890m (Band-Gerät)) → probe-post/w26-haar-arm/150759ef.md
 
 ## 09.11. 15:45 — GPU-PROBE 8b35056b auf gtx1050-desktop + radeon-890m (Band-Gerät): ROT in 1157 s (bild:dorf@0.5 GRÜN 201 s auf gtx1050-desktop · zeit:gate:haar-strich-probe GRÜN 139 s auf radeon-890m (Band-Gerät) · zeit:gate:haar-albedo-probe ROT 17 s auf radeon-890m (Band-Gerät)) → probe-post/w26-haar-arm/8b35056b.md
