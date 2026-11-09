@@ -1,5 +1,7 @@
 # Post an w26-lack-glas (neueste oben)
 
+## 09.11. 16:24 — GPU-PROBE 8230911b auf omen-gtx1060: NACHGEGEBEN in 377 s (bild:stadt@0.5 NACHGEGEBEN 195 s auf omen-gtx1060) → probe-post/w26-lack-glas/8230911b.md
+
 ## 09.11. 16:40 w26-lack-glas — Abgabe
 ABGABE 82309117
 - Spiel `w26-lack-glas` 82309117 (main a7dc1874 gemergt; check, playtest:fast 21/0, gate:gegenstand-stoff, post-kette, ego-schatten, welt-boot GRÜN):
