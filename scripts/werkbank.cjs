@@ -3226,7 +3226,15 @@ hauptLauf(async () => {
         const summe = [];
         try {
             for (const [ort, gaenge] of [["stadt", 2], ["wiese", 1]]) {
-                await umstellen({ ort, sicht: "ego" });
+                // DIE WACHE DES UMSTELLENS: steht der Ort nach 200 s (und 400 s) nicht, nennt sie, was offen ist (`_weltOffen`, die
+                // Ruhe und ihr Grund, die Akte des Offenen) — der Deckel der Probe (480 s) bräche sonst ohne ein Wort
+                const auf = umstellen({ ort, sicht: "ego" });
+                for (let t = 0, fertig = false, w = auf.finally(() => (fertig = true)); !fertig; t++) {
+                    await Promise.race([w, new Promise((f) => setTimeout(f, 1000))]);
+                    if (!fertig && (t === 200 || t === 400))
+                        zeile(`GEH ROT ${ort} steht nach ${t} s nicht: ${JSON.stringify((await rufe("/eval", { code: "const W = r._weltStand || {}; return [Object.entries(r._weltOffen()).filter(([, v]) => v).join(' '), W.ruhe, W.grund, r._builtRingRadius(), r._weltOffenAkte()].join(' · ');" })).ergebnis)}`); // prettier-ignore
+                }
+                await auf;
                 for (let g = 1; g <= gaenge; g++) {
                     const o = await rufe("/haenger", { sek: 4, ein: 0.5, tiere: "frei", wandern: "bahn", schwelle: 33, json: path.resolve("artifacts", "geh", `${ort}-${g}.json`) }); // prettier-ignore
                     if (!o?.datei) throw new Error(`${ort} ${g}: ${JSON.stringify(o).slice(0, 300)}`);
