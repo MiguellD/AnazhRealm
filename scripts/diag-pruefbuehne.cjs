@@ -1509,12 +1509,11 @@ async function lichtLauf() {
         );
     }
     // DIE NACHT ohne das Feuer (oben `S0_NACHT`)
-    for (const k of ["nacht"])
-        if (sauber && !sauber.fehler) {
-            const e = ergebnis[k];
-            if (!e) befunde.push(`S0 Nacht (${k}): der Schuss lief nicht`);
-            else if (!e.fehler) befunde.push(...s0NachtUrteil(e, S0_NACHT[k]));
-        }
+    const nacht = ergebnis.nacht;
+    if (sauber && !sauber.fehler) {
+        if (!nacht) befunde.push("S0 Nacht: der Schuss lief nicht");
+        else if (!nacht.fehler) befunde.push(...s0NachtUrteil(nacht, S0_NACHT.nacht));
+    }
     for (const [k, e] of Object.entries(himmel))
         for (const h of e.himmel)
             console.log(
@@ -1644,7 +1643,7 @@ async function lichtLauf() {
         pass = pass && taubGetroffen && !!kameraTreffer && stoffTreffer;
     }
     console.log(
-        `\n${pass ? "✅" : "⛔"} S0 BILD ${pass ? "GRÜN: die Feuerstelle trägt den Feuerkreis aus 2 m in der Ausgabe" : "ROT"} (${Math.round((Date.now() - t0) / 1000)} s, ${ECHT ? "echte GPU" : adapter.fehlt || adapter.vendor + "/" + adapter.architecture} · Holz ${HOLZ})\n`
+        `\n${pass ? "✅" : "⛔"} S0 BILD ${pass ? "GRÜN: die Feuerstelle trägt den Feuerkreis aus 2 m in der Ausgabe" : "ROT"} · Nacht ${JSON.stringify(nacht?.grund)} (${Math.round((Date.now() - t0) / 1000)} s, ${ECHT ? "echte GPU" : adapter.fehlt || adapter.vendor + "/" + adapter.architecture} · Holz ${HOLZ})\n`
     );
     process.exit(pass ? 0 : 1);
 }

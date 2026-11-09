@@ -18,8 +18,8 @@ fs.mkdirSync(OUT, { recursive: true });
 fs.mkdirSync(TMP, { recursive: true });
 // Variante[:Arme mit +] — a21/a36 das ALTE Gesetz (Korn × Kavität linear, die Höhe von main) mit Kavität 2,1 / 3,6; neu der Stand des
 // Zweigs; W-F-K das Produkt Korn × Kavität K mit weichem Boden F; L-M-C-H das Bild im Logarithmus zwischen M und 1/M, Steile C, Versatz H
-const VARIANTEN = (process.env.BN_VARIANTEN || "a21:0.5+1+2,L-0.38-12-0.03:0.5+1+2,a21:0.5,L-0.38-12-0.03:0.5,W-0.42-4.2:0.5+1+2,L-0.4-12-0.02:0.5+2,L-0.36-10-0.03:0.5+2,W-0.36-3.6:0.5").split(",");
-const BILDER = new Set((process.env.BN_BILDER || "L-0.38-12-0.03@0.5,W-0.42-4.2@0.5,L-0.4-12-0.02@0.5").split(","));
+const VARIANTEN = (process.env.BN_VARIANTEN || "a21:0.5+1+2,neu:0.5+1+2,a21:0.5+1+2,neu:0.5+1+2,a36:0.5+2").split(",");
+const BILDER = new Set((process.env.BN_BILDER || "a21@0.5,neu@0.5").split(","));
 const ALT = JSON.parse(fs.readFileSync(path.join(__dirname, "alt-gesetz.json"), "utf8"));
 const zeile = (s) => console.log(("✅ " + s).slice(0, 598));
 const rot = (s) => console.log(("❌ " + s).slice(0, 598));
