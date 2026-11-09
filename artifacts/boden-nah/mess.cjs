@@ -16,10 +16,10 @@ const OUT = path.join(process.env.RUNNER_TEMP || os.tmpdir(), "probe");
 const TMP = path.join(os.tmpdir(), "boden-nah-" + process.pid);
 fs.mkdirSync(OUT, { recursive: true });
 fs.mkdirSync(TMP, { recursive: true });
-// Variante[:Arme mit +] — a21/a36 das ALTE Gesetz (Korn × Kavität linear, die Höhe von main) mit Kavität 2,1 / 3,6;
-// neu der Stand des Zweigs; nM-C das neue Gesetz mit mulde 0,M und kavitaet C
-const VARIANTEN = (process.env.BN_VARIANTEN || "a21:0.5+1+2,neu:0.5+1+2,a21:0.5,neu:0.5,a36:0.5+2,n60-4.0:0.5+2,n60-5.0:0.5+2,n65-5.5:0.5").split(",");
-const BILDER = new Set((process.env.BN_BILDER || "a21@0.5,neu@0.5,a36@0.5,n60-5.0@0.5").split(","));
+// Variante[:Arme mit +] — a21/a36 das ALTE Gesetz (Korn × Kavität linear, die Höhe von main) mit Kavität 2,1 / 3,6; neu der Stand des
+// Zweigs; W-F-K das Produkt Korn × Kavität K mit weichem Boden F; L-M-C-H das Bild im Logarithmus zwischen M und 1/M, Steile C, Versatz H
+const VARIANTEN = (process.env.BN_VARIANTEN || "a21:0.5+1+2,L-0.38-12-0.03:0.5+1+2,a21:0.5,L-0.38-12-0.03:0.5,W-0.42-4.2:0.5+1+2,L-0.4-12-0.02:0.5+2,L-0.36-10-0.03:0.5+2,W-0.36-3.6:0.5").split(",");
+const BILDER = new Set((process.env.BN_BILDER || "L-0.38-12-0.03@0.5,W-0.42-4.2@0.5,L-0.4-12-0.02@0.5").split(","));
 const ALT = JSON.parse(fs.readFileSync(path.join(__dirname, "alt-gesetz.json"), "utf8"));
 const zeile = (s) => console.log(("✅ " + s).slice(0, 598));
 const rot = (s) => console.log(("❌ " + s).slice(0, 598));
@@ -93,25 +93,43 @@ if (${bild ? "true" : "false"}) {
 return aus;`;
 
 // DIE VARIANTEN des Boden-Stoffs (live, die Pose bleibt): das ALTE Gesetz als Eigen-Glieder der Instanz (die Texte von
-// w26-boden-nah, `alt-gesetz.json`), das neue Gesetz ist der Prototyp; die Zahlen über TERRAIN_BUMP. Der Stoff des Bodens baut neu.
+// w26-boden-nah, `alt-gesetz.json`); W und L tauschen nur das Himmels-Bild in `_mikroStoff` (die Höhe ist die des Zweigs).
+const STOFF = (himmel) => `(function (T, mat, hoehe, k) {
+  const B = this.constructor.TERRAIN_BUMP;
+  const h = hoehe.mul(k);
+  const korn = T.float(1.0).add(h.mul(B.korn)).max(0.1);
+  const himmel = ${himmel};
+  const ao = himmel.div(korn);
+  mat.aoNode = mat.aoNode ? mat.aoNode.mul(ao) : ao;
+  const c = T.vec4(mat.colorNode || T.materialColor).toVar();
+  mat.colorNode = T.vec4(c.rgb.mul(korn), c.a);
+})`;
+const HIMMEL = {
+    W: ([F, kav]) =>
+        `(() => { const q = T.float(1.0).add(h.mul(${kav})).max(0.0).mul(korn); const F = k.mul(${F} - 1.0).add(1.0); const d = q.sub(F); ` +
+        `return q.add(F).add(T.sqrt(d.mul(d).add(k.mul(k).mul(0.0225)))).mul(0.5); })()`,
+    L: ([mu, c, h0]) =>
+        `(() => { const x = h.sub(k.mul(k).mul(${h0})).mul(${c}); return T.exp(x.mul(T.inverseSqrt(x.mul(x).add(1.0))).mul(${-Math.log(mu)})); })()`,
+};
 const VARIANTE = (v) => `
 const K = r.constructor;
 if (!window.__bnMain) window.__bnMain = { bump: K.TERRAIN_BUMP };
 const M = window.__bnMain;
 const v = ${JSON.stringify(v)};
 const ALT = ${JSON.stringify({ relief: ALT.relief.replace(/AnazhRealm\./g, "this.constructor."), stoff: ALT.stoff.replace(/AnazhRealm\./g, "this.constructor.") })};
-const alt = /^a(\\d)(\\d)$/.exec(v), nn = /^n(\\d+)-([\\d.]+)$/.exec(v);
+const STOFF = ${JSON.stringify(/^[WL]-/.test(v) ? STOFF(HIMMEL[v[0]](v.split("-").slice(1).map(Number))) : "")};
+const alt = /^a(\\d)(\\d)$/.exec(v);
 delete r._mikroRelief; delete r._mikroStoff;
 if (alt) { r._mikroRelief = (0, eval)("({" + ALT.relief + "})")._mikroRelief; r._mikroStoff = (0, eval)("({" + ALT.stoff + "})")._mikroStoff; }
-const neu = alt ? { kavitaet: +(alt[1] + "." + alt[2]) } : nn ? { mulde: +nn[1] / 100, kavitaet: +nn[2] } : {};
-Object.defineProperty(K, "TERRAIN_BUMP", { value: Object.freeze(Object.assign({}, M.bump, neu)), configurable: true });
+if (STOFF) r._mikroStoff = (0, eval)(STOFF);
+Object.defineProperty(K, "TERRAIN_BUMP", { value: Object.freeze(Object.assign({}, M.bump, alt ? { kavitaet: +(alt[1] + "." + alt[2]) } : {})), configurable: true });
 const altM = r.state.voxelChunkMaterial;
 r.state.voxelChunkMaterial = null;
 const neuM = r._getVoxelChunkMaterial();
 let n = 0;
 r.state.scene.traverse((o) => { if (o.material === altM) { o.material = neuM; n++; } });
 window.__bundlesNeu && window.__bundlesNeu();
-return [v, n, alt ? "alt" : "neu", K.TERRAIN_BUMP.mulde, K.TERRAIN_BUMP.kavitaet];`;
+return [v, n, alt ? "alt" : STOFF ? "Bild getauscht" : "Zweig"];`;
 
 function main() {
     const t0 = Date.now();

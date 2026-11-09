@@ -2528,12 +2528,10 @@ class AnazhRealm_stoff_material {
         const B = AnazhRealm.TERRAIN_BUMP;
         const h = hoehe.mul(k);
         const korn = T.float(1.0).add(h.mul(B.korn)).max(0.1);
-        const himmel = T.pow(
-            T.exp(h.mul(B.kavitaet).sub(k.mul(k).mul(0.5 * (B.kavitaet * B.streu) ** 2)))
-                .mul(1.0 - B.mulde)
-                .add(B.mulde),
-            2.2
-        );
+        const himmel = (() => {
+            const x = h.sub(k.mul(k).mul(0.03)).mul(12);
+            return T.exp(x.mul(T.inverseSqrt(x.mul(x).add(1.0))).mul(-Math.log(0.38)));
+        })();
         const ao = himmel.div(korn);
         mat.aoNode = mat.aoNode ? mat.aoNode.mul(ao) : ao;
         // die Farbe EINMAL im Pixel: r184 cacht einen Knoten mit zwei Lesern in einer Variable, eine Typ-Umwandlung
