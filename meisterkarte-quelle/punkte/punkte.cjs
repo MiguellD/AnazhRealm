@@ -573,6 +573,11 @@ function hakenAm(repo, kopf) {
 // Griff statisch aus dem Befehl der Station (acorn: Literale, Konstanten der umgebenden Rümpfe, ein Parameter von `.map` oder `for … of`
 // über eine Liste, das Objekt `H.seite`) und urteilt ihn am Kopf; einen Griff, den sie nicht lesen kann, nennt sie beim Namen (blind
 // ist nie still grün). Eine Station mit eigenem Griff trägt `griff(lies, acorn)` → [Fehler] (lod.K3#1: die Scheiben statt Anker).
+// DAS BÜNDEL (09.11.): `tor.dekl(datei, namen, gestellt)` zieht die Liste MIT ihrem Abschluss (proben-welt.cjs `tor.buendel`) und
+// deklariert ihn in `new Function`. Befund Radeon 3ccb8f55: fahrzeug.K2#1 UNGEMESSEN — „ReferenceError: urteil is not defined … at
+// Object.wegenetzVerdict“: seit f18627146 riefen die Urteile der Fahr-Linse einen Helfer, den keine Liste nannte, gesehen erst am
+// Gerät beim Ruf (fahrzeug.K2#1, fahrzeug.K3#2, fahrzeug.K4#1/#2). Die Wand ruft DIESELBE Funktion am Kopf und deklariert das Bündel
+// (was die Station stellt, als Attrappe): braucht es einen Namen des Moduls (`require` …), fällt die Kette hier beim Namen.
 const ACORN_O = { ecmaVersion: "latest", sourceType: "script", allowHashBang: true, allowReturnOutsideFunction: true };
 const astKinder = (n) =>
     Object.keys(n)
@@ -584,6 +589,9 @@ const musterNamen = (p) =>
     !p ? [] : p.type === "Identifier" ? [p.name] : p.type === "AssignmentPattern" ? musterNamen(p.left) : p.type === "RestElement" ? musterNamen(p.argument)
         : p.type === "ArrayPattern" ? p.elements.flatMap(musterNamen) : p.type === "ObjectPattern" ? p.properties.flatMap((q) => musterNamen(q.type === "RestElement" ? q.argument : q.value)) : [];
 class GriffBlind extends Error {}
+// das Bündel der Probe (dieselbe Funktion wie am Gerät) und die Attrappe für das, was die Station selbst stellt
+const torBuendel = () => require(path.join(DIR, "stationen", "proben-welt.cjs")).sitzungTor().buendel;
+const ATTRAPPE = new Proxy(function () {}, { get: (_z, k) => (k === Symbol.toPrimitive ? () => 0 : ATTRAPPE), apply: () => ATTRAPPE, construct: () => ATTRAPPE });
 function griffeVon(st, acorn) {
     const griffe = [], blind = [];
     for (const a of befehlVon(st).filter((x) => typeof x === "string")) {
@@ -689,6 +697,11 @@ function griffeVon(st, acorn) {
                     if (o && o.type !== "ObjectExpression") throw new GriffBlind("die Optionen der Linse sind kein Objekt");
                     const e = o && o.properties.find((q) => q.type === "Property" && !q.computed && (q.key.name || q.key.value) === "ersetze");
                     griffe.push({ art: "datei", datei: d, namen: nm, anker: e ? ankerListe(wert(e.value)) : [], wo });
+                } else if (was === "dekl") {
+                    // DAS BÜNDEL (`tor.dekl(datei, namen, gestellt)`): die Liste und was die Station selbst stellt — toteAnker urteilt seinen Abschluss
+                    const gestellt = n.arguments[2] ? wert(n.arguments[2]) : [];
+                    if (!Array.isArray(gestellt) || gestellt.some((x) => typeof x !== "string")) throw new GriffBlind("die gestellten Namen sind keine Liste von Texten");
+                    griffe.push({ art: "dekl", datei: d, namen: nm, anker: [], buendel: gestellt, wo });
                 } else griffe.push({ art: "dekl", datei: d, namen: nm, anker: was === "quelle" && n.arguments[2] && typeof wert(n.arguments[1]) === "string" ? ankerListe(wert(n.arguments[2])) : [], wo });
             } catch (e) {
                 if (!(e instanceof GriffBlind)) throw e;
@@ -704,11 +717,12 @@ function toteAnker(stationen, lies, acorn) {
     const oben = (d) => {
         if (!memo.has(d)) {
             const t = lies(d);
-            let top = null, fehler = null;
+            let top = null, fehler = null, ast = null;
             if (t != null)
                 try {
                     top = new Map();
-                    for (const n of acorn.parse(t, ACORN_O).body) {
+                    ast = acorn.parse(t, ACORN_O);
+                    for (const n of ast.body) {
                         if (/Declaration$/.test(n.type) && n.id && n.type !== "VariableDeclaration") top.set(n.id.name, [n.start, n.end]);
                         if (n.type === "VariableDeclaration")
                             for (const x of n.declarations)
@@ -718,7 +732,7 @@ function toteAnker(stationen, lies, acorn) {
                 } catch (e) {
                     fehler = e.message;
                 }
-            memo.set(d, { t, top, fehler });
+            memo.set(d, { t, top, fehler, ast });
         }
         return memo.get(d);
     };
@@ -748,6 +762,12 @@ function toteAnker(stationen, lies, acorn) {
                 for (const n of x.namen) if (!d.top.has(n)) fe.add("liest " + n + " aus " + x.datei + " — keine Deklaration auf oberster Ebene");
                 if (x.art === "datei") zaehle(d.t.replace(/\r\n/g, "\n"), x.anker, x.datei, fe);
                 else if (x.anker.length && d.top.has(x.namen[0])) zaehle(d.t.slice(...d.top.get(x.namen[0])), x.anker, x.datei + " " + x.namen[0], fe);
+                if (x.buendel && x.namen.every((n) => d.top.has(n)))
+                    try {
+                        new Function(...x.buendel, torBuendel()({ text: d.t, ast: d.ast }, x.namen, x.buendel, x.datei))(...x.buendel.map(() => ATTRAPPE));
+                    } catch (e) {
+                        fe.add("das Bündel " + x.namen.join(" · ") + " deklariert sich nicht — " + String((e && e.message) || e).slice(0, 400));
+                    }
             }
         }
         if (typeof st.griff === "function") for (const f of st.griff(lies, acorn) || []) fe.add(f);
@@ -961,6 +981,34 @@ function eigenerBaum(p, wurzel) {
     }
     return eigen;
 }
+// DER LESER DES WINDOWS-ZEUGEN: die Zeilen des EINEN PowerShell-Laufs (T Zeit · P Prozess · C Kommandozeile eines neuen Prozesses ·
+// E Ende des Takts) in Stücken, wie der Strom sie bringt → gib(S) je Takt. Rein: der Selbsttest (5f) speist ihn mit gesetzten Zeilen
+function zeugenLeser(gib) {
+    const cmd = new Map(); // pid:start → die gekürzte Kommandozeile
+    let rest = "", S = null;
+    return (d) => {
+        rest += String(d);
+        const z = rest.split(/\r?\n/);
+        rest = z.pop();
+        for (const l of z) {
+            const f = l.split("\t");
+            if (f[0] === "T") S = { t: Number(f[1]), p: new Map() };
+            else if (f[0] === "P" && S) {
+                const pid = Number(f[1]);
+                if (pid === 0) continue; // das Leerlauf-Konto
+                const x = { pp: Number(f[2]), cpu: Number(f[3]) / 1e7, start: Number(f[4]), name: f.slice(5).join("\t") };
+                x.cmd = cmd.get(pid + ":" + x.start) || x.name;
+                S.p.set(pid, x);
+            } else if (f[0] === "C" && S) {
+                const pid = Number(f[1]), x = S.p.get(pid);
+                if (!x) continue;
+                const c = f.slice(2).join(" ").trim();
+                x.cmd = c ? kurzName(c) : x.name;
+                cmd.set(pid + ":" + x.start, x.cmd);
+            } else if (f[0] === "E" && S) (gib(S), (S = null));
+        }
+    };
+}
 // DIE QUELLE DES ZEUGEN je Plattform: Rückgabe { schnapp?() (synchron, Linux), start?(gib) (Windows: EIN PowerShell-Lauf, gib(S) je Takt),
 // stop(), blind? } — ein Schnappschuss S = { t (ms), p: Map(pid → { pp, cpu (s), start (ms), name, cmd? }) }
 function zeugenQuelle(taktMs) {
@@ -1039,30 +1087,8 @@ function zeugenQuelle(taktMs) {
                 } catch (e) {
                     return blind("PowerShell startet nicht: " + e.message);
                 }
-                const cmd = new Map(); // pid:start → die gekürzte Kommandozeile
-                let rest = "", S = null, err = "";
-                kind.stdout.on("data", (d) => {
-                    rest += String(d);
-                    const z = rest.split(/\r?\n/);
-                    rest = z.pop();
-                    for (const l of z) {
-                        const f = l.split("\t");
-                        if (f[0] === "T") S = { t: Number(f[1]), p: new Map() };
-                        else if (f[0] === "P" && S) {
-                            const pid = Number(f[1]);
-                            if (pid === 0) continue; // das Leerlauf-Konto
-                            const x = { pp: Number(f[2]), cpu: Number(f[3]) / 1e7, start: Number(f[4]), name: f.slice(5).join("\t") };
-                            x.cmd = cmd.get(pid + ":" + x.start) || x.name;
-                            S.p.set(pid, x);
-                        } else if (f[0] === "C" && S) {
-                            const pid = Number(f[1]), x = S.p.get(pid);
-                            if (!x) continue;
-                            const c = f.slice(2).join(" ").trim();
-                            x.cmd = c ? kurzName(c) : x.name;
-                            cmd.set(pid + ":" + x.start, x.cmd);
-                        } else if (f[0] === "E" && S) (gib(S), (S = null));
-                    }
-                });
+                let err = "";
+                kind.stdout.on("data", zeugenLeser(gib));
                 kind.stderr.on("data", (d) => (err = (err + String(d)).slice(-400)));
                 kind.on("error", (e) => blind("PowerShell: " + e.message));
                 kind.on("exit", (c) => blind("PowerShell endete (Exit " + c + ")" + (err.trim() ? ": " + err.trim().split(/\r?\n/).pop() : "")));
@@ -1206,7 +1232,7 @@ function fremdUrteil(st, e, b) {
 // der EINE Zeuge des Läufers (fahreGruppe öffnet je Station ein Fenster in ihm; `run` weckt ihn vor dem ersten Lauf)
 let zeugeDerMaschine = null;
 const maschinenZeuge = () => zeugeDerMaschine || (zeugeDerMaschine = fremdZeuge());
-// der stille Zeuge des Selbsttests: jedes Fenster ohne Last (der echte Zeuge und die Attrappen stehen in (5f) beim Namen)
+// der stille Zeuge des Selbsttests: jedes Fenster ohne Last (die Attrappen, das Gesetz und der Leser stehen in (5f) beim Namen)
 const stillerZeuge = () => ({ taktMs: FREMD_TAKT_MS, bereit: async () => {}, beginn: () => ({}), stop() {}, blind: null,
     ende: async () => ({ s: 0, takte: 0, fremdS: 0, kerne: 0, fensterKerne: 0, namen: [], dienerS: 0, diener: [], eigenS: 0, schwelle: FREMD_SCHWELLE_KERNE, eich: FREMD_HIER.ort, still: true }) });
 // DIE EICHUNG (`node punkte.cjs fremdlast [--sek 60] [--takt 2000]`): der Zeuge über --sek Sekunden — einmal im Leerlauf, einmal neben
@@ -4403,6 +4429,70 @@ async function selbsttest(o = {}) {
             const u = [lk.urteil(null, { exit: 0, stdout: radeon + ringe.z }), lk.urteil(null, { exit: 1, stdout: radeon + waag.z })];
             pruef("lod.K3#1 OHNE GERÄT: die Scheiben am Kopf (kleberProbe " + S.teile.kleber.join(" von ") + ", Druck-Block " + S.teile.drucke.join(" von ") + " Anweisungen) — die Ringe drucken die C6-Zeile, das Urteil GRÜN; die waagrechte Karte ROT",
                 u[0].gruen === true && ringe.errs.length === 0 && u[1].gruen === false && waag.errs.length > 0, JSON.stringify([u, ringe.errs, waag.errs]));
+            // DAS BÜNDEL (`tor.dekl` → `tor.buendel`, der Täter fahrzeug.K2#1 am 3ccb8f55): das gezogene Urteil ruft einen Helfer der obersten
+            // Ebene, den die Liste nicht nennt. Die Liste allein (tor.dekl bis 09.11.) deklariert sich und wirft erst beim RUF („urteil is not
+            // defined“); das Bündel zieht den Helfer in der Reihe der Quelle mit und urteilt. Ein Name, den ein Rumpf selbst bindet (Parameter,
+            // Muster, for, catch), zieht nichts mit; ein Name des Moduls in der Kette wirft beim ZIEHEN — die Wand nennt die Kette am Kopf,
+            // bis die Station ihn stellt (`gestellt`)
+            {
+                const C = "scripts/c.cjs";
+                const zeilen = [
+                    "const { pruefer } = require(\"./lib/welt-boot.cjs\");",
+                    "const { errs, check } = pruefer();",
+                    "const urteil = (zeilen) => zeilen.flatMap(([ok, t]) => (ok ? [] : [t]));",
+                    "const GRENZE = { m: 2 };",
+                    "function wegVerdict(m) { return urteil([[m.weg <= GRENZE.m, \"weg \" + m.weg]]); }",
+                    "function bericht(m) { const v = wegVerdict(m); check(\"WEG\", v.length === 0, v.join()); return v; }",
+                    "function schatten(urteil, { GRENZE: errs = 1 } = {}) { for (const check of [urteil]) try { return check + errs; } catch (pruefer) { return pruefer; } }",
+                ];
+                const text = zeilen.join("\n");
+                const q = { text, ast: acorn.parse(text, ACORN_O) };
+                const buendel = PW.sitzungTor().buendel;
+                // die Liste allein (tor.dekl bis 09.11.): jede Anweisung der obersten Ebene, die einen genannten Namen deklariert
+                const allein = (namen) => q.ast.body.filter((n) => (n.id ? [n.id] : n.declarations.map((d) => d.id)).some((i) => namen.includes(i.name))).map((n) => text.slice(n.start, n.end)).join("\n");
+                const ruf = (b) => { try { return JSON.stringify(new Function(b + "\nreturn wegVerdict;")()({ weg: 3 })); } catch (e) { return String(e); } };
+                const liste = ["GRENZE", "wegVerdict"];
+                const vor = ruf(allein(liste)), nach = ruf(buendel(q, liste, [], C));
+                const wand = (rumpf) => toteAnker([{ kriterium: "fahrzeug.K2", staffel: 1, probe: { befehl: ["node", "-e", "async function p(tor) { const C = \"" + C + "\"; " + rumpf + " }"] } }], (d) => (d === C ? text : null), acorn);
+                const still = wand("tor.dekl(C, [\"GRENZE\", \"wegVerdict\"]); tor.dekl(C, [\"schatten\"]); tor.dekl(C, [\"bericht\"], [\"check\"]);");
+                const kette = wand("tor.dekl(C, [\"bericht\"]);");
+                pruef("WAND ANKER das Bündel: die Liste allein wirft erst beim Ruf (urteil is not defined), das Bündel zieht den Helfer in der Reihe der Quelle mit und urteilt; gebundene Namen ziehen nichts mit; require in der Kette ROT beim Namen, gestellt still",
+                    vor === "ReferenceError: urteil is not defined" && nach === "[\"weg 3\"]" && buendel(q, liste, [], C) === zeilen.slice(2, 5).join("\n") && buendel(q, ["schatten"], [], C) === zeilen[6] &&
+                        still.length === 0 && kette.length === 1 && /^fahrzeug\.K2#1: das Bündel bericht deklariert sich nicht — scripts\/c\.cjs: bericht → check → pruefer lädt mit require /.test(kette[0]),
+                    JSON.stringify([vor, nach, still, kette]));
+                // EIN Lauf über jeden echten Ruf: jedes `tor.dekl` der Proben (proben-welt.cjs) steht im Befehl einer Station; die Wand zieht sein
+                // Bündel aus der Quelle am Kopf origin/main und deklariert es in `new Function` — keines wirft; was der Abschluss über die
+                // Liste hinaus mitzieht, steht beim Namen in der Zeile
+                const imWerk = [];
+                (function geh(n) {
+                    if (n.type === "CallExpression" && n.callee.type === "MemberExpression" && !n.callee.computed && n.callee.object.name === "tor" && n.callee.property.name === "dekl")
+                        imWerk.push(n.arguments[1] && n.arguments[1].type === "ArrayExpression" ? n.arguments[1].elements.map((e) => e && e.value).join() : "?");
+                    for (const c of astKinder(n)) geh(c);
+                })(acorn.parse(fs.readFileSync(path.join(DIR, "stationen", "proben-welt.cjs"), "utf8"), ACORN_O));
+                const echt = new Map(); // der Ruf → die Stationen, die ihn tragen
+                for (const st of ladeStationen())
+                    for (const x of griffeVon(st, acorn).griffe.filter((g) => g.buendel)) {
+                        const k = JSON.stringify([x.datei, x.namen, x.buendel]);
+                        echt.set(k, [...(echt.get(k) || []), st]);
+                    }
+                const kopf = ankerLeser(repo, "origin/main");
+                const rot = [], mit = [];
+                for (const [k, wer] of echt) {
+                    const [datei, namen, gestellt] = JSON.parse(k);
+                    const f = toteAnker([{ kriterium: wer[0].kriterium, staffel: wer[0].staffel, probe: { befehl: ["node", "-e", "async function p(tor) { tor.dekl(" + k.slice(1, -1) + "); }"] } }], kopf, acorn);
+                    rot.push(...f);
+                    if (f.length) continue;
+                    const t = kopf(datei);
+                    const dazu = acorn.parse(buendel({ text: t, ast: acorn.parse(t, ACORN_O) }, namen, gestellt, datei), ACORN_O).body
+                        .flatMap((n) => (n.type === "VariableDeclaration" ? n.declarations.flatMap((d) => musterNamen(d.id)) : n.id ? [n.id.name] : []))
+                        .filter((x) => !namen.includes(x));
+                    if (dazu.length) mit.push(wer.map(schluessel).join(" ") + " ← " + dazu.join(", "));
+                }
+                const gelesen = new Set([...echt.keys()].map((k) => JSON.parse(k)[1].join()));
+                pruef("WAND ANKER das Bündel am Kopf origin/main: jeder tor.dekl-Ruf der Proben (" + imWerk.length + ") steht im Befehl einer Station, zieht und deklariert sich in new Function",
+                    imWerk.length > 0 && imWerk.every((x) => gelesen.has(x)) && rot.length === 0,
+                    rot.length ? JSON.stringify(rot) : echt.size + " Rufe in " + new Set([...echt.values()].flat().map(schluessel)).size + " Stationen, 0 Würfe; der Abschluss zieht mit: " + (mit.join(" · ") || "nichts"));
+            }
         }
         // DER SAUM AM KAMM (ferne.K3, `kammSaum` der Station): die Grenze in Metern am Kamm. An den Spalten der Radeon 04.11. (Kronen wie
         // gewachsen) stehen ≥ 100 Kamm-Spalten, das Urteil GRÜN; die Mutante (12 PIXEL bis 04.11.) wirft sie unter 100 (ROT); ein naher Körper
@@ -4553,9 +4643,10 @@ async function selbsttest(o = {}) {
     // mit der Wanduhr, der eigene Baum hängt an einer erfundenen Wurzel): playtest:fast 1,5 Kerne fremd neben einer Zeit-Station →
     // UNGEMESSEN beim Namen; Diener (dwm.exe), der eigene Baum (Chrome der Sitzung) und der Erbe einer wiederbenutzten PID (älter als sein
     // „Vater“: fremd) getrennt; ohne fremde Last GRÜN und ROT wie heute; eine Bild-Station unter Last urteilt wie heute und trägt den
-    // Bericht; ein blinder Zeuge macht nur die Zeit-Station UNGEMESSEN, ein Abbruch behält seinen Grund vorn (brachAb). Dann der ECHTE
-    // Zeuge der Plattform (Linux /proc, Windows PowerShell): ein gestellter fremder Busy-Prozess AUSSERHALB des Baums (der Vermittler
-    // endet, der Waise hängt nie an diesem Läufer) → UNGEMESSEN mit seinem Namen; derselbe Busy als eigene Station ist nie fremd
+    // Bericht; ein blinder Zeuge macht nur die Zeit-Station UNGEMESSEN, ein Abbruch behält seinen Grund vorn (brachAb). Dann DAS GESETZ
+    // (fremdUrteil) an GESETZTEN Berichten um die Schwelle DIESES Rechners, mit seinen umgedrehten Zwillingen, die je an ihrem Satz fallen,
+    // und DER LESER des Windows-Zeugen (zeugenLeser) an gesetzten Zeilen: der Name aus der Kommandozeile, das Leerlauf-Konto, der eigene
+    // Baum, der Diener. Der ECHTE Zeuge der Plattform (Linux /proc, Windows PowerShell) steht als STAND-Zeile da, nie als Urteil
     {
         const T0 = Date.now(), WZ = 4242;
         const attrappe = (rate) => ({
@@ -4604,27 +4695,88 @@ async function selbsttest(o = {}) {
             blindGruen.gruen === true && !blindGruen.ungemessen && /GRÜN trotz Fremd-Last: der Zeuge ist blind/.test(blindGruen.grund) &&
             blindBild.gruen === true && !blindBild.ungemessen && ab.ungemessen === true && brachAb([ab]) && /^Absturz: Signal SIGKILL · n 0 · Fremd-Last: node scripts/.test(ab.grund),
             JSON.stringify([blind.grund, blindBild.gruen, ab.grund]));
-        // DER ECHTE ZEUGE: der Vermittler startet den Busy gelöst und endet (Linux: der Waise hängt an init; Windows: an einer toten PID,
-        // die eine spätere Station erben könnte — der Erbe ist älter als sie, nie ihr Kind)
-        const ATT = "punkte-fremdlast-attrappe";
-        // der Busy rechnet auf floor(Schwelle dieses Rechners) + 1 Kernen: allein über der Schwelle, auf jedem geeichten Rechner
-        const busyKerne = Math.floor(FREMD_SCHWELLE_KERNE) + 1, spin = "const t = Date.now() + 10000; while (Date.now() < t) {}";
-        // (ohne doppelte Anführungszeichen: die Kommandozeile von Windows bliebe sonst nicht EIN Glied, kurzName verlöre den Namen)
-        const busy = "for (let i = 1; i < " + busyKerne + "; i++) new (require('worker_threads').Worker)(`" + spin + "`, { eval: true }); " + spin;
-        const r = spawnSync(process.execPath, ["-e", "const c = require('child_process').spawn(process.execPath, ['-e', " + JSON.stringify(busy) + ", '" + ATT +
-            "'], { detached: true, stdio: 'ignore', windowsHide: true }); c.unref(); console.log(c.pid)"], { encoding: "utf8" });
-        const busyPid = Number(String(r.stdout).trim());
+        // DAS GESETZ AN GESETZTEN EINGABEN (10.11.). Vorher urteilte hier „der echte Zeuge“: ein gestellter Busy neben einer Zeit-Station am
+        // LEBENDEN Gerät — der Fall maß den Takt des PowerShell-Laufs unter der Last des Messplatzes (2–5 Takte in 11,5 s, Soll 23: der Zeuge
+        // blind, der Fall ROT am unveränderten Kopf ac2728ff), die Wanduhr des Läufers, nie das Gesetz. Jetzt ist der Bericht GESETZT — die
+        // Last über, AN und unter der Schwelle DIESES Rechners —, jeder Satz nennt Station, Ergebnis, Last und sein Soll; die UMGEDREHTEN
+        // Gesetze (aus fremdUrteil gebaut) fallen je an ihrem Satz, und jeder Satz fällt an einem von ihnen — ein Fall, den kein falsches
+        // Gesetz rötet, bewiese nichts
+        const ATT = "punkte-fremdlast-attrappe", TF = FREMD_SCHWELLE_KERNE, hochK = Math.floor(TF) + 1, tiefK = +(TF / 2).toFixed(2);
+        const lage = (kerne) => ({ s: 10, takte: 5, fremdS: +(kerne * 10).toFixed(2), kerne, fensterKerne: kerne, namen: [["node -e " + ATT, +(kerne * 10).toFixed(2)]],
+            dienerS: 0, diener: [], eigenS: 3, schwelle: TF, eich: FREMD_HIER.ort });
+        const hoch = lage(hochK), an = lage(TF), tief = lage(tiefK);
+        const rotE = { gruen: false, zahl: "n 3", grund: "ROT: n 3" }, gruenE = { gruen: true, zahl: "n 0" }, bildSt = { ...zeitSt, zeit: false };
+        const beimNamen = (b) => "Fremd-Last: node -e " + ATT + " " + fz1(b.fremdS) + " CPU-s — " + fz2(b.fensterKerne) + " Kerne fremd im dichtesten " + FREMD_FENSTER_S +
+            "-s-Fenster (Schwelle " + fz2(TF) + ", " + FREMD_HIER.ort + "; Σ fremd " + fz1(b.fremdS) + " CPU-s in 10,0 s)";
+        const ungemessenBeimNamen = (b) => (u) => u.ungemessen === true && u.gruen === false && u.grund === beimNamen(b) + " — kein Urteil, UNGEMESSEN (die Probe sah: n 3)" && u.zahl === u.grund;
+        const wieGemessen = (e) => (u) => u.gruen === e.gruen && !u.ungemessen && u.grund === e.grund && u.zahl === e.zahl;
+        const saetze = [
+            ["Last hoch × ROT → UNGEMESSEN beim Namen", zeitSt, rotE, hoch, ungemessenBeimNamen(hoch)],
+            ["Last hoch × GRÜN → GRÜN trotz Last", zeitSt, gruenE, hoch, (u) => u.gruen === true && !u.ungemessen && u.zahl === "n 0" && u.grund === "GRÜN trotz " + beimNamen(hoch)],
+            ["Last AN der Schwelle × ROT → UNGEMESSEN beim Namen", zeitSt, rotE, an, ungemessenBeimNamen(an)],
+            ["Last niedrig × ROT → ROT", zeitSt, rotE, tief, wieGemessen(rotE)],
+            ["Last niedrig × GRÜN → GRÜN", zeitSt, gruenE, tief, wieGemessen(gruenE)],
+            ["Last hoch × ROT an einer Bild-Station → ROT", bildSt, rotE, hoch, wieGemessen(rotE)],
+        ];
+        // die Sätze, die ein Gesetz U bricht (jedes Ergebnis trägt zudem den Bericht, über den geurteilt wurde)
+        const bricht = (U) => saetze.filter(([, st, e, b, soll]) => { const u = U(st, e, b); return !(soll(u) && u.fremd === b); }).map(([n]) => n); // prettier-ignore
+        const umgedreht = {
+            "umgedreht (unter der Schwelle UNGEMESSEN, darüber wie gemessen)": (st, e, b) => ({ ...fremdUrteil(st, e, { ...b, fensterKerne: b.fensterKerne >= b.schwelle ? 0 : b.schwelle + 1 }), fremd: b }),
+            "taub (die Last urteilt nie)": (st, e, b) => ({ ...e, fremd: b }),
+            "streng (GRÜN neben Last UNGEMESSEN, das Gesetz vor dem 09.11.)": (st, e, b) => { const u = fremdUrteil(st, e, b); return /^GRÜN trotz /.test(u.grund || "") ? { ...u, gruen: false, ungemessen: true } : u; }, // prettier-ignore
+            "lasch (erst ÜBER der Schwelle)": (st, e, b) => (b.fensterKerne === b.schwelle ? { ...e, fremd: b } : fremdUrteil(st, e, b)),
+            "blind für die Art (auch die Bild-Station UNGEMESSEN)": (st, e, b) => ({ ...fremdUrteil({ ...st, zeit: true }, e, b), fremd: b }),
+        };
+        const gebrochen = bricht(fremdUrteil), faellt = Object.entries(umgedreht).map(([n, U]) => [n.split(" (")[0], bricht(U)]);
+        pruef("FREMD-LAST das Gesetz an gesetzten Eingaben (Schwelle " + fz2(TF) + " dieses Rechners, Last " + fz2(hochK) + " · " + fz2(TF) + " · " + fz2(tiefK) +
+            " Kerne): Last hoch → ROT wird UNGEMESSEN beim Namen, GRÜN bleibt GRÜN; Last an der Schwelle → UNGEMESSEN; Last niedrig → ROT bleibt ROT; die Bild-Station urteilt wie gemessen; " +
+            faellt.length + " umgedrehte Gesetze fallen je an ihrem Satz, jeder Satz an einem von ihnen",
+            gebrochen.length === 0 && faellt.every(([, s]) => s.length > 0) && saetze.every(([n]) => faellt.some(([, s]) => s.includes(n))),
+            JSON.stringify(gebrochen.length ? { gebrochen } : faellt.map(([n, s]) => n + " fällt an " + (s.length ? s.length + " (" + s[0] + ")" : "KEINEM"))));
+        // DER LESER DES WINDOWS-ZEUGEN an gesetzten Zeilen (zeugenLeser — derselbe, der den PowerShell-Lauf liest; kein Prozess, keine
+        // Wanduhr): zwei Takte, der zweite 10 s hinter dem ersten und in zwei Stücken, mitten in ihrer Zeile. Die fremde PID 77 hängt an einem
+        // toten Vermittler und trägt den Namen ihrer Kommandozeile (nur der erste Takt bringt die C-Zeile), das Leerlauf-Konto (PID 0)
+        // rechnet 240 Kerne und zählt nie, die Wurzel und ihr Kind (3 Kerne — derselbe Busy als eigene Station) sind eigen, System ist Diener
+        const hns = (s) => Math.round(s * 1e7);
+        const zeilen = (t, s, fremdK, mitC) => ["T\t" + t,
+            "P\t0\t0\t" + hns(900 + 240 * s) + "\t0\tSystem Idle Process",
+            "P\t4\t0\t" + hns(70 + 2 * s) + "\t" + (T0 - 9e6) + "\tSystem",
+            "P\t" + WZ + "\t1\t" + hns(1 + 0.1 * s) + "\t" + (T0 - 1e6) + "\tnode.exe",
+            "P\t" + (WZ + 1) + "\t" + WZ + "\t" + hns(2 + 3 * s) + "\t" + (T0 - 5e5) + "\tnode.exe",
+            "P\t77\t9999\t" + hns(5 + fremdK * s) + "\t" + (T0 - 1e5) + "\tnode.exe",
+            ...(mitC ? ["C\t77\t\"C:\\Program Files\\nodejs\\node.exe\" -e while(1){} " + ATT, "C\t" + (WZ + 1) + "\tnode.exe -e while(1){} punkte-fremdlast-eigen"] : []),
+            "E", ""].join("\r\n");
+        const gelesen = async (fremdK) => {
+            let lies2 = null;
+            const z = fremdZeuge({ quelle: { start: (gib) => (lies2 = zeugenLeser(gib)), stop() {} }, taktMs: 500, wurzel: WZ, eich: FREMD_HIER });
+            const t = Date.now();
+            lies2(zeilen(t, 0, fremdK, true));
+            const f = z.beginn(), zwei = zeilen(t + 10000, 10, fremdK, false), mitte = zwei.indexOf("P\t77\t") + 9;
+            lies2(zwei.slice(0, mitte));
+            lies2(zwei.slice(mitte));
+            const b = await z.ende(f);
+            z.stop();
+            return b;
+        };
+        const lHoch = await gelesen(hochK), lTief = await gelesen(tiefK), NAME = "node.exe -e while(1){} " + ATT;
+        const uHoch = fremdUrteil(zeitSt, rotE, lHoch), uTief = fremdUrteil(zeitSt, rotE, lTief);
+        pruef("FREMD-LAST der Leser des Windows-Zeugen an gesetzten Zeilen (zeugenLeser, zwei Takte im Abstand von 10 s): der fremde Prozess trägt den Namen seiner Kommandozeile über den Takt hinweg, das Leerlauf-Konto zählt nie, der eigene Baum und der Diener sind nie fremd; über der Schwelle wird ROT UNGEMESSEN mit seinem Namen, darunter bleibt ROT",
+            JSON.stringify(lHoch.namen) === JSON.stringify([[NAME, 10 * hochK]]) && lHoch.fensterKerne === hochK && lHoch.s === 10 && lHoch.takte === 1 && lHoch.eigenS === 31 &&
+            JSON.stringify(lHoch.diener) === JSON.stringify([["System", 20]]) && lHoch.schwelle === TF &&
+            uHoch.ungemessen === true && uHoch.grund.startsWith("Fremd-Last: " + NAME + " " + fz1(10 * hochK) + " CPU-s — " + fz2(hochK) + " Kerne fremd im dichtesten ") &&
+            JSON.stringify(lTief.namen) === JSON.stringify([[NAME, +(10 * tiefK).toFixed(2)]]) && lTief.fensterKerne === tiefK && tiefK < TF &&
+            uTief.gruen === false && !uTief.ungemessen && uTief.grund === "ROT: n 3" && uTief.fremd === lTief,
+            JSON.stringify([uHoch.grund, lHoch, lTief.fensterKerne]));
+        // DER ECHTE ZEUGE der Plattform (Linux /proc, Windows der PowerShell-Lauf) liest das lebende Gerät: ein STAND, nie ein Urteil — kein
+        // pruef, kein gestellter Busy (er wäre fremde Last für jede Messung nebenan)
         const echtZ = fremdZeuge({ taktMs: 500 });
         await echtZ.bereit();
-        const echtUnter = await fahreStation(rotSt, { ...ctx("fremd-echt"), zeuge: echtZ });
-        try { process.kill(busyPid); } catch (_e) {}
-        const eigenSt = { ...zeitSt, befehl: ["node", "-e", "const t = Date.now() + 3000; while (Date.now() < t) {} require('fs').writeFileSync(process.argv[1], JSON.stringify({ n: 0 }))", "{AUS}", "punkte-fremdlast-eigen"] };
-        const echtEigen = await fahreStation(eigenSt, { ...ctx("fremd-eigen"), zeuge: echtZ });
+        const echtF = echtZ.beginn();
+        await new Promise((ja) => setTimeout(ja, 1500));
+        const echtB = await echtZ.ende(echtF);
         echtZ.stop();
-        pruef("FREMD-LAST der echte Zeuge (" + process.platform + ", Schwelle " + fz2(FREMD_SCHWELLE_KERNE) + ", Busy auf " + busyKerne + " Kernen): ein gestellter fremder Busy-Prozess neben einer Zeit-Station → UNGEMESSEN mit seinem Namen; derselbe Busy als eigene Station ist nie fremd",
-            busyPid > 0 && echtUnter.ungemessen === true && new RegExp("^Fremd-Last: [^—]*" + ATT + " \\d+,\\d CPU-s").test(echtUnter.grund) &&
-            !!echtEigen.fremd && !echtEigen.fremd.blind && !(echtEigen.fremd.namen || []).some(([n]) => /punkte-fremdlast-eigen/.test(n)) && echtEigen.fremd.eigenS >= 2,
-            JSON.stringify([echtUnter.grund, echtEigen.fremd]));
+        console.log("  STAND der echte Zeuge (" + process.platform + ", Takt 500 ms, kein Urteil): " + (echtB.blind ? "blind — " + echtB.blind + " (" + echtB.takte + " Takte in 1,5 s)"
+            : fz2(echtB.fensterKerne) + " Kerne fremd im Fenster (" + echtB.takte + " Takte in " + fz1(echtB.s) + " s; Schwelle " + fz2(echtB.schwelle) + ")" + (echtB.namen.length ? " · " + fremdNamen(echtB) : "")));
         // DIE SCHWELLE JE RECHNER (fremdEich): jeder Eintrag findet sich an seiner Plattform, seinen Kernen und seiner CPU; jede Schwelle
         // hält den Fehler unter 3 % (schwelle · effekt ≤ 0,03); ein ungeeichter Rechner (dieselbe Plattform, andere Kerne) urteilt an der
         // strengsten geeichten Schwelle und nennt sich „ungeeicht“; DIESER Rechner urteilt an FREMD_HIER
