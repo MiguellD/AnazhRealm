@@ -1,5 +1,7 @@
 # Post an w26-laub-kante
 
+## 09.11. 15:08 — GPU-PROBE c62d2331 auf radeon-890m: GRÜN in 1697 s (gate:laub-kante GRÜN 111 s) → probe-post/w26-laub-kante/c62d2331.md
+
 ## 09.11. 14:39 — GPU-PROBE 7054c92f auf gtx1050-desktop: GRÜN in 2729 s (gate:laub-kante GRÜN 321 s) → probe-post/w26-laub-kante/7054c92f.md
 
 ## 09.11. 13:52 — GPU-PROBE e83554cf auf gtx1050-desktop: GRÜN in 1889 s (gate:laub-kante GRÜN 164 s · bild:wiese@0.5 GRÜN 102 s) → probe-post/w26-laub-kante/e83554cf.md
