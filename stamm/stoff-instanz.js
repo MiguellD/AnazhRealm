@@ -1047,12 +1047,15 @@ class AnazhRealm_stoff_instanz {
             }
             // im Takt (vor jedem Pass des Frames), einmal je Frame: räumen, was GPU_KEHRAUS_MS kein Glied zog, und die Strecken
             // des letzten Frames freigeben
+            // DIE GRENZE ZÄHLT DIE TAKTE MIT (Lehre 26): was der letzte Takt hielt, bleibt — auch über ein Bild, das länger als
+            // GPU_KEHRAUS_MS stand (ein Hänger, ein Programm-Bau, swiftshader). Befund w25-gpu-wahl-2 (Mess-Wiese, Stand, ein
+            // Bild je 3,3 s): jeder Takt räumte jede Gestalt jedes Lagers und kopierte sie neu, 288 Kopien und 5,8 MB je Bild.
             takt(rend, jetzt) {
                 this.rend = rend;
                 if (this.taktT === jetzt) return;
+                const grenze = (this.grenze = Math.min(jetzt - AnazhRealm.GPU_KEHRAUS_MS, this.taktT ?? -Infinity));
                 this.taktT = jetzt;
                 this.taktN++;
-                const grenze = jetzt - AnazhRealm.GPU_KEHRAUS_MS;
                 for (const b of this.gestalten.values()) if (b.bv >= 0 && b.zuletzt < grenze) this.raeumen(b);
                 for (let k = 0; k < this.spaet.length; k += 4) {
                     raumGib(this.vFrei, this.spaet[k], this.spaet[k + 1]);
@@ -1064,7 +1067,7 @@ class AnazhRealm_stoff_instanz {
             // Pool-Gesetzes) oder wenn mehr als ein Achtel frei liegt und das Lager die Ruhe-Frist über ruhte (eng)
             ordnen(jetzt) {
                 if (this.gestalten.size === 0) return;
-                const grenze = jetzt - AnazhRealm.GPU_KEHRAUS_MS;
+                const grenze = this.taktT === jetzt ? this.grenze : jetzt - AnazhRealm.GPU_KEHRAUS_MS;
                 if (this.neu) return void this.bauen(grenze, AnazhRealm.CHUNK_SATZ_VERDICHTEN.luft);
                 const brach =
                     this.vCap - this.liegt > (this.vCap >> 3) + 256 || this.iCap - this.iLiegt > (this.iCap >> 3) + 768;
