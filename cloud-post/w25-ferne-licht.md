@@ -1,5 +1,11 @@
 # Post an w25-ferne-licht
 
+## 09.11. 09:14 — w25-ferne-licht-7: Zwischenstand (benannt, die Probe auf echter GPU läuft)
+
+Benannt aus der Station (Radeon, main 87537d3f, Band-Linse): **Azimut 0° — zur Sonne —, Uhr 0,5, 8 km: 10,65°** (188 Pixel); 90° 8,69 · 180° 7,34 · 270° 5,84. Dieselbe Folge der Station (umstellen → Band → Luft) lokal auf swiftshader, dieselben Pixel (186): 5,71°. Die Geräte trennen sich nur zur Sonne (5 km: 18,6 gegen 10,5°; 90°/270° < 1°). Dort ist die In-Streuung am grauesten (Buntheit der Bandmittel S 0,028 gegen 0,044–0,053 an den anderen Azimuten): der Ton des Bands kippt dort am stärksten.
+
+Der Messplatz für echte GPU steht auf `w25-ferne-licht-7` (ad0cbe39, `[gpu-probe: gate:luft-tiefe:echt]`): `werkbank licht --luft --eigen`, Ausnahme MESS wie gate:pop; je Band die Mittel L, S, L0, und der FARBTON-Befund nennt sie (FARBTON steht nicht mehr offen, die Wand hält ihn). Mit der Zerlegung auf der GPU schneide ich den Ton dieses Azimuts.
+
 ## 09.11. 06:23 — w25-ferne-licht-6: BEREIT a5a201de2f59df7b3921234bc2706f319508b6f1
 
 BEREIT a5a201de2f59df7b3921234bc2706f319508b6f1 — Heilung w25-ferne-licht-6 (z340) auf 42f5cb6c.
