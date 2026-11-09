@@ -182,27 +182,6 @@ class AnazhRealm_stoff_instanz {
         };
     }
 
-    // Die WGSL-Algebra derselben Gesetze (w25-gpu-wahl): jedes Gesetz über einer Algebra (`_wieseFern`, `_wieseFuss`,
-    // `_wieseSchale`) schreibt sich über ihr als WGSL-Ausdruck — die Wahl der GPU rechnet es aus DERSELBEN Quelle wie der Stoff
-    // (TSL) und die CPU (Zahlen), nie ein Zwilling von Hand. Eine Zahl wird ein f32-Literal, jede Größe ein Ausdruck in Klammern.
-    static _wgslAlgebra() {
-        const zahl = (n) => {
-            if (!Number.isFinite(n)) throw new Error(`_wgslAlgebra: ${n} ist keine endliche Zahl`);
-            const t = String(n);
-            return "f32(" + (/[.e]/.test(t) ? t : t + ".0") + ")";
-        };
-        return {
-            k: zahl,
-            add: (a, b) => `(${a} + ${b})`,
-            mul: (a, b) => `(${a} * ${b})`,
-            min: (a, b) => `min(${a}, ${b})`,
-            max: (a, b) => `max(${a}, ${b})`,
-            pow: (a, b) => `pow(${a}, ${b})`,
-            sin: (a) => `sin(${a})`,
-            sqrt: (a) => `sqrt(${a})`,
-        };
-    }
-
     // DER WIND IM PFLANZEN-STOFF (K19): Rinde und Laub jeder Foundry-Pflanze tragen den EINEN Wind-Term (phyto-core
     // `windAusschlag`, hier über der TSL-Algebra) — Stamm, Ast und Blatt je mit ihrer Frequenz, die Last aus der Wind-Zeile
     // des Wetters (U = uWindStrength / WEATHER_WIND_AMP, dieselbe Zeile, die das Wasser kräuselt), die Böe aus WIND_BOE
@@ -247,7 +226,7 @@ class AnazhRealm_stoff_instanz {
         const naht = this._weltNaht(T);
         const pW = naht.lage;
         const ht = uB.x.max(1e-3);
-        const H = AnazhRealm._senkenKnoten().attribut("aH0", "float").max(0.5);
+        const H = T.attribute("aH0", "float").max(0.5);
         const ort = pW.x.mul(wu.uWindDir.x).add(pW.z.mul(wu.uWindDir.y));
         const g = T.sin(wu.uWindTime.mul(B.omega).sub(ort.mul(B.k)))
             .mul(B.amp)
@@ -437,11 +416,8 @@ class AnazhRealm_stoff_instanz {
                 // die Fassade zeichnet, was ihre Quelle zeichnet (Bereich), so viele Instanzen, wie die Senke zählt
                 // (`_instanzZahl` bleibt der EINE Schreiber der Zahl — hier wird sie nur gelesen)
                 f.setDrawRange(g.drawRange.start, g.drawRange.count);
-                // nimmt die Arena ihres Stoffs die Senke (G1, im Takt: `_arenaKommt`), verlässt er den Graphen vor dem ersten Pass.
-                // Eine Senke der GPU-Wahl zieht er nie, solange eine Arena sie nehmen kann (`_arenaKann`): ohne Wahl zöge er jede
-                // Stufe ohne Fenster, die ganze Nähe in beiden Stufen — sie wartet unsichtbar und meldet sich (`onBeforeRender`)
-                const w = s.__wahlGpu === true && AnazhRealm._arenaKann(globalThis.anazhRealm?.state.renderer);
-                f.instanceCount = w ? 0 : s.count;
+                // nimmt die Arena ihres Stoffs die Senke (G1, im Takt: `_arenaKommt`), verlässt er den Graphen vor dem ersten Pass
+                f.instanceCount = s.count;
                 return f;
             }
             // Zieht der Zeichner, meldet er seine Senke zum Eintritt im nächsten Takt (`_arenaKommt`: eine spät gehängte Senke,
@@ -487,26 +463,21 @@ class AnazhRealm_stoff_instanz {
             constructor(feld, typ, n, name) {
                 const A = typ === "uint" ? Uint32Array : Float32Array;
                 super(new THREE.StorageInstancedBufferAttribute(new A(n), n), typ, 0);
-                // DER EIGENE PLATZHALTER: trägt die Quelle das Feld nicht (eine Arena, deren Glieder kein aH0 tragen), bindet der
-                // Knoten ihn — nie den Puffer des zuletzt gezeichneten Objekts (r184 erneuert die Bindegruppe nur mit ihrer
-                // Gruppen-Version): bis w25-gpu-wahl las eine solche Arena das Maß einer fremden und zog nach deren Fall den
-                // gefallenen Puffer („used in submit while destroyed“, renderContext_2, Radeon 6831170c ×2)
-                this.leer = this.value;
                 this.feld = feld;
                 this.updateType = "object";
                 this.setName(name);
             }
-            // die Liste der Wahl trägt jede Kamera für sich (`_wahlVor`): eine Karte Kamera → Puffer
-            quelle(o, kamera) {
-                const v = o && o.__instanzQuelle ? o.__instanzQuelle[this.feld] : null;
-                return v instanceof Map ? v.get(kamera) || null : v;
+            quelle(o) {
+                return o && o.__instanzQuelle ? o.__instanzQuelle[this.feld] : null;
             }
             setup(builder) {
-                this.value = this.quelle(builder.object, builder.camera) || this.leer;
+                const p = this.quelle(builder.object);
+                if (p) this.value = p;
                 return super.setup(builder);
             }
             update(frame) {
-                this.value = this.quelle(frame.object, frame.camera) || this.leer;
+                const p = this.quelle(frame.object);
+                if (p) this.value = p;
             }
         }
         // DER INDEX DER INSTANZ: zieht eine Arena aus der Wahl der GPU (Marke `aWahl`, `_instanzWahlGpu`), ist er ihr Eintrag in
@@ -541,30 +512,6 @@ class AnazhRealm_stoff_instanz {
         // `maxVertexBuffers` 8). Befund 16.10. (Radeon, Genesis Third, GPU-Wache): `aWindArt` als neunter Vertex-Puffer, „Vertex
         // buffer count (9) exceeds the maximum" — die Pipeline des Laubs abgesagt, jede nahe Krone fehlte im Bild.
         const windArt = new SenkenPuffer("windArt", "vec4", 4, "arenaWindArt").toReadOnly().element(index).xyz;
-        // DER EINE LESER EINES INSTANZ-ATTRIBUTS (w25-gpu-wahl): in der Wahl am Index der Liste aus dem Speicher-Puffer der Arena
-        // (`_instanzSeite` legt jedes unter seinem Namen in ihre Quelle), wie Matrix und Gang — als Vertex-Attribut läse r184 es am
-        // Index des ZUGS (erste Instanz = der Abschnitt der Liste dieser Kamera): jede gewählte Instanz trüge Farbe, Höhe der
-        // Blende und Karte einer fremden, je Bild eine andere (die Wahl zählt atomar); sonst das Attribut. vec3 liegt auf 4
-        // Zahlen (`_instanzSeite`: r184 richtet jeden Speicher-Puffer der Größe 3 auf 4 aus).
-        const attribute = new Map();
-        const attribut = (name, typ) => {
-            if (!attribute.has(name)) {
-                const n = typ === "float" ? 1 : 4;
-                const p = new SenkenPuffer(name, n === 4 ? "vec4" : "float", n, "arena_" + name).toReadOnly();
-                const lies = typ === "vec3" ? p.element(index).xyz : p.element(index);
-                attribute.set(
-                    name,
-                    T.nodeObject(
-                        new WahlWert(
-                            typ,
-                            () => lies,
-                            () => T.attribute(name, typ)
-                        )
-                    )
-                );
-            }
-            return attribute.get(name);
-        };
         class SenkenInstanz extends N {
             constructor() {
                 super("void");
@@ -574,7 +521,7 @@ class AnazhRealm_stoff_instanz {
                 if (builder.hasGeometryAttribute("normal"))
                     T.normalLocal.assign(T.transformNormal(T.normalLocal, matrix));
                 if (builder.geometry && builder.geometry.attributes && builder.geometry.attributes.instanzFarbe)
-                    T.varyingProperty("vec3", "vInstanceColor").assign(attribut("instanzFarbe", "vec3"));
+                    T.varyingProperty("vec3", "vInstanceColor").assign(T.attribute("instanzFarbe", "vec3"));
                 builder.__anazhInstanzMatrix = matrix;
                 return null;
             }
@@ -582,7 +529,6 @@ class AnazhRealm_stoff_instanz {
         AnazhRealm.__senkenKnoten = {
             matrix,
             windArt,
-            attribut,
             // der Gang je Instanz (`_gangSatzKnoten`): in der Wahl am Index aus dem Speicher-Puffer der Arena, sonst das Attribut
             gang: T.nodeObject(
                 new WahlWert(
@@ -853,40 +799,6 @@ class AnazhRealm_stoff_instanz {
         }
         return THREE.TSL.nodeObject(new AnazhRealm.__windArtK(stoff));
     }
-    // DER PLATZ-RAUM (der EINE Verwalter freier Strecken: die Arena — Lager und Instanz-Seite —, der Bestand der Nah-Wiese):
-    // `frei` = [Anfang, Länge, …] aufsteigend. Nehmen: die erste Strecke, die passt (−1: keine); Geben: einsortiert, mit den
-    // Nachbarn verschmolzen; Abschneiden: was ab `bis` frei liegt, fällt (der Raum endet dort).
-    static _raumNimm(frei, n) {
-        for (let k = 0; k < frei.length; k += 2) {
-            if (frei[k + 1] < n) continue;
-            const s = frei[k];
-            if (frei[k + 1] === n) frei.splice(k, 2);
-            else {
-                frei[k] += n;
-                frei[k + 1] -= n;
-            }
-            return s;
-        }
-        return -1;
-    }
-    static _raumGib(frei, s, n) {
-        let k = 0;
-        while (k < frei.length && frei[k] < s) k += 2;
-        frei.splice(k, 0, s, n);
-        if (k + 2 < frei.length && s + n === frei[k + 2]) {
-            frei[k + 1] += frei[k + 3];
-            frei.splice(k + 2, 2);
-        }
-        if (k > 0 && frei[k - 2] + frei[k - 1] === s) {
-            frei[k - 1] += frei[k + 1];
-            frei.splice(k, 2);
-        }
-    }
-    static _raumAbschneiden(frei, bis) {
-        for (let k = frei.length - 2; k >= 0; k -= 2)
-            if (frei[k] >= bis) frei.splice(k, 2);
-            else if (frei[k] + frei[k + 1] > bis) frei[k + 1] = bis - frei[k];
-    }
     static _arenaKlasse() {
         if (AnazhRealm.__arenaK) return AnazhRealm.__arenaK;
         const T = THREE;
@@ -922,7 +834,32 @@ class AnazhRealm_stoff_instanz {
         // — und die Matrizen jeder Quelle blieben daneben auf der GPU (0,49–0,51 MB). Der Platz-Raum (`raumNimm`/`raumGib`)
         // ist der EINE Verwalter beider Seiten; was frei wird, nimmt erst der nächste Takt (`spaet`): ein offener Pass (das
         // Hauptbild um den verschachtelten Schatten-Render) liest den alten Inhalt noch.
-        const [raumNimm, raumGib] = [AnazhRealm._raumNimm, AnazhRealm._raumGib];
+        const raumNimm = (frei, n) => {
+            for (let k = 0; k < frei.length; k += 2) {
+                if (frei[k + 1] < n) continue;
+                const s = frei[k];
+                if (frei[k + 1] === n) frei.splice(k, 2);
+                else {
+                    frei[k] += n;
+                    frei[k + 1] -= n;
+                }
+                return s;
+            }
+            return -1;
+        };
+        const raumGib = (frei, s, n) => {
+            let k = 0;
+            while (k < frei.length && frei[k] < s) k += 2;
+            frei.splice(k, 0, s, n);
+            if (k + 2 < frei.length && s + n === frei[k + 2]) {
+                frei[k + 1] += frei[k + 3];
+                frei.splice(k + 2, 2);
+            }
+            if (k > 0 && frei[k - 2] + frei[k - 1] === s) {
+                frei[k - 1] += frei[k + 1];
+                frei.splice(k, 2);
+            }
+        };
         const raumSpaet = (frei, spaet) => {
             for (let k = 0; k < spaet.length; k += 2) raumGib(frei, spaet[k], spaet[k + 1]);
             spaet.length = 0;
@@ -1344,15 +1281,10 @@ class AnazhRealm_stoff_instanz {
                 if (!this._ordnen(rend, false)) return null;
                 const zug = this._zugFuer(camera, false),
                     q = this.__instanzQuelle;
-                // DIE LISTE JE KAMERA, so lang wie die Instanz-Seite, für das Leben der Arena (auch über das Verdrängen ihres Zugs):
-                // das Render-Objekt einer Kamera bindet sie einmal und nie eine andere. Bis hier teilten die Kameras EINE Liste in
-                // Abschnitten; kam eine Kamera hinzu, wuchs sie neu — r184 erneuert eine Bindegruppe nur mit ihrer Gruppen-Version
-                // (`Nodes.updateGroup`, unter der Observer-Diät nie), die Render-Objekte zogen die gefallene („used in submit while
-                // destroyed", renderContext_2, GTX 8008fbf1 dreimal je Boot)
-                const L = q.liste || (q.liste = new Map());
-                if (!(zug.liste = L.get(camera))) {
-                    L.set(camera, (zug.liste = new IND(new Uint32Array(this._nCap), 1)));
-                    rend._attributes.update(zug.liste, 3); // r184 AttributeType.STORAGE
+                if (!q.liste || q.liste.array.length < this._segZahl * this._nCap) {
+                    weg(rend, q.liste);
+                    q.liste = new IND(new Uint32Array(this._segZahl * this._nCap), 1);
+                    rend._attributes.update(q.liste, 3); // r184 AttributeType.STORAGE
                 }
                 this._auftraege(zug, camera, rend, false);
                 zug.bereit = true;
@@ -1376,8 +1308,7 @@ class AnazhRealm_stoff_instanz {
                 const G = this.geometry.attributes;
                 for (const k in G) if (G[k].isInstancedBufferAttribute) weg(this._rend, G[k]);
                 weg(this._rend, this.__instanzQuelle.instanceMatrix);
-                for (const l of this.__instanzQuelle.liste ? this.__instanzQuelle.liste.values() : [])
-                    weg(this._rend, l);
+                weg(this._rend, this.__instanzQuelle.liste);
                 weg(this._rend, this._ind);
                 this._zuege.clear();
                 this._zuegeB.clear();
@@ -1425,24 +1356,17 @@ class AnazhRealm_stoff_instanz {
                     raumGib(this._nFrei, this._nCap, zu);
                     this._nCap += zu;
                 }
-                // in der Wahl liest der Shader jede Instanz-Größe am Index ihrer Liste: ein Speicher-Puffer (`_senkenKnoten`).
-                // Ein vec3 liegt dort auf 4 Zahlen: r184 richtet jeden Speicher-Puffer der Größe 3 beim Anlegen auf 4 aus und
-                // tauscht dabei Array und Größe des Attributs (WebGPUAttributeUtils `_force3to4BytesAlignment`) — wer danach
-                // dicht schrieb, schrieb jede Instanz nach der ersten an einen fremden Platz (GTX 0136ab62: Halm und Krone in
-                // fremden Farben). Die Arena legt den Schritt selbst, `_block` kopiert in ihn.
+                // in der Wahl liest der Shader jede Instanz-Größe am Index ihrer Liste: ein Speicher-Puffer (`_senkenKnoten`)
                 const K = this._wahl ? T.StorageInstancedBufferAttribute : T.InstancedBufferAttribute;
-                const neu = (k, a) => {
-                    const s = this._wahl && a.itemSize === 3 ? 4 : a.itemSize;
-                    g.setAttribute(k, new K(new a.array.constructor(this._nCap * s), s, a.normalized));
-                };
+                const neu = (k, a) =>
+                    g.setAttribute(
+                        k,
+                        new K(new a.array.constructor(this._nCap * a.itemSize), a.itemSize, a.normalized)
+                    );
                 for (const k in m0.geometry.attributes)
                     if (m0.geometry.attributes[k].isInstancedBufferAttribute) neu(k, m0.geometry.attributes[k]);
                 if (m0.instanceColor) neu("instanzFarbe", m0.instanceColor);
                 q.gang = g.attributes.aGang || null;
-                // in der Wahl liest jeder Stoff jedes Instanz-Attribut am Index der Liste (`_senkenKnoten().attribut`)
-                if (this._wahl)
-                    for (const k in g.attributes)
-                        if (g.attributes[k].isInstancedBufferAttribute) q[k] = g.attributes[k];
                 q.instanceMatrix = new T.StorageInstancedBufferAttribute(new Float32Array(this._nCap * 16), 16);
                 // die Art-Größen des Winds: ein Speicher-Puffer wie die Matrizen (`_senkenKnoten().windArt`), in der Geometrie
                 // nur die Marke, die das Programm der Arena vom Programm des Zeichners trennt (kein Shader liest sie als Attribut)
@@ -1467,22 +1391,21 @@ class AnazhRealm_stoff_instanz {
                 if (n > z.spitze) z.spitze = n;
                 const soll = platz(Math.max(z.spitze, z.spitzeVor));
                 if (z.erst >= 0 ? n <= z.cap && z.cap <= 2 * soll : soll === 0) return true;
-                // der alte Block fällt erst, wenn der neue steht (sein Platz wird ohnehin erst im nächsten Takt frei): ohne Platz
-                // behält das Glied ihn, und sein Rufer entscheidet (`_pruefen`)
-                let e = soll === 0 ? -1 : raumNimm(this._nFrei, soll);
+                if (z.erst >= 0) {
+                    this._nSpaet.push(z.erst, z.cap);
+                    this._nBelegt -= z.cap;
+                    z.erst = -1;
+                    z.cap = 0;
+                    if (soll === 0) return true;
+                }
+                let e = raumNimm(this._nFrei, soll);
                 // vor dem ersten Zug wächst die Instanz-Seite frei
-                if (e < 0 && soll > 0 && !this.__instanzQuelle.instanceMatrix) {
+                if (e < 0 && !this.__instanzQuelle.instanceMatrix) {
                     raumGib(this._nFrei, this._nCap, soll);
                     this._nCap += soll;
                     e = raumNimm(this._nFrei, soll);
                 }
-                if (e < 0 && soll > 0) return false;
-                if (z.erst >= 0) {
-                    this._nSpaet.push(z.erst, z.cap);
-                    this._nBelegt -= z.cap;
-                    [z.erst, z.cap] = [-1, 0];
-                }
-                if (soll === 0) return true;
+                if (e < 0) return false;
                 z.erst = e;
                 z.cap = soll;
                 z.n = -1;
@@ -1506,8 +1429,7 @@ class AnazhRealm_stoff_instanz {
                     // Instanz-Seite (headless 6a571e3b im Stand: 63 neue Render-Objekte in 73 Bildern).
                     let n = 0;
                     for (const m of this.glieder) n += platz(Math.max(m.__arenaZ.spitze, m.__arenaZ.spitzeVor));
-                    const warten = [...this._wartend].filter(([m]) => !m.__arena && m.parent && m.__zeichner);
-                    for (const [, bedarf] of warten) n += bedarf;
+                    for (const [m, bedarf] of this._wartend) if (!m.__arena && m.parent) n += bedarf;
                     this._wartend.clear();
                     AnazhRealm.__arenaFolgen = (AnazhRealm.__arenaFolgen | 0) + 1;
                     const a = new GeometrieArena(
@@ -1543,10 +1465,6 @@ class AnazhRealm_stoff_instanz {
                         if (y !== z) [y.spitze, y.spitzeVor, y.spitzeT] = [z.spitze, z.spitzeVor, z.spitzeT];
                         this._lager.lassen(z.gestalt);
                     }
-                    // die wartenden Senken treten in die Folgerin, für die sie gezählt war (w25-gpu-wahl: bis hier zählte sie ihr
-                    // Bedarf, genommen wurde keine — sie meldete sich erst wieder, wenn ihr Zeichner zog; eine Gruppe der GPU-Wahl,
-                    // deren Zeichner nie zog, stand für immer außerhalb jeder Arena)
-                    for (const [m] of warten) a.nehmen(m);
                     this._fallen();
                 }, 0);
             }
@@ -1591,12 +1509,8 @@ class AnazhRealm_stoff_instanz {
                     z.n = -1;
                     z.stempel = [];
                 }
-                // zurück zum Zeichner, bis die größere Arena steht — nur ohne Wahl der GPU: ein Glied der Wahl zöge dort jede
-                // Stufe ohne Fenster (die Nah-Wiese wartend gar nichts), die ganze Familie fehlte ein Bild (w25-gpu-wahl, gate:pop
-                // die Treue: die Nähe der Vorlage 1 in A ohne Arena). Es zeichnet seinen alten Block, bis die Folgerin steht.
-                if (this._blockFuer(z, m.count | 0, AnazhRealm.__arenaJetzt || 0)) return 0;
-                if (!this._wahl || z.erst < 0) return 3;
-                this._folgen();
+                // zurück zum Zeichner, bis die größere Arena steht
+                if (!this._blockFuer(z, m.count | 0, AnazhRealm.__arenaJetzt || 0)) return 3;
                 return 0;
             }
             _sichtbar(m, renderer) {
@@ -1627,60 +1541,44 @@ class AnazhRealm_stoff_instanz {
                     q = m.geometry.attributes,
                     c = m.instanceColor,
                     st = z.stempel,
-                    mw = m.matrixWorld.elements,
-                    G = this.geometry;
-                let mwNeu = false;
+                    mw = m.matrixWorld.elements;
+                let neu = n > z.n || st[0] !== im.version,
+                    k = 1;
                 for (let i = 0; i < 16; i++)
                     if (z.mw[i] !== mw[i]) {
                         z.mw.set(mw);
-                        mwNeu = true;
+                        neu = true;
                         break;
                     }
-                // je Quelle [Quelle, Ziel in der Arena, geändert]: die Matrizen, die Instanz-Größen, die Farbe
-                const quellen = [[im, this.__instanzQuelle.instanceMatrix, st[0] !== im.version]];
-                let k = 1;
                 for (const nm in q) {
                     const a = q[nm];
                     if (!a.isInstancedBufferAttribute) continue;
-                    quellen.push([a, G.attributes[nm], st[k] !== a || st[k + 1] !== a.version]);
+                    if (st[k] !== a || st[k + 1] !== a.version) neu = true;
                     st[k++] = a;
                     st[k++] = a.version;
                 }
-                if (c) quellen.push([c, G.attributes.instanzFarbe, st[k] !== c || st[k + 1] !== c.version]);
-                if (c) [st[k], st[k + 1]] = [c, c.version];
+                if (c && st[k] !== c.version) neu = true;
+                if (c) st[k] = c.version;
                 st[0] = im.version;
-                const neu = n > z.n || mwNeu || quellen.some((x) => x[2]);
                 if (!neu) return;
-                // DIE KOSTEN AN DER ÄNDERUNG (w25-gpu-wahl, Lehre 25): stand der Block (gefüllt, nicht umgezogen, dieselbe Welt-Matrix,
-                // die Einheit) und trägt jede geänderte Quelle ihre Bereiche (`addUpdateRange`), kopiert er nur sie — eine neue Kachel
-                // der Nah-Wiese schreibt ihren Block, nie den Ring. Nur ein Glied, das jeden Schreiber an Bereiche bindet (`__bereiche`,
-                // der Bestand `_nahWieseBestand`); sonst ganz, wie jede Senke ohne Maß (ein Schreiber ohne Version ginge sonst verloren).
-                const e = z.erst,
-                    alt = z.n,
-                    teil = m.__bereiche === true && alt >= 0 && !mwNeu && istEins(mw) && quellen.every((x) => !x[2] || x[0].updateRanges.length); // prettier-ignore
                 z.n = n;
-                for (const [a, d, anders] of quellen) {
-                    if (teil && !anders && n <= alt) continue;
-                    // die Plätze [i0, i1) der Quelle in den Block, im Schritt des Ziels (`_instanzSeite`: vec3 liegt auf 4)
-                    const [ga, gd] = [a.itemSize, d.itemSize];
-                    const kopie = (i0, i1) => {
-                        if (i1 <= i0) return;
-                        if (ga === gd) d.array.set(a.array.subarray(i0 * ga, i1 * ga), (e + i0) * gd);
-                        else for (let i = i0; i < i1; i++) d.array.set(a.array.subarray(i * ga, i * ga + ga), (e + i) * gd); // prettier-ignore
-                        if (teil) schreib(this._rend, d, (e + i0) * gd, (i1 - i0) * gd);
-                    };
-                    if (teil) {
-                        if (anders)
-                            for (const r of a.updateRanges)
-                                kopie(Math.floor(r.start / ga), Math.min(n, Math.ceil((r.start + r.count) / ga)));
-                        // der Zuwachs der Zahl kopiert ganz (seine Plätze schrieb die Quelle vielleicht, als die Zahl sie noch kappte)
-                        kopie(alt, n);
-                    } else if (a === im && !istEins(mw))
-                        for (let i = 0; i < n; i++) mal(d.array, (e + i) * 16, mw, im.array, i * 16); // prettier-ignore
-                    else kopie(0, n);
-                    if (!teil) schreib(this._rend, d, e * gd, n * gd);
-                    // die Quelle eines Glieds lädt r184 nie (die Arena zeichnet): ihre Bereiche sind hier verbraucht
-                    a.clearUpdateRanges();
+                const e = z.erst,
+                    G = this.geometry,
+                    M = this.__instanzQuelle.instanceMatrix;
+                if (istEins(mw)) M.array.set(im.array.subarray(0, n * 16), e * 16);
+                else for (let i = 0; i < n; i++) mal(M.array, (e + i) * 16, mw, im.array, i * 16);
+                schreib(this._rend, M, e * 16, n * 16);
+                for (const nm in q) {
+                    const a = q[nm];
+                    if (!a.isInstancedBufferAttribute) continue;
+                    const d = G.attributes[nm];
+                    d.array.set(a.array.subarray(0, n * a.itemSize), e * a.itemSize);
+                    schreib(this._rend, d, e * a.itemSize, n * a.itemSize);
+                }
+                if (c) {
+                    const d = G.attributes.instanzFarbe;
+                    d.array.set(c.array.subarray(0, n * c.itemSize), e * c.itemSize);
+                    schreib(this._rend, d, e * c.itemSize, n * c.itemSize);
                 }
             }
             // der Zug je Kamera — lose je Pass, im Bündel die aufgenommenen Plätze —, jeder ein Abschnitt des EINEN
@@ -1849,8 +1747,8 @@ class AnazhRealm_stoff_instanz {
                     n = Math.min(n, z.cap);
                     this._block(m, z, n);
                     const o = k * 5;
-                    // in der Wahl zählt der Compute die Instanzen, die erste ist der Block in der Liste dieser Kamera (`_wahlVor`)
-                    const li = z.erst;
+                    // in der Wahl zählt der Compute die Instanzen, die erste ist der Abschnitt der Liste (je Kamera ein Block-Raum)
+                    const li = zug.seg * this._nCap + z.erst;
                     args[o] = ni;
                     args[o + 1] = wahl ? 0 : n;
                     args[o + 2] = b.fi + s0;
@@ -1859,9 +1757,7 @@ class AnazhRealm_stoff_instanz {
                     if (wahl) wahl.push(m, z.erst, n, basis + o + 1, li);
                     zug.offs.push((basis + o) * 4);
                     zug.zuege.push(m);
-                    // das Buch zählt in der Wahl der GPU ihre Zahl (`_wahlRechnen`, ein Bild Verzug), sonst die der CPU
-                    const gz = wahl && zug.gpuZahl ? zug.gpuZahl.get(m) : undefined;
-                    zug.tri += (ni / 3) * (gz === undefined ? n : gz);
+                    zug.tri += (ni / 3) * n;
                     k++;
                 }
                 // gezählt am Stand dieses Passes (heilt jeden Schreiber an der Instanz-Zahl vorbei)

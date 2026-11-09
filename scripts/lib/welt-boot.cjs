@@ -650,8 +650,7 @@ function wacheAnProzessEnde() {
     process.on("exit", (code) => {
         if (!sammlung.fehler.length) return;
         console.log(`[welt-boot] ROT — ${sammlung.fehler.length} Fehler der Welt:`);
-        // ❌ je Fehler: der Dienst der GPU-Probe zeigt die Zeilen mit Urteil — ein Fehler ohne Urteils-Zeichen fehlte seinem Post
-        for (const f of sammlung.fehler.slice(0, 12)) console.log(`  ❌ ${f}`);
+        for (const f of sammlung.fehler.slice(0, 12)) console.log(`  · ${f}`);
         if (code === 0) process.exitCode = 1;
     });
 }
