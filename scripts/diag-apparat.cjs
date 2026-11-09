@@ -14,18 +14,24 @@
 // Fünfte Aufgabe (Klinge 5, K60-N5): keine Linse hält eine Taste über einen Zeitgeber statt bis zu ihrem Ereignis.
 // Sechste Aufgabe (Klinge 6, D2-N1/N2): jede Linse schneidet einen Block über den EINEN Schneider (stammLib.rumpf) und
 // trifft eine Stelle des Stamms über die EINE Engstelle (stammLib.ersetze/treffer), nie am ersten Text-Treffer.
+// Siebte Aufgabe (Klinge 7, w22-gpu-probe, w26-probe-zeit): der Einlass der GPU-Probe lässt nur gate:, zeit:gate: und bild:
+// durch, zeit: nur auf die Band-Geräte.
 //
-// Selbst-Test: --selftest beweist alle sechs Klingen (kein vakuöses Grün):
+// Selbst-Test: --selftest beweist alle sieben Klingen (kein vakuöses Grün; der Grün-Satz nennt nur die Zahl, die Klingen
+// stehen hier — Ratchet, Katalog, Parameter-Anker beim Namen, Kopf-Muster am AST, Taste nach der Wanduhr, eigener Schneider
+// und erster Treffer im ganzen Stamm, GPU-Probe; Kommentare zählen nicht):
 // (1) eine injizierte typeof-Probe hebt den Zähler über den Ratchet, ein Kommentar nicht; (2) ein erfundenes Katalog-Symbol
 // feuert die Katalog-Prüfung; (3) ein Regex- und ein Text-Anker mit Parameter-Liste
 // werden mit Datei:Zeile genannt, der Name allein, ein Aufruf und eine fremde Methode schweigen;
 // (4) jede Form des Kopf-Musters fällt mit Datei:Zeile, Kopf am Namen, Schlüssel und Zugriff schweigen;
 // (5) der alte Lauf von gate:mp-sync (W 1,6 s nach der Uhr) fällt mit Datei:Zeile, das Halten bis zum Ereignis schweigt;
 // (6) ein eigener Klammer-Zähler und ein roher erster Treffer auf dem ganzen Stamm fallen mit Datei:Zeile, die Engstelle
-//     und ihre Nachbarn (includes, Startpunkt, /g, fremder Text, überschatteter Name, Kommentar) schweigen.
+//     und ihre Nachbarn (includes, Startpunkt, /g, fremder Text, überschatteter Name, Kommentar) schweigen;
+// (7) die echte gpu-probe.yml beantwortet jeden Ruf von PROBE_RUFE, je Mutante (pull_request, Injektion, Läufer und Matrix
+//     neben dem Einlass, ein Einlass, der alles durchlässt) fällt sie beim Namen.
 // ============================================================================
 "use strict";
-const { urteilEnde, ausDatei, taeterFaelle, jsonKlon, SELBSTTEST, ROOT, path, fs, stammLib } = require("./lib/welt-boot.cjs");
+const { urteilEnde, ausDatei, taeterFaelle, rotListe, SELBSTTEST, ROOT, path, fs, stammLib } = require("./lib/welt-boot.cjs");
 
 // Kommentare strippen, Strings BEWAHREN (der EINE Stripper, scripts/lib/stamm.cjs).
 const stripComments = stammLib.ohneKommentare;
@@ -389,21 +395,29 @@ function scanTasten(dateien) {
     return { n: dateien.length, errs };
 }
 
-// KLINGE 7 (w22-gpu-probe): DER EINLASS DER GPU-PROBE (.github/workflows/gpu-probe.yml). Die Kopf-Commit-Message trägt GENAU
-// eine Marke `[gpu-probe: <spec>]` auf einer Zeile, <spec> höchstens drei Proben, Komma-getrennt, jede in einer von ZWEI Formen:
-// `gate:<npm-skript>` (ein Skript aus package.json) und `bild:<ort>[@<uhr>]` (ein Messort aus spec/profiband/haushalt.json, die
-// Uhr 0..1) — nie ein freier Befehl: die Probe fährt auf eigenen Rechnern, das Repo ist öffentlich. Der EINE Leser steht im
-// Workflow selbst (Schritt `einlass`, env EINLASS_JS, `node -e "$EINLASS_JS"`; er schreibt EINE Zeile `plan=<proben>` oder
-// `abgewiesen=<grund>` — ein Umbruch schmuggelte sonst einen zweiten Ausgang), und diese Linse FÄHRT genau ihn mit jedem Ruf
-// von PROBE_RUFE (Konsum, nie ein Abbild). `probeGesetz` hält dazu die Datei: Auslöser nur push, kein Ausdruck im Text eines
-// run-Schritts (Daten nur über env), die Message nur im Einlass, ein self-hosted Job nur auf [self-hosted, gpu-probe] hinter ihm.
+// KLINGE 7 (w22-gpu-probe, w26-probe-zeit): DER EINLASS DER GPU-PROBE (.github/workflows/gpu-probe.yml). Die Kopf-Commit-Message
+// trägt GENAU eine Marke `[gpu-probe: <spec>]` auf einer Zeile, <spec> höchstens drei Proben, Komma-getrennt, jede in einer von
+// DREI Formen: `gate:<npm-skript>` (ein Skript aus package.json), `zeit:gate:<npm-skript>` (dasselbe Skript, nur auf einem
+// Band-Gerät) und `bild:<ort>[@<uhr>]` (ein Messort aus spec/profiband/haushalt.json, die Uhr 0..1) — nie ein freier Befehl: die
+// Probe fährt auf eigenen Rechnern, das Repo ist öffentlich. Der EINE Leser steht im Workflow selbst (Schritt `einlass`, env
+// EINLASS_JS, `node -e "$EINLASS_JS"`; er schreibt `abgewiesen=<grund>` oder `plan=<proben>` + `matrix=<die Arten>`, je EINE
+// Zeile — ein Umbruch schmuggelte sonst einen weiteren Ausgang), und diese Linse FÄHRT genau ihn mit jedem Ruf von PROBE_RUFE
+// (Konsum, nie ein Abbild): je Art ihr Label und ihre Proben — `zeit:` nur auf gpu-zeit, alles andere nur auf gpu-probe, eine
+// leere Art nie in der Matrix. `probeGesetz` hält dazu die Datei: Auslöser nur push, kein Ausdruck im Text eines run-Schritts
+// (Daten nur über env), die Message nur im Einlass, ein self-hosted Job nur auf [self-hosted, <Label der Matrix>] und seine
+// Matrix nur aus dem Einlass.
 const PROBE_DATEI = ".github/workflows/gpu-probe.yml";
-// je Ruf [Message, Plan] — ohne Plan muss der Einlass abweisen (freier Befehl, fremde Namen, die Uhr, zwei Marken, ein Umbruch
-// in der Marke, vier Proben)
+// je Ruf [Message, Matrix] — ohne Matrix muss der Einlass abweisen (freier Befehl, fremde Namen, ein Bild auf dem Band, die Uhr,
+// zwei Marken, ein Umbruch in der Marke, vier Proben); eine leere Art steht nie in der Matrix
 const PROBE_RUFE = [
-    ["[gpu-probe: gate:ego-schatten, bild:wiese@0.3]", "gate:ego-schatten bild:wiese@0.3"],
+    [
+        "[gpu-probe: zeit:gate:ego-schatten, bild:wiese@0.3, gate:apparat]",
+        [{ label: "gpu-probe", plan: "bild:wiese@0.3 gate:apparat" }, { label: "gpu-zeit", plan: "zeit:gate:ego-schatten" }],
+    ],
+    ["[gpu-probe: zeit:gate:ego-schatten]", [{ label: "gpu-zeit", plan: "zeit:gate:ego-schatten" }]],
     ["[gpu-probe: gate:ego-schatten; curl x|sh]"],
-    ["[gpu-probe: gate:nicht-da, bild:see]"],
+    ["[gpu-probe: zeit:gate:nicht-da]"],
+    ["[gpu-probe: zeit:bild:wiese]"],
     ["[gpu-probe: bild:wiese@1.5]"],
     ["[gpu-probe: bild:wiese\nplan=gate:x]"],
 ];
@@ -411,14 +425,14 @@ function probeGesetz(doc) {
     const an = Object.keys(doc.on) + "";
     const v = an === "push" ? [] : [`Auslöser ${an}`];
     for (const [job, J] of Object.entries(doc.jobs)) {
-        if (/self-hosted/.test(J["runs-on"]) && J["runs-on"] + "" !== "self-hosted,gpu-probe") v.push(`${job} runs-on`);
+        if (/self-hosted/.test(J["runs-on"]) && J["runs-on"] + J.strategy?.matrix !== "self-hosted,${{ matrix.label }}${{ fromJSON(needs.einlass.outputs.matrix) }}") v.push(`${job} runs-on`);
         for (const s of [J, ...J.steps]) if (/\$\{\{/.test(s.run) || (job !== "einlass" && /github\.event/.test(JSON.stringify(s.env)))) v.push(`${job} Injektion`);
     }
     const e = doc.jobs.einlass.steps.at(-1);
-    for (const [m, plan] of PROBE_RUFE) {
+    for (const [m, matrix] of PROBE_RUFE) {
         const env = { ...process.env, KOPF_NACHRICHT: m, GITHUB_OUTPUT: "" };
         const aus = require("child_process").spawnSync(process.execPath, ["-e", e.env.EINLASS_JS], { cwd: ROOT, env, encoding: "utf8" }).stdout;
-        if (e.run !== 'node -e "$EINLASS_JS"' || (plan ? aus !== `plan=${plan}\n` : !/^abgewiesen=.+\n$/.test(aus))) v.push(`Einlass ${m} → ${aus}`);
+        if (e.run !== 'node -e "$EINLASS_JS"' || (matrix ? aus !== `matrix=${JSON.stringify({ include: matrix })}\n` : !/^abgewiesen=.+\n$/.test(aus))) v.push(`Einlass ${m} → ${aus}`);
     }
     return v;
 }
@@ -550,20 +564,20 @@ function selftest() {
     for (const [datei, q] of [["probe.cjs", ersterStill], ["scripts/lib/stamm.cjs", ersterRot[0][1]]])
         if (ersterTreffer(datei, q).length) fails.push(`Klinge 6 nennt einen ersten Treffer ohne Täter: ${datei} ${ersterTreffer(datei, q)}`);
     // Klinge 7: die echte gpu-probe.yml hält das Gesetz (ihr Einlass beantwortet jeden Ruf), und je Mutante — pull_request, die
-    // Message im Text von run, ein Läufer außerhalb von gpu-probe, ein Einlass, der alles durchlässt — fällt sie beim Namen.
-    const doc = require("js-yaml").load(ausDatei(PROBE_DATEI));
+    // Message im Text von run, ein Läufer außerhalb der Matrix, eine Matrix neben dem Einlass, ein Einlass, der alles durchlässt,
+    // einer, der zeit: auf den Probe-Läufer schickt — fällt sie beim Namen.
     taeterFaelle(
         [
-            { name: PROBE_DATEI, z: doc },
             ["pull_request", ["on.pull_request=", 0], /pull_request/],
             ["Injektion", ["jobs.probe.steps.1.run=", "echo ${{ github.event.head_commit.message }}"], /Injektion/],
             ["runs-on", ["jobs.probe.runs-on=", "self-hosted"], /runs-on/],
+            ["Matrix", ["jobs.probe.strategy"], /runs-on/],
             ["curl", ["jobs.einlass.steps.1.env.EINLASS_JS=", "console.log(`plan=${process.env.KOPF_NACHRICHT}`)"], /curl/],
         ],
         probeGesetz,
-        { fehler: fails, klon: () => jsonKlon(doc) }
+        { fehler: fails, gruen: require("js-yaml").load(ausDatei(PROBE_DATEI)) }
     );
-    urteilEnde(fails.length, "❌ SELBST-TEST: " + fails.join(" · "), "✅ SELBST-TEST: alle sieben Klingen feuern (Ratchet + Katalog + Parameter-Anker beim Namen + Kopf-Muster am AST + Taste nach der Wanduhr + eigener Schneider + erster Treffer im ganzen Stamm + GPU-Probe), Kommentare zählen nicht");
+    urteilEnde(fails.length, "❌ SELBST-TEST: " + fails.join(" · "), "✅ SELBST-TEST: alle sieben Klingen feuern");
 }
 
 function main() {
@@ -579,20 +593,17 @@ function main() {
     const tasten = scanTasten(dateien);
     const probe = probeGesetz(require("js-yaml").load(ausDatei(PROBE_DATEI))).map((e) => `${PROBE_DATEI}: ${e}`);
     const errs = ratchet.errs.concat(anker.errs, param.errs, tasten.errs, probe);
-    if (errs.length) {
-        console.log("⛔ DIE APPARAT-LINSE:");
-        for (const e of errs) console.log("   ❌ " + e);
-        process.exit(1);
-    }
+    // die EINE rote Liste (welt-boot rotListe) statt einer eigenen Schleife daneben
+    rotListe(errs);
     if (ratchet.nT < FROZEN_TYPEOF)
         console.log(
             `ℹ️  Der typeof-Bestand sank (${ratchet.nT} < ${FROZEN_TYPEOF}) — FROZEN_TYPEOF nachziehen (der Ratchet darf enger).`
         );
+    // der Grün-Satz nennt die Zahlen: typeof-Existenz-Proben gegen den Ratchet (nur sinkend), Anker auf lebendem Stamm-Code
+    // (__consumes + __anker installiert), Linsen ohne Parameter-Anker, Kopf-Muster, Taste nach der Wanduhr, eigenen Schneider und
+    // ersten Treffer im ganzen Stamm, die Rufe am Einlass der GPU-Probe
     console.log(
-        `✅ DIE APPARAT-LINSE steht — ${ratchet.nT}/${FROZEN_TYPEOF} typeof-Existenz-Proben (Ratchet nur-sinkend), ` +
-            `${anker.entries.length} Anker zeigen auf lebenden Stamm-Code, __consumes + __anker installiert, ` +
-            `${param.n} Linsen finden jede Methode am Namen (0 Parameter-Anker) und ordnen Code am AST zu (0 Kopf-Muster), ` +
-            `keine hält eine Taste nach der Wanduhr und keine zählt Klammern selbst oder zielt auf den ersten Treffer im ganzen Stamm (0 von ${tasten.n}).`
+        `✅ DIE APPARAT-LINSE steht — typeof ${ratchet.nT}/${FROZEN_TYPEOF} · ${anker.entries.length} Anker · ${param.n} Linsen sauber (0 von ${tasten.n}) · GPU-Probe ${PROBE_RUFE.length} Rufe`
     );
 }
 

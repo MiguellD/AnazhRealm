@@ -40,7 +40,7 @@ function urteil(z) {
 
 hauptLauf(async () => {
     await server.lausche(0);
-    const browser = await starteBrowser({ art: "linse", frist: 1800000, dumpio: false });
+    const browser = await starteBrowser({ art: "linse", frist: 1800000 });
     // Was der Browser-Prozess über seinen GPU-Prozess sagt (Absturz, Watchdog, Verlust), reist ins Log.
     {
         const proc = browser.process();
