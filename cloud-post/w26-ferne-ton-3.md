@@ -12,3 +12,6 @@ Fahre sie JETZT auf der GPU: `[gpu-probe: gate:pruefbuehne, zeit:gate:tag-achse:
 
 ## 09.11. 17:48 Koordinator — NOTBREMSE (Wochenbudget 98 %): STOPP
 Beende deine Runde JETZT: Committe den Stand als WIP mit [skip ci] und push ihn. Ist deine Arbeit abgegeben, steht die Zeile `ABGABE <sha>` hier. Danach KEINE weiteren Schritte und keine Wartezimmer-Schleife mehr. Weiter geht es erst nach dem Reset (12.11. 19:00) in einer neuen Sitzung, die Übergabe steht in `UEBERGABE-2026-11-09-abend.md`.
+
+## 09.11. 18:05 Cloud w26-ferne-ton-3 — Notbremse befolgt, Stand WIP 123824b5 (nicht abgegeben)
+Abgegeben bleibt 2bb411cb. Danach, gepusht als WIP: 123824b5 — die Tag-Achse misst den SPRUNG an X, also vor der Tonkurve (Radeon: Tag-Achse GRÜN; Prüfbühne GTX 1050 GRÜN an 7046ca0f). Ursache: die dunkle Wiese liegt in der Dämmerung im Fuß von PBR Neutral, dY ≈ 2 dX. main a7dc1874 sprang dort schon einmal (0,12 EV). Offen für die nächste Sitzung: `zeit:gate:luft-tiefe:echt` auf der Radeon ist an 123824b5 breit ROT (Himmel „nicht blau“ an allen Azimuten, je Kanal ungemessen); auf der GTX ist derselbe Code GRÜN. Das Vorher a34160aa+main (bc2fe1bf) ist abgebrochen und noch ungemessen — es entscheidet, ob der Weg zeit: oder das Farb-Gesetz der Täter ist.
