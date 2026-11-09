@@ -453,6 +453,31 @@ async function kleberProbe(page, fmtWunsch) {
                 pc.karteTiefeVersatz = versatz;
                 window.__fimpStoff();
             }
+            // (C9) DIE TIEFEN-PARALLAXE (w27-lod-baum, lod.K5; der Stoff, `_relief`): eine Kugel 2,6 m VOR der Achse, das Auge aus 40 m
+            // genau zwischen zwei Peilungen — jede der zwei Ansichten sieht sie 22,5° neben der Achse (± 1 m), an derselben Stelle des
+            // Quads gelesen stehen ZWEI Kugeln neben dem Stamm. Die Karte gegen ihre Gestalt als Mesh (IoU). SELBSTTEST: der Stoff
+            // ohne Gänge (`KARTE_RELIEF.gaenge` 0, die Karte bis w27).
+            const w9 = (22.5 * Math.PI) / 180,
+                rot9 = (-119 * Math.PI) / 180 + w9;
+            const gP = window.__fimpTeile(new T.SphereGeometry(1.2, 24, 16).translate(2.6 * Math.sin(w9), 5, 2.6 * Math.cos(w9)), new T.CylinderGeometry(0.3, 0.3, 6, 12).translate(0, 3, 0));
+            const zP = await window.__fimpBacke(ren, at, "fimp:gateKarte|5", 95, gP);
+            const camP = new T.PerspectiveCamera(20, 1, 1, 600);
+            camP.position.set(30 + 40 * Math.sin(rot9), 6, -10 + 40 * Math.cos(rot9));
+            camP.lookAt(30, 6, -10), camP.updateMatrixWorld(true);
+            const deckt9 = async (o) => Array.from(await window.__fimpBild(ren, rtO, camP, o)).filter((_, i) => i % 4 === 3).map((a) => +(a > 0));
+            const mGP = Object.assign(new T.Mesh(gP, new T.MeshBasicMaterial({ side: T.DoubleSide })), { matrixAutoUpdate: false });
+            mGP.matrix.copy(lage);
+            const g9 = await deckt9(mGP),
+                A9 = r.constructor,
+                vorRL = A9.KARTE_RELIEF;
+            out.parallaxe = { gestalt: g9.reduce(addiere, 0), karte: iou(await deckt9(window.__fimpKarte(zP, window.__fimpStoff(), lage, 1.5)), g9) };
+            try {
+                A9.KARTE_RELIEF = Object.assign({}, vorRL, { gaenge: 0 });
+                out.parallaxe.selbst = iou(await deckt9(window.__fimpKarte(zP, window.__fimpStoff(), lage, 1.5)), g9);
+            } finally {
+                A9.KARTE_RELIEF = vorRL;
+                window.__fimpStoff();
+            }
             // (C8) JENSEITS DER FERN-EBENE (material.K3#2): dieselbe Karte wie C6 aus 0° (dort ihr Bild, der Selbsttest) unter einer
             // Fern-Ebene von 150 m zeichnet nichts — die Spanne ihrer Ecken-Tiefe klemmt nur den Rück, nie die Lage
             (camO.far = 150), camO.updateProjectionMatrix();
@@ -834,6 +859,11 @@ hauptLauf(async () => {
         console.log(`  C7 TIEFE [${C.fmt}]: vor der Tafel Gestalt ${Ti.gestalt} px (Soll ≥ 80) · Karte ${teil(Ti.karte)} (Soll ≥ 0,6) · ohne Tiefe ${teil(Ti.selbst)} (MUSS < 0,2)`);
         if (!(Ti.gestalt >= 80 && teil(Ti.selbst) < 0.2)) errs.push(`${F} C7-SELBSTTEST: die Gestalt steht nicht vor der Tafel oder die Karte ohne Tiefe nicht dahinter — die Linse ist blind`);
         else if (!(teil(Ti.karte) >= 0.6)) errs.push(`${F} C7: die Karte steht hinter der Tafel — ihre Ecken lesen ihre Tiefe nicht (vertexNode)`);
+        // C9 DIE TIEFEN-PARALLAXE: die Karte steht, wo ihre Gestalt steht (IoU ≥ 0,8); ohne Gänge stehen zwei Kugeln (< 0,6)
+        const Pa = C.parallaxe || {};
+        console.log(`  C9 PARALLAXE [${C.fmt}]: eine Kugel vor der Achse, das Auge zwischen zwei Peilungen — Gestalt ${Pa.gestalt} px · Karte Deckung/IoU ${Pa.karte?.deckung}/${Pa.karte?.iou} (Soll IoU ≥ 0,8) · ohne Gänge ${Pa.selbst?.deckung}/${Pa.selbst?.iou} (MUSS < 0,6)`);
+        if (!(Pa.gestalt >= 400 && Pa.selbst?.iou < 0.6)) errs.push(`${F} C9-SELBSTTEST: die Gestalt liegt nicht im Bild oder die Karte ohne Gänge deckt sie — die Linse ist blind`);
+        else if (!(Pa.karte?.iou >= 0.8)) errs.push(`${F} C9: die Karte steht neben ihrer Gestalt (IoU ${Pa.karte?.iou} < 0,8) — das Fragment liest die Ansicht nicht am Treffer ihres Reliefs (stoff-material \`_relief\`, KARTE_RELIEF)`);
         // C8 JENSEITS DER FERN-EBENE zeichnet die Karte nichts (Selbsttest: C6 aus 0°, dieselbe Karte diesseits)
         if (C.fern) errs.push(`${F} C8: jenseits der Fern-Ebene ${C.fern} px`);
     }

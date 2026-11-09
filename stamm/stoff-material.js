@@ -1006,6 +1006,17 @@ class AnazhRealm_stoff_material {
                                         _morph
                                     );
                                     const _uv = _Ta.varying(_uvV, "vKarteUv"); // das Fragment: die Ecke, wo sie steht
+                                    // das Gewicht der Tiefe im Fragment (dasselbe, mit dem das Gitter steht) und der Abstand des Auges von der Mitte
+                                    // der Karte in Metern der Vorlage — je Instanz fest (`_relief` unten)
+                                    const _morphF = _Ta.varying(_morph, "vKarteMorph");
+                                    const _augeD = _Ta.varying(
+                                        _Ta.cameraPosition
+                                            .sub(_naht.anker)
+                                            .sub(_Ta.vec3(0.0, _hHv.mul(_sV), 0.0))
+                                            .length()
+                                            .div(_sV.max(1e-4)),
+                                        "vKarteAugeD"
+                                    );
                                     const _ecke = _uv.x.mul(_Ta.float(2.0)).sub(_Ta.float(1.0)); // die Ecke ±1
                                     // ── exakte Anker-Peilung im Fragment: posW = Anker + right·k + Hub der gekippten Karte entlang
                                     //    look (right ⟂ look) ⇒ ang(look) = atan2(−h) + atan2(k, d'), d' = √(|h|²−k²) — kein
@@ -1057,6 +1068,42 @@ class AnazhRealm_stoff_material {
                                     const _tW = _ring.y;
                                     const _bw = _Ta.float(_at.cw).div(_tW),
                                         _bh = _Ta.float(_at.ch).div(_tW); // die Zelle des Rings in Texeln
+                                    // DER EINE LESER DER TIEFE JE TEXEL (phyto-core `karteTiefe`; die Ecken des Gitters unten, `_relief` im
+                                    // Fragment): die Ansicht a des Rings R (Zeile der Ring-Tafel: Hebung, Teiler, erste Zeile) an der Stelle (u, v)
+                                    // ihrer Zelle (v = 0 ihr Fuß) auf der Mip-Stufe `stufe` — BC die Schicht `tmap`, rgba8 der vierte Kanal der
+                                    // Normale (vormultipliziert mit der Deckung in z); die Probe bleibt einen halben Texel der Stufe in IHRER
+                                    // Ansicht (die Nachbar-Ansicht liegt Kante an Kante). Rückgabe: w in Metern der Vorlage vor der Mitte des Rahmens.
+                                    const _ntT = _at.fmt === "rgba8" ? 1 : _at.nt; // die Tiefe liegt im Maß der Normale
+                                    const _tiefeAn = (R, a, u, v, stufe) => {
+                                        const tR = R.y;
+                                        const bw = _Ta.float(_at.cw).div(tR),
+                                            bh = _Ta.float(_at.ch).div(tR);
+                                        const texel = _Ta.exp2(stufe).mul(_ntT);
+                                        const hu = texel.mul(0.5).div(bw).min(0.5),
+                                            hv = texel.mul(0.5).div(bh).min(0.5);
+                                        const uvT = _Ta.vec2(
+                                            _Ta
+                                                .mod(a, tR)
+                                                .mul(bw)
+                                                .add(u.clamp(hu, _Ta.float(1.0).sub(hu)).mul(bw))
+                                                .div(_at.cw),
+                                            R.z
+                                                .add(_Ta.floor(a.div(tR)).mul(bh))
+                                                .add(_Ta.float(1.0).sub(v.clamp(hv, _Ta.float(1.0).sub(hv))).mul(bh))
+                                                .div(_Hs)
+                                        );
+                                        let t;
+                                        if (_at.fmt !== "rgba8") t = _at.tmapNode.sample(uvT).depth(_schicht).level(stufe).r;
+                                        else {
+                                            const n = _at.nmapNode.sample(uvT).depth(_schicht).level(stufe);
+                                            t = _Ta.select(
+                                                n.z.greaterThan(0.01),
+                                                _Ta.float(1.0).sub(_Ta.float(1.0).sub(n.w).div(n.z.max(1e-3))),
+                                                _Ta.float(0.5)
+                                            );
+                                        }
+                                        return globalThis.__phytoCore.karteTiefeVersatz(_alg, t, _rahmen.x, _hHv);
+                                    };
                                     // ── DIE GEKIPPTE KARTE IM RING: ein Punkt b der Karte (Höhe ±_hPhi um ihre Mitte) liegt im Bild des
                                     //    Rings e bei b / cos(φ − e) — der Strahl des Auges durch die Ebene des Rings; die halbe
                                     //    Bild-Höhe ist die des Rahmen-Zylinders (`karteRingHalbe`, dieselbe Formel liest die Bühne).
@@ -1065,7 +1112,6 @@ class AnazhRealm_stoff_material {
                                     const _hE = globalThis.__phytoCore.karteRingHalbe(_alg, _hHv, _rahmen.x, _eW);
                                     const _mR = _hPhi.div(_hE.mul(_Ta.cos(_phiF.sub(_eW)).max(1e-3))); // dv / d(uv.y)
                                     const _vC = _uv.y.mul(2.0).sub(1.0).mul(_mR).mul(0.5).add(0.5);
-                                    const _imRing = _Ta.step(0.0, _vC).mul(_Ta.step(_vC, 1.0));
                                     // Die Ansichten liegen Kante an Kante: die Unterkante (Stammfuß) der Ansicht v+1 grenzt an die
                                     // Oberkante der Ansicht v, im Ring in ¼ der Zellfläche auch die rechte Kante an die linke. Die
                                     // Klemme hält den Filter in SEINER Ansicht: einen halben Texel der gröberen gemischten Stufe
@@ -1074,27 +1120,77 @@ class AnazhRealm_stoff_material {
                                     const _halb = _Ta
                                         .max(_Ta.fwidth(_uv.y).mul(_mR), _Ta.float(0.5).div(_bh))
                                         .clamp(0.0, 0.25);
-                                    const _vIn = _vC.clamp(_halb, _Ta.float(1.0).sub(_halb));
                                     const _halbU = _Ta.max(_Ta.fwidth(_uv.x), _Ta.float(0.5).div(_bw)).clamp(0.0, 0.25);
-                                    const _uIn = _Ta.select(
-                                        _tW.greaterThan(1.5),
-                                        _uv.x.clamp(_halbU, _Ta.float(1.0).sub(_halbU)),
-                                        _uv.x
-                                    );
+                                    // ── DIE TIEFEN-PARALLAXE DER KARTE (w27-lod-baum, lod.K5; `KARTE_RELIEF`): jede Ansicht ist das Bild ihrer
+                                    //    Gestalt aus IHRER Peilung und Hebung, waagrecht gebacken (orthografisch). Bis hier las das Fragment
+                                    //    beide Ansichten an derselben Stelle des Quads — ein Punkt der Gestalt, der w vor der Achse steht, stand
+                                    //    damit um w · sin δ neben seinem Ort (δ bis 22,5° zur Peilung, bis 20° zur Hebung des Rings) und, weil
+                                    //    die Bühne ohne Fluchtpunkt backt, um k · w / d neben dem Bild des Auges im Abstand d. Station lod.K5#1
+                                    //    (Radeon und GTX, main da0e790f): die Weide am Wechsel 26 m trägt 5,16 px Kanten-Versatz zur L0; das
+                                    //    CPU-Modell der Station nennt die Teile (Weide 5,5 px: orthografisch genau aus der Blickrichtung 5,2,
+                                    //    mit Fluchtpunkt 2,0; Eiche 3,4: 1,7 und 0,95). Jetzt liest das Fragment jede Ansicht dort, wo der Strahl
+                                    //    des Auges durch seinen Punkt der Karte ihr Relief trifft: im Rahmen der Ansicht (rechts, oben, zum
+                                    //    Bäcker; δ = Peilung des Auges − ihre, φ die Hebung des Auges, e die des Rings) steht das Auge bei
+                                    //    D · (cos φ sin δ, sin φ cos e − cos φ sin e cos δ, sin φ sin e + cos φ cos e cos δ), der Punkt (k, b) der
+                                    //    gekippten Karte bei (k cos δ − b sin φ sin δ, k sin e sin δ + b (cos φ cos e + sin φ sin e cos δ),
+                                    //    b (cos φ sin e − sin φ cos e cos δ) − k cos e sin δ); der Strahl trifft die Tiefe w der Ansicht bei
+                                    //    t = (w − Auge.w) / (Punkt.w − Auge.w). Der Festpunkt beginnt auf der Ebene der Ansicht (w = 0: der
+                                    //    Stamm steht dort) und liest `gaenge`-mal die Tiefe je Texel (`_tiefeAn`, dieselbe Schicht wie die
+                                    //    Ecken des Gitters). Mit dem Gewicht des Gitters (`_morph`): die ferne Karte steht eben und liest wie
+                                    //    bis hier (ihr Versatz liegt unter dem Bildpunkt). Verfahren: tiefen-korrigierte Impostoren (Brucks,
+                                    //    Octahedral Impostors, 2018; Policarpo/Oliveira, Relief Impostors, 2006). ──
+                                    const _RL = AnazhRealm.KARTE_RELIEF;
+                                    const _dreh = (2 * Math.PI) / _at.V;
+                                    const _yW = _ring.z;
+                                    const _kK = _uv.x.mul(2.0).sub(1.0).mul(_rahmen.x);
+                                    const _bK = _uv.y.mul(2.0).sub(1.0).mul(_hPhi);
+                                    const _cPf = _Ta.cos(_phiF),
+                                        _sPf = _Ta.sin(_phiF),
+                                        _cEf = _Ta.cos(_eW),
+                                        _sEf = _Ta.sin(_eW);
+                                    const _reliefStufe = _Ta.float(Math.max(0, Math.log2(_RL.texel / _ntT)));
+                                    const _relief = (a, delta) => {
+                                        const sD = _Ta.sin(delta),
+                                            cD = _Ta.cos(delta);
+                                        const aU = _augeD.mul(_cPf).mul(sD),
+                                            aV = _augeD.mul(_sPf.mul(_cEf).sub(_cPf.mul(_sEf).mul(cD))),
+                                            aW = _augeD.mul(_sPf.mul(_sEf).add(_cPf.mul(_cEf).mul(cD)));
+                                        const qU = _kK.mul(cD).sub(_bK.mul(_sPf).mul(sD)),
+                                            qV = _kK.mul(_sEf).mul(sD).add(_bK.mul(_cPf.mul(_cEf).add(_sPf.mul(_sEf).mul(cD)))),
+                                            qW = _bK.mul(_cPf.mul(_sEf).sub(_sPf.mul(_cEf).mul(cD))).sub(_kK.mul(_cEf).mul(sD));
+                                        // das Auge steht vor der Ebene der Ansicht (die zwei nächsten Peilungen, der Ring seiner Hebung)
+                                        const nen = qW.sub(aW).min(-1e-3);
+                                        let u = _uv.x,
+                                            v = _vC;
+                                        let w = _Ta.float(0.0);
+                                        for (let i = 0; _RL.gaenge > 0 && i <= _RL.gaenge; i++) {
+                                            const t = w.sub(aW).div(nen);
+                                            u = aU.add(t.mul(qU.sub(aU))).div(_rahmen.x).mul(0.5).add(0.5);
+                                            v = aV.add(t.mul(qV.sub(aV))).div(_hE).mul(0.5).add(0.5);
+                                            if (i < _RL.gaenge) w = _tiefeAn(_ring, a, u, v, _reliefStufe);
+                                        }
+                                        u = _Ta.mix(_uv.x, u, _morphF);
+                                        v = _Ta.mix(_vC, v, _morphF);
+                                        // außerhalb des Bilds ihrer Ansicht ist die Karte leer
+                                        const drin = _Ta.step(0.0, u).mul(_Ta.step(u, 1.0)).mul(_Ta.step(0.0, v)).mul(_Ta.step(v, 1.0));
+                                        return { u, v, drin };
+                                    };
                                     // Die Schicht liegt, wie der Welt-Renderer sie zeichnet (S2): die Zeile 0 oben (die Ansicht im
                                     // Ring von oben, ihr Wipfel zuerst) — die Zellen-Höhe läuft gespiegelt. Die Zelle der Peilung a:
-                                    // τ Ansichten je Zeile ab der ersten Zeile des Rings (phyto-core `karteRinge`).
-                                    const _vZ = _Ta.float(1.0).sub(_vIn);
-                                    const _yW = _ring.z;
-                                    // die Zelle der Peilung a, gelesen an der Spalte u (0..1 in ihrer Ansicht)
-                                    const _zelle = (a, u) => {
+                                    // τ Ansichten je Zeile ab der ersten Zeile des Rings (phyto-core `karteRinge`), gelesen am Treffer
+                                    // ihrer Ansicht (`_relief`: u, v ∈ 0..1, v = 0 ihr Fuß).
+                                    const _zelle = (a, delta) => {
+                                        const tr = _relief(a, delta);
                                         const x0 = _Ta.mod(a, _tW).mul(_bw);
                                         const y0 = _yW.add(_Ta.floor(a.div(_tW)).mul(_bh));
-                                        const uv = _Ta.vec2(
-                                            x0.add(u.mul(_bw)).div(_at.cw),
-                                            y0.add(_vZ.mul(_bh)).div(_Hs)
+                                        const u = _Ta.select(
+                                            _tW.greaterThan(1.5),
+                                            tr.u.clamp(_halbU, _Ta.float(1.0).sub(_halbU)),
+                                            tr.u.clamp(0.0, 1.0)
                                         );
-                                        return { x0, y0, uv, u };
+                                        const vZ = _Ta.float(1.0).sub(tr.v.clamp(_halb, _Ta.float(1.0).sub(_halb)));
+                                        const uv = _Ta.vec2(x0.add(u.mul(_bw)).div(_at.cw), y0.add(vZ.mul(_bh)).div(_Hs));
+                                        return { x0, y0, uv, u, vZ, drin: tr.drin };
                                     };
                                     // DER STAMM-STRICH (Echt-GPU 05.10., Höhen-Sonde): die Anker-Peilung ist für das ganze Quad
                                     // dieselbe; steht sie GENAU auf einer Ansichts-Grenze, kippt ihr Rundungs-Rauschen einzelne Pixel
@@ -1117,8 +1213,8 @@ class AnazhRealm_stoff_material {
                                     // aus EINER Tiefen-Schicht verschob die zwei Ansichten 45° auseinander in den Schatten der jeweils
                                     // anderen (die Probe der Welle w4-laub-karte, eine Kugel 3,4 m neben der Achse: IoU 0,446 statt 0,582
                                     // ohne sie).
-                                    const _zA = _zelle(_v0, _uIn),
-                                        _zB = _zelle(_v1, _uIn);
+                                    const _zA = _zelle(_v0, _fb.mul(_dreh)),
+                                        _zB = _zelle(_v1, _fb.sub(1.0).mul(_dreh));
                                     const _uvA = _zA.uv;
                                     const _uvB = _zB.uv;
                                     // DIE VERGRÖSSERTE KARTE (K20, 12.10.): steht ein Texel der Stufe 0 auf mehr als einem Pixel, liest
@@ -1136,7 +1232,7 @@ class AnazhRealm_stoff_material {
                                         .clamp(0.0, 1.0);
                                     const _kubisch = (tex, z) => {
                                         const cx = z.u.mul(_bw).sub(_Ta.float(0.5));
-                                        const cy = _vZ.mul(_bh).sub(_Ta.float(0.5));
+                                        const cy = z.vZ.mul(_bh).sub(_Ta.float(0.5));
                                         const ix = _Ta.floor(cx),
                                             iy = _Ta.floor(cy);
                                         const fx = cx.sub(ix),
@@ -1182,8 +1278,7 @@ class AnazhRealm_stoff_material {
                                     const _liesA = (tex, z) => _Ta.mix(_probeA(tex, z.uv), _kubisch(tex, z), _kubW);
                                     // vormultipliziert: außerhalb des Bilds seines Rings ist die Karte leer (0 = durchsichtig)
                                     const _samp = _Ta
-                                        .mix(_liesA(_at.mapNode, _zA), _liesA(_at.mapNode, _zB), _fb)
-                                        .mul(_imRing);
+                                        .mix(_liesA(_at.mapNode, _zA).mul(_zA.drin), _liesA(_at.mapNode, _zB).mul(_zB.drin), _fb);
                                     // die Deckung an der Codec-Schwelle (alphaTest unten); ihre Probe trägt den Versatz des Laubs
                                     // (`_probeA` über `_laubVersatz`, A3) wie jede Karte der Klasse
                                     _alpha = _samp.a;
@@ -1359,8 +1454,6 @@ class AnazhRealm_stoff_material {
                                     //    w·(cos e·cos φ·cos δ + sin e·sin φ) vor der Ebene der Karte (`wAuge`). Der Clip-Raum rückt NUR
                                     //    die Tiefe: x, y und w der Ecke bleiben — Bild, Interpolation und Ableitungen des Fragments sind
                                     //    die der ebenen Karte; der Rasterer zieht die Tiefe zwischen den Ecken. ──
-                                    const _dreh = (2 * Math.PI) / _at.V;
-                                    const _ntT = _at.fmt === "rgba8" ? 1 : _at.nt; // die Tiefe liegt im Maß der Normale
                                     const _gNX = _gK.zellen[0];
                                     // die Peilung der Achse (das Fragment rechnet sie aus seinem Ort zurück, die Ecke kennt den Anker)
                                     const _fVv = _Ta
@@ -1392,8 +1485,6 @@ class AnazhRealm_stoff_material {
                                         const R = _at.ringTafel.element(i);
                                         const eR = R.x,
                                             tR = R.y;
-                                        const bw = _Ta.float(_at.cw).div(tR),
-                                            bh = _Ta.float(_at.ch).div(tR);
                                         const hE = globalThis.__phytoCore.karteRingHalbe(_alg, _hHv, _rahmen.x, eR);
                                         const vC = _uvV.y
                                             .mul(2.0)
@@ -1401,42 +1492,21 @@ class AnazhRealm_stoff_material {
                                             .mul(_hPhiV.div(hE.mul(_Ta.cos(_phiV.sub(eR)).max(1e-3))))
                                             .mul(0.5)
                                             .add(0.5);
-                                        // die Stufe: ein Texel misst eine halbe Gitter-Zelle der Ansicht; die Probe bleibt einen
-                                        // halben Texel der Stufe in IHRER Ansicht (die Nachbar-Ansicht liegt Kante an Kante)
-                                        const stufe = _Ta.log2(bw.div(_ntT * 2 * _gNX)).max(0.0);
-                                        const texel = _Ta.exp2(stufe).mul(_ntT);
-                                        const hu = texel.mul(0.5).div(bw).min(0.5),
-                                            hv = texel.mul(0.5).div(bh).min(0.5);
-                                        const uIn = _uvV.x.clamp(hu, _Ta.float(1.0).sub(hu));
-                                        const vZ = _Ta.float(1.0).sub(vC.clamp(hv, _Ta.float(1.0).sub(hv)));
+                                        // die Stufe: ein Texel misst eine halbe Gitter-Zelle der Ansicht (`_tiefeAn` hält die Probe einen
+                                        // halben Texel der Stufe in IHRER Ansicht)
+                                        const stufe = _Ta
+                                            .log2(
+                                                _Ta
+                                                    .float(_at.cw)
+                                                    .div(tR)
+                                                    .div(_ntT * 2 * _gNX)
+                                            )
+                                            .max(0.0);
                                         const cE = _Ta.cos(eR),
                                             sE = _Ta.sin(eR);
                                         const vBild = vC.mul(2.0).sub(1.0).mul(hE); // die Höhe im Bild des Rings
                                         const blick = (a, delta) => {
-                                            const uvT = _Ta.vec2(
-                                                _Ta.mod(a, tR).mul(bw).add(uIn.mul(bw)).div(_at.cw),
-                                                R.z
-                                                    .add(_Ta.floor(a.div(tR)).mul(bh))
-                                                    .add(vZ.mul(bh))
-                                                    .div(_Hs)
-                                            );
-                                            let t;
-                                            if (_at.fmt !== "rgba8")
-                                                t = _at.tmapNode.sample(uvT).depth(_schicht).level(stufe).r;
-                                            else {
-                                                const n = _at.nmapNode.sample(uvT).depth(_schicht).level(stufe);
-                                                t = _Ta.select(
-                                                    n.z.greaterThan(0.01),
-                                                    _Ta.float(1.0).sub(_Ta.float(1.0).sub(n.w).div(n.z.max(1e-3))),
-                                                    _Ta.float(0.5)
-                                                );
-                                            }
-                                            const w = globalThis.__phytoCore.karteTiefeVersatz(
-                                                _alg,
-                                                t,
-                                                _rahmen.x,
-                                                _hHv
-                                            );
+                                            const w = _tiefeAn(R, a, _uvV.x, vC, stufe);
                                             const sD = _Ta.sin(delta),
                                                 cD = _Ta.cos(delta);
                                             return _uKv
