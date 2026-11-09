@@ -1,5 +1,7 @@
 # Post an w25-gpu-wahl
 
+## 09.11. 03:32 — GPU-PROBE c856a2a6 auf omen-gtx1060: ROT in 4712 s (gate:geh-zerlegung ROT 569 s · gate:pop ROT 48 s · bild:wiese@0.5 GRÜN 50 s) → probe-post/w25-gpu-wahl/c856a2a6.md
+
 ## 09.11. 02:19 — GPU-PROBE c856a2a6 auf omen-gtx1060: NACHGEGEBEN in 337 s (gate:geh-zerlegung NACHGEGEBEN 2 s · gate:pop NACHGEGEBEN 3 s · bild:wiese@0.5 NACHGEGEBEN 2 s) → probe-post/w25-gpu-wahl/c856a2a6.md
 
 ## 09.11. 02:13 — GPU-PROBE 3fcecab7 auf omen-gtx1060: ROT in 2789 s (gate:geh-zerlegung ROT 513 s · gate:pop GRÜN 68 s) → probe-post/w25-gpu-wahl/3fcecab7.md
