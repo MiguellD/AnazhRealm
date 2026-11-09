@@ -219,11 +219,6 @@ function berichtAB(teil, Z) {
     }
     if (teil === 3) {
         je((zs, pre) => {
-            const namen = new Set(zs.flatMap((z) => Object.keys((z.out.nach && z.out.nach.glied) || {})));
-            const w = [...namen].map((k) => [k, med(zs.map((z) => (((z.out.nach && z.out.nach.glied) || {})[k] || [0])[0]))]).sort((a, b) => b[1] - a[1]); // prettier-ignore
-            zeile(`${pre}GLIEDER vor dem Bild (Median ms): ${w.filter(([k]) => !/:/.test(k) || /^(job|karte)/.test(k)).map(([k, v]) => `${k.replace(/^_tick/, "")} ${Math.round(v)}`).join(" · ")}`);
-            const zahl = (k) => zs.map((z) => ((((z.out.nach && z.out.nach.glied) || {})[k] || [0, 0])[1])).join("/");
-            zeile(`${pre}ZAHLEN vor dem Bild je Boot: Ferne gebaut ${zahl("fern:gebaut")} · gefallen ${zahl("fern:gefallen")} · Fern-Kacheln-Rufe ${zahl("_nahWieseFernKachel")} · Büschel-Rufe ${zahl("_nahWieseKachelBueschel")} · Lade-Bilder Uhr ${zahl("lade:uhr")} · Schuld ${zahl("lade:schuld")} · ganz ${zahl("lade:ganz")}`); // prettier-ignore
             // die Foundry bis zum Bild: wann die Schlange (wartend + im Werk) zuletzt nicht leer war, ihr Höchststand, und was dem Bild
             // in seiner letzten Sekunde fehlte
             const fo = (z) => {
@@ -242,7 +237,7 @@ function berichtAB(teil, Z) {
                 const L = Object.entries(W.post).filter(([, p]) => p[0] < da).map(([id, p]) => {
                     const a = W.ant[id];
                     const bahn = (/w(\d+)_/.exec(id) || [0, "0"])[1];
-                    return { id, bahn, t0: p[0], art: p[1], wer: p[2] + (p[3] != null ? "|L" + p[3] : ""), t1: a ? a[0] : null, bau: a ? a[1] : 0 };
+                    return { id, bahn, t0: p[0], art: p[1], preset: p[2], lod: p[3], wer: p[2] + (p[3] != null ? "|L" + p[3] : ""), t1: a ? a[0] : null, bau: a ? a[1] : 0 };
                 });
                 const bahnen = {};
                 for (const x of L) if (x.t1 != null) bahnen[x.bahn] = (bahnen[x.bahn] || 0) + Math.min(x.t1, da) - x.t0;
@@ -254,8 +249,35 @@ function berichtAB(teil, Z) {
                 return { L, bahnen, lang, letzt, arten, enq, ohne: L.filter((x) => x.t1 == null).length };
             };
             const W0 = werk(zs[0]);
-            zeile(`${pre}WERK (Boot ${zs[0].e.i + 1}) bis zum Bild: ${W0.L.length} gesendet (${Object.entries(W0.arten).map(([k, v]) => k + " " + v).join(", ")}), offen ${W0.ohne} · eingereiht ${W0.enq.length}, außer Blick ${W0.enq.filter((e) => e[4] === 0).length} · Bahn-Arbeit ${Object.entries(W0.bahnen).map(([b, ms]) => "w" + b + " " + sek(ms) + " s").join(" · ")}`); // prettier-ignore
-            zeile(`${pre}WERK langsamste (Senden→Antwort): ${W0.lang.map((x) => `${x.wer} w${x.bahn} ${sek(x.t0)}→${sek(x.t1)}`).join(" · ")} | zuletzt vor dem Bild: ${W0.letzt.map((x) => `${x.wer} ${sek(x.t1)}`).join(" · ")}`); // prettier-ignore
+            // der Dienst je Auftrag (der Faden arbeitet FIFO): Antwort − max(Senden, Antwort des Vorgängers seiner Bahn); das
+            // Einreihen je Auftrag aus der Liste `enq` (der früheste gleiche Auftrag, der noch keinem Senden gehört)
+            const z0 = zs[0];
+            const Wr = (z0.out.nach || {}).werk || { enq: [], krt: {}, streu: [] };
+            const offenE = Wr.enq.map((e) => ({ e, frei: true }));
+            const S = W0.L.slice().sort((a, b) => a.t0 - b.t0);
+            const vorg = {};
+            for (const x of S) {
+                const q = offenE.find((o) => o.frei && o.e[1] === x.art && o.e[2] === x.preset && o.e[3] === x.lod && o.e[0] <= x.t0 + 1);
+                if (q) [q.frei, x.te, x.blick] = [false, q.e[0], q.e[4]];
+                if (x.t1 != null) {
+                    x.dienst = x.t1 - Math.max(x.t0, vorg[x.bahn] || 0);
+                    vorg[x.bahn] = x.t1;
+                }
+            }
+            const dienst = {};
+            for (const x of S) if (x.dienst != null) dienst[x.bahn] = (dienst[x.bahn] || 0) + x.dienst;
+            const kurz = (x) => `${x.art === "karte" ? "K" : ""}${x.wer.replace(/\|L/, "")}${x.blick === 0 ? "°" : ""} ${x.te != null ? sek(x.te) : "?"}/${sek(x.t0)}/${x.t1 != null ? sek(x.t1) : "–"}w${x.bahn}`; // prettier-ignore
+            zeile(`${pre}WERK (Boot ${z0.e.i + 1}) bis zum Bild ${sek(z0.out.weltbildDa)} s: ${W0.L.length} gesendet (${Object.entries(W0.arten).map(([k, v]) => k + " " + v).join(", ")}), offen ${W0.ohne} · eingereiht ${W0.enq.length}, außer Blick ${W0.enq.filter((e) => e[4] === 0).length} · Dienst je Bahn ${Object.entries(dienst).map(([b, ms]) => "w" + b + " " + sek(ms) + " s").join(" · ")} · längster Dienst ${S.filter((x) => x.dienst != null).sort((a, b) => b.dienst - a.dienst).slice(0, 5).map((x) => x.wer + " " + Math.round(x.dienst)).join(" · ")}`); // prettier-ignore
+            const A = S.map(kurz);
+            for (let i = 0, j = 0; i < 3 && j < A.length; i++) {
+                let s = "";
+                while (j < A.length && s.length + A[j].length < 470) s += (s ? " · " : "") + A[j++];
+                zeile(`${pre}AUFTRÄGE ${i + 1} (Einreihen/Senden/Antwort, ° außer Blick, K Platte der Karte): ${s}`);
+            }
+            const K = Object.entries(Wr.krt || {}).sort((a, b) => (a[1][1] || 1e9) - (b[1][1] || 1e9));
+            zeile(`${pre}KARTEN (angelegt→gebacken, * im Blick): ${K.map(([k, v]) => `${k.replace(/^fimp:/, "").slice(0, 14)}${v[2] ? "*" : ""} ${sek(v[0])}→${v[1] ? sek(v[1]) : "–"}`).join(" · ")}`); // prettier-ignore
+            const ST = (Wr.streu || []).filter((s) => s[2] !== 0);
+            zeile(`${pre}STREU (Wecker im Bild: t Region Zusagen | weiter): ${ST.slice(-14).map((s) => `${sek(s[0])} ${s[1]} ${s[2] === -1 ? "weiter" : s[3]}`).join(" · ")}`); // prettier-ignore
             zeile(`${pre}FERNE: Bild aus der Ferne ${zs.map((z) => (z.out.nach && z.out.nach.fernbild ? sek(z.out.nach.fernbild) : "–")).join("/")} s → Weltbild ${zs.map((z) => sek(z.out.weltbildDa)).join("/")} s`); // prettier-ignore
         });
         return;

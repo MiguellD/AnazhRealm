@@ -233,7 +233,7 @@ function BAU_HAKEN() {
                 };
         }
         if (r && r.state && r.state._fernbildDa && !N.fernbild) N.fernbild = Math.round(r.state._fernbildDa);
-        if (A && A.prototype._foundryAntwort && !A.prototype._foundryAntwort.__haken) {
+        if (A && A.prototype._foundryAntwort && !A.prototype._foundryAntwort.__haken && A.prototype._streuWeckerSpannen && A.prototype._streuRegionWeiter && A.prototype._karteGebacken && A.prototype._foundryEnsureImpostorRecord && A.prototype._foundryZug) {
             const fa = A.prototype._foundryAntwort;
             A.prototype._foundryAntwort = function (f, m) {
                 if (m && m.reqId) N.werk.ant[m.reqId] = [Math.round(performance.now()), m.bau ? 1 : 0];
@@ -248,6 +248,45 @@ function BAU_HAKEN() {
                 } catch {}
                 N.werk.enq.push([Math.round(performance.now()), msg && msg.type, String((msg && (msg.presetId || msg.id || msg.kind)) || "").slice(0, 22), msg && msg.lod, blick]);
                 return au.apply(this, arguments);
+            };
+            // DIE KETTE DER KARTE und DER WECKER DER STREU bis zum Bild: je Karten-Zelle [angelegt, gebacken, im Blick]
+            // (`__kalt.nach.werk.krt`), je Region ihr Wecker [t, Region, hält das Bild, worauf sie wartet] und ihr Weiterbau
+            // (`werk.streu`); jede Zusage trägt ihren Namen (`__wer`: der Körper-Schlüssel des Zugs, „K:“ die Karte)
+            const vor = () => !(window.anazhRealm && window.anazhRealm.state && window.anazhRealm.state._weltbildDa);
+            N.werk.krt = {};
+            N.werk.streu = [];
+            const er = A.prototype._foundryEnsureImpostorRecord;
+            A.prototype._foundryEnsureImpostorRecord = function () {
+                const z = er.apply(this, arguments);
+                if (z && z.key) {
+                    if (z.ende && !z.ende.__wer) z.ende.__wer = "K:" + z.key;
+                    if (!N.werk.krt[z.key] && vor()) N.werk.krt[z.key] = [Math.round(performance.now()), 0, 0];
+                }
+                return z;
+            };
+            const kg = A.prototype._karteGebacken;
+            A.prototype._karteGebacken = function (z) {
+                const k = z && z.key && N.werk.krt[z.key];
+                if (k && !k[1]) [k[1], k[2]] = [Math.round(performance.now()), z._imBlick === true ? 1 : 0];
+                return kg.apply(this, arguments);
+            };
+            const fz = A.prototype._foundryZug;
+            A.prototype._foundryZug = function (key) {
+                const z = fz.apply(this, arguments);
+                if (z && typeof z === "object" && !z.__wer) z.__wer = String(key);
+                return z;
+            };
+            const ws = A.prototype._streuWeckerSpannen;
+            A.prototype._streuWeckerSpannen = function (region) {
+                const auf = region && region._zusagen ? [...region._zusagen.keys()].map((p) => (p && p.__wer) || "?") : [];
+                const o = ws.apply(this, arguments);
+                if (vor()) N.werk.streu.push([Math.round(performance.now()), region.regX + "," + region.regZ, region._bildWartet ? 1 : 0, auf.length + ":" + auf.slice(0, 4).join("+")]);
+                return o;
+            };
+            const rw = A.prototype._streuRegionWeiter;
+            A.prototype._streuRegionWeiter = function (region) {
+                if (vor()) N.werk.streu.push([Math.round(performance.now()), region.regX + "," + region.regZ, -1, "weiter"]);
+                return rw.apply(this, arguments);
             };
         }
         if (A && A.prototype._knotenRate && !A.prototype._knotenRate.__haken) {
