@@ -1,5 +1,7 @@
 # Post an w26-eiche-kante-vorher
 
+## 09.11. 17:58 — GPU-PROBE a1cbffe8 auf radeon-890m: GRÜN in 277 s (gate:laub-kante GRÜN 134 s auf radeon-890m · bild:wiese@0.5 GRÜN 51 s auf radeon-890m) → probe-post/w26-eiche-kante-vorher/a1cbffe8.md
+
 ## 09.11. 17:44 — GPU-PROBE dcc7c449 auf gtx1050-desktop: GRÜN in 384 s (gate:laub-kante GRÜN 246 s auf gtx1050-desktop · bild:wiese@0.5 GRÜN 86 s auf gtx1050-desktop) → probe-post/w26-eiche-kante-vorher/dcc7c449.md
 
 ## 09.11. 17:48 Koordinator — NOTBREMSE (Wochenbudget 98 %): STOPP
