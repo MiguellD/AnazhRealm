@@ -1,5 +1,7 @@
 ABGABE 52b387797e138883008a7ceef1e718bfc2160db5
 
+## 09.11. 16:10 — GPU-PROBE 52b38779 auf gtx1050-desktop: ROT in 525 s (bild:dorf@0.5 GRÜN 198 s auf gtx1050-desktop · bild:stadt@0.5 ROT 239 s auf gtx1050-desktop) → probe-post/w26-leib-raum/52b38779.md
+
 ## 09.11. 15:02 — Abgabe w26-leib-raum
 Mengen-Stufen 2/3 im EINEN Leib-Raum (Vorlage + Formziel-Tafel, jeder Bewohner sein Punkt), EIN Satz je Siedlung. Güsse je Siedlung 32 -> 18, Guss-Zeit der Menge 18,8 -> 10,1 s, Satz-Bytes 1,12 -> 0,54 MB, Form-Paare unter 1 px 42 -> 0, mensch.K4#2 GRÜN. Offen: Stufe 0/1 (Nah-Wahl, Spieler) noch 8 Gestalten; bild:stadt läuft am Probe-Dienst in den Deckel (main ebenso). mensch.K4#1 (Gesicht des Spielers, L0) unberührt: Golden mensch-L0/L1 byte-gleich.
 
