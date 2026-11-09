@@ -113,3 +113,35 @@ Am Kopf GRÜN (lokal): npm run check, playtest:fast 21/0, gate:takt samt Selbstt
 
 ## 08:15 Koordinator
 ABGABE 12de223b (stadt-takt-3) ist angenommen und fährt als **z342** zusammen mit ferne-licht-6. Die Wache der Bewohner läuft jetzt unter der EINEN Frist, und die Stadt ist auf der GTX wieder messbar. Weiter mit deiner Zerlegung von Stadt Gang 1 als Tabelle (Täter je Bild > 33 ms in ms).
+
+## 09.11. 08:56 — w25-stadt-takt-4 (Cloud-Sitzung): Abgabe 397a8950
+
+ABGABE 397a89501a138b289a3d4693f58958e15a48e37c
+
+Geschnitten: DER BAU-GANG UNTER DER EINEN FRIST — `stamm/vegetation-baum.js:2855 tickArchitectureCulling` fragt `_bauFrist("bau")` (unter dem Ladeschirm die Frist des Lade-Frames): der erste Bau-Ruf geht, jeder weitere bis zur Frist (`:2886`), über Budget die Takt-Garantie (ein Bau je 250 ms) — statt 1–6 gezählter Bauten je Takt neben der Frist; der Zähler-Hebel des Reglers fällt (`architectureBuildBudgetPerFrame`, `ARCH_QUALITY_BUDGET_MIN/MAX`). Linsen: gate:takt T12 nennt `tickArchitectureCulling` (abgelaufen 1 Bau; an der alten Schleife 3 → ROT, Selbsttest 12 → ROT), T9 prüft ihn an der Frist des Lade-Frames (Selbsttest 1 → ROT). Decke: acht Selbsttest-Sätze wandern in Kommentare (scripts −14 Atome).
+
+Gemessen (gate:geh-zerlegung, GTX, ABAB am selben Kopf, Vorher 7d70d425 → Nachher e542c81f):
+- `tickArchitectureCulling` Stadt Gang 1 p95/Mitte 24,4/9,2 → 14,7/4,5 ms; Domäne Bau 32,0/12,2 → 17,8/6,7; Bau als Täter 1× (Σ 332) → 0× (Σ 313).
+- Bild p50/p95/max: Stadt Gang 1 158/292/567 (96 %) → 108/200/442 (97 %); Gang 2 83/125/158 (98 %) → 50/92/158 (99 %); Wiese 42/75/100 (88 %) → 33/67/92 (69 %) — die Knoten-Bauten der zwei Läufe streuen (178 / 88).
+
+DIE ZERLEGUNG, Stadt Gang 1 nach dem Schnitt (GTX e542c81f, 31 von 32 Bildern > 33 ms, Σ Anteil ms):
+
+| Domäne | Täter (Bilder) | Σ Anteil ms | was darin | wem |
+|---|---|---|---|---|
+| Zeichnen | 7 | 678 | `renderer._renderScene` 37 p95 / 51 Mitte | Atlas §2 (w25-gpu-wahl) |
+| Bewohner | 2 | 534 | das schwerste Bild 442 ms: `_tuchGitter` 294 ms (das Gitter einer Tracht beim ersten Leib) | Körper (FUND) |
+| Streaming | 7 | 502 | `_loopVoxelStreaming` 31,5 / 23 | Planer, Strom |
+| Knoten-Bau | 8 | 478 | kalt 88 Bauten, 356 ms | Atlas §3 (w25-pipeline-vorwaermen) |
+| Sicht | 6 | 475 | Satz-Pass `_hoehlenSicht` 2,0 / 5,0 | Atlas §2 |
+| Satz | 1 | 353 | | Stadt |
+| Bau | 0 | 313 | `tickArchitectureCulling` 14,7 / 4,5 (vorher 24,4 / 9,2) | Stadt (dieser Schnitt) |
+| Rest · Verkehr · Leib · Tiere · GC | 0 | 249 · 216 · 102 · 56 · 41 | | |
+
+Die Besten: Lehre 14 wie Unreals Zeit-Scheibe für Streaming-Arbeit (`s.AsyncLoadingTimeLimit`) — Bauen nach der Frist statt nach Stückzahl.
+
+Ehrlich offen: Stadt Gang 1 bleibt bei 97 % > 33 ms; das schwerste Bild trägt das Tuch einer Tracht allein (294 ms in EINEM Takt) — der nächste Schnitt (Kern, Körper); ein einzelner Bau bleibt ein Stück (`_trittFlaecheSetzen` › `_nahWieseNeuIn` 3,6 ms p95); die Radeon ist ungemessen (jede Probe lief auf omen-gtx1060).
+
+FUND: stamm/koerper-fahrt.js:347 `_tuchGitter` (aus :299 `_tuchZustandAn`, koerper-core.js:6058 `tuchGitter`) · das Gitter einer Tracht baut beim ersten Leib dieser Tracht in dessen erstem Takt, 137–294 ms (GTX 7d70d425, e542c81f) · in der Vorlage der Gestalt oder in Raten, der Leib trägt bis dahin sein Tuch in Ruhe · M (Kern)
+FUND: stamm/siedlung-wege.js:1115 `_trittFlaecheSetzen` › :1185 `_nahWieseNeuIn` (aus siedlung-instanz.js:804 `_archInstanceAdd`) · jeder Bau legt die Kachel der Nah-Wiese unter seinem Grundriss neu, 2,5–3,6 ms je Bau · Kosten an der Kachel, die der Grundriss trifft · S
+
+Am Kopf GRÜN (lokal, Baum d28d517e = 397a8950): npm run check, playtest:fast 21/0, gate:takt samt Selbsttest, gate:post-kette und gate:ego-schatten (swiftshader, kein „[ERROR] STOFF“ außer der Injektion des Selbsttests), gate:arch-feld, gate:stand-takt, gate:welt-boot, gate:kreatur-takt (drei Teile), gate:betriebsgesetz.
