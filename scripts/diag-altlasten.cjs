@@ -1000,7 +1000,7 @@ const ZWILLINGE = [
         fiel: `K16 — die Landform ersetzt ${was}`,
     })),
     // W1 (Grok-Zwilling G3-4): die Wiese hat EIN Gesetz für Labor und Welt — Labor und Stamm rufen es im Kern.
-    ...["L * 1.08 - rk * 0.85 + m * 0.22", "lit * 0.5 + (1 - wet) * 0.5"].map((fingerprint) => ({
+    ...["L * 1.08 - rk * 0.85 + m * 0.22", "(af[c] - 1) * tr * WA.alter.anteil"].map((fingerprint) => ({
         fingerprint,
         gesetzbuch: "foundry-core.js",
         verboten: ["worlds/terrain/phytogenesis.js", ...STAMM],
@@ -3561,7 +3561,7 @@ function main() {
             feuert("gelaende-core.js", maske, "Massiv-Maske") &&
             feuert("scripts/playtest.cjs", mulde, "Tarn-Mulde") &&
             feuert("gelaende-core.js", mulde, "Tarn-Mulde") &&
-            feuert("worlds/terrain/phytogenesis.js", "const t = lit * 0.5 + (1 - wet) * 0.5;", "Wiesen-Tint") &&
+            feuert("worlds/terrain/phytogenesis.js", "const e = (af[c] - 1) * tr * WA.alter.anteil;", "Wiesen-Tint") &&
             feuert(STAMM[0], "const p = L * 1.08 - rk * 0.85 + m * 0.22;", "Bodenschicht") &&
             still("voxel-worker.js", cont0) &&
             still(STAMM[0], maske) &&

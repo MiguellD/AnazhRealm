@@ -4044,7 +4044,9 @@ function fernFarbeTeile(x, y, z, out, fuss, fussM, schutt, jahr) {
         g += w[i] * L[i][1];
         b += w[i] * L[i][2];
     }
-    const k = summe > 0 ? S / summe : 0;
+    // das Laub ist das Kronendach aus dem Spektrum (der Auftrag trägt es je Art, `_fernKroneArt`), die kahle Rinde trägt die
+    // Selbstbeschattung der Krone (`kronenSchatten`)
+    const k = summe > 0 ? 1 / summe : 0;
     out[3] = r * k;
     out[4] = g * k;
     out[5] = b * k;
@@ -4073,9 +4075,9 @@ function fernFarbeTeile(x, y, z, out, fuss, fussM, schutt, jahr) {
         jahr[1] = dg * k;
         jahr[2] = db * k;
         jahr[3] = summe > 0 ? dw / summe : 0;
-        jahr[4] = rr * k;
-        jahr[5] = rg * k;
-        jahr[6] = rb * k;
+        jahr[4] = rr * k * S;
+        jahr[5] = rg * k * S;
+        jahr[6] = rb * k * S;
         jahr[7] = 0;
     }
     return out;

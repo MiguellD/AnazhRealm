@@ -127,6 +127,12 @@ var FARB_SPEKTRUM = {
     // 1 − tot das grüne, zu `tot` (WIESEN_FARBE.halm.tot, 0,05) das dürre (PROSPECT-D: N 2 · Chlorophyll 1 · Carotinoide 2 ·
     // braune Pigmente 0,3 · Wasser 0,002 · Trockenmasse 0,008) — Selbstbeschattung, Lücken, Stroh und Grund liegen im Spektrum
     bestand: [0.0224, 0.0222, 0.0221, 0.0219, 0.0217, 0.0218, 0.0221, 0.0224, 0.0226, 0.0233, 0.0253, 0.0302, 0.04, 0.0511, 0.0567, 0.0588, 0.0571, 0.0504, 0.0443, 0.0413, 0.04, 0.0381, 0.0359, 0.0354, 0.0341, 0.0317, 0.0305, 0.0292, 0.0295, 0.0351, 0.0594],
+    // `dachLaub` / `dachNadel` das Kronendach des Waldes aus der Ferne nach 4SAIL über dunklem Waldboden (0,15; Sonne 16° vom
+    // Zenit, Blick von oben, LIDF sphärisch, Hot-Spot 0,1): Laubwald das Blatt PROSPECT-D N 1,5 · Chlorophyll 45 · Carotinoide 10 ·
+    // Wasser 0,012 · Trockenmasse 0,009 bei LAI 4,5 (linear 0,0263/0,0525/0,0139); Nadelwald N 1,8 · 70 · 15 · 0,03 · 0,03 bei
+    // LAI 6 (0,0209/0,0402/0,016) — Selbstbeschattung und Lücken der Krone liegen im Spektrum
+    dachLaub: [0.0184, 0.0182, 0.0179, 0.0178, 0.0176, 0.0175, 0.0176, 0.0176, 0.0176, 0.018, 0.0199, 0.0265, 0.0423, 0.0601, 0.0658, 0.0658, 0.0611, 0.0496, 0.0395, 0.0342, 0.0317, 0.0284, 0.0248, 0.0236, 0.0214, 0.0183, 0.0166, 0.0153, 0.0152, 0.0201, 0.0545],
+    dachNadel: [0.0193, 0.0191, 0.0188, 0.0186, 0.0185, 0.0183, 0.0183, 0.0182, 0.0182, 0.0182, 0.019, 0.0227, 0.0334, 0.0462, 0.0499, 0.0494, 0.0457, 0.0374, 0.0302, 0.0266, 0.0249, 0.0227, 0.0205, 0.0197, 0.0185, 0.0169, 0.0161, 0.0156, 0.0156, 0.0177, 0.0404],
     fels: 0.12,
     // die Wurzel des Halms im Schatten seines Büschels (emitGrass: die Wurzel 0,6 × das Blatt) — der Wiesen-Grund des Bodens
     wurzelSchatten: 0.6,
@@ -147,6 +153,8 @@ function spektrumHex(c) {
 // Halme der Welt (`AnazhRealm.GRAS_SPITZE`); die Wurzel das Blatt im Schatten des Büschels, als Wiesen-Grund der Boden-Palette
 // (`PORTAL_GROUND.mead`, die Welt `MEADOW_GREEN`)
 var HALM_FARBE = { spitze: spektrumLinear(FARB_SPEKTRUM.halm), bestand: spektrumLinear(FARB_SPEKTRUM.bestand) };
+// DAS KRONENDACH aus dem Spektrum (FARB_SPEKTRUM): die Ferne des Waldes je Typ — Laub wirft, Nadel steht (der Phänotyp der Art)
+var KRONEN_FARBE = { laub: spektrumLinear(FARB_SPEKTRUM.dachLaub), nadel: spektrumLinear(FARB_SPEKTRUM.dachNadel) };
 
 // DIE BODEN-PALETTE des Terrain-Studios — die EINE Boden-Farbe von Labor UND Welt. Jeder Wert ist eine
 // sRGB-ABSICHT (FARB-GESETZ): der Leser dekodiert linear (die Welt in `AnazhRealm.BODEN_FARBE`, das Labor
@@ -3110,8 +3118,13 @@ const WIESEN_ARTEN = Object.freeze({
 const WIESEN_GEWICHT = new Float64Array(WIESEN_ARTEN.arten.length); // die Mischung des Orts (je Ruf neu, ohne Allokation)
 // Der Tint eines Büschels am Welt-Ort (x, z) bei Licht `lit` (1 = offene Wiese) und Feuchte `wet` (0..1): seine Art aus der
 // Mischung des Orts und sein Alter, beide aus dem Γ5-Strom SEINES Orts (dasselbe Büschel trägt bei jedem Besuch dieselbe Art);
-// darüber der Standort des Labor-Tints FIX v27 — Schatten dunkler, hell + trocken wärmeres Oliv, Nässe kühles Grün —, das
-// Licht um die offene Wiese zentriert. Schreibt je Kanal den Faktor in [0, 2] auf die Halm-Farbe nach aus[o..o+2], gibt `aus`.
+// darüber das Licht des Orts (Schatten dunkler, um die offene Wiese zentriert). Schreibt je Kanal den Faktor in [0, 2] auf die
+// Halm-Farbe nach aus[o..o+2], gibt `aus`.
+// DAS MITTEL DES ORTS IST DAS BLATT (w26-ferne-ton-3): Art und Alter streuen die Büschel um die Halm-Farbe aus dem Spektrum
+// (FARB_SPEKTRUM), ihr Erwartungswert am Ort — die Mischung der Arten nach ihren Glocken, das Alter mit E[alt²] = 1/3 — teilt
+// den Faktor, die Nah-Wiese trägt im Mittel das gemessene Blatt. Bis hier lag die offene Wiese (Licht 1, Feuchte 0,3) im Mittel
+// bei Rot × 1,26, Blau × 0,78 — der Glatthafer des Lichts, das Alter und der Standort „hell + trocken wärmer“ (+8 % Rot, −9 %
+// Blau): aus dem Blatt R/G 0,59 las die Wiese oliv. Die Vergilbung des Orts trägt der tote Halm (WIESEN_FARBE.halm.tot).
 function wiesenTint(x, z, lit, wet, aus, o) {
     const cl = (v, a, b) => Math.max(a, Math.min(b, v));
     const WA = WIESEN_ARTEN,
@@ -3129,13 +3142,15 @@ function wiesenTint(x, z, lit, wet, aus, o) {
     const tr = cl(lit, 0, 1) * (1 - cl(wet, 0, 1)),
         alt = w(),
         s = tr * alt * alt * WA.alter.anteil;
-    const val = (lit - 1) * 0.45,
-        warm = (cl(lit * 0.5 + (1 - wet) * 0.5, 0, 1) - 0.5) * 0.24;
+    const val = (lit - 1) * 0.45;
     const f = A[k].f,
         af = WA.alter.f;
-    aus[o] = cl((1 + val + warm) * f[0] * (1 + (af[0] - 1) * s), 0, 2);
-    aus[o + 1] = cl((1 + val + warm * 0.35) * f[1] * (1 + (af[1] - 1) * s), 0, 2);
-    aus[o + 2] = cl((1 + val - warm * 0.8 + (wet - 0.5) * 0.12) * f[2] * (1 + (af[2] - 1) * s), 0, 2);
+    for (let c = 0; c < 3; c++) {
+        let e = 0;
+        for (let i = 0; i < A.length; i++) e += g[i] * A[i].f[c];
+        const ew = (e / summe) * (1 + ((af[c] - 1) * tr * WA.alter.anteil) / 3);
+        aus[o + c] = cl(((1 + val) * f[c] * (1 + (af[c] - 1) * s)) / ew, 0, 2);
+    }
     return aus;
 }
 /* GROUND-COVER-GESETZ: aus Licht x Feuchte x Substrat x Störung wächst die Bodenschicht (W1: aus dem Labor in den Kern — das
@@ -9526,6 +9541,8 @@ __terrainCore.PHYTO_PRESETS = PRESETS;
 __terrainCore.PORTAL_GROUND = PORTAL_GROUND;
 // DIE FARBE DES HALMS aus dem Spektrum (FARB_SPEKTRUM) reist mit: die Halme der Welt lesen dieselbe Spitze wie emitGrass.
 __terrainCore.HALM_FARBE = HALM_FARBE;
+// DAS KRONENDACH der Ferne aus dem Spektrum reist mit: der Stamm färbt den fernen Wald je Art daraus (`_fernLaubLinear`).
+__terrainCore.KRONEN_FARBE = KRONEN_FARBE;
 // DIE WIESE (W1): der Büschel-Tint und die Bodenschicht reisen zum Stamm — Labor und Nah-Wiese lesen dasselbe Gesetz.
 __terrainCore.wiesenTint = wiesenTint;
 __terrainCore.groundCover = groundCover;

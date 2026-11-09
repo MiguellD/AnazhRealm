@@ -3212,9 +3212,9 @@ AnazhRealm.CHUNK_IDB_MAX = 600;
 // Puffer, das Morph-Ziel als eigene Kopie): ein alter Eintrag trüge die Typ-Arrays des Mains ohne Morph-Ziel; seit w4-b-boden2
 // trägt der Reply Naht und Satz-Vorlage (`naht`, `satz`): ein alter Eintrag ließe den Einbau sie im Haupt-Faden nachrechnen.
 AnazhRealm.CHUNK_IDB_FORM = "faden-reply-satz";
-// FERN_FARBE (`fernFarbeTeile` im Fern-Faden, linear): das Kronendach des Waldes aus der Ferne = die Studio-Laubfarbe der Arten
-// am Ort × `kronenSchatten` (die Krone beschattet sich selbst: die Eiche, Blatt-Grün 0,195, trägt so 0,062 — die
-// Satelliten-Bänder geschlossener Laubwald-Kronen im Sommer, grün ~0,05–0,07); die Saison multipliziert der Leser
+// FERN_FARBE (`fernFarbeTeile` im Fern-Faden, linear): das Kronendach des Waldes aus der Ferne ist sein Spektrum je Art
+// (`_fernKroneArt`, Kern KRONEN_FARBE: Laubwald grün 0,0525, Nadelwald 0,0402); `kronenSchatten` trägt nur die kahle Krone
+// (die Rinde beschattet sich selbst, wie bis w26-ferne-ton-3 auch das Laub: Eiche 0,195 × 0,32); die Saison multipliziert der Leser
 // (`uSeasonMul`); der Feld-Pass malt neu, wenn die Saison je Kanal um mehr als `saisonDrift` gewandert ist. Das Wasser
 // trägt keine Fern-Farbe: es ist der Wasser-Körper des Gesetzes (`_wasserKoerper`, im Ring der Blick des Wassers).
 // `memo` = eine Generation des Fern-Farb-Gedächtnisses im Fern-Faden (zwei Generationen tragen > 2 volle Ringe).
