@@ -190,7 +190,7 @@ function berichtAB(teil, Z) {
     if (teil === 1) {
         je((zs, pre) =>
             zeile(
-                `${pre}KALT ${zs.length}× ${ad} V${zs[0].out.version} · t(Kontrolle) ${zs.map((z) => sek(z.e.tK)).join("/")} Median ${sek(med(zs.map((z) => z.e.tK)))} s · ` +
+                `${pre}KALT ${zs.length}× ${ad} V${zs[0].out.version} · Werk ${(zs[0].out.nach || {}).faeden}/${(zs[0].out.nach || {}).kerne} · t(Kontrolle) ${zs.map((z) => sek(z.e.tK)).join("/")} Median ${sek(med(zs.map((z) => z.e.tK)))} s · ` +
                     `Eigenmeldung ${zs.map((z) => sek(z.out.weltbildDa)).join("/")} Median ${sek(med(zs.map((z) => z.out.weltbildDa)))} · BELEGT bis Kontrolle ${zs.map((z) => sek(z.belegt)).join("/")} Median ${sek(med(zs.map((z) => z.belegt)))} s · ` +
                     `LongTasks ${zs.map((z) => z.langN).join("/")} · längste ${zs.map((z) => z.laengste).join("/")} ms`
             )
