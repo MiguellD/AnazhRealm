@@ -284,13 +284,22 @@ function leibInstall(cfg) {
         }
     };
     // reißt der Deckel, nennt sein Wurf die Lücken des Weltbilds (`__deckel`)
+    L.mess = [];
     L.steht = async (ms) => {
         let n = 0;
+        const t0 = performance.now();
+        const G = () => r._gpuLeine || { gerendert: 0, erledigt: 0 };
+        const g0 = G().gerendert, e0 = G().erledigt;
+        const spur = [];
         for (const weiter = window.__deckel("das Weltbild", ms / 45); weiter(); ) {
             await L.tick(5, 40);
             n++;
+            const lu = r._weltbildLuecken(true);
+            const o = r._weltOffen();
+            spur.push(((performance.now() - t0) / 1000).toFixed(1) + "s g" + (G().gerendert - g0) + " " + lu.map((l) => l.term + ":" + l.n).join(",") + " | " + Object.entries(o).filter(([, v]) => v).map(([k, v]) => k + v).join(","));
             if (n >= 4 && !r._weltbildFehlt(true).length) break;
         }
+        L.mess.push({ ms: Math.round(performance.now() - t0), n, gerendert: G().gerendert - g0, erledigt: G().erledigt - e0, spur: spur.filter((x, i) => i < 3 || i % 5 === 0 || i === spur.length - 1) });
         return r._weltbildFehlt(true);
     };
     // der Spieler an (x, z), bis das Weltbild dort steht; zurück, was noch fehlt
@@ -584,6 +593,7 @@ async function leibWiese(arg) {
         out.err = e?.stack || String(e);
     }
     out.proben = L.proben;
+    out.mess = L.mess;
     return out;
 }
 
@@ -609,6 +619,7 @@ async function leibHang(arg) {
         out.err = e?.stack || String(e);
     }
     out.proben = L.proben;
+    out.mess = L.mess;
     return out;
 }
 
@@ -1266,6 +1277,7 @@ hauptLauf(async () => {
         zeiten.hang = Date.now() - tH;
         leib.proben = [...(leib.wiese.proben || []), ...(leib.hang.proben || [])];
         leib.spruenge = leib.wiese.spruenge;
+        console.log('MESS ' + JSON.stringify({ wiese: leib.wiese.mess, hang: leib.hang.mess }, null, 1));
     }
     let nin = null;
     if (TEILE.includes("ninja")) {
