@@ -1,0 +1,721 @@
+{
+ "sha": "46128b7586235337484333188aaed12a291a24e7",
+ "geraet": "radeon",
+ "zeit": "2026-11-08T23:32:57.703Z",
+ "host": "MiguellD",
+ "je": {
+  "material.K1#1": {
+   "gruen": true,
+   "zahl": "Welt/Labor 0,9–1,1: 13/13 · im realen Band beidseits: 13/13 · echt beide Seiten · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 1.11,
+   "gpu": "amd/rdna-3",
+   "s": 66.4,
+   "fremd": {
+    "s": 69.8,
+    "takte": 25,
+    "fremdS": 317.48,
+    "kerne": 4.545,
+    "fensterKerne": 8.648,
+    "namen": [
+     [
+      "node.exe scratchpad/brenner.cjs 6 900 scratchpad/brenner.stopp",
+      191.25
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      33.41
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      23.3
+     ]
+    ],
+    "dienerS": 80.63,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      32.84
+     ],
+     [
+      "System",
+      30.39
+     ]
+    ],
+    "eigenS": 216.84
+   },
+   "zeit": "2026-11-08T23:27:20.360Z",
+   "abdruck": "3abc8b01e278",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "material.K1#2": {
+   "gruen": true,
+   "zahl": "Karte Welt 0.1799 · Labor terrain 0.1799, garage 0.18, portale 0.1799, schmiede 0.18, fachwerk 0.1799, koerperstudio 0.1799, tetrapoda 0.1799 · Soll 0.18 ± 0.003 · Zeilen alle im Soll und Band · echt beide Seiten · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 1.11,
+   "gpu": "amd/rdna-3",
+   "s": 66.4,
+   "fremd": {
+    "s": 69.8,
+    "takte": 25,
+    "fremdS": 317.48,
+    "kerne": 4.545,
+    "fensterKerne": 8.648,
+    "namen": [
+     [
+      "node.exe scratchpad/brenner.cjs 6 900 scratchpad/brenner.stopp",
+      191.25
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      33.41
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      23.3
+     ]
+    ],
+    "dienerS": 80.63,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      32.84
+     ],
+     [
+      "System",
+      30.39
+     ]
+    ],
+    "eigenS": 216.84
+   },
+   "zeit": "2026-11-08T23:27:20.360Z",
+   "abdruck": "564911886853",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "material.K1#1",
+   "modus": "session"
+  },
+  "schatten.K5#1": {
+   "gruen": false,
+   "zahl": "Kontrast 1.5405:1 (Soll ≥ 3:1) am Pfosten 2 m von glutbrunnen (6.2689 m vom Spieler, im Pool true, im Blick true, Boden gesehen 0.25), ohne Pfosten 1.569, Uhr 0 · Ort [-841,-861] · 1.84 s · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.17,
+   "grund": "ROT: Kontrast 1.5405:1 (Soll ≥ 3:1) am Pfosten 2 m von glutbrunnen (6.2689 m vom Spieler, im Pool true, im Blick true, Boden gesehen 0.25), ohne Pfosten 1.569, Uhr 0 · Ort [-841,-861] · 1.84 s · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 10.5,
+   "fremd": {
+    "s": 13.6,
+    "takte": 5,
+    "fremdS": 22.64,
+    "kerne": 1.664,
+    "fensterKerne": 1.664,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      5.56
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.42
+     ],
+     [
+      "svchost.exe",
+      2.88
+     ]
+    ],
+    "dienerS": 12.38,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      7.97
+     ],
+     [
+      "System",
+      2.19
+     ]
+    ],
+    "eigenS": 23.03
+   },
+   "zeit": "2026-11-08T23:28:50.207Z",
+   "abdruck": "35b9f2236d5d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "ungemessen": {
+  "vegetation.K1#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 40 s gerissen — beendet, UNGEMESSEN (zuletzt: SCHRITT /eval 0.0 s)",
+   "exit": 1,
+   "minuten": 0.68,
+   "grund": "Deckel 40 s gerissen — beendet, UNGEMESSEN (zuletzt: SCHRITT /eval 0.0 s)",
+   "s": 40.6,
+   "fremd": {
+    "s": 43.8,
+    "takte": 14,
+    "fremdS": 457.5,
+    "kerne": 10.449,
+    "fensterKerne": 10.88,
+    "namen": [
+     [
+      "node.exe scratchpad/brenner.cjs 6 900 scratchpad/brenner.stopp",
+      255.17
+     ],
+     [
+      "MsMpEng.exe",
+      39.89
+     ],
+     [
+      "SearchIndexer.exe",
+      39.14
+     ]
+    ],
+    "dienerS": 69.89,
+    "diener": [
+     [
+      "System",
+      35.3
+     ],
+     [
+      "WmiPrvSE.exe",
+      24.78
+     ]
+    ],
+    "eigenS": 80.94
+   },
+   "zeit": "2026-11-08T23:23:48.124Z",
+   "abdruck": "9c512329c038",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "lod.K5#1": {
+   "gruen": false,
+   "zahl": "Messort: kanten: die Treue: zwei Aufnahmen derselben Szene (tree L0) weichen in 5246 Bytes ab — EINE Aufnahme je Schuss trägt hier nicht — kein Urteil, UNGEMESSEN (die Probe sah: Folge: kanten: Exit 1 nc IsolatedWorld.evaluate (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\node_modules\\\\puppeteer-core\\\\lib\\\\cjs\\\\puppeteer\\\\cdp\\\\IsolatedWorld.js:105:16)\",\n  \"at async CdpFrame.evaluate (C:\\\\Users\\\\micha\\\\AnazhRealm-profiban) · Täter: @@PUNKTE@@ MESSORT kanten: die Treue: zwei Aufnahmen derselben Szene (tree L0) weichen in 5246 Bytes ab — EINE Aufnahme je Schuss trägt hier nicht",
+   "exit": 1,
+   "minuten": 0.16,
+   "grund": "Messort: kanten: die Treue: zwei Aufnahmen derselben Szene (tree L0) weichen in 5246 Bytes ab — EINE Aufnahme je Schuss trägt hier nicht — kein Urteil, UNGEMESSEN (die Probe sah: Folge: kanten: Exit 1 nc IsolatedWorld.evaluate (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\node_modules\\\\puppeteer-core\\\\lib\\\\cjs\\\\puppeteer\\\\cdp\\\\IsolatedWorld.js:105:16)\",\n  \"at async CdpFrame.evaluate (C:\\\\Users\\\\micha\\\\AnazhRealm-profiban) · Täter: @@PUNKTE@@ MESSORT kanten: die Treue: zwei Aufnahmen derselben Szene (tree L0) weichen in 5246 Bytes ab — EINE Aufnahme je Schuss trägt hier nicht",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 9.7,
+   "fremd": {
+    "s": 11.8,
+    "takte": 4,
+    "fremdS": 108.39,
+    "kerne": 9.208,
+    "fensterKerne": 9.208,
+    "namen": [
+     [
+      "node.exe scratchpad/brenner.cjs 6 900 scratchpad/brenner.stopp",
+      69.02
+     ],
+     [
+      "SearchIndexer.exe",
+      10.56
+     ],
+     [
+      "git reset --hard --no-recurse-submodules",
+      8.58
+     ]
+    ],
+    "dienerS": 19.05,
+    "diener": [
+     [
+      "System",
+      9.69
+     ],
+     [
+      "WmiPrvSE.exe",
+      5.36
+     ]
+    ],
+    "eigenS": 17.02
+   },
+   "zeit": "2026-11-08T23:24:58.428Z",
+   "abdruck": "c10974692b58",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "ferne.K2#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: band · Exit 1 · C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\46128b75-radeon\\ferne.K2_1.json.d\\band.json)",
+   "exit": 1,
+   "minuten": 1.51,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: band · Exit 1 · C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\46128b75-radeon\\ferne.K2_1.json.d\\band.json)",
+   "s": 90.6,
+   "fremd": {
+    "s": 96,
+    "takte": 32,
+    "fremdS": 795.52,
+    "kerne": 8.284,
+    "fensterKerne": 9.969,
+    "namen": [
+     [
+      "node.exe scratchpad/brenner.cjs 6 900 scratchpad/brenner.stopp",
+      568.72
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      49.86
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      31.92
+     ]
+    ],
+    "dienerS": 120.61,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      57.17
+     ],
+     [
+      "System",
+      36.02
+     ]
+    ],
+    "eigenS": 231.44
+   },
+   "zeit": "2026-11-08T23:25:24.603Z",
+   "abdruck": "802ccdf49463",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "gelaende.K3#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: WASSER {\"y\":1.57,\"nass\":true,\"versatz\":0,\"gefragt\":2})",
+   "exit": 1,
+   "minuten": 0.76,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: WASSER {\"y\":1.57,\"nass\":true,\"versatz\":0,\"gefragt\":2})",
+   "s": 45.8,
+   "fremd": {
+    "s": 47.4,
+    "takte": 17,
+    "fremdS": 59.67,
+    "kerne": 1.26,
+    "fensterKerne": 1.384,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      20.41
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      11.88
+     ],
+     [
+      "svchost.exe",
+      9.28
+     ]
+    ],
+    "dienerS": 39.14,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      19.19
+     ],
+     [
+      "dwm.exe",
+      10.97
+     ]
+    ],
+    "eigenS": 185.19
+   },
+   "zeit": "2026-11-08T23:29:02.952Z",
+   "abdruck": "41a675d42d94",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "mensch.K1#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: ✅ GRÜN — bewohner)",
+   "exit": 1,
+   "minuten": 1.51,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: ✅ GRÜN — bewohner)",
+   "s": 90.8,
+   "fremd": {
+    "s": 93.1,
+    "takte": 33,
+    "fremdS": 186.5,
+    "kerne": 2.003,
+    "fensterKerne": 2.859,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      44.94
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      38.94
+     ],
+     [
+      "MsMpEng.exe",
+      20.92
+     ]
+    ],
+    "dienerS": 83.13,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      41.73
+     ],
+     [
+      "System",
+      20.64
+     ]
+    ],
+    "eigenS": 301.97
+   },
+   "zeit": "2026-11-08T23:30:06.938Z",
+   "abdruck": "ac10e7df1f5a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "mensch.K2#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: ✅ GRÜN — bewohner)",
+   "exit": 1,
+   "minuten": 1.51,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: ✅ GRÜN — bewohner)",
+   "s": 90.8,
+   "fremd": {
+    "s": 93.1,
+    "takte": 33,
+    "fremdS": 186.5,
+    "kerne": 2.003,
+    "fensterKerne": 2.859,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      44.94
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      38.94
+     ],
+     [
+      "MsMpEng.exe",
+      20.92
+     ]
+    ],
+    "dienerS": 83.13,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      41.73
+     ],
+     [
+      "System",
+      20.64
+     ]
+    ],
+    "eigenS": 301.97
+   },
+   "zeit": "2026-11-08T23:30:06.938Z",
+   "abdruck": "dab117ec1548",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "mensch.K1#1",
+   "modus": "session"
+  },
+  "mensch.K5#1": {
+   "gruen": false,
+   "zahl": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 23,2 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 18,4 CPU-s · svchost.exe 11,3 CPU-s — 2,02 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30; Σ fremd 78,4 CPU-s in 48,5 s) — kein Urteil, UNGEMESSEN (die Probe sah: gasthaus/gasthaus #419347: Kopf-Zuwendung ab 3 m 0.267 / 0 / 0 / 0 s (Vorbeigang ab 72°, als Leib im Bild true/true/true/true) · Berührung 0/0/0/0 Takte, kleinster Abstand 2 / 1.335 / 1.335 / 1.952 m (Radien 0,7) · ohne Erinnerung 1.335, Ge)",
+   "exit": 0,
+   "minuten": 0.74,
+   "gpu": "amd/rdna-3",
+   "s": 44.6,
+   "fremd": {
+    "s": 48.5,
+    "takte": 17,
+    "fremdS": 78.44,
+    "kerne": 1.617,
+    "fensterKerne": 2.019,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      23.16
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      18.44
+     ],
+     [
+      "svchost.exe",
+      11.34
+     ]
+    ],
+    "dienerS": 42.13,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      22.78
+     ],
+     [
+      "dwm.exe",
+      11.95
+     ]
+    ],
+    "eigenS": 121.05
+   },
+   "ungemessen": true,
+   "grund": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 23,2 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 18,4 CPU-s · svchost.exe 11,3 CPU-s — 2,02 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30; Σ fremd 78,4 CPU-s in 48,5 s) — kein Urteil, UNGEMESSEN (die Probe sah: gasthaus/gasthaus #419347: Kopf-Zuwendung ab 3 m 0.267 / 0 / 0 / 0 s (Vorbeigang ab 72°, als Leib im Bild true/true/true/true) · Berührung 0/0/0/0 Takte, kleinster Abstand 2 / 1.335 / 1.335 / 1.952 m (Radien 0,7) · ohne Erinnerung 1.335, Ge)",
+   "zeit": "2026-11-08T23:31:57.121Z",
+   "abdruck": "e5aba4cb1a86",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "profiband.K3#1": {
+   "gruen": false,
+   "zahl": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 38,5 CPU-s · svchost.exe 25,3 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 22,2 CPU-s — 1,45 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30; Σ fremd 123,4 CPU-s in 90,7 s) — kein Urteil, UNGEMESSEN (die Probe sah: Band im Stand (Befehle · Dreiecke · VRAM · gpu-bank): wiese-ego 126 · 549k · 136.6 MB · 27.7 ms | wiese-third 123 · 534k · 134.6 MB · 27.12 ms | genesis-ego 88 · 370k · 122.1 MB · 17.7 ms | genesis-third 109 · 412k · 123.3 MB · 17.57 ms | d)",
+   "exit": 0,
+   "minuten": 1.44,
+   "grund": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 38,5 CPU-s · svchost.exe 25,3 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 22,2 CPU-s — 1,45 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30; Σ fremd 123,4 CPU-s in 90,7 s) — kein Urteil, UNGEMESSEN (die Probe sah: Band im Stand (Befehle · Dreiecke · VRAM · gpu-bank): wiese-ego 126 · 549k · 136.6 MB · 27.7 ms | wiese-third 123 · 534k · 134.6 MB · 27.12 ms | genesis-ego 88 · 370k · 122.1 MB · 17.7 ms | genesis-third 109 · 412k · 123.3 MB · 17.57 ms | d)",
+   "gpu": "amd/rdna-3",
+   "s": 86.4,
+   "fremd": {
+    "s": 90.7,
+    "takte": 32,
+    "fremdS": 123.36,
+    "kerne": 1.361,
+    "fensterKerne": 1.447,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      38.5
+     ],
+     [
+      "svchost.exe",
+      25.27
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      22.22
+     ]
+    ],
+    "dienerS": 73.31,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      43.31
+     ],
+     [
+      "dwm.exe",
+      20.52
+     ]
+    ],
+    "eigenS": 220
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-08T23:32:57.703Z",
+   "abdruck": "f53ad5c4b546",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "profiband.K3#2": {
+   "gruen": false,
+   "zahl": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 38,5 CPU-s · svchost.exe 25,3 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 22,2 CPU-s — 1,45 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30; Σ fremd 123,4 CPU-s in 90,7 s) — kein Urteil, UNGEMESSEN (die Probe sah: Befehle p95 ≤ 208: wiese-ego-steht 54 · wiese-third-steht 64 · genesis-ego-steht 51 · genesis-third-steht 66 · wiese-ego-geht 124 · wiese-ego-sprint 106 · wiese-fahrt 183 · genesis-third-geht 92 · stadt-ego-geht ? · wiese-ego-sturm ? ‖ Drei)",
+   "exit": 0,
+   "minuten": 1.44,
+   "grund": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 38,5 CPU-s · svchost.exe 25,3 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 22,2 CPU-s — 1,45 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30; Σ fremd 123,4 CPU-s in 90,7 s) — kein Urteil, UNGEMESSEN (die Probe sah: Befehle p95 ≤ 208: wiese-ego-steht 54 · wiese-third-steht 64 · genesis-ego-steht 51 · genesis-third-steht 66 · wiese-ego-geht 124 · wiese-ego-sprint 106 · wiese-fahrt 183 · genesis-third-geht 92 · stadt-ego-geht ? · wiese-ego-sturm ? ‖ Drei)",
+   "gpu": "amd/rdna-3",
+   "s": 86.4,
+   "fremd": {
+    "s": 90.7,
+    "takte": 32,
+    "fremdS": 123.36,
+    "kerne": 1.361,
+    "fensterKerne": 1.447,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      38.5
+     ],
+     [
+      "svchost.exe",
+      25.27
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      22.22
+     ]
+    ],
+    "dienerS": 73.31,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      43.31
+     ],
+     [
+      "dwm.exe",
+      20.52
+     ]
+    ],
+    "eigenS": 220
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-08T23:32:57.703Z",
+   "abdruck": "79e11b5cf7b3",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K3#1",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-08T23:22:55.419Z",
+  "port": 7804,
+  "warten": 0.2,
+  "bootS": 7.9,
+  "grundstellungS": [
+   5,
+   0.1,
+   5.1,
+   2.4,
+   3.7,
+   2.8,
+   2.7
+  ],
+  "proben": 9,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "vegetation.K1#1",
+    "s": 28.7,
+    "takte": 768,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": "wiese",
+    "vor": "lod.K5#1",
+    "s": 23.6,
+    "takte": 696,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": "genesis",
+    "vor": "ferne.K2#1",
+    "s": 15.1,
+    "takte": 627,
+    "chunks": 81,
+    "nach": "der Grundstellung"
+   },
+   {
+    "ort": "genesis",
+    "vor": "material.K1#1",
+    "s": 17.3,
+    "takte": 579,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": "dorf",
+    "vor": "schatten.K5#1",
+    "s": 19.2,
+    "takte": 583,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": "genesis",
+    "vor": "mensch.K1#1",
+    "s": 12.4,
+    "takte": 598,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": "genesis",
+    "vor": "mensch.K5#1",
+    "s": 14.9,
+    "takte": 616,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": null,
+    "vor": "profiband.K3#1",
+    "s": 12.3,
+    "takte": 704,
+    "chunks": 81,
+    "nach": "der Tür"
+   }
+  ],
+  "wegeTueren": [
+   {
+    "vor": "schatten.K5#1",
+    "wege": "wege +1 [-119.1,-274.9,279.2,201/272]",
+    "s": 2.4
+   },
+   {
+    "vor": "profiband.K3#1",
+    "wege": "wege +5 [-110,-230.5,17.6,-118.2/298] [-115.3,-244.9,7.2,-119.1/22] [-116.6,-234.8,9.9,-118.6/4] …",
+    "s": 2.7
+   }
+  ],
+  "unerklaert": [
+   {
+    "probe": "material.K1#1",
+    "wie": "werke +5 (−0)"
+   },
+   {
+    "probe": "gelaende.K3#1",
+    "wie": "orte +6,-25 +7,-24 · wege +6 [1410.2,-6310.3,1771.1,-6169.3/88] [1443.2,-6282.4,1737.7,-6193.4/6] [1723.8,-6196.8,1758.8,-5966.4/42] … (6,-25, 7,-24, netz:6,-25, netz:6,-25|7,-24)"
+   }
+  ],
+  "ciBlicke": 10,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 612,
+   "frameP95": 58.21,
+   "taktP95": 40.54,
+   "vramMax": 144.9,
+   "seiten": 7,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [
+    {
+     "probe": "gelaende.K3#1",
+     "m": 5981,
+     "ringVor": 4,
+     "ringMin": 0
+    },
+    {
+     "probe": "ferne.K2#1",
+     "m": 3592,
+     "ringVor": 4,
+     "ringMin": -1
+    },
+    {
+     "probe": "profiband.K3#1",
+     "m": 1092,
+     "ringVor": 4,
+     "ringMin": 1
+    }
+   ],
+   "zapfen": 636,
+   "luecken": 2,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+  },
+  "fahrtS": 680,
+  "minuten": 11.6
+ }
+}

@@ -75,16 +75,22 @@ async function folge(plan) {
                 aus.dateien[s.name] = fs.existsSync(f) ? duenn(JSON.parse(fs.readFileSync(f, "utf8"))) : null;
             }
             console.log("  " + s.name + " · Exit " + r.status + (e.json ? "" : " · " + String(e.rest).trim().split("\n").slice(-1)[0]));
-            if (s.muss && r.status !== 0) throw new Error(s.name + ": Exit " + r.status + " " + String(e.rest || "").slice(-300));
+            if (s.muss && r.status !== 0)
+                throw Object.assign(new Error(s.name + ": Exit " + r.status + " " + String(e.rest || "").slice(-300)), {
+                    messort: s.name + ": " + (e.json && typeof e.json.fehler === "string" ? e.json.fehler : String(e.rest || "").trim().split("\n").slice(-1)[0] || "Exit " + r.status),
+                });
         }
     } catch (e) {
         aus.fehler = String((e && e.message) || e);
+        aus.messort = String((e && e.messort) || "Folge: " + aus.fehler).replace(/\s+/g, " ").slice(0, 300);
         code = 1;
     } finally {
         fs.writeFileSync(AUS, JSON.stringify(aus, null, 1));
     }
     console.log(aus.adapter || "[linse-gpu] ungenannt");
-    console.log(aus.fehler ? "FOLGE ROT: " + aus.fehler : "FOLGE " + plan.name + ": " + plan.schritte.length + " Schritte");
+    // jeder Wurf der Folge fällt VOR dem Urteil der Linse (sie urteilt erst in punkte.cjs über die ganze Ausgabe): ein `muss`-Schritt,
+    // ein Feld, das ein früherer Schritt nicht trug, ein Blob, das Log der Sitzung — die EINE Marke des Messorts (punkte.cjs keinUrteil (d))
+    console.log(aus.fehler ? "@@PUNKTE@@ MESSORT " + aus.messort : "FOLGE " + plan.name + ": " + plan.schritte.length + " Schritte");
     process.exit(code);
 }
 const befehlDer = (plan) => ["node", "-e", "(" + folge.toString() + ")(" + JSON.stringify(plan) + ")", "{AUS}", "{KOORD}"];
@@ -343,6 +349,22 @@ const albedoSitzung = (teil, ausnahme) => ({
     ausnahme,
 });
 const ALBEDO_K1 = albedoSitzung("K1", "die Albedo-Tafel beider Seiten: elf Gänge der Welt und daneben sieben Studio-Seiten des Labors mit eigenem Renderer");
+// DIE SCHALE DES FELLS (material.K1, w24-linse-fell): die Zeile fell misst den Wolf, wie das Labor ihn zeigt — mit den Schalen seines
+// Fells (die Stufe am Auge der Tafel, 3,5 m über ihm, `_leibSicht`). Trägt die Welt-Seite der Zeile keinen Stoff fellSchale, las die
+// Inventur das Fell ohne sie: ein Auge der Stufen wählte sie zwischen Bestellung und Inventur ab (Radeon 77265b04, nach ferne.K1 die
+// Kamera 92 m über Genesis: 0,1844 ohne Schale, 0,1641 mit, das Labor 0,1619). Das Urteil nennt es beim Namen, nie nur als Zahl
+// die Roh-Ausgaben der Proben (knapp: was die Urteile lesen): am main 77265b04 in der Sitzung nach ferne.K1 (Radeon 08.11.) und am Zweig
+// w24-rueckfall-fell 8c5d944c (Radeon 08.11.); `k1OhneSchale` streicht den Stoff fellSchale aus der Welt-Seite der Zeile
+const K1_ROH = { alt: {"adapter":"[linse-gpu] amd/rdna-3","welt":{"echt":true,"geraet":"amd rdna-3"},"labor":{"echt":true,"geraet":"AMD Radeon(TM) 890M"},"eichung":{"soll":0.18,"rand":0.003,"welt":0.1799,"labor":{"terrain":0.1799,"garage":0.1799,"portale":0.1799,"schmiede":0.1799,"fachwerk":0.1799,"koerperstudio":0.1799,"tetrapoda":0.1799},"gruen":true},"zeilen":[{"id":"rinde","L":0.0893,"W":0.0807,"v":0.9037,"band":[0.07,0.12],"bandOk":true,"inBand":true},{"id":"laub","L":0.1784,"W":0.1921,"v":1.0768,"band":[0.15,0.26],"bandOk":true,"inBand":true},{"id":"birke","L":0.2121,"W":0.2164,"v":1.0203,"band":[0.15,0.26],"bandOk":true,"inBand":true},{"id":"fichte","L":0.1055,"W":0.0953,"v":0.9033,"band":[0.08,0.15],"bandOk":true,"inBand":true},{"id":"fels","L":0.2444,"W":0.2547,"v":1.0421,"band":[0.1,0.3],"bandOk":true,"inBand":true},{"id":"boden","L":0.0832,"W":0.0869,"v":1.0445,"band":[0.0123,0.871],"bandOk":true,"inBand":true},{"id":"haus","L":0.1491,"W":0.1512,"v":1.0141,"band":[0.0123,0.871],"bandOk":true,"inBand":true},{"id":"lack","L":0.0166,"W":0.0164,"v":0.988,"band":[0.0123,0.871],"bandOk":true,"inBand":true},{"id":"tor","L":0.6496,"W":0.6494,"v":0.9997,"band":[0.25,0.95],"bandOk":true,"inBand":true},{"id":"haut","L":0.0601,"W":0.0604,"v":1.005,"band":[0.0123,0.871],"bandOk":true,"inBand":true},{"id":"fell","L":0.1619,"W":0.1844,"v":1.139,"band":[0.0123,0.871],"bandOk":true,"inBand":true},{"id":"haar","L":0.0117,"W":0.0117,"v":1,"band":[0.01,0.3],"bandOk":true,"inBand":true},{"id":"klinge","L":0.3452,"W":0.3493,"v":1.0119,"band":[0.3,0.95],"bandOk":true,"inBand":true}],"dateien":{"welt":{"welt":{"fell":{"Y":0.1844,"stoffe":["unknown|0.90|0.00|0|1.00|v:stoff|xf","fell|0.93|0.00|0|1.00|t:0.287,0.231,0.162|v:haar|xf"]}}}}}, neu: {"adapter":"[linse-gpu] amd/rdna-3","welt":{"echt":true,"geraet":"amd rdna-3"},"labor":{"echt":true,"geraet":"AMD Radeon(TM) 890M"},"eichung":{"soll":0.18,"rand":0.003,"welt":0.1799,"labor":{"terrain":0.1799,"garage":0.1799,"portale":0.1799,"schmiede":0.1799,"fachwerk":0.1799,"koerperstudio":0.1799,"tetrapoda":0.1799},"gruen":true},"zeilen":[{"id":"rinde","L":0.0893,"W":0.0807,"v":0.9037,"band":[0.07,0.12],"bandOk":true,"inBand":true},{"id":"laub","L":0.1785,"W":0.1922,"v":1.0768,"band":[0.15,0.26],"bandOk":true,"inBand":true},{"id":"birke","L":0.2121,"W":0.2163,"v":1.0198,"band":[0.15,0.26],"bandOk":true,"inBand":true},{"id":"fichte","L":0.1055,"W":0.0954,"v":0.9043,"band":[0.08,0.15],"bandOk":true,"inBand":true},{"id":"fels","L":0.2444,"W":0.2547,"v":1.0421,"band":[0.1,0.3],"bandOk":true,"inBand":true},{"id":"boden","L":0.0832,"W":0.0876,"v":1.0529,"band":[0.0123,0.871],"bandOk":true,"inBand":true},{"id":"haus","L":0.1491,"W":0.1505,"v":1.0094,"band":[0.0123,0.871],"bandOk":true,"inBand":true},{"id":"lack","L":0.0166,"W":0.0164,"v":0.988,"band":[0.0123,0.871],"bandOk":true,"inBand":true},{"id":"tor","L":0.6496,"W":0.6494,"v":0.9997,"band":[0.25,0.95],"bandOk":true,"inBand":true},{"id":"haut","L":0.0601,"W":0.0604,"v":1.005,"band":[0.0123,0.871],"bandOk":true,"inBand":true},{"id":"fell","L":0.1599,"W":0.164,"v":1.0256,"band":[0.0123,0.871],"bandOk":true,"inBand":true},{"id":"haar","L":0.0117,"W":0.0117,"v":1,"band":[0.01,0.3],"bandOk":true,"inBand":true},{"id":"klinge","L":0.3452,"W":0.3493,"v":1.0119,"band":[0.3,0.95],"bandOk":true,"inBand":true}],"dateien":{"welt":{"welt":{"fell":{"Y":0.164,"stoffe":["unknown|0.90|0.00|0|1.00|v:stoff|xf","fell|0.93|0.00|0|1.00|t:0.287,0.231,0.162|v:haar|xf","fellSchale|0.92|0.00|0|1.00|t:0.287,0.231,0.162|v:haar|xf"]}}}}} };
+const k1OhneSchale = (j) => {
+    const k = JSON.parse(JSON.stringify(j));
+    k.dateien.welt.welt.fell.stoffe = k.dateien.welt.welt.fell.stoffe.filter((x) => !x.startsWith("fellSchale|"));
+    return k;
+};
+const fellOhneSchale = (j) => {
+    const f = (((j.dateien || {}).welt || {}).welt || {}).fell;
+    return f && Array.isArray(f.stoffe) && !f.stoffe.some((x) => x.startsWith("fellSchale|")) ? "fell ohne Schale (die Inventur las den Wolf ohne seine Schalen)" : null;
+};
 const ALBEDO_K3 = albedoSitzung("K3", "die Welt-Seite der Albedo-Tafel: elf Gänge, je Stufen-Zeile ihre Stufe gestellt und zu beiden Uhren geschossen");
 const ALBEDO_PFAD = [
     ...BILD,
@@ -1043,6 +1065,19 @@ async function neunSeite(r, T, C, kammSaum) {
                 const fov = C.kammFov / (W / H); // C.kammFov ist die waagrechte Öffnung
                 const ziel = E.clone().add(new T.Vector3(Math.sin(wahl.az), Math.tan(wahl.w), Math.cos(wahl.az)).multiplyScalar(1000));
                 stell(E, ziel, fov);
+                // DIE KAMM-KRONE STEHT (w24-rueckfall-kamm): den Umriss trägt der Wald des Kamms (`kammKrone`, je Sektor vom Faden nach dem
+                // Bild gerechnet, der Blick zuerst) — der Teil schießt erst, wenn jeder Sektor am Anker des Rings steht (höchstens
+                // `kammWarteS` s im Takt des Spiels, die Kamera der Probe ist sein Blick; sonst UNGEMESSEN beim Namen, nie ein nackter
+                // Kamm als ROT). Bis dahin schoss er in der Sitzung 19 s nach einer Tür den Kamm ohne Wald (Radeon 77265b04: Kohärenz
+                // 0,7488, Relief −2,9 m; derselbe Stand mit allen 8 Sektoren: 0,20 und +19,0 m)
+                const sektoren = () => (st.kammKrone && st.kammKrone.sektoren) || [];
+                for (const t1 = performance.now() + C.kammWarteS * 1000; !(sektoren().length && sektoren().every(Boolean)) && performance.now() < t1; ) {
+                    r._gameLoopTick(performance.now());
+                    await new Promise((z) => setTimeout(z, 50));
+                }
+                if (!(sektoren().length && sektoren().every(Boolean)))
+                    throw new Error("die Kamm-Krone steht nach " + C.kammWarteS + " s nicht: " + sektoren().filter(Boolean).length + " von " + sektoren().length + " Sektoren");
+                stell(E, ziel, fov);
                 const u8 = await schuss();
                 // DER HIMMEL ALLEIN (derselbe Blick, jedes Kind der Szene außer Himmel und Licht verborgen): ein Pixel, das ihm gleicht
                 // (±6 je Kanal), ist Himmel — die Farb-Regel der Soll-Tafel brach am Dunst (swiftshader, Dorf: Luma 149 unter 150)
@@ -1442,18 +1477,40 @@ async function neunSeite(r, T, C, kammSaum) {
             const im = orte.filter((o) => Math.abs(Math.atan2(Math.sin(o.w - wahl.az), Math.cos(o.w - wahl.az))) < halb);
             const zielY = med(im.map((o) => o.p.y));
             stell(E, new T.Vector3(E.x + Math.sin(wahl.az) * 4000, zielY == null ? E.y : zielY, E.z + Math.cos(wahl.az) * 4000), C.fernFov / (W / H));
-            const u8 = await schuss();
-            // gezählt wird, was das Bild trägt (der Ort projiziert ins Bild), nie der Plan
+            // DIE HÄNGE OHNE DEN SCHLEIER (w25-ferne-licht): die Luft legt auf jeden Hang dieselbe In-Streuung — aus 1 500 m über 5,6 km
+            // zwei Drittel jedes Pixels (Zerlegung swiftshader voll, Dorf: Licht- und Schattenhang mit Luft 0,0355 / 0,0323, ohne 0,0171 /
+            // 0,0108) —, je N·L geteilt trug sie das Verhältnis der N·L der Orte (der Schleier allein: 0,29 / 0,41 = 0,71) statt des
+            // Schattens: mit Luft 0,629, ohne 0,468. Der Schuss misst die Hänge ohne Luft (β 0, wie L0 der Luft-Linse); den Schleier
+            // urteilen ferne.K1 und K2
+            const luft = st.luft.U.beta, beta0 = luft.value, anw = r._dayNightApplyHemiUndLuft;
+            const eigen = Object.prototype.hasOwnProperty.call(r, "_dayNightApplyHemiUndLuft");
+            r._dayNightApplyHemiUndLuft = function (...a) {
+                anw.apply(this, a);
+                luft.value = 0;
+            };
+            let u8;
+            try {
+                luft.value = 0;
+                u8 = await schuss();
+            } finally {
+                if (eigen) r._dayNightApplyHemiUndLuft = anw;
+                else delete r._dayNightApplyHemiUndLuft;
+                luft.value = beta0;
+            }
+            // gezählt wird, was das Bild trägt (der Ort projiziert ins Bild), nie der Plan — am PIXEL DES ORTS, nie in seinem Feld
+            // (w25-ferne-licht-4): bei 640×360 deckt das 3×3-Feld aus 1 500 m in 5,5 km ~40 × 160 m Hang, der Schattenstreifen hinter
+            // dem Grat ist schmaler — das Feld mischte den besonnten Nachbarn ein (swiftshader voll, Dorf, Sonne 5°, ohne Luft: am
+            // Pixel 0,354, im Feld 0,442; die Sonne trug dem Schattenhang im Feld +6 %, am Pixel 0)
             const je = (s) => im.filter((o) => o.schatten === s).map((o) => {
                 const q = bp(o.p);
-                return q ? Yb(u8, q[0], q[1]) / o.nl : NaN;
+                return q ? Yp(u8, (Math.round(q[1]) * W + Math.round(q[0])) * 4) / o.nl : NaN;
             }).filter(Number.isFinite);
             const [js, jl] = [je(true), je(false)];
             const [Ls, Ll] = [med(js), med(jl)];
             return {
                 sonneGrad: r4((el * 180) / Math.PI), uhr: r4(st.timeOfDay), hochM: wahl.hoch, orte: orte.length, imBild: [js.length, jl.length],
                 gratKm: r4(med(im.filter((o) => o.schatten).map((o) => o.gratAb)) / 1000), Ls: r4(Ls), Ll: r4(Ll),
-                verhaeltnis: Ls != null && Ll > 0 ? r4(Ls / Ll) : null,
+                verhaeltnis: Ls != null && Ll > 0 ? r4(Ls / Ll) : null, luft: 0, feld: 1,
             };
         });
         // ───── schatten.K5 — nachts wirft das Feuer ─────
@@ -1545,15 +1602,19 @@ async function neunSeite(r, T, C, kammSaum) {
                 const neben = (p) => new T.Vector3(nb(p)[0], p.y, nb(p)[1]);
                 const sS = dS.filter((p) => gruenPx(mark, neben(p))), sL = dL.filter((p) => gruenPx(mark, neben(p)));
                 const sicht = Math.min(sS.length / dS.length, sL.length / dL.length), pfosten = gruenPx(mark, pfZ);
-                const [s0, l0] = [probeL(ohne, dS), probeL(ohne, dL)];
+                // DIE WERTE DER POSE AN IHRER POSE (w24-linse-feuer): die Punkte projiziert die Kamera, die jetzt steht (`bp`) — gelesen
+                // werden alle vier hier, nie nach der Schleife: dort stand die Kamera an der LETZTEN Pose, und die Rückfall-Wahl (keine
+                // Pose ruhig) las ihre Bilder an fremden Pixeln, mit und ohne Pfosten fast gleich (Radeon 03300ec8, 77265b04, 53b2fc7a:
+                // Kontrast 2,6423, Kontrolle 2,6433; die Posen selbst maßen 1,54 · 4,00 · 5,81 bei Kontrolle 1,569 · 0,553 · 1,566)
+                const [s0, l0, s1, l1] = [probeL(ohne, dS), probeL(ohne, dL), probeL(mark, dS), probeL(mark, dL)];
                 const kontrolle = s0.L > 0 && l0.L > 0 ? l0.L / s0.L : null;
-                const kand = { ps, PF, gy, dS, dL, sicht, pfosten, ohne, mit: mark, kontrolle, imPool, gut: pfosten && ruhig(kontrolle) };
+                const kand = { ps, sicht, pfosten, kontrolle, imPool, werte: { s0, l0, s1, l1 }, gut: pfosten && ruhig(kontrolle) };
                 if (!wahl || (kand.gut && !wahl.gut) || (kand.gut === wahl.gut && pfosten && !wahl.pfosten)) wahl = kand;
                 if (kand.gut) break;
             }
-            const { ps, dS, dL, ohne, mit, imPool } = wahl;
+            const { ps, imPool } = wahl;
             const q = ps.q;
-            const [s1, l1, s0, l0] = [probeL(mit, dS), probeL(mit, dL), probeL(ohne, dS), probeL(ohne, dL)];
+            const { s1, l1, s0, l0 } = wahl.werte;
             return {
                 quelle: String(q.type || "?"), abM: r4(ps.abM), imPool, uhr: r4(st.timeOfDay), boden: r4(wahl.sicht), pfosten: wahl.pfosten,
                 Llicht: r4(l1.L), Lschatten: r4(s1.L), kontrast: s1.L > 0 ? r4(l1.L / s1.L) : null,
@@ -1899,6 +1960,7 @@ const NEUN_C = {
     kammFov: 60,
     kammSchritt: 3,
     kammKroneM: 52.5, // die höchste Krone des Pflanz-Gesetzes: Weißtanne 26,9 m × Größe 1,95 (`kammSaum`)
+    kammWarteS: 10, // so lange wartet ferne.K3 auf die Sektoren der Kamm-Krone (im Deckel der Gruppe, 20 s auf der Radeon)
     lodVersatz: [4, -4],
     lodPixelMin: 1500,
     wolkeDeckung: 0.4,
@@ -2087,8 +2149,14 @@ const NEUN = [
         "1 = bei Sonne 5° Luma Schatten-/Lichthang ≤ 0,4 hinter einem ≥ 2 km fernen Grat an einem Gerät",
         // DAS AUGE WÄHLT DIE STATION (w6-g3-linsen): die Höhe über dem Spieler, aus der ≥ 5 Orte im Schatten UND im Licht im Bild stehen, nur
         // Hänge, die dem Auge ihr Gesicht zeigen (N·V ≥ 0,2), gezählt, was das Bild trägt — aus 80 m sah das Auge am Dorf 3 Orte im Schatten
-        (t) => [t.hochM != null && t.verhaeltnis != null && t.verhaeltnis <= 0.4 && t.imBild[0] >= 5 && t.imBild[1] >= 5 && Math.abs(t.sonneGrad - 5) <= 0.5 && t.gratKm >= 2, `Schatten-/Lichthang ${t.verhaeltnis} (je N·L; Soll ≤ 0,4) aus ${t.imBild[0]}/${t.imBild[1]} Orten im Bild, Auge ${t.hochM} m, Grat ${t.gratKm} km, Sonne ${t.sonneGrad}° (Uhr ${t.uhr})`],
-        neunProben("ferne.K4", { sonneGrad: 5.02, uhr: 0.74, hochM: 1500, orte: 377, imBild: [28, 100], gratKm: 5.4, Ls: 0.02, Ll: 0.09, verhaeltnis: 0.22 }, [
+        // DER SCHLEIER IST NICHT DER SCHATTEN (w25-ferne-licht): gemessen wird der Hang ohne Luft (`luft` 0); die In-Streuung, je N·L
+        // geteilt, trägt das Verhältnis der N·L der Orte — mit ihr urteilte die Linse über die Luft (ferne.K1/K2), nie über den Grat.
+        // DAS PIXEL DES ORTS (w25-ferne-licht-4): gezählt wird der Ort selbst (`feld` 1), nie das 3×3-Feld um ihn — bei 640×360 mischte
+        // es den besonnten Nachbarn in den Schattenstreifen hinter dem Grat
+        (t) => [t.luft === 0 && t.feld === 1 && t.hochM != null && t.verhaeltnis != null && t.verhaeltnis <= 0.4 && t.imBild[0] >= 5 && t.imBild[1] >= 5 && Math.abs(t.sonneGrad - 5) <= 0.5 && t.gratKm >= 2, `Schatten-/Lichthang ${t.verhaeltnis} (je N·L, ${t.luft === 0 ? "ohne Luft" : "durch den Schleier der Luft"}, ${t.feld === 1 ? "am Pixel des Orts" : "im Feld um den Ort"}; Soll ≤ 0,4) aus ${t.imBild[0]}/${t.imBild[1]} Orten im Bild, Auge ${t.hochM} m, Grat ${t.gratKm} km, Sonne ${t.sonneGrad}° (Uhr ${t.uhr})`],
+        neunProben("ferne.K4", { sonneGrad: 5.02, uhr: 0.74, hochM: 1500, orte: 377, imBild: [28, 100], gratKm: 5.4, Ls: 0.02, Ll: 0.09, verhaeltnis: 0.22, luft: 0, feld: 1 }, [
+            ["im 3×3-Feld um den Ort gemessen, der besonnte Nachbar mischt in den Schattenstreifen (swiftshader 0,442 gegen 0,354 am Pixel)", { sonneGrad: 4.9943, uhr: 0.735, hochM: 1500, orte: 255, imBild: [21, 64], gratKm: 5.3294, Ls: 0.0217, Ll: 0.0612, verhaeltnis: 0.3537, luft: 0 }],
+            ["durch den Schleier der Luft gemessen, die Zahl trüge (Radeon 77265b04 mit Luft 0,6352, der Schleier allein 0,71)", { sonneGrad: 5.0087, uhr: 0.735, hochM: 1500, orte: 257, imBild: [21, 64], gratKm: 5.3294, Ls: 0.02, Ll: 0.09, verhaeltnis: 0.22 }],
             ["main 0e3eadad und Zweig 35414866: kein Abendschatten an den Hängen im Blick (0,71 aus 28/100)", { sonneGrad: 5.0039, uhr: 0.7351, hochM: 1500, orte: 377, imBild: [28, 100], gratKm: 5.4342, Ls: 0.0345, Ll: 0.0489, verhaeltnis: 0.7063 }],
             ["das alte Auge 80 m ohne Wahl (3/7 Orte, der Rücken der Hänge: 0,24)", { sonneGrad: 5.02, uhr: 0.74, orte: 44, imBild: [3, 7], gratKm: 3.1, Ls: 0.02, Ll: 0.09, verhaeltnis: 0.24 }],
             ["jenseits der Kaskaden nur N·L (Spike 94c079cb)", { sonneGrad: 5.02, uhr: 0.74, orte: 140, imBild: [14, 22], gratKm: 3.1, Ls: 0.088, Ll: 0.09, verhaeltnis: 0.98 }],
@@ -2157,7 +2225,7 @@ const stationen = [
         }) },
         env: envDer,
         gpu: true,
-        zeit: false,
+        zeit: true, // Wanduhr-empfindlich gemessen (pm-fremdlast, Befund 08.11.: unter fremder Last ROT, in Ruhe GRÜN — die Belichtung schwingt in Bildern ein)
         minuten: 5,
         urteil: (j) => {
             if (!j) return { gruen: false, zahl: "keine Messung in {AUS}" };
@@ -2463,7 +2531,7 @@ const stationen = [
         // SCHNELL (w4-stationen-schnell-b, ZUG_PROBE): Genesis VOR dem Deckel, die Aufnahmen im Fenster der Licht-Linsen
         probe: ZUG_PROBE,
         gpu: true,
-        zeit: false,
+        zeit: true, // das Urteil fällt an der Wanduhr: der größte Sprung in EV je Sekunde über den Wetter-Zug (pm-fremdlast)
         minuten: 8,
         urteil: (j, lauf) => {
             const ad = (/\[linse-gpu\][^\r\n]*/.exec(lauf.stdout) || [null])[0];
@@ -2706,12 +2774,18 @@ const stationen = [
             const raus = Z.filter((z) => !imV.includes(z) || !z.inBand).map((z) =>
                 z.id + " " + (z.v == null ? "stumm" : z.v) + (z.bandOk ? (z.inBand ? "" : " ∉ [" + z.band.join(", ") + "] L " + z.L + " W " + z.W) : " ohne reales Band")
             );
-            const gruen = echt && Z.length >= 10 && imV.length === Z.length && imB.length === Z.length;
+            const schale = fellOhneSchale(j);
+            const gruen = echt && Z.length >= 10 && imV.length === Z.length && imB.length === Z.length && !schale;
             const zahl =
                 "Welt/Labor 0,9–1,1: " + imV.length + "/" + Z.length + " · im realen Band beidseits: " + imB.length + "/" + Z.length +
-                (raus.length ? " — " + raus.join(" · ") : "") + " · echt " + (echt ? "beide Seiten" : "NEIN") + " · " + (j.adapter || "Adapter ungenannt");
+                (raus.length ? " — " + raus.join(" · ") : "") + (schale ? " · " + schale : "") + " · echt " + (echt ? "beide Seiten" : "NEIN") + " · " + (j.adapter || "Adapter ungenannt");
             return { gruen, zahl };
         },
+        proben: [
+            { name: "die Messung am main 77265b04 nach ferne.K1 (Fell 0,1844 ohne Schale)", j: K1_ROH.alt, gruen: false, zahl: /fell ohne Schale/ },
+            { name: "die Messung am Zweig w24-rueckfall-fell 8c5d944c (Fell 0,1640 mit Schale)", j: K1_ROH.neu, gruen: true },
+            { name: "MUTANTE die Inventur ohne Schale, die Zahl im Soll", j: k1OhneSchale(K1_ROH.neu), gruen: false, zahl: /fell ohne Schale/ },
+        ],
         pfad: ALBEDO_PFAD,
         quelle: "1 = alle Zeilen Welt/Labor 0,9–1,1 und im realen Band, beide Seiten --echt, an einem Gerät",
     },
@@ -2734,13 +2808,18 @@ const stationen = [
             const alle = Z.length >= 10 && Z.every((z) => z.v != null && z.v >= 0.9 && z.v <= 1.1 && z.inBand);
             const e = j.eichung || {};
             const lab = Object.entries(e.labor || {}).map(([s, y]) => s + " " + y);
-            const gruen = echt && alle && e.gruen === true;
+            const schale = fellOhneSchale(j);
+            const gruen = echt && alle && e.gruen === true && !schale;
             const zahl =
                 "Karte Welt " + e.welt + " · Labor " + (lab.join(", ") || "stumm") + " · Soll " + e.soll + " ± " + e.rand +
-                " · Zeilen " + (alle ? "alle im Soll und Band" : "NICHT alle im Soll und Band") + " · echt " + (echt ? "beide Seiten" : "NEIN") +
+                " · Zeilen " + (alle ? "alle im Soll und Band" : "NICHT alle im Soll und Band") + (schale ? " · " + schale : "") + " · echt " + (echt ? "beide Seiten" : "NEIN") +
                 " · " + (j.adapter || "Adapter ungenannt");
             return { gruen, zahl };
         },
+        proben: [
+            { name: "die Messung am Zweig w24-rueckfall-fell 8c5d944c (Karte 0,1799, Fell mit Schale)", j: K1_ROH.neu, gruen: true },
+            { name: "MUTANTE die Inventur ohne Schale, die Zahl im Soll", j: k1OhneSchale(K1_ROH.neu), gruen: false, zahl: /fell ohne Schale/ },
+        ],
         pfad: ALBEDO_PFAD,
         quelle: "2 = beide Geräte, Eichung Karte 0,180",
     },
@@ -2938,7 +3017,7 @@ const stationen = [
             schritte: [
                 { name: "fenster", args: ["fenster", "1920", "1080"], muss: true },
                 { name: "umstellen", args: ["umstellen", "--ort", "wiese"], muss: true },
-                { name: "kanten", probe: "@KOORD@/bericht/2910-lod-k5/kanten.js", blob: "64942eb74271d12c08d4df01327ce89a06962311", muss: true, ms: 1800000 },
+                { name: "kanten", probe: "@KOORD@/bericht/2910-lod-k5/kanten.js", blob: "39b506a0eec9cacd1443ed85738db21b967610ef", muss: true, ms: 1800000 },
             ],
         }), },
         env: envDer,
@@ -3040,7 +3119,7 @@ const stationen = [
         }) },
         env: envDer,
         gpu: true,
-        zeit: false,
+        zeit: true, // das Urteil fällt an der Wanduhr: Pop-Pixel je Sekunde im Gang (pm-fremdlast, der Zeuge urteilt die Fremd-Last)
         minuten: 10,
         urteil: (j) => {
             if (!j) return { gruen: false, zahl: "keine Messung in {AUS}" };

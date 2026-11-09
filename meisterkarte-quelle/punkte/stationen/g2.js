@@ -1684,11 +1684,13 @@ async function vegetationLauf() {
     const W = Number(port) + 20000;
     const B = aus.replace(/\.json$/, "");
     const erg = { schuesse: [] };
+    // ein Wurf der Wege, die Ort und Seite stellen, trägt `messort` (punkte.cjs keinUrteil (d): die EINE Marke im catch unten)
     const ruf = async (weg, o) => {
         const t0 = Date.now();
-        const a = await werkbankRuf(W, weg, o);
+        const a = await werkbankRuf(W, weg, o).catch((e) => ({ fehler: String((e && e.message) || e) }));
         console.log("SCHRITT " + weg + " " + ((Date.now() - t0) / 1000).toFixed(1) + " s");
-        if (!a || a.fehler) throw new Error(weg + ": " + JSON.stringify(a).slice(0, 300));
+        if (!a || a.fehler)
+            throw Object.assign(new Error(weg + ": " + JSON.stringify(a).slice(0, 300)), /^\/(umstellen|fenster|status|reload)\b/.test(weg) ? { messort: weg + ": " + String((a && a.fehler) || "keine Antwort").replace(/\s+/g, " ").slice(0, 260) } : {});
         return a;
     };
     const SPIEL =
@@ -1739,6 +1741,7 @@ async function vegetationLauf() {
         }
     } catch (e) {
         erg.fehler = String((e && e.message) || e).split("\n")[0].slice(0, 400);
+        if (e && e.messort) console.log("@@PUNKTE@@ MESSORT " + e.messort);
     }
     fs.writeFileSync(aus, JSON.stringify(erg, null, 1));
     console.log("VEGETATION " + JSON.stringify(erg));
@@ -5347,8 +5350,10 @@ const stationen = [
     // DER ORT (w4-stationen-schnell-b; GTX b4bcf19c 50,5 s): das Start-Dorf steht um `_genesisMitte` (`_autoSettlementStartInfo`, fällig nur
     // im Nah-Radius des Genesis-Orts, `_startDorfFaellig`) — der Befehl nannte keinen Messort, die Probe lief nach einer Grundstellung an
     // der Mess-Wiese und zog 1,1 km zum Platz des Dorfs: den kalten Ring trug ihr Deckel (GTX: Genesis kalt 18,6 s, ab040980). Jetzt
-    // nennt sie Genesis, die Sitzung stellt es VOR dem Deckel (`probeOrt`); dasselbe Dorf aus dem Samen der Welt, derselbe Gang
-    probe: { sek: 10, befehl: [
+    // nennt sie Genesis, die Sitzung stellt es VOR dem Deckel (`probeOrt`); dasselbe Dorf aus dem Samen der Welt, derselbe Gang.
+    // DER DECKEL (w25-treue-kanten, 09.11.): nach der Grundstellung wächst das Start-Dorf neu — Radeon 35,1–45,7 s (95ba6fd6 bis
+    // 28c74a9f), dreimal am Gesetz 45 s gerissen (UNGEMESSEN); die Ausnahme beim Namen, der Deckel der Tafel das Gesetz 90 s
+    probe: { sek: 10, ausnahme: "das Start-Dorf wächst nach der Grundstellung neu bis 81 Leiber, dann vier Gänge zu 1,4 m/s mit je einem Bild je Takt — Radeon 35,1–45,7 s", befehl: [
         "bash",
         "-c",
         [
@@ -5359,7 +5364,7 @@ const stationen = [
         ].join("\n"),
     ],  mutiert: true },
     gpu: true,
-    zeit: false,
+    zeit: true, // das Urteil fällt an der Wanduhr: die Kopf-Zuwendung in s (pm-fremdlast)
     minuten: 8,
     // DIE FORM DER ZEILE seit mensch-begegnung 03da8f59 (27.10.): je Gang `imBild` = als Leib UND im Bild (das getrennte `nah`
     // fiel), `beruehrt` = die Takte, in denen ein Bewohner draußen näher als zwei Kapseln stand (vorher die Liste der Berührten).

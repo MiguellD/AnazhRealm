@@ -1,0 +1,32 @@
+{
+ "art": "dauer",
+ "sekunden": 17.1,
+ "schritte": [
+  [
+   "ende",
+   17.1
+  ]
+ ],
+ "offen": [],
+ "fehler": {},
+ "strom": {
+  "bloecke": 1283,
+  "bilder": 3327,
+  "seiten": 9,
+  "fehler": 0,
+  "verloren": 0
+ },
+ "dauer": {
+  "anfang": false,
+  "ende": true,
+  "torbau": {
+   "bau": true,
+   "tor": true,
+   "heim": true
+  },
+  "nacht": {
+   "nacht": 8.658416666666823e-15,
+   "mittag": 0.5000000000000103
+  }
+ }
+}

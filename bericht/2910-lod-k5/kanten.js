@@ -57,6 +57,34 @@ const takt = async () => {
     await sleep(16);
 };
 const warteBau = (name, fertig) => window.__gebautNach(name, { fertig, bau: () => {}, takt });
+// DIE ANKUNFT AM AUGE (w25-treue-kanten, 09.11.; Radeon 28c74a9f: die Treue wich in 8 792 Bytes ab, an 46128b75 5 246, an 1561bf3a
+// 1 826 — kein Urteil): DER TÄTER ist die Welt, die im Schuss noch eintritt. Je Fall gemessen (Werkbank, frische Welt an der Mess-Wiese,
+// dieselben zwei Schüsse je L0): Baum L1 1 759 Bytes (die Nah-Streu baut im ersten Schuss einen neuen Satz — chunkSaetze 11 → 12,
+// satzStoffe 9 → 10, streuSatz 5 → 6 —, Schuss 2 bis 5 je 0 Bytes), Haus L1 1 626 und L2 56 697 (die L0 des Hauses tritt in Raten in
+// den Bau-Satz, `_bauSatzRate`, je Bild des Schusses ein Stück — die Geschichte mittelt das halbe Haus), Tor L1 413 232 und L2 3 037.
+// Jetzt kommt das Auge an, ehe es schießt: Takt um Takt (die Freigabe der Foundry, die Karte bäckt) folgen die Nah-Sätze der Kamera
+// (`__nahFolgt`) und jeder Bereich des Bau-Satzes tritt ganz ein (`_tickBauSatz(Infinity)`, wie jede Linse, die den Satz auf die
+// Wahrheit seiner Gruppen legt), bis Foundry, Karten, Bau-Satz, Nah-Streu und Nah-Wiese nichts offen haben (`_weltOffen`) und ein Takt am
+// Stand der Sätze nichts mehr ändert. Die Treue bleibt Byte für Byte.
+const satzStand = () => {
+    const o = r._weltOffen();
+    const nah = ((st.nahStreu && st.nahStreu.offen) | 0) + ((st.nahWiese && st.nahWiese.offen) | 0);
+    const stand = [st.chunkSaetze ? st.chunkSaetze.size : 0, st.satzStoffe ? st.satzStoffe.size : 0, st.nahStreu ? st.nahStreu.kacheln.size : 0, st.nahWiese ? st.nahWiese.kacheln.size : 0, o];
+    // offen nur, was im ruhenden Loop eintritt: die Lieferung der Foundry, die Karte, der Bau-Satz in Raten (der Chunk-Bau des Spielers
+    // ruht mit dem Loop — er stünde nie)
+    return { offen: nah + (o.foundry | 0) + (o.karten | 0) + (o.bau | 0), stand: JSON.stringify(stand) };
+};
+const ankommen = (name) => {
+    let vor = null;
+    return warteBau("lod.K5 die Ankunft " + name, () => {
+        window.__nahFolgt();
+        r._tickBauSatz(Infinity);
+        const s = satzStand();
+        const steht = !s.offen && s.stand === vor;
+        vor = s.stand;
+        return steht;
+    });
+};
 // die Lieferung der Stufen: je Stufe der Flatten der Foundry (null: lädt; false: kann nicht; sonst steht sie), am Baum dazu seine Höhe
 // (die Schwellen der Maske lesen sie) — bis jede Stufe antwortet
 const liefere = (e, stufen, F) => {
@@ -180,6 +208,7 @@ try {
             cam.lookAt(m.x, m.y + hoch / 2, m.z);
             cam.updateMatrixWorld(true);
             r._archInstanceRemove(e);
+            await ankommen(F.kind + " leer");
             const leer = await schuss();
             try {
                 await stelle(e, 0, d);
@@ -188,6 +217,7 @@ try {
                 continue;
             }
             const winkel = pose(e);
+            await ankommen(F.kind + " L0");
             const b0 = await schuss();
             if (!aus.treue) {
                 // DIE TREUE (einmal je Lauf): dieselbe Szene ein zweites Mal — EINE Aufnahme je Schuss trägt nur, wenn sie Byte für Byte gleich ist
@@ -204,6 +234,7 @@ try {
                 continue;
             }
             pose(e);
+            await ankommen(F.kind + " L" + s);
             const bs = await schuss();
             const k = chamfer(maske(b0, leer), maske(bs, leer));
             aus.faelle.push({ kind: F.kind, preset, stufe: s, d: +d.toFixed(2), hoehe, px: k.px == null ? null : +k.px.toFixed(3), pixel: k.pixel, pose: winkel, ok: true, geliefert: true });

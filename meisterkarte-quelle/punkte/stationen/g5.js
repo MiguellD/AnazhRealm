@@ -3506,7 +3506,7 @@ const stationen = [
         probe: { ...FAHR_SITZUNG,  mutiert: true },
         env: K,
         gpu: true,
-        zeit: false,
+        zeit: true, // das Urteil fällt an der Wanduhr: Rückkehr in s nach dem Orbit, Ruck p95 je Bild (pm-fremdlast)
         minuten: 8,
         urteil: (j, lauf) => {
             const teil = (n) => lauf.stdout.split(/^@@PUNKTE@@ /m).find((s) => s.startsWith(n + "\n")) || "";
@@ -4284,7 +4284,7 @@ const stationen = [
         // Zwilling von #2, EIN Lauf; vorher der eigene Boot, 6 Soll-Minuten)
         probe: LEIB_K4,
         gpu: true,
-        zeit: false,
+        zeit: true, // das Urteil fällt an der Wanduhr: Ruck p95 je Bild beim Gehen (pm-fremdlast)
         minuten: 2,
         // DAS URTEIL (24.10., Prüfung der Buchung): das Kriterium misst Pixel „an einem Gerät“ — unter `--bild` zeichnet die Welt
         // auf der Karte (seit gpu-wand: Rezept linse ohne Null-Renderer), kamera-nah rechnet die Nah-Pixel gegen die Szene, die sie
