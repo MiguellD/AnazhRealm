@@ -2112,6 +2112,30 @@ class AnazhRealm_koerper_leib {
         const inv = new THREE.Matrix4();
         for (const m of meshes) m.boundingSphere = kugel.clone().applyMatrix4(inv.copy(m.matrixWorld).invert());
     }
+    // DAS QUER-MASS DER GESTALT (physik.K2 Staffel 2, Kollision = Bild; einmal je Vorlage, wie `tierBeinMass`): je Achse des
+    // Leibs (Becken · Rumpf-Mitte · Brust: hinter, zwischen und vor ±0,4 Hüft-Höhen, der halben Strecke zur End-Achse) die
+    // halbe Breite der GEZEICHNETEN Gestalt in ihrer Bind-Pose — Haut und Fell, die weiteste Ecke quer zur Blick-Achse — und
+    // die Höhe dieser Ecke über der Sohle, beide JE HÜFT-HÖHE (der Leib skaliert an ihr): [b, h, b, h, b, h]. Der Leib des
+    // Tiers liest sie als Radius je Achse (`_kreaturLeib`); bis hier galt für jede Gattung und Achse 0,3 × Hüft-Höhe: der Bär
+    // zeichnet 0,27–0,32 m halbe Breite bei 0,230 m Radius (an der Mauer stak seine Flanke 5,9 cm in ihr), der Hirsch 0,169 m
+    // bei 0,275 m (er hielt 10 cm vor jeder Wand).
+    static _tierQuerMass(t0, f, beinL) {
+        if (t0._querMass) return t0._querMass;
+        const v = new THREE.Vector3();
+        const q = [0, 0, 0, 0, 0, 0];
+        const grenze = (0.4 * beinL) / f;
+        t0.root.traverse((n) => {
+            const P = n.isSkinnedMesh && n.geometry.attributes.position;
+            for (let i = 0; P && i < P.count; i++) {
+                v.fromBufferAttribute(P, i).applyMatrix4(n.bindMatrix);
+                const a = v.z < -grenze ? 0 : v.z > grenze ? 4 : 2;
+                if (Math.abs(v.x) > q[a]) [q[a], q[a + 1]] = [Math.abs(v.x), v.y - t0.minY];
+            }
+        });
+        if (!(q[0] > 0 && q[2] > 0 && q[4] > 0 && beinL > 0))
+            return AnazhRealm._kernPflichtBruch("leib:Gestalt ohne Quer-Maß");
+        return (t0._querMass = q.map((x) => (x * f) / beinL));
+    }
     // Der Baum-GANG konsumiert das EINE Gang-Gesetz: cpgStep + STAND_POSE + MOTION-Profile (LIVE-Buch
     // über _motionProfileName) treiben die vier Bein-KETTEN des bauTier-Baums (Lab-Ziel-Mathe direkt,
     // nicht PD-geglättet). Deterministisch (Stand-Unruhe aus t-Sinus); der CPG-Zustand wohnt an
@@ -2251,12 +2275,15 @@ class AnazhRealm_koerper_leib {
             this._ofenVorlagenBinden(group2, [t0, t1]);
             group2.userData._soulParts = parts2;
             group2.userData._gelenk = gelenk;
+            // die Hüft-Höhe der Gestalt in Metern (das Gang-Gesetz misst die Schritt-Länge an ihr)
+            const beinL = (new THREE.Vector3().setFromMatrixPosition(t0.teile.legHL.matrixWorld).y - t0.minY) * f2;
             group2.userData._tierBaum = {
                 teile,
                 tailSegs,
                 f: f2,
-                // die Hüft-Höhe der Gestalt in Metern (das Gang-Gesetz misst die Schritt-Länge an ihr)
-                beinL: (new THREE.Vector3().setFromMatrixPosition(t0.teile.legHL.matrixWorld).y - t0.minY) * f2,
+                beinL,
+                // das Quer-Maß der gezeichneten Gestalt je Hüft-Höhe und Achse des Leibs (halbe Breite, Höhe ihrer Ecke)
+                quer: AnazhRealm._tierQuerMass(t0, f2, beinL),
                 bein: window.__tetrapodaCore.tierBeinMass(THREE, t0, f2),
                 wrap: wrap2,
                 // das Volumen der Gestalt bei Größe 1 (m³, die Nah-Gestalt im Rahmen des Tiers) — die Masse liest es

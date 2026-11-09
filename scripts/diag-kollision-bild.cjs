@@ -485,7 +485,7 @@ async function tempo(K) {
     // Nick und Wank, physik.K2 Staffel 2 — bis dahin der Rahmen eines Rechtecks)
     const leibKreise = (c) => {
         const [l, p] = [r._kreaturLeib(c, 0, {}), c.position];
-        return { l, p, kreise: [-1, 0, 1].map((o) => [p.x + l.fx * o * l.halb, p.z + l.fz * o * l.halb, l.radius]) };
+        return { l, p, kreise: [-1, 0, 1].map((o) => [p.x + l.fx * o * l.halb, p.z + l.fz * o * l.halb, l.rad[o + 1]]) };
     };
     const tierK = (c) => () => {
         const { l, p, kreise } = leibKreise(c);
@@ -528,8 +528,8 @@ async function tempo(K) {
             let t = -Infinity;
             for (let i = 0; i <= 8; i++) {
                 const [x, z] = [a[0] + ((b[0] - a[0]) * i) / 8, a[1] + ((b[1] - a[1]) * i) / 8];
-                if (k.re) t = Math.max(t, tiefeEcken(k.re.ecken, kreis(x, z, l.radius)));
-                else for (const [kx, kz, rr] of k.kreise) t = Math.max(t, rr + l.radius - Math.hypot(kx - x, kz - z));
+                if (k.re) t = Math.max(t, tiefeEcken(k.re.ecken, kreis(x, z, l.rad[Math.round(i / 4)])));
+                else for (const [kx, kz, rr] of k.kreise) t = Math.max(t, rr + l.rad[Math.round(i / 4)] - Math.hypot(kx - x, kz - z));
             }
             return t;
         },

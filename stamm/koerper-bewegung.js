@@ -637,6 +637,7 @@ class AnazhRealm_koerper_bewegung {
                 if (cr === pmK) {
                     const fd = AnazhRealm.PLAYER_FOOT_OFFSET;
                     leib.radius = AnazhRealm.PLAYER_WALL_RADIUS;
+                    (leib.rad || (leib.rad = [0, 0, 0]))[1] = leib.radius;
                     leib.halb = 0;
                     leib.hoehe = 2 * fd + stufeTier;
                     leib.fx = 0;
@@ -647,8 +648,8 @@ class AnazhRealm_koerper_bewegung {
                     leib.fuss = cr.position.y;
                 }
                 if (k.oben <= leib.fuss + stufeTier || k.unten >= leib.fuss + leib.hoehe) continue;
-                const rc = leib.radius;
                 for (let o = leib.halb > 0 ? -1 : 0; o <= (leib.halb > 0 ? 1 : 0); o++) {
+                    const rc = leib.rad[o + 1]; // je Achse ihr Radius (`_kreaturLeib`)
                     // der Abstand der Achse zur Hülle: die größte Stütz-Differenz über ihre Richtungen (innen negativ: der
                     // kürzeste Weg hinaus), der Schub längs dieser Richtung
                     const dx = cr.position.x + leib.fx * o * leib.halb - pos.x;
