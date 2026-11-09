@@ -34,7 +34,9 @@ function boote() {
     };
     const liste = [];
     try {
-        for (let i = 0; i < (AB ? 2 * N : N); i++) {
+        // DAS BUDGET der Probe (8 min Deckel): weitere Boots nur, solange einer im Schnitt noch hineinpasst — GTX 1050 kalt ~60 s
+        const t0 = Date.now();
+        for (let i = 0; i < (AB ? 2 * N : N) && (i < 2 || ((Date.now() - t0) / i) * (i + 1) < 400000); i++) {
             const seite = AB ? (i % 2 ? "B" : "A") : "B";
             setze(seite);
             const j = path.join(LAUF, `k${i}.json`);
@@ -51,6 +53,7 @@ function boote() {
                 continue;
             }
             liste.push({ i, seite, j, s, ad, tK: tK ? Number(tK[1]) * 1000 : NaN });
+            fs.writeFileSync(path.join(LAUF, "liste.json"), JSON.stringify(liste));
         }
     } finally {
         setze("B");
