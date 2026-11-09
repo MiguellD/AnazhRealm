@@ -795,6 +795,8 @@ async function holen() {
         radeon: messplatz(fortR, (id, l) => (/^(ENDE|ABBRUCH) /.test(l.rest) ? l.rest.replace(/^ENDE /, "") : null), jetzt),
         lO: lauferVon("omen-gtx1060"), lR: lauferVon("radeon-890m"), jO: traeger.get("omen-gtx1060"), jR: traeger.get("radeon-890m"),
         vO: verlauf.get("omen-gtx1060") || [], vR: verlauf.get("radeon-890m") || [], lokal,
+        // DAS DRITTE GERÄT (09.11.: GTX 1050, i7-950 — der Läufer der Bild-Proben, gpu-probe; Zeit-Gates fahren dort nie)
+        l3: lauferVon("gtx1050-desktop"), j3: traeger.get("gtx1050-desktop"), v3: verlauf.get("gtx1050-desktop") || [],
         offen: offeneAuftraege(schlange, erledigt), logs: koordinatorLogs(), plan: planVon(planT), agentenT,
         schlangeIds: new Set(String(schlange || "").split(/\r?\n/).filter((l) => l.trim() && !l.startsWith("#")).map((l) => l.trim().split(/\s+/)[0])),
         erledigtIds: new Set(erledigtJe.keys()),
@@ -891,12 +893,13 @@ function ampelZeilen(S) {
     const a = [
         geraetAmpel("OMEN", S.omen, S.lO, S.jO, false),
         geraetAmpel("RADEON", S.radeon, S.lR, S.jR, S.schloss && !(S.radeon && !S.radeon.zu), arbeitRadeon(S)),
+        S.l3 ? geraetAmpel("GTX1050", null, S.l3, S.j3, false) : `${grau("●")} GTX1050 nicht registriert`,
         `${ciRot ? rot("●") : S.runs.length ? gelb("●") : gruen("●")} CI ${lauf.length} läuft${warte.length ? ` · ${warte.length} wartet` : ""}${ciRot ? rot(` · ✗ ${ciRot} rot`) : ""}`,
         !g ? `${grau("●")} ZUG keine Logs` : g.still ? `${grau("●")} ZUG ${g.name} still` : g.exit == null ? `${gelb("●")} ZUG ${g.name} läuft` : `${g.exit ? rot("●") : gruen("●")} ZUG ${g.name} EXIT=${g.exit}`,
         S.mk ? fett(gelb("★")) + ` ${S.mk.summe}/${S.mk.max}` : "★ ?",
     ];
     const text = a.join("  "); // in EINER Zeile, über der Breite in zwei
-    return sicht(text).length <= BREITE ? [text] : [a.slice(0, 2).join("  "), a.slice(2).join("  ")];
+    return sicht(text).length <= BREITE ? [text] : [a.slice(0, 3).join("  "), a.slice(3).join("  ")];
 }
 function reiter(seite) {
     return SEITEN.map((s, i) => (i === seite ? fett(`[${i + 1} ${s}]`) : grau(` ${i + 1} ${s} `))).join(" ") + grau("  · Taste 1–4 · q beendet");
@@ -912,6 +915,15 @@ function seiteJetzt(S) {
     out.push("", linie("OMEN · GTX 1060"), ...messplatzZeilen(S.omen, S.lO, S.jO, S.vO));
     for (const a of S.offen.filter((a) => !S.omen || S.omen.zu || a.id !== S.omen.id)) out.push(`  ${grau("danach")}  ${a.prio} ${spalte(a.art, 6)} ${spalte(a.id, 14)} ${grau(auftragKurz(a))}`);
     out.push("", linie("RADEON 890M · Laptop"), ...messplatzZeilen(S.radeon, S.lR, S.jR, S.vR, S.lokal).map((z) => z.replace(/^(\s*\S+ )frei · zuletzt /, "$1Stationen frei · zuletzt ")), ...werkbankZeilen(S));
+    // DAS DRITTE GERÄT: keine Stationen-Datei, nur der Läufer (Job, Verlauf) und die Schlange der Proben, die auf gpu-probe warten
+    const probeWarten = S.runs.filter((r) => /GPU-Probe/.test(r.name) && r.status !== "in_progress").length;
+    out.push("", linie("DRITTES · GTX 1050 · Bild-Proben"));
+    if (!S.l3) out.push(`  ${grau("Läufer gtx1050-desktop nicht registriert")}`);
+    else {
+        if (!S.j3 && S.l3.status === "online") out.push(`  ${gruen("●")} frei${probeWarten ? gelb(` · ${probeWarten} Proben warten`) : ""}`);
+        else if (S.j3 && probeWarten) out.push(`  ${grau(`${probeWarten} Proben warten`)}`);
+        out.push(...messplatzZeilen(null, S.l3, S.j3, S.v3).filter((z) => !/noch keine Zeile/.test(z)));
+    }
     if (!S.logs || !S.logs.length) out.push("", linie(`ZUG · ${S.logs ? "keine fahre-/takt-Logs" : "Logs nur auf dem Laptop"}`));
     else {
         out.push("", linie("ZUG · Logs des Koordinators"));
