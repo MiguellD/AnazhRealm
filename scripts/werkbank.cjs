@@ -3271,10 +3271,13 @@ hauptLauf(async () => {
             const f1 = await fenster("erste Fahrt", "fahrt", K4.fahrt, true);
             const erste = kern.splice(n0);
             await umstellen({ ort: "genesis", sicht: "ego" });
+            const n1 = kern.length;
             const f2 = await fenster("zweite Fahrt", "fahrt", K4.fahrt, true);
+            const zweite = kern[n1];
             kern.length = 0;
+            if (zweite) kern.push(zweite);
             kern.push(`GEH ${gruen ? "GRÜN" : "ROT"} Summe > 33 ms: erste Fahrt ${f1.a.haengerN}/${f1.a.frames} max ${f1.a.frameMs.max} · zweite ${f2.a.haengerN}/${f2.a.frames} max ${f2.a.frameMs.max} · Gehen ${g.a.haengerN}/${g.a.frames}`); // prettier-ignore
-            kern.unshift(...erste.slice(0, 9));
+            kern.unshift(...erste.slice(0, 8));
         } catch (e) {
             gruen = false;
             zeile(`GEH ROT Error ${String(e?.message || e)}`, true);
