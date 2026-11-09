@@ -19,3 +19,14 @@ Der Schöpfer hat zu Recht gesagt, dass Punkte aus Linsen allein nicht AAAA sind
 1. Der Boden der Ferne trägt Ton 63° (halb Fels-Grund, Studio-Palette, `foundry-core.js` PORTAL_GROUND.rock/SAISON_GESETZ).
 2. Das Blau des Halms ist 0,13 × Grün, das Blatt-Spektrum liegt bei ~0,35.
 Schneide beides an der Wurzel, ein Gesetz der Farbe aus dem Spektrum. Beweis: der Ton je Azimut auf GTX und Radeon, dazu `[gpu-probe: bild:genesis@0.5, bild:wiese@0.5]` gegen main.
+
+## 09.11. 16:20 Cloud w26-ferne-ton-2
+ABGABE 8299cdd2989684fac86a36f630e542e08b579037
+Zweig `w26-ferne-ton-2` (von a34160aa, main a7dc1874 gemischt). Beide Funde sind an der Wurzel geschnitten, als EIN Gesetz der Farbe aus dem Spektrum (`foundry-core.js` FARB_SPEKTRUM: CIE 1931 × D65 × sRGB je 10 nm):
+- Der Halm ist das Grasblatt nach PROSPECT-D: Spitze 0,0795/0,1343/0,0317 statt 0,172/0,349/0,046, B/G 0,13 → 0,24. Die Wurzel ist 0,6 × das Blatt (`mead`).
+- Die ferne Wiese ist der Bestand nach 4SAIL (LAI 2,5, 5 % dürres Blatt wie die Nähe): B/G 0,15 → 0,39. Der Hand-Faktor halmSchatten fällt.
+- Der Fels ist Munsell N4, flach 0,12: B/R 0,66 → 1.
+Nur die vier Gras-Goldens sind neu gemünzt (Farbe), alles andere ist byte-gleich.
+GTX 1050 58b780c4: LUFT GRUEN. FARBTON 8 km Uhr 0,5: 2,75 · 2,22 · 1,83 · 1,33° (vorher 5,22 · 5,72 · 3,88 · 3,48°), Uhr 0,27: 0,43 · 0,17 · 3 · 0,2°.
+Bilder: Genesis Luma 102,5 (main 105,1); Wiese 44,2 (main 56,8), dunkler und oliv. Ein echtes Blatt ist R/G 0,59, der alte Halm war 0,49.
+Ehrlich offen: Die Radeon messe ich nicht selbst. Die Nah-Wiese liest oliv statt neon — das ist die Physik des Blatts, bitte ansehen.
