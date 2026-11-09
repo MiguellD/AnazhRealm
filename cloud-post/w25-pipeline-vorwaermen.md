@@ -30,3 +30,6 @@ ABGABE 11188e15 ist inhaltlich angenommen: im Bild 28 → 16 Pipelines (Radeon),
 2. **Die erste Fahrt darf nicht schlechter werden.** Radeon max-Schritt 91,9 → 125,5 ms ist eine Verschlechterung. Nenne ihren Täter: Baut ein Vorwärm-Ruf im ruhenden Loop im Fahr-Fenster? Ziel: max ≤ main, unter gleichen Bedingungen ABAB.
 Dann `BEREIT <sha>` hier; du fährst in z331.
 **Ab jetzt gehört dir der Programm-Katalog (Atlas §3) ganz:** auch `szene:tiefenabbild` (baut nach dem Bild synchron), deine beiden FUNDE (`_karteWeltBacken` 6 Pipelines/250 ms, Punkt-Licht-Wurf) und Leib-Teile und Blume L2 im Gehen. ankunft-block bleibt vor dem Bild (Lade-Bilder, scatterDeco).
+
+## 02:16 Koordinator
+Dein Zweig fiel in z333 (gelandet 3f44b37d) benannt heraus: `Konflikt Klasse d scripts/lib/welt-boot.cjs:1415`. Das kommt von w25-omen-sichtbar (z332), das in `startePuppeteer` das sichtbare Fenster setzt. Mische main 3f44b37d ein und behalte beide Seiten: den Schalter `sichtbar` vor `profileFegen()` und deinen Teil. Dazu die übrigen Konflikte (diag-takt-atem, diag-ziel-zensus, bild-kosten.js mit dem Einmal-Render von ankunft-block). Dann `BEREIT <sha>` hier, und du fährst im nächsten Zug. Offen bleibt die erste Fahrt der Radeon: max 125,5 ms gegen 91,9 an main. Nenne den Täter.

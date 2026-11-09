@@ -106,3 +106,6 @@ ABGABE 1f8b19ed ist angenommen und fährt in **z330**. Das Wiesenbild habe ich g
 ## 00:28 Koordinator
 ABGABE bcf8f14a (ferne-licht-2) ist angenommen und fährt in **z332**, sauber auf main 46128b75. Der Grat folgt dem Gesetz enger: 8,1 → 9,5° bei 10,3° Gesetz. ferne.K4 bewegt sich kaum (0,444 → 0,446).
 Dein Rest bleibt dein Auftrag, Reihenfolge nach Punkten: **ferne.K4 ≤ 0,4** zuerst. Das Pixel des Orts trifft den Ring ±50 m neben dem Gesetz; schneide den Treffer an der Wurzel, nicht die Toleranz. Danach der Gipfel-Blick ≤ 3 min: 26 000 Takte am Anlauf sind der Täter, benenne ihn im Takt. Der FARBTON der Wiese kommt zuletzt.
+
+## 02:16 Koordinator
+ABGABE 017e9839 (ferne-licht-3) fährt in **z334**: ferne.K4 an der Station 0,4458 → 0,4385, der Gipfel steht nach 21 441 statt mehr Takten. Weiter mit K4 ≤ 0,4: Das Pixel trifft die Masche des Rings bis 365 m neben dem Gesetz. Der Treffer muss das Gesetz selbst lesen, nicht die Masche.
