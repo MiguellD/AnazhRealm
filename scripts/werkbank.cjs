@@ -2621,7 +2621,7 @@ async function starte() {
                         if (last && !last.weg) await seite("__zerlegeLast", { an: false });
                     }
                 }
-                // DIE EINE SPUR (CDP-Trace) um den Lauf, nur im Mess-Fenster: die Belegung liest den Faden (`BELEGUNG_SPUR`,
+                // DIE EINE SPUR (CDP-Trace) um den Lauf (`ZL.lauf`, scripts/lib/zerlege-linse.cjs), nur im Mess-Fenster: die Belegung liest den Faden (`BELEGUNG_SPUR`,
                 // `belegungAuswerten`), Profil und Hänger-Linse lesen Stichproben aus derselben Spur (`HL.spurProfil`) — nie ein
                 // zweites Instrument; ein langer Hänger-Lauf nimmt nur Marken, Stichproben und die Aufträge des GPU-Prozesses
                 // (`gpu`: eine Leine ohne Auftrag der Seite heißt nach ihm) — der Faden voll sprengt den Puffer.
@@ -2651,7 +2651,7 @@ async function starte() {
                     if (o.wetterHalt) o.wetterHalt = wetterUrteil(o.wetterHalt);
                     return send(Object.assign(o, { fehler: fehler.slice(-5) }));
                 }
-                // DIE HÄNGER-LINSE (scripts/lib/haenger-linse.cjs): der echte Lauf (`lauf`, `k.haenger`) mit den Stichproben der
+                // DIE HÄNGER-LINSE (scripts/lib/haenger-linse.cjs): der echte Lauf (`ZL.lauf`, `k.haenger`) mit den Stichproben der
                 // Spur (1 ms), je Frame über der Schwelle die Ursache beim Namen (TAKT · NEBEN · GC · GPU und die Engstelle);
                 // `spitze` urteilt die Takt-Spitze (`takt`), `wandern: bahn` geht die Bahn der OMEN-Zellen „geht".
                 if (req.url === "/haenger") {
