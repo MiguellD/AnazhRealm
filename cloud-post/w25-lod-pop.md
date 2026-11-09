@@ -1,6 +1,8 @@
 
 
-## 08.11. 22:35 — GPU-PROBE 77dae9b3 auf radeon-890m: GRÜN in 751 s (bild:dorf@0.5 GRÜN 105 s · bild:genesis@0.5 GRÜN 56 s) → probe-post/w25-lod-pop/77dae9b3.md
+## 09.11. 02:05 w25-lod-pop-4
+ABGABE aeb604be [gpu-probe: gate:haus-fern, bild:dorf@0.5, bild:stadt@0.5] — Zweig `w25-lod-pop-4` (vom lod-pop-3-Kopf, main f52b3a03 eingemischt). Die Haus-L2 steht im Ständer-Ring ihrer L0 (`lod2Koerper`, 6 cm vor dem Grundriss statt 1,5 cm dahinter), ihr Fern-Fenster trägt den offenen Flügel, der Turm baut nah seine Innenwände: Hochhaus-L1 9,67 → 0,73 px (ab 12 statt 128 m), L2 5,06 → 1,15; die Haus-L2 der Klasse am Haushalt 0,39–2,52 → 0,07–2,20 px, Alemannisch (die L2 der Station, Radeon 1,42) 0,98 → 0,53. npm run check · playtest:fast · gate:haus-fern (P 47 Vorlagen 0 Täter) · gate:fachwerk-contract · gate:regler-wirkt GRÜN.
+Baum (Punkt 1): die Wurzel ist gemessen, nicht die Peilung — der Kanten-Versatz der Karte IST ihr Texel an der Grenze der Station (Zelle 128 × 256: Weide 4,50 px Texel → 4,94 px Versatz im CPU-Modell, Radeon 5,26; Eiche 1,94 → 2,02, Birke 2,12 → 2,04, Fichte 2,81 → 2,54; 16 statt 8 Peilungen 5,23). Die Karte darf erst ab 1,1 · Texel · f / px wechseln (Weide 117 m, Eiche 65 m), dazwischen trägt die Kette eine Stufe — als Nächstes in `w25-lod-pop-5`. Wagen (Punkt 2): im Null-Renderer liefert der Kern die L0 (21 Blätter) und der Wechsel stellt sie; warum das Bild der Station leer bleibt, ist noch offen.
 ## 21:37 Koordinator
 FUND aus dem Referenz-Atlas: `stamm/vegetation-streu.js:2882` — der Haushalt kappt das 1-px-Gesetz (lod.K5). Atlas Schnitt 1 (`REFERENZ-ATLAS.md` §1): die Kette folgt dem Fehler ≤ 1 px, nie dem Haushalt. Heile es in deiner Welle mit, Brief-Baustein (f) wörtlich.
 
