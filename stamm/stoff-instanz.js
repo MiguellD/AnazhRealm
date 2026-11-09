@@ -491,16 +491,18 @@ class AnazhRealm_stoff_instanz {
                 this.updateType = "object";
                 this.setName(name);
             }
-            quelle(o) {
-                return o && o.__instanzQuelle ? o.__instanzQuelle[this.feld] : null;
+            // die Liste der Wahl trägt jede Kamera für sich (`_wahlVor`): eine Karte Kamera → Puffer
+            quelle(o, kamera) {
+                const v = o && o.__instanzQuelle ? o.__instanzQuelle[this.feld] : null;
+                return v instanceof Map ? v.get(kamera) || null : v;
             }
             setup(builder) {
-                const p = this.quelle(builder.object);
+                const p = this.quelle(builder.object, builder.camera);
                 if (p) this.value = p;
                 return super.setup(builder);
             }
             update(frame) {
-                const p = this.quelle(frame.object);
+                const p = this.quelle(frame.object, frame.camera);
                 if (p) this.value = p;
             }
         }
@@ -1339,10 +1341,15 @@ class AnazhRealm_stoff_instanz {
                 if (!this._ordnen(rend, false)) return null;
                 const zug = this._zugFuer(camera, false),
                     q = this.__instanzQuelle;
-                if (!q.liste || q.liste.array.length < this._segZahl * this._nCap) {
-                    weg(rend, q.liste);
-                    q.liste = new IND(new Uint32Array(this._segZahl * this._nCap), 1);
-                    rend._attributes.update(q.liste, 3); // r184 AttributeType.STORAGE
+                // DIE LISTE JE KAMERA, so lang wie die Instanz-Seite, für das Leben der Arena (auch über das Verdrängen ihres Zugs):
+                // das Render-Objekt einer Kamera bindet sie einmal und nie eine andere. Bis hier teilten die Kameras EINE Liste in
+                // Abschnitten; kam eine Kamera hinzu, wuchs sie neu — r184 erneuert eine Bindegruppe nur mit ihrer Gruppen-Version
+                // (`Nodes.updateGroup`, unter der Observer-Diät nie), die Render-Objekte zogen die gefallene („used in submit while
+                // destroyed", renderContext_2, GTX 8008fbf1 dreimal je Boot)
+                const L = q.liste || (q.liste = new Map());
+                if (!(zug.liste = L.get(camera))) {
+                    L.set(camera, (zug.liste = new IND(new Uint32Array(this._nCap), 1)));
+                    rend._attributes.update(zug.liste, 3); // r184 AttributeType.STORAGE
                 }
                 this._auftraege(zug, camera, rend, false);
                 zug.bereit = true;
@@ -1366,7 +1373,8 @@ class AnazhRealm_stoff_instanz {
                 const G = this.geometry.attributes;
                 for (const k in G) if (G[k].isInstancedBufferAttribute) weg(this._rend, G[k]);
                 weg(this._rend, this.__instanzQuelle.instanceMatrix);
-                weg(this._rend, this.__instanzQuelle.liste);
+                for (const l of this.__instanzQuelle.liste ? this.__instanzQuelle.liste.values() : [])
+                    weg(this._rend, l);
                 weg(this._rend, this._ind);
                 this._zuege.clear();
                 this._zuegeB.clear();
@@ -1838,8 +1846,8 @@ class AnazhRealm_stoff_instanz {
                     n = Math.min(n, z.cap);
                     this._block(m, z, n);
                     const o = k * 5;
-                    // in der Wahl zählt der Compute die Instanzen, die erste ist der Abschnitt der Liste (je Kamera ein Block-Raum)
-                    const li = zug.seg * this._nCap + z.erst;
+                    // in der Wahl zählt der Compute die Instanzen, die erste ist der Block in der Liste dieser Kamera (`_wahlVor`)
+                    const li = z.erst;
                     args[o] = ni;
                     args[o + 1] = wahl ? 0 : n;
                     args[o + 2] = b.fi + s0;

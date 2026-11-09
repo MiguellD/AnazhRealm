@@ -2111,8 +2111,11 @@ async function starte() {
                     );
                 }
                 // DIE GPU-FEHLER-LINSE (V-D7): jede Device-Meldung und jeder Draw ohne gesetzten Vertex-Slot, mit Objekt.
-                if (req.url === "/gpu-fehler")
+                if (req.url === "/gpu-fehler") {
+                    // `--selbsttest`: ein zerstörter Quell-Puffer einer Kopie MUSS als zerstörte Bindung beim Namen stehen
+                    if (b.selbsttest) await page.evaluate(() => { const d = st.renderer.backend.device, U = GPUBufferUsage, [q, z] = [0, 1].map(() => d.createBuffer({ size: 16, usage: U.COPY_SRC | U.COPY_DST })), e = d.createCommandEncoder({ label: "selbsttest" }); e.copyBufferToBuffer(q, 0, z, 0, 16); const c = e.finish(); q.destroy(); d.queue.submit([c]); }); // prettier-ignore
                     return send(await page.evaluate(() => window.__gpuFehler || { fehlt: "Abgriff nicht installiert" }));
+                }
                 if (req.url === "/umstellen") {
                     if (b.ort) {
                         const { ort, haushalt } = BAND.ladeSpec(b.ort);
@@ -3893,7 +3896,12 @@ hauptLauf(async () => {
         process.exit(o.befunde.length ? 1 : 0);
     } else if (cmd === "schirm") o = await rufe("/schirm", { datei: opt("--datei"), regler: opt("--regler", "frei") });
     else if (cmd === "fenster") o = await rufe("/fenster", { w: a[0], h: a[1] });
-    else if (cmd === "gpu-fehler") o = await rufe("/gpu-fehler", {});
+    else if (cmd === "gpu-fehler") {
+        o = await rufe("/gpu-fehler", { selbsttest: SELBST });
+        const Z = o.zerstoert || [], s = Z.find((z) => z.pass === "selbsttest");
+        if (SELBST) endeMit(s && /destroy/.test(s.zerstoerer) ? `SELBSTTEST GRÜN — die zerstörte Bindung steht beim Namen: ${s.weg}, ${s.zerstoerer.slice(0, 120)}` : `SELBSTTEST ROT — blind (${Z.length} genannt)`, !!s); // prettier-ignore
+        if (Z.length) console.log(`ZERSTÖRTE BINDUNG ROT ×${Z.length}: ${Z.slice(0, 3).map((z) => `${z.pass} · ${z.weg} · ${z.objekt || "?"} · ${z.zerstoerer}`).join(" | ")}`.slice(0, 1200)); // prettier-ignore
+    }
     else if (cmd === "gpu-bank") o = await rufe("/gpu-bank", { n: a[0], runden: opt("--runden", 3) });
     else if (cmd === "latenz") {
         if (SELBST) {

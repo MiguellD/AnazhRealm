@@ -4,7 +4,11 @@
 //   (2) die Vorab-Probe je Draw, SYNCHRON (die Device-Meldung kommt asynchron, ohne Objekt): `createRenderPipeline` merkt
 //       die Zahl der Vertex-Puffer je Pipeline, `setPipeline`/`setVertexBuffer` die gesetzten Slots je Pass-Encoder, und
 //       `draw`/`drawIndexed` vergleicht — fehlt ein Slot, steht der Draw mit Pipeline-Label, Pass-Label, Index-Zahl und dem
-//       three-Objekt, das der Renderer gerade zeichnet (`backend.draw` → `renderObject.object`), im Protokoll.
+//       three-Objekt, das der Renderer gerade zeichnet (`backend.draw` → `renderObject.object`), im Protokoll;
+//   (3) DIE ZERSTÖRTE BINDUNG (w25-gpu-wahl): „used in submit while destroyed“ nennt keinen Puffer — der Abgriff stempelt jedes
+//       `GPUBuffer.destroy` mit seinem Stapel, merkt je Encoder jeden Puffer, den er bindet (Bindegruppe, Vertex, Index,
+//       indirekt, Kopie) samt dem Objekt im Zug, und nennt beim Submit jeden zerstörten (`zerstoert`: Pass, Weg, Objekt,
+//       Zerstörer). Befund GTX 8008fbf1: die Liste einer Arena der GPU-Wahl, ersetzt beim Wachsen, band ihr Render-Objekt weiter.
 //
 // Gebrauch: `page.evaluateOnNewDocument(GPU_FEHLER_INSTALL)` vor jedem Seiten-Skript; nach dem Renderer-Init
 // `page.evaluate(GPU_FEHLER_OBJEKT)`; lesen: `window.__gpuFehler` ({device: […], draws: […], geraete: [GPUDevice]}) oder
@@ -13,10 +17,54 @@
 
 function gpuFehlerAbgriff() {
     if (typeof GPUDevice === "undefined" || window.__gpuFehler) return;
-    const F = (window.__gpuFehler = { device: [], draws: [], pass: null, objekt: null, geraete: [] });
+    const F = (window.__gpuFehler = { device: [], draws: [], pass: null, objekt: null, geraete: [], zerstoert: [] });
+    // (3) die zerstörte Bindung: Stempel des Zerstörers, die Puffer je Encoder, das Urteil am Submit
+    const stapel = () => new Error().stack.split("\n").slice(2, 8).map((s) => s.trim().replace(/https?:\/\/[^/]+\//, "")).join(" < "); // prettier-ignore
+    const zer = GPUBuffer.prototype.destroy;
+    GPUBuffer.prototype.destroy = function () {
+        this.__zerstoert = stapel();
+        return zer.call(this);
+    };
+    const gruppen = new WeakMap(), genutzt = new WeakMap();
+    const cbg = GPUDevice.prototype.createBindGroup;
+    GPUDevice.prototype.createBindGroup = function (d) {
+        const g = cbg.call(this, d);
+        gruppen.set(g, (d.entries || []).map((e) => e.resource && e.resource.buffer).filter(Boolean));
+        return g;
+    };
+    const nutze = (enc, x, weg) => {
+        const l = genutzt.get(enc) || (genutzt.set(enc, []), genutzt.get(enc));
+        for (const b of x instanceof GPUBuffer ? [x] : gruppen.get(x) || []) if (l.length < 100000) l.push([b, weg, F.objekt]);
+    };
+    const haken = (K, name, idx, weg) => {
+        const f = K.prototype[name];
+        K.prototype[name] = function (...a) {
+            for (const i of idx) if (a[i]) nutze(this.__encoder || this, a[i], weg);
+            return f.apply(this, a);
+        };
+    };
+    for (const [n, K] of [["Render", GPURenderPassEncoder], ["Compute", GPUComputePassEncoder]]) {
+        const b = GPUCommandEncoder.prototype["begin" + n + "Pass"];
+        GPUCommandEncoder.prototype["begin" + n + "Pass"] = function (...a) {
+            return Object.assign(b.apply(this, a), { __encoder: this });
+        };
+        haken(K, "setBindGroup", [1], n + ":Bindegruppe");
+    }
+    haken(GPURenderPassEncoder, "setVertexBuffer", [1], "Vertex");
+    haken(GPURenderPassEncoder, "setIndexBuffer", [0], "Index");
+    haken(GPURenderPassEncoder, "drawIndexedIndirect", [0], "indirekt");
+    haken(GPUCommandEncoder, "copyBufferToBuffer", [0, 2], "Kopie");
+    const fertigen = GPUCommandEncoder.prototype.finish;
+    GPUCommandEncoder.prototype.finish = function (...a) {
+        return Object.assign(fertigen.apply(this, a), { __encoder: this, __pass: this.label });
+    };
     // jeder Submit zählt an SEINER Queue, bis ihr Gerät ihn abgegeben hat — das Ereignis, an dem `GPU_ABGABE` urteilt
     const sub = GPUQueue.prototype.submit;
     GPUQueue.prototype.submit = function (b) {
+        for (const cb of b || [])
+            for (const [p, weg, objekt] of genutzt.get(cb.__encoder) || [])
+                if (p.__zerstoert)
+                    merke(F.zerstoert, { pass: cb.__pass, weg, objekt, groesse: p.size, label: p.label, zerstoerer: p.__zerstoert }); // prettier-ignore
         const r = sub.call(this, b);
         this.__ein = (this.__ein || 0) + 1;
         this.onSubmittedWorkDone().then(() => (this.__ab = (this.__ab || 0) + 1));

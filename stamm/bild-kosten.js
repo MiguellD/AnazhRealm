@@ -3115,25 +3115,26 @@ class AnazhRealm_bild_kosten {
         pass.setPipeline(W.pipe);
         for (let j = 0; j < off.length; j++) {
             const a = arenen[2 * j],
+                zug = arenen[2 * j + 1],
                 q = a.__instanzQuelle,
-                n = arenen[2 * j + 1].wahl.length / 5;
-            for (const x of [q.instanceMatrix, q.liste]) rend._attributes.update(x, 3); // r184 AttributeType.STORAGE
+                n = zug.wahl.length / 5;
+            for (const x of [q.instanceMatrix, zug.liste]) rend._attributes.update(x, 3); // r184 AttributeType.STORAGE
             const mass = ["aH0", "aH0L", "aKarte"].map((k) => (q[k] ? (rend._attributes.update(q[k], 3), be.get(q[k]).buffer) : W.leer)); // prettier-ignore
             const puf = [
                 W.lage,
                 W.puffer,
-                ...[q.instanceMatrix, q.liste, a._ind].map((x) => be.get(x).buffer),
+                ...[q.instanceMatrix, zug.liste, a._ind].map((x) => be.get(x).buffer), // die Liste dieser Kamera (`_wahlVor`)
                 ...mass,
                 // der Zustand der Stufe der Nah-Wiese (`_nahWieseZustand`), sonst ein leerer
                 (this.state.nahWiese && this.state.nahWiese.zustand) || W.leerRW,
             ];
-            let bg = a.__wahlBG;
+            let bg = zug.__wahlBG; // je Zug: die Liste ist die seiner Kamera
             if (!bg || bg.n !== n || puf.some((p, k) => p !== bg.puf[k])) {
                 const entries = puf.map((buffer, i) => ({
                     binding: i,
                     resource: { buffer, size: i === 1 ? n * 64 : undefined },
                 }));
-                bg = a.__wahlBG = { n, puf, bg: dev.createBindGroup({ label: "pass-wahl", layout: W.lay, entries }) };
+                bg = zug.__wahlBG = { n, puf, bg: dev.createBindGroup({ label: "pass-wahl", layout: W.lay, entries }) };
             }
             pass.setBindGroup(0, bg.bg, [off[j]]);
             pass.dispatchWorkgroups(1, n); // je Auftrag EINE Arbeitsgruppe: sie verdichtet in der Folge der Instanzen
