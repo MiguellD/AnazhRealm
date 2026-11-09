@@ -778,7 +778,7 @@ const TAG_LINSE = {
 // DER DECKEL DER ARBEIT (geschätzt, ungemessen an der Karte): zwei Orte × 100 Uhren und ≥ 60 Fein-Uhren, je Uhr der Sprung, der Himmel
 // und EINE Aufnahme bis das Bild steht (640×360, ~3–5 Bilder), je Ort vier volle gegen die Geschichte, die Mess-Wiese kalt (9–18 s,
 // Radeon eich3–6) — 40 s; die RUF-Zeilen je Kurve nennen die Sekunden je Uhr
-const TAG_PROBE = { sek: 40, befehl: PW.torBefehl(PW.werkbankLinse, JSON.stringify(TAG_LINSE)) };
+const TAG_PROBE = { sek: 90, ausnahme: "die Tag-Kurve über 88 Uhren je Ort (Wiese und Genesis) mit Bahn grob und fein — GTX bca0d3d7, fe57747a, 77265b04, 87537d3f je am 45-s-Deckel gerissen, zuletzt im Ruf __tagKurve nach 36,7 s", befehl: PW.torBefehl(PW.werkbankLinse, JSON.stringify(TAG_LINSE)) };
 const LAUB_LINSE = {
     vorher: ["umstellen", "--ort", "dorf", "--sicht", "ego"],
     args: ["licht", "--laub", "ring,feld,feld0,feld90,feld180,panorama,spiegel,spiegel180,wasser,fichte,tanne", "--karte", "--uhr", "0.5,0.27,0.05", "--ort", "dorf"],
@@ -790,7 +790,7 @@ const LAUB_LINSE = {
 // Beruhigungen — 60 s; je Beruhigung und teurem Ruf eine Zeile
 // DIE STAFFEL 2 (33 Zeilen) über dem Gesetz der Fahrt (w4-proben-tempo2, 31.10.): GTX e0139769 86,5 s (Deckel aus der Zahl 130 s über
 // 90 s), Radeon 6b3da705 am 60-s-Deckel gerissen — 10 s, UNGEMESSEN beim Namen wie die übrigen nie endenden, bis die Linse fällt
-const LAUB_PROBE = { sek: 10, befehl: PW.torBefehl(PW.werkbankLinse, JSON.stringify(LAUB_LINSE)) };
+const LAUB_PROBE = { sek: 90, ausnahme: "33 Zeilen an zwei Orten — am Dorf der Ring und 24 Wege des Lichts, an der Mess-Wiese Fichte und Tanne je Uhr mit ihren Beruhigungen (GTX b4bcf19c 80,1 s, e0139769 86,5 s; Radeon 40,8–43,1 s, 77265b04 und e475c6b4 am 45-s-Deckel gerissen)", befehl: PW.torBefehl(PW.werkbankLinse, JSON.stringify(LAUB_LINSE)) };
 // DIE STAFFEL 1 FÄHRT ALLEIN (w4-proben-tempo2): ihr Urteil liest neun Zeilen (fichte, tanne, ring je Uhr) — die Linse misst nur sie,
 // nicht die 24 Wege der Staffel 2 (bis dahin EIN Lauf der Zwillinge, der jeden Deckel riss)
 // Sie ändert die Welt (der Gang ans Dorf und zur Fichte legt Orte und Wege an, Sitzung 00d3f283): mutiert. DIE ZAHL (Radeon 7521ca51, der
@@ -2266,7 +2266,7 @@ const stationen = [
         // Himmel zur Sonne ≥ 1,2; die tiefe Sonne (Uhr 0,27 und 0,73, klar) ≥ 2,5; bedeckt (Regen, jede Uhr) ≤ 1,5. Gültig ist eine
         // Spalte wie Staffel 1 nur mit A = B an der Sonnen-Kugel und A = C an der Schatten-Kugel (±2 %), ≥ 100 px, und wenn ihr
         // `stand` die Uhr und das Wetter der Spalte trägt.
-        probe: { sek: 33, befehl: befehlMitHimmel({
+        probe: { sek: 90, ausnahme: "die Schatten-Bilanz je Uhr klar und mit Himmel, je Kugel Setzen und Lösen samt Schuss (setz-/los-1…5) — die Arbeit (Radeon 30,3–44,9 s, GTX 33,0–34,6 s bis 07.11.; seit 08.11. jede Fahrt an beiden am 45-s-Deckel gerissen, 87537d3f Radeon 45,5 s, GTX 45,2 s in setz-5)", befehl: befehlMitHimmel({
             name: "licht.K2#2",
             texte: SPALTE_TEXTE,
             schritte: [
@@ -2963,7 +2963,7 @@ const stationen = [
         kriterium: "lod.K1",
         staffel: 1,
         geraet: ["radeon", "gtx"],
-        probe: { sek: 30, befehl: befehlDer({
+        probe: { sek: 90, ausnahme: "die Laub-Kante an der Tafel-Pose und an jeder Karte der Fernstufen samt Wiese und Auge — die Arbeit (Radeon 42,4–44,5 s am Rand des Gesetzes, 87537d3f 44,5 s; Radeon 77265b04, 1561bf3a, eff50c41 und GTX 77265b04, 87537d3f am 45-s-Deckel gerissen)", befehl: befehlDer({
             name: "lod.K1#1",
             schritte: [
                 { name: "fenster", args: ["fenster", "1920", "1080"], muss: true },

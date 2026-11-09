@@ -38,7 +38,7 @@
 //   node punkte.cjs grundprobe --baum <Spiel-Baum> [--mutante <zeile>] [--port P]   (Null-Renderer) die Grundstellung der Sitzung
 //        an einer Welt des Baums: Grund → graben, bauen, Ritt, Uhr, Brand, Regen, Ort-Takt → zurück, keine Größe weicht ab; die
 //        Mutante (ein Wort der GRUND_TAFEL schweigt) ist ROT beim Namen
-//   node punkte.cjs eichtafel --geraet radeon|gtx [--sha a,b] [--schreibe]   je Lauf der Sitzung: sein Deckel, das p90 seiner jüngsten
+//   node punkte.cjs eichtafel --geraet radeon|gtx [--sha a,b] [--schreibe [--nur id,id]]   je Lauf der Sitzung: sein Deckel, das p90 seiner jüngsten
 //        Läufe aus ALLEN Mess-Dateien der Karte und der Deckel daraus (eichTafel), dazu Σ heute ↔ aus den Zahlen und die Teile der Fahrt;
 //        --sha: je Mess-Datei die Stationen, die am Deckel rissen, vorher ↔ am Deckel der Tafel; --schreibe legt jeden Deckel als Deckel
 //        DIESER Karte in die Deckel-Tafel (deckel.json, probeSek) — nur, wenn die Stationen danach halten
@@ -2587,7 +2587,14 @@ function gerissenVorNach(t, m) {
 function eichtafelCli(o) {
     if (!["radeon", "gtx"].includes(o.geraet)) throw new Error("--geraet radeon|gtx (die Deckel-Tafel trägt die Sitzung einer Karte)");
     const ms = ladeMessungen();
-    const t = eichTafel(ladeGeprueft().stationen, ms, o.geraet);
+    // DIE STATIONEN DER TAFEL (w26-deckel-klasse): jede, die mit der Deckel-Tafel ODER nach ihrem eigenen Gesetz (ohne Tafel) hält — eine
+    // Station, deren Gesetz sich änderte (tiere.K5#1: teile statt ausnahme, ihr Eintrag 90 s über dem Gesetz 45 s), fiel sonst aus der
+    // Tafel, und ihr alter Eintrag hielt sie ROT: der EINE Schreiber der Tafel heilt ihn aus den Zahlen
+    const mitTafel = ladeGeprueft().stationen, tafel = deckelVon();
+    deckelTafel = {};
+    const ohneTafel = ladeGeprueft().stationen;
+    deckelTafel = tafel;
+    const t = eichTafel([...mitTafel, ...ohneTafel.filter((st) => !mitTafel.some((x) => schluessel(x) === schluessel(st)))], ms, o.geraet);
     for (const z of t.zeilen)
         console.log("  " + z.ids.join("+") + " · Deckel " + z.sek + " s · " + (z.s == null ? "—" : "p90 " + (z.zensiert ? "≥ " : "") + z.s + " s aus " + z.n) +
             (z.neu != null ? " → " + z.neu + " s" : "") + " · " + z.urteil + (z.ortM ? " · Ort im Deckel " + z.ortM + " m" : ""));
@@ -2606,7 +2613,11 @@ function eichtafelCli(o) {
     if (o.schreibe) {
         const alt = deckelVon();
         const neu = JSON.parse(JSON.stringify(alt)), je = (neu[o.geraet] = neu[o.geraet] || {});
-        const n = t.zeilen.filter((z) => z.neu != null).reduce((a, z) => (z.ids.forEach((id) => (je[id] = z.neu)), a + z.ids.length), 0);
+        // --nur id,id: nur die Läufe dieser Stationen schreiben ihren Deckel aus den Zahlen (eine Karte, die eine Klasse heilt, ändert
+        // nie den Abdruck der übrigen — deren Deckel bleibt Byte für Byte)
+        const nur = o.nur ? new Set(String(o.nur).split(",")) : null;
+        if (nur) for (const id of nur) if (!t.zeilen.some((z) => z.ids.includes(id))) throw new Error("--nur " + id + ": kein Lauf der Sitzung auf " + o.geraet);
+        const n = t.zeilen.filter((z) => z.neu != null && (!nur || z.ids.some((id) => nur.has(id)))).reduce((a, z) => (z.ids.forEach((id) => (je[id] = z.neu)), a + z.ids.length), 0);
         neu[o.geraet] = Object.fromEntries(Object.entries(je).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)));
         deckelTafel = neu;
         const fehler = ladeGeprueft().fehler;

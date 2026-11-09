@@ -334,59 +334,69 @@ async function tierKreis(tor) {
         ["const O = await schuss().finally(() => r.toggleCreatures(true));\n                    await wieder();",
             "const O = await schuss().finally(() => r.toggleCreatures(true));\n                    kreis.maskeMs += performance.now() - tMaske;\n                    tRenderVor = null;\n                    rend.setAnimationLoop(takt);"],
     ]);
+    // DIE TEILE (w26-deckel-klasse, `probe.teile` der Station, punkte.cjs fahreGruppe): der Kreis trägt 1 200 Spiel-s — Radeon 87537d3f
+    // Ego 555 Spiel-s nach 50,0 s Wanduhr, Third 210 nach 20,0 s, am 90-s-Deckel gerissen (77265b04, a7a9d7bf, e84fd1fb ebenso; e475c6b4
+    // 88,9 s am Rand). Der Lauf der Linse bleibt EINER je Sicht: er lebt in der Seite (`window.__kreisTeile`), jeder Teil wartet höchstens
+    // seine Frist (PUNKTE_TEIL_FRIST_S) auf ihn; läuft er noch, sagt der Teil `@@PUNKTE@@ TEIL WEITER`, der Kreis läuft in der Seite weiter,
+    // und der nächste Teil wartet weiter auf DENSELBEN Lauf. Der letzte Teil wartet ohne eigene Frist: reißt er den Deckel, ist der Kreis
+    // UNGEMESSEN beim Namen. Die Zeilen `KREIS-<sicht>` sind die des Laufs in einem Stück; das Urteil liest sie unverändert.
+    const [nr, nT] = String(process.env.PUNKTE_TEIL || "1/1").split("/").map(Number);
+    const fristS = Number(process.env.PUNKTE_TEIL_FRIST_S) || 0;
+    const bis = nr < nT ? Date.now() + Math.max(1000, fristS * 1000 - process.uptime() * 1000 - 1500) : Infinity;
     const page = await tor.seite();
     tor.karte();
-    await page.evaluate("window.__kreisBild = " + bild);
-    await page.evaluate((n) => {
-        const r = window.anazhRealm;
-        const rend = r.state.renderer;
-        const Z = window.__zeitraffer || (window.__zeitraffer = { n: 0, roh: null });
-        Z.n = n;
-        Z.ms = 1000 * r.constructor.TAKT_DECKEL_S;
-        if (Z.roh) return;
-        Z.roh = rend.setAnimationLoop;
-        Z.gen = 0;
-        // EIN BILD JE RAFFER-BILD: die Leine (`_gpuLeineStraff`) hält das Bild jedes Takts vor dem letzten — bei ruhendem Loop trägt
-        // er dennoch die ganze Welt (`zwischen` ist dort nie wahr), nur sein Bild fällt
-        Z.halt = false;
-        r._gpuLeineStraff = function () {
-            return Z.halt || Object.getPrototypeOf(this)._gpuLeineStraff.call(this);
-        };
-        Z.huelle = rend.setAnimationLoop = function (cb) {
-            const g = ++Z.gen;
-            if (typeof cb !== "function" || !Z.n) return Z.roh.call(this, cb);
-            Z.roh.call(this, null);
-            let ts = null;
-            const bild = (t) => {
-                if (Z.gen !== g) return;
-                if (ts === null) ts = t;
-                rend._nodes?.nodeFrame?.update();
-                try {
-                    for (let i = 0; i < Z.n && Z.gen === g; i++) (Z.halt = i < Z.n - 1), cb.call(rend, (ts += Z.ms));
-                } finally {
-                    Z.halt = false;
-                }
-                if (Z.gen === g) requestAnimationFrame(bild);
+    const gehalten = await page.evaluate(() => !!window.__kreisTeile);
+    if (nr > 1 && !gehalten) {
+        console.log("KREIS-BRUCH Teil " + nr + "/" + nT + ": kein gehaltener Kreis vor diesem Teil");
+        process.exitCode = 1;
+        return;
+    }
+    if (!gehalten) {
+        await page.evaluate("window.__kreisBild = " + bild);
+        await page.evaluate((n) => {
+            const r = window.anazhRealm;
+            const rend = r.state.renderer;
+            const Z = window.__zeitraffer || (window.__zeitraffer = { n: 0, roh: null });
+            Z.n = n;
+            Z.ms = 1000 * r.constructor.TAKT_DECKEL_S;
+            if (Z.roh) return;
+            Z.roh = rend.setAnimationLoop;
+            Z.gen = 0;
+            // EIN BILD JE RAFFER-BILD: die Leine (`_gpuLeineStraff`) hält das Bild jedes Takts vor dem letzten — bei ruhendem Loop trägt
+            // er dennoch die ganze Welt (`zwischen` ist dort nie wahr), nur sein Bild fällt
+            Z.halt = false;
+            r._gpuLeineStraff = function () {
+                return Z.halt || Object.getPrototypeOf(this)._gpuLeineStraff.call(this);
             };
-            requestAnimationFrame(bild);
-        };
-        return 1;
-    }, n);
-    await tor.ruf("/fenster", { w: 1280, h: 720 });
+            Z.huelle = rend.setAnimationLoop = function (cb) {
+                const g = ++Z.gen;
+                if (typeof cb !== "function" || !Z.n) return Z.roh.call(this, cb);
+                Z.roh.call(this, null);
+                let ts = null;
+                const bild = (t) => {
+                    if (Z.gen !== g) return;
+                    if (ts === null) ts = t;
+                    rend._nodes?.nodeFrame?.update();
+                    try {
+                        for (let i = 0; i < Z.n && Z.gen === g; i++) (Z.halt = i < Z.n - 1), cb.call(rend, (ts += Z.ms));
+                    } finally {
+                        Z.halt = false;
+                    }
+                    if (Z.gen === g) requestAnimationFrame(bild);
+                };
+                requestAnimationFrame(bild);
+            };
+            return 1;
+        }, n);
+        await tor.ruf("/fenster", { w: 1280, h: 720 });
+        await page.evaluate(() => (window.__kreisTeile = { fertig: {}, lauf: null }));
+    }
+    let haelt = false;
     try {
         for (const sicht of ["ego", "third"]) {
-            await tor.ruf("/umstellen", { ort: "wiese", sicht }, 120000);
-            const t = Date.now();
-            const bilder0 = await page.evaluate(() => window.anazhRealm._gpuLeine.gerendert);
-            let o = null;
-            let f = "";
-            const zeile = setInterval(() => {
-                page.evaluate(() => {
-                    const k = window.__kreis;
-                    return k && k.z0 != null ? { spielS: Math.round(window.anazhRealm.state.spielZeit - k.z0), pruefungen: k.pruefungen, masken: k.masken, maskeS: Math.round(k.maskeMs / 100) / 10, gesehen: k.gesehen.size, imBlick: k.imBlick } : null;
-                }).then((z) => z && console.log("FORTSCHRITT des Kreises " + sicht + " nach " + ((Date.now() - t) / 1000).toFixed(1) + " s Wanduhr: " + JSON.stringify(z)), () => {});
-            }, 10000);
-            try {
+            if (await page.evaluate((s) => !!window.__kreisTeile.fertig[s], sicht)) continue;
+            if (!(await page.evaluate((s) => !!window.__kreisTeile.lauf && window.__kreisTeile.lauf.sicht === s, sicht))) {
+                await tor.ruf("/umstellen", { ort: "wiese", sicht }, 120000);
                 await page.evaluate((u) => {
                     const A = window.anazhRealm.constructor;
                     const Z = window.__zeitraffer;
@@ -413,42 +423,76 @@ async function tierKreis(tor) {
                         if (flaeche >= soll) zuletzt.set(c, [s, flaeche, px]);
                     };
                 }, UHR);
-                o = await page.evaluate("(" + lauf + ")(" + JSON.stringify({ sek: 600, ein: 1, ruhe: 0, regler: "frei", tiere: "frei", wandern: "kreis", spur: false }) + ")");
-            } catch (e) {
-                f = " FEHLER " + String((e && e.message) || e).split("\n")[0];
+                // DER LAUF IN DER SEITE: er gehört keinem Teil — sein Ende (das Ergebnis oder der Wurf) steht in `lauf.ende`
+                await page.evaluate(
+                    "(() => { const T = window.__kreisTeile; const L = (T.lauf = { sicht: " + JSON.stringify(sicht) + ", t: Date.now(), bilder0: window.anazhRealm._gpuLeine.gerendert, ende: null });" +
+                        " L.p = (" + lauf + ")(" + JSON.stringify({ sek: 600, ein: 1, ruhe: 0, regler: "frei", tiere: "frei", wandern: "kreis", spur: false }) + ")" +
+                        ".then((o) => (L.ende = { o }), (e) => (L.ende = { f: String((e && e.message) || e).split(String.fromCharCode(10))[0] })); return 1; })()"
+                );
+            }
+            const zeile = setInterval(() => {
+                page.evaluate(() => {
+                    const k = window.__kreis, L = window.__kreisTeile && window.__kreisTeile.lauf;
+                    return k && k.z0 != null && L ? { w: (Date.now() - L.t) / 1000, z: { spielS: Math.round(window.anazhRealm.state.spielZeit - k.z0), pruefungen: k.pruefungen, masken: k.masken, maskeS: Math.round(k.maskeMs / 100) / 10, gesehen: k.gesehen.size, imBlick: k.imBlick } } : null;
+                }).then((x) => x && console.log("FORTSCHRITT des Kreises " + sicht + " nach " + x.w.toFixed(1) + " s Wanduhr: " + JSON.stringify(x.z)), () => {});
+            }, 10000);
+            let x = null;
+            try {
+                x = await page.evaluate((w) => {
+                    const L = window.__kreisTeile.lauf;
+                    return Promise.race([L.p.then(() => L.ende), new Promise((ok) => setTimeout(() => ok(null), w))]);
+                }, Number.isFinite(bis) ? Math.max(0, bis - Date.now()) : 2147483647);
             } finally {
                 clearInterval(zeile);
-                await page.evaluate(() => {
-                    delete window.__kreis;
-                    delete window.__kreisNeu;
-                    delete window.__kreisPx;
-                    const A = window.anazhRealm.constructor;
-                    const Z = window.__zeitraffer;
-                    if (Z.alt) [A.TAKT_DECKEL_S, A.FIXED_MAX_STEPS] = Z.alt;
-                    Z.ms = 1000 * A.TAKT_DECKEL_S;
-                    delete Z.alt;
-                }).catch(() => {});
             }
-            const k = o && o.kreis;
+            if (!x) {
+                const z = await page.evaluate(() => { const k = window.__kreis; return k && k.z0 != null ? Math.round(window.anazhRealm.state.spielZeit - k.z0) : null; });
+                console.log("  KREIS Teil " + nr + "/" + nT + ": " + sicht + " läuft in der Seite weiter (" + z + " Spiel-s) — weiter");
+                console.log("@@PUNKTE@@ TEIL WEITER");
+                haelt = true;
+                return;
+            }
+            const f = x.f ? " FEHLER " + x.f : "";
+            const w = await page.evaluate(() => {
+                const T = window.__kreisTeile, L = T.lauf;
+                delete window.__kreis;
+                delete window.__kreisNeu;
+                delete window.__kreisPx;
+                const A = window.anazhRealm.constructor;
+                const Z = window.__zeitraffer;
+                if (Z.alt) [A.TAKT_DECKEL_S, A.FIXED_MAX_STEPS] = Z.alt;
+                Z.ms = 1000 * A.TAKT_DECKEL_S;
+                delete Z.alt;
+                T.fertig[L.sicht] = true;
+                T.lauf = null;
+                return { s: (Date.now() - L.t) / 1000, bilder: window.anazhRealm._gpuLeine.gerendert - L.bilder0 };
+            });
+            const k = x.o && x.o.kreis;
             // die gezeichneten Bilder der Takte des Kreises (je Raffer-Bild höchstens eines; die Masken zeichnen neben der Leine)
-            if (k) k.bilder = (await page.evaluate(() => window.anazhRealm._gpuLeine.gerendert)) - bilder0;
-            console.log("KREIS-" + sicht + " EXIT=" + (k ? 0 : 1) + " (" + ((Date.now() - t) / 1000).toFixed(1) + " s Wanduhr, Zeitraffer " + n + " Takte zu " + UHR * 100 + " ms je Bild, Prüfung je " + TAKT_S + " Spiel-s" + f + ") " + JSON.stringify(k || {}));
+            if (k) k.bilder = w.bilder;
+            console.log("KREIS-" + sicht + " EXIT=" + (k ? 0 : 1) + " (" + w.s.toFixed(1) + " s Wanduhr, Zeitraffer " + n + " Takte zu " + UHR * 100 + " ms je Bild, Prüfung je " + TAKT_S + " Spiel-s" + (nT > 1 ? ", Teil " + nr + "/" + nT : "") + f + ") " + JSON.stringify(k || {}));
         }
     } finally {
-        // der Raffer fällt: liegt kein fremder Haken über ihm, steht die Schleife des Renderers wieder wie vorher
-        await page.evaluate(() => {
-            const Z = window.__zeitraffer;
-            const rend = window.anazhRealm.state.renderer;
-            delete window.__kreisBild;
-            if (!Z) return 1;
-            const A = window.anazhRealm.constructor;
-            if (Z.alt) [A.TAKT_DECKEL_S, A.FIXED_MAX_STEPS] = Z.alt;
-            Z.n = 0;
-            Z.gen++;
-            if (rend.setAnimationLoop === Z.huelle) (rend.setAnimationLoop = Z.roh), delete window.__zeitraffer, delete window.anazhRealm._gpuLeineStraff;
-            return 1;
-        });
-        await tor.ruf("/fenster", { w: 1920, h: 1080 });
+        // der Raffer fällt: liegt kein fremder Haken über ihm, steht die Schleife des Renderers wieder wie vorher (nie an der Naht eines Teils)
+        if (!haelt) {
+            await page.evaluate(() => {
+                const Z = window.__zeitraffer;
+                const rend = window.anazhRealm.state.renderer;
+                delete window.__kreisBild;
+                delete window.__kreisTeile;
+                delete window.__kreis;
+                delete window.__kreisNeu;
+                delete window.__kreisPx;
+                if (!Z) return 1;
+                const A = window.anazhRealm.constructor;
+                if (Z.alt) [A.TAKT_DECKEL_S, A.FIXED_MAX_STEPS] = Z.alt;
+                Z.n = 0;
+                Z.gen++;
+                if (rend.setAnimationLoop === Z.huelle) (rend.setAnimationLoop = Z.roh), delete window.__zeitraffer, delete window.anazhRealm._gpuLeineStraff;
+                return 1;
+            });
+            await tor.ruf("/fenster", { w: 1920, h: 1080 });
+        }
     }
 }
 
