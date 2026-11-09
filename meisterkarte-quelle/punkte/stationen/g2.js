@@ -47,9 +47,9 @@ async function vegetationK4Seite(H) {
     console.log("W9 " + (w.haeuser || []).length + " Häuser · Bild " + w.bild + " · Wasser " + (w.wasser || []).length + " · Werkstatt " + (o && o.werkstatt) + (o && o.fehler ? " · " + o.fehler : ""));
     return 0;
 }
-const VEGETATION_K4 = seiteProbe(33, vegetationK4Seite, {
+const VEGETATION_K4 = seiteProbe(90, vegetationK4Seite, {
     mutiert: true,
-    
+    ausnahme: "die Häuser des Start-Dorfs mit 112 Aufnahmen (Boxen, Third, Gegenprobe), das Haus des Spielers aus der Werkstatt und je Wasser-Ort Ego und Third — die Arbeit der Linse W9 nach der Welt in 1,0–1,8 s (Radeon und GTX seit 07.11. jede Fahrt am 45-s-Deckel gerissen, 87537d3f 45,4 / 45,2 s)",
 });
 
 // R6 der Tier-Gesetze (Zweig tier-gesetz-k5): Kern, Kreatur-Stamm, Leben-Feld, Leib und die Kreatur-Linse
@@ -3832,7 +3832,7 @@ const stationen = [
         kriterium: "tiere.K3",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        probe: { sek: 33, befehl: [
+        probe: { sek: 90, ausnahme: "die Gangart in 49 Zeilen (Welt 17, Satz 16, Labor 16, Kreuz 16) samt Querhang und Bühne — die Arbeit (Radeon 30,2–32,6 s; GTX 87537d3f 44,8 s am Rand, 77265b04 bei 47,2 s am 45-s-Deckel gerissen)", befehl: [
             "bash",
             "-c",
             [
@@ -4399,8 +4399,11 @@ const stationen = [
         geraet: "radeon",
         probe: {
             befehl: PW.torBefehl(PW.tierKreis),
-            sek: 90,
-            ausnahme: "1200 Spiel-s (je Sicht 600, „je 10 Spielminuten“) im Zeitraffer der Schleife, je Spiel-s die Prüfung und im Blick die Maske — die Arbeit, nie das Einschwingen",
+            // DIE TEILE (w26-deckel-klasse): 1200 Spiel-s (je Sicht 600, „je 10 Spielminuten“) trugen an der Radeon über 90 s — 87537d3f,
+            // 77265b04, a7a9d7bf, e84fd1fb am 90-s-Deckel gerissen (Ego 555 Spiel-s nach 50,0 s), e475c6b4 88,9 s. Der Kreis lebt in der
+            // Seite und läuft über die Naht der Teile weiter (proben-welt.cjs tierKreis), jeder Teil im Gesetz 45 s
+            sek: 45,
+            teile: 5,
             mutiert: false,
         },
         gpu: true,
