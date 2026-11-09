@@ -239,3 +239,4 @@
 2026-11-08T10:18 woche=23 karte=221 kopf=818b466d (+ankunft.K2 zurück; Ankunft kalt 8,78 s Radeon, warm 5,41 s)
 2026-11-08T10:35 karte=221 (gebucht am ef667956, buche.sh)
 2026-11-08T13:29 karte=221 (gebucht am 6fc7d524, buche.sh)
+2026-11-09T04:54 karte=222 (gebucht am eff50c41, buche.sh)
