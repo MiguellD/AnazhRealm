@@ -1,3 +1,0 @@
-  = recipes.json
-  = world-params.json
-  ✔ neu render-config.json
