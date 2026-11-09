@@ -1866,7 +1866,8 @@ class AnazhRealm_stoff_material {
         this._bodenStufenK = {
             f,
             abstand,
-            farbe: T.mix(farbe4.xyz, fZ4.xyz, f),
+            // die Ziel-Farbe reist als 8-bit-Gamma (`BODEN_SATZ_ATTR` gamma8: √c) — linear ist ihr Quadrat
+            farbe: T.mix(farbe4.xyz, fZ4.xyz.mul(fZ4.xyz), f),
             normalWelt: T.normalize(T.modelNormalMatrix.mul(nLokal)),
             himmel: nZ4.w,
             schutt: fZ4.w,

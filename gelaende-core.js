@@ -4462,13 +4462,26 @@
     // zum ersten Bild ≈ 1,0 s Boden: Einbau, Satz, Naht, Morph-Folge).
 
     // DIE VERTEX-FORM DES SATZES (K44): packt `n` Vertices (Breite `is`, aus `src` ab Vertex 0) in die Form `form` nach `dst` ab
-    // Vertex `ab` (Breite 4) — "snorm8" (|x| ≤ 1 auf ±127), sonst roh (float16x4 oder Float32 × 4); `w` (optional) ein Skalar je
-    // Vertex für die vierte Komponente (snorm8: −1…1, sonst roh; ohne: Normale 0, Farbe 1). `nur` (optional): nur diese Vertices
-    // des Bereichs — jeder andere behält seine Bytes. EINE Quelle für Faden, Satz und Linse (gate:chunk-satz (f)).
+    // Vertex `ab` (Breite 4) — "snorm8" (|x| ≤ 1 auf ±127), "gamma8" (w27-ferne-ton-5: eine Farbe 0 … 1 als √c auf 0 … 255, die
+    // Form jeder Albedo-Textur — 4 % je Stufe im Dunklen, unter der Schwelle des Auges; über 1 gekappt), sonst roh (float16x4
+    // oder Float32 × 4); `w` (optional) ein Skalar je Vertex für die vierte Komponente (snorm8: −1…1, gamma8: 0…1 linear, sonst
+    // roh; ohne: Normale 0, Farbe 1). `nur` (optional): nur diese Vertices des Bereichs — jeder andere behält seine Bytes. EINE
+    // Quelle für Faden, Satz und Linse (gate:chunk-satz (f)).
     function satzPacke(form, src, is, dst, ab, n, w, nur) {
         const o0 = ab * 4;
         const m = nur ? nur.length : n;
-        if (form === "snorm8")
+        if (form === "gamma8")
+            for (let j = 0; j < m; j++) {
+                const v = nur ? nur[j] : j;
+                const q = v * is,
+                    o = o0 + v * 4;
+                for (let k = 0; k < 4; k++) {
+                    const x = k < 3 ? src[q + k] : w ? w[v] : 1;
+                    const c = x > 1 ? 1 : x > 0 ? x : 0;
+                    dst[o + k] = Math.round((k < 3 ? Math.sqrt(c) : c) * 255);
+                }
+            }
+        else if (form === "snorm8")
             for (let j = 0; j < m; j++) {
                 const v = nur ? nur[j] : j;
                 const q = v * is,
@@ -5169,7 +5182,9 @@
             const dst =
                 form === "snorm8"
                     ? new Int8Array(n * 4)
-                    : form === "half"
+                    : form === "gamma8"
+                      ? new Uint8Array(n * 4)
+                      : form === "half"
                       ? new root.Float16Array(n * 4)
                       : new Float32Array(n * 4);
             satzPacke(form, A[name], is, dst, 0, n, w ? A[w] : null);
