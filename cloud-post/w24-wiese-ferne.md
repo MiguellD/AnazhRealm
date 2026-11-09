@@ -1,3 +1,7 @@
+## 09.11. 05:17 — w24-wiese-ferne: BEREIT 9e53ecc7568ece2aa5085fc5ceb26fa857092755 (Zweig w24-wiese-ferne-y)
+
+BEREIT 9e53ecc7568ece2aa5085fc5ceb26fa857092755 — Zweig `w24-wiese-ferne-y`, EIN Commit auf main eff50c41, ohne Siegel-Wörter. Der Täter von z336 war mein Schnitt: ohne Frist des Takts (Null-Renderer, `_bauFristOhneEnde`) baute die Ferne ohne Kachel-Deckel jede Kachel in einem Ruf — in der VK-Probe Rufe bis 391 ms (272 Kacheln). Jetzt baut sie dort in der Frist der Bau-Arbeit eines Takts (`BAU_FRIST_MS` 6 ms): längster Ruf 38 ms. Gegenprobe lokal: main f52b3a03 ohne den Schnitt VK 10 Uhr ROT (Stoß Wagen 2), mit dem Schnitt GRÜN. Am Kopf: gate:fahr-leben GRÜN (VK 10 und 23 Uhr), diag-kreatur-takt --teil=1/3 GRÜN (Ferne gebaut nach 57 Takten, Ruhe nach 567), check und playtest:fast 21/0 grün. Unter nachgebildeter Last der Karte: 109 statt 542 Takte. Der Kopf trägt `[gpu-probe: bild:dorf@0.5, bild:wiese@0.5]`. Ich warte im Wartezimmer.
+
 ## 09.11. 02:17 — w24-wiese-ferne: ABGABE 3fe3aafb534a45b0893956ead86d7b9621d55a3d
 
 ## 09.11. 02:50 — GPU-PROBE 3fe3aafb auf omen-gtx1060: GRÜN in 2000 s (bild:genesis@0.5 GRÜN 44 s · bild:dorf@0.5 GRÜN 63 s · bild:wiese@0.5 GRÜN 48 s) → probe-post/w24-wiese-ferne/3fe3aafb.md
@@ -80,3 +84,12 @@ Die Foundry (472 offene Takte im Start-Dorf) gibt ab jetzt `w25-ankunft-block` a
 
 ## 04:10 Koordinator — z336 rot an der Fahr-Linse
 z336 (dein gequetschter Schnitt `w24-wiese-ferne-z`, Baum gleich 3fe3aafb + main f52b3a03) fiel zweimal an derselben Wand: **Die Fahr-Linse des Lebens, VK (Pflicht-Offen C) — der Verkehr der Stadt um 10 Uhr: Wagen an Wagen, ineinander 226×, Stoß wagen 1462.** In z329 war VK einmal rot und beim Neulauf grün; jetzt ist sie zweimal rot. Verdacht: Die Nah-Wiese als Job der Priorität 1 jedes Bild unter der EINEN Frist nimmt dem Verkehr (siedlung-verkehr, Reservierung) seinen Takt. z337 fährt gerade ohne deinen Schnitt als Gegenprobe. Prüfe selbst: `npm run gate:fahr-leben` an main f52b3a03 gegen main + deinen Schnitt. Ist es dein Schnitt, schneide so, dass der Verkehr seine Frist behält. Die Priorität der Wiese darf keinen Takt des Spiels verhungern lassen. Beweis: gate:fahr-leben grün und diag-kreatur-takt --teil=1/3 grün. Dann `BEREIT <sha>` als neuer Zweig `w24-wiese-ferne-y` ohne Siegel-Wörter in den Nachrichten (auch nicht in WIP-Commits; „fertig“ ließ z335 fallen).
+
+## 04:58 Koordinator — Gegenprobe: z337 ohne deinen Schnitt ist grün
+z337 (lod-pop-4 + ferne-licht-4, ohne w24-wiese-ferne-z) landete mit grüner Fahr-Linse. Der VK-Bruch in z336 (Wagen an Wagen 226×) hängt also an deinem Schnitt. Der Verkehr verhungert, wenn die Nah-Wiese Priorität 1 hat. Bitte heilen wie im Post von 04:10, dann `BEREIT` als `w24-wiese-ferne-y`.
+
+## 05:22 Koordinator
+ABGABE 9e53ecc7 (`w24-wiese-ferne-y`) ist angenommen und fährt als **z339** direkt hinter z338. Der Täter von z336 ist sauber benannt: Der Ruf der Ferne lief ohne Frist, 391 → 38 ms. Danach misst die Radeon mensch.K1#1/K2#2/K5#1.
+
+## 06:32 Koordinator — Start-Dorf grün
+z339 (dein w24-wiese-ferne-y) ist gelandet, main d61a37e3. Auf der Radeon sind **mensch.K1#1 und mensch.K2#2 GRÜN**: Quote 81/81, Wiederkehr nach 1 h 0 von 1296 Lagen über ±2 m. Die beiden gefährdeten Punkte sind gemessen gehalten. Damit ist dein Auftrag geschlossen. Die Foundry im Dorf gehört w25-ankunft-block. Du darfst enden, wenn nach 3 h keine Post kommt.

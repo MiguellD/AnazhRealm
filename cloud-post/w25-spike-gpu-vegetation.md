@@ -37,3 +37,13 @@ Spike-Urteil JA ist angenommen. Die Zahl trägt: _instanzWahlPass 3,7/11,4 → 0
 - Der FUND aus dem Referenz-Atlas `bild-kosten.js:3233` (die GPU-Wahl gilt nur für aGang) ist damit eingeschlossen.
 - Richter: profiband.K2 und gate:geh-zerlegung. Ziel `_passSicht` ≤ 2 ms laut Atlas. Die GTX misst über den Probe-Dienst.
 **Reihenfolge der Hände:** `stamm/bild-kosten.js` bekommt in z331 den Umzug der Erst-Zeichnung nach `stamm/bild-erst.js` (w25-pipeline-vorwaermen), `vegetation-wiese.js` in z329 den Ruhe-Fix. Arbeite jetzt von main los und mische main ein, sobald z331 gelandet ist. Fasse die Erst-Zeichnung nicht an.
+
+## 05:15 Koordinator
+ABGABE 757f9f43 ist inhaltlich angenommen. Das ist der große Schnitt: `_passSicht` p95 20,5 → 7,8 ms, Bild p95 41,8 → 33,3 ms, Bilder > 33 ms 76/129 → 11/180, scripts −10 503 Atome. Er mischt sauber auf main und mit z338. Er fährt im nächsten Zug, sobald deine Probe (gate:pop, bild:wiese, gate:ego-schatten) da ist und ich das Wiesen-Bild gegen main gelegt habe. Er ändert jede Pflanze im Bild.
+**Nächster Auftrag im selben Faden:** `used in submit while destroyed` in 2 von 8 frischen Boots. Benenne den Täter und schneide ihn. Ein GPU-Validierungsfehler darf nicht im Spiel bleiben. Danach `_passSicht` Mitte 3,0 → ≤ 2 ms (`_chunkSatzPass` und `_wahlVor`→`_auftraege`).
+
+## 05:22 Koordinator — Konflikt mit w24-wiese-ferne-y
+`w24-wiese-ferne-y` (z339) und dein Zweig kollidieren in `stamm/daten.js`. Beide fassen wahrscheinlich `NAH_WIESE.fern` an (`kachelnJeTakt` fällt dort). Nach der Landung von z339 mische main ein, behalte die Frist von wiese-ferne-y und deinen GPU-Teil, und schreib `BEREIT <sha>`. Deine Bilder lege ich dann gegen main.
+
+## 05:40 Koordinator — Probe 757f9f43 auf der GTX ROT: Fehler der Welt
+`probe-post/w25-gpu-wahl/757f9f43.md`: **gate:pop ROT und gate:ego-schatten ROT**, beide an `[welt-boot] ROT — 5 Fehler der Welt`. Die Linse von ego-schatten selbst ist GRÜN (grob 776 px, fein 771 px). Das bild:wiese ist GRÜN. Ich halte das für deinen offenen Validierungsfehler „used in submit while destroyed“, der auf der GTX offenbar jedes Mal kommt, nicht nur in 2 von 8 Starts. Lies die fünf Fehler im Lauf (Link im Bericht) und benenne den Täter. Ein Puffer der Wahl wird zerstört, während ein Submit ihn noch hält. Typisch ist der Tausch der Arena oder des Auftrags-Puffers beim ersten Umstellen; dann müsste der alte Puffer erst nach `onSubmittedWorkDone` freigegeben werden. Der Zweig fährt erst, wenn gate:pop und gate:ego-schatten auf der GTX grün sind. Danach mischst du main nach z339 ein (Konflikt `daten.js`).

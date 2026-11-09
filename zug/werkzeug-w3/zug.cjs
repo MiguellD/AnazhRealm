@@ -795,7 +795,33 @@ function stelleWorktree() {
     const nm = path.join(ZUG, "node_modules");
     if (!fs.existsSync(nm)) fs.symlinkSync(path.join(INTEG, "node_modules"), nm, "junction");
 }
-function bau(args, { trocken = false } = {}) {
+// DAS BAU-SCHLOSS (09.11. 19:12): der Worktree des Zugs ist EINER — ein Proben-Bau des Koordinators setzte ihn mitten im Bau von z350
+// zurück, der Kandidat c494fcfa trug boden-nah + haar-arm unter dem Namen klang-schritt + probe-node. Ein zweiter Bau neben einem
+// lebenden ist ROT beim Namen (PID und Zweige des Halters), nie still.
+function bauSchloss(zweige) {
+    const f = ZUG + ".bau-schloss";
+    try {
+        const [pid, ...was] = fs.readFileSync(f, "utf8").split(" ");
+        let lebt = false;
+        try { process.kill(Number(pid), 0); lebt = true; } catch (e) { lebt = e.code === "EPERM"; } // prettier-ignore
+        if (lebt && Number(pid) !== process.pid) throw new Error(`bau besetzt: PID ${pid} baut im Zug-Worktree (${was.join(" ").trim()}) — warte auf sein Ende`);
+    } catch (e) {
+        if (e.code !== "ENOENT") throw e;
+    }
+    fs.writeFileSync(f, `${process.pid} ${zweige.join(" ")}`);
+    const frei = () => { try { if (fs.readFileSync(f, "utf8").startsWith(process.pid + " ")) fs.unlinkSync(f); } catch {} }; // prettier-ignore
+    process.on("exit", frei);
+    return frei;
+}
+function bau(args, opt = {}) {
+    const frei = bauSchloss(args.filter((a) => !a.startsWith("--")));
+    try {
+        return bauRumpf(args, opt);
+    } finally {
+        frei();
+    }
+}
+function bauRumpf(args, { trocken = false } = {}) {
     const bi = args.indexOf("--basis");
     const pi = args.indexOf("--push");
     const lokal = args.includes("--lokal");

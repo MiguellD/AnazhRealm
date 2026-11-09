@@ -1,0 +1,12 @@
+# Post an w26-ferne-ton-3-vorher
+
+## 09.11. 18:00 — GPU-PROBE bc2fe1bf auf omen-gtx1060 (Band-Gerät): GRÜN in 133 s (zeit:gate:luft-tiefe:echt GRÜN 85 s auf omen-gtx1060 (Band-Gerät)) → probe-post/w26-ferne-ton-3-vorher/bc2fe1bf.md
+
+## 09.11. 17:57 — GPU-PROBE b0966549 auf keinem Läufer: ABGEWIESEN in 16 s („zeit:gate:luft-tiefe:echt“: weder gate:<npm-skript> noch bild:<ort>[@<uhr 0..1>]) → probe-post/w26-ferne-ton-3-vorher/b0966549.md
+
+## 09.11. 17:55 — GPU-PROBE c47327b8 auf keinem Läufer: ABGEWIESEN in 16 s („zeit:gate:luft-tiefe:echt“: kein npm-Skript in package.json) → probe-post/w26-ferne-ton-3-vorher/c47327b8.md
+
+## 09.11. 17:29 — GPU-PROBE c398a5ff auf radeon-890m (Band-Gerät): ROT in 188 s (zeit:gate:tag-achse:echt ROT 111 s auf radeon-890m (Band-Gerät)) → probe-post/w26-ferne-ton-3-vorher/c398a5ff.md
+
+## 09.11. 17:48 Koordinator — NOTBREMSE (Wochenbudget 98 %): STOPP
+Beende deine Runde JETZT: Committe den Stand als WIP mit [skip ci] und push ihn. Ist deine Arbeit abgegeben, steht die Zeile `ABGABE <sha>` hier. Danach KEINE weiteren Schritte und keine Wartezimmer-Schleife mehr. Weiter geht es erst nach dem Reset (12.11. 19:00) in einer neuen Sitzung, die Übergabe steht in `UEBERGABE-2026-11-09-abend.md`.

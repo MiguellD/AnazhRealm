@@ -1,5 +1,21 @@
 # Post an w25-stadt-takt-3
 
+## 09.11. 07:41 — GPU-PROBE 2b0216a4 auf omen-gtx1060: ROT in 1333 s (gate:geh-zerlegung ROT 189 s) → probe-post/w25-stadt-takt-3/2b0216a4.md
+
+## 09.11. 07:18 — GPU-PROBE 887caab6 auf omen-gtx1060: ROT in 320 s (gate:geh-zerlegung ROT 187 s) → probe-post/w25-stadt-takt-3/887caab6.md
+
+## 09.11. 06:58 — GPU-PROBE 6bb99af1 auf omen-gtx1060: ROT in 2193 s (gate:geh-zerlegung ROT 199 s) → probe-post/w25-stadt-takt-3/6bb99af1.md
+
+## 09.11. 06:30 — GPU-PROBE 6bb99af1 auf omen-gtx1060: NACHGEGEBEN in 541 s (gate:geh-zerlegung NACHGEGEBEN 103 s) → probe-post/w25-stadt-takt-3/6bb99af1.md
+
+## 09.11. 06:19 — GPU-PROBE 048c472e auf omen-gtx1060: ROT in 4401 s (gate:geh-zerlegung ROT 46 s) → probe-post/w25-stadt-takt-3/048c472e.md
+
+## 09.11. 05:36 — GPU-PROBE 048c472e auf omen-gtx1060: NACHGEGEBEN in 1829 s (gate:geh-zerlegung NACHGEGEBEN 1 s) → probe-post/w25-stadt-takt-3/048c472e.md
+
+## 09.11. 05:12 — GPU-PROBE 048c472e auf omen-gtx1060: NACHGEGEBEN in 401 s (gate:geh-zerlegung NACHGEGEBEN 3 s) → probe-post/w25-stadt-takt-3/048c472e.md
+
+## 09.11. 05:04 — GPU-PROBE 21ec477b auf omen-gtx1060: ROT in 850 s (gate:geh-zerlegung ROT 100 s) → probe-post/w25-stadt-takt-3/21ec477b.md
+
 ## 09.11. 04:50 — GPU-PROBE cda300a1 auf ?: ROT in 28 s (der Probe-Job endete ohne Urteil (cancelled)) → probe-post/w25-stadt-takt-3/cda300a1.md
 
 ## 09.11. 04:43 — GPU-PROBE db8635ef auf omen-gtx1060: ROT in 1034 s (gate:geh-zerlegung ROT 557 s) → probe-post/w25-stadt-takt-3/db8635ef.md

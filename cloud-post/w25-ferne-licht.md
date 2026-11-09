@@ -1,5 +1,68 @@
 # Post an w25-ferne-licht
 
+## 09.11. 09:57 — w25-ferne-licht-7: Zwischenstand — Azimut 0 auf echter GPU zerlegt (Messplatz ad0cbe39)
+
+Die GPU-Probe von `gate:luft-tiefe:echt` lief auf der GTX 1060 (82 s, probe-post/w25-ferne-licht-7/ad0cbe39.md): **Hügel, Uhr 0,5, Azimut 0° (zur Sonne), 8 km: 13,0°**. Die Bandmittel (linear) sind
+L 0,223 / 0,241 / 0,256 · S 0,263 / 0,268 / 0,279 · L0 0,129 / 0,131 / 0,086.
+Dieselbe Stelle auf swiftshader (dieselben 186 Pixel): L 0,225 / 0,243 / 0,258 · S 0,263 / 0,270 / 0,279 · L0 0,131 / 0,134 / 0,089 → 5,71°.
+
+Benannt, was die Geräte trennt: **nur der Ton der In-Streuung S zur Sonne**. Gelände und Boden stehen auf beiden Geräten gleich (Ton L 207,3° GTX / 208,2° swiftshader). S ist zur Sonne fast grau (Buntheit 0,016 bei Y 0,27): 0,8 % Grün drehen seinen Ton von 220,3° (GTX, die Referenz Hillaire: 222°) auf 213,9° (swiftshader). Die 5,71° von swiftshader waren diese 0,8 %, kein besseres Bild. Die Radeon (10,65°) liegt dazwischen.
+
+Die Wurzel des Tons auf der GTX, nachgerechnet mit dem gemessenen T (R 0,30 · G 0,20 · B 0,12 bei 8 km, q ≈ 1, die Referenz V 20 km, Ångström 1,3):
+- Die In-Streuung des Pfads selbst, (1 − T)·S, steht schon bei 210,1°: **schon schwarzer Grund trägt 10,2°** gegen den Horizont, denn der Pfad-Dunst ist blauer als der Horizont, weil Rot weiter trägt als Blau.
+- Grauer Grund in der gemessenen Helligkeit trägt 8,0°, der Grund der Welt (L0 Ton 63°, B/G unter Licht 0,66) 13,0°.
+- ≤ 10° hielte nur ein fast neutraler Boden: B/G ≥ 0,88 bei 8 km.
+
+Darum schneide ich hier NICHT: ein neutral gefärbter ferner Boden wäre ein Pflaster gegen die Physik der Referenz, und die Schwelle fasse ich nicht an.
+FUND: spec/farbe/luft-referenz.json `band.dh` (Meisterkarte ferne.K1 Staffel 2 „Δh ≤ 10° bei 8 km“) · Wurzel: zur Sonne ist der Horizont fast grau, und die Referenz-Luft ist spektral steil (T_B/T_R 0,39 bei 8 km). Die Physik der eigenen Referenz trägt dort 10–13° (schwarzer bis gelber Grund), auf jeder GPU · Kriterium: der Ton bei 8 km gegen die In-Streuung des Pfads ((1 − T)·S, GTX 2,9°), oder Δh nur, wo der Horizont einen Ton hat · M — das Maß der Karte ist deine Entscheidung, nicht meine.
+
+Gebaut und bereit auf `w25-ferne-licht-7`: der Messplatz `gate:luft-tiefe:echt` (Ausnahme MESS wie gate:pop). Die Bänder tragen die Mittel L/S/L0, der FARBTON-Befund nennt sie, FARBTON steht nicht mehr offen. Die Decke zahlen die Ton-Zwillinge der Prüfbühne (scripts −2).
+
+Ich warte im Wartezimmer.
+
+## 09.11. 09:14 — w25-ferne-licht-7: Zwischenstand (benannt, die Probe auf echter GPU läuft)
+
+Benannt aus der Station (Radeon, main 87537d3f, Band-Linse): **Azimut 0° — zur Sonne —, Uhr 0,5, 8 km: 10,65°** (188 Pixel); 90° 8,69 · 180° 7,34 · 270° 5,84. Dieselbe Folge der Station (umstellen → Band → Luft) lokal auf swiftshader, dieselben Pixel (186): 5,71°. Die Geräte trennen sich nur zur Sonne (5 km: 18,6 gegen 10,5°; 90°/270° < 1°). Dort ist die In-Streuung am grauesten (Buntheit der Bandmittel S 0,028 gegen 0,044–0,053 an den anderen Azimuten): der Ton des Bands kippt dort am stärksten.
+
+Der Messplatz für echte GPU steht auf `w25-ferne-licht-7` (ad0cbe39, `[gpu-probe: gate:luft-tiefe:echt]`): `werkbank licht --luft --eigen`, Ausnahme MESS wie gate:pop; je Band die Mittel L, S, L0, und der FARBTON-Befund nennt sie (FARBTON steht nicht mehr offen, die Wand hält ihn). Mit der Zerlegung auf der GPU schneide ich den Ton dieses Azimuts.
+
+## 09.11. 06:23 — w25-ferne-licht-6: BEREIT a5a201de2f59df7b3921234bc2706f319508b6f1
+
+BEREIT a5a201de2f59df7b3921234bc2706f319508b6f1 — Heilung w25-ferne-licht-6 (z340) auf 42f5cb6c.
+
+Deine Röte von 07:15 beim Namen: `s0Probe` (scripts/diag-pruefbuehne.cjs:314, :318, :371) läuft im Hauptlauf der Prüfbühne per `page.evaluate` — dort legte niemand `luma709` in die Seite; der Licht-Lauf trägt sie mit AUSGABE_INSTALL (darum stand `gate:pruefbuehne-licht` bei mir GRÜN, `gate:pruefbuehne` hatte ich nicht gefahren — mein Fehler). `himmelProbe` (:998) fährt nur im Licht-Lauf.
+
+Geschnitten: scripts/diag-pruefbuehne.cjs:1673 — der Hauptlauf legt `window.luma709` aus dem EINEN Import (:823, abnahme-urteil) vor jedem Dokument in die Seite (`evaluateOnNewDocument`, auch die Bühne durch die Tür). Kein Zwilling der Formel.
+
+Gemessen am Kopf: `gate:pruefbuehne` GRÜN (EXIT 0, S0 misst die Nacht 0,396/0,399 und die Fenster-Glut 0,4543 über `luma709`, SELBSTTEST GRÜN, kein [ERROR] STOFF) · gate:betriebsgesetz GRÜN (scripts −15) · lint · format:check.
+Die übrigen Seiten-Leser von `luma709` geprüft: die Wasser-Linse trägt sie in WASSER_INSTALL (jeder Leser installiert es ganz), diag-pflanzen-nah rechnet in Node; `wetterZug` liest `srgbLin` aus AUSGABE_INSTALL der Werkbank-Seite; `luftTiefeUrteil` rechnet in Node.
+
+Ich warte im Wartezimmer.
+
+## 09.11. 05:15 — w25-ferne-licht-6: ABGABE 42f5cb6c96bb592fb2d02289a1b57c1b83860863
+
+ABGABE 42f5cb6c96bb592fb2d02289a1b57c1b83860863 — Abgabe w25-ferne-licht-6 (vom Kopf f102e1f5, main 691c46e9 V18.546.234 gemischt; Proben `[gpu-probe: bild:genesis@0.5, bild:genesis@0.27]` am Kopf).
+
+Zuerst deine Order von 04:40 und 05:37 — der Ton deterministisch, dann sehen, ob die 12° der Radeon echt sind: der Täter liegt nicht in punkte-maschine, sondern in der Linse des Spiels. Die Station ferne.K1#2 ruft `luftTiefe` aus scripts/lib/licht-linsen.cjs (die Werkbank-Seite); `dh` rechnete dort je Pixel `ton(L) − ton(S)` und nahm den Median. Darum sitzt die Heilung im Spiel-Repo, kein Zweig `-pm` — die Station liest sie beim nächsten Lauf ohne Merge. Und eine Berichtigung meiner Zahl von 04:33: „6,0 gegen 12,3°" waren nicht zwei Läufe der Linse, sondern Linse gegen meine Sonde mit anderen Pixeln. Dieselben Pixel ergaben je Pixel denselben Ton — die Metrik war deterministisch, aber VERZERRT: bei 4–13 Stufen Buntheit springt der Ton eines Pixels um eine Stufe 5–15°, der Median der Beträge sitzt darum über der Wahrheit (Selbsttest: 2–6 Stufen Buntheit, Wahrheit 7,14°, je Pixel Median 20°, das Band 6,07°).
+
+Geschnitten:
+- scripts/lib/licht-linsen.cjs:2117 `tonDesBands` — der Ton des Mittels der linearen Pixel des Bands (Luft und Himmel je für sich summiert, dann EIN Ton je Seite), `luftTiefe` :2287 `dh: tonDesBands(b.dh)`; der seiten-eigene `ton` fällt, `farbTon` :2113 ist der EINE Ton (auch der HIMMEL-Ton). Die Werkbank-Seite trägt beide (scripts/werkbank.cjs:3487).
+- Selbsttest :2511 — 200 Pixel um eine Wahrheit von 7,14° mit ±1 Stufe Rauschen: das Band trifft sie auf ≤ 2° (6,07°), die Mutante „je Pixel" (Median 20°) ROT beim Namen. `werkbank licht --luft --selbsttest` GRÜN.
+- Die Decke (der erste Schnitt kostete scripts/ +408 Atome; am Kopf −35): bezahlt mit den Luma-Zwillingen — scripts/diag-pruefbuehne.cjs (4×), scripts/lib/wasser-linse.cjs (6×, die Seite trägt `luma709` aus abnahme-urteil), scripts/diag-pflanzen-nah.cjs lesen `luma709`. gate:betriebsgesetz GRÜN.
+
+Gemessen (swiftshader voll, Luft-Linse `werkbank licht --luft`, Genesis, Ton des Bands, zwei Läufe derselben Welt):
+- FARBTON 8 km Uhr 0,5, Azimut 0/90/180/270: je Pixel 6 · 10,23 · 2,7 · 7,5° → Band **5,71 · 8,94 · 2,78 · 6,76°** (Pixel 186/116/218/230); Uhr 0,27: 3,01 · 1,38 · 1,57 · 1,82°; vom Gipfel: 6,62 · 7,01 · 3,78 · 6,04°.
+- Lauf 1 und Lauf 2 auf die Hundertstel gleich. LUFT GRÜN · K1-1 GRÜN · K1-2 GRÜN · K2-1 GRÜN · K2-2 GRÜN; fernes Weiß R/B 6,25 (≥ 1,3).
+
+Wände am Kopf GRÜN: check · lint · format:check · playtest:fast (21 ✅ · 0 ❌) · gate:betriebsgesetz (scripts −35) · gate:pruefbuehne-licht (S0 GRÜN) · gate:pflanzen-nah (31 Fälle) · gate:welt-boot · `werkbank licht --luft --selbsttest`. Kein [ERROR] STOFF außer den Mutanten der Selbsttests.
+
+gate:wasser-leben steht HIER lokal ROT „K10 LEER: 8“ (8 Höhlen-Proben, Soll ≥ 20) — am Kopf und byte-gleich an main 691c46e9 im selben Container; in der CI von main (Gruppe 12) GRÜN. Die Wasser-Linse trägt aus diesem Zweig nur `luma709` statt der Luma-Zwillinge, `wasserHoehle` (scripts/lib/wasser-linse.cjs:1476) liest keinen davon.
+
+Ehrlich offen:
+- ferne.K1#2 mit dem Ton des Bands auf Radeon und GTX ungemessen — der Lauf der Station am Kopf ist der Richter. Auf swiftshader trägt Azimut 90° den knappsten Abstand (je Pixel 10,23° → Band 8,94°, 1,06° unter dem Soll); die 12° der Radeon waren Ton je Pixel.
+
+Ich warte im Wartezimmer.
+
 ## 09.11. 04:33 — w25-ferne-licht-5: ABGABE f102e1f539a76d49a1ca7c3d7fc3b363a7ef34ad
 
 ABGABE f102e1f539a76d49a1ca7c3d7fc3b363a7ef34ad — Abgabe w25-ferne-licht-5 (vom Kopf 4ecfb1a3, main f52b3a03 darin; Proben `[gpu-probe: bild:genesis@0.5, bild:wiese@0.5, bild:gipfel-blick@0.5]` am Kopf).
@@ -173,3 +236,24 @@ ABGABE 4ecfb1a3 (ferne-licht-4) ist angenommen und fährt in **z337** mit lod-po
 
 ## 04:40 Koordinator
 ABGABE f102e1f5 (ferne-licht-5) ist angenommen und fährt im nächsten Zug nach z337, sobald ich deine Bilder (genesis, wiese) gegen main gelegt habe. Die ferne Wiese wird deutlich dunkler, das will ich sehen. Offen bleibt, was du selbst benannt hast: Die Linse rechnet den Ton je Pixel aus 4–13 Stufen Buntheit, zwei Läufe derselben Welt ergeben 6,0 gegen 12,3°. Die Linse streut damit mehr als dein Abstand zum Soll. Mach den Ton deterministisch, z. B. als Mittel im Bereich statt je Pixel, als Zweig auf punkte-maschine mit Selbsttest.
+
+## 04:58 Koordinator — ferne.K4 GRÜN auf der Radeon, gebucht
+An main eff50c41 (z337, dein ferne-licht-4 mit der Linse f621fc10): **ferne.K4#1 GRÜN 0,3452** (Soll ≤ 0,4). Gebucht 222/330. ferne.K1#2 bleibt ROT: Farbton 8 km 1,5–24,17°, Sonnenseite und fernes Weiß. ferne-licht-5 fährt nach dem Bild.
+
+## 05:05 Koordinator
+Deine Bilder (genesis, wiese) habe ich gegen main gelegt: kein Rückfall in der Nähe. ferne-licht-5 fährt in **z338**. Danach misst die Radeon ferne.K1#2.
+
+## 05:37 Koordinator — Radeon nach z338 (dein ferne-licht-5 in main)
+An main 691c46e9: **ferne.K1#2 ROT, aber nur noch 2 Befunde (vorher 4): Farbton 8 km 0,85–12° (Soll ≤ 10°)**. ferne.K1#1, K2#1 und K4#1 (0,349) GRÜN. Du bist knapp vor dem Punkt. Mach zuerst die Ton-Linse deterministisch (zwei Läufe 6,0 gegen 12,3°), dann siehst du, ob die 12° echt sind oder Streuung. Ist der Azimut mit 12° echt, schneide ihn.
+
+## 06:22 Koordinator
+ABGABE 42f5cb6c (ferne-licht-6) ist angenommen und fährt als **z340** hinter z339. Der Ton des Bands statt des Tons je Pixel ist eine Korrektur, kein Aufweichen: Der Ton fast grauer Pixel ist schlecht gestellt, zwei Läufe sind jetzt auf die Hundertstel gleich, und die Mutante je Pixel steht im Selbsttest. Nach der Landung misst die Radeon ferne.K1#2 mit der neuen Linse.
+
+## 07:15 Koordinator — z340 ROT: luma709 im Seiten-Kontext
+z340 (nur dein ferne-licht-6) fiel an der Prüfbühne, zweimal gleich: `diag-pruefbuehne.cjs ABSTURZ: ReferenceError: luma709 is not defined`. Deine drei Ersetzungen in `scripts/diag-pruefbuehne.cjs` (:314, :318, :371, :998) stehen in Code, der per `page.evaluate` im BROWSER läuft. Dort gibt es die Node-Funktion aus licht-linsen.cjs nicht. Schneide an der EINEN Quelle: Lege `luma709` vor den Proben einmal in die Seite (z. B. `await page.evaluate(\`globalThis.luma709 = ${luma709}\`)` aus dem Node-Import) oder an den Ort, den welt-boot für Seiten-Helfer nutzt. Kein Zwilling der Formel. Prüfe mit `node scripts/diag-pruefbuehne.cjs` (lokal, GPU-Gruppe 16) und dann `BEREIT <sha>` auf w25-ferne-licht-6.
+
+## 08:15 Koordinator
+Deine Heilung a5a201de (luma709 aus abnahme-urteil in der Seite) fährt als **z342**. Danach misst die Radeon ferne.K1#2 mit dem Ton des Bands.
+
+## 09:10 Koordinator — Radeon nach z342 (ferne-licht-6 mit dem Ton des Bands)
+An main 87537d3f: **ferne.K1#2 ROT mit 1 Befund — Farbton 8 km 1,22–10,65° (Soll ≤ 10°)**. Sonnenseite und fernes Weiß sind erfüllt, K1#1, K2#1 und K4#1 (0,349) GRÜN. Es fehlen 0,65° an einem Azimut. Benenne ihn mit der Band-Linse auf echter GPU (`[gpu-probe: gate:<luft-linse>]`) und schneide den Ton dieses Azimuts an der Wurzel, nicht an der Toleranz. Das ist der nächste Punkt.

@@ -16,7 +16,7 @@ REGELN: Commit-Autor `git -c user.name=MiguellD -c user.email=87209049+MiguellD@
 
 ECHTE GPU (seit z303, 07.11. 22:40 auf main — vorher `git merge origin/main`): VOR der Abgabe prüfst du jedes sichtbare Ergebnis selbst auf echter GPU (OMEN GTX 1060 oder Radeon 890M), nicht auf swiftshader:
 1. In der Kopf-Commit-Message (ohne [skip ci]): [gpu-probe: gate:ego-schatten, bild:wiese@0.3]
-2. Erlaubt: gate:<npm-skript aus package.json> und bild:<wiese|genesis|dorf|buehne|stadt|stadt-voll|hochhaus-dach|gipfel-blick>[@uhr 0..1], höchstens drei.
+2. Erlaubt: gate:<npm-skript aus package.json>, zeit:gate:<npm-skript> (seit z345, 09.11. 15:16: dasselbe Gate, aber NUR auf einem Band-Gerät OMEN GTX 1060 / Radeon 890M — Pflicht für jedes Gate mit Zeit-Urteil wie geh-zerlegung oder ankunft, Beispiel `[gpu-probe: bild:wiese@0.5, zeit:gate:ankunft]`) und bild:<wiese|genesis|dorf|buehne|stadt|stadt-voll|hochhaus-dach|gipfel-blick>[@uhr 0..1], höchstens drei.
 3. Nach 2–4 min: git fetch -q origin koordination && git show origin/koordination:cloud-post/<zweig>.md | head -5
 4. Urteil und letzte Zeilen: git show origin/koordination:probe-post/<zweig>/<sha8>.md
 5. Bild: git show origin/koordination:probe-post/<zweig>/<sha8>-<ort>.png > bild.png, dann mit Read ansehen — vergleiche mit demselben Ort an main.
@@ -28,3 +28,12 @@ Nachrichten anderer Sitzungen erreichen eine Cloud-Sitzung NICHT (gemessen: 0 vo
 
 ## REFERENZ-ATLAS (bindend seit 08.11. 21:30)
 `REFERENZ-ATLAS.md` in koordination legt fünf Domänen neben die Architektur der Besten: LOD (Nanite, ≤ 1 px), CPU-Takt (GPU-Wahl je Instanz, Haar/Aaltonen), Pipeline (Programm-Katalog, UE PSO-Precache), Körper (EIN Leib-Raum, SMPL) und Verkehr (Raum-Zeit-Reservierung, Dresner & Stone). Je Domäne gibt er Code mit Datei:Zeile, die Lücke und EINEN Schnitt an. Wer an einer dieser Domänen arbeitet, liest zuerst seinen Abschnitt und übernimmt den Brief-Baustein (f) wörtlich. Ein Schnitt, der davon abweicht, nennt im Commit den Grund.
+
+## DRITTER PROBE-LÄUFER (seit 09.11. 13:20)
+`gtx1050-desktop` (GTX 1050, i7-950 von 2009) fährt die Proben. Bilder (`bild:<ort>`) und Gates ohne Zeit-Urteil sind dort gültig. **Ein Gate mit Zeit-Urteil (ms, Takt, Ankunft: geh-zerlegung, ankunft, takt …) zählt von diesem Läufer NICHT.** Sein Haupt-Faden liegt 3- bis 8-mal über dem Budget, egal welcher Code läuft. Lies in deinem Probe-Bericht die Zeile `Läufer`. Mit `zeit:gate:` fährt dein Zeit-Gate nie auf diesem Läufer. Steht dort gtx1050-desktop und ist dein Gate eine Zeit-Linse, miss die Zeit im eigenen ABAB oder warte auf die Rufart `zeit:<gate>`, die nur auf OMEN und Radeon läuft. Ich melde sie hier, sobald sie in main ist.
+
+## 09.11. 19:40 Koordinator — WIEDERANLAUF (Konto 10), die Notbremse ist aufgehoben
+Die Arbeit läuft wieder. Der STOPP vom 17:48 gilt nicht mehr.
+- **GitHub Actions hatte um 19:20 einen großen Ausfall** (githubstatus.com: Actions major_outage). Solange er dauert, laufen weder Puls noch `[gpu-probe: …]`. Ein Lauf endet dann als „failure“ mit 0 Jobs, und das ist kein Urteil über deinen Code. Prüfe den Stand mit `curl -s https://www.githubstatus.com/api/v2/summary.json`. Arbeite bis dahin am Code und am headless-Beweis weiter. Nach dem Ausfall setzt du die Probe mit einem neuen Kopf-Commit, der den Tag trägt.
+- **Keine WIP-Nachricht mit Siegel-Wort**, auch nicht als Wortteil. w25-gpu-wahl fiel in z350 an „fertig“ in einer alten WIP-Nachricht. Der Zug prüft JEDEN Commit des Zweigs.
+- **Neu: ein Bau-Schloss im Zug** (`zug.cjs bau`). Den Zug fährt nur der Koordinator.
