@@ -555,8 +555,11 @@ async function vergroessertProbe(page, fmtWunsch) {
             };
             const cam = new T.PerspectiveCamera(60, W / H, 0.05, 50);
             const d = 0.866; // ein Pixel 7,8 mm: ein Texel der Höhe (8 m / ch) misst ~4 px
-            cam.position.set(0, 4, d);
-            cam.lookAt(0, 4, 0);
+            // um 3 mm (0,38 px) neben der Mitte (w26-laub-kante): dort trafen die Pixel-Mitten die Symmetrie-Punkte der Diagonale, an
+            // der Schwelle ½ den Gleichstand des Felds — kubisch und bilinear standen gleich (CPU-Modell 0,375 / 0,378), die Linse war
+            // blind; versetzt 0,25 / 0,50 an jeder Schwelle
+            cam.position.set(0.003, 4.003, d);
+            cam.lookAt(0.003, 4.003, 0);
             cam.updateMatrixWorld(true);
             out.pxJeTexel = +(8 / at.ch / ((2 * d * Math.tan(Math.PI / 6)) / H)).toFixed(2);
             const treppe = async (stufe, name) => {
