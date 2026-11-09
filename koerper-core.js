@@ -782,7 +782,7 @@
     //   rund   die Normale kippt zur Kante (rad): die Strähne ist rund, das Licht läuft quer über sie
     //   locke  [Locken je Umlauf, Ton ±]: Strähnen benachbarter Wurzel teilen den Ton ihrer Locke — auf 4 m (Third) ist die
     //          Strähne unter einem Pixel, die Locke 3 Pixel breit · ton  die Melanin-Streuung je Strähne (±)
-    //   wurzel der Ton der Wurzel (die Lage darüber verdeckt sie; HAAR_LOOK liest ihn als Anker der Strähnen-Achse) — die Albedo
+    //   wurzel der Ton der Wurzel (die Lage darüber verdeckt sie; `haarAchse` liest an ihm die Ecken des Bands) — die Albedo
     //          des Haars bleibt sein Ton, wo man es sieht (Keratin mit Melanin, die Zeile haar der Albedo-Tafel).
     // Bis haar.K2 stand jede Strähne als Kreuz-Karte vom Kopf ab, die Wurzel bei 0,12 über die ganze Länge: das Bild zeigte das
     // Raster der Kappe statt Strähnen (Strich arm 0,28 / third 0,38 gegen die REF 0,44, Radeon 20d09a04), das Haar las dunkler als
@@ -803,8 +803,60 @@
         specPow: 8,
         specAmt: 0.3,
         specFarbe: Object.freeze([0.3, 0.15, 0.04]),
-        wurzelAnker: HAAR_STRICH.wurzel,
     });
+    // DER RAHMEN DER STRÄHNE (w25-haar-albedo; Leser: der Welt-Stoff über stamm `_haarAchse`, das Labor `laborStoff`): das Gesetz
+    // der Ecken des Bäckers (foundry-core `__streuGeo`: je Band vier Ecken — zwei an der Wurzel im Ton × HAAR_STRICH.wurzel, zwei
+    // an der Spitze im Ton) rückwärts gelesen. Je Ecke [Achse, Länge]: die Achse 0 an der Wurzel, an der Spitze die Länge des Bands
+    // (die Feder des Winds liest sie, haar.K3), die Länge an jeder Ecke (Achse ÷ Länge = der Anteil Wurzel → Spitze, den der Glanz
+    // der Spitze liest). Die Farbe kann die Achse nicht tragen: jede Strähne trägt ihren eigenen Ton (HAAR_STRICH ton, locke) über einer
+    // Wurzel von 0,85 — bis hier lasen Welt und Labor den Anteil als Ton ÷ Ton-Anker und maßen den Würfel des Tons (der Glanz
+    // schaltete je Strähne ganz an oder aus: das dunkelbraune Haar stand weiß, haar.K2#1). Eingaben je Ecke: Lage und Farbe
+    // (xyz hintereinander), Ton (`menschTon`). Ein Vierer im Ton des Haars, dessen Farben dem Gesetz nicht folgen, ist ein Bruch
+    // (gezählt) — außer er ist eine Fläche in einem Ton (die Kappe der Grobstufe). Rückgabe { achse (Float32Array, 2 je Ecke), zahl,
+    // bruch }.
+    function haarAchse(lage, farbe, ton) {
+        var n = ton.length,
+            haarTon = menschTon("hair"),
+            wz = HAAR_STRICH.wurzel,
+            A = new Float32Array(n * 2),
+            zahl = 0,
+            bruch = 0;
+        var gleich = function (x, y) {
+            return Math.abs(x - y) <= 1e-5 + 2e-3 * Math.abs(y);
+        };
+        for (var i = 0; i + 3 < n; i += 4) {
+            var haar = true,
+                k,
+                f;
+            for (k = 0; k < 4; k++) haar = haar && Math.round(ton[i + k]) === haarTon;
+            if (!haar) continue;
+            var gesetz = true,
+                flach = true;
+            for (f = 0; f < 3; f++) {
+                var c0 = farbe[i * 3 + f],
+                    c1 = farbe[(i + 1) * 3 + f],
+                    c2 = farbe[(i + 2) * 3 + f],
+                    c3 = farbe[(i + 3) * 3 + f];
+                gesetz = gesetz && gleich(c0, c1) && gleich(c2, c3) && gleich(c0, wz * c2);
+                flach = flach && gleich(c1, c0) && gleich(c2, c0) && gleich(c3, c0);
+            }
+            if (!gesetz && flach) continue;
+            if (!gesetz) {
+                bruch++;
+                continue;
+            }
+            var d = [0, 0, 0];
+            for (f = 0; f < 3; f++)
+                d[f] = (lage[(i + 2) * 3 + f] + lage[(i + 3) * 3 + f] - lage[i * 3 + f] - lage[(i + 1) * 3 + f]) / 2;
+            var l = Math.sqrt(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]);
+            for (k = 0; k < 4; k++) {
+                A[(i + k) * 2] = k < 2 ? 0 : l;
+                A[(i + k) * 2 + 1] = l;
+            }
+            zahl++;
+        }
+        return { achse: A, zahl: zahl, bruch: bruch };
+    }
 
     // ════════════════════════════════════════════════════════════════════
     // DIE GESTALT DES MENSCHEN NAH (Welle 5, „der Mensch nah: Hände, Gesicht, Augen"): die Maße, mit denen bauMensch
@@ -994,14 +1046,16 @@
     //   mundFalte = der Anteil der Ecken der Kopf-Haut neben dem Mund (seitlich über drei Viertel der Lippen-Breite von ihrer Mitte,
     //   von der Oberlippe bis anderthalb Lippen-Höhen unter die Unterlippe, vorn), deren Ton (Farbe × Verdeckung) unter 40 % des
     //   hellen Haut-Tons fällt — die harte Falte von den Mundwinkeln zum Kiefer, die Unterlippe wie ein abgesetzter Puppen-Kiefer
-    //   (Nacharbeit w21-leib-bau: der Hals-Deckel lag im Kopf auf Höhe der Lippen; 0,110 → 0).
+    //   (Nacharbeit w21-leib-bau: der Hals-Deckel lag im Kopf auf Höhe der Lippen; 0,110 → 0). haarRahmen = der Anteil der Bänder
+    //   des Haars am Guss L0, deren Ecken der EINE Leser `haarAchse` als Strähne liest (w25-haar-albedo: Welt und Labor lesen Achse
+    //   und Länge aus ihm — ein Band ohne Rahmen glänzte an seiner Spitze nie).
     // prettier-ignore
     var KOPF_SOLL = Object.freeze({
         augenLinie: [0.45, 0.53], augenSpalt: [0.9, 1.25], mundZuPupille: [0.78, 1.0],
         ohrOben: [-0.02, 0.1], ohrUnten: [-0.06, 0.03], ohrLaenge: [0.23, 0.3], augenVorstand: [0.01, 0.035], augeFrei: [0.9, 1.0],
         lippeL: [-14, -4], lippeA: [4, 14], hoehleL: [-12, 0], hoehleA: [-2, 6], hautAlbedo: [0.05, 0.62],
         haarDeckung: [0.9, 1.0], kopfDreiecke: [0, 12000], haarLinie: 0.8, mundFalte: [0, 0.02],
-        brauKontrast: [8, 80],
+        brauKontrast: [8, 80], haarRahmen: [1, 1],
     });
     // DIE EINE HAUT IM GUSS (w21-leib-bau, gate:mensch-anatomie LEIB, gemessen von `leibUrteil`; foundry-core `__leibHaut`, Ofen L0): nahtRing = Anteil der
     // Rand-Ecken der Kopf-Haut, die auf der Haut des Leibs liegen (der gemeinsame Ring) · nahtSpalt / nahtPose = der weiteste Abstand
@@ -2337,7 +2391,22 @@
         L.forEach(function (x) {
             if (/^(head|eye[LR]|iris[LR]|lid[TB][LR])$/.test(x.j)) tris += x.I ? x.I.length / 3 : x.P.length / 9;
         });
-        if (!haut) return { augenVorstand: NaN, augeFrei: NaN, haarDeckung: NaN, kopfDreiecke: tris, mundFalte: NaN };
+        // DER RAHMEN DER STRÄHNE (w25-haar-albedo, KOPF_SOLL haarRahmen): der Anteil der Bänder des Haars, die der EINE Leser
+        // `haarAchse` als Strähne liest — ohne Band 0. DIE MUTANTE IM MASS (die Linse ist nie vakuös): dieselben Ecken mit der Wurzel
+        // × 0,7 (das Gesetz der Ecken gebrochen) — bricht der Leser nicht jedes ihrer Bänder, ist das Maß 0
+        var hz = [0, 0, 0];
+        L.forEach(function (x) {
+            var a = x.k === "hair" && x.o.geometry.attributes;
+            if (!a || !a.color || !a.aTon) return;
+            var r = haarAchse(a.position.array, a.color.array, a.aTon.array),
+                m = Float32Array.from(a.color.array);
+            for (var i = 0; i + 3 < a.aTon.count; i += 4) for (var c = 0; c < 6; c++) m[i * 3 + c] *= 0.7;
+            hz[0] += r.zahl;
+            hz[1] += r.bruch;
+            hz[2] += haarAchse(a.position.array, m, a.aTon.array).bruch < r.zahl ? 1 : 0;
+        });
+        var rahmen = hz[0] && !hz[2] ? hz[0] / (hz[0] + hz[1]) : 0;
+        if (!haut) return { augenVorstand: NaN, augeFrei: NaN, haarDeckung: NaN, kopfDreiecke: tris, mundFalte: NaN, haarRahmen: rahmen }; // prettier-ignore
         var hp = ecken(haut),
             hy = spanne(hp, 1),
             I = haut.I,
@@ -2430,7 +2499,7 @@
             });
             falte = zone ? dunkel / zone : NaN;
         }
-        return { augenVorstand: vorstand, augeFrei: irisN ? frei / irisN : NaN, haarDeckung: kal ? bedeckt / kal : NaN, kopfDreiecke: tris, mundFalte: falte }; // prettier-ignore
+        return { augenVorstand: vorstand, augeFrei: irisN ? frei / irisN : NaN, haarDeckung: kal ? bedeckt / kal : NaN, kopfDreiecke: tris, mundFalte: falte, haarRahmen: rahmen }; // prettier-ignore
     }
 
     // DIE ANLAGE (w11-koerper): die Hülle des Rumpfs weicht dem ruhenden Arm. Der Arm ruht mit SEINER Hülle am Kern des Rumpfs
@@ -6953,6 +7022,7 @@
         HAUT_LOOK: HAUT_LOOK,
         HAAR_LOOK: HAAR_LOOK,
         HAAR_STRICH: HAAR_STRICH,
+        haarAchse: haarAchse,
         MENSCH_GESTALT: MENSCH_GESTALT,
         MENSCH_SOLL: MENSCH_SOLL,
         KOPF_SOLL: KOPF_SOLL,

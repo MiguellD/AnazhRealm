@@ -90,10 +90,14 @@ class AnazhRealm_siedlung_satz {
     // Laternen rechnete bei jedem Belegen und Freigeben alle 48 (101 Takte p50 1,1 ms), und der Stufen-Wechsel eines Hauses
     // legte 36k–108k Ecken in EINEM Takt (24 Takte p50 5,9 ms, bis 27,4). Jetzt legt ein stehender Bereich nur die Slots, deren
     // Stempel (Matrix · Farbe · Instanz-Attribute) sich änderte (`_bauSatzSlots`), und ein großer neuer Bereich tritt in Raten
-    // ein (`_bauSatzRate`, je Takt höchstens BAU_SATZ_ECKEN_JE_TAKT Ecken, nah zuerst — Lehre 14); solange einer in Raten
+    // ein (`_bauSatzRate`, Stück für Stück von BAU_SATZ_STUECK Ecken, nah zuerst — Lehre 14); solange einer in Raten
     // tritt, wartet jeder Austritt: der alte Stufen-Bereich geht erst, wenn der neue steht. Bis das erste Weltbild steht,
     // gilt kein Deckel (das Bild wartet auf jedes ganze Haus, `_weltbildSteht`); eine Linse, die den Satz auf die Wahrheit
     // seiner Gruppen legt, ruft ihn mit `deckel` Infinity (jede Rate tritt ein, jeder Austritt geht).
+    // DIE EINE FRIST DER BAU-ARBEIT (w25-stadt-takt-2, Lehre 14 und 25): die Raten legen ihre Stücke bis zur Frist des Takts
+    // (`_bauFrist("satz")`), mindestens EINES — bis hier legten sie je Takt ihre eigenen BAU_SATZ_ECKEN_JE_TAKT (8 192) Ecken
+    // NEBEN der Frist, die der Planer davor schon trug: Messort stadt, erster Gang, GTX `_tickBauSatz` 5,3 ms in der Takt-Mitte
+    // (`_satzBlockEcken` 3,3 ms, ~0,6 µs je Ecke; gate:geh-zerlegung 90aed4f2).
     _tickBauSatz(deckel) {
         const st = this.state;
         const sm = st.bauSatzSchmutzig;
@@ -101,7 +105,7 @@ class AnazhRealm_siedlung_satz {
         if (!(sm && sm.size > 0) && !(raten && raten.size > 0)) return;
         const groups = st.archInstanceGroups;
         const saetze = st.chunkSaetze;
-        let budget = deckel != null ? deckel : st._weltbildDa == null ? Infinity : AnazhRealm.BAU_SATZ_ECKEN_JE_TAKT;
+        const ohne = deckel === Infinity || st._weltbildDa == null;
         const gehen = this._bauSatzGehen || (this._bauSatzGehen = []);
         gehen.length = 0;
         if (sm) {
@@ -116,11 +120,11 @@ class AnazhRealm_siedlung_satz {
                 const s = saetze ? saetze.get(art) : null;
                 const b = s ? s.bloecke.get(key) : null;
                 if (!lebt || (b && b.bau && g.liveCount < b.bau.cnt)) gehen.push(key, art);
-                else budget -= this._bauSatzLege(key, art, g, b, budget);
+                else this._bauSatzLege(key, art, g, b, ohne ? Infinity : 0);
             }
             sm.clear();
         }
-        if (raten && raten.size > 0) budget = this._bauSatzRaten(budget);
+        if (raten && raten.size > 0) this._bauSatzRaten(ohne ? Infinity : this._bauFrist("satz"));
         const warten = !!raten && raten.size > 0;
         for (let i = 0; i < gehen.length; i += 2) {
             const key = gehen[i],
@@ -141,7 +145,7 @@ class AnazhRealm_siedlung_satz {
     _bauSatzLege(key, art, g, b, budget) {
         if (b && b.bau && this._bauSatzSlots(b, g)) return b.bau.gelegt;
         const N = g.geom.attributes.position.count * g.liveCount;
-        if (N > budget && N > AnazhRealm.BAU_SATZ_ECKEN_JE_TAKT) {
+        if (N > budget && N > AnazhRealm.BAU_SATZ_STUECK) {
             this._bauSatzRateNeu(key, art, g);
             return 0;
         }
@@ -334,14 +338,15 @@ class AnazhRealm_siedlung_satz {
         });
     }
 
-    // Die Raten dieses Takts, nah zuerst; Rückgabe: der Rest des Deckels.
-    _bauSatzRaten(budget) {
-        const reihe = Array.from(this.state.bauSatzRaten.values()).sort((x, y) => x.d2 - y.d2);
-        for (const r of reihe) {
-            if (budget <= 0) break;
-            budget -= this._bauSatzRate(r, budget);
-        }
-        return budget;
+    // Die Raten dieses Takts, nah zuerst, Stück für Stück bis zur Frist `frist` (performance.now(); Infinity: ganz), mindestens EIN Stück.
+    _bauSatzRaten(frist) {
+        const R = this.state.bauSatzRaten;
+        let erst = true;
+        for (const r of Array.from(R.values()).sort((x, y) => x.d2 - y.d2))
+            while (R.has(r.key) && (erst || performance.now() < frist)) {
+                this._bauSatzRate(r, frist === Infinity ? Infinity : AnazhRealm.BAU_SATZ_STUECK);
+                erst = false;
+            }
     }
 
     _bauSatzRate(r, budget) {
@@ -1082,7 +1087,7 @@ class AnazhRealm_siedlung_satz {
     // DER ABGLEICH DES ALTERS IM SATZ (Lehre 14 und 25, Kosten an der Änderung): je Takt die wartenden Gruppen, nah zuerst, Slot
     // für Slot — ein Slot, dessen Stufen nicht sprangen, kostet den Vergleich mit seinem Stempel (`_satzAlterStempel`); einer,
     // dessen Stufe sprang, trägt die neue in seinen Stempel und legt seine Ecken AM ORT neu, in Fenstern unter dem Deckel des
-    // Takts (BAU_SATZ_ECKEN_JE_TAKT, der Deckel des Bau-Satzes; `_chunkSatzLege` am Ort lädt nur den Lauf, der sich änderte — die
+    // Takts (die EINE Frist der Bau-Arbeit in Stücken von BAU_SATZ_STUECK; `_chunkSatzLege` am Ort lädt nur den Lauf, der sich änderte — die
     // Farbe: Lage, Normale, Zellen und Hüllen bleiben). Ändert sich die Gruppe mitten im Slot (Belegen · Freigeben · Stufe),
     // fällt die Arbeit: ihre Alters-Stempel werden ungültig, der Slot-Abgleich legt sie ganz (`_bauSatzSlots`). Vor dem ersten
     // Weltbild gilt kein Deckel. Gemessen (Dorf, 43 Gruppen, 170 036 Ecken, Cloud headless): ein Sprung der Stufe lag als EIN
@@ -1091,8 +1096,8 @@ class AnazhRealm_siedlung_satz {
         const reihe = this._satzAltertOffen;
         if (!reihe || !reihe.length) return;
         const st = this.state;
-        let budget = st._weltbildDa == null ? Infinity : AnazhRealm.BAU_SATZ_ECKEN_JE_TAKT;
-        while (budget > 0 && reihe.length) {
+        const frist = st._weltbildDa == null ? Infinity : this._bauFrist("satz");
+        for (let erst = true; reihe.length && (erst || performance.now() < frist);) {
             const a = reihe[0];
             const g = a.g;
             const s = st.chunkSaetze ? st.chunkSaetze.get(g.satz) : null;
@@ -1127,7 +1132,7 @@ class AnazhRealm_siedlung_satz {
                 a.stand = g.slotStand;
             }
             const n = bau.n;
-            const v1 = Math.min(n, a.v + budget);
+            const v1 = Math.min(n, a.v + (frist === Infinity ? Infinity : AnazhRealm.BAU_SATZ_STUECK));
             const sts = st.satzStoffe ? st.satzStoffe.get(g.satz) : null;
             const attr = (sts && sts.attr) || AnazhRealm.BAU_SATZ_ATTR;
             const ic = g.mesh.instanceColor ? g.mesh.instanceColor.array : null;
@@ -1146,7 +1151,7 @@ class AnazhRealm_siedlung_satz {
                 bau
             );
             this._chunkSatzLege(s, b.vStart + a.i * n + a.v, A, v1 - a.v, true);
-            budget -= v1 - a.v;
+            erst = false;
             if (v1 === n) {
                 a.i++;
                 a.v = 0;
@@ -1645,9 +1650,10 @@ AnazhRealm.BAU_SATZ = Object.freeze({
 // Zahlen (die Glut-Stärke je Rezept, Rauheit und Metall nach `metal`) — 24 Satz-Befehle im Hauptbild für sieben Bauten.
 // DIE VERTEX-FORM (K44, wie der Boden-Satz): die Normale snorm8x4, die Farbe float16x4 — die Regler kosten so keinen Byte
 // (60 → 48 B je Vertex; gemessen Genesis Radeon: Bau-Sätze 12,3 MB Inhalt bei 60 B).
-// Der Deckel des Bau-Satzes je Takt (`_tickBauSatz`): so viele Ecken legt ein Takt höchstens in Raten (ein Bereich darüber
-// tritt in Raten ein) — gemessen Radeon 890M, Messort stadt: ~0,1 µs je Ecke, der Deckel hält den Posten unter 1 ms.
-AnazhRealm.BAU_SATZ_ECKEN_JE_TAKT = 8192;
+// DAS STÜCK des Bau-Satzes (`_tickBauSatz`, `_satzAltern`): so viele Ecken legt eine Rate je Schritt unter der EINEN Frist der
+// Bau-Arbeit (ein Bereich darüber tritt in Raten ein; ist die Frist leer, geht der Takt EIN Stück) — gemessen Messort stadt:
+// Radeon 890M ~0,1 µs, GTX 1060 ~0,6 µs je Ecke; bis w25-stadt-takt-2 der Deckel je Takt (BAU_SATZ_ECKEN_JE_TAKT, 8 192).
+AnazhRealm.BAU_SATZ_STUECK = 2048;
 AnazhRealm.BAU_SATZ_ATTR = Object.freeze([
     Object.freeze(["position", 3]),
     Object.freeze(["normal", 3, "snorm8"]),
