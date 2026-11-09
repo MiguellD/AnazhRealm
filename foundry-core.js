@@ -3125,6 +3125,7 @@ const WIESEN_GEWICHT = new Float64Array(WIESEN_ARTEN.arten.length); // die Misch
 // den Faktor, die Nah-Wiese trägt im Mittel das gemessene Blatt. Bis hier lag die offene Wiese (Licht 1, Feuchte 0,3) im Mittel
 // bei Rot × 1,26, Blau × 0,78 — der Glatthafer des Lichts, das Alter und der Standort „hell + trocken wärmer“ (+8 % Rot, −9 %
 // Blau): aus dem Blatt R/G 0,59 las die Wiese oliv. Die Vergilbung des Orts trägt der tote Halm (WIESEN_FARBE.halm.tot).
+// GTX 1050 e9f8151b: die Wiese@0,5 grün statt olivbraun (Luma 42,6), ferne.K1#2 FARBTON 8 km 0,06–2,86°.
 function wiesenTint(x, z, lit, wet, aus, o) {
     const cl = (v, a, b) => Math.max(a, Math.min(b, v));
     const WA = WIESEN_ARTEN,
