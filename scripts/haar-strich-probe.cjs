@@ -136,7 +136,13 @@ async function albedo() {
     const n = lauf(["--nachziehen", path.join(d, "welt.json"), path.join(d, "labor.json"), "--nur", "haar"]);
     console.log("✅ NACHZUG " + n.trim().split("\n").slice(-3).join(" | "));
     const z = JSON.parse(require("fs").readFileSync(path.join(ROOT, "spec/farbe/albedo-tafel.json"), "utf8")).zeilen.find((x) => x.id === "haar");
-    console.log("✅ ALBEDO-ZEILE " + JSON.stringify(z));
+    // die Zeile in kurzen Zeilen (der Bericht der Probe kappt lange): Ist, Ratsche, je Seite Kopf und Quellen
+    console.log("✅ ALBEDO-IST " + JSON.stringify({ ist: z.ist, ratsche: z.ratsche }));
+    for (const [k, g] of Object.entries(z.gemessen || {})) {
+        const { quellen, ...kopf } = g;
+        console.log("✅ ALBEDO-KOPF " + k + " " + JSON.stringify(kopf));
+        console.log("✅ ALBEDO-QUELLEN " + k + " " + JSON.stringify(quellen));
+    }
     process.exit(0);
 }
 (async () => {
