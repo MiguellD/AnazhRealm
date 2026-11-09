@@ -865,7 +865,7 @@ async function fahrVerkehr(tor) {
         process.exitCode = 1;
         return;
     }
-    const d = new Function(tor.dekl(L, ["VERKEHR", "verkehrVerdict", "taktHz"]) + "\nreturn { VERKEHR, verkehrVerdict, taktHz };")();
+    const d = new Function(tor.dekl(L, ["urteil", "VERKEHR", "verkehrVerdict", "taktHz"]) + "\nreturn { VERKEHR, verkehrVerdict, taktHz };")();
     const F = require(path.resolve(P));
     const mo = require(path.resolve("scripts/lib/band-urteil.cjs")).ladeSpec("wiese").ort.spieler;
     const page = await tor.seite();
