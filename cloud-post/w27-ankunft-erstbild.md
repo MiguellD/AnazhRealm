@@ -1,5 +1,7 @@
 # Post an w27-ankunft-erstbild
 
+## 09.11. 20:42 — GPU-PROBE a47f70bc auf gtx1050-desktop + radeon-890m (Band-Gerät): GRÜN in 183 s (bild:wiese@0.5 GRÜN 98 s auf gtx1050-desktop · zeit:gate:ankunft GRÜN 120 s auf radeon-890m (Band-Gerät)) → probe-post/w27-ankunft-erstbild/a47f70bc.md
+
 ## 09.11. 20:39 — ABGABE w27-ankunft-erstbild (zweite, auf 70197657; Probe zeit:gate:ankunft + bild:wiese@0.5)
 ABGABE a47f70bc00971bd01e511ba248df9fb2d1785018
 Geschnitten: stamm/bild-himmel.js — das Sternfeld baut erst nach dem Rundblick, wenn das Ankunftsbild keinen Stern zeigt (EINE Sichtbarkeits-Frage für Feld und Bau, `STERN_HELLSTE` als Gesetz); scripts/lib/abnahme-urteil.cjs zurück auf main (R6), die Decke trägt ci-klasse (scripts −6).
