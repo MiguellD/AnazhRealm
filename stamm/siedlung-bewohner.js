@@ -2110,23 +2110,21 @@ class AnazhRealm_siedlung_bewohner {
         const dtW = (dt * b.tempoTag) / b.tempo;
         const [weg0, rest0] = [b.weg, b.wegRest];
         let lenk = b.drinnen || !(dt > 0) ? null : this._bewohnerAusweichen(S, b, dtW);
-        // DER VORRANG DER FAHRBAHN (PFLICHT-OFFEN C, das EINE Gesetz der Straße): wer neben ihr steht und mit dem Schritt der Frist
-        // (`lenkS`, sein Tempo oder das seines Wegs) in sie träte, wartet am Rand, solange ein Wagen den Punkt vor seinem Bug
-        // beansprucht (`_verkehrVorrang`) — wer schon auf ihr geht, geht hinüber, und der Wagen hält vor ihm. Bis hier nahm der
+        // DER VORRANG DER FAHRBAHN (PFLICHT-OFFEN C, das EINE Gesetz der Straße): wer neben der Bahn eines Wagens steht und mit dem
+        // Schritt der Frist (`lenkS`, sein Tempo oder das seines Wegs) in sie träte, wartet am Rand, solange der Wagen den Punkt
+        // beansprucht (`_verkehrVorrang`) — wer schon in ihr geht, geht hinüber, und der Wagen hält vor ihm. Bis hier nahm der
         // Strom der Menge jede Lücke: die Halter der Kreuzung am Markt warteten auf Querende, 18 Wagen standen dahinter, in 150 s
-        // erreichte keiner sein Ziel.
+        // erreichte keiner sein Ziel. Der Rand ist die Bahn, die der Wagen fährt, nie die gemalte Fahrbahn (`_verkehrAufSpur`):
+        // bis heim2-w20-wald-kosten fragte nur, wer von ihr auf sie trat — wer am Rand ging, wo die Linie des Halters in der Kurve
+        // über die Fahrbahn hinaus reichte, trat ungefragt hinein (stadt-voll 10 Uhr: 43 von 140 Halte-Sekunden der Halter am Markt
+        // vor einem Leib neben der Fahrbahn).
         if (S.verkehr && b.weg && !b.drinnen && dt > 0) {
             const T = Math.max(dtW, AnazhRealm.BEWOHNER.lenkS);
             const e = lenk ? null : this._bewohnerLinie(b, x0, z0);
             const l = e ? Math.hypot(e.x - x0, e.z - z0) : 0;
             const [vx, vz] = lenk ? [lenk.vx, lenk.vz] : l > 1e-6 ? [((e.x - x0) / l) * b.tempo, ((e.z - z0) / l) * b.tempo] : [0, 0]; // prettier-ignore
             const [nx, nz] = [x0 + vx * T, z0 + vz * T];
-            if (
-                (vx || vz) &&
-                !this._verkehrAufSpur(S, x0, z0, 0) &&
-                this._verkehrAufSpur(S, nx, nz, 0) &&
-                this._verkehrVorrang(S, nx, nz, b)
-            )
+            if ((vx || vz) && this._verkehrVorrang(S, nx, nz, b) && !this._verkehrVorrang(S, x0, z0, b))
                 lenk = { vx: 0, vz: 0 };
         }
         const bewegt = this._bewohnerSchritt(b, dtW, lenk);
@@ -2236,13 +2234,17 @@ class AnazhRealm_siedlung_bewohner {
         // gilt der Punkt als erreicht, wenn das Bein von hier zum übernächsten frei ist — das Bein des Tags beginnt an ihm, und
         // er geht auf es zurück (`_bewohnerLinie`). Bis mensch.K3 Staffel 2 sprang er schon 7 m vor dem Punkt auf eine neue
         // Linie von hier: die Sehne schnitt die Ecke, und wer nach 1 h kam, fand den Feldarbeiter #809070 2,06 m fort.
+        // DER LEIB TRÄGT SEINEN RADIUS (`kR`, der Wagen im Gedränge, `_verkehrImRaster`) wie in Wache, Frist und Umweg: der Punkt
+        // in der Hülle eines Wagens ist besetzt, und neben ihm ist, wer ihm näher als zwei seiner Radien steht. Bis
+        // heim2-w20-wald-kosten fragte die Regel zwei Kapseln (K): der Punkt 1,65 m vor der Mitte des Bugs (kR 1,67) war frei und
+        // unerreichbar — der Gehende tänzelte 0,5 m vor ihm auf der Stelle, der Wagen wartete auf ihn (stadt-voll 10 Uhr: #7:18:1
+        // vor Wagen 8 an der Wende 818/467, eine Fahrt 346 s, ab Minute 9 fuhr keiner der 20 Wagen).
         const n1 = b.weg[b.wi + 1];
-        if (
-            n1 &&
-            hl < 2 * K &&
-            nb.some((o) => Math.hypot(o.leib.position.x - q.x, o.leib.position.z - q.z) < K) &&
-            !this._bewohnerWand(p, n1)
-        ) {
+        const besetzt = (o) => {
+            const r = o.kR || K;
+            return hl < 2 * r && Math.hypot(o.leib.position.x - q.x, o.leib.position.z - q.z) < r;
+        };
+        if (n1 && nb.some(besetzt) && !this._bewohnerWand(p, n1)) {
             this._bewohnerErreicht(b);
             return this._bewohnerAusweichen(S, b, dt);
         }

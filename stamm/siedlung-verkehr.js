@@ -374,6 +374,7 @@ class AnazhRealm_siedlung_verkehr {
                 folgeH: (w % V.folgeTakt) * AnazhRealm.FIXED_DT,
                 leiber: null,
                 vorne: null,
+                vorder: null,
                 grund: null,
                 warteS: 0,
                 stehtS: 0,
@@ -467,31 +468,39 @@ class AnazhRealm_siedlung_verkehr {
 
     // DER VORRANG DER FAHRBAHN: beansprucht ein Wagen der Stadt (er fährt) den Punkt (x, z) gegen den Bewohner b? Er liegt vor
     // seinem Bug, näher als der Wagen in der Zeitlücke `lueckeS` fährt (höchstens `vorrangM`: wer dort hinüber will, wäre noch in
-    // seiner Bahn, wenn er ankommt), und quer in seiner Bahn (der halbe Wagen, Kapsel, `seitM` und ein Meter für die Kurve) —
-    // außer der Wagen hält für b selbst (`W.wer`, `_verkehrFolge`): dann geht b zuerst. Wer steht, beansprucht nichts: vor dem
+    // seiner Bahn, wenn er ankommt), und in seiner Bahn (unten) — außer b hält selbst einen Wagen (`W.wer`, `_verkehrFolge`): dann
+    // geht b zuerst. Wer steht, beansprucht nichts: vor dem
     // wartenden Wagen geht man hinüber. Bis hier beanspruchte auch der stehende Wagen den Punkt — der Gehende am Rand wartete auf
     // ihn, er auf einen anderen, und der Halter der Kreuzung auf den Gehenden (stadt-voll 10 Uhr, 250 s, 18 Wagen dahinter); davor
     // hielt der Halter einer Enge für den, der in der Kurve am Rand auf ihn wartete. DIE LÜCKE IM STROM: wer schon `vorrangWarteS`
     // vor Leibern steht, beansprucht seine Bahn (`vorrangM`) auch stehend — wer in ihr geht, geht zu Ende, wer an den Rand kommt,
     // wartet. Bis w13-verkehr-heil querte der Markt um 10 Uhr ohne Ende vor dem Halter der Kreuzung (stadt-voll, Minute 5–9 nach
     // dem Sprung: Reihen von 5–7 Wagen dahinter, je 27–29 m in der Minute). Leser: der Gang der Bewohner (`_bewohnerGehen`).
+    // DER VORRANG LIEST DIE BAHN, DIE ER FÄHRT (heim2-w20-wald-kosten): beansprucht ist, was in seiner Bahn liegt — das Band um
+    // seine Linie voraus (`W.F`: halber Wagen, Kapsel, `seitM` und sein Ausscheren `rund`), dasselbe Band, in dem er vor einem
+    // Leib hält (`_verkehrFolge`) —, nie ein Strahl längs seiner Nase; wer einen Ort hält (`hat`), beansprucht seine Bahn durch
+    // ihn bis zu seinem Ende (der Ort gehört ihm, bis er hinaus ist). Wer selbst einen Wagen hält, geht zu Ende — ihm gilt kein
+    // Vorrang. Bis hier fragte der Strahl geradeaus: in der Kurve der Kreuzung am Markt (stadt-voll 10 Uhr) lag die Bahn des
+    // Halters neben ihm, und die Querenden traten hinein — 28 % der Zeit hielt ein Leib den Halter der Kreuzung (jetzt 21–23 %).
     _verkehrVorrang(S, x, z, b) {
         const V = AnazhRealm.VERKEHR;
+        const R = AnazhRealm.PLAYER_WALL_RADIUS;
+        let traf = false;
         for (const W of S.verkehr.wagen) {
             const e = W.entry;
-            if (W.zustand !== "faehrt" || !e || !e._fahr || W.wer === b) continue;
-            const [fx, fz] = [Math.sin(e._rideYaw || 0), Math.cos(e._rideYaw || 0)];
-            const [dx, dz] = [x - e.position.x, z - e.position.z];
-            const vor = dx * fx + dz * fz - W.hl;
-            const bahn = W.leibS >= V.vorrangWarteS ? V.vorrangM : Math.max(0, e._fahr.vlong) * V.lueckeS;
-            if (
-                vor > 0 &&
-                vor < Math.min(V.vorrangM, bahn) &&
-                Math.abs(dx * fz - dz * fx) < W.hw + AnazhRealm.PLAYER_WALL_RADIUS + V.seitM + 1
-            )
-                return true;
+            const F = W.F;
+            if (traf || W.zustand !== "faehrt" || !e || !e._fahr || !F) continue;
+            let bahn = Math.min(V.vorrangM, W.leibS >= V.vorrangWarteS ? V.vorrangM : Math.max(0, e._fahr.vlong) * V.lueckeS); // prettier-ignore
+            for (const y of W.zonen) if (y.hat && !y.weg) bahn = Math.max(bahn, y.aus - F.s - W.hl);
+            const r0 = W.hw + R + V.seitM;
+            if (!(bahn > 0) || (x - e.position.x) ** 2 + (z - e.position.z) ** 2 > (W.hl + bahn + r0 + 1) ** 2)
+                continue;
+            for (let i = F.i; !traf && i < F.pts.length && F.bogen[i] <= F.s + W.hl + bahn; i++) {
+                const r = r0 + F.rund[i];
+                traf = F.bogen[i] > F.s + W.hl && (x - F.pts[i].x) ** 2 + (z - F.pts[i].z) ** 2 < r * r;
+            }
         }
-        return false;
+        return traf && !S.verkehr.wagen.some((W) => W.wer === b);
     }
 
     // DER WAGEN STEHT AUF SEINEM PLATZ: das Werk des Gesetzes (`fahrzeug_<typ>`, ausGesetz, präzise — die Wende ist sein Platz),
@@ -855,7 +864,15 @@ class AnazhRealm_siedlung_verkehr {
                 weicht: null,
                 gesperrt: false,
             });
-            Object.assign(W, { vorne: null, grund: null, wer: null, platzLeib: null, bildRuht: false, bildAlt: true });
+            Object.assign(W, {
+                vorne: null,
+                vorder: null,
+                grund: null,
+                wer: null,
+                platzLeib: null,
+                bildRuht: false,
+                bildAlt: true,
+            });
         }
     }
 
@@ -1374,7 +1391,7 @@ class AnazhRealm_siedlung_verkehr {
         // seiner halben Länge um dessen Fußpunkt — dort steht sein Leib, wenn er ihn passiert); die des ganzen Fensters (`rund`)
         // filtert nur vor. Bis hier galt sie überall: wer an der Haltelinie der Wende wartete, sperrte dem, der aus dem Ring kam,
         // die gerade Bahn heraus (beide standen 40 s)
-        W.vorne = null;
+        [W.vorne, W.vorder] = [null, null];
         let [hx0, hx1, hz0, hz1] = [Infinity, -Infinity, Infinity, -Infinity];
         let kMax = 0;
         for (let i = F.i; i <= j1; i++) {
@@ -1445,7 +1462,15 @@ class AnazhRealm_siedlung_verkehr {
             const of = o._fahr;
             const vO = of && O.zustand === "faehrt" ? Math.max(0, of.vlong * Math.cos(ry - lt)) : 0;
             const gap = a.s - F.s - W.hl;
-            if (!W.vorne || gap < W.vorne.gap) W.vorne = { gap, v: vO, s: a.s, O, quer: a.quer, rund: rundAn(a.i) };
+            const d = { gap, v: vO, s: a.s, O, quer: a.quer, rund: rundAn(a.i) };
+            if (!W.vorne || gap < W.vorne.gap) W.vorne = d;
+            // DER VORDERE IN SEINER RICHTUNG (`vorder`: sein Weg liegt längs der Linie, wie die Begegnung entgegen cos < −0,5): der
+            // Kopf der Reihe vor ihm, die der Stauraum und der Kopf der Wartenden lesen (`_verkehrZonen`) — wer seine Linie quert,
+            // steht im Ort, nie in seiner Ausfahrt. Bis heim2-w20-wald-kosten las beide `vorne`: wer an der Haltelinie wartete, sah
+            // den Halter, der vor seinem Bug durch die Kreuzung bog, mit dem Tempo längs seiner Linie (quer: 0) als stehende Reihe
+            // in seiner Ausfahrt, hieß `gesperrt` und verlor den Kopf der Reihe — sechs Wagen anderer Arme fuhren vor ihm
+            // (stadt-voll 10 Uhr: Wagen 14 am Arm Ost 39 s an der Haltelinie, 8 m in Minute 8)
+            if (Math.cos(ry - lt) > 0.5 && (!W.vorder || gap < W.vorder.gap)) W.vorder = d;
             halt(gap, vO, "wagen", O);
         }
         // WER IN DER SPUR STEHT ODER GEHT: die Bewohner im Raster um das Fenster, der Spieler
@@ -1643,16 +1668,16 @@ class AnazhRealm_siedlung_verkehr {
         // Kreuzung am Markt, die 9 mit dem Heck 1,5 m hielt, 9 hinter 5 und 14 vor der Enge — ein Kreis, keiner der 20 Wagen fuhr)
         const raum = (ende) => {
             let stopp = Infinity;
-            if (!W.vorne) return true;
+            if (!W.vorder) return true;
             const reihe = [];
-            let [O, s, vO] = [W.vorne.O, W.vorne.s, W.vorne.v];
+            let [O, s, vO] = [W.vorder.O, W.vorder.s, W.vorder.v];
             for (const war = new Set(); O && !war.has(O) && war.size < 20;) {
                 war.add(O);
                 const z = O.F && O.zonen.find((y) => !y.weg && !y.hat);
                 const eigen = vO <= 1 || !O.F ? s : z ? s + Math.max(0, z.ein - V.vorM - O.F.s - O.hl) : Infinity;
                 reihe.push([O, eigen]);
-                if (!O.vorne || eigen === s) break;
-                [s, vO, O] = [s + 2 * O.hl + O.vorne.gap, O.vorne.v, O.vorne.O];
+                if (!O.vorder || eigen === s) break;
+                [s, vO, O] = [s + 2 * O.hl + O.vorder.gap, O.vorder.v, O.vorder.O];
             }
             for (let k = reihe.length - 1; k >= 0; k--)
                 stopp = Math.min(reihe[k][1], stopp - V.abstandM - 2 * reihe[k][0].hl);
@@ -1724,7 +1749,7 @@ class AnazhRealm_siedlung_verkehr {
         // führe der Durchgang der Wende ewig vor dem Ausparkenden vorbei) — bis w12-verkehr hielt der Kopf die Reihe auch, wenn er selbst nicht
         // konnte: um 23 Uhr wartete Wagen 5 an der Enge vor der Wende, die Wagen 18 hielt, 18 stand hinter 13, 13 hinter 15, und 15
         // durfte nicht an der Enge an 5 vorbei — ab Minute 5 fuhr keiner der 20 Wagen der Stadt des Worts
-        const kopf = Z.warte.find((o) => o === W || (!o.gesperrt && !(o.vorne && o.vorne.O.reihe.has(Z))));
+        const kopf = Z.warte.find((o) => o === W || (!o.gesperrt && !(o.vorder && o.vorder.O.reihe.has(Z))));
         // vor dem Kopf vorbei nur, wer ihm nicht im Weg ist (verträglich mit ihm: der Kopf wartet nie länger seinetwegen)
         if (!W.weicht && kette.every(darf) && (drinnen || !kopf || kopf === W || vertraeglich(z0, kopf)) && platz) {
             for (const z of kette) {
