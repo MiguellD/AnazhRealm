@@ -460,8 +460,8 @@ class AnazhRealm_bild_erst {
     }
 
     // DER KATALOG DER ROH-PROGRAMME (w26-programm-katalog, Atlas §3 — UE PSO-Precache: kein Programm entsteht am Zug): was die Welt
-    // am Gerät vorbei zeichnet oder rechnet (`ROH_PROGRAMME`: das Tiefen-Abbild des Hauptbilds, die Wahl der GPU), entsteht beim
-    // Anschluss des Geräts asynchron, Sekunden vor seinem ersten Leser. Bis hier baute der erste Lauf es synchron
+    // am Gerät vorbei zeichnet oder rechnet (`ROH_PROGRAMME`: das Tiefen-Abbild des Hauptbilds, die Wahl der GPU, der Rechner der
+    // Karten-Ablage), entsteht beim Anschluss des Geräts asynchron, Sekunden vor seinem ersten Leser. Bis hier baute der erste Lauf es synchron
     // (`createRenderPipeline`/`createComputePipeline`) — das Tiefen-Abbild im ersten Bild, das Wasser zeigte: der GPU-Prozess
     // übersetzte vor dem nächsten Bild (gemeldet in w25-pipeline-vorwaermen). Eine Absage meldet sich laut wie jede Pipeline.
     _rohKatalog(renderer) {
@@ -471,7 +471,7 @@ class AnazhRealm_bild_erst {
         const K = (this._rohProgramme = { dev, steht: new Map() });
         for (const [name, bau] of Object.entries(AnazhRealm.ROH_PROGRAMME))
             bau(dev, name).then(
-                (p) => K.steht.set(name, { p, gruppe: p.getBindGroupLayout(0) }),
+                (x) => K.steht.set(name, x),
                 (e) => this._gpuWacheMeldung("pipeline", `PIPELINE-ABSAGE ${name}: ${(e && e.message) || e}`)
             );
     }
@@ -612,17 +612,20 @@ AnazhRealm.VORWAERM_VERSUCHE = 3;
 AnazhRealm.VORWAERM_RUHE_MS = 0.3;
 // die kommenden Stufen jeder Art (`_vorwaermStufen`): die Foundry serviert je Art die deklarierte (`_foundryServierStufe`)
 AnazhRealm.VORWAERM_STUFEN = Object.freeze([0, 1, 2]);
-// DER KATALOG DER ROH-PROGRAMME (`_rohKatalog`): je Name der Bau seines Programms am Gerät (asynchron; das WGSL lebt bei seinem Pass)
+// DER KATALOG DER ROH-PROGRAMME (`_rohKatalog`): je Name der Bau seiner Programme am Gerät (asynchron; das WGSL lebt bei seinem
+// Pass) — das Versprechen trägt, was der Leser braucht (`_rohProgramm`)
 AnazhRealm.ROH_PROGRAMME = Object.freeze({
     "szene:tiefenabbild": (dev, label) => {
         const module = dev.createShaderModule({ label, code: AnazhRealm.TIEFEN_ABBILD_WGSL });
-        return dev.createRenderPipelineAsync({
-            label,
-            layout: "auto",
-            vertex: { module, entryPoint: "vs" },
-            fragment: { module, entryPoint: "fs", targets: [{ format: "r32float" }] },
-            primitive: { topology: "triangle-list" },
-        });
+        return dev
+            .createRenderPipelineAsync({
+                label,
+                layout: "auto",
+                vertex: { module, entryPoint: "vs" },
+                fragment: { module, entryPoint: "fs", targets: [{ format: "r32float" }] },
+                primitive: { topology: "triangle-list" },
+            })
+            .then((p) => ({ p, gruppe: p.getBindGroupLayout(0) }));
     },
     "pass-wahl": (dev, label) => {
         const lay = dev.createBindGroupLayout({
@@ -635,7 +638,37 @@ AnazhRealm.ROH_PROGRAMME = Object.freeze({
         });
         const module = dev.createShaderModule({ label, code: AnazhRealm.PASS_WAHL_WGSL });
         const layout = dev.createPipelineLayout({ bindGroupLayouts: [lay] });
-        return dev.createComputePipelineAsync({ label, layout, compute: { module, entryPoint: "wahl" } });
+        return dev
+            .createComputePipelineAsync({ label, layout, compute: { module, entryPoint: "wahl" } })
+            .then((p) => ({ p, gruppe: lay }));
+    },
+    // die GPU-Ablage der Karte (`_karteAblage`): neun Einstiege EINES Moduls an EINER Bindung (nur mit BC, `_impostorAtlasFormat`)
+    "karte-rechner": (dev, label) => {
+        if (!dev.features.has("texture-compression-bc")) return new Promise(() => {});
+        const S = (b, t) => Object.assign({ binding: b, visibility: GPUShaderStage.COMPUTE }, t);
+        const puffer = (b) => S(b, { buffer: { type: "storage" } });
+        const tex = (b) => S(b, { texture: { sampleType: "float" } });
+        const layout = dev.createBindGroupLayout({
+            label,
+            entries: [
+                S(0, { buffer: { type: "uniform", hasDynamicOffset: true } }),
+                tex(1),
+                tex(2),
+                tex(3),
+                ...[4, 5, 6, 7, 8, 9, 10].map(puffer),
+                S(11, { buffer: { type: "uniform" } }), // der Saum der Karte (`_karteSaumVon`), je Bake
+                puffer(12), // die Tiefe je Texel (w4-laub-karte): Summe und Zahl der deckenden je Stufe der Normale
+            ],
+        });
+        const module = dev.createShaderModule({ label, code: AnazhRealm.KARTE_RECHNER_WGSL });
+        const pl = dev.createPipelineLayout({ bindGroupLayouts: [layout] });
+        const namen = ["stufe0", "summeK", "glaette", "saumK", "grenzeK", "bc1", "normalK", "bc5", "sicht"];
+        const bau = (n) =>
+            dev.createComputePipelineAsync({ label: "karte-" + n, layout: pl, compute: { module, entryPoint: n } });
+        return Promise.all(namen.map(bau)).then((p) => ({
+            layout,
+            pipes: Object.fromEntries(namen.map((n, i) => [n, p[i]])),
+        }));
     },
 });
 AnazhRealm.KNOTEN_GANG = Object.freeze([

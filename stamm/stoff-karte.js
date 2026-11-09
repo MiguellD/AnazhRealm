@@ -984,6 +984,7 @@ class AnazhRealm_stoff_karte {
             h++;
             m.geometry = c.geometry;
             m.material = c.material;
+            m.name = "karte:" + z.preset; // die Linsen nennen den Bau der Bühne bei ihrer Art (bis w26 „UNBENANNT:Mesh")
             m.matrixAutoUpdate = false;
             m.matrix.copy(c.matrix);
             m.frustumCulled = false;
@@ -1321,46 +1322,11 @@ class AnazhRealm_stoff_karte {
         return aus;
     }
 
-    // DER RECHNER DER ABLAGE: die Compute-Programme (WGSL `KARTE_RECHNER_WGSL`) entstehen asynchron
-    // (createComputePipelineAsync) — bis sie stehen, wartet die Schlange (null).
+    // DER RECHNER DER ABLAGE: die Compute-Programme (WGSL `KARTE_RECHNER_WGSL`) stehen im Katalog der Roh-Programme
+    // (`ROH_PROGRAMME`, beim Anschluss des Geräts asynchron) — bis w26 begannen sie beim ersten Bake-Versuch, und die erste Karte
+    // wartete auf sie; bis sie stehen, wartet die Schlange (null).
     _karteRechner() {
-        const dev = this.state.renderer.backend.device;
-        const R = this._karteRechnerSatz;
-        if (R && R.dev === dev) return R.bereit ? R : null; // je Gerät EIN Satz Programme
-        const S = (b, t) => Object.assign({ binding: b, visibility: GPUShaderStage.COMPUTE }, t);
-        const puffer = (b) => S(b, { buffer: { type: "storage" } });
-        const tex = (b) => S(b, { texture: { sampleType: "float" } });
-        const layout = dev.createBindGroupLayout({
-            label: "karte-rechner",
-            entries: [
-                S(0, { buffer: { type: "uniform", hasDynamicOffset: true } }),
-                tex(1),
-                tex(2),
-                tex(3),
-                ...[4, 5, 6, 7, 8, 9, 10].map(puffer),
-                S(11, { buffer: { type: "uniform" } }), // der Saum der Karte (`_karteSaumVon`), je Bake
-                puffer(12), // die Tiefe je Texel (w4-laub-karte): Summe und Zahl der deckenden je Stufe der Normale
-            ],
-        });
-        const modul = dev.createShaderModule({ label: "karte-rechner", code: AnazhRealm.KARTE_RECHNER_WGSL });
-        const satz = (this._karteRechnerSatz = { bereit: false, layout, pipes: {}, dev });
-        const pl = dev.createPipelineLayout({ bindGroupLayouts: [layout] });
-        const namen = ["stufe0", "summeK", "glaette", "saumK", "grenzeK", "bc1", "normalK", "bc5", "sicht"];
-        Promise.all(
-            namen.map((n) =>
-                dev
-                    .createComputePipelineAsync({
-                        label: "karte-" + n,
-                        layout: pl,
-                        compute: { module: modul, entryPoint: n },
-                    })
-                    .then((p) => (satz.pipes[n] = p))
-            )
-        ).then(
-            () => (satz.bereit = true),
-            (e) => this._stoffBruch("die Karte: die Programme ihrer GPU-Ablage kompilieren nicht", e)
-        );
-        return null;
+        return this._rohProgramm("karte-rechner");
     }
 
     // DER PLAN DER ABLAGE einer Schicht (fest je Atlas-Maß: die Parameter liegen EINMAL im Uniform-Puffer, je Bake ändert

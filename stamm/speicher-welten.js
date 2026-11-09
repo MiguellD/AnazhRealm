@@ -3546,7 +3546,7 @@ AnazhRealm.WELT_GRENZE = Object.freeze({
         "_torZielAtlas",
         "_torProfile",
         "_karteBuehneSatz",
-        "_karteRechnerSatz",
+        "_rohProgramme", // der Katalog der Roh-Programme (`_rohKatalog`): je Gerät, nie je Welt
         "_ofenVorratSteht",
         "_gliederAuftraege",
         "_gliedKapseln",

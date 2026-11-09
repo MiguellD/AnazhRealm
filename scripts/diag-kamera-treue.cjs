@@ -27,10 +27,6 @@ const { DIAET_INSTALL, diaetUrteil } = require("./lib/diaet-linse.cjs");
 const BILD_SOLL = 0.999; // der Replay zeichnet wie der direkte Pfad
 const BLIND_GRENZE = 0.98; // die Lauf-Kontrollen MÜSSEN darunter liegen
 const BLICK_GRENZE = 0.9; // Blick X und Blick Y sind verschiedene Bilder
-// (k) DIE FÄLLE DES VORWÄRM-GESETZES (`_vorwaermUrteil`: holz · Bild · Ladeschirm · Loop ruht · Eingabe ruht · Leine straff ·
-// Auge steht) — je Fall der Täter beim Namen; Soll: der Leerlauf und die Werkbank bauen
-const VF = [["voll", 1, 0, 0, 1, 0, 1], ["voll", 1, 0, 1], [0, 0, 1, 1], ["kienspan", 1, 0, 1], ["voll", 1, 0, 0, 1, 0, 0]];
-const VF_NAME = ["Leerlauf", "Werkbank", "Ladeschirm", "kienspan", "Fahrt"];
 
 const namen = (w) =>
     Object.entries(w || {})
@@ -81,8 +77,7 @@ function urteil(z) {
     if (ks.kontrolle !== true) v.push("SCHLÜSSEL: die Kontrolle ist blind");
     if (!wu.leer || wu.leer.verwirft) v.push("WURF: das Standard-Fragment fehlt oder verwirft — die Probe ist blind");
     if (wu.formen !== "2/1") v.push(`WURF: Lichter/Zustände ${wu.formen} (Soll 2/1)`);
-    const falsch = VF_NAME.map((n, i) => (z.vorbau[i] === "11000"[i] ? "" : n + (i < 2 ? " baut nicht" : " baut"))).filter(Boolean); // prettier-ignore
-    if (falsch.length) v.push(`VORWÄRMEN: ${falsch.join(" · ")}`);
+    if (z.vorbau !== "11000") v.push(`VORWÄRMEN: Leerlauf, Werkbank, Ladeschirm, kienspan, Fahrt ${z.vorbau} (Soll 11000)`);
     if (!(wu.werfer || []).some((x) => x.aus && x.haupt)) v.push("WURF: kein Ausschnitt verwirft — die Probe ist blind");
     for (const x of wu.werfer || []) {
         if (x.haupt !== x.wurf) v.push(`WURF: ${x.name} — Hauptpass verwirft ${x.haupt}, Wurf verwirft ${x.wurf}`);
@@ -174,8 +169,8 @@ function selbsttest() {
         ["Teilen blind", ["stand.teilen", { programme: 0 }], /TEILEN: 0 Karten-Programme/],
         ["Programm je Senke", ["senke", { geteilt: false }], /SENKE: zwei Senken EINER Gestalt/],
         ["Form je Kaskade", ["wurf", { formen: "2/2" }], /Lichter\/Zustände 2\/2/],
-        { name: "Vorwärmen in der Fahrt", z: { ...gruen, vorbau: "11001" }, muss: /VORWÄRMEN: Fahrt baut$/ },
-        { name: "Vorwärmen unter dem Ladeschirm", z: { ...gruen, vorbau: "11100" }, muss: /VORWÄRMEN: Ladeschirm baut$/ },
+        ["Vorwärmen in der Fahrt", ["vorbau=", "11001"], /Fahrt 11001/],
+        ["Vorwärmen unter dem Ladeschirm", ["vorbau=", "11100"], /Fahrt 11100/],
         ["Senken-Kontrolle blind", ["senke", { kontrolle: false }], /SENKE: zwei r184-InstancedMesh/],
         ["Senke zeichnet anders", ["senke", { bild: 0.97 }], /SENKE: der Zeichner zeichnet 0.97/],
         ["Senken-Bild blind", ["senke", { blind: 0.999 }], /SENKE: ohne die Senke/],
@@ -206,7 +201,7 @@ const server = statikServer();
 
 // DIE BÜHNE (Seiten-Kontext): der echte Renderer des Spiels mit seinen Eingriffen (_configureRenderer), eine eigene
 // Szene, Zeit fest. Jeder Schuss ist ein echter Render in ein Ziel (160×120).
-function buehne(VF) {
+function buehne() {
     return (async () => {
         const T = window.THREE,
             TSL = T.TSL;
@@ -709,7 +704,9 @@ function buehne(VF) {
                 wurf.formen = [formen.length, new Set(formen).size].join("/");
                 for (const m of probe) m.dispose();
             }
-            // (k) DAS URTEIL DES VORWÄRM-GESETZES (w25, `_vorwaermUrteil`): je Fall des Stands baut es oder ruht
+            // (k) DAS URTEIL DES VORWÄRM-GESETZES (w25, `_vorwaermUrteil`: holz · Bild · Ladeschirm · Loop ruht · Eingabe ruht · Leine
+            // straff · Auge steht) je Fall — Leerlauf, Werkbank, Ladeschirm, kienspan, Fahrt; Soll: der Leerlauf und die Werkbank bauen
+            const VF = [["voll", 1, 0, 0, 1, 0, 1], ["voll", 1, 0, 1], [0, 0, 1, 1], ["kienspan", 1, 0, 1], ["voll", 1, 0, 0, 1, 0, 0]];
             const vorbau = A._vorwaermUrteil ? VF.map((a) => +A._vorwaermUrteil(...a)).join("") : "fehlt";
             return {
                 vorbau,
@@ -773,7 +770,7 @@ function buehne(VF) {
         if (!bereit.webgpu) throw new Error("kein WebGPU-Backend (die Bundle-API fehlt) — die Wand wäre blind");
         log(`Weltbild nach ${Math.round(bereit.ms / 1000)} s (Chokepoint ${bereit.wahrheit ? "eingehängt" : "FEHLT"})`);
         await page.evaluate(DIAET_INSTALL);
-        out = await page.evaluate(buehne, VF);
+        out = await page.evaluate(buehne);
         log(
             `Aufnahme: ${out.aufnahme.verfolgt}/${out.aufnahme.gezeichnet} verfolgt · ${out.aufnahme.schattenRenders} Schatten-Render · ` +
                 `${out.aufnahme.unterOverride} Bundles unter Override · Bild ${JSON.stringify(out.bild)}`
