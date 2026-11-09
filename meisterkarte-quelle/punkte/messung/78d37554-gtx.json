@@ -1,7 +1,7 @@
 {
  "sha": "78d37554b2d5f98d96ef454cfa9f51752c0e45a0",
  "geraet": "gtx",
- "zeit": "2026-11-09T21:33:51.104Z",
+ "zeit": "2026-11-09T21:39:04.063Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {},
  "ungemessen": {
@@ -813,97 +813,94 @@
    "bahn": "sitzung",
    "zwilling": "profiband.K1#1",
    "modus": "session"
+  },
+  "bauen.K1#2": {
+   "gruen": false,
+   "zahl": "Fremd-Last: AppHelperCap.exe 61,5 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 12,8 CPU-s · MsMpEng.exe 8,3 CPU-s — 2,25 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container); Σ fremd 106,6 CPU-s in 55,4 s) — kein Urteil, UNGEMESSEN (die Probe sah: 7/8 Werke in L0 im Bild (Bau-Hash = L0-Bau, ≤ 3 Eingaben) · p95 bis zum Bild werkstatt kalt 4638 · warm 879 ms (2+1) · rezeptbuch kalt null · warm 489 ms (0+1) · hotbar kalt 3654 · warm 1134 ms (1+2) · ROT: werkstatt p95 kalt 4638 · warm 87)",
+   "exit": 0,
+   "minuten": 0.86,
+   "grund": "Fremd-Last: AppHelperCap.exe 61,5 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 12,8 CPU-s · MsMpEng.exe 8,3 CPU-s — 2,25 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container); Σ fremd 106,6 CPU-s in 55,4 s) — kein Urteil, UNGEMESSEN (die Probe sah: 7/8 Werke in L0 im Bild (Bau-Hash = L0-Bau, ≤ 3 Eingaben) · p95 bis zum Bild werkstatt kalt 4638 · warm 879 ms (2+1) · rezeptbuch kalt null · warm 489 ms (0+1) · hotbar kalt 3654 · warm 1134 ms (1+2) · ROT: werkstatt p95 kalt 4638 · warm 87)",
+   "gpu": "nvidia/pascal",
+   "s": 51.6,
+   "fremd": {
+    "s": 55.4,
+    "takte": 25,
+    "fremdS": 106.63,
+    "kerne": 1.924,
+    "fensterKerne": 2.247,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      61.45
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      12.84
+     ],
+     [
+      "MsMpEng.exe",
+      8.31
+     ]
+    ],
+    "dienerS": 19.45,
+    "diener": [
+     [
+      "dwm.exe",
+      9.42
+     ],
+     [
+      "System",
+      6.94
+     ]
+    ],
+    "eigenS": 206.48,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-09T21:39:04.063Z",
+   "abdruck": "16d0aff9ab8b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-09T21:28:06.058Z",
+  "start": "2026-11-09T21:38:29.611Z",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 6.8,
-  "grundstellungS": [
-   0.1,
-   0.1,
-   4.3
-  ],
-  "proben": 7,
+  "bootS": 8.9,
+  "grundstellungS": [],
+  "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": "wiese",
-    "vor": "leib.K1#1",
-    "s": 23.4,
-    "takte": 658,
+    "ort": null,
+    "vor": "bauen.K1#2",
+    "s": 24.2,
+    "takte": 786,
     "chunks": 81,
     "nach": null
-   },
-   {
-    "ort": null,
-    "vor": "tore.K1#1",
-    "s": 14.2,
-    "takte": 610,
-    "chunks": 81,
-    "nach": "der Grundstellung"
-   },
-   {
-    "ort": null,
-    "vor": "ankunft.K3#1",
-    "s": 5.6,
-    "takte": 282,
-    "chunks": 99,
-    "nach": "der Grundstellung"
-   },
-   {
-    "ort": null,
-    "vor": "profiband.K1#1",
-    "s": 25.8,
-    "takte": 734,
-    "chunks": 81,
-    "nach": "der Tür"
    }
   ],
   "wegeTueren": [],
-  "haenger": [
-   {
-    "probe": "profiband.K4#2",
-    "zurueck": 9
-   }
-  ],
-  "ciBlicke": 8,
+  "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 3834,
-   "frameP95": 116.64,
-   "taktP95": 94.97,
-   "vramMax": 158.5,
-   "seiten": 6,
-   "marken": 2,
+   "bilder": 2496,
+   "frameP95": 50.01,
+   "taktP95": 39.5,
+   "vramMax": 140.6,
+   "seiten": 1,
+   "marken": 0,
    "fehler": 0,
    "verloren": 0,
-   "ortImDeckel": [
-    {
-     "probe": "profiband.K1#1",
-     "m": 1104,
-     "ringVor": 4,
-     "ringMin": 0
-    },
-    {
-     "probe": "klang.K5#2",
-     "m": 1087,
-     "ringVor": 4,
-     "ringMin": 0
-    },
-    {
-     "probe": "profiband.K5#1",
-     "m": 1083,
-     "ringVor": 4,
-     "ringMin": 0
-    }
-   ],
-   "zapfen": 411,
-   "luecken": 6,
-   "letzteLuecke": "kein Renderer"
+   "ortImDeckel": [],
+   "zapfen": 80,
+   "luecken": 0,
+   "letzteLuecke": null
   },
-  "fahrtS": 429.8,
-  "minuten": 7.23
+  "fahrtS": 87.4,
+  "minuten": 1.53
  }
 }
