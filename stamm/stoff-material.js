@@ -2868,6 +2868,9 @@ class AnazhRealm_stoff_material {
             const _g2 = _out.y;
             const _rb2 = _out.x.add(_out.z).mul(0.5);
             const _lum2 = _out.x.mul(0.3).add(_out.y.mul(0.59)).add(_out.z.mul(0.11));
+            // OFFEN (w26-ferne-ton-4): diese Wache liest noch die Albedo — Halm-Relief, Moos und Narbe des Bilds folgen dem Ton der
+            // Palette; die Welt liest die Deckung des Stoffs (`WIESEN_GRUND.deckung`, die Boden-Karte). Der Satz trägt ihr keinen
+            // freien Kanal (BODEN_SATZ_ATTR: jede vierte Komponente belegt).
             const _green = _T.smoothstep(_T.float(0.0), _T.float(G.gruenSchwelle), _g2.sub(_rb2));
             const _damp = _T.float(1.0).sub(_T.smoothstep(_T.float(G.mossDampLo), _T.float(G.mossDampHi), _lum2));
             const _gMoss = au && au.geoMoss ? au.geoMoss : _T.float(1.0);
