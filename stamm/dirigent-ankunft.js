@@ -1500,7 +1500,9 @@ class AnazhRealm_dirigent_ankunft {
     // dem Gesetz, das Pixel des Orts zeigte das Licht des Gesetzes bis 365 m daneben, an drei Orten einen Hang, der von der Sonne
     // weg zeigt. Der Strahl vom Auge durch `p` sucht den Schnitt mit dem Boden des Gitters über eine Masche — vor der Sehne,
     // wo sie unter dem Gesetz steht, sonst hinter ihr — in `treffer.schritte` gleichen Schritten, dann `treffer.halbieren` Mal
-    // halbiert (Relief Mapping, Policarpo & Oliveira 2005); findet er keinen, bleibt der Ort lotrecht unter der Sehne.
+    // halbiert (Relief Mapping, Policarpo & Oliveira 2005); findet er keinen, bleibt der Ort lotrecht unter der Sehne. Gemessen
+    // (swiftshader voll, Dorf, Sonne 5°, ohne Luft, 21/64 Orte, 640×360): am Pixel des Orts 0,4539 → 0,3537, der Schattenhang trägt
+    // kein Sonnenlicht mehr aus dem Nachbarn der Sehne.
     // DIE HIMMELS-SICHT DES GRATS (ferne.K4; Horizon-Based Ambient Occlusion aus der EINEN Karte): der Grat, der dem Empfänger in `p`
     // die Sonne nimmt, verdeckt ihm auch den Himmel unter seinem Horizontwinkel α zur Sonne — dort steht die Aureole, der hellste
     // Himmel des Abends. α aus der Karte: die größere Untergrenze aus dem Punkt, der den Schatten wirft — tan α ≥ (H − y) / s* + tan h☉
