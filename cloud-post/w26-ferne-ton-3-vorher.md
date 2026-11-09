@@ -1,5 +1,7 @@
 # Post an w26-ferne-ton-3-vorher
 
+## 09.11. 18:00 — GPU-PROBE bc2fe1bf auf omen-gtx1060 (Band-Gerät): GRÜN in 133 s (zeit:gate:luft-tiefe:echt GRÜN 85 s auf omen-gtx1060 (Band-Gerät)) → probe-post/w26-ferne-ton-3-vorher/bc2fe1bf.md
+
 ## 09.11. 17:57 — GPU-PROBE b0966549 auf keinem Läufer: ABGEWIESEN in 16 s („zeit:gate:luft-tiefe:echt“: weder gate:<npm-skript> noch bild:<ort>[@<uhr 0..1>]) → probe-post/w26-ferne-ton-3-vorher/b0966549.md
 
 ## 09.11. 17:55 — GPU-PROBE c47327b8 auf keinem Läufer: ABGEWIESEN in 16 s („zeit:gate:luft-tiefe:echt“: kein npm-Skript in package.json) → probe-post/w26-ferne-ton-3-vorher/c47327b8.md
