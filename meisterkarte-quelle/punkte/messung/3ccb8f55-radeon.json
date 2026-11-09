@@ -1,0 +1,182 @@
+{
+ "sha": "3ccb8f55fb5225e29fe5223e343a4859e48b2edb",
+ "geraet": "radeon",
+ "zeit": "2026-11-09T22:22:30.037Z",
+ "host": "MiguellD",
+ "je": {
+  "fahrzeug.K2#2": {
+   "gruen": false,
+   "zahl": "C ROT: der Verkehr der Stadt 10 Uhr ❌ fahrend je Minute [null] · ohne Ziel erreicht: Wagen 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 (0 Ankünfte) · bewegter Eintrag mit ve · 23 Uhr ❌ fahrend je Minute [null] · ohne Ziel erreicht: Wagen 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 (0 Ankünfte) · ohne Probe: 25°-Hang, Furt, Ego und Third — die 2 wartet auf sie",
+   "exit": 1,
+   "minuten": 1.15,
+   "grund": "ROT: C ROT: der Verkehr der Stadt 10 Uhr ❌ fahrend je Minute [null] · ohne Ziel erreicht: Wagen 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 (0 Ankünfte) · bewegter Eintrag mit ve · 23 Uhr ❌ fahrend je Minute [null] · ohne Ziel erreicht: Wagen 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 (0 Ankünfte) · ohne Probe: 25°-Hang, Furt, Ego und Third — die 2 wartet auf sie",
+   "gpu": "amd/rdna-3",
+   "s": 69.3,
+   "fremd": {
+    "s": 74.7,
+    "takte": 27,
+    "fremdS": 148.16,
+    "kerne": 1.982,
+    "fensterKerne": 2.941,
+    "namen": [
+     [
+      "git.exe",
+      47.14
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      25.73
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      18.73
+     ]
+    ],
+    "dienerS": 47.78,
+    "diener": [
+     [
+      "System",
+      21.84
+     ],
+     [
+      "WmiPrvSE.exe",
+      16.28
+     ]
+    ],
+    "eigenS": 289.11,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-09T22:22:30.037Z",
+   "abdruck": "65e7565d5488",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "ungemessen": {
+  "fahrzeug.K2#1": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine WEGENETZ-Zeile (Exit 1)) · Täter: PROBE-FEHLER ReferenceError: urteil is not defined |     at Object.wegenetzVerdict (eval at fahrWegenetz ([eval]:121:15), <anonymous>:14:5) |     at fahrWegenetz ([eval]:169:30)",
+   "exit": 1,
+   "minuten": 2.22,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine WEGENETZ-Zeile (Exit 1)) · Täter: PROBE-FEHLER ReferenceError: urteil is not defined |     at Object.wegenetzVerdict (eval at fahrWegenetz ([eval]:121:15), <anonymous>:14:5) |     at fahrWegenetz ([eval]:169:30)",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 38.4,
+   "teile": [
+    38.2,
+    38.3,
+    38.4,
+    18.5
+   ],
+   "fremd": {
+    "s": 134.9,
+    "takte": 45,
+    "fremdS": 326.42,
+    "kerne": 2.42,
+    "fensterKerne": 3.402,
+    "namen": [
+     [
+      "git.exe -c protocol.ext.allow=never -c core.alternateRefsCommand=f() { git --g… $1 for-eac",
+      54.34
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      49.61
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      43.47
+     ]
+    ],
+    "dienerS": 128.38,
+    "diener": [
+     [
+      "System",
+      64.86
+     ],
+     [
+      "WmiPrvSE.exe",
+      34.81
+     ]
+    ],
+    "eigenS": 601.3,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-09T22:19:47.651Z",
+   "abdruck": "d5ce7420c7ee",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-09T22:19:02.103Z",
+  "port": 7804,
+  "warten": 0.22,
+  "bootS": 6.4,
+  "grundstellungS": [
+   8.9
+  ],
+  "proben": 2,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "fahrzeug.K2#1",
+    "s": 20.5,
+    "takte": 581,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": "wiese",
+    "vor": "fahrzeug.K2#2",
+    "s": 19.3,
+    "takte": 576,
+    "chunks": 81,
+    "nach": "der Tür"
+   }
+  ],
+  "wegeTueren": [
+   {
+    "vor": "fahrzeug.K2#2",
+    "wege": "wege +21 [-119.1,-274.9,279.2,201/272] [-153.6,-1374.1,317.4,-940.2/202] [-16,-1673.7,240.8,-1629.6/3] …",
+    "s": 8.9
+   }
+  ],
+  "ciBlicke": 3,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 2,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [
+    {
+     "probe": "fahrzeug.K2#2",
+     "m": 1857,
+     "ringVor": 4,
+     "ringMin": 0
+    },
+    {
+     "probe": "fahrzeug.K2#1",
+     "m": 1618,
+     "ringVor": 4,
+     "ringMin": -1
+    }
+   ],
+   "zapfen": 257,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 266.7,
+  "minuten": 4.76
+ }
+}

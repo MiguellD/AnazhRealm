@@ -1,0 +1,182 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.238",
+  "sha": "78d37554b2d5f98d96ef454cfa9f51752c0e45a0"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": false,
+  "weltTakte": 0
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0.0139,
+   "taeter": {
+    "Laub baum_tanne": 0.0069,
+    "Laub grown_busch_hazel_v1": 0.0069
+   }
+  }
+ },
+ "ziel": {
+  "name": "Herde",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "abstand": 47.45,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   -538.438,
+   50.893,
+   -849.854
+  ],
+  "blick": [
+   -0.06453,
+   -0.25825,
+   -0.96392
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 71,
+  "sigma": 39.7,
+  "schwarz": 0.0001,
+  "weiss": 0
+ },
+ "wahl": {
+  "versucht": 6,
+  "gewaehlt": 2,
+  "posen": [
+   {
+    "k": 0,
+    "kamera": [
+     -550.38,
+     54.4,
+     -850.62
+    ],
+    "rot": [
+     "Ziel Herde verdeckt von an Punkt 2 Natur baum_birke in 44.72 m"
+    ],
+    "ms": 129
+   },
+   {
+    "k": 3,
+    "kamera": [
+     -571.675,
+     57.333,
+     -861.085
+    ],
+    "rot": [
+     "Ziel Herde verdeckt von an Punkt 5 Natur baum_birke in 47.21 m"
+    ],
+    "ms": 136
+   },
+   {
+    "k": 5,
+    "kamera": [
+     -579.578,
+     56.626,
+     -870.071
+    ],
+    "rot": [
+     "Ziel Herde verdeckt von an Punkt 6 Natur baum_tanne in 36.73 m"
+    ],
+    "ms": 103
+   },
+   {
+    "k": 1,
+    "kamera": [
+     -561.717,
+     56.144,
+     -854.451
+    ],
+    "rot": [
+     "Ziel Herde verdeckt von an Punkt 1 Laub baum_kiefer in 30.38 m"
+    ],
+    "ms": 137
+   },
+   {
+    "k": 7,
+    "kamera": [
+     -584.885,
+     53.613,
+     -880.795
+    ],
+    "rot": [
+     "Ziel Herde verdeckt von an Punkt 6 Natur baum_birke in 45.75 m"
+    ],
+    "ms": 118
+   },
+   {
+    "k": 2,
+    "kamera": [
+     -538.438,
+     50.893,
+     -849.854
+    ],
+    "rot": [],
+    "ms": 2694
+   }
+  ],
+  "ms": 3318
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Herde im Bild frei 47.45 m · Luma 71 σ 39.7 schwarz 0.0 % weiß 0.0 % · Stand 18.546.238 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 6 Posen",
+ "klasse": {
+  "ausdruck": "^tier",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 0,
+  "toene": [
+   "tier-satz=255/80/80",
+   "tier:bestaeuber=80/255/80",
+   "tier:wesen=80/120/255"
+  ],
+  "klassen": {
+   "tier-satz": {
+    "objekte": 4,
+    "pixel": 52
+   },
+   "tier:bestaeuber": {
+    "objekte": 1,
+    "pixel": 29
+   },
+   "tier:wesen": {
+    "objekte": 55,
+    "pixel": 375
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\78d37554-radeon\\tiere.K1_2-herde-2.maske.png"
+ }
+}

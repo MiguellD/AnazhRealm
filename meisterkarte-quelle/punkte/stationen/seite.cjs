@@ -33,7 +33,7 @@ async function seiteLauf() {
     const WB = require(path.resolve("scripts/lib/welt-boot.cjs"));
     const t0 = Date.now();
     const uhr = () => ((Date.now() - t0) / 1000).toFixed(1);
-    // der Deckel des Laufs (punkte.cjs PUNKTE_PROBE_DECKEL_S: die Eich-Fahrt 90 s), sonst der der Station
+    // der Deckel des Laufs (punkte.cjs PUNKTE_PROBE_DECKEL_S: der EINE Deckel an der Leine, Grund oder Anteil der Fahrt), sonst {SEK}
     const H = { aus, port: Number(port), W, sek: Number(process.env.PUNKTE_PROBE_DECKEL_S) || Number(sek), WB, ende: [] };
     H.ruf = async (weg, o) => {
         const a = await WB.werkbankRuf(W, weg, o || {});
@@ -120,7 +120,7 @@ async function seiteLauf() {
 
 // DIE PROBE einer Station: der Läufer und die Art (`async (H) => exit`, ohne freie Namen außer H, fs, path, require), der Deckel
 // `sek` (die Frist liest der Läufer aus {SEK}, dem Deckel des Laufs — nie eine zweite Zahl); `zusatz` trägt mutiert (die Probe ändert
-// die Welt) und ausnahme (der Grund für einen Deckel über 45 s)
+// die Welt)
 const seiteProbe = (sek, art, zusatz = {}) => ({
     sek,
     befehl: ["node", "-e", "(" + knapp(seiteLauf) + ")()", "{AUS}", "{PORT}", "{SEK}", knapp(art)],

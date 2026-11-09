@@ -119,7 +119,6 @@ const K2_PROBE = {
     befehl: PW.torBefehl(PW.wasserGraben, "{KOORD}"),
     sek: 10,
     mutiert: true,
-    ausnahme: "zwei Orte: der Damm an der Mess-Wiese, der Graben am Fluss nächst Genesis (1,7 km, der Ring kalt) — GTX p90 71,1 s",
 };
 
 // ───────── DIE WELT-PROBE (p3-stationen-g12, 01.11.): sieben Kriterien ohne Station in EINER Welt am Null-Renderer ─────────
@@ -2625,7 +2624,6 @@ module.exports = [
             befehl: PW.torBefehl(PW.kollisionTempo),
             sek: 90,
             mutiert: true,
-            ausnahme: "der Wagen bei vmax × 1,2 in seinen Läufen gegen Mauer, Fels, Baum und Haus, der gestoßene Bär, der Schmuggel und das Beweisbild — die Arbeit der Linse `tempo` (Radeon 27,8–33,8 s, GTX 40,5 s bis 05.11.; seit 07.11. jede Fahrt an beiden am 45-s-Deckel gerissen, 87537d3f Radeon 45,5 s, GTX 45,2 s; am Gesetz 90 s Radeon a7dc1874 68,0 s mit Urteil)",
         },
         gpu: true,
         zeit: false,
