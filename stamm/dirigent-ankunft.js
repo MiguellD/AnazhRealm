@@ -1489,7 +1489,7 @@ class AnazhRealm_dirigent_ankunft {
     // DER BODEN DES GESETZES für einen Empfänger, der das Gesetz nur NÄHERT (der Fern-Ring): `p` mit der Höhe des Gitters der
     // Karte (ihr Kanal b, je Texel der Boden aus `hoehen`, bilinear wie die Schatten-Höhe daneben), wo die Masche des Empfängers
     // (`masche`, m) gröber steht als das Gitter —
-    // über eine Gitter-Zelle weich (`zelleM` … 2 · `zelleM`, am Ring 0,9 … 1,9 km vom Anker, hinter jeder Kaskade); näher und
+    // über eine Gitter-Zelle weich (`zelleM` … 2 · `zelleM`, am Ring 0,23 … 0,54 km vom Anker); näher und
     // ohne Karte (`aktiv` 0) seine eigene Höhe. Der Leser setzt ihn als `receivedShadowPositionNode`: die Kaskaden und die
     // Sonnen-Sicht (`_sonnenSicht`, `shadowPositionWorld`) lesen DIESELBE Position. Bis ferne.K4 prüfte der Ring die Schatten-
     // Höhe des Gesetzes gegen seine Masche, die zwischen den Ecken bei 4–7 km ±50 m neben dem Gesetz steht: von 42 Hängen der
@@ -1798,7 +1798,7 @@ AnazhRealm.ANKUNFT_TAKT = Object.freeze({ bau: 32, streu: 16, streuScan: 640 });
 // DIE HORIZONT-KARTE (ferne.K4, `_horizontKarte`): das Gitter des Gesetzes und die Schatten-Höhe zur Sonne, je `gitter`² Texel
 // im Abstand `zelleM` — ±12,3 km um die Mitte: der Ring (8 km), sein Anker-Weg (`nachM`) und der Marsch (3 km) liegen darin.
 // Der Marsch zur Sonne geht `schritte` × `schrittM` (60 … 3 000 m, die Bahn der Station). Das Gitter kommt aus dem Feld-Faden
-// in Aufträgen à `zeilenJeAuftrag` Zeilen (8 192 Rufe des Gesetzes, ~0,4 s: das Feld drängt dazwischen), erst nach dem ersten
+// in Aufträgen à `zeilenJeAuftrag` Zeilen (12 288 Rufe des Gesetzes: das Feld drängt dazwischen), erst nach dem ersten
 // Weltbild (die Ankunft trägt es nie) und neu, wenn der Anker `nachM` gewandert ist. Neu gemalt wird die Karte, wenn das Licht
 // sich um `lichtRad` dreht (0,05°: am Grat in 3 km 2,6 m Schatten-Höhe) oder ein Gitter kommt — nie je Frame. `bandM` ist der
 // halbe Halbschatten mindestens (Gitter und r16f), `leerM` die Höhe, die kein Gelände trägt (außerhalb, vor der ersten Antwort).
@@ -1807,21 +1807,26 @@ AnazhRealm.ANKUNFT_TAKT = Object.freeze({ bau: 32, streu: 16, streuScan: 640 });
 // Empfänger der Sonne (`_sonnenSicht`) und des Himmels (`_horizontHimmel`), der Fern-Ring an ihrem Boden (`_horizontBoden`), die
 // Luft (`luftSicht`) und der Lichtmesser
 // (`_horizontSichtAm`); gate:schatten-terminator (H) malt einen bekannten Grat und liest Karte, Ring und Luft.
-// Speicher: Gitter r16f 128 KB + Karte rgba16f `karte`² 378 KB (H, s*, Boden), zusammen 0,494 MB unter der Ratsche 0,5
-// (spec/profiband/ratsche-*-gtx-*.json; vorher die Licht-Tiefe 512² r16f, 512 KB). Die Karte in der Auflösung des Gitters (256²,
-// 0,625 MB) trug am Dorf (swiftshader, Sonne 5°, 65 Orte) das Urteil des Gesetzes an 55 Orten, 220² an 54, 192² an 52, 128² an
-// 51 — der Ring-Stoff trägt 16 von 16 Texturen, den Boden liest er darum aus der Karte, nie aus dem Gitter. `messer` der Lichtmesser der Kamera
+// DAS GITTER IN DER AUFLÖSUNG DES GRATS (w25-ferne-licht-3): ein Kamm zwischen zwei Gitter-Punkten steht bilinear zu tief, ein
+// Tal zu hoch — der Grat zur Sonne trägt beides. An den 21 Schatten-Hängen der Station (Dorf, Sonne 5°) las die Karte auf 96 m
+// den Grat im Mittel 3,05° zu flach (Median 9,2° gegen 11,6° des Gesetzes), auf 48 m 1,34°, auf 32 m 0,77° (CPU-Nachbau des
+// Passes, je Gitter und Karte); die Physik der Orte (Hillaire, Band ±30°) trägt mit dem Grat des Gesetzes Ls/Ll 0,33, mit dem der
+// 96-m-Karte 0,41. Speicher: Gitter r16f 768² 1 152 KB + Karte rgba16f `karte`² 800 KB (H, s*, Boden, Grat), zusammen 1,91 MB in
+// der Ratsche der Klasse (spec/profiband/ratsche-*-gtx-*.json: 0,5 MB + 2 MB Toleranz; bis hier 256² à 96 m + 220², 0,494 MB).
+// Die Karte in der Auflösung des Gitters (256², 0,625 MB) trug am Dorf (swiftshader, Sonne 5°, 65 Orte) das Urteil des
+// Gesetzes an 55 Orten, 220² an 54, 192² an 52, 128² an 51 — der Ring-Stoff trägt 16 von 16 Texturen, den Boden liest er
+// darum aus der Karte, nie aus dem Gitter. `messer` der Lichtmesser der Kamera
 // (`_horizontSichtImBild`): `spalten` × `zeilen` Strahlen der unteren Bildhälfte, je bis `weitM` — an der Wiese 9 Texel, 0,2 ms
-// je neuem Licht, 0,1 ms je Ruf (Radeon); die Höhen des Gitters liegen dazu einmal je Gitter als Float32 (256 KB) im Main.
+// je neuem Licht, 0,1 ms je Ruf (Radeon); die Höhen des Gitters liegen dazu einmal je Gitter als Float32 (2,25 MB) im Main.
 AnazhRealm.HORIZONT_KARTE = Object.freeze({
     messer: Object.freeze({ spalten: 4, zeilen: 8, weitM: 3000 }),
-    gitter: 256,
-    karte: 220,
-    zelleM: 96,
+    gitter: 768,
+    karte: 320,
+    zelleM: 32,
     schrittM: 60,
     schritte: 50,
     nachM: 1000,
-    zeilenJeAuftrag: 32,
+    zeilenJeAuftrag: 16,
     lichtRad: (0.05 * Math.PI) / 180,
     bandM: 1.5,
     leerM: 10000,
