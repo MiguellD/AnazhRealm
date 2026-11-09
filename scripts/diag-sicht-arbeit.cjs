@@ -1317,7 +1317,7 @@ const server = statikServer();
             // das Auge in `zeitS` fährt, nie je Bild neu; die gehaltene Wahl zeichnet jede Instanz, die das Gesetz ohne Rand vom Auge
             // DIESES Bilds trifft. Scharf: ohne Weg (`bruch` "weg", der Punkt bis w24) legt jedes Bild neu an, der Weg ohne seinen
             // Rand ("rand") reißt Löcher.
-            const fahrt = async (bruch) => {
+            const fahrt = async (bruch, yaw = Math.PI / 5) => {
                 const [o, u] = [
                     { bilder: 30, neu: 0, geprueft: 0, loecher: 0, namen: [] },
                     st.lodUniforms.uLodAuge.value,
@@ -1328,7 +1328,7 @@ const server = statikServer();
                     vergiss();
                     for (let f = 0; f <= o.bilder; f++) {
                         await sleep(33);
-                        stelle(Math.PI / 5, f * 0.577, f / 3);
+                        stelle(yaw, f * 0.577, f / 3);
                         u.copy(cam.position);
                         const g0 = genHaupt();
                         frame();
@@ -1343,7 +1343,22 @@ const server = statikServer();
                 }
                 return o;
             };
-            [aus.fahrt, aus.fahrtOhneWeg, aus.fahrtOhneRand] = [await fahrt(), await fahrt("weg"), await fahrt("rand")];
+            // DIE STRECKE DER FAHRT trägt eine Kante: ob der Weg ohne seinen Rand Löcher reißt, hängt daran, dass die Fahrt das
+            // Fenster einer Instanz kreuzt — der Wald am Messort entscheidet das, nicht die Linse (z353: der dichtere Bestand der
+            // Mess-Wiese, heim2-w20-wald-kosten, ließ die eine Strecke π/5 an keiner Kante vorbei, ohne Rand 0 Löcher, die Linse
+            // fiel STUMPF). Die Fahrt wählt die erste Strecke der festen Reihe (π/5 zuerst, dann je π/4 gedreht), auf der der
+            // Täter ohne Rand Löcher reißt, und misst das Gesetz und den Täter ohne Weg auf GENAU dieser Strecke.
+            {
+                let [yaw, ohneRand] = [Math.PI / 5, null];
+                for (let k = 0; k < 8; k++) {
+                    const y = Math.PI / 5 + (k * Math.PI) / 4;
+                    const o = await fahrt("rand", y);
+                    if (!ohneRand || o.loecher > 0) [yaw, ohneRand] = [y, o];
+                    if (o.loecher > 0) break;
+                }
+                ohneRand.yaw = Math.round((yaw / Math.PI) * 1000) / 1000;
+                [aus.fahrt, aus.fahrtOhneWeg, aus.fahrtOhneRand] = [await fahrt(undefined, yaw), await fahrt("weg", yaw), ohneRand];
+            }
             // (W) DIE FERNE HÄLT ÜBER DEN WEG (w23-geh-takt, `_nahWieseFernSatz`): die Kamera geht 45 Bilder zu 1/15 m; je Bild wählt
             // nur ein Teil der Kacheln der Ferne neu. Scharf: der
             // Halt-Bruch (die Wahlen fallen je Bild — der Satz bis w23) wählt jede Kachel neu. DIE WIESE AM RUF (C): bei gleicher

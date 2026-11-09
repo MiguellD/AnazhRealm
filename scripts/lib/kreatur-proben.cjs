@@ -973,7 +973,11 @@ async function kreaturProben(r, T, opts) {
             Object.assign(t, { fs: 0, fb: 0, fMin: 1, phi: [0, 0], lauf: [], weg: glieder.map(() => 0), id: [0, 0] });
             Object.assign(t, { enge: 0, engst: [Infinity] });
             const [alt, beginn] = [glieder.map((c) => c.position.clone()), []];
-            for (let k = 0; k < (art === "blick" ? 1200 : fremd.length ? 36000 : 3600); k++) {
+            // DAS WANDERN DAUERT 120 s (z353): ohne den Zug des Verbands (Täter herde-zerfall) trieb die Herde am Ort des
+            // dichteren Walds (heim2-w20-wald-kosten) in 50 s nur auf 0,916 (Soll ≥ 0,9) auseinander, an main 0,791 — die Zahl der
+            // Wanderung hing am Ort, nicht am Gesetz; der Verband hält, solange er wandert, also urteilt die Probe über 10–120 s
+            t.takte = art === "blick" ? 1200 : fremd.length ? 36000 : art === "wander" ? 7200 : 3600;
+            for (let k = 0; k < t.takte; k++) {
                 const g0 = fremd.length && [6000, 18000].find((k0) => k >= k0 && k < k0 + 3600);
                 const x = flucht ? -30 + (1.4 * k) / 60 : g0 ? -30 + (1.4 * (k - g0)) / 60 : 45;
                 const q = neben(heim.x + x, heim.z + (g0 ? (g0 > 6000 ? 42 : -12) : 0));
@@ -1019,7 +1023,7 @@ async function kreaturProben(r, T, opts) {
             n: t.n,
             wurfAnteil: rund(t.wurf, 3),
             mittel: rund(t.summe / t.bilder, 3),
-            fluchtAnteil: rund(t.fluchtTakte / (3600 * t.n), 3),
+            fluchtAnteil: rund(t.fluchtTakte / (Math.min(t.takte, 3600) * t.n), 3),
             fluchtMittel: t.fb ? rund(t.fs / t.fb, 3) : null,
             fluchtMin: t.fb ? rund(t.fMin, 3) : null,
             enge: rund(t.enge / t.bilder, 2),
@@ -3480,7 +3484,7 @@ function urteil(name, z) {
         );
         soll(
             W.mittel >= 0.9,
-            `Verband zerfällt beim Wandern: im Mittel ${W.mittel} der ${W.n} Glieder binnen ${FR} Paar-Räumen vom Mittel von 10 bis 60 s (Soll ≥ 0,9; Wurf ${W.wurfAnteil})`
+            `Verband zerfällt beim Wandern: im Mittel ${W.mittel} der ${W.n} Glieder binnen ${FR} Paar-Räumen vom Mittel von 10 bis 120 s (Soll ≥ 0,9; Wurf ${W.wurfAnteil})`
         );
         soll(
             F.fluchtMittel !== null && F.fluchtMittel >= 0.8,
