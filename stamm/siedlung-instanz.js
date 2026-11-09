@@ -572,6 +572,13 @@ class AnazhRealm_siedlung_instanz {
             g = st.gpuWahlWirt = new THREE.Group();
             g.name = "@gpuWahl";
             g.matrixAutoUpdate = false;
+            // SEINE VERSION wie die eines Bündels: ein Kind kommt oder geht — die Werfer-Hülle (`_bundleWerferHuelle`) steht im
+            // Register, solange die Version steht; ohne sie hielt sie über jede neue Gruppe die alte Box (die Kaskade des ersten
+            // Schusses nach einem Gang las sie, der zweite die neue: gate:pop die Treue, GTX 806bdc95 7 599 Bytes, ΔY ≤ 1)
+            g.version = 0;
+            const neu = () => g.version++;
+            g.addEventListener("childadded", neu);
+            g.addEventListener("childremoved", neu);
         }
         if (g.parent !== st.scene) st.scene.add(g);
         return g;
