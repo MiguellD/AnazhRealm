@@ -39,7 +39,6 @@ const BLAETTER = [
     "_capNexusStructures",
     "_scatterSichtHoehe",
     "_scatterCellTransform",
-    "_nahStreuArmlaenge",
     "_foundryBudgetZeile",
     "_foundryFlattenFor",
     "_fernRingPunkt",
