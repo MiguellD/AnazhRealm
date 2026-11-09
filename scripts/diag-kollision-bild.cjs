@@ -447,7 +447,19 @@ async function tempo(K) {
     r._setWeather("sunny", "human");
     st.weatherTransition = null;
     r._naesseTakt(1e6);
-    const weite = (R, ux, uz) => R.hx * Math.abs(R.c * ux - R.s * uz) + R.hz * Math.abs(R.s * ux + R.c * uz);
+    // DAS EINDRINGEN zweier konvexer Vielecke (Ecken im Umlauf, Welt-XZ): die kleinste Überlappung über die Normalen jeder Kante
+    // (getrennt negativ); eine Box ihre vier Ecken, die Achse eines Leibs ihr Kreis als 24-Eck
+    const tiefeEcken = (A, B) =>
+        Math.min(
+            ...[A, B].flatMap((P) =>
+                P.map(([x, z], i, _, [x1, z1] = P[(i + 1) % P.length]) => {
+                    const [a, b] = [A, B].map((Q) => Q.map(([qx, qz]) => (qx * (z1 - z) - qz * (x1 - x)) / Math.hypot(x1 - x, z1 - z)));
+                    return Math.min(Math.max(...a) - Math.min(...b), Math.max(...b) - Math.min(...a));
+                })
+            )
+        );
+    const eckenVon = (R) => [[1, 1], [-1, 1], [-1, -1], [1, -1]].map(([u, w]) => [R.cx + u * R.hx * R.c + w * R.hz * R.s, R.cz - u * R.hx * R.s + w * R.hz * R.c]); // prettier-ignore
+    const kreis = (x, z, rr) => Array.from({ length: 24 }, (_, i) => [x + rr * Math.cos((i * Math.PI) / 12), z + rr * Math.sin((i * Math.PI) / 12)]);
     // DAS BILD (physik.K2 Staffel 2): jede gezeichnete Ecke eines Körpers — je Instanz-Slot eines Werks mit der Matrix des
     // Zeichners (`_archInstanceUpdate`), sonst jedes sichtbare Mesh (der Leib mit Skin: `getVertexPosition`) — gegen das Mesh
     // der Wand `W` (die Box seiner Geometrie im eigenen Rahmen): der kleinste Abstand, innen negativ
@@ -468,7 +480,9 @@ async function tempo(K) {
             }
         return d;
     };
-    // DIE KÖRPER: das Tier die drei Kreise seines Leibs, der Spieler seine Kapsel (Sim-Lage), der Wagen der Rahmen seiner Hülle
+    // DIE KÖRPER: das Tier die drei Kreise seines Leibs, der Spieler seine Kapsel (Sim-Lage), der Wagen die Ecken seiner Hülle,
+    // wie sie in diesem Schritt steht (ihr Stütz-Polygon `pl` · `pq` im Fahrt-Rahmen: der Umriss der gezeichneten Gestalt mit
+    // Nick und Wank, physik.K2 Staffel 2 — bis dahin der Rahmen eines Rechtecks)
     const leibKreise = (c) => {
         const [l, p] = [r._kreaturLeib(c, 0, {}), c.position];
         return { l, p, kreise: [-1, 0, 1].map((o) => [p.x + l.fx * o * l.halb, p.z + l.fz * o * l.halb, l.radius]) };
@@ -487,15 +501,15 @@ async function tempo(K) {
     };
     const wagenK = (e) => () => {
         const [p, h, s, c] = [simLage(), r._fahrHuelle(e), Math.sin(e._rideYaw || 0), Math.cos(e._rideYaw || 0)];
-        const re = { cx: p.x + s * h.mitte, cz: p.z + c * h.mitte, c, s, hx: h.hw, hz: h.hl, stufe: h.stufe };
-        return { mx: re.cx, mz: re.cz, y0: e._fahr.y + h.stufe, y1: e._fahr.y + h.dach, re };
+        const welt = Array.from(h.pl, (l, i) => [p.x + l * s + h.pq[i] * c, p.z + l * c - h.pq[i] * s]);
+        const ecken = welt.filter(([x, z], i, a, [x0, z0] = a.at(i - 1)) => Math.hypot(x - x0, z - z0) > 1e-6);
+        return { mx: p.x + s * h.mitte, mz: p.z + c * h.mitte, y0: e._fahr.y + h.stufe, y1: e._fahr.y + h.dach, re: { ecken, stufe: h.stufe } };
     };
     // DAS EINDRINGEN in eine Box; außer Band −Infinity (die Regeln der Hüllen: die Stufe trägt, der Wagen überrollt Dünneres)
     const inBox = (k, b, R = rahmen(b), h = k.re) => {
         if (h ? !(b.topY > k.y0 && b.botY < k.y1) || b.dick < h.stufe : !(b.topY > k.y0 + STUFE && b.botY < k.y1)) return -Infinity;
         if (!h) return Math.max(...k.kreise.map(([x, z, rr]) => rr - zuBox(R, x, z)));
-        const achsen = [R, h].flatMap((Q) => [[Q.c, -Q.s], [Q.s, Q.c]]);
-        return Math.min(...achsen.map(([ux, uz]) => weite(R, ux, uz) + weite(h, ux, uz) - Math.abs((h.cx - R.cx) * ux + (h.cz - R.cz) * uz)));
+        return tiefeEcken(h.ecken, eckenVon(R));
     };
     // DER DURCHTRITT: die Mitte jenseits der Mitte des Ziels `b`, an einer gedrehten WAND jenseits ihrer Mittel-Ebene
     const werkH = (e, b, wand) => {
@@ -514,7 +528,7 @@ async function tempo(K) {
             let t = -Infinity;
             for (let i = 0; i <= 8; i++) {
                 const [x, z] = [a[0] + ((b[0] - a[0]) * i) / 8, a[1] + ((b[1] - a[1]) * i) / 8];
-                if (k.re) t = Math.max(t, l.radius - zuBox(k.re, x, z));
+                if (k.re) t = Math.max(t, tiefeEcken(k.re.ecken, kreis(x, z, l.radius)));
                 else for (const [kx, kz, rr] of k.kreise) t = Math.max(t, rr + l.radius - Math.hypot(kx - x, kz - z));
             }
             return t;

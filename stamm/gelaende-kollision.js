@@ -1255,19 +1255,22 @@ class AnazhRealm_gelaende_kollision {
 
     // Fahrzeug-Kollisions-Hülle aus exportDrive.huelle: Unterkörper (nose..tail × ±bw × yFloor..yBelt)
     // + Greenhouse (cowl..back × ±cw × yBelt..yRoof) + 4 Rad-Boxen an fAx/rAx — als PSEUDO-Parts durch
-    // `_blockerComputePartAABB` (Skala + Gier gratis, kein zweiter Mathe-Pfad). null → Donor-Parts.
+    // `_blockerComputePartAABB` (Skala + Gier gratis, kein zweiter Mathe-Pfad). null → Donor-Parts. Der Unterkörper und das
+    // Dach messen die gezeichnete Gestalt, sobald sie steht (`_gestaltMass`: Bug · Heck · halbe Breite · Dach — wie der Ritt).
     _fahrzeugBlockerParts(entry) {
         const fzg = this._fahrzeugGesetzFor(entry);
         const h = fzg && fzg.drive ? fzg.drive.huelle : null;
         if (!h || !Number.isFinite(h.noseX) || !Number.isFinite(h.tailX)) return null;
+        const M = entry._gestaltMass;
+        const [bug, heck, hw, dach] = M ? [M.bug, M.heck, M.hw, M.dach] : [h.noseX, h.tailX, h.bw, h.yRoof];
         const teile = [
             {
-                position: { x: (h.noseX + h.tailX) / 2, y: (h.yFloor + h.yBelt) / 2, z: 0 },
-                size: { x: h.noseX - h.tailX, y: h.yBelt - h.yFloor, z: h.bw * 2 },
+                position: { x: (bug + heck) / 2, y: (h.yFloor + h.yBelt) / 2, z: 0 },
+                size: { x: bug - heck, y: h.yBelt - h.yFloor, z: hw * 2 },
             },
             {
-                position: { x: (h.cowlX + h.backX) / 2, y: (h.yBelt + h.yRoof) / 2, z: 0 },
-                size: { x: Math.max(0.4, h.cowlX - h.backX), y: h.yRoof - h.yBelt, z: h.cw * 2 },
+                position: { x: (h.cowlX + h.backX) / 2, y: (h.yBelt + dach) / 2, z: 0 },
+                size: { x: Math.max(0.4, h.cowlX - h.backX), y: dach - h.yBelt, z: h.cw * 2 },
             },
         ];
         for (const ax of [h.fAx, h.rAx]) {
@@ -1279,6 +1282,36 @@ class AnazhRealm_gelaende_kollision {
             }
         }
         return teile;
+    }
+
+    // DAS MASS DER GEZEICHNETEN GESTALT am Wagen (physik.K2 Staffel 2, Kollision = Bild; Beipack `__mass` des Kerns, vehicle-core
+    // `gestaltMass`: die Stütz-Punkte `umriss` [x, y, z, …] im Vorlagen-Raum und das `dach`): der Flat der Stufe, die der Wagen
+    // zeichnet, gibt es dem Eintrag (`_archInstanceAdd`, wie die Hülle des Hauses) — sein Umriss (`_fahrUmriss`), die Hülle des
+    // Ritts (frisch) und seine Boxen lesen es. Ein Studio-Wagen, dessen Bau kein Maß trägt, ist ein KERN-PFLICHT-Bruch (ein
+    // alter Kern auf der Platte), nie still die Stationen.
+    _wagenMassSetzen(entry, mass) {
+        if (!entry._fahrAchseX && !(this._fahrzeugGesetzFor(entry) || {}).drive) return;
+        if (entry._gestaltMass && entry._gestaltMass.von === mass) return;
+        const U = mass && mass.umriss;
+        if (!Array.isArray(U) || U.length < 9 || U.length % 3 || !U.every(Number.isFinite) || !(mass.dach > 0))
+            return AnazhRealm._kernPflichtBruch("vehicle:__mass (" + entry.type + ")");
+        const M = {
+            von: mass,
+            ecken: U,
+            dach: mass.dach,
+            bug: -Infinity,
+            heck: Infinity,
+            hw: 0,
+            skala: this._studioWeltSkala(entry),
+        };
+        for (let i = 0; i < U.length; i += 3) {
+            M.bug = Math.max(M.bug, U[i]);
+            M.heck = Math.min(M.heck, U[i]);
+            M.hw = Math.max(M.hw, Math.abs(U[i + 2]));
+        }
+        entry._gestaltMass = M;
+        entry._fahrHuelleKette = null;
+        if (entry.blockerAABBs) this._populateBlockerAABBs(entry);
     }
 
     // Fels-/Kristall-Hülle: JEDES Werk, das das Studio als Fels zeichnet (sein Preset ist ein Fels-Rezept mit gemessener

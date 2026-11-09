@@ -245,14 +245,8 @@ class AnazhRealm_siedlung_ort {
             const rS = AnazhRealm.PLAYER_WALL_RADIUS;
             if (Math.abs(dx * fX + dz * fZ) < k.hl + rS && Math.abs(dx * qX + dz * qZ) < k.hw + rS) return "spieler";
         }
-        k.fX = fX;
-        k.fZ = fZ;
-        k.qX = qX;
-        k.qZ = qZ;
-        k.unten = eb.y + k.stufe;
-        k.oben = eb.y + k.dach;
-        k.schub.length = 0;
-        k.schubQuelle.length = 0;
+        // die Hülle steht, wie der Wagen dort parkt (`_fahrzeugStand`: die Ebene seiner Räder, Nick = −Steigung)
+        this._fahrHuelleStellen(k, fX, fZ, -eb.steig, eb.wank, eb.y + k.stufe, eb.y + k.dach);
         const pos = this._fahrPlatzPos || (this._fahrPlatzPos = { x: 0, z: 0 });
         pos.x = x;
         pos.z = z;

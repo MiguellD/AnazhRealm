@@ -1328,6 +1328,7 @@ class AnazhRealm_studio_gestalt {
                       leaves,
                       huelle: group._huelle || null,
                       fern: group._fern || null,
+                      mass: group._mass || null,
                       wurfKosten,
                   }
                 : false;
@@ -1466,7 +1467,8 @@ AnazhRealm.HUELLE_LEIB_M = 0.05;
 AnazhRealm.HUELLE_BEDARF_M = 32;
 // DIE EINE BEIPACK-KARTE der Foundry-Antwort (`_foundryBuildGroup`): Beipack-Name → das Feld der Gruppe (der Flat reicht es
 // als `huelle` · `fern` weiter). `__huelle` (Welle L) die Kollision der gezeigten Stufe, `__fern` (S3) die Fernform der Stufe 3
-// — beide in der EINEN Hüllen-Form (docs/studio-vertrag.md N5, der Leser `_huelleVon`); `__mass` (K20) der Hub des Schafts,
+// — beide in der EINEN Hüllen-Form (docs/studio-vertrag.md N5, der Leser `_huelleVon`); `__mass` (K20) der Hub des Schafts
+// und (physik.K2 Staffel 2) der Umriss des Wagens, den der Flat als `mass` weiterreicht (`_wagenMassSetzen`),
 // `__krone` (D10) die gezeichnete Krone eines Baums oder Strauchs (das Kronen-Buch, `_foundryBaumKrone`).
 AnazhRealm.FOUNDRY_BEIPACK = Object.freeze({
     __huelle: "_huelle",
