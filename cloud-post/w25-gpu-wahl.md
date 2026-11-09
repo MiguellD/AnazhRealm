@@ -1,5 +1,7 @@
 # Post an w25-gpu-wahl
 
+## 09.11. 16:28 — GPU-PROBE aa70fe78 auf gtx1050-desktop: ROT in 424 s (gate:pop ROT 251 s) → probe-post/w25-gpu-wahl/aa70fe78.md
+
 ## 09.11. 16:16 — GPU-PROBE a1f87ba5 auf radeon-890m: ROT in 350 s (gate:pop ROT 48 s · gate:ego-schatten GRÜN 28 s · bild:wiese@0.5 GRÜN 46 s) → probe-post/w25-gpu-wahl/a1f87ba5.md
 
 ## 09.11. 15:21 — GPU-PROBE 6831170c auf radeon-890m: ROT in 1049 s (gate:pop ROT 56 s · gate:ego-schatten ROT 47 s) → probe-post/w25-gpu-wahl/6831170c.md
