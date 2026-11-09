@@ -106,6 +106,36 @@ const envDer = { MSYS2_ARG_CONV_EXCL: "*" };
 const UHR_TOL = 0.01;
 const uhrIst = (ist, soll) => Number.isFinite(ist) && Math.abs(ist - soll) <= UHR_TOL;
 
+// DIE PROBE VON material.K4#1 (w26-lack-glas-pm): der GT in fester Gestalt (Tiefschwarz) 6 m vor dem Ego-Auge (stationen/spiegel-lack.js;
+// ihr Text steht im Befehl — ändert er sich, zählt die alte Messung nicht). Die Proben: die Messung an main 87537d3f (GTX, Gestalt
+// gewürfelt), die Zahlen an der Pose der Probe (swiftshader kienspan: main −0,054, w26-lack-glas 0,775) in der Form einer Karte, und
+// die MUTANTE der alten Szene im Soll (GTX 77265b04 0,6432, Gestalt gewürfelt): nie GRÜN.
+const SPIEGEL_LACK = require("fs").readFileSync(require("path").join(__dirname, "spiegel-lack.js"), "utf8");
+const K4_ROH = (adapter, gestalt, lack, glas) => ({
+    adapter,
+    schritte: { spiegel: { exit: 0, json: { ergebnis: { ende: "ok", gestalt, vor: gestalt ? 6 : undefined, stand: { uhr: 0.5000000000000343, wetter: "sunny", sicht: "first" }, ergebnis: { lack, glas } } } } },
+});
+const K4_GTX = "[linse-gpu] nvidia/pascal";
+const K4_DECK = (r) => ({ spiegelTreue: r, ebene: 17184, bloecke: 54, einfallGrad: 69.4, normale: [-0.001, 0.996, -0.086] });
+const K4_WSS = { spiegelTreue: null, ebene: 7684, bloecke: 0, einfallGrad: 40.9, normale: [0.005, 0.72, -0.694] };
+const K4_PROBEN = [
+    {
+        name: "die Messung an main 87537d3f GTX (Gestalt gewürfelt, die Haube bei 3,8 m; die Windschutzscheibe ohne Blöcke)",
+        j: K4_ROH(K4_GTX, undefined, { spiegelTreue: -0.6581, ebene: 55245, bloecke: 44, einfallGrad: 52, normale: [0.187, 0.978, -0.087] }, { spiegelTreue: null, ebene: 4124, bloecke: 0, einfallGrad: 49.4, normale: [0.407, 0.892, -0.199] }),
+        gruen: false,
+        zahl: /Gestalt gewürfelt/,
+    },
+    {
+        name: "MUTANTE die alte Szene im Soll (GTX 77265b04 Haube 0,6432, Gestalt gewürfelt) — nie GRÜN",
+        j: K4_ROH(K4_GTX, undefined, { spiegelTreue: 0.6432, ebene: 79581, bloecke: 42, einfallGrad: 53.6, normale: [0.126, 0.987, -0.098] }, { spiegelTreue: -0.0399, ebene: 8909, bloecke: 53, einfallGrad: 71.7, normale: [0.015, 1, -0.007] }),
+        gruen: false,
+        zahl: /Gestalt gewürfelt/,
+    },
+    { name: "die Pose der Probe an main (Deck −0,054) in der Form einer Karte", j: K4_ROH(K4_GTX, 3, K4_DECK(-0.054), K4_WSS), gruen: false },
+    { name: "die Pose der Probe an w26-lack-glas (Deck 0,775) in der Form einer Karte", j: K4_ROH(K4_GTX, 3, K4_DECK(0.775), K4_WSS), gruen: true },
+    { name: "dasselbe Deck auf swiftshader — kein Adapter einer Karte", j: K4_ROH("[linse-gpu] google/swiftshader", 3, K4_DECK(0.775), K4_WSS), gruen: false, zahl: /kein Adapter einer Karte/ },
+];
+
 // Der Pfad des Wechsels (lod.K5, lod.K2): das Gesetz, seine Leser, der Regler, die Stufen der Kerne
 const LOD_PFAD = [
     "stamm/vegetation-*.js",
@@ -3145,18 +3175,25 @@ const stationen = [
         staffel: 1,
         geraet: ["radeon", "gtx"],
         // w3w-glanz (EIN Spiegel-Pass für Wasser, Glas, Lack, Metall, Nässe — das Glanz-Ziel des Szenen-Passes, `_spiegelUmgebung`):
-        // koordination `bericht/2910-w3w-glanz/spiegel-lack.js` über `werkbank eval` in der Welt der Sitzung — ein GT rechts neben dem
-        // Spieler, der Ego-Blick (`_loopCamera`) trifft seine Flanke streifend; Lack und Seiten-Scheibe je mit ihrer Maske (der Schuss
-        // ohne sie) und ihrer Ebene (Haupt-Achsen der Welt-Punkte, ≤ 3 cm), das Maß der Wasser-Station (`klassenMasse` spiegelTreue,
-        // die Achse an der Ebene: abnahme-urteil `spiegelPartner` mit `normale`). Gültig: Ego, Mittag klar, Einfall 45–85°, ≥ 2 000 Pixel
-        // in der Ebene und ≥ 8 Blöcke.
+        // die Seiten-Probe `stationen/spiegel-lack.js` (der Text steht im Befehl, `@T:SPIEGEL@`) über `werkbank eval` in der Welt der
+        // Sitzung — ein GT in fester Gestalt (Tiefschwarz) 6 m vor dem Spieler, der Ego-Blick (`_loopCamera`) sieht sein Deck unter ~70°;
+        // Lack (Klarlack ≥ 0,5) und Scheibe je mit ihrer Maske (der Schuss ohne sie) und der Ebene, deren Spiegel das Bild trägt (RANSAC,
+        // nie quer, die meisten Blöcke), das Maß der Wasser-Station (`klassenMasse` spiegelTreue, die Achse an der Ebene: abnahme-urteil
+        // `spiegelPartner` mit `normale`). Gültig: die Szene (Gestalt 3, 6 m), Ego, Mittag klar, Einfall 45–85°, ≥ 2 000 Pixel in der
+        // Ebene und ≥ 8 Blöcke.
+        // DIE SCHÄRFUNG (w26-lack-glas-pm; der Nachfolger von koordination bericht/2910-w3w-glanz/spiegel-lack.js, Kopf der Probe): bis
+        // hier zählte als Lack nur Klarlack UND Metall ≥ 0,5 (fünf von acht Gestalten ohne „Lack"), würfelten Same und Ort den Lack (am
+        // selben Commit 77265b04: GTX 0,6432, Radeon −0,0919), stand der Wagen 3,8 m voraus — der ideale Spiegel der Haube lag zum größten
+        // Teil über dem Bild, die Tür spiegelte das Pflaster (dieselbe Welt, derselbe Same: 0,1175 und 0,5086) — und gewann die größte
+        // Ebene, ob ihr Spiegel im Bild lag oder nicht (GTX 87537d3f: lack −0,6581 an der Haube, glas 0 Blöcke an der Windschutzscheibe).
         // DIE FAHRT (Eichlauf Radeon b3f9ae95 29.10.: 4,8 s): der Deckel steht in der Tafel der Fahrt (punkte.cjs DIE DECKEL)
         probe: { sek: 10, befehl: befehlDer({
             name: "material.K4#1",
             schritte: [
                 { name: "fenster", args: ["fenster", "1920", "1080"], muss: true },
-                { name: "spiegel", probe: "@KOORD@/bericht/2910-w3w-glanz/spiegel-lack.js", blob: "e9ba0e39b1c24c8773296cdefc57551d1b298d4c", muss: true },
+                { name: "spiegel", args: ["eval", "@T:SPIEGEL@"], muss: true },
             ],
+            texte: { SPIEGEL: SPIEGEL_LACK },
         }) },
         env: envDer,
         gpu: true,
@@ -3172,7 +3209,8 @@ const stationen = [
             if (e.ende !== "ok" || !e.ergebnis) return { gruen: false, zahl: "Probe: " + (e.fehler || e.ende) };
             const st = e.stand || {};
             // DIE POSE beim Namen (w4-linsen-b): Ego, Mittag klar — die Uhr über `uhrIst` (die Probe baut den GT im Takt des Spiels)
-            const posefehl = [st.sicht === "first" ? null : "Sicht " + st.sicht, uhrIst(st.uhr, 0.5) ? null : "Uhr " + st.uhr + " nicht Mittag (± " + UHR_TOL + ")",
+            // DIE SZENE beim Namen (w26-lack-glas-pm): die Gestalt 3 (Tiefschwarz) 6 m voraus — eine gewürfelte Gestalt misst nie
+            const posefehl = [e.gestalt === 3 && e.vor === 6 ? null : e.gestalt == null ? "Gestalt gewürfelt" : "Szene Gestalt " + e.gestalt + " " + e.vor + " m", st.sicht === "first" ? null : "Sicht " + st.sicht, uhrIst(st.uhr, 0.5) ? null : "Uhr " + st.uhr + " nicht Mittag (± " + UHR_TOL + ")",
                 st.wetter === "sunny" ? null : "Wetter " + st.wetter].filter(Boolean);
             const teile = [];
             let gruen = false;
@@ -3181,7 +3219,7 @@ const stationen = [
                 const gueltig = m.ebene >= 2000 && m.bloecke >= 8 && m.einfallGrad >= 45 && m.einfallGrad <= 85 && !m.quer;
                 if (hw && !posefehl.length && gueltig && m.spiegelTreue != null && m.spiegelTreue >= 0.5) gruen = true;
                 teile.push(
-                    n + " spiegelTreue " + m.spiegelTreue + (gueltig ? "" : " UNGÜLTIG") + " (" + (m.fehler || m.ebene + " px in der Ebene, " + m.bloecke +
+                    n + " spiegelTreue " + m.spiegelTreue + (gueltig ? "" : " UNGÜLTIG") + "" + " (" + (m.fehler || m.ebene + " px in der Ebene, " + m.bloecke +
                         " Blöcke, Einfall " + m.einfallGrad + "°, Normale " + JSON.stringify(m.normale)) + ")"
                 );
             }
@@ -3191,6 +3229,7 @@ const stationen = [
                     (posefehl.length ? " — POSE UNGÜLTIG: " + posefehl.join(", ") : "") + (hw ? "" : " — kein Adapter einer Karte") + " · " + (j.adapter || "Adapter ungenannt"),
             };
         },
+        proben: K4_PROBEN,
         pfad: [
             ...BILD,
             "stamm/studio-*.js",
