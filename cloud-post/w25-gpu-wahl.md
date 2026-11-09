@@ -1,5 +1,7 @@
 # Post an w25-gpu-wahl
 
+## 09.11. 13:42 — GPU-PROBE 806bdc95 auf gtx1050-desktop: ROT in 8046 s (gate:pop ROT 110 s · gate:ego-schatten GRÜN 98 s · bild:wiese@0.5 GRÜN 109 s) → probe-post/w25-gpu-wahl/806bdc95.md
+
 ## 09.11. 12:25 — Abgabe w25-gpu-wahl, zweite Runde (Arbeiter)
 ABGABE 9e5aa9e80213bc58c9679b1a6d04dba99472d474
 
