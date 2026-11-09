@@ -460,6 +460,11 @@ class AnazhRealm_bild_kosten {
             // steht — sonst meldet sich der Bürger an. Auch der synchrone Weg trifft im Cache eine noch offene Pipeline (r184
             // `getForRender`: Cache-Treffer → `e.pipeline=d`, ob fertig oder nicht), wenn eine Erst-Zeichnung ihren Schlüssel
             // eben asynchron anlegte: ein Neubau wartet dann wie sie.
+            // trägt das Render-Objekt noch keinen Knoten-Bau (weder eigen noch im Bau-Cache seines Schlüssels)?
+            const ungebautVon = (N, ro) =>
+                ro._nodeBuilderState === null &&
+                N.get(ro).nodeBuilderState === undefined &&
+                N.nodeBuilderCache.get(N.getForRenderCacheKey(ro)) === undefined;
             const zeichne = (rend, ro, aufnahme, asynchron, nurBauen) => {
                 const N = rend._nodes,
                     P = rend._pipelines;
@@ -565,9 +570,17 @@ class AnazhRealm_bild_kosten {
                 // Boots synchron (Atmosphäre ×5, PMREM ×2, Wolken, Welt-Licht, Post-Kette, Kontakt ×2, Rückstrahl; headless
                 // kalt) — Radeon kalt die längste Aufgabe 1,25 s, nur auf der echten GPU.
                 // Im Einmal-Render (`_einmalRender`, sein Sammler steht) gilt der Vorbau auch nach dem Bild (`_einmalVorbau`).
+                // DAS GESETZ DER SCHEIBE (w27-ankunft-erstbild, ankunft.K5): auch sein KNOTEN-BAU geht in Raten unter der EINEN Frist
+                // der Aufgabe (`_knotenRate` → `_bauFrist`), wie jeder Bau der Welt-Szene — bis hier baute der Einmal-Render seinen
+                // Graphen am Stück neben der Frist: headless kalt (main da0e790f) hielten Umgebung (PMREM-Filter 138 ms),
+                // Rückstrahl (114), Spiegel (126) und Atmosphäre (37–72) im Takt des Lade-Bilds 451 ms in 13 langen Aufgaben, die
+                // längste 704 ms. Wartet sein Bau, ist der Render nicht ganz (`einmalOffen`), sein Leser zeichnet im nächsten Takt neu.
                 if (scene !== welt.state.scene && !buehne && scene !== welt._buehneJetzt) {
                     if (!welt._psoVorbau() && !E.einmalSammel) zeichne(this, ro, aufnahme, false);
-                    else if (!zeichne(this, ro, aufnahme, true)) {
+                    else if (E.einmalSammel && ungebautVon(N, ro) && !welt._knotenRate(N, ro, E)) {
+                        E.verschoben++;
+                        E.einmalOffen++;
+                    } else if (!zeichne(this, ro, aufnahme, true)) {
                         E.einmalOffen++;
                         if (E.einmalSammel && E.wartetAuf) E.einmalSammel.add(E.wartetAuf); // worauf er wartet (`_einmalRender`)
                     }
@@ -582,10 +595,7 @@ class AnazhRealm_bild_kosten {
                 const urStoff = material.isShadowPassMaterial === true ? object.material : material;
                 if (urStoff && urStoff._anazhDiaet !== true && !Array.isArray(urStoff))
                     welt._materialObserverDiaet(urStoff);
-                const ungebaut =
-                    ro._nodeBuilderState === null &&
-                    N.get(ro).nodeBuilderState === undefined &&
-                    N.nodeBuilderCache.get(N.getForRenderCacheKey(ro)) === undefined;
+                const ungebaut = ungebautVon(N, ro);
                 let pass = buehne ? undefined : E.gezeichnet.get(object);
                 const vor = vorbau ? E.vorgebaut.get(object) : undefined;
                 if (vorbau && ((pass !== undefined && pass.has(k)) || (vor !== undefined && vor.has(k))))
