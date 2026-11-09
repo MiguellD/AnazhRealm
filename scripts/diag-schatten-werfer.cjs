@@ -1245,19 +1245,19 @@ function probe(selbsttest) {
                 // jedes Licht sieht die Kaskade wie das Auge (r184: EIN Lichter-Knoten je Szene, auch im Schatten-Pass)
                 if (o.isLight) {
                     lichter++;
-                    if (!kams.every((c) => (o.layers.mask & (maske == null ? c.layers.mask : maske)) !== 0))
+                    if (!kams.every((c) => (o.layers.mask & (maske ?? c.layers.mask)) !== 0))
                         lichtBlind.push(o.name || o.type);
                     return;
                 }
                 if (!(o.isMesh || o.isLine || o.isPoints || o.isSprite) || o.visible === false) return;
-                const sieht = kams.some((c) => (o.layers.mask & (maske == null ? c.layers.mask : maske)) !== 0);
+                const sieht = kams.some((c) => (o.layers.mask & (maske ?? c.layers.mask)) !== 0);
                 const wirft = o.castShadow === true;
                 if (sieht) gesehen++;
                 if (wirft) werfer++;
                 if (sieht !== wirft) fremd.push((o.name || o.type) + (wirft ? " (wirft, ungesehen)" : " (gesehen)"));
             });
             return {
-                masken: kams.map((c) => (maske == null ? c.layers.mask : maske)),
+                masken: kams.map((c) => (maske ?? c.layers.mask)),
                 soll: E,
                 gesehen,
                 werfer,

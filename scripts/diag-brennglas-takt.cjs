@@ -887,7 +887,7 @@ async function probe() {
     const filter = (k) =>
         k === "rauch"
             ? st.architectures.filter((e) => e && (e.userData?.rauchQuelle || e.chimney))
-            : st.architectures.filter((e) => e && e.affordances && e.affordances[k]);
+            : st.architectures.filter((e) => e?.affordances && e.affordances[k]);
     const vergleiche = (name) => {
         const f = [];
         let mitglieder = 0;

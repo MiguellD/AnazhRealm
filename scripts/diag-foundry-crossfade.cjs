@@ -1192,7 +1192,7 @@ async function runPartB() {
         }
         const fl0 = r._foundryFlattenFor(e, preset, 0),
             fl1 = r._foundryFlattenFor(e, preset, 1);
-        if (!(fl0 && fl0.leaves && fl1?.leaves))
+        if (!(fl0?.leaves && fl1?.leaves))
             return {
                 err: "Stufen nicht warm",
                 gestalt: r._foundryGestaltFor(e, preset),
@@ -1460,7 +1460,7 @@ async function main() {
     check(
         "DIE LAUTE BLENDE (Seite): ohne uLodD0 bricht der Baum-Stoff beim Namen, statt still ohne Maske zu zeichnen",
         !!laut && laut.blende === true && /uLodD0/.test(laut.bruch || ""),
-        laut ? (laut.bruch ? laut.bruch : `der Stoff entstand still (Maske ${laut.maske ? "da" : "fehlt"})`) : "keine Antwort"
+        laut ? (laut.bruch || `der Stoff entstand still (Maske ${laut.maske ? "da" : "fehlt"})`) : "keine Antwort"
     );
     const sp = laut?.spiegel || {};
     check(

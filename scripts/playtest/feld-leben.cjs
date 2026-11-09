@@ -598,7 +598,7 @@ async function checkBandWelle6APolish({ page, check }) {
         out.archEntrySpawned = !!entry;
         // DETERMINISMUS-BOGEN P3 — Architektur-Kollision ist feld-nativ via
         // entry.blockerAABBs (solide Part-AABBs, dichte ≥ 0.3), kein Ammo-Body mehr.
-        out.archHasCollision = !!(entry && Array.isArray(entry.blockerAABBs) && entry.blockerAABBs.length > 0);
+        out.archHasCollision = !!(entry && Array.isArray(entry.blockerAABBs) && entry.blockerAABBs.length);
 
         // temple ist jetzt instanced (kein entry.mesh). Die
         // Top-Y instanced-aware aus den Flatten-Leaf-AABBs × entry-World-Matrix
@@ -1801,7 +1801,7 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
             const et = r.spawnArchitecture("felsturm", { x: px - 9, y: 4, z: pz - 9 });
             out.felsturmSpawned = !!(et && et.type === "felsturm");
             // P3 — feld-native Kollision via blockerAABBs (solide Stein-Parts).
-            out.felsturmHasCollision = !!(et && Array.isArray(et.blockerAABBs) && et.blockerAABBs.length > 0);
+            out.felsturmHasCollision = !!(et && Array.isArray(et.blockerAABBs) && et.blockerAABBs.length);
         });
 
         // Placement-Probe über den Voxel-Populator: über ein Raster frischer Chunks MUSS mindestens ein
@@ -1897,7 +1897,7 @@ async function checkBandWelle6GHylomorphism({ page, check }) {
         out.glutYieldsGlut = probe(0.2, 0.1, 0.9, 0.1) === "glut";
         out.magieYieldsQuarz = probe(0.1, 0.2, 0.1, 0.9) === "quarz";
         r.worldFieldAt = origWFA;
-        out.returnsKnownMaterial = known.indexOf(r._terrainMaterialAt(40, -25)) >= 0;
+        out.returnsKnownMaterial = known.includes(r._terrainMaterialAt(40, -25));
         // Das Terrain ist nicht uniform — über ein Raster
         // emergieren ≥2 verschiedene Boden-Materialien.
         const seen = {};

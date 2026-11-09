@@ -262,7 +262,7 @@ async function checkBandNahStreu({ page, check }) {
                     const tx = Math.floor(pp.x / NS.kachel) + dx;
                     const tz = Math.floor(pp.z / NS.kachel) + dz;
                     const satz = r._nahStreuKachel(tx, tz, arten);
-                    if (satz && satz.items.length) kachel = { tx, tz, satz };
+                    if (satz?.items.length) kachel = { tx, tz, satz };
                 }
             }
         }
@@ -1667,7 +1667,7 @@ async function checkBandV18224ScatterPromotion({ page, check }) {
             out.hasLiveInstances = liveInstances > 0;
             out.liveInstanceCount = liveInstances;
             // Cells tragen species + variantIndex + slots (Lookup-Fütterung)
-            if (region && region.cells.length) {
+            if (region?.cells.length) {
                 const c0 = region.cells[0];
                 out.cellHasSpecies = typeof c0.species === "string" && c0.species.length > 0;
                 out.cellHasVariant = Number.isFinite(c0.variantIndex);
@@ -1708,7 +1708,7 @@ async function checkBandV18224ScatterPromotion({ page, check }) {
                 const regX2 = Math.floor(pp2.x / SC.regionM);
                 const regZ2 = Math.floor(pp2.z / SC.regionM);
                 const region = r._scatterRegion(regX2, regZ2, pp2);
-                if (region && region.cells.length) {
+                if (region?.cells.length) {
                     // eine PROMOTABLE (Baum-)Cell, die NICHT promoted ist + slots hat
                     // Understory/Streu sind nie promotable)
                     const cell = region.cells.find((c) => c.promotable && c.slots?.length);

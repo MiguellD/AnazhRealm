@@ -650,7 +650,7 @@ hauptLauf(async () => {
                 const rand = [];
                 for (let g = 0; f9?.feldY && g < f9.zoneVerts && rand.length < 100; g++) {
                     const p = r._fernRingPunkt(f9, g);
-                    if (f9.teilung.randV && f9.teilung.randV[g]) rand.push(p);
+                    if (f9.teilung.randV?.[g]) rand.push(p);
                 }
                 const tF = performance.now();
                 for (const p of rand) r._voxelSurfaceY(p.x, p.z);
@@ -663,7 +663,7 @@ hauptLauf(async () => {
             res.nahtStoffGeo = spion.geo;
             res.nahtStoffWege = spion.wege;
             const cm = st.voxelChunkMaterial;
-            const slots = (m) => ["colorNode", "normalNode", "roughnessNode", "outputNode"].filter((k) => m && m[k]);
+            const slots = (m) => ["colorNode", "normalNode", "roughnessNode", "outputNode"].filter((k) => m?.[k]);
             res.nahtSlotsChunk = slots(cm).join(",");
             const stoffNaht9 = fr9 && (fr9.stoffe ? fr9.stoffe.naht : fr9.material);
             res.nahtSlotsRing = slots(stoffNaht9).join(",");

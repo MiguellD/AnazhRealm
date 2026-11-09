@@ -2322,7 +2322,7 @@ async function checkBandR6Capability({ page, check }) {
             st.revokedKeys.delete(pub);
             st.grantedCapabilities["regen-tanz"].authorPubKey = "";
             const snap = r.buildStateSnapshot();
-            out.travels = !!(snap.grantedCapabilities && snap.grantedCapabilities["regen-tanz"]);
+            out.travels = !!(snap.grantedCapabilities?.["regen-tanz"]);
             r._loadStateRestoreMiscState({
                 grantedCapabilities: {
                     "regen-tanz": snap.grantedCapabilities["regen-tanz"],

@@ -24,7 +24,7 @@ class AnazhRealm_werkstatt_hud {
 
     grokSpeak(key) {
         const grok = this.state.grok;
-        const now = performance.now() / 1000;
+        const now = this._taktUhr(); // die Stimme ruht in Welt-Zeit (w23-pruef-welt)
         if (now - grok.lastSpoke < grok.minGapSeconds) return false;
         const cfg = grok.triggers[key];
         if (cfg && now - cfg.lastFired < cfg.cooldown) return false;
@@ -1410,7 +1410,7 @@ class AnazhRealm_werkstatt_hud {
         const r = this._statusRefs;
         if (!r || !r.abilities) return;
         const list = this.state.dsl.abilities;
-        const now = performance.now() / 1000;
+        const now = this._taktUhr();
         const GESTEN_SHOWN = 6;
         const expanded = !!this.state.hofGestenExpanded;
         // Neueste zuerst; default die Top-N, „alle"-Toggle zeigt mehr (wie die Regel-Gruppe).

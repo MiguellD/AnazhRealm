@@ -356,7 +356,7 @@ hauptLauf(async () => {
                 const zurueck = leihe(r, { _foundry: null, _foundryHelfer: selbst ? () => {} : r._foundryHelfer });
                 try {
                     const f = r._ensureAssetFoundry();
-                    await __weltDa(() => !!(!(f && !f.worker)));
+                    await __weltDa(() => !f && !f.worker);
                     aus10.geboren = !!f?.worker;
                     if (aus10.geboren) Object.assign(aus10, { name: f.worker.name, post: f.worker.post.slice() });
                     aus10.helfer = Math.max(0, geboren.length - 1);

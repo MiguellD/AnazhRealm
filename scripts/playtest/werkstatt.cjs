@@ -1074,9 +1074,9 @@ async function checkBandEarlyRingsAndUi({ page, check }) {
         // Die Klang-Welt selbst (Stimmen je Ort, kein Oszillator ohne Gesetz, der Regen aus dem Wetter-Feld, der Ruf eines Leibs
         // mit seiner Richtung am Ohr) misst gate:klang-zensus am Abgriff: (G)(H)(S), (N) regen, (R) und (Ra).
         out.masterAusGesetz =
-            Math.abs(s.masterGain.gain.value - UM.masterBasis * (s.masterVolume == null ? 1 : s.masterVolume)) < 1e-6;
+            Math.abs(s.masterGain.gain.value - UM.masterBasis * (s.masterVolume ?? 1)) < 1e-6;
         out.busAmRegler =
-            Math.abs(s.umwelt.bus.gain.value - (s.creaturePingVolume == null ? 1 : s.creaturePingVolume)) < 1e-6;
+            Math.abs(s.umwelt.bus.gain.value - (s.creaturePingVolume ?? 1)) < 1e-6;
 
         // (b) disposeSymphony räumt auf
         r.disposeSymphony();

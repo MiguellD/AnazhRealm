@@ -164,7 +164,6 @@ hauptLauf(async () => {
         };
         async function pumpRender(nTicks) {
             for (let i = 0; i < nTicks; i++) {
-                r.state._frameOverBudget = false;
                 try {
                     r.tickArchitectureCulling();
                     r._tickArchitectureLOD(8, r.state.playerMesh.position); // das Auge = der Proben-Ort
@@ -347,7 +346,7 @@ hauptLauf(async () => {
         // erbt sie, und der EINE Resolver loest den Klon aufs REZEPT — nie auf die
         // Donor-Substanz. Gemessen an einem echten klinge_-Auto-Blueprint des LIVE-Buchs.
         const autoBp = Object.keys(r.state.blueprints).find(
-            (n) => r.state.blueprints[n] && r.state.blueprints[n]._foundryAutoSpecies && /^klinge_/.test(n)
+            (n) => r.state.blueprints[n]?._foundryAutoSpecies && /^klinge_/.test(n)
         );
         res.autoBpName = autoBp || null;
         if (autoBp) {

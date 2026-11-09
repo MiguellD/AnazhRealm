@@ -444,6 +444,7 @@ async function checkBandLeistungsVertrag({ page, check }) {
             const _oRS = r._applyRenderScale,
                 _oSR = r._applyEffectiveShadowRange;
             st.renderer._isHeadlessNull = false;
+            const frei = leihe(window, { __anazhPruefLast: undefined }); // das gelüftete Regler-Regime fährt frei (w23-pruef-welt)
             r._applyRenderScale = () => {};
             r._applyEffectiveShadowRange = () => {};
             // DIE KARTE IST EIN GPU-ANWENDER wie Render-Skala und Schatten-Weite: mit echtem Renderer trägt eine Baum-Karte
@@ -571,6 +572,7 @@ async function checkBandLeistungsVertrag({ page, check }) {
             o.v1ChurnNull = o.standMints === 0;
             o.v3Stabil = groupsMax <= groups0; // stehen: nichts klettert (Reaper darf senken)
             // Regime zurück (die Gate-Hook-Lehre: sichern + wiederherstellen):
+            frei();
             st.renderer._isHeadlessNull = _oH0;
             r._applyRenderScale = _oRS;
             r._applyEffectiveShadowRange = _oSR;

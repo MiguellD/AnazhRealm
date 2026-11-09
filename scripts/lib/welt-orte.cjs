@@ -234,7 +234,7 @@ function weltOrte(art, opts) {
     const rMax = o.rMax || 400;
     const schritt = o.schritt || 6;
     const anzahl = o.anzahl || 1;
-    const abstand = o.abstand == null ? 5 : o.abstand;
+    const abstand = o.abstand ?? 5;
     const H = (x, z) => r.getTerrainHeightAt(x, z);
     const trocken = (x, z) => r._landAt(x, z) && !(r._nassAt(x, z));
     const grad = (t) => (Math.atan(t) * 180) / Math.PI;
@@ -265,7 +265,7 @@ function weltOrte(art, opts) {
     const pruefe = {
         eben: (x, z) => {
             const rr = o.r || 6;
-            const sp = o.spanne == null ? 1 : o.spanne;
+            const sp = o.spanne ?? 1;
             let lo = Infinity,
                 hi = -Infinity;
             for (let k = 0; k <= 8; k++) {
@@ -286,7 +286,7 @@ function weltOrte(art, opts) {
             const [gx, gz] = gefaelle(x, z, b);
             const t = Math.hypot(gx, gz);
             const n = grad(t);
-            if (!(n >= (o.min == null ? 25 : o.min) && n <= (o.max == null ? 35 : o.max))) return null;
+            if (!(n >= (o.min ?? 25) && n <= (o.max ?? 35))) return null;
             const ux = gx / t,
                 uz = gz / t;
             if (o.bergab) {
@@ -297,7 +297,7 @@ function weltOrte(art, opts) {
         },
         hangfuss: (x, z) => {
             if (!trocken(x, z) || unterFels(x, z)) return null;
-            if (neigung(x, z) > (o.fussMax == null ? 5 : o.fussMax)) return null;
+            if (neigung(x, z) > (o.fussMax ?? 5)) return null;
             const bis = o.bis || 10;
             for (let k = 0; k < 16; k++) {
                 const a = (k / 16) * Math.PI * 2;
@@ -307,7 +307,7 @@ function weltOrte(art, opts) {
                     const px = x + dx * d,
                         pz = z + dz * d;
                     if (!trocken(px, pz)) break;
-                    if (neigung(px, pz) >= (o.hangMin == null ? 15 : o.hangMin) && H(px, pz) > H(x, z) + 0.5)
+                    if (neigung(px, pz) >= (o.hangMin ?? 15) && H(px, pz) > H(x, z) + 0.5)
                         return { gier: Math.round(a * 1000) / 1000, hangBei: d };
                 }
             }
@@ -315,7 +315,7 @@ function weltOrte(art, opts) {
         },
         ufer: (x, z) => {
             if (!trocken(x, z) || unterFels(x, z)) return null;
-            if (neigung(x, z) > (o.fussMax == null ? 8 : o.fussMax)) return null;
+            if (neigung(x, z) > (o.fussMax ?? 8)) return null;
             const bis = o.bis || 30,
                 breite = o.breite || 10;
             const nass = (px, pz) => r._nassAt(px, pz);
@@ -337,16 +337,16 @@ function weltOrte(art, opts) {
             const [gx, gz] = gefaelle(x, z, 1);
             const t = Math.hypot(gx, gz);
             const n = grad(t);
-            if (!(n >= (o.min == null ? 25.2 : o.min) && n <= (o.max == null ? 40.1 : o.max)) || !trocken(x, z))
+            if (!(n >= (o.min ?? 25.2) && n <= (o.max ?? 40.1)) || !trocken(x, z))
                 return null;
             const cx = -gz / t,
                 cz = gx / t;
             const L = o.linie || 8;
-            const cosW = Math.cos(((o.winkel == null ? 20 : o.winkel) * Math.PI) / 180);
+            const cosW = Math.cos(((o.winkel ?? 20) * Math.PI) / 180);
             for (let s = -L; s <= L; s += 2) {
                 const [ax, az] = gefaelle(x + cx * s, z + cz * s, 1);
                 const ag = Math.hypot(ax, az);
-                if (!(grad(ag) >= (o.linieMin == null ? 16.7 : o.linieMin))) return null;
+                if (!(grad(ag) >= (o.linieMin ?? 16.7))) return null;
                 if ((ax * gx + az * gz) / (ag * t) < cosW || !trocken(x + cx * s, z + cz * s)) return null;
             }
             const sx = x - cx * L,
@@ -356,7 +356,7 @@ function weltOrte(art, opts) {
         kante: (x, z) => {
             const h0 = H(x, z);
             if (!Number.isFinite(h0) || !trocken(x, z)) return null;
-            const kMin = o.kanteMin == null ? 1.5 : o.kanteMin;
+            const kMin = o.kanteMin ?? 1.5;
             const [f0, f1] = o.fall || [3, 14];
             const anlauf = o.anlauf || 24;
             let best = null;
@@ -379,9 +379,9 @@ function weltOrte(art, opts) {
             return best;
         },
         hoehle: (x, z) => {
-            const felsMin = o.fels == null ? 2 : o.fels;
-            const luftMin = o.luft == null ? 3 : o.luft;
-            const R = o.R == null ? 1.8 : o.R;
+            const felsMin = o.fels ?? 2;
+            const luftMin = o.luft ?? 3;
+            const R = o.R ?? 1.8;
             const top = r._voxelSurfaceY(x, z);
             if (!Number.isFinite(top)) return null;
             let y = top - 0.05;

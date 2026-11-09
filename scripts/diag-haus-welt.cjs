@@ -2166,7 +2166,7 @@ function urteil(o) {
         if (wa.zugOffen) f.push("W9 Zug: blind — der Zug lebt");
         else if (wa.gesperrt && wa.haeuser < wa.slots - 1)
             f.push(`W9 Zug: ${wa.haeuser} von ${wa.slots - 1} freien Slots stehen`);
-        if (wa.start && !(au && au.brunnen[1] && au.laternen[1]))
+        if (wa.start && !(au?.brunnen[1] && au.laternen[1]))
             f.push("W9 Ausstattung: blind — kein Brunnen, keine Laterne");
         else if (au && Object.values(au).some(([n, soll]) => n < soll)) f.push(`W9 Ausstattung: ${JSON.stringify(au)}`);
     }

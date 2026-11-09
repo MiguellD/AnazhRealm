@@ -320,7 +320,7 @@ async function checkBandW13W14VibePassLibrary({ page, check }) {
         const out = {};
         const REG = AnazhRealm.WORLD_REGISTRY;
         // Jeder Registry-Eintrag trägt jetzt eine Beschreibung.
-        out.registryHasDesc = Object.values(REG).every((w) => typeof w.desc === "string" && w.desc.length > 0);
+        out.registryHasDesc = Object.values(REG).every((w) => typeof w.desc === "string" && w.desc.length);
         // spielgang.K5 — Name und Beschreibung tragen ihre Zeile in jeder Sprache; die Identität `label` (signiert) ist
         // byte-gleich der de-Zeile ihres `name` — kein Auseinanderlaufen von Identität und Anzeige.
         const T = AnazhRealm.TEXTE;
@@ -401,7 +401,7 @@ async function checkBandW13W14VibePassLibrary({ page, check }) {
         const feedTools = schoepfen ? schoepfen.querySelectorAll(".feed-tool") : [];
         out.feedToolsAccordion =
             feedTools.length >= 2 &&
-            Array.from(feedTools).every((t) => !!t.querySelector(".feed-tool-head .feed-tool-name"));
+            Array.from(feedTools).every((t) => t.querySelector(".feed-tool-head .feed-tool-name"));
         // die Feed-Tabs (Für dich | Aus dem Mesh) im Hauptthread; der Welt-Katalog im Mesh-Panel.
         const feedTabEls = feedCenter ? feedCenter.querySelectorAll(".feed-tabs .feed-tab") : [];
         const meshPanel = feedCenter && feedCenter.querySelector("#feed-mesh-panel");
@@ -2025,7 +2025,7 @@ async function checkBandPhi7PortalHalls({ page, check }) {
         // drei verschiedene Welten).
         const spawned = st.architectures.slice(-3);
         const allHavePortalMeta = spawned.every(
-            (e) => e.portalMeta && e.portalMeta.worldAddress && e.portalMeta.hallName === "test-halle"
+            (e) => e.portalMeta?.worldAddress && e.portalMeta.hallName === "test-halle"
         );
         const distinctWorlds = new Set(spawned.map((e) => e.portalMeta.worldAddress.worldId));
         out.matEntryMeta = allHavePortalMeta && distinctWorlds.size === 3;
@@ -2046,7 +2046,7 @@ async function checkBandPhi7PortalHalls({ page, check }) {
             snapTestHall.sig &&
             snapTestHall.authorPubKey
         );
-        const snapArchWithMeta = snap.architectures.filter((a) => a.portalMeta && a.portalMeta.worldAddress);
+        const snapArchWithMeta = snap.architectures.filter((a) => a.portalMeta?.worldAddress);
         out.snapArchHasPortalMeta = snapArchWithMeta.length === 3;
 
         // (H14) R2-DISJUNKTHEIT: keine der Φ7-Akte sind DSL-Ops (die Dispatch-Tafel `dslEffects` kennt sie nicht).

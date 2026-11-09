@@ -19,7 +19,7 @@
 //   Port: V1_PFAD_PORT (4421) · Mutanten: V1_MUTANTE=gedaechtnis-leer (--seele) · wertung-aus (--regeln)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, warteAufWelt, ROOT: root, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde, jsonLesen, jsonSchreiben, jsonKlon, fehlerStapel, SELBSTTEST, path, fs, stammLib, nullWelt } = require("./lib/welt-boot.cjs");
+const { statikServer, warteAufWelt, ROOT: root, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde, jsonLesen, jsonSchreiben, jsonKlon, fehlerStapel, SELBSTTEST, path, fs, stammLib, nullWelt, FENSTER } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 
 const PORT = Number(process.env.V1_PFAD_PORT || 4421);
@@ -359,7 +359,7 @@ function knotenVerdict(m) {
     if (String(d.near_water).toLowerCase() !== `kein wasser im umkreis von ${KNOTEN_DEFAULT.near_water} m`)
         out.push(`near_water ohne Radius: „${d.near_water}“ (Soll ${KNOTEN_DEFAULT.near_water} m)`);
     for (const k of ["at_player_forward", "at_field_need"])
-        if (!(Math.abs((d[k] == null ? NaN : d[k]) - KNOTEN_DEFAULT[k]) < 0.05))
+        if (!(Math.abs((d[k] ?? NaN) - KNOTEN_DEFAULT[k]) < 0.05))
             out.push(`${k} ohne Zahl: ${d[k]} m vom Spieler (Soll ${KNOTEN_DEFAULT[k]} m)`);
     if (m.messOrtOhneSpieler != null)
         out.push(`der Mess-Ort einer Regel ohne Spieler ist ${JSON.stringify(m.messOrtOhneSpieler)}`);
@@ -386,7 +386,7 @@ function sucheVerdict(m) {
             out.push(`${pfad}: nicht gezählt`);
             continue;
         }
-        const s = z.hoch != null ? z.hoch : z.scans;
+        const s = z.hoch ?? z.scans;
         if (!(s <= ALT8(z.R)))
             out.push(
                 `${pfad} ${z.R} m: ${s} Spalten-Scans bei ${z.proben} Proben${z.hoch != null ? " (hochgerechnet)" : ""} (Soll ≤ ${ALT8(z.R)})`
@@ -2065,17 +2065,16 @@ async function korpusSatz(a) {
     return e;
 }
 
-// DER SELBSTLAUF DER REGELN (KI K4) — vor dem ersten Satz eines Laufs leer, nach jedem Satz 100 s Welt-Zeit im Zeitraffer: die Uhr
-// der Seite rückt je Takt 0,25 s vor (sie bleibt verschoben, auch für die Sätze), der Nexus schreibt je 3 s eine Regel
+// DER SELBSTLAUF DER REGELN (KI K4) — vor dem ersten Satz eines Laufs leer, nach jedem Satz 100 s Welt-Zeit im Zeitraffer: die
+// Welt-Uhr (`spielZeit`, die Uhr des Felds seit w23-pruef-welt) rückt je Takt 0,25 s vor, der Nexus schreibt je 3 s eine Regel
 // (`_composeNexusRule`; im Gegenlauf je Sekunde, bis die Kappe verdrängt). Gezählt je Lauf, Drittel und Quelle am Bestand, gleich wer den Takt schlug (der eigene, der Loop): neu ·
 // erneuert (ihr born rückt) · verfallen (fort am ttl-Ende) · verdrängt (fort davor). Der Gegenlauf (lauf 1) mischt das δ: je Quelle
 // im Wechsel +1 / −1 über die Baseline des Rewards; die Mutante wertung-aus misst kein δ.
 async function regelRaffer(a) {
-    const R = window.__regeln || (window.__regeln = { vor: 0, z: [] });
+    const R = window.__regeln || (window.__regeln = { z: [] });
     const q = (x) => (/^llm/.test(x.source) ? "llm" : x.source === "nexus" && "nexus");
-    if (!R.uhr) {
-        const [uhr, wert] = [performance.now.bind(performance), r._measureRuleReward];
-        R.uhr = performance.now = () => uhr() + R.vor;
+    if (!R.wert) {
+        const wert = (R.wert = r._measureRuleReward);
         r._measureRuleReward = function (x, t) {
             if (R.lauf && x._vPos)
                 x._vBase = r._fieldWohlStruktur(r.auraAt(x._vPos.x, x._vPos.z, t)) - (R.dl.get(x) || [0, 0])[1];
@@ -2098,7 +2097,7 @@ async function regelRaffer(a) {
             (d[k] = (d[k] || 0) + 1);
         for (const [x, [born]] of R.dl)
             if (!st.worldRules.includes(x)) {
-                zaehl(x, performance.now() / 1000 - born >= x.ttlSec ? "verfallen" : "verdraengt");
+                zaehl(x, st.spielZeit - born >= x.ttlSec ? "verfallen" : "verdraengt");
                 R.dl.delete(x);
             }
         for (const x of st.worldRules.filter(q)) {
@@ -2107,13 +2106,12 @@ async function regelRaffer(a) {
             if (!alt || alt[0] !== x.born) zaehl(x, alt ? "erneuert" : "neu");
         }
     };
-    for (const ende = R.s + a.schritte; R.s < ende; R.s++, R.vor += 250) {
+    for (const ende = R.s + a.schritte; R.s < ende; R.s++) {
         sieh();
-        // DIE UHR DES TAKTS (`_taktUhr`) rückt mit, wie der Loop sie vor dem Tick setzt: eine Regel wird auf ihr geboren
-        // und altert auf der Uhr des Ticks
-        r._taktZeit = performance.now() / 1000;
+        // DIE WELT-UHR rückt mit, wie der Loop sie vor dem Tick setzt: eine Regel wird auf ihr geboren und altert auf ihr
+        st.spielZeit += 0.25;
         if (R.s % (R.lauf ? 4 : 12) === 0) r.dslRun(r._composeNexusRule(R.rng), { source: "nexus" });
-        r._tickWorldRules(r._taktZeit);
+        r._tickWorldRules(st.spielZeit);
     }
     return R.z;
 }
@@ -3139,7 +3137,7 @@ hauptLauf(async () => {
     console.log("=== W — DIE STATISCHE WAND (Node, kommentarfrei) ===");
     for (const [name, ok, detail] of wand(quelle)) check(name, ok, detail);
 
-    const { browser, page } = await nullWelt(server, { port: PORT, frist: 600000, fenster: { width: 1280, height: 720 } }, 30000);
+    const { browser, page } = await nullWelt(server, { port: PORT, frist: 600000, fenster: FENSTER.bild }, 30000);
     // Der KI-Endpunkt der V-D6-Probe: ein Port, auf dem nichts lauscht.
     const out = await page.evaluate(probe, {
         kiPort: PORT + 3,

@@ -135,7 +135,7 @@ function selbsttest() {
         e: 22,
         az: 45,
         NdotL: -0.002,
-        proben: proben == null ? 1600 : proben,
+        proben: proben ?? 1600,
         fleckenAn: fa,
         fleckenAus: fb,
     });

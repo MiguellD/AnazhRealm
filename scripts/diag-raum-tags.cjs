@@ -337,7 +337,7 @@ async function probe() {
     aus.quelle = quelle;
     if (quelle && r.cloneBlueprint(quelle, NAME)) {
         const bp0 = () => st.blueprints[NAME];
-        const stoff = Object.keys(st.materials).find((m) => st.materials[m] && st.materials[m].tags && m !== "stein");
+        const stoff = Object.keys(st.materials).find((m) => st.materials[m]?.tags && m !== "stein");
         r.defineMaterial("raum_stoff", 0x885533, { resoniert: 0.8, härte: 0.3, magieleitung: 0.6 });
         frage(NAME, "erste Frage", "rechnet");
         frage(NAME, "zweite Frage", "Treffer");

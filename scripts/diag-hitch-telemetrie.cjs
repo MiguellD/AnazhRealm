@@ -973,7 +973,7 @@ hauptLauf(async () => {
     bandIn(1)(
         traceMaengel.length === 0,
         "TRACE-FELDER (_flightRecorderBuildTrace)",
-        traceMaengel.length === 0
+        !traceMaengel.length
             ? `longTasks=${JSON.stringify(out.trace.sessionLongTasks)} · gcN=${out.trace.memoryGcN} · pipelines=${JSON.stringify(
                   out.trace.steadyPipelines
               )} · uploadKBProS=${out.trace.steadyUploadKBProS}`

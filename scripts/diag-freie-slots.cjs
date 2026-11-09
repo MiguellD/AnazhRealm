@@ -56,7 +56,7 @@ async function welt() {
         const r = await window.__weltDa();
         const st = r.state;
         const f = r._ensureAssetFoundry ? r._ensureAssetFoundry() : null;
-        await __weltDa(() => !!(!(f && !f.ready)));
+        await __weltDa(() => !f && !f.ready);
         o.foundry = !!(f?.ready);
         // ── A: DER ABSCHIED JEDER SENKE (W6) — jede Senke, die `_instanzMesh` ab hier baut, wird verfolgt; `_instanzAbschied`
         // stempelt sie. Eine Senke, die den Graphen ohne Abschied verlässt, hinterlässt ihre Instanz-Puffer in r184s Register

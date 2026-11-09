@@ -14,7 +14,8 @@
 //       Wort des Spielers, jeder Täter beim Namen (`himmelUrteil`); (B) BAND: frei schreibt nur der Zug, nie schneller als sein
 //       Takt; (R) REGLER zeigt die Welt-Zeit; (T) TAG trägt eine Szene, ein alter Stand setzt ihn nicht zurück; (Q) QUELLE: kein
 //       Wurf des Nexus trägt einen Uhr-Op; (U) UHR (A9): die Bühne hält NUR die Bild-Uhr, jeder Leser steht mit ihr; (P) kein
-//       Page-Error — der EINE Sammler (welt-boot) macht den Lauf ROT mit Namen.
+//       Page-Error — der EINE Sammler (welt-boot) macht den Lauf ROT mit Namen; (N) NEXUS (w23-pruef-welt): dieselbe Saat läuft
+//       auf schnellem und langsamem Takt (die Wanduhr ×1 und ×5 je Welt-Takt) dieselbe Folge der Nexus-Läufe je Welt-Sekunde.
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): jedes Urteil fällt bei jedem eingeschmuggelten Täter rot und bleibt
 // bei Bühne, Verweigerung und Wunsch grün.
 //   node scripts/diag-wetter-wache.cjs [--selftest]   (npm run gate:wetter-wache; Port WETTER_WACHE_PORT, HIMMEL_MIN)
@@ -31,7 +32,8 @@ const {
 } = require("./lib/ausgabe-aufnahme.cjs");
 
 const PORT = Number(process.env.WETTER_WACHE_PORT || 4602);
-// Spiel-Minuten je Fenster (G und B): drei Takte des Wetter-Zugs (120 s), 77 Feuer eines 4,7-s-Gesetzes, 15 Nexus-Evolutionen.
+// Spiel-Minuten je Fenster (G und B): drei Takte des Wetter-Zugs (120 s), 77 Feuer eines 4,7-s-Gesetzes (die Evolution des Nexus ruht
+// am Ort der Ankunft — ihren Takt in Welt-Zeit misst (N)).
 const HIMMEL_MIN = Number(process.env.HIMMEL_MIN || 6);
 const SCHRITT_SEK = 0.25;
 // Der Takt des Wesens im Schöpfer-Modus (Spiel-Sekunden): sechs Vorschläge je Fenster, zwei je Takt des Wetter-Zugs.
@@ -78,6 +80,9 @@ if (SELBSTTEST) {
         [{ nassTrocken: 0.1 }, { lag: 600 }, { worte: [1, 2, 3] }, { welt: "sunny" }, { labor: "klar" }].some((o) => F(o).length !== 1)
     )
         v.push("front: die Front, trockener Ort, falscher Lag, fehlende Zeile oder blinde Mutation");
+    const [f3, N] = ["a@24 b@48 c@72", (s, l = s) => nexusRot([s, l].map((x) => x.split(" "))).length];
+    if (N(f3) || !N(f3, f3 + " d@96") || !N(f3, "a@24 b@48.1 c@72") || !N("a@24"))
+        v.push("nexus: Folge gleich, Lauf mehr, Sekunde verschoben, stumm");
     selbsttestEnde(v, "jeder eingeschmuggelte Täter fällt rot; Bühne, Verweigerung und Wunsch grün.");
     process.exit(0);
 }
@@ -199,7 +204,7 @@ function probe(o) {
     r._gameLoopTick(performance.now());
     window.__buehne();
     window.__buehne({ wetter: "rainy", saison: "winter" });
-    let wort = +!!(r._rainSystem && r._rainSystem.mesh.visible);
+    let wort = +!!(r._rainSystem?.mesh.visible);
     r._loopRender();
     const uhren = () => Object.fromEntries(window.__bildUhren().map(([n, o, k]) => [n, o[k]]));
     const vor = uhren();
@@ -491,8 +496,42 @@ function urteil(S, H) {
         rot.push(
             `(T) TAG: ein alter Spielstand (8-min-Tag) setzt die Tag-Länge auf ${T.alterStand} — er hält den alten Tag fest`
         );
-    rot.push(...uhrRot(S.uhren), ...saatRot(S.saat), ...frontRot(S.front));
+    rot.push(...uhrRot(S.uhren), ...saatRot(S.saat), ...frontRot(S.front), ...nexusRot(S.nexus));
     return rot;
+}
+
+// (N) DAS FELD IN WELT-ZEIT (w23-pruef-welt): eine frische Welt läuft zweimal `o.sek` Spiel-Sekunden vom selben Stand (die Uhr, der
+// Strom des Nexus, seine Schlange), je Takt der Deckel `TAKT_DECKEL_S` Welt-Zeit — die Wanduhr geht je Takt `o.wand[i]` Deckel (1:
+// schnell wie die GTX, 5: langsam wie swiftshader). Der Nexus lebt (der Haken des Orts hält nur sein Dorf); jeder seiner Läufe steht
+// im Buch statt in der Welt: Programm (Hash) @ Welt-Sekunde ab dem Start.
+function nexusProbe(o) {
+    st.renderer.setAnimationLoop(null);
+    const [P, S0, D, B, buch] = [AnazhRealm.prototype, st.spielZeit, AnazhRealm.TAKT_DECKEL_S, (st.worldMeta.bauSame ||= {}), []];
+    const n0 = B.nexus;
+    let T = performance.now();
+    const zurueck = leihe(r, {
+        evolveNexus(t) {
+            const z = leihe(this, { _dorfTaktLebt: () => true });
+            P.evolveNexus.call(this, t);
+            z();
+        },
+        dslRun: (p, x) => (x.source === "nexus" && buch.push(`${r._fastHash(JSON.stringify(p))}@${(st.spielZeit - S0).toFixed(1)}`), { ok: true, log: [], outcome: {} }),
+    });
+    const lauf = (wand) => {
+        Object.assign(st, { spielZeit: S0, nexusLastEvolution: S0, nexusEvolutionQueue: [], nexusWirk: 1e6 });
+        [st.dsl.history, B.nexus, buch.length] = [[], n0, 0];
+        for (let k = 0; k < o.sek / D; k++) r._gameLoopTick((T += wand * D * 1000));
+        return [...buch];
+    };
+    const aus = o.wand.map(lauf); // [schnell, langsam]
+    zurueck();
+    return aus;
+}
+// (N) das Urteil des Nexus (rein): die langsame Uhr läuft dieselbe Folge wie die schnelle, mindestens drei Läufe. main ef667956
+// (die Wanduhr): schnell 0 Läufe in 120 s, langsam 9 (Welt 42,6 · 52,2 · … · 119,4 — je 24 s Wanduhr ×2 unter Last)
+function nexusRot([s, l]) {
+    const z = (x) => `${x.length} Läufe [${x.slice(0, 4).join(" ")}]`;
+    return s.join() !== l.join() ? [`(N) NEXUS: die Tat-Folge hängt an der Wanduhr — schnell ${z(s)} ≠ langsam ${z(l)}`] : s.length < 3 ? [`(N) NEXUS: ${z(s)} — schläft`] : [];
 }
 
 async function boot(browser) {
@@ -530,6 +569,9 @@ hauptLauf(async () => {
         wesenSek: WESEN_SEK,
     });
     const laufS = (Date.now() - t0) / 1000;
+    // (N) in der Welt des Himmels: der Nexus wirft erst mit dem Ofen-Vorrat (K60)
+    await page2.evaluate(() => __weltDa((x) => x._kreaturenBereit()));
+    S.nexus = await page2.evaluate(nexusProbe, { sek: 120, wand: [1, 5] });
     const lab = await browser.newPage();
     await server.zeige(lab, 60000, "worlds/terrain/index.html");
     await lab.waitForFunction("typeof updateWorld === 'function' && typeof camera === 'object' && camera");
@@ -580,6 +622,7 @@ hauptLauf(async () => {
         `  Front · Regen an A bei trockenem B ${(100 * F.nassTrocken).toFixed(0)} % · Lag ${F.lag} s (Soll ${F.soll.toFixed(0)} s ±20 %)` +
             ` · Worte ${F.worte.length}/5 (${F.worte.join(" ")}) · Mutation des Kerns: Welt ${F.welt}, Labor ${F.labor}`
     );
+    console.log(`  Nexus: ${S.nexus[0].join(" ")}`);
     const rot = urteil(S, H);
     wandEnde(
         rot,

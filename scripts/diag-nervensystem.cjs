@@ -25,7 +25,7 @@ const { fehlerText, statikServer,
     ROOT,
     hauptLauf,
     sleep,
-    wandEnde, ausDatei, SELBSTTEST } = require("./lib/welt-boot.cjs");
+    wandEnde, ausDatei, SELBSTTEST, fenster } = require("./lib/welt-boot.cjs");
 const { fehlt, text: stammText } = require("./lib/stamm.cjs");
 
 const lies = (f) => ausDatei(ROOT + "/" + f);
@@ -182,7 +182,7 @@ hauptLauf(async () => {
         const page = await k.newPage();
         await nullRenderer(page);
         await page.evaluateOnNewDocument(seitenHelfer);
-        await page.setViewport({ width: 1280, height: 720 });
+        await fenster(page, "bild");
         await server.zeige(page, 30000);
         return page;
     };
@@ -256,7 +256,7 @@ hauptLauf(async () => {
             // ersten Werk seiner Art — nie zu einem Werk, dessen Label es als Grundwort trägt (w4-tore-teile2: „tor" führte aus
             // „Lyra-Tor" zu tor_lyra statt zu tor_drachentor, der Satz „stell ein drachentor auf" verlor seine Absicht)
             wort: [...B.teile.map((t) => t.ziel && [t.rezept, t.ziel]), ...r._studioWortKatalog().stufen[2]]
-                .filter((x) => x && x[0] && r._studioBlueprintForWord(x[0]) !== x[1])
+                .filter((x) => x?.[0] && r._studioBlueprintForWord(x[0]) !== x[1])
                 .map((x) => x[0])
                 .join(" "),
             baum,

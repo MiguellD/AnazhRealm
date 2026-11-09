@@ -676,9 +676,7 @@ hauptLauf(async () => {
     check(
         "D2 RIESE",
         !R2.fehlt && mitBand(R2.imBand) && kartAllein(R2.jenseitsBand) && mitBand(R2.zurueck) && R2.luecke === 0,
-        R2.fehlt
-            ? R2.fehlt
-            : `Sichthöhe ${R2.sichtH} m · im Band ${zs(R2.imBand)} · jenseits ${zs(R2.jenseitsBand)} · zurück ${zs(R2.zurueck)}` +
+        R2.fehlt || `Sichthöhe ${R2.sichtH} m · im Band ${zs(R2.imBand)} · jenseits ${zs(R2.jenseitsBand)} · zurück ${zs(R2.zurueck)}` +
                   ` · Takte ohne Gestalt ${R2.luecke}/${R2.takte}`
     );
     const s3 = out.S3;

@@ -54,7 +54,7 @@ async function bauAbdruck(meshes) {
     for (const k of Object.keys(m).sort()) {
       const v = m[k];
       text(k);
-      if (v && v.array && v.itemSize) { text(v.itemSize); puffer(v.array); }
+      if (v?.array && v.itemSize) { text(v.itemSize); puffer(v.array); }
       else if (k === "index" && v?.buffer) puffer(v);
       else text(JSON.stringify(v === undefined ? null : v));
     }
@@ -383,8 +383,8 @@ async function runWithWorker(port, cb) {
                 liste,
                 d,
                 welche || null,
-                bis == null ? null : bis,
-                fangen == null ? -1 : fangen
+                bis ?? null,
+                fangen ?? -1
             );
         const out = await cb({ build, kostenListe, bauHashListe, getData, atlas, atlasAlpha, atlasBild, probeLauf });
         return out;

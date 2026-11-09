@@ -560,7 +560,7 @@ async function checkBandVoxelTerrainCore({ page, check }) {
         r.updateCreatures(0.016);
         out.creatureAiCached =
             st.creatures.length === 0 ||
-            st.creatures.some((c) => c.userData && c.userData.aiDir && c.userData.aiDir.isVector3);
+            st.creatures.some((c) => c.userData?.aiDir && c.userData.aiDir.isVector3);
         return out;
     });
 
@@ -2247,7 +2247,7 @@ async function checkBandTodZensus({ page, check }) {
             );
         if (!Array.isArray(z.raeumer) || z.raeumer.length || !(z.raeumt > 0))
             v.push(`raeumen: neben _leibZeichenFrei (${z.raeumt} Rufe im Fall) räumen ${JSON.stringify(z.raeumer)} — Soll EINE Methode`);
-        for (const k of KLASSEN) if (z.verstoss && z.verstoss[k]) v.push(`${k}: ${z.verstoss[k]} Takte — ${z.beispiel[k]}`);
+        for (const k of KLASSEN) if (z.verstoss?.[k]) v.push(`${k}: ${z.verstoss[k]} Takte — ${z.beispiel[k]}`);
         return { ok: v.length === 0, grund: v.join(" · ") };
     };
     const KLASSEN = [
@@ -2347,6 +2347,7 @@ async function checkBandBewegungUnterLast({ page, check }) {
         // Position nach jedem Tick zurück — die Linse MUSS das als „keine Bewegung" sehen.
         const heavyRun = (spot, ticks, pin) => {
             resetSim(spot);
+            const frei = leihe(window, { __anazhPruefLast: undefined }); // die Last ist echt: der Regler läuft frei (w23-pruef-welt)
             let t = performance.now();
             tick(t); // Baseline-Tick (setzt lastTime im Loop-Closure)
             resetSim(spot); // der Baseline-Tick darf die Messung nicht verschieben
@@ -2369,6 +2370,7 @@ async function checkBandBewegungUnterLast({ page, check }) {
                 if (s._frameOverBudget) overBudgetSeen = true;
             }
             const end = simPos();
+            frei();
             return {
                 movedXZ: Math.hypot(end.x - start.x, end.z - start.z),
                 start,
@@ -2481,7 +2483,7 @@ async function checkBandBewegungUnterLast({ page, check }) {
     check(
         `Bewegung unter Last SELBSTTEST: die gepinnte Position liest als keine Bewegung (${p ? p.movedXZ.toFixed(3) : "?"} m), ohne Takt-Deckel springt JEDER Wolf (${da ? da.ueber : "?"}/${da ? da.n : "?"})`,
         !!p && p.movedXZ <= 1.0 && !!da && da.n >= 3 && da.ueber === da.n && !da.halt.length,
-        da && da.halt.length ? `Vorbedingung: ${da.halt.join(" · ")}` : ""
+        da?.halt.length ? `Vorbedingung: ${da.halt.join(" · ")}` : ""
     );
 }
 

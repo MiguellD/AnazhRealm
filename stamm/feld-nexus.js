@@ -1506,7 +1506,7 @@ class AnazhRealm_feld_nexus {
                 const historyEntry = {
                     id: `llm_${this.state.dsl.nextEntryId++}`,
                     program: reply.program,
-                    at: performance.now() / 1000,
+                    at: this._taktUhr(),
                     outcome: result.outcome,
                     ok: true,
                     fitness: 0,
@@ -1570,7 +1570,7 @@ class AnazhRealm_feld_nexus {
         // Throttle: per-Kreatur UND welt-weit müssen erfüllt sein. Die Gaps atmen mit der Emotions-Balance
         // (derselbe Leser wie die Nexus-Ökonomie): kippt der Spieler, werden die Stimmen stiller (bis ×2).
         // Der Toggle bleibt der harte Aus.
-        const now = performance.now() / 1000;
+        const now = this._taktUhr(); // die Stimmen der Wesen ruhen in Welt-Zeit wie die des Begleiters
         const gapMul = 2 - this._emotionBalanceFactor();
         const lastSelf = creature.userData.lastProactiveSpeech || -Infinity;
         if (now - lastSelf < AnazhRealm.CREATURE_PROACTIVE_GAP_PER_CREATURE * gapMul) return false;

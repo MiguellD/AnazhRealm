@@ -412,7 +412,7 @@ function bandBefunde(messung, basis) {
             v.push(
                 `BASIS band: die Basis-Seite A stand an ${fremd.join(" · ") || "?"}${Array.isArray(basis.rot) ? "" : " ohne Rot-Liste"} — sie trägt keine Zeile dieser Seite`
             );
-        else traeger = new Map(basis.rot.filter((r) => r && r.schluessel).map((r) => [r.schluessel, r]));
+        else traeger = new Map(basis.rot.filter((r) => r?.schluessel).map((r) => [r.schluessel, r]));
     }
     const tol = basis?.toleranz || messung.toleranz || null;
     const zahl = Number.isFinite;
@@ -543,7 +543,7 @@ function laufKurz(l) {
         frameMs: l.frameMs,
         cpuTaktMs: l.cpuTaktMs,
         gpuDurchsatzMs: l.gpuDurchsatzMs,
-        renderEwmaMs: ph.render != null ? ph.render : null,
+        renderEwmaMs: ph.render ?? null,
         befehle: l.befehle ? { mittel: l.befehle.mittel, max: l.befehle.max } : null,
         dreiecke: l.dreiecke ? { mittel: l.dreiecke.mittel, max: l.dreiecke.max } : null,
         vramMB: l.vramMB ? l.vramMB.jetzt : null,

@@ -643,7 +643,7 @@ hauptLauf(async () => {
         // Pflanzen-Arten und die Selbsttests (drachentor Same 1/2, gt Same V + 1) baut `bauHashListe`.
         const ersteStufe = (preset) => {
             const kind = artVon(preset);
-            return stufen[kind].find((l) => !(budget[kind][l] && budget[kind][l].karte));
+            return stufen[kind].find((l) => !(budget[kind][l]?.karte));
         };
         const weltK = welt.length
             ? await kostenListe(welt, (c) => gestaltenV(gestalten, c.presetId) >= 2 && c.lod === ersteStufe(c.presetId))

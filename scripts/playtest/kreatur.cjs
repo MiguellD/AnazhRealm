@@ -812,7 +812,7 @@ async function checkBandWelle6HBuildAndPersist({ page, check }) {
         // Wir können nicht direkt die spezifische Row finden, aber wir können prüfen dass die ANZAHL specsSpans = Anzahl Kreaturen mit ≥1 Spec
         let creaturesWithSpecs = 0;
         for (const cc of st.creatures) {
-            if (r._creatureTopSpecializations(cc, 2).length > 0) creaturesWithSpecs++;
+            if (r._creatureTopSpecializations(cc, 2).length) creaturesWithSpecs++;
         }
         const allSpecsSpans = listEl ? listEl.querySelectorAll(".creature-specs") : [];
         out.uiSpansMatchSpecCount = allSpecsSpans.length === creaturesWithSpecs;

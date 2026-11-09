@@ -201,14 +201,7 @@ function selbsttest() {
 
 if (process.argv.includes("--selftest")) selbsttest();
 
-const {
-    statikServer,
-    nullWelt,
-    selbsttest: selbstMarke,
-    laufUhr,
-    fehlerText,
-    rotListe,
-} = require("./lib/welt-boot.cjs");
+const { statikServer, nullWelt, selbsttest: selbstMarke, laufUhr, fehlerText, rotListe, FENSTER } = require("./lib/welt-boot.cjs");
 const { linsenGpu } = require("./lib/software-gpu.cjs");
 const { ladeSpec } = require("./lib/band-urteil.cjs");
 
@@ -601,7 +594,7 @@ async function verdeckungPhase(opts) {
 (async () => {
     console.log("=== VERDECKUNGS-ABFRAGE — der Aussteige-Ablauf am Bach (WebGPU auf swiftshader) ===");
     const log = laufUhr();
-    const { browser, page } = await nullWelt(server, { art: "linse", bild: true, frist: 1200000, fenster: { width: 320, height: 180 }, vor: sammlerInstall }, 60000, "index.html?holz=kienspan"); // prettier-ignore
+    const { browser, page } = await nullWelt(server, { art: "linse", bild: true, frist: 1200000, fenster: FENSTER.bild, vor: sammlerInstall }, 60000, "index.html?holz=kienspan"); // prettier-ignore
     const out = { phasen: {} };
     try {
         const bereit = await page.evaluate(async (karte) => {

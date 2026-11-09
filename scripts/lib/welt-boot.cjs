@@ -262,13 +262,12 @@ function bildAus() {
     st.postProcessingFailed = true;
 }
 // DAS EINE EINSCHWINGEN (`await window.__weltStehtNach(takt, max)`): Takt um Takt (`takt(n)` oder der Takt der Seite, mindestens
-// einer), bis die Welt steht (`_weltSteht`) und das Buch da ist; der Regler hält, solange sie schwingt. Der Deckel `max` zählt
-// nur Takte ohne Offenes (`_weltOffen`); dann wirft er.
+// einer), bis die Welt steht (`_weltSteht`) und das Buch da ist. Der Deckel `max` zählt nur Takte ohne Offenes (`_weltOffen`); dann
+// wirft er. Den Regler fasst es nicht an: ihn hält die Last der Prüf-Bühne (`PRUEF_LAST`) von der ersten Zeile an — bis w23-pruef-welt
+// hielt das Einschwingen ihn aus (der Aktuator ruhte, das Laub wuchs erst danach) und gab ihn danach frei.
 async function weltStehtNach(takt, max) {
     const W = () => r._weltStand || {};
     const steht = () => r._weltSteht() && !r._bepflanzungWartet();
-    const regler = st.perfRegulator;
-    st.perfRegulator = false;
     let n = 0;
     try {
         for (
@@ -285,10 +284,17 @@ async function weltStehtNach(takt, max) {
                 (r._bepflanzungWartet() ? "das Buch fehlt" : `Ruhe ${W().ruhe | 0}, zuletzt brach sie: ${W().grund}`) +
                 ` (${f.message})`
         );
-    } finally {
-        st.perfRegulator = regler;
     }
     return n;
+}
+// DIE PRÜF-WELT EINER SEITE (`window.__pruefWelt()`, w23-pruef-welt): was die Linse zum Urteil sieht — Fenster, Welt-Uhr (Sekunden,
+// Takte), die Last (der Haken der Prüf-Bühne, loadScale) und jede Tat des Felds seit dem Boot: die Läufe des Nexus (Name @ Uhr des
+// Felds) und das Buch der Welt-Akte (Akt · Quelle @ Welt-Zeit); null ohne Welt
+function pruefWelt() {
+    if (!st?.dsl) return;
+    const [z, L, ls] = [(x) => (+x).toFixed(1), window.__anazhPruefLast, st.perfSense?.loadScale];
+    const t = [...st.dsl.history.filter((h) => /^evo_/.test(h.id)).map((h) => h.id + "@" + z(h.at)), ...(st.taten || []).map((e) => `${e.op}·${e.wer}@${z(e.t)}`)];
+    return [L != null && ls != null && ls !== L, `${innerWidth}×${innerHeight} · Welt ${z(st.spielZeit)} s ${st.weltTakt} Takte · Last ${L ?? "frei"}: loadScale ${ls?.toFixed(2)} · Taten ${t.length} [${t.slice(0, 6).join(" ")}]`];
 }
 // DAS EINE WARTEN AUF EINEN BAU (`await window.__gebautNach(e, { takt, fertig, bau, max })`): Takt um Takt, bis `fertig()` (sonst
 // `_archIsRendered(e)`) steht; vor jedem Takt ruft `bau(n)` ihn (ohne: `_rebuildArchitectureMesh(e)`). `e` ist ein Eintrag oder
@@ -478,7 +484,7 @@ const rahmen = (b) =>
         hx: (b.maxX - b.minX) / 2,
         hz: (b.maxZ - b.minZ) / 2,
     };
-const WARTEN_SEITE = `${weltR} window.rahmen = ${rahmen}; window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.sleep = ${sleep}; window.leihe = ${leihe}; window.__fremd = ${fremd}; window.__loopBild = ${loopBild}; window.__zielLesen = ${zielLesen}; window.jsonKlon = ${jsonKlon}; window.fehlerText = ${fehlerText}; window.fehlerStapel = ${fehlerStapel}; window.__seitenTakt = ${seitenTakt}; window.__bedienung2 = ${bedienung2}; window.__takte = ${takte}; window.__streuTakte = ${streuTakte}; window.__bildAus = ${bildAus}; window.__MUSTER = [16.7, 8.3, 25, 16.7, 33.3, 11.1, 20, 16.7]; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__farben = ${farben}; window.__lin = ${lin}; window.__stand = ${stand}; window.__standJson = ${standJson}; window.__werkPutz = ${werkPutz}; window.__bautenLeer = ${bautenLeer}; window.__bautenSeit = ${bautenSeit}; window.__peersWeg = ${peersWeg}; window.__rufe = ${rufe};`;
+const WARTEN_SEITE = `${weltR} window.rahmen = ${rahmen}; window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.sleep = ${sleep}; window.leihe = ${leihe}; window.__fremd = ${fremd}; window.__loopBild = ${loopBild}; window.__zielLesen = ${zielLesen}; window.jsonKlon = ${jsonKlon}; window.fehlerText = ${fehlerText}; window.fehlerStapel = ${fehlerStapel}; window.__seitenTakt = ${seitenTakt}; window.__bedienung2 = ${bedienung2}; window.__takte = ${takte}; window.__streuTakte = ${streuTakte}; window.__bildAus = ${bildAus}; window.__MUSTER = [16.7, 8.3, 25, 16.7, 33.3, 11.1, 20, 16.7]; window.__weltStehtNach = ${weltStehtNach}; window.__pruefWelt = ${pruefWelt}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__farben = ${farben}; window.__lin = ${lin}; window.__stand = ${stand}; window.__standJson = ${standJson}; window.__werkPutz = ${werkPutz}; window.__bautenLeer = ${bautenLeer}; window.__bautenSeit = ${bautenSeit}; window.__peersWeg = ${peersWeg}; window.__rufe = ${rufe};`;
 const CODE_OF_SEITE = `window.__codeOf = ((oK) => (f) => oK(String(f)))(${ohneKommentare}); window.__dokuOf = (f) => String(f); window.__fehlt = (f, re) => [].concat(f).every((g, i) => { if (typeof g !== "function") throw new Error("__fehlt: Glied " + i + " ist keine Funktion (" + typeof g + ") — die Absenz misst nichts"); re.lastIndex = 0; return !re.test(window.__codeOf(g)); }); ${WARTEN_SEITE}`;
 
 const ROOT = path.resolve(__dirname, "..", "..");
@@ -839,12 +845,38 @@ async function weicheUrteil(browser, art) {
     if (!GPU_REZEPTE.includes(art) || !welt.length || (await Promise.all(welt.map(genutzt))).some(Boolean)) return null;
     return `${path.basename(process.argv[1] || "?")} startet „${art}" und zeichnet nie (keine seiner ${welt.length} Seiten arbeitet auf der GPU): das Rezept ist „null"`;
 }
+// DIE PRÜF-WELT (w23-pruef-welt) — eine Gesetz-Linse urteilt die Welt des Spielers, nie die ihres Adapters:
+//   DIE LAST     `PRUEF_LAST` (1: die volle Welt, die das Profi-Band auf der GTX hält) trägt jede Seite vor ihrem ersten Skript als Haken
+//                `__anazhPruefLast`; der Regler des Stamms (`_pruefLast`) steht dort, kein Bild reißt sein Budget. Bis w23 lief er nach
+//                dem Einschwingen frei — swiftshader trieb loadScale auf 0, die GTX hielt ~1, und Architektur, Strom und Wasser
+//                standen je Gerät anders. Frei fährt ihn nur, wer den Regler oder das geregelte Erlebnis urteilt: `starteBrowser({
+//                regler: "frei" })` (Takt-Atem), die Werkbank (Profi-Band, gpu-bank, `bild:` der GPU-Probe) und im Playtest die
+//                Bänder des Reglers (sie leihen den Haken, `leihe(window, { __anazhPruefLast: undefined })`).
+//   DAS FENSTER  `fenster(page, art, plus)`: ein Bild- oder LOD-Urteil sieht die Welt im Fenster des Spielers (`bild` 1280×720 — Kosten
+//                und Stufen hängen am Schirm, `_stufenSchirm`) und fährt auf der Karte (der echt-Job), nie auf swiftshader in der vollen
+//                Batterie; ein schirm-unabhängiges Urteil (Ziele, Stapel, Kompilieren) darf klein fahren (`klein` 320×240).
+//   DIE WAND     am Abbau jeder Welt-Seite EINE Zeile (`pruefWeltMelden`, die Seite schließt oder der Browser baut ab; eine Seite, die
+//                nicht antwortet, nach 3 s ohne Zeile — die Stall-Akte nennt sie): Fenster, Welt-Uhr, Last und die Taten des Felds.
+//                Steht der Regler einer Gesetz-Seite nicht bei ihrer Last, ist der Lauf ROT beim Namen der Linse.
+const PRUEF_LAST = 1;
+// `ungerade`: die ungerade Leinwand der Post-Kette (f), das Fenster des Spielers um ein Pixel je Achse gewachsen
+const FENSTER = { bild: { width: 1280, height: 720 }, klein: { width: 320, height: 240 }, ungerade: { width: 1281, height: 721 } };
+const fenster = (page, art) => page.setViewport(FENSTER[art]);
+async function pruefWeltMelden(page) {
+    if (page.__pruefWelt || !/^https?:/.test(page.url())) return;
+    page.__pruefWelt = true;
+    const a = await Promise.race([page.evaluate("__pruefWelt?.()").catch(() => null), sleep(3000)]);
+    if (!a) return;
+    const z = `PRÜF-WELT ${path.basename(process.argv[1], ".cjs")} ${a[1]}`;
+    console.log(`  ${a[0] ? (melde("pruef-welt", "Regler frei — " + z), "❌") : "✅"} ${z}`);
+}
 // Je Seite: Ringe, Puls-Binding, Stich-Profiler (nur ohne Zeit-Urteil: ein Profiler färbt keine ms), umhüllte Aufrufe.
 function akteAnSeite(page, b) {
     if (!page.__akteBereit)
         page.__akteBereit = Promise.all([
             page.evaluateOnNewDocument(CODE_OF_SEITE),
             page.evaluateOnNewDocument(zeichnetHaken),
+            page.evaluateOnNewDocument(`window.__anazhPruefLast = ${b.pruefLast};`),
             akteAnlegen(page, b),
         ]);
     return page.__akteBereit;
@@ -864,6 +896,8 @@ async function akteAnlegen(page, b) {
     });
     AKTE_SEITEN.add(page);
     page.on("close", () => AKTE_SEITEN.delete(page));
+    const zu = page.close.bind(page);
+    page.close = async (...a) => (await pruefWeltMelden(page), zu(...a));
     page.on("console", (m) => ring(A.konsole, `${m.type()}: ${m.text().replace(/\s+/g, " ").slice(0, 200)}`, 12));
     for (const n of [
         "goto",
@@ -1135,6 +1169,7 @@ async function starteBrowser(opts = {}) {
         stapel: !opts.zeit && opts.art !== "echt",
         stallMs: opts.stallMs || 20000,
         offen: true,
+        pruefLast: opts.regler === "frei" ? undefined : PRUEF_LAST,
     };
     const proc = browser.process();
     if (proc?.stderr) {
@@ -1191,6 +1226,7 @@ async function starteBrowser(opts = {}) {
     let abbau = false;
     const zu = browser.close.bind(browser);
     browser.close = async (...a) => {
+        for (const p of await browser.pages().catch(() => [])) await pruefWeltMelden(p);
         const rot = await weicheUrteil(browser, opts.art);
         if (rot) melde("klasse", rot);
         [abbau, b.offen] = [true, false];
@@ -1404,7 +1440,8 @@ function wandEnde(errs, satz) {
 function rotListe(v) {
     if (!v.length) return;
     console.log(`\n❌ ROT — ${v.length} Verletzung(en):`);
-    for (const s of v) console.log("   • " + s);
+    // je Verletzung ❌ (der Filter der GPU-Probe trägt nur Zeilen mit Urteils-Zeichen ins Post — ein „•" verschwand dort, w23-pruef-welt)
+    for (const s of v) console.log("   ❌ " + s);
     process.exit(1);
 }
 // DAS ENDE DER SEITE einer Linse (`await seiteZu(browser, server, out, kopf, feld = "error")`): Browser und Server zu, die
@@ -1822,6 +1859,8 @@ module.exports = {
     statikServer,
     ortZug,
     starteBrowser,
+    fenster,
+    FENSTER,
     startePuppeteer,
     tempNeu,
     lebt,
@@ -1893,8 +1932,8 @@ async function selbsttest() {
         await page.close().catch(() => {});
         return akten.filter((a) => a.seite === id);
     };
-    // LANGSAM: der Bau steht nach 3,2 s, das Warten hält; TOT: nichts offen, ROT beim Namen; REGLER: das Einschwingen hält den
-    // atmenden Regler und gibt ihn frei (die ruhige Seite, 4,5 s).
+    // LANGSAM: der Bau steht nach 3,2 s, das Warten hält; TOT: nichts offen, ROT beim Namen; PRÜF-WELT: eine Welt, deren Regler
+    // unter der Last 1 frei lief (loadScale 0,4), steht beim Schließen der Seite ROT beim Namen (die ruhige Seite, 4,5 s).
     let bau = null;
     const bauProbe = async () => {
         const r = (window.anazhRealm = {
@@ -1925,16 +1964,7 @@ async function selbsttest() {
             aus.haengt = x.message;
         }
         r.offen = 0;
-        let still = 0;
-        r.state = { renderer: {}, perfRegulator: true };
-        r._weltSteht = () => still >= 30;
-        r._bepflanzungWartet = () => false;
-        const atmet = async () => (still = r.state.perfRegulator === false ? still + 1 : 0);
-        aus.regler = await window.__weltStehtNach(atmet, 300).then(
-            (n) => `steht nach ${n} Takten`,
-            (x) => x.message.slice(0, 60)
-        );
-        aus.frei = r.state.perfRegulator === true;
+        r.state = { dsl: { history: [{ id: "evo_1", at: 2 }] }, spielZeit: 3, perfSense: { loadScale: 0.4 } };
         return aus;
     };
     // DIE WEICHE: ohne GPU-Arbeit ist ein Echt-Rezept ROT beim Namen, EIN Draw-Aufruf (der Haken) trägt es
@@ -1987,9 +2017,9 @@ async function selbsttest() {
     const kontext = await browser.createBrowserContext();
     await server.zeige(await kontext.newPage(), undefined, "wirft.html", "load");
     await sleep(400);
-    const wurf = sammlung.fehler.filter((f) => f.includes("__seitenWurf"));
-    const kette = sammlung.fehler.filter((f) => f.startsWith("post-kette: "));
-    sammlung.fehler = sammlung.fehler.filter((f) => !wurf.includes(f) && !kette.includes(f));
+    // die drei erwarteten Täter des Selbsttests (der Wurf der Seite, die Post-Kette, die Prüf-Welt) aus der Sammlung
+    const [wurf, kette, pruef] = [/__seitenWurf/, /^post-kette: /, /^pruef-welt: /].map((re) => sammlung.fehler.filter((f) => re.test(f)));
+    sammlung.fehler = sammlung.fehler.filter((f) => ![...wurf, ...kette, ...pruef].includes(f));
     const code = fs
         .readdirSync(path.join(ROOT, "scripts"), { recursive: true })
         .map((f) => f.replace(/\\/g, "/"))
@@ -2151,8 +2181,8 @@ async function selbsttest() {
             `Bau HÄNGT: ${bau ? bau.haengt : "kein Befund"}`,
         ],
         [
-            !!bau && /^steht nach 30 /.test(bau.regler) && bau.frei,
-            `Regler atmet (echter Renderer): ${bau ? `${bau.regler}, danach ${bau.frei ? "frei" : "GEHALTEN"}` : "kein Befund"}`,
+            pruef.length === 1 && /Last 1: loadScale 0\.40 · Taten 1 \[evo_1@2\.0\]/.test(pruef[0]),
+            `Prüf-Welt (Last 1, loadScale 0,4): ${pruef[0] || "keine"}`,
         ],
         [
             /^welt-boot.cjs startet „echt" und zeichnet nie/.test(weiche[0]) && weiche[1] === null,

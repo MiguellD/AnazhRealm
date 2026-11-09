@@ -2452,7 +2452,7 @@ async function checkBandV8SoulRoleAndWorkshop({ page, check }) {
             // die Linien sind Werkstatt-Werkzeug: der Test bestellt
             // sie wie der Werkstatt-Viewer (der Test wandert mit).
             const group = r._buildFromBlueprint(bp, 0, undefined, { connectionLines: true });
-            const conn = group.children.filter((c) => c.userData && c.userData.isConnectionLine);
+            const conn = group.children.filter((c) => c.userData?.isConnectionLine);
             out.connHasLine = conn.some((c) => c.isLine);
             out.connHasMarker = conn.some((c) => c.isMesh);
             out.connDepthTestOff = conn.length > 0 && conn.every((c) => c.material && c.material.depthTest === false);

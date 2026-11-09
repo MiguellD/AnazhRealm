@@ -1291,7 +1291,7 @@ async function checkBandTierFern({ page, check }) {
         if (!pm) return { error: "kein Spieler" };
         // DIE KERN-ZEILE: die Grenze und die Hysterese der Grobstufe (tetrapoda lod.budget.kreatur)
         const BK = window.__tetrapodaCore && window.__tetrapodaCore.PORTAL_RENDER_CONFIG.lod.budget.kreatur;
-        const abKern = BK && BK[1] ? BK[1].ab : null;
+        const abKern = BK?.[1] ? BK[1].ab : null;
         const hyst = BK ? BK.hyst : null;
         if (!(abKern > 0) || !(hyst > 0)) return { error: "Kern-Zeile kreatur trägt kein ab/hyst" };
 

@@ -150,7 +150,6 @@ async function welt() {
         if (!f?.ready) return { fatal: "Foundry nicht bereit" };
         // DER TAKT der Wand: der echte Loop unter gehaltener Bühne (Mittag, Wetter fest).
         window.__schirmTakt = () => {
-            st._frameOverBudget = false;
             st.timeOfDay = 0.5;
             if (st.world) st.world.timeOfDay = 0.5;
             window.__wetterHalten();

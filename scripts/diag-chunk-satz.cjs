@@ -924,7 +924,7 @@ const { errs, check } = pruefer();
             res.wachsen = null;
             let ws = null;
             let wsName = null;
-            for (const [name, sa] of s.chunkSaetze ? s.chunkSaetze : [])
+            for (const [name, sa] of s.chunkSaetze || [])
                 if (sa?.mesh && sa.bloecke && sa.bloecke.size > 0 && (!ws || sa.vKap < ws.vKap))
                     ((ws = sa), (wsName = String(name).split("|")[0]));
             if (ws) {

@@ -664,7 +664,7 @@ function bandUrteil({ zensus, vram, texturen, gpu, haushalt, ratsche, ort, ratsc
             befehle: cmd,
             dreiecke: tris,
             je,
-            dMax: e.dMax != null ? e.dMax : null,
+            dMax: e.dMax ?? null,
             ...(e.inhalt ? { inhalt: e.inhalt } : {}),
         });
     }
@@ -885,7 +885,7 @@ function ratscheWeit(ratsche, u, paesse) {
         const mb = new Map(u.vram.erzeuger.map((e) => [e.erzeuger, e.mb]));
         for (const [k, r] of Object.entries(ratsche.vramMB || {}))
             if (!vramFrei(ratsche, k)) weit(`weit:vram:${k}`, r, mb.get(k) || 0, "vramMB", `VRAM ${k}`);
-        weit("weit:gesamt:vramMB", rg.vramMB, u.vram.gebunden != null ? u.vram.gebunden : u.vram.mb, "vramMB", "VRAM (gebunden)");
+        weit("weit:gesamt:vramMB", rg.vramMB, u.vram.gebunden ?? u.vram.mb, "vramMB", "VRAM (gebunden)");
     }
     return out;
 }
@@ -967,7 +967,7 @@ function ratscheNachziehen(ratsche, u, gemessen, nur) {
         const alt = obj[key];
         if (alt == null || ist < alt) {
             obj[key] = ist;
-            aenderungen.push(`${name}: ${alt == null ? "–" : alt} → ${ist}`);
+            aenderungen.push(`${name}: ${alt ?? "–"} → ${ist}`);
         }
     };
     for (const z of nur === "vram" ? [] : u.klassen) {
@@ -981,7 +981,7 @@ function ratscheNachziehen(ratsche, u, gemessen, nur) {
         setze(neu.gesamt, "dreiecke", u.summe.gebunden.dreiecke, "gesamt.dreiecke");
     }
     if (u.vram) {
-        setze(neu.gesamt, "vramMB", u.vram.gebunden != null ? u.vram.gebunden : u.vram.mb, "gesamt.vramMB");
+        setze(neu.gesamt, "vramMB", u.vram.gebunden ?? u.vram.mb, "gesamt.vramMB");
         neu.vramMB = neu.vramMB || {};
         for (const e of u.vram.erzeuger)
             if (!vramFrei(neu, e.erzeuger)) setze(neu.vramMB, e.erzeuger, e.mb, "vramMB." + e.erzeuger);

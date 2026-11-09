@@ -236,6 +236,12 @@ class AnazhRealm_dirigent_regler {
         const st = this.state;
         const sense = st.perfSense;
         if (!sense || st.perfRegulator === false) return;
+        // DIE PRÜF-BÜHNE HÄLT DEN REGLER (w23-pruef-welt): trägt die Seite die Last der Prüf-Bühne (`_pruefLast`), steht loadScale
+        // dort, und der Aktuator stellt die Welt in ihr — der PID ruht.
+        if (this._pruefLast() != null) {
+            [sense.loadScale, sense.pidPrevErr] = [this._pruefLast(), 0];
+            return this._nexusPerfActuate(sense);
+        }
         const dt = Math.max(0.004, Math.min(0.1, dtSec || 0.016));
         // Totband: EIN Sollwert für Wachsen UND Drosseln parkt den Fixpunkt exakt am Anschlag (≈59 fps).
         // Darum zwei Schwellen, EIN Regler: drosseln erst über der Decke (`throttleMs`, ≈59 fps), wachsen
@@ -260,6 +266,16 @@ class AnazhRealm_dirigent_regler {
         sense.pidPrevErr = err;
         sense.loadScale = Math.max(0, Math.min(1, sense.loadScale - du));
         this._nexusPerfActuate(sense);
+    }
+
+    // DIE LAST DER PRÜF-BÜHNE (w23-pruef-welt): erklärt eine Seite vor ihrem ersten Skript eine Last (`__anazhPruefLast` ∈ [0, 1],
+    // welt-boot `PRUEF_LAST` — der Haken der Prüf-Bühne wie `__anazhAutoSettlement` der des Orts), steht der Regler dort und kein
+    // Bild reißt sein Budget: jede Gesetz-Linse sieht auf swiftshader, GTX und Radeon dieselbe Welt. Frei trieb der PID loadScale
+    // nach der echten Bildrate — auf swiftshader auf 0, auf der GTX ~1 — und stellte damit Architektur, Strom, Wasser und Laub je
+    // Gerät anders. null ohne Haken: das Spiel kennt ihn nie.
+    _pruefLast() {
+        const v = typeof window !== "undefined" ? window.__anazhPruefLast : undefined;
+        return Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : null;
     }
 
     // DER RAND AM SCHIRM (lod.K5, Pixelgröße × Haushalt): `laub` die Reichweite der Vegetation (PERF_FOLIAGE_RADIUS_MAX), `bau`
@@ -313,7 +329,10 @@ class AnazhRealm_dirigent_regler {
         // Dichte/Dünnen); das Streaming (= Bewegung) bleibt unangetastet.
         // Unter dem Ladeschirm zeigt kein Frame die Welt (`_ladeTakt`): kein Frame reißt ein Budget; im Nachlauf des ersten
         // Bilds (`_nachlaufTakt`, B3d) baut die Welt hinter dem Spieler wie unter ihm.
+        // Die Last der Prüf-Bühne (`_pruefLast`) reißt kein Budget: sie IST die erklärte Last.
+        const halt = this._pruefLast() != null;
         st._frameOverBudget =
+            !halt &&
             !this._ladeTakt() &&
             st._nachlauf == null &&
             sense.frameMs > (Number.isFinite(st.perfTargetMs) ? st.perfTargetMs : AnazhRealm.PERF_TARGET_MS);
@@ -349,6 +368,7 @@ class AnazhRealm_dirigent_regler {
             // sense.frameMs, nie Wanduhr — gate:regler-sim bleibt deterministisch); auch echtes gpuMs über der Decke setzt die
             // Ruhe-Uhr zurück (nur Quelle "echt" — der Proxy lügt bei Stalls); sie schrumpft erst ab dem Totband.
             const _gpuVoll =
+                !halt &&
                 sense.gpuQuelle === "echt" &&
                 sense.phase &&
                 Number.isFinite(sense.phase.gpuMs) &&

@@ -44,7 +44,10 @@ class AnazhRealm_dirigent_takt {
             // DIE BILD-UHR (A9, Gesetz #0): die EINE Shader-Zeit der Welt in Sekunden, hier EINMAL je Takt geschrieben — Himmel,
             // Wasser, Wind und Böe, Tor, Regen, Flackern, Chaos-Flimmern und die TSL-`time` (`_loopRender`) lesen nur sie
             this._bildZeit = currentTime;
-            this._taktZeit = currentTime; // DIE UHR DES TAKTS (`_taktUhr`) — die Bühne hält die Bild-Uhr, nie sie
+            this._taktZeit = currentTime; // DER STEMPEL DES TAKTS: der Hunger der Bau-Frist zählt je Takt (`_bauFrist`), nie das Feld
+            // DIE UHR DES FELDS (`_taktUhr`, w23-pruef-welt) ist die Welt-Uhr dieses Takts: Nexus, Stimme, Gemüt, Plan und Lernen
+            // des Felds altern in Sim-Sekunden, nie an der Wanduhr des Geräts
+            const welt = this.state.spielZeit;
 
             // Error-Boundary des ewigen Loops: ein einziger Throw in einem Frame-Schritt bräche den
             // setAnimationLoop-Callback → die Welt erstarrt. Frame-Fehler werden abgefangen und gedrosselt mit
@@ -98,20 +101,20 @@ class AnazhRealm_dirigent_takt {
                     this._loopNexusUpdate();
 
                     // ### Grok-Stimme (Ring 1) ###
-                    this.grokTick(currentTime);
+                    this.grokTick(welt);
 
                     // ### Nexus-DSL Scheduler (Ring 2) ###
-                    this.dslTick(currentTime);
+                    this.dslTick(welt);
 
                     // ### Welt-Regeln ###
                     // Stehende Bedingung→Effekt-Regeln prüfen + feuern (gebudgetet); nach dslTick, damit eine soeben
                     // geplante Geste vor den Regeln läuft. DIE GESETZE LAUFEN AN DER WELT-UHR (feld.K2#2): Takt, Leben und
                     // Erneuerung jedes Gesetzes (Nexus, Gemüt, Spieler) zählen `spielZeit` — die Uhr, die jeder Mitspieler trägt
                     // (`_weltUhrNimm`) und die der Wurf schon las (`_worldRuleSeed`); bis feld.K2#2 die Takt-Uhr der Seite.
-                    this._tickWorldRules(this.state.spielZeit);
+                    this._tickWorldRules(welt);
 
-                    // ### Player-Emotionen (Ring 3) ###
-                    this.updatePlayerEmotions(currentTime);
+                    // ### Player-Emotionen (Ring 3) ### — das Gemüt verfliegt in Welt-Zeit (seine Gesetze feuern auf ihr)
+                    this.updatePlayerEmotions(welt);
 
                     // ### Player-Boosts (Welle 6.D Etappe 2) ###
                     // 1×/s self-throttled — Emotion-Trigger, Resonance-Trigger, Ablauf.
@@ -219,15 +222,15 @@ class AnazhRealm_dirigent_takt {
                     // → hier nichts mehr (der variable Ein-Schritt-Pfad ist abgelöst).
 
                     // ### Selbstanalyse + Nexus-Evolution-Trigger ### (V9.44-f)
-                    this._loopSelfAnalysis(currentTime);
+                    this._loopSelfAnalysis(welt);
 
                     // ### Schicht 1 — IQ-Ticks ###
                     // Pfad-Bucket-Sample (alle 2 s), Activity-Sample (jeden Frame), Keyword-Window-Cleanup (60 s),
-                    // pending Outcomes finalisieren (5 s nach Programm-Lauf: Emotion/Activity-Delta).
-                    this.samplePathBuckets(currentTime);
-                    this.samplePlayerActivity(currentTime);
-                    this.pruneRecentKeywords(currentTime);
-                    this.finalizePendingOutcomes(currentTime);
+                    // pending Outcomes finalisieren (5 s nach Programm-Lauf: Emotion/Activity-Delta) — in Welt-Sekunden.
+                    this.samplePathBuckets(welt);
+                    this.samplePlayerActivity(welt);
+                    this.pruneRecentKeywords(welt);
+                    this.finalizePendingOutcomes(welt);
 
                     // ### Kreaturen, Wetter, Wachstum ### (V9.44-f → _loopWeatherAndGrowth) — das Leben im Takt seines Bilds
                     if (!zwischen) this._loopWeatherAndGrowth(deltaBild);
@@ -1550,15 +1553,15 @@ class AnazhRealm_dirigent_takt {
             // Takt wie selfAwareness; DOM-Cost ist gering aber nicht null).
             this.updateWorldInfo();
         }
-        // Der Nexus atmet mit der Last: Basis-Intervall 24 s; ist der Frame über Budget (`_frameOverBudget`,
-        // derselbe Zeit-Zustand wie Laub-/Ring-Regler), streckt es sich ×2 (gedeckelt) — still, nie tot.
-        // Auch die Registrierung wartet auf die Bühne; nexusLastEvolution ist der Boot-Stempel → kein Burst.
+        // Der Nexus entwickelt sich je `nexusEvolutionInterval` (24 s) WELT-Zeit (w23-pruef-welt): bis hier alle 24 s Wanduhr, unter
+        // Last ×2 (`_frameOverBudget`) — auf swiftshader, GTX und Radeon griff das Feld bei verschiedenen Welt-Takten ein, und die
+        // Tat-Folge einer Saat hing am Gerät. Die Kosten seiner Taten trägt ihr Budget (ein schwerer Bau je Evolution, das
+        // Wirk-Tor), nie die Bildrate. Auch die Registrierung wartet auf die Bühne; nexusLastEvolution ist der Boot-Stempel → kein Burst.
         // SEINE GEBURT TRIFFT DAS MEMO (K60, w4-b-streu): er wirft erst, wenn die Kreaturen bereit sind (`_kreaturenBereit`:
         // das erste Weltbild und der Ofen-Vorrat) — sein `spawn_creature` goss sonst die Gattung im Haupt-Faden, sobald die
         // Bühne vor dem Bild stand (swiftshader kalt 5,5 s unter dem Ladeschirm, `_ofenKreaturTemplate`).
         if (this.nexus && this._buehneSteht() && this._kreaturenBereit()) {
-            const evoInterval = this.state.nexusEvolutionInterval * (this.state._frameOverBudget ? 2.0 : 1.0);
-            if (currentTime - this.state.nexusLastEvolution >= evoInterval) {
+            if (currentTime - this.state.nexusLastEvolution >= this.state.nexusEvolutionInterval) {
                 this.evolveNexus(currentTime);
             }
         }
@@ -1617,12 +1620,12 @@ class AnazhRealm_dirigent_takt {
         if (Number.isFinite(t) && t > this.state.spielZeit) this.state.spielZeit = t;
     }
 
-    // DIE UHR DES TAKTS (s): der Stempel, den der Loop jedem Glied als `currentTime` reicht (`_taktZeit`), vor dem ersten Takt
-    // die Wanduhr (dieselbe Achse wie der rAF-Stempel). Wer gegen `currentTime` altert (die Geburt einer Welt-Regel, ein
-    // geplanter DSL-Schritt, die Evolution des Nexus), wird auf ihr geboren — bis affekt.K3 auf der Wanduhr: unter einem Takt,
-    // der schneller geht als die Wand (der Zeitraffer der Linse), verfiel jede Nexus-Regel im ersten Takt nach der Geburt.
+    // DIE UHR DES FELDS (s) ist die WELT-UHR (`spielZeit`, w23-pruef-welt): was im Feld altert — die Evolution des Nexus, ein
+    // geplanter DSL-Schritt und `time_passed`, die Cooldowns der Stimmen, das Gemüt, das Lernen aus Taten —, altert in
+    // Sim-Sekunden, auf jedem Gerät bei derselben Welt-Zeit. Bis w23 der rAF-Stempel des Takts: auf swiftshader (2 Bilder je
+    // Sekunde, der Takt-Deckel 0,1 s) lief das Feld fünfmal so schnell durch die Welt wie auf der GTX.
     _taktUhr() {
-        return this._taktZeit || performance.now() / 1000;
+        return this.state.spielZeit;
     }
 
     // FRAME-BUDGET-POOL: EINE Quelle für „wie viel ms hat dieser Frame für aufschiebbare Arbeit".
@@ -1806,7 +1809,7 @@ class AnazhRealm_dirigent_takt {
     _bauFrist(wer, zeichnung = false) {
         if (this._bauFristOhneEnde()) return Infinity;
         const jetzt = performance.now();
-        const takt = this._taktZeit; // der Takt, dem der Hunger zählt (`_taktUhr`; eine Aufgabe außerhalb des Takts zählt zu seinem)
+        const takt = this._taktZeit; // der Takt, dem der Hunger zählt (sein Stempel; eine Aufgabe außerhalb des Takts zählt zu seinem)
         const H = this._bauHunger || (this._bauHunger = new Map());
         let T = this._bauFristTakt;
         if (!T) {

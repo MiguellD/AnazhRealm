@@ -845,7 +845,7 @@ function ankunftsHalter(spur, seite, opts) {
     out.meilensteine = M.map(({ name, t, belegtMs }) => ({
         name,
         t,
-        belegtMs: belegtMs == null ? Math.round(summe) : belegtMs,
+        belegtMs: belegtMs ?? Math.round(summe),
     }));
     // DAS URTEIL: je Halter-Name die längste Aufgabe, die er hielt, und wie oft — ROT beim Namen
     const je = new Map();
@@ -1195,7 +1195,7 @@ function latenzAn(k) {
                 if (p && p.t0 != null && !p.ms && weg(l, p.ref) >= 0.01)
                     Object.assign(p, { ms: t - p.t0, warten: L.taktAm - p.hoerer, takte: L.takt - p.takt, bild: t - L.taktAm });
                 const sw = p && p.t0 != null && st.player._swing;
-                if (sw && sw.hits.size) p.halt = Math.max(p.halt || 0, (p.lauf = sw.t === L.swVor && weg(l, L.vor) < 0.001 ? (p.lauf || 0) + 1 : 0));
+                if (sw?.hits.size) p.halt = Math.max(p.halt || 0, (p.lauf = sw.t === L.swVor && weg(l, L.vor) < 0.001 ? (p.lauf || 0) + 1 : 0));
                 L.swVor = sw && sw.t;
                 L.vor = l;
             } catch (e) {

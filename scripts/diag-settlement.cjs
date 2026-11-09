@@ -2022,7 +2022,7 @@ hauptLauf(async () => {
                 const portalArten = [...r._genesisTorTypen().values()];
                 res.c.ring.arten = portalArten.length;
                 const imRing = () =>
-                    st.architectures.filter((e) => e && e.position && portalArten.includes(e.type) && d2M(e) <= 30 * 30)
+                    st.architectures.filter((e) => e?.position && portalArten.includes(e.type) && d2M(e) <= 30 * 30)
                         .length;
                 const ringVorher = imRing();
                 for (let t5 = 0; t5 < 30 && !wm5.genesisOrt?.steht; t5++)
@@ -2049,7 +2049,7 @@ hauptLauf(async () => {
                 const formen = [];
                 r._stlWegeBuild = function (...a) {
                     const n6 = orig.apply(this, a);
-                    if (a[0] && a[0].roads) formen.push(n6);
+                    if (a[0]?.roads) formen.push(n6);
                     return n6;
                 };
                 await r.spawnSettlement({ seed: 4711, nH: 6, position: { x: 1500, y: 0, z: 1500 } });

@@ -20,7 +20,7 @@
 //   LAUF — kein Spiel-Bild und kein Kehraus-Puffer während der Bühne (der Loop ruht).
 //   node scripts/diag-kamera-treue.cjs [--selftest]   (--selftest: das Urteil über grün und je einen injizierten Täter)
 "use strict";
-const { statikServer, starteBrowser, laufUhr, taeterFaelle, selbsttestEnde, wandEnde, fehlerText, seiteZu, SELBSTTEST } = require("./lib/welt-boot.cjs");
+const { statikServer, laufUhr, taeterFaelle, selbsttestEnde, wandEnde, fehlerText, seiteZu, SELBSTTEST, fenster, nullSeite } = require("./lib/welt-boot.cjs");
 const { DIAET_INSTALL, diaetUrteil } = require("./lib/diaet-linse.cjs");
 
 const BILD_SOLL = 0.999; // der Replay zeichnet wie der direkte Pfad
@@ -737,9 +737,8 @@ function buehne() {
 (async () => {
     console.log("=== KAMERA-TREUE — echter Renderer (WebGPU, swiftshader-Adapter, kienspan, Schatten an): Stapel · Override · Bild ===");
     await server.lausche(0);
-    const browser = await starteBrowser({ art: "linse", frist: 600000 });
-    const page = await browser.newPage();
-    await page.setViewport({ width: 320, height: 240 });
+    const { browser, page } = await nullSeite({ art: "linse", bild: true, frist: 600000 });
+    await fenster(page, "klein");
     const vendorDrift = [];
     page.on("console", (m) => {
         const t = m.text();

@@ -937,7 +937,7 @@ async function checkBandWave4({ page, check }) {
         const builtIns = Object.values(mats).filter((m) => m.builtIn);
         out.builtInCount = builtIns.length;
         out.expectedBuiltIns = ["stein", "holz", "eisen", "bronze", "quarz", "leder"].every(
-            (n) => mats[n] && mats[n].builtIn
+            (n) => mats[n]?.builtIn
         );
         // Alle Built-in-Tag-Werte sind 0..1
         out.tagsInRange = builtIns.every((m) =>
@@ -1705,7 +1705,7 @@ async function checkBandWave5({ page, check }) {
         const expectedTypes = ["hafting", "lashing", "pinning", "welding", "gluing", "masonry", "sewing", "magic_bind"];
         out.eightTypes = expectedTypes.every((t) => types[t]);
         out.eachTypeHasStrongTags = expectedTypes.every(
-            (t) => Array.isArray(types[t].strongTags) && types[t].strongTags.length >= 1
+            (t) => Array.isArray(types[t].strongTags) && types[t].strongTags.length
         );
         out.eachTypeHasStrength = expectedTypes.every(
             (t) => typeof types[t].typeStrength === "number" && types[t].typeStrength > 0 && types[t].typeStrength <= 1
@@ -2382,7 +2382,7 @@ async function checkBandWaves9And10a({ page, check }) {
                 "ritueller-stab",
                 "drehbank-meißel",
             ];
-            out.allDomainToolsExist = domainToolNames.every((n) => !!st.tools[n]);
+            out.allDomainToolsExist = domainToolNames.every((n) => st.tools[n]);
 
             // Korrektes domain-Mapping pro Tool
             out.schmiedeHammerForging = st.tools["schmiede-hammer"] && st.tools["schmiede-hammer"].domain === "forging";
@@ -2510,7 +2510,7 @@ async function checkBandWaves9And10a({ page, check }) {
         const out = {};
         try {
             const stationNames = ["esse", "brennkolben", "webstuhl", "seelenstein_altar", "drehbank"];
-            out.allStationsExist = stationNames.every((n) => !!st.blueprints[n]);
+            out.allStationsExist = stationNames.every((n) => st.blueprints[n]);
             out.allHaveRole = stationNames.every(
                 (n) => st.blueprints[n] && st.blueprints[n].role === "workshop-station"
             );
@@ -3043,14 +3043,14 @@ async function checkBandV18164AutoConnect({ page, check }) {
         bp.connections.push({ type: "sitz", partA: 0, partB: -1, anchor: { x: 0, y: 0.175, z: 0 } });
         const world = r._buildFromBlueprint(bp, 0);
         const shop = r._buildFromBlueprint(bp, 0, undefined, { connectionLines: true });
-        out.sattelWelt = world.children.some((c) => c.userData && c.userData.isAttachmentVisual);
+        out.sattelWelt = world.children.some((c) => c.userData?.isAttachmentVisual);
         out.ghostNurWerkstatt =
-            shop.children.some((c) => c.userData && c.userData.isSeatGhost) &&
-            !world.children.some((c) => c.userData && c.userData.isSeatGhost);
+            shop.children.some((c) => c.userData?.isSeatGhost) &&
+            !world.children.some((c) => c.userData?.isSeatGhost);
         const ohneSitz = { name: "__acNoSitz", parts: bp.parts };
         out.keinSattelOhneSitz = !r
             ._buildFromBlueprint(ohneSitz, 0)
-            .children.some((c) => c.userData && c.userData.isAttachmentVisual);
+            .children.some((c) => c.userData?.isAttachmentVisual);
         delete blu.__ac;
         return out;
     });
@@ -3157,7 +3157,7 @@ async function checkBandV18214SkeletonMesh({ page, check }) {
             out.flatLeafCount = flat ? flat.leaves.length : -1;
             // 2 leaves erwartet (bark + foliage), max 4 als Toleranz.
             out.flatLeavesFew = flat && flat.leaves.length >= 1 && flat.leaves.length <= 4;
-            if (flat && flat.leaves.length) {
+            if (flat?.leaves.length) {
                 // T6: bark-Geometrie trägt color + viele Vertices; der Wind lebt im Stoff (K19: `_baumWindStoff` liest
                 // positionGeometry und den Stempel aH0) — die Geometrie trägt nur, was ein Stoff liest.
                 const ungelesen = (lf, gelesen) => Object.keys(lf.geom.attributes).filter((k) => !gelesen.includes(k));

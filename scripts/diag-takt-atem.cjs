@@ -24,7 +24,7 @@
 //   node scripts/diag-takt-atem.cjs [--selftest]   (npm run gate:takt-atem)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, nullWelt, laufUhr, taeterFaelle, selbsttestEnde, abwandlung, SELBSTTEST, fehlerText, seiteZu, rotListe } = require("./lib/welt-boot.cjs");
+const { statikServer, nullWelt, laufUhr, taeterFaelle, selbsttestEnde, abwandlung, SELBSTTEST, fehlerText, seiteZu, rotListe, FENSTER } = require("./lib/welt-boot.cjs");
 
 const SOLL = { dichte: 0.1, stand: 0.1, lage: 0.1 };
 
@@ -240,7 +240,7 @@ function atem() {
 (async () => {
     console.log("=== TAKT-ATEM — der Regler atmet, der Takt rechnet nur, was sich ändert ===");
     const log = laufUhr();
-    const { browser, page } = await nullWelt(server, { art: "linse", bild: true, frist: 600000, fenster: { width: 320, height: 180 } }, 60000, "index.html?holz=kienspan"); // prettier-ignore
+    const { browser, page } = await nullWelt(server, { art: "linse", bild: true, frist: 600000, regler: "frei", fenster: FENSTER.bild }, 60000, "index.html?holz=kienspan"); // prettier-ignore
     let out = null;
     try {
         // die Welt steht: Renderer, Foundry-Buch, Sätze und Bäume der Stufen-Wahl; danach ruht der Spiel-Loop

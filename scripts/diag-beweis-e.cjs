@@ -83,7 +83,7 @@ const SICHT_FN = async (a) => {
         const px = a.ox + Math.cos(w) * a.dist,
             pz = a.oz + Math.sin(w) * a.dist;
         const g = r._voxelSurfaceY(px, pz);
-        cam.position.set(px, Math.max(g + 0.35, a.augeY != null ? a.augeY : g + a.augeH), pz);
+        cam.position.set(px, Math.max(g + 0.35, a.augeY ?? g + a.augeH), pz);
         cam.lookAt(a.ox, a.zielY, a.oz);
         cam.updateMatrixWorld(true);
         if (st.playerMesh) st.playerMesh.visible = false;
@@ -152,7 +152,7 @@ const SCHUSS_FN = async (kam) => {
         herkunft[k] = (herkunft[k] || 0) + tri * n;
     });
     const zahlen = {
-        dc: ri.drawCalls != null ? ri.drawCalls : ri.calls,
+        dc: ri.drawCalls ?? ri.calls,
         tris: ri.triangles,
         renderMsSwiftshader: Math.round(renderMs),
         herkunft: Object.entries(herkunft)
@@ -690,7 +690,7 @@ hauptLauf(async () => {
                 `  umgestellt zu ${klasse}/${art}: ${um.takte} Takte · ${um.chunks} Chunks · ungebaut in der Mesh-Zone ${um.offen}${um.warum ? " — " + um.warum : ""}${um.zielStufe ? " · ⚠ " + um.zielStufe : ""}\n      Impostor: ${um.zensus}`
             );
             const g = await page.evaluate((k) => r._voxelSurfaceY(k.px, k.pz), k);
-            k.py = Math.max(g + 0.35, k.augeY != null ? k.augeY : g + k.augeH);
+            k.py = Math.max(g + 0.35, k.augeY ?? g + k.augeH);
             await schiesse(klasse, art, k);
             // ZUSTANDS-LINSE: WAS steht im Bild — Studio-Mesh oder Feld-Satz, welche Stufe serviert?
             if (klasse !== "kreatur") {

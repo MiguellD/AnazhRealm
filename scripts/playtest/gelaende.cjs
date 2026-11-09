@@ -97,8 +97,8 @@ async function checkBandVoxelP3AndInventory({ page, check }) {
         out.drainReturnedCount = built === dirtyMid;
         // Der Tick baut je Frame höchstens EINEN Chunk ein, nah zuerst, und keinen synchron (K69-2: die Aufträge der
         // nächsten gehen an den Worker voraus; ohne Worker baut er einen je Frame synchron). Ein frischer Frame: der
-        // Einbau-Merker des Edits (`_bodenEinbau`, der Frame-Planer setzt ihn je Frame zurück) gilt nicht.
-        st._frameOverBudget = false;
+        // Einbau-Merker des Edits (`_bodenEinbau`, der Frame-Planer setzt ihn je Frame zurück) gilt nicht; über dem Budget steht
+        // er nie (die Last der Prüf-Bühne, w23-pruef-welt).
         r.carveVoxel(pm.x, cy, pm.z, 3.5);
         const dirtyPostEdit = st.dirtyVoxelChunks.size;
         if (dirtyPostEdit > 1) {
@@ -685,7 +685,7 @@ async function checkBandVoxelP3AndInventory({ page, check }) {
         out.ichSpecSheet = !!(ichSpec && ichSpec.querySelector(".spec-sheet"));
         out.ichSpecHeaderName = !!(ichSpec && ichSpec.querySelector(".spec-header .spec-name"));
         out.ichSpecBody2Col = !!(ichSpec && ichSpec.querySelectorAll(".spec-body .spec-col").length === 2);
-        out.ichWerteBars = !!(ichSpec && ichSpec.querySelectorAll(".spec-body .spec-bar").length > 0);
+        out.ichWerteBars = !!(ichSpec && ichSpec.querySelectorAll(".spec-body .spec-bar").length);
         // die reiche 6-Achsen-Emotion (live, ≠ Kreatur binär) prominent im Ich
         out.ichEmotion6 = document.querySelectorAll("#status-emotions .emotion").length === 6;
         // die Chronik/Reise wandert in den HOF (Welt-Stimme); das Ich trägt keine Reise mehr.
@@ -694,7 +694,7 @@ async function checkBandVoxelP3AndInventory({ page, check }) {
         r._renderHofChronik();
         out.hofChronikRenders = (() => {
             const h = document.getElementById("hof-chronik");
-            return !!(h && h.childNodes.length);
+            return !!(h?.childNodes.length);
         })();
         // WERKSTATT-TOPOLOGIE: drei Spalten — LINKS die Selbst-Insel (.ich-self: Viewer + Was du trägst),
         // MITTE Inventar/Hotbar (zentral), RECHTS Rezepte (WERK); darunter die vollbreite STATSBAR

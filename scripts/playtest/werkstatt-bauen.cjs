@@ -1534,7 +1534,7 @@ async function checkBandM1VerbindungsWerkstatt({ page, check }) {
             // (7) der Punkt ist ABLESBAR: der Werkstatt-Viewer (connectionLines)
             // zeigt den Anker-Marker am exakten Punkt.
             const g = r._buildFromBlueprint(blu.__m1band, 0, undefined, { connectionLines: true });
-            const marker = g.children.find((ch) => ch.userData && ch.userData.isAnchorPoint);
+            const marker = g.children.find((ch) => ch.userData?.isAnchorPoint);
             out.anchorVisible = !!marker && marker.position.x === 0.5 && marker.position.y === 1.0;
             return out;
         } finally {

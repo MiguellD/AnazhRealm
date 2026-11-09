@@ -22,7 +22,7 @@
 //   Browser), den nichts mehr rief.
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { frageJa, statikServer, halteBis, pruefer, hauptLauf, nullRenderer, starteBrowser, wandEnde, selbsttestEnde, jsonSchreiben, jsonKlon, fehlerStapel, SELBSTTEST, path, fs, stammLib } = require("./lib/welt-boot.cjs");
+const { frageJa, statikServer, halteBis, pruefer, hauptLauf, nullRenderer, starteBrowser, wandEnde, selbsttestEnde, jsonSchreiben, jsonKlon, fehlerStapel, SELBSTTEST, path, fs, stammLib, fenster } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.WERKSTATT_WEG_PORT || 4623);
 const NUR_VERBEN = process.argv.includes("--verben");
@@ -1061,7 +1061,7 @@ function wegHelfer(arg) {
             if (o.lage === "frieden mit Material" || o.lage === "pfad") for (const mt in kosten) r.addMaterialToInventory(mt, kosten[mt]);
             r.setCameraMode(o.sicht === "Third" ? "third" : "first");
             const hotbarAlt = st.hotbar.slice();
-            if (o.slot != null || (o.weg === "hotbar" && !st.hotbar.includes(o.name))) r.setHotbarSlot(o.slot != null ? o.slot : st.hotbar.indexOf(null), o.name);
+            if (o.slot != null || (o.weg === "hotbar" && !st.hotbar.includes(o.name))) r.setHotbarSlot(o.slot ?? st.hotbar.indexOf(null), o.name);
             r.selectBlueprintForEdit(Object.keys(st.blueprints).find((n) => n !== o.name && r._katalogSichtbar(n)));
             const ort = o.ort === "lichtung" ? { x: P.x, y: P.y + 1, z: P.z } : arg.frei;
             st.playerMesh.position.set(ort.x, ort.y + 1.2, ort.z);
@@ -1676,7 +1676,7 @@ hauptLauf(async () => {
         const browser = await starteBrowser({ art: NUR_VERBEN ? "linse" : "null", frist: 600000 });
         const page = await browser.newPage();
         if (!NUR_VERBEN) await nullRenderer(page); // ohne Verben-Karte zeichnet die Seite nichts
-        await page.setViewport({ width: 1280, height: 720 });
+        await fenster(page, "bild");
         await page.evaluateOnNewDocument(frageJa); // die souveräne Geste des Teilens (#frage-dialog, spielgang.K5)
         await page.evaluateOnNewDocument(() => {
             const strom = (window.__eingabeStrom = []);

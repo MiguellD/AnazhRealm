@@ -339,7 +339,7 @@ function tafelNachziehen(t, messung, gemessen, nur) {
         // die Uhr-Spalten der Welt (material.K3): je weitere Uhr ihr Ist `@<uhr>`
         for (const u of neu.uhren.slice(1)) if ((messung.welt[z.id + "@" + u] || {}).Y) z.ist["@" + u] = knapp(messung.welt[z.id + "@" + u]);
         if (z.labor && (z.ratsche == null || e.abweichung < z.ratsche)) {
-            aenderungen.push(`${z.id}: ${z.ratsche == null ? "–" : z.ratsche} → ${e.abweichung}`);
+            aenderungen.push(`${z.id}: ${z.ratsche ?? "–"} → ${e.abweichung}`);
             z.ratsche = e.abweichung;
         }
         // der Stand der Zeile: je Seite der Messung, mit den Abdrücken IHRER Quellen
@@ -350,7 +350,7 @@ function tafelNachziehen(t, messung, gemessen, nur) {
         const z = neu.karten[k.studio];
         z.ist = { kL: k.ist.kL, ausgabe: k.ist.ausgabe };
         if (z.ratsche == null || k.abweichung < z.ratsche) {
-            aenderungen.push(`Karte ${k.studio}: ${z.ratsche == null ? "–" : z.ratsche} → ${k.abweichung}`);
+            aenderungen.push(`Karte ${k.studio}: ${z.ratsche ?? "–"} → ${k.abweichung}`);
             z.ratsche = k.abweichung;
         }
     }

@@ -164,7 +164,7 @@ function sichtLinse(cfg) {
                 } finally {
                     stapel.pop();
                     if (ruht) {
-                        if (a[1] && a[1].dicht) schuld.delete(kd);
+                        if (a[1]?.dicht) schuld.delete(kd);
                     } else if (!inWahl) schuld.delete(fam);
                 }
             }
@@ -628,7 +628,7 @@ function sichtArbeitOhne(f) {
     // je Pass zählt dieselbe Arbeit wie `arbeit`
     let n = 0;
     for (const [k, x] of Object.entries(f.jePass || {}))
-        if (!/^k\d+$/.test(k) || !(f.licht || lj[k])) n += x.arbeit != null ? x.arbeit : x.pruefung;
+        if (!/^k\d+$/.test(k) || !(f.licht || lj[k])) n += x.arbeit ?? x.pruefung;
     return n;
 }
 const sichtAenderung = (f) =>
@@ -636,7 +636,7 @@ const sichtAenderung = (f) =>
         f.licht ||
         f.kamera ||
         Object.keys(f.lichtJe || {}).length ||
-        Object.values(f.inhalt || {}).some((e) => !!e?.grund)
+        Object.values(f.inhalt || {}).some((e) => e?.grund)
     );
 
 // Die Statistik einer Phase: je Zähl-Größe Mittel · Median · Maximum über die Frames (ab `ab`).
@@ -1062,7 +1062,7 @@ function sichtLauf(k) {
         let messen = false;
         // der Vorlauf: gerenderte Frames, bevor die Ruhe zählt — ein Abschnitt mit Lücken legt sich nach `dichtNach` ruhigen
         // Pässen EINMAL dicht (die ferne Kaskade rendert jeden dritten Frame); das ist die Arbeit der Änderung davor
-        let vorlauf = k.vorlauf != null ? k.vorlauf : 120;
+        let vorlauf = k.vorlauf ?? 120;
         rend.setAnimationLoop((t) => {
             // Drehen: `drehGrad` je Frame (1° — darüber wählt jeder Frame neu: der Halt reicht einen halben Dreh-Rand)
             if (messen && phase && phase.name === "drehen") st.yaw += ((k.drehGrad || 1) * Math.PI) / 180;

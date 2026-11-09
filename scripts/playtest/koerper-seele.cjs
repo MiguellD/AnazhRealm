@@ -2587,8 +2587,7 @@ async function checkBandPhasenBF({ page, check }) {
                     if (!clean) continue;
                     const arch = (st.architectures || []).some(
                         (a) =>
-                            a &&
-                            a.position &&
+                            a?.position &&
                             a.position.x > tx - 8 &&
                             a.position.x < tx + span + 8 &&
                             a.position.z > tz - 8 &&

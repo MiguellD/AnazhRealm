@@ -71,7 +71,7 @@ const KLUFT_DURCHLAUF_MIN = 0.4;
 // Das Urteil über einen Befund: Liste der Verstöße (leer = grün). Rein, im Selbsttest wie im Lauf.
 function urteil(b) {
     const v = [];
-    if (!b.spiegel || b.spiegel.length === 0) v.push("SPIEGEL: kein Chunk zwischen Main und Worker verglichen");
+    if (!b.spiegel || !b.spiegel.length) v.push("SPIEGEL: kein Chunk zwischen Main und Worker verglichen");
     for (const sp of b.spiegel || []) {
         if (sp.fehler) {
             v.push(`SPIEGEL: Chunk ${sp.chunk} (LOD ${sp.lod}): ${sp.fehler}`);
@@ -212,7 +212,7 @@ function urteil(b) {
     // den Licht-Hash jedes beleuchteten Stoffs — ein direktes Licht auf 0 rechnet trotzdem seine BRDF in jedem Fragment;
     // Umgebung und Halbkugel addieren nur eine Bestrahlung und stehen im Bericht)
     const sl = b.szenenLicht;
-    if (!sl || !Array.isArray(sl.frei) || sl.frei.length === 0)
+    if (!sl || !Array.isArray(sl.frei) || !sl.frei.length)
         v.push("LEER: (l) Szenen-Licht: kein Licht der Szene unter freiem Himmel gezählt (die Wand prüfte nichts)");
     else {
         const tot = sl.frei.filter((l) => l.direkt && (!(l.I > 0) || l.schwarz));
@@ -1125,7 +1125,7 @@ const server = statikServer();
                 for (const b of bs ? bs.bloecke.values() : [])
                     for (const zl of b.zellen || []) {
                         const kn = zl.knoten;
-                        if (!kn || !kn.tore || kn.tore.length === 0) continue;
+                        if (!kn || !kn.tore || !kn.tore.length) continue;
                         for (let i = 0; i < zl.idx.length; i++) {
                             const j = zl.idx[i];
                             pm.set(PA.getX(j), PA.getY(j), PA.getZ(j));

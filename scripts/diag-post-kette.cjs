@@ -41,7 +41,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 
-const { statikServer, starteBrowser, postKetteBereit, laufUhr, taeterFaelle, selbsttestEnde, fs, SELBSTTEST, fehlerText, seiteZu, rotListe } = require("./lib/welt-boot.cjs");
+const { statikServer, postKetteBereit, laufUhr, taeterFaelle, selbsttestEnde, fs, SELBSTTEST, fehlerText, seiteZu, rotListe, fenster, nullSeite } = require("./lib/welt-boot.cjs");
 // der Bruch, den die Wand selbst in die Kette wirft (Schritt „Render-Fehler") — der EINE Fehler-Sammler (welt-boot) nennt jeden
 // anderen Bruch der Post-Kette ROT beim Namen, diesen erwartet die Linse und zählt ihn selbst (GENAU einmal, `urteil`)
 const ERZWUNGEN = /\[ERROR\] STOFF: die Post-Kette .*gate:post-kette — erzwungener Render-Fehler der Kette/;
@@ -59,8 +59,11 @@ const GODRAY_MIN_PCT = 2;
 const WASSER_TOL = 4;
 const WASSER_RAUSCHEN = 1;
 const WASSER_TIEFE_MIN = 15;
-// (f) Der Saum auf ungerader Leinwand: so viele Kanten-Pixel links am Pfahl dürfen zwischen Abbild und r184s Tiefe
-// höchstens um mehr als 8 Luma abweichen (Rauschen), und so viele Kanten-Pixel braucht die Probe mindestens (sonst blind).
+// (f) Der Saum auf ungerader Leinwand: so viele Kanten-Pixel links am Pfahl dürfen mit dem Abbild höchstens um mehr als 8 Luma
+// HELLER stehen als mit r184s Tiefe (Rauschen), und so viele Kanten-Pixel braucht die Probe mindestens (sonst blind). Der Defekt
+// ist der helle Saum (das Wasser liest den nahen Pfahl, wird durchsichtig); DUNKLER ist das Gesetz des Abbilds — am getauchten Fuß
+// des schrägen Pfahls liest das Paar den fernen Grund, nie den Gegenstand: im Fenster des Spielers (1281×721, w23-pruef-welt) 3
+// von 51 Kanten-Pixeln 47–78 Luma dunkler, swiftshader und Radeon; 321×241 zeigte den Fuß nicht.
 const SAUM_MAX = 2;
 const SAUM_KANTEN_MIN = 10;
 // (h) Das Dunkel: die dunkle Fläche zeigt im Mittel mindestens DUNKEL_LUMA_MIN Luma, und die zwei Belichtungen desselben
@@ -417,6 +420,7 @@ function saumProbe(ort) {
         const aus = { leinwand: [W, H], gpuFehler };
         try {
             const a = await aufnahme();
+            r._spiegelPass(); // der Spiegel steht vor dem Tausch: er liest das Abbild und bräche an r184s Tiefe laut
             const knoten = r._szeneTiefeKnoten,
                 wert = r._szeneTiefeWert;
             r._szeneTiefeKnoten = T.TSL.viewportDepthTexture();
@@ -439,12 +443,15 @@ function saumProbe(ort) {
             const paritaet = new Set();
             for (let y = 0; y < H; y++) {
                 for (let x = Math.ceil(W / 2); x < W - 1; x++) {
-                    if (L(b, x + 1, y) < 12 && L(b, x, y) > 60 && L(a, x + 1, y) < 12) {
+                    // die Kante darf EIN Übergangs-Pixel tragen (die Kantenglättung der Karte: in 1281×721 auf der Radeon trugen
+                    // sonst nur 7 Zeilen einen harten Sprung, die Probe war blind); geurteilt wird das letzte Wasser-Pixel vor ihr
+                    const kante = (u) => L(u, x + 1, y) < 12 || L(u, x + 2, y) < 12;
+                    if (L(b, x, y) > 60 && L(b, x + 1, y) <= 60 && kante(b) && kante(a)) {
                         kanten++;
                         paritaet.add(x & 1);
                         const d = L(a, x, y) - L(b, x, y);
-                        dMax = Math.max(dMax, Math.abs(d));
-                        if (Math.abs(d) > 8) abweichend++;
+                        dMax = Math.max(dMax, d);
+                        if (d > 8) abweichend++;
                         break;
                     }
                 }
@@ -677,6 +684,7 @@ function buehne(nFrames, nachtLicht) {
             };
             const w = { umgehaengt: [] };
             w.abbild = await wasserFarbe();
+            r._spiegelPass(); // der Spiegel steht vor dem Tausch (wie im Saum, (f))
             const knoten = r._szeneTiefeKnoten,
                 wert = r._szeneTiefeWert;
             r._szeneTiefeKnoten = T.TSL.viewportDepthTexture();
@@ -860,9 +868,8 @@ function zugangProbe() {
         "=== POST-KETTE — echter Renderer (WebGPU, swiftshader-Adapter, kienspan): Weiche · Tiefe · Shader · Godrays · Zugang ==="
     );
     await server.lausche(0);
-    const browser = await starteBrowser({ art: "linse", frist: 900000, erwartet: ERZWUNGEN });
-    const page = await browser.newPage();
-    await page.setViewport({ width: 320, height: 240 });
+    const { browser, page } = await nullSeite({ art: "linse", bild: true, frist: 900000, erwartet: ERZWUNGEN });
+    await fenster(page, "bild");
     // die ERROR-Zeilen der Seite (das Spiel meldet über `log(…, "ERROR")` → console.log „[ERROR]")
     const konsolenFehler = [];
     page.on("console", (m) => {
@@ -880,7 +887,7 @@ function zugangProbe() {
         out = await page.evaluate(buehne, N_FRAMES, DUNKEL_NACHT_LICHT);
         if (out.abbruch) log(`ABBRUCH: ${out.abbruch}`);
         // (f) die ungerade Leinwand: die Seite wächst um ein Pixel je Achse, die Welt zieht nach (Resize, Leser neu gebunden)
-        await page.setViewport({ width: 321, height: 241 });
+        await fenster(page, "ungerade");
         await page.evaluate(async () => {
             for (let i = 0; i < 6; i++) {
                 window.__loopBild();

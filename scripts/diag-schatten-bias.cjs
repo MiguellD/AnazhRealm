@@ -889,7 +889,7 @@ async function probe(cfg) {
             nachgezogen,
             hell: erwartet ? +(hellS / erwartet).toFixed(1) : null,
             abdunkeln: erwartet ? +(dunkelS / erwartet).toFixed(1) : null,
-            stufe: h.stufe == null ? null : h.stufe,
+            stufe: h.stufe ?? null,
             fund: fund.slice(),
             licht: d.toArray().map((x) => +x.toFixed(3)),
             normalBias: nb,

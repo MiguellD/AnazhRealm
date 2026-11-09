@@ -463,7 +463,7 @@ async function checkBandWelle6HCreatures({ page, check }) {
         out.spawnFootInOrchester = !!document.querySelector(".hof-orchester .hof-spawn #creature-soul-select");
         // Hof-F — die Sektions-Leiste (Gruppen-Dirigat).
         const secHost = document.getElementById("hof-sections");
-        out.sectionChipsRender = !!(secHost && secHost.querySelectorAll(".hof-section-chip").length >= 1);
+        out.sectionChipsRender = !!(secHost && secHost.querySelectorAll(".hof-section-chip").length);
         const alleChip = secHost && secHost.querySelector(".hof-section-chip");
         out.firstSectionIsAlle = !!(alleChip && /Alle/.test(alleChip.textContent));
         // Eine ECHTE Sektion (die zweite Chip, nicht „Alle") wählen → Liste filtert + die Befehlsleiste erscheint.
@@ -2086,7 +2086,7 @@ async function checkBandKreaturKosten({ page, check }) {
             const seh = z1?.wurf && Array.isArray(z1.wurf.seh) ? z1.wurf.seh : null;
             const aus = budgetFang.get(kind + "|1");
             if (!seh || !aus) return { fehlt: !seh ? "wurf.seh fehlt an der Stufe 1" : "kein Ausgang der Stufe 1" };
-            const teil = aus.filter((m) => m && m.position && m.mat && seh.includes(m.mat.seh));
+            const teil = aus.filter((m) => m?.position && m.mat && seh.includes(m.mat.seh));
             return Object.assign({ seh }, PCW.budgetSippen(teil));
         };
         const urteil = (kind, B, stufe, w, soll) => {

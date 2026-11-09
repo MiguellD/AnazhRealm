@@ -429,7 +429,7 @@ hauptLauf(async () => {
             // Die neuen Tier-Seelen bauen durch den EINEN Guss (Hof/Welt-Roster).
             res.o.tiere = ["wolf", "fuchs", "baer"].every((n) => {
                 const g = r._buildCreatureGroup(n);
-                return !!(g && g.children.length);
+                return !!(g?.children.length);
             });
         } catch (e) {
             res.o = res.o || {};

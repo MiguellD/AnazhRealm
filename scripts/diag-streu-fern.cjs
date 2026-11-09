@@ -356,7 +356,7 @@ hauptLauf(async () => {
             // die Quelle: unverschmolzen trägt der Haufen mehr Teile, als der Satz übernimmt
             const bf = r._foundryFlattenFor({ seed: 7 }, "geroell", 1);
             fit.teile =
-                bf && bf.leaves && bf.leaves[0] && bf.leaves[0]._srcGroup ? bf.leaves[0]._srcGroup.children.length : 0;
+                bf?.leaves && bf.leaves[0] && bf.leaves[0]._srcGroup ? bf.leaves[0]._srcGroup.children.length : 0;
             fit.leaves = bf?.leaves ? bf.leaves.length : 0;
         } catch (e) {
             fit.err = fehlerText(e);
