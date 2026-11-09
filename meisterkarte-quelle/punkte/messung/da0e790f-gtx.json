@@ -1,7 +1,7 @@
 {
  "sha": "da0e790f76ad8a02171aa36d628ef8a8d7758086",
  "geraet": "gtx",
- "zeit": "2026-11-09T18:47:27.000Z",
+ "zeit": "2026-11-09T19:42:31.935Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "mensch.K4#1": {
@@ -346,6 +346,203 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "lod.K5#1": {
+   "gruen": false,
+   "zahl": "Baum 5.15 px · Haus 0.14 px · Tor 0.18 px · Wagen 0.08 px (Soll ≤ 1 px am Wechsel-Abstand, 1920 × 1080) · gate L2: Exemplar 73 px, [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.68,
+   "grund": "ROT: Baum 5.15 px · Haus 0.14 px · Tor 0.18 px · Wagen 0.08 px (Soll ≤ 1 px am Wechsel-Abstand, 1920 × 1080) · gate L2: Exemplar 73 px, [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "s": 41.1,
+   "fremd": {
+    "s": 43.6,
+    "takte": 20,
+    "fremdS": 79.44,
+    "kerne": 1.823,
+    "fensterKerne": 1.967,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      48.27
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      9.7
+     ],
+     [
+      "OmenCommandCenterBackground.exe",
+      6.8
+     ]
+    ],
+    "dienerS": 12.72,
+    "diener": [
+     [
+      "dwm.exe",
+      5.23
+     ],
+     [
+      "System",
+      5.05
+     ]
+    ],
+    "eigenS": 63.53,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-09T19:37:43.725Z",
+   "abdruck": "ca610f2672bb",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "licht.K3#2": {
+   "gruen": false,
+   "zahl": "fichte@0.5 0.337 · fichte@0.27 0.455 · fichte@0.05 0.676 · tanne@0.5 1.042 · tanne@0.27 0.839 · tanne@0.05 0.672 · ring@0.5 0.988 · ring@0.27 1.014 · ring@0.05 0.995 · feld@0.5 0.947 · feld@0.27 0.925 · feld@0.05 0.961 · feld0@0.5 0.923 · feld0@0.27 0.94 · feld0@0.05 0.966 · feld90@0.5 0.937 · feld90@0.27 0.938 · feld90@0.05 0.974 · feld180@0.5 0.937 · feld180@0.27 0.935 · feld180@0.05 0.975 · panorama@0.5 0.944 · panorama@0.27 0.969 · panorama@0.05 0.96 · spiegel@0.5 1.056 · spiegel@0.27 0.949 · spiegel@0.05 1.003 · spiegel180@0.5 0.942 · spiegel180@0.27 0.972 · spiegel180@0.05 0.995 · wasser@0.5 0.919 · wasser@0.27 0.95 · wasser@0.05 0.941 · Soll 0,9–1,1 · [linse-gpu] nvidia/pascal",
+   "exit": 1,
+   "minuten": 1.09,
+   "grund": "ROT: fichte@0.5 0.337 · fichte@0.27 0.455 · fichte@0.05 0.676 · tanne@0.5 1.042 · tanne@0.27 0.839 · tanne@0.05 0.672 · ring@0.5 0.988 · ring@0.27 1.014 · ring@0.05 0.995 · feld@0.5 0.947 · feld@0.27 0.925 · feld@0.05 0.961 · feld0@0.5 0.923 · feld0@0.27 0.94 · feld0@0.05 0.966 · feld90@0.5 0.937 · feld90@0.27 0.938 · feld90@0.05 0.974 · feld180@0.5 0.937 · feld180@0.27 0.935 · feld180@0.05 0.975 · panorama@0.5 0.944 · panorama@0.27 0.969 · panorama@0.05 0.96 · spiegel@0.5 1.056 · spiegel@0.27 0.949 · spiegel@0.05 1.003 · spiegel180@0.5 0.942 · spiegel180@0.27 0.972 · spiegel180@0.05 0.995 · wasser@0.5 0.919 · wasser@0.27 0.95 · wasser@0.05 0.941 · Soll 0,9–1,1 · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "s": 65.1,
+   "fremd": {
+    "s": 68.2,
+    "takte": 31,
+    "fremdS": 125.23,
+    "kerne": 1.836,
+    "fensterKerne": 2.111,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      75.08
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      15.97
+     ],
+     [
+      "OmenCommandCenterBackground.exe",
+      9.38
+     ]
+    ],
+    "dienerS": 18.59,
+    "diener": [
+     [
+      "dwm.exe",
+      10.2
+     ],
+     [
+      "System",
+      4.64
+     ]
+    ],
+    "eigenS": 167.61,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-09T19:39:07.156Z",
+   "abdruck": "0c6b92a9c012",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "studios.K4#1": {
+   "gruen": false,
+   "zahl": "0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU pascal) · garage 23.9 %/– [Differenz 0.239 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · portale –/– [ROT: bild: {\"ms\":9090,\"fehler\":\"ABNAHME ROT [Ziel Blickziel verdeckt von portal-membran in] · schmiede 24.5 %/– [Differenz 0.2453 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · fachwerk –/– [ROT: bild: {\"ms\":4535,\"fehler\":\"ABNAHME ROT [Ziel Blickziel verdeckt von fern-ring in 27.0] · terrain 99.8 %/– [die Welt zeichnet an der Pose L1 (die Bühne L0) · Differenz 0.9982 > 0.021 Albedo ungemess] · koerperstudio –/– [ungemessen: das Werk ist eine Prägung (der Leib des Spielers), kein gesetzter Bau] · tetrapoda –/– [ungemessen: das Werk ist ein Wesen (eine lebende Kreatur), kein gesetzter Bau]",
+   "exit": 0,
+   "minuten": 1.24,
+   "grund": "ROT: 0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU pascal) · garage 23.9 %/– [Differenz 0.239 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · portale –/– [ROT: bild: {\"ms\":9090,\"fehler\":\"ABNAHME ROT [Ziel Blickziel verdeckt von portal-membran in] · schmiede 24.5 %/– [Differenz 0.2453 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · fachwerk –/– [ROT: bild: {\"ms\":4535,\"fehler\":\"ABNAHME ROT [Ziel Blickziel verdeckt von fern-ring in 27.0] · terrain 99.8 %/– [die Welt zeichnet an der Pose L1 (die Bühne L0) · Differenz 0.9982 > 0.021 Albedo ungemess] · koerperstudio –/– [ungemessen: das Werk ist eine Prägung (der Leib des Spielers), kein gesetzter Bau] · tetrapoda –/– [ungemessen: das Werk ist ein Wesen (eine lebende Kreatur), kein gesetzter Bau]",
+   "gpu": "nvidia/pascal",
+   "s": 74.4,
+   "fremd": {
+    "s": 75.5,
+    "takte": 34,
+    "fremdS": 151.59,
+    "kerne": 2.008,
+    "fensterKerne": 2.341,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      84.06
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      18.33
+     ],
+     [
+      "MsMpEng.exe",
+      10.27
+     ]
+    ],
+    "dienerS": 38.56,
+    "diener": [
+     [
+      "dwm.exe",
+      22.91
+     ],
+     [
+      "System",
+      11.22
+     ]
+    ],
+    "eigenS": 216.03,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-09T19:42:31.935Z",
+   "abdruck": "a576b62649d8",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "studios.K4#2": {
+   "gruen": false,
+   "zahl": "0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU pascal) · garage 23.9 %/– [Differenz 0.239 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · portale –/– [ROT: bild: {\"ms\":9090,\"fehler\":\"ABNAHME ROT [Ziel Blickziel verdeckt von portal-membran in] · schmiede 24.5 %/– [Differenz 0.2453 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · fachwerk –/– [ROT: bild: {\"ms\":4535,\"fehler\":\"ABNAHME ROT [Ziel Blickziel verdeckt von fern-ring in 27.0] · terrain 99.8 %/– [die Welt zeichnet an der Pose L1 (die Bühne L0) · Differenz 0.9982 > 0.021 Albedo ungemess] · koerperstudio –/– [ungemessen: das Werk ist eine Prägung (der Leib des Spielers), kein gesetzter Bau] · tetrapoda –/– [ungemessen: das Werk ist ein Wesen (eine lebende Kreatur), kein gesetzter Bau]",
+   "exit": 0,
+   "minuten": 1.24,
+   "grund": "ROT: 0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU pascal) · garage 23.9 %/– [Differenz 0.239 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · portale –/– [ROT: bild: {\"ms\":9090,\"fehler\":\"ABNAHME ROT [Ziel Blickziel verdeckt von portal-membran in] · schmiede 24.5 %/– [Differenz 0.2453 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · fachwerk –/– [ROT: bild: {\"ms\":4535,\"fehler\":\"ABNAHME ROT [Ziel Blickziel verdeckt von fern-ring in 27.0] · terrain 99.8 %/– [die Welt zeichnet an der Pose L1 (die Bühne L0) · Differenz 0.9982 > 0.021 Albedo ungemess] · koerperstudio –/– [ungemessen: das Werk ist eine Prägung (der Leib des Spielers), kein gesetzter Bau] · tetrapoda –/– [ungemessen: das Werk ist ein Wesen (eine lebende Kreatur), kein gesetzter Bau]",
+   "gpu": "nvidia/pascal",
+   "s": 74.4,
+   "fremd": {
+    "s": 75.5,
+    "takte": 34,
+    "fremdS": 151.59,
+    "kerne": 2.008,
+    "fensterKerne": 2.341,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      84.06
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      18.33
+     ],
+     [
+      "MsMpEng.exe",
+      10.27
+     ]
+    ],
+    "dienerS": 38.56,
+    "diener": [
+     [
+      "dwm.exe",
+      22.91
+     ],
+     [
+      "System",
+      11.22
+     ]
+    ],
+    "eigenS": 216.03,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-09T19:42:31.935Z",
+   "abdruck": "97b1e369c378",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "studios.K4#1",
+   "modus": "session"
   }
  },
  "ungemessen": {
@@ -495,122 +692,429 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "material.K1#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Karte Welt undefined · Labor stumm · Soll undefined ± undefined · Zeilen NICHT alle im Soll und Band · echt NEIN · [linse-gpu] nvidia/pascal) · Täter: ALBEDO-TAFEL 0 Zeilen beider Seiten — Labor: Protocol error (Runtime.evaluate): Target closed",
+   "exit": 3,
+   "minuten": 1.4,
+   "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Karte Welt undefined · Labor stumm · Soll undefined ± undefined · Zeilen NICHT alle im Soll und Band · echt NEIN · [linse-gpu] nvidia/pascal) · Täter: ALBEDO-TAFEL 0 Zeilen beider Seiten — Labor: Protocol error (Runtime.evaluate): Target closed",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 84.2,
+   "fremd": {
+    "s": 86.5,
+    "takte": 39,
+    "fremdS": 168.47,
+    "kerne": 1.947,
+    "fensterKerne": 2.167,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      95.5
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      21.78
+     ],
+     [
+      "MsMpEng.exe",
+      14.25
+     ]
+    ],
+    "dienerS": 36.69,
+    "diener": [
+     [
+      "dwm.exe",
+      16.03
+     ],
+     [
+      "System",
+      15.8
+     ]
+    ],
+    "eigenS": 289.42,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-09T19:31:48.310Z",
+   "abdruck": "18928b5b08be",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "licht.K1#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __tagKurve({\"uhren\":[0,0.01,0.02,0. (100 Uhren) · 20.9 s · 80.4 s)",
+   "exit": 1,
+   "minuten": 1.5,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __tagKurve({\"uhren\":[0,0.01,0.02,0. (100 Uhren) · 20.9 s · 80.4 s)",
+   "s": 90.2,
+   "fremd": {
+    "s": 94.4,
+    "takte": 43,
+    "fremdS": 177.09,
+    "kerne": 1.876,
+    "fensterKerne": 2.185,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      103.34
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      20.89
+     ],
+     [
+      "OmenCommandCenterBackground.exe",
+      14.11
+     ]
+    ],
+    "dienerS": 30.23,
+    "diener": [
+     [
+      "dwm.exe",
+      12.8
+     ],
+     [
+      "System",
+      12.31
+     ]
+    ],
+    "eigenS": 202.38,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-09T19:33:42.078Z",
+   "abdruck": "f53269961fa8",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "lod.K1#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: auge · Exit 0)",
+   "exit": 1,
+   "minuten": 1.5,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: auge · Exit 0)",
+   "s": 90.2,
+   "fremd": {
+    "s": 92,
+    "takte": 42,
+    "fremdS": 206.8,
+    "kerne": 2.249,
+    "fensterKerne": 3.875,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      103.66
+     ],
+     [
+      "SDXHelper.exe -Embedding",
+      23.19
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      20.95
+     ]
+    ],
+    "dienerS": 30.34,
+    "diener": [
+     [
+      "dwm.exe",
+      12.91
+     ],
+     [
+      "System",
+      12.45
+     ]
+    ],
+    "eigenS": 131.2,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-09T19:35:44.696Z",
+   "abdruck": "13a0cc06ffb8",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "studios.K2#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: p95 Griff → Bild unter der Schranke in 0/8 (Gesetz-Wert höchstens 12 ms garage, Neubau höchstens 1046 ms fachwerk, je Studio null Griffe) · Neuladen 5/8 · A/B 5/8) · Täter: @@PUNKTE@@ FRIST 84 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 1.41,
+   "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: p95 Griff → Bild unter der Schranke in 0/8 (Gesetz-Wert höchstens 12 ms garage, Neubau höchstens 1046 ms fachwerk, je Studio null Griffe) · Neuladen 5/8 · A/B 5/8) · Täter: @@PUNKTE@@ FRIST 84 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 84.7,
+   "fremd": {
+    "s": 87.9,
+    "takte": 40,
+    "fremdS": 174.05,
+    "kerne": 1.98,
+    "fensterKerne": 2.416,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      97.67
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      19.88
+     ],
+     [
+      "MsMpEng.exe",
+      15.72
+     ]
+    ],
+    "dienerS": 33.23,
+    "diener": [
+     [
+      "dwm.exe",
+      19.59
+     ],
+     [
+      "System",
+      8.59
+     ]
+    ],
+    "eigenS": 167.22,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-09T19:40:41.838Z",
+   "abdruck": "0729922f0665",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "studios.K3#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Dreiecke, Befehle, VRAM und GPU-ms ±5 % in 0/7 Mesh-Studios (0 Stufen), Klang 8/8 Orte im Quantum (Audio-Graph höchstens 0.161 ms), ohne garage L0 GPU 0.0236 ms↔Bank 8.0413 (+1), schmiede L0 GPU 0.0051 ms↔Bank 0.7525, portale L0 Bank 3.2062) · Täter: @@PUNKTE@@ FRIST 84 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "exit": 3,
+   "minuten": 1.41,
+   "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Dreiecke, Befehle, VRAM und GPU-ms ±5 % in 0/7 Mesh-Studios (0 Stufen), Klang 8/8 Orte im Quantum (Audio-Graph höchstens 0.161 ms), ohne garage L0 GPU 0.0236 ms↔Bank 8.0413 (+1), schmiede L0 GPU 0.0051 ms↔Bank 0.7525, portale L0 Bank 3.2062) · Täter: @@PUNKTE@@ FRIST 84 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 84.7,
+   "fremd": {
+    "s": 87.9,
+    "takte": 40,
+    "fremdS": 174.05,
+    "kerne": 1.98,
+    "fensterKerne": 2.416,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      97.67
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      19.88
+     ],
+     [
+      "MsMpEng.exe",
+      15.72
+     ]
+    ],
+    "dienerS": 33.23,
+    "diener": [
+     [
+      "dwm.exe",
+      19.59
+     ],
+     [
+      "System",
+      8.59
+     ]
+    ],
+    "eigenS": 167.22,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-09T19:40:41.838Z",
+   "abdruck": "40e20c122980",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "studios.K2#2",
+   "modus": "session"
+  },
+  "bauen.K1#2": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Ausgabe des Bild-Wegs auf der Karte (Exit 2)) · Täter: @@ PROBE-FEHLER ReferenceError: PHASEN is not defined |     at Object.<anonymous> (C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\AnazhRealm-mess\\.claude\\worktrees\\punkte-gtx\\scripts\\diag-werkstatt-weg.cjs:1795:70) |     at Module._compile (node:internal/modules/cjs/loader:1812:14) |     at H.linse ([eval]:",
+   "exit": 2,
+   "minuten": 0,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Ausgabe des Bild-Wegs auf der Karte (Exit 2)) · Täter: @@ PROBE-FEHLER ReferenceError: PHASEN is not defined |     at Object.<anonymous> (C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\AnazhRealm-mess\\.claude\\worktrees\\punkte-gtx\\scripts\\diag-werkstatt-weg.cjs:1795:70) |     at Module._compile (node:internal/modules/cjs/loader:1812:14) |     at H.linse ([eval]:",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 0.2,
+   "fremd": {
+    "s": 2.2,
+    "takte": 1,
+    "fremdS": 3.97,
+    "kerne": 1.837,
+    "fensterKerne": 1.837,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      2.69
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      0.34
+     ],
+     [
+      "OmenCommandCenterBackground.exe",
+      0.28
+     ]
+    ],
+    "dienerS": 0.59,
+    "diener": [
+     [
+      "dwm.exe",
+      0.25
+     ],
+     [
+      "System",
+      0.23
+     ]
+    ],
+    "eigenS": 3.2,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-09T19:42:30.019Z",
+   "abdruck": "39320cf4db45",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-09T18:35:20.968Z",
+  "start": "2026-11-09T19:31:11.915Z",
   "port": 7804,
   "warten": 0.02,
-  "bootS": 9,
+  "bootS": 6.8,
   "grundstellungS": [
-   12.2,
-   0.1,
-   7.2,
-   4
+   3.8,
+   6,
+   4.7,
+   6.2,
+   2.9,
+   0.1
   ],
-  "proben": 10,
+  "proben": 8,
   "freigaben": [],
   "orte": [
    {
-    "ort": "wiese",
-    "vor": "mensch.K4#1",
-    "s": 29.6,
-    "takte": 542,
+    "ort": "genesis",
+    "vor": "material.K1#2",
+    "s": 27.8,
+    "takte": 699,
     "chunks": 81,
     "nach": null
    },
    {
     "ort": "genesis",
-    "vor": "ferne.K1#2",
-    "s": 17.3,
-    "takte": 609,
-    "chunks": 81,
-    "nach": null
-   },
-   {
-    "ort": "wiese",
-    "vor": "gelaende.K2#2",
-    "s": 10.4,
-    "takte": 575,
-    "chunks": 81,
-    "nach": null
-   },
-   {
-    "ort": "wiese",
-    "vor": "physik.K2#2",
-    "s": 28.4,
-    "takte": 612,
+    "vor": "licht.K1#1",
+    "s": 23.5,
+    "takte": 592,
     "chunks": 81,
     "nach": "der Tür"
    },
    {
     "ort": "wiese",
-    "vor": "tiere.K1#2",
-    "s": 5.7,
-    "takte": 232,
-    "chunks": 98,
-    "nach": "der Grundstellung"
+    "vor": "lod.K1#1",
+    "s": 24.3,
+    "takte": 614,
+    "chunks": 81,
+    "nach": "der Tür"
    },
    {
-    "ort": "genesis",
-    "vor": "vegetation.K4#2",
-    "s": 25.2,
-    "takte": 619,
+    "ort": "wiese",
+    "vor": "lod.K5#1",
+    "s": 23.8,
+    "takte": 618,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": "dorf",
+    "vor": "licht.K3#2",
+    "s": 41.3,
+    "takte": 1564,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": null,
+    "vor": "studios.K2#2",
+    "s": 21.2,
+    "takte": 850,
     "chunks": 81,
     "nach": "der Tür"
    },
    {
     "ort": null,
-    "vor": "tiere.K3#2",
-    "s": 16.4,
-    "takte": 637,
+    "vor": "bauen.K1#2",
+    "s": 19.5,
+    "takte": 739,
     "chunks": 81,
     "nach": "der Tür"
+   },
+   {
+    "ort": null,
+    "vor": "studios.K4#1",
+    "s": 0.3,
+    "takte": 1,
+    "chunks": 81,
+    "nach": "der Grundstellung"
    }
   ],
-  "wegeTueren": [],
-  "ciBlicke": 11,
+  "wegeTueren": [
+   {
+    "vor": "studios.K2#2",
+    "wege": "wege +6 [-119.1,-274.9,279.2,201/272] [-748.3,-821.3,-615.9,-784.1/28] [-784.3,-952.2,-631.7,-806.5/4] …",
+    "s": 6.2
+   }
+  ],
+  "unerklaert": [
+   {
+    "probe": "material.K1#2",
+    "wie": "werke +5 (−0)"
+   },
+   {
+    "probe": "licht.K3#2",
+    "wie": "orte +-3,-3 · wege +3 [-748.3,-821.3,-615.9,-784.1/28] [-805.3,-801.4,-689.5,-574/6] [-833.8,-834.7,-648.1,-574.2/76] (-3,-3, netz:-3,-3, netz:-3,-3|-4,-4)"
+   }
+  ],
+  "ciBlicke": 9,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 1952,
-   "frameP95": 49.99,
-   "taktP95": 45.46,
-   "vramMax": 147.3,
-   "seiten": 4,
+   "bilder": 263,
+   "frameP95": 50.07,
+   "taktP95": 43.68,
+   "vramMax": 136.8,
+   "seiten": 6,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [
     {
-     "probe": "ferne.K1#2",
-     "m": 3592,
-     "ringVor": 4,
-     "ringMin": -1
-    },
-    {
-     "probe": "gelaende.K2#2",
-     "m": 1718,
-     "ringVor": 4,
-     "ringMin": 0
-    },
-    {
-     "probe": "tiere.K1#2",
-     "m": 327,
-     "ringVor": 4,
-     "ringMin": 0
-    },
-    {
-     "probe": "vegetation.K4#2",
-     "m": 292,
+     "probe": "licht.K1#1",
+     "m": 1083,
      "ringVor": 4,
      "ringMin": -1
     }
    ],
-   "zapfen": 666,
-   "luecken": 5,
+   "zapfen": 701,
+   "luecken": 2,
    "letzteLuecke": "/eval ohne Antwort binnen 10 s"
   },
-  "fahrtS": 775.9,
-  "minuten": 13.03
+  "fahrtS": 754.1,
+  "minuten": 12.65
  }
 }
