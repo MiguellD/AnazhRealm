@@ -3240,6 +3240,13 @@ hauptLauf(async () => {
             ));
             const [ax, ay, az, bx, by, bz] = auge;
             urteil("Spielgang", (o = await rufe("/bild", { px: ax, py: ay, pz: az, lx: bx, ly: by, lz: bz, w: 1920, h: 1080, wahl: 0, klasse, datei: datei("spielgang") })));
+            // DIE KLASSE OHNE HOLZ (Befund): derselbe Schuss, die Rinde jeder Gruppe verborgen — misst die Klasse ihr Laub oder ihren Stamm?
+            await evalRuf("window.__holz = []; r.state.scene.traverse((m) => m.visible && m.material?.userData?.foundryKind === 'bark' && (window.__holz.push(m), (m.visible = false))); return window.__holz.length;");
+            try {
+                urteil("Spielgang ohne Holz", await rufe("/bild", { px: ax, py: ay, pz: az, lx: bx, ly: by, lz: bz, w: 1920, h: 1080, wahl: 0, klasse, datei: datei("ohne-holz") }));
+            } finally {
+                await evalRuf("for (const m of window.__holz) m.visible = true; return window.__holz.length;");
+            }
         } finally {
             halt?.();
         }
