@@ -242,10 +242,10 @@ H.fahre(async function probeVerben(H) {
     await L.bauWeg(page, "ende");
     return j;
 }); 7804 C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\87537d3f-radeon\bauen.K5_2.json 45
-  ✅ werkstatt · Ego · Haus × betreten · 11.8 s
-  ✅ werkstatt · Third · Tor × portal · 13 s
-  ✅ ki · Ego · Wagen × drive · 15.6 s
-  ✅ ki · Third · Leiter × klettern · 17.9 s
+  ✅ werkstatt · Ego · Haus × betreten · 11.1 s
+  ✅ werkstatt · Third · Tor × portal · 11.7 s
+  ✅ ki · Ego · Wagen × drive · 14.8 s
+  ✅ ki · Third · Leiter × klettern · 17.2 s
 @@PUNKTE@@ FRIST 39 s der Probe gerissen — Fall geteilt · Ego · Bank an der Frist
   ❌ geteilt · Ego · Bank × sitzen — Frist der Probe · 35 s
 

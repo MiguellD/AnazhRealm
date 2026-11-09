@@ -172,22 +172,24 @@ $ C:\Program Files\nodejs\node.exe -e const tor = (function sitzungTor() {
     if (v.length) process.exitCode = 1;
 })(tor).then(() => process.exitCode || 0, (e) => ((e && e.messort ? console.log('@@PUNKTE@@ MESSORT ' + e.messort) : 0), console.log('PROBE-FEHLER ' + String((e && e.stack) || e).split('\n').slice(0, 4).join(' | ')), 1)).then(async (c) => { await tor.ende(); process.exit(c); }); C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\87537d3f-radeon\fahrzeug.K2_1.json
 [linse-gpu] amd/rdna-3
-  WN Teil 1/6: der Lauf hält nach 37.5 s an der Naht (Spieler bei 679, -1697, 3 Orte wach) — weiter
+  WN Teil 1/6: der Lauf hält nach 37.1 s an der Naht (Spieler bei 381, -1418, 2 Orte wach) — weiter
 @@PUNKTE@@ TEIL WEITER
 [linse-gpu] amd/rdna-3
-  WN Teil 2/6: der Lauf hält nach 37.5 s an der Naht (Spieler bei 1217, -1657, 5 Orte wach) — weiter
+  WN Teil 2/6: der Lauf hält nach 37.6 s an der Naht (Spieler bei 1217, -1657, 5 Orte wach) — weiter
 @@PUNKTE@@ TEIL WEITER
 [linse-gpu] amd/rdna-3
-  WN Teil 3/6: der Lauf hält nach 37.7 s an der Naht (Spieler bei 226, -1497, 6 Orte wach) — weiter
+  WN Teil 3/6: der Lauf hält nach 37.6 s an der Naht (Spieler bei 112, -1330, 6 Orte wach) — weiter
 @@PUNKTE@@ TEIL WEITER
 [linse-gpu] amd/rdna-3
-  WN Teil 4/6: der Lauf hält nach 37.7 s an der Naht (Spieler bei 618, -1728, 7 Orte wach) — weiter
+  WN Teil 4/6: der Lauf hält nach 37.7 s an der Naht (Spieler bei 511, -1540, 7 Orte wach) — weiter
 @@PUNKTE@@ TEIL WEITER
 [linse-gpu] amd/rdna-3
-  WN Teil 5/6: der Lauf hält nach 37.6 s an der Naht (Spieler bei 1007, -1429, 7 Orte wach) — weiter
+  WN Teil 5/6: der Lauf hält nach 37.1 s an der Naht (Spieler bei 774, -1610, 7 Orte wach) — weiter
 @@PUNKTE@@ TEIL WEITER
 [linse-gpu] amd/rdna-3
-PROBE-FEHLER ReferenceError: urteil is not defined |     at Object.wegenetzVerdict (eval at fahrWegenetz ([eval]:121:15), <anonymous>:14:5) |     at fahrWegenetz ([eval]:169:30)
+@@PUNKTE@@ FRIST 39 s der Probe gerissen: Error: DIE TEILE DER FAHRT reichten nicht: die Frist des letzten Teils riss an der Naht (Teil 6/6)
+  ❌ WN (fahrzeug.K2) die Fahrt auf dem Wegenetz — Error: DIE TEILE DER FAHRT reichten nicht: die Frist des letzten Teils riss an der Naht · 37.6 s in der Welt der Sitzung (Teil 6/6)
+WEGENETZ undefined
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3

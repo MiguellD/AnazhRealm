@@ -1,7 +1,7 @@
 {
  "sha": "87537d3f1481217f2aad2a5cbbe5a3f6c4b95a55",
  "geraet": "radeon",
- "zeit": "2026-11-09T11:29:44.113Z",
+ "zeit": "2026-11-09T12:08:07.334Z",
  "host": "MiguellD",
  "je": {
   "ferne.K1#1": {
@@ -3456,45 +3456,88 @@
    "bahn": "sitzung",
    "zwilling": "halten.K5#1",
    "modus": "session"
+  },
+  "leib.K3#2": {
+   "gruen": false,
+   "zahl": "keine Zeile LEIB_K3_BILD — der Deckel des Laufs fehlt (argv „1“: der Läufer ersetzt den Platzhalter SEK) (Exit 2)",
+   "exit": 2,
+   "minuten": 0,
+   "grund": "ROT: keine Zeile LEIB_K3_BILD — der Deckel des Laufs fehlt (argv „1“: der Läufer ersetzt den Platzhalter SEK) (Exit 2)",
+   "gpu": "amd/rdna-3",
+   "s": 0.1,
+   "fremd": {
+    "s": 2.3,
+    "takte": 1,
+    "fremdS": 2.39,
+    "kerne": 1.042,
+    "fensterKerne": 1.042,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      0.94
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      0.48
+     ],
+     [
+      "MsMpEng.exe",
+      0.36
+     ]
+    ],
+    "dienerS": 0.69,
+    "diener": [
+     [
+      "dwm.exe",
+      0.3
+     ],
+     [
+      "WmiPrvSE.exe",
+      0.2
+     ]
+    ],
+    "eigenS": 3.22,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-09T12:03:08.300Z",
+   "abdruck": "3ad18f4155ae",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-09T10:49:50.119Z",
+  "start": "2026-11-09T11:33:03.800Z",
   "port": 7804,
   "warten": 0.1,
-  "bootS": 6.3,
+  "bootS": 5.8,
   "grundstellungS": [
+   5.4,
+   3.5,
+   4,
+   2.8,
    5.2,
-   3.2,
-   4.3,
-   2.9,
-   3.4,
-   4.9,
-   3.7,
-   3.2,
-   4.4,
+   4,
+   3,
    4.2,
-   3.9,
+   4.2,
    3.7,
-   10.7,
-   0,
+   3.6,
+   11.4,
    0.1,
-   4.1,
-   3.9,
+   3.7,
+   3.3,
+   3.5,
+   2.2,
+   0.1,
    2.7,
-   3.1
+   3.6,
+   0
   ],
-  "proben": 26,
+  "proben": 25,
   "freigaben": [],
   "offen": [
-   "bauen.K5#2",
-   "siedlung.K2#1",
-   "siedlung.K2#2",
-   "siedlung.K5#1",
-   "siedlung.K5#2",
-   "leib.K3#2",
-   "halten.K5#1",
-   "halten.K5#2",
    "tore.K1#1",
    "tore.K3#1",
    "tore.K3#2",
@@ -3517,56 +3560,40 @@
    {
     "ort": "wiese",
     "vor": "tiere.K5#1",
-    "s": 17.1,
-    "takte": 746,
+    "s": 15.6,
+    "takte": 587,
     "chunks": 81,
     "nach": null
    },
    {
     "ort": "wiese",
     "vor": "licht.K2#2",
-    "s": 17.7,
-    "takte": 575,
+    "s": 17.5,
+    "takte": 588,
     "chunks": 81,
     "nach": "der Tür"
    },
    {
     "ort": "wiese",
-    "vor": "lod.K1#1",
-    "s": 14.3,
-    "takte": 536,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "dorf",
-    "vor": "licht.K3#2",
-    "s": 21,
-    "takte": 591,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "dorf",
-    "vor": "vegetation.K3#1",
-    "s": 17.9,
-    "takte": 606,
+    "vor": "leib.K1#1",
+    "s": 14.6,
+    "takte": 551,
     "chunks": 81,
     "nach": "der Tür"
    },
    {
     "ort": "genesis",
     "vor": "ankunft.K4#1",
-    "s": 13.3,
-    "takte": 639,
+    "s": 12.9,
+    "takte": 532,
     "chunks": 81,
-    "nach": null
+    "nach": "der Tür"
    },
    {
     "ort": null,
     "vor": "profiband.K5#1",
-    "s": 13.2,
-    "takte": 733,
+    "s": 13,
+    "takte": 682,
     "chunks": 81,
     "nach": "der Tür"
    },
@@ -3574,22 +3601,22 @@
     "ort": "wiese",
     "vor": "gelaende.K2#1",
     "s": 15.9,
-    "takte": 689,
+    "takte": 625,
     "chunks": 81,
     "nach": null
    },
    {
     "ort": "wiese",
     "vor": "physik.K2#2",
-    "s": 15.3,
-    "takte": 575,
+    "s": 16.8,
+    "takte": 579,
     "chunks": 81,
     "nach": "der Tür"
    },
    {
     "ort": "wiese",
     "vor": "oekologie.K4#2",
-    "s": 16.2,
+    "s": 14.9,
     "takte": 577,
     "chunks": 81,
     "nach": "der Tür"
@@ -3597,31 +3624,31 @@
    {
     "ort": "wiese",
     "vor": "fahrzeug.K3#1",
-    "s": 14.6,
-    "takte": 545,
+    "s": 15,
+    "takte": 573,
     "chunks": 81,
     "nach": "der Tür"
    },
    {
     "ort": "wiese",
     "vor": "fahrzeug.K3#2",
-    "s": 16.2,
-    "takte": 574,
+    "s": 14.9,
+    "takte": 578,
     "chunks": 81,
     "nach": "der Tür"
    },
    {
     "ort": "wiese",
     "vor": "leib.K1#2",
-    "s": 14.7,
-    "takte": 574,
+    "s": 15.7,
+    "takte": 578,
     "chunks": 81,
     "nach": "der Tür"
    },
    {
     "ort": "wiese",
     "vor": "leib.K4#1",
-    "s": 14.9,
+    "s": 15.8,
     "takte": 576,
     "chunks": 81,
     "nach": "der Tür"
@@ -3629,110 +3656,111 @@
    {
     "ort": "wiese",
     "vor": "fahrzeug.K2#1",
-    "s": 15.8,
-    "takte": 577,
+    "s": 18.4,
+    "takte": 586,
     "chunks": 81,
     "nach": "der Tür"
    },
    {
     "ort": "wiese",
     "vor": "klang.K5#2",
-    "s": 16.3,
-    "takte": 566,
+    "s": 17.5,
+    "takte": 576,
     "chunks": 81,
     "nach": "der Tür"
    },
    {
     "ort": "wiese",
     "vor": "speicher.K4#2",
-    "s": 3.2,
-    "takte": 187,
-    "chunks": 105,
+    "s": 3.9,
+    "takte": 186,
+    "chunks": 103,
     "nach": "der Grundstellung"
    },
    {
     "ort": "genesis",
     "vor": "vegetation.K4#1",
-    "s": 13.4,
-    "takte": 615,
-    "chunks": 81,
-    "nach": "der Grundstellung"
-   },
-   {
-    "ort": "genesis",
-    "vor": "siedlung.K1#2",
-    "s": 15.3,
-    "takte": 571,
+    "s": 16.2,
+    "takte": 600,
     "chunks": 81,
     "nach": "der Tür"
    },
    {
-    "ort": "buehne",
-    "vor": "schatten.K1#2",
-    "s": 11.8,
-    "takte": 595,
-    "chunks": 84,
+    "ort": "genesis",
+    "vor": "siedlung.K1#2",
+    "s": 14,
+    "takte": 579,
+    "chunks": 81,
     "nach": "der Tür"
    },
    {
     "ort": null,
     "vor": "studios.K2#2",
-    "s": 15.3,
-    "takte": 681,
+    "s": 14.1,
+    "takte": 684,
     "chunks": 81,
     "nach": "der Tür"
    },
    {
     "ort": null,
     "vor": "bauen.K1#2",
-    "s": 13.9,
-    "takte": 732,
+    "s": 13.2,
+    "takte": 682,
     "chunks": 81,
     "nach": "der Tür"
-   }
-  ],
-  "wegeTueren": [
-   {
-    "vor": "vegetation.K3#1",
-    "wege": "wege +5 [-748.3,-821.3,-615.9,-784.1/28] [-784.3,-952.2,-631.7,-806.5/4] [-805.3,-801.4,-689.5,-574/6] …",
-    "s": 2.9
    },
    {
-    "vor": "klang.K5#2",
-    "wege": "wege +20 [-153.6,-1374.1,317.4,-940.2/202] [-16,-1673.7,240.8,-1629.6/3] [-294.9,-1139.8,-143.6,-1110.1/32] …",
-    "s": 10.7
+    "ort": null,
+    "vor": "bauen.K5#2",
+    "s": 0.2,
+    "takte": 1,
+    "chunks": 81,
+    "nach": "der Grundstellung"
+   },
+   {
+    "ort": null,
+    "vor": "siedlung.K2#1",
+    "s": 13.1,
+    "takte": 682,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": null,
+    "vor": "siedlung.K5#1",
+    "s": 13.4,
+    "takte": 682,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": null,
+    "vor": "leib.K3#2",
+    "s": 0.1,
+    "takte": 1,
+    "chunks": 81,
+    "nach": "der Grundstellung"
    }
   ],
+  "wegeTueren": [],
   "haenger": [
    {
     "probe": "profiband.K4#1",
     "zurueck": 9
    }
   ],
-  "unerklaert": [
-   {
-    "probe": "licht.K3#2",
-    "wie": "orte +-3,-3 · wege +3 [-748.3,-821.3,-615.9,-784.1/28] [-805.3,-801.4,-689.5,-574/6] [-833.8,-834.7,-648.1,-574.2/76] (-3,-3, netz:-3,-3, netz:-3,-3|-4,-4)"
-   }
-  ],
-  "ciBlicke": 27,
+  "ciBlicke": 26,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 8922,
-   "frameP95": 83.73,
-   "taktP95": 79.15,
-   "vramMax": 151.4,
-   "seiten": 19,
+   "bilder": 9024,
+   "frameP95": 91.96,
+   "taktP95": 82.83,
+   "vramMax": 158.2,
+   "seiten": 20,
    "marken": 2,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [
-    {
-     "probe": "streaming.K3#1",
-     "m": 2000,
-     "ringVor": 4,
-     "ringMin": 0
-    },
     {
      "probe": "gelaende.K2#1",
      "m": 1718,
@@ -3743,19 +3771,25 @@
      "probe": "fahrzeug.K2#1",
      "m": 1618,
      "ringVor": 4,
-     "ringMin": -1
+     "ringMin": 0
     },
     {
-     "probe": "schatten.K1#2",
-     "m": 459,
+     "probe": "siedlung.K2#1",
+     "m": 1377,
      "ringVor": 4,
-     "ringMin": 1
+     "ringMin": 0
+    },
+    {
+     "probe": "streaming.K3#1",
+     "m": 1000,
+     "ringVor": 4,
+     "ringMin": 0
     },
     {
      "probe": "leib.K4#1",
-     "m": 319,
+     "m": 318,
      "ringVor": 4,
-     "ringMin": -1
+     "ringMin": 0
     },
     {
      "probe": "vegetation.K4#1",
@@ -3764,60 +3798,60 @@
      "ringMin": -1
     }
    ],
-   "zapfen": 1700,
-   "luecken": 8,
+   "zapfen": 1692,
+   "luecken": 7,
    "letzteLuecke": "THREE is not defined"
   },
-  "fahrtS": 1816.2,
-  "grund": "die Fahrt riss 1800 s vor bauen.K5#2 — offen: bauen.K5#2, siedlung.K2#1, siedlung.K2#2, siedlung.K5#1, siedlung.K5#2, leib.K3#2, halten.K5#1, halten.K5#2, tore.K1#1, tore.K3#1, tore.K3#2, ankunft.K2#1, ankunft.K3#1, ankunft.K1#1, ankunft.K1#2, ankunft.K5#1, profiband.K1#1, profiband.K1#2, pflicht.E#1, profiband.K2#1, profiband.K2#2, profiband.K3#1, profiband.K3#2, speicher.K1#1, speicher.K1#2",
-  "minuten": 30.45
+  "fahrtS": 1801.2,
+  "grund": "die Fahrt riss 1800 s vor tore.K1#1 — offen: tore.K1#1, tore.K3#1, tore.K3#2, ankunft.K2#1, ankunft.K3#1, ankunft.K1#1, ankunft.K1#2, ankunft.K5#1, profiband.K1#1, profiband.K1#2, pflicht.E#1, profiband.K2#1, profiband.K2#2, profiband.K3#1, profiband.K3#2, speicher.K1#1, speicher.K1#2",
+  "minuten": 30.2
  },
  "ungemessen": {
   "profiband.K4#1": {
    "gruen": false,
-   "zahl": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 12,7 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 7,4 CPU-s · MsMpEng.exe 6,0 CPU-s — 1,22 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 34,2 CPU-s in 35,4 s) — kein Urteil, UNGEMESSEN (die Probe sah: Gehen 40 Bilder · max 117.15 ms · 100.00 % > 33 ms · Fahrt 41 Bilder · max 141.81 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 2 Bild(er) > 100 ms (max 117.15), 100.00 % > 33 ms | Fahr)",
+   "zahl": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 12,5 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 7,7 CPU-s · svchost.exe 7,0 CPU-s — 1,42 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 40,4 CPU-s in 38,4 s) — kein Urteil, UNGEMESSEN (die Probe sah: Gehen 44 Bilder · max 117.07 ms · 95.45 % > 33 ms · Fahrt 39 Bilder · max 108.92 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 1 Bild(er) > 100 ms (max 117.07), 95.45 % > 33 ms | Fahrt:)",
    "exit": 0,
-   "minuten": 0.54,
-   "grund": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 12,7 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 7,4 CPU-s · MsMpEng.exe 6,0 CPU-s — 1,22 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 34,2 CPU-s in 35,4 s) — kein Urteil, UNGEMESSEN (die Probe sah: Gehen 40 Bilder · max 117.15 ms · 100.00 % > 33 ms · Fahrt 41 Bilder · max 141.81 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 2 Bild(er) > 100 ms (max 117.15), 100.00 % > 33 ms | Fahr)",
+   "minuten": 0.57,
+   "grund": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 12,5 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 7,7 CPU-s · svchost.exe 7,0 CPU-s — 1,42 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 40,4 CPU-s in 38,4 s) — kein Urteil, UNGEMESSEN (die Probe sah: Gehen 44 Bilder · max 117.07 ms · 95.45 % > 33 ms · Fahrt 39 Bilder · max 108.92 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 1 Bild(er) > 100 ms (max 117.07), 95.45 % > 33 ms | Fahrt:)",
    "gpu": "amd/rdna-3",
-   "s": 32.1,
+   "s": 34.3,
    "fremd": {
-    "s": 35.4,
-    "takte": 13,
-    "fremdS": 34.2,
-    "kerne": 0.965,
-    "fensterKerne": 1.218,
+    "s": 38.4,
+    "takte": 14,
+    "fremdS": 40.38,
+    "kerne": 1.052,
+    "fensterKerne": 1.42,
     "namen": [
      [
       "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      12.66
+      12.48
      ],
      [
       "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      7.41
+      7.67
      ],
      [
-      "MsMpEng.exe",
-      6.02
+      "svchost.exe",
+      6.97
      ]
     ],
-    "dienerS": 21.31,
+    "dienerS": 23.44,
     "diener": [
      [
       "dwm.exe",
-      9.05
+      9.88
      ],
      [
       "WmiPrvSE.exe",
-      7.05
+      7.88
      ]
     ],
-    "eigenS": 194.09,
+    "eigenS": 196.22,
     "schwelle": 0.5,
     "eich": "win32, Radeon 890M, 24 Kerne"
    },
    "ungemessen": true,
-   "zeit": "2026-11-09T10:50:04.997Z",
+   "zeit": "2026-11-09T11:33:18.287Z",
    "abdruck": "41e0d58bce8b",
    "port": 7804,
    "bahn": "sitzung",
@@ -3825,49 +3859,49 @@
   },
   "profiband.K4#2": {
    "gruen": false,
-   "zahl": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 12,7 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 7,4 CPU-s · MsMpEng.exe 6,0 CPU-s — 1,22 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 34,2 CPU-s in 35,4 s) — kein Urteil, UNGEMESSEN (die Probe sah: Gehen 40 Bilder · max 117.15 ms · 100.00 % > 33 ms · Fahrt 41 Bilder · max 141.81 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 2 Bild(er) > 100 ms (max 117.15), 100.00 % > 33 ms | Fahr)",
+   "zahl": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 12,5 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 7,7 CPU-s · svchost.exe 7,0 CPU-s — 1,42 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 40,4 CPU-s in 38,4 s) — kein Urteil, UNGEMESSEN (die Probe sah: Gehen 44 Bilder · max 117.07 ms · 95.45 % > 33 ms · Fahrt 39 Bilder · max 108.92 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 1 Bild(er) > 100 ms (max 117.07), 95.45 % > 33 ms | Fahrt:)",
    "exit": 0,
-   "minuten": 0.54,
-   "grund": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 12,7 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 7,4 CPU-s · MsMpEng.exe 6,0 CPU-s — 1,22 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 34,2 CPU-s in 35,4 s) — kein Urteil, UNGEMESSEN (die Probe sah: Gehen 40 Bilder · max 117.15 ms · 100.00 % > 33 ms · Fahrt 41 Bilder · max 141.81 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 2 Bild(er) > 100 ms (max 117.15), 100.00 % > 33 ms | Fahr)",
+   "minuten": 0.57,
+   "grund": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 12,5 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 7,7 CPU-s · svchost.exe 7,0 CPU-s — 1,42 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 40,4 CPU-s in 38,4 s) — kein Urteil, UNGEMESSEN (die Probe sah: Gehen 44 Bilder · max 117.07 ms · 95.45 % > 33 ms · Fahrt 39 Bilder · max 108.92 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 1 Bild(er) > 100 ms (max 117.07), 95.45 % > 33 ms | Fahrt:)",
    "gpu": "amd/rdna-3",
-   "s": 32.1,
+   "s": 34.3,
    "fremd": {
-    "s": 35.4,
-    "takte": 13,
-    "fremdS": 34.2,
-    "kerne": 0.965,
-    "fensterKerne": 1.218,
+    "s": 38.4,
+    "takte": 14,
+    "fremdS": 40.38,
+    "kerne": 1.052,
+    "fensterKerne": 1.42,
     "namen": [
      [
       "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      12.66
+      12.48
      ],
      [
       "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      7.41
+      7.67
      ],
      [
-      "MsMpEng.exe",
-      6.02
+      "svchost.exe",
+      6.97
      ]
     ],
-    "dienerS": 21.31,
+    "dienerS": 23.44,
     "diener": [
      [
       "dwm.exe",
-      9.05
+      9.88
      ],
      [
       "WmiPrvSE.exe",
-      7.05
+      7.88
      ]
     ],
-    "eigenS": 194.09,
+    "eigenS": 196.22,
     "schwelle": 0.5,
     "eich": "win32, Radeon 890M, 24 Kerne"
    },
    "ungemessen": true,
-   "zeit": "2026-11-09T10:50:04.997Z",
+   "zeit": "2026-11-09T11:33:18.287Z",
    "abdruck": "d49b25ac8016",
    "port": 7804,
    "bahn": "sitzung",
@@ -3877,47 +3911,47 @@
   "tiere.K5#1": {
    "gruen": false,
    "ungemessen": true,
-   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: FORTSCHRITT des Kreises third nach 30.1 s Wanduhr: {\"spielS\":334,\"pruefungen\":340,\"masken\":12,\"maskeS\":4.6,\"gesehen\":1,\"imBlick\":0})",
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: FORTSCHRITT des Kreises third nach 30.0 s Wanduhr: {\"spielS\":311,\"pruefungen\":318,\"masken\":14,\"maskeS\":5.6,\"gesehen\":2,\"imBlick\":0})",
    "exit": 1,
    "minuten": 1.51,
-   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: FORTSCHRITT des Kreises third nach 30.1 s Wanduhr: {\"spielS\":334,\"pruefungen\":340,\"masken\":12,\"maskeS\":4.6,\"gesehen\":1,\"imBlick\":0})",
-   "s": 90.5,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: FORTSCHRITT des Kreises third nach 30.0 s Wanduhr: {\"spielS\":311,\"pruefungen\":318,\"masken\":14,\"maskeS\":5.6,\"gesehen\":2,\"imBlick\":0})",
+   "s": 90.4,
    "fremd": {
-    "s": 93.3,
-    "takte": 36,
-    "fremdS": 85.02,
-    "kerne": 0.912,
-    "fensterKerne": 1.434,
+    "s": 95.8,
+    "takte": 37,
+    "fremdS": 85.72,
+    "kerne": 0.895,
+    "fensterKerne": 1.243,
     "namen": [
      [
       "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      27.25
+      27.17
      ],
      [
       "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      16.06
+      18.59
      ],
      [
       "svchost.exe",
-      10.28
+      11.14
      ]
     ],
-    "dienerS": 43.86,
+    "dienerS": 45.7,
     "diener": [
      [
       "WmiPrvSE.exe",
-      17.14
+      17.56
      ],
      [
       "dwm.exe",
-      16.3
+      16.11
      ]
     ],
-    "eigenS": 250.34,
+    "eigenS": 259.16,
     "schwelle": 0.5,
     "eich": "win32, Radeon 890M, 24 Kerne"
    },
-   "zeit": "2026-11-09T10:50:55.671Z",
+   "zeit": "2026-11-09T11:34:10.755Z",
    "abdruck": "d15c637d2e5a",
    "port": 7804,
    "bahn": "sitzung",
@@ -3932,60 +3966,11 @@
    "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: los-5 · Exit 0)",
    "s": 45.4,
    "fremd": {
-    "s": 49.4,
+    "s": 48.6,
     "takte": 18,
-    "fremdS": 36.56,
-    "kerne": 0.741,
-    "fensterKerne": 0.815,
-    "namen": [
-     [
-      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      13.33
-     ],
-     [
-      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      7.88
-     ],
-     [
-      "svchost.exe",
-      5.44
-     ]
-    ],
-    "dienerS": 22.8,
-    "diener": [
-     [
-      "WmiPrvSE.exe",
-      10.47
-     ],
-     [
-      "dwm.exe",
-      6.81
-     ]
-    ],
-    "eigenS": 63.69,
-    "schwelle": 0.5,
-    "eich": "win32, Radeon 890M, 24 Kerne"
-   },
-   "zeit": "2026-11-09T10:52:50.814Z",
-   "abdruck": "4c45dccebbbf",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session"
-  },
-  "leib.K1#1": {
-   "gruen": false,
-   "zahl": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 12,1 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 10,1 CPU-s · svchost.exe 4,8 CPU-s — 1,05 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 38,1 CPU-s in 40,9 s) — kein Urteil, UNGEMESSEN (die Probe sah: schlechtester von 1 Läufen p95 ms ego/gehen 76 · third/gehen 68.2 · ego/wechsel 40.5 · third/wechsel 26.7 · Bild 30.26 ms)",
-   "exit": 0,
-   "minuten": 0.66,
-   "grund": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 12,1 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 10,1 CPU-s · svchost.exe 4,8 CPU-s — 1,05 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 38,1 CPU-s in 40,9 s) — kein Urteil, UNGEMESSEN (die Probe sah: schlechtester von 1 Läufen p95 ms ego/gehen 76 · third/gehen 68.2 · ego/wechsel 40.5 · third/wechsel 26.7 · Bild 30.26 ms)",
-   "gpu": "amd/rdna-3",
-   "s": 39.7,
-   "fremd": {
-    "s": 40.9,
-    "takte": 15,
-    "fremdS": 38.14,
-    "kerne": 0.932,
-    "fensterKerne": 1.051,
+    "fremdS": 39.42,
+    "kerne": 0.812,
+    "fensterKerne": 0.997,
     "namen": [
      [
       "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
@@ -3993,30 +3978,79 @@
      ],
      [
       "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      10.05
+      7.11
      ],
      [
       "svchost.exe",
-      4.77
+      6.72
      ]
     ],
-    "dienerS": 21.28,
+    "dienerS": 22.64,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      10.55
+     ],
+     [
+      "dwm.exe",
+      6.8
+     ]
+    ],
+    "eigenS": 66.11,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-09T11:36:07.884Z",
+   "abdruck": "4c45dccebbbf",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "leib.K1#1": {
+   "gruen": false,
+   "zahl": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 9,8 CPU-s · svchost.exe 6,9 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 5,9 CPU-s — 0,93 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 35,5 CPU-s in 41,5 s) — kein Urteil, UNGEMESSEN (die Probe sah: schlechtester von 1 Läufen p95 ms ego/gehen 73.6 · third/gehen 66.8 · ego/wechsel 49 · third/wechsel 27.3 · Bild 33.54 ms)",
+   "exit": 0,
+   "minuten": 0.64,
+   "grund": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 9,8 CPU-s · svchost.exe 6,9 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 5,9 CPU-s — 0,93 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 35,5 CPU-s in 41,5 s) — kein Urteil, UNGEMESSEN (die Probe sah: schlechtester von 1 Läufen p95 ms ego/gehen 73.6 · third/gehen 66.8 · ego/wechsel 49 · third/wechsel 27.3 · Bild 33.54 ms)",
+   "gpu": "amd/rdna-3",
+   "s": 38.2,
+   "fremd": {
+    "s": 41.5,
+    "takte": 15,
+    "fremdS": 35.52,
+    "kerne": 0.857,
+    "fensterKerne": 0.933,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      9.77
+     ],
+     [
+      "svchost.exe",
+      6.92
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      5.88
+     ]
+    ],
+    "dienerS": 23.13,
     "diener": [
      [
       "dwm.exe",
-      9.33
+      9.66
      ],
      [
       "WmiPrvSE.exe",
-      8.25
+      9.17
      ]
     ],
-    "eigenS": 72.44,
+    "eigenS": 86.81,
     "schwelle": 0.5,
     "eich": "win32, Radeon 890M, 24 Kerne"
    },
    "ungemessen": true,
-   "zeit": "2026-11-09T10:54:43.056Z",
+   "zeit": "2026-11-09T11:37:12.919Z",
    "abdruck": "38f8e3e5fe0e",
    "port": 7804,
    "bahn": "sitzung",
@@ -4025,47 +4059,47 @@
   "streaming.K3#1": {
    "gruen": false,
    "ungemessen": true,
-   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: SPRUNG 1 EXIT=0 {\"m\":1000,\"stehtS\":35.2,\"bau\":0,\"frames\":759,\"frameMs\":{\"p50\":41.82,\"p95\":100.41,\"p99\":117.23,\"max\":133.93},\"taktMs\":{\"p50\":19.03,\"p95\":82.61,\"p)",
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
    "exit": 1,
    "minuten": 0.76,
-   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: SPRUNG 1 EXIT=0 {\"m\":1000,\"stehtS\":35.2,\"bau\":0,\"frames\":759,\"frameMs\":{\"p50\":41.82,\"p95\":100.41,\"p99\":117.23,\"max\":133.93},\"taktMs\":{\"p50\":19.03,\"p95\":82.61,\"p)",
-   "s": 45.7,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
+   "s": 45.4,
    "fremd": {
-    "s": 48.5,
+    "s": 47.8,
     "takte": 18,
-    "fremdS": 44.64,
-    "kerne": 0.92,
-    "fensterKerne": 1.008,
+    "fremdS": 39.36,
+    "kerne": 0.824,
+    "fensterKerne": 0.945,
     "namen": [
      [
       "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      17.08
+      13.02
      ],
      [
       "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      10.67
+      8.23
      ],
      [
       "svchost.exe",
-      5.92
+      7.33
      ]
     ],
-    "dienerS": 20.22,
+    "dienerS": 22.59,
     "diener": [
      [
-      "WmiPrvSE.exe",
-      10.23
+      "dwm.exe",
+      9.08
      ],
      [
-      "dwm.exe",
-      6.61
+      "WmiPrvSE.exe",
+      8.89
      ]
     ],
-    "eigenS": 173.69,
+    "eigenS": 163.41,
     "schwelle": 0.5,
     "eich": "win32, Radeon 890M, 24 Kerne"
    },
-   "zeit": "2026-11-09T10:55:37.521Z",
+   "zeit": "2026-11-09T11:37:52.341Z",
    "abdruck": "b97c7468e036",
    "port": 7804,
    "bahn": "sitzung",
@@ -4074,47 +4108,47 @@
   "ankunft.K4#1": {
    "gruen": false,
    "ungemessen": true,
-   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: POSE ego-45 41147 ms)",
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: POSE ego-45 43768 ms)",
    "exit": 1,
    "minuten": 1.51,
-   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: POSE ego-45 41147 ms)",
-   "s": 90.6,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: POSE ego-45 43768 ms)",
+   "s": 90.5,
    "fremd": {
-    "s": 96.1,
-    "takte": 36,
-    "fremdS": 86,
-    "kerne": 0.894,
-    "fensterKerne": 1.161,
+    "s": 91.8,
+    "takte": 35,
+    "fremdS": 74.33,
+    "kerne": 0.81,
+    "fensterKerne": 1.302,
     "namen": [
      [
       "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      30.22
+      22.72
      ],
      [
       "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      21.16
+      13.23
      ],
      [
       "svchost.exe",
-      10.56
+      11.09
      ]
     ],
-    "dienerS": 33.48,
+    "dienerS": 39.02,
     "diener": [
      [
       "WmiPrvSE.exe",
-      19.22
+      17.3
      ],
      [
-      "System",
-      6.91
+      "dwm.exe",
+      11.25
      ]
     ],
-    "eigenS": 109.55,
+    "eigenS": 109.45,
     "schwelle": 0.5,
     "eich": "win32, Radeon 890M, 24 Kerne"
    },
-   "zeit": "2026-11-09T10:58:21.446Z",
+   "zeit": "2026-11-09T11:38:57.084Z",
    "abdruck": "ea66260e5746",
    "port": 7804,
    "bahn": "sitzung",
@@ -4122,49 +4156,49 @@
   },
   "profiband.K5#1": {
    "gruen": false,
-   "zahl": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 10,0 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 6,2 CPU-s · svchost.exe 3,3 CPU-s — 0,92 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 24,3 CPU-s in 27,4 s) — kein Urteil, UNGEMESSEN (die Probe sah: Dauer 10.2 min in 3 Seite(n), 7 Proben: Dauerlast 2672 Bilder · Bild-p95 83.8 (p99 117.1, max 217.71) ms · Takt-p95 64.97 ms · VRAM-p95 145 MB · Anker Bild-p95 66.93 → 58.63 ms · Heap 279.9 → 405.5 MB · VRAM nach GC 130.9 → 136.6 MB · Weg 2)",
+   "zahl": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 5,7 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 3,3 CPU-s · svchost.exe 1,9 CPU-s — 0,94 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 15,8 CPU-s in 18,4 s) — kein Urteil, UNGEMESSEN (die Probe sah: Dauer 7.38 min in 3 Seite(n), 4 Proben: Dauerlast 2021 Bilder · Bild-p95 83.76 (p99 117, max 192.52) ms · Takt-p95 71.1 ms · VRAM-p95 150.7 MB · Anker Bild-p95 58.66 → 75.31 ms · Heap 284.6 → 401.3 MB · VRAM nach GC 133.1 → 152 MB · Weg 1.1)",
    "exit": 0,
-   "minuten": 0.37,
-   "grund": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 10,0 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 6,2 CPU-s · svchost.exe 3,3 CPU-s — 0,92 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 24,3 CPU-s in 27,4 s) — kein Urteil, UNGEMESSEN (die Probe sah: Dauer 10.2 min in 3 Seite(n), 7 Proben: Dauerlast 2672 Bilder · Bild-p95 83.8 (p99 117.1, max 217.71) ms · Takt-p95 64.97 ms · VRAM-p95 145 MB · Anker Bild-p95 66.93 → 58.63 ms · Heap 279.9 → 405.5 MB · VRAM nach GC 130.9 → 136.6 MB · Weg 2)",
+   "minuten": 0.25,
+   "grund": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 5,7 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 3,3 CPU-s · svchost.exe 1,9 CPU-s — 0,94 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 15,8 CPU-s in 18,4 s) — kein Urteil, UNGEMESSEN (die Probe sah: Dauer 7.38 min in 3 Seite(n), 4 Proben: Dauerlast 2021 Bilder · Bild-p95 83.76 (p99 117, max 192.52) ms · Takt-p95 71.1 ms · VRAM-p95 150.7 MB · Anker Bild-p95 58.66 → 75.31 ms · Heap 284.6 → 401.3 MB · VRAM nach GC 133.1 → 152 MB · Weg 1.1)",
    "gpu": "amd/rdna-3",
-   "s": 22.5,
+   "s": 15.2,
    "fremd": {
-    "s": 27.4,
-    "takte": 10,
-    "fremdS": 24.31,
-    "kerne": 0.887,
-    "fensterKerne": 0.919,
+    "s": 18.4,
+    "takte": 7,
+    "fremdS": 15.8,
+    "kerne": 0.86,
+    "fensterKerne": 0.936,
     "namen": [
      [
       "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      9.97
+      5.72
      ],
      [
       "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      6.16
+      3.28
      ],
      [
       "svchost.exe",
+      1.88
+     ]
+    ],
+    "dienerS": 9.77,
+    "diener": [
+     [
+      "dwm.exe",
+      4.28
+     ],
+     [
+      "WmiPrvSE.exe",
       3.3
      ]
     ],
-    "dienerS": 12.39,
-    "diener": [
-     [
-      "WmiPrvSE.exe",
-      5.61
-     ],
-     [
-      "dwm.exe",
-      4.27
-     ]
-    ],
-    "eigenS": 69.11,
+    "eigenS": 49.67,
     "schwelle": 0.5,
     "eich": "win32, Radeon 890M, 24 Kerne"
    },
    "ungemessen": true,
-   "zeit": "2026-11-09T11:00:12.052Z",
+   "zeit": "2026-11-09T11:40:43.949Z",
    "abdruck": "3895554d7dc0",
    "port": 7804,
    "bahn": "sitzung",
@@ -4172,49 +4206,49 @@
   },
   "profiband.K5#2": {
    "gruen": false,
-   "zahl": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 10,0 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 6,2 CPU-s · svchost.exe 3,3 CPU-s — 0,92 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 24,3 CPU-s in 27,4 s) — kein Urteil, UNGEMESSEN (die Probe sah: Dauer 10.2 min in 3 Seite(n), 7 Proben: Dauerlast 2672 Bilder · Bild-p95 83.8 (p99 117.1, max 217.71) ms · Takt-p95 64.97 ms · VRAM-p95 145 MB · Anker Bild-p95 66.93 → 58.63 ms · Heap 279.9 → 405.5 MB · VRAM nach GC 130.9 → 136.6 MB · Weg 2)",
+   "zahl": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 5,7 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 3,3 CPU-s · svchost.exe 1,9 CPU-s — 0,94 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 15,8 CPU-s in 18,4 s) — kein Urteil, UNGEMESSEN (die Probe sah: Dauer 7.38 min in 3 Seite(n), 4 Proben: Dauerlast 2021 Bilder · Bild-p95 83.76 (p99 117, max 192.52) ms · Takt-p95 71.1 ms · VRAM-p95 150.7 MB · Anker Bild-p95 58.66 → 75.31 ms · Heap 284.6 → 401.3 MB · VRAM nach GC 133.1 → 152 MB · Weg 1.1)",
    "exit": 0,
-   "minuten": 0.37,
-   "grund": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 10,0 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 6,2 CPU-s · svchost.exe 3,3 CPU-s — 0,92 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 24,3 CPU-s in 27,4 s) — kein Urteil, UNGEMESSEN (die Probe sah: Dauer 10.2 min in 3 Seite(n), 7 Proben: Dauerlast 2672 Bilder · Bild-p95 83.8 (p99 117.1, max 217.71) ms · Takt-p95 64.97 ms · VRAM-p95 145 MB · Anker Bild-p95 66.93 → 58.63 ms · Heap 279.9 → 405.5 MB · VRAM nach GC 130.9 → 136.6 MB · Weg 2)",
+   "minuten": 0.25,
+   "grund": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 5,7 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 3,3 CPU-s · svchost.exe 1,9 CPU-s — 0,94 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 15,8 CPU-s in 18,4 s) — kein Urteil, UNGEMESSEN (die Probe sah: Dauer 7.38 min in 3 Seite(n), 4 Proben: Dauerlast 2021 Bilder · Bild-p95 83.76 (p99 117, max 192.52) ms · Takt-p95 71.1 ms · VRAM-p95 150.7 MB · Anker Bild-p95 58.66 → 75.31 ms · Heap 284.6 → 401.3 MB · VRAM nach GC 133.1 → 152 MB · Weg 1.1)",
    "gpu": "amd/rdna-3",
-   "s": 22.5,
+   "s": 15.2,
    "fremd": {
-    "s": 27.4,
-    "takte": 10,
-    "fremdS": 24.31,
-    "kerne": 0.887,
-    "fensterKerne": 0.919,
+    "s": 18.4,
+    "takte": 7,
+    "fremdS": 15.8,
+    "kerne": 0.86,
+    "fensterKerne": 0.936,
     "namen": [
      [
       "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      9.97
+      5.72
      ],
      [
       "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      6.16
+      3.28
      ],
      [
       "svchost.exe",
+      1.88
+     ]
+    ],
+    "dienerS": 9.77,
+    "diener": [
+     [
+      "dwm.exe",
+      4.28
+     ],
+     [
+      "WmiPrvSE.exe",
       3.3
      ]
     ],
-    "dienerS": 12.39,
-    "diener": [
-     [
-      "WmiPrvSE.exe",
-      5.61
-     ],
-     [
-      "dwm.exe",
-      4.27
-     ]
-    ],
-    "eigenS": 69.11,
+    "eigenS": 49.67,
     "schwelle": 0.5,
     "eich": "win32, Radeon 890M, 24 Kerne"
    },
    "ungemessen": true,
-   "zeit": "2026-11-09T11:00:12.052Z",
+   "zeit": "2026-11-09T11:40:43.949Z",
    "abdruck": "c2ed7bf06604",
    "port": 7804,
    "bahn": "sitzung",
@@ -4224,47 +4258,47 @@
   "gelaende.K2#1": {
    "gruen": false,
    "ungemessen": true,
-   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: (b)(d) 8.6 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"flus)",
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: (b)(d) 8.8 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"flus)",
    "exit": 1,
    "minuten": 1.51,
-   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: (b)(d) 8.6 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"flus)",
-   "s": 90.5,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: (b)(d) 8.8 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"flus)",
+   "s": 90.4,
    "fremd": {
-    "s": 93.6,
+    "s": 93.1,
     "takte": 36,
-    "fremdS": 82.25,
-    "kerne": 0.879,
-    "fensterKerne": 1.34,
+    "fremdS": 79.16,
+    "kerne": 0.85,
+    "fensterKerne": 1.38,
     "namen": [
      [
       "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      27.86
+      23.47
      ],
      [
       "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      17.25
+      14.39
      ],
      [
       "svchost.exe",
-      9.75
+      11.97
      ]
     ],
-    "dienerS": 33.14,
+    "dienerS": 47.53,
     "diener": [
      [
-      "WmiPrvSE.exe",
-      17.53
+      "dwm.exe",
+      17.44
      ],
      [
-      "dwm.exe",
-      9.84
+      "WmiPrvSE.exe",
+      17.25
      ]
     ],
-    "eigenS": 198.31,
+    "eigenS": 203.98,
     "schwelle": 0.5,
     "eich": "win32, Radeon 890M, 24 Kerne"
    },
-   "zeit": "2026-11-09T11:00:52.323Z",
+   "zeit": "2026-11-09T11:41:15.798Z",
    "abdruck": "e4457419e1fd",
    "port": 7804,
    "bahn": "sitzung",
@@ -4273,47 +4307,47 @@
   "gelaende.K2#2": {
    "gruen": false,
    "ungemessen": true,
-   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: (b)(d) 8.6 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"flus)",
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: (b)(d) 8.8 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"flus)",
    "exit": 1,
    "minuten": 1.51,
-   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: (b)(d) 8.6 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"flus)",
-   "s": 90.5,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: (b)(d) 8.8 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"flus)",
+   "s": 90.4,
    "fremd": {
-    "s": 93.6,
+    "s": 93.1,
     "takte": 36,
-    "fremdS": 82.25,
-    "kerne": 0.879,
-    "fensterKerne": 1.34,
+    "fremdS": 79.16,
+    "kerne": 0.85,
+    "fensterKerne": 1.38,
     "namen": [
      [
       "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      27.86
+      23.47
      ],
      [
       "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      17.25
+      14.39
      ],
      [
       "svchost.exe",
-      9.75
+      11.97
      ]
     ],
-    "dienerS": 33.14,
+    "dienerS": 47.53,
     "diener": [
      [
-      "WmiPrvSE.exe",
-      17.53
+      "dwm.exe",
+      17.44
      ],
      [
-      "dwm.exe",
-      9.84
+      "WmiPrvSE.exe",
+      17.25
      ]
     ],
-    "eigenS": 198.31,
+    "eigenS": 203.98,
     "schwelle": 0.5,
     "eich": "win32, Radeon 890M, 24 Kerne"
    },
-   "zeit": "2026-11-09T11:00:52.323Z",
+   "zeit": "2026-11-09T11:41:15.798Z",
    "abdruck": "1bc5cfa604d1",
    "port": 7804,
    "bahn": "sitzung",
@@ -4329,41 +4363,41 @@
    "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
    "s": 45.6,
    "fremd": {
-    "s": 49.9,
+    "s": 49,
     "takte": 19,
-    "fremdS": 39.86,
-    "kerne": 0.798,
-    "fensterKerne": 1.016,
+    "fremdS": 36.17,
+    "kerne": 0.738,
+    "fensterKerne": 0.852,
     "namen": [
      [
       "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      16.09
+      12.58
      ],
      [
       "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      9.63
+      7.56
      ],
      [
       "svchost.exe",
-      6.77
+      5.44
      ]
     ],
-    "dienerS": 18.67,
+    "dienerS": 23.56,
     "diener": [
      [
-      "WmiPrvSE.exe",
-      9.67
+      "dwm.exe",
+      9.92
      ],
      [
-      "dwm.exe",
-      5.5
+      "WmiPrvSE.exe",
+      9.05
      ]
     ],
-    "eigenS": 99.61,
+    "eigenS": 100.28,
     "schwelle": 0.5,
     "eich": "win32, Radeon 890M, 24 Kerne"
    },
-   "zeit": "2026-11-09T11:02:44.333Z",
+   "zeit": "2026-11-09T11:43:11.134Z",
    "abdruck": "5efc75e89435",
    "port": 7804,
    "bahn": "sitzung",
@@ -4378,41 +4412,41 @@
    "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: RUDEL-GEFUEHL {\"woelfe\":6,\"gegen\":false,\"sicht\":\"first\",\"dauer\":600,\"umstelltS\":null,\"umstellt\":0,\"furcht\":{\"chaos\":0,\"sorrow\":0,\"joy\":0,\"hope\":0.102},\"opfer\":0)",
    "s": 45.4,
    "fremd": {
-    "s": 47.9,
+    "s": 46.6,
     "takte": 19,
-    "fremdS": 44.91,
-    "kerne": 0.938,
-    "fensterKerne": 1.343,
+    "fremdS": 30,
+    "kerne": 0.643,
+    "fensterKerne": 0.723,
     "namen": [
      [
       "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      14.22
+      11.13
      ],
      [
       "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      9
+      7.11
      ],
      [
-      "bash.exe leicht-wache.sh",
-      8.05
+      "svchost.exe",
+      4.56
      ]
     ],
-    "dienerS": 14.89,
+    "dienerS": 16.52,
     "diener": [
      [
       "WmiPrvSE.exe",
-      8.11
+      6.8
      ],
      [
       "dwm.exe",
-      3.97
+      6.64
      ]
     ],
-    "eigenS": 72.48,
+    "eigenS": 71.7,
     "schwelle": 0.5,
     "eich": "win32, Radeon 890M, 24 Kerne"
    },
-   "zeit": "2026-11-09T11:03:53.207Z",
+   "zeit": "2026-11-09T11:44:18.508Z",
    "abdruck": "8e4eb85ac8c6",
    "port": 7804,
    "bahn": "sitzung",
@@ -4420,50 +4454,50 @@
   },
   "fahrzeug.K3#1": {
    "gruen": false,
-   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Garage: keine Zeile MK2110 (Exit 0)) · Täter: (Welt 36.2 s · Garage 34.9 s im Fenster neben ihr)",
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Garage: keine Zeile MK2110 (Exit 0)) · Täter: (Welt 35.9 s · Garage 34.6 s im Fenster neben ihr)",
    "exit": 0,
-   "minuten": 0.65,
-   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Garage: keine Zeile MK2110 (Exit 0)) · Täter: (Welt 36.2 s · Garage 34.9 s im Fenster neben ihr)",
+   "minuten": 0.66,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Garage: keine Zeile MK2110 (Exit 0)) · Täter: (Welt 35.9 s · Garage 34.6 s im Fenster neben ihr)",
    "gpu": "amd/rdna-3",
    "gpuFremd": "google/swiftshader",
    "ungemessen": true,
-   "s": 38.8,
+   "s": 39.6,
    "fremd": {
-    "s": 41.3,
-    "takte": 13,
-    "fremdS": 48.08,
-    "kerne": 1.164,
-    "fensterKerne": 1.332,
+    "s": 43.8,
+    "takte": 14,
+    "fremdS": 75.44,
+    "kerne": 1.721,
+    "fensterKerne": 2.072,
     "namen": [
      [
       "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      15.44
+      16.98
      ],
      [
       "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      10.86
+      15.19
      ],
      [
-      "svchost.exe",
-      7.14
+      "bash.exe leicht-wache.sh",
+      12.2
      ]
     ],
-    "dienerS": 23.77,
+    "dienerS": 33.94,
     "diener": [
      [
       "WmiPrvSE.exe",
-      11.91
+      13.13
      ],
      [
       "dwm.exe",
-      5.72
+      12.63
      ]
     ],
-    "eigenS": 484.97,
+    "eigenS": 543.25,
     "schwelle": 0.5,
     "eich": "win32, Radeon 890M, 24 Kerne"
    },
-   "zeit": "2026-11-09T11:04:58.311Z",
+   "zeit": "2026-11-09T11:45:23.081Z",
    "abdruck": "1cdd86ceb799",
    "port": 7804,
    "bahn": "sitzung",
@@ -4479,41 +4513,41 @@
    "ungemessen": true,
    "s": 43.1,
    "fremd": {
-    "s": 46.9,
+    "s": 45.6,
     "takte": 18,
-    "fremdS": 36.09,
-    "kerne": 0.77,
-    "fensterKerne": 0.885,
+    "fremdS": 41.89,
+    "kerne": 0.919,
+    "fensterKerne": 1.14,
     "namen": [
      [
       "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      13.61
+      13.06
      ],
      [
       "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      8.83
+      12.06
      ],
      [
       "svchost.exe",
-      5.06
+      5.44
      ]
     ],
-    "dienerS": 15.38,
+    "dienerS": 19.88,
     "diener": [
      [
-      "WmiPrvSE.exe",
-      8.56
+      "dwm.exe",
+      7.91
      ],
      [
-      "dwm.exe",
-      3.94
+      "WmiPrvSE.exe",
+      7.52
      ]
     ],
-    "eigenS": 70.02,
+    "eigenS": 56.53,
     "schwelle": 0.5,
     "eich": "win32, Radeon 890M, 24 Kerne"
    },
-   "zeit": "2026-11-09T11:05:58.701Z",
+   "zeit": "2026-11-09T11:46:24.402Z",
    "abdruck": "5bdde2e988bc",
    "port": 7804,
    "bahn": "sitzung",
@@ -4529,41 +4563,41 @@
    "ungemessen": true,
    "s": 43.1,
    "fremd": {
-    "s": 46.9,
+    "s": 45.6,
     "takte": 18,
-    "fremdS": 36.09,
-    "kerne": 0.77,
-    "fensterKerne": 0.885,
+    "fremdS": 41.89,
+    "kerne": 0.919,
+    "fensterKerne": 1.14,
     "namen": [
      [
       "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      13.61
+      13.06
      ],
      [
       "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      8.83
+      12.06
      ],
      [
       "svchost.exe",
-      5.06
+      5.44
      ]
     ],
-    "dienerS": 15.38,
+    "dienerS": 19.88,
     "diener": [
      [
-      "WmiPrvSE.exe",
-      8.56
+      "dwm.exe",
+      7.91
      ],
      [
-      "dwm.exe",
-      3.94
+      "WmiPrvSE.exe",
+      7.52
      ]
     ],
-    "eigenS": 70.02,
+    "eigenS": 56.53,
     "schwelle": 0.5,
     "eich": "win32, Radeon 890M, 24 Kerne"
    },
-   "zeit": "2026-11-09T11:05:58.701Z",
+   "zeit": "2026-11-09T11:46:24.402Z",
    "abdruck": "fb4d189eecf2",
    "port": 7804,
    "bahn": "sitzung",
@@ -4580,41 +4614,41 @@
    "ungemessen": true,
    "s": 43.1,
    "fremd": {
-    "s": 46.9,
+    "s": 45.6,
     "takte": 18,
-    "fremdS": 36.09,
-    "kerne": 0.77,
-    "fensterKerne": 0.885,
+    "fremdS": 41.89,
+    "kerne": 0.919,
+    "fensterKerne": 1.14,
     "namen": [
      [
       "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      13.61
+      13.06
      ],
      [
       "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      8.83
+      12.06
      ],
      [
       "svchost.exe",
-      5.06
+      5.44
      ]
     ],
-    "dienerS": 15.38,
+    "dienerS": 19.88,
     "diener": [
      [
-      "WmiPrvSE.exe",
-      8.56
+      "dwm.exe",
+      7.91
      ],
      [
-      "dwm.exe",
-      3.94
+      "WmiPrvSE.exe",
+      7.52
      ]
     ],
-    "eigenS": 70.02,
+    "eigenS": 56.53,
     "schwelle": 0.5,
     "eich": "win32, Radeon 890M, 24 Kerne"
    },
-   "zeit": "2026-11-09T11:05:58.701Z",
+   "zeit": "2026-11-09T11:46:24.402Z",
    "abdruck": "d7ae96bc881d",
    "port": 7804,
    "bahn": "sitzung",
@@ -4630,41 +4664,41 @@
    "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ LATENZ1)",
    "s": 90.6,
    "fremd": {
-    "s": 97.5,
+    "s": 95.6,
     "takte": 35,
-    "fremdS": 107.55,
-    "kerne": 1.103,
-    "fensterKerne": 1.619,
+    "fremdS": 147.89,
+    "kerne": 1.548,
+    "fensterKerne": 2.063,
     "namen": [
      [
-      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      36.25
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      54.78
      ],
      [
-      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      22.72
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      42.27
      ],
      [
       "svchost.exe",
-      15.5
+      15.3
      ]
     ],
-    "dienerS": 47.06,
+    "dienerS": 63.13,
     "diener": [
      [
-      "WmiPrvSE.exe",
-      21.09
+      "dwm.exe",
+      30.42
      ],
      [
-      "dwm.exe",
-      17.33
+      "WmiPrvSE.exe",
+      20.2
      ]
     ],
-    "eigenS": 188.02,
+    "eigenS": 178.27,
     "schwelle": 0.5,
     "eich": "win32, Radeon 890M, 24 Kerne"
    },
-   "zeit": "2026-11-09T11:07:02.739Z",
+   "zeit": "2026-11-09T11:47:29.797Z",
    "abdruck": "93ae58d761ce",
    "port": 7804,
    "bahn": "sitzung",
@@ -4679,41 +4713,41 @@
    "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ LATENZ1)",
    "s": 90.6,
    "fremd": {
-    "s": 97.5,
+    "s": 95.6,
     "takte": 35,
-    "fremdS": 107.55,
-    "kerne": 1.103,
-    "fensterKerne": 1.619,
+    "fremdS": 147.89,
+    "kerne": 1.548,
+    "fensterKerne": 2.063,
     "namen": [
      [
-      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      36.25
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      54.78
      ],
      [
-      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      22.72
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      42.27
      ],
      [
       "svchost.exe",
-      15.5
+      15.3
      ]
     ],
-    "dienerS": 47.06,
+    "dienerS": 63.13,
     "diener": [
      [
-      "WmiPrvSE.exe",
-      21.09
+      "dwm.exe",
+      30.42
      ],
      [
-      "dwm.exe",
-      17.33
+      "WmiPrvSE.exe",
+      20.2
      ]
     ],
-    "eigenS": 188.02,
+    "eigenS": 178.27,
     "schwelle": 0.5,
     "eich": "win32, Radeon 890M, 24 Kerne"
    },
-   "zeit": "2026-11-09T11:07:02.739Z",
+   "zeit": "2026-11-09T11:47:29.797Z",
    "abdruck": "c4eb8f796007",
    "port": 7804,
    "bahn": "sitzung",
@@ -4722,49 +4756,49 @@
   },
   "leib.K4#1": {
    "gruen": false,
-   "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: stamm baum_tanne: 1102 Bilder · heran 8.54 → 0.89 m · Kugel {\"rückwärts: im Stamm baum_tanne\":47} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | fels felsturm: 1144 Bilder · heran 8.56 → 0.43 m · Kugel {\"orbit fern: im Stamm baum_tann) · Täter: @@PUNKTE@@ PROBE 84.1 s · Exit 1",
+   "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: stamm baum_tanne: 1102 Bilder · heran 8.54 → 0.89 m · Kugel {\"rückwärts: im Stamm baum_tanne\":47} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.052 m | fels felsturm: 1144 Bilder · heran 8.56 → 0.42 m · Kugel {\"orbit fern: im Stamm baum_tann) · Täter: @@PUNKTE@@ PROBE 84.1 s · Exit 1",
    "exit": 1,
-   "minuten": 1.4,
-   "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: stamm baum_tanne: 1102 Bilder · heran 8.54 → 0.89 m · Kugel {\"rückwärts: im Stamm baum_tanne\":47} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | fels felsturm: 1144 Bilder · heran 8.56 → 0.43 m · Kugel {\"orbit fern: im Stamm baum_tann) · Täter: @@PUNKTE@@ PROBE 84.1 s · Exit 1",
+   "minuten": 1.41,
+   "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: stamm baum_tanne: 1102 Bilder · heran 8.54 → 0.89 m · Kugel {\"rückwärts: im Stamm baum_tanne\":47} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.052 m | fels felsturm: 1144 Bilder · heran 8.56 → 0.42 m · Kugel {\"orbit fern: im Stamm baum_tann) · Täter: @@PUNKTE@@ PROBE 84.1 s · Exit 1",
    "gpu": "amd/rdna-3",
    "ungemessen": true,
-   "s": 84.2,
+   "s": 84.3,
    "fremd": {
-    "s": 87.3,
-    "takte": 35,
-    "fremdS": 61.14,
-    "kerne": 0.7,
-    "fensterKerne": 0.827,
+    "s": 87.9,
+    "takte": 34,
+    "fremdS": 144.22,
+    "kerne": 1.641,
+    "fensterKerne": 2.079,
     "namen": [
      [
       "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      25.28
+      39.7
      ],
      [
       "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      15.53
+      34.64
      ],
      [
-      "svchost.exe",
-      7.61
+      "MsMpEng.exe",
+      12.8
      ]
     ],
-    "dienerS": 25.92,
+    "dienerS": 40.61,
     "diener": [
      [
       "WmiPrvSE.exe",
-      13.45
+      15.81
      ],
      [
       "dwm.exe",
-      7.36
+      14.64
      ]
     ],
-    "eigenS": 161.22,
+    "eigenS": 171,
     "schwelle": 0.5,
     "eich": "win32, Radeon 890M, 24 Kerne"
    },
-   "zeit": "2026-11-09T11:08:57.366Z",
+   "zeit": "2026-11-09T11:49:24.714Z",
    "abdruck": "b64041c04ac5",
    "port": 7804,
    "bahn": "sitzung",
@@ -4772,49 +4806,49 @@
   },
   "leib.K4#2": {
    "gruen": false,
-   "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: innen haus_alemannisch: 1320 Bilder · heran 12.25 → 0.44 m · im Haus true · Kugel {} · Nah-Pixel {} · Ruck p95 0.0109 höchstens 0.628 m | innen-sprint haus_alemannisch: 872 Bilder · heran 12.25 → 1.96 m · im Haus true · Kugel {} · Nah-Pixel) · Täter: @@PUNKTE@@ PROBE 84.1 s · Exit 1",
+   "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: innen haus_alemannisch: 1318 Bilder · heran 12.25 → 0.41 m · im Haus true · Kugel {} · Nah-Pixel {} · Ruck p95 0.0124 höchstens 0.678 m | innen-sprint haus_alemannisch: 869 Bilder · heran 12.25 → 1.92 m · im Haus true · Kugel {} · Nah-Pixel) · Täter: @@PUNKTE@@ PROBE 84.1 s · Exit 1",
    "exit": 1,
-   "minuten": 1.4,
-   "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: innen haus_alemannisch: 1320 Bilder · heran 12.25 → 0.44 m · im Haus true · Kugel {} · Nah-Pixel {} · Ruck p95 0.0109 höchstens 0.628 m | innen-sprint haus_alemannisch: 872 Bilder · heran 12.25 → 1.96 m · im Haus true · Kugel {} · Nah-Pixel) · Täter: @@PUNKTE@@ PROBE 84.1 s · Exit 1",
+   "minuten": 1.41,
+   "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: innen haus_alemannisch: 1318 Bilder · heran 12.25 → 0.41 m · im Haus true · Kugel {} · Nah-Pixel {} · Ruck p95 0.0124 höchstens 0.678 m | innen-sprint haus_alemannisch: 869 Bilder · heran 12.25 → 1.92 m · im Haus true · Kugel {} · Nah-Pixel) · Täter: @@PUNKTE@@ PROBE 84.1 s · Exit 1",
    "gpu": "amd/rdna-3",
    "ungemessen": true,
-   "s": 84.2,
+   "s": 84.3,
    "fremd": {
-    "s": 87.3,
-    "takte": 35,
-    "fremdS": 61.14,
-    "kerne": 0.7,
-    "fensterKerne": 0.827,
+    "s": 87.9,
+    "takte": 34,
+    "fremdS": 144.22,
+    "kerne": 1.641,
+    "fensterKerne": 2.079,
     "namen": [
      [
       "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      25.28
+      39.7
      ],
      [
       "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      15.53
+      34.64
      ],
      [
-      "svchost.exe",
-      7.61
+      "MsMpEng.exe",
+      12.8
      ]
     ],
-    "dienerS": 25.92,
+    "dienerS": 40.61,
     "diener": [
      [
       "WmiPrvSE.exe",
-      13.45
+      15.81
      ],
      [
       "dwm.exe",
-      7.36
+      14.64
      ]
     ],
-    "eigenS": 161.22,
+    "eigenS": 171,
     "schwelle": 0.5,
     "eich": "win32, Radeon 890M, 24 Kerne"
    },
-   "zeit": "2026-11-09T11:08:57.366Z",
+   "zeit": "2026-11-09T11:49:24.714Z",
    "abdruck": "7746589109f9",
    "port": 7804,
    "bahn": "sitzung",
@@ -4823,57 +4857,57 @@
   },
   "fahrzeug.K2#1": {
    "gruen": false,
-   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine WEGENETZ-Zeile (Exit 1)) · Täter: PROBE-FEHLER ReferenceError: urteil is not defined |     at Object.wegenetzVerdict (eval at fahrWegenetz ([eval]:121:15), <anonymous>:14:5) |     at fahrWegenetz ([eval]:169:30)",
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine WEGENETZ-Zeile (Exit 1)) · Täter: WEGENETZ undefined",
    "exit": 1,
-   "minuten": 3.61,
-   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine WEGENETZ-Zeile (Exit 1)) · Täter: PROBE-FEHLER ReferenceError: urteil is not defined |     at Object.wegenetzVerdict (eval at fahrWegenetz ([eval]:121:15), <anonymous>:14:5) |     at fahrWegenetz ([eval]:169:30)",
+   "minuten": 3.83,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine WEGENETZ-Zeile (Exit 1)) · Täter: WEGENETZ undefined",
    "gpu": "amd/rdna-3",
    "ungemessen": true,
-   "s": 38.3,
+   "s": 38.4,
    "teile": [
     38.2,
     38.1,
-    38.1,
+    38.2,
+    38.4,
     38.3,
-    38.1,
-    25.7
+    38.3
    ],
    "fremd": {
-    "s": 218.6,
-    "takte": 80,
-    "fremdS": 234.03,
-    "kerne": 1.07,
-    "fensterKerne": 1.787,
+    "s": 233.4,
+    "takte": 84,
+    "fremdS": 400.48,
+    "kerne": 1.716,
+    "fensterKerne": 3.306,
     "namen": [
      [
       "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      81.11
+      104.61
      ],
      [
       "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      53.55
+      73.89
      ],
      [
-      "svchost.exe",
-      29.61
+      "MsMpEng.exe",
+      57.72
      ]
     ],
-    "dienerS": 95.08,
+    "dienerS": 152.11,
     "diener": [
      [
       "WmiPrvSE.exe",
-      45.33
+      52.7
      ],
      [
-      "dwm.exe",
-      27.94
+      "System",
+      48.48
      ]
     ],
-    "eigenS": 918.27,
+    "eigenS": 941.38,
     "schwelle": 0.5,
     "eich": "win32, Radeon 890M, 24 Kerne"
    },
-   "zeit": "2026-11-09T11:10:41.940Z",
+   "zeit": "2026-11-09T11:51:12.002Z",
    "abdruck": "d5ce7420c7ee",
    "port": 7804,
    "bahn": "sitzung",
@@ -4881,49 +4915,49 @@
   },
   "klang.K5#2": {
    "gruen": false,
-   "zahl": "Fremd-Last: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 19,3 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 18,1 CPU-s · MsMpEng.exe 12,8 CPU-s — 2,40 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 87,3 CPU-s in 43,8 s) — kein Urteil, UNGEMESSEN (die Probe sah: Klang-Takt p95 gehen 0.19 · fahrt 0.3 · nacht 0.19 ms · Aussetzer 0 in 33 s Wiedergabe (0 s still; verdichtet, Staffel: 10 min) (Exit 0))",
+   "zahl": "Fremd-Last: git pack-objects --exclude-promisor-objects-best-effort pack/pack 63,2 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 28,0 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 22,5 CPU-s — 6,22 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 151,2 CPU-s in 43,8 s) — kein Urteil, UNGEMESSEN (die Probe sah: Klang-Takt p95 gehen 0.19 · fahrt 0.35 · nacht 0.31 ms · Aussetzer 0 in 34 s Wiedergabe (0 s still; verdichtet, Staffel: 10 min) (Exit 0))",
    "exit": 0,
-   "minuten": 0.63,
-   "grund": "Fremd-Last: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 19,3 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 18,1 CPU-s · MsMpEng.exe 12,8 CPU-s — 2,40 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 87,3 CPU-s in 43,8 s) — kein Urteil, UNGEMESSEN (die Probe sah: Klang-Takt p95 gehen 0.19 · fahrt 0.3 · nacht 0.19 ms · Aussetzer 0 in 33 s Wiedergabe (0 s still; verdichtet, Staffel: 10 min) (Exit 0))",
+   "minuten": 0.65,
+   "grund": "Fremd-Last: git pack-objects --exclude-promisor-objects-best-effort pack/pack 63,2 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 28,0 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 22,5 CPU-s — 6,22 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 151,2 CPU-s in 43,8 s) — kein Urteil, UNGEMESSEN (die Probe sah: Klang-Takt p95 gehen 0.19 · fahrt 0.35 · nacht 0.31 ms · Aussetzer 0 in 34 s Wiedergabe (0 s still; verdichtet, Staffel: 10 min) (Exit 0))",
    "gpu": "amd/rdna-3",
-   "s": 37.8,
+   "s": 38.8,
    "fremd": {
     "s": 43.8,
     "takte": 15,
-    "fremdS": 87.3,
-    "kerne": 1.992,
-    "fensterKerne": 2.404,
+    "fremdS": 151.17,
+    "kerne": 3.453,
+    "fensterKerne": 6.217,
     "namen": [
      [
+      "git pack-objects --exclude-promisor-objects-best-effort pack/pack",
+      63.22
+     ],
+     [
       "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      19.28
+      28.02
      ],
      [
       "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      18.08
-     ],
-     [
-      "MsMpEng.exe",
-      12.84
+      22.45
      ]
     ],
-    "dienerS": 27.05,
+    "dienerS": 37.64,
     "diener": [
      [
-      "WmiPrvSE.exe",
-      10.78
+      "System",
+      12.14
      ],
      [
-      "System",
-      6.69
+      "dwm.exe",
+      11.88
      ]
     ],
-    "eigenS": 94.52,
+    "eigenS": 95.89,
     "schwelle": 0.5,
     "eich": "win32, Radeon 890M, 24 Kerne"
    },
    "ungemessen": true,
-   "zeit": "2026-11-09T11:14:46.799Z",
+   "zeit": "2026-11-09T11:55:32.098Z",
    "abdruck": "9e34b74fc5be",
    "port": 7804,
    "bahn": "sitzung",
@@ -4931,49 +4965,48 @@
   },
   "speicher.K4#2": {
    "gruen": false,
-   "zahl": "Fremd-Last: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 23,2 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 18,9 CPU-s · MsMpEng.exe 11,8 CPU-s — 2,35 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 84,1 CPU-s in 40,3 s) — kein Urteil, UNGEMESSEN (die Probe sah: bild-diff 1.98 % (Soll ≤ 1; Rauschen ohne Neuladen 0.19 %) · Pflicht vor {\"bau\":true,\"grube\":true,\"wasser\":2} · nach {\"bau\":true,\"grube\":true,\"wasser\":2} · [linse-gpu] amd/rdna-3)",
-   "exit": 0,
-   "minuten": 0.64,
-   "grund": "Fremd-Last: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 23,2 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 18,9 CPU-s · MsMpEng.exe 11,8 CPU-s — 2,35 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 84,1 CPU-s in 40,3 s) — kein Urteil, UNGEMESSEN (die Probe sah: bild-diff 1.98 % (Soll ≤ 1; Rauschen ohne Neuladen 0.19 %) · Pflicht vor {\"bau\":true,\"grube\":true,\"wasser\":2} · nach {\"bau\":true,\"grube\":true,\"wasser\":2} · [linse-gpu] amd/rdna-3)",
-   "gpu": "amd/rdna-3",
-   "s": 38.3,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
+   "exit": 1,
+   "minuten": 0.76,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
+   "s": 45.6,
    "fremd": {
-    "s": 40.3,
-    "takte": 14,
-    "fremdS": 84.14,
-    "kerne": 2.09,
-    "fensterKerne": 2.349,
+    "s": 50,
+    "takte": 17,
+    "fremdS": 148.19,
+    "kerne": 2.963,
+    "fensterKerne": 3.681,
     "namen": [
      [
-      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      23.17
-     ],
-     [
       "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      18.86
+      26.8
      ],
      [
       "MsMpEng.exe",
-      11.83
+      24.7
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      19.13
      ]
     ],
-    "dienerS": 23.7,
+    "dienerS": 44.61,
     "diener": [
      [
-      "WmiPrvSE.exe",
-      9.42
+      "System",
+      15.63
      ],
      [
       "dwm.exe",
-      7.28
+      14.13
      ]
     ],
-    "eigenS": 157.2,
+    "eigenS": 201.25,
     "schwelle": 0.5,
     "eich": "win32, Radeon 890M, 24 Kerne"
    },
-   "ungemessen": true,
-   "zeit": "2026-11-09T11:15:31.013Z",
+   "zeit": "2026-11-09T11:56:18.363Z",
    "abdruck": "cf5db34c59c4",
    "port": 7804,
    "bahn": "sitzung",
@@ -4982,47 +5015,47 @@
   "vegetation.K4#1": {
    "gruen": false,
    "ungemessen": true,
-   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 1.7 s)",
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 1.0 s)",
    "exit": 1,
    "minuten": 0.76,
-   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 1.7 s)",
-   "s": 45.5,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 1.0 s)",
+   "s": 45.4,
    "fremd": {
-    "s": 48.5,
-    "takte": 17,
-    "fremdS": 158.45,
-    "kerne": 3.267,
-    "fensterKerne": 3.994,
+    "s": 50.5,
+    "takte": 18,
+    "fremdS": 103.27,
+    "kerne": 2.046,
+    "fensterKerne": 2.507,
     "namen": [
      [
-      "MsMpEng.exe",
-      33.64
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      26.86
      ],
      [
-      "git reset --hard --no-recurse-submodules --quiet",
-      32.5
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      21.08
      ],
      [
-      "SearchIndexer.exe",
-      26.16
+      "node.exe punkte.cjs buchen --trocken --kopf 87537d3f1481217f2aad2a5cbbe5a3f6c4b95a55",
+      18.55
      ]
     ],
-    "dienerS": 36.02,
+    "dienerS": 40.45,
     "diener": [
      [
       "System",
-      16.86
+      18.09
      ],
      [
       "WmiPrvSE.exe",
-      11.66
+      11.77
      ]
     ],
-    "eigenS": 220.2,
+    "eigenS": 237.45,
     "schwelle": 0.5,
     "eich": "win32, Radeon 890M, 24 Kerne"
    },
-   "zeit": "2026-11-09T11:16:24.188Z",
+   "zeit": "2026-11-09T11:57:26.841Z",
    "abdruck": "80faecdff96d",
    "port": 7804,
    "bahn": "sitzung",
@@ -5031,47 +5064,47 @@
   "vegetation.K4#2": {
    "gruen": false,
    "ungemessen": true,
-   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 1.7 s)",
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 1.0 s)",
    "exit": 1,
    "minuten": 0.76,
-   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 1.7 s)",
-   "s": 45.5,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 1.0 s)",
+   "s": 45.4,
    "fremd": {
-    "s": 48.5,
-    "takte": 17,
-    "fremdS": 158.45,
-    "kerne": 3.267,
-    "fensterKerne": 3.994,
+    "s": 50.5,
+    "takte": 18,
+    "fremdS": 103.27,
+    "kerne": 2.046,
+    "fensterKerne": 2.507,
     "namen": [
      [
-      "MsMpEng.exe",
-      33.64
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      26.86
      ],
      [
-      "git reset --hard --no-recurse-submodules --quiet",
-      32.5
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      21.08
      ],
      [
-      "SearchIndexer.exe",
-      26.16
+      "node.exe punkte.cjs buchen --trocken --kopf 87537d3f1481217f2aad2a5cbbe5a3f6c4b95a55",
+      18.55
      ]
     ],
-    "dienerS": 36.02,
+    "dienerS": 40.45,
     "diener": [
      [
       "System",
-      16.86
+      18.09
      ],
      [
       "WmiPrvSE.exe",
-      11.66
+      11.77
      ]
     ],
-    "eigenS": 220.2,
+    "eigenS": 237.45,
     "schwelle": 0.5,
     "eich": "win32, Radeon 890M, 24 Kerne"
    },
-   "zeit": "2026-11-09T11:16:24.188Z",
+   "zeit": "2026-11-09T11:57:26.841Z",
    "abdruck": "89856abb09ad",
    "port": 7804,
    "bahn": "sitzung",
@@ -5080,49 +5113,49 @@
   },
   "siedlung.K1#2": {
    "gruen": false,
-   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 18 von 18 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.20 m · Innen-Bild 0 von 18 lesbar (Plan 18), innen ÷ Außen-Schatten min undefined · Median undefined (Soll ≥ 0,15) · dunkel: haus_gotisch undefined/undefined (Frist ) · Täter: haus_skandinavisch · Gang Hub 0.20 m · innen undefined ÷ außen undefined = undefined · Frist der Probe",
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 17 von 18 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.20 m · Innen-Bild 0 von 18 lesbar (Plan 18), innen ÷ Außen-Schatten min undefined · Median undefined (Soll ≥ 0,15) · dunkel: haus_gotisch undefined/undefined (Frist ) · Täter: haus_skandinavisch · Gang Hub — · innen undefined ÷ außen undefined = undefined · Frist der Probe · Frist der Probe",
    "exit": 0,
    "minuten": 0.56,
-   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 18 von 18 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.20 m · Innen-Bild 0 von 18 lesbar (Plan 18), innen ÷ Außen-Schatten min undefined · Median undefined (Soll ≥ 0,15) · dunkel: haus_gotisch undefined/undefined (Frist ) · Täter: haus_skandinavisch · Gang Hub 0.20 m · innen undefined ÷ außen undefined = undefined · Frist der Probe",
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 17 von 18 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.20 m · Innen-Bild 0 von 18 lesbar (Plan 18), innen ÷ Außen-Schatten min undefined · Median undefined (Soll ≥ 0,15) · dunkel: haus_gotisch undefined/undefined (Frist ) · Täter: haus_skandinavisch · Gang Hub — · innen undefined ÷ außen undefined = undefined · Frist der Probe · Frist der Probe",
    "gpu": "amd/rdna-3",
    "ungemessen": true,
-   "s": 33.5,
+   "s": 33.9,
    "fremd": {
-    "s": 37.3,
+    "s": 36.6,
     "takte": 13,
-    "fremdS": 113.39,
-    "kerne": 3.043,
-    "fensterKerne": 3.348,
+    "fremdS": 70.61,
+    "kerne": 1.928,
+    "fensterKerne": 2.076,
     "namen": [
      [
-      "git reset --hard --no-recurse-submodules --quiet",
-      27.89
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      19.25
      ],
      [
-      "MsMpEng.exe",
-      18.3
+      "node.exe punkte.cjs buchen --trocken --kopf 87537d3f1481217f2aad2a5cbbe5a3f6c4b95a55",
+      13.78
      ],
      [
-      "SearchIndexer.exe",
-      17.69
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      10.97
      ]
     ],
-    "dienerS": 43.17,
+    "dienerS": 34.41,
     "diener": [
      [
       "System",
-      26.63
+      15.81
      ],
      [
       "WmiPrvSE.exe",
-      8.5
+      8.56
      ]
     ],
-    "eigenS": 142.98,
+    "eigenS": 139.44,
     "schwelle": 0.5,
     "eich": "win32, Radeon 890M, 24 Kerne"
    },
-   "zeit": "2026-11-09T11:17:29.965Z",
+   "zeit": "2026-11-09T11:58:31.838Z",
    "abdruck": "07f57d259702",
    "port": 7804,
    "bahn": "sitzung",
@@ -5130,49 +5163,49 @@
   },
   "studios.K2#2": {
    "gruen": false,
-   "zahl": "Frist der Probe 40 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: p95 Griff → Bild unter der Schranke in 0/8 (Gesetz-Wert höchstens 15 ms portale, Neubau höchstens 1063 ms fachwerk, je Studio null Griffe) · Neuladen 5/8 · A/B 5/8) · Täter: @@ PROBE-FEHLER TargetCloseError: Protocol error (Runtime.callFunctionOn): Target closed |     at CallbackRegistry.clear (C:\\Users\\micha\\AnazhRealm-profiband\\node_modules\\puppeteer-core\\lib\\cjs\\puppeteer\\common\\CallbackRegistry.js:82:36) |     at CdpCDPSession.onClosed (C:\\Users\\micha\\AnazhRealm-pro",
+   "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: p95 Griff → Bild unter der Schranke in 0/8 (Gesetz-Wert höchstens 13 ms portale, Neubau höchstens 1578 ms koerperstudio, je Studio null Griffe) · Neuladen 7/8 · A/B 7/8) · Täter: @@PUNKTE@@ FRIST 84 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
    "exit": 3,
-   "minuten": 0.68,
-   "grund": "Frist der Probe 40 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: p95 Griff → Bild unter der Schranke in 0/8 (Gesetz-Wert höchstens 15 ms portale, Neubau höchstens 1063 ms fachwerk, je Studio null Griffe) · Neuladen 5/8 · A/B 5/8) · Täter: @@ PROBE-FEHLER TargetCloseError: Protocol error (Runtime.callFunctionOn): Target closed |     at CallbackRegistry.clear (C:\\Users\\micha\\AnazhRealm-profiband\\node_modules\\puppeteer-core\\lib\\cjs\\puppeteer\\common\\CallbackRegistry.js:82:36) |     at CdpCDPSession.onClosed (C:\\Users\\micha\\AnazhRealm-pro",
+   "minuten": 1.4,
+   "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: p95 Griff → Bild unter der Schranke in 0/8 (Gesetz-Wert höchstens 13 ms portale, Neubau höchstens 1578 ms koerperstudio, je Studio null Griffe) · Neuladen 7/8 · A/B 7/8) · Täter: @@PUNKTE@@ FRIST 84 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
    "gpu": "amd/rdna-3",
    "ungemessen": true,
-   "s": 40.7,
+   "s": 84.2,
    "fremd": {
-    "s": 43.6,
-    "takte": 16,
-    "fremdS": 83.23,
-    "kerne": 1.911,
-    "fensterKerne": 2.32,
+    "s": 86,
+    "takte": 32,
+    "fremdS": 198.08,
+    "kerne": 2.304,
+    "fensterKerne": 5.927,
     "namen": [
      [
-      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      20.02
+      "git pack-objects --exclude-promisor-objects-best-effort pack/pack",
+      47.47
      ],
      [
       "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      16.89
+      37.17
      ],
      [
-      "MsMpEng.exe",
-      13.63
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      36.88
      ]
     ],
-    "dienerS": 29.3,
+    "dienerS": 62.58,
     "diener": [
      [
       "System",
-      14.61
+      22.22
      ],
      [
-      "WmiPrvSE.exe",
-      8.98
+      "dwm.exe",
+      21.64
      ]
     ],
-    "eigenS": 83.3,
+    "eigenS": 156.3,
     "schwelle": 0.5,
     "eich": "win32, Radeon 890M, 24 Kerne"
    },
-   "zeit": "2026-11-09T11:19:09.939Z",
+   "zeit": "2026-11-09T11:59:24.865Z",
    "abdruck": "b814926a7e85",
    "port": 7804,
    "bahn": "sitzung",
@@ -5180,49 +5213,49 @@
   },
   "studios.K3#2": {
    "gruen": false,
-   "zahl": "Frist der Probe 40 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Dreiecke, Befehle, VRAM und GPU-ms ±5 % in 0/7 Mesh-Studios (0 Stufen), Klang 8/8 Orte im Quantum (Audio-Graph höchstens 0.082 ms), ohne garage L0 GPU 0.204 ms↔Bank 3.4096 (+1), schmiede L0 GPU 0.0235 ms↔Bank 0.8225, portale L0 GPU 0.4705 m) · Täter: @@ PROBE-FEHLER TargetCloseError: Protocol error (Runtime.callFunctionOn): Target closed |     at CallbackRegistry.clear (C:\\Users\\micha\\AnazhRealm-profiband\\node_modules\\puppeteer-core\\lib\\cjs\\puppeteer\\common\\CallbackRegistry.js:82:36) |     at CdpCDPSession.onClosed (C:\\Users\\micha\\AnazhRealm-pro",
+   "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Dreiecke, Befehle, VRAM und GPU-ms ±5 % in 0/7 Mesh-Studios (0 Stufen), Klang 8/8 Orte im Quantum (Audio-Graph höchstens 0.084 ms), ohne garage L0 GPU 0.221 ms↔Bank 6.9617 (+1), schmiede L0 GPU 0.023 ms↔Bank 0.6729, portale L0 GPU 0.5366 ms) · Täter: @@PUNKTE@@ FRIST 84 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
    "exit": 3,
-   "minuten": 0.68,
-   "grund": "Frist der Probe 40 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Dreiecke, Befehle, VRAM und GPU-ms ±5 % in 0/7 Mesh-Studios (0 Stufen), Klang 8/8 Orte im Quantum (Audio-Graph höchstens 0.082 ms), ohne garage L0 GPU 0.204 ms↔Bank 3.4096 (+1), schmiede L0 GPU 0.0235 ms↔Bank 0.8225, portale L0 GPU 0.4705 m) · Täter: @@ PROBE-FEHLER TargetCloseError: Protocol error (Runtime.callFunctionOn): Target closed |     at CallbackRegistry.clear (C:\\Users\\micha\\AnazhRealm-profiband\\node_modules\\puppeteer-core\\lib\\cjs\\puppeteer\\common\\CallbackRegistry.js:82:36) |     at CdpCDPSession.onClosed (C:\\Users\\micha\\AnazhRealm-pro",
+   "minuten": 1.4,
+   "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Dreiecke, Befehle, VRAM und GPU-ms ±5 % in 0/7 Mesh-Studios (0 Stufen), Klang 8/8 Orte im Quantum (Audio-Graph höchstens 0.084 ms), ohne garage L0 GPU 0.221 ms↔Bank 6.9617 (+1), schmiede L0 GPU 0.023 ms↔Bank 0.6729, portale L0 GPU 0.5366 ms) · Täter: @@PUNKTE@@ FRIST 84 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier",
    "gpu": "amd/rdna-3",
    "ungemessen": true,
-   "s": 40.7,
+   "s": 84.2,
    "fremd": {
-    "s": 43.6,
-    "takte": 16,
-    "fremdS": 83.23,
-    "kerne": 1.911,
-    "fensterKerne": 2.32,
+    "s": 86,
+    "takte": 32,
+    "fremdS": 198.08,
+    "kerne": 2.304,
+    "fensterKerne": 5.927,
     "namen": [
      [
-      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      20.02
+      "git pack-objects --exclude-promisor-objects-best-effort pack/pack",
+      47.47
      ],
      [
       "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      16.89
+      37.17
      ],
      [
-      "MsMpEng.exe",
-      13.63
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      36.88
      ]
     ],
-    "dienerS": 29.3,
+    "dienerS": 62.58,
     "diener": [
      [
       "System",
-      14.61
+      22.22
      ],
      [
-      "WmiPrvSE.exe",
-      8.98
+      "dwm.exe",
+      21.64
      ]
     ],
-    "eigenS": 83.3,
+    "eigenS": 156.3,
     "schwelle": 0.5,
     "eich": "win32, Radeon 890M, 24 Kerne"
    },
-   "zeit": "2026-11-09T11:19:09.939Z",
+   "zeit": "2026-11-09T11:59:24.865Z",
    "abdruck": "6b9b5abda81d",
    "port": 7804,
    "bahn": "sitzung",
@@ -5231,49 +5264,49 @@
   },
   "ankunft.K2#1": {
    "gruen": false,
-   "zahl": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 17,1 CPU-s · MsMpEng.exe 9,6 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 9,1 CPU-s — 1,16 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 52,9 CPU-s in 57,8 s) — kein Urteil, UNGEMESSEN (die Probe sah: 0.00 % Lücke nach 0.2 s bis zur Ruhe der Foundry · offen im Bild der Horizont wird geteilt · 4 Wald-Stücke warten auf ihre Gestalt · t(Kontrolle) kalt 11.21 s von außen (Eigenmeldung 10.24 s) · [linse-gpu] amd/rdna-3)",
+   "zahl": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 23,7 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 19,7 CPU-s · MsMpEng.exe 11,2 CPU-s — 1,66 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 71,8 CPU-s in 46,9 s) — kein Urteil, UNGEMESSEN (die Probe sah: 0.00 % Lücke nach 0.2 s bis zur Ruhe der Foundry · offen im Bild der Horizont wird geteilt · 4 Wald-Stücke warten auf ihre Gestalt · t(Kontrolle) kalt 10.07 s von außen (Eigenmeldung 9.11 s) · [linse-gpu] amd/rdna-3)",
    "exit": 0,
-   "minuten": 0.88,
-   "grund": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 17,1 CPU-s · MsMpEng.exe 9,6 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 9,1 CPU-s — 1,16 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 52,9 CPU-s in 57,8 s) — kein Urteil, UNGEMESSEN (die Probe sah: 0.00 % Lücke nach 0.2 s bis zur Ruhe der Foundry · offen im Bild der Horizont wird geteilt · 4 Wald-Stücke warten auf ihre Gestalt · t(Kontrolle) kalt 11.21 s von außen (Eigenmeldung 10.24 s) · [linse-gpu] amd/rdna-3)",
+   "minuten": 0.73,
+   "grund": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 23,7 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 19,7 CPU-s · MsMpEng.exe 11,2 CPU-s — 1,66 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 71,8 CPU-s in 46,9 s) — kein Urteil, UNGEMESSEN (die Probe sah: 0.00 % Lücke nach 0.2 s bis zur Ruhe der Foundry · offen im Bild der Horizont wird geteilt · 4 Wald-Stücke warten auf ihre Gestalt · t(Kontrolle) kalt 10.07 s von außen (Eigenmeldung 9.11 s) · [linse-gpu] amd/rdna-3)",
    "gpu": "amd/rdna-3",
-   "s": 52.8,
+   "s": 44,
    "fremd": {
-    "s": 57.8,
-    "takte": 21,
-    "fremdS": 52.88,
-    "kerne": 0.915,
-    "fensterKerne": 1.162,
+    "s": 46.9,
+    "takte": 17,
+    "fremdS": 71.75,
+    "kerne": 1.528,
+    "fensterKerne": 1.662,
     "namen": [
      [
       "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      17.08
-     ],
-     [
-      "MsMpEng.exe",
-      9.56
+      23.67
      ],
      [
       "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      9.09
+      19.67
+     ],
+     [
+      "MsMpEng.exe",
+      11.17
      ]
     ],
-    "dienerS": 35.28,
+    "dienerS": 35.09,
     "diener": [
      [
-      "WmiPrvSE.exe",
-      12.38
+      "dwm.exe",
+      13.56
      ],
      [
       "System",
-      11.75
+      10.89
      ]
     ],
-    "eigenS": 350.13,
+    "eigenS": 294.03,
     "schwelle": 0.5,
     "eich": "win32, Radeon 890M, 24 Kerne"
    },
    "ungemessen": true,
-   "zeit": "2026-11-09T11:26:34.988Z",
+   "zeit": "2026-11-09T12:05:06.113Z",
    "abdruck": "429b5674fc30",
    "port": 7804,
    "bahn": "sitzung",
@@ -5281,49 +5314,49 @@
   },
   "ankunft.K3#1": {
    "gruen": false,
-   "zahl": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 17,1 CPU-s · MsMpEng.exe 9,6 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 9,1 CPU-s — 1,16 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 52,9 CPU-s in 57,8 s) — kein Urteil, UNGEMESSEN (die Probe sah: warm Median 8.02 s (7.68 · 8.37, Zweit-Boot im warmen Browser) · [linse-gpu] amd/rdna-3)",
+   "zahl": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 23,7 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 19,7 CPU-s · MsMpEng.exe 11,2 CPU-s — 1,66 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 71,8 CPU-s in 46,9 s) — kein Urteil, UNGEMESSEN (die Probe sah: warm Median 8.25 s (7.59 · 8.90, Zweit-Boot im warmen Browser) · [linse-gpu] amd/rdna-3)",
    "exit": 0,
-   "minuten": 0.88,
-   "grund": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 17,1 CPU-s · MsMpEng.exe 9,6 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 9,1 CPU-s — 1,16 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 52,9 CPU-s in 57,8 s) — kein Urteil, UNGEMESSEN (die Probe sah: warm Median 8.02 s (7.68 · 8.37, Zweit-Boot im warmen Browser) · [linse-gpu] amd/rdna-3)",
+   "minuten": 0.73,
+   "grund": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 23,7 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 19,7 CPU-s · MsMpEng.exe 11,2 CPU-s — 1,66 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 71,8 CPU-s in 46,9 s) — kein Urteil, UNGEMESSEN (die Probe sah: warm Median 8.25 s (7.59 · 8.90, Zweit-Boot im warmen Browser) · [linse-gpu] amd/rdna-3)",
    "gpu": "amd/rdna-3",
-   "s": 52.8,
+   "s": 44,
    "fremd": {
-    "s": 57.8,
-    "takte": 21,
-    "fremdS": 52.88,
-    "kerne": 0.915,
-    "fensterKerne": 1.162,
+    "s": 46.9,
+    "takte": 17,
+    "fremdS": 71.75,
+    "kerne": 1.528,
+    "fensterKerne": 1.662,
     "namen": [
      [
       "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      17.08
-     ],
-     [
-      "MsMpEng.exe",
-      9.56
+      23.67
      ],
      [
       "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      9.09
+      19.67
+     ],
+     [
+      "MsMpEng.exe",
+      11.17
      ]
     ],
-    "dienerS": 35.28,
+    "dienerS": 35.09,
     "diener": [
      [
-      "WmiPrvSE.exe",
-      12.38
+      "dwm.exe",
+      13.56
      ],
      [
       "System",
-      11.75
+      10.89
      ]
     ],
-    "eigenS": 350.13,
+    "eigenS": 294.03,
     "schwelle": 0.5,
     "eich": "win32, Radeon 890M, 24 Kerne"
    },
    "ungemessen": true,
-   "zeit": "2026-11-09T11:26:34.988Z",
+   "zeit": "2026-11-09T12:05:06.113Z",
    "abdruck": "206c6118fb40",
    "port": 7804,
    "bahn": "sitzung",
@@ -5332,49 +5365,49 @@
   },
   "ankunft.K1#1": {
    "gruen": false,
-   "zahl": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 17,1 CPU-s · MsMpEng.exe 9,6 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 9,1 CPU-s — 1,16 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 52,9 CPU-s in 57,8 s) — kein Urteil, UNGEMESSEN (die Probe sah: t(Kontrolle) kalt 11.21 s von außen (Eigenmeldung 10.24 s), Bild 0.00 % Lücke bis zur Ruhe, offen im Bild der Horizont wird geteilt · 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht )",
+   "zahl": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 23,7 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 19,7 CPU-s · MsMpEng.exe 11,2 CPU-s — 1,66 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 71,8 CPU-s in 46,9 s) — kein Urteil, UNGEMESSEN (die Probe sah: t(Kontrolle) kalt 10.07 s von außen (Eigenmeldung 9.11 s), Bild 0.00 % Lücke bis zur Ruhe, offen im Bild der Horizont wird geteilt · 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht ·)",
    "exit": 0,
-   "minuten": 0.88,
-   "grund": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 17,1 CPU-s · MsMpEng.exe 9,6 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 9,1 CPU-s — 1,16 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 52,9 CPU-s in 57,8 s) — kein Urteil, UNGEMESSEN (die Probe sah: t(Kontrolle) kalt 11.21 s von außen (Eigenmeldung 10.24 s), Bild 0.00 % Lücke bis zur Ruhe, offen im Bild der Horizont wird geteilt · 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht )",
+   "minuten": 0.73,
+   "grund": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 23,7 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 19,7 CPU-s · MsMpEng.exe 11,2 CPU-s — 1,66 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 71,8 CPU-s in 46,9 s) — kein Urteil, UNGEMESSEN (die Probe sah: t(Kontrolle) kalt 10.07 s von außen (Eigenmeldung 9.11 s), Bild 0.00 % Lücke bis zur Ruhe, offen im Bild der Horizont wird geteilt · 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht ·)",
    "gpu": "amd/rdna-3",
-   "s": 52.8,
+   "s": 44,
    "fremd": {
-    "s": 57.8,
-    "takte": 21,
-    "fremdS": 52.88,
-    "kerne": 0.915,
-    "fensterKerne": 1.162,
+    "s": 46.9,
+    "takte": 17,
+    "fremdS": 71.75,
+    "kerne": 1.528,
+    "fensterKerne": 1.662,
     "namen": [
      [
       "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      17.08
-     ],
-     [
-      "MsMpEng.exe",
-      9.56
+      23.67
      ],
      [
       "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      9.09
+      19.67
+     ],
+     [
+      "MsMpEng.exe",
+      11.17
      ]
     ],
-    "dienerS": 35.28,
+    "dienerS": 35.09,
     "diener": [
      [
-      "WmiPrvSE.exe",
-      12.38
+      "dwm.exe",
+      13.56
      ],
      [
       "System",
-      11.75
+      10.89
      ]
     ],
-    "eigenS": 350.13,
+    "eigenS": 294.03,
     "schwelle": 0.5,
     "eich": "win32, Radeon 890M, 24 Kerne"
    },
    "ungemessen": true,
-   "zeit": "2026-11-09T11:26:34.988Z",
+   "zeit": "2026-11-09T12:05:06.113Z",
    "abdruck": "8a321f302a0c",
    "port": 7804,
    "bahn": "sitzung",
@@ -5383,49 +5416,49 @@
   },
   "ankunft.K1#2": {
    "gruen": false,
-   "zahl": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 17,1 CPU-s · MsMpEng.exe 9,6 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 9,1 CPU-s — 1,16 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 52,9 CPU-s in 57,8 s) — kein Urteil, UNGEMESSEN (die Probe sah: t(Kontrolle) kalt 11.21 s von außen (Eigenmeldung 10.24 s), Bild 0.00 % Lücke bis zur Ruhe, offen im Bild der Horizont wird geteilt · 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht )",
+   "zahl": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 23,7 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 19,7 CPU-s · MsMpEng.exe 11,2 CPU-s — 1,66 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 71,8 CPU-s in 46,9 s) — kein Urteil, UNGEMESSEN (die Probe sah: t(Kontrolle) kalt 10.07 s von außen (Eigenmeldung 9.11 s), Bild 0.00 % Lücke bis zur Ruhe, offen im Bild der Horizont wird geteilt · 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht ·)",
    "exit": 0,
-   "minuten": 0.88,
-   "grund": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 17,1 CPU-s · MsMpEng.exe 9,6 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 9,1 CPU-s — 1,16 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 52,9 CPU-s in 57,8 s) — kein Urteil, UNGEMESSEN (die Probe sah: t(Kontrolle) kalt 11.21 s von außen (Eigenmeldung 10.24 s), Bild 0.00 % Lücke bis zur Ruhe, offen im Bild der Horizont wird geteilt · 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht )",
+   "minuten": 0.73,
+   "grund": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 23,7 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 19,7 CPU-s · MsMpEng.exe 11,2 CPU-s — 1,66 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 71,8 CPU-s in 46,9 s) — kein Urteil, UNGEMESSEN (die Probe sah: t(Kontrolle) kalt 10.07 s von außen (Eigenmeldung 9.11 s), Bild 0.00 % Lücke bis zur Ruhe, offen im Bild der Horizont wird geteilt · 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht ·)",
    "gpu": "amd/rdna-3",
-   "s": 52.8,
+   "s": 44,
    "fremd": {
-    "s": 57.8,
-    "takte": 21,
-    "fremdS": 52.88,
-    "kerne": 0.915,
-    "fensterKerne": 1.162,
+    "s": 46.9,
+    "takte": 17,
+    "fremdS": 71.75,
+    "kerne": 1.528,
+    "fensterKerne": 1.662,
     "namen": [
      [
       "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      17.08
-     ],
-     [
-      "MsMpEng.exe",
-      9.56
+      23.67
      ],
      [
       "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      9.09
+      19.67
+     ],
+     [
+      "MsMpEng.exe",
+      11.17
      ]
     ],
-    "dienerS": 35.28,
+    "dienerS": 35.09,
     "diener": [
      [
-      "WmiPrvSE.exe",
-      12.38
+      "dwm.exe",
+      13.56
      ],
      [
       "System",
-      11.75
+      10.89
      ]
     ],
-    "eigenS": 350.13,
+    "eigenS": 294.03,
     "schwelle": 0.5,
     "eich": "win32, Radeon 890M, 24 Kerne"
    },
    "ungemessen": true,
-   "zeit": "2026-11-09T11:26:34.988Z",
+   "zeit": "2026-11-09T12:05:06.113Z",
    "abdruck": "4f76f2bf220f",
    "port": 7804,
    "bahn": "sitzung",
@@ -5434,49 +5467,49 @@
   },
   "ankunft.K5#1": {
    "gruen": false,
-   "zahl": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 17,1 CPU-s · MsMpEng.exe 9,6 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 9,1 CPU-s — 1,16 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 52,9 CPU-s in 57,8 s) — kein Urteil, UNGEMESSEN (die Probe sah: längste Aufgabe 397 ms (Soll ≤ 250) · Haupt-Faden belegt 10.08 s bis zur Kontrolle (Soll ≤ 4; 64 LongTasks 8.57 s) · Kontrolle 11.36 s Seiten-Uhr · die längste: 397 ms bei 2.1 s: _buildPbrNodeMaterial 71 · _runFrameScheduler (verteilt) 65 ·)",
+   "zahl": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 23,7 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 19,7 CPU-s · MsMpEng.exe 11,2 CPU-s — 1,66 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 71,8 CPU-s in 46,9 s) — kein Urteil, UNGEMESSEN (die Probe sah: längste Aufgabe 472 ms (Soll ≤ 250) · Haupt-Faden belegt 8.96 s bis zur Kontrolle (Soll ≤ 4; 53 LongTasks 7.90 s) · Kontrolle 10.17 s Seiten-Uhr · die längste: 472 ms bei 2.3 s: zeichne 71 · build [three.webgpu.min.js] 61 · build [three.web)",
    "exit": 0,
-   "minuten": 0.88,
-   "grund": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 17,1 CPU-s · MsMpEng.exe 9,6 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 9,1 CPU-s — 1,16 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 52,9 CPU-s in 57,8 s) — kein Urteil, UNGEMESSEN (die Probe sah: längste Aufgabe 397 ms (Soll ≤ 250) · Haupt-Faden belegt 10.08 s bis zur Kontrolle (Soll ≤ 4; 64 LongTasks 8.57 s) · Kontrolle 11.36 s Seiten-Uhr · die längste: 397 ms bei 2.1 s: _buildPbrNodeMaterial 71 · _runFrameScheduler (verteilt) 65 ·)",
+   "minuten": 0.73,
+   "grund": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 23,7 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 19,7 CPU-s · MsMpEng.exe 11,2 CPU-s — 1,66 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 71,8 CPU-s in 46,9 s) — kein Urteil, UNGEMESSEN (die Probe sah: längste Aufgabe 472 ms (Soll ≤ 250) · Haupt-Faden belegt 8.96 s bis zur Kontrolle (Soll ≤ 4; 53 LongTasks 7.90 s) · Kontrolle 10.17 s Seiten-Uhr · die längste: 472 ms bei 2.3 s: zeichne 71 · build [three.webgpu.min.js] 61 · build [three.web)",
    "gpu": "amd/rdna-3",
-   "s": 52.8,
+   "s": 44,
    "fremd": {
-    "s": 57.8,
-    "takte": 21,
-    "fremdS": 52.88,
-    "kerne": 0.915,
-    "fensterKerne": 1.162,
+    "s": 46.9,
+    "takte": 17,
+    "fremdS": 71.75,
+    "kerne": 1.528,
+    "fensterKerne": 1.662,
     "namen": [
      [
       "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      17.08
-     ],
-     [
-      "MsMpEng.exe",
-      9.56
+      23.67
      ],
      [
       "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      9.09
+      19.67
+     ],
+     [
+      "MsMpEng.exe",
+      11.17
      ]
     ],
-    "dienerS": 35.28,
+    "dienerS": 35.09,
     "diener": [
      [
-      "WmiPrvSE.exe",
-      12.38
+      "dwm.exe",
+      13.56
      ],
      [
       "System",
-      11.75
+      10.89
      ]
     ],
-    "eigenS": 350.13,
+    "eigenS": 294.03,
     "schwelle": 0.5,
     "eich": "win32, Radeon 890M, 24 Kerne"
    },
    "ungemessen": true,
-   "zeit": "2026-11-09T11:26:34.988Z",
+   "zeit": "2026-11-09T12:05:06.113Z",
    "abdruck": "f9a20f49a011",
    "port": 7804,
    "bahn": "sitzung",
@@ -5485,49 +5518,49 @@
   },
   "bauen.K1#2": {
    "gruen": false,
-   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Ausgabe des Bild-Wegs auf der Karte (Exit 2)) · Täter: @@ PROBE-FEHLER der Deckel des Laufs fehlt (argv „1“: der Läufer ersetzt den Platzhalter SEK)",
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Ausgabe des Bild-Wegs auf der Karte (Exit 2)) · Täter: @@ PROBE-FEHLER ReferenceError: PHASEN is not defined |     at Object.<anonymous> (C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\punkte-radeon\\scripts\\diag-werkstatt-weg.cjs:1795:70) |     at Module._compile (node:internal/modules/cjs/loader:1830:14) |     at H.linse ([eval]:134:15) |     at",
    "exit": 2,
    "minuten": 0,
-   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Ausgabe des Bild-Wegs auf der Karte (Exit 2)) · Täter: @@ PROBE-FEHLER der Deckel des Laufs fehlt (argv „1“: der Läufer ersetzt den Platzhalter SEK)",
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Ausgabe des Bild-Wegs auf der Karte (Exit 2)) · Täter: @@ PROBE-FEHLER ReferenceError: PHASEN is not defined |     at Object.<anonymous> (C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\punkte-radeon\\scripts\\diag-werkstatt-weg.cjs:1795:70) |     at Module._compile (node:internal/modules/cjs/loader:1830:14) |     at H.linse ([eval]:134:15) |     at",
    "gpu": "amd/rdna-3",
    "ungemessen": true,
    "s": 0.1,
    "fremd": {
-    "s": 2.5,
+    "s": 2.8,
     "takte": 1,
-    "fremdS": 3.41,
-    "kerne": 1.339,
-    "fensterKerne": 1.339,
+    "fremdS": 2.66,
+    "kerne": 0.943,
+    "fensterKerne": 0.943,
     "namen": [
      [
       "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      0.77
+      1.25
      ],
      [
       "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      0.75
+      0.72
      ],
      [
       "svchost.exe",
-      0.41
+      0.2
      ]
     ],
-    "dienerS": 0.88,
+    "dienerS": 1.53,
     "diener": [
      [
-      "System",
-      0.34
+      "dwm.exe",
+      0.81
      ],
      [
       "WmiPrvSE.exe",
-      0.34
+      0.53
      ]
     ],
-    "eigenS": 2.53,
+    "eigenS": 5.64,
     "schwelle": 0.5,
     "eich": "win32, Radeon 890M, 24 Kerne"
    },
-   "zeit": "2026-11-09T11:20:09.260Z",
+   "zeit": "2026-11-09T12:01:05.354Z",
    "abdruck": "89e299ecc8c3",
    "port": 7804,
    "bahn": "sitzung",
@@ -5543,41 +5576,41 @@
    "ungemessen": true,
    "s": 35.2,
    "fremd": {
-    "s": 38.8,
+    "s": 37.8,
     "takte": 14,
-    "fremdS": 60.94,
-    "kerne": 1.572,
-    "fensterKerne": 1.939,
+    "fremdS": 48.41,
+    "kerne": 1.279,
+    "fensterKerne": 1.537,
     "namen": [
      [
       "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      16.11
+      17.47
      ],
      [
       "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      13.97
+      10.31
      ],
      [
-      "MsMpEng.exe",
-      9.64
+      "svchost.exe",
+      6.53
      ]
     ],
-    "dienerS": 29.17,
+    "dienerS": 22.03,
     "diener": [
      [
-      "System",
-      11.08
+      "dwm.exe",
+      8.61
      ],
      [
-      "dwm.exe",
-      9.5
+      "WmiPrvSE.exe",
+      7.88
      ]
     ],
-    "eigenS": 136.52,
+    "eigenS": 98.47,
     "schwelle": 0.5,
     "eich": "win32, Radeon 890M, 24 Kerne"
    },
-   "zeit": "2026-11-09T11:20:49.028Z",
+   "zeit": "2026-11-09T12:01:06.151Z",
    "abdruck": "23a5c835e3b1",
    "port": 7804,
    "bahn": "sitzung",
@@ -5586,47 +5619,47 @@
   "siedlung.K2#1": {
    "gruen": false,
    "ungemessen": true,
-   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ MITTAG)",
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ DAEMMERUNG)",
    "exit": 1,
    "minuten": 0.79,
-   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ MITTAG)",
-   "s": 45.6,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ DAEMMERUNG)",
+   "s": 45.5,
    "fremd": {
-    "s": 49.6,
-    "takte": 17,
-    "fremdS": 183.08,
-    "kerne": 3.688,
-    "fensterKerne": 4.407,
+    "s": 51.8,
+    "takte": 19,
+    "fremdS": 66.41,
+    "kerne": 1.281,
+    "fensterKerne": 1.546,
     "namen": [
      [
-      "git reset --hard --no-recurse-submodules --quiet",
-      37.45
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      25.38
      ],
      [
-      "MsMpEng.exe",
-      36.41
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      14.3
      ],
      [
-      "SearchIndexer.exe",
-      35.69
+      "svchost.exe",
+      10.42
      ]
     ],
-    "dienerS": 76.14,
+    "dienerS": 28.27,
     "diener": [
      [
-      "System",
-      52.25
+      "WmiPrvSE.exe",
+      11.23
      ],
      [
-      "WmiPrvSE.exe",
-      12.56
+      "dwm.exe",
+      10.84
      ]
     ],
-    "eigenS": 265.14,
+    "eigenS": 247.88,
     "schwelle": 0.5,
     "eich": "win32, Radeon 890M, 24 Kerne"
    },
-   "zeit": "2026-11-09T11:21:44.461Z",
+   "zeit": "2026-11-09T12:01:59.715Z",
    "abdruck": "45b9dd0216d0",
    "port": 7804,
    "bahn": "sitzung",
@@ -5635,47 +5668,47 @@
   "siedlung.K2#2": {
    "gruen": false,
    "ungemessen": true,
-   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ MITTAG)",
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ DAEMMERUNG)",
    "exit": 1,
    "minuten": 0.79,
-   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ MITTAG)",
-   "s": 45.6,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ DAEMMERUNG)",
+   "s": 45.5,
    "fremd": {
-    "s": 49.6,
-    "takte": 17,
-    "fremdS": 183.08,
-    "kerne": 3.688,
-    "fensterKerne": 4.407,
+    "s": 51.8,
+    "takte": 19,
+    "fremdS": 66.41,
+    "kerne": 1.281,
+    "fensterKerne": 1.546,
     "namen": [
      [
-      "git reset --hard --no-recurse-submodules --quiet",
-      37.45
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      25.38
      ],
      [
-      "MsMpEng.exe",
-      36.41
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      14.3
      ],
      [
-      "SearchIndexer.exe",
-      35.69
+      "svchost.exe",
+      10.42
      ]
     ],
-    "dienerS": 76.14,
+    "dienerS": 28.27,
     "diener": [
      [
-      "System",
-      52.25
+      "WmiPrvSE.exe",
+      11.23
      ],
      [
-      "WmiPrvSE.exe",
-      12.56
+      "dwm.exe",
+      10.84
      ]
     ],
-    "eigenS": 265.14,
+    "eigenS": 247.88,
     "schwelle": 0.5,
     "eich": "win32, Radeon 890M, 24 Kerne"
    },
-   "zeit": "2026-11-09T11:21:44.461Z",
+   "zeit": "2026-11-09T12:01:59.715Z",
    "abdruck": "a8e05a2a6fe5",
    "port": 7804,
    "bahn": "sitzung",
@@ -5684,49 +5717,49 @@
   },
   "siedlung.K5#1": {
    "gruen": false,
-   "zahl": "Fremd-Last: MsMpEng.exe 15,4 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 13,5 CPU-s · git reset --hard --no-recurse-submodules --quiet 12,3 CPU-s — 3,20 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 83,3 CPU-s in 31,7 s) — kein Urteil, UNGEMESSEN (die Probe sah: nH 12 erstes Haus nach 1444.9 ms (haus_tudor, huelle in 200.4 m, Bau-Hash 59e4fc62) · nH 300 erstes Haus nach 746.7 ms (haus_tudor, mesh in 47 m, Bau-Hash 84121d20))",
-   "exit": 0,
-   "minuten": 0.43,
-   "grund": "Fremd-Last: MsMpEng.exe 15,4 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 13,5 CPU-s · git reset --hard --no-recurse-submodules --quiet 12,3 CPU-s — 3,20 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 83,3 CPU-s in 31,7 s) — kein Urteil, UNGEMESSEN (die Probe sah: nH 12 erstes Haus nach 1444.9 ms (haus_tudor, huelle in 200.4 m, Bau-Hash 59e4fc62) · nH 300 erstes Haus nach 746.7 ms (haus_tudor, mesh in 47 m, Bau-Hash 84121d20))",
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: nH 12: kein Ergebnis · nH 300: kein Ergebnis) · Täter: @@ PROBE-FEHLER der Deckel des Laufs fehlt (argv „3“: der Läufer ersetzt den Platzhalter SEK)",
+   "exit": 2,
+   "minuten": 0,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: nH 12: kein Ergebnis · nH 300: kein Ergebnis) · Täter: @@ PROBE-FEHLER der Deckel des Laufs fehlt (argv „3“: der Läufer ersetzt den Platzhalter SEK)",
    "gpu": "amd/rdna-3",
-   "s": 26.1,
+   "ungemessen": true,
+   "s": 0.1,
    "fremd": {
-    "s": 31.7,
-    "takte": 11,
-    "fremdS": 83.27,
-    "kerne": 2.626,
-    "fensterKerne": 3.201,
+    "s": 2.8,
+    "takte": 1,
+    "fremdS": 2.77,
+    "kerne": 0.981,
+    "fensterKerne": 0.981,
     "namen": [
      [
-      "MsMpEng.exe",
-      15.42
-     ],
-     [
       "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      13.5
+      1.09
      ],
      [
-      "git reset --hard --no-recurse-submodules --quiet",
-      12.31
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      0.63
+     ],
+     [
+      "nordvpn-service.exe",
+      0.28
      ]
     ],
-    "dienerS": 41.33,
+    "dienerS": 1.22,
     "diener": [
      [
-      "System",
-      24.69
+      "WmiPrvSE.exe",
+      0.61
      ],
      [
       "dwm.exe",
-      8.83
+      0.53
      ]
     ],
-    "eigenS": 189.41,
+    "eigenS": 4.36,
     "schwelle": 0.5,
     "eich": "win32, Radeon 890M, 24 Kerne"
    },
-   "ungemessen": true,
-   "zeit": "2026-11-09T11:22:50.950Z",
+   "zeit": "2026-11-09T12:03:06.539Z",
    "abdruck": "d25ae70e35f2",
    "port": 7804,
    "bahn": "sitzung",
@@ -5734,150 +5767,100 @@
   },
   "siedlung.K5#2": {
    "gruen": false,
-   "zahl": "Fremd-Last: MsMpEng.exe 15,4 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 13,5 CPU-s · git reset --hard --no-recurse-submodules --quiet 12,3 CPU-s — 3,20 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 83,3 CPU-s in 31,7 s) — kein Urteil, UNGEMESSEN (die Probe sah: nH 12 erstes Haus nach 1444.9 ms (haus_tudor, huelle in 200.4 m, Bau-Hash 59e4fc62) · nH 300 erstes Haus nach 746.7 ms (haus_tudor, mesh in 47 m, Bau-Hash 84121d20))",
-   "exit": 0,
-   "minuten": 0.43,
-   "grund": "Fremd-Last: MsMpEng.exe 15,4 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 13,5 CPU-s · git reset --hard --no-recurse-submodules --quiet 12,3 CPU-s — 3,20 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 83,3 CPU-s in 31,7 s) — kein Urteil, UNGEMESSEN (die Probe sah: nH 12 erstes Haus nach 1444.9 ms (haus_tudor, huelle in 200.4 m, Bau-Hash 59e4fc62) · nH 300 erstes Haus nach 746.7 ms (haus_tudor, mesh in 47 m, Bau-Hash 84121d20))",
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: nH 12: kein Ergebnis · nH 300: kein Ergebnis) · Täter: @@ PROBE-FEHLER der Deckel des Laufs fehlt (argv „3“: der Läufer ersetzt den Platzhalter SEK)",
+   "exit": 2,
+   "minuten": 0,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: nH 12: kein Ergebnis · nH 300: kein Ergebnis) · Täter: @@ PROBE-FEHLER der Deckel des Laufs fehlt (argv „3“: der Läufer ersetzt den Platzhalter SEK)",
    "gpu": "amd/rdna-3",
-   "s": 26.1,
+   "ungemessen": true,
+   "s": 0.1,
    "fremd": {
-    "s": 31.7,
-    "takte": 11,
-    "fremdS": 83.27,
-    "kerne": 2.626,
-    "fensterKerne": 3.201,
+    "s": 2.8,
+    "takte": 1,
+    "fremdS": 2.77,
+    "kerne": 0.981,
+    "fensterKerne": 0.981,
     "namen": [
      [
-      "MsMpEng.exe",
-      15.42
-     ],
-     [
       "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      13.5
+      1.09
      ],
      [
-      "git reset --hard --no-recurse-submodules --quiet",
-      12.31
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      0.63
+     ],
+     [
+      "nordvpn-service.exe",
+      0.28
      ]
     ],
-    "dienerS": 41.33,
+    "dienerS": 1.22,
     "diener": [
      [
-      "System",
-      24.69
+      "WmiPrvSE.exe",
+      0.61
      ],
      [
       "dwm.exe",
-      8.83
+      0.53
      ]
     ],
-    "eigenS": 189.41,
+    "eigenS": 4.36,
     "schwelle": 0.5,
     "eich": "win32, Radeon 890M, 24 Kerne"
    },
-   "ungemessen": true,
-   "zeit": "2026-11-09T11:22:50.950Z",
+   "zeit": "2026-11-09T12:03:06.539Z",
    "abdruck": "f3fd57d2afd2",
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "siedlung.K5#1",
    "modus": "session"
   },
-  "leib.K3#2": {
-   "gruen": false,
-   "zahl": "Messort: /umstellen ohne Antwort binnen 18 s — kein Urteil, UNGEMESSEN (die Probe sah: keine Zeile LEIB_K3_BILD — Error: /umstellen ohne Antwort binnen 18 s |     at ClientRequest.<anonymous> ([eval]:58:62) |     at Object.onceWrapper (node:events:630:28) |     at ClientRequest.emit (node:events:509:28) |     at  (Exit 2)) · Täter: @@ PROBE-FEHLER Error: /umstellen ohne Antwort binnen 18 s |     at ClientRequest.<anonymous> ([eval]:58:62) |     at Object.onceWrapper (node:events:630:28) |     at ClientRequest.emit (node:events:509:28) |     at Socket.emitRequestTimeout (node:_http_client:948:9)",
-   "exit": 2,
-   "minuten": 0.64,
-   "grund": "Messort: /umstellen ohne Antwort binnen 18 s — kein Urteil, UNGEMESSEN (die Probe sah: keine Zeile LEIB_K3_BILD — Error: /umstellen ohne Antwort binnen 18 s |     at ClientRequest.<anonymous> ([eval]:58:62) |     at Object.onceWrapper (node:events:630:28) |     at ClientRequest.emit (node:events:509:28) |     at  (Exit 2)) · Täter: @@ PROBE-FEHLER Error: /umstellen ohne Antwort binnen 18 s |     at ClientRequest.<anonymous> ([eval]:58:62) |     at Object.onceWrapper (node:events:630:28) |     at ClientRequest.emit (node:events:509:28) |     at Socket.emitRequestTimeout (node:_http_client:948:9)",
-   "gpu": "amd/rdna-3",
-   "ungemessen": true,
-   "s": 38.2,
-   "fremd": {
-    "s": 43.3,
-    "takte": 16,
-    "fremdS": 70.97,
-    "kerne": 1.641,
-    "fensterKerne": 2.358,
-    "namen": [
-     [
-      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      13.88
-     ],
-     [
-      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      13.64
-     ],
-     [
-      "msedgewebview2.exe --type=renderer --noerrdialogs --user-data-dir=EBWebView --webview-exe-",
-      8.16
-     ]
-    ],
-    "dienerS": 34.48,
-    "diener": [
-     [
-      "System",
-      17.23
-     ],
-     [
-      "dwm.exe",
-      8.55
-     ]
-    ],
-    "eigenS": 143.95,
-    "schwelle": 0.5,
-    "eich": "win32, Radeon 890M, 24 Kerne"
-   },
-   "zeit": "2026-11-09T11:23:35.241Z",
-   "abdruck": "3ad18f4155ae",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session"
-  },
   "tore.K1#1": {
    "gruen": false,
-   "zahl": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 18,7 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 12,7 CPU-s · svchost.exe 8,3 CPU-s — 1,50 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 65,9 CPU-s in 65,3 s) — kein Urteil, UNGEMESSEN (die Probe sah: t ego 4929 · third 11235 · ego 5231 · third 10731 · ego 5182 ms (Soll ≤ 2000) · Luma min 0.039 · Frame max 360 ms · Geburt 6969 ms · rot: #1 ego f081be72→49d83000: t 4929 ms, 222 Bilder schwarz und 0 weiß (Luma 0.039–0.319), 15 Frames über )",
+   "zahl": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 23,1 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 13,8 CPU-s · svchost.exe 6,8 CPU-s — 1,69 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 58,3 CPU-s in 49,1 s) — kein Urteil, UNGEMESSEN (die Probe sah: t ego — · third — · ego — · third 3569 · ego — ms (Soll ≤ 2000) · Luma min 0.007 · Frame max 347 ms · Geburt 5339 ms · rot: #1 ego 451cbb0c→19e61a17: t ohne sichtbare Eingabe, 215 Bilder schwarz und 0 weiß (Luma 0.008–0.271), 6 Frames über )",
    "exit": 0,
-   "minuten": 1.03,
-   "grund": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 18,7 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 12,7 CPU-s · svchost.exe 8,3 CPU-s — 1,50 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 65,9 CPU-s in 65,3 s) — kein Urteil, UNGEMESSEN (die Probe sah: t ego 4929 · third 11235 · ego 5231 · third 10731 · ego 5182 ms (Soll ≤ 2000) · Luma min 0.039 · Frame max 360 ms · Geburt 6969 ms · rot: #1 ego f081be72→49d83000: t 4929 ms, 222 Bilder schwarz und 0 weiß (Luma 0.039–0.319), 15 Frames über )",
+   "minuten": 0.72,
+   "grund": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 23,1 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 13,8 CPU-s · svchost.exe 6,8 CPU-s — 1,69 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 58,3 CPU-s in 49,1 s) — kein Urteil, UNGEMESSEN (die Probe sah: t ego — · third — · ego — · third 3569 · ego — ms (Soll ≤ 2000) · Luma min 0.007 · Frame max 347 ms · Geburt 5339 ms · rot: #1 ego 451cbb0c→19e61a17: t ohne sichtbare Eingabe, 215 Bilder schwarz und 0 weiß (Luma 0.008–0.271), 6 Frames über )",
    "gpu": "amd/rdna-3",
-   "s": 61.7,
+   "s": 43.3,
    "fremd": {
-    "s": 65.3,
-    "takte": 24,
-    "fremdS": 65.89,
-    "kerne": 1.009,
-    "fensterKerne": 1.495,
+    "s": 49.1,
+    "takte": 18,
+    "fremdS": 58.28,
+    "kerne": 1.188,
+    "fensterKerne": 1.691,
     "namen": [
      [
       "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      18.66
+      23.06
      ],
      [
       "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      12.69
+      13.83
      ],
      [
       "svchost.exe",
-      8.31
+      6.83
      ]
     ],
-    "dienerS": 44.22,
+    "dienerS": 39.02,
     "diener": [
      [
       "System",
-      18.34
+      14.19
      ],
      [
-      "WmiPrvSE.exe",
-      13.94
+      "dwm.exe",
+      14
      ]
     ],
-    "eigenS": 296.23,
+    "eigenS": 219.09,
     "schwelle": 0.5,
     "eich": "win32, Radeon 890M, 24 Kerne"
    },
    "ungemessen": true,
-   "zeit": "2026-11-09T11:24:57.095Z",
+   "zeit": "2026-11-09T12:03:53.916Z",
    "abdruck": "248a1713c159",
    "port": 7804,
    "bahn": "sitzung",
@@ -5891,43 +5874,43 @@
    "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine K8-Tafel (Exit 2)) · Täter: @@PUNKTE@@ FEHLER TypeError: r._genesisPortalRing is not a function |     at evaluate (evaluate at toreK3Seite (eval at seiteLauf ([eval]:69:15), <anonymous>:11:12), <anonymous>:3:2) |     at #evaluate (C:\\Users\\micha\\AnazhRealm-profiband\\node_modules\\puppeteer-core\\lib\\cjs\\puppeteer\\cdp\\ExecutionCo",
    "gpu": "amd/rdna-3",
    "ungemessen": true,
-   "s": 0.7,
+   "s": 0.6,
    "fremd": {
-    "s": 3,
+    "s": 2.5,
     "takte": 1,
-    "fremdS": 2.56,
-    "kerne": 0.855,
-    "fensterKerne": 0.855,
+    "fremdS": 2.59,
+    "kerne": 1.048,
+    "fensterKerne": 1.048,
     "namen": [
      [
       "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      0.73
-     ],
-     [
-      "svchost.exe",
-      0.56
+      1.05
      ],
      [
       "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      0.45
-     ]
-    ],
-    "dienerS": 1.39,
-    "diener": [
-     [
-      "WmiPrvSE.exe",
-      0.66
+      0.52
      ],
      [
-      "dwm.exe",
-      0.39
+      "MsMpEng.exe",
+      0.38
      ]
     ],
-    "eigenS": 4.27,
+    "dienerS": 1.19,
+    "diener": [
+     [
+      "dwm.exe",
+      0.67
+     ],
+     [
+      "System",
+      0.3
+     ]
+    ],
+    "eigenS": 6.48,
     "schwelle": 0.5,
     "eich": "win32, Radeon 890M, 24 Kerne"
    },
-   "zeit": "2026-11-09T11:26:11.670Z",
+   "zeit": "2026-11-09T12:04:49.477Z",
    "abdruck": "fe658a7efdd8",
    "port": 7804,
    "bahn": "sitzung",
@@ -5941,43 +5924,43 @@
    "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine K8-Tafel (Exit 2)) · Täter: @@PUNKTE@@ FEHLER TypeError: r._genesisPortalRing is not a function |     at evaluate (evaluate at toreK3Seite (eval at seiteLauf ([eval]:69:15), <anonymous>:11:12), <anonymous>:3:2) |     at #evaluate (C:\\Users\\micha\\AnazhRealm-profiband\\node_modules\\puppeteer-core\\lib\\cjs\\puppeteer\\cdp\\ExecutionCo",
    "gpu": "amd/rdna-3",
    "ungemessen": true,
-   "s": 0.7,
+   "s": 0.6,
    "fremd": {
-    "s": 3,
+    "s": 2.5,
     "takte": 1,
-    "fremdS": 2.56,
-    "kerne": 0.855,
-    "fensterKerne": 0.855,
+    "fremdS": 2.59,
+    "kerne": 1.048,
+    "fensterKerne": 1.048,
     "namen": [
      [
       "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      0.73
-     ],
-     [
-      "svchost.exe",
-      0.56
+      1.05
      ],
      [
       "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      0.45
-     ]
-    ],
-    "dienerS": 1.39,
-    "diener": [
-     [
-      "WmiPrvSE.exe",
-      0.66
+      0.52
      ],
      [
-      "dwm.exe",
-      0.39
+      "MsMpEng.exe",
+      0.38
      ]
     ],
-    "eigenS": 4.27,
+    "dienerS": 1.19,
+    "diener": [
+     [
+      "dwm.exe",
+      0.67
+     ],
+     [
+      "System",
+      0.3
+     ]
+    ],
+    "eigenS": 6.48,
     "schwelle": 0.5,
     "eich": "win32, Radeon 890M, 24 Kerne"
    },
-   "zeit": "2026-11-09T11:26:11.670Z",
+   "zeit": "2026-11-09T12:04:49.477Z",
    "abdruck": "2eef9f974ab7",
    "port": 7804,
    "bahn": "sitzung",
@@ -5986,48 +5969,49 @@
   },
   "profiband.K1#1": {
    "gruen": false,
-   "ungemessen": true,
-   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: PROFIBAND {\"art\":\"gang\",\"sekunden\":90.1,\"schritte\":[[\"genesis-ego\",20.7],[\"genesis-third\",8.9],[\"genesis-third-geht\",3.4],[\"wiese-ego\",35.5],[\"wiese-ego-geht\",3)",
+   "zahl": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 40,3 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 31,3 CPU-s · MsMpEng.exe 16,6 CPU-s — 3,15 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 148,4 CPU-s in 90,6 s) — kein Urteil, UNGEMESSEN (die Probe sah: Bild-p95 ≤ 33: wiese-ego-geht 100.43 · wiese-ego-sprint 83.71 · wiese-fahrt ? · genesis-third-geht 84.05 · stadt-ego-geht ? · wiese-ego-sturm ? · Gang 89 s · [linse-gpu] amd/rdna-3 — ROT 6: wiese-ego-geht Bild-p95 100.43 > 33 | wiese-ego-sp)",
    "exit": 0,
-   "minuten": 1.51,
-   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: PROFIBAND {\"art\":\"gang\",\"sekunden\":90.1,\"schritte\":[[\"genesis-ego\",20.7],[\"genesis-third\",8.9],[\"genesis-third-geht\",3.4],[\"wiese-ego\",35.5],[\"wiese-ego-geht\",3)",
-   "s": 90.4,
+   "minuten": 1.49,
+   "grund": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 40,3 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 31,3 CPU-s · MsMpEng.exe 16,6 CPU-s — 3,15 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 148,4 CPU-s in 90,6 s) — kein Urteil, UNGEMESSEN (die Probe sah: Bild-p95 ≤ 33: wiese-ego-geht 100.43 · wiese-ego-sprint 83.71 · wiese-fahrt ? · genesis-third-geht 84.05 · stadt-ego-geht ? · wiese-ego-sturm ? · Gang 89 s · [linse-gpu] amd/rdna-3 — ROT 6: wiese-ego-geht Bild-p95 100.43 > 33 | wiese-ego-sp)",
+   "gpu": "amd/rdna-3",
+   "s": 89.1,
    "fremd": {
-    "s": 93.4,
-    "takte": 33,
-    "fremdS": 89.42,
-    "kerne": 0.958,
-    "fensterKerne": 1.373,
+    "s": 90.6,
+    "takte": 32,
+    "fremdS": 148.44,
+    "kerne": 1.639,
+    "fensterKerne": 3.153,
     "namen": [
      [
       "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      24.3
+      40.34
      ],
      [
       "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      16.75
+      31.31
      ],
      [
-      "svchost.exe",
-      14.33
+      "MsMpEng.exe",
+      16.64
      ]
     ],
-    "dienerS": 49.45,
+    "dienerS": 51.39,
     "diener": [
      [
       "WmiPrvSE.exe",
-      21.72
+      21.06
      ],
      [
       "dwm.exe",
-      18.86
+      18.72
      ]
     ],
-    "eigenS": 309.39,
+    "eigenS": 279.02,
     "schwelle": 0.5,
     "eich": "win32, Radeon 890M, 24 Kerne"
    },
-   "zeit": "2026-11-09T11:27:50.544Z",
+   "ungemessen": true,
+   "zeit": "2026-11-09T12:06:14.584Z",
    "abdruck": "a4809dc2e930",
    "port": 7804,
    "bahn": "sitzung",
@@ -6035,48 +6019,49 @@
   },
   "profiband.K1#2": {
    "gruen": false,
-   "ungemessen": true,
-   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: PROFIBAND {\"art\":\"gang\",\"sekunden\":90.1,\"schritte\":[[\"genesis-ego\",20.7],[\"genesis-third\",8.9],[\"genesis-third-geht\",3.4],[\"wiese-ego\",35.5],[\"wiese-ego-geht\",3)",
+   "zahl": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 40,3 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 31,3 CPU-s · MsMpEng.exe 16,6 CPU-s — 3,15 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 148,4 CPU-s in 90,6 s) — kein Urteil, UNGEMESSEN (die Probe sah: Bild-p95 ≤ 16.7: wiese-ego-steht 58.64 · wiese-third-steht ? · genesis-ego-steht 33.67 · genesis-third-steht 41.96 · wiese-ego-geht 100.43 · wiese-ego-sprint 83.71 · wiese-fahrt ? · genesis-third-geht 84.05 · stadt-ego-geht ? · wiese-ego-st)",
    "exit": 0,
-   "minuten": 1.51,
-   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: PROFIBAND {\"art\":\"gang\",\"sekunden\":90.1,\"schritte\":[[\"genesis-ego\",20.7],[\"genesis-third\",8.9],[\"genesis-third-geht\",3.4],[\"wiese-ego\",35.5],[\"wiese-ego-geht\",3)",
-   "s": 90.4,
+   "minuten": 1.49,
+   "grund": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 40,3 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 31,3 CPU-s · MsMpEng.exe 16,6 CPU-s — 3,15 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 148,4 CPU-s in 90,6 s) — kein Urteil, UNGEMESSEN (die Probe sah: Bild-p95 ≤ 16.7: wiese-ego-steht 58.64 · wiese-third-steht ? · genesis-ego-steht 33.67 · genesis-third-steht 41.96 · wiese-ego-geht 100.43 · wiese-ego-sprint 83.71 · wiese-fahrt ? · genesis-third-geht 84.05 · stadt-ego-geht ? · wiese-ego-st)",
+   "gpu": "amd/rdna-3",
+   "s": 89.1,
    "fremd": {
-    "s": 93.4,
-    "takte": 33,
-    "fremdS": 89.42,
-    "kerne": 0.958,
-    "fensterKerne": 1.373,
+    "s": 90.6,
+    "takte": 32,
+    "fremdS": 148.44,
+    "kerne": 1.639,
+    "fensterKerne": 3.153,
     "namen": [
      [
       "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      24.3
+      40.34
      ],
      [
       "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      16.75
+      31.31
      ],
      [
-      "svchost.exe",
-      14.33
+      "MsMpEng.exe",
+      16.64
      ]
     ],
-    "dienerS": 49.45,
+    "dienerS": 51.39,
     "diener": [
      [
       "WmiPrvSE.exe",
-      21.72
+      21.06
      ],
      [
       "dwm.exe",
-      18.86
+      18.72
      ]
     ],
-    "eigenS": 309.39,
+    "eigenS": 279.02,
     "schwelle": 0.5,
     "eich": "win32, Radeon 890M, 24 Kerne"
    },
-   "zeit": "2026-11-09T11:27:50.544Z",
+   "ungemessen": true,
+   "zeit": "2026-11-09T12:06:14.584Z",
    "abdruck": "ed7fcd8a82d3",
    "port": 7804,
    "bahn": "sitzung",
@@ -6085,48 +6070,49 @@
   },
   "pflicht.E#1": {
    "gruen": false,
-   "ungemessen": true,
-   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: PROFIBAND {\"art\":\"gang\",\"sekunden\":90.1,\"schritte\":[[\"genesis-ego\",20.7],[\"genesis-third\",8.9],[\"genesis-third-geht\",3.4],[\"wiese-ego\",35.5],[\"wiese-ego-geht\",3)",
+   "zahl": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 40,3 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 31,3 CPU-s · MsMpEng.exe 16,6 CPU-s — 3,15 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 148,4 CPU-s in 90,6 s) — kein Urteil, UNGEMESSEN (die Probe sah: Bild-p95 ≤ 33: wiese-ego-steht 58.64 · wiese-third-steht ? · genesis-ego-steht 33.67 · genesis-third-steht 41.96 · Gang 89 s · [linse-gpu] amd/rdna-3 — ROT 4: wiese-ego-steht Bild-p95 58.64 > 33 | wiese-third-steht: ungemessen (die Uhr 84 s)",
    "exit": 0,
-   "minuten": 1.51,
-   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: PROFIBAND {\"art\":\"gang\",\"sekunden\":90.1,\"schritte\":[[\"genesis-ego\",20.7],[\"genesis-third\",8.9],[\"genesis-third-geht\",3.4],[\"wiese-ego\",35.5],[\"wiese-ego-geht\",3)",
-   "s": 90.4,
+   "minuten": 1.49,
+   "grund": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 40,3 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 31,3 CPU-s · MsMpEng.exe 16,6 CPU-s — 3,15 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 148,4 CPU-s in 90,6 s) — kein Urteil, UNGEMESSEN (die Probe sah: Bild-p95 ≤ 33: wiese-ego-steht 58.64 · wiese-third-steht ? · genesis-ego-steht 33.67 · genesis-third-steht 41.96 · Gang 89 s · [linse-gpu] amd/rdna-3 — ROT 4: wiese-ego-steht Bild-p95 58.64 > 33 | wiese-third-steht: ungemessen (die Uhr 84 s)",
+   "gpu": "amd/rdna-3",
+   "s": 89.1,
    "fremd": {
-    "s": 93.4,
-    "takte": 33,
-    "fremdS": 89.42,
-    "kerne": 0.958,
-    "fensterKerne": 1.373,
+    "s": 90.6,
+    "takte": 32,
+    "fremdS": 148.44,
+    "kerne": 1.639,
+    "fensterKerne": 3.153,
     "namen": [
      [
       "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      24.3
+      40.34
      ],
      [
       "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      16.75
+      31.31
      ],
      [
-      "svchost.exe",
-      14.33
+      "MsMpEng.exe",
+      16.64
      ]
     ],
-    "dienerS": 49.45,
+    "dienerS": 51.39,
     "diener": [
      [
       "WmiPrvSE.exe",
-      21.72
+      21.06
      ],
      [
       "dwm.exe",
-      18.86
+      18.72
      ]
     ],
-    "eigenS": 309.39,
+    "eigenS": 279.02,
     "schwelle": 0.5,
     "eich": "win32, Radeon 890M, 24 Kerne"
    },
-   "zeit": "2026-11-09T11:27:50.544Z",
+   "ungemessen": true,
+   "zeit": "2026-11-09T12:06:14.584Z",
    "abdruck": "faadcb87e50f",
    "port": 7804,
    "bahn": "sitzung",
@@ -6135,48 +6121,49 @@
   },
   "profiband.K2#1": {
    "gruen": false,
-   "ungemessen": true,
-   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: PROFIBAND {\"art\":\"gang\",\"sekunden\":90.1,\"schritte\":[[\"genesis-ego\",20.7],[\"genesis-third\",8.9],[\"genesis-third-geht\",3.4],[\"wiese-ego\",35.5],[\"wiese-ego-geht\",3)",
+   "zahl": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 40,3 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 31,3 CPU-s · MsMpEng.exe 16,6 CPU-s — 3,15 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 148,4 CPU-s in 90,6 s) — kein Urteil, UNGEMESSEN (die Probe sah: Belegung p95 ≤ 5.8: wiese-ego-steht 34.9 · wiese-third-steht ? · genesis-ego-steht 36.79 · genesis-third-steht 35.78 · Gang 89 s · [linse-gpu] amd/rdna-3 — ROT 4: wiese-ego-steht Belegung p95 34.9 > 5.8 | wiese-third-steht: ungemessen (die )",
    "exit": 0,
-   "minuten": 1.51,
-   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: PROFIBAND {\"art\":\"gang\",\"sekunden\":90.1,\"schritte\":[[\"genesis-ego\",20.7],[\"genesis-third\",8.9],[\"genesis-third-geht\",3.4],[\"wiese-ego\",35.5],[\"wiese-ego-geht\",3)",
-   "s": 90.4,
+   "minuten": 1.49,
+   "grund": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 40,3 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 31,3 CPU-s · MsMpEng.exe 16,6 CPU-s — 3,15 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 148,4 CPU-s in 90,6 s) — kein Urteil, UNGEMESSEN (die Probe sah: Belegung p95 ≤ 5.8: wiese-ego-steht 34.9 · wiese-third-steht ? · genesis-ego-steht 36.79 · genesis-third-steht 35.78 · Gang 89 s · [linse-gpu] amd/rdna-3 — ROT 4: wiese-ego-steht Belegung p95 34.9 > 5.8 | wiese-third-steht: ungemessen (die )",
+   "gpu": "amd/rdna-3",
+   "s": 89.1,
    "fremd": {
-    "s": 93.4,
-    "takte": 33,
-    "fremdS": 89.42,
-    "kerne": 0.958,
-    "fensterKerne": 1.373,
+    "s": 90.6,
+    "takte": 32,
+    "fremdS": 148.44,
+    "kerne": 1.639,
+    "fensterKerne": 3.153,
     "namen": [
      [
       "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      24.3
+      40.34
      ],
      [
       "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      16.75
+      31.31
      ],
      [
-      "svchost.exe",
-      14.33
+      "MsMpEng.exe",
+      16.64
      ]
     ],
-    "dienerS": 49.45,
+    "dienerS": 51.39,
     "diener": [
      [
       "WmiPrvSE.exe",
-      21.72
+      21.06
      ],
      [
       "dwm.exe",
-      18.86
+      18.72
      ]
     ],
-    "eigenS": 309.39,
+    "eigenS": 279.02,
     "schwelle": 0.5,
     "eich": "win32, Radeon 890M, 24 Kerne"
    },
-   "zeit": "2026-11-09T11:27:50.544Z",
+   "ungemessen": true,
+   "zeit": "2026-11-09T12:06:14.584Z",
    "abdruck": "bded3260dbec",
    "port": 7804,
    "bahn": "sitzung",
@@ -6185,48 +6172,49 @@
   },
   "profiband.K2#2": {
    "gruen": false,
-   "ungemessen": true,
-   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: PROFIBAND {\"art\":\"gang\",\"sekunden\":90.1,\"schritte\":[[\"genesis-ego\",20.7],[\"genesis-third\",8.9],[\"genesis-third-geht\",3.4],[\"wiese-ego\",35.5],[\"wiese-ego-geht\",3)",
+   "zahl": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 40,3 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 31,3 CPU-s · MsMpEng.exe 16,6 CPU-s — 3,15 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 148,4 CPU-s in 90,6 s) — kein Urteil, UNGEMESSEN (die Probe sah: Belegung p95 ≤ 5.8: wiese-ego-steht 34.9 · wiese-third-steht ? · genesis-ego-steht 36.79 · genesis-third-steht 35.78 ‖ Belegung p95 ≤ 8: wiese-ego-geht 99.4 · wiese-ego-sprint 83.37 · wiese-fahrt ? · genesis-third-geht 81.88 · stadt-ego-geh)",
    "exit": 0,
-   "minuten": 1.51,
-   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: PROFIBAND {\"art\":\"gang\",\"sekunden\":90.1,\"schritte\":[[\"genesis-ego\",20.7],[\"genesis-third\",8.9],[\"genesis-third-geht\",3.4],[\"wiese-ego\",35.5],[\"wiese-ego-geht\",3)",
-   "s": 90.4,
+   "minuten": 1.49,
+   "grund": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 40,3 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 31,3 CPU-s · MsMpEng.exe 16,6 CPU-s — 3,15 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 148,4 CPU-s in 90,6 s) — kein Urteil, UNGEMESSEN (die Probe sah: Belegung p95 ≤ 5.8: wiese-ego-steht 34.9 · wiese-third-steht ? · genesis-ego-steht 36.79 · genesis-third-steht 35.78 ‖ Belegung p95 ≤ 8: wiese-ego-geht 99.4 · wiese-ego-sprint 83.37 · wiese-fahrt ? · genesis-third-geht 81.88 · stadt-ego-geh)",
+   "gpu": "amd/rdna-3",
+   "s": 89.1,
    "fremd": {
-    "s": 93.4,
-    "takte": 33,
-    "fremdS": 89.42,
-    "kerne": 0.958,
-    "fensterKerne": 1.373,
+    "s": 90.6,
+    "takte": 32,
+    "fremdS": 148.44,
+    "kerne": 1.639,
+    "fensterKerne": 3.153,
     "namen": [
      [
       "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      24.3
+      40.34
      ],
      [
       "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      16.75
+      31.31
      ],
      [
-      "svchost.exe",
-      14.33
+      "MsMpEng.exe",
+      16.64
      ]
     ],
-    "dienerS": 49.45,
+    "dienerS": 51.39,
     "diener": [
      [
       "WmiPrvSE.exe",
-      21.72
+      21.06
      ],
      [
       "dwm.exe",
-      18.86
+      18.72
      ]
     ],
-    "eigenS": 309.39,
+    "eigenS": 279.02,
     "schwelle": 0.5,
     "eich": "win32, Radeon 890M, 24 Kerne"
    },
-   "zeit": "2026-11-09T11:27:50.544Z",
+   "ungemessen": true,
+   "zeit": "2026-11-09T12:06:14.584Z",
    "abdruck": "581af30fec74",
    "port": 7804,
    "bahn": "sitzung",
@@ -6235,48 +6223,49 @@
   },
   "profiband.K3#1": {
    "gruen": false,
-   "ungemessen": true,
-   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: PROFIBAND {\"art\":\"gang\",\"sekunden\":90.1,\"schritte\":[[\"genesis-ego\",20.7],[\"genesis-third\",8.9],[\"genesis-third-geht\",3.4],[\"wiese-ego\",35.5],[\"wiese-ego-geht\",3)",
+   "zahl": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 40,3 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 31,3 CPU-s · MsMpEng.exe 16,6 CPU-s — 3,15 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 148,4 CPU-s in 90,6 s) — kein Urteil, UNGEMESSEN (die Probe sah: Band im Stand (Befehle · Dreiecke · VRAM · gpu-bank): wiese-ego 125 · 529k · 135.7 MB · 28.6 ms | wiese-third ? | genesis-ego 94 · 445k · 129.3 MB · 18.2 ms | genesis-third 108 · 408k · 125.1 MB · 18.86 ms | dorf-ego ? | dorf-third ? · Gang)",
    "exit": 0,
-   "minuten": 1.51,
-   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: PROFIBAND {\"art\":\"gang\",\"sekunden\":90.1,\"schritte\":[[\"genesis-ego\",20.7],[\"genesis-third\",8.9],[\"genesis-third-geht\",3.4],[\"wiese-ego\",35.5],[\"wiese-ego-geht\",3)",
-   "s": 90.4,
+   "minuten": 1.49,
+   "grund": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 40,3 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 31,3 CPU-s · MsMpEng.exe 16,6 CPU-s — 3,15 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 148,4 CPU-s in 90,6 s) — kein Urteil, UNGEMESSEN (die Probe sah: Band im Stand (Befehle · Dreiecke · VRAM · gpu-bank): wiese-ego 125 · 529k · 135.7 MB · 28.6 ms | wiese-third ? | genesis-ego 94 · 445k · 129.3 MB · 18.2 ms | genesis-third 108 · 408k · 125.1 MB · 18.86 ms | dorf-ego ? | dorf-third ? · Gang)",
+   "gpu": "amd/rdna-3",
+   "s": 89.1,
    "fremd": {
-    "s": 93.4,
-    "takte": 33,
-    "fremdS": 89.42,
-    "kerne": 0.958,
-    "fensterKerne": 1.373,
+    "s": 90.6,
+    "takte": 32,
+    "fremdS": 148.44,
+    "kerne": 1.639,
+    "fensterKerne": 3.153,
     "namen": [
      [
       "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      24.3
+      40.34
      ],
      [
       "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      16.75
+      31.31
      ],
      [
-      "svchost.exe",
-      14.33
+      "MsMpEng.exe",
+      16.64
      ]
     ],
-    "dienerS": 49.45,
+    "dienerS": 51.39,
     "diener": [
      [
       "WmiPrvSE.exe",
-      21.72
+      21.06
      ],
      [
       "dwm.exe",
-      18.86
+      18.72
      ]
     ],
-    "eigenS": 309.39,
+    "eigenS": 279.02,
     "schwelle": 0.5,
     "eich": "win32, Radeon 890M, 24 Kerne"
    },
-   "zeit": "2026-11-09T11:27:50.544Z",
+   "ungemessen": true,
+   "zeit": "2026-11-09T12:06:14.584Z",
    "abdruck": "f53ad5c4b546",
    "port": 7804,
    "bahn": "sitzung",
@@ -6285,48 +6274,49 @@
   },
   "profiband.K3#2": {
    "gruen": false,
-   "ungemessen": true,
-   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: PROFIBAND {\"art\":\"gang\",\"sekunden\":90.1,\"schritte\":[[\"genesis-ego\",20.7],[\"genesis-third\",8.9],[\"genesis-third-geht\",3.4],[\"wiese-ego\",35.5],[\"wiese-ego-geht\",3)",
+   "zahl": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 40,3 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 31,3 CPU-s · MsMpEng.exe 16,6 CPU-s — 3,15 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 148,4 CPU-s in 90,6 s) — kein Urteil, UNGEMESSEN (die Probe sah: Befehle p95 ≤ 208: wiese-ego-steht 53 · wiese-third-steht ? · genesis-ego-steht 50 · genesis-third-steht 65 · wiese-ego-geht 126 · wiese-ego-sprint 137 · wiese-fahrt ? · genesis-third-geht 104 · stadt-ego-geht ? · wiese-ego-sturm ? ‖ Dreiec)",
    "exit": 0,
-   "minuten": 1.51,
-   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: PROFIBAND {\"art\":\"gang\",\"sekunden\":90.1,\"schritte\":[[\"genesis-ego\",20.7],[\"genesis-third\",8.9],[\"genesis-third-geht\",3.4],[\"wiese-ego\",35.5],[\"wiese-ego-geht\",3)",
-   "s": 90.4,
+   "minuten": 1.49,
+   "grund": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 40,3 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 31,3 CPU-s · MsMpEng.exe 16,6 CPU-s — 3,15 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 148,4 CPU-s in 90,6 s) — kein Urteil, UNGEMESSEN (die Probe sah: Befehle p95 ≤ 208: wiese-ego-steht 53 · wiese-third-steht ? · genesis-ego-steht 50 · genesis-third-steht 65 · wiese-ego-geht 126 · wiese-ego-sprint 137 · wiese-fahrt ? · genesis-third-geht 104 · stadt-ego-geht ? · wiese-ego-sturm ? ‖ Dreiec)",
+   "gpu": "amd/rdna-3",
+   "s": 89.1,
    "fremd": {
-    "s": 93.4,
-    "takte": 33,
-    "fremdS": 89.42,
-    "kerne": 0.958,
-    "fensterKerne": 1.373,
+    "s": 90.6,
+    "takte": 32,
+    "fremdS": 148.44,
+    "kerne": 1.639,
+    "fensterKerne": 3.153,
     "namen": [
      [
       "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      24.3
+      40.34
      ],
      [
       "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      16.75
+      31.31
      ],
      [
-      "svchost.exe",
-      14.33
+      "MsMpEng.exe",
+      16.64
      ]
     ],
-    "dienerS": 49.45,
+    "dienerS": 51.39,
     "diener": [
      [
       "WmiPrvSE.exe",
-      21.72
+      21.06
      ],
      [
       "dwm.exe",
-      18.86
+      18.72
      ]
     ],
-    "eigenS": 309.39,
+    "eigenS": 279.02,
     "schwelle": 0.5,
     "eich": "win32, Radeon 890M, 24 Kerne"
    },
-   "zeit": "2026-11-09T11:27:50.544Z",
+   "ungemessen": true,
+   "zeit": "2026-11-09T12:06:14.584Z",
    "abdruck": "79e11b5cf7b3",
    "port": 7804,
    "bahn": "sitzung",
@@ -6336,47 +6326,47 @@
   "speicher.K1#1": {
    "gruen": false,
    "ungemessen": true,
-   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: z2 platz geladen={\"x\":0,\"z\":0,\"b\":0,\"e\":0,\"w\":\"49d83000-98b7-4e05-a87b-249f79dd124b\"} alter=2.531 verloren=0/0 erw={\"key\":\"-1,0\",\"nH\":11,\"x\":-119.71764705882353)",
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: z2 platz geladen={\"x\":0,\"z\":0,\"b\":0,\"e\":0,\"w\":\"19e61a17-464a-48f6-a2dd-e811e0a9f7ed\"} alter=7.665 verloren=0/0 erw={\"key\":\"-1,0\",\"nH\":11,\"x\":-119.71764705882353)",
    "exit": 1,
    "minuten": 0.76,
-   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: z2 platz geladen={\"x\":0,\"z\":0,\"b\":0,\"e\":0,\"w\":\"49d83000-98b7-4e05-a87b-249f79dd124b\"} alter=2.531 verloren=0/0 erw={\"key\":\"-1,0\",\"nH\":11,\"x\":-119.71764705882353)",
-   "s": 45.7,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: z2 platz geladen={\"x\":0,\"z\":0,\"b\":0,\"e\":0,\"w\":\"19e61a17-464a-48f6-a2dd-e811e0a9f7ed\"} alter=7.665 verloren=0/0 erw={\"key\":\"-1,0\",\"nH\":11,\"x\":-119.71764705882353)",
+   "s": 45.5,
    "fremd": {
-    "s": 48.5,
-    "takte": 18,
-    "fremdS": 41.69,
-    "kerne": 0.86,
-    "fensterKerne": 1.041,
+    "s": 47.6,
+    "takte": 17,
+    "fremdS": 84.61,
+    "kerne": 1.778,
+    "fensterKerne": 2.095,
     "namen": [
      [
-      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      14.25
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      36.31
      ],
      [
-      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      8.77
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      21.95
      ],
      [
       "MsMpEng.exe",
-      6.69
+      6.66
      ]
     ],
-    "dienerS": 33.34,
+    "dienerS": 32.89,
     "diener": [
      [
-      "dwm.exe",
-      13.52
+      "WmiPrvSE.exe",
+      11.14
      ],
      [
-      "WmiPrvSE.exe",
-      10.67
+      "dwm.exe",
+      11.02
      ]
     ],
-    "eigenS": 269.03,
+    "eigenS": 264.16,
     "schwelle": 0.5,
     "eich": "win32, Radeon 890M, 24 Kerne"
    },
-   "zeit": "2026-11-09T11:29:44.113Z",
+   "zeit": "2026-11-09T12:08:07.334Z",
    "abdruck": "f84abebec58b",
    "port": 7804,
    "bahn": "sitzung",
@@ -6385,47 +6375,47 @@
   "speicher.K1#2": {
    "gruen": false,
    "ungemessen": true,
-   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: z2 platz geladen={\"x\":0,\"z\":0,\"b\":0,\"e\":0,\"w\":\"49d83000-98b7-4e05-a87b-249f79dd124b\"} alter=2.531 verloren=0/0 erw={\"key\":\"-1,0\",\"nH\":11,\"x\":-119.71764705882353)",
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: z2 platz geladen={\"x\":0,\"z\":0,\"b\":0,\"e\":0,\"w\":\"19e61a17-464a-48f6-a2dd-e811e0a9f7ed\"} alter=7.665 verloren=0/0 erw={\"key\":\"-1,0\",\"nH\":11,\"x\":-119.71764705882353)",
    "exit": 1,
    "minuten": 0.76,
-   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: z2 platz geladen={\"x\":0,\"z\":0,\"b\":0,\"e\":0,\"w\":\"49d83000-98b7-4e05-a87b-249f79dd124b\"} alter=2.531 verloren=0/0 erw={\"key\":\"-1,0\",\"nH\":11,\"x\":-119.71764705882353)",
-   "s": 45.7,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: z2 platz geladen={\"x\":0,\"z\":0,\"b\":0,\"e\":0,\"w\":\"19e61a17-464a-48f6-a2dd-e811e0a9f7ed\"} alter=7.665 verloren=0/0 erw={\"key\":\"-1,0\",\"nH\":11,\"x\":-119.71764705882353)",
+   "s": 45.5,
    "fremd": {
-    "s": 48.5,
-    "takte": 18,
-    "fremdS": 41.69,
-    "kerne": 0.86,
-    "fensterKerne": 1.041,
+    "s": 47.6,
+    "takte": 17,
+    "fremdS": 84.61,
+    "kerne": 1.778,
+    "fensterKerne": 2.095,
     "namen": [
      [
-      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      14.25
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      36.31
      ],
      [
-      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      8.77
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      21.95
      ],
      [
       "MsMpEng.exe",
-      6.69
+      6.66
      ]
     ],
-    "dienerS": 33.34,
+    "dienerS": 32.89,
     "diener": [
      [
-      "dwm.exe",
-      13.52
+      "WmiPrvSE.exe",
+      11.14
      ],
      [
-      "WmiPrvSE.exe",
-      10.67
+      "dwm.exe",
+      11.02
      ]
     ],
-    "eigenS": 269.03,
+    "eigenS": 264.16,
     "schwelle": 0.5,
     "eich": "win32, Radeon 890M, 24 Kerne"
    },
-   "zeit": "2026-11-09T11:29:44.113Z",
+   "zeit": "2026-11-09T12:08:07.334Z",
    "abdruck": "4f9ddc930613",
    "port": 7804,
    "bahn": "sitzung",
@@ -6435,110 +6425,65 @@
  },
  "fortsetzung": [
   {
-   "start": "2026-11-09T11:20:17.003Z",
+   "start": "2026-11-09T12:03:16.038Z",
    "port": 7804,
-   "warten": 0.1,
+   "warten": 0.18,
    "bootS": 6.4,
    "grundstellungS": [
-    3.2,
-    3.2,
-    2.1,
     0.1,
-    0.1,
-    0,
-    2.7,
-    1.9,
-    4.6
+    1.8,
+    2.5,
+    4.5
    ],
-   "proben": 10,
+   "proben": 5,
    "freigaben": [],
    "orte": [
     {
      "ort": null,
-     "vor": "bauen.K5#2",
-     "s": 16.5,
-     "takte": 834,
+     "vor": "tore.K1#1",
+     "s": 17.6,
+     "takte": 881,
      "chunks": 81,
      "nach": null
     },
     {
      "ort": null,
-     "vor": "siedlung.K2#1",
-     "s": 15.3,
-     "takte": 745,
-     "chunks": 81,
-     "nach": "der Tür"
+     "vor": "tore.K3#1",
+     "s": 9.5,
+     "takte": 700,
+     "chunks": 98,
+     "nach": "der Grundstellung"
     },
     {
      "ort": null,
-     "vor": "siedlung.K5#1",
-     "s": 13.9,
-     "takte": 737,
-     "chunks": 81,
-     "nach": "der Tür"
-    },
-    {
-     "ort": null,
-     "vor": "leib.K3#2",
-     "s": 13.2,
+     "vor": "ankunft.K2#1",
+     "s": 13.5,
      "takte": 740,
      "chunks": 81,
      "nach": "der Tür"
     },
     {
      "ort": null,
-     "vor": "halten.K5#1",
-     "s": 15,
-     "takte": 637,
-     "chunks": 81,
-     "nach": "der Grundstellung"
-    },
-    {
-     "ort": null,
-     "vor": "tore.K1#1",
-     "s": 18.5,
-     "takte": 779,
-     "chunks": 81,
-     "nach": "der Grundstellung"
-    },
-    {
-     "ort": null,
-     "vor": "tore.K3#1",
-     "s": 11.8,
-     "takte": 565,
-     "chunks": 90,
-     "nach": "der Grundstellung"
-    },
-    {
-     "ort": null,
-     "vor": "ankunft.K2#1",
-     "s": 18.6,
-     "takte": 788,
-     "chunks": 81,
-     "nach": "der Tür"
-    },
-    {
-     "ort": null,
      "vor": "profiband.K1#1",
-     "s": 17.9,
-     "takte": 738,
+     "s": 20.1,
+     "takte": 791,
      "chunks": 81,
      "nach": "der Tür"
     },
     {
      "ort": null,
      "vor": "speicher.K1#1",
-     "s": 16.1,
-     "takte": 772,
+     "s": 18.2,
+     "takte": 787,
      "chunks": 81,
      "nach": "der Tür"
     }
    ],
    "wegeTueren": [
     {
-     "vor": "leib.K3#2",
+     "vor": "speicher.K1#1",
      "wege": "wege +1 [-119.1,-274.9,279.2,201/272]",
-     "s": 2.1
+     "s": 4.5
     }
    ],
    "anOrt": [
@@ -6570,49 +6515,31 @@
      }
     }
    ],
-   "ciBlicke": 11,
+   "ciBlicke": 6,
    "strom": {
     "datei": "strom.ndjson",
-    "bilder": 2946,
-    "frameP95": 234.37,
-    "taktP95": 126.65,
-    "vramMax": 146.7,
-    "seiten": 16,
+    "bilder": 1229,
+    "frameP95": 368.01,
+    "taktP95": 135.14,
+    "vramMax": 143.7,
+    "seiten": 11,
     "marken": 0,
     "fehler": 0,
     "verloren": 0,
     "ortImDeckel": [
      {
-      "probe": "leib.K3#2",
-      "m": 6430,
-      "ringVor": 4,
-      "ringMin": 0
-     },
-     {
-      "probe": "siedlung.K5#1",
-      "m": 1798,
-      "ringVor": 4,
-      "ringMin": -1
-     },
-     {
-      "probe": "siedlung.K2#1",
-      "m": 1350,
-      "ringVor": 4,
-      "ringMin": 0
-     },
-     {
       "probe": "profiband.K1#1",
-      "m": 1092,
+      "m": 1091,
       "ringVor": 4,
-      "ringMin": 1
+      "ringMin": 0
      }
     ],
-    "zapfen": 595,
-    "luecken": 11,
-    "letzteLuecke": "THREE is not defined"
+    "zapfen": 312,
+    "luecken": 8,
+    "letzteLuecke": "kein Renderer"
    },
-   "fahrtS": 607.7,
-   "minuten": 10.3
+   "fahrtS": 327.8,
+   "minuten": 5.72
   }
  ]
 }

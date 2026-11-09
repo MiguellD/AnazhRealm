@@ -1,34 +1,34 @@
 {
  "art": "gang",
- "sekunden": 90.1,
+ "sekunden": 89,
  "schritte": [
   [
    "genesis-ego",
-   20.7
+   21.8
   ],
   [
    "genesis-third",
-   8.9
+   9.5
   ],
   [
    "genesis-third-geht",
-   3.4
-  ],
-  [
-   "wiese-ego",
-   35.5
-  ],
-  [
-   "wiese-ego-geht",
    3.2
   ],
   [
+   "wiese-ego",
+   41.1
+  ],
+  [
+   "wiese-ego-geht",
+   3.6
+  ],
+  [
    "wiese-third",
-   18.4
+   "Uhr"
   ],
   [
    "wiese-sprint",
-   "Uhr"
+   9.8
   ],
   [
    "wiese-fahrt",
@@ -48,7 +48,8 @@
   ]
  ],
  "offen": [
-  "wiese-ego-sprint",
+  "band:wiese-third",
+  "wiese-third-steht",
   "wiese-fahrt",
   "wiese-ego-sturm",
   "band:dorf-ego",
@@ -57,26 +58,26 @@
  ],
  "fehler": {},
  "strom": {
-  "bloecke": 547,
-  "bilder": 2556,
-  "seiten": 12,
+  "bloecke": 265,
+  "bilder": 854,
+  "seiten": 7,
   "fehler": 0,
   "verloren": 0
  },
  "zellen": {
   "wiese-ego-steht": {
-   "n": 68,
-   "frame": 33.68,
-   "p99": 41.77,
-   "max": 41.77,
-   "ueber33": 23,
+   "n": 54,
+   "frame": 58.64,
+   "p99": 66.49,
+   "max": 66.49,
+   "ueber33": 37,
    "ueber100": 0,
-   "takt": 14.9,
-   "vram": 134.2,
-   "gpu": 6.76,
+   "takt": 19.26,
+   "vram": 135.3,
+   "gpu": 10.29,
    "gpuN": 8,
    "befehle": 53,
-   "dreiecke": 425317,
+   "dreiecke": 430037,
    "voll": 1,
    "halt": false,
    "last": 1,
@@ -89,14 +90,14 @@
     "sunny"
    ],
    "buehne": 0,
-   "eigen": 68,
+   "eigen": 54,
    "fremd": 0,
    "fenster": {
     "ein": 0.3,
     "sek": 2,
     "regler": "voll",
-    "belegung": 23.23,
-    "pflicht": 2.91,
+    "belegung": 34.9,
+    "pflicht": 3.86,
     "wache": "GRUEN",
     "wetter": "sunny",
     "weg": 0,
@@ -112,67 +113,19 @@
     }
    }
   },
-  "wiese-third-steht": {
-   "n": 68,
-   "frame": 41.49,
-   "p99": 41.97,
-   "max": 41.97,
-   "ueber33": 27,
-   "ueber100": 0,
-   "takt": 19.71,
-   "vram": 137.5,
-   "gpu": 5.16,
-   "gpuN": 8,
-   "befehle": 64,
-   "dreiecke": 506001,
-   "voll": 1,
-   "halt": false,
-   "last": 1,
-   "sicht": [
-    2
-   ],
-   "sichtWechsel": 0,
-   "sattel": "0",
-   "wetter": [
-    "sunny"
-   ],
-   "buehne": 0,
-   "eigen": 68,
-   "fremd": 0,
-   "fenster": {
-    "ein": 0.3,
-    "sek": 2,
-    "regler": "voll",
-    "belegung": 27.09,
-    "pflicht": 3.19,
-    "wache": "GRUEN",
-    "wetter": "sunny",
-    "weg": 0,
-    "buehne": 0,
-    "last": 1,
-    "skala": 0.75,
-    "probe": {
-     "gehalten": false,
-     "sicht": "third",
-     "speed": 1.15,
-     "sprint": 5.175,
-     "skala": 0.75
-    }
-   }
-  },
   "genesis-ego-steht": {
-   "n": 72,
-   "frame": 50.15,
-   "p99": 50.29,
-   "max": 50.29,
-   "ueber33": 23,
+   "n": 87,
+   "frame": 33.67,
+   "p99": 41.89,
+   "max": 41.89,
+   "ueber33": 15,
    "ueber100": 0,
-   "takt": 41.92,
-   "vram": 123.5,
-   "gpu": 6.64,
+   "takt": 36.03,
+   "vram": 130.3,
+   "gpu": 6.54,
    "gpuN": 8,
    "befehle": 50,
-   "dreiecke": 310957,
+   "dreiecke": 310969,
    "voll": 1,
    "halt": false,
    "last": 1,
@@ -185,14 +138,14 @@
     "sunny"
    ],
    "buehne": 0,
-   "eigen": 72,
+   "eigen": 87,
    "fremd": 0,
    "fenster": {
     "ein": 0.3,
     "sek": 2,
     "regler": "voll",
-    "belegung": 48.58,
-    "pflicht": 4.51,
+    "belegung": 36.79,
+    "pflicht": 2.45,
     "wache": "GRUEN",
     "wetter": "sunny",
     "weg": 0,
@@ -209,18 +162,18 @@
    }
   },
   "genesis-third-steht": {
-   "n": 60,
-   "frame": 75.31,
-   "p99": 167.35,
-   "max": 167.35,
-   "ueber33": 20,
-   "ueber100": 2,
-   "takt": 67.19,
-   "vram": 130.1,
-   "gpu": 9.7,
+   "n": 80,
+   "frame": 41.96,
+   "p99": 50.27,
+   "max": 50.27,
+   "ueber33": 18,
+   "ueber100": 0,
+   "takt": 28.68,
+   "vram": 125.1,
+   "gpu": 6.07,
    "gpuN": 8,
-   "befehle": 66,
-   "dreiecke": 365267,
+   "befehle": 65,
+   "dreiecke": 364957,
    "voll": 1,
    "halt": false,
    "last": 1,
@@ -233,14 +186,14 @@
     "sunny"
    ],
    "buehne": 0,
-   "eigen": 60,
+   "eigen": 80,
    "fremd": 0,
    "fenster": {
     "ein": 0.3,
     "sek": 2,
     "regler": "voll",
-    "belegung": 69.8,
-    "pflicht": 6.24,
+    "belegung": 35.78,
+    "pflicht": 3.3,
     "wache": "GRUEN",
     "wetter": "sunny",
     "weg": 0,
@@ -257,18 +210,18 @@
    }
   },
   "wiese-ego-geht": {
-   "n": 38,
-   "frame": 83.71,
-   "p99": 83.73,
-   "max": 83.73,
-   "ueber33": 35,
-   "ueber100": 0,
-   "takt": 82.46,
-   "vram": 137.1,
-   "gpu": 9.96,
-   "gpuN": 7,
-   "befehle": 130,
-   "dreiecke": 613387,
+   "n": 28,
+   "frame": 100.43,
+   "p99": 117.13,
+   "max": 117.13,
+   "ueber33": 28,
+   "ueber100": 3,
+   "takt": 97.52,
+   "vram": 136.8,
+   "gpu": 14.87,
+   "gpuN": 8,
+   "befehle": 126,
+   "dreiecke": 617214,
    "voll": 1,
    "halt": false,
    "last": 1,
@@ -281,17 +234,65 @@
     "sunny"
    ],
    "buehne": 0,
-   "eigen": 38,
+   "eigen": 28,
    "fremd": 0,
    "fenster": {
     "ein": 0.5,
     "sek": 2,
     "regler": "voll",
-    "belegung": 84.84,
-    "pflicht": 2.62,
+    "belegung": 99.4,
+    "pflicht": 2.69,
     "wache": "GRUEN",
     "wetter": "sunny",
-    "weg": 8,
+    "weg": 9,
+    "buehne": 0,
+    "last": 1,
+    "skala": 0.75,
+    "probe": {
+     "gehalten": false,
+     "sicht": "first",
+     "speed": 1.15,
+     "sprint": 5.175,
+     "skala": 0.75
+    }
+   }
+  },
+  "wiese-ego-sprint": {
+   "n": 34,
+   "frame": 83.71,
+   "p99": 100.44,
+   "max": 100.44,
+   "ueber33": 34,
+   "ueber100": 1,
+   "takt": 82.23,
+   "vram": 139.9,
+   "gpu": 13.33,
+   "gpuN": 8,
+   "befehle": 137,
+   "dreiecke": 685053,
+   "voll": 1,
+   "halt": false,
+   "last": 1,
+   "sicht": [
+    1
+   ],
+   "sichtWechsel": 0,
+   "sattel": "0",
+   "wetter": [
+    "sunny"
+   ],
+   "buehne": 0,
+   "eigen": 34,
+   "fremd": 0,
+   "fenster": {
+    "ein": 0.5,
+    "sek": 2,
+    "regler": "voll",
+    "belegung": 83.37,
+    "pflicht": 2.61,
+    "wache": "GRUEN",
+    "wetter": "sunny",
+    "weg": 11,
     "buehne": 0,
     "last": 1,
     "skala": 0.75,
@@ -305,18 +306,18 @@
    }
   },
   "genesis-third-geht": {
-   "n": 27,
-   "frame": 108.83,
-   "p99": 125.63,
-   "max": 125.63,
-   "ueber33": 27,
-   "ueber100": 6,
-   "takt": 103.26,
+   "n": 38,
+   "frame": 84.05,
+   "p99": 117.13,
+   "max": 117.13,
+   "ueber33": 38,
+   "ueber100": 1,
+   "takt": 76.48,
    "vram": 127,
-   "gpu": 10.46,
+   "gpu": 16.35,
    "gpuN": 8,
-   "befehle": 92,
-   "dreiecke": 431350,
+   "befehle": 104,
+   "dreiecke": 447429,
    "voll": 1,
    "halt": false,
    "last": 1,
@@ -329,14 +330,14 @@
     "sunny"
    ],
    "buehne": 0,
-   "eigen": 27,
+   "eigen": 38,
    "fremd": 0,
    "fenster": {
     "ein": 0.5,
     "sek": 2,
     "regler": "voll",
-    "belegung": 104.29,
-    "pflicht": 2.96,
+    "belegung": 81.88,
+    "pflicht": 4.91,
     "wache": "GRUEN",
     "wetter": "sunny",
     "weg": 9,
@@ -357,10 +358,10 @@
   "genesis-ego": {
    "exit": 1,
    "urteil": "ROT",
-   "befehle": 80,
-   "dreiecke": 305213,
-   "vram": 121.8,
-   "gpu": 18.55,
+   "befehle": 94,
+   "dreiecke": 445487,
+   "vram": 129.3,
+   "gpu": 18.2,
    "stempel": "ROT",
    "eingeschwungen": false,
    "last": 1,
@@ -368,8 +369,8 @@
    "gestellt": [],
    "geraet": "radeon",
    "rot": [
+    "vorbau:haus_alemannisch: 17 Befehle, keine Haushalt-Klasse nimmt den Täter (Regel in haushalt.json)",
     "f:sitzbank:L0: 4 Befehle, keine Haushalt-Klasse nimmt den Täter (Regel in haushalt.json)",
-    "vorbau:baum_eiche: 3 Befehle, keine Haushalt-Klasse nimmt den Täter (Regel in haushalt.json)",
     "nahWiese:Lf:schale: 1 Befehle, keine Haushalt-Klasse nimmt den Täter (Regel in haushalt.json)"
    ],
    "probe": {
@@ -383,10 +384,10 @@
   "genesis-third": {
    "exit": 1,
    "urteil": "ROT",
-   "befehle": 98,
-   "dreiecke": 343936,
-   "vram": 122.7,
-   "gpu": 16.88,
+   "befehle": 108,
+   "dreiecke": 407510,
+   "vram": 125.1,
+   "gpu": 18.86,
    "stempel": "ROT",
    "eingeschwungen": true,
    "last": 1,
@@ -409,10 +410,10 @@
   "wiese-ego": {
    "exit": 1,
    "urteil": "ROT",
-   "befehle": 113,
-   "dreiecke": 497486,
-   "vram": 136.6,
-   "gpu": 28.11,
+   "befehle": 125,
+   "dreiecke": 528764,
+   "vram": 135.7,
+   "gpu": 28.6,
    "stempel": "ROT",
    "eingeschwungen": false,
    "last": 1,
@@ -422,37 +423,11 @@
    "rot": [
     "nahWiese:Lf:schale: 1 Befehle, keine Haushalt-Klasse nimmt den Täter (Regel in haushalt.json)",
     "kamm-krone: 1 Befehle, keine Haushalt-Klasse nimmt den Täter (Regel in haushalt.json)",
-    "baum haupt: 29 befehle über der Ratsche 24 (Täter: f:tanne:L1, f:tanne:L0, f:fichte:L1)"
+    "baum haupt: 41 befehle über der Ratsche 24 (Täter: f:tanne:L1, f:fichte:L1, f:fichte:L0)"
    ],
    "probe": {
     "gehalten": false,
     "sicht": "first",
-    "speed": 1.15,
-    "sprint": 5.175,
-    "skala": 0.75
-   }
-  },
-  "wiese-third": {
-   "exit": 1,
-   "urteil": "ROT",
-   "befehle": 135,
-   "dreiecke": 604685,
-   "vram": 137.5,
-   "gpu": 28.9,
-   "stempel": "ROT",
-   "eingeschwungen": false,
-   "last": 1,
-   "amMessort": true,
-   "gestellt": [],
-   "geraet": "radeon",
-   "rot": [
-    "nahWiese:Lf:schale: 1 Befehle, keine Haushalt-Klasse nimmt den Täter (Regel in haushalt.json)",
-    "kamm-krone: 1 Befehle, keine Haushalt-Klasse nimmt den Täter (Regel in haushalt.json)",
-    "streu haupt: 12 befehle über der Ratsche 4 (Täter: streuSatz, f:blume:L2, fscatter:geroell:L0)"
-   ],
-   "probe": {
-    "gehalten": false,
-    "sicht": "third",
     "speed": 1.15,
     "sprint": 5.175,
     "skala": 0.75
