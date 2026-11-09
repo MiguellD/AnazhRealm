@@ -1,7 +1,7 @@
 {
  "sha": "28c74a9f1994657d8d63aba3d647c30c8fa67ec2",
  "geraet": "radeon",
- "zeit": "2026-11-09T00:30:37.016Z",
+ "zeit": "2026-11-09T01:13:51.531Z",
  "host": "MiguellD",
  "je": {
   "vegetation.K1#1": {
@@ -295,103 +295,51 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
-  }
- },
- "ungemessen": {
-  "lod.K5#1": {
-   "gruen": false,
-   "zahl": "Messort: kanten: die Treue: zwei Aufnahmen derselben Szene (tree L0) weichen in 8792 Bytes ab — EINE Aufnahme je Schuss trägt hier nicht — kein Urteil, UNGEMESSEN (die Probe sah: Folge: kanten: Exit 1 nc IsolatedWorld.evaluate (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\node_modules\\\\puppeteer-core\\\\lib\\\\cjs\\\\puppeteer\\\\cdp\\\\IsolatedWorld.js:105:16)\",\n  \"at async CdpFrame.evaluate (C:\\\\Users\\\\micha\\\\AnazhRealm-profiban) · Täter: @@PUNKTE@@ MESSORT kanten: die Treue: zwei Aufnahmen derselben Szene (tree L0) weichen in 8792 Bytes ab — EINE Aufnahme je Schuss trägt hier nicht",
-   "exit": 1,
-   "minuten": 0.1,
-   "grund": "Messort: kanten: die Treue: zwei Aufnahmen derselben Szene (tree L0) weichen in 8792 Bytes ab — EINE Aufnahme je Schuss trägt hier nicht — kein Urteil, UNGEMESSEN (die Probe sah: Folge: kanten: Exit 1 nc IsolatedWorld.evaluate (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\node_modules\\\\puppeteer-core\\\\lib\\\\cjs\\\\puppeteer\\\\cdp\\\\IsolatedWorld.js:105:16)\",\n  \"at async CdpFrame.evaluate (C:\\\\Users\\\\micha\\\\AnazhRealm-profiban) · Täter: @@PUNKTE@@ MESSORT kanten: die Treue: zwei Aufnahmen derselben Szene (tree L0) weichen in 8792 Bytes ab — EINE Aufnahme je Schuss trägt hier nicht",
-   "gpu": "amd/rdna-3",
-   "ungemessen": true,
-   "s": 5.9,
-   "fremd": {
-    "s": 8.5,
-    "takte": 3,
-    "fremdS": 20.45,
-    "kerne": 2.42,
-    "fensterKerne": 2.42,
-    "namen": [
-     [
-      "node scripts/diag-altlasten.cjs --selftest",
-      8.39
-     ],
-     [
-      "MsMpEng.exe",
-      3.78
-     ],
-     [
-      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      2.88
-     ]
-    ],
-    "dienerS": 7.2,
-    "diener": [
-     [
-      "System",
-      3.78
-     ],
-     [
-      "WmiPrvSE.exe",
-      2
-     ]
-    ],
-    "eigenS": 10.16,
-    "schwelle": 0.5,
-    "eich": "win32, Radeon 890M, 24 Kerne"
-   },
-   "zeit": "2026-11-09T00:23:22.281Z",
-   "abdruck": "c10974692b58",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session"
   },
   "mensch.K1#1": {
    "gruen": false,
-   "ungemessen": true,
-   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: ✅ GRÜN — bewohner)",
-   "exit": 1,
-   "minuten": 1.51,
-   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: ✅ GRÜN — bewohner)",
-   "s": 90.6,
+   "zahl": "Probe-Fehler: Error: bewohner: das Start-Dorf: DIE WELT STEHT NICHT nach 721 Takten: Ruhe 0, zuletzt brach sie: Fege-Takt nahWiese wartet, nahStreu wartet (DER BAU STEHT NICHT: die Welt nach 721 Takten — die Welt hat nichts mehr offen)\n    at eval (eval at <anonymous> (:2:29), <anonymous>:2783:19)\n    at async eval (eval at <anonymous> (:2:29), <anonymous>:3086:9)\n    at async buehne (eval at <anonymous> (:2:29), <anonymous>:462:25)\n    at async kreaturProben (eval at <anonymous> (:2:29), <anonymous>:2809:5)\n    at async eval (eval at <anonymous> (:2:29), <anonymous>:398:13)",
+   "exit": 0,
+   "minuten": 1.02,
+   "grund": "ROT: Probe-Fehler: Error: bewohner: das Start-Dorf: DIE WELT STEHT NICHT nach 721 Takten: Ruhe 0, zuletzt brach sie: Fege-Takt nahWiese wartet, nahStreu wartet (DER BAU STEHT NICHT: die Welt nach 721 Takten — die Welt hat nichts mehr offen)\n    at eval (eval at <anonymous> (:2:29), <anonymous>:2783:19)\n    at async eval (eval at <anonymous> (:2:29), <anonymous>:3086:9)\n    at async buehne (eval at <anonymous> (:2:29), <anonymous>:462:25)\n    at async kreaturProben (eval at <anonymous> (:2:29), <anonymous>:2809:5)\n    at async eval (eval at <anonymous> (:2:29), <anonymous>:398:13)",
+   "gpu": "amd/rdna-3",
+   "s": 61.1,
    "fremd": {
-    "s": 92.9,
-    "takte": 32,
-    "fremdS": 237.22,
-    "kerne": 2.553,
-    "fensterKerne": 3.415,
+    "s": 65.2,
+    "takte": 23,
+    "fremdS": 84.38,
+    "kerne": 1.295,
+    "fensterKerne": 1.777,
     "namen": [
      [
-      "MsMpEng.exe",
-      47.02
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      30.72
      ],
      [
-      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      35.92
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      17.75
      ],
      [
       "svchost.exe",
-      26.84
+      11.63
      ]
     ],
-    "dienerS": 68.52,
+    "dienerS": 37.55,
     "diener": [
      [
-      "System",
-      24.09
+      "WmiPrvSE.exe",
+      15.38
      ],
      [
-      "WmiPrvSE.exe",
-      23.34
+      "System",
+      11.81
      ]
     ],
-    "eigenS": 313.86,
+    "eigenS": 248.53,
     "schwelle": 0.5,
     "eich": "win32, Radeon 890M, 24 Kerne"
    },
-   "zeit": "2026-11-09T00:26:38.828Z",
+   "zeit": "2026-11-09T01:09:24.648Z",
    "abdruck": "ac10e7df1f5a",
    "port": 7804,
    "bahn": "sitzung",
@@ -399,99 +347,151 @@
   },
   "mensch.K2#2": {
    "gruen": false,
-   "ungemessen": true,
-   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: ✅ GRÜN — bewohner)",
-   "exit": 1,
-   "minuten": 1.51,
-   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: ✅ GRÜN — bewohner)",
-   "s": 90.6,
+   "zahl": "Probe-Fehler: Error: bewohner: das Start-Dorf: DIE WELT STEHT NICHT nach 721 Takten: Ruhe 0, zuletzt brach sie: Fege-Takt nahWiese wartet, nahStreu wartet (DER BAU STEHT NICHT: die Welt nach 721 Takten — die Welt hat nichts mehr offen)\n    at eval (eval at <anonymous> (:2:29), <anonymous>:2783:19)\n    at async eval (eval at <anonymous> (:2:29), <anonymous>:3086:9)\n    at async buehne (eval at <anonymous> (:2:29), <anonymous>:462:25)\n    at async kreaturProben (eval at <anonymous> (:2:29), <anonymous>:2809:5)\n    at async eval (eval at <anonymous> (:2:29), <anonymous>:398:13)",
+   "exit": 0,
+   "minuten": 1.02,
+   "grund": "ROT: Probe-Fehler: Error: bewohner: das Start-Dorf: DIE WELT STEHT NICHT nach 721 Takten: Ruhe 0, zuletzt brach sie: Fege-Takt nahWiese wartet, nahStreu wartet (DER BAU STEHT NICHT: die Welt nach 721 Takten — die Welt hat nichts mehr offen)\n    at eval (eval at <anonymous> (:2:29), <anonymous>:2783:19)\n    at async eval (eval at <anonymous> (:2:29), <anonymous>:3086:9)\n    at async buehne (eval at <anonymous> (:2:29), <anonymous>:462:25)\n    at async kreaturProben (eval at <anonymous> (:2:29), <anonymous>:2809:5)\n    at async eval (eval at <anonymous> (:2:29), <anonymous>:398:13)",
+   "gpu": "amd/rdna-3",
+   "s": 61.1,
    "fremd": {
-    "s": 92.9,
-    "takte": 32,
-    "fremdS": 237.22,
-    "kerne": 2.553,
-    "fensterKerne": 3.415,
+    "s": 65.2,
+    "takte": 23,
+    "fremdS": 84.38,
+    "kerne": 1.295,
+    "fensterKerne": 1.777,
     "namen": [
      [
-      "MsMpEng.exe",
-      47.02
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      30.72
      ],
      [
-      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      35.92
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      17.75
      ],
      [
       "svchost.exe",
-      26.84
+      11.63
      ]
     ],
-    "dienerS": 68.52,
+    "dienerS": 37.55,
     "diener": [
      [
-      "System",
-      24.09
+      "WmiPrvSE.exe",
+      15.38
      ],
      [
-      "WmiPrvSE.exe",
-      23.34
+      "System",
+      11.81
      ]
     ],
-    "eigenS": 313.86,
+    "eigenS": 248.53,
     "schwelle": 0.5,
     "eich": "win32, Radeon 890M, 24 Kerne"
    },
-   "zeit": "2026-11-09T00:26:38.828Z",
+   "zeit": "2026-11-09T01:09:24.648Z",
    "abdruck": "dab117ec1548",
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "mensch.K1#1",
    "modus": "session"
   },
-  "mensch.K5#1": {
+  "lod.K5#1": {
    "gruen": false,
-   "ungemessen": true,
-   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN",
-   "exit": 1,
-   "minuten": 0.76,
-   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN",
-   "s": 45.7,
+   "zahl": "Baum 5.26 px · Haus 1.42 px · Tor 1.04 px · Wagen — px (Soll ≤ 1 px am Wechsel-Abstand, 1920 × 1080) · vehicle L1: Exemplar 0 px, [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.6,
+   "grund": "ROT: Baum 5.26 px · Haus 1.42 px · Tor 1.04 px · Wagen — px (Soll ≤ 1 px am Wechsel-Abstand, 1920 × 1080) · vehicle L1: Exemplar 0 px, [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 35.7,
    "fremd": {
-    "s": 49.9,
-    "takte": 17,
-    "fremdS": 130.41,
-    "kerne": 2.614,
-    "fensterKerne": 3.798,
+    "s": 41.9,
+    "takte": 14,
+    "fremdS": 87.42,
+    "kerne": 2.089,
+    "fensterKerne": 2.444,
     "namen": [
      [
-      "git pack-objects --local --quiet --delta-base-offset --honor-pack-keep pack/.tmp-45212-pac",
-      26.08
+      "node scripts/diag-altlasten.cjs",
+      30.08
      ],
      [
       "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      18.84
+      17.47
      ],
      [
-      "MsMpEng.exe",
-      17.48
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      9.42
      ]
     ],
-    "dienerS": 42.06,
+    "dienerS": 20.94,
     "diener": [
      [
-      "System",
-      15.28
+      "WmiPrvSE.exe",
+      10.44
      ],
      [
-      "WmiPrvSE.exe",
-      14.06
+      "System",
+      6.83
      ]
     ],
-    "eigenS": 127.38,
+    "eigenS": 67.19,
     "schwelle": 0.5,
     "eich": "win32, Radeon 890M, 24 Kerne"
    },
-   "zeit": "2026-11-09T00:28:26.384Z",
-   "abdruck": "e5aba4cb1a86",
+   "zeit": "2026-11-09T01:13:51.531Z",
+   "abdruck": "73222928922a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "ungemessen": {
+  "mensch.K5#1": {
+   "gruen": false,
+   "zahl": "Fremd-Last: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 26,9 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 24,1 CPU-s · MsMpEng.exe 10,6 CPU-s — 2,48 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 98,2 CPU-s in 46,6 s) — kein Urteil, UNGEMESSEN (die Probe sah: gasthaus/gasthaus #419347: Kopf-Zuwendung ab 3 m 0.267 / 0 / 0 / 0 s (Vorbeigang ab 72°, als Leib im Bild true/true/true/true) · Berührung 0/0/0/0 Takte, kleinster Abstand 2 / 1.335 / 1.335 / 1.952 m (Radien 0,7) · ohne Erinnerung 1.335, Ge)",
+   "exit": 0,
+   "minuten": 0.75,
+   "gpu": "amd/rdna-3",
+   "s": 45,
+   "fremd": {
+    "s": 46.6,
+    "takte": 16,
+    "fremdS": 98.23,
+    "kerne": 2.109,
+    "fensterKerne": 2.475,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      26.92
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      24.06
+     ],
+     [
+      "MsMpEng.exe",
+      10.59
+     ]
+    ],
+    "dienerS": 25.7,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      11.2
+     ],
+     [
+      "System",
+      7.16
+     ]
+    ],
+    "eigenS": 127.28,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "ungemessen": true,
+   "grund": "Fremd-Last: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 26,9 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 24,1 CPU-s · MsMpEng.exe 10,6 CPU-s — 2,48 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 98,2 CPU-s in 46,6 s) — kein Urteil, UNGEMESSEN (die Probe sah: gasthaus/gasthaus #419347: Kopf-Zuwendung ab 3 m 0.267 / 0 / 0 / 0 s (Vorbeigang ab 72°, als Leib im Bild true/true/true/true) · Berührung 0/0/0/0 Takte, kleinster Abstand 2 / 1.335 / 1.335 / 1.952 m (Radien 0,7) · ohne Erinnerung 1.335, Ge)",
+   "zeit": "2026-11-09T01:10:45.388Z",
+   "abdruck": "fbd51bda5863",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
@@ -955,126 +955,41 @@
   }
  },
  "sitzung": {
-  "start": "2026-11-09T00:22:10.182Z",
+  "start": "2026-11-09T01:13:17.708Z",
   "port": 7804,
-  "warten": 0.12,
-  "bootS": 6.9,
-  "grundstellungS": [
-   0,
-   6.5,
-   3,
-   2.6,
-   2.2
-  ],
-  "proben": 9,
+  "warten": 0.11,
+  "bootS": 5.8,
+  "grundstellungS": [],
+  "proben": 1,
   "freigaben": [],
   "orte": [
    {
     "ort": "wiese",
-    "vor": "vegetation.K1#1",
-    "s": 21,
-    "takte": 724,
+    "vor": "lod.K5#1",
+    "s": 18.7,
+    "takte": 684,
     "chunks": 81,
     "nach": null
-   },
-   {
-    "ort": "genesis",
-    "vor": "ferne.K1#1",
-    "s": 12.2,
-    "takte": 661,
-    "chunks": 81,
-    "nach": "der Grundstellung"
-   },
-   {
-    "ort": "dorf",
-    "vor": "ferne.K4#1",
-    "s": 20.5,
-    "takte": 752,
-    "chunks": 81,
-    "nach": null
-   },
-   {
-    "ort": "genesis",
-    "vor": "mensch.K1#1",
-    "s": 14.8,
-    "takte": 576,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "genesis",
-    "vor": "mensch.K5#1",
-    "s": 12.6,
-    "takte": 616,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "ankunft.K3#1",
-    "s": 11.7,
-    "takte": 692,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "profiband.K1#1",
-    "s": 20.7,
-    "takte": 808,
-    "chunks": 81,
-    "nach": "der Tür"
    }
   ],
-  "wegeTueren": [
-   {
-    "vor": "mensch.K1#1",
-    "wege": "wege +9 [-119.1,-274.9,279.2,201/272] [-784.3,-952.2,-631.7,-806.5/4] [-810.2,-986.5,-604,-776.9/95] …",
-    "s": 6.5
-   }
-  ],
-  "unerklaert": [
-   {
-    "probe": "gelaende.K3#1",
-    "wie": "orte +6,-25 +7,-24 · wege +6 [1410.2,-6310.3,1771.1,-6169.3/88] [1443.2,-6282.4,1737.7,-6193.4/6] [1723.8,-6196.8,1758.8,-5966.4/42] … (6,-25, 7,-24, netz:6,-25, netz:6,-25|7,-24)"
-   }
-  ],
-  "ciBlicke": 10,
+  "wegeTueren": [],
+  "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 660,
-   "frameP95": 217.59,
-   "taktP95": 133.06,
-   "vramMax": 145.3,
-   "seiten": 9,
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
-   "ortImDeckel": [
-    {
-     "probe": "gelaende.K3#1",
-     "m": 5981,
-     "ringVor": 4,
-     "ringMin": 0
-    },
-    {
-     "probe": "ferne.K1#1",
-     "m": 3592,
-     "ringVor": 4,
-     "ringMin": 0
-    },
-    {
-     "probe": "profiband.K1#1",
-     "m": 1089,
-     "ringVor": 4,
-     "ringMin": -1
-    }
-   ],
-   "zapfen": 540,
-   "luecken": 5,
-   "letzteLuecke": "Execution context was destroyed, most likely because of a navigation."
+   "ortImDeckel": [],
+   "zapfen": 63,
+   "luecken": 0,
+   "letzteLuecke": null
   },
-  "fahrtS": 581.6,
-  "minuten": 9.88
+  "fahrtS": 65.4,
+  "minuten": 1.28
  }
 }

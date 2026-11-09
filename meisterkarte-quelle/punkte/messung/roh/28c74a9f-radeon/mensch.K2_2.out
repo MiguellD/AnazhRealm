@@ -1,4 +1,4 @@
-$ C:/Program Files/Git/bin/bash.exe -c A=$(printf %s 'C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\28c74a9f-radeon\mensch.K1_1.json' | tr '\\' /); B="${A%.json}"; SK="$(printf %s 'C:\Users\micha\AppData\Local\Temp\claude\w3\pm' | tr '\\' /)/bericht/2210-messschuld-6cfce/skripte"
+$ C:/Program Files/Git/bin/bash.exe -c A=$(printf %s 'C:\Users\micha\AppData\Local\Temp\claude\54f2b8676e58c244\6d7dbf34-ba77-467d-98ce-54e77c51b4c7\scratchpad\pm2\meisterkarte-quelle\punkte\messung\roh\28c74a9f-radeon\mensch.K1_1.json' | tr '\\' /); B="${A%.json}"; SK="$(printf %s 'C:\Users\micha\AppData\Local\Temp\claude\54f2b8676e58c244\6d7dbf34-ba77-467d-98ce-54e77c51b4c7\scratchpad\pm2' | tr '\\' /)/bericht/2210-messschuld-6cfce/skripte"
 S=$(( 7804 )); W=$(( 7804 + 20000 )); export WERKBANK_PORT=$W
 node scripts/werkbank.cjs umstellen --ort genesis > "$B-umstellen.txt" 2>&1
 node scripts/diag-kreatur-takt.cjs --werkbank $W --proben bewohner --ort genesis
@@ -84,15 +84,22 @@ node "$SK/b64png.cjs" "$B-platz.txt" "$B-platz-8uhr-third.png"
 
 ===== DIE KREATUR-LINSE (gate:kreatur-takt) — sichtbares Fenster, echte GPU (Werkbank :27804) =====
 
-  ✅ bewohner  {"alsLeib":4,"schmiede10":2,"schmiede2":0,"tagTakt":0,"haeuser":18,"sollSumme":81,"leiber":81,"quote":1,"leer":[],"leerN":0,"imBlick":{"ego":17,"third":21},"nahLeiber":4,"planGleich":true,"trefferMin":0.983,"unter":[],"unterN":0,"stationen":2,"satzGang":{"schlupf":0.035,"wegLeib":823.1},"blick":{"n":160,"quote":0.925,"sektorMax":0.119},"ohnePlatz":0,"ohnePlatzWer":[],"stapel":[],"huellen":18,"wege":{"wandN":0,"wand":[],"durch":266,"tuer":266,"falsch":[],"aufWeg":0.901,"sprungN":0,"wegeMin":5,"wegeMax":8,"streckeMin":196,"ausserN":0,"ausser":[],"kurzN":0,"kurz":[],"steckenN":0,"stecken":[],"beruehrN":0,"beruehr":[]},"wiederkehr":{"n":1296,"maxM":1.759,"ueberN":0,"ueber":[]}}
+  ❌ bewohner  {"fehler":"Error: bewohner: das Start-Dorf: DIE WELT STEHT NICHT nach 721 Takten: Ruhe 0, zuletzt brach sie: Fege-Takt nahWiese wartet, nahStreu wartet (DER BAU STEHT NICHT: die Welt nach 721 Takten — die Welt hat nichts mehr offen)\n    at eval (eval at <anonymous> (:2:29), <anonymous>:2783:19)\n    at async eval (eval at <anonymous> (:2:29), <anonymous>:3086:9)\n    at async buehne (eval at <anonymous> (:2:29), <anonymous>:462:25)\n    at async kreaturProben (eval at <anonymous> (:2:29), <anonymous>:2809:5)\n    at async eval (eval at <anonymous> (:2:29), <anonymous>:398:13)"}
+       ↳ Error: bewohner: das Start-Dorf: DIE WELT STEHT NICHT nach 721 Takten: Ruhe 0, zuletzt brach sie: Fege-Takt nahWiese wartet, nahStreu wartet (DER BAU STEHT NICHT: die Welt nach 721 Takten — die Welt hat nichts mehr offen)
+    at eval (eval at <anonymous> (:2:29), <anonymous>:2783:19)
+    at async eval (eval at <anonymous> (:2:29), <anonymous>:3086:9)
+    at async buehne (eval at <anonymous> (:2:29), <anonymous>:462:25)
+    at async kreaturProben (eval at <anonymous> (:2:29), <anonymous>:2809:5)
+    at async eval (eval at <anonymous> (:2:29), <anonymous>:398:13)
 
-  (82 s)
-
-✅ GRÜN — bewohner
+  (41 s)
+{"uhr":0.3333,"tod":0.3333,"sicht":"third","stand":[-65.9,-176.8],"platz":[-53.5,-176.8],"leiber":81,"imBild":18,"gehendImBild":0,"fps":44.4,"takte":139,"version":"18.546.230"}
 
 --- stderr ---
 tr: warning: an unescaped backslash at end of string is not portable
 tr: warning: an unescaped backslash at end of string is not portable
+
+❌ ROT — 1 Probe(n) verletzt: die Kreaturen tragen ihren Defekt.
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3

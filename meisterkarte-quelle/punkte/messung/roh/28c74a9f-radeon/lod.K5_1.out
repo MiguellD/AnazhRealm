@@ -73,12 +73,12 @@ $ C:\Program Files\nodejs\node.exe -e (async function folge(plan) {
     // ein Feld, das ein früherer Schritt nicht trug, ein Blob, das Log der Sitzung — die EINE Marke des Messorts (punkte.cjs keinUrteil (d))
     console.log(aus.fehler ? "@@PUNKTE@@ MESSORT " + aus.messort : "FOLGE " + plan.name + ": " + plan.schritte.length + " Schritte");
     process.exit(code);
-})({"name":"lod.K5#1","schritte":[{"name":"fenster","args":["fenster","1920","1080"],"muss":true},{"name":"umstellen","args":["umstellen","--ort","wiese"],"muss":true},{"name":"kanten","probe":"@KOORD@/bericht/2910-lod-k5/kanten.js","blob":"64942eb74271d12c08d4df01327ce89a06962311","muss":true,"ms":1800000}]}) C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\28c74a9f-radeon\lod.K5_1.json C:\Users\micha\AppData\Local\Temp\claude\w3\pm
+})({"name":"lod.K5#1","schritte":[{"name":"fenster","args":["fenster","1920","1080"],"muss":true},{"name":"umstellen","args":["umstellen","--ort","wiese"],"muss":true},{"name":"kanten","probe":"@KOORD@/bericht/2910-lod-k5/kanten.js","blob":"39b506a0eec9cacd1443ed85738db21b967610ef","muss":true,"ms":1800000}]}) C:\Users\micha\AppData\Local\Temp\claude\54f2b8676e58c244\6d7dbf34-ba77-467d-98ce-54e77c51b4c7\scratchpad\pm2\meisterkarte-quelle\punkte\messung\roh\28c74a9f-radeon\lod.K5_1.json C:\Users\micha\AppData\Local\Temp\claude\54f2b8676e58c244\6d7dbf34-ba77-467d-98ce-54e77c51b4c7\scratchpad\pm2
   fenster · Exit 0
   umstellen · Exit 0
-  kanten · Exit 1
+  kanten · Exit 0
 [linse-gpu] amd/rdna-3
-@@PUNKTE@@ MESSORT kanten: die Treue: zwei Aufnahmen derselben Szene (tree L0) weichen in 8792 Bytes ab — EINE Aufnahme je Schuss trägt hier nicht
+FOLGE lod.K5#1: 3 Schritte
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3
