@@ -1,0 +1,3464 @@
+{
+ "sha": "87537d3f1481217f2aad2a5cbbe5a3f6c4b95a55",
+ "geraet": "gtx",
+ "zeit": "2026-11-09T10:11:57.659Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "vegetation.K2#1": {
+   "gruen": true,
+   "zahl": "Kamm 215.9 über Rausch-Boden 0.000 (×215.9), Tal 32.6 — Kamm/Tal 6.62 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 54.5 % in 0–15 m, Δt 0.25 s",
+   "exit": 0,
+   "minuten": 0.38,
+   "gpu": "nvidia/pascal",
+   "s": 22.7,
+   "fremd": {
+    "s": 26.2,
+    "takte": 12,
+    "fremdS": 53.91,
+    "kerne": 2.056,
+    "fensterKerne": 2.169,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      28.05
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      8.55
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      4.19
+     ]
+    ],
+    "dienerS": 9.08,
+    "diener": [
+     [
+      "dwm.exe",
+      3.78
+     ],
+     [
+      "System",
+      3.75
+     ]
+    ],
+    "eigenS": 28.63,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-09T09:41:37.429Z",
+   "abdruck": "c5c847aeaa4d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "mensch.K4#1": {
+   "gruen": false,
+   "zahl": "Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.13 m · third ROT strich 0.333 Soll [1,1] — gesicht 0.333 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei 1 [0.9, 1] · lippeL -16.17 [-14, -4] · lippeA 14.78 [4, 14] · hoehleL 7.37 [-12, 0] · hoehleA 9.83 [-2, 6] · haarDeckung 1 [0.9, 1]",
+   "exit": 0,
+   "minuten": 0.55,
+   "grund": "ROT: Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.13 m · third ROT strich 0.333 Soll [1,1] — gesicht 0.333 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei 1 [0.9, 1] · lippeL -16.17 [-14, -4] · lippeA 14.78 [4, 14] · hoehleL 7.37 [-12, 0] · hoehleA 9.83 [-2, 6] · haarDeckung 1 [0.9, 1]",
+   "gpu": "nvidia/pascal",
+   "s": 33.3,
+   "fremd": {
+    "s": 35.5,
+    "takte": 16,
+    "fremdS": 67.58,
+    "kerne": 1.902,
+    "fensterKerne": 2.049,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      37.53
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      10.33
+     ],
+     [
+      "MsMpEng.exe",
+      5.47
+     ]
+    ],
+    "dienerS": 8.8,
+    "diener": [
+     [
+      "dwm.exe",
+      4.05
+     ],
+     [
+      "System",
+      2.84
+     ]
+    ],
+    "eigenS": 61.09,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-09T09:42:01.887Z",
+   "abdruck": "2b95be34eb33",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "haar.K2#1": {
+   "gruen": false,
+   "zahl": "arm ROT strich 0.5645 Soll [0.3554,0.533] — strich 0.5645 > 0.533 · albedo: veraltet seit 4ef6370e: koerper-core.js geändert (c:b70902b2e416b42b → c:c0846417374ac1bd) · albedo — [0.01; 0.3] · third ROT strich 0.3235 Soll [0.3554,0.533] — strich 0.3235 < 0.3554 · albedo: veraltet seit 4ef6370e: koerper-core.js geändert (c:b70902b2e416b42b → c:c0846417374ac1bd) · albedo — [0.01; 0.3]",
+   "exit": 0,
+   "minuten": 0.4,
+   "grund": "ROT: arm ROT strich 0.5645 Soll [0.3554,0.533] — strich 0.5645 > 0.533 · albedo: veraltet seit 4ef6370e: koerper-core.js geändert (c:b70902b2e416b42b → c:c0846417374ac1bd) · albedo — [0.01; 0.3] · third ROT strich 0.3235 Soll [0.3554,0.533] — strich 0.3235 < 0.3554 · albedo: veraltet seit 4ef6370e: koerper-core.js geändert (c:b70902b2e416b42b → c:c0846417374ac1bd) · albedo — [0.01; 0.3]",
+   "gpu": "nvidia/pascal",
+   "s": 23.8,
+   "fremd": {
+    "s": 24,
+    "takte": 11,
+    "fremdS": 48.53,
+    "kerne": 2.02,
+    "fensterKerne": 2.08,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      25.14
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      7.14
+     ],
+     [
+      "MsMpEng.exe",
+      4.47
+     ]
+    ],
+    "dienerS": 7.33,
+    "diener": [
+     [
+      "dwm.exe",
+      3.67
+     ],
+     [
+      "System",
+      2.44
+     ]
+    ],
+    "eigenS": 22.67,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-09T09:42:37.388Z",
+   "abdruck": "c0eb0fef1e79",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "vegetation.K1#1": {
+   "gruen": true,
+   "zahl": "wiese-third-0.5--wiese: LAI 2–5 2.41 · 5–10 2.16 · 10–20 2.09 · 20–40 1.91, Farbton 2–5 m 13.43°, nahWiese 4 Befehle / 55791 Dreiecke",
+   "exit": 0,
+   "minuten": 0.7,
+   "gpu": "nvidia/pascal",
+   "s": 41.9,
+   "fremd": {
+    "s": 43.5,
+    "takte": 20,
+    "fremdS": 78.61,
+    "kerne": 1.805,
+    "fensterKerne": 2.052,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      46.5
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      9.7
+     ],
+     [
+      "OmenCommandCenterBackground.exe",
+      6.89
+     ]
+    ],
+    "dienerS": 8.42,
+    "diener": [
+     [
+      "dwm.exe",
+      3.8
+     ],
+     [
+      "System",
+      2.47
+     ]
+    ],
+    "eigenS": 45.09,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-09T09:43:01.403Z",
+   "abdruck": "6b1dbe84a49f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "vegetation.K5#1": {
+   "gruen": true,
+   "zahl": "Krone sommer 184370 px · winter 19088 px → Winter 0.104 × Sommer",
+   "exit": 0,
+   "minuten": 0.39,
+   "gpu": "nvidia/pascal",
+   "s": 23.5,
+   "fremd": {
+    "s": 24.2,
+    "takte": 11,
+    "fremdS": 49.11,
+    "kerne": 2.03,
+    "fensterKerne": 2.139,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      26
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      7.08
+     ],
+     [
+      "MsMpEng.exe",
+      4.5
+     ]
+    ],
+    "dienerS": 8.56,
+    "diener": [
+     [
+      "dwm.exe",
+      4.27
+     ],
+     [
+      "System",
+      3.02
+     ]
+    ],
+    "eigenS": 41.14,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-09T09:43:44.933Z",
+   "abdruck": "73585cf32eac",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "material.K2#1": {
+   "gruen": false,
+   "zahl": "boden 0.5 m glatt 0.1591 nyquist 0.1671 (Arm 0.498), 1 m glatt 0.0948 nyquist 0.1701 (Arm 0.998), 2 m glatt 0.1053 nyquist 0.1758 (Arm 1.996) · fels 0.5 m glatt 0 nyquist 0.1656 (Arm 0.493), 1 m glatt 0 nyquist 0.1565 (Arm 0.99), 2 m glatt 0 nyquist 0.1635 (Arm 1.93) · Soll nyquist ≥ 0,15, glatt ≤ 0,10 · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.42,
+   "grund": "ROT: boden 0.5 m glatt 0.1591 nyquist 0.1671 (Arm 0.498), 1 m glatt 0.0948 nyquist 0.1701 (Arm 0.998), 2 m glatt 0.1053 nyquist 0.1758 (Arm 1.996) · fels 0.5 m glatt 0 nyquist 0.1656 (Arm 0.493), 1 m glatt 0 nyquist 0.1565 (Arm 0.99), 2 m glatt 0 nyquist 0.1635 (Arm 1.93) · Soll nyquist ≥ 0,15, glatt ≤ 0,10 · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "s": 84.9,
+   "fremd": {
+    "s": 88.2,
+    "takte": 40,
+    "fremdS": 171.47,
+    "kerne": 1.943,
+    "fensterKerne": 2.117,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      93.36
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      25.36
+     ],
+     [
+      "MsMpEng.exe",
+      13.33
+     ]
+    ],
+    "dienerS": 29.75,
+    "diener": [
+     [
+      "dwm.exe",
+      14.3
+     ],
+     [
+      "System",
+      10.52
+     ]
+    ],
+    "eigenS": 182.7,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-09T09:47:55.491Z",
+   "abdruck": "2247d5f4601f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "lod.K5#1": {
+   "gruen": false,
+   "zahl": "Baum 5.29 px · Haus 1.41 px · Tor 1.07 px · Wagen — px (Soll ≤ 1 px am Wechsel-Abstand, 1920 × 1080) · vehicle L1: Exemplar 0 px, [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.69,
+   "grund": "ROT: Baum 5.29 px · Haus 1.41 px · Tor 1.07 px · Wagen — px (Soll ≤ 1 px am Wechsel-Abstand, 1920 × 1080) · vehicle L1: Exemplar 0 px, [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "s": 41.7,
+   "fremd": {
+    "s": 44,
+    "takte": 20,
+    "fremdS": 91.69,
+    "kerne": 2.084,
+    "fensterKerne": 2.343,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      46.63
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      11.02
+     ],
+     [
+      "svchost.exe",
+      8.13
+     ]
+    ],
+    "dienerS": 12.2,
+    "diener": [
+     [
+      "System",
+      5.09
+     ],
+     [
+      "dwm.exe",
+      4.61
+     ]
+    ],
+    "eigenS": 66.17,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-09T09:51:12.601Z",
+   "abdruck": "2e98972de2ac",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "ferne.K1#1": {
+   "gruen": true,
+   "zahl": "Koschmieder T/T_soll 0.93–1.03 bei 1/2/5/8 km, Uhr 0,5, 4 Azimute, K1-1 GRUEN, [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.21,
+   "gpu": "nvidia/pascal",
+   "s": 72.4,
+   "fremd": {
+    "s": 75,
+    "takte": 34,
+    "fremdS": 150.27,
+    "kerne": 2.002,
+    "fensterKerne": 2.218,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      78.39
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      24.77
+     ],
+     [
+      "MsMpEng.exe",
+      12.17
+     ]
+    ],
+    "dienerS": 28.72,
+    "diener": [
+     [
+      "dwm.exe",
+      14.41
+     ],
+     [
+      "System",
+      9.55
+     ]
+    ],
+    "eigenS": 188.66,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-09T09:55:31.367Z",
+   "abdruck": "f860195e6d68",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "ferne.K2#1": {
+   "gruen": true,
+   "zahl": "Restkontrast am Rand 0.9–2.0 % bei 18.4–23.2 km (≤ 2 %), 4 Azimute, K2-1 GRUEN, [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.21,
+   "gpu": "nvidia/pascal",
+   "s": 72.4,
+   "fremd": {
+    "s": 75,
+    "takte": 34,
+    "fremdS": 150.27,
+    "kerne": 2.002,
+    "fensterKerne": 2.218,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      78.39
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      24.77
+     ],
+     [
+      "MsMpEng.exe",
+      12.17
+     ]
+    ],
+    "dienerS": 28.72,
+    "diener": [
+     [
+      "dwm.exe",
+      14.41
+     ],
+     [
+      "System",
+      9.55
+     ]
+    ],
+    "eigenS": 188.66,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-09T09:55:31.367Z",
+   "abdruck": "5d8ab85fb384",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "ferne.K1#1",
+   "modus": "session"
+  },
+  "ferne.K1#2": {
+   "gruen": false,
+   "zahl": "K1-2 ROT (1 Befunde) · Farbton 8 km 1.37–13.76° (≤ 10°) · Sonnenseite Uhr 0,5/0,27 1.25/5.025 (≥ 1,2) · fernes Weiß R/B 6.248 (≥ 1,3) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.21,
+   "grund": "ROT: K1-2 ROT (1 Befunde) · Farbton 8 km 1.37–13.76° (≤ 10°) · Sonnenseite Uhr 0,5/0,27 1.25/5.025 (≥ 1,2) · fernes Weiß R/B 6.248 (≥ 1,3) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "s": 72.4,
+   "fremd": {
+    "s": 75,
+    "takte": 34,
+    "fremdS": 150.27,
+    "kerne": 2.002,
+    "fensterKerne": 2.218,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      78.39
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      24.77
+     ],
+     [
+      "MsMpEng.exe",
+      12.17
+     ]
+    ],
+    "dienerS": 28.72,
+    "diener": [
+     [
+      "dwm.exe",
+      14.41
+     ],
+     [
+      "System",
+      9.55
+     ]
+    ],
+    "eigenS": 188.66,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-09T09:55:31.367Z",
+   "abdruck": "9c259afc00c6",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "ferne.K1#1",
+   "modus": "session"
+  },
+  "ferne.K2#2": {
+   "gruen": true,
+   "zahl": "K2-2 GRUEN · Kanten-Linie Hügel 0/0/0.47/0.47°, Gipfel 0/0/0/0.47° (< 1°) · Boden 8/12 Befehle, 44.1k/64k Dreiecke · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.21,
+   "gpu": "nvidia/pascal",
+   "s": 72.4,
+   "fremd": {
+    "s": 75,
+    "takte": 34,
+    "fremdS": 150.27,
+    "kerne": 2.002,
+    "fensterKerne": 2.218,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      78.39
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      24.77
+     ],
+     [
+      "MsMpEng.exe",
+      12.17
+     ]
+    ],
+    "dienerS": 28.72,
+    "diener": [
+     [
+      "dwm.exe",
+      14.41
+     ],
+     [
+      "System",
+      9.55
+     ]
+    ],
+    "eigenS": 188.66,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-09T09:55:31.367Z",
+   "abdruck": "0346d90df351",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "ferne.K1#1",
+   "modus": "session"
+  },
+  "material.K3#1": {
+   "gruen": true,
+   "zahl": "Haus L0 0.1512 · L1/L0 1.008 · L2/L0 1.007 · Fels nur L0 (findling, basalt, sediment, zacken, geroell, kristalle), Welt-Y 0.2547 · Soll 0,95–1,05 · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.78,
+   "gpu": "nvidia/pascal",
+   "s": 47,
+   "fremd": {
+    "s": 48.6,
+    "takte": 22,
+    "fremdS": 106.86,
+    "kerne": 2.197,
+    "fensterKerne": 2.88,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      51.83
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      15.86
+     ],
+     [
+      "MsMpEng.exe",
+      8.47
+     ]
+    ],
+    "dienerS": 20.47,
+    "diener": [
+     [
+      "dwm.exe",
+      8.03
+     ],
+     [
+      "System",
+      7.45
+     ]
+    ],
+    "eigenS": 111.89,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-09T09:57:30.607Z",
+   "abdruck": "4c455d422927",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "material.K3#2": {
+   "gruen": true,
+   "zahl": "haus@0.5 l1 1.008/l2 1.007 · birke@0.5 l1 0.992/karte 1.006 · fichte@0.5 l1 0.994/karte 0.987 · haus@0.27 l1 1.008/l2 1.007 · birke@0.27 l1 0.992/karte 1.006 · fichte@0.27 l1 0.994/karte 0.986 · Fels nur L0 · Soll 0,95–1,05 · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.78,
+   "gpu": "nvidia/pascal",
+   "s": 47,
+   "fremd": {
+    "s": 48.6,
+    "takte": 22,
+    "fremdS": 106.86,
+    "kerne": 2.197,
+    "fensterKerne": 2.88,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      51.83
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      15.86
+     ],
+     [
+      "MsMpEng.exe",
+      8.47
+     ]
+    ],
+    "dienerS": 20.47,
+    "diener": [
+     [
+      "dwm.exe",
+      8.03
+     ],
+     [
+      "System",
+      7.45
+     ]
+    ],
+    "eigenS": 111.89,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-09T09:57:30.607Z",
+   "abdruck": "14ccb724b6cc",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "material.K3#1",
+   "modus": "session"
+  },
+  "gelaende.K3#1": {
+   "gruen": true,
+   "zahl": "spiegelTreue 0.9029 (wasserSatz 31524 px, spiegelEbene 0.886) in 1920×1080, Pose = Kamera des Spiels, Ziel auf dem Wasser in 39.1 m (Gier-Versatz 0°), ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Wasser im Bild frei 39.07 m · Luma 93.2 σ 34.5 schwarz 0.1 % weiß 0.0 % · Stand 18.546.236 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal",
+   "exit": 0,
+   "minuten": 0.48,
+   "gpu": "nvidia/pascal",
+   "s": 28.9,
+   "fremd": {
+    "s": 31.3,
+    "takte": 14,
+    "fremdS": 60.11,
+    "kerne": 1.923,
+    "fensterKerne": 2.073,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      33.17
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      9.11
+     ],
+     [
+      "MsMpEng.exe",
+      4.7
+     ]
+    ],
+    "dienerS": 8.91,
+    "diener": [
+     [
+      "dwm.exe",
+      4.25
+     ],
+     [
+      "System",
+      2.67
+     ]
+    ],
+    "eigenS": 100.63,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-09T10:05:28.130Z",
+   "abdruck": "0d1d63f1e2df",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "affekt.K4#2": {
+   "gruen": false,
+   "zahl": "spieler → — (0 ms) · nexus → — (0 ms) · ROT spieler: ohne Modell (die KI der Sitzung ist aus); nexus: ohne Modell (die KI der Sitzung ist aus)",
+   "exit": 0,
+   "minuten": 0,
+   "grund": "ROT: spieler → — (0 ms) · nexus → — (0 ms) · ROT spieler: ohne Modell (die KI der Sitzung ist aus); nexus: ohne Modell (die KI der Sitzung ist aus)",
+   "gpu": "nvidia/pascal",
+   "s": 0.2,
+   "fremd": {
+    "s": 2.2,
+    "takte": 1,
+    "fremdS": 4.39,
+    "kerne": 2.019,
+    "fensterKerne": 2.019,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      2.7
+     ],
+     [
+      "MsMpEng.exe",
+      0.44
+     ],
+     [
+      "OmenCommandCenterBackground.exe",
+      0.34
+     ]
+    ],
+    "dienerS": 0.33,
+    "diener": [
+     [
+      "dwm.exe",
+      0.14
+     ],
+     [
+      "System",
+      0.09
+     ]
+    ],
+    "eigenS": 0.22,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-09T10:05:58.173Z",
+   "abdruck": "cf772722618e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "ferne.K5#1": {
+   "gruen": true,
+   "zahl": "Sicht im Sturm 1553 m (Azimute 1509/1537/1553/1739, Soll 1 500 m ±15 %), [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.42,
+   "gpu": "nvidia/pascal",
+   "s": 24.9,
+   "fremd": {
+    "s": 26.6,
+    "takte": 12,
+    "fremdS": 55.66,
+    "kerne": 2.096,
+    "fensterKerne": 2.216,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      27.34
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      8.47
+     ],
+     [
+      "MsMpEng.exe",
+      4.77
+     ]
+    ],
+    "dienerS": 9.45,
+    "diener": [
+     [
+      "dwm.exe",
+      5.02
+     ],
+     [
+      "System",
+      2.91
+     ]
+    ],
+    "eigenS": 68.41,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-09T10:06:00.349Z",
+   "abdruck": "fe37562afe77",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "material.K4#1": {
+   "gruen": false,
+   "zahl": "lack spiegelTreue -0.6581 (55245 px in der Ebene, 44 Blöcke, Einfall 52°, Normale [0.187,0.978,-0.087]) · glas spiegelTreue null UNGÜLTIG (4124 px in der Ebene, 0 Blöcke, Einfall 49.4°, Normale [0.407,0.892,-0.199]) · Soll ≥ 0,5 an Lack oder Scheibe · first Uhr 0.5000000000000343 sunny · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.13,
+   "grund": "ROT: lack spiegelTreue -0.6581 (55245 px in der Ebene, 44 Blöcke, Einfall 52°, Normale [0.187,0.978,-0.087]) · glas spiegelTreue null UNGÜLTIG (4124 px in der Ebene, 0 Blöcke, Einfall 49.4°, Normale [0.407,0.892,-0.199]) · Soll ≥ 0,5 an Lack oder Scheibe · first Uhr 0.5000000000000343 sunny · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "s": 7.7,
+   "fremd": {
+    "s": 8.9,
+    "takte": 4,
+    "fremdS": 20.98,
+    "kerne": 2.345,
+    "fensterKerne": 2.345,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      9.61
+     ],
+     [
+      "svchost.exe",
+      4.69
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      2.44
+     ]
+    ],
+    "dienerS": 2.78,
+    "diener": [
+     [
+      "dwm.exe",
+      1.14
+     ],
+     [
+      "System",
+      1.05
+     ]
+    ],
+    "eigenS": 29.75,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-09T10:06:53.063Z",
+   "abdruck": "164434f426c7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "material.K5#1": {
+   "gruen": true,
+   "zahl": "3 von 4 Klassen im Band (Soll ≥ 3): eisen θ50 10.261° NEBEN dem Band, ρ 7.15 im Band — black-oxidized-steel · bronze θ50 3.305° im Band, ρ 82.55 im Band — alum-bronze 7,79°/51,4, brass 1,31°/471,3 · quarz θ50 1.256° im Band, ρ 442.56 im Band — black-obsidian 0,63°/698,5, aventurnine 1,45°/437,3 · stahl θ50 0.479° im Band, ρ 849.29 im Band — steel, ss440, chrome-steel · Sonne 74.2°, Uhr 0.5 sunny, [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.24,
+   "gpu": "nvidia/pascal",
+   "s": 14.3,
+   "fremd": {
+    "s": 15.3,
+    "takte": 7,
+    "fremdS": 28.72,
+    "kerne": 1.875,
+    "fensterKerne": 1.93,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      15.8
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      4.28
+     ],
+     [
+      "OmenCommandCenterBackground.exe",
+      2.72
+     ]
+    ],
+    "dienerS": 4.36,
+    "diener": [
+     [
+      "dwm.exe",
+      1.88
+     ],
+     [
+      "System",
+      1.58
+     ]
+    ],
+    "eigenS": 15.16,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-09T10:07:01.453Z",
+   "abdruck": "75eb7c78fd95",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "ungemessen": {
+  "profiband.K4#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "s": 45.3,
+   "fremd": {
+    "s": 46.8,
+    "takte": 20,
+    "fremdS": 87.94,
+    "kerne": 1.88,
+    "fensterKerne": 2.048,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      44.69
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      14.52
+     ],
+     [
+      "MsMpEng.exe",
+      9.69
+     ]
+    ],
+    "dienerS": 18.34,
+    "diener": [
+     [
+      "dwm.exe",
+      10.06
+     ],
+     [
+      "System",
+      5.13
+     ]
+    ],
+    "eigenS": 239.5,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-09T09:38:52.845Z",
+   "abdruck": "3fd9f4bf2400",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "profiband.K4#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "s": 45.3,
+   "fremd": {
+    "s": 46.8,
+    "takte": 20,
+    "fremdS": 87.94,
+    "kerne": 1.88,
+    "fensterKerne": 2.048,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      44.69
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      14.52
+     ],
+     [
+      "MsMpEng.exe",
+      9.69
+     ]
+    ],
+    "dienerS": 18.34,
+    "diener": [
+     [
+      "dwm.exe",
+      10.06
+     ],
+     [
+      "System",
+      5.13
+     ]
+    ],
+    "eigenS": 239.5,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-09T09:38:52.845Z",
+   "abdruck": "5d16596d62f0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K4#1",
+   "modus": "session"
+  },
+  "gelaende.K5#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: == hang · SICHT first (21.1 s): fein 4.3/200 · streu 1/711 · huf 0.8/201 · rad 1.2/200 (p95 cm / Kontakte))",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: == hang · SICHT first (21.1 s): fein 4.3/200 · streu 1/711 · huf 0.8/201 · rad 1.2/200 (p95 cm / Kontakte))",
+   "s": 45.2,
+   "fremd": {
+    "s": 46.3,
+    "takte": 21,
+    "fremdS": 94.86,
+    "kerne": 2.049,
+    "fensterKerne": 2.213,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      47.28
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      15.3
+     ],
+     [
+      "MsMpEng.exe",
+      9.31
+     ]
+    ],
+    "dienerS": 13.31,
+    "diener": [
+     [
+      "dwm.exe",
+      6.58
+     ],
+     [
+      "System",
+      4
+     ]
+    ],
+    "eigenS": 144.63,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-09T09:40:12.706Z",
+   "abdruck": "7c0cbb1bb442",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "vegetation.K5#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: SCHRITT /bild 39.8 s)",
+   "exit": 1,
+   "minuten": 1.5,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: SCHRITT /bild 39.8 s)",
+   "s": 90.2,
+   "fremd": {
+    "s": 91.8,
+    "takte": 42,
+    "fremdS": 178.25,
+    "kerne": 1.942,
+    "fensterKerne": 2.189,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      98.28
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      25.83
+     ],
+     [
+      "OmenCommandCenterBackground.exe",
+      13.73
+     ]
+    ],
+    "dienerS": 26.66,
+    "diener": [
+     [
+      "dwm.exe",
+      12.2
+     ],
+     [
+      "System",
+      9.47
+     ]
+    ],
+    "eigenS": 109.97,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-09T09:44:09.127Z",
+   "abdruck": "726e275ec65d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "licht.K2#1": {
+   "gruen": false,
+   "zahl": "Fremd-Last: AppHelperCap.exe 16,8 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 4,8 CPU-s · OmenCommandCenterBackground.exe 2,4 CPU-s — 2,05 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container); Σ fremd 30,9 CPU-s in 15,5 s) — kein Urteil, UNGEMESSEN (die Probe sah: Verhältnis 5.357 (5–12,5), Schatten-Anteil 0.1867 (0,08–0,20), A/B 0.997, A/C 1.000, Kappe 1497 px, Uhr 0.5 sunny, [linse-gpu] nvidia/pascal)",
+   "exit": 0,
+   "minuten": 0.19,
+   "gpu": "nvidia/pascal",
+   "s": 11.6,
+   "fremd": {
+    "s": 15.5,
+    "takte": 7,
+    "fremdS": 30.89,
+    "kerne": 1.999,
+    "fensterKerne": 2.052,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      16.75
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      4.78
+     ],
+     [
+      "OmenCommandCenterBackground.exe",
+      2.38
+     ]
+    ],
+    "dienerS": 5.34,
+    "diener": [
+     [
+      "dwm.exe",
+      2.81
+     ],
+     [
+      "System",
+      1.7
+     ]
+    ],
+    "eigenS": 29.41,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "ungemessen": true,
+   "grund": "Fremd-Last: AppHelperCap.exe 16,8 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 4,8 CPU-s · OmenCommandCenterBackground.exe 2,4 CPU-s — 2,05 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container); Σ fremd 30,9 CPU-s in 15,5 s) — kein Urteil, UNGEMESSEN (die Probe sah: Verhältnis 5.357 (5–12,5), Schatten-Anteil 0.1867 (0,08–0,20), A/B 0.997, A/C 1.000, Kappe 1497 px, Uhr 0.5 sunny, [linse-gpu] nvidia/pascal)",
+   "zeit": "2026-11-09T09:46:18.620Z",
+   "abdruck": "2ccc636c8b4f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "licht.K2#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: setz-5 · Exit 0)",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: setz-5 · Exit 0)",
+   "s": 45.2,
+   "fremd": {
+    "s": 45.9,
+    "takte": 21,
+    "fremdS": 86.41,
+    "kerne": 1.881,
+    "fensterKerne": 2.053,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      48.3
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      11.97
+     ],
+     [
+      "MsMpEng.exe",
+      7.94
+     ]
+    ],
+    "dienerS": 12.84,
+    "diener": [
+     [
+      "System",
+      5.11
+     ],
+     [
+      "dwm.exe",
+      5.05
+     ]
+    ],
+    "eigenS": 59.09,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-09T09:46:32.565Z",
+   "abdruck": "a36e076c42f0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "lod.K1#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: wiese · Exit 0)",
+   "exit": 1,
+   "minuten": 0.76,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: wiese · Exit 0)",
+   "s": 45.3,
+   "fremd": {
+    "s": 48.2,
+    "takte": 22,
+    "fremdS": 93.91,
+    "kerne": 1.946,
+    "fensterKerne": 2.198,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      52.14
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      12.7
+     ],
+     [
+      "MsMpEng.exe",
+      6.69
+     ]
+    ],
+    "dienerS": 16.28,
+    "diener": [
+     [
+      "System",
+      7.39
+     ],
+     [
+      "dwm.exe",
+      6.16
+     ]
+    ],
+    "eigenS": 78.28,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-09T09:49:54.580Z",
+   "abdruck": "2a29046aa7bb",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "lod.K2#1": {
+   "gruen": false,
+   "zahl": "Fremd-Last: AppHelperCap.exe 31,0 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 7,3 CPU-s · OmenCommandCenterBackground.exe 4,3 CPU-s — 1,98 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container); Σ fremd 55,3 CPU-s in 28,5 s) — kein Urteil, UNGEMESSEN (die Probe sah: Gehen 4 m/s: 0.0324 % Pop-Pixel je Sekunde (672 px, Soll ≤ 0,05 %), je Schritt 25*/29*/330*/47/44*/52*/77*/68* (* = Stufen-Wechsel), Laub 216–216 m, perfTarget 34 ms, [linse-gpu] nvidia/pascal)",
+   "exit": 0,
+   "minuten": 0.46,
+   "gpu": "nvidia/pascal",
+   "s": 27.4,
+   "fremd": {
+    "s": 28.5,
+    "takte": 13,
+    "fremdS": 55.31,
+    "kerne": 1.943,
+    "fensterKerne": 1.983,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      30.97
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      7.33
+     ],
+     [
+      "OmenCommandCenterBackground.exe",
+      4.34
+     ]
+    ],
+    "dienerS": 9.61,
+    "diener": [
+     [
+      "dwm.exe",
+      4.48
+     ],
+     [
+      "System",
+      3.52
+     ]
+    ],
+    "eigenS": 27.92,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "ungemessen": true,
+   "grund": "Fremd-Last: AppHelperCap.exe 31,0 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 7,3 CPU-s · OmenCommandCenterBackground.exe 4,3 CPU-s — 1,98 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container); Σ fremd 55,3 CPU-s in 28,5 s) — kein Urteil, UNGEMESSEN (die Probe sah: Gehen 4 m/s: 0.0324 % Pop-Pixel je Sekunde (672 px, Soll ≤ 0,05 %), je Schritt 25*/29*/330*/47/44*/52*/77*/68* (* = Stufen-Wechsel), Laub 216–216 m, perfTarget 34 ms, [linse-gpu] nvidia/pascal)",
+   "zeit": "2026-11-09T09:51:56.494Z",
+   "abdruck": "ddb153481a96",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "leib.K1#1": {
+   "gruen": false,
+   "zahl": "Fremd-Last: AppHelperCap.exe 41,3 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 9,1 CPU-s · MsMpEng.exe 6,5 CPU-s — 2,11 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container); Σ fremd 74,9 CPU-s in 39,5 s) — kein Urteil, UNGEMESSEN (die Probe sah: schlechtester von 1 Läufen p95 ms ego/gehen 57.6 · third/gehen 104.8 · ego/wechsel 32.9 · third/wechsel 40 · Bild 32.96 ms)",
+   "exit": 0,
+   "minuten": 0.65,
+   "grund": "Fremd-Last: AppHelperCap.exe 41,3 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 9,1 CPU-s · MsMpEng.exe 6,5 CPU-s — 2,11 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container); Σ fremd 74,9 CPU-s in 39,5 s) — kein Urteil, UNGEMESSEN (die Probe sah: schlechtester von 1 Läufen p95 ms ego/gehen 57.6 · third/gehen 104.8 · ego/wechsel 32.9 · third/wechsel 40 · Bild 32.96 ms)",
+   "gpu": "nvidia/pascal",
+   "s": 39,
+   "fremd": {
+    "s": 39.5,
+    "takte": 18,
+    "fremdS": 74.88,
+    "kerne": 1.895,
+    "fensterKerne": 2.108,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      41.25
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      9.08
+     ],
+     [
+      "MsMpEng.exe",
+      6.5
+     ]
+    ],
+    "dienerS": 14.98,
+    "diener": [
+     [
+      "dwm.exe",
+      7.45
+     ],
+     [
+      "System",
+      5.39
+     ]
+    ],
+    "eigenS": 73.92,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-09T09:52:24.928Z",
+   "abdruck": "cd8f3cd2b132",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "spielgang.K3#1": {
+   "gruen": false,
+   "zahl": "Fremd-Last: AppHelperCap.exe 13,7 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 4,7 CPU-s · MsMpEng.exe 1,8 CPU-s — 2,09 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container); Σ fremd 25,9 CPU-s in 13,1 s) — kein Urteil, UNGEMESSEN (die Probe sah: HUD deckt 2.54 % (1920×1080, im Spiel) · INP HUD 136 ms (50) · Menü 136 ms (21))",
+   "exit": 0,
+   "minuten": 0.18,
+   "gpu": "nvidia/pascal",
+   "s": 10.7,
+   "fremd": {
+    "s": 13.1,
+    "takte": 6,
+    "fremdS": 25.89,
+    "kerne": 1.972,
+    "fensterKerne": 2.088,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      13.73
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      4.69
+     ],
+     [
+      "MsMpEng.exe",
+      1.75
+     ]
+    ],
+    "dienerS": 5.8,
+    "diener": [
+     [
+      "dwm.exe",
+      3.55
+     ],
+     [
+      "System",
+      1.52
+     ]
+    ],
+    "eigenS": 17.59,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "ungemessen": true,
+   "grund": "Fremd-Last: AppHelperCap.exe 13,7 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 4,7 CPU-s · MsMpEng.exe 1,8 CPU-s — 2,09 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container); Σ fremd 25,9 CPU-s in 13,1 s) — kein Urteil, UNGEMESSEN (die Probe sah: HUD deckt 2.54 % (1920×1080, im Spiel) · INP HUD 136 ms (50) · Menü 136 ms (21))",
+   "zeit": "2026-11-09T09:53:04.474Z",
+   "abdruck": "aa427f854569",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "streaming.K3#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "s": 45.2,
+   "fremd": {
+    "s": 47.3,
+    "takte": 21,
+    "fremdS": 154.05,
+    "kerne": 3.259,
+    "fensterKerne": 3.571,
+    "namen": [
+     [
+      "MsMpEng.exe",
+      59.38
+     ],
+     [
+      "AppHelperCap.exe",
+      53.83
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      16.48
+     ]
+    ],
+    "dienerS": 14.72,
+    "diener": [
+     [
+      "dwm.exe",
+      7.95
+     ],
+     [
+      "System",
+      3.94
+     ]
+    ],
+    "eigenS": 157.14,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-09T09:53:17.587Z",
+   "abdruck": "d04b4f29f398",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "klang.K2#1": {
+   "gruen": false,
+   "zahl": "Fremd-Last: AppHelperCap.exe 31,3 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 9,8 CPU-s · MsMpEng.exe 4,6 CPU-s — 2,37 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container); Σ fremd 60,7 CPU-s in 28,8 s) — kein Urteil, UNGEMESSEN (die Probe sah: r 0.73 bei Lag 0 (n 103), Spitze 0.79 bei -1.2 s, CV Bild 0.27 / Ohr 0.48, 51.5 fps, Klang an)",
+   "exit": 0,
+   "minuten": 0.42,
+   "gpu": "nvidia/pascal",
+   "s": 25.3,
+   "fremd": {
+    "s": 28.8,
+    "takte": 13,
+    "fremdS": 60.72,
+    "kerne": 2.108,
+    "fensterKerne": 2.365,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      31.27
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      9.83
+     ],
+     [
+      "MsMpEng.exe",
+      4.59
+     ]
+    ],
+    "dienerS": 13.42,
+    "diener": [
+     [
+      "dwm.exe",
+      5.89
+     ],
+     [
+      "System",
+      4.28
+     ]
+    ],
+    "eigenS": 61.13,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "ungemessen": true,
+   "grund": "Fremd-Last: AppHelperCap.exe 31,3 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 9,8 CPU-s · MsMpEng.exe 4,6 CPU-s — 2,37 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container); Σ fremd 60,7 CPU-s in 28,8 s) — kein Urteil, UNGEMESSEN (die Probe sah: r 0.73 bei Lag 0 (n 103), Spitze 0.79 bei -1.2 s, CV Bild 0.27 / Ohr 0.48, 51.5 fps, Klang an)",
+   "zeit": "2026-11-09T09:54:44.609Z",
+   "abdruck": "99184fa7cfdf",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "licht.K5#1": {
+   "gruen": false,
+   "zahl": "Fremd-Last: AppHelperCap.exe 48,8 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 14,3 CPU-s · MsMpEng.exe 6,1 CPU-s — 2,17 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container); Σ fremd 88,7 CPU-s in 46,1 s) — kein Urteil, UNGEMESSEN (die Probe sah: größter Sprung 0.048 EV/s (Soll ≤ 0,1) · Hub klar ↔ Regen 0.75 EV · 125 s, Wörter standen · [linse-gpu] nvidia/pascal)",
+   "exit": 0,
+   "minuten": 0.74,
+   "gpu": "nvidia/pascal",
+   "s": 44.4,
+   "fremd": {
+    "s": 46.1,
+    "takte": 21,
+    "fremdS": 88.66,
+    "kerne": 1.923,
+    "fensterKerne": 2.167,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      48.75
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      14.27
+     ],
+     [
+      "MsMpEng.exe",
+      6.06
+     ]
+    ],
+    "dienerS": 14.41,
+    "diener": [
+     [
+      "dwm.exe",
+      6.48
+     ],
+     [
+      "System",
+      5.25
+     ]
+    ],
+    "eigenS": 94.11,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "ungemessen": true,
+   "grund": "Fremd-Last: AppHelperCap.exe 48,8 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 14,3 CPU-s · MsMpEng.exe 6,1 CPU-s — 2,17 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container); Σ fremd 88,7 CPU-s in 46,1 s) — kein Urteil, UNGEMESSEN (die Probe sah: größter Sprung 0.048 EV/s (Soll ≤ 0,1) · Hub klar ↔ Regen 0.75 EV · 125 s, Wörter standen · [linse-gpu] nvidia/pascal)",
+   "zeit": "2026-11-09T09:56:44.536Z",
+   "abdruck": "f03c733d82c5",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "material.K1#1": {
+   "gruen": false,
+   "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Welt/Labor 0,9–1,1: 0/0 · im realen Band beidseits: 0/0 · echt NEIN · [linse-gpu] nvidia/pascal) · Täter: ALBEDO-TAFEL 0 Zeilen beider Seiten — Labor: Protocol error (Runtime.callFunctionOn): Target closed",
+   "exit": 3,
+   "minuten": 1.4,
+   "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Welt/Labor 0,9–1,1: 0/0 · im realen Band beidseits: 0/0 · echt NEIN · [linse-gpu] nvidia/pascal) · Täter: ALBEDO-TAFEL 0 Zeilen beider Seiten — Labor: Protocol error (Runtime.callFunctionOn): Target closed",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 84.2,
+   "fremd": {
+    "s": 86.5,
+    "takte": 39,
+    "fremdS": 173.25,
+    "kerne": 2.003,
+    "fensterKerne": 2.293,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      91.03
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      26.41
+     ],
+     [
+      "MsMpEng.exe",
+      14.59
+     ]
+    ],
+    "dienerS": 34.08,
+    "diener": [
+     [
+      "dwm.exe",
+      16.72
+     ],
+     [
+      "System",
+      12.14
+     ]
+    ],
+    "eigenS": 244.16,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-09T09:58:52.688Z",
+   "abdruck": "b8eb79afff76",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "material.K1#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Karte Welt undefined · Labor stumm · Soll undefined ± undefined · Zeilen NICHT alle im Soll und Band · echt NEIN · [linse-gpu] nvidia/pascal) · Täter: ALBEDO-TAFEL 0 Zeilen beider Seiten — Labor: Protocol error (Runtime.callFunctionOn): Target closed",
+   "exit": 3,
+   "minuten": 1.4,
+   "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Karte Welt undefined · Labor stumm · Soll undefined ± undefined · Zeilen NICHT alle im Soll und Band · echt NEIN · [linse-gpu] nvidia/pascal) · Täter: ALBEDO-TAFEL 0 Zeilen beider Seiten — Labor: Protocol error (Runtime.callFunctionOn): Target closed",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 84.2,
+   "fremd": {
+    "s": 86.5,
+    "takte": 39,
+    "fremdS": 173.25,
+    "kerne": 2.003,
+    "fensterKerne": 2.293,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      91.03
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      26.41
+     ],
+     [
+      "MsMpEng.exe",
+      14.59
+     ]
+    ],
+    "dienerS": 34.08,
+    "diener": [
+     [
+      "dwm.exe",
+      16.72
+     ],
+     [
+      "System",
+      12.14
+     ]
+    ],
+    "eigenS": 244.16,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-09T09:58:52.688Z",
+   "abdruck": "18928b5b08be",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "material.K1#1",
+   "modus": "session"
+  },
+  "licht.K1#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __tagKurve({\"uhren\":[0.192,0.194,0. (88 Uhren) · 14.7 s · 34.5 s)",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __tagKurve({\"uhren\":[0.192,0.194,0. (88 Uhren) · 14.7 s · 34.5 s)",
+   "s": 45.3,
+   "fremd": {
+    "s": 46.4,
+    "takte": 21,
+    "fremdS": 87.36,
+    "kerne": 1.885,
+    "fensterKerne": 2.061,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      48.38
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      12.63
+     ],
+     [
+      "MsMpEng.exe",
+      6.45
+     ]
+    ],
+    "dienerS": 15.06,
+    "diener": [
+     [
+      "System",
+      6.23
+     ],
+     [
+      "dwm.exe",
+      6.23
+     ]
+    ],
+    "eigenS": 116.86,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-09T10:00:48.531Z",
+   "abdruck": "dfd7c213d39d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "ankunft.K4#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: POSE ego-0 72325 ms)",
+   "exit": 1,
+   "minuten": 1.5,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: POSE ego-0 72325 ms)",
+   "s": 90.2,
+   "fremd": {
+    "s": 93.8,
+    "takte": 43,
+    "fremdS": 170.81,
+    "kerne": 1.821,
+    "fensterKerne": 2.031,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      99.73
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      22.31
+     ],
+     [
+      "OmenCommandCenterBackground.exe",
+      14.92
+     ]
+    ],
+    "dienerS": 22.45,
+    "diener": [
+     [
+      "dwm.exe",
+      10.34
+     ],
+     [
+      "System",
+      7.56
+     ]
+    ],
+    "eigenS": 101.86,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-09T10:02:00.796Z",
+   "abdruck": "ea66260e5746",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "licht.K3#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __lichtWeg({ weg: \"spiegel\", uhr: 0 · 2.5 s · 34.9 s)",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __lichtWeg({ weg: \"spiegel\", uhr: 0 · 2.5 s · 34.9 s)",
+   "s": 45.2,
+   "fremd": {
+    "s": 46.6,
+    "takte": 21,
+    "fremdS": 95.69,
+    "kerne": 2.055,
+    "fensterKerne": 2.355,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      50.13
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      14.11
+     ],
+     [
+      "MsMpEng.exe",
+      8.28
+     ]
+    ],
+    "dienerS": 14.2,
+    "diener": [
+     [
+      "dwm.exe",
+      6.92
+     ],
+     [
+      "System",
+      4.3
+     ]
+    ],
+    "eigenS": 155.52,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-09T10:04:19.021Z",
+   "abdruck": "5bc5276247f0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "lod.K3#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 14 s gerissen — beendet, UNGEMESSEN (zuletzt: RUHE VOR TEIL C: die Welt steht nach 585 Takten · mit einer wartenden Karte: false)",
+   "exit": 1,
+   "minuten": 0.24,
+   "grund": "Deckel 14 s gerissen — beendet, UNGEMESSEN (zuletzt: RUHE VOR TEIL C: die Welt steht nach 585 Takten · mit einer wartenden Karte: false)",
+   "s": 14.2,
+   "fremd": {
+    "s": 15.4,
+    "takte": 7,
+    "fremdS": 30.38,
+    "kerne": 1.967,
+    "fensterKerne": 2.027,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      16.38
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      4.33
+     ],
+     [
+      "MsMpEng.exe",
+      2.53
+     ]
+    ],
+    "dienerS": 6.02,
+    "diener": [
+     [
+      "dwm.exe",
+      3.48
+     ],
+     [
+      "System",
+      1.59
+     ]
+    ],
+    "eigenS": 35.47,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-09T10:07:16.761Z",
+   "abdruck": "81ecb380cb90",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "profiband.K5#1": {
+   "gruen": false,
+   "zahl": "Fremd-Last: AppHelperCap.exe 25,3 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 7,1 CPU-s · MsMpEng.exe 4,3 CPU-s — 2,03 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container); Σ fremd 46,2 CPU-s in 24,5 s) — kein Urteil, UNGEMESSEN (die Probe sah: Dauer 28.94 min in 7 Seite(n), 9 Proben: Dauerlast 2383 Bilder · Bild-p95 183.32 (p99 224.94, max 325.02) ms · Takt-p95 179.49 ms · VRAM-p95 144 MB · Anker Bild-p95 100.02 → 166.67 ms · Heap 278.7 → 321.2 MB · VRAM nach GC 132.9 → 133.5 MB )",
+   "exit": 0,
+   "minuten": 0.38,
+   "grund": "Fremd-Last: AppHelperCap.exe 25,3 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 7,1 CPU-s · MsMpEng.exe 4,3 CPU-s — 2,03 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container); Σ fremd 46,2 CPU-s in 24,5 s) — kein Urteil, UNGEMESSEN (die Probe sah: Dauer 28.94 min in 7 Seite(n), 9 Proben: Dauerlast 2383 Bilder · Bild-p95 183.32 (p99 224.94, max 325.02) ms · Takt-p95 179.49 ms · VRAM-p95 144 MB · Anker Bild-p95 100.02 → 166.67 ms · Heap 278.7 → 321.2 MB · VRAM nach GC 132.9 → 133.5 MB )",
+   "gpu": "nvidia/pascal",
+   "s": 22.6,
+   "fremd": {
+    "s": 24.5,
+    "takte": 11,
+    "fremdS": 46.19,
+    "kerne": 1.883,
+    "fensterKerne": 2.032,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      25.25
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      7.14
+     ],
+     [
+      "MsMpEng.exe",
+      4.28
+     ]
+    ],
+    "dienerS": 8.25,
+    "diener": [
+     [
+      "dwm.exe",
+      4.36
+     ],
+     [
+      "System",
+      2.52
+     ]
+    ],
+    "eigenS": 86.27,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:07:57.282Z",
+   "abdruck": "6c22c6593987",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "profiband.K5#2": {
+   "gruen": false,
+   "zahl": "Fremd-Last: AppHelperCap.exe 25,3 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 7,1 CPU-s · MsMpEng.exe 4,3 CPU-s — 2,03 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container); Σ fremd 46,2 CPU-s in 24,5 s) — kein Urteil, UNGEMESSEN (die Probe sah: Dauer 28.94 min in 7 Seite(n), 9 Proben: Dauerlast 2383 Bilder · Bild-p95 183.32 (p99 224.94, max 325.02) ms · Takt-p95 179.49 ms · VRAM-p95 144 MB · Anker Bild-p95 100.02 → 166.67 ms · Heap 278.7 → 321.2 MB · VRAM nach GC 132.9 → 133.5 MB )",
+   "exit": 0,
+   "minuten": 0.38,
+   "grund": "Fremd-Last: AppHelperCap.exe 25,3 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 7,1 CPU-s · MsMpEng.exe 4,3 CPU-s — 2,03 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container); Σ fremd 46,2 CPU-s in 24,5 s) — kein Urteil, UNGEMESSEN (die Probe sah: Dauer 28.94 min in 7 Seite(n), 9 Proben: Dauerlast 2383 Bilder · Bild-p95 183.32 (p99 224.94, max 325.02) ms · Takt-p95 179.49 ms · VRAM-p95 144 MB · Anker Bild-p95 100.02 → 166.67 ms · Heap 278.7 → 321.2 MB · VRAM nach GC 132.9 → 133.5 MB )",
+   "gpu": "nvidia/pascal",
+   "s": 22.6,
+   "fremd": {
+    "s": 24.5,
+    "takte": 11,
+    "fremdS": 46.19,
+    "kerne": 1.883,
+    "fensterKerne": 2.032,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      25.25
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      7.14
+     ],
+     [
+      "MsMpEng.exe",
+      4.28
+     ]
+    ],
+    "dienerS": 8.25,
+    "diener": [
+     [
+      "dwm.exe",
+      4.36
+     ],
+     [
+      "System",
+      2.52
+     ]
+    ],
+    "eigenS": 86.27,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:07:57.282Z",
+   "abdruck": "9cb0be8108f4",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K5#1",
+   "modus": "session"
+  },
+  "gelaende.K2#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: (b)(d) 18.3 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"flu)",
+   "exit": 1,
+   "minuten": 1.5,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: (b)(d) 18.3 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"flu)",
+   "s": 90.2,
+   "fremd": {
+    "s": 93.2,
+    "takte": 42,
+    "fremdS": 182.25,
+    "kerne": 1.956,
+    "fensterKerne": 2.262,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      99.09
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      28.53
+     ],
+     [
+      "MsMpEng.exe",
+      14.83
+     ]
+    ],
+    "dienerS": 33.72,
+    "diener": [
+     [
+      "dwm.exe",
+      15.55
+     ],
+     [
+      "System",
+      13.09
+     ]
+    ],
+    "eigenS": 269.63,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-09T10:09:42.205Z",
+   "abdruck": "93eeb4494f5b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "gelaende.K2#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: (b)(d) 18.3 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"flu)",
+   "exit": 1,
+   "minuten": 1.5,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: (b)(d) 18.3 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"flu)",
+   "s": 90.2,
+   "fremd": {
+    "s": 93.2,
+    "takte": 42,
+    "fremdS": 182.25,
+    "kerne": 1.956,
+    "fensterKerne": 2.262,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      99.09
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      28.53
+     ],
+     [
+      "MsMpEng.exe",
+      14.83
+     ]
+    ],
+    "dienerS": 33.72,
+    "diener": [
+     [
+      "dwm.exe",
+      15.55
+     ],
+     [
+      "System",
+      13.09
+     ]
+    ],
+    "eigenS": 269.63,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-09T10:09:42.205Z",
+   "abdruck": "0f54a91aa37d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "gelaende.K2#1",
+   "modus": "session"
+  },
+  "wetter.K2#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung endete während der Probe (der Halter endete (Exit 1)) — ungemessen; die Probe sah: Wiese ego — | third — · ROT: ego: read ECONNRESET, third: connect ECONNREFUSED 127.0.0.1:27804",
+   "exit": 0,
+   "minuten": 0.11,
+   "grund": "die Welt der Sitzung endete während der Probe (der Halter endete (Exit 1)) — ungemessen",
+   "gpu": "nvidia/pascal",
+   "s": 6.4,
+   "fremd": {
+    "s": 8.9,
+    "takte": 4,
+    "fremdS": 29.92,
+    "kerne": 3.366,
+    "fensterKerne": 3.366,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      9.7
+     ],
+     [
+      "MsMpEng.exe",
+      6.56
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      3.58
+     ]
+    ],
+    "dienerS": 5.41,
+    "diener": [
+     [
+      "System",
+      2.2
+     ],
+     [
+      "dwm.exe",
+      1.91
+     ]
+    ],
+    "eigenS": 17.72,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:49.586Z",
+   "abdruck": "cced14e7e624",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "physik.K2#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.551Z",
+   "abdruck": "87e41bb36cf3",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "tiere.K1#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.554Z",
+   "abdruck": "9d9ccc7071a0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "affekt.K1#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.556Z",
+   "abdruck": "9410239eb591",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "oekologie.K4#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.558Z",
+   "abdruck": "7c55434a1b8a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "haar.K1#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.560Z",
+   "abdruck": "4737c3538058",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "fahrzeug.K3#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.563Z",
+   "abdruck": "e8395dc069f5",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "fahrzeug.K3#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.565Z",
+   "abdruck": "f9160ef42707",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "fahrzeug.K4#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.565Z",
+   "abdruck": "5f16d6260571",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "fahrzeug.K3#2",
+   "modus": "session"
+  },
+  "fahrzeug.K4#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.565Z",
+   "abdruck": "9bcf6b523b3f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "fahrzeug.K3#2",
+   "modus": "session"
+  },
+  "leib.K1#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.567Z",
+   "abdruck": "69bb8ec1c19c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "halten.K2#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.567Z",
+   "abdruck": "ce8afc8b9d18",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "leib.K1#2",
+   "modus": "session"
+  },
+  "leib.K4#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.570Z",
+   "abdruck": "8f7e47928a66",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "leib.K4#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.570Z",
+   "abdruck": "d92a3ff92ce9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "leib.K4#1",
+   "modus": "session"
+  },
+  "fahrzeug.K5#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.572Z",
+   "abdruck": "6684db253d7a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "fahrzeug.K2#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.575Z",
+   "abdruck": "2fefbc9de50b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "fahrzeug.K2#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.577Z",
+   "abdruck": "39aa5fcd7528",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "klang.K4#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.580Z",
+   "abdruck": "ed23e53b8b0a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "klang.K4#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.580Z",
+   "abdruck": "ede0f995fc5f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "klang.K4#1",
+   "modus": "session"
+  },
+  "klang.K5#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.582Z",
+   "abdruck": "811932f22285",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "speicher.K4#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.584Z",
+   "abdruck": "072891de491c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "wetter.K2#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.587Z",
+   "abdruck": "241e09374c00",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "licht.K3#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.589Z",
+   "abdruck": "4970c36e4fbd",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "mensch.K1#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.591Z",
+   "abdruck": "1c7d86be2250",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "mensch.K2#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.591Z",
+   "abdruck": "bf81faa399c7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "mensch.K1#1",
+   "modus": "session"
+  },
+  "vegetation.K4#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.594Z",
+   "abdruck": "b81f750d0692",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "vegetation.K4#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.594Z",
+   "abdruck": "f0aafc542846",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "vegetation.K4#1",
+   "modus": "session"
+  },
+  "mensch.K5#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.598Z",
+   "abdruck": "580d5390b4c9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "siedlung.K1#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.601Z",
+   "abdruck": "aee8fa98714b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "schatten.K1#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.603Z",
+   "abdruck": "4cf2516aa5c3",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "schatten.K1#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.605Z",
+   "abdruck": "bb691a8762eb",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "wetter.K3#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.607Z",
+   "abdruck": "073499ead14e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "tiere.K3#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.609Z",
+   "abdruck": "80efd4461b53",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "tiere.K2#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.611Z",
+   "abdruck": "f27a185f07bf",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "luftwasser.K5#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.613Z",
+   "abdruck": "fe1bca1545e6",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "luftwasser.K5#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.613Z",
+   "abdruck": "c82dc02519ca",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "luftwasser.K5#1",
+   "modus": "session"
+  },
+  "studios.K2#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.616Z",
+   "abdruck": "0729922f0665",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "studios.K3#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.616Z",
+   "abdruck": "40e20c122980",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "studios.K2#2",
+   "modus": "session"
+  },
+  "pipeline.K4#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.619Z",
+   "abdruck": "e8b08865db0c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "pipeline.K4#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.619Z",
+   "abdruck": "d2b650a6f75f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "pipeline.K4#1",
+   "modus": "session"
+  },
+  "ankunft.K2#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.619Z",
+   "abdruck": "fbcb837d411b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "pipeline.K4#1",
+   "modus": "session"
+  },
+  "ankunft.K3#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.619Z",
+   "abdruck": "3b4659c456d4",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "pipeline.K4#1",
+   "modus": "session"
+  },
+  "ankunft.K1#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.619Z",
+   "abdruck": "4e36edaf41f7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "pipeline.K4#1",
+   "modus": "session"
+  },
+  "ankunft.K1#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.619Z",
+   "abdruck": "201ca904c048",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "pipeline.K4#1",
+   "modus": "session"
+  },
+  "bauen.K1#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.622Z",
+   "abdruck": "39320cf4db45",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "bauen.K5#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.625Z",
+   "abdruck": "2e8942881f08",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "studios.K4#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.627Z",
+   "abdruck": "a576b62649d8",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "studios.K4#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.627Z",
+   "abdruck": "97b1e369c378",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "studios.K4#1",
+   "modus": "session"
+  },
+  "siedlung.K2#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.630Z",
+   "abdruck": "780be0a8826d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "siedlung.K2#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.630Z",
+   "abdruck": "6be425f258c7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "siedlung.K2#1",
+   "modus": "session"
+  },
+  "siedlung.K5#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.632Z",
+   "abdruck": "53734dd61b83",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "siedlung.K5#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.632Z",
+   "abdruck": "225997244700",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "siedlung.K5#1",
+   "modus": "session"
+  },
+  "siedlung.K4#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.635Z",
+   "abdruck": "05919a6be0cf",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "leib.K2#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.637Z",
+   "abdruck": "47608cd79624",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "leib.K2#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.637Z",
+   "abdruck": "dd158c900200",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "leib.K2#1",
+   "modus": "session"
+  },
+  "leib.K3#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.639Z",
+   "abdruck": "3ad18f4155ae",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "halten.K5#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.641Z",
+   "abdruck": "76276551b53f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "halten.K5#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.641Z",
+   "abdruck": "c420d1375d77",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "halten.K5#1",
+   "modus": "session"
+  },
+  "halten.K1#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.644Z",
+   "abdruck": "e5a8f60ac4b4",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "tore.K1#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.646Z",
+   "abdruck": "248a1713c159",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "tore.K3#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.648Z",
+   "abdruck": "f945bff7be0c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "tore.K3#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.648Z",
+   "abdruck": "7168640db50e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "tore.K3#1",
+   "modus": "session"
+  },
+  "streaming.K4#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.649Z",
+   "abdruck": "6c05ef8ef9e1",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "profiband.K1#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.652Z",
+   "abdruck": "d99cb8f5d547",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "profiband.K1#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.652Z",
+   "abdruck": "cf1ffc5a5e15",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K1#1",
+   "modus": "session"
+  },
+  "pflicht.E#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.652Z",
+   "abdruck": "faadcb87e50f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K1#1",
+   "modus": "session"
+  },
+  "profiband.K2#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.652Z",
+   "abdruck": "c1988d88f42c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K1#1",
+   "modus": "session"
+  },
+  "profiband.K2#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.652Z",
+   "abdruck": "0a6126d9fbfe",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K1#1",
+   "modus": "session"
+  },
+  "profiband.K3#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.652Z",
+   "abdruck": "34ac4a105f22",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K1#1",
+   "modus": "session"
+  },
+  "profiband.K3#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.652Z",
+   "abdruck": "4cc877868786",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K1#1",
+   "modus": "session"
+  },
+  "speicher.K1#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.656Z",
+   "abdruck": "7bedeb37abad",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "speicher.K1#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.656Z",
+   "abdruck": "8100b54f9d70",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "speicher.K1#1",
+   "modus": "session"
+  },
+  "speicher.K2#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.659Z",
+   "abdruck": "920fe5b46b7b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "speicher.K2#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während wetter.K2#2: der Halter endete (Exit 1)) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-09T10:11:57.659Z",
+   "abdruck": "9fd03137c637",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "speicher.K2#1",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-09T09:38:43.442Z",
+  "port": 7804,
+  "warten": 0.02,
+  "bootS": 8,
+  "grundstellungS": [
+   0.2,
+   8,
+   8,
+   7.9,
+   7.7,
+   6.3,
+   8.1,
+   8,
+   5,
+   5.1,
+   4.8,
+   5.2,
+   4.8,
+   5.1,
+   4.7
+  ],
+  "proben": 33,
+  "freigaben": [],
+  "offen": [
+   "gelaende.K2#1",
+   "gelaende.K2#2",
+   "wetter.K2#2",
+   "physik.K2#2",
+   "tiere.K1#2",
+   "affekt.K1#2",
+   "oekologie.K4#2",
+   "haar.K1#1",
+   "fahrzeug.K3#1",
+   "fahrzeug.K3#2",
+   "fahrzeug.K4#1",
+   "fahrzeug.K4#2",
+   "leib.K1#2",
+   "halten.K2#1",
+   "leib.K4#1",
+   "leib.K4#2",
+   "fahrzeug.K5#1",
+   "fahrzeug.K2#1",
+   "fahrzeug.K2#2",
+   "klang.K4#1",
+   "klang.K4#2",
+   "klang.K5#2",
+   "speicher.K4#2",
+   "wetter.K2#1",
+   "licht.K3#1",
+   "mensch.K1#1",
+   "mensch.K2#2",
+   "vegetation.K4#1",
+   "vegetation.K4#2",
+   "mensch.K5#1",
+   "siedlung.K1#2",
+   "schatten.K1#1",
+   "schatten.K1#2",
+   "wetter.K3#2",
+   "tiere.K3#2",
+   "tiere.K2#2",
+   "luftwasser.K5#1",
+   "luftwasser.K5#2",
+   "studios.K2#2",
+   "studios.K3#2",
+   "pipeline.K4#1",
+   "pipeline.K4#2",
+   "ankunft.K2#1",
+   "ankunft.K3#1",
+   "ankunft.K1#1",
+   "ankunft.K1#2",
+   "bauen.K1#2",
+   "bauen.K5#2",
+   "studios.K4#1",
+   "studios.K4#2",
+   "siedlung.K2#1",
+   "siedlung.K2#2",
+   "siedlung.K5#1",
+   "siedlung.K5#2",
+   "siedlung.K4#2",
+   "leib.K2#1",
+   "leib.K2#2",
+   "leib.K3#2",
+   "halten.K5#1",
+   "halten.K5#2",
+   "halten.K1#2",
+   "tore.K1#1",
+   "tore.K3#1",
+   "tore.K3#2",
+   "streaming.K4#2",
+   "profiband.K1#1",
+   "profiband.K1#2",
+   "pflicht.E#1",
+   "profiband.K2#1",
+   "profiband.K2#2",
+   "profiband.K3#1",
+   "profiband.K3#2",
+   "speicher.K1#1",
+   "speicher.K1#2",
+   "speicher.K2#1",
+   "speicher.K2#2"
+  ],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "gelaende.K5#2",
+    "s": 29.9,
+    "takte": 621,
+    "chunks": 81,
+    "nach": "der Grundstellung"
+   },
+   {
+    "ort": "wiese",
+    "vor": "vegetation.K2#1",
+    "s": 27,
+    "takte": 621,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": "wiese",
+    "vor": "licht.K2#1",
+    "s": 29.7,
+    "takte": 544,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": "wiese",
+    "vor": "material.K2#1",
+    "s": 29,
+    "takte": 629,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": "wiese",
+    "vor": "lod.K1#1",
+    "s": 25.1,
+    "takte": 618,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": "wiese",
+    "vor": "lod.K5#1",
+    "s": 24.9,
+    "takte": 617,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": "wiese",
+    "vor": "klang.K2#1",
+    "s": 30.6,
+    "takte": 637,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": "genesis",
+    "vor": "ferne.K1#1",
+    "s": 19.7,
+    "takte": 603,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": "genesis",
+    "vor": "material.K1#1",
+    "s": 25.4,
+    "takte": 580,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": "genesis",
+    "vor": "licht.K1#1",
+    "s": 25.8,
+    "takte": 616,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": "genesis",
+    "vor": "ankunft.K4#1",
+    "s": 21.6,
+    "takte": 581,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": "dorf",
+    "vor": "licht.K3#2",
+    "s": 41.6,
+    "takte": 722,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": null,
+    "vor": "gelaende.K3#1",
+    "s": 18.3,
+    "takte": 793,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": null,
+    "vor": "material.K4#1",
+    "s": 21.4,
+    "takte": 891,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": null,
+    "vor": "profiband.K5#1",
+    "s": 20,
+    "takte": 818,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": "wiese",
+    "vor": "gelaende.K2#1",
+    "s": 25.8,
+    "takte": 617,
+    "chunks": 81,
+    "nach": "der Tür"
+   }
+  ],
+  "wegeTueren": [
+   {
+    "vor": "lod.K1#1",
+    "wege": "wege +1 [-119.1,-274.9,279.2,201/272]",
+    "s": 7.7
+   },
+   {
+    "vor": "material.K1#1",
+    "wege": "wege +1 [-119.1,-274.9,279.2,201/272]",
+    "s": 8
+   },
+   {
+    "vor": "material.K4#1",
+    "wege": "wege +1 [-119.1,-274.9,279.2,201/272]",
+    "s": 4.8
+   },
+   {
+    "vor": "gelaende.K2#1",
+    "wege": "wege +1 [-119.1,-274.9,279.2,201/272]",
+    "s": 4.7
+   }
+  ],
+  "unerklaert": [
+   {
+    "probe": "gelaende.K5#2",
+    "wie": "werke +1 (−0)"
+   },
+   {
+    "probe": "material.K2#1",
+    "wie": "wege +1 [-119.1,-274.9,279.2,201/272] (genesis)"
+   },
+   {
+    "probe": "material.K3#1",
+    "wie": "werke +5 (−0)"
+   },
+   {
+    "probe": "material.K1#1",
+    "wie": "werke +5 (−0)"
+   },
+   {
+    "probe": "licht.K3#2",
+    "wie": "orte +-3,-3 · wege +3 [-748.3,-821.3,-615.9,-784.1/28] [-805.3,-801.4,-689.5,-574/6] [-833.8,-834.7,-648.1,-574.2/76] (-3,-3, netz:-3,-3, netz:-3,-3|-4,-4)"
+   },
+   {
+    "probe": "ferne.K5#1",
+    "wie": "wege +1 [-119.1,-274.9,279.2,201/272] (genesis)"
+   },
+   {
+    "probe": "profiband.K5#1",
+    "wie": "wege +1 [-119.1,-274.9,279.2,201/272] (genesis)"
+   }
+  ],
+  "ciBlicke": 34,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 2383,
+   "frameP95": 183.32,
+   "taktP95": 179.49,
+   "vramMax": 152.8,
+   "seiten": 16,
+   "marken": 2,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [
+    {
+     "probe": "gelaende.K3#1",
+     "m": 6469,
+     "ringVor": 4,
+     "ringMin": -1
+    },
+    {
+     "probe": "ferne.K5#1",
+     "m": 6469,
+     "ringVor": 4,
+     "ringMin": 0
+    },
+    {
+     "probe": "ferne.K1#1",
+     "m": 3592,
+     "ringVor": 4,
+     "ringMin": -1
+    },
+    {
+     "probe": "licht.K5#1",
+     "m": 3592,
+     "ringVor": 4,
+     "ringMin": 0
+    },
+    {
+     "probe": "material.K2#1",
+     "m": 1083,
+     "ringVor": 4,
+     "ringMin": 0
+    },
+    {
+     "probe": "licht.K1#1",
+     "m": 1083,
+     "ringVor": 4,
+     "ringMin": -1
+    },
+    {
+     "probe": "streaming.K3#1",
+     "m": 1000,
+     "ringVor": 4,
+     "ringMin": -1
+    },
+    {
+     "probe": "gelaende.K5#2",
+     "m": 312,
+     "ringVor": 4,
+     "ringMin": -1
+    }
+   ],
+   "zapfen": 1589,
+   "luecken": 11,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+  },
+  "fahrtS": 1810.9,
+  "grund": "die Fahrt riss 1800 s in gelaende.K2#1 — offen: gelaende.K2#1, gelaende.K2#2, wetter.K2#2, physik.K2#2, tiere.K1#2, affekt.K1#2, oekologie.K4#2, haar.K1#1, fahrzeug.K3#1, fahrzeug.K3#2, fahrzeug.K4#1, fahrzeug.K4#2, leib.K1#2, halten.K2#1, leib.K4#1, leib.K4#2, fahrzeug.K5#1, fahrzeug.K2#1, fahrzeug.K2#2, klang.K4#1, klang.K4#2, klang.K5#2, speicher.K4#2, wetter.K2#1, licht.K3#1, mensch.K1#1, mensch.K2#2, vegetation.K4#1, vegetation.K4#2, mensch.K5#1, siedlung.K1#2, schatten.K1#1, schatten.K1#2, wetter.K3#2, tiere.K3#2, tiere.K2#2, luftwasser.K5#1, luftwasser.K5#2, studios.K2#2, studios.K3#2, pipeline.K4#1, pipeline.K4#2, ankunft.K2#1, ankunft.K3#1, ankunft.K1#1, ankunft.K1#2, bauen.K1#2, bauen.K5#2, studios.K4#1, studios.K4#2, siedlung.K2#1, siedlung.K2#2, siedlung.K5#1, siedlung.K5#2, siedlung.K4#2, leib.K2#1, leib.K2#2, leib.K3#2, halten.K5#1, halten.K5#2, halten.K1#2, tore.K1#1, tore.K3#1, tore.K3#2, streaming.K4#2, profiband.K1#1, profiband.K1#2, pflicht.E#1, profiband.K2#1, profiband.K2#2, profiband.K3#1, profiband.K3#2, speicher.K1#1, speicher.K1#2, speicher.K2#1, speicher.K2#2",
+  "minuten": 30.25
+ },
+ "fortsetzung": [
+  {
+   "start": "2026-11-09T10:08:58.502Z",
+   "port": 7804,
+   "warten": 0.02,
+   "bootS": 8.6,
+   "grundstellungS": [
+    6.6
+   ],
+   "proben": 2,
+   "freigaben": [],
+   "orte": [
+    {
+     "ort": "wiese",
+     "vor": "gelaende.K2#1",
+     "s": 33.8,
+     "takte": 569,
+     "chunks": 81,
+     "nach": null
+    },
+    {
+     "ort": "wiese",
+     "vor": "wetter.K2#2",
+     "s": 28.5,
+     "takte": 671,
+     "chunks": 81,
+     "nach": "der Tür"
+    }
+   ],
+   "wegeTueren": [],
+   "grund": "die Welt trägt nicht mehr nach wetter.K2#2: der Halter endete (Exit 1)",
+   "ciBlicke": 3,
+   "strom": {
+    "datei": "strom.ndjson",
+    "bilder": 435,
+    "frameP95": 233.37,
+    "taktP95": 231.36,
+    "vramMax": 141.8,
+    "seiten": 2,
+    "marken": 0,
+    "fehler": 0,
+    "verloren": 0,
+    "ortImDeckel": [
+     {
+      "probe": "gelaende.K2#1",
+      "m": 1718,
+      "ringVor": 4,
+      "ringMin": 0
+     }
+    ],
+    "zapfen": 158,
+    "luecken": 3,
+    "letzteLuecke": "connect ECONNREFUSED 127.0.0.1:27804"
+   },
+   "fahrtS": 178.2,
+   "minuten": 3.49
+  }
+ ]
+}
