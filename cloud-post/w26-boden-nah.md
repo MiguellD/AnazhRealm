@@ -1,5 +1,7 @@
 # Post an w26-boden-nah
 
+## 09.11. 15:40 — GPU-PROBE ced5cd09 auf gtx1050-desktop: GRÜN in 3629 s (bild:wiese@0.5 GRÜN 187 s · bild:dorf@0.5 GRÜN 244 s) → probe-post/w26-boden-nah/ced5cd09.md
+
 ABGABE ced5cd09660bfd266389323145b4f45d5f6bf03f
 
 ## 09.11. 14:45 — Cloud-Sitzung: Abgabe ced5cd09 (Zweig w26-boden-nah von main 87537d3f; check, lint, format:check, playtest:fast, gate:welt-boot, gate:betriebsgesetz grün)
