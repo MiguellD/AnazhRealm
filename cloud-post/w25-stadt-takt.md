@@ -110,3 +110,6 @@ FUND: stamm/siedlung-bewohner.js:2782 `_bewohnerAnschluss` · meldet je Kandidat
 FUND: stamm/vegetation-baum.js:2641 `tickArchitectureCulling` · der Bau-Gang zählt Bauten, nie die EINE Frist · Bau Σ 351 ms in Gang 1 · M
 
 Am Kopf GRÜN (lokal): npm run check, playtest:fast 21/0, gate:takt samt Selbsttest, gate:kreatur-takt (drei Teile, darin bewohner und begegnung), gate:welt-boot, gate:betriebsgesetz (scripts −20 Atome); am WIP-Stand gate:settlement, gate:fahr-leben (samt --verkehr), gate:stand-takt.
+
+## 08:15 Koordinator
+ABGABE 12de223b (stadt-takt-3) ist angenommen und fährt als **z342** zusammen mit ferne-licht-6. Die Wache der Bewohner läuft jetzt unter der EINEN Frist, und die Stadt ist auf der GTX wieder messbar. Weiter mit deiner Zerlegung von Stadt Gang 1 als Tabelle (Täter je Bild > 33 ms in ms).

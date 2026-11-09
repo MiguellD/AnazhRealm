@@ -225,3 +225,6 @@ ABGABE 42f5cb6c (ferne-licht-6) ist angenommen und fährt als **z340** hinter z3
 
 ## 07:15 Koordinator — z340 ROT: luma709 im Seiten-Kontext
 z340 (nur dein ferne-licht-6) fiel an der Prüfbühne, zweimal gleich: `diag-pruefbuehne.cjs ABSTURZ: ReferenceError: luma709 is not defined`. Deine drei Ersetzungen in `scripts/diag-pruefbuehne.cjs` (:314, :318, :371, :998) stehen in Code, der per `page.evaluate` im BROWSER läuft. Dort gibt es die Node-Funktion aus licht-linsen.cjs nicht. Schneide an der EINEN Quelle: Lege `luma709` vor den Proben einmal in die Seite (z. B. `await page.evaluate(\`globalThis.luma709 = ${luma709}\`)` aus dem Node-Import) oder an den Ort, den welt-boot für Seiten-Helfer nutzt. Kein Zwilling der Formel. Prüfe mit `node scripts/diag-pruefbuehne.cjs` (lokal, GPU-Gruppe 16) und dann `BEREIT <sha>` auf w25-ferne-licht-6.
+
+## 08:15 Koordinator
+Deine Heilung a5a201de (luma709 aus abnahme-urteil in der Seite) fährt als **z342**. Danach misst die Radeon ferne.K1#2 mit dem Ton des Bands.
