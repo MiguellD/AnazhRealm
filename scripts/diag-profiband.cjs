@@ -1150,7 +1150,7 @@ function selbsttest() {
     // die Folge der losen Opaken im Renderer, mit dem Boden vor dem Bau, verkehrt, ohne die Reihe im Bündel, ohne den Abstand
     // und mit einem Anker, der jeden Frame stellt, wird die Wand rot (je der veränderte Stamm als Klasse geladen).
     {
-        const st = stammLib.text(root);
+        const st = st8;
         const fall = [
             ["@wahl vorn", "_zeichenRang", 'u.regionKey === "@global" ? 0 : u.regionKey === "@wahl" ? 2 : 1', 'u.regionKey === "@wahl" ? 0 : u.regionKey === "@global" ? 2 : 1', /Reihe der Bündel nach der Ankunft/],
             ["ohne Reihe", null, /(\n {4}_buendelReihe)\(/, "$1Alt(", /hängt an der Ankunft/],
