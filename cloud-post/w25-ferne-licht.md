@@ -1,5 +1,25 @@
 # Post an w25-ferne-licht
 
+## 09.11. 09:57 — w25-ferne-licht-7: Zwischenstand — Azimut 0 auf echter GPU zerlegt (Messplatz ad0cbe39)
+
+Die GPU-Probe von `gate:luft-tiefe:echt` lief auf der GTX 1060 (82 s, probe-post/w25-ferne-licht-7/ad0cbe39.md): **Hügel, Uhr 0,5, Azimut 0° (zur Sonne), 8 km: 13,0°**. Die Bandmittel (linear) sind
+L 0,223 / 0,241 / 0,256 · S 0,263 / 0,268 / 0,279 · L0 0,129 / 0,131 / 0,086.
+Dieselbe Stelle auf swiftshader (dieselben 186 Pixel): L 0,225 / 0,243 / 0,258 · S 0,263 / 0,270 / 0,279 · L0 0,131 / 0,134 / 0,089 → 5,71°.
+
+Benannt, was die Geräte trennt: **nur der Ton der In-Streuung S zur Sonne**. Gelände und Boden stehen auf beiden Geräten gleich (Ton L 207,3° GTX / 208,2° swiftshader). S ist zur Sonne fast grau (Buntheit 0,016 bei Y 0,27): 0,8 % Grün drehen seinen Ton von 220,3° (GTX, die Referenz Hillaire: 222°) auf 213,9° (swiftshader). Die 5,71° von swiftshader waren diese 0,8 %, kein besseres Bild. Die Radeon (10,65°) liegt dazwischen.
+
+Die Wurzel des Tons auf der GTX, nachgerechnet mit dem gemessenen T (R 0,30 · G 0,20 · B 0,12 bei 8 km, q ≈ 1, die Referenz V 20 km, Ångström 1,3):
+- Die In-Streuung des Pfads selbst, (1 − T)·S, steht schon bei 210,1°: **schon schwarzer Grund trägt 10,2°** gegen den Horizont, denn der Pfad-Dunst ist blauer als der Horizont, weil Rot weiter trägt als Blau.
+- Grauer Grund in der gemessenen Helligkeit trägt 8,0°, der Grund der Welt (L0 Ton 63°, B/G unter Licht 0,66) 13,0°.
+- ≤ 10° hielte nur ein fast neutraler Boden: B/G ≥ 0,88 bei 8 km.
+
+Darum schneide ich hier NICHT: ein neutral gefärbter ferner Boden wäre ein Pflaster gegen die Physik der Referenz, und die Schwelle fasse ich nicht an.
+FUND: spec/farbe/luft-referenz.json `band.dh` (Meisterkarte ferne.K1 Staffel 2 „Δh ≤ 10° bei 8 km“) · Wurzel: zur Sonne ist der Horizont fast grau, und die Referenz-Luft ist spektral steil (T_B/T_R 0,39 bei 8 km). Die Physik der eigenen Referenz trägt dort 10–13° (schwarzer bis gelber Grund), auf jeder GPU · Kriterium: der Ton bei 8 km gegen die In-Streuung des Pfads ((1 − T)·S, GTX 2,9°), oder Δh nur, wo der Horizont einen Ton hat · M — das Maß der Karte ist deine Entscheidung, nicht meine.
+
+Gebaut und bereit auf `w25-ferne-licht-7`: der Messplatz `gate:luft-tiefe:echt` (Ausnahme MESS wie gate:pop). Die Bänder tragen die Mittel L/S/L0, der FARBTON-Befund nennt sie, FARBTON steht nicht mehr offen. Die Decke zahlen die Ton-Zwillinge der Prüfbühne (scripts −2).
+
+Ich warte im Wartezimmer.
+
 ## 09.11. 09:14 — w25-ferne-licht-7: Zwischenstand (benannt, die Probe auf echter GPU läuft)
 
 Benannt aus der Station (Radeon, main 87537d3f, Band-Linse): **Azimut 0° — zur Sonne —, Uhr 0,5, 8 km: 10,65°** (188 Pixel); 90° 8,69 · 180° 7,34 · 270° 5,84. Dieselbe Folge der Station (umstellen → Band → Luft) lokal auf swiftshader, dieselben Pixel (186): 5,71°. Die Geräte trennen sich nur zur Sonne (5 km: 18,6 gegen 10,5°; 90°/270° < 1°). Dort ist die In-Streuung am grauesten (Buntheit der Bandmittel S 0,028 gegen 0,044–0,053 an den anderen Azimuten): der Ton des Bands kippt dort am stärksten.
