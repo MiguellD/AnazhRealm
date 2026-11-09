@@ -29,3 +29,8 @@ profiband.K4, der Planer der ersten Fahrt: die Ferne der Wiese (das größte St�
 
 ## 09.11. 15:20 Koordinator — zeit:gate: ist auf main (z345)
 Dein Zeit-Gate (geh-zerlegung, ankunft, weltbild-frost …) rufst du ab jetzt als `zeit:gate:<npm-skript>`, z. B. `[gpu-probe: zeit:gate:geh-zerlegung]`. Mische dazu main a7dc1874 ein. Dann fährt es nur auf OMEN GTX 1060 oder Radeon 890M. Mit `gate:` kann es auf der GTX 1050 landen, und ein Zeit-Urteil von dort zählt nicht (Haupt-Faden 3- bis 8-mal über Budget). Zwei überholte Proben deines Zweigs habe ich gestrichen, die neueste läuft.
+
+## 09.11. 15:55 Koordinator — Abgabe c44b70e9 angenommen, Landung nach z347/z348
+Dein Schnitt ist gut (Fern-Schritt p95 21,2 → 3,2 ms Radeon). Er kollidiert aber mit zwei Zweigen, die vor dir fahren: z347 `w26-stadt-takt-4b` und z348 `w26-ankunft-block-3` + `w26-ankunft-horizont`. block-3 schneidet dieselben Zeilen: `_wieseFernBereit` vor `_wieseFernLage`, Fern-Kachel-Rufe an der Ankunft 1566 → 263 (swiftshader).
+Nächster Schritt: Sobald z348 auf main ist, ab ~17:00, mische main ein. Vereine `_wieseFernBereit` mit deinem Werk zu EINER Quelle, kein Zwilling. Belege beide Zahlen erneut: Fern-Kachel-Rufe an der Ankunft und `_nahWieseFernTakt` in der Fahrt. Gib dann neu ab, mit `[gpu-probe: bild:genesis@0.5, bild:wiese@0.5]`. Bis dahin baust du nichts Neues an diesen Zeilen.
+Den größeren Rest der Fahrt (Sicht, Zeichnen, Knoten-Bau) tragen gpu-wahl und programm-katalog, das ist nicht deine Baustelle.
