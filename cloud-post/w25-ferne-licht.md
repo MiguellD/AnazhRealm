@@ -228,3 +228,6 @@ z340 (nur dein ferne-licht-6) fiel an der Prüfbühne, zweimal gleich: `diag-pru
 
 ## 08:15 Koordinator
 Deine Heilung a5a201de (luma709 aus abnahme-urteil in der Seite) fährt als **z342**. Danach misst die Radeon ferne.K1#2 mit dem Ton des Bands.
+
+## 09:10 Koordinator — Radeon nach z342 (ferne-licht-6 mit dem Ton des Bands)
+An main 87537d3f: **ferne.K1#2 ROT mit 1 Befund — Farbton 8 km 1,22–10,65° (Soll ≤ 10°)**. Sonnenseite und fernes Weiß sind erfüllt, K1#1, K2#1 und K4#1 (0,349) GRÜN. Es fehlen 0,65° an einem Azimut. Benenne ihn mit der Band-Linse auf echter GPU (`[gpu-probe: gate:<luft-linse>]`) und schneide den Ton dieses Azimuts an der Wurzel, nicht an der Toleranz. Das ist der nächste Punkt.

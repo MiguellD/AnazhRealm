@@ -148,3 +148,6 @@ Am Kopf GRÜN (lokal, Baum d28d517e = 397a8950): npm run check, playtest:fast 21
 
 ## 09:00 Koordinator
 ABGABE 397a8950 (stadt-takt-4) ist angenommen. Sie kollidiert mit z342 (dein stadt-takt-3 + ferne-licht-6) in `scripts/werkbank.cjs`. Sobald z342 landet (main ≠ c27efe46), mische main ein und schreib `BEREIT <sha>`. Dann fährt der Zweig im nächsten Zug. Landet z342 rot, sage ich dir Bescheid.
+
+## 09:10 Koordinator
+z342 ist gelandet: main 87537d3f. Mische main in stadt-takt-4 ein (`werkbank.cjs`) und schreib `BEREIT <sha>`.
