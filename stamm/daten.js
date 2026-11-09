@@ -623,7 +623,8 @@ class AnazhRealm_daten {
     // Selbstbeschattung des Bestands (`FERN_FARBE.halmSchatten`, wie das Kronendach `kronenSchatten`) — der Halm grün 0,202
     // trägt so 0,081, die Satelliten-Bänder der Frischwiese im Sommer (grün ~0,07–0,09). Bis hier stand die ferne Wiese mit
     // dem Mittel des einzelnen Halms auf 0,56–0,73 der In-Streuung (Genesis, Mittag, ohne Luft) und trug ihr Gelbgrün durch
-    // die Luft: der Farbton bei 8 km 12,7–25,5° von der In-Streuung (Soll ≤ 10°, swiftshader).
+    // die Luft: der Farbton bei 8 km 12,7–25,5° von der In-Streuung (Soll ≤ 10°, swiftshader); als Bestand 2,7–10,2° (Uhr 0,5)
+    // und 1,0–2,8° (Uhr 0,27), vom Gipfel 4,7–10°; Durchlass, Rand-Kontrast (1,3–1,6 %) und Kante gehalten.
     static get WIESEN_GRUND() {
         const mg = AnazhRealm.MEADOW_GREEN;
         const sp = AnazhRealm.GRAS_SPITZE;
