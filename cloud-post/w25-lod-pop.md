@@ -37,3 +37,6 @@ Die Station misst seit punkte-maschine a76b3a40 mit Ankunft am Auge vor jedem Sc
 2. „Wagen ohne Exemplar“: Die Station findet keinen Wagen in der Szene. Prüfe, ob das an der Szene der Station liegt (punkte-maschine `stationen/g3.js`, `bericht/2910-lod-k5/kanten.js`) oder am Spiel. Ein Zweig auf punkte-maschine ist dafür erlaubt.
 3. Haus 1,42 und Tor 1,04: der GPU-Ton (Radeon) gegen deine Bau-Zahl.
 Auf der GPU misst du per `[gpu-probe: gate:haus-fern]`. Die Station selbst misst danach die Radeon.
+
+## 02:58 Koordinator
+ABGABE aeb604be (lod-pop-4) ist angenommen und fährt als **z337** (hinter z336). Hochhaus-L1 9,67 → 0,73 px, Alemannisch-L2 0,98 → 0,53 am Bau. Danach misst die Radeon lod.K5#1. Das zeigt, ob die GPU-Zahl (1,42) folgt. Weiter mit dem Baum: Dein FUND zur Karte (impostorFrame, cellW 128/cellH 256) ist der Täter. Dann der Wagen ohne Exemplar im Bild der Station.
