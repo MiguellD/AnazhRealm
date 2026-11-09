@@ -39,6 +39,7 @@ const BLAETTER = [
     "_capNexusStructures",
     "_scatterSichtHoehe",
     "_scatterCellTransform",
+    "_bodenKommtNie", // je Kachel des Rings der Nah-Streu und der Nah-Wiese (w27-takt-streu: die Stufe wählt die GPU)
     "_foundryBudgetZeile",
     "_foundryFlattenFor",
     "_fernRingPunkt",

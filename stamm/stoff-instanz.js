@@ -1236,6 +1236,7 @@ class AnazhRealm_stoff_instanz {
                 g.boundingSphere = new T.Sphere(new T.Vector3(), Infinity);
             }
             nehmen(m) {
+                this._geordnet = -1; // die Glieder wechseln: der nächste Pass ordnet selbst (`_wahlVor`)
                 // nach dem ersten Zug wächst die Instanz-Seite nicht mehr: reicht ihr Platz nicht, folgt eine Arena mit Platz
                 // für den Bedarf
                 if (this.__instanzQuelle.instanceMatrix && !this._nPasst(platz(m.count | 0))) {
@@ -1276,6 +1277,7 @@ class AnazhRealm_stoff_instanz {
                 this._neuAuf();
             }
             lassen(m, zurueck) {
+                this._geordnet = -1; // die Glieder wechseln: der nächste Pass ordnet selbst (`_wahlVor`)
                 const i = this.glieder.indexOf(m);
                 if (i < 0) return;
                 this.glieder.splice(i, 1);
@@ -1311,6 +1313,7 @@ class AnazhRealm_stoff_instanz {
             // nach dem Frame — an der Mess-Wiese in jedem frischen Boot im ersten Schuss (L1 und L2 der Vorlage 1, 810 → 1 294
             // Plätze; die echte GPU brach die Treue des Pop-Gangs um 1 126 Bytes). false: die alte war kein Glied.
             tauschen(alt, neu) {
+                this._geordnet = -1; // die Glieder wechseln: der nächste Pass ordnet selbst (`_wahlVor`)
                 const i = this.glieder.indexOf(alt);
                 if (i < 0) return false;
                 this.glieder[i] = neu;
@@ -1356,7 +1359,11 @@ class AnazhRealm_stoff_instanz {
             // Arena des Lagers neu), dann schreiben die Bündel-Arenen ihre Aufträge — auf die Lage, die dieser Frame zeichnet
             _takt(auftraege) {
                 if (!this._rend) return;
-                if (!auftraege) return void (this._bereit = this._ordnen(this._rend, true));
+                if (!auftraege) {
+                    this._bereit = this._ordnen(this._rend, true);
+                    this._geordnet = AnazhRealm.__arenaJetzt;
+                    return;
+                }
                 if (this._bereit && this.glieder.length)
                     for (const z of this._zuegeB.values()) this._auftraege(z, null, this._rend, false);
             }
@@ -1366,7 +1373,12 @@ class AnazhRealm_stoff_instanz {
             // nach dem Frame (der Band-Zähler, die Blick-Sonde) eine Liste ohne Puffer („reading 'size'").
             _wahlVor(rend, camera) {
                 this._rend = rend;
-                if (!this._ordnen(rend, false)) return null;
+                // DER TAKT ORDNETE DIESES BILD SCHON (`_arenaTakt`, vor jedem Pass; w27-takt-streu): jeder Pass liest sein Ergebnis,
+                // solange kein Glied seither kam, ging oder seine Zahl wechselte (`_geordnet`) — ein zweites Ordnen je Pass ging
+                // jedes Glied umsonst
+                const takt = this._geordnet !== undefined && this._geordnet === AnazhRealm.__arenaJetzt;
+                const bereit = takt ? this._bereit : this._ordnen(rend, false);
+                if (!bereit) return null;
                 const zug = this._zugFuer(camera, false),
                     q = this.__instanzQuelle;
                 // DIE LISTE JE KAMERA, so lang wie die Instanz-Seite, für das Leben der Arena (auch über das Verdrängen ihres Zugs):
@@ -2357,6 +2369,7 @@ class AnazhRealm_stoff_instanz {
         if (vor > 0 !== n > 0) AnazhRealm._regtHalter(mesh); // die Werfer-Hülle ihres Bündels (das Register)
         // die Arena zählt ihre Glieder mit Instanzen: ohne eines betritt sie keinen Pass (kein leeres Render-Objekt)
         const a = mesh.__arena;
+        if (a && vor !== n) a._geordnet = -1; // eine neue Zahl: der nächste Pass ordnet selbst (`_wahlVor`)
         if (a && vor > 0 !== n > 0) {
             a._lebend += n > 0 ? 1 : -1;
             a._sicht();
