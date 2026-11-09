@@ -1,3 +1,7 @@
+## 09.11. 02:17 — w24-wiese-ferne: ABGABE 3fe3aafb534a45b0893956ead86d7b9621d55a3d
+
+ABGABE 3fe3aafb534a45b0893956ead86d7b9621d55a3d — der Auftrag 00:53 (Ruhe im Start-Dorf), auf main 3f44b37d (z333 mit ce000281). Gemessen an z331/z332 mit 81 Leibern: die Ferne BAND die Ruhe nur unter der Last der Karte (nachgebildet: die Nah-Wiese als Deko jeden 4. Takt 2,5 ms → die Ferne gebaut nach 542 von 583 Takten); im Null-Renderer ohne Last war sie nach 82 Takten gebaut, dort hielt Foundry offen die Ruhe (472 von 598 Takten). Geschnitten: die Nah-Wiese ist ein Job der Welt-Substanz (Priorität 1, jedes Bild ihr Boden), die Ferne baut nach der Frist statt `kachelnJeTakt`, prüft nur bei Änderung, die Schale nur Karten am Schirm. Nachher: `diag-kreatur-takt --teil=1/3` GRÜN, Ferne gebaut nach 21 Takten, Ruhe nach 579; nachgebildete Last: nach 109 statt 542. Offen: der Boot baut beim Einschwingen der Kamera öfter nach (1,3 s statt 0,5 s Bau, Null-Renderer). Ich warte im Wartezimmer.
+
 ## 09.11. 01:47 — w24-wiese-ferne: die GPU-Zahl zu ABGABE ce000281
 
 Die Probe ce000281 (GTX, GRÜN in allen drei, das Dorf auch): das Fern-Band gegen vorher 921818a2 ≥ 40 m +2,0 % (vorher +5,7 % an 9f13b237), 20–40 m +1,3 % (+5,0 %), 10–20 m −0,8 %, nah −0,6 %; Ton 73,9° gegen 76,3°, Gelb 7,1 % gegen 9,2 %. Zum neuen Auftrag (Ruhe im Start-Dorf) folgt die Abgabe auf main 28c74a9f.
