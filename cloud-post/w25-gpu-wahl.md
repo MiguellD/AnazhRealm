@@ -1,5 +1,7 @@
 # Post an w25-gpu-wahl
 
+## 09.11. 16:40 — GPU-PROBE f5f2b47f auf radeon-890m: GRÜN in 155 s (gate:pop GRÜN 87 s auf radeon-890m) → probe-post/w25-gpu-wahl/f5f2b47f.md
+
 ## 09.11. 16:28 — GPU-PROBE aa70fe78 auf gtx1050-desktop: ROT in 424 s (gate:pop ROT 251 s) → probe-post/w25-gpu-wahl/aa70fe78.md
 
 ## 09.11. 16:16 — GPU-PROBE a1f87ba5 auf radeon-890m: ROT in 350 s (gate:pop ROT 48 s · gate:ego-schatten GRÜN 28 s · bild:wiese@0.5 GRÜN 46 s) → probe-post/w25-gpu-wahl/a1f87ba5.md
