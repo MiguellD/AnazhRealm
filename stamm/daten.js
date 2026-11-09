@@ -712,7 +712,6 @@ class AnazhRealm_daten {
                 mikro: 0.15,
                 mikroHoehe: 0.75, // die Höhe der nächst gröberen Oktave je feinerer (`_mikroRelief`: das Spektrum β ≈ 1,2)
                 streu: 0.142,
-                rauschStreu: 0.2368,
                 kavitaet: 4.5,
                 mulde: 0.6,
                 korn: 2.0, // das Korn je Höhe (`_mikroStoff`, colorNode): die Albedo der Mulde dunkler, der Erhebung heller (σ ≈ 24 %), mittelfrei

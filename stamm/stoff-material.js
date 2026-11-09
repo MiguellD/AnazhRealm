@@ -2435,7 +2435,21 @@ class AnazhRealm_stoff_material {
                 ecken(i1, j1, 2)
             );
         };
-        this._rauschAtlasCache = { tex, raum, ebene, ebeneNeigung };
+        // DIE STREUUNG EINER EBENE (`streu`, σ 0,237) aus dem Gitter des Kerns, nie getippt: der Wert der Ebene (x | z) ist die
+        // Blende von vier Ecken-Gradienten — unabhängig je Ecke, die Achsen unkorreliert —, seine Varianz also E[g²] je Achse mal
+        // dem Zell-Mittel von Σ w² · d² (64 × 64 Proben; die Stichprobe über 400 000 Lagen misst dieselben 0,2368). An ihr eicht
+        // `_mikroRelief` die Höhe des Mikro-Reliefs.
+        const g = globalThis.__gelaendeCore.rauschGitter();
+        const bl = (t) => t * t * t * (t * (t * 6 - 15) + 10);
+        let [q, zelle2] = [0, 0];
+        for (let i = 0; i < g.length; i += 3) q += g[i] * g[i] + g[i + 2] * g[i + 2];
+        for (let i = 0; i < 4096; i++) {
+            const [x, y] = [((i & 63) + 0.5) / 64, ((i >> 6) + 0.5) / 64];
+            for (const [wx, dx] of [[1 - bl(x), x], [bl(x), x - 1]]) // prettier-ignore
+                for (const [wy, dy] of [[1 - bl(y), y], [bl(y), y - 1]]) zelle2 += (wx * wy) ** 2 * (dx * dx + dy * dy); // prettier-ignore
+        }
+        const streu = R.skala * Math.sqrt(((q / g.length) * 1.5 * zelle2) / 4096);
+        this._rauschAtlasCache = { tex, raum, ebene, ebeneNeigung, streu };
         return this._rauschAtlasCache;
     }
 
@@ -2472,7 +2486,7 @@ class AnazhRealm_stoff_material {
             [T.exp2(L0.sub(1.0)), T.float(1.0), T.float(mH)],
             [T.exp2(L0.sub(2.0)), aus, T.sqrt(aus).mul(mH * mH)],
         ].map(([f, w, h]) => [f, w.mul(-B.mikro), h]);
-        const stufe = T.pow(T.float(mH), fr).mul(B.streu / (B.rauschStreu * Math.sqrt(mH * mH + mH ** 4)));
+        const stufe = T.pow(T.float(mH), fr).mul(B.streu / (ra.streu * Math.sqrt(mH * mH + mH ** 4)));
         if (!n)
             oktaven.push(
                 [T.float(B.freq), T.float(-B.strength), T.float(0.0)],
