@@ -139,18 +139,7 @@ class AnazhRealm_koerper_leib {
         // Vorlage, die Sohle footBelowAnkle darunter — das Labor erdet über footBelowAnkle, die Welt setzt die tiefste Fläche der
         // Vorlage in der Ruhe-Pose (die flache Sohle des Schuhs) auf oy. Bis H5 stand der Leib mit dem Ursprung auf oy, die
         // Sohle 2,6 cm unter der Sohle der Kapsel (gate:koerper-stand K8 fuss, Median −1,3 cm an der Wiese).
-        if (!Number.isFinite(t0.sohleY)) {
-            const box = new THREE.Box3();
-            const b = new THREE.Box3();
-            t0.root.updateMatrixWorld(true);
-            t0.root.traverse((n) => {
-                if (!n.isMesh || !n.geometry || !n.geometry.attributes.position) return;
-                if (!n.geometry.boundingBox) n.geometry.computeBoundingBox();
-                box.union(b.copy(n.geometry.boundingBox).applyMatrix4(n.matrixWorld));
-            });
-            t0.sohleY = Number.isFinite(box.min.y) ? box.min.y : 0;
-        }
-        wrap.position.y = oy - f * t0.sohleY;
+        wrap.position.y = oy - f * AnazhRealm._ofenSohleY(t0);
         wrap.add(klon);
         wrap.userData._creatureSkin = true; // die 1st-Person-Regel deckt den GANZEN Leib (wie zuvor die Haut)
         wrap.userData.hautTon = skinCol; // die EINE Farb-Wahrheit für Leser (Band/Tint — Genom/Studio-Zahl)
@@ -199,6 +188,21 @@ class AnazhRealm_koerper_leib {
         rig.lidBR = P2("lidBR");
         wrap.userData._leibNah = klon; // die Nah-Gestalt (die Masse misst ihre Haut, nie die Fern-Gestalt)
         return { mesh: wrap, rig, kh, bones: [] };
+    }
+
+    // DIE SOHLE EINER VORLAGE (Gelände H5): die tiefste Fläche ihrer Teile in der Ruhe-Pose (Rahmen der Vorlage), einmal gemessen —
+    // der Leib (`_buildHumanoidRig`) und die Knochen der Vorlage der Menge (`_bewohnerRaumPose`) setzen sie auf die Sohle der Kapsel
+    static _ofenSohleY(t) {
+        if (Number.isFinite(t.sohleY)) return t.sohleY;
+        const box = new THREE.Box3();
+        const b = new THREE.Box3();
+        t.root.updateMatrixWorld(true);
+        t.root.traverse((n) => {
+            if (!n.isMesh || !n.geometry || !n.geometry.attributes.position) return;
+            if (!n.geometry.boundingBox) n.geometry.computeBoundingBox();
+            box.union(b.copy(n.geometry.boundingBox).applyMatrix4(n.matrixWorld));
+        });
+        return (t.sohleY = Number.isFinite(box.min.y) ? box.min.y : 0);
     }
 
     // DIE LEIB-HÜLLE (E2): der Wrap jeder Gelenk-Gestalt (Mensch und Tier, beide Stufen) ist ein BÜNDEL. Ein Leib bewegt sich
@@ -1227,6 +1231,9 @@ class AnazhRealm_koerper_leib {
             minY: Number.isFinite(sohle.min.y) ? sohle.min.y : 0,
             // die Hand-Mitte je Hand-Gelenk (Mensch nah, im Hand-Raum) — der Griff der Faust
             handMitte: skelett.handMitte || null,
+            // der Leib-Raum einer Mengen-Stufe (w26-leib-raum, foundry-core `__leibRaumTafel`): die Formziele jeder Ecke der Vorlage
+            // je Achse und Knoten — der Satz der Bewohner liest sie (`_gangSatz`)
+            raum: skelett.raum || null,
         };
     }
     // Das Art-Template (memo): warm aus dem Prefetch/IDB, kalt über den EINEN
@@ -1480,6 +1487,9 @@ class AnazhRealm_koerper_leib {
     // Die Tafel gehört der Seite (WELT_GRENZE.seite: ein bleibendes Programm liest sie), ihre Belegung der Welt: nach dem Wechsel am
     // Ort beginnt die neue Welt mit leeren Zeilen über derselben Karte — sonst gab der Abschied die Karte frei, die der Stoff des
     // Spielers weiter las („Destroyed texture ton-tafel used in a submit“, z86).
+    // DER PUNKT IM LEIB-RAUM (w26-leib-raum, koerper LEIB_RAUM): hinter den Tönen trägt jede Zeile die Lage ihres Menschen auf den
+    // Achsen des Raums (`leibRaumPunkt`, vier Achsen je Texel) — der Satz der Menge liest sie am Index seiner Palette
+    // (`_gangSatzKnoten`); eine Zeile ohne Punkt steht auf der Vorlage (jede Achse am Mittel-Knoten).
     _tonTafel() {
         const st = this.state;
         if (st.tonTafel) {
@@ -1488,14 +1498,13 @@ class AnazhRealm_koerper_leib {
         }
         const kc = window.__koerperCore;
         if (!kc || !kc.MENSCH_TON) return AnazhRealm._kernPflichtBruch("koerper:MENSCH_TON");
+        if (!kc.LEIB_RAUM) return AnazhRealm._kernPflichtBruch("koerper:LEIB_RAUM");
         const T = THREE;
-        const tex = new T.DataTexture(
-            new Float32Array(kc.MENSCH_TON.length * AnazhRealm.TON_TAFEL.zeilen * 4).fill(1),
-            kc.MENSCH_TON.length,
-            AnazhRealm.TON_TAFEL.zeilen,
-            T.RGBAFormat,
-            T.FloatType
-        );
+        const breite = kc.MENSCH_TON.length + Math.ceil(kc.LEIB_RAUM.achsen.length / 4);
+        const D = new Float32Array(breite * AnazhRealm.TON_TAFEL.zeilen * 4).fill(1);
+        const mitte = kc.LEIB_RAUM.achsen.map((a) => (a.knoten.length - 1) / 2);
+        for (let z = 0; z < AnazhRealm.TON_TAFEL.zeilen; z++) D.set(mitte, (z * breite + kc.MENSCH_TON.length) * 4);
+        const tex = new T.DataTexture(D, breite, AnazhRealm.TON_TAFEL.zeilen, T.RGBAFormat, T.FloatType);
         tex.name = "ton-tafel";
         tex.minFilter = tex.magFilter = T.NearestFilter;
         tex.generateMipmaps = false;
@@ -1507,7 +1516,7 @@ class AnazhRealm_koerper_leib {
     }
     // Eine Zeile der Tafel für eine Palette (`menschPalette`); die Tafel lädt im nächsten Bild. Eine volle Tafel bricht LAUT
     // (0: der Leib zeigt die Farben seiner Gestalt — die Linse der Menge nennt jedes Paar).
-    _tonZeile(palette) {
+    _tonZeile(palette, punkt = null) {
         const tex = this._tonTafel();
         const st = this.state;
         const z = st.tonTafelFrei.length
@@ -1523,7 +1532,10 @@ class AnazhRealm_koerper_leib {
         }
         const D = tex.image.data;
         const n = tex.image.width;
-        for (let t = 0; t < n; t++) D.set([palette[t * 3], palette[t * 3 + 1], palette[t * 3 + 2], 1], (z * n + t) * 4);
+        const kc = window.__koerperCore;
+        const nT = kc.MENSCH_TON.length;
+        for (let t = 0; t < nT; t++) D.set([palette[t * 3], palette[t * 3 + 1], palette[t * 3 + 2], 1], (z * n + t) * 4);
+        D.set(punkt || kc.LEIB_RAUM.achsen.map((a) => (a.knoten.length - 1) / 2), (z * n + nT) * 4);
         tex.needsUpdate = true;
         return z;
     }

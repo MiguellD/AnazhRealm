@@ -241,29 +241,37 @@ const kopfJe = (so, kern) =>
     );
 
 // DIE MENGE (mensch.K4 Staffel 2): 50 Bewohner aus 50 Samen je Siedlung, gerechnet von DENSELBEN Gliedern wie in der Welt
-// (`_bewohnerGestalten`, `_bewohnerGenome`; der Stamm im vm, stamm.cjs `ladeKlasse`), je Plan des Fachwerk-Kerns seine Tracht.
-// Die Gestalt-Distanz eines Paars wie die Station mensch.K4#2: gleicher Typ und gleiche Farben (Haut, Haar, Tracht — das
-// Geschlecht trägt der Typ), dann der größte Unterschied der Maße (die Vorlage × Höhe · Breite · Tiefe des Genoms) in Bildpunkten
-// am Rand der Nah-Wahl (BEWOHNER.nahM, 1080 Zeilen, KAM_FOV_GRAD); unter 1 px ist gleich. Die Vorlage ist der Kasten der
-// Mengen-Stufe (Ofen L2, Start-Dials) im Welt-Maß (8 · PLAYER_KH / 6 je Lab-Einheit). `eingriff(A)` verzerrt die Klasse.
+// (`_bewohnerGestalten`, `_bewohnerRaum`, `_bewohnerGenome`; der Stamm im vm, stamm.cjs `ladeKlasse`), je Plan des Fachwerk-Kerns
+// seine Tracht. DIE FORM ALLEIN (w26-leib-raum): jeder Bewohner ist in der Menge sein Punkt im Leib-Raum (die Vorlage der Stufe 2
+// seiner Siedlung samt Formzielen, `_leibRaumLeib` — dieselbe Rechnung wie der Knoten des Satzes) × seine Skala; die Gestalt-
+// Distanz eines Paars ist der größte Weg einer Ecke zwischen ihren Leibern (dieselbe Vorlage, dieselben Ecken) in Bildpunkten am
+// Rand der Nah-Wahl (BEWOHNER.nahM, 1080 Zeilen, KAM_FOV_GRAD), die Farben zählen nicht — unter 1 px ist gleich. Bis w26-leib-raum
+// zählte die Linse Typ und Farbe (die Vorlage des Typs × Höhe · Breite · Tiefe): zwei Bewohner eines Typs in derselben Form trug
+// nur ihre Farbe auseinander. `eingriff(A)` verzerrt die Klasse.
 const MENGE_PLAENE = [0x51ed, 0x7a11]; // die Samen der Pläne (je Plan seine Epoche und Tracht)
 function messeMenge(eingriff) {
     const { AnazhRealm: A, ctx } = require("./lib/stamm.cjs").ladeKlasse(require("path").join(__dirname, ".."));
-    if (eingriff) eingriff(A);
+    if (eingriff) eingriff(A, ctx);
     const r = Object.assign(Object.create(A.prototype), { state: {} });
-    const box = new ctx.THREE.Box3().setFromObject(ctx.BAKERS_BY_KIND.koerper(ctx.__koerperCore, "mensch", 1, 2, null)).getSize(new ctx.THREE.Vector3()); // prettier-ignore
     const px = (1080 / (2 * Math.tan((A.KAM_FOV_GRAD * Math.PI) / 360)) / A.BEWOHNER.nahM) * ((8 * A.PLAYER_KH) / 6);
-    const m = { gleich: 0, min: Infinity, paar: null };
+    const m = { gleich: 0, min: Infinity, paar: null, n: 0 };
     for (const seed of MENGE_PLAENE) {
         const S = { plan: ctx.__fachwerkCore.exportSettlement({ seed, nH: 12 }), liste: [...Array(50)].map((_, i) => ({ seed: `${seed}:${i >> 1}:${i & 1}` })) }; // prettier-ignore
         S.gestalten = r._bewohnerGestalten(S);
+        S.raum = r._bewohnerRaum(S);
         r._bewohnerGenome(S);
-        // je Bewohner seine Gestalt — der Typ und die Farben (die eigenen, sonst die des Typs, wie die Station) — und seine
-        // Maße in Bildpunkten
-        const je = S.liste.map((b) => [b.gestalt + JSON.stringify(b.farben || S.gestalten[b.gestalt].dK), [box.x * b.breite, box.y, box.z * b.tiefe].map((x) => x * b.groesse * px), b.seed]); // prettier-ignore
-        je.forEach(([g, a, s], i) =>
-            je.slice(i + 1).forEach(([h, c, t]) => {
-                const d = g === h ? Math.max(...a.map((x, e) => Math.abs(x - c[e]))) : Infinity;
+        // die Vorlage der Stufe 2 in der Tracht des Plans, wie der Ofen sie der Welt gießt (Beipack `raum`)
+        const g = ctx.BAKERS_BY_KIND.koerper(ctx.__koerperCore, "mensch", 1, 2, { dials: S.raum.dK });
+        let leib = null;
+        g.traverse((o) => o.isMesh && o.geometry.attributes.skinIndex && !leib && (leib = o));
+        const R = g.userData.__skelett.raum;
+        const pos = leib.geometry.attributes.position.array;
+        const je = S.liste.map((b) => [A._leibRaumLeib(R, pos, b.raumPunkt).map((x) => x * b.raumSkala * px), b.seed]);
+        m.n += je.length;
+        je.forEach(([a, s], i) =>
+            je.slice(i + 1).forEach(([c, t]) => {
+                let d = 0;
+                for (let k = 0; k < a.length; k += 3) d = Math.max(d, Math.hypot(a[k] - c[k], a[k + 1] - c[k + 1], a[k + 2] - c[k + 2]));
                 if (d < 1) m.gleich++;
                 if (d < m.min) [m.min, m.paar] = [d, `${s}/${t}`];
             })
@@ -351,7 +359,11 @@ if (SELBSTTEST) {
         true
     );
     // DIE MENGE (mensch.K4): die Farben der Gestalt statt der eigenen (der Stand vor mensch.K4)
-    pruefe("M1 die Farben der Gestalt (vor mensch.K4) werden erkannt", (A, roh = A.prototype._bewohnerGenome) => (A.prototype._bewohnerGenome = function (S) { roh.call(this, S); S.liste.forEach((b) => (b.farben = null)); }), /^menge\.gleich/, "menge"); // prettier-ignore
+    // der Leib-Raum ohne Punkt (jeder Bewohner auf der Vorlage, nur seine Größe) und die Gestalt statt des Punkts (8 Formen je
+    // Siedlung, der Weg vor w26-leib-raum) — beide machen Paare gleich
+    const punkt = (neu) => (A, ctx, roh = A.prototype._bewohnerGenome) => (A.prototype._bewohnerGenome = function (S) { roh.call(this, S); S.liste.forEach((b) => (b.raumPunkt = neu(ctx.__koerperCore, S, b))); }); // prettier-ignore
+    pruefe("M1 der Bewohner ohne seinen Punkt (die Vorlage für jeden) wird erkannt", punkt((K, S) => K.leibRaumPunkt(S.raum.dK)), /^menge\.gleich/, "menge"); // prettier-ignore
+    pruefe("M2 der Punkt seiner Gestalt (8 Formen je Siedlung) wird erkannt", punkt((K, S, b) => K.leibRaumPunkt(S.gestalten[b.gestalt].dK)), /^menge\.gleich/, "menge"); // prettier-ignore
     // DIE KAPPE VOR DEM SCHÄDEL (vor w7-gesicht: afro um sein zurueck 0,05 gesetzt, ohne die Dicke) begräbt sein Auge
     pruefe("K1 die Kappe vor dem Schädel (afro) wird erkannt", { kern: (K) => ({ ...K, haarKappe: (d) => K.haarKappe(d).map((k) => ({ ...k, c: [0, k.c[1], -0.05] })) }) }, /^afro\/rand\d augeFrei/, "schnitte"); // prettier-ignore
     pruefe("S5 der aufgesetzte Augapfel (eine Augapfel-Breite vor) wird erkannt", auge(0.12), /^augenVorstand/, true);
