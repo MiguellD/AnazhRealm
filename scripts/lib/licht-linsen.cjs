@@ -118,7 +118,7 @@ function albedoSicht(opts) {
         // DER TAKT DER TAFEL ist der Takt der Werkbank und sein Bild (`__werkTakt`; die Tafel misst nur in ihr): bis 31.10. schlief
         // ein eigener Zwilling je Takt 50 ms — an Genesis trugen die rund 680 Takte einer Tafel (die gesetzten Exemplare, das Auge
         // der Stufen je Zeile und Uhr) 34 s Schlaf, nie das Werk; Bedingung und Zahl der Takte bleiben.
-        // DER SATZ STEHT (ein Bau-Ereignis, nie eine Zahl von Takten): ein Bau-Bereich über BAU_SATZ_ECKEN_JE_TAKT tritt in Raten
+        // DER SATZ STEHT (ein Bau-Ereignis, nie eine Zahl von Takten): ein Bau-Bereich über BAU_SATZ_STUECK tritt in Raten
         // in seinen Satz (`_bauSatzRateNeu`) und zeichnet erst nach der letzten — offen steht er im EINEN Wort der Welt
         // (`_weltOffen().bau`). Mit dem Takt der Werkbank (w4-stationen-schnell-a2, 007ec392) legt nur jeder zweite bis dritte Takt
         // der Tafel den Satz (der Takt rendert nicht jedes Mal): die 20 gezählten Takte nach der Stufe trugen vom Haus L0 (drei
