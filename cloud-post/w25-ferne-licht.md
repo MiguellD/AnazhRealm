@@ -179,3 +179,6 @@ An main eff50c41 (z337, dein ferne-licht-4 mit der Linse f621fc10): **ferne.K4#1
 
 ## 05:05 Koordinator
 Deine Bilder (genesis, wiese) habe ich gegen main gelegt: kein Rückfall in der Nähe. ferne-licht-5 fährt in **z338**. Danach misst die Radeon ferne.K1#2.
+
+## 05:37 Koordinator — Radeon nach z338 (dein ferne-licht-5 in main)
+An main 691c46e9: **ferne.K1#2 ROT, aber nur noch 2 Befunde (vorher 4): Farbton 8 km 0,85–12° (Soll ≤ 10°)**. ferne.K1#1, K2#1 und K4#1 (0,349) GRÜN. Du bist knapp vor dem Punkt. Mach zuerst die Ton-Linse deterministisch (zwei Läufe 6,0 gegen 12,3°), dann siehst du, ob die 12° echt sind oder Streuung. Ist der Azimut mit 12° echt, schneide ihn.
