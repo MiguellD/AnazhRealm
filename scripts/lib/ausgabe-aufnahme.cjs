@@ -514,7 +514,10 @@ function membranOhneFilm(an) {
 //     (Wind, Wolken, Wasser, Membran, Brunnen, Fell).
 //   Zwischen den Schüssen (`__halten(quellen)`, die Takte von Blick-Wahl und Einschwingen; ohne Wort nur `tiere`): `tiere` — x/z
 //     nach jedem Kreatur-Takt zurück (Animation, Haut, Boden und LOD laufen weiter, die Vögel fliegen) · `bewohner` und `wagen` —
-//     ihr Takt ruht · `leib` — Atem und Kontrapost des Spielers stehen in der Pose ihres Halts.
+//     ihr Takt ruht · `leib` — Atem und Kontrapost des Spielers stehen in der Pose ihres Halts · `haar` — die Feder jedes Haars
+//     (`_haarFederTakt`, haar.K3) ruht in der Gestalt, wie sie gebaut ist, ab dem Ruf des Halters: bis w26-haar-arm wehte sie zwischen
+//     den Schüssen weiter (headless 87537d3f: im Arm-Schuss der Station haar.K2#1 wanderte sie 14 mm, die Welt-Uhr lief vor dem Bild
+//     2,5 s — dieselbe Spielart maß arm 0,383 / 0,519). Der Wind des Haars (haar.K3) hält `leib` und lässt `haar` offen.
 // Die Marke trägt die Hülle, nie der Prototyp: er trägt nie Stand (`_weltAbschied` bricht beim Namen) — bis 30.10. lag
 // `__tiereGehalten` auf ihm, und jeder Tausch am Ort nach einem gehaltenen Lauf brach an dieser Marke. Offen rechnet der
 // Spiegel in jedem Frame des Schusses neu (die Rausch-Linse der Station zug/a-spawn.cjs misst so seinen Lauf).
@@ -542,11 +545,22 @@ function halten(quellen) {
         function (t) {
             g.call(this, zu("leib") ? (H.t ??= t) : (H.t = t));
         });
+    // die Feder ruht: der Ausschlag 0, der Löser vergisst sie (`f.p` null) — nach dem Halt beginnt sie im ersten Takt aus der Ruhe
+    huelle("_haarFederTakt", (g) =>
+        function () {
+            if (!zu("haar")) return g.call(this);
+            for (const [o, f] of this._haarFedern || []) {
+                const a = o.userData.__haarFeder;
+                if (a) a.x = a.y = a.z = 0;
+                f.p = null;
+            }
+        });
     // im Schuss rechnet der Pass gehalten nur über den Sprung des ersten gezählten Frames (`_traaR.neu` → `L.an` 0), offen in jedem
     huelle("_spiegelPassWach", (g) =>
         function (L) {
             return window.__imSchuss ? !zu("spiegel") : g.call(this, L);
         });
+    if (zu("haar")) r._haarFederTakt();
 }
 
 // DIE RUHE DER ERST-ZEICHNUNG (`_configureRenderer`) — die EINE Regel jeder Linse, die ein angekommenes Bild
@@ -1497,7 +1511,7 @@ module.exports = {
         require("./welt-boot.cjs").WARTEN_SEITE +
         `window.__weltStehtWarten = ${weltStehtWarten};` +
         `window.__buehne = ${buehne};` +
-        `window.__halten = ${halten}; window.__halteQuellen = "spiegel zitter uhr tiere bewohner wagen leib".split(" ");` +
+        `window.__halten = ${halten}; window.__halteQuellen = "spiegel zitter uhr tiere bewohner wagen leib haar".split(" ");` +
         `window.__membranOhneFilm = ${membranOhneFilm};` +
         `(${saisonFest})();`,
 };
