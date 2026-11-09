@@ -17,8 +17,8 @@ const TMP = path.join(os.tmpdir(), "boden-nah-" + process.pid);
 fs.mkdirSync(OUT, { recursive: true });
 fs.mkdirSync(TMP, { recursive: true });
 const ARM = (process.env.BN_ARM || "0.5,1,2").split(",");
-const VARIANTEN = (process.env.BN_VARIANTEN || "main,mikro2,relief1,beide").split(",");
-const BILDER = new Set((process.env.BN_BILDER || "main@0.5,main@2").split(","));
+const VARIANTEN = (process.env.BN_VARIANTEN || "main,schnitt,main,schnitt").split(",");
+const BILDER = new Set((process.env.BN_BILDER || "main@0.5,schnitt@0.5").split(","));
 const zeile = (s) => console.log(("✅ " + s).slice(0, 598));
 const rot = (s) => console.log(("❌ " + s).slice(0, 598));
 
@@ -35,7 +35,7 @@ const json = (t) => {
     return null;
 };
 const wb = (args, ms) => {
-    const r = cp.spawnSync(process.execPath, [WB, ...args, "--port", P], { encoding: "utf8", timeout: ms || Number(process.env.BN_MS || 300000), maxBuffer: 1 << 28 });
+    const r = cp.spawnSync(process.execPath, [WB, ...args, "--port", P], { encoding: "utf8", timeout: Math.max(ms || 0, Number(process.env.BN_MS || 300000)), maxBuffer: 1 << 28 });
     return { exit: r.status, j: json(r.stdout), rest: String((r.stdout || "") + (r.stderr || "")).slice(-600) };
 };
 const evalW = (code, ms) => {
@@ -90,31 +90,23 @@ if (${bild ? "true" : "false"}) {
 }
 return aus;`;
 
-// DIE VARIANTEN des Boden-Stoffs (live, die Pose bleibt): `mikro2` das Korn und die Kavität des Mikro-Reliefs doppelt
-// (TERRAIN_BUMP korn · kavitaet), `relief1` das Relief der Nähe voll (`_terrainGeologyAlbedo` `_relief` 1 statt 0,4 … 1), `beide`.
-// Jede Variante setzt zuerst main zurück (die gemerkten Werte), dann ihre Änderung, und baut den Stoff des Bodens neu.
+// DIE VARIANTEN des Boden-Stoffs (live, die Pose bleibt): `schnitt` der Stand des Zweigs (TERRAIN_BUMP, wie die Seite ihn lud),
+// `main` die Kavität von main (2,1) — ABAB in EINER Welt; `mikro2` Korn und Kavität des Schnitts doppelt. Jede Variante setzt
+// zuerst den Zweig zurück (die gemerkten Werte), dann ihre Änderung, und baut den Stoff des Bodens neu.
 const VARIANTE = (v) => `
-const K = r.constructor, proto = Object.getPrototypeOf(r);
-if (!window.__bnMain) window.__bnMain = { bump: K.TERRAIN_BUMP, geo: proto._terrainGeologyAlbedo };
+const K = r.constructor;
+if (!window.__bnMain) window.__bnMain = { bump: K.TERRAIN_BUMP };
 const M = window.__bnMain;
-Object.defineProperty(K, "TERRAIN_BUMP", { value: M.bump, configurable: true });
-proto._terrainGeologyAlbedo = M.geo;
 const v = ${JSON.stringify(v)};
-if (v === "mikro2" || v === "beide")
-  Object.defineProperty(K, "TERRAIN_BUMP", { value: Object.freeze(Object.assign({}, M.bump, { korn: M.bump.korn * 2, kavitaet: M.bump.kavitaet * 2 })), configurable: true });
-let ersetzt = 0;
-if (v === "relief1" || v === "beide") {
-  const src = M.geo.toString();
-  const neu = src.replace(/\\.mul\\(0\\.6\\)(\\s*)\\.add\\(0\\.4\\)/, (_m, s) => (ersetzt++, ".mul(0.0)" + s + ".add(1.0)"));
-  proto._terrainGeologyAlbedo = (0, eval)("({" + neu + "})")._terrainGeologyAlbedo;
-}
+const neu = v === "main" ? { kavitaet: 2.1 } : v === "mikro2" ? { korn: M.bump.korn * 2, kavitaet: M.bump.kavitaet * 2 } : {};
+Object.defineProperty(K, "TERRAIN_BUMP", { value: Object.freeze(Object.assign({}, M.bump, neu)), configurable: true });
 const alt = r.state.voxelChunkMaterial;
 r.state.voxelChunkMaterial = null;
 const neuM = r._getVoxelChunkMaterial();
 let n = 0;
 r.state.scene.traverse((o) => { if (o.material === alt) { o.material = neuM; n++; } });
 window.__bundlesNeu && window.__bundlesNeu();
-return [v, n, ersetzt, K.TERRAIN_BUMP.korn, K.TERRAIN_BUMP.kavitaet];`;
+return [v, n, K.TERRAIN_BUMP.korn, K.TERRAIN_BUMP.kavitaet];`;
 
 function main() {
     const t0 = Date.now();
@@ -164,7 +156,7 @@ function main() {
                     fs.writeFileSync(path.join(OUT, `${SHA8}-${v}-${d}.png`), Buffer.from(url.split(",")[1], "base64"));
                 }
                 teile.push(
-                    `${d} m glatt ${m.glatt} nyq ${m.nyquist} β ${m.beta} L ${m.luma} arm ${k.arm && k.arm.ist} [${z.G}/${z.N} ${z.baender}]`
+                    `${d} m glatt ${m.glatt} (dunkel ${m.glattDunkel}) nyq ${m.nyquist} β ${m.beta} L ${m.luma} arm ${k.arm && k.arm.ist} [${z.G}/${z.N} ${z.baender}]`
                 );
             }
             zeile(`${v} (${vz.slice(1).join("/")}): ` + teile.join(" | "));
