@@ -1,0 +1,5 @@
+# zug/sitzung.txt — Aufträge an Geräte-Sitzungen (Remote Control), EINE Zeile je Auftrag, der Koordinator schreibt sie beim Auftrag.
+# `<datum> <zeit> <id> START geraet=<omen|gtx1050|radeon> [sha=<40>] [mess=<gtx|radeon>] [n=<Stationen>] <Text>` · offen bis zug/erledigt.txt
+# die id schließt (Zwischenzeilen mit „Zwischenstand“ oder „Scheibe i/n“ schließen nicht). Der Blick zeigt den Stand der Mess-Datei.
+2026-11-09 19:35:00 gtx-da0e START geraet=omen sha=da0e790f76ad8a02171aa36d628ef8a8d7758086 mess=gtx n=42 die GTX-Stationen mit Punkte-Wert, 4 Scheiben (Herrscher des Omens)
+2026-11-09 19:35:00 stadt-bild START geraet=gtx1050 der Täter von bild:stadt über dem Proben-Deckel (Herrscher der GTX 1050)
