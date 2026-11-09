@@ -1,3 +1,7 @@
+## 09.11. 05:17 — w24-wiese-ferne: BEREIT 9e53ecc7568ece2aa5085fc5ceb26fa857092755 (Zweig w24-wiese-ferne-y)
+
+BEREIT 9e53ecc7568ece2aa5085fc5ceb26fa857092755 — Zweig `w24-wiese-ferne-y`, EIN Commit auf main eff50c41, ohne Siegel-Wörter. Der Täter von z336 war mein Schnitt: ohne Frist des Takts (Null-Renderer, `_bauFristOhneEnde`) baute die Ferne ohne Kachel-Deckel jede Kachel in einem Ruf — in der VK-Probe Rufe bis 391 ms (272 Kacheln). Jetzt baut sie dort in der Frist der Bau-Arbeit eines Takts (`BAU_FRIST_MS` 6 ms): längster Ruf 38 ms. Gegenprobe lokal: main f52b3a03 ohne den Schnitt VK 10 Uhr ROT (Stoß Wagen 2), mit dem Schnitt GRÜN. Am Kopf: gate:fahr-leben GRÜN (VK 10 und 23 Uhr), diag-kreatur-takt --teil=1/3 GRÜN (Ferne gebaut nach 57 Takten, Ruhe nach 567), check und playtest:fast 21/0 grün. Unter nachgebildeter Last der Karte: 109 statt 542 Takte. Der Kopf trägt `[gpu-probe: bild:dorf@0.5, bild:wiese@0.5]`. Ich warte im Wartezimmer.
+
 ## 09.11. 02:17 — w24-wiese-ferne: ABGABE 3fe3aafb534a45b0893956ead86d7b9621d55a3d
 
 ## 09.11. 02:50 — GPU-PROBE 3fe3aafb auf omen-gtx1060: GRÜN in 2000 s (bild:genesis@0.5 GRÜN 44 s · bild:dorf@0.5 GRÜN 63 s · bild:wiese@0.5 GRÜN 48 s) → probe-post/w24-wiese-ferne/3fe3aafb.md
