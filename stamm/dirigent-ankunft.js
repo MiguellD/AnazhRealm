@@ -1811,7 +1811,9 @@ AnazhRealm.ANKUNFT_TAKT = Object.freeze({ bau: 32, streu: 16, streuScan: 640 });
 // Tal zu hoch — der Grat zur Sonne trägt beides. An den 21 Schatten-Hängen der Station (Dorf, Sonne 5°) las die Karte auf 96 m
 // den Grat im Mittel 3,05° zu flach (Median 9,2° gegen 11,6° des Gesetzes), auf 48 m 1,34°, auf 32 m 0,77° (CPU-Nachbau des
 // Passes, je Gitter und Karte); die Physik der Orte (Hillaire, Band ±30°) trägt mit dem Grat des Gesetzes Ls/Ll 0,33, mit dem der
-// 96-m-Karte 0,41. Speicher: Gitter r16f 768² 1 152 KB + Karte rgba16f `karte`² 800 KB (H, s*, Boden, Grat), zusammen 1,91 MB in
+// 96-m-Karte 0,41. Das Bild (swiftshader voll, Dorf, Sonne 5°, ohne Luft): am Ort des Gesetzes auf dem gezeichneten Ring
+// 0,487 → 0,419 (der Grat nimmt dem Schattenhang median 13 → 16 % seines Himmels), die Station ferne.K4 (das Pixel des
+// projizierten Orts, 640×360) 0,4458 → 0,4385. Speicher: Gitter r16f 768² 1 152 KB + Karte rgba16f `karte`² 800 KB (H, s*, Boden, Grat), zusammen 1,91 MB in
 // der Ratsche der Klasse (spec/profiband/ratsche-*-gtx-*.json: 0,5 MB + 2 MB Toleranz; bis hier 256² à 96 m + 220², 0,494 MB).
 // Die Karte in der Auflösung des Gitters (256², 0,625 MB) trug am Dorf (swiftshader, Sonne 5°, 65 Orte) das Urteil des
 // Gesetzes an 55 Orten, 220² an 54, 192² an 52, 128² an 51 — der Ring-Stoff trägt 16 von 16 Texturen, den Boden liest er

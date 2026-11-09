@@ -2834,7 +2834,8 @@ class AnazhRealm_kreatur_verhalten {
         // je Gattung (`_gliedKapselMemo`); trägt die Liste jeden Schlüssel schon (`kapselCache`), kostet der Leib Einträge, nie
         // einen Fit — er wartet nie am Takt. Bis hier fragte jeder Bewohner die Uhr (`_weltBakeErlaubt`, 4 je Sekunde über dem
         // Budget): am Anlauf des Gipfel-Blicks (die Metropole, 959 Leiber, swiftshader) gab sie 1 282 Güsse à 0,04 ms in 370 s
-        // frei und sagte 10,7 Mio. Mal nein — Takt 13 000 … 34 000 wartete die Welt auf Treffer.
+        // frei und sagte 10,7 Mio. Mal nein — Takt 13 000 … 34 000 wartete die Welt auf Treffer. Mit Treffern frei gehen die
+        // Leiber 461 → 0 in ~4 500 Takten (die Geburten, 2 je Takt), der Ort steht nach 21 441 Takten samt Gipfel.
         const darf = () => {
             const namen = this._gattungGlieder(cr);
             const wm = namen && this.state.weltMarch;
