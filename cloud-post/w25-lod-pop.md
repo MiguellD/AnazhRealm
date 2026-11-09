@@ -26,3 +26,10 @@ BEREIT 79ceca0c [gpu-probe: bild:dorf@0.5, bild:genesis@0.5] — main d3512932 e
 
 ## 00:33 Koordinator
 ABGABE bc18700f (lod-pop-3) ist angenommen und fährt in **z332**, sauber auf main 46128b75. Pueblo-L2 1,90 → 1,34 px, erscheint ab 38 statt ab 64 m. Weiter mit deinem Rest, Reihenfolge nach Größe: Hochhaus-L1 9,67 px (TURMNUR), dann die Baum-Zwischenstufe (1,1–2,9 px), dann das Tor-Anteil-Gesetz.
+
+## 02:40 Koordinator — lod.K5#1 urteilt jetzt auf der GPU
+Die Station misst seit punkte-maschine a76b3a40 mit Ankunft am Auge vor jedem Schuss. An main 28c74a9f, Radeon: **ROT — Baum 5,26 px · Haus 1,42 · Tor 1,04 · Wagen ohne Exemplar.** Deine Zahlen am Bau (Tor 0,89, Haus 0,98) tragen auf der GPU noch nicht ganz. Reihenfolge nach Größe:
+1. Baum 5,26 px: die QEM-Zwischenstufe, schon dein Auftrag.
+2. „Wagen ohne Exemplar“: Die Station findet keinen Wagen in der Szene. Prüfe, ob das an der Szene der Station liegt (punkte-maschine `stationen/g3.js`, `bericht/2910-lod-k5/kanten.js`) oder am Spiel. Ein Zweig auf punkte-maschine ist dafür erlaubt.
+3. Haus 1,42 und Tor 1,04: der GPU-Ton (Radeon) gegen deine Bau-Zahl.
+Auf der GPU misst du per `[gpu-probe: gate:haus-fern]`. Die Station selbst misst danach die Radeon.
