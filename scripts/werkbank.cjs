@@ -1087,7 +1087,12 @@ async function starte() {
                         zellen().find((c) => String(c.seed) === same && Math.hypot(c.x - g.anker[0], c.z - g.anker[1]) <= 1e-3);
                     if (!steht()) {
                         r._chatDispatchLegacyCommand(g.wort, [], () => {});
-                        for (const weiter = __deckel(`die Gründung „${g.wort}"`); !steht() && weiter(); ) await sleep(250);
+                        // DER AKT IST DIE BEREIT-BEDINGUNG (w27-stadt-bild): bis hier schlief die Probe je 250 ms unter dem Deckel, bis die
+                        // Zelle am Anker stand — der Takt ruht dabei, Leib und Horizont blieben offen, der Deckel zählte nie, und eine Stadt
+                        // 5,3 mm neben dem Anker (da0e790f) hielt jeden Läufer bis zum Proben-Deckel (GTX 1050 552–616 s, Radeon 616 s). Die
+                        // Probe wartet auf die EINE Flagge des Akts (`_dorfImFlug`, `spawnSettlement`) und urteilt, sobald er endet: die
+                        // Zellen unten nennen, wo die Stadt steht — das ist der neue Anker, wenn die Ort-Wahl mit der Welt wanderte.
+                        while (r._dorfImFlug) await sleep(250);
                     }
                     if (!steht())
                         throw new Error(`Messort ${o.ort}: „${g.wort}" steht nicht am Anker ${g.anker} (${JSON.stringify(zellen())})`);
