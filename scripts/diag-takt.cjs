@@ -315,7 +315,7 @@ hauptLauf(async () => {
                         r._tickHuellenNach();
                         // DIE FERNE DER WIESE (w26-fahrt-planer): je Kachel ein Werk von zwölf Schritten, das leer endet — abgelaufen EIN
                         // Schritt; bis dahin war die ganze Kachel das Stück und zählte nur die gebaute, der Takt ging die ganze Bau-Liste
-                        const [nwAlt, zw] = [st.nahWiese, leihe(r, { _nahKachelWartet: () => false, _wieseFernLage: () => ({}), _wieseAuge: () => ({}), _nahWieseFernKachel: function* () { for (let i = 0; i < 12; i++) yield aus9.wiese++; return null; } })]; // prettier-ignore
+                        const [nwAlt, zw] = [st.nahWiese, leihe(r, { _nahKachelWartet: () => false, _wieseFernBereit: () => true, _wieseFernLage: () => ({}), _wieseAuge: () => ({}), _nahWieseFernKachel: function* () { for (let i = 0; i < 12; i++) yield aus9.wiese++; return null; } })]; // prettier-ignore
                         st.nahWiese = { kacheln: new Map(), fern: { kacheln: new Map(), gitter: new Map() } };
                         r._nahWieseFernTakt({ x: 0, z: 0 }, r._bauFrist() || uhr, 1);
                         [st.nahWiese] = [nwAlt, zw()];

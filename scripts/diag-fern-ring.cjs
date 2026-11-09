@@ -34,6 +34,9 @@
 //   (15) DER HORIZONT STEHT NACH DEM SCHNEE — ein Edit-Auftrag fliegt, die Schneegrenze bestellt den Ring im selben Takt
 //       neu: am Ereignis (der Fern-Faden hat jede Bestellung beantwortet, der Ring hängt ganz) zählt er nichts im Flug (am
 //       Stamm 9e92be45 ROT: editFlug 1, der Horizont stand nie mehr).
+//   (16) DIE REGIONEN GEHEN VOR — ein Neben-Faden, geboren hinter 24 Chunk-Aufträgen des Voxel-Fadens, antwortet vor dem
+//       letzten: `hydro-an` tritt hinter den Regionen-Stand, nie hinter die Aufträge (am Stamm 87537d3f warteten Fern- und
+//       Feld-Faden auf der GTX 1050 kalt 1,8–1,9 s auf 17 Chunks). Selbsttest: die alte Reihe (Antwort nach dem letzten) fällt rot.
 // Selbsttest (immer mitgeprüft): eine absichtlich verfälschte Erwartung
 // (law + 0.5) MUSS rot fallen — die Linse ist nicht vakuös.
 //   node scripts/diag-fern-ring.cjs
@@ -58,8 +61,6 @@ hauptLauf(async () => {
                 !st.worldMeta));
         if (!r || !st || !st.scene) return { fatal: "anazhRealm/scene kam nie" };
         const F = AnazhRealm.FERN_RING;
-        // je Schale ihre volle Geometrie (der Träger: das ganze Index-Muster); vor der Teilung (K16 Runde 3) je Schale ein Mesh
-        const geosVon = (f) => f.geos || f.meshes.map((m) => m.geometry);
         // DAS EINE QUANTIL der Linse: p der sortierten Werte (am Rand geklemmt), leer NaN
         const quantil = (a, p) => (
             a.sort(aufsteigend),
@@ -149,7 +150,7 @@ hauptLauf(async () => {
             summeSoll += rr * F.winkel;
         }
         res.meshCount = fr.meshes.length;
-        res.vertCounts = geosVon(fr).map((g) => g.attributes.position.count);
+        res.vertCounts = fr.geos.map((g) => g.attributes.position.count);
         res.reihen = reihenSoll;
         res.vertsDeclared =
             res.vertCounts.length === reihenSoll.length &&
@@ -250,7 +251,7 @@ hauptLauf(async () => {
             // Selbsttest-Verfälschung NACH der Klemme (sonst bliebe eine wasser-
             // geklemmte Probe trotz Fudge grün — der Selbsttest wäre lückenhaft):
             expY += fudge || 0;
-            const pos = geosVon(fr)[s].attributes.position;
+            const pos = fr.geos[s].attributes.position;
             const okXZ = pos.getX(li) === sx && pos.getZ(li) === sz;
             const okY = Math.abs(pos.getY(li) - expY) < 0.01;
             return { ok: okXZ && okY, okXZ, okY, dy: Math.abs(pos.getY(li) - expY) };
@@ -313,7 +314,7 @@ hauptLauf(async () => {
                     if (!fr.nass[g]) continue;
                     const pp = r._fernRingPunkt(fr, g);
                     if (pp.s === 0 && pp.row === 0) continue; // die Saum-Tauchkante liegt ohnehin tiefer
-                    const y = geosVon(fr)[pp.s].attributes.position.getY(pp.li);
+                    const y = fr.geos[pp.s].attributes.position.getY(pp.li);
                     r._fernRingY(fr, pp, wlW, aus);
                     const talP = aus.spiegel - hub;
                     if (talP < tal) tal = talP;
@@ -680,7 +681,7 @@ hauptLauf(async () => {
             const span9 = r._voxelChunkConfig().span;
             const wl9 = Number.isFinite(st.waterLevel) ? st.waterLevel : 0;
             // die volle Schale 0 (der Träger, das ganze Index-Muster) — der Strahl trifft jedes ihrer Dreiecke, ob frei oder Naht
-            const ringMesh = new T9.Mesh(geosVon(fr9)[0], new T9.MeshBasicMaterial({ side: T9.DoubleSide }));
+            const ringMesh = new T9.Mesh(fr9.geos[0], new T9.MeshBasicMaterial({ side: T9.DoubleSide }));
             // DIE RING-HÖHE ÜBER EIN FACH-RASTER (8 m): der Strahl prüft nur die Dreiecke der Schale 0, deren Kasten den Punkt
             // trägt — der Strahl gegen die ganze Schale (15 000 Dreiecke je Probe) trug den Großteil der Linsen-Zeit.
             const ringFach = new Map();
@@ -1071,7 +1072,7 @@ hauptLauf(async () => {
             // gezeichnet zeigt Stiche, die Naht verworfen zeigt Löcher.
             {
                 const T = fr9.teilung;
-                const geo0 = geosVon(fr9)[0];
+                const geo0 = fr9.geos[0];
                 const I = geo0.index.array;
                 const P = geo0.attributes.position.array;
                 const treu = { proben: 0, stich: 0, loch: 0, selbstStich: 0, selbstLoch: 0, orte: [] };
@@ -1147,7 +1148,7 @@ hauptLauf(async () => {
             const indizes = [];
             for (let s = 0; s < 2; s++) {
                 const sh = fr9.schalen[s];
-                const geo = geosVon(fr9)[s];
+                const geo = fr9.geos[s];
                 const C = geo.attributes.color.array;
                 const K = geo.attributes.aKrone.array;
                 for (let row = 0; row < sh.reihen; row++) {
@@ -1322,7 +1323,7 @@ hauptLauf(async () => {
                 offen: 0,
                 orte: [],
             };
-            const geos = geosVon(frW);
+            const geos = frW.geos;
             const aus = {};
             const nass = {};
             const fl = {};
@@ -1429,6 +1430,22 @@ hauptLauf(async () => {
             res.horizont.push(f.gen | 0, f.editFlug);
         } catch (e15) {
             res.horizont = [String(e15)];
+        }
+        // ===== (16) DIE REGIONEN GEHEN VOR (w26-ankunft-horizont) =====
+        // 24 Chunk-Aufträge fern vom Spieler füllen die Reihe des Voxel-Fadens, dann wird ein Neben-Faden geboren und gefragt
+        // (`ping`): seine Reihe hält, bis die Regionen da sind (`hydroVom`). Je ms ab dem ersten Auftrag: die Antwort und die Chunks.
+        try {
+            const [t0, pc] = [performance.now(), st.lastPlayerVoxelChunk];
+            const ms = () => performance.now() - t0;
+            const chunks = Array.from({ length: 24 }, (_, i) =>
+                r._voxelWorkerComputeChunkMesh(pc.cx + 40 + i, pc.cz + 40, 0).then(ms, ms)
+            );
+            r._nebenFaden("regionen");
+            res.regionen = [await r._nebenAuftrag("regionen", { type: "ping" }).then(ms), Math.max(...(await Promise.all(chunks)))];
+            r._nebenFaeden.get("regionen").worker.terminate();
+            r._nebenFaeden.delete("regionen");
+        } catch (e16) {
+            res.regionen = [String(e16)];
         }
         r._fernRingDispose();
         res.fpDisposed = st.feldPass == null;
@@ -1667,6 +1684,15 @@ hauptLauf(async () => {
         "15: DER HORIZONT STEHT NACH DEM SCHNEE — ein Edit-Auftrag fliegt, die Schneegrenze bestellt neu (`_fernRingNeuBestellen`)",
         hz[0] > 0 && hz[2] > hz[1] && hz[3] === 0,
         `[im Flug, Generation vorher, nachher, editFlug] ${hz}`
+    );
+
+    // (16) der neue Faden antwortet vor dem letzten Chunk; der Selbsttest ist die alte Reihe (nach dem letzten)
+    const vortritt = (R) => R[0] < R[1];
+    const rg = out.regionen || [];
+    check(
+        "16: DIE REGIONEN GEHEN VOR — der neue Faden antwortet vor dem letzten Chunk",
+        vortritt(rg) && !vortritt([1230, 1229]),
+        `${rg} ms — TÄTER sonst: hydro-an hinter den Chunks (voxel-worker.js REGIONEN_STAND)`
     );
 
     wandEnde(errs, "DER FERN-RING STEHT UND DAS FELD ZEICHNET: 3 Schalen aus dem EINEN Höhen-Gesetz " +

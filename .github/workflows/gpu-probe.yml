@@ -158,6 +158,9 @@ jobs:
                   # Hänger, kein Tempo: dort gilt das Doppelte. Ein Zeit-Urteil fährt dort nie (`zeit:` läuft nur auf `gpu-zeit`).
                   case "$RUNNER_NAME" in *gtx1050*) DECKEL=960 ;; esac
                   echo "$RUNNER_NAME" > "$OUT/laeufer.txt"
+                  # DAS SICHTBARE FENSTER (Schöpfer 08./09.11.): auf dem OMEN (interaktiver Läufer in Sitzung 1) öffnet jede Probe ihren Browser
+                  # als Fenster (welt-boot `startePuppeteer`); Radeon und GTX 1050 bleiben headless, bis ihr A/B die Kosten nennt.
+                  case "$RUNNER_NAME" in *omen*) export LINSE_SICHTBAR=1 ;; esac
                   GPU=$(powershell -NoProfile -Command "(Get-CimInstance Win32_VideoController).Name -join ', '" 2> /dev/null | tr -d '\r')
                   echo "GPU ${GPU:-?} · $BAUM_ZEILE" > "$OUT/ergebnis.md"
                   rot_ende() {

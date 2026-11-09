@@ -515,9 +515,6 @@ class AnazhRealm_vegetation_wiese {
         // rechnete jeder neuen ihre Lage (GTX 1050 an main, die zweite Fahrt: `_nahWieseFernTakt` 99,8 ms in EINEM Takt; Null-Renderer
         // mit der Frist des Spiels, GT 20 m/s ab Genesis, die ersten 2,5 s: max 33 ms, darin `_wieseFernLage` 30 ms).
         const bis = deadline || performance.now() + AnazhRealm.BAU_FRIST_MS;
-        // ohne die Weite der Büschel (`reich`: die gezeichneten Vorlagen) zieht keine Kachel der Nähe Büschel — kein Werk beginnt,
-        // das auf null fiele (w26-ankunft-block-3 maß es vor dem Bild: 1 293 von 1 566 Bauten null)
-        if (!(reich > 0)) return ((o.offen += G.bau.length), o);
         if (G.werk) {
             const i = G.bau.findIndex((w) => w.key === G.werk.key);
             if (i < 0) G.werk = null;
@@ -531,6 +528,11 @@ class AnazhRealm_vegetation_wiese {
             }
             let werk = G.werk && G.werk.key === w.key ? G.werk : null;
             if (!werk) {
+                // die Kachel beginnt erst, wenn da ist, was sie liest (`_wieseFernBereit`: Weite und Boden-Karten) — ein Blick, kein Schritt
+                if (!this._wieseFernBereit(w.fx, w.fz, reich)) {
+                    o.offen++;
+                    continue;
+                }
                 schritt++;
                 const lage = w.lage || this._wieseFernLage(w.fx, w.fz);
                 if (!lage) {
@@ -845,6 +847,27 @@ class AnazhRealm_vegetation_wiese {
     // (`_nahWieseNeuIn`); jenseits des Chunk-Rings (`_bodenKommtNie`, `nie`) trägt es nichts. null, solange ein Chunk unter ihm
     // seine Karte noch bekommt. Ein neues Gitter ist ein Schritt des Werks der Kachel (`_nahWieseFernKachel`, unter der EINEN
     // Frist des Takts; Lehre 14). Kosten: 144 Proben je Kachel (12 × 12), EINMAL, solange ihr Boden steht.
+    // DIE KACHEL DER FERNE BEGINNT ERST, WENN DA IST, WAS SIE LIEST (w25-ankunft-block-2, w26-ankunft-block-3, die Klasse „ein Bau
+    // fällt auf null“): die Weite der Büschel (`reich`, `nahWiese.reich`: ohne die gezeichneten Vorlagen zieht keine Kachel der Nähe
+    // Büschel, `_nahWieseKachelBueschel`) und die Boden-Karten ihrer Kacheln der Nähe (`_bodenSichtChunks`, dieselben Rechtecke wie
+    // Lage und Büschel) — der Takt fragt sie VOR der Lage (`_nahWieseFernTakt`), ein Blick, kein Schritt; die 3 × 3 Gitter ihres
+    // Felds baut danach das Werk der Kachel als Schritte (w26-fahrt-planer; bis dahin baute die Bereitschaft sie unter der Frist).
+    // Bis w26-ankunft-block-3 rechnete der Takt die Lage jeder Kachel und fragte Weite und Karten erst im Bau: fehlte eines, fiel
+    // der Bau auf null und der nächste Takt rechnete die Lage neu (swiftshader kalt an main 87537d3f vor dem Bild: 1 566 Rufe der
+    // Kachel, 1 293 davon null, für 273 gebaute; `_wieseFernLage` 1 882 Rufe, 562 ms).
+    _wieseFernBereit(fx, fz, reich) {
+        if (!(reich > 0)) return false;
+        const NW = AnazhRealm.NAH_WIESE;
+        const [K, k6] = [NW.fern.kachel, NW.kachel];
+        const n = K / k6;
+        for (let j = 0; j < n; j++)
+            for (let i = 0; i < n; i++) {
+                const [x0, z0] = [(fx * n + i) * k6 - 0.34, (fz * n + j) * k6 - 0.34];
+                const [x1, z1] = [x0 + k6 + 0.68, z0 + k6 + 0.68];
+                if (!this._bodenKommtNie(x0, z0, x1, z1) && !this._bodenSichtChunks(x0, z0, x1, z1)) return false;
+            }
+        return true;
+    }
     _wieseFernGitter(fx, fz) {
         const NW = AnazhRealm.NAH_WIESE,
             F = NW.fern;
