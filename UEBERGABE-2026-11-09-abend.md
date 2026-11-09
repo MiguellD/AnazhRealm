@@ -1,4 +1,4 @@
-# ÜBERGABE 09.11. abends (Konto 9, Wochenbudget 96 % um 16:45, Reset 12.11. 19:00)
+# ÜBERGABE 09.11. abends (Konto 9, NOTBREMSE bei 98 % um 17:52, Reset 12.11. 19:00)
 
 **main** a7dc1874 (z345, nur Werkzeug: `zeit:gate:<npm>` für Zeit-Gates auf den Band-Geräten OMEN/Radeon).
 **Gebucht** 222 an eff50c41. Ehrlich trocken an a7dc1874: **218**, 6 Rückfälle. 3 davon heilen Zweige in der Schlange:
@@ -10,10 +10,11 @@ Ohne Heilung bleiben material.K4#1 gtx (lack-glas, siehe unten), material.K3#2 r
 Buchen erst, wenn z347–z349 gelandet sind und die Rückfall-Stationen neu gemessen sind: `BUCHE_KOPF=<sha40> bash artifacts/profiband/werkzeug/buche.sh`. Danach die Meisterkarte (Artifact BJk5eWsqBiLnS6o3Cns6QK) neu veröffentlichen.
 
 ## Züge (Skripte in /tmp/claude/w3: zug-schlange6.sh + zug-weiter3.sh, Logs /tmp/claude/fahre-zNNN(w).log)
-- **z347 ROT 17:04** (stadt-takt-4b + ferne-ton-2): echt S0-Feuerkreis-Luma, echt Tag-Achse, „Stall NATIV createRenderPipeline atmo-himmel“, CPU: Werk im Wasser (Wagen 1,23 m tief), K7 Wiesen-Dichte am Rand 1,257, Wasser-Wand (Graben leer), Fahr-Linse (T4, K8, S1). Wahrscheinlich bricht **stadt-takt-4b** die Welt-Bau-Linsen: Die Bau-Frist im Takt lässt die Prüf-Welten unfertig. Die Bau-Linsen müssen auf die Frist warten oder bauen, offen, keine Sitzung dran. **ferne-ton-2** fährt allein in **z351** hinter z350 und klärt die zwei echt-Wände.
-- **z348** w26-ankunft-block-3 (Fern-Kachel-Rufe 1566 → 263) + w26-ankunft-horizont (Horizont Radeon kalt 9,3 → 6,1 s) + w26-omen-sichtbar-2 (Proben auf der OMEN im sichtbaren Fenster). Wartet auf z347w.
+- **z347 ROT 17:04.** Die Triage (Champion, je Wand an main, an +stadt-takt-4b und an ferne-ton-2 allein) spricht **stadt-takt-4b frei**. **ferne-ton-2** bricht alle vier CPU-Wände (Wagen 1,23 m tief, K7 Wiesen-Rand, Graben leer, Fahr-Linse K8/S1): `PORTAL_GROUND.mead` 0x55632f → 0x3e5026 senkt das Grün des Bodens von 0,065 auf 0,046, und daraus rechnet `stamm/koerper-fahrt.js` die Haftung des Rads, ebenso die Nah-Wiese. Eine Farbe steuert dort Physik, das ist ein Zwilling von Stoff-Gesetz und Farbe. Heilung: Haftung und Wiese lesen den Stoff, nie das Grün der Farbe. ferne-ton-2 und ferne-ton-3 bleiben draußen, bis das geheilt ist.
+- **z351** w26-stadt-takt-4b (5ab84a7a, frei gesprochen), wartet auf z350w.
+- **z348** w26-ankunft-block-3 (Fern-Kachel-Rufe 1566 → 263) + w26-ankunft-horizont (Horizont Radeon kalt 9,3 → 6,1 s) + w26-omen-sichtbar-2 (Proben auf der OMEN im sichtbaren Fenster). Wartet auf z347w. Im CI seit 17:10 (da0e790f). ROT bisher: voll 8/18 Fahr-Linse VK „Wagen im Bau 1× haus_provenzalisch“ (Pflicht C). Der Zug-Wächter fährt sie noch einmal.
 - **z349** w26-leib-raum (Guss der Menge 18,8 → 10,1 s) + w26-boden-nah + w26-winter-fichte + w26-haar-arm (haar.K2 Radeon 0,64 → 0,43). Wartet auf z348w.
-- **z350** w26-klang-schritt (8d1d3bb1, S13 geheilt: −∞ dB kam als null aus dem Browser, `null > -90` ist wahr; jetzt über `__klangW.endlich`) + w26-probe-node (setup-node nur ohne Node 22 im PATH). Wartet auf z349w.
+- **z350** w26-klang-schritt (8d1d3bb1, S13 geheilt: −∞ dB kam als null aus dem Browser, `null > -90` ist wahr; jetzt über `__klangW.endlich`) + w26-probe-node (setup-node nur ohne Node 22 im PATH).  Dazu **w25-gpu-wahl** (a0a0b0d5: Bild GTX 1060 p95 41,8 → 33,3 ms, `_passSicht` 20,5 → 7,8 ms, scripts −8 870). Wartet auf z349w.
 - z346 fiel an der Klang-Linse S13 (klang-schritt). ferne-ton fährt in ferne-ton-2 mit.
 
 ## Zurückgehalten (mit Grund in cloud-post/<zweig>.md)
@@ -30,7 +31,9 @@ Neu eingemischt:
 
 ## Geräte
 - **OMEN:** Sweep nach D5 pausiert (87537d3f: 35 grün / 9 rot / 71 ungemessen). Seit 15:31 trägt sie gpu-probe + gpu-zeit. Fortsetzen mit `AB=6 VOR=71 bash sweep-reihe.sh 87537d3f…` (Sitzung „Koordinator Meldung“), wenn die Proben-Schlange leer ist. Der Läufer läuft interaktiv (Sitzung 1), sichtbare Fenster gehen, sobald z348 landet.
-- **Drittes Gerät gtx1050-desktop:** Die CPU ist der Engpass. G DATA hat der Schöpfer entfernt. Energieplan und Autostart sind offen: Die Sitzung dort nimmt nur die Zustimmung des Schöpfers in ihrem eigenen Chat. Defender-Ausnahmen und Auto-Anmeldung liegen beim Schöpfer. Zeit-Urteile zählen dort nie.
+- **Drittes Gerät gtx1050-desktop:** Die CPU ist der Engpass. Umgestellt sind Energieplan Höchstleistung, G DATA entfernt (beides der Schöpfer) sowie Autostart und Hintergrund-Apps (die Sitzung, Liste in C:\actions-runner\umstellung-0911.txt). Leerlauf-CPU 14 → 7 %. Offen beim Schöpfer: Defender-Ausnahmen prüfen, HKLM-Autostart (ClassicStartMenu, Maustreiber, Logitech), RAM: EIN Riegel in einem Board mit drei Kanälen. Zeit-Urteile zählen dort nie, `zeit:gate:` funktioniert (Radeon „Band-Gerät“).
+- **Achtung aufraeumen.ps1:** Es beendet auch die CI-Proben des Radeon-Läufers in C:\actions-runner (der Champion schoss so um ~17:40 einen ego-schatten-Job ab). Nur trocken fahren und gezielt beenden.
+- **gate:tag-achse:echt** ist auf der Radeon auch an main ROT (w26-ferne-ton-3-vorher c398a5ff). Das ist kein Fehler der Zweige.
 - **OFFENER FEHLER:** `bild:stadt*` reißt den Proben-Deckel auf ALLEN Läufern (Radeon 616 s, GTX 1050 552–616 s). Die Werkbank kommt am Stadt-Ort nie bis „Kamera des Spiels“. Damit gibt es kein GPU-Bild von Menge, Wagen und Verkehr (C).
 
 ## Notbremse bei 98 %
