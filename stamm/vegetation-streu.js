@@ -485,6 +485,13 @@ class AnazhRealm_vegetation_streu {
         // die Lücke im Blick fragt den Blick (`_rangImBlick`), nie den Rang: nach dem Bild nimmt der Rang alles hinein
         region._bildWartet = alle.some(([, rang]) => this._rangImBlick(rang)) || !!region._bildLuecke;
         const warten = (bild.length ? bild : alle).map(([z]) => z);
+        // DER NEUBAU AUSSER BLICK GEHÖRT DEM NACHLAUF (w25-ankunft-foundry): wartet die Region vor dem ersten Weltbild auf nichts
+        // im Blick (`_bildWartet` false), schläft sie auch auf dem Bild (`_weltbildKommt`) — ihr Neubau trüge nur, was außer
+        // Blick liegt, und hielte doch das Bild, solange seine Scheibe offen steht (`_streuRegionWartet`). Bis hier weckte sie
+        // jede Karte außer Blick, die der Takt vor dem Bild buk, und ihr Neubau säte die nächste: GTX kalt (4f86fbe6) weckten
+        // buche|2 · buche|1 · karst|1 · birke|3 (gebacken 15,26–16,26 s) die vier Wald-Stücke der Ankunft, buche|1 und birke|3
+        // entstanden erst in ihrem Neubau (14,33 · 15,41 s); die Streu schloss im Median 0,6 s nach den Karten im Blick.
+        if (!region._bildWartet && !this.state._weltbildDa) warten.push(this._weltbildKommt());
         const kam = () => {
             region._geweckt = true;
             this._scatterRefillPending = true;

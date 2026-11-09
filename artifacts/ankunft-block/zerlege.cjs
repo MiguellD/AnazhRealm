@@ -269,15 +269,15 @@ function berichtAB(teil, Z) {
             const kurz = (x) => `${x.art === "karte" ? "K" : ""}${x.wer.replace(/\|L/, "")}${x.blick === 0 ? "°" : ""} ${x.te != null ? sek(x.te) : "?"}/${sek(x.t0)}/${x.t1 != null ? sek(x.t1) : "–"}w${x.bahn}`; // prettier-ignore
             zeile(`${pre}WERK (Boot ${z0.e.i + 1}) bis zum Bild ${sek(z0.out.weltbildDa)} s: ${W0.L.length} gesendet (${Object.entries(W0.arten).map(([k, v]) => k + " " + v).join(", ")}), offen ${W0.ohne} · eingereiht ${W0.enq.length}, außer Blick ${W0.enq.filter((e) => e[4] === 0).length} · Dienst je Bahn ${Object.entries(dienst).map(([b, ms]) => "w" + b + " " + sek(ms) + " s").join(" · ")} · längster Dienst ${S.filter((x) => x.dienst != null).sort((a, b) => b.dienst - a.dienst).slice(0, 5).map((x) => x.wer + " " + Math.round(x.dienst)).join(" · ")}`); // prettier-ignore
             const A = S.map(kurz);
-            for (let i = 0, j = 0; i < 3 && j < A.length; i++) {
+            for (let i = 0, j = 0; !AB && i < 3 && j < A.length; i++) {
                 let s = "";
                 while (j < A.length && s.length + A[j].length < 470) s += (s ? " · " : "") + A[j++];
                 zeile(`${pre}AUFTRÄGE ${i + 1} (Einreihen/Senden/Antwort, ° außer Blick, K Platte der Karte): ${s}`);
             }
             const K = Object.entries(Wr.krt || {}).sort((a, b) => (a[1][1] || 1e9) - (b[1][1] || 1e9));
             zeile(`${pre}KARTEN (angelegt→gebacken, * im Blick): ${K.map(([k, v]) => `${k.replace(/^fimp:/, "").slice(0, 14)}${v[2] ? "*" : ""} ${sek(v[0])}→${v[1] ? sek(v[1]) : "–"}`).join(" · ")}`); // prettier-ignore
-            const ST = (Wr.streu || []).filter((s) => s[2] !== 0);
-            zeile(`${pre}STREU (Wecker im Bild: t Region Zusagen | weiter): ${ST.slice(-14).map((s) => `${sek(s[0])} ${s[1]} ${s[2] === -1 ? "weiter" : s[3]}`).join(" · ")}`); // prettier-ignore
+            const ST = Wr.streu || [];
+            zeile(`${pre}STREU (Wecker: t Region ! hält das Bild, Zusagen | weiter): ${ST.slice(-16).map((s) => `${sek(s[0])} ${s[1]} ${s[2] === -1 ? "weiter" : (s[2] ? "!" : "") + s[3]}`).join(" · ")}`); // prettier-ignore
             zeile(`${pre}FERNE: Bild aus der Ferne ${zs.map((z) => (z.out.nach && z.out.nach.fernbild ? sek(z.out.nach.fernbild) : "–")).join("/")} s → Weltbild ${zs.map((z) => sek(z.out.weltbildDa)).join("/")} s`); // prettier-ignore
         });
         return;
