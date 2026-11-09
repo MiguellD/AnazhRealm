@@ -1150,8 +1150,11 @@
     // steht ~2,5 cm über dem Mittel), nie unter dem Schädel. Bei 1 ist die Kappe die des Stils, Byte für Byte; die Strähnen
     // (haarStreu) wurzeln auf DERSELBEN Kappe. Bis studios.K1 trug hairVol nur die Zahl der Strähnen (das Bild 0,45 %).
     var HAAR_VOLUMEN = 0.2;
+    // DER LEIB-RAUM (w25-leib-raum, rein additiv, Steuer-Passagier `__kappe`): die Kappe eines Stils ist ihr Tripel [Dicke, Höhe,
+    // Front] — der Ofen fragt die Kappe an einem Punkt ZWISCHEN den Stilen (die Achsen des Leib-Raums); ohne `__kappe` Byte für Byte
+    // die des Stils.
     function haarKappe(d) {
-        var t = HAAR_KAPPE[(d && d.hairStyle) || "mittel"];
+        var t = (d && Array.isArray(d.__kappe) && d.__kappe.length === 3 && d.__kappe) || HAAR_KAPPE[(d && d.hairStyle) || "mittel"];
         if (!t) return []; // glatze
         var P = labProportionen(),
             r = P.skullBaseR * 1.03,
@@ -1165,6 +1168,79 @@
         // (augeFrei 0,40); jeder andere Stil liegt dahinter und bleibt byte-gleich
         var z = Math.max(t[2], dk * r); // die Front aus der Dicke samt Fülle (studios.K1 hairVol)
         return [{ c: [0, P.skullCY + SH / 2 + t[1] + ansatz, -z], r: r, sc: [1 + dk, sy + dk, 1 + dk] }];
+    }
+
+    // DER LEIB-RAUM (w26-leib-raum, REFERENZ-ATLAS §4 — SMPL, Loper et al. 2015: ein Körper ist ein Punkt in EINEM Raum, rein
+    // additiv): die Achsen, auf denen sich ein Mensch der Menge vom anderen unterscheidet, je Achse ihre Knoten. Der Ofen gießt je
+    // Mengen-Stufe EINE Vorlage am Mittel-Knoten jeder Achse (`leibRaumVorlage`) und je Knoten den Weg jeder ihrer Ecken (die
+    // Formziel-Tafel, foundry-core `__leibRaumTafel`); eine Person ist ihre Lage auf den Achsen (`leibRaumPunkt`: je Achse der Knoten-
+    // Index samt Bruch) — Vorlage + je Achse der Weg zwischen ihren zwei Knoten. Die Kappe des Haars ist ihr Tripel (HAAR_KAPPE:
+    // Dicke, Höhe, Front) als drei Achsen über die Spanne der Stile; die Höhe trägt die Skala des Leibs (charScale), die Farben die
+    // Palette (`menschPalette`). Die Spannen sind die des Genoms (Alter, Fülle des Haars: der Roller der Welt liest sie hier).
+    var LEIB_RAUM = (function () {
+        var fuenf = function (a, b) {
+            return Object.freeze([a, a + (b - a) / 4, a + (b - a) / 2, a + (3 * (b - a)) / 4, b]);
+        };
+        var stile = Object.keys(HAAR_KAPPE).map(function (k) {
+            return HAAR_KAPPE[k];
+        });
+        var kappe = function (j) {
+            var v = stile.map(function (t) {
+                return t[j];
+            });
+            return fuenf(Math.min.apply(null, v), Math.max.apply(null, v));
+        };
+        return Object.freeze({
+            achsen: Object.freeze([
+                Object.freeze({ achse: "gender", knoten: fuenf(0, 1) }),
+                Object.freeze({ achse: "mass", knoten: fuenf(0, 1) }),
+                Object.freeze({ achse: "tone", knoten: fuenf(0, 1) }),
+                Object.freeze({ achse: "age", knoten: fuenf(0.05, 0.5) }),
+                Object.freeze({ achse: "hairVol", knoten: Object.freeze([0.8, 1.05, 1.3]) }),
+                Object.freeze({ achse: "haaransatz", knoten: Object.freeze([0, 0.5, 1]) }),
+                Object.freeze({ achse: "__kappe0", knoten: kappe(0) }),
+                Object.freeze({ achse: "__kappe1", knoten: kappe(1) }),
+                Object.freeze({ achse: "__kappe2", knoten: kappe(2) }),
+            ]),
+        });
+    })();
+    // der Wert einer Achse an den Dials d (die Kappe: das Tripel `__kappe` oder das des Stils)
+    function leibRaumWert(d, achse) {
+        var kj = /^__kappe([012])$/.exec(achse);
+        if (kj) {
+            var t = (d && Array.isArray(d.__kappe) && d.__kappe) || HAAR_KAPPE[(d && d.hairStyle) || "mittel"];
+            if (!t) throw new Error("LEIB-RAUM: der Stil " + (d && d.hairStyle) + " trägt keine Kappe (fail-closed)");
+            return t[+kj[1]];
+        }
+        var v = d ? d[achse] : undefined;
+        if (typeof v !== "number" || !isFinite(v)) v = START_PARAMS[achse];
+        if (typeof v !== "number" || !isFinite(v)) throw new Error("LEIB-RAUM: die Achse " + achse + " ohne Wert (fail-closed)");
+        return v;
+    }
+    // Die Dials der Vorlage: d, jede Achse auf ihrem Mittel-Knoten (die Kappe als Tripel `__kappe`)
+    function leibRaumVorlage(d) {
+        var o = {},
+            k;
+        for (k in d) o[k] = d[k];
+        var kap = [0, 0, 0];
+        LEIB_RAUM.achsen.forEach(function (a) {
+            var m = a.knoten[(a.knoten.length - 1) / 2];
+            var kj = /^__kappe([012])$/.exec(a.achse);
+            if (kj) kap[+kj[1]] = m;
+            else o[a.achse] = m;
+        });
+        o.__kappe = kap;
+        return o;
+    }
+    // Der Punkt einer Person im Leib-Raum: je Achse (Reihe von LEIB_RAUM.achsen) ihr Knoten-Index samt Bruch, in [0, Knoten − 1]
+    function leibRaumPunkt(d) {
+        return LEIB_RAUM.achsen.map(function (a) {
+            var K = a.knoten,
+                v = leibRaumWert(d, a.achse);
+            if (v <= K[0]) return 0;
+            for (var j = 0; j < K.length - 1; j++) if (v <= K[j + 1]) return j + (v - K[j]) / (K[j + 1] - K[j]);
+            return K.length - 1;
+        });
     }
 
     // DIE TÖNE DES MENSCHEN (mensch.K4, rein additiv) — DIE FARBE FOLGT DEM SAMEN. Jede Ecke eines gegossenen Menschen trägt
@@ -7041,6 +7117,11 @@
         GESICHT_GENOM: GESICHT_GENOM,
         // mensch.K4 — die Schnitte mit Volumen (je Stil die Kappe): die Gestalten einer Siedlung wählen aus ihnen
         HAAR_KAPPE: HAAR_KAPPE,
+        // w26-leib-raum — der EINE Leib-Raum der Menge: die Achsen und ihre Knoten, die Vorlage, der Punkt einer Person (Leser: der
+        // Ofen der Mengen-Stufen, der Wirt: Genom-Roller und Satz der Bewohner)
+        LEIB_RAUM: LEIB_RAUM,
+        leibRaumVorlage: leibRaumVorlage,
+        leibRaumPunkt: leibRaumPunkt,
         // mensch.K4 — die Töne des Menschen: der Ton je Stoff-Klasse, die Braue, die Palette (Leser: der Ofen, der Wirt)
         MENSCH_TON: MENSCH_TON,
         KOPF_TON: KOPF_TON,
