@@ -2105,10 +2105,11 @@ function luftAufgeloest(L0, S, i, kanaele) {
     return kanaele.every((c) => Math.abs(L0[i + c] - S[i + c]) >= 12);
 }
 
-// DER TON DES BANDS (w25-ferne-licht-6, K1-2 FARBTON): der Abstand der Farbtöne zwischen dem Mittel des Pixels mit Luft und dem
+// DER TON DES BANDS (w25-ferne-licht-6, K1-2 FARBTON): der Abstand der Farbtöne zwischen dem Mittel der Pixel mit Luft und dem
 // Mittel der In-Streuung über das Band (`paare` je Pixel [L, S], linear), nie der Median der Töne je Pixel. Die In-Streuung trägt
-// bei 8 km 4–13 Stufen Buntheit (8 bit): eine Stufe drehte den Ton je Pixel um 5–15°, zwei Läufe derselben Welt gaben 6,0 gegen
-// 12,3° (swiftshader, Genesis); das Mittel über das Band löst unter der Stufe auf.
+// bei 8 km 4–13 Stufen Buntheit (8 bit): eine Stufe dreht den Ton eines Pixels um 5–15°, der Median der Beträge sitzt darum über
+// der Wahrheit (Selbsttest: Wahrheit 7,14°, je Pixel 20°, das Band 6,07°); das Mittel über das Band löst unter der Stufe auf.
+// Genesis 8 km, Uhr 0,5, swiftshader: je Pixel 6 · 10,23 · 2,7 · 7,5° → Band 5,71 · 8,94 · 2,78 · 6,76°, zwei Läufe gleich.
 function farbTon([r, g, b]) {
     const [hi, d] = [Math.max(r, g, b), Math.max(r, g, b) - Math.min(r, g, b)];
     return d > 0 ? 60 * (hi === r ? ((g - b) / d + 6) % 6 : hi === g ? (b - r) / d + 2 : (r - g) / d + 4) : 0;
