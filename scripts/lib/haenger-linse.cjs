@@ -698,50 +698,6 @@ function linseWerten(roh, spur, b) {
     return Object.assign(a, { befunde: haengerLinsenBefunde(a), tabelle: haengerTabelle(a) });
 }
 
-// DER TÄTER NACH DOMÄNE (`werkbank geh`, gate:geh-zerlegung): jeder Rahmen des Takts gehört der Domäne, die auf seinem Pfad
-// zuerst in der Reihe steht (die Bewohner im Takt-Planer sind Bewohner, die Kaskade über `_renderScene` ist Schatten); ohne Treffer
-// Rest. Je Domäne die SELBST-Zeit [ab p95, Mitte] in ms je Takt aus der Takt-Spitze `s` (`zeilen` in Tiefen-Reihe), je Hänger der
-// Hänger-Linse `a` die Domäne seiner Engstelle (GPU und GC behalten ihre Klasse), dazu DER BAUM: die oberste Ebene des Takts und
-// je Wurzel `teile` ihr Teilbaum bis Tiefe 4, inklusive ms ab p95/Mitte ab 0,8 ms — wohin die Zeit des Takts fließt.
-const DOMAENEN = [
-    ["Bewohner", /ewohner|_tickHausTueren/],
-    ["Verkehr", /erkehr|Wagen/],
-    ["Tiere", /reatur|Fauna|Herde/],
-    ["Schatten", /chatten|Kaskade|Shadow/],
-    ["Satz", /Satz|_satz/],
-    ["Bau", /_knotenRate|Architecture|AutoSettlement|Foundry|_foundry|_arch[A-Z]|_grundriss/],
-    ["Sicht", /Sicht/],
-    ["Leib", /Leib|_leib|_stepCharacter|kelett/],
-    ["Streaming", /_runFrameScheduler|Streaming|VoxelChunk|Scatter|Wiese|Streu|Wald|Saat|FernRing|WegeKarte|Water|Grass/],
-    ["Zeichnen", /render|Render/],
-];
-const domaeneVon = (namen) => (DOMAENEN.find(([, re]) => namen.some((n) => re.test(n))) || ["Rest"])[0];
-function domaenen(a, s, teile = /^_bewohner(Geburt|Liste|WerkTakt)|^tickArchitectureCulling|^_runFrameScheduler/) {
-    const [je, hJe, stapel, baum, r1] = [{}, {}, [], [], (x) => x.toFixed(1)];
-    s.zeilen.forEach((z, i) => {
-        stapel.length = z.tiefe;
-        stapel.push(z.name);
-        const d = (je[domaeneVon(stapel)] ||= [0, 0]);
-        let [sp, mi] = [z.spitzeMs, z.mitteMs];
-        for (let j = i + 1; j < s.zeilen.length && s.zeilen[j].tiefe > z.tiefe; j++)
-            if (s.zeilen[j].tiefe === z.tiefe + 1) [sp, mi] = [sp - s.zeilen[j].spitzeMs, mi - s.zeilen[j].mitteMs];
-        [d[0], d[1]] = [d[0] + Math.max(0, sp), d[1] + Math.max(0, mi)];
-        const w = stapel.findIndex((n) => teile.test(n));
-        if ((z.tiefe === 0 || (w >= 0 && z.tiefe - w <= 4)) && Math.max(z.spitzeMs, z.mitteMs) >= 0.8)
-            baum.push(`${"›".repeat(w < 0 ? 0 : z.tiefe - w)}${z.name.replace(/ \[[^\]]*\]/g, "").slice(0, 32)} ${r1(z.spitzeMs)}/${r1(z.mitteMs)}`);
-    });
-    for (const h of a.haenger || []) {
-        const d = /TAKT|NEBEN/.test(h.klasse) ? domaeneVon(h.pfad.map((p) => p.name).concat(h.name)) : h.klasse;
-        hJe[d] = (hJe[d] | 0) + 1;
-    }
-    const reihe = (o, f) => Object.entries(o).sort((x, y) => f(y[1]) - f(x[1]));
-    return {
-        baum,
-        jeDomaene: reihe(je, (v) => v[0]).map(([k, v]) => `${k} ${r1(v[0])}/${r1(v[1])}`).join(" · "),
-        haenger: reihe(hJe, (n) => n).map(([k, n]) => `${k} ${n}`).join(" "),
-    };
-}
-
 // DIE HALTER DER ANKUNFT (Pflicht-OFFEN B, die Kalt-Zeile `diag-boot-stage --kalt`): jede Aufgabe des Haupt-Fadens vor dem
 // ersten Weltbild über ANKUNFT_HALT_MS (die lange Aufgabe des Browsers, `longtask`) mit den Funktionen, die sie hielten, beim
 // Namen: je Aufgabe der Rahmen-Baum ihrer Stichproben (ohne die Hüllen, `rahmenBaum`), Halter ist der tiefste Rahmen, der in
@@ -1400,7 +1356,6 @@ module.exports = {
     latenzUrteil,
     latenzSelbsttest,
     linseWerten,
-    domaenen,
     spurProfil,
     selbsttest,
     HAENGER_INSTALL:
