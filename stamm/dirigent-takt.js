@@ -1904,6 +1904,21 @@ class AnazhRealm_dirigent_takt {
                 run: (ms) => this._bewohnerWerkTakt(ms),
             },
             {
+                name: "nahWiese",
+                // Welt-Substanz am Schirm (w24-wiese-ferne): die Wiese der Nähe und ihre Ferne bis 200 m sind, was das Bild um den
+                // Spieler trägt — jedes Bild ihr Boden unter der EINEN Frist der Bau-Arbeit, nach dem Boden wie die Deko
+                // (`_dekoWartet`). Als Deko bekam sie unter Last nur jedes 4. Bild 2,5 ms: im Start-Dorf mit 81 Leibern stand die
+                // Ferne erst nach 542 von 583 Takten (Null-Renderer, die Deko gedrosselt wie auf der Karte), an main 1561bf3a riss
+                // mensch.K1#1 „DIE WELT STEHT NICHT nach 765 Takten, nahWiese wartet“.
+                prio: 1,
+                run: (ms) => {
+                    if (this._dekoWartet()) return;
+                    const _nw = performance.now();
+                    this._tickNahWiese(Number.isFinite(ms) ? _nw + ms : undefined);
+                    this._perfSenseLap("nahWiese", _nw);
+                },
+            },
+            {
                 name: "scatterDeco",
                 prio: 2, // reine Optik — wartet, wenn das Terrain diesen Frame baute oder das Budget leer ist
                 run: (ms) => {
@@ -1934,7 +1949,6 @@ class AnazhRealm_dirigent_takt {
                     this._tickPendingGrass(lade ? Infinity : 1, lade ? _dl : undefined);
                     this._tickScatterRegrow(this._weltStunde());
                     this._tickLebenStufen();
-                    this._tickNahWiese(_dl);
                     this._tickNahStreu(_dl);
                     this._perfSenseLap("scatter", _sct);
                     const nowTiles = performance.now();
