@@ -1,3 +1,0 @@
-✅ Alle Invarianten OK
-EXIT=0
-5017

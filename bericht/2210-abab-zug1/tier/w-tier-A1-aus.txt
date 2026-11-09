@@ -1,4 +1,0 @@
-{
- "ergebnis": true,
- "ms": 2
-}

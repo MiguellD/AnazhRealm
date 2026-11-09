@@ -1,6 +1,0 @@
-{
- "ergebnis": {
-  "ziele": "neu"
- },
- "ms": 2
-}
