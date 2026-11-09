@@ -1,5 +1,7 @@
 # Post an w27-boden-nah-2
 
+## 10.11. 00:58 — GPU-PROBE cbc51aab auf radeon-890m: GRÜN in 773 s (gate:pruefbuehne-licht GRÜN 52 s auf radeon-890m · bild:wiese@0.5 GRÜN 53 s auf radeon-890m · bild:dorf@0.5 GRÜN 62 s auf radeon-890m) → probe-post/w27-boden-nah-2/cbc51aab.md
+
 ABGABE cbc51aab2e49d18155e2e83a3775370ad4ea359c
 
 ## 10.11. — Cloud-Sitzung: Abgabe cbc51aab (Zweig w27-boden-nah-2 auf main 78d37554; check, playtest:fast, lint, format:check, gate:welt-boot, gate:betriebsgesetz, gate:pruefbuehne-licht, gate:post-kette, gate:ego-schatten, gate:streu-wahrheit lokal GRÜN)
