@@ -329,6 +329,33 @@ function grenzeWand(A) {
     });
 }
 
+// P-WACHS — DIE KACHEL WÄCHST (w26-fahrt-planer) an der echten Klasse: baut eine stehende Kachel der Ferne neu, weil das Auge
+// ihren Anteil überholte (`_nahWieseFernKachel` mit `alt`), trägt sie dieselben Büschel, Grenzen und Matrizen wie der Bau aus
+// dem Nichts — wachsend (0,3 → 0,6) und schrumpfend (0,3 → 0,2), eine ihrer Kacheln der Nähe steht —, und sie fragt das Feld nur
+// für ihre Scheibe: die Fragen des Wachsens und des Baus bis zum alten Anteil sind die des ganzen Baus (`_bodenSichtAt`
+// gezählt). Bis hier zog jeder Neubau jedes Büschel neu (an main fragt das Wachsen das ganze Feld).
+function wachsWand(A) {
+    const G = A.constructor("return globalThis")();
+    const vl = { fuss: 0.52, flat: {}, fern: [{ lokal: new G.THREE.Matrix4() }] };
+    const w = weltVon(A, { nahWiese: { kacheln: new Map(), vorlagen: new Map([["0:L2", vl], ["1:L2", vl]]), reich: 0.775, fern: { gitter: new Map(), kacheln: new Map() } }, worldMeta: { erdbau: { haus: [] } } }); // prettier-ignore
+    let n = 0;
+    const hoehe = (x, z) => 0.05 * x + 2 * Math.sin(z / 9);
+    Object.assign(w, { _bodenSichtAt: (x, z, aus) => (n++, aus && (aus.gruen = 1), hoehe(x, z)), _pfadFeldAt: (x, z) => +(Math.abs(z + 30) < 2), _bodenSichtChunks: (...r) => A._wieseKarten(r), _feuchteAt: () => 0.4 }); // prettier-ignore
+    const bau = (a, alt = null) => ((n = 0), [w._nahWieseFernKachel(-3, -3, a, 0.775, undefined, 0, alt), n]);
+    const gleich = (a, b) => a.bueschel.length === b.bueschel.length && a.bueschel.every((x, i) => x.x === b.bueschel[i].x && x.z === b.bueschel[i].z && x.o === b.bueschel[i].o) && [a.grenze, a.basis].every((f, i) => f.length === [b.grenze, b.basis][i].length && f.every((v, j) => Object.is(v, [b.grenze, b.basis][i][j]))); // prettier-ignore
+    try {
+        w.state.nahWiese.kacheln.set("-6,-6", { bueschel: w._nahWieseKachelBueschel(-6, -6, 1) });
+        bau(0.3); // die Gitter des Felds
+        const [[k1, nAb], [k2, nVoll]] = [bau(0.3), bau(0.6)];
+        const [k2w, nWachs] = bau(0.6, k1);
+        const [k3, k3w] = [bau(0.2)[0], bau(0.2, k1)[0]];
+        const f = [!gleich(k2, k2w) && "wachsend nicht der Bau aus dem Nichts", !gleich(k3, k3w) && "schrumpfend nicht der Bau aus dem Nichts", nAb + nWachs !== nVoll && `die Scheibe fragt ${nWachs} statt ${nVoll - nAb} (das ganze Feld ${nVoll})`, !(k2.bueschel.length > k1.bueschel.length) && "ohne Scheibe"]; // prettier-ignore
+        return f.filter(Boolean).map((t) => `P-Wachs: ${t}`);
+    } catch (e) {
+        return [`P-Wachs: ${e.message}`];
+    }
+}
+
 // eine Zensus-Zeile der Selbsttests (je Klasse Befehle und Dreiecke des Haupt-Passes)
 const zensusZeile = (klasse, haupt, tris, stufe = null, art = null) => ({ klasse, stufe, art, je: { haupt }, jeTris: { haupt: tris } });
 
@@ -1149,6 +1176,14 @@ function selbsttest() {
             ["_wieseSchaleDaten", "if (haus && Gb", "if (0 && Gb", "haus: Karte"],
         ].filter(([g, a, b, x]) => !grenzeWand(klasseVon(stammLib.ersetze(st, g, a, b))).some((e) => e.includes(x)));
         t(`Grenze der Ferne: je Glied ein Mutant rot ${grenzeWand(A)}${stillG.map((m) => " — still " + m)}`, !grenzeWand(A).length && !stillG.length); // prettier-ignore
+        // P-WACHS (w26-fahrt-planer): die wachsende Kachel der Ferne — die alten Büschel doppelt, die Scheibe über das ganze Feld,
+        // die Grenzen der Scheibe vergessen: je ein Mutant rot
+        const stillW = [
+            ["_nahWieseFernKachel", "if (x.o >= ab) bueschel.push(x);", "bueschel.push(x);", "nicht der Bau"],
+            ["_nahWieseKachelBueschel", "if (o >= anteil || o < ab) continue;", "if (o >= anteil) continue;", "die Scheibe fragt"],
+            ["_nahWieseFernKachel", "grenze.set(G.grenze, m);", "", "nicht der Bau"],
+        ].filter(([g, a, b, x]) => !wachsWand(klasseVon(stammLib.ersetze(st, g, a, b))).some((e) => e.includes(x)));
+        t(`Die Kachel der Ferne wächst: je Glied ein Mutant rot ${wachsWand(A)}${stillW.map((m) => " — still " + m)}`, !wachsWand(A).length && !stillW.length); // prettier-ignore
         // S31 — DIE DECKUNG DER FERNE (P-Ferne): das Gesetz hält Deckung und Schirm, das vor w10-wiese (die Deckung fällt ab
         // 21 m mit d^−1,5) reißt beide — der veränderte Stamm als Klasse geladen
         const alt = ferneWand(klasseVon(stammLib.ersetze(st, [["NAH_WIESE", "voll: 40,", "voll: 21,"], ["NAH_WIESE", "fall: 3.25,", "fall: 1.5,"]])));
@@ -1319,6 +1354,7 @@ function main() {
     // P-Ferne — die Deckung der Ferne der Nah-Wiese über die festen Ringe und der Schirm (vegetation.K1)
     errs.push(...ferneWand(A).errs);
     errs.push(...grenzeWand(A)); // P-Grenze — die Grenze der Streckung der Ferne (w21-wiese-fern)
+    errs.push(...wachsWand(A)); // P-Wachs — die wachsende Kachel der Ferne (w26-fahrt-planer)
     // Die Zeile nahWiese (Pflicht seit der Integration V18.538: Gras-Zeile und Gestalten der Nah-Wiese stehen im Kern).
     const nwB = zs.nahWiese;
     if (!nwB || !Array.isArray(nwB.zeilen) || !nwB.zeilen.length)

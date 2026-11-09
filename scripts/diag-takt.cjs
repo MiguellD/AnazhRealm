@@ -33,7 +33,8 @@
 //       EINE, und der Planer gibt seinem Job 0 ms. Bis hier trug jeder seine eigene Uhr (headless GT-Fahrt Genesis:
 //       `_runFrameScheduler` 71,5 ms in EINEM Takt). Der Satz der Bauten (w25-stadt-takt-2) legt abgelaufen EIN Stück
 //       (BAU_SATZ_STUECK) seiner Raten und seines Alters — bis dahin je Takt seinen eigenen Deckel von 8 192 Ecken NEBEN der Frist
-//       (GTX, Messort stadt, erster Gang: `_tickBauSatz` 5,3 ms in der Takt-Mitte).
+//       (GTX, Messort stadt, erster Gang: `_tickBauSatz` 5,3 ms in der Takt-Mitte). Die Ferne der Wiese (w26-fahrt-planer) geht
+//       abgelaufen EINEN Versuch, ob die Kachel steht oder wartet — bis dahin zählte nur die gebaute (zwölf scheiternde: zwölf).
 //   T13 DIE ALTERUNG DER FRIST (w19-gang-hitch, Nacharbeit): hinter einem Strom, der die Frist in jedem Takt leert, bekommt jeder
 //       Bauer reihum Budget (Vortritt nach BAU_ALTER_TAKTE Takten nur mit dem Pflicht-Stück), und der Takt bleibt in ihr — sonst
 //       verhungerte der Wald (`waldPlan` 0 ms, CI z289 · z292 · z293: die Welt stand an der Wiese nie).
@@ -309,6 +310,17 @@ hauptLauf(async () => {
                         r._dispatchFrameJobs([{ prio: 1, run: (ms) => (aus9.planer = ms) }, ...r._buildDeferrableJobs(st.playerMesh.position).filter((j) => j.name === "bewohner")], { remainingMs: () => 50 }); // prettier-ignore
                         AnazhRealm.prototype._pruneDistantVoxelChunks.call(r, { x: 1e5, z: 0 });
                         r._tickHuellenNach();
+                        // DIE FERNE DER WIESE (w26-fahrt-planer): zwölf Kacheln, deren Bau scheitert (das Gitter verweigert nach der Frist)
+                        // — abgelaufen EIN Versuch; bis dahin zählte nur die gebaute Kachel, der Takt ging die ganze Bau-Liste
+                        const [nwAlt, zw] = [st.nahWiese, leihe(r, { _nahKachelWartet: () => false, _wieseFernLage: () => ({}), _nahWieseFernKachel: () => (aus9.wiese++, null), _wieseAuge: () => ({ x: 0, y: 0, z: 0, h: 1.5 }), _standStempel: () => 0 })]; // prettier-ignore
+                        try {
+                            const pz = st.lastPlayerVoxelChunk;
+                            st.nahWiese = { kacheln: new Map(), fern: { kacheln: new Map(), gitter: new Map(), bau: zwoelf.map((i) => ({ key: i + ",0", fx: i, fz: 0, d: 100 })), pruef: [0, r._karteRegung | 0, 1, pz ? pz.cx + "," + pz.cz : "", 0, 0, 1.5].join("|") } }; // prettier-ignore
+                            [aus9.wiese, uhr] = [0, uhr + 1];
+                            r._nahWieseFernTakt({ x: 0, y: 0, z: 0 }, uhr + Math.max(0, r._bauFrist("nahWiese") - uhr), 1);
+                        } finally {
+                            [st.nahWiese] = [nwAlt, zw()];
+                        }
                         // DER SATZ (w25-stadt-takt-2): drei Raten zu je vier Stücken, das Alter einer Gruppe von acht — bis dahin legte er je
                         // Takt seinen eigenen Deckel (8 192 Ecken)
                         const g = { key: 9, satz: 9, liveCount: 1, mesh: { instanceMatrix: {} } };
@@ -317,7 +329,7 @@ hauptLauf(async () => {
                         r._tickBauSatz();
                         aus9.raten = aus9.satz;
                         r._satzAltern();
-                        aus9.bau12 = [aus9.planer, strom(1e9, 1e9), pflanz() && r._tickPendingVegSpawns(8), aus9.abschied, 12 - r._huellenNach.size, werk.n, aus9.raten, aus9.satz - aus9.raten]; // prettier-ignore
+                        aus9.bau12 = [aus9.planer, strom(1e9, 1e9), pflanz() && r._tickPendingVegSpawns(8), aus9.abschied, 12 - r._huellenNach.size, werk.n, aus9.raten, aus9.satz - aus9.raten, aus9.wiese]; // prettier-ignore
                         // T13 — DIE ALTERUNG: der Strom leert die Frist je Takt, wer Budget bekommt, nutzt es ganz; der längste Hunger je
                         // Bauer steht im Hauptbuch des Gesetzes (`_bauHunger`). Der Selbsttest: ohne Alterung
                         AnazhRealm.BAU_ALTER_TAKTE = selbst ? 1e9 : alter;
@@ -447,7 +459,7 @@ hauptLauf(async () => {
     const T9 = !Object.values(frist).includes(false) && gang;
     const z9 = `${Object.keys(frist)}, Nah-Gang je ${[t9.pflanz, t9.ort, t9.dorf, t9.bau, t9.laub, t9.strom, t9.stromGleich, t9.stromMs, t9.stromMsGleich, t9.ring, t9.ringSoll, t9.fern, t9.fernKappe, t9.gleicherFrame, t9.ortAufgabe, t9.gang]}`; // prettier-ignore
     // T12 je Bauer beim Namen: abgelaufen sein erstes Stück (der Planer gibt seinem Job 0 ms)
-    const N12 = "_dispatchFrameJobs _tickVoxelChunkStreaming _pflanzGang _pruneDistantVoxelChunks _tickHuellenNach _bewohnerWerkTakt _tickBauSatz _satzAltern".split(" "); // prettier-ignore
+    const N12 = "_dispatchFrameJobs _tickVoxelChunkStreaming _pflanzGang _pruneDistantVoxelChunks _tickHuellenNach _bewohnerWerkTakt _tickBauSatz _satzAltern _nahWieseFernTakt".split(" "); // prettier-ignore
     const n12 = N12.filter((k, i) => (t9.bau12[i] === +!!i) === SELBST);
     // T13 je Bauer beim Namen: wer hinter dem Strom 6 Takte in Folge kein Budget bekam, verhungert
     const n13 = ["waldPlan", "karte", "streuLod"].filter((k) => (t9.satt13[k] < 6) === SELBST);
