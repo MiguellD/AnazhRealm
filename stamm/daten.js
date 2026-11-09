@@ -624,6 +624,13 @@ class AnazhRealm_daten {
     // `halmSchatten` 0,4 (0,044/0,081/0,0125, B/G 0,15 — der Hand-Faktor auf dem Hex der Absicht); davor stand die ferne Wiese
     // mit dem Mittel des einzelnen Halms auf 0,56–0,73 der In-Streuung und trug ihr Gelbgrün durch die Luft (8 km 12,7–25,5°). Als
     // Spektrum (GTX 1050 58b780c4): 8 km Uhr 0,5 je Azimut 2,75 · 2,22 · 1,83 · 1,33°, Uhr 0,27 0,17–3°.
+    // DIE WACHE LIEST DIE DECKUNG, NIE DEN TON (w26-ferne-ton-4): `deckung` je Boden-Klasse ist der Stoff, der die Narbe trägt
+    // (Kern `BODEN_DECKUNG`); `_bodenFarbeAt` und der Faden mischen sie mit den Gewichten der Farbe, der Fels-Stoff nimmt sie am
+    // Hang, im Schutt und in der Höhle (gelaende-core `felsStoff`), die Boden-Karte trägt sie als Grün-Kanal (`bodenKarte`) —
+    // Farbe, Halm, Haftung, Huf und Schritt lesen sie. `schwelle` (Einheit: Deckung) ist die Wache smoothstep(0, schwelle, d):
+    // ab 0,6 Deckung ist die Narbe geschlossen — die Breite der Wache, die bis hierher der Ton trug (gruenSchwelle 0,04 über dem
+    // Grün 0,065 des Wiesen-Grunds 0x55632f). Bis hierher rechnete die Wache g − (r+b)/2 aus der Farbe: der Ton 0x3e5026 senkte
+    // das Grün auf 0,046, und die Welt änderte ihr Verhalten (z347: Wagen 1,23 m tief, K7, Graben leer, Fahr-Linse K8/S1).
     static get WIESEN_GRUND() {
         const mg = AnazhRealm.MEADOW_GREEN;
         const sp = AnazhRealm.GRAS_SPITZE;
@@ -631,12 +638,16 @@ class AnazhRealm_daten {
         const H = AnazhRealm.Gesetz("terrain:HALM_FARBE", null);
         if (!H || !Array.isArray(H.bestand) || !H.bestand.every(Number.isFinite))
             AnazhRealm._kernPflichtBruch("terrain:HALM_FARBE.bestand");
+        const D = AnazhRealm.Gesetz("terrain:BODEN_DECKUNG", null);
+        const klassen = ["rock", "mead", "wet", "flechte", "basalt", "schnee", "sediment", "sand", "dirt"];
+        if (!D || !klassen.every((k) => Number.isFinite(D[k]))) AnazhRealm._kernPflichtBruch("terrain:BODEN_DECKUNG");
         return this._einmal(
             "WIESEN_GRUND",
             Object.freeze({
                 halmMittel: Object.freeze(halm),
                 farbe: Object.freeze(H.bestand.slice()),
-                schwelle: AnazhRealm.TERRAIN_GEOLOGY.gruenSchwelle,
+                deckung: Object.freeze(Object.fromEntries(klassen.map((k) => [k, D[k]]))),
+                schwelle: 0.6,
                 rauschM: 1 / 0.13,
             })
         );
@@ -666,8 +677,9 @@ class AnazhRealm_daten {
     // 0.29 ≈ 45°, 0.5 = 60°, 1 senkrecht. Das Profil ist konservativ (nur echte Hänge versteinern).
     static get TERRAIN_GEOLOGY() {
         // Fels- und Moos-Tint SIND die Boden-Palette (rock · wet). Die Schwellen sind linear (der Vertex trägt
-        // seit dem Farb-Gesetz die Albedo): `gruenSchwelle` ist die EINE Wiesen-Wache (g − (r+b)/2), die das
-        // Boden-Fragment UND der Grün-Kanal der Boden-Karte lesen (Wiese 0,066, Streu und Fels < 0).
+        // seit dem Farb-Gesetz die Albedo): `gruenSchwelle` ist die Wache des Boden-Fragments über der Albedo (g − (r+b)/2:
+        // Halm-Relief, Moos, Narbe des Bilds). Der Grün-Kanal der Boden-Karte liest sie nicht mehr: er trägt die Deckung des
+        // Stoffs (`WIESEN_GRUND.deckung` · `schwelle`, w26-ferne-ton-4).
         const P = AnazhRealm.BODEN_FARBE;
         return this._einmal(
             "TERRAIN_GEOLOGY",
@@ -683,7 +695,7 @@ class AnazhRealm_daten {
                 schuttGitter: 5.4,
                 schutt: 0.85,
                 mossTint: P.wet, // das Moos des Bodens ist der nasse Grund der Palette
-                gruenSchwelle: 0.04, // die Wiesen-Wache: smoothstep(0, gruenSchwelle, g − (r+b)/2)
+                gruenSchwelle: 0.04, // die Wache des Fragments: smoothstep(0, gruenSchwelle, g − (r+b)/2) der Albedo
                 mossDampLo: 0.05, // unter dieser linearen Luminanz = „feucht/Niederung" (nasser Grund 0,042)
                 mossDampHi: 0.09, //   (Wiese 0,10, beschattete Streu 0,086 — die Feuchte lebt im Vertex)
                 mossMax: 0.6, // Deckel der Moos-Übernahme (kein uniformer Teppich)

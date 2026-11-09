@@ -1098,11 +1098,14 @@ async function wasserUferFarbe(o = {}) {
             const pos = new Float32Array(m.positions),
                 col = new Float32Array(m.colors);
             const soll = new Float32Array(pos.length);
+            // die Deckung des Stoffs je Vertex (w26-ferne-ton-4): der Fels-Stoff nimmt sie mit der Farbe
+            const [deck, A] = [new Float32Array(pos.length / 3), { deckung: 0 }];
             for (let i = 0; i < pos.length; i += 3) {
-                r._bodenFarbeAt(pos[i], pos[i + 1], pos[i + 2], c);
+                r._bodenFarbeAt(pos[i], pos[i + 1], pos[i + 2], c, A);
                 soll[i] = c[0];
                 soll[i + 1] = c[1];
                 soll[i + 2] = c[2];
+                deck[i / 3] = A.deckung;
             }
             const spalte = soll.slice();
             const g = new T.BufferGeometry();
@@ -1111,6 +1114,7 @@ async function wasserUferFarbe(o = {}) {
             g.setAttribute("aHimmel", new T.BufferAttribute(new Float32Array(m.himmel), 1));
             g.setAttribute("color", new T.BufferAttribute(soll, 3));
             g.setIndex(new T.BufferAttribute(new Uint32Array(m.indices), 1));
+            g.userData.deckung = deck;
             r._felsStoff(g);
             for (let i = 0; i < pos.length; i += 3) {
                 vertices++;

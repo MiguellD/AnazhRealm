@@ -184,6 +184,16 @@ const PORTAL_GROUND = {
     // Wiese 0,04–0,08, Jin & Roy 2005)
     asche: 0x45403a,
 };
+// DIE DECKUNG DES BODENS (w26-ferne-ton-4, additiv): je Klasse der Boden-Palette, wie weit ihr STOFF eine Grasnarbe trägt
+// (0 … 1) — das Substrat der Wiese, nie ihre Farbe. Die Welt mischt sie mit DENSELBEN Gewichten wie die Farbe (`_bodenFarbeAt`,
+// der Faden `bodenFarbe`), der Fels-Stoff nimmt sie, wo der Hang, der Schutt oder die Höhle Fels sagt (gelaende-core
+// `felsStoff`); Licht und Feuchte wirken im Gesetz der Bodenschicht (`groundCover`: feuchter Grund trägt MEHR Gras). Die Erde
+// trägt die Narbe — `mead` die lebendige Erde, `wet` der nasse Grund (die Feuchtwiese); Fels, Flechte auf Stein, Glut-Gestein,
+// Schnee, der Schlick unter Wasser, der Strand und die getretene Erde des Pfads tragen keine. Der Magie-AKZENT färbt, er deckt
+// nicht (ohne Eintrag: die Deckung des Grunds bleibt). Bis hierher las die Welt die Narbe aus dem Ton (g − (r+b)/2 der Farbe):
+// der Strand trug 0,61 einer Wiese, die Flechte 1,45, ein Ton der Palette (mead 0x55632f → 0x3e5026) senkte das Grün der Wiese
+// von 0,065 auf 0,046 und mit ihm die Haftung des Rads und den Wuchs der Nah-Wiese.
+const BODEN_DECKUNG = Object.freeze({ mead: 1, wet: 1, rock: 0, flechte: 0, basalt: 0, schnee: 0, sediment: 0, sand: 0, dirt: 0 });
 
 const PORTAL_SKY = {
     top: 0x6a9ed0, // Mittags-Himmel-Top (weiches Dunst-Blau)
@@ -9540,6 +9550,8 @@ __terrainCore.PHYTO_PRESETS = PRESETS;
 // additiv): der Voxel-Worker faerbt jeden Chunk-Vertex mit ihr, darum muss sie VOR dem ersten Chunk feststehen —
 // der async Buch-Umschlag (get-book) kam zu spaet und trug nur vier ihrer Werte.
 __terrainCore.PORTAL_GROUND = PORTAL_GROUND;
+// DIE DECKUNG DES BODENS reist mit (w26-ferne-ton-4, rein additiv): die Welt mischt die Narbe aus dem Stoff, nie aus dem Ton.
+__terrainCore.BODEN_DECKUNG = BODEN_DECKUNG;
 // DIE FARBE DES HALMS aus dem Spektrum (FARB_SPEKTRUM) reist mit: die Halme der Welt lesen dieselbe Spitze wie emitGrass.
 __terrainCore.HALM_FARBE = HALM_FARBE;
 // DAS KRONENDACH der Ferne aus dem Spektrum reist mit: der Stamm färbt den fernen Wald je Art daraus (`_fernLaubLinear`).
