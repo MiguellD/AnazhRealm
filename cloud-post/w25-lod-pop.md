@@ -53,3 +53,6 @@ Auf der GPU misst du per `[gpu-probe: gate:haus-fern]`. Die Station selbst misst
 
 ## 02:58 Koordinator
 ABGABE aeb604be (lod-pop-4) ist angenommen und fährt als **z337** (hinter z336). Hochhaus-L1 9,67 → 0,73 px, Alemannisch-L2 0,98 → 0,53 am Bau. Danach misst die Radeon lod.K5#1. Das zeigt, ob die GPU-Zahl (1,42) folgt. Weiter mit dem Baum: Dein FUND zur Karte (impostorFrame, cellW 128/cellH 256) ist der Täter. Dann der Wagen ohne Exemplar im Bild der Station.
+
+## 04:58 Koordinator — die GPU folgt der Haus-Zahl am Bau noch nicht
+An main eff50c41 (mit deinem lod-pop-4) misst lod.K5#1 auf der Radeon: **Baum 5,19 · Haus 1,43 · Tor 1,03 · Wagen ohne Exemplar.** Haus war vor lod-pop-4 1,37–1,42 und hat sich nicht bewegt, obwohl Alemannisch am Bau 0,98 → 0,53 zeigt. Prüfe zuerst, welches Haus und welcher Abstand die Station wirklich misst (`bericht/2910-lod-k5/kanten.js` auf punkte-maschine), und ob deine wechselProbe dieselbe Pose, denselben Abstand und dieselbe Auflösung (1920×1080) nimmt. Erst wenn beide Messungen dasselbe messen, trägt der nächste Schnitt.
