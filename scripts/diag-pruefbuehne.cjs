@@ -820,7 +820,7 @@ const S0_TON = { hue: [28, 45], satMax: 0.75, palette: { hex: 0xff7a35, nacht: 1
 // DAS LICHT ADDIERT LINEAR (F1, die Foto-Kette): mit minus ohne Feuer je Kanal im LINEAREN Licht der Ausgabe (sRGB entschlüsselt),
 // der Rest wieder in sRGB — unter der Tonkurve Khronos PBR Neutral (linear bis zur Schulter, der Schwarzpunkt fällt in der
 // Differenz) ist das das Licht des Feuers auf dem Boden (die Differenz der sRGB-Werte zöge die Nacht nichtlinear ab).
-const { srgbLin: s0Lin, linSrgb: s0Srgb } = require("./lib/abnahme-urteil.cjs");
+const { srgbLin: s0Lin, linSrgb: s0Srgb, luma709 } = require("./lib/abnahme-urteil.cjs");
 function s0TonNetto(e, ohne) {
     if (!e || !e.ton || !ohne || !ohne.ton) return null;
     const [R, G, B] = e.ton.rgb.map((c, i) => s0Srgb(Math.max(0, s0Lin(c) - s0Lin(ohne.ton.rgb[i]))));
@@ -1668,6 +1668,9 @@ hauptLauf(async () => {
     await server.lausche(PORT);
     const browser = await starteBrowser({ art: "standard", frist: 900000 });
     const page = await browser.newPage();
+    // Die Proben der Seite (S0 `s0Probe`) lesen die EINE Leuchtdichte (abnahme-urteil `luma709`) — der Licht-Lauf trägt sie mit
+    // AUSGABE_INSTALL, der Hauptlauf legt sie hier vor jedem Dokument in die Seite (jede Bühne kommt frisch durch die Tür).
+    await page.evaluateOnNewDocument(`window.luma709 = ${luma709};`);
     await page.evaluateOnNewDocument(() => {
         window.__anazhHeadlessNullRenderer = true;
         // DER STOFF-ZENSUS: jeder direkt beleuchtete Stoff der Szene (Standard, Physical, Lambert, Phong, Toon — Basic
