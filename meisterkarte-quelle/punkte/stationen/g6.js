@@ -1859,7 +1859,12 @@ const PB_PROBEN_DAUER = [
 // DIE DECKEL NACH IHRER MESSUNG (w4-fehlt-acht, Radeon eich3–6 4f098fa6 … 1f17e7d1 am selben Abdruck): glaette 27,6 · 27,0 · 27,0 · 28,8 s
 // → 29 s, dauer 36,0 · 22,8 · 29,4 · 30,6 s → 37 s (die Messung trägt Minuten auf zwei Stellen: 36,0 heißt bis 36,3 s; vorher je
 // 45 s); gang ungemessen (die Fahrt kam nie zu ihm) — 64 s
-const PB_PROBE_GLAETTE = { sek: 29, stellung: "anfang", befehl: pbBefehl("glaette") };
+const PB_PROBE_GLAETTE = {
+    sek: 90,
+    stellung: "anfang",
+    ausnahme: "die Glätte unter der eigenen Uhr: je Zelle der Tafel ein Fenster mit Spur in beiden Sichten (Radeon 27,0–38,5 s; GTX 77265b04 und 87537d3f am 45-s-Deckel gerissen)",
+    befehl: pbBefehl("glaette"),
+};
 const PB_PROBE_GANG = { sek: PB_GANG_SEK, mutiert: true, ausnahme: PB_AUSNAHME_GANG, befehl: pbBefehl("gang") };
 const PB_PROBE_DAUER = { sek: 23, stellung: "ende", befehl: pbBefehl("dauer") };
 

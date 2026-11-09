@@ -38,7 +38,7 @@
 //   node punkte.cjs grundprobe --baum <Spiel-Baum> [--mutante <zeile>] [--port P]   (Null-Renderer) die Grundstellung der Sitzung
 //        an einer Welt des Baums: Grund → graben, bauen, Ritt, Uhr, Brand, Regen, Ort-Takt → zurück, keine Größe weicht ab; die
 //        Mutante (ein Wort der GRUND_TAFEL schweigt) ist ROT beim Namen
-//   node punkte.cjs eichtafel --geraet radeon|gtx [--sha a,b] [--schreibe]   je Lauf der Sitzung: sein Deckel, das p90 seiner jüngsten
+//   node punkte.cjs eichtafel --geraet radeon|gtx [--sha a,b] [--schreibe [--nur id,id]]   je Lauf der Sitzung: sein Deckel, das p90 seiner jüngsten
 //        Läufe aus ALLEN Mess-Dateien der Karte und der Deckel daraus (eichTafel), dazu Σ heute ↔ aus den Zahlen und die Teile der Fahrt;
 //        --sha: je Mess-Datei die Stationen, die am Deckel rissen, vorher ↔ am Deckel der Tafel; --schreibe legt jeden Deckel als Deckel
 //        DIESER Karte in die Deckel-Tafel (deckel.json, probeSek) — nur, wenn die Stationen danach halten
@@ -1187,7 +1187,10 @@ function fremdBericht(f, t1, taktMs, blindGrund, eich = FREMD_HIER) {
 const fremdNamen = (b) => (b.namen || []).slice(0, 3).map(([n, s]) => n + " " + fz1(s) + " CPU-s").join(" · ");
 // DAS URTEIL DER FREMD-LAST über ein Ergebnis der Station st (fahreGruppe): der Bericht steht in jedem Eintrag; an einer Zeit-Station
 // über der Schwelle (oder mit blindem Zeugen) UNGEMESSEN beim Namen — der Grund eines Abbruchs (brachAb) bleibt vorn, die Sitzung
-// liest ihn
+// liest ihn. GRÜN TROTZ LAST (Schöpfer 09.11. „1 Punkt in 12 h“): fremde Last nimmt einer Zeit-Station Rechenzeit, sie macht sie nie
+// schneller — ein GRÜN neben Last (oder neben einem blinden Zeugen) ist in Ruhe erst recht GRÜN und zählt, mit der Last im Grund.
+// Nur ein ROT (oder ein Abbruch) neben Last ist UNGEMESSEN: dort könnte die Last der Täter sein. Gemessen 09.11.: die Claude-App
+// trägt auf der Radeon 2–4 fremde Kerne, neben ihr urteilte keine Zeit-Station (20 Kriterien auf 0 standen UNGEMESSEN).
 function fremdUrteil(st, e, b) {
     const mit = { ...e, fremd: b };
     if (st.zeit !== true || e.ungemessen) return mit;
@@ -1196,6 +1199,7 @@ function fremdUrteil(st, e, b) {
     const was = b.blind ? "Fremd-Last: der Zeuge ist blind (" + b.blind + ") — Ruhe unbezeugt"
         : "Fremd-Last: " + fremdNamen(b) + " — " + fz2(b.fensterKerne) + " Kerne fremd im dichtesten " + FREMD_FENSTER_S + "-s-Fenster (Schwelle " +
             fz2(b.schwelle) + ", " + b.eich + "; Σ fremd " + fz1(b.fremdS) + " CPU-s in " + fz1(b.s) + " s)";
+    if (e.gruen === true && !brachAb([e])) return { ...mit, grund: (e.grund ? e.grund + " · " : "") + "GRÜN trotz " + was };
     const grund = (brachAb([e]) ? e.grund + " · " : "") + was + " — kein Urteil, UNGEMESSEN (die Probe sah: " + String(e.zahl).slice(0, 240) + ")";
     return { ...mit, gruen: false, ungemessen: true, grund, zahl: grund };
 }
@@ -2583,7 +2587,14 @@ function gerissenVorNach(t, m) {
 function eichtafelCli(o) {
     if (!["radeon", "gtx"].includes(o.geraet)) throw new Error("--geraet radeon|gtx (die Deckel-Tafel trägt die Sitzung einer Karte)");
     const ms = ladeMessungen();
-    const t = eichTafel(ladeGeprueft().stationen, ms, o.geraet);
+    // DIE STATIONEN DER TAFEL (w26-deckel-klasse): jede, die mit der Deckel-Tafel ODER nach ihrem eigenen Gesetz (ohne Tafel) hält — eine
+    // Station, deren Gesetz sich änderte (tiere.K5#1: teile statt ausnahme, ihr Eintrag 90 s über dem Gesetz 45 s), fiel sonst aus der
+    // Tafel, und ihr alter Eintrag hielt sie ROT: der EINE Schreiber der Tafel heilt ihn aus den Zahlen
+    const mitTafel = ladeGeprueft().stationen, tafel = deckelVon();
+    deckelTafel = {};
+    const ohneTafel = ladeGeprueft().stationen;
+    deckelTafel = tafel;
+    const t = eichTafel([...mitTafel, ...ohneTafel.filter((st) => !mitTafel.some((x) => schluessel(x) === schluessel(st)))], ms, o.geraet);
     for (const z of t.zeilen)
         console.log("  " + z.ids.join("+") + " · Deckel " + z.sek + " s · " + (z.s == null ? "—" : "p90 " + (z.zensiert ? "≥ " : "") + z.s + " s aus " + z.n) +
             (z.neu != null ? " → " + z.neu + " s" : "") + " · " + z.urteil + (z.ortM ? " · Ort im Deckel " + z.ortM + " m" : ""));
@@ -2602,7 +2613,11 @@ function eichtafelCli(o) {
     if (o.schreibe) {
         const alt = deckelVon();
         const neu = JSON.parse(JSON.stringify(alt)), je = (neu[o.geraet] = neu[o.geraet] || {});
-        const n = t.zeilen.filter((z) => z.neu != null).reduce((a, z) => (z.ids.forEach((id) => (je[id] = z.neu)), a + z.ids.length), 0);
+        // --nur id,id: nur die Läufe dieser Stationen schreiben ihren Deckel aus den Zahlen (eine Karte, die eine Klasse heilt, ändert
+        // nie den Abdruck der übrigen — deren Deckel bleibt Byte für Byte)
+        const nur = o.nur ? new Set(String(o.nur).split(",")) : null;
+        if (nur) for (const id of nur) if (!t.zeilen.some((z) => z.ids.includes(id))) throw new Error("--nur " + id + ": kein Lauf der Sitzung auf " + o.geraet);
+        const n = t.zeilen.filter((z) => z.neu != null && (!nur || z.ids.some((id) => nur.has(id)))).reduce((a, z) => (z.ids.forEach((id) => (je[id] = z.neu)), a + z.ids.length), 0);
         neu[o.geraet] = Object.fromEntries(Object.entries(je).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)));
         deckelTafel = neu;
         const fehler = ladeGeprueft().fehler;
@@ -4562,17 +4577,21 @@ async function selbsttest(o = {}) {
         const zeugen = [];
         // die Attrappen urteilen am festen Rechner der ersten Eichung (dem Container, 0,3), nie an dem, der den Selbsttest fährt
         const mitZeuge = (n, quelle) => ({ ...ctx(n), zeuge: zeugen[zeugen.push(fremdZeuge({ quelle, taktMs: 300, wurzel: WZ, eich: FREMD_EICH[0] })) - 1] });
-        const unter = await fahreStation(zeitSt, mitZeuge("fremd-unter", attrappe(1.5)));
+        const rotSt = { ...zeitSt, befehl: [...zeitSt.befehl.slice(0, 4), "3"] };
+        const unter = await fahreStation(rotSt, mitZeuge("fremd-unter", attrappe(1.5)));
+        const unterGruen = await fahreStation(zeitSt, mitZeuge("fremd-unter-gruen", attrappe(1.5)));
         const still = await fahreStation(zeitSt, mitZeuge("fremd-still", attrappe(0)));
-        const stillRot = await fahreStation({ ...zeitSt, befehl: [...zeitSt.befehl.slice(0, 4), "3"] }, mitZeuge("fremd-still-rot", attrappe(0)));
+        const stillRot = await fahreStation(rotSt, mitZeuge("fremd-still-rot", attrappe(0)));
         const bild = await fahreStation({ ...zeitSt, zeit: false }, mitZeuge("fremd-bild", attrappe(1.5)));
-        const blind = await fahreStation(zeitSt, mitZeuge("fremd-blind", { blind: "kein Zeuge auf plan9", stop() {} }));
+        const blind = await fahreStation(rotSt, mitZeuge("fremd-blind", { blind: "kein Zeuge auf plan9", stop() {} }));
+        const blindGruen = await fahreStation(zeitSt, mitZeuge("fremd-blind-gruen", { blind: "kein Zeuge auf plan9", stop() {} }));
         const blindBild = await fahreStation({ ...zeitSt, zeit: false }, mitZeuge("fremd-blind-bild", { blind: "kein Zeuge auf plan9", stop() {} }));
         zeugen.forEach((z) => z.stop());
         const ab = fremdUrteil(zeitSt, { gruen: false, zahl: "n 0", grund: "Absturz: Signal SIGKILL · n 0" }, unter.fremd);
-        pruef("FREMD-LAST die Attrappe: playtest:fast 1,5 Kerne fremd neben einer Zeit-Station → UNGEMESSEN beim Namen; der Diener, der eigene Baum und der Erbe einer wiederbenutzten PID getrennt",
+        pruef("FREMD-LAST die Attrappe: playtest:fast 1,5 Kerne fremd neben einer ROTEN Zeit-Station → UNGEMESSEN beim Namen; dieselbe Last neben einer GRÜNEN → GRÜN trotz Last (die Last macht nie schneller); der Diener, der eigene Baum und der Erbe einer wiederbenutzten PID getrennt",
             unter.ungemessen === true && unter.gruen === false &&
-            /^Fremd-Last: node scripts\/playtest\.cjs --fast \d+,\d CPU-s · erbe\.exe --alt \d+,\d CPU-s — 1,70 Kerne fremd im dichtesten 10-s-Fenster \(Schwelle 0,30, linux, 4 Kerne \(Container\); .* — kein Urteil, UNGEMESSEN \(die Probe sah: n 0\)$/.test(unter.grund) &&
+            /^Fremd-Last: node scripts\/playtest\.cjs --fast \d+,\d CPU-s · erbe\.exe --alt \d+,\d CPU-s — 1,70 Kerne fremd im dichtesten 10-s-Fenster \(Schwelle 0,30, linux, 4 Kerne \(Container\); .* — kein Urteil, UNGEMESSEN \(die Probe sah: n 3\)$/.test(unter.grund) &&
+            unterGruen.gruen === true && !unterGruen.ungemessen && /GRÜN trotz Fremd-Last: node scripts\/playtest\.cjs --fast/.test(unterGruen.grund) &&
             unter.fremd.diener[0][0] === "dwm.exe" && unter.fremd.eigenS > unter.fremd.fremdS && !unter.fremd.namen.some(([n]) => /chrome|punkte\.cjs/.test(n)),
             JSON.stringify([unter.grund, unter.fremd]));
         pruef("FREMD-LAST ohne fremde Last urteilt die Zeit-Station wie heute (GRÜN, ROT), eine Bild-Station unter Last urteilt wie heute und trägt den Bericht",
@@ -4582,6 +4601,7 @@ async function selbsttest(o = {}) {
             JSON.stringify([still, stillRot, bild].map((x) => [x.gruen, !!x.ungemessen, x.grund || x.zahl, x.fremd.fensterKerne])));
         pruef("FREMD-LAST ein blinder Zeuge macht nur die Zeit-Station UNGEMESSEN beim Grund; ein Abbruch behält seinen Grund vorn (die Sitzung liest ihn)",
             blind.ungemessen === true && /^Fremd-Last: der Zeuge ist blind \(kein Zeuge auf plan9\) — Ruhe unbezeugt — kein Urteil, UNGEMESSEN/.test(blind.grund) &&
+            blindGruen.gruen === true && !blindGruen.ungemessen && /GRÜN trotz Fremd-Last: der Zeuge ist blind/.test(blindGruen.grund) &&
             blindBild.gruen === true && !blindBild.ungemessen && ab.ungemessen === true && brachAb([ab]) && /^Absturz: Signal SIGKILL · n 0 · Fremd-Last: node scripts/.test(ab.grund),
             JSON.stringify([blind.grund, blindBild.gruen, ab.grund]));
         // DER ECHTE ZEUGE: der Vermittler startet den Busy gelöst und endet (Linux: der Waise hängt an init; Windows: an einer toten PID,
@@ -4596,7 +4616,7 @@ async function selbsttest(o = {}) {
         const busyPid = Number(String(r.stdout).trim());
         const echtZ = fremdZeuge({ taktMs: 500 });
         await echtZ.bereit();
-        const echtUnter = await fahreStation(zeitSt, { ...ctx("fremd-echt"), zeuge: echtZ });
+        const echtUnter = await fahreStation(rotSt, { ...ctx("fremd-echt"), zeuge: echtZ });
         try { process.kill(busyPid); } catch (_e) {}
         const eigenSt = { ...zeitSt, befehl: ["node", "-e", "const t = Date.now() + 3000; while (Date.now() < t) {} require('fs').writeFileSync(process.argv[1], JSON.stringify({ n: 0 }))", "{AUS}", "punkte-fremdlast-eigen"] };
         const echtEigen = await fahreStation(eigenSt, { ...ctx("fremd-eigen"), zeuge: echtZ });

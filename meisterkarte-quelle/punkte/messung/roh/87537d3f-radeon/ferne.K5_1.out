@@ -1,0 +1,7 @@
+$ C:\Program Files\nodejs\node.exe scripts/werkbank.cjs licht --luft --wetter stormy --datei C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\87537d3f-radeon\ferne.K5_1.json
+
+✅ SELBSTTEST GRÜN — grauer β, Kante 21 %, Linie, leere Messung, Sicht 1800 m, Sprung 0,5 EV/s und der Ton je Pixel beim Namen ROT
+SICHT GRUEN · Sicht im Wetter stormy 1559 m (Soll 1500 ±15 %, 4 Azimute)
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3

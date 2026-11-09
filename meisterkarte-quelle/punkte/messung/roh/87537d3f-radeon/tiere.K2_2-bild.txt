@@ -1,0 +1,120 @@
+{
+ "ms": 660,
+ "kamera": [
+  57.75,
+  90.68,
+  2.47
+ ],
+ "hell": 78.5,
+ "kontrast": 7.46,
+ "dc": 70,
+ "dreiecke": 508171,
+ "klasse": {
+  "ausdruck": "^tier:",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 39,
+  "toene": [
+   "tier:bestaeuber=255/80/80",
+   "tier:wesen=80/255/80",
+   "tier:wolf=80/120/255"
+  ],
+  "klassen": {
+   "tier:bestaeuber": {
+    "objekte": 1,
+    "spiegelTreue": null,
+    "spiegelEbene": 89.353,
+    "sp": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "zweiton": 0,
+    "weiss": 0,
+    "wt": 0,
+    "wtZiel": null,
+    "bunt": 25.22,
+    "pixel": 30,
+    "luma": 60.6,
+    "kante": 0.0122,
+    "kr": 26,
+    "strich": null,
+    "si": 0,
+    "bloecke": 0,
+    "glatt": null,
+    "nyquist": null,
+    "beta": null
+   },
+   "tier:wesen": {
+    "objekte": 11,
+    "spiegelTreue": null,
+    "spiegelEbene": 88.885,
+    "sp": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "zweiton": 0,
+    "weiss": 0,
+    "wt": 0,
+    "wtZiel": null,
+    "bunt": 27.76,
+    "pixel": 640,
+    "luma": 58.79,
+    "kante": 0.3371,
+    "kr": 220,
+    "strich": null,
+    "si": 0,
+    "bloecke": 1,
+    "glatt": 0,
+    "nyquist": 0.238,
+    "beta": 2.543
+   },
+   "tier:wolf": {
+    "objekte": 52,
+    "spiegelTreue": -0.4557,
+    "spiegelEbene": 89.284,
+    "sp": [
+     33,
+     0,
+     0,
+     5797,
+     5797,
+     -2641.7
+    ],
+    "zweiton": 0,
+    "weiss": 0,
+    "wt": 0,
+    "wtZiel": null,
+    "bunt": 17.65,
+    "pixel": 16407,
+    "luma": 51.49,
+    "kante": 0.3695,
+    "kr": 4302,
+    "strich": 0.543,
+    "si": 274,
+    "bloecke": 46,
+    "glatt": 0.1957,
+    "nyquist": 0.1066,
+    "beta": 2.9031
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\87537d3f-radeon\\tiere.K2_2-wolfsrevier.maske.png"
+ },
+ "zeit": null,
+ "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.14 m · Luma 69.2 σ 34.6 schwarz 0.1 % weiß 0.0 % · Stand 18.546.236 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen",
+ "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\87537d3f-radeon\\tiere.K2_2-wolfsrevier.png",
+ "gesamtMs": 8556
+}

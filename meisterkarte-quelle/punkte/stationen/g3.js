@@ -106,6 +106,36 @@ const envDer = { MSYS2_ARG_CONV_EXCL: "*" };
 const UHR_TOL = 0.01;
 const uhrIst = (ist, soll) => Number.isFinite(ist) && Math.abs(ist - soll) <= UHR_TOL;
 
+// DIE PROBE VON material.K4#1 (w26-lack-glas-pm): der GT in fester Gestalt (Tiefschwarz) 6 m vor dem Ego-Auge (stationen/spiegel-lack.js;
+// ihr Text steht im Befehl — ändert er sich, zählt die alte Messung nicht). Die Proben: die Messung an main 87537d3f (GTX, Gestalt
+// gewürfelt), die Zahlen an der Pose der Probe (swiftshader kienspan: main −0,054, w26-lack-glas 0,775) in der Form einer Karte, und
+// die MUTANTE der alten Szene im Soll (GTX 77265b04 0,6432, Gestalt gewürfelt): nie GRÜN.
+const SPIEGEL_LACK = require("fs").readFileSync(require("path").join(__dirname, "spiegel-lack.js"), "utf8");
+const K4_ROH = (adapter, gestalt, lack, glas) => ({
+    adapter,
+    schritte: { spiegel: { exit: 0, json: { ergebnis: { ende: "ok", gestalt, vor: gestalt ? 6 : undefined, stand: { uhr: 0.5000000000000343, wetter: "sunny", sicht: "first" }, ergebnis: { lack, glas } } } } },
+});
+const K4_GTX = "[linse-gpu] nvidia/pascal";
+const K4_DECK = (r) => ({ spiegelTreue: r, ebene: 17184, bloecke: 54, einfallGrad: 69.4, normale: [-0.001, 0.996, -0.086] });
+const K4_WSS = { spiegelTreue: null, ebene: 7684, bloecke: 0, einfallGrad: 40.9, normale: [0.005, 0.72, -0.694] };
+const K4_PROBEN = [
+    {
+        name: "die Messung an main 87537d3f GTX (Gestalt gewürfelt, die Haube bei 3,8 m; die Windschutzscheibe ohne Blöcke)",
+        j: K4_ROH(K4_GTX, undefined, { spiegelTreue: -0.6581, ebene: 55245, bloecke: 44, einfallGrad: 52, normale: [0.187, 0.978, -0.087] }, { spiegelTreue: null, ebene: 4124, bloecke: 0, einfallGrad: 49.4, normale: [0.407, 0.892, -0.199] }),
+        gruen: false,
+        zahl: /Gestalt gewürfelt/,
+    },
+    {
+        name: "MUTANTE die alte Szene im Soll (GTX 77265b04 Haube 0,6432, Gestalt gewürfelt) — nie GRÜN",
+        j: K4_ROH(K4_GTX, undefined, { spiegelTreue: 0.6432, ebene: 79581, bloecke: 42, einfallGrad: 53.6, normale: [0.126, 0.987, -0.098] }, { spiegelTreue: -0.0399, ebene: 8909, bloecke: 53, einfallGrad: 71.7, normale: [0.015, 1, -0.007] }),
+        gruen: false,
+        zahl: /Gestalt gewürfelt/,
+    },
+    { name: "die Pose der Probe an main (Deck −0,054) in der Form einer Karte", j: K4_ROH(K4_GTX, 3, K4_DECK(-0.054), K4_WSS), gruen: false },
+    { name: "die Pose der Probe an w26-lack-glas (Deck 0,775) in der Form einer Karte", j: K4_ROH(K4_GTX, 3, K4_DECK(0.775), K4_WSS), gruen: true },
+    { name: "dasselbe Deck auf swiftshader — kein Adapter einer Karte", j: K4_ROH("[linse-gpu] google/swiftshader", 3, K4_DECK(0.775), K4_WSS), gruen: false, zahl: /kein Adapter einer Karte/ },
+];
+
 // Der Pfad des Wechsels (lod.K5, lod.K2): das Gesetz, seine Leser, der Regler, die Stufen der Kerne
 const LOD_PFAD = [
     "stamm/vegetation-*.js",
@@ -585,7 +615,11 @@ const LAUB_AUGE =
     "const st = r.state, pm = st.playerMesh.position; st.yaw = r._blickGierZu(-269 - pm.x, -1036 - pm.z); st.pitch = 0; " +
     "for (let i = 0; i < 30; i++) r._loopCamera(performance.now() + i * 100); " +
     "const c = st.camera, d = new T.Vector3(); c.getWorldDirection(d); " +
-    "return [c.position.x, c.position.y, c.position.z, c.position.x + 100 * d.x, c.position.y + 100 * d.y, c.position.z + 100 * d.z].map((v) => +v.toFixed(3));";
+    // DAS ZIEL VOR DEM HANG (09.11., Radeon a7dc1874: „Blickziel verdeckt von Boden-Schicht in 44.56 m“ — die Tafel-Pose GRÜN, strauch
+    // 0,2066): das Auge zielte stur 100 m geradeaus und traf am Hang den Boden. Jetzt läuft der Blick in Metern, bis der Boden über
+    // ihm steht, und das Ziel liegt bei 60 % davon, höchstens 12 m (Radeon 94cae0a4: bei 60 % stand eine Tanne in 44,53 m davor) — die Kante urteilt das ganze Bild, das Ziel nur die freie Sicht; `--wahl 0` bleibt.
+    "let t = 2; while (t < 100 && r._voxelSurfaceY(c.position.x + t * d.x, c.position.z + t * d.z) < c.position.y + t * d.y - 0.5) t++; t = Math.max(3, Math.min(12, 0.6 * t)); " +
+    "return [c.position.x, c.position.y, c.position.z, c.position.x + t * d.x, c.position.y + t * d.y, c.position.z + t * d.z].map((v) => +v.toFixed(3));";
 const LAUB_KANTE_MAX = 0.22;
 const LAUB_PIXEL_MIN = 5000;
 // das Rohe der Proben (stdout `LOD-K1 {…}` im Format von {AUS}); die Messung selbst liest {AUS}
@@ -778,7 +812,7 @@ const TAG_LINSE = {
 // DER DECKEL DER ARBEIT (geschätzt, ungemessen an der Karte): zwei Orte × 100 Uhren und ≥ 60 Fein-Uhren, je Uhr der Sprung, der Himmel
 // und EINE Aufnahme bis das Bild steht (640×360, ~3–5 Bilder), je Ort vier volle gegen die Geschichte, die Mess-Wiese kalt (9–18 s,
 // Radeon eich3–6) — 40 s; die RUF-Zeilen je Kurve nennen die Sekunden je Uhr
-const TAG_PROBE = { sek: 40, befehl: PW.torBefehl(PW.werkbankLinse, JSON.stringify(TAG_LINSE)) };
+const TAG_PROBE = { sek: 90, ausnahme: "die Tag-Kurve über 88 Uhren je Ort (Wiese und Genesis) mit Bahn grob und fein — GTX bca0d3d7, fe57747a, 77265b04, 87537d3f je am 45-s-Deckel gerissen, zuletzt im Ruf __tagKurve nach 36,7 s", befehl: PW.torBefehl(PW.werkbankLinse, JSON.stringify(TAG_LINSE)) };
 const LAUB_LINSE = {
     vorher: ["umstellen", "--ort", "dorf", "--sicht", "ego"],
     args: ["licht", "--laub", "ring,feld,feld0,feld90,feld180,panorama,spiegel,spiegel180,wasser,fichte,tanne", "--karte", "--uhr", "0.5,0.27,0.05", "--ort", "dorf"],
@@ -790,7 +824,7 @@ const LAUB_LINSE = {
 // Beruhigungen — 60 s; je Beruhigung und teurem Ruf eine Zeile
 // DIE STAFFEL 2 (33 Zeilen) über dem Gesetz der Fahrt (w4-proben-tempo2, 31.10.): GTX e0139769 86,5 s (Deckel aus der Zahl 130 s über
 // 90 s), Radeon 6b3da705 am 60-s-Deckel gerissen — 10 s, UNGEMESSEN beim Namen wie die übrigen nie endenden, bis die Linse fällt
-const LAUB_PROBE = { sek: 10, befehl: PW.torBefehl(PW.werkbankLinse, JSON.stringify(LAUB_LINSE)) };
+const LAUB_PROBE = { sek: 90, ausnahme: "33 Zeilen an zwei Orten — am Dorf der Ring und 24 Wege des Lichts, an der Mess-Wiese Fichte und Tanne je Uhr mit ihren Beruhigungen (GTX b4bcf19c 80,1 s, e0139769 86,5 s; Radeon 40,8–43,1 s, 77265b04 und e475c6b4 am 45-s-Deckel gerissen; am Gesetz 90 s Radeon a7dc1874 45,4 s mit Urteil)", befehl: PW.torBefehl(PW.werkbankLinse, JSON.stringify(LAUB_LINSE)) };
 // DIE STAFFEL 1 FÄHRT ALLEIN (w4-proben-tempo2): ihr Urteil liest neun Zeilen (fichte, tanne, ring je Uhr) — die Linse misst nur sie,
 // nicht die 24 Wege der Staffel 2 (bis dahin EIN Lauf der Zwillinge, der jeden Deckel riss)
 // Sie ändert die Welt (der Gang ans Dorf und zur Fichte legt Orte und Wege an, Sitzung 00d3f283): mutiert. DIE ZAHL (Radeon 7521ca51, der
@@ -2266,7 +2300,7 @@ const stationen = [
         // Himmel zur Sonne ≥ 1,2; die tiefe Sonne (Uhr 0,27 und 0,73, klar) ≥ 2,5; bedeckt (Regen, jede Uhr) ≤ 1,5. Gültig ist eine
         // Spalte wie Staffel 1 nur mit A = B an der Sonnen-Kugel und A = C an der Schatten-Kugel (±2 %), ≥ 100 px, und wenn ihr
         // `stand` die Uhr und das Wetter der Spalte trägt.
-        probe: { sek: 33, befehl: befehlMitHimmel({
+        probe: { sek: 90, ausnahme: "die Schatten-Bilanz je Uhr klar und mit Himmel, je Kugel Setzen und Lösen samt Schuss (setz-/los-1…5) — die Arbeit (Radeon 30,3–44,9 s, GTX 33,0–34,6 s bis 07.11.; seit 08.11. jede Fahrt an beiden am 45-s-Deckel gerissen, 87537d3f Radeon 45,5 s, GTX 45,2 s in setz-5; am Gesetz 90 s Radeon a7dc1874 62,6 s mit Urteil)", befehl: befehlMitHimmel({
             name: "licht.K2#2",
             texte: SPALTE_TEXTE,
             schritte: [
@@ -2963,7 +2997,7 @@ const stationen = [
         kriterium: "lod.K1",
         staffel: 1,
         geraet: ["radeon", "gtx"],
-        probe: { sek: 30, befehl: befehlDer({
+        probe: { sek: 90, ausnahme: "die Laub-Kante an der Tafel-Pose und an jeder Karte der Fernstufen samt Wiese und Auge — die Arbeit (Radeon 42,4–44,5 s am Rand des Gesetzes, 87537d3f 44,5 s; Radeon 77265b04, 1561bf3a, eff50c41 und GTX 77265b04, 87537d3f am 45-s-Deckel gerissen; am Gesetz 90 s Radeon a7dc1874 52,7 s mit Urteil)", befehl: befehlDer({
             name: "lod.K1#1",
             schritte: [
                 { name: "fenster", args: ["fenster", "1920", "1080"], muss: true },
@@ -3017,7 +3051,7 @@ const stationen = [
             schritte: [
                 { name: "fenster", args: ["fenster", "1920", "1080"], muss: true },
                 { name: "umstellen", args: ["umstellen", "--ort", "wiese"], muss: true },
-                { name: "kanten", probe: "@KOORD@/bericht/2910-lod-k5/kanten.js", blob: "39b506a0eec9cacd1443ed85738db21b967610ef", muss: true, ms: 1800000 },
+                { name: "kanten", probe: "@KOORD@/bericht/2910-lod-k5/kanten.js", blob: "dbd6fce15dcc298b828cb1795d7bbf14fe867937", muss: true, ms: 1800000 },
             ],
         }), },
         env: envDer,
@@ -3027,6 +3061,15 @@ const stationen = [
         // DIE POSE DES TORS (w8-lod-wechsel, 03.11.): kanten.js stellt die Flügel der L0 über den EINEN Schwenk-Träger in die Fern-Pose,
         // die die Stufe im Körper trägt — ein Tor-Fall ohne ihren Winkel (`pose`) maß die gebacken geschlossene L0 (8e6262cc: Kathedrale
         // L1 9,95 px, die Flügel, nie der Bau) und ist ein Bruch. Ohne {AUS} liest das Urteil die Folge aus der Ausgabe (die Proben).
+        // DIE DECKUNG STATT DER FARBE (w26-lod-baum-pm, 09.11.): der Staffel-Text misst den Kanten-Versatz des UMRISSES; die Maske der
+        // Farbe (> 18 gegen den leeren Schuss) zählte an der Alemannisch-L2 nur 47 % der L0 (37 311 von 79 003 Pixeln der Geometrie —
+        // dunkles Fachwerk vor dunklem Grund) und mass die Ränder dieser Lücken mit (Radeon 87537d3f Haus 1,64 px, am Bau 0,51–0,83).
+        // Jeder Fall trägt die Maske, an der er urteilt (`maske`); nur die Deckung der Tiefe zählt, die Farbe reist als Zeugnis
+        // (`pxFarbe`). Ein Fall ohne die Deckung ist ein Bruch.
+        // DER BODEN JEDES FALLS (w26-lod-baum-pm): bis hier blieb der Eintrag jedes Exemplars bis zum Ende der Folge am selben Ort, die
+        // Hülle des ersten Hauses senkte den Boden dort um 2,6 m (`_voxelSurfaceY` 28,64 → 26,05), jedes spätere Exemplar stand im Grund —
+        // die Limousine ganz unter dem gezeichneten Boden („Wagen ohne Exemplar"), Tore und Alemannisch halb. Jeder Fall trägt den Boden
+        // seines Orts (`bodenM`), die Folge den des ersten (`boden0`); weicht er um mehr als 5 cm ab, ist es ein Bruch beim Namen.
         urteil: (j, lauf) => {
             if (!j && lauf && /^s*{/.test(String(lauf.stdout)))
                 try {
@@ -3045,6 +3088,8 @@ const stationen = [
             const bruch = [];
             for (const f of e.faelle) {
                 if (f.fehler || !f.ok || f.px == null || !(f.pixel >= 200)) bruch.push(f.kind + " L" + f.stufe + ": " + (f.fehler || (f.ok ? "Exemplar " + f.pixel + " px" : "Stufe nicht gestellt")));
+                else if (f.maske !== "tiefe") bruch.push(f.kind + " L" + f.stufe + ": die Maske der Farbe statt der Deckung");
+                else if (!(Math.abs(f.bodenM - e.boden0) <= 0.05)) bruch.push(f.kind + " L" + f.stufe + ": das Exemplar stand auf fremdem Grund (Boden " + f.bodenM + " statt " + e.boden0 + ")");
                 else if (f.kind === "gate" && !Number.isFinite(f.pose)) bruch.push("gate L" + f.stufe + ": die L0 ohne die Pose des Spiels");
                 else je[f.kind] = Math.max(je[f.kind] || 0, f.px);
             }
@@ -3058,14 +3103,16 @@ const stationen = [
             };
         },
         proben: (() => {
-            const fall = (kind, stufe, px, pose) => ({ kind, stufe, d: 12, px, pixel: 40000, pose, ok: true, geliefert: true });
-            const folge = (faelle) => JSON.stringify({ plan: "lod.K5#1", adapter: "[linse-gpu] amd/rdna-3", schritte: { kanten: { exit: 0, json: { ergebnis: { schirm: [1920, 1080], faelle } } } } });
+            const fall = (kind, stufe, px, pose) => ({ kind, stufe, d: 12, bodenM: 28.64, maske: "tiefe", px, pixel: 40000, pose, ok: true, geliefert: true });
+            const folge = (faelle) => JSON.stringify({ plan: "lod.K5#1", adapter: "[linse-gpu] amd/rdna-3", schritte: { kanten: { exit: 0, json: { ergebnis: { schirm: [1920, 1080], boden0: 28.64, faelle } } } } });
             const gut = [fall("tree", 1, 0.8), fall("haus", 2, 0.9), fall("gate", 1, 0.67, 0.975), fall("gate", 2, 0.9, 0.975), fall("vehicle", 1, 0.3)];
             return [
                 { name: "jede Familie ≤ 1 px, die Tore in der Pose des Spiels", stdout: folge(gut), gruen: true },
                 { name: "ein Tor ohne die Pose des Spiels (die L0 gebacken zu)", stdout: folge(gut.map((f) => (f.kind === "gate" ? Object.assign({}, f, { pose: undefined }) : f))), gruen: false },
                 { name: "die geschlossene L0 neben der Fern-Pose (8e6262cc: Tor 9,95 px)", stdout: folge(gut.map((f, i) => (i === 2 ? Object.assign({}, f, { px: 9.952 }) : f))), gruen: false },
                 { name: "der Wagen ohne Exemplar im Bild", stdout: folge(gut.map((f) => (f.kind === "vehicle" ? Object.assign({}, f, { px: null, pixel: 0 }) : f))), gruen: false },
+                { name: "das Tor im Keller des Hauses davor (87537d3f: Boden 26,05 statt 28,64 m)", stdout: folge(gut.map((f) => (f.kind === "gate" ? Object.assign({}, f, { bodenM: 26.047 }) : f))), gruen: false },
+                { name: "die Maske der Farbe statt der Deckung (87537d3f: Haus 1,64 px aus 47 % der L0)", stdout: folge(gut.map((f) => (f.kind === "haus" ? Object.assign({}, f, { maske: undefined }) : f))), gruen: false },
             ];
         })(),
         pfad: [...BILD, ...LOD_PFAD],
@@ -3145,18 +3192,25 @@ const stationen = [
         staffel: 1,
         geraet: ["radeon", "gtx"],
         // w3w-glanz (EIN Spiegel-Pass für Wasser, Glas, Lack, Metall, Nässe — das Glanz-Ziel des Szenen-Passes, `_spiegelUmgebung`):
-        // koordination `bericht/2910-w3w-glanz/spiegel-lack.js` über `werkbank eval` in der Welt der Sitzung — ein GT rechts neben dem
-        // Spieler, der Ego-Blick (`_loopCamera`) trifft seine Flanke streifend; Lack und Seiten-Scheibe je mit ihrer Maske (der Schuss
-        // ohne sie) und ihrer Ebene (Haupt-Achsen der Welt-Punkte, ≤ 3 cm), das Maß der Wasser-Station (`klassenMasse` spiegelTreue,
-        // die Achse an der Ebene: abnahme-urteil `spiegelPartner` mit `normale`). Gültig: Ego, Mittag klar, Einfall 45–85°, ≥ 2 000 Pixel
-        // in der Ebene und ≥ 8 Blöcke.
+        // die Seiten-Probe `stationen/spiegel-lack.js` (der Text steht im Befehl, `@T:SPIEGEL@`) über `werkbank eval` in der Welt der
+        // Sitzung — ein GT in fester Gestalt (Tiefschwarz) 6 m vor dem Spieler, der Ego-Blick (`_loopCamera`) sieht sein Deck unter ~70°;
+        // Lack (Klarlack ≥ 0,5) und Scheibe je mit ihrer Maske (der Schuss ohne sie) und der Ebene, deren Spiegel das Bild trägt (RANSAC,
+        // nie quer, die meisten Blöcke), das Maß der Wasser-Station (`klassenMasse` spiegelTreue, die Achse an der Ebene: abnahme-urteil
+        // `spiegelPartner` mit `normale`). Gültig: die Szene (Gestalt 3, 6 m), Ego, Mittag klar, Einfall 45–85°, ≥ 2 000 Pixel in der
+        // Ebene und ≥ 8 Blöcke.
+        // DIE SCHÄRFUNG (w26-lack-glas-pm; der Nachfolger von koordination bericht/2910-w3w-glanz/spiegel-lack.js, Kopf der Probe): bis
+        // hier zählte als Lack nur Klarlack UND Metall ≥ 0,5 (fünf von acht Gestalten ohne „Lack"), würfelten Same und Ort den Lack (am
+        // selben Commit 77265b04: GTX 0,6432, Radeon −0,0919), stand der Wagen 3,8 m voraus — der ideale Spiegel der Haube lag zum größten
+        // Teil über dem Bild, die Tür spiegelte das Pflaster (dieselbe Welt, derselbe Same: 0,1175 und 0,5086) — und gewann die größte
+        // Ebene, ob ihr Spiegel im Bild lag oder nicht (GTX 87537d3f: lack −0,6581 an der Haube, glas 0 Blöcke an der Windschutzscheibe).
         // DIE FAHRT (Eichlauf Radeon b3f9ae95 29.10.: 4,8 s): der Deckel steht in der Tafel der Fahrt (punkte.cjs DIE DECKEL)
         probe: { sek: 10, befehl: befehlDer({
             name: "material.K4#1",
             schritte: [
                 { name: "fenster", args: ["fenster", "1920", "1080"], muss: true },
-                { name: "spiegel", probe: "@KOORD@/bericht/2910-w3w-glanz/spiegel-lack.js", blob: "e9ba0e39b1c24c8773296cdefc57551d1b298d4c", muss: true },
+                { name: "spiegel", args: ["eval", "@T:SPIEGEL@"], muss: true },
             ],
+            texte: { SPIEGEL: SPIEGEL_LACK },
         }) },
         env: envDer,
         gpu: true,
@@ -3172,7 +3226,8 @@ const stationen = [
             if (e.ende !== "ok" || !e.ergebnis) return { gruen: false, zahl: "Probe: " + (e.fehler || e.ende) };
             const st = e.stand || {};
             // DIE POSE beim Namen (w4-linsen-b): Ego, Mittag klar — die Uhr über `uhrIst` (die Probe baut den GT im Takt des Spiels)
-            const posefehl = [st.sicht === "first" ? null : "Sicht " + st.sicht, uhrIst(st.uhr, 0.5) ? null : "Uhr " + st.uhr + " nicht Mittag (± " + UHR_TOL + ")",
+            // DIE SZENE beim Namen (w26-lack-glas-pm): die Gestalt 3 (Tiefschwarz) 6 m voraus — eine gewürfelte Gestalt misst nie
+            const posefehl = [e.gestalt === 3 && e.vor === 6 ? null : e.gestalt == null ? "Gestalt gewürfelt" : "Szene Gestalt " + e.gestalt + " " + e.vor + " m", st.sicht === "first" ? null : "Sicht " + st.sicht, uhrIst(st.uhr, 0.5) ? null : "Uhr " + st.uhr + " nicht Mittag (± " + UHR_TOL + ")",
                 st.wetter === "sunny" ? null : "Wetter " + st.wetter].filter(Boolean);
             const teile = [];
             let gruen = false;
@@ -3181,7 +3236,7 @@ const stationen = [
                 const gueltig = m.ebene >= 2000 && m.bloecke >= 8 && m.einfallGrad >= 45 && m.einfallGrad <= 85 && !m.quer;
                 if (hw && !posefehl.length && gueltig && m.spiegelTreue != null && m.spiegelTreue >= 0.5) gruen = true;
                 teile.push(
-                    n + " spiegelTreue " + m.spiegelTreue + (gueltig ? "" : " UNGÜLTIG") + " (" + (m.fehler || m.ebene + " px in der Ebene, " + m.bloecke +
+                    n + " spiegelTreue " + m.spiegelTreue + (gueltig ? "" : " UNGÜLTIG") + "" + " (" + (m.fehler || m.ebene + " px in der Ebene, " + m.bloecke +
                         " Blöcke, Einfall " + m.einfallGrad + "°, Normale " + JSON.stringify(m.normale)) + ")"
                 );
             }
@@ -3191,6 +3246,7 @@ const stationen = [
                     (posefehl.length ? " — POSE UNGÜLTIG: " + posefehl.join(", ") : "") + (hw ? "" : " — kein Adapter einer Karte") + " · " + (j.adapter || "Adapter ungenannt"),
             };
         },
+        proben: K4_PROBEN,
         pfad: [
             ...BILD,
             "stamm/studio-*.js",
