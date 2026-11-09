@@ -1208,11 +1208,11 @@ class AnazhRealm_stoff_material {
                                             .sample(this._laubVersatz(_Ta, uv, _gX, _gY))
                                             .depth(_schicht)
                                             .grad(_gX, _gY);
-                                    // Die Tiefe der Gestalt liest das Fragment nicht (heil-laub-tiefe): sie steht an den Ecken des
-                                    // Gitters (`vertexNode`, unten). Das Fragment liest jede Ansicht an ihrer Spalte: eine Blick-Parallaxe
-                                    // aus EINER Tiefen-Schicht verschob die zwei Ansichten 45° auseinander in den Schatten der jeweils
-                                    // anderen (die Probe der Welle w4-laub-karte, eine Kugel 3,4 m neben der Achse: IoU 0,446 statt 0,582
-                                    // ohne sie).
+                                    // Die Tiefe des Bilds (frag_depth) schreibt das Fragment nicht (heil-laub-tiefe): sie steht an den Ecken
+                                    // des Gitters (`vertexNode`, unten). Das Fragment liest jede Ansicht am Treffer IHRES Reliefs (`_relief`
+                                    // oben, jede aus ihrer eigenen Tiefen-Schicht): die Probe der Welle w4-laub-karte verschob beide
+                                    // Ansichten mit EINER Schicht in EINEM Schritt und fand sie im Schatten der jeweils anderen (eine Kugel
+                                    // 3,4 m neben der Achse: IoU 0,446 statt 0,582 ohne sie).
                                     const _zA = _zelle(_v0, _fb.mul(_dreh)),
                                         _zB = _zelle(_v1, _fb.sub(1.0).mul(_dreh));
                                     const _uvA = _zA.uv;
