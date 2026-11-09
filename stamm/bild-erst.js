@@ -293,9 +293,16 @@ class AnazhRealm_bild_erst {
     _vorwaermArten() {
         const st = this.state;
         const A = this._erstZeichnungStand().vorwaermArten;
-        for (const name of Array.isArray(st.hotbar) ? st.hotbar : []) {
+        // DIE WAGEN DES GESETZES (w26): jede Art der Fahrzeug-Domäne (KIND_POLICY vehicle) steht ohne Hotbar in der Welt — gesetzt aus
+        // jedem Bauplan, bald im Verkehr; ihre Gestalt wärmt vor wie die der Hotbar (GTX 1050, 3877c9c6, erste Fahrt Ego: „haupt arena
+        // f:gt:L0" 171,9 ms im Fenster, ein Schritt 102,2 ms — das größte Bild 233 ms)
+        const f = this._foundry;
+        const wagen = Object.keys((f && f.recipes) || {}).filter((p) => f.recipes[p].kind === "vehicle");
+        const hotbar = (Array.isArray(st.hotbar) ? st.hotbar : []).map((name) => {
             const bp = name && st.blueprints && st.blueprints[name];
-            const preset = bp && this._isPlaceableBlueprint(bp) ? this._foundryPresetForEntry({ type: name }) : null;
+            return bp && this._isPlaceableBlueprint(bp) ? this._foundryPresetForEntry({ type: name }) : null;
+        });
+        for (const preset of hotbar.concat(wagen)) {
             const art = preset && { preset, streu: false, region: null };
             if (art && !A.has(AnazhRealm._vorwaermArtSchluessel(art)))
                 A.set(AnazhRealm._vorwaermArtSchluessel(art), art);
