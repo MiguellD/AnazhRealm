@@ -1653,13 +1653,12 @@ class AnazhRealm_koerper_leib {
         });
         return this._tonLeibKnoten;
     }
-    // DIE ACHSE DER STRÄHNE (haar.K3): je Ecke des nahen Haars ihr Platz auf ihrer Strähne — `aStraehne` 0 an der Wurzel, an der
-    // Spitze die Länge der Strähne (Raum der Gestalt). Das Gesetz der Ecken legt foundry-core `__streuGeo`: je Band vier Ecken,
-    // zwei an der Wurzel (Ton × HAAR_STRICH.wurzel), zwei an der Spitze (der Ton), die Kreuz-Karte zwei solche Bänder; die Braue
-    // im selben Teil trägt ihren eigenen Ton (koerper `menschTon`) und steht. Gelesen hier, am Bau jedes Teils
-    // (`_foundryBuildMesh`): ein Band, das dem Gesetz nicht folgt, meldet der EINE Melder beim Namen. Der Ofen-Guss bleibt
-    // byte-gleich (gate:ofen-contract); die Grobstufe (die Kappe ohne Strähnen, einfarbig) trägt keine Achse. Liefert die Zahl der
-    // Strähnen.
+    // DIE ACHSE DER STRÄHNE (haar.K3, w25-haar-albedo): je Ecke des nahen Haars der Rahmen ihrer Strähne `aStraehne` [Achse,
+    // Länge] — das EINE Gesetz koerper `haarAchse` (das Gesetz der Ecken des Bäckers `__streuGeo` rückwärts; das Labor
+    // liest dasselbe). Die Achse trägt die Feder des Winds, Achse ÷ Länge den Glanz der Spitze (`_foundryTreeMaterial`); die
+    // Braue im selben Teil trägt ihren eigenen Ton und steht. Gelesen hier, am Bau jedes Teils (`_foundryBuildMesh`): ein Band,
+    // das dem Gesetz nicht folgt, meldet der EINE Melder beim Namen. Der Ofen-Guss bleibt byte-gleich (gate:ofen-contract); die
+    // Grobstufe (die Kappe ohne Strähnen, einfarbig) trägt keine Achse. Liefert die Zahl der Strähnen.
     _haarAchse(mesh) {
         const kl =
             mesh &&
@@ -1670,54 +1669,16 @@ class AnazhRealm_koerper_leib {
         // der Versatz der Feder (Welt-Meter, `_haarFederTakt`): ein Klar-Wert am Teil — jeder Klon trägt seinen eigenen
         mesh.userData.__haarFeder = { x: 0, y: 0, z: 0 };
         if (!a.color || !a.aTon || a.aStraehne) return 0;
-        const KC = globalThis.__koerperCore;
-        const ton = KC.menschTon("hair");
-        const wz = KC.HAAR_STRICH.wurzel;
-        const [p, c, t] = [a.position, a.color, a.aTon];
-        const n = p.count;
-        const L = new Float32Array(n);
-        const gleich = (x, y) => Math.abs(x - y) <= 1e-5 + 2e-3 * Math.abs(y);
-        let [zahl, bruch] = [0, 0];
-        for (let i = 0; i + 3 < n; i += 4) {
-            let haar = true;
-            for (let k = 0; k < 4; k++) haar = haar && Math.round(t.getX(i + k)) === ton;
-            if (!haar) continue;
-            let [gesetz, flach] = [true, true];
-            for (const f of ["getX", "getY", "getZ"]) {
-                gesetz =
-                    gesetz &&
-                    gleich(c[f](i), c[f](i + 1)) &&
-                    gleich(c[f](i + 2), c[f](i + 3)) &&
-                    gleich(c[f](i), wz * c[f](i + 2));
-                for (let k = 1; k < 4; k++) flach = flach && gleich(c[f](i + k), c[f](i));
-            }
-            // EINE FLÄCHE, KEINE STRÄHNE: die Kappe der Grobstufe (foundry-core: das Haar-Volumen `haarKappe` als Kugel im Stoff
-            // des Haars, im Teil der Brauen) trägt den Ton des Haars in jeder Ecke einfarbig — die Strähne trägt immer ihren
-            // Verlauf (Wurzel = HAAR_STRICH.wurzel × Spitze). Bis hier las die Achse jede Vierergruppe der Kappe als gebrochenes
-            // Band: 15 Brüche je Grobstufe, ERROR in jeder Linse am Leib (gate:post-kette, CI 41622260772)
-            if (!gesetz && flach) continue;
-            if (!gesetz) {
-                bruch++;
-                continue;
-            }
-            const d = [0, 1, 2].map(
-                (k) =>
-                    (p.getComponent(i + 2, k) +
-                        p.getComponent(i + 3, k) -
-                        p.getComponent(i, k) -
-                        p.getComponent(i + 1, k)) /
-                    2
-            );
-            L[i + 2] = L[i + 3] = Math.hypot(d[0], d[1], d[2]);
-            zahl++;
-        }
-        if (bruch) {
-            this._bruchMelden(`HAAR-ACHSE: ${bruch} Bänder des Haars folgen nicht dem Gesetz der Ecken (__streuGeo)`);
+        const n = a.position.count;
+        const je = (b, m) => Float32Array.from({ length: n * m }, (_, j) => b.getComponent((j / m) | 0, j % m));
+        const r = globalThis.__koerperCore.haarAchse(je(a.position, 3), je(a.color, 3), je(a.aTon, 1));
+        if (r.bruch) {
+            this._bruchMelden(`HAAR-ACHSE: ${r.bruch} Bänder des Haars folgen nicht dem Gesetz der Ecken (__streuGeo)`);
             return 0;
         }
-        if (!zahl) return 0;
-        mesh.geometry.setAttribute("aStraehne", new THREE.BufferAttribute(L, 1));
-        return zahl;
+        if (!r.zahl) return 0;
+        mesh.geometry.setAttribute("aStraehne", new THREE.BufferAttribute(r.achse, 2));
+        return r.zahl;
     }
     // DAS HAAR IM EINEN WIND UND MIT DEM LEIB (haar.K3) — der Lage-Knoten jedes Haar-Stoffs: der Versatz der Ecke ist die
     // Auslenkung der Feder ihres Teils (`userData.__haarFeder`, Welt-Meter, `_haarFederTakt`) × Länge der Strähne /
@@ -1732,7 +1693,7 @@ class AnazhRealm_koerper_leib {
         const feder = T.reference("userData.__haarFeder", "vec3");
         const naht = this._weltNaht(T);
         const achse = T.Fn((b) =>
-            b.geometry && b.geometry.hasAttribute("aStraehne") ? T.attribute("aStraehne", "float") : T.float(0)
+            b.geometry && b.geometry.hasAttribute("aStraehne") ? T.attribute("aStraehne", "vec2").x : T.float(0)
         )();
         const zug = naht.vorlage(feder.mul(achse.mul(naht.skala).div(H.bezug)));
         const deckel = achse.mul(H.reichweite).div(zug.length().max(1e-9)).min(1);

@@ -2830,9 +2830,20 @@ class AnazhRealm_kreatur_verhalten {
         const GF = G && !u._menge ? G : this._feldGrenzen(!!u._menge); // `G`: das Feld der Tiere dieses Takts (der Ziegel)
         u._kzNah = AnazhRealm._stufeGemerkt(m, u._kzNah === true ? 0 : 3, GF, 1, p, auge) !== 3;
         const d2 = (p.x - auge.x) * (p.x - auge.x) + (p.z - auge.z) * (p.z - auge.z); // nur der Bake-Takt liest ihn
+        // DER FIT-TAKT ZÄHLT FITS (w25-ferne-licht-3, wie sk5-haus und die Streu): die Kapsel jedes Glieds passt der Vorrat EINMAL
+        // je Gattung (`_gliedKapselMemo`); trägt die Liste jeden Schlüssel schon (`kapselCache`), kostet der Leib Einträge, nie
+        // einen Fit — er wartet nie am Takt. Bis hier fragte jeder Bewohner die Uhr (`_weltBakeErlaubt`, 4 je Sekunde über dem
+        // Budget): am Anlauf des Gipfel-Blicks (die Metropole, 959 Leiber, swiftshader) gab sie 1 282 Güsse à 0,04 ms in 370 s
+        // frei und sagte 10,7 Mio. Mal nein — Takt 13 000 … 34 000 wartete die Welt auf Treffer. Mit Treffern frei gehen die
+        // Leiber 461 → 0 in ~4 500 Takten (die Geburten, 2 je Takt), der Ort steht nach 21 441 Takten samt Gipfel.
+        const darf = () => {
+            const namen = this._gattungGlieder(cr);
+            const wm = namen && this.state.weltMarch;
+            return !!namen && (namen.every((nm) => wm && wm.kapselCache.has(nm.key)) || this._weltBakeErlaubt(d2));
+        };
         if (u._kzNah) {
             u._kzNahGewesen = true; // das Studio-Tier stand schon im Bild — sein Satz übernimmt später, ohne Einblenden
-            if (vorab && !u._kzGlieder && !u._kzVersuch && this._gattungGlieder(cr) && this._weltBakeErlaubt(d2)) {
+            if (vorab && !u._kzGlieder && !u._kzVersuch && darf()) {
                 u._kzVersuch = true;
                 this._leibMatrix(cr);
                 u._kzGlieder = this._kreaturGliederBacken(cr, false);
@@ -2852,7 +2863,7 @@ class AnazhRealm_kreatur_verhalten {
                 return;
             }
             // getaktet, oder die Gattung kalt (ihr Vorrat im Leerlauf bestellt, `_gattungGlieder`): bis dahin trägt der Körper
-            if (!this._gattungGlieder(cr) || !this._weltBakeErlaubt(d2)) return;
+            if (!darf()) return;
             u._kzVersuch = true;
             this._leibMatrix(cr);
             // Fern geboren (nie nah im Bild, kein Satz trug ihn): die Glieder blenden bei ihrer Geburt ein, statt zu ploppen.
