@@ -597,7 +597,10 @@ const BILD_FAELLE = [
 ];
 async function probeBildWeg(H) {
     const { path } = H;
-    const L = H.linse("scripts/diag-werkstatt-weg.cjs", ["probe", "wegHelfer", "bauWeg", "wegLauf", "WERKE", "TEILE", "PHASEN"]);
+    const L = H.linse("scripts/diag-werkstatt-weg.cjs", ["probe", "wegHelfer", "bauWeg", "wegLauf", "WERKE", "TEILE"]);
+    // DIE PHASEN DER ZEILE gehören der Station (09.11.: w22-geh-bild 6c5a3a5b strich `PHASEN` in der Linse — in scripts/ las sie
+    // niemand, die Decke zahlte; diese Station las sie: „ReferenceError: PHASEN is not defined“, bauen.K1#2 UNGEMESSEN auf der GTX)
+    const PHASEN = ["eingabe", "steht", "l0", "bild", "gpu"]; // der Weg der UI · das Setzen · der L0-Bau · das Zeichnen · die GPU (e.zeiten)
     const { buehne } = require(path.resolve("scripts/lib/welt-boot.cjs"));
     const { page } = await H.verbinde();
     await page.setViewport({ width: 1280, height: 720 }); // das Fenster der Linse (--echt); die Grundstellung stellt 1920 × 1080 zurück
@@ -635,7 +638,7 @@ async function probeBildWeg(H) {
         const z = e.zeiten || [];
         console.log(
             `  [bild] ${weg} · ${lage} · ${werk} · ${sicht} ${e.kalt ? "kalt" : "warm"} ${z[4]} ms, Bau-Hash ${e.bau === e.soll ? "=" : "≠"} L0 · ` +
-                `${L.PHASEN.map((k, i) => k + " " + (z[i] - (z[i - 1] || 0))).join(" · ")} ${e.fehler || ""}`
+                `${PHASEN.map((k, i) => k + " " + (z[i] - (z[i - 1] || 0))).join(" · ")} ${e.fehler || ""}`
         );
         await H.binnen(page.evaluate(() => window.__weltStehtNach()), Math.min(8000, (H.rest() - 4) * 1000));
     }
