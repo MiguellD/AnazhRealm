@@ -1,4 +1,0 @@
-{
- "ergebnis": "gedaechtnis",
- "ms": 1
-}
