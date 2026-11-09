@@ -33,6 +33,9 @@ Neu eingemischt:
 - **Drittes Gerät gtx1050-desktop:** Die CPU ist der Engpass. G DATA hat der Schöpfer entfernt. Energieplan und Autostart sind offen: Die Sitzung dort nimmt nur die Zustimmung des Schöpfers in ihrem eigenen Chat. Defender-Ausnahmen und Auto-Anmeldung liegen beim Schöpfer. Zeit-Urteile zählen dort nie.
 - **OFFENER FEHLER:** `bild:stadt*` reißt den Proben-Deckel auf ALLEN Läufern (Radeon 616 s, GTX 1050 552–616 s). Die Werkbank kommt am Stadt-Ort nie bis „Kamera des Spiels“. Damit gibt es kein GPU-Bild von Menge, Wagen und Verkehr (C).
 
+## Notbremse bei 98 %
+`bash /tmp/claude/w3/notbremse-cloud.sh` schreibt in EINEM Commit einen STOPP in brief-gemein und in den Briefkasten jedes w25/w26-Zweigs, der seit 09.11. 10:00 aktiv war. Laufende Sitzungen lesen ihn im Wartezimmer. Direktnachrichten erreichen Cloud-Sitzungen nicht, und stoppen kann sie nur der Schöpfer in der App. Die Zug-Skripte (z348–z351) kosten kein Budget und fahren weiter.
+
 ## Wachen
 `bash /tmp/claude/w3/kombi-wache.sh` (run_in_background) endet bei der ersten neuen Abgabe (w24–w26, heim2) oder beim nächsten Zug-Ende.
 
