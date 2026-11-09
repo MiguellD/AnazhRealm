@@ -322,13 +322,13 @@ H.fahre(async function probeAlbedo(H) {
     console.log(j.fehler ? "ALBEDO-TAFEL ROT: " + j.fehler : "ALBEDO-TAFEL " + j.zeilen.length + " Zeilen beider Seiten" + (j.laborFehler ? " — " + j.laborFehler : ""));
     return j;
 }); 7804 C:\Users\micha\Desktop\AnazhRealm-OMEN\n0611-pm\meisterkarte-quelle\punkte\messung\roh\87537d3f-gtx\material.K1_1.json 90
-@@ 2.8 s · ort · 82 Takte
+@@ 1.4 s · ort · 53 Takte
 LABOR terrain 6
 LABOR garage 1
 LABOR portale 1
-@@ 53.5 s · welt · 29 Zeilen, Karte 0.1799
 LABOR schmiede 1
 LABOR fachwerk 1
+@@ 70.6 s · welt · 29 Zeilen, Karte 0.1799
 @@PUNKTE@@ FRIST 84 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier
 @@ 84 s · Labor: Protocol error (Runtime.callFunctionOn): Target closed
 [linse-gpu] nvidia/pascal

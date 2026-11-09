@@ -169,7 +169,7 @@ $ C:\Program Files\nodejs\node.exe -e const tor = (function sitzungTor() {
 [linse-gpu] nvidia/pascal
 == wiese · SICHT first (3.9 s): fein 1.1/200 · streu 0.5/344 · huf 0.2/201 · rad 0.1/200 (p95 cm / Kontakte)
 == wiese · SICHT third (10.2 s): fein 1.1/200 · streu 0.8/357 · huf 0.2/201 · rad 0.1/200 (p95 cm / Kontakte)
-== hang · SICHT first (21.1 s): fein 4.3/200 · streu 1/711 · huf 0.8/201 · rad 1.2/200 (p95 cm / Kontakte)
+== hang · SICHT first (21.4 s): fein 4.3/200 · streu 1/711 · huf 0.8/201 · rad 1.2/200 (p95 cm / Kontakte)
 
 --- gpu-zeuge ---
 [linse-gpu] nvidia/pascal

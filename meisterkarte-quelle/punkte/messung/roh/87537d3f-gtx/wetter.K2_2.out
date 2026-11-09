@@ -125,10 +125,48 @@ $ C:\Program Files\nodejs\node.exe -e const tor = (function sitzungTor() {
 {
  "wiese": {
   "ego": {
-   "fehler": "read ECONNRESET"
+   "ort": "wiese",
+   "haus": null,
+   "naesse": 0.909,
+   "innen": {
+    "n": 0,
+    "verhaeltnis": null,
+    "nass": null,
+    "bild": null
+   },
+   "aussen": {
+    "n": 25920,
+    "verhaeltnis": 0.784
+   },
+   "dicht": 1,
+   "glanz": 16,
+   "regen": {
+    "innen": 0,
+    "aussen": 149
+   },
+   "regenbild": 0.926
   },
   "third": {
-   "fehler": "connect ECONNREFUSED 127.0.0.1:27804"
+   "ort": "wiese",
+   "haus": null,
+   "naesse": 0.909,
+   "innen": {
+    "n": 0,
+    "verhaeltnis": null,
+    "nass": null,
+    "bild": null
+   },
+   "aussen": {
+    "n": 25894,
+    "verhaeltnis": 0.776
+   },
+   "dicht": 1,
+   "glanz": 16,
+   "regen": {
+    "innen": 0,
+    "aussen": 95
+   },
+   "regenbild": 0.92
   }
  }
 }
