@@ -1,7 +1,7 @@
 {
  "sha": "87537d3f1481217f2aad2a5cbbe5a3f6c4b95a55",
  "geraet": "gtx",
- "zeit": "2026-11-09T13:38:15.735Z",
+ "zeit": "2026-11-09T14:26:05.613Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "vegetation.K2#1": {
@@ -2094,6 +2094,55 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "lod.K2#1": {
+   "gruen": true,
+   "zahl": "Gehen 4 m/s: 0.036 % Pop-Pixel je Sekunde (746 px, Soll ≤ 0,05 %), je Schritt 23*/30*/23*/379/47*/62*/90*/92* (* = Stufen-Wechsel), Laub 216–216 m, perfTarget 34 ms, [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.44,
+   "gpu": "nvidia/pascal",
+   "s": 26.7,
+   "fremd": {
+    "s": 30.9,
+    "takte": 14,
+    "fremdS": 74.69,
+    "kerne": 2.418,
+    "fensterKerne": 2.624,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      33.72
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      15.75
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      7.02
+     ]
+    ],
+    "dienerS": 10.05,
+    "diener": [
+     [
+      "dwm.exe",
+      4.22
+     ],
+     [
+      "System",
+      3.91
+     ]
+    ],
+    "eigenS": 33.83,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "grund": "GRÜN trotz Fremd-Last: AppHelperCap.exe 33,7 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 15,8 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 7,0 CPU-s — 2,62 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container); Σ fremd 74,7 CPU-s in 30,9 s)",
+   "zeit": "2026-11-09T14:07:41.738Z",
+   "abdruck": "ddb153481a96",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "ungemessen": {
@@ -2106,41 +2155,41 @@
    "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
    "s": 45.2,
    "fremd": {
-    "s": 47.5,
-    "takte": 20,
-    "fremdS": 119.19,
-    "kerne": 2.509,
-    "fensterKerne": 2.677,
+    "s": 49.5,
+    "takte": 21,
+    "fremdS": 134.17,
+    "kerne": 2.711,
+    "fensterKerne": 3.087,
     "namen": [
      [
       "AppHelperCap.exe",
-      44.27
+      46.98
      ],
      [
       "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      36.75
+      40.02
      ],
      [
       "MsMpEng.exe",
-      12.48
+      13.23
      ]
     ],
-    "dienerS": 18.39,
+    "dienerS": 21.66,
     "diener": [
      [
       "dwm.exe",
-      9.88
+      12.23
      ],
      [
       "System",
-      5.11
+      5.88
      ]
     ],
-    "eigenS": 245.39,
+    "eigenS": 261.45,
     "schwelle": 0.3,
     "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
    },
-   "zeit": "2026-11-09T13:01:21.542Z",
+   "zeit": "2026-11-09T13:59:53.974Z",
    "abdruck": "3fd9f4bf2400",
    "port": 7804,
    "bahn": "sitzung",
@@ -2155,41 +2204,41 @@
    "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
    "s": 45.2,
    "fremd": {
-    "s": 47.5,
-    "takte": 20,
-    "fremdS": 119.19,
-    "kerne": 2.509,
-    "fensterKerne": 2.677,
+    "s": 49.5,
+    "takte": 21,
+    "fremdS": 134.17,
+    "kerne": 2.711,
+    "fensterKerne": 3.087,
     "namen": [
      [
       "AppHelperCap.exe",
-      44.27
+      46.98
      ],
      [
       "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      36.75
+      40.02
      ],
      [
       "MsMpEng.exe",
-      12.48
+      13.23
      ]
     ],
-    "dienerS": 18.39,
+    "dienerS": 21.66,
     "diener": [
      [
       "dwm.exe",
-      9.88
+      12.23
      ],
      [
       "System",
-      5.11
+      5.88
      ]
     ],
-    "eigenS": 245.39,
+    "eigenS": 261.45,
     "schwelle": 0.3,
     "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
    },
-   "zeit": "2026-11-09T13:01:21.542Z",
+   "zeit": "2026-11-09T13:59:53.974Z",
    "abdruck": "5d16596d62f0",
    "port": 7804,
    "bahn": "sitzung",
@@ -2199,47 +2248,47 @@
   "gelaende.K5#2": {
    "gruen": false,
    "ungemessen": true,
-   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: == wiese · SICHT third (10.7 s): fein 1.1/200 · streu 0.8/357 · huf 0.2/201 · rad 0.1/200 (p95 cm / Kontakte))",
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: == hang · SICHT first (22.6 s): fein 4.3/200 · streu 1/711 · huf 0.8/201 · rad 1.2/200 (p95 cm / Kontakte))",
    "exit": 1,
    "minuten": 0.75,
-   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: == wiese · SICHT third (10.7 s): fein 1.1/200 · streu 0.8/357 · huf 0.2/201 · rad 0.1/200 (p95 cm / Kontakte))",
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: == hang · SICHT first (22.6 s): fein 4.3/200 · streu 1/711 · huf 0.8/201 · rad 1.2/200 (p95 cm / Kontakte))",
    "s": 45.2,
    "fremd": {
-    "s": 49,
-    "takte": 22,
-    "fremdS": 121.73,
-    "kerne": 2.485,
-    "fensterKerne": 2.81,
+    "s": 46.8,
+    "takte": 21,
+    "fremdS": 118.39,
+    "kerne": 2.527,
+    "fensterKerne": 2.782,
     "namen": [
      [
       "AppHelperCap.exe",
-      50.55
+      48.98
      ],
      [
       "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      33.63
+      31.22
      ],
      [
       "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      11.11
+      12.94
      ]
     ],
-    "dienerS": 13.73,
+    "dienerS": 14.97,
     "diener": [
      [
       "dwm.exe",
-      6.47
+      7.39
      ],
      [
       "System",
       4.34
      ]
     ],
-    "eigenS": 147.14,
+    "eigenS": 158.47,
     "schwelle": 0.3,
     "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
    },
-   "zeit": "2026-11-09T13:02:44.001Z",
+   "zeit": "2026-11-09T14:01:17.547Z",
    "abdruck": "7c0cbb1bb442",
    "port": 7804,
    "bahn": "sitzung",
@@ -2248,47 +2297,47 @@
   "vegetation.K5#2": {
    "gruen": false,
    "ungemessen": true,
-   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: SCHRITT /bild 41.6 s)",
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: SCHRITT /bild 41.4 s)",
    "exit": 1,
    "minuten": 1.5,
-   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: SCHRITT /bild 41.6 s)",
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: SCHRITT /bild 41.4 s)",
    "s": 90.2,
    "fremd": {
-    "s": 92.2,
-    "takte": 42,
-    "fremdS": 224.89,
-    "kerne": 2.44,
-    "fensterKerne": 2.722,
+    "s": 90.4,
+    "takte": 41,
+    "fremdS": 230.7,
+    "kerne": 2.551,
+    "fensterKerne": 3.332,
     "namen": [
      [
       "AppHelperCap.exe",
-      98.17
+      96.3
      ],
      [
       "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      58.56
+      56.13
      ],
      [
       "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      18.19
+      22.34
      ]
     ],
-    "dienerS": 30.13,
+    "dienerS": 29.83,
     "diener": [
      [
       "dwm.exe",
-      12.78
+      13.53
      ],
      [
       "System",
-      12
+      11.3
      ]
     ],
-    "eigenS": 143.25,
+    "eigenS": 146.19,
     "schwelle": 0.3,
     "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
    },
-   "zeit": "2026-11-09T13:04:09.108Z",
+   "zeit": "2026-11-09T14:02:42.278Z",
    "abdruck": "726e275ec65d",
    "port": 7804,
    "bahn": "sitzung",
@@ -2303,41 +2352,41 @@
    "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: setz-4 · Exit 0)",
    "s": 45.2,
    "fremd": {
-    "s": 48.7,
-    "takte": 22,
-    "fremdS": 114.36,
-    "kerne": 2.35,
-    "fensterKerne": 2.693,
+    "s": 46.9,
+    "takte": 21,
+    "fremdS": 139.52,
+    "kerne": 2.976,
+    "fensterKerne": 3.921,
     "namen": [
      [
       "AppHelperCap.exe",
-      51.55
+      51.25
      ],
      [
       "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      28.39
+      25.88
      ],
      [
-      "MsMpEng.exe",
-      8.23
+      "svchost.exe",
+      16.84
      ]
     ],
-    "dienerS": 14.48,
+    "dienerS": 16.59,
     "diener": [
      [
       "System",
-      5.89
+      6.78
      ],
      [
       "dwm.exe",
-      5.48
+      6.63
      ]
     ],
-    "eigenS": 70.2,
+    "eigenS": 75.47,
     "schwelle": 0.3,
     "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
    },
-   "zeit": "2026-11-09T13:06:15.402Z",
+   "zeit": "2026-11-09T14:04:49.922Z",
    "abdruck": "a36e076c42f0",
    "port": 7804,
    "bahn": "sitzung",
@@ -2350,142 +2399,93 @@
    "exit": 1,
    "minuten": 0.75,
    "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: wiese · Exit 0)",
-   "s": 45.2,
+   "s": 45.3,
    "fremd": {
-    "s": 46.2,
+    "s": 46.5,
     "takte": 21,
-    "fremdS": 111.28,
-    "kerne": 2.408,
-    "fensterKerne": 2.549,
+    "fremdS": 112.72,
+    "kerne": 2.426,
+    "fensterKerne": 2.693,
     "namen": [
      [
       "AppHelperCap.exe",
-      48.95
+      48.72
      ],
      [
       "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      27.64
+      24.91
      ],
      [
       "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      8.02
+      9.33
      ]
     ],
-    "dienerS": 13.55,
+    "dienerS": 15.78,
     "diener": [
      [
       "dwm.exe",
-      6.5
+      6.67
      ],
      [
       "System",
-      4.59
+      5.81
      ]
     ],
-    "eigenS": 71.81,
+    "eigenS": 71.91,
     "schwelle": 0.3,
     "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
    },
-   "zeit": "2026-11-09T13:07:36.425Z",
+   "zeit": "2026-11-09T14:06:18.552Z",
    "abdruck": "2a29046aa7bb",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session"
-  },
-  "lod.K2#1": {
-   "gruen": false,
-   "ungemessen": true,
-   "zahl": "Deckel 28 s gerissen — beendet, UNGEMESSEN (zuletzt: umstellen · Exit 0)",
-   "exit": 1,
-   "minuten": 0.47,
-   "grund": "Deckel 28 s gerissen — beendet, UNGEMESSEN (zuletzt: umstellen · Exit 0)",
-   "s": 28.2,
-   "fremd": {
-    "s": 30.8,
-    "takte": 14,
-    "fremdS": 64.95,
-    "kerne": 2.11,
-    "fensterKerne": 2.283,
-    "namen": [
-     [
-      "AppHelperCap.exe",
-      32.23
-     ],
-     [
-      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      15.39
-     ],
-     [
-      "MsMpEng.exe",
-      4.47
-     ]
-    ],
-    "dienerS": 8.95,
-    "diener": [
-     [
-      "System",
-      3.83
-     ],
-     [
-      "dwm.exe",
-      3.52
-     ]
-    ],
-    "eigenS": 33.31,
-    "schwelle": 0.3,
-    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
-   },
-   "zeit": "2026-11-09T13:08:54.589Z",
-   "abdruck": "ddb153481a96",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
   },
   "leib.K1#1": {
    "gruen": false,
-   "zahl": "Fremd-Last: AppHelperCap.exe 42,4 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 26,3 CPU-s · MsMpEng.exe 7,6 CPU-s — 2,66 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container); Σ fremd 99,8 CPU-s in 40,2 s) — kein Urteil, UNGEMESSEN (die Probe sah: schlechtester von 1 Läufen p95 ms ego/gehen 54 · third/gehen 55.9 · ego/wechsel 113.2 · third/wechsel 27.1 · Bild 32.2 ms)",
+   "zahl": "Fremd-Last: AppHelperCap.exe 45,2 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 24,7 CPU-s · svchost.exe 9,5 CPU-s — 3,01 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container); Σ fremd 108,5 CPU-s in 42,4 s) — kein Urteil, UNGEMESSEN (die Probe sah: schlechtester von 1 Läufen p95 ms ego/gehen 141.3 · third/gehen 74.3 · ego/wechsel 69.1 · third/wechsel 27.8 · Bild 32.71 ms)",
    "exit": 0,
-   "minuten": 0.6,
-   "grund": "Fremd-Last: AppHelperCap.exe 42,4 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 26,3 CPU-s · MsMpEng.exe 7,6 CPU-s — 2,66 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container); Σ fremd 99,8 CPU-s in 40,2 s) — kein Urteil, UNGEMESSEN (die Probe sah: schlechtester von 1 Läufen p95 ms ego/gehen 54 · third/gehen 55.9 · ego/wechsel 113.2 · third/wechsel 27.1 · Bild 32.2 ms)",
+   "minuten": 0.69,
+   "grund": "Fremd-Last: AppHelperCap.exe 45,2 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 24,7 CPU-s · svchost.exe 9,5 CPU-s — 3,01 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container); Σ fremd 108,5 CPU-s in 42,4 s) — kein Urteil, UNGEMESSEN (die Probe sah: schlechtester von 1 Läufen p95 ms ego/gehen 141.3 · third/gehen 74.3 · ego/wechsel 69.1 · third/wechsel 27.8 · Bild 32.71 ms)",
    "gpu": "nvidia/pascal",
-   "s": 36.3,
+   "s": 41.1,
    "fremd": {
-    "s": 40.2,
-    "takte": 18,
-    "fremdS": 99.81,
-    "kerne": 2.483,
-    "fensterKerne": 2.656,
+    "s": 42.4,
+    "takte": 19,
+    "fremdS": 108.52,
+    "kerne": 2.559,
+    "fensterKerne": 3.01,
     "namen": [
      [
       "AppHelperCap.exe",
-      42.38
+      45.22
      ],
      [
       "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      26.27
+      24.66
      ],
      [
-      "MsMpEng.exe",
-      7.58
+      "svchost.exe",
+      9.5
      ]
     ],
-    "dienerS": 17.78,
+    "dienerS": 19.5,
     "diener": [
      [
       "dwm.exe",
-      8.78
+      9.89
      ],
      [
       "System",
-      6.72
+      6.58
      ]
     ],
-    "eigenS": 106.55,
+    "eigenS": 103.72,
     "schwelle": 0.3,
     "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
    },
    "ungemessen": true,
-   "zeit": "2026-11-09T13:10:01.017Z",
+   "zeit": "2026-11-09T14:08:10.565Z",
    "abdruck": "cd8f3cd2b132",
    "port": 7804,
    "bahn": "sitzung",
@@ -2500,41 +2500,41 @@
    "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
    "s": 45.2,
    "fremd": {
-    "s": 47.7,
-    "takte": 21,
-    "fremdS": 165.64,
-    "kerne": 3.474,
-    "fensterKerne": 3.865,
+    "s": 46.2,
+    "takte": 20,
+    "fremdS": 168.75,
+    "kerne": 3.653,
+    "fensterKerne": 4.054,
     "namen": [
      [
-      "AppHelperCap.exe",
-      54.92
+      "MsMpEng.exe",
+      53.08
      ],
      [
-      "MsMpEng.exe",
-      53.41
+      "AppHelperCap.exe",
+      52.03
      ],
      [
       "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      30.55
+      32.92
      ]
     ],
-    "dienerS": 16.86,
+    "dienerS": 17.03,
     "diener": [
      [
       "dwm.exe",
-      7.83
+      7.92
      ],
      [
       "System",
-      5.91
+      5.89
      ]
     ],
-    "eigenS": 152.61,
+    "eigenS": 161.92,
     "schwelle": 0.3,
     "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
    },
-   "zeit": "2026-11-09T13:10:39.003Z",
+   "zeit": "2026-11-09T14:08:52.956Z",
    "abdruck": "d04b4f29f398",
    "port": 7804,
    "bahn": "sitzung",
@@ -2542,49 +2542,49 @@
   },
   "material.K1#1": {
    "gruen": false,
-   "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Welt/Labor 0,9–1,1: 0/0 · im realen Band beidseits: 0/0 · echt NEIN · [linse-gpu] nvidia/pascal) · Täter: ALBEDO-TAFEL 0 Zeilen beider Seiten — Labor: Protocol error (Runtime.callFunctionOn): Target closed",
+   "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Welt/Labor 0,9–1,1: 0/0 · im realen Band beidseits: 0/0 · echt NEIN · [linse-gpu] nvidia/pascal) · Täter: ALBEDO-TAFEL 0 Zeilen beider Seiten — Labor: Protocol error (Runtime.evaluate): Target closed",
    "exit": 3,
    "minuten": 1.4,
-   "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Welt/Labor 0,9–1,1: 0/0 · im realen Band beidseits: 0/0 · echt NEIN · [linse-gpu] nvidia/pascal) · Täter: ALBEDO-TAFEL 0 Zeilen beider Seiten — Labor: Protocol error (Runtime.callFunctionOn): Target closed",
+   "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Welt/Labor 0,9–1,1: 0/0 · im realen Band beidseits: 0/0 · echt NEIN · [linse-gpu] nvidia/pascal) · Täter: ALBEDO-TAFEL 0 Zeilen beider Seiten — Labor: Protocol error (Runtime.evaluate): Target closed",
    "gpu": "nvidia/pascal",
    "ungemessen": true,
-   "s": 84.3,
+   "s": 84.2,
    "fremd": {
-    "s": 87.3,
-    "takte": 39,
-    "fremdS": 211.95,
-    "kerne": 2.428,
-    "fensterKerne": 2.634,
+    "s": 87.7,
+    "takte": 38,
+    "fremdS": 243.25,
+    "kerne": 2.773,
+    "fensterKerne": 4.29,
     "namen": [
      [
       "AppHelperCap.exe",
-      92.59
+      91.52
      ],
      [
       "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      52.88
+      58.38
      ],
      [
       "MsMpEng.exe",
-      18.55
+      23.64
      ]
     ],
-    "dienerS": 36.05,
+    "dienerS": 44.89,
     "diener": [
      [
-      "dwm.exe",
-      17.16
+      "System",
+      20.5
      ],
      [
-      "System",
-      13.42
+      "dwm.exe",
+      18.39
      ]
     ],
-    "eigenS": 300.27,
+    "eigenS": 325.48,
     "schwelle": 0.3,
     "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
    },
-   "zeit": "2026-11-09T13:12:02.393Z",
+   "zeit": "2026-11-09T14:10:13.775Z",
    "abdruck": "b8eb79afff76",
    "port": 7804,
    "bahn": "sitzung",
@@ -2592,49 +2592,49 @@
   },
   "material.K1#2": {
    "gruen": false,
-   "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Karte Welt undefined · Labor stumm · Soll undefined ± undefined · Zeilen NICHT alle im Soll und Band · echt NEIN · [linse-gpu] nvidia/pascal) · Täter: ALBEDO-TAFEL 0 Zeilen beider Seiten — Labor: Protocol error (Runtime.callFunctionOn): Target closed",
+   "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Karte Welt undefined · Labor stumm · Soll undefined ± undefined · Zeilen NICHT alle im Soll und Band · echt NEIN · [linse-gpu] nvidia/pascal) · Täter: ALBEDO-TAFEL 0 Zeilen beider Seiten — Labor: Protocol error (Runtime.evaluate): Target closed",
    "exit": 3,
    "minuten": 1.4,
-   "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Karte Welt undefined · Labor stumm · Soll undefined ± undefined · Zeilen NICHT alle im Soll und Band · echt NEIN · [linse-gpu] nvidia/pascal) · Täter: ALBEDO-TAFEL 0 Zeilen beider Seiten — Labor: Protocol error (Runtime.callFunctionOn): Target closed",
+   "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Karte Welt undefined · Labor stumm · Soll undefined ± undefined · Zeilen NICHT alle im Soll und Band · echt NEIN · [linse-gpu] nvidia/pascal) · Täter: ALBEDO-TAFEL 0 Zeilen beider Seiten — Labor: Protocol error (Runtime.evaluate): Target closed",
    "gpu": "nvidia/pascal",
    "ungemessen": true,
-   "s": 84.3,
+   "s": 84.2,
    "fremd": {
-    "s": 87.3,
-    "takte": 39,
-    "fremdS": 211.95,
-    "kerne": 2.428,
-    "fensterKerne": 2.634,
+    "s": 87.7,
+    "takte": 38,
+    "fremdS": 243.25,
+    "kerne": 2.773,
+    "fensterKerne": 4.29,
     "namen": [
      [
       "AppHelperCap.exe",
-      92.59
+      91.52
      ],
      [
       "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      52.88
+      58.38
      ],
      [
       "MsMpEng.exe",
-      18.55
+      23.64
      ]
     ],
-    "dienerS": 36.05,
+    "dienerS": 44.89,
     "diener": [
      [
-      "dwm.exe",
-      17.16
+      "System",
+      20.5
      ],
      [
-      "System",
-      13.42
+      "dwm.exe",
+      18.39
      ]
     ],
-    "eigenS": 300.27,
+    "eigenS": 325.48,
     "schwelle": 0.3,
     "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
    },
-   "zeit": "2026-11-09T13:12:02.393Z",
+   "zeit": "2026-11-09T14:10:13.775Z",
    "abdruck": "18928b5b08be",
    "port": 7804,
    "bahn": "sitzung",
@@ -2644,47 +2644,47 @@
   "licht.K1#1": {
    "gruen": false,
    "ungemessen": true,
-   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __tagKurve({\"uhren\":[0.192,0.194,0. (88 Uhren) · 14.8 s · 35.0 s)",
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __tagKurve({\"uhren\":[0.192,0.194,0. (88 Uhren) · 15.0 s · 35.9 s)",
    "exit": 1,
    "minuten": 0.75,
-   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __tagKurve({\"uhren\":[0.192,0.194,0. (88 Uhren) · 14.8 s · 35.0 s)",
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __tagKurve({\"uhren\":[0.192,0.194,0. (88 Uhren) · 15.0 s · 35.9 s)",
    "s": 45.2,
    "fremd": {
-    "s": 46.3,
+    "s": 47.4,
     "takte": 21,
-    "fremdS": 102.42,
-    "kerne": 2.215,
-    "fensterKerne": 2.484,
+    "fremdS": 113.64,
+    "kerne": 2.395,
+    "fensterKerne": 2.631,
     "namen": [
      [
       "AppHelperCap.exe",
-      48
+      49.86
      ],
      [
       "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      23.84
+      27.06
      ],
      [
-      "MsMpEng.exe",
-      7.33
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      9.13
      ]
     ],
-    "dienerS": 14.33,
+    "dienerS": 15.86,
     "diener": [
      [
-      "dwm.exe",
-      5.94
+      "System",
+      6.73
      ],
      [
-      "System",
-      5.91
+      "dwm.exe",
+      6.17
      ]
     ],
-    "eigenS": 114.66,
+    "eigenS": 116.61,
     "schwelle": 0.3,
     "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
    },
-   "zeit": "2026-11-09T13:13:59.756Z",
+   "zeit": "2026-11-09T14:12:11.774Z",
    "abdruck": "dfd7c213d39d",
    "port": 7804,
    "bahn": "sitzung",
@@ -2693,47 +2693,47 @@
   "ankunft.K4#1": {
    "gruen": false,
    "ungemessen": true,
-   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: POSE ego-0 74036 ms)",
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: POSE ego-0 75084 ms)",
    "exit": 1,
    "minuten": 1.5,
-   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: POSE ego-0 74036 ms)",
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: POSE ego-0 75084 ms)",
    "s": 90.2,
    "fremd": {
-    "s": 91.7,
+    "s": 92.1,
     "takte": 42,
-    "fremdS": 188.78,
-    "kerne": 2.058,
-    "fensterKerne": 2.291,
+    "fremdS": 211.28,
+    "kerne": 2.293,
+    "fensterKerne": 2.526,
     "namen": [
      [
       "AppHelperCap.exe",
-      97.06
+      99.69
      ],
      [
       "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      41.7
+      45.84
      ],
      [
-      "OmenCommandCenterBackground.exe",
-      12.19
+      "MsMpEng.exe",
+      15.63
      ]
     ],
-    "dienerS": 22.22,
+    "dienerS": 27.64,
     "diener": [
      [
-      "dwm.exe",
-      10.77
+      "System",
+      11.3
      ],
      [
-      "System",
-      6.55
+      "dwm.exe",
+      11.11
      ]
     ],
-    "eigenS": 107.02,
+    "eigenS": 105.58,
     "schwelle": 0.3,
     "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
    },
-   "zeit": "2026-11-09T13:15:16.230Z",
+   "zeit": "2026-11-09T14:13:30.040Z",
    "abdruck": "ea66260e5746",
    "port": 7804,
    "bahn": "sitzung",
@@ -2742,47 +2742,47 @@
   "licht.K3#2": {
    "gruen": false,
    "ungemessen": true,
-   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __lichtWeg({ weg: \"spiegel\", uhr: 0 · 2.9 s · 36.6 s)",
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __lichtWeg({ weg: \"spiegel\", uhr: 0 · 2.9 s · 36.7 s)",
    "exit": 1,
    "minuten": 0.75,
-   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __lichtWeg({ weg: \"spiegel\", uhr: 0 · 2.9 s · 36.6 s)",
-   "s": 45.2,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __lichtWeg({ weg: \"spiegel\", uhr: 0 · 2.9 s · 36.7 s)",
+   "s": 45.3,
    "fremd": {
-    "s": 48.9,
-    "takte": 22,
-    "fremdS": 110.94,
-    "kerne": 2.269,
-    "fensterKerne": 2.59,
+    "s": 47,
+    "takte": 21,
+    "fremdS": 115.31,
+    "kerne": 2.452,
+    "fensterKerne": 2.523,
     "namen": [
      [
       "AppHelperCap.exe",
-      51.88
+      49.36
      ],
      [
       "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      27.02
+      29.56
      ],
      [
       "MsMpEng.exe",
-      8.63
+      9.7
      ]
     ],
-    "dienerS": 14.81,
+    "dienerS": 14.36,
     "diener": [
      [
       "dwm.exe",
-      7.69
+      6.86
      ],
      [
       "System",
-      4.22
+      4.45
      ]
     ],
-    "eigenS": 154.59,
+    "eigenS": 156.03,
     "schwelle": 0.3,
     "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
    },
-   "zeit": "2026-11-09T13:17:32.438Z",
+   "zeit": "2026-11-09T14:15:50.750Z",
    "abdruck": "5bc5276247f0",
    "port": 7804,
    "bahn": "sitzung",
@@ -2790,49 +2790,49 @@
   },
   "profiband.K5#1": {
    "gruen": false,
-   "zahl": "Fremd-Last: AppHelperCap.exe 28,2 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 14,3 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 4,3 CPU-s — 2,41 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container); Σ fremd 60,9 CPU-s in 26,5 s) — kein Urteil, UNGEMESSEN (die Probe sah: Dauer 17.24 min in 5 Seite(n), 6 Proben: Dauerlast 1617 Bilder · Bild-p95 200.01 (p99 225.06, max 316.67) ms · Takt-p95 196.38 ms · VRAM-p95 143.7 MB · Anker Bild-p95 83.38 → 74.98 ms · Heap 278.5 → 334.6 MB · VRAM nach GC 132.9 → 134.1 MB )",
+   "zahl": "Fremd-Last: AppHelperCap.exe 24,5 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 15,2 CPU-s · MsMpEng.exe 5,0 CPU-s — 2,36 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container); Σ fremd 57,7 CPU-s in 24,7 s) — kein Urteil, UNGEMESSEN (die Probe sah: Dauer 17.03 min in 5 Seite(n), 6 Proben: Dauerlast 1585 Bilder · Bild-p95 199.99 (p99 241.7, max 375) ms · Takt-p95 194.9 ms · VRAM-p95 141.3 MB · Anker Bild-p95 91.72 → 100.04 ms · Heap 276.6 → 336.2 MB · VRAM nach GC 132.3 → 133.8 MB · We)",
    "exit": 0,
-   "minuten": 0.41,
-   "grund": "Fremd-Last: AppHelperCap.exe 28,2 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 14,3 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 4,3 CPU-s — 2,41 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container); Σ fremd 60,9 CPU-s in 26,5 s) — kein Urteil, UNGEMESSEN (die Probe sah: Dauer 17.24 min in 5 Seite(n), 6 Proben: Dauerlast 1617 Bilder · Bild-p95 200.01 (p99 225.06, max 316.67) ms · Takt-p95 196.38 ms · VRAM-p95 143.7 MB · Anker Bild-p95 83.38 → 74.98 ms · Heap 278.5 → 334.6 MB · VRAM nach GC 132.9 → 134.1 MB )",
+   "minuten": 0.39,
+   "grund": "Fremd-Last: AppHelperCap.exe 24,5 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 15,2 CPU-s · MsMpEng.exe 5,0 CPU-s — 2,36 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container); Σ fremd 57,7 CPU-s in 24,7 s) — kein Urteil, UNGEMESSEN (die Probe sah: Dauer 17.03 min in 5 Seite(n), 6 Proben: Dauerlast 1585 Bilder · Bild-p95 199.99 (p99 241.7, max 375) ms · Takt-p95 194.9 ms · VRAM-p95 141.3 MB · Anker Bild-p95 91.72 → 100.04 ms · Heap 276.6 → 336.2 MB · VRAM nach GC 132.3 → 133.8 MB · We)",
    "gpu": "nvidia/pascal",
-   "s": 24.3,
+   "s": 23.6,
    "fremd": {
-    "s": 26.5,
-    "takte": 12,
-    "fremdS": 60.89,
-    "kerne": 2.294,
-    "fensterKerne": 2.407,
+    "s": 24.7,
+    "takte": 11,
+    "fremdS": 57.7,
+    "kerne": 2.339,
+    "fensterKerne": 2.359,
     "namen": [
      [
       "AppHelperCap.exe",
-      28.16
+      24.47
      ],
      [
       "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      14.28
+      15.16
      ],
      [
-      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      4.34
+      "MsMpEng.exe",
+      5.03
      ]
     ],
-    "dienerS": 9.64,
+    "dienerS": 9.06,
     "diener": [
      [
       "dwm.exe",
-      5.52
+      4.75
      ],
      [
       "System",
-      2.73
+      2.58
      ]
     ],
-    "eigenS": 75.2,
+    "eigenS": 94.16,
     "schwelle": 0.3,
     "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
    },
    "ungemessen": true,
-   "zeit": "2026-11-09T13:18:44.804Z",
+   "zeit": "2026-11-09T14:17:04.925Z",
    "abdruck": "6c22c6593987",
    "port": 7804,
    "bahn": "sitzung",
@@ -2840,49 +2840,49 @@
   },
   "profiband.K5#2": {
    "gruen": false,
-   "zahl": "Fremd-Last: AppHelperCap.exe 28,2 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 14,3 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 4,3 CPU-s — 2,41 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container); Σ fremd 60,9 CPU-s in 26,5 s) — kein Urteil, UNGEMESSEN (die Probe sah: Dauer 17.24 min in 5 Seite(n), 6 Proben: Dauerlast 1617 Bilder · Bild-p95 200.01 (p99 225.06, max 316.67) ms · Takt-p95 196.38 ms · VRAM-p95 143.7 MB · Anker Bild-p95 83.38 → 74.98 ms · Heap 278.5 → 334.6 MB · VRAM nach GC 132.9 → 134.1 MB )",
+   "zahl": "Fremd-Last: AppHelperCap.exe 24,5 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 15,2 CPU-s · MsMpEng.exe 5,0 CPU-s — 2,36 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container); Σ fremd 57,7 CPU-s in 24,7 s) — kein Urteil, UNGEMESSEN (die Probe sah: Dauer 17.03 min in 5 Seite(n), 6 Proben: Dauerlast 1585 Bilder · Bild-p95 199.99 (p99 241.7, max 375) ms · Takt-p95 194.9 ms · VRAM-p95 141.3 MB · Anker Bild-p95 91.72 → 100.04 ms · Heap 276.6 → 336.2 MB · VRAM nach GC 132.3 → 133.8 MB · We)",
    "exit": 0,
-   "minuten": 0.41,
-   "grund": "Fremd-Last: AppHelperCap.exe 28,2 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 14,3 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 4,3 CPU-s — 2,41 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container); Σ fremd 60,9 CPU-s in 26,5 s) — kein Urteil, UNGEMESSEN (die Probe sah: Dauer 17.24 min in 5 Seite(n), 6 Proben: Dauerlast 1617 Bilder · Bild-p95 200.01 (p99 225.06, max 316.67) ms · Takt-p95 196.38 ms · VRAM-p95 143.7 MB · Anker Bild-p95 83.38 → 74.98 ms · Heap 278.5 → 334.6 MB · VRAM nach GC 132.9 → 134.1 MB )",
+   "minuten": 0.39,
+   "grund": "Fremd-Last: AppHelperCap.exe 24,5 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 15,2 CPU-s · MsMpEng.exe 5,0 CPU-s — 2,36 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container); Σ fremd 57,7 CPU-s in 24,7 s) — kein Urteil, UNGEMESSEN (die Probe sah: Dauer 17.03 min in 5 Seite(n), 6 Proben: Dauerlast 1585 Bilder · Bild-p95 199.99 (p99 241.7, max 375) ms · Takt-p95 194.9 ms · VRAM-p95 141.3 MB · Anker Bild-p95 91.72 → 100.04 ms · Heap 276.6 → 336.2 MB · VRAM nach GC 132.3 → 133.8 MB · We)",
    "gpu": "nvidia/pascal",
-   "s": 24.3,
+   "s": 23.6,
    "fremd": {
-    "s": 26.5,
-    "takte": 12,
-    "fremdS": 60.89,
-    "kerne": 2.294,
-    "fensterKerne": 2.407,
+    "s": 24.7,
+    "takte": 11,
+    "fremdS": 57.7,
+    "kerne": 2.339,
+    "fensterKerne": 2.359,
     "namen": [
      [
       "AppHelperCap.exe",
-      28.16
+      24.47
      ],
      [
       "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      14.28
+      15.16
      ],
      [
-      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      4.34
+      "MsMpEng.exe",
+      5.03
      ]
     ],
-    "dienerS": 9.64,
+    "dienerS": 9.06,
     "diener": [
      [
       "dwm.exe",
-      5.52
+      4.75
      ],
      [
       "System",
-      2.73
+      2.58
      ]
     ],
-    "eigenS": 75.2,
+    "eigenS": 94.16,
     "schwelle": 0.3,
     "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
    },
    "ungemessen": true,
-   "zeit": "2026-11-09T13:18:44.804Z",
+   "zeit": "2026-11-09T14:17:04.925Z",
    "abdruck": "9cb0be8108f4",
    "port": 7804,
    "bahn": "sitzung",
@@ -2892,47 +2892,47 @@
   "gelaende.K2#1": {
    "gruen": false,
    "ungemessen": true,
-   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: (b)(d) 20.0 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"flu)",
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: (b)(d) 20.4 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"flu)",
    "exit": 1,
    "minuten": 1.5,
-   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: (b)(d) 20.0 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"flu)",
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: (b)(d) 20.4 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"flu)",
    "s": 90.2,
    "fremd": {
-    "s": 93.1,
-    "takte": 42,
-    "fremdS": 210.63,
-    "kerne": 2.263,
-    "fensterKerne": 2.939,
+    "s": 91.4,
+    "takte": 41,
+    "fremdS": 230.02,
+    "kerne": 2.516,
+    "fensterKerne": 2.938,
     "namen": [
      [
       "AppHelperCap.exe",
-      95.14
+      96.98
      ],
      [
       "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      51.05
+      55.64
      ],
      [
-      "MsMpEng.exe",
-      15.56
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      19.52
      ]
     ],
-    "dienerS": 34.19,
+    "dienerS": 28.42,
     "diener": [
      [
       "dwm.exe",
-      15.92
+      15.53
      ],
      [
       "System",
-      12.69
+      7.23
      ]
     ],
-    "eigenS": 272.64,
+    "eigenS": 264.27,
     "schwelle": 0.3,
     "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
    },
-   "zeit": "2026-11-09T13:19:42.265Z",
+   "zeit": "2026-11-09T14:18:06.010Z",
    "abdruck": "93eeb4494f5b",
    "port": 7804,
    "bahn": "sitzung",
@@ -2941,47 +2941,47 @@
   "gelaende.K2#2": {
    "gruen": false,
    "ungemessen": true,
-   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: (b)(d) 20.0 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"flu)",
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: (b)(d) 20.4 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"flu)",
    "exit": 1,
    "minuten": 1.5,
-   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: (b)(d) 20.0 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"flu)",
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: (b)(d) 20.4 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"flu)",
    "s": 90.2,
    "fremd": {
-    "s": 93.1,
-    "takte": 42,
-    "fremdS": 210.63,
-    "kerne": 2.263,
-    "fensterKerne": 2.939,
+    "s": 91.4,
+    "takte": 41,
+    "fremdS": 230.02,
+    "kerne": 2.516,
+    "fensterKerne": 2.938,
     "namen": [
      [
       "AppHelperCap.exe",
-      95.14
+      96.98
      ],
      [
       "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      51.05
+      55.64
      ],
      [
-      "MsMpEng.exe",
-      15.56
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      19.52
      ]
     ],
-    "dienerS": 34.19,
+    "dienerS": 28.42,
     "diener": [
      [
       "dwm.exe",
-      15.92
+      15.53
      ],
      [
       "System",
-      12.69
+      7.23
      ]
     ],
-    "eigenS": 272.64,
+    "eigenS": 264.27,
     "schwelle": 0.3,
     "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
    },
-   "zeit": "2026-11-09T13:19:42.265Z",
+   "zeit": "2026-11-09T14:18:06.010Z",
    "abdruck": "0f54a91aa37d",
    "port": 7804,
    "bahn": "sitzung",
@@ -2997,41 +2997,41 @@
    "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
    "s": 45.2,
    "fremd": {
-    "s": 48.3,
-    "takte": 22,
-    "fremdS": 105.23,
-    "kerne": 2.179,
-    "fensterKerne": 2.312,
+    "s": 46.1,
+    "takte": 21,
+    "fremdS": 105.19,
+    "kerne": 2.28,
+    "fensterKerne": 2.333,
     "namen": [
      [
       "AppHelperCap.exe",
-      51.92
+      48.67
      ],
      [
       "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      23.67
+      23.3
      ],
      [
-      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      8.14
+      "MsMpEng.exe",
+      8.27
      ]
     ],
-    "dienerS": 12.8,
+    "dienerS": 10.13,
     "diener": [
      [
       "dwm.exe",
-      6.61
+      4.69
      ],
      [
       "System",
-      3.27
+      2.83
      ]
     ],
-    "eigenS": 79.22,
+    "eigenS": 78.34,
     "schwelle": 0.3,
     "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
    },
-   "zeit": "2026-11-09T13:21:48.962Z",
+   "zeit": "2026-11-09T14:20:16.496Z",
    "abdruck": "87e41bb36cf3",
    "port": 7804,
    "bahn": "sitzung",
@@ -3046,41 +3046,41 @@
    "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: ✅ GRÜN — herde)",
    "s": 90.2,
    "fremd": {
-    "s": 92.4,
+    "s": 93.2,
     "takte": 42,
-    "fremdS": 213.17,
-    "kerne": 2.307,
-    "fensterKerne": 2.533,
+    "fremdS": 226.84,
+    "kerne": 2.435,
+    "fensterKerne": 2.913,
     "namen": [
      [
       "AppHelperCap.exe",
-      98.69
+      98.47
      ],
      [
       "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      48.61
+      57.16
      ],
      [
-      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      20.5
+      "MsMpEng.exe",
+      16.77
      ]
     ],
-    "dienerS": 27.84,
+    "dienerS": 29.94,
     "diener": [
      [
       "dwm.exe",
-      13.38
+      14.94
      ],
      [
       "System",
-      9.5
+      9.53
      ]
     ],
-    "eigenS": 173.63,
+    "eigenS": 186.72,
     "schwelle": 0.3,
     "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
    },
-   "zeit": "2026-11-09T13:23:51.574Z",
+   "zeit": "2026-11-09T14:22:22.206Z",
    "abdruck": "9d9ccc7071a0",
    "port": 7804,
    "bahn": "sitzung",
@@ -3093,43 +3093,43 @@
    "exit": 1,
    "minuten": 0.75,
    "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
-   "s": 45.3,
+   "s": 45.2,
    "fremd": {
-    "s": 48.1,
+    "s": 48.5,
     "takte": 22,
-    "fremdS": 103.5,
-    "kerne": 2.15,
-    "fensterKerne": 2.275,
+    "fremdS": 110.97,
+    "kerne": 2.288,
+    "fensterKerne": 2.409,
     "namen": [
      [
       "AppHelperCap.exe",
-      50.77
+      52.8
      ],
      [
       "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      24.16
+      22.59
      ],
      [
       "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      7.86
+      9.25
      ]
     ],
-    "dienerS": 10.83,
+    "dienerS": 12.56,
     "diener": [
      [
       "dwm.exe",
-      5.09
+      6.63
      ],
      [
       "System",
-      3.16
+      3.23
      ]
     ],
-    "eigenS": 70.42,
+    "eigenS": 73.53,
     "schwelle": 0.3,
     "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
    },
-   "zeit": "2026-11-09T13:26:01.364Z",
+   "zeit": "2026-11-09T14:24:32.526Z",
    "abdruck": "7c55434a1b8a",
    "port": 7804,
    "bahn": "sitzung",
@@ -3137,50 +3137,49 @@
   },
   "fahrzeug.K3#1": {
    "gruen": false,
-   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Garage: keine Zeile MK2110 (Exit 3)) · Täter: (Welt 38.3 s · Garage 36.8 s im Fenster neben ihr)",
-   "exit": 3,
-   "minuten": 0.74,
-   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Garage: keine Zeile MK2110 (Exit 3)) · Täter: (Welt 38.3 s · Garage 36.8 s im Fenster neben ihr)",
+   "zahl": "die Welt der Sitzung endete während der Probe (die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen; die Probe sah: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: Garage: keine Zeile MK2110 (Exit 1))",
+   "exit": 1,
+   "minuten": 0.2,
+   "grund": "die Welt der Sitzung endete während der Probe (die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "gpu": "nvidia/pascal",
-   "gpuFremd": "google/swiftshader",
    "ungemessen": true,
-   "s": 44.2,
+   "s": 12,
    "fremd": {
-    "s": 47.8,
-    "takte": 16,
-    "fremdS": 97.72,
-    "kerne": 2.044,
-    "fensterKerne": 2.77,
+    "s": 16.1,
+    "takte": 7,
+    "fremdS": 62.41,
+    "kerne": 3.867,
+    "fensterKerne": 4.153,
     "namen": [
      [
-      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      37.78
-     ],
-     [
       "AppHelperCap.exe",
-      25.14
+      14.7
      ],
      [
-      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      11.47
+      "MsMpEng.exe",
+      14.11
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      13.52
      ]
     ],
-    "dienerS": 17.98,
+    "dienerS": 8.44,
     "diener": [
      [
       "dwm.exe",
-      7.98
+      3.41
      ],
      [
       "System",
-      5.66
+      2.72
      ]
     ],
-    "eigenS": 331.95,
+    "eigenS": 59.39,
     "schwelle": 0.3,
     "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
    },
-   "zeit": "2026-11-09T13:27:21.041Z",
+   "zeit": "2026-11-09T14:25:50.974Z",
    "abdruck": "e8395dc069f5",
    "port": 7804,
    "bahn": "sitzung",
@@ -3188,49 +3187,12 @@
   },
   "fahrzeug.K3#2": {
    "gruen": false,
-   "zahl": "Frist der Probe 45 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: gate:fahr-leben ohne Zeile T4/T5 (Exit 0)) · Täter: @@PUNKTE@@ FRIST 45 s der Probe gerissen — WELT (43.0 s)",
-   "exit": 0,
-   "minuten": 0.72,
-   "grund": "Frist der Probe 45 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: gate:fahr-leben ohne Zeile T4/T5 (Exit 0)) · Täter: @@PUNKTE@@ FRIST 45 s der Probe gerissen — WELT (43.0 s)",
-   "gpu": "nvidia/pascal",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "ungemessen": true,
-   "s": 43.2,
-   "fremd": {
-    "s": 44,
-    "takte": 20,
-    "fremdS": 109.64,
-    "kerne": 2.491,
-    "fensterKerne": 2.747,
-    "namen": [
-     [
-      "AppHelperCap.exe",
-      47.16
-     ],
-     [
-      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      29.31
-     ],
-     [
-      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      10.67
-     ]
-    ],
-    "dienerS": 14.28,
-    "diener": [
-     [
-      "dwm.exe",
-      7.42
-     ],
-     [
-      "System",
-      4.38
-     ]
-    ],
-    "eigenS": 79.23,
-    "schwelle": 0.3,
-    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
-   },
-   "zeit": "2026-11-09T13:28:43.139Z",
+   "zeit": "2026-11-09T14:26:05.497Z",
    "abdruck": "f9160ef42707",
    "port": 7804,
    "bahn": "sitzung",
@@ -3238,49 +3200,12 @@
   },
   "fahrzeug.K4#1": {
    "gruen": false,
-   "zahl": "Frist der Probe 45 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: gate:fahr-leben ohne Zeile T4 (Exit 0)) · Täter: @@PUNKTE@@ FRIST 45 s der Probe gerissen — WELT (43.0 s)",
-   "exit": 0,
-   "minuten": 0.72,
-   "grund": "Frist der Probe 45 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: gate:fahr-leben ohne Zeile T4 (Exit 0)) · Täter: @@PUNKTE@@ FRIST 45 s der Probe gerissen — WELT (43.0 s)",
-   "gpu": "nvidia/pascal",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "ungemessen": true,
-   "s": 43.2,
-   "fremd": {
-    "s": 44,
-    "takte": 20,
-    "fremdS": 109.64,
-    "kerne": 2.491,
-    "fensterKerne": 2.747,
-    "namen": [
-     [
-      "AppHelperCap.exe",
-      47.16
-     ],
-     [
-      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      29.31
-     ],
-     [
-      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      10.67
-     ]
-    ],
-    "dienerS": 14.28,
-    "diener": [
-     [
-      "dwm.exe",
-      7.42
-     ],
-     [
-      "System",
-      4.38
-     ]
-    ],
-    "eigenS": 79.23,
-    "schwelle": 0.3,
-    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
-   },
-   "zeit": "2026-11-09T13:28:43.139Z",
+   "zeit": "2026-11-09T14:26:05.497Z",
    "abdruck": "5f16d6260571",
    "port": 7804,
    "bahn": "sitzung",
@@ -3289,49 +3214,12 @@
   },
   "fahrzeug.K4#2": {
    "gruen": false,
-   "zahl": "Frist der Probe 45 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: gate:fahr-leben ohne Zeile T4 (Exit 0)) · Täter: @@PUNKTE@@ FRIST 45 s der Probe gerissen — WELT (43.0 s)",
-   "exit": 0,
-   "minuten": 0.72,
-   "grund": "Frist der Probe 45 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: gate:fahr-leben ohne Zeile T4 (Exit 0)) · Täter: @@PUNKTE@@ FRIST 45 s der Probe gerissen — WELT (43.0 s)",
-   "gpu": "nvidia/pascal",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "ungemessen": true,
-   "s": 43.2,
-   "fremd": {
-    "s": 44,
-    "takte": 20,
-    "fremdS": 109.64,
-    "kerne": 2.491,
-    "fensterKerne": 2.747,
-    "namen": [
-     [
-      "AppHelperCap.exe",
-      47.16
-     ],
-     [
-      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      29.31
-     ],
-     [
-      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      10.67
-     ]
-    ],
-    "dienerS": 14.28,
-    "diener": [
-     [
-      "dwm.exe",
-      7.42
-     ],
-     [
-      "System",
-      4.38
-     ]
-    ],
-    "eigenS": 79.23,
-    "schwelle": 0.3,
-    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
-   },
-   "zeit": "2026-11-09T13:28:43.139Z",
+   "zeit": "2026-11-09T14:26:05.497Z",
    "abdruck": "9bcf6b523b3f",
    "port": 7804,
    "bahn": "sitzung",
@@ -3340,49 +3228,12 @@
   },
   "leib.K1#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung endete während der Probe (der Halter endete (Exit 1)) — ungemessen; die Probe sah: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: latenz-JSON in 0 von 1 Läufen) · Täter: at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1645:16)",
-   "exit": 0,
-   "minuten": 0.03,
-   "grund": "die Welt der Sitzung endete während der Probe (der Halter endete (Exit 1)) — ungemessen",
-   "gpu": "nvidia/pascal",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "ungemessen": true,
-   "s": 1.8,
-   "fremd": {
-    "s": 4.5,
-    "takte": 2,
-    "fremdS": 13.28,
-    "kerne": 2.977,
-    "fensterKerne": 2.977,
-    "namen": [
-     [
-      "AppHelperCap.exe",
-      4.72
-     ],
-     [
-      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      2.84
-     ],
-     [
-      "MsMpEng.exe",
-      1.86
-     ]
-    ],
-    "dienerS": 2.81,
-    "diener": [
-     [
-      "System",
-      1.13
-     ],
-     [
-      "WmiPrvSE.exe",
-      0.97
-     ]
-    ],
-    "eigenS": 1.42,
-    "schwelle": 0.3,
-    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
-   },
-   "zeit": "2026-11-09T13:38:12.364Z",
+   "zeit": "2026-11-09T14:26:05.502Z",
    "abdruck": "69bb8ec1c19c",
    "port": 7804,
    "bahn": "sitzung",
@@ -3390,49 +3241,12 @@
   },
   "halten.K2#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung endete während der Probe (der Halter endete (Exit 1)) — ungemessen; die Probe sah: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: latenz-JSON in 0 von 1 Läufen) · Täter: at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1645:16)",
-   "exit": 0,
-   "minuten": 0.03,
-   "grund": "die Welt der Sitzung endete während der Probe (der Halter endete (Exit 1)) — ungemessen",
-   "gpu": "nvidia/pascal",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "ungemessen": true,
-   "s": 1.8,
-   "fremd": {
-    "s": 4.5,
-    "takte": 2,
-    "fremdS": 13.28,
-    "kerne": 2.977,
-    "fensterKerne": 2.977,
-    "namen": [
-     [
-      "AppHelperCap.exe",
-      4.72
-     ],
-     [
-      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      2.84
-     ],
-     [
-      "MsMpEng.exe",
-      1.86
-     ]
-    ],
-    "dienerS": 2.81,
-    "diener": [
-     [
-      "System",
-      1.13
-     ],
-     [
-      "WmiPrvSE.exe",
-      0.97
-     ]
-    ],
-    "eigenS": 1.42,
-    "schwelle": 0.3,
-    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
-   },
-   "zeit": "2026-11-09T13:38:12.364Z",
+   "zeit": "2026-11-09T14:26:05.502Z",
    "abdruck": "ce8afc8b9d18",
    "port": 7804,
    "bahn": "sitzung",
@@ -3441,12 +3255,12 @@
   },
   "leib.K4#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-11-09T13:38:15.691Z",
+   "zeit": "2026-11-09T14:26:05.506Z",
    "abdruck": "8f7e47928a66",
    "port": 7804,
    "bahn": "sitzung",
@@ -3454,12 +3268,12 @@
   },
   "leib.K4#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-11-09T13:38:15.691Z",
+   "zeit": "2026-11-09T14:26:05.506Z",
    "abdruck": "d92a3ff92ce9",
    "port": 7804,
    "bahn": "sitzung",
@@ -3468,12 +3282,12 @@
   },
   "fahrzeug.K5#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-11-09T13:38:15.693Z",
+   "zeit": "2026-11-09T14:26:05.511Z",
    "abdruck": "6684db253d7a",
    "port": 7804,
    "bahn": "sitzung",
@@ -3481,12 +3295,12 @@
   },
   "fahrzeug.K2#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-11-09T13:38:15.695Z",
+   "zeit": "2026-11-09T14:26:05.515Z",
    "abdruck": "2fefbc9de50b",
    "port": 7804,
    "bahn": "sitzung",
@@ -3494,12 +3308,12 @@
   },
   "fahrzeug.K2#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-11-09T13:38:15.698Z",
+   "zeit": "2026-11-09T14:26:05.519Z",
    "abdruck": "36c3ac11fe9d",
    "port": 7804,
    "bahn": "sitzung",
@@ -3507,12 +3321,12 @@
   },
   "klang.K5#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-11-09T13:38:15.700Z",
+   "zeit": "2026-11-09T14:26:05.523Z",
    "abdruck": "811932f22285",
    "port": 7804,
    "bahn": "sitzung",
@@ -3520,12 +3334,12 @@
   },
   "speicher.K4#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-11-09T13:38:15.702Z",
+   "zeit": "2026-11-09T14:26:05.527Z",
    "abdruck": "072891de491c",
    "port": 7804,
    "bahn": "sitzung",
@@ -3533,48 +3347,12 @@
   },
   "licht.K3#1": {
    "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "ungemessen": true,
-   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: BERUHIGUNG 9 statt /lauf {\"sek\":5,\"ein\":8,\"ruhe\":120,\"regler\":\"voll\"}: die Welt steht nach 1 Takten, 0.0 s · 44.5 s)",
-   "exit": 1,
-   "minuten": 0.75,
-   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: BERUHIGUNG 9 statt /lauf {\"sek\":5,\"ein\":8,\"ruhe\":120,\"regler\":\"voll\"}: die Welt steht nach 1 Takten, 0.0 s · 44.5 s)",
-   "s": 45.2,
-   "fremd": {
-    "s": 46.9,
-    "takte": 21,
-    "fremdS": 118.88,
-    "kerne": 2.536,
-    "fensterKerne": 2.749,
-    "namen": [
-     [
-      "AppHelperCap.exe",
-      49.19
-     ],
-     [
-      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      33.95
-     ],
-     [
-      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      9.84
-     ]
-    ],
-    "dienerS": 16.47,
-    "diener": [
-     [
-      "dwm.exe",
-      8.14
-     ],
-     [
-      "System",
-      5.05
-     ]
-    ],
-    "eigenS": 164.41,
-    "schwelle": 0.3,
-    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
-   },
-   "zeit": "2026-11-09T13:36:51.437Z",
+   "zeit": "2026-11-09T14:26:05.541Z",
    "abdruck": "4970c36e4fbd",
    "port": 7804,
    "bahn": "sitzung",
@@ -3582,48 +3360,12 @@
   },
   "mensch.K1#1": {
    "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "ungemessen": true,
-   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN",
-   "exit": 1,
-   "minuten": 1.5,
-   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN",
-   "s": 90.2,
-   "fremd": {
-    "s": 91.6,
-    "takte": 40,
-    "fremdS": 226.69,
-    "kerne": 2.475,
-    "fensterKerne": 3.375,
-    "namen": [
-     [
-      "AppHelperCap.exe",
-      93.98
-     ],
-     [
-      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      56.8
-     ],
-     [
-      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      19.78
-     ]
-    ],
-    "dienerS": 31.44,
-    "diener": [
-     [
-      "dwm.exe",
-      12.48
-     ],
-     [
-      "System",
-      11.7
-     ]
-    ],
-    "eigenS": 320.03,
-    "schwelle": 0.3,
-    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
-   },
-   "zeit": "2026-11-09T13:32:02.949Z",
+   "zeit": "2026-11-09T14:26:05.530Z",
    "abdruck": "1c7d86be2250",
    "port": 7804,
    "bahn": "sitzung",
@@ -3631,48 +3373,12 @@
   },
   "mensch.K2#2": {
    "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "ungemessen": true,
-   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN",
-   "exit": 1,
-   "minuten": 1.5,
-   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN",
-   "s": 90.2,
-   "fremd": {
-    "s": 91.6,
-    "takte": 40,
-    "fremdS": 226.69,
-    "kerne": 2.475,
-    "fensterKerne": 3.375,
-    "namen": [
-     [
-      "AppHelperCap.exe",
-      93.98
-     ],
-     [
-      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      56.8
-     ],
-     [
-      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      19.78
-     ]
-    ],
-    "dienerS": 31.44,
-    "diener": [
-     [
-      "dwm.exe",
-      12.48
-     ],
-     [
-      "System",
-      11.7
-     ]
-    ],
-    "eigenS": 320.03,
-    "schwelle": 0.3,
-    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
-   },
-   "zeit": "2026-11-09T13:32:02.949Z",
+   "zeit": "2026-11-09T14:26:05.530Z",
    "abdruck": "bf81faa399c7",
    "port": 7804,
    "bahn": "sitzung",
@@ -3681,49 +3387,12 @@
   },
   "vegetation.K4#1": {
    "gruen": false,
-   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: kein W9 im JSON der Linse (HAUS_WELT_JSON)) · Täter: @@PUNKTE@@ FEHLER Error: /eval: {\"ms\":41127,\"fehler\":\"DIE WELT STEHT NICHT nach 2441 Takten: Ruhe 5, zuletzt brach sie: Felder offen 1267 (DER BAU STEHT NICHT: die Welt nach 2441 Takten — die Welt hat nichts mehr offen)\",\"stapel\":[\"weltStehtNach (pptr:evaluate;lade%20(C%3A%5CUsers%5Cmicha%5CDesktop%",
-   "exit": 2,
-   "minuten": 0.72,
-   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: kein W9 im JSON der Linse (HAUS_WELT_JSON)) · Täter: @@PUNKTE@@ FEHLER Error: /eval: {\"ms\":41127,\"fehler\":\"DIE WELT STEHT NICHT nach 2441 Takten: Ruhe 5, zuletzt brach sie: Felder offen 1267 (DER BAU STEHT NICHT: die Welt nach 2441 Takten — die Welt hat nichts mehr offen)\",\"stapel\":[\"weltStehtNach (pptr:evaluate;lade%20(C%3A%5CUsers%5Cmicha%5CDesktop%",
-   "gpu": "nvidia/pascal",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "ungemessen": true,
-   "s": 43.2,
-   "fremd": {
-    "s": 45.9,
-    "takte": 20,
-    "fremdS": 108.81,
-    "kerne": 2.372,
-    "fensterKerne": 2.529,
-    "namen": [
-     [
-      "AppHelperCap.exe",
-      46.22
-     ],
-     [
-      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      30.84
-     ],
-     [
-      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      9.77
-     ]
-    ],
-    "dienerS": 14.17,
-    "diener": [
-     [
-      "dwm.exe",
-      6.94
-     ],
-     [
-      "System",
-      4.47
-     ]
-    ],
-    "eigenS": 193.94,
-    "schwelle": 0.3,
-    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
-   },
-   "zeit": "2026-11-09T13:34:05.982Z",
+   "zeit": "2026-11-09T14:26:05.534Z",
    "abdruck": "b81f750d0692",
    "port": 7804,
    "bahn": "sitzung",
@@ -3731,49 +3400,12 @@
   },
   "vegetation.K4#2": {
    "gruen": false,
-   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: kein W9 im JSON der Linse (HAUS_WELT_JSON)) · Täter: @@PUNKTE@@ FEHLER Error: /eval: {\"ms\":41127,\"fehler\":\"DIE WELT STEHT NICHT nach 2441 Takten: Ruhe 5, zuletzt brach sie: Felder offen 1267 (DER BAU STEHT NICHT: die Welt nach 2441 Takten — die Welt hat nichts mehr offen)\",\"stapel\":[\"weltStehtNach (pptr:evaluate;lade%20(C%3A%5CUsers%5Cmicha%5CDesktop%",
-   "exit": 2,
-   "minuten": 0.72,
-   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: kein W9 im JSON der Linse (HAUS_WELT_JSON)) · Täter: @@PUNKTE@@ FEHLER Error: /eval: {\"ms\":41127,\"fehler\":\"DIE WELT STEHT NICHT nach 2441 Takten: Ruhe 5, zuletzt brach sie: Felder offen 1267 (DER BAU STEHT NICHT: die Welt nach 2441 Takten — die Welt hat nichts mehr offen)\",\"stapel\":[\"weltStehtNach (pptr:evaluate;lade%20(C%3A%5CUsers%5Cmicha%5CDesktop%",
-   "gpu": "nvidia/pascal",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "ungemessen": true,
-   "s": 43.2,
-   "fremd": {
-    "s": 45.9,
-    "takte": 20,
-    "fremdS": 108.81,
-    "kerne": 2.372,
-    "fensterKerne": 2.529,
-    "namen": [
-     [
-      "AppHelperCap.exe",
-      46.22
-     ],
-     [
-      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      30.84
-     ],
-     [
-      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      9.77
-     ]
-    ],
-    "dienerS": 14.17,
-    "diener": [
-     [
-      "dwm.exe",
-      6.94
-     ],
-     [
-      "System",
-      4.47
-     ]
-    ],
-    "eigenS": 193.94,
-    "schwelle": 0.3,
-    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
-   },
-   "zeit": "2026-11-09T13:34:05.982Z",
+   "zeit": "2026-11-09T14:26:05.534Z",
    "abdruck": "f0aafc542846",
    "port": 7804,
    "bahn": "sitzung",
@@ -3782,49 +3414,12 @@
   },
   "siedlung.K1#2": {
    "gruen": false,
-   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 7 von 18 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.20 m · Innen-Bild 0 von 18 lesbar (Plan 18), innen ÷ Außen-Schatten min undefined · Median undefined (Soll ≥ 0,15) · dunkel: haus_gotisch undefined/undefined (Frist d) · Täter: haus_skandinavisch · Gang Hub — · innen undefined ÷ außen undefined = undefined · Frist der Probe · Frist der Probe",
-   "exit": 0,
-   "minuten": 0.6,
-   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 7 von 18 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.20 m · Innen-Bild 0 von 18 lesbar (Plan 18), innen ÷ Außen-Schatten min undefined · Median undefined (Soll ≥ 0,15) · dunkel: haus_gotisch undefined/undefined (Frist d) · Täter: haus_skandinavisch · Gang Hub — · innen undefined ÷ außen undefined = undefined · Frist der Probe · Frist der Probe",
-   "gpu": "nvidia/pascal",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "ungemessen": true,
-   "s": 36.3,
-   "fremd": {
-    "s": 40.2,
-    "takte": 18,
-    "fremdS": 100.34,
-    "kerne": 2.498,
-    "fensterKerne": 2.598,
-    "namen": [
-     [
-      "AppHelperCap.exe",
-      42.64
-     ],
-     [
-      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      27.88
-     ],
-     [
-      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      7.95
-     ]
-    ],
-    "dienerS": 11.58,
-    "diener": [
-     [
-      "dwm.exe",
-      5.73
-     ],
-     [
-      "System",
-      3.52
-     ]
-    ],
-    "eigenS": 150.38,
-    "schwelle": 0.3,
-    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
-   },
-   "zeit": "2026-11-09T13:35:21.022Z",
+   "zeit": "2026-11-09T14:26:05.537Z",
    "abdruck": "aee8fa98714b",
    "port": 7804,
    "bahn": "sitzung",
@@ -3832,12 +3427,12 @@
   },
   "studios.K2#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-11-09T13:38:15.705Z",
+   "zeit": "2026-11-09T14:26:05.545Z",
    "abdruck": "0729922f0665",
    "port": 7804,
    "bahn": "sitzung",
@@ -3845,12 +3440,12 @@
   },
   "studios.K3#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-11-09T13:38:15.705Z",
+   "zeit": "2026-11-09T14:26:05.545Z",
    "abdruck": "40e20c122980",
    "port": 7804,
    "bahn": "sitzung",
@@ -3859,12 +3454,12 @@
   },
   "pipeline.K4#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-11-09T13:38:15.707Z",
+   "zeit": "2026-11-09T14:26:05.548Z",
    "abdruck": "e8b08865db0c",
    "port": 7804,
    "bahn": "sitzung",
@@ -3872,12 +3467,12 @@
   },
   "pipeline.K4#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-11-09T13:38:15.707Z",
+   "zeit": "2026-11-09T14:26:05.548Z",
    "abdruck": "d2b650a6f75f",
    "port": 7804,
    "bahn": "sitzung",
@@ -3886,12 +3481,12 @@
   },
   "ankunft.K2#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-11-09T13:38:15.707Z",
+   "zeit": "2026-11-09T14:26:05.548Z",
    "abdruck": "fbcb837d411b",
    "port": 7804,
    "bahn": "sitzung",
@@ -3900,12 +3495,12 @@
   },
   "ankunft.K3#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-11-09T13:38:15.707Z",
+   "zeit": "2026-11-09T14:26:05.548Z",
    "abdruck": "3b4659c456d4",
    "port": 7804,
    "bahn": "sitzung",
@@ -3914,12 +3509,12 @@
   },
   "ankunft.K1#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-11-09T13:38:15.707Z",
+   "zeit": "2026-11-09T14:26:05.548Z",
    "abdruck": "4e36edaf41f7",
    "port": 7804,
    "bahn": "sitzung",
@@ -3928,12 +3523,12 @@
   },
   "ankunft.K1#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-11-09T13:38:15.707Z",
+   "zeit": "2026-11-09T14:26:05.548Z",
    "abdruck": "201ca904c048",
    "port": 7804,
    "bahn": "sitzung",
@@ -3942,12 +3537,12 @@
   },
   "bauen.K1#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-11-09T13:38:15.710Z",
+   "zeit": "2026-11-09T14:26:05.555Z",
    "abdruck": "39320cf4db45",
    "port": 7804,
    "bahn": "sitzung",
@@ -3955,12 +3550,12 @@
   },
   "bauen.K5#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-11-09T13:38:15.712Z",
+   "zeit": "2026-11-09T14:26:05.559Z",
    "abdruck": "2e8942881f08",
    "port": 7804,
    "bahn": "sitzung",
@@ -3968,12 +3563,12 @@
   },
   "studios.K4#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-11-09T13:38:15.714Z",
+   "zeit": "2026-11-09T14:26:05.563Z",
    "abdruck": "a576b62649d8",
    "port": 7804,
    "bahn": "sitzung",
@@ -3981,12 +3576,12 @@
   },
   "studios.K4#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-11-09T13:38:15.714Z",
+   "zeit": "2026-11-09T14:26:05.563Z",
    "abdruck": "97b1e369c378",
    "port": 7804,
    "bahn": "sitzung",
@@ -3995,12 +3590,12 @@
   },
   "siedlung.K2#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-11-09T13:38:15.716Z",
+   "zeit": "2026-11-09T14:26:05.567Z",
    "abdruck": "780be0a8826d",
    "port": 7804,
    "bahn": "sitzung",
@@ -4008,12 +3603,12 @@
   },
   "siedlung.K2#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-11-09T13:38:15.716Z",
+   "zeit": "2026-11-09T14:26:05.567Z",
    "abdruck": "6be425f258c7",
    "port": 7804,
    "bahn": "sitzung",
@@ -4022,12 +3617,12 @@
   },
   "siedlung.K5#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-11-09T13:38:15.718Z",
+   "zeit": "2026-11-09T14:26:05.572Z",
    "abdruck": "53734dd61b83",
    "port": 7804,
    "bahn": "sitzung",
@@ -4035,12 +3630,12 @@
   },
   "siedlung.K5#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-11-09T13:38:15.718Z",
+   "zeit": "2026-11-09T14:26:05.572Z",
    "abdruck": "225997244700",
    "port": 7804,
    "bahn": "sitzung",
@@ -4049,12 +3644,12 @@
   },
   "leib.K2#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-11-09T13:38:15.720Z",
+   "zeit": "2026-11-09T14:26:05.577Z",
    "abdruck": "47608cd79624",
    "port": 7804,
    "bahn": "sitzung",
@@ -4062,12 +3657,12 @@
   },
   "leib.K2#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-11-09T13:38:15.720Z",
+   "zeit": "2026-11-09T14:26:05.577Z",
    "abdruck": "dd158c900200",
    "port": 7804,
    "bahn": "sitzung",
@@ -4076,12 +3671,12 @@
   },
   "leib.K3#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-11-09T13:38:15.723Z",
+   "zeit": "2026-11-09T14:26:05.583Z",
    "abdruck": "3ad18f4155ae",
    "port": 7804,
    "bahn": "sitzung",
@@ -4089,12 +3684,12 @@
   },
   "tore.K1#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-11-09T13:38:15.725Z",
+   "zeit": "2026-11-09T14:26:05.587Z",
    "abdruck": "248a1713c159",
    "port": 7804,
    "bahn": "sitzung",
@@ -4102,12 +3697,12 @@
   },
   "tore.K3#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-11-09T13:38:15.727Z",
+   "zeit": "2026-11-09T14:26:05.594Z",
    "abdruck": "f945bff7be0c",
    "port": 7804,
    "bahn": "sitzung",
@@ -4115,12 +3710,12 @@
   },
   "tore.K3#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-11-09T13:38:15.727Z",
+   "zeit": "2026-11-09T14:26:05.594Z",
    "abdruck": "7168640db50e",
    "port": 7804,
    "bahn": "sitzung",
@@ -4129,12 +3724,12 @@
   },
   "streaming.K4#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-11-09T13:38:15.729Z",
+   "zeit": "2026-11-09T14:26:05.599Z",
    "abdruck": "6c05ef8ef9e1",
    "port": 7804,
    "bahn": "sitzung",
@@ -4142,12 +3737,12 @@
   },
   "profiband.K1#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-11-09T13:38:15.732Z",
+   "zeit": "2026-11-09T14:26:05.605Z",
    "abdruck": "d99cb8f5d547",
    "port": 7804,
    "bahn": "sitzung",
@@ -4155,12 +3750,12 @@
   },
   "profiband.K1#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-11-09T13:38:15.732Z",
+   "zeit": "2026-11-09T14:26:05.605Z",
    "abdruck": "cf1ffc5a5e15",
    "port": 7804,
    "bahn": "sitzung",
@@ -4169,12 +3764,12 @@
   },
   "pflicht.E#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-11-09T13:38:15.732Z",
+   "zeit": "2026-11-09T14:26:05.605Z",
    "abdruck": "faadcb87e50f",
    "port": 7804,
    "bahn": "sitzung",
@@ -4183,12 +3778,12 @@
   },
   "profiband.K2#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-11-09T13:38:15.732Z",
+   "zeit": "2026-11-09T14:26:05.605Z",
    "abdruck": "c1988d88f42c",
    "port": 7804,
    "bahn": "sitzung",
@@ -4197,12 +3792,12 @@
   },
   "profiband.K2#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-11-09T13:38:15.732Z",
+   "zeit": "2026-11-09T14:26:05.605Z",
    "abdruck": "0a6126d9fbfe",
    "port": 7804,
    "bahn": "sitzung",
@@ -4211,12 +3806,12 @@
   },
   "profiband.K3#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-11-09T13:38:15.732Z",
+   "zeit": "2026-11-09T14:26:05.605Z",
    "abdruck": "34ac4a105f22",
    "port": 7804,
    "bahn": "sitzung",
@@ -4225,12 +3820,12 @@
   },
   "profiband.K3#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-11-09T13:38:15.732Z",
+   "zeit": "2026-11-09T14:26:05.605Z",
    "abdruck": "4cc877868786",
    "port": 7804,
    "bahn": "sitzung",
@@ -4239,12 +3834,12 @@
   },
   "speicher.K1#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-11-09T13:38:15.735Z",
+   "zeit": "2026-11-09T14:26:05.613Z",
    "abdruck": "7bedeb37abad",
    "port": 7804,
    "bahn": "sitzung",
@@ -4252,12 +3847,12 @@
   },
   "speicher.K1#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während leib.K1#2: der Halter endete (Exit 1)) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-11-09T13:38:15.735Z",
+   "zeit": "2026-11-09T14:26:05.613Z",
    "abdruck": "8100b54f9d70",
    "port": 7804,
    "bahn": "sitzung",
@@ -4266,223 +3861,147 @@
   }
  },
  "sitzung": {
-  "start": "2026-11-09T13:01:12.324Z",
+  "start": "2026-11-09T13:59:45.222Z",
   "port": 7804,
   "warten": 0.02,
-  "bootS": 7.7,
+  "bootS": 7.4,
   "grundstellungS": [
    0.2,
-   8.2,
-   7.9,
-   6.3,
-   6,
-   6.4,
-   8.5,
+   7.7,
+   8,
+   8.4,
+   7,
+   7.4,
+   5,
    5.4,
-   5.1,
-   5.3,
-   5.4,
-   5.1,
+   4.9,
+   5.7,
+   5.2,
+   8.4,
+   29.3,
    8.2,
-   31.1,
-   7.8,
-   5.8,
-   8.3,
-   8.4
+   5.7
   ],
-  "proben": 20,
+  "proben": 18,
   "freigaben": [],
-  "offen": [
-   "leib.K1#2",
-   "halten.K2#1",
-   "leib.K4#1",
-   "leib.K4#2",
-   "fahrzeug.K5#1",
-   "fahrzeug.K2#1",
-   "fahrzeug.K2#2",
-   "klang.K5#2",
-   "speicher.K4#2",
-   "mensch.K1#1",
-   "mensch.K2#2",
-   "vegetation.K4#1",
-   "vegetation.K4#2",
-   "siedlung.K1#2",
-   "licht.K3#1",
-   "studios.K2#2",
-   "studios.K3#2",
-   "pipeline.K4#1",
-   "pipeline.K4#2",
-   "ankunft.K2#1",
-   "ankunft.K3#1",
-   "ankunft.K1#1",
-   "ankunft.K1#2",
-   "bauen.K1#2",
-   "bauen.K5#2",
-   "studios.K4#1",
-   "studios.K4#2",
-   "siedlung.K2#1",
-   "siedlung.K2#2",
-   "siedlung.K5#1",
-   "siedlung.K5#2",
-   "leib.K2#1",
-   "leib.K2#2",
-   "leib.K3#2",
-   "tore.K1#1",
-   "tore.K3#1",
-   "tore.K3#2",
-   "streaming.K4#2",
-   "profiband.K1#1",
-   "profiband.K1#2",
-   "pflicht.E#1",
-   "profiband.K2#1",
-   "profiband.K2#2",
-   "profiband.K3#1",
-   "profiband.K3#2",
-   "speicher.K1#1",
-   "speicher.K1#2"
-  ],
   "orte": [
    {
     "ort": "wiese",
     "vor": "gelaende.K5#2",
-    "s": 31.4,
-    "takte": 673,
+    "s": 31.8,
+    "takte": 693,
     "chunks": 81,
     "nach": "der Grundstellung"
    },
    {
     "ort": "wiese",
     "vor": "vegetation.K5#2",
-    "s": 29.8,
-    "takte": 592,
+    "s": 30.4,
+    "takte": 654,
     "chunks": 81,
     "nach": "der Tür"
    },
    {
     "ort": "wiese",
     "vor": "licht.K2#2",
-    "s": 26.9,
-    "takte": 624,
+    "s": 29.2,
+    "takte": 618,
     "chunks": 81,
     "nach": "der Tür"
    },
    {
     "ort": "wiese",
     "vor": "lod.K1#1",
-    "s": 27.3,
-    "takte": 637,
+    "s": 34.2,
+    "takte": 661,
     "chunks": 81,
     "nach": "der Tür"
    },
    {
     "ort": "wiese",
     "vor": "lod.K2#1",
-    "s": 26.1,
-    "takte": 613,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "wiese",
-    "vor": "leib.K1#1",
-    "s": 30.2,
-    "takte": 647,
+    "s": 30.1,
+    "takte": 625,
     "chunks": 81,
     "nach": "der Tür"
    },
    {
     "ort": "genesis",
     "vor": "material.K1#1",
-    "s": 26.2,
-    "takte": 574,
+    "s": 26,
+    "takte": 581,
     "chunks": 81,
     "nach": "der Tür"
    },
    {
     "ort": "genesis",
     "vor": "licht.K1#1",
-    "s": 26.3,
-    "takte": 629,
+    "s": 26.6,
+    "takte": 579,
     "chunks": 81,
     "nach": "der Tür"
    },
    {
     "ort": "genesis",
     "vor": "ankunft.K4#1",
-    "s": 25.3,
-    "takte": 580,
+    "s": 26.7,
+    "takte": 577,
     "chunks": 81,
     "nach": "der Tür"
    },
    {
     "ort": "dorf",
     "vor": "licht.K3#2",
-    "s": 39.5,
-    "takte": 716,
+    "s": 44.1,
+    "takte": 754,
     "chunks": 81,
     "nach": "der Tür"
    },
    {
     "ort": null,
     "vor": "profiband.K5#1",
-    "s": 19.6,
-    "takte": 848,
+    "s": 22.5,
+    "takte": 849,
     "chunks": 81,
     "nach": "der Tür"
    },
    {
     "ort": "wiese",
     "vor": "gelaende.K2#1",
-    "s": 26.2,
-    "takte": 628,
+    "s": 31.8,
+    "takte": 602,
     "chunks": 81,
     "nach": "der Tür"
    },
    {
     "ort": "wiese",
     "vor": "physik.K2#2",
-    "s": 26.3,
-    "takte": 648,
+    "s": 29.9,
+    "takte": 676,
     "chunks": 81,
     "nach": "der Tür"
    },
    {
     "ort": "wiese",
     "vor": "tiere.K1#2",
-    "s": 28.8,
-    "takte": 650,
+    "s": 32.3,
+    "takte": 835,
     "chunks": 81,
     "nach": "der Tür"
    },
    {
     "ort": "wiese",
     "vor": "oekologie.K4#2",
-    "s": 30,
-    "takte": 652,
+    "s": 30.6,
+    "takte": 609,
     "chunks": 81,
     "nach": "der Tür"
    },
    {
     "ort": "wiese",
     "vor": "fahrzeug.K3#1",
-    "s": 27.7,
-    "takte": 629,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "wiese",
-    "vor": "fahrzeug.K3#2",
-    "s": 27.8,
-    "takte": 629,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "wiese",
-    "vor": "leib.K1#2",
-    "s": 25.8,
-    "takte": 659,
+    "s": 25.4,
+    "takte": 617,
     "chunks": 81,
     "nach": "der Tür"
    }
@@ -4491,7 +4010,7 @@
    {
     "vor": "gelaende.K2#1",
     "wege": "wege +1 [-119.1,-274.9,279.2,201/272]",
-    "s": 5.1
+    "s": 5.2
    }
   ],
   "unerklaert": [
@@ -4508,14 +4027,15 @@
     "wie": "wege +1 [-119.1,-274.9,279.2,201/272] (genesis)"
    }
   ],
-  "ciBlicke": 21,
+  "grund": "die Welt trägt nicht mehr nach fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an",
+  "ciBlicke": 19,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 4588,
-   "frameP95": 199.98,
-   "taktP95": 195.02,
-   "vramMax": 152.8,
-   "seiten": 19,
+   "bilder": 1985,
+   "frameP95": 224.97,
+   "taktP95": 219.58,
+   "vramMax": 151.2,
+   "seiten": 16,
    "marken": 2,
    "fehler": 0,
    "verloren": 0,
@@ -4530,7 +4050,7 @@
      "probe": "licht.K1#1",
      "m": 1083,
      "ringVor": 4,
-     "ringMin": -1
+     "ringMin": 0
     },
     {
      "probe": "streaming.K3#1",
@@ -4551,96 +4071,11 @@
      "ringMin": -1
     }
    ],
-   "zapfen": 1431,
-   "luecken": 19,
-   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+   "zapfen": 1211,
+   "luecken": 22,
+   "letzteLuecke": "connect ECONNREFUSED 127.0.0.1:27804"
   },
-  "fahrtS": 1803.1,
-  "grund": "die Fahrt riss 1800 s in leib.K1#2 — offen: leib.K1#2, halten.K2#1, leib.K4#1, leib.K4#2, fahrzeug.K5#1, fahrzeug.K2#1, fahrzeug.K2#2, klang.K5#2, speicher.K4#2, mensch.K1#1, mensch.K2#2, vegetation.K4#1, vegetation.K4#2, siedlung.K1#2, licht.K3#1, studios.K2#2, studios.K3#2, pipeline.K4#1, pipeline.K4#2, ankunft.K2#1, ankunft.K3#1, ankunft.K1#1, ankunft.K1#2, bauen.K1#2, bauen.K5#2, studios.K4#1, studios.K4#2, siedlung.K2#1, siedlung.K2#2, siedlung.K5#1, siedlung.K5#2, leib.K2#1, leib.K2#2, leib.K3#2, tore.K1#1, tore.K3#1, tore.K3#2, streaming.K4#2, profiband.K1#1, profiband.K1#2, pflicht.E#1, profiband.K2#1, profiband.K2#2, profiband.K3#1, profiband.K3#2, speicher.K1#1, speicher.K1#2",
-  "minuten": 30.15
- },
- "fortsetzung": [
-  {
-   "start": "2026-11-09T13:31:21.047Z",
-   "port": 7804,
-   "warten": 0.02,
-   "bootS": 8.3,
-   "grundstellungS": [
-    5.6,
-    4.7,
-    4.7,
-    4.6
-   ],
-   "proben": 5,
-   "freigaben": [],
-   "orte": [
-    {
-     "ort": "genesis",
-     "vor": "mensch.K1#1",
-     "s": 32.2,
-     "takte": 655,
-     "chunks": 81,
-     "nach": null
-    },
-    {
-     "ort": "genesis",
-     "vor": "vegetation.K4#1",
-     "s": 26.5,
-     "takte": 580,
-     "chunks": 81,
-     "nach": "der Tür"
-    },
-    {
-     "ort": "genesis",
-     "vor": "siedlung.K1#2",
-     "s": 25.7,
-     "takte": 579,
-     "chunks": 81,
-     "nach": "der Tür"
-    },
-    {
-     "ort": "dorf",
-     "vor": "licht.K3#1",
-     "s": 47.1,
-     "takte": 739,
-     "chunks": 81,
-     "nach": "der Tür"
-    },
-    {
-     "ort": "wiese",
-     "vor": "leib.K1#2",
-     "s": 30.6,
-     "fehler": "Protocol error (Runtime.callFunctionOn): Target closed",
-     "nach": "der Tür"
-    }
-   ],
-   "wegeTueren": [],
-   "zeichnerBlind": [
-    {
-     "probe": "leib.K1#2",
-     "wann": "vor",
-     "fehler": "Attempted to use detached Frame 'C2D69508DA47C088876C201C9E5B7E0B'."
-    }
-   ],
-   "grund": "die Welt trägt nicht mehr nach leib.K1#2: der Halter endete (Exit 1)",
-   "ciBlicke": 6,
-   "strom": {
-    "datei": "strom.ndjson",
-    "bilder": 0,
-    "frameP95": null,
-    "taktP95": null,
-    "vramMax": null,
-    "seiten": 5,
-    "marken": 0,
-    "fehler": 0,
-    "verloren": 0,
-    "ortImDeckel": [],
-    "zapfen": 324,
-    "luecken": 10,
-    "letzteLuecke": "connect ECONNREFUSED 127.0.0.1:27804"
-   },
-   "fahrtS": 413.7,
-   "minuten": 7.41
-  }
- ]
+  "fahrtS": 1579.5,
+  "minuten": 26.86
+ }
 }
