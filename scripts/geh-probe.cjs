@@ -98,9 +98,10 @@ function boot(nr, wurzel, seite) {
             wb(["umstellen", "--ort", "genesis", "--sicht", "ego"], 300);
             const an = ev("const s = r.state; return [Math.round(s._weltbildDa || -1), Math.round(s._fernbildDa || -1)];") || []; // prettier-ignore
             const b0 = bauStand();
-            zelle("Gehen", "bahn", SEITE.geh, `Ankunft ${an[0]} ms (Ferne ${an[1]}) · Knoten ${b0[0]} Σ ${b0[1]} ms · Pipelines ${b0[2]} · `); // prettier-ignore
-            wb(["umstellen", "--ort", "genesis", "--sicht", "ego"], 300);
-            zelle("Fahrt Ego", "fahrt", SEITE.fahrt, "");
+            if (!AB) zelle("Gehen", "bahn", SEITE.geh, `Ankunft ${an[0]} ms (Ferne ${an[1]}) · Knoten ${b0[0]} Σ ${b0[1]} ms · Pipelines ${b0[2]} · `); // prettier-ignore
+            if (!AB) wb(["umstellen", "--ort", "genesis", "--sicht", "ego"], 300);
+            vorAnkunft = `Ankunft ${an[0]} ms · `;
+            zelle("Fahrt Ego", "fahrt", SEITE.fahrt, AB ? vorAnkunft : "");
             if (!AB) wb(["umstellen", "--ort", "genesis", "--sicht", "third"], 300);
             if (!AB) zelle("Fahrt Third", "fahrt", SEITE.fahrt, "");
             tor.stop();
@@ -111,13 +112,16 @@ function boot(nr, wurzel, seite) {
 }
 
 const ab = []; // je Boot der ersten Fahrt: [Seite, max, p95, Anteil > 33 ms]
+let vorAnkunft = "";
+const T0 = Date.now(); // die Probe hält ihren Deckel (8 min): kein Boot beginnt nach 6 min
 (async () => {
     let gruen = true;
     let a = null;
     try {
         if (AB) a = baumA();
         const folge = AB ? ["A", "B", "A", "B"] : Array.from({ length: Number(arg("--boots", 2)) }, () => "");
-        for (const [i, seite] of folge.entries()) gruen = (await boot(i + 1, seite === "A" ? a : undefined, seite)) && gruen;
+        for (const [i, seite] of folge.entries())
+            if (Date.now() - T0 < 360000) gruen = (await boot(i + 1, seite === "A" ? a : undefined, seite)) && gruen;
         if (AB) {
             const je = (s) => ab.filter((x) => x[0] === s).map((x) => `${x[1]}/${x[2]}/${(100 * x[3]).toFixed(0)}%`).join(" ");
             const mx = (s) => Math.max(...ab.filter((x) => x[0] === s).map((x) => x[1]));
