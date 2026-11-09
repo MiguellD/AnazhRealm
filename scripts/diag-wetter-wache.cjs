@@ -78,7 +78,8 @@ if (SELBSTTEST) {
         [{ nassTrocken: 0.1 }, { lag: 600 }, { worte: [1, 2, 3] }, { welt: "sunny" }, { labor: "klar" }].some((o) => F(o).length !== 1)
     )
         v.push("front: die Front, trockener Ort, falscher Lag, fehlende Zeile oder blinde Mutation");
-    selbsttestEnde(v, "jeder eingeschmuggelte Täter fällt rot; Bühne, Verweigerung und Wunsch grün.");
+    // der Selbsttest: jeder eingeschmuggelte Täter fällt rot; Bühne, Verweigerung und Wunsch grün.
+    selbsttestEnde(v);
     process.exit(0);
 }
 

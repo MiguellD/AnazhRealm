@@ -187,9 +187,11 @@ async function checkBandV18278LoopErrorBoundary({ page, check }) {
     );
 }
 
-// EIN PID-Regler misst die Last je Subsystem (perfSense) und fährt ALLE Stellgrößen (Arch-Cull,
-// Streaming-, Wasser-Iso-Budget) nach gemessener Last — das teuerste gibt zuerst nach, Gravitation
-// NIE. `_nexusAdaptiveQuality(fps)` ist nur der fps-Eingang in DENSELBEN Regler.
+// EIN PID-Regler misst die Last je Subsystem (perfSense) und fährt ALLE Stellgrößen (die Architektur-Domäne am
+// Schatten-Intervall, Streaming-, Wasser-Iso-Budget) nach gemessener Last — das teuerste gibt zuerst nach, Gravitation
+// NIE. `_nexusAdaptiveQuality(fps)` ist nur der fps-Eingang in DENSELBEN Regler. Den Bau-Durchsatz trägt seit
+// w25-stadt-takt-4 die EINE Frist der Bau-Arbeit (perf.d); der Regler legt ihn nur über Budget (`_frameOverBudget`) auf die
+// Takt-Garantie — bis dahin zählte er ihn (`architectureBuildBudgetPerFrame`, die Mutante jeder Bau-Zeile hier).
 async function checkBandWellePerfENexusGovernor({ page, check }) {
     const res = await page.evaluate(() => {
         const A = AnazhRealm; // window.AnazhRealm headless undefined (V18.259-Gotcha)
@@ -198,54 +200,56 @@ async function checkBandWellePerfENexusGovernor({ page, check }) {
         // KEIN Parallel-Governor mehr: selfAwarenessAnalyze ruft _nexusAdaptiveQuality NICHT.
         out.noParallelGovernor = __fehlt(r.selfAwarenessAnalyze, /_nexusAdaptiveQuality/);
 
-        const snap = {
-            sense: st.perfSense,
-            radius: st.architectureCullingRadius,
-            budget: st.architectureBuildBudgetPerFrame,
-            streamMs: st._voxelStreamBudgetMs,
-            waterMs: st.atmosphere ? st.atmosphere.waterIsoBudgetMs : undefined,
-            gravity: st.gravity,
-            reg: st.perfRegulator,
-        };
+        // die Stellgrößen und Schalter, die das Band fährt (am Ende zurück)
+        const K = ["perfSense", "architectureCullingRadius", "_voxelStreamBudgetMs", "gravity", "perfRegulator"];
+        const [snap, waterMs] = [K.map((k) => st[k]), st.atmosphere ? st.atmosphere.waterIsoBudgetMs : undefined];
         st.perfRegulator = true;
         st.perfSense = r._perfSenseInit(); // sauberer Start (loadScale=1)
         const gBefore = st.gravity;
         const L = A.PERF_LEVERS;
+        // die Lage einer Stellgröße (0 = voll gedrosselt, 1 = unangetastet): das Stream-Budget, die Architektur-Domäne am
+        // Schatten-Intervall (`effArch`); EIN Aktuieren je Last-Bild (`streaming`, `archCulling`, die Draw-Calls)
+        const streamPos = () =>
+            (st._voxelStreamBudgetMs - L.streamBudgetMs[0]) / (L.streamBudgetMs[1] - L.streamBudgetMs[0]);
+        const archPos = () =>
+            (L.shadowMinInterval[1] - st._shadowMinInterval) / (L.shadowMinInterval[1] - L.shadowMinInterval[0]);
+        const akt = (loadScale, streaming, archCulling, renderCalls) =>
+            r._nexusPerfActuate({
+                loadScale,
+                renderCalls,
+                phase: { streaming, render: 0, archCulling, waterIso: 1, creatures: 0, physics: 0 },
+            });
 
         // (1) ANHALTENDER FPS-DRUCK → der EINE Regler strafft ALLE Stellgrößen der Qualität (der Rand der Mesh-Zone ist ein
         // Wechsel-Abstand am Schirm, kein Stellglied — Regler-Sim S6).
         for (let i = 0; i < 90; i++) r._nexusAdaptiveQuality(15); // frameMs≈67 >> Soll
-        out.tightenedBudget = st.architectureBuildBudgetPerFrame < 4;
-        out.tightenedStream = st._voxelStreamBudgetMs < L.streamBudgetMs[1];
-        out.budgetFloor = st.architectureBuildBudgetPerFrame >= A.ARCH_QUALITY_BUDGET_MIN;
+        // der Bau über Budget (`_frameOverBudget`) an der Takt-Garantie, kein Zähler
+        out.ohneZaehler = st.architectureBuildBudgetPerFrame === undefined;
+        out.tightenedBudget = st._frameOverBudget && archPos() < 1;
+        out.tightenedStream = streamPos() < 1;
+        r._handBauNaechster = undefined;
+        out.budgetFloor = r._handBauErlaubt(0);
         out.gravityUntouchedLow = st.gravity === gBefore;
 
         // (2) FPS-LUFT (frameMs≈7 ≪ growMs) → relax zum MAXIMUM aller Stellgrößen. Viele Ticks: mit dem
         // Atem-Totband braucht der Integral-Term lange, bis loadScale auf 1.0 clampt (Gleichgewicht, err<0).
         for (let i = 0; i < 240; i++) r._nexusAdaptiveQuality(140);
-        out.relaxedBudget = st.architectureBuildBudgetPerFrame === A.ARCH_QUALITY_BUDGET_MAX;
-        out.relaxedStream = Math.abs(st._voxelStreamBudgetMs - L.streamBudgetMs[1]) < 0.01;
+        out.relaxedBudget = !st._frameOverBudget && archPos() > 0.99;
+        out.relaxedStream = streamPos() > 0.996;
         out.gravityUntouchedHigh = st.gravity === gBefore;
 
         // (3) SYNERGIE (der Kern der Schöpfer-Forderung „optimal nutzen"): bei
         // streaming-dominanter Last drosselt der EINE Regler das Stream-Budget
-        // STÄRKER (näher an min) als das Bau-Budget je Frame — das teuerste zuerst.
-        r._nexusPerfActuate({
-            loadScale: 0.5,
-            phase: { streaming: 20, render: 0, archCulling: 1, waterIso: 1, creatures: 0, physics: 0 },
-        });
-        const streamPos = (st._voxelStreamBudgetMs - L.streamBudgetMs[0]) / (L.streamBudgetMs[1] - L.streamBudgetMs[0]);
-        const budgetPos = (b) =>
-            (b - A.ARCH_QUALITY_BUDGET_MIN) / (A.ARCH_QUALITY_BUDGET_MAX - A.ARCH_QUALITY_BUDGET_MIN);
-        const archPos = budgetPos(st.architectureBuildBudgetPerFrame);
-        out.synergyStreamThrottledMore = streamPos < archPos - 0.1;
-        out.synergyStreamPos = +streamPos.toFixed(2);
-        out.synergyArchPos = +archPos.toFixed(2);
+        // STÄRKER (näher an min) als die Architektur-Domäne (Schatten-Intervall) — das teuerste zuerst.
+        akt(0.5, 20, 1);
+        out.synergyStreamThrottledMore = streamPos() < archPos() - 0.1;
+        out.synergyStreamPos = +streamPos().toFixed(2);
+        out.synergyArchPos = +archPos().toFixed(2);
 
         // (4) ungültige FPS ändert nichts.
-        const rBefore = st.architectureBuildBudgetPerFrame;
+        const rBefore = st._shadowMinInterval;
         r._nexusAdaptiveQuality(0);
-        out.zeroFpsNoChange = st.architectureBuildBudgetPerFrame === rBefore;
+        out.zeroFpsNoChange = st._shadowMinInterval === rBefore;
 
         // (5) Kosten-Schätzung liest den Sense (der Produktions-Ökonomie-Keim).
         st.perfSense.perCreatureMs = 0.05;
@@ -256,9 +260,7 @@ async function checkBandWellePerfENexusGovernor({ page, check }) {
         // (6) die NEUEN AUGEN: perfSense SIEHT die GPU-Render-Last + die per-Subsystem-Spikes. CONSUM: der
         // Fold füllt die Felder, Loop + Overlay lesen sie.
         out.hasRenderFields =
-            typeof st.perfSense.renderCalls === "number" &&
-            typeof st.perfSense.renderTris === "number" &&
-            typeof st.perfSense.renderCallsMax === "number" &&
+            ["renderCalls", "renderTris", "renderCallsMax"].every((k) => typeof st.perfSense[k] === "number") &&
             !!st.perfSense.phaseMax;
         st._perfFrame = { renderCalls: 1000, renderTris: 500000, streaming: 50 };
         st._perfMarks = {};
@@ -268,16 +270,10 @@ async function checkBandWellePerfENexusGovernor({ page, check }) {
         out.foldPhaseSpike = (st.perfSense.phaseMax.streaming || 0) >= 50;
 
         // (a) MODERATE Render-Last (Draw-Calls unter dem Responsiv-Schwellwert): die Architektur-Domäne
-        // (Schatten/Bau-Durchsatz = die render-verursachenden Hebel) gibt MEHR nach als das Streaming — die Welt
+        // (Schatten · Strahlen · Laub-Dichte = die render-verursachenden Hebel) gibt MEHR nach als das Streaming — die Welt
         // lädt weiter, während die Render-Qualität schrumpft.
-        r._nexusPerfActuate({
-            loadScale: 0.5,
-            renderCalls: 600,
-            phase: { streaming: 1, render: 0, archCulling: 0.5, waterIso: 1, creatures: 0, physics: 0 },
-        });
-        const archPosR = budgetPos(st.architectureBuildBudgetPerFrame);
-        const streamPosR =
-            (st._voxelStreamBudgetMs - L.streamBudgetMs[0]) / (L.streamBudgetMs[1] - L.streamBudgetMs[0]);
+        akt(0.5, 1, 0.5, 600);
+        const [archPosR, streamPosR] = [archPos(), streamPos()];
         const shadowLoaded = st._shadowMinInterval;
         // unter moderater Render-Last gibt die Architektur-Domäne (Cull/Schatten) MEHR nach.
         out.renderLoadThrottlesArch = archPosR < streamPosR - 0.1;
@@ -286,40 +282,24 @@ async function checkBandWellePerfENexusGovernor({ page, check }) {
         // wäre sie dauerhaft an (Lauf-Freeze). Render-Druck drosselt nur die Optik (Schatten/Cull/Laub).
         const pendBSnap = st.voxelMeshPending;
         st.voxelMeshPending = new Set(["0,0,0", "1,0,0"]); // Bau-Rückstau: die Welt lädt
-        r._nexusPerfActuate({
-            loadScale: 0.5,
-            renderCalls: 1100,
-            phase: { streaming: 1, render: 0, archCulling: 0.5, waterIso: 1, creatures: 0, physics: 0 },
-        });
-        const streamPosBound =
-            (st._voxelStreamBudgetMs - L.streamBudgetMs[0]) / (L.streamBudgetMs[1] - L.streamBudgetMs[0]);
+        akt(0.5, 1, 0.5, 1100);
         st.voxelMeshPending = pendBSnap;
-        out.renderLoadProtectsStreaming = Math.abs(st._voxelStreamBudgetMs - L.streamBudgetMs[1]) < 0.01;
-        out.renderStreamPosBound = +streamPosBound.toFixed(2);
+        out.renderLoadProtectsStreaming = streamPos() > 0.996;
+        out.renderStreamPosBound = +streamPos().toFixed(2);
         // (c) dieselbe loadScale OHNE Render-Last: das Schatten-Intervall ist KÜRZER (= der
         // Render-Load hat es verlängert → der Schatten-Pass läuft seltener unter GPU-Last).
-        r._nexusPerfActuate({
-            loadScale: 0.5,
-            renderCalls: 0,
-            phase: { streaming: 1, render: 0, archCulling: 0.5, waterIso: 1, creatures: 0, physics: 0 },
-        });
+        akt(0.5, 1, 0.5, 0);
         out.renderLoadLengthensShadow = shadowLoaded > st._shadowMinInterval + 1e-6;
         out.renderArchPos = +archPosR.toFixed(2);
         out.renderStreamPos = +streamPosR.toFixed(2);
 
         const pendingSnap = st.voxelMeshPending;
         st.voxelMeshPending = new Set(["0,0,0", "1,0,0", "2,0,0", "3,0,0", "4,0,0"]); // Bau-Rückstau (lädt)
-        r._nexusPerfActuate({
-            loadScale: 0.2, // starke Drosselung
-            phase: { streaming: 20, render: 0, archCulling: 1, waterIso: 1, creatures: 0, physics: 0 },
-        });
-        out.loadingPinsStreamMax = Math.abs(st._voxelStreamBudgetMs - L.streamBudgetMs[1]) < 0.01;
+        akt(0.2, 20, 1); // starke Drosselung
+        out.loadingPinsStreamMax = streamPos() > 0.996;
         st.voxelMeshPending = new Set(); // settled (kein Rückstau)
-        r._nexusPerfActuate({
-            loadScale: 0.2,
-            phase: { streaming: 20, render: 0, archCulling: 1, waterIso: 1, creatures: 0, physics: 0 },
-        });
-        out.settledThrottlesStream = st._voxelStreamBudgetMs < L.streamBudgetMs[1] - 0.01;
+        akt(0.2, 20, 1);
+        out.settledThrottlesStream = streamPos() < 0.996;
         st.voxelMeshPending = pendingSnap;
 
         // (9) DER ATEM-TOTBAND: im Komfort-Band [growMs, throttleMs] HÄLT der
@@ -330,37 +310,29 @@ async function checkBandWellePerfENexusGovernor({ page, check }) {
         st.perfSense.pidPrevErr = 0;
         st.perfSense.phase = { streaming: 1, render: 0, archCulling: 1, waterIso: 1, creatures: 0, physics: 0 };
         // (a) Frame IM Totband (15 ms ≈ 66 fps) → loadScale HÄLT (kein Wachsen, kein Pendeln).
-        for (let i = 0; i < 60; i++) {
-            st.perfSense.frameMs = 15;
-            r._nexusPerfRegulate(0.016);
-        }
+        const regle = (ms, n) => {
+            for (let i = 0; i < n; i++) {
+                st.perfSense.frameMs = ms;
+                r._nexusPerfRegulate(0.016);
+            }
+        };
+        regle(15, 60);
         out.deadbandHolds = Math.abs(st.perfSense.loadScale - 0.5) < 0.05;
         out.deadbandLoadScale = +st.perfSense.loadScale.toFixed(3);
         // (b) KLARER Kopfraum (10 ms ≈ 100 fps, unter growMs) → loadScale wächst zum Maximum
         // (die Schönheit füllt die Reserve — langsam, das ist gewollt).
-        for (let i = 0; i < 300; i++) {
-            st.perfSense.frameMs = 10;
-            r._nexusPerfRegulate(0.016);
-        }
+        regle(10, 300);
         out.headroomGrows = st.perfSense.loadScale > 0.9;
         out.headroomLoadScale = +st.perfSense.loadScale.toFixed(3);
         // (c) ÜBER der Decke (25 ms ≈ 40 fps) → loadScale fällt wieder (der fps-Boden schützt).
-        for (let i = 0; i < 120; i++) {
-            st.perfSense.frameMs = 25;
-            r._nexusPerfRegulate(0.016);
-        }
+        regle(25, 120);
         out.ceilingThrottles = st.perfSense.loadScale < 0.5;
         out.ceilingLoadScale = +st.perfSense.loadScale.toFixed(3);
         // der Passagier ist gekehrt: die toten Bang-Bang-Schwellen sind weg.
         out.deadConstantsGone = A.ARCH_QUALITY_FPS_LOW === undefined && A.ARCH_QUALITY_FPS_HIGH === undefined;
 
-        st.perfSense = snap.sense;
-        st.architectureCullingRadius = snap.radius;
-        st.architectureBuildBudgetPerFrame = snap.budget;
-        st._voxelStreamBudgetMs = snap.streamMs;
-        if (st.atmosphere && snap.waterMs !== undefined) st.atmosphere.waterIsoBudgetMs = snap.waterMs;
-        st.gravity = snap.gravity;
-        st.perfRegulator = snap.reg;
+        K.forEach((k, i) => (st[k] = snap[i]));
+        if (st.atmosphere && waterMs !== undefined) st.atmosphere.waterIsoBudgetMs = waterMs;
         return out;
     });
     if (res.error) {
@@ -373,18 +345,24 @@ async function checkBandWellePerfENexusGovernor({ page, check }) {
         res.noParallelGovernor
     );
     check(
-        "FPS-Druck strafft ALLE Stellgrößen der Qualität (Bau-Budget + Stream-Budget)",
-        res.tightenedBudget && res.tightenedStream
+        "FPS-Druck strafft ALLE Stellgrößen der Qualität (Bau: Takt-Garantie statt Frist · Schatten · Stream-Budget)",
+        res.tightenedBudget && res.tightenedStream && res.ohneZaehler
     );
-    check("anhaltender Druck bounded (Budget ≥ 1)", res.budgetFloor);
+    check(
+        "anhaltender Druck bounded — über Budget ein Bau je 250 ms (Takt-Garantie), kein Zähler",
+        res.budgetFloor && res.ohneZaehler
+    );
     check(
         "V12.0-perf.e: Gravitation NIE angetastet (die Wurzel-Heilung)",
         res.gravityUntouchedLow && res.gravityUntouchedHigh
     );
-    check("FPS-Luft relaxt ALLE Stellgrößen zum Maximum", res.relaxedBudget && res.relaxedStream);
     check(
-        `SYNERGIE — das teuerste Subsystem gibt zuerst nach (streamPos ${res.synergyStreamPos} < archPos ${res.synergyArchPos})`,
-        res.synergyStreamThrottledMore
+        "FPS-Luft relaxt ALLE Stellgrößen zum Maximum (Bau an der Frist · Schatten · Stream-Budget)",
+        res.relaxedBudget && res.relaxedStream && res.ohneZaehler
+    );
+    check(
+        `SYNERGIE — das teuerste Subsystem gibt zuerst nach (streamPos ${res.synergyStreamPos} < archPos ${res.synergyArchPos} am Schatten; der Bau an der Frist)`,
+        res.synergyStreamThrottledMore && res.ohneZaehler
     );
     check("ungültige FPS (0) ändert nichts (headless-Schutz)", res.zeroFpsNoChange);
     check("Kosten-Schätzung skaliert mit n (Produktions-Ökonomie-Keim)", res.estimateScales);
@@ -401,8 +379,8 @@ async function checkBandWellePerfENexusGovernor({ page, check }) {
         res.foldPhaseSpike
     );
     check(
-        `unter MODERATER Render-Last drosselt der Regler ARCH/Schatten (archPos ${res.renderArchPos}) MEHR als Streaming (streamPos ${res.renderStreamPos}) — Durchsatz geschützt, die Welt lädt weiter`,
-        res.renderLoadThrottlesArch
+        `unter MODERATER Render-Last drosselt der Regler ARCH/Schatten (archPos ${res.renderArchPos}) MEHR als Streaming (streamPos ${res.renderStreamPos}) — Durchsatz geschützt, die Welt lädt weiter, der Bau an der Frist`,
+        res.renderLoadThrottlesArch && res.ohneZaehler
     );
     check(
         `STREAMING IST HEILIG — hohe Render-Last (1100 Calls) drosselt das Streaming bei Rückstau NICHT (streamPos ${res.renderStreamPosBound} = MAX) — die Bewegung verhungert NIE am Render-Druck (Heilung des V18.276-Lauf-Freeze)`,
