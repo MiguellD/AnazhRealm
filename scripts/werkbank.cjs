@@ -3235,13 +3235,15 @@ hauptLauf(async () => {
             for (const [ort, gaenge] of [["stadt", 2], ["wiese", 1]]) {
                 // DIE WACHE DES UMSTELLENS: steht der Ort nach 200 s (und 400 s) nicht, nennt sie, was offen ist (`_weltOffen`, die
                 // Ruhe und ihr Grund, die Akte des Offenen) — der Deckel der Probe (480 s) bräche sonst ohne ein Wort
-                const [auf, um0] = [umstellen({ ort, sicht: "ego" }), Date.now()];
-                for (let t = 0, fertig = false, w = auf.finally(() => (fertig = true)); !fertig; t++) {
-                    await Promise.race([w, new Promise((f) => setTimeout(f, 1000))]);
-                    if (!fertig && (t === 200 || t === 400))
+                const [auf, um0, zu] = [umstellen({ ort, sicht: "ego" }), Date.now(), { fertig: false }];
+                auf.finally(() => (zu.fertig = true)).catch(() => {});
+                for (let t = 1; !zu.fertig; t++) {
+                    await Promise.race([auf.catch(() => {}), new Promise((f) => setTimeout(f, 1000))]);
+                    if (!zu.fertig && (t === 200 || t === 400))
                         zeile(`GEH ROT ${ort} steht nach ${t} s nicht: ${JSON.stringify((await rufe("/eval", { code: "const W = r._weltStand || {}; return [Object.entries(r._weltOffen()).filter(([, v]) => v).join(' '), W.ruhe, W.grund, r._builtRingRadius(), r._weltOffenAkte()].join(' · ');" })).ergebnis)}`); // prettier-ignore
                 }
-                await auf;
+                const umO = await auf;
+                if (!umO || umO.fehler) throw new Error(`${ort} umstellen: ${umO ? umO.fehler : "keine Antwort"}`);
                 const umS = Math.round((Date.now() - um0) / 1000);
                 for (let g = 1; g <= gaenge; g++) {
                     const o = await rufe("/haenger", { sek: 4, ein: 0.5, tiere: "frei", wandern: "bahn", schwelle: 33, json: path.resolve("artifacts", "geh", `${ort}-${g}.json`) }); // prettier-ignore
@@ -3264,7 +3266,7 @@ hauptLauf(async () => {
             zeile(`GEH ${gruen ? "GRÜN" : "ROT"} Summe Bild p50/p95/max: ${summe.join(" · ")}`);
         } catch (e) {
             gruen = false;
-            zeile(`GEH ROT Error ${String(e?.stack || e).slice(0, 500)}`);
+            zeile(`GEH ROT Error ${String(e?.message || e)}`);
         } finally {
             halt?.();
         }
