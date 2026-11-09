@@ -362,7 +362,9 @@ async function probeLeben(expected) {
             let kontakte = 0;
             let hz = Infinity;
             for (let n = 0; n < spur.length; n++) {
-                const k = spur[n].kontakt;
+                // der Kontakt des VORIGEN Schritts: der Fahr-Schritt liest die Lage, die der Löser am Ende des vorigen setzte
+                // (`_fahrPlan`); bis w27-wagen-spalt fuhr die Spur ihn einen Schritt zu früh (eine Kiefer am Ende der Strecke: 0,19 m)
+                const k = n > 0 && spur[n - 1].kontakt;
                 if (k) {
                     kontakte++;
                     const cy = Math.cos(q.yaw);
@@ -924,14 +926,13 @@ async function probeLeben(expected) {
                     if (st.player.mountedArch == null && drin(L[n], sp.x, sp.z))
                         m.leib++ < 6 && m.leibOrte.push(["spieler|" + W.nr, k, ...ort2(L[n]), W.grund, "spieler"]);
                     // DER BAU (jeder Wagen, nah wie fern — die Hülle des Fahr-Schritts fährt nur bis `huelleM` vom Spieler): das
-                    // Rechteck seiner Hülle an seiner Lage gegen die Boxen der Bauwerke im EINEN Struktur-Löser
+                    // Vieleck seiner Hülle an seiner Lage (gestellt vom EINEN Schreiber `_fahrHuelleStellen`) gegen die Boxen im EINEN Struktur-Löser
                     // (`_stepCharacterStructures`, dieselbe Probe wie der Fahr-Schritt, an einer Kopie der Lage); tiefer als 0,05 m
                     // ist eine Berührung — Haus, Laterne, Stand, Brunnen, der Wagen am Platz
                     const hk = e._fahr && Number.isFinite(e._fahr.y) ? r._fahrHuelle(e) : null;
                     if (hk) {
-                        const ry = e._rideYaw || 0;
-                        Object.assign(hk, { fX: Math.sin(ry), fZ: Math.cos(ry), qX: Math.cos(ry), qZ: -Math.sin(ry) });
-                        [hk.unten, hk.oben, hk.schub.length, hk.schubQuelle.length] = [e._fahr.y + hk.stufe, e._fahr.y + hk.dach, 0, 0]; // prettier-ignore
+                        const [ry, f] = [e._rideYaw || 0, e._fahr];
+                        r._fahrHuelleStellen(hk, Math.sin(ry), Math.cos(ry), -f.steig - f.fNick, f.wank + f.fWank, f.y + hk.stufe, f.y + hk.dach); // prettier-ignore
                         r._stepCharacterStructures({ x: e.position.x, z: e.position.z }, 0, 0, 0, hk);
                         hk.schubQuelle.forEach((q, j) => {
                             // der fahrende Wagen trägt sein Rechteck (oben, `schnitt`): seine Boxen ziehen erst nach (`boxFernM`)

@@ -490,7 +490,7 @@ const ROOT = path.resolve(__dirname, "..", "..");
 // das Modul der Import-Karte der Welt (index.html `<script type="importmap">`) für das Manifest-Feld `engine`, ab der
 // Wurzel; ENGINE_THREE schweigt die Warnung von require(esm) (Node liest die typlose .js als ES-Modul — der Weg, kein Befund)
 const ENGINE_MODUL = () =>
-    JSON.parse(fs.readFileSync(path.join(ROOT, "index.html"), "utf8").match(/<script type="importmap">([\s\S]*?)<\/script>/)[1]).imports[jsonLesen("cores.manifest.json").find((c) => c.engine).engine].slice(1); // prettier-ignore
+    JSON.parse(ausDatei("index.html").match(/<script type="importmap">([\s\S]*?)<\/script>/)[1]).imports[jsonLesen("cores.manifest.json").find((c) => c.engine).engine].slice(1); // prettier-ignore
 function ENGINE_THREE() {
     const w = process.emitWarning;
     process.emitWarning = () => {};

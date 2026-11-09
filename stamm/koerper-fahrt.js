@@ -1574,7 +1574,7 @@ class AnazhRealm_koerper_fahrt {
             pm.y = entry.position.y - 0.5 + sitz + fz.fHub;
             // Feld-nativ: das Gefährt führt die Vertikale → den Feld-Fall-Zustand nullen.
             this.state._fieldVy = 0;
-            return;
+            return this._rittBlocker(entry);
         }
         // DER RITT OHNE FAHR-GESETZ: die Räder (Hufe) stehen auf der Ebene durch die Aufstandspunkte (`_rittEbene`, die
         // Ebene des Kerns); schwimmt das Werk über diesem Grund (die Wahrheit am Körper mit seiner Gestalt — W-W2: ohne den
@@ -1644,6 +1644,24 @@ class AnazhRealm_koerper_fahrt {
         entry._rideRoll = Number.isFinite(entry._terrainRollZiel)
             ? Math.max(-kl, Math.min(kl, entry._terrainRollZiel))
             : 0;
+        if (Number.isFinite(entry._rideYaw)) entry.rotationY = this._rittGier(entry, entry._rideYaw);
+        this._rittBlocker(entry);
+    }
+
+    // DIE BLOCKER DES GERITTENEN WERKS ZIEHEN IM SIM-SCHRITT MIT (physik.K2, Lehre 13): dieselbe Quelle `_populateBlockerAABBs`,
+    // an der Lage und Gier des Schritts, schwellen-getaktet (> 0,5 m / > 0,1 rad) gegen Array-Churn; Absteigen stempelt final. Die
+    // Spieler-Kapsel überspringt sie (riddenId), ein Tier löst gegen sie (das Ausweichen ist seine Sache). Bis hier stempelte der
+    // Frame-Takt sie an der GEZEICHNETEN Lage und Gier: ein Bär, den die Hülle des Wagens stieß, löste gegen Boxen, deren Lage die
+    // Bildrate trug (gate:fahr-leben L8: nach 200 Schritten 0,14 mm zwischen 60 fps und gemischten Bildern).
+    _rittBlocker(entry) {
+        if (!entry.blockerAABBs) return;
+        const st = entry._blockerStampAt;
+        const ry = Number.isFinite(entry.rotationY) ? entry.rotationY : 0;
+        const p = entry.position;
+        if (!st || Math.abs(st.x - p.x) > 0.5 || Math.abs(st.z - p.z) > 0.5 || Math.abs(st.ry - ry) > 0.1) {
+            this._populateBlockerAABBs(entry);
+            entry._blockerStampAt = { x: p.x, z: p.z, ry };
+        }
     }
 
     // DIE TIEFE AM WAGEN (Schau-2 wasser-wahrheit): so tief steht die Unterkante des Fahr-Zustands (`fz.y`, die Ebene der
@@ -2094,21 +2112,7 @@ class AnazhRealm_koerper_fahrt {
             // STEER_VIS.instance = "entry-yaw" — Feel .124; do not yaw leaves; shared localMatrix sacred.
             this._archInstanceUpdate(entry);
         }
-        // Blocker ziehen mit (dieselbe Quelle _populateBlockerAABBs; _stepCharacterStructures überspringt
-        // riddenId). Schwellen-getaktet (>0.5 m / >0.1 rad) gegen Array-Churn; Absteigen stempelt final.
-        if (entry.blockerAABBs) {
-            const st = entry._blockerStampAt;
-            const ry = Number.isFinite(entry.rotationY) ? entry.rotationY : 0;
-            if (
-                !st ||
-                Math.abs(st.x - entry.position.x) > 0.5 ||
-                Math.abs(st.z - entry.position.z) > 0.5 ||
-                Math.abs(st.ry - ry) > 0.1
-            ) {
-                this._populateBlockerAABBs(entry);
-                entry._blockerStampAt = { x: entry.position.x, z: entry.position.z, ry };
-            }
-        }
+        // die Blocker ziehen im Sim-Schritt mit (`_rittBlocker`), nie an der gezeichneten Lage
     }
 
     // ----- Welt-Reaktion: magnifying (Camera-FOV-Zoom) -----
