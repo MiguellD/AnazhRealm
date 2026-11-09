@@ -42,7 +42,7 @@ class AnazhRealm_bild_erst {
                 vorwaermVerweigert: 0,
                 ohneDraw: new WeakSet(), // Objekte, die ein Pass der Welt ohne Draw fand (die Arena ohne Instanz im Pass, der Gast)
                 vorwaermHalt: new Map(), // die leere Senke einer kommenden Stufe → ihre Gruppe: sie hält, bis ihre Arena steht
-                vorwaermArten: new Map(), // Art@Region → die Art, deren Stufen vorwärmen (null: sie stehen) (`_vorwaermStufen`)
+                vorwaermArten: new Map(), // Art (Streu oder Bau) → die Art, deren Stufen vorwärmen (null: sie stehen) (`_vorwaermStufen`)
                 leer: new Set(),
             };
         return this._erstZeichnung;
@@ -108,11 +108,14 @@ class AnazhRealm_bild_erst {
             E.vorwaermFehlt.set(o, f);
         }
         if (f.size) E.vorwaerm.add(o);
-        // eine geborene Arena nennt ihre Art: deren übrige Stufen wärmen vor (`_vorwaermStufen`, im Leerlauf)
+        // eine geborene Arena nennt ihre Art: deren übrige Stufen wärmen vor (`_vorwaermStufen`, im Leerlauf) — EINMAL je Art, in
+        // der Region der ersten Arena: das Programm einer Stufe kennt keine Region (Stoff × Form × Pass), die Hüllen der nächsten
+        // Region bauten nichts Neues (Gebot 7: die Kosten folgen dem, was fehlt, nie der Welt — bis w26 je Art × Region, jede neue
+        // Region der Fahrt legte ihre Hüllen an, und der erste Leerlauf danach legte sie alle zugleich)
         const g0 = o.isGeometrieArena === true && o.glieder[0];
         const art = g0 && AnazhRealm._vorwaermArtVon(g0.userData.archInstanceKey);
         if (art) {
-            const k = art.preset + "@" + art.region;
+            const k = AnazhRealm._vorwaermArtSchluessel(art);
             if (!E.vorwaermArten.has(k)) E.vorwaermArten.set(k, art);
         }
     }
@@ -268,6 +271,9 @@ class AnazhRealm_bild_erst {
     // (seine Stufen und seine Karte trägt der Stufen-Vorlauf). GTX vorher (53b2fc7a), im Fenster gebaut: „haupt arena
     // fscatter:blume:L2" 294 ms im Gehen, „haupt arena f:gt:L0" 244 ms und „fscatter:blume:L0" 87 ms in der ersten Fahrt.
     // Die Art einer Gruppe aus ihrem Schlüssel (`_archInstanceGroupFor`, gelesen wie `_instanzKlasse`); null: keine Studio-Art
+    static _vorwaermArtSchluessel(art) {
+        return (art.streu ? "streu:" : "bau:") + art.preset;
+    }
     static _vorwaermArtVon(key) {
         const s = String(key);
         const st = /^fscatter:([^:#]+):[^:#]+:\d#[^@]*(?:@(.+))?$/.exec(s);
@@ -283,7 +289,9 @@ class AnazhRealm_bild_erst {
         for (const name of Array.isArray(st.hotbar) ? st.hotbar : []) {
             const bp = name && st.blueprints && st.blueprints[name];
             const preset = bp && this._isPlaceableBlueprint(bp) ? this._foundryPresetForEntry({ type: name }) : null;
-            if (preset && !A.has(preset + "@null")) A.set(preset + "@null", { preset, streu: false, region: null });
+            const art = preset && { preset, streu: false, region: null };
+            if (art && !A.has(AnazhRealm._vorwaermArtSchluessel(art)))
+                A.set(AnazhRealm._vorwaermArtSchluessel(art), art);
         }
         for (const [k, art] of A) if (this._vorwaermStufen(art)) A.set(k, null);
     }
