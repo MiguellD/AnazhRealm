@@ -483,6 +483,21 @@ function check(name, ok) {
             RI.faelle === 54 && RI.rot === 0
         );
         check("CO-SCHÖPFER: der Satz wird spawn_studio (ohne KI-Schlüssel)", K.satz === true);
+        // DER TAKT DER BAU-ARBEIT (w23-pruef-welt-heim-k10): der Hunger der Frist (`_bauFrist`), das Pflicht-Stück des Knoten-Baus und
+        // das EINE Skelett je Takt zählen an `state.weltTakt`, den der Loop je Takt zählt. w23-pruef-welt strich den Stempel, den sie
+        // lasen, samt Schreiber — alle drei sahen EINEN ewigen Takt, gate:takt T13 setzt den Takt im Stub selbst und sah es nie.
+        // Konsum: drei echte Takte, je danach der Takt im Hunger eines Bauers (3 Werte), dann drei mit stehendem Zähler (der fehlende
+        // Schreiber: 1 Wert) — ein Leser auf einem toten Feld zählt 1, einer auf einer fremden Uhr 6.
+        const BT = await page.evaluate(async () => {
+            const [z, h, w] = [leihe(r, { _bauFristOhneEnde: () => false }), new Set(), st.weltTakt + 3];
+            for (let i = 0; i < 6; i++, await null) {
+                if (i === 3) Object.defineProperty(st, "weltTakt", { configurable: true, get: () => -1, set() {} });
+                r._gameLoopTick(performance.now()), r._bauFrist("linse"), h.add(r._bauHunger.get("linse").takt);
+            }
+            delete st.weltTakt, (st.weltTakt = w), r._bauHunger.delete("linse"), z();
+            return h.size;
+        });
+        check(`BAU-TAKT: der Hunger zählt je Takt des Loops — ${BT} Takte aus 3 freien und 3 mit stehendem Zähler (Soll 4)`, BT === 4); // prettier-ignore
         if (K.err) console.log("     ⟶ " + K.err);
 
         console.log(`\nLaufzeit: ${((Date.now() - T0) / 1000).toFixed(0)}s · ${pass} ✅ · ${fails.length} ❌`);

@@ -58,7 +58,7 @@ hauptLauf(async () => {
         await __gebautNach("der Ring der Inventur", { fertig: () => st.voxelChunks?.size >= 25, takt: () => __streuTakte(1, 6), max: 9000 }); // prettier-ignore
         const o = { foundryEnabled: !!r._foundryEnabled?.() };
         const f = r._ensureAssetFoundry();
-        await __weltDa(() => !f && !f.ready);
+        await __weltDa(() => !f || f.ready);
         o.foundryReady = !!f?.ready;
         await __streuTakte(350, 8);
         // ── Die Nähe der Wiese misst nur, wo sie legt: am Start (der Platz) steht der nächste Büschel jenseits der Übergabe —

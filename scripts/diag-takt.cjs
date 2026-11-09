@@ -250,12 +250,12 @@ hauptLauf(async () => {
                     Object.assign(stub, { _voxelChunkConfig: () => ({ span: 16, ringRadius: 12 }), _voxelChunkLodFor: () => 0, _stufenZelle: () => 0, _ensureVoxelChunkAt: () => aus9.stromBau++, _fernRingEinhaengen: () => 0, _fernRingPunkt: () => ({ x: 0, z: 0, fuss: { ht: 0, hr: 0 }, rad: 0, s: 1 }), _fernAuftrag: () => new Promise(() => {}) }); // prettier-ignore
                     for (const k of "_setLastPlayerVoxelChunk _stufeAugeTakt _rebuildVoxelChunk _pruneDistantVoxelChunks _bedarfVoraus".split(" ")) stub[k] = () => {}; // prettier-ignore
                     const werk = { n: 0, liste: [], ox: 0, oz: 0, listeWerk: (function* () { while (++werk.n < 200) yield; })() }; // prettier-ignore
-                    Object.assign(stub, { _bauFrist: () => Infinity, _disposeVoxelChunk: () => aus9.abschied++, _huellenBedarf: () => "alle", _huellenNach: null, _bauFristOhneEnde: () => false, _taktZeit: 0, _bewohnerSiedlungen: new Map([[0, werk]]), _bauSatzRate: (q) => (aus9.satz++, --q.n || st.bauSatzRaten.delete(q.key)), _satzAltertOffen: null, _satzAlterStempel: () => true, _satzBlockEcken: () => 0, _chunkSatzLege: (s, o, A, n) => (aus9.satz += n / AnazhRealm.BAU_SATZ_STUECK) }); // prettier-ignore
+                    Object.assign(stub, { _bauFrist: () => Infinity, _disposeVoxelChunk: () => aus9.abschied++, _huellenBedarf: () => "alle", _huellenNach: null, _bauFristOhneEnde: () => false, _bewohnerSiedlungen: new Map([[0, werk]]), _bauSatzRate: (q) => (aus9.satz++, --q.n || st.bauSatzRaten.delete(q.key)), _satzAltertOffen: null, _satzAlterStempel: () => true, _satzBlockEcken: () => 0, _chunkSatzLege: (s, o, A, n) => (aus9.satz += n / AnazhRealm.BAU_SATZ_STUECK) }); // prettier-ignore
                     for (const k of "_ladeTakt _naturSetzen _spawnSettlementSlot _dorfTaktLebt _foliageChunkInRadius _foundryPlatzBereit _nebenFaden".split(" ")) stub[k] = () => true; // prettier-ignore
                     for (const k of "_standRuht _archKartenPreset _foundryEnabled _handBauErlaubt _archZiegelFern _foundryRewarmColdTrees _capNexusStructures _standMeldet _weltFeldAktiv".split(" ")) stub[k] = () => false; // prettier-ignore
                     if (selbst) stub._ladeFrist = () => -Infinity; // der Selbsttest: die Kappe allein
                     zurueck = leihe(r, stub);
-                    const S = { _frameOverBudget: false, playerMesh: { position: { x: 0, y: 0, z: 0 } }, architectureCullingRadius: 100, architectureBuildBudgetPerFrame: 3, pendingVegSpawns: 0, architectures: 0, pendingFoliageChunks: 0, voxelChunks: 0, voxelTerrainActive: true, playerVel: null, bauSatzRaten: null, bauSatzSchmutzig: null, _weltbildDa: st._weltbildDa, chunkSaetze: st.chunkSaetze, archInstanceGroups: st.archInstanceGroups, _voxelStreamMaxPerFrame: 3, _voxelStreamBudgetMs: 1e9, fernRing: null }; // prettier-ignore
+                    const S = { weltTakt: 0, _frameOverBudget: false, playerMesh: { position: { x: 0, y: 0, z: 0 } }, architectureCullingRadius: 100, architectureBuildBudgetPerFrame: 3, pendingVegSpawns: 0, architectures: 0, pendingFoliageChunks: 0, voxelChunks: 0, voxelTerrainActive: true, playerVel: null, bauSatzRaten: null, bauSatzSchmutzig: null, _weltbildDa: st._weltbildDa, chunkSaetze: st.chunkSaetze, archInstanceGroups: st.archInstanceGroups, _voxelStreamMaxPerFrame: 3, _voxelStreamBudgetMs: 1e9, fernRing: null }; // prettier-ignore
                     const [stAlt, qD, zwoelf, alter] = [Object.keys(S).map((k) => st[k]), r._autoSettlementQueue, [...Array(12).keys()], AnazhRealm.BAU_ALTER_TAKTE]; // prettier-ignore
                     let uhr = 0;
                     performance.now = () => ++uhr;
@@ -321,7 +321,7 @@ hauptLauf(async () => {
                         // T13 — DIE ALTERUNG: der Strom leert die Frist je Takt, wer Budget bekommt, nutzt es ganz; der längste Hunger je
                         // Bauer steht im Hauptbuch des Gesetzes (`_bauHunger`). Der Selbsttest: ohne Alterung
                         AnazhRealm.BAU_ALTER_TAKTE = selbst ? 1e9 : alter;
-                        for (r._taktZeit = 1; r._taktZeit < 13; r._taktZeit++, await null)
+                        for (st.weltTakt = 1; st.weltTakt < 13; st.weltTakt++, await null)
                             for (const wer of ["strom", "waldPlan", "karte", "streuLod"]) uhr = Math.max(uhr, AnazhRealm.prototype._bauFrist.call(r, wer)); // prettier-ignore
                         aus9.satt13 = Object.fromEntries([...r._bauHunger].map(([k, h]) => [k, h.satt]));
                     } finally {
@@ -356,7 +356,7 @@ hauptLauf(async () => {
                 const zurueck = leihe(r, { _foundry: null, _foundryHelfer: selbst ? () => {} : r._foundryHelfer });
                 try {
                     const f = r._ensureAssetFoundry();
-                    await __weltDa(() => !f && !f.worker);
+                    await __weltDa(() => !f || f.worker);
                     aus10.geboren = !!f?.worker;
                     if (aus10.geboren) Object.assign(aus10, { name: f.worker.name, post: f.worker.post.slice() });
                     aus10.helfer = Math.max(0, geboren.length - 1);

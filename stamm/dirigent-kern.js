@@ -55,7 +55,6 @@ class AnazhRealm {
         AnazhRealm._wurfEbene();
         // DIE BILD-UHR (A9): die EINE Shader-Zeit der Welt in Sekunden — der Loop schreibt sie je Takt, jedes Bild liest sie
         this._bildZeit = 0;
-        this._taktZeit = 0; // DER STEMPEL DES TAKTS (der Loop schreibt ihn je Takt): auf ihm zählt die Bau-Frist ihren Hunger
         this.state = {
             // ### Kern ###
             renderer: null,

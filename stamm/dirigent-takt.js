@@ -44,7 +44,6 @@ class AnazhRealm_dirigent_takt {
             // DIE BILD-UHR (A9, Gesetz #0): die EINE Shader-Zeit der Welt in Sekunden, hier EINMAL je Takt geschrieben — Himmel,
             // Wasser, Wind und Böe, Tor, Regen, Flackern, Chaos-Flimmern und die TSL-`time` (`_loopRender`) lesen nur sie
             this._bildZeit = currentTime;
-            this._taktZeit = currentTime; // DER STEMPEL DES TAKTS: der Hunger der Bau-Frist zählt je Takt (`_bauFrist`), nie das Feld
             // DIE UHR DES FELDS (`_taktUhr`, w23-pruef-welt) ist die Welt-Uhr dieses Takts: Nexus, Stimme, Gemüt, Plan und Lernen
             // des Felds altern in Sim-Sekunden, nie an der Wanduhr des Geräts
             const welt = this.state.spielZeit;
@@ -1806,10 +1805,14 @@ class AnazhRealm_dirigent_takt {
     // UNTER DEM LADESCHIRM ist sie die Frist des Lade-Frames (`_ladeFrist`, K60-2) — für die Zeichnung (`zeichnung`: der Knoten-Bau
     // der Erst-Zeichnung, `_knotenRate`) die ganze samt dem Guthaben der gehaltenen Leine, für jeden anderen Bauer im Bild-Takt
     // ihre Hälfte. Bis hier (w19-ankunft-takt) trug der Knoten-Bau dafür eine zweite Uhr (`rateFrist`) neben dieser.
+    // DER TAKT IST `state.weltTakt` (die Welt-Uhr in Takten, je Takt EINMAL vom Loop gezählt) — für den Hunger hier, das Pflicht-Stück
+    // des Knoten-Baus (`_knotenRate`) und das EINE Skelett je Takt (`_baumGestaltTeile`). Bis w23-pruef-welt-heim-k10 lasen sie den
+    // Stempel `_taktZeit` neben ihm; w23-pruef-welt strich seinen Schreiber mit der alten Uhr des Felds, und alle drei sahen
+    // `undefined` als EINEN ewigen Takt (kein Hunger, kein Pflicht-Stück, kein zweites Skelett).
     _bauFrist(wer, zeichnung = false) {
         if (this._bauFristOhneEnde()) return Infinity;
         const jetzt = performance.now();
-        const takt = this._taktZeit; // der Takt, dem der Hunger zählt (sein Stempel; eine Aufgabe außerhalb des Takts zählt zu seinem)
+        const takt = this.state.weltTakt; // der Takt, dem der Hunger zählt (die Welt-Uhr in Takten; eine Aufgabe außerhalb des Takts zählt zu seinem)
         const H = this._bauHunger || (this._bauHunger = new Map());
         let T = this._bauFristTakt;
         if (!T) {

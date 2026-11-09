@@ -671,7 +671,7 @@ class AnazhRealm_bild_kosten {
                 bauMs: 0,
                 verschoben: 0,
                 einmalOffen: 0, // Renders außerhalb der Welt-Szene, deren Pipeline unter dem Ladeschirm noch im Bau stand (PSO-Vorbau)
-                pflichtTakt: null, // der Takt, in dem der Bau in Raten sein Pflicht-Stück ging (`_knotenRate`, `_taktZeit`)
+                pflichtTakt: null, // der Takt, in dem der Bau in Raten sein Pflicht-Stück ging (`_knotenRate`, `state.weltTakt`)
                 imFlug: new Map(), // Bau-Schlüssel → der laufende Bau in Raten (`_knotenRate`): EINER je Schlüssel
                 pipeAsync: 0,
                 bereitN: 0,
@@ -740,8 +740,8 @@ class AnazhRealm_bild_kosten {
         // SEIN PFLICHT-STÜCK (w19-gang-hitch, Nacharbeit — jeder Leser der Frist geht mindestens eins): der erste Ruf des Takts baut
         // einen Schritt auch nach der Frist, jeder weitere wartet — bis hier wartete jeder, und ein Takt, dessen Bauer vor dem Bild
         // die Frist leerten, baute keinen Knoten (Wiese, Gehen: 0 von 6 Rufen); die Alterung gibt ihm dazu seinen Vortritt
-        if (t0 >= frist && E.pflichtTakt === this._taktZeit) return false;
-        E.pflichtTakt = this._taktZeit;
+        if (t0 >= frist && E.pflichtTakt === this.state.weltTakt) return false;
+        E.pflichtTakt = this.state.weltTakt;
         const key = N.getForRenderCacheKey(ro);
         let s = N.nodeBuilderCache.get(key);
         // ein Bau, den ein Zwilling vollendete, dessen Eintrag mit seinem letzten Leser fiel (`usedTimes`), tritt wieder ein
