@@ -2,10 +2,9 @@
 // sich selbst wieder auf. Kein Gate sah es: jede Zahl im Flugschreiber war „der Frame".
 //
 // Die Linse hüllt die Leser der Sicht-Kette (Prototyp-Methoden, wie die Takt-Linse) und zählt je Frame: die Pässe, die
-// Aufrufe je Leser, die geprüften KÖRPER (`_passTrifft` je Leser, `_hoehlenRect` und `_hoehlenLichtLage` je acht Ecken),
-// die Index-Bytes der Neuschreib-Linse der Sätze (`s.schreiben`) und die TREFFER (eine Wahl, deren Lage steht:
-// `_satzAbschnittSteht`). Die Instanzen der globalen Gruppen und die Büschel der Nah-Wiese wählt die GPU (`_instanzWahlGpu`,
-// w25-gpu-wahl) — die CPU prüft keine, die Linse zählt keine. Das Urteil (rein, im Selbsttest wie im Lauf):
+// Aufrufe je Leser, die geprüften KÖRPER (`_passTrifft` je Leser, `_hoehlenRect` und `_hoehlenLichtLage` je acht Ecken,
+// `_instanzBehalten` je Instanz), die Index-Bytes der Neuschreib-Linse der Sätze (`s.schreiben`) und die TREFFER (eine
+// Wahl, deren Lage steht: `_satzAbschnittSteht` · `_instanzWahlSteht`). Das Urteil (rein, im Selbsttest wie im Lauf):
 // in RUHE (Kamera, Kaskaden und Welt stehen) verlangt die Sicht nach dem ersten Frame keine neue Arbeit — jede Prüfung,
 // jede Höhlen-Rechnung, jedes Byte in Ruhe ist ein Cache-Bruch; wer dreht oder geht, rechnet neu (eine Wahl, die über
 // eine neue Lage hält, wäre ein Loch).
@@ -26,14 +25,16 @@ const SICHT_KETTE = [
     "_hoehlenHinaus",
     "_hoehlenAusgang",
     "_hoehlenBesuch",
+    "_instanzWahlPass",
     "_werferWahlPass",
+    "_nahWieseSicht",
 ];
 // Die Körper-Prüfungen: je Aufruf EIN Körper (Box mit Saum) bzw. acht Ecken einer Box.
-const SICHT_PRUEFUNG = ["_passTrifft", "_hoehlenRect", "_hoehlenLichtLage"];
+const SICHT_PRUEFUNG = ["_passTrifft", "_hoehlenRect", "_hoehlenLichtLage", "_instanzBehalten"];
 // Die Treffer: eine Wahl, deren Lage steht (true = Cache-Treffer).
-const SICHT_TREFFER = ["_satzAbschnittSteht"];
-// Die Täter beim NAMEN: jede neu gerechnete Wahl (der Satz und sein Pass, der Werfer der Bündel).
-const SICHT_NEU = ["_satzAbschnittMerke", "_werferWahlMerke"];
+const SICHT_TREFFER = ["_satzAbschnittSteht", "_instanzWahlSteht"];
+// Die Täter beim NAMEN: jede neu gerechnete Wahl (der Satz und sein Pass, die Gruppe).
+const SICHT_NEU = ["_satzAbschnittMerke", "_instanzWahlMerke", "_werferWahlMerke"];
 // DIE BYTES BEIM GRUND (K): jedes Index-Byte eines Satzes (`_chunkSatzSchreib`) trägt den Grund seines Schreibers —
 // die neue Wahl eines Passes (`wahl:<warum die Wahl nicht stand>`: `stand` = der Satz änderte Bereich, Hülle oder Ordnung,
 // `neu` = der Abschnitt fehlte, `lage` = die Lage des Passes, `liste`/`hoehle`), das Verdichten einer ruhenden Wahl
@@ -51,6 +52,8 @@ const RUHE_LESER = [
     "_chunkSatzAbschnitt",
     "_hoehlenSicht",
     "_hoehlenSichtLicht",
+    "_instanzWahlPass",
+    "_nahWieseSicht",
     "_werferWahlPass",
 ];
 
@@ -259,11 +262,13 @@ function sichtLinse(cfg) {
                     z.warum[kw] = (z.warum[kw] || 0) + 1;
                 }
             } else if (art === "neu") {
-                // der Satz × Pass bzw. das Bündel × Pass, deren Wahl dieser Frame neu rechnete
+                // der Satz × Pass bzw. die Gruppe, deren Wahl dieser Frame neu rechnete
                 const w =
                     name === "_satzAbschnittMerke"
                         ? "satz " + String(a[0].art).split("|")[0] + "|" + a[1].key
-                        : "werfer " + (a[0].name || a[0].id) + "|" + a[2].key;
+                        : name === "_werferWahlMerke"
+                          ? "werfer " + (a[0].name || a[0].id) + "|" + a[2].key
+                          : "gruppe " + ((a[0].mesh && a[0].mesh.name) || a[0].key || "?");
                 z.neu[w] = (z.neu[w] || 0) + 1;
                 // die neue Wahl schuldet ihrem Abschnitt ein Verdichten und ihrem Satz ein Umlegen
                 if (name === "_satzAbschnittMerke") {
@@ -477,6 +482,7 @@ function sichtLinse(cfg) {
             o.ecken = 8 * ((p._hoehlenRect || 0) + (p._hoehlenLichtLage || 0));
             let ruhe = (p._hoehlenRect || 0) + (p._hoehlenLichtLage || 0);
             for (const n of cfg.ruheLeser) ruhe += o.trifft[n] || 0;
+            ruhe += p._instanzBehalten || 0;
             for (const n of ["_hoehlenSicht", "_hoehlenSichtLicht", "_chunkSatzAbschnitt"]) ruhe += o.aufrufe[n] || 0;
             o.arbeit = ruhe;
             o.trefferSumme = Object.values(o.treffer).reduce((a, b) => a + b, 0);
@@ -800,6 +806,7 @@ function sichtPhase(frames, ab) {
         hoehlenSichtLicht: st(auf("_hoehlenSichtLicht")),
         abschnitt: st(auf("_chunkSatzAbschnitt")),
         passTrifft: st((f) => f.pruefung._passTrifft || 0),
+        instanzBehalten: st((f) => f.pruefung._instanzBehalten || 0),
         werferTrifft: st((f) => f.trifft._werferWahlPass || 0),
         hinaus: st((f) => (f.aufrufe._hoehlenHinaus || 0) + (f.aufrufe._hoehlenAusgang || 0)),
         // die Leser, die die Linse nicht hüllen konnte (die Welt trägt sie nicht)
@@ -818,7 +825,7 @@ function sichtPhase(frames, ab) {
 //       jede Inhalts-Änderung rot (die Welt steht); sonst (der echte Loop — eine Gruppe wird geräumt) der Median 0 und
 //       höchstens `RUHE_EREIGNIS` der Frames;
 //   (B) BEWEGUNG: wer dreht oder geht, rechnet neu — eine Phase ohne Arbeit hielte eine Wahl über eine neue Lage (Loch);
-//   (T) TREUE: die gehaltene Wahl ist die frisch gerechnete (`b.treue`: je Satz × Pass die Zellen, je Kaskade die Werfer);
+//   (T) TREUE: die gehaltene Wahl ist die frisch gerechnete (`b.treue`: je Satz × Pass die Zellen, je Gruppe die Zahl);
 //   (S) SCHARF: ein eingeschmuggelter Cache-Bruch (`b.bruch`, eine Ruhe-Phase mit gebrochenem Cache) fällt rot; ein
 //       eingeschmuggelter Lege-Bruch (`b.legeBruch`: jeder ruhende Abschnitt legt sich je Pass dicht neu) zählt als Neulegen
 //       ohne Änderung und steht als `dicht:ohne` beim Namen; ein eingeschmuggelter Stand-Bruch (`b.standBruch`: jeder Satz zählt je Frame seinen Stand, kein Beleg ändert sich) zählt
@@ -886,7 +893,7 @@ function sichtUrteil(b) {
                 `RUHE: die Sicht-Kette arbeitet in Ruhe ohne Änderung (Median ${A.median}, max ${A.max} Prüfungen, in ` +
                     `${A.frames} von ${R.frames} Frames, ${R.aenderungFrames} mit Änderung; alle Frames Ø ${R.arbeit.mittel}, ` +
                     `Höhlen-Sicht ${R.hoehlenSicht.mittel} + Licht ${R.hoehlenSichtLicht.mittel} Aufrufe, ` +
-                    `Abschnitte ${R.abschnitt.mittel}, Ecken ${R.ecken.mittel}, ` +
+                    `Abschnitte ${R.abschnitt.mittel}, Ecken ${R.ecken.mittel}, Instanzen ${R.instanzBehalten.mittel}, ` +
                     `Werfer ${R.werferTrifft.mittel} (_werferWahlPass)) — ` +
                     "nichts hat sich geändert, jede Prüfung ist ein Cache-Bruch" +
                     (R.taeter?.length ? `; neu gerechnet je Frame: ${R.taeter.join(", ")}` : "")
@@ -947,7 +954,7 @@ function sichtUrteil(b) {
     }
     for (const t of (b.treue && b.treue.abweichung) || [])
         v.push(`TREUE: ${t} — die gehaltene Wahl ist nicht die frisch gerechnete`);
-    if (b.treue && !(b.treue.geprueft > 0)) v.push("LEER: Treue ohne Vergleich (kein Abschnitt, kein Werfer)");
+    if (b.treue && !(b.treue.geprueft > 0)) v.push("LEER: Treue ohne Vergleich (kein Abschnitt, keine Gruppe)");
     if (b.bruch !== undefined) {
         const x = b.bruch;
         if (!x || !(x.arbeit.median > 0))

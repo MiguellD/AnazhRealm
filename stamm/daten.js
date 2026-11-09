@@ -457,7 +457,7 @@ class AnazhRealm_daten {
 
     // DIE NAH-WIESE (V18.508): nah am Auge wächst die Wiese aus dem Studio-Gras (Foundry „gras", Stufen
     // aus `kindStages.grass`). Kosten an den SCHIRM gebunden (Gebot 7): ein Kachel-Ring um das Auge, nie je Chunk;
-    // gezeichnet wird je Büschel, was das Auge sieht (die Wahl der GPU über dem Bestand `_nahWieseBestand`, EINE Senke je Vorlage × Stufe ×
+    // gezeichnet wird je Büschel, was das Auge sieht (der Sicht-Satz `_nahWieseSicht`, EINE Senke je Vorlage × Stufe ×
     // Teil). `stufe1` = Radius der feinen Stufe (L1) um das Auge, je Büschel, `stufe1Rand` = ihr Austritt dahinter
     // (Hysterese), `radius` = die Übergabe: bis hier legt der Sicht-Satz jedes Büschel, dahinter zeichnet DIE FERNE
     // dieselben Büschel weiter, `vorlauf` = so weit vor der Übergabe steht jede Kachel schon (kein Büschel tritt in den Kreis,
@@ -563,6 +563,11 @@ class AnazhRealm_daten {
                     rand: 0.2,
                     vorlauf: 8,
                     kachelnJeTakt: 4,
+                    // DER WEG DER WAHL (w23-geh-takt, `_wieseFernAnker`): die Wahl einer Kachel hält auf der Strecke, die das Auge in
+                    // `zeitS` geht (`wegM` bis `wegMax` m), quer `querM`, lotrecht `lotM`, die Höhe über dem Boden `hM`, die Drehung
+                    // samt Sichtfeld `drehRad`; im Stand ein Punkt mit `standM` (dem Halt der Lage); ab der halben Drift wählt sie
+                    // neu im Budget `ms` je Bild
+                    halt: Object.freeze({ wegM: 2, wegMax: 8, zeitS: 0.5, querM: 0.15, lotM: 0.1, hM: 0.1, drehRad: 0.026, standM: 0.02, ms: 0.5 }), // prettier-ignore
                     gitter: 1,
                     boden: 0.5,
                     wiese: 0.5,

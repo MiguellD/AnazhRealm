@@ -390,7 +390,7 @@ class AnazhRealm_siedlung_instanz {
     _lodSlotStamp(g, slot, scale, voll, leaf, ein = 0) {
         const geom = g && g.mesh && g.mesh.geometry;
         if (!geom || !geom.userData || !geom.userData._lodFacade) return;
-        g.slotStand = (g.slotStand | 0) + 1; // der Stand der Slots (das Altern des Bau-Satzes): Sichthöhe und Karte
+        g.slotStand = (g.slotStand | 0) + 1; // der Slot-Stand (`_instanzSlotStand`): Sichthöhe und Karte der Wahl
         const s = Number.isFinite(scale) && scale > 0 ? scale : 1;
         const a0 = geom.attributes.aH0;
         if (a0 && a0.isInstancedBufferAttribute && slot < a0.array.length) {
@@ -487,20 +487,13 @@ class AnazhRealm_siedlung_instanz {
         const mesh = AnazhRealm._instanzMesh(groupGeom, leaf.mat, capacity);
         mesh.castShadow = castShadow;
         mesh.receiveShadow = true;
-        // regional → lokale BBox → die Engine cullt beim Umsehen; global → die Wahl der GPU je Instanz und Pass
-        // (`_instanzWahlArt`, `_instanzWahlGpu`).
+        // regional → lokale BBox → die Engine cullt beim Umsehen; global → die Instanz-Wahl je Pass (`_instanzWahlPass`).
         mesh.frustumCulled = regional;
         mesh.userData.archInstanceKey = key;
         // der Rang im Bündel (`_buendelKinderReihe`): die Stufe des Leafs, die Atlas-Karte (fern) zuletzt
         mesh.userData.buendelStufe = atlasGruppe ? 9 : Number.isFinite(leaf.stufe) ? leaf.stufe : 0;
         const wahl = satz ? null : this._instanzWahlArt(leaf, castShadow, regional);
         if (wahl) mesh.userData.instanzWahl = wahl;
-        // DIE WAHL DER GPU (w25-gpu-wahl): die Gruppe zieht aus ihrer Arena der Wahl, mit dem Fenster ihrer Stufe und dem Saum
-        // des Winds (eine Pflanze wiegt, `pflanzeRandM`; die Karte trägt ihr Quad); jede gewachsene Gruppe erbt sie (`_archInstanceGroupGrow`)
-        const fenster = wahl === "gpu" ? AnazhRealm._wahlFenster(leaf, atlasGruppe) : null;
-        const wahlGpu = (m) =>
-            fenster && Object.assign(m, { __wahlGpu: true, __wahlFenster: fenster, __wahlSaum: fenster[0] >= 1 && fenster[0] <= 3 ? AnazhRealm.PASS_WAHL.pflanzeRandM : 0 }); // prettier-ignore
-        wahlGpu(mesh);
         // V18.389 — der Schatten-Zwilling verlässt die Ebene 0 (unsichtbar für die Kamera); er wirft auf der Wurf-Ebene
         // SHADOW_TWIN_LAYER, die sein `castShadow` trägt (K72, `_wurfEbene`). Kein FOLIAGE_LAYER (kein Laub-Pass-Mitglied).
         if (leaf.shadowTwin) mesh.layers.disable(0);
@@ -511,11 +504,10 @@ class AnazhRealm_siedlung_instanz {
         // "@global"-Bundle: der Key matcht das Kugel-Regex nicht → keine cullSphere → immer sichtbar,
         // Submit ≈ 0. Nicht-WebGPU/Kill-Switch → Szene-Pfad.
         // Eine Satz-Gruppe hängt nirgends: sie ist Slot-Wahrheit und Raycast-Ziel, gezeichnet wird ihr Bereich im Satz.
-        // Die Gruppen der Wahl hängen in EINER schlichten Gruppe der Szene (`_gpuWahlWirt`, kein Bündel): ihre Arena wählt je Pass
-        // auf der GPU (ein Bündel spielte die Züge ab, die es aufnahm — bis w25-gpu-wahl das eigene "@wahl"-Bündel, das das
-        // Hauptbild bei jeder neuen Wahl neu aufnahm), die Kaskaden-Box liest ihre Werfer-Hülle (`_kaskadenHuellen`).
+        // Die Wahl-Gruppen (Welle 7: die Pflanzen-Stufen und die EINE Atlas-Gruppe der Karten) ziehen in EIN eigenes
+        // "@wahl"-Bundle: ändert der Blick die Wahl, nimmt das Hauptbild nur sie neu auf, nie die übrigen globalen Gruppen.
         const bundle =
-            !leaf.tuer && !satz && !wahl ? this._archRegionBundleFor(regional ? regionKey : "@global") : null;
+            !leaf.tuer && !satz ? this._archRegionBundleFor(regional ? regionKey : wahl ? "@wahl" : "@global") : null;
         if (satz) {
             mesh.frustumCulled = false;
             mesh.userData.bauSatz = satz;
@@ -525,9 +517,6 @@ class AnazhRealm_siedlung_instanz {
             bundle.add(mesh);
             AnazhRealm._buendelKinderReihe(bundle, this._buendelAuge);
             bundle.needsUpdate = true; // ein Bürger ohne fertige Pipeline: die Erst-Zeichnung nimmt neu auf, wenn sie steht
-        } else if (wahl === "gpu" && this._gpuWahlWirt()) {
-            mesh.matrixAutoUpdate = false; // STATISCH: die Lage der Gruppe liegt in ihren Instanz-Matrizen (die Hülle hält im Register)
-            this._gpuWahlWirt().add(mesh);
         } else if (this.state.scene) this.state.scene.add(mesh);
         // slotRef: Slot-Index → die Slot-Marke {key, slot} (der Rückverweis des Umzugs, `_archGroupAlloc`); slotEntry:
         // Slot-Index → Architektur-Eintrag (der Crosshair-Raycast). Leer geboren: count 0, unsichtbar, bis der erste Bewohner kommt.
@@ -546,9 +535,11 @@ class AnazhRealm_siedlung_instanz {
             shadowTwin: !!leaf.shadowTwin, // V18.389 — Growth muss die Layer neu setzen
             tuer: leaf.tuer || null, // V18.465 — Tür-Flügel-Scharnier (Template-Raum)
             satz, // Welle 6 — die Satz-Art (null = die Gruppe zeichnet selbst)
-            wahl, // "gpu": die Wahl der GPU je Instanz und Pass (null = die Gruppe zeichnet jede Instanz, regional ihr Bündel)
-            wahlGpu, // der Stempel der Wahl auf jede Senke der Gruppe (auch die gewachsene)
+            wahl, // Welle 7 — "haupt" | "schatten": die Instanz-Wahl je Pass (null = die Gruppe zeichnet jede Instanz)
+            // das Fenster der Blende: der Stufen-Stempel (1 · 2 · 3) oder "karte" (die Einblendung des Billboards)
+            wahlStufe: wahl ? (atlasGruppe ? "karte" : leaf.geom.attributes.aLodLevel.array[0]) : 0,
         };
+        if (wahl) this._instanzWahlGruppen().add(g);
         // Nur im NEU-Gruppen-Zweig (nicht in _archInstanceGroupGrow → g-Identität
         // bleibt): der Ref-Zähler der Cache-Gruppe steigt um 1, solange eine lebende InstancedMesh-Gruppe ihre
         // geteilte Geometrie hält; _disposeArchInstanceGroup dekrementiert 1:1.
@@ -558,22 +549,6 @@ class AnazhRealm_siedlung_instanz {
         }
         this.state.archInstanceGroups.set(key, g);
         this._archGruppenMintMerke(key); // CHURN-LINSE (18.07.) — s. _archGruppenMintMerke
-        return g;
-    }
-
-    // DER WIRT DER GPU-WAHL: EINE schlichte Gruppe in der Szene trägt jede Gruppe der Wahl (`_instanzWahlArt` "gpu") — ihre Arena
-    // hängt in der Szene (`_arenaNimmt`: der Wirt eines Glieds ist sein Bündel, sonst die Szene), die Kaskaden-Box liest ihre
-    // Werfer-Hülle wie die eines Bündels (`_bundleWerferHuelle`, `_kaskadenHuellen`). Eine neue Szene trägt sie neu.
-    _gpuWahlWirt() {
-        const st = this.state;
-        if (!st.scene) return null;
-        let g = st.gpuWahlWirt;
-        if (!g) {
-            g = st.gpuWahlWirt = new THREE.Group();
-            g.name = "@gpuWahl";
-            g.matrixAutoUpdate = false;
-        }
-        if (g.parent !== st.scene) st.scene.add(g);
         return g;
     }
 
@@ -628,8 +603,7 @@ class AnazhRealm_siedlung_instanz {
         next.userData.archInstanceKey = g.key;
         next.userData.buendelStufe = g.mesh.userData.buendelStufe;
         if (g.satz) next.userData.bauSatz = g.satz; // Welle 6 — die Satz-Gruppe bleibt ohne Eltern (der Satz zeichnet)
-        if (g.wahl) next.userData.instanzWahl = g.wahl; // die Wahl reist mit, ihr Stempel der GPU ebenso
-        if (g.wahlGpu) g.wahlGpu(next);
+        if (g.wahl) next.userData.instanzWahl = g.wahl; // Welle 7 — die Instanz-Wahl je Pass reist mit
         // V18.389 — die Layer-Zuordnung des Schatten-Zwillings mitführen (sonst kippt der gewachsene
         // Mesh auf Layer 0 zurück → sichtbar für die Kamera). Nur der Zwilling braucht das; die Laub-
         // Layer bleibt wie im bestehenden Growth-Pfad (unberührt). Den Wurf trägt `castShadow` (oben, K72 `_wurfEbene`).
@@ -686,7 +660,7 @@ class AnazhRealm_siedlung_instanz {
         g.slotRef[slot] = ref;
         g.slotEntry[slot] = entry || null;
         g.liveCount = slot + 1;
-        g.slotStand = (g.slotStand | 0) + 1; // der Stand der Slots: das Altern des Bau-Satzes liest ihn (`siedlung-satz`)
+        g.slotStand = (g.slotStand | 0) + 1; // der Slot-Stand (`_instanzSlotStand`): jede Wahl eines Passes wählt neu
         AnazhRealm._instanzZahl(g.mesh, g.liveCount);
         // SUBMIT-WAL — der Aufrufer schreibt gleich Matrix/Farbe in diesen Slot
         // (synchron, vor dem nächsten Render): das Region-Bundle re-recorden.
@@ -714,7 +688,7 @@ class AnazhRealm_siedlung_instanz {
         g.slotEntry[letzt] = null;
         ref.slot = -1;
         g.liveCount = letzt;
-        g.slotStand = (g.slotStand | 0) + 1; // der Stand der Slots (das Altern des Bau-Satzes)
+        g.slotStand = (g.slotStand | 0) + 1; // der Slot-Stand (`_instanzSlotStand`)
         AnazhRealm._instanzZahl(g.mesh, letzt);
         if (!g.mesh.__arena) this._archMeshBundleTouch(g.mesh); // SUBMIT-WAL — count-/Matrix-Mutation → Bündel neu (eine Arena liest sie im Takt, G1)
         // V12.0-perf.e-fix — boundingSphere invalidieren: InstancedMesh.raycast
@@ -722,6 +696,28 @@ class AnazhRealm_siedlung_instanz {
         // verfehlt der Raycast Instanzen, die nach dem letzten Cache dazukamen.
         g.mesh.boundingSphere = null;
         return true;
+    }
+
+    // Zwei lebende Slots tauschen ihre Bewohner — Instanz-Größen, Marken (die Halter lesen `slot` frisch) und Einträge.
+    _archGroupTausch(g, a, b) {
+        // der Tausch der Wahl zählt, um wie viel er die Versionen hebt (der Slot-Stand zieht es ab, `_instanzSlotStand`)
+        const im = g.mesh.instanceMatrix;
+        const ak = g.mesh.geometry.attributes.aKarte;
+        const v = im.version,
+            vk = ak ? ak.version : 0;
+        AnazhRealm._instanzTausch(g.mesh, a, b);
+        g._ordnung = (g._ordnung | 0) + 1; // die Ordnung der Slots (die Wahl eines Passes merkt sie, `_instanzWahlSteht`)
+        g._tauschMat = (g._tauschMat | 0) + (im.version - v);
+        if (ak) g._tauschKarte = (g._tauschKarte | 0) + (ak.version - vk);
+        const ra = g.slotRef[a],
+            rb = g.slotRef[b];
+        ra.slot = b;
+        rb.slot = a;
+        g.slotRef[a] = rb;
+        g.slotRef[b] = ra;
+        const e = g.slotEntry[a];
+        g.slotEntry[a] = g.slotEntry[b];
+        g.slotEntry[b] = e;
     }
 
     // DER UMZUG EINER INSTANZ (Verdichten): alles, was je Slot reist, rückt von `von` nach `nach` — die Matrix, die
@@ -748,6 +744,29 @@ class AnazhRealm_siedlung_instanz {
                 a.needsUpdate = true;
             }
     }
+    // DER TAUSCH ZWEIER INSTANZEN (die Instanz-Wahl je Pass ordnet ihre Gruppe): dieselbe Liste der Instanz-Größen wie
+    // der Umzug, in beide Richtungen.
+    static _instanzTausch(mesh, a, b) {
+        const tausch = (attr, n) => {
+            if (!attr) return;
+            const x = attr.array;
+            for (let j = 0, ia = a * n, ib = b * n; j < n; j++, ia++, ib++) {
+                const t = x[ia];
+                x[ia] = x[ib];
+                x[ib] = t;
+            }
+            attr.needsUpdate = true;
+        };
+        tausch(mesh.instanceMatrix, 16);
+        tausch(mesh.instanceColor, 3);
+        const geo = mesh.geometry;
+        if (geo && geo.userData && geo.userData._lodFacade)
+            for (const k in AnazhRealm.LOD_INSTANZ_ATTRIBUTE) {
+                const at = geo.attributes[k];
+                if (at && at.isInstancedBufferAttribute) tausch(at, at.itemSize);
+            }
+    }
+
     // Die EINE Fern-Key-Ableitung: trägt ein Leaf die FERN-Stufe (Impostor `fimp:` · Foundry-L2 `f:…|2|…`
     // · Grammatik `_lod2` · Streu `fscatter:…:2`), mappt sein Region-Key auf die SUPER-REGION (4×4, Marker
     // `s:`) — camera-facing Quads nutzen den Region-Cull kaum. Der platzierte Bau ist global (null-Key, Welle B);
@@ -1059,6 +1078,7 @@ class AnazhRealm_siedlung_instanz {
                 if (g.mesh) this._instanzAbschied(g.mesh);
             }
             this.state.archInstanceGroups.clear();
+            this._instanzWahlGruppen().clear();
         }
         // T3 — verwaiste (bereits leere) Region-Bundles mit abbauen (Welt-Wechsel/Restore);
         // NACH den Gruppen (die Instanzen-Räumung oben kann Bundles schon leeren+löschen).

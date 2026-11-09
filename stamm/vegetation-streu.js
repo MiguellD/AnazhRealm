@@ -1470,6 +1470,8 @@ class AnazhRealm_vegetation_streu {
         if (!g) return;
         this._archGruppenDisposes = (this._archGruppenDisposes || 0) + 1; // CHURN-LINSE (18.07.)
         this.state.archInstanceGroups.delete(groupKey);
+        if (g.wahl) this._instanzWahlGruppen().delete(g);
+        g._wahlJe = null; // eine entsorgte Gruppe hält keine Wahl (ihre Marken zeigen auf freigegebene Slots)
         if (g.satz) this._bauSatzMarke(groupKey, g.satz); // Welle 6 — der Bereich verlässt den Satz im nächsten Takt
         if (g.mesh) {
             // SUBMIT-WAL — parent-bewusst (die scene.remove-Falle): eine regionale Gruppe hängt in ihrer
