@@ -648,8 +648,8 @@
                         // 5.5 lokal vs 5.0 Peer -- vereint auf 5.5, alle drei
                         // Leser haengen an derselben Emotions-Bruecke);
                         // klangTempoMin = die Schritt-Klang-Schwelle (m/s --
-                        // darunter feuert kein Schritt-Burst; die Timbre-Tabelle
-                        // wohnt im klang-Gesetzbuch SCHRITT_TIMBRE).
+                        // darunter feuert kein Schritt; sein Klang ist das Gesetz
+                        // SCHRITT im klang-Gesetzbuch aus der Stoff-Zeile).
                         schritt: { taktCompound: 5.5, klangTempoMin: 0.9 },
                         // AKTIONS-AUSDAUER (Zensus 17.07., rein additiv): die
                         // Ausdauer-Kosten EINER Maus-Arm-Aktion (Hieb/Abbau/
