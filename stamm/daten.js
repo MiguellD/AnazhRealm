@@ -622,7 +622,8 @@ class AnazhRealm_daten {
     // `HALM_FARBE.bestand`, FARB_SPEKTRUM: das Blatt nach PROSPECT-D, 5 % dürr wie die Nähe, im Bestand nach 4SAIL, LAI 2,5 —
     // linear 0,0392/0,049/0,019, B/G 0,39): Selbstbeschattung, Lücken und Grund liegen im Spektrum. Bis w26-ferne-ton-2 das Mittel des Halms ×
     // `halmSchatten` 0,4 (0,044/0,081/0,0125, B/G 0,15 — der Hand-Faktor auf dem Hex der Absicht); davor stand die ferne Wiese
-    // mit dem Mittel des einzelnen Halms auf 0,56–0,73 der In-Streuung und trug ihr Gelbgrün durch die Luft (8 km 12,7–25,5°).
+    // mit dem Mittel des einzelnen Halms auf 0,56–0,73 der In-Streuung und trug ihr Gelbgrün durch die Luft (8 km 12,7–25,5°). Als
+    // Spektrum (GTX 1050 58b780c4): 8 km Uhr 0,5 je Azimut 2,75 · 2,22 · 1,83 · 1,33°, Uhr 0,27 0,17–3°.
     static get WIESEN_GRUND() {
         const mg = AnazhRealm.MEADOW_GREEN;
         const sp = AnazhRealm.GRAS_SPITZE;
