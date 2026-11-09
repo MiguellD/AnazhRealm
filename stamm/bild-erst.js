@@ -307,6 +307,22 @@ class AnazhRealm_bild_erst {
             if (art && !A.has(AnazhRealm._vorwaermArtSchluessel(art)))
                 A.set(AnazhRealm._vorwaermArtSchluessel(art), art);
         }
+        // DIE STREU DES GESETZES (w26): Strauch-, Kraut- und Fels-Schicht fragen das Gesetz der Schicht selbst
+        // (`_scatterSpeciesForLayer`, je Zweig ein Fall) — die erste Blume der Fahrt fand ihr Programm nicht (Radeon 9505db4a:
+        // „haupt arena fscatter:blume:L0" 39,2 ms, „…:L2" 23,8 ms in einem Bild der ersten Fahrt); die Bäume trägt der Stufen-Vorlauf
+        const streu = [
+            ["under", 0, 1, 0],
+            ["under", 1, 0, 0],
+            ["under", 0, 0, 0],
+            ["rock", 0, 0, 0],
+            ["rock", 0, 0, 50],
+        ];
+        for (const fall of streu) {
+            const preset = this._foundryPresetForEntry({ type: this._scatterSpeciesForLayer(...fall) });
+            const art = preset && { preset, streu: true, region: null };
+            if (art && !A.has(AnazhRealm._vorwaermArtSchluessel(art)))
+                A.set(AnazhRealm._vorwaermArtSchluessel(art), art);
+        }
         for (const [k, art] of A) if (this._vorwaermStufen(art)) A.set(k, null);
     }
     // die Stufen EINER Art als leere Gruppen; true: jede steht (oder die Art hat keine Studio-Gestalt, ist ein Baum)
