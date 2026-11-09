@@ -1,5 +1,7 @@
 ## 09.11. 16:20 — Abgabe w26-haar-arm
 
+## 09.11. 16:14 — GPU-PROBE 774ff9ac auf omen-gtx1060: GRÜN in 105 s (bild:dorf@0.5 GRÜN 67 s auf omen-gtx1060) → probe-post/w26-haar-arm/774ff9ac.md
+
 ABGABE 774ff9ac
 
 Kajiya-Kay an der Faser (Welt + Labor), EIN Haar (Gestalt des Rezepts unter der Prägung), Albedo-Zeile haar frisch (Radeon 3141bca7). Station-Szene, Pose gehalten: Radeon arm 0,6409 → 0,4299 · third 0,4637 (im Band), GTX 1050 arm 0,5151 · third 0,527; bild:dorf@0.5 GRÜN. Offen: GTX 1060 maß den Zweig nicht. Die Station grünt mit w26-haar-linse-pm.
