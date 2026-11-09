@@ -44,7 +44,10 @@ class AnazhRealm_stoff_gang {
         // die Vorlage (`_gangSatzKnoten`). Ohne Ton kein Punkt (er steht in der Zeile der Palette): fail-closed.
         const raum = !!spec.raum;
         if (raum && (!ton || spec.quellen.some((q) => !q.raum || q.raum.n !== q.m.geometry.attributes.position.count)))
-            throw this._stoffBruch(`der Leib-Raum des Satzes (${spec.name})`, new Error("eine Quelle ohne Ton oder Tafel"));
+            throw this._stoffBruch(
+                `der Leib-Raum des Satzes (${spec.name})`,
+                new Error("eine Quelle ohne Ton oder Tafel")
+            );
         const seite = this._gangSeite(spec.name, N, B, ton, J, raum);
         const tex = seite.tex;
         const satz = {

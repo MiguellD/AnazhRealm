@@ -289,7 +289,8 @@ class AnazhRealm_siedlung_bewohner {
         if (!kc || typeof kc.leibRaumVorlage !== "function" || !kc.CLOTH_COLORS)
             return AnazhRealm._kernPflichtBruch("koerper:leibRaumVorlage");
         const T = S.plan.kleidung;
-        if (!T || !Array.isArray(T.farben) || !T.farben.length) return AnazhRealm._kernPflichtBruch("fachwerk:kleidung");
+        if (!T || !Array.isArray(T.farben) || !T.farben.length)
+            return AnazhRealm._kernPflichtBruch("fachwerk:kleidung");
         const P = kc.START_PARAMS;
         const tracht = this._bewohnerTracht(
             { topColor: P.topColor, bottomColor: P.bottomColor, shoeColor: P.shoeColor },
@@ -912,7 +913,9 @@ class AnazhRealm_siedlung_bewohner {
                     (m) => m.isSkinnedMesh && q.push({ m, beid: m.material.side === THREE.DoubleSide, raum: t.raum })
                 );
             if (q.length !== 1) {
-                this._bruchMelden(`BEWOHNER: die Mengen-Stufe ${lod} trägt ihre Vorlage nicht („${S.plan.name || "?"}")`);
+                this._bruchMelden(
+                    `BEWOHNER: die Mengen-Stufe ${lod} trägt ihre Vorlage nicht („${S.plan.name || "?"}")`
+                );
                 return false;
             }
             quellen.push(q[0]);
@@ -1126,7 +1129,11 @@ class AnazhRealm_siedlung_bewohner {
         // (der Ursprung liegt PLAYER_FOOT_OFFSET × Skala über ihr, `_bewohnerStellen`)
         const lage = (g, b) =>
             m4.compose(
-                o3.set(g.position.x, g.position.y + AnazhRealm.PLAYER_FOOT_OFFSET * (b.raumSkala - g.scale.y), g.position.z),
+                o3.set(
+                    g.position.x,
+                    g.position.y + AnazhRealm.PLAYER_FOOT_OFFSET * (b.raumSkala - g.scale.y),
+                    g.position.z
+                ),
                 g.quaternion,
                 v3.setScalar(b.raumSkala)
             );

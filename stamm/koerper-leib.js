@@ -1534,7 +1534,8 @@ class AnazhRealm_koerper_leib {
         const n = tex.image.width;
         const kc = window.__koerperCore;
         const nT = kc.MENSCH_TON.length;
-        for (let t = 0; t < nT; t++) D.set([palette[t * 3], palette[t * 3 + 1], palette[t * 3 + 2], 1], (z * n + t) * 4);
+        for (let t = 0; t < nT; t++)
+            D.set([palette[t * 3], palette[t * 3 + 1], palette[t * 3 + 2], 1], (z * n + t) * 4);
         D.set(punkt || kc.LEIB_RAUM.achsen.map((a) => (a.knoten.length - 1) / 2), (z * n + nT) * 4);
         tex.needsUpdate = true;
         return z;
