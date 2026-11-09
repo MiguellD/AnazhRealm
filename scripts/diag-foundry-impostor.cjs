@@ -429,8 +429,8 @@ async function kleberProbe(page, fmtWunsch) {
             };
             const iou = (k, g) => ((n) => (k.forEach((b, i) => ((n[0] += b), (n[1] += g[i]), (n[2] += b & g[i]))), { deckung: +(n[0] / Math.max(1, n[1])).toFixed(3), iou: +(n[2] / Math.max(1, n[0] + n[1] - n[2])).toFixed(3) }))([0, 0, 0]);
             if (st.windUniforms) st.windUniforms.uWindStrength.value = 0; // der Wind ruht (wie C2)
-            const mG = Object.assign(new T.Mesh(gO, new T.MeshBasicMaterial({ side: T.DoubleSide })), { matrixAutoUpdate: false });
-            mG.matrix.copy(lage);
+            const alsMesh = (g) => Object.assign(new T.Mesh(g, new T.MeshBasicMaterial({ side: T.DoubleSide })), { matrixAutoUpdate: false, matrix: lage.clone() });
+            const mG = alsMesh(gO);
             const [mO, mS] = [zO, zS].map((zz) => window.__fimpKarte(zz, mat, lage, 1.5));
             out.oben = { hebungen: echt.ringe.map((x) => x.hebung), schichtB: r._impostorCensus().schichtB, je: {} };
             for (const phi of [-20, 0, 40, 60, 80]) {
@@ -443,41 +443,29 @@ async function kleberProbe(page, fmtWunsch) {
             const wand = new T.Mesh(new T.PlaneGeometry(40, 40), new T.MeshBasicMaterial({ color: 0xff0000 }));
             wand.position.set(30, 6, -8.5);
             const davor = async (o) => (await deckt(0, o, wand)).reduce(addiere, 0);
-            const pc = globalThis.__phytoCore,
-                versatz = pc.karteTiefeVersatz;
-            out.tiefe = { gestalt: await davor(mG), karte: await davor(mO) };
-            try {
-                pc.karteTiefeVersatz = (A) => A.k(0);
-                out.tiefe.selbst = await davor(window.__fimpKarte(zO, window.__fimpStoff(), lage, 1.5));
-            } finally {
-                pc.karteTiefeVersatz = versatz;
-                window.__fimpStoff();
-            }
-            // (C9) DIE TIEFEN-PARALLAXE (w27-lod-baum, lod.K5; der Stoff, `_relief`): eine Kugel 2,8 m VOR der Achse, das Auge aus 40 m
-            // genau zwischen zwei Peilungen — jede der zwei Ansichten sieht sie 22,5° neben der Achse (± 1,07 m), an derselben Stelle
-            // des Quads gelesen stehen ZWEI Kugeln neben ihrem Ort. Die Karte gegen ihre Gestalt als Mesh (IoU). SELBSTTEST: der Stoff
-            // ohne Gänge (`KARTE_RELIEF.gaenge` 0, die Karte bis w27).
-            const w9 = (22.5 * Math.PI) / 180,
-                rot9 = (-119 * Math.PI) / 180 + w9;
-            const gP = window.__fimpTeile(new T.SphereGeometry(0.9, 24, 16).translate(2.8 * Math.sin(w9), 4, 2.8 * Math.cos(w9)));
-            const zP = await window.__fimpBacke(ren, at, "fimp:gateKarte|5", 95, gP);
-            const camP = new T.PerspectiveCamera(20, 1, 1, 600);
-            camP.position.set(30 + 40 * Math.sin(rot9), 6, -10 + 40 * Math.cos(rot9));
-            camP.lookAt(30, 6, -10), camP.updateMatrixWorld(true);
-            const deckt9 = async (o) => Array.from(await window.__fimpBild(ren, rtO, camP, o)).filter((_, i) => i % 4 === 3).map((a) => +(a > 0));
-            const mGP = Object.assign(new T.Mesh(gP, new T.MeshBasicMaterial({ side: T.DoubleSide })), { matrixAutoUpdate: false });
-            mGP.matrix.copy(lage);
-            const g9 = await deckt9(mGP),
-                A9 = r.constructor,
-                vorRL = A9.KARTE_RELIEF;
-            out.parallaxe = { gestalt: g9.reduce(addiere, 0), karte: iou(await deckt9(window.__fimpKarte(zP, window.__fimpStoff(), lage, 1.5)), g9) };
-            try {
-                A9.KARTE_RELIEF = Object.assign({}, vorRL, { gaenge: 0 });
-                out.parallaxe.selbst = iou(await deckt9(window.__fimpKarte(zP, window.__fimpStoff(), lage, 1.5)), g9);
-            } finally {
-                A9.KARTE_RELIEF = vorRL;
-                window.__fimpStoff();
-            }
+            // DER EINGRIFF DER SELBSTTESTS (C7, C9): o[k] = w, die Karte der Zelle z mit frisch gebautem Stoff gemessen, danach zurück
+            const unter = async (o, k, w, z, mess) => {
+                const alt = o[k];
+                o[k] = w;
+                try {
+                    return await mess(window.__fimpKarte(z, window.__fimpStoff(), lage, 1.5));
+                } finally {
+                    o[k] = alt;
+                    window.__fimpStoff();
+                }
+            };
+            out.tiefe = { gestalt: await davor(mG), karte: await davor(mO), selbst: await unter(globalThis.__phytoCore, "karteTiefeVersatz", (A) => A.k(0), zO, davor) };
+            // (C9) DIE TIEFEN-PARALLAXE (w27-lod-baum, lod.K5; der Stoff, `_relief`): eine Kugel 2,8 m VOR der Achse, zum Auge von C6
+            // aus 0° gewandt (die Instanz steht −119° gedreht: das Auge blickt 119° in ihrem Raum, 16° und 29° neben den zwei nächsten
+            // Peilungen) — an derselben Stelle des Quads gelesen stehen ZWEI Kugeln neben ihrem Ort. Die Karte gegen ihre Gestalt als
+            // Mesh (IoU). SELBSTTEST: der Stoff ohne Gänge (`KARTE_RELIEF.gaenge` 0, die Karte bis w27).
+            const v9 = (119 * Math.PI) / 180,
+                gP = window.__fimpTeile(new T.SphereGeometry(0.9, 24, 16).translate(2.8 * Math.sin(v9), 4, 2.8 * Math.cos(v9))),
+                zP = await window.__fimpBacke(ren, at, "fimp:gateKarte|5", 95, gP),
+                g9 = await deckt(0, alsMesh(gP)),
+                p9 = async (m) => iou(await deckt(0, m), g9).iou,
+                A9 = r.constructor;
+            out.parallaxe = [g9.reduce(addiere, 0), await p9(window.__fimpKarte(zP, mat, lage, 1.5)), await unter(A9, "KARTE_RELIEF", { ...A9.KARTE_RELIEF, gaenge: 0 }, zP, p9)];
             // (C8) JENSEITS DER FERN-EBENE (material.K3#2): dieselbe Karte wie C6 aus 0° (dort ihr Bild, der Selbsttest) unter einer
             // Fern-Ebene von 150 m zeichnet nichts — die Spanne ihrer Ecken-Tiefe klemmt nur den Rück, nie die Lage
             (camO.far = 150), camO.updateProjectionMatrix();
@@ -860,10 +848,9 @@ hauptLauf(async () => {
         if (!(Ti.gestalt >= 80 && teil(Ti.selbst) < 0.2)) errs.push(`${F} C7-SELBSTTEST: die Gestalt steht nicht vor der Tafel oder die Karte ohne Tiefe nicht dahinter — die Linse ist blind`);
         else if (!(teil(Ti.karte) >= 0.6)) errs.push(`${F} C7: die Karte steht hinter der Tafel — ihre Ecken lesen ihre Tiefe nicht (vertexNode)`);
         // C9 DIE TIEFEN-PARALLAXE: die Karte steht, wo ihre Gestalt steht (IoU ≥ 0,8); ohne Gänge stehen zwei Kugeln (< 0,6)
-        const Pa = C.parallaxe || {};
-        console.log(`  C9 PARALLAXE [${C.fmt}]: eine Kugel vor der Achse, das Auge zwischen zwei Peilungen — Gestalt ${Pa.gestalt} px · Karte Deckung/IoU ${Pa.karte?.deckung}/${Pa.karte?.iou} (Soll IoU ≥ 0,8) · ohne Gänge ${Pa.selbst?.deckung}/${Pa.selbst?.iou} (MUSS < 0,6)`);
-        if (!(Pa.gestalt >= 400 && Pa.selbst?.iou < 0.6)) errs.push(`${F} C9-SELBSTTEST: die Gestalt liegt nicht im Bild oder die Karte ohne Gänge deckt sie — die Linse ist blind`);
-        else if (!(Pa.karte?.iou >= 0.8)) errs.push(`${F} C9: die Karte steht neben ihrer Gestalt (IoU ${Pa.karte?.iou} < 0,8) — das Fragment liest die Ansicht nicht am Treffer ihres Reliefs (stoff-material \`_relief\`, KARTE_RELIEF)`);
+        const [g9, k9, o9] = C.parallaxe || [];
+        console.log(`  C9 PARALLAXE [${C.fmt}]: Gestalt ${g9} px · IoU Karte ${k9} (Soll ≥ 0,8) · ohne Gänge ${o9} (MUSS < 0,6)`);
+        if (!(g9 >= 400 && o9 < 0.6 && k9 >= 0.8)) errs.push(`${F} C9: ${o9 < 0.6 ? "die Karte steht neben ihrer Gestalt (stoff-material _relief)" : "SELBSTTEST blind"}`);
         // C8 JENSEITS DER FERN-EBENE zeichnet die Karte nichts (Selbsttest: C6 aus 0°, dieselbe Karte diesseits)
         if (C.fern) errs.push(`${F} C8: jenseits der Fern-Ebene ${C.fern} px`);
     }
