@@ -2043,12 +2043,14 @@ class AnazhRealm_siedlung_bauten {
                 const arr =
                     form === "snorm8"
                         ? new Int8Array(vKap * 4)
-                        : form === "half"
-                          ? new globalThis.Float16Array(vKap * 4)
-                          : new Float32Array(vKap * gis);
+                        : form === "gamma8"
+                          ? new Uint8Array(vKap * 4)
+                          : form === "half"
+                            ? new globalThis.Float16Array(vKap * 4)
+                            : new Float32Array(vKap * gis);
                 const alt = g.attributes[name];
                 if (alt) arr.set(alt.array.subarray(0, Math.min(s.vEnde, vKap) * gis));
-                g.setAttribute(name, new THREE.BufferAttribute(arr, gis, form === "snorm8"));
+                g.setAttribute(name, new THREE.BufferAttribute(arr, gis, form === "snorm8" || form === "gamma8"));
             }
             s.vKap = vKap;
             for (const b of s.bloecke.values()) this._chunkSatzViews(s, b);
@@ -2173,11 +2175,12 @@ class AnazhRealm_siedlung_bauten {
     // DIE VERTEX-FORM des Satzes (K44, gemessen 14.10. Radeon, Genesis third: der Boden-Satz 14,6 von 40,1 MB Puffer, 60 B je
     // Vertex, Normale und Farbe 24 B davon in Float32): die Normale (Einheitsvektor, |n| ≤ 1) reist als snorm8x4 (4 B, ≤ 0,45°
     // — die Form der Profi-Engines für Vertex-Normalen), die Farbe als float16x4 (8 B, 11 Bit Mantisse, Werte über 1 bleiben;
-    // unorm hätte die Glut-Farben über 1 gekappt). Die vierte Komponente: Normale 0, Farbe 1 (Alpha). Rückgabe: die Form oder
+    // unorm hätte die Glut-Farben über 1 gekappt); die ZIEL-Farbe des Geomorphs reist als 8-bit-Gamma ("gamma8", unorm8x4 mit
+    // √c — w27-ferne-ton-5: sie zeichnet nur im Übergangs-Band, jenseits der Nähe). Die vierte Komponente: Normale 0, Farbe 1 (Alpha). Rückgabe: die Form oder
     // null (Float32). Ohne Float16Array (vor Chrome 135) bleibt die Farbe Float32 — laut, einmal je Welt.
     _satzForm(form) {
         if (!form) return null;
-        if (form === "snorm8") return form;
+        if (form === "snorm8" || form === "gamma8") return form;
         if (form === "half") {
             if (typeof globalThis.Float16Array === "function") return form;
             if (!this._satzFormLaut) {
@@ -3266,7 +3269,11 @@ AnazhRealm.CHUNK_SATZ_VERDICHTEN = Object.freeze({ luft: 1.25, schwelle: 1.5, st
 // behält seine Float32-Arrays für jeden CPU-Leser; der Geomorph der Stufe bringt Normale und Stoff-Farbe des Ziels
 // (`aNormalZiel` snorm8x4, `aFarbeZiel` float16x4); die vierte Komponente trägt je einen Skalar des Chunks (die Mulde des
 // Gesetzes in der Normale, gelaende-core `muldeEcken` — wetter.K2, die Pfütze; Morph-Code in der Farbe, Himmels-Sicht im
-// Normal-Ziel, Schutt im Farb-Ziel) — 48 B je Vertex. Leser: der Satz (`_chunkSatzArt`) und der
+// Normal-Ziel, Schutt im Farb-Ziel); dazu DER STOFF DES GRUNDS (w27-ferne-ton-5, `aStoff` snorm8x4: die Deckung der Narbe ·
+// die Nässe des Grunds · frei — je 0 … 1 auf 127 Stufen; das Boden-Fragment liest aus ihm Halm-Relief, Moos und Glanz, bis
+// hierher aus Ton und Luminanz der Albedo). Seine 4 B zahlt die Ziel-Farbe: sie reist als 8-bit-Gamma (`gamma8`, unorm8x4 mit
+// √c: 4 statt 8 B — die Form jeder Albedo-Textur; sie zeichnet nur im Übergangs-Band der Stufe und deckt am Wechsel die
+// Farbe der gröberen Stufe auf eine Gamma-Stufe) — 48 B je Vertex, wie bis hierher (gate:chunk-satz (m)). Leser: der Satz (`_chunkSatzArt`) und der
 // voxel-worker, der jede Vorlage in DIESEN Formen packt (`_bodenSatzFormen`, gelaende-core `satzVorlage`, w4-b-boden2).
 AnazhRealm.BODEN_SATZ_ATTR = Object.freeze([
     ["position", 3],
@@ -3274,7 +3281,8 @@ AnazhRealm.BODEN_SATZ_ATTR = Object.freeze([
     ["color", 3, "half", "aMorphWeight"],
     ["aMorphTarget", 3],
     ["aNormalZiel", 3, "snorm8", "aHimmel"],
-    ["aFarbeZiel", 3, "half", "aSchutt"],
+    ["aFarbeZiel", 3, "gamma8", "aSchutt"],
+    ["aStoff", 3, "snorm8"],
 ]);
 
 // DER ANKER DER REIHE IM BÜNDEL (1310-9): ab diesem Weg des Auges stellen die Bündel ihre Kinder neu nach Abstand (je

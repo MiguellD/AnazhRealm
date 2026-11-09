@@ -646,7 +646,7 @@ function sichtPhase(frames, ab) {
         f.klasse = window.__sichtBytesKlasse(f);
         f.legeKlasse = window.__sichtBytesKlasse(f, "legeGrund");
     }
-    const reihe = (g) => fs.map(g).sort((a, b) => a - b);
+    const reihe = (g) => fs.map(g).sort(aufsteigend);
     const st = (g) => {
         const x = reihe(g);
         if (!x.length) return { mittel: 0, median: 0, max: 0 };

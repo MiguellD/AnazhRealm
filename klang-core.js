@@ -324,6 +324,8 @@
             wasser: { filter: 'lowpass',  freq: 900,  q: 0.7, dauer: 0.16, gain: 0.06 },
             // stoffe.K3 (rein additiv): das Eis — hart, kurz und hell wie Stein, eine Terz höher
             eis:    { filter: 'bandpass', freq: 1900, q: 2.0, dauer: 0.05, gain: 0.05 },
+            // w27-ferne-ton-5 (rein additiv): der Sand des Strands — der Fuß sinkt ein, ein weiches, langes Rauschen ohne Kante
+            sand:   { filter: 'lowpass',  freq: 1400, q: 0.6, dauer: 0.13, gain: 0.04 },
             // stoffe.K1 (rein additiv): die übrigen Zeilen — Holz hohl, Gras und Laub raschelnd, Metall klirrend, Leib dumpf
             // klang.K4 (w4-heil-klang): die drei Pflanzen-Böden je eigen — trockenes Laub bricht und knistert am hellsten, Gras
             //   raschelt, Kraut dämpft; Schwerpunkt am Abgriff (48 kHz) Kraut 4 707 · Gras 5 605 · Laub 6 395 Hz. Vorher
