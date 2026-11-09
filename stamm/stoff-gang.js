@@ -363,8 +363,9 @@ class AnazhRealm_stoff_gang {
     }
     // DIE FORMZIEL-TAFEL DER SEITE (w26-leib-raum, koerper LEIB_RAUM): je Vorlage (ihre Tafel, foundry-core `__leibRaumTafel`) so
     // viele Zeilen wie Ecken, je Zeile die Formziele ihrer Ecke an jedem Knoten jeder Achse (ein Texel je Knoten, xyz) — die Breite
-    // ist die Zahl der Knoten des Gesetzes. Jede Tafel liegt EINMAL auf der Seite, gleich wie viele Sätze sie tragen (`nutzer`), und
-    // geht mit dem letzten; die Höhe wächst doppelt bis GANG_SEITE.zielMax. `knoten(ton)` gibt dem Gang-Knoten den Weg jeder Ecke:
+    // ist die Zahl der Knoten des Gesetzes, je Texel ein Halb-Float (0,04 mm im Raum eines Leibs). Jede Tafel liegt EINMAL auf der
+    // Seite, gleich wie viele Sätze sie tragen (`nutzer`), und geht mit dem letzten; die Höhe wächst in Schritten von
+    // GANG_SEITE.zielSchritt Zeilen bis GANG_SEITE.zielMax, so weit die Tafeln reichen. `knoten(ton)` gibt dem Gang-Knoten den Weg jeder Ecke:
     // je Achse der Punkt der Instanz (in der Zeile ihrer Palette auf der Ton-Tafel `ton`, hinter den Tönen, `_tonZeile`) zwischen
     // zwei Knoten, ihre Formziele gemischt — Vorlage + Σ je Achse, wie SMPL (Loper et al. 2015) seine Formen legt.
     _gangZielTafel(name) {
@@ -379,16 +380,17 @@ class AnazhRealm_stoff_gang {
             breite += a.knoten.length;
         }
         const tex = new T.DataTexture(
-            new Float32Array(breite * G.zielStart * 4),
+            new Uint16Array(breite * G.zielSchritt * 4),
             breite,
-            G.zielStart,
+            G.zielSchritt,
             T.RGBAFormat,
-            T.FloatType
+            T.HalfFloatType
         );
         tex.name = name + "-formziel";
         tex.minFilter = tex.magFilter = T.NearestFilter;
         tex.generateMipmaps = false;
-        const Z = { tex, breite, hoehe: G.zielStart, frei: [[0, G.zielStart]], belegt: new Map() };
+        const halb = THREE.DataUtils.toHalfFloat;
+        const Z = { tex, breite, hoehe: G.zielSchritt, frei: [[0, G.zielSchritt]], belegt: new Map() };
         const bruch = (text) => this._stoffBruch(`die Formziel-Tafel (${name})`, new Error(text));
         Z.nimm = (tafel) => {
             const b = Z.belegt.get(tafel);
@@ -399,8 +401,8 @@ class AnazhRealm_stoff_gang {
             while (!f) {
                 if (Z.hoehe >= G.zielMax) throw bruch(`${Z.hoehe} Zeilen belegt, ${tafel.n} gesucht`);
                 const alt = Z.hoehe;
-                const neu = Math.min(G.zielMax, alt * 2);
-                const D = new Float32Array(breite * neu * 4);
+                const neu = Math.min(G.zielMax, Math.ceil((alt + tafel.n) / G.zielSchritt) * G.zielSchritt);
+                const D = new Uint16Array(breite * neu * 4);
                 D.set(tex.image.data);
                 tex.image = { data: D, width: breite, height: neu };
                 Z.hoehe = neu;
@@ -416,7 +418,7 @@ class AnazhRealm_stoff_gang {
                 for (let k = 0; k < breite; k++) {
                     const o = ((a + i) * breite + k) * 4,
                         q = (i * breite + k) * 3;
-                    [D[o], D[o + 1], D[o + 2]] = [zi[q], zi[q + 1], zi[q + 2]];
+                    [D[o], D[o + 1], D[o + 2]] = [halb(zi[q]), halb(zi[q + 1]), halb(zi[q + 2])];
                 }
             tex.needsUpdate = true;
             Z.belegt.set(tafel, { a, nutzer: 1 });
@@ -451,12 +453,12 @@ class AnazhRealm_stoff_gang {
         return Z;
     }
     // DER LEIB EINES PUNKTS auf der CPU (w26-leib-raum), wie der Knoten ihn zeichnet (`_gangZielTafel` `weg`): je Ecke der Vorlage
-    // (`pos`, ihre Lage in der Ruhe) je Achse das Formziel des Punkts zwischen seinen zwei Knoten. Nach `aus` (Float32Array 3n).
-    // Leser: die Linsen der Menge (mensch.K4: der Kasten jedes Leibs im Satz).
-    static _leibRaumLeib(tafel, pos, punkt, aus = new Float32Array(tafel.n * 3)) {
+    // (`tafel.lage`, ihre Lage in der Ruhe) je Achse das Formziel des Punkts zwischen seinen zwei Knoten. Nach `aus` (Float32Array
+    // 3n). Leser: die Linse der Menge (mensch.K4, gate:mensch-anatomie: die Form jedes Leibs im Satz).
+    static _leibRaumLeib(tafel, punkt, aus = new Float32Array(tafel.n * 3)) {
         const breite = tafel.ziele.length / 3 / tafel.n;
         const Z = tafel.ziele;
-        aus.set(pos.subarray(0, tafel.n * 3));
+        aus.set(tafel.lage);
         let s0 = 0;
         tafel.achsen.forEach((a, ai) => {
             const K = a.knoten.length;
@@ -588,5 +590,6 @@ _stammZonen(AnazhRealm, [AnazhRealm_stoff_gang]);
 // ===== ATLAS · Stoff/gang — Außen-Konstanten =====
 // DIE SEITE DES GANGS (`_gangSeite`): Plätze (je drei Texel) zu Beginn und höchstens je Seite — 3 · max ≤ 8192, die Breiten-Grenze
 // einer WebGPU-Textur
-// (die Formziel-Tafel des Leib-Raums, `_gangZielTafel`: Zeilen zu Beginn und höchstens — je Vorlage eine Zeile je Ecke)
-AnazhRealm.GANG_SEITE = Object.freeze({ start: 128, max: 2730, zielStart: 2048, zielMax: 8192 });
+// (die Formziel-Tafel des Leib-Raums, `_gangZielTafel`: der Schritt ihres Wachstums und ihre Höhe höchstens in Zeilen — je
+// Vorlage eine Zeile je Ecke, die Mengen-Stufen 2 und 3 zusammen 1 191)
+AnazhRealm.GANG_SEITE = Object.freeze({ start: 128, max: 2730, zielSchritt: 256, zielMax: 8192 });

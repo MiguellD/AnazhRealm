@@ -9677,6 +9677,9 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         }
         leibV = __vereinigungsVolumen(netze, 0.06); // 0,06 E (1,6 cm): ±0,1 % gegen 0,02 E
     }
+    // DER RAUM TRÄGT SEINE VORLAGE (w26-leib-raum): die Ecken des Leibs der Menge, wie die Stufe sie gießt (Ruhe-Pose, Rahmen des
+    // Leibs) — Vorlage + Formziele ist der EINE Leib-Raum der Stufe (die Linsen rechnen ihn ohne den Baum, `_leibRaumLeib`)
+    if (raumTafel) raumTafel.lage = Float32Array.from(mengenLeib.mesh.geometry.attributes.position.array);
     return __bakeGelenkBaum(B.character, "mensch", nodeName, fein, {
         art: presetId,
         base: skinCol,
