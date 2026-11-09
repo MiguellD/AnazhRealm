@@ -1,7 +1,7 @@
 # ÜBERGABE 09.11. abends (Konto 9, NOTBREMSE bei 98 % um 17:52, Reset 12.11. 19:00)
-n**Zuerst neben dieser Datei lesen: `ZWEIG-INVENTAR-0911.md`.** Es führt jeden w25/w26-Zweig mit Stand, Zug und Einordnung. z348 ist um 18:07 gelandet, main ist da0e790f.
+**Zuerst neben dieser Datei lesen: `ZWEIG-INVENTAR-0911.md`.** Es führt jeden w25/w26-Zweig mit Stand, Zug und Einordnung. z348 ist um 18:07 gelandet, main ist da0e790f.
 
-**main** a7dc1874 (z345, nur Werkzeug: `zeit:gate:<npm>` für Zeit-Gates auf den Band-Geräten OMEN/Radeon).
+**main** da0e790f (z348 um 18:07: ankunft-block-3, ankunft-horizont, omen-sichtbar-2; davor z345 a7dc1874, nur Werkzeug: `zeit:gate:<npm>` für Zeit-Gates auf den Band-Geräten OMEN/Radeon).
 **Gebucht** 222 an eff50c41. Ehrlich trocken an a7dc1874: **218**, 6 Rückfälle. 3 davon heilen Zweige in der Schlange:
 - klang.K4#2 gtx → w26-klang-schritt (S13, siehe unten)
 - vegetation.K5#2 radeon → w26-winter-fichte (z349)
