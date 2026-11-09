@@ -828,6 +828,10 @@ hauptLauf(async () => {
                     rend = st.renderer,
                     q = rend.backend.device.queue,
                     A = r.constructor;
+                // erst steht die Welt (das EINE Einschwingen): Geburten sind kein Stand
+                let stehtNicht = null;
+                if (mutante === "erst")
+                    await window.__weltStehtNach(null, 1800).catch((e) => (stehtNicht = String(e && e.message).slice(0, 200)));
                 const p0 = performance.now.bind(performance);
                 let plus = 0;
                 const je = {};
@@ -867,13 +871,14 @@ hauptLauf(async () => {
                 }
                 const verboten = Object.entries(je).filter(([k]) => k.startsWith("pass-wahl") || /(^|<)kopie(<|$)/.test(k));
                 return {
+                    stehtNicht,
                     bilder,
                     kbJeBild: +(Object.values(je).reduce((a, b) => a + b, 0) / 1024 / Math.max(1, bilder)).toFixed(1),
                     verboten: verboten.map(([k, b]) => `${k} ${(b / 1024 / Math.max(1, bilder)).toFixed(1)} KB`),
                     top: Object.entries(je).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([k, b]) => `${k} ${(b / 1024 / Math.max(1, bilder)).toFixed(1)} KB`),
                 };
             }, mutante);
-        out.stand = await stand(null);
+        out.stand = await stand("erst");
         out.standKehraus = await stand("kehraus");
         out.standLage = await stand("lage");
         out.standDanach = await stand(null);
@@ -1051,13 +1056,14 @@ hauptLauf(async () => {
     const leer = { verboten: [], top: [] };
     const [sx, sk, sl, sd] = [out.stand, out.standKehraus, out.standLage, out.standDanach].map((x) => x || leer);
     bandIn(1)(
-        sx.bilder === 4 &&
+        !sx.stehtNicht &&
+            sx.bilder === 4 &&
             sx.verboten.length === 0 &&
             sd.verboten.length === 0 &&
             sk.verboten.some((v) => /kopie/.test(v)) &&
             sl.verboten.some((v) => /^pass-wahl-auftraege/.test(v)),
         "STAND LÄDT NICHTS (Lehre 25)",
-        `Stand ${sx.kbJeBild} KB je Bild · verboten ${sx.verboten.join(", ") || "keins"} · Top ${(sx.top || []).join(" · ")} | ` +
+        `${sx.stehtNicht ? "DIE WELT STEHT NICHT: " + sx.stehtNicht + " | " : ""}Stand ${sx.kbJeBild} KB je Bild · verboten ${sx.verboten.join(", ") || "keins"} · Top ${(sx.top || []).join(" · ")} | ` +
             `Mutante Kehraus der Wanduhr: ${sk.verboten.join(", ") || "STUMPF (keine Kopie genannt)"} | Mutante Lage vergessen: ` +
             `${sl.verboten.join(", ") || "STUMPF (keine Wahl genannt)"} | danach ${sd.verboten.join(", ") || "keins"}`
     );

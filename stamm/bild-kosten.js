@@ -3545,7 +3545,7 @@ AnazhRealm.WAHL_BASIS = Object.freeze([0, 1, 2, 4, 5, 6, 8, 9, 10]);
 // Element 11 seine WEITE — die Wiese die Übergabe `radius`, an die die Ferne zeichnet, die Streu das Rand-Band ihrer Art
 // (`_streuWeite`: die Pflanze steht diesseits weite + rand · (½ − ⌊4 · Ordnung⌋/4), die Viertel-Stufen der Würfel-Ordnung);
 // die Stufe nach `_nahStufe` — die nahe bis `saum.z`, gehalten bis `saum.w` dahinter — mit dem ZUSTAND des Platzes (`zustand`,
-// Basis der Familie + Platz im Glied, zwei Hälften: gelesen die des letzten Hauptbilds, geschrieben die andere, nur im Hauptbild
+// Basis der Familie + Platz im Glied, zwei Hälften: gelesen die des letzten Rechnens, geschrieben die andere, nur im Hauptbild
 // und nur vom ersten Teil der nahen Stufe; nach einem Sprung des Auges aus dem Jetzt); jede Senke behält ihre Stufe (`fenster.y`
 // 1 die nahe, 2 die ferne, 3 eine Art mit EINER Stufe: keine Wahl der Stufe).
 // DIE FERNE (Art 6) UND DIE SCHALE (Art 7, `_nahWieseBestand`): tot fällt, diesseits der Übergabe legt die Nähe; das Büschel steht,

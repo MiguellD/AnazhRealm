@@ -1535,8 +1535,12 @@ class AnazhRealm_vegetation_wiese {
                 };
             },
         });
+        // GEBURT UND TOD nur, wenn eine Kachel, eine Vorlage oder die Ferne sich änderte (`nw.neu`, w27-takt-streu: der Stand
+        // kostet nichts — vorher ging jeder Takt jede Familie über jede Kachel); der Stempel unten jedes Mal
+        const neu = nw.neu === true || nw.neu === undefined;
+        nw.neu = false;
         let anders = false;
-        for (const f of familien) {
+        for (const f of neu ? familien : AnazhRealm.STAND_LEER) {
             let F = B[f.key];
             // eine neue Vorlage (Saison, Studio) oder Schale: ihre Senken sind neu — jede Kachel wird in ihnen neu geboren
             if (!F || F.ident.some((x, i) => x !== f.ident[i]))
@@ -1545,7 +1549,7 @@ class AnazhRealm_vegetation_wiese {
             if (f.senken && this._bestandFamilie(F, f, nahe)) anders = true;
             if (f.senken && nahe) this._naheMelden(nahe, F.hoch, f.senken);
         }
-        this._naheZustand();
+        if (neu) this._naheZustand();
         // DER STEMPEL DER WAHL auf jeder Senke (auch der gewachsenen), die Art und ihre Größen: die Nähe (5) ihre Stufe, die
         // Basis ihres Zustands, wer ihn schreibt (der erste Teil der L1), das Band (Übergabe, Stufe 1, ihr Rand); die Ferne (6) die
         // Halbbreite ihres Halms (`breite`), die Schale (7) Breite und Höhe ihrer Karte — beide die Übergabe und den Rand des
@@ -1658,7 +1662,7 @@ class AnazhRealm_vegetation_wiese {
 
     // DER ZUSTAND DER NÄHE auf der GPU (Art 5): je Familie (die Vorlagen der Wiese, je Art und Gestalt die Streu) ihr Raum von
     // `cap` Plätzen ab ihrer Basis, je Platz zwei Hälften (die Wahl liest die eine und schreibt die andere, im Wechsel je
-    // Hauptbild, `_wahlRechnen`). Wächst eine Familie über ihren Raum oder kommt eine hinzu, legt er jeden Raum nach seiner Zahl
+    // Hauptbild, in dem die Nähe rechnet, `_wahlRechnen`). Wächst eine Familie über ihren Raum oder kommt eine hinzu, legt er jeden Raum nach seiner Zahl
     // neu (frisch null: jeder Platz wählt aus dem Jetzt), und jede Senke der Nähe trägt ihre neue Basis; sonst schreibt nur die
     // Geburt — je Block EIN Schreiben (`nahe.neu`: Familie, erster Platz, die Stufe je Platz aus dem Jetzt).
     _naheZustand() {
@@ -2276,17 +2280,19 @@ class AnazhRealm_vegetation_wiese {
     // `_naheZustand`, geschrieben vom ersten Teil der nahen Stufe), dann die Sicht — im Kaskaden-Pass mit der Licht-Kapsel der
     // stehenden. Eine Art mit EINER Stufe wählt keine Stufe (Rolle 3). OHNE GEOMETRIE-ARENA (WebGL2, `__arenaOhne`) wählt niemand:
     // die ferne Stufe zeichnet jede Pflanze des Rings ohne Rand-Band, die nahe nichts (die Grenze aus w25-gpu-wahl); der
-    // Null-Renderer zeichnet nie. Ohne Änderung (`bestandNeu`) kein Gang. Rückgabe: geschrieben?
+    // Null-Renderer zeichnet nie. Ohne Änderung (`bestandNeu`) kein Gang über Familien und Kacheln, nur der Stempel. Rückgabe:
+    // geschrieben?
     _nahStreuBestand() {
         const st = this.state,
             ns = st.nahStreu,
             NS = AnazhRealm.NAH_STREU;
-        if (!ns || !ns.bestandNeu) return false;
+        if (!ns) return false;
+        const neu = ns.bestandNeu === true;
         ns.bestandNeu = false;
         const B = ns.bestand || (ns.bestand = new Map());
         const cam = st.camera.position;
         let anders = false;
-        for (const fam of ns.familien.values()) {
+        for (const fam of neu ? ns.familien.values() : AnazhRealm.STAND_LEER) {
             let F = B.get(fam.key);
             // eine neue Senke in der Familie: jede Kachel wird in ihr neu geboren
             if (!F || F.ident !== fam.senken.length)
@@ -2314,7 +2320,7 @@ class AnazhRealm_vegetation_wiese {
             if (this._bestandFamilie(F, f, nahe)) anders = true;
             if (nahe) this._naheMelden(nahe, F.hoch, fam.senken);
         }
-        this._naheZustand();
+        if (neu) this._naheZustand();
         // DER STEMPEL DER WAHL auf jeder Senke (auch der gewachsenen): die Nähe (5), ihre Rolle (1 die nahe Stufe, 2 die ferne,
         // 3 die EINE), die Basis ihres Zustands, wer ihn schreibt (der erste Teil der nahen Stufe), das Band (der Ring,
         // die Armlänge, ihr Rand) und der Saum des Winds der wiegenden
@@ -2322,6 +2328,7 @@ class AnazhRealm_vegetation_wiese {
             webgl = !kann && !!(st.renderer && st.renderer.backend && st.renderer.backend.isWebGLBackend === true);
         for (const fam of ns.familien.values()) {
             const F = B.get(fam.key);
+            if (!F) continue;
             const basis = fam.stufen > 1 ? this._naheBasis("streu:" + fam.key) : 0;
             let schreibt = fam.stufen > 1;
             for (const a of fam.senken) {
