@@ -35,7 +35,7 @@ const json = (t) => {
     return null;
 };
 const wb = (args, ms) => {
-    const r = cp.spawnSync(process.execPath, [WB, ...args, "--port", P], { encoding: "utf8", timeout: ms || 300000, maxBuffer: 1 << 28 });
+    const r = cp.spawnSync(process.execPath, [WB, ...args, "--port", P], { encoding: "utf8", timeout: ms || Number(process.env.BN_MS || 300000), maxBuffer: 1 << 28 });
     return { exit: r.status, j: json(r.stdout), rest: String((r.stdout || "") + (r.stderr || "")).slice(-600) };
 };
 const evalW = (code, ms) => {
@@ -85,7 +85,8 @@ if (${bild ? "true" : "false"}) {
   for (const [x0, y0, gl] of bl) { if (gl) { c.fillStyle = "rgba(255,0,0,0.55)"; c.fillRect(x0, y0, 8, 8); } }
   const k = Object.assign(document.createElement("canvas"), { width: W >> 1, height: H >> 1 });
   k.getContext("2d").drawImage(cv, 0, 0, W >> 1, H >> 1);
-  aus.png = k.toDataURL("image/png");
+  window.__bnPng = k.toDataURL("image/png");
+  aus.png = window.__bnPng.length;
 }
 return aus;`;
 
@@ -156,7 +157,12 @@ function main() {
                     continue;
                 }
                 const z = evalW(ZERLEGUNG(BILDER.has(`${v}@${d}`)));
-                if (z.png) fs.writeFileSync(path.join(OUT, `${SHA8}-${v}-${d}.png`), Buffer.from(z.png.split(",")[1], "base64"));
+                // das Bild in Scheiben (eine große Ausgabe der Werkbank kappt Node beim Exit)
+                if (z.png) {
+                    let url = "";
+                    for (let o = 0; o < z.png; o += 50000) url += evalW(`return window.__bnPng.slice(${o}, ${o + 50000});`);
+                    fs.writeFileSync(path.join(OUT, `${SHA8}-${v}-${d}.png`), Buffer.from(url.split(",")[1], "base64"));
+                }
                 teile.push(
                     `${d} m glatt ${m.glatt} nyq ${m.nyquist} β ${m.beta} L ${m.luma} arm ${k.arm && k.arm.ist} [${z.G}/${z.N} ${z.baender}]`
                 );
