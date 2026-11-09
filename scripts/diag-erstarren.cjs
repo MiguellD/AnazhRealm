@@ -40,8 +40,7 @@ const server = statikServer();
 const { errs, check } = pruefer();
 
 (async () => {
-    await server.lausche(0);
-    const { browser, page } = await nullSeite({ frist: 300000 }); // GPU-frei; Foundry bleibt AN (Produktions-Pfad)
+    const { browser, page } = await nullSeite({ frist: 300000 }, server); // GPU-frei; Foundry bleibt AN (Produktions-Pfad)
     page.setDefaultTimeout(280000);
     let out = null;
     try {
@@ -121,8 +120,7 @@ const { errs, check } = pruefer();
                 } catch {}
                 const w = performance.now() - w0;
                 wall[i] = w;
-                if (w > STALL_MS) {
-                    if (i === selbstTestTick) selbstTestGesehen = true;
+                if (w > STALL_MS) if (i === selbstTestTick) selbstTestGesehen = true;
                     else {
                         const top = Object.entries(acc)
                             .sort((a, b) => b[1] - a[1])
@@ -130,7 +128,6 @@ const { errs, check } = pruefer();
                             .map(([k, v]) => `${k}:${v.toFixed(0)}ms`);
                         if (stalls.length < 12) stalls.push({ i, ms: Math.round(w), top });
                     }
-                }
                 if (i % 50 === 0) await sleep(0);
             }
             const quart = (a, b) => {

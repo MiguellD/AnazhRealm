@@ -530,6 +530,9 @@ class AnazhRealm_daten {
     // 13 Dreiecke), gedreht nach ihrer Ziehung (`_ortZiehung` Zug 1), steigend über `rampe` m hinter der Übergabe; ihr Anteil
     // (`_wieseSchale`) hält 1 bis `voll`, dahinter (voll/d)³ — die Karten je Pixel bleiben, jede wird um 1/Anteil breiter
     // (höchstens `breitMax`) —, vor `bis` über `saum` fällt er auf 0. EIN Befehl (`nahWiese:Lf:schale`), keine Büschel mehr.
+    // Jede Karte steht auf der Ebene ihres Hangs und ist höchstens so breit, wie ihre Wiese und ihr Boden sie tragen (w24-wiese-
+    // ferne, `_wieseSchaleDaten`: dieselbe Maske wie die Füße der Büschel, `boden`, der Grund der Häuser); `schmal` × `breite`
+    // ist die schmalste Karte — wo selbst sie nicht steht, steht keine.
     // Gemessen (Radeon, vegetation.K1#1, Mess-Wiese Third): LAI 2–5 · 5–10 · 10–20 · 20–40 m ohne Keile und ohne Schale 2,40 ·
     // 2,23 · 1,72 · 0,32, mit ihr 2,40 · 2,23 · 2,08 · satt (0 Boden-Pixel); die Büschel der Ferne wie main (im Blick 1 168), die
     // Schale 1 854 Karten, 24 102 Dreiecke (Null-Renderer, der Sicht-Satz; Genesis 155 · 2 015), ihr Bau 0,14 ms je Kachel.
@@ -571,6 +574,7 @@ class AnazhRealm_daten {
                         breite: 2.3,
                         hoehe: 0.7,
                         breitMax: 3,
+                        schmal: 0.25,
                     }),
                 }),
             })

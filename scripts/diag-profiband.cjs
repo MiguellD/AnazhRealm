@@ -290,6 +290,13 @@ function ferneWand(A) {
 // zwischen sich ≤ 0,3 der Krümmung); im Freien die volle Spreizung, am Riss die flache Ebene (Minmod — der Riss liegt unter der
 // Kante des Gitters); der Konsum: der Block trägt die Grenze in Element 3, das Gesetz spreizt nie über sie. Bis w21-wiese-fern
 // spreizte die Ferne jedes Büschel bis `streckMax`: Füße bis 47 m neben dem Boden, ein Büschel spannte 95 m (Mess-Wiese).
+// P-KARTE (w24-wiese-ferne): über DEMSELBEN Boden die Karten der Schale ihrer Kachel (`_wieseSchaleDaten` über dem Feld der
+// Grenze) in ihrer größten Breite — der Breiten-Achse ihrer Matrix: keine liegt über dem Weg, ihre Unterkante (die Ebene des
+// Hangs) höchstens 1,5 × `boden` neben dem Boden (wie das Büschel am Hügel; am Riss unter der Kante des Gitters überspannt sie
+// ihn wie die Füße), keine im Grund des Hauses, die Matrix affin, im Freien die volle Breite. Dazu ein KAMM (Grat bei z −60,
+// Gefälle 0,8 je Seite, unter der Kante der Wiese — die Silhouette eines Hangs): auf ihm hält die Ebene waagrecht, die Karte
+// quer zum Grat nur so breit, wie ihre Enden den Boden tragen. Bis w24-wiese-ferne an der Gasse 55 von 96 Karten über dem
+// Weg, am Hügel 144 von 144 schwebend (bis 2,73 m), am Haus 20 im Grund.
 function grenzeWand(A) {
     const G = A.constructor("return globalThis")(); // das Global des vm (die Kerne der Klasse)
     const vl = { fuss: 0.52, flat: {}, fern: [{ lokal: new G.THREE.Matrix4() }] };
@@ -297,16 +304,26 @@ function grenzeWand(A) {
     // (der Schlüssel `boxen` berechnet: die Hüllen-Form-Wand liest den Code ohne Texte)
     const haus = { art: "grund", cx: 0, cz: 120, phi: 0, ex: 3, ez: 3, saum: 0, y: 6, ["boxen"]: [[-3, 3, -3, 3, 0]] };
     const w = weltVon(A, { nahWiese: { vorlagen: new Map([["0:L2", vl]]), reich: 0.775, fern: { gitter: new Map() } }, worldMeta: { erdbau: { haus: [haus] } } }); // prettier-ignore
-    const hoehe = (x, z) => 0.05 * x - 20 * (Math.abs(x + 20) < 0.2) - 5 * (Math.max(Math.abs(x + 56.3), Math.abs(z - 61.53)) < 0.75) + 6 * Math.max(0, 1 - ((x - 40) ** 2 + (z - 40) ** 2) / 144); // prettier-ignore
-    Object.assign(w, { _bodenSichtAt: (x, z, aus) => (aus && (aus.gruen = 1), hoehe(x, z)), _pfadFeldAt: (x, z) => +(Math.abs(z + 30) < 2), _bodenSichtChunks: (...r) => A._wieseKarten(r) }); // prettier-ignore
-    return [["frei", -60, 0, 99], ["gasse", -60, -26, 2], ["riss", -19, -60, 99], ["grube", -60, 60, 3.04], ["huegel", 46, 40, 4.24], ["haus", 0, 113, 3.74]].flatMap(([name, x, z, rMax]) => { // prettier-ignore
+    const hoehe = (x, z) => 0.05 * x - 20 * (Math.abs(x + 20) < 0.2) - 5 * (Math.max(Math.abs(x + 56.3), Math.abs(z - 61.53)) < 0.75) + 6 * Math.max(0, 1 - ((x - 40) ** 2 + (z - 40) ** 2) / 144) + (x > 48) * Math.max(0, 4 - 0.8 * Math.abs(z + 60)); // prettier-ignore
+    Object.assign(w, { _bodenSichtAt: (x, z, aus) => (aus && (aus.gruen = 1), hoehe(x, z)), _pfadFeldAt: (x, z) => +(Math.abs(z + 30) < 2), _bodenSichtChunks: (...r) => A._wieseKarten(r), _feuchteAt: () => 0 }); // prettier-ignore
+    return [["frei", -60, 0, 99], ["gasse", -60, -26, 2], ["riss", -19, -60, 99], ["grube", -60, 60, 3.04], ["huegel", 46, 40, 4.24], ["haus", 0, 113, 3.74], ["kamm", 66, -60, 0.7]].flatMap(([name, x, z, rMax]) => { // prettier-ignore
         try {
             const b = { x, y: hoehe(x, z), z, s: 1, vorlage: 0, f: [1, 1, 1] };
             w._slopeAt(x, z, hoehe, 1, b, b.y); // die Ebene des Hangs (gx, gz) am Büschel
-            const g = w._wieseFernGrenzen(Math.floor(x / 12), Math.floor(z / 12), [b], 0.775).grenze[0];
+            const Gr = w._wieseFernGrenzen(Math.floor(x / 12), Math.floor(z / 12), [b], 0.775);
+            const g = Gr.grenze[0];
             const B = w._nahWieseFernBlock({ grenze: [g], bloecke: [], ...w._nahWieseKachelDaten(0, 0, [b], 12) }, 0, vl);
             const f = [vl.fuss * g > rMax && "Füße außerhalb ihres Bodens", name === "frei" && g < A.NAH_WIESE.fern.streckMax && "zu eng", name === "riss" && b.gx > 0.1 && "die Ebene kippt", B.matrizen[0][3] !== g && "Block ohne Grenze", A._wieseFern(G.__phytoCore.WIND_ZAHLEN, 30, 30, g).spreiz > g && "Gesetz über der Grenze"]; // prettier-ignore
-            return f.filter(Boolean).map((t) => `P-Grenze ${name} (Spreizung ${g.toFixed(2)}): ${t}`);
+            // P-Karte: je Karte der Kachel 17 Punkte ihrer Unterkante in größter Breite (die Breiten-Achse der Matrix) — nie auf dem
+            // Weg, im Grund des Hauses, mehr als 1,5 × `boden` neben dem Boden (am Riss überspannt sie ihn wie die Füße), frei 6,9 m
+            const K = w._wieseSchaleDaten(Math.floor(x / 12), Math.floor(z / 12), Gr.feld);
+            for (let i = 0, k = -8; i < K.n; k < 8 ? k++ : ((k = -8), i++)) {
+                const [a, sy, c, , , , , , , , , , mx, my, mz] = K.matrizen.subarray(i * 16, i * 16 + 15);
+                const [px, pz] = [mx + (a * k) / 16, mz + (c * k) / 16];
+                f.push((w._pfadFeldAt(px, pz) || G.__gelaendeCore.erdbauGrund(w._erdbauLage(), px, pz, 0) || (name !== "riss" && Math.abs(my + 0.05 + (sy * k) / 16 - hoehe(px, pz)) > 0.75) || (name === "frei" && Math.hypot(a, c) < 6.89)) && "Karte außerhalb ihres Bodens"); // prettier-ignore
+            }
+            f.push(!K.n && "keine Karte");
+            return [...new Set(f.filter(Boolean))].map((t) => `P-Grenze ${name}: ${t} (Spreizung ${g.toFixed(2)})`);
         } catch (e) {
             return [`P-Grenze ${name}: ${e.message}`];
         }
@@ -1118,13 +1135,19 @@ function selbsttest() {
         );
         // P-GRENZE (w21-wiese-fern): die Grenze hält; je Glied ein Mutant, der genau seinen Fall rot macht
         const stillG = [
-            ["_wieseFernGrenzen", "!T[o]", "0", "gasse"],
-            ["_wieseFernGrenzen", "= T[p] = 0", "", "grube"],
+            ["_wieseFernFeld", "!T[o]", "0", "gasse"],
+            ["_wieseFernFeld", "[0, 0, 1, 1]", "[T[o], T[p], 1, 1]", "grube"],
+            ["_wieseFernFeld", "[0, 0, 1, 1]", "[0, 0, Wg[o], Wg[p]]", "grube: Karte"],
             ["_wieseFernGrenzen", "F.boden", "1e9", "huegel"],
             ["_wieseFernGrenzen", "!Gb", "1 || !Gb", "haus"],
             ["_slopeAt", "Number.isFinite(fuss)", "0", "riss"],
             ["_wieseFern", "A.min(s, grenze)", "s", "Gesetz"],
             ["_nahWieseFernBlock", "+ 3] = gr", "+ 3] = 0", "Block"],
+            // P-Karte (w24-wiese-ferne): die Maske, der Hang, der Boden und der Grund des Hauses der Karte
+            ["_wieseSchaleDaten", "(tasten && !(D.weg(x + v", "(0 && !(D.weg(x + v", "gasse: Karte"],
+            ["_wieseSchaleDaten", "sy * B,", "0,", "huegel: Karte"],
+            ["_wieseSchaleDaten", "F.boden", "1e9", "kamm: Karte"],
+            ["_wieseSchaleDaten", "if (haus && Gb", "if (0 && Gb", "haus: Karte"],
         ].filter(([g, a, b, x]) => !grenzeWand(klasseVon(stammLib.ersetze(st, g, a, b))).some((e) => e.includes(x)));
         t(`Grenze der Ferne: je Glied ein Mutant rot ${grenzeWand(A)}${stillG.map((m) => " — still " + m)}`, !grenzeWand(A).length && !stillG.length); // prettier-ignore
         // S31 — DIE DECKUNG DER FERNE (P-Ferne): das Gesetz hält Deckung und Schirm, das vor w10-wiese (die Deckung fällt ab

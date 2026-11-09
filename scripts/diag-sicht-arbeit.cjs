@@ -150,9 +150,6 @@ function selbsttest() {
     };
     const klon = () => jsonKlon(gruen);
     const fehler = [];
-    const v0 = urteil(klon());
-    if (v0.length) fehler.push("der grüne Befund fällt rot: " + v0.join(" · "));
-    console.log(`  ${v0.length ? "❌" : "✅"} Selbsttest grün → ${v0.join(" · ") || "grün"}`);
     // der echte Loop unter langsamem Takt: das Licht dreht in jedem Frame (die Sonne läuft schneller als eine Stufe je Frame),
     // die Kaskaden mit Box halten ihre Wahl über den Licht-Rand — grün
     const randSonne = (arbeitFrames, lichtRand) =>
@@ -640,7 +637,7 @@ function selbsttest() {
         ],
         ["Fahrt ohne Rand nicht gemessen", ["fahrtOhneRand"], /LINSE STUMPF: \(F\) ohne den Rand des Wegs/],
     ];
-    taeterFaelle(faelle, urteil, { fehler, klon });
+    taeterFaelle(faelle, urteil, { fehler, gruen });
     selbsttestEnde(fehler);
 }
 
@@ -656,8 +653,7 @@ const server = statikServer();
 
 (async () => {
     console.log("=== SICHT-ARBEIT (Welle C) — Null-Renderer, Mess-Wiese, die Sicht-Linse je Frame ===");
-    await server.lausche(0);
-    const { browser, page } = await nullSeite({ frist: 600000 });
+    const { browser, page } = await nullSeite({ frist: 600000 }, server);
     page.setDefaultTimeout(580000);
     let befund = null;
     try {

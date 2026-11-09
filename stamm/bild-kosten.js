@@ -3585,7 +3585,9 @@ fn behalten(a: Auftrag, i: u32, j: u32) -> bool {
             let S = wieseSchale(d);
             if (m[1].w >= S.x * (1.0 + a.saum.z)) { return false; }
             c = fuss + vec3f(0.0, a.fenster.z * 0.5, 0.0) - lage.auge.xyz;
-            r = 0.5 * a.fenster.y * S.y + a.fenster.z;
+            // die Breite nie über die größte ihrer Matrix, längs ihrer Breiten-Achse samt dem Hang (_wieseSchaleDaten)
+            let gk = length(m[0].xz) / a.fenster.y;
+            r = 0.5 * length(m[0].xyz) * min(1.0, S.y / max(gk, 1e-6)) + a.fenster.z;
         }
     }
     let rr = r + lage.rand.x + lage.rand.y * length(c);

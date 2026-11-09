@@ -134,11 +134,7 @@ function ortAn(rumpf) {
                       : oben
             );
             wartend = null;
-        } else if (c === "}") {
-            stapel.pop();
-        } else if (c === ";" && klammer === 0) {
-            wartend = null;
-        }
+        } else if (c === "}") stapel.pop(); else if (c === ";" && klammer === 0) wartend = null;
         art[i] = stapel.length ? stapel[stapel.length - 1] : "unbedingt";
     }
     // „block" ohne Zweig/Schleife darüber ist unbedingt
@@ -427,7 +423,7 @@ function stoffGraph(stoff, rauschQuelle, tsl, zweige) {
     const offen = [];
     for (const k of Object.keys(tsl || {})) {
         const v = tsl[k];
-        if (v && v.isNode === true) offen.push(v);
+        if (v?.isNode === true) offen.push(v);
     }
     while (offen.length) {
         const n = offen.pop();
@@ -673,11 +669,9 @@ fn auswahlImZweig() -> f32 {
     const knoten = (eig) => {
         const n = Object.assign({ isNode: true, id: id++ }, eig);
         n.getChildren = function* () {
-            for (const v of Object.values(n)) {
-                if (Array.isArray(v)) {
-                    for (const x of v) if (x && x.isNode === true) yield x;
-                } else if (v && v.isNode === true) yield v;
-            }
+            for (const v of Object.values(n)) if (Array.isArray(v)) {
+                    for (const x of v) if (x?.isNode === true) yield x;
+                } else if (v?.isNode === true) yield v;
         };
         return n;
     };
@@ -764,9 +758,7 @@ function shaderKostenSeite(o) {
         const q = rend.backend?.device ? rend.backend.device.queue : null;
         try {
             __bundlesNeu();
-            for (let i = 0; i < Math.max(1, opt.frames || 1); i++) {
-                window.__loopBild();
-            }
+            for (let i = 0; i < Math.max(1, opt.frames || 1); i++) window.__loopBild();
             if (q) await q.onSubmittedWorkDone();
         } finally {
             objs.get = roh;

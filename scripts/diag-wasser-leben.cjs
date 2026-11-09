@@ -763,12 +763,10 @@ function selbsttest() {
         const halb = (k) => (k === "huelle0" || k === "regionen" || k === "kacheln" ? q[k] : null);
         const a = {},
             z = {};
-        for (const k of Object.keys(q)) {
-            if (typeof q[k] === "number") {
+        for (const k of Object.keys(q)) if (typeof q[k] === "number") {
                 a[k] = Math.ceil(q[k] / 2);
                 z[k] = q[k] - a[k];
             } else a[k] = z[k] = halb(k);
-        }
         Object.assign(a, { teil: { k: 0, n: 2 }, breiten0: [2, 2.75], tiefen0: [0.31, 0.33], buckelMax: 0 });
         Object.assign(z, { teil: { k: 1, n: 2 }, breiten0: [1.9], tiefen0: [0.3], buckelMax: 0 });
         const m = quellTeileVereinen([a, z]);
@@ -789,7 +787,7 @@ function selbsttest() {
         );
         if (!ok) fehler.push("die Teile urteilen anders als das Ganze");
     }
-    taeterFaelle([{ name: "der grüne Befund", z: gut }, ...taeter.map(([n, m]) => [n, m, { test: (x) => x.startsWith(n) }])], urteil, { fehler, klon: kopie });
+    taeterFaelle(taeter.map(([n, m]) => [n, m, { test: (x) => x.startsWith(n) }]), urteil, { fehler, gruen: gut });
     selbsttestEnde(fehler);
 }
 
