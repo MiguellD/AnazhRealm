@@ -1095,7 +1095,8 @@ class AnazhRealm_siedlung_bewohner {
             }
             // DAS WERK DER LISTE (`listeWerk`): erst die Liste (`_bewohnerListe`), dann weicht jeder ihrer Stände der Welt — was
             // der Wald-Takt schon brachte, und die Spuren der Wagen (`_bewohnerStandPruefen`); erst danach lebt sie
-            if (!S.liste || S.listeWerk) {
+            // (`lebt`: eine Liste, deren erstes Werk stand, lebt weiter, während ein Werk der Wache ihre Stände prüft)
+            if (!S.liste || (S.listeWerk && !S.lebt)) {
                 if (d2 > A.nearM * A.nearM) continue;
                 const q = this._autoSettlementQueue;
                 if (q && q.cellKey === S.key) continue; // die Häuser wachsen noch
@@ -1131,14 +1132,7 @@ class AnazhRealm_siedlung_bewohner {
             // gestaffelte Takt ohne sie, und fiel eine Wende auf seinen Takt, rechnete `zielUhr` mit der Uhr seines letzten Takts
             for (const b of S.ruhend.splice(0, Math.floor(S.ruhSoll))) this._bewohnerWecken(S, b);
             S.ruhSoll -= Math.floor(S.ruhSoll);
-            // DIE WACHE (mensch.K3): wechselt eine Hülle im Rechteck der Wege, prüft jeder Gehende den Rest seines Wegs
-            if (S.wache.stand !== S.wegeStand) {
-                const trifft = this._bewohnerWechsel(S, S.wegeStand);
-                S.wegeStand = S.wache.stand;
-                for (const b of S.liste) this._bewohnerWecken(S, b);
-                for (const gang = this._bewohnerStandPruefen(S, trifft); !gang.next().done;); // ganz, in diesem Takt
-                this._bewohnerWegPruefen(S, trifft);
-            }
+            this._bewohnerWacheTakt(S);
             let anders = false; // eine Wahl wechselt: der Satz neu (`_bewohnerSatzSchreiben`); sonst rücken die Bewegten
             const bewegt = this._bewohnerBewegt || (this._bewohnerBewegt = []);
             bewegt.length = 0;
@@ -1394,6 +1388,25 @@ class AnazhRealm_siedlung_bewohner {
         }
     }
 
+    // DIE WACHE (mensch.K3): wechselt eine Hülle im Rechteck der Wege, prüft ein WERK der Siedlung (`listeWerk`) jeden Stand, den
+    // der Wechsel trifft (`_bewohnerStandPruefen`), dann den Rest jedes Wegs (`_bewohnerWegPruefen`) — unter der EINEN Frist der
+    // Bau-Arbeit im Takt-Planer (`_bewohnerWerkTakt`, mindestens ein Stück je Takt), und die Leute leben dabei weiter (`lebt`).
+    // Was während des Werks wechselt, sammelt das Buch der Wache (`_bewohnerWechsel`) für das nächste. Bis w25-stadt-takt-3 ging
+    // die Prüfung ganz im Takt der Leute: reichte das Buch (256 Wechsel) beim Ankommen der Stadt nicht zurück, prüfte EIN Takt
+    // jeden Stand — GTX, Messort stadt, erster Gang: ein Takt 2 546 ms (`_bewohnerStandPruefen` 2 540, darin `_bewohnerWand`
+    // 1 566), Null-Renderer 3 280 Stände 3,55 s.
+    _bewohnerWacheTakt(S) {
+        if (S.wache.stand === S.wegeStand || S.listeWerk) return;
+        const trifft = this._bewohnerWechsel(S, S.wegeStand);
+        S.wegeStand = S.wache.stand;
+        for (const b of S.liste) this._bewohnerWecken(S, b);
+        const gang = this._bewohnerStandPruefen(S, trifft);
+        S.listeWerk = (function* (realm) {
+            yield* gang;
+            realm._bewohnerWegPruefen(S, trifft);
+        })(this);
+    }
+
     // DAS WERK DER LISTE IM TAKT-PLANER (w25-stadt-takt, die EINE Frist der Bau-Arbeit, Lehre 14 und 25): der Job `bewohner`
     // (`_buildDeferrableJobs`, Welt-Substanz hinter dem Strom) rechnet bis zu seinem Budget `ms` (der Rest der EINEN Frist
     // `_bauFrist`; ohne Bild und im ruhenden Loop ganz) an jedem Werk einer Siedlung im Nah-Ring (`listeWerk`: erst die Liste,
@@ -1410,8 +1423,8 @@ class AnazhRealm_siedlung_bewohner {
         const [p, nah, q] = [pm.position, AnazhRealm.AUTO_SETTLEMENT.nearM, this._autoSettlementQueue];
         const tag = Number.isFinite(this.state.timeOfDay) ? this.state.timeOfDay : 0.5;
         for (const S of alle.values()) {
-            if (!S.listeWerk || (q && q.cellKey === S.key) || (S.ox - p.x) ** 2 + (S.oz - p.z) ** 2 > nah * nah)
-                continue;
+            const R = S.lebt ? nah * AnazhRealm.BEWOHNER.fernFaktor : nah; // ein Werk der Wache, so weit die Leute leben
+            if (!S.listeWerk || (q && q.cellKey === S.key) || (S.ox - p.x) ** 2 + (S.oz - p.z) ** 2 > R * R) continue;
             let w;
             do w = S.listeWerk.next();
             while (!w.done && performance.now() < bis);
@@ -1426,6 +1439,8 @@ class AnazhRealm_siedlung_bewohner {
                 S.listeWerk = this._bewohnerStandPruefen(S, null);
                 continue;
             }
+            if (S.lebt) continue;
+            S.lebt = true; // die Liste lebt ab jetzt
             S.planStunde = null;
             S.uhrStunde = (((tag % 1) + 1) % 1) * 24;
         }
@@ -2821,15 +2836,16 @@ class AnazhRealm_siedlung_bewohner {
                     x: o.x + Math.cos((i * 2 * Math.PI) / n) * r,
                     z: o.z + Math.sin((i * 2 * Math.PI) / n) * r,
                 };
-                // die billigen Proben zuerst (Lehre 25): das Gesetz, die Spur, der Raum, der Grundriss — dann die Wand und das Land
+                // die billigen Proben zuerst (Lehre 25): das Gesetz, der Raum, der Grundriss — dann die Spur (seit heim2-w13-verkehr-heil
+                // fragt sie am Stand den Weg zu seiner Tür ab, `dies`), die Wand und das Land
                 if (gesetz) {
                     if (!gesetz(q.x, q.z)) continue;
                     drin++;
                 }
-                if (frei && !frei(q)) continue;
                 if (raum && raum(q)) continue;
                 const g = this._imGrundriss(q.x, q.z, BW.saumM);
                 if (g === "haus" || g === "bau") continue;
+                if (frei && !frei(q)) continue;
                 if (this._bewohnerWand(q, q, true, rand) || (!ausDerWand && this._bewohnerWand(o, q))) continue;
                 if (!this._landAt(q.x, q.z, 0.2)) continue;
                 if (this._bewohnerAnschluss(N, q) >= 0) gefunden = q;
@@ -2850,7 +2866,7 @@ class AnazhRealm_siedlung_bewohner {
     // auseinander), wer dort Platz machte, fand seinen Stand nie frei (`tuerFreiM`) — 31–43 Steckenbleiber, Soll-Orte 0,708–0,837.
     // Steht der Ursprung in einer Hülle ohne Ausweg: laut, der Stand bleibt.
     // IN RATEN (Lehre 14): je geprüftem Stand ein Schritt (`yield`) — bei der Geburt der Liste treibt sie der Bewohner-Takt nach
-    // Zeit (`listeWerk`), nach einem Wechsel der Wache geht sie ganz. Bis bewohner-takt prüfte die Geburt jeden Stand im Takt
+    // Zeit (`listeWerk`), nach einem Wechsel der Wache ebenso (`_bewohnerWacheTakt`). Bis bewohner-takt prüfte die Geburt jeden Stand im Takt
     // der fertigen Liste: am Start-Dorf 43 ms, die Aufgabe 90 ms (swiftshader kalt).
     *_bewohnerStandPruefen(S, trifft) {
         const BW = AnazhRealm.BEWOHNER;
@@ -2985,7 +3001,7 @@ class AnazhRealm_siedlung_bewohner {
             // nächsten Ort diesseits, und erst wo keiner trägt, bleibt er, wo er stand. Bis heim2-w13-verkehr-heil stand er, wo der
             // Ring ihn fand, auch jenseits der Trasse: die sechs Leute des Hauses 7:1 der Metropole gingen zwischen Tür und Stand
             // über die Fahrbahn (stadt-voll 23 Uhr: rund 390 von 704 Proben auf ihr, der Anteil 5,27 %)
-            const dies = frei && o.anker ? (p) => frei(p) && !this._verkehrFahrbahnM(S, o.anker, [p]) : frei;
+            const dies = frei && o.anker ? (p) => frei(p) && !this._verkehrFahrbahnM(S, o.anker, [p], 0) : frei;
             const wand = this._bewohnerWand(ur, ur, true, BW.standRandM);
             const dort = !wand && (!frei || frei(ur));
             let q =
@@ -3159,6 +3175,7 @@ class AnazhRealm_siedlung_bewohner {
         if (S.wache && this._blockerWachen) this._blockerWachen.delete(S.wache);
         S.liste = null;
         S.listeWerk = null;
+        S.lebt = false;
         S.gestalten = null;
         S.netz = null; // das Netz hing an der Wache (`frei`, `stand`): mit der Liste entsteht es neu
         this._ofenMemoRaeumen();
