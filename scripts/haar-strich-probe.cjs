@@ -19,6 +19,7 @@ let baender = 0;
 for (const o of teile) {
   const g = o.geometry, P = g.attributes.position, C = g.attributes.color, Tn = g.attributes.aTon, N = g.attributes.normal, n = P.count;
   if (!g.userData.__nOrig) g.userData.__nOrig = Float32Array.from(N.array);
+  if (g.attributes.aHaarT) { baender += g.attributes.aHaarT.count / 4; continue; }
   const A = new Float32Array(n * 4);
   for (let i = 0; i + 3 < n; i += 4) {
     let haar = true; for (let k = 0; k < 4; k++) haar = haar && Math.round(Tn.getX(i + k)) === haarTon;
@@ -75,12 +76,14 @@ for (const m of mats) {
 }
 window.__bundlesNeu && window.__bundlesNeu(); return mats.size;`;
 const KK = { wrap: 0.5, kd: 1, cR: 0.046, sR: -0.1, pR: 80, cT: 0.5, sT: 0.1, pT: 20, jit: 0.2 };
+const SANFT = { ...KK, cR: 0.02, pR: 40 };
+// der Zweig ist Kajiya-Kay im Stamm (HAAR_LOOK.kk = KK); die Spielarten tauschen nur die Zahlen
 const STAENDE = [
     ["zweig#1", true, null],
-    ["rund-weg", false, null],
-    ["kk", true, KK],
-    ["kk-rund-weg", false, KK],
-    ["kk-streu", true, { ...KK, jit: 0.5 }],
+    ["sanft", true, SANFT],
+    ["sanft-streu", true, { ...SANFT, jit: 0.5 }],
+    ["sanft-trt", true, { ...SANFT, cT: 1 }],
+    ["sanft-rund-weg", false, SANFT],
     ["zweig#2", true, null],
 ];
 (async () => {
