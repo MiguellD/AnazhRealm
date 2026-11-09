@@ -267,7 +267,7 @@ function berichtAB(teil, Z) {
                 const rest = t.map((x) => x[3]).sort((a, b2) => a - b2)[t.length >> 1];
                 return `${s}: ${t.length}·${Math.round(t.reduce((m, x) => m + x[1], 0))}·${b.filter((x) => !x[4] && (x[3] === "0" || x[3] === "T")).length}/${b.filter((x) => !x[4] && x[3] === "n").length}·${rest}·${t.filter((x) => x[4]).length}·${t.filter((x) => x[5]).length}·${Math.max(0, ...t.map((x) => x[7] | 0))}`;
             });
-            zeile(`${pre}KARTEN-TAKT je s (Takte·ms·Ringe/nicht ganz·Rest der Lade-Frist Median·Leine straff·Lade-Bild·Hunger max): ${kz.join(" | ")}`); // prettier-ignore
+            if (!AB) zeile(`${pre}KARTEN-TAKT je s (Takte·ms·Ringe/nicht ganz·Rest der Lade-Frist Median·Leine straff·Lade-Bild·Hunger max): ${kz.join(" | ")}`); // prettier-ignore
             const fest = ["_tickImpostorBake", "_tickFernRing", "_tickPendingVegSpawns", "_tickArchitectureLOD", "_loopRender", "_loopFixedStep", "_loopPhysicsSync", "tickDayNight", "_atmoTakt", "_ensureSkyEnvironment", "_tickDirtyVoxelChunks", "_tickScatterLod", "_tickWegeKarte", "_tickFoundryIngest", "_tickHuellenNach"]; // prettier-ignore
             const S = Nn.sek || {};
             const wz = Object.keys(S).map(Number).filter((s) => s >= 8 && s * 1000 < da).sort((a, b) => a - b).map((s) => {

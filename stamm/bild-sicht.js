@@ -2214,22 +2214,31 @@ class AnazhRealm_bild_sicht {
     // (Wasser flach auf dem Spiegel) und die EINE Fern-Farbe × Saison (`_fernAuftrag` „feld“, B2), der Haupt-Faden legt die
     // Antwort in die RGBA-Textur und backt das Panorama. Re-Anker oder Saison-Drift → neu; das alte Feld bleibt sichtbar, bis
     // das neue steht.
+    // DIE SEKTOREN DES FELDS (w25-ankunft-horizont): je Feld-Faden (`_feldBahnen`) ein Sektor des Azimuts [ia, ia + w) über alle
+    // Radien — derselbe Punkt, dasselbe Gesetz, derselbe Zustand in jedem Faden, die Antworten legen sich Zeile um Zeile in die
+    // EINE Textur. Bis hier rechnete EIN Faden das ganze Feld, und seine erste Rechnung baute das Fluss-Netz des Gesetzes über
+    // die ganze Scheibe bis 40 km: GTX kalt (b6a4ef4b) 7,7–8,6 s ab den Regionen (5,5 s), der Horizont schloss 13,5–14,7 s.
     _feldPassMal(fp, fr) {
-        if (fp.flug || !this._nebenFaden("feld")) return; // die Bahn des Panoramas (`_fernAuftrag`)
+        const bahnen = this._feldBahnen();
+        if (fp.flug || !bahnen) return; // die Bahnen des Panoramas (`_fernAuftrag`)
         const P = AnazhRealm.FELD_PASS;
         const F = AnazhRealm.FERN_RING;
         const rMin = F.schalen[F.schalen.length - 1].aussen;
-        const n = P.az * P.rad;
-        const punkte = new Float32Array(n * 2);
-        for (let iy = 0; iy < P.rad; iy++) {
-            const r = rMin + ((iy + 0.5) / P.rad) * (P.rMaxM - rMin);
-            for (let ix = 0; ix < P.az; ix++) {
-                const a = ((ix + 0.5) / P.az - 0.5) * 2 * Math.PI;
-                const k = iy * P.az + ix;
-                punkte[k * 2] = fr.anchorX + Math.cos(a) * r;
-                punkte[k * 2 + 1] = fr.anchorZ + Math.sin(a) * r;
+        const teile = bahnen.map((bahn, j) => {
+            const ia = Math.floor((j * P.az) / bahnen.length);
+            const w = Math.floor(((j + 1) * P.az) / bahnen.length) - ia;
+            const punkte = new Float32Array(P.rad * w * 2);
+            for (let iy = 0; iy < P.rad; iy++) {
+                const r = rMin + ((iy + 0.5) / P.rad) * (P.rMaxM - rMin);
+                for (let ix = ia; ix < ia + w; ix++) {
+                    const a = ((ix + 0.5) / P.az - 0.5) * 2 * Math.PI;
+                    const q = iy * w + ix - ia;
+                    punkte[q * 2] = fr.anchorX + Math.cos(a) * r;
+                    punkte[q * 2 + 1] = fr.anchorZ + Math.sin(a) * r;
+                }
             }
-        }
+            return { bahn, ia, w, punkte };
+        });
         fp.flug = true;
         const gen = ++fp.gen;
         const ankerX = fr.anchorX;
@@ -2240,14 +2249,29 @@ class AnazhRealm_bild_sicht {
         const schnee = this._schneeGilt(); // der Faden färbt mit dem Versatz der Schneegrenze, den er trägt
         // die Masche des Texels: Azimut-Breite am Radius (im Faden je Texel), die radiale Zeile des Felds
         const hr = (P.rMaxM - rMin) / (2 * P.rad);
-        this._fernAuftrag("feld", { punkte, ax: ankerX, az: ankerZ, azN: P.az, hr, saison, praesenz }, [punkte.buffer])
-            .then((antwort) => {
+        Promise.all(
+            teile.map((t) =>
+                this._fernAuftrag(
+                    "feld",
+                    { punkte: t.punkte, ax: ankerX, az: ankerZ, azN: P.az, hr, saison, praesenz },
+                    [t.punkte.buffer],
+                    t.bahn
+                )
+            )
+        )
+            .then((antworten) => {
                 if (this.state.feldPass !== fp || fp.gen !== gen) return;
                 fp.flug = false;
-                fp.daten.set(antwort.daten);
+                let hMax = -Infinity;
+                teile.forEach((t, j) => {
+                    const d = antworten[j].daten;
+                    for (let iy = 0; iy < P.rad; iy++)
+                        fp.daten.set(d.subarray(iy * t.w * 4, (iy + 1) * t.w * 4), (iy * P.az + t.ia) * 4);
+                    hMax = Math.max(hMax, antworten[j].hMax);
+                });
                 fp.tex.needsUpdate = true;
                 fp.U.rMin.value = rMin;
-                fp.U.hMax.value = antwort.hMax + 5;
+                fp.U.hMax.value = hMax + 5;
                 fp.anchorX = ankerX;
                 fp.anchorZ = ankerZ;
                 fp.saison = saison;
@@ -2262,6 +2286,21 @@ class AnazhRealm_bild_sicht {
                 if (this.state.feldPass === fp && fp.gen === gen) fp.flug = false;
                 this._stoffBruch("der Feld-Pass (der Fern-Faden)", e);
             });
+    }
+
+    // DIE BAHNEN DES FELDS: der Feld-Faden und seine Geschwister ("feld", "feld2", …) — je FELD_PASS.kerneJeFaden Kerne einer,
+    // höchstens FELD_PASS.faeden; null, solange der Voxel-Faden (die Quelle jedes Neben-Fadens) nicht steht.
+    _feldBahnen() {
+        const P = AnazhRealm.FELD_PASS;
+        const kerne = (typeof navigator !== "undefined" && navigator.hardwareConcurrency) || 1;
+        const K = Math.max(1, Math.min(P.faeden, Math.floor(kerne / P.kerneJeFaden)));
+        const bahnen = [];
+        for (let j = 0; j < K; j++) {
+            const name = j ? "feld" + (j + 1) : "feld";
+            if (!this._nebenFaden(name)) return j ? bahnen : null;
+            bahnen.push(name);
+        }
+        return bahnen;
     }
 
     // Ist die Saison seit dem Bild des Feldes gewandert (je Kanal > `FERN_FARBE.saisonDrift`, die Präsenz des Laubs um mehr als
@@ -3804,7 +3843,9 @@ AnazhRealm.HOEHLEN_LICHT_KACHEL_M = 4;
 // -Quantisierung; `scheibe` = Punkte je Auftrag an den Fern-Faden (B2), `scheibenImFlug` = Aufträge zugleich.
 // FELD_PASS — polares Höhen+Farb-Feld jenseits der letzten Schale: az×rad Texel bis rMaxM, gemalt
 // vom Fern-Faden (Höhe und Fern-Farbe je Texel, B2), gemarcht vom Fullscreen-Fragment (nur Himmel-Pixel).
-AnazhRealm.FELD_PASS = Object.freeze({ az: 192, rad: 48, rMaxM: 40000 });
+// faeden · kerneJeFaden: die Sektoren des Felds (`_feldBahnen`) — je 6 Kerne ein Feld-Faden, höchstens 3 (GTX 1060 am OMEN 12
+// Kerne → 2, Radeon 890M 24 → 3; ein Gerät unter 12 Kernen rechnet das Feld in EINEM Faden)
+AnazhRealm.FELD_PASS = Object.freeze({ az: 192, rad: 48, rMaxM: 40000, faeden: 3, kerneJeFaden: 6 });
 // FELD_PANO — Schattierungs-Persistenz: statt 96 Raymarch-Schritten je Himmel-Pixel je Frame marcht
 // EIN Compute ins Polar-Panorama (Farbe + Treffer-DISTANZ; der Nebel bleibt live im Fragment →
 // Tag/Nacht braucht keinen Re-Bake), das Fragment schlägt nur nach. Re-Bake nur bei Kamera-Drift;
