@@ -214,7 +214,7 @@
   },
   "ankunft.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: ankunft.K4#1 radeon: ungemessen (R10) — zuletzt an 87537d3f: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: POSE ego-0 46778 ms) · ankunft.K4#1 gtx: ungemessen (R10) — zuletzt an 87537d3f: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: POSE ego-0 75084 ms)",
+   "beleg": "Maschine: 0 — offen: ankunft.K4#1 radeon: ungemessen (R10) — zuletzt an da0e790f: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: POSE ego-45 39299 ms) · ankunft.K4#1 gtx: ungemessen (R10) — zuletzt an 87537d3f: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: POSE ego-0 75084 ms)",
    "stationen": [
     {
      "id": "ankunft.K4#1",
@@ -222,7 +222,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 87537d3f: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: POSE ego-0 46778 ms)",
+     "grund": "ungemessen (R10) — zuletzt an da0e790f: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: POSE ego-45 39299 ms)",
      "ungemessen": true
     },
     {
@@ -984,16 +984,15 @@
   },
   "haar.K2": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: haar.K2#1 radeon: Station seit der Messung geändert · haar.K2#1 gtx: ROT: EINE Pose: Leib Δ 0 · Haar-Feder Δ 0 m über 3 Lesungen · arm ROT strich 0.556 Soll [0.3554,0.533] — strich 0.556 > 0.533 · albedo: veraltet seit 4ef6370e: koerper-core.js geändert (c:b70902b2e416b42b → c:c0846417374ac1bd) · albedo — [0.01; 0.3] · third ROT strich 0.3625 Soll [0.3554,0.533] — strich 0.3625 — albedo: veraltet seit 4ef6370e: koerper-core.js geändert (c:b70902b2e416b42b → c:c0846417374ac1bd) · albedo — [0.01; 0.3] an da0e790f",
+   "beleg": "Maschine: 0 — offen: haar.K2#1 radeon: ROT: EINE Pose: Leib Δ 0 · Haar-Feder Δ 0 m über 3 Lesungen · arm ROT strich 0.5638 Soll [0.3554,0.533] — strich 0.5638 > 0.533 · albedo: veraltet seit 4ef6370e: koerper-core.js geändert (c:b70902b2e416b42b → c:c0846417374ac1bd) · albedo — [0.01; 0.3] · third ROT strich 0.3751 Soll [0.3554,0.533] — strich 0.3751 — albedo: veraltet seit 4ef6370e: koerper-core.js geändert (c:b70902b2e416b42b → c:c0846417374ac1bd) · albedo — [0.01; 0.3] an da0e790f · haar.K2#1 gtx: ROT: EINE Pose: Leib Δ 0 · Haar-Feder Δ 0 m über 3 Lesungen · arm ROT strich 0.556 Soll [0.3554,0.533] — strich 0.556 > 0.533 · albedo: veraltet seit 4ef6370e: koerper-core.js geändert (c:b70902b2e416b42b → c:c0846417374ac1bd) · albedo — [0.01; 0.3] · third ROT strich 0.3625 Soll [0.3554,0.533] — strich 0.3625 — albedo: veraltet seit 4ef6370e: koerper-core.js geändert (c:b70902b2e416b42b → c:c0846417374ac1bd) · albedo — [0.01; 0.3] an da0e790f",
    "stationen": [
     {
      "id": "haar.K2#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true
+     "zahl": "EINE Pose: Leib Δ 0 · Haar-Feder Δ 0 m über 3 Lesungen · arm ROT strich 0.5638 Soll [0.3554,0.533] — strich 0.5638 > 0.533 · albedo: veraltet seit 4ef6370e: koerper-core.js geändert (c:b70902b2e416b42b → c:c0846417374ac1bd) · albedo — [0.01; 0.3] · third ROT strich 0.3751 Soll [0.3554,0.533] — strich 0.3751 — albedo: veraltet seit 4ef6370e: koerper-core.js geändert (c:b70902b2e416b42b → c:c0846417374ac1bd) · albedo — [0.01; 0.3]",
+     "sha": "da0e790f76ad8a02171aa36d628ef8a8d7758086",
+     "grund": "ROT: EINE Pose: Leib Δ 0 · Haar-Feder Δ 0 m über 3 Lesungen · arm ROT strich 0.5638 Soll [0.3554,0.533] — strich 0.5638 > 0.533 · albedo: veraltet seit 4ef6370e: koerper-core.js geändert (c:b70902b2e416b42b → c:c0846417374ac1bd) · albedo — [0.01; 0.3] · third ROT strich 0.3751 Soll [0.3554,0.533] — strich 0.3751 — albedo: veraltet seit 4ef6370e: koerper-core.js geändert (c:b70902b2e416b42b → c:c0846417374ac1bd) · albedo — [0.01; 0.3]"
     },
     {
      "id": "haar.K2#1",
@@ -1786,16 +1785,15 @@
   },
   "lod.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: lod.K1#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/welt-boot.cjs) · lod.K1#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: lod.K1#1 radeon: ROT: Tafel-Pose schlechteste fimp:strauch:L2 0.2070 · Karte fimp:birke:L2 0.1556 (29212 px), fimp:eiche:L2 0.1332 (62183 px), fimp:fichte:L2 0.1419 (47881 px), fimp:strauch:L2 0.2070 (23032 px), fimp:tanne:L2 0.1613 (129917 px) | Spielgang schlechteste f:eiche:L1 0.3623 · Karte fimp:birke:L2 0.1427 (26242 px), fimp:eiche:L2 0.1465 (60997 px), fimp:fichte:L2 0.1350 (37786 px), fimp:strauch:L2 0.2179 (29635 px), fimp:tanne:L2 0.1474 (96541 px) (Soll kante ≤ 0,22 je Teil-Klasse, zweiton 0) · [linse-gpu] amd/rdna-3 an da0e790f · lod.K1#1 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "lod.K1#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/welt-boot.cjs)",
-     "ungemessen": true
+     "zahl": "Tafel-Pose schlechteste fimp:strauch:L2 0.2070 · Karte fimp:birke:L2 0.1556 (29212 px), fimp:eiche:L2 0.1332 (62183 px), fimp:fichte:L2 0.1419 (47881 px), fimp:strauch:L2 0.2070 (23032 px), fimp:tanne:L2 0.1613 (129917 px) | Spielgang schlechteste f:eiche:L1 0.3623 · Karte fimp:birke:L2 0.1427 (26242 px), fimp:eiche:L2 0.1465 (60997 px), fimp:fichte:L2 0.1350 (37786 px), fimp:strauch:L2 0.2179 (29635 px), fimp:tanne:L2 0.1474 (96541 px) (Soll kante ≤ 0,22 je Teil-Klasse, zweiton 0) · [linse-gpu] amd/rdna-3",
+     "sha": "da0e790f76ad8a02171aa36d628ef8a8d7758086",
+     "grund": "ROT: Tafel-Pose schlechteste fimp:strauch:L2 0.2070 · Karte fimp:birke:L2 0.1556 (29212 px), fimp:eiche:L2 0.1332 (62183 px), fimp:fichte:L2 0.1419 (47881 px), fimp:strauch:L2 0.2070 (23032 px), fimp:tanne:L2 0.1613 (129917 px) | Spielgang schlechteste f:eiche:L1 0.3623 · Karte fimp:birke:L2 0.1427 (26242 px), fimp:eiche:L2 0.1465 (60997 px), fimp:fichte:L2 0.1350 (37786 px), fimp:strauch:L2 0.2179 (29635 px), fimp:tanne:L2 0.1474 (96541 px) (Soll kante ≤ 0,22 je Teil-Klasse, zweiton 0) · [linse-gpu] amd/rdna-3"
     },
     {
      "id": "lod.K1#1",
@@ -1864,16 +1862,15 @@
   },
   "lod.K5": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: 17 Läufe bei 30/60/144 fps, Puls und Regler ±10 % (loadScale 0–1): Abstände, Schwellen, Grenzen, Wahl und Ränder gleich, die Mutante (Regler-Term im Gesetz) wandert an d3708675 headless — offen: lod.K5#1 radeon: Station seit der Messung geändert · lod.K5#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: 17 Läufe bei 30/60/144 fps, Puls und Regler ±10 % (loadScale 0–1): Abstände, Schwellen, Grenzen, Wahl und Ränder gleich, die Mutante (Regler-Term im Gesetz) wandert an d3708675 headless — offen: lod.K5#1 radeon: ROT: Baum 5.16 px · Haus 0.13 px · Tor 0.18 px · Wagen 0.08 px (Soll ≤ 1 px am Wechsel-Abstand, 1920 × 1080) · gate L2: Exemplar 66 px, [linse-gpu] amd/rdna-3 an da0e790f · lod.K5#1 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "lod.K5#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true
+     "zahl": "Baum 5.16 px · Haus 0.13 px · Tor 0.18 px · Wagen 0.08 px (Soll ≤ 1 px am Wechsel-Abstand, 1920 × 1080) · gate L2: Exemplar 66 px, [linse-gpu] amd/rdna-3",
+     "sha": "da0e790f76ad8a02171aa36d628ef8a8d7758086",
+     "grund": "ROT: Baum 5.16 px · Haus 0.13 px · Tor 0.18 px · Wagen 0.08 px (Soll ≤ 1 px am Wechsel-Abstand, 1920 × 1080) · gate L2: Exemplar 66 px, [linse-gpu] amd/rdna-3"
     },
     {
      "id": "lod.K5#1",
@@ -2262,17 +2259,16 @@
    ]
   },
   "mensch.K4": {
-   "punkte": 0,
-   "beleg": "Maschine: gehalten: 50 Bewohner aus 50 Samen, 8 Typen · Gestalt-Distanz min 99 px (7:52:4/7:38:4; 0 Paare unter 1 px) · Höhe 1.683–1.928 m um 1.816 · Gesicht 50 von 50 in MENSCH_SOLL · Leib/Wurf je Typ 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 (Zeilen 1700,360) · die 50: 132200 Dreiecke · Takt 0.748 ms für 1094 → 0.034 ms je 50 an d3708675 headless — offen: mensch.K4#1 radeon: Station seit der Messung geändert · mensch.K4#1 gtx: ROT: Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.13 m · third ROT strich 0.667 Soll [1,1] — gesicht 0.667 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei 1 [0.9, 1] · lippeL -14.38 [-14, -4] · lippeA 11.19 [4, 14] · hoehleL -7.06 [-12, 0] · hoehleA 9.32 [-2, 6] · haarDeckung 1 [0.9, 1] an da0e790f",
+   "punkte": 2,
+   "beleg": "Maschine: Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.12 m · third GRÜN strich 1 Soll [1,1] · augeFrei 1 [0.9, 1] · lippeL -12.87 [-14, -4] · lippeA 10.44 [4, 14] · hoehleL -6.1 [-12, 0] · hoehleA 4.24 [-2, 6] · haarDeckung 1 [0.9, 1] an da0e790f radeon · gehalten: 50 Bewohner aus 50 Samen, 8 Typen · Gestalt-Distanz min 99 px (7:52:4/7:38:4; 0 Paare unter 1 px) · Höhe 1.683–1.928 m um 1.816 · Gesicht 50 von 50 in MENSCH_SOLL · Leib/Wurf je Typ 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 (Zeilen 1700,360) · die 50: 132200 Dreiecke · Takt 0.748 ms für 1094 → 0.034 ms je 50 an d3708675 headless",
    "stationen": [
     {
      "id": "mensch.K4#1",
      "geraet": "radeon",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true
+     "gruen": true,
+     "zahl": "Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.12 m · third GRÜN strich 1 Soll [1,1] · augeFrei 1 [0.9, 1] · lippeL -12.87 [-14, -4] · lippeA 10.44 [4, 14] · hoehleL -6.1 [-12, 0] · hoehleA 4.24 [-2, 6] · haarDeckung 1 [0.9, 1]",
+     "sha": "da0e790f76ad8a02171aa36d628ef8a8d7758086",
+     "grund": null
     },
     {
      "id": "mensch.K4#1",
@@ -3741,16 +3737,15 @@
   },
   "studios.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: studios.K4#1 radeon: Linse seit der Messung geändert (R6: scripts/diag-albedo-tafel.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +25) · studios.K4#1 gtx: Station seit der Messung geändert — zuletzt an 87537d3f: die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen · studios.K4#2 radeon: Linse seit der Messung geändert (R6: scripts/diag-albedo-tafel.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +25) · studios.K4#2 gtx: Station seit der Messung geändert — zuletzt an 87537d3f: die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
+   "beleg": "Maschine: 0 — offen: studios.K4#1 radeon: ROT: 0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU rdna-3) · garage 23.5 %/– [Differenz 0.2347 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · portale –/– [ROT: bild: {\"ms\":8042,\"fehler\":\"ABNAHME ROT [Ziel Blickziel verdeckt von portal-membran in] · schmiede 24.4 %/– [Differenz 0.2443 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · fachwerk –/– [ROT: bild: {\"ms\":4505,\"fehler\":\"ABNAHME ROT [Ziel Blickziel verdeckt von fern-ring in 27.0] · terrain 99.8 %/– [die Welt zeichnet an der Pose L1 (die Bühne L0) · Differenz 0.9981 > 0.021 Albedo ungemess] · koerperstudio –/– [ungemessen: das Werk ist eine Prägung (der Leib des Spielers), kein gesetzter Bau] · tetrapoda –/– [ungemessen: das Werk ist ein Wesen (eine lebende Kreatur), kein gesetzter Bau] an da0e790f · studios.K4#1 gtx: Station seit der Messung geändert — zuletzt an 87537d3f: die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen · studios.K4#2 radeon: ROT: 0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU rdna-3) · garage 23.5 %/– [Differenz 0.2347 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · portale –/– [ROT: bild: {\"ms\":8042,\"fehler\":\"ABNAHME ROT [Ziel Blickziel verdeckt von portal-membran in] · schmiede 24.4 %/– [Differenz 0.2443 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · fachwerk –/– [ROT: bild: {\"ms\":4505,\"fehler\":\"ABNAHME ROT [Ziel Blickziel verdeckt von fern-ring in 27.0] · terrain 99.8 %/– [die Welt zeichnet an der Pose L1 (die Bühne L0) · Differenz 0.9981 > 0.021 Albedo ungemess] · koerperstudio –/– [ungemessen: das Werk ist eine Prägung (der Leib des Spielers), kein gesetzter Bau] · tetrapoda –/– [ungemessen: das Werk ist ein Wesen (eine lebende Kreatur), kein gesetzter Bau] an da0e790f · studios.K4#2 gtx: Station seit der Messung geändert — zuletzt an 87537d3f: die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "stationen": [
     {
      "id": "studios.K4#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-albedo-tafel.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +25)",
-     "ungemessen": true
+     "zahl": "0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU rdna-3) · garage 23.5 %/– [Differenz 0.2347 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · portale –/– [ROT: bild: {\"ms\":8042,\"fehler\":\"ABNAHME ROT [Ziel Blickziel verdeckt von portal-membran in] · schmiede 24.4 %/– [Differenz 0.2443 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · fachwerk –/– [ROT: bild: {\"ms\":4505,\"fehler\":\"ABNAHME ROT [Ziel Blickziel verdeckt von fern-ring in 27.0] · terrain 99.8 %/– [die Welt zeichnet an der Pose L1 (die Bühne L0) · Differenz 0.9981 > 0.021 Albedo ungemess] · koerperstudio –/– [ungemessen: das Werk ist eine Prägung (der Leib des Spielers), kein gesetzter Bau] · tetrapoda –/– [ungemessen: das Werk ist ein Wesen (eine lebende Kreatur), kein gesetzter Bau]",
+     "sha": "da0e790f76ad8a02171aa36d628ef8a8d7758086",
+     "grund": "ROT: 0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU rdna-3) · garage 23.5 %/– [Differenz 0.2347 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · portale –/– [ROT: bild: {\"ms\":8042,\"fehler\":\"ABNAHME ROT [Ziel Blickziel verdeckt von portal-membran in] · schmiede 24.4 %/– [Differenz 0.2443 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · fachwerk –/– [ROT: bild: {\"ms\":4505,\"fehler\":\"ABNAHME ROT [Ziel Blickziel verdeckt von fern-ring in 27.0] · terrain 99.8 %/– [die Welt zeichnet an der Pose L1 (die Bühne L0) · Differenz 0.9981 > 0.021 Albedo ungemess] · koerperstudio –/– [ungemessen: das Werk ist eine Prägung (der Leib des Spielers), kein gesetzter Bau] · tetrapoda –/– [ungemessen: das Werk ist ein Wesen (eine lebende Kreatur), kein gesetzter Bau]"
     },
     {
      "id": "studios.K4#1",
@@ -3765,10 +3760,9 @@
      "id": "studios.K4#2",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-albedo-tafel.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +25)",
-     "ungemessen": true
+     "zahl": "0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU rdna-3) · garage 23.5 %/– [Differenz 0.2347 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · portale –/– [ROT: bild: {\"ms\":8042,\"fehler\":\"ABNAHME ROT [Ziel Blickziel verdeckt von portal-membran in] · schmiede 24.4 %/– [Differenz 0.2443 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · fachwerk –/– [ROT: bild: {\"ms\":4505,\"fehler\":\"ABNAHME ROT [Ziel Blickziel verdeckt von fern-ring in 27.0] · terrain 99.8 %/– [die Welt zeichnet an der Pose L1 (die Bühne L0) · Differenz 0.9981 > 0.021 Albedo ungemess] · koerperstudio –/– [ungemessen: das Werk ist eine Prägung (der Leib des Spielers), kein gesetzter Bau] · tetrapoda –/– [ungemessen: das Werk ist ein Wesen (eine lebende Kreatur), kein gesetzter Bau]",
+     "sha": "da0e790f76ad8a02171aa36d628ef8a8d7758086",
+     "grund": "ROT: 0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU rdna-3) · garage 23.5 %/– [Differenz 0.2347 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · portale –/– [ROT: bild: {\"ms\":8042,\"fehler\":\"ABNAHME ROT [Ziel Blickziel verdeckt von portal-membran in] · schmiede 24.4 %/– [Differenz 0.2443 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · fachwerk –/– [ROT: bild: {\"ms\":4505,\"fehler\":\"ABNAHME ROT [Ziel Blickziel verdeckt von fern-ring in 27.0] · terrain 99.8 %/– [die Welt zeichnet an der Pose L1 (die Bühne L0) · Differenz 0.9981 > 0.021 Albedo ungemess] · koerperstudio –/– [ungemessen: das Werk ist eine Prägung (der Leib des Spielers), kein gesetzter Bau] · tetrapoda –/– [ungemessen: das Werk ist ein Wesen (eine lebende Kreatur), kein gesetzter Bau]"
     },
     {
      "id": "studios.K4#2",
@@ -3929,16 +3923,15 @@
   },
   "tiere.K5": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: tiere.K5#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/welt-boot.cjs)",
+   "beleg": "Maschine: 0 — offen: tiere.K5#1 radeon: ROT: ego (first) 1 Sichtungen in 600 Spiel-s (wesen 361 px 100 m 542 s), 604 Prüfungen, 8 Masken, Bestand bis 20, im Blick erschienen 0 | third (third) 3 Sichtungen in 600 Spiel-s (baer 376 px 36 m 317 s · wesen 617 px 40 m 524 s · wesen 211 px 96 m 556 s), 617 Prüfungen, 34 Masken, Bestand bis 20, im Blick erschienen 0 an da0e790f",
    "stationen": [
     {
      "id": "tiere.K5#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/welt-boot.cjs)",
-     "ungemessen": true
+     "zahl": "ego (first) 1 Sichtungen in 600 Spiel-s (wesen 361 px 100 m 542 s), 604 Prüfungen, 8 Masken, Bestand bis 20, im Blick erschienen 0 | third (third) 3 Sichtungen in 600 Spiel-s (baer 376 px 36 m 317 s · wesen 617 px 40 m 524 s · wesen 211 px 96 m 556 s), 617 Prüfungen, 34 Masken, Bestand bis 20, im Blick erschienen 0",
+     "sha": "da0e790f76ad8a02171aa36d628ef8a8d7758086",
+     "grund": "ROT: ego (first) 1 Sichtungen in 600 Spiel-s (wesen 361 px 100 m 542 s), 604 Prüfungen, 8 Masken, Bestand bis 20, im Blick erschienen 0 | third (third) 3 Sichtungen in 600 Spiel-s (baer 376 px 36 m 317 s · wesen 617 px 40 m 524 s · wesen 211 px 96 m 556 s), 617 Prüfungen, 34 Masken, Bestand bis 20, im Blick erschienen 0"
     }
    ]
   },
@@ -4184,7 +4177,7 @@
   },
   "vegetation.K3": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: vegetation.K3#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/welt-boot.cjs)",
+   "beleg": "Maschine: 0 — offen: vegetation.K3#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/welt-boot.cjs) — zuletzt an da0e790f: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Zeile NEUN vegetation.K3) · Täter: NEUN-ENDE 8 gemessen, ausgelassen am Budget 8.5 s: vegetation.K3 · 8.8 s",
    "stationen": [
     {
      "id": "vegetation.K3#1",
@@ -4192,7 +4185,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/welt-boot.cjs)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/welt-boot.cjs) — zuletzt an da0e790f: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Zeile NEUN vegetation.K3) · Täter: NEUN-ENDE 8 gemessen, ausgelassen am Budget 8.5 s: vegetation.K3 · 8.8 s",
      "ungemessen": true
     }
    ]
@@ -4483,8 +4476,8 @@
  },
  "rueckfall": [],
  "kopfVoll": "da0e790f76ad8a02171aa36d628ef8a8d7758086",
- "zeit": "2026-11-09T19:09:32.017Z",
- "vorher": "eff50c41",
+ "zeit": "2026-11-09T19:27:59.786Z",
+ "vorher": "da0e790f",
  "pflicht": {
   "dokument": "docs/PFLICHT-OFFEN.md",
   "eintraege": [
@@ -4493,10 +4486,10 @@
     "titel": "AAAA je Klasse",
     "kriterium": "A fällt, wenn K5 jede Klasse GRÜN nennt und E dabei an beiden Messplätzen hält.",
     "status": "ohne Richter",
-    "gruen": 2,
+    "gruen": 3,
     "gesamt": 8,
-    "prozent": 25,
-    "punkte": 1,
+    "prozent": 38,
+    "punkte": 3,
     "max": 8,
     "kriterien": [
      "haar.K1",
@@ -4508,16 +4501,11 @@
      {
       "station": "lod.K1#1",
       "geraet": "radeon",
-      "zeile": "Linse seit der Messung geändert (R6: scripts/lib/welt-boot.cjs)"
+      "zeile": "ROT: Tafel-Pose schlechteste fimp:strauch:L2 0.2070 · Karte fimp:birke:L2 0.1556 (29212 px), fimp:eiche:L2 0.1332 (62183 px), fimp:fichte:L2 0.1419 (47881 px), fimp:strauch:L2 0.2070 (23032 px), fimp:tanne:L2 0.1613 (129917 px) | Spielgang "
      },
      {
       "station": "lod.K1#1",
       "geraet": "gtx",
-      "zeile": "Station seit der Messung geändert"
-     },
-     {
-      "station": "mensch.K4#1",
-      "geraet": "radeon",
       "zeile": "Station seit der Messung geändert"
      },
      {
@@ -4528,7 +4516,7 @@
      {
       "station": "haar.K2#1",
       "geraet": "radeon",
-      "zeile": "Station seit der Messung geändert"
+      "zeile": "ROT: EINE Pose: Leib Δ 0 · Haar-Feder Δ 0 m über 3 Lesungen · arm ROT strich 0.5638 Soll [0.3554,0.533] — strich 0.5638 > 0.533 · albedo: veraltet seit 4ef6370e: koerper-core.js geändert (c:b70902b2e416b42b → c:c0846417374ac1bd) · albedo — "
      },
      {
       "station": "haar.K2#1",
