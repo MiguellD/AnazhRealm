@@ -3818,15 +3818,15 @@
     // Welt-Renderer sie backt (S2, `_karteWeltBacken`: Zeile 0 oben). Die GPU-Ablage des Hosts (`KARTE_RECHNER_WGSL`: Mips,
     // BC1/BC5) rechnet DIESES Gesetz, `impostorMips` ist es auf der CPU (die Linse liest es; die Kodierung der Transport-
     // Schale fiel mit S2 — `karteKodiere` las niemand mehr):
-    //   schwelle      Alpha-Schwelle: Binarisierung der Karte, Mip-Deckung und der alphaTest der Welt — dort, wo der Filter der
-    //                 Welt (bilinear, zwei Stufen trilinear gemischt) deckt, was Stufe 0 deckt (Castaño 2010, an der Schwelle
-    //                 statt an der Alpha gemessen; gate:streu-wahrheit „am Schirm", die Scheibe: 0,34 → 1,20 · 0,42 → 1,01 ·
-    //                 0,45 → 0,995 · 0,5 → 0,95). 0,34 dehnte jeden Rand des Saums und vereinte die Muster zweier Stufen: die
-    //                 Karte deckte am Schirm 1,06–1,16 ihrer Stufe 0 (CPU-Zwilling, Tafel-Größen, Strauch · Birke · Eiche ·
-    //                 Fichte · Tanne 1,13 · 1,16 · 1,16 · 1,13 · 1,06; bei 0,45 1,05 · 1,08 · 1,08 · 1,01 · 0,97; bei 0,5
-    //                 1,00 · 0,97 · 0,97 · 0,93 · 0,94, aber an ½ verliert die Mischung ihre Teil-Ränder — Löcher im Kern der
-    //                 Birke 3,4 → 9,6 %) — die Wiese stand dunkler, die Lücken zum Licht zu (w24-strauch-saum, Koordinator 08.11.:
-    //                 bild:wiese@0.5 Kronen-Mitte 48,7 → 45,5)
+    //   schwelle      Alpha-Schwelle: Binarisierung der Karte, Mip-Deckung und der alphaTest der Welt — ½ wie der Blatt-Atlas
+    //                 und jeder Studio-Stoff: an ½ schneidet der bilineare Filter die binäre, deckungstreue Wahl jeder Stufe auf
+    //                 ihrer Texel-Grenze, die Welt zeigt, was die Stufe wählt. Der Filter der Welt liest dafür je Pixel EINE
+    //                 Stufe und EINE Ansicht (der Karten-Stoff, `_ditherIGN`; die Mischung löst die Zeit NACH dem Test). Bis
+    //                 w26-laub-kante mischte er zwei Stufen trilinear und zwei Ansichten VOR dem Test, und die Schwelle trug
+    //                 seinen Fehler: 0,34 vereinte die Muster zweier Stufen (die Scheibe deckte am Schirm 1,20 ihrer Stufe 0),
+    //                 0,45 traf im Mittel über die Mischung 0,995, ½ verlor ihre Teil-Ränder (0,95, Löcher im Kern der Birke
+    //                 9,6 %) — je Schirm-Größe schwankte die Deckung zwischen Vereinigung und Schnittmenge (CPU-Modell, Strauch:
+    //                 0,94–1,32 bei 0,45, 0,67–1,00 bei ½; EINE Stufe je Pixel an ½ 0,98–1,07)
     //   normalTeiler  die Welt-Normale liegt auf 1/normalTeiler der Albedo-Auflösung (weiche Licht-Modulation fern):
     //                 die Ablage mittelt die volle Normale der Bühne als Vektor (KARTE_RECHNER_WGSL normalK) und beginnt dort
     //   minSeite      die Mip-Kette endet, bevor eine Ansicht unter 4 px fällt (BC-Block, keine Ansichten-Mischung)
@@ -3871,7 +3871,7 @@
     // → dieser) birke 0,2056 → 0,1753 · eiche 0,1788 → 0,1417 · fichte 0,1474 → 0,1470 · tanne 0,1691 → 0,1636 · strauch
     // 0,3242 → 0,2083.
     var KARTEN_GESETZ = {
-        schwelle: 0.45,
+        schwelle: 0.5,
         normalTeiler: 2,
         minSeite: 4,
         minOpak: 64,

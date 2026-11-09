@@ -221,8 +221,8 @@ async function driveImpostor(page) {
             // DIE STRICH-WAND am Graphen (Integration W6): steht die Peilung auf einer Ansichts-Grenze, springt
             // die Atlas-Koordinate; nimmt die Hardware die Ableitung daraus, zieht der Filter einen senkrechten Strich über die
             // Krone (swiftshader sieht ihn nie). Jede Atlas-Stichprobe des Karten-Stoffs trägt darum explizite Gradienten
-            // (die Albedo je Ansicht A und B, die Normale der nächsten, S2b) oder liest auf der Stufe 0 (die kubische Zelle). Selbsttest: ein Stoff,
-            // der den Atlas ohne beides liest, fällt beim Namen.
+            // (die Normale der nächsten Ansicht, S2b) oder liest auf ihrer Stufe (die Albedo: je Pixel EINE aus der stetigen Ableitung,
+            // w26-laub-kante; die kubische Zelle auf Stufe 0). Selbsttest: ein Stoff, der den Atlas ohne beides liest, fällt beim Namen.
             const atS = r._impostorAtlas();
             const strich = (m) => {
                 const p = new Set();
@@ -770,11 +770,12 @@ hauptLauf(async () => {
     if (A.strich) {
         const s = A.strich;
         console.log(`  Strich-Wand am Graphen: ${JSON.stringify(s)} · Selbsttest ${JSON.stringify(A.strichSelbst)}`);
-        // die Albedo je Ansicht (2) und die Normale der nächsten (1) mit Gradienten der stetigen Koordinate, die Tiefe an der Ecke auf
-        // ihrer Stufe (heil-laub-tiefe), nie im Fragment (frag: depthNode → frag_depth)
-        if (!(s.gradMap === 2 && s.gradNmap === 1 && !s.frag && s.ohne === 0 && s.springend === 0))
-            errs.push(`A: Strich-Wand — Albedo 2 · Normale 1 stetig abgeleitet, keine Probe ohne, keine Tiefe im Fragment (${JSON.stringify(s)})`);
-        if (!(A.strichSelbst?.ohne === 1 && A.strichSelbst.springend === 1 && A.strichSelbst.frag))
+        // die Normale der nächsten Ansicht (1) mit Gradienten der stetigen Koordinate, die Albedo auf IHRER Stufe (w26-laub-kante: je
+        // Pixel EINE, aus derselben stetigen Ableitung — ein Gradient der Albedo mischte zwei Stufen trilinear VOR dem Test, main 2),
+        // die Tiefe an der Ecke auf ihrer Stufe (heil-laub-tiefe), nie im Fragment (frag: depthNode → frag_depth)
+        if (!(s.gradMap === 0 && s.gradNmap === 1 && !s.frag && s.ohne === 0 && s.springend === 0))
+            errs.push(`A: Strich-Wand — Albedo 0 · Normale 1 stetig abgeleitet, keine Probe ohne, keine Tiefe im Fragment (${JSON.stringify(s)})`);
+        if (!(A.strichSelbst?.ohne === 1 && A.strichSelbst.springend === 1 && A.strichSelbst.gradMap === 1 && A.strichSelbst.frag))
             errs.push("A-SELBSTTEST: ein Atlas-Stoff ohne Gradienten oder mit springender Ableitung bleibt ungesehen");
     } else if (A.ready) errs.push("A: die Strich-Proben liefen nicht");
 

@@ -76,18 +76,18 @@ function kartenFarbe(core) {
 // Bis w23 wählte Stufe 0 nie, die Zelle maß die Blattgröße (Strauch 55 Stufe-0-Texel), das Muster verschob den Umriss um ein Texel:
 // an der Tafel-Pose standen Laibe (Radeon, main 03300ec8: strauch 0,4023, birke 0,3293).
 const KANTE_SOLL = jsonLesen("spec/abnahme/soll-tafel.json").klassen.find((k) => k.id === "laub-kante").soll.eigenschaften[0].band[1];
-// DIE DECKUNG AM SCHIRM (w24-strauch-saum): die Welt liest die Stufen 1–3 bilinear, mischt je zwei (trilinear, der Anteil t der
-// gröberen, t in Achteln ohne ½) und verwirft an der Schwelle der Karte (a ≤ s) — der Anteil, der besteht, je 4 × 4 Proben eines
-// Texels (der Rand der Scheibe ist leer: ein Abgriff außerhalb liest 0). Bei 0,34 dehnte der Filter jeden Rand des Saums und
-// vereinte die Muster zweier Stufen: die Scheibe deckte 1,20 ihrer Stufe 0, die Wiese stand dunkler (Koordinator 08.11.,
-// bild:wiese@0.5 Kronen-Mitte 48,7 → 45,5)
+// DIE DECKUNG AM SCHIRM (w24-strauch-saum, w26-laub-kante): die Welt liest je Pixel EINE Stufe — die ihres λ und mit dem Anteil t
+// die gröbere (der Karten-Stoff, `_ditherIGN`; t in Achteln) — bilinear und verwirft an der Schwelle der Karte (a ≤ s): der Anteil,
+// der besteht, je 4 × 4 Proben eines Texels der Stufen 1–3 (der Rand der Scheibe ist leer: ein Abgriff außerhalb liest 0). Bis
+// w26 mischte der Filter zwei Stufen trilinear VOR dem Test: bei 0,34 deckte die Scheibe 1,20 ihrer Stufe 0 (die Wiese stand
+// dunkler, Koordinator 08.11.), bei ½ 0,93–0,94; EINE Stufe je Pixel an ½ 0,98–0,99
 function schirmDeckung(st, s, n = 0, m = 0) {
     for (let k = 1; k <= 3; k++)
         for (let y = 0.125; y < st[k].h; y += 0.25)
             for (let x = 0.125; x < st[k].w; x += 0.25) {
                 const [b0, b1] = [1, 0.5].map((f, j, _, q = st[k + j], u = x * f - 0.5, v = y * f - 0.5, i = Math.floor(u), h = Math.floor(v)) =>
-                    [0, 1, 2, 3].reduce((z, e) => z + (q.data[((h + (e >> 1)) * q.w + i + (e & 1)) * 4 + 3] / 255 || 0) * Math.abs(1 - (e & 1) - u + i) * Math.abs(1 - (e >> 1) - v + h), 0));
-                for (let t = 0; t < 1; t += 0.125) if (t !== 0.5) (n++, (m += b0 + t * (b1 - b0) > s));
+                    [0, 1, 2, 3].reduce((z, e) => z + (q.data[((h + (e >> 1)) * q.w + i + (e & 1)) * 4 + 3] / 255 || 0) * Math.abs(1 - (e & 1) - u + i) * Math.abs(1 - (e >> 1) - v + h), 0) > s);
+                for (let t = 0; t < 1; t += 0.125) (n++, (m += b0 + t * (b1 - b0)));
             }
     return m / n;
 }
@@ -107,7 +107,7 @@ function kartenSaum(core, presets, ic) {
         const d = st.map((s) => s.data.filter((x, i) => i % 4 === 3 && x).length / (s.w * s.h));
         d.forEach((x, k) => Math.abs(x - d[0]) > 0.5 / (32768 >> (2 * k)) && fehler.push(`Saum ${art}: Stufe ${k} deckt ${x} statt ${d[0]} — die Karte dünnt aus`));
         const schirm = schirmDeckung(st, core.KARTEN_GESETZ.schwelle) / d[0];
-        if (Math.abs(schirm - 1) > 0.08) fehler.push(`Saum ${art}: die Karte deckt am Schirm ${schirm.toFixed(3)} ihrer Stufe 0 — der Test der Welt dehnt oder dünnt den Saum`);
+        if (Math.abs(schirm - 1) > 0.03) fehler.push(`Saum ${art}: die Karte deckt am Schirm ${schirm.toFixed(3)} ihrer Stufe 0 — der Test der Welt dehnt oder dünnt den Saum`);
         const k = st.slice(0, 2).map(kante);
         umriss.set(sa.nadel, k[0]);
         if (!(Math.max(...k) <= KANTE_SOLL)) fehler.push(`Saum ${art}: der Umriss franst nicht im Maß des Schirms (kante ${k} über ${KANTE_SOLL})`);
@@ -129,7 +129,7 @@ function kernDaten(phytoSrc, kernSrc) {
                 kernSrc +
                 "\n;__daten = { presets: PRESETS, cfg: PORTAL_RENDER_CONFIG };",
             ctx,
-            { timeout: 30000, filename: "foundry-core.js" }
+            { timeout: 30000 }
         );
         return ctx.__daten;
     } catch {

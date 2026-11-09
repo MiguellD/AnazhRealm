@@ -1179,13 +1179,37 @@ class AnazhRealm_stoff_material {
                                                     .mul(wy.g1)
                                             );
                                     };
-                                    const _liesA = (tex, z) => _Ta.mix(_probeA(tex, z.uv), _kubisch(tex, z), _kubW);
+                                    // DIE STUFE JE PIXEL (w26-laub-kante, lod.K1#1): jede Stufe der Albedo ist binär und deckungstreu
+                                    // (Karten-Gesetz, BC1), an ½ schneidet der bilineare Filter sie auf ihrer Texel-Grenze — so wie
+                                    // sie gewählt ist. Je Pixel liest die Karte darum EINE Stufe: die der Hardware (λ der
+                                    // anisotropen Probe: log2 max(ρ_min, ρ_max / Anisotropie)) und mit ihrem Anteil die nächste
+                                    // (⌊λ + Rauschen⌋, `_ditherIGN`, wie der Ring; die Mischung löst TAAU NACH dem Test, die Zeit
+                                    // integriert den Fußabdruck mit dem Versatz des Laubs). Bis w26 mischte der trilineare Filter zwei
+                                    // Stufen VOR dem Test — ihr Saum trägt Zellen je 2^k, ihre Muster sind fremd: bei 0,45 ihre
+                                    // Vereinigung, bei ½ ihre Schnittmenge (CPU-Modell, Strauch, 3 Kronen × 12 Schirm-Größen: Deckung
+                                    // am Schirm 0,94–1,32 bzw. 0,67–1,00 der Stufe 0, EINE Stufe je Pixel an ½ 0,98–1,07); die
+                                    // Schwelle stand darum bei 0,45 statt ½. Die zwei Ansichten mischen weiter: ihr Saum liegt in
+                                    // derselben Lage ihrer Zelle (Modell: gemischt oder gewählt, Kante 0,102–0,103, Deckung 0,97).
+                                    const _stufeA = _Ta
+                                        .log2(
+                                            _gpX
+                                                .min(_gpY)
+                                                .max(_gpX.max(_gpY).div(_Ta.float(_at.map.anisotropy)))
+                                                .max(_Ta.float(1e-6))
+                                        )
+                                        .add(this._ditherIGN(_Ta, 4))
+                                        .floor()
+                                        .max(0.0);
+                                    const _probeM = (uv) =>
+                                        _at.mapNode
+                                            .sample(this._laubVersatz(_Ta, uv, _gX, _gY))
+                                            .depth(_schicht)
+                                            .level(_stufeA);
+                                    const _liesA = (z) => _Ta.mix(_probeM(z.uv), _kubisch(_at.mapNode, z), _kubW);
                                     // vormultipliziert: außerhalb des Bilds seines Rings ist die Karte leer (0 = durchsichtig)
-                                    const _samp = _Ta
-                                        .mix(_liesA(_at.mapNode, _zA), _liesA(_at.mapNode, _zB), _fb)
-                                        .mul(_imRing);
+                                    const _samp = _Ta.mix(_liesA(_zA), _liesA(_zB), _fb).mul(_imRing);
                                     // die Deckung an der Codec-Schwelle (alphaTest unten); ihre Probe trägt den Versatz des Laubs
-                                    // (`_probeA` über `_laubVersatz`, A3) wie jede Karte der Klasse
+                                    // (`_probeM` über `_laubVersatz`, A3) wie jede Karte der Klasse
                                     _alpha = _samp.a;
                                     // fin-Einblendung des Billboards aus der EINEN Quelle `__phytoCore.lodCrossfadeMask` lod=2 (via
                                     // `_lodCrossfadeMaskNode`); Distanz = Fragment-Anker-Peilung (√_hl2), Sichthöhe = der Stempel
@@ -1326,10 +1350,10 @@ class AnazhRealm_stoff_material {
                                     //    vom Licht abgewandte Krone las die Sicht ihrer eigenen Seite (Radeon, Messort dorf: die
                                     //    Tanne unter dem Mond der Uhr 0,05 stand 1,234 × über ihrer Gestalt, jetzt 1,028).
                                     const _SZ = AnazhRealm.KARTE_SONNEN_SICHT;
-                                    const _beide = (tex) => _Ta.mix(_probeA(tex, _uvA), _probeA(tex, _uvB), _fb);
-                                    const _lP = _beide(_at.lmapNode);
+                                    const _beide = (lies) => _Ta.mix(lies(_uvA), lies(_uvB), _fb);
+                                    const _lP = _beide((uv) => _probeA(_at.lmapNode, uv));
                                     const _kod = _vm
-                                        ? _lP.div(_beide(_at.mapNode).a.max(_Ta.float(1e-3))).min(_Ta.vec4(1.0))
+                                        ? _lP.div(_beide(_probeM).a.max(_Ta.float(1e-3))).min(_Ta.vec4(1.0))
                                         : _lP;
                                     const _feld = _kod
                                         .mul(_Ta.vec4(..._SZ.spanne.map(([a, b]) => b - a)))
