@@ -489,6 +489,11 @@ class AnazhRealm_dirigent_regler {
         } catch (_e) {
             /* Privacy-Modus */
         }
+        // DER NULL-RENDERER ZEICHNET NICHT (w27-ferne-ton-5): seine Welt fragt kein Gerät — ihr Umfang (Ring, Schatten) ist der der
+        // vollen Welt, wie ihn jede Linse ohne Bild misst. Bis hierher fragte die Wahl den WebGL2-Rückfall des Browsers: Chrome 148
+        // (die CI) reicht unter --disable-gpu keinen (→ „voll", Ring 4), Chromium 153 reicht swiftshader (→ „kienspan", Ring 2) —
+        // derselbe Kopf maß gate:koerper-stand K7 mit 459 statt 1 906 Büscheln und gate:wasser-leben K10 mit 8 statt 178 Proben.
+        if (this._nullRendererGewaehlt()) return "voll";
         // Gefragt wird das Gerät, das WIRKLICH zeichnet (K67): der WebGPU-Adapter, wenn die Welt ihn bekommt — sonst der
         // WebGL2-Rückfall (r184 fällt ohne Adapter und unter dem forceWebGL-Hook auf GL), dessen Renderer-String. Vorher
         // fragte die Wahl nur den Adapter: auf dem Rückfall antwortete keiner, und eine Software-GL (swiftshader) fuhr

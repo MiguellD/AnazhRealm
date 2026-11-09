@@ -399,6 +399,7 @@ function chunkAntwort(mesh, lod, cx, cz) {
             aFarbeZiel: grob ? mesh.colors : mesh.farbeZiel,
             aSchutt: mesh.schutt,
             aMulde: mesh.mulde,
+            aStoff: mesh.stoff,
         },
         mesh.indices,
         { tri: mesh.hTri, n: mesh.hN },
@@ -419,6 +420,9 @@ function chunkAntwort(mesh, lod, cx, cz) {
         normals: mesh.normals.buffer,
         indices: mesh.indices.buffer,
         colors: mesh.colors.buffer,
+        // der Stoff des Grunds je Vertex (je drei Zahlen: Deckung · Nässe · frei; w26-ferne-ton-4, w27-ferne-ton-5): der Main
+        // rastert mit der Deckung die Karte einer vorläufigen Gestalt (`_bodenKarteNaht`), der Satz reicht ihn dem Fragment (aStoff)
+        stoff: mesh.stoff.buffer,
         // der Stoff (K17-2): Himmels-Sicht und Schutt je Vertex, die Feuchte des Mooses je Netz
         himmel: mesh.himmel.buffer,
         schutt: mesh.schutt.buffer,
@@ -531,6 +535,7 @@ function bodenHalten(a, cx, cz, lod) {
         t: kopieF(a.morphZiel),
         nrm: kopieF(a.normals),
         col: kopieF(a.colors),
+        st: kopieF(a.stoff),
         him: kopieF(a.himmel),
         sch: kopieF(a.schutt),
         mul: kopieF(a.mulde),
@@ -597,18 +602,21 @@ function bodenKarteNaht(r, lage, art) {
     const BK = state.bodenKarte;
     const ref = art === "karte" ? lage : new Float32Array(lage);
     const alt = r[art];
+    // das Grün der Lage liest die Deckung des Stoffs (w26-ferne-ton-4) — fail-closed: ein Netz ohne sie trüge eine Karte ohne Wiese
+    if (art === "karte" && !(r.st && r.st.length === r.P.length))
+        throw new Error(`bodenKarteNaht(${r.cx},${r.cz}): das Netz trägt keinen Stoff des Grunds (st)`);
     const k =
         r.idx.length < 3
             ? null
             : G.bodenKarte(
                   ref,
                   r.idx,
-                  art === "karte" ? r.col : null,
+                  art === "karte" ? r.st : null,
                   r.cx,
                   r.cz,
                   voxelChunkConfig(r.lod),
                   BK.teilung,
-                  BK.gruenSchwelle,
+                  BK.wache,
                   alt,
                   r.naht,
                   !!alt
@@ -662,6 +670,7 @@ function bodenTeil(r, nachbar, gm, teile) {
                         aFarbeZiel: B.FZ,
                         aSchutt: B.SC,
                         aMulde: B.MU,
+                        aStoff: B.ST,
                     },
                     B.I,
                     null,
@@ -1334,7 +1343,8 @@ function applyStateSnapshot(snap) {
     // DER ERDBAU DER ORTE (K10): die Splat-Liste des Mains (`_erdbauRoh`), hier in die Normalform des Gesetzbuchs gelegt
     if (snap.erdbau !== undefined) state.erdbau = G.erdbauNormal((state.erdbauRoh = snap.erdbau));
     if (snap.felsStoff) state.felsStoff = snap.felsStoff;
-    // DIE BODEN-KARTE (w4-b-boden): Teilung und Wiesen-Wache des Stamms (`BODEN_KARTE_TEILUNG`, `TERRAIN_GEOLOGY`) — dieselben Zahlen
+    // DIE BODEN-KARTE (w4-b-boden): Teilung und Wiesen-Wache des Stamms (`BODEN_KARTE_TEILUNG`, `WIESEN_GRUND.schwelle` über der
+    // Deckung) — dieselben Zahlen
     if (snap.bodenKarte) state.bodenKarte = snap.bodenKarte;
     // DIE FORMEN DES BODEN-SATZES (w4-b-boden2): je gepacktem Attribut [Name, Breite, Vertex-Form, Skalar der 4. Komponente] —
     // dieselben, mit denen der Satz des Mains packt (`BODEN_SATZ_ATTR`, `_satzForm`)
@@ -3014,15 +3024,21 @@ function gradientNormals(positions, density, ox, oy, oz, step, Nx, Ny, Nz) {
 // Per-Vertex-Field-Colors (Mirror von _attachVoxelFieldColors)
 // =============================================================================
 
-function attachFieldColors(positions) {
+// `stoff` (optional, Float32Array, je Vertex drei): die Deckung des Stoffs (w26-ferne-ton-4), die die Boden-Karte rastert, und
+// die Nässe des Grunds (w27-ferne-ton-5) — das Boden-Fragment liest beide (aStoff)
+function attachFieldColors(positions, stoff) {
     const n = positions.length / 3;
     const colors = new Float32Array(n * 3);
     const c = BODEN_FARBE_TMP;
     for (let i = 0; i < n; i++) {
-        bodenFarbe(positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2], c);
+        bodenFarbe(positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2], c, undefined, BODEN_DECKUNG_TMP);
         colors[i * 3] = c[0];
         colors[i * 3 + 1] = c[1];
         colors[i * 3 + 2] = c[2];
+        if (stoff) {
+            stoff[i * 3] = BODEN_DECKUNG_TMP.deckung;
+            stoff[i * 3 + 1] = BODEN_DECKUNG_TMP.nass;
+        }
     }
     return colors;
 }
@@ -3033,8 +3049,11 @@ function attachFieldColors(positions) {
 // \`flussAbdruck\`). Die Palette und der Wiesen-Grund kommen vom Main (Schnappschuss \`bodenPalette\` · \`wiesenGrund\`) —
 // ohne sie färbt der Faden nicht (laut, kein stiller Ersatz). Die Sichtbarkeit der Feuchte und die Flechte sind hardkodiert
 // (V17.100-Lehre: bit-Vertrag mit \`AnazhRealm.FEUCHTE\` · \`AnazhRealm.LICHEN\`, bei Änderung beide mit-ziehen).
+// `out` = [r, g, b]; `aus` (optional) nimmt `deckung`, die Deckung des Stoffs (`WIESEN_GRUND.deckung`, w26-ferne-ton-4), und
+// `nass`, den Anteil des nassen Grunds (w27-ferne-ton-5, wie `_bodenFarbeAt`)
 const BODEN_FARBE_TMP = new Float64Array(3);
-function bodenFarbe(x, y, z, out, fussM) {
+const BODEN_DECKUNG_TMP = { deckung: 0, nass: 0 };
+function bodenFarbe(x, y, z, out, fussM, aus) {
     const P = state.bodenPalette;
     if (!P) throw new Error("bodenFarbe: die Boden-Palette fehlt im Worker-Zustand (bodenPalette)");
     const WG = state.wiesenGrund;
@@ -3048,22 +3067,32 @@ function bodenFarbe(x, y, z, out, fussM) {
     const sandNoise = state.noise;
     const f = worldFieldAt(x, z);
     const c = [P.rock[0], P.rock[1], P.rock[2]];
-    const mix = (target, t) => {
+    // DIE DECKUNG (w26-ferne-ton-4): der Stoff jeder Klasse trägt seine Narbe, gemischt mit dem Gewicht seiner Farbe
+    const DK = WG.deckung;
+    if (!DK) throw new Error("bodenFarbe: die Deckung des Bodens (wiesenGrund.deckung) fehlt im Worker-Zustand");
+    let d = DK.rock;
+    let n = 0; // der Anteil des nassen Grunds (w27-ferne-ton-5): jede Klasse über ihm nimmt ihn mit ihrem Gewicht
+    const mix = (target, t, dk) => {
         c[0] += (target[0] - c[0]) * t;
         c[1] += (target[1] - c[1]) * t;
         c[2] += (target[2] - c[2]) * t;
+        if (dk !== undefined) {
+            d += (dk - d) * t;
+            n -= n * t;
+        }
     };
-    mix(P.mead, ss(0.25, 0.85, f.lebendig));
+    mix(P.mead, ss(0.25, 0.85, f.lebendig), DK.mead);
     // DER BODEN ATMET: nach earth, vor lava/snow/sed/strand; y ist die Oberfläche
     const feuchte = feuchteAt(x, z, y, fussM);
-    mix(P.wet, ss(0.3, 0.85, feuchte));
+    mix(P.wet, ss(0.3, 0.85, feuchte), DK.wet);
+    n += ss(0.3, 0.85, feuchte);
     // Kein Kronendach im Vertex (wie Main, 06.10.): die Streu unter den echten Kronen legt der Boden-Stoff auf.
     let lichenCluster = (sandNoise.noise2D(x * 0.04 + 7.7, z * 0.04 - 3.3) + 1) * 0.5;
     const oktav = fussM > 0 ? self.__phytoCore.forestOktavMittel : null;
     if (oktav) lichenCluster += (0.5 - lichenCluster) * oktav(fussM, 1 / 0.04); // das Simplex-Mittel ist 0,5
     const lichenMix = ss(0.5, 0.9, feuchte) * ss(0.5, 0.85, f.dichte || 0) * lichenCluster * 0.22;
-    mix(P.flechte, lichenMix);
-    mix(P.basalt, ss(0.48, 1.02, f.glut) * 0.65); // dunkles Basalt, gekappt
+    mix(P.flechte, lichenMix, DK.flechte);
+    mix(P.basalt, ss(0.48, 1.02, f.glut) * 0.65, DK.basalt); // dunkles Basalt, gekappt
     // Der Magie-Akzent in Flecken.
     let magieFleck = ss(0.6, 0.85, (sandNoise.noise2D(x * 0.09 + 3.1, z * 0.09 - 8.7) + 1) * 0.5);
     if (oktav) magieFleck += (fleckMittel(sandNoise) - magieFleck) * oktav(fussM, 1 / 0.09);
@@ -3071,7 +3100,7 @@ function bodenFarbe(x, y, z, out, fussM) {
     // Die Schneegrenze ist Gesetz (gelaende-core \`schnee\`) und liest den Pegel (der Versatz des Mains, stoffe.K3-2).
     if (!Number.isFinite(state.schneeVersatz))
         throw new Error("bodenFarbe: der Versatz der Schneegrenze fehlt (schneeVersatz)");
-    mix(P.schnee, G.schnee(state, y, x, z, state.schneeVersatz));
+    mix(P.schnee, G.schnee(state, y, x, z, state.schneeVersatz), DK.schnee);
     // Schlick und Strand über beiden Bezügen: See/Meer voll, der Fluss mit seiner Kronen-Blende; mit fussM trägt jedes
     // Fluss-Band das Mittel seiner Kronen-Blende über die Fläche (\`flussAbdruck\`, je Segment sein Spiegel).
     const uf = { see: 0, fluss: null, ufer: 0 };
@@ -3080,15 +3109,23 @@ function bodenFarbe(x, y, z, out, fussM) {
     const aboveWater = y - uf.see;
     const aboveFluss = !ab && uf.fluss !== null ? y - uf.fluss : null;
     let schlick = ss(-0.5, -4, aboveWater);
-    if (aboveFluss !== null) schlick = Math.max(schlick, uf.ufer * ss(-0.5, -4, aboveFluss));
+    // die Narbe endet am Spiegel (w27-ferne-ton-5, wie `_bodenFarbeAt`): die Deckung fällt vom Spiegel bis 0,5 m Tiefe auf die des Schlicks
+    let unterWasser = ss(0, -0.5, aboveWater);
+    if (aboveFluss !== null) {
+        schlick = Math.max(schlick, uf.ufer * ss(-0.5, -4, aboveFluss));
+        unterWasser = Math.max(unterWasser, uf.ufer * ss(0, -0.5, aboveFluss));
+    }
     const imStrand = (a) => a !== null && a > -1.3 && a < 2.5;
     let flussStrand = false;
     if (ab)
         for (let i = 0; i < ab.n; i++) {
             schlick = Math.max(schlick, ab.mu[i] * ss(-0.5, -4, y - ab.sp[i]));
+            unterWasser = Math.max(unterWasser, ab.mu[i] * ss(0, -0.5, y - ab.sp[i]));
             if (ab.mu[i] > 0 && imStrand(y - ab.sp[i])) flussStrand = true;
         }
     mix(P.sediment, schlick);
+    d += (DK.sediment - d) * unterWasser;
+    n -= n * unterWasser;
     if (imStrand(aboveWater) || (uf.ufer > 0 && imStrand(aboveFluss)) || flussStrand) {
         const widthNoise = (sandNoise.noise2D(x * 0.0018, z * 0.0018) + 1) * 0.5;
         const intenseNoise = (sandNoise.noise2D(x * 0.0034 + 17, z * 0.0034 - 9) + 1) * 0.5;
@@ -3099,15 +3136,15 @@ function bodenFarbe(x, y, z, out, fussM) {
             let shoreBlend = glocke(aboveWater);
             if (aboveFluss !== null) shoreBlend = Math.max(shoreBlend, uf.ufer * glocke(aboveFluss));
             if (ab) for (let i = 0; i < ab.n; i++) shoreBlend = Math.max(shoreBlend, ab.mu[i] * glocke(y - ab.sp[i]));
-            mix(P.sand, shoreBlend * intensity);
+            mix(P.sand, shoreBlend * intensity, DK.sand);
         }
     }
     // die PFADE: die Fluss-Bänke als getrampelte, gepackte Erde
     const pathF = pathFieldAt(x, z, y, fussM);
-    if (pathF > 0.01) mix(P.dirt, pathF * 0.6);
+    if (pathF > 0.01) mix(P.dirt, pathF * 0.6, DK.dirt);
     // DER WIESEN-GRUND (K53): wo die Wache Grün sagt, deckt das Mittel des Halms den Grund; die Fläche, die den Fleck nicht
-    // auflöst (\`fussM\`), trägt sein Mittel.
-    const gruen = ss(0, WG.schwelle, c[1] - 0.5 * (c[0] + c[2]));
+    // auflöst (\`fussM\`), trägt sein Mittel. Die Wache liest die Deckung des Stoffs, nie den Ton (w26-ferne-ton-4).
+    const gruen = ss(0, WG.schwelle, d);
     if (gruen > 0) {
         let fleck = (sandNoise.noise2D(x * 0.13 + 5.3, z * 0.13 - 2.9) + 1) * 0.5;
         if (oktav) fleck += (0.5 - fleck) * oktav(fussM, WG.rauschM);
@@ -3116,6 +3153,11 @@ function bodenFarbe(x, y, z, out, fussM) {
     out[0] = c[0];
     out[1] = c[1];
     out[2] = c[2];
+    // die Deckung (vor dem Fels-Stoff des Netzes): der Chunk trägt sie je Vertex (`attachFieldColors`)
+    if (aus) {
+        aus.deckung = d;
+        aus.nass = n;
+    }
     return out;
 }
 
@@ -3600,7 +3642,7 @@ function stufeZielNetz(fein, feinNormal, feinFarbe, ox, oy, oz, grobLod) {
     const nV = lage.length / 3;
     const himmel = G.himmelsSicht(iU, Int32Array.from(triZelle), nV, gs);
     const FS = state.felsStoff;
-    G.felsStoff(state, FS.basis, FS.netz, lage, normalen, iU, himmel, farben, nV, feuchteAt);
+    G.felsStoff(state, FS.basis, FS.netz, lage, normalen, iU, himmel, farben, nV, feuchteAt, null); // das Ziel trägt keine Karte mit Grün
     return G.stufeZiel(fein, lage, iU, gs, [
         { fein: feinNormal, grob: normalen, einheit: true },
         { fein: feinFarbe, grob: farben },
@@ -3661,7 +3703,9 @@ function buildChunkMesh(cx, cz, lod, saat = null) {
     // (maxDelta ~1.19e-7, der Float32-Epsilon). Float32-First erzwingt
     // identische Eingangs-Werte für die Color-Mix-Pipeline.
     const positionsF32 = new Float32Array(positions);
-    const colors = attachFieldColors(positionsF32);
+    // DIE DECKUNG JE VERTEX (w26-ferne-ton-4): der Stoff der Narbe, den die Boden-Karte rastert — der Fels-Stoff nimmt sie am Hang
+    const stoff = new Float32Array(positionsF32.length);
+    const colors = attachFieldColors(positionsF32, stoff);
     // DER STOFF ENTSTEHT, WO DAS NETZ ENTSTEHT (K17-2): Himmels-Sicht, Fels-Stoff (in `colors`) und Schutt aus dem EINEN
     // Gelände-Kern — derselbe Code wie im Sync-Bau des Mains (`_felsStoff`), der Main setzt nur die Attribute. Bis K17-2 rechnete
     // der Main ihn je Chunk nach (Mess-Wiese Σ 59,4 ms je Ring).
@@ -3681,7 +3725,8 @@ function buildChunkMesh(cx, cz, lod, saat = null) {
         himmel,
         colors,
         nV,
-        feuchteAt
+        feuchteAt,
+        stoff
     );
     // DIE BODEN-KARTE ENTSTEHT, WO DAS NETZ ENTSTEHT (w4-b-boden): gelaende-core `bodenKarte` über der FERTIGEN Lage und Farbe
     // (nach dem Stein unter Fels), dieselbe Rechnung wie der Sync-Bau des Stamms (`_bodenKarteAusMesh`) — der Main setzt sie nur
@@ -3689,7 +3734,7 @@ function buildChunkMesh(cx, cz, lod, saat = null) {
     // ~4,5 ms je Chunk, GTX `_bodenKarteAusMesh` 176 ms Selbstzeit bis zum Bild).
     const BK = state.bodenKarte;
     if (!BK) throw new Error("buildChunkMesh: die Boden-Karte fehlt im Worker-Zustand (bodenKarte)");
-    const karte = G.bodenKarte(positionsF32, indicesU32, colors, cx, cz, cfg, BK.teilung, BK.gruenSchwelle, null, null);
+    const karte = G.bodenKarte(positionsF32, indicesU32, stoff, cx, cz, cfg, BK.teilung, BK.wache, null, null);
     // DIE MULDE ENTSTEHT, WO DAS NETZ ENTSTEHT (wetter.K2): gelaende-core `muldeEcken` — die Senke des Gesetzes je Vertex, in der
     // der Regen als Pfütze steht; das Gedächtnis des Gitters teilt der Faden über seine Netze (`muldeMemo`)
     const mulde = G.muldeEcken(state, positionsF32, nV, lod, muldeMemo);
@@ -3702,7 +3747,7 @@ function buildChunkMesh(cx, cz, lod, saat = null) {
     // DIE KARTE DES ZIELS (K51-2, w4-b-boden): die Boden-Karte der Morph-Ziele (ohne Grün, wie `_bodenStufeMisch` sie liest) —
     // der Main rastert danach nur, was ein Naht-Morph oder ein Edit an den Zielen bewegt
     const karteZiel = stufe
-        ? G.bodenKarte(stufe.ziel, indicesU32, null, cx, cz, cfg, BK.teilung, BK.gruenSchwelle, null, null)
+        ? G.bodenKarte(stufe.ziel, indicesU32, null, cx, cz, cfg, BK.teilung, BK.wache, null, null)
         : null;
     // V9.93 (Wasser-LOD-Naht-Heilung): Wasser-Cells IMMER LOD 0 für naht-
     // freie Wasseroberflächen über LOD-Boundaries hinweg. Für LOD-0-Chunks
@@ -3745,6 +3790,7 @@ function buildChunkMesh(cx, cz, lod, saat = null) {
         indices: indicesU32,
         normals,
         colors,
+        stoff,
         himmel,
         schutt: fels.schutt,
         felsFeuchte: fels.feuchte,
@@ -4056,7 +4102,9 @@ function fernFarbeTeile(x, y, z, out, fuss, fussM, schutt, jahr) {
         g += w[i] * L[i][1];
         b += w[i] * L[i][2];
     }
-    const k = summe > 0 ? S / summe : 0;
+    // das Laub ist das Kronendach aus dem Spektrum (der Auftrag trägt es je Art, `_fernKroneArt`), die kahle Rinde trägt die
+    // Selbstbeschattung der Krone (`kronenSchatten`)
+    const k = summe > 0 ? 1 / summe : 0;
     out[3] = r * k;
     out[4] = g * k;
     out[5] = b * k;
@@ -4085,9 +4133,9 @@ function fernFarbeTeile(x, y, z, out, fuss, fussM, schutt, jahr) {
         jahr[1] = dg * k;
         jahr[2] = db * k;
         jahr[3] = summe > 0 ? dw / summe : 0;
-        jahr[4] = rr * k;
-        jahr[5] = rg * k;
-        jahr[6] = rb * k;
+        jahr[4] = rr * k * S;
+        jahr[5] = rg * k * S;
+        jahr[6] = rb * k * S;
         jahr[7] = 0;
     }
     return out;

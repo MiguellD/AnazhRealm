@@ -3266,7 +3266,9 @@ AnazhRealm.CHUNK_SATZ_VERDICHTEN = Object.freeze({ luft: 1.25, schwelle: 1.5, st
 // behält seine Float32-Arrays für jeden CPU-Leser; der Geomorph der Stufe bringt Normale und Stoff-Farbe des Ziels
 // (`aNormalZiel` snorm8x4, `aFarbeZiel` float16x4); die vierte Komponente trägt je einen Skalar des Chunks (die Mulde des
 // Gesetzes in der Normale, gelaende-core `muldeEcken` — wetter.K2, die Pfütze; Morph-Code in der Farbe, Himmels-Sicht im
-// Normal-Ziel, Schutt im Farb-Ziel) — 48 B je Vertex. Leser: der Satz (`_chunkSatzArt`) und der
+// Normal-Ziel, Schutt im Farb-Ziel); dazu DER STOFF DES GRUNDS (w27-ferne-ton-5, `aStoff` snorm8x4: die Deckung der Narbe ·
+// die Nässe des Grunds · frei — je 0 … 1 auf 127 Stufen; das Boden-Fragment liest aus ihm Halm-Relief, Moos und Glanz, bis
+// hierher aus Ton und Luminanz der Albedo) — 52 B je Vertex. Leser: der Satz (`_chunkSatzArt`) und der
 // voxel-worker, der jede Vorlage in DIESEN Formen packt (`_bodenSatzFormen`, gelaende-core `satzVorlage`, w4-b-boden2).
 AnazhRealm.BODEN_SATZ_ATTR = Object.freeze([
     ["position", 3],
@@ -3275,6 +3277,7 @@ AnazhRealm.BODEN_SATZ_ATTR = Object.freeze([
     ["aMorphTarget", 3],
     ["aNormalZiel", 3, "snorm8", "aHimmel"],
     ["aFarbeZiel", 3, "half", "aSchutt"],
+    ["aStoff", 3, "snorm8"],
 ]);
 
 // DER ANKER DER REIHE IM BÜNDEL (1310-9): ab diesem Weg des Auges stellen die Bündel ihre Kinder neu nach Abstand (je

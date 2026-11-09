@@ -2798,14 +2798,13 @@ hauptLauf(async () => {
                                     if (Math.abs(hub) <= 0.25) continue;
                                     wand++;
                                     // K66, Prüfung 2: die Halme der Wand — die Nah-Wiese wächst nach dem Grün-Kanal der Boden-Karte
-                                    // (`_bodenKarteAusMesh`: die Wiesen-Wache `gruenSchwelle` über der FERTIGEN Vertex-Farbe), die
+                                    // (`_bodenKarteAusMesh`: die Wiesen-Wache `WIESEN_GRUND.schwelle` über der Deckung des Stoffs je
+                                    // Vertex nach dem Fels-Stoff), die
                                     // Ferne nach `_fernSchuttAt` (Ring, Kronen-Karte, Feld-Pass): Wiese ab dem halben Grün, Ferne ohne Schutt
                                     // — wo das Netz den Stoff der Wand zeigt (Schutt ≥ 0,5) und der Erdbau die Höhe der Ferne bewegt (ohne Detail-Term, wie
                                     // der Ring); die Ferne ist ein Höhenfeld: unter der Kante einer Fläche zeigt sie die Fläche
-                                    const C3 = w.colors;
-                                    let tg = (C3[3 * i + 1] - 0.5 * (C3[3 * i] + C3[3 * i + 2])) / GG.gruenSchwelle;
-                                    tg = tg < 0 ? 0 : tg > 1 ? 1 : tg;
-                                    if (tg * tg * (3 - 2 * tg) >= 0.5) halm++;
+                                    // (die Wache smoothstep(0, schwelle, d) ≥ ½ ⇔ d ≥ ½ · schwelle)
+                                    if (w.stoff[3 * i] >= 0.5 * AnazhRealm.WIESEN_GRUND.schwelle) halm++;
                                     if (
                                         f === null &&
                                         w.schutt[i] >= 0.5 &&

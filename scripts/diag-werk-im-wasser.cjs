@@ -168,6 +168,10 @@ function urteil(b) {
             v.push(`A: Vortrieb nach der Ansaugung — das Tempo steigt von ${m(AN.vA)} auf ${m(AN.vMaxNach)} m/s`);
         if (!(AN.maxTiefe <= AN.dach))
             v.push(`A: der Wagen taucht ${m(AN.maxTiefe)} m tief — über sein Dach (${m(AN.dach)} m)`);
+        // das Rad liest den Strand seines Anlaufs (die Wiese darüber senkt μ nur, er trägt keinen Weg): `_fahrHaft` über `_strandAt`
+        const AA = AN.anlauf || {};
+        if (!(AA.mu <= AA.soll + 0.02)) v.push(`A: der Anlauf (Sand ${m(AA.sand)}) greift mit μ ${m(AA.mu)}, sein Strand trägt ${m(AA.soll)}`);
+        if (!(AA.nass < 0.1)) v.push(`A: der Seegrund trägt Grün ${m(AA.nass)} — die Narbe endet am Spiegel`);
         if (!(AN.kameraUnter <= S.kameraUnter))
             v.push(`A: die Verfolger-Kamera steht in ${AN.kameraUnter} Frames unter dem Spiegel`);
         const AD = AN.damm;
@@ -887,6 +891,15 @@ async function probe(A) {
                 }
                 if (tief === null) throw new Error(`die Rampe erreicht in 40 m nicht ${A.ansaugTief} m Wasser`);
                 const rampe = { x: px, z: pz, ux, uz, tief, steigung: +((A.ansaugTief - t0) / tief).toFixed(3) };
+                // DER ANLAUF ALS STOFF (w27-ferne-ton-5), 8 m vor dem Wasser: der Strand (`_strandAt`) und μ des Rads trocken
+                // (`_fahrHaft`) gegen die Zeile seines Grunds mit dem Sand darüber — die Wand hing am Ton des Sands; dazu das
+                // Grün des gebauten Seegrunds 4 m im Wasser (die Narbe endet am Spiegel: dort bremste das Rad wie auf Gras)
+                const [an, nass] = [{ x: px - ux * 8, z: pz - uz * 8 }, {}];
+                an.sand = r._strandAt(an.x, an.z, (an.y = hh(an.x, an.z)));
+                const muGrund = r._stoff(r._terrainMaterialAt(an.x, an.z, an.y)).muRad;
+                r._fahrHaft(an);
+                r._bodenSichtAt(px + ux * 4, pz + uz * 4, nass);
+                const anlauf = { sand: an.sand, mu: an._haft.trocken, soll: muGrund + (r._stoff("sand").muRad - muGrund) * an.sand, nass: nass.gruen };
                 const sx = rampe.x - rampe.ux * 26;
                 const sz = rampe.z - rampe.uz * 26;
                 const bahnFrei = () => {
@@ -949,6 +962,7 @@ async function probe(A) {
                 const drei = tA ? nachA.find((p) => p.t >= tA.zeit + 3000) : null;
                 const ansaug = {
                     rampe,
+                    anlauf,
                     ansaug: W.ansaug,
                     dach: W.dach,
                     vA: tA ? tA.v : NaN,
@@ -1843,6 +1857,7 @@ function selbsttest() {
         ansaug: {
             ansaug: 0.72,
             dach: 1.2,
+            anlauf: { sand: 0.8, mu: 0.34, soll: 0.34, nass: 0 },
             vA: 2.96,
             v3: 0,
             vMaxNach: 2.74,
@@ -2008,6 +2023,9 @@ function selbsttest() {
         ],
         ["A Vortrieb", ["ansaug.vMaxNach=", 3.5], /A: Vortrieb nach der Ansaugung/],
         ["A über dem Dach", ["ansaug.maxTiefe=", 2.3], /A: der Wagen taucht 2\.30 m tief/],
+        // der Täter bis w27-ferne-ton-5: der Strand griff wie Erde (das Grün der Deckung 0,15 darüber)
+        ["A Strand als Erde", ["ansaug.anlauf.mu=", 0.66], /A: der Anlauf \(Sand 0\.80\) greift mit μ 0\.66/],
+        ["A Wiese unter Wasser", ["ansaug.anlauf.nass=", 0.77], /A: der Seegrund trägt Grün 0\.77/],
         ["A Kamera", ["ansaug.kameraUnter=", 3], /A: die Verfolger-Kamera steht in 3/],
         ["A nie an der Ansaugung", ["ansaug.erreicht=", false], /A LEER: das Wasser erreichte/],
         [

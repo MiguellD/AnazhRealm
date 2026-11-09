@@ -12,8 +12,15 @@
 //                 tragen GPU-Bytes und CPU-Leser Erde und die Wiesen-/Streu-Kachel darüber fällt; abgebaut über den
 //                 echten Abbau (`removeArchitecture`) sind die Bytes sofort leer und gehen hoch, der CPU-Leser liest 0,
 //                 die Kacheln fallen (der nächste Takt lässt Wiese und Nah-Streu zurückwachsen)
-// --selftest: ein injizierter Boden-Streifen im Pool, eine harte Kante, der vergessliche ferne Umzug und der alte
-// Abbau der Trittfläche müssen beim Namen rot werden.
+//   9 TON      die Deckung der Wiese ist ein Feld des Gesetzes (der Stoff, `WIESEN_GRUND.deckung`), die Farbe ihr Leser
+//              (w26-ferne-ton-4): derselbe Boden in zwei Tönen des Wiesen-Grunds (`BODEN_FARBE.mead` 0x3e5026 ↔ 0x55632f, der
+//              Faden im Stand) — die 3 × 3 Chunks um den Spieler, je Ton gebaut im Faden (`chunk-mesh`) und im Haupt-Faden
+//              (`_buildVoxelChunkData`): Deckung je Vertex und Grün der Boden-Karte byte-gleich; mit der Karte des Haupt-Fadens
+//              lesen Haftung (`_fahrHaft`), Schritt (`_kontaktStoffAt`) und Wuchs der Nah-Wiese (`_nahWieseKachelBueschel`)
+//              dasselbe. Die Farbe der Vertices MUSS sich ändern (sonst wirkt der Ton nicht, die Probe wäre blind).
+// --selftest: ein injizierter Boden-Streifen im Pool, eine harte Kante, der vergessliche ferne Umzug, der alte
+// Abbau der Trittfläche und die Deckung aus dem Ton (g − (r+b)/2 der Farbe, die Wache bis w26-ferne-ton-4) müssen beim Namen
+// rot werden.
 //   node scripts/diag-weg-boden.cjs [--selftest]
 
 const { statikServer, hauptLauf, SELBSTTEST, nullWelt } = require("./lib/welt-boot.cjs");
@@ -269,6 +276,55 @@ function trittProbe(stoerung) {
     return out;
 }
 
+// 9 TON: zwei Töne des Wiesen-Grunds, je Ton der Boden der 3 × 3 Chunks im Faden und im Haupt-Faden und seine Leser —
+// `farbe`: die Deckung liest den Ton (der Täter vor w26-ferne-ton-4, als Laufzeit-Stub am Haupt-Faden). → je Größe die
+// Zahl der Stellen, die der Ton ändert; `farbe` die der Vertex-Farben (sie MUSS sich ändern). Den Spiegel Faden ↔ Haupt-Faden
+// (Deckung, Karte, Farbe am fertigen Bau) hält der Playtest (`checkBandWellePerf3cPhase3FullMesh`, das Merge-Gate) — bis
+// w27-ferne-ton-5 zählte ihn diese Probe ein zweites Mal
+async function tonProbe(farbe) {
+    const [A, P, basis, span] = [AnazhRealm, r.constructor.prototype, AnazhRealm.BODEN_FARBE, r._voxelChunkConfig(0).span];
+    const [c0x, c0z] = [st.playerMesh.position.x, st.playerMesh.position.z].map((v) => Math.floor(v / span));
+    const C = [-1, 0, 1].flatMap((i) => [-1, 0, 1].map((j) => [c0x + i, c0z + j, st.voxelChunks.get(c0x + i + "," + (c0z + j))]));
+    if (C.some(([, , E]) => !(E && E.surfMap && E.gruenMap))) return { fehler: "die 3 × 3 Chunks um den Spieler tragen keine Karte" };
+    const zu = [];
+    if (farbe) zu.push(leihe(r, { _bodenFarbeAt(x, y, z, o, aus) { P._bodenFarbeAt.call(this, x, y, z, o, aus); if (aus) aus.deckung = (o[1] - (o[0] + o[2]) / 2) / 0.0651; return o; } })); // prettier-ignore
+    const messe = async (hex) => {
+        Object.defineProperty(A, "BODEN_FARBE", { value: { ...basis, mead: A._srgbHexLinear(hex) }, configurable: true });
+        await r._voxelWorkerSyncState({ op: "state-set" });
+        const M = { faden: [], haupt: [], farbe: [], haft: [], wuchs: [] };
+        for (const [cx, cz, E] of C) {
+            const w = await r._voxelWorkerComputeChunkMesh(cx, cz, E.lod || 0);
+            const frei = leihe(r, { _syncStelle: "naht" });
+            const g = r._buildVoxelChunkData(cx, cz, E.lod || 0);
+            frei();
+            M.faden.push(...w.karte.gruen, ...w.stoff);
+            M.haupt.push(...g.gruenMap, ...g.mesh.geometry.attributes.aStoff.array);
+            M.farbe.push(...w.colors, ...g.mesh.geometry.attributes.color.array);
+            zu.push(leihe(E, { gruenMap: g.gruenMap }));
+        }
+        for (let i = 0; i < 72 * 72; i++) {
+            const [x, z] = [(c0x - 1) * span + ((i % 72) + 0.5) * 1.8, (c0z - 1) * span + (Math.floor(i / 72) + 0.5) * 1.8];
+            const y = r._bodenSichtAt(x, z);
+            M.haft.push(y === null ? "-" : r._fahrHaft({ x, z, y }) + r._kontaktStoffAt(x, z, y));
+        }
+        const K = A.NAH_WIESE.kachel;
+        for (let t = 0; t < 64; t++) M.wuchs.push(JSON.stringify((r._nahWieseKachelBueschel(Math.floor((c0x * span) / K) + (t % 8), Math.floor((c0z * span) / K) + (t >> 3)) || []).map((b) => [b.gi, b.gj, b.y, b.s]))); // prettier-ignore
+        while (zu.length > (farbe ? 1 : 0)) zu.pop()();
+        return M;
+    };
+    let a, b;
+    try {
+        [a, b] = [await messe(0x3e5026), await messe(0x55632f)];
+    } finally {
+        while (zu.length) zu.pop()();
+        Object.defineProperty(A, "BODEN_FARBE", { value: basis, configurable: true });
+        await r._voxelWorkerSyncState({ op: "state-set" });
+    }
+    const anders = (x, y) => x.filter((v, i) => v !== y[i]).length;
+    const N = Object.fromEntries(Object.keys(a).map((k) => [k, anders(a[k], b[k])]));
+    return Object.assign(N, { wiese: a.haft.filter((v) => /gras$/.test(v)).length, bueschel: a.wuchs.join("").split("],[").length }); // prettier-ignore
+}
+
 function urteil(S) {
     if (S.fehler) return ["Probe: " + S.fehler];
     const rot = [];
@@ -288,6 +344,13 @@ function urteil(S) {
             `7 BESTAND: nach 1,6 km Ausflug steht die Eintrags-Krone ${S.bestandRegister ? "im" : "NICHT im"} Register, ` +
                 `Streu unter ihr ${S.bestandStreu} (soll > 0,5), ${S.bestandUngleich} Texel ungleich dem vollen Neumalen (soll 0)`
         );
+    const N = S.ton;
+    if (!N || N.fehler) rot.push("9 TON: " + (N ? N.fehler : "nicht gemessen"));
+    else {
+        if (!(N.farbe > 0 && N.wiese > 0 && N.bueschel > 1)) rot.push("9 TON blind: " + JSON.stringify(N));
+        const folgt = ["faden", "haupt", "haft", "wuchs"].filter((k) => N[k] > 0);
+        if (folgt.length) rot.push("9 TON: die Deckung liest die Farbe — " + folgt.map((k) => `${k} ${N[k]}`).join(" · "));
+    }
     const T = S.tritt;
     if (!T) rot.push("8 TRITT: nicht gemessen");
     else if (T.fehler) rot.push("8 TRITT: " + T.fehler);
@@ -323,64 +386,31 @@ hauptLauf(async () => {
         }
     });
     const messen = async (stoerung) =>
-        Object.assign(await page.evaluate(probe, stoerung === "tritt" ? null : stoerung), {
+        Object.assign(await page.evaluate(probe, stoerung === "tritt" || stoerung === "farbe" ? null : stoerung), {
             tritt: await page.evaluate(trittProbe, stoerung === "tritt" ? "tritt" : null),
+            // der Ton fährt nur im heilen Lauf und mit seinem Täter (die anderen Störungen lassen den Boden, wie er ist)
+            ton: stoerung == null || stoerung === "farbe" ? await page.evaluate(tonProbe, !!stoerung) : {},
         });
     const S = await messen(null);
-    let selbst = null;
+    // der Selbsttest: je Störung ihr Befund beim Namen (der Kopf seiner Zeile), danach heilt die Welt
+    const selbst = [];
     if (SELBSTTEST) {
-        const streifen = urteil(await messen("streifen"));
-        const hart = urteil(await messen("hart"));
-        const vergessen = urteil(await messen("vergessen"));
-        const tritt = urteil(await messen("tritt"));
-        const heil = urteil(await messen(null));
-        selbst = {
-            streifenRot: streifen.some((e) => e.startsWith("1 KEIN QUAD")),
-            hartRot: hart.some((e) => e.startsWith("3 KANTE")),
-            vergessenRot: vergessen.some((e) => e.startsWith("7 BESTAND")),
-            trittRot: tritt.some((e) => e.startsWith("8 TRITT gelöst")),
-            heilGruen: heil.length === 0,
-            streifen: streifen[0] || "-",
-            hart: hart.find((e) => e.startsWith("3 KANTE")) || hart[0] || "-",
-            vergessen: vergessen.find((e) => e.startsWith("7 BESTAND")) || vergessen[0] || "-",
-            tritt: tritt.find((e) => e.startsWith("8 TRITT")) || tritt[0] || "-",
-        };
+        // die Störungen: ein Boden-Streifen im Pool · die harte Kante · der ferne Umzug vergisst · der alte Abbau der Trittfläche ·
+        // die Deckung aus dem Ton
+        const FAELLE = { streifen: "1 KEIN QUAD", hart: "3 KANTE", vergessen: "7 BESTAND", tritt: "8 TRITT gelöst", farbe: "9 TON: die Deckung liest die Farbe" };
+        for (const stoerung in FAELLE) selbst.push([stoerung, urteil(await messen(stoerung)).find((e) => e.startsWith(FAELLE[stoerung]))]);
+        selbst.push(["heil", urteil(await messen(null)).length ? null : "grün"]);
     }
     await browser.close();
     server.close();
 
     console.log("=== DIE WEG-KANTEN-PROBE — der Weg ist Boden ===");
-    if (S.fehler) console.log("  " + S.fehler);
-    else {
-        console.log(`  Pool: ${S.flacheStreifen} flache Boden-Streifen · ${S.zaeune} Zaun-Streifen`);
-        console.log(`  Straße: Mitte ${S.mitte} · 2,5 m außerhalb ${S.aussen} · weiche Rand-Proben ${S.kantenProben}`);
-        console.log(`  Platz ${S.platz} · Acker ${S.acker} · Feldweg ${S.feldweg}`);
-        console.log(`  Konsum: Boden-Shader ${S.shaderLiest} · Wiese ${JSON.stringify(S.wiese)}`);
-        console.log(`  Ecke (45°-Acker) ${S.ecke} · Weg in 300 m ${S.fernWeg}`);
-        console.log(
-            `  Kronen-Bestand nach 1,6 km Ausflug: im Register ${S.bestandRegister} · Streu ${S.bestandStreu} · ` +
-                `${S.bestandUngleich} Texel ungleich dem vollen Neumalen`
-        );
-        const T = S.tritt || {};
-        if (T.fehler) console.log("  Trittfläche: " + T.fehler);
-        else
-            console.log(
-                `  Trittfläche gesetzt: CPU ${T.gesetztCpu} · GPU-Byte ${T.gesetztGpu} · ${T.gesetztGefallen}/2 Kacheln neu · ` +
-                    `gelöst: CPU ${T.geloestCpu} · GPU-Byte ${T.geloestGpu} · Upload ${T.geloestUpload} · ` +
-                    `${T.geloestGefallen}/2 Kacheln neu · ${T.formenRest} Formen übrig`
-            );
-    }
+    // DIE ZEILE: jede Zahl jeder Probe (die Urteile nennen den Täter beim Namen)
+    console.log("  " + JSON.stringify(S));
     const rot = urteil(S);
-    if (selbst) {
-        console.log(`  Selbsttest: Boden-Streifen im Pool → ${selbst.streifen}`);
-        console.log(`  Selbsttest: harte Kante → ${selbst.hart}`);
-        console.log(`  Selbsttest: der ferne Umzug vergisst → ${selbst.vergessen}`);
-        console.log(`  Selbsttest: der alte Abbau der Trittfläche → ${selbst.tritt}`);
-        if (!selbst.streifenRot) rot.push("SELBSTTEST: der injizierte Boden-Streifen blieb grün");
-        if (!selbst.hartRot) rot.push("SELBSTTEST: die harte Kante blieb grün");
-        if (!selbst.vergessenRot) rot.push("SELBSTTEST: der vergessene Kronen-Bestand blieb grün");
-        if (!selbst.trittRot) rot.push("SELBSTTEST: der alte Abbau der Trittfläche blieb grün");
-        if (!selbst.heilGruen) rot.push("SELBSTTEST: nach der Heilung nicht grün");
+    for (const [name, fund] of selbst) {
+        console.log(`  Selbsttest: ${name} → ${fund || "-"}`);
+        if (!fund) rot.push(`SELBSTTEST: ${name} — nicht beim Namen`);
     }
     require("./lib/welt-boot.cjs").wandEnde(rot, "der Weg ist getretene Erde im Boden: weich gerändert, kein Quad, die Wiese weicht ihm.");
 });

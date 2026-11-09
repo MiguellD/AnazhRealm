@@ -438,22 +438,23 @@ function weltOrte(art, opts) {
             bahnFrei(x, z, 0, -1, -1, 5, 1) && [0, 1, 2, 3, 4].every((q) => !r._nassAt(x, z - q, 0.1, H(x, z - q)) && r._kontaktStoffAt(x, z - q, H(x, z - q)) === o.stoff) ? {} : null,
         // wiese — das Gesetz der Mess-Wiese (`o.wiese`, Vorgabe die Schwellen des Messorts `__wieseGesetz`): erst Boden (Hang,
         // Nässe), dann Wald, Blick und Horizont; zurück kommt die Messung samt dem besten Blick-Punkt
-        // Die Suche steht vor dem Bau: das Gras liest sie am Gesetz der Boden-Farbe (`_bodenFarbeAt`, aus dem der Chunk jeden
-        // Vertex färbt — dieselbe Wiesen-Wache g − (r+b)/2 wie die Boden-Karte), die gebaute Karte urteilt nach dem Umstellen.
+        // Die Suche steht vor dem Bau: das Gras liest sie am Gesetz des Bodens (`_bodenFarbeAt`, aus dem der Chunk jeden
+        // Vertex färbt — `aus.deckung` die Deckung des Stoffs, dieselbe Wiesen-Wache wie die Boden-Karte, nie der Ton), die
+        // gebaute Karte urteilt nach dem Umstellen.
         wiese: (x, z) => {
             const S = o.wiese || window.__wieseGesetz;
             const b = window.__wieseMessen(r, x, z, null, S, true);
             if (b.fehler || window.__wieseUrteil(b, S).length) return null;
-            const gs = AnazhRealm.TERRAIN_GEOLOGY.gruenSchwelle;
-            const f = [0, 0, 0];
+            const W = AnazhRealm.WIESEN_GRUND.schwelle;
+            const [f, A] = [[0, 0, 0], { deckung: 0 }];
             let g = 0;
             for (let i = 0; i <= 4; i++)
                 for (let k = 0; k < (i ? 8 : 1); k++) {
                     const a = (k / 8) * Math.PI * 2;
                     const px = x + (Math.cos(a) * S.ring * i) / 4,
                         pz = z + (Math.sin(a) * S.ring * i) / 4;
-                    r._bodenFarbeAt(px, r._terrainMacroSurfaceY(px, pz), pz, f);
-                    const t = Math.max(0, Math.min(1, (f[1] - 0.5 * (f[0] + f[2])) / gs));
+                    r._bodenFarbeAt(px, r._terrainMacroSurfaceY(px, pz), pz, f, A);
+                    const t = Math.max(0, Math.min(1, A.deckung / W));
                     g += (t * t * (3 - 2 * t)) / 33;
                 }
             if (g < S.grasMin) return null;

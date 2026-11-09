@@ -76,12 +76,93 @@ const SEASON = {
     uHalm: { value: 1.0 }, // die Gestalt des Halms im Jahr (SAISON_GESETZ `ha`)
 };
 
+// DAS FARB-GESETZ AUS DEM SPEKTRUM (w26-ferne-ton-2, additiv): eine Albedo ist ein Reflexions-Spektrum R(λ), ihre lineare
+// Farbe das Integral unter dem Licht des Tags — CIE 1931 2° × D65 × die sRGB-Matrix (IEC 61966-2-1), je 10 nm von 400 bis
+// 700 nm zu Gewichten gefaltet (`gewichte`, je Kanal auf Σ = 1 genormt: das flache Spektrum 1 ist Weiß; gegen die 1-nm-Rechnung
+// von colour-science 0.4.7, 380–780 nm, auf ±0,0005). Die Spektren: `halm` das Grasblatt im Sommer nach PROSPECT-D (Féret et
+// al. 2017, Remote Sens. Environ. 193:204; N 1,5 · Chlorophyll a+b 35 µg/cm² · Carotinoide 9 µg/cm² · Wasser 0,012 cm ·
+// Trockenmasse 0,005 g/cm²), linear 0,0795/0,1343/0,0317 (die ColorChecker-Kachel „foliage“, BabelColor-Mittel, 0,104/0,150/
+// 0,052); `fels` das mittlere Grau der Geologie (GSA Rock-Color Chart „medium dark gray“, Munsell N4 — neutral, also flach: Y
+// 0,12). Bis hierher stand die Halm-Spitze als Hex der Absicht 0x6f9a3a × 1,08 (linear 0,172/0,349/0,046: Grün 2,6 × das Blatt,
+// Blau 0,13 × Grün statt 0,24) und der Fels warm-grau 0x6b6258 (B/R 0,66) — die Ferne aus Wiese und Fels trug Ton 63°.
+// prettier-ignore
+var FARB_SPEKTRUM = {
+    nm0: 400, schritt: 10,
+    gewichte: [
+        [0.00094, -0.00081, 0.00569],
+        [0.0031, -0.00271, 0.01921],
+        [0.00952, -0.00847, 0.06106],
+        [0.01738, -0.01605, 0.12152],
+        [0.02211, -0.02199, 0.18513],
+        [0.01638, -0.02002, 0.20909],
+        [0.002, -0.01113, 0.19759],
+        [-0.01622, 0.00378, 0.14744],
+        [-0.034, 0.02212, 0.09195],
+        [-0.04626, 0.03894, 0.04655],
+        [-0.06395, 0.06332, 0.02301],
+        [-0.08409, 0.09592, 0.00666],
+        [-0.09202, 0.12621, -0.00582],
+        [-0.08275, 0.14849, -0.01247],
+        [-0.05306, 0.14896, -0.01555],
+        [-0.01275, 0.14233, -0.01673],
+        [0.03749, 0.12203, -0.01572],
+        [0.09189, 0.09541, -0.01366],
+        [0.14827, 0.0674, -0.01133],
+        [0.18192, 0.03569, -0.00808],
+        [0.21113, 0.01315, -0.00587],
+        [0.2105, -0.00236, -0.00394],
+        [0.18169, -0.00939, -0.00249],
+        [0.13234, -0.00987, -0.00144],
+        [0.09392, -0.00837, -0.00085],
+        [0.05728, -0.0056, -0.00046],
+        [0.03354, -0.00344, -0.00025],
+        [0.01827, -0.00192, -0.00013],
+        [0.00932, -0.00099, -6e-5],
+        [0.00403, -0.00043, -3e-5],
+        [0.00207, -0.00022, -1e-5],
+    ],
+    halm: [0.0432, 0.0427, 0.0421, 0.0417, 0.0414, 0.0413, 0.0418, 0.0422, 0.0425, 0.0441, 0.0506, 0.0692, 0.1068, 0.1462, 0.1628, 0.1673, 0.1594, 0.1346, 0.1108, 0.0973, 0.0907, 0.0817, 0.0715, 0.0678, 0.061, 0.0504, 0.0438, 0.0376, 0.0371, 0.0567, 0.1448],
+    // `bestand` die Wiese aus der Ferne: der Halm im Bestand nach 4SAIL (Verhoef et al. 2007, PROSAIL; LAI 2,5 Grasland,
+    // erektophil, Hot-Spot 0,05, über halb hellem, halb feuchtem Boden; Sonne 16° vom Zenit, Blick von oben), sein Blatt zu
+    // 1 − tot das grüne, zu `tot` (WIESEN_FARBE.halm.tot, 0,05) das dürre (PROSPECT-D: N 2 · Chlorophyll 1 · Carotinoide 2 ·
+    // braune Pigmente 0,3 · Wasser 0,002 · Trockenmasse 0,008) — Selbstbeschattung, Lücken, Stroh und Grund liegen im Spektrum
+    bestand: [0.0224, 0.0222, 0.0221, 0.0219, 0.0217, 0.0218, 0.0221, 0.0224, 0.0226, 0.0233, 0.0253, 0.0302, 0.04, 0.0511, 0.0567, 0.0588, 0.0571, 0.0504, 0.0443, 0.0413, 0.04, 0.0381, 0.0359, 0.0354, 0.0341, 0.0317, 0.0305, 0.0292, 0.0295, 0.0351, 0.0594],
+    // `dachLaub` / `dachNadel` das Kronendach des Waldes aus der Ferne nach 4SAIL über dunklem Waldboden (0,15; Sonne 16° vom
+    // Zenit, Blick von oben, LIDF sphärisch, Hot-Spot 0,1): Laubwald das Blatt PROSPECT-D N 1,5 · Chlorophyll 45 · Carotinoide 10 ·
+    // Wasser 0,012 · Trockenmasse 0,009 bei LAI 4,5 (linear 0,0263/0,0525/0,0139); Nadelwald N 1,8 · 70 · 15 · 0,03 · 0,03 bei
+    // LAI 6 (0,0209/0,0402/0,016) — Selbstbeschattung und Lücken der Krone liegen im Spektrum
+    dachLaub: [0.0184, 0.0182, 0.0179, 0.0178, 0.0176, 0.0175, 0.0176, 0.0176, 0.0176, 0.018, 0.0199, 0.0265, 0.0423, 0.0601, 0.0658, 0.0658, 0.0611, 0.0496, 0.0395, 0.0342, 0.0317, 0.0284, 0.0248, 0.0236, 0.0214, 0.0183, 0.0166, 0.0153, 0.0152, 0.0201, 0.0545],
+    dachNadel: [0.0193, 0.0191, 0.0188, 0.0186, 0.0185, 0.0183, 0.0183, 0.0182, 0.0182, 0.0182, 0.019, 0.0227, 0.0334, 0.0462, 0.0499, 0.0494, 0.0457, 0.0374, 0.0302, 0.0266, 0.0249, 0.0227, 0.0205, 0.0197, 0.0185, 0.0169, 0.0161, 0.0156, 0.0156, 0.0177, 0.0404],
+    fels: 0.12,
+    // die Wurzel des Halms im Schatten seines Büschels (emitGrass: die Wurzel 0,6 × das Blatt) — der Wiesen-Grund des Bodens
+    wurzelSchatten: 0.6,
+};
+// R(λ) (je `schritt` ab `nm0`, oder eine Zahl: das flache Spektrum) → linear sRGB
+function spektrumLinear(R) {
+    const G = FARB_SPEKTRUM.gewichte;
+    const c = [0, 0, 0];
+    for (let i = 0; i < G.length; i++) for (let k = 0; k < 3; k++) c[k] += G[i][k] * (typeof R === "number" ? R : R[i]);
+    return c;
+}
+// die sRGB-Absicht (Hex) einer linearen Farbe — der Wert, den die Paletten tragen (FARB-GESETZ: der Leser dekodiert)
+function spektrumHex(c) {
+    const e = (v) => Math.round(255 * Math.min(1, Math.max(0, v <= 0.0031308 ? 12.92 * v : 1.055 * Math.pow(v, 1 / 2.4) - 0.055)));
+    return (e(c[0]) << 16) | (e(c[1]) << 8) | e(c[2]);
+}
+// DIE FARBE DES HALMS aus dem Spektrum: die Spitze ist das Blatt — EINE Quelle für das Gras des Studios (emitGrass) und die
+// Halme der Welt (`AnazhRealm.GRAS_SPITZE`); die Wurzel das Blatt im Schatten des Büschels, als Wiesen-Grund der Boden-Palette
+// (`PORTAL_GROUND.mead`, die Welt `MEADOW_GREEN`)
+var HALM_FARBE = { spitze: spektrumLinear(FARB_SPEKTRUM.halm), bestand: spektrumLinear(FARB_SPEKTRUM.bestand) };
+// DAS KRONENDACH aus dem Spektrum (FARB_SPEKTRUM): die Ferne des Waldes je Typ — Laub wirft, Nadel steht (der Phänotyp der Art)
+var KRONEN_FARBE = { laub: spektrumLinear(FARB_SPEKTRUM.dachLaub), nadel: spektrumLinear(FARB_SPEKTRUM.dachNadel) };
+
 // DIE BODEN-PALETTE des Terrain-Studios — die EINE Boden-Farbe von Labor UND Welt. Jeder Wert ist eine
 // sRGB-ABSICHT (FARB-GESETZ): der Leser dekodiert linear (die Welt in `AnazhRealm.BODEN_FARBE`, das Labor
 // ueber THREE.Color). Lineare Albedo Y in Klammern, gegen die gemessene Natur:
 //   lit      Waldboden = Laubstreu/Humus unter dem Kronendach (0,11; Laubstreu 0,08-0,15) — bis 05.10. ein
 //            dunkles Moos-Gruen 0x2c3621 (0,033): der Studio-Waldkern lag schwarz, die Welt trug ihn nie
-//   mead     Wiesen-Grund (0,11) · dirt Pfad-Erde (0,07) · rock Fels, warm-grau (0,13) · wet nasser Grund (0,045)
+//   mead     Wiesen-Grund = die Wurzel des Halms (HALM_FARBE, 0,07) · dirt Pfad-Erde (0,07) · rock Fels, Munsell N4 (FARB_SPEKTRUM,
+//            0,12) · wet nasser Grund (0,045)
 //   sand     Strand (0,48)
 // Die Welt-Klassen, die das Labor nicht kennt (das Labor ignoriert sie, must-ignore):
 //   schnee   Neuschnee auf der Prominenz (0,86) · basalt Glut-Gestein, die Glut traegt das Emissiv (0,04)
@@ -89,9 +170,9 @@ const SEASON = {
 //   sediment der Seegrund unter Wasser, Schlick (0,15) · flechte die Flechten-Patina auf feuchtem Stein (0,19)
 const PORTAL_GROUND = {
     lit: 0x735a3c,
-    mead: 0x55632f,
+    mead: spektrumHex(HALM_FARBE.spitze.map((x) => x * FARB_SPEKTRUM.wurzelSchatten)),
     dirt: 0x5c4a33,
-    rock: 0x6b6258,
+    rock: spektrumHex(spektrumLinear(FARB_SPEKTRUM.fels)),
     wet: 0x33402a,
     sand: 0xc9b791,
     schnee: 0xebedff,
@@ -103,6 +184,16 @@ const PORTAL_GROUND = {
     // Wiese 0,04–0,08, Jin & Roy 2005)
     asche: 0x45403a,
 };
+// DIE DECKUNG DES BODENS (w26-ferne-ton-4, additiv): je Klasse der Boden-Palette, wie weit ihr STOFF eine Grasnarbe trägt
+// (0 … 1) — das Substrat der Wiese, nie ihre Farbe. Die Welt mischt sie mit DENSELBEN Gewichten wie die Farbe (`_bodenFarbeAt`,
+// der Faden `bodenFarbe`), der Fels-Stoff nimmt sie, wo der Hang, der Schutt oder die Höhle Fels sagt (gelaende-core
+// `felsStoff`); Licht und Feuchte wirken im Gesetz der Bodenschicht (`groundCover`: feuchter Grund trägt MEHR Gras). Die Erde
+// trägt die Narbe — `mead` die lebendige Erde, `wet` der nasse Grund (die Feuchtwiese); Fels, Flechte auf Stein, Glut-Gestein,
+// Schnee, der Schlick unter Wasser, der Strand und die getretene Erde des Pfads tragen keine. Der Magie-AKZENT färbt, er deckt
+// nicht (ohne Eintrag: die Deckung des Grunds bleibt). Bis hierher las die Welt die Narbe aus dem Ton (g − (r+b)/2 der Farbe):
+// der Strand trug 0,61 einer Wiese, die Flechte 1,45, ein Ton der Palette (mead 0x55632f → 0x3e5026) senkte das Grün der Wiese
+// von 0,065 auf 0,046 und mit ihm die Haftung des Rads und den Wuchs der Nah-Wiese.
+const BODEN_DECKUNG = Object.freeze({ mead: 1, wet: 1, rock: 0, flechte: 0, basalt: 0, schnee: 0, sediment: 0, sand: 0, dirt: 0 });
 
 const PORTAL_SKY = {
     top: 0x6a9ed0, // Mittags-Himmel-Top (weiches Dunst-Blau)
@@ -3003,16 +3094,18 @@ function emitFlower(P) {
     return { height: H };
 }
 
-// Die Halm-Spitze: der Saison-Akzent nach dem Farb-Gesetz, linear um GRAS_SPITZE_HELL aufgehellt (emitGrass). Der
-// Stamm liest DIESELBE Zahl fuer die Halme seiner Boden-Wiese (`AnazhRealm.GRAS_SPITZE`, terrain:GRAS_SPITZE_HELL).
-const GRAS_SPITZE_HELL = 1.08;
 // Der Halm-Teppich (K56): Reichweite des Büschels in Einheiten des Understory-Rasters (deriveParamsPlant, Art grass).
 const TEPPICH_REICH = 0.7;
 // DIE WIESEN-FARBE (W1, 16.10.): die Streuung der Wiese als EIN Gesetz für Labor und Welt. (a) je HALM (emitGrass, Vertex-
 // Farbe) aus einem EIGENEN Γ5-Strom (SEED ^ 0x3c6e) — der Gestalt-Strom bleibt byte-gleich: Helligkeit, Farbton gelb- ↔
 // blaugrün, trockene Halme, strohige Spitzen; (b) je BÜSCHEL der Tint `wiesenTint` (Labor `aTintI`, Welt Instanz-Farbe).
+// DER TOTE HALM (w26-ferne-ton-2, additiv): `tot` ist der Anteil vergilbter Blatt-Fläche der Frischwiese im Sommer — EINE Zahl
+// für die Nähe (die Stroh-Gewichte des Halms tragen sie: trockene Halme und strohige Spitzen deckten mit `trockenAnteil`,
+// `trocken`, `spitze` im Mittel `strohFlaeche` 0,1482 der Halm-Fläche, über die Breite des Halms gewogen; sie skalieren auf `tot`)
+// und die Ferne (FARB_SPEKTRUM.bestand: das Blatt des Bestands ist 1 − tot grün, tot dürr). Ein dürrer Halm ist ~3 × so hell
+// wie ein grüner (PROSPECT-D: Y 0,33 gegen 0,115) — gegen das Blatt aus dem Spektrum las der Anteil des Neon-Halms golden.
 const WIESEN_FARBE = Object.freeze({
-    halm: Object.freeze({ hell: [0.72, 1.28], ton: 1.0, trockenAnteil: 0.3, trocken: [0.4, 0.9], spitze: 0.8, stroh: 0.62 }),
+    halm: Object.freeze({ hell: [0.72, 1.28], ton: 1.0, trockenAnteil: 0.3, trocken: [0.4, 0.9], spitze: 0.8, stroh: 0.62, tot: 0.05, strohFlaeche: 0.1482 }),
 });
 // DIE GRASNARBE ALS GESELLSCHAFT (A2, 16.10.): die Farbe eines Büschels ist die seiner ART und seines ALTERS an seinem Ort,
 // nie ein Rauschen. Die Narbe der Frischwiese (Arrhenatherion) mischt ihre Gräser nach dem Standort — je Art eine Glocke um
@@ -3035,8 +3128,14 @@ const WIESEN_ARTEN = Object.freeze({
 const WIESEN_GEWICHT = new Float64Array(WIESEN_ARTEN.arten.length); // die Mischung des Orts (je Ruf neu, ohne Allokation)
 // Der Tint eines Büschels am Welt-Ort (x, z) bei Licht `lit` (1 = offene Wiese) und Feuchte `wet` (0..1): seine Art aus der
 // Mischung des Orts und sein Alter, beide aus dem Γ5-Strom SEINES Orts (dasselbe Büschel trägt bei jedem Besuch dieselbe Art);
-// darüber der Standort des Labor-Tints FIX v27 — Schatten dunkler, hell + trocken wärmeres Oliv, Nässe kühles Grün —, das
-// Licht um die offene Wiese zentriert. Schreibt je Kanal den Faktor in [0, 2] auf die Halm-Farbe nach aus[o..o+2], gibt `aus`.
+// darüber das Licht des Orts (Schatten dunkler, um die offene Wiese zentriert). Schreibt je Kanal den Faktor in [0, 2] auf die
+// Halm-Farbe nach aus[o..o+2], gibt `aus`.
+// DAS MITTEL DES ORTS IST DAS BLATT (w26-ferne-ton-3): Art und Alter streuen die Büschel um die Halm-Farbe aus dem Spektrum
+// (FARB_SPEKTRUM), ihr Erwartungswert am Ort — die Mischung der Arten nach ihren Glocken, das Alter mit E[alt²] = 1/3 — teilt
+// den Faktor, die Nah-Wiese trägt im Mittel das gemessene Blatt. Bis hier lag die offene Wiese (Licht 1, Feuchte 0,3) im Mittel
+// bei Rot × 1,26, Blau × 0,78 — der Glatthafer des Lichts, das Alter und der Standort „hell + trocken wärmer“ (+8 % Rot, −9 %
+// Blau): aus dem Blatt R/G 0,59 las die Wiese oliv. Die Vergilbung des Orts trägt der tote Halm (WIESEN_FARBE.halm.tot).
+// GTX 1050 e9f8151b: die Wiese@0,5 grün statt olivbraun (Luma 42,6), ferne.K1#2 FARBTON 8 km 0,06–2,86°.
 function wiesenTint(x, z, lit, wet, aus, o) {
     const cl = (v, a, b) => Math.max(a, Math.min(b, v));
     const WA = WIESEN_ARTEN,
@@ -3054,13 +3153,15 @@ function wiesenTint(x, z, lit, wet, aus, o) {
     const tr = cl(lit, 0, 1) * (1 - cl(wet, 0, 1)),
         alt = w(),
         s = tr * alt * alt * WA.alter.anteil;
-    const val = (lit - 1) * 0.45,
-        warm = (cl(lit * 0.5 + (1 - wet) * 0.5, 0, 1) - 0.5) * 0.24;
+    const val = (lit - 1) * 0.45;
     const f = A[k].f,
         af = WA.alter.f;
-    aus[o] = cl((1 + val + warm) * f[0] * (1 + (af[0] - 1) * s), 0, 2);
-    aus[o + 1] = cl((1 + val + warm * 0.35) * f[1] * (1 + (af[1] - 1) * s), 0, 2);
-    aus[o + 2] = cl((1 + val - warm * 0.8 + (wet - 0.5) * 0.12) * f[2] * (1 + (af[2] - 1) * s), 0, 2);
+    for (let c = 0; c < 3; c++) {
+        let e = 0;
+        for (let i = 0; i < A.length; i++) e += g[i] * A[i].f[c];
+        const ew = (e / summe) * (1 + ((af[c] - 1) * tr * WA.alter.anteil) / 3);
+        aus[o + c] = cl(((1 + val) * f[c] * (1 + (af[c] - 1) * s)) / ew, 0, 2);
+    }
     return aus;
 }
 /* GROUND-COVER-GESETZ: aus Licht x Feuchte x Substrat x Störung wächst die Bodenschicht (W1: aus dem Labor in den Kern — das
@@ -3126,8 +3227,15 @@ function emitGrass(P) {
     const lf = HS.anteil;
     const wMul = __halmBreite(__lod, HG.spitze);
     const N = Math.max(3, Math.round(lerp(50, 150, P.density) * lf));
-    const baseCol = vegFarbe(seasonTint).multiplyScalar(0.6),
-        tipCol = vegFarbe(seasonAccent).multiplyScalar(GRAS_SPITZE_HELL);
+    // DER HALM AUS DEM SPEKTRUM (FARB_SPEKTRUM, HALM_FARBE): Wurzel und Spitze sind das Blatt des Sommers, das Jahr legt sein
+    // Verhältnis zum Sommer darüber (die Stützen des SAISON_GESETZ) — im Sommer, dem Bau der Welt, genau das Spektrum
+    const imJahr = (c, jetzt, sommer) => {
+        const [a, b] = [vegFarbe(jetzt), vegFarbe(sommer)];
+        return new THREE.Color(c[0] * (a.r / b.r), c[1] * (a.g / b.g), c[2] * (a.b / b.b));
+    };
+    const SO = SAISON_GESETZ.stuetzen[1];
+    const baseCol = imJahr(vegFarbe(PORTAL_GROUND.mead).toArray(), seasonTint, SO.ti),
+        tipCol = imJahr(HALM_FARBE.spitze, seasonAccent, SO.ac);
     const seedCol = vegFarbe(P.seedTan || 0xc8b27a);
     const SH = P.seedHead || 0;
     // Die Stufe der Ähre: Ährchen je Ähre und Segmente des Stängels aus ihrer Budget-Zeile (`lod.budget.grass[stufe].aehre`),
@@ -3198,7 +3306,7 @@ function emitGrass(P) {
             c.g *= hl;
             c.b *= hl * (1 - ton * 1.2);
             const sf = f < 0.55 ? 0 : ((f - 0.55) / 0.45) * ((f - 0.55) / 0.45) * (3 - (2 * (f - 0.55)) / 0.45);
-            c.lerp(stroh, Math.min(1, Math.max(trk * (0.4 + 0.6 * f), spz * sf)));
+            c.lerp(stroh, (WH.tot / WH.strohFlaeche) * Math.min(1, Math.max(trk * (0.4 + 0.6 * f), spz * sf)));
             for (let q = 0; q < (s < K ? 2 : 1); q++) {
                 const sw = Math.pow(f, 1.4) * P.windGain;
                 sway.push(sw, la * 1.3 + i, 1.1 + 0.5 * (1 - f));
@@ -9442,8 +9550,12 @@ __terrainCore.PHYTO_PRESETS = PRESETS;
 // additiv): der Voxel-Worker faerbt jeden Chunk-Vertex mit ihr, darum muss sie VOR dem ersten Chunk feststehen —
 // der async Buch-Umschlag (get-book) kam zu spaet und trug nur vier ihrer Werte.
 __terrainCore.PORTAL_GROUND = PORTAL_GROUND;
-// Die Halm-Spitze des Grases (emitGrass) reist mit: der Stamm hellt den Saison-Akzent um DIESELBE Zahl auf (rein additiv).
-__terrainCore.GRAS_SPITZE_HELL = GRAS_SPITZE_HELL;
+// DIE DECKUNG DES BODENS reist mit (w26-ferne-ton-4, rein additiv): die Welt mischt die Narbe aus dem Stoff, nie aus dem Ton.
+__terrainCore.BODEN_DECKUNG = BODEN_DECKUNG;
+// DIE FARBE DES HALMS aus dem Spektrum (FARB_SPEKTRUM) reist mit: die Halme der Welt lesen dieselbe Spitze wie emitGrass.
+__terrainCore.HALM_FARBE = HALM_FARBE;
+// DAS KRONENDACH der Ferne aus dem Spektrum reist mit: der Stamm färbt den fernen Wald je Art daraus (`_fernLaubLinear`).
+__terrainCore.KRONEN_FARBE = KRONEN_FARBE;
 // DIE WIESE (W1): der Büschel-Tint und die Bodenschicht reisen zum Stamm — Labor und Nah-Wiese lesen dasselbe Gesetz.
 __terrainCore.wiesenTint = wiesenTint;
 __terrainCore.groundCover = groundCover;
