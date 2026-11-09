@@ -1604,8 +1604,8 @@ class AnazhRealm_koerper_leib {
     // Gesetz — ein Teil, dessen Haut-Gewichte zu `KOPF_TEILUNG.anteil` an den Gelenken des Kopfs hängen (`KOPF_TEILUNG.gelenk`:
     // head, Augen, Lider) oder der unter dem Kopf-Knoten sitzt (die Strähnen), heißt `<leib>:kopf/<Stoff>`, der Rest
     // `<leib>:leib/<Stoff>` (Stoff = `__klasse` des Teils, ohne sie `auge` am Iris-Gelenk, sonst `stoff`). Liefert [grob, fein]:
-    // grob die Täter-Klasse (`_taeterKlasse`), fein der Name des Teils — was kein Leib eines Menschen ist, trägt beide gleich (der
-    // Satz der Menge bleibt `bewohner-satz`). Leser: die Teilung der Werkbank (`bild --klasse`: wählt der Ausdruck den Leib, ist er
+    // grob die Täter-Klasse (`_taeterKlasse`, das Holz unten ausgenommen), fein der Name des Teils — was kein Leib eines Menschen
+    // ist, trägt beide gleich (der Satz der Menge bleibt `bewohner-satz`). Leser: die Teilung der Werkbank (`bild --klasse`: wählt der Ausdruck den Leib, ist er
     // EINE Klasse, sonst zeigt er seine Teile) und ihr Gesicht (die Kopf-Haut des nächsten gewählten Leibs). Bis w4-bewohner-wache
     // teilte die Werkbank selbst und nur den Spieler (nur unter `--gesicht`): kein Bewohner trug `bewohner:kopf/…`.
     // DAS HOLZ IST EIN AUSSEN (w26-eiche-kante, lod.K1#1): ein Teil einer Foundry-Gestalt (`f:<art>:L<n>`), dessen Stoff Holz ist
