@@ -565,7 +565,6 @@ class AnazhRealm_daten {
                     auge: 1.5,
                     rand: 0.2,
                     vorlauf: 8,
-                    kachelnJeTakt: 4,
                     // DER WEG DER WAHL (w23-geh-takt, `_wieseFernAnker`): die Wahl einer Kachel hält auf der Strecke, die das Auge in
                     // `zeitS` geht (`wegM` bis `wegMax` m), quer `querM`, lotrecht `lotM`, die Höhe über dem Boden `hM`, die Drehung
                     // samt Sichtfeld `drehRad`; im Stand ein Punkt mit `standM` (dem Halt der Lage); ab der halben Drift wählt sie
