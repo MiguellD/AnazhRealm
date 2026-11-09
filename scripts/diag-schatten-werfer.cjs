@@ -274,6 +274,37 @@ function probe(selbsttest) {
     // (−0,9 · Grenze, Neu-Wahl jedes Werfers, +0,9 · Grenze). `art`: "gesetz" (K8) · "untreu" (S11: die Lage hält jede
     // Drehung) · "ohneRand" (S12: `_passTrifft` ohne Licht-Rand) · "ganzerRand" (S13: die Halb-Regel fällt, der Halt reicht
     // bis zum ganzen Rand).
+    // DER ECHTE WERFER der Kaskade k in ihrer jetzigen Lage: er steht in der Box der Karte, und sein Licht-Strahl (Körper samt
+    // Ausdehnung, entlang des Lichts bis unter die Box) trifft die Empfänger — die Wahl-Scheibe im Höhenband der Box —,
+    // geschnitten je Ebene als Intervall des Strahls (kein Saum, kein Rand). Das Gesetz der Wahl prüft die Ebenen je Ende der Kapsel (eine
+    // Obermenge): was nur sie wählt, wirft keinen Schatten auf einen Empfänger.
+    const echt = (L, cx, cy, cz, hx, hy, hz, rr) => {
+        const fit = L.fit,
+            d = L.dir;
+        // in der Box der Karte (ohne Rand): ein Werfer außerhalb steht in keiner Karte
+        for (const P of L.fr.planes) {
+            const n = P.normal;
+            const st = Math.abs(n.x) * hx + Math.abs(n.y) * hy + Math.abs(n.z) * hz + rr;
+            if (n.x * cx + n.y * cy + n.z * cz + P.constant < -st) return false;
+        }
+        const v = new T.Vector3(cx, cy, cz).applyMatrix4(fit.basisInv);
+        const sl = Math.abs(d.x) * hx + Math.abs(d.y) * hy + Math.abs(d.z) * hz + rr;
+        let s0 = 0,
+            s1 = Math.max(0, v.z - fit.zb + sl);
+        const ebene = (nx, ny, nz, c0) => {
+            const ext = Math.abs(nx) * hx + Math.abs(ny) * hy + Math.abs(nz) * hz + rr;
+            const a = nx * cx + ny * cy + nz * cz + c0 + ext;
+            const b = nx * d.x + ny * d.y + nz * d.z;
+            if (Math.abs(b) < 1e-12) {
+                if (a < 0) s1 = -1;
+            } else if (b > 0) s0 = Math.max(s0, -a / b);
+            else s1 = Math.min(s1, -a / b);
+        };
+        for (const P of fit.ebenen) ebene(P.normal.x, P.normal.y, P.normal.z, P.constant);
+        ebene(0, 1, 0, -fit.band0);
+        ebene(0, -1, 0, fit.band1);
+        return s0 <= s1;
+    };
     const k8 = (art) => {
         const res = { art, grenze: [], budget: [], faelle: [], loecher: 0, namen: [], geprueft: 0, neu: [] };
         const C = r.constructor;
@@ -329,37 +360,6 @@ function probe(selbsttest) {
             let dt = alpha / (2 * Math.PI);
             for (let k = 0; k < 4; k++) dt *= alpha / d0.angleTo(richtung(0.5 + vor * dt));
             tag(0.5 + vor * dt);
-        };
-        // DER ECHTE WERFER der Kaskade k in ihrer jetzigen Lage: er steht in der Box der Karte, und sein Licht-Strahl (Körper samt
-        // Ausdehnung, entlang des Lichts bis unter die Box) trifft die Empfänger — die Wahl-Scheibe im Höhenband der Box —,
-        // geschnitten je Ebene als Intervall des Strahls (kein Saum, kein Rand). Das Gesetz der Wahl prüft die Ebenen je Ende der Kapsel (eine
-        // Obermenge): was nur sie wählt, wirft keinen Schatten auf einen Empfänger.
-        const echt = (L, cx, cy, cz, hx, hy, hz, rr) => {
-            const fit = L.fit,
-                d = L.dir;
-            // in der Box der Karte (ohne Rand): ein Werfer außerhalb steht in keiner Karte
-            for (const P of L.fr.planes) {
-                const n = P.normal;
-                const st = Math.abs(n.x) * hx + Math.abs(n.y) * hy + Math.abs(n.z) * hz + rr;
-                if (n.x * cx + n.y * cy + n.z * cz + P.constant < -st) return false;
-            }
-            const v = new T.Vector3(cx, cy, cz).applyMatrix4(fit.basisInv);
-            const sl = Math.abs(d.x) * hx + Math.abs(d.y) * hy + Math.abs(d.z) * hz + rr;
-            let s0 = 0,
-                s1 = Math.max(0, v.z - fit.zb + sl);
-            const ebene = (nx, ny, nz, c0) => {
-                const ext = Math.abs(nx) * hx + Math.abs(ny) * hy + Math.abs(nz) * hz + rr;
-                const a = nx * cx + ny * cy + nz * cz + c0 + ext;
-                const b = nx * d.x + ny * d.y + nz * d.z;
-                if (Math.abs(b) < 1e-12) {
-                    if (a < 0) s1 = -1;
-                } else if (b > 0) s0 = Math.max(s0, -a / b);
-                else s1 = Math.min(s1, -a / b);
-            };
-            for (const P of fit.ebenen) ebene(P.normal.x, P.normal.y, P.normal.z, P.constant);
-            ebene(0, 1, 0, -fit.band0);
-            ebene(0, -1, 0, fit.band1);
-            return s0 <= s1;
         };
         // fehlt ein echter Werfer der Kaskade k in ihrer gehaltenen Wahl? (die Leser rechnen ihre Körper wie im Pass, das Urteil
         // ist der echte Werfer)
@@ -468,9 +468,64 @@ function probe(selbsttest) {
                 m.position.set(x, (Number.isFinite(y) ? y : pm.y) + 120, z);
                 schwarm.add(m);
             }
+        // DER RAND-SCHWARM (die Zähne von S11/S12): das Raster trifft den Rand einer Scheibe nur zufällig (CI z350: 0 Löcher in
+        // S11 und S12, lokal 2–4) — je Kaskade und 16 Richtungen steht eine Reihe Werfer genau über dem Rand ihrer Scheibe
+        // (der echte Werfer `echt`, am Mittag ohne Saum gesucht), im Schritt eines Achtels ihres Licht-Rands bis drei Ränder
+        // diesseits und jenseits: was die Drehung über den Rand trägt, steht dort in jeder Welt
         st.scene.add(schwarm);
         schwarm.updateMatrixWorld(true);
         st._regionBundles.set(schwarm.name, schwarm);
+        const C = r.constructor,
+            PW0 = C.PASS_WAHL;
+        C.PASS_WAHL = Object.freeze(Object.assign({}, PW0, { saumM: Object.freeze([0, 0]) }));
+        try {
+            r._shadowFrame = (r._shadowFrame || 0) + 1;
+            mittag();
+            neuGepasst();
+            const far = Math.min(cam.far, csm.maxFar);
+            const vorn = new T.Vector3(0, 0, -1).applyQuaternion(cam.quaternion).setY(0).normalize();
+            aus.randSchwarm = csm.lights.map((_l, k) => {
+                const L = lageVon(k);
+                const R = L.licht,
+                    d = L.dir;
+                if (!(R > 0) || !L.fit || !(d.y < 0)) return "ohne Rand";
+                const t = (((k > 0 ? csm.breaks[k - 1] : 0) + csm.breaks[k]) / 2) * (far - cam.near) + cam.near;
+                const p0 = cam.position.clone().addScaledVector(vorn, t);
+                const y0 = r._voxelSurfaceY(p0.x, p0.z);
+                p0.y = Number.isFinite(y0) ? y0 : pm.y;
+                const start = p0.addScaledVector(d, -120 / -d.y);
+                const trifft = (p) => echt(L, p.x, p.y, p.z, 1, 1, 1, 0);
+                if (!trifft(start)) return "ohne Start";
+                let n = 0;
+                for (let j = 0; j < 16; j++) {
+                    const u = new T.Vector3(Math.cos((j * Math.PI) / 8), 0, Math.sin((j * Math.PI) / 8));
+                    const bei = (s) => start.clone().addScaledVector(u, s);
+                    let [a, b] = [0, 8];
+                    while (b < 8192 && trifft(bei(b))) [a, b] = [b, 2 * b];
+                    if (b >= 8192) continue;
+                    while (b - a > 0.01) {
+                        const m = (a + b) / 2;
+                        if (trifft(bei(m))) a = m;
+                        else b = m;
+                    }
+                    for (let q = -24; q <= 24; q++) {
+                        const m = Object.assign(new T.Mesh(pfahl, stoff), { castShadow: true });
+                        m.position.copy(bei(a + (q * R) / 8));
+                        schwarm.add(m);
+                        n++;
+                    }
+                }
+                return n;
+            });
+        } finally {
+            C.PASS_WAHL = PW0;
+            if (r._passLagen) r._passLagen.clear();
+        }
+        // der Schwarm nahm die Reihen auf: seine Werfer-Hülle rechnet neu (das Register hört kein neues Kind)
+        schwarm.updateMatrixWorld(true);
+        schwarm.needsUpdate = true;
+        delete schwarm.userData._werferR;
+        delete schwarm.userData._werferTakt;
         try {
             aus.k8 = k8("gesetz");
             if (selbsttest) {
@@ -1288,7 +1343,7 @@ function probe(selbsttest) {
             check(
                 "K8 die Wahl hält über die Stufen der Sonne (ohne Saum): die Grenze des Halts ist das halbe Budget, die Lage hält über eine Neu-Wahl mitten in der Drehung und trägt jeden echten Werfer; über dem Rand wählt jede Kaskade neu",
                 k8gut(a.k8),
-                a.k8
+                Object.assign({ randSchwarm: a.randSchwarm }, a.k8)
             );
         check(
             "K5 die Karte trägt die längste Kante bei texelM (kleinste Zweierpotenz)",
