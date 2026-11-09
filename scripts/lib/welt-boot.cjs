@@ -1088,7 +1088,11 @@ function profileFegen(tmp = os.tmpdir()) {
 }
 const tempNeu = (name = "profil", pid = process.pid) => fs.mkdtempSync(path.join(os.tmpdir(), `anazh-${pid}-${name}-`));
 const signalEnde = (s) => process.exit(128 + os.constants.signals[s]);
+// DAS SICHTBARE FENSTER (Schöpfer 08./09.11.: „die GPU-Proben mit offenem Fenster, dann sehe ich, was geschieht“): LINSE_SICHTBAR=1
+// (gpu-probe.yml je Läufer) öffnet JEDEN Browser dieses Starters als Fenster — Werkbank und Gates gehen beide hier durch. Die Drossel
+// verdeckter Fenster schaltet Puppeteer selbst ab (ChromeLauncher-Vorgaben); der Weg der Welt bleibt derselbe.
 async function startePuppeteer(o) {
+    o.headless &&= process.env.LINSE_SICHTBAR !== "1";
     profileFegen();
     if (o.userDataDir) return require("puppeteer").launch(o);
     const d = tempNeu();
