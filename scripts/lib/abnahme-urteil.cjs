@@ -2448,7 +2448,6 @@ function sollIstAbweisung(alt, neu, q) {
 }
 
 module.exports = {
-    SCHWELLEN,
     armUrteil,
     klassenMasse,
     sollTafelUrteil,

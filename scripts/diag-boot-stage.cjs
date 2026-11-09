@@ -137,7 +137,7 @@ function wechselUrteil(vor, nach, kern) {
 // Haupt-Faden ≥ ANKUNFT_HALT_MS hält (blind ohne Marken ist sie ROT)
 const halterZeilen = (a) =>
     `${HL.ankunftsHalterTafel(a)}\n  die Spur: ${a.verlust?.satz || "ohne Proben"}\n` +
-    `  ${a.befunde.length ? "❌" : "✅"} DIE HALTER vor dem ersten Bild: ${a.befunde.slice(0, 6).join(" · ") || "keiner"}`;
+    `  ${a.befunde.length ? "❌" : "✅"} DIE HALTER bis zur Kontrolle: ${a.befunde.slice(0, 6).join(" · ") || "keiner"}`;
 
 // ── DIE KALT-ZEILE (`--kalt`): die Probe je 200 ms in der Seite, ab dem ersten Skript ──
 // Die Haupt-Thread-Zeit je Sekunde der schweren Ankunfts-Arbeiter liest die Spur (`ankunftsHalter`, Klassen über die Namen der
@@ -334,7 +334,9 @@ async function kaltLauf() {
     const seite = {
         lang: out.lang,
         marken: out.marken,
-        bis: out.weltbildDa,
+        // DAS FENSTER DER HALTER ist das der Station (ankunft.K5, w27-ankunft-erstbild): bis zur Kontrolle (die Uhr ab Navigation),
+        // nie nur bis zum Bild — jede Aufgabe ≥ 50 ms davor beim Namen (headless kalt main da0e790f: die längste 704 ms)
+        bis: tK || out.weltbildDa,
         meilensteine,
         klassen: KALT_KLASSEN,
         familie: KALT_PFLANZEN,
@@ -378,7 +380,7 @@ async function kaltLauf() {
     const kl = Object.entries(out.vorBild);
     if (kl.length)
         console.log(
-            `  die Klasse Pflanzen bis zum Weltbild: ${Math.round(kl.reduce((a, [, ms]) => a + ms, 0))} ms Haupt-Faden (` +
+            `  die Klasse Pflanzen bis zur Kontrolle: ${Math.round(kl.reduce((a, [, ms]) => a + ms, 0))} ms Haupt-Faden (` +
                 kl.map(([k, ms]) => `${k} ${Math.round(ms)}`).join(" · ") +
                 ")"
         );
