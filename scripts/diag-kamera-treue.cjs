@@ -706,7 +706,7 @@ function buehne() {
             }
             // (k) DAS URTEIL DES VORWÄRM-GESETZES (w25, `_vorwaermUrteil`: holz · Bild · Ladeschirm · Loop ruht · Eingabe ruht · Leine
             // straff · Auge steht) je Fall — Leerlauf, Werkbank, Ladeschirm, kienspan, Fahrt; Soll: der Leerlauf und die Werkbank bauen
-            const VF = [["voll", 1, 0, 0, 1, 0, 1], ["voll", 1, 0, 1], [0, 0, 1, 1], ["kienspan", 1, 0, 1], ["voll", 1, 0, 0, 1, 0, 0]];
+            const VF = [[0, 1, 0, 0, 1, 0, 1], [0, 1, 0, 1], [0, 0, 1, 1], ["kienspan", 1, 0, 1], [0, 1, 0, 0, 1, 0, 0]];
             const vorbau = A._vorwaermUrteil ? VF.map((a) => +A._vorwaermUrteil(...a)).join("") : "fehlt";
             return {
                 vorbau,
