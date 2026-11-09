@@ -36,4 +36,4 @@ Neu eingemischt:
 ## Wachen
 `bash /tmp/claude/w3/kombi-wache.sh` (run_in_background) endet bei der ersten neuen Abgabe (w24–w26, heim2) oder beim nächsten Zug-Ende.
 
-- **Drittes Gerät, Hardware (16:45):** Es steckt EIN 8-GB-Riegel DDR3-1066 im Triple-Channel-Board X58, die CPU nutzt also 1 von 3 Speicherkanälen. Zwei gleiche Riegel dazu (~10–20 € gebraucht) sind der beste Hebel je Euro. setup-node kostet je Job 30–60 s, obwohl Node 22 im Tool-Cache liegt: ein Kandidat für die CI-Diät am Proben-Workflow.
+- **Drittes Gerät, Hardware (16:45):** Es steckt EIN 8-GB-Riegel DDR3-1066 im Triple-Channel-Board X58, die CPU nutzt also 1 von 3 Speicherkanälen. Zwei gleiche Riegel dazu (~10–20 € gebraucht) sind der beste Hebel je Euro. setup-node kostet im Normalbetrieb ~10 s je Job (2–4 %), nach einem Neustart ~30 s. Schnitt: setup-node nur, wenn `node --version` nicht mit v22 beginnt. Das hilft nur, wenn Node 22 dort im PATH liegt. „Set up job“ schwankt 13–50 s, weil die Actions je Job neu geladen werden.
