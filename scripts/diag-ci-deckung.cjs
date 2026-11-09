@@ -139,6 +139,7 @@ const AUSNAHMEN = {
         klasse: KLASSEN.MESS,
         grund: "der Messplatz von lod.K2#1 im GPU-Probe-Dienst, der Richter ist die Station",
     },
+    "gate:geh-zerlegung": { klasse: KLASSEN.MESS, grund: "der Messplatz des Programm-Katalogs im GPU-Probe-Dienst (profiband.K4)" },
     "gate:arch-feld": {
         klasse: KLASSEN.FRIST,
         grund:
