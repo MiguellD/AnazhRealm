@@ -612,42 +612,28 @@ class AnazhRealm_daten {
         return [dek(((hex >> 16) & 255) / 255), dek(((hex >> 8) & 255) / 255), dek((hex & 255) / 255)];
     }
 
-    // DER WIESEN-GRUND (K53, EINE Quelle): wo der Boden grün ist (die Wiesen-Wache über der Deckung des Stoffs), deckt ihn
+    // DER WIESEN-GRUND (K53, EINE Quelle): wo der Boden grün ist (die Wiesen-Wache `gruenSchwelle`: g − (r+b)/2), deckt ihn
     // das Gras — das MITTEL des Halms (`halmMittel`), das Integral der Halm-Farbe (h ∈ [0, 1]: mix(Wurzel, Spitze, h) ·
     // (0,65 + 0,35 h)) = 0,383 · Wurzel + 0,442 · Spitze, Y 0,17 wie das Studio-Gras der Nah-Wiese (das Relief der Nähe liest es);
     // die karge Stelle (Fleck λ 7,7 m, `rauschM`) zeigt mehr Grund: Gewicht 0,5 … 1 der Wache. Das Gesetz rechnet ihn
     // (`_bodenFarbeAt`, der Worker `attachFieldColors` mit diesem Schnappschuss), nie das Fragment: bis K53 mischte ihn nur der
     // Boden-Stoff (V18.346), der Feld-Pass und das Panorama zeigten den nackten Grund (`mead`, aus 45 m eine oliv-gelbe Steppe).
-    // DIE WIESE AUS DER FERNE IST EIN BESTAND (w25-ferne-licht-5, ferne.K1#2): `farbe` ist sein Spektrum (Kern
-    // `HALM_FARBE.bestand`, FARB_SPEKTRUM: das Blatt nach PROSPECT-D, 5 % dürr wie die Nähe, im Bestand nach 4SAIL, LAI 2,5 —
-    // linear 0,0392/0,049/0,019, B/G 0,39): Selbstbeschattung, Lücken und Grund liegen im Spektrum. Bis w26-ferne-ton-2 das Mittel des Halms ×
-    // `halmSchatten` 0,4 (0,044/0,081/0,0125, B/G 0,15 — der Hand-Faktor auf dem Hex der Absicht); davor stand die ferne Wiese
-    // mit dem Mittel des einzelnen Halms auf 0,56–0,73 der In-Streuung und trug ihr Gelbgrün durch die Luft (8 km 12,7–25,5°). Als
-    // Spektrum (GTX 1050 58b780c4): 8 km Uhr 0,5 je Azimut 2,75 · 2,22 · 1,83 · 1,33°, Uhr 0,27 0,17–3°.
-    // DIE WACHE LIEST DIE DECKUNG, NIE DEN TON (w26-ferne-ton-4): `deckung` je Boden-Klasse ist der Stoff, der die Narbe trägt
-    // (Kern `BODEN_DECKUNG`); `_bodenFarbeAt` und der Faden mischen sie mit den Gewichten der Farbe, der Fels-Stoff nimmt sie am
-    // Hang, im Schutt und in der Höhle (gelaende-core `felsStoff`), die Boden-Karte trägt sie als Grün-Kanal (`bodenKarte`) —
-    // Farbe, Halm, Haftung, Huf und Schritt lesen sie. `schwelle` (Einheit: Deckung) ist die Wache smoothstep(0, schwelle, d):
-    // ab 0,6 Deckung ist die Narbe geschlossen — die Breite der Wache, die bis hierher der Ton trug (gruenSchwelle 0,04 über dem
-    // Grün 0,065 des Wiesen-Grunds 0x55632f). Bis hierher rechnete die Wache g − (r+b)/2 aus der Farbe: der Ton 0x3e5026 senkte
-    // das Grün auf 0,046, und die Welt änderte ihr Verhalten (z347: Wagen 1,23 m tief, K7, Graben leer, Fahr-Linse K8/S1).
+    // DIE WIESE AUS DER FERNE IST EIN BESTAND (w25-ferne-licht-5, ferne.K1#2): `farbe` = das Mittel des Halms × die
+    // Selbstbeschattung des Bestands (`FERN_FARBE.halmSchatten`, wie das Kronendach `kronenSchatten`) — der Halm grün 0,202
+    // trägt so 0,081, die Satelliten-Bänder der Frischwiese im Sommer (grün ~0,07–0,09). Bis hier stand die ferne Wiese mit
+    // dem Mittel des einzelnen Halms auf 0,56–0,73 der In-Streuung (Genesis, Mittag, ohne Luft) und trug ihr Gelbgrün durch
+    // die Luft: der Farbton bei 8 km 12,7–25,5° von der In-Streuung (Soll ≤ 10°, swiftshader); als Bestand 2,7–10,2° (Uhr 0,5)
+    // und 1,0–2,8° (Uhr 0,27), vom Gipfel 4,7–10°; Durchlass, Rand-Kontrast (1,3–1,6 %) und Kante gehalten.
     static get WIESEN_GRUND() {
         const mg = AnazhRealm.MEADOW_GREEN;
         const sp = AnazhRealm.GRAS_SPITZE;
         const halm = [0, 1, 2].map((i) => 0.383 * mg[i] + 0.442 * sp[i]);
-        const H = AnazhRealm.Gesetz("terrain:HALM_FARBE", null);
-        if (!H || !Array.isArray(H.bestand) || !H.bestand.every(Number.isFinite))
-            AnazhRealm._kernPflichtBruch("terrain:HALM_FARBE.bestand");
-        const D = AnazhRealm.Gesetz("terrain:BODEN_DECKUNG", null);
-        const klassen = ["rock", "mead", "wet", "flechte", "basalt", "schnee", "sediment", "sand", "dirt"];
-        if (!D || !klassen.every((k) => Number.isFinite(D[k]))) AnazhRealm._kernPflichtBruch("terrain:BODEN_DECKUNG");
         return this._einmal(
             "WIESEN_GRUND",
             Object.freeze({
                 halmMittel: Object.freeze(halm),
-                farbe: Object.freeze(H.bestand.slice()),
-                deckung: Object.freeze(Object.fromEntries(klassen.map((k) => [k, D[k]]))),
-                schwelle: 0.6,
+                farbe: Object.freeze(halm.map((x) => x * AnazhRealm.FERN_FARBE.halmSchatten)),
+                schwelle: AnazhRealm.TERRAIN_GEOLOGY.gruenSchwelle,
                 rauschM: 1 / 0.13,
             })
         );
@@ -661,25 +647,26 @@ class AnazhRealm_daten {
         return AnazhRealm.BODEN_FARBE.mead;
     }
 
-    // Die Gras-SPITZE: das Grasblatt aus seinem Spektrum (Kern `HALM_FARBE.spitze`, FARB_SPEKTRUM: PROSPECT-D unter D65,
-    // linear 0,0795/0,1343/0,0317) — dieselbe Zahl, die emitGrass im Sommer trägt. EINE Quelle für die Halm-Spitze des
-    // Nah-Grases und die Halme der Boden-Wiese (`_terrainGeologyAlbedo`). Bis w26-ferne-ton-2 der Sommer-Akzent 0x6f9a3a × 1,08
-    // (0,172/0,349/0,046: Grün 2,6 × das Blatt, Blau 0,13 × Grün).
+    // Die Gras-SPITZE: der Sommer-Grasakzent des Studios (SAISON_GESETZ, Sommer-Stütze `ac` 0x6f9a3a) nach dem
+    // FARB-GESETZ linear, aufgehellt um die Zahl des Studio-Grases (terrain:GRAS_SPITZE_HELL, emitGrass: `vegFarbe(
+    // seasonAccent) × 1,08` — linear, 0,172/0,349/0,046). EINE Quelle für die Halm-Spitze des Nah-Grases und die Halme
+    // der Boden-Wiese (`_terrainGeologyAlbedo`). Bis 06.10. hellte der Stamm in sRGB auf (0,187/0,383/0,049, ein Zwilling
+    // der Studio-Formel mit eigener Rechnung).
     static get GRAS_SPITZE() {
-        const H = AnazhRealm.Gesetz("terrain:HALM_FARBE", null);
-        if (!H || !Array.isArray(H.spitze) || !H.spitze.every(Number.isFinite))
-            AnazhRealm._kernPflichtBruch("terrain:HALM_FARBE.spitze");
-        return this._einmal("GRAS_SPITZE", Object.freeze(H.spitze.slice()));
+        const ac = AnazhRealm._saisonGesetz().stuetzen[1].ac;
+        if (!Number.isFinite(ac)) AnazhRealm._kernPflichtBruch("terrain:SAISON_GESETZ.stuetzen[1].ac");
+        const hell = AnazhRealm.Gesetz("terrain:GRAS_SPITZE_HELL", null);
+        if (!Number.isFinite(hell)) AnazhRealm._kernPflichtBruch("terrain:GRAS_SPITZE_HELL");
+        return this._einmal("GRAS_SPITZE", Object.freeze(AnazhRealm._srgbHexLinear(ac).map((v) => v * hell)));
     }
 
     // Per-Fragment-Multi-Klassen-Geologie: die Klassen emergieren aus der Welt-Wahrheit — steile Hänge
     // tragen keine lockere Erde (sie rutscht) → Fels bricht durch. `_steep = 1 − normalWorld.y`: 0 flach,
     // 0.29 ≈ 45°, 0.5 = 60°, 1 senkrecht. Das Profil ist konservativ (nur echte Hänge versteinern).
     static get TERRAIN_GEOLOGY() {
-        // Fels- und Moos-Tint SIND die Boden-Palette (rock · wet). Die Wachen der Albedo sind gefallen (w27-ferne-ton-5): Grün
-        // und Nässe liest das Boden-Fragment aus dem Stoff des Grunds je Vertex (`aStoff`: die Deckung über `WIESEN_GRUND.
-        // schwelle`, die Nässe), wie die Boden-Karte ihr Grün (w26-ferne-ton-4) — bis hierher aus g − (r+b)/2 und der Luminanz
-        // der Farbe (die Schwellen 0,04 und 0,05 … 0,09 standen hier).
+        // Fels- und Moos-Tint SIND die Boden-Palette (rock · wet). Die Schwellen sind linear (der Vertex trägt
+        // seit dem Farb-Gesetz die Albedo): `gruenSchwelle` ist die EINE Wiesen-Wache (g − (r+b)/2), die das
+        // Boden-Fragment UND der Grün-Kanal der Boden-Karte lesen (Wiese 0,066, Streu und Fels < 0).
         const P = AnazhRealm.BODEN_FARBE;
         return this._einmal(
             "TERRAIN_GEOLOGY",
@@ -695,6 +682,9 @@ class AnazhRealm_daten {
                 schuttGitter: 5.4,
                 schutt: 0.85,
                 mossTint: P.wet, // das Moos des Bodens ist der nasse Grund der Palette
+                gruenSchwelle: 0.04, // die Wiesen-Wache: smoothstep(0, gruenSchwelle, g − (r+b)/2)
+                mossDampLo: 0.05, // unter dieser linearen Luminanz = „feucht/Niederung" (nasser Grund 0,042)
+                mossDampHi: 0.09, //   (Wiese 0,10, beschattete Streu 0,086 — die Feuchte lebt im Vertex)
                 mossMax: 0.6, // Deckel der Moos-Übernahme (kein uniformer Teppich)
                 roughBase: 0.94, // V18.386 — Portal-Terrain-Roughness (`_terMat` 0.94, matter Boden). Der Substanz-Kern
                 //                  variiert sie ums Korn (Erhebung rau, Mulde glänzt), Moos wird matter,
@@ -1742,7 +1732,6 @@ class AnazhRealm_daten {
             "stoff.leib": ["Leib", "Body"],
             "stoff.menge": ["{n}× {stoff}", "{n}× {stoff}"],
             "stoff.quarz": ["Quarz", "Quartz"],
-            "stoff.sand": ["Sand", "Sand"],
             "stoff.schuppen": ["Schuppen", "Scales"],
             "stoff.stahl": ["Stahl", "Steel"],
             "stoff.stein": ["Stein", "Stone"],

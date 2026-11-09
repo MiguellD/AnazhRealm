@@ -58,9 +58,6 @@ class AnazhRealm_gelaende_chunks {
                                 normals: new Float32Array(msg.normals),
                                 indices: new Uint32Array(msg.indices),
                                 colors: new Float32Array(msg.colors),
-                                // der Stoff des Grunds je Vertex (Deckung · Nässe · frei): die Karte einer vorläufigen Gestalt
-                                // liest die Deckung (w26-ferne-ton-4), das Fragment beide (aStoff, w27-ferne-ton-5)
-                                stoff: new Float32Array(msg.stoff),
                                 // der Stoff (K17-2): Himmels-Sicht und Schutt je Vertex, die Feuchte des Mooses je Netz
                                 himmel: new Float32Array(msg.himmel),
                                 schutt: new Float32Array(msg.schutt),
@@ -276,11 +273,10 @@ class AnazhRealm_gelaende_chunks {
             // Tönen und Schwellen wie der Sync-Bau des Stamms (`FELS_STOFF.basis` · `FELS_STOFF.netz`)
             felsStoff: { basis: AnazhRealm.FELS_STOFF.basis, netz: AnazhRealm.FELS_STOFF.netz },
             // DIE BODEN-KARTE reist mit (w4-b-boden): der Worker rastert sie beim Chunk-Bau (gelaende-core `bodenKarte`) mit
-            // DERSELBEN Teilung und Wiesen-Wache wie der Stamm (`_bodenKarteAusMesh`) — die Wache über der Deckung des Stoffs
-            // (`WIESEN_GRUND.schwelle`, w26-ferne-ton-4), nie über dem Ton der Farbe
+            // DERSELBEN Teilung und Wiesen-Wache wie der Stamm (`_bodenKarteAusMesh`)
             bodenKarte: {
                 teilung: AnazhRealm.BODEN_KARTE_TEILUNG,
-                wache: AnazhRealm.WIESEN_GRUND.schwelle,
+                gruenSchwelle: AnazhRealm.TERRAIN_GEOLOGY.gruenSchwelle,
             },
             // DIE FORMEN DES BODEN-SATZES reisen mit (w4-b-boden2): der Worker packt jede Vorlage in DENSELBEN Vertex-Formen wie
             // der Satz (`BODEN_SATZ_ATTR`, `_satzForm`)
@@ -814,15 +810,6 @@ class AnazhRealm_gelaende_chunks {
         geom.setAttribute("aSchutt", attr(meshData.schutt, 1));
         geom.setAttribute("aMulde", attr(meshData.mulde, 1));
         if (meshData.felsFeuchte !== undefined) geom.userData.felsFeuchte = meshData.felsFeuchte;
-        // DER STOFF DES GRUNDS (w26-ferne-ton-4, w27-ferne-ton-5): je Vertex die Deckung der Narbe und die Nässe des Grunds nach
-        // dem Fels-Stoff (die dritte Zahl frei) — die Karte einer vorläufigen Gestalt rastert mit der Deckung (`_bodenKarteNaht`),
-        // der Satz reicht beide dem Fragment (`BODEN_SATZ_ATTR` aStoff). Fail-closed: ein Faden ohne ihn (eine alte Platte) bricht
-        // laut.
-        if (!meshData.stoff || meshData.stoff.length !== nV * 3)
-            throw new Error(
-                `_buildVoxelChunkDataFromWorkerMesh(${cx},${cz}): der Worker liefert keinen Stoff des Grunds je Vertex`
-            );
-        geom.setAttribute("aStoff", attr(meshData.stoff, 3));
         // Der CPU-Körper des Chunks (gezeichnet wird er als Bereich im Boden-Satz, `_chunkSatzEin`).
         const mat = this._getVoxelChunkMaterial();
         const mesh = new THREE.Mesh(geom, mat);
@@ -1543,7 +1530,6 @@ class AnazhRealm_gelaende_chunks {
                 w: k(A.aMorphWeight.array),
                 nrm: k(A.normal.array),
                 col: k(A.color.array),
-                st: k(A.aStoff.array),
                 him: k(A.aHimmel.array),
                 sch: k(A.aSchutt.array),
                 mul: k(A.aMulde.array),
@@ -1672,7 +1658,6 @@ class AnazhRealm_gelaende_chunks {
         bg.setAttribute("aHimmel", at(band.HS, 1));
         bg.setAttribute("aSchutt", at(band.SC, 1));
         bg.setAttribute("aMulde", at(band.MU, 1));
-        bg.setAttribute("aStoff", at(band.ST, 3));
         bg.setIndex(at(band.I, 1));
         bg.userData.satzVorlage = band.satz;
         bg.userData.ausFaden = true; // sein Satz kommt fertig (`_chunkSatzEin` wacht darüber)
@@ -1741,11 +1726,7 @@ class AnazhRealm_gelaende_chunks {
             (art === "lage" || (lod | 0) < 3)
         )
             this._fadenUmgangen(`Boden-Karte (${art}) eines Faden-Netzes`);
-        // die Lage rastert ihr Grün aus der Deckung des Stoffs (w26-ferne-ton-4, die erste Zahl von `aStoff`), nie aus der Farbe —
-        // fail-closed: eine Lage ohne Stoff trüge eine Karte ohne Wiese
-        const deck = art === "lage" && geom.attributes.aStoff ? geom.attributes.aStoff.array : null;
-        if (art === "lage" && !(deck && deck.length === geom.attributes.position.array.length))
-            throw new Error(`_bodenKarteNaht(${cx},${cz}): die Lage trägt keinen Stoff des Grunds (aStoff)`);
+        const col = art === "lage" && geom.attributes.color ? geom.attributes.color.array : null;
         // KEINE KOPIE EMPFANGENER BYTES (streaming.K5): die Lage einer vorläufigen Gestalt ist der Puffer, den sie an Ort und
         // Stelle bewegte (der Neubau aus dem Faden ersetzt das Netz, kein Teil des Fadens legt sich bis dahin an,
         // `_bodenTeilLegen`); nur die Karte der Ziele eines Sync-Baus hält ihre Lage als Kopie des Attributs
@@ -1755,7 +1736,7 @@ class AnazhRealm_gelaende_chunks {
         // gate:worker-dichte K5). Der Stand der Karte zählt jede neue Lage, je Zelle der Stand ihres letzten Wechsels: der
         // Leser einer früheren Lage (`_bodenKartenStehen`) fragt ihn statt einer alten Kopie.
         const alt = naht[art];
-        const k = this._bodenKarteAusMesh(ref, geom.index.array, deck, cx, cz, lod, alt, bewegt || naht, !!alt);
+        const k = this._bodenKarteAusMesh(ref, geom.index.array, col, cx, cz, lod, alt, bewegt || naht, !!alt);
         if (!k || !alt) return (naht[art] = k && Object.assign(k, { ref }));
         // dieselbe Karte (dieselben Felder, dasselbe Objekt): ihr Stand steigt, die gewechselten Zellen tragen ihn
         alt.stand = (alt.stand | 0) + 1;
@@ -3229,20 +3210,20 @@ AnazhRealm.CHUNK_IDB_MAX = 600;
 // Säulen-Farbe ohne Stoff; seit K17-2 NB1 wellt EIN Gradienten-Rauschen die Bänke und das Geröll streut wie die Referenz:
 // ein alter Chunk trüge die Welle aus dem Wert-Rauschen; seit der Karte hydro-faden legt der Faden seinen rohen Reply ab (die
 // Puffer, das Morph-Ziel als eigene Kopie): ein alter Eintrag trüge die Typ-Arrays des Mains ohne Morph-Ziel; seit w4-b-boden2
-// trägt der Reply Naht und Satz-Vorlage (`naht`, `satz`): ein alter Eintrag ließe den Einbau sie im Haupt-Faden nachrechnen; seit
-// w26-ferne-ton-4 trägt er die Deckung des Stoffs je Vertex (`deckung`) und eine Karte, deren Grün sie liest: ein alter Eintrag
-// trüge das Grün aus dem Ton; seit w27-ferne-ton-5 endet die Narbe am Spiegel (ein alter Eintrag trüge Grün unter Wasser), und
-// der Reply trägt den Stoff des Grunds je Vertex (`stoff`: Deckung · Nässe · frei) samt seiner Vorlage im Satz (aStoff).
-AnazhRealm.CHUNK_IDB_FORM = "faden-reply-stoff";
-// FERN_FARBE (`fernFarbeTeile` im Fern-Faden, linear): das Kronendach des Waldes aus der Ferne ist sein Spektrum je Art
-// (`_fernKroneArt`, Kern KRONEN_FARBE: Laubwald grün 0,0525, Nadelwald 0,0402); `kronenSchatten` trägt nur die kahle Krone
-// (die Rinde beschattet sich selbst, wie bis w26-ferne-ton-3 auch das Laub: Eiche 0,195 × 0,32); die Saison multipliziert der Leser
+// trägt der Reply Naht und Satz-Vorlage (`naht`, `satz`): ein alter Eintrag ließe den Einbau sie im Haupt-Faden nachrechnen.
+AnazhRealm.CHUNK_IDB_FORM = "faden-reply-satz";
+// FERN_FARBE (`fernFarbeTeile` im Fern-Faden, linear): das Kronendach des Waldes aus der Ferne = die Studio-Laubfarbe der Arten
+// am Ort × `kronenSchatten` (die Krone beschattet sich selbst: die Eiche, Blatt-Grün 0,195, trägt so 0,062 — die
+// Satelliten-Bänder geschlossener Laubwald-Kronen im Sommer, grün ~0,05–0,07); die Saison multipliziert der Leser
 // (`uSeasonMul`); der Feld-Pass malt neu, wenn die Saison je Kanal um mehr als `saisonDrift` gewandert ist. Das Wasser
 // trägt keine Fern-Farbe: es ist der Wasser-Körper des Gesetzes (`_wasserKoerper`, im Ring der Blick des Wassers).
 // `memo` = eine Generation des Fern-Farb-Gedächtnisses im Fern-Faden (zwei Generationen tragen > 2 volle Ringe).
-// Die Wiese trägt keinen Faktor: ihr Bestand ist ein Spektrum (`WIESEN_GRUND.farbe`, Kern `HALM_FARBE.bestand`).
+// `halmSchatten` dasselbe für die Wiese (`WIESEN_GRUND.farbe`): der Bestand der Halme beschattet sich selbst — das Mittel des
+// Halms (grün 0,202) trägt aus der Ferne 0,081, die Satelliten-Bänder der Frischwiese im Sommer (grün ~0,07–0,09); der Farbton
+// der Ferne bei 8 km fiel damit von 12,7–25,5° auf 2,7–10,2° von der In-Streuung (ferne.K1#2, Genesis, Mittag, swiftshader).
 AnazhRealm.FERN_FARBE = Object.freeze({
     kronenSchatten: 0.32,
+    halmSchatten: 0.4,
     saisonDrift: 0.05,
     memo: 12288,
 });

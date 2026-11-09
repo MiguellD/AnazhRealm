@@ -699,11 +699,11 @@ async function tatSeite(MESS, vorher) {
     return T;
 }
 
-// DIE BÜHNE JEDER SEITE (nach jedem Laden): die Seite der Tat und des Brands. Der Ring steht voll (HOLZ_PROFILE.voll, der Ring
-// des Profi-Bands E): die Welt des Null-Renderers fragt kein Gerät (`_holzWahl`, w27-ferne-ton-5) — bis dahin trug sie unter
-// einem Browser mit WebGL2-Rückfall das Holz kienspan (Ring 2, ±108 m: der Fluss nächst der Mess-Wiese lag 204 m fern), und
-// diese Bühne setzte den Ring von Hand
-const BUEHNE = `window.__seite = ${seite};`;
+// DIE BÜHNE JEDER SEITE (nach jedem Laden): die Seite der Tat und des Brands und der Ring im Wort des Reglers voll
+// (HOLZ_PROFILE.voll, der Ring des Profi-Bands E) — der Null-Renderer trägt das Holz kienspan (Ring 2, ±108 m), seit die Wahl
+// des Geräts jede Welt deckelt (speicher-laden `_applyHolzProfil`): der Fluss nächst der Mess-Wiese lag 204 m fern (jenseits
+// des Rings trägt keine Zelle ein Bett, die Wiese liest den gebauten Boden), die Ort-Phase fand keinen fernen Chunk
+const BUEHNE = `window.__seite = ${seite}; st.chunkRingRadius = AnazhRealm.HOLZ_PROFILE.voll.ring;`;
 async function tatLauf(page) {
     const T = await page.evaluate(tatSeite, MESS, null);
     await page.reload({ waitUntil: "networkidle0", timeout: 120000 });

@@ -240,9 +240,6 @@ const FORBIDDEN = [
     ["_drainScatterMeshPools", "Welle B"],
     ["_scatterMeshPools", "Welle B"],
     ['"deck-streu"', "Welle B — die Deck-Streu ist der zweite Block der Fern-Mesh je Art"],
-    // w27-ferne-ton-5: das Boden-Fragment liest den Stoff des Grunds (aStoff), nie Ton und Luminanz der Albedo
-    ["gruenSchwelle", "aStoff"],
-    ["mossDampLo", "aStoff"],
     ["_archPlacedRegionKey", "Welle B — der platzierte Bau ist global, ein Studio-Leaf keyt nach Geometrie"],
     ["useRegionArchCull", "Welle B"],
     ["ARCH_REGION_CULL_MAX_SPAN", "Welle B"],
@@ -1003,7 +1000,7 @@ const ZWILLINGE = [
         fiel: `K16 — die Landform ersetzt ${was}`,
     })),
     // W1 (Grok-Zwilling G3-4): die Wiese hat EIN Gesetz für Labor und Welt — Labor und Stamm rufen es im Kern.
-    ...["L * 1.08 - rk * 0.85 + m * 0.22", "(af[c] - 1) * tr * WA.alter.anteil"].map((fingerprint) => ({
+    ...["L * 1.08 - rk * 0.85 + m * 0.22", "lit * 0.5 + (1 - wet) * 0.5"].map((fingerprint) => ({
         fingerprint,
         gesetzbuch: "foundry-core.js",
         verboten: ["worlds/terrain/phytogenesis.js", ...STAMM],
@@ -3564,7 +3561,7 @@ function main() {
             feuert("gelaende-core.js", maske, "Massiv-Maske") &&
             feuert("scripts/playtest.cjs", mulde, "Tarn-Mulde") &&
             feuert("gelaende-core.js", mulde, "Tarn-Mulde") &&
-            feuert("worlds/terrain/phytogenesis.js", "const e = (af[c] - 1) * tr * WA.alter.anteil;", "Wiesen-Tint") &&
+            feuert("worlds/terrain/phytogenesis.js", "const t = lit * 0.5 + (1 - wet) * 0.5;", "Wiesen-Tint") &&
             feuert(STAMM[0], "const p = L * 1.08 - rk * 0.85 + m * 0.22;", "Bodenschicht") &&
             still("voxel-worker.js", cont0) &&
             still(STAMM[0], maske) &&

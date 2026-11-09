@@ -980,16 +980,12 @@ function tagKurveUrteil(welt) {
             continue;
         }
         const e = (x) => ev(x.Y, mittag.Y);
-        // DER SPRUNG DER KAMERA vor der Tonkurve (w26-ferne-ton-3): X ist die Belichtung × die Szene (die Ausgabe durch die Umkehr
-        // `vor`), Y die Ausgabe — im Fuß der Kurve (unter 0,04 linear quadratisch) verdoppelt Y jede Stufe: die Wiese aus dem
-        // Spektrum in der Dämmerung (Radeon 7046ca0f, Uhr 0,252–0,26) sprang in Y 0,10–0,16 EV bei X ≤ 0,09 (swiftshader dY ≈ 2 dX)
-        const k = (x) => ev(x.X, mittag.X);
-        const ref = (x) => k(x) - stufen(x.sonne) + stufen(mittag.sonne);
+        const ref = (x) => ev(x.X, mittag.X) - stufen(x.sonne) + stufen(mittag.sonne);
         kurven[ort] = `Karte ${m.karte} · ` + alle.map((x) => `${x.uhr}:${r2(e(x))}/${r2(ref(x))}`).join(" ");
         if (!(m.karte >= S.karte[0] && m.karte <= S.karte[1])) rot("ANKER", `die 18-%-Karte mittags Luma ${m.karte}`);
         alle.forEach((x, i) => {
             const a = alle[i - 1];
-            if (a && x.uhr - a.uhr < 0.0105 && Math.abs(k(x) - k(a)) > S.sprung) rot("SPRUNG", `Uhr ${a.uhr} → ${x.uhr} ${r2(k(x) - k(a))} EV vor der Tonkurve`);
+            if (a && x.uhr - a.uhr < 0.0105 && Math.abs(e(x) - e(a)) > S.sprung) rot("SPRUNG", `Uhr ${a.uhr} → ${x.uhr} ${r2(e(x) - e(a))} EV`);
             if (e(x) > S.buckel) rot("BUCKEL", `Uhr ${x.uhr} (Sonne ${x.sonne}°) ${r2(e(x))} EV über dem Mittag`);
             if (Math.abs(ref(x)) > S.ref) rot("REF", `Uhr ${x.uhr} (Sonne ${x.sonne}°) ${r2(ref(x))} Stufen neben der REF`);
             if (Math.abs(ev(x.sofort, x.frisch)) > S.async) rot("ASYNC", `Uhr ${x.uhr} ${r2(ev(x.sofort, x.frisch))} EV`);
@@ -1019,14 +1015,12 @@ function tagKurveSelbsttest() {
         const alle = q.zeilen.map((r) => Object.fromEntries(T.spalten.map((s, i) => [s, r[i]])));
         const z = (u) => alle.find((x) => x.uhr === u);
         if (fall === "BUCKEL") z(0.33).Y = z(0.5).Y * 1.2;
-        if (fall === "SPRUNG") z(0.276).X *= 1.2;
-        // der Fuß der Tonkurve: die Ausgabe springt 0,2 EV, die Belichtung nicht — keine Stufe der Kamera
-        if (fall === "FUSS") z(0.276).Y *= 1.15;
+        if (fall === "SPRUNG") z(0.276).Y *= 1.2;
         if (fall === "GOLD") z(0.276).Y = z(0.278).Y = z(0.5).Y;
         if (fall === "REF") z(0.33).X *= 1.5;
         if (fall === "NACHT") z(0).hell = 10;
         if (fall === "ASYNC") z(0.722).sofort *= 2;
-        const m = { zeilen: alle, schreiber: { _dayNightApplyBelichtung: 1 }, karte: fall === "ANKER" ? 170 : q.karte, bahn: fall !== "WAND" && fall !== "FUSS" };
+        const m = { zeilen: alle, schreiber: { _dayNightApplyBelichtung: 1 }, karte: fall === "ANKER" ? 170 : q.karte, bahn: fall !== "WAND" };
         if (fall === "SCHREIBER") m.schreiber._tickPortalMembranes = 1;
         if (fall === "BLIND") m.zeilen = [];
         return tagKurveUrteil({ wiese: m }).befunde.join();
@@ -1039,7 +1033,6 @@ function tagKurveSelbsttest() {
     };
     return [
         [kurve(T.kopf, "WAND"), ""],
-        [kurve(T.kopf, "FUSS"), ""],
         [kurve(T.kopf).replace(/ wiese:[^,]*/g, ""), "REF,REF,REF,REF,WARM,WARM"],
         [kurve(T.kopf, "REF"), /REF wiese: Uhr 0\.33 /],
         ...["ANKER", "SPRUNG", "BUCKEL", "GOLD", "NACHT", "ASYNC", "SCHREIBER", "BLIND"].map((f) => [kurve(T.kopf, f), new RegExp(`(^|,)${f} wiese`)]),
@@ -2121,24 +2114,9 @@ function farbTon([r, g, b]) {
     const [hi, d] = [Math.max(r, g, b), Math.max(r, g, b) - Math.min(r, g, b)];
     return d > 0 ? 60 * (hi === r ? ((g - b) / d + 6) % 6 : hi === g ? (b - r) / d + 2 : (r - g) / d + 4) : 0;
 }
-// Farbton, Sättigung (HSV) und 8-bit-Farbe einer Farbe in [0, 1] — der Ton des Feuers der Prüfbühne (Seite und Node)
-function hsvTon(c) {
-    const mx = Math.max(...c);
-    return { hue: +farbTon(c).toFixed(1), sat: +(mx > 0 ? (mx - Math.min(...c)) / mx : 0).toFixed(3), rgb: c.map((x) => Math.round(x * 255)) };
-}
 function tonDesBands(paare) {
     const [l, s] = [0, 1].map((k) => farbTon([0, 1, 2].map((i) => paare.reduce((a, p) => a + p[k][i], 0))));
     return paare.length ? +Math.min(Math.abs(l - s), 360 - Math.abs(l - s)).toFixed(2) : null;
-}
-// DER TON DER FERNE (w26-ferne-ton, K1-2 FARBTON): der Ton des Bands gegen die Luft vor einem SCHWARZEN Ziel in derselben
-// Entfernung — je Pixel A = S·(1 − e^{−β·g·d}), β der Referenz (Koschmieder: L = L0·T + S·(1 − T) je Kanal) —, nie gegen den
-// Horizont S selbst (`paare` je Pixel [L, S, g·d]). Die Luft filtert je Kanal (bei 8 km 1 − T = 0,67/0,78/0,88): gegen den
-// fast grauen Horizont zur Sonne (die Mie-Aureole, 3–4 Stufen Buntheit) trug schon die Luft allein, ein Band OHNE Boden, auf der
-// GTX 10,21°, auf swiftshader 2,69° (87537d3f, Azimut 0, Uhr 0,5) — der Ton einer fast grauen Referenz ist schlecht gestellt,
-// je Kanal 1 % Rundung des Geräts drehte ihn um 7°. Gegen die Luft der Entfernung (Buntheit ~20 %) misst das Band, was der Boden
-// durch die Luft trägt: GTX 1050 Azimut 0 13° → 5,22°, je Uhr 0,5 5,22 · 5,72 · 3,88 · 3,48°, Uhr 0,27 0,36–3,36° (bb75c460).
-function tonDerFerne(paare, beta) {
-    return tonDesBands(paare.map(([L, S, gd]) => [L, S.map((s, c) => s * (1 - Math.exp(-beta[c] * gd)))]));
 }
 
 // DIE LUFT IM BILD (ferne-luft, Meisterkarte Ferne K1 + K2): vom Hügel je Uhr vier Azimute ab der Sonne, je drei
@@ -2292,7 +2270,7 @@ function luftTiefe(o) {
                     if (!b) continue;
                     tc.forEach((x, c) => x != null && b.q[c].push(x / Math.exp(-bRef[c] * t.g * t.d)));
                     if (tc[0] > 0.01 && tc[2] > 0.01 && luftAufgeloest(L0, S, i, [0, 2])) b.dk.push(Math.log(tc[0] / tc[2]) / (t.g * t.d));
-                    b.dh.push([l, sa, t.g * t.d]);
+                    b.dh.push([l, sa]);
                 }
             const rand = med(Object.values(fern));
             const Yd = Float32Array.from({ length: W * H }, (_, p) => luma709([srgbLin(L[p * 4]), srgbLin(L[p * 4 + 1]), srgbLin(L[p * 4 + 2])]));
@@ -2306,7 +2284,7 @@ function luftTiefe(o) {
             return {
                 kante: { spalten: Object.keys(oben).length, rand: Object.keys(kante).length, linie: +((kl.linie / W) * hfov).toFixed(2), stufe: kl.stufe },
                 blende: k,
-                baender: bd.map((b) => ({ d: b.d, n: b.dh.length, q: b.q.map(med), dk: med(b.dk), nk: b.dk.length, dh: tonDerFerne(b.dh, bRef) })),
+                baender: bd.map((b) => ({ d: b.d, n: b.dh.length, q: b.q.map(med), dk: med(b.dk), nk: b.dk.length, dh: tonDesBands(b.dh) })),
                 himmel: inS[0].length >= R.mindest.n ? inS.map(med) : null,
                 rand: { km: +(rand / 1000).toFixed(1), C: med(gez.filter((x) => x.d >= 0.9 * fern[x.x]).map((x) => x.C)) },
                 sicht: { m: med(sb), n: sb.length },
@@ -2379,8 +2357,8 @@ function duvTageslicht(c) {
 }
 
 // DAS URTEIL DER LUFT (die Bänder in spec/farbe/luft-referenz.json): K1-1 KOSCHMIEDER, K1-2 JE KANAL (Δβ blau−rot gegen die
-// Referenz, grau = 0) · FARBTON, K2-1 KANTE. Jede Sicht (Uhr × Azimut) misst `mindest`, sonst ROT beim Namen: eine leere
-// Messung ist nie grün.
+// Referenz, grau = 0) · FARBTON, K2-1 KANTE; was die Referenz `offen` nennt, steht OFFEN und hält die Wand nicht. Jede Sicht
+// (Uhr × Azimut) misst `mindest`, sonst ROT beim Namen: eine leere Messung ist nie grün.
 function luftTiefeUrteil(m, R) {
     const B = R.band;
     const M = R.mindest;
@@ -2399,7 +2377,7 @@ function luftTiefeUrteil(m, R) {
                 // (w22-ferne-heil: der Luftschatten `luftSicht` fiel bei β 1 unter seine Klemme, T/T_soll bis −7,98)
                 if (u === 0.5 && q.length)
                     liste.push(`K1-1 KOSCHMIEDER ${wo} ${b.d / 1000} km: T/T_soll ${q.join(", ")} außerhalb ±${B.T * 100} %${Math.min(...b.q) < 0 ? " · T < 0: luftSicht hängt an β" : ""}`);
-                if (b.d === 8000 && !(b.dh <= B.dh)) liste.push(`K1-2 FARBTON ${wo} 8 km: ${b.dh}° von der Luft der Entfernung > ${B.dh}°`);
+                if (b.d === 8000 && !(b.dh <= B.dh)) liste.push(`K1-2 FARBTON ${wo} 8 km: ${b.dh}° von der In-Streuung > ${B.dh}°`);
             }
             const fern = z.baender.filter((b) => b.d >= 2000 && b.nk > 0);
             const nk = fern.reduce((a, b) => a + b.nk, 0);
@@ -2435,9 +2413,11 @@ function luftTiefeUrteil(m, R) {
             const k = ((zs || []).find((x) => x.uhr === 0.5 && x.az === az) || {}).kante || { spalten: 0 };
             if (!(k.spalten >= M.spalten && k.linie < B.linie)) liste.push(`K2-2 KANTENLINIE ${ort} Azimut ${az}°: Linie ${k.linie}° Stufe ${k.stufe} (${k.rand}/${k.spalten} Spalten)`);
         }
+    const offen = (b) => Object.keys(R.offen || {}).some((k) => b.includes(k));
     const staffel = {};
     for (const k of ["K1-1", "K1-2", "K2-1", "K2-2"]) staffel[k] = liste.some((b) => b.startsWith(k)) ? "ROT" : "GRUEN";
-    return { urteil: liste.length ? "ROT" : "GRUEN", staffel, befunde: liste };
+    const befunde = liste.filter((b) => !offen(b));
+    return { urteil: befunde.length ? "ROT" : "GRUEN", staffel, befunde, offen: liste.filter(offen) };
 }
 
 // DER WETTER-ZUG IM BILD (Licht K5): klar → `o.wort` → klar als Wort des Spielers, je Wort `o.sek` Sekunden der Welt-Uhr im
@@ -2501,7 +2481,7 @@ function luftTiefeSelbsttest(R) {
                 baender: R.baenderM.map((d) => ({ d, n, q, dk, nk: n, dh: 5 })),
             }))
         );
-    const urteil = (zeilen, gipfel = zeilen, weiss = { RB: 1.5 }) => luftTiefeUrteil({ zeilen, gipfel: { zeilen: gipfel }, weiss }, R);
+    const urteil = (zeilen, gipfel = zeilen, weiss = { RB: 1.5 }) => luftTiefeUrteil({ zeilen, gipfel: { zeilen: gipfel }, weiss }, Object.assign({}, R, { offen: {} }));
     const leer = urteil(sichten(null, null, 0)).staffel;
     const k = ref[2] - ref[0];
     // das Bild einer Welt-Kante: Himmel 0,5 über einer Stufe `c` ab Zeile 100 (`zacke`: je zweite Spalte 8 px tiefer)
@@ -2527,15 +2507,8 @@ function luftTiefeSelbsttest(R) {
         // der Median der Töne je Pixel (die Mutante der alten Linse, `tonDesBands` je Paar) liegt 13° darüber: er verzerrte nach OBEN
         ((s = 11, L = [1524, 1532, 1545], S = [1500, 1530, 1560]) => {
             const px = Array.from({ length: 200 }, () => [L, S].map((c) => c.map((v) => Math.round(v / 10 + (s = (s * 1664525 + 1013904223) >>> 0) / 2 ** 31 - 1))));
-            const [band, je] = [tonDesBands(px), px.map((p) => tonDesBands([p])).sort(aufsteigend)[100]];
+            const [band, je] = [tonDesBands(px), px.map((p) => tonDesBands([p])).sort((a, b) => a - b)[100]];
             return (Math.abs(band - tonDesBands([[L, S]])) <= 2 && je > 17) || `Ton des Bands ${band}° (Wahrheit 7,14°), je Pixel ${je}°`;
-        })(),
-        // DER TON DER FERNE gegen die Luft der Entfernung (der Horizont der GTX 87537d3f, 8 km nach Koschmieder): ein schwarzer Boden
-        // trägt 0° (gegen S, die Mutante der alten Linse, 8,5° — die Luft allein verbrauchte die Toleranz), die Wiese vor dem
-        // Bestand (w25-ferne-licht-5, 37,9°) bleibt ROT
-        ((S = [0.26289, 0.26804, 0.27857], T = ref.map((b) => Math.exp(-b * 7760))) => {
-            const [schwarz, wiese] = [[0, 0, 0], [0.16, 0.21, 0.06]].map((L0) => [[L0.map((x, c) => T[c] * x + (1 - T[c]) * S[c]), S, 7760]]);
-            return (tonDerFerne(schwarz, ref) === 0 && tonDesBands(schwarz) > 8 && tonDerFerne(wiese, ref) > 10) || "Ton der Ferne";
         })(),
         // die Auflösung je Pixel in Stufen (L0 gegen S, 8 bit): das Paar am Morgen (Rot 24, Blau 19 Stufen; linear 0,029/0,021 unter
         // der alten Wache 0,05) trägt, das Rauschen (4 Stufen) und das helle Paar (9 Stufen, linear 0,057 über ihr) nie
@@ -2929,9 +2902,7 @@ module.exports = {
     luftBetaRef,
     luftAufgeloest,
     farbTon,
-    hsvTon,
     tonDesBands,
-    tonDerFerne,
     luftTiefe,
     luftTiefeUrteil,
     luftTiefeSelbsttest,
