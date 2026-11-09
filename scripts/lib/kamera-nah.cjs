@@ -68,6 +68,10 @@ function nahDeckungInSeite(o) {
         if (e?.mesh) archNachMesh.set(e.mesh, e);
         if (e?.id != null) eintragNachId.set(e.id, e);
     }
+    // DIE MEMBRAN GEHÖRT IHREM TOR (studios.K4, w27-studio-mesh): die Welt zeichnet sie als eigenes Mesh neben dem Rahmen
+    // (`_membranBauFor`, `_portalMembranes`) — ohne Eintrag hieß sie fremd, und das Tor am Ziel verdeckte sich selbst (Radeon
+    // da0e790f: „Ziel Blickziel verdeckt von portal-membran in 18.98 m“, kein Bild der Welt für das Tor-Studio)
+    for (const rec of r._portalMembranes?.values() || []) if (rec.mesh) archNachMesh.set(rec.mesh, rec.entry);
     const eintragVon = (obj, inst) => {
         // der Pool der Fundamente (`st.archFundament`, EIN Mesh für jedes Bauwerk, `idAt[slot]` = die id des Eintrags)
         const fu = st.archFundament;
@@ -311,6 +315,15 @@ function nahDeckungInSeite(o) {
             if (!vor(W0)) return { d, vor: d < L / 2 && "Boden-Schicht" };
             let h = null;
             const traegt = (s) => Math.hypot(s.center.x - W0.x, s.center.z - W0.z) <= s.radius + 0.25 && W0.y >= s.center.y - s.radius;
+            // DAS ZIEL IM SATZ (wie `legeDreiecke`: die Zelle eines Bau-Bereichs gehört `slotEntry[i]` ihrer Gruppe): steht die Fläche
+            // über der Zelle eines Eintrags des Ziels, ist sie das Ziel. Die Suche unten liest keinen Satz — ein Haus, das der
+            // Bau-Satz zeichnet, fand so nie seinen Eigner, und die kleinste fremde Hülle über dem Punkt hieß Verdecker (Radeon
+            // da0e790f, das Fachwerk-Haus der Station studios.K4: „Ziel Blickziel verdeckt von fern-ring in 27.09 m“)
+            for (const s of satzVon.values())
+                for (const b of s.bloecke.values()) {
+                    const se = st.archInstanceGroups.get(b.key)?.slotEntry;
+                    if (b.zellen.some((z, k) => OHNE.has(se?.[k]?.id) && traegt(z.huelle.getBoundingSphere(zs)))) return { d };
+                }
             st.scene.traverseVisible((obj) => zaehlt(obj) && !S.boden.aus.has(obj) && !satzVon.has(obj) && jeInstanz(obj, traegt, (ob, k) => !(h?.rad <= bs.radius) && (h = { rad: bs.radius, obj: ob, e: eintragVon(ob, k) }))); // prettier-ignore
             if (h?.e && OHNE.has(h.e.id)) return { d };
             return { d: W0.distanceTo(E), vor: h ? klasseVon(h.obj, Array.isArray(h.obj.material) ? h.obj.material[0] : h.obj.material, h.e).name : "Satz oder Gelände" };
