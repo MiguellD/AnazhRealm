@@ -609,13 +609,12 @@ const REZEPTE = {
 const GPU_REZEPTE = ["linse", "webgl", "echt"];
 
 // Die Start-Optionen: `frist` = protocolTimeout (ms), `zusatz` hinter dem Rezept, `viewport`, `profil` = userDataDir; headless.
-function browserOptionen({ art, frist, zusatz = [], headless = true, viewport, profil, dumpio, zeit = false } = {}) {
+function browserOptionen({ art, frist, zusatz = [], headless = true, viewport, profil, zeit = false } = {}) {
     if (!REZEPTE[art])
         throw new Error(`welt-boot: unbekanntes Rezept "${art}" — erlaubt: ${Object.keys(REZEPTE).join(" · ")}`);
     const o = { headless, userDataDir: profil };
     if (frist != null) o.protocolTimeout = frist;
     if (viewport !== undefined) o.defaultViewport = viewport;
-    if (dumpio != null) o.dumpio = dumpio;
     o.args = [...REZEPTE[art]({ zeit }), ...zusatz];
     return o;
 }
