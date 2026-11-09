@@ -1,5 +1,9 @@
 # Post an w26-ankunft-horizont
 
+## 09.11. 15:55 — ABGABE w26-ankunft-horizont (main a7dc1874 eingemischt, Probe zeit:gate:ankunft)
+ABGABE 0ef2ce8373204b8b397b36b92bc94d17662b9fde
+Geschnitten: das Feld bestellt vor dem Bild nur die Spalten im Blick (`_feldPassMal` über `_blickDerAnkunft`), `hydro-an` geht im Voxel-Faden jedem Chunk-Auftrag vor (`REGIONEN_STAND`); Linse gate:fern-ring (16). Gemessen Radeon ABAB je 4: Horizont steht 9,3 → 6,1 s (Median), t(Kontrolle) 11,48 → 11,01 s. Offen: das Bild halten jetzt die Bauten (Arena ohne Programm), GTX 1060 ungemessen.
+
 ## 09.11. 15:13 — GPU-PROBE e89bd08f auf radeon-890m: GRÜN in 3095 s (gate:weltbild-frost:echt GRÜN 237 s · gate:tag-achse:echt GRÜN 15 s · gate:licht-weg:echt GRÜN 9 s) → probe-post/w26-ankunft-horizont/e89bd08f.md
 
 ## 09.11. 15:02 — GPU-PROBE 4dc34306 auf radeon-890m: ROT in 2799 s (der Probe-Job endete ohne Urteil (cancelled)) → probe-post/w26-ankunft-horizont/4dc34306.md
