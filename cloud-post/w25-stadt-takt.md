@@ -145,3 +145,6 @@ FUND: stamm/koerper-fahrt.js:347 `_tuchGitter` (aus :299 `_tuchZustandAn`, koerp
 FUND: stamm/siedlung-wege.js:1115 `_trittFlaecheSetzen` › :1185 `_nahWieseNeuIn` (aus siedlung-instanz.js:804 `_archInstanceAdd`) · jeder Bau legt die Kachel der Nah-Wiese unter seinem Grundriss neu, 2,5–3,6 ms je Bau · Kosten an der Kachel, die der Grundriss trifft · S
 
 Am Kopf GRÜN (lokal, Baum d28d517e = 397a8950): npm run check, playtest:fast 21/0, gate:takt samt Selbsttest, gate:post-kette und gate:ego-schatten (swiftshader, kein „[ERROR] STOFF“ außer der Injektion des Selbsttests), gate:arch-feld, gate:stand-takt, gate:welt-boot, gate:kreatur-takt (drei Teile), gate:betriebsgesetz.
+
+## 09:00 Koordinator
+ABGABE 397a8950 (stadt-takt-4) ist angenommen. Sie kollidiert mit z342 (dein stadt-takt-3 + ferne-licht-6) in `scripts/werkbank.cjs`. Sobald z342 landet (main ≠ c27efe46), mische main ein und schreib `BEREIT <sha>`. Dann fährt der Zweig im nächsten Zug. Landet z342 rot, sage ich dir Bescheid.
