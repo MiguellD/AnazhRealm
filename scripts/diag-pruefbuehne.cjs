@@ -821,14 +821,13 @@ const S0_TON = { hue: [28, 45], satMax: 0.75, palette: { hex: 0xff7a35, nacht: 1
 // der Rest wieder in sRGB — unter der Tonkurve Khronos PBR Neutral (linear bis zur Schulter, der Schwarzpunkt fällt in der
 // Differenz) ist das das Licht des Feuers auf dem Boden (die Differenz der sRGB-Werte zöge die Nacht nichtlinear ab).
 const { srgbLin: s0Lin, linSrgb: s0Srgb, luma709 } = require("./lib/abnahme-urteil.cjs");
+const { farbTon } = require("./lib/licht-linsen.cjs");
 function s0TonNetto(e, ohne) {
     if (!e || !e.ton || !ohne || !ohne.ton) return null;
     const [R, G, B] = e.ton.rgb.map((c, i) => s0Srgb(Math.max(0, s0Lin(c) - s0Lin(ohne.ton.rgb[i]))));
     const mx = Math.max(R, G, B);
     const dl = mx - Math.min(R, G, B);
-    let hue = 0;
-    if (dl > 0) hue = mx === R ? 60 * (((G - B) / dl + 6) % 6) : mx === G ? 60 * ((B - R) / dl + 2) : 60 * ((R - G) / dl + 4);
-    return { hue: +hue.toFixed(1), sat: +(mx > 0 ? dl / mx : 0).toFixed(3), rgb: [R, G, B].map((c) => Math.round(c * 255)) };
+    return { hue: +farbTon([R, G, B]).toFixed(1), sat: +(mx > 0 ? dl / mx : 0).toFixed(3), rgb: [R, G, B].map((c) => Math.round(c * 255)) };
 }
 // der Ton des Schusses `e` gegen den Schuss ohne Feuer `ohne`: Farbton netto, Sättigung brutto
 function s0Ton(e, ohne) {
@@ -1103,6 +1102,8 @@ async function lichtLauf() {
         process.exit(1);
     };
     const page = await browser.newPage();
+    // der EINE Farbton (licht-linsen `farbTon`) für den Ton der Feuer-Probe in der Seite
+    await page.evaluateOnNewDocument(`window.farbTon = ${farbTon};`);
     await page.evaluateOnNewDocument(s0PipeRegister);
     // der Speicher fällt vor dem ersten Skript des ERSTEN Ladens (ein Laden weniger als Laden → Löschen → Neu laden)
     await page.evaluateOnNewDocument(() => {
@@ -1431,11 +1432,8 @@ async function lichtLauf() {
                         const mx = Math.max(R, G, B);
                         const mn = Math.min(R, G, B);
                         const dl = mx - mn;
-                        let hue = 0;
-                        if (dl > 0)
-                            hue = mx === R ? 60 * (((G - B) / dl + 6) % 6) : mx === G ? 60 * ((B - R) / dl + 2) : 60 * ((R - G) / dl + 4);
                         ton = {
-                            hue: +hue.toFixed(1),
+                            hue: +farbTon([R, G, B]).toFixed(1),
                             sat: +(mx > 0 ? dl / mx : 0).toFixed(3),
                             rgb: [R, G, B].map((c) => Math.round(c * 255)),
                             punkte: nt / 9,

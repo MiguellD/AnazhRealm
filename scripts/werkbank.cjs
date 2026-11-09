@@ -3484,7 +3484,7 @@ hauptLauf(async () => {
         if (SELBST) process.exit(0);
         const halt = await eigeneWelt();
         const seite = async (f, o) =>
-            ergebnis(await evalRuf(`const kantenLinie = ${LL.kantenLinie}, luftBetaRef = ${LL.luftBetaRef}, luftAufgeloest = ${LL.luftAufgeloest}, farbTon = ${LL.farbTon}, tonDesBands = ${LL.tonDesBands}; return await (${f})(${JSON.stringify(o)});`));
+            ergebnis(await evalRuf(`const ${["kantenLinie", "luftBetaRef", "luftAufgeloest", "farbTon", "bandMittel", "tonDesBands"].map((n) => `${n} = ${LL[n]}`)}; return await (${f})(${JSON.stringify(o)});`));
         const wort = opt("--wetter");
         const zug = wort && argv.includes("--zug");
         const mittag = { ...ref, uhren: [0.5] };

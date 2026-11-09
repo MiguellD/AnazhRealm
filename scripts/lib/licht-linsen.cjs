@@ -2114,8 +2114,12 @@ function farbTon([r, g, b]) {
     const [hi, d] = [Math.max(r, g, b), Math.max(r, g, b) - Math.min(r, g, b)];
     return d > 0 ? 60 * (hi === r ? ((g - b) / d + 6) % 6 : hi === g ? (b - r) / d + 2 : (r - g) / d + 4) : 0;
 }
+// die Mittel des Bands je Glied der Paare [L, S, L0], linear — der Befund des Tons nennt sie (gate:luft-tiefe:echt auf echter GPU)
+function bandMittel(paare) {
+    return [0, 1, 2].map((k) => [0, 1, 2].map((i) => paare.reduce((a, p) => a + p[k]?.[i], 0) / paare.length));
+}
 function tonDesBands(paare) {
-    const [l, s] = [0, 1].map((k) => farbTon([0, 1, 2].map((i) => paare.reduce((a, p) => a + p[k][i], 0))));
+    const [l, s] = bandMittel(paare).map(farbTon);
     return paare.length ? +Math.min(Math.abs(l - s), 360 - Math.abs(l - s)).toFixed(2) : null;
 }
 
@@ -2270,7 +2274,7 @@ function luftTiefe(o) {
                     if (!b) continue;
                     tc.forEach((x, c) => x != null && b.q[c].push(x / Math.exp(-bRef[c] * t.g * t.d)));
                     if (tc[0] > 0.01 && tc[2] > 0.01 && luftAufgeloest(L0, S, i, [0, 2])) b.dk.push(Math.log(tc[0] / tc[2]) / (t.g * t.d));
-                    b.dh.push([l, sa]);
+                    b.dh.push([l, sa, l0]);
                 }
             const rand = med(Object.values(fern));
             const Yd = Float32Array.from({ length: W * H }, (_, p) => luma709([srgbLin(L[p * 4]), srgbLin(L[p * 4 + 1]), srgbLin(L[p * 4 + 2])]));
@@ -2284,7 +2288,7 @@ function luftTiefe(o) {
             return {
                 kante: { spalten: Object.keys(oben).length, rand: Object.keys(kante).length, linie: +((kl.linie / W) * hfov).toFixed(2), stufe: kl.stufe },
                 blende: k,
-                baender: bd.map((b) => ({ d: b.d, n: b.dh.length, q: b.q.map(med), dk: med(b.dk), nk: b.dk.length, dh: tonDesBands(b.dh) })),
+                baender: bd.map((b) => ({ d: b.d, n: b.dh.length, q: b.q.map(med), dk: med(b.dk), nk: b.dk.length, dh: tonDesBands(b.dh), mittel: bandMittel(b.dh) })),
                 himmel: inS[0].length >= R.mindest.n ? inS.map(med) : null,
                 rand: { km: +(rand / 1000).toFixed(1), C: med(gez.filter((x) => x.d >= 0.9 * fern[x.x]).map((x) => x.C)) },
                 sicht: { m: med(sb), n: sb.length },
@@ -2377,7 +2381,7 @@ function luftTiefeUrteil(m, R) {
                 // (w22-ferne-heil: der Luftschatten `luftSicht` fiel bei β 1 unter seine Klemme, T/T_soll bis −7,98)
                 if (u === 0.5 && q.length)
                     liste.push(`K1-1 KOSCHMIEDER ${wo} ${b.d / 1000} km: T/T_soll ${q.join(", ")} außerhalb ±${B.T * 100} %${Math.min(...b.q) < 0 ? " · T < 0: luftSicht hängt an β" : ""}`);
-                if (b.d === 8000 && !(b.dh <= B.dh)) liste.push(`K1-2 FARBTON ${wo} 8 km: ${b.dh}° von der In-Streuung > ${B.dh}°`);
+                if (b.d === 8000 && !(b.dh <= B.dh)) liste.push(`K1-2 FARBTON ${wo} 8 km: ${b.dh}° von der In-Streuung > ${B.dh}° · L/S/L0 ${b.mittel}`);
             }
             const fern = z.baender.filter((b) => b.d >= 2000 && b.nk > 0);
             const nk = fern.reduce((a, b) => a + b.nk, 0);
@@ -2902,6 +2906,7 @@ module.exports = {
     luftBetaRef,
     luftAufgeloest,
     farbTon,
+    bandMittel,
     tonDesBands,
     luftTiefe,
     luftTiefeUrteil,
