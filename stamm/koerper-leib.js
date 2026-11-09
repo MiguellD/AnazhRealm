@@ -1678,6 +1678,8 @@ class AnazhRealm_koerper_leib {
         }
         if (!r.zahl) return 0;
         mesh.geometry.setAttribute("aStraehne", new THREE.BufferAttribute(r.achse, 2));
+        // die Tangente der Strähne und ihr Wurf (Kajiya-Kay, `_haarLichtModell`)
+        mesh.geometry.setAttribute("aHaarT", new THREE.BufferAttribute(r.tangente, 4));
         return r.zahl;
     }
     // DAS HAAR IM EINEN WIND UND MIT DEM LEIB (haar.K3) — der Lage-Knoten jedes Haar-Stoffs: der Versatz der Ecke ist die

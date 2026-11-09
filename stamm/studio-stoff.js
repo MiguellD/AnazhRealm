@@ -30,23 +30,46 @@ class AnazhRealm_studio_stoff {
     // × die Bestrahlung der Quelle wie Lambert (lightColor trägt den Schatten der Kaskade, × N·L ÷ π). Ohne direktes Licht — im
     // Schatten, unter dem weißen Umgebungslicht der Albedo-Tafel — glänzt nichts. Das Labor rechnet dasselbe (`laborStoff`: der
     // Glanz × das direkte Diffuse ÷ die Albedo).
+    // KAJIYA-KAY AN DER FASER (w26-haar-arm): diffus sin(T, L) × die Form (N·L umwickelt, `wrap`), Glanz als zwei Lappen
+    // sin(T', H)^p mit der Tangente um `shift` + Wurf × `jit` zur Normale gekippt (R farblos, TRT im Ton des Haars; Scheuermann
+    // 2004), normiert (p + 2) / 2π — die Rundung der Normale quer zur Strähne trägt kein Licht mehr (die Streifen je Band, die den
+    // Strich am Arm über das Band hoben). Ohne Tangente (die Braue, die Kappe der Grobstufe) das Licht des Standard-Stoffs.
     static _haarLichtModell() {
         if (AnazhRealm._haarLichtK) return AnazhRealm._haarLichtK;
         const T = THREE.TSL;
         const Basis = THREE.MeshStandardNodeMaterial.prototype.setupLightingModel.call(null).constructor;
         class HaarLicht extends Basis {
-            constructor(glanz) {
+            constructor(kk, faser) {
                 super();
-                this.glanz = glanz;
+                this.kk = kk;
+                this.faser = faser;
             }
             direct(e, builder) {
-                super.direct(e, builder);
-                e.reflectedLight.directSpecular.addAssign(
-                    e.lightColor
-                        .mul(T.normalView.dot(e.lightDirection).max(0.0))
-                        .mul(this.glanz)
-                        .mul(1 / Math.PI)
-                );
+                const { kk, faser } = this;
+                const L = e.lightDirection,
+                    N = T.normalView;
+                const nl = N.dot(L);
+                const tl = faser.t.normalize();
+                const form = nl.mul(kk.wrap).add(1 - kk.wrap).clamp(0.0, 1.0);
+                const sinTL = T.float(1).sub(tl.dot(L).pow(2)).max(0.0).sqrt();
+                const diffus = T.mix(nl.max(0.0), sinTL.mul(form), kk.kd).mul(faser.da);
+                e.reflectedLight.directDiffuse.addAssign(e.lightColor.mul(diffus).mul(T.diffuseColor.rgb).mul(1 / Math.PI));
+                const H = L.add(T.positionViewDirection.normalize()).normalize();
+                const lappen = (shift, p) => {
+                    const th = tl.add(N.mul(faser.wurf.mul(kk.jit).add(shift))).normalize().dot(H);
+                    return T.float(1)
+                        .sub(th.mul(th))
+                        .max(0.0)
+                        .sqrt()
+                        .pow(p)
+                        .mul((p + 2) / (2 * Math.PI));
+                };
+                const glanz = T.vec3(...kk.R.farbe)
+                    .mul(lappen(kk.R.shift, kk.R.p))
+                    .add(T.diffuseColor.rgb.mul(kk.TRT.amt).mul(lappen(kk.TRT.shift, kk.TRT.p)));
+                e.reflectedLight.directSpecular.addAssign(e.lightColor.mul(form).mul(glanz).mul(faser.da));
+                // ohne Faser der Standard-Stoff (Lambert + GGX)
+                super.direct(Object.assign({}, e, { lightColor: e.lightColor.mul(T.float(1).sub(faser.da)) }), builder);
             }
         }
         AnazhRealm._haarLichtK = HaarLicht;
@@ -453,12 +476,24 @@ class AnazhRealm_studio_stoff {
                             term(mf.farbe, rim.pow(3.0).mul(TSL.step(mf.schwelle, hsh)).mul(mf.amt));
                         }
                     }
-                    if (add && kind === "hair") {
-                        // DER GLANZ DES HAARS IST LICHT (w25-haar-albedo): die Terme von HAAR_LOOK wiegen je direktem Licht im
-                        // Lichtmodell des Haars (`_haarLichtModell`) — nie als Emission. Bis hier leuchtete der Glanz von selbst: im
-                        // Schatten des Walds stand das dunkelbraune Haar (Albedo 0,0117) weiß (Radeon 53b2fc7a, haar.K2#1 arm 0,6263).
+                    if (kind === "hair" && L.kk) {
+                        // DER GLANZ DES HAARS IST LICHT (w25-haar-albedo) AN DER FASER (w26-haar-arm): Kajiya-Kay je direktem Licht im
+                        // Lichtmodell des Haars (`_haarLichtModell`), nie als Emission. Die Tangente der Strähne (`aHaarT`, koerper
+                        // `haarAchse`) trägt diffus und Glanz; über die Naht in die Welt (die Instanz der Menge mit), dann ins Auge.
                         const K = AnazhRealm._haarLichtModell();
-                        mat.setupLightingModel = () => new K(add);
+                        const naht = this._weltNaht(TSL);
+                        const a = TSL.Fn((b) =>
+                            b.geometry && b.geometry.hasAttribute("aHaarT")
+                                ? TSL.attribute("aHaarT", "vec4")
+                                : TSL.vec4(0.0)
+                        )();
+                        const welt = naht.spalte(0).mul(a.x).add(naht.spalte(1).mul(a.y)).add(naht.spalte(2).mul(a.z));
+                        const faser = {
+                            t: TSL.vertexStage(TSL.cameraViewMatrix.mul(TSL.vec4(welt, 0.0)).xyz),
+                            wurf: TSL.vertexStage(a.w),
+                            da: TSL.vertexStage(TSL.step(0.5, a.xyz.length())),
+                        };
+                        mat.setupLightingModel = () => new K(L.kk, faser);
                         const schluessel = mat.customProgramCacheKey;
                         mat.customProgramCacheKey = function () {
                             return schluessel.call(this) + "|haarLicht";

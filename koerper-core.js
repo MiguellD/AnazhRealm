@@ -797,12 +797,17 @@
         ton: 0.2,
         wurzel: 0.85,
     });
+    // DAS LICHT DES HAARS (w26-haar-arm, Kajiya-Kay 1989 / Marschner 2003 / Scheuermann 2004; Leser: stamm `_haarLichtModell`, das
+    // Labor `laborStoff`): an der Tangente der Strähne (koerper `haarAchse`) — wrap die Form N·L umwickelt, kd der Anteil sin(T, L) am
+    // Diffusen, jit der Wurf je Strähne auf den Kipp der Lappen; R farblos (Keratin F0 0,046), TRT im Ton des Haars.
     var HAAR_LOOK = Object.freeze({
-        tipRimPow: 3,
-        tipRimFarbe: Object.freeze([0.35, 0.18, 0.05]),
-        specPow: 8,
-        specAmt: 0.3,
-        specFarbe: Object.freeze([0.3, 0.15, 0.04]),
+        kk: Object.freeze({
+            wrap: 0.5,
+            kd: 1,
+            jit: 0.2,
+            R: Object.freeze({ farbe: Object.freeze([0.046, 0.046, 0.046]), shift: -0.1, p: 80 }),
+            TRT: Object.freeze({ amt: 0.5, shift: 0.1, p: 20 }),
+        }),
     });
     // DER RAHMEN DER STRÄHNE (w25-haar-albedo; Leser: der Welt-Stoff über stamm `_haarAchse`, das Labor `laborStoff`): das Gesetz
     // der Ecken des Bäckers (foundry-core `__streuGeo`: je Band vier Ecken — zwei an der Wurzel im Ton × HAAR_STRICH.wurzel, zwei
@@ -813,12 +818,14 @@
     // schaltete je Strähne ganz an oder aus: das dunkelbraune Haar stand weiß, haar.K2#1). Eingaben je Ecke: Lage und Farbe
     // (xyz hintereinander), Ton (`menschTon`). Ein Vierer im Ton des Haars, dessen Farben dem Gesetz nicht folgen, ist ein Bruch
     // (gezählt) — außer er ist eine Fläche in einem Ton (die Kappe der Grobstufe). Rückgabe { achse (Float32Array, 2 je Ecke), zahl,
-    // bruch }.
+    // bruch }. DIE TANGENTE (w26-haar-arm, Kajiya-Kay): je Ecke `tangente` [x, y, z, Wurf] — die Richtung Wurzel → Spitze (die Mitte der Spitze
+    // − die Mitte der Wurzel, Einheit) und der Wurf der Strähne; das Licht des Haars läuft an ihr, nie an der Normale (`_haarLichtModell`).
     function haarAchse(lage, farbe, ton) {
         var n = ton.length,
             haarTon = menschTon("hair"),
             wz = HAAR_STRICH.wurzel,
             A = new Float32Array(n * 2),
+            TA = new Float32Array(n * 4),
             zahl = 0,
             bruch = 0;
         var gleich = function (x, y) {
@@ -849,13 +856,18 @@
             for (f = 0; f < 3; f++)
                 d[f] = (lage[(i + 2) * 3 + f] + lage[(i + 3) * 3 + f] - lage[i * 3 + f] - lage[(i + 1) * 3 + f]) / 2;
             var l = Math.sqrt(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]);
+            // der Wurf der Strähne (−1 … 1, ein Hash ihrer Nummer — die Lage der Ecken bleibt): er kippt ihre Glanz-Lappen (HAAR_LOOK)
+            var h = Math.sin((i >> 2) * 12.9898 + 78.233) * 43758.5453,
+                wurf = 2 * (h - Math.floor(h)) - 1;
             for (k = 0; k < 4; k++) {
                 A[(i + k) * 2] = k < 2 ? 0 : l;
                 A[(i + k) * 2 + 1] = l;
+                for (f = 0; f < 3; f++) TA[(i + k) * 4 + f] = l > 0 ? d[f] / l : 0;
+                TA[(i + k) * 4 + 3] = wurf;
             }
             zahl++;
         }
-        return { achse: A, zahl: zahl, bruch: bruch };
+        return { achse: A, tangente: TA, zahl: zahl, bruch: bruch };
     }
 
     // ════════════════════════════════════════════════════════════════════
