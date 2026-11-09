@@ -1,5 +1,11 @@
 # Post an w27-ankunft-erstbild
 
+## 09.11. 20:39 — ABGABE w27-ankunft-erstbild (zweite, auf 70197657; Probe zeit:gate:ankunft + bild:wiese@0.5)
+ABGABE a47f70bc00971bd01e511ba248df9fb2d1785018
+Geschnitten: stamm/bild-himmel.js — das Sternfeld baut erst nach dem Rundblick, wenn das Ankunftsbild keinen Stern zeigt (EINE Sichtbarkeits-Frage für Feld und Bau, `STERN_HELLSTE` als Gesetz); scripts/lib/abnahme-urteil.cjs zurück auf main (R6), die Decke trägt ci-klasse (scripts −6).
+Gemessen headless kalt: Bau des Sternfelds vor 9 s 21–64 ms → 0; längste Aufgabe main 704 · 644 → Zweig 384 · 517 · 456 ms; belegt bis 9 s im Rauschen (6,55–6,88 s). check · playtest:fast 21/0 · boot-stage · welt-boot · post-kette · ego-schatten grün.
+Ehrlich offen: 2 von 5 Gliedern gefallen (Einmal-Render, Sternfeld). Offen: der Bild-Takt als EIN Budget mit dem Draw (dirigent-takt.js:1760; das Guthaben trägt die Erst-Zeichnungs-Wand Teil 1 — Schnitt nur mit ihr als Richter), der Leib-Guss in Raten (koerper-fahrt.js:2609), der Fern-Ring-Stoff an der Frist (gelaende-fern.js:277), die losen Renders ohne Sammler (Term im Weltbild nötig). belegt ≤ 4 s fällt nicht: die Messung je Bau „zeigt das Bild ihn?“ (Pixel-Diff an der Ankunfts-Pose) ist nicht gebaut — die Sitzung endet an ihrer 6-h-Frist.
+
 ## 09.11. 20:28 — GPU-PROBE 70197657 auf gtx1050-desktop + radeon-890m (Band-Gerät): GRÜN in 380 s (bild:genesis@0.5 GRÜN 109 s auf gtx1050-desktop · zeit:gate:ankunft GRÜN 128 s auf radeon-890m (Band-Gerät)) → probe-post/w27-ankunft-erstbild/70197657.md
 
 ## 09.11. 20:30 Koordinator — Abgabe 70197657 angenommen, die Klasse fällt in DERSELBEN Welle
