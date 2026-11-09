@@ -1,8 +1,8 @@
 {
  "sha": "b62542c9c12a5d5bf10dd44065756faa3ce27001",
  "geraet": "headless",
- "zeit": "2026-11-05T06:01:12.715Z",
- "host": "farm:41975434794",
+ "zeit": "2026-11-05T10:05:53.528Z",
+ "host": "lokal-w12-g2",
  "je": {
   "spielgang.K5#2": {
    "gruen": false,
@@ -1233,16 +1233,15 @@
    "zwilling": "ultiversum.K3#1"
   },
   "affekt.K3#1": {
-   "gruen": false,
-   "zahl": "value > 0 echt 0.512 → 0.604 · gemischt 0.262 → 0.643 · stumm 0.000 → 0.000 · Stimme: Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 56 m südwestlich von dir, weil lebendig am O",
+   "gruen": true,
+   "zahl": "value > 0 echt 0.426 → 0.778 · gemischt 0.292 → 0.500 · stumm 0.000 → 0.000 · erneuert echt 81/94 mit value > 0, 0/51 ohne, gemischt 4/15 mit value > 0, 0/39 ohne · Stimme: Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 43 m südlich von dir, weil Zufall ≤ 0.63. (G",
    "exit": 0,
-   "minuten": 15.36,
-   "grund": "ROT: value > 0 echt 0.512 → 0.604 · gemischt 0.262 → 0.643 · stumm 0.000 → 0.000 · Stimme: Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 56 m südwestlich von dir, weil lebendig am O",
-   "zeit": "2026-11-05T05:40:50.146Z",
-   "abdruck": "8469f3478dae",
+   "minuten": 59.22,
+   "zeit": "2026-11-05T10:05:53.528Z",
+   "abdruck": "85e7ef05b30a",
    "port": 7704,
-   "bahn": "1/1",
-   "host": "farm:41975434794/7"
+   "bahn": "1/3",
+   "host": "lokal-w12-g2"
   },
   "klang.K3#2": {
    "gruen": true,
@@ -1466,16 +1465,15 @@
    "zwilling": "feld.K2#1"
   },
   "affekt.K4#1": {
-   "gruen": false,
-   "zahl": "30 Spielminuten, 57 Zeilen, 4 falsch, Abstand 30 s, offen -20.8 s, ohne Tat 0, Klassen {\"nexus\":61,\"rule:nexus\":563,\"llm\":2,\"rule:llm\":11,\"wunsch\":16,\"human\":2,\"fern\":182} · 4 Zeilen falsch · falsch [438.1 s] dazu 6 weitere Tat: Der Nexus färbt den Himmel — überall, aus eigenem Antrieb. (Programm evo_21; dazu 7 weitere Taten seit der letzten Zeile) · falsch [528.1 s] dazu 4 weitere Tat: Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 56 m südlich von dir, weil lebendig am Ort hoch ist (>0.79). (Gesetz Nr. 12 des Nexus; dazu 8 weitere Taten seit der letzten Zeile)",
+   "gruen": true,
+   "zahl": "30 Spielminuten, 55 Zeilen, 0 falsch, Abstand 30 s, offen -6.9 s, ohne Tat 0, Klassen {\"nexus\":64,\"rule:nexus\":289,\"llm\":3,\"rule:llm\":11,\"wunsch\":16,\"human\":2,\"fern\":185}, verworfen 115",
    "exit": 0,
-   "minuten": 1.14,
-   "grund": "ROT: 30 Spielminuten, 57 Zeilen, 4 falsch, Abstand 30 s, offen -20.8 s, ohne Tat 0, Klassen {\"nexus\":61,\"rule:nexus\":563,\"llm\":2,\"rule:llm\":11,\"wunsch\":16,\"human\":2,\"fern\":182} · 4 Zeilen falsch · falsch [438.1 s] dazu 6 weitere Tat: Der Nexus färbt den Himmel — überall, aus eigenem Antrieb. (Programm evo_21; dazu 7 weitere Taten seit der letzten Zeile) · falsch [528.1 s] dazu 4 weitere Tat: Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 56 m südlich von dir, weil lebendig am Ort hoch ist (>0.79). (Gesetz Nr. 12 des Nexus; dazu 8 weitere Taten seit der letzten Zeile)",
-   "zeit": "2026-11-05T05:57:44.359Z",
-   "abdruck": "102c24f2d675",
-   "port": 7704,
-   "bahn": "1/1",
-   "host": "farm:41975434794/8"
+   "minuten": 3.8,
+   "zeit": "2026-11-05T10:05:53.573Z",
+   "abdruck": "5f07443490eb",
+   "port": 7714,
+   "bahn": "2/3",
+   "host": "lokal-w12-g2"
   },
   "leib.K3#1": {
    "gruen": true,
@@ -1568,15 +1566,15 @@
   },
   "haar.K4#2": {
    "gruen": false,
-   "zahl": "Tracht poncho/pants, 11122 Tuch-Ecken · Löser [xpbdSchritt, xpbdKette, tuchGitter, tuchZustand, tuchTakt, tuchRuhe, tuchDrapieren] 44 Rufe im Gang · was der Löser trägt 0.1053 m · Durchdringung im Gang 4319 (40 von 40 Bildern; in Ruhe 86, nicht gezählt) · Labor 0 Rufe · ROT der Gang drückt 4319 Tuch-Ecken hinter die Haut (in 40 von 40 Bildern); das Labor ruft den Löser nicht (Labor ≠ Welt)",
-   "exit": 1,
-   "minuten": 0.7,
-   "grund": "ROT: Tracht poncho/pants, 11122 Tuch-Ecken · Löser [xpbdSchritt, xpbdKette, tuchGitter, tuchZustand, tuchTakt, tuchRuhe, tuchDrapieren] 44 Rufe im Gang · was der Löser trägt 0.1053 m · Durchdringung im Gang 4319 (40 von 40 Bildern; in Ruhe 86, nicht gezählt) · Labor 0 Rufe · ROT der Gang drückt 4319 Tuch-Ecken hinter die Haut (in 40 von 40 Bildern); das Labor ruft den Löser nicht (Labor ≠ Welt)",
-   "zeit": "2026-11-05T06:00:13.379Z",
-   "abdruck": "1b02b3b55148",
-   "port": 7704,
-   "bahn": "1/1",
-   "host": "farm:41975434794/9"
+   "zahl": "Tracht poncho/pants, 8245/2877 Tuch-Ecken · Löser [xpbdSchritt, xpbdKette, tuchGitter, tuchZustand, tuchTakt, tuchRuhe, tuchDrapieren] 45 Rufe im Gang (Gitter-Stufe 0, 15.08 ms je Takt) · Durchdringung fein/fein 3057 (40 Bilder, Ruhe 12, trägt 0.0865 m, Mutante 7339, quer 3914) · grob/grob 543 (40 Bilder, Ruhe 6, trägt 0.0381 m, Mutante 2396, quer 835) · Labor tuchTakt 6× in 25 s · ROT der Gang drückt 3057 Tuch-Ecken der feinen Stufe hinter ihre Haut (in 40 von 40 Bildern); der Gang drückt 543 Tuch-Ecken der groben Stufe hinter ihre Haut (in 40 von 40 Bildern)",
+   "exit": 0,
+   "minuten": 2.68,
+   "grund": "ROT: Tracht poncho/pants, 8245/2877 Tuch-Ecken · Löser [xpbdSchritt, xpbdKette, tuchGitter, tuchZustand, tuchTakt, tuchRuhe, tuchDrapieren] 45 Rufe im Gang (Gitter-Stufe 0, 15.08 ms je Takt) · Durchdringung fein/fein 3057 (40 Bilder, Ruhe 12, trägt 0.0865 m, Mutante 7339, quer 3914) · grob/grob 543 (40 Bilder, Ruhe 6, trägt 0.0381 m, Mutante 2396, quer 835) · Labor tuchTakt 6× in 25 s · ROT der Gang drückt 3057 Tuch-Ecken der feinen Stufe hinter ihre Haut (in 40 von 40 Bildern); der Gang drückt 543 Tuch-Ecken der groben Stufe hinter ihre Haut (in 40 von 40 Bildern)",
+   "zeit": "2026-11-05T10:05:53.619Z",
+   "abdruck": "2e8f39aef1c7",
+   "port": 7724,
+   "bahn": "3/3",
+   "host": "lokal-w12-g2"
   },
   "spielgang.K1#1": {
    "gruen": true,

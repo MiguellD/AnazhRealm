@@ -1,4 +1,4 @@
-$ /opt/hostedtoolcache/node/22.23.3/x64/bin/node -e (async function stimmeLauf() {
+$ C:\Program Files\nodejs\node.exe -e (async function stimmeLauf() {
 const fs = require("fs");
 const path = require("path");
 const { statikServer, nullSeite } = require(path.resolve("scripts/lib/welt-boot.cjs"));
@@ -32,7 +32,7 @@ server.close();
 }
 fs.writeFileSync(aus, JSON.stringify(erg, null, 1));
 process.exit(0);
-})() /home/runner/work/AnazhRealm/AnazhRealm/.claude/worktrees/koordination/meisterkarte-quelle/punkte/messung/roh/b62542c9-headless/affekt.K4_1.json - async function stimmeGang(o) {
+})() C:\Users\micha\AppData\Local\Temp\claude\w3\w12-g2-proben\meisterkarte-quelle\punkte\messung\roh\b62542c9-headless\affekt.K4_1.json - async function stimmeGang(o) {
 const r = window.anazhRealm;
 const [st, P] = [r.state, Object.getPrototypeOf(r)];
 const pm = st.playerMesh.position;
@@ -54,11 +54,16 @@ for (const op of [...P.constructor.DSL_WELTAKTE, "weather"]) {
 const f = tafel[op];
 tafel[op] = (a, ctx) => {
 const w = { op, wer: ctx.source, regel: ctx.regel, weil: ctx.weil, grund: ctx.grund, prog: ctx.programId, t: st.spielZeit - t0, n: st.creatures.length, vor: wetter(), aussen: jetzt };
+const vorher = new Set(st.creatures);
+w.kappe = st.creatures.length >= st.maxCreatures;
 jetzt = w;
 try {
 const x = f(a, ctx);
-w.ok = op !== "spawn_creature" || st.creatures.length > w.n;
+w.ok = op !== "spawn_creature" || st.creatures.some((c) => !vorher.has(c));
 return x;
+} catch (e) {
+w.fehler = String((e && e.message) || e).slice(0, 40);
+throw e;
 } finally {
 [jetzt, w.seq, w.wunsch] = [w.aussen, ++seq, st.wetterWunsch !== w.vor[2]];
 w.ok = !!w.ok && (op !== "weather" || wetter().some((x, k) => x !== w.vor[k]));
@@ -149,6 +154,9 @@ human: n(/^human$/, () => true),
 fern: n(/^(rule:)*(nexus|llm:)/, (w) => w.ort && !w.ort.blick),
 },
 beispiele: zeilen.filter((z, i) => i % 12 === 0).map((z) => "[" + z.t + " s] " + z.text),
+verworfen: W.filter((w) => !w.ok)
+.map((w) => w.op + (w.kappe ? "@kappe" : "") + " " + w.wer.replace(/:.*/, "") + (w.fehler ? " " + w.fehler : ""))
+.reduce((a, k) => ((a[k] = (a[k] || 0) + 1), a), {}),
 };
 } function stimmeUrteil(g) {
 if (!g || !g.klassen) return ["kein Gang"];
@@ -164,23 +172,23 @@ return [
 ...g.ohneTat.map((x) => "Zeile ohne Tat: „" + x + "“"),
 ];
 }
-[stall-akte] ═══ affekt.K4_1.json · Seite #2 http://127.0.0.1:40879/index.html · der Puls steht seit 20.9 s
-[stall-akte] offen evaluate((async function stimmeGang(o) { const r = window.anazhRealm; const [st, P] = [r.state, Obj) seit 37.6 s
-[stall-akte] Puls 12×, zuletzt vor 20.9 s — complete · renderer bereit · weltbild da · frames 695 · welt 695 Takte · Ruhe 0 · zuletzt Welt-Regung · programme 0 · gl-sync 0
-[stall-akte] CPU (2 s) renderer 10677 105 % · GPU 10573 1 %
-[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 57:48 gpu 3 [VizCompositorTh 2 %]/r 235 · 57:50 gpu 0 [VizCompositorTh 1 %]/r 384 · 57:52 gpu 1/r 339 · 57:54 gpu 1 [VizCompositorTh 1 %]/r 199 · 57:56 gpu 1 [Chrome_ChildIOT 1 %]/r 98 · 57:58 gpu 1 [VizCompositorTh 1 %]/r 128 · 58:00 gpu 0/r 110 · 58:02 gpu 1 [VizCompositorTh 1 %]/r 105 · 58:04 gpu 1 [VizCompositorTh 1 %]/r 109 · 58:06 gpu 0 [VizCompositorTh 1 %]/r 106 · 58:08 gpu 1/r 104 · 58:10 gpu 1 [Chrome_ChildIOT 1 %]/r 109 · 58:12 gpu 0 [Chrome_ChildIOT 1 %]/r 105 · 58:14 gpu 1 [VizCompositorTh 1 %]/r 109 · 58:16 gpu 1/r 105 · 58:18 gpu 1 [VizCompositorTh 1 %]/r 104 · 58:20 gpu 0/r 108 · 58:22 gpu 0 [Chrome_ChildIOT 1 %]/r 129 · 58:24 gpu 1/r 107
+[stall-akte] ═══ affekt.K4_1.json · Seite #2 http://127.0.0.1:55256/index.html · der Puls steht seit 20.6 s
+[stall-akte] offen evaluate((async function stimmeGang(o) { const r = window.anazhRealm; const [st, P] = [r.state, Obj) seit 62.6 s
+[stall-akte] Puls 38×, zuletzt vor 20.6 s — complete · renderer bereit · weltbild da · frames 1285 · welt 1285 Takte · Ruhe 30 · zuletzt Foundry offen 1 · programme 0 · gl-sync 0
+[stall-akte] CPU (2 s) renderer 30524 87 % · GPU 48712 1 %
+[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 06:05 gpu 4/r 381 · 06:07 gpu 1/r 379 · 06:09 gpu 1/r 353 · 06:11 gpu 3/r 230 · 06:13 gpu 1/r 158 · 06:15 gpu 1/r 236 · 06:17 gpu 1/r 188 · 06:19 gpu 1/r 194 · 06:21 gpu 1/r 170 · 06:23 gpu 1/r 174 · 06:25 gpu 1/r 165 · 06:27 gpu 0/r 112 · 06:29 gpu 0/r 100 · 06:31 gpu 0/r 66 · 06:33 gpu 1/r 45 · 06:35 gpu 2/r 101 · 06:37 gpu 1/r 114 · 06:39 gpu 1/r 89 · 06:41 gpu 1/r 83 · 06:43 gpu 1/r 74 · 06:45 gpu 1/r 52 · 06:47 gpu 1/r 85 · 06:49 gpu 1/r 69 · 06:51 gpu 1/r 69 · 06:53 gpu 1/r 74 · 06:55 gpu 1/r 87 · 06:57 gpu 1/r 43 · 06:59 gpu 1/r 116 · 07:01 gpu 1/r 67 · 07:03 gpu 1/r 82
 [stall-akte] Stapel kein Stapel in 8 s — der Haupt-Thread steht NATIV
-[stall-akte] Konsole log: [AnazhRealm V18.546.186] [INFO] Nexus-Evolution (DSL) ausgeführt: evo_35, fitness=1.00
-[stall-akte] Konsole log: [AnazhRealm V18.546.186] [INFO] Nexus-Evolution (Regel) registriert: evo_38
-[stall-akte] Konsole log: [AnazhRealm V18.546.186] [INFO] Das Wetter zieht zu sunny (Wunsch: nexus)
-[stall-akte] Konsole log: [AnazhRealm V18.546.186] [INFO] Nexus-Evolution (Regel) registriert: evo_39
-[stall-akte] Konsole log: [AnazhRealm V18.546.186] [INFO] Nexus-Evolution (DSL) ausgeführt: evo_40, fitness=1.00
-[stall-akte] Konsole log: [AnazhRealm V18.546.186] [INFO] Nexus-Evolution (Regel) registriert: evo_41
-[stall-akte] Konsole log: [AnazhRealm V18.546.186] [INFO] Nexus-Evolution (Regel) registriert: evo_42
-[stall-akte] Konsole log: [AnazhRealm V18.546.186] [INFO] Nexus-Evolution (DSL) ausgeführt: evo_43, fitness=1.00
-[stall-akte] Konsole log: [AnazhRealm V18.546.186] [INFO] Das Wetter zieht zu rainy (Wunsch: nexus)
-[stall-akte] Konsole log: [AnazhRealm V18.546.186] [INFO] Nexus-Evolution (DSL) ausgeführt: evo_44, fitness=1.00
-[stall-akte] Konsole log: [AnazhRealm V18.546.186] [INFO] Nexus-Evolution (DSL) ausgeführt: evo_45, fitness=1.00
-[stall-akte] Konsole log: [AnazhRealm V18.546.186] [INFO] Nexus-Evolution (DSL) ausgeführt: evo_46, fitness=0.00
-[stall-akte] URTEIL NATIV — der Haupt-Thread rechnet in einem nativen Aufruf (105 %, kein JS-Stapel); zuletzt kein Stempel
-STIMME {"mutante":null,"minuten":30,"zeilen":57,"falschN":4,"falsch":[{"t":438.1,"text":"Der Nexus färbt den Himmel — überall, aus eigenem Antrieb. (Programm evo_21; dazu 7 weitere Taten seit der letzten Zeile)","falsch":["dazu 6 weitere Tat"]},{"t":528.1,"text":"Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 56 m südlich von dir, weil lebendig am Ort hoch ist (>0.79). (Gesetz Nr. 12 des Nexus; dazu 8 weitere Taten seit der letzten Zeile)","falsch":["dazu 4 weitere Tat"]},{"t":738.1,"text":"Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 56 m südwestlich von dir, weil lebendig am Ort hoch ist (>0.7). (Gesetz Nr. 16 des Nexus; dazu 15 weitere Taten seit der letzten Zeile)","falsch":["dazu 14 weitere Tat"]},{"t":1489.9,"text":"Der Nexus ruft 4 happy Kreaturen herbei in der Nähe des Spielers — 9 m südlich von dir, aus eigenem Antrieb. (Programm evo_70; dazu 15 weitere Taten seit der letzten Zeile)","falsch":["Ein Gesetz des Nexus","Ein Gesetz des Nexus "," — 56 m südwestlich von dir, ","lebendig am Ort hoch ist (>0.7)","weil ","(Gesetz Nr. 16 des Nexus","dazu 14 weitere Tat"]}],"abstand":30,"offen":-20.8,"ohneTat":[],"begleiter":2,"klassen":{"nexus":61,"rule:nexus":563,"llm":2,"rule:llm":11,"wunsch":16,"human":2,"fern":182},"beispiele":["[3 s] Der Nexus färbt den Himmel — überall, aus eigenem Antrieb. (Programm evo_1)","[468.1 s] Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 56 m südwestlich von dir, weil lebendig am Ort hoch ist (>0.79). (Gesetz Nr. 12 des Nexus; dazu 5 weitere Taten seit der letzten Zeile)","[828.1 s] Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 56 m südlich von dir, weil lebendig am Ort hoch ist (>0.79). (Gesetz Nr. 18 des Nexus; dazu 31 weitere Taten seit der letzten Zeile)","[1188.9 s] Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 56 m südlich von dir, weil lebendig am Ort hoch ist (>0.7). (Gesetz Nr. 16 des Nexus; dazu 5 weitere Taten seit der letzten Zeile)","[1550.1 s] Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 56 m südöstlich von dir, weil lebendig am Ort hoch ist (>0.7). (Gesetz Nr. 16 des Nexus; dazu 7 weitere Taten seit der letzten Zeile)"],"rot":["4 Zeilen falsch","falsch [438.1 s] dazu 6 weitere Tat: Der Nexus färbt den Himmel — überall, aus eigenem Antrieb. (Programm evo_21; dazu 7 weitere Taten seit der letzten Zeile)","falsch [528.1 s] dazu 4 weitere Tat: Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 56 m südlich von dir, weil lebendig am Ort hoch ist (>0.79). (Gesetz Nr. 12 des Nexus; dazu 8 weitere Taten seit der letzten Zeile)","falsch [738.1 s] dazu 14 weitere Tat: Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 56 m südwestlich von dir, weil lebendig am Ort hoch ist (>0.7). (Gesetz Nr. 16 des Nexus; dazu 15 weitere Taten seit der letzten Zeile)","falsch [1489.9 s] Ein Gesetz des Nexus | Ein Gesetz des Nexus  |  — 56 m südwestlich von dir,  | lebendig am Ort hoch ist (>0.7) | weil  | (Gesetz Nr. 16 des Nexus | dazu 14 weitere Tat: Der Nexus ruft 4 happy Kreaturen herbei in der Nähe des Spielers — 9 m südlich von dir, aus eigenem Antrieb. (Programm evo_70; dazu 15 weitere Taten seit der letzten Zeile)"]}
+[stall-akte] Konsole log: [AnazhRealm V18.546.186] [INFO] Grok: Der Regen bleibt. Schön still ist es jetzt.
+[stall-akte] Konsole log: [AnazhRealm V18.546.186] [INFO] FOUNDRY WARM: Settlement-Kanal bereit (6 Probe-Slots)
+[stall-akte] Konsole log: [AnazhRealm V18.546.186] [INFO] Nexus-Evolution (DSL) ausgeführt: evo_1, fitness=1.00
+[stall-akte] Konsole log: [AnazhRealm V18.546.186] [INFO] Nexus-Evolution (Regel) registriert: evo_2
+[stall-akte] Konsole log: [AnazhRealm V18.546.186] [INFO] Nexus-Evolution (Regel) registriert: evo_3
+[stall-akte] Konsole log: [AnazhRealm V18.546.186] [INFO] Nexus-Evolution (DSL) ausgeführt: evo_4, fitness=1.00
+[stall-akte] Konsole log: [AnazhRealm V18.546.186] [INFO] Nexus-Evolution (Regel) registriert: evo_5
+[stall-akte] Konsole log: [AnazhRealm V18.546.186] [INFO] Nexus-Evolution (DSL) ausgeführt: evo_6, fitness=1.00
+[stall-akte] Konsole log: [AnazhRealm V18.546.186] [INFO] Nexus-Evolution (Regel) registriert: evo_7
+[stall-akte] Konsole log: [AnazhRealm V18.546.186] [INFO] Nexus-Evolution (DSL) ausgeführt: evo_8, fitness=0.00
+[stall-akte] Konsole log: [AnazhRealm V18.546.186] [INFO] Grok: Du bist seit einer Weile still. Geht's dir gut?
+[stall-akte] Konsole log: [AnazhRealm V18.546.186] [INFO] Nexus-Evolution (Regel) registriert: evo_9
+[stall-akte] URTEIL NATIV — der Haupt-Thread rechnet in einem nativen Aufruf (87 %, kein JS-Stapel); zuletzt kein Stempel
+STIMME {"mutante":null,"minuten":30,"zeilen":55,"falschN":0,"falsch":[],"abstand":30,"offen":-6.9,"ohneTat":[],"begleiter":1,"klassen":{"nexus":64,"rule:nexus":289,"llm":3,"rule:llm":11,"wunsch":16,"human":2,"fern":185},"beispiele":["[3 s] Der Nexus färbt den Himmel — überall, aus eigenem Antrieb. (Programm evo_1)","[468.1 s] Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 56 m südwestlich von dir, weil lebendig am Ort hoch ist (>0.79). (Gesetz Nr. 12 des Nexus; dazu 4 weitere Taten seit der letzten Zeile)","[828.1 s] Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 56 m südwestlich von dir, weil lebendig am Ort hoch ist (>0.7). (Gesetz Nr. 18 des Nexus; dazu 22 weitere Taten seit der letzten Zeile)","[1200.9 s] Ein Gesetz der KI trägt Leben ins Feld vor dem Spieler — 12 m südlich von dir, weil lebendig am Ort niedrig ist (<1.01). (Gesetz Nr. 25 der KI; dazu 4 weitere Taten seit der letzten Zeile)","[1596.4 s] Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 43 m südlich von dir, weil Zufall ≤ 0.63. (Gesetz Nr. 30 des Nexus; dazu 1 weitere Tat seit der letzten Zeile)"],"verworfen":{"weather@kappe rule":51,"weather@kappe nexus":26,"spawn_village nexus Unbekannter Ort „spawn_creature“":1,"weather rule":1,"deposit_life@kappe rule Unbekannter Ort „creatures_color“":22,"spawn_creature@kappe nexus":2,"spawn_creature@kappe nexus Unbekannter Ort „spawn_waterfall“":1,"spawn_creature@kappe nexus Unbekannter Ort „spawn_creature“":1,"weather nexus":10},"rot":[]}
