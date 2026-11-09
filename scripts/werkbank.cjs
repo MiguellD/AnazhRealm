@@ -3211,7 +3211,40 @@ hauptLauf(async () => {
         const je = (o.schritte || []).map((s) => s.pop + (s.wechsel ? "*" : "") + (s.ein.length ? `+${s.ein.length}@${Math.min(...s.ein)}` : ""));
         if (je.length) console.log(`lod.K2#1 ${o.anteilJeSekunde <= 0.05 ? "GRÜN" : "ROT"} ${o.anteilJeSekunde} % Pop-Pixel/s (${o.popPixel} px) · ${je.join("/")} · Laub ${o.laub} · dc, Dreiecke ${o.kosten.at(-1)} · GPU ${o.bank.gpuJeFrameMs} ms, CPU ${o.bank.cpuJeFrameMs} ms je Bild`);
     }
-    else if (cmd === "bedienung") o = await rufe("/bedienung", { runden: opt("--runden", 3), staffel: opt("--staffel") });
+    else if (cmd === "kante") {
+        // DIE LAUB-SILHOUETTE WIE DIE STATION lod.K1#1 — der Messplatz des GPU-Probe-Dienstes (`gate:laub-kante`): frisch an der
+        // Mess-Wiese, 1920 × 1080, die Tafel-Pose der Soll-Tafel (laub-kante `mass.werkzeug`), dann der Spielgang der Station
+        // (Ego, 8 s auf der Bahn, das Auge zum Waldhang der Tafel, das Ziel vor dem Hang); je Schuss die Teil-Klassen ab
+        // 5 000 px mit ihrer Kante, die Bilder in die Post. Die Zahl misst, der Richter ist die Station
+        const w = jsonLesen(SOLL_TAFEL).klassen.find((k) => k.id === "laub-kante").mass.werkzeug.split(" ");
+        const [px, py, pz, lx, ly, lz] = w.slice(2);
+        const klasse = w[11].slice(1, -1);
+        const halt = await eigeneWelt(["--ort", "wiese"]);
+        const datei = (n) => process.env.RUNNER_TEMP && path.join(process.env.RUNNER_TEMP, "probe", n + ".png");
+        const urteil = (titel, b) => {
+            if (!b.klasse) throw new Error(`${titel}: /bild ohne Klasse: ${b.fehler} ${(b.stapel || []).join(" | ")}`);
+            const je = Object.entries(b.klasse.klassen).filter((e) => e[1].pixel >= 5000 && e[1].kante != null);
+            const gut = je.every((e) => e[1].kante <= 0.22 && !e[1].zweiton);
+            console.log(`lod.K1#1 ${titel} ${gut ? "GRÜN" : "ROT"}`, JSON.stringify(je.map((e) => [e[0], e[1].kante, e[1].pixel, e[1].zweiton])));
+        };
+        try {
+            await rufe("/fenster", { w: 1920, h: 1080 });
+            urteil("Tafel-Pose", (o = await rufe("/bild", { px, py, pz, lx, ly, lz, w: 1920, h: 1080, ziel: w[9], klasse, datei: datei("tafel") })));
+            await umstellen({ ort: "wiese", sicht: "ego" });
+            await rufe("/lauf", { sek: 8, ein: 2, regler: "frei", tiere: "halten", ruhe: 0, wandern: "bahn" });
+            const auge = ergebnis(await evalRuf(
+                "const st = r.state, pm = st.playerMesh.position; st.yaw = r._blickGierZu(-269 - pm.x, -1036 - pm.z); st.pitch = 0; " +
+                "for (let i = 0; i < 30; i++) r._loopCamera(performance.now() + i * 100); const c = st.camera, d = new T.Vector3(); c.getWorldDirection(d); " +
+                "let t = 2; while (t < 100 && r._voxelSurfaceY(c.position.x + t * d.x, c.position.z + t * d.z) < c.position.y + t * d.y - 0.5) t++; " +
+                "t = Math.max(3, Math.min(12, 0.6 * t)); return [c.position.x, c.position.y, c.position.z, c.position.x + t * d.x, c.position.y + t * d.y, c.position.z + t * d.z];"
+            ));
+            const [ax, ay, az, bx, by, bz] = auge;
+            urteil("Spielgang", (o = await rufe("/bild", { px: ax, py: ay, pz: az, lx: bx, ly: by, lz: bz, w: 1920, h: 1080, wahl: 0, klasse, datei: datei("spielgang") })));
+        } finally {
+            halt?.();
+        }
+        o = o.abnahme;
+    } else if (cmd === "bedienung") o = await rufe("/bedienung", { runden: opt("--runden", 3), staffel: opt("--staffel") });
     else if (cmd === "albedo" && hat("nah-fern")) {
         // DIE ALBEDO NAH GEGEN FERN: je Ort im Chunk-Quadrat Boden-Satz gegen Fern-Ring aus 420 m, dazu das Gesetz an
         // der Stelle; `--selbsttest` (ohne Welt) prüft das Urteil: im Band grün (auch ein Ring, der im Band seiner Abtastung
