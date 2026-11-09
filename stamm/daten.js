@@ -614,18 +614,26 @@ class AnazhRealm_daten {
     }
 
     // DER WIESEN-GRUND (K53, EINE Quelle): wo der Boden grün ist (die Wiesen-Wache `gruenSchwelle`: g − (r+b)/2), deckt ihn
-    // das Gras — aus der Ferne das MITTEL des Halms, das Integral der Halm-Farbe (h ∈ [0, 1]: mix(Wurzel, Spitze, h) ·
-    // (0,65 + 0,35 h)) = 0,383 · Wurzel + 0,442 · Spitze, Y 0,17 wie das Studio-Gras der Nah-Wiese; die karge Stelle (Fleck
-    // λ 7,7 m, `rauschM`) zeigt mehr Grund: Gewicht 0,5 … 1 der Wache. Das Gesetz rechnet ihn (`_bodenFarbeAt`, der Worker
-    // `attachFieldColors` mit diesem Schnappschuss), nie das Fragment: bis K53 mischte ihn nur der Boden-Stoff (V18.346), der
-    // Feld-Pass und das Panorama zeigten den nackten Grund (`mead`, aus 45 m eine oliv-gelbe Steppe).
+    // das Gras — das MITTEL des Halms (`halmMittel`), das Integral der Halm-Farbe (h ∈ [0, 1]: mix(Wurzel, Spitze, h) ·
+    // (0,65 + 0,35 h)) = 0,383 · Wurzel + 0,442 · Spitze, Y 0,17 wie das Studio-Gras der Nah-Wiese (das Relief der Nähe liest es);
+    // die karge Stelle (Fleck λ 7,7 m, `rauschM`) zeigt mehr Grund: Gewicht 0,5 … 1 der Wache. Das Gesetz rechnet ihn
+    // (`_bodenFarbeAt`, der Worker `attachFieldColors` mit diesem Schnappschuss), nie das Fragment: bis K53 mischte ihn nur der
+    // Boden-Stoff (V18.346), der Feld-Pass und das Panorama zeigten den nackten Grund (`mead`, aus 45 m eine oliv-gelbe Steppe).
+    // DIE WIESE AUS DER FERNE IST EIN BESTAND (w25-ferne-licht-5, ferne.K1#2): `farbe` = das Mittel des Halms × die
+    // Selbstbeschattung des Bestands (`FERN_FARBE.halmSchatten`, wie das Kronendach `kronenSchatten`) — der Halm grün 0,202
+    // trägt so 0,081, die Satelliten-Bänder der Frischwiese im Sommer (grün ~0,07–0,09). Bis hier stand die ferne Wiese mit
+    // dem Mittel des einzelnen Halms auf 0,56–0,73 der In-Streuung (Genesis, Mittag, ohne Luft) und trug ihr Gelbgrün durch
+    // die Luft: der Farbton bei 8 km 12,7–25,5° von der In-Streuung (Soll ≤ 10°, swiftshader); als Bestand 2,7–10,2° (Uhr 0,5)
+    // und 1,0–2,8° (Uhr 0,27), vom Gipfel 4,7–10°; Durchlass, Rand-Kontrast (1,3–1,6 %) und Kante gehalten.
     static get WIESEN_GRUND() {
         const mg = AnazhRealm.MEADOW_GREEN;
         const sp = AnazhRealm.GRAS_SPITZE;
+        const halm = [0, 1, 2].map((i) => 0.383 * mg[i] + 0.442 * sp[i]);
         return this._einmal(
             "WIESEN_GRUND",
             Object.freeze({
-                farbe: Object.freeze([0, 1, 2].map((i) => 0.383 * mg[i] + 0.442 * sp[i])),
+                halmMittel: Object.freeze(halm),
+                farbe: Object.freeze(halm.map((x) => x * AnazhRealm.FERN_FARBE.halmSchatten)),
                 schwelle: AnazhRealm.TERRAIN_GEOLOGY.gruenSchwelle,
                 rauschM: 1 / 0.13,
             })
