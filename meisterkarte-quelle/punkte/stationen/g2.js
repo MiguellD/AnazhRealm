@@ -1468,9 +1468,46 @@ const sollUrteil = (id, name) =>
     "node -e 'const AU = require(\"./scripts/lib/abnahme-urteil.cjs\"); const u = AU.sollTafelUrteil(require(\"./spec/abnahme/soll-tafel.json\"), " +
     "AU.standLeser(process.cwd()).sollQuelle()); const z = u.zeilen.find((x) => x.id === \"" + id + "\"); console.log(\"" + name + " \" + " +
     "JSON.stringify({ urteil: z.urteil, ist: z.ist, band: z.band, grund: z.grund, taeter: z.taeter, teile: z.teile, stand: z.stand }))'";
+// DIE POSE DER SCHÜSSE (w26-haar-linse-pm; FUND w25-haar-albedo): vor jedem Bild tickt die Welt, bis sie steht (`__weltStehtWarten`) —
+// Atem und Kontrapost des Leibs auf der Anzeige-Uhr, die Feder des Haars auf der Welt-Uhr (`_haarFederTakt`). Dieselbe Spielart maß in
+// EINER Welt arm 0,383 / 0,519 (GTX); headless an 87537d3f wanderte im Arm-Schuss der Leib um 0,0087 und die Feder des Haars um 14 mm
+// (z −8 → +6 mm), die Welt-Uhr lief 2,5 s. `o.pose` liest die Pose des gemessenen Leibs — je Knoten ohne Mesh Lage und Drehung, je
+// Haar-Teil die Feder `__haarFeder` (Welt-Meter) — vor dem ersten Schuss und nach jedem als Zeile „POSE <vor|nach-n> {leib, haar}“;
+// das Urteil verlangt EINE Pose über alle Lesungen (|Δ| ≤ POSE_TOLERANZ) und nennt sonst die Lesung und die Größe, die wanderte.
+// `o.halten` (Quellen des EINEN Halters `__halten`, ausgabe-aufnahme) hält die Pose nach `vorher`, sofort und nicht erst im nächsten
+// Takt: die Anzeige-Uhr des Leibs steht auf 0 (EINE Pose je Lauf und Gerät, nie die Phase des Halts); der EINE Wind steht still
+// (`_windWob` 0, der Hebel der Mutante von haar.K3) — mit stehendem Leib und ohne Wind klingt die Feder des Haars in Takten der
+// Welt-Uhr auf genau 0 aus (`_haarFederTakt`, höchstens 40 Takte), die Gestalt des Haars, wie sie gebaut ist; am Ende lässt die
+// Station beides los.
+const POSE_TOLERANZ = 1e-4;
+const POSE_LEIB =
+    "const pm = r.state.playerMesh, leib = [], haar = []; pm.updateMatrixWorld(true); pm.traverse((o) => { if (!o.isMesh) " +
+    "leib.push(...o.position.toArray(), ...o.quaternion.toArray()); else if (o.userData.__haarFeder) haar.push(o.userData.__haarFeder.x, " +
+    "o.userData.__haarFeder.y, o.userData.__haarFeder.z); }); const k = (v) => +(+v).toFixed(5); return { leib: leib.map(k), haar: haar.map(k) };";
+function posenUrteil(stdout, namen) {
+    const L = ["vor", ...namen.map((n) => "nach-" + n)].map((k) => [k, jsonZeile(stdout, new RegExp("^POSE " + k + " "))]);
+    const fehlt = L.filter(([, p]) => !p || !Array.isArray(p.leib) || !Array.isArray(p.haar) || !p.leib.length).map(([k]) => k);
+    if (fehlt.length) return { ok: false, zahl: "ohne Pose: " + fehlt.join(", ") };
+    const d = { leib: 0, haar: 0 };
+    let wer = null;
+    for (const [k, p] of L.slice(1))
+        for (const g of ["leib", "haar"]) {
+            const a = L[0][1][g],
+                b = p[g];
+            const x = a.length !== b.length ? Infinity : Math.max(0, ...a.map((v, i) => Math.abs(v - b[i])));
+            d[g] = Math.max(d[g], x);
+            if (x > POSE_TOLERANZ && !wer) wer = k;
+        }
+    const f = (x) => (x === Infinity ? "Teile ungleich" : String(+x.toPrecision(2)));
+    return {
+        ok: !wer,
+        zahl: (wer ? "ZWEI POSEN (vor → " + wer + ")" : "EINE Pose") + ": Leib Δ " + f(d.leib) + " · Haar-Feder Δ " + f(d.haar) + " m über " + L.length + " Lesungen",
+    };
+}
 // IN DER SITZUNG (29.10.): EIN Teleport an die Wiese, die Szene, zwei Schüsse — Ziel 15 s, Deckel 45 s; `o.mutiert`, wo die Szene
 // Tiere räumt oder setzt
 function sollKlasseStation(o) {
+    const halten = o.halten ? JSON.stringify(o.halten) : null;
     return {
         kriterium: o.kriterium,
         staffel: 1,
@@ -1481,13 +1518,23 @@ function sollKlasseStation(o) {
             [
                 "A=$(printf %s '{AUS}' | tr '\\\\' /); B=\"${A%.json}\"",
                 "S=$(( {PORT} )); W=$(( {PORT} + 20000 )); export WERKBANK_PORT=$W",
-                "trap 'git checkout spec/abnahme/soll-tafel.json' EXIT",
+                "loesen() { :; }",
+                "trap 'git checkout spec/abnahme/soll-tafel.json; loesen' EXIT",
                 "node scripts/werkbank.cjs fenster 1920 1080 > /dev/null 2>&1",
                 "erg() { node -e 'const t = require(\"fs\").readFileSync(0, \"utf8\"); console.log(JSON.stringify(JSON.parse(t.slice(t.indexOf(\"{\"))).ergebnis))'; }",
                 bildFehler,
+                ...(o.pose ? ["pose() { echo \"POSE $1 $(node scripts/werkbank.cjs eval '" + o.pose + "' | erg)\"; }"] : []),
                 ...o.vorher,
+                ...(halten
+                    ? [
+                          "loesen() { node scripts/werkbank.cjs eval 'const H = window.__gehalten; for (const q of " + halten + ") H && H.delete(q); if (H) delete H.t; delete r._windWob; return 1;' > /dev/null 2>&1; }",
+                          "node scripts/werkbank.cjs eval 'window.__halten(" + halten + "); window.__gehalten.t = 0; r.animatePlayerSoul(0); r._windWob = () => 0; const ruht = () => { let j = true; r.state.playerMesh.traverse((o) => { const f = o.userData.__haarFeder; if (f && (f.x || f.y || f.z)) j = false; }); return j; }; let k = 0; for (; k < 40 && !ruht(); k++) { await sleep(110); r._gameLoopTick(performance.now()); } return { gehalten: [...window.__gehalten], takte: k, ruht: ruht() };' > \"$B-halten.txt\" 2>&1",
+                      ]
+                    : []),
+                ...(o.pose ? ["pose vor"] : []),
                 ...Object.entries(o.schuesse).flatMap(([n, a]) => [
                     "node scripts/werkbank.cjs bild " + a + " --wahl 0 --klasse '" + o.klasse + "' --ist " + o.id + " --datei \"$B-" + n + ".png\" > \"$B-" + n + ".txt\" 2>&1; e=$?; echo \"BILD " + n + " $e\"; [ $e = 0 ] || fehl \"$B-" + n + ".txt\" " + n,
+                    ...(o.pose ? ["pose nach-" + n] : []),
                     sollUrteil(o.id, n.toUpperCase()),
                 ]),
             ].join("\n"),
@@ -1501,24 +1548,51 @@ function sollKlasseStation(o) {
                 const fehler = (new RegExp("^BILD " + n + " FEHLER (.*)$", "m").exec(lauf.stdout) || [])[1];
                 return [n, jsonZeile(lauf.stdout, new RegExp("^" + n.toUpperCase() + " ")), bild === "0", (fehler || "").trim() || (bild == null ? "ohne BILD-Zeile" : "Exit " + bild)];
             });
+            const pose = o.pose ? posenUrteil(lauf.stdout, Object.keys(o.schuesse)) : null;
             return {
-                gruen: z.every(([, x, ok]) => ok && x && x.urteil === "GRÜN"),
-                zahl: z
-                    .map(([n, x, ok, f]) =>
-                        n + " " + (!ok ? "ROT Bild: " + f : x ? x.urteil + " strich " + x.ist + " Soll [" + x.band + "]" + (x.grund ? " — " + x.grund : "") + (x.teile ? " · " + x.teile : "") : "ohne Zeile (Exit " + lauf.exit + ")"))
-                    .join(" · "),
+                gruen: z.every(([, x, ok]) => ok && x && x.urteil === "GRÜN") && (!pose || pose.ok),
+                zahl:
+                    (pose ? pose.zahl + " · " : "") +
+                    z
+                        .map(([n, x, ok, f]) =>
+                            n + " " + (!ok ? "ROT Bild: " + f : x ? x.urteil + " strich " + x.ist + " Soll [" + x.band + "]" + (x.grund ? " — " + x.grund : "") + (x.teile ? " · " + x.teile : "") : "ohne Zeile (Exit " + lauf.exit + ")"))
+                        .join(" · "),
             };
         },
         // die Ausgabe eines Laufs: beide Bilder und Tafel-Zeilen GRÜN; ein Bild, das scheitert, ist ROT, auch wenn die Tafel-Zeile
-        // danach eine eingecheckte grüne Messung liest
+        // danach eine eingecheckte grüne Messung liest. Mit `o.pose`: EINE Pose über alle Lesungen; ROT, wo der Leib atmet oder die
+        // Feder des Haars wandert (die Zahlen headless an 87537d3f), wo eine Lesung fehlt oder ein Teil kommt oder geht
         proben: (() => {
             const tafel = (n, u, ist) => n.toUpperCase() + " " + JSON.stringify({ urteil: u, ist, band: [0.3, 0.6], grund: u === "GRÜN" ? null : "strich ungemessen", taeter: null, teile: null, stand: null });
-            const lauf = (fehlt) => Object.keys(o.schuesse).flatMap((n) => n === fehlt
-                ? ["BILD " + n + " 1", "BILD " + n + " FEHLER ABNAHME ROT [Ziel Blickziel nicht im Bild (ndc [0,0])]", tafel(n, "GRÜN", 0.45)]
-                : ["BILD " + n + " 0", tafel(n, "GRÜN", 0.45)]).join("\n");
+            const leib0 = [0, 0.9, 0, 0, 0, 0, 1, 0.012, 0.31, 0.004, 0.0123, -0.0021, 0.0007, 0.99992],
+                haar0 = [0, 0, 0];
+            const posen = (wandert) => {
+                const z = { vor: { leib: leib0, haar: haar0 } };
+                Object.keys(o.schuesse).forEach((n, i) => (z["nach-" + n] = wandert && i === 0 ? wandert({ leib: [...leib0], haar: [...haar0] }) : { leib: leib0, haar: haar0 }));
+                return z;
+            };
+            const lauf = (fehlt, P) => [
+                ...(o.pose && P.vor ? ["POSE vor " + JSON.stringify(P.vor)] : []),
+                ...Object.keys(o.schuesse).flatMap((n) => [
+                    ...(n === fehlt
+                        ? ["BILD " + n + " 1", "BILD " + n + " FEHLER ABNAHME ROT [Ziel Blickziel nicht im Bild (ndc [0,0])]"]
+                        : ["BILD " + n + " 0"]),
+                    ...(o.pose && P["nach-" + n] ? ["POSE nach-" + n + " " + JSON.stringify(P["nach-" + n])] : []),
+                    tafel(n, "GRÜN", 0.45),
+                ]),
+            ].join("\n");
             return [
-                { name: "jedes Bild und jede Tafel-Zeile GRÜN", stdout: lauf(null), gruen: true },
-                { name: "ein Bild scheitert, die Tafel liest eine alte grüne Messung", stdout: lauf(Object.keys(o.schuesse)[0]), gruen: false },
+                { name: "jedes Bild und jede Tafel-Zeile GRÜN", stdout: lauf(null, posen(null)), gruen: true },
+                { name: "ein Bild scheitert, die Tafel liest eine alte grüne Messung", stdout: lauf(Object.keys(o.schuesse)[0], posen(null)), gruen: false },
+                ...(o.pose
+                    ? [
+                          { name: "zwei Schüsse, zwei Posen: die Feder des Haars wandert 14 mm (headless 87537d3f)", stdout: lauf(null, posen((p) => ((p.haar[2] = 0.0141), p))), gruen: false },
+                          { name: "zwei Schüsse, zwei Posen: der Leib atmet 0,0087 (headless 87537d3f)", stdout: lauf(null, posen((p) => ((p.leib[9] += 0.0087), p))), gruen: false },
+                          { name: "ein Haar-Teil kommt zwischen den Schüssen", stdout: lauf(null, posen((p) => ((p.haar = [...p.haar, 0, 0, 0]), p))), gruen: false },
+                          { name: "ohne die Lesung vor dem ersten Schuss", stdout: lauf(null, { ...posen(null), vor: null }), gruen: false },
+                          { name: "die Pose wandert unter der Toleranz (5e-5)", stdout: lauf(null, posen((p) => ((p.leib[9] += 5e-5), p))), gruen: true },
+                      ]
+                    : []),
             ];
         })(),
         pfad: [
@@ -5650,11 +5724,16 @@ const stationen = [
     // (`--gesicht 0.7`), third 4 m hinter dem Kopf (`--gesicht -4`, der Blick des Third); der Kopf in Stoffen, die Klasse
     // spieler:kopf/hair. Soll: strich der REF ref-haar.png ± 20 % = [0,3554; 0,533] UND die Albedo der Zeile haar der Albedo-Tafel
     // im Natur-Band [0,01; 0,3] — die Zeile fehlt (die Tafel misst nur ganz auf der Karte), ROT „albedo: … ohne Ist“ bis sie steht.
+    // DIE POSE STEHT (w26-haar-linse-pm): der EINE Halter hält den Leib (`__halten` leib, die Anzeige-Uhr auf 0), der Wind steht
+    // still, die Feder des Haars ruht; beide Schüsse messen EINE Pose (POSE-Zeilen, `posenUrteil`) — bis dahin streute der Arm ±0,07
+    // bei halber Bandbreite 0,089 (GTX, dieselbe Spielart in einer Welt); headless an 87537d3f ROT „ZWEI POSEN … Haar-Feder Δ 3,3 mm“.
     sollKlasseStation({
         kriterium: "haar.K2",
         id: "haar",
         sek: 32,
         klasse: "^spieler:kopf/hair$",
+        pose: POSE_LEIB,
+        halten: ["leib"],
         vorher: ["node scripts/werkbank.cjs umstellen --ort wiese --sicht third > \"$B-umstellen.txt\" 2>&1"],
         schuesse: { arm: "0 0 0 0 0 0 --gesicht 0.7 --spieler", third: "0 0 0 0 0 0 --gesicht -4 --spieler" },
         pfad: ["koerper-core.js", "stamm/koerper-*.js", "stamm/studio-bruecke.js", "spec/farbe/albedo-tafel.json"],
