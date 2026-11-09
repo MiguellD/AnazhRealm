@@ -2424,27 +2424,8 @@ class AnazhRealm_gelaende_boden {
         const aboveFluss = uf.fluss !== null ? y - uf.fluss : null;
         let schlick = ss(-0.5, -4, aboveWater);
         if (aboveFluss !== null) schlick = Math.max(schlick, uf.ufer * ss(-0.5, -4, aboveFluss));
-        // Strand: Glocken-Profil über dem Wasser (`_waterLevelAt` O(1) für Ozean; See-Vertices bekommen den
-        // See-Spiegel). Drei Noise-Modulationen statt einer Schwelle: (a) Breite (λ~570 m), (b) Intensität
-        // (λ~290 m), (c) karge Fels-Patches ohne Sand. Die Glocke trägt bis 0,6 + 1,9 m — das Fenster schneidet sie nie
-        // (bis Welle L endete es bei 2,0 m: ein Sprung im Strand jeder breiten Glocke).
-        const imStrand = (a) => a !== null && a > -1.3 && a < 2.5;
         mix(sed, schlick, DK.sediment);
-        if (imStrand(aboveWater) || (uf.ufer > 0 && imStrand(aboveFluss))) {
-            const widthNoise = (sandNoise.noise2D(x * 0.0018, z * 0.0018) + 1) * 0.5; // [0, 1]
-            const intenseNoise = (sandNoise.noise2D(x * 0.0034 + 17, z * 0.0034 - 9) + 1) * 0.5;
-            if (widthNoise > 0.18) {
-                const width = 0.5 + 1.4 * widthNoise; // [0.5, 1.9] m
-                const intensity = 0.25 + 0.55 * intenseNoise; // [0.25, 0.8]
-                const glocke = (a) => Math.max(0, 1 - Math.abs(a - 0.6) / width);
-                let shoreBlend = glocke(aboveWater);
-                if (aboveFluss !== null) shoreBlend = Math.max(shoreBlend, uf.ufer * glocke(aboveFluss));
-                mix(sand, shoreBlend * intensity, DK.sand);
-            }
-            // widthNoise <= 0.18 → karge Stelle, Sand bleibt aus (Stone/
-            // Earth gewinnt). Spielt mit den V9.60-b.1-Hochseen zusammen:
-            // jeder See hat sein eigenes Mix aus Sand-Strand und Fels-Ufer.
-        }
+        mix(sand, this._strandAt(x, z, y, uf), DK.sand);
         // V18.230 (Ω-OPSIS Säule II Ω-O6) — die PFADE: die Fluss-Bänke sind
         // getrampelte, gepackte Erde (Gras wird zusätzlich unterdrückt, s.
         // _buildVoxelChunkGrass). Lawful aus dem Drainage-Netz (_pathFieldAt).
@@ -2463,6 +2444,35 @@ class AnazhRealm_gelaende_boden {
         // die Deckung des Stoffs (vor dem Fels-Stoff des Netzes): der Chunk trägt sie je Vertex (`_attachVoxelFieldColors`)
         if (aus) aus.deckung = d;
         return out;
+    }
+
+    // DER STRAND (w27-ferne-ton-5): das Gewicht des Sands am Ufer bei (x, z) auf dem Boden y, 0 … 0,8 — die EINE Stelle, an der
+    // die Welt „hier liegt Sand“ sagt. Ein Glocken-Profil über dem Wasser über beiden Bezügen (`_waterLevelAt` → `uf`: See/Meer
+    // voll, der Fluss mit seiner Kronen-Blende; ohne `uf` fragt der Leser selbst), drei Rausch-Modulationen statt einer
+    // Schwelle: (a) Breite (λ~570 m), (b) Intensität (λ~290 m), (c) karge Fels-Ufer ohne Sand (jeder See trägt sein eigenes Mix
+    // aus Strand und Fels). Die Glocke trägt bis 0,6 + 1,9 m — das Fenster schneidet sie nie. Leser: die Farbe und die Deckung
+    // des Bodens (`_bodenFarbeAt`; der Faden rechnet dieselben Zahlen, `bodenFarbe`) und der Stoff unter Rad, Huf und Schritt
+    // (`_fahrHaft`, `_kontaktStoffAt`: die Zeile sand). Bis hierher malte nur die Farbe den Strand: die Haftung las ihn über den
+    // Ton des Sands als 61 % Wiese (μ Gras), nach der Deckung des Stoffs (w26-ferne-ton-4) als Erde (μ 0,7).
+    _strandAt(x, z, y, uf) {
+        if (!uf) {
+            uf = { see: 0, fluss: null, ufer: 0 };
+            this._waterLevelAt(x, z, uf);
+        }
+        const aboveWater = y - uf.see;
+        const aboveFluss = uf.fluss !== null ? y - uf.fluss : null;
+        const imStrand = (a) => a !== null && a > -1.3 && a < 2.5;
+        if (!(imStrand(aboveWater) || (uf.ufer > 0 && imStrand(aboveFluss)))) return 0;
+        const sandNoise = this._gelaende().noise;
+        const widthNoise = (sandNoise.noise2D(x * 0.0018, z * 0.0018) + 1) * 0.5; // [0, 1]
+        const intenseNoise = (sandNoise.noise2D(x * 0.0034 + 17, z * 0.0034 - 9) + 1) * 0.5;
+        if (!(widthNoise > 0.18)) return 0; // die karge Stelle: Stein und Erde gewinnen
+        const width = 0.5 + 1.4 * widthNoise; // [0.5, 1.9] m
+        const intensity = 0.25 + 0.55 * intenseNoise; // [0.25, 0.8]
+        const glocke = (a) => Math.max(0, 1 - Math.abs(a - 0.6) / width);
+        let shoreBlend = glocke(aboveWater);
+        if (aboveFluss !== null) shoreBlend = Math.max(shoreBlend, uf.ufer * glocke(aboveFluss));
+        return shoreBlend * intensity;
     }
 
     // Test-Chunk (`voxel test`): ein Voxel-Chunk wird neben dem Spieler gemesht und in die Szene gestellt

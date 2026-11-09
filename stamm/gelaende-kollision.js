@@ -1080,7 +1080,8 @@ class AnazhRealm_gelaende_kollision {
     // sonst das Eis des gefrorenen Spiegels (`_eisAt`), das Pflaster eines Plans (der Belag der Wege-Karte `_wegeBelagAt` ≥ ½:
     // Stein), das Laub des Waldbodens unter dem Kronendach (die EINE Wald-Lese-Stelle
     // `_kronenStreuAt` ≥ ½), die Wiese, wo die Boden-Karte Gras zeichnet (der Grün-Kanal des EINEN Lesers `_bodenSichtAt` ≥ ½),
-    // darunter der Stoff des Felds (`_terrainMaterialAt`). Leser: der Schritt-Klang (`_schrittMaterialAt`) und die Reibung des
+    // der Sand, wo die Boden-Farbe den Strand malt (`_strandAt` ≥ ½, w27-ferne-ton-5), darunter der Stoff des Felds
+    // (`_terrainMaterialAt`). Leser: der Schritt-Klang (`_schrittMaterialAt`) und die Reibung des
     // gestoßenen Leibs (`_kreaturStossSchritt`).
     _kontaktStoffAt(x, z, y) {
         const aus = this._kontaktAus || (this._kontaktAus = { stoff: null });
@@ -1094,6 +1095,7 @@ class AnazhRealm_gelaende_kollision {
         if (this._kronenStreuAt(x, z) >= 0.5) return "laub";
         const grund = {};
         if (this._bodenSichtAt(x, z, grund) !== null && grund.gruen >= 0.5) return "gras";
+        if (this._strandAt(x, z, y) >= 0.5) return "sand";
         return this._terrainMaterialAt(x, z, y);
     }
 

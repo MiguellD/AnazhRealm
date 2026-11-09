@@ -1745,6 +1745,7 @@ class AnazhRealm_daten {
             "stoff.leib": ["Leib", "Body"],
             "stoff.menge": ["{n}× {stoff}", "{n}× {stoff}"],
             "stoff.quarz": ["Quarz", "Quartz"],
+            "stoff.sand": ["Sand", "Sand"],
             "stoff.schuppen": ["Schuppen", "Scales"],
             "stoff.stahl": ["Stahl", "Steel"],
             "stoff.stein": ["Stein", "Stone"],

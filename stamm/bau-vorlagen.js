@@ -1567,10 +1567,14 @@ class AnazhRealm_bau_vorlagen {
             gras: 350,
             wasser: im(globalThis.__vehicleCore.FAHR.wasser, "rho"),
             eis: 917,
+            sand: 1600,
         };
         // DIE HAFTUNG DES RADS (fahrzeug.K1): je Stoff, auf dem ein Rad stehen kann, μ des Reifens trocken und voll nass (`muRad`,
         // `muRadNass`; Bezug der Asphalt des Labors, μ 1) — Tafel-Werte der Reibung Reifen auf Fahrbahn: verdichtete Erde
-        // 0,7/0,45, Gras 0,4/0,2, rauer Fels 0,8/0,55, Bohle 0,65/0,4, Metall 0,6/0,35, Laubstreu 0,45/0,2. Leser: der Reibkreis am
+        // 0,7/0,45, Gras 0,4/0,2, rauer Fels 0,8/0,55, Bohle 0,65/0,4, Metall 0,6/0,35, Laubstreu 0,45/0,2, loser Sand 0,35/0,45
+        // (w27-ferne-ton-5: der Zugkraft-Beiwert eines Reifens auf trockenem losem Sand nach Abzug des Einsinkens 0,3–0,4,
+        // Bekker/Wong, Theory of Ground Vehicles; feuchter Sand trägt durch die Kapillar-Kohäsion fester — die einzige Zeile,
+        // die nass besser greift). Leser: der Reibkreis am
         // Wagen (`_fahrHaft`). Die Stoffe der Leiber tragen keine — unter dem Rad liegt nie Fleisch —, und kraut, die Mahd im
         // Beutel, auch nicht: die Wiese unter Rad, Huf und Schritt ist EINE Zeile, gras. μ des Leibs (`mu`) und μ des Rads sind
         // zwei Paare (Huf auf Fels 0,6, Reifen auf Fels 0,8), je eine Spalte derselben Zeile.
@@ -1579,7 +1583,7 @@ class AnazhRealm_bau_vorlagen {
         // hier), eine Flüssigkeit trägt ihren Kompressions-Modul. Tafel-Werte (Engineering ToolBox): Granit 50 GPa, Eiche längs
         // 11 GPa, Quarzglas 72 GPa, Leder 0,2 GPa, kortikaler Knochen 18 GPa, Haut und Gewebe 1 MPa, Keratin (Federn, Schuppen)
         // 2,5 GPa, Holzkohle 3 GPa, Blatt und Halm 50 MPa, verdichteter Boden 50 MPa, Aluminium (die Hülle) 70 GPa, Wasser
-        // (K) 2,2 GPa, Eis 9 GPa.
+        // (K) 2,2 GPa, Eis 9 GPa, loser Sand wie verdichteter Boden 50 MPa.
         // prettier-ignore
         const SI = {
             //         μ      c     T_zünd  T_schmelz  μ Rad  nass  E
@@ -1604,6 +1608,7 @@ class AnazhRealm_bau_vorlagen {
             gras:     [0.6,  1800, 533,    null,      0.4,   0.2,  5e7],
             wasser:   [null, 4186, null,   273.15,    null,  null, 2.2e9],
             eis:      [0.05, 2050, null,   null,      null,  null, 9e9],
+            sand:     [0.55, 830,  null,   1986,      0.35,  0.45, 5e7],
         };
         // die Spalten L und k (oben): nur das Eis wächst im Kern; L_v des Wassers (2,257 MJ/kg) trocknet das Bett vor der Zündung
         const PHASE = { eis: { L: 334000, k: 2.2 }, wasser: { Lv: 2257000 } };
@@ -1629,7 +1634,7 @@ class AnazhRealm_bau_vorlagen {
             stein: [0.85, 0], holz: [0.84, 0], eisen: [0.54, 1], bronze: [0.25, 1], stahl: [0.09, 1], quarz: [0.135, 0],
             leder: [0.4, 0], knochen: [0.9, 0], fleisch: [0.9, 0], leib: [0.9, 0], federn: [0.9, 0], schuppen: [0.9, 0],
             glut: [0.9, 0], laub: [0.9, 0], erde: [0.755, 0], kraut: [0.9, 0], essenz: [0.76, 0], blech: [0.44, 1],
-            gras: [0.9, 0], wasser: [0.72, 0], eis: [0.7, 0],
+            gras: [0.9, 0], wasser: [0.72, 0], eis: [0.7, 0], sand: [0.9, 0],
         };
         // DIE ANTWORT AUF DAS ALTER (stoffe.K4, `_werkAlter` → `_alterKern`): je Stoff, der verwittert, seine SCHICHTEN — je
         // Schicht das Ziel der Fläche (lineare Albedo), die Tage, in denen Zeit und Nässe-Dosis sie 63 % dorthin tragen (null: die
@@ -1663,10 +1668,10 @@ class AnazhRealm_bau_vorlagen {
         };
         const welt = this;
         const TB = AnazhRealm._schrittTimbre().material;
-        // Stahl, Blech und Leib sind Stoffe der Körper (die Klinge der Schmiede, die Hülle des Wagens, der Mensch), Gras, Wasser
-        // und Eis Stoffe der Welt, keine Bau-Stoffe: die Welt hat keine Quelle, aus der man sie sammelt, die Werkstatt bietet sie
-        // nicht an (`bauStoff`).
-        const keinBauStoff = ["stahl", "blech", "leib", "gras", "wasser", "eis"];
+        // Stahl, Blech und Leib sind Stoffe der Körper (die Klinge der Schmiede, die Hülle des Wagens, der Mensch), Gras, Wasser,
+        // Eis und Sand Stoffe der Welt, keine Bau-Stoffe: die Welt hat keine Quelle, aus der man sie sammelt, die Werkstatt bietet
+        // sie nicht an (`bauStoff`).
+        const keinBauStoff = ["stahl", "blech", "leib", "gras", "wasser", "eis", "sand"];
         const make = (name, label, color, tags) => {
             const si = SI[name];
             if (!si || !TB[name])
@@ -1921,6 +1926,16 @@ class AnazhRealm_bau_vorlagen {
                 wärmeleitung: 0.5,
                 transparent: 0.7,
                 resoniert: 0.5,
+            }),
+            // DER SAND DES STRANDS (w27-ferne-ton-5): die Schicht, die die Boden-Farbe am Ufer malt (`_strandAt`) — Rad, Huf und
+            // Schritt stehen auf ihr (`_fahrHaft`, `_kontaktStoffAt`). Loser Quarzsand: Schüttdichte 1 600 kg/m³, c 830 J/(kg·K),
+            // die Sohle hält mit dem Reibungswinkel der Schüttung (tan 29° = 0,55), er brennt nie.
+            make("sand", "stoff.sand", 0xc9b791, {
+                härte: 0.15,
+                dichte: 0.45,
+                zähigkeit: 0.05,
+                wärmeleitung: 0.1,
+                resoniert: 0.2,
             }),
         ];
         const out = {};
