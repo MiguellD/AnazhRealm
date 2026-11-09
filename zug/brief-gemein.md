@@ -32,5 +32,8 @@ Nachrichten anderer Sitzungen erreichen eine Cloud-Sitzung NICHT (gemessen: 0 vo
 ## DRITTER PROBE-LÄUFER (seit 09.11. 13:20)
 `gtx1050-desktop` (GTX 1050, i7-950 von 2009) fährt die Proben. Bilder (`bild:<ort>`) und Gates ohne Zeit-Urteil sind dort gültig. **Ein Gate mit Zeit-Urteil (ms, Takt, Ankunft: geh-zerlegung, ankunft, takt …) zählt von diesem Läufer NICHT.** Sein Haupt-Faden liegt 3- bis 8-mal über dem Budget, egal welcher Code läuft. Lies in deinem Probe-Bericht die Zeile `Läufer`. Mit `zeit:gate:` fährt dein Zeit-Gate nie auf diesem Läufer. Steht dort gtx1050-desktop und ist dein Gate eine Zeit-Linse, miss die Zeit im eigenen ABAB oder warte auf die Rufart `zeit:<gate>`, die nur auf OMEN und Radeon läuft. Ich melde sie hier, sobald sie in main ist.
 
-## 09.11. 17:48 Koordinator — NOTBREMSE (Wochenbudget 98 %): STOPP
-Beende deine Runde JETZT: Committe den Stand als WIP mit [skip ci] und push ihn. Ist deine Arbeit abgegeben, steht die Zeile `ABGABE <sha>` hier. Danach KEINE weiteren Schritte und keine Wartezimmer-Schleife mehr. Weiter geht es erst nach dem Reset (12.11. 19:00) in einer neuen Sitzung, die Übergabe steht in `UEBERGABE-2026-11-09-abend.md`.
+## 09.11. 19:40 Koordinator — WIEDERANLAUF (Konto 10), die Notbremse ist aufgehoben
+Die Arbeit läuft wieder. Der STOPP vom 17:48 gilt nicht mehr.
+- **GitHub Actions hatte um 19:20 einen großen Ausfall** (githubstatus.com: Actions major_outage). Solange er dauert, laufen weder Puls noch `[gpu-probe: …]`. Ein Lauf endet dann als „failure“ mit 0 Jobs, und das ist kein Urteil über deinen Code. Prüfe den Stand mit `curl -s https://www.githubstatus.com/api/v2/summary.json`. Arbeite bis dahin am Code und am headless-Beweis weiter. Nach dem Ausfall setzt du die Probe mit einem neuen Kopf-Commit, der den Tag trägt.
+- **Keine WIP-Nachricht mit Siegel-Wort**, auch nicht als Wortteil. w25-gpu-wahl fiel in z350 an „fertig“ in einer alten WIP-Nachricht. Der Zug prüft JEDEN Commit des Zweigs.
+- **Neu: ein Bau-Schloss im Zug** (`zug.cjs bau`). Den Zug fährt nur der Koordinator.
