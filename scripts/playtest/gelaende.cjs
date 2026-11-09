@@ -1261,7 +1261,9 @@ async function checkBandWelleC3CellularReaction({ page, check }) {
         // VOR der Baseline → beide Seiten sehen denselben Architektur-Satz, nur der Damm unterscheidet.
         // der 3×3-Force-Drain um den Test-Chunk (vor der Baseline und nach dem Abbau: dieselbe Lage beider Seiten)
         const frisch = () => {
-            frisch();
+            if (!st.dirtyVoxelChunks) st.dirtyVoxelChunks = new Set();
+            for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) st.dirtyVoxelChunks.add(`${testCx + dx},${testCz + dz}`);
+            for (let d = 0; d < 8 && st.dirtyVoxelChunks.size > 0; d++) r._drainDirtyVoxelChunks();
         };
         frisch();
         const preDamEntry0 = st.voxelChunks && st.voxelChunks.get(preDamChunkKey);
@@ -1303,9 +1305,7 @@ async function checkBandWelleC3CellularReaction({ page, check }) {
             // beim Band-Eintritt variiert je Lauf → den GELESENEN Chunk (`damChunkKey`) + 3×3-Umfeld EXPLIZIT
             // dirty markieren und drainen, bis das Set leer ist: die Stempel-Cell wird garantiert neu
             // klassifiziert.
-            if (!st.dirtyVoxelChunks) st.dirtyVoxelChunks = new Set();
-            for (let dz = -1; dz <= 1; dz++) for (let dx = -1; dx <= 1; dx++) st.dirtyVoxelChunks.add(`${testCx + dx},${testCz + dz}`);
-            for (let d = 0; d < 8 && st.dirtyVoxelChunks.size > 0; d++) r._drainDirtyVoxelChunks();
+            frisch();
             const afterRemoveEntry = st.voxelChunks && st.voxelChunks.get(damChunkKey);
             if (
                 preDamCells &&

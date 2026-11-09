@@ -48,7 +48,7 @@
 //
 //   node scripts/diag-profiband.cjs [--selftest] [--messung <boot.json …>]          (npm run gate:profiband)
 "use strict";
-const { selbsttestEnde, SELBSTTEST, path, fs, stammLib, jsonLesen, ROOT: root, jsonKlon } = require("./lib/welt-boot.cjs");
+const { selbstTafel, SELBSTTEST, path, fs, stammLib, jsonLesen, ROOT: root, jsonKlon } = require("./lib/welt-boot.cjs");
 const DZ = require("./lib/draw-zaehler.cjs");
 const BAND = require("./lib/band-urteil.cjs");
 
@@ -336,8 +336,7 @@ function selbsttest() {
     const { haushalt, ratsche } = BAND.ladeSpec("wiese", { geraet: "radeon", sicht: "ego" });
     const A = klasseVon();
     const S = stammKlasse(A);
-    const tests = [];
-    const t = (name, ok) => tests.push({ name, ok: !!ok });
+    const { t, ende } = selbstTafel();
     // Die Selbsttests urteilen gegen eine UNGEMESSENE Ratsche desselben Schemas mit fester Toleranz — die gemessenen
     // Werte der echten (die Hülle der Serie) dürfen keinen Selbsttest färben.
     const rt = jsonKlon(ratsche);
@@ -1268,9 +1267,7 @@ function selbsttest() {
     // DER GANG (K5, `werkbank puffer --gang`): ein ungedeckelter Cache ist rot beim Pfad, ein gedeckelter nicht
     t("Gang: Heap je Minute und VRAM-Drift urteilen, der Halter steht beim Pfad", DZ.gangSelbsttest().length === 0);
 
-    const rot = tests.filter((x) => !x.ok);
-    for (const x of tests) console.log(`${x.ok ? "✅" : "❌"} SELBST-TEST: ${x.name}`);
-    selbsttestEnde(rot.map((x) => x.name), `die Band-Wand feuert (${tests.length}/${tests.length})`);
+    ende("die Band-Wand feuert");
 }
 
 function main() {
