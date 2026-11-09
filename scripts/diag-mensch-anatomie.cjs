@@ -133,9 +133,8 @@ function messe(sb, verzerre, dials) {
 // zeichnen). Farben in CIELAB (D65) aus den linearen Stoff- und Vertex-Farben.
 const ladeOfen = () => fadenScope(OFEN_KERNE);
 // CIELAB, sRGB und Luma: die EINEN der Linsen (abnahme-urteil)
-const { cielab, srgbLin, luma709 } = require("./lib/abnahme-urteil.cjs");
+const { cielab, linHex, luma709 } = require("./lib/abnahme-urteil.cjs");
 const lab = (r, g, b) => cielab([r, g, b]);
-const linHex = (hx) => [(hx >> 16) & 255, (hx >> 8) & 255, hx & 255].map(srgbLin);
 function messeKopf(sb, eingriff) {
     const T = sb.THREE;
     const K = sb.__koerperCore;

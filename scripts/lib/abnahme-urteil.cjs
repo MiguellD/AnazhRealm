@@ -356,6 +356,8 @@ function abnahmeSelbsttest(fixtureDir) {
 // DIE sRGB-KURVE (IEC 61966-2-1), EINE für jede Linse (rein, in der Seite global über ABNAHME_INSTALL): `srgbLin` ein Byte
 // 0–255 → linear, `linSrgb` linear → 0–1.
 const srgbLin = (u) => (u <= 10.31475 ? u / 3294.6 : ((u / 255 + 0.055) / 1.055) ** 2.4);
+// ein Paletten-Hex (sRGB-Absicht) → seine lineare Albedo je Kanal (das FARB-GESETZ, Lehre 21) — die EINE Rechnung der Linsen
+const linHex = (h) => [(h >> 16) & 255, (h >> 8) & 255, h & 255].map(srgbLin);
 const linSrgb = (x) => (x <= 0.0031308 ? 12.92 * x : 1.055 * x ** (1 / 2.4) - 0.055);
 // DIE LUMA (Rec. 709) der drei Kanäle ab Index i (ein Byte-Bild oder ein Tripel), EINE für jede Linse (in der Seite global)
 const luma709 = (u, i = 0) => 0.2126 * u[i] + 0.7152 * u[i + 1] + 0.0722 * u[i + 2];
@@ -2464,6 +2466,7 @@ module.exports = {
     bildRauschen,
     abnahmeSelbsttest,
     srgbLin,
+    linHex,
     linSrgb,
     luma709,
     cielab,

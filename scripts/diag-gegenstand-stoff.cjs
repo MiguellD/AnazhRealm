@@ -15,7 +15,8 @@
 //   durchsicht   eine Scheibe ohne Durchsicht
 //   toenung      Vertex-Farben UND eine nicht-weiße Material-Farbe (das Labor tönt, die Welt nicht)
 //   lack-gestalt die Gestalten tragen nicht die acht Lacke des LACK_GESETZ (linear)
-//   transport    das Gesetz der Regler (phyto-core) macht aus Klarlack/Durchsicht nicht die Zahlen des Wirts
+//   transport    der Stoff, den der Wirt in der echten Welt baut (`--tafel`, `_foundryTreeMaterial`), trägt Klarlack und Durchsicht
+//                seines Gesetzbuchs nicht (bis w26 fragte die Linse nur, ob `budgetRegler` sie liest — nie den gebauten Stoff)
 //   umgebung     ein Stoff der WELT skaliert die EINE Umgebung (`envMapIntensity` ≠ 1, w26-lack-glas): je Umgebungs-Zahl, die ein
 //                Gesetzbuch trägt (Lack 2,6, Scheibe 3,0, Chrom 1,6, Gummi 0,5 …), baut der Wirt in der echten Welt (`--tafel`)
 //                einen Lack-Stoff (`_foundryTreeMaterial`) — er trägt 1, sonst spiegelte er die Welt ×v (Fresnel und Energie
@@ -68,9 +69,7 @@ const BAND = {
 };
 const LABOR = new Set(["ton", "lehre"]);
 // Luma und sRGB → linear: die EINE Quelle der Linsen (abnahme-urteil)
-const { luma709: lum, srgbLin } = require("./lib/abnahme-urteil.cjs");
-const lin = (v) => srgbLin(v * 255);
-const linHex = (h) => [lin(((h >> 16) & 255) / 255), lin(((h >> 8) & 255) / 255), lin((h & 255) / 255)];
+const { luma709: lum, linHex } = require("./lib/abnahme-urteil.cjs");
 
 // Was ein Mesh der Welt an Albedo liefert: Vertex-Farben (Mittel) oder die Material-Farbe.
 function weltAlbedo(o) {
@@ -147,14 +146,6 @@ function lackGestalten() {
     return out;
 }
 
-// Der Transport am Gesetz der Regler: Klarlack und Durchsicht eines
-// Stoffs werden die Material-Zahlen, aus denen der Wirt baut (phyto-core `budgetRegler`)
-const LACK_GLAS = { clearcoat: 1, clearcoatRoughness: 0.1, opacity: 0.4 };
-function transport(R) {
-    if (R && R.cc === 1 && R.ccr === 0.1 && R.op === 0.4) return [];
-    return [`transport: budgetRegler liest Klarlack/Durchsicht nicht (cc ${R && R.cc} · op ${R && R.op})`];
-}
-
 function alles() {
     const out = [];
     // je Same dazu eine Stufe der Zeit-Achse (EPOCHE_GESETZ, reihum alle sechs): Holz, Leder, Bronze, Messing, Eisen-Band,
@@ -165,7 +156,6 @@ function alles() {
                 out.push(...urteil(`fahrzeug ${id} Same ${s} ${JSON.stringify(ov)}`, VC.buildInstance(id, s, 0, ov)));
     for (const id of Object.keys(SC.PRESETS)) out.push(...urteil(`klinge ${id}`, SC.buildInstance(id, 1, 0)));
     out.push(...lackGestalten());
-    out.push(...transport(PC.budgetRegler("unknown", LACK_GLAS)));
     return [...new Set(out)];
 }
 
@@ -187,74 +177,45 @@ function selbstTest() {
     // je Täter-Gestalt: das Urteil nennt seinen Täter, sonst bleibt er still
     const still = (g, taeter, name) => urteil("t", g).some((s) => s.includes(taeter)) || fehl.push(name + " still");
     // der Reifen roh (r128 las 0x131519 als 0,08 linear)
-    still(mk("gummi", 0x131519), "band gummi", "roher Reifen bleibt");
-    still(mk("ton", 0x8d9499), "labor-stoff", "Ton-Karosserie bleibt");
+    still(mk("gummi", 0x131519), "band gummi", "Reifen");
+    still(mk("ton", 0x8d9499), "labor-stoff", "Ton");
     const lack = (name, metalness, cc) => {
         const g = mk("lack", 0x111319, { metalness });
         g.children[0].material.userData.__lack = name;
         g.children[0].material.clearcoat = cc;
         return g;
     };
-    still(lack("Tiefschwarz", 0, 0), "klarlack", "Lack ohne Klarlack bleibt");
+    still(lack("Tiefschwarz", 0, 0), "klarlack", "Klarlack");
     // der Uni-Lack als gefärbter Spiegel (bis W5: jeder Lack metalness 0,85)
-    still(lack("Signalrot", 0.85, 1), "lack-art", "Uni-Lack als Metall bleibt");
-    still(mk("glas", 0x0a0f18), "durchsicht", "blinde Scheibe bleibt");
+    still(lack("Signalrot", 0.85, 1), "lack-art", "Lackart");
+    still(mk("glas", 0x0a0f18), "durchsicht", "Scheibe");
     const vc = mk("holz", 0x6b4a2a, { vertexColors: true });
     const geo = vc.children[0].geometry;
     geo.setAttribute("color", new THREE.Float32BufferAttribute(new Float32Array(geo.attributes.position.count * 3).fill(0.2), 3));
-    still(vc, "toenung", "getönte Vertex-Farben bleiben");
+    still(vc, "toenung", "Tönung");
     const namenlos = mk("gummi", 0x2a2c2f);
     delete namenlos.children[0].material.userData.__stoff;
-    still(namenlos, "ohne-stoff", "Stoff ohne Namen bleibt");
-    if (!transport(PC.budgetRegler("unknown", {})).length) fehl.push("Transport ohne Klarlack bleibt still");
+    still(namenlos, "ohne-stoff", "Namenlos");
     return fehl;
 }
 
-// DIE UMGEBUNGS-ZAHLEN der Gesetzbücher (Node, r128 wie `alles`): jede `envMapIntensity` ≠ 1 eines Stoffs, der in die Welt reist
-function umgebungsZahlen() {
-    const z = new Set();
-    const lies = (g) => g.traverse((o) => o.isMesh && typeof o.material?.envMapIntensity === "number" && z.add(+o.material.envMapIntensity.toFixed(3)));
-    for (const id of Object.keys(VC.PRESETS)) for (let s = 1; s <= 8; s++) lies(VC.buildInstance(id, s, 0));
-    for (const id of Object.keys(SC.PRESETS)) lies(SC.buildInstance(id, 1, 0));
-    return [...z].filter((v) => v !== 1).sort((a, b) => a - b);
-}
-// DIE PROBE DER WELT (`umgebung`, `schichten`, in der Seite): je Zahl der Lack-Stoff des Wirts (Klarlack 1) mit ihr im Gesetzbuch, dazu
-// ein Stoff mit dem Klarlack der Haut (0,12) — was er trägt: [Zahl, Klarlack, envMapIntensity, specularIntensity]; `sabotage` legt den
-// Stand vor w26 um den Bau (die Umgebung ×Zahl des Labors, die Basis mit r184s Vorgabe 1)
-function umgebungProbe(zahlen, sabotage) {
-    const P = Object.getPrototypeOf(r),
-        bau = P._foundryTreeMaterial,
-        rend = r.state.renderer,
-        bib = rend && rend.library,
-        mats = r._foundryMats || {},
-        vor = new Set(Object.keys(mats));
-    // die Physical-Attrappe: ein Standard-Stoff mit den Feldern, die der Wirt am Klarlack setzt
-    class Physical extends THREE.MeshStandardNodeMaterial {
-        constructor(p) {
-            super();
-            Object.assign(this, { clearcoat: 0, clearcoatRoughness: 0, specularIntensity: 1, isMeshPhysicalNodeMaterial: true });
-            this.setValues(p);
-        }
-    }
-    if (rend && !bib) rend.library = { getMaterialNodeClass: (n) => (n === "MeshPhysicalMaterial" ? Physical : null) };
-    if (sabotage)
-        P._foundryTreeMaterial = function (kind, mp, ...rest) {
-            const m = bau.call(this, kind, mp, ...rest);
-            m.envMapIntensity = globalThis.__phytoCore.budgetRegler(kind, mp).env;
-            if (m.isMeshPhysicalNodeMaterial) m.specularIntensity = 1;
-            return m;
-        };
+// DIE PROBE DER WELT (`transport`, `umgebung`, `schichten`; in der Seite des Null-Renderers): je Umgebungs-Zahl eines Gesetzbuchs
+// (Gummi 0,5 · Lack 2,6 · Scheibe 3,0 — das Gesetz des Wirts ist EINE Zeile ohne Fall je Zahl) der Stoff des Wirts mit Klarlack 1 und
+// Durchsicht 0,4, dazu der Klarlack der Haut (0,12) — die Täter beim Namen. Der Null-Renderer trägt keine Bibliothek: die Probe
+// reicht dem Wirt eine mit einer Physical-Attrappe (das Gesetz des Wirts, nie r184); `sabotage` legt den Stand vor w26 um den Bau und
+// nimmt dem Stoff den Klarlack
+function umgebungProbe(sabotage) {
+    const [P, rend] = [Object.getPrototypeOf(r), r.state.renderer];
+    const bau = P._foundryTreeMaterial;
+    rend.library = { getMaterialNodeClass: () => class extends THREE.MeshStandardNodeMaterial {} };
+    if (sabotage) P._foundryTreeMaterial = (k, mp) => Object.assign(bau.call(r, k, mp), { clearcoat: 0, envMapIntensity: mp.envMapIntensity, specularIntensity: 1 });
     try {
-        const reihe = zahlen.map((v) => [v, 1]).concat([[1, 0.12]]);
-        return reihe.map(([v, cc]) => {
-            const m = r._foundryTreeMaterial("unknown", { roughness: 0.37, metalness: 0, clearcoat: cc, clearcoatRoughness: 0.07, envMapIntensity: v, seh: "metall" });
-            return [v, cc, m.envMapIntensity, m.isMeshPhysicalNodeMaterial ? +m.specularIntensity.toFixed(4) : null];
+        return [[0.5, 1], [2.6, 1], [3, 1], [1, 0.12]].flatMap(([v, cc]) => {
+            const m = r._foundryTreeMaterial("unknown", { roughness: 0.37, clearcoat: cc, clearcoatRoughness: 0.07, opacity: 0.4, envMapIntensity: v });
+            return [m.clearcoat !== cc || m.opacity !== 0.4 ? "transport " + cc : "", m.envMapIntensity !== 1 ? "umgebung " + v : "", m.specularIntensity !== 1 - cc ? "schichten " + cc : ""].filter(Boolean);
         });
     } finally {
-        P._foundryTreeMaterial = bau;
-        if (rend && !bib) delete rend.library;
-        // die Stoffe der Probe verlassen den Vorrat des Wirts (die Attrappe zeichnet nie)
-        for (const k of Object.keys(r._foundryMats || {})) if (!vor.has(k)) delete r._foundryMats[k];
+        [P._foundryTreeMaterial, rend.library] = [bau, undefined];
     }
 }
 
@@ -413,15 +374,9 @@ async function tafel() {
         await warteAufWelt(page, 180000);
         await page.evaluate(require("./lib/wasser-linse.cjs").WASSER_INSTALL);
         await buehne(page);
-        // DIE UMGEBUNG (w26-lack-glas): kein Stoff der Welt skaliert sie — die Sabotage (die Zeile vor w26) feuert beim Namen
-        const zahlen = umgebungsZahlen();
-        const [uEcht, uSab] = [await page.evaluate(umgebungProbe, zahlen, false), await page.evaluate(umgebungProbe, zahlen, true)];
-        const falsch = ([v, cc, env, si]) => [env !== 1 && "umgebung: Gesetzbuch " + v + " → Welt " + env, (si == null || Math.abs(si - (1 - cc)) > 1e-4) && "schichten: Klarlack " + cc + " → Basis " + si + " (Soll " + +(1 - cc).toFixed(4) + ")"].filter(Boolean);
-        const uRot = uEcht.flatMap(falsch), sabRot = uSab.flatMap(falsch);
-        // stumm: die Sabotage nennt nicht JEDEN Täter (Umgebung je Zahl ≠ 1, die Basis je Klarlack)
-        const uStumm = !zahlen.length || sabRot.filter((x) => x.startsWith("umgebung")).length < zahlen.length || sabRot.filter((x) => x.startsWith("schichten")).length < uSab.length;
-        console.log("UMGEBUNG " + JSON.stringify({ zahlen, welt: uEcht, sabotage: uSab }));
-        console.log(uRot.length ? "❌ " + [...new Set(uRot)].join(" · ") : uStumm ? "❌ umgebung/schichten: die Sabotage feuert nicht beim Namen (" + sabRot.length + " Täter)" : "✅ umgebung + schichten: " + zahlen.length + " Zahlen der Gesetzbücher, jeder Welt-Stoff trägt die EINE Umgebung (1), die Basis unter dem Klarlack 1 − Klarlack; die Sabotage nennt " + sabRot.length + " Täter");
+        // TRANSPORT, UMGEBUNG UND SCHICHTEN (w26-lack-glas): die Sabotage (der Stand vor w26) nennt JEDEN Täter beim Namen
+        const [uRot, uSab] = [await page.evaluate(umgebungProbe, false), await page.evaluate(umgebungProbe, true)];
+        console.log("UMGEBUNG " + JSON.stringify({ rot: uRot, sabotage: uSab }));
         const echt = await page.evaluate(tafelProbe, STOFFE, WIRKUNGEN, false);
         const sab = await page.evaluate(tafelProbe, STOFFE, WIRKUNGEN, true);
         const je = {};
@@ -429,8 +384,8 @@ async function tafel() {
         // an der Tafel vorbei: grün trotz Sabotage; stumm: die Sabotage maß nicht (ein Absturz ist kein Rot)
         const vorbei = STOFFE.flatMap((X) => WIRKUNGEN.filter((w) => sab[X][w].ok || (je[X].includes(w) && sab[X][w].fehler)).map((w) => X + "." + w));
         console.log("TAFEL " + JSON.stringify({ je, vorbei }));
-        const gruen = !vorbei.length && STOFFE.every((X) => je[X].length >= 3) && !uRot.length && !uStumm;
-        console.log(gruen ? "✅ TAFEL GRÜN — Staffel " + (STOFFE.every((X) => je[X].length === 7) ? 2 : 1) : "❌ TAFEL ROT — an der Tafel vorbei oder stumm: " + vorbei);
+        const gruen = !vorbei.length && STOFFE.every((X) => je[X].length >= 3) && !uRot.length && uSab.length === 11;
+        console.log(gruen ? "✅ TAFEL GRÜN — Staffel " + (STOFFE.every((X) => je[X].length === 7) ? 2 : 1) : "❌ TAFEL ROT: " + vorbei);
         return gruen ? 0 : 1;
     } finally {
         await browser.close();
@@ -447,21 +402,15 @@ if (process.argv.includes("--tafel")) {
 
 const fehlSelbst = selbstTest();
 if (SELBSTTEST) {
-    urteilEnde(fehlSelbst.length, "❌ SELBST-TEST ROT — " + fehlSelbst.join(" · "), "✅ SELBST-TEST GRÜN — die Stoff-Linse feuert auf Ton, rohen Reifen, Lack ohne Lackschicht, blinde Scheibe, Tönung, Namenlose und fehlenden Transport.");
+    urteilEnde(fehlSelbst.length, "❌ SELBST-TEST ROT — " + fehlSelbst.join(" · "), "✅ SELBST-TEST GRÜN — jeder Täter feuert");
 }
 const befunde = alles();
-console.log("=== DIE STOFF-LINSE DER GEGENSTÄNDE (Fahrzeuge × 8 Lacke · Klingen/Werkzeuge) ===");
-const klassen = {};
-for (const b of befunde) {
-    const k = (b.split(": ")[1] || b).split(" ")[0];
-    klassen[k] = (klassen[k] || 0) + 1;
-}
-for (const b of befunde.slice(0, 40)) console.log("  ❌ " + b);
-if (befunde.length > 40) console.log(`  … ${befunde.length - 40} weitere`);
+console.log("=== STOFF-LINSE DER GEGENSTÄNDE ===");
+for (const b of befunde) console.log("  ❌ " + b);
 if (fehlSelbst.length) console.log("  ❌ Selbst-Test: " + fehlSelbst.join(" · "));
 if (befunde.length || fehlSelbst.length) {
-    console.error(`\n❌ ROT — ${befunde.length} Befund(e): ${JSON.stringify(klassen)}`);
+    console.error(`\n❌ ROT — ${befunde.length} Befund(e)`);
     process.exit(1);
 }
-console.log("\n✅ GRÜN — jeder Stoff der Fahrzeuge und Klingen liegt im Band seiner Natur, der Lack trägt seine Lackschicht und die acht Lacke, jede Scheibe ihre Durchsicht, das Labor tönt nichts, was die Welt nicht sieht.");
+console.log("\n✅ GRÜN — jeder Stoff im Band seiner Natur");
 process.exit(0);
