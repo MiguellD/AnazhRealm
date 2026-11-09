@@ -3225,7 +3225,7 @@ hauptLauf(async () => {
         let gruen = true;
         const summe = [];
         try {
-            for (const [ort, gaenge] of [["wiese", 1], ["stadt", 2]]) {
+            for (const [ort, gaenge] of [["stadt", 2], ["wiese", 1]]) {
                 await umstellen({ ort, sicht: "ego" });
                 for (let g = 1; g <= gaenge; g++) {
                     const o = await rufe("/haenger", { sek: 4, ein: 0.5, tiere: "frei", wandern: "bahn", schwelle: 33, json: path.resolve("artifacts", "geh", `${ort}-${g}.json`) }); // prettier-ignore
