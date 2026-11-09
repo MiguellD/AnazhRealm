@@ -3219,7 +3219,8 @@ AnazhRealm.CHUNK_IDB_FORM = "faden-reply-satz";
 // trägt keine Fern-Farbe: es ist der Wasser-Körper des Gesetzes (`_wasserKoerper`, im Ring der Blick des Wassers).
 // `memo` = eine Generation des Fern-Farb-Gedächtnisses im Fern-Faden (zwei Generationen tragen > 2 volle Ringe).
 // `halmSchatten` dasselbe für die Wiese (`WIESEN_GRUND.farbe`): der Bestand der Halme beschattet sich selbst — das Mittel des
-// Halms (grün 0,202) trägt aus der Ferne 0,081, die Satelliten-Bänder der Frischwiese im Sommer (grün ~0,07–0,09).
+// Halms (grün 0,202) trägt aus der Ferne 0,081, die Satelliten-Bänder der Frischwiese im Sommer (grün ~0,07–0,09); der Farbton
+// der Ferne bei 8 km fiel damit von 12,7–25,5° auf 2,7–10,2° von der In-Streuung (ferne.K1#2, Genesis, Mittag, swiftshader).
 AnazhRealm.FERN_FARBE = Object.freeze({
     kronenSchatten: 0.32,
     halmSchatten: 0.4,
