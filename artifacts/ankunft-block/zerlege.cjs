@@ -298,7 +298,8 @@ function berichtAB(teil, Z) {
             const tz = zs.map((z) => {
                 const P = (z.out.proben || []).filter((q) => q.t <= z.out.weltbildDa && q.fehlt && q.fehlt.length);
                 const zu = Object.entries(term).map(([k, re]) => [k, P.filter((q) => q.fehlt.some((f) => re.test(f))).reduce((m, q) => Math.max(m, q.t), 0)]).filter(([, t]) => t > 0); // prettier-ignore
-                return `${zu.map(([k, t]) => `${k} ${sek(t)}`).join(" ")} · Ferne ${z.out.nach && z.out.nach.fernbild ? sek(z.out.nach.fernbild) : "–"} · Bild ${sek(z.out.weltbildDa)}`;
+                const hz = ((z.out.nach || {}).hz || []).map(([t, w]) => `${w} ${sek(t)}`).join(" ");
+                return `${zu.map(([k, t]) => `${k} ${sek(t)}`).filter((x) => !/^(boden|pflanzung|streu|dorf) /.test(x)).join(" ")} · ${hz} · Ferne ${z.out.nach && z.out.nach.fernbild ? sek(z.out.nach.fernbild) : "–"} · Bild ${sek(z.out.weltbildDa)}`;
             });
             zeile(`${pre}TERME je Boot (zuletzt offen, s): ${tz.join(" | ")}`.slice(0, 590));
             for (let i = 0, j = 0; !AB && i < 2 && j < wz.length; i++) {

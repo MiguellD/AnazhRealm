@@ -269,7 +269,7 @@ function BAU_HAKEN() {
                 };
         }
         if (r && r.state && r.state._fernbildDa && !N.fernbild) N.fernbild = Math.round(r.state._fernbildDa);
-        if (A && A.prototype._foundryAntwort && !A.prototype._foundryAntwort.__haken && A.prototype._streuWeckerSpannen && A.prototype._streuRegionWeiter && A.prototype._karteGebacken && A.prototype._foundryEnsureImpostorRecord && A.prototype._foundryZug) {
+        if (A && A.prototype._foundryAntwort && !A.prototype._foundryAntwort.__haken && A.prototype._streuWeckerSpannen && A.prototype._streuRegionWeiter && A.prototype._karteGebacken && A.prototype._foundryEnsureImpostorRecord && A.prototype._foundryZug && A.prototype._feldPanoramaRechnen && A.prototype._feldPassMal) {
             const fa = A.prototype._foundryAntwort;
             A.prototype._foundryAntwort = function (f, m) {
                 if (m && m.reqId) N.werk.ant[m.reqId] = [Math.round(performance.now()), m.bau ? 1 : 0];
@@ -289,6 +289,7 @@ function BAU_HAKEN() {
             // (`__kalt.nach.werk.krt`), je Region ihr Wecker [t, Region, hält das Bild, worauf sie wartet] und ihr Weiterbau
             // (`werk.streu`); jede Zusage trägt ihren Namen (`__wer`: der Körper-Schlüssel des Zugs, „K:“ die Karte)
             const vor = () => !(window.anazhRealm && window.anazhRealm.state && window.anazhRealm.state._weltbildDa);
+            const vorBild2 = vor;
             N.werk.krt = {};
             N.werk.streu = [];
             const er = A.prototype._foundryEnsureImpostorRecord;
@@ -319,6 +320,32 @@ function BAU_HAKEN() {
                 if (vor()) N.werk.streu.push([Math.round(performance.now()), region.regX + "," + region.regZ, region._bildWartet ? 1 : 0, auf.length + ":" + auf.slice(0, 4).join("+")]);
                 return o;
             };
+            // DER HORIZONT WIRD GEMALT: der Feld-Auftrag (gesendet), seine Antwort (das Panorama beginnt), das Panorama zurück
+            // (`__kalt.nach.hz`: [t, was])
+            N.hz = [];
+            const fm = A.prototype._feldPassMal;
+            if (typeof fm === "function")
+                A.prototype._feldPassMal = function (fp) {
+                    const vor = fp && fp.flug;
+                    const o = fm.apply(this, arguments);
+                    if (fp && !vor && fp.flug && vorBild2()) N.hz.push([Math.round(performance.now()), "feld"]);
+                    return o;
+                };
+            const pm = A.prototype._feldPanoramaMal;
+            if (typeof pm === "function")
+                A.prototype._feldPanoramaMal = function (fp) {
+                    const vor = fp && fp.panoFlug;
+                    const o = pm.apply(this, arguments);
+                    if (fp && !vor && fp.panoFlug && vorBild2()) N.hz.push([Math.round(performance.now()), "pano"]);
+                    return o;
+                };
+            const pr = A.prototype._feldPanoramaRechnen;
+            if (typeof pr === "function")
+                A.prototype._feldPanoramaRechnen = function () {
+                    const p = pr.apply(this, arguments);
+                    if (p && p.then) p.then(() => vorBild2() && N.hz.push([Math.round(performance.now()), "zurück"]));
+                    return p;
+                };
             const rw = A.prototype._streuRegionWeiter;
             A.prototype._streuRegionWeiter = function (region) {
                 if (vor()) N.werk.streu.push([Math.round(performance.now()), region.regX + "," + region.regZ, -1, "weiter"]);
