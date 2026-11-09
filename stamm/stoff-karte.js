@@ -1788,11 +1788,13 @@ AnazhRealm.KARTEN_ATLAS_SCHRITT = 2;
 // Dreiecke; 653 im Bild, Median 44 px hoch, 209 über 64 px, 53 über 128 px).
 AnazhRealm.KARTE_GITTER = Object.freeze({ zellen: Object.freeze([2, 2]), px: Object.freeze([64, 128]) });
 // DIE TIEFEN-PARALLAXE DER KARTE (w27-lod-baum, lod.K5; der Stoff, `_relief`): das Fragment liest jede Ansicht dort, wo der Strahl
-// des Auges ihr Relief trifft — der Festpunkt beginnt auf der Ebene der Ansicht und liest `gaenge`-mal die Tiefe je Texel, auf
-// der Mip-Stufe, deren Texel `texel` Texel der Albedo misst (die Ablage mittelt dort die deckenden: die Hülle der Krone, nie das
-// einzelne Blatt — an ihm springt der Festpunkt). 0 Gänge: jede Ansicht an der Stelle des Quads (die Karte bis w27, der Selbsttest
-// von gate:foundry-impostor C9).
-AnazhRealm.KARTE_RELIEF = Object.freeze({ gaenge: 2, texel: 4 });
+// des Auges ihr Relief trifft — der Festpunkt beginnt `start` Rahmen-Halbbreiten vor der Ebene der Ansicht und liest `gaenge`-mal
+// die Tiefe je Texel, auf der Mip-Stufe, deren Texel `texel` Texel der Albedo misst (die Ablage mittelt dort die deckenden: die
+// Hülle der Krone, nie das einzelne Blatt — an ihm springt der Festpunkt); rückt der letzte Gang die Tiefe um mehr als `halt`
+// Rahmen-Halbbreiten, trifft der Strahl nichts. Am CPU-Modell der Station (L0 gegen Karte am Wechsel, Deckung beider/Vereinigung):
+// Weide 0,82 → 0,88 · Eiche 0,83 → 0,91 · Karst 0,70 → 0,89 · Birke 0,81 → 0,87. 0 Gänge: jede Ansicht an der Stelle des Quads
+// (die Karte bis w27, der Selbsttest von gate:foundry-impostor C9).
+AnazhRealm.KARTE_RELIEF = Object.freeze({ gaenge: 3, texel: 4, start: 0.48, halt: 0.48 });
 
 // DAS JAHR DER KARTE (w21-laub-jahr-fern, `_karteJahr`): `stufen` Stufen je Jahr — die Karte backt ihr Laub in der Präsenz und
 // Tönung der Stufe und backt neu, wenn die Welt die Stufe wechselt (`_karteJahrTakt`): 32 Stufen tragen die Präsenz in

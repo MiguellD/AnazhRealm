@@ -1008,15 +1008,19 @@ class AnazhRealm_stoff_material {
                                     const _uv = _Ta.varying(_uvV, "vKarteUv"); // das Fragment: die Ecke, wo sie steht
                                     // das Gewicht der Tiefe im Fragment (dasselbe, mit dem das Gitter steht) und der Abstand des Auges von der Mitte
                                     // der Karte in Metern der Vorlage — je Instanz fest (`_relief` unten)
-                                    const _morphF = _Ta.varying(_morph, "vKarteMorph");
-                                    const _augeD = _Ta.varying(
-                                        _Ta.cameraPosition
-                                            .sub(_naht.anker)
-                                            .sub(_Ta.vec3(0.0, _hHv.mul(_sV), 0.0))
-                                            .length()
-                                            .div(_sV.max(1e-4)),
-                                        "vKarteAugeD"
+                                    const _nahF = _Ta.varying(
+                                        _Ta.vec2(
+                                            _morph,
+                                            _Ta.cameraPosition
+                                                .sub(_naht.anker)
+                                                .sub(_Ta.vec3(0.0, _hHv.mul(_sV), 0.0))
+                                                .length()
+                                                .div(_sV.max(1e-4))
+                                        ),
+                                        "vKarteNah"
                                     );
+                                    const _morphF = _nahF.x,
+                                        _augeD = _nahF.y;
                                     const _ecke = _uv.x.mul(_Ta.float(2.0)).sub(_Ta.float(1.0)); // die Ecke ±1
                                     // ── exakte Anker-Peilung im Fragment: posW = Anker + right·k + Hub der gekippten Karte entlang
                                     //    look (right ⟂ look) ⇒ ang(look) = atan2(−h) + atan2(k, d'), d' = √(|h|²−k²) — kein
@@ -1089,11 +1093,17 @@ class AnazhRealm_stoff_material {
                                                 .div(_at.cw),
                                             R.z
                                                 .add(_Ta.floor(a.div(tR)).mul(bh))
-                                                .add(_Ta.float(1.0).sub(v.clamp(hv, _Ta.float(1.0).sub(hv))).mul(bh))
+                                                .add(
+                                                    _Ta
+                                                        .float(1.0)
+                                                        .sub(v.clamp(hv, _Ta.float(1.0).sub(hv)))
+                                                        .mul(bh)
+                                                )
                                                 .div(_Hs)
                                         );
                                         let t;
-                                        if (_at.fmt !== "rgba8") t = _at.tmapNode.sample(uvT).depth(_schicht).level(stufe).r;
+                                        if (_at.fmt !== "rgba8")
+                                            t = _at.tmapNode.sample(uvT).depth(_schicht).level(stufe).r;
                                         else {
                                             const n = _at.nmapNode.sample(uvT).depth(_schicht).level(stufe);
                                             t = _Ta.select(
@@ -1134,10 +1144,11 @@ class AnazhRealm_stoff_material {
                                     //    D · (cos φ sin δ, sin φ cos e − cos φ sin e cos δ, sin φ sin e + cos φ cos e cos δ), der Punkt (k, b) der
                                     //    gekippten Karte bei (k cos δ − b sin φ sin δ, k sin e sin δ + b (cos φ cos e + sin φ sin e cos δ),
                                     //    b (cos φ sin e − sin φ cos e cos δ) − k cos e sin δ); der Strahl trifft die Tiefe w der Ansicht bei
-                                    //    t = (w − Auge.w) / (Punkt.w − Auge.w). Der Festpunkt beginnt auf der Ebene der Ansicht (w = 0: der
-                                    //    Stamm steht dort) und liest `gaenge`-mal die Tiefe je Texel (`_tiefeAn`, dieselbe Schicht wie die
-                                    //    Ecken des Gitters). Mit dem Gewicht des Gitters (`_morph`): die ferne Karte steht eben und liest wie
-                                    //    bis hier (ihr Versatz liegt unter dem Bildpunkt). Verfahren: tiefen-korrigierte Impostoren (Brucks,
+                                    //    t = (w − Auge.w) / (Punkt.w − Auge.w). Der Festpunkt beginnt `start` Rahmen-Halbbreiten vor der
+                                    //    Ebene der Ansicht (die halbe Krone: von dort findet er Hülle und Stamm) und liest `gaenge`-mal die
+                                    //    Tiefe je Texel (`_tiefeAn`, dieselbe Schicht wie die Ecken des Gitters); steht er danach nicht (der
+                                    //    letzte Gang rückt um mehr als `halt`), trifft der Strahl nichts. Mit dem Gewicht des Gitters
+                                    //    (`_morph`): die ferne Karte steht eben und liest wie bis hier (ihr Versatz liegt unter dem Bildpunkt). Verfahren: tiefen-korrigierte Impostoren (Brucks,
                                     //    Octahedral Impostors, 2018; Policarpo/Oliveira, Relief Impostors, 2006). ──
                                     const _RL = AnazhRealm.KARTE_RELIEF;
                                     const _dreh = (2 * Math.PI) / _at.V;
@@ -1156,23 +1167,49 @@ class AnazhRealm_stoff_material {
                                             aV = _augeD.mul(_sPf.mul(_cEf).sub(_cPf.mul(_sEf).mul(cD))),
                                             aW = _augeD.mul(_sPf.mul(_sEf).add(_cPf.mul(_cEf).mul(cD)));
                                         const qU = _kK.mul(cD).sub(_bK.mul(_sPf).mul(sD)),
-                                            qV = _kK.mul(_sEf).mul(sD).add(_bK.mul(_cPf.mul(_cEf).add(_sPf.mul(_sEf).mul(cD)))),
-                                            qW = _bK.mul(_cPf.mul(_sEf).sub(_sPf.mul(_cEf).mul(cD))).sub(_kK.mul(_cEf).mul(sD));
+                                            qV = _kK
+                                                .mul(_sEf)
+                                                .mul(sD)
+                                                .add(_bK.mul(_cPf.mul(_cEf).add(_sPf.mul(_sEf).mul(cD)))),
+                                            qW = _bK
+                                                .mul(_cPf.mul(_sEf).sub(_sPf.mul(_cEf).mul(cD)))
+                                                .sub(_kK.mul(_cEf).mul(sD));
                                         // das Auge steht vor der Ebene der Ansicht (die zwei nächsten Peilungen, der Ring seiner Hebung)
                                         const nen = qW.sub(aW).min(-1e-3);
                                         let u = _uv.x,
                                             v = _vC;
-                                        let w = _Ta.float(0.0);
+                                        let w = _rahmen.x.mul(_RL.start),
+                                            wVor = w;
                                         for (let i = 0; _RL.gaenge > 0 && i <= _RL.gaenge; i++) {
                                             const t = w.sub(aW).div(nen);
-                                            u = aU.add(t.mul(qU.sub(aU))).div(_rahmen.x).mul(0.5).add(0.5);
-                                            v = aV.add(t.mul(qV.sub(aV))).div(_hE).mul(0.5).add(0.5);
-                                            if (i < _RL.gaenge) w = _tiefeAn(_ring, a, u, v, _reliefStufe);
+                                            u = aU
+                                                .add(t.mul(qU.sub(aU)))
+                                                .div(_rahmen.x)
+                                                .mul(0.5)
+                                                .add(0.5);
+                                            v = aV
+                                                .add(t.mul(qV.sub(aV)))
+                                                .div(_hE)
+                                                .mul(0.5)
+                                                .add(0.5);
+                                            if (i < _RL.gaenge) [wVor, w] = [w, _tiefeAn(_ring, a, u, v, _reliefStufe)];
                                         }
                                         u = _Ta.mix(_uv.x, u, _morphF);
                                         v = _Ta.mix(_vC, v, _morphF);
-                                        // außerhalb des Bilds ihrer Ansicht ist die Karte leer
-                                        const drin = _Ta.step(0.0, u).mul(_Ta.step(u, 1.0)).mul(_Ta.step(0.0, v)).mul(_Ta.step(v, 1.0));
+                                        // außerhalb des Bilds ihrer Ansicht ist die Karte leer — und dort, wo der Festpunkt nicht steht (der letzte
+                                        // Gang rückt die Tiefe um mehr als `halt`: der Strahl pendelt zwischen einem Körper und der Leere daneben,
+                                        // er trifft nichts; an derselben Stelle des Quads gelesen stünde dort das Doppelbild der Ansicht)
+                                        const steht = _Ta.step(w.sub(wVor).abs(), _rahmen.x.mul(_RL.halt));
+                                        const drin = _Ta
+                                            .step(0.0, u)
+                                            .mul(_Ta.step(u, 1.0))
+                                            .mul(_Ta.step(0.0, v))
+                                            .mul(_Ta.step(v, 1.0))
+                                            .mul(
+                                                _RL.gaenge > 0
+                                                    ? _Ta.mix(_Ta.float(1.0), steht, _morphF)
+                                                    : _Ta.float(1.0)
+                                            );
                                         return { u, v, drin };
                                     };
                                     // Die Schicht liegt, wie der Welt-Renderer sie zeichnet (S2): die Zeile 0 oben (die Ansicht im
@@ -1183,13 +1220,17 @@ class AnazhRealm_stoff_material {
                                         const tr = _relief(a, delta);
                                         const x0 = _Ta.mod(a, _tW).mul(_bw);
                                         const y0 = _yW.add(_Ta.floor(a.div(_tW)).mul(_bh));
-                                        const u = _Ta.select(
-                                            _tW.greaterThan(1.5),
-                                            tr.u.clamp(_halbU, _Ta.float(1.0).sub(_halbU)),
-                                            tr.u.clamp(0.0, 1.0)
-                                        );
+                                        // die Klemme der Spalte nur im geteilten Ring (dort grenzt die rechte Kante an die linke) — als Rechnung,
+                                        // nie als Zweig: r184 baut einen Knoten, wo er ZUERST gelesen wird (Lehre 26), der Treffer des Reliefs
+                                        // stünde sonst nur im Zweig des geteilten Rings (GTX 1050 und swiftshader, gate:foundry-impostor: der
+                                        // waagrechte Ring zeichnete 0 Pixel)
+                                        const rand = _halbU.mul(_Ta.step(1.5, _tW));
+                                        const u = tr.u.clamp(rand, _Ta.float(1.0).sub(rand));
                                         const vZ = _Ta.float(1.0).sub(tr.v.clamp(_halb, _Ta.float(1.0).sub(_halb)));
-                                        const uv = _Ta.vec2(x0.add(u.mul(_bw)).div(_at.cw), y0.add(vZ.mul(_bh)).div(_Hs));
+                                        const uv = _Ta.vec2(
+                                            x0.add(u.mul(_bw)).div(_at.cw),
+                                            y0.add(vZ.mul(_bh)).div(_Hs)
+                                        );
                                         return { x0, y0, uv, u, vZ, drin: tr.drin };
                                     };
                                     // DER STAMM-STRICH (Echt-GPU 05.10., Höhen-Sonde): die Anker-Peilung ist für das ganze Quad
@@ -1277,8 +1318,11 @@ class AnazhRealm_stoff_material {
                                     };
                                     const _liesA = (tex, z) => _Ta.mix(_probeA(tex, z.uv), _kubisch(tex, z), _kubW);
                                     // vormultipliziert: außerhalb des Bilds seines Rings ist die Karte leer (0 = durchsichtig)
-                                    const _samp = _Ta
-                                        .mix(_liesA(_at.mapNode, _zA).mul(_zA.drin), _liesA(_at.mapNode, _zB).mul(_zB.drin), _fb);
+                                    const _samp = _Ta.mix(
+                                        _liesA(_at.mapNode, _zA).mul(_zA.drin),
+                                        _liesA(_at.mapNode, _zB).mul(_zB.drin),
+                                        _fb
+                                    );
                                     // die Deckung an der Codec-Schwelle (alphaTest unten); ihre Probe trägt den Versatz des Laubs
                                     // (`_probeA` über `_laubVersatz`, A3) wie jede Karte der Klasse
                                     _alpha = _samp.a;

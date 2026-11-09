@@ -453,13 +453,13 @@ async function kleberProbe(page, fmtWunsch) {
                 pc.karteTiefeVersatz = versatz;
                 window.__fimpStoff();
             }
-            // (C9) DIE TIEFEN-PARALLAXE (w27-lod-baum, lod.K5; der Stoff, `_relief`): eine Kugel 2,6 m VOR der Achse, das Auge aus 40 m
-            // genau zwischen zwei Peilungen — jede der zwei Ansichten sieht sie 22,5° neben der Achse (± 1 m), an derselben Stelle des
-            // Quads gelesen stehen ZWEI Kugeln neben dem Stamm. Die Karte gegen ihre Gestalt als Mesh (IoU). SELBSTTEST: der Stoff
+            // (C9) DIE TIEFEN-PARALLAXE (w27-lod-baum, lod.K5; der Stoff, `_relief`): eine Kugel 2,8 m VOR der Achse, das Auge aus 40 m
+            // genau zwischen zwei Peilungen — jede der zwei Ansichten sieht sie 22,5° neben der Achse (± 1,07 m), an derselben Stelle
+            // des Quads gelesen stehen ZWEI Kugeln neben ihrem Ort. Die Karte gegen ihre Gestalt als Mesh (IoU). SELBSTTEST: der Stoff
             // ohne Gänge (`KARTE_RELIEF.gaenge` 0, die Karte bis w27).
             const w9 = (22.5 * Math.PI) / 180,
                 rot9 = (-119 * Math.PI) / 180 + w9;
-            const gP = window.__fimpTeile(new T.SphereGeometry(1.2, 24, 16).translate(2.6 * Math.sin(w9), 5, 2.6 * Math.cos(w9)), new T.CylinderGeometry(0.3, 0.3, 6, 12).translate(0, 3, 0));
+            const gP = window.__fimpTeile(new T.SphereGeometry(0.9, 24, 16).translate(2.8 * Math.sin(w9), 4, 2.8 * Math.cos(w9)));
             const zP = await window.__fimpBacke(ren, at, "fimp:gateKarte|5", 95, gP);
             const camP = new T.PerspectiveCamera(20, 1, 1, 600);
             camP.position.set(30 + 40 * Math.sin(rot9), 6, -10 + 40 * Math.cos(rot9));
