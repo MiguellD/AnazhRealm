@@ -328,19 +328,21 @@ class AnazhRealm_koerper_bewegung {
         for (const t of [0.25, 0.5, 0.75])
             for (const sq of [-1, 1]) umriss.push({ l: heck + (bug - heck) * t, q: sq * hw, nl: 0, nq: sq });
         // die Ecken in Ruhe und ihre Richtungen: der Umriss der Gestalt (Vorlagen-Raum x · y · z, quer = −z; Richtung j der
-        // Winkel 2π·j/n des Kerns) oder das Rechteck
-        const m = ecken ? ecken.length / 3 : 4;
-        const n = ecken ? m : 16;
-        const [rl, ry, rq, ul, uq] = [m, m, m, n, n].map((z) => new Float64Array(z));
-        for (let i = 0; i < m; i++) {
-            rl[i] = ecken ? ecken[i * 3] * skala : i === 0 || i === 3 ? bug : heck;
-            ry[i] = ecken ? ecken[i * 3 + 1] * skala : 0;
-            rq[i] = ecken ? -ecken[i * 3 + 2] * skala : i < 2 ? hw : -hw;
-        }
-        for (let j = 0; j < n; j++) {
-            ul[j] = Math.cos((2 * Math.PI * j) / n);
-            uq[j] = -Math.sin((2 * Math.PI * j) / n);
-        }
+        // Winkel 2π·j/n des Kerns — benachbarte Richtungen stützen oft dieselbe Ecke, sie zählt einmal) oder das Rechteck
+        const n = ecken ? ecken.length / 3 : 16;
+        const roh = ecken
+            ? Array.from({ length: n }, (_, i) => [
+                  ecken[i * 3] * skala,
+                  ecken[i * 3 + 1] * skala,
+                  -ecken[i * 3 + 2] * skala,
+              ])
+            : [bug, heck, heck, bug].map((l, i) => [l, 0, i < 2 ? hw : -hw]);
+        const eck = roh.filter((e, i) => e.some((x, k) => x !== roh.at(i - 1)[k]));
+        const m = eck.length;
+        const [rl, ry, rq] = [0, 1, 2].map((k) => Float64Array.from(eck, (e) => e[k]));
+        const [ul, uq] = [Math.cos, (w) => -Math.sin(w)].map((f) =>
+            Float64Array.from({ length: n }, (_, j) => f((2 * Math.PI * j) / n))
+        );
         entry._fahrHuelleKette = {
             bug,
             heck,

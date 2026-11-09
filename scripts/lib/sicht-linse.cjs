@@ -646,7 +646,7 @@ function sichtPhase(frames, ab) {
         f.klasse = window.__sichtBytesKlasse(f);
         f.legeKlasse = window.__sichtBytesKlasse(f, "legeGrund");
     }
-    const reihe = (g) => fs.map(g).sort((a, b) => a - b);
+    const reihe = (g) => fs.map(g).sort(aufsteigend);
     const st = (g) => {
         const x = reihe(g);
         if (!x.length) return { mittel: 0, median: 0, max: 0 };
@@ -783,7 +783,7 @@ function sichtPhase(frames, ab) {
         aenderungFrames: fs.length - ohneAenderung.length,
         kameraFrames: fs.filter((f) => f.kamera).length,
         arbeitOhne: (() => {
-            const x = fs.map((f) => window.__sichtArbeitOhne(f)).sort((a, b) => a - b);
+            const x = fs.map((f) => window.__sichtArbeitOhne(f)).sort(aufsteigend);
             return {
                 frames: x.filter((a) => a > 0).length,
                 median: x.length ? rang(x) : 0,

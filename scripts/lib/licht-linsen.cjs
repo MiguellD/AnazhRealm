@@ -2507,7 +2507,7 @@ function luftTiefeSelbsttest(R) {
         // der Median der Töne je Pixel (die Mutante der alten Linse, `tonDesBands` je Paar) liegt 13° darüber: er verzerrte nach OBEN
         ((s = 11, L = [1524, 1532, 1545], S = [1500, 1530, 1560]) => {
             const px = Array.from({ length: 200 }, () => [L, S].map((c) => c.map((v) => Math.round(v / 10 + (s = (s * 1664525 + 1013904223) >>> 0) / 2 ** 31 - 1))));
-            const [band, je] = [tonDesBands(px), px.map((p) => tonDesBands([p])).sort((a, b) => a - b)[100]];
+            const [band, je] = [tonDesBands(px), px.map((p) => tonDesBands([p])).sort(aufsteigend)[100]];
             return (Math.abs(band - tonDesBands([[L, S]])) <= 2 && je > 17) || `Ton des Bands ${band}° (Wahrheit 7,14°), je Pixel ${je}°`;
         })(),
         // die Auflösung je Pixel in Stufen (L0 gegen S, 8 bit): das Paar am Morgen (Rot 24, Blau 19 Stufen; linear 0,029/0,021 unter

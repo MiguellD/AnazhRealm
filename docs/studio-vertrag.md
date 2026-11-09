@@ -380,6 +380,12 @@ eines Gesetzbuchs als Primitive, asset-lokal (Vorlagen-Raum, Meter), JEDE Zahl a
   (`{ schaftHub }`, Vorlagen-Einheiten: der Hub, um den der Schaft die Krone über ihre Form-Höhe trägt; 0 ohne Welt-Maß) —
   `FOUNDRY_BEIPACK` `__mass` → `_mass`; der EINE Leser `_foundryGruppenHoehe` misst die Sichthöhe der SSE-Stufenwahl ohne
   ihn, fail-closed (KERN-PFLICHT).
+- **Das Maß des Wagens (physik.K2 Staffel 2):** jeder Bau eines Fahrzeugs trägt im selben Beipack `__mass` den Umriss, den er
+  zeichnet (`{ umriss, dach }`: `umriss` je Richtung 2π · j / 64 der Ebene x/z der Stütz-Punkt `[x, y, z]` der gebauten Gestalt,
+  `dach` ihr größtes y; Vorlagen-Raum, Raster 2^-12 — vehicle-core `gestaltMass`); der Flat reicht ihn als `mass` weiter, der EINE
+  Leser `_wagenMassSetzen` gibt ihn dem Eintrag: die Hülle des Ritts (`_fahrUmriss` → `_fahrHuelleBau`) und die Boxen des stehenden
+  Wagens kollidieren mit der gezeichneten Gestalt, nie mit den Stationen `exportDrive.huelle` (fail-closed: KERN-PFLICHT). Wand:
+  `gate:kollision-bild` (V) BILD ≠ KOLLISION.
 - **Der Kamin des Hauses (B3c):** die Hülle `__huelle` eines Hauses trägt additiv `kamin` (`[x, y, z]` haus-lokal auf dem
   Raster, die Spitze des Stapels aus `kaminSpitze` — derselben Formel wie der Slot des Exports; `null` = kein Kamin); der EINE
   Leser `_hausHuelleSetzen` gibt sie dem Eintrag ohne Spitze aus einem Export (Vorschau, KI) — der Wirt baut kein Haus, um sie

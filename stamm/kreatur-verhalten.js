@@ -877,12 +877,11 @@ class AnazhRealm_kreatur_verhalten {
         [h.t, h.nx, h.nz, h.cx, h.cz] = [this.state.creatureAnimationTime, nx / n, nz / n, cx, cz];
     }
 
-    // DER LEIB DES TIERS (D2, Welle L): EINE benannte Größe je Tier, gelesen von jedem Körper, der ein Tier berührt (der
-    // Hüllen-Kontakt _kreaturHuellenKontakt; der Wagen liest denselben Leib, nie einen zweiten Kreis). Drei Achsen längs
-    // der Gier bei −halb · 0 · +halb (Becken, Rumpf-Mitte, Brust: der Vierbeiner ist ~1,6 Hüft-Höhen lang), je Achse der halbe
-    // Rumpf als Radius `rad[0..2]` — das Quer-Maß der GEZEICHNETEN Gestalt dort (`tb.quer`, physik.K2 Staffel 2: halbe Breite
-    // und, um den Wank am Hang geneigt, die Höhe ihrer breitesten Ecke; ohne Studio-Baum 0,3·L), `radius` der größte; die Höhe
-    // vom Fuß bis zum Kopf (1,8·L). L ist die Hüft-Höhe der Gestalt (wie Gang- und Steuer-Gesetz). `out` wird überschrieben.
+    // DER LEIB DES TIERS (D2, Welle L): EINE benannte Größe je Tier, gelesen von jedem Körper, der ein Tier berührt (der Hüllen-
+    // Kontakt _kreaturHuellenKontakt; der Wagen liest denselben Leib). Drei Achsen längs der Gier bei −halb · 0 · +halb (Becken,
+    // Rumpf-Mitte, Brust), je Achse der halbe Rumpf als Radius `rad[0..2]` — das Quer-Maß der GEZEICHNETEN Gestalt dort (`tb.quer`,
+    // physik.K2 Staffel 2; ohne Studio-Baum 0,3·L; nie der Wank am Hang: ihn glättet der Frame-Takt, die Sim läse die Bildrate),
+    // `radius` der größte; die Höhe vom Fuß bis zum Kopf (1,8·L). L ist die Hüft-Höhe der Gestalt. `out` wird überschrieben.
     // Die REICHWEITE ist die waagrechte Spanne der ganzen Gestalt um die Mitte (halb + Höhe: an den End-Achsen hängt höchstens ein
     // Glied von Leib-Höhe) — das Grob-Tor des Treffers (_trefferErreichbar) liest sie. Gemessen über die Treffer-Glieder, vier Gattungen
     // × acht Größen im Spiel-Takt: Wolf 1,86 · Bär 2,00 · Hirsch 2,01 · Fuchs 2,21 L (die Rute) gegen 2,6 L (gate:kampf-gefuehl T12).
@@ -892,10 +891,7 @@ class AnazhRealm_kreatur_verhalten {
         o.L = l;
         const q = creature.userData && (creature.userData._tierBaum || 0).quer;
         const rad = o.rad || (o.rad = [0, 0, 0]);
-        for (let a = 0, rz = creature.rotation.z || 0; a < 3; a++)
-            rad[a] = q
-                ? l * (q[2 * a] * Math.cos(rz) + q[2 * a + 1] * Math.abs(Math.sin(rz)))
-                : Math.max(0.12, 0.3 * l);
+        for (let a = 0; a < 3; a++) rad[a] = q ? l * q[a] : Math.max(0.12, 0.3 * l);
         o.radius = Math.max(rad[0], rad[1], rad[2]);
         o.halb = 0.8 * l;
         o.hoehe = Math.max(0.5, 1.8 * l);
@@ -1230,7 +1226,7 @@ class AnazhRealm_kreatur_verhalten {
         const leib = this._kreaturLeib(c, L, this._kreaturWegLeib || (this._kreaturWegLeib = {}));
         const T = AnazhRealm.LEIB_TEIL;
         const weg = Math.hypot(v.x, v.z) * dt;
-        const teile = Math.max(1, Math.ceil(weg / Math.max(T.minM, T.radius * leib.radius)));
+        const teile = Math.max(1, Math.ceil(weg / Math.max(T.minM, T.radius * Math.min(...leib.rad)))); // die schmalste Achse
         const h = dt / teile;
         for (let k = 0; k < teile; k++) {
             const x0 = c.position.x;
@@ -1443,8 +1439,7 @@ class AnazhRealm_kreatur_verhalten {
             nah = ud._huellenNah = { x: p.x, z: p.z, t, liste };
         }
         if (!nah.liste.length) return;
-        // DER LEIB (_kreaturLeib, die EINE benannte Größe): drei Achsen längs der Gier, je Achse sein Radius, die Höhe vom
-        // Fuß bis zum Kopf. Eine Achse, die der Löser schiebt, schiebt den ganzen Leib.
+        // DER LEIB (_kreaturLeib): drei Achsen längs der Gier, je Achse ihr Radius; eine Achse, die der Löser schiebt, schiebt alle
         const leib = this._kreaturLeib(creature, L, this._kreaturLeibHuelle || (this._kreaturLeibHuelle = {}));
         const radius = leib.radius;
         const halb = leib.halb;

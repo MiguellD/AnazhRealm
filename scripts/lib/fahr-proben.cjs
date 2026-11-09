@@ -1391,7 +1391,7 @@ async function probeLeben(expected) {
             bilder(60);
             tasten(false);
             ab5();
-            spalte.sort((a, b) => a - b);
+            spalte.sort(aufsteigend);
             S.raeder = {
                 leaves: rad.length,
                 stehend: steh.length,

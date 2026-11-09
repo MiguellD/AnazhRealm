@@ -21,7 +21,7 @@ async function kreaturProben(r, T, opts) {
     const grad = (a) => (a * 180) / Math.PI;
     const quantil = (arr, q) => {
         if (!arr.length) return null;
-        const b = arr.slice().sort((a, b) => a - b);
+        const b = arr.slice().sort(aufsteigend);
         return b[Math.min(b.length - 1, Math.floor(q * (b.length - 1) + 0.5))];
     };
     const rund = (v, n) => +v.toFixed(n); // die Zahl der Zeile, auf n Stellen
@@ -1862,7 +1862,7 @@ async function kreaturProben(r, T, opts) {
                 (c) => c.userData._jagdZiel === "spieler" && /^(jagd|hetzen)$/.test(c.userData._motionZustand)
             );
         const luecke = (R) => {
-            const w = R.map((c) => Math.atan2(c.position.x - pm.x, c.position.z - pm.z)).sort((a, b) => a - b);
+            const w = R.map((c) => Math.atan2(c.position.x - pm.x, c.position.z - pm.z)).sort(aufsteigend);
             return grad(Math.max(...w.map((a, i) => (i + 1 < w.length ? w[i + 1] : w[0] + TAU) - a)));
         };
         // die Lücke beim ersten Biss, der den Spieler trifft (das Maul am Leib)
@@ -2591,7 +2591,7 @@ async function kreaturProben(r, T, opts) {
             menge: (S) => {
                 const M = liste.filter((b) => b.leib && !b.drinnen).sort((a, b) => ab(a.leib.position, pm) - ab(b.leib.position, pm)).slice(0, 50); // prettier-ignore
                 const f = M[0].leib.userData._tierBaum.wrap.scale.x;
-                ms.sort((a, b) => a - b);
+                ms.sort(aufsteigend);
                 return {
                     je: M.map((b) => [b.seed, b.gestalt, b.groesse, b.breite, b.tiefe, !!b.nah, b.farben]),
                     typ: S.gestalten.map((G) => ({
