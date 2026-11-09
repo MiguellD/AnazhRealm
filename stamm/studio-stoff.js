@@ -34,10 +34,11 @@ class AnazhRealm_studio_stoff {
     // sin(T', H)^p mit der Tangente um `shift` + Wurf × `jit` zur Normale gekippt (R farblos, TRT im Ton des Haars; Scheuermann
     // 2004), normiert (p + 2) / 2π — die Rundung der Normale quer zur Strähne trägt kein Licht mehr (die Streifen je Band, die den
     // Strich am Arm über das Band hoben). Ohne Tangente (die Braue, die Kappe der Grobstufe) das Licht des Standard-Stoffs.
-    // DER LAPPEN AM PIXEL (w27-haar-arm-2, koerper HAAR_LOOK.kk.fuss): wo ein Pixel der Szene mehrere Strähnen deckt
-    // (`faser.unter` 1), trägt es das Mittel ihrer Lappen — p' = p / (1 + p · streu² · unter), normiert (p' + 2) / 2π; der Wurf
-    // der einzelnen Strähne fällt im selben Maß (`faser.wurf`). Bis hier flimmerte der Lappen R im Gang (K6, Radeon: Kopf
-    // 9,6–10,6 % der Pixel über halb zum Grund, ohne R 0,1 %).
+    // DER LAPPEN AM PIXEL (w27-haar-arm-2, koerper HAAR_LOOK.kk.fuss · `haarLappen`): wo ein Pixel der Szene mehrere Strähnen
+    // deckt (`unter` 1), trägt es das Mittel ihrer Lappen — die halbe Potenz und die Norm je Lappen rechnet die Ecke
+    // (`HaarLicht.lappen`: [h, Norm] von R und TRT, energie-treu geweitet), das Fragment nur (1 − cos²)^h × Norm; der Wurf der
+    // einzelnen Strähne fällt im selben Maß (`faser.wurf`). Bis hier flimmerte der Lappen R im Gang (K6, Radeon: Kopf 9,6–10,6 %
+    // der Pixel über halb zum Grund, ohne R 0,1 %).
     static _haarLichtModell() {
         if (AnazhRealm._haarLichtK) return AnazhRealm._haarLichtK;
         const T = THREE.TSL;
@@ -67,27 +68,31 @@ class AnazhRealm_studio_stoff {
                         .mul(1 / Math.PI)
                 );
                 const H = L.add(T.positionViewDirection.normalize()).normalize();
-                const lappen = (shift, p) => {
+                // sin^p' = (1 − cos²)^h mit der halben Potenz h der Ecke (`HaarLicht.lappen`: hn = [h, Norm])
+                const lappen = (shift, hn) => {
                     const th = tl
                         .add(N.mul(faser.wurf.mul(kk.jit).add(shift)))
                         .normalize()
                         .dot(H);
-                    // sin^p' = (1 − cos²)^(p' / 2): die halbe Potenz spart die Wurzel
-                    const halb = T.float(p / 2).div(faser.unter.mul(p * kk.fuss.streu * kk.fuss.streu).add(1.0));
-                    return T.float(1)
-                        .sub(th.mul(th))
-                        .max(0.0)
-                        .pow(halb)
-                        .mul(halb.add(1.0).mul(1 / Math.PI));
+                    return T.float(1).sub(th.mul(th)).max(0.0).pow(hn.x).mul(hn.y);
                 };
                 const glanz = T.vec3(...kk.R.farbe)
-                    .mul(lappen(kk.R.shift, kk.R.p))
-                    .add(T.diffuseColor.rgb.mul(kk.TRT.amt).mul(lappen(kk.TRT.shift, kk.TRT.p)));
+                    .mul(lappen(kk.R.shift, faser.lappen.xy))
+                    .add(T.diffuseColor.rgb.mul(kk.TRT.amt).mul(lappen(kk.TRT.shift, faser.lappen.zw)));
                 e.reflectedLight.directSpecular.addAssign(e.lightColor.mul(form).mul(glanz).mul(faser.da));
                 // ohne Faser der Standard-Stoff (Lambert + GGX)
                 super.direct(Object.assign({}, e, { lightColor: e.lightColor.mul(T.float(1).sub(faser.da)) }), builder);
             }
         }
+        // die Lappen der Ecke: [h, Norm] von R und TRT aus dem Gesetz des Kerns (koerper `haarLappen`) und dem Fußabdruck `unter`
+        HaarLicht.lappen = (kk, unter) => {
+            const hn = (p) => {
+                const G = globalThis.__koerperCore.haarLappen(p, kk);
+                const h = T.float(G.halb).div(unter.mul(G.weite).add(1.0));
+                return [h, h.mul(2 / G.fuss).add(1.5 / G.fuss).sqrt().mul(G.norm)];
+            };
+            return T.vertexStage(T.vec4(...hn(kk.R.p), ...hn(kk.TRT.p)));
+        };
         AnazhRealm._haarLichtK = HaarLicht;
         return HaarLicht;
     }
@@ -503,7 +508,8 @@ class AnazhRealm_studio_stoff {
                             t: TSL.vertexStage(TSL.cameraViewMatrix.mul(TSL.vec4(welt, 0.0)).xyz),
                             wurf: TSL.vertexStage(a.w.mul(unter.oneMinus())),
                             da: TSL.vertexStage(TSL.step(0.5, a.xyz.length())),
-                            unter: TSL.vertexStage(unter),
+                            unter,
+                            lappen: K.lappen(L.kk, unter),
                         };
                         mat.setupLightingModel = () => new K(L.kk, faser);
                         const schluessel = mat.customProgramCacheKey;

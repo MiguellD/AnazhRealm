@@ -15,14 +15,14 @@ const DUNKEL = { skinTone: "karamell", hairColor: "darkbrown" };
 const SAETZE = {
     a: [
         ["dunkel", DUNKEL, null],
-        ["dunkel-ohne-filter", DUNKEL, { streu: 0 }],
-        ["anker", null, null],
-        ["anker-ohne-filter", null, { streu: 0 }],
-    ],
-    b: [
-        ["dunkel-streu-0.12", DUNKEL, { streu: 0.12 }],
         ["dunkel-streu-0.25", DUNKEL, { streu: 0.25 }],
         ["dunkel-streu-0.35", DUNKEL, { streu: 0.35 }],
+        ["anker", null, null],
+    ],
+    b: [
+        ["dunkel-streu-0.5", DUNKEL, { streu: 0.5 }],
+        ["dunkel-ohne-filter", DUNKEL, { streu: 0 }],
+        ["anker-streu-0.35", null, { streu: 0.35 }],
         ["dunkel#2", DUNKEL, null],
     ],
 };
@@ -104,7 +104,7 @@ async function haarKopf(k) {
             if (!o) [m.setupLightingModel, m.customProgramCacheKey] = [lm0, key0];
             else {
                 const kk = { ...kk0, fuss: { ...kk0.fuss, ...o } };
-                m.setupLightingModel = () => new K(kk, inst.faser);
+                m.setupLightingModel = () => new K(kk, { ...inst.faser, lappen: K.lappen(kk, inst.faser.unter) });
                 m.customProgramCacheKey = function () {
                     return key0.call(this) + "|" + name;
                 };
