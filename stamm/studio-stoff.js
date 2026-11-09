@@ -102,16 +102,23 @@ class AnazhRealm_studio_stoff {
         if (!this._foundryMats) this._foundryMats = {};
         const T = THREE;
         const TSL = T.TSL;
-        // Material-Regler: reist `mp` mit (roughness/metalness/flatShading/env/side/Glut), baut AnazhRealm EXAKT
+        // Material-Regler: reist `mp` mit (roughness/metalness/flatShading/side/Glut), baut AnazhRealm EXAKT
         // dieses Material; ohne `mp` die Baum-Defaults — die Zahlen und die Look-Familie (FELL_LOOK/HAUT_LOOK/HAAR_LOOK,
         // der Ton-Anker mp.color steht im Key) liest der Wirt aus DERSELBEN Quelle wie der Schlüssel (phyto-core
         // `budgetRegler`); Laub/Gras sind immer beidseitig.
+        // DIE UMGEBUNG IST EINE (w26-lack-glas, material.K4): kein Welt-Stoff skaliert sie — `envMapIntensity` bleibt 1. Was ein
+        // Stoff spiegelt und wie hell, sagt allein seine Optik unter r184s BRDF (Rauheit, Metall, Klarlack, Durchsicht: Fresnel
+        // und Energie) gegen DIE Umgebung der Welt (`_spiegelUmgebung`: der Spiegel-Pass über dem Himmel der Atmosphäre). Das
+        // Gesetzbuch trägt die Zahl seines Labors (`R.env`, Teil der Identität `budgetStoff` und eingefroren in den Asset-Goldens):
+        // dort hellt sie die Raum-Umgebung der r128-Bühnen auf. Bis hier setzte der Wirt sie — der Lack spiegelte die Welt ×2,6, die
+        // Scheibe ×3,0, Chrom ×1,6, Fels und Gummi ×0,5 (Licht UND Bestrahlung, r184 EnvironmentNode × envMapIntensity): eine
+        // Sonderlage je Stoff, die Fresnel und Energie brach — die Silber-Flanke des GT glänzte ohne Spiegel-Pass oliv vom
+        // Wiesen-Boden der Umgebung (swiftshader holz voll, Same 2). Die Wand: gate:gegenstand-stoff `umgebung`.
         const R = globalThis.__phytoCore.budgetRegler(kind, mp);
         const isBark = R.rinde;
         const rough = R.r,
             metal = R.mt,
             flat = R.fl,
-            env = R.env,
             sideDouble = R.doppelt,
             emis = R.em,
             emisI = R.emI,
@@ -197,7 +204,6 @@ class AnazhRealm_studio_stoff {
             mat.opacity = R.op;
             mat.forceSinglePass = true;
         }
-        if (env !== 1) mat.envMapIntensity = env;
         if (emis) {
             mat.emissive = new T.Color(emis[0], emis[1], emis[2]);
             mat.emissiveIntensity = emisI;

@@ -16,6 +16,10 @@
 //   toenung      Vertex-Farben UND eine nicht-weiße Material-Farbe (das Labor tönt, die Welt nicht)
 //   lack-gestalt die Gestalten tragen nicht die acht Lacke des LACK_GESETZ (linear)
 //   transport    das Gesetz der Regler (phyto-core) macht aus Klarlack/Durchsicht nicht die Zahlen des Wirts
+//   umgebung     ein Stoff der WELT skaliert die EINE Umgebung (`envMapIntensity` ≠ 1, w26-lack-glas): je Umgebungs-Zahl, die ein
+//                Gesetzbuch trägt (Lack 2,6, Scheibe 3,0, Chrom 1,6, Gummi 0,5 …), baut der Wirt in der echten Welt (`--tafel`)
+//                einen Lack-Stoff (`_foundryTreeMaterial`) — er trägt 1, sonst spiegelte er die Welt ×v (Fresnel und Energie
+//                gebrochen); die Sabotage ist die Zeile vor w26 (`mat.envMapIntensity = R.env`) und muss ROT sein
 //   node scripts/diag-gegenstand-stoff.cjs [--selftest]
 //
 // DIE TAFEL-PROBE (stoffe.K1, `--tafel`, Port GEGENSTAND_STOFF_PORT): die EINE Stoff-Tafel in SI (`state.materials`) und je
@@ -202,6 +206,37 @@ function selbstTest() {
     return fehl;
 }
 
+// DIE UMGEBUNGS-ZAHLEN der Gesetzbücher (Node, r128 wie `alles`): jede `envMapIntensity` ≠ 1 eines Stoffs, der in die Welt reist
+function umgebungsZahlen() {
+    const z = new Set();
+    const lies = (g) => g.traverse((o) => o.isMesh && typeof o.material?.envMapIntensity === "number" && z.add(+o.material.envMapIntensity.toFixed(3)));
+    for (const id of Object.keys(VC.PRESETS)) for (let s = 1; s <= 8; s++) lies(VC.buildInstance(id, s, 0));
+    for (const id of Object.keys(SC.PRESETS)) lies(SC.buildInstance(id, 1, 0));
+    return [...z].filter((v) => v !== 1).sort((a, b) => a - b);
+}
+// DIE PROBE DER WELT (`umgebung`, in der Seite): je Zahl der Lack-Stoff des Wirts mit ihr im Gesetzbuch — was er trägt; `sabotage`
+// legt die Zeile vor w26 um den Bau (der Stoff skaliert die Umgebung mit der Zahl seines Labors)
+function umgebungProbe(zahlen, sabotage) {
+    const P = Object.getPrototypeOf(r),
+        bau = P._foundryTreeMaterial;
+    if (sabotage)
+        P._foundryTreeMaterial = function (kind, mp, ...rest) {
+            const m = bau.call(this, kind, mp, ...rest);
+            m.envMapIntensity = globalThis.__phytoCore.budgetRegler(kind, mp).env;
+            return m;
+        };
+    try {
+        return zahlen.map((v) => {
+            const m = r._foundryTreeMaterial("unknown", { roughness: 0.35, metalness: 0.7, clearcoat: 1, clearcoatRoughness: 0.03, envMapIntensity: v, seh: "metall" });
+            const ist = m.envMapIntensity;
+            m.envMapIntensity = 1;
+            return [v, ist];
+        });
+    } finally {
+        P._foundryTreeMaterial = bau;
+    }
+}
+
 const STOFFE = ["holz", "stein", "eisen", "gras", "erde", "laub", "wasser"];
 const WIRKUNGEN = ["rho", "mu", "albedo", "klang", "tZuend", "tSchmelz", "c"];
 async function tafelProbe(STOFFE, WIRKUNGEN, sabotage) {
@@ -357,6 +392,12 @@ async function tafel() {
         await warteAufWelt(page, 180000);
         await page.evaluate(require("./lib/wasser-linse.cjs").WASSER_INSTALL);
         await buehne(page);
+        // DIE UMGEBUNG (w26-lack-glas): kein Stoff der Welt skaliert sie — die Sabotage (die Zeile vor w26) feuert beim Namen
+        const zahlen = umgebungsZahlen();
+        const [uEcht, uSab] = [await page.evaluate(umgebungProbe, zahlen, false), await page.evaluate(umgebungProbe, zahlen, true)];
+        const uRot = uEcht.filter(([, ist]) => ist !== 1), uStumm = !zahlen.length || uSab.every(([v, ist]) => ist !== v);
+        console.log("UMGEBUNG " + JSON.stringify({ zahlen, welt: uEcht, sabotage: uSab }));
+        console.log(uRot.length ? "❌ umgebung: der Welt-Stoff skaliert die EINE Umgebung — " + uRot.map(([v, ist]) => "Gesetzbuch " + v + " → Welt " + ist).join(", ") : uStumm ? "❌ umgebung: die Sabotage feuert nicht (die Probe misst nichts)" : "✅ umgebung: " + zahlen.length + " Zahlen der Gesetzbücher, jeder Welt-Stoff trägt die EINE Umgebung (1), die Sabotage ROT");
         const echt = await page.evaluate(tafelProbe, STOFFE, WIRKUNGEN, false);
         const sab = await page.evaluate(tafelProbe, STOFFE, WIRKUNGEN, true);
         const je = {};
@@ -364,7 +405,7 @@ async function tafel() {
         // an der Tafel vorbei: grün trotz Sabotage; stumm: die Sabotage maß nicht (ein Absturz ist kein Rot)
         const vorbei = STOFFE.flatMap((X) => WIRKUNGEN.filter((w) => sab[X][w].ok || (je[X].includes(w) && sab[X][w].fehler)).map((w) => X + "." + w));
         console.log("TAFEL " + JSON.stringify({ je, vorbei }));
-        const gruen = !vorbei.length && STOFFE.every((X) => je[X].length >= 3);
+        const gruen = !vorbei.length && STOFFE.every((X) => je[X].length >= 3) && !uRot.length && !uStumm;
         console.log(gruen ? "✅ TAFEL GRÜN — Staffel " + (STOFFE.every((X) => je[X].length === 7) ? 2 : 1) : "❌ TAFEL ROT — an der Tafel vorbei oder stumm: " + vorbei);
         return gruen ? 0 : 1;
     } finally {
