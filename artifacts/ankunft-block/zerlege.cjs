@@ -233,7 +233,7 @@ function berichtAB(teil, Z) {
             {
                 const gl = (z, k) => ((z.out.nach && z.out.nach.glied) || {})[k] || [0, 0];
                 const G = ["job:nahWiese", "_nahWieseFernTakt", "_wieseFernBereit", "_wieseFernLage", "_nahWieseFernKachel", "_nahWieseKachelBueschel"]; // prettier-ignore
-                zeile(`${pre}WIESE vor dem Bild (Median ms · Rufe je Boot): ${G.map((k) => `${k.replace(/^_/, "")} ${Math.round(med(zs.map((z) => gl(z, k)[0])))} · ${zs.map((z) => gl(z, k)[1]).join("/")}`).join(" | ")} | Ferne gebaut ${zs.map((z) => gl(z, "fern:gebaut")[1]).join("/")} | Σ Fern-Glieder ${Math.round(med(zs.map((z) => ["_wieseFernBereit", "_wieseFernLage", "_nahWieseFernKachel"].reduce((m, k) => m + gl(z, k)[0], 0))))} ms`); // prettier-ignore
+                zeile(`${pre}WIESE vor dem Bild (Median ms · Rufe je Boot): ${G.map((k) => `${k.replace(/^_/, "")} ${Math.round(med(zs.map((z) => gl(z, k)[0])))} · ${zs.map((z) => gl(z, k)[1]).join("/")}`).join(" | ")} | Ferne gebaut ${zs.map((z) => gl(z, "fern:gebaut")[1]).join("/")} | Σ Fern-Glieder ${Math.round(med(zs.map((z) => ["_wieseFernBereit", "_wieseFernLage", "_nahWieseFernKachel"].reduce((m, k) => m + gl(z, k)[0], 0))))} ms | Bild→Kontrolle ${zs.map((z) => sek(z.e.tK - z.out.weltbildDa)).join("/")} s`); // prettier-ignore
             }
             // DER KARTEN-BAKE bis zum Bild (Boot 1 der Seite): je Zelle angelegt → gebacken, je Zelle die Rufe nach Grund (P Platte,
             // R Rechner, L die L1, O fremde halbe Karte, n nicht ganz, 0 ein Ring, T gebacken), je Sekunde der Takt der Karte und wer die
