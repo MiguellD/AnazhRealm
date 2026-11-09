@@ -51,12 +51,13 @@
 //   S5  Selbsttest: das Addon-_updateShadowBounds schreibt die Kaskaden-Kamera (der Zweit-Schreiber ist echt)
 //   S7  Selbsttest: eine zweite Szenen-Tiefe macht Z2 rot
 //   S8  Selbsttest: die alte Regel (der Satz zeichnet den ganzen Ring in jedem Pass) macht W7 rot
-//   S9  Selbsttest: die alte Regel (eine globale Gruppe zeichnet jede Instanz in jedem Pass) macht W8 rot, beim Namen
-//   S10 Selbsttest: urteilt EIN Leser nach der alten Box (das Frustum allein, ohne Licht-Kapsel) — die Zellen, die Werfer
-//       der Bündel oder die Instanzen —, wird W9 rot und nennt ihn
+//   S10 Selbsttest: urteilt EIN Leser der CPU nach der alten Box (das Frustum allein, ohne Licht-Kapsel) — die Zellen oder
+//       die Werfer der Bündel —, wird W9 rot und nennt ihn (die Instanzen der globalen Gruppen wählt die GPU, w25-gpu-wahl)
 //   S11 Selbsttest: hält die Lage einer Kaskade jede Drehung des Lichts (die Rand-Prüfung fällt), wählt keine Kaskade über
 //       dem Rand neu, und in der Folge fehlen echte Werfer — K8 wird rot
-//   S12 Selbsttest: fällt der Licht-Rand aus `_passTrifft`, fehlen in der Folge echte Werfer — K8 wird rot
+//   S12 Selbsttest: fällt der Licht-Rand aus `_passTrifft`, fehlen in der Folge echte Werfer — K8 wird rot. Die Zähne von
+//       S11/S12 trägt der RAND-SCHWARM: je Kaskade 16 Reihen Werfer genau über dem Rand ihrer Scheibe (am Mittag ohne Saum
+//       gesucht), im Achtel des Licht-Rands — das Raster des Schwarms traf den Rand nur zufällig (CI z350: 0 Löcher)
 //   S14 Selbsttest: die alte Maske der Kaskaden-Kamera (Welt + Zwilling) sieht Nicht-Werfer — W10 wird rot und nennt sie
 //   S15 Selbsttest: ein Licht ohne Wurf-Ebene sieht die Kaskade nicht — W10 wird rot und nennt es
 //   S13 Selbsttest: fällt die Halb-Regel des Lichts (Halt bis zum ganzen Rand), steht die Grenze beim ganzen Budget — K8
