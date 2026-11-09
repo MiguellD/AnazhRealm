@@ -1,4 +1,0 @@
-{
- "getauscht": "computeSpatialTags",
- "ms": 30
-}
