@@ -1,5 +1,7 @@
 ## 09.11. 23:55 — Koordinator: die Wurzel der drei roten Wände von w26-haar-arm (probe-z352-haar-arm 589b4b58)
 
+## 10.11. 00:42 — GPU-PROBE fc424db8 auf radeon-890m: GRÜN in 662 s (gate:haar-kopf-a GRÜN 110 s auf radeon-890m · gate:haar-strich-a GRÜN 118 s auf radeon-890m · gate:kamera-leib:echt GRÜN 75 s auf radeon-890m) → probe-post/w27-haar-arm-2/fc424db8.md
+
 ## 09.11. 23:52 — GPU-PROBE 9933c4a0 auf radeon-890m + radeon-890m (Band-Gerät): ROT in 787 s (gate:haar-kopf-a GRÜN 131 s auf radeon-890m · gate:haar-kopf-b GRÜN 120 s auf radeon-890m · zeit:gate:haar-kopf-a ROT 110 s auf radeon-890m (Band-Gerät)) → probe-post/w27-haar-arm-2/9933c4a0.md
 
 Alle drei CPU-Wände hängen an EINEM Leser, keine riss an der Zeit (18 s, 94 s, 23 s, je Exit 1 mit Inhalts-Befund):
