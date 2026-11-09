@@ -976,15 +976,16 @@ class AnazhRealm_vegetation_wiese {
         const WT = AnazhRealm.Gesetz("terrain:wiesenTint", null) || AnazhRealm._kernPflichtBruch("terrain:wiesenTint");
         const eigen = D.nie.some(([gx, gz]) => gx === fx && gz === fz);
         const licht = eigen ? null : this._bodenLichtFeld(fx * F.kachel, fz * F.kachel, (fx + 1) * F.kachel, (fz + 1) * F.kachel); // prettier-ignore
-        // die halbe Breite der Karte von `schmal` bis `breitMax` × `breite`, die Schritte des Tastens nach außen: die schmalste,
-        // dann je 0,5 m bis zur breitesten
-        const [p, eb, h0, h1] = [[], {}, 0.5 * S.breite * S.schmal, 0.5 * S.breite * S.breitMax];
-        const schritte = [h0];
-        for (let e = 0.5; e < h1; e += 0.5) if (e > h0) schritte.push(e);
-        schritte.push(h1);
         // der Weg in Reichweite der Kachel (ihre Karten reichen höchstens breitMax × breite / 2 über sie): sonst tastet keine
         const reich = (S.breite * S.breitMax) / 2 + l;
         const tasten = D.wegIn(fx * F.kachel - reich, fz * F.kachel - reich, (fx + 1) * F.kachel + reich, (fz + 1) * F.kachel + reich); // prettier-ignore
+        // die halbe Breite der Karte von `schmal` bis `breitMax` × `breite`, die Schritte des Tastens nach außen: die schmalste,
+        // dann je 0,5 m bis zur breitesten — wo die Kachel Weg berührt je 0,25 m: das Pfad-Feld ist bilinear aus den Texeln der
+        // Wege-Karte, ein Buckel über der Hälfte passte zwischen zwei Schritte von 0,5 m (Mess-Wiese ab 40 m: eine Karte auf 0,52)
+        const [p, eb, h0, h1, dt] = [[], {}, 0.5 * S.breite * S.schmal, 0.5 * S.breite * S.breitMax, tasten ? 0.25 : 0.5]; // prettier-ignore
+        const schritte = [h0];
+        for (let e = dt; e < h1; e += dt) if (e > h0) schritte.push(e);
+        schritte.push(h1);
         // ist die Karte bei ±e frei? kein Grund eines Hauses in ihrer halben Breite, ihre Unterkante höchstens `boden` neben dem
         // gezeichneten Boden, und wo die Kachel Weg berührt, kein Weg über der Hälfte
         const frei = (x, z, y, c, s, sy, e, haus) => {
@@ -1005,7 +1006,7 @@ class AnazhRealm_vegetation_wiese {
                 const sy = eb.gx * c - eb.gz * s; // die Steigung der Unterkante je Meter längs der Karte
                 // der Grund der Häuser: berührt ihn die größte Breite nicht, fragt kein Schritt
                 const haus = Gb.erdbauGrund(E, x, z, h1);
-                // frei bis `a`, unfrei bei `b` (0: frei bis zur größten Breite); dazwischen halbiert bis auf 3 cm
+                // frei bis `a`, unfrei bei `b` (0: frei bis zur größten Breite); dazwischen halbiert auf 1/16 des Schritts
                 let [a, b] = [0, 0];
                 for (const e of schritte) {
                     if (!frei(x, z, y, c, s, sy, e, haus)) {
@@ -1098,11 +1099,14 @@ class AnazhRealm_vegetation_wiese {
         geo.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
         geo.setAttribute("aZahn", new THREE.Float32BufferAttribute(zahn, 2));
         const mat = new THREE.MeshStandardNodeMaterial({ roughness: 1, metalness: 0, side: THREE.DoubleSide });
-        // der erste Treffer: K in der Richtung des Blicks (die Narbe lässt bei Λ 1 e^−K durch), je Schicht der Narbe die
-        // Wahrscheinlichkeit, dass er in ihr fällt (die letzte trägt den Rest bis zum Fuß), Farbe und Narbe danach gewogen
+        // der erste Treffer: K in der Richtung des Blicks (die Narbe lässt bei Λ 1 e^−K durch) × die Klumpung Ω der Büschel
+        // (`klumpung`, Nilson), je Schicht der Narbe die Wahrscheinlichkeit, dass er in ihr fällt (die letzte trägt den Rest bis
+        // zum Fuß), Farbe und Narbe danach gewogen
         const [A, PC] = [AnazhRealm._windTsl(T), globalThis.__phytoCore];
         const blick = T.normalize(T.cameraPosition.sub(T.positionWorld)).y;
-        const K = T.log(PC.halmNarbe(A, T.float(1), blick).direkt).negate();
+        const K = T.log(PC.halmNarbe(A, T.float(1), blick).direkt)
+            .negate()
+            .mul(S.klumpung);
         let [farbe, lam] = [T.vec3(0, 0, 0), T.float(0)];
         halm.forEach((s, i) => {
             const w = T.exp(K.mul(-s.von)).sub(i + 1 < halm.length ? T.exp(K.mul(-s.bis)) : T.float(0));
