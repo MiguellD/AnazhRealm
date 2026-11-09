@@ -320,7 +320,7 @@ function BAU_HAKEN() {
                 };
         }
         if (r && r.state && r.state._fernbildDa && !N.fernbild) N.fernbild = Math.round(r.state._fernbildDa);
-        if (A && A.prototype._foundryAntwort && !A.prototype._foundryAntwort.__haken && A.prototype._streuWeckerSpannen && A.prototype._streuRegionWeiter && A.prototype._karteGebacken && A.prototype._foundryEnsureImpostorRecord && A.prototype._foundryZug && A.prototype._feldPanoramaRechnen && A.prototype._feldPassMal) {
+        if (A && A.prototype._foundryAntwort && !A.prototype._foundryAntwort.__haken && A.prototype._streuWeckerSpannen && A.prototype._streuRegionWeiter && A.prototype._karteGebacken && A.prototype._foundryEnsureImpostorRecord && A.prototype._foundryZug && A.prototype._feldPanoramaRechnen && A.prototype._feldPassMal && A.prototype._weltbildLuecken && A.prototype._lueckeTaeter) {
             const fa = A.prototype._foundryAntwort;
             A.prototype._foundryAntwort = function (f, m) {
                 if (m && m.reqId) N.werk.ant[m.reqId] = [Math.round(performance.now()), m.bau ? 1 : 0];
