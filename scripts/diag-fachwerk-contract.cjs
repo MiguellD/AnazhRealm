@@ -107,7 +107,9 @@ function shellPfad(name, seed, stufe) {
     const turm = (p.storeys || 1) >= 6;
     if (stufe === 0) {
         // ≡ promoteBauen (Lab) + LÜCKENLOS-Bake:
-        const hp2 = Object.assign({}, p, { nur: turm || p.arm ? { moebel: false } : {} });
+        const hp2 = Object.assign({}, p, {
+            nur: turm ? { moebel: false, innenwaende: false } : p.arm ? { moebel: false } : {},
+        });
         const st =
             (p.storeys || 1) > 11
                 ? FC.stapelBau(hp2, { gelaende: false })
