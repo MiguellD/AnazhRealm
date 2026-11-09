@@ -3258,10 +3258,10 @@ hauptLauf(async () => {
                     const s = HL.linseWerten(roh, spur, { spitze: true }), d = HL.domaenen(a, s, /^_verkehrSchritt|^tickArchitectureCulling|^_tickBewohner|^_bewohner|^_tickAutoSettlement|^_tickBauSatz|^_chunkSatzPass/);
                     const u = `GEH ${a.frameMs.p95 <= 33.4 ? "GRÜN" : ((gruen = false), "ROT")} ${ort}-ego Gang ${g}`;
                     zeile(`${u}: Bild ${q(a.frameMs)} · Takt ${q(a.taktMs)} · GPU ${q(a.gpuMs)} · Befehle ${a.befehle?.p95} (${passe(a.befehle)}) · Dreiecke ${a.dreiecke?.p95} · ${a.frames} Bilder, ${a.haengerN} > 33 ms · Knoten-Bau ${a.knotenBau.sync}× ${a.knotenBau.ms} ms · Weg ${roh.bahnM} m${g === 1 ? ` · umgestellt in ${umS} s` : ""}`); // prettier-ignore
-                    zeile(`${u} je Bild > 33 ms Täter× Σ Anteil ms: ${d.haenger || "-"} · schwerste ${d.bilder}`);
-                    zeile(`${u} je Domäne ab p95/Mitte (${s.spitzeN} Takte): ${d.jeDomaene}`);
+                    if (ort === "stadt") zeile(`${u} je Bild > 33 ms Täter× Σ Anteil ms: ${d.haenger || "-"} · schwerste ${d.bilder}`); // die letzten zehn Zeilen tragen die Stadt
+                    if (ort === "stadt") zeile(`${u} je Domäne ab p95/Mitte (${s.spitzeN} Takte): ${d.jeDomaene}`);
                     summe.push(`${ort} ${g}: ${a.frameMs.p50}/${a.frameMs.p95}/${a.frameMs.max} ms, > 33 ms ${a.haengerN}/${a.frames} (${Math.round((100 * a.haengerN) / a.frames)} %), Takt ${a.taktMs.p50}/${a.taktMs.p95}`); // prettier-ignore
-                    for (let i = 0, k = 1; ort === "stadt" && g === 1 && i < d.baum.length && k <= 3; k++) {
+                    for (let i = 0, k = 1; ort === "stadt" && g === 1 && i < d.baum.length && k <= 2; k++) {
                         let t = `${u} Baum ${k}:`;
                         do t += " " + d.baum[i++];
                         while (i < d.baum.length && t.length + d.baum[i].length < 580);
