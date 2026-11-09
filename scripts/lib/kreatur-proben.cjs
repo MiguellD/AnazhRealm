@@ -976,8 +976,7 @@ async function kreaturProben(r, T, opts) {
             // DAS WANDERN DAUERT 120 s (z353): ohne den Zug des Verbands (Täter herde-zerfall) trieb die Herde am Ort des
             // dichteren Walds (heim2-w20-wald-kosten) in 50 s nur auf 0,916 (Soll ≥ 0,9) auseinander, an main 0,791 — die Zahl der
             // Wanderung hing am Ort, nicht am Gesetz; der Verband hält, solange er wandert, also urteilt die Probe über 10–120 s
-            t.takte = art === "blick" ? 1200 : fremd.length ? 36000 : art === "wander" ? 7200 : 3600;
-            for (let k = 0; k < t.takte; k++) {
+            for (let k = 0; k < (art === "blick" ? 1200 : fremd.length ? 36000 : art === "wander" ? 7200 : 3600); k++) {
                 const g0 = fremd.length && [6000, 18000].find((k0) => k >= k0 && k < k0 + 3600);
                 const x = flucht ? -30 + (1.4 * k) / 60 : g0 ? -30 + (1.4 * (k - g0)) / 60 : 45;
                 const q = neben(heim.x + x, heim.z + (g0 ? (g0 > 6000 ? 42 : -12) : 0));
@@ -1023,7 +1022,7 @@ async function kreaturProben(r, T, opts) {
             n: t.n,
             wurfAnteil: rund(t.wurf, 3),
             mittel: rund(t.summe / t.bilder, 3),
-            fluchtAnteil: rund(t.fluchtTakte / (Math.min(t.takte, 3600) * t.n), 3),
+            fluchtAnteil: rund(t.fluchtTakte / (3600 * t.n), 3),
             fluchtMittel: t.fb ? rund(t.fs / t.fb, 3) : null,
             fluchtMin: t.fb ? rund(t.fMin, 3) : null,
             enge: rund(t.enge / t.bilder, 2),

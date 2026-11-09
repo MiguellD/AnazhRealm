@@ -162,6 +162,7 @@ function selbsttest() {
             stufe,
             arbeit: werte(arbeitFrames > 0 ? 20 : 0, 0, arbeitFrames > 0 ? 3000 : 0),
         });
+    const BT = { gehalten: true, traegt: true, geprueft: 640, fall: "f:eiche|2|1:0 Slot 3 (Stufe 1, Kante 18.400 m)" };
     const gruen = {
         sonne: sonne(12, 6, 1 / 255),
         ruhe: phase(0, 0, 9),
@@ -179,22 +180,8 @@ function selbsttest() {
         }),
         augeAn: true,
         auge: Object.assign(phase(0, 0, 9), { kameraFrames: 0 }),
-        blendeTreue: {
-            gehalten: true,
-            traegt: true,
-            loecher: 0,
-            namen: [],
-            geprueft: 640,
-            fall: "f:eiche|2|1:0 Slot 3 (Stufe 1, Kante 18.400 m)",
-        },
-        blendeTreueOhneRand: {
-            gehalten: true,
-            traegt: true,
-            loecher: 1,
-            namen: ["f:eiche|2|1:0 Slot 3"],
-            geprueft: 640,
-            fall: "f:eiche|2|1:0 Slot 3 (Stufe 1, Kante 18.400 m)",
-        },
+        blendeTreue: { ...BT, loecher: 0, namen: [] },
+        blendeTreueOhneRand: { ...BT, loecher: 1, namen: ["f:eiche|2|1:0 Slot 3"] },
         treue: { geprueft: 12, abweichung: [] },
         fahrt: { bilder: 30, neu: 2, geprueft: 9, loecher: 0, namen: [] },
         fahrtOhneWeg: { bilder: 30, neu: 30 },
@@ -216,13 +203,13 @@ function selbsttest() {
     };
     const klon = () => jsonKlon(gruen);
     const fehler = [];
+    // ein grüner Fall des Selbsttests: rot ist ein Fehler beim Namen
+    const gruenFall = (name, v) => (v.length && fehler.push(`${name} fällt rot: ${v.join(" · ")}`), console.log(`  ${v.length ? "❌" : "✅"} Selbsttest ${name} → ${v.join(" · ") || "grün"}`)); // prettier-ignore
     // der echte Loop unter langsamem Takt: das Licht dreht in jedem Frame (die Sonne läuft schneller als eine Stufe je Frame),
     // die Kaskaden mit Box halten ihre Wahl über den Licht-Rand — grün
     const randSonne = (arbeitFrames, lichtRand) =>
         Object.assign(sonne(arbeitFrames, 199, 0.0004), { frames: 199, sonneRad: 0.19, mitBox: true, lichtRand });
-    const v1 = urteil(Object.assign(klon(), { sonne: randSonne(40, 32) }));
-    if (v1.length) fehler.push("der grüne Befund mit Licht-Rand fällt rot: " + v1.join(" · "));
-    console.log(`  ${v1.length ? "❌" : "✅"} Selbsttest grün mit Licht-Rand → ${v1.join(" · ") || "grün"}`);
+    gruenFall("grün mit Licht-Rand", urteil(Object.assign(klon(), { sonne: randSonne(40, 32) })));
     // RUHE MIT ÄNDERUNG (K): Arbeit und Bytes in Frames mit gedrehtem Licht sind die Arbeit der Änderung — grün; die
     // Linse nennt sie (die Werkbank fällte die laufende Sonne als „schreibt ohne Änderung"). Ein Satz-Inhalt mit benanntem
     // Grund ist im echten Loop (nicht streng) eine Änderung — in der eingefrorenen Welt der Wand fällt er rot (Fall unten).
@@ -230,11 +217,7 @@ function selbsttest() {
         inhaltFrames: 3,
         inhaltJe: { boden: { frames: 3, aenderung: 3, folge: 0, bereiche: 3, keys: ["+-901,-850"] } },
     });
-    const vL = SICHT.sichtUrteil({ ruhe: loopInhalt });
-    if (vL.length) fehler.push("der echte Loop mit Inhalts-Änderung fällt rot: " + vL.join(" · "));
-    console.log(
-        `  ${vL.length ? "❌" : "✅"} Selbsttest echter Loop mit Inhalts-Änderung → ${vL.join(" · ") || "grün"}`
-    );
+    gruenFall("echter Loop mit Inhalts-Änderung", SICHT.sichtUrteil({ ruhe: loopInhalt }));
     const mitAenderung = klon();
     Object.assign(mitAenderung.ruhe, {
         arbeit: werte(800, 0, 10000),
@@ -243,9 +226,7 @@ function selbsttest() {
         bytes: werte(5291, 0, 232320),
         schreibFrames: 69,
     });
-    const v2 = urteil(mitAenderung);
-    if (v2.length) fehler.push("Ruhe mit Änderung fällt rot: " + v2.join(" · "));
-    console.log(`  ${v2.length ? "❌" : "✅"} Selbsttest Ruhe mit Änderung (Licht) → ${v2.join(" · ") || "grün"}`);
+    gruenFall("Ruhe mit Änderung (Licht)", urteil(mitAenderung));
     // DIE KLASSE JE BYTE (`sichtBytesKlasse`): der Grund des Schreibers gegen die Änderung im selben Frame — ein Satz-Inhalt
     // zählt nur mit BENANNTEM Grund (`grund`), nie über die Zähler des Spiels (Stand, Verdichten)
     const kl = (f) => SICHT.sichtBytesKlasse(f);
@@ -795,8 +776,7 @@ const server = statikServer();
             const boden = r._voxelSurfaceY(MESS.x, MESS.z);
             // Die Stellvertreter-Kaskaden (wie gate:chunk-satz): Ortho-Kameras über dem Blick, k0 ±120 m, k1 ±400 m, die
             // Mitte ein halbes Feld vor dem Auge — sie laufen mit, wenn der Blick dreht oder geht.
-            const kaskaden = [new T.OrthographicCamera(-120, 120, 120, -120, 0, 1600)];
-            kaskaden.push(new T.OrthographicCamera(-400, 400, 400, -400, 0, 1600));
+            const kaskaden = [120, 400].map((h) => new T.OrthographicCamera(-h, h, h, -h, 0, 1600));
             // `quer`: der Versatz quer zum Blick (die Fahrt der Linse geht schräg, F)
             const stelle = (yaw, vor, quer = 0) => {
                 const ex = ppos.x + Math.sin(yaw) * vor + Math.cos(yaw) * quer,
@@ -804,7 +784,7 @@ const server = statikServer();
                 cam.position.set(ex, boden + 1.7, ez);
                 cam.lookAt(ex + Math.sin(yaw) * 100, boden + 1.7, ez - Math.cos(yaw) * 100);
                 cam.updateMatrixWorld(true);
-                kaskaden.forEach((c, i) => {
+                kaskaden.forEach((c) => {
                     const h = c.right * 0.5;
                     const cx = ex + Math.sin(yaw) * h,
                         cz = ez - Math.cos(yaw) * h;
@@ -812,7 +792,6 @@ const server = statikServer();
                     c.lookAt(cx, boden, cz);
                     c.updateMatrixWorld(true);
                     c.updateProjectionMatrix();
-                    void i;
                 });
             };
             // EIN Frame der Sicht: das Hauptbild über `_passSicht`, dann jede Kaskade mit derselben Lage wie in `_passSicht`
@@ -1317,7 +1296,7 @@ const server = statikServer();
             // das Auge in `zeitS` fährt, nie je Bild neu; die gehaltene Wahl zeichnet jede Instanz, die das Gesetz ohne Rand vom Auge
             // DIESES Bilds trifft. Scharf: ohne Weg (`bruch` "weg", der Punkt bis w24) legt jedes Bild neu an, der Weg ohne seinen
             // Rand ("rand") reißt Löcher.
-            const fahrt = async (bruch, yaw = Math.PI / 5) => {
+            const fahrt = async (bruch, yaw) => {
                 const [o, u] = [
                     { bilder: 30, neu: 0, geprueft: 0, loecher: 0, namen: [] },
                     st.lodUniforms.uLodAuge.value,
@@ -1348,17 +1327,9 @@ const server = statikServer();
             // Mess-Wiese, heim2-w20-wald-kosten, ließ die eine Strecke π/5 an keiner Kante vorbei, ohne Rand 0 Löcher, die Linse
             // fiel STUMPF). Die Fahrt wählt die erste Strecke der festen Reihe (π/5 zuerst, dann je π/4 gedreht), auf der der
             // Täter ohne Rand Löcher reißt, und misst das Gesetz und den Täter ohne Weg auf GENAU dieser Strecke.
-            {
-                let [yaw, ohneRand] = [Math.PI / 5, null];
-                for (let k = 0; k < 8; k++) {
-                    const y = Math.PI / 5 + (k * Math.PI) / 4;
-                    const o = await fahrt("rand", y);
-                    if (!ohneRand || o.loecher > 0) [yaw, ohneRand] = [y, o];
-                    if (o.loecher > 0) break;
-                }
-                ohneRand.yaw = Math.round((yaw / Math.PI) * 1000) / 1000;
-                [aus.fahrt, aus.fahrtOhneWeg, aus.fahrtOhneRand] = [await fahrt(undefined, yaw), await fahrt("weg", yaw), ohneRand];
-            }
+            let yaw, FR;
+            for (let k = 0; k < 8 && !(FR?.loecher > 0); k++) FR = await fahrt("rand", (yaw = Math.PI * (0.2 + k / 4)));
+            [aus.fahrt, aus.fahrtOhneWeg, aus.fahrtOhneRand] = [await fahrt(0, yaw), await fahrt("weg", yaw), FR];
             // (W) DIE FERNE HÄLT ÜBER DEN WEG (w23-geh-takt, `_nahWieseFernSatz`): die Kamera geht 45 Bilder zu 1/15 m; je Bild wählt
             // nur ein Teil der Kacheln der Ferne neu. Scharf: der
             // Halt-Bruch (die Wahlen fallen je Bild — der Satz bis w23) wählt jede Kachel neu. DIE WIESE AM RUF (C): bei gleicher
