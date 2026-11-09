@@ -1702,7 +1702,9 @@ class AnazhRealm_stoff_material {
                     // dieselbe (K02a: die Decke nimmt das Licht von unten, kein Himmel von oben); der Fern-Ring (`fernNeigung`: die
                     // Masche des Empfängers, m) trägt die Normale des Gesetzes aus der Karte (`_fernNeigungNormale`, ferne.K4), wo
                     // seine Masche gröber steht als ein Texel
-                    const _nWahr = opts.fernNeigung ? this._fernNeigungNormale(_nWG, opts.fernNeigung) : _nWG;
+                    const _nWahr = opts.fernNeigung
+                        ? this._fernNeigungNormale(_nWG, opts.fernNeigung, opts.fernOrt)
+                        : _nWG;
                     let _baseN = _nWahr;
                     // Mikro-Relief (`_mikroRelief`, TERRAIN_BUMP): die festen Oktaven (Klumpen, Kiesel) und die drei am Schirm kippen
                     // die geflattete Normale entgegen dem Gradienten, LOD-gegated.
@@ -2881,7 +2883,7 @@ class AnazhRealm_stoff_material {
             // Feld-Pass zeichnet (gate:nah-fern, Luft aus). Hier lebt nur noch die Farbe des Halms für das Relief der Nähe.
             const _mg = AnazhRealm.MEADOW_GREEN;
             const _sp = AnazhRealm.GRAS_SPITZE;
-            const _wg = AnazhRealm.WIESEN_GRUND.farbe;
+            const _wg = AnazhRealm.WIESEN_GRUND.halmMittel; // das Relief der Nähe trägt das Mittel des Halms, die Ferne den Bestand
             const _wurzel = _T.vec3(_mg[0], _mg[1], _mg[2]);
             const _spitze = _T.vec3(_sp[0], _sp[1], _sp[2]);
             const _krone = _T.vec3(_wg[0], _wg[1], _wg[2]);

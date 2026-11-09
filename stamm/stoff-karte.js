@@ -657,6 +657,15 @@ class AnazhRealm_stoff_karte {
         // jede Karte der Schlange am Stück und legte Minuten swiftshader-Arbeit in die Schlange (CI z289 · z292 · z293, umstellen an
         // die Mess-Wiese: die Leine blieb gespannt, das Panorama und die letzten Karten zeichneten nie, das Weltbild fehlte, und die
         // 90 Würfe außer Blick warteten — „Wald offen 90"); auf main verdeckte das Budget KARTE_WELT_MS (ein Ring je Takt) die Lücke.
+        // DIE KARTEN EINES TAKTS SIND EINE ARBEIT AN DER LEINE (w25-ankunft-karte): mit endlicher Frist fragt die Leine den Beginn
+        // des Takts (`nurHalbe`), die Frist begrenzt, wie viele Karten er beginnt, und was sie zeichneten, bindet sich EINMAL an,
+        // nach der letzten (`onSubmittedWorkDone` nach ihr trägt jede Zeichnung davor). Ohne Ende (der ruhende Loop) fragt die
+        // Leine weiter jede Karte bei ihrem Beginn. Bis hier band sich jede Karte für sich, und die nächste desselben Takts fand die
+        // Leine gespannt: unter dem Ladeschirm begann je Takt höchstens EINE Karte — die 14 Karten im Blick backten 11,4 → 14,0 s,
+        // beim Eintritt ~90 ms der Frist frei, je Karte ~55 ms Haupt-Faden (GTX kalt, f7d88889). Ein Schritt, der nicht ganz stand,
+        // beendet den Takt NICHT: der Versuch jeder Karte treibt den Bau der Programme ihrer Art (endete der Takt am ersten, kam die
+        // zweite Karte erst 3 s nach der ersten, das Weltbild +1,19 s, a1e54bc9).
+        const jeKarte = !Number.isFinite(frist);
         let v = gezeichnet();
         const binden = () => gezeichnet() !== v && (this._gpuLeineBinden(), (v = gezeichnet()));
         for (let i = 0; i < q.length;) {
@@ -665,9 +674,10 @@ class AnazhRealm_stoff_karte {
                 q.splice(i, 1);
                 continue;
             }
-            if (!(at.offen && at.offen.z === z) && this._gpuLeineStraff()) break; // an gespannter Leine nur die begonnene Karte
+            // an gespannter Leine nur die begonnene Karte
+            if (!(at.offen && at.offen.z === z) && (nurHalbe || (jeKarte && this._gpuLeineStraff()))) break;
             const e = this._karteWeltBacken(at, z);
-            binden();
+            if (jeKarte) binden();
             // null: die L1 reist, ein Bürger der Bühne wartet auf seine Pipeline oder die Bühne trägt eine halbe Karte;
             // 0: ein Ring steht — im Budget backt derselbe Takt den nächsten
             if (e === null || e === 0) {
@@ -681,6 +691,7 @@ class AnazhRealm_stoff_karte {
             n++;
             if (performance.now() >= frist) break;
         }
+        binden();
         return n;
     }
 
@@ -874,6 +885,25 @@ class AnazhRealm_stoff_karte {
     // des Wirts auf der Platte der Schale (`_foundrySchale`, Frage `karte`): ein Treffer legt ihre Bytes in die Schicht — ohne
     // L1, Bühne und Programme; ein Miss backt, und die Ablage reicht dieselben Bytes zurück in den Faden (`_karteAblage`).
     // `z._platte`: undefined = ungefragt, false = die Frage reist, null = backen, sonst der Treffer.
+    // DIE PLATTE FRAGT DER ERSTE LESER (w25-ankunft-foundry): die Frage geht mit dem Rang des Lesers ins Werk, sobald er die
+    // Zelle verlangt (`_foundryBuildImpostorFlat`), nie erst, wenn der Karten-Takt die Zelle erreicht — an gespannter Leine
+    // und nach der Frist steht der Takt hinter der begonnenen Karte, und die Frage reiste in den Weg ihres Bakes (GTX kalt,
+    // 4f86fbe6: die Mammut-Karte angelegt 8,04 s, gefragt 14,35 s, gebacken 14,97 s; das Werk leer ab 10,5 s, seine Schlange
+    // erst 0,3–1 s vor dem Bild). `jahr`: die Stufe des Jahrs, die der Bake liest (ohne: die der Welt); die Platte trägt
+    // die Karte EINER Stufe (ihr Wert nennt sie, `_foundrySchale`) — eine andere ist ein Miss. Nur BC trägt die Platte.
+    _kartePlatteFragen(z, jahr) {
+        const at = this._impostorAtlas();
+        if (!at || at.fmt !== "bc" || z._abzug || z._platte !== undefined || !this._foundry) return;
+        const j = jahr || this._karteJahr(this.state.seasonPhase);
+        z._platte = false;
+        const frage = { type: "karte", presetId: z.preset, platte: "fimp|bc|" + z.key, jahr: j.stufe };
+        const wort = `FOUNDRY TIMEOUT: karte(${z.key}) nach 45 s Arbeit ohne Reply → sie backt`;
+        this._foundryAuftrag(this._foundry, "krt", frage, z._bedarfD2, 45000, wort).then((m) => {
+            z._platte = (m && m.karte) || null;
+            z._platteJahr = j;
+            z._liefer = m && m.liefer;
+        });
+    }
     _karteWeltBacken(at, z) {
         const rend = this.state.renderer;
         const bc = at.fmt === "bc";
@@ -886,17 +916,7 @@ class AnazhRealm_stoff_karte {
         // ein Abzug liest die Bühne: die Platte trägt nur BC-Bytes, die Karte backt
         if (z._abzug) z._platte = null;
         if (bc && z._platte !== null) {
-            if (z._platte === undefined) {
-                z._platte = false;
-                // die Platte trägt die Karte EINER Stufe (ihr Wert nennt sie, `_foundrySchale`): eine andere ist ein Miss
-                const frage = { type: "karte", presetId: z.preset, platte: "fimp|bc|" + z.key, jahr: jahr.stufe };
-                const wort = `FOUNDRY TIMEOUT: karte(${z.key}) nach 45 s Arbeit ohne Reply → sie backt`;
-                this._foundryAuftrag(this._foundry, "krt", frage, z._bedarfD2, 45000, wort).then((m) => {
-                    z._platte = (m && m.karte) || null;
-                    z._platteJahr = jahr;
-                    z._liefer = m && m.liefer;
-                });
-            }
+            this._kartePlatteFragen(z, jahr); // fragte sie ihr Leser nicht, fragt sie der Bake
             if (z._platte === false) return null;
             const k = z._platte;
             const lage = at.lage || (at.lage = this._karteRechenPlan(at, true));
