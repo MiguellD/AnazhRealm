@@ -1,0 +1,265 @@
+{
+ "sha": "f52b3a03012ad62610c495c7d0ef1e443bf997c4",
+ "geraet": "radeon",
+ "zeit": "2026-11-09T01:44:21.658Z",
+ "host": "MiguellD",
+ "je": {
+  "haar.K2#1": {
+   "gruen": false,
+   "zahl": "arm ROT strich 0.6409 Soll [0.3554,0.533] — strich 0.6409 > 0.533 · albedo: veraltet seit 4ef6370e: koerper-core.js geändert (c:b70902b2e416b42b → c:c0846417374ac1bd) · albedo — [0.01; 0.3] · third ROT strich 0.2937 Soll [0.3554,0.533] — strich 0.2937 < 0.3554 · albedo: veraltet seit 4ef6370e: koerper-core.js geändert (c:b70902b2e416b42b → c:c0846417374ac1bd) · albedo — [0.01; 0.3]",
+   "exit": 0,
+   "minuten": 0.42,
+   "grund": "ROT: arm ROT strich 0.6409 Soll [0.3554,0.533] — strich 0.6409 > 0.533 · albedo: veraltet seit 4ef6370e: koerper-core.js geändert (c:b70902b2e416b42b → c:c0846417374ac1bd) · albedo — [0.01; 0.3] · third ROT strich 0.2937 Soll [0.3554,0.533] — strich 0.2937 < 0.3554 · albedo: veraltet seit 4ef6370e: koerper-core.js geändert (c:b70902b2e416b42b → c:c0846417374ac1bd) · albedo — [0.01; 0.3]",
+   "gpu": "amd/rdna-3",
+   "s": 25,
+   "fremd": {
+    "s": 28.3,
+    "takte": 10,
+    "fremdS": 43.28,
+    "kerne": 1.528,
+    "fensterKerne": 1.748,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      13.45
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      8.33
+     ],
+     [
+      "bash.exe leicht-wache.sh",
+      6.02
+     ]
+    ],
+    "dienerS": 14.72,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      6.45
+     ],
+     [
+      "System",
+      5.47
+     ]
+    ],
+    "eigenS": 51.61,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-09T01:42:29.243Z",
+   "abdruck": "b400c965d4a7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "ferne.K1#1": {
+   "gruen": true,
+   "zahl": "Koschmieder T/T_soll 0.90–1.06 bei 1/2/5/8 km, Uhr 0,5, 4 Azimute, K1-1 GRUEN, [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.95,
+   "gpu": "amd/rdna-3",
+   "s": 56.9,
+   "fremd": {
+    "s": 60.2,
+    "takte": 21,
+    "fremdS": 89.56,
+    "kerne": 1.489,
+    "fensterKerne": 1.802,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      32.95
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      22.91
+     ],
+     [
+      "svchost.exe",
+      9.97
+     ]
+    ],
+    "dienerS": 33.02,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      13.86
+     ],
+     [
+      "System",
+      9.97
+     ]
+    ],
+    "eigenS": 136.25,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-09T01:43:06.553Z",
+   "abdruck": "b6d080cc7435",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "ferne.K1#2": {
+   "gruen": false,
+   "zahl": "K1-2 ROT (4 Befunde) · Farbton 8 km 1.579–25° (≤ 10°) · Sonnenseite Uhr 0,5/0,27 1.25/5.025 (≥ 1,2) · fernes Weiß R/B 6.248 (≥ 1,3) · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.95,
+   "grund": "ROT: K1-2 ROT (4 Befunde) · Farbton 8 km 1.579–25° (≤ 10°) · Sonnenseite Uhr 0,5/0,27 1.25/5.025 (≥ 1,2) · fernes Weiß R/B 6.248 (≥ 1,3) · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 56.9,
+   "fremd": {
+    "s": 60.2,
+    "takte": 21,
+    "fremdS": 89.56,
+    "kerne": 1.489,
+    "fensterKerne": 1.802,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      32.95
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      22.91
+     ],
+     [
+      "svchost.exe",
+      9.97
+     ]
+    ],
+    "dienerS": 33.02,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      13.86
+     ],
+     [
+      "System",
+      9.97
+     ]
+    ],
+    "eigenS": 136.25,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-09T01:43:06.553Z",
+   "abdruck": "230798f8028a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "ferne.K1#1",
+   "modus": "session"
+  },
+  "ferne.K4#1": {
+   "gruen": false,
+   "zahl": "Schatten-/Lichthang 0.6243 (je N·L; Soll ≤ 0,4) aus 21/64 Orten im Bild, Auge 1500 m, Grat 5.3294 km, Sonne 5.0087° (Uhr 0.735) · Ort [-841,-861] · 0.29 s · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.16,
+   "grund": "ROT: Schatten-/Lichthang 0.6243 (je N·L; Soll ≤ 0,4) aus 21/64 Orten im Bild, Auge 1500 m, Grat 5.3294 km, Sonne 5.0087° (Uhr 0.735) · Ort [-841,-861] · 0.29 s · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 9.8,
+   "fremd": {
+    "s": 13.9,
+    "takte": 5,
+    "fremdS": 16.16,
+    "kerne": 1.166,
+    "fensterKerne": 1.166,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      6.66
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      4.33
+     ],
+     [
+      "svchost.exe",
+      2.17
+     ]
+    ],
+    "dienerS": 6.56,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      3
+     ],
+     [
+      "System",
+      2.28
+     ]
+    ],
+    "eigenS": 28.72,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-09T01:44:21.658Z",
+   "abdruck": "c40aea5be6fb",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-09T01:41:54.958Z",
+  "port": 7804,
+  "warten": 0.14,
+  "bootS": 5.8,
+  "grundstellungS": [],
+  "proben": 3,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "haar.K2#1",
+    "s": 16.7,
+    "takte": 655,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": "genesis",
+    "vor": "ferne.K1#1",
+    "s": 10.9,
+    "takte": 629,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": "dorf",
+    "vor": "ferne.K4#1",
+    "s": 17.2,
+    "takte": 682,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 4,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [
+    {
+     "probe": "ferne.K1#1",
+     "m": 3592,
+     "ringVor": 4,
+     "ringMin": 0
+    }
+   ],
+   "zapfen": 150,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 149.2,
+  "minuten": 2.7
+ }
+}
