@@ -5350,8 +5350,10 @@ const stationen = [
     // DER ORT (w4-stationen-schnell-b; GTX b4bcf19c 50,5 s): das Start-Dorf steht um `_genesisMitte` (`_autoSettlementStartInfo`, fällig nur
     // im Nah-Radius des Genesis-Orts, `_startDorfFaellig`) — der Befehl nannte keinen Messort, die Probe lief nach einer Grundstellung an
     // der Mess-Wiese und zog 1,1 km zum Platz des Dorfs: den kalten Ring trug ihr Deckel (GTX: Genesis kalt 18,6 s, ab040980). Jetzt
-    // nennt sie Genesis, die Sitzung stellt es VOR dem Deckel (`probeOrt`); dasselbe Dorf aus dem Samen der Welt, derselbe Gang
-    probe: { sek: 10, befehl: [
+    // nennt sie Genesis, die Sitzung stellt es VOR dem Deckel (`probeOrt`); dasselbe Dorf aus dem Samen der Welt, derselbe Gang.
+    // DER DECKEL (w25-treue-kanten, 09.11.): nach der Grundstellung wächst das Start-Dorf neu — Radeon 35,1–45,7 s (95ba6fd6 bis
+    // 28c74a9f), dreimal am Gesetz 45 s gerissen (UNGEMESSEN); die Ausnahme beim Namen, der Deckel der Tafel das Gesetz 90 s
+    probe: { sek: 10, ausnahme: "das Start-Dorf wächst nach der Grundstellung neu bis 81 Leiber, dann vier Gänge zu 1,4 m/s mit je einem Bild je Takt — Radeon 35,1–45,7 s", befehl: [
         "bash",
         "-c",
         [
