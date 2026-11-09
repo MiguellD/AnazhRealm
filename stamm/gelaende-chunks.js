@@ -3227,8 +3227,8 @@ AnazhRealm.CHUNK_IDB_MAX = 600;
 // Puffer, das Morph-Ziel als eigene Kopie): ein alter Eintrag trüge die Typ-Arrays des Mains ohne Morph-Ziel; seit w4-b-boden2
 // trägt der Reply Naht und Satz-Vorlage (`naht`, `satz`): ein alter Eintrag ließe den Einbau sie im Haupt-Faden nachrechnen; seit
 // w26-ferne-ton-4 trägt er die Deckung des Stoffs je Vertex (`deckung`) und eine Karte, deren Grün sie liest: ein alter Eintrag
-// trüge das Grün aus dem Ton.
-AnazhRealm.CHUNK_IDB_FORM = "faden-reply-deckung";
+// trüge das Grün aus dem Ton; seit w27-ferne-ton-5 endet die Narbe am Spiegel: ein alter Eintrag trüge Grün unter Wasser.
+AnazhRealm.CHUNK_IDB_FORM = "faden-reply-deckung-spiegel";
 // FERN_FARBE (`fernFarbeTeile` im Fern-Faden, linear): das Kronendach des Waldes aus der Ferne ist sein Spektrum je Art
 // (`_fernKroneArt`, Kern KRONEN_FARBE: Laubwald grün 0,0525, Nadelwald 0,0402); `kronenSchatten` trägt nur die kahle Krone
 // (die Rinde beschattet sich selbst, wie bis w26-ferne-ton-3 auch das Laub: Eiche 0,195 × 0,32); die Saison multipliziert der Leser

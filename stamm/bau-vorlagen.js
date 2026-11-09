@@ -1571,10 +1571,11 @@ class AnazhRealm_bau_vorlagen {
         };
         // DIE HAFTUNG DES RADS (fahrzeug.K1): je Stoff, auf dem ein Rad stehen kann, μ des Reifens trocken und voll nass (`muRad`,
         // `muRadNass`; Bezug der Asphalt des Labors, μ 1) — Tafel-Werte der Reibung Reifen auf Fahrbahn: verdichtete Erde
-        // 0,7/0,45, Gras 0,4/0,2, rauer Fels 0,8/0,55, Bohle 0,65/0,4, Metall 0,6/0,35, Laubstreu 0,45/0,2, loser Sand 0,35/0,45
-        // (w27-ferne-ton-5: der Zugkraft-Beiwert eines Reifens auf trockenem losem Sand nach Abzug des Einsinkens 0,3–0,4,
-        // Bekker/Wong, Theory of Ground Vehicles; feuchter Sand trägt durch die Kapillar-Kohäsion fester — die einzige Zeile,
-        // die nass besser greift). Leser: der Reibkreis am
+        // 0,7/0,45, Gras 0,4/0,2, rauer Fels 0,8/0,55, Bohle 0,65/0,4, Metall 0,6/0,35, Laubstreu 0,45/0,2, loser Sand 0,25/0,35
+        // (w27-ferne-ton-5: die Zugkraft-Beiwerte für Gummireifen nach Peurifoy et al., Construction Planning, Equipment, and
+        // Methods — loser trockener Sand 0,20–0,30, nasser Sand und Kies 0,30–0,40; dieselbe Tafel trägt trockenen Lehm
+        // 0,50–0,70 und nassen 0,40–0,50, die Zeile erde. Der Reifen sinkt im trockenen Sand ein, feuchter trägt durch die
+        // Kapillar-Kohäsion fester — die einzige Zeile, die nass besser greift). Leser: der Reibkreis am
         // Wagen (`_fahrHaft`). Die Stoffe der Leiber tragen keine — unter dem Rad liegt nie Fleisch —, und kraut, die Mahd im
         // Beutel, auch nicht: die Wiese unter Rad, Huf und Schritt ist EINE Zeile, gras. μ des Leibs (`mu`) und μ des Rads sind
         // zwei Paare (Huf auf Fels 0,6, Reifen auf Fels 0,8), je eine Spalte derselben Zeile.
@@ -1608,7 +1609,7 @@ class AnazhRealm_bau_vorlagen {
             gras:     [0.6,  1800, 533,    null,      0.4,   0.2,  5e7],
             wasser:   [null, 4186, null,   273.15,    null,  null, 2.2e9],
             eis:      [0.05, 2050, null,   null,      null,  null, 9e9],
-            sand:     [0.55, 830,  null,   1986,      0.35,  0.45, 5e7],
+            sand:     [0.55, 830,  null,   1986,      0.25,  0.35, 5e7],
         };
         // die Spalten L und k (oben): nur das Eis wächst im Kern; L_v des Wassers (2,257 MJ/kg) trocknet das Bett vor der Zündung
         const PHASE = { eis: { L: 334000, k: 2.2 }, wasser: { Lv: 2257000 } };

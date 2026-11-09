@@ -3096,15 +3096,22 @@ function bodenFarbe(x, y, z, out, fussM, aus) {
     const aboveWater = y - uf.see;
     const aboveFluss = !ab && uf.fluss !== null ? y - uf.fluss : null;
     let schlick = ss(-0.5, -4, aboveWater);
-    if (aboveFluss !== null) schlick = Math.max(schlick, uf.ufer * ss(-0.5, -4, aboveFluss));
+    // die Narbe endet am Spiegel (w27-ferne-ton-5, wie `_bodenFarbeAt`): die Deckung fällt vom Spiegel bis 0,5 m Tiefe auf die des Schlicks
+    let unterWasser = ss(0, -0.5, aboveWater);
+    if (aboveFluss !== null) {
+        schlick = Math.max(schlick, uf.ufer * ss(-0.5, -4, aboveFluss));
+        unterWasser = Math.max(unterWasser, uf.ufer * ss(0, -0.5, aboveFluss));
+    }
     const imStrand = (a) => a !== null && a > -1.3 && a < 2.5;
     let flussStrand = false;
     if (ab)
         for (let i = 0; i < ab.n; i++) {
             schlick = Math.max(schlick, ab.mu[i] * ss(-0.5, -4, y - ab.sp[i]));
+            unterWasser = Math.max(unterWasser, ab.mu[i] * ss(0, -0.5, y - ab.sp[i]));
             if (ab.mu[i] > 0 && imStrand(y - ab.sp[i])) flussStrand = true;
         }
-    mix(P.sediment, schlick, DK.sediment);
+    mix(P.sediment, schlick);
+    d += (DK.sediment - d) * unterWasser;
     if (imStrand(aboveWater) || (uf.ufer > 0 && imStrand(aboveFluss)) || flussStrand) {
         const widthNoise = (sandNoise.noise2D(x * 0.0018, z * 0.0018) + 1) * 0.5;
         const intenseNoise = (sandNoise.noise2D(x * 0.0034 + 17, z * 0.0034 - 9) + 1) * 0.5;

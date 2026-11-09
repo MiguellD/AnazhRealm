@@ -2423,8 +2423,17 @@ class AnazhRealm_gelaende_boden {
         const aboveWater = y - uf.see;
         const aboveFluss = uf.fluss !== null ? y - uf.fluss : null;
         let schlick = ss(-0.5, -4, aboveWater);
-        if (aboveFluss !== null) schlick = Math.max(schlick, uf.ufer * ss(-0.5, -4, aboveFluss));
-        mix(sed, schlick, DK.sediment);
+        // DIE NARBE ENDET AM SPIEGEL (w27-ferne-ton-5): der Grund unter stehendem Wasser trägt keine — seine Deckung fällt vom
+        // Spiegel bis 0,5 m Tiefe auf die des Schlicks, wo dessen Farbe erst beginnt (sie wächst bis 4 m: mit ihrem Gewicht
+        // trug der Seegrund in 1 m Tiefe die Deckung des nassen Grunds, 0,35–0,43 — Grün 0,6–0,8, das Rad bremste dort wie auf
+        // Gras: die Wand „Werk im Wasser“ A, 1,22 m tief)
+        let unterWasser = ss(0, -0.5, aboveWater);
+        if (aboveFluss !== null) {
+            schlick = Math.max(schlick, uf.ufer * ss(-0.5, -4, aboveFluss));
+            unterWasser = Math.max(unterWasser, uf.ufer * ss(0, -0.5, aboveFluss));
+        }
+        mix(sed, schlick);
+        d += (DK.sediment - d) * unterWasser;
         mix(sand, this._strandAt(x, z, y, uf), DK.sand);
         // V18.230 (Ω-OPSIS Säule II Ω-O6) — die PFADE: die Fluss-Bänke sind
         // getrampelte, gepackte Erde (Gras wird zusätzlich unterdrückt, s.
