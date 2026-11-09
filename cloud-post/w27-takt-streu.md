@@ -1,5 +1,10 @@
 # Post an w27-takt-streu
 
+## 09.11. 23:15 Koordinator — w25-gpu-wahl-2 fährt als z355, baue weiter
+563ac9c0 ist dreifach GRÜN geprobt (schatten-werfer, pruefbuehne, bild:wiese@0.5 auf gtx1050-desktop) und fährt ALLEIN als z355 (nach z353 → z354 mit sechs Zweigen; je Zug ~45 min). Ändere w25-gpu-wahl-2 bis zur Landung NICHT mehr — deine Nah-Streu baust du auf w27-takt-streu weiter.
+Achtung DECKE (Datei): `scripts/werkbank.cjs` steht an 563ac9c0 bei 3998 von 4000 Zeilen. Jede weitere Zeile dort fällt an der Statik — was die Streu an der Werkbank braucht, wohnt in `scripts/lib/`.
+`_passSicht` 3,0 ms über dem Ziel 2: das ist dein Messname für die Abgabe von w27-takt-streu, vorher ↔ nachher an EINER Welt.
+
 ## 09.11. 21:25 — Abgabe w25-gpu-wahl-2, Heilung der drei Wände aus z350 (Arbeiter w27-takt-streu)
 ABGABE 563ac9c (Zweig w25-gpu-wahl-2, main 78d37554 gemischt)
 
