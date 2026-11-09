@@ -191,6 +191,12 @@ class AnazhRealm_studio_stoff {
         if (MatK !== T.MeshStandardNodeMaterial) {
             mat.clearcoat = ccSoll.cc;
             mat.clearcoatRoughness = ccSoll.ccr;
+            // DIE SCHICHTEN (w26-lack-glas, material.K4): die Basis spiegelt an der Luft nur, wo kein Klarlack über ihr liegt —
+            // unter dem Lack grenzt Harz an Harz (n ≈ 1,5 beidseits, kein Fresnel-Sprung), der Spiegel ist allein der Klarlack;
+            // r184 ließ die Basis mit ihrem eigenen Luft-Fresnel (F0 0,04, Rauheit der Basis) daneben spiegeln: ein zweites, weiches
+            // Bild in der Stärke des Klarlacks über jedem Uni-Lack. Der Anteil der Basis-Grenzfläche ist 1 − Klarlack (Lack 1 → 0,
+            // die Haut 0,12 → 0,88); ein Metall trägt sein F0 in der Albedo (Klinge, Flocken), ihm nimmt das nichts.
+            mat.specularIntensity = 1 - ccSoll.cc;
         }
         // DIE DURCHSICHT (W5): ein durchsichtiger Stoff (Scheibe, Fenster, Glimm-Scheibe) zeichnet transparent mit der
         // Deckkraft seines Gesetzbuchs; einen Schatten wirft er nicht (`_foundryBuildMesh`: das Licht geht durch ihn). Er

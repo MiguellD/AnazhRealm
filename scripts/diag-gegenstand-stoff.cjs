@@ -20,6 +20,10 @@
 //                Gesetzbuch trägt (Lack 2,6, Scheibe 3,0, Chrom 1,6, Gummi 0,5 …), baut der Wirt in der echten Welt (`--tafel`)
 //                einen Lack-Stoff (`_foundryTreeMaterial`) — er trägt 1, sonst spiegelte er die Welt ×v (Fresnel und Energie
 //                gebrochen); die Sabotage ist die Zeile vor w26 (`mat.envMapIntensity = R.env`) und muss ROT sein
+//   schichten    unter dem Klarlack spiegelt die Basis an der Luft (`specularIntensity` ≠ 1 − Klarlack): der Lack-Stoff des Wirts
+//                (Klarlack 1) trägt 0, die Haut (0,12) 0,88 — sonst legte r184 ein zweites, weiches Bild der Basis neben den Spiegel
+//                des Lacks; die Sabotage ist r184s Vorgabe 1. Der Null-Renderer trägt keine Bibliothek: die Probe reicht dem Wirt
+//                eine (`getMaterialNodeClass`) mit einer Physical-Attrappe — geprüft wird das Gesetz des Wirts, nie r184
 //   node scripts/diag-gegenstand-stoff.cjs [--selftest]
 //
 // DIE TAFEL-PROBE (stoffe.K1, `--tafel`, Port GEGENSTAND_STOFF_PORT): die EINE Stoff-Tafel in SI (`state.materials`) und je
@@ -214,26 +218,43 @@ function umgebungsZahlen() {
     for (const id of Object.keys(SC.PRESETS)) lies(SC.buildInstance(id, 1, 0));
     return [...z].filter((v) => v !== 1).sort((a, b) => a - b);
 }
-// DIE PROBE DER WELT (`umgebung`, in der Seite): je Zahl der Lack-Stoff des Wirts mit ihr im Gesetzbuch — was er trägt; `sabotage`
-// legt die Zeile vor w26 um den Bau (der Stoff skaliert die Umgebung mit der Zahl seines Labors)
+// DIE PROBE DER WELT (`umgebung`, `schichten`, in der Seite): je Zahl der Lack-Stoff des Wirts (Klarlack 1) mit ihr im Gesetzbuch, dazu
+// ein Stoff mit dem Klarlack der Haut (0,12) — was er trägt: [Zahl, Klarlack, envMapIntensity, specularIntensity]; `sabotage` legt den
+// Stand vor w26 um den Bau (die Umgebung ×Zahl des Labors, die Basis mit r184s Vorgabe 1)
 function umgebungProbe(zahlen, sabotage) {
     const P = Object.getPrototypeOf(r),
-        bau = P._foundryTreeMaterial;
+        bau = P._foundryTreeMaterial,
+        rend = r.state.renderer,
+        bib = rend && rend.library,
+        mats = r._foundryMats || {},
+        vor = new Set(Object.keys(mats));
+    // die Physical-Attrappe: ein Standard-Stoff mit den Feldern, die der Wirt am Klarlack setzt
+    class Physical extends THREE.MeshStandardNodeMaterial {
+        constructor(p) {
+            super();
+            Object.assign(this, { clearcoat: 0, clearcoatRoughness: 0, specularIntensity: 1, isMeshPhysicalNodeMaterial: true });
+            this.setValues(p);
+        }
+    }
+    if (rend && !bib) rend.library = { getMaterialNodeClass: (n) => (n === "MeshPhysicalMaterial" ? Physical : null) };
     if (sabotage)
         P._foundryTreeMaterial = function (kind, mp, ...rest) {
             const m = bau.call(this, kind, mp, ...rest);
             m.envMapIntensity = globalThis.__phytoCore.budgetRegler(kind, mp).env;
+            if (m.isMeshPhysicalNodeMaterial) m.specularIntensity = 1;
             return m;
         };
     try {
-        return zahlen.map((v) => {
-            const m = r._foundryTreeMaterial("unknown", { roughness: 0.35, metalness: 0.7, clearcoat: 1, clearcoatRoughness: 0.03, envMapIntensity: v, seh: "metall" });
-            const ist = m.envMapIntensity;
-            m.envMapIntensity = 1;
-            return [v, ist];
+        const reihe = zahlen.map((v) => [v, 1]).concat([[1, 0.12]]);
+        return reihe.map(([v, cc]) => {
+            const m = r._foundryTreeMaterial("unknown", { roughness: 0.37, metalness: 0, clearcoat: cc, clearcoatRoughness: 0.07, envMapIntensity: v, seh: "metall" });
+            return [v, cc, m.envMapIntensity, m.isMeshPhysicalNodeMaterial ? +m.specularIntensity.toFixed(4) : null];
         });
     } finally {
         P._foundryTreeMaterial = bau;
+        if (rend && !bib) delete rend.library;
+        // die Stoffe der Probe verlassen den Vorrat des Wirts (die Attrappe zeichnet nie)
+        for (const k of Object.keys(r._foundryMats || {})) if (!vor.has(k)) delete r._foundryMats[k];
     }
 }
 
@@ -395,9 +416,12 @@ async function tafel() {
         // DIE UMGEBUNG (w26-lack-glas): kein Stoff der Welt skaliert sie — die Sabotage (die Zeile vor w26) feuert beim Namen
         const zahlen = umgebungsZahlen();
         const [uEcht, uSab] = [await page.evaluate(umgebungProbe, zahlen, false), await page.evaluate(umgebungProbe, zahlen, true)];
-        const uRot = uEcht.filter(([, ist]) => ist !== 1), uStumm = !zahlen.length || uSab.every(([v, ist]) => ist !== v);
+        const falsch = ([v, cc, env, si]) => [env !== 1 && "umgebung: Gesetzbuch " + v + " → Welt " + env, (si == null || Math.abs(si - (1 - cc)) > 1e-4) && "schichten: Klarlack " + cc + " → Basis " + si + " (Soll " + +(1 - cc).toFixed(4) + ")"].filter(Boolean);
+        const uRot = uEcht.flatMap(falsch), sabRot = uSab.flatMap(falsch);
+        // stumm: die Sabotage nennt nicht JEDEN Täter (Umgebung je Zahl ≠ 1, die Basis je Klarlack)
+        const uStumm = !zahlen.length || sabRot.filter((x) => x.startsWith("umgebung")).length < zahlen.length || sabRot.filter((x) => x.startsWith("schichten")).length < uSab.length;
         console.log("UMGEBUNG " + JSON.stringify({ zahlen, welt: uEcht, sabotage: uSab }));
-        console.log(uRot.length ? "❌ umgebung: der Welt-Stoff skaliert die EINE Umgebung — " + uRot.map(([v, ist]) => "Gesetzbuch " + v + " → Welt " + ist).join(", ") : uStumm ? "❌ umgebung: die Sabotage feuert nicht (die Probe misst nichts)" : "✅ umgebung: " + zahlen.length + " Zahlen der Gesetzbücher, jeder Welt-Stoff trägt die EINE Umgebung (1), die Sabotage ROT");
+        console.log(uRot.length ? "❌ " + [...new Set(uRot)].join(" · ") : uStumm ? "❌ umgebung/schichten: die Sabotage feuert nicht beim Namen (" + sabRot.length + " Täter)" : "✅ umgebung + schichten: " + zahlen.length + " Zahlen der Gesetzbücher, jeder Welt-Stoff trägt die EINE Umgebung (1), die Basis unter dem Klarlack 1 − Klarlack; die Sabotage nennt " + sabRot.length + " Täter");
         const echt = await page.evaluate(tafelProbe, STOFFE, WIRKUNGEN, false);
         const sab = await page.evaluate(tafelProbe, STOFFE, WIRKUNGEN, true);
         const je = {};

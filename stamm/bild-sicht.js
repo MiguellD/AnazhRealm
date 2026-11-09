@@ -648,14 +648,16 @@ class AnazhRealm_bild_sicht {
     // zur Rauheit `glanzRauheit[0]`, 0 ab `glanzRauheit[1]`, der Klarlack (Lack, Klingen-Stahl) mit seiner eigenen. Nur ein
     // Stoff, der Glanz trägt, spiegelt: r184 setzt `specularColor` in jedem Standard- und Physical-Stoff (0,04 bzw. aus ior);
     // ein Basic- oder Lambert-Stoff (Wasser, Himmel, Funken, Schatten-Quads) setzt ihn nie, seine Variable bleibt WGSL-null.
-    // Das Wasser erkennt der Pass an seiner Zelle (`_spiegelPass`).
+    // DER KLARLACK GLÄNZT SELBST (w26-lack-glas): unter vollem Klarlack trägt die Basis keine Luft-Grenzfläche (`specularIntensity`
+    // 1 − Klarlack, `_foundryTreeMaterial`), ihr `specularColor` ist 0 — der Lack spiegelt durch seine Schicht; auch die
+    // Klarlack-Variable bleibt in jedem Stoff ohne Schicht WGSL-null. Das Wasser erkennt der Pass an seiner Zelle (`_spiegelPass`).
     _glanzKnoten() {
         const T = THREE.TSL;
         const [a, b] = AnazhRealm.SPIEGEL.glanzRauheit;
         const glatt = (r) => T.float(1).sub(T.smoothstep(a, b, r));
-        const g = T.max(glatt(T.roughness), T.clearcoat.mul(glatt(T.clearcoatRoughness)));
         const traegt = T.max(T.specularColor.r, T.max(T.specularColor.g, T.specularColor.b)).greaterThan(1e-3);
-        return T.vec4(T.select(traegt, g, T.float(0)), 0, 0, 1);
+        const g = T.max(T.select(traegt, glatt(T.roughness), T.float(0)), T.clearcoat.mul(glatt(T.clearcoatRoughness)));
+        return T.vec4(g, 0, 0, 1);
     }
 
     // DIE EINE UMGEBUNG (material.K4, `scene.environmentNode`): was jeder Standard- und Physical-Stoff spiegelt — Glas, Lack,
