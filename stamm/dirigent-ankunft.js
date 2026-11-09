@@ -1486,14 +1486,23 @@ class AnazhRealm_dirigent_ankunft {
         return T.mix(T.float(1), licht, AnazhRealm._imEinheitsQuadrat(q).mul(K.U.aktiv));
     }
 
-    // DER BODEN DES GESETZES für einen Empfänger, der das Gesetz nur NÄHERT (der Fern-Ring): `p` mit der Höhe des Gitters der
-    // Karte (ihr Kanal b, je Texel der Boden aus `hoehen`, bilinear wie die Schatten-Höhe daneben), wo die Masche des Empfängers
-    // (`masche`, m) gröber steht als das Gitter —
+    // DER BODEN DES GESETZES für einen Empfänger, der das Gesetz nur NÄHERT (der Fern-Ring): der Punkt, an dem der Blick des
+    // Auges durch `p` das Gesetz TRIFFT (der Boden des Gitters, Kanal b der Karte, bilinear wie die Schatten-Höhe daneben), wo
+    // die Masche des Empfängers (`masche`, m) gröber steht als das Gitter —
     // über eine Gitter-Zelle weich (`zelleM` … 2 · `zelleM`, am Ring 0,23 … 0,54 km vom Anker); näher und
-    // ohne Karte (`aktiv` 0) seine eigene Höhe. Der Leser setzt ihn als `receivedShadowPositionNode`: die Kaskaden und die
-    // Sonnen-Sicht (`_sonnenSicht`, `shadowPositionWorld`) lesen DIESELBE Position. Bis ferne.K4 prüfte der Ring die Schatten-
-    // Höhe des Gesetzes gegen seine Masche, die zwischen den Ecken bei 4–7 km ±50 m neben dem Gesetz steht: von 42 Hängen der
-    // Station (Sonne 5°, Dorf, swiftshader) lagen 11 im Schatten hell und 5 im Licht dunkel.
+    // ohne Karte (`aktiv` 0) seine eigene Lage. Der Leser setzt ihn als `receivedShadowPositionNode` und als Ort der Normale
+    // (`_fernNeigungNormale`): die Kaskaden, die Sonnen-Sicht (`_sonnenSicht`, `shadowPositionWorld`), der Grat-Himmel und die
+    // Licht-Normale lesen DIESELBE Position. Bis ferne.K4 prüfte der Ring die Schatten-Höhe des Gesetzes gegen seine Masche,
+    // die zwischen den Ecken bei 4–7 km ±50 m neben dem Gesetz steht: von 42 Hängen der Station (Sonne 5°, Dorf, swiftshader)
+    // lagen 11 im Schatten hell und 5 im Licht dunkel.
+    // DER TREFFER (w25-ferne-licht-4): bis hier las der Ring das Gesetz lotrecht unter seiner Sehne — der Blick aber trifft die
+    // Sehne, wo das Gesetz nicht ist: an den 21 Schattenorten der Station (Dorf, aus 1 500 m) stand die Masche −34 … +44 m neben
+    // dem Gesetz, das Pixel des Orts zeigte das Licht des Gesetzes bis 365 m daneben, an drei Orten einen Hang, der von der Sonne
+    // weg zeigt. Der Strahl vom Auge durch `p` sucht den Schnitt mit dem Boden des Gitters über eine Masche — vor der Sehne,
+    // wo sie unter dem Gesetz steht, sonst hinter ihr — in `treffer.schritte` gleichen Schritten, dann `treffer.halbieren` Mal
+    // halbiert (Relief Mapping, Policarpo & Oliveira 2005); findet er keinen, bleibt der Ort lotrecht unter der Sehne. Gemessen
+    // (swiftshader voll, Dorf, Sonne 5°, ohne Luft, 21/64 Orte, 640×360): am Pixel des Orts 0,4539 → 0,3537, der Schattenhang trägt
+    // kein Sonnenlicht mehr aus dem Nachbarn der Sehne.
     // DIE HIMMELS-SICHT DES GRATS (ferne.K4; Horizon-Based Ambient Occlusion aus der EINEN Karte): der Grat, der dem Empfänger in `p`
     // die Sonne nimmt, verdeckt ihm auch den Himmel unter seinem Horizontwinkel α zur Sonne — dort steht die Aureole, der hellste
     // Himmel des Abends. α aus der Karte: die größere Untergrenze aus dem Punkt, der den Schatten wirft — tan α ≥ (H − y) / s* + tan h☉
@@ -1558,12 +1567,37 @@ class AnazhRealm_dirigent_ankunft {
         const T = THREE.TSL;
         const K = this._horizontKarte();
         const H = AnazhRealm.HORIZONT_KARTE;
-        const q = K.zuUv(p.xz);
-        const boden = T.texture(K.rt.texture, q).level(0).b.add(K.U.bezug);
-        const w = T.smoothstep(H.zelleM, 2 * H.zelleM, masche)
-            .mul(AnazhRealm._imEinheitsQuadrat(q))
-            .mul(K.U.aktiv);
-        return T.vec3(p.x, T.mix(p.y, boden, w), p.z);
+        const [n, m] = [H.treffer.schritte, H.treffer.halbieren];
+        return T.Fn(() => {
+            const boden = (xz) => T.texture(K.rt.texture, K.zuUv(xz)).level(0).b.add(K.U.bezug);
+            const w = T.smoothstep(H.zelleM, 2 * H.zelleM, masche)
+                .mul(AnazhRealm._imEinheitsQuadrat(K.zuUv(p.xz)))
+                .mul(K.U.aktiv)
+                .toVar();
+            const d = T.normalize(p.sub(T.cameraPosition)).toVar();
+            // die Höhe des Strahls über dem Gesetz im Abstand t (m längs des Blicks) von der Sehne
+            const ueber = (t) => p.y.add(d.y.mul(t)).sub(boden(p.xz.add(d.xz.mul(t))));
+            const L = T.float(masche).toVar();
+            const a = T.select(ueber(T.float(0)).lessThan(0), L.negate(), T.float(0)).toVar();
+            const [lo, hi, fund] = [a.toVar(), a.add(L).toVar(), T.float(0).toVar()];
+            T.Loop(n, ({ i }) => {
+                const t = a.add(L.mul(T.float(i).add(1).div(n))).toVar();
+                const unter = ueber(t).lessThanEqual(0).toVar();
+                const offen = fund.equal(0);
+                hi.assign(T.select(offen.and(unter), t, hi));
+                lo.assign(T.select(offen.and(unter.not()), t, lo));
+                fund.assign(T.select(unter, T.float(1), fund));
+            });
+            T.Loop(m, () => {
+                const mitte = lo.add(hi).mul(0.5).toVar();
+                const oben = ueber(mitte).greaterThan(0).toVar();
+                lo.assign(T.select(oben, mitte, lo));
+                hi.assign(T.select(oben, hi, mitte));
+            });
+            const t = T.select(fund.greaterThan(0), lo.add(hi).mul(0.5), T.float(0)).mul(w);
+            const xz = p.xz.add(d.xz.mul(t)).toVar();
+            return T.vec3(xz.x, T.mix(p.y, boden(xz), w), xz.y);
+        })();
     }
 
     // DIE SICHT DES GELÄNDES AUF DER CPU am Punkt (x, y, z) zum Licht `L` (normiert): der Lichtmesser des Orts
@@ -1834,6 +1868,7 @@ AnazhRealm.HORIZONT_KARTE = Object.freeze({
     leerM: 10000,
     luftProben: 8,
     gratRad: (30 * Math.PI) / 180,
+    treffer: Object.freeze({ schritte: 8, halbieren: 4 }),
 });
 
 // 1 im Einheits-Quadrat [0, 1]², sonst 0 (ein TSL-vec2): die Karte gilt nur über ihrem Gitter.
