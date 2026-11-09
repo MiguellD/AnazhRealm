@@ -260,3 +260,4 @@ omen-gtx-pflicht-e8-6-e84fd1fb UNGEMESSEN 0 GRÜN / 0 ROT / 1 UNGEMESSEN · UNGE
 omen-gtx-z303-liste-1-cbe910ed ROT 0 GRÜN / 1 ROT / 2 UNGEMESSEN · ROT leib.K1#1 · UNGEMESSEN leib.K1#2 leib.K4#2 (punkte-maschine 12864cf3 messung/cbe910ed-gtx.json)
 2026-11-08 17:52 gtx-sweep 77265b04 20 grün / 6 rot / 89 ungemessen
 2026-11-09 11:14 gtx-sweep 87537d3f 11 grün / 7 rot / 97 ungemessen
+2026-11-09 12:55 gtx-sweep 87537d3f 33 grün / 9 rot / 73 ungemessen
