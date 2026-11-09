@@ -1,5 +1,32 @@
 # Post an w25-ferne-licht
 
+## 09.11. 03:16 — w25-ferne-licht-4: ABGABE 4ecfb1a33fc1d71d044be6e0cab8236529bd077b
+
+ABGABE 4ecfb1a33fc1d71d044be6e0cab8236529bd077b — Abgabe w25-ferne-licht-4 (vom Kopf 017e9839, origin/main V18.546.232 gemischt; Proben `[gpu-probe: bild:gipfel-blick@0.735, bild:gipfel-blick@0.5]` am Kopf). Dazu der Zweig der Linse `w25-ferne-licht-4-pm` (4525ea7, auf w25-ferne-licht-pm 4b84b72).
+
+Zuerst deine Frage von 02:50 — was hebt K4 auf der Radeon? Nicht der Renderer: die Station von punkte-maschine misst DURCH DIE LUFT und im 3×3-Feld. Dieselbe Station am Kopf 017e9839 (≙ main f52b3a03 für K4) auf swiftshader voll: **0,6161** (Ls 0,0725 / Ll 0,1177) — die Radeon 0,6243. Die Renderer liegen 0,008 auseinander. Meine Zahlen 0,4458 → 0,4385 kamen von der Station ohne Luft (w25-ferne-licht-pm, 4b84b72) — sie ist bis heute nicht in punkte-maschine. Die Atmosphäre ist der Hebel der Karte: ohne den Schleier dieselbe Welt 0,4539 (am Pixel) — die In-Streuung liegt gleich auf beiden Hängen und trägt je N·L das Verhältnis der N·L der Orte (FUND 21:25). Schatten-Kaskade und Tonkurve sind es nicht (die Kaskaden enden bei 270 m, die Station rechnet die Neutral-Kurve zurück).
+
+Geschnitten:
+- stamm/dirigent-ankunft.js:1566 `_horizontBoden` — DER TREFFER LIEST DAS GESETZ: der Strahl vom Auge durch das Fragment sucht den Schnitt mit dem Boden des 32-m-Gitters (Kanal b der Karte) über eine Masche — vor der Sehne, wo sie unter dem Gesetz steht, sonst hinter ihr —, 8 gleiche Schritte, 4 Halbierungen (Relief Mapping, Policarpo & Oliveira 2005); findet er keinen, bleibt der Ort lotrecht. stamm/gelaende-fern.js:276 — Schatten (`receivedShadowPositionNode`), Grat-Himmel und Licht-Normale (`_fernNeigungNormale`, :1113, `fernOrt` über stamm/stoff-material.js) lesen DIESEN Ort, nie die Sehne. Kein neuer Sampler (16/16), keine Konstante außer `HORIZONT_KARTE.treffer`.
+- Zweig w25-ferne-licht-4-pm, g3.js ferne.K4 — die Station zählt das Pixel des Orts, nie sein 3×3-Feld (`feld` 1): bei 640×360 deckt das Feld aus 1 500 m in 5,5 km ~40 × 160 m Hang, der Schattenstreifen hinter dem Grat ist schmaler. Mutante „im 3×3-Feld um den Ort gemessen" ROT beim Namen, `punkte.cjs selbsttest --ohne 3c` GRÜN 162/162.
+
+Gemessen (swiftshader voll, Dorf, Sonne 5°, ohne Luft, 21/64 Orte, 640×360):
+- Station am Pixel (4-pm): Kopf 017e9839 0,4539 → Kopf 4ecfb1a3 **0,3537** (Ls 0,0254 → 0,0217 · Ll 0,0561 → 0,0612).
+- Dieselbe Welt im alten 3×3-Feld: 0,4385 → 0,4433 — das Feld trägt den besonnten Nachbarn in den Streifen (dieselbe Welt mit Treffer: im Feld 0,4416, am Pixel 0,3537).
+- Die Zuordnung: das Pixel allein ohne Treffer 0,4539 (schlechter als das Feld), der Treffer allein im Feld 0,4433 — erst beide zusammen 0,3537. Auf der großen Leinwand (1920×1080) trägt der Treffer schon im 3×3-Feld 0,354 (ohne Treffer 0,4215).
+- Kosten: 14 Abtastungen der Karte je Fragment des Rings, kein Sampler, keine Pipeline mehr; auf der GPU ungemessen (die Proben am Kopf).
+
+K4 auf echter GPU: die Linse von K4 IST die Station der NEUN-Seite. Ich habe sie als `werkbank licht --grat` (Familie der Licht-Linsen, `gate:ferne-grat:echt`, Selbsttest, auf swiftshader GRÜN 0,3576 in 3 min 38 s samt Boot) gebaut und wieder herausgenommen: sie wäre ihr Zwilling und kostet scripts/ +3 810 Atome (DECKE und Wachstums-Wand ROT, erlaubt 266). Der Weg zur GPU ist darum: w25-ferne-licht-4-pm in punkte-maschine — dann misst die Radeon K4 ohne Schleier am Pixel. Bis dahin trägt das Bild `bild:gipfel-blick@0.735` (der Blick über die Stadt zum Horizont bei Sonne ~5°) die Hänge auf der GTX.
+
+Wände am Kopf GRÜN: check · lint · format:check · playtest:fast (21 ✅ · 0 ❌) · gate:welt-boot · gate:schatten-terminator · gate:post-kette (kein [ERROR] STOFF außer den Mutanten der Selbsttests) · gate:ego-schatten · gate:fern-ring · gate:betriebsgesetz.
+
+Ehrlich offen:
+- ferne.K4#1 auf der Radeon bleibt ROT, bis die Station ihre Heilung trägt — FUND Zweig w25-ferne-licht-4-pm (4525ea7) · Wurzel: punkte-maschine misst durch die Luft (0,6161 swiftshader / 0,6243 Radeon) und im 3×3-Feld · ferne.K4#1 · S (ein Merge).
+- ferne.K1#2 ROT: Farbton 8 km 1,6–25° (≤ 10°), fernes Weiß R/B 6,25 (≥ 1,3) — in dieser Welle nicht angefasst · L.
+- FUND stamm/gelaende-fern.js:2095 `FERN_NEIGUNG` (514² à 31,25 m) und stamm/dirigent-ankunft.js:1857 `HORIZONT_KARTE` (768² à 32 m): zwei Gitter desselben Gesetzes im Feld-Faden, fast gleich fein — EIN Gitter trüge beide · M.
+
+Ich warte im Wartezimmer.
+
 ## 09.11. 02:08 — w25-ferne-licht-3: ABGABE 017e9839ce545150497b064bb36d0b4023a63a64
 
 ABGABE 017e9839ce545150497b064bb36d0b4023a63a64 — Abgabe w25-ferne-licht-3 (vom Kopf bcf8f14a, origin/main V18.546.230 gemischt; Probe `[gpu-probe: bild:gipfel-blick@0.5]` am Kopf).
