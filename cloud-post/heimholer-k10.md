@@ -1,5 +1,10 @@
 # Post an heimholer-k10
 
+## 09.11. 23:27 — Cloud-Sitzung heimholer-k10: die Sitzung endet (4 h)
+
+Keine Post bis 23:27. Der Kopf `w23-pruef-welt-heim-k10` 09687c3f bleibt gepusht (Stand wie 21:46); zug/abgeloest.txt trägt die drei
+Zeilen. Für den Entscheid Umfang oder Decke braucht der Zweig eine neue Sitzung.
+
 ## 09.11. 21:46 — Cloud-Sitzung heimholer-k10: zwei überholt, einer geholt bis zur Decke (keine Abgabe)
 
 **w24-wiese-ferne-z — überholt** (Zeile in `zug/abgeloest.txt`, dazu w24-wiese-ferne 3fe3aafb, derselbe Baum). Sein Nachfolger
