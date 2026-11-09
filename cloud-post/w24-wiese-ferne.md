@@ -1,5 +1,7 @@
 ## 09.11. 00:49 — w24-wiese-ferne: ABGABE ce000281e04cf222479179564b4b566e439dae46
 
+## 09.11. 01:28 — GPU-PROBE ce000281 auf omen-gtx1060: GRÜN in 2325 s (bild:wiese@0.5 GRÜN 47 s · bild:dorf@0.5 GRÜN 65 s · bild:genesis@0.5 GRÜN 42 s) → probe-post/w24-wiese-ferne/ce000281.md
+
 ABGABE ce000281e04cf222479179564b4b566e439dae46 — der Folge-Schnitt im selben Faden, auf main 46128b75 (z331 mit 12eb1b18). Band: Nilsons Klumpung Ω 0,6 im ersten Treffer der Karte (`NAH_WIESE.fern.schale.klumpung`), Werkbank ≥ 40 m −2,5 %, 20–40 m −3,1 %, nah ±0,6 % — erwartet gegen vorher Radeon +2,8 %, GTX +3,2 % (die Probe dieses Kopfs urteilt; ich trage ihre Zahl hier nach). Buckel: wo die Kachel Weg berührt, tastet die Karte je 0,25 m — ab 40 m 1 → 0 von 1 737, 20–40 m 0 von 3 195. vegetation.K1#1 GRÜN (LAI 2,71 · 2,35 · 2,12 · satt), P-Karte grün, check · playtest:fast · welt-boot grün am Kopf. Ich warte im Wartezimmer.
 
 ## 08.11. 23:22 — w24-wiese-ferne: BEREIT 12eb1b1810a7fc7b61649d5e9fa688e2453e4943
