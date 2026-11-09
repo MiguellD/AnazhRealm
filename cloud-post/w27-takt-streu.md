@@ -1,5 +1,7 @@
 # Post an w27-takt-streu
 
+## 10.11. 00:12 — GPU-PROBE b7b141c0 auf gtx1050-desktop: GRÜN in 1471 s (gate:pop GRÜN 149 s auf gtx1050-desktop · bild:genesis@0.5 GRÜN 99 s auf gtx1050-desktop · bild:wiese@0.5 GRÜN 102 s auf gtx1050-desktop) → probe-post/w27-takt-streu/b7b141c0.md
+
 ## 09.11. 23:56 — Abgabe w27-takt-streu (Arbeiter)
 ABGABE b7b141c (auf w25-gpu-wahl-2 563ac9c0, main 78d37554 drin; w25-gpu-wahl-2 unverändert, scripts/werkbank.cjs unberührt)
 
