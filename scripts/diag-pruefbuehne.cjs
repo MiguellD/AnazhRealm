@@ -858,7 +858,7 @@ const S0_STOFF = (() => {
 // Boden derselben Sitzung, (b) sein Weg ist synchron.
 const S0_MS = { maxMs: 250, relativ: 1.1, ruhe: 1.3, n: 9, main: { "amd/rdna-3": 721, "nvidia/pascal": 1132 } };
 function s0BodenUrteil(name, p, bezug) {
-    const [ms, mitte] = [Math.min(...p.ms), rang([...p.ms].sort((x, y) => x - y))];
+    const [ms, mitte] = [Math.min(...p.ms), rang([...p.ms].sort(aufsteigend))];
     const [decke, last] = [Math.max(S0_MS.maxMs, S0_MS.relativ * bezug || 0), mitte > S0_MS.ruhe * ms];
     return [
         p.weg !== "asynchron" && `${name}: die Pipeline entstand ${p.weg}, nie asynchron wie jede der Erst-Zeichnung (\`_renderObjectDirect\`)`,

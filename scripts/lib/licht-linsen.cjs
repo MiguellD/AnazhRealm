@@ -980,12 +980,16 @@ function tagKurveUrteil(welt) {
             continue;
         }
         const e = (x) => ev(x.Y, mittag.Y);
-        const ref = (x) => ev(x.X, mittag.X) - stufen(x.sonne) + stufen(mittag.sonne);
+        // DER SPRUNG DER KAMERA vor der Tonkurve (w26-ferne-ton-3): X ist die Belichtung × die Szene (die Ausgabe durch die Umkehr
+        // `vor`), Y die Ausgabe — im Fuß der Kurve (unter 0,04 linear quadratisch) verdoppelt Y jede Stufe: die Wiese aus dem
+        // Spektrum in der Dämmerung (Radeon 7046ca0f, Uhr 0,252–0,26) sprang in Y 0,10–0,16 EV bei X ≤ 0,09 (swiftshader dY ≈ 2 dX)
+        const k = (x) => ev(x.X, mittag.X);
+        const ref = (x) => k(x) - stufen(x.sonne) + stufen(mittag.sonne);
         kurven[ort] = `Karte ${m.karte} · ` + alle.map((x) => `${x.uhr}:${r2(e(x))}/${r2(ref(x))}`).join(" ");
         if (!(m.karte >= S.karte[0] && m.karte <= S.karte[1])) rot("ANKER", `die 18-%-Karte mittags Luma ${m.karte}`);
         alle.forEach((x, i) => {
             const a = alle[i - 1];
-            if (a && x.uhr - a.uhr < 0.0105 && Math.abs(e(x) - e(a)) > S.sprung) rot("SPRUNG", `Uhr ${a.uhr} → ${x.uhr} ${r2(e(x) - e(a))} EV`);
+            if (a && x.uhr - a.uhr < 0.0105 && Math.abs(k(x) - k(a)) > S.sprung) rot("SPRUNG", `Uhr ${a.uhr} → ${x.uhr} ${r2(k(x) - k(a))} EV vor der Tonkurve`);
             if (e(x) > S.buckel) rot("BUCKEL", `Uhr ${x.uhr} (Sonne ${x.sonne}°) ${r2(e(x))} EV über dem Mittag`);
             if (Math.abs(ref(x)) > S.ref) rot("REF", `Uhr ${x.uhr} (Sonne ${x.sonne}°) ${r2(ref(x))} Stufen neben der REF`);
             if (Math.abs(ev(x.sofort, x.frisch)) > S.async) rot("ASYNC", `Uhr ${x.uhr} ${r2(ev(x.sofort, x.frisch))} EV`);
@@ -1015,12 +1019,14 @@ function tagKurveSelbsttest() {
         const alle = q.zeilen.map((r) => Object.fromEntries(T.spalten.map((s, i) => [s, r[i]])));
         const z = (u) => alle.find((x) => x.uhr === u);
         if (fall === "BUCKEL") z(0.33).Y = z(0.5).Y * 1.2;
-        if (fall === "SPRUNG") z(0.276).Y *= 1.2;
+        if (fall === "SPRUNG") z(0.276).X *= 1.2;
+        // der Fuß der Tonkurve: die Ausgabe springt 0,2 EV, die Belichtung nicht — keine Stufe der Kamera
+        if (fall === "FUSS") z(0.276).Y *= 1.15;
         if (fall === "GOLD") z(0.276).Y = z(0.278).Y = z(0.5).Y;
         if (fall === "REF") z(0.33).X *= 1.5;
         if (fall === "NACHT") z(0).hell = 10;
         if (fall === "ASYNC") z(0.722).sofort *= 2;
-        const m = { zeilen: alle, schreiber: { _dayNightApplyBelichtung: 1 }, karte: fall === "ANKER" ? 170 : q.karte, bahn: fall !== "WAND" };
+        const m = { zeilen: alle, schreiber: { _dayNightApplyBelichtung: 1 }, karte: fall === "ANKER" ? 170 : q.karte, bahn: fall !== "WAND" && fall !== "FUSS" };
         if (fall === "SCHREIBER") m.schreiber._tickPortalMembranes = 1;
         if (fall === "BLIND") m.zeilen = [];
         return tagKurveUrteil({ wiese: m }).befunde.join();
@@ -1033,6 +1039,7 @@ function tagKurveSelbsttest() {
     };
     return [
         [kurve(T.kopf, "WAND"), ""],
+        [kurve(T.kopf, "FUSS"), ""],
         [kurve(T.kopf).replace(/ wiese:[^,]*/g, ""), "REF,REF,REF,REF,WARM,WARM"],
         [kurve(T.kopf, "REF"), /REF wiese: Uhr 0\.33 /],
         ...["ANKER", "SPRUNG", "BUCKEL", "GOLD", "NACHT", "ASYNC", "SCHREIBER", "BLIND"].map((f) => [kurve(T.kopf, f), new RegExp(`(^|,)${f} wiese`)]),
@@ -2520,7 +2527,7 @@ function luftTiefeSelbsttest(R) {
         // der Median der Töne je Pixel (die Mutante der alten Linse, `tonDesBands` je Paar) liegt 13° darüber: er verzerrte nach OBEN
         ((s = 11, L = [1524, 1532, 1545], S = [1500, 1530, 1560]) => {
             const px = Array.from({ length: 200 }, () => [L, S].map((c) => c.map((v) => Math.round(v / 10 + (s = (s * 1664525 + 1013904223) >>> 0) / 2 ** 31 - 1))));
-            const [band, je] = [tonDesBands(px), px.map((p) => tonDesBands([p])).sort((a, b) => a - b)[100]];
+            const [band, je] = [tonDesBands(px), px.map((p) => tonDesBands([p])).sort(aufsteigend)[100]];
             return (Math.abs(band - tonDesBands([[L, S]])) <= 2 && je > 17) || `Ton des Bands ${band}° (Wahrheit 7,14°), je Pixel ${je}°`;
         })(),
         // DER TON DER FERNE gegen die Luft der Entfernung (der Horizont der GTX 87537d3f, 8 km nach Koschmieder): ein schwarzer Boden
