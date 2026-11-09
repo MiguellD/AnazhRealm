@@ -1090,7 +1090,11 @@ async function starte() {
                         // die Schleife schläft ohne Takt: ihr Deckel zählt JEDEN Gang (`false`, 120 × 250 ms) — mit dem Offenen der Welt
                         // zählte er nur stille Gänge und warf erst nach 3 600 (900 s): an z331 (Anker ±1 mm) schwieg die Stadt bis
                         // zum Deckel jeder GPU-Probe (480 s; w25-stadt-takt-3 b464baaf · db8635ef, gpu-wahl 3fcecab7)
-                        for (const weiter = __deckel(`die Gründung „${g.wort}"`, 120, false); !steht() && weiter(); ) await sleep(250);
+                        try {
+                            for (const weiter = __deckel(`die Gründung „${g.wort}"`, 120, false); !steht() && weiter(); ) await sleep(250);
+                        } catch (f) {
+                            throw new Error(`${f.message} · Anker ${g.anker}, die Zellen ${JSON.stringify(zellen().map((c) => [c.seed, c.x, c.z]))}`);
+                        }
                     }
                     if (!steht())
                         throw new Error(`Messort ${o.ort}: „${g.wort}" steht nicht am Anker ${g.anker} (${JSON.stringify(zellen())})`);
