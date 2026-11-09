@@ -1,7 +1,7 @@
 {
  "sha": "78d37554b2d5f98d96ef454cfa9f51752c0e45a0",
  "geraet": "gtx",
- "zeit": "2026-11-09T21:39:04.063Z",
+ "zeit": "2026-11-09T21:44:24.903Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {},
  "ungemessen": {
@@ -863,22 +863,71 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "gelaende.K2#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: (b)(d) 16.3 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"flu)",
+   "exit": 1,
+   "minuten": 1.5,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: (b)(d) 16.3 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"flu)",
+   "s": 90.2,
+   "fremd": {
+    "s": 92.2,
+    "takte": 42,
+    "fremdS": 174.09,
+    "kerne": 1.889,
+    "fensterKerne": 2.253,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      101.91
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      20.39
+     ],
+     [
+      "OmenCommandCenterBackground.exe",
+      14.38
+     ]
+    ],
+    "dienerS": 32.34,
+    "diener": [
+     [
+      "dwm.exe",
+      16.72
+     ],
+     [
+      "System",
+      10.28
+     ]
+    ],
+    "eigenS": 262.84,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-09T21:44:24.903Z",
+   "abdruck": "0f54a91aa37d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-09T21:38:29.611Z",
+  "start": "2026-11-09T21:43:46.813Z",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 8.9,
+  "bootS": 7.4,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": null,
-    "vor": "bauen.K1#2",
-    "s": 24.2,
-    "takte": 786,
+    "ort": "wiese",
+    "vor": "gelaende.K2#2",
+    "s": 29.2,
+    "takte": 562,
     "chunks": 81,
     "nach": null
    }
@@ -887,20 +936,27 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 2496,
-   "frameP95": 50.01,
-   "taktP95": 39.5,
-   "vramMax": 140.6,
+   "bilder": 1396,
+   "frameP95": 83.3,
+   "taktP95": 77.34,
+   "vramMax": 140.5,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
-   "ortImDeckel": [],
-   "zapfen": 80,
+   "ortImDeckel": [
+    {
+     "probe": "gelaende.K2#2",
+     "m": 1718,
+     "ringVor": 4,
+     "ringMin": -1
+    }
+   ],
+   "zapfen": 122,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 87.4,
-  "minuten": 1.53
+  "fahrtS": 128.7,
+  "minuten": 2.21
  }
 }
