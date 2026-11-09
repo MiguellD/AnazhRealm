@@ -1073,8 +1073,8 @@ async function starte() {
                 // kein Haus auf ihm, eine Stadt erwacht erst, wenn er naht —, dann steht er am Ort: am Boden oder auf dem Dach (`dach`, m)
                 const a = o?.anlauf || [x, z];
                 r.state.playerMesh.position.set(a[0], r._voxelSurfaceY(a[0], a[1]) + 1.8, a[1]);
-                // DIE GRÜNDUNG (haushalt.json `gruendung`, die Stadt): der Spieler sagt sein Wort am Anlauf mit dem Blick des Orts, wie im
-                // Spiel (Chat) — die Siedlung steht danach am Anker der Spec (±1 mm, sonst laut: die Ort-Wahl wanderte mit der Welt; der
+                // DIE GRÜNDUNG (haushalt.json `gruendung`, die Stadt): Same und Größe aus dem Wort, der Ort am Anker der Spec (bis w25-stadt-takt-3 sprach der Spieler sein Wort am Anlauf mit dem Blick des Orts, wie im
+                // Spiel (Chat)) — die Siedlung steht danach am Anker der Spec (±1 mm, sonst laut: die Ort-Wahl wanderte mit der Welt; der
                 // Richter des Verkehrs stellt die Stadt genau dorthin — bis w12-verkehr ±1 m, und 0,28 m daneben stand eine andere
                 // Stadt: 295 statt 300 Häuser, vier statt einer Wende, gate:fahr-leben --verkehr GRÜN, die Radeon 7 von 20); eine Welt,
                 // die sie trägt, gründet nicht neu. Die Bahn des Orts (`bahn`, die Hauptgasse) liegt Meter für Meter auf ihrem Weg (`_aufWeg`).
@@ -1086,7 +1086,13 @@ async function starte() {
                     const steht = () =>
                         zellen().find((c) => String(c.seed) === same && Math.hypot(c.x - g.anker[0], c.z - g.anker[1]) <= 1e-3);
                     if (!steht()) {
-                        r._chatDispatchLegacyCommand(g.wort, [], () => {});
+                        // DIE STADT AM ANKER DER SPEC, nie am Fenster (w25-stadt-takt-3): das Wort ohne Ort misst den Anker vor dem
+                        // Spieler durch den Bildwinkel der Welt-Kamera (`_siedlungsAnker`, fov × Seitenverhältnis) — das Fenster des
+                        // Windows-Läufers rückte die Stadt um 5,3 mm (GTX 048c472e: 662,7171/422,3055 statt 662,7200/422,3099), und
+                        // jede Probe am Ort stand still. Gegründet wird mit dem Ort des Ankers, wie der Richter des Verkehrs
+                        // (fahr-proben `verkehr`); ein Wunsch-Ort, der den Spieler nicht berührt, bleibt, wie er ist.
+                        const [, seed, nH] = g.wort.split(" ").map(Number);
+                        r.spawnSettlement({ verlangt: "human", seed, nH, position: { x: g.anker[0], y: 0, z: g.anker[1] } });
                         // die Schleife schläft ohne Takt: ihr Deckel zählt JEDEN Gang (`false`, 120 × 250 ms) — mit dem Offenen der Welt
                         // zählte er nur stille Gänge und warf erst nach 3 600 (900 s): an z331 (Anker ±1 mm) schwieg die Stadt bis
                         // zum Deckel jeder GPU-Probe (480 s; w25-stadt-takt-3 b464baaf · db8635ef, gpu-wahl 3fcecab7)
