@@ -2989,7 +2989,7 @@ const stationen = [
             schritte: [
                 { name: "fenster", args: ["fenster", "1920", "1080"], muss: true },
                 { name: "umstellen", args: ["umstellen", "--ort", "wiese"], muss: true },
-                { name: "kanten", probe: "@KOORD@/bericht/2910-lod-k5/kanten.js", blob: "0c5206dc15bc7800431b5aba56835874dc0f447e", muss: true, ms: 1800000 },
+                { name: "kanten", probe: "@KOORD@/bericht/2910-lod-k5/kanten.js", blob: "39b506a0eec9cacd1443ed85738db21b967610ef", muss: true, ms: 1800000 },
             ],
         }), },
         env: envDer,
