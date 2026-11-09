@@ -10,6 +10,7 @@
 const { spawnSync } = require("child_process");
 const fs = require("fs");
 const path = require("path");
+require(path.resolve("scripts/lib/welt-boot.cjs")); // setzt den Helfer `rang`, den die Hänger-Linse liest
 const HL = require(path.resolve("scripts/lib/haenger-linse.cjs"));
 
 const BILD = process.argv.includes("--bild");
