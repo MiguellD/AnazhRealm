@@ -1,7 +1,7 @@
 {
  "sha": "f52b3a03012ad62610c495c7d0ef1e443bf997c4",
  "geraet": "radeon",
- "zeit": "2026-11-09T01:44:21.658Z",
+ "zeit": "2026-11-09T03:03:08.101Z",
  "host": "MiguellD",
  "je": {
   "haar.K2#1": {
@@ -199,44 +199,184 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "lod.K5#1": {
+   "gruen": false,
+   "zahl": "Baum 5.16 px · Haus 1.37 px · Tor 1.04 px · Wagen — px (Soll ≤ 1 px am Wechsel-Abstand, 1920 × 1080) · vehicle L1: Exemplar 0 px, [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.45,
+   "grund": "ROT: Baum 5.16 px · Haus 1.37 px · Tor 1.04 px · Wagen — px (Soll ≤ 1 px am Wechsel-Abstand, 1920 × 1080) · vehicle L1: Exemplar 0 px, [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 26.9,
+   "fremd": {
+    "s": 30.8,
+    "takte": 11,
+    "fremdS": 68.89,
+    "kerne": 2.235,
+    "fensterKerne": 2.359,
+    "namen": [
+     [
+      "node scripts/diag-phyto-tree.cjs",
+      21.02
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      10.78
+     ],
+     [
+      "node scripts/diag-studio-uebergabe.cjs",
+      9.56
+     ]
+    ],
+    "dienerS": 19.23,
+    "diener": [
+     [
+      "System",
+      7.23
+     ],
+     [
+      "WmiPrvSE.exe",
+      7.11
+     ]
+    ],
+    "eigenS": 43.14,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-09T03:02:29.269Z",
+   "abdruck": "73222928922a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "mensch.K1#1": {
+   "gruen": false,
+   "zahl": "Probe-Fehler: Error: bewohner: das Start-Dorf: DIE WELT STEHT NICHT nach 651 Takten: Ruhe 0, zuletzt brach sie: Fege-Takt nahWiese wartet, nahStreu wartet (DER BAU STEHT NICHT: die Welt nach 651 Takten — die Welt hat nichts mehr offen)\n    at eval (eval at <anonymous> (:2:29), <anonymous>:2783:19)\n    at async eval (eval at <anonymous> (:2:29), <anonymous>:3086:9)\n    at async buehne (eval at <anonymous> (:2:29), <anonymous>:462:25)\n    at async kreaturProben (eval at <anonymous> (:2:29), <anonymous>:2809:5)\n    at async eval (eval at <anonymous> (:2:29), <anonymous>:398:13)",
+   "exit": 0,
+   "minuten": 0.97,
+   "grund": "ROT: Probe-Fehler: Error: bewohner: das Start-Dorf: DIE WELT STEHT NICHT nach 651 Takten: Ruhe 0, zuletzt brach sie: Fege-Takt nahWiese wartet, nahStreu wartet (DER BAU STEHT NICHT: die Welt nach 651 Takten — die Welt hat nichts mehr offen)\n    at eval (eval at <anonymous> (:2:29), <anonymous>:2783:19)\n    at async eval (eval at <anonymous> (:2:29), <anonymous>:3086:9)\n    at async buehne (eval at <anonymous> (:2:29), <anonymous>:462:25)\n    at async kreaturProben (eval at <anonymous> (:2:29), <anonymous>:2809:5)\n    at async eval (eval at <anonymous> (:2:29), <anonymous>:398:13)",
+   "gpu": "amd/rdna-3",
+   "s": 58.4,
+   "fremd": {
+    "s": 60.8,
+    "takte": 20,
+    "fremdS": 166.8,
+    "kerne": 2.745,
+    "fensterKerne": 3.548,
+    "namen": [
+     [
+      "node scripts/diag-altlasten.cjs --selftest",
+      58.31
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      29.31
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      23.23
+     ]
+    ],
+    "dienerS": 59.75,
+    "diener": [
+     [
+      "System",
+      25.77
+     ],
+     [
+      "WmiPrvSE.exe",
+      16.95
+     ]
+    ],
+    "eigenS": 255.5,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-09T03:03:08.101Z",
+   "abdruck": "ac10e7df1f5a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "mensch.K2#2": {
+   "gruen": false,
+   "zahl": "Probe-Fehler: Error: bewohner: das Start-Dorf: DIE WELT STEHT NICHT nach 651 Takten: Ruhe 0, zuletzt brach sie: Fege-Takt nahWiese wartet, nahStreu wartet (DER BAU STEHT NICHT: die Welt nach 651 Takten — die Welt hat nichts mehr offen)\n    at eval (eval at <anonymous> (:2:29), <anonymous>:2783:19)\n    at async eval (eval at <anonymous> (:2:29), <anonymous>:3086:9)\n    at async buehne (eval at <anonymous> (:2:29), <anonymous>:462:25)\n    at async kreaturProben (eval at <anonymous> (:2:29), <anonymous>:2809:5)\n    at async eval (eval at <anonymous> (:2:29), <anonymous>:398:13)",
+   "exit": 0,
+   "minuten": 0.97,
+   "grund": "ROT: Probe-Fehler: Error: bewohner: das Start-Dorf: DIE WELT STEHT NICHT nach 651 Takten: Ruhe 0, zuletzt brach sie: Fege-Takt nahWiese wartet, nahStreu wartet (DER BAU STEHT NICHT: die Welt nach 651 Takten — die Welt hat nichts mehr offen)\n    at eval (eval at <anonymous> (:2:29), <anonymous>:2783:19)\n    at async eval (eval at <anonymous> (:2:29), <anonymous>:3086:9)\n    at async buehne (eval at <anonymous> (:2:29), <anonymous>:462:25)\n    at async kreaturProben (eval at <anonymous> (:2:29), <anonymous>:2809:5)\n    at async eval (eval at <anonymous> (:2:29), <anonymous>:398:13)",
+   "gpu": "amd/rdna-3",
+   "s": 58.4,
+   "fremd": {
+    "s": 60.8,
+    "takte": 20,
+    "fremdS": 166.8,
+    "kerne": 2.745,
+    "fensterKerne": 3.548,
+    "namen": [
+     [
+      "node scripts/diag-altlasten.cjs --selftest",
+      58.31
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      29.31
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      23.23
+     ]
+    ],
+    "dienerS": 59.75,
+    "diener": [
+     [
+      "System",
+      25.77
+     ],
+     [
+      "WmiPrvSE.exe",
+      16.95
+     ]
+    ],
+    "eigenS": 255.5,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-09T03:03:08.101Z",
+   "abdruck": "dab117ec1548",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "mensch.K1#1",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-09T01:41:54.958Z",
+  "start": "2026-11-09T03:01:55.882Z",
   "port": 7804,
   "warten": 0.14,
-  "bootS": 5.8,
+  "bootS": 6.4,
   "grundstellungS": [],
-  "proben": 3,
+  "proben": 2,
   "freigaben": [],
   "orte": [
    {
     "ort": "wiese",
-    "vor": "haar.K2#1",
-    "s": 16.7,
-    "takte": 655,
+    "vor": "lod.K5#1",
+    "s": 15.7,
+    "takte": 663,
     "chunks": 81,
     "nach": null
    },
    {
     "ort": "genesis",
-    "vor": "ferne.K1#1",
-    "s": 10.9,
-    "takte": 629,
-    "chunks": 81,
-    "nach": null
-   },
-   {
-    "ort": "dorf",
-    "vor": "ferne.K4#1",
-    "s": 17.2,
-    "takte": 682,
+    "vor": "mensch.K1#1",
+    "s": 9.1,
+    "takte": 615,
     "chunks": 81,
     "nach": null
    }
   ],
   "wegeTueren": [],
-  "ciBlicke": 4,
+  "ciBlicke": 3,
   "strom": {
    "datei": "strom.ndjson",
    "bilder": 0,
@@ -247,19 +387,12 @@
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
-   "ortImDeckel": [
-    {
-     "probe": "ferne.K1#1",
-     "m": 3592,
-     "ringVor": 4,
-     "ringMin": 0
-    }
-   ],
-   "zapfen": 150,
+   "ortImDeckel": [],
+   "zapfen": 124,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 149.2,
-  "minuten": 2.7
+  "fahrtS": 123.8,
+  "minuten": 2.26
  }
 }
