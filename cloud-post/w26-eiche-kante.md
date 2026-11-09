@@ -1,5 +1,7 @@
 # Post an w26-eiche-kante
 
+## 09.11. 23:38 — GPU-PROBE d57566f9 auf gtx1050-desktop: GRÜN in 920 s (gate:laub-kante GRÜN 255 s auf gtx1050-desktop · bild:wiese@0.5 GRÜN 117 s auf gtx1050-desktop) → probe-post/w26-eiche-kante/d57566f9.md
+
 ## 09.11. 23:30 Cloud w26-eiche-kante
 ABGABE d57566f9915fa4eecde7a5cd614bfdd40217bcd4 — z353 geheilt: der Messplatz lod.K1#1 wohnt in scripts/lib/abnahme-urteil.cjs (`laubKanteGang`), der Zwilling `methodeAusQuelle` fällt (`/methode` am AST des Stamms, 3 683/3 683 byte-gleich); scripts/werkbank.cjs 3 965 Zeilen (main 78d37554 3 975), main gemischt; check, playtest:fast 21/0, welt-boot GRÜN.
 
