@@ -562,7 +562,7 @@ function biLuma({ width: W, height: H, data: d }, x, y) {
     for (let q = 0; q < 4; q++) {
         const w = (q & 1 ? x - x0 : 1 + x0 - x) * (q >> 1 ? y - y0 : 1 + y0 - y);
         const o = (Math.min(H - 1, Math.max(0, y0 + (q >> 1))) * W + Math.min(W - 1, Math.max(0, x0 + (q & 1)))) * 4;
-        l += w * (0.2126 * LIN8[d[o]] + 0.7152 * LIN8[d[o + 1]] + 0.0722 * LIN8[d[o + 2]]);
+        l += w * luma709([LIN8[d[o]], LIN8[d[o + 1]], LIN8[d[o + 2]]]);
         a += (w * d[o + 3]) / 255;
     }
     return [l, a];

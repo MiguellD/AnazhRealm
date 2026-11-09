@@ -1,4 +1,5 @@
 const { WELT_ORTE_INSTALL } = require("./welt-orte.cjs");
+const { luma709 } = require("./abnahme-urteil.cjs");
 // wasser-linse.cjs — DIE PROBEN DER WASSER-WAND (scripts/diag-wasser-leben.cjs, Welle L Q6 + Q7 bis F3): je Probe eine Seiten-
 // Funktion `window.__wasser*` (WASSER_INSTALL), die den Chokepoint selbst ruft (nie einen Stub); was sie misst und warum, steht
 // über ihr. Werkbank (echte GPU, sichtbar): `werkbank eval` mit WASSER_INSTALL.
@@ -637,7 +638,7 @@ async function wasserLicht(o = {}) {
         const camAltL = camL.position.clone();
         const zeitAlt = st.timeOfDay;
         const weltZeitAlt = st.world ? st.world.timeOfDay : undefined;
-        const lum = (c) => 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b;
+        const lum = (c) => luma709([c.r, c.g, c.b]);
         const augenAltL = st.playerEyesUnderwater;
         // Die Umgebung der EINEN Atmosphäre (D3) kommt EINE Lesung nach der Malung auf die CPU (`_himmelFrisch`, linear
         // Float32): neu gezeichnet und ihre Lesung abgewartet — eine alte Lesung trüge die vorige Uhrzeit.
@@ -656,7 +657,7 @@ async function wasserLicht(o = {}) {
             // (D3, `himmelFarbe`) — seine Leuchtdichte über dem Wasser ist E/π der waagrechten Normale
             if (luftL.U.unterWasser.value > 0.5) return lum(luftL.U.farbe.value);
             const e = r._himmelsIrradianz();
-            return e ? 0.2126 * e.mitte[0] + 0.7152 * e.mitte[1] + 0.0722 * e.mitte[2] : null;
+            return e ? luma709(e.mitte) : null;
         };
         const himmel = async () => {
             if (!(await frisch())) return null;
@@ -997,7 +998,7 @@ async function wasserDamm(o = {}) {
 async function wasserUferFarbe(o = {}) {
     const h = st.hydrosphere;
     if (!h || !h.ready) return { fehler: "keine Hydrosphäre" };
-    const L = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+    const L = luma709;
     const R = wasserRund(1);
     const proben = [];
     for (const rv of h.rivers)
@@ -1295,8 +1296,8 @@ async function wasserBild(o = {}) {
         const L = new Float32Array(W * H);
         const L0 = new Float32Array(W * H);
         for (let p = 0; p < W * H; p++) {
-            L[p] = 0.2126 * px[p * 4] + 0.7152 * px[p * 4 + 1] + 0.0722 * px[p * 4 + 2];
-            L0[p] = 0.2126 * px0[p * 4] + 0.7152 * px0[p * 4 + 1] + 0.0722 * px0[p * 4 + 2];
+            L[p] = luma709(px, p * 4);
+            L0[p] = luma709(px0, p * 4);
         }
         const zone = (z) => {
             let n = 0,
@@ -1437,7 +1438,7 @@ async function wasserRegen(o = {}) {
     const lit = new Uint8Array(W * H);
     let n = 0;
     for (let p = 0; p < W * H; p++)
-        if (0.2126 * px[p * 4] + 0.7152 * px[p * 4 + 1] + 0.0722 * px[p * 4 + 2] > 4) {
+        if (luma709(px, p * 4) > 4) {
             lit[p] = 1;
             n++;
         }
@@ -3137,7 +3138,7 @@ async function wasserOrte(o = {}) {
 module.exports = {
     WASSER_INSTALL:
         WELT_ORTE_INSTALL +
-        `var BACH_PROBE_M = ${BACH_PROBE_M};` +
+        `var BACH_PROBE_M = ${BACH_PROBE_M}; window.luma709 = ${luma709};` +
         wasserRund +
         wasserFlaechen +
         wasserBoot +
