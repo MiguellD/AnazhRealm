@@ -2213,7 +2213,7 @@ class AnazhRealm_feld_leben {
         // die Akte, die schon wirkten (je Stempel und Inhalt): ein nachgeholter Akt (`_akteNachholen`) wirkt nach dem Reload nie zweimal
         const G = [...(this._feldAktGewirkt || [])];
         const bis = Math.max(-Infinity, ...G.map(([, w]) => w)) - 2 * AnazhRealm.AKT_NACHHOL_S;
-        return { feld, bestand, akte, gewirkt: G.filter(([, w]) => w >= bis).map(([k]) => k) };
+        return { feld, bestand, akte, gewirkt: G.filter(([, w]) => w >= bis).map(([k]) => k), seite: S };
     }
     _lebenAusStand(v) {
         const st = this.state;
@@ -2241,18 +2241,32 @@ class AnazhRealm_feld_leben {
         }
         const R = this._bestandRegionen().regionen;
         const LG = AnazhRealm._lebensraumGesetz().L.gattung;
+        // DAS RASTER DES STANDS (`seite`, die Seite seiner Kacheln): ein Stand eines anderen Rasters (bis w27-tiere-sicht 354 m,
+        // ohne Marke) nennt mit seinen Schlüsseln andere Orte — sein Bestand zieht um: jedes Tier in die Kachel seines Ankers (der
+        // Takt und der Zähler der Kachel sind die spätesten ihrer Quellen: keine Kennung kehrt wieder). Ohne den Umzug läse die
+        // Kachel am alten Schlüssel Tiere, die 500 m entfernt ankern.
+        const fremd = v.seite !== this._bestandSeite();
         for (const [key, r] of Object.entries(v.bestand && typeof v.bestand === "object" ? v.bestand : {})) {
             if (!/^-?\d+,-?\d+$/.test(key) || !r || !zahl(r.t) || !Number.isInteger(r.seq) || !Array.isArray(r.tiere))
                 continue;
-            const tiere = r.tiere.filter(
-                (t) =>
-                    t &&
-                    typeof t.id === "string" &&
-                    typeof t.soul === "string" &&
-                    t.g in LG &&
-                    [t.bs, t.alterS, t.x, t.z].every(zahl)
-            );
-            R[key] = { t: r.t, seq: r.seq, tiere: tiere.map((t) => ({ ...t, v: t.v == null ? null : String(t.v) })) };
+            const tiere = r.tiere
+                .filter(
+                    (t) =>
+                        t &&
+                        typeof t.id === "string" &&
+                        typeof t.soul === "string" &&
+                        t.g in LG &&
+                        [t.bs, t.alterS, t.x, t.z].every(zahl)
+                )
+                .map((t) => ({ ...t, v: t.v == null ? null : String(t.v) }));
+            if (!fremd) R[key] = { t: r.t, seq: r.seq, tiere };
+            else
+                for (const t of tiere) {
+                    const k = this._bestandKey(t.x, t.z);
+                    const Z = R[k] || (R[k] = { t: r.t, seq: r.seq, tiere: [] });
+                    [Z.t, Z.seq] = [Math.max(Z.t, r.t), Math.max(Z.seq, r.seq)];
+                    Z.tiere.push(t);
+                }
         }
         // die offenen Akte treten in die Reihe (sie wirken in der Folge mit den Takten, nie beim Laden)
         for (const a of Array.isArray(v.akte) ? v.akte : [])

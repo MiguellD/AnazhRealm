@@ -2419,9 +2419,12 @@ class AnazhRealm_kreatur_leben {
     // DER LEIB FINDET SEIN TIER WIEDER (feld.K2#2): ein Leib des Stands zeichnete das Tier `id` — steht es im Bestand (oder tritt es
     // mit einem offenen Akt der Annahme hinein), zeichnet er es wieder; fiel es im Gesetz, ist er ein Leib ohne Tier
     // (`_ohneTier`, er geht außer Blick). Nie eine neue Annahme: das Tier trüge zweimal im Bestand, beim Mitspieler doppelt.
+    // Gesucht wird die KENNUNG in jeder Region des Stands (≤ 4 nahe): bis w27-tiere-sicht las der Leib die Kachel aus dem Kopf der
+    // Kennung — nach dem Umzug eines Stands in ein anderes Raster (`_lebenAusStand`) steht das Tier in der Kachel seines Ankers.
     _bestandLeibWieder(c, id) {
-        const R = this._bestandRegionen().regionen[id.split(".")[0]];
-        const t = R && R.tiere.find((x) => x.id === id);
+        let t = null;
+        for (const R of Object.values(this._bestandRegionen().regionen))
+            if ((t = R.tiere.find((x) => x.id === id))) break;
         const a = !t && (this.state.feldAkte || []).find((x) => x.art === "annahme" && x.id === id);
         const tier = t || (a && Object.assign({ id }, a.tier, { zu: true }));
         if (!tier || tier.leib) return void (c.userData._ohneTier = true);
@@ -3331,13 +3334,15 @@ AnazhRealm.CREATURE_SPAWN_FAR_MIN = 130; // V18.315 — Boot-Kreaturen spawnen �
 // LOD_SCHIRM.leib.feldHystM); bis 04.10. stand der Eintritt bei 55 m: ein nahendes Tier lief zwischen 55 und 64 m als Kapsel-Satz.
 AnazhRealm.ANALOG_NAH_M = 64;
 // DIE REGION DES BESTANDS (oekologie.K2#2, `_bestandRegion`): die Kachel hat die Fläche des Reviers (Seite revierM·√π) in
-// zellen × zellen Zellen; eine Region, die das Gesetz nie las, beginnt aufholS vor dem Lesen leer, und der Takt des Spielers
+// zellen × zellen Zellen des Rasters (tetrapoda BESTAND_GESETZ rasterM 50 m: 4 × 4 auf 200 m Seite — bis w27-tiere-sicht 7 × 7
+// auf 354 m, dieselbe Gemeinschaft auf dem dreifachen Land: 0,72 Köpfe je ha, an der Mess-Wiese 1 Sichtung in 10 Spielminuten
+// Gang); eine Region, die das Gesetz nie las, beginnt aufholS vor dem Lesen leer, und der Takt des Spielers
 // holt in seinen nahen Regionen höchstens aufholJeTakt versäumte Takte nach (~0,25 ms je Takt — die Kosten hängen an der
 // Bewegung, nie an der Weltgröße; eine neue Region hat ihre Stunde in drei Minuten); gezeichnet
 // werden je Takt höchstens leiberJeTakt Leiber (ein Leib kostet ~0,6 ms, eine Herde wächst über zwei Takte am selben Ort).
 AnazhRealm.BESTAND_REGION = Object.freeze({
     seiteJeRevier: Math.sqrt(Math.PI),
-    zellen: 7,
+    zellen: 4,
     aufholS: 3600,
     aufholJeTakt: 20,
     leiberJeTakt: 3,
