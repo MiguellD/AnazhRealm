@@ -3213,6 +3213,7 @@ hauptLauf(async () => {
             halt?.();
         }
         const je = (o.schritte || []).map((s) => s.pop + (s.wechsel ? "*" : "") + (s.ein.length ? `+${s.ein.length}@${Math.min(...s.ein)}` : ""));
+        if (typeof o.fehler === "string") console.log(`lod.K2#1 ROT — der Gang brach: ${o.fehler}`.slice(0, 590));
         if (je.length) console.log(`lod.K2#1 ${o.anteilJeSekunde <= 0.05 ? "GRÜN" : "ROT"} ${o.anteilJeSekunde} % Pop-Pixel/s (${o.popPixel} px) · ${je.join("/")} · Laub ${o.laub} · dc, Dreiecke ${o.kosten.at(-1)} · GPU ${o.bank.gpuJeFrameMs} ms, CPU ${o.bank.cpuJeFrameMs} ms je Bild`);
         const B = o.block || {}, rot = (B.rot || []).concat(B.fehler ? [B.fehler] : [], B.glieder > 0 ? [] : ["LEER: kein Glied einer Arena der Wahl im Hauptbild"], /^BLIND|^$/.test(B.selbsttest || "") ? [`SELBSTTEST ${B.selbsttest || "fehlt"}`] : []);
         console.log(rot.length ? `BLOCK-TREUE ROT:\n  ${rot.join("\n  ")}` : `BLOCK-TREUE GRÜN ${B.glieder} Blöcke treu · Selbsttest nennt ${B.selbsttest}`);
