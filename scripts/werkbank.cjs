@@ -827,17 +827,18 @@ function popGang() {
                 const p1 = start.clone().addScaledVector(fwd, (i + 1) / 2);
                 await geh(start.clone().addScaledVector(fwd, i / 2));
                 const vor = new Map(st.architectures.filter(Boolean).map((e) => [e, stufe(e)]));
+                const folgen = () => r.constructor.__arenaFolgen | 0, fA = folgen();
                 const a = await schuss(p1);
                 if (aus.treue === undefined) {
                     // der Täter beim Namen: jede Senke der GPU-Wahl, die in A außerhalb ihrer Arena stand (sie zeichnete ohne Wahl oder nicht)
                     const ohne = [];
                     st.scene.traverse((o) => o.__wahlGpu === true && !o.__arena && ohne.push(o.name || o.uuid.slice(0, 8)));
-                    const a2 = await schuss(p1);
+                    const [a2, fA2] = [await schuss(p1), folgen()];
                     aus.treue = a.reduce((n, x, k) => n + (x !== a2[k]), 0);
                     // der Ort beim Namen: abweichende Pixel je Feld (4 × 3, Zeilen oben → unten), der größte Luma-Sprung, und ob ein
                     // dritter Schuss dem zweiten gleicht (A unfertig) oder nicht (die Szene flackert)
                     const ort = (x, y) => { const f = Array(12).fill(0); let d = 0; for (let k = 0; k < W * H * 4; k += 4) if (x[k] !== y[k] || x[k + 1] !== y[k + 1] || x[k + 2] !== y[k + 2]) { const i = k / 4; f[Math.floor(((i / W) | 0) * 3 / H) * 4 + Math.floor((i % W) * 4 / W)]++; d = Math.max(d, Math.abs(luma709(x, k) - luma709(y, k))); } return `${f.join("/")} max ΔY ${d.toFixed(0)}`; }; // prettier-ignore
-                    if (aus.treue) throw new Error(`die Treue: zwei Aufnahmen derselben Szene weichen in ${aus.treue} Bytes ab — Felder ${ort(a, a2)}; A2↔A3 ${ort(a2, await schuss(p1))}${ohne.length ? ` — in A ohne Arena: ${ohne.join(", ")}` : ""}`); // prettier-ignore
+                    if (aus.treue) throw new Error(`die Treue: zwei Aufnahmen derselben Szene weichen in ${aus.treue} Bytes ab — Felder ${ort(a, a2)}; A2↔A3 ${ort(a2, await schuss(p1))}; Arena-Folgen vor A ${fA}, bis A2 ${fA2 - fA}${ohne.length ? ` — in A ohne Arena: ${ohne.join(", ")}` : ""}`); // prettier-ignore
                 }
                 await geh(p1);
                 const b = await schuss(p1);
