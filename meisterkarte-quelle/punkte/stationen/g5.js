@@ -5739,10 +5739,10 @@ const stationen = [
     // Fahrer des Spiels am Steuer des GT (die Tafel `K2_ZWEI`), dann die Tafel `VERKEHR` der Linse GANZ — 10 und 23 Uhr je 600 s, ihr
     // `verkehrVerdict` je Stunde. Das Urteil (`k2ZweiUrteil`) nennt jeden Teil beim Namen; ein Verkehr unter 600 s je Stunde ist nie grün.
     // DER TAKT: der der Linse, ganz — im Mess-Fenster hält die Leine jedes Bild außer jedem `bildJe`-ten (das Gesetz des ruhenden Loops:
-    // die Leine hält nur das Bild, nie den Takt). Am Baum main 78d37554 (Null-Renderer, je 600 s, EIN Lauf je Art): jedes Bild — 10 Uhr
-    // 142 Ankünfte, langsamste Minute 56 m, 23 Uhr 156 / 152 m, GRÜN; jedes achte — dasselbe Urteil (scratch vk-harness, Modus L);
-    // Zwischen-Takte ohne Leben (die Leine des laufenden Loops) und der Takt-Deckel (0,1 s je Bild) kippen 10 Uhr auf ROT (20 m in
-    // einer Minute) — die Probe kürzt keinen Takt. DER DECKEL: 8 Teile je 45 s = 360 s (3 min je Stunde Verkehr; das Höchste des
+    // die Leine hält nur das Bild, nie den Takt). Am Baum main 78d37554 (Null-Renderer, je 600 s, EIN Lauf je Art): jedes Bild (die
+    // Linse) — 10 Uhr 142 Ankünfte, langsamste Minute 56 m, 23 Uhr 156 / 152 m, GRÜN; jedes achte — 143 / 66 m, 156 / 152 m, GRÜN, jedes
+    // andere Maß gleich (Berührung, Stoß, Trasse, Sitz, Stufen 0); Zwischen-Takte ohne Leben (die Leine des laufenden Loops: 10 Uhr 20 m
+    // in Minute 8) und der Takt-Deckel (0,1 s je Bild: 127 Ankünfte, 20 m) ROT, 23 Uhr bei allen gleich — die Probe kürzt keinen Takt. DER DECKEL: 8 Teile je 45 s = 360 s (3 min je Stunde Verkehr; das Höchste des
     // Gesetzes, TEILE_MAX), die Fahrt trägt sie (Radeon Σ 4 859 − 90 + 360 s). Die Uhr der Probe (`ZEIT`) und der Halt jedes Teils
     // (`__probeStand`) nennen, was die Karte braucht; swiftshader (Cloud, 4 Kerne, nicht das Band) am Baum main: der Takt der Stadt
     // ~5,5 ms, die Ankunft am Hang ~150 s. Reichen die Teile auf einer Karte nicht, steht sie UNGEMESSEN beim Namen samt Stand.

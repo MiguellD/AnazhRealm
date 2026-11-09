@@ -922,9 +922,9 @@ async function fahrWegenetz(tor) {
 //     `verkehrVerdict` der Linse je Stunde, die Zeile `VERKEHR {…}`.
 // DER TAKT IST DER DER LINSE (gemessen am Baum main 78d37554, Null-Renderer, 10 Uhr, 600 s): im Muster der Linse fährt der
 // langsamste Wagen seiner langsamsten Minute 56 m (142 Ankünfte, GRÜN); am Takt-Deckel des Spiels (0,1 s je Bild, ein Sechstel der
-// Takte) 20 m — ROT; mit Zwischen-Takten ohne Leben (das Bild jeden vierten Takt, `zwischen`) 20 m — ROT; um 23 Uhr tragen alle
-// drei dasselbe Urteil (Zwischen-Takte Zahl für Zahl). Wer die Bewohner seltener schreiten lässt, ändert am Tag das Urteil: die Probe
-// kürzt keinen Takt. DIE UHR (`uhr` in `zweiSeite`, an `_gameLoopTick` und `_uhrSetzen` geliehen) nennt, was das kostet: je Stunde
+// Takte) 20 m — ROT; mit Zwischen-Takten ohne Leben (das Bild jeden vierten Takt, `zwischen`) 20 m — ROT; jeder Takt ganz, das Bild
+// jeden achten (`bildJe`, unten) 66 m (143 Ankünfte, GRÜN); um 23 Uhr tragen alle dasselbe Urteil. Wer die Bewohner seltener schreiten
+// lässt, ändert am Tag das Urteil: die Probe kürzt keinen Takt, sie spart nur Bilder. DIE UHR (`uhr` in `zweiSeite`, an `_gameLoopTick` und `_uhrSetzen` geliehen) nennt, was das kostet: je Stunde
 // die Sekunden bis zum Anfang, die Sekunden und ms je Takt der 600 s, die Bilder der Karte — die Zeile `ZEIT {…}`, im Halt jedes
 // Teils der Stand (`__probeStand`). Kennt der Stand den Verkehr nicht, ROT beim Namen in Sekunden. Die Stadt erwacht, die Uhr
 // springt, der Wagen räumt seine Bahn: mutiert.
@@ -1031,7 +1031,8 @@ async function zweiSeite(o, verkehr) {
     // Eigenschaft der Welt lebt genau so lange), geht jedes `bildJe`-te Bild hinaus — sonst hält die Leine es, wie wenn die GPU
     // nachläuft (`_gpuLeineStraff`); der Takt selbst bleibt GANZ: der Loop der Sitzung ruht, und dem ruhenden Loop hält die Leine nur
     // das Bild (`zwischen` fällt, dirigent-takt) — Leben, Verkehr, Sim, Stufen und Strom rechnen jeden Takt. Gemessen am Baum main
-    // 78d37554 (Null-Renderer, je 600 s): jedes Bild 142 / 156 Ankünfte, langsamste Minute 56 / 152 m; jedes achte 141 / … — dasselbe Urteil
+    // 78d37554 (Null-Renderer, je 600 s, 10 / 23 Uhr): jedes Bild 142 / 156 Ankünfte, langsamste Minute 56 / 152 m; jedes achte 143 / 156,
+    // 66 / 152 m — dasselbe Urteil
     const uhr = { t0: performance.now(), stunden: {}, jetzt: null, halt: false };
     const [takt, bilder] = [r._gameLoopTick, () => (r._gpuLeine ? r._gpuLeine.gerendert : 0)];
     const misst = () => Object.prototype.hasOwnProperty.call(r, "_verkehrSchritt");
@@ -1096,14 +1097,15 @@ async function fahrVerkehr(tor) {
     const d = new Function(tor.dekl(L, ["urteil", "VERKEHR", "verkehrVerdict", "taktHz"]) + "\nreturn { VERKEHR, verkehrVerdict, taktHz };")();
     const F = require(path.resolve(P));
     const mo = require(path.resolve("scripts/lib/band-urteil.cjs")).ladeSpec("wiese").ort.spieler;
-    // probeLeben am SHA: vor dem Verkehr der Linse fahren Hang und Furt in ihrem Rumpf (EIN Anker, sonst wirft die Probe beim Namen)
+    // probeLeben am SHA: vor dem Verkehr der Linse fahren Furt und Hang in ihrem Rumpf (EIN Anker, sonst wirft die Probe beim Namen;
+    // die Wand ANKER liest ihn statisch) — `zweiSeite` kommt als Text der Tafel und wird dort gelesen, wo sie die Helfer der Linse sieht
     const code = tor.quelle(P, "probeLeben", [
         [
             "            else if (expected.verkehr) res.verkehr = await verkehr(expected.verkehr);",
-            "            else if (expected.verkehr) Object.assign(res, await (" + zweiSeite + ")(expected.zwei, () => verkehr(expected.verkehr)));",
+            '            else if (expected.verkehr) Object.assign(res, await eval("(" + expected.zwei.code + ")")(expected.zwei, () => verkehr(expected.verkehr)));',
         ],
     ]);
-    const zwei = { ...JSON.parse(tor.arg[0]), stunden: d.VERKEHR.stunden, sek: d.VERKEHR.sek };
+    const zwei = { ...JSON.parse(tor.arg[0]), code: String(zweiSeite), stunden: d.VERKEHR.stunden, sek: d.VERKEHR.sek };
     const page = await tor.seite();
     tor.karte();
     const T = await teilLauf(page, "VK", code, { messort: mo, verkehr: d.VERKEHR, zwei }, async () => {
