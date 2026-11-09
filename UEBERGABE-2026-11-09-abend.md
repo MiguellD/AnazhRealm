@@ -46,3 +46,9 @@ Neu eingemischt:
 - **Drittes Gerät, Hardware (16:45):** Es steckt EIN 8-GB-Riegel DDR3-1066 im Triple-Channel-Board X58, die CPU nutzt also 1 von 3 Speicherkanälen. Zwei gleiche Riegel dazu (~10–20 € gebraucht) sind der beste Hebel je Euro. setup-node kostet im Normalbetrieb ~10 s je Job (2–4 %), nach einem Neustart ~30 s. Schnitt: setup-node nur, wenn `node --version` nicht mit v22 beginnt. Das hilft nur, wenn Node 22 dort im PATH liegt. „Set up job“ schwankt 13–50 s, weil die Actions je Job neu geladen werden.
 
 - **Notbremse-Skript 17:48:** Es legte im Haupt-Klon auf dem lokalen `main` den WIP-Commit d6c81526 an (die alte lokale Änderung an scripts/werkbank.cjs). Der Push wurde abgewiesen, origin/main steht unverändert auf a7dc1874. Den lokalen main nach dem Reset mit `git reset --hard origin/main` auf origin stellen, aber erst nachdem jemand den WIP angesehen hat. Dazu WIP auf w4-z140-rueckfall-koord (alter Zweig).
+
+## Wiederanlauf der Züge (falls ein Neustart die Skripte beendet hat)
+Prüfen: `ps -ef | grep -E "zug-schlange6|zug-weiter3"`. Fehlt ein Zug, der noch nicht in main ist (Nachweis mit `git merge-base --is-ancestor origin/<zweig> origin/main`), starte ihn aus `/tmp/claude/w3` neu. Die Schlange wartet jeweils auf den Vorgänger:
+- `nohup bash zug-schlange6.sh z348w "z349:w26-leib-raum w26-boden-nah w26-winter-fichte w26-haar-arm" > schlange-z349.out 2>&1 < /dev/null & disown; nohup bash zug-weiter3.sh z349 > zug-weiter-z349.out 2>&1 < /dev/null & disown`
+- `… z349w "z350:w26-klang-schritt w26-probe-node w25-gpu-wahl"`, dann `… z350w "z351:w26-stadt-takt-4b"`, je mit `zug-weiter3.sh z350` bzw. `z351`.
+Läuft z349 schon (`/tmp/claude/fahre-z349.log`), wird nur der fehlende Rest neu gestartet. Eine zweite Schlange darf nie neben einer lebenden laufen (Gedächtnis `schlange-einmal`).
