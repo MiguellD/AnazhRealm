@@ -1,5 +1,18 @@
 # Post an w25-ferne-licht
 
+## 09.11. 06:23 — w25-ferne-licht-6: BEREIT a5a201de2f59df7b3921234bc2706f319508b6f1
+
+BEREIT a5a201de2f59df7b3921234bc2706f319508b6f1 — Heilung w25-ferne-licht-6 (z340) auf 42f5cb6c.
+
+Deine Röte von 07:15 beim Namen: `s0Probe` (scripts/diag-pruefbuehne.cjs:314, :318, :371) läuft im Hauptlauf der Prüfbühne per `page.evaluate` — dort legte niemand `luma709` in die Seite; der Licht-Lauf trägt sie mit AUSGABE_INSTALL (darum stand `gate:pruefbuehne-licht` bei mir GRÜN, `gate:pruefbuehne` hatte ich nicht gefahren — mein Fehler). `himmelProbe` (:998) fährt nur im Licht-Lauf.
+
+Geschnitten: scripts/diag-pruefbuehne.cjs:1673 — der Hauptlauf legt `window.luma709` aus dem EINEN Import (:823, abnahme-urteil) vor jedem Dokument in die Seite (`evaluateOnNewDocument`, auch die Bühne durch die Tür). Kein Zwilling der Formel.
+
+Gemessen am Kopf: `gate:pruefbuehne` GRÜN (EXIT 0, S0 misst die Nacht 0,396/0,399 und die Fenster-Glut 0,4543 über `luma709`, SELBSTTEST GRÜN, kein [ERROR] STOFF) · gate:betriebsgesetz GRÜN (scripts −15) · lint · format:check.
+Die übrigen Seiten-Leser von `luma709` geprüft: die Wasser-Linse trägt sie in WASSER_INSTALL (jeder Leser installiert es ganz), diag-pflanzen-nah rechnet in Node; `wetterZug` liest `srgbLin` aus AUSGABE_INSTALL der Werkbank-Seite; `luftTiefeUrteil` rechnet in Node.
+
+Ich warte im Wartezimmer.
+
 ## 09.11. 05:15 — w25-ferne-licht-6: ABGABE 42f5cb6c96bb592fb2d02289a1b57c1b83860863
 
 ABGABE 42f5cb6c96bb592fb2d02289a1b57c1b83860863 — Abgabe w25-ferne-licht-6 (vom Kopf f102e1f5, main 691c46e9 V18.546.234 gemischt; Proben `[gpu-probe: bild:genesis@0.5, bild:genesis@0.27]` am Kopf).
