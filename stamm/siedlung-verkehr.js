@@ -453,14 +453,21 @@ class AnazhRealm_siedlung_verkehr {
     // DIE METER EINES WEGS AUF DER FAHRBAHN (von `von` über die Punkte `pts`, je halben Meter `_verkehrAufSpur` ohne Rand). Leser:
     // die Seite des Gehwegs (`_bewohnerStrecke`: die Seite, die weniger über die Fahrbahn führt) und der Stand diesseits seiner
     // Tür (`_bewohnerStandPruefen`).
-    _verkehrFahrbahnM(S, von, pts) {
+    // `genug`: der Leser will nur wissen, ob mehr als so viele Meter auf ihr liegen — sie endet am ersten, der es zeigt (der Stand
+    // diesseits seiner Tür fragt `0`: an der Stadt fragte jede Suche eines Stands je Punkt den ganzen Weg ab, 250 146 Wege und
+    // 8,38 Mio. `_verkehrAufSpur` in EINER Prüfung der Stände, 3,55 s Null-Renderer).
+    _verkehrFahrbahnM(S, von, pts, genug = Infinity) {
         let m = 0;
         for (let i = 0, a = von; i < pts.length; a = pts[i++]) {
             const b = pts[i];
             const L = Math.hypot(b.x - a.x, b.z - a.z);
             const n = Math.max(1, Math.ceil(L / 0.5));
             for (let k = 1; k <= n; k++)
-                if (this._verkehrAufSpur(S, a.x + ((b.x - a.x) * k) / n, a.z + ((b.z - a.z) * k) / n, 0)) m += L / n;
+                if (
+                    this._verkehrAufSpur(S, a.x + ((b.x - a.x) * k) / n, a.z + ((b.z - a.z) * k) / n, 0) &&
+                    (m += L / n) > genug
+                )
+                    return m;
         }
         return m;
     }

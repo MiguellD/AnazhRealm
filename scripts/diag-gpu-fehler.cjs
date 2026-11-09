@@ -132,6 +132,7 @@ hauptLauf(async () => {
         /^Gerät 3 haengt gibt [^|]*$/.test(still(zwei)),
         still(zwei)
     );
-    selbsttestEnde(errs, "die GPU-Fehler-Linse nennt den fehlenden Vertex-Slot mit Pipeline und Pass.");
+    // der Selbsttest: die GPU-Fehler-Linse nennt den fehlenden Vertex-Slot mit Pipeline und Pass.
+    selbsttestEnde(errs);
     process.exit(0);
 });

@@ -2363,8 +2363,12 @@ async function kreaturProben(r, T, opts) {
     // ruft ihn, bis ihr Werk (`_weltOffen().leute`) fünf Takte nicht fällt: dann wartet es auf den Faden (die Vorlagen der
     // Gestalten). Bis w4-stationen-schnell-a trug jedes Warten EINEN Takt der Bewohner je Bild und 16 ms Schlaf: an der Karte
     // ging die Liste des Start-Dorfs über Hunderte Bilder, nach jeder Abwesenheit neu (die Wiederkehr: 16 Prüf-Stunden)
+    // DER TAKT DER LEUTE wie im Spiel: erst ihr Werk (der Job `bewohner` des Planers, hier ohne Ende — die Liste und, nach einem
+    // Wechsel der Wache, die Prüfung ihrer Stände, `_bewohnerWacheTakt`), dann die Leute. Bis w25-stadt-takt-3 prüfte die Wache
+    // im Takt der Leute selbst; ein Takt ohne das Werk ließe ihre Stände ungeprüft
+    const leute = (dt) => (r._bewohnerWerkTakt(Infinity), r._tickBewohner(dt));
     const leuteTakt = () => {
-        for (let n = Infinity, still = 0, m; still < 5 && (m = (r._bewohnerWerkTakt(Infinity), r._tickBewohner(0), r._weltOffen().leute)); n = m)
+        for (let n = Infinity, still = 0, m; still < 5 && (m = (leute(0), r._weltOffen().leute)); n = m)
             still = m < n ? 0 : still + 1;
     };
     // Takt um Takt des Spiels, bis die Siedlung steht: je Takt das Bild, dann das Werk der Leute; der Schlaf gibt dem Faden das
@@ -2382,8 +2386,8 @@ async function kreaturProben(r, T, opts) {
     // Bewohner, #724672 steckte um 12,62 Uhr (1 von 6 Läufen)
     const uhrAuf = async (h, wo, da, max) => {
         for (const backen of [true, false]) {
-            for (const t of [h + 12, h]) r._uhrSetzen((t % 24) / 24, "regler"), r._tickBewohner(0);
-            for (const weiter = __deckel(wo, max, false); weiter() && !da(); ) r._tickBewohner(0);
+            for (const t of [h + 12, h]) r._uhrSetzen((t % 24) / 24, "regler"), leute(0);
+            for (const weiter = __deckel(wo, max, false); weiter() && !da(); ) leute(0);
             if (backen) await bisDa(wo, () => r._weltOffen().leiber > 0, max);
         }
     };
@@ -2570,7 +2574,7 @@ async function kreaturProben(r, T, opts) {
         const takt = (dt, M) => {
             r._uhrSetzen((s.timeOfDay + dt / tagS) % 1, "uhr");
             const t0 = performance.now();
-            r._tickBewohner(dt);
+            leute(dt);
             M.messen(dt, performance.now() - t0);
         };
         // DER NAH-RING (mensch.K1 Staffel 2), ein Messer wie `wegeMesser`: Bewohner gesamt, im Nah-Ring (draußen, näher
@@ -2742,7 +2746,7 @@ async function kreaturProben(r, T, opts) {
         const alleDa = () => liste.every((b) => b.leib && !b.ankunft);
         await uhrAuf(12.5, "bewohner: der Tag", alleDa);
         // Täter (Selbsttest): der Tag beginnt mit Geschichte — die Bewohner gehen 12 s auf der Uhr von 12,5, ohne Sprung
-        if (hat("bewohner-uhr")) for (let k = 0; k < 120; k++) r._tickBewohner(DT);
+        if (hat("bewohner-uhr")) for (let k = 0; k < 120; k++) leute(DT);
         const SD = wegeMesser(liste);
         const treffer = new Map();
         const vorher = new Map();
@@ -2895,7 +2899,7 @@ async function kreaturProben(r, T, opts) {
             for (const [T, sah] of blieb) {
                 pm.x = P.x + A.AUTO_SETTLEMENT.nearM * A.BEWOHNER.fernFaktor + 80;
                 r._uhrSetzen(((T + 23) / 24) % 1, "regler");
-                r._tickBewohner(0); // fern gehen die Leiber
+                leute(0); // fern gehen die Leiber
                 r._uhrSetzen(T / 24, "regler");
                 pm.copy(P);
                 // die Vorlagen der Gestalten kommen aus dem Faden zurück (die Fortgegangenen gaben sie frei): die Freigabe
@@ -2988,7 +2992,7 @@ async function kreaturProben(r, T, opts) {
         await bisDa("begegnung: die Leiber", () => !da());
         await uhrAuf(10, "begegnung: 10 Uhr", da);
         await stehtUm("begegnung: das Start-Dorf");
-        const schritt = () => [takt(dt), r._tickBewohner(dt)];
+        const schritt = () => [takt(dt), leute(dt)];
         // DER WEG: aus 9 m schräg vor ihm (± 0,6 rad zu seinem Blick) durch seinen Stand und 12 m weiter, je halben Meter frei
         // von Grundriss — und derselbe 2 m daneben (der Vorbeigang); wer sonst dort steht, macht dem Spieler Platz
         const offen = (x, z) => r._landAt(x, z) && !["haus", "bau"].includes(r._imGrundriss(x, z, 0.5));
