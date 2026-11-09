@@ -1944,9 +1944,8 @@ class AnazhRealm_siedlung_bauten {
                 userData: { chunkSatz: "wasser", isHydrosphere: true, hydroKind: "chunk-water-satz" },
             };
         // DER STOFF-SATZ: je Familie × Stoff × Wurf ein Satz — sein Stoff ist der geteilte Studio-Stoff. Der Bau-Satz
-        // (`_bauSatzArt`): ein Bereich ist eine Instanz-Gruppe (alle ihre Instanzen in Welt-Lage, `_bauSatzBlock`). Der
-        // Streu-Satz (`_streuSatzArt`, W7): ein Bereich ist der Block einer Kachel in einer Senke der Nah-Streu, seine Attribute
-        // trägt der Eintrag (der wiegende Stoff dazu `aWiege`), seine Kapazität ist die der Streu.
+        // (`_bauSatzArt`): ein Bereich ist eine Instanz-Gruppe (alle ihre Instanzen in Welt-Lage, `_bauSatzBlock`). Die Nah-Streu
+        // trägt seit w27-takt-streu keinen Satz mehr: ihre Senken zeichnen in ihrer Arena, die Wahl der GPU wählt je Pflanze.
         const bau = this.state.satzStoffe ? this.state.satzStoffe.get(art) : null;
         // Ein NUR-WURF-Satz (`bauWurf`, S3) liegt NUR auf SHADOW_TWIN_LAYER (die Kaskaden-Kameras sehen ihn, das Hauptbild
         // nie — `_chunkSatzPass` wählt dort nichts) und empfängt nichts.
@@ -3241,9 +3240,6 @@ AnazhRealm.CHUNK_SATZ = Object.freeze({
     // Der Bau-Satz (Welle 6) beginnt klein: je Stoff ein Satz, das Dorf der Mess-Wiese trägt in seinem größten Stoff
     // ~40k Vertices — er wächst in wenigen Schritten, eine Formation bleibt darunter.
     bau: Object.freeze({ v: 1 << 13, i: 1 << 14 }),
-    // Der Streu-Satz (W7) je Stoff der Nah-Streu: der größte Stoff (das wiegende Laub) trägt an der Mess-Wiese ~38k
-    // Vertices im Ring, ein seltener (Totholz) eine Pflanze mit 101 — er beginnt klein und wächst.
-    streu: Object.freeze({ v: 1 << 10, i: 1 << 11 }),
 });
 // DIE ABSCHNITTE des Satzes (`_chunkSatzAbschnitt`): je Pass ein Lauf im Index mit `luft` über seiner Länge (er wächst,
 // ohne umzuziehen); einer, den `ruheTakte` Render-Takte kein Pass fragte, fällt beim Umlegen; das Hauptbild legt dicht

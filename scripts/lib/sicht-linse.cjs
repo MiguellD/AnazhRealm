@@ -274,7 +274,7 @@ function sichtLinse(cfg) {
             return o;
         };
     };
-    // die Index-Bytes je Satz-Familie (boden · wasser · bauSatz · streuSatz · formationenSatz), kumulativ
+    // die Index-Bytes je Satz-Familie (boden · wasser · bauSatz · formationenSatz), kumulativ
     const bytesJe = () => {
         const o = {};
         const ss = st.chunkSaetze;

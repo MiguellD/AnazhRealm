@@ -3100,14 +3100,15 @@ class AnazhRealm_bild_kosten {
             W.u = new Uint32Array(W.f.buffer);
         }
         off.forEach((o, j) => AnazhRealm._wahlAuftraege(arenen[2 * j + 1].wahl, W.f, W.u, o / 4));
-        // die Hälften des Zustands der Nah-Wiese wechseln je Hauptbild (gelesen die des letzten, geschrieben die andere —
+        // die Hälften des Zustands der Nähe wechseln je Hauptbild (gelesen die des letzten, geschrieben die andere —
         // nur das Hauptbild schreibt); ein Sprung des Auges wählt einmal aus dem Jetzt (`_wieseAugeTakt`)
         const F = AnazhRealm._wahlLage(L, W.lageF),
-            nw = this.state.nahWiese;
+            nw = this.state.nahWiese,
+            N = this.state.nahe;
         if (haupt) W.par ^= 1;
-        [F[30], F[31], F[67]] = [W.par, haupt ? 1 : 0, haupt && nw && nw.sprung ? 1 : 0];
+        [F[30], F[31], F[67]] = [W.par, haupt ? 1 : 0, haupt && N && N.sprung ? 1 : 0];
         F[27] = nw && nw.auge ? nw.auge.h : 0; // die Höhe des Auges über dem eigenen Boden (`_wieseAugeTakt`, die Ferne)
-        if (haupt && nw) nw.sprung = false;
+        if (haupt && N) N.sprung = false;
         dev.queue.writeBuffer(W.lage, 0, F);
         dev.queue.writeBuffer(W.puffer, 0, W.f.buffer, 0, bytes);
         const enc = dev.createCommandEncoder({ label: "pass-wahl" });
@@ -3125,8 +3126,8 @@ class AnazhRealm_bild_kosten {
                 W.puffer,
                 ...[q.instanceMatrix, zug.liste, a._ind].map((x) => be.get(x).buffer), // die Liste dieser Kamera (`_wahlVor`)
                 ...mass,
-                // der Zustand der Stufe der Nah-Wiese (`_nahWieseZustand`), sonst ein leerer
-                (this.state.nahWiese && this.state.nahWiese.zustand) || W.leerRW,
+                // der Zustand der Stufe jeder Nähe (`_naheZustand`: Wiese und Streu), sonst ein leerer
+                (N && N.zustand) || W.leerRW,
             ];
             let bg = zug.__wahlBG; // je Zug: die Liste ist die seiner Kamera
             if (!bg || bg.n !== n || puf.some((p, k) => p !== bg.puf[k])) {
@@ -3500,10 +3501,13 @@ AnazhRealm.WAHL_BASIS = Object.freeze([0, 1, 2, 4, 5, 6, 8, 9, 10]);
 // der Maske zum Ursprung der Instanz in XZ × Perf × min(Bezug/Sichthöhe, 1), mit dem Halt als Rand — und das Urteil an den
 // Kanten des EINEN Blend-Gesetzes (`_blendeKanten` → `_blendeBehaelt`, dieselbe Folge der Bedingungen; die Kanten trägt die
 // Lage). Die Karte wählt ihr Quad auf der Stammachse als Kugel. Das Fenster gilt je Pass-Art (Hauptbild · Kaskade).
-// DIE NÄHE DER NAH-WIESE (Art 5, `_nahWieseBestand`): ein toter Platz (Element 11 < 0) fällt; die Stufe nach `_nahStufe` — L1 bis
-// `stufe1`, gehalten bis `stufe1Rand` dahinter — mit dem ZUSTAND des Platzes (`zustand`, Basis + Platz im Glied, zwei Hälften:
-// gelesen die des letzten Hauptbilds, geschrieben die andere, nur im Hauptbild und nur vom ersten Teil der L1; nach einem
-// Sprung des Auges aus dem Jetzt); jenseits der Übergabe `radius` zeichnet die Ferne; jede Senke behält ihre Stufe.
+// DIE NÄHE (Art 5, `_bestandFamilie`: die Nah-Wiese und die Nah-Streu): ein toter Platz (Element 11 < 0) fällt, sonst trägt
+// Element 11 seine WEITE — die Wiese die Übergabe `radius`, an die die Ferne zeichnet, die Streu das Rand-Band ihrer Art
+// (`_streuWeite`: die Pflanze steht diesseits weite + rand · (½ − ⌊4 · Ordnung⌋/4), die Viertel-Stufen der Würfel-Ordnung);
+// die Stufe nach `_nahStufe` — die nahe bis `saum.z`, gehalten bis `saum.w` dahinter — mit dem ZUSTAND des Platzes (`zustand`,
+// Basis der Familie + Platz im Glied, zwei Hälften: gelesen die des letzten Hauptbilds, geschrieben die andere, nur im Hauptbild
+// und nur vom ersten Teil der nahen Stufe; nach einem Sprung des Auges aus dem Jetzt); jede Senke behält ihre Stufe (`fenster.y`
+// 1 die nahe, 2 die ferne, 3 eine Art mit EINER Stufe: keine Wahl der Stufe).
 // DIE FERNE (Art 6) UND DIE SCHALE (Art 7, `_nahWieseBestand`): tot fällt, diesseits der Übergabe legt die Nähe; das Büschel steht,
 // solange seine Ordnung (Element 7) unter dem Anteil seines Gesetzes × (1 + Rand) liegt — `_wieseFern` am Fußabdruck-Abstand
 // `_wieseFuss` (der Fuß, die Ebene seines Hangs aus den waagrechten Achsen, die Höhe des Auges über dem eigenen Boden in
@@ -3559,7 +3563,7 @@ fn behalten(a: Auftrag, i: u32, j: u32) -> bool {
         let war = zustand[z + par] == 1u && lage.saum.w < 0.5;
         let l1 = d <= a.saum.z + select(0.0, a.saum.w, war);
         if (a.fenster.w > 0.5 && lage.rand.w > 0.5) { zustand[z + 1u - par] = select(0u, 1u, l1); }
-        if (d >= a.saum.y || l1 != (a.fenster.y < 1.5)) { return false; }
+        if (d >= min(a.saum.y, m[2].w) || (a.fenster.y < 2.5 && l1 != (a.fenster.y < 1.5))) { return false; }
     }
     var c = (m * vec4f(a.kugel.xyz, 1.0)).xyz - lage.auge.xyz;
     let s2 = max(dot(m[0].xyz, m[0].xyz), max(dot(m[1].xyz, m[1].xyz), dot(m[2].xyz, m[2].xyz)));

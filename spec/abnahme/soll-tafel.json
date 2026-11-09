@@ -41,11 +41,11 @@
                 "name": "laiWirk",
                 "rechnung": {
                     "G": 0.5,
-                    "halm": "^(nahWiese:.*|streuSatz)$",
+                    "halm": "^(nahWiese:.*|streuNah:.*|streuSatz)$",
                     "grund": "^bodenSatz$",
                     "quelle": "G 0,5 = kugelige Blatt-Winkel (Campbell & Norman 1998, Kap. 15); gezählt im Ring der Nah-Wiese (`abstand.ring` = AnazhRealm.NAH_WIESE.radius der gemessenen Welt) — jenseits zeichnet der Boden-Satz das Gras"
                 },
-                "werkzeug": "werkbank bild -278 +1.7 -1038 -276 +1.2 -1026 --wahl 0 --klasse '^(nahWiese:.*|streuSatz|bodenSatz)$' --abstand --ist boden-nah (Mess-Wiese K55)",
+                "werkzeug": "werkbank bild -278 +1.7 -1038 -276 +1.2 -1026 --wahl 0 --klasse '^(nahWiese:.*|streuNah:.*|bodenSatz)$' --abstand --ist boden-nah (Mess-Wiese K55)",
                 "messung": {
                     "werkzeug": "bild",
                     "datum": "2026-10-17T01:05:18.628Z",
@@ -2446,7 +2446,7 @@
                     "minProben": 400,
                     "quelle": "eine Probe = ein 2 × 2-Block der Leinwand 1920 × 1080 (die Leinwand 960 × 540 des Spikes); eine Kachel zählt ab 400 Proben"
                 },
-                "werkzeug": "werkbank bild -278 +1.7 -1038 -278 +0 -1044.82 --fov 46.7 --wahl 0 --klasse '^(nahWiese:.*|streuSatz|bodenSatz)$' --abstand --ist boden-nah-farbe (Mess-Wiese K55, die Geometrie des Soll-Bilds: Auge 1,7 m, 13,9° abwärts, hfov 75°; Leinwand 1920 × 1080 — headless nach `werkbank fenster 1920 1080`)",
+                "werkzeug": "werkbank bild -278 +1.7 -1038 -278 +0 -1044.82 --fov 46.7 --wahl 0 --klasse '^(nahWiese:.*|streuNah:.*|bodenSatz)$' --abstand --ist boden-nah-farbe (Mess-Wiese K55, die Geometrie des Soll-Bilds: Auge 1,7 m, 13,9° abwärts, hfov 75°; Leinwand 1920 × 1080 — headless nach `werkbank fenster 1920 1080`)",
                 "messung": {
                     "werkzeug": "bild",
                     "datum": "2026-10-17T02:53:08.824Z",

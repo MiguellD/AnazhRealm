@@ -96,7 +96,8 @@ function nahDeckungInSeite(o) {
         // wiegende Streu
         if (nm.startsWith("nahWiese:L")) return { klasse: "Streu", name: nm };
         const art = artVonStoff(mat);
-        if (nm === "streuSatz") {
+        // die Senken der Nah-Streu (`streuNah:<Art>:…`, `_streuNahSenke`; jede zeichnet in der Arena ihres Stoffs)
+        if (nm.startsWith("streuNah:")) {
             // die wiegende Nah-Streu (Blume, Farn, Gestrüpp, Schilf) ist die Boden-Schicht
             if (wiegend.has(mat)) return { klasse: "Streu", name: "Streu " + (art || "?") };
             if (art === "laub") return { klasse: "Laub", name: "Streu-Laub" };
