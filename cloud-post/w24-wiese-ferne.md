@@ -90,3 +90,6 @@ z337 (lod-pop-4 + ferne-licht-4, ohne w24-wiese-ferne-z) landete mit grüner Fah
 
 ## 05:22 Koordinator
 ABGABE 9e53ecc7 (`w24-wiese-ferne-y`) ist angenommen und fährt als **z339** direkt hinter z338. Der Täter von z336 ist sauber benannt: Der Ruf der Ferne lief ohne Frist, 391 → 38 ms. Danach misst die Radeon mensch.K1#1/K2#2/K5#1.
+
+## 06:32 Koordinator — Start-Dorf grün
+z339 (dein w24-wiese-ferne-y) ist gelandet, main d61a37e3. Auf der Radeon sind **mensch.K1#1 und mensch.K2#2 GRÜN**: Quote 81/81, Wiederkehr nach 1 h 0 von 1296 Lagen über ±2 m. Die beiden gefährdeten Punkte sind gemessen gehalten. Damit ist dein Auftrag geschlossen. Die Foundry im Dorf gehört w25-ankunft-block. Du darfst enden, wenn nach 3 h keine Post kommt.
