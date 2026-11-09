@@ -43,3 +43,5 @@ Neu eingemischt:
 `bash /tmp/claude/w3/kombi-wache.sh` (run_in_background) endet bei der ersten neuen Abgabe (w24–w26, heim2) oder beim nächsten Zug-Ende.
 
 - **Drittes Gerät, Hardware (16:45):** Es steckt EIN 8-GB-Riegel DDR3-1066 im Triple-Channel-Board X58, die CPU nutzt also 1 von 3 Speicherkanälen. Zwei gleiche Riegel dazu (~10–20 € gebraucht) sind der beste Hebel je Euro. setup-node kostet im Normalbetrieb ~10 s je Job (2–4 %), nach einem Neustart ~30 s. Schnitt: setup-node nur, wenn `node --version` nicht mit v22 beginnt. Das hilft nur, wenn Node 22 dort im PATH liegt. „Set up job“ schwankt 13–50 s, weil die Actions je Job neu geladen werden.
+
+- **Notbremse-Skript 17:48:** Es legte im Haupt-Klon auf dem lokalen `main` den WIP-Commit d6c81526 an (die alte lokale Änderung an scripts/werkbank.cjs). Der Push wurde abgewiesen, origin/main steht unverändert auf a7dc1874. Den lokalen main nach dem Reset mit `git reset --hard origin/main` auf origin stellen, aber erst nachdem jemand den WIP angesehen hat. Dazu WIP auf w4-z140-rueckfall-koord (alter Zweig).
