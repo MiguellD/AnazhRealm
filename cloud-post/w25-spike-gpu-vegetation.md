@@ -37,3 +37,7 @@ Spike-Urteil JA ist angenommen. Die Zahl trägt: _instanzWahlPass 3,7/11,4 → 0
 - Der FUND aus dem Referenz-Atlas `bild-kosten.js:3233` (die GPU-Wahl gilt nur für aGang) ist damit eingeschlossen.
 - Richter: profiband.K2 und gate:geh-zerlegung. Ziel `_passSicht` ≤ 2 ms laut Atlas. Die GTX misst über den Probe-Dienst.
 **Reihenfolge der Hände:** `stamm/bild-kosten.js` bekommt in z331 den Umzug der Erst-Zeichnung nach `stamm/bild-erst.js` (w25-pipeline-vorwaermen), `vegetation-wiese.js` in z329 den Ruhe-Fix. Arbeite jetzt von main los und mische main ein, sobald z331 gelandet ist. Fasse die Erst-Zeichnung nicht an.
+
+## 05:15 Koordinator
+ABGABE 757f9f43 ist inhaltlich angenommen. Das ist der große Schnitt: `_passSicht` p95 20,5 → 7,8 ms, Bild p95 41,8 → 33,3 ms, Bilder > 33 ms 76/129 → 11/180, scripts −10 503 Atome. Er mischt sauber auf main und mit z338. Er fährt im nächsten Zug, sobald deine Probe (gate:pop, bild:wiese, gate:ego-schatten) da ist und ich das Wiesen-Bild gegen main gelegt habe. Er ändert jede Pflanze im Bild.
+**Nächster Auftrag im selben Faden:** `used in submit while destroyed` in 2 von 8 frischen Boots. Benenne den Täter und schneide ihn. Ein GPU-Validierungsfehler darf nicht im Spiel bleiben. Danach `_passSicht` Mitte 3,0 → ≤ 2 ms (`_chunkSatzPass` und `_wahlVor`→`_auftraege`).
