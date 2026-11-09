@@ -834,7 +834,10 @@ function popGang() {
                     st.scene.traverse((o) => o.__wahlGpu === true && !o.__arena && ohne.push(o.name || o.uuid.slice(0, 8)));
                     const a2 = await schuss(p1);
                     aus.treue = a.reduce((n, x, k) => n + (x !== a2[k]), 0);
-                    if (aus.treue) throw new Error(`die Treue: zwei Aufnahmen derselben Szene weichen in ${aus.treue} Bytes ab${ohne.length ? ` — in A ohne Arena: ${ohne.join(", ")}` : ""}`); // prettier-ignore
+                    // der Ort beim Namen: abweichende Pixel je Feld (4 × 3, Zeilen oben → unten), der größte Luma-Sprung, und ob ein
+                    // dritter Schuss dem zweiten gleicht (A unfertig) oder nicht (die Szene flackert)
+                    const ort = (x, y) => { const f = Array(12).fill(0); let d = 0; for (let k = 0; k < W * H * 4; k += 4) if (x[k] !== y[k] || x[k + 1] !== y[k + 1] || x[k + 2] !== y[k + 2]) { const i = k / 4; f[Math.floor(((i / W) | 0) * 3 / H) * 4 + Math.floor((i % W) * 4 / W)]++; d = Math.max(d, Math.abs(luma709(x, k) - luma709(y, k))); } return `${f.join("/")} max ΔY ${d.toFixed(0)}`; }; // prettier-ignore
+                    if (aus.treue) throw new Error(`die Treue: zwei Aufnahmen derselben Szene weichen in ${aus.treue} Bytes ab — Felder ${ort(a, a2)}; A2↔A3 ${ort(a2, await schuss(p1))}${ohne.length ? ` — in A ohne Arena: ${ohne.join(", ")}` : ""}`); // prettier-ignore
                 }
                 await geh(p1);
                 const b = await schuss(p1);
