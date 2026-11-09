@@ -834,7 +834,6 @@ async function speicherTaktLauf(h) {
 const SPEICHER_TAKT_PROBE = {
     sek: 33,
     befehl: sitzungBefehl(speicherTaktLauf, [speicherTaktSeite]),
-    ausnahme: "zwei Speicher-Bilder zu je 20 Ständen und 10 000 Gruben dazwischen: GTX 50,4 s",
 };
 // ─────────────────── speicher.K4#2: die Wiederkehr zeigt dieselbe Welt ───────────────────
 // bildSeite der Mess-Bahn speicher-zwei in der Welt der Sitzung: am Bach der Mess-Wiese (welt-boot `uferStellen` am SHA, der Loop
@@ -1145,7 +1144,6 @@ const ANKUNFT_KALT = {
     ...probeBefehl(probeAnkunftKalt, 90, { ankunft: probeAnkunft }),
     mutiert: true,
     sek: 10,
-    ausnahme: "vier Boots in EINER Probe: kalt mit leerer Herkunft (14,6 s Radeon, 16,1 s GTX) samt Ruhe und Schuss, zwei Zweit-Boots, der Kern-Wechsel",
 };
 // die Spur des Kalt-Boots aus der Ausgabe EINES Laufs: j.spur, sonst die Zeile „SPUR kalt {…}“
 const spurVon = (j, lauf) => (j && j.spur) || jsonZeile(lauf.stdout, /^SPUR kalt \{/);
@@ -1743,9 +1741,6 @@ const pbBefehl = (art) => [
     art,
     "{AUS}",
 ];
-const PB_AUSNAHME_GANG =
-    "sechs Stationen (K1–K3 je #1 #2) lesen EINE Probe: je Zelle ein Fenster mit Spur (die Belegung trägt nie der Strom) und je Ort × " +
-    "Sicht ein Band (Ratsche + gpu-bank) an vier Orten, unter der Uhr " + PB_KONST.budget + " s (bis 29.10. 6 × 80 min in eigenen Boots)";
 
 // DIE PROBEN (punkte.cjs selbsttest): die Zeile PROFIBAND, wie die Probe sie druckt, mit Zahlen im Band; je Mutante die Stationen,
 // die GRÜN bleiben
@@ -1862,10 +1857,9 @@ const PB_PROBEN_DAUER = [
 const PB_PROBE_GLAETTE = {
     sek: 90,
     stellung: "anfang",
-    ausnahme: "die Glätte unter der eigenen Uhr: je Zelle der Tafel ein Fenster mit Spur in beiden Sichten (Radeon 27,0–38,5 s; GTX 77265b04 und 87537d3f am 45-s-Deckel gerissen)",
     befehl: pbBefehl("glaette"),
 };
-const PB_PROBE_GANG = { sek: PB_GANG_SEK, mutiert: true, ausnahme: PB_AUSNAHME_GANG, befehl: pbBefehl("gang") };
+const PB_PROBE_GANG = { sek: PB_GANG_SEK, mutiert: true, befehl: pbBefehl("gang") };
 const PB_PROBE_DAUER = { sek: 23, stellung: "ende", befehl: pbBefehl("dauer") };
 
 // ───────── klang.K3 Staffel 2 — DER RAUM AUS DER WELT (w5-s2-g1, Welt-Probe der Gruppe I: EIN Boot am Null-Renderer) ─────────
@@ -2713,7 +2707,6 @@ module.exports = [
         geraet: ["radeon", "gtx"],
         probe: {
             sek: 90,
-            ausnahme: "zehn Posen am Spawn (der erste Blick und vier Azimute, Ego und Third), je ein Schuss mit der Teilung aller Zeilen der Tafel, in Third dazu der Kopf, und die Licht-Bilanz — der Ring an Genesis kalt",
             befehl: ["node", "-e", "(" + spawnBlick.toString() + ")(process.argv[1], process.argv[2])", "{AUS}", "{PORT}"],
         },
         gpu: true,
@@ -4139,8 +4132,7 @@ module.exports = [
         // DIE AUSNAHME (w12-proben-s): die Wiederkehr ist ein Boot — das Neuladen der Seite und danach das Ufer, bis das Wasser wieder
         // zeichnet; Radeon b62542c9 35 s am Ort vor dem Deckel, die GTX riss 45 s nur mit der Reise von 1147 m (vor w12-proben-frist),
         // seitdem ohne Zahl. Der Deckel je Karte in deckel.json (GTX: das Gesetz, bis sie misst)
-        probe: { sek: 15, befehl: sitzungBefehl(speicherBildLauf, [uferSeite, speicherBildSeite]), mutiert: true,
-            ausnahme: "die Wiederkehr: ein Neuladen der Seite und zweimal das Ufer, bis das Wasser zeichnet — Radeon 35 s" },
+        probe: { sek: 15, befehl: sitzungBefehl(speicherBildLauf, [uferSeite, speicherBildSeite]), mutiert: true },
         gpu: true,
         zeit: true, // Wanduhr-empfindlich gemessen (pm-fremdlast, Befund 08.11.: bild-diff 1,03–1,04 % unter fremder Last an e84fd1fb und a7a9d7bf, 0,66–0,69 % in Ruhe)
         minuten: 1,

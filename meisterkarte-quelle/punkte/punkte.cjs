@@ -9,8 +9,8 @@
 //        die Einträge mit modus "session" und bahn "sitzung", der Kopf der Sitzung als m.sitzung (darin m.sitzung.strom: die Dauerlast
 //        jedes Bilds der Sitzung, stromSeite); die Reihe anfang · was die Welt lässt · ende · was sie ändert, die Grundstellung nur nach
 //        einer mutierenden Probe oder einem Abbruch; danach die befehl-Stationen
-//        --eich (radeon|gtx, DIE EICH-FAHRT, eichEintrag): die Sitzung mit dem Deckel 90 s je Probe über die Proben ohne frische Messung und
-//        ohne Eich-Zahl am SHA; je Probe ihre Sekunden (`eich`), ein Urteil zählt nur im Gesetz — die OMEN fährt sie als Station zug/eich-gtx.sh
+//        --eich (radeon|gtx, DIE EICH-FAHRT, eichEintrag): die Sitzung an derselben Leine über die Proben ohne frische Messung und
+//        ohne Eich-Zahl am SHA; je Probe ihre Sekunden (`eich`), das Urteil wie in jeder Fahrt — die OMEN fährt sie als Station zug/eich-gtx.sh
 //        Zwillinge (gleicher Befehl und Umgebung) fahren EINMAL; DER BAHN-PLAN (fahrePlan): jede Zeit-Station allein, die übrigen
 //        auf bis zu N Bahnen (Vorgabe 3, höchstens 5) zugleich, jede Bahn mit eigenem Spiel-Baum und eigenem Port-Band (portBand) —
 //        auf radeon|gtx über das Platz-Schloss (werkzeug/gpu-lauf.sh: ein Bild-Lauf nimmt einen Platz, ein Zeit-Lauf alle)
@@ -61,15 +61,13 @@
 //   proben (optional): [{ name, stdout | j, gruen }] Roh-Ausgaben des Befehls (stdout) oder seine Rohdatei (j, das JSON an {AUS})
 //     mit dem Urteil, das die Station über sie spricht
 //   (die Schlupflöcher der Soll-Tafel als Mutanten; der Selbsttest urteilt jede).
-//   probe (statt befehl, nur gpu true): { befehl: argv wie oben, sek: Deckel in s (Vorgabe und höchstens PROBE_DECKEL_S, mit ausnahme
-//   höchstens PROBE_AUSNAHME_S) } —
+//   probe (statt befehl, nur gpu true): { befehl: argv wie oben, sek: der Grund-Deckel in s ohne Eintrag in deckel.json (Vorgabe
+//   PROBE_DECKEL_S, je Teil höchstens ein Teil der Fahrt FAHRT_MAX_S − SITZUNG_BOOT_S; darüber die Leine, fahreGruppe) } —
 //   die Station misst als Probe in der EINEN warmen Welt der Sitzung (fahreSitzung), nie mit eigenem Boot; dazu {PORT} = der Port
 //   der Sitzung (save-server {PORT}, Werkbank {PORT}+20000 = WERKBANK_PORT), PUNKTE_SITZUNG_LOG = das Log ihrer Werkbank,
 //   PUNKTE_SITZUNG_STROM = der Strom der Sitzung (je Bild eine Zeile, stromSeite; Zapfen, Marke und Leser exportiert diese Maschine),
 //   PUNKTE_PROBE = ihr Name. Dazu optional: mutiert (true: sie ändert die Welt — baut, gräbt, Tab-Tod, Speichern/Laden —, nur nach
-//   ihr setzt die Sitzung die Welt zurück) · stellung ("anfang" | "ende": die Reihe der Sitzung, sitzungsReihe) · ausnahme (der Grund,
-//   warum sie über PROBE_DECKEL_S braucht; nie über PROBE_AUSNAHME_S, nie an einer Probe bis PROBE_DECKEL_S) · teile (2…TEILE_MAX, nie
-//   mit ausnahme: der Lauf fährt in Teil-Proben derselben Welt, je Teil ein Prozess unter dem Deckel, PUNKTE_TEIL „i/N“ und die Frist
+//   ihr setzt die Sitzung die Welt zurück) · stellung ("anfang" | "ende": die Reihe der Sitzung, sitzungsReihe) · teile (2…TEILE_MAX: der Lauf fährt in Teil-Proben derselben Welt, je Teil ein Prozess unter dem Deckel, PUNKTE_TEIL „i/N“ und die Frist
 //   PUNKTE_TEIL_FRIST_S; der nächste nur nach `@@PUNKTE@@ TEIL WEITER`, EIN Urteil über alle — fahreGruppe). Eine Station trägt GENAU
 //   EINES von befehl und probe; auf radeon|gtx NUR probe (DIE FAHRT, fahrtUrteil).
 // DIE FAHRT (29.10., das Gesetz des Schöpfers: „Ein kpl. Fahrt durch jedes System max 30 min, inbegriff ist dann auch die dauerlast"):
@@ -145,24 +143,21 @@ function hilfeText() {
 // DIE PROBE der Sitzung (29.10., Takt 19 an b3f9ae95 Radeon: 64 GPU-Stationen 879 Stations-Minuten, Mittel 13,7 min — 282 min am
 // Schloss, 103 min Abbau-Schwanz, jede Station ihr eigener Boot; die Welt lädt warm in Sekunden): argv und Deckel; eine Station mit
 // probe hat keinen befehl. Der Abdruck einer befehl-Station bleibt Byte für Byte (pr nur an einer Probe)
-// DAS BUDGET DER PROBE (29.10., der Schöpfer: „Eine komplette Fahrt durch jedes System max 30 min"): Ziel ≤ 15 s, Deckel 45 s, nur
-// mit `ausnahme` (der Grund beim Namen) bis 90 s — darüber ROT, auch mit ausnahme; DIE FAHRT je Karte ≤ FAHRT_MAX_S samt Boot
-// DIE DECKEL (30.10., Karte w4-grundstellung) — je Probe ihr `sek`, aus dem Gegenlauf Radeon b3f9ae95 (gegenlauf/fahrt-b3f9ae95-radeon.json,
-// die Reihe der Sitzung): der gemessene Lauf; lief die Probe nach einer Grundstellung mit Neuladen (nach einer mutierenden oder einer
-// gerissenen — die Kaskade: jeder gerissene Deckel lud die Seite neu, und die nächste riss wieder) und war ROT oder OFFEN, ohne den
-// Ring-Neubau (45 s je Probe), OFFEN dort mindestens 15 s (gerissen: die Messung ist zensiert); eine GRÜNE Messung bleibt ganz;
-// mindestens 10 s. Selbst getaktet (eigene Uhr, feste Fenster) und darum nach eigenem Bedarf: das Profi-Band (gang 64 s, glätte und
-// dauer 45 s). Über dem Budget (FAHRT_MAX_S − SITZUNG_BOOT_S) die EINE Kappe 33 s: Σ 1 656 s in 69 Läufen; 31 Proben stehen dort
-// unter ihrem Bedarf (ferne.K1 91, siedlung.K4#2 92, speicher.K2 73, vegetation.K5#2 68, tiere.K2#2 64, licht.K2#2 59, tiere.K3#2 59,
-// speicher.K1 57, tiere.K1#2 55, leib.K2 52, siedlung.K1#2 49, fahrzeug.K3#1 47, leib.K1#2, siedlung.K2 47, licht.K5#1, lod.K5#1,
-// material.K2#1, material.K3, mensch.K1, mensch.K1#2, studios.K4, tiere.K5#1, vegetation.K4, fahrzeug.K3#2 46, material.K1, wetter.K2#1,
-// schatten.K1#1 45, streaming.K3#1, affekt.K1#2 43, oekologie.K4#2, leib.K4 40 s) — die GPU-Fahrt nennt, wer warm am Deckel fällt
-// (UNGEMESSEN beim Namen), ihre Zahl ersetzt die Schätzung.
+// DAS BUDGET DER FAHRT (29.10., der Schöpfer: „Eine komplette Fahrt durch jedes System max 30 min"): FAHRT_MAX_S samt Boot ist das
+// EINE Gesetz der Zeit. DER DECKEL EINER PROBE IST EIN NOT-AUS AN DER LEINE (10.11., pm-deckel; Radeon 78d37554 `run --nur` mit 6 Proben:
+// 6 von 6 UNGEMESSEN an Einzel-Uhren — gelaende.K2#2 „Deckel 90 s“, klang.K5#2 „Deckel 45 s“, siedlung.K1#2 und bauen.K1#2 „Frist der
+// Probe 39 s“ mit 10/18 Häusern und 2/8 Werken gesehen, leib.K3#2 „/umstellen binnen 11 s“ —, die Fahrt lief 505 s von 1 800; die
+// Inventur 07.11.: 762 Deckel-Risse, 60 % der GPU-Ereignisse UNGEMESSEN): je Probe ihr GRUND-Deckel (probeSek: deckel.json je Karte aus
+// ihren Grün-Läufen, eichTafel, sonst probe.sek, Vorgabe PROBE_DECKEL_S) — bis dahin tötet nichts; darüber lebt sie, solange sie
+// Lebenszeichen gibt (jede Ausgabe auf stdout/stderr, Stille höchstens STILLE_S) und ihr ANTEIL der Fahrt trägt (fahreSitzung: der Rest
+// der Fahrt nach Bedarf unter die offenen Proben geteilt — eine `--nur`-Fahrt mit wenigen teilt das ganze Budget unter diesen wenigen).
+// Die eigene Frist der Probe ({SEK}, PUNKTE_PROBE_DECKEL_S, PUNKTE_TEIL_FRIST_S) folgt demselben EINEN Deckel. Ein Abbruch bleibt
+// UNGEMESSEN beim Namen (Stille, Anteil, Fahrt); der Deckel ändert nie ein Urteil
 const PROBE_DECKEL_S = 45;
-const PROBE_AUSNAHME_S = 90;
 const PROBE_SEK = PROBE_DECKEL_S;
 const FAHRT_MAX_S = 1800;
-const PROBE_SCHLUESSEL = ["befehl", "sek", "mutiert", "ausnahme", "stellung", "teile"];
+const STILLE_S = 15;
+const PROBE_SCHLUESSEL = ["befehl", "sek", "mutiert", "stellung", "teile"];
 // DIE TEILE (probe.teile, fahreGruppe): höchstens TEILE_MAX Teil-Proben je Lauf, jede im Gesetz der Probe; die Fahrt zählt jeden Teil
 const TEILE_MAX = 8;
 const teileVon = (st) => (st.probe && st.probe.teile) || 1;
@@ -260,21 +255,18 @@ function pruefeStationen(liste, karte) {
             if (st.befehl !== undefined) f.push("genau eines von befehl und probe");
             if (!p || typeof p !== "object") f.push("probe ist kein { befehl, sek }");
             else {
-                // DER DECKEL (die Fahrt, b): bis PROBE_DECKEL_S frei, darüber nur mit ausnahme bis PROBE_AUSNAHME_S, darüber nie
-                // der größte Deckel der Station: probe.sek und jeder Eintrag der Deckel-Tafel (nur an ihren eigenen Karten)
-                const sek = probeSek(st), dk = deckelEintraege(st);
+                // DER DECKEL (die Fahrt, b): der Grund-Deckel der Station — probe.sek und jeder Eintrag der Deckel-Tafel (nur an ihren
+                // eigenen Karten) —, je Teil der Probe höchstens EIN Teil der Fahrt (eine Probe misst in EINER Sitzung); kein Gesetz je Probe,
+                // keine Ausnahme je Station: die Zeit bindet die Fahrt (fahrtUrteil), die Leine den Hänger (fahreGruppe)
+                const sek = probeSek(st), dk = deckelEintraege(st), teilS = FAHRT_MAX_S - SITZUNG_BOOT_S;
                 if (p.sek !== undefined && !(Number.isInteger(p.sek) && p.sek >= 1)) f.push("probe.sek keine ganze Zahl ≥ 1");
                 else if (Object.entries(dk).some(([g, x]) => !ge.includes(g) || !Number.isInteger(x) || x < 1))
                     f.push("deckel.json: " + JSON.stringify(dk) + " — je Karte eine ganze Zahl ≥ 1, nur an den Geräten der Station");
-                else if (sek > PROBE_AUSNAHME_S) f.push("Deckel " + sek + " s über " + PROBE_AUSNAHME_S + " s — nie, auch mit ausnahme (die Fahrt ≤ " + FAHRT_MAX_S / 60 + " min)");
-                else if (sek > PROBE_DECKEL_S && p.ausnahme === undefined) f.push("Deckel " + sek + " s über " + PROBE_DECKEL_S + " s ohne ausnahme (der Grund beim Namen, bis " + PROBE_AUSNAHME_S + " s)");
-                else if (sek <= PROBE_DECKEL_S && p.ausnahme !== undefined) f.push("ausnahme an einem Deckel von " + sek + " s — sie trägt nur einen über " + PROBE_DECKEL_S + " s");
+                else if (sek * teileVon(st) > teilS) f.push("Deckel " + sek + " s × " + teileVon(st) + " Teil(e) über dem Teil der Fahrt " + teilS + " s (FAHRT_MAX_S − Boot) — eine Probe misst in EINER Sitzung");
                 if (Object.keys(p).some((k) => !PROBE_SCHLUESSEL.includes(k))) f.push("probe trägt nur " + PROBE_SCHLUESSEL.join(", "));
                 if (p.mutiert !== undefined && typeof p.mutiert !== "boolean") f.push("probe.mutiert nicht boolesch");
                 if (p.stellung !== undefined && !["anfang", "ende"].includes(p.stellung)) f.push("probe.stellung nicht anfang|ende");
-                if (p.ausnahme !== undefined && !(typeof p.ausnahme === "string" && p.ausnahme.length >= 12)) f.push("probe.ausnahme ohne Grund");
                 if (p.teile !== undefined && !(Number.isInteger(p.teile) && p.teile >= 2 && p.teile <= TEILE_MAX)) f.push("probe.teile keine ganze Zahl 2…" + TEILE_MAX);
-                else if (p.teile !== undefined && p.ausnahme !== undefined) f.push("probe.teile mit ausnahme — ein Teil misst im Gesetz " + PROBE_DECKEL_S + " s, nie darüber");
                 if (Array.isArray(p.befehl) && p.befehl.every((a) => typeof a === "string")) {
                     const feind = sitzungsFeinde(p.befehl);
                     if (feind.length) f.push("probe greift die Welt der Sitzung an: " + feind.join(", "));
@@ -1305,9 +1297,11 @@ function fahreGruppe(sts, ctx) {
         // ein Lauf, der das Schloss nie bekam, ist KEINE Messung: ungemessen beim Grund (eintragen legt ihn nie nach m.je)
         const offen = (grund, exit = null) => fertig({ gruen: false, ungemessen: true, zahl: grund, exit, minuten: min(), grund });
         if (!!sitz !== !!st.probe) return rot(st.probe ? "eine Probe misst nur in der Sitzung (fahreSitzung)" : "ein befehl fährt nie in der Sitzung");
-        // in der Sitzung der Deckel der Probe — in der Eich-Fahrt die Ausnahme-Grenze PROBE_AUSNAHME_S (sitz.eich, eichEintrag) —, gekappt
-        // am Rest der Fahrt (sitz.restS, fahreSitzung)
-        const sitzDeckelS = sitz && sitz.eich ? PROBE_AUSNAHME_S : probeSek(st, ctx.geraet);
+        // in der Sitzung DER EINE DECKEL der Probe je Teil: ihr Grund-Deckel (probeSek, bis dahin tötet nichts) oder ihr Anteil der Fahrt
+        // (sitz.anteilS, fahreSitzung), das größere — gekappt am Rest der Fahrt (sitz.restS); die Leine (unten) tötet zwischen Grund und
+        // Deckel nur die Stille
+        const grundS = sitz ? probeSek(st, ctx.geraet) : null;
+        const sitzDeckelS = sitz ? Math.max(grundS, Math.floor((sitz.anteilS || 0) / teileN)) : null;
         let fahrtKappt = !!sitz && sitz.restS != null && sitz.restS < sitzDeckelS;
         let deckelS = sitz ? (fahrtKappt ? Math.max(1, Math.floor(sitz.restS)) : sitzDeckelS) : Math.max(ctx.deckelMinS != null ? ctx.deckelMinS : 120, Math.ceil(st.minuten * 60 * 2));
         let argv = befehlVon(st).map((a) => ersetze(a, { ...ctx, sek: deckelS }));
@@ -1365,14 +1359,29 @@ function fahreGruppe(sts, ctx) {
         const stillS = ctx.stillS || SCHLOSS_STILL_S;
         let uhr = null, amSchloss = !schloss;
         const stelle = (s) => { clearTimeout(uhr); const k = kind; uhr = setTimeout(() => { tot = true; baumTot(k.pid); }, s * 1000); };
+        // DIE LEINE (in der Sitzung, je Teil ab tA): bis zum Grund-Deckel tötet nichts; danach fällt die Probe, wenn sie STILLE_S kein
+        // Lebenszeichen gab (jede Ausgabe, tLeben) oder ihr Deckel (Anteil, Rest der Fahrt) reißt — `riss` nennt, woran
+        const stilleS = (sitz && ctx.stilleS) || STILLE_S;
+        let tLeben = 0, riss = null;
+        const leine = (tA) => {
+            clearTimeout(uhr);
+            const k = kind, t = Date.now(), lauf = (t - tA) / 1000, still = (t - tLeben) / 1000;
+            if (lauf >= deckelS || (lauf >= grundS && still >= stilleS)) {
+                riss = lauf >= deckelS ? { art: "deckel" } : { art: "stille", still: +still.toFixed(1), lauf: +lauf.toFixed(1) };
+                tot = true;
+                return baumTot(k.pid);
+            }
+            const bis = Math.min(deckelS - lauf, Math.max(grundS - lauf, stilleS - still));
+            uhr = setTimeout(() => leine(tA), Math.max(50, Math.ceil(bis * 1000)));
+        };
         const lauscht = () => {
             if (amSchloss) return;
             if (/^gpu-lauf: Schloss /m.test(err) || /^gpu-lauf: Schloss /m.test(out)) { amSchloss = true; tSchloss = Date.now(); stelle(deckelS + 120); } else stelle(stillS);
         };
         // DIE TEILE EINER PROBE (w19-fahrt-ziel-2-pm, `probe.teile` N): ein Lauf, der mehr Wanduhr braucht als das Gesetz einer Probe
         // (fahrzeug.K2#1: Orte und Fahrt auf dem Wegenetz ~127 s auf der GTX gegen 45 s), fährt in bis zu N Teil-Proben in DERSELBEN
-        // Welt — je Teil ein Prozess unter dem Deckel der Probe (die Uhr je Teil, gekappt am Rest der Fahrt), mit PUNKTE_TEIL „i/N“ und
-        // der Frist PUNKTE_TEIL_FRIST_S = das Gesetz − FRIST_VORLAUF_S (auch in der Eich-Fahrt: kein Teil misst über dem Gesetz). Der
+        // Welt — je Teil ein Prozess unter dem Deckel der Probe (die Leine je Teil, gekappt am Rest der Fahrt), mit PUNKTE_TEIL „i/N“ und
+        // der Frist PUNKTE_TEIL_FRIST_S = derselbe EINE Deckel des Teils − FRIST_VORLAUF_S. Der
         // nächste Teil fährt nur, wenn der vorige mit Exit 0 `@@PUNKTE@@ TEIL WEITER` sagte; sonst urteilt die Station EINMAL über die
         // Ausgabe aller Teile (EIN Urteil, EIN Gesetz über den ganzen Lauf). Zwischen den Teilen nie eine Grundstellung: die Sitzung
         // sieht EINE Probe. Sagt der letzte Teil WEITER, reichten die Teile nicht — UNGEMESSEN beim Namen, nie still offen.
@@ -1382,7 +1391,7 @@ function fahreGruppe(sts, ctx) {
             const rest = teil > 1 && sitz && sitz.restS != null ? sitz.restS - (Date.now() - t0) / 1000 : Infinity;
             if (rest < deckelS) [fahrtKappt, deckelS] = [true, Math.max(1, Math.floor(rest))];
             if (teileN > 1) Object.assign(env, { PUNKTE_PROBE_DECKEL_S: String(deckelS), PUNKTE_TEIL: teil + "/" + teileN,
-                PUNKTE_TEIL_FRIST_S: String(Math.max(1, Math.min(deckelS, gesetzVon(st)) - FRIST_VORLAUF_S)) });
+                PUNKTE_TEIL_FRIST_S: String(Math.max(1, deckelS - FRIST_VORLAUF_S)) });
             const tA = Date.now();
             let k, outTeil = "", tE = null, gemeldet = false;
             try {
@@ -1390,9 +1399,10 @@ function fahreGruppe(sts, ctx) {
             } catch (e) {
                 return rot("Start: " + e.message);
             }
-            k.stdout.on("data", (d) => { out = kappe(out, String(d)); outTeil = kappe(outTeil, String(d)); lauscht(); });
-            k.stderr.on("data", (d) => { err = kappe(err, String(d)); lauscht(); });
-            stelle(schloss ? stillS : deckelS);
+            k.stdout.on("data", (d) => { tLeben = Date.now(); out = kappe(out, String(d)); outTeil = kappe(outTeil, String(d)); lauscht(); });
+            k.stderr.on("data", (d) => { tLeben = Date.now(); err = kappe(err, String(d)); lauscht(); });
+            if (sitz) ((tLeben = tA), leine(tA));
+            else stelle(schloss ? stillS : deckelS);
             k.on("error", (e) => { clearTimeout(uhr); rot("Start: " + e.message); });
             // das Ende der Station ist das Ende ihres Prozesses, nie das Schließen der Rohre: ein Enkel, der sie erbt (der Herzschlag
             // `while sleep 300` in gpu-lauf.sh der OMEN), hielte "close" bis zu seinem Erwachen — 26.10.: jede GTX-Station dauerte
@@ -1429,10 +1439,12 @@ function fahreGruppe(sts, ctx) {
             // überschritten“ — ihr erster Schuss stand nach 51 s, der zweite trug den Deckel); in der Sitzung ebenso die Wache
             const zuletzt = String(out).split(/\r?\n/).map((l) => l.trim()).filter(Boolean).pop();
             const wobei = zuletzt ? " (zuletzt: " + zuletzt.slice(0, 160) + ")" : "";
-            // DIE WACHE DER FAHRT: in der Sitzung ist eine Probe am Deckel UNGEMESSEN beim Namen (sie misst nicht, was sie soll — nie ROT,
-            // nie GRÜN); der Rest der Fahrt kappte sie: die Fahrt riss FAHRT_MAX_S
+            // DIE WACHE DER FAHRT: in der Sitzung ist eine Probe an der Leine UNGEMESSEN beim Namen (sie misst nicht, was sie soll — nie ROT,
+            // nie GRÜN): die Stille über ihrem Grund-Deckel, ihr Anteil der Fahrt, oder der Rest der Fahrt kappte sie (FAHRT_MAX_S)
             const imTeil = teileN > 1 ? " in Teil " + teil + "/" + teileN : "";
-            if (tot && sitz) return offen((fahrtKappt ? "Deckel der Fahrt " + (sitz.fahrtMaxS || FAHRT_MAX_S) + " s gerissen nach " + deckelS + " s der Probe" : "Deckel " + deckelS + " s gerissen") + imTeil + " — beendet, UNGEMESSEN" + wobei, code);
+            if (tot && sitz) return offen((riss && riss.art === "stille" ? "Deckel " + grundS + " s gerissen: Stille seit " + riss.still + " s nach " + riss.lauf + " s (kein Lebenszeichen)"
+                : fahrtKappt ? "Deckel der Fahrt " + (sitz.fahrtMaxS || FAHRT_MAX_S) + " s gerissen nach " + deckelS + " s der Probe"
+                    : "Deckel " + deckelS + " s gerissen" + (deckelS > grundS ? " (der Anteil der Fahrt, mit Lebenszeichen)" : "")) + imTeil + " — beendet, UNGEMESSEN" + wobei, code);
             if (ohneEnde) return offen("die Teile reichten nicht: Teil " + teil + "/" + teileN + " sagte WEITER — der Lauf ohne Ende, UNGEMESSEN" + wobei, code);
             if (tot) return rot("Deckel " + (schloss ? deckelS + 120 : deckelS) + " s überschritten — beendet" + wobei, code);
             const blockiert = (/^SCHLOSS BLOCKIERT .*$/m.exec(out) || [""])[0].trim();
@@ -1545,6 +1557,9 @@ async function baumSperre(repo, geraet) {
 // — 60 s, das Anderthalbfache des Größten je gemessenen (40 s); ein Boot darüber ist ROT beim Namen (der Halter)
 const SITZUNG_BOOT_S = 60;
 const SITZUNG_MAX_S = FAHRT_MAX_S + 600;
+// DER ZWISCHENRAUM je Probe (der Anteil der Fahrt, fahreSitzung): Ort und Grundstellung vor ihr (Radeon 78d37554: Ort 17,4–27,8 s,
+// Grundstellung 3,0–5,2 s — höchstens 33 s)
+const ZWISCHEN_S = 35;
 const GRUNDSTELLUNG_S = 180;
 const STAND_DATEIEN = ["anazhRealmState.json", "anazhRealmState.json.bak", "anazhRealmPerf.json"];
 const GRUND_SEITE = ["__ortTakt", "__ortStell", "__ortSchritt", "__ortBahn", "__anazhAutoSettlement"];
@@ -2504,49 +2519,38 @@ const brachAb = (es) => es.some((e) => /^(Deckel |Frist der Probe |Absturz|Start
 // der Werkbank trägt es, WARTEN_SEITE) — kein Messort, kein Umstellen: der Spieler bleibt, wo Boot, Grundstellung oder Tür ihn ließen
 const WELT_STEHT = "await __weltDa(); const takte = await __weltStehtNach(); return { takte, chunks: r.state.voxelChunks ? r.state.voxelChunks.size : 0, ring: r._builtRingRadius() };";
 
-// DIE EICH-FAHRT (w4-sitzung-eichen; takt25c GTX an 6b3da705: 36 von 38 Proben rissen ihren geschätzten Deckel — 10, 15, die Kappe 33 s —
-// und standen UNGEMESSEN, die Zahl, die die Schätzung ersetzen soll, war zensiert): `run --eich` fährt die Sitzung mit dem Deckel
-// PROBE_AUSNAHME_S je Probe (fahreGruppe) und trägt je Probe `eich` — ihre Sekunden s, ihren Deckel sek, ihr Gesetz gesetzS. Das Gesetz
-// steht offen: ein Urteil zählt nur, wenn die Probe darin blieb (≤ PROBE_DECKEL_S, mit ausnahme ≤ PROBE_AUSNAHME_S); darüber ist sie
-// UNGEMESSEN beim Namen, mit Urteil und Zahl, nie GRÜN oder ROT; am Eich-Deckel „≥ 90 s“ (gerissen). Was keine Zahl der Probe ist
-// (die Welt endete, die Fahrt riss, kein Schloss), bleibt, wie es fiel. Die Fahrt bleibt ≤ FAHRT_MAX_S: den Rest misst die nächste
-// Eich-Fahrt (eichOffen: ohne frische Messung und ohne Zahl am SHA)
-const gesetzVon = (st) => (st.probe && st.probe.ausnahme !== undefined ? PROBE_AUSNAHME_S : PROBE_DECKEL_S);
+/// DIE EICH-FAHRT (w4-sitzung-eichen; takt25c GTX an 6b3da705: 36 von 38 Proben rissen ihren geschätzten Deckel und standen UNGEMESSEN):
+// `run --eich` fährt die Proben ohne Eich-Zahl am SHA (eichOffen) an derselben Leine wie jede Fahrt und trägt je Probe `eich` — ihre
+// Sekunden s und ihren Grund-Deckel sek; an der Leine gefallen (Stille, Anteil, Frist) ist die Zahl zensiert (`gerissen`, eine Untergrenze).
+// Der Deckel ändert nie ein Urteil (bis 10.11. hieß ein GRÜN über 45 s „das Urteil zählt nie“ — eine Wanduhr urteilte). Was keine Zahl der
+// Probe ist (die Welt endete, die Fahrt riss, kein Schloss), bleibt, wie es fiel
 function eichEintrag(st, e, geraet) {
-    // am Eich-Deckel: der Deckel riss, oder die eigene Frist der Probe ({SEK} − 6 s) — die Zahl ist zensiert, „≥ 90 s“
-    const am = !!e.ungemessen && /^(Deckel|Frist der Probe) \d+(\.\d+)? s gerissen/.test(e.grund || "");
+    const am = !!e.ungemessen && RISS_GRUND.test(e.grund || "");
     if (e.ungemessen && !am) return e;
-    const eich = { s: e.s, sek: probeSek(st, geraet), gesetzS: gesetzVon(st), ...(am ? { gerissen: true } : {}) };
-    if (am) return { ...e, eich, grund: "EICH: ≥ " + PROBE_AUSNAHME_S + " s — " + e.grund, zahl: "EICH: ≥ " + PROBE_AUSNAHME_S + " s — " + e.zahl };
-    if (e.s <= eich.gesetzS) return { ...e, eich };
-    const grund = "EICH: " + e.s + " s über dem Gesetz " + eich.gesetzS + " s" + (eich.gesetzS === PROBE_DECKEL_S ? " (ohne ausnahme)" : "") +
-        " — das Urteil zählt nie (" + (e.gruen ? "GRÜN" : "ROT") + ": " + String(e.zahl).slice(0, 200) + ")";
-    return { ...e, gruen: false, ungemessen: true, zahl: grund, grund, eich: { ...eich, urteil: e.gruen ? "GRÜN" : "ROT" } };
+    return { ...e, eich: { s: e.s, sek: probeSek(st, geraet), ...(am ? { gerissen: true } : {}) } };
 }
 // die Stationen ohne Eich-Zahl am SHA: m = die Mess-Datei des Geräts (oder null), ab(st) = der Abdruck heute — eine Zahl zählt nur zum
 // Abdruck, an dem sie fiel (eine geänderte Probe eicht neu)
 const eichOffen = (meine, m, sha, ab) =>
     meine.filter((st) => !(m && m.sha === sha && [m.je, m.ungemessen].some((x) => x && x[schluessel(st)] && x[schluessel(st)].eich && x[schluessel(st)].abdruck === ab(st))));
-// DIE DECKEL-TAFEL AUS DEN GEMESSENEN DAUERN (04.11., Karte deckel-wurzel; GTX 5fba36ea: vegetation.K1#1 brach in der EINEN Eich-Fahrt nach
-// 2,8 s ab — „ohne alle Schüsse“ —, die Tafel setzte ⌈1,5 × 2,8⌉ + 6 = 11 s, und jede Fahrt danach riss dort, obwohl 20 Läufe davor
-// 31,2–39,6 s brauchten; Radeon 2674ff9a: 52 von 117 Stationen „Deckel/Frist gerissen“ UNGEMESSEN): EINE Quelle je Probe und Karte — die
-// Sekunden ALLER Mess-Dateien der Karte (laufSekunden), nie die einer einzigen Fahrt. Je Lauf der Sitzung (Zwillinge einmal, die Reihe der
-// Fahrt) die jüngsten DECKEL_REIHE_N Läufe: einer, der sein Urteil sprach (die Sitzung `s`, die Eich-Fahrt `eich.s`), ist eine Zahl; einer
-// am Deckel oder an der eigenen Frist (die Eich-Fahrt am Eich-Deckel: ≥ 90 s) ist eine UNTERGRENZE (zensiert). DIE REGEL: das p90 der Reihe
-// (der Rang ⌈0,9 × n⌉: der schnelle Fehlschlag nach unten und der eine Ausreißer nach oben tragen nie), ⌈1,5 × p90⌉ + 6 s Vorlauf der
-// Frist, mindestens DECKEL_MIN_S, höchstens das Gesetz der Probe (45 s, mit ausnahme 90 s). Ist das p90 zensiert (die Probe riss dort, ihr
-// Bedarf ist unbekannt) oder liegt es über dem Gesetz, trägt sie das GESETZ — die volle gesetzliche Zeit in jeder Fahrt: ein Lauf, der
-// wirklich hängt, reißt dort und bleibt UNGEMESSEN beim Namen („Deckel 45 s gerissen“), einer, der schneller wurde, urteilt (bis 04.11.
-// trugen sie DECKEL_MIN_S und rissen jede Fahrt, nur eine eigene Eich-Fahrt sah sie wieder). Ein Deckel ist kein Urteil: das Urteil der
-// Station bleibt Byte für Byte. DIE RUHE: ein Deckel heute zwischen ⌈1,1 × p90⌉ + 6 und ⌈1,5 × p90⌉ + 6 bleibt (ein neuer Deckel ändert
-// den Abdruck, die Station misst neu). DIE FAHRT bindet die Tafel nie mehr: was über FAHRT_MAX_S reicht, misst die Fortsetzung
-// (fahreFortsetzung) in einer neuen Sitzung, höchstens FAHRT_TEILE_MAX Teile (fahrtUrteil)
+// DIE DECKEL-TAFEL AUS DEN GRÜN-LÄUFEN (10.11., pm-deckel; die Inventur 07.11.: 62 Stationen trugen 10 s, ihre Grün-Läufe brauchten median
+// 44,6 s, max 84 s — 248 Risse dort —, weil `laufSekunden` jeden gemessenen Lauf in die Reihe legte, auch das ROT nach 2 s, und das p90
+// unter den Boden von 10 s fiel): EINE Quelle je Probe und Karte — die Sekunden ALLER Mess-Dateien DIESER Karte (laufSekunden), nie einer
+// Fahrt, nie eines fremden Geräts. DIE REGEL: das p90 der jüngsten DECKEL_REIHE_N GRÜN-Läufe (Rang ⌈0,9 × n⌉), ⌈EICH_FAKTOR × p90⌉ + 6 s
+// Vorlauf der Frist; mit weniger als DECKEL_GRUEN_MIN Grün-Läufen die Vorgabe der Station (probe.sek, mindestens PROBE_DECKEL_S), nie unter
+// dem Deckel heute (ohne Grün-Reihe sinkt nichts: gelaende.K2, leib.K4 tragen 90 s und rissen dort); NIE unter
+// dem höchsten je gemessenen Urteil + Vorlauf (GRÜN oder ein ROT, das sein Maß sprach — der schnelle Fehlschlag drückt nie nach unten, das
+// langsame Urteil trägt immer); höchstens ein Teil der Fahrt je Teil der Probe. Ein Lauf an der Leine (zensiert) trägt nie: sein Bedarf ist
+// unbekannt, die Leine gibt ihm in jeder Fahrt mit Rest mehr. Ein Deckel ist kein Urteil: das Urteil der Station bleibt Byte für Byte.
+// DIE RUHE: ein Deckel heute zwischen ⌈1,1 × p90⌉ + 6 und ⌈EICH_FAKTOR × p90⌉ + 6 bleibt (ein neuer Deckel ändert den Abdruck). DIE FAHRT
+// bindet die Tafel nie: was über FAHRT_MAX_S reicht, misst die Fortsetzung (fahreFortsetzung), höchstens FAHRT_TEILE_MAX Teile (fahrtUrteil)
 // FRIST_VORLAUF_S: die Probe hat Deckel − 6 s (FRIST_S in stationen/sitzung-seite.js, frist in stationen/seite.cjs) — der Deckel trägt ihre
 // Zahl erst mit diesem Vorlauf (Radeon 25ac4c0c mit ⌈1,45 × s⌉: siedlung.K5 13,3 s an der Frist 14 s, halten.K1#2 15 s an 16 s gerissen)
-const EICH_FAKTOR = 1.5, EICH_FAKTOR_MIN = 1.1, DECKEL_MIN_S = 10, FRIST_VORLAUF_S = 6, DECKEL_REIHE_N = 10, DECKEL_P = 0.9;
+const EICH_FAKTOR = 2, EICH_FAKTOR_MIN = 1.1, FRIST_VORLAUF_S = 6, DECKEL_REIHE_N = 10, DECKEL_P = 0.9, DECKEL_GRUEN_MIN = 3;
 const RISS_GRUND = /^(Deckel|Frist der Probe) \d+(\.\d+)? s gerissen/;
-// die jüngsten DECKEL_REIHE_N Läufe der Probe `id` auf der Karte aus allen Mess-Dateien ms: { s, zensiert, zeit, sha } (ein Zwilling erbt
-// den Lauf der ersten Station, er zählt nie zweimal; „die Welt endete“, „die Fahrt riss“, kein Schloss sind keine Zahl der Probe)
+// jeder Lauf der Probe `id` auf der Karte aus allen Mess-Dateien ms, der jüngste zuerst: { s, gruen, gemessen, zensiert, zeit, sha } —
+// gemessen: ein Urteil fiel (GRÜN oder ROT im Maß), zensiert: an der Leine oder der eigenen Frist gefallen (ein Zwilling erbt den Lauf der
+// ersten Station, er zählt nie zweimal; „die Welt endete“, „die Fahrt riss“, kein Schloss, Fremd-Last sind keine Zahl der Probe)
 function laufSekunden(ms, geraet, id) {
     const es = [];
     for (const m of ms) {
@@ -2554,42 +2558,48 @@ function laufSekunden(ms, geraet, id) {
         for (const x of [m.je, m.ungemessen]) {
             const e = x && x[id];
             if (!e || e.zwilling) continue;
-            const mit = (s, zensiert) => es.push({ s, zensiert, zeit: String(e.zeit || ""), sha: m.sha });
-            if (e.eich) mit(e.eich.gerissen ? PROBE_AUSNAHME_S : e.eich.s, !!e.eich.gerissen);
-            else if (e.modus !== "session" || !(e.s > 0)) continue;
-            else if (!e.ungemessen) mit(e.s, false);
-            // am Deckel oder an der eigenen Frist N: die Untergrenze ist das größere von s und N (bauen.K5#2 Radeon: „Frist der Probe
+            const mit = (s, gemessen, gruen) => es.push({ s, gruen: !!gruen, gemessen: !!gemessen, zensiert: !gemessen, zeit: String(e.zeit || ""), sha: m.sha });
+            // die Eich-Fahrt bis 10.11.: am Eich-Deckel zensiert, „über dem Gesetz“ ein Urteil, das nie zählte (eich.urteil) — die Zahl trägt
+            if (e.eich) {
+                if (e.eich.gerissen) mit(e.eich.s || 90, false);
+                else if (!e.ungemessen) mit(e.eich.s, true, e.gruen === true);
+                else if (e.eich.urteil) mit(e.eich.s, true, e.eich.urteil === "GRÜN");
+            } else if (e.modus !== "session" || !(e.s > 0)) continue;
+            else if (!e.ungemessen) mit(e.s, true, e.gruen === true);
+            // an der Leine oder an der eigenen Frist N: die Untergrenze ist das größere von s und N (bauen.K5#2 Radeon: „Frist der Probe
             // 33 s gerissen“ nach 29,2 s Prozess — die Probe zählt ihre Frist selbst)
-            else if (RISS_GRUND.test(e.grund || "")) mit(Math.max(e.s, Number(RISS_GRUND.exec(e.grund)[0].match(/\d+(\.\d+)?/)[0])), true);
+            else if (RISS_GRUND.test(e.grund || "")) mit(Math.max(e.s, Number(RISS_GRUND.exec(e.grund)[0].match(/\d+(\.\d+)?/)[0])), false);
         }
     }
-    return es.sort((a, b) => b.zeit.localeCompare(a.zeit)).slice(0, DECKEL_REIHE_N);
+    return es.sort((a, b) => b.zeit.localeCompare(a.zeit));
 }
-// der Deckel aus der Reihe: { p90, zensiert, ueber, n, neu } oder null (ohne Lauf); sek = der Deckel heute (DIE RUHE)
-function deckelAus(reihe, gesetzS, sek, faktor = EICH_FAKTOR) {
+// der Deckel aus der Reihe: { p90, n, hoch, zensiert, neu } oder null (ohne Lauf); vorgabe = der Deckel ohne Grün-Reihe, sek = der Deckel
+// heute (DIE RUHE), teile = die Teil-Proben (der Deckel gilt je Teil)
+function deckelAus(reihe, vorgabe, sek, teile = 1) {
     if (!reihe.length) return null;
-    const l = [...reihe].sort((a, b) => a.s - b.s || a.zensiert - b.zensiert);
-    const p = l[Math.ceil(DECKEL_P * l.length) - 1];
-    const ueber = !p.zensiert && p.s > gesetzS;
-    const aus = (f) => Math.min(gesetzS, Math.max(DECKEL_MIN_S, Math.ceil(+(f * p.s).toFixed(6)) + FRIST_VORLAUF_S));
-    const neu = p.zensiert || ueber ? gesetzS : sek >= aus(EICH_FAKTOR_MIN) && sek <= aus(faktor) ? sek : aus(faktor);
-    return { p90: p.s, zensiert: p.zensiert, ueber, n: l.length, neu };
+    const gruen = reihe.filter((x) => x.gruen).slice(0, DECKEL_REIHE_N).map((x) => x.s).sort((a, b) => a - b);
+    const p90 = gruen.length >= DECKEL_GRUEN_MIN ? gruen[Math.ceil(DECKEL_P * gruen.length) - 1] : null;
+    const hoch = Math.max(0, ...reihe.filter((x) => (p90 == null ? x.gemessen : x.gruen)).map((x) => x.s));
+    const boden = hoch > 0 ? Math.ceil(+hoch.toFixed(6)) + FRIST_VORLAUF_S : 0;
+    const aus = (f) => Math.ceil(+(f * p90).toFixed(6)) + FRIST_VORLAUF_S;
+    const roh = p90 == null ? Math.max(vorgabe, sek, boden) :Math.max(boden, sek >= aus(EICH_FAKTOR_MIN) && sek <= aus(EICH_FAKTOR) ? sek : aus(EICH_FAKTOR));
+    return { p90, n: gruen.length, hoch, zensiert: reihe.filter((x) => x.zensiert).length, neu: Math.min(Math.floor((FAHRT_MAX_S - SITZUNG_BOOT_S) / teile), roh) };
 }
-// DIE TAFEL (`eichtafel`, der Leser der Zahlen): je Lauf der Sitzung sein Deckel heute, das p90 seiner Reihe und der Deckel aus ihr; Σ heute
-// ↔ aus den Zahlen und die Teile der Fahrt. ms = die Mess-Dateien (ladeMessungen)
-function eichTafel(stationen, ms, geraet, faktor = EICH_FAKTOR) {
+// DIE TAFEL (`eichtafel`, der Leser der Zahlen): je Lauf der Sitzung sein Deckel heute, das p90 seiner Grün-Reihe und der Deckel aus ihr; Σ
+// heute ↔ aus den Zahlen und die Teile der Fahrt. ms = die Mess-Dateien (ladeMessungen)
+function eichTafel(stationen, ms, geraet) {
     const reihe = sitzungsReihe(gruppiere(stationen.filter((st) => st.probe && geraeteVon(st).includes(geraet))));
     // der Ort im Deckel der jüngsten Sitzung der Karte (stromKopf `ortImDeckel`): wie weit der Lauf im eigenen Deckel zog — der Täter beim Namen
     const letzte = ms.filter((m) => (!m.geraet || m.geraet === geraet) && m.sitzung && m.sitzung.strom)
         .sort((a, b) => String(b.zeit || "").localeCompare(String(a.zeit || "")))[0];
     const ort = new Map(((letzte && letzte.sitzung.strom.ortImDeckel) || []).map((e) => [e.probe, e.m]));
     const zeilen = reihe.map((g) => {
-        const sek = probeSek(g[0], geraet), gesetzS = gesetzVon(g[0]);
-        const d = deckelAus(laufSekunden(ms, geraet, schluessel(g[0])), gesetzS, sek, faktor);
+        const sek = probeSek(g[0], geraet), vorgabe = Math.max(PROBE_DECKEL_S, sekRoh(g[0]));
+        const d = deckelAus(laufSekunden(ms, geraet, schluessel(g[0])), vorgabe, sek, teileVon(g[0]));
         const neu = d ? d.neu : null;
-        const urteil = !d ? "ohne Zahl" : d.zensiert ? "gerissen bei " + d.p90 + " s — das Gesetz " + gesetzS + " s"
-            : d.ueber ? "über dem Gesetz " + gesetzS + " s — das Gesetz, schneller machen" : neu === sek ? "trägt" : neu > sek ? "Deckel zu knapp" : "Deckel zu weit";
-        return { ids: g.map(schluessel), sek, s: d ? d.p90 : null, n: d ? d.n : 0, zensiert: !!(d && d.zensiert), ueber: !!(d && d.ueber), neu, gesetzS, urteil,
+        const urteil = !d ? "ohne Zahl" : d.p90 == null ? d.n + " Grün-Läufe (unter " + DECKEL_GRUEN_MIN + ") — die Vorgabe " + Math.max(vorgabe, sek) + " s" + (d.hoch ? ", nie unter dem Urteil " + d.hoch + " s" : "")
+            : neu === sek ? "trägt" : neu > sek ? "Deckel zu knapp" : "Deckel zu weit";
+        return { ids: g.map(schluessel), sek, s: d ? d.p90 : null, n: d ? d.n : 0, hoch: d ? d.hoch : null, zensiert: d ? d.zensiert : 0, neu, urteil,
             ortM: ort.get(schluessel(g[0])) || null, probeTeile: teileVon(g[0]) };
     });
     // je Lauf seine Teil-Proben (probe.teile): der Deckel gilt je Teil, die Fahrt trägt jeden
@@ -2597,16 +2607,15 @@ function eichTafel(stationen, ms, geraet, faktor = EICH_FAKTOR) {
     return { zeilen, heute: zeilen.reduce((a, z) => a + z.sek * z.probeTeile, 0), ausZahlen, budget, teile: Math.max(1, Math.ceil(ausZahlen / budget)),
         geeicht: zeilen.filter((z) => z.s != null).length };
 }
-// GERISSEN VORHER ↔ NACHHER an einer Mess-Datei m der Karte: jede Station, die dort am Deckel oder an der eigenen Frist UNGEMESSEN fiel
-// (vorher), und die, die am Deckel der Tafel t wieder risse (nachher): ihr p90 + Vorlauf über dem Deckel (auch ein zensiertes: die
-// Untergrenze allein reißt ihn schon). Ein zensiertes p90 darunter oder keine Zahl heißt: der Bedarf ist unbekannt — sie zählt als
-// gerissen (unbekannt), nie still als gemessen, und trägt das Gesetz
+// GERISSEN VORHER ↔ NACHHER an einer Mess-Datei m der Karte: jede Station, die dort an der Leine oder an der eigenen Frist UNGEMESSEN fiel
+// (vorher), und die, die am Deckel der Tafel t wieder risse (nachher): ihr Grün-p90 + Vorlauf über dem Deckel. Ohne Grün-p90 ist der Bedarf
+// unbekannt — sie zählt als gerissen (unbekannt), nie still als gemessen; die Leine misst sie, wo die Fahrt Rest trägt
 function gerissenVorNach(t, m) {
     const je = new Map(t.zeilen.flatMap((z) => z.ids.map((id) => [id, z])));
     const vorher = Object.entries((m && m.ungemessen) || {}).filter(([id, e]) => je.has(id) && RISS_GRUND.test(e.grund || "")).map(([id]) => id);
     const sicher = (z, sek) => z.s != null && z.s + FRIST_VORLAUF_S > sek;
     const amNeu = (id) => sicher(je.get(id), je.get(id).neu != null ? je.get(id).neu : je.get(id).sek);
-    const unbekannt = vorher.filter((id) => !amNeu(id) && (je.get(id).s == null || je.get(id).zensiert));
+    const unbekannt = vorher.filter((id) => !amNeu(id) && je.get(id).s == null);
     return { vorher, vorherSicher: vorher.filter((id) => sicher(je.get(id), je.get(id).sek)), nachher: vorher.filter((id) => amNeu(id) || unbekannt.includes(id)),
         sicher: vorher.filter(amNeu), unbekannt };
 }
@@ -2622,7 +2631,7 @@ function eichtafelCli(o) {
     deckelTafel = tafel;
     const t = eichTafel([...mitTafel, ...ohneTafel.filter((st) => !mitTafel.some((x) => schluessel(x) === schluessel(st)))], ms, o.geraet);
     for (const z of t.zeilen)
-        console.log("  " + z.ids.join("+") + " · Deckel " + z.sek + " s · " + (z.s == null ? "—" : "p90 " + (z.zensiert ? "≥ " : "") + z.s + " s aus " + z.n) +
+        console.log("  " + z.ids.join("+") + " · Deckel " + z.sek + " s · " + (z.s == null ? "—" : "p90 " + z.s + " s aus " + z.n + " Grün-Läufen") + (z.zensiert ? " · " + z.zensiert + " an der Leine" : "") +
             (z.neu != null ? " → " + z.neu + " s" : "") + " · " + z.urteil + (z.ortM ? " · Ort im Deckel " + z.ortM + " m" : ""));
     console.log("DECKEL-TAFEL " + o.geraet + " aus " + ms.filter((m) => m.geraet === o.geraet).length + " Mess-Dateien: " + t.geeicht + " von " + t.zeilen.length +
         " Läufen mit Zahl · Σ Deckel heute " + t.heute + " s → aus den Zahlen " + t.ausZahlen + " s · die Fahrt in " + t.teile + " Teil(en) je ≤ " + FAHRT_MAX_S +
@@ -2633,7 +2642,7 @@ function eichtafelCli(o) {
         if (!fs.existsSync(d)) throw new Error("--sha " + sha + ": keine " + path.relative(DIR, d));
         const v = gerissenVorNach(t, JSON.parse(fs.readFileSync(d, "utf8")));
         console.log("GERISSEN " + path.basename(d) + ": " + v.vorher.length + " Stationen rissen dort · sicher gerissen am Deckel heute " + v.vorherSicher.length +
-            " → am Deckel der Tafel " + v.sicher.length + (v.sicher.length ? " (" + v.sicher.join(" ") + ")" : "") + " · Bedarf unbekannt, jetzt am Gesetz " + v.unbekannt.length);
+            " → am Deckel der Tafel " + v.sicher.length + (v.sicher.length ? " (" + v.sicher.join(" ") + ")" : "") + " · Bedarf unbekannt (ohne Grün-Reihe, die Leine misst sie) " + v.unbekannt.length);
     }
     // --schreibe (DIE DECKEL-TAFEL, deckel.json): jeder Deckel aus den Zahlen wird der Deckel seiner Karte — nur, wenn die Stationen danach halten
     if (o.schreibe) {
@@ -2696,12 +2705,19 @@ async function fahreSitzung(gruppen0, ctx, melde) {
     // aktOrt: wo die Welt zuletzt eingeschwungen stand — ein Messort, „(hier)“ (DER WARME START, ohne Ort) oder null (nirgends: nach
     // dem Boot, jeder Grundstellung und in jeder neuen Seite); stellSeite: die Seite, in der das geschah
     let aktOrt = null, ortNach = null, stellSeite = null;
-    // DIE EICH-FAHRT (ctx.eich, `run --eich`, eichEintrag): das Gesetz beim Namen im Kopf und im Log
+    // DIE EICH-FAHRT (ctx.eich, `run --eich`, eichEintrag): dieselbe Leine, je Probe ihre Sekunden (eich) — im Kopf und im Log
     if (ctx.eich) {
-        kopf.eich = { deckelS: PROBE_AUSNAHME_S, gesetzS: PROBE_DECKEL_S, ausnahmeS: PROBE_AUSNAHME_S, fahrtMaxS };
-        console.log("  SITZUNG EICH-FAHRT: jede Probe bis " + PROBE_AUSNAHME_S + " s — das Gesetz: je Probe ≤ " + PROBE_DECKEL_S + " s, mit ausnahme ≤ " +
-            PROBE_AUSNAHME_S + " s, die Fahrt ≤ " + fahrtMaxS + " s; ein Urteil zählt nur im Gesetz, je Probe ihre Sekunden (eich)");
+        kopf.eich = { fahrtMaxS };
+        console.log("  SITZUNG EICH-FAHRT: je Probe ihre Sekunden an derselben Leine (Grund-Deckel, Stille " + (ctx.stilleS || STILLE_S) + " s, Anteil), die Fahrt ≤ " + fahrtMaxS + " s");
     }
+    // DER ANTEIL DER FAHRT (die Leine, fahreGruppe): der Rest der Fahrt nach Bedarf (Grund-Deckel × Teile) unter die Probe und alle nach
+    // ihr geteilt, je folgende Probe ZWISCHEN_S für Grundstellung und Ort vorab (Radeon 78d37554: Ort 17,4–27,8 s + Grundstellung
+    // 3,0–5,2 s); reicht der Rest nicht (die volle Fahrt), ist der Anteil der Grund-Deckel — was über die Fahrt reicht, misst die Fortsetzung
+    const bedarf = (g) => probeSek(g[0], ctx.geraet) * teileVon(g[0]);
+    const anteil = (i) => {
+        const vor = gruppen.slice(i).reduce((a, g) => a + bedarf(g), 0);
+        return Math.max(0, Math.floor(((restS() - ZWISCHEN_S * (gruppen.length - i - 1)) * bedarf(gruppen[i])) / vor));
+    };
     // DER ZAPF-TAKT: nie zwei Zapfen der Sitzung zugleich; während der Grundstellung ruht er. `seite`: die Seite des letzten Zapfens
     // (stromSeite zieht je Seite einen Haken ein) — eine neue Seite hat keinen gebauten Ring (DER WARME START)
     const W = ctx.port + 20000, zz = { zapfen: 0, luecken: 0, letzteLuecke: null };
@@ -2882,7 +2898,7 @@ async function fahreSitzung(gruppen0, ctx, melde) {
         if (leihe.fehler) console.log("  SITZUNG die Leihe der Hänger-Linse vor " + schluessel(g[0]) + " nicht lesbar: " + leihe.fehler);
         const zeit = new Date().toISOString();
         aktuell = schluessel(g[0]);
-        const es = await fahreGruppe(g, { ...ctx, ...aus, sitzung: { log, zeuge, strom, grund, probe: aktuell, restS: restS(), fahrtMaxS, eich: !!ctx.eich } });
+        const es = await fahreGruppe(g, { ...ctx, ...aus, sitzung: { log, zeuge, strom, grund, probe: aktuell, restS: restS(), anteilS: anteil(gruppen.indexOf(g)), fahrtMaxS } });
         if (es.some((e) => /^Deckel der Fahrt /.test(e.grund || ""))) (gerissen = "in " + aktuell), kopf.offen.push(...g.map(schluessel));
         await zapf(aktuell);
         aktuell = "(sitzung)";
@@ -3277,7 +3293,7 @@ async function run(opt) {
     if (opt.geraet === "headless" && !opt.farm && !opt.trocken) return farmRufen(opt, a);
     if (opt.trocken) {
         console.log("Punkte-Maschine (trocken): " + meine.length + " Station(en) auf " + opt.geraet + " am " + sha.slice(0, 8) + ", " +
-            planText(gruppiere(meine), bahnenSoll, opt.geraet) + (opt.eich ? " · EICH-FAHRT: je Probe bis " + PROBE_AUSNAHME_S + " s, die Fahrt ≤ " + FAHRT_MAX_S + " s" : "") + ": " +
+            planText(gruppiere(meine), bahnenSoll, opt.geraet) + (opt.eich ? " · EICH-FAHRT: je Probe ihre Sekunden an der Leine, die Fahrt ≤ " + FAHRT_MAX_S + " s" : "") + ": " +
             meine.map((st) => schluessel(st) + (st.zeit ? "(Zeit)" : "")).join(" "));
         return null;
     }
@@ -3325,8 +3341,8 @@ async function run(opt) {
             eintragen(m, id, e);
             console.log(stationsZeile(id, e));
             // die Zahl der Eich-Fahrt (eichEintrag) — die Sekunden VOR der Id: der Fortschritt liest das Urteil aus „<Urteil> <id>“
-            if (e.eich) console.log("  EICH " + (e.eich.gerissen ? "≥ " + PROBE_AUSNAHME_S : e.eich.s) + " s · " + id + " · Deckel " + e.eich.sek + " s · Gesetz " + e.eich.gesetzS + " s · " +
-                (e.eich.gerissen ? "am Eich-Deckel" : e.ungemessen ? "über dem Gesetz, das Urteil (" + e.eich.urteil + ") zählt nie" : "im Gesetz, das Urteil zählt") + (e.zwilling ? " (Zwilling von " + e.zwilling + ")" : ""));
+            if (e.eich) console.log("  EICH " + (e.eich.gerissen ? "≥ " : "") + e.eich.s + " s · " + id + " · Grund-Deckel " + e.eich.sek + " s · " +
+                (e.eich.gerissen ? "an der Leine gefallen" : "das Urteil fiel") + (e.zwilling ? " (Zwilling von " + e.zwilling + ")" : ""));
         });
         m.zeit = zeit;
         m.host = host;
@@ -4026,15 +4042,17 @@ async function selbsttest(o = {}) {
         pruef("FORMAT-ROT die Staffel 1 nennt beide Geräte ohne beide · beide an einem Gerät · beide an Staffel 2",
             /nennt beide Geräte — beide: true/.test(bf[0]) && /beide nur als true/.test(bf[1]) && /beide nur als true/.test(bf[2]) && pruefeStationen([{ ...pb, beide: true }], karte).fehler.length === 0, bf.join(" || "));
         // DIE FAHRT (29.10., eine Fahrt durch jedes System ≤ 30 min je Gerät; 04.11. in höchstens FAHRT_TEILE_MAX Teilen): (a) ein befehl auf
-        // einer Karte, (b) eine 80-min-Station und ein Deckel über 45 s ohne ausnahme, (c) die Summe über FAHRT_TEILE_MAX Teilen — jede Klasse
-        // ROT beim Namen, die Grenze selbst grün
+        // einer Karte, (b) eine 80-min-Station und eine Probe über einem Teil der Fahrt in Teilen, (c) die Summe über FAHRT_TEILE_MAX Teilen —
+        // jede Klasse ROT beim Namen, die Grenze selbst grün; KEINE Ausnahme je Station (pm-deckel: der Schlüssel `ausnahme` ist ROT)
         const fa = (mut) => pruefeStationen([{ ...pb, beide: true, ...mut }], karte).fehler.join(" | ");
-        const fb = [fa({ befehl: ["node", "-e", "0"], probe: undefined, geraet: "gtx", beide: undefined }), fa({ probe: { befehl: ["node", "-e", "0"], sek: 4800, ausnahme: "achtzig Minuten eigener Boot" } }),
-            fa({ probe: { befehl: ["node", "-e", "0"], sek: 60 } }), fa({ probe: { befehl: ["node", "-e", "0"], sek: 45, ausnahme: "der Grund beim Namen" } }),
-            fa({ probe: { befehl: ["node", "-e", "0"], sek: 90, ausnahme: "der Grund beim Namen" } }), fa({ probe: { befehl: ["node", "-e", "0"] } })];
-        pruef("FAHRT-ROT (a) ein befehl auf gtx · (b) eine 80-min-Station, 60 s ohne ausnahme, eine ausnahme an 45 s — je beim Namen; 90 s mit ausnahme und die Vorgabe 45 s grün",
-            /befehl auf gtx — eine Station der Karte misst nur als Probe/.test(fb[0]) && /Deckel 4800 s über 90 s — nie, auch mit ausnahme/.test(fb[1]) &&
-            /Deckel 60 s über 45 s ohne ausnahme/.test(fb[2]) && /ausnahme an einem Deckel von 45 s/.test(fb[3]) && fb[4] === "" && fb[5] === "" && probeSek({ probe: {} }) === PROBE_DECKEL_S, fb.join(" || "));
+        const tS = FAHRT_MAX_S - SITZUNG_BOOT_S;
+        const fb = [fa({ befehl: ["node", "-e", "0"], probe: undefined, geraet: "gtx", beide: undefined }), fa({ probe: { befehl: ["node", "-e", "0"], sek: 4800 } }),
+            fa({ probe: { befehl: ["node", "-e", "0"], sek: 900, teile: 2 } }), fa({ probe: { befehl: ["node", "-e", "0"], sek: 90, ausnahme: "der Grund beim Namen" } }),
+            fa({ probe: { befehl: ["node", "-e", "0"], sek: 90 } }), fa({ probe: { befehl: ["node", "-e", "0"] } }), fa({ probe: { befehl: ["node", "-e", "0"], sek: tS } })];
+        pruef("FAHRT-ROT (a) ein befehl auf gtx · (b) eine 80-min-Station, 900 s × 2 Teile über dem Teil der Fahrt, der Schlüssel ausnahme — je beim Namen; 90 s, ein ganzer Teil und die Vorgabe 45 s grün",
+            /befehl auf gtx — eine Station der Karte misst nur als Probe/.test(fb[0]) && new RegExp("Deckel 4800 s × 1 Teil\\(e\\) über dem Teil der Fahrt " + tS + " s").test(fb[1]) &&
+            new RegExp("Deckel 900 s × 2 Teil\\(e\\) über dem Teil der Fahrt " + tS + " s").test(fb[2]) && /probe trägt nur befehl, sek, mutiert, stellung, teile/.test(fb[3]) &&
+            fb[4] === "" && fb[5] === "" && fb[6] === "" && probeSek({ probe: {} }) === PROBE_DECKEL_S, fb.join(" || "));
         const fp = (n, sek, ge = ["radeon", "gtx"], befehl = "p" + n) => ({ kriterium: "f.K" + n, staffel: 1, geraet: ge, gpu: true, probe: { befehl: ["node", befehl], sek } });
         // die Grenze aus den Konstanten: n × 45 + der Rest = FAHRT_TEILE_MAX × (FAHRT_MAX_S − Boot) (bis 04.11. EIN Teil: 38 × 45 + 30)
         const teilS = FAHRT_MAX_S - SITZUNG_BOOT_S, allS = FAHRT_TEILE_MAX * teilS;
@@ -4053,20 +4071,20 @@ async function selbsttest(o = {}) {
             new RegExp("^gtx: die Fahrt " + (allS + 1 + SITZUNG_BOOT_S) + " s").test(uf[1][1]) && uf[2].length === 0 && uf[3].length === 2 &&
             uf[3][0].includes("die größten: f.K" + (nG - 1) + "#1 90 s, f.K" + nG + "#1 60 s, f.K1#1 45 s") && uf[4].length === 1 && /^radeon: /.test(uf[4][0]) &&
             fahrtUrteil(einTeil).length === 0 && fahrtTeile(fahrtSumme(einTeil, "radeon")) === 2 && fahrtSumme(einTeil, "radeon").deckel === teilS + 1, JSON.stringify(uf));
-        // DIE DECKEL-TAFEL (deckel.json, 01.11. mess-werkzeug): je Karte ihr Deckel in Fahrt und Läufer, ohne Eintrag probe.sek; über 45 s nur
-        // mit ausnahme, nur an den eigenen Karten, 0 s ROT beim Namen; der Abdruck ohne Eintrag Byte für Byte wie bisher, mit Eintrag ein anderer
+        // DIE DECKEL-TAFEL (deckel.json, 01.11. mess-werkzeug): je Karte ihr Deckel in Fahrt und Läufer, ohne Eintrag probe.sek; nur an den
+        // eigenen Karten, 0 s und über einem Teil der Fahrt ROT beim Namen; der Abdruck ohne Eintrag Byte für Byte wie bisher, mit Eintrag ein anderer
         const jk = (mut = {}) => ({ ...pb, beide: true, probe: { befehl: ["node", "-e", "0"], sek: 10, ...mut } });
         const mitTafel = (t, f) => { deckelTafel = t; try { return f(); } finally { deckelTafel = {}; } };
         const abd0 = abdruck(jk(), "hilfe");
         const jf = [mitTafel({ radeon: { "profiband.K1#1": 40 } }, () => [fa({ probe: jk().probe }), fahrtSumme([jk()], "radeon").deckel, fahrtSumme([jk()], "gtx").deckel,
             probeSek(jk(), "radeon"), probeSek(jk(), "gtx"), abdruck(jk(), "hilfe", "radeon"), abdruck(jk(), "hilfe", "gtx"), abdruck(jk(), "hilfe")]),
-            mitTafel({ radeon: { "profiband.K1#1": 60 } }, () => [fa({ probe: jk().probe }), fa({ probe: jk({ ausnahme: "der Boot der Radeon dauert" }).probe })]),
+            mitTafel({ radeon: { "profiband.K1#1": 1800 } }, () => [fa({ probe: jk().probe }), mitTafel({ radeon: { "profiband.K1#1": 60 } }, () => fa({ probe: jk().probe }))]),
             mitTafel({ gtx: { "profiband.K1#1": 0 } }, () => fa({ probe: jk().probe })), mitTafel({ gtx: { "profiband.K1#1": 20 } }, () => fa({ geraet: "radeon", beide: undefined, probe: jk().probe }))];
-        pruef("DECKEL-TAFEL je Karte ihr Deckel (Fahrt, Läufer), ohne Eintrag probe.sek; 60 s ohne ausnahme, 0 s, eine fremde Karte ROT beim Namen; der Abdruck je Karte: nur der Eintrag DIESER Karte ändert ihn",
+        pruef("DECKEL-TAFEL je Karte ihr Deckel (Fahrt, Läufer), ohne Eintrag probe.sek; 1800 s über dem Teil der Fahrt, 0 s, eine fremde Karte ROT beim Namen, 60 s grün; der Abdruck je Karte: nur der Eintrag DIESER Karte ändert ihn",
             jf[0][0] === "" && jf[0][1] === 40 && jf[0][2] === 10 && jf[0][3] === 40 && jf[0][4] === 10 && jf[0][5] !== abd0 && jf[0][6] === abd0 && jf[0][7] === abd0 && abdruck(jk(), "hilfe", "radeon") === abd0 &&
-            /Deckel 60 s über 45 s ohne ausnahme/.test(jf[1][0]) && jf[1][1] === "" && /deckel.json: .* je Karte eine ganze Zahl ≥ 1/.test(jf[2]) && /deckel.json: {"gtx":20}/.test(jf[3]),
+            /Deckel 1800 s × 1 Teil\(e\) über dem Teil der Fahrt/.test(jf[1][0]) && jf[1][1] === "" && /deckel.json: .* je Karte eine ganze Zahl ≥ 1/.test(jf[2]) && /deckel.json: {"gtx":20}/.test(jf[3]),
             JSON.stringify(jf));
-        const echtGross = ladeStationen().map((s) => (s.probe ?{ ...s, probe: { ...s.probe, sek: 90, ausnahme: "der Selbsttest bläht jeden Deckel" } } : s));
+        const echtGross = ladeStationen().map((s) => (s.probe ? { ...s, probe: { ...s.probe, sek: 90 } } : s));
         const eg = pruefeStationen(echtGross, karte).fehler.filter((f) => /^(radeon|gtx): die Fahrt/.test(f));
         pruef("FAHRT-ROT an der echten Liste: jeder Deckel auf 90 s gebläht reißt die " + FAHRT_TEILE_MAX + " Teile der Fahrt beider Karten (liste, run und buchen fallen dort)",
             eg.length === 2 && eg.every((f) => /die größten: /.test(f)), eg.join(" | "));
@@ -5035,8 +5053,8 @@ async function selbsttest(o = {}) {
         const fe = (mut) => pruefeStationen([{ ...gp, ...mut }], karte).fehler.join(" | ");
         const f = [fe({ befehl: ["node", "-e", "0"] }), fe({ geraet: "headless", gpu: false }), fe({ probe: { befehl: ["node", "-e", "0"], sek: 5000 } }),
             fe({ probe: { befehl: ["bash", "-c", "raeum() { for p in $(netstat -ano); do :; done; }; node scripts/werkbank.cjs start --echt"] } }), fe({})];
-        pruef("SITZUNG-FORMAT genau eines von befehl und probe · probe nur an einer GPU-Station · Deckel ≤ " + PROBE_AUSNAHME_S + " s · die Feinde der Welt beim Namen",
-            /genau eines von befehl und probe/.test(f[0]) && /probe nur an einer GPU-Station/.test(f[1]) && /Deckel 5000 s über 90 s/.test(f[2]) &&
+        pruef("SITZUNG-FORMAT genau eines von befehl und probe · probe nur an einer GPU-Station · Deckel ≤ ein Teil der Fahrt · die Feinde der Welt beim Namen",
+            /genau eines von befehl und probe/.test(f[0]) && /probe nur an einer GPU-Station/.test(f[1]) && /Deckel 5000 s × 1 Teil\(e\) über dem Teil der Fahrt/.test(f[2]) &&
             /greift die Welt der Sitzung an: netstat \(räumt Ports\), werkbank start\|stop/.test(f[3]) && f[4] === "", f.join(" || "));
         // DIE FEINDE DES WETTERS: die Mutante von affekt.K5#2 bis 03.11. (das Wort, dahinter der Halt gefroren) ist ROT beim Namen —
         // headless und als Probe; ein Wort unter dem Halt der Sitzung ohne Tauen ebenso; der EINE Weg und ein getautes Wort sind frei
@@ -5050,17 +5068,16 @@ async function selbsttest(o = {}) {
             /probe\.befehl setzt das Wetter unter dem Mess-Halt: der Halt von Hand gefroren \(weatherEffectTime = −…\), _setWeather unter dem Halt der Sitzung \(ohne Tauen\)/.test(fw[1]) &&
             /_setWeather unter dem Halt der Sitzung \(ohne Tauen\)/.test(fw[2]) && fw[3] === "" && fw[4] === "" && fw[5] === "" && fw[6] === "", fw.join(" || "));
         const pb = (p) => fe({ probe: { befehl: ["node", "-e", "0"], sek: 30, ...p } });
-        const f2 = [pb({ mutiert: "ja" }), pb({ stellung: "mitte" }), pb({ ausnahme: "weil" }), pb({ ausnahme: "der Grund beim Namen", sek: 91 }), pb({ wache: 1 }),
-            pb({ mutiert: true, stellung: "ende", ausnahme: "der Grund beim Namen", sek: 90 })];
-        pruef("SITZUNG-FORMAT die Schlüssel der Fahrt: mutiert boolesch · stellung anfang|ende · ausnahme mit Grund und nie über " + PROBE_AUSNAHME_S + " s · nichts sonst",
-            /mutiert nicht boolesch/.test(f2[0]) && /stellung nicht anfang\|ende/.test(f2[1]) && /ausnahme ohne Grund/.test(f2[2]) && /Deckel 91 s über 90 s — nie, auch mit ausnahme/.test(f2[3]) &&
-            /probe trägt nur befehl, sek, mutiert, ausnahme, stellung/.test(f2[4]) && f2[5] === "", f2.join(" || "));
-        // DIE TEILE (probe.teile, fahreGruppe): 2…TEILE_MAX ganz, nie mit ausnahme (ein Teil misst im Gesetz); der Abdruck trägt sie, die
-        // Fahrt zählt den Deckel je Teil
-        const f3 = [pb({ teile: 1 }), pb({ teile: TEILE_MAX + 1 }), pb({ teile: 2.5 }), pb({ teile: 3, ausnahme: "der Grund beim Namen", sek: 90 }), pb({ teile: 3, mutiert: true })];
+        const f2 = [pb({ mutiert: "ja" }), pb({ stellung: "mitte" }), pb({ ausnahme: "der Grund beim Namen", sek: 91 }), pb({ wache: 1 }),
+            pb({ mutiert: true, stellung: "ende", sek: 900 })];
+        pruef("SITZUNG-FORMAT die Schlüssel der Fahrt: mutiert boolesch · stellung anfang|ende · keine ausnahme je Station · nichts sonst; 900 s grün (die Leine, kein Gesetz je Probe)",
+            /mutiert nicht boolesch/.test(f2[0]) && /stellung nicht anfang\|ende/.test(f2[1]) && /probe trägt nur befehl, sek, mutiert, stellung, teile/.test(f2[2]) &&
+            /probe trägt nur befehl, sek, mutiert, stellung, teile/.test(f2[3]) && f2[4] === "", f2.join(" || "));
+        // DIE TEILE (probe.teile, fahreGruppe): 2…TEILE_MAX ganz; der Abdruck trägt sie, die Fahrt zählt den Deckel je Teil
+        const f3 = [pb({ teile: 1 }), pb({ teile: TEILE_MAX + 1 }), pb({ teile: 2.5 }), pb({ teile: 3, mutiert: true })];
         const tlp = { ...gp, probe: { ...gp.probe, teile: 3 } };
-        pruef("SITZUNG-FORMAT die Teile: 2…" + TEILE_MAX + " ganz, nie mit ausnahme; der Abdruck trägt sie, die Fahrt zählt den Deckel je Teil",
-            f3.slice(0, 3).every((x) => /probe\.teile keine ganze Zahl 2…8/.test(x)) && /probe\.teile mit ausnahme — ein Teil misst im Gesetz 45 s/.test(f3[3]) && f3[4] === "" &&
+        pruef("SITZUNG-FORMAT die Teile: 2…" + TEILE_MAX + " ganz; der Abdruck trägt sie, die Fahrt zählt den Deckel je Teil",
+            f3.slice(0, 3).every((x) => /probe\.teile keine ganze Zahl 2…8/.test(x)) && f3[3] === "" &&
             abdruck(tlp, "h") !== abdruck(gp, "h") && fahrtSumme([tlp], "gtx").deckel === 3 * fahrtSumme([gp], "gtx").deckel, f3.join(" || "));
         const h = "hilfe";
         const alt = (st) => crypto.createHash("sha1").update(JSON.stringify({ k: st.kriterium, s: st.staffel, g: geraeteVon(st), b: st.befehl, e: st.env || {},
@@ -5070,9 +5087,9 @@ async function selbsttest(o = {}) {
             abdruck(gp, h) !== abdruck({ ...gp, probe: { ...gp.probe, befehl: ["node", "-e", "1"] } }, h), abdruck(st0, h) + " " + alt(st0));
         const altP = (st) => crypto.createHash("sha1").update(JSON.stringify({ k: st.kriterium, s: st.staffel, g: geraeteVon(st), b: st.befehl, e: st.env || {},
             gpu: !!st.gpu, u: String(st.urteil), p: st.pfad, q: st.quelle, h, pr: [st.probe.befehl, probeSek(st)] })).digest("hex").slice(0, 12);
-        pruef("SITZUNG-ABDRUCK eine Probe ohne mutiert und stellung Byte für Byte wie am Sitzungs-Stand; mutiert und stellung ändern ihn, die ausnahme nie",
+        pruef("SITZUNG-ABDRUCK eine Probe ohne mutiert und stellung Byte für Byte wie am Sitzungs-Stand; mutiert und stellung ändern ihn",
             abdruck(gp, h) === altP(gp) && abdruck({ ...gp, probe: { ...gp.probe, mutiert: true } }, h) !== abdruck(gp, h) &&
-            abdruck({ ...gp, probe: { ...gp.probe, stellung: "ende" } }, h) !== abdruck(gp, h) && abdruck({ ...gp, probe: { ...gp.probe, ausnahme: "der Grund beim Namen" } }, h) === abdruck(gp, h),
+            abdruck({ ...gp, probe: { ...gp.probe, stellung: "ende" } }, h) !== abdruck(gp, h),
             abdruck(gp, h) + " " + altP(gp));
         e = await fahreStation({ ...gp, urteil: lies }, ctx("probe-allein"));
         pruef("SITZUNG eine Probe fährt nie außerhalb der Sitzung", e.gruen === false && /nur in der Sitzung/.test(e.grund), JSON.stringify(e));
@@ -5130,12 +5147,12 @@ async function selbsttest(o = {}) {
         const S = (k, s, probe, urteil) => ({ ...gp, kriterium: k, staffel: s, probe, urteil });
         const hookLog = path.join(tmp, "sitzung-hook.log");
         fs.writeFileSync(hookLog, "2026-10-29 10:00:00 ende ci-probe 1/1 echt\n");
-        const lauf = async (gruppen, art, gpuLauf, fahrtMaxS, eich) => {
+        const lauf = async (gruppen, art, gpuLauf, fahrtMaxS, eich, mehr = {}) => {
             fs.rmSync(zaehler, { force: true });
             const rohDir = path.join(tmp, "roh-" + art);
             const es = {}, reihe = [];
             const kopf = await fahreSitzung(gruppen, { koord: KOORD, geraet: "radeon", bash: findeBash(), gpuLauf, baum: tmp, port: P, band: [P, P + 20000, P + 19999],
-                rohDir, welt: art === "kein-start" ? undefined : welt(art), stillS: 20, stromTaktMs: 200, hookLog, ...(fahrtMaxS ? { fahrtMaxS } : {}), ...(eich ? { eich } : {}) },
+                rohDir, welt: art === "kein-start" ? undefined : welt(art), stillS: 20, stilleS: 1, stromTaktMs: 200, hookLog, ...(fahrtMaxS ? { fahrtMaxS } : {}), ...(eich ? { eich } : {}), ...mehr },
             (g, xs, aus, zeit) => g.forEach((st, i) => { reihe.push(schluessel(st)); es[schluessel(st)] = stationsEintrag(xs[i], { zeit, abdruck: abdruck(st, h), port: P, bahn: "sitzung", zwilling: i ? schluessel(g[0]) : null, modus: "session" }); }));
             return { es, kopf, reihe, rohDir, z: fs.existsSync(zaehler) ? fs.readFileSync(zaehler, "utf8").trim().split("\n") : [] };
         };
@@ -5151,7 +5168,7 @@ async function selbsttest(o = {}) {
         const zeile = /^  (GRÜN|ROT ) (\S+) · .* · Exit \S+ · ([\d.]+) min( \(Zwilling von \S+\))?$/;
         const schloss = gl && fs.existsSync(glLog) ? fs.readFileSync(glLog, "utf8").trim().split("\n") : [];
         pruef("SITZUNG EINE Welt: jede Probe darin (WERKBANK_PORT, das Log, der Zeuge der Welt), der Deckel der Probe beim Namen ihrer letzten Zeile, nach dem Fehler die nächste in DERSELBEN Welt, Zwillinge EIN Lauf",
-            r1.z.filter((l) => l === "start").length === 1 && x["a.K1#1"].gruen && /^Deckel 2 s gerissen — beendet, UNGEMESSEN \(zuletzt: SCHRITT \/umstellen 41\.3 s\)$/.test(x["b.K1#1"].grund) && x["b.K1#1"].ungemessen === true &&
+            r1.z.filter((l) => l === "start").length === 1 && x["a.K1#1"].gruen && /^Deckel 2 s gerissen: Stille seit [\d.]+ s nach [\d.]+ s \(kein Lebenszeichen\) — beendet, UNGEMESSEN \(zuletzt: SCHRITT \/umstellen 41\.3 s\)$/.test(x["b.K1#1"].grund) && x["b.K1#1"].ungemessen === true &&
             x["c.K1#1"].gruen === false && x["c.K1#1"].exit === 1 &&
             x["d.K1#1"].gruen && x["d.K1#2"].gruen && x["d.K1#2"].zwilling === "d.K1#1" && x["a.K1#1"].gpu === "amd/stub-sitzung" && r1.kopf.proben === 4, JSON.stringify([r1.z, x]));
         pruef("SITZUNG der Grund nach der Reihe anfang, die Grundstellung nur nach einem Abbruch oder einer mutierenden Probe — nie vor jeder; nach dem Abbruch (b.K1 am Deckel) durch die Tür (die Seite neu: die Arbeit der gefallenen Probe endet in der Seite); nie ein zweiter Start; am Ende stop",
@@ -5173,6 +5190,30 @@ async function selbsttest(o = {}) {
             // die Attrappe c stürzt ohne Zeile ab (Exit 1, ihr Urteil liest nur den Exit): kein Urteil, UNGEMESSEN beim Namen (keinUrteil)
             x["c.K1#1"].ungemessen === true && /^die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN \(die Probe sah: exit 1\)$/.test(x["c.K1#1"].grund),
             JSON.stringify(Object.entries(x).map(([id, e]) => stationsZeile(id, e))));
+        // DIE LEINE (10.11., pm-deckel; Radeon 78d37554 `run --nur` mit 6 Proben: 6 von 6 UNGEMESSEN an Einzel-Uhren, die Fahrt 505 s von
+        // 1 800): (a) die Probe ohne Lebenszeichen fällt über ihrem Grund-Deckel nach der Stille beim Namen, die Fahrt läuft weiter (die
+        // nächste GRÜN); die LEBENDE (4 s Arbeit, je 0,3 s eine Zeile, Grund 2 s) misst GRÜN, und ihre eigene Frist folgt dem EINEN Deckel
+        // ({SEK} = PUNKTE_PROBE_DECKEL_S = ihr Anteil der Fahrt, über dem Grund); (c) ein ROT im Maß nach 3 s am Grund 1 s bleibt ROT
+        // gemessen — der Deckel ändert nie ein Urteil. DIE MUTANTE (vorher ROT am Täter): die feste Uhr je Station (bis 10.11.) tötete l nach 2 s
+        const lebt = ["node", "-e", 'const t = setInterval(() => console.log("@@ Schritt"), 300); setTimeout(() => { clearInterval(t); require("fs").writeFileSync(process.argv[1], ' +
+            'JSON.stringify({ n: 0, sek: Number(process.argv[2]), env: Number(process.env.PUNKTE_PROBE_DECKEL_S) })); }, 4000)', "{AUS}", "{SEK}"];
+        const rotMass = ["node", "-e", 'const t = setInterval(() => console.log("@@ Schritt"), 300); setTimeout(() => { clearInterval(t); require("fs").writeFileSync(process.argv[1], JSON.stringify({ n: 7 })); }, 3000)', "{AUS}"];
+        const nN = (j) => ({ gruen: !!j && j.n === 0, zahl: "n " + (j ? j.n : "—") + (j && j.sek ? " sek " + j.sek + " env " + j.env : "") });
+        const rl = await lauf([[S("s.K1", 1, { befehl: ["node", "-e", "setTimeout(() => {}, 60000)"], sek: 2 }, nN)], [S("l.K1", 1, { befehl: lebt, sek: 2 }, nN)],
+            [S("r.K1", 1, { befehl: rotMass, sek: 1 }, nN)], [S("n.K1", 1, { befehl: [...ruf, "return 1"], sek: 30 }, warm)]], "gut");
+        const xl = rl.es, sekEnv = (/ sek (\d+) env (\d+)$/.exec((xl["l.K1#1"] || {}).zahl || "") || []).slice(1).map(Number);
+        pruef("LEINE (a) die stille Probe fällt über ihrem Grund-Deckel 2 s nach 1 s Stille beim Namen, die Fahrt läuft weiter; die LEBENDE (4 s Arbeit am Grund 2 s) misst GRÜN, " +
+            "ihre Frist folgt dem EINEN Deckel ({SEK} = PUNKTE_PROBE_DECKEL_S = der Anteil > 2 s); (c) ROT im Maß nach 3 s am Grund 1 s bleibt ROT gemessen",
+            !!xl["s.K1#1"] && xl["s.K1#1"].ungemessen === true && /^Deckel 2 s gerissen: Stille seit [\d.]+ s nach [\d.]+ s \(kein Lebenszeichen\) — beendet, UNGEMESSEN$/.test(xl["s.K1#1"].grund) && xl["s.K1#1"].s < 4 &&
+            !!xl["l.K1#1"] && xl["l.K1#1"].gruen === true && !xl["l.K1#1"].ungemessen && xl["l.K1#1"].s >= 4 && sekEnv.length === 2 && sekEnv[0] > 2 && sekEnv[0] === sekEnv[1] &&
+            !!xl["r.K1#1"] && xl["r.K1#1"].gruen === false && !xl["r.K1#1"].ungemessen && /^n 7/.test(xl["r.K1#1"].zahl) && xl["r.K1#1"].s >= 3 && !!xl["n.K1#1"] && xl["n.K1#1"].gruen === true,
+            JSON.stringify(Object.entries(xl).map(([id, e]) => [id, e.gruen, e.ungemessen, e.s, e.grund || e.zahl])));
+        // DIE MUTANTE der festen Uhr: trägt die Fahrt keinen Rest (60 s, nach l ein Bedarf von 1 000 s), ist ihr Anteil null und der Deckel der
+        // Grund — die lebende fällt nach 2 s beim Namen, wie jede bis 10.11.; die Fahrt läuft weiter
+        const rm = await lauf([[S("l.K1", 1, { befehl: lebt, sek: 2 }, nN)], [S("n.K1", 1, { befehl: [...ruf, "return 1"], sek: 1000 }, warm)]], "gut", null, 60);
+        pruef("LEINE die MUTANTE ohne Rest der Fahrt: der Deckel ist der Grund, die lebende Probe fällt nach 2 s beim Namen (Deckel 2 s, kein Anteil), die nächste misst GRÜN",
+            !!rm.es["l.K1#1"] && rm.es["l.K1#1"].ungemessen === true && /^Deckel 2 s gerissen — beendet, UNGEMESSEN \(zuletzt: @@ Schritt\)$/.test(rm.es["l.K1#1"].grund) && rm.es["l.K1#1"].s < 4 &&
+            !!rm.es["n.K1#1"] && rm.es["n.K1#1"].gruen === true, JSON.stringify(rm.es));
         // DIE TEILE EINER PROBE (probe.teile, w19-fahrt-ziel-2-pm): je Teil ein Prozess unter dem Deckel mit PUNKTE_TEIL und der Frist
         // (Gesetz − Vorlauf, nie der Eich-Deckel), der nächste nur nach WEITER, EIN Urteil über alle Teile, `s` der längste, `teile` je Teil;
         // der Deckel eines Teils und ein letzter Teil, der WEITER sagt, sind UNGEMESSEN beim Namen. DIE MUTANTE (vorher ROT am Täter): ohne
@@ -5182,18 +5223,20 @@ async function selbsttest(o = {}) {
         const teilU = (j, l) => ({ gruen: /^ENDE$/m.test(l.stdout), zahl: (l.stdout.match(/^T .*$/gm) || []).join(",") + (/^ENDE$/m.test(l.stdout) ? " ENDE" : "") });
         const rt = await lauf([[S("t.K1", 1, { befehl: teilB(["weiter", "weiter", "ende"]), sek: 30, teile: 3 }, teilU)], [S("u.K1", 1, { befehl: teilB(["weiter", "ende", "weiter"]), sek: 30, teile: 3 }, teilU)],
             [S("v.K1", 1, { befehl: teilB(["weiter", "haengt"]), sek: 2, teile: 2 }, teilU)], [S("w.K1", 1, { befehl: teilB(["weiter", "weiter"]), sek: 30, teile: 2 }, teilU)],
-            [S("m.K1", 1, { befehl: teilB(["weiter", "weiter", "ende"]), sek: 30 }, teilU)]], "teile");
-        // in der Eich-Fahrt (Deckel 90 s je Probe) misst ein Teil im Gesetz: die Frist 39 s = 45 − 6, nie 84
+            [S("m.K1", 1, { befehl: teilB(["weiter", "weiter", "ende"]), sek: 30 }, teilU)]], "teile", null, 200);
+        // die Fahrt von 200 s trägt keinen Rest über den Grund-Deckeln (Σ 274 s): je Teil der Grund 30 s, die Frist 24 s. In der Eich-Fahrt
+        // mit dem ganzen Budget folgt die Frist jedes Teils dem EINEN Deckel — dem Anteil je Teil, über dem Grund
         const re = await lauf([[S("e.K1", 1, { befehl: teilB(["weiter", "ende"]), sek: 30, teile: 2 }, teilU)]], "teile-eich", null, null, true);
         const xt = { ...rt.es, ...re.es };
-        pruef("SITZUNG DIE TEILE: drei Teile EIN Urteil (Frist 24 s = Deckel 30 − 6, in der Eich-Fahrt 39 s = Gesetz − 6; s der längste, je Teil seine Sekunden); endet Teil 2 ohne WEITER, " +
+        const fristE = (/^T 1\/2 (\d+),T 2\/2 (\d+) ENDE$/.exec(xt["e.K1#1"].zahl) || []).slice(1).map(Number);
+        pruef("SITZUNG DIE TEILE: drei Teile EIN Urteil (Frist 24 s = Deckel 30 − 6 ohne Rest der Fahrt, mit Rest der Anteil je Teil − 6; s der längste, je Teil seine Sekunden); endet Teil 2 ohne WEITER, " +
             "fährt Teil 3 nie; der Deckel in Teil 2/2 und ein letzter Teil mit WEITER UNGEMESSEN beim Namen; die MUTANTE ohne teile ROT nach Teil 1",
             xt["t.K1#1"].gruen === true && xt["t.K1#1"].zahl === "T 1/3 24,T 2/3 24,T 3/3 24 ENDE" && xt["t.K1#1"].teile.length === 3 && xt["t.K1#1"].s === Math.max(...xt["t.K1#1"].teile) &&
             xt["u.K1#1"].gruen === true && xt["u.K1#1"].zahl === "T 1/3 24,T 2/3 24 ENDE" && xt["u.K1#1"].teile.length === 2 &&
             xt["v.K1#1"].ungemessen === true && /^Deckel 2 s gerissen in Teil 2\/2 — beendet, UNGEMESSEN/.test(xt["v.K1#1"].grund) && xt["v.K1#1"].teile.length === 2 && xt["v.K1#1"].s >= 2 &&
             xt["w.K1#1"].ungemessen === true && /^die Teile reichten nicht: Teil 2\/2 sagte WEITER/.test(xt["w.K1#1"].grund) &&
             xt["m.K1#1"].gruen === false && xt["m.K1#1"].zahl === "T 1/1 undefined" && !xt["m.K1#1"].ungemessen &&
-            xt["e.K1#1"].gruen === true && xt["e.K1#1"].zahl === "T 1/2 39,T 2/2 39 ENDE" && xt["e.K1#1"].eich && xt["e.K1#1"].eich.gesetzS === 45,
+            xt["e.K1#1"].gruen === true && fristE.length === 2 && fristE[0] > 24 && fristE[0] === fristE[1] && xt["e.K1#1"].eich && xt["e.K1#1"].eich.sek === 30,
             JSON.stringify(Object.entries(xt).map(([id, e]) => [id, e.gruen, e.ungemessen, e.zahl, e.grund, e.s, e.teile])));
         // DIE REIHE und DER STROM: anfang, die Welt lassend, ende, mutierend — die Grundstellung nur nach der mutierenden; jede Probe kennt
         // den Strom und ihren Namen, die Bilder ihres Loops stehen unter ihrem Namen, der Kopf trägt die Dauerlast
@@ -5280,30 +5323,25 @@ async function selbsttest(o = {}) {
         pruef("SITZUNG DIE WELT HÄNGT: der Ort steht nicht — EINMAL durch die Tür, neu umgestellt, die Probe misst in der heilen Welt",
             rH.z.join(",") === "start,nimm,umstellen:wiese,tuer,reload,grund,umstellen:wiese,stop" && rH.kopf.orte.length === 1 && rH.kopf.orte[0].nach === "der Tür (die Welt hing)" &&
             !rH.kopf.orte[0].fehler && rH.es["a.K1#1"].gruen, JSON.stringify([rH.z, rH.kopf.orte, rH.es]));
-        // DIE EICH-FAHRT (eichEintrag): ein Urteil zählt nur im Gesetz — 30 s an einem Deckel von 10 s zählt (≤ 45 s), 50 s ohne ausnahme
-        // ist UNGEMESSEN beim Namen samt Urteil, 50 s mit ausnahme zählt (≤ 90 s), am Eich-Deckel „≥ 90 s“; die Welt, die endete, und
-        // die Fahrt, die riss, tragen keine Zahl der Probe
+        // DIE EICH-FAHRT (eichEintrag): der Deckel ändert nie ein Urteil — GRÜN nach 50 s bleibt GRÜN (bis 10.11. „über dem Gesetz 45 s,
+        // das Urteil zählt nie“), ROT bleibt ROT, je mit ihrer Zahl; an der Leine gefallen ist die Zahl zensiert (gerissen), der Grund bleibt
+        // wörtlich; die Welt, die endete, und die Fahrt, die riss, tragen keine Zahl der Probe
         const pe = (p) => ({ ...gp, probe: { befehl: ["node", "-e", "0"], sek: 10, ...p } });
-        const riss = "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: SCHRITT /bild 14.5 s)";
-        const ee = [eichEintrag(pe({}), { gruen: true, zahl: "z", exit: 0, minuten: 0.5, s: 30 }), eichEintrag(pe({}), { gruen: true, zahl: "z", exit: 0, minuten: 0.8, s: 50 }),
-            eichEintrag(pe({ sek: 60, ausnahme: "der Grund beim Namen" }), { gruen: false, zahl: "rot", grund: "ROT: rot", exit: 0, minuten: 0.8, s: 50 }),
-            eichEintrag(pe({}), { gruen: false, ungemessen: true, zahl: riss, grund: riss, exit: 1, minuten: 1.5, s: 90.3 }),
+        const riss = "Deckel 10 s gerissen: Stille seit 15 s nach 25 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: SCHRITT /bild 14.5 s)";
+        const ee = [eichEintrag(pe({}), { gruen: true, zahl: "z", exit: 0, minuten: 0.8, s: 50 }), eichEintrag(pe({ sek: 60 }), { gruen: false, zahl: "rot", grund: "ROT: rot", exit: 0, minuten: 0.8, s: 50 }),
+            eichEintrag(pe({}), { gruen: false, ungemessen: true, zahl: riss, grund: riss, exit: 1, minuten: 0.5, s: 25.3 }),
             eichEintrag(pe({}), { gruen: false, ungemessen: true, zahl: "w", grund: "die Welt der Sitzung endete während der Probe (x) — ungemessen", s: 3 }),
             eichEintrag(pe({}), { gruen: false, ungemessen: true, zahl: "f", grund: "Deckel der Fahrt 1800 s gerissen nach 12 s der Probe — beendet, UNGEMESSEN", s: 12 })];
-        pruef("EICH ein Urteil zählt nur im Gesetz: 30 s am Deckel 10 s zählt · 50 s ohne ausnahme UNGEMESSEN beim Namen samt Urteil · 50 s mit ausnahme zählt · am Eich-Deckel ≥ 90 s · Welt und Fahrt ohne Zahl",
-            ee[0].gruen === true && !ee[0].ungemessen && ee[0].eich.s === 30 && ee[0].eich.sek === 10 && ee[0].eich.gesetzS === PROBE_DECKEL_S &&
-            ee[1].ungemessen === true && ee[1].gruen === false && /^EICH: 50 s über dem Gesetz 45 s \(ohne ausnahme\) — das Urteil zählt nie \(GRÜN: z\)$/.test(ee[1].grund) && ee[1].eich.urteil === "GRÜN" &&
-            ee[2].gruen === false && !ee[2].ungemessen && ee[2].eich.gesetzS === PROBE_AUSNAHME_S && ee[2].eich.sek === 60 &&
-            ee[3].ungemessen === true && ee[3].eich.gerissen === true && /^EICH: ≥ 90 s — Deckel 90 s gerissen .*SCHRITT \/bild 14\.5 s\)$/.test(ee[3].grund) &&
-            !ee[4].eich && !ee[5].eich && ee[4].grund === "die Welt der Sitzung endete während der Probe (x) — ungemessen", JSON.stringify(ee));
-        // DIE EICH-FAHRT in der Stub-Welt: eine Probe, die 3 s braucht, reißt ihren Deckel von 2 s (b.K1 in r1) — in der Eich-Fahrt misst sie
-        // bis zur Ausnahme-Grenze, ihr Urteil zählt (3 s ≤ 45 s), ihre Zahl steht beim Namen, der Kopf nennt das Gesetz
-        const drei = ["node", "-e", 'setTimeout(() => require("fs").writeFileSync(process.argv[1], JSON.stringify({ n: 0 })), 3000)', "{AUS}"];
-        const r16 = await lauf([[S("a.K1", 1, { befehl: drei, sek: 2 }, lies)]], "gut", null, null, true);
+        pruef("EICH der Deckel ändert nie ein Urteil: GRÜN nach 50 s am Grund 10 s bleibt GRÜN · ROT bleibt ROT · an der Leine zensiert, der Grund wörtlich · Welt und Fahrt ohne Zahl",
+            ee[0].gruen === true && !ee[0].ungemessen && ee[0].eich.s === 50 && ee[0].eich.sek === 10 && ee[0].zahl === "z" &&
+            ee[1].gruen === false && !ee[1].ungemessen && ee[1].eich.s === 50 && ee[1].eich.sek === 60 &&
+            ee[2].ungemessen === true && ee[2].eich.gerissen === true && ee[2].grund === riss &&
+            !ee[3].eich && !ee[4].eich && ee[3].grund === "die Welt der Sitzung endete während der Probe (x) — ungemessen", JSON.stringify(ee));
+        // DIE EICH-FAHRT in der Stub-Welt: dieselbe Leine — die lebende Probe (4 s Arbeit am Grund 2 s) misst GRÜN, ihre Zahl beim Namen
+        const r16 = await lauf([[S("a.K1", 1, { befehl: lebt, sek: 2 }, nN)]], "gut", null, null, true);
         const ea = r16.es["a.K1#1"] || {};
-        pruef("EICH-FAHRT die Probe über ihrem Deckel (2 s) misst bis " + PROBE_AUSNAHME_S + " s: GRÜN im Gesetz, eich s ≈ 3 · sek 2 · Gesetz 45; der Kopf nennt Deckel, Gesetz und Fahrt",
-            ea.gruen === true && !!ea.eich && ea.eich.sek === 2 && ea.eich.s >= 3 && ea.eich.s < 10 && ea.eich.gesetzS === PROBE_DECKEL_S &&
-            !!r16.kopf.eich && r16.kopf.eich.deckelS === PROBE_AUSNAHME_S && r16.kopf.eich.gesetzS === PROBE_DECKEL_S && r16.kopf.eich.fahrtMaxS === FAHRT_MAX_S,
+        pruef("EICH-FAHRT an derselben Leine: die lebende Probe über ihrem Grund-Deckel (2 s) misst GRÜN, eich s ≥ 4 · sek 2; der Kopf nennt die Fahrt",
+            ea.gruen === true && !!ea.eich && ea.eich.sek === 2 && ea.eich.s >= 4 && ea.eich.s < 12 && !!r16.kopf.eich && r16.kopf.eich.fahrtMaxS === FAHRT_MAX_S,
             JSON.stringify([ea, r16.kopf.eich]));
         // DIE AUSWAHL DER EICH-FAHRT (eichOffen): eine Probe mit Zahl am SHA und heutigem Abdruck fällt heraus; ohne Zahl, mit fremdem Abdruck
         // (die Probe änderte sich) oder an einem anderen SHA bleibt sie — die nächste Eich-Fahrt misst den Rest
@@ -5314,53 +5352,43 @@ async function selbsttest(o = {}) {
             .map((l) => l.map(schluessel).join(","));
         pruef("EICH die Auswahl: mit Zahl am SHA und heutigem Abdruck heraus · ohne Zahl, mit fremdem Abdruck, an einem anderen SHA oder ohne Mess-Datei bleibt sie",
             eo.join(" | ") === "b.K1#1,c.K1#1 | a.K1#1 | a.K1#1", eo.join(" | "));
-        // DIE TAFEL (eichTafel, der Leser der Zahlen): ⌈1,5 × s⌉ ≥ 10 s je Lauf, im Gesetz höchstens das Gesetz, Zwillinge EINE Zeile; über dem
-        // Gesetz und am Eich-Deckel DECKEL_MIN_S (schneller machen — ihr Urteil zählt nie), ohne Zahl der Deckel heute; Σ heute ↔ aus den Zahlen
-        const tp = (n, sek, extra = {}) => S(n + ".K1", 1, { befehl: ["node", "t" + n], sek, ...extra }, lies);
-        const tz = { a: [10, { s: 30 }], b: [33, { s: 50 }], c: [15, { s: 90.4, gerissen: true }], d: [20, null], e: [36, { s: 20 }], f: [40, { s: 6 }], g: [60, { s: 50 }], h: [20, { s: 40 }] };
-        const ts = Object.entries(tz).map(([n, [sek]]) => tp(n, sek, n === "g" ? { ausnahme: "der Grund beim Namen" } : {}));
-        const tw = { ...tp("a", 10), staffel: 2 }; // der Zwilling von a.K1#1: derselbe Befehl, EIN Lauf
-        const tm = { sha: "s1", je: {}, ungemessen: {} };
-        for (const st of ts) { const z = tz[st.kriterium[0]][1]; if (z) tm[z.gerissen || z.s > 45 ? "ungemessen" : "je"][schluessel(st)] = { abdruck: abdruck(st, h), eich: z }; }
-        const tt = eichTafel([...ts, tw], [tm], "radeon");
-        const tzl = tt.zeilen.map((z) => z.ids.join("+") + " " + z.sek + (z.neu != null ? "→" + z.neu : "") + " " + z.urteil).join(" | ");
-        pruef("EICH-TAFEL der Deckel aus der Zahl ⌈1,5 × s⌉ + 6 s Vorlauf der Frist ≥ 10 s, höchstens das Gesetz (h: 40 s → 45): zu knapp · über dem Gesetz und ≥ 90 s tragen das Gesetz · ohne Zahl · trägt (die Ruhe) · zu weit · mit ausnahme bis 90 s; Zwillinge EINE Zeile; Σ heute ↔ aus den Zahlen",
-            tzl === "a.K1#1+a.K1#2 10→45 Deckel zu knapp | b.K1#1 33→45 über dem Gesetz 45 s — das Gesetz, schneller machen | c.K1#1 15→45 gerissen bei 90 s — das Gesetz 45 s | d.K1#1 20 ohne Zahl | " +
-                "e.K1#1 36→36 trägt | f.K1#1 40→15 Deckel zu weit | g.K1#1 60→81 Deckel zu knapp | h.K1#1 20→45 Deckel zu knapp" && tt.heute === 234 && tt.ausZahlen === 45 + 45 + 45 + 20 + 36 + 15 + 81 + 45 && tt.geeicht === 7 &&
-                tt.budget === FAHRT_MAX_S - SITZUNG_BOOT_S && tt.teile === 1, tzl + " · Σ " + tt.heute + " → " + tt.ausZahlen);
-        // DIE DECKEL-TAFEL AUS DEN DAUERN ALLER MESS-DATEIEN (04.11., deckel-wurzel; GTX 5fba36ea: vegetation.K1#1 brach in der EINEN Eich-Fahrt
-        // nach 2,8 s ab, die Tafel setzte 11 s, jede Fahrt danach riss): v trägt 20 Läufe — vier alte mit 60 s (aus der Reihe gefallen), neun
-        // mit 14,8–22,1 s, der jüngste Fehlschlag 2,8 s, heute am Deckel 11 s gerissen — das p90 der jüngsten 10 ist 21 s → 38 s (nie 11 s aus
-        // dem einen Lauf, nie 45 s aus den alten, nie die 80 s der Radeon); w riss dreimal an einem Deckel unter seinem Bedarf (10,4 s < 20 s):
-        // sein p90 bleibt 20 s → 36 s; x riss nur an der eigenen Frist (4 s): der Bedarf ist unbekannt, es trägt das Gesetz; y HÄNGT (jede Fahrt
-        // am Gesetz 45 s gerissen): es bleibt am Gesetz und reißt sicher wieder — UNGEMESSEN beim Grund, nie weicher. GERISSEN an der Datei von
-        // heute: 4 rissen, alle sicher am Deckel heute → sicher nur y, x unbekannt am Gesetz, v und w getragen
+        // DIE MUTANTE (b) DER INVENTUR (07.11., Entwurf 2): die Reihe [2 s ROT, 2 s ROT, 41/44/48 s GRÜN] gab dem alten p90 aller Läufe den
+        // Boden 10 s (62 Stationen, 248 Risse) — die Grün-Reihe gibt ⌈2 × 48⌉ + 6 = 102 s; nie unter dem höchsten je grünen Lauf (zehn junge
+        // 10 s, ein alter 80 s: 86 s, nie 26 s); unter drei Grün-Läufen die Vorgabe
+        const rr = (s, gruen) => ({ s, gruen, gemessen: true, zensiert: false, zeit: "", sha: "x" });
+        const db = [deckelAus([rr(2, false), rr(2, false), rr(41, true), rr(44, true), rr(48, true)], PROBE_DECKEL_S, 10),
+            deckelAus([...Array.from({ length: 10 }, () => rr(10, true)), rr(80, true)], PROBE_DECKEL_S, 10), deckelAus([rr(30, true), rr(2, false)], PROBE_DECKEL_S, 10)];
+        pruef("DECKEL (b) aus der Grün-Reihe: [2 ROT, 2 ROT, 41, 44, 48 GRÜN] → 102 s (alt 10 s) · nie unter dem höchsten Grün (80 s → 86, nie 26) · unter 3 Grün-Läufen die Vorgabe 45 s",
+            db[0].neu >= 102 && db[0].p90 === 48 && db[1].neu === 86 && db[1].p90 === 10 && db[2].neu === PROBE_DECKEL_S && db[2].p90 === null, JSON.stringify(db));
+        // DIE TAFEL (eichTafel, der Leser der Zahlen) aus den Mess-Dateien JE KARTE: a die Mutante (b) auf der Radeon, ihre 300 s der GTX zählen
+        // nie; b ein Grün-Lauf → die Vorgabe; c nur an der Frist gefallen → die Vorgabe (zensiert trägt nie); d ohne Lauf; e trägt (die Ruhe);
+        // f zu weit; g nie unter dem höchsten Grün; h in 2 Teilen höchstens ein halber Teil der Fahrt je Teil; Zwillinge EINE Zeile.
+        // GERISSEN an der Datei von heute: a (am Grund 10 s, Bedarf 54 s) heilt, c bleibt unbekannt
         {
-            const tq = (n, sek) => ({ ...S(n + ".K1", 1, { befehl: ["node", "q" + n], sek }, lies), geraet: ["radeon", "gtx"] });
-            const [qv, qw, qx, qy] = [tq("v", 11), tq("w", 10), tq("x", 10), tq("y", 45)];
-            const zeitQ = (i) => "2026-10-" + String(10 + i).padStart(2, "0") + "T12:00:00.000Z";
-            const gemessen = (i, s) => ({ gruen: false, zahl: "z", s, zeit: zeitQ(i), modus: "session", bahn: "sitzung" });
-            const riss = (i, s, grund) => ({ gruen: false, ungemessen: true, zahl: grund, grund, s, zeit: zeitQ(i), modus: "session", bahn: "sitzung" });
-            const vq = [60, 60, 60, 60, 14.8, 15.7, 17.4, 20.5, 22.1, 16, 18, 19, 21, 2.8];
-            const msq = Array.from({ length: 16 }, (_, i) => {
-                const je = {}, un = {};
-                if (i < vq.length) je["v.K1#1"] = gemessen(i, vq[i]);
-                if (i === 15) un["v.K1#1"] = riss(i, 11.2, "Deckel 11 s gerissen — beendet, UNGEMESSEN");
-                if (i <= 4) je["w.K1#1"] = gemessen(i, 20);
-                if (i >= 13) un["w.K1#1"] = riss(i, 10.4, "Deckel 10 s gerissen — beendet, UNGEMESSEN");
-                if (i >= 10) un["x.K1#1"] = riss(i, 4.2, "Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN");
-                if (i >= 10) un["y.K1#1"] = riss(i, 45.6, "Deckel 45 s gerissen — beendet, UNGEMESSEN");
-                return { sha: "q" + i, geraet: "gtx", zeit: zeitQ(i), je, ungemessen: un };
-            }).concat([{ sha: "qr", geraet: "radeon", zeit: zeitQ(16), je: { "v.K1#1": gemessen(16, 80), "w.K1#1": gemessen(16, 80) } }]);
-            const tq1 = eichTafel([qv, qw, qx, qy], msq, "gtx");
-            const tql = tq1.zeilen.map((z) => z.ids.join("+") + " " + z.sek + "→" + z.neu + " " + z.urteil).join(" | ");
-            const gv = gerissenVorNach(tq1, msq[15]);
-            pruef("DECKEL AUS DEN DAUERN: das p90 der jüngsten " + DECKEL_REIHE_N + " Läufe aller Mess-Dateien der Karte (v 11 → 38 s, nie der eine Fehlschlag 2,8 s), ein Riss unter dem Bedarf trägt nie (w 36 s), " +
-                "die Frist allein heißt Bedarf unbekannt → das Gesetz (x), der Hänger bleibt am Gesetz und reißt sicher wieder (y, UNGEMESSEN); GERISSEN heute 4 (sicher 4) → sicher 1, unbekannt 1",
-                tql === "v.K1#1 11→38 Deckel zu knapp | w.K1#1 10→36 Deckel zu knapp | x.K1#1 10→45 gerissen bei 4.2 s — das Gesetz 45 s | y.K1#1 45→45 gerissen bei 45.6 s — das Gesetz 45 s" &&
-                laufSekunden(msq, "gtx", "v.K1#1").length === DECKEL_REIHE_N && laufSekunden(msq, "radeon", "v.K1#1").map((x) => x.s).join() === "80" &&
-                gv.vorher.join() === "v.K1#1,w.K1#1,x.K1#1,y.K1#1" && gv.vorherSicher.length === 4 && gv.sicher.join() === "y.K1#1" && gv.unbekannt.join() === "x.K1#1" &&
-                gv.nachher.join() === "x.K1#1,y.K1#1", tql + " · " + JSON.stringify(gv));
+            const tq = (n, sek, extra = {}) => ({ ...S(n + ".K1", 1, { befehl: ["node", "q" + n], sek, ...extra }, lies), geraet: ["radeon", "gtx"] });
+            const qs = [tq("a", 10), tq("b", 45), tq("c", 20), tq("d", 20), tq("e", 46), tq("f", 90), tq("g", 30), tq("h", 50, { teile: 2 })];
+            const qw = { ...tq("a", 10), staffel: 2 };
+            const laeufe = [["radeon", "a", 2, false], ["radeon", "a", 2, false], ["radeon", "a", 41, true], ["radeon", "a", 44, true], ["radeon", "a", 48, true],
+                ["gtx", "a", 300, true], ["gtx", "a", 300, true], ["gtx", "a", 300, true], ["radeon", "b", 30, true], ["radeon", "c", 14.2, "Frist der Probe 14 s gerissen — kein Urteil, UNGEMESSEN"],
+                ["radeon", "e", 20, true], ["radeon", "e", 20, true], ["radeon", "e", 20, true], ["radeon", "f", 6, true], ["radeon", "f", 6, true], ["radeon", "f", 6, true],
+                ["radeon", "g", 80, true], ...Array.from({ length: 10 }, () => ["radeon", "g", 10, true]), ["radeon", "h", 1000, true], ["radeon", "h", 1000, true], ["radeon", "h", 1000, true]];
+            const zq = (i) => "2026-11-01T00:" + String(Math.floor(i / 60)).padStart(2, "0") + ":" + String(i % 60).padStart(2, "0") + ".000Z";
+            const msq = laeufe.map(([g, n, s, w], i) => ({ sha: "q" + i, geraet: g, zeit: zq(i),
+                ...(typeof w === "string" ? { je: {}, ungemessen: { [n + ".K1#1"]: { gruen: false, ungemessen: true, zahl: w, grund: w, s, zeit: zq(i), modus: "session" } } }
+                    : { je: { [n + ".K1#1"]: { gruen: w, zahl: "z", s, zeit: zq(i), modus: "session" } }, ungemessen: {} }) }));
+            const heute = { sha: "qh", geraet: "radeon", zeit: zq(99), je: {}, ungemessen: { "a.K1#1": { gruen: false, ungemessen: true, grund: "Deckel 10 s gerissen — beendet, UNGEMESSEN", s: 10.4, zeit: zq(99), modus: "session" },
+                "c.K1#1": msq[9].ungemessen["c.K1#1"] } };
+            const tq1 = eichTafel([...qs, qw], [...msq, heute], "radeon");
+            const tql = tq1.zeilen.map((z) => z.ids.join("+") + " " + z.sek + (z.neu != null ? "→" + z.neu : "") + " " + z.urteil).sort().join(" | ");
+            const gv = gerissenVorNach(tq1, heute);
+            pruef("DECKEL-TAFEL aus den Grün-Läufen je Karte: a 10 → 102 (die GTX zählt nie), b und c die Vorgabe 45, d ohne Zahl, e trägt, f 90 → 18, g → 86, h je Teil ≤ 870; Zwillinge EINE Zeile; Σ heute ↔ aus den Zahlen; GERISSEN heute 2 → a heilt, c unbekannt",
+                tql === "a.K1#1+a.K1#2 10→102 Deckel zu knapp | b.K1#1 45→45 1 Grün-Läufe (unter 3) — die Vorgabe 45 s, nie unter dem Urteil 30 s | " +
+                    "c.K1#1 20→45 0 Grün-Läufe (unter 3) — die Vorgabe 45 s | d.K1#1 20 ohne Zahl | e.K1#1 46→46 trägt | f.K1#1 90→18 Deckel zu weit | " +
+                    "g.K1#1 30→86 Deckel zu knapp | h.K1#1 50→870 Deckel zu knapp" && tq1.heute === 10 + 45 + 20 + 20 + 46 + 90 + 30 + 100 &&
+                    tq1.ausZahlen === 102 + 45 + 45 + 20 + 46 + 18 + 86 + 1740 && tq1.geeicht === 5 && tq1.teile === 2 &&
+                    laufSekunden(msq, "radeon", "a.K1#1").length === 5 && laufSekunden(msq, "gtx", "a.K1#1").map((x) => x.s).join() === "300,300,300" &&
+                    gv.vorher.join() === "a.K1#1,c.K1#1" && gv.vorherSicher.join() === "a.K1#1" && gv.sicher.length === 0 && gv.unbekannt.join() === "c.K1#1" && gv.nachher.join() === "c.K1#1",
+                tql + " · Σ " + tq1.heute + " → " + tq1.ausZahlen + " · " + JSON.stringify(gv));
         }
         // der Ort eines Vegetations-Laufs (w4-sitzung-reif): der erste Stand seines Plans — die Sitzung stellt ihn vor dem Deckel
         const plan = (...p) => ({ probe: { befehl: ["node", "-e", "(async function vegetationLauf() {})()", "{AUS}", "{PORT}", JSON.stringify(p)] } });

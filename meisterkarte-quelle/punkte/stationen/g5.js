@@ -1092,7 +1092,6 @@ const LEIB_K2 = seiteProbe(33, leibK2Seite, {
 // orbit fern Bau 34 %, Ruck innen 0,024 m).
 const LEIB_K4 = seiteProbe(33, leibK4Seite, {
     mutiert: true,
-    ausnahme: "der Gang in voller Abdeckung im echten Takt: 7 920 Bilder (7 Gänge × 2 Orbits à 6 s, der Schmuggel, der Steilhang 318 m fern) — der Takt allein headless ~26 s",
 });
 const HALTEN_K5 = seiteProbe(19, haltenK5Seite, { mutiert: true });
 const HALTEN_K1 = seiteProbe(10, haltenK1Seite, { mutiert: true });
@@ -1104,7 +1103,6 @@ const TORE_K3 = seiteProbe(10, toreK3Seite, {
 // Ladeschirm), im Soll höchstens 2 s je Lauf — der Deckel trägt die Messung von heute, nicht das Soll
 const TORE_K1 = seiteProbe(90, toreK1Seite, {
     mutiert: true,
-    ausnahme: "sechs Welt-Wechsel durch ein Welt-Tor (die Geburt der Ferne kalt, fünf Läufe in schon besuchte Welten, zurück daheim), heute je Wechsel 5–7 s bis zur ersten sichtbaren Eingabe — Radeon 55 s",
 });
 
 // Pfade (R6): die Dateien, die die Messung liest
@@ -1387,7 +1385,6 @@ const LATENZ_HALT_SITZUNG = sitzung(33,
 // DIE AUSNAHME (w12-proben-frist): acht Reihen zu LATENZ_PROBEN (zwei Sichten × vier Verben, 120 Proben), je Probe die Taste bis zum
 // bewegten Ausgabe-Bild an der Wanduhr — doppelt so viele wie leib.K1#1 (60 Proben: Radeon p90 36,7 s, GTX 26,3 s); Radeon 8ef49bef
 // riss 45 s in LATENZ1
-LATENZ_HALT_SITZUNG.ausnahme = "acht Latenz-Reihen zu 15 Proben (Ego und Third × gehen, springen, einsteigen, hieb): 120 Tasten bis zum Bild";
 // DIE FAHRT IN EINEM LAUF (fahrzeug.K3#2, fahrzeug.K4#1, fahrzeug.K4#2, Zwillinge, 29.10.): der Ritt (tempo4.js auf dem Weg der Probe,
 // WELT — w4-heil-fahrzeug 30.10.), T5, der Blick am Steilhang (blick.js, BLICK) und T4 von gate:fahr-leben (FAHR) — alle in der EINEN
 // Welt der Sitzung (proben-welt.cjs `fahrWelt`; bis w4-ssa-E lief die Linse ganz in einer eigenen Null-Welt daneben, und `wait` hielt
@@ -4034,7 +4031,7 @@ const stationen = [
         // zurück, die nächste Probe stand in seinem Ort (GTX 3ed95dcf, klang.K2#1: archLod 5459 Einträge an der Mess-Wiese, sonst 1297)
         // DIE AUSNAHME (w12-proben-frist): der Ort von 1320 am Rand, drei Wege zum Hügel (592 m, der Ring im Deckel), 1500 s Welt-Uhr des
         // Wachstums und das Bild vom Hügel — Radeon 8ef49bef stand nach 45 s bei UHR (dem dritten von sechs Schritten, Teil W 14,8 s davor)
-        ), mutiert: true, sek: 33, ausnahme: "der Ort am Rand, drei Wege zum Hügel (592 m), 1500 s Welt-Uhr des Wachstums und das Bild vom Hügel" },
+        ), mutiert: true, sek: 33 },
         gpu: true,
         zeit: false,
         minuten: 12,
@@ -5622,7 +5619,6 @@ const stationen = [
             befehl: PW.torBefehl(PW.fahrVerkehr, "12"),
             sek: 55,
             mutiert: true,
-            ausnahme: "die Metropole von stadt-voll (nH 300) gründet in der Probe, dann je Stunde (10 und 23 Uhr) 12 s Spielzeit im Takt des Spiels",
         },
         gpu: true, zeit: false, minuten: 3,
         urteil: (j, lauf) => {
