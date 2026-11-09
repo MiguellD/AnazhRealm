@@ -68,3 +68,45 @@ Befund (gate:geh-zerlegung mit einer Wache im Umstellen, Zweig `w25-stadt-takt-3
 Wurzel: heim2-w13-verkehr-heil (z331) zog die Gründung der Stadt von ±1 m auf ±1 mm an (`scripts/werkbank.cjs:1087`, Anker in `spec/profiband/haushalt.json` 662,7199…/422,3098…). Die Schleife der Gründung schläft ohne Takt (`await sleep(250)`), ihr Deckel (`__deckel`) zählte nur Gänge ohne Offenes — bei offener Welt (wald 665) warf er erst nach 3 600 stillen Gängen = 900 s. Mit einem Deckel, der jeden Gang zählt (30 s), kam das Umstellen in 21ec477b nach rund 30 s zurück (die Probe endete nach 100 s samt Boot) — die Gründung stand also nicht binnen ±1 mm am Anker; den Wurf selbst verschluckte meine Wache (geheilt in 048c472e). Die Lage der gegründeten Zelle nennt die laufende Probe 048c472e (sie gab zweimal dem echt-Job nach).
 
 FUND: scripts/werkbank.cjs:1087–1090 · ±1 mm-Anker und ein Deckel, der eine Schleife ohne Takt nie zählt · jede Probe am Messort stadt/stadt-voll schweigt bis 480 s · S (der Deckel ist in w25-stadt-takt-3 geheilt; ob die Ort-Wahl je Gerät um mehr als 1 mm wandert oder die Gründung ausbleibt, nennt 048c472e).
+
+## 09.11. 08:07 — w25-stadt-takt-3 (Cloud-Sitzung): Abgabe 12de223b
+
+ABGABE 12de223b8ca0c0cefa2cbd235ec17d411c29a2b9
+
+Geschnitten: (1) DIE WACHE DER BEWOHNER UNTER DER EINEN FRIST — `stamm/siedlung-bewohner.js:1398 _bewohnerWacheTakt`: wechselt eine Hülle im Rechteck der Wege, prüft ein Werk der Siedlung die getroffenen Stände und danach die Wege (`_bewohnerWerkTakt`, mindestens ein Stück je Takt), die Leute leben dabei weiter (`S.lebt`). Bis hier prüfte `_tickBewohner` die Stände ganz in EINEM Takt — reichte das Buch der Wache (256 Wechsel) beim Ankommen der Stadt nicht zurück, alle 3 280. (2) Die Fahrbahn-Probe des Stands (heim2-w13-verkehr-heil) kostet je Suchpunkt nur noch, was sie braucht: nach Raum und Grundriss (`:2848`), mit Ende am ersten Meter (`_verkehrFahrbahnM(…, genug)`, `siedlung-verkehr.js:459`, `:3004`). (3) DIE STADT DES MESSORTS AM ANKER — `scripts/werkbank.cjs:1095` gründet sie mit `spawnSettlement` am Anker der Spec (wie der Richter des Verkehrs, `fahr-proben verkehr`), `:1100` der Deckel der Gründung zählt jeden Gang und nennt die Zellen. Linsen: gate:takt T12 nennt `_bewohnerWacheTakt` (Takt der Leute 0 Stücke, der Job abgelaufen 1; an main 0 → ROT, Selbsttest 99 → ROT); die Bewohner-Linse geht den EINEN Takt der Leute (`kreatur-proben.cjs:2369`, das Werk und dann die Leute).
+
+Gemessen (gate:geh-zerlegung, GTX omen-gtx1060, Vorher 6bb99af1 → Nachher 887caab6 | 2b0216a4, Bild p50/p95/max, Anteil > 33 ms):
+- Stadt Gang 1: 408/2 767/2 767 ms, 6 Bilder in 4 s (EIN Takt 2 546 ms: `_tickBewohner › _bewohnerStandPruefen` 2 540, darin `_bewohnerWand` 1 566, `_bewohnerAuswegGang` 752) → 100/242/408 (35 Bilder, 97 %) | 100/283/475 (34 Bilder, 97 %).
+- Stadt Gang 2: 83/225/325 (98 %) → 50/125/267 (98 %) | 58/125/167 (98 %); Bewohner p95/Mitte 125,2/4,3 → 8,7/4,6 | 7,1/5,1 ms.
+- Wiese: 42/84/150 (94 %) → 33/67/100 (75 %) | 42/92/133 (80 %).
+- Null-Renderer, volle Prüfung der Stände der Stadt (3 280): 3,35 → 2,14 s, `_verkehrAufSpur` 8 380 348 → 252 404, `_verkehrFahrbahnM` 250 146 → 32 300; die Stände byte-gleich (1 196, 264 gerückt, Hash 216012355).
+- Die Stadt messbar: an main ≥ z331 stand jede Probe am Messort stadt bis 480 s still (die Gründung ±1 mm: die GTX setzte „dorf 7 120“ bei 662,7171/422,3055 statt 662,7200/422,3099, 048c472e — `_siedlungsAnker` misst ohne Ort durch den Bildwinkel des Fensters); am Anker der Spec umgestellt in 18 s (Wiese) bzw. im Lauf.
+
+DIE ZERLEGUNG DER STADT, Gang 1 (GTX 2b0216a4, 33 von 34 Bildern > 33 ms; je Bild Takt und Neben-Last je Domäne aus den Stichproben, GPU-Warten und GC aus den Klassen des Fensters; Täter = die Bilder, deren größter Teil die Domäne ist) — der Plan für profiband.K2 in der Stadt:
+
+| Domäne | Täter (Bilder) | Σ Anteil ms | Ø ms je Bild > 33 | was darin, beim Namen | wem |
+|---|---|---|---|---|---|
+| Zeichnen | 18 | 787 | 23,8 | `renderer._renderScene` 124 p95 / 41 Mitte; 220 Befehle (haupt 76, k1 34, k0 25) | Atlas §2 (w25-gpu-wahl) |
+| Bewohner | 2 | 557 | 16,9 | das schwerste Bild 475 ms: `_animateHuman › _tuchTakt › _tuchZustandAn › _tuchGitter` 145 ms; die Wache als Werk 2,3 ms Mitte | Stadt (Tuch: Körper, FUND) |
+| Streaming | 4 | 472 | 14,3 | `_loopVoxelStreaming` 42 p95 / 21 Mitte | Planer, Strom |
+| Sicht | 1 | 452 | 13,7 | im Satz-Pass `_hoehlenSicht` 4,3 / `_chunkSatzAbschnitt` 3,1 p95 | Atlas §2 (w25-gpu-wahl) |
+| Knoten-Bau | 6 | 404 | 12,2 | kalt 62 Bauten, 315 ms | Atlas §3 (w25-pipeline-vorwaermen) |
+| Satz | 1 | 365 | 11,1 | `_tickBauSatz` 3,3 / 2,2 (unter der Frist seit z333) | Stadt |
+| Bau | 1 | 351 | 10,6 | `tickArchitectureCulling` › `_rebuildArchitectureMesh` › `_archInstanceAdd` 6,9 | Stadt (FUND: Bauten-Zahl statt Frist) |
+| Rest | 0 | 257 | 7,8 | ohne Domäne (Tages-Uhr, Sinn, Programm) | — |
+| Verkehr | 0 | 161 | 4,9 | `_verkehrSchritt` 1,0 / 2,6; Gang 2 ein Bild 167 ms mit Verkehr 93 | Stadt (Pflicht C) |
+| Leib | 0 | 106 | 3,2 | | Körper |
+| Tiere · GC · Schatten · GPU | 0 | 50 · 41 · 4 · 1 | | | |
+
+Σ 4 008 ms über 33 Bilder (Ø 121 ms je Bild). Gang 2 (2b0216a4, 61 von 62): Zeichnen 39× Σ 793 · Sicht 6× 567 · Streaming 2× 447 · Bewohner 5× 397 · Satz 331 · Knoten-Bau 7× 315 · Verkehr 1× 313 · Rest 306 · Bau 1× 281 · Leib 89 · Tiere 86 · GC 40.
+
+Die Besten: Lehre 14 wie Unreals Async-Laden mit Zeit-Scheibe (`s.AsyncLoadingTimeLimit`) — die Antwort auf einen Wechsel der Welt geht in Raten unter EINEM Budget je Frame; der Messort wie der Replay einer Engine an festen Eingaben (ein fester Ort statt des Fensters).
+
+Ehrlich offen: Stadt Gang 1 bleibt bei 97 % > 33 ms — Zeichnen, Sicht und Knoten-Bau tragen 1 643 von 4 008 ms und gehören den Nachbarn; das nächste Stück der Stadt ist das Tuch eines Leibs (145 ms in einem Takt), dann der Bau-Gang. Die Radeon ist ungemessen: jede Probe lief auf omen-gtx1060 (sieben gaben dem echt-Job nach). gate:geh-zerlegung lebt im WIP-Kopf 2b0216a4 (im Kopf kostete sie die Decke).
+
+FUND: stamm/koerper-fahrt.js:347 `_tuchGitter` (aus :299 `_tuchZustandAn`) · das Tuch eines Leibs baut sein Gitter am ersten Takt seiner Animation, 145 ms in EINEM Takt (GTX 2b0216a4) · Kosten in Raten oder in der Vorlage der Gestalt · M
+FUND: gelaende-core.js:2160 `erdbauY` · je Stand fragt `_bewohnerAnschluss` → `_bewohnerWand` den Boden der Linie; `erdbauY` 1,21 s selbst in zwei vollen Prüfungen (Null-Renderer) · Kosten je Frage unabhängig von der Splat-Dichte · M (Kern)
+FUND: stamm/siedlung-bewohner.js:2782 `_bewohnerAnschluss` · meldet je Kandidat einer Suche einen Bruch („erreicht keinen Weg frei“), 0,33 s Log in zwei vollen Prüfungen · nur der Ort eines Stands ist ein Bruch · S
+FUND: stamm/vegetation-baum.js:2641 `tickArchitectureCulling` · der Bau-Gang zählt Bauten, nie die EINE Frist · Bau Σ 351 ms in Gang 1 · M
+
+Am Kopf GRÜN (lokal): npm run check, playtest:fast 21/0, gate:takt samt Selbsttest, gate:kreatur-takt (drei Teile, darin bewohner und begegnung), gate:welt-boot, gate:betriebsgesetz (scripts −20 Atome); am WIP-Stand gate:settlement, gate:fahr-leben (samt --verkehr), gate:stand-takt.
