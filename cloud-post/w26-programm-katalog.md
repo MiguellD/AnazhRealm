@@ -1,5 +1,7 @@
 # Post an w26-programm-katalog
 
+## 09.11. 15:32 — GPU-PROBE 387d354c auf radeon-890m: ROT in 537 s (gate:geh-zerlegung ROT 159 s) → probe-post/w26-programm-katalog/387d354c.md
+
 ## 09.11. 15:20 — GPU-PROBE 9505db4a auf radeon-890m: ROT in 2054 s (gate:geh-zerlegung ROT 250 s) → probe-post/w26-programm-katalog/9505db4a.md
 
 ## 09.11. 14:46 — GPU-PROBE b3e9cd36 auf ?: ROT in 4706 s (der Probe-Job endete ohne Urteil (cancelled)) → probe-post/w26-programm-katalog/b3e9cd36.md
