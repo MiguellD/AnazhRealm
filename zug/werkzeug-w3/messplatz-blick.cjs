@@ -35,7 +35,9 @@ const LOG_STILL_H = 2; // ein Log ohne EXIT, das so lange nichts schrieb, läuft
 const HAENGER_MIN = 30; // FRESSER: so lange still heißt Hänger (Prozess-Ausgabe, Log, Workflow-Protokoll)
 const TEMP_CLAUDE = path.join(process.env.TEMP || os.tmpdir(), "claude"); // Logs des Koordinators und das GPU-Schloss
 const CLOUD_H = 6;
-const CLOUD_AUS = /^(heim-|integ-)|^(koordination|punkte-maschine)$/;
+// 09.11.: main, zug-a/-b und probe-* zählten als „Cloud-Zweige“; claude/<name> ist der Arbeits-Zwilling einer Cloud-Sitzung (derselbe SHA wie ihr
+// benannter Zweig, check.yml lässt ihn aus) — er stand doppelt unter den Abgaben
+const CLOUD_AUS = /^(heim-|integ-|zug-|probe-|claude\/)|^(main|koordination|punkte-maschine)$/;
 const KANDIDAT_AUS = /^(heim-|integ-|zug-)|^(main|koordination|punkte-maschine)$/;
 const SEITE_MAX = 40;
 if (/omen/i.test(os.hostname())) {
@@ -150,9 +152,55 @@ function zeilenVon(text) {
     return String(text || "").split(/\r?\n/).map((l) => /^(\d{4}-\d\d-\d\d) (\d\d:\d\d:\d\d) (\S+) (.*)$/.exec(l))
         .filter(Boolean).map((m) => ({ t: new Date(`${m[1]}T${m[2]}`), zeit: m[2], id: m[3], rest: m[4] }));
 }
+// zug/erledigt.txt in BEIDEN Formen: der Dienst schreibt „<id> …“, die Sweeps einer Geräte-Sitzung „<datum> <zeit> <id> …“ (09.11.: der
+// Blick schlüsselte nach dem ersten Wort, also nach dem Datum, und fand seit dem 07.11. keinen Auftrag der OMEN mehr). Eine Zwischenzeile
+// („Zwischenstand“, „Scheibe 1/4“) schließt keinen Auftrag. id → der Rest der jüngsten schließenden Zeile
+function erledigtVon(text) {
+    const je = new Map();
+    for (const l of String(text || "").split(/\r?\n/)) {
+        if (!l.trim()) continue;
+        const m = /^\d{4}-\d\d-\d\d \d\d:\d\d(?::\d\d)? (\S+)\s*(.*)$/.exec(l);
+        const [id, rest] = m ? [m[1], m[2]] : [l.split(" ")[0], l.split(" ").slice(1).join(" ")];
+        const s = /Scheibe (\d+)\/(\d+)/.exec(rest);
+        if (/Zwischen/i.test(rest) || (s && +s[1] < +s[2])) continue;
+        je.set(id, rest);
+    }
+    return je;
+}
+// DIE AUFTRÄGE AN GERÄTE-SITZUNGEN (09.11.: OMEN und GTX 1050 arbeiten per Remote Control — kein Läufer-Job, keine Stationen-Datei,
+// der Blick zeigte beide „frei“, während die OMEN 42 Stationen maß). Der Koordinator schreibt beim Auftrag EINE Zeile nach
+// koordination zug/sitzung.txt: `<datum> <zeit> <id> START geraet=<omen|gtx1050|radeon> [sha=<40>] [mess=<gtx|radeon>] [n=<Stationen>] <Text>`.
+// Offen ist sie, bis erledigt.txt ihre id schließt (12 h Horizont). Der Fortschritt kommt aus dem Werk selbst, nie aus einem Wort: die
+// Mess-Datei messung/<sha8>-<mess>.json auf punkte-maschine (Stationen je + ungemessen, Zeit ihres jüngsten Pushs)
+function sitzungenVon(text, erledigtJe, jetzt) {
+    const out = [];
+    for (const z of zeilenVon(text)) {
+        if (!/^START /.test(z.rest) || jetzt - z.t > 12 * 3600e3 || erledigtJe.has(z.id)) continue;
+        const kv = Object.fromEntries([...z.rest.matchAll(/(\w+)=(\S+)/g)].map((m) => [m[1], m[2]]));
+        const i = out.findIndex((x) => x.id === z.id);
+        const e = { id: z.id, t: z.t, geraet: kv.geraet || "?", sha: kv.sha || null, mess: kv.mess || null, n: kv.n ? Number(kv.n) : null, text: z.rest.replace(/^START /, "").replace(/\w+=\S+\s*/g, "").trim() };
+        if (i >= 0) out[i] = e; else out.push(e);
+    }
+    return out;
+}
+// die Werkstücke der Sitzungen: je Mess-Datei der jüngste Commit (ETag) und ihr Inhalt je Commit (unveränderlich)
+const messStand = new Map(); // commit-sha → { gemessen, ungemessen }
+async function sitzungFortschritt(s, versuch) {
+    if (!s.sha || !s.mess || !TOKEN) return s;
+    const pfad = `meisterkarte-quelle/punkte/messung/${s8(s.sha)}-${s.mess}.json`;
+    const c = await versuch("Mess-Datei " + s.id, () => api(`/commits?sha=punkte-maschine&path=${pfad}&per_page=1`));
+    if (!c || !c.length) return { ...s, datei: null };
+    const k = c[0].sha;
+    if (!messStand.has(k)) {
+        const roh = await versuch("Mess-Inhalt " + s.id, () => fetch(`${ROH}/${k}/${pfad}`).then((r) => (r.ok ? r.json() : null)));
+        if (roh) messStand.set(k, { gemessen: Object.keys(roh.je || {}).length, ungemessen: Object.keys(roh.ungemessen || {}).length });
+    }
+    return { ...s, datei: { t: new Date(c[0].commit.committer.date), ...(messStand.get(k) || {}) } };
+}
+const sitzungKurz = (s) => `${s.id}${s.datei && s.datei.gemessen != null ? ` ${s.datei.gemessen}${s.n ? "/" + s.n : ""} gemessen` : ""}`;
 // die Warteschlange wie der Dienst: offen = nicht erledigt, nicht storniert; prio 1 vor 2 vor 3, sonst Datei-Reihenfolge
 function offeneAuftraege(schlange, erledigt) {
-    const fertigIds = new Set(String(erledigt || "").split(/\r?\n/).map((l) => l.split(" ")[0]).filter(Boolean));
+    const fertigIds = new Set(erledigtVon(erledigt).keys());
     const storno = new Set();
     const alle = [];
     String(schlange || "").split(/\r?\n/).forEach((l, i) => {
@@ -265,17 +313,37 @@ function werkbankHoerer() {
 // ── Koordinator: Logs in $TEMP/claude, EXIT= heißt beendet ───────────────────────────────────────────────────────────
 const logText = (n, dir = TEMP_CLAUDE) => { const p = path.join(dir, n), st = fs.statSync(p); return { st, t: st.size > 1 << 20 ? "" : fs.readFileSync(p, "utf8") }; };
 // je Log { name, t, exit (null = läuft), letzte }; null, wenn der Ordner fehlt (nicht der Laptop)
-function koordinatorLogs() {
+// LEBT der Zug? Ein Log ohne Urteil „läuft“ nur, solange ein Prozess der Kette seine Id trägt (09.11.: z350 hieß nach seinem Abbruch
+// 25 min „läuft“ — die 2-h-Uhr urteilte über die Zeit, nie über den Prozess). null = keine ps-Liste (dann die Uhr wie bisher)
+let letztePs = null;
+function zugLebt(name, ps = letztePs) {
+    if (!ps) return null;
+    const id = name.replace(/-.*$/, "").replace(/w$/, "");
+    if (!/^z\d+$/.test(id)) return null;
+    const re = new RegExp(`(fahre|zug-sammler\\d*|zug-weiter\\d*|zug-schlange\\d*)\\.sh\\b.*(\\s|:)${id}(w|:|\\s|$)`);
+    return ps.some((p) => re.test(p.cmd + " "));
+}
+const ENDE_ZUG = /\] (GELANDET |FAHRT ROT|ABGEBROCHEN)/;
+function koordinatorLogs(ps) {
     let namen;
     try { namen = fs.readdirSync(TEMP_CLAUDE).filter((n) => /^(fahre-.*|takt.*)\.log$/.test(n)); } catch (_e) { return null; }
-    return namen.map((n) => ({ n, ...logText(n) })).sort((a, b) => b.st.mtimeMs - a.st.mtimeMs).slice(0, 4).map(({ n, st, t }) => {
+    // ein Zug, der noch SAMMELT (zug-sammler wartet auf die CI seiner Zweige, Statik, Vorzug), hat noch kein fahre-Log: er steht als eigene
+    // Zeile oben (09.11.: z350 sammelte 10 min unsichtbar, oben stand der abgebrochene Vorgänger)
+    const sammelt = [...new Set((ps || []).map((p) => (/zug-sammler\d*\.sh (z\d+)\b/.exec(p.cmd) || [])[1]).filter(Boolean))]
+        .filter((id) => !namen.includes(`fahre-${id}.log`)).map((id) => {
+            let z = ""; try { z = fs.readFileSync(path.join(TEMP_CLAUDE, "w3", `kette-${id}.out`), "utf8").trim().split(/\r?\n/).pop() || ""; } catch (_e) { /* noch nichts */ }
+            return { name: id, t: new Date(), exit: null, tot: false, still: false, letzte: "sammelt · " + (z.replace(/^\d\d:\d\d\s+/, "") || "wartet auf die CI der Zweige") };
+        });
+    return sammelt.concat(namen.map((n) => ({ n, ...logText(n) })).sort((a, b) => b.st.mtimeMs - a.st.mtimeMs).slice(0, 4).map(({ n, st, t }) => {
         const ex = [...t.matchAll(/EXIT=(\d+)/g)].pop();
         const letzte = t.split(/\r?\n/).filter((l) => l.trim() && !/^EXIT=/.test(l)).pop() || "";
-        // ein Zug-Log endet mit seinem Urteil, nie mit EXIT= (31.10.: z104/z105 hießen nach FAHRT ROT bzw. GELANDET weiter „läuft“)
-        const urteil = /\] GELANDET /.test(letzte) ? 0 : /\] FAHRT ROT/.test(letzte) ? 1 : null;
+        // ein Zug-Log endet mit seinem Urteil, nie mit EXIT= (31.10.: z104/z105 hießen nach FAHRT ROT bzw. GELANDET weiter „läuft“);
+        // ABGEBROCHEN schreibt der Koordinator, wenn er einen Zug anhält (09.11. z350)
+        const urteil = /\] GELANDET /.test(letzte) ? 0 : /\] FAHRT ROT/.test(letzte) ? 1 : /\] ABGEBROCHEN/.test(letzte) ? 2 : null;
         const exit = ex ? Number(ex[1]) : urteil;
-        return { name: n.replace(/\.log$/, "").replace(/^fahre-/, ""), t: st.mtime, exit, still: exit == null && Date.now() - st.mtime > LOG_STILL_H * 3600e3, letzte: letzte.replace(/^\d\d:\d\d:\d\d\s+/, "") };
-    });
+        const name = n.replace(/\.log$/, "").replace(/^fahre-/, ""), lebt = exit == null ? zugLebt(name, ps) : null;
+        return { name, t: st.mtime, exit, tot: lebt === false, still: exit == null && (lebt === false || (lebt == null && Date.now() - st.mtime > LOG_STILL_H * 3600e3)), letzte: letzte.replace(/^\d\d:\d\d:\d\d\s+/, "") };
+    })).slice(0, 4);
 }
 // je Zug-Log (fahre-*.log): Start („bau gegen“, sonst die erste Uhrzeit), GELANDET, ROT vor der Landung, Dauer in min. Die Logs
 // tragen nur Uhrzeiten: der Tag kommt aus dem Datei-Datum, über Mitternacht zählt +24 h; für die Tafel Kandidat, drin-Zweige, Landung, FAHRT ROT
@@ -289,14 +357,15 @@ function zugLaeufe(jetzt, dir = TEMP_CLAUDE) {
         const iBau = z.findIndex((l) => /\] bau gegen/.test(l));
         const iStart = iBau >= 0 ? iBau : z.findIndex((l) => sek(l) != null);
         const iLand = z.findIndex((l) => /GELANDET/.test(l));
-        const iRot = z.findIndex((l) => /ROT urteil/.test(l));
+        const iRot = z.findIndex((l) => /ROT urteil|\] FAHRT ROT|\] ABGEBROCHEN/.test(l)); // 09.11.: das Urteil der Nachwache (zNNNw) heißt „FAHRT ROT (…)“, ohne „urteil“
         const ex = [...t.matchAll(/EXIT=(\d+)/g)].pop();
         const s0 = iStart >= 0 ? sek(z[iStart]) : null;
         // die Uhrzeit einer Zeile am Tag des Datei-Datums (Stunden-Felder, nie Mitternacht + Sekunden: am 25.10. hatte der Tag 25 h)
         const m = st.mtime, amTag = (l) => { const s = sek(l); if (s == null) return null; const d = new Date(m.getFullYear(), m.getMonth(), m.getDate(), Math.floor(s / 3600), Math.floor(s / 60) % 60, s % 60); if (d - m > 60000) d.setDate(d.getDate() - 1); return d; };
         // läuft = weder EXIT noch GELANDET noch FAHRT ROT (ein Zug-Log endet mit seinem Urteil, wie in koordinatorLogs; 08.11.: z323 hieß nach FAHRT
         // ROT 81 min „läuft“) und das Log schrieb in den letzten LOG_STILL_H Stunden (ältere fahre.sh schrieben kein EXIT)
-        const laeuft = !ex && iLand < 0 && !/\] FAHRT ROT/.test(t) && jetzt - st.mtime < LOG_STILL_H * 3600e3;
+        const lebt = zugLebt(n.replace(/^fahre-|\.log$/g, "")); // der Prozess entscheidet, die Uhr nur ohne ps-Liste
+        const laeuft = !ex && iLand < 0 && !/\] (FAHRT ROT|ABGEBROCHEN)/.test(t) && (lebt == null ? jetzt - st.mtime < LOG_STILL_H * 3600e3 : lebt);
         const sEnde = iLand >= 0 ? sek(z[iLand]) : !laeuft ? sek([...z].reverse().find((l) => sek(l) != null)) : null;
         const start = iStart >= 0 ? amTag(z[iStart]) : null;
         const min = s0 == null ? null : sEnde != null ? ((sEnde - s0 + 86400) % 86400) / 60 : (jetzt - start) / 60000;
@@ -372,7 +441,8 @@ function messplatzZeilen(mp, l, job, verlauf, lokal) {
     const out = [];
     for (const p of lokal || []) out.push(`  ${gelb("●")} misst ${s8(p.sha)} ${p.geraet} ${grau(`(punkte.cjs run${p.offen ? " --offen" : ""}, seit ${hhmm(p.start)})`)}`);
     if (!mp) out.push(`  ${grau("noch keine Zeile")}`);
-    else if (mp.zu) out.push(`  ${gruen("●")} Stationen-Datei: zuletzt ${mp.id}: ${urteilFarbe(mp.zu)} ${grau(`(${mp.letzte.zeit.slice(0, 5)})`)}`);
+    // ein Stand von einem früheren Tag trägt sein Datum (09.11.: „zuletzt 25374f6f-radeon (06:12)“ war der 06.11.)
+    else if (mp.zu) out.push(`  ${grau("●")} Stationen-Datei: zuletzt ${mp.id}: ${urteilFarbe(mp.zu)} ${grau(`(${mp.letzte.t.toDateString() === new Date().toDateString() ? "" : tag(mp.letzte.t) + ". "}${mp.letzte.zeit.slice(0, 5)})`)}`);
     else {
         out.push(`  ${mp.still ? rot("●") : gelb("●")} ${spalte(mp.id, 14)} ${mp.stand ? balken(mp.stand.i, mp.stand.n) : ""}${mp.start ? grau(` · seit ${mp.start.zeit.slice(0, 5)}`) : ""}${mp.eta ? ` · Ende ≈ ${fett(hhmm(mp.eta))}` : ""}`);
         out.push(`  ${grau(`nächste Station seit ${mp.letzte.zeit.slice(0, 5)} (${dauer(mp.alter)})`)}${mp.still ? rot(" — still") : ""}`);
@@ -689,6 +759,29 @@ function abgabenVon(jetzt, datei = path.join(TEMP_CLAUDE, "w3", "abgabe.log")) {
     }
     return out;
 }
+// DER BLICK SCHREIBT DIE ABGABEN SELBST (09.11.: w3/abgabe.log speiste nur eine Abgabe-Wache — sie endete am 08.11. 16:36, ABGABEN und WARTEND
+// standen 27 h auf 0, während Abgaben kamen). Die Quelle ist der Titel des Zweig-Kopfs („Abgabe <zweig>: …“), je SHA einmal; die Uhrzeit
+// ist der Push, nie früher als die jüngste Zeile (abgabenVon liest die Tage rückwärts aus der Folge der Uhrzeiten)
+function abgabeSchreiben(zweige, jetzt, datei = path.join(TEMP_CLAUDE, "w3", "abgabe.log")) {
+    let text = "";
+    try { text = fs.readFileSync(datei, "utf8"); } catch (_e) { /* neu */ }
+    const da = new Set([...text.matchAll(/^\d\d:\d\d \S+ \S+ (\w+) /gm)].map((m) => m[1].slice(0, 8)));
+    const alt = abgabenVon(jetzt, datei) || [];
+    let boden = alt.length ? alt[0].t : new Date(0); // die jüngste Zeile (abgabenVon: jüngste zuerst)
+    const neu = zweige.filter((x) => /^Abgabe /.test(x.titel || "") && !da.has(s8(x.sha))).sort((a, b) => a.t - b.t);
+    if (!neu.length) return 0;
+    // der Tag steht nicht in der Zeile: schrieb zuletzt ein früherer Tag, trägt je fehlendem Tag eine Zeile „23:59 TAG …“ den Wechsel (abgabenVon
+    // zählt einen Tag zurück, sobald die Uhrzeit rückwärts gelesen steigt) — sonst läsen sich die Zeilen von gestern als heute
+    const zeilen = [];
+    try {
+        const m = fs.statSync(datei).mtime, tage = Math.round((new Date(jetzt.toDateString()) - new Date(m.toDateString())) / 864e5);
+        for (let i = tage; i >= 1; i--) zeilen.push(`23:59 TAG ${new Date(+jetzt - i * 864e5).toISOString().slice(0, 10)} wechsel (abgabeSchreiben)`);
+        if (tage > 0) boden = new Date(0);
+    } catch (_e) { /* neu */ }
+    for (const x of neu) { const t = x.t > boden && x.t.toDateString() === jetzt.toDateString() ? x.t : boden > new Date(0) ? boden : jetzt; boden = t; zeilen.push(`${hhmm(t)} ABGABE ${x.z} ${s8(x.sha)} ${x.titel}`); }
+    try { fs.appendFileSync(datei, (text && !text.endsWith("\n") ? "\n" : "") + zeilen.join("\n") + "\n"); } catch (_e) { return 0; }
+    return zeilen.length;
+}
 // WARTEND (Koordinator 08.11.): die jüngste ABGABE je Zweig in 48 h, deren Inhalt nicht im Ziel steckt (origin/main, -pm: origin/punkte-maschine).
 // DRIN = `git merge-tree --write-tree <ziel> <kopf>` ergibt glatt den Baum des Ziels (Vorfahr wie gelandeter Inhalt), alle Köpfe in EINEM Prozess
 // (ein git-Start kostet hier 0,7 s; cat-file prüft vorher, ein fehlender Kopf bräche --stdin), draußen zählt compare die Commits vor dem Ziel;
@@ -725,9 +818,12 @@ async function holen() {
     const [main, koord] = await Promise.all(["main", "koordination"].map((b) => versuch("Ref " + b, async () => (await api(`/git/ref/heads/${b}`)).object.sha)));
     for (const k of dateien.keys()) if (![main, koord].includes(k.split(":")[0])) dateien.delete(k);
     const D = (p) => koord && versuch(p, () => datei(koord, p));
-    const [paket, karte, fort, fortR, schlange, erledigt, budgetT, planT, agentenT, abgeloestT] = await Promise.all([
+    const [paket, karte, fort, fortR, schlange, erledigt, budgetT, planT, agentenT, abgeloestT, sitzungT, ghStatus] = await Promise.all([
         main && versuch("package.json", () => datei(main, "package.json")),
         D("meisterkarte.json"), D("zug/fortschritt.txt"), D("zug/fortschritt-radeon.txt"), D("zug/warteschlange.txt"), D("zug/erledigt.txt"), D("zug/budget.txt"), D("zug/plan.txt"), D("zug/agenten.txt"), D("zug/abgeloest.txt"),
+        Promise.resolve(D("zug/sitzung.txt")).then((x) => x || ""),
+        // DER ZUSTAND VON GITHUB ACTIONS (09.11. 19:20: major_outage — jeder Lauf endete „failure“ mit 0 Jobs, der Blick sagte „CI nichts läuft“)
+        versuch("githubstatus", () => fetch("https://www.githubstatus.com/api/v2/components.json").then((r) => r.json()).then((j) => ((j.components || []).find((c) => c.name === "Actions") || {}).status || "?")),
     ]);
     const laeufer = TOKEN ? await versuch("Läufer", async () => (await api("/actions/runners?per_page=20")).runners) : null;
     const runs = [];
@@ -741,8 +837,16 @@ async function holen() {
     for (const r of runs) for (const j of (jobs.get(r.id) || { jobs: [] }).jobs) if (j.status === "in_progress" && j.runner_name) traeger.set(j.runner_name, { run: r, job: j });
     const verlauf = TOKEN ? await verlaufJe(jobs, versuch, jetzt) : new Map();
     // laufende Punkte-Messungen des Laptops (punkte.cjs run direkt, ohne zug.sh — sie schreiben keine Stationen-Datei)
-    const lokal = ((await psListe()) || []).map((p) => [p, /punkte\.cjs run --sha ([0-9a-f]{7,40}) --geraet (\w+)/.exec(p.cmd)]).filter(([, m]) => m)
+    const ps = await psListe();
+    letztePs = ps; // der Zug lebt nur mit seinem Prozess (zugLebt)
+    const lokal = (ps || []).map((p) => [p, /punkte\.cjs run --sha ([0-9a-f]{7,40}) --geraet (\w+)/.exec(p.cmd)]).filter(([, m]) => m)
         .map(([p, m]) => ({ sha: m[1], geraet: m[2], offen: /--offen/.test(p.cmd), start: p.start }));
+    // der Ruhe-Läufer der Radeon (w3/zeit-lauer*.sh) wartet auf < 0,5 fremde Kerne: er ist Arbeit, auch bevor er misst
+    const lauer = (ps || []).filter((p) => /zeit-lauer\d*\.sh/.test(p.cmd) && !/^bash -c/.test(p.cmd)).slice(0, 1).map((p) => {
+        const f = path.join(TEMP_CLAUDE, "w3", (/(zeit-lauer\d*)\.sh/.exec(p.cmd) || [])[1] + ".out");
+        let z = ""; try { z = fs.readFileSync(f, "utf8").trim().split(/\r?\n/).pop() || ""; } catch (_e) { /* noch keine Zeile */ }
+        return { start: p.start, letzte: z };
+    })[0] || null;
     // Last: die GPU-Probe ruht, solange die Radeon misst (Zeit-Stationen) — Fortschritt ohne ENDE (jünger als 3 h), echt-Job auf
     // radeon-890m oder ein gehaltenes GPU-Schloss (deckt auch Läufe ausserhalb von zug.sh)
     const rLetzte = zeilenVon(fortR).pop();
@@ -767,13 +871,17 @@ async function holen() {
         if (!String(a.ref).startsWith("refs/heads/") || a.activity_type === "branch_deletion" || CLOUD_AUS.test(z) || new Date(a.timestamp) < grenze || zweige.some((x) => x.z === z)) continue;
         zweige.push({ z, t: new Date(a.timestamp), sha: a.after });
     }
-    for (const x of zweige.slice(0, 5))
+    // der Titel JEDES Kopfs (je SHA einmal, unveränderlich): aus ihm liest der Blick die Abgaben selbst (abgabeSchreiben)
+    for (const x of zweige.slice(0, 80))
         x.titel = titel.get(x.sha) || (await versuch("Titel " + s8(x.sha), async () => { const m = (await api(`/git/commits/${x.sha}`)).message.split("\n")[0]; titel.set(x.sha, m); return m; }));
+    abgabeSchreiben(zweige, jetzt);
     const aeltester = akt && akt.length ? new Date(akt[akt.length - 1].timestamp) : null;
 
     let mk = null;
     try { mk = karte && JSON.parse(karte); } catch (_e) { fehler.push("meisterkarte.json: kein JSON"); }
-    const erledigtJe = new Map(String(erledigt || "").split(/\r?\n/).filter(Boolean).map((l) => [l.split(" ")[0], l.split(" ").slice(1).join(" ")]));
+    const erledigtJe = erledigtVon(erledigt);
+    const sitzungen = [];
+    for (const s of sitzungenVon(sitzungT, erledigtJe, jetzt)) sitzungen.push(await sitzungFortschritt(s, versuch));
     const budget = budgetVon(budgetT);
     const abgaben = abgabenVon(jetzt);
     // KURS und PLAN (≈ 15 s, vor allem die Zweig-Liste) laufen im Hintergrund und zeichnen bei Ankunft neu; nur der erste Blick,
@@ -797,7 +905,9 @@ async function holen() {
         vO: verlauf.get("omen-gtx1060") || [], vR: verlauf.get("radeon-890m") || [], lokal,
         // DAS DRITTE GERÄT (09.11.: GTX 1050, i7-950 — der Läufer der Bild-Proben, gpu-probe; Zeit-Gates fahren dort nie)
         l3: lauferVon("gtx1050-desktop"), j3: traeger.get("gtx1050-desktop"), v3: verlauf.get("gtx1050-desktop") || [],
-        offen: offeneAuftraege(schlange, erledigt), logs: koordinatorLogs(), plan: planVon(planT), agentenT,
+        offen: offeneAuftraege(schlange, erledigt), logs: koordinatorLogs(ps), plan: planVon(planT), agentenT,
+        sitzungen, actions: ghStatus, lauer,
+        sitzungVon: (g) => sitzungen.filter((s) => s.geraet === g),
         schlangeIds: new Set(String(schlange || "").split(/\r?\n/).filter((l) => l.trim() && !l.startsWith("#")).map((l) => l.trim().split(/\s+/)[0])),
         erledigtIds: new Set(erledigtJe.keys()),
         luecke: akt && akt.length >= 100 && aeltester > grenze ? aeltester : null,
@@ -890,12 +1000,16 @@ function ampelZeilen(S) {
     const lauf = S.runs.filter((r) => r.status === "in_progress"), warte = S.runs.filter((r) => r.status !== "in_progress");
     const ciRot = S.runs.reduce((s, r) => s + S.rotVon(r), 0);
     const g = S.logs && S.logs[0];
+    // die Arbeit einer Geräte-Sitzung (zug/sitzung.txt) zählt wie ein Job: das Gerät ist nicht frei
+    const sitz = (g) => { const s = (S.sitzungVon ? S.sitzungVon(g) : [])[0]; return s ? `Sitzung ${sitzungKurz(s)}` : null; };
+    const lauerArbeit = S.lauer ? `Ruhe-Läufer ${/RUHE/.test(S.lauer.letzte) ? "misst" : "wartet"}` : null;
     const a = [
-        geraetAmpel("OMEN", S.omen, S.lO, S.jO, false),
-        geraetAmpel("RADEON", S.radeon, S.lR, S.jR, S.schloss && !(S.radeon && !S.radeon.zu), arbeitRadeon(S)),
-        S.l3 ? geraetAmpel("GTX1050", null, S.l3, S.j3, false) : `${grau("●")} GTX1050 nicht registriert`,
+        geraetAmpel("OMEN", S.omen, S.lO, S.jO, false, sitz("omen")),
+        geraetAmpel("RADEON", S.radeon, S.lR, S.jR, S.schloss && !(S.radeon && !S.radeon.zu), [arbeitRadeon(S), sitz("radeon"), lauerArbeit].filter(Boolean).join(" · ") || null),
+        S.l3 ? geraetAmpel("GTX1050", null, S.l3, S.j3, false, sitz("gtx1050")) : `${grau("●")} GTX1050 nicht registriert`,
+        S.actions && S.actions !== "operational" ? `${rot("●")} CI ${rot("Actions " + S.actions)}` :
         `${ciRot ? rot("●") : S.runs.length ? gelb("●") : gruen("●")} CI ${lauf.length} läuft${warte.length ? ` · ${warte.length} wartet` : ""}${ciRot ? rot(` · ✗ ${ciRot} rot`) : ""}`,
-        !g ? `${grau("●")} ZUG keine Logs` : g.still ? `${grau("●")} ZUG ${g.name} still` : g.exit == null ? `${gelb("●")} ZUG ${g.name} läuft` : `${g.exit ? rot("●") : gruen("●")} ZUG ${g.name} EXIT=${g.exit}`,
+        !g ? `${grau("●")} ZUG keine Logs` : g.tot ? `${rot("●")} ZUG ${g.name} ohne Prozess` : g.still ? `${grau("●")} ZUG ${g.name} still` : g.exit == null ? `${gelb("●")} ZUG ${g.name} läuft` : g.exit === 2 ? `${grau("●")} ZUG ${g.name} abgebrochen` : `${g.exit ? rot("●") : gruen("●")} ZUG ${g.name} EXIT=${g.exit}`,
         S.mk ? fett(gelb("★")) + ` ${S.mk.summe}/${S.mk.max}` : "★ ?",
     ];
     const text = a.join("  "); // in EINER Zeile, über der Breite in zwei
@@ -912,15 +1026,19 @@ function seiteJetzt(S) {
     const out = [];
     out.push(grau(`main ${s8(S.main)}${S.version ? " · V" + S.version : ""} · Karte gebucht ${S.mk ? `${S.mk.stand} am ${S.mk.kopf}` : "?"} · koordination ${s8(S.koord)}`));
     out.push(`${os.hostname()}  CPU ${mini(S.cpu)} · RAM ${mini((100 * (os.totalmem() - os.freemem())) / os.totalmem())} · GPU ${S.ruht ? gelb("ruht: Messung") + grau(` (${S.ruht})`) : mini(S.gpu)} · ${grau("OMEN-Last nicht gemeldet")}`);
-    out.push("", linie("OMEN · GTX 1060"), ...messplatzZeilen(S.omen, S.lO, S.jO, S.vO));
+    // je Gerät zuerst die Aufträge seiner Sitzung (zug/sitzung.txt) mit dem Stand ihres Werkstücks
+    const sitzZeilen = (g) => (S.sitzungVon ? S.sitzungVon(g) : []).map((s) => `  ${gelb("●")} Sitzung ${spalte(s.id, 14)} ${s.datei && s.datei.gemessen != null ? (s.n ? balken(s.datei.gemessen, s.n) : `${s.datei.gemessen} gemessen`) + grau(` · ${s.datei.ungemessen || 0} offen · Mess-Datei ${hhmm(s.datei.t)}`) : grau(s.mess ? "noch keine Mess-Datei" : s.text.slice(0, 60))}${grau(` · seit ${hhmm(s.t)}`)}`);
+    out.push("", linie("OMEN · GTX 1060"), ...sitzZeilen("omen"), ...messplatzZeilen(S.omen, S.lO, S.jO, S.vO).filter((z) => !(S.sitzungVon && S.sitzungVon("omen").length && /Stationen-Datei: zuletzt .*alt \(/.test(z))));
     for (const a of S.offen.filter((a) => !S.omen || S.omen.zu || a.id !== S.omen.id)) out.push(`  ${grau("danach")}  ${a.prio} ${spalte(a.art, 6)} ${spalte(a.id, 14)} ${grau(auftragKurz(a))}`);
-    out.push("", linie("RADEON 890M · Laptop"), ...messplatzZeilen(S.radeon, S.lR, S.jR, S.vR, S.lokal).map((z) => z.replace(/^(\s*\S+ )frei · zuletzt /, "$1Stationen frei · zuletzt ")), ...werkbankZeilen(S));
+    const lauerZeile = S.lauer ? [`  ${gelb("●")} Ruhe-Läufer ${grau(`seit ${hhmm(S.lauer.start)}`)} · ${S.lauer.letzte ? S.lauer.letzte.slice(0, 90) : grau("noch keine Zeile")}`] : [];
+    out.push("", linie("RADEON 890M · Laptop"), ...sitzZeilen("radeon"), ...lauerZeile, ...messplatzZeilen(S.radeon, S.lR, S.jR, S.vR, S.lokal).map((z) => z.replace(/^(\s*\S+ )frei · zuletzt /, "$1Stationen frei · zuletzt ")), ...werkbankZeilen(S));
     // DAS DRITTE GERÄT: keine Stationen-Datei, nur der Läufer (Job, Verlauf) und die Schlange der Proben, die auf gpu-probe warten
     const probeWarten = S.runs.filter((r) => /GPU-Probe/.test(r.name) && r.status !== "in_progress").length;
     out.push("", linie("DRITTES · GTX 1050 · Bild-Proben"));
+    out.push(...sitzZeilen("gtx1050"));
     if (!S.l3) out.push(`  ${grau("Läufer gtx1050-desktop nicht registriert")}`);
     else {
-        if (!S.j3 && S.l3.status === "online") out.push(`  ${gruen("●")} frei${probeWarten ? gelb(` · ${probeWarten} Proben warten`) : ""}`);
+        if (!S.j3 && S.l3.status === "online") out.push(`  ${(S.sitzungVon && S.sitzungVon("gtx1050").length) ? gelb("●") + " Läufer frei" : gruen("●") + " frei"}${probeWarten ? gelb(` · ${probeWarten} Proben warten`) : ""}`);
         else if (S.j3 && probeWarten) out.push(`  ${grau(`${probeWarten} Proben warten`)}`);
         out.push(...messplatzZeilen(null, S.l3, S.j3, S.v3).filter((z) => !/noch keine Zeile/.test(z)));
     }
@@ -928,12 +1046,13 @@ function seiteJetzt(S) {
     else {
         out.push("", linie("ZUG · Logs des Koordinators"));
         for (const g of S.logs) {
-            const z = g.still ? grau("○ still ") : g.exit == null ? gelb("● läuft ") : g.exit ? rot(`✗ EXIT=${g.exit}`) : gruen("✓ EXIT=0");
+            const z = g.tot ? rot("○ tot   ") : g.still ? grau("○ still ") : g.exit == null ? gelb("● läuft ") : g.exit === 2 ? grau("○ Abbruch") : g.exit ? rot(`✗ EXIT=${g.exit}`) : gruen("✓ EXIT=0");
             out.push(`  ${spalte(z, 9)} ${spalte(g.name, 10)} ${grau(spalte(`${hhmm(g.t)} · vor ${dauer(S.jetzt - g.t)}`, 22))} ${urteilFarbe(g.letzte)}`);
         }
     }
     const lauf = S.runs.filter((r) => r.status === "in_progress"), warte = S.runs.filter((r) => r.status !== "in_progress");
-    if (!S.runs.length) out.push("", linie("CI · nichts läuft"));
+    if (S.actions && S.actions !== "operational") out.push("", linie(`CI · GitHub Actions ${S.actions}`) + " " + rot("(githubstatus.com — ein Lauf mit 0 Jobs ist dann kein Urteil)"));
+    else if (!S.runs.length) out.push("", linie("CI · nichts läuft"));
     else {
         out.push("", linie(`CI · ${lauf.length} läuft · ${warte.length} wartet`));
         for (const r of [...lauf, ...warte].slice(0, 5)) {
@@ -956,7 +1075,7 @@ function seiteJetzt(S) {
         for (const x of S.zweige.slice(0, 5)) out.push(`  ${grau(hhmm(x.t))}  ${spalte(x.z, 28)} ${grau(s8(x.sha))}  ${x.titel || ""}`);
     }
     const ab = (S.abgaben || []).filter((a) => S.jetzt - a.t <= CLOUD_H * 3600e3);
-    out.push("", linie(S.abgaben ? `ABGABEN · ${ab.length} in ${CLOUD_H} h (w3/abgabe.log)${ab.length > 5 ? " · die jüngsten 5" : ""}` : "ABGABEN · w3/abgabe.log fehlt"));
+    out.push("", linie(S.abgaben ? `ABGABEN · ${ab.length} in ${CLOUD_H} h (Titel der Zweig-Köpfe → w3/abgabe.log)${ab.length > 5 ? " · die jüngsten 5" : ""}` : "ABGABEN · w3/abgabe.log fehlt"));
     return out.concat(ab.slice(0, 5).map((a) => `  ${grau(hhmm(a.t))}  ${spalte(a.zweig, 28)} ${grau(a.sha)}  ${a.titel}`));
 }
 
@@ -1168,6 +1287,20 @@ function selbsttest() {
     const soll = { gebucht: 4, ehrlich: 2, d24: 1, rueck: "b.K1#1", pflicht: "A1", konto: 10, jeKonto: 0.1, je24: 0.1, jeLandung: 5, gruen: 2, rot: 1, wand: 30, al: 135, ci: 200, nCi: "2/3" }; for (const k of Object.keys(soll)) if (ist[k] !== soll[k]) fehler.push(`${k}: ${ist[k]} statt ${soll[k]}`);
     const ab = path.join(d, "abgabe.log"), um = new Date(2026, 10, 8, 0, 30); fs.writeFileSync(ab, "23:50 ABGABE w1-x aaaa1111 Abgabe w1-x: eins\n00:10 wip w1-y cccc3333 Decke\n00:20 ABGABE w1-y bbbb2222 Abgabe w1-y: zwei\n"), fs.utimesSync(ab, um, um);
     const al = (abgabenVon(new Date(+um + 1800e3), ab) || []).map((a) => `${a.zweig} ${tag(a.t)} ${hhmm(a.t)} ${a.titel}`).join(" · "); if (al !== "w1-y 08.11 00:20 zwei · w1-x 07.11 23:50 eins") fehler.push("Abgaben über Mitternacht: " + al);
+    // (09.11.) DIE VERKNÜPFUNGEN DES BLICKS — je Fall die Mutante, die der alte Leser war, ROT beim Namen:
+    // (V1) erledigt.txt in der Datums-Form schließt seine id, eine Zwischenzeile nicht (alt: der Schlüssel war das Datum)
+    const E = erledigtVon("omen-a GRÜN 1/1\n2026-11-09 20:10 gtx-x Scheibe 1/4: 8 grün\n2026-11-09 20:12 gtx-y Zwischenstand 3 grün\n2026-11-09 21:30 gtx-z 30 grün / 4 rot\n");
+    if (!(E.has("omen-a") && E.has("gtx-z") && !E.has("gtx-x") && !E.has("gtx-y") && !E.has("2026-11-09"))) fehler.push("erledigt.txt (V1): " + [...E.keys()].join(","));
+    // (V2) ein Zug-Log ohne Urteil läuft nur mit Prozess; die Kette zählt, das Abgebrochene nie (alt: 2-h-Uhr)
+    const P = [{ cmd: "bash zug-schlange6.sh z350w z351:w26-stadt-takt-4b" }, { cmd: "bash zug-weiter3.sh z350" }];
+    const lebt = [zugLebt("z351", P), zugLebt("z350w", P), zugLebt("z352", P), zugLebt("z35", P), zugLebt("z351", [])].join();
+    if (lebt !== "true,true,false,false,false") fehler.push("Zug lebt (V2): " + lebt);
+    // (V3) der Blick schreibt Abgaben; schrieb zuletzt ein früherer Tag, liest sich die alte Zeile nicht als heute (alt: kein Schreiber, 27 h blind)
+    const ab2 = path.join(d, "abgabe2.log"), gestern = new Date(2026, 10, 8, 16, 40), heute = new Date(2026, 10, 9, 19, 50);
+    fs.writeFileSync(ab2, "16:30 ABGABE w1-alt dddd4444 Abgabe w1-alt: gestern\n"), fs.utimesSync(ab2, gestern, gestern);
+    const nS = abgabeSchreiben([{ z: "w1-neu", sha: "eeee5555ffff", t: new Date(2026, 10, 9, 19, 38), titel: "Abgabe w1-neu: heute" }, { z: "w1-wip", sha: "1234abcd", t: new Date(2026, 10, 9, 19, 40), titel: "WIP w1-wip" }], heute, ab2);
+    const a2 = (abgabenVon(heute, ab2) || []).map((a) => `${a.zweig} ${tag(a.t)} ${hhmm(a.t)}`).join(" · ");
+    if (nS !== 2 || a2 !== "w1-neu 09.11 19:38 · w1-alt 08.11 16:30" || abgabeSchreiben([{ z: "w1-neu", sha: "eeee5555ffff", t: heute, titel: "Abgabe w1-neu: heute" }], heute, ab2) !== 0) fehler.push(`Abgaben-Schreiber (V3): ${nS} Zeilen · ${a2}`);
     fs.rmSync(d, { recursive: true, force: true }); console.log(fehler.length ? "messplatz-blick SELBSTTEST ROT: " + fehler.join(" · ") : "messplatz-blick Selbsttest grün: Tafel (ungemessen nie Ertrag, Rückfall zieht ab, Neulauf grün, ohne Kandidat kein Zug, Notiz ohne Werte), Abgaben über Mitternacht");
     process.exitCode = fehler.length ? 1 : 0;
 }
