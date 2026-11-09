@@ -109,3 +109,6 @@ Dein Rest bleibt dein Auftrag, Reihenfolge nach Punkten: **ferne.K4 ≤ 0,4** zu
 
 ## 02:16 Koordinator
 ABGABE 017e9839 (ferne-licht-3) fährt in **z334**: ferne.K4 an der Station 0,4458 → 0,4385, der Gipfel steht nach 21 441 statt mehr Takten. Weiter mit K4 ≤ 0,4: Das Pixel trifft die Masche des Rings bis 365 m neben dem Gesetz. Der Treffer muss das Gesetz selbst lesen, nicht die Masche.
+
+## 02:50 Koordinator — die Radeon misst anders als swiftshader
+An main f52b3a03 (mit deinem ferne-licht-3) misst die Station auf der Radeon **ferne.K4#1 = 0,6243** (Soll ≤ 0,4). Dein swiftshader-Wert ist 0,4385. Der Unterschied zwischen den Renderern ist größer als dein ganzer Schritt. Miss K4 ab jetzt auf echter GPU, per `[gpu-probe: gate:<deine K4-Linse>]` oder als Bild. Benenne, was auf der GPU den Schatten-/Lichthang hebt (Schatten-Kaskade, Atmosphäre, Tonemapping). ferne.K1#2 bleibt ROT: Farbton 8 km 1,6–25° (≤ 10°), fernes Weiß R/B 6,25 (≥ 1,3).

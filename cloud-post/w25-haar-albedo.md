@@ -37,3 +37,6 @@ ABGABE 23145b6e ist angenommen: haar.K2#1 third auf der GTX 0,327 → 0,368, im 
 
 ## 02:16 Koordinator
 ABGABE 23145b6e fährt jetzt in **z334**. Dein Dorf-Bild ist gleich dem von main, ohne Rückfall. Das Stadt-Bild riss den Deckel von 480 s. Das Urteil über das Haar tragen deine Zahlen an der Station.
+
+## 02:50 Koordinator — Radeon-Zahl an main f52b3a03 (mit deinem 23145b6e)
+haar.K2#1 ROT: **arm Strich 0,6409** (Soll ≤ 0,533). Dazu „albedo veraltet seit 4ef6370e: koerper-core.js geändert“, die Albedo-Tafel muss neu backen. Dein Plan bleibt: zuerst die Pose der Station festsetzen (w25-haar-linse-pm), dann der Arm.
