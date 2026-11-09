@@ -2114,19 +2114,24 @@ function farbTon([r, g, b]) {
     const [hi, d] = [Math.max(r, g, b), Math.max(r, g, b) - Math.min(r, g, b)];
     return d > 0 ? 60 * (hi === r ? ((g - b) / d + 6) % 6 : hi === g ? (b - r) / d + 2 : (r - g) / d + 4) : 0;
 }
-// die Mittel des Bands je Glied der Paare [L, S, L0], linear — der Befund des Tons nennt sie (gate:luft-tiefe:echt auf echter GPU)
-function bandMittel(paare) {
-    return [0, 1, 2].map((k) => [0, 1, 2].map((i) => paare.reduce((a, p) => a + p[k]?.[i], 0) / paare.length));
+// Farbton, Sättigung (HSV) und 8-bit-Farbe einer Farbe in [0, 1] — der Ton des Feuers der Prüfbühne (Seite und Node)
+function hsvTon(c) {
+    const mx = Math.max(...c);
+    return { hue: +farbTon(c).toFixed(1), sat: +(mx > 0 ? (mx - Math.min(...c)) / mx : 0).toFixed(3), rgb: c.map((x) => Math.round(x * 255)) };
 }
 function tonDesBands(paare) {
-    const [l, s] = bandMittel(paare).map(farbTon);
+    const [l, s] = [0, 1].map((k) => farbTon([0, 1, 2].map((i) => paare.reduce((a, p) => a + p[k][i], 0))));
     return paare.length ? +Math.min(Math.abs(l - s), 360 - Math.abs(l - s)).toFixed(2) : null;
 }
-// DER TON ZERLEGT (w26-ferne-ton): das Band ist je Kanal L = T·L0 + (1 − T)·S — die Luft allein (der Boden schwarz,
-// (1 − T)·S = S·(L0 − L)/(L0 − S)) trägt `luft` Grad gegen S, der Boden den Rest; dazu Blau/Grün des Bodens ohne Luft
-function tonZerlegt([L, S, L0]) {
-    const luft = tonDesBands([[S.map((s, c) => (s * (L0[c] - L[c])) / (L0[c] - S[c])), S]]);
-    return { luft, boden: +(tonDesBands([[L, S]]) - luft).toFixed(2), bg: +(L0[2] / L0[1]).toFixed(2) };
+// DER TON DER FERNE (w26-ferne-ton, K1-2 FARBTON): der Ton des Bands gegen die Luft vor einem SCHWARZEN Ziel in derselben
+// Entfernung — je Pixel A = S·(1 − e^{−β·g·d}), β der Referenz (Koschmieder: L = L0·T + S·(1 − T) je Kanal) —, nie gegen den
+// Horizont S selbst (`paare` je Pixel [L, S, g·d]). Die Luft filtert je Kanal (bei 8 km 1 − T = 0,67/0,78/0,88): gegen den
+// fast grauen Horizont zur Sonne (die Mie-Aureole, 3–4 Stufen Buntheit) trug schon die Luft allein, ein Band OHNE Boden, auf der
+// GTX 10,21°, auf swiftshader 2,69° (87537d3f, Azimut 0, Uhr 0,5) — der Ton einer fast grauen Referenz ist schlecht gestellt,
+// je Kanal 1 % Rundung des Geräts drehte ihn um 7°. Gegen die Luft der Entfernung (Buntheit ~20 %) misst das Band, was der Boden
+// durch die Luft trägt: GTX 13° → 4,6°, swiftshader 6,9° → 4,9°.
+function tonDerFerne(paare, beta) {
+    return tonDesBands(paare.map(([L, S, gd]) => [L, S.map((s, c) => s * (1 - Math.exp(-beta[c] * gd)))]));
 }
 
 // DIE LUFT IM BILD (ferne-luft, Meisterkarte Ferne K1 + K2): vom Hügel je Uhr vier Azimute ab der Sonne, je drei
@@ -2280,7 +2285,7 @@ function luftTiefe(o) {
                     if (!b) continue;
                     tc.forEach((x, c) => x != null && b.q[c].push(x / Math.exp(-bRef[c] * t.g * t.d)));
                     if (tc[0] > 0.01 && tc[2] > 0.01 && luftAufgeloest(L0, S, i, [0, 2])) b.dk.push(Math.log(tc[0] / tc[2]) / (t.g * t.d));
-                    b.dh.push([l, sa, l0]);
+                    b.dh.push([l, sa, t.g * t.d]);
                 }
             const rand = med(Object.values(fern));
             const Yd = Float32Array.from({ length: W * H }, (_, p) => luma709([srgbLin(L[p * 4]), srgbLin(L[p * 4 + 1]), srgbLin(L[p * 4 + 2])]));
@@ -2294,7 +2299,7 @@ function luftTiefe(o) {
             return {
                 kante: { spalten: Object.keys(oben).length, rand: Object.keys(kante).length, linie: +((kl.linie / W) * hfov).toFixed(2), stufe: kl.stufe },
                 blende: k,
-                baender: bd.map((b) => ({ d: b.d, n: b.dh.length, q: b.q.map(med), dk: med(b.dk), nk: b.dk.length, dh: tonDesBands(b.dh), mittel: bandMittel(b.dh) })),
+                baender: bd.map((b) => ({ d: b.d, n: b.dh.length, q: b.q.map(med), dk: med(b.dk), nk: b.dk.length, dh: tonDerFerne(b.dh, bRef) })),
                 himmel: inS[0].length >= R.mindest.n ? inS.map(med) : null,
                 rand: { km: +(rand / 1000).toFixed(1), C: med(gez.filter((x) => x.d >= 0.9 * fern[x.x]).map((x) => x.C)) },
                 sicht: { m: med(sb), n: sb.length },
@@ -2367,8 +2372,8 @@ function duvTageslicht(c) {
 }
 
 // DAS URTEIL DER LUFT (die Bänder in spec/farbe/luft-referenz.json): K1-1 KOSCHMIEDER, K1-2 JE KANAL (Δβ blau−rot gegen die
-// Referenz, grau = 0) · FARBTON, K2-1 KANTE; was die Referenz `offen` nennt, steht OFFEN und hält die Wand nicht. Jede Sicht
-// (Uhr × Azimut) misst `mindest`, sonst ROT beim Namen: eine leere Messung ist nie grün.
+// Referenz, grau = 0) · FARBTON, K2-1 KANTE. Jede Sicht (Uhr × Azimut) misst `mindest`, sonst ROT beim Namen: eine leere
+// Messung ist nie grün.
 function luftTiefeUrteil(m, R) {
     const B = R.band;
     const M = R.mindest;
@@ -2387,8 +2392,7 @@ function luftTiefeUrteil(m, R) {
                 // (w22-ferne-heil: der Luftschatten `luftSicht` fiel bei β 1 unter seine Klemme, T/T_soll bis −7,98)
                 if (u === 0.5 && q.length)
                     liste.push(`K1-1 KOSCHMIEDER ${wo} ${b.d / 1000} km: T/T_soll ${q.join(", ")} außerhalb ±${B.T * 100} %${Math.min(...b.q) < 0 ? " · T < 0: luftSicht hängt an β" : ""}`);
-                const z8 = b.d === 8000 && !(b.dh <= B.dh) && tonZerlegt(b.mittel);
-                if (z8) liste.push(`K1-2 FARBTON ${wo} 8 km: ${b.dh}° von der In-Streuung > ${B.dh}° · die Luft allein (Boden schwarz) ${z8.luft}°, der Boden ${z8.boden}° (B/G ${z8.bg}) · L/S/L0 ${b.mittel.flat().map((x) => +x.toFixed(4))}`);
+                if (b.d === 8000 && !(b.dh <= B.dh)) liste.push(`K1-2 FARBTON ${wo} 8 km: ${b.dh}° von der Luft der Entfernung > ${B.dh}°`);
             }
             const fern = z.baender.filter((b) => b.d >= 2000 && b.nk > 0);
             const nk = fern.reduce((a, b) => a + b.nk, 0);
@@ -2424,11 +2428,9 @@ function luftTiefeUrteil(m, R) {
             const k = ((zs || []).find((x) => x.uhr === 0.5 && x.az === az) || {}).kante || { spalten: 0 };
             if (!(k.spalten >= M.spalten && k.linie < B.linie)) liste.push(`K2-2 KANTENLINIE ${ort} Azimut ${az}°: Linie ${k.linie}° Stufe ${k.stufe} (${k.rand}/${k.spalten} Spalten)`);
         }
-    const offen = (b) => Object.keys(R.offen || {}).some((k) => b.includes(k));
     const staffel = {};
     for (const k of ["K1-1", "K1-2", "K2-1", "K2-2"]) staffel[k] = liste.some((b) => b.startsWith(k)) ? "ROT" : "GRUEN";
-    const befunde = liste.filter((b) => !offen(b));
-    return { urteil: befunde.length ? "ROT" : "GRUEN", staffel, befunde, offen: liste.filter(offen) };
+    return { urteil: liste.length ? "ROT" : "GRUEN", staffel, befunde: liste };
 }
 
 // DER WETTER-ZUG IM BILD (Licht K5): klar → `o.wort` → klar als Wort des Spielers, je Wort `o.sek` Sekunden der Welt-Uhr im
@@ -2492,7 +2494,7 @@ function luftTiefeSelbsttest(R) {
                 baender: R.baenderM.map((d) => ({ d, n, q, dk, nk: n, dh: 5 })),
             }))
         );
-    const urteil = (zeilen, gipfel = zeilen, weiss = { RB: 1.5 }) => luftTiefeUrteil({ zeilen, gipfel: { zeilen: gipfel }, weiss }, Object.assign({}, R, { offen: {} }));
+    const urteil = (zeilen, gipfel = zeilen, weiss = { RB: 1.5 }) => luftTiefeUrteil({ zeilen, gipfel: { zeilen: gipfel }, weiss }, R);
     const leer = urteil(sichten(null, null, 0)).staffel;
     const k = ref[2] - ref[0];
     // das Bild einer Welt-Kante: Himmel 0,5 über einer Stufe `c` ab Zeile 100 (`zacke`: je zweite Spalte 8 px tiefer)
@@ -2521,10 +2523,13 @@ function luftTiefeSelbsttest(R) {
             const [band, je] = [tonDesBands(px), px.map((p) => tonDesBands([p])).sort((a, b) => a - b)[100]];
             return (Math.abs(band - tonDesBands([[L, S]])) <= 2 && je > 17) || `Ton des Bands ${band}° (Wahrheit 7,14°), je Pixel ${je}°`;
         })(),
-        // DER TON ZERLEGT beim Namen (GTX 87537d3f, Azimut 0, Uhr 0,5): 13° = die Luft allein 10,21° + der Boden 2,79° (B/G 0,66)
-        ((z) => (z.luft === 10.21 && z.boden === 2.79 && z.bg === 0.66) || `zerlegt ${JSON.stringify(z)}`)(
-            tonZerlegt([[0.22295, 0.2412, 0.25643], [0.26289, 0.26804, 0.27857], [0.12897, 0.13138, 0.08637]])
-        ),
+        // DER TON DER FERNE gegen die Luft der Entfernung (der Horizont der GTX 87537d3f, 8 km nach Koschmieder): ein schwarzer Boden
+        // trägt 0° (gegen S, die Mutante der alten Linse, 8,5° — die Luft allein verbrauchte die Toleranz), die Wiese vor dem
+        // Bestand (w25-ferne-licht-5, 37,9°) bleibt ROT
+        ((S = [0.26289, 0.26804, 0.27857], T = ref.map((b) => Math.exp(-b * 7760))) => {
+            const [schwarz, wiese] = [[0, 0, 0], [0.16, 0.21, 0.06]].map((L0) => [[L0.map((x, c) => T[c] * x + (1 - T[c]) * S[c]), S, 7760]]);
+            return (tonDerFerne(schwarz, ref) === 0 && tonDesBands(schwarz) > 8 && tonDerFerne(wiese, ref) > 10) || "Ton der Ferne";
+        })(),
         // die Auflösung je Pixel in Stufen (L0 gegen S, 8 bit): das Paar am Morgen (Rot 24, Blau 19 Stufen; linear 0,029/0,021 unter
         // der alten Wache 0,05) trägt, das Rauschen (4 Stufen) und das helle Paar (9 Stufen, linear 0,057 über ihr) nie
         ...[[[38, 32, 21], [62, 54, 40], 1], [[120, 121, 119], [124, 123, 126]], [[191, 191, 191], [200, 200, 200]]].map(
@@ -2917,9 +2922,9 @@ module.exports = {
     luftBetaRef,
     luftAufgeloest,
     farbTon,
-    bandMittel,
+    hsvTon,
     tonDesBands,
-    tonZerlegt,
+    tonDerFerne,
     luftTiefe,
     luftTiefeUrteil,
     luftTiefeSelbsttest,

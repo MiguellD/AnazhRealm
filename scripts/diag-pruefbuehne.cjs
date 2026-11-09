@@ -821,13 +821,10 @@ const S0_TON = { hue: [28, 45], satMax: 0.75, palette: { hex: 0xff7a35, nacht: 1
 // der Rest wieder in sRGB — unter der Tonkurve Khronos PBR Neutral (linear bis zur Schulter, der Schwarzpunkt fällt in der
 // Differenz) ist das das Licht des Feuers auf dem Boden (die Differenz der sRGB-Werte zöge die Nacht nichtlinear ab).
 const { srgbLin: s0Lin, linSrgb: s0Srgb, luma709 } = require("./lib/abnahme-urteil.cjs");
-const { farbTon } = require("./lib/licht-linsen.cjs");
+const { farbTon, hsvTon } = require("./lib/licht-linsen.cjs");
 function s0TonNetto(e, ohne) {
     if (!e || !e.ton || !ohne || !ohne.ton) return null;
-    const [R, G, B] = e.ton.rgb.map((c, i) => s0Srgb(Math.max(0, s0Lin(c) - s0Lin(ohne.ton.rgb[i]))));
-    const mx = Math.max(R, G, B);
-    const dl = mx - Math.min(R, G, B);
-    return { hue: +farbTon([R, G, B]).toFixed(1), sat: +(mx > 0 ? dl / mx : 0).toFixed(3), rgb: [R, G, B].map((c) => Math.round(c * 255)) };
+    return hsvTon(e.ton.rgb.map((c, i) => s0Srgb(Math.max(0, s0Lin(c) - s0Lin(ohne.ton.rgb[i])))));
 }
 // der Ton des Schusses `e` gegen den Schuss ohne Feuer `ohne`: Farbton netto, Sättigung brutto
 function s0Ton(e, ohne) {
@@ -1103,7 +1100,7 @@ async function lichtLauf() {
     };
     const page = await browser.newPage();
     // der EINE Farbton (licht-linsen `farbTon`) für den Ton der Feuer-Probe in der Seite
-    await page.evaluateOnNewDocument(`window.farbTon = ${farbTon};`);
+    await page.evaluateOnNewDocument(`window.farbTon = ${farbTon}; window.hsvTon = ${hsvTon};`);
     await page.evaluateOnNewDocument(s0PipeRegister);
     // der Speicher fällt vor dem ersten Skript des ERSTEN Ladens (ein Laden weniger als Laden → Löschen → Neu laden)
     await page.evaluateOnNewDocument(() => {
@@ -1427,18 +1424,7 @@ async function lichtLauf() {
                         nt++;
                     });
                     let ton = null;
-                    if (nt) {
-                        const [R, G, B] = rgb.map((c) => c / nt);
-                        const mx = Math.max(R, G, B);
-                        const mn = Math.min(R, G, B);
-                        const dl = mx - mn;
-                        ton = {
-                            hue: +farbTon([R, G, B]).toFixed(1),
-                            sat: +(mx > 0 ? dl / mx : 0).toFixed(3),
-                            rgb: [R, G, B].map((c) => Math.round(c * 255)),
-                            punkte: nt / 9,
-                        };
-                    }
+                    if (nt) ton = Object.assign(hsvTon(rgb.map((c) => c / nt)), { punkte: nt / 9 });
                     const pool = r._leuchtPool?.plaetze || [];
                     // die Programme und Pipelines (ein Wechsel der Plätze baut keins: Pool voll und leer zählen gleich)
                     const PL = rend._pipelines;
