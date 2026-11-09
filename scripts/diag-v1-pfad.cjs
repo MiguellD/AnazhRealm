@@ -19,7 +19,7 @@
 //   Port: V1_PFAD_PORT (4421) · Mutanten: V1_MUTANTE=gedaechtnis-leer (--seele) · wertung-aus (--regeln)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, warteAufWelt, ROOT: root, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde, jsonLesen, jsonSchreiben, jsonKlon, fehlerStapel, SELBSTTEST, path, fs, stammLib, nullWelt } = require("./lib/welt-boot.cjs");
+const { statikServer, warteAufWelt, ROOT: root, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde, jsonLesen, jsonSchreiben, jsonKlon, fehlerStapel, SELBSTTEST, path, fs, stammLib, nullWelt, bruchFaelle, probeUrteil } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 
 const PORT = Number(process.env.V1_PFAD_PORT || 4421);
@@ -185,6 +185,8 @@ const ORT_OPS = [
     "deposit_life",
     "deposit_emotion",
 ];
+// die Akte eines Effekts, der ohne Ort wirkt: je Akt sein Name und sein Abstand zum Spieler
+const ohneOrt = (akte) => akte.map((a) => `${a.nm} ${a.abstand == null ? "ohne Ort" : a.abstand + " m vom Spieler"}`).join(", ");
 function ortVerdict(m) {
     if (startFehlt(m)) return ["start"];
     const out = [];
@@ -197,10 +199,7 @@ function ortVerdict(m) {
         }
         if (e.kalt) out.push(`${op}: Buch kalt (Vorbedingung)`);
         else if (e.fehler) out.push(`${op}: wirft (${e.fehler.slice(0, 80)})`);
-        if (e.akte?.length)
-            out.push(
-                `${op}: wirkt ohne Ort (${e.akte.map((a) => `${a.nm} ${a.abstand == null ? "ohne Ort" : a.abstand + " m vom Spieler"}`).join(", ")})`
-            );
+        if (e.akte?.length) out.push(`${op}: wirkt ohne Ort (${ohneOrt(e.akte)})`);
         if (!e.kalt && !(soll.test(e.grund || "") && e.effekt === op)) out.push(`${op}: scheitert nicht benannt`);
         if (e.ok) out.push(`${op}: meldet Erfolg`);
     }
@@ -347,10 +346,7 @@ function knotenVerdict(m) {
             continue;
         }
         if (e.fehler) out.push(`${name}: wirft (${e.fehler.slice(0, 80)})`);
-        if (e.akte?.length)
-            out.push(
-                `${name}: wirkt ohne Ort (${e.akte.map((a) => `${a.nm} ${a.abstand == null ? "ohne Ort" : a.abstand + " m vom Spieler"}`).join(", ")})`
-            );
+        if (e.akte?.length) out.push(`${name}: wirkt ohne Ort (${ohneOrt(e.akte)})`);
         if (!(new RegExp(soll, "i").test(e.grund || "") && e.effekt === effekt))
             out.push(`${name}: scheitert nicht benannt (${e.grund ? `„${e.grund}“ an ${e.effekt}` : "kein Grund"})`);
         if (e.ok) out.push(`${name}: meldet Erfolg`);
@@ -1462,22 +1458,25 @@ async function probe(arg) {
             falsch = 0,
             nass = 0;
         const beispiele = [];
-        for (const c of zentren)
-            for (let i = 0; i < 400; i++) {
+        // `k` Punkte im Kreis `R` um (cx, cz), je Marge das Urteil gegen den Scan (`vor` dem Beispiel)
+        const probe = (cx, cz, R, k, vor = "") => {
+            for (let i = 0; i < k; i++) {
                 const a = rnd() * Math.PI * 2,
-                    d = Math.sqrt(rnd()) * 220;
-                const x = c.x + Math.cos(a) * d,
-                    z = c.z + Math.sin(a) * d;
+                    d = Math.sqrt(rnd()) * R;
+                const x = cx + Math.cos(a) * d,
+                    z = cz + Math.sin(a) * d;
                 for (const mg of [0.2, 0.4, 1.5]) {
                     const soll = ref(x, z, mg);
                     n++;
                     if (!soll) nass++;
                     if (urteil.call(r, x, z, mg) !== soll) {
                         falsch++;
-                        if (beispiele.length < 3) beispiele.push(`(${x.toFixed(1)}, ${z.toFixed(1)}, ${mg})`);
+                        if (beispiele.length < 3) beispiele.push(`${vor}(${x.toFixed(1)}, ${z.toFixed(1)}, ${mg})`);
                     }
                 }
             }
+        };
+        for (const c of zentren) probe(c.x, c.z, 220, 400);
         // Der Spieler-Wille: ein Graben und eine Aufschüttung am Ufer, nur für diese Urteile (kein Remesh).
         const wm = st.worldMeta;
         const editsAlt = wm.voxelEdits;
@@ -1488,21 +1487,7 @@ async function probe(arg) {
             { x: ufer.x - 6, y: sy + 1, z: ufer.z + 4, r: 6, mode: "fill" },
         ]);
         try {
-            for (let i = 0; i < 300; i++) {
-                const a = rnd() * Math.PI * 2,
-                    d = Math.sqrt(rnd()) * 16;
-                const x = ufer.x + Math.cos(a) * d,
-                    z = ufer.z + Math.sin(a) * d;
-                for (const mg of [0.2, 0.4, 1.5]) {
-                    const soll = ref(x, z, mg);
-                    n++;
-                    if (!soll) nass++;
-                    if (urteil.call(r, x, z, mg) !== soll) {
-                        falsch++;
-                        if (beispiele.length < 3) beispiele.push(`Edit (${x.toFixed(1)}, ${z.toFixed(1)}, ${mg})`);
-                    }
-                }
-            }
+            probe(ufer.x, ufer.z, 16, 300, "Edit ");
         } finally {
             wm.voxelEdits = editsAlt;
         }
@@ -2506,7 +2491,7 @@ hauptLauf(async () => {
             },
         };
         const mitZ = (k, z) => ({ zaehlung: { ...gesundW.zaehlung, [k]: z } });
-        for (const [kurz, urteil, gesund, brueche] of [
+        bruchFaelle(check, [
             [
                 "V-D3",
                 vorschauVerdict,
@@ -2664,17 +2649,7 @@ hauptLauf(async () => {
                     ["kein nasser Punkt (vakuös)", { exakt: { n: 3600, falsch: 0, nass: 0 } }, "kein nasser Punkt"],
                 ],
             ],
-        ]) {
-            check(`Selbst-Test ${kurz}: gesund == 0 Täter`, !urteil(gesund).length, urteil(gesund).join(" · "));
-            for (const [name, bruch, soll] of brueche) {
-                const v = urteil(Object.assign({}, gesund, bruch));
-                check(
-                    `Selbst-Test ${kurz}: ‚${name}' → die Linse nennt ${soll}`,
-                    v.some((t) => t.startsWith(soll)),
-                    v.join(" · ")
-                );
-            }
-        }
+        ]);
         const gruen = wand(quelle);
         check(
             "Selbst-Test W: der Arbeitsbaum ist grün",
@@ -3166,7 +3141,7 @@ hauptLauf(async () => {
         return s.length ? `min ${s[0]} · median ${rang(s)} · max ${s[s.length - 1]}` : "—";
     };
     const rm = out.rahmen || {};
-    for (const [kurz, name, m, urteil, zeile] of [
+    for (const z of [
         [
             "V-D1",
             "der Genesis-Ort ist EIN Plan (keine Krone über dem Freiraum), jedes Tor auf seinem Slot",
@@ -3256,16 +3231,8 @@ hauptLauf(async () => {
                 return `${re.length} gemessen (${rw.length}/${rm.waffenImBuch} Waffen: ${stat(rw)}; alle: ${stat(re)}) · ${(rm.eintraege || []).filter((q) => q.leer).length} ehrlich leer · Aspekt ${rm.aspekt} · ${rm.ms} ms`;
             },
         ],
-    ]) {
-        const mm = m || {};
-        if (mm.err) check(`${kurz} Probe ohne Ausnahme`, false, mm.err.split("\n")[0]);
-        const v = urteil(mm);
-        check(
-            `${kurz} ${name}`,
-            !v.length,
-            `${mm.gestartet ? zeile(mm) : "nicht gestartet"}${v.length ? " — Täter: " + v.join(", ") : ""}`
-        );
-    }
+    ])
+        probeUrteil(check, ...z);
     if (process.env.V1_PFAD_RAHMEN_JSON) jsonSchreiben(process.env.V1_PFAD_RAHMEN_JSON, rm);
     wandEnde(errs, "der v1-Pfad trägt seine benannten Schnitte.");
 });

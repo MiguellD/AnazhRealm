@@ -100,7 +100,7 @@ class AnazhRealm_stoff_material {
             // w22-strauch-karte wurde der Halm quer um s breiter: das L2-Blatt (halbe Breite 4–9 cm) lag bei s = 14 als Keil von
             // 2,5 m Breite und 0,8 m Höhe in der Wiese — am See (Radeon, Mittag) große flache Pyramiden im mittleren Gras, mit
             // s ≥ 9 schon diesseits 20 m am abgewandten Hang. Die Ähre (ihr Anker über dem Boden: der Fuß ihres Stängels in der
-            // Höhe seiner Spitze, `_wieseAehrenFuss`) wandert mit ihrem Stängel, in ihrer Größe. Bis w14-wiese-saum streckte der
+            // Höhe seiner Spitze, geboren in emitGrass) wandert mit ihrem Stängel, in ihrer Größe. Bis w14-wiese-saum streckte der
             // Stoff jede waagrechte Lage um s: die Neigung der Halme (p50 0,34 der Höhe) mit ihr — bei s = 14 lag der Halm 12°
             // über dem Boden (der Saum der Mess-Wiese, swiftshader-Maske 06.11.)
             const c = T.attribute("aCenter", "vec3");
@@ -117,9 +117,11 @@ class AnazhRealm_stoff_material {
             const pixHalb = v0.length().mul(this._halmFernePixel).mul(0.5).div(naht.skala.max(1e-6));
             const breit = T.sign(u).mul(pixHalb.sub(halb).max(0)).mul(T.step(c.y, 1e-4));
             const lage = T.positionLocal.add(T.vec3(c.x, 0, c.z).mul(sp1)).add(t.mul(breit));
-            const ha = this._ensureSeasonUniforms().uLaubPraesenz.z; // die Gestalt des Halms im Jahr, wie die Nähe (vegetation.K5#2)
+            // die Gestalt des Halms im Jahr, wie die Nähe (vegetation.K5#2, `_halmImJahr`): um seinen gespreizten Fuß
+            const ha = this._ensureSeasonUniforms().uLaubPraesenz.z;
             const sway = this._windSwayOffset(T, { hoehe: T.positionGeometry.y.mul(sk).mul(ha) });
-            this._halmFerneKnoten = T.vec3(lage.x, lage.y.mul(ha), lage.z).mul(v).add(sway.mul(v));
+            const jahr = this._halmImJahr(T, T.vec3(c.x, 0, c.z).mul(G.spreiz), lage);
+            this._halmFerneKnoten = jahr.mul(v).add(sway.mul(v));
             this._halmFerneStoffe = new Map();
         }
         // der Klon trägt die Stoff-Werte des Halms (Zahlen; `userData` als Kopie, `_stoffWert` liest sie am Stoff)
@@ -127,6 +129,22 @@ class AnazhRealm_stoff_material {
         m.positionNode = this._halmFerneKnoten;
         this._halmFerneStoffe.set(mat, m);
         return m;
+    }
+
+    // DER HALM IM JAHR (w26-winter-fichte, vegetation.K5#2) — der EINE Leser der Gestalt des Halms im Stoff: phyto-core
+    // `halmImJahr` über der TSL-Algebra, der Halm kürzt sich längs seiner Achse um seinen Fuß (Höhe und Neigung × `ha`,
+    // `uLaubPraesenz.z`, `_saisonPraesenz`), die Breite bleibt — die Fläche fällt genau mit `ha`. `fuss` der Fuß am Boden (vec3,
+    // y 0: aCenter x/z der Vorlage, in der Ferne gespreizt), `lage` die Ecke in der Vorlage; die Ähre (aCenter y > 0) kürzt als
+    // Ganzes um den Fuß ihres Stängels (ihr Anker, geboren in emitGrass). Leser: der Gras-Stoff der Nah-Wiese (`_foundryTreeMaterial`)
+    // und ihre Ferne (`_halmFerne`). Bis hierher staute jeder Leser nur y: Neigung und Fußabdruck blieben, die Wiese deckte im
+    // Winter von oben wie im Sommer (Radeon 87537d3f: LAI 2–10 m Winter 0,567 × Sommer).
+    _halmImJahr(T, fuss, lage) {
+        const ha = this._ensureSeasonUniforms().uLaubPraesenz.z;
+        const n = T.normalGeometry;
+        const o = lage.sub(fuss);
+        const aehre = T.step(1e-4, T.attribute("aCenter", "vec3").y);
+        const J = globalThis.__phytoCore.halmImJahr(AnazhRealm._windTsl(T), ha, o.x, o.y, o.z, n.x, n.z, aehre);
+        return fuss.add(T.vec3(J.x, J.y, J.z));
     }
 
     // DAS WIEGEN IM EINEN WIND (w20-boee-bild) — die KANONISCHE Wind-Größe des Halms, jeder Halm-Leser LIEST sie (die Nah-Wiese,

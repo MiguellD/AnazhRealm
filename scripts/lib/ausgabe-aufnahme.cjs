@@ -1014,6 +1014,15 @@ function wetterUrteil(w) {
 }
 
 // DER SELBSTTEST DES URTEILS (rein): jeder Täter fällt rot und steht beim Namen, Verweigerung und Bühne bleiben grün.
+// DIE FÄLLE EINES URTEILS (Wetter-Wache, Welt-Akt-Wache): je Fall [Name, Eingang, Soll, Täter] — das Urteil trifft sein Soll und
+// nennt den Täter beim Namen; jede Abweichung in `v`
+function faelleUrteil(faelle, urteil, v) {
+    for (const [name, e, soll, taeter] of faelle) {
+        const u = urteil(e);
+        if (u.urteil !== soll) v.push(`${name}: ${u.urteil} statt ${soll}`);
+        if (taeter && !u.taeter.some((t) => t.includes(taeter))) v.push(`${name}: der Täter „${taeter}" steht nicht im Urteil`);
+    }
+}
 function wetterSelbsttest() {
     const v = [];
     const fest = { vorher: "sunny", nachher: "sunny", uhrVorher: -1e9, uhrNachher: -1e9 };
@@ -1070,12 +1079,7 @@ function wetterSelbsttest() {
             null,
         ],
     ];
-    for (const [name, w, soll, taeter] of faelle) {
-        const u = wetterUrteil(w);
-        if (u.urteil !== soll) v.push(`${name}: ${u.urteil} statt ${soll}`);
-        if (taeter && !u.taeter.some((t) => t.includes(taeter)))
-            v.push(`${name}: der Täter „${taeter}" steht nicht im Urteil`);
-    }
+    faelleUrteil(faelle, wetterUrteil, v);
     const vw = wetterUrteil(faelle[8][1]).verweigert;
     if (vw["emotion:sorrow → rainy"] !== 1) v.push("verweigert: die verweigerte Quelle steht nicht beim Namen");
     return v;
@@ -1454,12 +1458,7 @@ function weltaktSelbsttest() {
         ["kein spion", null, "ROT", "kein Welt-Akt-Spion"],
         ["verweigert", buch([halt, halt]), "GRUEN", null],
     ];
-    for (const [name, b, soll, taeter] of faelle) {
-        const u = weltaktUrteil(b);
-        if (u.urteil !== soll) v.push(`${name}: ${u.urteil} statt ${soll}`);
-        if (taeter && !u.taeter.some((t) => t.includes(taeter)))
-            v.push(`${name}: der Täter „${taeter}" steht nicht im Urteil`);
-    }
+    faelleUrteil(faelle, weltaktUrteil, v);
     if (weltaktUrteil(faelle[5][1]).verweigert["nexus → creatures_size_mul"] !== 2)
         v.push("verweigert: die verweigerte Quelle steht nicht beim Namen");
     return v;
