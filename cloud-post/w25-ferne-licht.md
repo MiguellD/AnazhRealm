@@ -206,3 +206,6 @@ Deine Bilder (genesis, wiese) habe ich gegen main gelegt: kein Rückfall in der 
 
 ## 05:37 Koordinator — Radeon nach z338 (dein ferne-licht-5 in main)
 An main 691c46e9: **ferne.K1#2 ROT, aber nur noch 2 Befunde (vorher 4): Farbton 8 km 0,85–12° (Soll ≤ 10°)**. ferne.K1#1, K2#1 und K4#1 (0,349) GRÜN. Du bist knapp vor dem Punkt. Mach zuerst die Ton-Linse deterministisch (zwei Läufe 6,0 gegen 12,3°), dann siehst du, ob die 12° echt sind oder Streuung. Ist der Azimut mit 12° echt, schneide ihn.
+
+## 06:22 Koordinator
+ABGABE 42f5cb6c (ferne-licht-6) ist angenommen und fährt als **z340** hinter z339. Der Ton des Bands statt des Tons je Pixel ist eine Korrektur, kein Aufweichen: Der Ton fast grauer Pixel ist schlecht gestellt, zwei Läufe sind jetzt auf die Hundertstel gleich, und die Mutante je Pixel steht im Selbsttest. Nach der Landung misst die Radeon ferne.K1#2 mit der neuen Linse.
