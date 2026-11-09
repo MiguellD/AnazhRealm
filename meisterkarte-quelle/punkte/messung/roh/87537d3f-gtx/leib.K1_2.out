@@ -11,19 +11,17 @@ teil LATENZ1 $W latenz --proben 15 --sicht ego,third --verb gehen,springen,einst
 teil SPIEL1 $W eval 'const L = window.__hs; return { gesetzt: L.n, dauerMs: [Math.min(...L.dauer), Math.max(...L.dauer)].map((x) => Math.round(x * 1000)), haltTakte: L.takte, gleitMm: Math.round(L.gleit * 10000) / 10 };'
 node -e 'const fs = require("fs"); const [aus, ...f] = process.argv.slice(1); fs.writeFileSync(aus, JSON.stringify({ laeufe: f.map((x) => { try { return JSON.parse(fs.readFileSync(x, "utf8")); } catch (_e) { return null; } }) }));' "C:\Users\micha\Desktop\AnazhRealm-OMEN\n0611-pm\meisterkarte-quelle\punkte\messung\roh\87537d3f-gtx\leib.K1_2.json" "C:\Users\micha\Desktop\AnazhRealm-OMEN\n0611-pm\meisterkarte-quelle\punkte\messung\roh\87537d3f-gtx\leib.K1_2.json.lauf1.json"
 @@PUNKTE@@ HAKEN1
-{
- "ms": 2,
- "ergebnis": 1
-}
-@@PUNKTE@@ EXIT 0
+@@PUNKTE@@ EXIT 2
 @@PUNKTE@@ LATENZ1
 @@PUNKTE@@ EXIT 2
 @@PUNKTE@@ SPIEL1
 @@PUNKTE@@ EXIT 2
 
 --- stderr ---
-werkbank.cjs ABSTURZ: Error: read ECONNRESET
-    at TCP.onStreamRead (node:internal/stream_base_commons:216:20)
+werkbank.cjs ABSTURZ: Error: connect ECONNREFUSED 127.0.0.1:27804
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1645:16)
+werkbank.cjs ABSTURZ: Error: connect ECONNREFUSED 127.0.0.1:27804
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1645:16)
 werkbank.cjs ABSTURZ: Error: connect ECONNREFUSED 127.0.0.1:27804
     at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1645:16)
 

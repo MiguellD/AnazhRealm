@@ -107,9 +107,9 @@ return 0;
 }
 [linse-gpu] nvidia/pascal
 @@PUNKTE@@ ZEIT welt 1.9 s
-@@PUNKTE@@ FEHLER Error: /eval: {"ms":41150,"fehler":"DIE WELT STEHT NICHT nach 2441 Takten: Ruhe 20, zuletzt brach sie: Felder offen 1222 (DER BAU STEHT NICHT: die Welt nach 2441 Takten — die Welt hat nichts mehr offen)","stapel":["weltStehtNach (pptr:evaluate;lade%20(C%3A%5CUsers%5Cmicha%5CDesktop%5CAnazhRealm-OMEN%5CAnazhRealm-mess%5C.claude%5Cworktrees%5Cpunkte-gtx%5Cscripts%5Cwerkbank.cjs%3A938%3A24):983:15)","async proben  |     at H.ruf ([eval]:12:70) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async H.seite ([eval]:15:28)
+@@PUNKTE@@ FEHLER Error: /eval: {"ms":41127,"fehler":"DIE WELT STEHT NICHT nach 2441 Takten: Ruhe 5, zuletzt brach sie: Felder offen 1267 (DER BAU STEHT NICHT: die Welt nach 2441 Takten — die Welt hat nichts mehr offen)","stapel":["weltStehtNach (pptr:evaluate;lade%20(C%3A%5CUsers%5Cmicha%5CDesktop%5CAnazhRealm-OMEN%5CAnazhRealm-mess%5C.claude%5Cworktrees%5Cpunkte-gtx%5Cscripts%5Cwerkbank.cjs%3A938%3A24):983:15)","async proben ( |     at H.ruf ([eval]:12:70) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async H.seite ([eval]:15:28)
 @@PUNKTE@@ FRIST 39 s der Probe gerissen (Deckel 45 s): jeder Takt danach warf
-@@PUNKTE@@ PROBE 43.0 s · Exit 2
+@@PUNKTE@@ PROBE 43.1 s · Exit 2
 
 --- gpu-zeuge ---
 [linse-gpu] nvidia/pascal

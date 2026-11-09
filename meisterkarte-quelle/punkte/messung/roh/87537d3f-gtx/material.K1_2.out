@@ -328,11 +328,11 @@ LABOR garage 1
 LABOR portale 1
 LABOR schmiede 1
 LABOR fachwerk 1
-@@ 79.2 s · welt · 29 Zeilen, Karte 0.1799
+@@ 75.6 s · welt · 29 Zeilen, Karte 0.1799
 @@PUNKTE@@ FRIST 84 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier
-@@ 84 s · Labor: Protocol error (Runtime.evaluate): Target closed
+@@ 84 s · Labor: Protocol error (Runtime.callFunctionOn): Target closed
 [linse-gpu] nvidia/pascal
-ALBEDO-TAFEL 0 Zeilen beider Seiten — Labor: Protocol error (Runtime.evaluate): Target closed
+ALBEDO-TAFEL 0 Zeilen beider Seiten — Labor: Protocol error (Runtime.callFunctionOn): Target closed
 
 --- gpu-zeuge ---
 [linse-gpu] nvidia/pascal
