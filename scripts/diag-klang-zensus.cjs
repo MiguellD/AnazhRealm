@@ -1309,7 +1309,7 @@ async function koerperSeite(m, mut) {
 }
 // Das Urteil (F) je Teil beim Namen und die drei Zahlen: Hz je 1000 Upm, Landung dB je m/s, Doppler je Vorbeifahrt.
 function koerperUrteil(F) {
-    const q = F.motor.map(([u, hz]) => (hz / u) * 1000).sort((a, b) => a - b);
+    const q = F.motor.map(([u, hz]) => (hz / u) * 1000).sort(aufsteigend);
     const [rot, fall] = [[], F.landung.slice(1)];
     if (q.length && (new Set(F.motor.map(([u]) => Math.round(u / 250))).size < 4 || !(q.at(-1) / q[0] <= 1.04)))
         rot.push(`F motor stumm: ${q[0]}–${q.at(-1)} Hz je 1000 Upm`);

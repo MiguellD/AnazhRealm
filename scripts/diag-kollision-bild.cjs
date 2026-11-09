@@ -527,8 +527,10 @@ async function tempo(K) {
             let t = -Infinity;
             for (let i = 0; i <= 8; i++) {
                 const [x, z] = [a[0] + ((b[0] - a[0]) * i) / 8, a[1] + ((b[1] - a[1]) * i) / 8];
-                if (k.re) t = Math.max(t, tiefeEcken(k.re.ecken, kreis(x, z, l.rad[Math.round(i / 4)])));
-                else for (const [kx, kz, rr] of k.kreise) t = Math.max(t, rr + l.rad[Math.round(i / 4)] - Math.hypot(kx - x, kz - z));
+                // sein Radius dort: zwischen den drei Achsen linear (wie der Löser Leib an Leib, `_leibPaar`)
+                const ri = l.rad[1] + ((l.rad[i < 4 ? 0 : 2] - l.rad[1]) * Math.abs(i - 4)) / 4;
+                if (k.re) t = Math.max(t, tiefeEcken(k.re.ecken, kreis(x, z, ri)));
+                else for (const [kx, kz, rr] of k.kreise) t = Math.max(t, rr + ri - Math.hypot(kx - x, kz - z));
             }
             return t;
         },

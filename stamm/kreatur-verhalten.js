@@ -1094,7 +1094,7 @@ class AnazhRealm_kreatur_verhalten {
             t.z = K.z;
             t.hx = 0;
             t.hz = 0;
-            t.r = K.r;
+            [t.r, t.rad] = [K.r, null];
             t.y0 = K.y0;
             t.y1 = K.y1;
             t.reich = t.r;
@@ -1105,7 +1105,7 @@ class AnazhRealm_kreatur_verhalten {
         t.z = q.position.z;
         t.hx = lb.fx * lb.halb;
         t.hz = lb.fz * lb.halb;
-        t.r = lb.radius;
+        [t.r, t.rad] = [lb.radius, lb.rad];
         t.y0 = q.position.y;
         t.y1 = q.position.y + lb.hoehe;
         t.reich = lb.halb + lb.radius;
@@ -1136,7 +1136,10 @@ class AnazhRealm_kreatur_verhalten {
             b.z + b.hz,
             nah
         );
-        const tief = a.r + b.r - nah.d;
+        // je Leib sein Radius an der Berührung: zwischen den Achsen (`rad`, das Quer-Maß der Gestalt dort) linear, s = −1 … +1
+        const r = (t, x, z, s = ((x - t.x) * t.hx + (z - t.z) * t.hz) / (t.hx * t.hx + t.hz * t.hz)) =>
+            t.rad && Number.isFinite(s) ? t.rad[1] + (t.rad[s < 0 ? 0 : 2] - t.rad[1]) * Math.abs(s) : t.r;
+        const tief = r(a, nah.px, nah.pz) + r(b, nah.qx, nah.qz) - nah.d;
         if (!(tief > 0)) return false;
         const wich = tief > 1e-4; // ein Rest unter 0,1 mm ruft keinen weiteren Gang
         let nx;
