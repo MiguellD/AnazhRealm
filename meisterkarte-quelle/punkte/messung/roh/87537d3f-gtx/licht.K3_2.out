@@ -182,12 +182,13 @@ $ C:\Program Files\nodejs\node.exe -e const tor = (function sitzungTor() {
 })(tor).then(() => process.exitCode || 0, (e) => ((e && e.messort ? console.log('@@PUNKTE@@ MESSORT ' + e.messort) : 0), console.log('PROBE-FEHLER ' + String((e && e.stack) || e).split('\n').slice(0, 4).join(' | ')), 1)).then(async (c) => { await tor.ende(); process.exit(c); }); C:\Users\micha\Desktop\AnazhRealm-OMEN\n0611-pm\meisterkarte-quelle\punkte\messung\roh\87537d3f-gtx\licht.K3_2.json {"vorher":["umstellen","--ort","dorf","--sicht","ego"],"args":["licht","--laub","ring,feld,feld0,feld90,feld180,panorama,spiegel,spiegel180,wasser,fichte,tanne","--karte","--uhr","0.5,0.27,0.05","--ort","dorf"],"fenster":[640,360],"ruheMax":600}
 [linse-gpu] nvidia/pascal
 VORHER werkbank umstellen --ort dorf --sicht ego EXIT=0 · 1.5 s
-BERUHIGUNG 1 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 41 Takten, 0.8 s · 5.6 s
-RUF /umstellen {"x":-856.0115046159461,"z":-804.976302075234} · 19.7 s · 25.2 s
-BERUHIGUNG 2 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.0 s · 25.3 s
-BERUHIGUNG 3 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.1 s · 29.2 s
-BERUHIGUNG 4 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.1 s · 29.7 s
-RUF /eval return await __lichtWeg({ weg: "spiegel", uhr: 0 · 2.5 s · 34.9 s
+RUF /umstellen {"x":-841,"z":-861} · 2.3 s · 5.5 s
+BERUHIGUNG 1 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.0 s · 5.5 s
+RUF /umstellen {"x":-856.0115046159461,"z":-804.976302075234} · 21.0 s · 26.5 s
+BERUHIGUNG 2 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.0 s · 26.6 s
+BERUHIGUNG 3 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.2 s · 30.6 s
+BERUHIGUNG 4 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.1 s · 31.3 s
+RUF /eval return await __lichtWeg({ weg: "spiegel", uhr: 0 · 2.9 s · 36.6 s
 
 --- gpu-zeuge ---
 [linse-gpu] nvidia/pascal

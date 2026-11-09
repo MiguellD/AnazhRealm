@@ -9,7 +9,7 @@ timeout 600 $W umstellen --ort wiese > /dev/null 2>&1
 teil BEDIENUNG $W bedienung --runden 5
 @@PUNKTE@@ BEDIENUNG
 {
- "ms": 7820,
+ "ms": 6722,
  "deckungPct": 2.54,
  "bild": [
   1920,
@@ -19,13 +19,13 @@ teil BEDIENUNG $W bedienung --runden 5
  "inp": {
   "hud": {
    "n": 50,
-   "inpMs": 56,
+   "inpMs": 96,
    "maxMs": 104
   },
   "menue": {
    "n": 20,
-   "inpMs": 224,
-   "maxMs": 224
+   "inpMs": 144,
+   "maxMs": 144
   }
  },
  "ort": "wiese"

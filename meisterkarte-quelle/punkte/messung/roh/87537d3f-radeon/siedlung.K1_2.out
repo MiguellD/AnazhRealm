@@ -511,25 +511,7 @@ H.fahre(async function probeStartDorf(H) {
         );
     return j;
 }); 7804 C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\87537d3f-radeon\siedlung.K1_2.json 45
-@@PUNKTE@@ FRIST 39 s der Probe gerissen — 18 von 18 Häusern an der Frist ausgelassen
-  haus_gotisch · Gang Hub 0.20 m · innen undefined ÷ außen undefined = undefined · Frist der Probe
-  haus_alpenchalet · Gang Hub 0.20 m · innen undefined ÷ außen undefined = undefined · Frist der Probe
-  haus_schwarzwald · Gang Hub 0.20 m · innen undefined ÷ außen undefined = undefined · Frist der Probe
-  haus_schwarzwald · Gang Hub 0.20 m · innen undefined ÷ außen undefined = undefined · Frist der Probe
-  haus_schwarzwald · Gang Hub 0.20 m · innen undefined ÷ außen undefined = undefined · Frist der Probe
-  haus_schwarzwald · Gang Hub 0.20 m · innen undefined ÷ außen undefined = undefined · Frist der Probe
-  haus_schwarzwald · Gang Hub 0.20 m · innen undefined ÷ außen undefined = undefined · Frist der Probe
-  haus_schwarzwald · Gang Hub 0.20 m · innen undefined ÷ außen undefined = undefined · Frist der Probe
-  haus_schwarzwald · Gang Hub 0.20 m · innen undefined ÷ außen undefined = undefined · Frist der Probe
-  haus_alpenchalet · Gang Hub 0.20 m · innen undefined ÷ außen undefined = undefined · Frist der Probe
-  haus_alpenchalet · Gang Hub 0.20 m · innen undefined ÷ außen undefined = undefined · Frist der Probe
-  haus_alpenchalet · Gang Hub 0.20 m · innen undefined ÷ außen undefined = undefined · Frist der Probe
-  haus_schwarzwald · Gang Hub 0.20 m · innen undefined ÷ außen undefined = undefined · Frist der Probe
-  haus_schwarzwald · Gang Hub 0.20 m · innen undefined ÷ außen undefined = undefined · Frist der Probe
-  haus_schwarzwald · Gang Hub 0.20 m · innen undefined ÷ außen undefined = undefined · Frist der Probe
-  haus_skandinavisch · Gang Hub 0.20 m · innen undefined ÷ außen undefined = undefined · Frist der Probe
-  haus_alpenchalet · Gang Hub 0.20 m · innen undefined ÷ außen undefined = undefined · Frist der Probe
-  haus_skandinavisch · Gang Hub 0.20 m · innen undefined ÷ außen undefined = undefined · Frist der Probe
+@@ PROBE-FEHLER Error: /eval ohne Antwort binnen 37 s |     at ClientRequest.<anonymous> ([eval]:58:62) |     at Object.onceWrapper (node:events:630:28) |     at ClientRequest.emit (node:events:509:28) |     at Socket.emitRequestTimeout (node:_http_client:948:9)
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3

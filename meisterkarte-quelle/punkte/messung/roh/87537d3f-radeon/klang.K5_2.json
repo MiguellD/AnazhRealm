@@ -1,54 +1,54 @@
 {
  "seite": {
   "isoliert": true,
-  "tiere": 0
+  "tiere": 3
  },
  "phasen": {
   "gehen": {
-   "bilder": 957,
+   "bilder": 929,
    "weg": 10,
-   "p95": 0.15,
-   "max": 0.94,
+   "p95": 0.19,
+   "max": 1.08,
    "traeger": [
     "_playSchrittOneShot 0.09",
     "_lofiPlayGroove 0.08",
     "_lofiPlayChord 0.05"
    ],
    "spitze": [
-    "_lofiPlayChord 0.67",
-    "_raumStrahlen 0.01",
-    "_fahrtKlangTick 0.00"
+    "_lofiPlayChord 0.69",
+    "_playSchrittOneShot 0.16",
+    "_schrittMaterialAt 0.01"
    ]
   },
   "fahrt": {
    "bilder": 600,
-   "weg": 29,
-   "p95": 0.23,
-   "max": 1.1,
+   "weg": 83,
+   "p95": 0.33,
+   "max": 0.98,
    "traeger": [
-    "_fahrtKlangTick 0.06",
+    "_fahrtKlangTick 0.07",
     "_raumStrahlen 0.06",
-    "_lofiPlayGroove 0.05"
+    "_lofiPlayGroove 0.03"
    ],
    "spitze": [
-    "_raumStrahlen 0.95",
-    "_umweltLageZwei 0.05",
-    "_umweltLageEins 0.04"
+    "_lofiPlayChord 0.65",
+    "_fahrtKlangTick 0.04",
+    "_raumStrahlen 0.00"
    ],
    "sattel": true
   },
   "nacht": {
-   "bilder": 600,
+   "bilder": 612,
    "weg": 10,
    "p95": 0.25,
-   "max": 0.75,
+   "max": 0.81,
    "traeger": [
     "_playSchrittOneShot 0.08",
     "_lofiPlayGroove 0.05",
     "_lofiPlayChord 0.04"
    ],
    "spitze": [
-    "_lofiPlayChord 0.61",
+    "_lofiPlayChord 0.55",
     "_raumStrahlen 0.01",
     "_fahrtKlangTick 0.00"
    ]
@@ -57,11 +57,11 @@
  "aussetzer": {
   "n": 0,
   "still": 0,
-  "s": 27
+  "s": 35
  },
  "rot": [
-  "T fahrt: Klang-ms je Bild p95 0.23 > 0.2 (max 1.1; trägt _fahrtKlangTick 0.06 · _raumStrahlen 0.06 · _lofiPlayGroove 0.05)",
-  "T nacht: Klang-ms je Bild p95 0.25 > 0.2 (max 0.75; trägt _playSchrittOneShot 0.08 · _lofiPlayGroove 0.05 · _lofiPlayChord 0.04)"
+  "T fahrt: Klang-ms je Bild p95 0.33 > 0.2 (max 0.98; trägt _fahrtKlangTick 0.07 · _raumStrahlen 0.06 · _lofiPlayGroove 0.03)",
+  "T nacht: Klang-ms je Bild p95 0.25 > 0.2 (max 0.81; trägt _playSchrittOneShot 0.08 · _lofiPlayGroove 0.05 · _lofiPlayChord 0.04)"
  ],
- "sek": 31.4
+ "sek": 38.9
 }
