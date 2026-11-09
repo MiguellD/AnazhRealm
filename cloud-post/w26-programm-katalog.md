@@ -1,5 +1,13 @@
 # Post an w26-programm-katalog
 
+## 09.11. 16:05 — w26-programm-katalog (Cloud-Sitzung)
+
+ABGABE 180983988401ac81328ffd59bcc3d2e1ee5b233b
+
+Geschnitten: w25-pipeline-vorwaermen + main a7dc1874 gemischt (der Einmal-Render von ankunft-block mit `_einmalVorbau` in stamm/bild-erst.js, taeterFaelle in der Form von main; `sichtbar(o)` steht in main nicht mehr). Der Katalog der Roh-Programme (stamm/bild-erst.js `_rohKatalog`/`_rohProgramm`, `ROH_PROGRAMME`): Tiefen-Abbild, Pass-Wahl und die neun Programme des Karten-Rechners entstehen asynchron beim Start des Geräts, nie am Zug; eine Lücke nach dem Weltbild ist ROT `KATALOG-LÜCKE <name>`; das Panorama übersetzt asynchron; boot-stage zählt auch synchrone Compute-Programme nach dem Bild. Vorwärm-Gesetz: Familie `punkt` (das Feuer, nur solange es wirft), die Bühne der Karte wärmt je Form vor (stamm/stoff-karte.js `_karteBuehneVorwaermen`, 8 Formen: 3 Baum, 5 Wagen, Probe-Ziel 1×1), kommende Stufen je Art statt Art × Region, die Wagen und die Streu des Gesetzes (gt…suv; farn, blume, geroell aus `_scatterSpeciesForLayer`).
+Gemessen: Werkbank swiftshader, erste Karte der Tanne: 2 Knoten-Bauten + 2 Pipelines im Bake → 0 nach dem Vorwärmen. Radeon A/B gegen main auf DEMSELBEN Gerät (A B A B), erste Fahrt Ego max/p95: 9505db4a A 108,8/92 · 234,4/226,1 → B 117,1/92,2 · 184,2/134; 387d354c A 133,7/109 · 108,9/100,6 → B 226,1/100,6 · 108,9/100,5. Täter beim Namen: kein Ruf des Vorwärm-Gesetzes in der Fahrt (Rufe 0/0, GTX 1050 3877c9c6) — die Spitzen sind ein Knoten-Schritt der eben gesetzten GT-Arena (51–102 ms am Stück, vor dem Vorwärmen der Wagen), die erste Blume der Fahrt (39 ms, seit der Streu weg), geroell L0 (18 ms) und Takt (`_bodenSichtAt` in `_wieseFernLage`, `_passSicht`); die 226 ms in 387d354c sind GC, daneben ein Bild mit `createBuffer` 59 %.
+Ehrlich offen: max ≤ main ist nicht belegt (je zwei Paare, 1:1); geroell L0 baut trotz Vorwärmen (die Form gleicht der Hülle — offen, ob sie vor der Fahrt stand); ein Knoten-Schritt bis 102 ms ist unteilbar (buildCode). gate:geh-zerlegung fiel vor der Abgabe (Decke, scripts −8 Atome); w26-fahrt-planer bringt `werkbank geh` unter demselben Namen. Die Kopf-Probe trägt darum gate:kamera-treue und bild:genesis@0.5. Am Kopf grün (swiftshader): check, playtest:fast, lint, format:check, welt-boot, kamera-treue; vorher post-kette, ego-schatten, foundry-impostor.
+
 ## 09.11. 15:32 — GPU-PROBE 387d354c auf radeon-890m: ROT in 537 s (gate:geh-zerlegung ROT 159 s) → probe-post/w26-programm-katalog/387d354c.md
 
 ## 09.11. 15:20 — GPU-PROBE 9505db4a auf radeon-890m: ROT in 2054 s (gate:geh-zerlegung ROT 250 s) → probe-post/w26-programm-katalog/9505db4a.md
