@@ -617,8 +617,8 @@ const LAUB_AUGE =
     "const c = st.camera, d = new T.Vector3(); c.getWorldDirection(d); " +
     // DAS ZIEL VOR DEM HANG (09.11., Radeon a7dc1874: „Blickziel verdeckt von Boden-Schicht in 44.56 m“ — die Tafel-Pose GRÜN, strauch
     // 0,2066): das Auge zielte stur 100 m geradeaus und traf am Hang den Boden. Jetzt läuft der Blick in Metern, bis der Boden über
-    // ihm steht, und das Ziel liegt bei 60 % davon (höchstens 100 m, mindestens 3 m) — freie Sicht im Gehen, `--wahl 0` bleibt.
-    "let t = 2; while (t < 100 && r._voxelSurfaceY(c.position.x + t * d.x, c.position.z + t * d.z) < c.position.y + t * d.y - 0.5) t++; t = Math.max(3, 0.6 * t); " +
+    // ihm steht, und das Ziel liegt bei 60 % davon, höchstens 12 m (Radeon 94cae0a4: bei 60 % stand eine Tanne in 44,53 m davor) — die Kante urteilt das ganze Bild, das Ziel nur die freie Sicht; `--wahl 0` bleibt.
+    "let t = 2; while (t < 100 && r._voxelSurfaceY(c.position.x + t * d.x, c.position.z + t * d.z) < c.position.y + t * d.y - 0.5) t++; t = Math.max(3, Math.min(12, 0.6 * t)); " +
     "return [c.position.x, c.position.y, c.position.z, c.position.x + t * d.x, c.position.y + t * d.y, c.position.z + t * d.z].map((v) => +v.toFixed(3));";
 const LAUB_KANTE_MAX = 0.22;
 const LAUB_PIXEL_MIN = 5000;

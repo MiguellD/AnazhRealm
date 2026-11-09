@@ -1,7 +1,7 @@
 {
  "sha": "a7dc18745db8fdfe0a57781c9ba25cc71e53c9fd",
  "geraet": "radeon",
- "zeit": "2026-11-09T15:12:11.944Z",
+ "zeit": "2026-11-09T15:33:27.871Z",
  "host": "MiguellD",
  "je": {
   "tiere.K5#1": {
@@ -110,49 +110,49 @@
   },
   "lod.K1#1": {
    "gruen": false,
-   "zahl": "Tafel-Pose schlechteste fimp:strauch:L2 0.2066 · Karte fimp:birke:L2 0.1543 (29170 px), fimp:eiche:L2 0.1326 (61478 px), fimp:fichte:L2 0.1427 (47885 px), fimp:strauch:L2 0.2066 (23268 px), fimp:tanne:L2 0.1649 (129059 px) | Spielgang: die Aufnahme speichert nichts — Ziel Blickziel verdeckt von Boden-Schicht in 44.56 m · Sicht 0.0 % (Soll kante ≤ 0,22 je Teil-Klasse, zweiton 0) · [linse-gpu] amd/rdna-3",
+   "zahl": "Tafel-Pose schlechteste fimp:strauch:L2 0.2086 · Karte fimp:birke:L2 0.1630 (29565 px), fimp:eiche:L2 0.1342 (64492 px), fimp:fichte:L2 0.1406 (50175 px), fimp:strauch:L2 0.2086 (22994 px), fimp:tanne:L2 0.1606 (134859 px) | Spielgang schlechteste f:eiche:L1 0.3261 · Karte fimp:birke:L2 0.1392 (26880 px), fimp:eiche:L2 0.1504 (63277 px), fimp:fichte:L2 0.1310 (40580 px), fimp:strauch:L2 0.2149 (30151 px), fimp:tanne:L2 0.1417 (98406 px) (Soll kante ≤ 0,22 je Teil-Klasse, zweiton 0) · [linse-gpu] amd/rdna-3",
    "exit": 0,
-   "minuten": 0.88,
-   "grund": "ROT: Tafel-Pose schlechteste fimp:strauch:L2 0.2066 · Karte fimp:birke:L2 0.1543 (29170 px), fimp:eiche:L2 0.1326 (61478 px), fimp:fichte:L2 0.1427 (47885 px), fimp:strauch:L2 0.2066 (23268 px), fimp:tanne:L2 0.1649 (129059 px) | Spielgang: die Aufnahme speichert nichts — Ziel Blickziel verdeckt von Boden-Schicht in 44.56 m · Sicht 0.0 % (Soll kante ≤ 0,22 je Teil-Klasse, zweiton 0) · [linse-gpu] amd/rdna-3",
+   "minuten": 1.39,
+   "grund": "ROT: Tafel-Pose schlechteste fimp:strauch:L2 0.2086 · Karte fimp:birke:L2 0.1630 (29565 px), fimp:eiche:L2 0.1342 (64492 px), fimp:fichte:L2 0.1406 (50175 px), fimp:strauch:L2 0.2086 (22994 px), fimp:tanne:L2 0.1606 (134859 px) | Spielgang schlechteste f:eiche:L1 0.3261 · Karte fimp:birke:L2 0.1392 (26880 px), fimp:eiche:L2 0.1504 (63277 px), fimp:fichte:L2 0.1310 (40580 px), fimp:strauch:L2 0.2149 (30151 px), fimp:tanne:L2 0.1417 (98406 px) (Soll kante ≤ 0,22 je Teil-Klasse, zweiton 0) · [linse-gpu] amd/rdna-3",
    "gpu": "amd/rdna-3",
-   "s": 52.7,
+   "s": 83.5,
    "fremd": {
-    "s": 54.9,
-    "takte": 19,
-    "fremdS": 119.3,
-    "kerne": 2.174,
-    "fensterKerne": 2.571,
+    "s": 88.9,
+    "takte": 30,
+    "fremdS": 262.23,
+    "kerne": 2.95,
+    "fensterKerne": 4.137,
     "namen": [
      [
-      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      28.28
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-30804-profil-h8zo1L --no-p",
+      93.89
      ],
      [
-      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      22.94
+      "MsMpEng.exe",
+      50.41
      ],
      [
       "svchost.exe",
-      17.78
+      28.02
      ]
     ],
-    "dienerS": 27.38,
+    "dienerS": 60.48,
     "diener": [
      [
       "WmiPrvSE.exe",
-      13.56
+      24.53
      ],
      [
       "System",
-      6.83
+      16.13
      ]
     ],
-    "eigenS": 74.95,
+    "eigenS": 126.3,
     "schwelle": 0.5,
     "eich": "win32, Radeon 890M, 24 Kerne"
    },
-   "zeit": "2026-11-09T15:08:18.411Z",
-   "abdruck": "f518559dfbbf",
+   "zeit": "2026-11-09T15:33:27.871Z",
+   "abdruck": "8c7876da1b59",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
@@ -308,92 +308,41 @@
   }
  },
  "sitzung": {
-  "start": "2026-11-09T14:42:51.015Z",
+  "start": "2026-11-09T15:32:44.554Z",
   "port": 7804,
-  "warten": 15.51,
-  "bootS": 7.9,
-  "grundstellungS": [
-   4.7,
-   0
-  ],
-  "proben": 6,
-  "freigaben": [
-   {
-    "vor": "tiere.K5#1",
-    "s": 364.5
-   }
-  ],
+  "warten": 0.15,
+  "bootS": 7,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
   "orte": [
    {
     "ort": "wiese",
-    "vor": "tiere.K5#1",
-    "s": 22.8,
-    "takte": 662,
+    "vor": "lod.K1#1",
+    "s": 23.7,
+    "takte": 633,
     "chunks": 81,
     "nach": null
-   },
-   {
-    "ort": "dorf",
-    "vor": "licht.K3#2",
-    "s": 26.2,
-    "takte": 1374,
-    "chunks": 81,
-    "nach": null
-   },
-   {
-    "ort": "wiese",
-    "vor": "physik.K2#2",
-    "s": 16.9,
-    "takte": 572,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "genesis",
-    "vor": "vegetation.K4#2",
-    "s": 13.7,
-    "takte": 655,
-    "chunks": 81,
-    "nach": "der Grundstellung"
    }
   ],
-  "wegeTueren": [
-   {
-    "vor": "physik.K2#2",
-    "wege": "wege +6 [-119.1,-274.9,279.2,201/272] [-748.3,-821.3,-615.9,-784.1/28] [-784.3,-952.2,-631.7,-806.5/4] …",
-    "s": 4.7
-   }
-  ],
-  "unerklaert": [
-   {
-    "probe": "licht.K3#2",
-    "wie": "orte +-3,-3 · wege +3 [-748.3,-821.3,-615.9,-784.1/28] [-805.3,-801.4,-689.5,-574/6] [-833.8,-834.7,-648.1,-574.2/76] (-3,-3, netz:-3,-3, netz:-3,-3|-4,-4)"
-   }
-  ],
-  "ciBlicke": 8,
+  "wegeTueren": [],
+  "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 190,
-   "frameP95": 75.33,
-   "taktP95": 59.15,
-   "vramMax": 149.6,
-   "seiten": 2,
+   "bilder": 166,
+   "frameP95": 83.69,
+   "taktP95": 50.98,
+   "vramMax": 130.6,
+   "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
-   "ortImDeckel": [
-    {
-     "probe": "vegetation.K4#2",
-     "m": 292,
-     "ringVor": 4,
-     "ringMin": -1
-    }
-   ],
-   "zapfen": 529,
-   "luecken": 1,
-   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+   "ortImDeckel": [],
+   "zapfen": 105,
+   "luecken": 0,
+   "letzteLuecke": null
   },
-  "fahrtS": 559.7,
-  "minuten": 31.01
+  "fahrtS": 120.2,
+  "minuten": 2.23
  }
 }

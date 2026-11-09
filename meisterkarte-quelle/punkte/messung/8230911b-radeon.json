@@ -1,0 +1,95 @@
+{
+ "sha": "8230911b8ba7a2c37674102b02d6a13b3b5a8ad7",
+ "geraet": "radeon",
+ "zeit": "2026-11-09T15:25:37.880Z",
+ "host": "MiguellD",
+ "je": {
+  "material.K4#1": {
+   "gruen": false,
+   "zahl": "lack spiegelTreue null UNGÜLTIG (4280 px in der Ebene, 2 Blöcke, Einfall 53.7°, Normale [-0.016,0.915,-0.404]) · glas spiegelTreue null UNGÜLTIG (6825 px in der Ebene, 0 Blöcke, Einfall 37.7°, Normale [0.01,0.671,-0.741]) · Soll ≥ 0,5 an Lack oder Scheibe · first Uhr 0.5000000000000219 sunny · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.11,
+   "grund": "ROT: lack spiegelTreue null UNGÜLTIG (4280 px in der Ebene, 2 Blöcke, Einfall 53.7°, Normale [-0.016,0.915,-0.404]) · glas spiegelTreue null UNGÜLTIG (6825 px in der Ebene, 0 Blöcke, Einfall 37.7°, Normale [0.01,0.671,-0.741]) · Soll ≥ 0,5 an Lack oder Scheibe · first Uhr 0.5000000000000219 sunny · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 6.6,
+   "fremd": {
+    "s": 11.4,
+    "takte": 4,
+    "fremdS": 23.97,
+    "kerne": 2.108,
+    "fensterKerne": 2.108,
+    "namen": [
+     [
+      "MsMpEng.exe",
+      4.81
+     ],
+     [
+      "node scripts/diag-sprache.cjs --selftest",
+      4.06
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      3.89
+     ]
+    ],
+    "dienerS": 7.16,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      2.59
+     ],
+     [
+      "dwm.exe",
+      2.47
+     ]
+    ],
+    "eigenS": 24.97,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-09T15:25:37.880Z",
+   "abdruck": "ab82d80519be",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-09T15:24:59.340Z",
+  "port": 7804,
+  "warten": 0.18,
+  "bootS": 6.3,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": null,
+    "vor": "material.K4#1",
+    "s": 18,
+    "takte": 830,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 15,
+   "frameP95": 159.06,
+   "taktP95": 37.23,
+   "vramMax": 126.6,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 33,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 36.7,
+  "minuten": 0.87
+ }
+}
