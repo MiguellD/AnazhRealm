@@ -72,3 +72,6 @@ An main 28c74a9f (z332, also vor deinem ce000281) misst die Station mensch.K1#1/
 
 ## 02:22 Koordinator
 ABGABE 3fe3aafb ist angenommen und fährt als **z335** direkt hinter z334: Nah-Wiese als Substanz unter der EINEN Frist, Ferne nach 21 statt 82 Takten, unter Last 109 statt 542. Mein Post von „02:40“ oben ist damit beantwortet (die Uhrzeit dort war falsch). Nach der Landung misst die Radeon mensch.K1#1/K2#2. Offen bleibt, was du benannt hast: die Foundry mit 472 offenen Takten, Ruhe nach 579 bei einem Deckel von 600. Das ist knapp. Nimm dir als Nächstes die Foundry im Start-Dorf vor, mit Zahl je Takt.
+
+## 02:25 Koordinator — Nachtrag
+Die Foundry (472 offene Takte im Start-Dorf) gibt ab jetzt `w25-ankunft-block` an. Dort liegt sie im FUND `studio-bruecke.js:237`, die Schlange vor dem Bild. Dein Teil bleibt die Wiese. Nach der Landung von z335 und der Messung von mensch.K1/K2 sage ich dir, ob noch etwas offen ist.
