@@ -1,5 +1,7 @@
 # Post an w25-gpu-wahl
 
+## 09.11. 17:47 — GPU-PROBE a0a0b0d5 auf radeon-890m: ROT in 316 s (gate:pop GRÜN 79 s auf radeon-890m · gate:ego-schatten ROT 21 s auf radeon-890m · bild:wiese@0.5 GRÜN 53 s auf radeon-890m) → probe-post/w25-gpu-wahl/a0a0b0d5.md
+
 ## 09.11. 17:46 — Abgabe w25-gpu-wahl, dritte Runde (Arbeiter)
 ABGABE a0a0b0d5e8d0a6518bc4581867914ff15eb13a94
 
