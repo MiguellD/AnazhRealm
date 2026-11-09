@@ -657,6 +657,13 @@ class AnazhRealm_stoff_karte {
         // jede Karte der Schlange am Stück und legte Minuten swiftshader-Arbeit in die Schlange (CI z289 · z292 · z293, umstellen an
         // die Mess-Wiese: die Leine blieb gespannt, das Panorama und die letzten Karten zeichneten nie, das Weltbild fehlte, und die
         // 90 Würfe außer Blick warteten — „Wald offen 90"); auf main verdeckte das Budget KARTE_WELT_MS (ein Ring je Takt) die Lücke.
+        // DIE KARTEN EINES TAKTS SIND EINE ARBEIT AN DER LEINE (w25-ankunft-karte): mit endlicher Frist fragt die Leine den Beginn
+        // des Takts (`nurHalbe`), die Frist begrenzt, wie viele Karten er beginnt, und was sie zeichneten, bindet sich EINMAL an,
+        // nach der letzten (`onSubmittedWorkDone` nach ihr trägt jede Zeichnung davor). Ohne Ende (der ruhende Loop) fragt die
+        // Leine weiter jede Karte bei ihrem Beginn. Bis hier band sich jede Karte für sich, und die nächste desselben Takts fand die
+        // Leine gespannt: unter dem Ladeschirm begann je Takt höchstens EINE Karte — die 14 Karten im Blick backten 11,4 → 14,0 s,
+        // beim Eintritt ~90 ms der Frist frei, je Karte ~55 ms Haupt-Faden (GTX kalt, f7d88889).
+        const jeKarte = !Number.isFinite(frist);
         let v = gezeichnet();
         const binden = () => gezeichnet() !== v && (this._gpuLeineBinden(), (v = gezeichnet()));
         for (let i = 0; i < q.length;) {
@@ -665,9 +672,10 @@ class AnazhRealm_stoff_karte {
                 q.splice(i, 1);
                 continue;
             }
-            if (!(at.offen && at.offen.z === z) && this._gpuLeineStraff()) break; // an gespannter Leine nur die begonnene Karte
+            // an gespannter Leine nur die begonnene Karte
+            if (!(at.offen && at.offen.z === z) && (nurHalbe || (jeKarte && this._gpuLeineStraff()))) break;
             const e = this._karteWeltBacken(at, z);
-            binden();
+            if (jeKarte) binden();
             // null: die L1 reist, ein Bürger der Bühne wartet auf seine Pipeline oder die Bühne trägt eine halbe Karte;
             // 0: ein Ring steht — im Budget backt derselbe Takt den nächsten
             if (e === null || e === 0) {
@@ -681,6 +689,7 @@ class AnazhRealm_stoff_karte {
             n++;
             if (performance.now() >= frist) break;
         }
+        binden();
         return n;
     }
 

@@ -228,7 +228,7 @@ function berichtAB(teil, Z) {
                 const letzt = P.filter((q) => q.t > z.out.weltbildDa - 1000 && q.fehlt && q.fehlt.length).map((q) => q.fehlt.join("+"));
                 return `${(z.out.nach || {}).faeden}/${(z.out.nach || {}).kerne} Fäden/Kerne · leer ab ${voll.length ? sek(voll[voll.length - 1].t) : "–"} s, max ${Math.max(0, ...P.map(n))} · zuletzt fehlt ${letzt.slice(-2).join(" / ").slice(0, 90)}`;
             };
-            zeile(`${pre}FOUNDRY bis zum Bild je Boot: ${zs.map(fo).join(" | ")}`);
+            if (!AB) zeile(`${pre}FOUNDRY bis zum Bild je Boot: ${zs.map(fo).join(" | ")}`);
             // DAS WERK bis zum Bild (Boot-Median): Aufträge je Art, je Bahn die Arbeit (Antwort − Senden) und die Bahn-Last, die
             // langsamsten Aufträge und die letzten Antworten vor dem Bild
             const werk = (z) => {
@@ -267,7 +267,7 @@ function berichtAB(teil, Z) {
                 if (!g && (e === "0" || e === "T") && k.erst == null) k.erst = t;
             }
             const R = Object.entries(je).sort((a, b) => a[1].t0 - b[1].t0).map(([k, v]) => `${k} ${sek(v.t0)}→${v.erst != null ? sek(v.erst) : "–"} ${v.n}× ${Math.round(v.ms)} ms ${Object.entries(v.g).map(([g, n]) => g + n).join(" ")}`); // prettier-ignore
-            for (let i = 0, j = 0; i < 2 && j < R.length; i++) {
+            for (let i = 0, j = 0; !AB && i < 2 && j < R.length; i++) {
                 let s = "";
                 while (j < R.length && s.length + R[j].length < 450) s += (s ? " · " : "") + R[j++];
                 zeile(`${pre}KARTEN-RUFE ${i + 1} (erster Ruf→erster Ring, Rufe, ms, Gründe P R L O n 0 T): ${s}`);
@@ -293,7 +293,15 @@ function berichtAB(teil, Z) {
                 const top = Object.entries(S[s]).filter(([k]) => /^job:/.test(k) || fest.includes(k)).sort((a, b) => b[1] - a[1]).slice(0, 4);
                 return `${s}: ${top.map(([k, ms]) => `${k.replace(/^_tick|^_loop|^job:/, "")} ${Math.round(ms)}`).join(" ")}`;
             });
-            for (let i = 0, j = 0; i < 2 && j < wz.length; i++) {
+            // DIE TERME je Boot: wann jeder zuletzt offen war (die Proben der Kalt-Zeile), der Horizont nach seinem Satz
+            const term = { boden: /Boden wächst/, horizont: /Horizont/, "h:wächst": /Horizont wächst/, "h:geteilt": /geteilt/, "h:gemalt": /Horizont wird gemalt/, pflanzung: /gepflanzt|bepflanzt/, streu: /Wald-Stücke/, karten: /ferne Bäume/, bauten: /Bäume und Bauten/, dorf: /Dorf|Häuser/ }; // prettier-ignore
+            const tz = zs.map((z) => {
+                const P = (z.out.proben || []).filter((q) => q.t <= z.out.weltbildDa && q.fehlt && q.fehlt.length);
+                const zu = Object.entries(term).map(([k, re]) => [k, P.filter((q) => q.fehlt.some((f) => re.test(f))).reduce((m, q) => Math.max(m, q.t), 0)]).filter(([, t]) => t > 0); // prettier-ignore
+                return `${zu.map(([k, t]) => `${k} ${sek(t)}`).join(" ")} · Ferne ${z.out.nach && z.out.nach.fernbild ? sek(z.out.nach.fernbild) : "–"} · Bild ${sek(z.out.weltbildDa)}`;
+            });
+            zeile(`${pre}TERME je Boot (zuletzt offen, s): ${tz.join(" | ")}`.slice(0, 590));
+            for (let i = 0, j = 0; !AB && i < 2 && j < wz.length; i++) {
                 let s = "";
                 while (j < wz.length && s.length + wz[j].length < 480) s += (s ? " | " : "") + wz[j++];
                 zeile(`${pre}WER je s (Top 4 ms): ${s}`);
