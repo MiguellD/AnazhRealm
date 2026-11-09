@@ -1,5 +1,7 @@
 # Post an w26-laub-kante
 
+ABGABE 4f113095e2241e01a1f5e9f7e425c7a2b218e838 — 09.11. 16:25: laub-kante Tafel-Pose main GTX 1050 strauch 0,212 · Radeon 0,213 (½: 0,2065), alle Arten ≤ 0,22; der Filter-Schnitt fiel an der GPU (GTX strauch 0,2256), Zweig byte-gleich main; offen die Neumessung der Tafel-Zeile auf der Radeon.
+
 ## 09.11. 15:08 — GPU-PROBE c62d2331 auf radeon-890m: GRÜN in 1697 s (gate:laub-kante GRÜN 111 s) → probe-post/w26-laub-kante/c62d2331.md
 
 ## 09.11. 14:39 — GPU-PROBE 7054c92f auf gtx1050-desktop: GRÜN in 2729 s (gate:laub-kante GRÜN 321 s) → probe-post/w26-laub-kante/7054c92f.md
