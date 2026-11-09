@@ -817,9 +817,7 @@ async function checkBandWave10b({ page, check }) {
                 "test_10ext_platweak",
                 "test_10ext_lifter",
                 "test_10ext_lifterstrong",
-            ]) {
-                if (st.blueprints[n]) r.deleteBlueprint(n);
-            }
+            ]) if (st.blueprints[n]) r.deleteBlueprint(n);
             r.selectBlueprintForEdit("stein_block");
             r._renderWorkshopDOM();
             // UI-Putz: Welt-Tab aufgelöst — neutraler Reset via closeAllDrawers (Welt = Default-Blick).
@@ -1162,8 +1160,7 @@ async function checkBandPsi0Winkel({ page, check }) {
             let max = 0;
             let warn = 0;
             let top = "";
-            for (let i = 0; i < names.length; i++) {
-                for (let j = i + 1; j < names.length; j++) {
+            for (let i = 0; i < names.length; i++) for (let j = i + 1; j < names.length; j++) {
                     const num = (sig) => {
                         const o = {};
                         for (const k of Object.keys(sig)) if (Number.isFinite(Number(sig[k]))) o[k] = Number(sig[k]);
@@ -1176,7 +1173,6 @@ async function checkBandPsi0Winkel({ page, check }) {
                         top = `${names[i]}↔${names[j]}`;
                     }
                 }
-            }
             return { max: Math.round(max * 1000) / 1000, warn, top };
         };
         return {

@@ -101,10 +101,8 @@ function gpuFehlerAbgriff() {
         };
         const svb = R.setVertexBuffer;
         R.setVertexBuffer = function (slot, buf, off, size) {
-            if (this.__slots) {
-                if (buf) this.__slots.add(slot);
+            if (this.__slots) if (buf) this.__slots.add(slot);
                 else this.__slots.delete(slot);
-            }
             return svb.call(this, slot, buf, off, size);
         };
         const di = R.drawIndexed;

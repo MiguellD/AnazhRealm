@@ -218,7 +218,7 @@ async function checkBandWahrerAnblickSaeule1({ page, check }) {
                 r._terrainGeologyAlbedo(null, "ALBEDO_SENTINEL", null);
                 out.helperGraceful = false;
             } catch (e) {
-                out.helperGraceful = !!(e && e.stoff === true);
+                out.helperGraceful = !!(e?.stoff === true);
             } finally {
                 r.log = logAlt;
             }

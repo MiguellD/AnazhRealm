@@ -5,11 +5,12 @@
 // höchstens 24 Teile der Rolle "sicht" (der Rahmen-Strang der innersten Ordnung und der Sockel — der March läuft je
 // Pixel über alle Teile seines Eintrags). Die Linse misst je Rezept (7) und — für die Kosten — über die Regler-Hülle (7
 // Rezepte × 27 Regler × Rand), direkt am Gesetzbuch (Node, die Engine des Fadens three r184 + porta-core.js) und
-// mit dem EINEN Leser des Stamms (`_huelleVon` aus dem Stamm):
+// mit dem EINEN Leser des Stamms (`_huelleVon` des geladenen Wirts, `wirtMitBuch`; die ferne Stufe je Rezept an der Grenze, die
+// `_wechselGesetz` aus der Zeile seiner Vorlage legt — den Pop dort misst gate:haus-fern P):
 //
 //   K  FERNBILD: die Fernform (`_huelleVon(…, "sicht")`) trägt ≤ 24 Teile und KEIN "wurf"-Teil (je Bau der Regler-Hülle);
 //      die Kosten der Stufe 3 (Zeile und Draw je Rezept und Rand) richtet gate:regler-wirkt STUFEN über die echte Brücke
-//   W  WURF-DECKUNG: die Stufe 3 gegen die L0 — IoU der Schatten-Fußabdrücke (Projektion entlang der Sonne auf y = 0, Raster
+//   W  WURF-DECKUNG: die Stufe 3 gegen die L0 — IoU der Schatten-Fußabdrücke (`wurfIou`, kronen-linse — dieselbe wie die Haus-Linse) (Projektion entlang der Sonne auf y = 0, Raster
 //      5 cm) unter zwölf Sonnen (25° · 40° · 60° · 74° Höhe × drei Azimute) — die L0 mit den Teilen, die sie wirft (castShadow:
 //      die leuchtenden Türen, der Bogen-Saum, der Leucht-Ring und die Scheibe warfen nie)
 //   I  INNEN: die Stufe 3 steht nicht aus dem Gezeichneten — je Ecke ihres Gitters der Abstand zur L0-Oberfläche (Proben: jede
@@ -20,8 +21,8 @@
 //   node scripts/diag-tor-fern.cjs [--selftest] [--nur <regex>]
 "use strict";
 
-const { studioKern, pruefer, ROOT: root, stammLib } = require("./lib/welt-boot.cjs");
-const { rasterDreieck } = require("./lib/kronen-linse.cjs");
+const { studioKern, pruefer } = require("./lib/welt-boot.cjs");
+const { wurfIou } = require("./lib/kronen-linse.cjs");
 const PC = studioKern("porta-core.js", "__portaCore");
 const ARG = process.argv;
 const SELBST = ARG.includes("--selftest");
@@ -33,25 +34,10 @@ const NUR = ARG.includes("--nur") ? new RegExp(ARG[ARG.indexOf("--nur") + 1]) : 
 // Fern-Strang der Ruine über ihren fehlenden Steinen — 9,1) → ≤ 10 cm; der Tiefen-Bias der nahen Kaskade trägt 5–13 cm.
 const SOLL = { fernTeile: 24, wurfIou: 0.85, wurfMedian: 0.92, innenP95: 0.1 };
 
-// ── DER EINE LESER DES STAMMS: `AnazhRealm._huelleVon` aus der Quelle (die Fernform liest, was er liest) ──
-const STAMM = stammLib.text(root);
-// die Methode am NAMEN (gate:apparat Klinge 3): Rumpf und Parameter liest der EINE Leser `methodeAm` (scripts/lib/stamm.cjs)
-const KEIL_TYP = (() => {
-    const m = stammLib.treffer(STAMM, null, /AnazhRealm\.HUELLE_KEIL_TYP = Object\.freeze\((\{[^}]*\})\)/);
-    return m ? Function("return " + m[1])() : {};
-})();
-function leser(rumpf) {
-    const stub = {
-        HUELLE_KEIL_TYP: KEIL_TYP,
-        _kernPflichtBruch: (q) => {
-            throw new Error("KERN-PFLICHT " + q);
-        },
-    };
-    return Function("AnazhRealm", "return function _huelleVon(" + HUELLE.args + ") {" + rumpf + "};")(stub);
-}
-const HUELLE = stammLib.methodeAm(STAMM, "_huelleVon");
-const RUMPF = HUELLE.rumpf;
-const huelleVon = leser(RUMPF);
+// ── DER EINE LESER DES STAMMS: `AnazhRealm._huelleVon` des geladenen Wirts (die Fernform liest, was er liest; bis w25-lod-pop
+//    aus dem Quelltext nachgebaut, mit einem Zwilling von HUELLE_KEIL_TYP und `_kernPflichtBruch`) ──
+const WIRT = require("./lib/asset-worker-harness.cjs").wirtMitBuch();
+const huelleVon = (h, rolle, q) => WIRT._huelleVon(h, rolle, q);
 
 // ── Fußabdruck entlang der Sonne (Raster 5 cm) ──
 const RASTER = 0.05;
@@ -72,21 +58,6 @@ function dreiecke(g, nurWerfer) {
     });
     return out;
 }
-function abdruck(D, d, box) {
-    const nu = Math.ceil((box.u1 - box.u0) / RASTER),
-        nv = Math.ceil((box.v1 - box.v0) / RASTER),
-        m = new Uint8Array(nu * nv);
-    const pr = (x, y, z) => {
-        const t = Math.max(0, y) / d[1];
-        return [x - d[0] * t, z - d[2] * t];
-    };
-    const R = { u0: box.u0, v0: box.v0, r: RASTER, nu, nv };
-    for (let i = 0; i < D.length; i += 9) {
-        const [a, b, c] = [0, 3, 6].map((j) => pr(D[i + j], D[i + j + 1], D[i + j + 2]));
-        rasterDreieck(...a, ...b, ...c, R, (o) => (m[o] = 1), 1e-9);
-    }
-    return m;
-}
 const SONNEN = [];
 for (const h of [25, 40, 60, 74])
     for (const az of [0, 120, 240]) {
@@ -95,34 +66,7 @@ for (const h of [25, 40, 60, 74])
         SONNEN.push([Math.cos(e) * Math.sin(a), Math.sin(e), Math.cos(e) * Math.cos(a)]);
     }
 function wurfDeckung(L0, W) {
-    const ious = [];
-    for (const d of SONNEN) {
-        let u0 = 1e9,
-            u1 = -1e9,
-            v0 = 1e9,
-            v1 = -1e9;
-        for (const D of [L0, W])
-            for (let i = 0; i < D.length; i += 3) {
-                const t = Math.max(0, D[i + 1]) / d[1],
-                    u = D[i] - d[0] * t,
-                    v = D[i + 2] - d[2] * t;
-                u0 = Math.min(u0, u);
-                u1 = Math.max(u1, u);
-                v0 = Math.min(v0, v);
-                v1 = Math.max(v1, v);
-            }
-        const box = { u0: u0 - 0.2, u1: u1 + 0.2, v0: v0 - 0.2, v1: v1 + 0.2 };
-        const a = abdruck(L0, d, box),
-            b = abdruck(W, d, box);
-        let s = 0,
-            v = 0;
-        for (let k = 0; k < a.length; k++) {
-            if (a[k] && b[k]) s++;
-            if (a[k] || b[k]) v++;
-        }
-        ious.push(v ? s / v : 0);
-    }
-    ious.sort(aufsteigend);
+    const ious = SONNEN.map((d) => wurfIou([L0], [W], d, RASTER)).sort(aufsteigend);
     return { min: ious[0], median: rang(ious) };
 }
 
@@ -274,25 +218,15 @@ const FERN = {
     genesisThird: ["maurentor", "drachentor", "maschine", "kathedrale", "ruine"],
 };
 FERN.rest = FERN.klasse - FERN.fest;
-const STUFE_NACH_GRENZEN = Function(
-    "return function _stufeNachGrenzen(d, cur, G, s) {" +
-        stammLib.methodeAm(STAMM, "_stufeNachGrenzen").rumpf +
-        "};"
-)();
-const WIRT = (() => {
-    const { AnazhRealm: A, ctx } = stammLib.ladeKlasse(root);
-    const rc = require("./lib/asset-worker-harness.cjs").kanalImVm()({ type: "get-book" }).renderConfig;
-    ctx.__phytoCore.kerneVereinen(rc);
-    A._studioRenderConfig = rc;
-    return A;
-})();
-function stufeBei(K, d) {
+// die gezeigten Stufen des Tors mit der Grenze, die das Gesetz des Stamms aus der Fehler-Zeile seiner Vorlage `id` legt (ohne `id`
+// der Haushalt der Art, `_wechselGesetz` ohne Vorlage)
+function stufeBei(K, d, id) {
     const art = K.PORTAL_RENDER_CONFIG.lod.budget.gate,
         S = K.PORTAL_RENDER_CONFIG.lod.kindStages.gate;
     const grenzen = S.slice(1)
         .filter((st) => art[st] && art[st].nurWurf !== true)
-        .map((st) => ({ stufe: st, ab: WIRT._wechselGesetz("gate", st, 1, 0) }));
-    return STUFE_NACH_GRENZEN(d, undefined, { erste: S[0], grenzen, h: art.hyst }, 1);
+        .map((st) => ({ stufe: st, ab: WIRT._wechselGesetz("gate", st, 1, 0, undefined, id) }));
+    return WIRT._stufeNachGrenzen(d, undefined, { erste: S[0], grenzen, h: art.hyst }, 1);
 }
 const stoffKey = (m) =>
     [
@@ -316,13 +250,12 @@ function fernStufe(K, verfaelsche) {
         ist = [];
     let maxT = 0,
         summe = 0;
-    const st13 = stufeBei(K, FERN.dM[0]),
-        zeile = K.PORTAL_RENDER_CONFIG.lod.budget.gate[st13];
     for (const id of Object.keys(K.PRESETS)) {
         if (NUR && !NUR.test(id)) continue;
         const L0 = stoffe(K.buildInstance(id, 7, 0));
         for (const d of FERN.dM) {
-            const st = stufeBei(K, d),
+            const st = stufeBei(K, d, id),
+                zeile = K.PORTAL_RENDER_CONFIG.lod.budget.gate[st],
                 g = K.buildInstance(id, 7, st);
             if (verfaelsche) verfaelsche(g);
             const n = tris(g);
@@ -338,7 +271,7 @@ function fernStufe(K, verfaelsche) {
     }
     if (!NUR && summe > FERN.rest)
         bruch.push(
-            `Genesis Third fern (${FERN.genesisThird.join(" · ")}) Stufe ${st13}: ${summe} Dreiecke > Rest ${FERN.rest} (Klasse ${FERN.fest + summe} > ${FERN.klasse})`
+            `Genesis Third fern (${FERN.genesisThird.join(" · ")}) bei ${FERN.dM[0]} m: ${summe} Dreiecke > Rest ${FERN.rest} (Klasse ${FERN.fest + summe} > ${FERN.klasse})`
         );
     return { bruch: [...new Set(bruch)], ist, maxT, summe };
 }
@@ -381,7 +314,7 @@ if (SELBST) {
     check(
         "SELBSTTEST F: die Stufe 2 mit dem Gesetz der Stufe 1 wird rot beim Namen",
         f5.bruch.some((b) => /drachentor bei 13 m Stufe 2: \d+ Dreiecke/.test(b)) &&
-            f5.bruch.some((b) => /^Genesis Third fern .* Stufe 2: \d+ Dreiecke > Rest/.test(b)),
+            f5.bruch.some((b) => /^Genesis Third fern .* bei 13 m: \d+ Dreiecke > Rest/.test(b)),
         f5.bruch[0] || ""
     );
     // S6: ein Stoff der fernen Stufe heller als sein L0-Stoff
@@ -432,4 +365,7 @@ if (SELBST) {
         `max p95 ${(Math.max(...z4.map((r) => r.innenP95)) * 100).toFixed(1)} cm`
     );
 }
-wandEnde(fails, "die Tore werfen aus ihrer NUR-WURF-Stufe (die Hüllen-Liste, N5), die Fernform liest ≤ 24 sicht-Teile ohne ein wurf-Teil, Wurf-Deckung und Innen halten ihr Soll.");
+wandEnde(
+    fails,
+    "die Tore werfen aus ihrer NUR-WURF-Stufe (die Hüllen-Liste, N5), die Fernform liest ≤ 24 sicht-Teile ohne ein wurf-Teil, Wurf-Deckung und Innen halten ihr Soll."
+);

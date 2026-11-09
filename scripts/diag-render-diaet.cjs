@@ -386,13 +386,11 @@ hauptLauf(async () => {
             out.farbe.glutGebacken === true && out.farbe.glutEmissiv === true && out.farbe.glutGeteilt === true
         );
     } else check("F: Farb-Wahrheits-Block erreicht", false, out.farbe && out.farbe.err);
-    if (out.welt && !out.welt.err) {
-        check(
+    if (out.welt && !out.welt.err) check(
             `W: Welt-Zensus — JEDES leaf.tint-Material stammt aus dem EINEN _foliageMatCache (je Signatur EIN Material; ${out.welt.leafTintLeaves} Leaves → ${out.welt.mats} Materialien)`,
             out.welt.leafTintLeaves > 0 && out.welt.fremde === 0,
             `fremde=${out.welt.fremde} cacheMats=${out.welt.cacheMats} wrappers=${out.welt.wrappers}`
-        );
-    } else check("W: Welt-Zensus erreicht", false, out.welt && out.welt.err);
+        ); else check("W: Welt-Zensus erreicht", false, out.welt && out.welt.err);
 
     await browser.close();
     server.close();

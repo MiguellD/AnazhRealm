@@ -41,7 +41,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 
-const { statikServer, starteBrowser, postKetteBereit, laufUhr, taeterFaelle, selbsttestEnde, fs, SELBSTTEST, jsonKlon, fehlerText, seiteZu, rotListe } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, postKetteBereit, laufUhr, taeterFaelle, selbsttestEnde, fs, SELBSTTEST, fehlerText, seiteZu, rotListe } = require("./lib/welt-boot.cjs");
 // der Bruch, den die Wand selbst in die Kette wirft (Schritt „Render-Fehler") — der EINE Fehler-Sammler (welt-boot) nennt jeden
 // anderen Bruch der Post-Kette ROT beim Namen, diesen erwartet die Linse und zählt ihn selbst (GENAU einmal, `urteil`)
 const ERZWUNGEN = /\[ERROR\] STOFF: die Post-Kette .*gate:post-kette — erzwungener Render-Fehler der Kette/;
@@ -303,7 +303,6 @@ function selbsttest() {
             tritanopie: { himmel: 0, himmelPx: 4700, kiste: 90, kistePx: 100 },
         },
     };
-    if (urteil(gruen).length) fehler.push("der grüne Lauf fällt rot: " + urteil(gruen).join(" · "));
     const faelle = [
         ["Direktpfad stürzt", (z) => (z.schritte[1].fehler = ["TypeError: Invalid value used as weak map key"]), /Direktpfad — TypeError/],
         ["Direktpfad ohne Tiefe", ["schritte.1.tiefe=", false], /Direktpfad zeichnet ohne Tiefe/],
@@ -355,7 +354,7 @@ function selbsttest() {
         ["Zugang blind", ["zugang.tritanopie", { kiste: 0 }], /ZUGANG: blind/],
         ["Zugang fehlt", ["zugang"], /ZUGANG: lief nicht/],
     ];
-    taeterFaelle(faelle, urteil, { fehler, klon: () => jsonKlon(gruen) });
+    taeterFaelle(faelle, urteil, { fehler, gruen });
     selbsttestEnde(fehler, "die Shader-Kosten-Linse zählt richtig, jeder injizierte Täter fällt rot und wird beim Namen genannt.");
 }
 

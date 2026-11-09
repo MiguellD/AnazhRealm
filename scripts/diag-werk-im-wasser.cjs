@@ -52,7 +52,7 @@
 //   node scripts/diag-werk-im-wasser.cjs [--selftest]
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, taeterFaelle, selbsttestEnde, argOpt, ausDatei, SELBSTTEST, path, stammLib, weltTor, jsonLesen, jsonKlon } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, taeterFaelle, selbsttestEnde, argOpt, ausDatei, SELBSTTEST, path, stammLib, weltTor, jsonLesen } = require("./lib/welt-boot.cjs");
 const { messort } = require("./lib/welt-orte.cjs");
 
 const SCHWELLE = {
@@ -2106,7 +2106,7 @@ function selbsttest() {
         ["C leer", ["ergebnis.versuche.0.gesetzt=", 6], /C LEER/],
         ["D lief nicht", ["damm"], /D: die Damm-Probe lief nicht/],
     ];
-    const fehler = taeterFaelle([["grüner Befund", () => {}], ...faelle], urteil, { klon: () => jsonKlon(gruen) });
+    const fehler = taeterFaelle(faelle, urteil, { gruen });
     // die Leser-Linse gegen eingeschmuggelte Täter im echten Stamm (der Vor-Stand über den EINEN Helfer)
     const gifte = [
         [

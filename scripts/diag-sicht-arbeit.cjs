@@ -67,7 +67,7 @@ function urteil(b) {
                     `nicht, was die Maske vom Auge dieses Frames behält: ${BT.namen.join(", ")} (Kante: ${BT.fall})`
             );
         const BO = b.blendeTreueOhneRand;
-        if (BT?.fall && BT.gehalten && !(BO && BO.loecher > 0))
+        if (BT?.fall && BT.gehalten && !(BO?.loecher > 0))
             v.push(
                 "LINSE STUMPF: ohne den Halt als Rand des Fensters fehlt der gehaltenen Wahl nichts " +
                     `(${BO ? BO.loecher : "?"} Löcher) — die Blende-Treue prüft die Kante nicht`
@@ -216,9 +216,6 @@ function selbsttest() {
     };
     const klon = () => jsonKlon(gruen);
     const fehler = [];
-    const v0 = urteil(klon());
-    if (v0.length) fehler.push("der grüne Befund fällt rot: " + v0.join(" · "));
-    console.log(`  ${v0.length ? "❌" : "✅"} Selbsttest grün → ${v0.join(" · ") || "grün"}`);
     // der echte Loop unter langsamem Takt: das Licht dreht in jedem Frame (die Sonne läuft schneller als eine Stufe je Frame),
     // die Kaskaden mit Box halten ihre Wahl über den Licht-Rand — grün
     const randSonne = (arbeitFrames, lichtRand) =>
@@ -739,7 +736,7 @@ function selbsttest() {
         ["Ferne ohne Kachel", ["ferneWeg.kacheln=", undefined], /FERNE: je Bild/],
         ["Halt-Bruch stumpf", ["ferneWegHalt.neu=", 9], /STUMPF: Halt/],
     ];
-    taeterFaelle(faelle, urteil, { fehler, klon });
+    taeterFaelle(faelle, urteil, { fehler, gruen });
     selbsttestEnde(fehler);
 }
 
@@ -755,8 +752,7 @@ const server = statikServer();
 
 (async () => {
     console.log("=== SICHT-ARBEIT (Welle C) — Null-Renderer, Mess-Wiese, die Sicht-Linse je Frame ===");
-    await server.lausche(0);
-    const { browser, page } = await nullSeite({ frist: 600000 });
+    const { browser, page } = await nullSeite({ frist: 600000 }, server);
     page.setDefaultTimeout(580000);
     let befund = null;
     try {

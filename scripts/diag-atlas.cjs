@@ -120,13 +120,11 @@ function pruefe(root, opt = {}) {
         return { fehler, info };
     }
     // SYNTAX je Datei — V8 wie `node --check`
-    for (const t of teile) {
-        try {
+    for (const t of teile) try {
             new vm.Script(t.text, { filename: t.pfad });
         } catch (e) {
             fehler.push(`SYNTAX ${t.pfad}: ${e.message}`);
         }
-    }
     // R3 S∘S⁻¹ = id: die Dateien sind das Bild von S (Namen, Marker, Klassen, Naht-Rufe folgen dem Stamm)
     let T = null;
     try {
@@ -141,8 +139,7 @@ function pruefe(root, opt = {}) {
         fehler.push(`R3 LISTE: ${e.message}`);
     }
     // R7 die Domäne: der Stamm ist der Fixpunkt der Karte
-    if (T) {
-        try {
+    if (T) try {
             const K = opt.karte || stammLib.karteVon(root);
             const r = stammLib.ordne(T, K);
             const datei = (s) => stammLib.pfadVon(s || "?");
@@ -157,7 +154,6 @@ function pruefe(root, opt = {}) {
         } catch (e) {
             fehler.push(`R7 DOMÄNE: ${e.message}`);
         }
-    }
     // R6 Cache: jeder Stamm-Tag trägt ?v= = package.version
     const version = jsonLesen(path.join(root, "package.json")).version;
     for (const tag of stammLib.tagsVon(ausDatei(path.join(root, "index.html"))))
@@ -218,7 +214,7 @@ function pruefe(root, opt = {}) {
             if (s.type === "ClassDeclaration") continue;
             // außerhalb: die Außen-Konstanten, die Naht-Rufe und der Boot
             const e = s.type === "ExpressionStatement" ? s.expression : null;
-            const ziel = e && e.type === "AssignmentExpression" && istAnazh(e.left) ? eigenschaft(e.left) : null;
+            const ziel = e?.type === "AssignmentExpression" && istAnazh(e.left) ? eigenschaft(e.left) : null;
             const ort = `${t.pfad}:${s.loc.start.line}`;
             if (ziel) ziele.set(ziel, (ziele.get(ziel) || []).concat({ ort, idx }));
             aussen.push({ s, ort, idx, d, aus: ziel ? e.left : null });
@@ -239,7 +235,7 @@ function pruefe(root, opt = {}) {
     for (const a of aussen)
         for (const l of ladeLeser(a.s, a.aus)) {
             const st = statisch.get(l.name);
-            if (st && st.d > a.d)
+            if (st?.d > a.d)
                 fehler.push(`R4 ZWILLING: ${a.ort} liest beim Laden AnazhRealm.${l.name}, getragen erst in ${st.ort}`);
             if (st) continue;
             const z = ziele.get(l.name);
@@ -272,7 +268,7 @@ function finde(root, rx) {
                         if (n.type === "VariableDeclarator" && n.id.type === "Identifier" && /Function/.test(n.init?.type || ""))
                             fn.add(n.id.name);
                         const l = n.type === "AssignmentExpression" ? n.left : null;
-                        if (l && l.type === "MemberExpression" && l.object.type === "ThisExpression" && !l.computed) zu.push(n);
+                        if (l?.type === "MemberExpression" && l.object.type === "ThisExpression" && !l.computed) zu.push(n);
                     });
                     for (const n of zu)
                         if (/Function/.test(n.right.type) || (n.right.type === "Identifier" && fn.has(n.right.name)))
