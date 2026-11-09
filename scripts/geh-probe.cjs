@@ -38,7 +38,7 @@ const SEITE = {
     fahrt: `clearInterval(window.__k4iv); ${TASTE} const bis = performance.now() + 20000; const iv = setInterval(() => { if (st.player.mountedArch !== "werkbank-fahrt" && performance.now() < bis) return; clearInterval(iv); setTimeout(() => { t("KeyE", "e"); setTimeout(() => t("KeyE", "e"), 1000); }, 1000); }, 50); return 1;`, // prettier-ignore
 };
 // DER BAU-STAND der Erst-Zeichnung: fertige Knoten-Bauten, ihre Zeit, asynchrone Pipelines, das Vorwärm-Gesetz (gebaut, offen)
-const BAU = "const E = r._erstZeichnung || {}; return [E.bauN | 0, +(E.bauMs || 0).toFixed(1), E.pipeAsync | 0, E.vorwaermN | 0, E.vorwaerm ? E.vorwaerm.size : -1];"; // prettier-ignore
+const BAU = "const E = r._erstZeichnung || {}; return [E.bauN | 0, +(E.bauMs || 0).toFixed(1), E.pipeAsync | 0, E.vorwaermN | 0, E.vorwaerm ? E.vorwaerm.size : -1, E.vorwaermRufe | 0];"; // prettier-ignore
 
 function boot(nr) {
     const PORT = PORT0 + nr;
@@ -49,7 +49,7 @@ function boot(nr) {
         return o.stdout || "";
     };
     const ev = (code) => (json(wb(["eval", code], 60)) || {}).ergebnis;
-    const bauStand = () => ev(BAU) || [0, 0, 0, 0, -1];
+    const bauStand = () => ev(BAU) || [0, 0, 0, 0, -1, 0];
     let gruen = true;
     const zelle = (name, wandern, code, vor) => {
         const j = path.join(D, `${nr}-${name.replace(/\W+/g, "-")}.json`);
@@ -66,7 +66,7 @@ function boot(nr) {
         const kb = a.knotenBau || {};
         const U = `GEH ${ok ? "GRÜN" : "ROT"} ${nr} ${name}`;
         zeile(`${U}: ${vor}Bild p50/95/99/max ${q(a.frameMs)} · ${(100 * anteil).toFixed(1)} % > 33 ms · Takt ${q(a.taktMs)} · ${a.frames} Bilder · Weg ${roh.bahnM} m · Ursachen ${a.jeUrsache.slice(0, 3).map((e) => `${e.n}× ${e.summeMs}/${e.maxMs} ${e.ursache}`).join(" | ")}`); // prettier-ignore
-        zeile(`${U} Bau: Knoten ${bn[0] - bv[0]} Σ ${(bn[1] - bv[1]).toFixed(1)} ms, max-Schritt ${kb.maxMs} ms, ${kb.ueber16} > 16,7 · Pipelines ${bn[2] - bv[2]} · vorgewärmt davor ${bv[3]} offen ${bv[4]} im Fenster ${bn[3] - bv[3]} · je Auftrag ${JSON.stringify(Object.entries(kb.jeAuftragMs || {}).slice(0, 4))}`); // prettier-ignore
+        zeile(`${U} Bau: Knoten ${bn[0] - bv[0]} Σ ${(bn[1] - bv[1]).toFixed(1)} ms, max-Schritt ${kb.maxMs} ms, ${kb.ueber16} > 16,7 · Pipelines ${bn[2] - bv[2]} · vorgewärmt davor ${bv[3]} offen ${bv[4]} im Fenster ${bn[3] - bv[3]} (Rufe ${bn[5] - bv[5]}) · je Auftrag ${JSON.stringify(Object.entries(kb.jeAuftragMs || {}).slice(0, 4))}`); // prettier-ignore
         // DIE SPITZE: die drei längsten Bilder, je ihr Fenster der Rohdaten (Knoten-Bau-Schritte mit ms, Pipelines)
         const t0 = roh.tMess[0];
         const spitze = (a.haenger || [])
