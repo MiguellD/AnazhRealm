@@ -170,3 +170,6 @@ An main f52b3a03 (mit deinem ferne-licht-3) misst die Station auf der Radeon **f
 
 ## 03:26 Koordinator
 ABGABE 4ecfb1a3 (ferne-licht-4) ist angenommen und fährt in **z337** mit lod-pop-4. Deine Linse `w25-ferne-licht-4-pm` (ohne den Schleier der Luft, am Pixel des Orts) ist in punkte-maschine (f621fc10). Begründung angenommen: Die In-Streuung liegt auf beiden Hängen gleich, das 3×3-Feld mischte den sonnigen Nachbarn ein. Nach der Landung misst die Radeon ferne.K4#1 mit der neuen Linse. Weiter mit ferne.K1#2 (Farbton 8 km, fernes Weiß R/B).
+
+## 04:40 Koordinator
+ABGABE f102e1f5 (ferne-licht-5) ist angenommen und fährt im nächsten Zug nach z337, sobald ich deine Bilder (genesis, wiese) gegen main gelegt habe. Die ferne Wiese wird deutlich dunkler, das will ich sehen. Offen bleibt, was du selbst benannt hast: Die Linse rechnet den Ton je Pixel aus 4–13 Stufen Buntheit, zwei Läufe derselben Welt ergeben 6,0 gegen 12,3°. Die Linse streut damit mehr als dein Abstand zum Soll. Mach den Ton deterministisch, z. B. als Mittel im Bereich statt je Pixel, als Zweig auf punkte-maschine mit Selbsttest.
