@@ -229,25 +229,6 @@ function berichtAB(teil, Z) {
                 return `${(z.out.nach || {}).faeden}/${(z.out.nach || {}).kerne} Fäden/Kerne · leer ab ${voll.length ? sek(voll[voll.length - 1].t) : "–"} s, max ${Math.max(0, ...P.map(n))} · zuletzt fehlt ${letzt.slice(-2).join(" / ").slice(0, 90)}`;
             };
             if (!AB) zeile(`${pre}FOUNDRY bis zum Bild je Boot: ${zs.map(fo).join(" | ")}`);
-            // DAS WERK bis zum Bild (Boot-Median): Aufträge je Art, je Bahn die Arbeit (Antwort − Senden) und die Bahn-Last, die
-            // langsamsten Aufträge und die letzten Antworten vor dem Bild
-            const werk = (z) => {
-                const W = (z.out.nach || {}).werk || { post: {}, ant: {}, enq: [] };
-                const da = z.out.weltbildDa;
-                const L = Object.entries(W.post).filter(([, p]) => p[0] < da).map(([id, p]) => {
-                    const a = W.ant[id];
-                    const bahn = (/w(\d+)_/.exec(id) || [0, "0"])[1];
-                    return { id, bahn, t0: p[0], art: p[1], preset: p[2], lod: p[3], wer: p[2] + (p[3] != null ? "|L" + p[3] : ""), t1: a ? a[0] : null, bau: a ? a[1] : 0 };
-                });
-                const bahnen = {};
-                for (const x of L) if (x.t1 != null) bahnen[x.bahn] = (bahnen[x.bahn] || 0) + Math.min(x.t1, da) - x.t0;
-                const lang = L.filter((x) => x.t1 != null).sort((a, b) => b.t1 - b.t0 - (a.t1 - a.t0)).slice(0, 6);
-                const letzt = L.filter((x) => x.t1 != null && x.t1 < da).sort((a, b) => b.t1 - a.t1).slice(0, 5);
-                const arten = {};
-                for (const x of L) arten[x.art] = (arten[x.art] || 0) + 1;
-                const enq = W.enq.filter((e) => e[0] < da);
-                return { L, bahnen, lang, letzt, arten, enq, ohne: L.filter((x) => x.t1 == null).length };
-            };
             // DER KARTEN-BAKE bis zum Bild (Boot 1 der Seite): je Zelle angelegt → gebacken, je Zelle die Rufe nach Grund (P Platte,
             // R Rechner, L die L1, O fremde halbe Karte, n nicht ganz, 0 ein Ring, T gebacken), je Sekunde der Takt der Karte und wer die
             // Frist vor ihr leerte
