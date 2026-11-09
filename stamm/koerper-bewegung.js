@@ -730,10 +730,12 @@ class AnazhRealm_koerper_bewegung {
         (this._fahrLos || (this._fahrLos = new Set())).add(entry);
     }
 
-    // DAS STOSS-EREIGNIS (das EINE Impuls-Gesetz): ein Aufprall erreicht Kamera und Klang — der Kamera-Ruck über den EINEN
+    // DAS STOSS-EREIGNIS (das EINE Impuls-Gesetz): ein Aufprall erreicht Kamera, Klang und BILD — der Kamera-Ruck über den EINEN
     // Landungs-Dip (_landImpactPending, wie der Treffer) mit dem Sprung der eigenen Fahrt (am leichten Tier klein, am Fels
-    // voll), Klang und Funken über das Stoff-Paar Hülle × Gegner (`_trefferPaar`; stumm ohne Symphonie).
+    // voll), Klang und Funken über das Stoff-Paar Hülle × Gegner (`_trefferPaar`; stumm ohne Symphonie); das Bild dieses
+    // Schritts zeichnet die Lage des Stoßes (`_stossImSchritt`, der Leser `_loopFixedStep`).
     _stossEreignis(gegner, dv, ort, eigen) {
+        this.state._stossImSchritt = true;
         const G = AnazhRealm._arenaGesetz().gefuehl;
         const e = Math.max(0, Math.min(1, dv / AnazhRealm.STOSS.ruckRefMs));
         this.state._landImpactPending = Math.max(
