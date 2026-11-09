@@ -95,7 +95,16 @@ const STAENDE = [
 async function albedo() {
     const d = path.join(os.tmpdir(), "haar-albedo");
     require("fs").mkdirSync(d, { recursive: true });
-    const welt = spawn(process.execPath, ["scripts/werkbank.cjs", "start", "--echt", "--port", String(PORT), "--ort", "wiese"], { cwd: ROOT, env });
+    // die echte Seite kommt vom save-server (werkbank `--echt --seite`, wie die Sitzung der Punkte-Maschine)
+    const SP = PORT + 1;
+    const server = spawn(process.execPath, ["save-server.js"], { cwd: ROOT, env: { ...process.env, PORT: String(SP) } });
+    for (let i = 0; i < 60; i++) {
+        const da = await new Promise((ok) => require("http").get("http://127.0.0.1:" + SP + "/", (r) => (r.resume(), ok(true))).on("error", () => ok(false)));
+        if (da) break;
+        await new Promise((ok) => setTimeout(ok, 1000));
+    }
+    process.on("exit", () => server.kill());
+    const welt = spawn(process.execPath, ["scripts/werkbank.cjs", "start", "--echt", "--port", String(PORT), "--seite", "http://localhost:" + SP, "--ort", "wiese"], { cwd: ROOT, env });
     let log = "";
     await new Promise((ok, nein) => {
         const t = setTimeout(() => nein(new Error("die Werkbank stand nach 240 s nicht")), 240000);
