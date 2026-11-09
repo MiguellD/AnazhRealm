@@ -1714,7 +1714,7 @@
   const annexDoors = GAs.length ? GAs.flatMap(A=>{ const tw=Math.min(2.45,A.gw-0.55), t0=A.xin+A.sx*0.30, tlo=Math.min(t0,t0+A.sx*tw), thi=Math.max(t0,t0+A.sx*tw), p0=A.xin+A.sx*0.35;
     return [ {x0:tlo, x1:thi, y0:0.06, y1:0.06+2.0, z:A.z0, kind:'tor'},
              {x0:Math.min(p0,p0+A.sx*0.85), x1:Math.max(p0,p0+A.sx*0.85), y0:0.06, y1:0.06+2.0, z:A.z1, kind:'personentuer'} ]; }) : [];
-  { const hm={art:'haupt',x0:-W/2,x1:W/2,z0:-Dp/2,z1:Dp/2,y0:P.pilotis?baseY-0.24:0,eY:eaveY,rY:ridgeY,egTop:levels[0].top,dach:ROOFMODE==='alt'?'alt:'+P.dachTyp:ROOFMODE,hip:P.hip,ovZ:P.ovEave,ovX:P.ovRake,curve:DEF_cv,dachRolle:(sm&&sm.RM&&sm.RM.ziegel)||'ziegel'};
+  { const hm={art:'haupt',x0:-W/2,x1:W/2,z0:-Dp/2,z1:Dp/2,y0:P.pilotis?baseY-0.24:0,eY:eaveY,rY:ridgeY,egTop:levels[0].top,dach:ROOFMODE==='alt'?'alt:'+P.dachTyp:ROOFMODE,hip:P.hip,ovZ:P.ovEave,ovX:P.ovRake,curve:DEF_cv,dachRolle:(sm&&sm.RM&&sm.RM.ziegel)||'ziegel',ring:ROUND?0:P.post/2-0.02};   // ring: so weit steht der Ständer-Ring (postsRing, plateRing: Mitte 2 cm innen) vor dem Grundriss — der Umriss der L0
     addMasse(Object.assign({},hm)); if(P.doppel){ SHIFT=W; addMasse(Object.assign({},hm)); SHIFT=0; }
     if(DORMER) addMasse({art:'gaube',x0:DORMER.gx-DORMER.gW/2,x1:DORMER.gx+DORMER.gW/2,z0:DORMER.zFront,z1:DORMER.zBack,y0:DORMER.baseY2,y1:DORMER.frontTop}); }   // der Hauptkörper (das Doppelhaus: beide Einheiten)
   return { P, subsystems, order, solids, strahl, build, spawn, floors:levels.map(L=>L.y), windows:windowOpenings, annexDoors,
@@ -2394,7 +2394,8 @@
     // Rahmen-Stoff). Die Fern-Stufe kostet Stoff + Glas, zwei Befehle; 14 bis 16 Dreiecke je Fenster.
     var RAHMEN_TIEFE = 0.1,
         SCHEIBE_RAND = 0.06,
-        KREUZ = 0.02;
+        KREUZ = 0.02,
+        FLUEGEL_LAGE = [0.8138785, 0.5810352]; // cos und sin der Flügel-Öffnung der L0 (fensterAt: 0,62 rad)
     // prettier-ignore
     function fensterFern(fen, B, geoms){
   const liste=fen&&fen.liste; if(!liste||!liste.length) return;
@@ -2419,7 +2420,14 @@
     if(schlaf) teile([scheibe(d1+0.01)], M.putz, schlafF);
     else { teile([scheibe(d1+0.01)], M.putz, innen); teile([scheibe(d1+0.02)], M.glas, eins); }
     const k=d1+0.03, q=(ua,ub,ya,yb)=>[[P(ua,ya,k),P(ub,ya,k),P(ub,yb,k),P(ua,yb,k)],aus];   // das Kreuz: der Pfosten durchgehend, der Kämpfer links und rechts von ihm
-    teile([q(u-KREUZ,u+KREUZ,o.cy-ph,o.cy+ph), q(u-pw,u-KREUZ,o.cy-KREUZ,o.cy+KREUZ), q(u+KREUZ,u+pw,o.cy-KREUZ,o.cy+KREUZ)], rahmenM, rahmenF); }
+    teile([q(u-KREUZ,u+KREUZ,o.cy-ph,o.cy+ph), q(u-pw,u-KREUZ,o.cy-KREUZ,o.cy+KREUZ), q(u+KREUZ,u+pw,o.cy-KREUZ,o.cy+KREUZ)], rahmenM, rahmenF);
+    if(Math.sign(z?o.cz:o.cx)!==s) continue;   // der Flügel der L0 dreht nach dem Vorzeichen seiner Lage: zeigt die Wand dagegen, schlägt er in den Körper
+    const [c,sn]=FLUEGEL_LAGE, N=uR.map((r,i)=>c*aus[i]-sn*r), F=(a,y,dl)=>P(u-o.w/2+a*c*o.w-dl*sn,y,a*sn*o.w+dl*c), fy0=o.cy-o.h/2, fy1=o.cy+o.h/2;
+    const fl=(a0,a1,ya,yb,dl,n)=>[[F(a0,ya,dl),F(a1,ya,dl),F(a1,yb,dl),F(a0,yb,dl)],n], Nm=N.map(c2=>-c2), ar=SCHEIBE_RAND/o.w;
+    teile([fl(0,1,fy0,fy1,0,N), fl(0,1,fy0,fy1,0,Nm)], rahmenM, rahmenF);   // der Flügel-Rahmen, beidseitig
+    const sch=(dl)=>[fl(ar,1-ar,fy0+SCHEIBE_RAND,fy1-SCHEIBE_RAND,dl,N), fl(ar,1-ar,fy0+SCHEIBE_RAND,fy1-SCHEIBE_RAND,-dl,Nm)];
+    if(schlaf) teile(sch(0.01), M.putz, schlafF);
+    else { teile(sch(0.01), M.putz, innen); teile(sch(0.02), M.glas, eins); } }
   const wrap=bauOrtWrap(B); wrap.add(grp2); wrap.updateMatrixWorld(true);
   bakeLOD(grp2, kol, geoms, 0);
 }
@@ -2590,10 +2598,11 @@
         var dazu = function (teil, rolle, faktor, haut) {
             if (teil) aus.push({ teil: teil, rolle: rolle, faktor: faktor || null, rang: rang, i: aus.length, haut: haut || null });
         };
-        var wand = function (x0, x1, y0, y1, z0, z1, rolle) {
+        // `ring` (der Hauptkörper, nur der L2-Bake `lod2Koerper`): die Wand-Haut — der Ständer-Ring der L0 steht so weit vor dem Grundriss
+        var wand = function (x0, x1, y0, y1, z0, z1, rolle, ring) {
             var r = rolle || wr,
                 f = rolle ? null : wf;
-            dazu(huelleTeil("box", x0 + IW, x1 - IW, y0, y1, z0 + IW, z1 - IW, farbe(r, f)), r, f);
+            dazu(huelleTeil("box", x0 + IW, x1 - IW, y0, y1, z0 + IW, z1 - IW, farbe(r, f)), r, f, ring > 0 ? { ring: ring + IW } : null);
         };
         var keil = function (x0, x1, y0, y1, z0, z1, first, walm, rolle, haut) {
             dazu(huelleTeil("keil", x0, x1, y0, y1, z0, z1, farbe(rolle), walm > 0 ? { first: first, walm: _hr(walm) } : { first: first }), rolle, null, haut);
@@ -2677,9 +2686,9 @@
                 // die Wand bis unter das Dach (beim Dom bis zur Springlinie der Trommel, bei Zinnen bis zur Brustwehr)
                 var top = dach === "sattel" ? m.eY - ID : dach === "dome" && kuppel ? kuppel.springY - ID : zinnen ? zinnen.y1 - ID : hatStufen ? m.eY - 0.15 : m.eY + 0.1 - ID;
                 if (vork && vork.y0 < top) {
-                    wand(m.x0, m.x1, m.y0, vork.y0, m.z0, m.z1);
-                    wand(m.x0 - vork.ov, m.x1 + vork.ov, vork.y0, top, m.z0 - vork.ov, m.z1 + vork.ov);
-                } else wand(m.x0, m.x1, m.y0, top, m.z0, m.z1);
+                    wand(m.x0, m.x1, m.y0, vork.y0, m.z0, m.z1, undefined, m.ring);
+                    wand(m.x0 - vork.ov, m.x1 + vork.ov, vork.y0, top, m.z0 - vork.ov, m.z1 + vork.ov, undefined, m.ring);
+                } else wand(m.x0, m.x1, m.y0, top, m.z0, m.z1, undefined, m.ring);
                 var mS = (m.rY - m.eY) / Math.max(0.1, (m.z1 - m.z0) / 2);
                 if (dach === "sattel" && m.curve > 0) schwung(m, dr);
                 else if (dach === "sattel") {
@@ -2991,7 +3000,10 @@
       _teilGitter(x.teil, alle, H, false, n=>n[1]>0.02?1:0);   // der Körper unter der Haut schließt den Raum zwischen Haut und Giebel (die Walm-Seiten)
       _teilGitter(x.teil, alle, Gi, false, n=>Math.abs(n[1])<=0.02&&Math.abs(amX?n[0]:n[2])>0.98?1:0);
       netz(H, x.rolle, x.faktor); netz(Gi, wr, wf); continue; }
-    const G={pos:[],nrm:[],idx:[]}; _teilGitter(x.teil, alle, G, true); netz(G, x.rolle, x.faktor); }
+    // DIE WAND TRÄGT IHREN RING (w25-lod-pop-3, lod.K5): die Wand des Hauptkörpers steht im Ständer-Ring der L0 (`ring`, 6 cm vor dem
+    // Grundriss), nie 1,5 cm dahinter — die Hochhaus-L1 stand an jeder Ecke 7,5 cm innen (4,0 px am Haushalt 12 m).
+    const t=x.haut&&x.haut.ring&&x.teil.art==='box'?Object.assign({},x.teil,{h:_hr3([x.teil.h[0]+x.haut.ring,x.teil.h[1],x.teil.h[2]+x.haut.ring])}):x.teil;
+    const G={pos:[],nrm:[],idx:[]}; _teilGitter(t, alle, G, true); netz(G, x.rolle, x.faktor); }
   const wrap=bauOrtWrap(B); wrap.add(grp2); wrap.updateMatrixWorld(true);
   bakeLOD(grp2, B.p.col, geoms, 0);
 }
@@ -4983,12 +4995,10 @@
     //    Bauzeit) — gate:fachwerk-contract prüft die Gleichheit je Kultur. ──
     var SOLIDLOS = { gelaende: false, geruest: false, riegel: false, streben: false, zimmermann: false, gefache: false, giebel: false, dachwerk: false, dachdeckung: false, fenster: false, moebel: false, anbau: false, fluegel: false, balkon: false, kuppel: false, dachAlt: false, arkade: false, turm: false, zinnen: false, vorkragung: false, pilotis: false, terrasse: false, rundbau: false };
     function stufe0Param(p) {
-        // ≡ promoteBauen (Lab): RING-A-WÜRDE — Türme sparen Möbel+Innenwände,
-        // Armut (p.arm, Dorf-Daten) spart Möbel; sonst der VOLLE Bau.
-        var turm = (p.storeys || 1) >= 6;
-        return Object.assign({}, p, {
-            nur: turm ? { moebel: false, innenwaende: false } : p.arm ? { moebel: false } : {},
-        });
+        // ≡ promoteBauen (Lab): RING-A-WÜRDE — Türme und Armut (p.arm, Dorf-Daten) sparen Möbel; sonst der VOLLE Bau.
+        // Die Innenwände baut die Nahstufe immer (w25-lod-pop-3, lod.K5): ohne sie sah man durch die offenen Flügel des
+        // hohlen Turms den Himmel (die Hochhaus-L1 stand an der Diagonale 50,7 px neben ihrer L0); Hochhaus L0 75 856 → 79 456.
+        return Object.assign({}, p, { nur: (p.storeys || 1) >= 6 || p.arm ? { moebel: false } : {} });
     }
     function stufe0Bau(hp2) {
         return (hp2.storeys || 1) > 11
