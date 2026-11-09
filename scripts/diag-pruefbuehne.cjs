@@ -311,11 +311,11 @@ async function s0Probe(page, station, schein) {
                     if (!eigen) continue;
                     // der Pool in 2 m: das EINE Gesetz (fachwerk `lichtAbfall`: 1/d^abfall mit Kern und Saum), die Farbe nach Luminanz
                     const ab = window.__fachwerkCore.lichtAbfall({ reichweiteM: p.reichweite, abfall: p.abfall, kernM: p.kern }, 2);
-                    const lum = 0.2126 * p.farbe[0] + 0.7152 * p.farbe[1] + 0.0722 * p.farbe[2];
+                    const lum = luma709(p.farbe);
                     e2 += p.staerke * ab * lum;
                 }
                 const en = r._waagrechtIrradianz([0, 0, 0]);
-                const nacht = 0.2126 * en[0] + 0.7152 * en[1] + 0.0722 * en[2];
+                const nacht = luma709(en);
                 return { n: lichter.length, lichter, e2: +e2.toFixed(3), nacht: +nacht.toFixed(3) };
             };
             for (const klang of [false, true]) {
@@ -368,7 +368,7 @@ async function s0Probe(page, station, schein) {
             // die Fenster-Glut des Zeitplans: um Mitternacht an, mittags aus
             const glut = () => {
                 const c = s.atmoUniforms?.lichtGlut?.fenster?.value;
-                return c ? +(0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b).toFixed(4) : null;
+                return c ? +luma709([c.r, c.g, c.b]).toFixed(4) : null;
             };
             uhr(0);
             await takt(2);
@@ -995,7 +995,7 @@ async function himmelProbe(page, taub) {
             const uhr = (t) => {
                 if (r.setTimeOfDay(t, "human") !== true) throw new Error("S0: die Uhr nimmt den Spieler nicht (" + t + ")");
             };
-            const lum = (e) => 0.2126 * e[0] + 0.7152 * e[1] + 0.0722 * e[2];
+            const lum = luma709;
             r._setWeather("sunny", "human");
             s.weatherTransition = null;
             uhr(0.3);
