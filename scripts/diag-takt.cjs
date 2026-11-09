@@ -31,7 +31,9 @@
 //   T12 DIE EINE FRIST DER BAU-ARBEIT (w19-gang-hitch, profiband.K4): im Takt des Spielers fragt jeder Bauer die EINE Frist
 //       (`_bauFrist`) — abgelaufen geht der Strom EIN Stück, die Pflanz-Schlange EINEN Wurf, das Abräumen EINEN Chunk, die Hüllen
 //       EINE, und der Planer gibt seinem Job 0 ms. Bis hier trug jeder seine eigene Uhr (headless GT-Fahrt Genesis:
-//       `_runFrameScheduler` 71,5 ms in EINEM Takt).
+//       `_runFrameScheduler` 71,5 ms in EINEM Takt). Der Satz der Bauten (w25-stadt-takt-2) legt abgelaufen EIN Stück
+//       (BAU_SATZ_STUECK) seiner Raten und seines Alters — bis dahin je Takt seinen eigenen Deckel von 8 192 Ecken NEBEN der Frist
+//       (GTX, Messort stadt, erster Gang: `_tickBauSatz` 5,3 ms in der Takt-Mitte).
 //   T13 DIE ALTERUNG DER FRIST (w19-gang-hitch, Nacharbeit): hinter einem Strom, der die Frist in jedem Takt leert, bekommt jeder
 //       Bauer reihum Budget (Vortritt nach BAU_ALTER_TAKTE Takten nur mit dem Pflicht-Stück), und der Takt bleibt in ihr — sonst
 //       verhungerte der Wald (`waldPlan` 0 ms, CI z289 · z292 · z293: die Welt stand an der Wiese nie).
@@ -240,7 +242,7 @@ hauptLauf(async () => {
             // T9 — die Kappen des Lade-Takts: im Lade-Takt arbeiten die Leser der Klasse bis zur EINEN Frist. Der Selbsttest
             // fährt die Kappe allein (`_ladeFrist` −∞).
             const t9 = await (async () => {
-                const aus9 = { stromBau: 0, abschied: 0 };
+                const aus9 = { stromBau: 0, abschied: 0, satz: 0 };
                 let zurueck = () => {};
                 try {
                     // die Klasse in EREIGNIS-Zeit: jede Uhr-Frage ist 1 ms (die Frist = 100 Fragen), je Leser eine Aufgabe (`await`)
@@ -248,12 +250,12 @@ hauptLauf(async () => {
                     Object.assign(stub, { _voxelChunkConfig: () => ({ span: 16, ringRadius: 12 }), _voxelChunkLodFor: () => 0, _stufenZelle: () => 0, _ensureVoxelChunkAt: () => aus9.stromBau++, _fernRingEinhaengen: () => 0, _fernRingPunkt: () => ({ x: 0, z: 0, fuss: { ht: 0, hr: 0 }, rad: 0, s: 1 }), _fernAuftrag: () => new Promise(() => {}) }); // prettier-ignore
                     for (const k of "_setLastPlayerVoxelChunk _stufeAugeTakt _rebuildVoxelChunk _pruneDistantVoxelChunks _bedarfVoraus".split(" ")) stub[k] = () => {}; // prettier-ignore
                     const werk = { n: 0, liste: [], ox: 0, oz: 0, listeWerk: (function* () { while (++werk.n < 200) yield; })() }; // prettier-ignore
-                    Object.assign(stub, { _bauFrist: () => Infinity, _disposeVoxelChunk: () => aus9.abschied++, _huellenBedarf: () => "alle", _huellenNach: null, _bauFristOhneEnde: () => false, _taktZeit: 0, _bewohnerSiedlungen: new Map([[0, werk]]) }); // prettier-ignore
+                    Object.assign(stub, { _bauFrist: () => Infinity, _disposeVoxelChunk: () => aus9.abschied++, _huellenBedarf: () => "alle", _huellenNach: null, _bauFristOhneEnde: () => false, _taktZeit: 0, _bewohnerSiedlungen: new Map([[0, werk]]), _bauSatzRate: (q) => (aus9.satz++, --q.n || st.bauSatzRaten.delete(q.key)), _satzAltertOffen: null, _satzAlterStempel: () => true, _satzBlockEcken: () => 0, _chunkSatzLege: (s, o, A, n) => (aus9.satz += n / AnazhRealm.BAU_SATZ_STUECK) }); // prettier-ignore
                     for (const k of "_ladeTakt _naturSetzen _spawnSettlementSlot _dorfTaktLebt _foliageChunkInRadius _foundryPlatzBereit _nebenFaden".split(" ")) stub[k] = () => true; // prettier-ignore
                     for (const k of "_standRuht _archKartenPreset _foundryEnabled _handBauErlaubt _archZiegelFern _foundryRewarmColdTrees _capNexusStructures _standMeldet _weltFeldAktiv".split(" ")) stub[k] = () => false; // prettier-ignore
                     if (selbst) stub._ladeFrist = () => -Infinity; // der Selbsttest: die Kappe allein
                     zurueck = leihe(r, stub);
-                    const S = { _frameOverBudget: false, playerMesh: { position: { x: 0, y: 0, z: 0 } }, architectureCullingRadius: 100, architectureBuildBudgetPerFrame: 3, pendingVegSpawns: 0, architectures: 0, pendingFoliageChunks: 0, voxelChunks: 0, voxelTerrainActive: true, playerVel: null, _voxelStreamMaxPerFrame: 3, _voxelStreamBudgetMs: 1e9, fernRing: null }; // prettier-ignore
+                    const S = { _frameOverBudget: false, playerMesh: { position: { x: 0, y: 0, z: 0 } }, architectureCullingRadius: 100, architectureBuildBudgetPerFrame: 3, pendingVegSpawns: 0, architectures: 0, pendingFoliageChunks: 0, voxelChunks: 0, voxelTerrainActive: true, playerVel: null, bauSatzRaten: null, bauSatzSchmutzig: null, _weltbildDa: st._weltbildDa, chunkSaetze: st.chunkSaetze, archInstanceGroups: st.archInstanceGroups, _voxelStreamMaxPerFrame: 3, _voxelStreamBudgetMs: 1e9, fernRing: null }; // prettier-ignore
                     const [stAlt, qD, zwoelf, alter] = [Object.keys(S).map((k) => st[k]), r._autoSettlementQueue, [...Array(12).keys()], AnazhRealm.BAU_ALTER_TAKTE]; // prettier-ignore
                     let uhr = 0;
                     performance.now = () => ++uhr;
@@ -307,7 +309,15 @@ hauptLauf(async () => {
                         r._dispatchFrameJobs([{ prio: 1, run: (ms) => (aus9.planer = ms) }, ...r._buildDeferrableJobs(st.playerMesh.position).filter((j) => j.name === "bewohner")], { remainingMs: () => 50 }); // prettier-ignore
                         AnazhRealm.prototype._pruneDistantVoxelChunks.call(r, { x: 1e5, z: 0 });
                         r._tickHuellenNach();
-                        aus9.bau12 = [aus9.planer, strom(1e9, 1e9), pflanz() && r._tickPendingVegSpawns(8), aus9.abschied, 12 - r._huellenNach.size, werk.n]; // prettier-ignore
+                        // DER SATZ (w25-stadt-takt-2): drei Raten zu je vier Stücken, das Alter einer Gruppe von acht — bis dahin legte er je
+                        // Takt seinen eigenen Deckel (8 192 Ecken)
+                        const g = { key: 9, satz: 9, liveCount: 1, mesh: { instanceMatrix: {} } };
+                        [st.bauSatzRaten, st._weltbildDa, st.archInstanceGroups, r._satzAltertOffen] = [new Map([0, 1, 2].map((k) => [k, { key: k, d2: k, n: 4 }])), 1, new Map([[9, g]]), [{ g, i: 0, v: 0 }]]; // prettier-ignore
+                        st.chunkSaetze = new Map([[9, { bloecke: new Map([[9, { vStart: 0, bau: { alter: 1, cnt: 1, n: 8 * AnazhRealm.BAU_SATZ_STUECK } }]]) }]]); // prettier-ignore
+                        r._tickBauSatz();
+                        aus9.raten = aus9.satz;
+                        r._satzAltern();
+                        aus9.bau12 = [aus9.planer, strom(1e9, 1e9), pflanz() && r._tickPendingVegSpawns(8), aus9.abschied, 12 - r._huellenNach.size, werk.n, aus9.raten, aus9.satz - aus9.raten]; // prettier-ignore
                         // T13 — DIE ALTERUNG: der Strom leert die Frist je Takt, wer Budget bekommt, nutzt es ganz; der längste Hunger je
                         // Bauer steht im Hauptbuch des Gesetzes (`_bauHunger`). Der Selbsttest: ohne Alterung
                         AnazhRealm.BAU_ALTER_TAKTE = selbst ? 1e9 : alter;
@@ -428,18 +438,21 @@ hauptLauf(async () => {
     const t8 = aus.t8;
     // je Faden dieselbe Reihe: Werk (r1 → r3) und Helfer (rw1_2 → rw1_4); der Helfer-Faden trug wirklich zwei (nicht vakuös)
     const helferNr = (t8.nummern || []).filter((k) => /w1_\d+$/.test(k));
-    const T8 = t8.erster === "abgelaufen" && t8.zweiter === "offen" && t8.geist === true && helferNr.length === 2 && t8.helferErster === "abgelaufen" && t8.helferZweiter === "offen" && t8.helferGeist === true; // prettier-ignore
+    const z8 = [t8.erster, t8.zweiter, t8.geist, helferNr, t8.helferErster, t8.helferZweiter, t8.helferGeist] + "";
+    const T8 = helferNr.length === 2 && z8 === `abgelaufen,offen,true,${helferNr},abgelaufen,offen,true`;
     const t9 = aus.t9;
     // je Leser der Klasse (`_kappeOffen`) alle zwölf statt seiner Kappe, die Frist ein Vielfaches; die Frist gilt je Aufgabe
     const frist = { _tickPendingVegSpawns: t9.pflanz === 12, "_kappeOffen (Frist)": t9.ort >= 20, _tickAutoSettlement: t9.dorf === 12, tickArchitectureCulling: t9.bau === 12, _tickFoliageGrowth: t9.laub === 12, _tickVoxelChunkStreaming: t9.strom > 3 && t9.strom < 625 && t9.stromGleich === 3, "_tickVoxelChunkStreaming (ms)": t9.stromMs > 4 && t9.stromMs < 625 && t9.stromMsGleich > 0 && t9.stromMsGleich <= 4, _ringWaechst: t9.ring === t9.ringSoll, _fernRingRefresh: t9.fern > t9.fernKappe, _ladeFrist: t9.gleicherFrame === 4 && t9.ortAufgabe >= 20 }; // prettier-ignore
     const gang = t9.gang.every(Boolean);
     const T9 = !Object.values(frist).includes(false) && gang;
+    const z9 = `${Object.keys(frist)}, Nah-Gang je ${[t9.pflanz, t9.ort, t9.dorf, t9.bau, t9.laub, t9.strom, t9.stromGleich, t9.stromMs, t9.stromMsGleich, t9.ring, t9.ringSoll, t9.fern, t9.fernKappe, t9.gleicherFrame, t9.ortAufgabe, t9.gang]}`; // prettier-ignore
     // T12 je Bauer beim Namen: abgelaufen sein erstes Stück (der Planer gibt seinem Job 0 ms)
-    const N12 = "_dispatchFrameJobs _tickVoxelChunkStreaming _pflanzGang _pruneDistantVoxelChunks _tickHuellenNach _bewohnerWerkTakt".split(" "); // prettier-ignore
+    const N12 = "_dispatchFrameJobs _tickVoxelChunkStreaming _pflanzGang _pruneDistantVoxelChunks _tickHuellenNach _bewohnerWerkTakt _tickBauSatz _satzAltern".split(" "); // prettier-ignore
     const n12 = N12.filter((k, i) => (t9.bau12[i] === +!!i) === SELBST);
     // T13 je Bauer beim Namen: wer hinter dem Strom 6 Takte in Folge kein Budget bekam, verhungert
     const n13 = ["waldPlan", "karte", "streuLod"].filter((k) => (t9.satt13[k] < 6) === SELBST);
     const z13 = JSON.stringify(t9.satt13);
+    const z5 = [t5.K, t5.folge, t5.nummernSteigen, t5.imFlug, aus.t5i.frei[0], aus.t5i.n, aus.t5a.n, aus.t5a.erster];
     const t10 = aus.t10;
     const T14 = aus.t14 === 1; // die Räumung am Ort liest die EINE Form am Kasten
     const T10 = t10.geboren && t10.name === "buch" && !t10.post.includes("get-book") && t10.helfer === t10.helferSoll;
@@ -452,11 +465,11 @@ hauptLauf(async () => {
     if (SELBST) {
         const [v, vak] = [(x) => (x ? "vakuös" : "rot"), (n) => (n.length ? "vakuös: " + n : "rot")];
         const vakuoes = Object.keys(frist).filter((k) => frist[k]); // je Leser rot beim Namen, sonst geht er an `_kappeOffen` vorbei
-        const ok = !T3 && !T4 && !T5 && !T6 && !T8 && !T5i && !T5a && !T9 && !vakuoes.length && !t9.gang.some(Boolean) && !T10 && !n11.concat(n12, n13).length && !T14; // prettier-ignore
+        const ok = ![T3, T4, T5, T6, T8, T5i, T5a, T9, T10, T14, ...vakuoes, ...t9.gang, ...n11, ...n12, ...n13].some(Boolean);
         console.log(
             `${ok ? "✅" : "❌"} SELBST-TEST (je T die alte Klasse): T3 Fenster 2 fern ${t3.fern2} ${v(T3)}; T4 fern ${t3.fern3} ${v(T4)}; ` +
-                `T5 ${t5.folge.join("·")} ${aus.t5i.frei[0]} ${aus.t5a.erster} ${v(T5)}; T6 ${t6.folge.join("·")}, frei ${t6.frei.join("·")} ${v(T6)}; ` +
-                `T8 ${t8.zweiter} ${t8.helferZweiter} ${v(T8)}; T9 ${[t9.pflanz, t9.ort, t9.dorf, t9.bau, t9.laub, t9.strom, t9.stromMs, t9.ring, t9.fern, t9.gang]} ${v(T9)}${vakuoes.length ? ` — vakuös: ${vakuoes}` : ""}; ` +
+                `T5 ${z5} ${v(T5)}; T6 ${t6.folge.join("·")}, frei ${t6.frei.join("·")} ${v(T6)}; ` +
+                `T8 ${z8} ${v(T8)}; T9 ${z9} ${v(T9)}${vakuoes.length ? ` — vakuös: ${vakuoes}` : ""}; ` +
                 `T10 ${t10.name} ${t10.helfer}/${t10.helferSoll} ${v(T10)}; T11 ${z11} ${vak(n11)}; T12 ${t9.bau12} ${vak(n12)}; T13 ${z13} ${vak(n13)}; T14 ${aus.t14} ${v(T14)}`
         );
         process.exit(ok ? 0 : 1);
@@ -468,16 +481,17 @@ hauptLauf(async () => {
     // T5 gesendet: der nachpriorisierte Schlüssel in 5 m, dann der Bau in 10 m; frei zuerst Soll e10 (am Ort des Spielers); der
     // Anhänger am Wächter ist ein naher Leser am fernen Zug (Soll 11 Ergebnisse) — der Täter: der eingefrorene Rang (_foundryNaeher
     // hebt nur die Wartenden)
-    zeile(T5, `T5 Schlange: ${t5.K} + 10 → ${t5.folge.join(" · ")} · Nummer ${t5.nummernSteigen} · Flug ${t5.imFlug} · frei ${aus.t5i.frei[0]}/${aus.t5i.n} · Anhänger (${aus.t5a.n}) Nr. ${aus.t5a.erster}${aus.t5a.erster === 10 ? "" : " — Täter _foundryNaeher"}`); // prettier-ignore
+    // die Werte: K + 10 → Folge · Nummer · Flug · frei/n · Anhänger und seine Nummer
+    zeile(T5, `T5 Schlange: ${z5}${aus.t5a.erster === 10 ? "" : " — Täter _foundryNaeher"}`); // prettier-ignore
     zeile(T6, `T6 Worker-Schlange nie verhungert: ${t6.folge.join(" · ")} · frei ${t6.frei.join(" · ")}`);
-    zeile(T8, `T8 Geist im Faden: ${t8.erster} · ${t8.zweiter} · Geist ${t8.geist}; Helfer (${helferNr.join(" → ") || "leer"}): ` +
-            `${t8.helferErster} · ${t8.helferZweiter} · Geist ${t8.helferGeist}` +
+    // die Werte: erster · zweiter · Geist, die Helfer-Nummern, ihr erster · zweiter · Geist
+    zeile(T8, `T8 Geist im Faden: ${z8}` +
             // der Täter: die Nummer eines Helfer-Auftrags (w<k>_<n>) liest nicht, seine Uhr läuft ab dem Anmelden
             (T8 || t8.helferZweiter !== "abgelaufen" || t8.zweiter !== "offen" ? "" : " — Täter _foundryUhren")
     );
-    zeile(T9, `T9 Kappen: ` +
-            `Pflanz ${t9.pflanz}/12 · Frist ${t9.ort} · Dorf ${t9.dorf}/12 · Bau ${t9.bau}/12 · Laub ${t9.laub}/12 · Frame ${t9.gleicherFrame}/4 · Aufgabe ${t9.ortAufgabe} · Strom ${t9.strom}, ${t9.stromGleich}/3 · ms ${t9.stromMs}, ${t9.stromMsGleich} · Ring ${t9.ring}/${t9.ringSoll} · Fern ${t9.fern}/${t9.fernKappe} · ` +
-            `Nah-Gang ${t9.gang.join(" · ")}` +
+    // die Soll-Werte: Pflanz, Dorf, Bau, Laub je 12; Frist und Aufgabe ≥ 20; Strom 4–624 und gleich 3; ms 5–624 und gleich 1–4; Ring
+    // = Soll; Fern > Kappe; Frame 4
+    zeile(T9, `T9 Kappen: ${z9}` +
             // der Täter: Wartende verbrauchen Versuche oder die Kappe bricht den Nah-Gang ab (tickArchitectureCulling) — sonst gilt
             // bei ihm die Kappe je Takt unter dem Ladeschirm, nicht die EINE Frist des Lade-Frames (`_kappeOffen`)
             (T9 ? "" : ` — Täter ${gang ? Object.keys(frist).filter((k) => !frist[k]) : "tickArchitectureCulling"}`)
