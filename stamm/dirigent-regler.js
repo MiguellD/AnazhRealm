@@ -320,11 +320,9 @@ class AnazhRealm_dirigent_regler {
         // DER RAND AM SCHIRM (lod.K5): Laub- und Architektur-Radius sind Wechsel-Abstände — die Karte des Walds an das Fern-Feld,
         // die Mesh-Zone der Bauten an ihre Fernform — und folgen dem Schirm und dem Haushalt (`_randSchirm`), nie der Bildrate:
         // bis w3v-lod lagen sie bei lerp(MIN, MAX, effArch), der Wald-Rand wanderte unter Last zwischen 70 und 240 m (Pop und
-        // Regler zugleich). Der PID regelt die Qualität — Dichte, Bau-Durchsatz, Schatten, Strahlen —, nie den Rand.
+        // Regler zugleich). Der PID regelt die Qualität — Dichte, Schatten, Strahlen —, nie den Rand; den Bau-Durchsatz trägt seit
+        // w25-stadt-takt-4 die EINE Frist der Bau-Arbeit (`tickArchitectureCulling`), kein Zähler je Takt.
         const archZiel = this._randSchirm("bau");
-        st.architectureBuildBudgetPerFrame = Math.round(
-            lerp(AnazhRealm.ARCH_QUALITY_BUDGET_MIN, AnazhRealm.ARCH_QUALITY_BUDGET_MAX, effArch)
-        );
         // Headless (Null-Renderer): der Rand sofort am Schirm, die Dichte voll.
         if (st.renderer && st.renderer._isHeadlessNull) {
             st.foliageRadius = this._randSchirm("laub");
@@ -1983,8 +1981,6 @@ _stammZonen(AnazhRealm, [AnazhRealm_dirigent_regler]);
 // DER HAUSHALT DER RÄNDER (`_randSchirm`): die Mesh-Zone der Bauten (ARCH_QUALITY_RADIUS_MAX) und die Reichweite der Vegetation
 // (PERF_FOLIAGE_RADIUS_MAX), an jedem Schirm ganz. Das Build-Budget je Frame pendelt mit dem Regler zwischen MIN und MAX.
 AnazhRealm.ARCH_QUALITY_RADIUS_MAX = 150;
-AnazhRealm.ARCH_QUALITY_BUDGET_MAX = 6;
-AnazhRealm.ARCH_QUALITY_BUDGET_MIN = 1;
 AnazhRealm.INP_FENSTER = 2000; // so viele Interaktionen hält das Bedienungs-Ohr (spielgang.K3), die älteste weicht
 // Kapazitäts-gewachsene Welt: die Vegetation eines Chunks füllt nur innerhalb `foliageRadius` — der startet klein (kein
 // Spawn-Freeze) und wächst mit dem gebauten Ring zum Rand am Schirm (`_randSchirm`), nie mit der Last. RMIN > max. Test-Spawn

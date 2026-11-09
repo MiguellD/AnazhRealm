@@ -256,9 +256,9 @@ hauptLauf(async () => {
                     for (const k of "_standRuht _archKartenPreset _foundryEnabled _handBauErlaubt _archZiegelFern _foundryRewarmColdTrees _capNexusStructures _standMeldet _weltFeldAktiv".split(" ")) stub[k] = () => false; // prettier-ignore
                     if (selbst) stub._ladeFrist = () => -Infinity; // der Selbsttest: die Kappe allein
                     zurueck = leihe(r, stub);
-                    const S = { _frameOverBudget: false, playerMesh: { position: { x: 0, y: 0, z: 0 } }, architectureCullingRadius: 100, architectureBuildBudgetPerFrame: 3, pendingVegSpawns: 0, architectures: 0, pendingFoliageChunks: 0, voxelChunks: 0, voxelTerrainActive: true, playerVel: null, bauSatzRaten: null, bauSatzSchmutzig: null, _weltbildDa: st._weltbildDa, chunkSaetze: st.chunkSaetze, archInstanceGroups: st.archInstanceGroups, _voxelStreamMaxPerFrame: 3, _voxelStreamBudgetMs: 1e9, fernRing: null }; // prettier-ignore
+                    const S = { _frameOverBudget: false, playerMesh: { position: { x: 0, y: 0, z: 0 } }, architectureCullingRadius: 100, pendingVegSpawns: 0, architectures: 0, pendingFoliageChunks: 0, voxelChunks: 0, voxelTerrainActive: true, playerVel: null, bauSatzRaten: null, bauSatzSchmutzig: null, _weltbildDa: st._weltbildDa, chunkSaetze: st.chunkSaetze, archInstanceGroups: st.archInstanceGroups, _voxelStreamMaxPerFrame: 3, _voxelStreamBudgetMs: 1e9, fernRing: null }; // prettier-ignore
                     const [stAlt, qD, zwoelf, alter] = [Object.keys(S).map((k) => st[k]), r._autoSettlementQueue, [...Array(12).keys()], AnazhRealm.BAU_ALTER_TAKTE]; // prettier-ignore
-                    let uhr = 0;
+                    let [uhr, zurueck9] = [0, null];
                     performance.now = () => ++uhr;
                     try {
                         Object.assign(st, S, { pendingFoliageChunks: new Set(zwoelf.map((i) => i + ",0")), voxelChunks: new Map(zwoelf.map((i) => [i + ",0", {}])) }); // prettier-ignore
@@ -276,7 +276,7 @@ hauptLauf(async () => {
                         aus9.dorf = r._autoSettlementQueue ? r._autoSettlementQueue.idx : 12;
                         await null;
                         st.architectures = zwoelf.map(() => ({ position: { x: 0, z: 0 }, _ziegelGebacken: true }));
-                        aus9.bau = (r.tickArchitectureCulling(), st.architectures.filter((e) => e.t9).length);
+                        aus9.bau = ((zurueck9 = leihe(r, { _bauFrist: () => r._ladeFrist() })), r.tickArchitectureCulling(), zurueck9(), st.architectures.filter((e) => e.t9).length); // prettier-ignore
                         await null;
                         aus9.laub = 0;
                         r._tickFoliageGrowth();
@@ -320,7 +320,10 @@ hauptLauf(async () => {
                         r._tickBauSatz();
                         aus9.raten = aus9.satz;
                         r._satzAltern();
-                        aus9.bau12 = [aus9.planer, strom(1e9, 1e9), pflanz() && r._tickPendingVegSpawns(8), aus9.abschied, 12 - r._huellenNach.size, werk.n, aus9.wache || wach.n, aus9.raten, aus9.satz - aus9.raten]; // prettier-ignore
+                        // DER BAU-GANG (w25-stadt-takt-4): zwölf baubare Einträge, abgelaufen geht EIN Bau — bis dahin zählte er drei je Takt
+                        st.architectures = zwoelf.map((i) => ({ position: { x: i + 1, z: 0 }, _ziegelGebacken: true }));
+                        aus9.bau12b = (r.tickArchitectureCulling(), st.architectures.filter((e) => e.t9).length);
+                        aus9.bau12 = [aus9.planer, strom(1e9, 1e9), pflanz() && r._tickPendingVegSpawns(8), aus9.abschied, 12 - r._huellenNach.size, werk.n, aus9.wache || wach.n, aus9.raten, aus9.satz - aus9.raten, aus9.bau12b]; // prettier-ignore
                         // T13 — DIE ALTERUNG: der Strom leert die Frist je Takt, wer Budget bekommt, nutzt es ganz; der längste Hunger je
                         // Bauer steht im Hauptbuch des Gesetzes (`_bauHunger`). Der Selbsttest: ohne Alterung
                         AnazhRealm.BAU_ALTER_TAKTE = selbst ? 1e9 : alter;
@@ -450,7 +453,7 @@ hauptLauf(async () => {
     const T9 = !Object.values(frist).includes(false) && gang;
     const z9 = `${Object.keys(frist)}, Nah-Gang je ${[t9.pflanz, t9.ort, t9.dorf, t9.bau, t9.laub, t9.strom, t9.stromGleich, t9.stromMs, t9.stromMsGleich, t9.ring, t9.ringSoll, t9.fern, t9.fernKappe, t9.gleicherFrame, t9.ortAufgabe, t9.gang]}`; // prettier-ignore
     // T12 je Bauer beim Namen: abgelaufen sein erstes Stück (der Planer gibt seinem Job 0 ms)
-    const N12 = "_dispatchFrameJobs _tickVoxelChunkStreaming _pflanzGang _pruneDistantVoxelChunks _tickHuellenNach _bewohnerWerkTakt _bewohnerWacheTakt _tickBauSatz _satzAltern".split(" "); // prettier-ignore
+    const N12 = "_dispatchFrameJobs _tickVoxelChunkStreaming _pflanzGang _pruneDistantVoxelChunks _tickHuellenNach _bewohnerWerkTakt _bewohnerWacheTakt _tickBauSatz _satzAltern tickArchitectureCulling".split(" "); // prettier-ignore
     const n12 = N12.filter((k, i) => (t9.bau12[i] === +!!i) === SELBST);
     // T13 je Bauer beim Namen: wer hinter dem Strom 6 Takte in Folge kein Budget bekam, verhungert
     const n13 = ["waldPlan", "karte", "streuLod"].filter((k) => (t9.satt13[k] < 6) === SELBST);

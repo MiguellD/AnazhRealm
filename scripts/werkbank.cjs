@@ -3493,7 +3493,8 @@ hauptLauf(async () => {
         // mit `--zug` den Wetter-Zug klar → Wort → klar, die Ausgabe-Luma je Sekunde (Licht K5); Urteil `wetterLuftUrteil`.
         const ref = jsonLesen(path.join(__dirname, "../spec/farbe/luft-referenz.json"));
         const fehl = LL.luftTiefeSelbsttest(ref);
-        selbsttestEnde(fehl, "grauer β, Kante 21 %, Linie, leere Messung, Sicht 1800 m und Sprung 0,5 EV/s beim Namen ROT");
+        // der Selbsttest: grauer β, Kante 21 %, Linie, leere Messung, Sicht 1800 m und Sprung 0,5 EV/s beim Namen ROT
+        selbsttestEnde(fehl);
         if (SELBST) process.exit(0);
         const halt = await eigeneWelt();
         const seite = async (f, o) =>
@@ -3943,7 +3944,9 @@ hauptLauf(async () => {
     } else if (cmd === "shader") {
         if (SELBST) {
             const f = SK.selbsttest();
-            selbsttestEnde(f, "die Shader-Kosten-Linse zählt Orte, Arten, Arbeit, Rauschen und den Stoff-Graph, das Urteil nennt jeden Bruch");
+            // der Selbsttest: die Shader-Kosten-Linse zählt Orte, Arten, Arbeit, Rauschen und den Stoff-Graph, das Urteil nennt
+            // jeden Bruch
+            selbsttestEnde(f);
             process.exit(0);
         }
         o = await rufe("/shader", {
