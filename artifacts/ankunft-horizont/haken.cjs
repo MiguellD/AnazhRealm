@@ -369,7 +369,7 @@ function BAU_HAKEN() {
             };
             A.prototype._knotenRate.__haken = true;
         }
-        if (A && A.prototype._knotenRate.__haken && A.prototype._foundryAntwort.__haken && A.prototype._loopRender.__haken && r && r.state && r.state._weltbildDa && r.state.renderer && r.state.renderer._nodes && r.state.renderer._nodes.__bauHaken)
+        if (A && (A.prototype._knotenRate || {}).__haken && (A.prototype._foundryAntwort || {}).__haken && (A.prototype._loopRender || {}).__haken && r && r.state && r.state._weltbildDa && r.state.renderer && r.state.renderer._nodes && r.state.renderer._nodes.__bauHaken)
             clearInterval(warte);
     }, 5);
 }
