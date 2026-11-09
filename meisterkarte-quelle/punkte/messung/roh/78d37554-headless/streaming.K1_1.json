@@ -1,0 +1,123 @@
+{
+ "proben": {
+  "fahrt": {
+   "von": [
+    -280.4,
+    -1045.6
+   ],
+   "richtung": [
+    -0.95,
+    0.313
+   ],
+   "ring": 4,
+   "holz": "voll",
+   "bilder": 4671,
+   "sek": 133,
+   "taktMs": {
+    "p50": 11.3,
+    "p95": 41.9
+   },
+   "je": {
+    "sprint": {
+     "v": 5.175,
+     "bilder": 3350,
+     "luecke": 3350,
+     "je": {
+      "karte": 59482
+     },
+     "zeugen": [
+      "a:-4584,-9318:karte karte 211 m",
+      "a:-3912,-8641:karte karte 213 m",
+      "a:-4084,-8702:karte karte 217 m",
+      "a:-4651,-9294:karte karte 218 m",
+      "a:-4074,-8681:karte karte 218 m",
+      "a:-4589,-9199:karte karte 218 m"
+     ],
+     "sek": 60.01,
+     "wegM": 310
+    },
+    "gt": {
+     "v": 63.82,
+     "bilder": 1321,
+     "luecke": 1315,
+     "je": {
+      "karte": 64189,
+      "baum": 2797,
+      "bau": 1487
+     },
+     "zeugen": [
+      "a:-7279,-7969:karte karte 215 m",
+      "a:-7249,-7817:karte karte 224 m",
+      "a:-7343,-7779:karte karte 233 m",
+      "a:-7689,-8622:karte karte 212 m",
+      "a:-7739,-8292:karte karte 232 m",
+      "a:-7636,-8229:karte karte 226 m"
+     ],
+     "sek": 60.016,
+     "wegM": 3967
+    }
+   },
+   "eintritt": {
+    "baum": {
+     "n": 3214,
+     "ok": 2357,
+     "spaet": [
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1
+     ]
+    },
+    "wuchs": {
+     "n": 789,
+     "ok": 789,
+     "spaet": []
+    },
+    "boden": {
+     "n": 1527,
+     "ok": 1442,
+     "spaet": [
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1
+     ]
+    },
+    "karte": {
+     "n": 11185,
+     "ok": 5229,
+     "spaet": [
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1
+     ]
+    },
+    "bau": {
+     "n": 1108,
+     "ok": 1038,
+     "spaet": [
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1
+     ]
+    },
+    "streu": {
+     "n": 45,
+     "ok": 45,
+     "spaet": []
+    }
+   }
+  }
+ },
+ "fehler": []
+}

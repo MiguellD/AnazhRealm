@@ -1,0 +1,439 @@
+{
+ "sha": "78d37554b2d5f98d96ef454cfa9f51752c0e45a0",
+ "geraet": "headless",
+ "zeit": "2026-11-09T21:54:30.081Z",
+ "host": "laptop",
+ "je": {
+  "physik.K3#2": {
+   "gruen": true,
+   "zahl": "Same 260739443: ohne 0+1 → 2/2 Trümmer, ohne 0+2 → 1/1 Trümmer, ohne 2 → 0/0 Trümmer, Ruhe 1,283 s, 10 min 0 m · Reload 3/3, Lage 0 m, Drehung 0° (ohne sie ≥ 24,097°) · 100 Körper wach: Trümmerfeld 0,4 ms (p75 0,6), Haufen 4 hoch 0,6 ms (p75 0,7), schlafend 0 ms",
+   "exit": 0,
+   "minuten": 1.17,
+   "fremd": {
+    "s": 72.8,
+    "takte": 29,
+    "fremdS": 199.97,
+    "kerne": 2.746,
+    "fensterKerne": 1.758,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-31600-profil-ajyTqJ --no-p",
+      124.72
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      18.41
+     ],
+     [
+      "MsMpEng.exe",
+      9.56
+     ]
+    ],
+    "dienerS": 29.38,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      11.53
+     ],
+     [
+      "dwm.exe",
+      9.36
+     ]
+    ],
+    "eigenS": 9.67,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "grund": "GRÜN trotz Fremd-Last: chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-31600-profil-ajyTqJ --no-p 124,7 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 18,4 CPU-s · MsMpEng.exe 9,6 CPU-s — 1,76 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 200,0 CPU-s in 72,8 s)",
+   "zeit": "2026-11-09T21:45:35.458Z",
+   "abdruck": "9186a866f2ff",
+   "port": 7704,
+   "bahn": "allein",
+   "host": "laptop"
+  },
+  "mensch.K4#2": {
+   "gruen": true,
+   "zahl": "50 Bewohner aus 50 Samen, 8 Typen · Gestalt-Distanz min 99 px (7:28:3/7:59:3; 0 Paare unter 1 px) · Höhe 1.625–1.858 m um 1.741 · Gesicht 50 von 50 in MENSCH_SOLL · Leib/Wurf je Typ 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 (Zeilen 1700,360) · die 50: 132200 Dreiecke · Takt 1.569 ms für 1083 → 0.072 ms je 50",
+   "exit": 0,
+   "minuten": 0.81,
+   "fremd": {
+    "s": 50.9,
+    "takte": 20,
+    "fremdS": 56.08,
+    "kerne": 1.102,
+    "fensterKerne": 1.349,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      14.16
+     ],
+     [
+      "svchost.exe",
+      9.44
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      8.98
+     ]
+    ],
+    "dienerS": 21.14,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      8.55
+     ],
+     [
+      "dwm.exe",
+      6.77
+     ]
+    ],
+    "eigenS": 151.77,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "grund": "GRÜN trotz Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 14,2 CPU-s · svchost.exe 9,4 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 9,0 CPU-s — 1,35 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 56,1 CPU-s in 50,9 s)",
+   "zeit": "2026-11-09T21:46:48.046Z",
+   "abdruck": "ea5fc9f1e1f0",
+   "port": 7704,
+   "bahn": "allein",
+   "host": "laptop"
+  },
+  "ki.K5#1": {
+   "gruen": true,
+   "zahl": "p95 Satz → Welt 2.41 s über 32 Positiv-Sätze (Soll lokal ≤ 6 s; ohne Wirkung 0) · 41/41 Sätze gegen qwen3:4b-instruct @ 127.0.0.1:11434",
+   "exit": 0,
+   "minuten": 3.21,
+   "fremd": {
+    "s": 193.4,
+    "takte": 67,
+    "fremdS": 2068.02,
+    "kerne": 10.695,
+    "fensterKerne": 14.954,
+    "namen": [
+     [
+      "llama-server.exe --model blobs/sha256-85e4a5b7b8ef0e48af0e8658f5aaab9c2324c76c1641493f4d1e",
+      1701.86
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      88.19
+     ],
+     [
+      "MsMpEng.exe",
+      61.06
+     ]
+    ],
+    "dienerS": 133.94,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      47.13
+     ],
+     [
+      "dwm.exe",
+      43.03
+     ]
+    ],
+    "eigenS": 96.09,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "grund": "GRÜN trotz Fremd-Last: llama-server.exe --model blobs/sha256-85e4a5b7b8ef0e48af0e8658f5aaab9c2324c76c1641493f4d1e 1701,9 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 88,2 CPU-s · MsMpEng.exe 61,1 CPU-s — 14,95 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 2068,0 CPU-s in 193,4 s)",
+   "zeit": "2026-11-09T21:47:39.163Z",
+   "abdruck": "30202ff53615",
+   "port": 7704,
+   "bahn": "allein",
+   "host": "laptop"
+  },
+  "tore.K5#1": {
+   "gruen": true,
+   "zahl": "Zeit 153 ms (A 381) · A=9c183437/12 B=9c183437/12 ohne=515787a7/12 · Profil A, B, Kontext-Probe: ?",
+   "exit": 0,
+   "minuten": 1.3,
+   "fremd": {
+    "s": 78.8,
+    "takte": 30,
+    "fremdS": 96.36,
+    "kerne": 1.223,
+    "fensterKerne": 2.045,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      22.7
+     ],
+     [
+      "MsMpEng.exe",
+      14.19
+     ],
+     [
+      "svchost.exe",
+      12.78
+     ]
+    ],
+    "dienerS": 40.17,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      15.03
+     ],
+     [
+      "System",
+      13.61
+     ]
+    ],
+    "eigenS": 237.11,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "grund": "GRÜN trotz Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 22,7 CPU-s · MsMpEng.exe 14,2 CPU-s · svchost.exe 12,8 CPU-s — 2,05 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 96,4 CPU-s in 78,8 s)",
+   "zeit": "2026-11-09T21:50:52.527Z",
+   "abdruck": "de0a766a90ba",
+   "port": 7704,
+   "bahn": "allein",
+   "host": "laptop"
+  },
+  "streaming.K5#1": {
+   "gruen": true,
+   "zahl": "1.04 MB/min am Empfang in 60.0 s Fahrt",
+   "exit": 0,
+   "minuten": 1.3,
+   "fremd": {
+    "s": 80.7,
+    "takte": 31,
+    "fremdS": 127.67,
+    "kerne": 1.581,
+    "fensterKerne": 2.367,
+    "namen": [
+     [
+      "MsMpEng.exe",
+      25.19
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      22.69
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      14.17
+     ]
+    ],
+    "dienerS": 39.31,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      15.11
+     ],
+     [
+      "dwm.exe",
+      11.19
+     ]
+    ],
+    "eigenS": 149.44,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "grund": "GRÜN trotz Fremd-Last: MsMpEng.exe 25,2 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 22,7 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 14,2 CPU-s — 2,37 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 127,7 CPU-s in 80,7 s)",
+   "zeit": "2026-11-09T21:54:30.081Z",
+   "abdruck": "08885852a938",
+   "port": 7704,
+   "bahn": "allein",
+   "host": "laptop"
+  }
+ },
+ "ungemessen": {
+  "stoffe.K2#2": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine BRAND-Zeile (Exit 1)) · Täter: FEHLER: kein Wind ab 600 s (gebootet bis 11.067 s) gibt binnen 700 s einen Strahl Fluss → nasses Bett → trockenes Bett (Herd mit Boden-Feuchte ≤ 0,05) binnen 320 m um die Mess-Wiese (Ring 4)",
+   "exit": 1,
+   "minuten": 0.25,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine BRAND-Zeile (Exit 1)) · Täter: FEHLER: kein Wind ab 600 s (gebootet bis 11.067 s) gibt binnen 700 s einen Strahl Fluss → nasses Bett → trockenes Bett (Herd mit Boden-Feuchte ≤ 0,05) binnen 320 m um die Mess-Wiese (Ring 4)",
+   "ungemessen": true,
+   "fremd": {
+    "s": 22,
+    "takte": 7,
+    "fremdS": 18.8,
+    "kerne": 0.856,
+    "fensterKerne": 0.841,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      4.8
+     ],
+     [
+      "svchost.exe",
+      4.2
+     ],
+     [
+      "MsMpEng.exe",
+      2.94
+     ]
+    ],
+    "dienerS": 11.34,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      5.94
+     ],
+     [
+      "dwm.exe",
+      2.86
+     ]
+    ],
+    "eigenS": 60.95,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-09T21:45:18.466Z",
+   "abdruck": "0e550814be7b",
+   "port": 7704,
+   "bahn": "allein",
+   "host": "laptop"
+  },
+  "streaming.K1#1": {
+   "gruen": false,
+   "zahl": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 43,0 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 24,8 CPU-s · MsMpEng.exe 24,1 CPU-s — 1,80 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 184,8 CPU-s in 138,7 s) — kein Urteil, UNGEMESSEN (die Probe sah: sprint 5.175 m/s 60.01 s: 3350 von 3350 Bildern mit Lücke (karte 59482; a:-4584,-9318:karte karte 211 m · a:-3912,-8641:karte karte 213 m · a:-4084,-8702:karte karte 217 m) · gt 63.82 m/s 60.016 s: 1315 von 1321 Bildern mit Lücke (karte 641)",
+   "exit": 0,
+   "minuten": 2.29,
+   "grund": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 43,0 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 24,8 CPU-s · MsMpEng.exe 24,1 CPU-s — 1,80 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 184,8 CPU-s in 138,7 s) — kein Urteil, UNGEMESSEN (die Probe sah: sprint 5.175 m/s 60.01 s: 3350 von 3350 Bildern mit Lücke (karte 59482; a:-4584,-9318:karte karte 211 m · a:-3912,-8641:karte karte 213 m · a:-4084,-8702:karte karte 217 m) · gt 63.82 m/s 60.016 s: 1315 von 1321 Bildern mit Lücke (karte 641)",
+   "fremd": {
+    "s": 138.7,
+    "takte": 53,
+    "fremdS": 184.77,
+    "kerne": 1.332,
+    "fensterKerne": 1.795,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      43.03
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      24.84
+     ],
+     [
+      "MsMpEng.exe",
+      24.05
+     ]
+    ],
+    "dienerS": 68.84,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      25.73
+     ],
+     [
+      "dwm.exe",
+      22.33
+     ]
+    ],
+    "eigenS": 634.42,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-09T21:52:11.333Z",
+   "abdruck": "6caf085861a3",
+   "port": 7704,
+   "bahn": "allein",
+   "host": "laptop"
+  },
+  "streaming.K2#1": {
+   "gruen": false,
+   "zahl": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 43,0 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 24,8 CPU-s · MsMpEng.exe 24,1 CPU-s — 1,80 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 184,8 CPU-s in 138,7 s) — kein Urteil, UNGEMESSEN (die Probe sah: fertig beim Eintritt: boden 1442/1527 (94.4 %, spät -1/-1/-1 s) · baum 2357/3214 (73.3 %, spät -1/-1/-1 s) · karte 5229/11185 (46.8 %, spät -1/-1/-1 s) · bau 1038/1108 (93.7 %, spät -1/-1/-1 s) · wuchs 789/789 (100 %) · streu 45/45 (100 %) )",
+   "exit": 0,
+   "minuten": 2.29,
+   "grund": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 43,0 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 24,8 CPU-s · MsMpEng.exe 24,1 CPU-s — 1,80 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 184,8 CPU-s in 138,7 s) — kein Urteil, UNGEMESSEN (die Probe sah: fertig beim Eintritt: boden 1442/1527 (94.4 %, spät -1/-1/-1 s) · baum 2357/3214 (73.3 %, spät -1/-1/-1 s) · karte 5229/11185 (46.8 %, spät -1/-1/-1 s) · bau 1038/1108 (93.7 %, spät -1/-1/-1 s) · wuchs 789/789 (100 %) · streu 45/45 (100 %) )",
+   "fremd": {
+    "s": 138.7,
+    "takte": 53,
+    "fremdS": 184.77,
+    "kerne": 1.332,
+    "fensterKerne": 1.795,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      43.03
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      24.84
+     ],
+     [
+      "MsMpEng.exe",
+      24.05
+     ]
+    ],
+    "dienerS": 68.84,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      25.73
+     ],
+     [
+      "dwm.exe",
+      22.33
+     ]
+    ],
+    "eigenS": 634.42,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-09T21:52:11.333Z",
+   "abdruck": "812b543d4746",
+   "port": 7704,
+   "bahn": "allein",
+   "host": "laptop",
+   "zwilling": "streaming.K1#1"
+  },
+  "streaming.K5#2": {
+   "gruen": false,
+   "zahl": "Fremd-Last: MsMpEng.exe 25,2 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 22,7 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 14,2 CPU-s — 2,37 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 127,7 CPU-s in 80,7 s) — kein Urteil, UNGEMESSEN (die Probe sah: 1.04 MB/min in 60.0 s Fahrt · Kopie 0.00 MB · Speicher-Faden ja (Fäden: buch · werk · werk · werk · voxel · streu · wald · speicher))",
+   "exit": 0,
+   "minuten": 1.3,
+   "grund": "Fremd-Last: MsMpEng.exe 25,2 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 22,7 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 14,2 CPU-s — 2,37 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 127,7 CPU-s in 80,7 s) — kein Urteil, UNGEMESSEN (die Probe sah: 1.04 MB/min in 60.0 s Fahrt · Kopie 0.00 MB · Speicher-Faden ja (Fäden: buch · werk · werk · werk · voxel · streu · wald · speicher))",
+   "fremd": {
+    "s": 80.7,
+    "takte": 31,
+    "fremdS": 127.67,
+    "kerne": 1.581,
+    "fensterKerne": 2.367,
+    "namen": [
+     [
+      "MsMpEng.exe",
+      25.19
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      22.69
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      14.17
+     ]
+    ],
+    "dienerS": 39.31,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      15.11
+     ],
+     [
+      "dwm.exe",
+      11.19
+     ]
+    ],
+    "eigenS": 149.44,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-09T21:54:30.081Z",
+   "abdruck": "1fe252f89810",
+   "port": 7704,
+   "bahn": "allein",
+   "host": "laptop",
+   "zwilling": "streaming.K5#1"
+  }
+ }
+}

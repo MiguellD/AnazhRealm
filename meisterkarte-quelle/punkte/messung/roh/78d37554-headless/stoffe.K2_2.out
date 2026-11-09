@@ -1,0 +1,3 @@
+$ C:\Program Files\nodejs\node.exe scripts/diag-stand-takt.cjs --brand
+=== STAND-TAKT (Welle K) — Null-Renderer, Mess-Wiese, die Stand-Linse je Frame ===
+FEHLER: kein Wind ab 600 s (gebootet bis 11.067 s) gibt binnen 700 s einen Strahl Fluss → nasses Bett → trockenes Bett (Herd mit Boden-Feuchte ≤ 0,05) binnen 320 m um die Mess-Wiese (Ring 4)
