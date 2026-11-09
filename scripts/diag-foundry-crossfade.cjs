@@ -1,5 +1,5 @@
 // diag-foundry-crossfade.cjs — DIE BLENDE DER STUFEN: das EINE Masken-Gesetz
-// `__phytoCore.lodCrossfadeMask` (phyto-core) gegen die Studio-Blende, das Fenster der Instanz-Wahl und die lebende Welt.
+// `__phytoCore.lodCrossfadeMask` (phyto-core) gegen die Studio-Blende, das Fenster der GPU-Wahl und die lebende Welt.
 // Teil (a), Node an der GELADENEN Klasse (`stammLib.ladeKlasse`: die Kerne wie index.html, dann der Stamm) — nie ein
 // Quelltext-Zitat:
 //   (1) DIE STUDIO-BLENDE LÄUFT: der Fragment-Satz, den foundry-core `injectWind` dem Labor-Stoff einsetzt (Rinde und Laub,
@@ -12,9 +12,9 @@
 //   (3) DAS FENSTER DER INSTANZ-WAHL: die echten `AnazhRealm._blendeKanten` / `_blendeBehaelt` gegen das Gesetz, je
 //       Stufe (L0 · L1 · einzige Nah-Stufe · Karte) × Laub/Rinde × Metrik-Verhältnis × Band-Satz × Distanz-Intervall,
 //       Dither-Raster 256 — kein Loch; der Überschuss steht als Zahl.
-//   (4) DIE STUFE OHNE BILD: das echte `_instanzFenster` über eine Birke und eine
-//       Eiche, 0–60 m, je Stufe — keine Stufe wird gezeichnet, die das Gesetz an der Instanz-Distanz nicht behält, keine
-//       fehlt, die es behält.
+//   (4) DIE STUFE OHNE BILD: das Fenster der GPU-Wahl (`haelt` · `fenster` aus `PASS_WAHL_WGSL`, die Lage aus `_wahlLage`)
+//       über eine Birke und eine Eiche, 0–60 m, je Stufe — keine Stufe wird gezeichnet, die das Gesetz an der
+//       Instanz-Distanz nicht behält, keine fehlt, die es behält.
 //   (5) DIE ABSENZEN DER BLENDE über den EINEN Helfer `stammLib.fehlt`: kein Maß von der Licht-Kamera, zum Fragment oder
 //       Vertex, keine Stufen-Wahl vom Spieler, kein Ausschnitt über opacityNode, kein Fehler in einer Fenster-Variable,
 //       keine Karte unter Wenn.
@@ -214,16 +214,33 @@ function fensterLinse(core, cfgs, verschiebe) {
     return out;
 }
 
-// ===== (4) DIE STUFE OHNE BILD — das Fenster der Instanz-Wahl gegen das Gesetz an der Instanz-Distanz =====
-// `fenster(g, i, L)` ist das echte `_instanzFenster` (im Selbsttest gewickelt); `this` trägt nur, was eine alte Fassung las
-// (die Weite der Gestalt, die Krone der Birke 10 m).
-const stumpf = { _instanzWeite: () => ({ r: 10.06, y: 0 }) };
-function stufeOhneBildLinse(core, cfg, fenster = (g, i, L) => A.prototype._instanzFenster.call(stumpf, g, i, L)) {
+// ===== (4) DIE STUFE OHNE BILD — das Fenster der GPU-Wahl gegen das Gesetz an der Instanz-Distanz =====
+// Das Fenster lebt im WGSL der Wahl (`PASS_WAHL_WGSL`, w25-gpu-wahl): seine Glieder `haelt` und `fenster` laufen hier als JS
+// (die Typen fallen, `let` wird `const`), die Lage legt das echte `_wahlLage` in die Felder des `Lage`-Gefüges (je vec4f vier
+// Zahlen in Float32). `wgsl` ist der Quelltext (im Selbsttest verfälscht).
+function wgslFenster(wgsl, L, mass) {
+    const aus = A._wahlLage(L, new Float32Array(76));
+    const lage = {};
+    let o = 0;
+    for (const [, name, n] of wgsl.match(/struct Lage \{([^}]*)\}/)[1].matchAll(/(\w+): (?:array<vec4f, (\d+)>|vec4f)/g)) {
+        const v = Array.from({ length: +n || 1 }, () => ({ x: aus[o++], y: aus[o++], z: aus[o++], w: aus[o++] }));
+        lage[name] = n ? v : v[0];
+    }
+    const js = [...wgsl.matchAll(/\nfn (haelt|fenster)\(([^)]*)\) -> bool \{[\s\S]*?\n\}/g)].map(([t, n, a]) =>
+        t.replace(/fn \w+\([^)]*\) -> bool/, `function ${n}(${a.replace(/: \w+/g, "")})`).replace(/\blet /g, "const ").replace(/(\d)u\b/g, "$1")); // prettier-ignore
+    if (js.length !== 2) throw new Error("PASS_WAHL_WGSL trägt `haelt` und `fenster` nicht — das Fenster der Wahl fehlt");
+    const kopf = "const { max, min, abs } = Math, vec2f = (x, y) => ({ x, y }), length = (v) => Math.hypot(v.x, v.y);";
+    return new Function("lage", "h0", "h0l", "karte", `${kopf}\n${js.join("\n")}\nreturn fenster;`)(lage, mass.h0, mass.h0l, mass.karte); // prettier-ignore
+}
+function stufeOhneBildLinse(core, cfg, wgsl = A.PASS_WAHL_WGSL) {
     const gesetz = core.lodCrossfadeMask;
     const K = A._blendeKanten(gesetz, cfg.d0, cfg.d1, cfg.fade, cfg.fade0);
     const perf = 1.21,
         ref = 12;
-    const L = { ex: 0, ez: 0, perf, ref, kanten: K, haltBlende: 0 };
+    const ebene = { normal: { x: 0, y: 0, z: 0 }, constant: 0 };
+    const L = { fr: { planes: Array(6).fill(ebene) }, ax: 0, ay: 0, az: 0, halt: 0, haltBlende: 0, licht: 0, rand: 0, dreh: 0, fit: null, an: true, kanten: K, ex: 0, ez: 0, perf, ref }; // prettier-ignore
+    const mass = { h0: [0], h0l: [0], karte: [{ x: 0, y: 1.2, z: 4, w: 0 }] };
+    const fenster = wgslFenster(wgsl, L, mass);
     // die Wahrheit an der Instanz-Distanz (`zeigt`, das Laub)
     const zeigtL = (stufe, dS, dL) => zeigt(gesetz, stufe, dS, dL, cfg, true);
     const out = { proben: 0, ohneBild: 0, loecher: 0, beispiel: null, loch: null, jeStufe: {} };
@@ -233,21 +250,12 @@ function stufeOhneBildLinse(core, cfg, fenster = (g, i, L) => A.prototype._insta
     ])
         for (const stufe of [1, 2, 3, "karte"])
             for (let d = 0; d <= 60; d += 0.1) {
-                const s = art.s;
-                const hL = Math.min(art.h / s, 24) * s;
-                const g = {
-                    wahlStufe: stufe,
-                    mesh: {
-                        instanceMatrix: { array: [s, 0, 0, 0, 0, s, 0, 0, 0, 0, s, 0, 0, 0, d, 1] },
-                        matrixWorld: { elements: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1] },
-                        geometry: {
-                            attributes: { aH0: { array: [art.h] }, aH0L: { array: [hL] }, aKarte: { array: [0, 1.2, 4, art.h] } },
-                        },
-                    },
-                };
+                const hL = Math.min(art.h / art.s, 24) * art.s;
+                [mass.h0[0], mass.h0l[0], mass.karte[0].w] = [art.h, hL, art.h];
                 const dS = d * perf * Math.min(ref / art.h, 1),
                     dL = d * perf * Math.min(ref / hL, 1);
-                const zeichnet = fenster(g, 0, L);
+                // die Instanz am Ursprung + d in z (das Fenster liest nur ihre vierte Spalte), die Art der Stufe (die Karte 4)
+                const zeichnet = fenster(stufe === "karte" ? 4 : stufe, 0, [null, null, null, { x: 0, z: d }]);
                 const wahr = zeigtL(stufe, dS, dL);
                 // die Kanten stehen per Bisektion auf 1 mm an der äußeren Grenze (`_blendeKanten`): 1 cm Wahrnehmungs-Distanz
                 // um die Instanz ist die Toleranz des Gesetzes, kein Bild ohne Stufe
@@ -1293,11 +1301,10 @@ async function main() {
             const v = fensterLinse(CORE, [CFG], fn);
             check(`Selbst-Test Fenster: „${name}" 1 m nach innen → die Linse nennt Löcher`, v.loecher > 0, `${v.loecher} Löcher`);
         }
-        // V5: die Weite der Gestalt (Krone 10,06 m) als Rand im Fenster — die L1 der nahen Birke wird genannt.
-        const weit = (g, i, L) => A.prototype._instanzFenster.call(stumpf, g, i, Object.assign({}, L, { haltBlende: L.haltBlende + stumpf._instanzWeite().r }));
-        const S8 = stufeOhneBildLinse(CORE, CFG, weit);
+        // V5: die Weite der Gestalt (Krone der Birke 10,06 m) als Rand im Fenster des WGSL — die L1 der nahen Birke wird genannt.
+        const S8 = stufeOhneBildLinse(CORE, CFG, A.PASS_WAHL_WGSL.replaceAll("lage.saum.y", "(lage.saum.y + 10.06)"));
         check(
-            "Selbst-Test Stufe ohne Bild: die Weite der Gestalt im Fenster → die L1 der nahen Birke wird genannt",
+            "Selbst-Test Stufe ohne Bild: die Weite der Gestalt im Fenster des WGSL → die L1 der nahen Birke wird genannt",
             !!S8.jeStufe[2] && S8.jeStufe[2].art === "birke" && S8.jeStufe[2].d < 8,
             `ohne Bild ${S8.ohneBild} · die L1: ${JSON.stringify(S8.jeStufe[2])}`
         );
@@ -1359,16 +1366,16 @@ async function main() {
             .map(([k, v]) => `${k}: ${v.loecher} Löcher · Überschuss ${v.ueberschuss}/${v.proben}`)
             .join(" · ");
         check(
-            "FENSTER (W7): die Instanz-Wahl verwirft nie, was das Blend-Gesetz zeigt — je Stufe kein Loch",
+            "FENSTER (W7): das Gesetz des Fensters (`_blendeBehaelt`) verwirft nie, was das Blend-Gesetz zeigt — je Stufe kein Loch",
             F6.proben > 1000 && F6.loecher === 0,
             `${F6.proben} Intervalle · ${t}${F6.beispiel ? " · z. B. " + JSON.stringify(F6.beispiel) : ""}`
         );
     }
-    // (4) — DIE STUFE OHNE BILD: das echte _instanzFenster gegen das Gesetz an der Instanz-Distanz
+    // (4) — DIE STUFE OHNE BILD: das Fenster der GPU-Wahl (PASS_WAHL_WGSL) gegen das Gesetz an der Instanz-Distanz
     {
         const S8 = stufeOhneBildLinse(CORE, CFG);
         check(
-            "STUFE OHNE BILD: keine Stufe wird gezeichnet, die das Gesetz an der Instanz-Distanz nicht behält (doppelt außerhalb des Fade-Fensters)",
+            "STUFE OHNE BILD: die Wahl der GPU zeichnet keine Stufe, die das Gesetz an der Instanz-Distanz nicht behält, und keine fehlt (das Fenster im WGSL)",
             S8.proben > 4000 && S8.ohneBild === 0 && S8.loecher === 0,
             `${S8.proben} Proben · ohne Bild ${S8.ohneBild}${S8.beispiel ? " (z. B. " + JSON.stringify(S8.beispiel) + ")" : ""} · Löcher ${S8.loecher}${S8.loch ? " (" + JSON.stringify(S8.loch) + ")" : ""}`
         );

@@ -637,8 +637,7 @@ async function probe(cfg) {
     // derselben Art mit (Nachtrag 0710-12: konservativ, aber die IoU unrein). Darum fällt VOR dem Leer-Schuss jeder Slot der
     // Art auf Skala 0 und kehrt NACH dem zweiten Leer-Schuss zurück: alle drei Schüsse sehen dieselbe Welt, der gemessene
     // Werfer (danach gesetzt) ist der einzige seiner Art. Gemerkt wird je Slot-HALTER (`slotRef`), nie je Index — die Gruppe
-    // verdichtet beim Freigeben (`_instanzUmzug`) und tauscht je Pass (`_archGroupTausch`), der Halter trägt seinen Slot mit;
-    // ein freigegebener bleibt frei.
+    // verdichtet beim Freigeben (`_instanzUmzug`), der Halter trägt seinen Slot mit; ein freigegebener bleibt frei.
     const NULL_MATRIX = new T.Matrix4().makeScale(0, 0, 0);
     const artSlots = (typ, ohne) => {
         const aus = [];

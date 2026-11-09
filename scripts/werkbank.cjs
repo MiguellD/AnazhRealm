@@ -827,11 +827,21 @@ function popGang() {
                 const p1 = start.clone().addScaledVector(fwd, (i + 1) / 2);
                 await geh(start.clone().addScaledVector(fwd, i / 2));
                 const vor = new Map(st.architectures.filter(Boolean).map((e) => [e, stufe(e)]));
-                const a = await schuss(p1);
+                const folgen = () => r.constructor.__arenaFolgen | 0, fA = folgen();
+                // die Zahl der GPU-Wahl je Glied und Kamera nach dem Schuss (`zug.gpuZahl`, ein Bild Verzug) — wählt A anders als A2?
+                const zahlen = async (z = new Map()) => { await sleep(80); for (const ar of r.constructor.__arenen.values()) for (const [k, zug] of ar._zuege || []) for (const [m, n] of zug.gpuZahl || []) z.set(`${r._taeterKlasse(m).slice(0, 40)}·${m.id}@${k === cam ? "auge" : "k" + k.id}`, n); return z; }; // prettier-ignore
+                const a = await schuss(p1), zA = await zahlen();
                 if (aus.treue === undefined) {
-                    const a2 = await schuss(p1);
+                    // der Täter beim Namen: jede Senke der GPU-Wahl, die in A außerhalb ihrer Arena stand (sie zeichnete ohne Wahl oder nicht)
+                    const ohne = [];
+                    st.scene.traverse((o) => o.__wahlGpu === true && !o.__arena && ohne.push(o.name || o.uuid.slice(0, 8)));
+                    const [a2, fA2, zA2] = [await schuss(p1), folgen(), await zahlen()];
+                    const wahl = [...new Set([...zA.keys(), ...zA2.keys()])].filter((k) => zA.get(k) !== zA2.get(k)).map((k) => `${k} ${zA.get(k) ?? "-"}→${zA2.get(k) ?? "-"}`); // prettier-ignore
                     aus.treue = a.reduce((n, x, k) => n + (x !== a2[k]), 0);
-                    if (aus.treue) throw new Error(`die Treue: zwei Aufnahmen derselben Szene weichen in ${aus.treue} Bytes ab`);
+                    // der Ort beim Namen: abweichende Pixel je Feld (4 × 3, Zeilen oben → unten), der größte Luma-Sprung, und ob ein
+                    // dritter Schuss dem zweiten gleicht (A unfertig) oder nicht (die Szene flackert)
+                    const ort = (x, y) => { const f = Array(12).fill(0); let d = 0; for (let k = 0; k < W * H * 4; k += 4) if (x[k] !== y[k] || x[k + 1] !== y[k + 1] || x[k + 2] !== y[k + 2]) { const i = k / 4; f[Math.floor(((i / W) | 0) * 3 / H) * 4 + Math.floor((i % W) * 4 / W)]++; d = Math.max(d, Math.abs(luma709(x, k) - luma709(y, k))); } return `${f.join("/")} max ΔY ${d.toFixed(0)}`; }; // prettier-ignore
+                    if (aus.treue) throw new Error(`die Treue: zwei Aufnahmen derselben Szene weichen in ${aus.treue} Bytes ab — Felder ${ort(a, a2)}; A2↔A3 ${ort(a2, await schuss(p1))}; Arena-Folgen vor A ${fA}, bis A2 ${fA2 - fA}; Wahl A↔A2 ${wahl.length} von ${zA.size} Zügen anders${wahl.length ? ": " + wahl.slice(0, 8).join(", ") : ""}${ohne.length ? ` — in A ohne Arena: ${ohne.join(", ")}` : ""}`); // prettier-ignore
                 }
                 await geh(p1);
                 const b = await schuss(p1);
@@ -2108,8 +2118,11 @@ async function starte() {
                     );
                 }
                 // DIE GPU-FEHLER-LINSE (V-D7): jede Device-Meldung und jeder Draw ohne gesetzten Vertex-Slot, mit Objekt.
-                if (req.url === "/gpu-fehler")
+                if (req.url === "/gpu-fehler") {
+                    // `--selbsttest`: ein zerstörter Quell-Puffer einer Kopie MUSS als zerstörte Bindung beim Namen stehen
+                    if (b.selbsttest) await page.evaluate(() => { const d = st.renderer.backend.device, U = GPUBufferUsage, [q, z] = [0, 1].map(() => d.createBuffer({ size: 16, usage: U.COPY_SRC | U.COPY_DST })), e = d.createCommandEncoder({ label: "selbsttest" }); e.copyBufferToBuffer(q, 0, z, 0, 16); const c = e.finish(); q.destroy(); d.queue.submit([c]); }); // prettier-ignore
                     return send(await page.evaluate(() => window.__gpuFehler || { fehlt: "Abgriff nicht installiert" }));
+                }
                 if (req.url === "/umstellen") {
                     if (b.ort) {
                         const { ort, haushalt } = BAND.ladeSpec(b.ort);
@@ -3204,12 +3217,17 @@ hauptLauf(async () => {
             await rufe("/fenster", { w: 1920, h: 1080 });
             await umstellen({ ort: "wiese", sicht: "ego" });
             o = ergebnis(await evalRuf(`return await (${popGang})();`));
+            o.block = ergebnis(await evalRuf(`return await (${SICHT.blockTreue})();`)); // die Blöcke des letzten Bilds (sicht-linse)
             o.bank = await rufe("/gpu-bank", {}); // die GPU-Zeit je Bild am Ende des Gangs (`gpuBank`)
         } finally {
             halt?.();
         }
         const je = (o.schritte || []).map((s) => s.pop + (s.wechsel ? "*" : "") + (s.ein.length ? `+${s.ein.length}@${Math.min(...s.ein)}` : ""));
+        if (typeof o.fehler === "string") console.log(`lod.K2#1 ROT — der Gang brach: ${o.fehler}`.slice(0, 590));
         if (je.length) console.log(`lod.K2#1 ${o.anteilJeSekunde <= 0.05 ? "GRÜN" : "ROT"} ${o.anteilJeSekunde} % Pop-Pixel/s (${o.popPixel} px) · ${je.join("/")} · Laub ${o.laub} · dc, Dreiecke ${o.kosten.at(-1)} · GPU ${o.bank.gpuJeFrameMs} ms, CPU ${o.bank.cpuJeFrameMs} ms je Bild`);
+        const B = o.block || {}, rot = (B.rot || []).concat(B.fehler ? [B.fehler] : [], B.glieder > 0 ? [] : ["LEER: kein Glied einer Arena der Wahl im Hauptbild"], /^BLIND|^$/.test(B.selbsttest || "") ? [`SELBSTTEST ${B.selbsttest || "fehlt"}`] : []);
+        console.log(rot.length ? `BLOCK-TREUE ROT:\n  ${rot.join("\n  ")}` : `BLOCK-TREUE GRÜN ${B.glieder} Blöcke treu · Selbsttest nennt ${B.selbsttest}`);
+        if (rot.length) o.fehler = "BLOCK-TREUE ROT"; // ein fremder Block, ein blinder Selbsttest oder kein geprüftes Glied
     }
     else if (cmd === "bedienung") o = await rufe("/bedienung", { runden: opt("--runden", 3), staffel: opt("--staffel") });
     else if (cmd === "albedo" && hat("nah-fern")) {
@@ -3885,7 +3903,12 @@ hauptLauf(async () => {
         process.exit(o.befunde.length ? 1 : 0);
     } else if (cmd === "schirm") o = await rufe("/schirm", { datei: opt("--datei"), regler: opt("--regler", "frei") });
     else if (cmd === "fenster") o = await rufe("/fenster", { w: a[0], h: a[1] });
-    else if (cmd === "gpu-fehler") o = await rufe("/gpu-fehler", {});
+    else if (cmd === "gpu-fehler") {
+        o = await rufe("/gpu-fehler", { selbsttest: SELBST });
+        const Z = o.zerstoert || [], s = Z.find((z) => z.pass === "selbsttest");
+        if (SELBST) endeMit(s && /destroy/.test(s.zerstoerer) ? `SELBSTTEST GRÜN — die zerstörte Bindung steht beim Namen: ${s.weg}, ${s.zerstoerer.slice(0, 120)}` : `SELBSTTEST ROT — blind (${Z.length} genannt)`, !!s); // prettier-ignore
+        if (Z.length) console.log(`ZERSTÖRTE BINDUNG ROT ×${Z.length}: ${Z.slice(0, 3).map((z) => `${z.pass} · ${z.weg} · ${z.objekt || "?"} · ${z.zerstoerer}`).join(" | ")}`.slice(0, 1200)); // prettier-ignore
+    }
     else if (cmd === "gpu-bank") o = await rufe("/gpu-bank", { n: a[0], runden: opt("--runden", 3) });
     else if (cmd === "latenz") {
         if (SELBST) {

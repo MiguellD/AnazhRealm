@@ -472,7 +472,6 @@ class AnazhRealm_stoff_karte {
                       perf: lu.uLodPerf.value,
                       ref: lu.uLodRef.value,
                       kanten: this._blendeK,
-                      haltBlende: 0, // der Rand des Fensters (`_instanzFenster`): der Wurf wählt am Auge, ohne Halt
                   }
                 : null;
             const liste = W && W.liste.length >= n * 6 ? W.liste : new Float32Array(n * 6);
@@ -482,8 +481,12 @@ class AnazhRealm_stoff_karte {
             let k = 0,
                 hwMax = 0;
             for (let i = 0; i < n; i++) {
-                if (Lm && !this._instanzFenster(g, i, Lm)) continue;
                 const o = i * 16;
+                // das Fenster der Karte (das EINE Blend-Gesetz `_blendeBehaelt`, wie die Wahl der GPU es rechnet, `PASS_WAHL_WGSL`):
+                // der Abstand ihres Ankers vom Auge der Maske × Perf × min(Bezug/Sichthöhe, 1); verdeckt (Sichthöhe < 0) behält sie
+                const sicht = ak[i * 4 + 3];
+                const dS = Lm && Math.hypot(a[o + 12] - Lm.ex, a[o + 14] - Lm.ez) * Lm.perf * Math.min(Lm.ref / Math.max(Math.abs(sicht), 1e-3), 1); // prettier-ignore
+                if (Lm && !AnazhRealm._blendeBehaelt(Lm.kanten, "karte", dS, dS, dS, dS, sicht < 0)) continue;
                 const s = Math.sqrt(a[o] * a[o] + a[o + 1] * a[o + 1] + a[o + 2] * a[o + 2]);
                 const c = nadel[Math.floor(ak[i * 4] + 0.5)] ? 1 : laub;
                 liste.set([a[o + 12], a[o + 13], a[o + 14], ak[i * 4 + 1] * s, ak[i * 4 + 2] * s * 0.5, c], k * 6);
