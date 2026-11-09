@@ -781,6 +781,7 @@ class AnazhRealm {
             // Max. teure Architektur-Builds je Frame im Culling-Scan: deckelt den Build-Burst beim Eintritt in
             // dichte Regionen (3/Frame ≈ 180/s, eine Region füllt sich in <1 s ohne Spike); Cull ungedeckelt.
             // Die Kollision ist feld-nativ via entry.blockerAABBs, render-unabhängig ab Spawn.
+            architectureBuildBudgetPerFrame: 3,
             // Performance-Regelkreis: Sollwert + die vom PID gefahrenen Streaming-Stellgrößen (Default = volle
             // Qualität, der Regler senkt unter Last). perfRegulator:false schaltet die Rückkopplung ab (der
             // Sense misst weiter); perfSense lazy.
