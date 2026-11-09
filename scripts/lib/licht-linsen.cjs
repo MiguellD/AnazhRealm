@@ -2122,6 +2122,12 @@ function tonDesBands(paare) {
     const [l, s] = bandMittel(paare).map(farbTon);
     return paare.length ? +Math.min(Math.abs(l - s), 360 - Math.abs(l - s)).toFixed(2) : null;
 }
+// DER TON ZERLEGT (w26-ferne-ton): das Band ist je Kanal L = T·L0 + (1 − T)·S — die Luft allein (der Boden schwarz,
+// (1 − T)·S = S·(L0 − L)/(L0 − S)) trägt `luft` Grad gegen S, der Boden den Rest; dazu Blau/Grün des Bodens ohne Luft
+function tonZerlegt([L, S, L0]) {
+    const luft = tonDesBands([[S.map((s, c) => (s * (L0[c] - L[c])) / (L0[c] - S[c])), S]]);
+    return { luft, boden: +(tonDesBands([[L, S]]) - luft).toFixed(2), bg: +(L0[2] / L0[1]).toFixed(2) };
+}
 
 // DIE LUFT IM BILD (ferne-luft, Meisterkarte Ferne K1 + K2): vom Hügel je Uhr vier Azimute ab der Sonne, je drei
 // Schüsse aus dem Ausgabe-Pfad — Luft (L), β 0 (L0), β 1 (S) —, linear; je Pixel T = (L − S)/(L0 − S) je Kanal gegen die externe
@@ -2381,7 +2387,8 @@ function luftTiefeUrteil(m, R) {
                 // (w22-ferne-heil: der Luftschatten `luftSicht` fiel bei β 1 unter seine Klemme, T/T_soll bis −7,98)
                 if (u === 0.5 && q.length)
                     liste.push(`K1-1 KOSCHMIEDER ${wo} ${b.d / 1000} km: T/T_soll ${q.join(", ")} außerhalb ±${B.T * 100} %${Math.min(...b.q) < 0 ? " · T < 0: luftSicht hängt an β" : ""}`);
-                if (b.d === 8000 && !(b.dh <= B.dh)) liste.push(`K1-2 FARBTON ${wo} 8 km: ${b.dh}° von der In-Streuung > ${B.dh}° · L/S/L0 ${b.mittel}`);
+                const z8 = b.d === 8000 && !(b.dh <= B.dh) && tonZerlegt(b.mittel);
+                if (z8) liste.push(`K1-2 FARBTON ${wo} 8 km: ${b.dh}° von der In-Streuung > ${B.dh}° · die Luft allein (Boden schwarz) ${z8.luft}°, der Boden ${z8.boden}° (B/G ${z8.bg}) · L/S/L0 ${b.mittel.flat().map((x) => +x.toFixed(4))}`);
             }
             const fern = z.baender.filter((b) => b.d >= 2000 && b.nk > 0);
             const nk = fern.reduce((a, b) => a + b.nk, 0);
@@ -2514,6 +2521,10 @@ function luftTiefeSelbsttest(R) {
             const [band, je] = [tonDesBands(px), px.map((p) => tonDesBands([p])).sort((a, b) => a - b)[100]];
             return (Math.abs(band - tonDesBands([[L, S]])) <= 2 && je > 17) || `Ton des Bands ${band}° (Wahrheit 7,14°), je Pixel ${je}°`;
         })(),
+        // DER TON ZERLEGT beim Namen (GTX 87537d3f, Azimut 0, Uhr 0,5): 13° = die Luft allein 10,21° + der Boden 2,79° (B/G 0,66)
+        ((z) => (z.luft === 10.21 && z.boden === 2.79 && z.bg === 0.66) || `zerlegt ${JSON.stringify(z)}`)(
+            tonZerlegt([[0.22295, 0.2412, 0.25643], [0.26289, 0.26804, 0.27857], [0.12897, 0.13138, 0.08637]])
+        ),
         // die Auflösung je Pixel in Stufen (L0 gegen S, 8 bit): das Paar am Morgen (Rot 24, Blau 19 Stufen; linear 0,029/0,021 unter
         // der alten Wache 0,05) trägt, das Rauschen (4 Stufen) und das helle Paar (9 Stufen, linear 0,057 über ihr) nie
         ...[[[38, 32, 21], [62, 54, 40], 1], [[120, 121, 119], [124, 123, 126]], [[191, 191, 191], [200, 200, 200]]].map(
@@ -2908,6 +2919,7 @@ module.exports = {
     farbTon,
     bandMittel,
     tonDesBands,
+    tonZerlegt,
     luftTiefe,
     luftTiefeUrteil,
     luftTiefeSelbsttest,
