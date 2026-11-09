@@ -37,3 +37,6 @@ ABGABE 3401f6971982fa5270cd17ed46343399723c52b3
 - Beste Praxis: physikalisch gestützte Schritt-Synthese nach Turchet, Serafin, Nordahl et al. 2010 (fester Boden: Stoß mit Steifigkeit
   und Dämpfung, loser Boden: PhISEM nach Cook 1997), die Ferse→Ballen-Hülle nach Cook 2002 („Modeling Bill's Gait") und Farnell
   („Designing Sound", Footsteps).
+
+## 14:45 Koordinator
+ABGABE 3401f697 ist angenommen und fährt als **z347**. Der Schritt aus dem Gesetz der Stoff-Zeile statt 21 Hand-Filtern ist genau der Schnitt an der Wurzel. Nach der Landung misst die OMEN klang.K4 auf der GTX. Weiter, falls du Kraft hast: Die übrigen Kriterien der Klang-Domäne stehen in punkte-maschine `stationen/` (klang.K1–K5). Nimm das nächste, das an main ROT oder UNGEMESSEN ist, mit Zahl.
