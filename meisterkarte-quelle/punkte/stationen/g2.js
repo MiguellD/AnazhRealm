@@ -1475,8 +1475,10 @@ const sollUrteil = (id, name) =>
 // Haar-Teil die Feder `__haarFeder` (Welt-Meter) — vor dem ersten Schuss und nach jedem als Zeile „POSE <vor|nach-n> {leib, haar}“;
 // das Urteil verlangt EINE Pose über alle Lesungen (|Δ| ≤ POSE_TOLERANZ) und nennt sonst die Lesung und die Größe, die wanderte.
 // `o.halten` (Quellen des EINEN Halters `__halten`, ausgabe-aufnahme) hält die Pose nach `vorher`, sofort und nicht erst im nächsten
-// Takt: die Anzeige-Uhr des Leibs steht auf 0 (EINE Pose je Lauf und Gerät, nie die Phase des Halts), `haar` legt die Feder in Ruhe;
-// am Ende lässt die Station sie los (die Welt der Sitzung misst weiter).
+// Takt: die Anzeige-Uhr des Leibs steht auf 0 (EINE Pose je Lauf und Gerät, nie die Phase des Halts); der EINE Wind steht still
+// (`_windWob` 0, der Hebel der Mutante von haar.K3) — mit stehendem Leib und ohne Wind klingt die Feder des Haars in Takten der
+// Welt-Uhr auf genau 0 aus (`_haarFederTakt`, höchstens 40 Takte), die Gestalt des Haars, wie sie gebaut ist; am Ende lässt die
+// Station beides los.
 const POSE_TOLERANZ = 1e-4;
 const POSE_LEIB =
     "const pm = r.state.playerMesh, leib = [], haar = []; pm.updateMatrixWorld(true); pm.traverse((o) => { if (!o.isMesh) " +
@@ -1525,8 +1527,8 @@ function sollKlasseStation(o) {
                 ...o.vorher,
                 ...(halten
                     ? [
-                          "loesen() { node scripts/werkbank.cjs eval 'const H = window.__gehalten; for (const q of " + halten + ") H && H.delete(q); if (H) delete H.t; return 1;' > /dev/null 2>&1; }",
-                          "node scripts/werkbank.cjs eval 'window.__halten(" + halten + "); window.__gehalten.t = 0; r.animatePlayerSoul(0); return [...window.__gehalten];' > \"$B-halten.txt\" 2>&1",
+                          "loesen() { node scripts/werkbank.cjs eval 'const H = window.__gehalten; for (const q of " + halten + ") H && H.delete(q); if (H) delete H.t; delete r._windWob; return 1;' > /dev/null 2>&1; }",
+                          "node scripts/werkbank.cjs eval 'window.__halten(" + halten + "); window.__gehalten.t = 0; r.animatePlayerSoul(0); r._windWob = () => 0; const ruht = () => { let j = true; r.state.playerMesh.traverse((o) => { const f = o.userData.__haarFeder; if (f && (f.x || f.y || f.z)) j = false; }); return j; }; let k = 0; for (; k < 40 && !ruht(); k++) { await sleep(110); r._gameLoopTick(performance.now()); } return { gehalten: [...window.__gehalten], takte: k, ruht: ruht() };' > \"$B-halten.txt\" 2>&1",
                       ]
                     : []),
                 ...(o.pose ? ["pose vor"] : []),
@@ -5719,16 +5721,16 @@ const stationen = [
     // (`--gesicht 0.7`), third 4 m hinter dem Kopf (`--gesicht -4`, der Blick des Third); der Kopf in Stoffen, die Klasse
     // spieler:kopf/hair. Soll: strich der REF ref-haar.png ± 20 % = [0,3554; 0,533] UND die Albedo der Zeile haar der Albedo-Tafel
     // im Natur-Band [0,01; 0,3] — die Zeile fehlt (die Tafel misst nur ganz auf der Karte), ROT „albedo: … ohne Ist“ bis sie steht.
-    // DIE POSE STEHT (w26-haar-linse-pm): der EINE Halter hält den Leib (`__halten` leib, die Anzeige-Uhr auf 0) und die Feder des
-    // Haars (`haar`, seit w26-haar-arm im Halter; vorher ROT „ZWEI POSEN … Haar-Feder“), beide Schüsse messen EINE Pose (POSE-Zeilen,
-    // `posenUrteil`) — bis dahin streute der Arm ±0,07 bei halber Bandbreite 0,089 (GTX, dieselbe Spielart in einer Welt).
+    // DIE POSE STEHT (w26-haar-linse-pm): der EINE Halter hält den Leib (`__halten` leib, die Anzeige-Uhr auf 0), der Wind steht
+    // still, die Feder des Haars ruht; beide Schüsse messen EINE Pose (POSE-Zeilen, `posenUrteil`) — bis dahin streute der Arm ±0,07
+    // bei halber Bandbreite 0,089 (GTX, dieselbe Spielart in einer Welt); headless an 87537d3f ROT „ZWEI POSEN … Haar-Feder Δ 3,3 mm“.
     sollKlasseStation({
         kriterium: "haar.K2",
         id: "haar",
         sek: 32,
         klasse: "^spieler:kopf/hair$",
         pose: POSE_LEIB,
-        halten: ["leib", "haar"],
+        halten: ["leib"],
         vorher: ["node scripts/werkbank.cjs umstellen --ort wiese --sicht third > \"$B-umstellen.txt\" 2>&1"],
         schuesse: { arm: "0 0 0 0 0 0 --gesicht 0.7 --spieler", third: "0 0 0 0 0 0 --gesicht -4 --spieler" },
         pfad: ["koerper-core.js", "stamm/koerper-*.js", "stamm/studio-bruecke.js", "spec/farbe/albedo-tafel.json"],
