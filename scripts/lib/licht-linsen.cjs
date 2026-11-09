@@ -2900,6 +2900,7 @@ module.exports = {
     kantenLinie,
     luftBetaRef,
     luftAufgeloest,
+    farbTon,
     tonDesBands,
     luftTiefe,
     luftTiefeUrteil,
