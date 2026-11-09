@@ -22,3 +22,6 @@ w15-strom-takt mit w15-strom-takt-2 in main gelandet (V18.546.207), 765/845 eige
 w19-fahrt-ziel als f8463cc + w19-fahrt-ziel-2 in main (V18.546.212), 17/17 Zeilen wortgleich (heimholer 17:05)
 w16-haenger aufgenommen in heim2-w19-gang-hitch 7213b347 (heimholer 18:33)
 w27-stadt-bild derselbe Täter (werkbank.cjs:1090, 5,3 mm) an der Wurzel in w26-stadt-takt-4b (z351): Gründung am Ort des Ankers statt verschobener Anker-Zahlen (Koordinator 21:25)
+w24-wiese-ferne-z überholt von w24-wiese-ferne-y 9e53ecc7 (in main seit z339, d61a37e3): -y trägt 96 von 98 Zeilen des Zweigs wortgleich, die 2 übrigen sind der Täter von z336 (die Ferne baute ohne Frist, Ruf bis 391 ms, VK Wagen an Wagen 226×); w25-gpu-wahl-2 und w26-winter-fichte-2 tragen die Frist der Ferne weiter (heimholer-k10)
+w24-wiese-ferne derselbe Baum wie w24-wiese-ferne-z (3fe3aafb + main f52b3a03 = Baum b5439be7), überholt von w24-wiese-ferne-y in main (z339) (heimholer-k10)
+heim2-w21-laub-jahr-fern in main seit z330 (f5dde626, V18.546.228): der Merge-Baum gegen main da0e790f ist außerhalb der zwei Konflikt-Dateien gleich main; der Rest 03db07b9 + 51bf7065 sind 7 Zeilen Schreibweise (?. statt &&), 0 Verhalten (heimholer-k10)
