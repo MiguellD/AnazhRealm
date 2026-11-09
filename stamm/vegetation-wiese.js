@@ -515,6 +515,9 @@ class AnazhRealm_vegetation_wiese {
         // rechnete jeder neuen ihre Lage (GTX 1050 an main, die zweite Fahrt: `_nahWieseFernTakt` 99,8 ms in EINEM Takt; Null-Renderer
         // mit der Frist des Spiels, GT 20 m/s ab Genesis, die ersten 2,5 s: max 33 ms, darin `_wieseFernLage` 30 ms).
         const bis = deadline || performance.now() + AnazhRealm.BAU_FRIST_MS;
+        // ohne die Weite der Büschel (`reich`: die gezeichneten Vorlagen) zieht keine Kachel der Nähe Büschel — kein Werk beginnt,
+        // das auf null fiele (w26-ankunft-block-3 maß es vor dem Bild: 1 293 von 1 566 Bauten null)
+        if (!(reich > 0)) return ((o.offen += G.bau.length), o);
         if (G.werk) {
             const i = G.bau.findIndex((w) => w.key === G.werk.key);
             if (i < 0) G.werk = null;
