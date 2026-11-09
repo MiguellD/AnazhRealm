@@ -1,0 +1,211 @@
+{
+ "sha": "d61a37e3a5bb398603b8b0a9eab0eabc00d3dafe",
+ "geraet": "radeon",
+ "zeit": "2026-11-09T05:26:20.454Z",
+ "host": "MiguellD",
+ "je": {
+  "mensch.K1#1": {
+   "gruen": true,
+   "zahl": "Quote 81/81 = 1, Häuser ohne Bewohner 0, gegangene im Blick 17 Ego / 21 Third; Third-Bild am Dorfplatz um 08:00 (Soll 08:00) 18 Menschen im Bild, 0 gehend, 38.1 fps",
+   "exit": 0,
+   "minuten": 1.42,
+   "gpu": "amd/rdna-3",
+   "s": 85,
+   "fremd": {
+    "s": 87.3,
+    "takte": 32,
+    "fremdS": 225.69,
+    "kerne": 2.584,
+    "fensterKerne": 3.277,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      59.41
+     ],
+     [
+      "node scripts/diag-altlasten.cjs --selftest",
+      37.19
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      28.28
+     ]
+    ],
+    "dienerS": 51.05,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      18.61
+     ],
+     [
+      "dwm.exe",
+      17.27
+     ]
+    ],
+    "eigenS": 263.75,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-09T05:24:32.547Z",
+   "abdruck": "ac10e7df1f5a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "mensch.K2#2": {
+   "gruen": true,
+   "zahl": "Soll-Orte alle 81/81 ≥ 0,9 (min 0.983), Wege je Tag 5–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1296 Lagen über ±2 m (max 1.759 m), Sprünge 0, Plan bit-gleich true",
+   "exit": 0,
+   "minuten": 1.42,
+   "gpu": "amd/rdna-3",
+   "s": 85,
+   "fremd": {
+    "s": 87.3,
+    "takte": 32,
+    "fremdS": 225.69,
+    "kerne": 2.584,
+    "fensterKerne": 3.277,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      59.41
+     ],
+     [
+      "node scripts/diag-altlasten.cjs --selftest",
+      37.19
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      28.28
+     ]
+    ],
+    "dienerS": 51.05,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      18.61
+     ],
+     [
+      "dwm.exe",
+      17.27
+     ]
+    ],
+    "eigenS": 263.75,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-09T05:24:32.547Z",
+   "abdruck": "dab117ec1548",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "mensch.K1#1",
+   "modus": "session"
+  }
+ },
+ "ungemessen": {
+  "mensch.K5#1": {
+   "gruen": false,
+   "zahl": "Fremd-Last: node scripts/diag-altlasten.cjs 26,8 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 25,9 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 14,1 CPU-s — 2,84 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 97,3 CPU-s in 38,7 s) — kein Urteil, UNGEMESSEN (die Probe sah: gasthaus/gasthaus #419347: Kopf-Zuwendung ab 3 m 0.267 / 0 / 0 / 0 s (Vorbeigang ab 72°, als Leib im Bild true/true/true/true) · Berührung 0/0/0/0 Takte, kleinster Abstand 2 / 1.335 / 1.335 / 1.952 m (Radien 0,7) · ohne Erinnerung 1.335, Ge)",
+   "exit": 0,
+   "minuten": 0.59,
+   "gpu": "amd/rdna-3",
+   "s": 35.3,
+   "fremd": {
+    "s": 38.7,
+    "takte": 14,
+    "fremdS": 97.33,
+    "kerne": 2.515,
+    "fensterKerne": 2.839,
+    "namen": [
+     [
+      "node scripts/diag-altlasten.cjs",
+      26.84
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      25.92
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      14.09
+     ]
+    ],
+    "dienerS": 22.86,
+    "diener": [
+     [
+      "dwm.exe",
+      8.95
+     ],
+     [
+      "WmiPrvSE.exe",
+      8.19
+     ]
+    ],
+    "eigenS": 121.39,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "ungemessen": true,
+   "grund": "Fremd-Last: node scripts/diag-altlasten.cjs 26,8 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 25,9 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 14,1 CPU-s — 2,84 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 97,3 CPU-s in 38,7 s) — kein Urteil, UNGEMESSEN (die Probe sah: gasthaus/gasthaus #419347: Kopf-Zuwendung ab 3 m 0.267 / 0 / 0 / 0 s (Vorbeigang ab 72°, als Leib im Bild true/true/true/true) · Berührung 0/0/0/0 Takte, kleinster Abstand 2 / 1.335 / 1.335 / 1.952 m (Radien 0,7) · ohne Erinnerung 1.335, Ge)",
+   "zeit": "2026-11-09T05:26:20.454Z",
+   "abdruck": "fbd51bda5863",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-09T05:24:02.412Z",
+  "port": 7804,
+  "warten": 0.1,
+  "bootS": 5.3,
+  "grundstellungS": [
+   3.5
+  ],
+  "proben": 2,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "genesis",
+    "vor": "mensch.K1#1",
+    "s": 15.7,
+    "takte": 641,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": "genesis",
+    "vor": "mensch.K5#1",
+    "s": 18.2,
+    "takte": 627,
+    "chunks": 81,
+    "nach": "der Tür"
+   }
+  ],
+  "wegeTueren": [
+   {
+    "vor": "mensch.K5#1",
+    "wege": "wege +5 [-110,-230.5,17.6,-118.2/298] [-115.3,-244.9,7.2,-119.1/22] [-116.6,-234.8,9.9,-118.6/4] …",
+    "s": 3.5
+   }
+  ],
+  "ciBlicke": 3,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 2,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 134,
+   "luecken": 1,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+  },
+  "fahrtS": 168.6,
+  "minuten": 3
+ }
+}
