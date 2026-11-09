@@ -17,6 +17,15 @@ node -e 'const fs = require("fs"); const [aus, ...f] = process.argv.slice(1); fs
 }
 @@PUNKTE@@ EXIT 0
 @@PUNKTE@@ LATENZ1
+@@PUNKTE@@ EXIT 2
+@@PUNKTE@@ SPIEL1
+@@PUNKTE@@ EXIT 2
+
+--- stderr ---
+werkbank.cjs ABSTURZ: Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20)
+werkbank.cjs ABSTURZ: Error: connect ECONNREFUSED 127.0.0.1:27804
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1645:16)
 
 --- gpu-zeuge ---
 [linse-gpu] nvidia/pascal
