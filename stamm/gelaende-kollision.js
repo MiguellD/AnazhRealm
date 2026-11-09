@@ -1290,8 +1290,7 @@ class AnazhRealm_gelaende_kollision {
     // Ritts (frisch) und seine Boxen lesen es. Ein Studio-Wagen, dessen Bau kein Maß trägt, ist ein KERN-PFLICHT-Bruch (ein
     // alter Kern auf der Platte), nie still die Stationen.
     _wagenMassSetzen(entry, mass) {
-        if (!entry._fahrAchseX && !(this._fahrzeugGesetzFor(entry) || {}).drive) return;
-        if (entry._gestaltMass && entry._gestaltMass.von === mass) return;
+        if (!this._fahrzeugGesetzFor(entry) || (entry._gestaltMass && entry._gestaltMass.von === mass)) return;
         const U = mass && mass.umriss;
         if (!Array.isArray(U) || U.length < 9 || U.length % 3 || !U.every(Number.isFinite) || !(mass.dach > 0))
             return AnazhRealm._kernPflichtBruch("vehicle:__mass (" + entry.type + ")");
