@@ -149,16 +149,10 @@ async function checkBandW13W14VibePassLibrary({ page, check }) {
         out.snapshotKeepsSig = !!snapBp && snapBp.signature === bp.signature && snapBp.authorPubKey === bp.authorPubKey;
         // Cross-Autor: ein mit FREMDEM Schlüssel signierter Bauplan
         // verifiziert ebenso (das Fundament für W13 Phase 3).
-        const foreignPair = await crypto.subtle.generateKey({ name: "Ed25519" }, true, ["sign", "verify"]);
-        const foreignJwk = await crypto.subtle.exportKey("jwk", foreignPair.privateKey);
+        const fremd = await __fremd();
         const foreignCanon = r._canonicalBlueprint(bp);
-        const foreignSig = await crypto.subtle.sign(
-            { name: "Ed25519" },
-            foreignPair.privateKey,
-            new TextEncoder().encode(foreignCanon)
-        );
-        bp.signature = r._vibeBytesToHex(new Uint8Array(foreignSig));
-        bp.authorPubKey = r._vibeBytesToHex(r._vibeB64uToBytes(foreignJwk.x));
+        bp.signature = await fremd.sign(foreignCanon);
+        bp.authorPubKey = fremd.pubHex;
         bp.signedHash = r._fastHash(foreignCanon);
         out.crossAuthorValid = (await r.verifyBlueprintSignature(bp)) === "valid";
         out.crossAuthorForeign = bp.authorPubKey !== st.vibePass.publicKeyHex;
@@ -238,16 +232,8 @@ async function checkBandW13W14VibePassLibrary({ page, check }) {
         p2p.enabled = true;
         r.p2pSend = origSend;
         // --- vibe-Empfang: ein fremder Peer, drei Beweis-Fälle ---
-        const foreign = await crypto.subtle.generateKey({ name: "Ed25519" }, true, ["sign", "verify"]);
-        const foreignJwk = await crypto.subtle.exportKey("jwk", foreign.privateKey);
-        const foreignPubHex = r._vibeBytesToHex(r._vibeB64uToBytes(foreignJwk.x));
+        const { pubHex: foreignPubHex, sign } = await __fremd();
         const foreignId = "ed25519:" + foreignPubHex;
-        const sign = async (text) =>
-            r._vibeBytesToHex(
-                new Uint8Array(
-                    await crypto.subtle.sign({ name: "Ed25519" }, foreign.privateKey, new TextEncoder().encode(text))
-                )
-            );
         // (a) gültiger Beweis (signiert die eigene peerId).
         const proofA = await sign("_w13p3peerA");
         r.p2pHandleMessage(
@@ -714,19 +700,9 @@ async function checkBandW13W14VibePassLibrary({ page, check }) {
         out.forgedState = (await r.verifyWorldSignature("fluid")) === "forged";
         st.signedWorlds.fluid.signature = realSig;
         // Cross-Autor: ein mit FREMDEM Schlüssel signiertes Manifest verifiziert.
-        const foreign = await crypto.subtle.generateKey({ name: "Ed25519" }, true, ["sign", "verify"]);
-        const foreignJwk = await crypto.subtle.exportKey("jwk", foreign.privateKey);
-        const foreignPubHex = r._vibeBytesToHex(r._vibeB64uToBytes(foreignJwk.x));
+        const { pubHex: foreignPubHex, sign } = await __fremd();
         const canonTerrain = r._canonicalManifest(REG.terrain);
-        const foreignSig = r._vibeBytesToHex(
-            new Uint8Array(
-                await crypto.subtle.sign(
-                    { name: "Ed25519" },
-                    foreign.privateKey,
-                    new TextEncoder().encode(canonTerrain)
-                )
-            )
-        );
+        const foreignSig = await sign(canonTerrain);
         st.signedWorlds.terrain = {
             authorPubKey: foreignPubHex,
             signature: foreignSig,
@@ -878,9 +854,7 @@ async function checkBandW13W14VibePassLibrary({ page, check }) {
         const garbage = await r.importWorldManifest({ nonsense: true });
         out.importGarbageRejected = garbage.ok === false;
         // Cross-Autor: ein fremd-signiertes Manifest (neue id, erreichbarer Pfad).
-        const foreign = await crypto.subtle.generateKey({ name: "Ed25519" }, true, ["sign", "verify"]);
-        const foreignJwk = await crypto.subtle.exportKey("jwk", foreign.privateKey);
-        const foreignPubHex = r._vibeBytesToHex(r._vibeB64uToBytes(foreignJwk.x));
+        const { pubHex: foreignPubHex, sign } = await __fremd();
         const fm = {
             schemaVersion: "1.0",
             id: "void-zwei",
@@ -890,12 +864,6 @@ async function checkBandW13W14VibePassLibrary({ page, check }) {
             dsl: ["skybox_color"],
         };
         const fmCanon = r._canonicalManifest(fm);
-        const sign = async (canon) =>
-            r._vibeBytesToHex(
-                new Uint8Array(
-                    await crypto.subtle.sign({ name: "Ed25519" }, foreign.privateKey, new TextEncoder().encode(canon))
-                )
-            );
         const fmSig = await sign(fmCanon);
         const importValid = await r.importWorldManifest(
             Object.assign({}, fm, {

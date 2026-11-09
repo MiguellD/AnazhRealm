@@ -2623,9 +2623,9 @@ class AnazhRealm_vegetation_baum {
     // Distanz-Culling: Daten-Einträge bleiben immer, nur die GPU-Last ist begrenzt — in Reichweite ohne
     // Mesh → bauen, außerhalb mit Mesh → disposen. So kann der Spieler unbegrenzt bauen.
     tickArchitectureCulling() {
-        // Der Scan läuft je Frame (Distanz-Checks trivial), die teuren Builds sind auf
-        // `architectureBuildBudgetPerFrame` gedeckelt (sonst baut ein Tick beim Eintritt in eine dichte Region
-        // alles auf einmal). Cull (fern) ist billig → ungedeckelt.
+        // Der Scan läuft je Frame (Distanz-Checks trivial), die teuren Builds gehen unter der EINEN Frist der Bau-Arbeit
+        // (`_bauFrist("bau")`, unten; sonst baut ein Tick beim Eintritt in eine dichte Region alles auf einmal). Cull (fern) ist
+        // billig → ungedeckelt.
         const playerPos = this.state.playerMesh ? this.state.playerMesh.position : null;
         if (!playerPos) return;
         // DIE STAND-WACHE: ging der Gang über alle Einträge ohne Bau, Räumung und Wartende, und regt sich nichts (Ort,
@@ -2638,8 +2638,7 @@ class AnazhRealm_vegetation_baum {
         // Kollision ist feld-nativ (`entry.blockerAABBs` ab Spawn) → der Cull-Tick steuert NUR das Rendern,
         // keine Ammo-Bodies. Über Budget (_frameOverBudget) → 0 Bauten, bei Kopfraum der geregelte Durchsatz:
         // die Welt wächst in den Lücken, nie auf Kosten des Spielers. Das Cullen läuft weiter (billig).
-        const budget = this.state._frameOverBudget ? 0 : Math.max(1, this.state.architectureBuildBudgetPerFrame || 3);
-        let built = 0;
+        const ueber = !!this.state._frameOverBudget;
         const ziegelOffen = this._archZiegelOffen || (this._archZiegelOffen = []);
         const nahOffen = this._archNahOffen || (this._archNahOffen = []);
         const ohneFeld = !!(this.state.renderer && this.state.renderer._isHeadlessNull); // Null-Renderer: kein Feld
@@ -2849,6 +2848,11 @@ class AnazhRealm_vegetation_baum {
             // Platz-Uhr, Versuche und Bau-Budget sind Kappen je Takt (`_kappeOffen`): unter dem Ladeschirm gelten sie bis zur
             // Frist des Lade-Frames — Radeon kalt (G2, nachher-k2) war „Bäume und Bauten wachsen" der Schwanz der Ankunft
             // (226 Einträge 12,5 s → 8 bei 15,4 s), 3 Bauten je Lade-Frame.
+            // DIE EINE FRIST DER BAU-ARBEIT (w25-stadt-takt-4, Lehre 14 und 25): der erste Bau-Ruf geht, jeder weitere bis zur Frist
+            // (`_bauFrist("bau")`, unter dem Ladeschirm die des Lade-Frames); über Budget trägt die Takt-Garantie. Bis hier zählte der
+            // Gang Bauten (`architectureBuildBudgetPerFrame`, der Regler 1–6) NEBEN der Frist der übrigen Bauer — GTX, Messort stadt,
+            // erster Gang: `tickArchitectureCulling` p95 12–25 ms, Bau Σ 351 ms über 33 Bilder (gate:geh-zerlegung 2b0216a4).
+            const frist = this._bauFrist("bau");
             const fAn = this._foundryEnabled();
             let versuche = 0,
                 bauZu = false,
@@ -2879,8 +2883,8 @@ class AnazhRealm_vegetation_baum {
                     bauZu = true;
                     continue;
                 }
-                if (!this._kappeOffen(built, budget)) {
-                    if (hand === null) hand = this._handBauErlaubt(budget);
+                if (ueber || (frist !== Infinity && versuche > 1 && performance.now() >= frist)) {
+                    if (hand === null) hand = this._handBauErlaubt(ueber ? 0 : 1);
                     if (!hand) {
                         bauZu = true;
                         continue;
@@ -2889,7 +2893,7 @@ class AnazhRealm_vegetation_baum {
                 this._zusagenVon(entry.position, () => this._rebuildArchitectureMesh(entry), Z);
                 if (this._archIsRendered(entry)) {
                     entry._nahWartet = null;
-                    if (built++ >= budget) hand = false;
+                    if (ueber) hand = false;
                     if (entry._ziegelSlot) this._weltFeldAktiv(entry._ziegelSlot, false);
                     if (entry.mesh) entry.mesh.visible = true;
                     regung++;

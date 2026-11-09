@@ -192,7 +192,9 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
   je Seite; Aufträge und Berichte der Messplätze leben im Zweig `koordination`, nie in main.
 - Bild-Urteile auf ECHTER GPU aus jedem Zweig (`.github/workflows/gpu-probe.yml`): die Kopf-Commit-Message trägt
   `[gpu-probe: gate:<npm-skript>, bild:<messort>@<uhr>]` (höchstens drei, ohne `[skip ci]`), ein freier Läufer mit dem Label gpu-probe
-  fährt sie unter dem GPU-Schloss; Urteil und Bild stehen in `origin/koordination:probe-post/<zweig>/<sha8>.md`, die Zeile oben in
+  fährt sie unter dem GPU-Schloss; ein Gate mit Zeit-Urteil (ms, Takt, Ankunft) ruft `zeit:gate:<npm-skript>` und fährt nur auf einem
+  Band-Gerät (Label gpu-zeit: OMEN, Radeon — der dritte Läufer gtx1050-desktop liegt 3- bis 8-mal über jedem Budget); Urteil und Bild
+  stehen in `origin/koordination:probe-post/<zweig>/<sha8>.md` (je Probe ihr Läufer), die Zeile oben in
   `cloud-post/<zweig>.md`, 2–3 min ab dem Push (07.11.: Radeon 108 s, OMEN 195 s samt npm ci; gate:apparat Klinge 7 hält den Einlass:
-  nur push, nur die zwei Formen).
+  nur push, nur die drei Formen, `zeit:` nur auf gpu-zeit).
 - Commits klein, deutsch, emoji-frei, die Message ist der Chronik-Eintrag; PR nur auf Wunsch. Docs: `docs/README.md` ist die EINE Karte.
