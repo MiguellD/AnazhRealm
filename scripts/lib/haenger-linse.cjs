@@ -420,8 +420,12 @@ function haengerAuswerten(roh, spur, opts) {
         const vor = geraeteIn(roh, T, vorK, j, T.c0[vorK], w1);
         let name;
         let e = null;
-        if (klasse === "TAKT" || klasse === "NEBEN")
+        let anteile = null;
+        if (klasse === "TAKT" || klasse === "NEBEN") {
             name = P ? engstellenName((e = engstelle(P, klasse === "TAKT" ? idsTakt : idsNeben, 0.5))) : "ohne Profil";
+            // JE BILD DER TÄTER (w25-stadt-takt-2): die Proben des Fensters je Domäne (`domaeneVon` über den Pfad, Selbst-Zeit)
+            if (P) anteile = domaeneJe(rahmenBaum(P, klasse === "TAKT" ? idsTakt : idsNeben).wurzel);
+        }
         else if (klasse === "GC") name = "Garbage-Collector";
         else {
             const sync = vor.pipes.filter((x) => x.art === "sync");
@@ -449,6 +453,7 @@ function haengerAuswerten(roh, spur, opts) {
             pfad: e ? e.pfad.slice(-6) : [],
             zweige: e && !e.pfad.length ? e.zweige : [],
             selbst: e ? e.selbst : [],
+            anteile,
             geraet: im.dev,
             geraetVorher: klasse === "GPU" ? vor.dev : null,
             pipelines: (klasse === "GPU" ? vor.pipes : im.pipes).slice(0, 12).map((x) => x.art + ":" + x.n),
@@ -696,6 +701,80 @@ function linseWerten(roh, spur, b) {
     if (b.spitze) return spitzenAuswerten(roh, spur, b.posten ? String(b.posten).split(",") : undefined);
     const a = haengerAuswerten(roh, spur, { schwelle: Number(b.schwelle) || 100 });
     return Object.assign(a, { befunde: haengerLinsenBefunde(a), tabelle: haengerTabelle(a) });
+}
+
+// DER TÄTER NACH DOMÄNE (`werkbank geh`, gate:geh-zerlegung): jeder Rahmen des Takts gehört der Domäne, die auf seinem Pfad
+// zuerst in der Reihe steht (die Bewohner im Takt-Planer sind Bewohner, die Kaskade über `_renderScene` ist Schatten); ohne Treffer
+// Rest. Je Domäne die SELBST-Zeit [ab p95, Mitte] in ms je Takt aus der Takt-Spitze `s` (`zeilen` in Tiefen-Reihe), je Hänger der
+// Hänger-Linse `a` die Domäne seiner Engstelle (GPU und GC behalten ihre Klasse), dazu DER BAUM: die oberste Ebene des Takts und
+// je Wurzel `teile` ihr Teilbaum bis Tiefe 4, inklusive ms ab p95/Mitte ab 0,8 ms — wohin die Zeit des Takts fließt.
+// DIE FAHRT (w26-fahrt-planer): die Sicht steht vor dem Satz (`_passSicht › _chunkSatzPass` ist Sicht, nie Satz), der Planer
+// teilt sich in Strom, Wiese, Wald und seinen Rest, die Fahrt (Sim-Schritt, Ritt) und der Verkehr sind eigen
+const DOMAENEN = [
+    ["Knoten-Bau", /_knotenRate/],
+    ["Schatten", /chatten|Kaskade|Shadow/],
+    ["Sicht", /^_passSicht$/],
+    ["Verkehr", /erkehr/],
+    ["Bewohner", /ewohner|_tickHausTueren/],
+    ["Tiere", /reatur|Fauna|Herde/],
+    ["Satz", /^(_tickChunkSatz|_tickBauSatz|_bauSatzRaten|_satzAltern)$/],
+    ["Bau", /Architecture|AutoSettlement|Foundry|_foundry|_arch[A-Z]|_grundriss/],
+    ["Strom", /^(_tickVoxelChunkStreaming|_tickMorphFolge|_tickDirtyVoxelChunks|_tickPendingWaterIso|_tickFernRing|_tickWegeKarte)$/],
+    ["Wiese", /^(_tickNahWiese|_tickScatterStreaming|_tickNahStreu|_tickPendingGrass|_tickScatterLod)$/],
+    ["Wald", /^(_tickSaat|_tickWaldPlan|_tickPendingVegSpawns|_tickHuellenNach|_tickImpostorBake|_tickCanopyStreaming)$/],
+    ["Planer", /^_runFrameScheduler$/],
+    ["Fahrt", /^(_fahr|_tickMountedMovement$|tickAffordances$|_loopFixedStep$)/],
+    ["Leib", /Leib|_leib|_stepCharacter|kelett|^animatePlayerSoul$/],
+    ["Zeichnen", /render|Render/],
+];
+const domaeneVon = (namen) => (DOMAENEN.find(([, re]) => namen.some((n) => re.test(n))) || ["Rest"])[0];
+// die Selbst-Proben eines Rahmen-Baums (`rahmenBaum`) je Domäne ihres Pfads, als Anteil 0…1
+function domaeneJe(w) {
+    const je = {};
+    const geh = (k, pfad) => {
+        let selbst = k.n;
+        for (const [nm, c] of k.k) (selbst -= c.n), geh(c, pfad.concat(nm));
+        if (pfad.length) je[domaeneVon(pfad)] = (je[domaeneVon(pfad)] || 0) + selbst / (w.n || 1);
+    };
+    geh(w, []);
+    return je;
+}
+function domaenen(a, s, teile = /^_bewohner(Geburt|Liste|WerkTakt)|^tickArchitectureCulling|^_runFrameScheduler/) {
+    const [je, hJe, stapel, baum, r1] = [{}, {}, [], [], (x) => x.toFixed(1)];
+    s.zeilen.forEach((z, i) => {
+        stapel.length = z.tiefe;
+        stapel.push(z.name);
+        const d = (je[domaeneVon(stapel)] ||= [0, 0]);
+        let [sp, mi] = [z.spitzeMs, z.mitteMs];
+        for (let j = i + 1; j < s.zeilen.length && s.zeilen[j].tiefe > z.tiefe; j++)
+            if (s.zeilen[j].tiefe === z.tiefe + 1) [sp, mi] = [sp - s.zeilen[j].spitzeMs, mi - s.zeilen[j].mitteMs];
+        [d[0], d[1]] = [d[0] + Math.max(0, sp), d[1] + Math.max(0, mi)];
+        const w = stapel.findIndex((n) => teile.test(n));
+        if ((z.tiefe === 0 || (w >= 0 && z.tiefe - w <= 4)) && Math.max(z.spitzeMs, z.mitteMs) >= 0.8)
+            baum.push(`${"›".repeat(w < 0 ? 0 : z.tiefe - w)}${z.name.replace(/ \[[^\]]*\]/g, "").slice(0, 32)} ${r1(z.spitzeMs)}/${r1(z.mitteMs)}`);
+    });
+    // JE BILD DER TÄTER: die Domäne mit dem größten Anteil am Fenster des Hängers (ms = Anteil × seine Takt-Zeit), GPU und GC ihre
+    // Klasse; je Täter Bilder und Summe, dazu die schwersten Bilder einzeln
+    // DER ANTEIL (w25-stadt-takt-3): je Bild seine Zeit ganz — Takt und Neben-Last je Domäne, dazu GPU-Warten und GC aus den
+    // Klassen des Fensters; je Domäne die Bilder, deren größter Teil sie ist, und ihr Anteil Σ ms über alle Bilder > Schwelle
+    const [bilder, an] = [[], {}];
+    for (const h of a.haenger || []) {
+        const z = h.zeiten || {};
+        const ms = (h.anteile ? Object.entries(h.anteile).map(([k, v]) => [k, v * (z.TAKT + z.NEBEN)]).concat([["GPU", z.GPU], ["GC", z.GC]]) : [[/TAKT|NEBEN/.test(h.klasse) ? domaeneVon(h.pfad.map((p) => p.name).concat(h.name)) : h.klasse, h.dt]]).filter(([, v]) => v > 0).sort((x, y) => y[1] - x[1]); // prettier-ignore
+        const d = ms.length ? ms[0][0] : h.klasse;
+        hJe[d] = (hJe[d] || 0) + 1;
+        for (const [k, v] of ms) an[k] = (an[k] || 0) + v;
+        bilder.push([h.dt, ms.slice(0, 2).map(([k, v]) => `${k} ${Math.round(v)}`).join("+"), h.t, ms.slice(0, 3)]);
+    }
+    const reihe = (o, f) => Object.entries(o).sort((x, y) => f(y[1]) - f(x[1]));
+    return {
+        baum,
+        jeDomaene: reihe(je, (v) => v[0]).map(([k, v]) => `${k} ${r1(v[0])}/${r1(v[1])}`).join(" · "),
+        haenger: reihe(an, (v) => v).map(([k, v]) => `${k} ${hJe[k] || 0}× Σ${Math.round(v)}`).join(" · "),
+        // JE BILD in der Zeit-Reihe (w26-fahrt-planer): „t+dt Täter ms Zweiter ms Dritter ms" — die Tafel der Abgabe
+        jeBild: bilder.slice().sort((x, y) => x[2] - y[2]).map(([dt, , t, m]) => `${t}+${Math.round(dt)} ${m.map(([k, v]) => k + " " + Math.round(v)).join(" ")}`), // prettier-ignore
+        bilder: bilder.sort((x, y) => y[0] - x[0]).slice(0, 8).map(([dt, t]) => `${Math.round(dt)}:${t}`).join(" · "),
+    };
 }
 
 // DIE HALTER DER ANKUNFT (Pflicht-OFFEN B, die Kalt-Zeile `diag-boot-stage --kalt`): jede Aufgabe des Haupt-Fadens vor dem
@@ -1061,6 +1140,13 @@ function selbsttest() {
     const dauer = (s) => s.profil.timeDeltas.reduce((x, y) => x + y);
     if (weg.split("9916 von 9916 Proben unter").length !== 4 || klein !== "256 ,256 ,256 " || Math.abs(dauer(spurProfil(ev.toSpliced(3, 1))) - dauer(sp)) > 1000)
         f.push(`der verlorene ProfileChunk: ${weg} · ${klein}`);
+    // DER TÄTER NACH DOMÄNE (`domaenen`): das Werk der Bewohner im Planer heißt Bewohner (nie Streaming), der Wurf über `_renderScene`
+    // Schatten, ein Hänger im Takt der Bewohner Bewohner, einer der GPU GPU; der Teilbaum unter dem Planer steht eingerückt; der Satz
+    // der Sicht (`_passSicht › _chunkSatzPass`) ist Sicht, der Rest des Planers Planer, je Bild die Zeit-Reihe
+    const Dt = domaenen({ haenger: [{ klasse: "TAKT", name: "frei", dt: 40, t: 300, pfad: [{ name: "_tickBewohner" }] }, { klasse: "GPU", name: "?", dt: 50, t: 100, pfad: [] }] }, { zeilen: [
+        ...[[0, "_runFrameScheduler", 9, 5], [1, "_bewohnerWerkTakt", 6, 3], [0, "_loopShadowUpdate", 4, 4], [1, "_renderScene", 3, 3], [0, "_passSicht", 5, 2], [1, "_chunkSatzPass", 5, 2]].map(([tiefe, name, spitzeMs, mitteMs]) => ({ tiefe, name, spitzeMs, mitteMs }))] }); // prettier-ignore
+    if (Dt.jeDomaene !== "Bewohner 6.0/3.0 · Sicht 5.0/2.0 · Schatten 4.0/4.0 · Planer 3.0/2.0" || Dt.haenger !== "GPU 1× Σ50 · Bewohner 1× Σ40" || Dt.baum[1] !== "›_bewohnerWerkTakt 6.0/3.0" || Dt.jeBild.join() !== "100+50 GPU 50,300+40 Bewohner 40") // prettier-ignore
+        f.push(`der Täter nach Domäne: ${Dt.jeDomaene} · ${Dt.haenger} · ${Dt.baum.join(" ")} · ${Dt.jeBild}`);
     return f.concat(ankunftsSelbsttest());
 }
 
@@ -1356,6 +1442,7 @@ module.exports = {
     latenzUrteil,
     latenzSelbsttest,
     linseWerten,
+    domaenen,
     spurProfil,
     selbsttest,
     HAENGER_INSTALL:

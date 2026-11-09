@@ -3085,7 +3085,7 @@ async function starte() {
                     const sp = HL.spurProfil(ev);
                     const a = HL.linseWerten(roh, sp, b);
                     const datei = zeitAblage(b.json, b.spitze ? "takt" : "haenger", "json");
-                    jsonAb(datei, Object.assign({ echt: ECHT, boot: bootZeile() }, a));
+                    jsonAb(datei, Object.assign({ echt: ECHT, boot: bootZeile(), befehle: l.befehle, dreiecke: l.dreiecke, gpuMs: l.gpuMs }, a));
                     // Das ROHE (Takte + Stichproben der Spur) daneben: `haenger --auswerten <roh>` urteilt es neu, ohne Welt
                     fs.writeFileSync(datei.replace(/\.json$/, "") + ".roh.json", JSON.stringify({ roh, spur: sp }));
                     const { tabelle, befunde, cpuMs, taeter } = a;
@@ -3211,7 +3211,79 @@ hauptLauf(async () => {
         const je = (o.schritte || []).map((s) => s.pop + (s.wechsel ? "*" : "") + (s.ein.length ? `+${s.ein.length}@${Math.min(...s.ein)}` : ""));
         if (je.length) console.log(`lod.K2#1 ${o.anteilJeSekunde <= 0.05 ? "GRÜN" : "ROT"} ${o.anteilJeSekunde} % Pop-Pixel/s (${o.popPixel} px) · ${je.join("/")} · Laub ${o.laub} · dc, Dreiecke ${o.kosten.at(-1)} · GPU ${o.bank.gpuJeFrameMs} ms, CPU ${o.bank.cpuJeFrameMs} ms je Bild`);
     }
-    else if (cmd === "bedienung") o = await rufe("/bedienung", { runden: opt("--runden", 3), staffel: opt("--staffel") });
+    else if (cmd === "geh") {
+        // DIE ZERLEGUNG DER ERSTEN FAHRT (`gate:geh-zerlegung`, profiband.K4 — der Messplatz des GPU-Probe-Dienstes): frisch gebootet
+        // wie die Glätte der Station (punkte-maschine g6 `pbProbe` „glaette“): Genesis Ego, das Anker-Fenster (Bahn, Regler voll),
+        // das Gehen mit V alle 0,75 s, umgestellt, dann DIE ERSTE FAHRT (GT 20 m/s, E aus 1 s nach dem Aufsitzen, E ein 1 s später,
+        // 2,5 s nach 0,3 s, Regler des Spielers) und noch einmal umgestellt die zweite. Je Fahrt aus DERSELBEN Spur: jedes Bild über
+        // 33 ms in der Zeit-Reihe mit seinen drei größten Tätern in ms (`HL.domaenen` `jeBild`: Takt- und Neben-Last je Domäne,
+        // GPU-Warten, GC), die Summe je Täter, die Takt-Spitze je Domäne (ms je Takt ab p95 / Mitte) und der Baum des Planers.
+        // Zeilen „GEH …" ≤ 590 Zeichen; die letzten zehn trägt die erste Fahrt (der Dienst postet sie). Exit 0 nur, wenn jede Fahrt
+        // ≤ 1 % Bilder über 33 ms und keines über 100 ms hält (profiband.K4 Staffel 2).
+        const halt = await eigeneWelt();
+        const q = (z) => (z ? [z.p50, z.p95, z.p99, z.max].join("/") : "?");
+        const kern = [];
+        const zeile = (s, k) => (console.log((s = s.replace(/\s+/g, " ").slice(0, 590))), k && kern.push(s));
+        const TASTE = 'const t = (c, k) => { for (const a of ["keydown", "keyup"]) window.dispatchEvent(new KeyboardEvent(a, { bubbles: true, code: c, key: k })); }; '; // prettier-ignore
+        const K4 = {
+            geh: `clearInterval(window.__k4iv); const z = (window.__k4 = { v: 0 }); ${TASTE} window.__k4iv = setInterval(() => { t("KeyV", "v"); z.v++; }, 750); setTimeout(() => clearInterval(window.__k4iv), 4000); return 1;`, // prettier-ignore
+            fahrt: `const st = r.state; clearInterval(window.__k4iv); const z = (window.__k4 = { wagen: "-", aus: "-", ein: "-" }); ${TASTE} const bis = performance.now() + 20000; const iv = setInterval(() => { if (st.player.mountedArch !== "werkbank-fahrt" && performance.now() < bis) return; clearInterval(iv); setTimeout(() => { z.wagen = st.player.mountedArch; t("KeyE", "e"); setTimeout(() => { z.aus = st.player.mountedArch; t("KeyE", "e"); setTimeout(() => { z.ein = st.player.mountedArch; }, 300); }, 1000); }, 1000); }, 50); return 1;`, // prettier-ignore
+        };
+        const PLANER = /^_runFrameScheduler$|^_loopFixedStep$|^tickArchitectureCulling$|^_tickChunkSatz$|^_tickMountedMovement$|^_loopWeatherAndGrowth$/; // prettier-ignore
+        let gruen = true;
+        const fenster = async (name, wandern, code, kopf) => {
+            if (code) ergebnis(await evalRuf(code));
+            const o = await rufe("/haenger", { sek: 2.5, ein: 0.3, regler: "frei", tiere: "frei", wandern, schwelle: 33, json: path.resolve("artifacts", "geh", `${name.replace(/\W+/g, "-")}.json`) }); // prettier-ignore
+            if (!o?.datei) throw new Error(`${name}: ${JSON.stringify(o).slice(0, 300)}`);
+            const a = jsonLesen(o.datei), { roh, spur } = jsonLesen(o.datei.replace(/\.json$/, ".roh.json"));
+            const s = HL.linseWerten(roh, spur, { spitze: true }), d = HL.domaenen(a, s, PLANER);
+            const anteil = a.frames ? a.haengerN / a.frames : 1;
+            const ok = anteil <= 0.01 && a.frameMs.max <= 100;
+            if (!kopf) return { a, anteil };
+            gruen = gruen && ok;
+            const u = `GEH ${ok ? "GRÜN" : "ROT"} ${name}`;
+            const tasten = ergebnis(await evalRuf("return window.__k4 || null"));
+            zeile(`${u}: Bild ${q(a.frameMs)} · ${a.haengerN}/${a.frames} > 33 ms (${(100 * anteil).toFixed(0)} %) · Takt ${q(a.taktMs)} · GPU ${q(a.gpuMs)} · Befehle ${a.befehle?.p95} · Dreiecke ${a.dreiecke?.p95} · Knoten-Bau ${a.knotenBau.sync}× ${a.knotenBau.ms} ms · Weg ${roh.bahnM} m · Tasten ${JSON.stringify(tasten)}`, true); // prettier-ignore
+            // JE BILD > 33 ms (t ms ab Fenster + dt: Täter ms …), so viele Zeilen, wie die Bilder brauchen
+            for (let i = 0, k = 1; i < d.jeBild.length; k++) {
+                let t = `${u} je Bild ${k}:`;
+                do t += " | " + d.jeBild[i++];
+                while (i < d.jeBild.length && t.length + d.jeBild[i].length < 584);
+                zeile(t, true);
+            }
+            zeile(`${u} Täter je Bild > 33 ms (Bilder als größter Teil, Σ ms über alle): ${d.haenger || "-"}`, true);
+            zeile(`${u} je Domäne ab p95/Mitte (${s.spitzeN}/${s.takte} Takte, CPU ${q(s.cpuMs)}): ${d.jeDomaene}`, true);
+            for (let i = 0, k = 1; i < d.baum.length && k <= 2; k++) {
+                let t = `${u} Baum ${k}:`;
+                do t += " " + d.baum[i++];
+                while (i < d.baum.length && t.length + d.baum[i].length < 580);
+                zeile(t, k === 1);
+            }
+            return { a, anteil };
+        };
+        try {
+            await umstellen({ ort: "genesis", sicht: "ego" });
+            await rufe("/lauf", { sek: 2, ein: 0.3, ruhe: 0, regler: "voll", tiere: "frei", wandern: "bahn" });
+            const g = await fenster("Gehen", "bahn", K4.geh, false);
+            zeile(`GEH Gehen (Station k4-geh): Bild ${q(g.a.frameMs)} · ${g.a.haengerN}/${g.a.frames} > 33 ms`);
+            const n0 = kern.length;
+            await umstellen({ ort: "genesis", sicht: "ego" });
+            const f1 = await fenster("erste Fahrt", "fahrt", K4.fahrt, true);
+            const erste = kern.splice(n0);
+            await umstellen({ ort: "genesis", sicht: "ego" });
+            const f2 = await fenster("zweite Fahrt", "fahrt", K4.fahrt, true);
+            kern.length = 0;
+            kern.push(`GEH ${gruen ? "GRÜN" : "ROT"} Summe > 33 ms: erste Fahrt ${f1.a.haengerN}/${f1.a.frames} max ${f1.a.frameMs.max} · zweite ${f2.a.haengerN}/${f2.a.frames} max ${f2.a.frameMs.max} · Gehen ${g.a.haengerN}/${g.a.frames}`); // prettier-ignore
+            kern.unshift(...erste.slice(0, 9));
+        } catch (e) {
+            gruen = false;
+            zeile(`GEH ROT Error ${String(e?.message || e)}`, true);
+        } finally {
+            halt?.();
+        }
+        for (const k of kern) console.log(k);
+        process.exit(gruen ? 0 : 1);
+    } else if (cmd === "bedienung") o = await rufe("/bedienung", { runden: opt("--runden", 3), staffel: opt("--staffel") });
     else if (cmd === "albedo" && hat("nah-fern")) {
         // DIE ALBEDO NAH GEGEN FERN: je Ort im Chunk-Quadrat Boden-Satz gegen Fern-Ring aus 420 m, dazu das Gesetz an
         // der Stelle; `--selbsttest` (ohne Welt) prüft das Urteil: im Band grün (auch ein Ring, der im Band seiner Abtastung
