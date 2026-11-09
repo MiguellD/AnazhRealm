@@ -874,6 +874,25 @@ class AnazhRealm_stoff_karte {
     // des Wirts auf der Platte der Schale (`_foundrySchale`, Frage `karte`): ein Treffer legt ihre Bytes in die Schicht — ohne
     // L1, Bühne und Programme; ein Miss backt, und die Ablage reicht dieselben Bytes zurück in den Faden (`_karteAblage`).
     // `z._platte`: undefined = ungefragt, false = die Frage reist, null = backen, sonst der Treffer.
+    // DIE PLATTE FRAGT DER ERSTE LESER (w25-ankunft-foundry): die Frage geht mit dem Rang des Lesers ins Werk, sobald er die
+    // Zelle verlangt (`_foundryBuildImpostorFlat`), nie erst, wenn der Karten-Takt die Zelle erreicht — an gespannter Leine
+    // und nach der Frist steht der Takt hinter der begonnenen Karte, und die Frage reiste in den Weg ihres Bakes (GTX kalt,
+    // 4f86fbe6: die Mammut-Karte angelegt 8,04 s, gefragt 14,35 s, gebacken 14,97 s; das Werk leer ab 10,5 s, seine Schlange
+    // erst 0,3–1 s vor dem Bild). `jahr`: die Stufe des Jahrs, die der Bake liest (ohne: die der Welt); die Platte trägt
+    // die Karte EINER Stufe (ihr Wert nennt sie, `_foundrySchale`) — eine andere ist ein Miss. Nur BC trägt die Platte.
+    _kartePlatteFragen(z, jahr) {
+        const at = this._impostorAtlas();
+        if (!at || at.fmt !== "bc" || z._abzug || z._platte !== undefined || !this._foundry) return;
+        const j = jahr || this._karteJahr(this.state.seasonPhase);
+        z._platte = false;
+        const frage = { type: "karte", presetId: z.preset, platte: "fimp|bc|" + z.key, jahr: j.stufe };
+        const wort = `FOUNDRY TIMEOUT: karte(${z.key}) nach 45 s Arbeit ohne Reply → sie backt`;
+        this._foundryAuftrag(this._foundry, "krt", frage, z._bedarfD2, 45000, wort).then((m) => {
+            z._platte = (m && m.karte) || null;
+            z._platteJahr = j;
+            z._liefer = m && m.liefer;
+        });
+    }
     _karteWeltBacken(at, z) {
         const rend = this.state.renderer;
         const bc = at.fmt === "bc";
@@ -886,17 +905,7 @@ class AnazhRealm_stoff_karte {
         // ein Abzug liest die Bühne: die Platte trägt nur BC-Bytes, die Karte backt
         if (z._abzug) z._platte = null;
         if (bc && z._platte !== null) {
-            if (z._platte === undefined) {
-                z._platte = false;
-                // die Platte trägt die Karte EINER Stufe (ihr Wert nennt sie, `_foundrySchale`): eine andere ist ein Miss
-                const frage = { type: "karte", presetId: z.preset, platte: "fimp|bc|" + z.key, jahr: jahr.stufe };
-                const wort = `FOUNDRY TIMEOUT: karte(${z.key}) nach 45 s Arbeit ohne Reply → sie backt`;
-                this._foundryAuftrag(this._foundry, "krt", frage, z._bedarfD2, 45000, wort).then((m) => {
-                    z._platte = (m && m.karte) || null;
-                    z._platteJahr = jahr;
-                    z._liefer = m && m.liefer;
-                });
-            }
+            this._kartePlatteFragen(z, jahr); // fragte sie ihr Leser nicht, fragt sie der Bake
             if (z._platte === false) return null;
             const k = z._platte;
             const lage = at.lage || (at.lage = this._karteRechenPlan(at, true));
