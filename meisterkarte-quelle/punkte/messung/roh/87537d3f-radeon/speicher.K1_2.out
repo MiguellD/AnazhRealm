@@ -224,10 +224,9 @@ const todZyklus = async function todZyklus(o) {
     return j;
 }); C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\87537d3f-radeon\speicher.K1_1.json C:\Users\micha\AppData\Local\Temp\claude\w3\pm
 [linse-gpu] amd/rdna-3
-z0 boot geladen={"x":0,"z":0,"b":0,"e":0,"w":"303e908f-74b6-41ef-914e-108dad83f8b1"} alter=undefined verloren=undefined/undefined
-z1 idb geladen={"x":0,"z":0,"b":0,"e":0,"w":"303e908f-74b6-41ef-914e-108dad83f8b1"} alter=5.917 verloren=0/0
-z2 platz geladen={"x":0,"z":0,"b":0,"e":0,"w":"303e908f-74b6-41ef-914e-108dad83f8b1"} alter=3.374 verloren=0/0 erw={"key":"-1,0","nH":11,"x":-119.71764705882353,"z":79.56078431372549,"d":143,"gangAktiv":true}
-z3 erwachen-hart geladen={"x":0,"z":0,"b":0,"e":0,"w":"303e908f-74b6-41ef-914e-108dad83f8b1"} alter=2.972 verloren=0/0 erw={"key":"-1,0","nH":11,"x":-119.71764705882353,"z":79.56078431372549,"d":143,"gangAktiv":true}
+z0 boot geladen={"x":0,"z":0,"b":0,"e":0,"w":"49d83000-98b7-4e05-a87b-249f79dd124b"} alter=undefined verloren=undefined/undefined
+z1 idb geladen={"x":0,"z":0,"b":0,"e":0,"w":"49d83000-98b7-4e05-a87b-249f79dd124b"} alter=7.793 verloren=0/0
+z2 platz geladen={"x":0,"z":0,"b":0,"e":0,"w":"49d83000-98b7-4e05-a87b-249f79dd124b"} alter=2.531 verloren=0/0 erw={"key":"-1,0","nH":11,"x":-119.71764705882353,"z":79.56078431372549,"d":143,"gangAktiv":true}
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3

@@ -1,18 +1,18 @@
 {
  "art": "dauer",
- "sekunden": 19,
+ "sekunden": 22.3,
  "schritte": [
   [
    "ende",
-   19
+   22.3
   ]
  ],
  "offen": [],
  "fehler": {},
  "strom": {
-  "bloecke": 1322,
-  "bilder": 2921,
-  "seiten": 9,
+  "bloecke": 606,
+  "bilder": 2691,
+  "seiten": 6,
   "fehler": 0,
   "verloren": 0
  },
@@ -25,26 +25,26 @@
    "heim": true
   },
   "nacht": {
-   "nacht": 1.3530583333333369e-14,
-   "mittag": 0.5000000000000117
+   "nacht": 1.1720499999999965e-14,
+   "mittag": 0.5000000000000093
   },
-  "minuten": 22.09,
-  "seiten": 5,
-  "proben": 9,
+  "minuten": 10.2,
+  "seiten": 3,
+  "proben": 7,
   "last": {
-   "n": 2902,
-   "frame": 92.14,
-   "p99": 125.52,
-   "max": 292.92,
-   "ueber33": 2084,
-   "ueber100": 133,
-   "takt": 77.92,
-   "vram": 144.2,
-   "gpu": 10.74,
-   "gpuN": 469,
-   "befehle": 84,
-   "dreiecke": 500217,
-   "voll": 0.039,
+   "n": 2672,
+   "frame": 83.8,
+   "p99": 117.1,
+   "max": 217.71,
+   "ueber33": 1655,
+   "ueber100": 70,
+   "takt": 64.97,
+   "vram": 145,
+   "gpu": 11.44,
+   "gpuN": 396,
+   "befehle": 88,
+   "dreiecke": 510444,
+   "voll": 0.042,
    "halt": false,
    "last": 0,
    "sicht": [
@@ -58,24 +58,24 @@
    ],
    "buehne": 0
   },
-  "weg": 1177,
-  "gegangen": 135,
+  "weg": 2216,
+  "gegangen": 132,
   "fahren": true,
   "nachtImStrom": true,
   "anker": {
    "a": {
-    "n": 39,
-    "frame": 91.7,
-    "p99": 92.03,
-    "max": 92.03,
-    "ueber33": 34,
+    "n": 43,
+    "frame": 66.93,
+    "p99": 92.05,
+    "max": 92.05,
+    "ueber33": 39,
     "ueber100": 0,
-    "takt": 65.71,
-    "vram": 136.8,
-    "gpu": 15.28,
+    "takt": 46.78,
+    "vram": 136.1,
+    "gpu": 12.05,
     "gpuN": 8,
-    "befehle": 92,
-    "dreiecke": 369033,
+    "befehle": 75,
+    "dreiecke": 360816,
     "voll": 1,
     "halt": false,
     "last": 1,
@@ -90,21 +90,21 @@
     "buehne": 0
    },
    "b": {
-    "n": 61,
-    "frame": 58.31,
-    "p99": 124.88,
-    "max": 124.88,
-    "ueber33": 25,
-    "ueber100": 2,
-    "takt": 43.63,
-    "vram": 136.5,
-    "gpu": 9.66,
-    "gpuN": 9,
+    "n": 56,
+    "frame": 58.63,
+    "p99": 67.24,
+    "max": 67.24,
+    "ueber33": 33,
+    "ueber100": 0,
+    "takt": 54.06,
+    "vram": 137.6,
+    "gpu": 13.43,
+    "gpuN": 8,
     "befehle": 77,
-    "dreiecke": 470580,
+    "dreiecke": 469156,
     "voll": 1,
     "halt": false,
-    "last": 0.53,
+    "last": 0.54,
     "sicht": [
      1
     ],
@@ -118,16 +118,16 @@
    "laeufe": 2
   },
   "gang": [
-   "heap: +17.4 MB/min > 5 — Halter: r._foundry.cache[].children[].geometry.attributes +9.4 MB · r.state.renderer._nodes.nodeBuilderCache[].updateNodes[] +3.8 MB · r.state.chunkSaetze[].mesh.__renderObjekte[].attributes +3.1 MB",
-   "vram: +3.6 MB zurück am Start — tex:karte-albedo:atlas bc1-rgba-unorm-srgb 128x3584x20 +5.8 MB · tex:karte-normal:atlas bc5-rg-unorm 64x1792x20 +2.9 MB · tex:karte-licht:atlas rgba8unorm 32x896x20 +2.2 MB"
+   "heap: +12.3 MB/min > 5 — Halter: r._foundry.cache[].children[].geometry.attributes +16.1 MB · r.state.chunkSaetze[].mesh.__renderObjekte[].attributes +11.4 MB · r.state.chunkSaetze[].mesh.__renderObjekte[]._anazhIx +5.0 MB",
+   "vram: +5.7 MB zurück am Start — tex:karte-albedo:atlas bc1-rgba-unorm-srgb 128x3584x20 +5.8 MB · buf:? +3.1 MB · tex:karte-normal:atlas bc5-rg-unorm 64x1792x20 +2.9 MB"
   ],
   "heap": [
-   280.3,
-   665.7
+   279.9,
+   405.5
   ],
   "vramGC": [
-   132.3,
-   135.9
+   130.9,
+   136.6
   ]
  }
 }

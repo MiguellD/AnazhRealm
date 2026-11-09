@@ -366,10 +366,10 @@ H.fahre(async function probeUnterwasser(H) {
     if (j.wasser && j.wasser.frist) H.fristRiss("das Wasser bis " + j.wasser.frist);
     console.log("LEIB_K3_BILD " + JSON.stringify(j));
     return j;
-}); 7804 C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\87537d3f-radeon\leib.K3_2.json 30
-@@ 11.6 s · umgestellt 1816/-6168 in 10016 ms
-@@PUNKTE@@ MESSORT /umstellen ohne Antwort binnen 7 s
-@@ PROBE-FEHLER Error: /umstellen ohne Antwort binnen 7 s |     at ClientRequest.<anonymous> ([eval]:58:62) |     at Object.onceWrapper (node:events:630:28) |     at ClientRequest.emit (node:events:509:28) |     at Socket.emitRequestTimeout (node:_http_client:948:9)
+}); 7804 C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\87537d3f-radeon\leib.K3_2.json 45
+@@ 14.2 s · umgestellt 1816/-6168 in 11815 ms
+@@PUNKTE@@ MESSORT /umstellen ohne Antwort binnen 18 s
+@@ PROBE-FEHLER Error: /umstellen ohne Antwort binnen 18 s |     at ClientRequest.<anonymous> ([eval]:58:62) |     at Object.onceWrapper (node:events:630:28) |     at ClientRequest.emit (node:events:509:28) |     at Socket.emitRequestTimeout (node:_http_client:948:9)
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3

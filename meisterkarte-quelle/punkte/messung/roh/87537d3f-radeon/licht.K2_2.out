@@ -235,6 +235,8 @@ $ C:/Program Files/Git/bin/bash.exe -c set -u; node -e "$1" "$3" "$5" && exec no
   kugel-4 · Exit 0
   los-4 · Exit 0
   setz-5 · Exit 0
+  kugel-5 · Exit 0
+  los-5 · Exit 0
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3

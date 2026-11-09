@@ -23,7 +23,7 @@ wait
 echo "@@PUNKTE@@ Z"; cat "$L/zipf.out"
 @@PUNKTE@@ WAHL
 {
- "ms": 8,
+ "ms": 12,
  "ergebnis": {
   "seed": "anazh-realm-seed",
   "staedte": 3,
@@ -45,7 +45,7 @@ echo "@@PUNKTE@@ Z"; cat "$L/zipf.out"
 
 @@PUNKTE@@ STAND
 {
- "ms": 10507,
+ "ms": 14144,
  "ergebnis": {
   "mauer": 48,
   "zug": false,
@@ -58,7 +58,7 @@ echo "@@PUNKTE@@ Z"; cat "$L/zipf.out"
 
 @@PUNKTE@@ KAMERA
 {
- "ms": 3,
+ "ms": 4,
  "ergebnis": {
   "pose": [
    -470.09,
@@ -77,18 +77,6 @@ echo "@@PUNKTE@@ Z"; cat "$L/zipf.out"
 }
 
 @@PUNKTE@@ MITTAG
-{
- "ms": 24074,
- "fehler": "ABNAHME ROT [Ziel Blickziel verdeckt von Laub baum_kiefer in 41.18 m] · beweis · Sicht 0.0 % · Ziel Blickziel im Bild VERDECKT 103.23 m · Luma 65.7 σ 39.6 schwarz 0.0 % weiß 0.0 % · Stand 18.546.236 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 42 Posen — die Blick-Wahl fand in 42 Posen keine freie — die Aufnahme speichert nichts",
- "stapel": [
-  "abnahme (pptr:evaluate;lade%20(C%3A%5CUsers%5Cmicha%5CAnazhRealm-profiband%5C.claude%5Cworktrees%5Cpunkte-radeon%5Cscripts%5Cwerkbank.cjs%3A938%3A24):1273:32)",
-  "at abnahme (evaluate at lade (C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\punkte-radeon\\scripts\\werkbank.cjs:938:24), <anonymous>:1272:31)",
-  "at evaluate (evaluate at lade (C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\punkte-radeon\\scripts\\werkbank.cjs:938:24), <anonymous>:1374:83)",
-  "at #evaluate (C:\\Users\\micha\\AnazhRealm-profiband\\node_modules\\puppeteer-core\\lib\\cjs\\puppeteer\\cdp\\ExecutionContext.js:391:56)"
- ]
-}
-@@PUNKTE@@ EXIT 1
-@@PUNKTE@@ DAEMMERUNG
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3

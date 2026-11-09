@@ -138,6 +138,7 @@ $ C:\Program Files\nodejs\node.exe -e const tor = (function sitzungTor() {
     }
 })(tor).then(() => process.exitCode || 0, (e) => ((e && e.messort ? console.log('@@PUNKTE@@ MESSORT ' + e.messort) : 0), console.log('PROBE-FEHLER ' + String((e && e.stack) || e).split('\n').slice(0, 4).join(' | ')), 1)).then(async (c) => { await tor.ende(); process.exit(c); }); C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\87537d3f-radeon\streaming.K3_1.json
 [linse-gpu] amd/rdna-3
+SPRUNG 1 EXIT=0 {"m":1000,"stehtS":35.2,"bau":0,"frames":759,"frameMs":{"p50":41.82,"p95":100.41,"p99":117.23,"max":133.93},"taktMs":{"p50":19.03,"p95":82.61,"p99":96.08,"max":127.5},"profil":true,"ursachen":["TAKT: _nahWieseFernTakt › _wieseFernLage x104","TAKT: _slopeAt › boden x63","TAKT: _tickNahWiese › _nahWieseFernTakt x54"]}
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3

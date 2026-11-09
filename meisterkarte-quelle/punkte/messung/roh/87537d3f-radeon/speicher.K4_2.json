@@ -12,7 +12,7 @@
    ],
    "uhr": 0.5,
    "wetter": "sunny",
-   "bauten": 2967,
+   "bauten": 2927,
    "edits": 1
   },
   "nach": {
@@ -27,12 +27,12 @@
    ],
    "uhr": 0.5,
    "wetter": "sunny",
-   "bauten": 2087,
+   "bauten": 2089,
    "edits": 1
   }
  },
- "diff": 2.1770833333333792,
- "rauschen": 0.1597222222222219,
+ "diff": 1.9843750000000406,
+ "rauschen": 0.1909722222222218,
  "vor": {
   "bau": true,
   "grube": true,
@@ -43,7 +43,7 @@
   "grube": true,
   "wasser": 2
  },
- "reloadMs": 2466,
+ "reloadMs": 2130,
  "adapter": {
   "renderer": "[linse-gpu] amd/rdna-3"
  },
@@ -59,5 +59,5 @@
    ]
   }
  },
- "sek": 36.4
+ "sek": 38.1
 }

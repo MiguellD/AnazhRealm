@@ -181,33 +181,987 @@ $ C:\Program Files\nodejs\node.exe -e const tor = (function sitzungTor() {
     }
 })(tor).then(() => process.exitCode || 0, (e) => ((e && e.messort ? console.log('@@PUNKTE@@ MESSORT ' + e.messort) : 0), console.log('PROBE-FEHLER ' + String((e && e.stack) || e).split('\n').slice(0, 4).join(' | ')), 1)).then(async (c) => { await tor.ende(); process.exit(c); }); C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\87537d3f-radeon\licht.K3_2.json {"vorher":["umstellen","--ort","dorf","--sicht","ego"],"args":["licht","--laub","ring,feld,feld0,feld90,feld180,panorama,spiegel,spiegel180,wasser,fichte,tanne","--karte","--uhr","0.5,0.27,0.05","--ort","dorf"],"fenster":[640,360],"ruheMax":600}
 [linse-gpu] amd/rdna-3
-VORHER werkbank umstellen --ort dorf --sicht ego EXIT=0 · 1.0 s
-BERUHIGUNG 1 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.0 s · 3.5 s
-RUF /umstellen {"x":-856.0115046159461,"z":-804.976302075234} · 10.8 s · 14.3 s
-BERUHIGUNG 2 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.0 s · 14.3 s
-BERUHIGUNG 3 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.1 s · 16.3 s
+VORHER werkbank umstellen --ort dorf --sicht ego EXIT=0 · 1.1 s
+BERUHIGUNG 1 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.0 s · 3.6 s
+RUF /umstellen {"x":-856.0115046159461,"z":-804.976302075234} · 10.8 s · 14.4 s
+BERUHIGUNG 2 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.0 s · 14.5 s
+BERUHIGUNG 3 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.1 s · 16.4 s
 BERUHIGUNG 4 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.1 s · 16.6 s
-RUF /umstellen {"x":-841,"z":-861} · 3.0 s · 26.9 s
-BERUHIGUNG 5 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.0 s · 26.9 s
-BERUHIGUNG 6 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.0 s · 28.1 s
-BERUHIGUNG 7 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 49 Takten, 0.6 s · 29.7 s
-BERUHIGUNG 8 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 50 Takten, 0.6 s · 30.4 s
-BERUHIGUNG 9 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.0 s · 30.4 s
-BERUHIGUNG 10 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 50 Takten, 0.6 s · 31.1 s
+RUF /umstellen {"x":-841,"z":-861} · 2.8 s · 26.8 s
+BERUHIGUNG 5 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.0 s · 26.8 s
+BERUHIGUNG 6 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.0 s · 28.0 s
+BERUHIGUNG 7 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 45 Takten, 0.6 s · 29.6 s
+BERUHIGUNG 8 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 50 Takten, 0.6 s · 30.3 s
+BERUHIGUNG 9 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.0 s · 30.3 s
+BERUHIGUNG 10 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 50 Takten, 0.6 s · 31.0 s
 BERUHIGUNG 11 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 50 Takten, 0.6 s · 31.7 s
-BERUHIGUNG 12 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.0 s · 31.8 s
+BERUHIGUNG 12 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.0 s · 31.7 s
 BERUHIGUNG 13 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 50 Takten, 0.6 s · 32.4 s
-BERUHIGUNG 14 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 50 Takten, 0.6 s · 33.1 s
-RUF /umstellen {"x":-841,"z":-861} · 4.0 s · 37.1 s
-BERUHIGUNG 15 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.1 s · 37.2 s
-RUF /umstellen {"x":-853.4286581941664,"z":-865.1071123109842} · 3.9 s · 41.1 s
-BERUHIGUNG 16 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.0 s · 41.2 s
-BERUHIGUNG 17 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 49 Takten, 0.7 s · 42.1 s
-BERUHIGUNG 18 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 53 Takten, 0.7 s · 43.0 s
-BERUHIGUNG 19 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.0 s · 43.0 s
-BERUHIGUNG 20 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 53 Takten, 0.6 s · 44.0 s
-BERUHIGUNG 21 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 53 Takten, 0.7 s · 44.7 s
-BERUHIGUNG 22 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.1 s · 44.8 s
+BERUHIGUNG 14 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 50 Takten, 0.6 s · 33.0 s
+RUF /umstellen {"x":-841,"z":-861} · 3.3 s · 36.3 s
+BERUHIGUNG 15 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.0 s · 36.3 s
+RUF /umstellen {"x":-853.4286581941664,"z":-865.1071123109842} · 2.0 s · 38.4 s
+BERUHIGUNG 16 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.0 s · 38.4 s
+BERUHIGUNG 17 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 51 Takten, 0.7 s · 39.1 s
+BERUHIGUNG 18 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 50 Takten, 0.6 s · 39.9 s
+BERUHIGUNG 19 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.0 s · 39.9 s
+BERUHIGUNG 20 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 50 Takten, 0.6 s · 40.7 s
+BERUHIGUNG 21 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 50 Takten, 0.6 s · 41.3 s
+BERUHIGUNG 22 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.0 s · 41.4 s
+BERUHIGUNG 23 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 50 Takten, 0.6 s · 42.1 s
+BERUHIGUNG 24 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 50 Takten, 0.6 s · 42.8 s
+{
+ "welt": {
+  "ring@0.5": {
+   "art": "boden",
+   "abstand": 400,
+   "gefaelle": -7.2,
+   "sonneGrad": 5,
+   "hoehe": 1,
+   "d": 0,
+   "stufe": "bodenSatz → fern-ring",
+   "paar": "fern/nah",
+   "karte": {
+    "gestalt": {
+     "Y": 0.22831,
+     "L": 54.9,
+     "C": 24.69,
+     "pixel": 3686
+    },
+    "karte": {
+     "Y": 0.22557,
+     "L": 54.61,
+     "C": 24.62,
+     "pixel": 3940
+    },
+    "verhaeltnis": 0.988,
+    "dL": -0.29,
+    "dC": -0.07
+   }
+  },
+  "ring@0.27": {
+   "art": "boden",
+   "abstand": 400,
+   "gefaelle": -7.2,
+   "sonneGrad": 5,
+   "hoehe": 1,
+   "d": 0,
+   "stufe": "bodenSatz → fern-ring",
+   "paar": "fern/nah",
+   "karte": {
+    "gestalt": {
+     "Y": 0.04375,
+     "L": 24.88,
+     "C": 16,
+     "pixel": 3686
+    },
+    "karte": {
+     "Y": 0.0442,
+     "L": 25.01,
+     "C": 16.13,
+     "pixel": 3940
+    },
+    "verhaeltnis": 1.01,
+    "dL": 0.13,
+    "dC": 0.13
+   }
+  },
+  "ring@0.05": {
+   "art": "boden",
+   "abstand": 400,
+   "gefaelle": -7.2,
+   "sonneGrad": 5,
+   "hoehe": 1,
+   "d": 0,
+   "stufe": "bodenSatz → fern-ring",
+   "paar": "fern/nah",
+   "karte": {
+    "gestalt": {
+     "Y": 0.02059,
+     "L": 15.79,
+     "C": 8.47,
+     "pixel": 3686
+    },
+    "karte": {
+     "Y": 0.02048,
+     "L": 15.74,
+     "C": 8.48,
+     "pixel": 3940
+    },
+    "verhaeltnis": 0.995,
+    "dL": -0.05,
+    "dC": 0.01
+   }
+  },
+  "feld@0.5": {
+   "art": "feld",
+   "stufe": "welt-stoff → feld",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.45179,
+     "L": 73.01,
+     "C": 2.46
+    },
+    "karte": {
+     "Y": 0.42781,
+     "L": 71.41,
+     "C": 2.37
+    },
+    "verhaeltnis": 0.947,
+    "dL": -1.6,
+    "dC": -0.09
+   }
+  },
+  "feld@0.27": {
+   "art": "feld",
+   "stufe": "welt-stoff → feld",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.03012,
+     "L": 20.09,
+     "C": 5.11
+    },
+    "karte": {
+     "Y": 0.02788,
+     "L": 19.17,
+     "C": 4.87
+    },
+    "verhaeltnis": 0.926,
+    "dL": -0.92,
+    "dC": -0.24
+   }
+  },
+  "feld@0.05": {
+   "art": "feld",
+   "stufe": "welt-stoff → feld",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.03829,
+     "L": 23.1,
+     "C": 5.44
+    },
+    "karte": {
+     "Y": 0.03679,
+     "L": 22.58,
+     "C": 5.3
+    },
+    "verhaeltnis": 0.961,
+    "dL": -0.52,
+    "dC": -0.14
+   }
+  },
+  "feld0@0.5": {
+   "art": "feld0",
+   "stufe": "welt-stoff → feld0",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.17724,
+     "L": 49.16,
+     "C": 2.57
+    },
+    "karte": {
+     "Y": 0.16346,
+     "L": 47.43,
+     "C": 2.38
+    },
+    "verhaeltnis": 0.922,
+    "dL": -1.73,
+    "dC": -0.19
+   }
+  },
+  "feld0@0.27": {
+   "art": "feld0",
+   "stufe": "welt-stoff → feld0",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.1156,
+     "L": 40.51,
+     "C": 24.68
+    },
+    "karte": {
+     "Y": 0.10861,
+     "L": 39.35,
+     "C": 24.21
+    },
+    "verhaeltnis": 0.94,
+    "dL": -1.16,
+    "dC": -0.47
+   }
+  },
+  "feld0@0.05": {
+   "art": "feld0",
+   "stufe": "welt-stoff → feld0",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.02659,
+     "L": 18.62,
+     "C": 2.68
+    },
+    "karte": {
+     "Y": 0.0257,
+     "L": 18.23,
+     "C": 2.61
+    },
+    "verhaeltnis": 0.967,
+    "dL": -0.39,
+    "dC": -0.07
+   }
+  },
+  "feld90@0.5": {
+   "art": "feld90",
+   "stufe": "welt-stoff → feld90",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.06066,
+     "L": 29.58,
+     "C": 3.64
+    },
+    "karte": {
+     "Y": 0.05682,
+     "L": 28.6,
+     "C": 3.52
+    },
+    "verhaeltnis": 0.937,
+    "dL": -0.98,
+    "dC": -0.12
+   }
+  },
+  "feld90@0.27": {
+   "art": "feld90",
+   "stufe": "welt-stoff → feld90",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.01514,
+     "L": 12.7,
+     "C": 1.92
+    },
+    "karte": {
+     "Y": 0.0142,
+     "L": 12.09,
+     "C": 1.91
+    },
+    "verhaeltnis": 0.938,
+    "dL": -0.61,
+    "dC": -0.01
+   }
+  },
+  "feld90@0.05": {
+   "art": "feld90",
+   "stufe": "welt-stoff → feld90",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.02229,
+     "L": 16.64,
+     "C": 2.35
+    },
+    "karte": {
+     "Y": 0.02172,
+     "L": 16.36,
+     "C": 2.28
+    },
+    "verhaeltnis": 0.974,
+    "dL": -0.28,
+    "dC": -0.07
+   }
+  },
+  "feld180@0.5": {
+   "art": "feld180",
+   "stufe": "welt-stoff → feld180",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.05504,
+     "L": 28.12,
+     "C": 3.69
+    },
+    "karte": {
+     "Y": 0.05156,
+     "L": 27.17,
+     "C": 3.56
+    },
+    "verhaeltnis": 0.937,
+    "dL": -0.95,
+    "dC": -0.13
+   }
+  },
+  "feld180@0.27": {
+   "art": "feld180",
+   "stufe": "welt-stoff → feld180",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.01044,
+     "L": 9.36,
+     "C": 2.12
+    },
+    "karte": {
+     "Y": 0.00977,
+     "L": 8.79,
+     "C": 2.12
+    },
+    "verhaeltnis": 0.936,
+    "dL": -0.57,
+    "dC": 0
+   }
+  },
+  "feld180@0.05": {
+   "art": "feld180",
+   "stufe": "welt-stoff → feld180",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.02213,
+     "L": 16.57,
+     "C": 2.31
+    },
+    "karte": {
+     "Y": 0.02157,
+     "L": 16.29,
+     "C": 2.26
+    },
+    "verhaeltnis": 0.975,
+    "dL": -0.28,
+    "dC": -0.05
+   }
+  },
+  "panorama@0.5": {
+   "art": "panorama",
+   "stufe": "welt-stoff → panorama",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.45179,
+     "L": 73.01,
+     "C": 2.46
+    },
+    "karte": {
+     "Y": 0.4262,
+     "L": 71.3,
+     "C": 2.46
+    },
+    "verhaeltnis": 0.943,
+    "dL": -1.71,
+    "dC": 0
+   }
+  },
+  "panorama@0.27": {
+   "art": "panorama",
+   "stufe": "welt-stoff → panorama",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.03012,
+     "L": 20.09,
+     "C": 5.11
+    },
+    "karte": {
+     "Y": 0.0292,
+     "L": 19.72,
+     "C": 5.16
+    },
+    "verhaeltnis": 0.969,
+    "dL": -0.37,
+    "dC": 0.05
+   }
+  },
+  "panorama@0.05": {
+   "art": "panorama",
+   "stufe": "welt-stoff → panorama",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.03829,
+     "L": 23.1,
+     "C": 5.44
+    },
+    "karte": {
+     "Y": 0.03673,
+     "L": 22.56,
+     "C": 5.25
+    },
+    "verhaeltnis": 0.959,
+    "dL": -0.54,
+    "dC": -0.19
+   }
+  },
+  "spiegel@0.5": {
+   "art": "spiegel",
+   "stufe": "welt-stoff → spiegel",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.17724,
+     "L": 49.16,
+     "C": 2.57
+    },
+    "karte": {
+     "Y": 0.18725,
+     "L": 50.36,
+     "C": 2.44
+    },
+    "verhaeltnis": 1.056,
+    "dL": 1.2,
+    "dC": -0.13
+   }
+  },
+  "spiegel@0.27": {
+   "art": "spiegel",
+   "stufe": "welt-stoff → spiegel",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.1156,
+     "L": 40.51,
+     "C": 24.68
+    },
+    "karte": {
+     "Y": 0.1097,
+     "L": 39.53,
+     "C": 24.08
+    },
+    "verhaeltnis": 0.949,
+    "dL": -0.98,
+    "dC": -0.6
+   }
+  },
+  "spiegel@0.05": {
+   "art": "spiegel",
+   "stufe": "welt-stoff → spiegel",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.02659,
+     "L": 18.62,
+     "C": 2.68
+    },
+    "karte": {
+     "Y": 0.02667,
+     "L": 18.66,
+     "C": 2.77
+    },
+    "verhaeltnis": 1.003,
+    "dL": 0.04,
+    "dC": 0.09
+   }
+  },
+  "spiegel180@0.5": {
+   "art": "spiegel180",
+   "stufe": "welt-stoff → spiegel180",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.05504,
+     "L": 28.12,
+     "C": 3.69
+    },
+    "karte": {
+     "Y": 0.05187,
+     "L": 27.26,
+     "C": 3.64
+    },
+    "verhaeltnis": 0.942,
+    "dL": -0.86,
+    "dC": -0.05
+   }
+  },
+  "spiegel180@0.27": {
+   "art": "spiegel180",
+   "stufe": "welt-stoff → spiegel180",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.01044,
+     "L": 9.36,
+     "C": 2.12
+    },
+    "karte": {
+     "Y": 0.01015,
+     "L": 9.11,
+     "C": 2.27
+    },
+    "verhaeltnis": 0.972,
+    "dL": -0.25,
+    "dC": 0.15
+   }
+  },
+  "spiegel180@0.05": {
+   "art": "spiegel180",
+   "stufe": "welt-stoff → spiegel180",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.02213,
+     "L": 16.57,
+     "C": 2.31
+    },
+    "karte": {
+     "Y": 0.02203,
+     "L": 16.52,
+     "C": 2.4
+    },
+    "verhaeltnis": 0.995,
+    "dL": -0.05,
+    "dC": 0.09
+   }
+  },
+  "wasser@0.5": {
+   "art": "wasser",
+   "stufe": "welt-stoff → wasser",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.45179,
+     "L": 73.01,
+     "C": 2.46
+    },
+    "karte": {
+     "Y": 0.41357,
+     "L": 70.43,
+     "C": 1.97
+    },
+    "verhaeltnis": 0.915,
+    "dL": -2.58,
+    "dC": -0.49
+   }
+  },
+  "wasser@0.27": {
+   "art": "wasser",
+   "stufe": "welt-stoff → wasser",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.03012,
+     "L": 20.09,
+     "C": 5.11
+    },
+    "karte": {
+     "Y": 0.02861,
+     "L": 19.48,
+     "C": 5.13
+    },
+    "verhaeltnis": 0.95,
+    "dL": -0.61,
+    "dC": 0.02
+   }
+  },
+  "wasser@0.05": {
+   "art": "wasser",
+   "stufe": "welt-stoff → wasser",
+   "weg": true,
+   "karte": {
+    "gestalt": {
+     "Y": 0.03829,
+     "L": 23.1,
+     "C": 5.44
+    },
+    "karte": {
+     "Y": 0.036,
+     "L": 22.3,
+     "C": 5.22
+    },
+    "verhaeltnis": 0.94,
+    "dL": -0.8,
+    "dC": -0.22
+   }
+  },
+  "fichte@0.5": {
+   "art": "fichte",
+   "abstand": 8,
+   "gefaelle": 1.6,
+   "sonneGrad": 60.3,
+   "hoehe": 22.7,
+   "d": 0,
+   "stufe": "f:fichte:L0",
+   "pixel": 159,
+   "karte": {
+    "gestalt": {
+     "Y": 0.29179,
+     "L": 60.94,
+     "C": 30.18
+    },
+    "karte": {
+     "Y": 0.10446,
+     "L": 38.63,
+     "C": 27.23
+    },
+    "verhaeltnis": 0.358,
+    "dL": -22.31,
+    "dC": -2.95
+   }
+  },
+  "fichte@0.27": {
+   "art": "fichte",
+   "abstand": 8,
+   "gefaelle": 1.6,
+   "sonneGrad": 60.3,
+   "hoehe": 22.7,
+   "d": 0,
+   "stufe": "f:fichte:L0",
+   "pixel": 156,
+   "karte": {
+    "gestalt": {
+     "Y": 0.01651,
+     "L": 13.54,
+     "C": 14.23
+    },
+    "karte": {
+     "Y": 0.00705,
+     "L": 6.37,
+     "C": 6.73
+    },
+    "verhaeltnis": 0.427,
+    "dL": -7.17,
+    "dC": -7.5
+   }
+  },
+  "fichte@0.05": {
+   "art": "fichte",
+   "abstand": 8,
+   "gefaelle": 1.6,
+   "sonneGrad": 60.3,
+   "hoehe": 22.7,
+   "d": 0,
+   "stufe": "f:fichte:L0",
+   "pixel": 159,
+   "karte": {
+    "gestalt": {
+     "Y": 0.01671,
+     "L": 13.65,
+     "C": 11.35
+    },
+    "karte": {
+     "Y": 0.01175,
+     "L": 10.38,
+     "C": 11.06
+    },
+    "verhaeltnis": 0.703,
+    "dL": -3.27,
+    "dC": -0.29
+   }
+  },
+  "tanne@0.5": {
+   "art": "tanne",
+   "abstand": 8,
+   "gefaelle": 3.4,
+   "sonneGrad": 52.1,
+   "hoehe": 13.5,
+   "d": 0,
+   "stufe": "f:tanne:L0",
+   "pixel": 4748,
+   "karte": {
+    "gestalt": {
+     "Y": 0.08295,
+     "L": 34.59,
+     "C": 19.54
+    },
+    "karte": {
+     "Y": 0.07914,
+     "L": 33.8,
+     "C": 15.65
+    },
+    "verhaeltnis": 0.954,
+    "dL": -0.79,
+    "dC": -3.89
+   }
+  },
+  "tanne@0.27": {
+   "art": "tanne",
+   "abstand": 8,
+   "gefaelle": 3.4,
+   "sonneGrad": 52.1,
+   "hoehe": 13.5,
+   "d": 0,
+   "stufe": "f:tanne:L0",
+   "pixel": 4640,
+   "karte": {
+    "gestalt": {
+     "Y": 0.01594,
+     "L": 13.19,
+     "C": 10.08
+    },
+    "karte": {
+     "Y": 0.01389,
+     "L": 11.89,
+     "C": 7.3
+    },
+    "verhaeltnis": 0.871,
+    "dL": -1.3,
+    "dC": -2.78
+   }
+  },
+  "tanne@0.05": {
+   "art": "tanne",
+   "abstand": 8,
+   "gefaelle": 3.4,
+   "sonneGrad": 52.1,
+   "hoehe": 13.5,
+   "d": 0,
+   "stufe": "f:tanne:L0",
+   "pixel": 5111,
+   "karte": {
+    "gestalt": {
+     "Y": 0.02574,
+     "L": 18.25,
+     "C": 13.61
+    },
+    "karte": {
+     "Y": 0.01677,
+     "L": 13.69,
+     "C": 7.55
+    },
+    "verhaeltnis": 0.652,
+    "dL": -4.56,
+    "dC": -6.06
+   }
+  }
+ },
+ "zeilen": [
+  {
+   "art": "ring@0.5",
+   "stufe": "bodenSatz → fern-ring",
+   "mittag": 0.988,
+   "dL": -0.29,
+   "dC": -0.07
+  },
+  {
+   "art": "ring@0.27",
+   "stufe": "bodenSatz → fern-ring",
+   "karte": 1.022,
+   "dL": 0.42,
+   "dC": 0.18,
+   "mittag": 0.988
+  },
+  {
+   "art": "ring@0.05",
+   "stufe": "bodenSatz → fern-ring",
+   "karte": 1.007,
+   "dL": 0.24,
+   "dC": 0.03,
+   "mittag": 0.988
+  },
+  {
+   "art": "feld@0.5",
+   "stufe": "welt-stoff → feld",
+   "karte": 0.947,
+   "dL": -1.6,
+   "dC": -0.09
+  },
+  {
+   "art": "feld@0.27",
+   "stufe": "welt-stoff → feld",
+   "karte": 0.926,
+   "dL": -0.92,
+   "dC": -0.24
+  },
+  {
+   "art": "feld@0.05",
+   "stufe": "welt-stoff → feld",
+   "karte": 0.961,
+   "dL": -0.52,
+   "dC": -0.14
+  },
+  {
+   "art": "feld0@0.5",
+   "stufe": "welt-stoff → feld0",
+   "karte": 0.922,
+   "dL": -1.73,
+   "dC": -0.19
+  },
+  {
+   "art": "feld0@0.27",
+   "stufe": "welt-stoff → feld0",
+   "karte": 0.94,
+   "dL": -1.16,
+   "dC": -0.47
+  },
+  {
+   "art": "feld0@0.05",
+   "stufe": "welt-stoff → feld0",
+   "karte": 0.967,
+   "dL": -0.39,
+   "dC": -0.07
+  },
+  {
+   "art": "feld90@0.5",
+   "stufe": "welt-stoff → feld90",
+   "karte": 0.937,
+   "dL": -0.98,
+   "dC": -0.12
+  },
+  {
+   "art": "feld90@0.27",
+   "stufe": "welt-stoff → feld90",
+   "karte": 0.938,
+   "dL": -0.61,
+   "dC": -0.01
+  },
+  {
+   "art": "feld90@0.05",
+   "stufe": "welt-stoff → feld90",
+   "karte": 0.974,
+   "dL": -0.28,
+   "dC": -0.07
+  },
+  {
+   "art": "feld180@0.5",
+   "stufe": "welt-stoff → feld180",
+   "karte": 0.937,
+   "dL": -0.95,
+   "dC": -0.13
+  },
+  {
+   "art": "feld180@0.27",
+   "stufe": "welt-stoff → feld180",
+   "karte": 0.936,
+   "dL": -0.57,
+   "dC": 0
+  },
+  {
+   "art": "feld180@0.05",
+   "stufe": "welt-stoff → feld180",
+   "karte": 0.975,
+   "dL": -0.28,
+   "dC": -0.05
+  },
+  {
+   "art": "panorama@0.5",
+   "stufe": "welt-stoff → panorama",
+   "karte": 0.943,
+   "dL": -1.71,
+   "dC": 0
+  },
+  {
+   "art": "panorama@0.27",
+   "stufe": "welt-stoff → panorama",
+   "karte": 0.969,
+   "dL": -0.37,
+   "dC": 0.05
+  },
+  {
+   "art": "panorama@0.05",
+   "stufe": "welt-stoff → panorama",
+   "karte": 0.959,
+   "dL": -0.54,
+   "dC": -0.19
+  },
+  {
+   "art": "spiegel@0.5",
+   "stufe": "welt-stoff → spiegel",
+   "karte": 1.056,
+   "dL": 1.2,
+   "dC": -0.13
+  },
+  {
+   "art": "spiegel@0.27",
+   "stufe": "welt-stoff → spiegel",
+   "karte": 0.949,
+   "dL": -0.98,
+   "dC": -0.6
+  },
+  {
+   "art": "spiegel@0.05",
+   "stufe": "welt-stoff → spiegel",
+   "karte": 1.003,
+   "dL": 0.04,
+   "dC": 0.09
+  },
+  {
+   "art": "spiegel180@0.5",
+   "stufe": "welt-stoff → spiegel180",
+   "karte": 0.942,
+   "dL": -0.86,
+   "dC": -0.05
+  },
+  {
+   "art": "spiegel180@0.27",
+   "stufe": "welt-stoff → spiegel180",
+   "karte": 0.972,
+   "dL": -0.25,
+   "dC": 0.15
+  },
+  {
+   "art": "spiegel180@0.05",
+   "stufe": "welt-stoff → spiegel180",
+   "karte": 0.995,
+   "dL": -0.05,
+   "dC": 0.09
+  },
+  {
+   "art": "wasser@0.5",
+   "stufe": "welt-stoff → wasser",
+   "karte": 0.915,
+   "dL": -2.58,
+   "dC": -0.49
+  },
+  {
+   "art": "wasser@0.27",
+   "stufe": "welt-stoff → wasser",
+   "karte": 0.95,
+   "dL": -0.61,
+   "dC": 0.02
+  },
+  {
+   "art": "wasser@0.05",
+   "stufe": "welt-stoff → wasser",
+   "karte": 0.94,
+   "dL": -0.8,
+   "dC": -0.22
+  },
+  {
+   "art": "fichte@0.5",
+   "stufe": "f:fichte:L0",
+   "karte": 0.358,
+   "dL": -22.31,
+   "dC": -2.95
+  },
+  {
+   "art": "fichte@0.27",
+   "stufe": "f:fichte:L0",
+   "karte": 0.427,
+   "dL": -7.17,
+   "dC": -7.5
+  },
+  {
+   "art": "fichte@0.05",
+   "stufe": "f:fichte:L0",
+   "karte": 0.703,
+   "dL": -3.27,
+   "dC": -0.29
+  },
+  {
+   "art": "tanne@0.5",
+   "stufe": "f:tanne:L0",
+   "karte": 0.954,
+   "dL": -0.79,
+   "dC": -3.89
+  },
+  {
+   "art": "tanne@0.27",
+   "stufe": "f:tanne:L0",
+   "karte": 0.871,
+   "dL": -1.3,
+   "dC": -2.78
+  },
+  {
+   "art": "tanne@0.05",
+   "stufe": "f:tanne:L0",
+   "karte": 0.652,
+   "dL": -4.56,
+   "dC": -6.06
+  }
+ ]
+}
+LAUB-LICHT ROT: KARTE fichte@0.5: Karte/Gestalt (f:fichte:L0) Luma 0.358 (ΔL* -22.31, ΔC* -2.95) — außerhalb ±10 % / ΔC* 3 | KARTE fichte@0.27: Karte/Gestalt (f:fichte:L0) Luma 0.427 (ΔL* -7.17, ΔC* -7.5) — außerhalb ±10 % / ΔC* 3 | KARTE fichte@0.05: Karte/Gestalt (f:fichte:L0) Luma 0.703 (ΔL* -3.27, ΔC* -0.29) — außerhalb ±10 % / ΔC* 3 | KARTE tanne@0.5: Karte/Gestalt (f:tanne:L0) Luma 0.954 (ΔL* -0.79, ΔC* -3.89) — außerhalb ±10 % / ΔC* 3 | KARTE tanne@0.27: Karte/Gestalt (f:tanne:L0) Luma 0.871 (ΔL* -1.3, ΔC* -2.78) — außerhalb ±10 % / ΔC* 3 | KARTE tanne@0.05: Karte/Gestalt (f:tanne:L0) Luma 0.652 (ΔL* -4.56, ΔC* -6.06) — außerhalb ±10 % / ΔC* 3
+LINSE werkbank licht --laub ring,feld,feld0,feld90,feld180,panorama,spiegel,spiegel180,wasser,fichte,tanne --karte --uhr 0.5,0.27,0.05 --ort dorf EXIT=1 nach 42.8 s in der Welt der Sitzung (24 Beruhigungen, Fenster 640×360)
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3

@@ -254,8 +254,8 @@ H.fahre(async function probeBildWeg(H) {
     offen = false;
     Object.assign(j, await L.bauWeg(page, "ende"));
     return j;
-}); 7804 C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\87537d3f-radeon\bauen.K1_2.json 45
-@@ PROBE-FEHLER ReferenceError: PHASEN is not defined |     at Object.<anonymous> (C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\punkte-radeon\scripts\diag-werkstatt-weg.cjs:1795:70) |     at Module._compile (node:internal/modules/cjs/loader:1830:14) |     at H.linse ([eval]:134:15) |     at probeBildWeg ([eval]:212:17)
+}); 7804 C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\87537d3f-radeon\bauen.K1_2.json 1
+@@ PROBE-FEHLER der Deckel des Laufs fehlt (argv „1“: der Läufer ersetzt den Platzhalter SEK)
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3

@@ -390,12 +390,12 @@ H.fahre(async function probeDorf(H) {
 {
  "ergebnis": {
   "gesetzt": {
-   "ms": 807.8,
+   "ms": 1444.8,
    "bilder": 16
   },
   "imRadius": null,
   "erstes": {
-   "ms": 807.9,
+   "ms": 1444.9,
    "bilder": 16,
    "stufe": "huelle",
    "typ": "haus_tudor",
@@ -404,17 +404,17 @@ H.fahre(async function probeDorf(H) {
     -889.47,
     -1375.1
    ],
-   "abstand": 206.6,
+   "abstand": 200.4,
    "auge": [
-    -1091.7,
-    38.4,
-    -1417.6
+    -1085.6,
+    38.6,
+    -1416.5
    ]
   },
   "hash": "59e4fc62",
   "bereit": {
-   "ms": 8153,
-   "bilder": 152,
+   "ms": 7014,
+   "bilder": 126,
    "vorrat": true,
    "ruhig": true,
    "zugFrei": true
@@ -439,12 +439,12 @@ H.fahre(async function probeDorf(H) {
    "nachbarn": 12
   },
   "erwacht": {
-   "bild": 183,
-   "d": 259
+   "bild": 160,
+   "d": 255.6
   },
   "abgewiesen": 0,
   "plan": 16,
-  "bilder": 199,
+  "bilder": 176,
   "reserviert": {
    "seed": 29749318,
    "nH": 12,
@@ -457,21 +457,21 @@ H.fahre(async function probeDorf(H) {
  }
 }
 @@PUNKTE@@ EXIT 0
-@@ 13.4 s · frische Welt (Grundstellung) nach 2.1 s
+@@ 14.3 s · frische Welt (Grundstellung) nach 2.6 s
 @@PUNKTE@@ NH300
 {
  "ergebnis": {
   "gesetzt": {
-   "ms": 377.5,
+   "ms": 746.6,
    "bilder": 8
   },
   "imRadius": {
-   "ms": 377.6,
+   "ms": 746.6,
    "bilder": 8,
    "radius": 150
   },
   "erstes": {
-   "ms": 377.6,
+   "ms": 746.7,
    "bilder": 8,
    "stufe": "mesh",
    "typ": "haus_tudor",
@@ -480,17 +480,17 @@ H.fahre(async function probeDorf(H) {
     -1071.24,
     -1380.05
    ],
-   "abstand": 49.2,
+   "abstand": 47,
    "auge": [
-    -1101.1,
-    37.9,
-    -1419.2
+    -1098,
+    38.1,
+    -1418.7
    ]
   },
   "hash": "84121d20",
   "bereit": {
-   "ms": 10036,
-   "bilder": 302,
+   "ms": 10069,
+   "bilder": 270,
    "vorrat": true,
    "ruhig": false,
    "zugFrei": true
@@ -515,12 +515,12 @@ H.fahre(async function probeDorf(H) {
    "nachbarn": 12
   },
   "erwacht": {
-   "bild": 309,
-   "d": 266.9
+   "bild": 276,
+   "d": 265.7
   },
   "abgewiesen": 0,
   "plan": 292,
-  "bilder": 317,
+  "bilder": 284,
   "reserviert": {
    "seed": 29749318,
    "nH": 300,

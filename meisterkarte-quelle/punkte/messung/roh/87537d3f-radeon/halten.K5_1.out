@@ -81,7 +81,7 @@ code = code || 3;
 }
 console.log("@@PUNKTE@@ PROBE " + uhr() + " s · Exit " + code);
 process.exit(code);
-})() C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\87537d3f-radeon\halten.K5_1.json 7804 1 async function haltenK5Seite(H) {
+})() C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\87537d3f-radeon\halten.K5_1.json 7804 12 async function haltenK5Seite(H) {
 const KP = require(path.resolve("scripts/lib/kampf-proben.cjs"));
 const D = H.quelle("scripts/diag-kampf-gefuehl.cjs", ["hash", "json", "zeig", "k5Verdict", "q14Verdict", "k5Bericht"], { stammLib: require(path.resolve("scripts/lib/stamm.cjs")) });
 await H.frist();
@@ -101,8 +101,17 @@ if (!c) ok = false;
 return ok ? 0 : 1;
 }
 [linse-gpu] amd/rdna-3
-@@PUNKTE@@ FEHLER Error: der Deckel des Laufs fehlt (argv „1“: der Läufer ersetzt den Platzhalter SEK) |     at seiteLauf ([eval]:68:25) |     at [eval]:84:3 |     at runScriptInThisContext (node:internal/vm:219:10)
-@@PUNKTE@@ PROBE 0.0 s · Exit 2
+@@PUNKTE@@ ZEIT welt 0.1 s
+@@PUNKTE@@ ZEIT k5 0.5 s
+@@PUNKTE@@ ZEIT reload 5.0 s
+  (Q13) 3102b94a439c → 3102b94a439c {"sturz":[{"v":6.213,"d":0,"quelle":null},{"v":8.829,"d":10.73,"quelle":"sturz"},{"v":12.59,"d":57.043,"quelle":"sturz"},{"v":15.369,"d":101.727,"quelle":"sturz"},{"v":11.924,"d":47.663,"quelle":"sturz"}],"lage":[[29.244,0.072],[29.244,0.072]],"vorTod":{"ort":[0,90.8,0],"inventar":["holz7","stein3"],"leben":[0.64,0],"bindung":[0.12,"follow_player"],"werte":[134,140,80,12.8],"nahrung":[]},"tod":{"q":"jagd","anker":0,"rueckkehr":[true,true,true,true,true,true,true,true,true]},"q14":{"leer":[116.03,157.97,80,10.404],"werk":{"eisen":[154.868,129.763,80,15.898],"bronze":[152.719,131.036,80,15.527],"holz":[131.925,144.52,80,12.605]},"nahrung":{"kraut":[125.906,151.529,93.096,11.778],"fleisch":[127.188,150.245,92.875,11.949]},"getragen":[166.038,122.45,92.875,17.445]},"nachTod":{"ort":[0,90.8,0],"inventar":["holz7","stein3"],"leben":[0.42,1],"bindung":[0.12,"follow_player"],"werte":[184.01,104.48,92.87,19.84],"nahrung":["consume:_k5"]},"nachReload":{"ort":[0,90.8,0],"inventar":["holz7","stein3"],"leben":[0.42,1],"bindung":[0.12,"follow_player"],"werte":[184.01,104.48,92.87,19.84],"nahrung":["consume:_k5"]}}
+  ✅ Q13 halten.K5 Staffel 1: Sturz, Tod durch den Wolf, Wiederkehr mit Zustand 
+  ✅ SELBST-TEST (S17): ein fester Sturz-Schaden ROT an der Reihe, ein Höhen-Zähler am Wurf
+  ✅ SELBST-TEST (S18): eine Wiederkehr ohne Inventar ROT am Teil
+  (Q14) {"leer":[116.03,157.97,80,10.404],"werk":{"eisen":[154.868,129.763,80,15.898],"bronze":[152.719,131.036,80,15.527],"holz":[131.925,144.52,80,12.605]},"nahrung":{"kraut":[125.906,151.529,93.096,11.778],"fleisch":[127.188,150.245,92.875,11.949]},"getragen":[166.038,122.45,92.875,17.445],"stand":[[184.01,104.48,92.87,19.84],[184.01,104.48,92.87,19.84],["consume:_k5"],["consume:_k5"]]}
+  ✅ Q14 halten.K5 Staffel 2: Werk und Nahrung 
+  ✅ SELBST-TEST (S20): ein Stand ohne Nahrung, eine Nahrung ohne Wirkung
+@@PUNKTE@@ PROBE 5.0 s · Exit 0
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3

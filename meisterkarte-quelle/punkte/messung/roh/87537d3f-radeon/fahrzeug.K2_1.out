@@ -175,16 +175,16 @@ $ C:\Program Files\nodejs\node.exe -e const tor = (function sitzungTor() {
   WN Teil 1/6: der Lauf hält nach 37.5 s an der Naht (Spieler bei 679, -1697, 3 Orte wach) — weiter
 @@PUNKTE@@ TEIL WEITER
 [linse-gpu] amd/rdna-3
-  WN Teil 2/6: der Lauf hält nach 37.6 s an der Naht (Spieler bei -186, -1146, 6 Orte wach) — weiter
+  WN Teil 2/6: der Lauf hält nach 37.5 s an der Naht (Spieler bei 1217, -1657, 5 Orte wach) — weiter
 @@PUNKTE@@ TEIL WEITER
 [linse-gpu] amd/rdna-3
-  WN Teil 3/6: der Lauf hält nach 37.2 s an der Naht (Spieler bei 259, -1493, 6 Orte wach) — weiter
+  WN Teil 3/6: der Lauf hält nach 37.7 s an der Naht (Spieler bei 226, -1497, 6 Orte wach) — weiter
 @@PUNKTE@@ TEIL WEITER
 [linse-gpu] amd/rdna-3
-  WN Teil 4/6: der Lauf hält nach 37.7 s an der Naht (Spieler bei 650, -1727, 7 Orte wach) — weiter
+  WN Teil 4/6: der Lauf hält nach 37.7 s an der Naht (Spieler bei 618, -1728, 7 Orte wach) — weiter
 @@PUNKTE@@ TEIL WEITER
 [linse-gpu] amd/rdna-3
-  WN Teil 5/6: der Lauf hält nach 37.8 s an der Naht (Spieler bei 1020, -1429, 7 Orte wach) — weiter
+  WN Teil 5/6: der Lauf hält nach 37.6 s an der Naht (Spieler bei 1007, -1429, 7 Orte wach) — weiter
 @@PUNKTE@@ TEIL WEITER
 [linse-gpu] amd/rdna-3
 PROBE-FEHLER ReferenceError: urteil is not defined |     at Object.wegenetzVerdict (eval at fahrWegenetz ([eval]:121:15), <anonymous>:14:5) |     at fahrWegenetz ([eval]:169:30)
