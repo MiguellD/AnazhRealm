@@ -620,13 +620,12 @@ const REZEPTE = {
 const GPU_REZEPTE = ["linse", "webgl", "echt"];
 
 // Die Start-Optionen: `frist` = protocolTimeout (ms), `zusatz` hinter dem Rezept, `viewport`, `profil` = userDataDir; headless.
-function browserOptionen({ art, frist, zusatz = [], headless = true, viewport, profil, dumpio, zeit = false } = {}) {
+function browserOptionen({ art, frist, zusatz = [], headless = true, viewport, profil, zeit = false } = {}) {
     if (!REZEPTE[art])
         throw new Error(`welt-boot: unbekanntes Rezept "${art}" — erlaubt: ${Object.keys(REZEPTE).join(" · ")}`);
     const o = { headless, userDataDir: profil };
     if (frist != null) o.protocolTimeout = frist;
     if (viewport !== undefined) o.defaultViewport = viewport;
-    if (dumpio != null) o.dumpio = dumpio;
     o.args = [...REZEPTE[art]({ zeit }), ...zusatz];
     return o;
 }
@@ -1099,7 +1098,11 @@ function profileFegen(tmp = os.tmpdir()) {
 }
 const tempNeu = (name = "profil", pid = process.pid) => fs.mkdtempSync(path.join(os.tmpdir(), `anazh-${pid}-${name}-`));
 const signalEnde = (s) => process.exit(128 + os.constants.signals[s]);
+// DAS SICHTBARE FENSTER (Schöpfer 08./09.11.: „die GPU-Proben mit offenem Fenster, dann sehe ich, was geschieht“): LINSE_SICHTBAR=1
+// (gpu-probe.yml je Läufer) öffnet JEDEN Browser dieses Starters als Fenster — Werkbank und Gates gehen beide hier durch. Die Drossel
+// verdeckter Fenster schaltet Puppeteer selbst ab (ChromeLauncher-Vorgaben); der Weg der Welt bleibt derselbe.
 async function startePuppeteer(o) {
+    o.headless &&= process.env.LINSE_SICHTBAR !== "1";
     profileFegen();
     if (o.userDataDir) return require("puppeteer").launch(o);
     const d = tempNeu();
