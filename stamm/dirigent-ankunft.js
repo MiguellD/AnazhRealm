@@ -1376,7 +1376,8 @@ class AnazhRealm_dirigent_ankunft {
     //     (x, z, false)) auf `gitter`² Punkten im Abstand `zelleM` um den Anker des Rings, gerechnet im Feld-Faden
     //     (`_fernAuftrag("gitter")`, `_horizontGitterTakt`), über dem Bezug (Meeresspiegel) als r16f;
     //   DIE KARTE — je Texel die SCHATTEN-HÖHE zur Sonne: H = max_s (h(x + â·s) − s · tan h☉) über den Marsch s = 60 … 3 000 m
-    //     (`schrittM` × `schritte`, dieselbe Bahn wie die Station), dazu der Weg s* des Grats und der Boden des Gitters (rgba16f,
+    //     (`schrittM` × `schritte`, dieselbe Bahn wie die Station), dazu der Weg s* des Grats, der Boden des Gitters und der Grat
+    //     des Bodens (tan des höchsten Horizonts zur Sonne über ihm, `_horizontHimmel`) (rgba16f,
     //     `karte`² Texel über dem Quadrat des Gitters) — ein Schirm-Pass über das Gitter (`pass`), neu gemalt, wenn das Licht sich
     //     um `lichtRad` dreht oder ein Gitter kommt (`_horizontKarteTakt`).
     // Ein Empfänger in der Höhe y liegt im Licht, wenn y über H steht — der Halbschatten so breit, wie die Sonne (`sonneTan`) ihn
@@ -1431,20 +1432,23 @@ class AnazhRealm_dirigent_ankunft {
                     const tanH = U.licht.y.div(flach);
                     const best = T.float(-H.leerM).toVar();
                     const weg = T.float(0).toVar();
+                    // der Boden des Gitters am Texel (`_horizontBoden`: der Empfänger, der das Gesetz nur nähert, liest ihn
+                    // aus DERSELBEN Abtastung wie die Schatten-Höhe — ein eigener Sampler sprengte den Ring-Stoff, 17 > 16)
+                    const boden = T.texture(hoehen, zuUv(xz)).level(0).r.toVar();
+                    // DER GRAT DES BODENS (w25-ferne-licht-2): tan des höchsten Horizonts zur Sonne über dem Boden des Texels,
+                    // max (h − h₀)/s über denselben Marsch — der Grat-Himmel (`_horizontHimmel`) liest ihn im Alpha
+                    const steil = T.float(-1).toVar();
                     for (let k = 1; k <= H.schritte; k++) {
                         const s = k * H.schrittM;
                         const q = zuUv(xz.add(a.mul(s)));
-                        const z = T.mix(
-                            T.float(-H.leerM),
-                            T.texture(hoehen, q).level(0).r.sub(tanH.mul(s)),
-                            AnazhRealm._imEinheitsQuadrat(q)
-                        );
+                        const drin = AnazhRealm._imEinheitsQuadrat(q);
+                        const h = T.texture(hoehen, q).level(0).r;
+                        const z = T.mix(T.float(-H.leerM), h.sub(tanH.mul(s)), drin);
                         weg.assign(T.select(z.greaterThan(best), T.float(s), weg));
                         best.assign(T.max(best, z));
+                        steil.assign(T.max(steil, T.mix(T.float(-1), h.sub(boden).div(s), drin)));
                     }
-                    // der Boden des Gitters am Texel (`_horizontBoden`: der Empfänger, der das Gesetz nur nähert, liest ihn
-                    // aus DERSELBEN Abtastung wie die Schatten-Höhe — ein eigener Sampler sprengte den Ring-Stoff, 17 > 16)
-                    return T.vec4(best, weg, T.texture(hoehen, zuUv(xz)).level(0).r, 1);
+                    return T.vec4(best, weg, boden, steil);
                 })(),
             "horizont-karte"
         );
@@ -1485,15 +1489,18 @@ class AnazhRealm_dirigent_ankunft {
     // DER BODEN DES GESETZES für einen Empfänger, der das Gesetz nur NÄHERT (der Fern-Ring): `p` mit der Höhe des Gitters der
     // Karte (ihr Kanal b, je Texel der Boden aus `hoehen`, bilinear wie die Schatten-Höhe daneben), wo die Masche des Empfängers
     // (`masche`, m) gröber steht als das Gitter —
-    // über eine Gitter-Zelle weich (`zelleM` … 2 · `zelleM`, am Ring 0,9 … 1,9 km vom Anker, hinter jeder Kaskade); näher und
+    // über eine Gitter-Zelle weich (`zelleM` … 2 · `zelleM`, am Ring 0,23 … 0,54 km vom Anker); näher und
     // ohne Karte (`aktiv` 0) seine eigene Höhe. Der Leser setzt ihn als `receivedShadowPositionNode`: die Kaskaden und die
     // Sonnen-Sicht (`_sonnenSicht`, `shadowPositionWorld`) lesen DIESELBE Position. Bis ferne.K4 prüfte der Ring die Schatten-
     // Höhe des Gesetzes gegen seine Masche, die zwischen den Ecken bei 4–7 km ±50 m neben dem Gesetz steht: von 42 Hängen der
     // Station (Sonne 5°, Dorf, swiftshader) lagen 11 im Schatten hell und 5 im Licht dunkel.
     // DIE HIMMELS-SICHT DES GRATS (ferne.K4; Horizon-Based Ambient Occlusion aus der EINEN Karte): der Grat, der dem Empfänger in `p`
     // die Sonne nimmt, verdeckt ihm auch den Himmel unter seinem Horizontwinkel α zur Sonne — dort steht die Aureole, der hellste
-    // Himmel des Abends. α aus der Karte: tan α = (H − y) / s* + tan h☉ (die Schatten-Höhe H über dem Weg s* des Grats, y die Höhe
-    // des Empfängers), ohne Grat 0. Das verdeckte Band 0 … α über `gratRad` beidseits des Azimuts der Sonne (die Karte kennt den
+    // Himmel des Abends. α aus der Karte: die größere Untergrenze aus dem Punkt, der den Schatten wirft — tan α ≥ (H − y) / s* + tan h☉
+    // (die Schatten-Höhe H über dem Weg s* des Grats, y die Höhe des Empfängers) — und dem Grat des Bodens (Alpha: max (h − h₀)/s
+    // über dem Boden h₀ des Texels) abzüglich (y − h₀) je kürzestem Schritt; ohne Grat 0. Der Punkt des Schattens allein ist nicht
+    // der Grat: ein Berg 3 km fern wirft ihn, der Kamm 200 m vor dem Hang steht höher (Dorf, Sonne 5°: die Karte las 8,1° im
+    // Median, das Gesetz 10,3°, nahe Grate bis 10° zu flach). Das verdeckte Band 0 … α über `gratRad` beidseits des Azimuts der Sonne (die Karte kennt den
     // Horizont nur zur Sonne: der Grat gilt dort als Wand) trägt je Abtastung die Strahlung des Himmels in Richtung ω (`strahlung`:
     // die Himmels-Sicht der Atmosphäre, `himmelFarbe`) × max(n·ω, 0) × Δω/π — der Abzug von der mittleren Strahlung der
     // Bestrahlung (`_spiegelUmgebung`). Außerhalb der Karte und wo sie ruht 0. Bis ferne.K4 sah der Hang hinter dem Grat den
@@ -1501,8 +1508,8 @@ class AnazhRealm_dirigent_ankunft {
     // Strahlung die Umgebung der Stoffe in der Rauheit 0,5: ihre Keule mittelte am Horizont den Boden darunter, der Grat nahm dem
     // Schattenhang bei Sonne 5° 3,6 % seines Himmels (Dorf, swiftshader voll) — die Himmels-Sicht im Band (±30°, bis zum Grat
     // 11,6°) trägt 18,8 % (CPU-Nachbau der Tafeln, exakt integriert), die drei Abtastungen der Tafel schätzen es auf +18 %.
-    // Heute nimmt er 6,2 % (Median, je Ort 0–25 %): das Gitter (`zelleM` 96 m) liest nahe Grate (60–240 m vor dem Hang) bis 10°
-    // zu flach (Grat des Gesetzes 10,3° gegen die Karte 8,1° im Median, ferne.K4).
+    // Mit dem Grat des Bodens nimmt der Term an den Schatten-Hängen der Station 10–25 % (Median 14 %, ein Schirm-Pass am Punkt
+    // des Gesetzes mit seiner Normale; die PMREM-Stufe 1 trifft die Kosinus-Bestrahlung der Tafel auf 7 %).
     // Die drei Abtastungen (−⅔, 0, +⅔ · `gratRad` um das Azimut der Sonne) laufen in EINER Schleife (wie `falte`, K17-3): die
     // Strahlung steht einmal im Programm — ausgeschrieben stand sie dreimal in jedem Stoff (Boden der Bühne S0: +9 580 Zeichen).
     _horizontHimmel(p, n, strahlung) {
@@ -1514,7 +1521,16 @@ class AnazhRealm_dirigent_ankunft {
             const t = T.texture(K.rt.texture, q).level(0).toVar();
             const L = K.U.licht;
             const flach = T.max(T.length(L.xz), 1e-4).toVar();
-            const tanA = T.max(t.r.sub(p.y.sub(K.U.bezug)).div(T.max(t.g, H.schrittM)).add(L.y.div(flach)), 0).toVar();
+            // tan α: das Größere zweier Untergrenzen des Horizonts über dem Empfänger in der Höhe y — der Punkt, der den Schatten
+            // wirft ((H − y)/s* + tan h☉), und der Grat des Bodens (Alpha) abzüglich der Höhe über dem Boden je kürzestem Schritt
+            const y = p.y.sub(K.U.bezug).toVar();
+            const tanA = T.max(
+                T.max(
+                    t.r.sub(y).div(T.max(t.g, H.schrittM)).add(L.y.div(flach)),
+                    t.a.sub(T.max(y.sub(t.b), 0).div(H.schrittM))
+                ),
+                0
+            ).toVar();
             const el = T.atan(tanA).mul(0.5).toVar();
             const [ce, se] = [T.cos(el).toVar(), T.sin(el).toVar()];
             const a = L.xz.div(flach).toVar();
@@ -1782,7 +1798,7 @@ AnazhRealm.ANKUNFT_TAKT = Object.freeze({ bau: 32, streu: 16, streuScan: 640 });
 // DIE HORIZONT-KARTE (ferne.K4, `_horizontKarte`): das Gitter des Gesetzes und die Schatten-Höhe zur Sonne, je `gitter`² Texel
 // im Abstand `zelleM` — ±12,3 km um die Mitte: der Ring (8 km), sein Anker-Weg (`nachM`) und der Marsch (3 km) liegen darin.
 // Der Marsch zur Sonne geht `schritte` × `schrittM` (60 … 3 000 m, die Bahn der Station). Das Gitter kommt aus dem Feld-Faden
-// in Aufträgen à `zeilenJeAuftrag` Zeilen (8 192 Rufe des Gesetzes, ~0,4 s: das Feld drängt dazwischen), erst nach dem ersten
+// in Aufträgen à `zeilenJeAuftrag` Zeilen (12 288 Rufe des Gesetzes: das Feld drängt dazwischen), erst nach dem ersten
 // Weltbild (die Ankunft trägt es nie) und neu, wenn der Anker `nachM` gewandert ist. Neu gemalt wird die Karte, wenn das Licht
 // sich um `lichtRad` dreht (0,05°: am Grat in 3 km 2,6 m Schatten-Höhe) oder ein Gitter kommt — nie je Frame. `bandM` ist der
 // halbe Halbschatten mindestens (Gitter und r16f), `leerM` die Höhe, die kein Gelände trägt (außerhalb, vor der ersten Antwort).
@@ -1791,21 +1807,28 @@ AnazhRealm.ANKUNFT_TAKT = Object.freeze({ bau: 32, streu: 16, streuScan: 640 });
 // Empfänger der Sonne (`_sonnenSicht`) und des Himmels (`_horizontHimmel`), der Fern-Ring an ihrem Boden (`_horizontBoden`), die
 // Luft (`luftSicht`) und der Lichtmesser
 // (`_horizontSichtAm`); gate:schatten-terminator (H) malt einen bekannten Grat und liest Karte, Ring und Luft.
-// Speicher: Gitter r16f 128 KB + Karte rgba16f `karte`² 378 KB (H, s*, Boden), zusammen 0,494 MB unter der Ratsche 0,5
-// (spec/profiband/ratsche-*-gtx-*.json; vorher die Licht-Tiefe 512² r16f, 512 KB). Die Karte in der Auflösung des Gitters (256²,
-// 0,625 MB) trug am Dorf (swiftshader, Sonne 5°, 65 Orte) das Urteil des Gesetzes an 55 Orten, 220² an 54, 192² an 52, 128² an
-// 51 — der Ring-Stoff trägt 16 von 16 Texturen, den Boden liest er darum aus der Karte, nie aus dem Gitter. `messer` der Lichtmesser der Kamera
+// DAS GITTER IN DER AUFLÖSUNG DES GRATS (w25-ferne-licht-3): ein Kamm zwischen zwei Gitter-Punkten steht bilinear zu tief, ein
+// Tal zu hoch — der Grat zur Sonne trägt beides. An den 21 Schatten-Hängen der Station (Dorf, Sonne 5°) las die Karte auf 96 m
+// den Grat im Mittel 3,05° zu flach (Median 9,2° gegen 11,6° des Gesetzes), auf 48 m 1,34°, auf 32 m 0,77° (CPU-Nachbau des
+// Passes, je Gitter und Karte); die Physik der Orte (Hillaire, Band ±30°) trägt mit dem Grat des Gesetzes Ls/Ll 0,33, mit dem der
+// 96-m-Karte 0,41. Das Bild (swiftshader voll, Dorf, Sonne 5°, ohne Luft): am Ort des Gesetzes auf dem gezeichneten Ring
+// 0,487 → 0,419 (der Grat nimmt dem Schattenhang median 13 → 16 % seines Himmels), die Station ferne.K4 (das Pixel des
+// projizierten Orts, 640×360) 0,4458 → 0,4385. Speicher: Gitter r16f 768² 1 152 KB + Karte rgba16f `karte`² 800 KB (H, s*, Boden, Grat), zusammen 1,91 MB in
+// der Ratsche der Klasse (spec/profiband/ratsche-*-gtx-*.json: 0,5 MB + 2 MB Toleranz; bis hier 256² à 96 m + 220², 0,494 MB).
+// Die Karte in der Auflösung des Gitters (256², 0,625 MB) trug am Dorf (swiftshader, Sonne 5°, 65 Orte) das Urteil des
+// Gesetzes an 55 Orten, 220² an 54, 192² an 52, 128² an 51 — der Ring-Stoff trägt 16 von 16 Texturen, den Boden liest er
+// darum aus der Karte, nie aus dem Gitter. `messer` der Lichtmesser der Kamera
 // (`_horizontSichtImBild`): `spalten` × `zeilen` Strahlen der unteren Bildhälfte, je bis `weitM` — an der Wiese 9 Texel, 0,2 ms
-// je neuem Licht, 0,1 ms je Ruf (Radeon); die Höhen des Gitters liegen dazu einmal je Gitter als Float32 (256 KB) im Main.
+// je neuem Licht, 0,1 ms je Ruf (Radeon); die Höhen des Gitters liegen dazu einmal je Gitter als Float32 (2,25 MB) im Main.
 AnazhRealm.HORIZONT_KARTE = Object.freeze({
     messer: Object.freeze({ spalten: 4, zeilen: 8, weitM: 3000 }),
-    gitter: 256,
-    karte: 220,
-    zelleM: 96,
+    gitter: 768,
+    karte: 320,
+    zelleM: 32,
     schrittM: 60,
     schritte: 50,
     nachM: 1000,
-    zeilenJeAuftrag: 32,
+    zeilenJeAuftrag: 16,
     lichtRad: (0.05 * Math.PI) / 180,
     bandM: 1.5,
     leerM: 10000,

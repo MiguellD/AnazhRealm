@@ -532,7 +532,10 @@ class AnazhRealm_daten {
     // (höchstens `breitMax`) —, vor `bis` über `saum` fällt er auf 0. EIN Befehl (`nahWiese:Lf:schale`), keine Büschel mehr.
     // Jede Karte steht auf der Ebene ihres Hangs und ist höchstens so breit, wie ihre Wiese und ihr Boden sie tragen (w24-wiese-
     // ferne, `_wieseSchaleDaten`: dieselbe Maske wie die Füße der Büschel, `boden`, der Grund der Häuser); `schmal` × `breite`
-    // ist die schmalste Karte — wo selbst sie nicht steht, steht keine.
+    // ist die schmalste Karte — wo selbst sie nicht steht, steht keine. `klumpung` ist Nilsons Klumpungs-Index Ω der Wiese im
+    // ersten Treffer der Karte (`_wieseSchaleSenke`: die Lücke e^−Ω·K·Λ): die Halme stehen in Büscheln, kein gleichmäßiges
+    // Medium — der Blick fällt zwischen ihnen tiefer in die Narbe. Geeicht am Bild der echten Halme (vorher 921818a2, Radeon,
+    // Mess-Wiese ≥ 40 m): mit Ω 1 das Fern-Band +5,3 % Luma (GTX +5,7 %), Werkbank Ω 0,7 −1,7 %, Ω 0,6 −2,5 % (20–40 m −3,1 %).
     // Gemessen (Radeon, vegetation.K1#1, Mess-Wiese Third): LAI 2–5 · 5–10 · 10–20 · 20–40 m ohne Keile und ohne Schale 2,40 ·
     // 2,23 · 1,72 · 0,32, mit ihr 2,40 · 2,23 · 2,08 · satt (0 Boden-Pixel); die Büschel der Ferne wie main (im Blick 1 168), die
     // Schale 1 854 Karten, 24 102 Dreiecke (Null-Renderer, der Sicht-Satz; Genesis 155 · 2 015), ihr Bau 0,14 ms je Kachel.
@@ -580,6 +583,7 @@ class AnazhRealm_daten {
                         hoehe: 0.7,
                         breitMax: 3,
                         schmal: 0.25,
+                        klumpung: 0.6,
                     }),
                 }),
             })
