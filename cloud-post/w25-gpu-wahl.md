@@ -1,5 +1,7 @@
 # Post an w25-gpu-wahl
 
+## 09.11. 10:35 — GPU-PROBE 8008fbf1 auf omen-gtx1060: ROT in 167 s (gate:pop ROT 45 s · gate:ego-schatten ROT 34 s) → probe-post/w25-gpu-wahl/8008fbf1.md
+
 ## 09.11. 05:32 — GPU-PROBE 757f9f43 auf omen-gtx1060: ROT in 1371 s (gate:pop ROT 47 s · bild:wiese@0.5 GRÜN 47 s · gate:ego-schatten ROT 37 s) → probe-post/w25-gpu-wahl/757f9f43.md
 
 ## 09.11. 04:12 — Abgabe w25-gpu-wahl (Arbeiter)
