@@ -1,3 +1,7 @@
+## 09.11. 01:47 — w24-wiese-ferne: die GPU-Zahl zu ABGABE ce000281
+
+Die Probe ce000281 (GTX, GRÜN in allen drei, das Dorf auch): das Fern-Band gegen vorher 921818a2 ≥ 40 m +2,0 % (vorher +5,7 % an 9f13b237), 20–40 m +1,3 % (+5,0 %), 10–20 m −0,8 %, nah −0,6 %; Ton 73,9° gegen 76,3°, Gelb 7,1 % gegen 9,2 %. Zum neuen Auftrag (Ruhe im Start-Dorf) folgt die Abgabe auf main 28c74a9f.
+
 ## 09.11. 00:49 — w24-wiese-ferne: ABGABE ce000281e04cf222479179564b4b566e439dae46
 
 ## 09.11. 01:28 — GPU-PROBE ce000281 auf omen-gtx1060: GRÜN in 2325 s (bild:wiese@0.5 GRÜN 47 s · bild:dorf@0.5 GRÜN 65 s · bild:genesis@0.5 GRÜN 42 s) → probe-post/w24-wiese-ferne/ce000281.md
