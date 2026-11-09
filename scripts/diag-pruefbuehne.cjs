@@ -1043,7 +1043,7 @@ async function himmelProbe(page, taub) {
 // nicht (`TERRAIN_BUMP.mulde`). Der Zug z352 fiel so (w26-boden-nah, Korn × Kavität 3,6 linear: Luma 24,6, abgesoffen 10,0 % auf
 // der Radeon wie auf swiftshader; main mit 2,1 stand bei 4,0 %, pascal bei 6,4 %), und das Urteil nannte Belichtung und
 // Post-Kette. Der Zweig „kein Sternen-Licht" fiel dafür: seit licht.K1 schwärzt es den Boden nie (oben). Selbsttest: die Zahlen
-// von z352 MÜSSEN `_mikroStoff` nennen.
+// von z352 MÜSSEN `_mikroStoff` nennen. Die letzte Zeile des Laufs trägt Luma und Anteil der Nacht (der Probe-Post liest sie).
 const S0_NACHT = { nacht: { luma: 22, schwarz: 0.05 } };
 function s0NachtUrteil(e, soll) {
     const g = e.grund;

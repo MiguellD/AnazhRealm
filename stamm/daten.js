@@ -720,15 +720,16 @@ class AnazhRealm_daten {
                 // Nacht. Im LOGARITHMUS beschränkt: ln Bild = −ln(mulde) · s(kavitaet · (h − krume)), s(x) = x / √(1 + x²). Die
                 // tiefste Mulde hält `mulde` des Lichts der Fläche, die höchste Krume trägt 1/mulde: kein Pixel säuft ab, keiner
                 // glitzert. `kavitaet` ist die Steile zwischen beiden (je Höhe), `krume` die Schwelle über der mittleren Fläche — die
-                // Mehrheit liegt in der Mulde, das Mittel des Bilds steht bei 1,11 (main 1,09, w26 1,15; gerechnet am Rausch-Gesetz).
+                // Mehrheit liegt in der Mulde, das Mittel des Bilds steht bei 1,13 (main 1,09, w26 1,15; gerechnet am Rausch-Gesetz).
                 // GEMESSEN (Radeon 890M, Mess-Wiese Ego, der Weg von material.K2#1, ABAB in EINER Welt, je 2× bit-gleich): glatt
-                // 0,5/1/2 m 0,156/0,093/0,106 → 0,037/0,016/0,014, nyquist 0,167/0,171/0,175 → 0,176/0,180/0,180, Klassen-Luma
-                // 32,18 → 32,16; die Nacht der Prüfbühne (S0, swiftshader): abgesoffen 4,0 % → 0,6 %, Luma 24,2 → 23,7.
+                // 0,5/1/2 m 0,157/0,093/0,108 → 0,032/0,013/0,012, nyquist 0,167/0,171/0,175 → 0,175/0,179/0,180, Klassen-Luma
+                // 32,18 → 32,30; die Nacht der Prüfbühne (S0, Radeon wie swiftshader): abgesoffen 4,0 % → 0,7 %, Luma 24,2 → 24,1.
                 // DAS GESETZ DAVOR — Korn × Kavität linear, (1 + korn · h)(1 + kavitaet · h) — nahm der Mulde Albedo UND Himmel, bis
                 // auf 0 bei h = −1/kavitaet: mit 2,1 soffen in der Nacht 4,0 % ab (pascal 6,4 %: main saß ohne Abstand an der Wand
                 // 5 %), mit 3,6 (w26-boden-nah, glatt 0,031) 9,8 % — der Zug z352 fiel an S0 Nacht. Das Urteil glatt liest die BREITE
                 // der Verteilung (p10–p90 2,0 der Fläche), nicht ihre Spitzen: ein Boden mit hellen Spitzen (0,6 + 0,4 · exp in der
-                // Helligkeit) hielt die Nacht und verlor K2#1 (glatt 0,161, derselbe Lauf).
+                // Helligkeit) hielt die Nacht und verlor K2#1 (glatt 0,161, dieselbe Welt). Die Schwelle 0,03 gäbe der Nacht Luma
+                // 23,7, 0,02 gäbe 24,6 — 0,025 hält die Luma von main.
                 mulde: 0.38,
                 kavitaet: 12,
                 krume: 0.025,

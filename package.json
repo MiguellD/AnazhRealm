@@ -173,7 +173,7 @@
         "gate:weltbild-frost:echt": "node scripts/diag-weltbild-frost.cjs --echt",
         "gate:tag-achse:echt": "node scripts/werkbank.cjs licht --tag --kurz --eigen --port 4692",
         "gate:licht-weg:echt": "node scripts/werkbank.cjs licht --laub feld,feld0,feld90,feld180,panorama,wasser --uhr 0.5,0.27,0.05 --eigen --port 4697",
-        "gate:naesse:echt": "node artifacts/boden-nah/mess.cjs",
+        "gate:naesse:echt": "node scripts/werkbank.cjs licht --naesse --eigen --port 4699",
         "gate:pop": "node scripts/werkbank.cjs pop --eigen --port 4792",
         "beweis:e": "node scripts/diag-beweis-e.cjs --tag aaa8 --proto-min 90"
     },

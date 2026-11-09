@@ -2535,7 +2535,7 @@ class AnazhRealm_stoff_material {
     // DAS HIMMELS-BILD ist im Logarithmus beschränkt (`TERRAIN_BUMP.mulde · kavitaet · krume`, dort die Zahlen und die
     // Messung): exp(−ln(mulde) · s(kavitaet · (h − krume))) mit s(x) = x / √(1 + x²) — die tiefste Mulde hält `mulde` des
     // Lichts, die höchste Krume 1/mulde. Beim Ausblenden geht die Höhe mit k, die Schwelle mit k² (zweite Ordnung wie die
-    // Streuung: das Mittel wandert stetig von 1,11 auf 1). Bis w27-boden-nah-2 las das Himmels-Licht Korn × Kavität derselben
+    // Streuung: das Mittel wandert stetig von 1,13 auf 1). Bis w27-boden-nah-2 las das Himmels-Licht Korn × Kavität derselben
     // Höhe, beide linear bis 0 — die Mulde verlor Albedo UND Himmel, 4–10 % des offenen Bodens standen in der Nacht schwarz
     // (gate:pruefbuehne-licht S0 Nacht nennt den Stoff). Das Korn hält 0,1 der Albedo (h < −0,45, 3σ: der Teiler). Die Alpha des
     // Stoffs bleibt (Lehre 26: der Schattenpass liest colorNode.a); ohne colorNode trägt die Stoff-Farbe (r184 multipliziert
