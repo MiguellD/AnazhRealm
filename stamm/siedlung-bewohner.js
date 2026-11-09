@@ -233,17 +233,12 @@ class AnazhRealm_siedlung_bewohner {
     // Geschlecht, Bau, Muskel, der Schnitt des Haars, seine Länge und Fülle, das Alter, das Gesicht (Auge, Mund, Braue, Haar-Ansatz:
     // koerper GESICHT_GENOM) — die Farben trägt jeder Bewohner aus seinem eigenen Samen (`_bewohnerGenome`, die Ton-Tafel); bis
     // mensch.K4 vier Gestalten, ein Schnitt; bis w7-gesicht trug jede Gestalt dasselbe Gesicht (Iris 0,00621–0,00625 Hk).
+    // DIE GESTALT IST DIE NAH-WAHL (w26-leib-raum): die Gestalten tragen die Stufen 0 und 1 (`keys`) — die Menge (Stufen 2 und 3)
+    // ist der Leib-Raum der Siedlung (`_bewohnerRaum`), jeder Bewohner dort sein eigener Punkt.
     _bewohnerGestalten(S) {
         const kc = window.__koerperCore;
         if (!kc || !kc.START_PARAMS) return AnazhRealm._kernPflichtBruch("koerper:START_PARAMS");
-        const alt = this._activePeerUebergabe;
-        this._activePeerUebergabe = {};
-        let buch;
-        try {
-            buch = this._koerperStudioDials();
-        } finally {
-            this._activePeerUebergabe = alt;
-        }
+        const buch = this._bewohnerBuch();
         // DIE TRACHT DER EPOCHE (siedlung.K4): der Plan trägt die Kleidung seines Jahrs (fachwerk `kleidung`) — ihr Schnitt
         // kleidet jede Gestalt, die Farbe des Genoms fällt in ihre Farben
         const T = S.plan.kleidung;
@@ -267,10 +262,46 @@ class AnazhRealm_siedlung_bewohner {
             const dB = Object.assign({}, buch || {}, ov);
             const dK = Object.assign({}, kc.START_PARAMS, dB);
             const f = this._menschGussFarben(dB);
-            const keys = [0, 1, 2, 3].map((lod) => this._ofenMenschKey(dK, f.skin, f.hair, lod));
-            aus.push({ gen, ov, dK, f, keys, bestellt: keys.map(() => false), satz: null, tonZeile: 0 });
+            const keys = [0, 1].map((lod) => this._ofenMenschKey(dK, f.skin, f.hair, lod));
+            aus.push({ gen, ov, dK, f, keys, bestellt: keys.map(() => false), lage: null, tonZeile: 0 });
         }
         return aus;
+    }
+    // Das Buch der Gestalt ohne die Übergabe des Spielers (der Sentinel des Mitspielers): die Dials des Bauplans jeder Gestalt und
+    // der Vorlage der Siedlung
+    _bewohnerBuch() {
+        const alt = this._activePeerUebergabe;
+        this._activePeerUebergabe = {};
+        try {
+            return this._koerperStudioDials();
+        } finally {
+            this._activePeerUebergabe = alt;
+        }
+    }
+    // DER LEIB-RAUM EINER SIEDLUNG (w26-leib-raum, REFERENZ-ATLAS §4 — SMPL: ein Körper ist ein Punkt in EINEM Raum): die Menge (der
+    // Satz, Stufen 2 und 3) ist EINE Vorlage in der Tracht ihres Plans, jede Achse des Raums am Mittel-Knoten (koerper
+    // `leibRaumVorlage`, Höhe 1: die Größe jedes Bewohners trägt die Matrix seines Satzes), mit ihrer Formziel-Tafel aus dem Ofen —
+    // und jeder Bewohner ihr Punkt (`_bewohnerGenome`: `raumPunkt` in der Zeile seiner Palette). Kein Guss je Gestalt: zwei
+    // Vorlagen je Tracht, die das Memo teilt. Bis w26-leib-raum goss jede der 8 Gestalten beide Mengen-Stufen (16 Güsse je Siedlung),
+    // und jeder Bewohner trug die nächste von ihnen.
+    _bewohnerRaum(S) {
+        const kc = window.__koerperCore;
+        if (!kc || typeof kc.leibRaumVorlage !== "function" || !kc.CLOTH_COLORS)
+            return AnazhRealm._kernPflichtBruch("koerper:leibRaumVorlage");
+        const T = S.plan.kleidung;
+        if (!T || !Array.isArray(T.farben) || !T.farben.length)
+            return AnazhRealm._kernPflichtBruch("fachwerk:kleidung");
+        const P = kc.START_PARAMS;
+        const tracht = this._bewohnerTracht(
+            { topColor: P.topColor, bottomColor: P.bottomColor, shoeColor: P.shoeColor },
+            T,
+            Object.keys(kc.CLOTH_COLORS)
+        );
+        const dB = Object.assign({}, this._bewohnerBuch() || {}, tracht, { height: 1 });
+        const dK = kc.leibRaumVorlage(Object.assign({}, P, dB));
+        const f = this._menschGussFarben(dB);
+        const keys = [2, 3].map((lod) => this._ofenMenschKey(dK, f.skin, f.hair, lod));
+        return { dK, f, keys, bestellt: keys.map(() => false), tonZeile: 0, pose: null };
     }
     // DIE TRACHT DER EPOCHE an einem Satz Dials: ihr Schnitt (fachwerk `kleidung`), die Farben des Genoms in ihre Farben
     _bewohnerTracht(d, T, tuch) {
@@ -299,10 +330,14 @@ class AnazhRealm_siedlung_bewohner {
             Math.abs(a.alter - t.alter) +
             (a.schnitt === t.schnitt ? 0 : 0.5) +
             0.25 * (Math.abs(a.auge - t.auge) + Math.abs(a.mund - t.mund) + Math.abs(a.braue - t.braue) + Math.abs(a.haaransatz - t.haaransatz)); // prettier-ignore
+        if (typeof kc.leibRaumPunkt !== "function") return AnazhRealm._kernPflichtBruch("koerper:leibRaumPunkt");
         const rest = (x) => 1 + Math.max(-BW.restMax, Math.min(BW.restMax, x));
         const tuch = Object.keys(kc.CLOTH_COLORS);
         for (const G of S.gestalten)
             if (!G.tonZeile) G.tonZeile = this._tonZeile(kc.menschPalette(G.dK, G.f.skin, G.f.hair));
+        // der Leib-Raum der Siedlung entsteht mit den Punkten ihrer Bewohner (`_bewohnerRaum`)
+        const R = S.raum || (S.raum = this._bewohnerRaum(S));
+        if (!R.tonZeile) R.tonZeile = this._tonZeile(kc.menschPalette(R.dK, R.f.skin, R.f.hair));
         for (const b of S.liste) {
             const gen = (b.genom = this._rollHumanoidGenome(b.seed));
             let best = 0;
@@ -328,11 +363,24 @@ class AnazhRealm_siedlung_bewohner {
             );
             b.farben = { skinTone: d.skinTone, hairColor: d.hairColor, topColor: d.topColor, bottomColor: d.bottomColor, shoeColor: d.shoeColor }; // prettier-ignore
             const f = this._menschGussFarben(d);
+            // SEIN PUNKT IM LEIB-RAUM (w26-leib-raum): die Achsen seines Genoms — Geschlecht, Bau, Muskel, Alter, die Fülle und der
+            // Ansatz des Haars, der Schnitt als Kappe (koerper `leibRaumPunkt`); seine Größe die Skala seines Satzes gegen die Vorlage
+            const dP = Object.assign(this._dialsAusGenom(gen), {
+                age: gen.alter,
+                hairVol: gen.haarFuelle,
+                haaransatz: gen.haaransatz,
+                hairStyle: gen.schnitt,
+            });
+            b.raumPunkt = kc.leibRaumPunkt(dP);
+            b.raumSkala = dP.height / R.dK.height;
             if (b.tonZeilen) this._tonZeileFrei(b.tonZeilen[0]);
+            // seine Zeile trägt seine Palette und seinen Punkt; die Nah-Wahl und das Feld färben gegen die Gestalt, der Satz gegen
+            // die Vorlage (`satzZeilen`)
             b.tonZeilen = [
-                this._tonZeile(kc.menschPalette(Object.assign({}, G.dK, b.farben), f.skin, f.hair)),
+                this._tonZeile(kc.menschPalette(Object.assign({}, G.dK, b.farben), f.skin, f.hair), b.raumPunkt),
                 G.tonZeile,
             ];
+            b.satzZeilen = [b.tonZeilen[0], R.tonZeile];
         }
     }
 
@@ -740,13 +788,15 @@ class AnazhRealm_siedlung_bewohner {
 
     // DIE VORLAGEN DER GESTALTEN im Faden (der Mensch-Ofen der Foundry, nah zuerst — nie ein Guss im Haupt-Faden): je Stufe
     // EIN Auftrag; die Antwort legt die Vorlage `fest` ins Memo (die Geburt bindet sie, `_bewohnerFort` gibt sie frei).
+    // Die Vorlagen des Leib-Raums (Stufen 2 und 3, `_bewohnerRaum`) gehen denselben Weg.
     _bewohnerVorlagen(S, wo) {
         const memo = AnazhRealm._tierOfenMemo || (AnazhRealm._tierOfenMemo = new Map());
-        for (const G of S.gestalten)
-            for (let lod = 0; lod < G.keys.length; lod++) {
-                const key = G.keys[lod];
-                if (G.bestellt[lod] || memo.has(key)) continue;
-                G.bestellt[lod] = true;
+        for (const [G, stufe0] of [...S.gestalten.map((G) => [G, 0]), [S.raum, 2]])
+            for (let i = 0; i < G.keys.length; i++) {
+                const key = G.keys[i];
+                const lod = stufe0 + i;
+                if (G.bestellt[i] || memo.has(key)) continue;
+                G.bestellt[i] = true;
                 this._foundryRequest(
                     "mensch",
                     0,
@@ -755,7 +805,7 @@ class AnazhRealm_siedlung_bewohner {
                     this._foundryRang(wo, false)
                 ).then((meshes) => {
                     if (!meshes || !meshes.length) {
-                        G.bestellt[lod] = false;
+                        G.bestellt[i] = false;
                         return this._bruchMelden(`BEWOHNER: der Mensch-Ofen lieferte die Gestalt nicht (lod ${lod})`);
                     }
                     if (S.gestalten === null) return; // die Siedlung ging, bevor die Vorlage kam
@@ -823,7 +873,12 @@ class AnazhRealm_siedlung_bewohner {
         g.userData._menge = true; // der Mensch der Menge: sein Feld wählt das Stufen-Gesetz am Schirm (`_feldGrenzen`)
         this.state.scene.add(g);
         b.leib = g;
-        if (G.satz === null) G.satz = this._bewohnerSatz(S, b);
+        if (S.satz === null) S.satz = this._bewohnerSatz(S, b);
+        // DIE LAGEN SEINER GESTALT (das Feld, `_bewohnerFeldLage`): der Gang ihrer Glieder je Gestalt, der Stand sofort
+        if (G.lage === null) {
+            G.lage = { n: AnazhRealm.BEWOHNER.gangPhasen, gebacken: 0, fertig: false, tempo: b.tempo, gang: null };
+            this._bewohnerGangPose(g, G.lage, G.lage.n, null);
+        }
     }
 
     // DER STAND DES LEIBS an (x, z): auf dem Boden jedes Körpers (Q4: die Fels-Grenze, nie das Dach), an der Tür auf ihrer
@@ -835,60 +890,127 @@ class AnazhRealm_siedlung_bewohner {
         [b.grundH, b.frist] = [undefined, null]; // der Grund des Schritts liest neu, er wählt neu
     }
 
-    // DER SATZ EINER GESTALT (der EINE Gang-Satz, `_gangSatz` — Lehre 23: die Kosten der Menge hängen nie an der Kopfzahl): der
-    // Leib der Menge im Auge (`leib`, die Mengen-Stufe 2 — mensch.K4: EINE Hülle, die Farben in ihren Ecken) und sein Wurf aus der
-    // NUR-WURF-Stufe 3 (`wurf`, Studio-Vertrag B2: nie gezeigt, nur auf der Wurf-Ebene, jeder im Nah-Kreis, auch die Nah-Wahl;
-    // Lehre 26: der Schatten ist derselbe Leib), EINE Senke je Stufe. Befehle je Gestalt: einer im Auge, der Wurf je Kaskade (bis
-    // mensch.K4 Haut, Rest im Stoff des größten Kleids und Wurf). DER GANG IM SATZ: das EINE Gang-Gesetz des nahen Leibs in
-    // EINEM Band — `gangPhasen` Phasen des Doppelschritts und der Stand (`_bewohnerGangPose`, am Leib `b` seiner Gestalt), je
-    // Instanz Phase und Gewicht seines Gangs (`_bewohnerSatzSchreiben`). Ein Bewohner im Satz ist eine Matrix; der Satz geht
-    // mit seiner Siedlung.
+    // DER SATZ DER MENGE (der EINE Gang-Satz, `_gangSatz` — Lehre 23: die Kosten der Menge hängen nie an der Kopfzahl): EINER je
+    // Siedlung, ihr Leib-Raum (`_bewohnerRaum`, w26-leib-raum): der Leib der Menge im Auge (`leib`, die Mengen-Stufe 2 — mensch.K4:
+    // EINE Hülle, die Farben in ihren Ecken) und sein Wurf aus der NUR-WURF-Stufe 3 (`wurf`, Studio-Vertrag B2: nie gezeigt, nur
+    // auf der Wurf-Ebene, jeder im Nah-Kreis, auch die Nah-Wahl; Lehre 26: der Schatten ist derselbe Leib), EINE Senke je Stufe —
+    // jede die Vorlage ihrer Stufe samt Formziel-Tafel (`raum`), jede Instanz ihr Punkt (die Zeile ihrer Palette, `satzZeilen`).
+    // Befehle je Siedlung: einer im Auge, der Wurf je Kaskade (bis w26-leib-raum je Gestalt, 8 je Siedlung). DER GANG IM SATZ: das
+    // EINE Gang-Gesetz des nahen Leibs in EINEM Band — `gangPhasen` Phasen des Doppelschritts und der Stand, am Leib `b` gestellt
+    // und auf die Knochen der Vorlage gelegt (`_bewohnerRaumStellen`), je Instanz Phase und Gewicht ihres Gangs
+    // (`_bewohnerSatzSchreiben`). Ein Bewohner im Satz ist eine Matrix und ein Punkt; der Satz geht mit seiner Siedlung.
     _bewohnerSatz(S, b) {
-        const G = S.gestalten[b.gestalt];
+        const R = S.raum;
         const senken = [];
         const quellen = [];
         for (const [lod, teil] of [
             [2, "leib"],
             [3, "wurf"],
         ]) {
-            const t = this._ofenMenschTemplate(G.dK, G.f.skin, G.f.hair, lod);
+            const t = this._ofenMenschTemplate(R.dK, R.f.skin, R.f.hair, lod);
             const q = [];
-            if (t && t.root)
-                t.root.traverse((m) => m.isSkinnedMesh && q.push({ m, beid: m.material.side === THREE.DoubleSide }));
+            if (t && t.root && t.raum)
+                t.root.traverse(
+                    (m) => m.isSkinnedMesh && q.push({ m, beid: m.material.side === THREE.DoubleSide, raum: t.raum })
+                );
             if (q.length !== 1) {
-                this._bruchMelden(`BEWOHNER: die Mengen-Stufe ${lod} trägt ihren Leib nicht („${S.plan.name || "?"}")`);
+                this._bruchMelden(
+                    `BEWOHNER: die Mengen-Stufe ${lod} trägt ihre Vorlage nicht („${S.plan.name || "?"}")`
+                );
                 return false;
             }
             quellen.push(q[0]);
             senken.push({ teil, quellen: q, stoff: q[0].m.material, wurf: teil === "wurf" });
         }
-        const cap = S.liste.filter((x) => x.gestalt === b.gestalt).length;
         return this._gangSatz(
-            { name: "bewohner-satz", inventar: "bewohner", n: AnazhRealm.BEWOHNER.gangPhasen, quellen, cap, senken },
+            {
+                name: "bewohner-satz",
+                inventar: "bewohner",
+                n: AnazhRealm.BEWOHNER.gangPhasen,
+                quellen,
+                cap: S.liste.length,
+                senken,
+                raum: true,
+            },
             // der Stand zuerst (der Satz steht, bis sein Gang gebacken ist — `_bewohnerGangBacken` im Takt)
-            (Z) => this._bewohnerGangPose(b.leib, Object.assign(Z, { gebacken: 0, tempo: b.tempo }), Z.n)
+            (Z) => this._bewohnerGangPose(b.leib, Object.assign(Z, { gebacken: 0, tempo: b.tempo }), Z.n, S)
         );
     }
 
-    // DIE POSE k DES GANG-PUFFERS (k < n: die Phase 2πk/n des Doppelschritts im EINEN Gang-Gesetz — `_gaitTick` mit dem Tempo
-    // des Leibs, eingeschwungen, dann `_animateHuman`; k = n: der Stand, der Kontrapost des Atems bei 0) am Leib, geskinnt in den
-    // Raum des Leibs (`_gangSatzPose`), und die Lage jedes Teils im Raum des Leibs (`_bewohnerLagePose`: der Gang des Felds).
-    // Danach steht der Leib wieder im Stand.
-    _bewohnerGangPose(g, satz, k) {
-        if (k < satz.n) {
-            if (!satz.gang) {
+    // DIE POSE k (k < n: die Phase 2πk/n des Doppelschritts im EINEN Gang-Gesetz — `_gaitTick` mit dem Tempo des Leibs,
+    // eingeschwungen, dann `_animateHuman`; k = n: der Stand, der Kontrapost des Atems bei 0) am Leib `g`: mit der Siedlung `S` die
+    // Zeile k des Gang-Puffers ihres Satzes `Z` — die Pose auf die Knochen der Vorlage gelegt (`_bewohnerRaumStellen`) und in den
+    // Raum des Leibs geskinnt (`_gangSatzPose`) —, ohne sie die Lagen der Zeile k einer Gestalt `Z` (`_bewohnerLagePose`: der Gang
+    // des Felds). Danach steht der Leib wieder im Stand.
+    _bewohnerGangPose(g, Z, k, S) {
+        if (k < Z.n) {
+            if (!Z.gang) {
                 const h = {};
-                for (let i = 0; i < 40; i++) satz.gang = this._gaitTick(g, h, satz.tempo, 0.1, null);
+                for (let i = 0; i < 40; i++) Z.gang = this._gaitTick(g, h, Z.tempo, 0.1, null);
             }
-            this._animateHuman(g, 0, (2 * Math.PI * k) / satz.n, true, false, null, satz.gang);
+            this._animateHuman(g, 0, (2 * Math.PI * k) / Z.n, true, false, null, Z.gang);
         } else this._animateHuman(g, 0, 0, false, false, null);
         this._leibMatrix(g);
-        this._gangSatzPose(satz, k, g.userData._tierBaum.teile, g.matrixWorld);
-        this._bewohnerLagePose(satz, k, g);
-        if (k < satz.n) {
+        if (S) {
+            const P = this._bewohnerRaumStellen(S, g);
+            this._gangSatzPose(Z, k, P.teile, P.wurzel.matrixWorld);
+        } else this._bewohnerLagePose(Z, k, g);
+        if (k < Z.n) {
             this._animateHuman(g, 0, 0, false, false, null);
             this._leibMatrix(g);
         }
+    }
+
+    // DIE KNOCHEN DER VORLAGE (w26-leib-raum): das Skelett der Mengen-Stufe 2 der Siedlung (ihr Leib-Raum, `_bewohnerRaum`) in
+    // demselben Rahmen wie ein Leib (`_buildHumanoidRig`: die Hülle × Welt-Maß, die Sohle der Vorlage auf der Sohle der Kapsel),
+    // einmal je Siedlung; `ruhe` die Lage jedes Knochens beim Bau.
+    _bewohnerRaumPose(S) {
+        const R = S.raum;
+        if (R.pose) return R.pose;
+        const t = this._ofenMenschTemplate(R.dK, R.f.skin, R.f.hair, 2);
+        const klon = t.root.clone(true);
+        const meshes = [];
+        klon.traverse((n) => n.isMesh && meshes.push(n));
+        for (const m of meshes) m.parent.remove(m);
+        const teile = {};
+        klon.traverse((n) => {
+            if ((n.isGroup || n.isBone) && n.name) teile[n.name] = n;
+        });
+        const f = (8 * AnazhRealm.PLAYER_KH) / 6;
+        const wrap = new THREE.Group();
+        wrap.scale.setScalar(f);
+        wrap.position.y = -AnazhRealm.PLAYER_FOOT_OFFSET - f * AnazhRealm._ofenSohleY(t);
+        wrap.add(klon);
+        const wurzel = new THREE.Group();
+        wurzel.add(wrap);
+        const ruhe = {};
+        for (const nm in teile)
+            ruhe[nm] = {
+                position: teile[nm].position.clone(),
+                quaternion: teile[nm].quaternion.clone(),
+                scale: teile[nm].scale.clone(),
+            };
+        wurzel.updateMatrixWorld(true);
+        return (R.pose = { wurzel, teile, ruhe });
+    }
+    // DIE POSE EINES LEIBS AUF DER VORLAGE (w26-leib-raum, die Pose in der Ruhe ihres Knochens — SMPL: dieselbe Pose θ, die Gelenke
+    // des Raums): je Knochen der Vorlage die Drehung des gestellten Leibs `g` gegen seine Ruhe (`_tierBaum.ruhe`), auf die Ruhe der
+    // Vorlage gelegt, dazu der Schritt seiner Lage und das Maß seiner Skala. Die Gelenke der Person liegen dabei auf denen der
+    // Vorlage: gemessen weichen sie über die Achsen des Raums höchstens 21 mm quer ab (die Schulter, Geschlecht) — der Gang dreht
+    // die Glieder um die Querachse, die Querlage trägt er nicht.
+    _bewohnerRaumStellen(S, g) {
+        const P = this._bewohnerRaumPose(S);
+        const tb = g.userData._tierBaum;
+        const q = this._bewohnerRaumQ || (this._bewohnerRaumQ = new THREE.Quaternion());
+        for (const nm in P.teile) {
+            const [d, r, s, sr] = [P.teile[nm], P.ruhe[nm], tb.teile[nm], tb.ruhe[nm]];
+            if (!s || !sr) continue;
+            d.quaternion.copy(r.quaternion).multiply(q.copy(sr.quaternion).invert().multiply(s.quaternion));
+            d.position.copy(r.position).add(s.position).sub(sr.position);
+            d.scale.copy(r.scale).multiply(s.scale).divide(sr.scale);
+        }
+        P.wurzel.updateMatrixWorld(true);
+        return P;
     }
 
     // DIE LAGEN DER ZEILE k (der Gang des Felds, Lehre 14): je Teil des Leibs (`_tierBaum.teile`, "" = die Hülle — die Anker der
@@ -923,7 +1045,7 @@ class AnazhRealm_siedlung_bewohner {
     _bewohnerFeldLage(b, S) {
         const g = b.leib;
         const gl = g.userData._kzGlieder;
-        const Z = S.gestalten[b.gestalt].satz;
+        const Z = S.gestalten[b.gestalt].lage;
         if (!gl || !Z) return;
         if (Z.lageVon === undefined) {
             Z.lageVon = gl.map((x) => Z.lageTeile.indexOf(x.name));
@@ -965,38 +1087,58 @@ class AnazhRealm_siedlung_bewohner {
     }
 
     // DER GANG WIRD GEBACKEN (Lehre 14: schwere deterministische Arbeit im Takt, nie als Spitze): je Takt höchstens `je`
-    // Phasen am ersten Leib der Gestalt, der nicht als Leib lebt (ein Leib der Nah-Wahl trägt seine eigene Pose); sind alle
-    // gebacken, lädt die Textur EINMAL neu und der Satz geht (`fertig`). Liefert, ob ein Satz eben fertig wurde.
+    // Phasen — zuerst der Satz der Siedlung (am ersten Leib, der nicht als Leib lebt: ein Leib der Nah-Wahl trägt seine eigene
+    // Pose), dann die Lagen jeder Gestalt (das Feld, an einem ihrer Leiber); ist der Satz gebacken, lädt die Textur EINMAL neu und
+    // er geht (`fertig`). Liefert, ob der Satz eben fertig wurde.
     _bewohnerGangBacken(S, je) {
         let fertig = false;
-        S.gestalten.forEach((G, gi) => {
-            const Z = G.satz;
-            if (!Z || Z.fertig || je <= 0) return;
-            const b = S.liste.find((x) => x.gestalt === gi && x.leib && !x.nah && !x.amSteuer);
-            if (!b) return;
-            for (; je > 0 && Z.gebacken < Z.n; je--) this._bewohnerGangPose(b.leib, Z, Z.gebacken++);
+        const frei = (gi) => S.liste.find((x) => (gi < 0 || x.gestalt === gi) && x.leib && !x.nah && !x.amSteuer);
+        const Z = S.satz;
+        const b = Z && !Z.fertig && je > 0 ? frei(-1) : null;
+        if (b) {
+            for (; je > 0 && Z.gebacken < Z.n; je--) this._bewohnerGangPose(b.leib, Z, Z.gebacken++, S);
             if (Z.gebacken >= Z.n) {
                 Z.tex.needsUpdate = true;
                 Z.fertig = fertig = true;
             }
+        }
+        S.gestalten.forEach((G, gi) => {
+            const L = G.lage;
+            if (!L || L.fertig || je <= 0) return;
+            const c = frei(gi);
+            if (!c) return;
+            for (; je > 0 && L.gebacken < L.n; je--) this._bewohnerGangPose(c.leib, L, L.gebacken++, null);
+            if (L.gebacken >= L.n) L.fertig = true;
         });
         return fertig;
     }
 
-    // DIE MATRIZEN DER SÄTZE (nur, wenn sich eine Wahl oder Lage ändert — Lehre 25): je Gestalt dicht ([0, n) lebt) — im Auge
-    // (der Leib) jeder Bewohner im Nah-Kreis, den die Nah-Wahl nicht trägt, im Wurf jeder im Nah-Kreis. Je Instanz Phase (`walkPhase` / 2π) und Gewicht (`_gaitW`) seines Gangs — bis der Gang
-    // gebacken ist, der Stand. Die Laufzeit-Marke `_satz` sagt jedem Leser, dass der Leib im Satz gezeichnet wird. Jeder
-    // merkt seine Plätze (`satzOrt`: Wurf, Leib); wechselt keine Wahl, rückt der Takt nur die Bewegten (`bewegt`) an
-    // ihren Plätzen — der Takt kostet die Gehenden, nie die Menge (mensch.K3: der Morgengang trägt das ganze Dorf).
+    // DIE MATRIZEN DES SATZES (nur, wenn sich eine Wahl oder Lage ändert — Lehre 25): dicht ([0, n) lebt) — im Auge (der Leib)
+    // jeder Bewohner im Nah-Kreis, den die Nah-Wahl nicht trägt, im Wurf jeder im Nah-Kreis. Je Instanz Phase (`walkPhase` / 2π)
+    // und Gewicht (`_gaitW`) seines Gangs — bis der Gang gebacken ist, der Stand — und die Zeilen seiner Palette (`satzZeilen`:
+    // seine, darin sein Punkt im Leib-Raum, und die der Vorlage). Die Laufzeit-Marke `_satz` sagt jedem Leser, dass der Leib im
+    // Satz gezeichnet wird. Jeder merkt seine Plätze (`satzOrt`: Wurf, Leib); wechselt keine Wahl, rückt der Takt nur die Bewegten
+    // (`bewegt`) an ihren Plätzen — der Takt kostet die Gehenden, nie die Menge (mensch.K3: der Morgengang trägt das ganze Dorf).
     _bewohnerSatzSchreiben(S, bewegt = null) {
         const m4 = this._bewohnerM4 || (this._bewohnerM4 = new THREE.Matrix4());
         const v3 = this._bewohnerV3 || (this._bewohnerV3 = new THREE.Vector3());
-        // je Art die Senke des Satzes seiner Gestalt: der Wurf, der Leib
+        const o3 = this._bewohnerO3 || (this._bewohnerO3 = new THREE.Vector3());
+        // je Art die Senke des Satzes: der Wurf, der Leib
         const ARTEN = ["wurf", "leib"];
-        // seine Matrix: Ort, Blick, seine Höhe und — wie die Hüllen seines Leibs (`_bewohnerGeburt`) — Breite und Tiefe
+        const Z = S.satz || null;
+        // seine Matrix: Ort, Blick und seine Größe gegen die Vorlage (`raumSkala`) — die Sohle bleibt, wo die seines Leibs steht
+        // (der Ursprung liegt PLAYER_FOOT_OFFSET × Skala über ihr, `_bewohnerStellen`)
         const lage = (g, b) =>
-            m4.compose(g.position, g.quaternion, v3.set(g.scale.x * b.breite, g.scale.y, g.scale.z * b.tiefe));
-        const setze = (Z, k, i, b) =>
+            m4.compose(
+                o3.set(
+                    g.position.x,
+                    g.position.y + AnazhRealm.PLAYER_FOOT_OFFSET * (b.raumSkala - g.scale.y),
+                    g.position.z
+                ),
+                g.quaternion,
+                v3.setScalar(b.raumSkala)
+            );
+        const setze = (k, i, b) =>
             AnazhRealm._gangSatzInstanz(
                 Z[k],
                 i,
@@ -1004,42 +1146,39 @@ class AnazhRealm_siedlung_bewohner {
                 0,
                 Z.fertig ? (b.walkPhase || 0) / (2 * Math.PI) : 0,
                 Z.fertig ? b._gaitW || 0 : 0,
-                b.tonZeilen
+                b.satzZeilen
             );
         if (bewegt) {
+            if (!Z) return;
             const dran = new Set();
             for (const b of bewegt) {
-                const Z = b.satzOrt && b.leib ? S.gestalten[b.gestalt].satz : null;
-                if (!Z) continue;
+                if (!b.satzOrt || !b.leib) continue;
                 lage(b.leib, b);
                 b.satzOrt.forEach((i, j) => {
                     if (i < 0) return;
-                    setze(Z, ARTEN[j], i, b);
+                    setze(ARTEN[j], i, b);
                     dran.add(Z[ARTEN[j]]);
                 });
             }
             for (const m of dran) AnazhRealm._gangSatzNeu(m);
             return;
         }
-        const zahl = new Map();
+        const zahl = [0, 0];
         for (const b of S.liste) {
             const g = b.leib;
             if (!g) continue;
-            const Z = S.gestalten[b.gestalt].satz;
             g.userData._satz = !!b.kreis && !b.nah && !!Z;
             b.satzOrt = null;
             if (!b.kreis || !Z) continue;
             lage(g, b);
-            b.satzOrt = ARTEN.map((k) => {
+            b.satzOrt = ARTEN.map((k, j) => {
                 if (k === "leib" && b.nah) return -1;
-                const i = zahl.get(Z[k]) || 0;
-                zahl.set(Z[k], i + 1);
-                setze(Z, k, i, b);
+                const i = zahl[j]++;
+                setze(k, i, b);
                 return i;
             });
         }
-        for (const G of S.gestalten)
-            for (const k of ARTEN) if (G.satz) AnazhRealm._gangSatzZahl(G.satz[k], zahl.get(G.satz[k]) || 0);
+        if (Z) ARTEN.forEach((k, j) => AnazhRealm._gangSatzZahl(Z[k], zahl[j]));
     }
 
     // DER BEWOHNER-TAKT (Lehre 13: im Frame-Takt der Wesen, nie am Render-Signal): je gemeldeter Siedlung nahe dem Spieler
@@ -1175,7 +1314,7 @@ class AnazhRealm_siedlung_bewohner {
                 if (!b.leib) {
                     if (b.leib === false || geburten >= BW.geburtenJeTakt) continue;
                     const G = S.gestalten[b.gestalt];
-                    if (!memo || G.keys.some((k) => !memo.has(k))) continue;
+                    if (!memo || G.keys.some((k) => !memo.has(k)) || S.raum.keys.some((k) => !memo.has(k))) continue;
                     // geboren wird am Ort seines Plans (drinnen an seiner Tür, ungezeichnet) — und dort steht er, wo die Uhr
                     // ihn sieht: die Ankunft geht den Tag nach, den keiner sah
                     b.x = b.ziel.x;
@@ -1432,6 +1571,7 @@ class AnazhRealm_siedlung_bewohner {
             S.listeWerk = null;
             if (!S.liste) {
                 S.gestalten = this._bewohnerGestalten(S);
+                S.satz = null;
                 S.liste = w.value;
                 this._bewohnerGenome(S);
                 this._bewohnerWacheSetzen(S);
@@ -3164,9 +3304,9 @@ class AnazhRealm_siedlung_bewohner {
             this._disposeSoulGroup(g);
         }
         const memo = AnazhRealm._tierOfenMemo;
-        for (const G of S.gestalten || []) {
+        if (S.satz) this._gangSatzAbschied(S.satz);
+        for (const G of [...(S.gestalten || []), ...(S.raum ? [S.raum] : [])]) {
             this._tonZeileFrei(G.tonZeile);
-            if (G.satz) this._gangSatzAbschied(G.satz);
             for (const key of G.keys) {
                 const v = memo && memo.get(key);
                 if (v && v.__ofen) v.__ofen.fest = false;
@@ -3177,6 +3317,8 @@ class AnazhRealm_siedlung_bewohner {
         S.listeWerk = null;
         S.lebt = false;
         S.gestalten = null;
+        S.raum = null;
+        S.satz = null;
         S.netz = null; // das Netz hing an der Wache (`frei`, `stand`): mit der Liste entsteht es neu
         this._ofenMemoRaeumen();
     }
