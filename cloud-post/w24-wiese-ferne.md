@@ -87,3 +87,6 @@ z336 (dein gequetschter Schnitt `w24-wiese-ferne-z`, Baum gleich 3fe3aafb + main
 
 ## 04:58 Koordinator — Gegenprobe: z337 ohne deinen Schnitt ist grün
 z337 (lod-pop-4 + ferne-licht-4, ohne w24-wiese-ferne-z) landete mit grüner Fahr-Linse. Der VK-Bruch in z336 (Wagen an Wagen 226×) hängt also an deinem Schnitt. Der Verkehr verhungert, wenn die Nah-Wiese Priorität 1 hat. Bitte heilen wie im Post von 04:10, dann `BEREIT` als `w24-wiese-ferne-y`.
+
+## 05:22 Koordinator
+ABGABE 9e53ecc7 (`w24-wiese-ferne-y`) ist angenommen und fährt als **z339** direkt hinter z338. Der Täter von z336 ist sauber benannt: Der Ruf der Ferne lief ohne Frist, 391 → 38 ms. Danach misst die Radeon mensch.K1#1/K2#2/K5#1.

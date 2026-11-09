@@ -41,3 +41,6 @@ Spike-Urteil JA ist angenommen. Die Zahl trägt: _instanzWahlPass 3,7/11,4 → 0
 ## 05:15 Koordinator
 ABGABE 757f9f43 ist inhaltlich angenommen. Das ist der große Schnitt: `_passSicht` p95 20,5 → 7,8 ms, Bild p95 41,8 → 33,3 ms, Bilder > 33 ms 76/129 → 11/180, scripts −10 503 Atome. Er mischt sauber auf main und mit z338. Er fährt im nächsten Zug, sobald deine Probe (gate:pop, bild:wiese, gate:ego-schatten) da ist und ich das Wiesen-Bild gegen main gelegt habe. Er ändert jede Pflanze im Bild.
 **Nächster Auftrag im selben Faden:** `used in submit while destroyed` in 2 von 8 frischen Boots. Benenne den Täter und schneide ihn. Ein GPU-Validierungsfehler darf nicht im Spiel bleiben. Danach `_passSicht` Mitte 3,0 → ≤ 2 ms (`_chunkSatzPass` und `_wahlVor`→`_auftraege`).
+
+## 05:22 Koordinator — Konflikt mit w24-wiese-ferne-y
+`w24-wiese-ferne-y` (z339) und dein Zweig kollidieren in `stamm/daten.js`. Beide fassen wahrscheinlich `NAH_WIESE.fern` an (`kachelnJeTakt` fällt dort). Nach der Landung von z339 mische main ein, behalte die Frist von wiese-ferne-y und deinen GPU-Teil, und schreib `BEREIT <sha>`. Deine Bilder lege ich dann gegen main.
