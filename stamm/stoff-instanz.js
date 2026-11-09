@@ -1302,6 +1302,28 @@ class AnazhRealm_stoff_instanz {
                 }
                 if (this.glieder.length === 0) this._fallen();
             }
+            // DER TAUSCH (die Senke wuchs, `_senkeMesh`): die gewachsene tritt an den Platz der alten — derselbe Block, dieselbe
+            // Gestalt, ihr Inhalt kopiert ganz neu (`_pruefen`: die Matrizen sind neu), kein Bild ohne sie. Bis hier trat sie wie
+            // eine Fremde ein (`_arenaMelden`): der alte Block lag noch, der neue fand keinen Platz, und eine Folgerin nahm sie erst
+            // nach dem Frame — an der Mess-Wiese in jedem frischen Boot im ersten Schuss (L1 und L2 der Vorlage 1, 810 → 1 294
+            // Plätze; die echte GPU brach die Treue des Pop-Gangs um 1 126 Bytes). false: die alte war kein Glied.
+            tauschen(alt, neu) {
+                const i = this.glieder.indexOf(alt);
+                if (i < 0) return false;
+                this.glieder[i] = neu;
+                [neu.__arena, neu.__arenaZ, alt.__arena, alt.__arenaZ] = [this, alt.__arenaZ, null, null];
+                this._lebend += ((neu.count | 0) > 0) - ((alt.count | 0) > 0);
+                this._sicht();
+                for (const z of [...this._zuege.values(), ...this._zuegeB.values()]) {
+                    const j = z.zuege.indexOf(alt);
+                    if (j >= 0) z.zuege[j] = neu;
+                }
+                if (neu.__zeichner.parent === neu) neu.remove(neu.__zeichner); // die Senke zeichnet nicht selbst
+                quelleWeg(neu);
+                AnazhRealm._arenaBuendel(neu);
+                this._neuAuf();
+                return true;
+            }
             // Im Bündel (`__buendel`) nimmt es die Arena auf; zeichnet sie im Hauptbild (Ebene 0), bleibt sie sichtbar, solange
             // sie Glieder trägt — ein Wechsel der Sicht nähme das Bündel neu auf. Sonst betritt sie nur einen Pass, in dem ein
             // Glied Instanzen zählt (die Instanz-Zahl zählt mit, `_instanzZahl`).

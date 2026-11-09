@@ -1922,13 +1922,17 @@ class AnazhRealm_vegetation_wiese {
             m.instanceMatrix.array.set(alt.instanceMatrix.array.subarray(0, a.anzahl * 16));
             m.instanceColor.array.set(alt.instanceColor.array.subarray(0, a.anzahl * 3));
             if (alt.parent) alt.parent.remove(alt);
-            this._instanzAbschied(alt);
             a.wachse++;
         }
         AnazhRealm._instanzZahl(m, a.anzahl);
         a.mesh = m;
         a.kap = kap;
         eltern.add(m);
+        // in ihrer Arena tritt die gewachsene an den Platz der alten (`tauschen`: derselbe Block, keine Folgerin), dann geht die alte
+        if (alt) {
+            if (alt.__arena) alt.__arena.tauschen(alt, m);
+            this._instanzAbschied(alt);
+        }
     }
 
     // Ein Kachel-Block tritt ein (Matrizen n×16, Farben n×3 bei Tint-Senken, die Ernte-Identität je Pflanze): die Senke
