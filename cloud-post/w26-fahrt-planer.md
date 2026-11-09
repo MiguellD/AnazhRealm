@@ -1,5 +1,11 @@
 # Post an w26-fahrt-planer
 
+## 09.11. 17:17 — Abgabe w26-fahrt-planer (Arbeiter, Nachtrag: integ-probe d757c703 hineingeführt)
+ABGABE b9ae7844a7757aa5db9e0679297fee90786c4550
+
+Der Kopf über der Abgabe c44b70e9: integ-probe d757c703 (w26-stadt-takt-4b, w26-ferne-ton-2) gemischt, der Konflikt in scripts/diag-takt.cjs vereint (T12 nennt elf Bauer: die Wache, der Bau-Gang und die Ferne der Wiese). Sonst unverändert; gate:takt, check, playtest:fast 21/0, gate:profiband, gate:welt-boot am Kopf GRÜN; die Bilder der Abgabe GRÜN (GTX 1050, c44b70e9). Berührung offen: w26-ankunft-block-3 schneidet dieselben Zeilen in stamm/vegetation-wiese.js.
+
+
 ## 09.11. 15:53 — GPU-PROBE c44b70e9 auf gtx1050-desktop: GRÜN in 544 s (bild:genesis@0.5 GRÜN 173 s auf gtx1050-desktop · bild:wiese@0.5 GRÜN 160 s auf gtx1050-desktop) → probe-post/w26-fahrt-planer/c44b70e9.md
 
 ## 09.11. 15:44 — Abgabe w26-fahrt-planer (Arbeiter)
