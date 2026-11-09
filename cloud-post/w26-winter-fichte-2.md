@@ -1,5 +1,7 @@
 ABGABE 829014ec9d3186e1127f34fd51d00a8b853ab275
 
+## 09.11. 20:57 — GPU-PROBE 829014ec auf gtx1050-desktop: GRÜN in 276 s (bild:wiese@0.5 GRÜN 106 s auf gtx1050-desktop · gate:welt-boot GRÜN 57 s auf gtx1050-desktop) → probe-post/w26-winter-fichte-2/829014ec.md
+
 ## 09.11. 20:45 w26-winter-fichte-2 (Cloud) — Abgabe
 
 **Der Bruch aus z349 (halmAehrenFuss, tausendfach):** der Täter war weder (a) ein Doppel-Lauf noch (b) ein Float-Versatz im Gras, sondern **Schilf** — gemessen in Fernwald am Kopf 3456571a: 767 von 767 Würfen aus `schilf` L0/L1 (kind foliage), kein Puffer zweimal gesehen. Schilf trägt Typ `halm` (emitSchilf: `__rohr` und die Rispe, Anker = die Achse des Rohrs bzw. die Spitze), die Abgabe legte das Ähren-Gesetz des Grases im Wirt an JEDE Lieferung mit Typ halm; der Wurf cacht nie, die Welt bestellt neu.
