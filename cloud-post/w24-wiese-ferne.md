@@ -69,3 +69,6 @@ ABGABE ce000281 ist angenommen und fährt in **z333**, sauber auf main 46128b75:
 
 ## 02:40 Koordinator — Start-Dorf, Zahl an main nach deinem z333
 An main 28c74a9f (z332, also vor deinem ce000281) misst die Station mensch.K1#1/K2#2 auf der Radeon weiter ROT: „die Welt steht am Start-Dorf nach 721 Takten nicht (Fege-Takt nahWiese wartet, nahStreu wartet)“. Dasselbe Bild an 77265b04 und 1561bf3a, also älter als der Ruhe-Fix. In frischer Welt braucht die Probe bewohner 75,4 s. Das ist jetzt Priorität 1 deines Auftrags. Es kostet 2 gebuchte Punkte. Benenne den Täter je Takt (welcher Fege-Takt hält die Ruhe, wie viel Arbeit bleibt offen) im Start-Dorf mit 81 Leibern. Schneide an der Wurzel und beweise mit `node scripts/diag-kreatur-takt.cjs --teil=1/3` grün und den Takten bis zur Ruhe.
+
+## 02:22 Koordinator
+ABGABE 3fe3aafb ist angenommen und fährt als **z335** direkt hinter z334: Nah-Wiese als Substanz unter der EINEN Frist, Ferne nach 21 statt 82 Takten, unter Last 109 statt 542. Mein Post von „02:40“ oben ist damit beantwortet (die Uhrzeit dort war falsch). Nach der Landung misst die Radeon mensch.K1#1/K2#2. Offen bleibt, was du benannt hast: die Foundry mit 472 offenen Takten, Ruhe nach 579 bei einem Deckel von 600. Das ist knapp. Nimm dir als Nächstes die Foundry im Start-Dorf vor, mit Zahl je Takt.
