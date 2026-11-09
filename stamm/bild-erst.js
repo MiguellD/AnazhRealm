@@ -90,11 +90,13 @@ class AnazhRealm_bild_erst {
         return !sp || st.postProcessingFailed || st.renderer.getRenderTarget() === sp.renderTarget ? "auge" : null;
     }
     // Gehört `o` in die Familie? ohne Kamera die Regel der Familie, mit ihr die Ebenen ihres Passes
+    // — der Punkt nur, solange das Feuer wirft (`_lichtWurfK.id`): am Tag hielte die Reihe sonst jeden Werfer, der die Welt verließ
     _vorwaermGehoert(o, fam, camera) {
         if (fam === "auge") {
             const m = (o.layers.mask | (o.userData._maskeVorEgo | 0)) >>> 0;
             return camera ? (m & camera.layers.mask) !== 0 : (m & 1) !== 0;
         }
+        if (fam === "punkt" && !camera && !(this._lichtWurfK && this._lichtWurfK.id != null)) return false;
         return o.castShadow === true && (!camera || (o.layers.mask & camera.layers.mask) !== 0);
     }
     // Ein Objekt tritt ins Gesetz: seine fehlenden Familien (eine, in der es schon steht, fehlt nie)
@@ -133,7 +135,8 @@ class AnazhRealm_bild_erst {
             this._vorwaermErgebnis = "gebaut";
         }
         if (f && f.size === 0) this._vorwaermFrei(o);
-        else if (f && !AnazhRealm.VORWAERM_HALT.some((h) => f.has(h))) this._vorwaermFrei(o, false);
+        else if (f && !AnazhRealm.VORWAERM_HALT.some((h) => f.has(h)))
+            this._vorwaermFrei(o, !this._vorwaermGehoert(o, "punkt", null)); // wirft das Feuer nicht mehr, fällt es ganz
     }
     // Es steht in jeder Familie (oder fällt aus dem Gesetz): es verlässt die Reihe — die Hüllen der kommenden Stufen
     // (`_vorwaermStufen`) hielten bis hier, jetzt räumt der Leer-Chokepoint sie (`_archGroupLeerDispose`); `ganz` false: es steht in
@@ -206,7 +209,9 @@ class AnazhRealm_bild_erst {
             const f = E.vorwaermFehlt.get(o);
             let w = o;
             while (w.parent) w = w.parent;
-            if (!f || f.size === 0 || w !== scene) {
+            // es steht, verließ die Szene oder wartet nur auf den Punkt eines Feuers, das nicht mehr wirft
+            const nurPunkt = !!f && f.size === 1 && f.has("punkt") && !this._vorwaermGehoert(o, "punkt", null);
+            if (!f || f.size === 0 || w !== scene || nurPunkt) {
                 this._vorwaermFrei(o);
                 continue;
             }
