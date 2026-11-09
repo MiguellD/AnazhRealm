@@ -487,6 +487,11 @@ class AnazhRealm_stoff_instanz {
             constructor(feld, typ, n, name) {
                 const A = typ === "uint" ? Uint32Array : Float32Array;
                 super(new THREE.StorageInstancedBufferAttribute(new A(n), n), typ, 0);
+                // DER EIGENE PLATZHALTER: trägt die Quelle das Feld nicht (eine Arena, deren Glieder kein aH0 tragen), bindet der
+                // Knoten ihn — nie den Puffer des zuletzt gezeichneten Objekts (r184 erneuert die Bindegruppe nur mit ihrer
+                // Gruppen-Version): bis w25-gpu-wahl las eine solche Arena das Maß einer fremden und zog nach deren Fall den
+                // gefallenen Puffer („used in submit while destroyed“, renderContext_2, Radeon 6831170c ×2)
+                this.leer = this.value;
                 this.feld = feld;
                 this.updateType = "object";
                 this.setName(name);
@@ -497,13 +502,11 @@ class AnazhRealm_stoff_instanz {
                 return v instanceof Map ? v.get(kamera) || null : v;
             }
             setup(builder) {
-                const p = this.quelle(builder.object, builder.camera);
-                if (p) this.value = p;
+                this.value = this.quelle(builder.object, builder.camera) || this.leer;
                 return super.setup(builder);
             }
             update(frame) {
-                const p = this.quelle(frame.object, frame.camera);
-                if (p) this.value = p;
+                this.value = this.quelle(frame.object, frame.camera) || this.leer;
             }
         }
         // DER INDEX DER INSTANZ: zieht eine Arena aus der Wahl der GPU (Marke `aWahl`, `_instanzWahlGpu`), ist er ihr Eintrag in
