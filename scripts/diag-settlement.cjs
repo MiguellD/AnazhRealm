@@ -2803,9 +2803,8 @@ hauptLauf(async () => {
                                     // Ferne nach `_fernSchuttAt` (Ring, Kronen-Karte, Feld-Pass): Wiese ab dem halben Grün, Ferne ohne Schutt
                                     // — wo das Netz den Stoff der Wand zeigt (Schutt ≥ 0,5) und der Erdbau die Höhe der Ferne bewegt (ohne Detail-Term, wie
                                     // der Ring); die Ferne ist ein Höhenfeld: unter der Kante einer Fläche zeigt sie die Fläche
-                                    let tg = w.deckung[i] / AnazhRealm.WIESEN_GRUND.schwelle;
-                                    tg = tg < 0 ? 0 : tg > 1 ? 1 : tg;
-                                    if (tg * tg * (3 - 2 * tg) >= 0.5) halm++;
+                                    // (die Wache smoothstep(0, schwelle, d) ≥ ½ ⇔ d ≥ ½ · schwelle)
+                                    if (w.stoff[3 * i] >= 0.5 * AnazhRealm.WIESEN_GRUND.schwelle) halm++;
                                     if (
                                         f === null &&
                                         w.schutt[i] >= 0.5 &&

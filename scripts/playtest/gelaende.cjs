@@ -1606,7 +1606,8 @@ async function checkBandWellePerf3cPhase2Async({ page, check }) {
 
 // Voller Chunk-Mesh im Worker: er trägt die komplette Pipeline (Iso-Meshing + Cells + Colors), nicht nur die Density-Samples.
 // Invariante: der FERTIGE Bau des Worker-Wegs (das Worker-Mesh und sein Haupt-Thread-Schritt) gleicht dem Sync-Bau — Lage,
-// Normalen, Index, Farbe, die Deckung des Stoffs (w26-ferne-ton-4: der Faden mischt sie in seinem Spiegel der Boden-Farbe)
+// Normalen, Index, Farbe, der Stoff des Grunds (w26-ferne-ton-4, w27-ferne-ton-5: der Faden mischt Deckung und Nässe in seinem
+// Spiegel der Boden-Farbe)
 // und die Boden-Karte (Höhe + Grün: wer AUF dem Boden steht, liest sie), die Zellen bis auf den Architektur-Stempel.
 async function checkBandWellePerf3cPhase3FullMesh({ page, check }) {
     const res = await page.evaluate(async () => {
@@ -1650,7 +1651,7 @@ async function checkBandWellePerf3cPhase3FullMesh({ page, check }) {
             normals: abw(gS.attributes.normal.array, W.normals, 1e-4),
             indices: abw(gS.index.array, W.indices),
             colors: abw(gS.attributes.color.array, gF.attributes.color.array, 1e-4),
-            Deckung: abw(gS.userData.deckung, gF.userData.deckung),
+            Stoff: abw(gS.attributes.aStoff.array, gF.attributes.aStoff.array),
             "Boden-Karte Grün": abw(S.gruenMap, F.gruenMap),
             "Boden-Karte Höhe": abw(S.surfMap, F.surfMap),
         };

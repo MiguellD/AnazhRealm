@@ -58,8 +58,9 @@ class AnazhRealm_gelaende_chunks {
                                 normals: new Float32Array(msg.normals),
                                 indices: new Uint32Array(msg.indices),
                                 colors: new Float32Array(msg.colors),
-                                // die Deckung des Stoffs je Vertex (w26-ferne-ton-4): die Karte einer vorläufigen Gestalt liest sie
-                                deckung: new Float32Array(msg.deckung),
+                                // der Stoff des Grunds je Vertex (Deckung · Nässe · frei): die Karte einer vorläufigen Gestalt
+                                // liest die Deckung (w26-ferne-ton-4), das Fragment beide (aStoff, w27-ferne-ton-5)
+                                stoff: new Float32Array(msg.stoff),
                                 // der Stoff (K17-2): Himmels-Sicht und Schutt je Vertex, die Feuchte des Mooses je Netz
                                 himmel: new Float32Array(msg.himmel),
                                 schutt: new Float32Array(msg.schutt),
@@ -813,13 +814,15 @@ class AnazhRealm_gelaende_chunks {
         geom.setAttribute("aSchutt", attr(meshData.schutt, 1));
         geom.setAttribute("aMulde", attr(meshData.mulde, 1));
         if (meshData.felsFeuchte !== undefined) geom.userData.felsFeuchte = meshData.felsFeuchte;
-        // DIE DECKUNG DES STOFFS (w26-ferne-ton-4): je Vertex die Narbe nach dem Fels-Stoff, ein CPU-Feld (die Karte einer
-        // vorläufigen Gestalt rastert mit ihr, `_bodenKarteNaht`). Fail-closed: ein Faden ohne sie (eine alte Platte) bricht laut.
-        if (!meshData.deckung || meshData.deckung.length !== nV)
+        // DER STOFF DES GRUNDS (w26-ferne-ton-4, w27-ferne-ton-5): je Vertex die Deckung der Narbe und die Nässe des Grunds nach
+        // dem Fels-Stoff (die dritte Zahl frei) — die Karte einer vorläufigen Gestalt rastert mit der Deckung (`_bodenKarteNaht`),
+        // der Satz reicht beide dem Fragment (`BODEN_SATZ_ATTR` aStoff). Fail-closed: ein Faden ohne ihn (eine alte Platte) bricht
+        // laut.
+        if (!meshData.stoff || meshData.stoff.length !== nV * 3)
             throw new Error(
-                `_buildVoxelChunkDataFromWorkerMesh(${cx},${cz}): der Worker liefert keine Deckung des Stoffs je Vertex`
+                `_buildVoxelChunkDataFromWorkerMesh(${cx},${cz}): der Worker liefert keinen Stoff des Grunds je Vertex`
             );
-        geom.userData.deckung = meshData.deckung;
+        geom.setAttribute("aStoff", attr(meshData.stoff, 3));
         // Der CPU-Körper des Chunks (gezeichnet wird er als Bereich im Boden-Satz, `_chunkSatzEin`).
         const mat = this._getVoxelChunkMaterial();
         const mesh = new THREE.Mesh(geom, mat);
@@ -1540,7 +1543,7 @@ class AnazhRealm_gelaende_chunks {
                 w: k(A.aMorphWeight.array),
                 nrm: k(A.normal.array),
                 col: k(A.color.array),
-                deck: k(u.deckung),
+                st: k(A.aStoff.array),
                 him: k(A.aHimmel.array),
                 sch: k(A.aSchutt.array),
                 mul: k(A.aMulde.array),
@@ -1669,6 +1672,7 @@ class AnazhRealm_gelaende_chunks {
         bg.setAttribute("aHimmel", at(band.HS, 1));
         bg.setAttribute("aSchutt", at(band.SC, 1));
         bg.setAttribute("aMulde", at(band.MU, 1));
+        bg.setAttribute("aStoff", at(band.ST, 3));
         bg.setIndex(at(band.I, 1));
         bg.userData.satzVorlage = band.satz;
         bg.userData.ausFaden = true; // sein Satz kommt fertig (`_chunkSatzEin` wacht darüber)
@@ -1737,11 +1741,11 @@ class AnazhRealm_gelaende_chunks {
             (art === "lage" || (lod | 0) < 3)
         )
             this._fadenUmgangen(`Boden-Karte (${art}) eines Faden-Netzes`);
-        // die Lage rastert ihr Grün aus der Deckung des Stoffs (w26-ferne-ton-4, `geom.userData.deckung`), nie aus der Farbe —
-        // fail-closed: eine Lage ohne Deckung trüge eine Karte ohne Wiese
-        const deck = art === "lage" ? geom.userData.deckung : null;
-        if (art === "lage" && !(deck && deck.length * 3 === geom.attributes.position.array.length))
-            throw new Error(`_bodenKarteNaht(${cx},${cz}): die Lage trägt keine Deckung des Stoffs (userData.deckung)`);
+        // die Lage rastert ihr Grün aus der Deckung des Stoffs (w26-ferne-ton-4, die erste Zahl von `aStoff`), nie aus der Farbe —
+        // fail-closed: eine Lage ohne Stoff trüge eine Karte ohne Wiese
+        const deck = art === "lage" && geom.attributes.aStoff ? geom.attributes.aStoff.array : null;
+        if (art === "lage" && !(deck && deck.length === geom.attributes.position.array.length))
+            throw new Error(`_bodenKarteNaht(${cx},${cz}): die Lage trägt keinen Stoff des Grunds (aStoff)`);
         // KEINE KOPIE EMPFANGENER BYTES (streaming.K5): die Lage einer vorläufigen Gestalt ist der Puffer, den sie an Ort und
         // Stelle bewegte (der Neubau aus dem Faden ersetzt das Netz, kein Teil des Fadens legt sich bis dahin an,
         // `_bodenTeilLegen`); nur die Karte der Ziele eines Sync-Baus hält ihre Lage als Kopie des Attributs
@@ -3227,8 +3231,9 @@ AnazhRealm.CHUNK_IDB_MAX = 600;
 // Puffer, das Morph-Ziel als eigene Kopie): ein alter Eintrag trüge die Typ-Arrays des Mains ohne Morph-Ziel; seit w4-b-boden2
 // trägt der Reply Naht und Satz-Vorlage (`naht`, `satz`): ein alter Eintrag ließe den Einbau sie im Haupt-Faden nachrechnen; seit
 // w26-ferne-ton-4 trägt er die Deckung des Stoffs je Vertex (`deckung`) und eine Karte, deren Grün sie liest: ein alter Eintrag
-// trüge das Grün aus dem Ton; seit w27-ferne-ton-5 endet die Narbe am Spiegel: ein alter Eintrag trüge Grün unter Wasser.
-AnazhRealm.CHUNK_IDB_FORM = "faden-reply-deckung-spiegel";
+// trüge das Grün aus dem Ton; seit w27-ferne-ton-5 endet die Narbe am Spiegel (ein alter Eintrag trüge Grün unter Wasser), und
+// der Reply trägt den Stoff des Grunds je Vertex (`stoff`: Deckung · Nässe · frei) samt seiner Vorlage im Satz (aStoff).
+AnazhRealm.CHUNK_IDB_FORM = "faden-reply-stoff";
 // FERN_FARBE (`fernFarbeTeile` im Fern-Faden, linear): das Kronendach des Waldes aus der Ferne ist sein Spektrum je Art
 // (`_fernKroneArt`, Kern KRONEN_FARBE: Laubwald grün 0,0525, Nadelwald 0,0402); `kronenSchatten` trägt nur die kahle Krone
 // (die Rinde beschattet sich selbst, wie bis w26-ferne-ton-3 auch das Laub: Eiche 0,195 × 0,32); die Saison multipliziert der Leser

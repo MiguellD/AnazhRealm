@@ -240,6 +240,9 @@ const FORBIDDEN = [
     ["_drainScatterMeshPools", "Welle B"],
     ["_scatterMeshPools", "Welle B"],
     ['"deck-streu"', "Welle B — die Deck-Streu ist der zweite Block der Fern-Mesh je Art"],
+    // w27-ferne-ton-5: das Boden-Fragment liest den Stoff des Grunds (aStoff), nie Ton und Luminanz der Albedo
+    ["gruenSchwelle", "aStoff"],
+    ["mossDampLo", "aStoff"],
     ["_archPlacedRegionKey", "Welle B — der platzierte Bau ist global, ein Studio-Leaf keyt nach Geometrie"],
     ["useRegionArchCull", "Welle B"],
     ["ARCH_REGION_CULL_MAX_SPAN", "Welle B"],

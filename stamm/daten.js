@@ -612,7 +612,7 @@ class AnazhRealm_daten {
         return [dek(((hex >> 16) & 255) / 255), dek(((hex >> 8) & 255) / 255), dek((hex & 255) / 255)];
     }
 
-    // DER WIESEN-GRUND (K53, EINE Quelle): wo der Boden grün ist (die Wiesen-Wache `gruenSchwelle`: g − (r+b)/2), deckt ihn
+    // DER WIESEN-GRUND (K53, EINE Quelle): wo der Boden grün ist (die Wiesen-Wache über der Deckung des Stoffs), deckt ihn
     // das Gras — das MITTEL des Halms (`halmMittel`), das Integral der Halm-Farbe (h ∈ [0, 1]: mix(Wurzel, Spitze, h) ·
     // (0,65 + 0,35 h)) = 0,383 · Wurzel + 0,442 · Spitze, Y 0,17 wie das Studio-Gras der Nah-Wiese (das Relief der Nähe liest es);
     // die karge Stelle (Fleck λ 7,7 m, `rauschM`) zeigt mehr Grund: Gewicht 0,5 … 1 der Wache. Das Gesetz rechnet ihn
@@ -676,10 +676,10 @@ class AnazhRealm_daten {
     // tragen keine lockere Erde (sie rutscht) → Fels bricht durch. `_steep = 1 − normalWorld.y`: 0 flach,
     // 0.29 ≈ 45°, 0.5 = 60°, 1 senkrecht. Das Profil ist konservativ (nur echte Hänge versteinern).
     static get TERRAIN_GEOLOGY() {
-        // Fels- und Moos-Tint SIND die Boden-Palette (rock · wet). Die Schwellen sind linear (der Vertex trägt
-        // seit dem Farb-Gesetz die Albedo): `gruenSchwelle` ist die Wache des Boden-Fragments über der Albedo (g − (r+b)/2:
-        // Halm-Relief, Moos, Narbe des Bilds). Der Grün-Kanal der Boden-Karte liest sie nicht mehr: er trägt die Deckung des
-        // Stoffs (`WIESEN_GRUND.deckung` · `schwelle`, w26-ferne-ton-4).
+        // Fels- und Moos-Tint SIND die Boden-Palette (rock · wet). Die Wachen der Albedo sind gefallen (w27-ferne-ton-5): Grün
+        // und Nässe liest das Boden-Fragment aus dem Stoff des Grunds je Vertex (`aStoff`: die Deckung über `WIESEN_GRUND.
+        // schwelle`, die Nässe), wie die Boden-Karte ihr Grün (w26-ferne-ton-4) — bis hierher aus g − (r+b)/2 und der Luminanz
+        // der Farbe (die Schwellen 0,04 und 0,05 … 0,09 standen hier).
         const P = AnazhRealm.BODEN_FARBE;
         return this._einmal(
             "TERRAIN_GEOLOGY",
@@ -695,9 +695,6 @@ class AnazhRealm_daten {
                 schuttGitter: 5.4,
                 schutt: 0.85,
                 mossTint: P.wet, // das Moos des Bodens ist der nasse Grund der Palette
-                gruenSchwelle: 0.04, // die Wache des Fragments: smoothstep(0, gruenSchwelle, g − (r+b)/2) der Albedo
-                mossDampLo: 0.05, // unter dieser linearen Luminanz = „feucht/Niederung" (nasser Grund 0,042)
-                mossDampHi: 0.09, //   (Wiese 0,10, beschattete Streu 0,086 — die Feuchte lebt im Vertex)
                 mossMax: 0.6, // Deckel der Moos-Übernahme (kein uniformer Teppich)
                 roughBase: 0.94, // V18.386 — Portal-Terrain-Roughness (`_terMat` 0.94, matter Boden). Der Substanz-Kern
                 //                  variiert sie ums Korn (Erhebung rau, Mulde glänzt), Moos wird matter,

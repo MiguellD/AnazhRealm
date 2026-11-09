@@ -4292,15 +4292,16 @@
     // Edit bewegt): die Höhe des GERENDERTEN Bodens je Chunk aus dem fertigen Netz (Surface-Nets nach Glättung und Crop) auf
     // ein Gitter von `cfg.step / T` (LOD 0: 0,45 m, Ursprung Chunk − Schritt, über das Pad (dim + 3) · Schritt); je Punkt die
     // OBERSTE nicht-steile Fläche (Wände tragen nichts), NaN ohne Boden, dazu der Grün-Kanal (Uint8: die Wiesen-Wache
-    // smoothstep(0, `wache`, d) über der Deckung `deck` je Vertex — der Stoff der Narbe nach dem Fels-Stoff, nie die Farbe,
-    // w26-ferne-ton-4; null: die Karte trägt nur die Höhe). `cfg` { step, dim, span } die Stufe des Netzes · `basis` die vorige Karte derselben
+    // smoothstep(0, `wache`, d) über der Deckung je Vertex — die erste Zahl seines Stoffs `stoff` (je Vertex drei: Deckung ·
+    // Nässe · frei, w27-ferne-ton-5): der Stoff der Narbe nach dem Fels-Stoff, nie die Farbe, w26-ferne-ton-4; null: die Karte
+    // trägt nur die Höhe). `cfg` { step, dim, span } die Stufe des Netzes · `basis` die vorige Karte derselben
     // Geometrie (`hoehe`, `gruen`, ihre Lage `ref`, je Dreieck sein Zellen-Rechteck `zellen`): neu gerastert werden nur die
     // Zellen unter den Dreiecken, die gegen `ref` ihre Lage ändern — byte-gleich mit der ganzen Karte · `rand` (`rand` die
     // Vertices, `randTri` ihre Dreiecke): bewegen kann nur der Saum (mit `bewegt`: genau diese Ecken SIND bewegt, `pos` ist
     // `ref` an Ort und Stelle). `anOrt` (mit `basis`): die Karte schreibt in die Felder
     // der Basis statt in ihre Kopie, und `geaendert` nennt danach jede Zelle, deren Höhe wechselte (der Leser einer früheren
     // Lage fragt sie statt einer alten Kopie). → { hoehe, gruen, zellen, geaendert } oder null.
-    function bodenKarte(pos, idx, deck, cx, cz, cfg, T, wache, basis, rand, anOrt) {
+    function bodenKarte(pos, idx, stoff, cx, cz, cfg, T, wache, basis, rand, anOrt) {
         if (!pos || !idx || idx.length < 3) return null;
         const h = cfg.step / T;
         const M = T * (cfg.dim + 3) + 1;
@@ -4432,8 +4433,8 @@
                     map[m] = y;
                     // Grün-Kanal: die Wiesen-Wache über der Deckung des Stoffs (`WIESEN_GRUND.deckung`, je Vertex nach dem
                     // Fels-Stoff) — bis w26-ferne-ton-4 g − (r+b)/2 der Vertex-Farbe: ein Ton der Palette änderte Haftung und Wuchs.
-                    if (deck) {
-                        const g = w1 * deck[idx[t]] + w2 * deck[idx[t + 1]] + w3 * deck[idx[t + 2]];
+                    if (stoff) {
+                        const g = w1 * stoff[3 * idx[t]] + w2 * stoff[3 * idx[t + 1]] + w3 * stoff[3 * idx[t + 2]];
                         const t2 = Math.max(0, Math.min(1, g / wache));
                         gruen[m] = Math.round(255 * t2 * t2 * (3 - 2 * t2));
                     }
@@ -5077,7 +5078,7 @@
         if (kanten.length === 0) return null;
         let nV = 0;
         for (let k = 2; k < kanten.length; k += 3) nV += kanten[k] ? 8 : 4;
-        const [P, N, C, NZ, FZ, MT] = Array.from({ length: 6 }, () => new Float32Array(nV * 3));
+        const [P, N, C, NZ, FZ, MT, ST] = Array.from({ length: 7 }, () => new Float32Array(nV * 3));
         const [MW, HS, SC, MU] = Array.from({ length: 4 }, () => new Float32Array(nV));
         // der Index in der Form, die `setIndex` aus einer Liste wählte (Uint16 bis 65 535 Ecken)
         const I = nV - 1 >= 65535 ? new Uint32Array((nV / 4) * 6) : new Uint16Array((nV / 4) * 6);
@@ -5089,7 +5090,8 @@
             sA = r.sch,
             mA = r.mul,
             nZ = r.nZ,
-            fZ = r.fZ;
+            fZ = r.fZ,
+            stA = r.st;
         // die Ecke o: Lage, Quell-Vertex v (Farbe, Himmel, Schutt, die Normale außer am Vorhang); `morph`: Ziel, Code, Ziel-Normale
         // und -Farbe des Quell-Vertex (die feine Kante wandert mit), sonst fest (Ziel = Lage, Code 0)
         const ecke = (x, y, z, v, morph, vorhang) => {
@@ -5110,6 +5112,7 @@
             for (let k = 0; k < 3; k++) {
                 NZ[o3 + k] = morph ? nZ[v * 3 + k] : N[o3 + k];
                 FZ[o3 + k] = morph ? fZ[v * 3 + k] : C[o3 + k];
+                ST[o3 + k] = stA[v * 3 + k]; // der Stoff der Quell-Ecke (Deckung · Nässe, w27-ferne-ton-5)
             }
             HS[o] = hA[v];
             SC[o] = sA[v];
@@ -5147,7 +5150,7 @@
             ecke(tax, tay - SKIRT, taz, a, false, true);
             quad();
         }
-        return { P, N, C, NZ, FZ, MT, MW, HS, SC, MU, I };
+        return { P, N, C, NZ, FZ, MT, MW, HS, SC, MU, ST, I };
     }
 
     // DIE VORLAGE EINES BODEN-BEREICHS IM SATZ (aus dem Stamm `_chunkSatzLege` · `_chunkSatzViertel` · `_chunkSatzHuelle`): je
@@ -5304,9 +5307,10 @@
     // (der Schutt bricht, er rundet nicht), die Feuchte EINMAL je Netz am Schwerpunkt seines Felsens unter dem Himmel.
     // L die Gelände-Lage · B `felsBasis` · o { rockLo, rockHi, schuttKandidat, schuttGitter, schutt, fuss } · P N I das Netz
     // (n Vertices) · H `himmelsSicht` (null: alles unter dem Himmel) · C die Säulen-Farbe (wird zum Stoff gemischt) ·
-    // feuchte(x, z, y) die Feuchte des Wirts · D (w26-ferne-ton-4) die Deckung je Vertex (der Stoff der Narbe, `bodenKarte`
-    // liest sie): wo der Vertex Fels-Stoff trägt, trägt er keine Narbe — D wird mit demselben Gewicht zu 0 gemischt (null: das
-    // Netz trägt keine Karte, die Morph-Ziele). → { schutt: Float32Array(n) (das Gewicht des Schutts, der Detail-Term legt sein
+    // feuchte(x, z, y) die Feuchte des Wirts · D (w26-ferne-ton-4) der Stoff je Vertex (je drei Zahlen: die Deckung der Narbe,
+    // `bodenKarte` liest sie, die Nässe des Grunds, frei — w27-ferne-ton-5): wo der Vertex Fels-Stoff trägt, trägt er weder
+    // Narbe noch nassen Grund — Deckung und Nässe werden mit demselben Gewicht zu 0 gemischt (null: das Netz trägt keine Karte,
+    // die Morph-Ziele). → { schutt: Float32Array(n) (das Gewicht des Schutts, der Detail-Term legt sein
     // Korn auf), feuchte (womit das Moos gerechnet wurde; undefined ohne Fels) }.
     function felsStoff(L, B, o, P, N, I, H, C, n, feuchte, D) {
         const SW = new Float32Array(n);
@@ -5407,7 +5411,10 @@
             C[3 * i] += (t[0] - C[3 * i]) * w;
             C[3 * i + 1] += (t[1] - C[3 * i + 1]) * w;
             C[3 * i + 2] += (t[2] - C[3 * i + 2]) * w;
-            if (D) D[i] -= D[i] * w;
+            if (D) {
+                D[3 * i] -= D[3 * i] * w;
+                D[3 * i + 1] -= D[3 * i + 1] * w;
+            }
         }
         return { schutt: SW, feuchte: fe };
     }

@@ -1515,7 +1515,7 @@ class AnazhRealm_gelaende_boden {
     // Mesh (Surface-Nets-Vertices nach Glättung + Crop) auf ein Gitter von step/BODEN_KARTE_TEILUNG (LOD 0:
     // 0,45 m, Origin chunk − step, über das Pad (dim+3)·step); je Punkt die OBERSTE nicht-steile Fläche (Wände
     // tragen nichts), NaN ohne Boden, dazu der Grün-Kanal (Uint8: die Wache über der Deckung des Stoffs je Vertex,
-    // `geom.userData.deckung`, w26-ferne-ton-4 — nie über der Farbe). Vorher las die Karte die Dichte-Spalten
+    // die erste Zahl von `aStoff`, w26-ferne-ton-4 — nie über der Farbe). Vorher las die Karte die Dichte-Spalten
     // (Nulldurchgang an den Gitter-Ecken) — gemessen 01.10.: an der Mess-Wiese −1004/−790 liegt der gerenderte
     // Boden ±0,22 m (q05–q95, max +0,43) neben dem Gesetz, im Spawn-Chunk Median 45 cm; das 1,8-m-Netz trägt
     // die Feinform der Funktion nicht, die Glättung verdoppelt die Abweichung. Die Karte trifft das Mesh im
@@ -1530,7 +1530,8 @@ class AnazhRealm_gelaende_boden {
     // der Saum (`_bodenNaht`: `rand` die Vertices, `randTri` ihre Dreiecke) — die Suche nach bewegten geht nur ihn.
     // DIE RECHNUNG IST DER KERN (w4-b-boden, gelaende-core `bodenKarte`): der voxel-worker rastert die Karte jedes Netzes, das
     // er baut (der Einbau setzt sie nur ein); hier rastern der Sync-Bau, der Naht-Morph und die vorläufige Gestalt eines Edits.
-    // `deck` die Deckung je Vertex (`geom.userData.deckung`), null: die Karte trägt nur die Höhe (die Morph-Ziele).
+    // `deck` der Stoff je Vertex (`aStoff`: je drei Zahlen, die erste die Deckung), null: die Karte trägt nur die Höhe (die
+    // Morph-Ziele).
     _bodenKarteAusMesh(pos, idx, deck, cx, cz, lod, basis = null, rand = null, anOrt = false) {
         if (!pos || !idx || idx.length < 3) return null;
         const G = globalThis.__gelaendeCore;
@@ -2271,20 +2272,22 @@ class AnazhRealm_gelaende_boden {
         if (!pos || typeof this.worldFieldAt !== "function") return;
         const n = pos.count;
         const colors = new Float32Array(n * 3);
-        // DIE DECKUNG JE VERTEX (w26-ferne-ton-4): der Stoff der Narbe, den die Boden-Karte rastert (`_bodenKarteNaht`) — ein
-        // CPU-Feld des Netzes, kein Attribut der GPU
-        const deckung = new Float32Array(n);
+        // DER STOFF DES GRUNDS JE VERTEX (w26-ferne-ton-4, w27-ferne-ton-5): die Deckung der Narbe, die die Boden-Karte rastert
+        // (`_bodenKarteNaht`), und die Nässe des Grunds (die dritte Zahl frei) — das Attribut `aStoff`, der Satz reicht es dem
+        // Fragment (`BODEN_SATZ_ATTR`, snorm8x4)
+        const stoff = new Float32Array(n * 3);
         const out = [0, 0, 0];
-        const aus = { deckung: 0 };
+        const aus = { deckung: 0, nass: 0 };
         for (let i = 0; i < n; i++) {
             this._bodenFarbeAt(pos.getX(i), pos.getY(i), pos.getZ(i), out, aus);
             colors[i * 3] = out[0];
             colors[i * 3 + 1] = out[1];
             colors[i * 3 + 2] = out[2];
-            deckung[i] = aus.deckung;
+            stoff[i * 3] = aus.deckung;
+            stoff[i * 3 + 1] = aus.nass;
         }
         geom.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
-        geom.userData.deckung = deckung;
+        geom.setAttribute("aStoff", new THREE.Float32BufferAttribute(stoff, 3));
         this._felsStoff(geom);
     }
 
@@ -2299,9 +2302,9 @@ class AnazhRealm_gelaende_boden {
         const him = geom.attributes.aHimmel;
         const nor = geom.attributes.normal;
         const pos = geom.attributes.position;
-        const deck = geom.userData.deckung;
-        if (!col || !nor || !pos || !deck || deck.length !== pos.count)
-            throw new Error("_felsStoff: der Boden trägt nicht color · normal · position · Deckung (fail-closed)");
+        const st = geom.attributes.aStoff;
+        if (!col || !nor || !pos || !st || st.count !== pos.count)
+            throw new Error("_felsStoff: der Boden trägt nicht color · normal · position · aStoff (fail-closed)");
         // Ohne Höhlen-Graph (nur der Voxel-Test `_voxelTest`: ein Gitter ohne Sicht-Graph) steht jeder Vertex unter dem
         // Himmel — jeder Chunk trägt `aHimmel` (`_buildVoxelChunkData*` bauen den Graph fail-closed).
         const S = globalThis.__gelaendeCore.felsStoff(
@@ -2315,7 +2318,7 @@ class AnazhRealm_gelaende_boden {
             col.array,
             pos.count,
             (x, z, y) => this._feuchteAt(x, z, y),
-            deck
+            st.array
         );
         geom.setAttribute("aSchutt", new THREE.Float32BufferAttribute(S.schutt, 1));
         // die Linse (`gate:hoehlen-sicht` (k)) liest, womit das Moos gerechnet wurde
@@ -2382,17 +2385,25 @@ class AnazhRealm_gelaende_boden {
         const WG = AnazhRealm.WIESEN_GRUND;
         const DK = WG.deckung;
         let d = DK.rock;
+        // DIE NÄSSE DES GRUNDS (w27-ferne-ton-5): der Anteil des nassen Grunds an der Mischung — die Feuchte legt ihn auf, jede
+        // Klasse über ihm nimmt ihn mit ihrem Gewicht (Flechte, Glut, Schnee, Strand, Pfad; unter Wasser 0). Das Boden-Fragment
+        // liest ihn für Moos und Glanz, wo es bis hierher die Luminanz der Albedo las (`_terrainGeologyAlbedo`)
+        let n = 0;
         const mix = (target, t, dk) => {
             c[0] += (target[0] - c[0]) * t;
             c[1] += (target[1] - c[1]) * t;
             c[2] += (target[2] - c[2]) * t;
-            if (dk !== undefined) d += (dk - d) * t;
+            if (dk !== undefined) {
+                d += (dk - d) * t;
+                n -= n * t;
+            }
         };
         mix(earth, ss(0.25, 0.85, f.lebendig), DK.mead);
         // Feuchte schiebt den Boden Richtung dampEarth. Reihenfolge im mix-Stack ist Pflicht: nach earth, VOR
         // lava/snow/sed/strand. genVersion-Schleuse via _feuchteAt (< 2 → 0); Vertex-y ist die Surface.
         const feuchte = typeof this._feuchteAt === "function" ? this._feuchteAt(x, z, y) : 0;
         mix(dampEarth, ss(F_VIS_LO, F_VIS_HI, feuchte), DK.wet);
+        n += ss(F_VIS_LO, F_VIS_HI, feuchte);
         // Kein Kronendach im Vertex: bis 06.10. dunkelte das Kronenlicht-Feld der Platzierung (`_canopyLightAt`, wo
         // Bäume wachsen DÜRFEN) den Boden × (0,58 + 0,46 · Licht) — zu 98 % ohne Baum darüber, unter einem Baum
         // zusätzlich zu seinem echten Schatten. Die Laubstreu unter den echten Kronen legt `_wegeBodenFarbe` auf.
@@ -2434,6 +2445,7 @@ class AnazhRealm_gelaende_boden {
         }
         mix(sed, schlick);
         d += (DK.sediment - d) * unterWasser;
+        n -= n * unterWasser;
         mix(sand, this._strandAt(x, z, y, uf), DK.sand);
         // V18.230 (Ω-OPSIS Säule II Ω-O6) — die PFADE: die Fluss-Bänke sind
         // getrampelte, gepackte Erde (Gras wird zusätzlich unterdrückt, s.
@@ -2451,7 +2463,10 @@ class AnazhRealm_gelaende_boden {
         out[1] = c[1];
         out[2] = c[2];
         // die Deckung des Stoffs (vor dem Fels-Stoff des Netzes): der Chunk trägt sie je Vertex (`_attachVoxelFieldColors`)
-        if (aus) aus.deckung = d;
+        if (aus) {
+            aus.deckung = d;
+            aus.nass = n;
+        }
         return out;
     }
 

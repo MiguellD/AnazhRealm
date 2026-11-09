@@ -297,8 +297,8 @@ async function tonProbe(farbe) {
             const frei = leihe(r, { _syncStelle: "naht" });
             const g = r._buildVoxelChunkData(cx, cz, E.lod || 0);
             frei();
-            M.faden.push(...w.karte.gruen, ...w.deckung);
-            M.haupt.push(...g.gruenMap, ...g.mesh.geometry.userData.deckung);
+            M.faden.push(...w.karte.gruen, ...w.stoff);
+            M.haupt.push(...g.gruenMap, ...g.mesh.geometry.attributes.aStoff.array);
             M.farbe.push(...w.colors, ...g.mesh.geometry.attributes.color.array);
             zu.push(leihe(E, { gruenMap: g.gruenMap }));
         }
