@@ -1,5 +1,5 @@
 // haar-strich-probe.cjs — AUF ZEIT (w26-haar-arm, fällt vor der Abgabe): die Szene der Station haar.K2#1 auf der echten Karte über die
-// GPU-Probe — eigene Werkbank an der Mess-Wiese, Third, 1920 × 1080, die Pose gehalten (`__halten` leib + haar, die Anzeige-Uhr auf 0),
+// GPU-Probe — eigene Werkbank an der Mess-Wiese, Third, 1920 × 1080, die Pose gehalten wie die Station (`__halten` leib, die Anzeige-Uhr auf 0, der Wind still, die Feder ruht),
 // je Schuss das Maß strich der Klasse spieler:kopf/hair (werkbank bild --klasse, ohne --ist). Je Spielart zwei Schüsse (arm 0,7 m,
 // third −4 m), die Spielarten live in derselben Welt: der Zweig, die Normale ohne Rundung, Kajiya-Kay (Tangente der Strähne).
 "use strict";
@@ -147,7 +147,7 @@ async function albedo() {
         wb("fenster", "1920", "1080");
         const u = json(wb("umstellen", "--ort", "wiese", "--sicht", "third"));
         console.log("umgestellt", JSON.stringify({ ort: u.ort, sicht: u.sicht, fehler: u.fehler }));
-        const h = json(wb("eval", 'window.__halten(["leib", "haar"]); window.__gehalten.t = 0; r.animatePlayerSoul(0); const c = []; r.state.playerMesh.traverse((o) => o.isMesh && o.material?.userData?.__klasse === "hair" && o.geometry.attributes.color && c.push(o.geometry.attributes.color.getX(2))); return { gehalten: [...window.__gehalten], haarRot: c.slice(0, 3) };')).ergebnis; // prettier-ignore
+        const h = json(wb("eval", 'window.__halten(["leib"]); window.__gehalten.t = 0; r.animatePlayerSoul(0); r._windWob = () => 0; const ruht = () => { let j = true; r.state.playerMesh.traverse((o) => { const f = o.userData.__haarFeder; if (f && (f.x || f.y || f.z)) j = false; }); return j; }; let k = 0; for (; k < 40 && !ruht(); k++) { await sleep(110); r._gameLoopTick(performance.now()); } const c = []; r.state.playerMesh.traverse((o) => o.isMesh && o.material?.userData?.__klasse === "hair" && o.geometry.attributes.color && c.push(o.geometry.attributes.color.getX(2))); return { gehalten: [...window.__gehalten], takte: k, ruht: ruht(), haarRot: c.slice(0, 3) };')).ergebnis; // prettier-ignore
         console.log("✅ GEHALTEN", JSON.stringify(h), "rahmen", JSON.stringify(json(wb("eval", RAHMEN)).ergebnis));
         const POSE = "const pm = r.state.playerMesh, z = []; pm.traverse((o) => { if (!o.isMesh) z.push(...o.position.toArray(), ...o.quaternion.toArray()); else if (o.userData.__haarFeder) z.push(o.userData.__haarFeder.x, o.userData.__haarFeder.y, o.userData.__haarFeder.z); }); return z;";
         const pose0 = json(wb("eval", POSE)).ergebnis;
