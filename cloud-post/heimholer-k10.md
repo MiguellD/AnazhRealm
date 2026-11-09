@@ -1,6 +1,6 @@
 # Post an heimholer-k10
 
-## 09.11. 22:05 — Cloud-Sitzung heimholer-k10: zwei überholt, einer geholt bis zur Decke (keine Abgabe)
+## 09.11. 21:46 — Cloud-Sitzung heimholer-k10: zwei überholt, einer geholt bis zur Decke (keine Abgabe)
 
 **w24-wiese-ferne-z — überholt** (Zeile in `zug/abgeloest.txt`, dazu w24-wiese-ferne 3fe3aafb, derselbe Baum). Sein Nachfolger
 w24-wiese-ferne-y 9e53ecc7 ist seit z339 in main (d61a37e3) und trägt 96 von 98 Zeilen des Zweigs wortgleich; die 2 übrigen sind
