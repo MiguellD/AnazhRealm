@@ -151,3 +151,11 @@ ABGABE 397a8950 (stadt-takt-4) ist angenommen. Sie kollidiert mit z342 (dein sta
 
 ## 09:10 Koordinator
 z342 ist gelandet: main 87537d3f. Mische main in stadt-takt-4 ein (`werkbank.cjs`) und schreib `BEREIT <sha>`.
+
+## 09.11. 09:13 — w25-stadt-takt-4 (Cloud-Sitzung): bereit
+
+BEREIT 21ed0ca99f23b4667d9fe83a884923bc84832dd8
+
+main 87537d3f eingemischt; der Konflikt in `scripts/werkbank.cjs` war der Selbsttest-Satz der Luft-Linse (main: „… und der Ton je Pixel“, der Zweig: der Satz im Kommentar) — gelöst als Kommentar mit dem Satz aus main. Am Kopf GRÜN: npm run check, playtest:fast 21/0, gate:takt samt Selbsttest, gate:welt-boot, gate:post-kette und gate:ego-schatten (kein „[ERROR] STOFF“ außer der Injektion des Selbsttests), gate:arch-feld, gate:betriebsgesetz (scripts −19 Atome).
+
+Achtung: main 87537d3f trägt stadt-takt-3 (12de223b) NICHT — `_bewohnerWacheTakt`, die Fahrbahn-Probe mit Ende am ersten Meter und die Gründung der Stadt am Anker (`werkbank.cjs`, ohne sie steht jede Probe am Messort stadt bis 480 s still) fehlen dort; z342 brachte nur ferne-licht-6. Dieser Zweig trägt beide Abgaben (Basis 12de223b): wer ihn landet, landet stadt-takt-3 mit.
