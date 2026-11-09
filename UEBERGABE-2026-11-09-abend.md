@@ -10,7 +10,7 @@ Ohne Heilung bleiben material.K4#1 gtx (lack-glas, siehe unten), material.K3#2 r
 Buchen erst, wenn z347–z349 gelandet sind und die Rückfall-Stationen neu gemessen sind: `BUCHE_KOPF=<sha40> bash artifacts/profiband/werkzeug/buche.sh`. Danach die Meisterkarte (Artifact BJk5eWsqBiLnS6o3Cns6QK) neu veröffentlichen.
 
 ## Züge (Skripte in /tmp/claude/w3: zug-schlange6.sh + zug-weiter3.sh, Logs /tmp/claude/fahre-zNNN(w).log)
-- **z347** w26-stadt-takt-4b + w26-ferne-ton-2 (enthält ferne-ton). Im CI seit 16:21 (Kandidat d757c703).
+- **z347 ROT 17:04** (stadt-takt-4b + ferne-ton-2): echt S0-Feuerkreis-Luma, echt Tag-Achse, „Stall NATIV createRenderPipeline atmo-himmel“, CPU: Werk im Wasser (Wagen 1,23 m tief), K7 Wiesen-Dichte am Rand 1,257, Wasser-Wand (Graben leer), Fahr-Linse (T4, K8, S1). Wahrscheinlich bricht **stadt-takt-4b** die Welt-Bau-Linsen: Die Bau-Frist im Takt lässt die Prüf-Welten unfertig. Die Bau-Linsen müssen auf die Frist warten oder bauen, offen, keine Sitzung dran. **ferne-ton-2** fährt allein in **z351** hinter z350 und klärt die zwei echt-Wände.
 - **z348** w26-ankunft-block-3 (Fern-Kachel-Rufe 1566 → 263) + w26-ankunft-horizont (Horizont Radeon kalt 9,3 → 6,1 s) + w26-omen-sichtbar-2 (Proben auf der OMEN im sichtbaren Fenster). Wartet auf z347w.
 - **z349** w26-leib-raum (Guss der Menge 18,8 → 10,1 s) + w26-boden-nah + w26-winter-fichte + w26-haar-arm (haar.K2 Radeon 0,64 → 0,43). Wartet auf z348w.
 - **z350** w26-klang-schritt (8d1d3bb1, S13 geheilt: −∞ dB kam als null aus dem Browser, `null > -90` ist wahr; jetzt über `__klangW.endlich`) + w26-probe-node (setup-node nur ohne Node 22 im PATH). Wartet auf z349w.
