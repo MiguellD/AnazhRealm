@@ -244,3 +244,4 @@
 2026-11-09T19:55 woche=2 karte=222 (Konto 10: Wiederanlauf, 4 Cloud, OMEN gtx-da0e)
 2026-11-09T20:09 karte=222 (gebucht am da0e790f, buche.sh)
 2026-11-09T20:28 karte=224 (gebucht am da0e790f, buche.sh)
+2026-11-09T23:06 karte=224 (gebucht am 78d37554, buche.sh)
