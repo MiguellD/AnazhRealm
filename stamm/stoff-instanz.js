@@ -1675,7 +1675,9 @@ class AnazhRealm_stoff_instanz {
                 if (c) [st[k], st[k + 1]] = [c, c.version];
                 st[0] = im.version;
                 const neu = n > z.n || mwNeu || quellen.some((x) => x[2]);
-                if (!neu) return;
+                if (!neu) return false;
+                // DIE DATEN DER ARENA ÄNDERTEN SICH (w27-takt-streu): die Wahl der GPU rechnet ihre Züge neu (`_wahlRechnen`)
+                this._datenV = (this._datenV | 0) + 1;
                 // DIE KOSTEN AN DER ÄNDERUNG (w25-gpu-wahl, Lehre 25): stand der Block (gefüllt, nicht umgezogen, dieselbe Welt-Matrix,
                 // die Einheit) und trägt jede geänderte Quelle ihre Bereiche (`addUpdateRange`), kopiert er nur sie — eine neue Kachel
                 // der Nah-Wiese schreibt ihren Block, nie den Ring. Nur ein Glied, das jeden Schreiber an Bereiche bindet (`__bereiche`,
@@ -1707,6 +1709,7 @@ class AnazhRealm_stoff_instanz {
                     // die Quelle eines Glieds lädt r184 nie (die Arena zeichnet): ihre Bereiche sind hier verbraucht
                     a.clearUpdateRanges();
                 }
+                return true;
             }
             // der Zug je Kamera — lose je Pass, im Bündel die aufgenommenen Plätze —, jeder ein Abschnitt des EINEN
             // Auftrags-Puffers, so lang wie die Glieder
@@ -1904,7 +1907,19 @@ class AnazhRealm_stoff_instanz {
                         zug.zuege.push(this);
                     }
                 }
-                if (k > 0) schreib(renderer, this._ind, basis, k * 5);
+                // DIE AUFTRÄGE GEHEN NUR BEI ÄNDERUNG auf die GPU (w27-takt-streu, Lehre 25): gleichen sie denen, die dieser Zug
+                // zuletzt schrieb, steht der Puffer — in der Wahl der GPU mit den Zahlen, die der Compute zählte; ein neuer Auftrag
+                // setzt sie auf 0 zurück, der Compute dieses Passes zählt sie neu (`argsNeu`, `_wahlRechnen`)
+                if (k > 0) {
+                    const alt = zug.argsAlt;
+                    let gleich = !!alt && alt.length === k * 5;
+                    for (let i = 0; gleich && i < k * 5; i++) gleich = alt[i] === args[i];
+                    if (!gleich) {
+                        schreib(renderer, this._ind, basis, k * 5);
+                        zug.argsAlt = args.slice(0, k * 5);
+                        zug.argsNeu = true;
+                    }
+                }
             }
             raycast() {}
         }
