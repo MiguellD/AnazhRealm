@@ -504,7 +504,7 @@ function enterPlay() {
   leibGruppe.add(gestalt.root); gestalt.root.position.set(0, -play.sohleY, 0);
   document.getElementById('ui').style.display = 'none'; document.getElementById('playHint').style.display = 'block'; document.getElementById('hud').style.display = 'block';
   play.fovBase = camera.fov; play.fov = camera.fov; resetRun();
-  renderer.domElement.requestPointerLock();
+  AnazhHuelle.zeiger(renderer.domElement);
 }
 function exitPlay() {
   play.on = false; controls.enabled = true; parkGroup.visible = false;
@@ -521,7 +521,7 @@ function resetRun() {
   parkAngebote.forEach(function (a) { a.zustand = {}; });
   play.camX = 0; play.camY = 5; play.camZ = -9;
 }
-renderer.domElement.addEventListener('click', function () { if (play.on && document.pointerLockElement !== renderer.domElement) renderer.domElement.requestPointerLock(); });
+renderer.domElement.addEventListener('click', function () { if (play.on && document.pointerLockElement !== renderer.domElement) AnazhHuelle.zeiger(renderer.domElement); });
 document.getElementById('btnPlay').addEventListener('click', enterPlay);
 // DER WIRT DES GESETZES im Labor (die Rückrufe des Plans): geerdet nach dem letzten Kontakt, am Steilhang kein Sprung (das Labor
 // trägt keinen), der Abdruck aus Kraft und Masse unter der Erd-Schwere, der Kopfraum unter den Park-Boxen

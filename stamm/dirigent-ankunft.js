@@ -1342,8 +1342,12 @@ class AnazhRealm_dirigent_ankunft {
             // Pointer-Lock wieder aktivieren und Drag&Drop tot machen. Dasselbe für jede offene Schublade (Welle L).
             if (this.state.inventoryOpen || this._uiSchubladeOffen()) return;
             if (document.pointerLockElement === canvas) return;
-            const p = canvas.requestPointerLock();
-            if (p && typeof p.catch === "function") p.catch(() => {}); // Ablehnung (Policy) ist kein Seiten-Fehler
+            try {
+                const p = canvas.requestPointerLock();
+                if (p && typeof p.catch === "function") p.catch(() => {}); // Ablehnung (Policy, ohne Fokus) ist kein Seiten-Fehler
+            } catch (_e) {
+                /* der synchrone Wurf ebenso: der nächste Klick fängt den Zeiger */
+            }
         });
         // Maus-Aktionen (abbauen/platzieren) nur mit aktivem Pointer-Lock, geschlossenem Inventar und geschlossener
         // Schublade (Drag&Drop hat eigene Listener): IST DIE UI OFFEN, IST DER CANVAS TAUB (Welle L, Befund V-D2 — mit
