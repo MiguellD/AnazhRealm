@@ -125,7 +125,7 @@ $ C:\Program Files\nodejs\node.exe -e (function spawnBlick(AUS, PORT) {
         process.exit(1);
     });
 })(process.argv[1], process.argv[2]) C:\Users\micha\Desktop\AnazhRealm-OMEN\n0611-pm\meisterkarte-quelle\punkte\messung\roh\87537d3f-gtx\ankunft.K4_1.json 7804
-POSE ego-0 72226 ms
+POSE ego-0 75133 ms
 
 --- gpu-zeuge ---
 [linse-gpu] nvidia/pascal

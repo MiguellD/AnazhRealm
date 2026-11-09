@@ -215,10 +215,10 @@ $ C:\Program Files\nodejs\node.exe -e const tor = (function sitzungTor() {
 [linse-gpu] nvidia/pascal
 @@PUNKTE@@ WELT
 {
- "fehler": "/eval: Frist 18811 ms"
+ "fehler": "/eval: Frist 40684 ms"
 }
 @@PUNKTE@@ EXIT 1
-@@PUNKTE@@ FRIST 23 s der Probe gerissen — WELT (21.0 s)
+@@PUNKTE@@ FRIST 45 s der Probe gerissen — WELT (43.0 s)
 
 --- gpu-zeuge ---
 [linse-gpu] nvidia/pascal

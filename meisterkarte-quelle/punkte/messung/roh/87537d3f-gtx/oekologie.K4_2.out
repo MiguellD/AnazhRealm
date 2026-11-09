@@ -110,7 +110,6 @@ s.worldMeta.taten.length = n0;
 return aus;
 }
 [linse-gpu] nvidia/pascal
-RUDEL-GEFUEHL {"woelfe":6,"gegen":false,"sicht":"first","dauer":40.32,"umstelltS":20.32,"umstellt":0.775,"furcht":{"chaos":1,"sorrow":0,"joy":0.235,"hope":0},"opfer":6,"situation":[0.129,0.39,0.796],"triumph":{"joy":0.501,"hope":0.274},"chaosNach":0.284}
 
 --- gpu-zeuge ---
 [linse-gpu] nvidia/pascal

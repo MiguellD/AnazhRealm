@@ -9,11 +9,11 @@ timeout 120 $W umstellen --ort wiese > /dev/null 2>&1
 teil LATENZ1 $W latenz --proben 15 --sicht ego,third --verb gehen,wechsel --json "C:\Users\micha\Desktop\AnazhRealm-OMEN\n0611-pm\meisterkarte-quelle\punkte\messung\roh\87537d3f-gtx\leib.K1_1.json.lauf1.json"
 node -e 'const fs = require("fs"); const [aus, ...f] = process.argv.slice(1); fs.writeFileSync(aus, JSON.stringify({ laeufe: f.map((x) => { try { return JSON.parse(fs.readFileSync(x, "utf8")); } catch (_e) { return null; } }) }));' "C:\Users\micha\Desktop\AnazhRealm-OMEN\n0611-pm\meisterkarte-quelle\punkte\messung\roh\87537d3f-gtx\leib.K1_1.json" "C:\Users\micha\Desktop\AnazhRealm-OMEN\n0611-pm\meisterkarte-quelle\punkte\messung\roh\87537d3f-gtx\leib.K1_1.json.lauf1.json"
 @@PUNKTE@@ LATENZ1
-ego/gehen {"n":15,"fehlt":0,"p50":38.1,"p95":54.3,"max":54.3,"eingabe":0.4,"hoerer":0.1,"kette":22.7,"kurve":0,"takte":5}
-ego/wechsel {"n":15,"fehlt":0,"p50":25.9,"p95":42,"max":42,"eingabe":0.3,"hoerer":0.3,"kette":25.5,"kurve":0,"takte":3}
-third/gehen {"n":15,"fehlt":0,"p50":43.4,"p95":79.2,"max":79.2,"eingabe":0.3,"hoerer":0,"kette":35.4,"kurve":0,"takte":5}
-third/wechsel {"n":15,"fehlt":0,"p50":16.7,"p95":22.5,"max":22.5,"eingabe":0.3,"hoerer":0.2,"kette":16.4,"kurve":0,"takte":2}
-LATENZ ROT (Bild 31.91 ms) ego/gehen p95 54.3 ms > 50 (fehlt 0) — Täter kette 22.7 ms, 5 Takte · third/gehen p95 79.2 ms > 50 (fehlt 0) — Täter kette 35.4 ms, 5 Takte
+ego/gehen {"n":15,"fehlt":0,"p50":43.8,"p95":58.1,"max":58.1,"eingabe":1.1,"hoerer":0.1,"kette":18.9,"kurve":0,"takte":5}
+ego/wechsel {"n":15,"fehlt":0,"p50":31.4,"p95":43,"max":43,"eingabe":0.3,"hoerer":0.4,"kette":31,"kurve":0,"takte":2}
+third/gehen {"n":15,"fehlt":0,"p50":37.4,"p95":53.9,"max":53.9,"eingabe":0.4,"hoerer":0,"kette":19.7,"kurve":20.5,"takte":4}
+third/wechsel {"n":15,"fehlt":0,"p50":17.4,"p95":36.7,"max":36.7,"eingabe":0.4,"hoerer":0.3,"kette":16.7,"kurve":0,"takte":2}
+LATENZ ROT (Bild 32.3 ms) ego/gehen p95 58.1 ms > 50 (fehlt 0) — Täter kette 18.9 ms, 5 Takte · third/gehen p95 53.9 ms > 50 (fehlt 0) — Täter kurve 20.5 ms, 4 Takte
 @@PUNKTE@@ EXIT 1
 
 --- gpu-zeuge ---

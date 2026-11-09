@@ -274,5 +274,9 @@ H.fahre(async function probeTempoGarage(H) {
     return { welt: !!(welt && welt.ergebnis), garage: g };
 }); 7804 C:\Users\micha\Desktop\AnazhRealm-OMEN\n0611-pm\meisterkarte-quelle\punkte\messung\roh\87537d3f-gtx\fahrzeug.K3_1.json 45
 
+--- stderr ---
+FEHLER: Der Prozess mit PID 13428 (untergeordnetem Prozess von PID 4908) konnte nicht beendet werden.
+Ursache: Dieser Vorgang wird nicht unterst�tzt.
+
 --- gpu-zeuge ---
 [linse-gpu] nvidia/pascal
