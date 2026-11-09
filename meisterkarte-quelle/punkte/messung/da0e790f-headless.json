@@ -1,0 +1,154 @@
+{
+ "sha": "da0e790f76ad8a02171aa36d628ef8a8d7758086",
+ "geraet": "headless",
+ "zeit": "2026-11-09T19:11:31.722Z",
+ "host": "farm:42680650834",
+ "je": {
+  "spielgang.K5#2": {
+   "gruen": false,
+   "zahl": "de.regel 42 Sätze · 46 Zeilen, fremd 0 · de.nexus 43 Sätze · 161 Zeilen, fremd 0 · Prompt 43/43 · en.regel 42 Sätze · 46 Zeilen, fremd 0 · en.nexus 43 Sätze · 161 Zeilen, fremd 0 · Prompt 43/43 · Selbsttest 3/3 ROT · MODELL qwen3:4b-instruct @ http://127.0.0.1:11434: de 42 Sätze, 156/162 Zeilen in de, fremd 0 · en 42 Sätze, 159/161 Zeilen in en, fremd 0 · ROT de.regel nennt nicht den wahren Schreiber: nexus (regel); de.nexus nennt nicht den wahren Schreiber: nexus (nexus); en.regel nennt nicht den wahren Schreiber: nexus (regel); en.nexus nennt nicht den wahren Schreiber: nexus (nexus)",
+   "exit": 0,
+   "minuten": 15.33,
+   "grund": "ROT: de.regel 42 Sätze · 46 Zeilen, fremd 0 · de.nexus 43 Sätze · 161 Zeilen, fremd 0 · Prompt 43/43 · en.regel 42 Sätze · 46 Zeilen, fremd 0 · en.nexus 43 Sätze · 161 Zeilen, fremd 0 · Prompt 43/43 · Selbsttest 3/3 ROT · MODELL qwen3:4b-instruct @ http://127.0.0.1:11434: de 42 Sätze, 156/162 Zeilen in de, fremd 0 · en 42 Sätze, 159/161 Zeilen in en, fremd 0 · ROT de.regel nennt nicht den wahren Schreiber: nexus (regel); de.nexus nennt nicht den wahren Schreiber: nexus (nexus); en.regel nennt nicht den wahren Schreiber: nexus (regel); en.nexus nennt nicht den wahren Schreiber: nexus (nexus)",
+   "fremd": {
+    "s": 920,
+    "takte": 460,
+    "fremdS": 1753.43,
+    "kerne": 1.906,
+    "fensterKerne": 2.154,
+    "namen": [
+     [
+      "llama-server --model blobs/sha256-85e4a5b7b8ef0e48af0e8658f5aaab9c2324c76c1641493f4d1e25fc",
+      1704.45
+     ],
+     [
+      "hv_kvp_daemon -n",
+      20.68
+     ],
+     [
+      "provjobd327167002",
+      16.07
+     ]
+    ],
+    "dienerS": 2.11,
+    "diener": [
+     [
+      "[kworker/u16:5+iou_exit]",
+      0.37
+     ],
+     [
+      "[kworker/0:3-cgroup_free]",
+      0.29
+     ]
+    ],
+    "eigenS": 172.51,
+    "schwelle": 0.3,
+    "eich": "linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-09T19:11:31.722Z",
+   "abdruck": "59af6c2932a2",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:42680650834/1"
+  }
+ },
+ "ungemessen": {
+  "streaming.K1#1": {
+   "gruen": false,
+   "zahl": "Fremd-Last: provjobd1184972373 13,1 CPU-s · hv_kvp_daemon -n 2,5 CPU-s · Runner.Worker spawnclient 142 145 0,7 CPU-s — 0,91 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, linux, 4 Kerne (Container); Σ fremd 17,1 CPU-s in 161,0 s) — kein Urteil, UNGEMESSEN (die Probe sah: sprint 5.175 m/s 60.006 s: 2880 von 2880 Bildern mit Lücke (karte 49319; a:-4584,-9318:karte karte 211 m · a:-3912,-8641:karte karte 213 m · a:-4084,-8702:karte karte 217 m) · gt 63.82 m/s 60.013 s: 1316 von 1367 Bildern mit Lücke (karte 54)",
+   "exit": 0,
+   "minuten": 2.68,
+   "grund": "Fremd-Last: provjobd1184972373 13,1 CPU-s · hv_kvp_daemon -n 2,5 CPU-s · Runner.Worker spawnclient 142 145 0,7 CPU-s — 0,91 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, linux, 4 Kerne (Container); Σ fremd 17,1 CPU-s in 161,0 s) — kein Urteil, UNGEMESSEN (die Probe sah: sprint 5.175 m/s 60.006 s: 2880 von 2880 Bildern mit Lücke (karte 49319; a:-4584,-9318:karte karte 211 m · a:-3912,-8641:karte karte 213 m · a:-4084,-8702:karte karte 217 m) · gt 63.82 m/s 60.013 s: 1316 von 1367 Bildern mit Lücke (karte 54)",
+   "fremd": {
+    "s": 161,
+    "takte": 81,
+    "fremdS": 17.05,
+    "kerne": 0.106,
+    "fensterKerne": 0.907,
+    "namen": [
+     [
+      "provjobd1184972373",
+      13.14
+     ],
+     [
+      "hv_kvp_daemon -n",
+      2.51
+     ],
+     [
+      "Runner.Worker spawnclient 142 145",
+      0.72
+     ]
+    ],
+    "dienerS": 0.71,
+    "diener": [
+     [
+      "[kworker/u16:2+iou_exit]",
+      0.2
+     ],
+     [
+      "[kworker/u16:0-events_power_efficient]",
+      0.16
+     ]
+    ],
+    "eigenS": 426.18,
+    "schwelle": 0.3,
+    "eich": "linux, 4 Kerne (Container)"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-09T19:10:09.113Z",
+   "abdruck": "6caf085861a3",
+   "port": 7704,
+   "bahn": "allein",
+   "host": "farm:42680650834/2"
+  },
+  "streaming.K2#1": {
+   "gruen": false,
+   "zahl": "Fremd-Last: provjobd1184972373 13,1 CPU-s · hv_kvp_daemon -n 2,5 CPU-s · Runner.Worker spawnclient 142 145 0,7 CPU-s — 0,91 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, linux, 4 Kerne (Container); Σ fremd 17,1 CPU-s in 161,0 s) — kein Urteil, UNGEMESSEN (die Probe sah: fertig beim Eintritt: boden 1129/1571 (71.9 %, spät -1/-1/-1 s) · baum 2444/3694 (66.2 %, spät -1/-1/-1 s) · karte 3671/10601 (34.6 %, spät -1/-1/-1 s) · bau 850/850 (100 %) · wuchs 683/685 (99.7 %, spät -1/0.042 s) · streu 45/46 (97.8 %, s)",
+   "exit": 0,
+   "minuten": 2.68,
+   "grund": "Fremd-Last: provjobd1184972373 13,1 CPU-s · hv_kvp_daemon -n 2,5 CPU-s · Runner.Worker spawnclient 142 145 0,7 CPU-s — 0,91 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, linux, 4 Kerne (Container); Σ fremd 17,1 CPU-s in 161,0 s) — kein Urteil, UNGEMESSEN (die Probe sah: fertig beim Eintritt: boden 1129/1571 (71.9 %, spät -1/-1/-1 s) · baum 2444/3694 (66.2 %, spät -1/-1/-1 s) · karte 3671/10601 (34.6 %, spät -1/-1/-1 s) · bau 850/850 (100 %) · wuchs 683/685 (99.7 %, spät -1/0.042 s) · streu 45/46 (97.8 %, s)",
+   "fremd": {
+    "s": 161,
+    "takte": 81,
+    "fremdS": 17.05,
+    "kerne": 0.106,
+    "fensterKerne": 0.907,
+    "namen": [
+     [
+      "provjobd1184972373",
+      13.14
+     ],
+     [
+      "hv_kvp_daemon -n",
+      2.51
+     ],
+     [
+      "Runner.Worker spawnclient 142 145",
+      0.72
+     ]
+    ],
+    "dienerS": 0.71,
+    "diener": [
+     [
+      "[kworker/u16:2+iou_exit]",
+      0.2
+     ],
+     [
+      "[kworker/u16:0-events_power_efficient]",
+      0.16
+     ]
+    ],
+    "eigenS": 426.18,
+    "schwelle": 0.3,
+    "eich": "linux, 4 Kerne (Container)"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-09T19:10:09.113Z",
+   "abdruck": "812b543d4746",
+   "port": 7704,
+   "bahn": "allein",
+   "host": "farm:42680650834/2",
+   "zwilling": "streaming.K1#1"
+  }
+ }
+}
