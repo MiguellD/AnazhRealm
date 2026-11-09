@@ -68,6 +68,7 @@ function ladeschirmVerdict(m) {
         ["licht", "ohne das Licht des Orts", /Licht des Orts/],
         ["dorfExport", "mit dem Export eines Dorfs der Ankunft unterwegs", /Dorf/],
         ["dorfSchlange", "mit den Häusern eines Dorfs der Mesh-Zone in der Schlange", /Dorf/],
+        ["dorfFern", "im Sinkflug mit einem fernen Haus (800 m) im Bild", /Dorf/],
         ["dorfFaellig", "mit einem fälligen, noch nicht bestellten Start-Dorf am Genesis-Ort", /Dorf/],
     ]) {
         const z = f[k];
@@ -546,11 +547,11 @@ async function probe(arg) {
                 fall("baumUngebaut", baumWeg(false), baumHer);
                 fall("baumHinten", baumWeg(true), baumHer);
                 // (2b) DER SINKFLUG (b-himmel): derselbe Baum ohne Gestalt im Blick, das Auge SINKFLUG.hoeheM über dem Stand — waagrecht
-                // liegt er unter dem Schirm (das Bild weicht), steil hinab (die Blick-Achse der Welt-Matrix) ist er die Lücke beim Namen
-                const flug = (m9) => () => ((st._sinkflug = { grundY: pm.y }), (st.camera.position.y += AnazhRealm.SINKFLUG.hoeheM), m9 && (st.camera.matrixWorld.elements[9] = m9));
+                // liegt er unter dem Schirm (das Bild weicht), blickt die Kamera auf ihn hinab, ist er die Lücke beim Namen
+                const flug = (z) => () => ((st._sinkflug = { grundY: pm.y }), (st.camera.position.y += AnazhRealm.SINKFLUG.hoeheM), z && st.camera.lookAt(z.x, z.y, z.z), st.camera.updateMatrixWorld());
                 const landen = () => ((st._sinkflug = null), baumHer(), st.camera.updateMatrixWorld());
                 fall("baumUnterSchirm", baumWeg(false), landen, flug());
-                fall("baumImFlug", baumWeg(false), landen, flug(9));
+                fall("baumImFlug", baumWeg(false), landen, flug(baum.position));
             } else {
                 const n = st.architectures.filter((a) => a && /^baum_/.test(a.type || "")).length;
                 m.ohneFall.baumUngebaut = m.ohneFall.baumHinten = m.ohneFall.baumUnterSchirm = m.ohneFall.baumImFlug = m.ohneFall.lueckeRuht = m.ohneFall.lueckeFlackert = `kein gezeichneter Baum ab 30 m (${n} Baum-Einträge)`;
@@ -603,6 +604,8 @@ async function probe(arg) {
             fallMit("dorfExport", dorfAn, [r, { _autoSettlementPendingKey: "start" }]);
             const dorfPlan = { name: "linse:dorf", slots: [{ kultur: "linse:dorf", x: 0, z: 0, y: pm.y }] };
             fallMit("dorfSchlange", dorfAn, [r, { _autoSettlementQueue: r._dorfZug(dorfPlan, { x: pm.x, z: pm.z }, "start") }]);
+            // (4f') im Sinkflug zählt jedes Haus im Blick bis zur Schirmgröße, nie nur die Mesh-Zone (b-himmel-2)
+            fallMit("dorfFern", dorfAn, [st, { _sinkflug: { grundY: pm.y } }], [st.camera.position, { y: st.camera.position.y + AnazhRealm.SINKFLUG.hoeheM }], [r, { _autoSettlementPendingKey: null, _autoSettlementQueue: r._dorfZug(dorfPlan, vorn(800), "fern") }]);
             // fällig: die Welt trägt noch kein Start-Dorf, der Spieler steht am Genesis-Ort, das Buch trägt den Dorf-Kanal
             const wmD = st.worldMeta || (st.worldMeta = {});
             const ohneStart = Object.assign({}, wmD.settlementCells || {});
@@ -1744,6 +1747,7 @@ hauptLauf(async () => {
             karteOffen: halt("1 ferne Bäume werden gemalt", "karten"),
             ...Object.fromEntries(["baumUnterSchirm", "bodenHinten", "baumHinten", "karteHinten", "pflanzungHinten"].map((k) => [k, weicht])),
             baumImFlug: halt("1 Bäume und Bauten wachsen", "bauten"),
+            dorfFern: halt("1 Häuser des Dorfs wachsen", "dorf"),
             weltFehlt: halt("die Welt entsteht", "welt"),
             buchZu: halt("das Buch der Studios öffnet sich", "buch"),
             leibFehlt: halt("der Spieler erhält seinen Leib", "leib"),
@@ -1785,6 +1789,7 @@ hauptLauf(async () => {
                     ["ein Loch hinter dem Spieler hält das erste Bild", { faelle: mitFall(l2aFaelle, { baumHinten: { weg: false, stand: "1 Bäume und Bauten wachsen" } }) }, "mit einem Baum hinter dem Spieler ohne Gestalt hält der Ladeschirm"],
                     ["ein Loch im Blick weicht (B3d)", { faelle: mitFall(l2aFaelle, { karteOffen: weicht }) }, "mit der offenen Karte eines Baums im Blick weicht der Ladeschirm"],
                     ["ein Loch im Sinkflug", { faelle: mitFall(l2aFaelle, { baumImFlug: weicht }) }, "im Sinkflug mit einem Baum im Bild weicht"],
+                    ["ein fernes Dorf fehlt im Flug-Bild", { faelle: mitFall(l2aFaelle, { dorfFern: weicht }) }, "im Sinkflug mit einem fernen Haus (800 m) im Bild weicht"],
                     ["ein Loch im Rundblick nach N Takten (B3d)", { rundblick: { N: 240, loecher: 3, erstes: "Takt 120 (180°): 3 Bäume und Bauten wachsen", spaet: true, griff: 40 } }, "der Rundblick nach der Kontrolle zählt 3 Löcher in 240 Takten"],
                     ["der Rang ohne Blick", { rang: { vorBild: "hinten,blick,vorrat", nachBild: "hinten,blick,vorrat" } }, "vor dem ersten Bild sendet die Pumpe „hinten,blick,vorrat\""],
                     ["der Blick-Schlüssel überlebt das Bild", { rang: { vorBild: "blick", nachBild: "hinten,blick" } }, "nach dem ersten Bild sendet die Pumpe „hinten,blick\""],
