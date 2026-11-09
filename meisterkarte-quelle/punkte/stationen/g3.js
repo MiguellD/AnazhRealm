@@ -615,7 +615,11 @@ const LAUB_AUGE =
     "const st = r.state, pm = st.playerMesh.position; st.yaw = r._blickGierZu(-269 - pm.x, -1036 - pm.z); st.pitch = 0; " +
     "for (let i = 0; i < 30; i++) r._loopCamera(performance.now() + i * 100); " +
     "const c = st.camera, d = new T.Vector3(); c.getWorldDirection(d); " +
-    "return [c.position.x, c.position.y, c.position.z, c.position.x + 100 * d.x, c.position.y + 100 * d.y, c.position.z + 100 * d.z].map((v) => +v.toFixed(3));";
+    // DAS ZIEL VOR DEM HANG (09.11., Radeon a7dc1874: „Blickziel verdeckt von Boden-Schicht in 44.56 m“ — die Tafel-Pose GRÜN, strauch
+    // 0,2066): das Auge zielte stur 100 m geradeaus und traf am Hang den Boden. Jetzt läuft der Blick in Metern, bis der Boden über
+    // ihm steht, und das Ziel liegt bei 60 % davon (höchstens 100 m, mindestens 3 m) — freie Sicht im Gehen, `--wahl 0` bleibt.
+    "let t = 2; while (t < 100 && r._voxelSurfaceY(c.position.x + t * d.x, c.position.z + t * d.z) < c.position.y + t * d.y - 0.5) t++; t = Math.max(3, 0.6 * t); " +
+    "return [c.position.x, c.position.y, c.position.z, c.position.x + t * d.x, c.position.y + t * d.y, c.position.z + t * d.z].map((v) => +v.toFixed(3));";
 const LAUB_KANTE_MAX = 0.22;
 const LAUB_PIXEL_MIN = 5000;
 // das Rohe der Proben (stdout `LOD-K1 {…}` im Format von {AUS}); die Messung selbst liest {AUS}
