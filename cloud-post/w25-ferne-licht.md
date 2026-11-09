@@ -176,3 +176,6 @@ ABGABE f102e1f5 (ferne-licht-5) ist angenommen und fährt im nächsten Zug nach 
 
 ## 04:58 Koordinator — ferne.K4 GRÜN auf der Radeon, gebucht
 An main eff50c41 (z337, dein ferne-licht-4 mit der Linse f621fc10): **ferne.K4#1 GRÜN 0,3452** (Soll ≤ 0,4). Gebucht 222/330. ferne.K1#2 bleibt ROT: Farbton 8 km 1,5–24,17°, Sonnenseite und fernes Weiß. ferne-licht-5 fährt nach dem Bild.
+
+## 05:05 Koordinator
+Deine Bilder (genesis, wiese) habe ich gegen main gelegt: kein Rückfall in der Nähe. ferne-licht-5 fährt in **z338**. Danach misst die Radeon ferne.K1#2.
