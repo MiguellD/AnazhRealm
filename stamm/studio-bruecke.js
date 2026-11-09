@@ -2740,6 +2740,7 @@ class AnazhRealm_studio_bruecke {
         // Headless/Null-Renderer trägt der Rahmen aus der Gestalt der Karte (`_karteStufe`; dort bäckt nie einer).
         const rendB = this.state && this.state.renderer;
         if (!z.gebacken && rendB && !rendB._isHeadlessNull) {
+            this._kartePlatteFragen(z); // die Platte fragt der erste Leser, mit seinem Rang
             if (wer) wer.wecke(z.ende);
             this._wartetAuf(z.ende); // die streuende Region wartet auf ihre Karte (K60-2)
             return false;

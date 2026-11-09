@@ -2105,6 +2105,20 @@ function luftAufgeloest(L0, S, i, kanaele) {
     return kanaele.every((c) => Math.abs(L0[i + c] - S[i + c]) >= 12);
 }
 
+// DER TON DES BANDS (w25-ferne-licht-6, K1-2 FARBTON): der Abstand der Farbtöne zwischen dem Mittel der Pixel mit Luft und dem
+// Mittel der In-Streuung über das Band (`paare` je Pixel [L, S], linear), nie der Median der Töne je Pixel. Die In-Streuung trägt
+// bei 8 km 4–13 Stufen Buntheit (8 bit): eine Stufe dreht den Ton eines Pixels um 5–15°, der Median der Beträge sitzt darum über
+// der Wahrheit (Selbsttest: Wahrheit 7,14°, je Pixel 20°, das Band 6,07°); das Mittel über das Band löst unter der Stufe auf.
+// Genesis 8 km, Uhr 0,5, swiftshader: je Pixel 6 · 10,23 · 2,7 · 7,5° → Band 5,71 · 8,94 · 2,78 · 6,76°, zwei Läufe gleich.
+function farbTon([r, g, b]) {
+    const [hi, d] = [Math.max(r, g, b), Math.max(r, g, b) - Math.min(r, g, b)];
+    return d > 0 ? 60 * (hi === r ? ((g - b) / d + 6) % 6 : hi === g ? (b - r) / d + 2 : (r - g) / d + 4) : 0;
+}
+function tonDesBands(paare) {
+    const [l, s] = [0, 1].map((k) => farbTon([0, 1, 2].map((i) => paare.reduce((a, p) => a + p[k][i], 0))));
+    return paare.length ? +Math.min(Math.abs(l - s), 360 - Math.abs(l - s)).toFixed(2) : null;
+}
+
 // DIE LUFT IM BILD (ferne-luft, Meisterkarte Ferne K1 + K2): vom Hügel je Uhr vier Azimute ab der Sonne, je drei
 // Schüsse aus dem Ausgabe-Pfad — Luft (L), β 0 (L0), β 1 (S) —, linear; je Pixel T = (L − S)/(L0 − S) je Kanal gegen die externe
 // Referenz längs des Strahls zum Gelände-Gesetz (Bänder nur, wo die Szenen-Tiefe ihn bestätigt); der Rand je Spalte das fernste
@@ -2139,13 +2153,6 @@ function luftTiefe(o) {
             const m = Math.min(...c);
             const mi = m >= 0.04 ? m + 0.04 : Math.sqrt(m / 6.25);
             return Math.max(...c) > 0.75 ? null : c.map((x) => x + (mi >= 0.08 ? 0.04 : mi - 6.25 * mi * mi));
-        };
-        const ton = (u8, i) => {
-            const c = [u8[i], u8[i + 1], u8[i + 2]];
-            const hi = Math.max(...c);
-            const d = hi - Math.min(...c);
-            if (d < 1) return 0;
-            return 60 * (hi === c[0] ? ((c[1] - c[2]) / d + 6) % 6 : hi === c[1] ? (c[2] - c[0]) / d + 2 : (c[0] - c[1]) / d + 4);
         };
         const med = (a) => (a.length ? +rang(a.slice().sort(aufsteigend)).toPrecision(4) : null);
         // β und Blende des Schusses über dem Anwenden des Himmels; der Feld-Pass wie in der Spiel-Schleife
@@ -2263,8 +2270,7 @@ function luftTiefe(o) {
                     if (!b) continue;
                     tc.forEach((x, c) => x != null && b.q[c].push(x / Math.exp(-bRef[c] * t.g * t.d)));
                     if (tc[0] > 0.01 && tc[2] > 0.01 && luftAufgeloest(L0, S, i, [0, 2])) b.dk.push(Math.log(tc[0] / tc[2]) / (t.g * t.d));
-                    const dh = Math.abs(ton(L, i) - ton(S, i));
-                    b.dh.push(Math.min(dh, 360 - dh));
+                    b.dh.push([l, sa]);
                 }
             const rand = med(Object.values(fern));
             const Yd = Float32Array.from({ length: W * H }, (_, p) => luma709([srgbLin(L[p * 4]), srgbLin(L[p * 4 + 1]), srgbLin(L[p * 4 + 2])]));
@@ -2278,7 +2284,7 @@ function luftTiefe(o) {
             return {
                 kante: { spalten: Object.keys(oben).length, rand: Object.keys(kante).length, linie: +((kl.linie / W) * hfov).toFixed(2), stufe: kl.stufe },
                 blende: k,
-                baender: bd.map((b) => ({ d: b.d, n: b.dh.length, q: b.q.map(med), dk: med(b.dk), nk: b.dk.length, dh: med(b.dh) })),
+                baender: bd.map((b) => ({ d: b.d, n: b.dh.length, q: b.q.map(med), dk: med(b.dk), nk: b.dk.length, dh: tonDesBands(b.dh) })),
                 himmel: inS[0].length >= R.mindest.n ? inS.map(med) : null,
                 rand: { km: +(rand / 1000).toFixed(1), C: med(gez.filter((x) => x.d >= 0.9 * fern[x.x]).map((x) => x.C)) },
                 sicht: { m: med(sb), n: sb.length },
@@ -2391,8 +2397,7 @@ function luftTiefeUrteil(m, R) {
     const Y = (c) => c && luma709(c);
     for (const z of m.zeilen.filter((x) => x.uhr === 0.5)) {
         const [r, g, b] = z.himmel || [0, 0, 0];
-        const d = Math.max(r, g, b) - Math.min(r, g, b);
-        const h = d > 0 && b >= Math.max(r, g) ? +(60 * ((r - g) / d + 4)).toFixed(1) : null;
+        const h = b > Math.min(r, g) && b >= Math.max(r, g) ? +farbTon([r, g, b]).toFixed(1) : null;
         if (!(Math.abs(h - R.himmel.ton) <= B.himmelTon))
             liste.push(`K1-2 HIMMEL Azimut ${z.az}°: Ton der In-Streuung ${h == null ? "nicht blau " + z.himmel : h + "°"} statt ${R.himmel.ton}° ±${B.himmelTon} (Duv ${duvTageslicht([r, g, b])})`);
     }
@@ -2434,7 +2439,7 @@ function wetterZug(o) {
                     for (let i = 0; i < 1 / dt; i++) r._gameLoopTick(T0 + ++k * dt * 1000);
                     const u8 = (await window.__ausgabeAufnahme(160, 90, 1, { satz: "messung" })).u8;
                     const wt = st.weatherTransition;
-                    const Y = u8.reduce((a, v, i) => a + (i % 4 < 3 && [0.2126, 0.7152, 0.0722][i % 4] * ((v / 255 + 0.055) / 1.055) ** 2.4), 0);
+                    const Y = u8.reduce((a, v, i) => a + (i % 4 < 3 && [0.2126, 0.7152, 0.0722][i % 4] * srgbLin(v)), 0);
                     reihe.push({ t: st.spielZeit, wetter: st.weather, zug: wt ? wt.progress : 1, Y });
                 }
             }
@@ -2497,7 +2502,14 @@ function luftTiefeSelbsttest(R) {
         (bild(0.05) >= 400 && bild(0.01) === 0 && bild(0.05, true) <= 8) || `Linie bei Stufe 5 % ${bild(0.05)} px, 1 % ${bild(0.01)}, Zacken ${bild(0.05, true)}`,
         (leer["K1-1"] === "ROT" && leer["K1-2"] === "ROT" && leer["K2-1"] === "ROT" && leer["K2-2"] === "ROT") || "eine leere Messung ist nicht ROT",
         urteil([]).urteil === "ROT" || "eine Messung ohne Sicht ist nicht ROT",
-        urteil(sichten(k, 0.005, 50, 0, 1.3, undefined, [1, 1, -2])).befunde.join().includes("T < 0") || "T < 0 namenlos",
+        // DER TON DES BANDS ist deterministisch: 200 Pixel einer fast grauen In-Streuung (6 Stufen Buntheit, wie bei 8 km zur Sonne)
+        // mit einem Hauch Gelb, je Pixel ±1 Stufe Rauschen auf 8 bit gerundet — das Mittel trifft den Ton der Wahrheit (7,1°) auf 2°,
+        // der Median der Töne je Pixel (die Mutante der alten Linse, `tonDesBands` je Paar) liegt 13° darüber: er verzerrte nach OBEN
+        ((s = 11, L = [1524, 1532, 1545], S = [1500, 1530, 1560]) => {
+            const px = Array.from({ length: 200 }, () => [L, S].map((c) => c.map((v) => Math.round(v / 10 + (s = (s * 1664525 + 1013904223) >>> 0) / 2 ** 31 - 1))));
+            const [band, je] = [tonDesBands(px), px.map((p) => tonDesBands([p])).sort((a, b) => a - b)[100]];
+            return (Math.abs(band - tonDesBands([[L, S]])) <= 2 && je > 17) || `Ton des Bands ${band}° (Wahrheit 7,14°), je Pixel ${je}°`;
+        })(),
         // die Auflösung je Pixel in Stufen (L0 gegen S, 8 bit): das Paar am Morgen (Rot 24, Blau 19 Stufen; linear 0,029/0,021 unter
         // der alten Wache 0,05) trägt, das Rauschen (4 Stufen) und das helle Paar (9 Stufen, linear 0,057 über ihr) nie
         ...[[[38, 32, 21], [62, 54, 40], 1], [[120, 121, 119], [124, 123, 126]], [[191, 191, 191], [200, 200, 200]]].map(
@@ -2889,6 +2901,8 @@ module.exports = {
     kantenLinie,
     luftBetaRef,
     luftAufgeloest,
+    farbTon,
+    tonDesBands,
     luftTiefe,
     luftTiefeUrteil,
     luftTiefeSelbsttest,

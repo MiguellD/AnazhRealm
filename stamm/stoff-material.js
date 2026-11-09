@@ -2883,7 +2883,7 @@ class AnazhRealm_stoff_material {
             // Feld-Pass zeichnet (gate:nah-fern, Luft aus). Hier lebt nur noch die Farbe des Halms für das Relief der Nähe.
             const _mg = AnazhRealm.MEADOW_GREEN;
             const _sp = AnazhRealm.GRAS_SPITZE;
-            const _wg = AnazhRealm.WIESEN_GRUND.farbe;
+            const _wg = AnazhRealm.WIESEN_GRUND.halmMittel; // das Relief der Nähe trägt das Mittel des Halms, die Ferne den Bestand
             const _wurzel = _T.vec3(_mg[0], _mg[1], _mg[2]);
             const _spitze = _T.vec3(_sp[0], _sp[1], _sp[2]);
             const _krone = _T.vec3(_wg[0], _wg[1], _wg[2]);
