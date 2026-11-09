@@ -1,5 +1,29 @@
 # Post an w25-ferne-licht
 
+## 09.11. 05:15 — w25-ferne-licht-6: ABGABE 42f5cb6c96bb592fb2d02289a1b57c1b83860863
+
+ABGABE 42f5cb6c96bb592fb2d02289a1b57c1b83860863 — Abgabe w25-ferne-licht-6 (vom Kopf f102e1f5, main 691c46e9 V18.546.234 gemischt; Proben `[gpu-probe: bild:genesis@0.5, bild:genesis@0.27]` am Kopf).
+
+Zuerst deine Order von 04:40 und 05:37 — der Ton deterministisch, dann sehen, ob die 12° der Radeon echt sind: der Täter liegt nicht in punkte-maschine, sondern in der Linse des Spiels. Die Station ferne.K1#2 ruft `luftTiefe` aus scripts/lib/licht-linsen.cjs (die Werkbank-Seite); `dh` rechnete dort je Pixel `ton(L) − ton(S)` und nahm den Median. Darum sitzt die Heilung im Spiel-Repo, kein Zweig `-pm` — die Station liest sie beim nächsten Lauf ohne Merge. Und eine Berichtigung meiner Zahl von 04:33: „6,0 gegen 12,3°" waren nicht zwei Läufe der Linse, sondern Linse gegen meine Sonde mit anderen Pixeln. Dieselben Pixel ergaben je Pixel denselben Ton — die Metrik war deterministisch, aber VERZERRT: bei 4–13 Stufen Buntheit springt der Ton eines Pixels um eine Stufe 5–15°, der Median der Beträge sitzt darum über der Wahrheit (Selbsttest: 2–6 Stufen Buntheit, Wahrheit 7,14°, je Pixel Median 20°, das Band 6,07°).
+
+Geschnitten:
+- scripts/lib/licht-linsen.cjs:2117 `tonDesBands` — der Ton des Mittels der linearen Pixel des Bands (Luft und Himmel je für sich summiert, dann EIN Ton je Seite), `luftTiefe` :2287 `dh: tonDesBands(b.dh)`; der seiten-eigene `ton` fällt, `farbTon` :2113 ist der EINE Ton (auch der HIMMEL-Ton). Die Werkbank-Seite trägt beide (scripts/werkbank.cjs:3487).
+- Selbsttest :2511 — 200 Pixel um eine Wahrheit von 7,14° mit ±1 Stufe Rauschen: das Band trifft sie auf ≤ 2° (6,07°), die Mutante „je Pixel" (Median 20°) ROT beim Namen. `werkbank licht --luft --selbsttest` GRÜN.
+- Die Decke (der erste Schnitt kostete scripts/ +408 Atome; am Kopf −35): bezahlt mit den Luma-Zwillingen — scripts/diag-pruefbuehne.cjs (4×), scripts/lib/wasser-linse.cjs (6×, die Seite trägt `luma709` aus abnahme-urteil), scripts/diag-pflanzen-nah.cjs lesen `luma709`. gate:betriebsgesetz GRÜN.
+
+Gemessen (swiftshader voll, Luft-Linse `werkbank licht --luft`, Genesis, Ton des Bands, zwei Läufe derselben Welt):
+- FARBTON 8 km Uhr 0,5, Azimut 0/90/180/270: je Pixel 6 · 10,23 · 2,7 · 7,5° → Band **5,71 · 8,94 · 2,78 · 6,76°** (Pixel 186/116/218/230); Uhr 0,27: 3,01 · 1,38 · 1,57 · 1,82°; vom Gipfel: 6,62 · 7,01 · 3,78 · 6,04°.
+- Lauf 1 und Lauf 2 auf die Hundertstel gleich. LUFT GRÜN · K1-1 GRÜN · K1-2 GRÜN · K2-1 GRÜN · K2-2 GRÜN; fernes Weiß R/B 6,25 (≥ 1,3).
+
+Wände am Kopf GRÜN: check · lint · format:check · playtest:fast (21 ✅ · 0 ❌) · gate:betriebsgesetz (scripts −35) · gate:pruefbuehne-licht (S0 GRÜN) · gate:pflanzen-nah (31 Fälle) · gate:welt-boot · `werkbank licht --luft --selbsttest`. Kein [ERROR] STOFF außer den Mutanten der Selbsttests.
+
+gate:wasser-leben steht HIER lokal ROT „K10 LEER: 8“ (8 Höhlen-Proben, Soll ≥ 20) — am Kopf und byte-gleich an main 691c46e9 im selben Container; in der CI von main (Gruppe 12) GRÜN. Die Wasser-Linse trägt aus diesem Zweig nur `luma709` statt der Luma-Zwillinge, `wasserHoehle` (scripts/lib/wasser-linse.cjs:1476) liest keinen davon.
+
+Ehrlich offen:
+- ferne.K1#2 mit dem Ton des Bands auf Radeon und GTX ungemessen — der Lauf der Station am Kopf ist der Richter. Auf swiftshader trägt Azimut 90° den knappsten Abstand (je Pixel 10,23° → Band 8,94°, 1,06° unter dem Soll); die 12° der Radeon waren Ton je Pixel.
+
+Ich warte im Wartezimmer.
+
 ## 09.11. 04:33 — w25-ferne-licht-5: ABGABE f102e1f539a76d49a1ca7c3d7fc3b363a7ef34ad
 
 ABGABE f102e1f539a76d49a1ca7c3d7fc3b363a7ef34ad — Abgabe w25-ferne-licht-5 (vom Kopf 4ecfb1a3, main f52b3a03 darin; Proben `[gpu-probe: bild:genesis@0.5, bild:wiese@0.5, bild:gipfel-blick@0.5]` am Kopf).
