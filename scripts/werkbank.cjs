@@ -1277,14 +1277,11 @@ async function starte() {
                 // DER KOPF IN STOFFEN (die Kopf-Klasse des Stamms, `_kopfKlasse`): jeder Leib eines Menschen — der Spieler, jeder
                 // Bewohner — teilt sich in `<leib>:kopf/<Stoff>` und `<leib>:leib/<Stoff>`; wählt der Ausdruck den Leib selbst
                 // (`^spieler$`), ist er EINE Klasse, sonst zeigt die Teilung jeden Stoff des Kopfs für sich (`^bewohner:kopf/`).
-                // Bis w4-bewohner-wache teilte die Werkbank selbst, nur den Spieler und nur unter `--gesicht`
-                // DAS HOLZ IST EIN AUSSEN (w26-eiche-kante, lod.K1#1): die Klasse einer Foundry-Gruppe ist Art × Stufe
-                // (`_instanzKlasse` f:eiche|…|1:<teil>) — ihre Rinde trug den Namen ihres Laubs, und `laub`/`laub-kante` maßen den Stamm
-                // als Umriss der Krone (Spielgang, GTX 1050 30e94000: f:eiche:L1 0,3102 mit, 0,194 ohne Rinde — 2 726 Stamm-Pixel gegen
-                // die Wiese). Die Rinde heißt `<klasse>:holz`: ein Ausdruck, der sie meint, nennt sie; sonst steht sie als Außen
+                // Bis w4-bewohner-wache teilte die Werkbank selbst, nur den Spieler und nur unter `--gesicht`. Das Holz einer
+                // Foundry-Gestalt ist ein eigener Leib der Teilung (`<klasse>:holz`): ein Ausdruck, der es meint, nennt es; sonst steht es als Außen
                 const teilName = (o) => {
                     const [grob, fein] = r._kopfKlasse(o);
-                    return (re.test(grob) ? grob : fein) + (o.material?.userData?.foundryKind === "bark" ? ":holz" : "");
+                    return re.test(grob) ? grob : fein;
                 };
                 const teile = new Map();
                 const nimm = (kl, o) => teile.set(kl, [...(teile.get(kl) || []), o]);
