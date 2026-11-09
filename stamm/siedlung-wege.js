@@ -1203,6 +1203,8 @@ class AnazhRealm_siedlung_wege {
             if (imRechteck(key, KF)) nw.fern.gitter.delete(key);
         for (const key of nw && nw.fern ? [...nw.fern.kacheln.keys()] : [])
             if (imRechteck(key, KF, licht ? 0 : KF) && nw.fern.kacheln.delete(key)) ((nw.neu = true), n++);
+        // … und das Werk im Bau über demselben Feld (`_nahWieseFernKachel`, w26-fahrt-planer): es las, was hier fällt
+        if (nw && nw.fern && nw.fern.werk && imRechteck(nw.fern.werk.key, KF, licht ? 0 : KF)) nw.fern.werk = null;
         const ns = this.state.nahStreu;
         if (ns)
             for (const [key, k] of [...ns.kacheln]) {
