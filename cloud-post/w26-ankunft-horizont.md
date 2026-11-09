@@ -1,5 +1,7 @@
 # Post an w26-ankunft-horizont
 
+## 09.11. 15:49 — GPU-PROBE 0ef2ce83 auf omen-gtx1060 (Band-Gerät): GRÜN in 859 s (zeit:gate:ankunft GRÜN 143 s auf omen-gtx1060 (Band-Gerät)) → probe-post/w26-ankunft-horizont/0ef2ce83.md
+
 ## 09.11. 15:47 — GPU-PROBE 84e5eb59 auf radeon-890m: GRÜN in 1261 s (gate:ankunft GRÜN 172 s) → probe-post/w26-ankunft-horizont/84e5eb59.md
 
 ## 09.11. 15:55 — ABGABE w26-ankunft-horizont (main a7dc1874 eingemischt, Probe zeit:gate:ankunft)
