@@ -44,7 +44,7 @@
 //   node scripts/diag-fall-waechter.cjs [--selftest]   (npm run gate:fall-waechter; Port FALL_WAECHTER_PORT)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, warteAufWelt, ROOT: root, sleep, hauptLauf, pruefer, taeterFaelle, selbsttestEnde, nullSeite, urteilEnde, stammLib, SELBSTTEST, jsonKlon } = require("./lib/welt-boot.cjs");
+const { statikServer, warteAufWelt, ROOT: root, sleep, hauptLauf, pruefer, taeterFaelle, selbsttestEnde, urteilEnde, stammLib, SELBSTTEST, nullWelt } = require("./lib/welt-boot.cjs");
 const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
 const PRUEF_SATZ = require("../spec/pruefsatz/bauen-k3.json"); // die Brücke auf zwei Pfeilern (B2)
 
@@ -342,10 +342,8 @@ function selbsttest() {
         ),
     };
     const { errs, check } = pruefer();
-    const klon = () => jsonKlon(gruen);
     // je Fall der Täter, den die Wand beim Namen nennt (`muss`); ohne `muss` bleibt der Befund grün
     const faelle = [
-        ["der grüne Befund", () => {}],
         // das Gegenstück: ein Tier am steilen Fuß der Höhlenwand steht auf der Ebene seiner Proben, 0,2 m unter dem Fels unter
         // seiner Wurzel (der Grund krümmt sich unter dem Leib) — im Höhlen-Band, grün
         ["Tier im Höhlen-Band", ["proben.5", { tiefsteUnter: 0.2, yEnde: 30.2, grundEnde: 30.4 }]],
@@ -453,7 +451,7 @@ function selbsttest() {
         ["Ring ohne Edit", ["turm2.3.ring.takte"], /\(B2 Fels Third\) FERN-RING OHNE EDIT/],
         ["Ring zu spät", ["turm2.5.ring.takte=", 90], /\(B2 Brücke Third\) FERN-RING ZU SPÄT: 1\.50 s/],
     ];
-    taeterFaelle(faelle, urteil, { fehler: errs, klon });
+    taeterFaelle(faelle, urteil, { fehler: errs, gruen });
     // die Quellen-Wand am Stamm (grün), an einer Kopie mit dem alten Leser im Körper-Schritt, einem unbenannten Leser der
     // Oberkante an einem Leib und einem veralteten Namen (rot, je beim Namen)
     const stamm = stammLib.text(root);
@@ -741,9 +739,7 @@ async function probe(K) {
     const hoehleGrund = hs ? hs.grund : NaN;
     {
         const name = "O3 Wagen in der Höhle";
-        if (hk) {
-            await amOrt(hk, 40);
-        }
+        if (hk) await amOrt(hk, 40);
         const m =
             hk && hs
                 ? await fahrt(hk.x, hk.z, hk.grund, 0, 120)
@@ -1020,12 +1016,9 @@ async function probe(K) {
 
 hauptLauf(async () => {
     console.log("=== DER FALL-WÄCHTER (Leben-Schau 2) — Null-Renderer, echter Spiel-Takt, Spaltgrund + Höhle ===");
-    await server.lausche(PORT);
-    const { browser, page } = await nullSeite({ frist: 900000 });
+    // die Orte aus der Welt (`__weltOrte`, scripts/lib/welt-orte.cjs); B2: der Fern-Ring lebt auch ohne Renderer
+    const { browser, page } = await nullWelt(server, { port: PORT, frist: 900000, vor: [WELT_ORTE_INSTALL, "window.__anazhFernRing = true"] }, 120000); // prettier-ignore
     page.setDefaultTimeout(880000);
-    await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // die Orte aus der Welt (`__weltOrte`, scripts/lib/welt-orte.cjs)
-    await page.evaluateOnNewDocument("window.__anazhFernRing = true"); // B2: der Fern-Ring lebt auch ohne Renderer
-    await server.zeige(page, 120000);
     await warteAufWelt(page, 180000);
     const befund = await page.evaluate(probe, {
         spaltenJeOrt: 6,

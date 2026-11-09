@@ -882,11 +882,17 @@ class AnazhRealm_stoff_material {
                         );
                         {
                             // DAS KRONENDACH (0910-8, K16 — EINE Quelle): wo kein echter Wald zeichnet, trägt der Boden mit Wege-Karte
-                            // das Kronendach × Saison nach der Deckung (`_fernKroneNahMisch`) — der Chunk-Boden UND der Fern-Ring,
-                            // derselbe Stoff; der Ring reicht seine Ecken-Krone (`opts.kroneVertex`) für den Ort jenseits der Karte.
+                            // das Kronendach im Jahr nach der Deckung (`_fernKroneNahMisch`) — der Chunk-Boden UND der Fern-Ring,
+                            // derselbe Stoff; der Ring reicht seine Ecken-Krone samt ihrem Jahr (`opts.kroneVertex`,
+                            // `opts.jahrVertex`) für den Ort jenseits der Karte.
                             let _alb =
                                 opts.wegeKarte === true
-                                    ? this._fernKroneNahMisch(_Ta, _geo, opts.kroneVertex || null)
+                                    ? this._fernKroneNahMisch(
+                                          _Ta,
+                                          _geo,
+                                          opts.kroneVertex || null,
+                                          opts.jahrVertex || null
+                                      )
                                     : _geo;
                             // DAS WASSER DES RINGS (K16, die Naht des Wassers): der Anteil des Wassers (`opts.wasserVertex`,
                             // aNass) ist kein Boden — er wirft zurück, was der Wasser-Stoff zurückwirft (`_wasserBlick`: der
@@ -1238,33 +1244,27 @@ class AnazhRealm_stoff_material {
                                     // ist er reine Albedo (linear, ohne Tonkurve): das Licht kommt allein aus der EINEN Licht-Kette —
                                     // die Tag-Licht-Achse, die ein eingebackenes Tageslicht mit der Sonne fallen ließ, fiel mit ihm.
                                     const _rgbK = _samp.rgb.div(_samp.a.max(_Ta.float(1e-3)));
-                                    // Die Karte ist Golden-Sommer gebacken; das Jahr färbt sie wie der Studio-Impostor:
-                                    // alb × mix(1, uSeasonMul, SAISON_GESETZ.kartenGewicht) (V18.527, kein Neubau).
+                                    // DAS JAHR DER KARTE (w21-laub-jahr-fern): sie ist IM JAHR gebacken (`_karteJahr`, ein Eingang
+                                    // ihres Bakes) — ihr Laub liegt in Präsenz und Tönung ihrer Stufe, die kahlen Äste des Winters
+                                    // stehen in ihr wie an der Gestalt; ihr Stoff trägt kein zweites Jahr. Zwischen zwei Bakes färbt
+                                    // er stetig nach: die gebackene Albedo × uSeasonMul / die Tönung des Bakes (die Reihe des Jahrs
+                                    // `_karteJahrFarbe` je Schicht) — das Laub trägt die Tönung der Welt wie die nahe Stufe, die Nadel-
+                                    // Art (`_karteNadel`) ×1 wie ihr Wedel. Bis w21 färbte die Sommer-Karte jeden Texel zu
+                                    // SAISON_GESETZ.kartenGewicht (0,8), Rinde eingeschlossen, und hob im Winter ihre Schwelle um
+                                    // (1 − Präsenz) × 0,5: dicht Deckendes blieb stehen, die ferne Krone im Winter voll.
                                     const _suK = this._ensureSeasonUniforms();
                                     const _albK = _rgbK.mul(
                                         _Ta.mix(
+                                            _Ta.div(
+                                                _suK.uSeasonMul,
+                                                this._karteJahrFarbe(_Ta).element(_schicht.toInt()).xyz
+                                            ),
                                             _Ta.vec3(1.0, 1.0, 1.0),
-                                            _suK.uSeasonMul,
-                                            _Ta.float(AnazhRealm._saisonGesetz().kartenGewicht)
+                                            this._karteNadel(_Ta).element(_schicht.toInt())
                                         )
                                     );
                                     albedoNode = _albK;
                                     mat.alphaTest = globalThis.__phytoCore.KARTEN_GESETZ.schwelle; // die Codec-Schwelle
-                                    // DAS JAHR DER KARTE (vegetation.K5, der Studio-Impostor): sie ist Sommer gebacken (die volle
-                                    // Krone, `_karteBuehne`), ihre Schwelle hebt sich um Δ = (1 − Laub-Präsenz) × SAISON_GESETZ
-                                    // .karteSchwelle — im Winter steht nur, was dicht deckt; die Nadel-Art (`_karteNadel`, je
-                                    // Programm-Bau gelesen: die Reihe wächst mit dem Atlas) fällt nie. Δ geht von der Deckung ab,
-                                    // nie in einen Schwellen-Knoten (K68-N1): r184 verwirft a ≤ alphaTest, a − Δ ≤ s heißt a ≤ s + Δ,
-                                    // und die Zahl des Stoffs regiert den Schnitt — der Klon des Phantoms (`_ghostMaterialFor`: Zahl
-                                    // × Deckkraft) trägt das Jahr mit, opak setzt r184 die Alpha nach dem Test auf 1. Bis zur Heilung
-                                    // trug die Karte `alphaTestNode` mit der Zahl als Konstante (gate:werkstatt-weg L-Werkstatt ROT).
-                                    _alpha = _alpha.sub(
-                                        _Ta.Fn(() => {
-                                            const nadel = this._karteNadel(_Ta).element(_schicht.toInt());
-                                            const p = _Ta.mix(_suK.uLaubPraesenz.x, _Ta.float(1), nadel).clamp(0, 1);
-                                            return _Ta.float(1).sub(p).mul(AnazhRealm._saisonGesetz().karteSchwelle);
-                                        })()
-                                    );
                                     // ── Normal-Atlas (rg, z = √(1−x²−y²)) → Billboard-Rahmen → per-Fragment-Licht ──
                                     // Das rgba8-Ziel trägt die Normale vormultipliziert mit der Deckung (z) — kein Saum der
                                     // Leer-Normale an der Silhouette; BC5 trägt das Mittel der deckenden Texel (leer = die Normale der
@@ -1702,7 +1702,9 @@ class AnazhRealm_stoff_material {
                     // dieselbe (K02a: die Decke nimmt das Licht von unten, kein Himmel von oben); der Fern-Ring (`fernNeigung`: die
                     // Masche des Empfängers, m) trägt die Normale des Gesetzes aus der Karte (`_fernNeigungNormale`, ferne.K4), wo
                     // seine Masche gröber steht als ein Texel
-                    const _nWahr = opts.fernNeigung ? this._fernNeigungNormale(_nWG, opts.fernNeigung) : _nWG;
+                    const _nWahr = opts.fernNeigung
+                        ? this._fernNeigungNormale(_nWG, opts.fernNeigung, opts.fernOrt)
+                        : _nWG;
                     let _baseN = _nWahr;
                     // Mikro-Relief (`_mikroRelief`, TERRAIN_BUMP): die festen Oktaven (Klumpen, Kiesel) und die drei am Schirm kippen
                     // die geflattete Normale entgegen dem Gradienten, LOD-gegated.
@@ -2881,7 +2883,7 @@ class AnazhRealm_stoff_material {
             // Feld-Pass zeichnet (gate:nah-fern, Luft aus). Hier lebt nur noch die Farbe des Halms für das Relief der Nähe.
             const _mg = AnazhRealm.MEADOW_GREEN;
             const _sp = AnazhRealm.GRAS_SPITZE;
-            const _wg = AnazhRealm.WIESEN_GRUND.farbe;
+            const _wg = AnazhRealm.WIESEN_GRUND.halmMittel; // das Relief der Nähe trägt das Mittel des Halms, die Ferne den Bestand
             const _wurzel = _T.vec3(_mg[0], _mg[1], _mg[2]);
             const _spitze = _T.vec3(_sp[0], _sp[1], _sp[2]);
             const _krone = _T.vec3(_wg[0], _wg[1], _wg[2]);

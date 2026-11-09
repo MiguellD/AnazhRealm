@@ -606,7 +606,7 @@ class AnazhRealm_dirigent_takt {
                     if (b.leib && !b.drinnen && !b.amSteuer && !b.leib.userData._kzVersuch) o.leiber++;
         // DIE LEUTE IM WERK (w4-linsen-b; mensch.K5#1, mensch.K1#1/K2#2 an 3ed95dcf GTX: „DER BAU STEHT NICHT: begegnung: die Leiber nach
         // 306 Takten — die Welt hat nichts mehr offen"): seit bewohner-takt rechnet das Werk der Liste (`listeWerk`: `_bewohnerListe`,
-        // dann `_bewohnerStandPruefen`) mit Bild je Takt `BEWOHNER.listeMs` — an der Karte geht die Liste des Start-Dorfs über Hunderte
+        // dann `_bewohnerStandPruefen`) mit Bild je Takt unter der EINEN Frist (`_bewohnerWerkTakt`) — an der Karte geht die Liste des Start-Dorfs über Hunderte
         // Takte, und die Welt nannte sich ruhig, während ihre Leute noch entstanden: jeder Deckel zählte die Takte als still und brach,
         // `_weltSteht` gab ein Bild ohne die Leute frei. Offen ist je Siedlung im Nah-Ring (dort geht ihr Werk, `_tickBewohner`) ihr
         // Werk samt seinem Rest (`listeRest`: Personen, Besuche, Stände, die es noch stellt) und je Kopf, wer noch geboren wird
@@ -1732,6 +1732,15 @@ class AnazhRealm_dirigent_takt {
     _psoVorbau() {
         return this._imTakt === true && this._ladeTakt();
     }
+    // DER VORBAU DES EINMAL-RENDERS (`_einmalRender`, w25-ankunft-block): unter dem Ladeschirm wie jeder Render außerhalb der Welt
+    // (`_psoVorbau`), nach dem Bild in jedem Takt des laufenden Loops — ein Pass, der dann zum ersten Mal zeichnet (der Spiegel,
+    // die Horizont-Karte, eine neue Tafel), übersetzt seine Pipeline nie im GPU-Prozess vor dem nächsten Bild. Der ruhende Loop
+    // (eine Linse, die Werkbank, das Portal) und jeder Leser außerhalb des Takts zeichnen ganz.
+    _einmalVorbau() {
+        const r = this.state.renderer;
+        if (this._psoVorbau()) return true;
+        return this._imTakt === true && !!this.state._weltbildDa && !!r && !r._isHeadlessNull && !this._loopRuht();
+    }
 
     // DIE FRIST DES LADE-FRAMES (K60-2): EINE je Aufgabe des Event-Loops — der Frame des Loops ist eine, jede Scheibe im
     // eigenen Takt (per setTimeout; bis K5 die Ort-Wahl, heute im Ort-Faden) eine andere; gestellt beim ersten Leser, gelöscht am Ende
@@ -1890,6 +1899,26 @@ class AnazhRealm_dirigent_takt {
                 },
             },
             {
+                name: "bewohner",
+                prio: 1, // Welt-Substanz: die Leute einer Siedlung im Nah-Ring (das Werk der Liste, `_bewohnerWerkTakt`), hinter dem Wald
+                run: (ms) => this._bewohnerWerkTakt(ms),
+            },
+            {
+                name: "nahWiese",
+                // Welt-Substanz am Schirm (w24-wiese-ferne): die Wiese der Nähe und ihre Ferne bis 200 m sind, was das Bild um den
+                // Spieler trägt — jedes Bild ihr Boden unter der EINEN Frist der Bau-Arbeit, nach dem Boden wie die Deko
+                // (`_dekoWartet`). Als Deko bekam sie unter Last nur jedes 4. Bild 2,5 ms: im Start-Dorf mit 81 Leibern stand die
+                // Ferne erst nach 542 von 583 Takten (Null-Renderer, die Deko gedrosselt wie auf der Karte), an main 1561bf3a riss
+                // mensch.K1#1 „DIE WELT STEHT NICHT nach 765 Takten, nahWiese wartet“.
+                prio: 1,
+                run: (ms) => {
+                    if (this._dekoWartet()) return;
+                    const _nw = performance.now();
+                    this._tickNahWiese(Number.isFinite(ms) ? _nw + ms : undefined);
+                    this._perfSenseLap("nahWiese", _nw);
+                },
+            },
+            {
                 name: "scatterDeco",
                 prio: 2, // reine Optik — wartet, wenn das Terrain diesen Frame baute oder das Budget leer ist
                 run: (ms) => {
@@ -1920,7 +1949,6 @@ class AnazhRealm_dirigent_takt {
                     this._tickPendingGrass(lade ? Infinity : 1, lade ? _dl : undefined);
                     this._tickScatterRegrow(this._weltStunde());
                     this._tickLebenStufen();
-                    this._tickNahWiese(_dl);
                     this._tickNahStreu(_dl);
                     this._perfSenseLap("scatter", _sct);
                     const nowTiles = performance.now();

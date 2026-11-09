@@ -1461,7 +1461,7 @@
     const hTop=deckY+1.05, B=(c,y,w,h,t2)=>hor?beam(g,c,y,fix,w,h,t2,role):beam(g,fix,y,c,t2,h,w,role);
     B((a0+a1)/2,hTop-0.035,len,0.07,0.09); B((a0+a1)/2,deckY+0.10,len,0.06,0.07);                                    // Handlauf (OK 1.05) + Fußriegel
     const nP=Math.max(1,Math.round(len/1.5)); for(let i=0;i<=nP;i++)B(a0+len*i/nP,(deckY+hTop)/2,0.07,hTop-deckY,0.07);   // Pfosten
-    const _gf=P.flaechig?2:1, nS=Math.max(2,Math.ceil(len/(0.16*_gf))); if(!(P.nur&&P.nur.fern)) for(let i=1;i<nS;i++)B(a0+len*i/nS,(deckY+hTop)/2,0.045*_gf,hTop-deckY-0.16,0.045*_gf); }   // die Stufen des Stabs: die Flächen-Stufe im Großformat (halb so viele, doppelt so breit — derselbe Anteil Durchblick), die ferne Stufe ohne Stäbe (4,5 cm unter 1,5 Pixel: sie flimmerten nur)   // Stäbe: Pitch ≤0.16 → licht ≤0.115
+    const _gf=P.nur&&P.nur.fern?6:P.flaechig?2:1, nS=Math.max(2,Math.ceil(len/(0.16*_gf))); for(let i=1;i<nS;i++)B(a0+len*i/nS,(deckY+hTop)/2,0.045*_gf,hTop-deckY-0.16,0.045*_gf); }   // die Stufen des Stabs: die Flächen-Stufe im Großformat (halb so viele, doppelt so breit — derselbe Anteil Durchblick), die ferne Stufe je sechster sechsfach breit (w25-lod-pop-2: ohne Stäbe lag die Pueblo-Brüstung 1,9 px neben der L0; 27 cm Stab, derselbe Anteil Durchblick)   // Stäbe: Pitch ≤0.16 → licht ≤0.115
   function bruestungRect(g,xa,xb,za,zb,deckY,role){ bruestungSeg(g,'z',xa,xb,za,za,deckY,role); bruestungSeg(g,'z',xa,xb,zb,zb,deckY,role); bruestungSeg(g,'x',xa,xa,za,zb,deckY,role); bruestungSeg(g,'x',xb,xb,za,zb,deckY,role); }
   // MERLON-GESETZ (Burgenbau) — Brustwehr mannshoch (Sims ≥1.0 über Deck, man fällt nicht durchs Crenel), Merlon:Crenel ≈ 3:2 — GETEILT von Ringmauer UND Turm
   function merlonSeg(g,axis,x0,x1,z0,z1,deckY,role,dpt){ const hor=(axis==='z'), a0=hor?x0:z0, a1=hor?x1:z1, fix=hor?z0:x0, len=a1-a0; if(len<0.4)return; dpt=dpt||0.42;
@@ -1515,10 +1515,10 @@
     beam(g,0,baseY-0.12,0,W,0.24,Dp,'boden');   // angehobene Bodenplatte
     for(let ix=0;ix<=nx;ix++)for(let iz=0;iz<=nz;iz++){ const x=-W/2+W*ix/nx, z=-Dp/2+Dp*iz/nz; if(ix>0&&ix<nx&&iz>0&&iz<nz)continue; beam(g,x,gy+h/2,z,0.34,h,0.34,wr); }   // Stützenraster am Rand
     beam(g,0,gy+h/2,0,0.4,h,0.4,wr); return g; }
-  function terrasse(){ const g=grp(); if(!P.terrasse) return g;   // TERRASSIERUNG — SETBACK-GESETZ (NYC 1916) + LOCHWAND-GESETZ: ECHTE Fenster-/Tür-Öffnungen in hohlen Tiers; Absturzkanten → BRÜSTUNGS-GESETZ
+  function terrasse(){ const g=grp(); if(!P.terrasse) return g; const _fT=!!(P.nur&&P.nur.fern);   // DIE FERNE STUFE (DESTNUR, w25-lod-pop-2): die Tiers als geschlossener Körper mit Brüstung — kein Loch, kein Fenster, kein Treppenauge (der Umriss bleibt, die L2 hält ihre Zeile)   // TERRASSIERUNG — SETBACK-GESETZ (NYC 1916) + LOCHWAND-GESETZ: ECHTE Fenster-/Tür-Öffnungen in hohlen Tiers; Absturzkanten → BRÜSTUNGS-GESETZ
     const nT=Math.min(4, 2+((P.seed*13)%3)+(P.storeys>2?1:0)), _ir=0.095+((P.seed*7)%4)*0.014, role=(P.stil==='stein'||P.stil==='klinker')?'putz':'stein', grl=(P.stil==='modern'||P.stil==='glas')?'metall':'holz', tH=Math.max(2.2,P.ogH*0.8), fwd=(ww)=>Math.min(0.85,ww), asym=Math.max(-1,Math.min(1,P.terrAsym||0)), wT=0.24; let y=eaveY-0.15, pw=W, pd=Dp, pcx=0, pcz=0;
     for(let t=0;t<nT;t++){ const ins=t*W*_ir, w=Math.max(1.4,W-2*ins), dd=Math.max(1.4,Dp-2*ins), cx=asym*ins, cz=-(Dp-dd)/2;
-      if(t===0&&LOFT){ const hx0=LOFT.x0-0.05,hx1=LOFT.x1+0.05,hz0=LOFT.z0-0.05,hz1=LOFT.z1+0.05;   // TREPPENAUGE-GESETZ: von innen erschlossen — der Speicherlauf mündet in Tier 0, SIA-Ring ums Auge
+      if(t===0&&LOFT&&!_fT){ const hx0=LOFT.x0-0.05,hx1=LOFT.x1+0.05,hz0=LOFT.z0-0.05,hz1=LOFT.z1+0.05;   // TREPPENAUGE-GESETZ: von innen erschlossen — der Speicherlauf mündet in Tier 0, SIA-Ring ums Auge
         [[pcx-pw/2,hx0,pcz-pd/2,pcz+pd/2],[hx1,pcx+pw/2,pcz-pd/2,pcz+pd/2],[hx0,hx1,pcz-pd/2,hz0],[hx0,hx1,hz1,pcz+pd/2]].forEach(([a,b2,c2,d2])=>{ if(b2-a>0.06&&d2-c2>0.06) beam(g,(a+b2)/2,y+0.07,(c2+d2)/2,b2-a,0.14,d2-c2,'boden'); });
         const zA=(LOFT.dir>0)?hz0:hz1; bruestungSeg(g,'z',hx0,hx1,zA,zA,y+0.14,grl); bruestungSeg(g,'x',hx0,hx0,hz0,hz1,y+0.14,grl); bruestungSeg(g,'x',hx1,hx1,hz0,hz1,y+0.14,grl); }   // 3-seitig: der Austritt bleibt frei
       else beam(g,pcx,y+0.07,pcz,pw,0.14,pd,'boden');                                                // GESCHOSSPLATTE über den VORHERIGEN Footprint
@@ -1526,19 +1526,19 @@
       const fx=[],bx=[],sz2=[];
       for(let i=0;i<nx;i++){ const px=cx-w/2+w*(i+0.5)/nx, ww2=fwd(w/nx*0.5); fx.push({c:px,w:ww2+0.14,b:wy-wh/2-0.06,t:wy+wh/2+0.08}); if(!(t>0&&Math.abs(px-cx)<0.8)) bx.push({c:px,w:ww2+0.14,b:wy-wh/2-0.06,t:wy+wh/2+0.08}); }
       for(let i=0;i<nz;i++){ const pz=cz-dd/2+dd*(i+0.5)/nz, ww2=fwd(dd/nz*0.5); sz2.push({c:pz,w:ww2+0.14,b:wy-wh/2-0.06,t:wy+wh/2+0.08}); }
-      lochWand(g,true, cz-dd/2+wT/2, cx-w/2, cx+w/2, y, y+tH, fx, role);                                                // Front: echte Fensteröffnungen
-      lochWand(g,false, cx-w/2+wT/2, cz-dd/2+wT, cz+dd/2-wT, y, y+tH, sz2, role);
-      lochWand(g,false, cx+w/2-wT/2, cz-dd/2+wT, cz+dd/2-wT, y, y+tH, sz2, role);
-      if(t===0) lochWand(g,true, cz+dd/2-wT/2, cx-w/2, cx+w/2, y, y+tH, bx, role);
+      lochWand(g,true, cz-dd/2+wT/2, cx-w/2, cx+w/2, y, y+tH, _fT?[]:fx, role);                                                // Front: echte Fensteröffnungen
+      lochWand(g,false, cx-w/2+wT/2, cz-dd/2+wT, cz+dd/2-wT, y, y+tH, _fT?[]:sz2, role);
+      lochWand(g,false, cx+w/2-wT/2, cz-dd/2+wT, cz+dd/2-wT, y, y+tH, _fT?[]:sz2, role);
+      if(t===0) lochWand(g,true, cz+dd/2-wT/2, cx-w/2, cx+w/2, y, y+tH, _fT?[]:bx, role);
       else { const dwB=0.95, dhB=Math.min(2.05,tH-0.18), zb=cz+dd/2-wT/2;
-        lochWand(g,true, zb, cx-w/2, cx+w/2, y, y+tH, bx.concat([{c:cx,w:dwB+0.10,b:y-0.02,t:y+dhB}]), role);           // Rückwand: Fenster UND Terrassentür aus derselben Loch-Quelle
-        beam(g,cx,y+0.14+(dhB-0.14)/2,zb+0.10,dwB-0.10,dhB-0.20,0.06,'holz'); beam(g,cx,y+0.17,zb+0.16,dwB+0.2,0.06,0.34,'stein');   // Türblatt + Schwelle auf dem Deck
+        lochWand(g,true, zb, cx-w/2, cx+w/2, y, y+tH, _fT?[]:bx.concat([{c:cx,w:dwB+0.10,b:y-0.02,t:y+dhB}]), role);           // Rückwand: Fenster UND Terrassentür aus derselben Loch-Quelle
+        if(!_fT){ beam(g,cx,y+0.14+(dhB-0.14)/2,zb+0.10,dwB-0.10,dhB-0.20,0.06,'holz'); beam(g,cx,y+0.17,zb+0.16,dwB+0.2,0.06,0.34,'stein'); }   // Türblatt + Schwelle auf dem Deck
         const rw={z1:(pcz+pd/2)-(cz+dd/2), x0:(cx-w/2)-(pcx-pw/2), x1:(pcx+pw/2)-(cx+w/2)};
         if(rw.z1>0.15) bruestungSeg(g,'z',pcx-pw/2,pcx+pw/2,pcz+pd/2,pcz+pd/2,y+0.14,grl);
         if(rw.x0>0.15) bruestungSeg(g,'x',pcx-pw/2,pcx-pw/2,pcz-pd/2,pcz+pd/2,y+0.14,grl);
         if(rw.x1>0.15) bruestungSeg(g,'x',pcx+pw/2,pcx+pw/2,pcz-pd/2,pcz+pd/2,y+0.14,grl); }
-      for(let i=0;i<nx;i++){ const px=cx-w/2+w*(i+0.5)/nx; fensterAt(g,px,wy,cz-dd/2-0.02,fwd(w/nx*0.5),wh,true); if(t>0&&Math.abs(px-cx)<0.8)continue; fensterAt(g,px,wy,cz+dd/2+0.02,fwd(w/nx*0.5),wh,true); }
-      for(let i=0;i<nz;i++){ const pz=cz-dd/2+dd*(i+0.5)/nz; fensterAt(g,cx-w/2-0.02,wy,pz,fwd(dd/nz*0.5),wh,false); fensterAt(g,cx+w/2+0.02,wy,pz,fwd(dd/nz*0.5),wh,false); }
+      if(!_fT) for(let i=0;i<nx;i++){ const px=cx-w/2+w*(i+0.5)/nx; fensterAt(g,px,wy,cz-dd/2-0.02,fwd(w/nx*0.5),wh,true); if(t>0&&Math.abs(px-cx)<0.8)continue; fensterAt(g,px,wy,cz+dd/2+0.02,fwd(w/nx*0.5),wh,true); }
+      if(!_fT) for(let i=0;i<nz;i++){ const pz=cz-dd/2+dd*(i+0.5)/nz; fensterAt(g,cx-w/2-0.02,wy,pz,fwd(dd/nz*0.5),wh,false); fensterAt(g,cx+w/2+0.02,wy,pz,fwd(dd/nz*0.5),wh,false); }
       addMasse({art:'stufe',x0:cx-w/2,x1:cx+w/2,z0:cz-dd/2,z1:cz+dd/2,y0:y,y1:y+tH});
       pw=w; pd=dd; pcx=cx; pcz=cz; y+=tH; }
     beam(g,pcx,y+0.07,pcz,pw,0.14,pd,'boden');                                                                          // Dachplatte des obersten Tiers
@@ -1714,7 +1714,7 @@
   const annexDoors = GAs.length ? GAs.flatMap(A=>{ const tw=Math.min(2.45,A.gw-0.55), t0=A.xin+A.sx*0.30, tlo=Math.min(t0,t0+A.sx*tw), thi=Math.max(t0,t0+A.sx*tw), p0=A.xin+A.sx*0.35;
     return [ {x0:tlo, x1:thi, y0:0.06, y1:0.06+2.0, z:A.z0, kind:'tor'},
              {x0:Math.min(p0,p0+A.sx*0.85), x1:Math.max(p0,p0+A.sx*0.85), y0:0.06, y1:0.06+2.0, z:A.z1, kind:'personentuer'} ]; }) : [];
-  { const hm={art:'haupt',x0:-W/2,x1:W/2,z0:-Dp/2,z1:Dp/2,y0:P.pilotis?baseY-0.24:0,eY:eaveY,rY:ridgeY,egTop:levels[0].top,dach:ROOFMODE==='alt'?'alt:'+P.dachTyp:ROOFMODE,hip:P.hip,ovZ:P.ovEave,ovX:P.ovRake,curve:DEF_cv,dachRolle:(sm&&sm.RM&&sm.RM.ziegel)||'ziegel'};
+  { const hm={art:'haupt',x0:-W/2,x1:W/2,z0:-Dp/2,z1:Dp/2,y0:P.pilotis?baseY-0.24:0,eY:eaveY,rY:ridgeY,egTop:levels[0].top,dach:ROOFMODE==='alt'?'alt:'+P.dachTyp:ROOFMODE,hip:P.hip,ovZ:P.ovEave,ovX:P.ovRake,curve:DEF_cv,dachRolle:(sm&&sm.RM&&sm.RM.ziegel)||'ziegel',ring:ROUND?0:P.post/2-0.02};   // ring: so weit steht der Ständer-Ring (postsRing, plateRing: Mitte 2 cm innen) vor dem Grundriss — der Umriss der L0
     addMasse(Object.assign({},hm)); if(P.doppel){ SHIFT=W; addMasse(Object.assign({},hm)); SHIFT=0; }
     if(DORMER) addMasse({art:'gaube',x0:DORMER.gx-DORMER.gW/2,x1:DORMER.gx+DORMER.gW/2,z0:DORMER.zFront,z1:DORMER.zBack,y0:DORMER.baseY2,y1:DORMER.frontTop}); }   // der Hauptkörper (das Doppelhaus: beide Einheiten)
   return { P, subsystems, order, solids, strahl, build, spawn, floors:levels.map(L=>L.y), windows:windowOpenings, annexDoors,
@@ -1979,8 +1979,17 @@
     // ═══════════════════════════════════════════════════════════════════════
     // prettier-ignore
     const KULLVOL=0.012;
+    // DER UMRISS DER FERNEN STUFE (w25-lod-pop-2, lod.K5): Portikus und Veranda stehen in der L2 — ohne sie lag ihr Umriss 3,1 px (georgian)
+    // und 4,5 px (viktorianisch) neben der L0 am Haushalt 26 m, mit ihnen 0,58 / 0,39 px; die L2 hält ihre Zeile (höchstens 7 104 Dreiecke am
+    // Regler-Rand, L2/L0 ≤ 0,084). Die Terrasse des Pueblo steht fern als Körper mit Brüstung (`terrasse`, `_fT`): voll gebaut riss sie die Zeile (10 778 bei
+    // doppel=1), so 6 504 höchstens; Pueblo 12,76 → 1,34 px (die Stäbe der fernen Brüstung je sechster,
+    // sechsfach breit, `bruestungSeg`; es fehlen die Vigas).
     // prettier-ignore
-    const DESTNUR={fern:true,kaempfer:false,dachdeckung:"rand",dachwerk:false,fenster:false,gefache:false,boeden:false,innenwaende:false,treppe:false,moebel:false,geruest:false,zimmermann:false,tueren:false,anbau:false,balkon:false,portikus:false,veranda:false,terrasse:false,arkade:false,giebel:false,dachAlt:false}; // GIEBEL-KOPLANAR-FIX: DESTNUR-Giebelwände lagen EXAKT auf den dachPrisma-Gabeln (GEMESSEN: barock 21.7k / antike 13.5k Z-Fight-Paare auf Traufhöhe) — fern IST der Körper der Giebel   // Stufe 2: 6.7x — Kull-Opfer entstehen gar nicht erst. dachwerk AUS: nackte Sparren über dem dims-Körper lasen sich als Ruine — der Körper trägt das Dach
+    const DESTNUR={fern:true,kaempfer:false,dachdeckung:"rand",dachwerk:false,fenster:false,gefache:false,boeden:false,innenwaende:false,treppe:false,moebel:false,geruest:false,zimmermann:false,tueren:false,anbau:false,balkon:false,portikus:true,veranda:true,terrasse:true,arkade:false,giebel:false,dachAlt:false}; // GIEBEL-KOPLANAR-FIX: DESTNUR-Giebelwände lagen EXAKT auf den dachPrisma-Gabeln (GEMESSEN: barock 21.7k / antike 13.5k Z-Fight-Paare auf Traufhöhe) — fern IST der Körper der Giebel   // Stufe 2: 6.7x — Kull-Opfer entstehen gar nicht erst. dachwerk AUS: nackte Sparren über dem dims-Körper lasen sich als Ruine — der Körper trägt das Dach
+    // DIE TURM-STUFE 1 (w25-lod-pop-3, lod.K5): die Hochhaus-L1 stand am Haushalt 12 m 9,67 px neben der L0 — drei Wurzeln, je Peilung
+    // gemessen: durch die offenen Flügel des hohlen Turms stand der Himmel (an der Diagonale 50,7 px; der Turm baut nah die Innenwände,
+    // `stufe0Param`), der Körper der Liste lag 7,5 cm hinter dem Ständer-Ring der L0 (`lod2Koerper` trägt den Ring, 4,0 → 0,8 px) und
+    // die Fern-Fenster trugen den offenen Flügel nicht (`fensterFern`). Jetzt 0,73 px, die L2 5,06 → 1,15.
     // prettier-ignore
     const TURMNUR={fern:true,gefache:false,riegel:false,streben:false,zimmermann:false,fenster:false,geruest:false,boeden:false,innenwaende:false,treppe:false,moebel:false}; // Turm-Fassade: Paneele x 11 Geschosse waren die Masse
     // prettier-ignore
@@ -2384,7 +2393,8 @@
     // Rahmen-Stoff). Die Fern-Stufe kostet Stoff + Glas, zwei Befehle; 14 bis 16 Dreiecke je Fenster.
     var RAHMEN_TIEFE = 0.1,
         SCHEIBE_RAND = 0.06,
-        KREUZ = 0.02;
+        KREUZ = 0.02,
+        FLUEGEL_LAGE = [0.8138785, 0.5810352]; // cos und sin der Flügel-Öffnung der L0 (fensterAt: 0,62 rad)
     // prettier-ignore
     function fensterFern(fen, B, geoms){
   const liste=fen&&fen.liste; if(!liste||!liste.length) return;
@@ -2409,7 +2419,14 @@
     if(schlaf) teile([scheibe(d1+0.01)], M.putz, schlafF);
     else { teile([scheibe(d1+0.01)], M.putz, innen); teile([scheibe(d1+0.02)], M.glas, eins); }
     const k=d1+0.03, q=(ua,ub,ya,yb)=>[[P(ua,ya,k),P(ub,ya,k),P(ub,yb,k),P(ua,yb,k)],aus];   // das Kreuz: der Pfosten durchgehend, der Kämpfer links und rechts von ihm
-    teile([q(u-KREUZ,u+KREUZ,o.cy-ph,o.cy+ph), q(u-pw,u-KREUZ,o.cy-KREUZ,o.cy+KREUZ), q(u+KREUZ,u+pw,o.cy-KREUZ,o.cy+KREUZ)], rahmenM, rahmenF); }
+    teile([q(u-KREUZ,u+KREUZ,o.cy-ph,o.cy+ph), q(u-pw,u-KREUZ,o.cy-KREUZ,o.cy+KREUZ), q(u+KREUZ,u+pw,o.cy-KREUZ,o.cy+KREUZ)], rahmenM, rahmenF);
+    if(Math.sign(z?o.cz:o.cx)!==s) continue;   // der Flügel der L0 dreht nach dem Vorzeichen seiner Lage: zeigt die Wand dagegen, schlägt er in den Körper
+    const [c,sn]=FLUEGEL_LAGE, N=uR.map((r,i)=>c*aus[i]-sn*r), F=(a,y,dl)=>P(u-o.w/2+a*c*o.w-dl*sn,y,a*sn*o.w+dl*c), fy0=o.cy-o.h/2, fy1=o.cy+o.h/2;
+    const fl=(a0,a1,ya,yb,dl,n)=>[[F(a0,ya,dl),F(a1,ya,dl),F(a1,yb,dl),F(a0,yb,dl)],n], Nm=N.map(c2=>-c2), ar=SCHEIBE_RAND/o.w;
+    teile([fl(0,1,fy0,fy1,0,N), fl(0,1,fy0,fy1,0,Nm)], rahmenM, rahmenF);   // der Flügel-Rahmen, beidseitig
+    const sch=(dl)=>[fl(ar,1-ar,fy0+SCHEIBE_RAND,fy1-SCHEIBE_RAND,dl,N), fl(ar,1-ar,fy0+SCHEIBE_RAND,fy1-SCHEIBE_RAND,-dl,Nm)];
+    if(schlaf) teile(sch(0.01), M.putz, schlafF);
+    else { teile(sch(0.01), M.putz, innen); teile(sch(0.02), M.glas, eins); } }
   const wrap=bauOrtWrap(B); wrap.add(grp2); wrap.updateMatrixWorld(true);
   bakeLOD(grp2, kol, geoms, 0);
 }
@@ -2580,10 +2597,11 @@
         var dazu = function (teil, rolle, faktor, haut) {
             if (teil) aus.push({ teil: teil, rolle: rolle, faktor: faktor || null, rang: rang, i: aus.length, haut: haut || null });
         };
-        var wand = function (x0, x1, y0, y1, z0, z1, rolle) {
+        // `ring` (der Hauptkörper, nur der L2-Bake `lod2Koerper`): die Wand-Haut — der Ständer-Ring der L0 steht so weit vor dem Grundriss
+        var wand = function (x0, x1, y0, y1, z0, z1, rolle, ring) {
             var r = rolle || wr,
                 f = rolle ? null : wf;
-            dazu(huelleTeil("box", x0 + IW, x1 - IW, y0, y1, z0 + IW, z1 - IW, farbe(r, f)), r, f);
+            dazu(huelleTeil("box", x0 + IW, x1 - IW, y0, y1, z0 + IW, z1 - IW, farbe(r, f)), r, f, ring > 0 ? { ring: ring + IW } : null);
         };
         var keil = function (x0, x1, y0, y1, z0, z1, first, walm, rolle, haut) {
             dazu(huelleTeil("keil", x0, x1, y0, y1, z0, z1, farbe(rolle), walm > 0 ? { first: first, walm: _hr(walm) } : { first: first }), rolle, null, haut);
@@ -2667,9 +2685,9 @@
                 // die Wand bis unter das Dach (beim Dom bis zur Springlinie der Trommel, bei Zinnen bis zur Brustwehr)
                 var top = dach === "sattel" ? m.eY - ID : dach === "dome" && kuppel ? kuppel.springY - ID : zinnen ? zinnen.y1 - ID : hatStufen ? m.eY - 0.15 : m.eY + 0.1 - ID;
                 if (vork && vork.y0 < top) {
-                    wand(m.x0, m.x1, m.y0, vork.y0, m.z0, m.z1);
-                    wand(m.x0 - vork.ov, m.x1 + vork.ov, vork.y0, top, m.z0 - vork.ov, m.z1 + vork.ov);
-                } else wand(m.x0, m.x1, m.y0, top, m.z0, m.z1);
+                    wand(m.x0, m.x1, m.y0, vork.y0, m.z0, m.z1, undefined, m.ring);
+                    wand(m.x0 - vork.ov, m.x1 + vork.ov, vork.y0, top, m.z0 - vork.ov, m.z1 + vork.ov, undefined, m.ring);
+                } else wand(m.x0, m.x1, m.y0, top, m.z0, m.z1, undefined, m.ring);
                 var mS = (m.rY - m.eY) / Math.max(0.1, (m.z1 - m.z0) / 2);
                 if (dach === "sattel" && m.curve > 0) schwung(m, dr);
                 else if (dach === "sattel") {
@@ -2981,7 +2999,10 @@
       _teilGitter(x.teil, alle, H, false, n=>n[1]>0.02?1:0);   // der Körper unter der Haut schließt den Raum zwischen Haut und Giebel (die Walm-Seiten)
       _teilGitter(x.teil, alle, Gi, false, n=>Math.abs(n[1])<=0.02&&Math.abs(amX?n[0]:n[2])>0.98?1:0);
       netz(H, x.rolle, x.faktor); netz(Gi, wr, wf); continue; }
-    const G={pos:[],nrm:[],idx:[]}; _teilGitter(x.teil, alle, G, true); netz(G, x.rolle, x.faktor); }
+    // DIE WAND TRÄGT IHREN RING (w25-lod-pop-3, lod.K5): die Wand des Hauptkörpers steht im Ständer-Ring der L0 (`ring`, 6 cm vor dem
+    // Grundriss), nie 1,5 cm dahinter — die Hochhaus-L1 stand an jeder Ecke 7,5 cm innen (4,0 px am Haushalt 12 m).
+    const t=x.haut&&x.haut.ring&&x.teil.art==='box'?Object.assign({},x.teil,{h:_hr3([x.teil.h[0]+x.haut.ring,x.teil.h[1],x.teil.h[2]+x.haut.ring])}):x.teil;
+    const G={pos:[],nrm:[],idx:[]}; _teilGitter(t, alle, G, true); netz(G, x.rolle, x.faktor); }
   const wrap=bauOrtWrap(B); wrap.add(grp2); wrap.updateMatrixWorld(true);
   bakeLOD(grp2, B.p.col, geoms, 0);
 }
@@ -3949,7 +3970,12 @@
     // DIE MENGE (`verkehrVon`): je `hausJeWagen` Häuser einer städtischen Siedlung (Markt bis Metropole, `plan.staedtisch`) EIN
     // Wagen, sein Fahrer ein Bewohner des Hauses floor((w + ½) · Häuser / Wagen) — gleichmäßig über den Plan; ein Dorf fährt nicht.
     // DAS NETZ (`verkehrsNetz`, am Ursprung ox/oz): die Trassen, die zwei Wagen nebeneinander tragen (jede Straße ab `breiteM`:
-    // die Hauptstraßen der Stadt; Punkte zweier Trassen näher als `naheM` treffen sich), ihr längster zusammenhängender Teil. Knoten mit drei und
+    // die Hauptstraßen der Stadt; Punkte zweier Trassen näher als `naheM` treffen sich, und DER STOSS: das Ende einer Trasse trifft
+    // das Ende einer anderen bis `stossM` — am Knoten des Straßengraphen liegen sie bis zu einem Schritt der Trasse (3 m, `strassengraph`
+    // DS) auseinander. Bis w13-verkehr-heil trug nur `naheM` (2,5): an stadt-voll endeten zwei Trassen am Knoten 961,6/387,7 und 732/570
+    // im Stoß von 3,0 m, das Netz hieß dort „Ende", und das Ende im Osten (am Brunnen) trug keine Wende — Wenden 3 an 4 Enden; `naheM`
+    // 3,1 für jeden Punkt verband auch die Gabel zweier Trassen im Start-Dorf (-59/-141, ein Schritt Seite an Seite) und rückte sein
+    // Netz), ihr längster zusammenhängender Teil. Knoten mit drei und
     // mehr Nachbarn näher als `kreuzM` sind EINE Kreuzung (mit drei und mehr Ausgängen; zwei Stücke derselben Straße stoßen
     // nur aneinander), jedes Ende ein Knotenpunkt, dazwischen die Strecken. Jede Strecke trägt zwei Spuren (rechts der Fahrt um
     // `spurM`, an einer Kreuzung um ihren Radius gekürzt), jeder Punkt frei für den halben Wagen (`halbM`): wo ein Brunnen, eine
@@ -3965,9 +3991,10 @@
     // (`parkL` × `parkB`) längs des Kreises, frei von Grundriss, Tritt, der Mitte jedes Wegs (die Gasse bleibt dem Fuß) und der
     // Spur zur Wende. Der Plan v2 (`ortPlan`) wählt je Ende die erste, deren Kreis und Plätze Land tragen und nicht steiler als
     // `hangMax` liegen und deren Bahn auf jeder Fläche, die sie kreuzt, binnen `flaecheM` deren Höhe trägt, und legt sie als
-    // Boden (`verkehrsBoden`).
-    var VERKEHR_GESETZ = { hausJeWagen: 15, breiteM: 4.9, naheM: 2.5, spurM: 1.25, halbM: 1.2, ausweichM: 3, einweichM: 2.5, kreuzM: 6, kurveR: 5.5, abbiegRandM: 0.3, wendeM: 7,
-      wendeRandM: 1.2, wendeAbM: [7, 40], abzweigM: 2, abzweigFreiM: 8, wendeN: 8, parkL: 5.4, parkB: 2.3, parkRandM: 0.6, zelleM: 8, hangMax: 0.3, ringRandM: 1, flaecheM: 0.1, kreuzSpurM: 3 };
+    // Boden (`verkehrsBoden`). `wendeAbM` reicht bis 80 m (höchstens die halbe Strecke): bis w12-verkehr 40 — an der Stadt des
+    // Worts (stadt-voll, 836,09/438,24) trug das Ende im Osten in 40 m keinen freien Kreis, mit ihm 3 statt 1 Wende, 21 Plätze für 20.
+    var VERKEHR_GESETZ = { hausJeWagen: 15, breiteM: 4.9, naheM: 2.5, stossM: 3.1, spurM: 1.25, halbM: 1.2, ausweichM: 3, einweichM: 2.5, kreuzM: 6, kurveR: 5.5, abbiegRandM: 0.3, wendeM: 7,
+      wendeRandM: 1.2, wendeAbM: [7, 80], abzweigM: 2, abzweigFreiM: 8, wendeN: 8, parkL: 5.4, parkB: 2.3, parkRandM: 0.6, zelleM: 8, hangMax: 0.3, ringRandM: 1, flaecheM: 0.1, kreuzSpurM: 3 };
     function verkehrVon(plan){
       const sl=(plan&&plan.slots)||[], N=plan&&plan.staedtisch?Math.ceil(sl.length/VERKEHR_GESETZ.hausJeWagen):0, slots=[];
       for(let w=0;w<N;w++) slots.push(Math.min(sl.length-1,Math.floor((w+0.5)*sl.length/N)));
@@ -3992,15 +4019,17 @@
       // DIE KNOTEN: je Punkt einer Trasse, die zwei Wagen trägt (über dem Wasser die Achse der Brücke, `wegUeberBruecken`), die
       // Folge ihre Kante, zwei Punkte zweier Trassen näher als `naheM` (sie treffen sich) verbunden; DIE LÄUFE aller Wege
       // (Straßen und Feldwege), an denen kein Platz liegt (`amWeg`)
-      const kn=[], nb=[], laeufe=[], netz=new Map(), zN=V.naheM;
+      const kn=[], nb=[], laeufe=[], netz=new Map(), ende=[], zN=Math.max(V.naheM,V.stossM);   /*das Raster trägt den weiteren Griff*/
       (plan.roads||[]).concat(plan.feldwege||[]).forEach((rd,ri)=>{ let vor=null;
-        for(const q of wegUeberBruecken(rd.pts||[], rd.bruecken)){ if(!q||!isFinite(q.x)||!isFinite(q.z)) continue; const P={x:ox+q.x, z:oz+q.z};
+        const Q=wegUeberBruecken(rd.pts||[], rd.bruecken).filter(q=>q&&isFinite(q.x)&&isFinite(q.z));
+        for(let u=0;u<Q.length;u++){ const q=Q[u], P={x:ox+q.x, z:oz+q.z};
           if(vor) laeufe.push([vor,P]); vor=P;
-          if((rd.w||0)<V.breiteM) continue; const i=kn.length; kn.push(P); nb.push([]);
+          if((rd.w||0)<V.breiteM) continue; const i=kn.length; kn.push(P); nb.push([]); ende.push(u===0||u===Q.length-1);
           if(i>0&&kn[i-1].ri===ri){ nb[i].push(i-1); nb[i-1].push(i); } P.ri=ri;
           const ix=Math.floor(P.x/zN), iz=Math.floor(P.z/zN);
-          for(let a=ix-1;a<=ix+1;a++) for(let b=iz-1;b<=iz+1;b++) for(const j of netz.get(a*2097152+b)||[])
-            if(kn[j].ri!==ri&&(kn[j].x-P.x)**2+(kn[j].z-P.z)**2<zN*zN&&nb[i].indexOf(j)<0){ nb[i].push(j); nb[j].push(i); }
+          for(let a=ix-1;a<=ix+1;a++) for(let b=iz-1;b<=iz+1;b++) for(const j of netz.get(a*2097152+b)||[]){
+            const d2=(kn[j].x-P.x)**2+(kn[j].z-P.z)**2;
+            if(kn[j].ri!==ri&&(d2<V.naheM*V.naheM||(ende[i]&&ende[j]&&d2<V.stossM*V.stossM))&&nb[i].indexOf(j)<0){ nb[i].push(j); nb[j].push(i); } }
           (netz.get(ix*2097152+iz)||(netz.set(ix*2097152+iz,[]),netz.get(ix*2097152+iz))).push(i); } });
       const n=kn.length;
       const teil=new Int32Array(n).fill(-1); let best=-1, bestL=0;
@@ -4250,7 +4279,10 @@
     function verkehrsBoden(plan, ox, oz, ctx, flaeche, kern){
       const V=VERKEHR_GESETZ, N=verkehrsNetz(plan,ox,oz), erdbau=[], r6=(v)=>Math.round(v*1e6)/1e6;
       const land=(x,z)=>!(ctx.wasserAt&&ctx.wasserAt(x,z)), h=(x,z)=>ctx.hoeheAt(x,z);
-      const trasse=(a,b,y,w)=>erdbau.push({art:"trasse", x0:r6(a.x), z0:r6(a.z), y0:y, x1:r6(b.x), z1:r6(b.z), y1:y, w:r6(w)});
+      // DIE WEGE DES VERKEHRS je mit ihrer Zahl (ab 3000; gelaende-core erdbauY: auf EINEM Weg trägt die nächste Mitte) — ohne sie
+      // trug an jedem Gelenk die spätere Strecke die Höhe ihres Anfangs, jede Rampe der Bahn war eine Treppe (stadt-voll des Worts,
+      // die Bahn der Wende im Osten: 0,21 m je Meter, die Wende fiel an der Stufe 889,5/351,8)
+      let wegN=3000; const trasse=(a,b,y,w,weg=wegN++)=>erdbau.push({art:"trasse", x0:r6(a.x), z0:r6(a.z), y0:y, x1:r6(b.x), z1:r6(b.z), y1:y, w:r6(w), weg});
       // EIN WEG AUF DEN FLÄCHEN (`aufFlaechen`, der Abbieger und der Übergang der Wende): die Punkte Q je Meter (P, ihr Weg s), je
       // Punkt die Höhe der Fläche, die er kreuzt (`f`: jede Fläche — Kern, Saum, Platz — oder nur die Kerne), dazwischen
       // gleichmäßig nach dem Weg; `y0`/`y1` (nicht null) heften Anfang/Ende an eine Höhe. null, wo keine Fläche und kein Anker eine
@@ -4264,7 +4296,7 @@
         for(let i=0;i<ys.length;i++){ if(ys[i]!==null) continue; let i0=i-1, i1=i; while(i1<ys.length&&ys[i1]===null) i1++;
           for(let j=i;j<i1;j++) ys[j]=i0<0?ys[i1]:i1>=ys.length?ys[i0]:ys[i0]+(ys[i1]-ys[i0])*(s[j]-s[i0])/(s[i1]-s[i0]); i=i1-1; }
         return {P, s, ys}; };
-      const lege=(A,w)=>{ for(let i=1;i<A.P.length;i++) erdbau.push({art:"trasse", x0:r6(A.P[i-1].x), z0:r6(A.P[i-1].z), y0:r6(A.ys[i-1]), x1:r6(A.P[i].x), z1:r6(A.P[i].z), y1:r6(A.ys[i]), w:r6(w)}); };
+      const lege=(A,w,weg=wegN++)=>{ for(let i=1;i<A.P.length;i++) erdbau.push({art:"trasse", x0:r6(A.P[i-1].x), z0:r6(A.P[i-1].z), y0:r6(A.ys[i-1]), x1:r6(A.P[i].x), z1:r6(A.P[i].z), y1:r6(A.ys[i]), w:r6(w), weg}); };
       // DIE HÖHE DER WENDE: Ring und Plätze liegen auf der Höhe des Wegs am Abzweig (y, im Mittel der Kerne unter dem Anfang der Bahn
       // hinein und dem Ende der Bahn heraus), die Übergänge je Meter
       // auf dem Kern, den sie kreuzen (die Spuren, die sie verlassen, treffen und queren), dazwischen gleichmäßig bis an den Ring
@@ -4292,7 +4324,7 @@
           K.wende=Object.assign({},w,{plaetze,y:r6(y),hEin,hAus}); break; }
         const w=K.wende; if(!w) continue;
         const ring=[]; for(let a=0;a<=2*Math.PI+1e-9;a+=1/w.r) ring.push({x:w.x+Math.cos(a)*w.r, z:w.z+Math.sin(a)*w.r});
-        for(let i=1;i<ring.length;i++) trasse(ring[i-1],ring[i],w.y,2*V.halbM+V.ringRandM);
+        const wr=wegN++; for(let i=1;i<ring.length;i++) trasse(ring[i-1],ring[i],w.y,2*V.halbM+V.ringRandM,wr);
         lege(w.hEin,2*V.halbM); lege(w.hAus,2*V.halbM); delete w.hEin; delete w.hAus;
         for(const p of w.plaetze){ const fx=Math.sin(p.fahrt)*V.parkL*0.5, fz=Math.cos(p.fahrt)*V.parkL*0.5;
           trasse({x:p.x-fx,z:p.z-fz},{x:p.x+fx,z:p.z+fz},w.y,V.parkB); } }
@@ -4558,7 +4590,7 @@
       let done=false;
       const a0=rnd()*Math.PI*2, rB=(Rw?Rw-4.5-rq:34+rq);
       for(let k2=0;k2<10&&!done;k2++){ const a2=a0+k2*0.63;
-        const ccx=Math.cos(a2)*rB, ccz=Math.sin(a2)*rB, phi=Math.atan2(-Math.sin(a2),-Math.cos(a2))*0+Math.atan2(-Math.cos(a2)*0-Math.sin(a2), -Math.cos(a2));
+        const ccx=Math.cos(a2)*rB, ccz=Math.sin(a2)*rB, phi=Math.atan2(Math.cos(a2),Math.sin(a2));   /*die Front (lokal −z) zur Stadt: der Rücken (lokal +z → sin φ, cos φ) zeigt nach außen (cos a2, sin a2) — bis w13-verkehr-heil atan2(−sin, −cos), die Tür 90° quer zur Mauer (Stadt am Messort stadt: die Burg #304883 öffnete nach Westen, ihr Herr fand keinen Weg)*/
         const o={cx:ccx,cz:ccz,phi,ex:exB,ez:ezB};
         let ok=true;
         for(const q2 of obbs) if(obbSep(o,q2.o)<gap-1e-6){ok=false;break;}
@@ -4962,12 +4994,10 @@
     //    Bauzeit) — gate:fachwerk-contract prüft die Gleichheit je Kultur. ──
     var SOLIDLOS = { gelaende: false, geruest: false, riegel: false, streben: false, zimmermann: false, gefache: false, giebel: false, dachwerk: false, dachdeckung: false, fenster: false, moebel: false, anbau: false, fluegel: false, balkon: false, kuppel: false, dachAlt: false, arkade: false, turm: false, zinnen: false, vorkragung: false, pilotis: false, terrasse: false, rundbau: false };
     function stufe0Param(p) {
-        // ≡ promoteBauen (Lab): RING-A-WÜRDE — Türme sparen Möbel+Innenwände,
-        // Armut (p.arm, Dorf-Daten) spart Möbel; sonst der VOLLE Bau.
-        var turm = (p.storeys || 1) >= 6;
-        return Object.assign({}, p, {
-            nur: turm ? { moebel: false, innenwaende: false } : p.arm ? { moebel: false } : {},
-        });
+        // ≡ promoteBauen (Lab): RING-A-WÜRDE — Türme und Armut (p.arm, Dorf-Daten) sparen Möbel; sonst der VOLLE Bau.
+        // Die Innenwände baut die Nahstufe immer (w25-lod-pop-3, lod.K5): ohne sie sah man durch die offenen Flügel des
+        // hohlen Turms den Himmel (die Hochhaus-L1 stand an der Diagonale 50,7 px neben ihrer L0); Hochhaus L0 75 856 → 79 456.
+        return Object.assign({}, p, { nur: (p.storeys || 1) >= 6 || p.arm ? { moebel: false } : {} });
     }
     function stufe0Bau(hp2) {
         return (hp2.storeys || 1) > 11

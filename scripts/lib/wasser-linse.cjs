@@ -1,4 +1,5 @@
 const { WELT_ORTE_INSTALL } = require("./welt-orte.cjs");
+const { luma709 } = require("./abnahme-urteil.cjs");
 // wasser-linse.cjs — DIE PROBEN DER WASSER-WAND (scripts/diag-wasser-leben.cjs, Welle L Q6 + Q7 bis F3): je Probe eine Seiten-
 // Funktion `window.__wasser*` (WASSER_INSTALL), die den Chokepoint selbst ruft (nie einen Stub); was sie misst und warum, steht
 // über ihr. Werkbank (echte GPU, sichtbar): `werkbank eval` mit WASSER_INSTALL.
@@ -103,7 +104,7 @@ function wasserFluss() {
     }
     quer.sort((a, b) => a - b);
     buckel.sort((a, b) => a - b);
-    const q = (p, A = quer) => (A.length ? A[Math.min(A.length - 1, Math.floor(p * A.length))] : 0);
+    const q = (p, A = quer) => (A.length ? rang(A, p) : 0);
     const R = wasserRund(3);
     // Wasserfall-Doppel: ein Sturz je Ort (der geteilte Unterlauf zieht ihn sonst je Quelle).
     const wf = Array.isArray(h.waterfalls) ? h.waterfalls : [];
@@ -207,7 +208,7 @@ async function wasserKoerper(o = {}) {
         r.removeCreature(c);
         if (!tiefen.length) return null;
         const linie = tb?.bein ? tb.bein[0].h * (c.scale.x || 1) : null;
-        const sohle = tiefen[tiefen.length >> 1];
+        const sohle = rang(tiefen);
         const schwimmt = c.userData._motionZustand === "schwimmen";
         return { seele, abstand, sohleUnterSpiegel: R(sohle, 3), wasserlinie: R(linie, 3), schwimmt };
     };
@@ -228,7 +229,7 @@ async function wasserKoerper(o = {}) {
         }
         fuesse.sort((a, b) => a - b);
         aus.lage = {
-            fussUnterSpiegelP50: R(-fuesse[fuesse.length >> 1], 3),
+            fussUnterSpiegelP50: R(-rang(fuesse), 3),
             sollFussUnterSpiegel: R(brust, 3),
             augenUnter,
             geerdet: st._fieldWasGrounded === true,
@@ -637,7 +638,7 @@ async function wasserLicht(o = {}) {
         const camAltL = camL.position.clone();
         const zeitAlt = st.timeOfDay;
         const weltZeitAlt = st.world ? st.world.timeOfDay : undefined;
-        const lum = (c) => 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b;
+        const lum = (c) => luma709([c.r, c.g, c.b]);
         const augenAltL = st.playerEyesUnderwater;
         // Die Umgebung der EINEN Atmosphäre (D3) kommt EINE Lesung nach der Malung auf die CPU (`_himmelFrisch`, linear
         // Float32): neu gezeichnet und ihre Lesung abgewartet — eine alte Lesung trüge die vorige Uhrzeit.
@@ -656,7 +657,7 @@ async function wasserLicht(o = {}) {
             // (D3, `himmelFarbe`) — seine Leuchtdichte über dem Wasser ist E/π der waagrechten Normale
             if (luftL.U.unterWasser.value > 0.5) return lum(luftL.U.farbe.value);
             const e = r._himmelsIrradianz();
-            return e ? 0.2126 * e.mitte[0] + 0.7152 * e.mitte[1] + 0.0722 * e.mitte[2] : null;
+            return e ? luma709(e.mitte) : null;
         };
         const himmel = async () => {
             if (!(await frisch())) return null;
@@ -997,7 +998,7 @@ async function wasserDamm(o = {}) {
 async function wasserUferFarbe(o = {}) {
     const h = st.hydrosphere;
     if (!h || !h.ready) return { fehler: "keine Hydrosphäre" };
-    const L = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+    const L = luma709;
     const R = wasserRund(1);
     const proben = [];
     for (const rv of h.rivers)
@@ -1295,8 +1296,8 @@ async function wasserBild(o = {}) {
         const L = new Float32Array(W * H);
         const L0 = new Float32Array(W * H);
         for (let p = 0; p < W * H; p++) {
-            L[p] = 0.2126 * px[p * 4] + 0.7152 * px[p * 4 + 1] + 0.0722 * px[p * 4 + 2];
-            L0[p] = 0.2126 * px0[p * 4] + 0.7152 * px0[p * 4 + 1] + 0.0722 * px0[p * 4 + 2];
+            L[p] = luma709(px, p * 4);
+            L0[p] = luma709(px0, p * 4);
         }
         const zone = (z) => {
             let n = 0,
@@ -1437,7 +1438,7 @@ async function wasserRegen(o = {}) {
     const lit = new Uint8Array(W * H);
     let n = 0;
     for (let p = 0; p < W * H; p++)
-        if (0.2126 * px[p * 4] + 0.7152 * px[p * 4 + 1] + 0.0722 * px[p * 4 + 2] > 4) {
+        if (luma709(px, p * 4) > 4) {
             lit[p] = 1;
             n++;
         }
@@ -2285,7 +2286,7 @@ async function wasserQuelle(o = {}) {
                 beispiele.push(zeile);
         }
     }
-    const p50 = (A) => (A.length ? A.slice().sort((a, b) => a - b)[A.length >> 1] : 0);
+    const p50 = (A) => (A.length ? rang(A.slice().sort((a, b) => a - b)) : 0);
     const h0 = huelleVon(st.hydrosphere)(0);
     return {
         quellen,
@@ -2350,7 +2351,7 @@ function quellTeileVereinen(teile) {
             fehler: `die Teile der Quell-Probe sehen verschiedene Kacheln (${abdruck(teile[0])} gegen ${abdruck(fremd)})`,
         };
     const R = wasserRund(2);
-    const p50 = (A) => (A.length ? A.slice().sort((a, b) => a - b)[A.length >> 1] : 0);
+    const p50 = (A) => (A.length ? rang(A.slice().sort((a, b) => a - b)) : 0);
     const summe = (k) => teile.reduce((s, t) => s + (t[k] || 0), 0);
     const breiten0 = [].concat(...teile.map((t) => t.breiten0 || []));
     const tiefen0 = [].concat(...teile.map((t) => t.tiefen0 || []));
@@ -2619,7 +2620,7 @@ async function wasserBank(o = {}) {
         }
     }
     const s = winkel.slice().sort((a, b) => a - b);
-    const q = (p) => (s.length ? s[Math.min(s.length - 1, Math.floor(p * s.length))] : 0);
+    const q = (p) => (s.length ? rang(s, p) : 0);
     return {
         ort,
         r: rad,
@@ -3051,13 +3052,13 @@ async function wasserOrte(o = {}) {
                 if (!(r._terrainMacroSurfaceY(x, z, false) < wl - 2)) continue;
                 await __weltDa(() => !r._ensureHydroTilesAround(x, z, 0));
                 const h = r._hydroFor(x, z);
-                if (h?.ready && regionen.indexOf(h) < 0) regionen.push(h);
-                da = !!(h?.water?.waterKind && h.water.waterKind.indexOf(1) >= 0);
+                if (h?.ready && !regionen.includes(h)) regionen.push(h);
+                da = !!(h?.water?.waterKind && h.water.waterKind.includes(1));
                 // die Küste ist breiter als eine Kachel: ihre Nachbarn gehören zur Suche nach der Tasche (unten)
                 if (da) {
                     await __weltDa(() => !r._ensureHydroTilesAround(x, z, 1024));
                     for (const t of st.hydroTiles ? st.hydroTiles.values() : [])
-                        if (t?.ready && regionen.indexOf(t) < 0) regionen.push(t);
+                        if (t?.ready && !regionen.includes(t)) regionen.push(t);
                 }
             }
         }
@@ -3137,7 +3138,7 @@ async function wasserOrte(o = {}) {
 module.exports = {
     WASSER_INSTALL:
         WELT_ORTE_INSTALL +
-        `var BACH_PROBE_M = ${BACH_PROBE_M};` +
+        `var BACH_PROBE_M = ${BACH_PROBE_M}; window.luma709 = ${luma709};` +
         wasserRund +
         wasserFlaechen +
         wasserBoot +

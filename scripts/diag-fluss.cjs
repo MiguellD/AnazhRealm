@@ -25,7 +25,7 @@
 //
 //   node scripts/diag-fluss.cjs [--selftest]          (npm run gate:fluss)
 "use strict";
-const { statikServer, starteBrowser, ROOT: root, hauptLauf, pruefer, selbsttestEnde, wandEnde, jsonLesen, SELBSTTEST, stammLib } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, ROOT: root, hauptLauf, pruefer, selbsttestEnde, wandEnde, jsonLesen, SELBSTTEST, stammLib, nullWelt } = require("./lib/welt-boot.cjs");
 
 // Port über FLUSS_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4561.
 const PORT = Number(process.env.FLUSS_PORT || 4561);
@@ -333,9 +333,7 @@ const WELT_HAKEN = () => {
     // Schale entscheidet. So misst die Sonde den Zweit-Boot mit echter IndexedDB im echten Studio-Worker.
     const B0 = window.Blob;
     const B1 = function (teile, opt) {
-        if (Array.isArray(teile) && typeof teile[0] === "string" && teile[0].includes("_foundrySchale")) {
-            teile = [teile[0].replace('"platte":false', '"platte":true')].concat(teile.slice(1));
-        }
+        if (Array.isArray(teile) && typeof teile[0] === "string" && teile[0].includes("_foundrySchale")) teile = [teile[0].replace('"platte":false', '"platte":true')].concat(teile.slice(1));
         return new B0(teile, opt);
     };
     B1.prototype = B0.prototype;
@@ -349,14 +347,14 @@ const WELT_HAKEN = () => {
             this.addEventListener("message", (e) => {
                 const m = e.data;
                 // W7: jeder Attribut-Name, der über den Kanal reist (die Wand der Schale im echten Boot)
-                if (m && m.type === "asset" && Array.isArray(m.meshes))
+                if (m?.type === "asset" && Array.isArray(m.meshes))
                     for (const x of m.meshes) for (const k in x || {}) if (x[k]?.array) fl.reist.add(k);
-                if (m && m.type === "asset")
+                if (m?.type === "asset")
                     fl.antworten.push({ w: this.__flNr, vorrat: m.vorrat === true, leer: !m.meshes.length, p: m.presetId });
             });
         }
         postMessage(m, t) {
-            if (m && m.type === "build-asset")
+            if (m?.type === "build-asset")
                 fl.posts.push({ p: m.presetId, s: m.seed, l: m.lod, ov: !!m.ov, w: this.__flNr, id: m.reqId });
             return t ? super.postMessage(m, t) : super.postMessage(m);
         }
@@ -595,12 +593,8 @@ function urteilWelt(d) {
 
 async function welt() {
     const server = statikServer();
-    await server.lausche(PORT);
-    const browser = await starteBrowser({ art: "null", frist: 900000 });
+    const { browser, page } = await nullWelt(server, { port: PORT, frist: 900000, vor: WELT_HAKEN }, 60000);
     try {
-        const page = await browser.newPage();
-        await page.evaluateOnNewDocument(WELT_HAKEN);
-        await server.zeige(page, 60000);
         const erst = await page.evaluate(WELT_MESSEN);
         // W3 DER ZWEIT-BOOT: dieselbe Welt lädt neu (gleicher Browser = dieselbe IndexedDB, derselbe Stempel) — was jetzt
         // noch gebaut wird, hat die Platte verfehlt.

@@ -485,6 +485,13 @@ class AnazhRealm_vegetation_streu {
         // die Lücke im Blick fragt den Blick (`_rangImBlick`), nie den Rang: nach dem Bild nimmt der Rang alles hinein
         region._bildWartet = alle.some(([, rang]) => this._rangImBlick(rang)) || !!region._bildLuecke;
         const warten = (bild.length ? bild : alle).map(([z]) => z);
+        // DER NEUBAU AUSSER BLICK GEHÖRT DEM NACHLAUF (w25-ankunft-foundry): wartet die Region vor dem ersten Weltbild auf nichts
+        // im Blick (`_bildWartet` false), schläft sie auch auf dem Bild (`_weltbildKommt`) — ihr Neubau trüge nur, was außer
+        // Blick liegt, und hielte doch das Bild, solange seine Scheibe offen steht (`_streuRegionWartet`). Bis hier weckte sie
+        // jede Karte außer Blick, die der Takt vor dem Bild buk, und ihr Neubau säte die nächste: GTX kalt (4f86fbe6) weckten
+        // buche|2 · buche|1 · karst|1 · birke|3 (gebacken 15,26–16,26 s) die vier Wald-Stücke der Ankunft, buche|1 und birke|3
+        // entstanden erst in ihrem Neubau (14,33 · 15,41 s); die Streu schloss im Median 0,6 s nach den Karten im Blick.
+        if (!region._bildWartet && !this.state._weltbildDa) warten.push(this._weltbildKommt());
         const kam = () => {
             region._geweckt = true;
             this._scatterRefillPending = true;
@@ -1827,13 +1834,13 @@ class AnazhRealm_vegetation_streu {
     }
 
     // DAS GESETZ DES WECHSELS (lod.K5, `AnazhRealm._wechselGesetz`): eine Stufe gilt ab dem Abstand, an dem ihr Kanten-Versatz
-    // zur L0 — der Fehler ihres Baus (LOD_SCHIRM.fehler, je Familie einmal gemessen am Bau) mal die
-    // Brennweite des Schirms — das Soll von LOD_SCHIRM.px Bildpunkten trägt, höchstens am Haushalt des Buchs. Jeder Leser fragt
-    // es: die Schwellen der Bäume, der Streu und jeder Karten-Art (`_stufenSchirm`, ihre Maske), die Grenzen von Haus, Tor und
-    // Ausstattung (`_archStufenGrenzen`). Kein Regler, keine Bildrate. `groesse` ist der Bezug der Zeile (Baum: die Sichthöhe; sonst die
-    // Welt-Skala des Eintrags, der Fehler in Metern); null = die Art trägt die Stufe nicht.
-    _wechselAbstand(kind, stufe, groesse) {
-        return AnazhRealm._wechselGesetz(kind, stufe, groesse, this._schirm().hoehe);
+    // zur L0 — der Fehler ihrer Vorlage (LOD_SCHIRM.fehler, je Vorlage gemessen am Bau) mal die Brennweite des Schirms — das Soll
+    // von LOD_SCHIRM.px Bildpunkten trägt, frühestens am Haushalt des Buchs. Jeder Leser fragt es: die Schwellen der Bäume, der
+    // Streu und jeder Karten-Art (`_stufenSchirm`, ihre Maske), die Grenzen von Haus, Tor und Ausstattung (`_archStufenGrenzen`,
+    // mit `vorlage`). Kein Regler, keine Bildrate. `groesse` ist der Bezug der Zeile (Baum: die Sichthöhe; sonst die Welt-Skala des
+    // Eintrags, der Fehler in Metern); null = die Art trägt die Stufe nicht.
+    _wechselAbstand(kind, stufe, groesse, vorlage) {
+        return AnazhRealm._wechselGesetz(kind, stufe, groesse, this._schirm().hoehe, undefined, vorlage);
     }
 
     // DIE GRENZEN DER LEIBER (das EINE Stufen-Gesetz für Mensch und Tier): die Grobstufe der Gelenk-Gestalt (Stufe 1) ab dem
@@ -2845,14 +2852,16 @@ AnazhRealm.LOD_DISTANCES = (() => {
     };
 })();
 
-// DER SCHIRM DES WECHSELS (lod.K5, `_wechselAbstand`): `fehler` je Art (rec.kind) und gezeigter Stufe der Kanten-Versatz zur L0,
-// gemessen am Bau (29.10., die Messung der Station lod.K5 headless: L0 und Stufe über die Brücke gebaut, ihre Silhouetten je
-// Peilung in den Bildpunkten des Abstands gerastert, Chamfer der Kanten, an jeder Vorlage, die schlechteste der Art zählt; die
-// Karte des Baums als Mischung ihrer zwei nächsten gebackenen L1-Ansichten, die Tor-Flügel der L0 in der Fern-Pose) — der Fehler
-// ist der Abstand, an dem er 1 px trägt, mal der Pixelgröße des Schirms: der Baum relativ zu seiner Sichthöhe, jede gebaute Art
-// in Metern bei Welt-Skala 1; der Wagen trägt keine Zeile, er wechselt an der Maske des Baums (die Limousine trägt dort
-// 0,02 px). `px` = die Bildpunkte, die ein Wechsel tragen darf (das Soll, Nanite:
-// < 1 Pixel). `zeilen` = der Schirm des Solls (1920 × 1080). `hyst` = die Hysterese der gebauten Arten ohne eigene im Buch
+// DER SCHIRM DES WECHSELS (lod.K5, `_wechselAbstand`): `fehler` je Art (rec.kind) und VORLAGE (der Schlüssel des Rezepts im Buch)
+// der Kanten-Versatz jeder gezeigten Stufe zur L0, gemessen am Bau (w25-lod-pop: die Messung der Station am Gesetzbuch in Node,
+// `kantenVersatz` — L0 und Stufe je Peilung in den Bildpunkten des Haushalts gerastert, Chamfer der Kanten; die Tor-Flügel der L0
+// in der Fern-Pose, die Haus-Türen zu) — der Fehler ist der Abstand, an dem er 1 px trägt, mal der Pixelgröße des Schirms, in
+// Metern bei Welt-Skala 1: trägt die Stufe das Soll am Haushalt, ihr Versatz dort (der Wechsel bleibt am Haushalt); sonst der
+// GEMESSENE Abstand, an dem ihr Versatz × 1,1 einen Bildpunkt trägt (fern skaliert er nicht mehr mit 1 / d). Die Linse misst jede
+// Zeile an der Grenze des Gesetzes nach (gate:haus-fern P: Haus, Ausstattung, Tor), ein Täter nennt seine Zeile. Bis hier stand je
+// Art EINE Zahl (die schlechteste Vorlage, 29.10.), die der Haushalt deckelte. DER BAUM trägt keine Zeile: seine Masken wechseln je Art (uLodD0/uLodD1 der Karten-Arten), nie je Vorlage — sein Wechsel
+// steht am Haushalt; der Wagen wechselt an der Maske des Baums (die Limousine trägt dort 0,02 px). `px` = die Bildpunkte, die ein
+// Wechsel tragen darf (das Soll, Nanite: < 1 Pixel). `zeilen` = der Schirm des Solls (1920 × 1080). `hyst` = die Hysterese der gebauten Arten ohne eigene im Buch
 // (`_stufeNachGrenzen`: hinein ab (1 + h)·d, zurück unter (1 − h)·d). `leib` = der Haushalt des Felds der Leiber (`_feldGrenzen`):
 // das Feld trägt jenseits der Nah-Grenze, zurück erst `feldHystM` diesseits; der Mensch der Menge, sobald sein Leib
 // (`mengeKoerperM` hoch) unter `mengePx` Bildpunkte fällt, zurück `mengeHystM` diesseits. `bewegungMS` = das Tempo, bei dem die
@@ -2863,28 +2872,98 @@ AnazhRealm.LOD_SCHIRM = Object.freeze({
     hyst: 0.1,
     leib: Object.freeze({ feldHystM: 10, mengeKoerperM: 1.8, mengePx: 64, mengeHystM: 4 }),
     bewegungMS: 1.4,
-    fehler: Object.freeze({
-        tree: Object.freeze({ 1: 0.0376, 2: 0.0578 }), // die Weide (ihre Krone doppelt so breit wie hoch), L1 und Karte
-        haus: Object.freeze({ 1: 0.0238, 2: 0.1152 }), // modern · alemannisch
-        gate: Object.freeze({ 1: 0.0156, 2: 0.34 }), // kathedrale · geisttor (bis r = 32 Größen nie ≤ 1 px: untere Schranke)
-        ausstattung: Object.freeze({ 1: 0.0117 }), // brunnen
-    }),
+    fehler: (() => {
+        const je = (t) =>
+            Object.freeze(
+                Object.fromEntries(Object.entries(t).map(([v, z]) => [v, Object.freeze({ 1: z[0], 2: z[1] })]))
+            );
+        return Object.freeze({
+            tree: je({}),
+            // die Zeilen der Tore (w25-lod-pop; L2 Geisttor 8,28 · Lyra 8,30 · Ruine 3,51 · Vitruv 2,76 px am Haushalt 12 m: das Anteil-
+            // Gesetz der Quote pipeline.K3 legt ihr Filigran unter den Pixel — die L1 hält bis zum Pixel-Term)
+            gate: je({
+                drachentor: [0.0064, 0.014],
+                kathedrale: [0.004, 0.0096],
+                maschine: [0.0044, 0.0116],
+                geisttor: [0.0029, 0.1902],
+                verkalkt: [0.0052, 0.0106],
+                ruine: [0.0049, 0.0659],
+                maurentor: [0.0038, 0.0082],
+                lyra: [0.0017, 0.1557],
+                vitruv: [0.0079, 0.0575],
+                tiertor: [0.0073, 0.0271],
+            }),
+            // die Zeilen der Häuser (w25-lod-pop; Stufen-Defekte am Haushalt: Pueblo L2 12,8 → 1,1 px — die Terrasse steht fern als
+            // Körper mit Brüstung und jedem sechsten Stab, w25-lod-pop-2; es fehlen die Vigas —, Marokkanisch 2,2, Japanisch 1,3, Chinesisch
+            // 1,5; seit die L2 im Ständer-Ring der L0 steht und ihre Fenster den offenen Flügel tragen, w25-lod-pop-3, die übrigen 0,2–0,9
+            // statt 0,4–1,3 px; Hochhaus L1 9,7 → 0,7 · L2 5,1 → 1,2 px, sein Turm baut nah die Innenwände)
+            haus: je({
+                alemannisch: [0.0042, 0.0216],
+                fraenkisch: [0.0046, 0.0236],
+                niedersaechsisch: [0.0196, 0.035],
+                mittelalterlich: [0.0055, 0.0171],
+                holzhuette: [0.0081, 0.0216],
+                franzoesisch: [0.0151, 0.0265],
+                italienisch: [0.0034, 0.0187],
+                modern: [0.0038, 0.0074],
+                volle_moderne: [0.0032, 0.0114],
+                hochhaus: [0.0137, 0.0468],
+                roemisch: [0.0109, 0.0265],
+                tudor: [0.0051, 0.02],
+                alpenchalet: [0.0034, 0.0183],
+                hollaendisch: [0.0036, 0.0179],
+                hanseatisch: [0.0025, 0.0131],
+                georgian: [0.0019, 0.0143],
+                viktorianisch: [0.0021, 0.0078],
+                griechisch: [0.0036, 0.0163],
+                spanisch: [0.0036, 0.0163],
+                andalusisch: [0.0019, 0.0147],
+                provenzalisch: [0.004, 0.0163],
+                pueblo: [0.0166, 0.0475],
+                marokkanisch: [0.0023, 0.0895],
+                skandinavisch: [0.0025, 0.0175],
+                norwegisch: [0.0038, 0.0167],
+                russisch: [0.0047, 0.0159],
+                schwarzwald: [0.0002, 0.0151],
+                japanisch: [0.0122, 0.0518],
+                gotisch: [0.0044, 0.0135],
+                barock: [0, 0.0029],
+                renaissance: [0.0034, 0.0159],
+                chinesisch: [0.0006, 0.0618],
+            }),
+            ausstattung: je({
+                feuerstelle: [0.0035],
+                marktstand: [0.0047],
+                brunnen: [0.0105],
+                laterne: [0.0076],
+                wandlaterne: [0.0084],
+            }),
+        });
+    })(),
 });
 // DAS GESETZ DES WECHSELS als reine Funktion (der Wirt ruft es über `_wechselAbstand` mit der Höhe des EINEN Schirms) —
-// Pixelgröße × Haushalt: der Abstand, an dem der Fehler der Stufe LOD_SCHIRM.px Bildpunkte trägt (Fehler × Größe × Brennweite / px,
-// die Brennweite aus der Höhe des Zeichenpuffers `zeilen` im Ruhe-Sichtfeld KAM_FOV_GRAD — Tempo und Fernglas legen keine Stufe
-// um), höchstens der Haushalt des Buchs (`_wechselHaushalt`) — ganz, nie nach dem Schirm gestaucht: seine Bänder (fade, fade0)
-// stehen in Metern des Buchs, eine gestauchte Schwelle schöbe das L0/L1- über das L1/Karte-Band. Wo die Stufe das Soll trägt,
-// wechselt sie dort (näher, billiger; ein kleinerer Schirm zieht den Pixel-Term heran); wo nicht, hält der Haushalt, und der
-// Fehler am Wechsel steht über dem Soll (die Station nennt ihn). `zeilen` 0 = noch kein Zeichenpuffer: der Schirm des Solls.
-// null = die Art trägt die Stufe nicht. DIE LEIBER (Mensch, Tier: ihr Buch ist die Zeile ihres Ofens, `_leibGrenzen`) reichen ihren
-// Haushalt `haushalt` selbst; ohne gemessenen Fehler (die Tafel trägt für Leiber keine Zeile) hält er allein.
-AnazhRealm._wechselGesetz = function (kind, stufe, groesse, zeilen, haushalt) {
+// PIXELGRÖSSE STATT METER (w25-lod-pop): eine Stufe zeigt sich nie näher als der Abstand, an dem der Fehler IHRER VORLAGE
+// LOD_SCHIRM.px Bildpunkte trägt (Fehler × Größe × Brennweite / px, die Brennweite aus der Höhe des Zeichenpuffers `zeilen` im
+// Ruhe-Sichtfeld KAM_FOV_GRAD — Tempo und Fernglas legen keine Stufe um), und nie näher als der Haushalt des Buchs
+// (`_wechselHaushalt`: die Nähe, die die feinere Stufe hält — die Tür des Tors lebt in seiner L0, seine Bänder fade/fade0 stehen in
+// Metern des Buchs). Bis hier deckelte der Haushalt den Pixel-Term (min): eine Stufe, die das Soll dort nicht trug, wechselte
+// trotzdem — lod.K5 GTX 08.11. Tor 7,79 px (die Geisttor-L2: das Anteil-Gesetz der Quote pipeline.K3 legt ihr Filigran unter
+// den Pixel), Haus 4,08, Baum 2,02. Jetzt schiebt der Fehler den Wechsel hinaus, bis er einen Bildpunkt trägt — je Vorlage,
+// nie je Art: die schwerste Vorlage der Art verschob sonst jede (die Lyra-L2 hätte das Drachentor bis 106 m auf L1 gehalten).
+// `vorlage` = der Schlüssel des Rezepts im Buch (`_archStufenGrenzen`); eine Art mit Tafel trägt JEDE ihrer Vorlagen, eine
+// fehlende Zeile ist ein KERN-PFLICHT-Bruch (nie still der Haushalt). Ohne `vorlage` (die Art als Ganze — die Masken des Baums,
+// die Probe des Reglers) hält der Haushalt. `zeilen` 0 = noch kein Zeichenpuffer: der Schirm des Solls. null = die Art trägt
+// die Stufe nicht (keine Tafel). DIE LEIBER (Mensch, Tier: ihr Buch ist die Zeile ihres Ofens, `_leibGrenzen`) reichen ihren
+// Haushalt `haushalt` selbst; ohne Tafel hält er allein.
+AnazhRealm._wechselGesetz = function (kind, stufe, groesse, zeilen, haushalt, vorlage) {
     const S = AnazhRealm.LOD_SCHIRM;
-    const e = S.fehler[kind] ? S.fehler[kind][stufe] : undefined;
+    const T = S.fehler[kind];
     const h = haushalt > 0 ? haushalt : AnazhRealm._wechselHaushalt(kind, stufe);
-    if (!(e > 0 || haushalt > 0) || !(h > 0)) return null;
-    return Math.min(e > 0 ? (e * AnazhRealm._brennweite(zeilen)) / S.px : Infinity, h) * groesse;
+    if (!(T || haushalt > 0) || !(h > 0)) return null;
+    if (vorlage != null && !(T && T[vorlage]))
+        return AnazhRealm._kernPflichtBruch("LOD_SCHIRM.fehler." + kind + "." + vorlage);
+    const e = vorlage != null ? T[vorlage][stufe] : 0;
+    return Math.max(e > 0 ? (e * AnazhRealm._brennweite(zeilen)) / S.px : 0, h) * groesse;
 };
 // DIE BRENNWEITE DES SCHIRMS in Bildpunkten (je Meter Größe in 1 m Abstand): die Höhe des Zeichenpuffers `zeilen` im
 // Ruhe-Sichtfeld KAM_FOV_GRAD, ohne Zeichenpuffer (0) der Schirm des Solls — jede Grenze des Stufen-Gesetzes liest sie.

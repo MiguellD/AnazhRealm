@@ -260,7 +260,7 @@ const LEIB = (k) => {
     // misst ihn, nie die steigende Ferse. Ohne Abrollen in der Zeile liegt der Ballen auf der Ferse (die Messung von vorher).
     const zeileB = r._gangZeile(true);
     const massB = r._gaitBeinMass(rig);
-    const ballenL = zeileB && zeileB.ballen > 0 ? zeileB.ballen * core.gangReich(massB.l1 + massB.l2) : 0;
+    const ballenL = zeileB?.ballen > 0 ? zeileB.ballen * core.gangReich(massB.l1 + massB.l2) : 0;
     const lokalB = lokal.map((v) => v.clone().add(new T.Vector3(0, 0, ballenL)));
     const beinM = massB.L;
     // die LOCK-LÖSER: je Takt und Bein, das im Stand-Fenster des Gesetzes geht (w ≥ 0,35) — trug es den Lock und
@@ -358,7 +358,7 @@ const LEIB = (k) => {
     // der flache Fuß: ohne das Abrollen über den Ballen (tetrapoda gangRolle, fx.bewegung.gang rollWinkel) sinkt das
     // Becken im Doppel-Stand so tief, wie ein flacher Fuß hinten und vorn die Kette verlangt — das Knie knickt ein
     const beckenTaeter =
-        zeileB && zeileB.rollWinkel > 0
+        zeileB?.rollWinkel > 0
             ? "tetrapoda gangBecken (das Becken des Gesetzes)"
             : "tetrapoda gangFuss/gangBecken (der flache Fuß, kein Abrollen über den Ballen: gangRolle)";
     const loeserTaeter = "_gaitLegIK (die Reichweiten-Wand löst den stehenden Fuß)";
@@ -723,8 +723,7 @@ hauptLauf(async () => {
         if (leib.fehler) {
             log("  ❌ Spieler-Leib:", leib.fehler);
             rot++;
-        } else {
-            for (const z of leib.zeilen) {
+        } else for (const z of leib.zeilen) {
                 const gleit = z.schlupf !== null && z.schlupf <= SCHWELLE;
                 const kad = z.v > 2 || z.kadenz >= KADENZ_GEHEN;
                 const spitze = z.name === "Spitze";
@@ -743,7 +742,6 @@ hauptLauf(async () => {
                 );
                 if (!ok) rot++;
             }
-        }
         // LABOR = WELT IM BEWEGUNGS-TAKT: die Spur der Welt (frei und an der Schaukel) und die Werte ihrer Seele
         const taktWelt = await page.evaluate(TAKT_WELT, { skript: TAKT_SKRIPT, schaukel: TAKT_SCHAUKEL, ort: TAKT_ORT });
         const sw = await page.evaluate(SCHWERE, { stub: SELBST });

@@ -116,17 +116,22 @@ function laborStoff(m0,geo,skin,cache){
   else m=m0.clone();
   m.skinning=skin;if(vc){m.vertexColors=true;m.color.setRGB(1,1,1);}
   if(haut||haar||webe){
-    var tonL=Math.max(1e-4,0.2126*m0.color.r+0.7152*m0.color.g+0.0722*m0.color.b);
     m.onBeforeCompile=function(sh){
-      sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vGeo;').replace('#include <begin_vertex>','#include <begin_vertex>\nvGeo=position;');
-      var fk='varying vec3 vGeo;\n'+(webe?GLSL_RAUSCHEN:'');
-      var farbe=webe?'\ndiffuseColor.rgb*=1.0+snoise(vGeo*'+gf(webe[0])+')*'+gf(webe[1])+';':'';
+      // DIE ACHSE DES HAARS (w25-haar-albedo, wie die Welt `_foundryTreeMaterial`): `aStraehne` [Achse, Länge] aus stufeAnlegen
+      // (koerper `haarAchse`) reist als Varying, ihr Quotient ist der Anteil Wurzel → Spitze
+      var lumW='vec3(0.2126,0.7152,0.0722)';
+      var ach=haar?'\nattribute vec2 aStraehne;\nvarying vec2 vAchse;':'',achV=haar?'\nvAchse=aStraehne;':'';
+      sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vGeo;'+ach).replace('#include <begin_vertex>','#include <begin_vertex>\nvGeo=position;'+achV);
+      var fk='varying vec3 vGeo;\n'+(haar?'varying vec2 vAchse;\n':'')+(webe?GLSL_RAUSCHEN:'');
+      var farbe=webe?'\ndiffuseColor.rgb*=1.0+snoise(vGeo*'+gf(webe[0])+')*'+gf(webe[1])+';':haar?'\nfloat sTL=clamp(vAchse.x/max(vAchse.y,1e-6),0.0,1.0);':'';
       var look='\nvec3 vdL=normalize(-vViewPosition);float ndvL=clamp(dot(normal,vdL),-1.0,1.0);float rimL=clamp(1.0-abs(ndvL),0.0,1.0);';
       if(haut)look+='totalEmissiveRadiance+='+gv(HL.sssFarbe)+'*pow(rimL,'+gf(HL.sssPow)+')*'+gf(HL.sssAmt)+';';
-      else if(haar){var sT=!vc?'1.0':'clamp((dot(vColor,vec3(0.2126,0.7152,0.0722))/'+gf(tonL)+'-'+gf(HAL.wurzelAnker)+')/'+gf(Math.max(1e-3,1-HAL.wurzelAnker))+',0.0,1.0)';
-        look+='float sTL='+sT+';totalEmissiveRadiance+='+gv(HAL.tipRimFarbe)+'*pow(rimL,'+gf(HAL.tipRimPow)+')*sTL+'+gv(HAL.specFarbe)+'*pow(max(ndvL,0.0),'+gf(HAL.specPow)+')*sTL*'+gf(HAL.specAmt)+';';}
+      // DER GLANZ IST LICHT (w25-haar-albedo, wie die Welt `_haarLichtModell`): je direktem Licht — der Glanz × das direkte Diffuse
+      // ÷ die Albedo (= Σ Bestrahlung · N·L ÷ π samt Schatten), nie Emission; unter Umgebungslicht allein glänzt nichts
+      else if(haar)look+='vec3 glanzL='+gv(HAL.tipRimFarbe)+'*pow(rimL,'+gf(HAL.tipRimPow)+')*sTL+'+gv(HAL.specFarbe)+'*pow(max(ndvL,0.0),'+gf(HAL.specPow)+')*sTL*'+gf(HAL.specAmt)+';';
       else look='';
-      sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\n'+fk).replace('#include <color_fragment>','#include <color_fragment>'+farbe).replace('#include <emissivemap_fragment>','#include <emissivemap_fragment>'+look);
+      var licht=haar?'\nreflectedLight.directSpecular+=glanzL*dot(reflectedLight.directDiffuse,'+lumW+')/max(dot(diffuseColor.rgb,'+lumW+'),1e-4);':'';
+      sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\n'+fk).replace('#include <color_fragment>','#include <color_fragment>'+farbe).replace('#include <emissivemap_fragment>','#include <emissivemap_fragment>'+look).replace('#include <lights_fragment_end>','#include <lights_fragment_end>'+licht);
     };
     m.customProgramCacheKey=function(){return 'labor-welt-mensch-'+key+(webe?'|'+m0.userData.__webe:'');};
   }
@@ -147,7 +152,13 @@ function stufeAnlegen(lod,ov,baum,cache){
   if(!sk||!Array.isArray(sk.joints)||!sk.joints.length)throw new Error('Labor: der Ofen-Guss L'+lod+' trägt kein Skelett (fail-closed)');
   if(!baum)baum=gelenkBaum(sk);
   var liste=[];
-  g.children.slice().forEach(function(m0){var geo=m0.geometry,skin=!!geo.attributes.skinIndex,mat=laborStoff(m0.material,geo,skin,cache);
+  g.children.slice().forEach(function(m0){var geo=m0.geometry,skin=!!geo.attributes.skinIndex,mat=laborStoff(m0.material,geo,skin,cache),ga=geo.attributes;
+    // der Rahmen der Strähne (koerper `haarAchse`, wie die Welt `_haarAchse`): ein Band gegen das Gesetz bricht laut
+    if(m0.material.userData.__klasse==='hair'&&ga.color&&ga.aTon&&!ga.aStraehne){
+      if(ga.position.itemSize!==3||ga.color.itemSize!==3||ga.aTon.itemSize!==1||ga.position.isInterleavedBufferAttribute)throw new Error('Labor: das Haar trägt Lage, Farbe und Ton nicht je Ecke (fail-closed)');
+      var ra=KC.haarAchse(ga.position.array,ga.color.array,ga.aTon.array);
+      if(ra.bruch)throw new Error('Labor: '+ra.bruch+' Bänder des Haars folgen nicht dem Gesetz der Ecken (fail-closed)');
+      if(ra.zahl)geo.setAttribute('aStraehne',new THREE.BufferAttribute(ra.achse,2));}
     var n=skin?new THREE.SkinnedMesh(geo,mat):new THREE.Mesh(geo,mat),j=baum.teile[m0.userData.__assetJoint];
     if(!j)throw new Error('Labor: das Gelenk '+m0.userData.__assetJoint+' fehlt dem Baum (fail-closed)');
     n.userData.__seh=m0.material.userData.__seh;n.userData.__klasse=m0.material.userData.__klasse;n.userData.__webe=m0.material.userData.__webe||null;n.receiveShadow=true;j.add(n);liste.push(n);});

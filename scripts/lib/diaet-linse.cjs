@@ -360,7 +360,6 @@ function diaetUrteil(e) {
 function selbsttest() {
     const fehler = [];
     const gruen = { modus: "ruhe", frames: 60, zahl: { pruef: 120, gangKnoten: 66, wiederholtKnoten: 0 } };
-    if (diaetUrteil(gruen).length) fehler.push("der grüne Lauf fällt rot: " + diaetUrteil(gruen).join(" · "));
     const faelle = [
         ["Gang je Programm, Fremd je Objekt", Object.assign({}, gruen, { zahl: { pruef: 120, wiederholtKnoten: 850, wiederholtGruppe: 70, wiederholtFremd: 40 } }), /RUHE: 960 wiederholte Gänge .*Gruppe 70 · Fremd 40/],
         ["blind (kein Frame)", { modus: "ruhe", frames: 0, zahl: {} }, /kein gerenderter Frame/],
@@ -374,7 +373,7 @@ function selbsttest() {
         ["gelöschte Attribute", Object.assign({}, gruen, { zahl: { pruef: 85, geloescht: 5 }, geloescht: "bauSatz" }), /GELÖSCHT: 5 .*bauSatz/],
         ["statische Regung ohne Meldung", Object.assign({}, gruen, { zahl: { pruef: 85, regungOhne: 1 }, regungOhne: ["haus Lage: 1"] }), /REGUNG OHNE MELDUNG: haus Lage/],
     ];
-    require("./welt-boot.cjs").taeterFaelle(faelle.map(([name, z, muss]) => ({ name, z, muss })), diaetUrteil, { fehler });
+    require("./welt-boot.cjs").taeterFaelle(faelle.map(([name, z, muss]) => ({ name, z, muss })), diaetUrteil, { fehler, gruen });
     // Drehen und Gehen dürfen Arbeit tragen (die Änderung) — das Urteil fällt dort nie über Wiederholung.
     if (diaetUrteil(Object.assign({}, gruen, { modus: "drehen", zahl: { pruef: 120, wiederholtKnoten: 5, ohne: 3 } })).length)
         fehler.push("Drehen fällt rot über Wiederholung oder Refresh ohne Änderung");

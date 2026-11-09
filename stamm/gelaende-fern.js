@@ -271,14 +271,20 @@ class AnazhRealm_gelaende_fern {
         const masche = TSL.length(TSL.positionWorld.xz.sub(uAnker))
             .mul(AnazhRealm._fernRingMascheJeM())
             .add(schalen[0].snap * Math.SQRT2);
+        // DER TREFFER DES BLICKS AUF DEM GESETZ (ferne.K4, w25-ferne-licht-4): der Schatten, der Grat-Himmel und die Normale des
+        // Rings lesen den Punkt, an dem der Strahl des Auges das Gesetz trifft (`_horizontBoden`), nie die Sehne der Masche
+        const treffer = this._horizontBoden(TSL.positionWorld, masche);
         const stoff = () =>
             this._buildToonNodeMaterial({
                 vertexColors: true,
                 side: THREE.DoubleSide,
                 wegeKarte: true,
                 kroneVertex: TSL.attribute("aKrone", "vec4"),
+                // das Jahr der Ecken-Krone (w21-laub-jahr-fern): ihr Laub werfender Anteil und ihre kahle Krone
+                jahrVertex: { laub: TSL.attribute("aLaub", "vec4"), kahl: TSL.attribute("aKahl", "vec3") },
                 wasserVertex: TSL.attribute("aNass", "float"),
                 fernNeigung: masche,
+                fernOrt: treffer,
             });
         const material = stoff();
         const stoffNaht = stoff();
@@ -316,9 +322,8 @@ class AnazhRealm_gelaende_fern {
         // DER SCHATTEN LIEST DEN BODEN DES GESETZES (ferne.K4): der Ring IST das Gesetz, seine Masche nähert es nur — jenseits
         // der Gitter-Zelle der Horizont-Karte (`_horizontBoden`, die Masche aus dem Radius wie die Weiche unten) prüft er die
         // Schatten-Höhe am Boden des Gitters, aus dem die Karte sie rechnet, nie an seiner Sehne (bei 4–7 km ±50 m daneben).
-        const schattenBoden = this._horizontBoden(TSL.positionWorld, masche);
-        material.receivedShadowPositionNode = schattenBoden;
-        stoffNaht.receivedShadowPositionNode = schattenBoden;
+        material.receivedShadowPositionNode = treffer;
+        stoffNaht.receivedShadowPositionNode = treffer;
         // DIE REGEL (K16, die Naht; der CPU-Spiegel ist `_fernRingRegel`, die Linse misst nach ihm): das Deck eines Chunks
         // deckt nicht seine Zelle. Der Pad-Aufruf (`ox − step`, `dim + 3`, crop 1) behält die Zellen 1 … dim + 1: die erste
         // Vertex-Spalte steht in der ersten Voxel-Spalte der Zelle, die letzte in der des +Nachbarn, und die Glättung (eine
@@ -423,6 +428,9 @@ class AnazhRealm_gelaende_fern {
             geo.setAttribute("color", new THREE.Float32BufferAttribute(new Float32Array(per * 3), 3));
             geo.setAttribute("aKrone", new THREE.Float32BufferAttribute(new Float32Array(per * 4), 4));
             geo.setAttribute("aNass", new THREE.Float32BufferAttribute(new Float32Array(per), 1));
+            // das Jahr der Krone (w21-laub-jahr-fern): der Laub werfende Anteil des Dachs und seine kahle Krone
+            geo.setAttribute("aLaub", new THREE.Float32BufferAttribute(new Float32Array(per * 4), 4));
+            geo.setAttribute("aKahl", new THREE.Float32BufferAttribute(new Float32Array(per * 3), 3));
             geo.setAttribute("normal", new THREE.Float32BufferAttribute(new Float32Array(per * 3), 3));
             geo.setIndex(indices);
             geos.push(geo);
@@ -435,7 +443,7 @@ class AnazhRealm_gelaende_fern {
         const voll0 = geos[0].index.array;
         const teil = (index) => {
             const g = new THREE.BufferGeometry();
-            for (const k of ["position", "color", "aKrone", "aNass", "normal"])
+            for (const k of ["position", "color", "aKrone", "aNass", "aLaub", "aKahl", "normal"])
                 g.setAttribute(k, geos[0].attributes[k]);
             g.setIndex(new THREE.BufferAttribute(index, 1));
             return g;
@@ -482,6 +490,7 @@ class AnazhRealm_gelaende_fern {
             flussC: new Float64Array(off),
             flussSp: new Float64Array(off),
             teile: new Float32Array(off * 8).fill(NaN),
+            jahr: new Float32Array(off * 8), // die Teile des Jahrs je Punkt (w21-laub-jahr-fern, `_fernRingSchreibe`)
             krone: new Float64Array(off).fill(-Infinity), // die Krone der Füll-Edits in der Masche (`fernKrone`, bauen.K4)
             nass: new Uint8Array(off), // je Punkt: trägt der Boden dort Wasser
             // die Bestellung: der nächste Index (`auftrag`), die Scheiben im Flug, die Antworten vor dem Einhängen
@@ -729,11 +738,22 @@ class AnazhRealm_gelaende_fern {
         geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
         geo.setAttribute("normal", new THREE.Float32BufferAttribute(nor, 3));
         geo.setAttribute("color", new THREE.Float32BufferAttribute(new Float32Array(nv * 3), 3));
+        // die Deckung der Krone im Jahr (w21-laub-jahr-fern, `_kammKroneSaison`): die kahle Laub-Krone deckt ihr Holz
+        geo.setAttribute("aDeckt", new THREE.Float32BufferAttribute(new Float32Array(nv).fill(1), 1));
         geo.setIndex(nv > 65535 ? new THREE.Uint32BufferAttribute(idx, 1) : new THREE.Uint16BufferAttribute(idx, 1));
         geo.computeBoundingSphere();
         geo.userData.kammArt = art;
-        if (!kk.stoff)
+        if (!kk.stoff) {
             kk.stoff = this._buildToonNodeMaterial({ vertexColors: true, pflanzenStoff: true, side: THREE.DoubleSide });
+            // DIE DECKUNG IM JAHR (w21-laub-jahr-fern): die Krone deckt mit ihrer Deckung (`aDeckt`) — je Pixel gegen das EINE
+            // Rauschen der Blende (`_ditherIGN`, rotiert mit uDitherT), in der Alpha der Farbe (Lehre 26); voll deckt sie ganz
+            const T = THREE.TSL;
+            const c = kk.stoff.colorNode;
+            if (!c || c.rgb === undefined)
+                throw new Error("Kamm-Krone: der Stoff trägt keine Farbe für die Deckung im Jahr");
+            kk.stoff.colorNode = T.vec4(c.rgb, T.step(this._ditherIGN(T, 0), T.attribute("aDeckt", "float")));
+            kk.stoff.alphaTest = 0.5;
+        }
         if (kk.mesh) {
             if (st.scene) st.scene.remove(kk.mesh);
             this._queueGeometryDispose(kk.mesh.geometry);
@@ -756,42 +776,76 @@ class AnazhRealm_gelaende_fern {
     }
 
     // Die Farbe je Art der Antwort: die Studio-Laubfarbe linear (`_fernLaubLinear` für die fünf Wald-Arten, sonst der Phänotyp
-    // der Art) × die Selbstbeschattung der Krone (`FERN_FARBE.kronenSchatten`, wie das Kronendach des Rings).
+    // der Art) × die Selbstbeschattung der Krone (`FERN_FARBE.kronenSchatten`, wie das Kronendach des Rings). Dazu das Jahr der
+    // Art (w21-laub-jahr-fern): ob sie ihr Laub wirft und ihre Rinde (der Wipfel `barkB`, × dieselbe Selbstbeschattung).
     _kammKroneLaub(arten) {
         const fuenf = ["baum_kiefer", "baum_tanne", "baum_eiche", "baum_birke", "baum_erle"];
         const L = this._fernLaubLinear();
         const S = AnazhRealm.FERN_FARBE.kronenSchatten;
         const c = new THREE.Color();
-        return arten.map((sp) => {
+        const laub = [];
+        const wirft = [];
+        const rinde = [];
+        for (const sp of arten) {
             const i = fuenf.indexOf(sp);
+            const a = this._phytoArt(sp);
+            const d = a && globalThis.__phytoCore.artPhaenotyp(a.rec.s, a.rec);
+            if (!d || !Number.isFinite(d.leafCol) || !Number.isFinite(d.barkB))
+                throw new Error("Kamm-Krone: Studio-Laubfarbe oder -Rinde fehlt für " + sp);
             let rgb = i >= 0 ? L[i] : null;
             if (!rgb) {
-                const a = this._phytoArt(sp);
-                const d = a && globalThis.__phytoCore.artPhaenotyp(a.rec.s, a.rec);
-                if (!d || !Number.isFinite(d.leafCol)) throw new Error("Kamm-Krone: Studio-Laubfarbe fehlt für " + sp);
                 c.setHex(d.leafCol);
                 rgb = [c.r, c.g, c.b];
             }
-            return [rgb[0] * S, rgb[1] * S, rgb[2] * S];
-        });
+            laub.push([rgb[0] * S, rgb[1] * S, rgb[2] * S]);
+            c.setHex(d.barkB);
+            rinde.push([c.r * S, c.g * S, c.b * S]);
+            wirft.push(d.conifer ? 0 : 1);
+        }
+        return { laub, wirft, rinde };
     }
 
-    // Die Saison der Krone (der CPU-Spiegel `_fernSaison`, wie das Feld): neu gefärbt, wenn sie um `saisonSchritt` wandert.
+    // Die Saison der Krone (der CPU-Spiegel `_fernSaison` und `_fernPraesenz`, wie das Feld): neu gefärbt, wenn Tönung oder
+    // Präsenz um `saisonSchritt` wandern — je Art die Krone im Jahr nach DEMSELBEN Gesetz wie Ring und Boden (phyto-core
+    // `kroneImJahr`, Zahlen-Algebra): die Laub werfende Art deckt mit ihrer Präsenz und tönt, die kahle trägt ihr Holz, die
+    // Nadel steht in ihrer Farbe. Farbe je Ecke, die Deckung in `aDeckt` (der Stoff deckt gegen das Rauschen der Blende).
     _kammKroneSaison(kk) {
         const s = this._fernSaison(this._kammSaisonV || (this._kammSaisonV = { r: 1, g: 1, b: 1 }));
+        const pr = this._fernPraesenz();
         const alt = kk.saison;
         const K = AnazhRealm.KAMM_KRONE;
-        if (alt && Math.max(Math.abs(alt.r - s.r), Math.abs(alt.g - s.g), Math.abs(alt.b - s.b)) < K.saisonSchritt)
+        if (
+            alt &&
+            Math.max(Math.abs(alt.r - s.r), Math.abs(alt.g - s.g), Math.abs(alt.b - s.b), Math.abs(alt.p - pr)) <
+                K.saisonSchritt
+        )
             return;
-        kk.saison = { r: s.r, g: s.g, b: s.b };
+        kk.saison = { r: s.r, g: s.g, b: s.b, p: pr };
         const geo = kk.mesh.geometry;
         const art = geo.userData.kammArt;
         const col = geo.attributes.color;
+        const deckt = geo.attributes.aDeckt;
+        const pc = globalThis.__phytoCore;
+        const Z = pc.WIND_ZAHLEN;
+        const S = [s.r, s.g, s.b];
+        const je = kk.laub.laub.map((L, a) => {
+            const w = kk.laub.wirft[a];
+            const R = kk.laub.rinde[a];
+            const out = [0, 0, 0, 1];
+            for (let c = 0; c < 3; c++) {
+                const j = pc.kroneImJahr(Z, pr, S[c], L[c], w ? L[c] : 0, w, w ? R[c] : 0);
+                out[c] = j.farbe / Math.max(j.deckung, 1e-4);
+                out[3] = j.deckung;
+            }
+            return out;
+        });
         for (let i = 0; i < art.length; i++) {
-            const L = kk.laub[art[i]];
-            col.setXYZ(i, L[0] * s.r, L[1] * s.g, L[2] * s.b);
+            const J = je[art[i]];
+            col.setXYZ(i, J[0], J[1], J[2]);
+            deckt.setX(i, J[3]);
         }
         col.needsUpdate = true;
+        deckt.needsUpdate = true;
     }
 
     // Der Abschied (Ring-Besitz, `_fernRingDispose`): Netz, Stoff, der Auftrag im Flug fällt (`gen`).
@@ -823,10 +877,36 @@ class AnazhRealm_gelaende_fern {
         return this._fernLaubLin;
     }
 
+    // DAS JAHR DER FÜNF WALD-ARTEN (w21-laub-jahr-fern, die Folge von `_fernLaubLinear`): je Art ihre Rinde (der Wipfel `barkB`
+    // ihres Phänotyps, linear nach dem FARB-GESETZ — die Äste, die die kahle Krone zeigt) und ob sie ihr Laub wirft (keine
+    // Konifere: der Phänotyp, dieselbe Quelle wie die Nadel der Karte). Der Fern-Faden trägt daraus die Teile des Jahrs
+    // (`fernFarbeTeile` `jahr`). Einmal je Sitzung — ohne Phänotyp bricht die Fern-Farbe laut.
+    _fernJahrArten() {
+        if (this._fernJahrArt) return this._fernJahrArt;
+        const c = new THREE.Color();
+        const rinde = [];
+        const wirft = [];
+        for (const art of ["baum_kiefer", "baum_tanne", "baum_eiche", "baum_birke", "baum_erle"]) {
+            const a = this._phytoArt(art);
+            const d = a && globalThis.__phytoCore.artPhaenotyp(a.rec.s, a.rec);
+            if (!d || !Number.isFinite(d.barkB)) throw new Error("Fern-Farbe: die Studio-Rinde fehlt für " + art);
+            c.setHex(d.barkB);
+            rinde.push([c.r, c.g, c.b]);
+            wirft.push(d.conifer ? 0 : 1);
+        }
+        return (this._fernJahrArt = { rinde, wirft });
+    }
+
     // Die Saison der laufenden Phase als {r, g, b} (der CPU-Spiegel von `uSeasonMul`, `_saisonMul` ist die EINE Formel).
     _fernSaison(out) {
         const ph = typeof this.state.seasonPhase === "number" ? this.state.seasonPhase : 0.375;
         return this._saisonMul(ph, out || { r: 1, g: 1, b: 1 });
+    }
+    // Die Präsenz des Laubs der laufenden Phase (der CPU-Spiegel von `uLaubPraesenz.x`, `_saisonPraesenz` ist die EINE Formel):
+    // Feld und Kamm-Krone legen sie im Faden bzw. auf der CPU über ihr Dach (`kroneImJahr`).
+    _fernPraesenz() {
+        const ph = typeof this.state.seasonPhase === "number" ? this.state.seasonPhase : 0.375;
+        return this._saisonPraesenz(ph, this._fernPraesenzV || (this._fernPraesenzV = { x: 1, y: 1, z: 1 })).x;
     }
 
     // DER EINE Punkt-Helfer (CPU-Schleife UND Feld-Zeichner): globaler Vertex-Index → Schale/Lokal-
@@ -1028,12 +1108,13 @@ class AnazhRealm_gelaende_fern {
     // DIE NORMALE DES RINGS (TSL, Leser `_buildToonNodeMaterial` mit `fernNeigung`): die Normale der Karte, wo die Masche des
     // Empfängers (`masche`, m) gröber steht als ein Texel — über ein Texel weich (`texelM` … 2 · `texelM`, am Ring ab ~0,5 km), in
     // der Karte und wenn sie steht; sonst die Normale der Masche (`nMasche`). Das Licht, die Zuwendung des Schattens und die
-    // Bestrahlung des Himmels lesen sie (die wahre Normale des Stoffs).
-    _fernNeigungNormale(nMasche, masche) {
+    // Bestrahlung des Himmels lesen sie (die wahre Normale des Stoffs) — am Ort `ort`, dem Treffer des Blicks auf dem Gesetz
+    // (`_horizontBoden`), nie an der Sehne.
+    _fernNeigungNormale(nMasche, masche, ort = THREE.TSL.positionWorld) {
         const T = THREE.TSL;
         const K = this._fernNeigungEnsure();
         const F = AnazhRealm.FERN_NEIGUNG;
-        const q = T.positionWorld.xz.sub(K.U.ursprung).div(K.karte.N * F.texelM);
+        const q = ort.xz.sub(K.U.ursprung).div(K.karte.N * F.texelM);
         const t = T.texture(K.karte.tex, q).depth(T.int(K.karte.schicht)).level(T.float(0));
         const [x, z] = [t.r.mul(2).sub(1), t.g.mul(2).sub(1)];
         const n = T.vec3(x, T.sqrt(T.max(T.float(1).sub(x.mul(x)).sub(z.mul(z)), 0)), z);
@@ -1253,7 +1334,12 @@ class AnazhRealm_gelaende_fern {
         const o = p.g * 8;
         if (!wet && !(fr.teile[o] === fr.teile[o]))
             throw new Error("Fern-Ring: der trockene Punkt " + p.g + " trägt keine Teile aus dem Fern-Faden");
-        AnazhRealm._fernRingSchreibe(geo, p.li, wet ? this._fernRingWasserTeile() : fr.teile.subarray(o, o + 8));
+        AnazhRealm._fernRingSchreibe(
+            geo,
+            p.li,
+            wet ? this._fernRingWasserTeile() : fr.teile.subarray(o, o + 8),
+            wet ? AnazhRealm.FERN_JAHR_LEER : fr.jahr.subarray(o, o + 8)
+        );
     }
 
     // Die Teile des Wassers: der Wasser-Körper des Gesetzes, ohne Krone, Wasser-Anteil 1 (der Ring-Stoff zeichnet den Blick).
@@ -1485,15 +1571,21 @@ class AnazhRealm_gelaende_fern {
         return Math.ceil(Math.log(aussen / inner) / Math.log(q)) + 1;
     }
 
-    static _fernRingSchreibe(geo, li, t) {
+    // `j` die Teile des Jahrs (der Fern-Faden, `fernFarbeTeile` `jahr`): aLaub = (Laub der Laub werfenden Arten, ihr Anteil),
+    // aKahl = ihre Rinde × Anteil — der Ring-Stoff legt Präsenz und Tönung darüber (`_fernKroneNahMisch`, `kroneImJahr`).
+    static _fernRingSchreibe(geo, li, t, j) {
         geo.attributes.color.setXYZ(li, t[0], t[1], t[2]);
         geo.attributes.aKrone.setXYZW(li, t[3], t[4], t[5], t[6]);
         geo.attributes.aNass.setX(li, t[7]);
+        geo.attributes.aLaub.setXYZW(li, j[0], j[1], j[2], j[3]);
+        geo.attributes.aKahl.setXYZ(li, j[4], j[5], j[6]);
     }
     static _fernRingAttributeHoch(geo) {
         geo.attributes.color.needsUpdate = true;
         geo.attributes.aKrone.needsUpdate = true;
         geo.attributes.aNass.needsUpdate = true;
+        geo.attributes.aLaub.needsUpdate = true;
+        geo.attributes.aKahl.needsUpdate = true;
     }
 
     // DIE FERN-KRONE DES NAHEN BODENS (0910-8, „die weiße Masse“): der Fern-Ring trägt den Wald als Kronendach × Deckung
@@ -1515,10 +1607,12 @@ class AnazhRealm_gelaende_fern {
         const TSL = THREE.TSL;
         const K = AnazhRealm.FERN_KRONE_NAH;
         // DIE FERN-KARTE: EINE Array-Textur, Schicht 0 die Krone des nahen Bodens, Schicht 1 die Maske des Fern-Rings
-        // (`_fernRingMaskeHoch`) — EIN Sampler für beide (gate:webgl-probe W6: ≤ 16 Einheiten je Stoff)
-        const lagen = new Uint8Array(K.N * K.N * 4 * 2);
-        const daten = lagen.subarray(0, K.N * K.N * 4);
-        const tex = new THREE.DataArrayTexture(lagen, K.N, K.N, 2);
+        // (`_fernRingMaskeHoch`), Schicht 2 und 3 das Jahr der Krone (w21-laub-jahr-fern: der Laub werfende Anteil des Dachs, seine
+        // kahle Krone — `fernFarbeTeile` `jahr`) — EIN Sampler für alle (gate:webgl-probe W6: ≤ 16 Einheiten je Stoff)
+        const L = K.N * K.N * 4;
+        const lagen = new Uint8Array(L * 4);
+        const daten = lagen.subarray(0, L);
+        const tex = new THREE.DataArrayTexture(lagen, K.N, K.N, 4);
         tex.format = THREE.RGBAFormat;
         tex.type = THREE.UnsignedByteType;
         tex.colorSpace = THREE.SRGBColorSpace;
@@ -1540,7 +1634,8 @@ class AnazhRealm_gelaende_fern {
             N: K.N,
             tex,
             daten,
-            maske: lagen.subarray(K.N * K.N * 4),
+            maske: lagen.subarray(L, 2 * L),
+            jahr: lagen.subarray(2 * L, 4 * L),
             puffer: new Uint8Array(K.N * K.N * 4),
             U,
             job: null,
@@ -1580,7 +1675,10 @@ class AnazhRealm_gelaende_fern {
                 if (k.job === job) k.job = null;
                 if (st.fernKroneNah !== k) return;
                 k.daten.set(antwort.rgba);
+                k.jahr.set(antwort.jahr);
                 k.tex.addLayerUpdate(0);
+                k.tex.addLayerUpdate(2);
+                k.tex.addLayerUpdate(3);
                 k.tex.needsUpdate = true;
                 k.U.mitte.value.set(mx, mz);
                 k.U.groesse.value = groesse;
@@ -1618,20 +1716,43 @@ class AnazhRealm_gelaende_fern {
         return k.ohneWald;
     }
 
-    _fernKroneNahMisch(_T, alb, kroneVertex = null) {
+    // DIE KRONE IM JAHR (w21-laub-jahr-fern): das Dach liest dieselbe Jahres-Größe wie die Gestalt und die Karte — die Präsenz
+    // `uLaubPraesenz.x` und die Tönung `uSeasonMul` — nach DEMSELBEN Gesetz (phyto-core `kroneImJahr`, hier über der TSL-Algebra):
+    // das Laub der Laub werfenden Arten deckt mit der Präsenz und tönt, die Nadel steht in ihrer Farbe, die kahle Krone trägt
+    // ihre Rinde (`jahrVertex` bzw. die Schichten 2 und 3 der Fern-Karte). Bis w21 deckte das Dach im Winter, was es im Sommer
+    // deckte, und tönte jede Art (die Nadel im Herbst orange).
+    _fernKroneNahMisch(_T, alb, kroneVertex = null, jahrVertex = null) {
         const k = this._fernKroneNahEnsure();
         const su = this._ensureSeasonUniforms();
-        if (!k || !su || !su.uSeasonMul || !_T.texture || !_T.positionWorld || !_T.cameraPosition)
-            throw new Error("Fern-Krone (nah): der Boden-Stoff braucht Karte, Saison-Uniform und TSL");
+        if (!k || !su || !su.uSeasonMul || !su.uLaubPraesenz || !_T.texture || !_T.positionWorld || !_T.cameraPosition)
+            throw new Error("Fern-Krone (nah): der Boden-Stoff braucht Karte, Saison-Uniformen und TSL");
+        if (!kroneVertex !== !jahrVertex)
+            throw new Error("Fern-Krone: die Ecken-Krone reist nur mit ihrem Jahr (aKrone · aLaub · aKahl)");
         const xz = _T.positionWorld.xz;
         const uv = xz.sub(k.U.mitte).div(k.U.groesse).add(0.5);
-        const s = _T.texture(k.tex, uv).depth(_T.int(0));
+        const lies = (lage) => _T.texture(k.tex, uv).depth(_T.int(lage));
+        const s = lies(0);
+        const sLaub = lies(2);
+        const sKahl = lies(3);
         const innen = _T.step(_T.max(uv.x.sub(0.5).abs(), uv.y.sub(0.5).abs()), _T.float(0.5));
         const ohneWald = this._fernKroneOhneWald(_T);
         const karte = innen.mul(k.U.bereit);
-        if (!kroneVertex) return _T.mix(alb, s.rgb.mul(su.uSeasonMul), s.a.mul(ohneWald).mul(karte));
-        const krone = _T.mix(kroneVertex, s, karte);
-        return _T.mix(alb, krone.rgb.mul(su.uSeasonMul), krone.a.mul(ohneWald));
+        const krone = kroneVertex ? _T.mix(kroneVertex, s, karte) : s;
+        const laub = kroneVertex ? _T.mix(jahrVertex.laub, sLaub, karte) : sLaub;
+        const kahl = kroneVertex ? _T.mix(jahrVertex.kahl, sKahl.rgb, karte) : sKahl.rgb;
+        const J = globalThis.__phytoCore.kroneImJahr(
+            AnazhRealm._windTsl(_T),
+            su.uLaubPraesenz.x,
+            su.uSeasonMul,
+            krone.rgb,
+            laub.rgb,
+            laub.a,
+            kahl
+        );
+        // die Deckung im Jahr liegt nach dem Gesetz bei ≥ 1 − (1 − holz) = holz (die kahle Krone ganz Laub werfender Arten)
+        const farbe = J.farbe.div(J.deckung);
+        const deckung = krone.a.mul(J.deckung).mul(ohneWald);
+        return _T.mix(alb, farbe, kroneVertex ? deckung : deckung.mul(karte));
     }
 
     // DER HORIZONT AUS DEM FADEN (B2): der Ring bestellt seine Punkte in Scheiben (`FERN_RING.scheibe`) beim Fern-Faden
@@ -1795,6 +1916,7 @@ class AnazhRealm_gelaende_fern {
         const setze = (g, a, k) => {
             for (const f of ["law", "schutt", "nassY", "spiegel", "flussC", "flussSp", "krone"]) fr[f][g] = a[f][k];
             fr.teile.set(a.teile.subarray(k * 8, k * 8 + 8), g * 8);
+            fr.jahr.set(a.jahr.subarray(k * 8, k * 8 + 8), g * 8);
             const v = a.voll[k];
             if (v === v) fr.vollY[g] = v;
             const p = this._fernRingPunkt(fr, g);
@@ -1964,6 +2086,8 @@ AnazhRealm.FERN_RING = Object.freeze({
     scheibe: 512,
     scheibenImFlug: 3,
 });
+// DIE TEILE DES JAHRS EINES NASSEN PUNKTS (w21-laub-jahr-fern, `_fernRingSchreibe`): Wasser trägt keine Krone — kein Laub, kein Holz.
+AnazhRealm.FERN_JAHR_LEER = Object.freeze([0, 0, 0, 0, 0, 0, 0, 0]);
 // DIE NEIGUNG DES RINGS (`_fernNeigungTakt`): `texelM` die Kante eines Texels der Karte (die Schicht der Kronen-Karte, ihr Raster
 // 512² → ±8 km, die Schale 2 ganz; die Station ferne.K4 misst die Neigung des Gesetzes über 50 m, die Karte über 62,5 m), neu nach
 // `nachM` Wanderung des Ankers, das Gitter in Aufträgen à `zeilenJeAuftrag` Zeilen (514² Rufe des Gesetzes, 2,25 µs je Ruf:

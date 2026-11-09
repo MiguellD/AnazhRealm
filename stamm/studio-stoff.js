@@ -24,6 +24,34 @@ class AnazhRealm_studio_stoff {
     // receivedShadowPositionNode), die Normale und Kavität von Stein, Halm und Facette (normalNode, aoNode). Jede Baum-Art baute
     // so dasselbe Programm neu: swiftshader kalt bis zum Weltbild 47 Knoten-Bauten, davon 13 byte-gleiche Zwillinge (die Karte
     // 10 × 69 129 Zeichen WGSL, das Laub der Welt 5 × 95 818), 46 % des gebauten WGSL.
+    // DAS LICHTMODELL DES HAARS (w25-haar-albedo; Kajiya-Kay 1989, Marschner 2003: R und TT sind das Licht der Quelle, das die
+    // Faser spiegelt und durchlässt, nie eigenes): der Standard-Stoff wie das Laub (`_laubLichtModell`), dessen `direct` je direktem
+    // Licht den Glanz der Strähne addiert — die Terme von HAAR_LOOK (Spitzen-Rim und Spec über die Achse, `_foundryTreeMaterial`)
+    // × die Bestrahlung der Quelle wie Lambert (lightColor trägt den Schatten der Kaskade, × N·L ÷ π). Ohne direktes Licht — im
+    // Schatten, unter dem weißen Umgebungslicht der Albedo-Tafel — glänzt nichts. Das Labor rechnet dasselbe (`laborStoff`: der
+    // Glanz × das direkte Diffuse ÷ die Albedo).
+    static _haarLichtModell() {
+        if (AnazhRealm._haarLichtK) return AnazhRealm._haarLichtK;
+        const T = THREE.TSL;
+        const Basis = THREE.MeshStandardNodeMaterial.prototype.setupLightingModel.call(null).constructor;
+        class HaarLicht extends Basis {
+            constructor(glanz) {
+                super();
+                this.glanz = glanz;
+            }
+            direct(e, builder) {
+                super.direct(e, builder);
+                e.reflectedLight.directSpecular.addAssign(
+                    e.lightColor
+                        .mul(T.normalView.dot(e.lightDirection).max(0.0))
+                        .mul(this.glanz)
+                        .mul(1 / Math.PI)
+                );
+            }
+        }
+        AnazhRealm._haarLichtK = HaarLicht;
+        return HaarLicht;
+    }
     _graphTeilen(mat, sig) {
         const G = this._geteilteGraphen || (this._geteilteGraphen = new Map());
         const plaetze = Object.keys(mat).filter((p) => p.endsWith("Node") && mat[p] != null);
@@ -211,9 +239,14 @@ class AnazhRealm_studio_stoff {
         // DIE FARBE DES JAHRS (V18.527): Laub und Gras sind Golden-Sommer gebacken — ihre Albedo × uSeasonMul
         // (das Studio-Gesetz: der Laub-Shader multipliziert mix(1, uSeasonMul, vSeasW), vSeasW = 1 auf Laub und
         // Blüte). Rinde, Fels, Kristall bleiben ungetönt. Die Gestalt des Jahrs trägt die Lage (`jahr`, `_jahrLage`).
+        // DIE TÖNUNG FOLGT DEM TYP (w21-laub-jahr-fern): das Laub tönt, dessen Ecken Laub oder Blüte sind (`jahr` — die Schale
+        // liefert die Jahres-Ecken nur an solchen Teilen), dazu das Gras; die Nadel (Typ 2, der Wedel), der Halm des Schilfs
+        // (Typ 4) und jedes Laub ohne Jahr stehen in ihrer Farbe wie im Studio (vSeasW 0). Bis w21 tönte die Welt nach der Art
+        // des Stoffs: die Fichte stand im Herbst orange (Tönung r × 2,23), ihre Karte zu 80 %.
         const _suF =
             kind === "foliage" || kind === "foliageTex" || kind === "grass" ? this._ensureSeasonUniforms() : null;
-        const laubFarbe0 = _suF && _suF.uSeasonMul ? vcol.mul(_suF.uSeasonMul) : vcol;
+        const _toent = kind === "grass" || jahr === true;
+        const laubFarbe0 = _toent && _suF && _suF.uSeasonMul ? vcol.mul(_suF.uSeasonMul) : vcol;
         // DIE BLATT-UNTERSEITE (phyto-core BLATT_UNTERSEITE, 05.10.): die gesehene Fläche nach unten gewandt → die hellere,
         // mattere Unterseite (`_laubUnterseite`, K68-N1: die Fläche, nie die Licht-Normale). Laub und Blüte, nie Gras.
         const laubFarbe =
@@ -264,8 +297,8 @@ class AnazhRealm_studio_stoff {
             // Haut + Fell: Shader-Gesetze der Labs (koerperstudio matSkin: SSS-Fresnel-Saum · tetrapoda matFur:
             // Fell-Rim + Gold-Sheen + Spitzen-Rim/-Spec) reisen als DATEN (FELL_LOOK/HAUT_LOOK/HAAR_LOOK, Kern-
             // Zahlen = die EINZIGE Quelle) und werden hier als emissive-Additive gewoben (wie das Lab-GLSL).
-            // Strähnen-Achse: der Bäcker trägt sie als Farbverlauf (__streuGeo: Wurzel = Ton×0.12); die Luminanz-
-            // Ratio zum Ton-Anker (mp.color) gewinnt vStrandY zurück. Ohne Kern-LOOK/TSL-Symbole: byte-alt.
+            // Strähnen-Achse: die Strähne des Tiers trägt sie als Farbverlauf (Wurzel = Ton×0.12), die Luminanz-Ratio zum
+            // Ton-Anker (mp.color) gewinnt vStrandY zurück; das Haar des Menschen trägt sie als Rahmen (`aStraehne`, unten).
             mat.colorNode = TSL.vec4(vcol, 1.0);
             try {
                 const tkC = typeof globalThis !== "undefined" ? globalThis.__tetrapodaCore : null;
@@ -281,6 +314,21 @@ class AnazhRealm_studio_stoff {
                             ? tkC && tkC.FELL_LOOK && tkC.FELL_LOOK.koerper
                             : tkC && tkC.FELL_LOOK && tkC.FELL_LOOK.straehne;
                 if (L) {
+                    // DIE ACHSE DES HAARS (w25-haar-albedo) ist seine Gestalt: `aStraehne` [Achse, Länge] je Ecke (koerper
+                    // `haarAchse`, am Bau `_haarAchse`) — der Anteil Wurzel → Spitze. Die Farbe trägt seit HAAR_STRICH den Ton jeder
+                    // Strähne und Locke (±20 %, ±30 %) über einer Wurzel von 0,85: ihr Quotient zum Ton-Anker war der Würfel des Tons,
+                    // und der Glanz schaltete je Strähne ganz an oder aus. Ohne Achse (die Braue, die Kappe der Grobstufe) trägt das
+                    // Haar keinen Glanz der Spitze.
+                    const haarT =
+                        kind === "hair"
+                            ? TSL.Fn((b) =>
+                                  b.geometry && b.geometry.hasAttribute("aStraehne")
+                                      ? ((a) => a.x.div(a.y.max(1e-6)).clamp(0.0, 1.0))(
+                                            TSL.attribute("aStraehne", "vec2")
+                                        )
+                                      : TSL.float(0)
+                              )()
+                            : null;
                     const ndv = TSL.normalView.normalize().dot(TSL.positionViewDirection).clamp(-1.0, 1.0);
                     const rim = TSL.float(1.0).sub(ndv.abs()).clamp(0.0, 1.0);
                     let add = null;
@@ -374,14 +422,16 @@ class AnazhRealm_studio_stoff {
                         }
                         const sT = schale
                             ? TSL.mix(TSL.float(FS.mittel.t), aS.x, zeigt)
-                            : tonL !== null
-                              ? vcolRoh
-                                    .dot(TSL.vec3(0.2126, 0.7152, 0.0722))
-                                    .div(tonL)
-                                    .sub(wA)
-                                    .div(Math.max(1e-3, 1 - wA))
-                                    .clamp(0.0, 1.0)
-                              : TSL.float(1.0);
+                            : haarT
+                              ? haarT
+                              : tonL !== null
+                                ? vcolRoh
+                                      .dot(TSL.vec3(0.2126, 0.7152, 0.0722))
+                                      .div(tonL)
+                                      .sub(wA)
+                                      .div(Math.max(1e-3, 1 - wA))
+                                      .clamp(0.0, 1.0)
+                                : TSL.float(1.0);
                         if (Number.isFinite(L.tipRimPow) && Array.isArray(L.tipRimFarbe))
                             term(L.tipRimFarbe, rim.pow(L.tipRimPow).mul(sT));
                         if (Number.isFinite(L.specPow) && Array.isArray(L.specFarbe))
@@ -403,7 +453,17 @@ class AnazhRealm_studio_stoff {
                             term(mf.farbe, rim.pow(3.0).mul(TSL.step(mf.schwelle, hsh)).mul(mf.amt));
                         }
                     }
-                    if (add) mat.emissiveNode = add;
+                    if (add && kind === "hair") {
+                        // DER GLANZ DES HAARS IST LICHT (w25-haar-albedo): die Terme von HAAR_LOOK wiegen je direktem Licht im
+                        // Lichtmodell des Haars (`_haarLichtModell`) — nie als Emission. Bis hier leuchtete der Glanz von selbst: im
+                        // Schatten des Walds stand das dunkelbraune Haar (Albedo 0,0117) weiß (Radeon 53b2fc7a, haar.K2#1 arm 0,6263).
+                        const K = AnazhRealm._haarLichtModell();
+                        mat.setupLightingModel = () => new K(add);
+                        const schluessel = mat.customProgramCacheKey;
+                        mat.customProgramCacheKey = function () {
+                            return schluessel.call(this) + "|haarLicht";
+                        };
+                    } else if (add) mat.emissiveNode = add;
                     // Wrap-Licht des Lab-Fells: ·(0.5 + 0.5·max(NdotV,0)) NACH allen Additiven — die matFur-Ordnung
                     // (outputNode multipliziert den fertigen Output inkl. emissive-Terme).
                     if (Number.isFinite(L.wrap)) {

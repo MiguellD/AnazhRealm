@@ -3,7 +3,7 @@
 // 6 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
-const { safeEvaluate, erreichbar } = require("../playtest.cjs");
+const { safeEvaluate, erreichbar, FLUEGEL } = require("../playtest.cjs");
 
 async function checkBandRing11AndW7Mesh({ page, check }) {
     // ### modify_terrain stirbt, voxel_carve/_fill leben ###
@@ -887,7 +887,7 @@ async function checkBandW16Distribution({ page, check }) {
         let soulMsg = null;
         const origSend = r.p2pSend;
         r.p2pSend = (m) => {
-            if (m && m.type === "soul") soulMsg = m;
+            if (m?.type === "soul") soulMsg = m;
         };
         p2p.enabled = true;
         r._p2pBroadcastSoul();
@@ -1508,9 +1508,7 @@ async function checkBandLateMultiUser({ page, check }) {
         r._p2pHandleCompanionSay = origHandle;
 
         // (h) Empfang: speechEnabled=false → kein Log, kein Wurf.
-        if (typeof window !== "undefined" && "speechSynthesis" in window) {
-            window.speechSynthesis.cancel();
-        }
+        if (typeof window !== "undefined" && "speechSynthesis" in window) window.speechSynthesis.cancel();
         const logs = [];
         const origLog = r.log;
         r.log = (msg) => logs.push(String(msg));
@@ -1526,9 +1524,7 @@ async function checkBandLateMultiUser({ page, check }) {
         // (i) speechEnabled=true → Log-Zeile mit "Begleiter".
         logs.length = 0;
         grok.speechEnabled = true;
-        if (typeof window !== "undefined" && "speechSynthesis" in window) {
-            window.speechSynthesis.cancel();
-        }
+        if (typeof window !== "undefined" && "speechSynthesis" in window) window.speechSynthesis.cancel();
         try {
             r._p2pHandleCompanionSay("peerY", { text: "Träume sind sauber.", voice: "" });
         } catch {
@@ -1557,14 +1553,10 @@ async function checkBandLateMultiUser({ page, check }) {
                 localStorage.getItem("anazh.companion.voice") === "Probe-Stimme";
             vs.value = "";
             vs.dispatchEvent(new Event("change"));
-        } else {
-            out.voiceChangePersists = false;
-        }
+        } else out.voiceChangePersists = false;
 
         // Cleanup
-        if (typeof window !== "undefined" && "speechSynthesis" in window) {
-            window.speechSynthesis.cancel();
-        }
+        if (typeof window !== "undefined" && "speechSynthesis" in window) window.speechSynthesis.cancel();
         p2p.enabled = false;
         p2p.connected = false;
         grok.companionVoice = "";
@@ -1915,7 +1907,7 @@ async function checkBandLateMultiUser({ page, check }) {
 
 async function checkBandV8SoulRoleAndWorkshop({ page, check }) {
     // ### Soul-Sync (Peer-Avatar = echte Seele) ###
-    const v834Results = await safeEvaluate(page, () => {
+    const v834Results = await safeEvaluate(page, (FLUEGEL) => {
         const out = {};
         const p2p = st.p2p;
         p2p.peerId = "self-v834";
@@ -1931,27 +1923,12 @@ async function checkBandV8SoulRoleAndWorkshop({ page, check }) {
 
         // soul-Nachricht (geflügelte Compound-Seele) → echte Seele + Name-Schild. Peers reisen als
         // Compound-Seelen aus bodyParts; benannte Anker (leftWing) kommen aus der EINEN Rollen-Quelle.
-        const WING_PARTS = [
-            { shape: "box", material: "federn", size: { x: 0.5, y: 0.55, z: 0.4 }, position: { x: 0, y: 0.5, z: 0 } },
-            {
-                shape: "plane",
-                material: "federn",
-                size: { x: 0.9, y: 0.04, z: 0.5 },
-                position: { x: 0.62, y: 0.55, z: 0 },
-            },
-            {
-                shape: "plane",
-                material: "federn",
-                size: { x: 0.9, y: 0.04, z: 0.5 },
-                position: { x: -0.62, y: 0.55, z: 0 },
-            },
-        ];
         r.p2pHandleMessage(
             JSON.stringify({
                 type: "soul",
                 peerId: "pv1",
                 soulName: "fluegel-probe",
-                bodyParts: WING_PARTS,
+                bodyParts: FLUEGEL,
                 name: "Aria",
             })
         );
@@ -1962,7 +1939,7 @@ async function checkBandV8SoulRoleAndWorkshop({ page, check }) {
             pv1b?.mesh?.userData?.parts?.leftWing &&
             pv1b.mesh.rotation.order === "YXZ"
         );
-        out.nameLabelCreated = !!(pv1b && pv1b.avatarName === "Aria" && pv1b.nameLabel);
+        out.nameLabelCreated = !!(pv1b?.avatarName === "Aria" && pv1b.nameLabel);
 
         // Soul-Wechsel Flügel → Vierläufer (Beine + Schwanz-Kette) → Mesh wird
         // neu gebaut (Compound: children == bodyParts, die schwanz-Rolle lebt
@@ -2075,7 +2052,7 @@ async function checkBandV8SoulRoleAndWorkshop({ page, check }) {
 
         p2p.enabled = false;
         return out;
-    });
+    }, FLUEGEL);
 
     if (erreichbar(check, "Soul-Sync Tests laufen", v834Results)) {
         check("frischer Peer ist Cone+Sphere-Platzhalter", v834Results.placeholderKind);
@@ -2367,9 +2344,7 @@ async function checkBandV8SoulRoleAndWorkshop({ page, check }) {
                 const after = sec.classList.contains("collapsed");
                 out.collapseToggles = before !== after;
                 headers[0].click(); // Ausgangszustand wiederherstellen
-            } else {
-                out.collapseToggles = false;
-            }
+            } else out.collapseToggles = false;
         }
 
         // D — Werkzeug-Drag überlebt Palette-Neu-Rendern (Delegation).
@@ -2493,9 +2468,7 @@ async function checkBandV8SoulRoleAndWorkshop({ page, check }) {
             delete st.blueprints["_t838d"];
             // Auswahl wiederherstellen — kein hängender Verweis auf
             // den gelöschten Test-Bauplan für nachfolgende Tests.
-            if (origSel && st.blueprints[origSel]) {
-                r.selectBlueprintForEdit(origSel);
-            }
+            if (origSel && st.blueprints[origSel]) r.selectBlueprintForEdit(origSel);
         }
 
         // F — 3D-Preview-Höhe.
@@ -2604,9 +2577,7 @@ async function checkBandV8SoulRoleAndWorkshop({ page, check }) {
             const lrow = document.querySelector("#workshop-list .workshop-list-row");
             out.listRowGlow = !!lrow && !!lrow.style.borderLeft && lrow.style.borderLeft.length > 0;
             delete st.blueprints["_t839c"];
-            if (origSel && st.blueprints[origSel]) {
-                r.selectBlueprintForEdit(origSel);
-            }
+            if (origSel && st.blueprints[origSel]) r.selectBlueprintForEdit(origSel);
         }
 
         // W-C(f)/R-008 — der Umwidmen-Rest im Ich FIEL ERSATZLOS: kein
@@ -2648,9 +2619,7 @@ async function checkBandG8R1DampedChannel({ page, check }) {
         // Fenster → admittiert genau PORTAL_CHANNEL_RATE_MAX, Rest verworfen.
         const po = {};
         let admitted = 0;
-        for (let i = 0; i < 10000; i++) {
-            if (r._portalChannelAdmit(po, 1000)) admitted++;
-        }
+        for (let i = 0; i < 10000; i++) if (r._portalChannelAdmit(po, 1000)) admitted++;
         out.channelCapsFlood = admitted === K.PORTAL_CHANNEL_RATE_MAX;
         out.channelAdmitted = admitted;
         // (3) Der Bucket SETTLED: nach dem Fenster admittiert er wieder (der
@@ -2659,9 +2628,7 @@ async function checkBandG8R1DampedChannel({ page, check }) {
         // (4) Der per-Peer-Cap: 120 admittiert je Peer, der 121. fällt; ein
         // ANDERER Peer ist unabhängig (kein gemeinsamer Eimer).
         let pa = 0;
-        for (let i = 0; i < 300; i++) {
-            if (r._p2pPeerRateAdmit("g8r1-test", "peerA", K.SUBWORLD_NET_PEER_RATE_MAX)) pa++;
-        }
+        for (let i = 0; i < 300; i++) if (r._p2pPeerRateAdmit("g8r1-test", "peerA", K.SUBWORLD_NET_PEER_RATE_MAX)) pa++;
         out.peerCaps = pa === K.SUBWORLD_NET_PEER_RATE_MAX;
         out.peerIndependent = r._p2pPeerRateAdmit("g8r1-test", "peerB", K.SUBWORLD_NET_PEER_RATE_MAX) === true;
         if (r._p2pRate) delete r._p2pRate["g8r1-test"];

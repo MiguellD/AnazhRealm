@@ -457,12 +457,17 @@ class AnazhRealm_bild_erst {
     // Rückstrahls); true, wenn jede seiner Pipelines stand und er ganz zeichnete. Wartete er auf Pipelines (`einmalOffen`), läuft
     // `fn` erst wieder, wenn jede von ihnen steht (`E.offen` trägt sie bis dahin) — bis hier malte jeder Takt ihn neu, ohne Bild
     // (PMREM samt seiner Filter-Pässe je Takt). `schluessel`: der Render (sein Quad, der PMREM-Generator).
+    // NACH DEM BILD GILT DER VORBAU WEITER (w25-ankunft-block): in jedem Takt des laufenden Loops entsteht die Pipeline eines
+    // Einmal-Renders asynchron (`_einmalVorbau`) — sein Leser hält den alten Stand, bis sie steht (Spiegel, Horizont-Karte,
+    // Tafeln, Umgebung, Rückstrahl). Bis hier baute der erste Lauf eines Passes, der nach dem Bild begann, seine Pipeline synchron
+    // im GPU-Prozess: Radeon kalt der Spiegel 0,4 s nach dem Bild (73 k Zeichen WGSL), die Horizont-Karte nach 2,5 s — der rAF
+    // stand 1,3–2,2 s bei freiem Haupt-Faden, das Halten der W-Taste kam erst 1,7–2,4 s nach dem Bild.
     _einmalRender(schluessel, fn) {
         const E = this._erstZeichnungStand();
         const W = E.einmalWarte || (E.einmalWarte = new WeakMap());
         const w = W.get(schluessel);
-        // außerhalb des Vorbaus (ein Leser außerhalb des Takts, das Bild steht) zeichnet er ganz, worauf er auch wartete
-        if (!this._psoVorbau()) {
+        // außerhalb des Vorbaus (ein Leser außerhalb des Takts, der ruhende Loop) zeichnet er ganz, worauf er auch wartete
+        if (!this._einmalVorbau()) {
             W.delete(schluessel);
             fn();
             return true;
@@ -472,11 +477,12 @@ class AnazhRealm_bild_erst {
             W.delete(schluessel);
         }
         const vorbau = E.einmalOffen;
+        const vorSammel = E.einmalSammel;
         const sammel = (E.einmalSammel = new Set());
         try {
             fn();
         } finally {
-            E.einmalSammel = null;
+            E.einmalSammel = vorSammel || null;
         }
         if (E.einmalOffen === vorbau) return true;
         if (sammel.size) W.set(schluessel, sammel);

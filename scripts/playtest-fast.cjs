@@ -172,7 +172,7 @@ function check(name, ok) {
             // soul-Baupläne (der generische embody-Pfad; Konsum = wirklich getragen).
             out.tierKoerper = safe(() => {
                 const bp = r.state.blueprints.koerper_wolf;
-                const okDef = !!(bp && bp.role === "soul" && Array.isArray(bp.parts) && bp.parts.length >= 10);
+                const okDef = !!(bp?.role === "soul" && Array.isArray(bp.parts) && bp.parts.length >= 10);
                 const prev = r.state.player?.soul || "human";
                 let getragen = false;
                 if (okDef) {
@@ -494,9 +494,7 @@ function check(name, ok) {
                 server.close();
                 process.exit(1);
             }
-        } else {
-            console.log(`\n✅ Kern-Gesundheit OK — für den Merge: 'npm run playtest' (voll).`);
-        }
+        } else console.log(`\n✅ Kern-Gesundheit OK — für den Merge: 'npm run playtest' (voll).`);
     } catch (e) {
         console.log("FATAL: " + (e?.stack || e));
         await browser.close();

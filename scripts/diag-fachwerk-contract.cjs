@@ -107,9 +107,7 @@ function shellPfad(name, seed, stufe) {
     const turm = (p.storeys || 1) >= 6;
     if (stufe === 0) {
         // ≡ promoteBauen (Lab) + LÜCKENLOS-Bake:
-        const hp2 = Object.assign({}, p, {
-            nur: turm ? { moebel: false, innenwaende: false } : p.arm ? { moebel: false } : {},
-        });
+        const hp2 = Object.assign({}, p, { nur: turm || p.arm ? { moebel: false } : {} });
         const st =
             (p.storeys || 1) > 11
                 ? FC.stapelBau(hp2, { gelaende: false })
@@ -320,8 +318,7 @@ function bogenUrteil(BG, B, steine, zwickelMaxV) {
     // B4 — der Kämpfer: nichts unter yS; die Kämpfersteine über ihrem Pfeiler
     const vMin = Math.min(...S.flatMap((s) => s.ecken.map((e) => e[1])));
     if (vMin < -0.01) bef.push(`B4 ein Keilstein reicht ${(-vMin).toFixed(2)} m unter den Kämpfer`);
-    if (B.pfeiler && S.length) {
-        for (const [s, pf] of [
+    if (B.pfeiler && S.length) for (const [s, pf] of [
             [S[0], B.pfeiler[0]],
             [S[S.length - 1], B.pfeiler[1]],
         ]) {
@@ -334,7 +331,6 @@ function bogenUrteil(BG, B, steine, zwickelMaxV) {
                 break;
             }
         }
-    }
     // B5 — unter der Traufe
     const vMax = Math.max(zwickelMaxV, ...S.flatMap((s) => s.ecken.map((e) => e[1])));
     if (B.yS + vMax > B.cap + 0.005)

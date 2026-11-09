@@ -27,7 +27,7 @@
 //   node scripts/diag-weltakt-wache.cjs [--selftest]   (npm run gate:weltakt-wache; Port WELTAKT_WACHE_PORT)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, nullRenderer, nullSeite, selbsttestEnde, hauptLauf, wandEnde, SELBSTTEST } = require("./lib/welt-boot.cjs");
+const { statikServer, nullRenderer, selbsttestEnde, hauptLauf, wandEnde, SELBSTTEST, nullWelt } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL, weltaktUrteil, weltaktSelbsttest } = require("./lib/ausgabe-aufnahme.cjs");
 const MESS = require("./lib/welt-orte.cjs").messort("wiese");
 
@@ -367,12 +367,10 @@ async function tatProbe(m) {
             if (Object.values(x).every(Number.isFinite) || w >= deckel) return x;
         }
     };
-    for (let n = 1, t0 = st.spielZeit; n <= 10; n++, st.spielZeit = t0 += 30) {
-        taten.push({ delta: tat(() => r.processChatCommand("pflege das land")), ...hoere(() => {
+    for (let n = 1, t0 = st.spielZeit; n <= 10; n++, st.spielZeit = t0 += 30) taten.push({ delta: tat(() => r.processChatCommand("pflege das land")), ...hoere(() => {
             const [mischung, antwort] = ohr(m.x, um.lage);
             return { antwort, nachbar: ohr(m.x + 32)[1], mischung, ausgabe: um.graph.zensus().find((v) => v.name === "vogel").db };
         }) });
-    }
     st.spielZeit += 120;
     const stempel = { delta: tat(() => r.dslRun(["deposit_emotion", "joy", 0.8], { source: "human" })), ...hoere(() => ({ antwort: ohr(m.x)[1] })) };
     stelle(30);
@@ -473,9 +471,7 @@ function urteil(S) {
 }
 
 hauptLauf(async () => {
-    await server.lausche(PORT);
-    const { browser, page } = await nullSeite({ frist: 180000 });
-    await server.zeige(page, 60000);
+    const { browser, page } = await nullWelt(server, { port: PORT, frist: 180000 }, 60000);
     await page.evaluate(() => __weltDa((r) => r.state && r.state.player && r.nexus));
     await page.evaluate(AUSGABE_INSTALL);
     const S = await page.evaluate(probe, GESCHICKT);

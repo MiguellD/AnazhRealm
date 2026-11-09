@@ -311,11 +311,11 @@ async function s0Probe(page, station, schein) {
                     if (!eigen) continue;
                     // der Pool in 2 m: das EINE Gesetz (fachwerk `lichtAbfall`: 1/d^abfall mit Kern und Saum), die Farbe nach Luminanz
                     const ab = window.__fachwerkCore.lichtAbfall({ reichweiteM: p.reichweite, abfall: p.abfall, kernM: p.kern }, 2);
-                    const lum = 0.2126 * p.farbe[0] + 0.7152 * p.farbe[1] + 0.0722 * p.farbe[2];
+                    const lum = luma709(p.farbe);
                     e2 += p.staerke * ab * lum;
                 }
                 const en = r._waagrechtIrradianz([0, 0, 0]);
-                const nacht = 0.2126 * en[0] + 0.7152 * en[1] + 0.0722 * en[2];
+                const nacht = luma709(en);
                 return { n: lichter.length, lichter, e2: +e2.toFixed(3), nacht: +nacht.toFixed(3) };
             };
             for (const klang of [false, true]) {
@@ -368,7 +368,7 @@ async function s0Probe(page, station, schein) {
             // die Fenster-Glut des Zeitplans: um Mitternacht an, mittags aus
             const glut = () => {
                 const c = s.atmoUniforms?.lichtGlut?.fenster?.value;
-                return c ? +(0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b).toFixed(4) : null;
+                return c ? +luma709([c.r, c.g, c.b]).toFixed(4) : null;
             };
             uhr(0);
             await takt(2);
@@ -820,7 +820,7 @@ const S0_TON = { hue: [28, 45], satMax: 0.75, palette: { hex: 0xff7a35, nacht: 1
 // DAS LICHT ADDIERT LINEAR (F1, die Foto-Kette): mit minus ohne Feuer je Kanal im LINEAREN Licht der Ausgabe (sRGB entschlüsselt),
 // der Rest wieder in sRGB — unter der Tonkurve Khronos PBR Neutral (linear bis zur Schulter, der Schwarzpunkt fällt in der
 // Differenz) ist das das Licht des Feuers auf dem Boden (die Differenz der sRGB-Werte zöge die Nacht nichtlinear ab).
-const { srgbLin: s0Lin, linSrgb: s0Srgb } = require("./lib/abnahme-urteil.cjs");
+const { srgbLin: s0Lin, linSrgb: s0Srgb, luma709 } = require("./lib/abnahme-urteil.cjs");
 function s0TonNetto(e, ohne) {
     if (!e || !e.ton || !ohne || !ohne.ton) return null;
     const [R, G, B] = e.ton.rgb.map((c, i) => s0Srgb(Math.max(0, s0Lin(c) - s0Lin(ohne.ton.rgb[i]))));
@@ -862,7 +862,7 @@ const S0_STOFF = (() => {
 // Boden derselben Sitzung, (b) sein Weg ist synchron.
 const S0_MS = { maxMs: 250, relativ: 1.1, ruhe: 1.3, n: 9, main: { "amd/rdna-3": 721, "nvidia/pascal": 1132 } };
 function s0BodenUrteil(name, p, bezug) {
-    const [ms, mitte] = [Math.min(...p.ms), [...p.ms].sort((x, y) => x - y)[p.ms.length >> 1]];
+    const [ms, mitte] = [Math.min(...p.ms), rang([...p.ms].sort((x, y) => x - y))];
     const [decke, last] = [Math.max(S0_MS.maxMs, S0_MS.relativ * bezug || 0), mitte > S0_MS.ruhe * ms];
     return [
         p.weg !== "asynchron" && `${name}: die Pipeline entstand ${p.weg}, nie asynchron wie jede der Erst-Zeichnung (\`_renderObjectDirect\`)`,
@@ -995,7 +995,7 @@ async function himmelProbe(page, taub) {
             const uhr = (t) => {
                 if (r.setTimeOfDay(t, "human") !== true) throw new Error("S0: die Uhr nimmt den Spieler nicht (" + t + ")");
             };
-            const lum = (e) => 0.2126 * e[0] + 0.7152 * e[1] + 0.0722 * e[2];
+            const lum = luma709;
             r._setWeather("sunny", "human");
             s.weatherTransition = null;
             uhr(0.3);
@@ -1668,6 +1668,9 @@ hauptLauf(async () => {
     await server.lausche(PORT);
     const browser = await starteBrowser({ art: "standard", frist: 900000 });
     const page = await browser.newPage();
+    // Die Proben der Seite (S0 `s0Probe`) lesen die EINE Leuchtdichte (abnahme-urteil `luma709`) — der Licht-Lauf trägt sie mit
+    // AUSGABE_INSTALL, der Hauptlauf legt sie hier vor jedem Dokument in die Seite (jede Bühne kommt frisch durch die Tür).
+    await page.evaluateOnNewDocument(`window.luma709 = ${luma709};`);
     await page.evaluateOnNewDocument(() => {
         window.__anazhHeadlessNullRenderer = true;
         // DER STOFF-ZENSUS: jeder direkt beleuchtete Stoff der Szene (Standard, Physical, Lambert, Phong, Toon — Basic

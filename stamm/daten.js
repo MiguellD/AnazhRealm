@@ -530,6 +530,12 @@ class AnazhRealm_daten {
     // 13 Dreiecke), gedreht nach ihrer Ziehung (`_ortZiehung` Zug 1), steigend über `rampe` m hinter der Übergabe; ihr Anteil
     // (`_wieseSchale`) hält 1 bis `voll`, dahinter (voll/d)³ — die Karten je Pixel bleiben, jede wird um 1/Anteil breiter
     // (höchstens `breitMax`) —, vor `bis` über `saum` fällt er auf 0. EIN Befehl (`nahWiese:Lf:schale`), keine Büschel mehr.
+    // Jede Karte steht auf der Ebene ihres Hangs und ist höchstens so breit, wie ihre Wiese und ihr Boden sie tragen (w24-wiese-
+    // ferne, `_wieseSchaleDaten`: dieselbe Maske wie die Füße der Büschel, `boden`, der Grund der Häuser); `schmal` × `breite`
+    // ist die schmalste Karte — wo selbst sie nicht steht, steht keine. `klumpung` ist Nilsons Klumpungs-Index Ω der Wiese im
+    // ersten Treffer der Karte (`_wieseSchaleSenke`: die Lücke e^−Ω·K·Λ): die Halme stehen in Büscheln, kein gleichmäßiges
+    // Medium — der Blick fällt zwischen ihnen tiefer in die Narbe. Geeicht am Bild der echten Halme (vorher 921818a2, Radeon,
+    // Mess-Wiese ≥ 40 m): mit Ω 1 das Fern-Band +5,3 % Luma (GTX +5,7 %), Werkbank Ω 0,7 −1,7 %, Ω 0,6 −2,5 % (20–40 m −3,1 %).
     // Gemessen (Radeon, vegetation.K1#1, Mess-Wiese Third): LAI 2–5 · 5–10 · 10–20 · 20–40 m ohne Keile und ohne Schale 2,40 ·
     // 2,23 · 1,72 · 0,32, mit ihr 2,40 · 2,23 · 2,08 · satt (0 Boden-Pixel); die Büschel der Ferne wie main (im Blick 1 168), die
     // Schale 1 854 Karten, 24 102 Dreiecke (Null-Renderer, der Sicht-Satz; Genesis 155 · 2 015), ihr Bau 0,14 ms je Kachel.
@@ -559,7 +565,6 @@ class AnazhRealm_daten {
                     auge: 1.5,
                     rand: 0.2,
                     vorlauf: 8,
-                    kachelnJeTakt: 4,
                     // DER WEG DER WAHL (w23-geh-takt, `_wieseFernAnker`): die Wahl einer Kachel hält auf der Strecke, die das Auge in
                     // `zeitS` geht (`wegM` bis `wegMax` m), quer `querM`, lotrecht `lotM`, die Höhe über dem Boden `hM`, die Drehung
                     // samt Sichtfeld `drehRad`; im Stand ein Punkt mit `standM` (dem Halt der Lage); ab der halben Drift wählt sie
@@ -576,6 +581,8 @@ class AnazhRealm_daten {
                         breite: 2.3,
                         hoehe: 0.7,
                         breitMax: 3,
+                        schmal: 0.25,
+                        klumpung: 0.6,
                     }),
                 }),
             })
@@ -606,18 +613,26 @@ class AnazhRealm_daten {
     }
 
     // DER WIESEN-GRUND (K53, EINE Quelle): wo der Boden grün ist (die Wiesen-Wache `gruenSchwelle`: g − (r+b)/2), deckt ihn
-    // das Gras — aus der Ferne das MITTEL des Halms, das Integral der Halm-Farbe (h ∈ [0, 1]: mix(Wurzel, Spitze, h) ·
-    // (0,65 + 0,35 h)) = 0,383 · Wurzel + 0,442 · Spitze, Y 0,17 wie das Studio-Gras der Nah-Wiese; die karge Stelle (Fleck
-    // λ 7,7 m, `rauschM`) zeigt mehr Grund: Gewicht 0,5 … 1 der Wache. Das Gesetz rechnet ihn (`_bodenFarbeAt`, der Worker
-    // `attachFieldColors` mit diesem Schnappschuss), nie das Fragment: bis K53 mischte ihn nur der Boden-Stoff (V18.346), der
-    // Feld-Pass und das Panorama zeigten den nackten Grund (`mead`, aus 45 m eine oliv-gelbe Steppe).
+    // das Gras — das MITTEL des Halms (`halmMittel`), das Integral der Halm-Farbe (h ∈ [0, 1]: mix(Wurzel, Spitze, h) ·
+    // (0,65 + 0,35 h)) = 0,383 · Wurzel + 0,442 · Spitze, Y 0,17 wie das Studio-Gras der Nah-Wiese (das Relief der Nähe liest es);
+    // die karge Stelle (Fleck λ 7,7 m, `rauschM`) zeigt mehr Grund: Gewicht 0,5 … 1 der Wache. Das Gesetz rechnet ihn
+    // (`_bodenFarbeAt`, der Worker `attachFieldColors` mit diesem Schnappschuss), nie das Fragment: bis K53 mischte ihn nur der
+    // Boden-Stoff (V18.346), der Feld-Pass und das Panorama zeigten den nackten Grund (`mead`, aus 45 m eine oliv-gelbe Steppe).
+    // DIE WIESE AUS DER FERNE IST EIN BESTAND (w25-ferne-licht-5, ferne.K1#2): `farbe` = das Mittel des Halms × die
+    // Selbstbeschattung des Bestands (`FERN_FARBE.halmSchatten`, wie das Kronendach `kronenSchatten`) — der Halm grün 0,202
+    // trägt so 0,081, die Satelliten-Bänder der Frischwiese im Sommer (grün ~0,07–0,09). Bis hier stand die ferne Wiese mit
+    // dem Mittel des einzelnen Halms auf 0,56–0,73 der In-Streuung (Genesis, Mittag, ohne Luft) und trug ihr Gelbgrün durch
+    // die Luft: der Farbton bei 8 km 12,7–25,5° von der In-Streuung (Soll ≤ 10°, swiftshader); als Bestand 2,7–10,2° (Uhr 0,5)
+    // und 1,0–2,8° (Uhr 0,27), vom Gipfel 4,7–10°; Durchlass, Rand-Kontrast (1,3–1,6 %) und Kante gehalten.
     static get WIESEN_GRUND() {
         const mg = AnazhRealm.MEADOW_GREEN;
         const sp = AnazhRealm.GRAS_SPITZE;
+        const halm = [0, 1, 2].map((i) => 0.383 * mg[i] + 0.442 * sp[i]);
         return this._einmal(
             "WIESEN_GRUND",
             Object.freeze({
-                farbe: Object.freeze([0, 1, 2].map((i) => 0.383 * mg[i] + 0.442 * sp[i])),
+                halmMittel: Object.freeze(halm),
+                farbe: Object.freeze(halm.map((x) => x * AnazhRealm.FERN_FARBE.halmSchatten)),
                 schwelle: AnazhRealm.TERRAIN_GEOLOGY.gruenSchwelle,
                 rauschM: 1 / 0.13,
             })
