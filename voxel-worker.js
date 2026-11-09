@@ -110,8 +110,20 @@ reiheTakt.port1.onmessage = () => {
     nachricht(reihe.shift());
     if (reihe.length) reiheTakt.port2.postMessage(0);
 };
+// DIE REGIONEN GEHEN VOR (w26-ankunft-horizont): `hydro-an` liest nur den Stand der Regionen — es tritt hinter die letzte
+// Nachricht der Reihe, die ihn ändert (`REGIONEN_STAND`), vor jeden Auftrag dahinter; die Regionen, die es reicht, sind dieselben
+// wie am Ende der Reihe. Bis hier stand es hinter jedem Chunk-Auftrag, und der neue Neben-Faden hielt seine ganze Reihe: GTX 1050
+// kalt am Kopf 87537d3f warteten Fern- und Feld-Faden 1,8–1,9 s auf 17 Chunks, bevor Ring und Feld rechnen durften.
+const REGIONEN_STAND = new Set(["init", "state-set", "state-update", "hydro"]);
 self.onmessage = function (e) {
     if (!reiheHaelt && e.data && BODEN_SOFORT.has(e.data.type)) return void nachricht(e);
+    if (e.data && e.data.type === "hydro-an") {
+        let i = reihe.length;
+        while (i > 0 && !REGIONEN_STAND.has(reihe[i - 1].data && reihe[i - 1].data.type)) i--;
+        reihe.splice(i, 0, e);
+        if (reihe.length === 1) reiheTakt.port2.postMessage(0);
+        return;
+    }
     if (reihe.push(e) === 1) reiheTakt.port2.postMessage(0);
 };
 function nachricht(e) {
