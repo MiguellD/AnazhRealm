@@ -35,7 +35,6 @@
         "gate:persistence": "node scripts/diag-persistence.cjs --selftest",
         "gate:render-tap": "node scripts/diag-render-tap.cjs",
         "gate:takt-atem": "node scripts/diag-takt-atem.cjs --selftest && node scripts/diag-takt-atem.cjs",
-        "gate:takt-atem:echt": "npm run gate:takt-atem",
         "gate:boot-stage": "node scripts/diag-boot-stage.cjs --selftest",
         "gate:pruefbuehne": "node scripts/diag-pruefbuehne.cjs --selftest",
         "gate:pruefbuehne-licht": "node scripts/diag-pruefbuehne.cjs --licht --selftest",

@@ -569,6 +569,16 @@ jobs:
               # kein Render-Linsen-Skript liest `.calls` nackt, der Flugschreiber trägt das version-Feld.
               run: npm run gate:render-tap
 
+            - name: Takt-Atem (echter Renderer — der atmende Regler weckt keinen Fege-Takt und keine Pass-Lage)
+              if: steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 18
+              # Faehrt die echte Welt (swiftshader, kienspan) ohne Loop und ohne Wanduhr: der Aktuator steht auf festen Stufen
+              # (loadScale 1 -> 0,1 -> 1, je 80 Takte) und atmet darueber; gezaehlt je Takt (zweite Haelfte jeder Stufe): die
+              # Wechsel der Laub-Dichte, die Weckrufe des Stand-Stempels durch sie, die neuen Lagen des Hauptbilds, dazu
+              # _tickArchitectureLOD, _lodTreeVisHeight, _foundrySichtHoehe, _chunkSatzAbschnitt, _hoehlenSicht. main 66005ca6:
+              # Dichte, Stempel und Lage in 100 % der Takte (CPU-Takt frei 4,8 -> 11,7 ms). Gegenprobe (stossende Dichte) und
+              # --selftest zuerst.
+              run: npm run gate:takt-atem
+
             - name: Fahrzeug-Asset-Vertrag v3 (vehicle-core buildInstance byte-eingefroren, Plattform-Probe)
               if: steps.vorbereitung.outcome == 'success' && !cancelled() && matrix.gruppe == 1
               # seit 04.11. in voll 4/18 und 5/18: „puls 2/2“ stand mit 14 Schritten auf dem Deckel 2,0 min (Waage), der Zug fährt ihn weiter
@@ -1585,13 +1595,6 @@ jobs:
               timeout-minutes: 5
               if: ${{ !cancelled() }}
               run: npm run gate:ego-schatten:echt
-
-            - name: Takt-Atem auf der Karte (der atmende Regler weckt keinen Fege-Takt und keine Pass-Lage, im Fenster des Spielers)
-              timeout-minutes: 5
-              if: ${{ !cancelled() }}
-              # w23-pruef-welt: die Bild- und LOD-Urteile der 320er-Fenster zogen auf die Karte in 1280×720 (welt-boot `fenster`) — die
-              # Stufen und Kosten hängen am Schirm; Ego-Schatten, Verdeckung und Post-Kette standen schon hier, Takt-Atem kam dazu
-              run: npm run gate:takt-atem:echt
 
             - name: Kamera-Leib auf der Karte (K6 - am Pruefplatz wird der Leib beim Seitwaertsgehen nie durchsichtig)
               timeout-minutes: 5
