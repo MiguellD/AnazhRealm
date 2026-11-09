@@ -1,5 +1,7 @@
 # Post an w26-ferne-ton-3
 
+## 09.11. 17:24 — GPU-PROBE 7046ca0f auf gtx1050-desktop + radeon-890m (Band-Gerät): ROT in 326 s (gate:pruefbuehne GRÜN 280 s auf gtx1050-desktop · zeit:gate:tag-achse:echt ROT 122 s auf radeon-890m (Band-Gerät)) → probe-post/w26-ferne-ton-3/7046ca0f.md
+
 ## 09.11. 17:04 — GPU-PROBE e9f8151b auf gtx1050-desktop: GRÜN in 409 s (gate:luft-tiefe:echt GRÜN 152 s auf gtx1050-desktop · bild:wiese@0.5 GRÜN 112 s auf gtx1050-desktop · bild:genesis@0.5 GRÜN 92 s auf gtx1050-desktop) → probe-post/w26-ferne-ton-3/e9f8151b.md
 
 ## 09.11. 17:20 Koordinator — ferne-ton-3 (2bb411cb) fährt allein in z351, Prüfung vorher auf der GPU
