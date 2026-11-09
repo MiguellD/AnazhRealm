@@ -2190,6 +2190,7 @@ function luftTiefe(o) {
             belichten.apply(this, a);
             st.renderer.toneMappingExposure *= blende;
         };
+        const spur = [];
         const schuss = async (b, k) => {
             const alt = U.beta.value;
             const e = st.renderer.toneMappingExposure;
@@ -2198,7 +2199,11 @@ function luftTiefe(o) {
             if (b != null) U.beta.value = dichte = b;
             if (st.fernRing) r._tickFeldPass(st.fernRing);
             try {
-                return (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
+                const u8 = (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
+                // DIAG (w27-ferne-ton-5, fällt vor der Abgabe): je Schuss β · Belichtung · Sonnen-Stufe · Schlüssel der Himmels-Sicht · Tafel · Leine
+                const AL = st.atmoLut || {};
+                spur.push([b, +st.renderer.toneMappingExposure.toFixed(4), st._sonne && st._sonne.winkel, AL.himmelSchluessel, AL.tafel ? 1 : 0, r._gpuLeineStraff() ? 1 : 0].join("/"));
+                return u8;
             } finally {
                 dichte = null;
                 blende = 1;
@@ -2306,6 +2311,7 @@ function luftTiefe(o) {
             return {
                 kante: { spalten: Object.keys(oben).length, rand: Object.keys(kante).length, linie: +((kl.linie / W) * hfov).toFixed(2), stufe: kl.stufe },
                 blende: k,
+                diag: spur.splice(0).join(","),
                 baender: bd.map((b) => ({ d: b.d, n: b.dh.length, q: b.q.map(med), dk: med(b.dk), nk: b.dk.length, dh: tonDerFerne(b.dh, bRef) })),
                 himmel: inS[0].length >= R.mindest.n ? inS.map(med) : null,
                 rand: { km: +(rand / 1000).toFixed(1), C: med(gez.filter((x) => x.d >= 0.9 * fern[x.x]).map((x) => x.C)) },

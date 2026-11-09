@@ -3525,7 +3525,7 @@ hauptLauf(async () => {
         const u = LL.luftTiefeUrteil(m, ref);
         console.log("  FARBTON 8 km K1-2", u.staffel["K1-2"], "je Uhr/Azimut", m.zeilen.map((z) => `${z.uhr}/${z.az} ${z.baender[3]?.dh}°`).join(" "));
         for (const b of u.befunde) console.log("  ROT " + b);
-        endeMit(`LUFT ${u.urteil} · ${Object.entries(u.staffel).map((e) => e.join(" ")).join(" · ")}`, u.urteil === "GRUEN");
+        endeMit(`LUFT ${u.urteil} · ${Object.entries(u.staffel).map((e) => e.join(" ")).join(" · ")} · DIAG ${m.zeilen.map((z) => z.uhr + "@" + z.az + " k" + z.blende + " " + z.diag).join(" ; ")}`, u.urteil === "GRUEN");
     } else if (cmd === "licht" && hat("laub")) {
         // DAS LAUB IM GEGENLICHT: je Art der nächste Baum, der Spieler am Augen-Ort (die Stufe folgt ihm), Gegenlicht
         // gegen Auflicht; das Urteil `laubLichtUrteil` (≥ 1,3, Labor ± 10 % wo gemessen). `--selbsttest` ohne Welt.
