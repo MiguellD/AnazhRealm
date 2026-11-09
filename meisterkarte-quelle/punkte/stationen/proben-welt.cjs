@@ -664,7 +664,7 @@ async function fahrWelt(tor) {
     const ritt = datei("bericht/3010-heil-fahrzeug/tempo4.js", tor.arg[0]);
     const blick = datei("bericht/2010-buendel-abab/blick.js", tor.arg[1]);
     // die Verdikte der Linse und die Namen ihrer Zeilen T4/T5, wörtlich aus ihrem Text (je genau einmal, sonst laut)
-    const d = new Function(tor.dekl(L, ["taeter", "WECHSEL", "wechselVerdict"]) + "\nreturn { taeter, wechselVerdict };")();
+    const d = new Function(tor.dekl(L, ["taeter", "urteil", "WECHSEL", "wechselVerdict"]) + "\nreturn { taeter, wechselVerdict };")();
     const text = fs.readFileSync(L, "utf8");
     const name = (k) => {
         const m = text.match(new RegExp('"' + k + ' [^"\\n]+"', "g")) || [];
@@ -836,7 +836,7 @@ async function fahrWegenetz(tor) {
     }
     const [nr, n] = String(process.env.PUNKTE_TEIL || "1/1").split("/").map(Number);
     const fristS = Number(process.env.PUNKTE_TEIL_FRIST_S) || 0;
-    const d = new Function(tor.dekl(L, ["WEGENETZ", "wegenetzVerdict", "taktHz"]) + "\nreturn { WEGENETZ, wegenetzVerdict, taktHz };")();
+    const d = new Function(tor.dekl(L, ["urteil", "WEGENETZ", "wegenetzVerdict", "taktHz"]) + "\nreturn { WEGENETZ, wegenetzVerdict, taktHz };")();
     const F = require(path.resolve(P));
     const mo = require(path.resolve("scripts/lib/band-urteil.cjs")).ladeSpec("wiese").ort.spieler;
     const page = await tor.seite();
