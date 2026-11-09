@@ -2171,7 +2171,8 @@ function selbsttest() {
             /K4 über der Ansaugung/,
         ],
     ].map(giftFall("Kern"))], (gift) => kernUrteil(require("./lib/asset-worker-harness.cjs").kernAusText(gift(kernSrc), "__vehicleCore")), { fehler });
-    selbsttestEnde(fehler, "Befund, Leser und Kern nennen jeden eingeschmuggelten Täter beim Namen.");
+    // der Selbsttest: Befund, Leser und Kern nennen jeden eingeschmuggelten Täter beim Namen.
+    selbsttestEnde(fehler);
     process.exit(0);
 }
 

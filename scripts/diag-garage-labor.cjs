@@ -186,7 +186,9 @@ hauptLauf(async () => {
                 v = src.split(a).length === 2 ? U({ ...echt, [ns]: kernAusText(src.replace(a, b), ns) }) : [`Anker fehlt: ${a}`];
             check(`Selbst-Test Kern-Mutante ${k} ${muss}`, v.some((t) => muss.test(t)), v.slice(0, 3).join(" · "));
         }
-        selbsttestEnde(errs, "die Labor-Linse nennt Maus, HUD, Tacho, Preset, Kultur, Lehren, jeden Modus der Ansicht und die Zeit-Achse beim Namen.");
+        // der Selbsttest: die Labor-Linse nennt Maus, HUD, Tacho, Preset, Kultur, Lehren, jeden Modus der Ansicht und die
+        // Zeit-Achse beim Namen.
+        selbsttestEnde(errs);
         process.exit(0);
     }
 

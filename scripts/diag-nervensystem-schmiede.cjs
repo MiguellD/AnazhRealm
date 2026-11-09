@@ -111,7 +111,8 @@ hauptLauf(async () => {
                 `Selbst-Test 9 (H-S): ${n || "gesund"}`,
                 seilVerdict({ teile: true, schwung: true, ruht: true, fern: true, ...b }).join() === n
             );
-        selbsttestEnde(errs, "die Linse feuert auf alle Verletzungs-Klassen (Faust, Seil).");
+        // der Selbsttest: die Linse feuert auf alle Verletzungs-Klassen (Faust, Seil).
+        selbsttestEnde(errs);
         process.exit(0);
     }
 

@@ -76,17 +76,21 @@ async function checkBandV1728SpawnClearance({ page, check }) {
     );
 }
 
-// Budgetierter Culling-Build: `tickArchitectureCulling` baut höchstens
-// `architectureBuildBudgetPerFrame` teure Builds pro Frame, statt beim Eintritt in eine dichte
-// Region alle cold-Einträge auf einmal (FPS-Sturm).
+// DER BAU UNTER DER EINEN FRIST (w25-stadt-takt-4): `tickArchitectureCulling` baut den ersten Bau-Ruf und jeden weiteren bis zur
+// EINEN Frist der Bau-Arbeit (`_bauFrist("bau")`), statt beim Eintritt in eine dichte Region alle cold-Einträge auf einmal
+// (FPS-Sturm); über Budget trägt die Takt-Garantie (`_handBauErlaubt`, ein Bau je 250 ms). Bis dahin zählte der Regler die
+// Bauten je Takt (`architectureBuildBudgetPerFrame`, ARCH_QUALITY_BUDGET_MIN/MAX: 1–6) — die Mutante jeder Bau-Zeile hier.
 async function checkBandWellePerfDBudget({ page, check }) {
     const res = await page.evaluate(() => {
         if (!r || !st || !st.playerMesh) return { error: "no realm/player" };
-        const out = {};
-        out.hasBudgetField = Number.isFinite(st.architectureBuildBudgetPerFrame);
-        const budget = st.architectureBuildBudgetPerFrame;
-        out.budget = budget;
-        // N7.3 — UNIT-RICHTER: der Prüf-Gegenstand ist der budgetierte GRAMMATIK-Bau-Pfad
+        const out = {
+            zaehler: String([
+                st.architectureBuildBudgetPerFrame,
+                AnazhRealm.ARCH_QUALITY_BUDGET_MIN,
+                AnazhRealm.ARCH_QUALITY_BUDGET_MAX,
+            ]),
+        };
+        // N7.3 — UNIT-RICHTER: der Prüf-Gegenstand ist der GRAMMATIK-Bau-Pfad
         // (`_rebuildArchitectureMesh` klassisch/instanced); foundry-ON hinge derselbe Spawn
         // an der Studio-Varianten-Cache-Lage (variant-abhängig kalt) → lokaler Hook.
         window.__withNoFoundry(() => {
@@ -96,8 +100,7 @@ async function checkBandWellePerfDBudget({ page, check }) {
             const origRadius = st.architectureCullingRadius;
             st.architectureCullingRadius = 0;
             const ids = [];
-            const N = 12;
-            for (let i = 0; i < N; i++) {
+            for (let i = 0; i < 12; i++) {
                 const e = r.spawnArchitecture(
                     "baum_kiefer",
                     { x: pp.x + 4 + i, y: pp.y, z: pp.z + 4 },
@@ -106,25 +109,52 @@ async function checkBandWellePerfDBudget({ page, check }) {
                 if (e) ids.push(e.id);
             }
             st.architectureCullingRadius = Math.max(origRadius, 300);
-            // tickArchitectureCulling baut 0 bei `_frameOverBudget` (Bau nur in freier Zeit) → Kopfraum
-            // erzwingen, sonst hängt der Bau-Pfad-Test am Warmup-Leftover (langsamer Warmup = Flake).
-            st._frameOverBudget = false;
             const idSet = new Set(ids);
             const renderedCount = () => st.architectures.filter((e) => idSet.has(e.id) && r._archIsRendered(e)).length;
             out.coldBefore = ids.length - renderedCount();
-            // EIN Tick → höchstens `budget` der 12 gebaut (kein Burst).
-            const renderedPre = renderedCount();
-            r.tickArchitectureCulling(performance.now());
-            out.builtInOneTick = renderedCount() - renderedPre;
-            out.respectsBudget = out.builtInOneTick <= budget;
-            // Alle 12 bauen: das Cull-Budget ist GLOBAL, unter kumulativer Last verhungern die Test-Bäume an
-            // Hunderten cold-Architekturen. Darum den Bau-Pfad DIREKT prüfen — `_rebuildArchitectureMesh` ist
-            // dieselbe Bau-Quelle, die der Cull-Tick budgetiert ruft.
-            for (const e of st.architectures.filter((x) => idSet.has(x.id) && !r._archIsRendered(x))) {
-                r._rebuildArchitectureMesh(e);
+            // DIE TAKTE DER PROBE wie im Bild: der Null-Renderer baut ohne Ende (`_bauFristOhneEnde`), hier nicht; je Takt eine
+            // frische Frist (`_bauFristTakt` fiele sonst erst am Ende der Aufgabe), `ueber` = `_frameOverBudget` (sonst hängt der
+            // Takt am Warmup-Leftover); jeder Bau-Ruf kostet 4 ms mehr auf der Uhr der Probe (`plus`, wie gate:takt: keine Warte-
+            // Schleife an der Wanduhr), ein Takt gibt die ms seiner Bau-Rufe; nach dem letzten Takt steht `_frameOverBudget` false
+            const [F, bau, ms, uhr] = [
+                AnazhRealm.BAU_FRIST_MS,
+                r._rebuildArchitectureMesh,
+                [],
+                performance.now.bind(performance),
+            ];
+            let plus = 0;
+            performance.now = () => uhr() + plus;
+            const takt = (ueber) => (
+                (st._frameOverBudget = ueber),
+                (r._bauFristTakt = null),
+                r.tickArchitectureCulling(),
+                ms.splice(0)
+            );
+            r._bauFristOhneEnde = () => false;
+            r._rebuildArchitectureMesh = (e, t0 = performance.now()) => {
+                bau.call(r, e);
+                plus += 4;
+                ms.push(performance.now() - t0);
+            };
+            try {
+                // EIN Takt an der Frist: Bau-ms ≤ Frist + ein Bau (der erste geht immer);
+                // über Budget EIN Bau, binnen 250 ms keiner
+                const eng = takt(false);
+                r._handBauNaechster = undefined;
+                out.ueber = [takt(true).length, takt(true).length].join();
+                out.eng = eng; // die ms je Bau-Ruf (ohne Bau ist Math.max -Infinity: rot)
+                out.respectsFrist = eng.reduce((s, x) => s + x, 0) <= F + Math.max(...eng) + 0.5 && out.ueber === "1,0";
+                // KOPFRAUM: unter weiter Frist baut EIN Takt den Rest — die Frist misst, kein Zähler. Der Rest sind mindestens 9
+                // (12, an der Frist höchstens 2 Bau-Rufe zu je ≥ 4 ms in 6 ms, über Budget 1), jeder Zähler gab höchstens 6
+                AnazhRealm.BAU_FRIST_MS = 1e4;
+                out.weit = takt(false).length;
+            } finally {
+                AnazhRealm.BAU_FRIST_MS = F;
+                delete r._bauFristOhneEnde;
+                delete r._rebuildArchitectureMesh;
+                delete performance.now;
             }
-            out.builtAfterManyTicks = renderedCount();
-            out.allEventuallyBuilt = out.builtAfterManyTicks === ids.length;
+            out.built = renderedCount();
             // Cleanup.
             for (const e of st.architectures.filter((x) => idSet.has(x.id))) r.removeArchitecture(e);
             st.architectureCullingRadius = origRadius;
@@ -132,28 +162,24 @@ async function checkBandWellePerfDBudget({ page, check }) {
         return out;
     });
     if (res.error) {
-        check("V12.0-perf.d: Budget-Band (realm)", false, res.error);
+        check("V12.0-perf.d: Frist-Band (realm)", false, res.error);
         return;
     }
-    check(
-        "V12.0-perf.d: architectureBuildBudgetPerFrame existiert (≥1)",
-        res.hasBudgetField && res.budget >= 1,
-        `budget=${res.budget}`
-    );
+    check("V12.0-perf.d: kein Bau-Zähler, den Bau trägt die EINE Frist", res.zaehler === ",,", `Zähler ${res.zaehler}`);
     check(
         "V12.0-perf.d: 12 cold-in-range Einträge vor dem ersten Tick",
         res.coldBefore === 12,
         `cold=${res.coldBefore}`
     );
     check(
-        "V12.0-perf.d: EIN Tick baut höchstens budget (kein Burst)",
-        res.respectsBudget,
-        `gebaut=${res.builtInOneTick}, budget=${res.budget}`
+        "V12.0-perf.d: EIN Tick baut bis zur Frist (Bau-ms ≤ Frist + ein Bau), über Budget ein Bau je 250 ms",
+        res.respectsFrist,
+        `Bau-ms ${res.eng}, über Budget ${res.ueber}`
     );
     check(
-        "V12.0-perf.d: über mehrere Ticks werden ALLE gebaut (sanftes Pop-In)",
-        res.allEventuallyBuilt,
-        `gebaut=${res.builtAfterManyTicks}/12`
+        "V12.0-perf.d: weite Frist, EIN Tick baut den Rest (≥ 9) — ALLE gebaut",
+        res.weit >= 9 && res.built === 12,
+        `im Takt ${res.weit}, gebaut=${res.built}/12`
     );
 }
 

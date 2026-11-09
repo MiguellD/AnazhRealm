@@ -1073,8 +1073,8 @@ async function starte() {
                 // kein Haus auf ihm, eine Stadt erwacht erst, wenn er naht —, dann steht er am Ort: am Boden oder auf dem Dach (`dach`, m)
                 const a = o?.anlauf || [x, z];
                 r.state.playerMesh.position.set(a[0], r._voxelSurfaceY(a[0], a[1]) + 1.8, a[1]);
-                // DIE GRÜNDUNG (haushalt.json `gruendung`, die Stadt): der Spieler sagt sein Wort am Anlauf mit dem Blick des Orts, wie im
-                // Spiel (Chat) — die Siedlung steht danach am Anker der Spec (±1 mm, sonst laut: die Ort-Wahl wanderte mit der Welt; der
+                // DIE GRÜNDUNG (haushalt.json `gruendung`, die Stadt): Same und Größe aus dem Wort, der Ort am Anker der Spec (bis w25-stadt-takt-3 sprach der Spieler sein Wort am Anlauf mit dem Blick des Orts, wie im
+                // Spiel (Chat)) — die Siedlung steht danach am Anker der Spec (±1 mm, sonst laut: die Ort-Wahl wanderte mit der Welt; der
                 // Richter des Verkehrs stellt die Stadt genau dorthin — bis w12-verkehr ±1 m, und 0,28 m daneben stand eine andere
                 // Stadt: 295 statt 300 Häuser, vier statt einer Wende, gate:fahr-leben --verkehr GRÜN, die Radeon 7 von 20); eine Welt,
                 // die sie trägt, gründet nicht neu. Die Bahn des Orts (`bahn`, die Hauptgasse) liegt Meter für Meter auf ihrem Weg (`_aufWeg`).
@@ -1086,8 +1086,21 @@ async function starte() {
                     const steht = () =>
                         zellen().find((c) => String(c.seed) === same && Math.hypot(c.x - g.anker[0], c.z - g.anker[1]) <= 1e-3);
                     if (!steht()) {
-                        r._chatDispatchLegacyCommand(g.wort, [], () => {});
-                        for (const weiter = __deckel(`die Gründung „${g.wort}"`); !steht() && weiter(); ) await sleep(250);
+                        // DIE STADT AM ANKER DER SPEC, nie am Fenster (w25-stadt-takt-3): das Wort ohne Ort misst den Anker vor dem
+                        // Spieler durch den Bildwinkel der Welt-Kamera (`_siedlungsAnker`, fov × Seitenverhältnis) — das Fenster des
+                        // Windows-Läufers rückte die Stadt um 5,3 mm (GTX 048c472e: 662,7171/422,3055 statt 662,7200/422,3099), und
+                        // jede Probe am Ort stand still. Gegründet wird mit dem Ort des Ankers, wie der Richter des Verkehrs
+                        // (fahr-proben `verkehr`); ein Wunsch-Ort, der den Spieler nicht berührt, bleibt, wie er ist.
+                        const [, seed, nH] = g.wort.split(" ").map(Number);
+                        r.spawnSettlement({ verlangt: "human", seed, nH, position: { x: g.anker[0], y: 0, z: g.anker[1] } });
+                        // die Schleife schläft ohne Takt: ihr Deckel zählt JEDEN Gang (`false`, 120 × 250 ms) — mit dem Offenen der Welt
+                        // zählte er nur stille Gänge und warf erst nach 3 600 (900 s): an z331 (Anker ±1 mm) schwieg die Stadt bis
+                        // zum Deckel jeder GPU-Probe (480 s; w25-stadt-takt-3 b464baaf · db8635ef, gpu-wahl 3fcecab7)
+                        try {
+                            for (const weiter = __deckel(`die Gründung „${g.wort}"`, 120, false); !steht() && weiter(); ) await sleep(250);
+                        } catch (f) {
+                            throw new Error(`${f.message} · Anker ${g.anker}, die Zellen ${JSON.stringify(zellen().map((c) => [c.seed, c.x, c.z]))}`);
+                        }
                     }
                     if (!steht())
                         throw new Error(`Messort ${o.ort}: „${g.wort}" steht nicht am Anker ${g.anker} (${JSON.stringify(zellen())})`);
@@ -3480,11 +3493,12 @@ hauptLauf(async () => {
         // mit `--zug` den Wetter-Zug klar → Wort → klar, die Ausgabe-Luma je Sekunde (Licht K5); Urteil `wetterLuftUrteil`.
         const ref = jsonLesen(path.join(__dirname, "../spec/farbe/luft-referenz.json"));
         const fehl = LL.luftTiefeSelbsttest(ref);
-        selbsttestEnde(fehl, "grauer β, Kante 21 %, Linie, leere Messung, Sicht 1800 m, Sprung 0,5 EV/s und der Ton je Pixel beim Namen ROT");
+        // der Selbsttest: grauer β, Kante 21 %, Linie, leere Messung, Sicht 1800 m, Sprung 0,5 EV/s und der Ton je Pixel beim Namen ROT
+        selbsttestEnde(fehl);
         if (SELBST) process.exit(0);
         const halt = await eigeneWelt();
         const seite = async (f, o) =>
-            ergebnis(await evalRuf(`const kantenLinie = ${LL.kantenLinie}, luftBetaRef = ${LL.luftBetaRef}, luftAufgeloest = ${LL.luftAufgeloest}, farbTon = ${LL.farbTon}, tonDesBands = ${LL.tonDesBands}; return await (${f})(${JSON.stringify(o)});`));
+            ergebnis(await evalRuf(`const ${["kantenLinie", "luftBetaRef", "luftAufgeloest", "farbTon", "tonDesBands", "tonDerFerne"].map((n) => `${n} = ${LL[n]}`)}; return await (${f})(${JSON.stringify(o)});`));
         const wort = opt("--wetter");
         const zug = wort && argv.includes("--zug");
         const mittag = { ...ref, uhren: [0.5] };
@@ -3509,8 +3523,9 @@ hauptLauf(async () => {
         if (zug) endeMit(`ZUG ${w.zug.gruen ? "GRUEN" : "ROT"} · Sprung ${JSON.stringify(w.zug.sprung)} EV/s (Soll ≤ ${ref.wetter.zugEvS}) · klar → ${wort} → klar gezogen ${w.zug.gezogen}, ${m.reihe.length} s`, w.zug.gruen);
         if (wort) endeMit(`SICHT ${w.sicht.gruen ? "GRUEN" : "ROT"} · Sicht im Wetter ${wort} ${w.sicht.ist} m (Soll ${ref.wetter.sichtSturmM} ±${ref.wetter.band * 100} %, ${w.sicht.n} Azimute)`, w.sicht.gruen);
         const u = LL.luftTiefeUrteil(m, ref);
-        for (const b of u.befunde.map((x) => "ROT " + x).concat(u.offen.map((x) => "OFFEN " + x))) console.log("  " + b);
-        endeMit(`LUFT ${u.urteil} · ${Object.entries(u.staffel).map((e) => e.join(" ")).join(" · ")} (offen: ${Object.keys(ref.offen).join(", ")})`, u.urteil === "GRUEN");
+        console.log("  FARBTON 8 km K1-2", u.staffel["K1-2"], "je Uhr/Azimut", m.zeilen.map((z) => `${z.uhr}/${z.az} ${z.baender[3]?.dh}°`).join(" "));
+        for (const b of u.befunde) console.log("  ROT " + b);
+        endeMit(`LUFT ${u.urteil} · ${Object.entries(u.staffel).map((e) => e.join(" ")).join(" · ")}`, u.urteil === "GRUEN");
     } else if (cmd === "licht" && hat("laub")) {
         // DAS LAUB IM GEGENLICHT: je Art der nächste Baum, der Spieler am Augen-Ort (die Stufe folgt ihm), Gegenlicht
         // gegen Auflicht; das Urteil `laubLichtUrteil` (≥ 1,3, Labor ± 10 % wo gemessen). `--selbsttest` ohne Welt.
@@ -3683,7 +3698,9 @@ hauptLauf(async () => {
     else if (cmd === "diaet") {
         if (SELBST) {
             const f = DIAET.selbsttest();
-            selbsttestEnde(f, "das Diät-Urteil nennt die Wiederholung im Stand, den Refresh ohne Änderung, die Prüfung ohne Meldung und eine blinde Linse beim Namen");
+            // der Selbsttest: das Diät-Urteil nennt die Wiederholung im Stand, den Refresh ohne Änderung, die Prüfung ohne
+            // Meldung und eine blinde Linse beim Namen
+            selbsttestEnde(f);
             process.exit(0);
         }
         o = await rufe("/diaet", {
@@ -3928,7 +3945,9 @@ hauptLauf(async () => {
     } else if (cmd === "shader") {
         if (SELBST) {
             const f = SK.selbsttest();
-            selbsttestEnde(f, "die Shader-Kosten-Linse zählt Orte, Arten, Arbeit, Rauschen und den Stoff-Graph, das Urteil nennt jeden Bruch");
+            // der Selbsttest: die Shader-Kosten-Linse zählt Orte, Arten, Arbeit, Rauschen und den Stoff-Graph, das Urteil nennt
+            // jeden Bruch
+            selbsttestEnde(f);
             process.exit(0);
         }
         o = await rufe("/shader", {
