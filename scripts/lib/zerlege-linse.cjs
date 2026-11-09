@@ -158,7 +158,7 @@ function passUhr() {
 // 0,34 bei Breite 0,03–0,04; ein einhöckriger Pass überbrückt mit 2 % seiner Werte ~0,4 σ, gefordert wären ≥ 2 σ — er
 // bleibt ganz (rein = p50, anteilOben 0, versatz 0).
 function zweiGipfel(w) {
-    const a = w.filter(Number.isFinite).sort((a, b) => a - b);
+    const a = w.filter(Number.isFinite).sort(aufsteigend);
     const q = (b, f) => (b.length ? +rang(b, f).toFixed(2) : null);
     const n = a.length, m = Math.max(1, Math.ceil(n / 50)), k = Math.floor(n / 50);
     let j = 0;
@@ -265,7 +265,7 @@ function belegungAuswerten(ev, { bildMs = 1000 / 60, schwelle = 1 } = {}) {
         jeBild.push({ ms, belegt, pf, pflicht: pf.reduce((a, b) => a + b, 0), nt });
     }
     const q = (a, f) => {
-        const s = [...a].sort((a, b) => a - b);
+        const s = [...a].sort(aufsteigend);
         return s.length ? +rang(s, f).toFixed(2) : null;
     };
     const zahl = (a) => ({ p50: q(a, 0.5), p95: q(a, 0.95), mittel: q([a.reduce((a, b) => a + b, 0) / (a.length || 1)], 0) });
@@ -1280,7 +1280,7 @@ function zerlegeLast(k) {
         for (let i = 0; i < 5; i++) w.push(await allein(12));
         if (rend.backend.timestampQueryPool?.render)
             await rend.resolveTimestampsAsync("render");
-        w.sort((a, b) => a - b);
+        w.sort(aufsteigend);
         return {
             an: true,
             iter,
@@ -1449,7 +1449,7 @@ function zerlegeSchalter(inv, haushalt, opt) {
 // Differenzen, der Beleg (Renders im AUS-Zustand, Haken-Treffer, Befehle der Klasse, Kollateral), Gesamt und Rest.
 function zerlegeAuswerten(roh, schalter) {
     const med = (a) => {
-        const s = a.filter(Number.isFinite).sort((a, b) => a - b);
+        const s = a.filter(Number.isFinite).sort(aufsteigend);
         if (!s.length) return null;
         const m = s.length >> 1;
         return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;

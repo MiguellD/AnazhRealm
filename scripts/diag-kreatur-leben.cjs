@@ -167,6 +167,8 @@ async function lebenBuehnen() {
             [s.lifeField, s.faunaBestand] = [];
             // DAS TAL: von den nahen Regionen die mit der größten Kapazität des Rotwilds, leer gelesen — dort misst die Kaskade
             const [n, ms, nah] = [[], [], r._bestandNah()];
+            // leer gelesen AN DER UHR 0 (seit w27-tiere-sicht beginnt eine junge Region eine Stunde davor)
+            for (const k of nah) r._bestandRegion(k, false).t = 0;
             const tal = nah.reduce((a, b) =>
                 r._kreaturBestand(null, b).deer.K > r._kreaturBestand(null, a).deer.K ? b : a
             );
@@ -243,6 +245,8 @@ async function lebenBuehnen() {
         if (taeter === "bestand-kappe") decke("_creatureNaturalBirth", (alt) => (...a) => (s.creatures.length < s.maxCreatures ? alt.apply(r, a) : [])); // prettier-ignore
         // der Täter der Dichte (tiere.K5): das Revier auf dem Land von vor w27-tiere-sicht (Kachel 354 m)
         if (taeter === "bestand-duenn") decke("_bestandSeite", () => () => 354);
+        // der Täter der jungen Welt: die Region beginnt ohne ihre Stunde (bis w27-tiere-sicht frühestens an der Welt-Uhr 0)
+        if (taeter === "bestand-jung") aufraeumen.push(leihe(A, { BESTAND_REGION: { ...A.BESTAND_REGION, aufholS: 0 } }));
         // DAS TAL DER WILDNIS: die Kaskade misst, wo das Feld wirft — keine Zelle des Bestands der nahen Regionen liegt auf einer
         // Fläche des Genesis-Orts (Kern, Ring, Mall, Wiese, Ufer, die Bühnen: dort fällt jede Geburt und jeder Leib,
         // `_kreaturGrundFrei`). Der Zeitraffer steht ganze Regionen westlich der Ankunft, bis keine mehr dort liegt (709 m). Bis
@@ -263,6 +267,10 @@ async function lebenBuehnen() {
             "bestand-nahrung": ["halb"],
             "bestand-kappe": ["ohneWolf", "kappeHalb"],
         };
+        // DIE JUNGE WELT: an der Welt-Uhr 0 holen die nahen Regionen ihre Stunde nach (100 Takte des Spiels, die Uhr steht)
+        s.spielZeit = 0;
+        for (let k = 0; k < 100; k++) r.tickFaunaLifecycle();
+        const jung = r._bestandNah().reduce((n, k) => n + r._bestandRegion(k, false).tiere.length, 0);
         const L = {};
         for (const [name, eingriff] of Object.entries({
             grund: null,
@@ -313,6 +321,7 @@ async function lebenBuehnen() {
                 .flat()
                 .reduce((p, l) => p + l.kappe, 0),
             richtungen,
+            jung,
             hungertod: G[0].tod, // je Hungertod aller Läufe
             bestand: {
                 nah: G[0].nah.length,
@@ -811,6 +820,7 @@ function lebenUrteil(name, z, soll) {
         soll(!bruchB.length, `die halbe Nahrung senkt den Bestand nicht an jedem Ort: ${JSON.stringify(bruchB)}`);
         // DIE DICHTE (tiere.K5: der Geher trifft Tiere; die Karte verlangt 150 im 500-m-Ring, 1,9 je ha — und mehr als die Kappe 20)
         soll(B.zahl >= 1.5 * B.ha, `der Bestand ist dünn: ${B.zahl} Köpfe auf ${B.ha} ha (Soll ≥ 1,5 je ha)`);
+        soll(z.jung >= B.ha, `die junge Welt ist leer: ${z.jung} Tiere an der Welt-Uhr 0`);
         soll(B.nahrung.length >= 8 && B.nahrung.every((o) => o.grund >= 1), "fern lebt keine Zahl");
         soll(B.ms <= 5.8, `der Lebenszyklus kostet p95 ${B.ms} ms je Takt (Soll ≤ 5,8 ms, der CPU-Takt des Bands)`);
         const fehlt = ["hirsche", "jungwuchs", "woelfe", "nahrung", "mutante"].filter((k) => !z.richtungen[k]);
@@ -954,6 +964,7 @@ module.exports = {
             ["bestand-kappe", /die Kappe am Schirm ändert den Bestand/],
             ["bestand-fern", /fern lebt keine Zahl/],
             ["bestand-duenn", /der Bestand ist dünn/],
+            ["bestand-jung", /die junge Welt ist leer/],
         ],
         folgen: [
             ["folgen", /das gebundene Tier folgt nicht/],
