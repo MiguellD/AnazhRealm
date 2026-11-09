@@ -170,8 +170,9 @@ function urteil(b) {
             v.push(`A: der Wagen taucht ${m(AN.maxTiefe)} m tief — über sein Dach (${m(AN.dach)} m)`);
         // das Rad liest den Strand seines Anlaufs (die Wiese darüber senkt μ nur, er trägt keinen Weg): `_fahrHaft` über `_strandAt`
         const AA = AN.anlauf || {};
-        if (!(AA.mu <= AA.soll + 0.02)) v.push(`A: der Anlauf (Sand ${m(AA.sand)}) greift mit μ ${m(AA.mu)}, sein Strand trägt ${m(AA.soll)}`);
-        if (!(AA.nass < 0.1)) v.push(`A: der Seegrund trägt Grün ${m(AA.nass)} — die Narbe endet am Spiegel`);
+        // … und die Narbe endet am Spiegel: der gebaute Seegrund trägt kein Grün
+        if (!(AA.mu <= AA.soll + 0.02 && AA.nass < 0.1))
+            v.push(`A: der Anlauf (Sand ${m(AA.sand)}) greift mit μ ${m(AA.mu)} (sein Strand trägt ${m(AA.soll)}), der Seegrund trägt Grün ${m(AA.nass)}`);
         if (!(AN.kameraUnter <= S.kameraUnter))
             v.push(`A: die Verfolger-Kamera steht in ${AN.kameraUnter} Frames unter dem Spiegel`);
         const AD = AN.damm;
@@ -2025,7 +2026,7 @@ function selbsttest() {
         ["A über dem Dach", ["ansaug.maxTiefe=", 2.3], /A: der Wagen taucht 2\.30 m tief/],
         // der Täter bis w27-ferne-ton-5: der Strand griff wie Erde (das Grün der Deckung 0,15 darüber)
         ["A Strand als Erde", ["ansaug.anlauf.mu=", 0.66], /A: der Anlauf \(Sand 0\.80\) greift mit μ 0\.66/],
-        ["A Wiese unter Wasser", ["ansaug.anlauf.nass=", 0.77], /A: der Seegrund trägt Grün 0\.77/],
+        ["A Wiese unter Wasser", ["ansaug.anlauf.nass=", 0.77], /A: der Anlauf .* der Seegrund trägt Grün 0\.77/],
         ["A Kamera", ["ansaug.kameraUnter=", 3], /A: die Verfolger-Kamera steht in 3/],
         ["A nie an der Ansaugung", ["ansaug.erreicht=", false], /A LEER: das Wasser erreichte/],
         [

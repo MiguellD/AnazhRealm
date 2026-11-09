@@ -382,17 +382,16 @@ async function checkBandVoxelTerrainCore({ page, check }) {
         // Die Wiese ist BODEN-FUNKTION (Parallax-Halme im Terrain-Shading), keine Halm-Geometrie: jede
         // Gras-Zelle verbucht 0 Halme UND das Boden-Albedo ruft die Halm-Schicht (die Ebene des Rausch-Atlas, Konsum am Ruf) —
         // am Chunk-Boden (`felsImVertex`: sein Vertex trägt den Stoff des Grunds, aus dem die Wache liest, w27-ferne-ton-5)
+        // … und ihre Wache liest den Stoff UNTER den Schichten der Wege-Karte (`lagen.stoff`, `_wegeBodenFarbe`): auf Pflaster,
+        // Weg und Streu steht kein Halm — bis w27-ferne-ton-5 über den Ton der gemischten Farbe
         const T = window.THREE.TSL;
+        const boden = [T, T.attribute("color", "vec3"), T.positionWorld, null, true];
+        const lagen = { stoff: (s) => s.xy };
         out.voxelGrassIsSurface =
             grassEntries > 0 &&
             grassBlades === 0 &&
-            window.__consumes(r, "_terrainGeologyAlbedo", r._rauschAtlas(), "ebene", [
-                T,
-                T.attribute("color", "vec3"),
-                T.positionWorld,
-                null,
-                true,
-            ]);
+            window.__consumes(r, "_terrainGeologyAlbedo", r._rauschAtlas(), "ebene", boden) &&
+            window.__consumes(r, "_terrainGeologyAlbedo", lagen, "stoff", [...boden, lagen]);
         // _voxelSurfaceY: liefert eine endliche Höhe AUF dem Nulldurchgang (interpoliert wie die
         // Mesh-Kante) — 0,6 m darunter Grund, 0,6 m darüber Luft.
         const sy = r._voxelSurfaceY(12, -8);
@@ -621,7 +620,7 @@ async function checkBandVoxelTerrainCore({ page, check }) {
         );
         check("Voxel V9.22: jeder Voxel-Chunk bekommt einen Gras-Eintrag", voxelP2bResults.voxelGrassBuilt);
         check(
-            "Voxel V9.22: die Wiese ist Boden-Funktion — Gras-Zellen verbucht, 0 Halme, Parallax-Halme im Terrain-Albedo",
+            "Voxel V9.22: die Wiese ist Boden-Funktion — Gras-Zellen verbucht, 0 Halme, Parallax-Halme im Terrain-Albedo über dem Stoff unter den Wege-Schichten",
             voxelP2bResults.voxelGrassIsSurface
         );
         check(
@@ -877,29 +876,18 @@ async function checkBandWellePerf3bDistanceLod({ page, check }) {
 // der Regler ruht wie unter `__weltStehtNach`) wächst der Ring Schale um Schale bis zum Ziel, sobald die jetzige steht — nie
 // darüber, nie zurück unter Last; eine ungebaute Schale hält ihn, der gesenkte Regler des Spielers gilt sofort.
 async function checkBandJedesHolzExistenzBoden({ page, check }) {
-    const res = await page.evaluate(() => {
-        const F = [
-            "renderer",
-            "_activeRingRadius",
-            "chunkRingRadius",
-            "voxelMeshPending",
-            "pendingGrass",
-            "perfRegulator",
-            "perfSense",
-            "_frameOverBudget",
-        ];
-        const snap = F.map((k) => st[k]);
+    const res = await page.evaluate(async () => {
         let gebaut = 12;
         const pfad = [];
         const takt = (n) => {
             for (let i = 0; i < n; i++) r._ringWaechst();
             pfad.push(st._activeRingRadius);
         };
+        const zu = [
+            leihe(st, { renderer: { _isHeadlessNull: false }, chunkRingRadius: 4, _activeRingRadius: 0, voxelMeshPending: new Set(), pendingGrass: new Set(), perfRegulator: false, perfSense: { frameMs: 50, phase: {} }, _frameOverBudget: true }), // prettier-ignore
+            leihe(r, { _builtRingRadius: () => gebaut, _ladeTakt: () => false }),
+        ];
         try {
-            Object.assign(st, { renderer: { _isHeadlessNull: false }, chunkRingRadius: 4, _activeRingRadius: 0 });
-            Object.assign(st, { voxelMeshPending: new Set(), pendingGrass: new Set(), perfRegulator: false });
-            Object.assign(st, { perfSense: { frameMs: 50, phase: {} }, _frameOverBudget: true });
-            Object.assign(r, { _builtRingRadius: () => gebaut, _ladeTakt: () => false });
             for (let i = 0; i < 6; i++) takt(1);
             [st._activeRingRadius, gebaut] = [2, 1];
             takt(3);
@@ -909,21 +897,22 @@ async function checkBandJedesHolzExistenzBoden({ page, check }) {
             takt(1);
         } catch (e) {
             pfad.push(e.message);
-        } finally {
-            F.forEach((k, i) => (st[k] = snap[i]));
-            delete r._builtRingRadius;
-            delete r._ladeTakt;
         }
-        return pfad.join(",");
+        // DER NULL-RENDERER FRAGT KEIN GERÄT (w27-ferne-ton-5): reicht der Browser einen WebGL2-Rückfall auf swiftshader (Chromium
+        // 153 unter --disable-gpu; Chrome 148, die CI, reicht keinen), wählt die Welt ohne Bild trotzdem das volle Holz — die
+        // Gegenprobe (eine Welt, die zeichnet) wählt an demselben Gerät kienspan
+        zu.push(leihe(HTMLCanvasElement.prototype, { getContext: () => ({ getExtension: () => null, getParameter: () => "SwiftShader" }) })); // prettier-ignore
+        const wahl = (nul) => Object.assign(Object.create(r), { _nullRendererGewaehlt: () => nul })._holzWahl();
+        const holz = [await wahl(true), await wahl(false)];
+        zu.forEach((z) => z());
+        return [pfad.join(","), holz.join()];
     });
     check(
         `JEDES-HOLZ: ohne Kopfraum und Regler wächst der Ring bis zum Ziel und nie zurück (${res}) — die Welt existiert ganz`,
-        res.startsWith("1,2,3,4,4,4,")
+        res[0].startsWith("1,2,3,4,4,4,")
     );
-    check(
-        `JEDES-HOLZ: eine ungebaute Schale hält den Ring, der gesenkte Regler gilt sofort (${res})`,
-        res.endsWith(",2,3,2")
-    );
+    check(`JEDES-HOLZ: eine ungebaute Schale hält den Ring, der gesenkte Regler gilt sofort (${res})`, res[0].endsWith(",2,3,2"));
+    check(`JEDES-HOLZ: der Null-Renderer fragt kein Gerät, eine Welt mit Bild schon (${res[1]})`, res[1] === "voll,kienspan");
 }
 
 // Wasser-Cells leben IMMER auf LOD 0, unabhängig vom Terrain-LOD des Chunks — sonst klafft die

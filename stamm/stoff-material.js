@@ -872,13 +872,16 @@ class AnazhRealm_stoff_material {
                         const _terrRough = {};
                         // DIE WEGE-KARTE (Chunk-Boden, V18.530): der Weg IST die Boden-Farbe des Fragments — die
                         // Vertex-Farbe mischt zur Pfad-Erde (`_wegeBodenFarbe`), und DIESE Farbe liest die Geologie.
-                        const _bodenVc = opts.wegeKarte === true ? this._wegeBodenFarbe(_Ta, albedoNode) : null;
+                        // … und der Stoff des Grunds unter ihren Schichten (`_lagen.stoff`), den die Wache der Geologie liest
+                        const _lagen = {};
+                        const _bodenVc = opts.wegeKarte === true ? this._wegeBodenFarbe(_Ta, albedoNode, _lagen) : null;
                         const _geo = this._terrainGeologyAlbedo(
                             _Ta,
                             _bodenVc || albedoNode,
                             _Ta.positionWorld,
                             _terrRough,
-                            opts.felsImVertex === true
+                            opts.felsImVertex === true,
+                            _lagen
                         );
                         {
                             // DAS KRONENDACH (0910-8, K16 — EINE Quelle): wo kein echter Wald zeichnet, trägt der Boden mit Wege-Karte
@@ -2789,7 +2792,7 @@ class AnazhRealm_stoff_material {
     // (rohe Geometrie-Normale) → Fels/Geröll bricht durch; FLACH + FEUCHT (dampEarth im Basis-Albedo) →
     // Moos. smoothstep-Konkurrenz, per-Fragment (kein Vertex-Trapez). Render-only; Fehler → der
     // unveränderte Albedo.
-    _terrainGeologyAlbedo(_T, albedo, wp, roughOut, felsImVertex) {
+    _terrainGeologyAlbedo(_T, albedo, wp, roughOut, felsImVertex, lagen) {
         try {
             const G = AnazhRealm.TERRAIN_GEOLOGY;
             const au = this.state.atmoUniforms;
@@ -2877,7 +2880,10 @@ class AnazhRealm_stoff_material {
             // Palette (Luminanz 0,043 … 0,064) las als nasse Niederung: Moos auf jeder Wiese. Halm-Relief, Moos und Glanz sind das
             // RELIEF DER NÄHE: sie tragen 1 am Fuß → 0 bei 90 m (`_nah`), jenseits zeichnet der Boden die Farbe des Gesetzes — der
             // Fern-Ring (er beginnt jenseits, ohne Stoff im Vertex) trägt keins, Chunk-Boden und Ring lesen an ihrer Naht EINE Zahl.
-            const _stoff = felsImVertex ? this._bodenStufenKnoten().stoff : null;
+            // Unter den Schichten der Wege-Karte (`lagen.stoff`, `_wegeBodenFarbe`: Rasen, Streu, Asche, Weg, Acker, Pflaster malt
+            // das Fragment) ist der Stoff der der Schicht — auf dem Pflaster und unter der Streu steht kein Halm.
+            const _roh = felsImVertex ? this._bodenStufenKnoten().stoff : null;
+            const _stoff = _roh && (lagen && lagen.stoff ? lagen.stoff(_roh) : _roh.xy);
             const _nah = _T.float(1.0).sub(_camD.mul(_T.float(1.0 / 90.0)).clamp(0.0, 1.0)); // 1 am Fuß → 0 bei 90 m
             const _green = _stoff
                 ? _T.smoothstep(_T.float(0.0), _T.float(AnazhRealm.WIESEN_GRUND.schwelle), _stoff.x)

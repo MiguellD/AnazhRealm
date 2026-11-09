@@ -1097,24 +1097,19 @@ async function wasserUferFarbe(o = {}) {
             if (!m || m.empty) continue;
             const pos = new Float32Array(m.positions),
                 col = new Float32Array(m.colors);
-            const soll = new Float32Array(pos.length);
-            // der Stoff des Grunds je Vertex (Deckung · Nässe · frei, w27-ferne-ton-5): der Fels-Stoff nimmt ihn mit der Farbe
-            const [deck, A] = [new Float32Array(pos.length), {}];
-            for (let i = 0; i < pos.length; i += 3) {
-                r._bodenFarbeAt(pos[i], pos[i + 1], pos[i + 2], c, A);
-                soll[i] = c[0];
-                soll[i + 1] = c[1];
-                soll[i + 2] = c[2];
-                [deck[i], deck[i + 1]] = [A.deckung, A.nass];
-            }
-            const spalte = soll.slice();
             const g = new T.BufferGeometry();
             g.setAttribute("position", new T.BufferAttribute(pos, 3));
             g.setAttribute("normal", new T.BufferAttribute(new Float32Array(m.normals), 3));
             g.setAttribute("aHimmel", new T.BufferAttribute(new Float32Array(m.himmel), 1));
-            g.setAttribute("color", new T.BufferAttribute(soll, 3));
             g.setIndex(new T.BufferAttribute(new Uint32Array(m.indices), 1));
-            g.setAttribute("aStoff", new T.BufferAttribute(deck, 3));
+            // der Bau des Haupt-Fadens selbst (`_attachVoxelFieldColors`: Farbe und Stoff der Säule je Vertex, dann der
+            // Fels-Stoff) — die Farbe der Säule steht vor dem Fels-Stoff (`spalte`). Bis w27-ferne-ton-5 rechnete die Linse
+            // die Farbe in einer eigenen Schleife nach (ein Zwilling des Baus)
+            const ohneFels = leihe(r, { _felsStoff() {} });
+            r._attachVoxelFieldColors(g);
+            ohneFels();
+            const soll = g.attributes.color.array;
+            const spalte = soll.slice();
             r._felsStoff(g);
             for (let i = 0; i < pos.length; i += 3) {
                 vertices++;

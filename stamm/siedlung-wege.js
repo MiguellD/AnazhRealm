@@ -764,7 +764,12 @@ class AnazhRealm_siedlung_wege {
     // Farben der Boden-Palette (dieselbe Pfad-Erde wie der gebackene Ufer-Pfad), dem Mittel des Halms (`WIESEN_GRUND`) und
     // dem Stein-Gesetz (`_kopfsteinFarbe`), nur auf Begehbarem — ein Hang unter dem Weg bleibt Hang. Die Stufe wählt dieselbe Grenze wie `_wegeFeldAt`. Ohne die
     // Karte bricht der Boden-Stoff laut (der Chunk-Boden liest sie immer, kein stiller Boden ohne Weg).
-    _wegeBodenFarbe(_T, vc) {
+    // DER STOFF UNTER DEN SCHICHTEN (w27-ferne-ton-5, `aus.stoff(s)`: der Stoff des Grunds je Vertex → vec2 Deckung · Nässe nach
+    // den Schichten der Karte): der Rasen trägt die Narbe (Deckung → 1), Streu, Asche, Erde, Acker und Pflaster nehmen sie mit
+    // ihrem Gewicht; der Acker ist nasser Grund (Nässe → 1), Streu, Asche, Erde und Pflaster nehmen auch sie — dieselbe Folge
+    // wie die Farbe. Die Wache der Geologie (`_terrainGeologyAlbedo`: Halm-Relief, Moos, Glanz) liest ihn; bis hierher las
+    // sie die gemischte FARBE, und jede Schicht wirkte über ihren Ton.
+    _wegeBodenFarbe(_T, vc, aus) {
         const wk = this._wegeKarteEnsure();
         if (!wk || !wk.stufen[0].U || !_T.texture || !_T.positionWorld || !_T.normalWorldGeometry)
             throw new Error("Wege-Karte: der Boden-Stoff braucht Karte, Uniforms und TSL (texture/positionWorld)");
@@ -826,6 +831,17 @@ class AnazhRealm_siedlung_wege {
         const a = P.wet;
         const mitErde = _T.mix(mitAsche, _T.vec3(e[0], e[1], e[2]), _erde);
         const mitAcker = _T.mix(mitErde, _T.vec3(a[0], a[1], a[2]), _acker);
+        if (aus) {
+            const ohne = (w) => _T.float(1).sub(w);
+            const frei = ohne(_k).mul(ohne(_a)).mul(ohne(_erde));
+            aus.stoff = (s) =>
+                _T
+                    .vec2(
+                        _T.mix(s.x, _T.float(1), _rasen).mul(frei).mul(ohne(_acker)),
+                        _T.mix(s.y.mul(frei), _T.float(1), _acker)
+                    )
+                    .mul(ohne(_pflaster));
+        }
         // DAS PFLASTER deckt jeden Grund (porta STEIN_GESETZ.kopfstein)
         return _T.mix(mitAcker, this._kopfsteinFarbe(_T, xz), _pflaster);
     }

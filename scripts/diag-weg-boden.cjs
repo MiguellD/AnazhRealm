@@ -307,8 +307,8 @@ async function tonProbe(farbe) {
             const y = r._bodenSichtAt(x, z);
             M.haft.push(y === null ? "-" : r._fahrHaft({ x, z, y }) + r._kontaktStoffAt(x, z, y));
         }
-        const K = A.NAH_WIESE.kachel;
-        for (let t = 0; t < 64; t++) M.wuchs.push(JSON.stringify((r._nahWieseKachelBueschel(Math.floor((c0x * span) / K) + (t % 8), Math.floor((c0z * span) / K) + (t >> 3)) || []).map((b) => [b.gi, b.gj, b.y, b.s]))); // prettier-ignore
+        const [kx, kz] = [c0x, c0z].map((c) => Math.floor((c * span) / A.NAH_WIESE.kachel));
+        for (let t = 0; t < 64; t++) M.wuchs.push(JSON.stringify((r._nahWieseKachelBueschel(kx + (t % 8), kz + (t >> 3)) || []).map((b) => [b.gi, b.gj, b.y, b.s]))); // prettier-ignore
         while (zu.length > (farbe ? 1 : 0)) zu.pop()();
         return M;
     };
