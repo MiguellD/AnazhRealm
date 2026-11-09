@@ -248,9 +248,10 @@ var SAISON_GESETZ = {
     // (typ.bluete) auf seine Mitte (injectWind: transformed = mix(aCenter, transformed, pres)), Labor UND Welt (`_jahrLage`);
     // Rinde 0, Nadel 2 und der Halm ausserhalb des Gras-Stoffs (Schilf) stehen. Die Karte hebt ihre Alpha-Schwelle um
     // (1 - pr) * karteSchwelle (der Studio-Impostor, die Welt-Karte) — die gebackene Karte ist Sommer (volle Krone).
-    // vegetation.K5#2 (05.11., additiv) — DIE GESTALT DES HALMS: `ha` staucht jeden Halm des Grases (der Gras-Stoff, Halm 4)
-    // ueber seiner Wurzel auf diesen Anteil seiner Hoehe, VOR dem Wind (injectWind: transformed.y *= uHalm; die Welt:
-    // der Gras-Stoff und `_halmFerne` ueber `_saisonPraesenz` z). Die Wiese waechst im Fruehling nach (0,7 der Sommer-
+    // vegetation.K5#2 (05.11., additiv) — DIE GESTALT DES HALMS: `ha` kuerzt jeden Halm des Grases (der Gras-Stoff, Halm 4)
+    // laengs seiner Achse um seinen Fuss auf diesen Anteil seiner Laenge, die Breite bleibt, VOR dem Wind (w26: phyto-core
+    // `halmImJahr` — injectWind `halmJahrGlsl`; die Welt: der Gras-Stoff und `_halmFerne` ueber `_halmImJahr`, die Schale ihre
+    // Hoehe; bis w26 staute jeder Leser nur y). Die Wiese waechst im Fruehling nach (0,7 der Sommer-
     // Hoehe), steht im Sommer ganz (1 — jeder Koerper bleibt byte-gleich), ist im Herbst gemaeht und vergilbt (0,8) und
     // liegt im Winter abgestorben und vom Schnee gedrueckt (0,35): die Halm-Flaeche und mit ihr der LAI fallen etwa linear
     // mit der Hoehe. Bis dahin stand die Winter-Wiese so hoch wie im Sommer (LAI 2–10 m Winter 1,058 × Sommer, Radeon 8ef49bef).
@@ -829,6 +830,18 @@ function baumWindGlsl(foliage) {
         (foliage ? "transformed+=normalize(normal)*(" + w.flattern + "*_wAn/_wSk);\n" : "")
     );
 }
+// DER HALM IM JAHR IM LABOR (w26-winter-fichte, additiv): derselbe Term wie der Gras-Stoff der Welt (phyto-core `halmImJahr`,
+// hier über der GLSL-Algebra WIND_GLSL) — der Halm kürzt sich längs seiner Achse um seinen Fuß (aCenter x/z, y 0), Höhe und
+// Neigung × uHalm, die Breite bleibt; die Ähre (aCenter y > 0, der Fuß ihres Stängels: phytogenesis legt ihn wie der Wirt,
+// phyto-core `halmAehrenFuss`) kürzt als Ganzes. Bis w26 staute das Labor nur y (`transformed.y *= uHalm`).
+function halmJahrGlsl() {
+    const PC = self.__phytoCore;
+    const J = PC.halmImJahr(PC.WIND_GLSL, "_hHa", "_hO.x", "_hO.y", "_hO.z", "objectNormal.x", "objectNormal.z", "_hAe");
+    return (
+        "{float _hHa=clamp(uHalm,0.0,1.0); vec3 _hF=vec3(aCenter.x,0.0,aCenter.z); vec3 _hO=transformed-_hF; float _hAe=step(0.0001,aCenter.y);\n" +
+        "transformed=_hF+vec3(" + J.x + "," + J.y + "," + J.z + ");}\n"
+    );
+}
 // `krone` (K68-N1): das Laub einer Krone (emitTreeRezept: Karte, Klinge, Nadel) trägt die Normale der Krone (phyto-core
 // kronenNormalen) und liest sie FLIP-FREI — die doppelseitige Rückseite kehrte sie nach innen (die Welt: `_laubStoffNormale`).
 function injectWind(mat, foliage, isGrass, baum, krone) {
@@ -860,8 +873,8 @@ function injectWind(mat, foliage, isGrass, baum, krone) {
             "#include <begin_vertex>\nfloat wT=aType;\n" +
                 (foliage ? "vSeasW=(wT==" + SAISON_GESETZ.typ.laub.toFixed(1) + "||wT==" + SAISON_GESETZ.typ.bluete.toFixed(1) + ")?1.0:0.0;\n" : "") +
                 "float pres=(wT==" + SAISON_GESETZ.typ.laub.toFixed(1) + ")?uLeafPresence:(wT==" + SAISON_GESETZ.typ.bluete.toFixed(1) + "?uBloom:1.0);\ntransformed=mix(aCenter,transformed,clamp(pres,0.0,1.0));\nfloat _sw=aWind.x,_ph=aWind.y,_om=aWind.z;\n" +
-                // die Gestalt des Halms im Jahr (SAISON_GESETZ `ha`): der Halm staucht sich ueber seiner Wurzel (y 0), VOR dem Wind
-                (isGrass ? "transformed.y*=clamp(uHalm,0.0,1.0);\n" : "") +
+                // die Gestalt des Halms im Jahr (SAISON_GESETZ `ha`): der Halm kuerzt sich um seinen Fuss (`halmJahrGlsl`), VOR dem Wind
+                (isGrass ? halmJahrGlsl() : "") +
                 "#ifdef USE_INSTANCING\n vec2 _iw=instanceMatrix[3].xz;\n#else\n vec2 _iw=vec2(0.0);\n#endif\n" +
                 "vLod=aLodLevel;\n#ifdef USE_INSTANCING\n float _isy=length(instanceMatrix[1].xyz); float _cd=length(cameraPosition.xz-_iw); float _lk=(aH0>0.001)?min(uLodRef/(aH0*_isy),1.0):1.0; vLodD=_cd*_lk; float _lkL=(aH0L>0.001)?min(uLodRef/(aH0L*_isy),1.0):1.0; vLodDL=_cd*_lkL;\n#else\n vLodD=length(cameraPosition.xz-_iw); vLodDL=vLodD;\n#endif\n" +
                 (foliage
