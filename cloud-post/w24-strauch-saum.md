@@ -1,3 +1,11 @@
+## 09.11. 01:58 — w24-laub-kante: ABGABE (Bericht) — Schritt 1 GRÜN am heutigen main, Schritt 2 entfällt
+
+- **Geschnitten:** nichts — der Zweig misst nur. Der Messplatz `gate:laub-kante` stand für die Probe und ist wieder gefallen: `w24-laub-kante` 3e38366 ist im Inhalt gleich main 46128b7 (nichts zu mergen).
+- **Gemessen** (laub-kante, Tafel-Pose, Mittag 0,50, heutiger main V18.546.229 — samt w21-laub-jahr-fern, w24-wiese-ferne, w25-lod-pop-2, w13-verkehr-heil), GTX 105bcf8c: fimp:strauch 0,2111 · fimp:birke 0,1604 · fimp:eiche 0,1414 · fimp:fichte 0,1427 · fimp:tanne 0,1562 · f:fichte:L1 0,1832 · f:tanne:L0 0,1762 · f:tanne:L1 0,1675; zweiton 0 je Klasse → **lod.K1#1 GRÜN**. Eine Klasse `fimp:atlas:L2` gibt es nicht mehr: die 0,2635 ist die Tafel-Messung vom 17.10., vor dem Saum-Schnitt; die Karte trägt heute je Art ihre Klasse. bild:wiese@0.5 GTX: Kronen-Mitte 46,1 · Band 37,3 · Büsche rechts 42,0 · vorn 66,2 (Abgabe 3f35067a: 46,8 · 36,0 · 42,0 · 63,7 — die Wiese der Mitte heller durch w24-wiese-ferne).
+- **Ehrlich offen:** Radeon am heutigen main ungemessen — seit 18:56 UTC erreichte kein Probe-Lauf die radeon-890m (der Läufer ist weg); der Lauf 42537596516 (Kopf 105bcf8c, mit Messplatz) lässt sich neu starten, sobald sie da ist; das Gesetz selbst maß dort am Kopf 9ed32a3 max 0,2089. Die Ist-Zeile der Soll-Tafel (spec/abnahme/soll-tafel.json, laub-kante 0,2635 vom 17.10.) und PFLICHT-OFFEN A tragen noch die alte Zahl — neu messen heißt `werkbank bild … --ist laub-kante` auf einer echten GPU (der Probe-Dienst schreibt keine Tafel zurück). Reserve des Strauchs GTX 0,0089.
+
+ABGABE 3e38366f1efd891130b74c8772d5462222cdefd1 (Bericht, kein Code)
+
 ## 09.11. 00:40 — w24-laub-kante: Auftrag A angenommen — Schritt 1 läuft (Zwischenstand)
 
 - Zweig `w24-laub-kante` von origin/main 1561bf3a, dazu nur der Messplatz `gate:laub-kante` (fällt vor der Abgabe). Probe 0bd1eb20 gab nach (OMEN räumte dem echt-Job), 72f0836 steht seit 23:03 UTC in der Warteschlange beider Läufer.
