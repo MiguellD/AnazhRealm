@@ -1,7 +1,7 @@
 {
  "sha": "78d37554b2d5f98d96ef454cfa9f51752c0e45a0",
  "geraet": "gtx",
- "zeit": "2026-11-09T21:44:24.903Z",
+ "zeit": "2026-11-09T21:49:45.371Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {},
  "ungemessen": {
@@ -912,22 +912,71 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "tiere.K1#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: ✅ GRÜN — herde)",
+   "exit": 1,
+   "minuten": 1.5,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: ✅ GRÜN — herde)",
+   "s": 90.2,
+   "fremd": {
+    "s": 92.1,
+    "takte": 42,
+    "fremdS": 205.66,
+    "kerne": 2.233,
+    "fensterKerne": 2.712,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      100.77
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      27.56
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      26.97
+     ]
+    ],
+    "dienerS": 30.53,
+    "diener": [
+     [
+      "dwm.exe",
+      14.17
+     ],
+     [
+      "System",
+      11
+     ]
+    ],
+    "eigenS": 170.53,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-09T21:49:45.371Z",
+   "abdruck": "9d9ccc7071a0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-09T21:43:46.813Z",
+  "start": "2026-11-09T21:49:05.283Z",
   "port": 7804,
-  "warten": 0.01,
-  "bootS": 7.4,
+  "warten": 0.02,
+  "bootS": 7.5,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
     "ort": "wiese",
-    "vor": "gelaende.K2#2",
-    "s": 29.2,
-    "takte": 562,
+    "vor": "tiere.K1#2",
+    "s": 31,
+    "takte": 589,
     "chunks": 81,
     "nach": null
    }
@@ -936,27 +985,27 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 1396,
-   "frameP95": 83.3,
-   "taktP95": 77.34,
-   "vramMax": 140.5,
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [
     {
-     "probe": "gelaende.K2#2",
-     "m": 1718,
+     "probe": "tiere.K1#2",
+     "m": 317,
      "ringVor": 4,
-     "ringMin": -1
+     "ringMin": 0
     }
    ],
-   "zapfen": 122,
-   "luecken": 0,
-   "letzteLuecke": null
+   "zapfen": 105,
+   "luecken": 1,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
   },
-  "fahrtS": 128.7,
-  "minuten": 2.21
+  "fahrtS": 130,
+  "minuten": 2.25
  }
 }
