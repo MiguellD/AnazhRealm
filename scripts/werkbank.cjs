@@ -829,9 +829,12 @@ function popGang() {
                 const vor = new Map(st.architectures.filter(Boolean).map((e) => [e, stufe(e)]));
                 const a = await schuss(p1);
                 if (aus.treue === undefined) {
+                    // der Täter beim Namen: jede Senke der GPU-Wahl, die in A außerhalb ihrer Arena stand (sie zeichnete ohne Wahl oder nicht)
+                    const ohne = [];
+                    st.scene.traverse((o) => o.__wahlGpu === true && !o.__arena && ohne.push(o.name || o.uuid.slice(0, 8)));
                     const a2 = await schuss(p1);
                     aus.treue = a.reduce((n, x, k) => n + (x !== a2[k]), 0);
-                    if (aus.treue) throw new Error(`die Treue: zwei Aufnahmen derselben Szene weichen in ${aus.treue} Bytes ab`);
+                    if (aus.treue) throw new Error(`die Treue: zwei Aufnahmen derselben Szene weichen in ${aus.treue} Bytes ab${ohne.length ? ` — in A ohne Arena: ${ohne.join(", ")}` : ""}`); // prettier-ignore
                 }
                 await geh(p1);
                 const b = await schuss(p1);

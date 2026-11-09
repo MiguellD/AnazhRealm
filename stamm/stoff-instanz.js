@@ -437,8 +437,11 @@ class AnazhRealm_stoff_instanz {
                 // die Fassade zeichnet, was ihre Quelle zeichnet (Bereich), so viele Instanzen, wie die Senke zählt
                 // (`_instanzZahl` bleibt der EINE Schreiber der Zahl — hier wird sie nur gelesen)
                 f.setDrawRange(g.drawRange.start, g.drawRange.count);
-                // nimmt die Arena ihres Stoffs die Senke (G1, im Takt: `_arenaKommt`), verlässt er den Graphen vor dem ersten Pass
-                f.instanceCount = s.count;
+                // nimmt die Arena ihres Stoffs die Senke (G1, im Takt: `_arenaKommt`), verlässt er den Graphen vor dem ersten Pass.
+                // Eine Senke der GPU-Wahl zieht er nie, solange eine Arena sie nehmen kann (`_arenaKann`): ohne Wahl zöge er jede
+                // Stufe ohne Fenster, die ganze Nähe in beiden Stufen — sie wartet unsichtbar und meldet sich (`onBeforeRender`)
+                const w = s.__wahlGpu === true && AnazhRealm._arenaKann(globalThis.anazhRealm?.state.renderer);
+                f.instanceCount = w ? 0 : s.count;
                 return f;
             }
             // Zieht der Zeichner, meldet er seine Senke zum Eintritt im nächsten Takt (`_arenaKommt`: eine spät gehängte Senke,
@@ -1453,21 +1456,22 @@ class AnazhRealm_stoff_instanz {
                 if (n > z.spitze) z.spitze = n;
                 const soll = platz(Math.max(z.spitze, z.spitzeVor));
                 if (z.erst >= 0 ? n <= z.cap && z.cap <= 2 * soll : soll === 0) return true;
-                if (z.erst >= 0) {
-                    this._nSpaet.push(z.erst, z.cap);
-                    this._nBelegt -= z.cap;
-                    z.erst = -1;
-                    z.cap = 0;
-                    if (soll === 0) return true;
-                }
-                let e = raumNimm(this._nFrei, soll);
+                // der alte Block fällt erst, wenn der neue steht (sein Platz wird ohnehin erst im nächsten Takt frei): ohne Platz
+                // behält das Glied ihn, und sein Rufer entscheidet (`_pruefen`)
+                let e = soll === 0 ? -1 : raumNimm(this._nFrei, soll);
                 // vor dem ersten Zug wächst die Instanz-Seite frei
-                if (e < 0 && !this.__instanzQuelle.instanceMatrix) {
+                if (e < 0 && soll > 0 && !this.__instanzQuelle.instanceMatrix) {
                     raumGib(this._nFrei, this._nCap, soll);
                     this._nCap += soll;
                     e = raumNimm(this._nFrei, soll);
                 }
-                if (e < 0) return false;
+                if (e < 0 && soll > 0) return false;
+                if (z.erst >= 0) {
+                    this._nSpaet.push(z.erst, z.cap);
+                    this._nBelegt -= z.cap;
+                    [z.erst, z.cap] = [-1, 0];
+                }
+                if (soll === 0) return true;
                 z.erst = e;
                 z.cap = soll;
                 z.n = -1;
@@ -1491,7 +1495,8 @@ class AnazhRealm_stoff_instanz {
                     // Instanz-Seite (headless 6a571e3b im Stand: 63 neue Render-Objekte in 73 Bildern).
                     let n = 0;
                     for (const m of this.glieder) n += platz(Math.max(m.__arenaZ.spitze, m.__arenaZ.spitzeVor));
-                    for (const [m, bedarf] of this._wartend) if (!m.__arena && m.parent) n += bedarf;
+                    const warten = [...this._wartend].filter(([m]) => !m.__arena && m.parent && m.__zeichner);
+                    for (const [, bedarf] of warten) n += bedarf;
                     this._wartend.clear();
                     AnazhRealm.__arenaFolgen = (AnazhRealm.__arenaFolgen | 0) + 1;
                     const a = new GeometrieArena(
@@ -1527,6 +1532,10 @@ class AnazhRealm_stoff_instanz {
                         if (y !== z) [y.spitze, y.spitzeVor, y.spitzeT] = [z.spitze, z.spitzeVor, z.spitzeT];
                         this._lager.lassen(z.gestalt);
                     }
+                    // die wartenden Senken treten in die Folgerin, für die sie gezählt war (w25-gpu-wahl: bis hier zählte sie ihr
+                    // Bedarf, genommen wurde keine — sie meldete sich erst wieder, wenn ihr Zeichner zog; eine Gruppe der GPU-Wahl,
+                    // deren Zeichner nie zog, stand für immer außerhalb jeder Arena)
+                    for (const [m] of warten) a.nehmen(m);
                     this._fallen();
                 }, 0);
             }
@@ -1571,8 +1580,12 @@ class AnazhRealm_stoff_instanz {
                     z.n = -1;
                     z.stempel = [];
                 }
-                // zurück zum Zeichner, bis die größere Arena steht
-                if (!this._blockFuer(z, m.count | 0, AnazhRealm.__arenaJetzt || 0)) return 3;
+                // zurück zum Zeichner, bis die größere Arena steht — nur ohne Wahl der GPU: ein Glied der Wahl zöge dort jede
+                // Stufe ohne Fenster (die Nah-Wiese wartend gar nichts), die ganze Familie fehlte ein Bild (w25-gpu-wahl, gate:pop
+                // die Treue: die Nähe der Vorlage 1 in A ohne Arena). Es zeichnet seinen alten Block, bis die Folgerin steht.
+                if (this._blockFuer(z, m.count | 0, AnazhRealm.__arenaJetzt || 0)) return 0;
+                if (!this._wahl || z.erst < 0) return 3;
+                this._folgen();
                 return 0;
             }
             _sichtbar(m, renderer) {

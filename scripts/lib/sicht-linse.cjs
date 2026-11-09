@@ -1106,7 +1106,7 @@ function sichtLauf(k) {
 // DIE BLOCK-TREUE DER WAHL (w25-gpu-wahl, Seiten-Code für `werkbank pop` / gate:pop): jedes Glied, das das letzte Hauptbild aus einer Arena der GPU-Wahl zog,
 // trägt im GPU-Puffer seines Blocks die Quelle (Matrizen, Instanz-Größen, Farbe im Schritt der Arena: vec3 auf 4, `_instanzSeite`).
 // Befund GTX 0136ab62: r184 richtet einen Speicher-Puffer der Größe 3 still auf 4 aus, `_block` schrieb dicht — Halm und Krone in
-// fremden Farben, jeder Stempel stimmte. Der Täter beim Namen; Selbsttest: ein auf der GPU verfälschter Wert des ersten kopierten
+// fremden Farben, jeder Stempel stimmte. Jede Senke der Wahl ohne Arena ist ROT. Der Täter beim Namen; Selbsttest: ein auf der GPU verfälschter Wert des ersten kopierten
 // Blocks MUSS genau sein Glied nennen.
 function blockTreue() {
     return (async () => {
@@ -1133,6 +1133,8 @@ function blockTreue() {
                     }
                 }
             }
+            // eine Senke der Wahl außerhalb jeder Arena zeichnet ohne Wahl (ihr Zeichner: jede Stufe ohne Fenster) oder gar nicht
+            st.scene.traverse((o) => o.__wahlGpu === true && !o.__arena && o.count > 0 && fremd.push({ m: o, text: `${o.name || o.uuid.slice(0, 8)} · ${o.count} Instanzen ohne Arena (ohne Wahl)` })); // prettier-ignore
             return { n, fremd };
         };
         const ist = await pruefe(), aus = { glieder: ist.n, rot: ist.fremd.map((x) => x.text) };

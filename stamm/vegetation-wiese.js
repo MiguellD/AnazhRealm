@@ -1568,12 +1568,12 @@ class AnazhRealm_vegetation_wiese {
                     __wahlNah: art === 5 ? [NW.radius, NW.stufe1, NW.stufe1Rand] : [NW.radius, Fe.rand, 0],
                 });
                 a.anzahl = F.hoch;
-                const wartet = !a.mesh.__arena;
-                if (wartet && kann) AnazhRealm._arenaMelden(a.mesh);
-                // OHNE GEOMETRIE-ARENA (WebGL2, `__arenaOhne`) wählt niemand: die Ferne und die Schale zeichnen ihren Bestand
-                // voll (ihr Stoff legt das Gesetz je Instanz selbst, `_halmFerne`), die Nähe nicht (sie stünde in beiden Stufen);
-                // der Null-Renderer zeichnet nie (0, bis eine Arena nimmt)
-                AnazhRealm._instanzZahl(a.mesh, !wartet || (webgl && art !== 5) ? F.hoch : 0);
+                if (!a.mesh.__arena && kann) AnazhRealm._arenaMelden(a.mesh);
+                // die Zahl ist der Bestand: wartet die Senke auf ihre Arena, zieht ihr Zeichner sie nicht (`_instanzZeichnerKlasse`).
+                // OHNE GEOMETRIE-ARENA (WebGL2, `__arenaOhne`) wählt niemand: die Ferne und die Schale zeichnen ihren Bestand voll
+                // (ihr Stoff legt das Gesetz je Instanz selbst, `_halmFerne`), die Nähe nicht (sie stünde in beiden Stufen); der
+                // Null-Renderer zeichnet nie
+                AnazhRealm._instanzZahl(a.mesh, kann || (webgl && art !== 5) ? F.hoch : 0);
             });
         }
         return anders;
