@@ -4318,7 +4318,67 @@ async function selbsttest(o = {}) {
                 cq === 75 && /^SCHLOSS BLOCKIERT von Vorrang: 'probe-zeit'/m.test(q.out) && !sp.Q,
                 "P Exit " + cp + " weg " + weg + " · " + p.err.trim().split("\n").filter((l) => /Vorrang/.test(l)).join(" ") + " · Q Exit " + cq + " · " + q.out.trim()];
         })();
-        for (const [name, ok, was] of await Promise.all([planFall, zeitFall, einFall, ciFall, vertreterFall, nachtFall, vorrangFall])) pruef(name, ok, was);
+        // (h)–(j) DER WARTENDE BRICHT ES (10.11., Auftrag gpu-stufe K10, Gebot 10): die OMEN stand 28 min an einem Schloss mit toter pid,
+        // ein Radeon-Hook 25 min an „ci-runner A“ ohne pid, während er selbst (Job B) der lebende Runner.Worker war. Als „Worker“ dient
+        // hier die laufende bash (GPU_WORKER_BILD), als Hook B der Test, der nur mkdir versucht und selbst nichts bricht
+        const vl = (r) => r.err.trim().split("\n").filter((l) => /VERWAIST/.test(l)).join(" ");
+        const hookZeilen = (env, ...z) => fs.appendFileSync(env.GPU_HOOK_LOG, z.map((x) => "2026-11-10 " + x + "\r\n").join(""));
+        // (h) „ci-runner A“ liegt (29 Byte, keine pid), hook.log nennt B: ein Wartender bricht A, und B hat das Schloss in ≤ 60 s
+        const waiseCiFall = (async () => {
+            const env = { ...schlossEnv("waise-ci"), GPU_WORKER_BILD: path.basename(findeBash()) }, log = path.join(tmp, "bahn-waise-ci.log");
+            fs.mkdirSync(env.GPU_SCHLOSS, { recursive: true });
+            fs.writeFileSync(path.join(env.GPU_SCHLOSS, "besitzer.txt"), "ci-runner 111/1 echt");
+            hookZeilen(env, "00:00:00 start ci-runner 111/1 echt: Schloss genommen (refs/heads/a)", "00:20:00 start ci-runner 222/1 echt: wartet auf Schloss von 'ci-runner 111/1 echt'");
+            const t0 = Date.now(), w = lauf(env, "zeit", 1, "W", log);
+            let hook = false;
+            while (!hook && Date.now() - t0 < 60e3) {
+                try {
+                    fs.mkdirSync(env.GPU_SCHLOSS);
+                    hook = true;
+                } catch (_e) {
+                    await warte(200);
+                }
+            }
+            const ms = Date.now() - t0;
+            baumTot(w.k.pid);
+            await w.fertig;
+            fs.rmSync(env.GPU_SCHLOSS, { recursive: true, force: true });
+            return ["SCHLOSS ein Läufer fährt einen Job: liegt „ci-runner A“, während hook.log B nennt, bricht der Wartende A, und B hat das Schloss in ≤ 60 s",
+                hook && /VERWAIST: Halter 'ci-runner 111\/1 echt' \(der Läufer fährt 'ci-runner 222\/1 echt'\) tot — Schloss gelöst/.test(w.err) && !spannen(log).W,
+                "B nach " + ms + " ms (" + hook + ") · W: " + vl(w)];
+        })();
+        // (i) „ci-runner B“ hält und hook.log nennt B: keiner bricht, der Wartende endet mit Exit 75 bei der Vorfahrt
+        const haeltCiFall = (async () => {
+            const env = { ...schlossEnv("haelt-ci"), GPU_WORKER_BILD: path.basename(findeBash()) }, log = path.join(tmp, "bahn-haelt-ci.log");
+            const b = path.join(env.GPU_SCHLOSS, "besitzer.txt");
+            fs.mkdirSync(env.GPU_SCHLOSS, { recursive: true });
+            fs.writeFileSync(b, "ci-runner 222/1 echt");
+            hookZeilen(env, "00:00:00 start ci-runner 111/1 echt: Schloss genommen (refs/heads/a)", "00:20:00 start ci-runner 222/1 echt: verwaistes Schloss 'ci-runner 111/1 echt' geloest",
+                "00:20:01 start ci-runner 222/1 echt: Schloss genommen (refs/heads/b)");
+            const w = lauf({ ...env, GPU_LAUF_WARTE_S: "3" }, "zeit", 1, "W", log);
+            const c = await w.fertig;
+            const steht = fs.existsSync(b) && fs.readFileSync(b, "utf8") === "ci-runner 222/1 echt";
+            fs.rmSync(env.GPU_SCHLOSS, { recursive: true, force: true });
+            return ["SCHLOSS ein Läufer fährt einen Job: hält „ci-runner B“ und hook.log nennt B, bricht keiner (Exit 75 bei der Vorfahrt)",
+                c === 75 && steht && !/VERWAIST/.test(w.err) && !spannen(log).W, "Exit " + c + " · steht " + steht + " · " + w.out.trim() + " " + vl(w)];
+        })();
+        // (j) ein Halter mit toter pid: der Wartende bricht und ÜBERNIMMT das Schloss in ≤ 60 s, beim Namen (der lebende Halter lässt
+        // ihn warten: (f), Exit 75 beim Namen)
+        const totFall = (async () => {
+            const env = schlossEnv("tot"), log = path.join(tmp, "bahn-tot.log");
+            const k = spawn(findeBash(), ["-c", "exit 0"], { windowsHide: true });
+            const tot = await new Promise((ok) => k.on("close", () => ok(k.pid)));
+            fs.mkdirSync(env.GPU_SCHLOSS, { recursive: true });
+            fs.writeFileSync(path.join(env.GPU_SCHLOSS, "besitzer.txt"), "probe-tot\npid=" + tot + "\n");
+            const t0 = Date.now(), w = lauf({ ...env, GPU_LAUF_WARTE_S: "60" }, "zeit", 1, "T", log);
+            const c = await w.fertig;
+            const ms = Date.now() - t0, sp = spannen(log);
+            return ["SCHLOSS der Wartende bricht ein Schloss mit toter pid und übernimmt es in ≤ 60 s (VERWAIST beim Namen)",
+                c === 0 && spanne(sp.T) && ms <= 60e3 && !fs.existsSync(env.GPU_SCHLOSS) &&
+                new RegExp("VERWAIST: Halter 'probe-tot' \\(Halter pid=" + tot + " lebt nicht\\) tot — Schloss übernommen von 'probe-T'").test(w.err),
+                "Exit " + c + " nach " + ms + " ms · " + vl(w)];
+        })();
+        for (const [name, ok, was] of await Promise.all([planFall, zeitFall, einFall, ciFall, vertreterFall, nachtFall, vorrangFall, waiseCiFall, haeltCiFall, totFall])) pruef(name, ok, was);
     } else pruef("BAHNEN Platz-Schloss", false, "keine Git-bash");
     // (4) Glob
     const gl = [["stamm/kreatur-leben.js", ["stamm/kreatur-*.js"], true], ["stamm/x/kreatur-a.js", ["stamm/kreatur-*.js"], false],
