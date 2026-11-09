@@ -1887,7 +1887,14 @@ class AnazhRealm_stoff_instanz {
                     ziehen++;
                     if (k >= platz) continue; // die Plätze des Bündels reichen nicht: es nimmt neu auf (unten)
                     n = Math.min(n, z.cap);
-                    this._block(m, z, n);
+                    // DER BLOCK EINMAL JE BILD (w27-takt-streu): zwischen den Pässen eines Bilds ändert kein Schreiber die Daten —
+                    // der erste Pass prüft und kopiert, jeder weitere liest den Block, wie er liegt (ein neuer Block, `z.n` < 0, und
+                    // ein Zuwachs kopieren immer)
+                    const jetzt = AnazhRealm.__arenaJetzt;
+                    if (jetzt === undefined || z.blockJetzt !== jetzt || z.n < 0 || n > z.n) {
+                        z.blockJetzt = jetzt;
+                        this._block(m, z, n);
+                    }
                     const o = k * 5;
                     // in der Wahl zählt der Compute die Instanzen, die erste ist der Block in der Liste dieser Kamera (`_wahlVor`)
                     const li = z.erst;
