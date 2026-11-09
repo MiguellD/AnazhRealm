@@ -1518,11 +1518,13 @@ async function starte() {
                     .evaluate(() => (window.__stempelWache ? __stempelWache() : null))
                     .then((w) => Object.assign({ warnung: stempelWarnung.n }, w || {}))
                     .catch(() => null);
+            // DER KURZE LAUF vor dem Bild des Spielers (Schirm, Bedienung): 1 s einschwingen, 0,5 s echter Loop, die Tiere gehalten
+            const kurzLauf = (regler) => page.evaluate(ZL.lauf, { sek: 0.5, ein: 1, regler, tiere: "halten" });
             await stempel();
             try {
                 // DER SCHIRM: was der Spieler sieht — der präsentierte Canvas nach einer Sekunde echter Loop.
                 if (req.url === "/schirm") {
-                    await page.evaluate(ZL.lauf, { sek: 0.5, ein: 1, regler: b.regler || "frei", tiere: "halten" });
+                    await kurzLauf(b.regler || "frei");
                     await page.evaluate("__loop(1)");
                     await sleep(300);
                     const datei = zeitAblage(b.datei, "schirm", "png");
@@ -1586,7 +1588,7 @@ async function starte() {
                         await loopAus();
                         return send(Object.assign(o, { ort: aktOrt }));
                     }
-                    await page.evaluate(ZL.lauf, { sek: 0.5, ein: 1, regler: "frei", tiere: "halten" });
+                    await kurzLauf("frei");
                     if (await page.evaluate(`${r}._ladeschirmSteht()`)) throw new Error("bedienung: der Ladeschirm steht — kein Bild des Spielers");
                     // der Klick fängt den Zeiger wie beim Spieler: im Spiel (`body.im-spiel`), die Übergänge laufen aus
                     await page.bringToFront();
