@@ -34,6 +34,10 @@ class AnazhRealm_studio_stoff {
     // sin(T', H)^p mit der Tangente um `shift` + Wurf × `jit` zur Normale gekippt (R farblos, TRT im Ton des Haars; Scheuermann
     // 2004), normiert (p + 2) / 2π — die Rundung der Normale quer zur Strähne trägt kein Licht mehr (die Streifen je Band, die den
     // Strich am Arm über das Band hoben). Ohne Tangente (die Braue, die Kappe der Grobstufe) das Licht des Standard-Stoffs.
+    // DER LAPPEN AM PIXEL (w27-haar-arm-2, koerper HAAR_LOOK.kk.fuss): wo ein Pixel der Szene mehrere Strähnen deckt
+    // (`faser.unter` 1), trägt es das Mittel ihrer Lappen — p' = p / (1 + p · streu² · unter), normiert (p' + 2) / 2π; der Wurf
+    // der einzelnen Strähne fällt im selben Maß (`faser.wurf`). Bis hier flimmerte der Lappen R im Gang (K6, Radeon: Kopf
+    // 9,6–10,6 % der Pixel über halb zum Grund, ohne R 0,1 %).
     static _haarLichtModell() {
         if (AnazhRealm._haarLichtK) return AnazhRealm._haarLichtK;
         const T = THREE.TSL;
@@ -68,12 +72,13 @@ class AnazhRealm_studio_stoff {
                         .add(N.mul(faser.wurf.mul(kk.jit).add(shift)))
                         .normalize()
                         .dot(H);
+                    // sin^p' = (1 − cos²)^(p' / 2): die halbe Potenz spart die Wurzel
+                    const halb = T.float(p / 2).div(faser.unter.mul(p * kk.fuss.streu * kk.fuss.streu).add(1.0));
                     return T.float(1)
                         .sub(th.mul(th))
                         .max(0.0)
-                        .sqrt()
-                        .pow(p)
-                        .mul((p + 2) / (2 * Math.PI));
+                        .pow(halb)
+                        .mul(halb.add(1.0).mul(1 / Math.PI));
                 };
                 const glanz = T.vec3(...kk.R.farbe)
                     .mul(lappen(kk.R.shift, kk.R.p))
@@ -482,10 +487,23 @@ class AnazhRealm_studio_stoff {
                                 : TSL.vec4(0.0)
                         )();
                         const welt = naht.spalte(0).mul(a.x).add(naht.spalte(1).mul(a.y)).add(naht.spalte(2).mul(a.z));
+                        // DER FUSSABDRUCK DES PIXELS an der Strähne (`kk.fuss`, w27-haar-arm-2): Meter je Pixel der Szene am Ort der
+                        // Ecke (Tiefe, Projektion und Höhe des Ziels — wie das Schutt-Korn des Bodens) gegen die Breite der Strähne
+                        // (Kopf-Raum × die Skala der Naht): `unter` 0, wo das Pixel die Strähne auflöst, 1, wo es mehrere deckt
+                        const F = L.kk.fuss;
+                        const pxM = TSL.positionView.z
+                            .negate()
+                            .max(1e-4)
+                            .mul(2.0)
+                            .div(TSL.cameraProjectionMatrix.element(1).y.mul(TSL.screenSize.y));
+                        const unter = TSL.float(1.0).sub(
+                            TSL.smoothstep(F.px[0], F.px[1], naht.skala.mul(F.breite).div(pxM))
+                        );
                         const faser = {
                             t: TSL.vertexStage(TSL.cameraViewMatrix.mul(TSL.vec4(welt, 0.0)).xyz),
-                            wurf: TSL.vertexStage(a.w),
+                            wurf: TSL.vertexStage(a.w.mul(unter.oneMinus())),
                             da: TSL.vertexStage(TSL.step(0.5, a.xyz.length())),
+                            unter: TSL.vertexStage(unter),
                         };
                         mat.setupLightingModel = () => new K(L.kk, faser);
                         const schluessel = mat.customProgramCacheKey;

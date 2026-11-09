@@ -105,6 +105,8 @@
         "gate:kreatur-takt": "node scripts/diag-kreatur-takt.cjs --selftest --teil=1/3 && node scripts/diag-kreatur-takt.cjs --teil=1/3 && node scripts/diag-kreatur-takt.cjs --selftest --teil=2/3 && node scripts/diag-kreatur-takt.cjs --teil=2/3 && node scripts/diag-kreatur-takt.cjs --selftest --teil=3/3 && node scripts/diag-kreatur-takt.cjs --teil=3/3",
         "gate:tier-anatomie": "node scripts/diag-tier-anatomie.cjs --selftest && node scripts/diag-tier-anatomie.cjs",
         "gate:tier-gang": "node scripts/diag-tier-gang.cjs --selftest && node scripts/diag-tier-gang.cjs",
+        "gate:haar-strich-a": "node scripts/haar-strich-probe.cjs --satz a",
+        "gate:haar-strich-b": "node scripts/haar-strich-probe.cjs --satz b",
         "gate:haar-kopf-a": "node scripts/haar-kopf-probe.cjs --satz a",
         "gate:haar-kopf-b": "node scripts/haar-kopf-probe.cjs --satz b",
         "gate:mensch-anatomie": "node scripts/diag-mensch-anatomie.cjs --selftest && node scripts/diag-mensch-anatomie.cjs",

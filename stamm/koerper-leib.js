@@ -2721,19 +2721,11 @@ class AnazhRealm_koerper_leib {
     }
     // DIE EINE GESTALT-DIAL-QUELLE: liest die acht Morph-Dials des Da-Vinci-Studios LIVE
     // (f.recipes[mensch].s). Kaltes Buch → null → Avatar aus den Host-Konstanten (_buildHumanGroup).
-    // DIE GESTALT DES REZEPTS (w26-haar-arm): die Wahlen des Buchs (fx.gestalt — Haut, Haar, Kleid; das Labor zeigt sie, die
-    // Albedo-Tafel misst sie) liegen unter der Prägung. Bis hier reisten nur die Dials: Haut und Haar des Spielers würfelte der
-    // Anker aus dem Samen der Welt (`_menschAnkerFarben`, auch Blau und Pink) — an der Mess-Wiese trug er Weiß, die Zeile haar der
-    // Albedo-Tafel und das Labor Dunkelbraun: Station haar.K2 und Tafel maßen zwei Haare.
     _koerperStudioDials() {
         const f = this._foundry;
         const rec = f && f.recipes ? f.recipes[AnazhRealm.KOERPER_HOST_RECIPE] : null;
-        const s1 = rec && rec.s;
-        const g1 = rec && rec.fx && rec.fx.gestalt;
-        const s =
-            (s1 && typeof s1 === "object") || (g1 && typeof g1 === "object")
-                ? Object.assign({}, s1 && typeof s1 === "object" ? s1 : {}, g1 && typeof g1 === "object" ? g1 : {})
-                : null;
+        const s0 = rec && rec.s;
+        const s = s0 && typeof s0 === "object" ? s0 : null;
         // DIE PRÄGUNG DES MENSCH-REZEPTS = VORRANG-Quelle (ws.studioOv, geschrieben vom EINEN Übergabe-Kanal und den
         // Werkstatt-Reglern): Dials und Gestalt-Wahlen ÜBER das Buch (bmDials → Mensch-Ofen-Memo-Key → bakeMenschInstance).
         // Beim Peer-Avatar-Guss FÜHRT die Prägung des SENDERS: _p2pApplyPeerSoul setzt sie transient in

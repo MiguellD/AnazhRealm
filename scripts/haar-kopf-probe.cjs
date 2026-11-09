@@ -9,19 +9,21 @@ const { statikServer, starteBrowser, buehne, ROOT: root, hauptLauf, argOpt } = r
 const { istHardwareAdapter } = require("./lib/software-gpu.cjs");
 const PORT = Number(process.env.HAAR_KOPF_PORT || 4795);
 const STRAFE = { dt: 1000 / 60, warm: 40, zwischen: 30, je: 4, kontrast: 60, halb: 0.5, kopfAnteil: 0.15, kern: 300 };
-const KK = { wrap: 0.5, kd: 1, jit: 0.2, R: { farbe: [0.046, 0.046, 0.046], shift: -0.1, p: 80 }, TRT: { amt: 0.5, shift: 0.1, p: 20 } };
+// DIE SPIELARTEN: [Name, die Farbe des Leibs (null: der Anker der Welt wie an main; sonst die Prägung des Rezepts), der Flicken auf
+// HAAR_LOOK.kk.fuss (null: der Zweig)]
+const DUNKEL = { skinTone: "karamell", hairColor: "darkbrown" };
 const SAETZE = {
     a: [
-        ["zweig", null],
-        ["ohne-glanz", { ...KK, R: { ...KK.R, farbe: [0, 0, 0] }, TRT: { ...KK.TRT, amt: 0 } }],
-        ["standard", "standard"],
-        ["ohne-straehnen", "weg"],
+        ["dunkel", DUNKEL, null],
+        ["dunkel-ohne-filter", DUNKEL, { streu: 0 }],
+        ["anker", null, null],
+        ["anker-ohne-filter", null, { streu: 0 }],
     ],
     b: [
-        ["nur-R", { ...KK, TRT: { ...KK.TRT, amt: 0 } }],
-        ["nur-TRT", { ...KK, R: { ...KK.R, farbe: [0, 0, 0] } }],
-        ["jit0", { ...KK, jit: 0 }],
-        ["zweig#2", null],
+        ["dunkel-streu-0.12", DUNKEL, { streu: 0.12 }],
+        ["dunkel-streu-0.25", DUNKEL, { streu: 0.25 }],
+        ["dunkel-streu-0.35", DUNKEL, { streu: 0.35 }],
+        ["dunkel#2", DUNKEL, null],
     ],
 };
 
@@ -81,20 +83,28 @@ async function haarKopf(k) {
     __buehne();
     const [W, H] = rend.getDrawingBufferSize(new THREE.Vector2()).toArray();
     const schuss = async () => (await __ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
-    // das Haar des Spielers: die Strähnen-Teile (Klasse hair) und ihre Stoffe mit dem Lichtmodell des Zweigs
-    const haar = [];
-    st.playerMesh.traverse((o) => o.isMesh && (o.userData.__klasse || o.material?.userData?.__klasse) === "hair" && haar.push(o));
-    const mats = new Set(haar.map((o) => o.material));
+    // das Haar des Spielers: die Strähnen-Teile (Klasse hair) und ihre Stoffe mit dem Lichtmodell des Stamms; `faerbe` prägt den
+    // Leib (der EINE Übergabe-Kanal, null: ohne Prägung) und sammelt das Haar des neuen Gusses
     const K = AnazhRealm._haarLichtModell();
-    const vor = new Map();
-    for (const m of mats) vor.set(m, [m.setupLightingModel, m.customProgramCacheKey, m.setupLightingModel()]);
-    const setze = (name, kk) => {
-        for (const o of haar) o.visible = kk !== "weg";
+    const kk0 = window.__koerperCore.HAAR_LOOK.kk;
+    let [haar, mats] = [[], new Set()];
+    const faerbe = async (f) => {
+        if (st.workshop) st.workshop.studioOv = {};
+        if (f) r._studioUebergabeEmpfang({ type: "uebergabe", world: "probe", kind: "koerper", preset: "mensch", seed: 0, ov: f });
+        else r.applyPlayerSoul(st.player.soul || "human");
+        for (let i = 0; i < 600 && !steht(); i++) await bild();
+        haar = [];
+        st.playerMesh.traverse((o) => o.isMesh && (o.userData.__klasse || o.material?.userData?.__klasse) === "hair" && haar.push(o));
+        mats = new Set(haar.map((o) => o.material));
+    };
+    const setze = (name, o) => {
         for (const m of mats) {
-            const [lm0, key0, inst] = vor.get(m);
-            if (kk === null || kk === "weg") [m.setupLightingModel, m.customProgramCacheKey] = [lm0, key0];
+            if (!m.userData.__lichtOrig) m.userData.__lichtOrig = [m.setupLightingModel, m.customProgramCacheKey, m.setupLightingModel()];
+            const [lm0, key0, inst] = m.userData.__lichtOrig;
+            if (!o) [m.setupLightingModel, m.customProgramCacheKey] = [lm0, key0];
             else {
-                m.setupLightingModel = kk === "standard" ? THREE.MeshStandardNodeMaterial.prototype.setupLightingModel : () => new K(kk, inst.faser);
+                const kk = { ...kk0, fuss: { ...kk0.fuss, ...o } };
+                m.setupLightingModel = () => new K(kk, inst.faser);
                 m.customProgramCacheKey = function () {
                     return key0.call(this) + "|" + name;
                 };
@@ -109,9 +119,11 @@ async function haarKopf(k) {
         for (let i = 0; i < c.count; i++) for (let f = 0; f < 3; f++) s[f] += c.getComponent(i, f) / c.count;
         return s.map((v) => +v.toFixed(4));
     };
-    const out = { traa: !!st.traaNode, W, H, haar: haar.map((o) => ({ ecken: o.geometry.attributes.position.count, faser: !!o.geometry.attributes.aHaarT, farbe: farbe(o), skinned: !!o.isSkinnedMesh })), stoffe: mats.size, staende: [] };
-    for (const [name, kk] of k.staende) {
-        setze(name, kk);
+    const out = { traa: !!st.traaNode, W, H, staende: [] };
+    let farbe0;
+    for (const [name, f, o] of k.staende) {
+        if (JSON.stringify(f) !== farbe0) await faerbe(f), (farbe0 = JSON.stringify(f));
+        setze(name, o);
         await schuss(); // die Pipeline der Spielart baut hier
         st._traaR && (st._traaR.neu = true);
         const proben = [];
@@ -136,9 +148,8 @@ async function haarKopf(k) {
             taste("keyup");
             for (let i = 0; i < 20; i++) await bild(k.dt);
         }
-        out.staende.push({ name, proben });
+        out.staende.push({ name, proben, haar: haar.filter((o) => o.geometry.attributes.aHaarT).map(farbe) });
     }
-    setze("zweig", null);
     return out;
 }
 
@@ -159,7 +170,7 @@ hauptLauf(async () => {
     await browser.close();
     server.close();
     const p1 = (x) => (100 * x).toFixed(1);
-    console.log(`✅ HAAR ${m.W}×${m.H} · zeitliche Auflösung ${m.traa ? "an" : "AUS"} · ${m.haar.length} Teile, ${m.stoffe} Stoffe: ${m.haar.map((h) => `${h.ecken} Ecken${h.faser ? " Faser" : ""}${h.skinned ? " Haut" : ""} Farbe ${h.farbe}`).join(" · ")}`.slice(0, 590));
+    console.log(`✅ HAAR ${m.W}×${m.H} · zeitliche Auflösung ${m.traa ? "an" : "AUS"} · Farbe der Strähnen ${m.staende.map((s) => s.name + " " + s.haar.join("/")).join(" · ")}`.slice(0, 590));
     const karten = [];
     for (const s of m.staende) {
         const P = s.proben;

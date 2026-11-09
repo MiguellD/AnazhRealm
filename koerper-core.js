@@ -800,11 +800,24 @@
     // DAS LICHT DES HAARS (w26-haar-arm, Kajiya-Kay 1989 / Marschner 2003 / Scheuermann 2004; Leser: stamm `_haarLichtModell`, das
     // Labor `laborStoff`): an der Tangente der Strähne (koerper `haarAchse`) — wrap die Form N·L umwickelt, kd der Anteil sin(T, L) am
     // Diffusen, jit der Wurf je Strähne auf den Kipp der Lappen; R farblos (Keratin F0 0,046), TRT im Ton des Haars.
+    // DER LAPPEN AM PIXEL (w27-haar-arm-2, `fuss` — Glanz-Antialiasing nach dem Fußabdruck: Toksvig 2005, Kaplanyan 2016,
+    // Tokuyoshi & Kaplanyan 2019): deckt ein Pixel mehrere Strähnen, trägt es das MITTEL ihrer Lappen statt EINER gezogenen.
+    //   breite  die mittlere Breite des Bands im Kopf-Raum ((1,8 + 0,65) × HAAR_STRICH.t je Seite: 9 mm an der Wurzel, 3 an der Spitze)
+    //   px      [unter so vielen Pixeln je Strähne trägt das Pixel ihr Mittel ganz, über so vielen löst es sie auf]
+    //   streu   die Streuung des Lappen-Arguments T'·H über die Strähnen EINES Pixels: der Wurf (jit/√3 = 0,115), die Rundung
+    //           quer zur Strähne (|shift| × das Mittel von sin über ±rund ≈ 0,06) und die Streuung des Strichs (0,06–0,10 je
+    //           Achse im Umkreis eines Pixels, gemessen an den 1215 Strähnen des Stils mittel) — √(0,115² + 0,06² + 0,10²) = 0,17
+    // Der Lappen weitet sich um sie: p' = p / (1 + p · streu²), normiert (p' + 2) / 2π — seine Energie bleibt; der Wurf der
+    // einzelnen Strähne fällt im selben Maß. Bis hier zog jedes Pixel EINE Strähne aus mehreren: der Lappen R (p 80, im Gipfel
+    // 160-mal das Diffuse des dunkelbraunen Haars) flimmerte im Gang von Bild zu Bild (Radeon 890M, Prüfplatz Third,
+    // gate:kamera-leib:echt K6: Kopf 9,6–10,6 % der Pixel über halb zum Grund; nur R 11,3 %; ohne R, nur TRT (p 20) und unter
+    // dem Standard-Licht je 0,1 %).
     var HAAR_LOOK = Object.freeze({
         kk: Object.freeze({
             wrap: 0.5,
             kd: 1,
             jit: 0.2,
+            fuss: Object.freeze({ breite: 2.45 * HAAR_STRICH.t, px: Object.freeze([1.5, 4]), streu: 0.17 }),
             R: Object.freeze({ farbe: Object.freeze([0.046, 0.046, 0.046]), shift: -0.1, p: 80 }),
             TRT: Object.freeze({ amt: 0.5, shift: 0.1, p: 20 }),
         }),

@@ -97,7 +97,7 @@ const {trochanterY}=window.__koerperCore.labProportionen();
    HAAR_LOOK und der Webung der Kleid-Zeile — dieselben Zahlen liest der Welt-Stoff (stamm, TSL). */
 var KC=window.__koerperCore,BZ=KC.PORTAL_RENDER_CONFIG.lod.budget.koerper,STUFEN=KC.PORTAL_RENDER_CONFIG.lod.kindStages.koerper;
 var HL=KC.HAUT_LOOK,HAL=KC.HAAR_LOOK;
-var uZeit={value:0},stufeWahl='auto',gestalt=null;
+var uZeit={value:0},uSchirmH={value:renderer.getDrawingBufferSize(new THREE.Vector2()).y},stufeWahl='auto',gestalt=null;
 var character=null,torsoG=null,headGroup=null,irisL=null,irisR=null,lidTL=null,lidTR=null,hairGroup=null,torsoR=0.38;
 function gf(x){var s=(+x).toString();return s.indexOf('.')<0&&s.indexOf('e')<0?s+'.0':s;}
 function gv(a){return 'vec3('+gf(a[0])+','+gf(a[1])+','+gf(a[2])+')';}
@@ -119,16 +119,22 @@ function laborStoff(m0,geo,skin,cache){
     m.onBeforeCompile=function(sh){
       // DIE FASER DES HAARS (w26-haar-arm, wie die Welt `_haarLichtModell`): `aHaarT` [Tangente, Wurf] aus stufeAnlegen (koerper
       // `haarAchse`) reist als Varying im Auge; ohne Tangente (die Braue) das Licht des Standard-Stoffs
-      var ach=haar?'\nattribute vec4 aHaarT;\nvarying vec3 vHaarT;\nvarying float vWurf;':'',achV=haar?'\nvHaarT=(modelViewMatrix*vec4(aHaarT.xyz,0.0)).xyz;vWurf=aHaarT.w;':'';
-      sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vGeo;'+ach).replace('#include <begin_vertex>','#include <begin_vertex>\nvGeo=position;'+achV);
-      var fk='varying vec3 vGeo;\n'+(haar?'varying vec3 vHaarT;\nvarying float vWurf;\n':'')+(webe?GLSL_RAUSCHEN:'');
+      // DER FUSSABDRUCK DES PIXELS (w27-haar-arm-2, wie die Welt, HAAR_LOOK.kk.fuss): Meter je Pixel am Ort der Ecke (Tiefe,
+      // Projektion, Höhe des Schirms) gegen die Breite der Strähne — `vUnter` 0, wo das Pixel sie auflöst, 1, wo es mehrere deckt
+      var kk=HAL.kk,FU=kk.fuss;
+      if(haar)sh.uniforms.uSchirmH=uSchirmH;
+      var ach=haar?'\nattribute vec4 aHaarT;\nuniform float uSchirmH;\nvarying vec3 vHaarT;\nvarying float vWurf;\nvarying float vUnter;':'',achV=haar?'\nvHaarT=(modelViewMatrix*vec4(aHaarT.xyz,0.0)).xyz;':'';
+      var fussV=haar?'\nvUnter=1.0-smoothstep('+gf(FU.px[0])+','+gf(FU.px[1])+','+gf(FU.breite)+'*length(modelMatrix[0].xyz)*projectionMatrix[1][1]*uSchirmH/(2.0*max(-mvPosition.z,1e-4)));vWurf=aHaarT.w*(1.0-vUnter);':'';
+      sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vGeo;'+ach).replace('#include <begin_vertex>','#include <begin_vertex>\nvGeo=position;'+achV).replace('#include <project_vertex>','#include <project_vertex>'+fussV);
+      var fk='varying vec3 vGeo;\n'+(haar?'varying vec3 vHaarT;\nvarying float vWurf;\nvarying float vUnter;\n':'')+(webe?GLSL_RAUSCHEN:'');
       var farbe=webe?'\ndiffuseColor.rgb*=1.0+snoise(vGeo*'+gf(webe[0])+')*'+gf(webe[1])+';':'';
       var look='\nvec3 vdL=normalize(-vViewPosition);float ndvL=clamp(dot(normal,vdL),-1.0,1.0);float rimL=clamp(1.0-abs(ndvL),0.0,1.0);';
       if(haut)look+='totalEmissiveRadiance+='+gv(HL.sssFarbe)+'*pow(rimL,'+gf(HL.sssPow)+')*'+gf(HL.sssAmt)+';';
       else look='';
       // KAJIYA-KAY AN DER FASER (w26-haar-arm, wie die Welt `_haarLichtModell`, die Zahlen HAAR_LOOK.kk): je direktem Licht diffus
-      // sin(T, L) × die Form, die Lappen R und TRT an der gekippten Tangente; unter Umgebungslicht allein glänzt nichts
-      var kk=HAL.kk,lap=function(sh,p){return 'pow(sqrt(max(1.0-pow(dot(normalize(t+N*(vWurf*'+gf(kk.jit)+'+('+gf(sh)+'))),H),2.0),0.0)),'+gf(p)+')*'+gf((p+2)/(2*Math.PI));};
+      // sin(T, L) × die Form, die Lappen R und TRT an der gekippten Tangente; unter Umgebungslicht allein glänzt nichts.
+      // DER LAPPEN AM PIXEL (w27-haar-arm-2): p' = p / (1 + p · streu² · vUnter), normiert (p' + 2) / 2π — sin^p' als (1 − cos²)^(p'/2)
+      var lap=function(sh,p){var h='('+gf(p/2)+'/(1.0+vUnter*'+gf(p*FU.streu*FU.streu)+'))';return 'pow(max(1.0-pow(dot(normalize(t+N*(vWurf*'+gf(kk.jit)+'+('+gf(sh)+'))),H),2.0),0.0),'+h+')*('+h+'+1.0)*RECIPROCAL_PI';};
       var kkFn=haar?'\nvoid RE_Direct_Haar(const in IncidentLight directLight,const in GeometricContext geometry,const in PhysicalMaterial material,inout ReflectedLight reflectedLight){'+
         'if(length(vHaarT)<1e-4){RE_Direct_Physical(directLight,geometry,material,reflectedLight);return;}'+
         'vec3 L=directLight.direction,N=geometry.normal,t=normalize(vHaarT),H=normalize(L+geometry.viewDir);float nl=dot(N,L);'+
@@ -915,7 +921,7 @@ function playKamera(dt) {
 // ===================== END PLAY SYSTEM =====================
 var BUILD='B64·benchmark';console.log('%cDA VINCI BUILD '+BUILD,'color:#7fd;font-weight:bold');
 (function(){var d=document.createElement('div');d.id='buildtag';d.textContent=BUILD;d.style.cssText='position:fixed;right:8px;bottom:6px;font:10px monospace;color:#9fb2c8;opacity:.45;z-index:99;pointer-events:none;';document.body.appendChild(d);})();
-animate();addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);composer.setSize(innerWidth,innerHeight);});
+animate();addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);composer.setSize(innerWidth,innerHeight);uSchirmH.value=renderer.getDrawingBufferSize(new THREE.Vector2()).y;});
 
 /* ==================== DIE BRÜCKE ZUR HEIMAT (die Hülle, K41) ==================== */
 /* EINE Brücke (../huelle/huelle.js): die DSL spricht die ECHTEN UI-Pfade — die acht Bewegungs-/Emotions-Profile leben
