@@ -90,7 +90,48 @@ const STAENDE = [
     ["sanft-rund-weg", false, SANFT],
     ["zweig#2", true, null],
 ];
+// DIE ALBEDO-ZEILE haar NEU (`--albedo`): Welt (werkbank start --echt + albedo --tafel) und Labor (diag-albedo-tafel --labor --echt
+// --nur koerperstudio) auf der Karte, der Nachzug --nur haar; die Zeile danach als EINE JSON-Zeile (sie fällt byte-gleich in die Tafel)
+async function albedo() {
+    const d = path.join(os.tmpdir(), "haar-albedo");
+    require("fs").mkdirSync(d, { recursive: true });
+    const welt = spawn(process.execPath, ["scripts/werkbank.cjs", "start", "--echt", "--port", String(PORT), "--ort", "wiese"], { cwd: ROOT, env });
+    let log = "";
+    await new Promise((ok, nein) => {
+        const t = setTimeout(() => nein(new Error("die Werkbank stand nach 240 s nicht")), 240000);
+        const lies = (x) => ((log += x), /WERKBANK bereit/.test(log) && (clearTimeout(t), ok()));
+        welt.stdout.on("data", lies);
+        welt.stderr.on("data", lies);
+        welt.on("exit", (c) => nein(new Error("die Werkbank endete " + c + ": " + log.slice(-400))));
+    });
+    try {
+        const o = execFileSync(process.execPath, ["scripts/werkbank.cjs", "albedo", "--tafel", "--datei", path.join(d, "welt.json")], { cwd: ROOT, env, encoding: "utf8", maxBuffer: 1 << 26 }); // prettier-ignore
+        console.log("✅ WELT " + (o.split("\n").find((z) => /^haar\b/.test(z.trim())) || "").trim());
+    } catch (e) {
+        console.log("✅ WELT (Urteil ROT) " + (String(e.stdout || "").split("\n").find((z) => /^haar\b/.test(z.trim())) || "").trim());
+    } finally {
+        try {
+            wb("stop");
+        } catch {}
+        welt.kill();
+    }
+    const lauf = (a) => {
+        try {
+            return execFileSync(process.execPath, ["scripts/diag-albedo-tafel.cjs", ...a], { cwd: ROOT, encoding: "utf8", maxBuffer: 1 << 26 });
+        } catch (e) {
+            return String(e.stdout || "") + String(e.stderr || "");
+        }
+    };
+    const l = lauf(["--labor", "--echt", "--nur", "koerperstudio", "--datei", path.join(d, "labor.json")]);
+    console.log("✅ LABOR " + (l.split("\n").find((z) => /^haar\b/.test(z.trim())) || l.trim().split("\n").pop()).trim());
+    const n = lauf(["--nachziehen", path.join(d, "welt.json"), path.join(d, "labor.json"), "--nur", "haar"]);
+    console.log("✅ NACHZUG " + n.trim().split("\n").slice(-3).join(" | "));
+    const z = JSON.parse(require("fs").readFileSync(path.join(ROOT, "spec/farbe/albedo-tafel.json"), "utf8")).zeilen.find((x) => x.id === "haar");
+    console.log("✅ ALBEDO-ZEILE " + JSON.stringify(z));
+    process.exit(0);
+}
 (async () => {
+    if (process.argv.includes("--albedo")) return albedo();
     const welt = spawn(process.execPath, ["scripts/werkbank.cjs", "start", "--port", String(PORT), "--ort", "wiese"], { cwd: ROOT, env });
     let log = "";
     await new Promise((ok, nein) => {

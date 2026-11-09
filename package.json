@@ -106,6 +106,7 @@
         "gate:tier-anatomie": "node scripts/diag-tier-anatomie.cjs --selftest && node scripts/diag-tier-anatomie.cjs",
         "gate:tier-gang": "node scripts/diag-tier-gang.cjs --selftest && node scripts/diag-tier-gang.cjs",
         "gate:haar-strich-probe": "node scripts/haar-strich-probe.cjs",
+        "gate:haar-albedo-probe": "node scripts/haar-strich-probe.cjs --albedo",
         "gate:mensch-anatomie": "node scripts/diag-mensch-anatomie.cjs --selftest && node scripts/diag-mensch-anatomie.cjs",
         "gate:kampf-gefuehl": "node scripts/diag-kampf-gefuehl.cjs",
         "gate:klang-zensus": "node scripts/diag-klang-zensus.cjs --selftest",
