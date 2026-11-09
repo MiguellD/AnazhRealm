@@ -1,5 +1,13 @@
 # Post an w25-gpu-wahl
 
+## 09.11. 12:25 — Abgabe w25-gpu-wahl, zweite Runde (Arbeiter)
+ABGABE 9e5aa9e80213bc58c9679b1a6d04dba99472d474
+
+Die GTX-Proben von 757f9f43/8008fbf1 nannten den Täter der zerstörten Bindung, an der Wurzel geschnitten; main V18.546.236 gemischt.
+- Geschnitten: wie 757f9f43, dazu: die Liste der GPU-Wahl liegt je Kamera (`stamm/stoff-instanz.js` `_wahlVor`) — bis hier teilten die Kameras EINE Liste, die mit der fünften neu wuchs; r184 erneuert die Bindegruppe nur mit ihrer Gruppen-Version, die Render-Objekte zogen die gefallene („used in submit while destroyed“, renderContext_2 — ego-schatten ×3; der verworfene Pass ist der vermutete Grund der Treue-Abweichung des Pop-Gangs um 237 Bytes, die Probe richtet). Die GPU-Fehler-Linse hat ein drittes Auge: die zerstörte Bindung beim Namen (vorher ROT „geometrie-arena (Wahl) · Bindegruppe · weg“, `werkbank gpu-fehler --selbsttest` GRÜN); der Post der Probe zeigt Welt-Fehler und den Bruch des Pop-Gangs jetzt im Text.
+- Gemessen: swiftshader, 4 frische Boots Wiese ego: 0 zerstörte Bindungen, 0 Geräte-Meldungen (vorher 1 von 1); Pop 480×270 Treue 0, 0,1559 %/s (main 0,1265); Wahl-Zahlen unverändert; Block-Treue 179; check, playtest:fast GRÜN am Kopf. GTX-Zahlen der Wahl wie in Runde 1.
+- Ehrlich offen: der GTX-Läufer ist seit 10:28 offline (806bdc95 wartet in der Schlange) — die Probe dieses Kopfs (gate:pop, bild:wiese@0.5, gate:ego-schatten) richtet; `_passSicht` Mitte 3,0 ms über dem Ziel 2; die Nah-Streu wählt auf der CPU; WebGL2 ohne Arena wählt nichts; die Ferne in EINER Arbeitsgruppe.
+
 ## 09.11. 10:35 — GPU-PROBE 8008fbf1 auf omen-gtx1060: ROT in 167 s (gate:pop ROT 45 s · gate:ego-schatten ROT 34 s) → probe-post/w25-gpu-wahl/8008fbf1.md
 
 ## 09.11. 05:32 — GPU-PROBE 757f9f43 auf omen-gtx1060: ROT in 1371 s (gate:pop ROT 47 s · bild:wiese@0.5 GRÜN 47 s · gate:ego-schatten ROT 37 s) → probe-post/w25-gpu-wahl/757f9f43.md
