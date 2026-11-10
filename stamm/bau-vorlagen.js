@@ -1612,7 +1612,8 @@ class AnazhRealm_bau_vorlagen {
             gras: { sigma: 11483, last: 0.166, tiefe: AnazhRealm.GRASS_BLADE_H, heiz: 18608000, mx: 0.12 },
             laub: { sigma: 8202, last: 0.654, tiefe: 0.061, heiz: 18608000, mx: 0.25 },
         };
-        // DIE OPTIK DER ZEILE (material.K5): Rauheit (r184 `roughness`, α = r²) und Metall (0 | 1) — die EINE Quelle jedes Stoffs,
+        // DIE OPTIK DER ZEILE (material.K5): Rauheit (r184 `roughness`, α = r²) und Metall (0 | 1) stehen seit w28 in der Zeile des
+        // Stoff-Gesetzes (die Spalte `rauheit`; `metall` folgt dort aus der Bindung) — die EINE Quelle jedes Stoffs,
         // der aus einer Zeile baut (`_stoffOptik` → `_buildPbrNodeMaterial`); eine Änderung wirkt sofort in jedem gebauten Stoff
         // (`_stoffOptikWirkt`). Wo eine gemessene BRDF die Klasse trägt, ist r die Form ihrer Spitze unter r184s GGX:
         // MERL (Matusik et al. 2003, 100 gemessene Stoffe), gelesen über die NBRDF-Netze von Sztrajman et al. 2021 (github
@@ -1624,13 +1625,6 @@ class AnazhRealm_bau_vorlagen {
         // r 0,135 (1,05° / 500); Blech (Lack ohne Klarlack): blue-, gold-, green-, silver-metallic-paint(2) 7,87–9,49° /
         // 10–13,3 → r 0,44 (8,77° / 11). Ohne Exemplar (MERL kennt kein rohes Holz, keinen rauen Fels, kein Leder) gilt die
         // Zahl, die die Tags bis material.K5 herleiteten. Das Soll der Kugel-Bühne (die Bänder je Klasse) trägt ihre Station.
-        // prettier-ignore
-        const OPTIK = {
-            stein: [0.85, 0], holz: [0.84, 0], eisen: [0.54, 1], bronze: [0.25, 1], stahl: [0.09, 1], quarz: [0.135, 0],
-            leder: [0.4, 0], knochen: [0.9, 0], fleisch: [0.9, 0], leib: [0.9, 0], federn: [0.9, 0], schuppen: [0.9, 0],
-            glut: [0.9, 0], laub: [0.9, 0], erde: [0.755, 0], kraut: [0.9, 0], essenz: [0.76, 0], blech: [0.44, 1],
-            gras: [0.9, 0], wasser: [0.72, 0], eis: [0.7, 0],
-        };
         // DIE ANTWORT AUF DAS ALTER (stoffe.K4, `_werkAlter` → `_alterKern`): je Stoff, der verwittert, seine SCHICHTEN — je
         // Schicht das Ziel der Fläche (lineare Albedo), die Tage, in denen Zeit und Nässe-Dosis sie 63 % dorthin tragen (null: die
         // Achse wirkt nicht), und die Lage, an der sie wächst (die Exposition, `_alterLage`: frei · nord · oben · lauf). Holz
@@ -1696,6 +1690,7 @@ class AnazhRealm_bau_vorlagen {
                         q.set(v === null ? null : +v);
                         if (k === "rho") AnazhRealm._stoffStand = (AnazhRealm._stoffStand || 0) + 1;
                         if ((k === "n" || k === "abbe" || k === "rho") && (name === "wasser" || name === "eis")) welt._wasserOptikWirkt();
+                        if (k === "rauheit") welt._stoffOptikWirkt(name);
                     },
                 });
             }
@@ -1707,18 +1702,15 @@ class AnazhRealm_bau_vorlagen {
                 z.alter = Object.freeze(
                     ALTER[name].map((s) => Object.freeze(Object.assign({}, s, { ziel: Object.freeze(s.ziel) })))
                 );
-            const optik = OPTIK[name];
-            if (!optik) AnazhRealm._kernPflichtBruch("STOFF-TAFEL " + name + ": die Optik (Rauheit, Metall)");
-            ["rauheit", "metall"].forEach((k, i) =>
-                Object.defineProperty(z, k, {
-                    enumerable: true,
-                    get: () => optik[i],
-                    set: (v) => {
-                        optik[i] = +v;
-                        welt._stoffOptikWirkt(name);
-                    },
-                })
-            );
+            if (!Number.isFinite(g.rauheit)) AnazhRealm._kernPflichtBruch("STOFF-TAFEL " + name + ": die Optik (Rauheit)");
+            Object.defineProperty(z, "metall", {
+                enumerable: true,
+                get: () => g.metall,
+                set: (v) => {
+                    g.metall = v;
+                    welt._stoffOptikWirkt(name);
+                },
+            });
             return z;
         };
         const list = [

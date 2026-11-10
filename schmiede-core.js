@@ -2850,7 +2850,8 @@
     //     Gefüge), trägt die Zeile gemessen (`eigen`).
     //   Spalten (SI): rho kg/m³ · E Pa · sigY Pa (Streckgrenze, bei spröden Stoffen die Druckfestigkeit) · sigB Pa
     //     (Bruchfestigkeit im Zug) · n (Brechzahl bei 587,6 nm) · abbe (Abbe-Zahl V = (n_d − 1)/(n_F − n_C)) · c J/(kg·K) ·
-    //     tSchmelz K · eta (Verlustfaktor). null: die Spalte gilt dem Stoff nicht (eine Flüssigkeit streckt sich nicht, ein
+    //     tSchmelz K · eta (Verlustfaktor) · rauheit (die Breite des Glanzes, GGX; gemessene BRDF der Klasse, MERL) —
+    //     und `metall` FOLGT aus der Bindung: freie Elektronen spiegeln (Metall, Karbid, gelöstes Metall 1, sonst 0). null: die Spalte gilt dem Stoff nicht (eine Flüssigkeit streckt sich nicht, ein
     //     opaker Stoff bricht kein Bild) oder die Dichte ist der Eintrag eines anderen Gesetzbuchs (`rhoVon`: der Wirt
     //     verbindet sie — das Wasser des Fahr-Kerns, das Gewebe der Leiber).
     // prettier-ignore
@@ -2873,37 +2874,37 @@
         // Die Teil-Werte der Oxide im Glas-Netz nach Appen 1949 (Teil-Volumen 26,7 · 20,2 · 14,4 cm³/mol, Teil-Brechzahl
         // 1,4585 · 1,590 · 1,730).
         var REIN = {
-            //            Formel               Bindung        ρ      E        σ_y     σ_B     n       V     c     T_schm  η
-            ferrit:     [{ Fe: 1 },            "metall",      7874,  2.11e11, 1.3e8,  2.6e8,  null,   null, 449,  1811,   0.002],
-            zementit:   [{ Fe: 3, C: 1 },      "karbid",      7690,  1.9e11,  4e9,    4e9,    null,   null, 590,  1500,   0.002],
-            kupfer:     [{ Cu: 1 },            "metall",      8960,  1.3e11,  7e7,    2.2e8,  null,   null, 385,  1358,   0.002],
-            zinn:       [{ Sn: 1 },            "metall",      7287,  5e10,    1.2e7,  2e7,    null,   null, 228,  505,    0.002],
-            kieselglas: [{ Si: 1, O: 2 },      "netz",        2250,  7.2e10,  1.1e9,  5e7,    1.4585, 67.8, 740,  1986,   0.001],
-            natron:     [{ Na: 2, O: 1 },      "netz",        3068,  5e10,    1.1e9,  5e7,    1.59,   45,   1100, 1405,   0.001],
-            kalk:       [{ Ca: 1, O: 1 },      "netz",        3894,  1.1e11,  1.1e9,  5e7,    1.73,   40,   750,  2886,   0.001],
-            quarz:      [{ Si: 1, O: 2 },      "kovalent",    2650,  7.2e10,  1.1e9,  5e7,    1.5442, 69.9, 740,  1986,   0.001],
-            wasser:     [{ H: 2, O: 1 },       "wasserstoff", null,  2.2e9,   null,   null,   1.333,  55.8, 4186, 273.15, 0.03],
-            eis:        [{ H: 2, O: 1 },       "wasserstoff", 917,   9e9,     1e7,    1e6,    1.309,  55,   2050, null,   0.01],
-            blech:      [null,                 "metall",      null,  7e10,    1.5e8,  2.5e8,  null,   null, 460,  1723,   0.001],
+            //            Formel               Bindung        ρ      E        σ_y     σ_B     n       V     c     T_schm  η       r
+            ferrit:     [{ Fe: 1 },            "metall",      7874,  2.11e11, 1.3e8,  2.6e8,  null,   null, 449,  1811,   0.002, null],
+            zementit:   [{ Fe: 3, C: 1 },      "karbid",      7690,  1.9e11,  4e9,    4e9,    null,   null, 590,  1500,   0.002, null],
+            kupfer:     [{ Cu: 1 },            "metall",      8960,  1.3e11,  7e7,    2.2e8,  null,   null, 385,  1358,   0.002, null],
+            zinn:       [{ Sn: 1 },            "metall",      7287,  5e10,    1.2e7,  2e7,    null,   null, 228,  505,    0.002, null],
+            kieselglas: [{ Si: 1, O: 2 },      "netz",        2250,  7.2e10,  1.1e9,  5e7,    1.4585, 67.8, 740,  1986,   0.001, null],
+            natron:     [{ Na: 2, O: 1 },      "netz",        3068,  5e10,    1.1e9,  5e7,    1.59,   45,   1100, 1405,   0.001, null],
+            kalk:       [{ Ca: 1, O: 1 },      "netz",        3894,  1.1e11,  1.1e9,  5e7,    1.73,   40,   750,  2886,   0.001, null],
+            quarz:      [{ Si: 1, O: 2 },      "kovalent",    2650,  7.2e10,  1.1e9,  5e7,    1.5442, 69.9, 740,  1986,   0.001, 0.135],
+            wasser:     [{ H: 2, O: 1 },       "wasserstoff", null,  2.2e9,   null,   null,   1.333,  55.8, 4186, 273.15, 0.03, 0.72],
+            eis:        [{ H: 2, O: 1 },       "wasserstoff", 917,   9e9,     1e7,    1e6,    1.309,  55,   2050, null,   0.01, 0.7],
+            blech:      [null,                 "metall",      null,  7e10,    1.5e8,  2.5e8,  null,   null, 460,  1723,   0.001, 0.44],
             // Gestein und Gewachsenes: gemessen als Ganzes (ihr Gefüge ist kein Massen-Anteil zweier Phasen)
-            stein:      [null,                 "gestein",     2650,  5e10,    1.3e8,  1e7,    null,   null, 790,  1500,   0.01],
-            holz:       [null,                 "faser",       null,  1.1e10,  5e7,    9e7,    null,   null, 1700, null,   0.01],
-            leder:      [null,                 "faser",       860,   2e8,     1e7,    2e7,    null,   null, 1500, null,   0.1],
-            knochen:    [null,                 "faser",       1900,  1.8e10,  1.7e8,  1.3e8,  null,   null, 1300, null,   0.02],
-            fleisch:    [null,                 "gewebe",      null,  1e6,     1e5,    3e5,    null,   null, 3500, null,   0.3],
-            leib:       [null,                 "gewebe",      null,  1e6,     1e5,    3e5,    null,   null, 3500, null,   0.3],
-            federn:     [null,                 "faser",       50,    2.5e9,   5e7,    2e8,    null,   null, 1500, null,   0.1],
-            schuppen:   [null,                 "faser",       1300,  2.5e9,   5e7,    2e8,    null,   null, 1500, null,   0.05],
-            glut:       [{ C: 1 },             "kovalent",    400,   3e9,     5e6,    2e6,    null,   null, 1000, null,   0.05],
-            laub:       [null,                 "faser",       300,   5e7,     1e6,    1e7,    null,   null, 1800, null,   0.3],
-            erde:       [null,                 "korn",        1500,  5e7,     2e5,    2e4,    null,   null, 800,  null,   0.2],
-            kraut:      [null,                 "faser",       400,   5e7,     1e6,    1e7,    null,   null, 1800, null,   0.3],
-            essenz:     [null,                 "wasserstoff", 1000,  2.2e9,   null,   null,   1.333,  55.8, 4186, null,   0.03],
-            gras:       [null,                 "faser",       350,   5e7,     1e6,    1e7,    null,   null, 1800, null,   0.3]
+            stein:      [null,                 "gestein",     2650,  5e10,    1.3e8,  1e7,    null,   null, 790,  1500,   0.01, 0.85],
+            holz:       [null,                 "faser",       null,  1.1e10,  5e7,    9e7,    null,   null, 1700, null,   0.01, 0.84],
+            leder:      [null,                 "faser",       860,   2e8,     1e7,    2e7,    null,   null, 1500, null,   0.1, 0.4],
+            knochen:    [null,                 "faser",       1900,  1.8e10,  1.7e8,  1.3e8,  null,   null, 1300, null,   0.02, 0.9],
+            fleisch:    [null,                 "gewebe",      null,  1e6,     1e5,    3e5,    null,   null, 3500, null,   0.3, 0.9],
+            leib:       [null,                 "gewebe",      null,  1e6,     1e5,    3e5,    null,   null, 3500, null,   0.3, 0.9],
+            federn:     [null,                 "faser",       50,    2.5e9,   5e7,    2e8,    null,   null, 1500, null,   0.1, 0.9],
+            schuppen:   [null,                 "faser",       1300,  2.5e9,   5e7,    2e8,    null,   null, 1500, null,   0.05, 0.9],
+            glut:       [{ C: 1 },             "kovalent",    400,   3e9,     5e6,    2e6,    null,   null, 1000, null,   0.05, 0.9],
+            laub:       [null,                 "faser",       300,   5e7,     1e6,    1e7,    null,   null, 1800, null,   0.3, 0.9],
+            erde:       [null,                 "korn",        1500,  5e7,     2e5,    2e4,    null,   null, 800,  null,   0.2, 0.755],
+            kraut:      [null,                 "faser",       400,   5e7,     1e6,    1e7,    null,   null, 1800, null,   0.3, 0.9],
+            essenz:     [null,                 "wasserstoff", 1000,  2.2e9,   null,   null,   1.333,  55.8, 4186, null,   0.03, 0.76],
+            gras:       [null,                 "faser",       350,   5e7,     1e6,    1e7,    null,   null, 1800, null,   0.3, 0.9]
         };
         // die Dichte als Eintrag eines anderen Gesetzbuchs (der Wirt verbindet sie beim Bau seiner Tafel) bzw. dieses Kerns
         var RHO_VON = { wasser: "vehicle:FAHR.wasser.rho", blech: "vehicle:FAHR.huelleDichte × FAHR.wasser.rho", fleisch: "tetrapoda:MASSSTAB.dichteKgM3", leib: "koerper:LEIB.dichteKgM3", holz: "schmiede:RHO.holz" };
-        var SPALTEN = ["rho", "E", "sigY", "sigB", "n", "abbe", "c", "tSchmelz", "eta"];
+        var SPALTEN = ["rho", "E", "sigY", "sigB", "n", "abbe", "c", "tSchmelz", "eta", "rauheit"];
         // LEGIERUNG UND VERBUND: `teile` Massen-Anteile von Zeilen. Stahl und Schmiede-Eisen sind Eisen mit `C` Massen-%
         // Kohlenstoff, gebunden als Zementit (die Stöchiometrie aus den molaren Massen, `karbid`); in der Bronze löst sich das
         // Zinn im Kupfer-Gitter (`loest`); Glas ist ein Netz dreier Oxide. Der Mörtel steht nicht hier: die Festigkeit eines
@@ -2913,10 +2914,10 @@
             return { ferrit: 1 - w, zementit: w };
         }
         var MISCH = {
-            stahl:   { C: 1.0, teile: karbid(1.0), bindung: "karbid", eigen: { tSchmelz: 1723, eta: 0.0003 } },
-            eisen:   { C: 0.25, teile: karbid(0.25), bindung: "karbid", eigen: { tSchmelz: 1811, eta: 0.002 } },
-            bronze:  { C: 0, teile: { kupfer: 0.88, zinn: 0.12 }, bindung: "loesung", loest: { zinn: 4e8 }, eigen: { tSchmelz: 1223, eta: 0.001 } },
-            glas:    { teile: { kieselglas: 0.74, natron: 0.16, kalk: 0.1 }, bindung: "netz", eigen: { tSchmelz: 1273, eta: 0.001 } }
+            stahl:   { C: 1.0, teile: karbid(1.0), bindung: "karbid", eigen: { tSchmelz: 1723, eta: 0.0003, rauheit: 0.09 } },
+            eisen:   { C: 0.25, teile: karbid(0.25), bindung: "karbid", eigen: { tSchmelz: 1811, eta: 0.002, rauheit: 0.54 } },
+            bronze:  { C: 0, teile: { kupfer: 0.88, zinn: 0.12 }, bindung: "loesung", loest: { zinn: 4e8 }, eigen: { tSchmelz: 1223, eta: 0.001, rauheit: 0.25 } },
+            glas:    { teile: { kieselglas: 0.74, natron: 0.16, kalk: 0.1 }, bindung: "netz", eigen: { tSchmelz: 1273, eta: 0.001, rauheit: 0.05 } }
         };
         var LINIE = { F: 486.13e-9, d: 587.56e-9, C: 656.27e-9 };
         // die Schwerpunkte der drei Kanäle des Bilds (sRGB-Primärfarben, dominante Wellenlänge): R 611 nm, G 549 nm, B 464 nm
@@ -3018,8 +3019,15 @@
                 set: function (v) { (n0 = v), (an = z.rho); }
             });
         }
+        var FREIE_ELEKTRONEN = { metall: 1, karbid: 1, loesung: 1 };
         function klingend(z) {
+            var metall;
             Object.defineProperty(z, "schall", { enumerable: true, get: function () { return schall(z.E, z.rho); } });
+            Object.defineProperty(z, "metall", {
+                enumerable: true,
+                get: function () { return metall === undefined ? FREIE_ELEKTRONEN[z.bindung] || 0 : metall; },
+                set: function (v) { metall = +v; }
+            });
         }
         Object.keys(REIN).forEach(function (name) {
             var R = REIN[name], z = { name: name, formel: R[0], bindung: R[1], rhoVon: RHO_VON[name] || null };
