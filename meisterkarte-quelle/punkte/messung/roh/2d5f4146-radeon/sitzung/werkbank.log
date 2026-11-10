@@ -1,12 +1,27 @@
 [linse-gpu] amd/rdna-3
-[seite] 2026-11-10T16:48:09.253Z navigiert http://localhost:7804/index.html
+[seite] 2026-11-10T17:24:59.553Z navigiert http://localhost:7804/index.html
 WERKBANK bereit: Steuer 127.0.0.1:27804 · Seite :27803
-[seite] 2026-11-10T16:50:02.701Z navigiert http://localhost:7804/index.html
+[seite] 2026-11-10T17:26:47.602Z navigiert http://localhost:7804/index.html
 [abbruch] /bild: der Rufer ist fort, 1 Abbruch
-[seite] 2026-11-10T16:51:54.073Z navigiert http://localhost:7804/index.html
-[seite] 2026-11-10T16:54:23.086Z navigiert http://localhost:7804/index.html
-[seite] 2026-11-10T16:55:28.051Z navigiert http://localhost:7804/index.html
-[seite] 2026-11-10T16:56:34.185Z navigiert http://localhost:7804/index.html
-[seite] 2026-11-10T16:58:30.309Z navigiert http://localhost:7804/index.html
-[seite] 2026-11-10T17:01:28.371Z GESCHLOSSEN
-[seite] 2026-11-10T17:01:28.423Z Browser getrennt
+[seite] 2026-11-10T17:28:37.586Z navigiert http://localhost:7804/index.html
+[seite] 2026-11-10T17:37:28.401Z navigiert http://localhost:7804/index.html
+[seite] 2026-11-10T17:38:30.317Z navigiert http://localhost:7804/index.html
+[seite] 2026-11-10T17:39:35.612Z navigiert http://localhost:7804/index.html
+[seite] 2026-11-10T17:41:29.133Z navigiert http://localhost:7804/index.html
+[seite] 2026-11-10T17:43:14.880Z navigiert http://localhost:7804/index.html
+[seite] 2026-11-10T17:43:45.719Z navigiert http://localhost:7804/index.html
+[abbruch] /eval: der Rufer ist fort, 1 Abbruch
+[seite] 2026-11-10T17:46:05.508Z navigiert http://localhost:7804/index.html
+[seite] 2026-11-10T17:47:02.189Z navigiert http://localhost:7804/index.html
+[seite] 2026-11-10T17:48:54.912Z navigiert http://localhost:7804/index.html
+[seite] 2026-11-10T17:49:53.928Z navigiert http://localhost:7804/index.html
+[seite] 2026-11-10T17:51:01.221Z navigiert http://localhost:7804/index.html
+[seite] 2026-11-10T17:52:20.723Z navigiert http://localhost:7804/index.html
+[seite] 2026-11-10T17:52:38.718Z navigiert about:blank
+[seite] 2026-11-10T17:52:39.323Z navigiert http://localhost:7804/index.html
+[seite] 2026-11-10T17:52:58.240Z navigiert http://localhost:7804/index.html
+[seite] 2026-11-10T17:53:05.401Z navigiert http://localhost:7804/index.html
+[seite] 2026-11-10T17:53:10.272Z navigiert http://localhost:7804/index.html
+[seite] 2026-11-10T17:53:21.293Z navigiert http://localhost:7804/index.html
+[seite] 2026-11-10T17:54:59.918Z GESCHLOSSEN
+[seite] 2026-11-10T17:55:00.060Z Browser getrennt

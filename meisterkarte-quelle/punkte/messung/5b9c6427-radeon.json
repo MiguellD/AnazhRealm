@@ -1,0 +1,243 @@
+{
+ "sha": "5b9c6427d7e3db0712e20d104b012a83f8ffd68c",
+ "geraet": "radeon",
+ "zeit": "2026-11-10T18:21:29.941Z",
+ "host": "MiguellD",
+ "je": {
+  "schatten.K5#1": {
+   "gruen": false,
+   "zahl": "Kontrast 0.989:1 (Soll ≥ 3:1) am Pfosten 2 m von glutbrunnen (7.9246 m vom Spieler, im Pool true, im Blick true, Boden gesehen 0), ohne Pfosten 1.2579, Uhr 0 · Ort [-841,-861] · 1.58 s · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.16,
+   "grund": "ROT: Kontrast 0.989:1 (Soll ≥ 3:1) am Pfosten 2 m von glutbrunnen (7.9246 m vom Spieler, im Pool true, im Blick true, Boden gesehen 0), ohne Pfosten 1.2579, Uhr 0 · Ort [-841,-861] · 1.58 s · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 9.6,
+   "fremd": {
+    "s": 11.9,
+    "takte": 5,
+    "fremdS": 11.94,
+    "kerne": 1.002,
+    "fensterKerne": 1.002,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      3.06
+     ],
+     [
+      "bash.exe -c source /c/Users/micha/.claude/shell-sna… \"'/\"' | git credential fill dev/null ",
+      1.97
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      1.91
+     ]
+    ],
+    "dienerS": 5.75,
+    "diener": [
+     [
+      "dwm.exe",
+      1.89
+     ],
+     [
+      "WmiPrvSE.exe",
+      1.53
+     ]
+    ],
+    "geraetS": 3.98,
+    "geraet": [
+     [
+      "svchost.exe",
+      2.2
+     ],
+     [
+      "MsMpEng.exe",
+      1.77
+     ],
+     [
+      "SearchIndexer.exe",
+      0.02
+     ]
+    ],
+    "eigenS": 16.98,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T18:21:29.941Z",
+   "abdruck": "7852171edeaa",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "ferne.K3#1": {
+   "gruen": false,
+   "zahl": "Kohärenz 0.3715 über 273 Kamm-Spalten 0,4–4 km (Soll < 0,3; REF real-mischwald 0,160), Umriss-Schwankung 6.4688 m über 256 Spalten 1,5–2,5 km (Soll ≥ 3 m), Relief über dem Gesetz 2.7217 m, Azimut 180° · Ort [-841,-861] · 1.24 s · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.16,
+   "grund": "ROT: Kohärenz 0.3715 über 273 Kamm-Spalten 0,4–4 km (Soll < 0,3; REF real-mischwald 0,160), Umriss-Schwankung 6.4688 m über 256 Spalten 1,5–2,5 km (Soll ≥ 3 m), Relief über dem Gesetz 2.7217 m, Azimut 180° · Ort [-841,-861] · 1.24 s · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 9.6,
+   "fremd": {
+    "s": 11.9,
+    "takte": 5,
+    "fremdS": 11.94,
+    "kerne": 1.002,
+    "fensterKerne": 1.002,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      3.06
+     ],
+     [
+      "bash.exe -c source /c/Users/micha/.claude/shell-sna… \"'/\"' | git credential fill dev/null ",
+      1.97
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      1.91
+     ]
+    ],
+    "dienerS": 5.75,
+    "diener": [
+     [
+      "dwm.exe",
+      1.89
+     ],
+     [
+      "WmiPrvSE.exe",
+      1.53
+     ]
+    ],
+    "geraetS": 3.98,
+    "geraet": [
+     [
+      "svchost.exe",
+      2.2
+     ],
+     [
+      "MsMpEng.exe",
+      1.77
+     ],
+     [
+      "SearchIndexer.exe",
+      0.02
+     ]
+    ],
+    "eigenS": 16.98,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T18:21:29.941Z",
+   "abdruck": "283edff7491d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "schatten.K5#1",
+   "modus": "session"
+  },
+  "lod.K4#1": {
+   "gruen": false,
+   "zahl": "Luma-Sprung 7.13 % (Soll < 2 %) über 14010 px, die der Wechsel ändert (Auge 4 m; die Klassen zusammen), zweiton 0/0, Uhr 0.5 · Ort [-841,-861] · 0.91 s · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.16,
+   "grund": "ROT: Luma-Sprung 7.13 % (Soll < 2 %) über 14010 px, die der Wechsel ändert (Auge 4 m; die Klassen zusammen), zweiton 0/0, Uhr 0.5 · Ort [-841,-861] · 0.91 s · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 9.6,
+   "fremd": {
+    "s": 11.9,
+    "takte": 5,
+    "fremdS": 11.94,
+    "kerne": 1.002,
+    "fensterKerne": 1.002,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      3.06
+     ],
+     [
+      "bash.exe -c source /c/Users/micha/.claude/shell-sna… \"'/\"' | git credential fill dev/null ",
+      1.97
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      1.91
+     ]
+    ],
+    "dienerS": 5.75,
+    "diener": [
+     [
+      "dwm.exe",
+      1.89
+     ],
+     [
+      "WmiPrvSE.exe",
+      1.53
+     ]
+    ],
+    "geraetS": 3.98,
+    "geraet": [
+     [
+      "svchost.exe",
+      2.2
+     ],
+     [
+      "MsMpEng.exe",
+      1.77
+     ],
+     [
+      "SearchIndexer.exe",
+      0.02
+     ]
+    ],
+    "eigenS": 16.98,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T18:21:29.941Z",
+   "abdruck": "1f3ef123b2e4",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "schatten.K5#1",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-10T18:20:46.629Z",
+  "port": 7804,
+  "warten": 0.14,
+  "bootS": 6.3,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "dorf",
+    "vor": "schatten.K5#1",
+    "s": 22.2,
+    "takte": 665,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 45,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 46.6,
+  "minuten": 0.99
+ }
+}

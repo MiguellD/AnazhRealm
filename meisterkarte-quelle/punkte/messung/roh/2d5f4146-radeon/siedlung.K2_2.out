@@ -23,7 +23,7 @@ wait
 echo "@@PUNKTE@@ Z"; cat "$L/zipf.out"
 @@PUNKTE@@ WAHL
 {
- "ms": 7,
+ "ms": 8,
  "ergebnis": {
   "seed": "anazh-realm-seed",
   "staedte": 3,
@@ -45,20 +45,20 @@ echo "@@PUNKTE@@ Z"; cat "$L/zipf.out"
 
 @@PUNKTE@@ STAND
 {
- "ms": 10508,
+ "ms": 11217,
  "ergebnis": {
   "mauer": 48,
   "zug": false,
   "pending": null,
   "haeuser": 49,
-  "takte": 96,
+  "takte": 104,
   "zugHaken": false
  }
 }
 
 @@PUNKTE@@ KAMERA
 {
- "ms": 3,
+ "ms": 4,
  "ergebnis": {
   "pose": [
    -470.09,
@@ -78,7 +78,7 @@ echo "@@PUNKTE@@ Z"; cat "$L/zipf.out"
 
 @@PUNKTE@@ MITTAG
 {
- "ms": 304,
+ "ms": 356,
  "kamera": [
   -468.45,
   39.62,
@@ -86,16 +86,41 @@ echo "@@PUNKTE@@ Z"; cat "$L/zipf.out"
  ],
  "hell": 64.4,
  "kontrast": 3.81,
- "dc": 99,
- "dreiecke": 513866,
+ "dc": 87,
+ "dreiecke": 523211,
  "klasse": null,
  "zeit": null,
  "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 66.38 m · Luma 86.1 σ 49.6 schwarz 0.3 % weiß 0.0 % · Stand 18.546.246 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 4 Posen",
  "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\punkte-g5-27804\\stadt-mittag.png",
- "gesamtMs": 20631
+ "gesamtMs": 19648
 }
 @@PUNKTE@@ EXIT 0
 @@PUNKTE@@ DAEMMERUNG
+{
+ "ms": 520,
+ "kamera": [
+  -468.45,
+  39.62,
+  -1308.43
+ ],
+ "hell": 38.2,
+ "kontrast": 2.98,
+ "dc": 88,
+ "dreiecke": 524972,
+ "klasse": null,
+ "zeit": null,
+ "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 66.38 m · Luma 87.7 σ 73.8 schwarz 0.3 % weiß 0.0 % · Stand 18.546.246 · Bühne summer sunny 0.25 · Gerät WebGPU amd rdna-3 · Blick-Wahl 4 Posen",
+ "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\punkte-g5-27804\\stadt-daemmerung.png",
+ "gesamtMs": 4636
+}
+@@PUNKTE@@ EXIT 0
+@@PUNKTE@@ Z
+=== TEIL Z: DAS RANG-GESETZ (siedlung.K2) ===
+  ✅ Z1 RANG: binnen 2 km eine ummauerte Stadt in 7/8 Saaten (Soll ≥ 6) — saat-0: metropole 286 Slots 416 m · saat-1: stadt 35 Slots 618 m · saat-2: stadt 39 Slots 266 m · saat-3: stadt 41 Slots 691 m · saat-4: grossstadt 68 Slots 1139 m · saat-5: keine · saat-6: stadt 32 Slots 970 m · saat-7: stadt 30 Slots 1105 m
+  ✅ Z2 OHNE EPOCHE 21 Slots (18 Häuser)
+ZIPF {"zeta":1.022,"ki":[0.956,1.158],"je":[0.981,1.017,1.158,1.054,0.956,0.997,1.051,0.963],"n":[240,241,245,237,241,244,237,244],"export":"Mauer und Graph 7/7","gruen":true}
+  ✅ Z3 ZIPF: ζ 1.022 [0.956; 1.158] über 8 Saaten × 32 × 32 km (Soll 0,8–1,2), Mauer und Graph 7/7
+@@PUNKTE@@ EXIT 0
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3

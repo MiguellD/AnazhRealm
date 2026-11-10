@@ -385,18 +385,18 @@ H.fahre(async function probeDorf(H) {
         console.log("@@PUNKTE@@ EXIT 0");
     }
     return j;
-}); 7804 C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\2d5f4146-radeon\siedlung.K5_1.json 20
+}); 7804 C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\2d5f4146-radeon\siedlung.K5_1.json 57
 @@PUNKTE@@ NH12
 {
  "ergebnis": {
   "gesetzt": {
-   "ms": 299.3,
-   "bilder": 10
+   "ms": 334.9,
+   "bilder": 12
   },
   "imRadius": null,
   "erstes": {
-   "ms": 299.4,
-   "bilder": 10,
+   "ms": 335,
+   "bilder": 12,
    "stufe": "huelle",
    "typ": "haus_tudor",
    "same": 75343,
@@ -404,17 +404,17 @@ H.fahre(async function probeDorf(H) {
     -889.47,
     -1375.1
    ],
-   "abstand": 216.2,
+   "abstand": 215.4,
    "auge": [
-    -1101.2,
-    37.9,
-    -1419.2
+    -1100.3,
+    38,
+    -1419.1
    ]
   },
   "hash": "59e4fc62",
   "bereit": {
-   "ms": 4763,
-   "bilder": 196,
+   "ms": 4562,
+   "bilder": 172,
    "vorrat": true,
    "ruhig": true,
    "zugFrei": true
@@ -439,12 +439,12 @@ H.fahre(async function probeDorf(H) {
    "nachbarn": 12
   },
   "erwacht": {
-   "bild": 215,
-   "d": 266.8
+   "bild": 196,
+   "d": 266.2
   },
   "abgewiesen": 0,
   "plan": 16,
-  "bilder": 225,
+  "bilder": 208,
   "reserviert": {
    "seed": 29749318,
    "nH": 12,
@@ -457,10 +457,80 @@ H.fahre(async function probeDorf(H) {
  }
 }
 @@PUNKTE@@ EXIT 0
-@@PUNKTE@@ FRIST 14 s der Probe gerissen — nH 300 ausgelassen (8.6 s Rest)
+@@ 5.6 s · frische Welt (Grundstellung) nach 0.2 s
 @@PUNKTE@@ NH300
 {
- "ergebnis": null
+ "ergebnis": {
+  "gesetzt": {
+   "ms": 72.2,
+   "bilder": 3
+  },
+  "imRadius": {
+   "ms": 72.2,
+   "bilder": 3,
+   "radius": 150
+  },
+  "erstes": {
+   "ms": 72.3,
+   "bilder": 3,
+   "stufe": "mesh",
+   "typ": "haus_tudor",
+   "same": 844001,
+   "ort": [
+    -1071.24,
+    -1380.05
+   ],
+   "abstand": 50,
+   "auge": [
+    -1102.1,
+    37.9,
+    -1419.4
+   ]
+  },
+  "hash": "84121d20",
+  "bereit": {
+   "ms": 9056,
+   "bilder": 526,
+   "vorrat": true,
+   "ruhig": true,
+   "zugFrei": true
+  },
+  "taktFehler": null,
+  "frist": null,
+  "nah": 260,
+  "start": 268,
+  "zelle": [
+   -4,
+   -6
+  ],
+  "nH": 300,
+  "same": 29749318,
+  "anker": [
+   -839.5,
+   -1373.1
+  ],
+  "anmarsch": {
+   "grad": 190,
+   "rand": 4.2,
+   "nachbarn": 12
+  },
+  "erwacht": {
+   "bild": 540,
+   "d": 266.8
+  },
+  "abgewiesen": 0,
+  "plan": 292,
+  "bilder": 543,
+  "reserviert": {
+   "seed": 29749318,
+   "nH": 300,
+   "x": -839.5294117647059,
+   "z": -1373.113725490196,
+   "wx": -839.5294117647059,
+   "wz": -1373.113725490196,
+   "ort": "ort:29749318:-840,-1373"
+  }
+ }
 }
 @@PUNKTE@@ EXIT 0
 

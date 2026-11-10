@@ -106,7 +106,7 @@ console.log("W9 " + (w.haeuser || []).length + " Häuser · Bild " + w.bild + " 
 return 0;
 }
 [linse-gpu] amd/rdna-3
-@@PUNKTE@@ ZEIT welt 1.2 s
+@@PUNKTE@@ ZEIT welt 1.1 s
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3

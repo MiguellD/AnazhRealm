@@ -290,7 +290,7 @@ $ C:\Program Files\nodejs\node.exe -e const tor = (function sitzungTor() {
 [linse-gpu] amd/rdna-3
 @@PUNKTE@@ WELT
 {
- "fehler": "/eval: Frist 40853 ms"
+ "fehler": "/eval: Frist 40812 ms"
 }
 @@PUNKTE@@ EXIT 1
 @@PUNKTE@@ FRIST 45 s der Probe gerissen — WELT (43.0 s)
