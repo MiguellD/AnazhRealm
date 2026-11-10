@@ -50,23 +50,20 @@ async function installiereBacke(page) {
             [u0, v0, u1, v1, u0, v1],
         ];
         window.__fimpSaeule = () => new T.CylinderGeometry(R, R, Y, 32).translate(0, Y / 2, 0);
+        // DIE PROBE: ein frischer Renderer (W × H) und ein frischer Atlas im Format `fmt` — null, wo die Welt auf ihm kein BC fährt:
         // das Schicht-Format, das DIE WELT auf dem Probe-Renderer wählt (`_impostorAtlasFormat`: BC nur mit WebGPU-Ablage) —
         // bis S2b fragte die Probe `hasFeature`, und WebGL2 (s3tc) erzwang eine BC-Stufe, die die Welt dort nie fährt
-        window.__fimpFormat = (ren) => {
-            const vor = st.renderer;
+        window.__fimpProbe = async (W, H, fmt) => {
+            const ren = new T.WebGPURenderer({ antialias: false }),
+                vor = st.renderer;
+            await ren.init();
+            ren.setSize(W, H, false);
             st.renderer = ren;
             try {
-                return r._impostorAtlasFormat();
+                if (fmt === "bc" && r._impostorAtlasFormat() !== "bc") return null;
             } finally {
                 st.renderer = vor;
             }
-        };
-        // DIE PROBE: ein frischer Renderer (W × H) und ein frischer Atlas im Format `fmt` — null, wo die Welt auf ihm kein BC fährt
-        window.__fimpProbe = async (W, H, fmt) => {
-            const ren = new T.WebGPURenderer({ antialias: false });
-            await ren.init();
-            ren.setSize(W, H, false);
-            if (fmt === "bc" && window.__fimpFormat(ren) !== "bc") return null;
             r._kartenAtlas = undefined;
             const at = r._impostorAtlas();
             at.fmt = fmt;
@@ -228,14 +225,25 @@ async function driveImpostor(page) {
                 // Mip-Stufe), nie das Fragment — ein depthNode schreibt frag_depth, und der frühe Tiefentest fällt für jedes
                 // Karten-Fragment (`frag`; z114, GTX, Mess-Wiese Ego steht: gpu-bank 15,41 → 20,52 ms)
                 const geh = (n, s) => n && !s.has(n) && (s.add(n), n.isTextureNode && n.referenceNode && [atS.mapNode, atS.nmapNode, atS.tmapNode].includes(n.getBase()) && p.add(n), [...n.getChildren()].forEach((c) => geh(c, s)));
-                for (const w of [m.colorNode, m.normalNode, m.receivedShadowPositionNode, m.vertexNode]) geh(w, new Set());
+                // DAS RELIEF (w27-lod-baum, lod.K5): das Fragment liest jede Ansicht am Treffer ihres Tiefen-Reliefs (`_relief`) — die
+                // Tiefe je Texel auf ihrer Stufe, gezählt im Graphen der Farbe, ehe die Ecke (vertexNode) dieselben Schichten liest
+                geh(m.colorNode, new Set());
+                const relief = [...p].filter((n) => n.levelNode && n.getBase() !== atS.mapNode).length;
+                for (const w of [m.normalNode, m.receivedShadowPositionNode, m.vertexNode]) geh(w, new Set());
                 const g = (b) => [...p].filter((n) => n.gradNode && n.getBase() === b).length;
                 // springend: die Ableitung kommt aus der eigenen (springenden) Stichproben-Koordinate statt aus der stetigen
                 const quelle = (d) => (d.isVarNode ? d.node : d).aNode; // dFdx reist in r184 als VarNode um den MathNode
                 const springend = [...p].filter((n) => n.gradNode?.some((d) => quelle(d) && quelle(d).id === n.uvNode.id)).length;
-                return { gradMap: g(atS.mapNode), gradNmap: g(atS.nmapNode), frag: !!m.depthNode, ohne: [...p].filter((n) => !n.gradNode && !n.levelNode).length, springend };
+                return { gradMap: g(atS.mapNode), gradNmap: g(atS.nmapNode), frag: !!m.depthNode, ohne: [...p].filter((n) => !n.gradNode && !n.levelNode).length, springend, relief };
             };
             out.strich = strich(r._impostorAtlasMaterial());
+            // die Mutante des Reliefs: derselbe Stoff ohne Gänge (`KARTE_RELIEF.gaenge` 0, die Karte bis w27) liest keine Tiefe im Fragment
+            const RL = AnazhRealm.KARTE_RELIEF,
+                alt = atS.mat;
+            AnazhRealm.KARTE_RELIEF = { ...RL, gaenge: 0 };
+            out.reliefOhne = strich(__fimpStoff()).relief;
+            AnazhRealm.KARTE_RELIEF = RL;
+            atS.mat = alt;
             const uS = THREE.TSL.uv();
             out.strichSelbst = strich({ colorNode: atS.mapNode.sample(uS).depth(0).add(atS.mapNode.sample(uS).grad(uS.dFdx(), uS.dFdy())), depthNode: uS.x });
         } catch (e) {
@@ -282,14 +290,14 @@ async function kleberProbe(page, fmtWunsch) {
                 H = 128;
             // Ein frischer Atlas im Format des Probe-Renderers (die Seite fährt den Null-Renderer).
             // BEIDE Format-Stufen desselben Pfads: BC (Adapter-Feature) und rgba8/rg8 (DataArrayTexture, GPU-Mips)
-            const pr = await window.__fimpProbe(W, H, fmtWunsch);
+            const pr = await __fimpProbe(W, H, fmtWunsch);
             if (!pr) return { fmt: "bc", ohneFeature: true };
             const { ren, at } = pr;
             // die Regeln der Welt an der Klasse (die Seite fährt den Null-Renderer, der sie nie anlegt): Abschied und Register
             r._texturAbschied(ren);
             r._renderObjektRegister(ren);
             out.fmt = fmtWunsch;
-            const mat = window.__fimpStoff();
+            const mat = __fimpStoff();
             out.billboard = !!mat?.userData?.impostorBillboard;
             if (!out.billboard) {
                 out.err = "Impostor-TSL-Wiring: der Stoff trägt keinen Karten-Marker (impostorBillboard)";
@@ -298,9 +306,9 @@ async function kleberProbe(page, fmtWunsch) {
             // (1) die Probe-Gestalten durch den ECHTEN Bake: links oben eine Tafel (in den Ansichten um die Peilung der
             // Kamera links), die Säule deckt jede Ansicht ganz (sie trägt den Monster-Slot)
             const H0 = 8; // die Sichthöhe der Probe-Karten (= ihr Rahmen 2 · halfH)
-            const tafel = window.__fimpFlaeche(window.__fimpRechteck(0, 0.5, 0.5, 1));
-            const z = await window.__fimpBacke(ren, at, "fimp:gateKarte|1", 91, tafel);
-            const zV = await window.__fimpBacke(ren, at, "fimp:gateKarte|2", 92, window.__fimpSaeule());
+            const tafel = __fimpFlaeche(__fimpRechteck(0, 0.5, 0.5, 1));
+            const z = await __fimpBacke(ren, at, "fimp:gateKarte|1", 91, tafel);
+            const zV = await __fimpBacke(ren, at, "fimp:gateKarte|2", 92, __fimpSaeule());
             out.geschrieben = z.gebacken && zV.gebacken;
             const leaf = r._impostorLeaf(z, new T.Matrix4(), H0);
             const leafV = r._impostorLeaf(zV, new T.Matrix4(), H0);
@@ -322,16 +330,12 @@ async function kleberProbe(page, fmtWunsch) {
             mesh.instanceMatrix.needsUpdate = true;
             r._lodSlotStamp({ mesh }, refMonster.slot, 1, false, leafV);
             r._lodSlotStamp({ mesh }, refLebt.slot, 1, false, leaf);
-            const szene = new T.Scene();
-            szene.add(mesh);
-            szene.add(new T.AmbientLight(0xffffff, 3));
             const cam = new T.PerspectiveCamera(60, W / H, 0.5, 500);
-            // BÜHNE: eigene Szene des Impostor-Vergleichs
+            // BÜHNE: eigene Szene des Impostor-Vergleichs (`__fimpBild`: die Objekte unter Umgebungslicht)
             cam.position.set(0, 4, 26);
             cam.lookAt(0, 4, 0);
             cam.updateMatrixWorld(true);
             const rt = new T.RenderTarget(W, H);
-            ren.setRenderTarget(rt);
             // Die Schirm-Box des lebenden Quads (Anker −6, Halbbreite 4, Höhe 8) — in Quadranten geteilt.
             const px = (x, y) => {
                 const v = new T.Vector3(x, y, 0).project(cam);
@@ -342,10 +346,7 @@ async function kleberProbe(page, fmtWunsch) {
             // EICHUNG der Lese-Richtung: ein Marker über dem Quad (allein gezeichnet) — liest die Rückgabe Zeile 0 oben?
             const marker = new T.Mesh(new T.BoxGeometry(2, 2, 2), new T.MeshBasicMaterial({ color: 0xffffff }));
             marker.position.set(-6, 14, 0);
-            szene.add(marker);
-            mesh.visible = false;
-            await ren.renderAsync(szene, cam);
-            const mb = await ren.readRenderTargetPixelsAsync(rt, 0, 0, W, H);
+            const mb = await __fimpBild(ren, rt, cam, marker);
             let sy = 0,
                 ny = 0;
             for (let y = 0; y < H; y++)
@@ -357,11 +358,8 @@ async function kleberProbe(page, fmtWunsch) {
             const yMarker = px(-6, 14)[1];
             const obenZuerst = ny > 0 && Math.abs(sy / ny - yMarker) < Math.abs(H - 1 - sy / ny - yMarker);
             out.eichung = { markerPx: ny, obenZuerst };
-            szene.remove(marker);
-            mesh.visible = true;
             const zaehle = async () => {
-                await ren.renderAsync(szene, cam);
-                const buf = await ren.readRenderTargetPixelsAsync(rt, 0, 0, W, H);
+                const buf = await __fimpBild(ren, rt, cam, mesh);
                 const q = { lo: 0, ro: 0, lu: 0, ru: 0, links: 0, rechts: 0, zeilen: {} };
                 const xm = (x0 + x1) / 2,
                     ym = (yOben + yUnten) / 2;
@@ -408,11 +406,11 @@ async function kleberProbe(page, fmtWunsch) {
             // über einem Stamm durch den ECHTEN Bake, abseits des Ursprungs, gedreht und skaliert (r184 rechnet den positionNode VOR
             // der Instanz-Matrix — eine Karte, die mit ihrer Instanz dreht, stünde von vorn als Strich), aus jeder Hebung gegen
             // dieselbe Gestalt als Mesh (Deckung K/G, IoU; 180 m, 6°). Selbsttest: jeder Ring waagrecht gebacken (die Karte bis lod.K3).
-            const gO = window.__fimpTeile(new T.CylinderGeometry(3.6, 3.6, 1.2, 48).translate(0, 6.6, 0), new T.CylinderGeometry(0.3, 0.3, 6, 12).translate(0, 3, 0));
+            const gO = __fimpTeile(new T.CylinderGeometry(3.6, 3.6, 1.2, 48).translate(0, 6.6, 0), new T.CylinderGeometry(0.3, 0.3, 6, 12).translate(0, 3, 0));
             const echt = at.ringe;
-            const zO = await window.__fimpBacke(ren, at, "fimp:gateKarte|3", 93, gO);
+            const zO = await __fimpBacke(ren, at, "fimp:gateKarte|3", 93, gO);
             at.ringe = Object.assign({}, echt, { ringe: echt.ringe.map((x) => Object.assign({}, x, { hebung: 0 })) });
-            const zS = await window.__fimpBacke(ren, at, "fimp:gateKarte|4", 94, gO).finally(() => (at.ringe = echt));
+            const zS = await __fimpBacke(ren, at, "fimp:gateKarte|4", 94, gO).finally(() => (at.ringe = echt));
             const lage = new T.Matrix4().compose(new T.Vector3(30, 0, -10), new T.Quaternion().setFromAxisAngle(new T.Vector3(0, 1, 0), (-119 * Math.PI) / 180), new T.Vector3(1.5, 1.5, 1.5));
             // die Leinwand 256²: die Karte 149 px hoch, über KARTE_GITTER px[1] — ihre Ecken tragen die Tiefe (C7)
             const camO = new T.PerspectiveCamera(6, 1, 1, 600),
@@ -421,14 +419,14 @@ async function kleberProbe(page, fmtWunsch) {
             const deckt = async (phi, ...o) => {
                 camO.position.set(30, 6 + 180 * Math.sin((phi * Math.PI) / 180), 180 * Math.cos((phi * Math.PI) / 180) - 10);
                 camO.lookAt(30, 6, -10), camO.updateMatrixWorld(true);
-                const q = await window.__fimpBild(ren, rtO, camO, ...o);
+                const q = await __fimpBild(ren, rtO, camO, ...o);
                 return Array.from({ length: q.length / 4 }, (_, i) => +(q[i * 4 + 3] > 0 && !(q[i * 4] > 200 && q[i * 4 + 1] < 60)));
             };
             const iou = (k, g) => ((n) => (k.forEach((b, i) => ((n[0] += b), (n[1] += g[i]), (n[2] += b & g[i]))), { deckung: +(n[0] / Math.max(1, n[1])).toFixed(3), iou: +(n[2] / Math.max(1, n[0] + n[1] - n[2])).toFixed(3) }))([0, 0, 0]);
             if (st.windUniforms) st.windUniforms.uWindStrength.value = 0; // der Wind ruht (wie C2)
-            const alsMesh = (g) => Object.assign(new T.Mesh(g, new T.MeshBasicMaterial({ side: T.DoubleSide })), { matrixAutoUpdate: false, matrix: lage.clone() });
-            const mG = alsMesh(gO);
-            const [mO, mS] = [zO, zS].map((zz) => window.__fimpKarte(zz, mat, lage, 1.5));
+            const mG = Object.assign(new T.Mesh(gO, new T.MeshBasicMaterial({ side: T.DoubleSide })), { matrixAutoUpdate: false });
+            mG.matrix.copy(lage);
+            const [mO, mS] = [zO, zS].map((zz) => __fimpKarte(zz, mat, lage, 1.5));
             out.oben = { hebungen: echt.ringe.map((x) => x.hebung), schichtB: r._impostorCensus().schichtB, je: {} };
             for (const phi of [-20, 0, 40, 60, 80]) {
                 const g = await deckt(phi, mG);
@@ -440,29 +438,16 @@ async function kleberProbe(page, fmtWunsch) {
             const wand = new T.Mesh(new T.PlaneGeometry(40, 40), new T.MeshBasicMaterial({ color: 0xff0000 }));
             wand.position.set(30, 6, -8.5);
             const davor = async (o) => (await deckt(0, o, wand)).reduce(addiere, 0);
-            // DER EINGRIFF DER SELBSTTESTS (C7, C9): o[k] = w, die Karte der Zelle z mit frisch gebautem Stoff gemessen, danach zurück
-            const unter = async (o, k, w, z, mess) => {
-                const alt = o[k];
-                o[k] = w;
-                try {
-                    return await mess(window.__fimpKarte(z, window.__fimpStoff(), lage, 1.5));
-                } finally {
-                    o[k] = alt;
-                    window.__fimpStoff();
-                }
-            };
-            out.tiefe = { gestalt: await davor(mG), karte: await davor(mO), selbst: await unter(globalThis.__phytoCore, "karteTiefeVersatz", (A) => A.k(0), zO, davor) };
-            // (C9) DIE TIEFEN-PARALLAXE (w27-lod-baum, lod.K5; der Stoff, `_relief`): eine Kugel 2,8 m VOR der Achse, zum Auge von C6
-            // aus 0° gewandt (die Instanz steht −119° gedreht: das Auge blickt 119° in ihrem Raum, 16° und 29° neben den zwei nächsten
-            // Peilungen) — an derselben Stelle des Quads gelesen stehen ZWEI Kugeln neben ihrem Ort. Die Karte gegen ihre Gestalt als
-            // Mesh (IoU). SELBSTTEST: der Stoff ohne Gänge (`KARTE_RELIEF.gaenge` 0, die Karte bis w27).
-            const v9 = (119 * Math.PI) / 180,
-                gP = window.__fimpTeile(new T.SphereGeometry(0.9, 24, 16).translate(2.8 * Math.sin(v9), 4, 2.8 * Math.cos(v9))),
-                zP = await window.__fimpBacke(ren, at, "fimp:gateKarte|5", 95, gP),
-                g9 = await deckt(0, alsMesh(gP)),
-                p9 = async (m) => iou(await deckt(0, m), g9).iou,
-                A9 = r.constructor;
-            out.parallaxe = [g9.reduce(addiere, 0), await p9(window.__fimpKarte(zP, mat, lage, 1.5)), await unter(A9, "KARTE_RELIEF", { ...A9.KARTE_RELIEF, gaenge: 0 }, zP, p9)];
+            const pc = globalThis.__phytoCore,
+                versatz = pc.karteTiefeVersatz;
+            out.tiefe = { gestalt: await davor(mG), karte: await davor(mO) };
+            try {
+                pc.karteTiefeVersatz = (A) => A.k(0);
+                out.tiefe.selbst = await davor(__fimpKarte(zO, __fimpStoff(), lage, 1.5));
+            } finally {
+                pc.karteTiefeVersatz = versatz;
+                __fimpStoff();
+            }
             // (C8) JENSEITS DER FERN-EBENE (material.K3#2): dieselbe Karte wie C6 aus 0° (dort ihr Bild, der Selbsttest) unter einer
             // Fern-Ebene von 150 m zeichnet nichts — die Spanne ihrer Ecken-Tiefe klemmt nur den Rück, nie die Lage
             (camO.far = 150), camO.updateProjectionMatrix();
@@ -492,7 +477,7 @@ async function kleberProbe(page, fmtWunsch) {
                     st.renderer = vorR;
                 }
                 // rgba8: das Ziel wächst neu, die Schichten backen nach (bc: die GPU kopiert sie)
-                if (at.fmt === "rgba8") for (const zz of [z, zV]) await window.__fimpBacke(ren, at, zz);
+                if (at.fmt === "rgba8") for (const zz of [z, zV]) await __fimpBacke(ren, at, zz);
                 const q = await zaehle();
                 await sleep(0); // die alte Form fällt nach dem Submit
                 const sonne = r._karteBuehneSatz?.schatten.textures || [];
@@ -556,22 +541,22 @@ async function vergroessertProbe(page, fmtWunsch) {
             const T = THREE;
             const W = 128,
                 H = 128;
-            const pr = await window.__fimpProbe(W, H, fmtWunsch);
+            const pr = await __fimpProbe(W, H, fmtWunsch);
             if (!pr) return { fmt: "bc", ohneFeature: true };
             const { ren, at } = pr;
-            const mat = window.__fimpStoff();
+            const mat = __fimpStoff();
             if (!mat?.userData?.impostorBillboard) return { err: "kein Billboard-Stoff" };
             // die Kante: deckend, wo u + v > 1 (Ansichts-Koordinaten) — im Welt-Quad (8 × 8 m) die Diagonale x + y = 4; `stufe`
             // malt sie in Stufen von stufe × 2·stufe Texeln (der Selbsttest)
             const kante = (stufe) => {
-                if (!stufe) return window.__fimpFlaeche([[0.98, 0.02, 0.98, 0.98, 0.02, 0.98]]);
+                if (!stufe) return __fimpFlaeche([[0.98, 0.02, 0.98, 0.98, 0.02, 0.98]]);
                 const d = [];
                 for (let x = 0; x < at.cw; x += stufe) {
                     let y = 0;
                     while (y < at.ch && !((x + stufe / 2) / at.cw + (y + stufe) / at.ch > 1)) y += 2 * stufe;
-                    if (y < at.ch) d.push(...window.__fimpRechteck(x / at.cw, y / at.ch, (x + stufe) / at.cw, 1));
+                    if (y < at.ch) d.push(...__fimpRechteck(x / at.cw, y / at.ch, (x + stufe) / at.cw, 1));
                 }
-                return window.__fimpFlaeche(d);
+                return __fimpFlaeche(d);
             };
             const cam = new T.PerspectiveCamera(60, W / H, 0.05, 50);
             const d = 0.866; // ein Pixel 7,8 mm: ein Texel der Höhe (8 m / ch) misst ~4 px
@@ -580,11 +565,11 @@ async function vergroessertProbe(page, fmtWunsch) {
             cam.updateMatrixWorld(true);
             out.pxJeTexel = +(8 / at.ch / ((2 * d * Math.tan(Math.PI / 6)) / H)).toFixed(2);
             const treppe = async (stufe, name) => {
-                const z = await window.__fimpBacke(ren, at, "fimp:gateKante|" + name, stufe ? 94 : 93, kante(stufe));
+                const z = await __fimpBacke(ren, at, "fimp:gateKante|" + name, stufe ? 94 : 93, kante(stufe));
                 const rt = new T.RenderTarget(W, H);
                 // der Wind ruht: die Probe misst die Karte, nie den Ausschlag des Augenblicks (die Treppe streute 0,248-0,372)
                 if (st.windUniforms) st.windUniforms.uWindStrength.value = 0;
-                const buf = await window.__fimpBild(ren, rt, cam, window.__fimpKarte(z, mat, new T.Matrix4(), 1));
+                const buf = await __fimpBild(ren, rt, cam, __fimpKarte(z, mat, new T.Matrix4(), 1));
                 let gleich = 0,
                     zeilen = 0,
                     vor = null;
@@ -668,7 +653,7 @@ async function windProbe(page) {
         try {
             const T = THREE;
             const W = 256;
-            const { ren } = await window.__fimpProbe(W, W, "rgba8");
+            const { ren } = await __fimpProbe(W, W, "rgba8");
             r._windUniformsEnsure();
             const wu = r._ensureWindCoupling(T.TSL);
             const anker = new T.Vector3(30, 0, -10);
@@ -681,7 +666,7 @@ async function windProbe(page) {
             const rt = new T.RenderTarget(W, W);
             // der Schwerpunkt des Säulen-Bilds, Pixel → Welt (Bild-x = Welt +x, Bild-y (unten → oben) = Welt −z)
             const schwerpunkt = async (mesh) => {
-                const buf = await window.__fimpBild(ren, rt, cam, mesh);
+                const buf = await __fimpBild(ren, rt, cam, mesh);
                 let [n, sx, sy] = [0, 0, 0];
                 for (let p = 0; p < W * W; p++) if (buf[p * 4 + 3] > 0) n++, (sx += p % W), (sy += (p / W) | 0);
                 const w = (v) => (v / n + 0.5) * ((2 * halb) / W) - halb;
@@ -734,8 +719,8 @@ hauptLauf(async () => {
     // ===== TEIL A — MECHANIK (Null-Renderer, HART) =====
     const browserA = await starteBrowser({ art: "webgl", frist: 180000 });
     const { page: pageA } = await bootPage(browserA, true);
-    const A = await driveImpostor(pageA);
     await installiereBacke(pageA);
+    const A = await driveImpostor(pageA);
     const ruhe = await weltRuht(pageA);
     const Cs =[await kleberProbe(pageA, "bc"), await kleberProbe(pageA, "rgba8")];
     const C2s = [await vergroessertProbe(pageA, "bc"), await vergroessertProbe(pageA, "rgba8")];
@@ -796,6 +781,8 @@ hauptLauf(async () => {
         // ihrer Stufe (heil-laub-tiefe), nie im Fragment (frag: depthNode → frag_depth)
         if (!(s.gradMap === 2 && s.gradNmap === 1 && !s.frag && s.ohne === 0 && s.springend === 0))
             E(`A: Strich-Wand — Albedo 2 · Normale 1 stetig abgeleitet, keine Probe ohne, keine Tiefe im Fragment (${J(s)})`);
+        // das Relief: das Fragment liest die Tiefe je Texel (≥ 2 — zwei Ansichten), seine Mutante ohne Gänge keine
+        if (!(s.relief >= 2 && A.reliefOhne === 0)) E(`A: _relief liest ${s.relief}, ohne Gänge ${A.reliefOhne}`);
         if (!(A.strichSelbst?.ohne === 1 && A.strichSelbst.springend === 1 && A.strichSelbst.frag))
             E("A-SELBSTTEST: ein Atlas-Stoff ohne Gradienten oder mit springender Ableitung bleibt ungesehen");
     } else if (A.ready) E("A: die Strich-Proben liefen nicht");
@@ -856,10 +843,6 @@ hauptLauf(async () => {
         log(`  C7 TIEFE [${C.fmt}]: vor der Tafel Gestalt ${Ti.gestalt} px (Soll ≥ 80) · Karte ${teil(Ti.karte)} (Soll ≥ 0,6) · ohne Tiefe ${teil(Ti.selbst)} (MUSS < 0,2)`);
         if (!(Ti.gestalt >= 80 && teil(Ti.selbst) < 0.2)) E(`${F} C7-SELBSTTEST: die Gestalt steht nicht vor der Tafel oder die Karte ohne Tiefe nicht dahinter — die Linse ist blind`);
         else if (!(teil(Ti.karte) >= 0.6)) E(`${F} C7: die Karte steht hinter der Tafel — ihre Ecken lesen ihre Tiefe nicht (vertexNode)`);
-        // C9 DIE TIEFEN-PARALLAXE: die Karte steht, wo ihre Gestalt steht (IoU ≥ 0,8); ohne Gänge stehen zwei Kugeln (< 0,6)
-        const [g9, k9, o9] = C.parallaxe || [];
-        log(`  C9 PARALLAXE [${C.fmt}]: Gestalt ${g9} px · IoU Karte ${k9} (Soll ≥ 0,8) · ohne Gänge ${o9} (MUSS < 0,6)`);
-        if (!(g9 >= 400 && o9 < 0.6 && k9 >= 0.8)) E(`${F} C9: ${o9 < 0.6 ? "die Karte steht neben ihrer Gestalt (stoff-material _relief)" : "SELBSTTEST blind"}`);
         // C8 JENSEITS DER FERN-EBENE zeichnet die Karte nichts (Selbsttest: C6 aus 0°, dieselbe Karte diesseits)
         if (C.fern) E(`${F} C8: jenseits der Fern-Ebene ${C.fern} px`);
     }
