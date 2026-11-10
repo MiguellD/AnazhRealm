@@ -797,12 +797,35 @@
         ton: 0.2,
         wurzel: 0.85,
     });
+    // DAS LICHT DES HAARS (w26-haar-arm, Kajiya-Kay 1989 / Marschner 2003 / Scheuermann 2004; Leser: stamm `_haarLichtModell`, das
+    // Labor `laborStoff`): an der Tangente der Strähne (koerper `haarAchse`) — wrap die Form N·L umwickelt, kd der Anteil sin(T, L) am
+    // Diffusen, jit der Wurf je Strähne auf den Kipp der Lappen; R farblos (Keratin F0 0,046), TRT im Ton des Haars.
+    // DER LAPPEN AM PIXEL (w27-haar-arm-2, `fuss` — Glanz-Antialiasing nach dem Fußabdruck: Toksvig 2005, Kaplanyan 2016,
+    // Tokuyoshi & Kaplanyan 2019): deckt ein Pixel mehrere Strähnen, trägt es das MITTEL ihrer Lappen statt EINER gezogenen.
+    //   breite  die mittlere Breite des Bands im Kopf-Raum ((1,8 + 0,65) × HAAR_STRICH.t je Seite: 9 mm an der Wurzel, 3 an der Spitze)
+    //   px      [unter so vielen Pixeln je Strähne trägt das Pixel ihr Mittel ganz, über so vielen löst es sie auf]
+    //   streu   die Streuung des Lappen-Arguments T'·H über die Strähnen EINES Pixels: der Wurf (jit/√3 = 0,115), die Rundung
+    //           quer zur Strähne (|shift| × das Mittel von sin über ±rund ≈ 0,06) und die Streuung des Strichs (0,06–0,10 je
+    //           Achse im Umkreis eines Pixels, gemessen an den 1215 Strähnen des Stils mittel) — √(0,115² + 0,06² + 0,10²) = 0,17
+    //   flaeche der Anteil, um den das Licht des Haars unter dem Pixel (`unter` 1) zur Fläche geht — das Licht des Standard-Stoffs
+    //           an der Normale der Kappe: die Tangente einer einzelnen Strähne trägt dort kein Licht mehr, das Mittel vieler ist die
+    //           Fläche (die Ferne der Haar-Karten jeder Engine); aufgelöst (`unter` 0) trägt die Faser alles. Gemessen in DERSELBEN
+    //           Welt (Radeon f8fa2154, Prüfplatz, das graue Haar des Ankers): das Licht der Fläche Kopf 0,4–1,4 %, Kajiya-Kay mit den
+    //           geweiteten Lappen 1,7–2,5 %, ohne TRT 1,9 %, ohne beide Lappen 0,8 % — die Lappen flimmern, solange sie leben
+    // Der Lappen weitet sich um sie (`haarLappen`): p' = p / (1 + p · streu² · unter), sein Band trägt dieselbe Energie, breiter
+    // und flacher; der Wurf der einzelnen Strähne fällt mit `unter`, und mit `unter` geht das Licht zur Fläche (`flaeche`). Bis hier zog jedes Pixel EINE Strähne aus mehreren: der Lappen R (p 80, im Gipfel
+    // 160-mal das Diffuse des dunkelbraunen Haars) flimmerte im Gang von Bild zu Bild (Radeon 890M, Prüfplatz Third,
+    // gate:kamera-leib:echt K6: Kopf 9,6–10,6 % der Pixel über halb zum Grund; nur R 11,3 %; ohne R, nur TRT (p 20) und unter
+    // dem Standard-Licht je 0,1 %).
     var HAAR_LOOK = Object.freeze({
-        tipRimPow: 3,
-        tipRimFarbe: Object.freeze([0.35, 0.18, 0.05]),
-        specPow: 8,
-        specAmt: 0.3,
-        specFarbe: Object.freeze([0.3, 0.15, 0.04]),
+        kk: Object.freeze({
+            wrap: 0.5,
+            kd: 1,
+            jit: 0.2,
+            fuss: Object.freeze({ breite: 2.45 * HAAR_STRICH.t, px: Object.freeze([1.5, 4]), streu: 0.17, flaeche: 1 }),
+            R: Object.freeze({ farbe: Object.freeze([0.046, 0.046, 0.046]), shift: -0.1, p: 80 }),
+            TRT: Object.freeze({ amt: 0.5, shift: 0.1, p: 20 }),
+        }),
     });
     // DER RAHMEN DER STRÄHNE (w25-haar-albedo; Leser: der Welt-Stoff über stamm `_haarAchse`, das Labor `laborStoff`): das Gesetz
     // der Ecken des Bäckers (foundry-core `__streuGeo`: je Band vier Ecken — zwei an der Wurzel im Ton × HAAR_STRICH.wurzel, zwei
@@ -813,12 +836,14 @@
     // schaltete je Strähne ganz an oder aus: das dunkelbraune Haar stand weiß, haar.K2#1). Eingaben je Ecke: Lage und Farbe
     // (xyz hintereinander), Ton (`menschTon`). Ein Vierer im Ton des Haars, dessen Farben dem Gesetz nicht folgen, ist ein Bruch
     // (gezählt) — außer er ist eine Fläche in einem Ton (die Kappe der Grobstufe). Rückgabe { achse (Float32Array, 2 je Ecke), zahl,
-    // bruch }.
+    // bruch }. DIE TANGENTE (w26-haar-arm, Kajiya-Kay): je Ecke `tangente` [x, y, z, Wurf] — die Richtung Wurzel → Spitze (die Mitte der Spitze
+    // − die Mitte der Wurzel, Einheit) und der Wurf der Strähne; das Licht des Haars läuft an ihr, nie an der Normale (`_haarLichtModell`).
     function haarAchse(lage, farbe, ton) {
         var n = ton.length,
             haarTon = menschTon("hair"),
             wz = HAAR_STRICH.wurzel,
             A = new Float32Array(n * 2),
+            TA = new Float32Array(n * 4),
             zahl = 0,
             bruch = 0;
         var gleich = function (x, y) {
@@ -849,13 +874,162 @@
             for (f = 0; f < 3; f++)
                 d[f] = (lage[(i + 2) * 3 + f] + lage[(i + 3) * 3 + f] - lage[i * 3 + f] - lage[(i + 1) * 3 + f]) / 2;
             var l = Math.sqrt(d[0] * d[0] + d[1] * d[1] + d[2] * d[2]);
+            // der Wurf der Strähne (−1 … 1, ein Hash ihrer Nummer — die Lage der Ecken bleibt): er kippt ihre Glanz-Lappen (HAAR_LOOK)
+            var h = Math.sin((i >> 2) * 12.9898 + 78.233) * 43758.5453,
+                wurf = 2 * (h - Math.floor(h)) - 1;
             for (k = 0; k < 4; k++) {
                 A[(i + k) * 2] = k < 2 ? 0 : l;
                 A[(i + k) * 2 + 1] = l;
+                for (f = 0; f < 3; f++) TA[(i + k) * 4 + f] = l > 0 ? d[f] / l : 0;
+                TA[(i + k) * 4 + 3] = wurf;
             }
             zahl++;
         }
-        return { achse: A, zahl: zahl, bruch: bruch };
+        return { achse: A, tangente: TA, zahl: zahl, bruch: bruch };
+    }
+    // DER LAPPEN AM PIXEL ALS GESETZ (w27-haar-arm-2, HAAR_LOOK.kk.fuss; Leser: stamm `_haarLichtModell`, das Labor `laborStoff`):
+    // die Zahlen eines Glanz-Lappens der Potenz p. Der Leser rechnet mit `unter` (0 das Pixel löst die Strähne auf … 1 es deckt
+    // mehrere) die halbe Potenz h = halb / (1 + weite · unter) — der Lappen ist (1 − cos²)^h, sin^p' mit p' = 2h — und die Norm
+    // norm · √((2h + 1,5) / fuss): das Band des Lappens über den Versatz trägt √(2π / (p + 1,5)), geweitet dieselbe Energie; mit
+    // unter 0 steht genau sin^p · (p + 2) / 2π. Der Lappen
+    // der Faser trägt den Anteil 1 − unter · flaeche (den Rest trägt die Fläche, `kk.fuss.flaeche`).
+    function haarLappen(p, kk) {
+        var F = (kk || HAAR_LOOK.kk).fuss;
+        return {
+            halb: p / 2,
+            weite: F ? p * F.streu * F.streu : 0,
+            flaeche: F ? F.flaeche : 0,
+            norm: (p + 2) / (2 * Math.PI),
+            fuss: p + 1.5,
+        };
+    }
+    // DAS FLIMMERN DER LAPPEN (rein, w27-haar-arm-2; Leser: `haarGlanzSelbsttest`): EIN Pixel deckt viele Strähnen, jedes Bild
+    // zieht EINE. Je Lappen entlang seines Glanz-Bands (der Versatz d des Arguments T'·H der Mittel-Strähne) das Mittel und die
+    // Streuung seines Werts über die gezogene Strähne — ihr Strich streut um `strich` je Achse (gemessen 0,06–0,10), ihre Normale
+    // kippt um ±HAAR_STRICH.rund quer zur Strähne, ihr Wurf ist ±1 × (1 − unter). Rückgabe je Lappen { flimmern: die größte
+    // Streuung × sein Gewicht im Licht (R: die Luma seiner Farbe; TRT: amt × die Luma des Tons `ton`), energie: sein Band über den
+    // Versatz, gipfel }. `rechne` (optional) ersetzt den Wert des Lappens (die Mutanten des Selbsttests).
+    function haarFlimmern(kk, unter, ton, rechne) {
+        var saat = 12345;
+        var zieh = function () {
+            saat = (Math.imul(saat, 1664525) + 1013904223) >>> 0;
+            return saat / 4294967296;
+        };
+        var gauss = function () {
+            return Math.sqrt(-2 * Math.log(zieh() + 1e-12)) * Math.cos(2 * Math.PI * zieh());
+        };
+        var wert =
+            rechne ||
+            function (G, u, cos2) {
+                var h = G.halb / (1 + G.weite * u);
+                return Math.pow(Math.max(1 - cos2, 0), h) * G.norm * Math.sqrt((2 * h + 1.5) / G.fuss) * (1 - u * G.flaeche);
+            };
+        var rund = HAAR_STRICH.rund,
+            strich = 0.08,
+            D = [0, 0.1, 0.2, 0.3, 0.45, 0.6, 0.75, 0.9],
+            aus = {};
+        [
+            ["R", kk.R, 0.2126 * kk.R.farbe[0] + 0.7152 * kk.R.farbe[1] + 0.0722 * kk.R.farbe[2]],
+            ["TRT", kk.TRT, kk.TRT.amt * ton],
+        ].forEach(function (z) {
+            var L = z[1],
+                G = haarLappen(L.p, kk),
+                mittel = [],
+                max = 0,
+                energie = 0;
+            // die Mittel-Strähne: T entlang y, um den mittleren Kipp zur Normale z; H senkrecht zu ihr, um d zu ihr geneigt
+            var kz = (L.shift * Math.sin(rund)) / rund,
+                kl = Math.sqrt(1 + kz * kz),
+                Tm = [0, 1 / kl, kz / kl];
+            var hx = 0.7,
+                hy = -0.7 * Tm[1] * Tm[2],
+                hz = 0.7 * (1 - Tm[2] * Tm[2]),
+                hl = Math.sqrt(hx * hx + hy * hy + hz * hz);
+            for (var di = 0; di < D.length; di++) {
+                var d = D[di],
+                    w = Math.sqrt(1 - d * d),
+                    H = [(hx / hl) * w, (hy / hl) * w + d * Tm[1], (hz / hl) * w + d * Tm[2]],
+                    m = 0,
+                    q = 0,
+                    n = 8000;
+                for (var i = 0; i < n; i++) {
+                    var a = (2 * zieh() - 1) * rund,
+                        kipp = (2 * zieh() - 1) * (1 - unter) * kk.jit + L.shift,
+                        tx = strich * gauss() + Math.sin(a) * kipp,
+                        tz = strich * gauss() + Math.cos(a) * kipp,
+                        tl = Math.sqrt(tx * tx + 1 + tz * tz),
+                        th = (tx * H[0] + H[1] + tz * H[2]) / tl,
+                        v = wert(G, unter, th * th);
+                    m += v;
+                    q += v * v;
+                }
+                m /= n;
+                mittel.push(m);
+                max = Math.max(max, z[2] * Math.sqrt(Math.max(q / n - m * m, 0)));
+            }
+            for (var e = 1; e < D.length; e++) energie += ((mittel[e] + mittel[e - 1]) / 2) * (D[e] - D[e - 1]);
+            aus[z[0]] = { flimmern: max, energie: energie, gipfel: mittel[0] };
+        });
+        return aus;
+    }
+    // DER SELBSTTEST DES GLANZES UNTER DEM PIXEL (w27-haar-arm-2; Leser: diag-kamera-laub K5 über `lichtSelbsttest`): das Gesetz
+    // HAAR_LOOK.kk hält, die Mutanten fallen beim Namen. Die Szene ist die von K6 (gate:kamera-leib:echt): der Prüfplatz, Third, die
+    // Kappe 6,4 m vor dem Auge, 1280 × 720 in der Skala der Szene 0,75 — ein Pixel 1,8 cm, die Strähne 0,3 Pixel breit (unter 1);
+    // das Haar in beiden Tönen der Welt: Dunkelbraun (das Rezept, 0,0127 — dort trägt R das Flimmern) und Hellgrau (der Anker des
+    // Spielers am Prüfplatz, 0,6 — dort TRT, im Ton des Haars). Geeicht an K6 (Kopf je Probe, Soll ≤ 5 %): dunkel ohne Fußabdruck
+    // R 0,197 — GTX 1050 bis 11,0 %; grau mit den geweiteten Lappen TRT 0,031 — Radeon bis 5,9 % (debea1a5, ROT; main dort bis
+    // 2,7 %); die Fläche 0. HAAR_FLIMMERN_MAX liegt darunter.
+    //   1 aufgelöst (unter 0) steht der Lappen des Vorgängers: sin^p · (p + 2) / 2π, bit-gleich
+    //   2 am Prüfplatz flimmert kein Lappen über HAAR_FLIMMERN_MAX
+    //   3 der geweitete Lappen selbst (ohne die Fläche) hält die Energie seines Bands (±10 %), sein Gipfel fällt
+    //   Mutanten: ohne Fußabdruck (`fuss` fehlt: der Stand w26) · ohne die Fläche (flaeche 0: die Lappen leben am Prüfplatz) · ohne
+    //   die Weitung (streu 0) · die Norm des geweiteten Lappens ohne die Wurzel ((p' + 2) / 2π: das Band verlöre Energie)
+    var HAAR_FLIMMERN_MAX = 0.02;
+    function haarGlanzSelbsttest() {
+        var v = [],
+            kk = HAAR_LOOK.kk,
+            mit = function (f) {
+                return Object.assign({}, kk, { fuss: Object.assign({}, kk.fuss, f) });
+            },
+            ton = 0.0127,
+            grau = 0.6,
+            pz = function (x) {
+                return (+x).toFixed(4);
+            };
+        var G = haarLappen(kk.R.p, kk),
+            c2 = 0.03;
+        if (Math.pow(1 - c2, G.halb) * G.norm * Math.sqrt((2 * G.halb + 1.5) / G.fuss) !== Math.pow(1 - c2, kk.R.p / 2) * ((kk.R.p + 2) / (2 * Math.PI)))
+            v.push("Haar: aufgelöst steht nicht der Lappen sin^p · (p + 2) / 2π");
+        var d = haarFlimmern(kk, 1, ton),
+            h = haarFlimmern(kk, 1, grau);
+        ["R", "TRT"].forEach(function (l) {
+            if (!(d[l].flimmern <= HAAR_FLIMMERN_MAX && h[l].flimmern <= HAAR_FLIMMERN_MAX))
+                v.push("Haar: der Lappen " + l + " flimmert am Prüfplatz " + pz(d[l].flimmern) + " (dunkel) · " + pz(h[l].flimmern) + " (grau) > " + HAAR_FLIMMERN_MAX);
+        });
+        var frei = haarFlimmern(kk, 0, ton),
+            weit = haarFlimmern(mit({ flaeche: 0 }), 1, ton);
+        ["R", "TRT"].forEach(function (l) {
+            if (!(Math.abs(weit[l].energie / frei[l].energie - 1) <= 0.1 && weit[l].gipfel < frei[l].gipfel))
+                v.push("Haar: der geweitete Lappen " + l + " hält die Energie seines Bands nicht (" + pz(frei[l].energie) + " → " + pz(weit[l].energie) + ")");
+        });
+        // die Mutanten: jede fällt an ihrem Maß
+        var ohne = haarFlimmern(Object.assign({}, kk, { fuss: null }), 1, ton);
+        if (!(ohne.R.flimmern > HAAR_FLIMMERN_MAX)) v.push("Haar-Mutante: der Lappen R ohne Fußabdruck bleibt ungenannt (" + pz(ohne.R.flimmern) + ")");
+        var leben = haarFlimmern(mit({ flaeche: 0 }), 1, grau);
+        if (!(leben.TRT.flimmern > HAAR_FLIMMERN_MAX)) v.push("Haar-Mutante: die Lappen ohne die Fläche bleiben am Prüfplatz ungenannt (TRT grau " + pz(leben.TRT.flimmern) + ")");
+        var schmal = haarFlimmern(mit({ flaeche: 0, streu: 0 }), 1, ton);
+        if (!(schmal.R.flimmern > 1.5 * weit.R.flimmern))
+            v.push("Haar-Mutante: der Lappen ohne die Weitung bleibt ungenannt (R " + pz(schmal.R.flimmern) + " gegen " + pz(weit.R.flimmern) + ")");
+        var norm = haarFlimmern(mit({ flaeche: 0 }), 1, ton, function (g, u, cos2) {
+            var hh = g.halb / (1 + g.weite * u);
+            return (Math.pow(Math.max(1 - cos2, 0), hh) * (2 * hh + 2)) / (2 * Math.PI);
+        });
+        if (!(norm.R.energie / frei.R.energie < 0.9)) v.push("Haar-Mutante: die Norm ohne Wurzel bleibt ungenannt (Energie " + pz(norm.R.energie) + ")");
+        return v;
+    }
+    // DER SELBSTTEST UNTER DEM LICHT (Leser: diag-kamera-laub K5): das Gesicht (`gesichtSelbsttest`) und der Glanz des Haars
+    function lichtSelbsttest() {
+        return gesichtSelbsttest().concat(haarGlanzSelbsttest());
     }
 
     // ════════════════════════════════════════════════════════════════════
@@ -7099,6 +7273,10 @@
         HAAR_LOOK: HAAR_LOOK,
         HAAR_STRICH: HAAR_STRICH,
         haarAchse: haarAchse,
+        haarLappen: haarLappen,
+        haarFlimmern: haarFlimmern,
+        haarGlanzSelbsttest: haarGlanzSelbsttest,
+        lichtSelbsttest: lichtSelbsttest,
         MENSCH_GESTALT: MENSCH_GESTALT,
         MENSCH_SOLL: MENSCH_SOLL,
         KOPF_SOLL: KOPF_SOLL,

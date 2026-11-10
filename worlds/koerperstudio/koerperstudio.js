@@ -97,7 +97,7 @@ const {trochanterY}=window.__koerperCore.labProportionen();
    HAAR_LOOK und der Webung der Kleid-Zeile — dieselben Zahlen liest der Welt-Stoff (stamm, TSL). */
 var KC=window.__koerperCore,BZ=KC.PORTAL_RENDER_CONFIG.lod.budget.koerper,STUFEN=KC.PORTAL_RENDER_CONFIG.lod.kindStages.koerper;
 var HL=KC.HAUT_LOOK,HAL=KC.HAAR_LOOK;
-var uZeit={value:0},stufeWahl='auto',gestalt=null;
+var uZeit={value:0},uSchirmH={value:renderer.getDrawingBufferSize(new THREE.Vector2()).y},stufeWahl='auto',gestalt=null;
 var character=null,torsoG=null,headGroup=null,irisL=null,irisR=null,lidTL=null,lidTR=null,hairGroup=null,torsoR=0.38;
 function gf(x){var s=(+x).toString();return s.indexOf('.')<0&&s.indexOf('e')<0?s+'.0':s;}
 function gv(a){return 'vec3('+gf(a[0])+','+gf(a[1])+','+gf(a[2])+')';}
@@ -117,21 +117,35 @@ function laborStoff(m0,geo,skin,cache){
   m.skinning=skin;if(vc){m.vertexColors=true;m.color.setRGB(1,1,1);}
   if(haut||haar||webe){
     m.onBeforeCompile=function(sh){
-      // DIE ACHSE DES HAARS (w25-haar-albedo, wie die Welt `_foundryTreeMaterial`): `aStraehne` [Achse, Länge] aus stufeAnlegen
-      // (koerper `haarAchse`) reist als Varying, ihr Quotient ist der Anteil Wurzel → Spitze
-      var lumW='vec3(0.2126,0.7152,0.0722)';
-      var ach=haar?'\nattribute vec2 aStraehne;\nvarying vec2 vAchse;':'',achV=haar?'\nvAchse=aStraehne;':'';
-      sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vGeo;'+ach).replace('#include <begin_vertex>','#include <begin_vertex>\nvGeo=position;'+achV);
-      var fk='varying vec3 vGeo;\n'+(haar?'varying vec2 vAchse;\n':'')+(webe?GLSL_RAUSCHEN:'');
-      var farbe=webe?'\ndiffuseColor.rgb*=1.0+snoise(vGeo*'+gf(webe[0])+')*'+gf(webe[1])+';':haar?'\nfloat sTL=clamp(vAchse.x/max(vAchse.y,1e-6),0.0,1.0);':'';
+      // DIE FASER DES HAARS (w26-haar-arm, wie die Welt `_haarLichtModell`): `aHaarT` [Tangente, Wurf] aus stufeAnlegen (koerper
+      // `haarAchse`) reist als Varying im Auge; ohne Tangente (die Braue) das Licht des Standard-Stoffs
+      // DER FUSSABDRUCK DES PIXELS (w27-haar-arm-2, wie die Welt, HAAR_LOOK.kk.fuss): Meter je Pixel am Ort der Ecke (Tiefe,
+      // Projektion, Höhe des Schirms) gegen die Breite der Strähne — `unter` 0, wo das Pixel sie auflöst, 1, wo es mehrere deckt;
+      // die Faser trägt den Anteil `vAnteil` = 1 − unter · flaeche, den Rest das Licht des Standard-Stoffs (wie die Welt)
+      // (koerper `haarLappen`: je Lappen die halbe Potenz h und die Norm an der Ecke, `vLappen` [h, Norm] von R und TRT)
+      var kk=HAL.kk,FU=kk.fuss,hnV=function(p){var G=KC.haarLappen(p,kk),h='('+gf(G.halb)+'/(1.0+'+gf(G.weite)+'*unter))';return h+',sqrt((2.0*'+h+'+1.5)/'+gf(G.fuss)+')*'+gf(G.norm);};
+      if(haar)sh.uniforms.uSchirmH=uSchirmH;
+      var ach=haar?'\nattribute vec4 aHaarT;\nuniform float uSchirmH;\nvarying vec3 vHaarT;\nvarying float vWurf;\nvarying vec4 vLappen;\nvarying float vAnteil;':'',achV=haar?'\nvHaarT=(modelViewMatrix*vec4(aHaarT.xyz,0.0)).xyz;':'';
+      var fussV=haar?'\nfloat pxM=2.0*max(-mvPosition.z,1e-4)/(projectionMatrix[1][1]*uSchirmH),sk=length(modelMatrix[0].xyz),unter=1.0-smoothstep('+gf(FU.px[0])+','+gf(FU.px[1])+','+gf(FU.breite)+'*sk/pxM);vWurf=aHaarT.w*(1.0-unter);vLappen=vec4('+hnV(kk.R.p)+','+hnV(kk.TRT.p)+');vAnteil=1.0-unter*'+gf(FU.flaeche)+';':'';
+      sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vGeo;'+ach).replace('#include <begin_vertex>','#include <begin_vertex>\nvGeo=position;'+achV).replace('#include <project_vertex>','#include <project_vertex>'+fussV);
+      var fk='varying vec3 vGeo;\n'+(haar?'varying vec3 vHaarT;\nvarying float vWurf;\nvarying vec4 vLappen;\nvarying float vAnteil;\n':'')+(webe?GLSL_RAUSCHEN:'');
+      var farbe=webe?'\ndiffuseColor.rgb*=1.0+snoise(vGeo*'+gf(webe[0])+')*'+gf(webe[1])+';':'';
       var look='\nvec3 vdL=normalize(-vViewPosition);float ndvL=clamp(dot(normal,vdL),-1.0,1.0);float rimL=clamp(1.0-abs(ndvL),0.0,1.0);';
       if(haut)look+='totalEmissiveRadiance+='+gv(HL.sssFarbe)+'*pow(rimL,'+gf(HL.sssPow)+')*'+gf(HL.sssAmt)+';';
-      // DER GLANZ IST LICHT (w25-haar-albedo, wie die Welt `_haarLichtModell`): je direktem Licht — der Glanz × das direkte Diffuse
-      // ÷ die Albedo (= Σ Bestrahlung · N·L ÷ π samt Schatten), nie Emission; unter Umgebungslicht allein glänzt nichts
-      else if(haar)look+='vec3 glanzL='+gv(HAL.tipRimFarbe)+'*pow(rimL,'+gf(HAL.tipRimPow)+')*sTL+'+gv(HAL.specFarbe)+'*pow(max(ndvL,0.0),'+gf(HAL.specPow)+')*sTL*'+gf(HAL.specAmt)+';';
       else look='';
-      var licht=haar?'\nreflectedLight.directSpecular+=glanzL*dot(reflectedLight.directDiffuse,'+lumW+')/max(dot(diffuseColor.rgb,'+lumW+'),1e-4);':'';
-      sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\n'+fk).replace('#include <color_fragment>','#include <color_fragment>'+farbe).replace('#include <emissivemap_fragment>','#include <emissivemap_fragment>'+look).replace('#include <lights_fragment_end>','#include <lights_fragment_end>'+licht);
+      // KAJIYA-KAY AN DER FASER (w26-haar-arm, wie die Welt `_haarLichtModell`, die Zahlen HAAR_LOOK.kk): je direktem Licht diffus
+      // sin(T, L) × die Form, die Lappen R und TRT an der gekippten Tangente; unter Umgebungslicht allein glänzt nichts.
+      // DER LAPPEN AM PIXEL (w27-haar-arm-2): sin^p' als (1 − cos²)^h × Norm, hn = [h, Norm] der Ecke (`vLappen`)
+      var lap=function(sh,hn){return 'pow(max(1.0-pow(dot(normalize(t+N*(vWurf*'+gf(kk.jit)+'+('+gf(sh)+'))),H),2.0),0.0),'+hn+'.x)*'+hn+'.y';};
+      var kkFn=haar?'\nvoid RE_Direct_Haar(const in IncidentLight directLight,const in GeometricContext geometry,const in PhysicalMaterial material,inout ReflectedLight reflectedLight){'+
+        'if(length(vHaarT)<1e-4){RE_Direct_Physical(directLight,geometry,material,reflectedLight);return;}'+
+        'IncidentLight dlF=directLight;dlF.color*=1.0-vAnteil;RE_Direct_Physical(dlF,geometry,material,reflectedLight);'+
+        'vec3 L=directLight.direction,N=geometry.normal,t=normalize(vHaarT),H=normalize(L+geometry.viewDir);float nl=dot(N,L);'+
+        'float form=clamp(nl*'+gf(kk.wrap)+'+'+gf(1-kk.wrap)+',0.0,1.0);float sinTL=sqrt(max(1.0-pow(dot(t,L),2.0),0.0));'+
+        'reflectedLight.directDiffuse+=directLight.color*mix(max(nl,0.0),sinTL*form,'+gf(kk.kd)+')*vAnteil*material.diffuseColor*RECIPROCAL_PI;'+
+        'reflectedLight.directSpecular+=directLight.color*form*vAnteil*('+gv(kk.R.farbe)+'*'+lap(kk.R.shift,'vLappen.xy')+'+material.diffuseColor*'+gf(kk.TRT.amt)+'*'+lap(kk.TRT.shift,'vLappen.zw')+');}'+
+        '\n#undef RE_Direct\n#define RE_Direct RE_Direct_Haar\n':'';
+      sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\n'+fk).replace('#include <color_fragment>','#include <color_fragment>'+farbe).replace('#include <emissivemap_fragment>','#include <emissivemap_fragment>'+look).replace('#include <lights_physical_pars_fragment>','#include <lights_physical_pars_fragment>'+kkFn);
     };
     m.customProgramCacheKey=function(){return 'labor-welt-mensch-'+key+(webe?'|'+m0.userData.__webe:'');};
   }
@@ -158,7 +172,7 @@ function stufeAnlegen(lod,ov,baum,cache){
       if(ga.position.itemSize!==3||ga.color.itemSize!==3||ga.aTon.itemSize!==1||ga.position.isInterleavedBufferAttribute)throw new Error('Labor: das Haar trägt Lage, Farbe und Ton nicht je Ecke (fail-closed)');
       var ra=KC.haarAchse(ga.position.array,ga.color.array,ga.aTon.array);
       if(ra.bruch)throw new Error('Labor: '+ra.bruch+' Bänder des Haars folgen nicht dem Gesetz der Ecken (fail-closed)');
-      if(ra.zahl)geo.setAttribute('aStraehne',new THREE.BufferAttribute(ra.achse,2));}
+      if(ra.zahl){geo.setAttribute('aStraehne',new THREE.BufferAttribute(ra.achse,2));geo.setAttribute('aHaarT',new THREE.BufferAttribute(ra.tangente,4));}}
     var n=skin?new THREE.SkinnedMesh(geo,mat):new THREE.Mesh(geo,mat),j=baum.teile[m0.userData.__assetJoint];
     if(!j)throw new Error('Labor: das Gelenk '+m0.userData.__assetJoint+' fehlt dem Baum (fail-closed)');
     n.userData.__seh=m0.material.userData.__seh;n.userData.__klasse=m0.material.userData.__klasse;n.userData.__webe=m0.material.userData.__webe||null;n.receiveShadow=true;j.add(n);liste.push(n);});
@@ -910,7 +924,7 @@ function playKamera(dt) {
 // ===================== END PLAY SYSTEM =====================
 var BUILD='B64·benchmark';console.log('%cDA VINCI BUILD '+BUILD,'color:#7fd;font-weight:bold');
 (function(){var d=document.createElement('div');d.id='buildtag';d.textContent=BUILD;d.style.cssText='position:fixed;right:8px;bottom:6px;font:10px monospace;color:#9fb2c8;opacity:.45;z-index:99;pointer-events:none;';document.body.appendChild(d);})();
-animate();addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);composer.setSize(innerWidth,innerHeight);});
+animate();addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);composer.setSize(innerWidth,innerHeight);uSchirmH.value=renderer.getDrawingBufferSize(new THREE.Vector2()).y;});
 
 /* ==================== DIE BRÜCKE ZUR HEIMAT (die Hülle, K41) ==================== */
 /* EINE Brücke (../huelle/huelle.js): die DSL spricht die ECHTEN UI-Pfade — die acht Bewegungs-/Emotions-Profile leben

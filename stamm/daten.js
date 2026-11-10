@@ -706,11 +706,31 @@ class AnazhRealm_daten {
                 mikroMinM: 0.0005,
                 mikro: 0.15,
                 mikroHoehe: 0.75, // die Höhe der nächst gröberen Oktave je feinerer (`_mikroRelief`: das Spektrum β ≈ 1,2)
-                // die Kavität je Höhe (`_mikroStoff`, aoNode): das Himmels-Licht der Mulde und der Erhebung — die Höhe streut σ ≈ 0,12,
-                // 2,1 gibt der Mulde ein Viertel weniger Himmel (rauer Boden im diffusen Licht: Mulde 0,3–0,6, Krume 1); mit 0,7
-                // trug der Boden im Schatten der Wiese kein Korn (Radeon, Mess-Wiese Ego 1 m: glatt 0,31 bei Luma 10–20)
-                kavitaet: 2.1,
-                korn: 2.0, // das Korn je Höhe (`_mikroStoff`, colorNode): die Albedo der Mulde dunkler, der Erhebung heller (σ ≈ 24 %), mittelfrei
+                // DIE HÖHE AM SCHIRM streut `streu` (σ, in der Höhe −1 … 1), STETIG über den Oktaven-Wechsel: jede Oktave trägt
+                // mikroHoehe^(Oktaven über der feinsten), die ein- und die ausblendende leistungs-gleich (√fract, √(1 − fract)) — σ
+                // steht auf 0,142–0,146. Bis w27-boden-nah-2 fiel die Höhe einer Oktave an jedem Wechsel im Sprung (1 → 0,75 → 0,56):
+                // σ 0,133 ↔ 0,178, das Mittel des Bodens im reinen Himmels-Licht 1,12 ↔ 1,20 — Bänder im Schatten und in der Nacht.
+                streu: 0.142,
+                // DAS HIMMELS-BILD (`_mikroStoff`, aoNode): was das Relief im reinen Himmels-Licht zeigt — Schatten, bedeckter Tag,
+                // Nacht. Im LOGARITHMUS beschränkt: ln Bild = −ln(mulde) · s(kavitaet · (h − krume)), s(x) = x / √(1 + x²). Die
+                // tiefste Mulde hält `mulde` des Lichts der Fläche, die höchste Krume trägt 1/mulde: kein Pixel säuft ab, keiner
+                // glitzert. `kavitaet` ist die Steile zwischen beiden (je Höhe), `krume` die Schwelle über der mittleren Fläche — die
+                // Mehrheit liegt in der Mulde, das Mittel des Bilds steht bei 1,13 (main 1,09, w26 1,15; gerechnet am Rausch-Gesetz).
+                // GEMESSEN (Radeon 890M, Mess-Wiese Ego, der Weg von material.K2#1, ABAB in EINER Welt, je 2× bit-gleich): glatt
+                // 0,5/1/2 m 0,157/0,093/0,108 → 0,032/0,013/0,012, nyquist 0,167/0,171/0,175 → 0,175/0,179/0,180, Klassen-Luma
+                // 32,18 → 32,30; die Nacht der Prüfbühne (S0, Radeon wie swiftshader): abgesoffen 4,0 % → 0,7 %, Luma 24,2 → 24,1.
+                // DAS GESETZ DAVOR — Korn × Kavität linear, (1 + korn · h)(1 + kavitaet · h) — nahm der Mulde Albedo UND Himmel, bis
+                // auf 0 bei h = −1/kavitaet: mit 2,1 soffen in der Nacht 4,0 % ab (pascal 6,4 %: main saß ohne Abstand an der Wand
+                // 5 %), mit 3,6 (w26-boden-nah, glatt 0,031) 9,8 % — der Zug z352 fiel an S0 Nacht. Das Urteil glatt liest die BREITE
+                // der Verteilung (p10–p90 2,0 der Fläche), nicht ihre Spitzen: ein Boden mit hellen Spitzen (0,6 + 0,4 · exp in der
+                // Helligkeit) hielt die Nacht und verlor K2#1 (glatt 0,161, dieselbe Welt). Die Schwelle 0,03 gäbe der Nacht Luma
+                // 23,7, 0,02 gäbe 24,6 — 0,025 hält die Luma von main.
+                mulde: 0.38,
+                kavitaet: 12,
+                krume: 0.025,
+                // das Korn je Höhe (`_mikroStoff`, colorNode): die Albedo der Mulde dunkler, der Erhebung heller (σ 29 %), mittelfrei —
+                // die Sonne liest es, das Himmels-Licht liest das Himmels-Bild
+                korn: 2.0,
                 // Kipp-Stärke subtil halten: der Bump kippt die wahre Normale des Bodens (ferne.K4: keine 2.5D-Lichtung mehr)
                 // — zu stark (0.42 = 23°) gibt bimodales dot(N,L) = bolde Hell/Dunkel-Trapeze. 0.24 = 13° moduliert echtes
                 // Mikro-Relief; das Albedo-Korn trägt die feine Textur.
