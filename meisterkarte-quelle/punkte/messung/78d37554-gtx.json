@@ -1,7 +1,7 @@
 {
  "sha": "78d37554b2d5f98d96ef454cfa9f51752c0e45a0",
  "geraet": "gtx",
- "zeit": "2026-11-10T02:59:19.238Z",
+ "zeit": "2026-11-10T03:04:47.916Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {},
  "ungemessen": {
@@ -1010,22 +1010,71 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "fahrzeug.K2#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen: Stille seit 89.4 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "exit": 1,
+   "minuten": 1.5,
+   "grund": "Deckel 90 s gerissen: Stille seit 89.4 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "s": 90.2,
+   "fremd": {
+    "s": 92.1,
+    "takte": 41,
+    "fremdS": 261,
+    "kerne": 2.834,
+    "fensterKerne": 4.075,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      100.02
+     ],
+     [
+      "MsMpEng.exe",
+      49.2
+     ],
+     [
+      "svchost.exe",
+      47.95
+     ]
+    ],
+    "dienerS": 42.98,
+    "diener": [
+     [
+      "System",
+      20.19
+     ],
+     [
+      "dwm.exe",
+      14.55
+     ]
+    ],
+    "eigenS": 392.33,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-10T03:04:47.916Z",
+   "abdruck": "3288dc20437e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-10T02:58:47.092Z",
+  "start": "2026-11-10T03:04:09.465Z",
   "port": 7804,
-  "warten": 0.02,
-  "bootS": 6.9,
+  "warten": 0.01,
+  "bootS": 7.4,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": null,
-    "vor": "bauen.K1#2",
-    "s": 23.9,
-    "takte": 784,
+    "ort": "wiese",
+    "vor": "fahrzeug.K2#2",
+    "s": 29.8,
+    "takte": 569,
     "chunks": 81,
     "nach": null
    }
@@ -1034,20 +1083,27 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 2405,
-   "frameP95": 50.01,
-   "taktP95": 41.69,
-   "vramMax": 142.9,
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
-   "ortImDeckel": [],
-   "zapfen": 80,
+   "ortImDeckel": [
+    {
+     "probe": "fahrzeug.K2#2",
+     "m": 1857,
+     "ringVor": 4,
+     "ringMin": -1
+    }
+   ],
+   "zapfen": 120,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 83.1,
-  "minuten": 1.47
+  "fahrtS": 129.6,
+  "minuten": 2.24
  }
 }
