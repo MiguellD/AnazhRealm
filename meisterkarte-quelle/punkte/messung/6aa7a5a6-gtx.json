@@ -1,7 +1,7 @@
 {
  "sha": "6aa7a5a6bfd01df56192e66b658681dac67a27a9",
  "geraet": "gtx",
- "zeit": "2026-11-10T13:11:29.064Z",
+ "zeit": "2026-11-10T13:25:31.670Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "haar.K2#1": {
@@ -1581,108 +1581,481 @@
    "bahn": "sitzung",
    "zwilling": "studios.K2#2",
    "modus": "session"
+  },
+  "leib.K1#1": {
+   "gruen": false,
+   "zahl": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 8,6 CPU-s · MsMpEng.exe 4,7 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 3,5 CPU-s — 0,68 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container); Σ fremd 22,7 CPU-s in 38,9 s) — kein Urteil, UNGEMESSEN (die Probe sah: schlechtester von 1 Läufen p95 ms ego/gehen 62 · third/gehen 64.1 · ego/wechsel 39.4 · third/wechsel 33.9 · Bild 33.63 ms)",
+   "exit": 0,
+   "minuten": 0.6,
+   "grund": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 8,6 CPU-s · MsMpEng.exe 4,7 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 3,5 CPU-s — 0,68 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container); Σ fremd 22,7 CPU-s in 38,9 s) — kein Urteil, UNGEMESSEN (die Probe sah: schlechtester von 1 Läufen p95 ms ego/gehen 62 · third/gehen 64.1 · ego/wechsel 39.4 · third/wechsel 33.9 · Bild 33.63 ms)",
+   "gpu": "nvidia/pascal",
+   "s": 36.2,
+   "fremd": {
+    "s": 38.9,
+    "takte": 18,
+    "fremdS": 22.67,
+    "kerne": 0.583,
+    "fensterKerne": 0.676,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      8.56
+     ],
+     [
+      "MsMpEng.exe",
+      4.69
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.52
+     ]
+    ],
+    "dienerS": 14.69,
+    "diener": [
+     [
+      "dwm.exe",
+      7.39
+     ],
+     [
+      "System",
+      5.38
+     ]
+    ],
+    "eigenS": 80.5,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-10T13:19:02.513Z",
+   "abdruck": "cd8f3cd2b132",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "leib.K1#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen: Stille seit 88.6 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ LATENZ1)",
+   "exit": 1,
+   "minuten": 1.54,
+   "grund": "Deckel 90 s gerissen: Stille seit 88.6 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ LATENZ1)",
+   "s": 90.1,
+   "fremd": {
+    "s": 92.9,
+    "takte": 43,
+    "fremdS": 54.27,
+    "kerne": 0.584,
+    "fensterKerne": 0.798,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      20.45
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      8.66
+     ],
+     [
+      "MsMpEng.exe",
+      7.03
+     ]
+    ],
+    "dienerS": 36.41,
+    "diener": [
+     [
+      "dwm.exe",
+      19.55
+     ],
+     [
+      "System",
+      12.31
+     ]
+    ],
+    "eigenS": 120.25,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-10T13:19:39.638Z",
+   "abdruck": "69bb8ec1c19c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "leib.K4#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen: Stille seit 89.9 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "exit": 1,
+   "minuten": 1.5,
+   "grund": "Deckel 90 s gerissen: Stille seit 89.9 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "s": 90.1,
+   "fremd": {
+    "s": 92.5,
+    "takte": 43,
+    "fremdS": 46.73,
+    "kerne": 0.505,
+    "fensterKerne": 0.668,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      19.22
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      7.09
+     ],
+     [
+      "MsMpEng.exe",
+      6.78
+     ]
+    ],
+    "dienerS": 22.95,
+    "diener": [
+     [
+      "dwm.exe",
+      11.2
+     ],
+     [
+      "System",
+      6.98
+     ]
+    ],
+    "eigenS": 168.81,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-10T13:21:48.141Z",
+   "abdruck": "8f7e47928a66",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "bauen.K1#2": {
+   "gruen": false,
+   "zahl": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 10,7 CPU-s · MsMpEng.exe 6,0 CPU-s · svchost.exe 2,0 CPU-s — 0,75 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container); Σ fremd 28,6 CPU-s in 48,2 s) — kein Urteil, UNGEMESSEN (die Probe sah: 6/8 Werke in L0 im Bild (Bau-Hash = L0-Bau, ≤ 3 Eingaben) · p95 bis zum Bild werkstatt kalt 3755 · warm 856 ms (2+1) · rezeptbuch kalt null · warm null ms (0+0) · hotbar kalt 4394 · warm 1845 ms (1+2) · ROT: werkstatt p95 kalt 3755 · warm 8)",
+   "exit": 0,
+   "minuten": 0.75,
+   "grund": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 10,7 CPU-s · MsMpEng.exe 6,0 CPU-s · svchost.exe 2,0 CPU-s — 0,75 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container); Σ fremd 28,6 CPU-s in 48,2 s) — kein Urteil, UNGEMESSEN (die Probe sah: 6/8 Werke in L0 im Bild (Bau-Hash = L0-Bau, ≤ 3 Eingaben) · p95 bis zum Bild werkstatt kalt 3755 · warm 856 ms (2+1) · rezeptbuch kalt null · warm null ms (0+0) · hotbar kalt 4394 · warm 1845 ms (1+2) · ROT: werkstatt p95 kalt 3755 · warm 8)",
+   "gpu": "nvidia/pascal",
+   "s": 45.2,
+   "fremd": {
+    "s": 48.2,
+    "takte": 22,
+    "fremdS": 28.59,
+    "kerne": 0.594,
+    "fensterKerne": 0.75,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      10.72
+     ],
+     [
+      "MsMpEng.exe",
+      6.03
+     ],
+     [
+      "svchost.exe",
+      1.98
+     ]
+    ],
+    "dienerS": 16.7,
+    "diener": [
+     [
+      "dwm.exe",
+      7.31
+     ],
+     [
+      "System",
+      6.89
+     ]
+    ],
+    "eigenS": 172.64,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-10T13:23:43.830Z",
+   "abdruck": "16d0aff9ab8b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "tore.K1#1": {
+   "gruen": false,
+   "zahl": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 11,9 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 5,7 CPU-s · MsMpEng.exe 4,8 CPU-s — 0,92 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container); Σ fremd 32,8 CPU-s in 48,8 s) — kein Urteil, UNGEMESSEN (die Probe sah: t ego 4430 · third 8597 · ego — · third 7545 · ego — ms (Soll ≤ 2000) · Luma min 0.017 · Frame max 539 ms · Geburt 7799 ms · rot: #1 ego 8aa8ff15→3d0d6d3c: t 4430 ms, 66 Bilder schwarz und 0 weiß (Luma 0.043–0.314), 19 Frames über 100 ms (b)",
+   "exit": 0,
+   "minuten": 0.77,
+   "grund": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 11,9 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 5,7 CPU-s · MsMpEng.exe 4,8 CPU-s — 0,92 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container); Σ fremd 32,8 CPU-s in 48,8 s) — kein Urteil, UNGEMESSEN (die Probe sah: t ego 4430 · third 8597 · ego — · third 7545 · ego — ms (Soll ≤ 2000) · Luma min 0.017 · Frame max 539 ms · Geburt 7799 ms · rot: #1 ego 8aa8ff15→3d0d6d3c: t 4430 ms, 66 Bilder schwarz und 0 weiß (Luma 0.043–0.314), 19 Frames über 100 ms (b)",
+   "gpu": "nvidia/pascal",
+   "s": 46.2,
+   "fremd": {
+    "s": 48.8,
+    "takte": 22,
+    "fremdS": 32.78,
+    "kerne": 0.671,
+    "fensterKerne": 0.916,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      11.94
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      5.69
+     ],
+     [
+      "MsMpEng.exe",
+      4.81
+     ]
+    ],
+    "dienerS": 25.86,
+    "diener": [
+     [
+      "dwm.exe",
+      12.73
+     ],
+     [
+      "System",
+      10
+     ]
+    ],
+    "eigenS": 242.63,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-10T13:24:33.017Z",
+   "abdruck": "248a1713c159",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "ankunft.K3#1": {
+   "gruen": false,
+   "zahl": "Fremd-Last: MsMpEng.exe 28,9 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 19,5 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 7,8 CPU-s — 1,96 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container); Σ fremd 73,6 CPU-s in 70,1 s) — kein Urteil, UNGEMESSEN (die Probe sah: warm Median 11.24 s (11.02 · 11.46, Zweit-Boot im warmen Browser) · [linse-gpu] nvidia/pascal)",
+   "exit": 0,
+   "minuten": 1.11,
+   "grund": "Fremd-Last: MsMpEng.exe 28,9 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 19,5 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 7,8 CPU-s — 1,96 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container); Σ fremd 73,6 CPU-s in 70,1 s) — kein Urteil, UNGEMESSEN (die Probe sah: warm Median 11.24 s (11.02 · 11.46, Zweit-Boot im warmen Browser) · [linse-gpu] nvidia/pascal)",
+   "gpu": "nvidia/pascal",
+   "s": 66.5,
+   "fremd": {
+    "s": 70.1,
+    "takte": 31,
+    "fremdS": 73.58,
+    "kerne": 1.05,
+    "fensterKerne": 1.956,
+    "namen": [
+     [
+      "MsMpEng.exe",
+      28.94
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      19.45
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      7.77
+     ]
+    ],
+    "dienerS": 43.13,
+    "diener": [
+     [
+      "System",
+      19.89
+     ],
+     [
+      "dwm.exe",
+      18.53
+     ]
+    ],
+    "eigenS": 451.42,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-10T13:25:31.670Z",
+   "abdruck": "3b4659c456d4",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "ankunft.K1#1": {
+   "gruen": false,
+   "zahl": "Fremd-Last: MsMpEng.exe 28,9 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 19,5 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 7,8 CPU-s — 1,96 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container); Σ fremd 73,6 CPU-s in 70,1 s) — kein Urteil, UNGEMESSEN (die Probe sah: t(Kontrolle) kalt 21.73 s von außen (Eigenmeldung 20.63 s), Bild 0.01 % Lücke bis zur Ruhe, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht · [linse-gpu] nvidia/pascal)",
+   "exit": 0,
+   "minuten": 1.11,
+   "grund": "Fremd-Last: MsMpEng.exe 28,9 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 19,5 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 7,8 CPU-s — 1,96 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container); Σ fremd 73,6 CPU-s in 70,1 s) — kein Urteil, UNGEMESSEN (die Probe sah: t(Kontrolle) kalt 21.73 s von außen (Eigenmeldung 20.63 s), Bild 0.01 % Lücke bis zur Ruhe, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht · [linse-gpu] nvidia/pascal)",
+   "gpu": "nvidia/pascal",
+   "s": 66.5,
+   "fremd": {
+    "s": 70.1,
+    "takte": 31,
+    "fremdS": 73.58,
+    "kerne": 1.05,
+    "fensterKerne": 1.956,
+    "namen": [
+     [
+      "MsMpEng.exe",
+      28.94
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      19.45
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      7.77
+     ]
+    ],
+    "dienerS": 43.13,
+    "diener": [
+     [
+      "System",
+      19.89
+     ],
+     [
+      "dwm.exe",
+      18.53
+     ]
+    ],
+    "eigenS": 451.42,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-10T13:25:31.670Z",
+   "abdruck": "4e36edaf41f7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "ankunft.K3#1",
+   "modus": "session"
+  },
+  "ankunft.K1#2": {
+   "gruen": false,
+   "zahl": "Fremd-Last: MsMpEng.exe 28,9 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 19,5 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 7,8 CPU-s — 1,96 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container); Σ fremd 73,6 CPU-s in 70,1 s) — kein Urteil, UNGEMESSEN (die Probe sah: t(Kontrolle) kalt 21.73 s von außen (Eigenmeldung 20.63 s), Bild 0.01 % Lücke bis zur Ruhe, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht · [linse-gpu] nvidia/pascal)",
+   "exit": 0,
+   "minuten": 1.11,
+   "grund": "Fremd-Last: MsMpEng.exe 28,9 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 19,5 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 7,8 CPU-s — 1,96 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container); Σ fremd 73,6 CPU-s in 70,1 s) — kein Urteil, UNGEMESSEN (die Probe sah: t(Kontrolle) kalt 21.73 s von außen (Eigenmeldung 20.63 s), Bild 0.01 % Lücke bis zur Ruhe, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht · [linse-gpu] nvidia/pascal)",
+   "gpu": "nvidia/pascal",
+   "s": 66.5,
+   "fremd": {
+    "s": 70.1,
+    "takte": 31,
+    "fremdS": 73.58,
+    "kerne": 1.05,
+    "fensterKerne": 1.956,
+    "namen": [
+     [
+      "MsMpEng.exe",
+      28.94
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      19.45
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      7.77
+     ]
+    ],
+    "dienerS": 43.13,
+    "diener": [
+     [
+      "System",
+      19.89
+     ],
+     [
+      "dwm.exe",
+      18.53
+     ]
+    ],
+    "eigenS": 451.42,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-10T13:25:31.670Z",
+   "abdruck": "201ca904c048",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "ankunft.K3#1",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-10T13:02:47.433Z",
+  "start": "2026-11-10T13:18:23.583Z",
   "port": 7804,
   "warten": 0.01,
   "bootS": 7.4,
   "grundstellungS": [
-   5.2,
-   8.7,
-   11.2,
-   6.2
+   5.4,
+   4.9,
+   0.1,
+   0.1
   ],
   "proben": 6,
   "freigaben": [],
   "orte": [
    {
     "ort": "wiese",
-    "vor": "licht.K2#1",
-    "s": 29.5,
-    "takte": 538,
-    "chunks": 81,
-    "nach": null
-   },
-   {
-    "ort": "genesis",
-    "vor": "ankunft.K4#1",
-    "s": 15.4,
-    "takte": 603,
+    "vor": "leib.K1#1",
+    "s": 30.2,
+    "takte": 728,
     "chunks": 81,
     "nach": null
    },
    {
     "ort": "wiese",
-    "vor": "gelaende.K2#1",
-    "s": 26.7,
-    "takte": 603,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "wiese",
-    "vor": "fahrzeug.K2#1",
-    "s": 28.7,
-    "takte": 722,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "wiese",
-    "vor": "fahrzeug.K2#2",
-    "s": 28.1,
-    "takte": 774,
+    "vor": "leib.K4#1",
+    "s": 30.2,
+    "takte": 748,
     "chunks": 81,
     "nach": "der Tür"
    },
    {
     "ort": null,
-    "vor": "studios.K2#2",
-    "s": 17.2,
-    "takte": 786,
+    "vor": "bauen.K1#2",
+    "s": 19.3,
+    "takte": 876,
     "chunks": 81,
     "nach": "der Tür"
+   },
+   {
+    "ort": null,
+    "vor": "tore.K1#1",
+    "s": 3,
+    "takte": 150,
+    "chunks": 90,
+    "nach": "der Grundstellung"
+   },
+   {
+    "ort": null,
+    "vor": "ankunft.K3#1",
+    "s": 10.6,
+    "takte": 610,
+    "chunks": 98,
+    "nach": "der Grundstellung"
    }
   ],
   "wegeTueren": [],
   "ciBlicke": 7,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 1429,
-   "frameP95": 83.32,
-   "taktP95": 70.9,
-   "vramMax": 143.7,
-   "seiten": 5,
+   "bilder": 7275,
+   "frameP95": 74.98,
+   "taktP95": 58.32,
+   "vramMax": 155.6,
+   "seiten": 7,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
-   "ortImDeckel": [
-    {
-     "probe": "fahrzeug.K2#2",
-     "m": 1857,
-     "ringVor": 4,
-     "ringMin": 0
-    },
-    {
-     "probe": "gelaende.K2#1",
-     "m": 1718,
-     "ringVor": 4,
-     "ringMin": 0
-    },
-    {
-     "probe": "fahrzeug.K2#1",
-     "m": 1160,
-     "ringVor": 4,
-     "ringMin": -1
-    }
-   ],
-   "zapfen": 534,
-   "luecken": 4,
-   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+   "ortImDeckel": [],
+   "zapfen": 478,
+   "luecken": 5,
+   "letzteLuecke": "kein Renderer"
   },
-  "fahrtS": 612.3,
-  "minuten": 10.27
+  "fahrtS": 495.9,
+  "minuten": 8.31
  }
 }
