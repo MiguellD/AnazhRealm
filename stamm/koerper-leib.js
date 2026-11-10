@@ -1604,13 +1604,21 @@ class AnazhRealm_koerper_leib {
     // Gesetz — ein Teil, dessen Haut-Gewichte zu `KOPF_TEILUNG.anteil` an den Gelenken des Kopfs hängen (`KOPF_TEILUNG.gelenk`:
     // head, Augen, Lider) oder der unter dem Kopf-Knoten sitzt (die Strähnen), heißt `<leib>:kopf/<Stoff>`, der Rest
     // `<leib>:leib/<Stoff>` (Stoff = `__klasse` des Teils, ohne sie `auge` am Iris-Gelenk, sonst `stoff`). Liefert [grob, fein]:
-    // grob die Täter-Klasse (`_taeterKlasse`), fein der Name des Teils — was kein Leib eines Menschen ist, trägt beide gleich (der
-    // Satz der Menge bleibt `bewohner-satz`). Leser: die Teilung der Werkbank (`bild --klasse`: wählt der Ausdruck den Leib, ist er
+    // grob die Täter-Klasse (`_taeterKlasse`, das Holz unten ausgenommen), fein der Name des Teils — was kein Leib eines Menschen
+    // ist, trägt beide gleich (der Satz der Menge bleibt `bewohner-satz`). Leser: die Teilung der Werkbank (`bild --klasse`: wählt der Ausdruck den Leib, ist er
     // EINE Klasse, sonst zeigt er seine Teile) und ihr Gesicht (die Kopf-Haut des nächsten gewählten Leibs). Bis w4-bewohner-wache
     // teilte die Werkbank selbst und nur den Spieler (nur unter `--gesicht`): kein Bewohner trug `bewohner:kopf/…`.
+    // DAS HOLZ IST EIN AUSSEN (w26-eiche-kante, lod.K1#1): ein Teil einer Foundry-Gestalt (`f:<art>:L<n>`), dessen Stoff Holz ist
+    // (das Kern-Gesetz phyto-core `budgetRegler(kind).rinde`: Rinde und Stiel), ist ein eigener Leib `<klasse>:holz`, grob wie fein
+    // — die Krone eines Baums ist ihr Laub. Bis hier trug die Rinde den Namen ihres Laubs, und die Laub-Kante maß den Stamm im Gras
+    // als Umriss der Krone (Spielgang, GTX 1050 30e94000: f:eiche:L1 0,3102 mit, 0,194 ohne Rinde, 2 726 Stamm-Pixel).
     _kopfKlasse(o) {
         const grob = this._taeterKlasse(o);
-        if (!o.geometry || this._menschLeib(this._leibWurzel(o)) !== grob) return [grob, grob];
+        if (!o.geometry || this._menschLeib(this._leibWurzel(o)) !== grob) {
+            const art = o.material && o.material.userData ? o.material.userData.foundryKind : null;
+            const holz = grob.startsWith("f:") && !!art && globalThis.__phytoCore.budgetRegler(art).rinde;
+            return holz ? [grob + ":holz", grob + ":holz"] : [grob, grob];
+        }
         const K = AnazhRealm.KOPF_TEILUNG;
         const auge = !!(o.isSkinnedMesh && o.skeleton && o.skeleton.bones.some((b) => K.iris.test(b.name)));
         const stoff = (o.userData && o.userData.__klasse) || (auge ? "auge" : "stoff");

@@ -209,19 +209,6 @@ const eigeneWelt = async (zusatz, tor) => (hat("eigen") ? ((tor = werkbankTor(PO
 const dateiAb = (o) => opt("--datei") && jsonAb(path.resolve(opt("--datei")), o);
 const urteilEnde = (name, u) => endeMit(`${name} ${u.urteil}${u.befunde.length ? ": " + u.befunde.join(" | ") : ""}`, u.urteil === "GRUEN");
 
-// Eine Klassen-Methode (4 Leerzeichen eingerückt, prettier-Form, auch ein Gang) aus dem Quelltext schneiden.
-function methodeAusQuelle(quelle, name) {
-    const kopf = new RegExp(`\\n    (async |\\*)?${name}\\(([^)]*)\\) \\{\\n`);
-    const m = kopf.exec(quelle);
-    if (!m) return null;
-    const start = m.index + 1;
-    const ende = quelle.indexOf("\n    }\n", start);
-    if (ende < 0) return null;
-    const text = quelle.slice(start, ende + 6);
-    const art = m[1] === "*" ? "function*" : `${m[1] || ""}function`;
-    return `(${art} ${name}(${m[2]}) {${text.slice(text.indexOf("{\n") + 1)})`;
-}
-
 // DIE SICHTBARE BÖE (vegetation.K2 Staffel 1, `bild --zeit Δt`): die zeitliche Luma-Varianz zweier Ausgabe-Bilder (Rec. 709 auf
 // sRGB 0–255, `luma709`, Δt auseinander unter der Bild-Uhr der Bühne) auf den Pixeln der Maske `nah` (0–15 m), in der Seite `__boeVarianz`.
 // Das Urteil: das Nah-Feld trägt ≥ 5 % des Bilds (NAH), am Kamm der Böe liegt die Varianz ≥ 2× über dem Rausch-Boden (die Paare
@@ -2291,8 +2278,10 @@ async function starte() {
                     // `--quelle <datei>`: die Methode aus einem anderen Stand (die Basis eines A/B in EINER Welt)
                     // die Quelle ist eine Stamm-Datei oder ein Baum (scripts/lib/stamm.cjs: beide Formen, laut)
                     const quelle = stammLib.text(b.quelle ? path.resolve(b.quelle) : root);
-                    const src = methodeAusQuelle(quelle, b.name);
-                    if (!src) return send({ fehler: `Methode ${b.name} nicht gefunden` });
+                    // die Methode am AST (scripts/lib/stamm.cjs `glieder`, Lehre 12): ihr Funktions-Ausdruck mit async und Gang
+                    const g = stammLib.glieder(quelle).find((x) => x.name === b.name && x.art === "method" && !x.statisch), f = g?.knoten.value;
+                    if (!f) return send({ fehler: `Methode ${b.name} nicht gefunden` });
+                    const src = `(${f.async ? "async " : ""}function${f.generator ? "*" : ""} ${b.name}${quelle.slice(f.start, f.end)})`;
                     const o = await page.evaluate(
                         (name, src, terrain) => {
                             const fn = (0, eval)(src);
@@ -3947,6 +3936,7 @@ hauptLauf(async () => {
         if (selbst) console.log(`VERZUGPROBE ${gut ? "GRÜN" : "ROT"}: Verzug 3 Bilder hebt p50 um ${hub} ms ${o.fehler || mit.fehler || ""}`);
         process.exit(gut ? 0 : 1);
     }
+    else if (cmd === "kante") o = await AU.laubKanteGang({ rufe, umstellen, evalRuf, eigeneWelt, ergebnis }); // lod.K1#1, gate:laub-kante
     else if (cmd === "ziele") {
         o = await rufe("/ziele", { n: opt("--n"), json: opt("--json") });
         if (o?.tabelle) endeMit(o.tabelle + "\n" + o.datei, o.ok);
