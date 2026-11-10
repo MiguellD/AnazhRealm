@@ -96,7 +96,7 @@ function teile(meshes) {
             idx: m.index ? u32(m.index) : null,
         }));
 }
-const { luma709, srgbLin } = require("./lib/abnahme-urteil.cjs");
+const { luma709, srgbLin, klassenMasse } = require("./lib/abnahme-urteil.cjs");
 const Y = (c, i) => luma709(c, i * 3);
 const kreuz = (u, w) => [u[1] * w[2] - u[2] * w[1], u[2] * w[0] - u[0] * w[2], u[0] * w[1] - u[1] * w[0]];
 function hoehe(T) {
@@ -654,43 +654,34 @@ for (let i = 1; i <= 8; i++) {
 // Die Schwelle des Laub-Stoffs je Schirm-Ort: der alphaTest 0,5 (die Welt zeichnet ohne Raster-Schwelle).
 const kornSchwelle = () => 0.5;
 const KORN_MAX = 0.083;
-function kornReihe(mips, zBasis) {
-    // `mips` je Stufe { width, height, data rgba8 }, 4 Zellen nebeneinander; `zBasis` = Zell-Breite der ersten Stufe.
-    const stufeA = (m, c, u, v) => {
-        const W = m.width,
-            H = m.height,
-            d = m.data;
-        const x = ((c + u) / 4) * W - 0.5,
-            y = v * H - 0.5;
-        const x0 = Math.floor(x),
-            y0 = Math.floor(y),
-            fx = x - x0,
-            fy = y - y0;
-        let a = 0;
-        for (let q = 0; q < 4; q++) {
-            const dx = q & 1,
-                dy = q >> 1;
-            const w = (dx ? fx : 1 - fx) * (dy ? fy : 1 - fy);
-            a += w * d[(Math.min(H - 1, Math.max(0, y0 + dy)) * W + Math.min(W - 1, Math.max(0, x0 + dx))) * 4 + 3];
-        }
-        return a / 255;
-    };
+// DER ABGRIFF DER GPU (Z, Z2, U): `mips` je Stufe { width, height, data rgba8 }, 4 Zellen nebeneinander, `zBasis` die Zell-Breite
+// der ersten Stufe; bei λ trilinear zwischen zwei Stufen, bilinear je Stufe (der EINE Leser `biLuma`) → (c, u, v) ↦ [Luminanz, Deckung]
+function abgriff(mips, zBasis) {
     const versatz = Math.log2(PC.BLATT_ATLAS_ZELLE / zBasis);
+    const stufe = (m, c, u, v) => biLuma(m, ((c + u) / 4) * m.width - 0.5, v * m.height - 0.5);
     return (lambda) => {
-        const N = Math.max(4, Math.round(PC.BLATT_ATLAS_ZELLE / 2 ** lambda));
         const l = Math.max(0, lambda - versatz),
             l0 = Math.min(mips.length - 1, Math.floor(l)),
             l1 = Math.min(mips.length - 1, l0 + 1),
             f = l - Math.floor(l);
-        const probe = (c, u, v) => {
-            const a0 = stufeA(mips[l0], c, u, v);
-            return l1 === l0 || f === 0 ? a0 : a0 + (stufeA(mips[l1], c, u, v) - a0) * f;
+        return (c, u, v) => {
+            const p0 = stufe(mips[l0], c, u, v);
+            if (l1 === l0 || f === 0) return p0;
+            const p1 = stufe(mips[l1], c, u, v);
+            return [p0[0] + (p1[0] - p0[0]) * f, p0[1] + (p1[1] - p0[1]) * f];
         };
+    };
+}
+function kornReihe(mips, zBasis) {
+    const A = abgriff(mips, zBasis);
+    return (lambda) => {
+        const N = Math.max(4, Math.round(PC.BLATT_ATLAS_ZELLE / 2 ** lambda));
+        const probe = A(lambda);
         // Das Pixel, wie die zeitliche Auflösung es ruhend zeigt: das Mittel über die Halton-Unterproben (TRAANode).
         const pixel = (c, px, py, schwelle) => {
             let k = 0;
             for (const [hx, hy] of KORN_HALTON)
-                if (probe(c, (px + hx) / N, (py + hy) / N) >= schwelle(px + hx, py + hy)) k++;
+                if (probe(c, (px + hx) / N, (py + hy) / N)[1] >= schwelle(px + hx, py + hy)) k++;
             return k / KORN_HALTON.length;
         };
         const zellen = [];
@@ -720,27 +711,17 @@ function kornReihe(mips, zBasis) {
 // aus dem Stamm gelesen), die Deckung λ. Ziel: Farb-Korn der Welt ≤ FARB_KORN_ANTEIL × Farb-Korn ohne Oktave.
 const FARB_KORN_ANTEIL = 0.5;
 function farbKornReihe(mips, zBasis) {
-    const stufe = (m, c, u, v) => biLuma(m, ((c + u) / 4) * m.width - 0.5, v * m.height - 0.5);
-    const versatz = Math.log2(PC.BLATT_ATLAS_ZELLE / zBasis);
-    const probe = (lam, c, u, v) => {
-        const l = Math.max(0, lam - versatz),
-            l0 = Math.min(mips.length - 1, Math.floor(l)),
-            l1 = Math.min(mips.length - 1, l0 + 1),
-            f = l - Math.floor(l);
-        const p0 = stufe(mips[l0], c, u, v);
-        if (l1 === l0 || f === 0) return p0;
-        const p1 = stufe(mips[l1], c, u, v);
-        return [p0[0] + (p1[0] - p0[0]) * f, p0[1] + (p1[1] - p0[1]) * f];
-    };
+    const A = abgriff(mips, zBasis);
     return (lambda, oktave) => {
         const N = Math.max(4, Math.round(PC.BLATT_ATLAS_ZELLE / 2 ** lambda));
+        const [deckung, farbe] = [A(lambda), A(lambda + oktave)];
         const pixel = (px, py) => {
             let s = 0;
             for (const [hx, hy] of KORN_HALTON) {
                 const u = (px + hx) / N,
                     v = (py + hy) / N;
-                if (probe(lambda, 0, u, v)[1] < kornSchwelle()) return null; // nur voll deckende Pixel: das Innere
-                const [l, a] = probe(lambda + oktave, 0, u, v);
+                if (deckung(0, u, v)[1] < kornSchwelle()) return null; // nur voll deckende Pixel: das Innere
+                const [l, a] = farbe(0, u, v);
                 s += l / Math.max(a, 1e-3);
             }
             return s / KORN_HALTON.length;
@@ -761,11 +742,7 @@ function farbKornReihe(mips, zBasis) {
 function farbKornUrteil(fr, bcFmt, lambdaKrone, oktave) {
     const v = [],
         m = {};
-    const bc = fr.bc.mips.map((x) => ({
-        width: x.width,
-        height: x.height,
-        data: PC.bcDekodiere(x.data, x.width, x.height, bcFmt),
-    }));
+    const bc = bcStufen(fr, bcFmt);
     for (const [fmt, mips] of [
         ["bc", bc],
         ["rgba", fr.rgba.mips],
@@ -781,13 +758,10 @@ function farbKornUrteil(fr, bcFmt, lambdaKrone, oktave) {
     }
     return { v, m };
 }
-// Die Reihen je Format der Welt (die Fracht, wie die GPU sie liest) — `fr` = blattAtlasFracht(bild, true).
+// Die Reihen je Format der Welt (die Fracht, wie die GPU sie liest) — `fr` = blattAtlasFracht(bild, true); die BC-Kette dekodiert
+const bcStufen = (fr, f) => fr.bc.mips.map((m) => ({ ...m, data: PC.bcDekodiere(m.data, m.width, m.height, f) }));
 function kornReihen(fr, bcFmt) {
-    const bc = fr.bc.mips.map((m) => ({
-        width: m.width,
-        height: m.height,
-        data: PC.bcDekodiere(m.data, m.width, m.height, bcFmt),
-    }));
+    const bc = bcStufen(fr, bcFmt);
     return {
         bc: kornReihe(bc, bc[0].width / 4),
         rgba: kornReihe(fr.rgba.mips, fr.rgba.mips[0].width / 4),
@@ -821,6 +795,46 @@ function kornUrteil(reihen, lambdaKrone, deckungLabor) {
             });
             m[`${fmt}@${lam}`] = s.zellen.map((z) => `${z.flimmern.toFixed(3)}/${z.deckung.toFixed(2)}`).join(" ");
         }
+    }
+    return { v, m };
+}
+// (U) DER UMRISS DER FERNEN L1-KRONE (w26-eiche-kante, lod.K1#1): die Krone aus UMRISS_KARTEN Karten EINER Zelle (die Eichen-L1
+// trägt 147), gedreht, in der Ellipse aus 8 × 7 Karten-Kernen, jede wie (Z) auf dem Schirm gelesen (`kornReihe` Abgriff: trilinear,
+// bilinear je Stufe, alphaTest 0,5); Messname die Kante ihres Umrisses (`klassenMasse` kante, das Maß der Soll-Tafel laub-kante) je λ
+// der L1-Ferne, Soll ≤ ihr Band. Der Täter beim Namen: die glatte Kette schmilzt die Karte zu ihrer Hülle (KARTEN_GESETZ.lappen) —
+// main a7dc1874 Zelle 0 λ 3 / 3,5 0,245 / 0,269 (der Mutant „Klecks ohne Lappen"), Radeon am Spielgang f:eiche:L1 0,3261.
+const UMRISS_LAMBDA = [3, 3.5];
+const UMRISS_KARTEN = 147;
+const UMRISS_SOLL = require("../spec/abnahme/soll-tafel.json").klassen.find((k) => k.id === "laub-kante").soll
+    .eigenschaften[0].band[1];
+function umrissUrteil(mips) {
+    const A = abgriff(mips, mips[0].width / 4),
+        h = PC.BLATT_ATLAS_BREIT.kern / 2,
+        v = [],
+        m = {};
+    for (const lam of UMRISS_LAMBDA) {
+        const probe = A(lam),
+            C = PC.BLATT_ATLAS_ZELLE / 2 ** lam;
+        const [W, H, rx, ry] = [Math.ceil(12 * C), Math.ceil(10 * C), 4 * h * 2 * C, 3.4 * h * 2 * C];
+        m[lam] = [0, 1, 2, 3].map((c) => {
+            const R = PC.mulberry32(0x5eed + c),
+                maske = new Uint8Array(W * H);
+            for (let n = 0; n < UMRISS_KARTEN; n++) {
+                let [px, py] = [2, 2];
+                while (px * px + py * py > 1) [px, py] = [R() * 2 - 1, R() * 2 - 1];
+                const [r, th] = [R() ** 0.15, R() * 2 * Math.PI];
+                const [cx, cy, co, si] = [W / 2 + px * rx * r, H / 2 + py * ry * r, Math.cos(th), Math.sin(th)];
+                for (let y = Math.max(0, Math.floor(cy - C)); y < Math.min(H, cy + C); y++)
+                    for (let x = Math.max(0, Math.floor(cx - C)); x < Math.min(W, cx + C); x++) {
+                        const [dx, dy] = [x + 0.5 - cx, y + 0.5 - cy];
+                        const [u, w] = [(co * dx + si * dy) / C + 0.5, (co * dy - si * dx) / C + 0.5];
+                        if (Math.abs(u - 0.5) <= h && Math.abs(w - 0.5) <= h && probe(c, u, w)[1] >= kornSchwelle())
+                            maske[y * W + x] = 1;
+                    }
+            }
+            return klassenMasse(new Uint8Array(W * H * 4), maske, W, H).kante; // die Kante liest nur die Maske
+        });
+        m[lam].forEach((k, c) => k > UMRISS_SOLL && v.push(`Umriss Zelle ${c} λ ${lam}: kante ${k.toFixed(3)} > ${UMRISS_SOLL} — die glatte Kette schmilzt die Karte zu ihrer Hülle (KARTEN_GESETZ.lappen)`)); // prettier-ignore
     }
     return { v, m };
 }
@@ -1186,6 +1200,11 @@ hauptLauf(async () => {
         );
     }
 
+    // (U) der Umriss der fernen L1-Krone je Zelle, aus der Fracht ohne BC (die Alpha der Kette, wie BC3 sie trägt).
+    const um = umrissUrteil(frK.rgba.mips);
+    fails.push(...um.v);
+    console.log(`Umriss der L1-Krone (kante je Zelle 0 1 2 3, ${UMRISS_KARTEN} Karten, Soll ≤ ${UMRISS_SOLL}): ` + UMRISS_LAMBDA.map((l) => `λ ${l} ${um.m[l].map((k) => k.toFixed(3)).join(" ")}`).join(" · ")); // prettier-ignore
+
     // (H) der Höhen-Zensus je Art gegen die Spanne der Natur, und H/D.
     const hz = hoehenUrteil(roh, skala);
     fails.push(...hz.v);
@@ -1314,6 +1333,20 @@ hauptLauf(async () => {
             rgba: kornReihe(kornig(frK.rgba.mips), frK.rgba.mips[0].width / 4),
         };
         st.push(["Korn je Texel", kornUrteil(r, lamKrone, null).v.length > 0]);
+    }
+    // (U) die glatte Kette ohne Lappen (main a7dc1874): die Krone aus Kleckses muss beim Namen fallen
+    {
+        const G = PC.KARTEN_GESETZ,
+            lappen = G.lappen;
+        G.lappen = 0;
+        try {
+            const [m0, wert] = [bild.mips[0], bild.wert];
+            const ms = PC.impostorMips(m0.data, m0.width, m0.height, 4, 0.5, 64, { quer: true, blut: wert, alphaRoh: true, glatt: true }).stufen; // prettier-ignore
+            const fr = PC.blattAtlasFracht({ wert, mips: ms.map((x) => ({ width: x.w, height: x.h, data: x.data })) }, false);
+            st.push(["Klecks ohne Lappen", umrissUrteil(fr.rgba.mips).v.some((x) => /Umriss Zelle 0 /.test(x))]);
+        } finally {
+            G.lappen = lappen;
+        }
     }
     // (H) an kranken Kopien des Zensus: die Buche gestaucht auf 0,6 ihrer Höhe (der Wald von gestern, 18–27 m) und
     // ihr Stamm in x/z × 4 (der Stamm vor dem Welt-Maß, H/D 15) — beide MÜSSEN die Buche beim Namen nennen.
