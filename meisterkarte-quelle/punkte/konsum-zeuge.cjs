@@ -90,14 +90,14 @@ if (KONSUM && BAUM) {
     // die Datei im Baum: ihre Länge in Zeichen ist das Maß der Offsets; eine Datei mit BOM zählt ganz
     const eintrag = (p) => {
         if (!konsum.js.has(p)) {
-            let len = -1;
+            let len = -1, text = "";
             try {
-                const t = lies(path.join(BAUM, p), "utf8");
-                len = t.charCodeAt(0) === 0xfeff ? -1 : t.length;
+                text = lies(path.join(BAUM, p), "utf8");
+                len = text.charCodeAt(0) === 0xfeff ? -1 : text.length;
             } catch (_e) {
                 len = -1;
             }
-            konsum.js.set(p, len < 0 ? null : { len, an: new Uint8Array(len) });
+            konsum.js.set(p, len < 0 ? null : { len, an: new Uint8Array(len), text });
         }
         const e = konsum.js.get(p);
         if (!e) ganz(p, "nicht lesbar oder BOM");
@@ -333,14 +333,17 @@ if (KONSUM && BAUM) {
     // fallen; die geladenen Skripte, das Gelesene und die Verzeichnisse bleiben)
     const stueck = (neu) => {
         sitz.post("Profiler.takePreciseCoverage", (e, r) => r && male(r.result));
-        const texte = [...konsum.texte, ...(konsum.cdpBlind ? konsum.wartend : [])];
+        // die gelesenen Funktions-Texte an ihrem Ort im Baum: je Text EINMAL gesucht (in jedem geladenen Skript), in jedem Stück gemalt
+        for (const p of konsum.skripte) eintrag(p);
+        for (const t of [...konsum.texte, ...(konsum.cdpBlind ? konsum.wartend : [])]) {
+            if (gesucht.has(t)) continue;
+            gesucht.add(t);
+            for (const [p, e] of konsum.js) if (e) for (let i = e.text.indexOf(t); i >= 0; i = e.text.indexOf(t, i + 1)) textOrte.push([e, i, i + t.length]);
+        }
+        for (const [e, a, b] of textOrte) e.an.fill(1, a, b);
         const js = {};
         for (const [p, e] of konsum.js) {
             if (!e) continue;
-            if (texte.length) {
-                const q = lies(path.join(BAUM, p), "utf8");
-                for (const t of texte) for (let i = q.indexOf(t); i >= 0; i = q.indexOf(t, i + 1)) e.an.fill(1, i, i + t.length);
-            }
             const b = [];
             for (let i = 0; i < e.len; i++) if (e.an[i]) b.length && b[b.length - 1][1] === i ? b[b.length - 1][1]++ : b.push([i, i + 1]);
             if (b.length) js[p] = { len: e.len, bereiche: b };
@@ -354,6 +357,7 @@ if (KONSUM && BAUM) {
         return JSON.stringify({ js, skripte: [...konsum.skripte], geladen: [...konsum.geladen], ganz: [...konsum.ganz], warum: konsum.warum, browser: konsum.browser, seite: SEITE,
             npm: /(^|[\\/])(npm-cli\.js|npx-cli\.js|npm|npx)$/.test(process.argv[1] || ""), blind: konsum.blind });
     };
+    const gesucht = new Set(), textOrte = [];
     let zu = false;
     function abschluss() {
         if (zu) return;
