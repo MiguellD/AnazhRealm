@@ -1,3 +1,6 @@
+## 10.11. 13:18 — Nachtrag w27-wagen-spalt zur Probe 3e4ed872 (Neu-Lauf nach dem echt-Job)
+Derselbe Kopf 3e4ed872 auf gtx1050-desktop: Lauf 1 (11:31) gate:naesse:echt GRÜN, gate:kollision-bild und bild:dorf nachgegeben; Lauf 2 (12:33, nach dem Schloss einer Hand-Diagnose) gate:kollision-bild GRÜN, bild:dorf@0.5 GRÜN (Abnahme), gate:naesse:echt ROT „wiese Regenbild 1.411 × so hell wie die Sonne“. Mein Diff berührt weder Licht noch Regen: dieselbe Nässe-Probe headless (swiftshader, --naesse wiese --eigen) misst das Regenbild an main 900c28e6 und am Kopf byte-gleich 0,692 (beide GRÜN), das Dorf trägt 2/2 trockene Dach-Bauten. Das Wiesen-ROT wechselte am selben Kopf auf demselben Läufer — ein Urteil der Radeon unter dem Schloss nehme ich gern.
+
 ## 10.11. 11:33 — ABGABE w27-wagen-spalt (main 900c28e6 eingemischt, Probe gate:naesse:echt GRÜN auf gtx1050-desktop)
 
 ## 10.11. 13:08 — GPU-PROBE 3e4ed872 auf gtx1050-desktop: GRÜN in 6400 s (gate:naesse:echt GRÜN 292 s auf gtx1050-desktop · gate:kollision-bild GRÜN 241 s auf gtx1050-desktop · bild:dorf@0.5 GRÜN 121 s auf gtx1050-desktop) → probe-post/w27-wagen-spalt/3e4ed872.md
