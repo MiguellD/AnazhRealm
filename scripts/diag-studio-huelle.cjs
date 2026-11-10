@@ -372,11 +372,11 @@ function selbsttest() {
     const { THREE: T, __weltLicht: L } = fadenScope(["foundry-core.js", "welt-licht.js"]);
     let h9 = "";
     try {
-        L.buehneZeichnet({ sonne: 0, belichtung: 1, tafeln: { rtEq: {}, U: { licht: {} } } }, new T.Scene().add(new T.PointLight()), {});
+        L.buehneZeichnet({ sonne: 0, belichtung: 1 }, new T.Scene().add(new T.PointLight()), {});
     } catch (e) {
         h9 = e.message;
     }
-    const h9ok = /ein Licht PointLight .* die Belichtung undefined statt 1/.test(h9);
+    const h9ok = /ein Licht PointLight .* die Belichtung undefined statt 1 · ein Himmel neben/.test(h9);
     console.log(`${h9ok ? "✅" : "❌"} SELBST-TEST H9 ${h9}`);
     return ok && h9ok && !gangBasis.length;
 }

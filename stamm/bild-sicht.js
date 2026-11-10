@@ -683,7 +683,7 @@ class AnazhRealm_bild_sicht {
         // reicht ihre Stufe als Variable über der Konstanten 1 (`float(1)` in einer VarNode, gelesen am Vendor 03.11.) — bis
         // dahin fragte der Zweig nur `isConstNode`, nahm nie, und jede Bestrahlung las den Spiegel mit dem Gewicht 0 (eine Abtastung je Fragment für nichts).
         const wirt = this;
-        const konstant = (n) => !!n && (n.isConstNode === true || (n.isVarNode === true && konstant(n.node)));
+        const konstant = __weltLicht.stufeKonstant;
         class SpiegelUmgebung extends N {
             constructor() {
                 super("vec3");
@@ -770,6 +770,8 @@ class AnazhRealm_bild_sicht {
         const webgpuRaum = st.renderer.coordinateSystem === THREE.WebGPUCoordinateSystem;
         const U = {
             invVP: uniform(new THREE.Matrix4()),
+            // die Rückrechnung um das Auge (Projektion × Drehung der Ansicht, ohne ihre Lage): die Normale der glänzenden Fläche
+            invVPr: uniform(new THREE.Matrix4()),
             vp: uniform(new THREE.Matrix4()),
             auge: uniform(new THREE.Vector3()),
             // die Blick-Achse (w eines Punkts = sein Abstand längs ihr), die Nah-Ebene und die Tiefen-Zeilen der Projektion
@@ -841,7 +843,12 @@ class AnazhRealm_bild_sicht {
                     const v = normalize(P.sub(U.auge));
                     // DIE FLÄCHE DES SPIEGELS (material.K4): das Wasser liegt waagrecht (sein Gesetz), jede andere glänzende Fläche
                     // (Glas, Lack, Metall, nasser Stein) trägt die Normale ihrer Tiefe — je Achse der Nachbar mit dem kleineren
-                    // Sprung (an einer Kante der Fläche, nie über sie), zum Auge gewandt
+                    // Sprung (an einer Kante der Fläche, nie über sie), zum Auge gewandt.
+                    // UM DAS AUGE GERECHNET (w27-studio-mesh, `invVPr`): die Nachbarn als Punkte relativ zum Auge — ihre Differenz
+                    // trägt die Mantisse ganz. Bis hier standen sie in Welt-Koordinaten (`invVP`): die Auslöschung von 32 Bit
+                    // wuchs mit dem Abstand vom Ursprung (Prüfbühne, 400 m: ~3 mm Lage auf 5 mm Texel) — die Normale sprang von
+                    // Texel zu Texel um 2–3°, und Lack, Scheibe und Klinge lasen den Himmel gesprenkelt (eine Zeile über das Dach
+                    // des GT: 0,18 · 1,15 · 0,71 · 0,30 · 0,17 · 0,45; Station studios.K4, Radeon da0e790f: garage 23,5 %).
                     const n = vec3(0, 1, 0).toVar();
                     const R = vec3(v.x, abs(v.y), v.z).toVar();
                     If(wasser.not(), () => {
@@ -849,7 +856,7 @@ class AnazhRealm_bild_sicht {
                             const qq = T.clamp(q, vec2(0), tiefeGr0.sub(1));
                             const dq = tiefe.load(ivec2(qq)).r;
                             const uq = qq.add(0.5).div(tiefeGr0);
-                            const h = U.invVP.mul(
+                            const h = U.invVPr.mul(
                                 vec4(
                                     uq.x.mul(2).sub(1),
                                     float(1).sub(uq.y).mul(2).sub(1),
@@ -865,7 +872,7 @@ class AnazhRealm_bild_sicht {
                         const dx = naeher(welt(tq.add(vec2(1, 0))).sub(pc), pc.sub(welt(tq.sub(vec2(1, 0)))));
                         const dy = naeher(welt(tq.add(vec2(0, 1))).sub(pc), pc.sub(welt(tq.sub(vec2(0, 1)))));
                         const nn = normalize(T.cross(dx, dy));
-                        n.assign(select(dot(nn, U.auge.sub(pc)).lessThan(0.0), nn.negate(), nn));
+                        n.assign(select(dot(nn, pc).greaterThan(0.0), nn.negate(), nn));
                         R.assign(T.reflect(v, n));
                     });
                     // DER SPIEGEL DES BILDS (A1): der gespiegelte Strahl als Strecke im Schirm gegen die Tiefe des Szenen-Passes —
@@ -3880,7 +3887,7 @@ AnazhRealm.FELD_PANO = Object.freeze({
 // 0,25 hat θ50 3,5°, Eisen 0,54 schon 11°: die Optik der Stoff-Zeile, `_defaultMaterials`); dieselbe Kurve wiegt den Spiegel im Stoff
 // (`_spiegelUmgebung`).
 AnazhRealm.SPIEGEL = Object.freeze({
-    glanzRauheit: [0.25, 0.45],
+    glanzRauheit: __weltLicht.GLANZ_RAUHEIT,
     glanzSchwelle: 0.02,
     bildSchritte: 48,
     bildDichte: 2,

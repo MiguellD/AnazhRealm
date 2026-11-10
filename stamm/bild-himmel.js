@@ -84,79 +84,21 @@ class AnazhRealm_bild_himmel {
         return st.skyboxUniforms;
     }
 
-    // DIE HIMMELS-SICHT in Richtung `vDir` (normiert, ein TSL-Knoten): die EINE Atmosphäre und die Wolken des HIMMEL_GESETZ —
-    // die Kuppel zeichnet sie (vDir = normalize(positionLocal), V8.26), das Wasser spiegelt sie (`_wasserBlick`, A1: bis dahin
-    // las der Spiegel die Umgebung von 128 × 64 ohne Wolken — wo das Bild den Himmel nicht trug, ein Verlauf).
-    // DAS WOLKEN-FELD (licht.K4): die Menge der Wolke (0 … 1) am Punkt `sp` der Schicht (ein TSL-vec2, in Einheiten
-    // (1 + projY) · hoeheM) — EINE Funktion für die Kuppel (`_wolkenMenge`) und die Karte des Wurfs (`_wolkenKarte`). Sie folgt
-    // HIMMEL_GESETZ (foundry-core — dieselben Zahlen injiziert das Studio in sein GLSL): zwei fbm-Abtastungen (h21/vn verbatim),
-    // Deckungs-smoothstep aus uCloudCover, weiche Ränder. DIE BEWEGUNG hat EINE Quelle, den Wind (`zug`, `_dayNightApplySkybox`):
-    // die Fronten ziehen mit `WIND_FELD.front.zugMS` (850 hPa) längs der Grundrichtung der Saat (phyto-core `windGrund`), die
-    // Luft trägt beide Felder — das Muster wandert in der Welt über den Boden, zur Bild-Uhr (`time`). `drift`/`drift2` des
-    // Gesetzes bewegen den Himmel des Studios, der keinen Wind kennt; in der Welt zogen sie das feine Feld 24 m/s gegen das
-    // grobe, das Muster verformte sich statt zu wandern (licht.K4: der Wurf stand bei r0 0,90).
-    // Fail-closed: das Gesetz lebt NUR in foundry-core (__terrainCore); unlesbar → Bruch, der schreit. Die Bausteine
-    // (h21 · vn2 · fbm2) entstehen einmal je Welt.
+    // DER EINE HIMMEL MIT SEINEN WOLKEN ist ein Baustein der Engine (w27-studio-mesh, welt-licht.js `wolkenFeld` · `wolkenMenge` ·
+    // `himmelSicht` — dort stehen Gesetz und Geschichte): die Welt reicht ihm ihr HIMMEL_GESETZ und die Uniforms ihres Himmels
+    // (`_himmelUniformen`), die Bühne der Studios seine eigenen. Fail-closed: das Gesetz lebt NUR in foundry-core (__terrainCore);
+    // unlesbar → Bruch, der schreit. Leser des Felds: die Kuppel (`_wolkenMenge`) und die Karte des Wurfs (`_wolkenKarte`).
     _wolkenFeld(sp) {
-        const TSL = THREE.TSL;
-        const { vec2, float, dot, floor, fract, mix, smoothstep, clamp, Fn } = TSL;
         const HG =
             AnazhRealm.Gesetz("terrain:HIMMEL_GESETZ", null) || AnazhRealm._kernPflichtBruch("terrain:HIMMEL_GESETZ");
-        if (!this._wolkenBau || this._wolkenBau.HG !== HG) {
-            const h21 = Fn(([q]) => {
-                const p = fract(q.mul(vec2(123.34, 345.45)));
-                const p2 = p.add(dot(p, p.add(34.345)));
-                return fract(p2.x.mul(p2.y));
-            });
-            const vn2 = Fn(([q]) => {
-                const i = floor(q);
-                const f0 = fract(q);
-                const f = f0.mul(f0).mul(float(3.0).sub(f0.mul(2.0)));
-                return mix(
-                    mix(h21(i), h21(i.add(vec2(1.0, 0.0))), f.x),
-                    mix(h21(i.add(vec2(0.0, 1.0))), h21(i.add(vec2(1.0, 1.0))), f.x),
-                    f.y
-                );
-            });
-            const fbm2 = Fn(([q]) => {
-                let s = float(0.0);
-                let p = q;
-                let a = 0.5;
-                for (let o = 0; o < HG.fbm.okt; o++) {
-                    s = s.add(vn2(p).mul(a));
-                    p = p.mul(HG.fbm.lac).add(HG.fbm.off);
-                    a *= 0.5;
-                }
-                return s;
-            });
-            this._wolkenBau = { HG, fbm2 };
-        }
-        const { fbm2 } = this._wolkenBau;
-        const { time: uTime, cloudCover: cov, zug } = this._himmelUniformen();
-        const luft = sp.add(zug.mul(uTime));
-        const nA = fbm2(luft.mul(HG.s1));
-        const nB = fbm2(luft.mul(HG.s2));
-        const dens = smoothstep(
-            float(HG.dens[0]).sub(cov.mul(HG.dens[1])),
-            float(HG.dens[2]).sub(cov.mul(HG.dens[3])),
-            nA.mul(HG.mixN[0]).add(nB.mul(HG.mixN[1]))
-        );
-        const edgeW = smoothstep(float(0.0), float(HG.edge[0]), nB).mul(HG.edge[1]).add(HG.edge[2]);
-        return clamp(dens.mul(edgeW).mul(HG.deck), float(0.0), float(1.0));
+        return __weltLicht.wolkenFeld(HG, this._himmelUniformen(), sp);
     }
 
-    // DIE WOLKE DER KUPPEL in Richtung `dir` (normiert) vom Auge: Himmelsebenen-Projektion sp = dir.xz/(dir.y+projY) plus der Ort
-    // des Auges auf der Schicht (`auge.xz / ((1 + projY) · hoeheM)`, im Zenit genau die Lage über ihm) — die Kuppel zeigt das Feld
-    // der Welt, das die Karte des Wurfs trägt; Horizont-Ausklang; max(y, hor0) klemmt den Nenner unter dem Horizont (TSL brancht
-    // nicht wie das Studio) — sonst NaN.
+    // DIE WOLKE DER KUPPEL in Richtung `dir` (normiert) vom Auge (welt-licht.js `wolkenMenge`).
     _wolkenMenge(dir) {
-        const T = THREE.TSL;
         const HG =
             AnazhRealm.Gesetz("terrain:HIMMEL_GESETZ", null) || AnazhRealm._kernPflichtBruch("terrain:HIMMEL_GESETZ");
-        const { auge } = this._himmelUniformen();
-        const anker = auge.xz.mul(1 / ((1 + HG.projY) * AnazhRealm.WOLKEN_SCHICHT.hoeheM));
-        const sp = dir.xz.div(T.max(dir.y, T.float(HG.hor[0])).add(HG.projY)).add(anker);
-        return this._wolkenFeld(sp).mul(T.smoothstep(T.float(HG.hor[0]), T.float(HG.hor[1]), dir.y));
+        return __weltLicht.wolkenMenge(HG, this._himmelUniformen(), dir);
     }
 
     // DIE KARTE DES WURFS (licht.K4, die Cloud-Shadow-Map von Horizon/MSFS): je Texel die Menge der Wolke an EINEM Punkt der
@@ -280,50 +222,12 @@ class AnazhRealm_bild_himmel {
         return T.mix(durch, T.float(1), T.step(K.U.schicht, p.y));
     }
 
+    // DIE HIMMELS-SICHT in Richtung `vDir` (normiert, ein TSL-Knoten; welt-licht.js `himmelSicht`): die EINE Atmosphäre dieser Welt
+    // (`_atmoLutBau`) und ihre Wolken — die Kuppel zeichnet sie, das Wasser und jeder glatte Stoff spiegeln sie (`_spiegelPass`).
     _himmelSicht(vDir) {
-        const TSL = THREE.TSL;
-        const { vec3, float, normalize, dot, mix, clamp, max, Fn } = TSL;
-        // DER HIMMEL IST DIE ATMOSPHÄRE (D3): die Kuppel liest die Himmels-Sicht der EINEN Atmosphäre (`_atmoLutBau`,
-        // Hillaire) — Rayleigh-Blau, Mie-Hof um die Sonne, Dämmerung und Mondnacht aus dem Medium; bis D3 eine Nebel-Kuppel
-        // (Indigo-Noise × Tint-Farbe, Horizont-Dunst, drei Halo-Schichten), getunt statt gerechnet. Die Scheibe der Sonne
-        // trägt ihr Körper (`sunMesh`), den Hof die Mie-Phase der Tafel.
-        const A = this._atmoLutBau();
-        const { cloudCover: uCloudCover, sunDir: uSunDir, sunCol: uSunCol } = this._himmelUniformen();
-        // Das Wolken-Feld ist die EINE Funktion `_wolkenMenge` (HIMMEL_GESETZ); hier Farbe und Licht der Wolke, Farbton uSunCol
-        // (_atmoSonne).
         const HG =
             AnazhRealm.Gesetz("terrain:HIMMEL_GESETZ", null) || AnazhRealm._kernPflichtBruch("terrain:HIMMEL_GESETZ");
-        // DIE WOLKE NUR, WO SIE IST (A1-n1, Gebot 7): unter `hor[0]` klingt sie auf null aus — dort rechnet die Sicht die
-        // Atmosphäre allein (exakt dasselbe Bild); der Spiegel des fernen Wassers liegt ganz darunter (2,6 m Auge, 170 m weit).
-        return Fn(() => {
-            const sicht = A.himmelFarbe(vDir).toVar();
-            TSL.If(vDir.y.greaterThan(HG.hor[0]), () => {
-                const cov = uCloudCover;
-                const saW = clamp(dot(vDir, normalize(uSunDir)).mul(0.5).add(0.5), float(0.0), float(1.0));
-                const litW = mix(
-                    vec3(HG.litGrau[0], HG.litGrau[1], HG.litGrau[2]),
-                    uSunCol.mul(HG.litSonne[0]).add(HG.litSonne[1]),
-                    saW.mul(HG.litSa)
-                );
-                const cloudAmt = this._wolkenMenge(vDir);
-                // Wolken-Farbe = Studio-Gesetz: grau → sonnenbeschienen (litW), bedeckt → dunkler (HG.bedeckt).
-                const cloudColor = mix(litW, vec3(HG.bedeckt[0], HG.bedeckt[1], HG.bedeckt[2]), cov.mul(HG.bedecktK));
-                // DAS LICHT DER WOLKE aus den Tafeln: Sonne und Mond durch die Atmosphäre bis zur Wolken-Ebene (`WOLKEN_SCHICHT`
-                // über dem Auge — dieselbe Schicht, die ihren Schatten wirft) auf ihre Oberseite, dazu der Himmel von oben (der
-                // Zenit der Himmels-Sicht, E/π) — Lambert. So ist die Mittags-Wolke weiß über dem Blau und die Nacht-Wolke dunkler
-                // als die 18-%-Karte im Mondlicht.
-                const U = A.U;
-                const rW = U.hKm.add(A.RG + AnazhRealm.WOLKEN_SCHICHT.hoeheM / 1000);
-                const lichtWolke = A.durchlass(rW, U.sonne.y)
-                    .mul(max(U.sonne.y, 0))
-                    .add(U.mondE.mul(A.durchlass(rW, U.mond.y)).mul(max(U.mond.y, 0)))
-                    .mul(U.licht.div(Math.PI))
-                    .add(A.himmelFarbe(vec3(0, 1, 0)));
-                const wolkeHell = dot(lichtWolke, vec3(0.2126, 0.7152, 0.0722));
-                sicht.assign(mix(sicht, cloudColor.mul(wolkeHell), cloudAmt));
-            });
-            return sicht;
-        })();
+        return __weltLicht.himmelSicht(this._atmoLutBau(), HG, this._himmelUniformen(), vDir);
     }
 
     // ### Skybox ###
@@ -3267,23 +3171,9 @@ AnazhRealm._saisonLage = function (phase) {
     return { SG, a: SG.stuetzen[i], b: SG.stuetzen[(i + 1) % 4], k: f - Math.floor(f) };
 };
 AnazhRealm.LUFT = Object.freeze(Object.assign({}, AnazhRealm._atmoKern().luft));
-// DIE WOLKEN-SCHICHT (licht.K4, `_wolkenFeld` · `_wolkenKarte` · `_wolkenSchatten`): die Höhe der Wolke `hoeheM` — über dem
-// Auge für die Kuppel, über dem Meeresspiegel für den Wurf — die Basis des Schönwetter-Kumulus (0,6–1,5 km); 1 Einheit des groben
-// fbm ≈ 0,73 · hoeheM (580 m). Dieselbe Schicht trägt das Licht der Wolke (`_himmelSicht`). Die Karte des Wurfs: `karte`² Texel
-// à `zelleM` (±4,1 km), neu nach `zugS` Sekunden der Bild-Uhr; die Mip-Stufe steigt ab `rand` (Anteil des halben Rands) bis
-// zum Mittel. `steilMin` klemmt den Sonnen-Strahl über dem Horizont (sin der Sonnenhöhe). `deckung` die Achse des Wetters [klar,
-// Regen]: die Deckung, die `_dayNightApplySkybox` schreibt, und der Nullpunkt des Wurfs (`_wolkenGewicht`). `mittelMin` der Boden
-// des mittleren Durchlasses, gegen den der Wurf misst (im Regen ist die Karte fast ganz Wolke).
-AnazhRealm.WOLKEN_SCHICHT = Object.freeze({
-    hoeheM: 800,
-    steilMin: 0.05,
-    karte: 512,
-    zelleM: 16,
-    zugS: 0.1,
-    rand: 0.8,
-    mittelMin: 0.05,
-    deckung: Object.freeze([0.12, 0.9]),
-});
+// DIE WOLKEN-SCHICHT (licht.K4, `_wolkenFeld` · `_wolkenKarte` · `_wolkenSchatten`): Höhe, Karte des Wurfs und die Achse des
+// Wetters — EINE Tafel im Baustein (welt-licht.js `WOLKEN_SCHICHT`), die Bühne der Studios liest dieselbe.
+AnazhRealm.WOLKEN_SCHICHT = __weltLicht.WOLKEN_SCHICHT;
 // DAS SCHIRM-DREIECK (welt-licht.js `schirmDreieck`): EIN Dreieck über den ganzen Schirm in der Form von r184 `QuadMesh`, sein
 // Fragment aus `fn()` — die Pässe der Atmosphäre und das Ausgabe-Dreieck jeder Bühne (`_buehneRender`) teilen Geometrie und Kamera;
 // die Bühne der Studios zeichnet ihre Tafeln mit demselben.
