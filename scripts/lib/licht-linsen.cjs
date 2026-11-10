@@ -1705,11 +1705,13 @@ function laubGegenlicht(opts) {
                 if (opts.karte === 1) return (window.__karteGestalt = Object.assign(out, b, { stufe: stufeJetzt, ziel })), { stufe: out.stufe };
                 const g = window.__karteGestalt;
                 const lab = window.__lab;
+                // die Karte gegen ihre Gestalt: Leuchtdichte im Verhältnis, Helligkeit und Buntheit als Abstand, die zwei Bilder
+                const vergleich = (lg, lk) => ({ gestalt: lg, karte: lk, verhaeltnis: +(lk.Y / lg.Y).toFixed(3), dL: +(lk.L - lg.L).toFixed(2), dC: +(lk.C - lg.C).toFixed(2), png: [g.png, b.png] }); // prettier-ignore
                 if (opts.boden) {
                     const mittel = (x, m = x.maske.reduce(addiere, 0)) => m ? Object.assign(lab([0, 1, 2].map((q) => x.Cp.reduce((s, v, i) => (i % 3 === q && x.maske[(i / 3) | 0] ? s + v : s), 0) / m)), { pixel: m }) : null;
                     const [lg, lk] = [mittel(g), mittel(b)];
                     if (!lg || !lk) return { fehler: "die Stelle zeichnet kein Pixel" };
-                    return Object.assign(out, { stufe: g.stufe + " → " + stufeJetzt, paar: "fern/nah", karte: { gestalt: lg, karte: lk, verhaeltnis: +(lk.Y / lg.Y).toFixed(3), dL: +(lk.L - lg.L).toFixed(2), dC: +(lk.C - lg.C).toFixed(2), png: [g.png, b.png] } });
+                    return Object.assign(out, { stufe: g.stufe + " → " + stufeJetzt, paar: "fern/nah", karte: vergleich(lg, lk) });
                 }
                 const sg = [0, 0, 0], sk = [0, 0, 0];
                 let n = 0;
@@ -1734,7 +1736,7 @@ function laubGegenlicht(opts) {
                     }
                 if (!n) return { fehler: g ? "Karte und Gestalt teilen kein Pixel" : "kein Schuss der Gestalt (karte: 1)" };
                 const lg = lab(sg.map((v) => v / n)), lk = lab(sk.map((v) => v / n));
-                return Object.assign(out, { stufe: opts.haus || opts.boden ? g.stufe + " → " + stufeJetzt : g.stufe, paar: opts.haus || opts.boden ? "fern/nah" : undefined, pixel: n, karte: { gestalt: lg, karte: lk, verhaeltnis: +(lk.Y / lg.Y).toFixed(3), dL: +(lk.L - lg.L).toFixed(2), dC: +(lk.C - lg.C).toFixed(2), png: [g.png, b.png] } });
+                return Object.assign(out, { stufe: opts.haus || opts.boden ? g.stufe + " → " + stufeJetzt : g.stufe, paar: opts.haus || opts.boden ? "fern/nah" : undefined, pixel: n, karte: vergleich(lg, lk) });
             }
             if (opts.oben) {
                 // DIE KRONE VON OBEN (Nordstern §4.5 „Bestandes-Albedo … von oben im Ausgabe-Pfad“): das Auge lotrecht
@@ -2190,7 +2192,6 @@ function luftTiefe(o) {
             belichten.apply(this, a);
             st.renderer.toneMappingExposure *= blende;
         };
-        const spur = [];
         const schuss = async (b, k) => {
             const alt = U.beta.value;
             const e = st.renderer.toneMappingExposure;
@@ -2199,11 +2200,7 @@ function luftTiefe(o) {
             if (b != null) U.beta.value = dichte = b;
             if (st.fernRing) r._tickFeldPass(st.fernRing);
             try {
-                const u8 = (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
-                // DIAG (w27-ferne-ton-5, fällt vor der Abgabe): je Schuss β · Belichtung · Sonnen-Stufe · Schlüssel der Himmels-Sicht · Tafel · Leine
-                const K = st.horizontKarte || { U: { aktiv: {} } };
-                spur.push([b, +st.renderer.toneMappingExposure.toFixed(4), K.bereit ? 1 : 0, K.malZahl, K.U.aktiv.value, K.gebrochen ? 1 : 0].join("/"));
-                return u8;
+                return (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
             } finally {
                 dichte = null;
                 blende = 1;
@@ -2269,16 +2266,6 @@ function luftTiefe(o) {
             const D = await window.__spiegelDaten();
             const L0 = await schuss(0, k);
             const S = await schuss(1, k);
-            // DIAG (fällt vor der Abgabe): derselbe Schuss β 1 mit ruhender Horizont-Karte (Sicht 1) — das Mittel der unteren Hälfte je Kanal
-            if (!spur.h) try {
-                spur.h = true;
-                const ht = r._horizontKarteTakt;
-                r._horizontKarteTakt = function () { const K = ht.apply(this, arguments); if (K) K.U.aktiv.value = 0; return K; }; // prettier-ignore
-                const S2 = await schuss(1, k);
-                delete r._horizontKarteTakt;
-                const mit = (u8) => { const m = [0, 0, 0]; let n = 0; for (let yy = H >> 1; yy < H; yy += 4) for (let xx = 4; xx < W; xx += 8) { const c = roh(u8, (yy * W + xx) * 4); if (c) (c.forEach((v, i) => (m[i] += v)), n++); } return m.map((v) => +(v / Math.max(1, n)).toFixed(4)).join(":"); }; // prettier-ignore
-                spur.push("H " + mit(S) + " | ohne " + mit(S2));
-            } catch (e) { spur.push("H-FEHLER " + String(e && e.stack).slice(0, 600).replace(/[\n,;]/g, " ")); }
             D.iv = new T.Matrix4().fromArray(D.ivp);
             const bd = R.baenderM.map((d) => ({ d, q: [[], [], []], dk: [], dh: [] }));
             const gez = [];
@@ -2321,7 +2308,6 @@ function luftTiefe(o) {
             return {
                 kante: { spalten: Object.keys(oben).length, rand: Object.keys(kante).length, linie: +((kl.linie / W) * hfov).toFixed(2), stufe: kl.stufe },
                 blende: k,
-                diag: spur.splice(0).join(","),
                 baender: bd.map((b) => ({ d: b.d, n: b.dh.length, q: b.q.map(med), dk: med(b.dk), nk: b.dk.length, dh: tonDerFerne(b.dh, bRef) })),
                 himmel: inS[0].length >= R.mindest.n ? inS.map(med) : null,
                 rand: { km: +(rand / 1000).toFixed(1), C: med(gez.filter((x) => x.d >= 0.9 * fern[x.x]).map((x) => x.C)) },
