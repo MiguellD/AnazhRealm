@@ -61,7 +61,8 @@ function archivBefund(dateien) {
 }
 
 // 6) WACHSTUMS-WAND: scripts/ + spec/ wachsen zusammen höchstens um die Hälfte des Spiel-Wachstums. Sie URTEILT am
-//    Fenster des ZUGS — am Kandidaten gegen seinen Grund (`--grund`) und am Push von integ-probe; jeder andere Zweig druckt
+//    Fenster des TAGES — main der letzten 24 h samt dem Zug, am Push von integ-probe (`--grund tag` misst dasselbe Fenster
+//    vor dem Zug, `--grund <rev>` ein beliebiges); jeder andere Zweig druckt
 //    seinen Stand (Prüf / Spiel / erlaubt) ohne ROT: ein Linsen-Commit vor seinem Spiel-Commit oder ein reiner Linsen-Zweig
 //    ist kein Befund, die Summe im Zug ist es. Die Decke „scripts/ sinkt nur" (+0 je Stand) fiel am 09.11.: main 02.11. →
 //    09.11. maß Prüf −2 936 bei Spiel +234 451 (erlaubt +117 225), und 01.–07.11. standen 44 ROT an ihr, 0 echt — sie
@@ -128,17 +129,23 @@ const taeterVon = (je) =>
         .map(([p, d]) => `, ${p} +${d}`)
         .join("");
 // Die Stände, an denen die Wand misst — je Stand [grund, kopf (null = Arbeitsbaum), Name, urteilt]. Ein Karten-Zweig misst
-// sich ganz ab der Merge-Basis mit origin/integ-probe und druckt den Stand (urteilt nicht). integ-probe urteilt über seinen PUSH (WACHSTUM_VORHER = der Kopf vor dem Push,
-// nach einem Force-Push dessen Merge-Basis mit HEAD, sonst der letzte Commit): der Integrator merget eine Karte oder
-// spult integ-probe auf ihren Kopf vor — dann geht der erste Eltern-Pfad durch die Karte, und je Commit gemessen träfe ihr „Merge integ-probe in <karte>" die Summe fremder
-// Karten. Nie die Summe seit main: eine Karte, die Spiel-Code streicht, machte sonst eine fremde rot. main nimmt nur den
-// Vorlauf von integ-probe, dessen jeder Push an dieser Wand stand — main misst nichts zweimal.
+// sich ganz ab der Merge-Basis mit origin/integ-probe und druckt den Stand (urteilt nicht). integ-probe urteilt über den TAG:
+// Grund ist der main-Stand 24 h vor dem Kopf (Erst-Eltern-Kette von origin/main, nie die der Karte — spult der Integrator
+// integ-probe auf eine Karte vor, ginge deren Kette durch fremde Commits), davon die Merge-Basis mit dem Kopf. Bis 10.11. war das
+// Fenster der eine Push: eine Linsen-Heilung brauchte Spiel-Partner im eigenen Zug und stand an der Wand, während der Tag
+// Prüf +2 223 / Spiel +11 482 maß (erlaubt 5 741) — sechs Heilungen warteten, darunter die des gemessenen Falls „reading 'size'".
+// Der Preis ist gewollt: ein Tag, der Spiel-Code streicht, senkt das Budget jedes Zugs dieses Tages. main nimmt nur den Vorlauf
+// von integ-probe, dessen jeder Push an dieser Wand stand — main misst nichts zweimal.
+function tagGrund(kopf) {
+    const vor = new Date((+git(["log", "-1", "--format=%ct", kopf]).trim() - 24 * 3600) * 1000).toISOString();
+    const vorTag = git(["rev-list", "-1", "--first-parent", `--before=${vor}`, "origin/main"]).trim();
+    return git(["merge-base", vorTag, kopf]).trim();
+}
 function wachstumsStaende(zweig, kopfRev) {
     if (zweig === "main") return [];
     if (zweig === "integ-probe") {
-        const vorher = process.env.WACHSTUM_VORHER;
-        const grund = vorher && !/^0+$/.test(vorher) ? git(["merge-base", vorher, "HEAD"]).trim() : "HEAD~1";
-        return [[grund, "HEAD", `Push ${grund.slice(0, 8)}..HEAD`, true]];
+        const grund = tagGrund("HEAD");
+        return [[grund, "HEAD", `Tag ${grund.slice(0, 8)}..HEAD`, true]];
     }
     return [
         [
@@ -336,7 +343,9 @@ function main() {
     const gemessen = [];
     try {
         const zweig = process.env.GITHUB_REF_NAME || git(["rev-parse", "--abbrev-ref", "HEAD"]).trim();
-        const staende = grundRev ? [[grundRev, kopfRev, "--grund", true]] : wachstumsStaende(zweig, kopfRev);
+        const staende = grundRev
+            ? [[grundRev === "tag" ? tagGrund(kopfRev || "HEAD") : grundRev, kopfRev, "--grund", true]]
+            : wachstumsStaende(zweig, kopfRev);
         for (const [grund, kopf, name, urteilt] of staende) {
             const { je, frei, hand } = wachstumZwischen(
                 grund,

@@ -134,10 +134,8 @@ jobs:
               # und die CI-Deckung: jeder Gate-Schritt trägt genau EINE Gruppe, und in der Gegenrichtung läuft jedes
               # `gate:*` und jeder Teil dieser Statik in einem Workflow — oder steht mit Klasse und Grund in der
               # Ausnahme-Liste von scripts/diag-ci-deckung.cjs. gate:taille startet den save-server selbst (TAILLE_PORT,
-              # sonst ein freier Port des Systems, welt-boot `eigenePorte`) und liest ihn mit einem Chromium. WACHSTUM_VORHER: der Kopf vor dem Push —
-              # auf integ-probe urteilt die Wachstums-Wand über das Fenster des Pushes.
-              env:
-                  WACHSTUM_VORHER: ${{ github.event.before }}
+              # sonst ein freier Port des Systems, welt-boot `eigenePorte`) und liest ihn mit einem Chromium. Auf integ-probe
+              # urteilt die Wachstums-Wand über den Tag (main der letzten 24 h samt Zug; braucht origin/main mit Geschichte).
               run: npm run check:statik
 
             - name: Streu-Wahrheit (die Studio-Arten der Nah-Streu tragen das Farb-Gesetz, ihr Stoff liest den EINEN Himmel)
