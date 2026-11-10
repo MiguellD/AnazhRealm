@@ -104,7 +104,7 @@ async function haarKopf(k) {
             if (!o) [m.setupLightingModel, m.customProgramCacheKey] = [lm0, key0];
             else {
                 const kk = { ...kk0, fuss: { ...kk0.fuss, ...o } };
-                m.setupLightingModel = () => new K(kk, { ...inst.faser, lappen: K.lappen(kk, inst.faser.unter) });
+                m.setupLightingModel = () => new K(kk, { ...inst.faser, lappen: K.lappen(kk, inst.faser.unter, inst.faser.k) });
                 m.customProgramCacheKey = function () {
                     return key0.call(this) + "|" + name;
                 };

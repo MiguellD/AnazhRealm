@@ -60,7 +60,9 @@ class AnazhRealm_studio_stoff {
                     .add(1 - kk.wrap)
                     .clamp(0.0, 1.0);
                 const sinTL = T.float(1).sub(tl.dot(L).pow(2)).max(0.0).sqrt();
-                const diffus = T.mix(nl.max(0.0), sinTL.mul(form), kk.kd).mul(faser.da);
+                // unter dem Pixel geht das Diffuse zur Fläche (`kk.fuss.diffus`): das Mittel vieler Tangenten ist die Kappe
+                const kd = faser.unter.mul(-kk.kd * kk.fuss.diffus).add(kk.kd);
+                const diffus = T.mix(nl.max(0.0), sinTL.mul(form), kd).mul(faser.da);
                 e.reflectedLight.directDiffuse.addAssign(
                     e.lightColor
                         .mul(diffus)
@@ -84,12 +86,20 @@ class AnazhRealm_studio_stoff {
                 super.direct(Object.assign({}, e, { lightColor: e.lightColor.mul(T.float(1).sub(faser.da)) }), builder);
             }
         }
-        // die Lappen der Ecke: [h, Norm] von R und TRT aus dem Gesetz des Kerns (koerper `haarLappen`) und dem Fußabdruck `unter`
-        HaarLicht.lappen = (kk, unter) => {
+        // die Lappen der Ecke: [h, Norm] von R und TRT aus dem Gesetz des Kerns (koerper `haarLappen`), dem Fußabdruck `unter` und
+        // der Krümmung `k` (Pixel-Meter / Radius der Kappe)
+        HaarLicht.lappen = (kk, unter, k) => {
             const hn = (p) => {
                 const G = globalThis.__koerperCore.haarLappen(p, kk);
-                const h = T.float(G.halb).div(unter.mul(G.weite).add(1.0));
-                return [h, h.mul(2 / G.fuss).add(1.5 / G.fuss).sqrt().mul(G.norm)];
+                const h = T.float(G.halb).div(unter.mul(G.weite).add(k.mul(k).mul(G.kruemm)).add(1.0));
+                return [
+                    h,
+                    h
+                        .mul(2 / G.fuss)
+                        .add(1.5 / G.fuss)
+                        .sqrt()
+                        .mul(G.norm),
+                ];
             };
             return T.vertexStage(T.vec4(...hn(kk.R.p), ...hn(kk.TRT.p)));
         };
@@ -494,7 +504,8 @@ class AnazhRealm_studio_stoff {
                         const welt = naht.spalte(0).mul(a.x).add(naht.spalte(1).mul(a.y)).add(naht.spalte(2).mul(a.z));
                         // DER FUSSABDRUCK DES PIXELS an der Strähne (`kk.fuss`, w27-haar-arm-2): Meter je Pixel der Szene am Ort der
                         // Ecke (Tiefe, Projektion und Höhe des Ziels — wie das Schutt-Korn des Bodens) gegen die Breite der Strähne
-                        // (Kopf-Raum × die Skala der Naht): `unter` 0, wo das Pixel die Strähne auflöst, 1, wo es mehrere deckt
+                        // (Kopf-Raum × die Skala der Naht): `unter` 0, wo das Pixel die Strähne auflöst, 1, wo es mehrere deckt; `k`
+                        // die Krümmung der Kappe über das Pixel (Pixel-Meter / ihr Radius in Welt-Metern)
                         const F = L.kk.fuss;
                         const pxM = TSL.positionView.z
                             .negate()
@@ -508,9 +519,11 @@ class AnazhRealm_studio_stoff {
                             t: TSL.vertexStage(TSL.cameraViewMatrix.mul(TSL.vec4(welt, 0.0)).xyz),
                             wurf: TSL.vertexStage(a.w.mul(unter.oneMinus())),
                             da: TSL.vertexStage(TSL.step(0.5, a.xyz.length())),
-                            unter,
-                            lappen: K.lappen(L.kk, unter),
+                            unter: TSL.vertexStage(unter),
+                            k: pxM.div(naht.skala.mul(F.radius)),
+                            lappen: null,
                         };
+                        faser.lappen = K.lappen(L.kk, unter, faser.k);
                         mat.setupLightingModel = () => new K(L.kk, faser);
                         const schluessel = mat.customProgramCacheKey;
                         mat.customProgramCacheKey = function () {

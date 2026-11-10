@@ -120,14 +120,15 @@ function laborStoff(m0,geo,skin,cache){
       // DIE FASER DES HAARS (w26-haar-arm, wie die Welt `_haarLichtModell`): `aHaarT` [Tangente, Wurf] aus stufeAnlegen (koerper
       // `haarAchse`) reist als Varying im Auge; ohne Tangente (die Braue) das Licht des Standard-Stoffs
       // DER FUSSABDRUCK DES PIXELS (w27-haar-arm-2, wie die Welt, HAAR_LOOK.kk.fuss): Meter je Pixel am Ort der Ecke (Tiefe,
-      // Projektion, Höhe des Schirms) gegen die Breite der Strähne — `unter` 0, wo das Pixel sie auflöst, 1, wo es mehrere deckt
+      // Projektion, Höhe des Schirms) gegen die Breite der Strähne — `unter` 0, wo das Pixel sie auflöst, 1, wo es mehrere deckt;
+      // `kr` die Krümmung der Kappe über das Pixel (Pixel-Meter / ihr Radius)
       // (koerper `haarLappen`: je Lappen die halbe Potenz h und die Norm an der Ecke, `vLappen` [h, Norm] von R und TRT)
-      var kk=HAL.kk,FU=kk.fuss,hnV=function(p){var G=KC.haarLappen(p,kk),h='('+gf(G.halb)+'/(1.0+'+gf(G.weite)+'*unter))';return h+',sqrt((2.0*'+h+'+1.5)/'+gf(G.fuss)+')*'+gf(G.norm);};
+      var kk=HAL.kk,FU=kk.fuss,hnV=function(p){var G=KC.haarLappen(p,kk),h='('+gf(G.halb)+'/(1.0+'+gf(G.weite)+'*unter+'+gf(G.kruemm)+'*kr*kr))';return h+',sqrt((2.0*'+h+'+1.5)/'+gf(G.fuss)+')*'+gf(G.norm);};
       if(haar)sh.uniforms.uSchirmH=uSchirmH;
-      var ach=haar?'\nattribute vec4 aHaarT;\nuniform float uSchirmH;\nvarying vec3 vHaarT;\nvarying float vWurf;\nvarying vec4 vLappen;':'',achV=haar?'\nvHaarT=(modelViewMatrix*vec4(aHaarT.xyz,0.0)).xyz;':'';
-      var fussV=haar?'\nfloat unter=1.0-smoothstep('+gf(FU.px[0])+','+gf(FU.px[1])+','+gf(FU.breite)+'*length(modelMatrix[0].xyz)*projectionMatrix[1][1]*uSchirmH/(2.0*max(-mvPosition.z,1e-4)));vWurf=aHaarT.w*(1.0-unter);vLappen=vec4('+hnV(kk.R.p)+','+hnV(kk.TRT.p)+');':'';
+      var ach=haar?'\nattribute vec4 aHaarT;\nuniform float uSchirmH;\nvarying vec3 vHaarT;\nvarying float vWurf;\nvarying vec4 vLappen;\nvarying float vKd;':'',achV=haar?'\nvHaarT=(modelViewMatrix*vec4(aHaarT.xyz,0.0)).xyz;':'';
+      var fussV=haar?'\nfloat pxM=2.0*max(-mvPosition.z,1e-4)/(projectionMatrix[1][1]*uSchirmH),sk=length(modelMatrix[0].xyz),unter=1.0-smoothstep('+gf(FU.px[0])+','+gf(FU.px[1])+','+gf(FU.breite)+'*sk/pxM),kr=pxM/('+gf(FU.radius)+'*sk);vWurf=aHaarT.w*(1.0-unter);vLappen=vec4('+hnV(kk.R.p)+','+hnV(kk.TRT.p)+');vKd='+gf(kk.kd)+'*(1.0-unter*'+gf(FU.diffus)+');':'';
       sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vGeo;'+ach).replace('#include <begin_vertex>','#include <begin_vertex>\nvGeo=position;'+achV).replace('#include <project_vertex>','#include <project_vertex>'+fussV);
-      var fk='varying vec3 vGeo;\n'+(haar?'varying vec3 vHaarT;\nvarying float vWurf;\nvarying vec4 vLappen;\n':'')+(webe?GLSL_RAUSCHEN:'');
+      var fk='varying vec3 vGeo;\n'+(haar?'varying vec3 vHaarT;\nvarying float vWurf;\nvarying vec4 vLappen;\nvarying float vKd;\n':'')+(webe?GLSL_RAUSCHEN:'');
       var farbe=webe?'\ndiffuseColor.rgb*=1.0+snoise(vGeo*'+gf(webe[0])+')*'+gf(webe[1])+';':'';
       var look='\nvec3 vdL=normalize(-vViewPosition);float ndvL=clamp(dot(normal,vdL),-1.0,1.0);float rimL=clamp(1.0-abs(ndvL),0.0,1.0);';
       if(haut)look+='totalEmissiveRadiance+='+gv(HL.sssFarbe)+'*pow(rimL,'+gf(HL.sssPow)+')*'+gf(HL.sssAmt)+';';
@@ -140,7 +141,7 @@ function laborStoff(m0,geo,skin,cache){
         'if(length(vHaarT)<1e-4){RE_Direct_Physical(directLight,geometry,material,reflectedLight);return;}'+
         'vec3 L=directLight.direction,N=geometry.normal,t=normalize(vHaarT),H=normalize(L+geometry.viewDir);float nl=dot(N,L);'+
         'float form=clamp(nl*'+gf(kk.wrap)+'+'+gf(1-kk.wrap)+',0.0,1.0);float sinTL=sqrt(max(1.0-pow(dot(t,L),2.0),0.0));'+
-        'reflectedLight.directDiffuse+=directLight.color*mix(max(nl,0.0),sinTL*form,'+gf(kk.kd)+')*material.diffuseColor*RECIPROCAL_PI;'+
+        'reflectedLight.directDiffuse+=directLight.color*mix(max(nl,0.0),sinTL*form,vKd)*material.diffuseColor*RECIPROCAL_PI;'+
         'reflectedLight.directSpecular+=directLight.color*form*('+gv(kk.R.farbe)+'*'+lap(kk.R.shift,'vLappen.xy')+'+material.diffuseColor*'+gf(kk.TRT.amt)+'*'+lap(kk.TRT.shift,'vLappen.zw')+');}'+
         '\n#undef RE_Direct\n#define RE_Direct RE_Direct_Haar\n':'';
       sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\n'+fk).replace('#include <color_fragment>','#include <color_fragment>'+farbe).replace('#include <emissivemap_fragment>','#include <emissivemap_fragment>'+look).replace('#include <lights_physical_pars_fragment>','#include <lights_physical_pars_fragment>'+kkFn);

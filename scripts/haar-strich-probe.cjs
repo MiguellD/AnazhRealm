@@ -44,7 +44,7 @@ for (const m of new Set(haar.map((x) => x.material))) {
   if (!m.userData.__lichtOrig) m.userData.__lichtOrig = [m.setupLightingModel, m.customProgramCacheKey, m.setupLightingModel()];
   const [lm0, key0, inst] = m.userData.__lichtOrig;
   if (!o) { m.setupLightingModel = lm0; m.customProgramCacheKey = key0; }
-  else { const kk = { ...kk0, fuss: { ...kk0.fuss, ...o } }; m.setupLightingModel = () => new K(kk, { ...inst.faser, lappen: K.lappen(kk, inst.faser.unter) }); m.customProgramCacheKey = function () { return key0.call(this) + "|" + JSON.stringify(o); }; }
+  else { const kk = { ...kk0, fuss: { ...kk0.fuss, ...o } }; m.setupLightingModel = () => new K(kk, { ...inst.faser, lappen: K.lappen(kk, inst.faser.unter, inst.faser.k) }); m.customProgramCacheKey = function () { return key0.call(this) + "|" + JSON.stringify(o); }; }
   m.needsUpdate = true; n++;
 }
 window.__bundlesNeu && window.__bundlesNeu(); return n;`;
