@@ -3341,8 +3341,9 @@ AnazhRealm.CREATURE_SPAWN_FAR_MIN = 130; // V18.315 — Boot-Kreaturen spawnen �
 AnazhRealm.ANALOG_NAH_M = 64;
 // DIE REGION DES BESTANDS (oekologie.K2#2, `_bestandRegion`): die Kachel hat die Fläche des Reviers (Seite revierM·√π) in
 // zellen × zellen Zellen des Rasters (tetrapoda BESTAND_GESETZ rasterM 50 m: 4 × 4 auf 200 m Seite — bis w27-tiere-sicht 7 × 7
-// auf 354 m, dieselbe Gemeinschaft auf dem dreifachen Land: 0,72 Köpfe je ha, an der Mess-Wiese 1 Sichtung in 10 Spielminuten
-// Gang); eine Region, die das Gesetz nie las, beginnt aufholS vor dem Lesen leer, und der Takt des Spielers
+// auf 354 m, dieselbe Gemeinschaft auf dem dreifachen Land: 0,72 Köpfe je ha; die Station tiere.K5#1 zählte an der Mess-Wiese
+// in 10 Spielminuten Gang Ego 1 · Third 3 Sichtungen, jetzt 3–10 · 5–10 in drei Welten, swiftshader 320×180); eine Region, die
+// das Gesetz nie las, beginnt aufholS vor dem Lesen leer, in einer jungen Welt aufholS vor der Welt-Uhr 0, und der Takt des Spielers
 // holt in seinen nahen Regionen höchstens aufholJeTakt versäumte Takte nach (~0,25 ms je Takt — die Kosten hängen an der
 // Bewegung, nie an der Weltgröße; eine neue Region hat ihre Stunde in drei Minuten); gezeichnet
 // werden je Takt höchstens leiberJeTakt Leiber (ein Leib kostet ~0,6 ms, eine Herde wächst über zwei Takte am selben Ort).
