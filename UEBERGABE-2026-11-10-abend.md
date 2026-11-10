@@ -47,3 +47,4 @@ BEFUND-GROSSES-BILD-2026-11-10.md ZUERST LESEN: sieben Blockaden mit Täter (B1 
 - z372 (Tagesfenster + gpu-wahl-heil + studio-mesh + ort-pose) Kandidat b269f840 seit 19:56 in CI; der Bau-Schnitt in zug.cjs (Fenster des Kandidaten-Gesetzes) trägt.
 - w27-takt-gc 575fcc91 heilt beide z370-Befunde (GTX 1050), fährt nach z372.
 - ferne.K3 + lod.K4: Täter per Halbierung 4f4b15a4 (Merge w27-wald-kosten-heim); Konsum-Probe main ohne Kappungs-Räumung (d03e4a5f) → /tmp/claude/w4/wald-probe.log.
+- 20:20 Schöpfer: „Ja, Breite öffnen" — die Breite öffnet als Gesetzbuch-Tiefe, sobald B2/B3/B5 stehen (BEFUND §5 ENTSCHIEDEN). CLAUDE.md zieht w27-breite-offen 74a11ddb nach (nur Text, gate:betriebsgesetz GRÜN) — fährt im nächsten Zug.

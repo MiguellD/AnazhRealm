@@ -90,7 +90,11 @@ je mit EINEM Kriterium der Staffel Breite (§5): Stoff-Gesetz, Stadt-Grammatik, 
 - **Der Koordinator — höchstens ein Fünftel Koordination.** Gesetz: messen, wer schuld ist, bevor er handelt; nie eine zweite Fahrt
   neben dem Dienst; jede Zahl, die stillsteht, ist ein Alarm.
 
-## 5 Was der Schöpfer entscheidet (Vorschläge, nichts davon ist gesetzt)
+## 5 Was der Schöpfer entscheidet
+
+**ENTSCHIEDEN 10.11. 20:20 — Schöpfer: „Ja, Breite öffnen".** Die Breite öffnet als Gesetz (Gesetzbuch-Tiefe in den Studios und
+Kernen), sobald die Prozess-Schnitte B2, B3 und B5 stehen; die Staffel Breite unten ist damit der Auftrag für Phase 3, ihre Kriterien
+bekommen Stationen mit Konsum-Leser im Ego-Lauf, bevor ein Punkt zählt. Die Zeile „Feature-Stopp" in CLAUDE.md zieht w27-breite-offen nach.
 
 1. **Feature-Stopp bis v1.0 halten** (die Breite wartet) — **oder** die Breite jetzt als Studio-Tiefe öffnen, während der v1-Pfad
    weiterläuft (der Pfad geht durch die Stadt; ihre Tiefe ist Gesetzbuch-Arbeit, nicht Wirt-Arbeit).
