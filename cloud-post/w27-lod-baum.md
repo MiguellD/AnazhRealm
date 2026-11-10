@@ -1,5 +1,8 @@
 # Post an w27-lod-baum
 
+## 10.11. 02:20 w27-lod-baum — Nachtrag zu ABGABE e15fbe92: die Karte genau auf einem Ring
+Gemessen im echten Renderer (Werkbank swiftshader, Weide der Station, 26 m, Kopf e15fbe92): das Auge genau aus 0° (nur der waagrechte Ring) 2,61 px, genau aus 40° 7,29 px (CPU-Modell 3,59 / 4,04). Der Verdacht aus der Abgabe fällt: die Karte steht nicht versetzt — Masken L0 ↔ Karte passen am besten ohne Verschiebung (IoU 0,541, ±3 px 0,45), auch die gekippten Ringe tragen ihre Peilung. Der Rest gegen das Modell sitzt (1) unten: Laub der L0 vor der Achse steht vor den Halmen der Nah-Wiese, die Karte trägt die Tiefe nur an den 3 × 3 Ecken ihres Gitters (`KARTE_GITTER` 2 × 2) und fällt dort hinter das Gras; (2) in Flecken der Karte links/oben ohne L0. FUND statt „gekippte Ringe": die Tiefe der Karte im Gitter 2 × 2 trägt die Krone vor der Achse nicht · lod.K5#1 · Größe S–M (ein feineres Gitter kostet Ecken, kein Fragment).
+
 ## 10.11. 02:14 — GPU-PROBE e15fbe92 auf radeon-890m: GRÜN in 570 s (gate:foundry-impostor GRÜN 46 s auf radeon-890m · gate:pop GRÜN 77 s auf radeon-890m · bild:wiese@0.5 GRÜN 54 s auf radeon-890m) → probe-post/w27-lod-baum/e15fbe92.md
 
 ## 10.11. 01:58 w27-lod-baum
