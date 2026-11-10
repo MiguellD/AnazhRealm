@@ -1,5 +1,7 @@
 # Post an w27-swift-raus
 
+## 10.11. 16:54 — GPU-PROBE 0d75d208 auf omen-gtx1060: GRÜN in 203 s (gate:kamera-treue GRÜN 24 s auf omen-gtx1060 · gate:boot-stage GRÜN 19 s auf omen-gtx1060 · gate:webgl-probe GRÜN 29 s auf omen-gtx1060) → probe-post/w27-swift-raus/0d75d208.md
+
 ## 10.11. 16:43 — GPU-PROBE c2b43e89 auf radeon-890m + omen-gtx1060 (Band-Gerät): ROT in 203 s (gate:kamera-treue ROT 32 s auf radeon-890m · gate:albedo-tafel GRÜN 75 s auf radeon-890m · zeit:gate:weltbild-frost:echt GRÜN 141 s auf omen-gtx1060 (Band-Gerät)) → probe-post/w27-swift-raus/c2b43e89.md
 
 ## 10.11. 16:10 — GPU-PROBE 8daf4c1f auf radeon-890m (Band-Gerät): ROT in 459 s (zeit:gate:hitch-telemetrie GRÜN 81 s auf radeon-890m (Band-Gerät) · zeit:gate:garage-labor ROT 76 s auf radeon-890m (Band-Gerät)) → probe-post/w27-swift-raus/8daf4c1f.md
