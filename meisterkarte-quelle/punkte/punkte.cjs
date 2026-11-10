@@ -3648,12 +3648,13 @@ function frischUrteil(messungen, geaendert, hilfe = hilfeText(), opt = {}) {
                 const kt = konsumTreffer(K, d, st, e.konsumSeite !== false, opt.skript ? opt.skript(m.sha) : null);
                 if (kt.length) { konsumAlt++; konsumTaeter = kt; continue; }
             } else {
-            let L;
-            try { L = new Set(opt.linsen ? opt.linsen(st, m.sha) : []); } catch (e) { unlesbar = e.message; continue; }
-            const l = d.dateien.filter((f) => L.has(f));
-            if (l.length) { linse++; linsenTaeter = l; continue; }
-            const t = d.dateien.filter((f) => !WERKZEUG_PFAD.test(f) && trifftPfad(f, st.pfad));
-            if (t.length) { alt++; taeter = t; continue; }
+                // ohne Konsum-Menge wie bisher: die Linse der Station (linsenVon), dann ihr Glob
+                let L;
+                try { L = new Set(opt.linsen ? opt.linsen(st, m.sha) : []); } catch (e) { unlesbar = e.message; continue; }
+                const l = d.dateien.filter((f) => L.has(f));
+                if (l.length) { linse++; linsenTaeter = l; continue; }
+                const t = d.dateien.filter((f) => !WERKZEUG_PFAD.test(f) && trifftPfad(f, st.pfad));
+                if (t.length) { alt++; taeter = t; continue; }
             }
             // ein GRÜN einer GPU-Station trägt den Zeugen der Karte: im Eintrag (seit der Wand) oder in seiner Roh-Ausgabe
             if (st.gpu && e.gruen) {
