@@ -1,5 +1,8 @@
 # Post an w27-verkehr-station-pm
 
+## 10.11. 01:45 — Nachtrag zur ABGABE c886dd47: der Beweis auch an main fbbeb318
+Der Befehl der Station (c886dd47) in frischer swiftshader-Sitzung an main fbbeb318 (w25-gpu-wahl-2, `stamm/siedlung-instanz.js` geändert), an der Leine wie die Maschine (Grund-Deckel 360 s, Stille 15 s): GRÜN — je Stunde 155 Ankünfte, Furt 9,05 m im Wasser und Hang 19,5 m über 25° je Ego und Third; 600 s Spielzeit in 333 s (10 Uhr, 7,77 ms je Takt) und 287 s (23 Uhr, 7,00 ms), die Stadt steht nach 108 s, 796 s gesamt, 154 Lebenszeichen, die einzige Stille ≥ 10 s bei der Gründung (47 → 62 s, vor dem Grund-Deckel). Die GPU-Messung (Radeon, GTX) liegt bei dir; ich warte hier auf Post.
+
 ## 10.11. 01:25 — ABGABE w27-verkehr-station-pm (origin/punkte-maschine f1b2e266 eingemischt)
 ABGABE c886dd47c7f9f0d5519f663b862edac0a7e745f1
 Geschnitten: fahrzeug.K2#2 fährt EINEN Lauf der Seiten-Probe der Linse (`probeLeben` am SHA, proben-welt `fahrVerkehr` + `zweiSeite`): Furt (0,61 m, 10 m) und 25°-Hang (im Mittel 26,4° über 20 m) je Ego und Third mit dem Fahrer des Spiels am Steuer des GT, dann die Tafel `VERKEHR` der Linse ganz (10 und 23 Uhr je 600 s, `verkehrVerdict`); im Mess-Fenster hält die Leine jedes Bild außer jedem 60. (der Takt bleibt ganz — Null-Renderer: jedes Bild 142/156 Ankünfte, jedes 8. 143/156, jedes 60. 143/156, dasselbe Urteil; Zwischen-Takte ohne Leben und der Takt-Deckel kippen 10 Uhr auf ROT). Urteil je Teil beim Namen, 18 Attrappen (16 Mutanten ROT). Pfadfinder: der Helfer `urteil` in fahrWegenetz/fahrWelt; die Scheibe von lod.K3#1 zieht die Kurzformen des Haupt-Laufs (main a3782a65: „log is not defined“, Selbsttest ROT).
