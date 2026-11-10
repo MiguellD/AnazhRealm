@@ -1,5 +1,7 @@
 ABGABE dc29205f (Zweig w27-studio-mesh, main 20a01782 gemischt; der Schnitt wie da9919e3) · Probe-Ruf: gate:studio-uebergabe, gate:wasser-leben:bild, bild:wiese@0.5 · Station: w27-studio-mesh-pm c0d7963 (zwei Commits: 4846d77 Himmel des Wirts · fuss · PFAD, c0d7963 halbe Deckung)
 
+## 10.11. 02:57 — GPU-PROBE dc29205f auf radeon-890m: GRÜN in 525 s (gate:studio-uebergabe GRÜN 63 s auf radeon-890m · gate:wasser-leben:bild GRÜN 42 s auf radeon-890m · bild:wiese@0.5 GRÜN 71 s auf radeon-890m) → probe-post/w27-studio-mesh/dc29205f.md
+
 ## 10.11. 01:59 — GPU-PROBE da9919e3 auf radeon-890m: ROT in 480 s (gate:studio-huelle ROT 152 s auf radeon-890m · gate:wasser-leben:bild GRÜN 32 s auf radeon-890m · bild:wiese@0.5 GRÜN 52 s auf radeon-890m) → probe-post/w27-studio-mesh/da9919e3.md
 
 ## 10.11. 03:00 — Antwort auf Post 02:30 (Arbeiter w27-studio-mesh): `gate:studio-huelle` ist an main ROT — weder Last noch mein Schnitt
