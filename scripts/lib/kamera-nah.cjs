@@ -309,7 +309,10 @@ function nahDeckungInSeite(o) {
             if (!vor(W)) return { d };
             if (!S.boden) return { d, offen: true };
             if (!vor(W0)) return { d, vor: d < L / 2 && "Boden-Schicht" };
-            let h = null;
+            // DER SATZ BEIM NAMEN (w27-ort-pose): seine Hülle ist ohne Maß, die Hüllen-Frage unten übergeht ihn — der Stamm nennt
+            // die Zelle, in deren Kasten die Fläche liegt (`_satzZelleBei`). Vorher hieß die Wand eines Hauses im Bau-Satz
+            // „fern-ring“, die einzige Hülle über ihrem Fuß (stadt, GTX 1050: „Ziel Blickziel verdeckt von fern-ring in 24.2 m“)
+            let h = r._satzZelleBei(W0, S.boden.aus);
             const traegt = (s) => Math.hypot(s.center.x - W0.x, s.center.z - W0.z) <= s.radius + 0.25 && W0.y >= s.center.y - s.radius;
             st.scene.traverseVisible((obj) => zaehlt(obj) && !S.boden.aus.has(obj) && !satzVon.has(obj) && jeInstanz(obj, traegt, (ob, k) => !(h?.rad <= bs.radius) && (h = { rad: bs.radius, obj: ob, e: eintragVon(ob, k) }))); // prettier-ignore
             if (h?.e && OHNE.has(h.e.id)) return { d };

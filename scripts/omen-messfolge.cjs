@@ -382,7 +382,7 @@ function wachenUrteil(name, vor, nach, ort, gehalten) {
                 continue;
             }
             for (const f of BAND.ortGestellt(ort, w.ort, SICHT)) v.push(`ORT ${name} (${wann}): ${f}`);
-            const d = Math.hypot(w.ort.spieler[0] - ort.spieler[0], w.ort.spieler[1] - ort.spieler[1]);
+            const d = !ort.ortPose ? Math.hypot(w.ort.spieler[0] - ort.spieler[0], w.ort.spieler[1] - ort.spieler[1]) : 0;
             if (!(d <= 8))
                 v.push(
                     `ORT ${name} (${wann}): der Spieler steht ${d.toFixed(1)} m vom Messort ${ort.spieler.join(" ")}`
@@ -707,7 +707,8 @@ async function folge(neu = { versuch: 1, versuche: [], letzter: true }) {
                         je[String(g)].takt = m.takt;
                     }
                 }
-                await blick(BAND.ortGier(ort));
+                // ein Ort mit Pose aus dem Plan (`ortPose`) kehrt über `umstellen` zu ihr zurück, nie über eine Zahl der Spec
+                await (ort.blick ? blick(BAND.ortGier(ort)) : R("/umstellen", { ort: ORT }));
                 return je;
             });
             aus.kurz.gpuBank = {};
