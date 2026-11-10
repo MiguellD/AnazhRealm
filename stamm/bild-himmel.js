@@ -2291,16 +2291,19 @@ class AnazhRealm_bild_himmel {
         });
         // die Himmels-Sicht EINMAL je Blick (`himmelTexel`): Farbe und Anteil der Sonne lesen denselben Texel; den Luftschatten
         // baut nur ein Programm, dessen Renderer Schatten zeichnet (`_wirftImStoff` — unter kienspan ruht die Karte)
-        const farbe = T.Fn(([auge, punkt]) => {
+        // `sicht` ist der Luftschatten des Strahls (`luftSicht`); wer ihn reicht, entscheidet, WO er gerechnet wird.
+        const farbeMit = T.Fn(([auge, punkt, sicht]) => {
             const dir = punkt.sub(auge).normalize();
             const blick = T.vec3(dir.x, T.max(dir.y, 0.0), dir.z).normalize().toVar();
             const tx = A.himmelTexel(blick).toVar();
             const schatten = this._wirftImStoff(
-                T.float(1).sub(A.himmelEinfach(blick, tx).mul(T.float(1).sub(luftSicht(auge, punkt)))),
+                T.float(1).sub(A.himmelEinfach(blick, tx).mul(T.float(1).sub(sicht))),
                 T.float(1)
             );
             return T.select(U.unterWasser.greaterThan(0.5), U.farbe, A.himmelFarbe(blick, tx).mul(schatten));
         });
+        // der Schirm-Pass (Feld, Panorama, Spiegel) kennt nur das Pixel: sein Strahl rechnet den Luftschatten dort, einmal je Pixel
+        const farbe = T.Fn(([auge, punkt]) => farbeMit(auge, punkt, luftSicht(auge, punkt)));
         // DIE LUFT VOR DEM GEZEICHNETEN (w4-ferne-blau): EINE Mischung je Kanal für jeden Leser — die Stoffe der Szene
         // (`scene.fogNode`, der Fern-Ring darunter), der Feld-Pass und sein Panorama (`imDunst`) und der Spiegel des Wassers;
         // bis dahin setzte jeder Pass `mix(·, farbe, faktor)` selbst zusammen.
@@ -2318,7 +2321,20 @@ class AnazhRealm_bild_himmel {
         const mische = T.Fn(([rgb, auge, punkt]) =>
             T.mix(rgb.mul(durchlass(punkt)), farbe(auge, punkt), faktor(auge, punkt))
         );
-        st.scene.fogNode = T.vec4(mische(T.output.rgb, T.cameraPosition, T.positionWorld), T.output.a);
+        // DER LUFTSCHATTEN DER STOFFE STEHT AN DEN ECKEN (w28-horizont-gtx): der Strahl zum Punkt eines Stoffs rechnet seine
+        // `luftProben` im Vertex, das Fragment liest ihn als Varying (`vLuftSicht`) — die Größe ist glatt (die gewogene Sicht längs
+        // des Strahls, ihre acht Proben stehen an fernen Hängen 600 m auseinander, jede Masche ist feiner). Bis hier lief die
+        // Schleife in JEDEM Fragment JEDES Stoffs, auch im verworfenen Texel einer Karte und unter jeder Überdeckung: GTX 1060,
+        // Mess-Wiese Ego 1920×1080, gpu-bank — EINE Welt, je Stellung neu gebaut: 8 Proben 34,2 ms, 4: 30,2, 2: 29,1, 1: 28,5
+        // (0,8 ms je Probe, die Hälfte der Abruf der Karte: 8 Proben ohne ihn 30,9); ABAB je frischer Boot Kopf 4e2df19b ↔ Ecken:
+        // 34,26 · 34,36 ↔ 27,08 · 26,74 ms (−7,4 ms). Der Grat-Himmel daneben (`_horizontHimmel`) kostet dort 1,0 ms.
+        const sichtEcke = T.varying(luftSicht(T.cameraPosition, T.positionWorld), "vLuftSicht");
+        const stoff = T.mix(
+            T.output.rgb.mul(durchlass(T.positionWorld)),
+            farbeMit(T.cameraPosition, T.positionWorld, sichtEcke),
+            faktor(T.cameraPosition, T.positionWorld)
+        );
+        st.scene.fogNode = T.vec4(stoff, T.output.a);
         st.luft = { U, faktor, farbe, mische };
         return st.luft;
     }
