@@ -2596,17 +2596,15 @@ async function kreaturProben(r, T, opts) {
                 const M = liste.filter((b) => b.leib && !b.drinnen).sort((a, b) => ab(a.leib.position, pm) - ab(b.leib.position, pm)).slice(0, 50); // prettier-ignore
                 const f = M[0].leib.userData._tierBaum.wrap.scale.x;
                 ms.sort((a, b) => a - b);
+                // die Dreiecke der Senken des EINEN Satzes der Siedlung (Leib, Wurf) — jeder Typ zeichnet in ihm
+                const dreiecke = ["leib", "wurf"].map((k) => S.satz[k].geometry.index.count / 3);
                 return {
                     je: M.map((b) => [b.seed, b.gestalt, b.groesse, b.breite, b.tiefe, !!b.nah, b.farben]),
+                    // je Typ (die Gestalt der Nah-Wahl, Stufen 0 und 1) seine Dials und der Kasten seiner Grobstufe
                     typ: S.gestalten.map((G) => ({
                         dials: G.dK,
-                        mass: new T.Box3().setFromObject(r._ofenMenschTemplate(G.dK, G.f.skin, G.f.hair, 2).root).getSize(new T.Vector3()).multiplyScalar(f).toArray(), // prettier-ignore
-                        // die Dreiecke der Senken; eine Gestalt ohne Satz (kein Kopf trug sie bis jetzt) zählt die ihrer Stufen
-                        dreiecke: [2, 3].map((lod, i) => {
-                            let n = 0;
-                            (G.satz ? G.satz[i ? "wurf" : "leib"] : r._ofenMenschTemplate(G.dK, G.f.skin, G.f.hair, lod).root).traverse((m) => m.isMesh && (n += m.geometry.index.count / 3)); // prettier-ignore
-                            return n;
-                        }),
+                        mass: new T.Box3().setFromObject(r._ofenMenschTemplate(G.dK, G.f.skin, G.f.hair, 1).root).getSize(new T.Vector3()).multiplyScalar(f).toArray(), // prettier-ignore
+                        dreiecke,
                     })),
                     pxM: r._schirm().pxJeM / A.BEWOHNER.nahM,
                     kaskaden: A.SCHATTEN_KASKADE.texelM.length,

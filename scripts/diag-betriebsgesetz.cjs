@@ -10,7 +10,9 @@ const { wandEnde, argOpt, ausDatei, path, fs, jsonLesen, ROOT: root } = require(
 //      dazu die LOGBUCH-WAND (kein „Stand-Stempel:", max 40 Zeilen).
 //   3) STAND-WAND: der CLAUDE.md-Stand bleibt ≤ 40 Zeilen (Chronik = git log, Lehre 15).
 //   4) ABSENZ-WAND: BETRIEBSGESETZ in CLAUDE.md + Pflicht-Output in champion.md — ein stilles Streichen ist rot.
-//   6) WACHSTUMS-WAND + DECKE: scripts/ sinkt nur, in Code-Atomen ohne Kommentare (PFLICHT-OFFEN D); 7) ZITAT-WAND: jede .md steht in der Karte, nennt nur Lebendes;
+//   6) WACHSTUMS-WAND: scripts/ + spec/ wachsen höchstens um die Hälfte des Spiels, in Code-Atomen ohne Kommentare — sie
+//      urteilt am Fenster des Zugs, jeder andere Zweig druckt seinen Stand; 6b) DATEI-DECKE 4 000 Zeilen je Skript;
+//   7) ZITAT-WAND: jede .md steht in der Karte, nennt nur Lebendes;
 //   8) STRIPPER-WAND: EIN Kommentar-Stripper (scripts/lib/stamm.cjs), EIN __codeOf (scripts/lib/welt-boot.cjs).
 // Selbsttest feuert (Lehre 1: die Linse beweist sich selbst, nie Wachsamkeit).
 
@@ -58,13 +60,15 @@ function archivBefund(dateien) {
     ];
 }
 
-// 6) WACHSTUMS-WAND + DIE DECKE (PFLICHT-OFFEN D): scripts/ wächst nie — Code und Dateien
-//    sinken oder stehen, eine neue Linse zahlt mit gestrichenen; scripts/ + spec/ zusammen höchstens um die Hälfte des
-//    Spiel-Wachstums. Gemessen JE ZWEIG (`wachstumsStaende`), nie gegen einen festen Grund (der summierte fremde Zweige):
-//    je geänderter Datei die ATOME (Wort oder Satzzeichen) am Kopf − am Grund, Code (.js .cjs .mjs .html .css) ohne
-//    Kommentare über den EINEN Stripper (`ohneKommentare`) — ein Kommentar kostet nichts und zahlt nichts (bis 24.10.
-//    zählte jede Diff-Zeile: parallele Zweige strichen für ihre Decke dieselben Kommentare und ernteten Konflikte),
-//    Pressen zahlt nichts; dazu Dateien neu − weg. Dasselbe Maß gilt der Spiel-Seite (sonst kaufte ein Kommentar im
+// 6) WACHSTUMS-WAND: scripts/ + spec/ wachsen zusammen höchstens um die Hälfte des Spiel-Wachstums. Sie URTEILT am
+//    Fenster des ZUGS — am Kandidaten gegen seinen Grund (`--grund`) und am Push von integ-probe; jeder andere Zweig druckt
+//    seinen Stand (Prüf / Spiel / erlaubt) ohne ROT: ein Linsen-Commit vor seinem Spiel-Commit oder ein reiner Linsen-Zweig
+//    ist kein Befund, die Summe im Zug ist es. Die Decke „scripts/ sinkt nur" (+0 je Stand) fiel am 09.11.: main 02.11. →
+//    09.11. maß Prüf −2 936 bei Spiel +234 451 (erlaubt +117 225), und 01.–07.11. standen 44 ROT an ihr, 0 echt — sie
+//    kaufte Atome statt Linsen (Gebot 10). Gemessen JE STAND (`wachstumsStaende`), nie gegen einen festen Grund (der
+//    summierte fremde Zweige): je geänderter Datei die ATOME (Wort oder Satzzeichen) am Kopf − am Grund, Code (.js .cjs .mjs .html .css) ohne
+//    Kommentare über den EINEN Stripper (`ohneKommentare`) — ein Kommentar kostet nichts und zahlt nichts, Pressen zahlt
+//    nichts. Dasselbe Maß gilt der Spiel-Seite (sonst kaufte ein Kommentar im
 //    Spiel Prüf-Budget). Beide Texte je Datei liest EIN Diff mit voller Umgebung (`-U` über jede Länge): Umgebung und
 //    „-" sind der Grund, Umgebung und „+" der Kopf. `--grund <rev>` / `--kopf <rev>` messen zwischen zwei Ständen, ohne
 //    `--kopf` der Arbeitsbaum; kein Grund = ROT.
@@ -90,7 +94,8 @@ const zahl = (d) => (d >= 0 ? "+" : "") + d;
 function wachstumAusDiff(text, werkzeug) {
     const [seiten, je, datei, hand] = [new Map(), new Map(), new Map(), []];
     let [pfad, hunk, frei] = [null, false, 0];
-    for (const z of text.split("\n")) if (z.startsWith("diff --git ")) {
+    for (const z of text.split("\n"))
+        if (z.startsWith("diff --git ")) {
             [pfad, hunk] = [z.slice(13, 13 + (z.length - 16) / 2), false];
             seiten.set(pfad, [[], []]);
         } else if (!hunk && /^(new|deleted) file mode/.test(z)) datei.set(pfad, z[0] === "n" ? 1 : -1);
@@ -108,7 +113,7 @@ function wachstumAusDiff(text, werkzeug) {
         if (t) frei += atome(p, w) - atome(p, a);
         je.set(p, d);
     }
-    return { je, datei, frei, hand };
+    return { je, frei, hand };
 }
 const summe = (m, vor = "") => [...m].reduce((s, [p, d]) => (p.startsWith(vor) ? s + d : s), 0);
 function wachstumZwischen(grund, kopf, pfade, werkzeug) {
@@ -117,13 +122,13 @@ function wachstumZwischen(grund, kopf, pfade, werkzeug) {
 }
 const taeterVon = (je) =>
     [...je]
-        .filter(([p, d]) => p.startsWith("scripts/") && d > 0)
+        .filter(([, d]) => d > 0)
         .sort((a, b) => b[1] - a[1])
         .slice(0, 3)
         .map(([p, d]) => `, ${p} +${d}`)
         .join("");
-// Die Stände, an denen die Wand misst — je Stand [grund, kopf (null = Arbeitsbaum), Name]. Ein Karten-Zweig misst sich
-// ganz ab der Merge-Basis mit origin/integ-probe. integ-probe misst seinen PUSH (WACHSTUM_VORHER = der Kopf vor dem Push,
+// Die Stände, an denen die Wand misst — je Stand [grund, kopf (null = Arbeitsbaum), Name, urteilt]. Ein Karten-Zweig misst
+// sich ganz ab der Merge-Basis mit origin/integ-probe und druckt den Stand (urteilt nicht). integ-probe urteilt über seinen PUSH (WACHSTUM_VORHER = der Kopf vor dem Push,
 // nach einem Force-Push dessen Merge-Basis mit HEAD, sonst der letzte Commit): der Integrator merget eine Karte oder
 // spult integ-probe auf ihren Kopf vor — dann geht der erste Eltern-Pfad durch die Karte, und je Commit gemessen träfe ihr „Merge integ-probe in <karte>" die Summe fremder
 // Karten. Nie die Summe seit main: eine Karte, die Spiel-Code streicht, machte sonst eine fremde rot. main nimmt nur den
@@ -133,23 +138,27 @@ function wachstumsStaende(zweig, kopfRev) {
     if (zweig === "integ-probe") {
         const vorher = process.env.WACHSTUM_VORHER;
         const grund = vorher && !/^0+$/.test(vorher) ? git(["merge-base", vorher, "HEAD"]).trim() : "HEAD~1";
-        return [[grund, "HEAD", `Push ${grund.slice(0, 8)}..HEAD`]];
+        return [[grund, "HEAD", `Push ${grund.slice(0, 8)}..HEAD`, true]];
     }
-    return [[git(["merge-base", "HEAD", "origin/integ-probe"]).trim(), kopfRev, "Merge-Basis mit origin/integ-probe"]];
-}
-function wachstumBefund(dP, dS, name = "Zweig", dSkript = 0, dDatei = 0, taeter = "", hand = "") {
-    const erlaubt = Math.floor(Math.max(0, dS) / 2);
     return [
-        ...(dSkript > 0 || dDatei > 0
-            ? [
-                  `DECKE (${name}): scripts/ wuchs um ${dSkript} Atome / ${dDatei} Dateien${taeter} — sie sinkt nur, Kommentare und Pressen zahlen nichts`,
-              ]
-            : []),
-        ...(dP > erlaubt
-            ? [
-                  `WACHSTUMS-WAND (${name}): scripts/ + spec/ +${dP} Atome bei Spiel ${dS} — erlaubt die Hälfte (${erlaubt})${hand}`,
-              ]
-            : []),
+        [
+            git(["merge-base", "HEAD", "origin/integ-probe"]).trim(),
+            kopfRev,
+            "Merge-Basis mit origin/integ-probe",
+            false,
+        ],
+    ];
+}
+const erlaubtVon = (dS) => Math.floor(Math.max(0, dS) / 2);
+// die Zeile des Stands: was die Wand am Zug sagen wird, auch wo sie nicht urteilt
+const wachstumStand = (dP, dS, name, urteilt, frei = 0, hand = "") =>
+    `${name}: Prüf ${zahl(dP)} / Spiel ${zahl(dS)} Atome · erlaubt ${erlaubtVon(dS)} · ` +
+    `${urteilt ? "urteilt" : "Stand, urteilt am Zug"} · Werkzeug-Ausgabe ${zahl(frei)} frei${hand}`;
+function wachstumBefund(dP, dS, name, urteilt, taeter = "", hand = "") {
+    const erlaubt = erlaubtVon(dS);
+    if (!urteilt || dP <= erlaubt) return [];
+    return [
+        `WACHSTUMS-WAND (${name}): scripts/ + spec/ +${dP} Atome bei Spiel ${dS} — erlaubt die Hälfte (${erlaubt})${taeter}${hand}`,
     ];
 }
 
@@ -306,14 +315,20 @@ function stripperBefund(dateien) {
     return out;
 }
 
-// 6b) DIE DECKE JE DATEI: keine Datei in scripts/ trägt über 4 000 Zeilen — der Richter
-//     lebt nach Domäne (scripts/playtest/<domaene>.cjs, `stamm-umzug --richter`), eine Linse teilt am selben Tag; ROT beim Namen.
+// 6b) DIE DECKE JE DATEI: keine Datei in scripts/ trägt über 4 000 Zeilen; ROT beim Namen samt dem Weg, der teilt. Den
+//     Richter (scripts/playtest.cjs + scripts/playtest/<domaene>.cjs) teilt das Werkzeug: `stamm-umzug --richter` gibt
+//     eine Domäne über der Decke nach Modul/teil ab. Jede andere Linse teilt von Hand nach Domäne (scripts/lib/<domaene>-proben.cjs
+//     wie fahr-proben, kampf-proben) — `--nach-karte` teilt nur den Stamm, kein Skript.
 const DATEI_DECKE = 4000;
+const teilWeg = (pfad) =>
+    /^scripts\/playtest(?:\.cjs|\/)/.test(pfad)
+        ? "teilt: node scripts/stamm-umzug.cjs --richter"
+        : "kein Werkzeug teilt sie — von Hand nach Domäne (scripts/lib/<domaene>-proben.cjs)";
 const dateiDeckeBefund = (dateien) =>
     dateien
         .map(({ pfad, text }) => [pfad, (text.match(/\n/g) || []).length])
         .filter(([, n]) => n > DATEI_DECKE)
-        .map(([pfad, n]) => `DECKE (Datei): ${pfad} trägt ${n} Zeilen — höchstens ${DATEI_DECKE} (PFLICHT-OFFEN D)`);
+        .map(([pfad, n]) => `DECKE (Datei): ${pfad} trägt ${n} Zeilen — höchstens ${DATEI_DECKE}, ${teilWeg(pfad)}`);
 
 function main() {
     const errs = [];
@@ -321,21 +336,18 @@ function main() {
     const gemessen = [];
     try {
         const zweig = process.env.GITHUB_REF_NAME || git(["rev-parse", "--abbrev-ref", "HEAD"]).trim();
-        const staende = grundRev ? [[grundRev, kopfRev, "--grund"]] : wachstumsStaende(zweig, kopfRev);
-        for (const [grund, kopf, name] of staende) {
-            const { je, datei, frei, hand } = wachstumZwischen(
+        const staende = grundRev ? [[grundRev, kopfRev, "--grund", true]] : wachstumsStaende(zweig, kopfRev);
+        for (const [grund, kopf, name, urteilt] of staende) {
+            const { je, frei, hand } = wachstumZwischen(
                 grund,
                 kopf,
                 PRUEF_PFADE,
                 werkzeugVon((k) => stamm.teileVon(root, k ? kopf : grund))
             );
             const [dP, dS] = [summe(je), summe(wachstumZwischen(grund, kopf, SPIEL_PFADE).je)];
-            const [dK, dD] = [summe(je, "scripts/"), summe(datei, "scripts/")];
             const vonHand = hand.length ? ` · von Hand ${hand.join(", ")}` : "";
-            gemessen.push(
-                `${name}: Prüf ${zahl(dP)} / Spiel ${zahl(dS)} Atome · scripts ${dK} Atome ${dD} Dat. · Werkzeug-Ausgabe ${zahl(frei)} frei${vonHand}`
-            );
-            errs.push(...wachstumBefund(dP, dS, name, dK, dD, taeterVon(je), vonHand));
+            gemessen.push(wachstumStand(dP, dS, name, urteilt, frei, vonHand));
+            errs.push(...wachstumBefund(dP, dS, name, urteilt, taeterVon(je), vonHand));
         }
         if (!staende.length)
             gemessen.push(`${zweig}: misst nichts zweimal (jeder Merge stand auf integ-probe an der Wand)`);
@@ -349,9 +361,7 @@ function main() {
     // 7) ZITAT-WAND
     let dokuZeile = "nicht gelesen";
     try {
-        const gates = new Set(
-            Object.keys(jsonLesen("package.json").scripts)
-        );
+        const gates = new Set(Object.keys(jsonLesen("package.json").scripts));
         // die Welt ist der Index (wie in der CI), nie der lokale Rest unverfolgter Dateien
         const dateien = [...new Set(git(["ls-files", "--cached"]).split("\n"))].filter(
             (p) => p && fs.existsSync(path.join(root, p))
@@ -471,36 +481,46 @@ function main() {
             .join("\n")
     ).length; // muss feuern
     if (!l1 || l2 || !l3) errs.push(`Selbsttest der Logbuch-Wand versagt (l1=${l1} l2=${l2} l3=${l3})`);
-    // die Wachstums-Wand je Fall: die Zahl der Befunde; die Decke an einem Diff mit voller Umgebung: die Summe der
-    // Code-Atome, „rot" = ROT beim Namen der Datei, dahinter die Abweichung von Hand. Die Fälle fahren mit einem GIERIGEN
-    // Werkzeug, das jeden Kopf für abgeleitet erklärt: eine Datei außerhalb der Werkzeug-Tafeln und eine neue Tafel fragt
-    // die Wand nie (6c, Fall c). Eine geänderte Tafel misst gegen die frische Ausgabe, hier ihr Grund und die Zeile „b" (die
-    // Ableitung selbst prüft stamm-umzug --selftest an einem Umzug): (a) gleich ihr zählt 0 — der Umzug ist grün, wo er ohne
-    // Abzug zählte; (b) eine Hand-Zeile in der Tafel-Region zählt +1 und steht mit Datei:Zeile beim Namen
+    // die Wachstums-Wand je Fall: die Zahl der Befunde am Zug (urteilt) und am Zweig (Stand); die Atome an einem Diff mit
+    // voller Umgebung: die Summe der Code-Atome, „rot" = am Zug gegen Spiel 0 ROT beim Namen der Datei, dahinter die
+    // Abweichung von Hand. Die Fälle fahren mit einem GIERIGEN Werkzeug, das jeden Kopf für abgeleitet erklärt: eine Datei
+    // außerhalb der Werkzeug-Tafeln und eine neue Tafel fragt die Wand nie (6c, Fall c). Eine geänderte Tafel misst gegen die
+    // frische Ausgabe, hier ihr Grund und die Zeile „b" (die Ableitung selbst prüft stamm-umzug --selftest an einem Umzug):
+    // (a) gleich ihr zählt 0; (b) eine Hand-Zeile in der Tafel-Region zählt +1 und steht mit Datei:Zeile beim Namen
     const gierig = (p, a, n) => n;
     const fall = (hunk, m = "", p = "scripts/x.cjs", werk = gierig) => {
         const w = wachstumAusDiff(`diff --git a/${p} b/${p}\n${m}@@\n${hunk}`, werk);
-        const rot = wachstumBefund(-9, 99, "x", summe(w.je), summe(w.datei), taeterVon(w.je));
+        const rot = wachstumBefund(summe(w.je), 0, "x", true, taeterVon(w.je));
         return [summe(w.je) + (String(rot).includes("x.cjs +") ? " rot" : ""), ...w.hand].join(" ");
     };
     const [frisch, tafel] = [(p, a) => a + "\nb", TAFELN[0]];
+    // der Linsen-Zweig: +50 Prüf bei Spiel 0 ist am Zweig GRÜN und druckt seinen Stand; derselbe Stand am Zug ist ROT
+    const zweigStand = wachstumStand(50, 0, "Zweig", false);
+    const zweig =
+        wachstumBefund(50, 0, "Zweig", false).length +
+        (zweigStand.includes("Prüf +50 / Spiel +0 Atome · erlaubt 0 · Stand") ? " Stand" : "");
+    // der Zug-Kandidat über der Hälfte: ROT beim Namen des Stands und des Täters
+    const zug = String(wachstumBefund(501, 1000, "--grund", true, ", scripts/y.cjs +501"));
+    const zugSoll =
+        "WACHSTUMS-WAND (--grund): scripts/ + spec/ +501 Atome bei Spiel 1000 — erlaubt die Hälfte (500), scripts/y.cjs +501";
     const wand = [
-        wachstumBefund(600, 1000).length, // +600 Prüf gegen +1000 Spiel: feuert
-        wachstumBefund(400, 1000).length, // +400 gegen +1000: schweigt
-        wachstumBefund(10, -500).length, // die Welt schrumpft, der Apparat wächst: feuert
-        wachstumBefund(-100, -300).length, // beide schrumpfen: schweigt
-        wachstumBefund(-9, 99, "x", -5, 1).length, // eine neue Datei mit weniger Atomen: feuert
+        wachstumBefund(600, 1000, "Zug", true).length, // +600 Prüf gegen +1000 Spiel: feuert
+        wachstumBefund(400, 1000, "Zug", true).length, // +400 gegen +1000: schweigt
+        wachstumBefund(10, -500, "Zug", true).length, // die Welt schrumpft, der Apparat wächst: feuert
+        wachstumBefund(-100, -300, "Zug", true).length, // beide schrumpfen: schweigt
+        zweig, // der Linsen-Zweig: 0 Befunde, die Stand-Zeile steht
+        zug === zugSoll ? "rot" : zug, // die Mutante am Zug: feuert beim Namen
         fall("+// x\n a;\n-b;\n+b; /* y\n+ */"), // (a) nur Kommentare dazu: 0
         fall("-// x\n a;"), // (b) nur Kommentare weg: 0, zahlt nichts
         fall("-a;\n+!a;"), // (c) ein Code-Atom mehr: ROT beim Namen
         fall("-a;\n-b;\n+a; b;"), // (d) Pressen zweier Zeilen zu einer: 0
-        fall("+a;\n+b;", "new file mode\n"), // eine neue Datei zählt ganz und als Datei
+        fall("+a;\n+b;", "new file mode\n"), // eine neue Datei zählt ganz
         fall("-a;\n-b;", "deleted file mode\n"), // eine gestrichene zahlt ganz
         fall("-a\n+a\n+b", "", tafel, frisch), // (a) die frische Ausgabe des Werkzeugs: 0
         fall("-a\n+a\n+h\n+b", "", tafel, frisch), // (b) eine Hand-Zeile darin: +1 beim Namen
         fall("+a", "new file mode\n", tafel), // (c) eine neue Tafel zählt voll
     ].join(" · ");
-    if (wand !== `1 · 0 · 1 · 0 · 1 · 0 · 0 · 1 rot · 0 · 4 rot · -4 · 0 · 1 ${tafel}:2 +1 · 1`)
+    if (wand !== `1 · 0 · 1 · 0 · 0 Stand · rot · 0 · 0 · 1 rot · 0 · 4 rot · -4 · 0 · 1 ${tafel}:2 +1 · 1`)
         errs.push(`Selbsttest der Wachstums-Wand versagt (${wand})`);
     // die Zitat-Wand: je Regel genau ein Täter beim Namen; die Chronik-Zeile, der Platzhalter und die Einheit schweigen
     const zTexte = {
@@ -565,7 +585,14 @@ function main() {
     // die Decke je Datei: eine gepflanzte 4 001-Zeilen-Datei ist ROT beim Namen, 4 000 Zeilen halten
     const d1 = dateiDeckeBefund([{ pfad: "scripts/x.cjs", text: "x\n".repeat(4001) }]);
     const d2 = dateiDeckeBefund([{ pfad: "scripts/y.cjs", text: "y\n".repeat(4000) }]).length;
-    if (d1.length !== 1 || !d1[0].includes("scripts/x.cjs trägt 4001") || d2)
+    const d3 = dateiDeckeBefund([{ pfad: "scripts/playtest/x.cjs", text: "x\n".repeat(4001) }]);
+    if (
+        d1.length !== 1 ||
+        !d1[0].includes("scripts/x.cjs trägt 4001") ||
+        !d1[0].includes("von Hand") ||
+        d2 ||
+        !String(d3).includes("--richter")
+    )
         errs.push(`Selbsttest der Datei-Decke versagt (d1=${d1.length} d2=${d2})`);
 
     wandEnde(
