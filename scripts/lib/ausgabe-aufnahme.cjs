@@ -807,22 +807,30 @@ async function blickWahl(opt) {
 // DIE ABNAHME AM BILD (w18-abnahme-sicht, kamera-nah `o.ziel.tiefe`): gemessen mit der Tiefe S des Bilds; zeigt S an einem Ziel-Punkt eine
 // Fläche davor (`ziel.frei` ungemessen), misst sie noch einmal mit `S.boden`, demselben Bild mit verborgenen Halmen der Nah-Wiese, Streu
 // und Wasser (EIN Bild des Loops; ihre Stoffe stehen schon): was dort am Ziel-Pixel steht, ist keine Boden-Schicht; `aus` nennt die
-// Verborgenen. Nur wo das Bild etwas vor dem Ziel zeigt, kostet es das zweite Bild.
+// Verborgenen. Nur wo das Bild etwas vor dem Ziel zeigt, kostet es das zweite Bild. DER LEIB (w27-ort-pose-voll): zeigt auch
+// `S.boden` etwas davor, fragt ein drittes Bild `S.leib` — ohne Boden-Schicht UND ohne die Leiber (`leiber`: der Leib als Mesh
+// mit Skelett, der Satz einer Gestalt mit `userData.gang`, dieselbe Grenze wie kamera-nah `zaehlt`), denn ein Leib ist nie
+// Fläche der Linse, auch nicht vor dem Ziel.
 async function zielMessen(opt, S) {
-    const m = window.__abnahmeMessen({ ...opt, tiefe: S });
-    if (m.ziel?.frei !== null) return m;
-    const aus = new Set();
-    st.scene.traverseVisible((o) => (o.userData.isHydrosphere || /^(nahWiese:|streuSatz|wasserSatz|farWater|chunk-water-)/.test(r._taeterKlasse(o))) && aus.add(o)); // prettier-ignore
-    for (const o of aus) o.visible = false;
-    window.__bundlesNeu();
-    try {
-        window.__loopBild();
-        S.boden = Object.assign(await window.__spiegelDaten(), { aus });
-    } finally {
-        for (const o of aus) o.visible = true;
+    let m = window.__abnahmeMessen({ ...opt, tiefe: S });
+    for (const welches of ["boden", "leib"]) {
+        if (m.ziel?.frei !== null) return m;
+        const aus = new Set();
+        const leiber = new Set();
+        st.scene.traverseVisible((o) => (o.userData.isHydrosphere || /^(nahWiese:|streuSatz|wasserSatz|farWater|chunk-water-)/.test(r._taeterKlasse(o))) && aus.add(o)); // prettier-ignore
+        if (welches === "leib") st.scene.traverseVisible((o) => (o.isSkinnedMesh || o.userData.gang) && (aus.add(o), leiber.add(o)));
+        for (const o of aus) o.visible = false;
         window.__bundlesNeu();
+        try {
+            window.__loopBild();
+            S[welches] = Object.assign(await window.__spiegelDaten(), { aus, leiber });
+        } finally {
+            for (const o of aus) o.visible = true;
+            window.__bundlesNeu();
+        }
+        m = window.__abnahmeMessen({ ...opt, tiefe: S });
     }
-    return window.__abnahmeMessen({ ...opt, tiefe: S });
+    return m;
 }
 
 // DAS GANZE BILD (echte GPU): ein Ausgabe-Ziel kleiner als der Canvas lieferte die linke obere Ecke
