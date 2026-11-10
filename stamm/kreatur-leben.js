@@ -2221,15 +2221,17 @@ class AnazhRealm_kreatur_leben {
     // das abgeäste, und eine ferne Region stand unter der halben Nahrung still (27.10.: −4 %). Die Fälle gezeichneter Tiere
     // sammelt `tode` (ohne: sie fallen am Ende). Liefert die Region. JEDER TAKT STEHT AUF DEM RASTER DER WELT-UHR (feld.K2#2):
     // der Beginn ist ein Vielfaches von taktS — zwei Seiten und ein Reload zählen dieselben Takte zu denselben Zeiten.
-    // DIE STUNDE LIEGT VOR JEDER UHR (w27-tiere-sicht): auch in einer jungen Welt beginnt die Region aufholS vor dem Lesen — das
-    // Raster reicht unter die Welt-Uhr 0. Bis dahin begann sie frühestens bei 0: eine Welt unter einer Stunde trug nur, was seit
-    // ihrer Geburt warf (Mess-Wiese 20 Spiel-s nach der Ankunft: 0–15 Tiere in den nahen Regionen, nach 300 Spiel-s 28–46 — der
-    // Geher der ersten zehn Minuten ging durch leeres Land).
+    // DIE STUNDE LIEGT VOR DER WELT (w27-tiere-sicht): in einer jungen Welt (jünger als aufholS) beginnt JEDE Region aufholS vor der
+    // Welt-Uhr 0 — für jede Seite derselbe Zeitpunkt, gleich, wann sie liest. Bis dahin begann sie frühestens bei 0: eine Welt unter
+    // einer Stunde trug nur, was seit ihrer Geburt warf (Mess-Wiese 20 Spiel-s nach der Ankunft: 0–15 Tiere in den nahen Regionen,
+    // nach 300 Spiel-s 28–46 — der Geher der ersten zehn Minuten ging durch leeres Land); ein Beginn aufholS vor dem LESEN hätte
+    // den Gleichlauf gebrochen (gate:mp-sync (f): Leben 207 von 268 Zellen gleich, der Mitspieler liest später).
     _bestandRegion(key, aufholen = true, bis = 0, max = Infinity, tode = null) {
         const F = this._bestandRegionen();
         const B = AnazhRealm._bestandGesetz().B;
         const jetzt = this.state.spielZeit || 0;
-        const fern = Math.floor((jetzt - AnazhRealm.BESTAND_REGION.aufholS) / B.taktS) * B.taktS;
+        const AH = AnazhRealm.BESTAND_REGION.aufholS;
+        const fern = jetzt < AH ? -AH : Math.floor((jetzt - AH) / B.taktS) * B.taktS;
         const R = F.regionen[key] || (F.regionen[key] = { t: fern, seq: 0, tiere: [] });
         if (R.t < fern) R.t = fern;
         if (!aufholen) return R;
