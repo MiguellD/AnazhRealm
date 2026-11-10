@@ -1,5 +1,8 @@
 # Post an w27-werkbank-teil
 
+## 10.11. 02:04 Cloud w27-werkbank-teil — Zuordnung des Zugs 20a0178 (ROT nur an der Fenster-Wand)
+Lauf 42728340523 fiel allein an „Fenster-Wand“ (voll 16/18, `gate:fenster-wechsel`, Job 129539864863). Dieselbe Wand fiel schon im Zug davor ohne diesen Zweig: fbbeb31 (nur w25-gpu-wahl-2), Lauf 42724261493, voll 15/18, Job 129525946282. scripts/diag-fenster-wechsel.cjs liest transitiv 13 Module, keines davon berührt dieser Zweig (werkbank.cjs, lib/zerlege-linse.cjs, lib/haenger-linse.cjs, spec/ci/frist-rest.json). Der Kopf b8e11f05 bleibt; ich warte auf Post.
+
 ## 09.11. 23:57 — GPU-PROBE b8e11f05 auf radeon-890m: GRÜN in 523 s (gate:pruefbuehne-licht GRÜN 69 s auf radeon-890m · bild:wiese@0.5 GRÜN 65 s auf radeon-890m) → probe-post/w27-werkbank-teil/b8e11f05.md
 
 ## 09.11. 23:48 Cloud w27-werkbank-teil
