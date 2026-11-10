@@ -150,13 +150,13 @@ function selbsttest() {
     };
     const klon = () => jsonKlon(gruen);
     const fehler = [];
+    // ein grüner Fall des Selbsttests: rot ist ein Fehler beim Namen
+    const gruenFall = (name, v) => (v.length && fehler.push(`${name} fällt rot: ${v.join(" · ")}`), console.log(`  ${v.length ? "❌" : "✅"} Selbsttest ${name} → ${v.join(" · ") || "grün"}`)); // prettier-ignore
     // der echte Loop unter langsamem Takt: das Licht dreht in jedem Frame (die Sonne läuft schneller als eine Stufe je Frame),
     // die Kaskaden mit Box halten ihre Wahl über den Licht-Rand — grün
     const randSonne = (arbeitFrames, lichtRand) =>
         Object.assign(sonne(arbeitFrames, 199, 0.0004), { frames: 199, sonneRad: 0.19, mitBox: true, lichtRand });
-    const v1 = urteil(Object.assign(klon(), { sonne: randSonne(40, 32) }));
-    if (v1.length) fehler.push("der grüne Befund mit Licht-Rand fällt rot: " + v1.join(" · "));
-    console.log(`  ${v1.length ? "❌" : "✅"} Selbsttest grün mit Licht-Rand → ${v1.join(" · ") || "grün"}`);
+    gruenFall("grün mit Licht-Rand", urteil(Object.assign(klon(), { sonne: randSonne(40, 32) })));
     // RUHE MIT ÄNDERUNG (K): Arbeit und Bytes in Frames mit gedrehtem Licht sind die Arbeit der Änderung — grün; die
     // Linse nennt sie (die Werkbank fällte die laufende Sonne als „schreibt ohne Änderung"). Ein Satz-Inhalt mit benanntem
     // Grund ist im echten Loop (nicht streng) eine Änderung — in der eingefrorenen Welt der Wand fällt er rot (Fall unten).
@@ -164,11 +164,7 @@ function selbsttest() {
         inhaltFrames: 3,
         inhaltJe: { boden: { frames: 3, aenderung: 3, folge: 0, bereiche: 3, keys: ["+-901,-850"] } },
     });
-    const vL = SICHT.sichtUrteil({ ruhe: loopInhalt });
-    if (vL.length) fehler.push("der echte Loop mit Inhalts-Änderung fällt rot: " + vL.join(" · "));
-    console.log(
-        `  ${vL.length ? "❌" : "✅"} Selbsttest echter Loop mit Inhalts-Änderung → ${vL.join(" · ") || "grün"}`
-    );
+    gruenFall("echter Loop mit Inhalts-Änderung", SICHT.sichtUrteil({ ruhe: loopInhalt }));
     const mitAenderung = klon();
     Object.assign(mitAenderung.ruhe, {
         arbeit: werte(800, 0, 10000),
@@ -177,9 +173,7 @@ function selbsttest() {
         bytes: werte(5291, 0, 232320),
         schreibFrames: 69,
     });
-    const v2 = urteil(mitAenderung);
-    if (v2.length) fehler.push("Ruhe mit Änderung fällt rot: " + v2.join(" · "));
-    console.log(`  ${v2.length ? "❌" : "✅"} Selbsttest Ruhe mit Änderung (Licht) → ${v2.join(" · ") || "grün"}`);
+    gruenFall("Ruhe mit Änderung (Licht)", urteil(mitAenderung));
     // DIE KLASSE JE BYTE (`sichtBytesKlasse`): der Grund des Schreibers gegen die Änderung im selben Frame — ein Satz-Inhalt
     // zählt nur mit BENANNTEM Grund (`grund`), nie über die Zähler des Spiels (Stand, Verdichten)
     const kl = (f) => SICHT.sichtBytesKlasse(f);
@@ -711,7 +705,7 @@ const server = statikServer();
                 cam.position.set(ex, boden + 1.7, ez);
                 cam.lookAt(ex + Math.sin(yaw) * 100, boden + 1.7, ez - Math.cos(yaw) * 100);
                 cam.updateMatrixWorld(true);
-                kaskaden.forEach((c, i) => {
+                kaskaden.forEach((c) => {
                     const h = c.right * 0.5;
                     const cx = ex + Math.sin(yaw) * h,
                         cz = ez - Math.cos(yaw) * h;
@@ -719,7 +713,6 @@ const server = statikServer();
                     c.lookAt(cx, boden, cz);
                     c.updateMatrixWorld(true);
                     c.updateProjectionMatrix();
-                    void i;
                 });
             };
             // EIN Frame der Sicht: das Hauptbild über `_passSicht`, dann jede Kaskade mit derselben Lage wie in `_passSicht`

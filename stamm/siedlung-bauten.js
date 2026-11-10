@@ -174,7 +174,7 @@ class AnazhRealm_siedlung_bauten {
         // einer wartete, und regt sich nichts (Ort, Bau-Menge, Ankunft, Regler), wählt sie dieselben Stufen — kein Gang. Ohne
         // Eintrag ist die Runde 0 und gegangen: auch die leere Wahl geht durch die Wache, nie an ihr vorbei. DIE RUNDE IST EIN
         // RUNDGANG: die wachen Einträge bei seinem Beginn, bis so viele gegangen sind — wer einschläft, verkürzt erst den
-        // nächsten (gate:stand-takt TREUE: die Runde steht, solange sie gegangen wird).
+        // nächsten, wer wechselt oder wartet, beginnt ihn neu (gate:stand-takt TREUE: die Runde steht, solange sie gegangen wird).
         if (!(W.rest > 0)) W.runde = W.rest = W.wach.size;
         if (this._standRuht("archLod", W.runde, { pos: pm, rand: AnazhRealm.STAND_RAND_M }, "bau")) return bewegt;
         if (occlOn) this._maybeRebuildOcclusionGrid();
@@ -228,12 +228,15 @@ class AnazhRealm_siedlung_bauten {
         const gitterAlt = occlOn && this._occlGridRegung !== (this._weltRegung | 0);
         // wer auf seine Zusage schläft (`W.zusage`), hält die Stufen-Wahl offen wie ein Wartender — die Welt steht erst, wenn sie
         // kam; ebenso die Nachlese, bis sie jeden Schläfer des Bestands einmal geweckt hat (`_stufenWache`)
-        this._standMeldet(
-            "archLod",
-            besucht,
-            z.switches + z.regung > 0,
-            z.offen > 0 || gitterAlt || W.zusage.size > 0 || W.nach > 0
-        );
+        const [wirkt, offen] = [z.switches + z.regung > 0, z.offen > 0 || gitterAlt || W.zusage.size > 0 || W.nach > 0];
+        // DIE RUNDE BEGINNT, WO DIE WACHE NEU ZÄHLT (w20-wald-kosten): wirkt ein Gang oder wartet er, zählt die Wache ihre leeren
+        // Einträge von vorn (`_standMeldet`) — und die Runde, an der sie sie misst, beginnt mit ihr an den Wachen von jetzt: wer
+        // wechselte oder wartet, steht wach hinten in ihr. Bis hier lief die alte Runde weiter: endete sie, ehe der Gang den
+        // Gewechselten wieder erreichte, maß die neue (kleine) Runde die leeren Gänge der alten (großen), und die Wache schlief
+        // über ungeurteilten Einträgen (gate:stand-takt TREUE-LÜCKE „33 → 27 Einheiten": nach dem Fixpunkt wechselten 7 Bäume in
+        // 51–93 m, die Runde 2 807 endete, die neue maß 33 gegen 2 048 leere Gänge — 6 Bäume schliefen ungeurteilt wach).
+        if (wirkt || offen) W.rest = 0;
+        this._standMeldet("archLod", besucht, wirkt, offen);
         return bewegt + z.switches;
     }
 
