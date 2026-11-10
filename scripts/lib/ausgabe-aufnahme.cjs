@@ -812,7 +812,7 @@ async function zielMessen(opt, S) {
     const m = window.__abnahmeMessen({ ...opt, tiefe: S });
     if (m.ziel?.frei !== null) return m;
     const aus = new Set();
-    st.scene.traverseVisible((o) => (o.userData.isHydrosphere || /^(nahWiese:|streuSatz|wasserSatz|farWater|chunk-water-)/.test(r._taeterKlasse(o))) && aus.add(o)); // prettier-ignore
+    st.scene.traverseVisible((o) => (o.userData.isHydrosphere || /^(nahWiese:|streuNah:|wasserSatz|farWater|chunk-water-)/.test(r._taeterKlasse(o))) && aus.add(o)); // prettier-ignore
     for (const o of aus) o.visible = false;
     window.__bundlesNeu();
     try {

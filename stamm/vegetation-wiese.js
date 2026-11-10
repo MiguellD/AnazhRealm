@@ -202,8 +202,8 @@ class AnazhRealm_vegetation_wiese {
     // DIE ZIEHUNG DES ORTS (rein, über einer Wort-Algebra W, `_wortAlgebra`): das Wort einer Lage — x und z auf 1/256 m (in f32
     // exakt bis ±32 km, keine Rundung, die eine Karte anders legte), versetzt um 2²³, PCG über beide Achsen —, je `zug` eine
     // PCG-Runde weiter, die oberen 24 Bit als Zahl in [0, 1). Zug 0 ist die Ordnung der Ferne (`_wieseOrdnung`, `_halmFerne`), Zug 1
-    // das Rauschen des Halms: die Phase seines Wiegens (`_windSwayOffset` am Fuß des Büschels; die Nah-Streu trägt es je Pflanze im
-    // Satz, `_satzKernWiege`; die Strähne des Haars am Ort ihrer ersten Sicht, `_haarFederTakt`). EINE Rechnung für CPU und Stoff.
+    // das Rauschen des Halms: die Phase seines Wiegens (`_windSwayOffset` am Fuß des Büschels und jeder Pflanze der Nah-Streu;
+    // die Strähne des Haars am Ort ihrer ersten Sicht, `_haarFederTakt`). EINE Rechnung für CPU und Stoff.
     // GESCHICHTET (`schritt` > 0, die Ordnung der Ferne): über dem Gitter dieser Schrittweite tragen die oberen 8 Bit den
     // BAYER-RANG der Zelle (gi, gj = die Lage durch den Schritt, gerundet: der Jitter ±0,34 m der Wiese bleibt unter dem halben
     // Schritt) in der Tafel 16 × 16 — die Bit-Umkehr von (gi ⊕ gj, gi) verschränkt —, darunter die oberen 16 Bit des Worts
@@ -1423,11 +1423,10 @@ class AnazhRealm_vegetation_wiese {
     // (`_passTrifft`), 16 Zahlen und den Ton je Teil in seine Senke (der Spike w25 maß an der Mess-Wiese im Gang, Radeon, den Satz
     // samt Ferne 3,1/11,5 ms Mittel/p95 je Bild). Jetzt trägt jede Senke der Nähe (Vorlage × Stufe × Teil) JEDES Büschel ihrer
     // Vorlage im Ring, je Kachel ein BLOCK (gleiche Plätze in jeder Senke der Vorlage, Basis × Teil, die vierte Zeile der Matrix
-    // trägt den Fuß — Element 3 x, 7 z — und den Tod, Element 11 = −1), geschrieben nur bei Geburt und Tod einer Kachel (ein
-    // Tod gibt seine Plätze frei, eine Geburt nimmt den ersten freien Raum, der passt); die Arena kopiert nur diese Bereiche
-    // (`_block`). Die Wahl der GPU (`PASS_WAHL_WGSL`, Art 5) urteilt je Büschel und Pass: die Stufe nach `_nahStufe` (L1 bis
-    // `stufe1`, gehalten bis `stufe1Rand` dahinter — der ZUSTAND je Platz in `zustand`, zwei Hälften im Wechsel je Hauptbild,
-    // nach einem Sprung des Auges aus dem Jetzt), die Übergabe `radius` an die Ferne, dann die Sicht; jede Senke ihre Stufe.
+    // trägt den Fuß — Element 3 x, 7 z — und die Weite, Element 11: die Übergabe `radius`), geschrieben nur bei Geburt und Tod
+    // einer Kachel (`_bestandFamilie`). Die Wahl der GPU (`PASS_WAHL_WGSL`, Art 5) urteilt je Büschel und Pass: die Stufe nach
+    // `_nahStufe` (L1 bis `stufe1`, gehalten bis `stufe1Rand` dahinter — der ZUSTAND je Platz, `_naheZustand`), die Übergabe
+    // `radius` an die Ferne, dann die Sicht; jede Senke ihre Stufe.
     // Je Takt (`_tickNahWiese`), am Anfang und nach dem Bau; ohne Änderung ein Gang über die Kacheln. Rückgabe: geschrieben?
     _nahWieseBestand() {
         const st = this.state,
@@ -1439,7 +1438,6 @@ class AnazhRealm_vegetation_wiese {
         const mw = this._tmpWieseM4b || (this._tmpWieseM4b = new THREE.Matrix4());
         const cam = st.camera.position;
         const fern = nw.fern ? nw.fern.kacheln : new Map();
-        const z = nw.zustandNeu || (nw.zustandNeu = []);
         // DIE FAMILIEN: je Vorlage die Nähe (jede Senke beider Stufen, Basis × Teil, der Fuß in Element 3 und 7), je Vorlage die
         // Ferne (die Teile der Stufe L2 mit dem Gesetz der Ferne, `_nahWieseFernBlock`: Grenze in Element 3, die Ordnung in 7),
         // die Schale (ihre Karten, `_wieseSchaleDaten`, die Ordnung in 7). Je Block: Zahl und Schreiber an seinen ersten Platz.
@@ -1457,7 +1455,7 @@ class AnazhRealm_vegetation_wiese {
                     for (let i = 0; i < k.bueschel.length; i++) if (k.bueschel[i].vorlage === v) idx.push(i);
                     return {
                         n: idx.length,
-                        schreib: (s0, senken) =>
+                        schreib: (s0, senken, nah) =>
                             idx.forEach((i, j) => {
                                 const b = k.bueschel[i],
                                     o = (s0 + j) * 16;
@@ -1465,11 +1463,11 @@ class AnazhRealm_vegetation_wiese {
                                 for (const a of senken) {
                                     const arr = a.mesh.instanceMatrix.array;
                                     arr.set(mw.multiplyMatrices(m4, a.lokal).elements, o);
-                                    [arr[o + 3], arr[o + 7], arr[o + 11]] = [b.x, b.z, 0];
+                                    [arr[o + 3], arr[o + 7], arr[o + 11]] = [b.x, b.z, NW.radius];
                                     a.mesh.instanceColor.array.set(k.farben.subarray(i * 3, i * 3 + 3), (s0 + j) * 3);
                                 }
                                 // der Zustand des Platzes aus dem Jetzt (`_nahStufe` ohne Gedächtnis)
-                                z.push(v, s0 + j, Math.hypot(b.x - cam.x, b.z - cam.z) <= NW.stufe1 ? 1 : 0);
+                                nah[j] = Math.hypot(b.x - cam.x, b.z - cam.z) <= NW.stufe1 ? 1 : 0;
                             }),
                     };
                 },
@@ -1515,59 +1513,21 @@ class AnazhRealm_vegetation_wiese {
                 };
             },
         });
+        // GEBURT UND TOD nur, wenn eine Kachel, eine Vorlage oder die Ferne sich änderte (`nw.neu`, w27-takt-streu: der Stand
+        // kostet nichts — vorher ging jeder Takt jede Familie über jede Kachel); der Stempel unten jedes Mal
+        const neu = nw.neu === true || nw.neu === undefined;
+        nw.neu = false;
         let anders = false;
-        for (const f of familien) {
+        for (const f of neu ? familien : AnazhRealm.STAND_LEER) {
             let F = B[f.key];
             // eine neue Vorlage (Saison, Studio) oder Schale: ihre Senken sind neu — jede Kachel wird in ihnen neu geboren
             if (!F || F.ident.some((x, i) => x !== f.ident[i]))
                 F = B[f.key] = { ident: f.ident, frei: [], hoch: 0, bloecke: new Map() };
-            if (!f.senken) continue;
-            const geaendert = new Set();
-            // der Tod: eine Kachel verließ den Ring (oder baute neu) — ihre Plätze tragen den Tod, ihr Raum wird frei
-            for (const [key, b] of F.bloecke) {
-                if (f.kacheln.get(key) === b.k) continue;
-                for (const a of f.senken) {
-                    for (let j = 0; j < b.n; j++) a.mesh.instanceMatrix.array[(b.s + j) * 16 + 11] = -1;
-                    a.mesh.instanceMatrix.addUpdateRange(b.s * 16, b.n * 16);
-                    geaendert.add(a);
-                }
-                F.bloecke.delete(key);
-                AnazhRealm._raumGib(F.frei, b.s, b.n);
-            }
-            // die Geburt: eine Kachel trat ein — ihr Block nimmt den ersten freien Raum, der passt, sonst das Ende
-            for (const [key, k] of f.kacheln) {
-                if (F.bloecke.has(key)) continue;
-                const bl = f.block(k);
-                let s0 = bl.n ? AnazhRealm._raumNimm(F.frei, bl.n) : 0;
-                if (s0 < 0) ((s0 = F.hoch), (F.hoch += bl.n));
-                F.bloecke.set(key, { k, s: s0, n: bl.n });
-                if (!bl.n) continue;
-                for (const a of f.senken)
-                    if (F.hoch > a.kap) {
-                        a.anzahl = a.kap;
-                        this._senkeMesh(a, Math.ceil(F.hoch * 1.5) + 64, st.scene);
-                    }
-                bl.schreib(s0, f.senken);
-                for (const a of f.senken) {
-                    a.mesh.instanceMatrix.addUpdateRange(s0 * 16, bl.n * 16);
-                    a.mesh.instanceColor.addUpdateRange(s0 * 3, bl.n * 3);
-                    geaendert.add(a);
-                }
-            }
-            // die Zahl: der höchste lebende Platz (oben frei gewordener Raum fällt ab)
-            let hoch = 0;
-            for (const b of F.bloecke.values()) hoch = Math.max(hoch, b.s + b.n);
-            if (hoch < F.hoch) {
-                AnazhRealm._raumAbschneiden(F.frei, hoch);
-                F.hoch = hoch;
-            }
-            for (const a of geaendert) {
-                a.mesh.instanceMatrix.needsUpdate = true;
-                a.mesh.instanceColor.needsUpdate = true;
-                anders = true;
-            }
+            const nahe = f.key.startsWith("nah") ? "wiese:" + f.key : null;
+            if (f.senken && this._bestandFamilie(F, f, nahe)) anders = true;
+            if (f.senken && nahe) this._naheMelden(nahe, F.hoch, f.senken);
         }
-        this._nahWieseZustand();
+        if (neu) this._naheZustand();
         // DER STEMPEL DER WAHL auf jeder Senke (auch der gewachsenen), die Art und ihre Größen: die Nähe (5) ihre Stufe, die
         // Basis ihres Zustands, wer ihn schreibt (der erste Teil der L1), das Band (Übergabe, Stufe 1, ihr Rand); die Ferne (6) die
         // Halbbreite ihres Halms (`breite`), die Schale (7) Breite und Höhe ihrer Karte — beide die Übergabe und den Rand des
@@ -1578,6 +1538,7 @@ class AnazhRealm_vegetation_wiese {
         for (const f of familien) {
             const F = B[f.key];
             if (!f.senken || !F) continue;
+            const basis = f.key.startsWith("nah") ? this._naheBasis("wiese:" + f.key) : 0;
             f.senken.forEach((a, p) => {
                 const art = f.key.startsWith("nah") ? 5 : f.key === "schale" ? 7 : 6;
                 const stufe = art === 5 && f.ident[0].senken.includes(a) ? 1 : 2;
@@ -1586,7 +1547,7 @@ class AnazhRealm_vegetation_wiese {
                     __bereiche: true, // jeder Schreiber des Bestands setzt seine Bereiche (`_block` kopiert nur sie)
                     __wahlFenster:
                         art === 5
-                            ? [5, stufe, f.v * (nw.zustandCap || 0), stufe === 1 && p === 0 ? 1 : 0]
+                            ? [5, stufe, basis, stufe === 1 && p === 0 ? 1 : 0]
                             : art === 6
                               ? [6, f.ident[0].breite, 0, 0]
                               : [7, Fe.schale.breite, Fe.schale.hoehe, 0],
@@ -1604,58 +1565,134 @@ class AnazhRealm_vegetation_wiese {
         return anders;
     }
 
-    // DER ZUSTAND DER STUFE auf der GPU (`_nahWieseBestand`): je Platz beider Vorlagen zwei Hälften (die Wahl liest die eine
-    // und schreibt die andere, im Wechsel je Hauptbild, `_wahlRechnen`), je Vorlage `zustandCap` Plätze. Wächst eine Vorlage
-    // darüber, wächst der Puffer, und jeder lebende Platz trägt den Zustand aus dem Jetzt; sonst schreibt nur die Geburt.
-    _nahWieseZustand() {
+    // DIE FAMILIE EINES BESTANDS (`_nahWieseBestand`, `_nahStreuBestand` — Tsushima: die Kachel ist Daten, die GPU wählt): Senken
+    // mit gleichen Plätzen, je Kachel ein BLOCK, geschrieben NUR bei Geburt und Tod. Der Tod: die Plätze eines Blocks, dessen
+    // Kachel ging oder neu baute (ihre Identität in `f.kacheln` wechselte), werden leer — die Matrix null (ein Zeichner ohne
+    // Arena zieht ein Nichts) und Element 11 = −1 (die Wahl verwirft sie) —, ihr Raum wird frei; die Geburt nimmt den ersten
+    // freien Raum, der passt, sonst das Ende (eine Senke ohne Mesh oder ohne Platz wächst, `_senkeMesh`), die Arena kopiert nur
+    // diese Bereiche (`_block`). `nahe` (der Schlüssel einer Familie der Nähe, Art 5): der Schreiber legt je Platz seine Stufe aus
+    // dem Jetzt (`nah[j]` 1/0), der Zustand nimmt sie (`_naheZustand`). Rückgabe: geschrieben?
+    _bestandFamilie(F, f, nahe) {
+        const geaendert = new Set();
+        for (const [key, b] of F.bloecke) {
+            if (f.kacheln.get(key) === b.k) continue;
+            for (const a of f.senken) {
+                const arr = a.mesh.instanceMatrix.array;
+                arr.fill(0, b.s * 16, (b.s + b.n) * 16);
+                for (let j = 0; j < b.n; j++) arr[(b.s + j) * 16 + 11] = -1;
+                a.mesh.instanceMatrix.addUpdateRange(b.s * 16, b.n * 16);
+                geaendert.add(a);
+            }
+            F.bloecke.delete(key);
+            AnazhRealm._raumGib(F.frei, b.s, b.n);
+        }
+        for (const [key, k] of f.kacheln) {
+            if (F.bloecke.has(key)) continue;
+            const bl = f.block(k, key);
+            let s0 = bl.n ? AnazhRealm._raumNimm(F.frei, bl.n) : 0;
+            if (s0 < 0) ((s0 = F.hoch), (F.hoch += bl.n));
+            F.bloecke.set(key, { k, s: s0, n: bl.n });
+            if (!bl.n) continue;
+            for (const a of f.senken)
+                if (!a.mesh || F.hoch > a.kap) {
+                    a.anzahl = a.mesh ? a.kap : 0;
+                    this._senkeMesh(a, Math.ceil(F.hoch * 1.5) + 64, this.state.scene);
+                }
+            const nah = nahe ? new Uint32Array(bl.n) : null;
+            bl.schreib(s0, f.senken, nah);
+            if (nah) this._naheStand().neu.push(nahe, s0, nah);
+            for (const a of f.senken) {
+                a.mesh.instanceMatrix.addUpdateRange(s0 * 16, bl.n * 16);
+                a.mesh.instanceColor.addUpdateRange(s0 * 3, bl.n * 3);
+                geaendert.add(a);
+            }
+        }
+        // die Zahl: der höchste lebende Platz (oben frei gewordener Raum fällt ab)
+        let hoch = 0;
+        for (const b of F.bloecke.values()) hoch = Math.max(hoch, b.s + b.n);
+        if (hoch < F.hoch) {
+            AnazhRealm._raumAbschneiden(F.frei, hoch);
+            F.hoch = hoch;
+        }
+        for (const a of geaendert) {
+            a.mesh.instanceMatrix.needsUpdate = true;
+            a.mesh.instanceColor.needsUpdate = true;
+        }
+        return geaendert.size > 0;
+    }
+
+    // EINE FAMILIE DER NÄHE meldet sich beim Zustand (`_naheZustand`) mit ihrer Zahl (`hoch`) und ihren Senken — wächst der
+    // Zustand, legt er die Basis jeder gemeldeten Senke neu (`_naheBasis`).
+    _naheMelden(key, hoch, senken) {
+        const N = this._naheStand();
+        let i = N.index.get(key);
+        if (i === undefined) N.index.set(key, (i = N.index.size));
+        N.hoch[i] = hoch;
+        N.senken[i] = senken;
+    }
+    _naheBasis(key) {
+        const N = this._naheStand();
+        return N.basis[N.index.get(key)] | 0;
+    }
+    _naheStand() {
+        return (this.state.nahe ||= { index: new Map(), hoch: [], senken: [], cap: [], basis: [], zustand: null, neu: [], sprung: false }); // prettier-ignore
+    }
+
+    // DER ZUSTAND DER NÄHE auf der GPU (Art 5): je Familie (die Vorlagen der Wiese, je Art und Gestalt die Streu) ihr Raum von
+    // `cap` Plätzen ab ihrer Basis, je Platz zwei Hälften (die Wahl liest die eine und schreibt die andere, im Wechsel je
+    // Hauptbild, in dem die Nähe rechnet, `_wahlRechnen`). Wächst eine Familie über ihren Raum oder kommt eine hinzu, legt er jeden Raum nach seiner Zahl
+    // neu (frisch null: jeder Platz wählt aus dem Jetzt), und jede Senke der Nähe trägt ihre neue Basis; sonst schreibt nur die
+    // Geburt — je Block EIN Schreiben (`nahe.neu`: Familie, erster Platz, die Stufe je Platz aus dem Jetzt).
+    _naheZustand() {
         const st = this.state,
-            nw = st.nahWiese,
-            NW = AnazhRealm.NAH_WIESE;
+            N = this._naheStand();
         const dev = AnazhRealm._arenaKann(st.renderer) ? st.renderer.backend.device : null;
-        const neu = nw.zustandNeu || [];
-        nw.zustandNeu = [];
+        const neu = N.neu;
+        N.neu = [];
         if (!dev) return;
-        const nah = [nw.bestand.nah0, nw.bestand.nah1];
-        const hoch = Math.max(...nah.map((F) => (F ? F.hoch : 0)), 1);
-        if (!nw.zustand || hoch > nw.zustandCap) {
-            if (nw.zustand)
+        const raum = (h) => 2 ** Math.ceil(Math.log2((h | 0) * 1.25 + 64));
+        if (!N.zustand || N.cap.length < N.index.size || N.hoch.some((h, i) => h > N.cap[i])) {
+            if (N.zustand)
                 setTimeout(
                     (
                         (b) => () =>
                             b.destroy()
-                    )(nw.zustand),
+                    )(N.zustand),
                     0
                 ); // nach dem Submit des Bilds
-            nw.zustandCap = 2 ** Math.ceil(Math.log2(hoch * 1.25 + 64));
-            nw.zustand = dev.createBuffer({ label: "nah-wiese-zustand", size: nw.zustandCap * 2 * 2 * 4, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST }); // prettier-ignore
-            const cam = st.camera.position;
-            neu.length = 0;
-            nah.forEach((F, v) => {
-                for (const b of F ? F.bloecke.values() : AnazhRealm.STAND_LEER)
-                    for (let j = 0, i = 0; i < b.k.bueschel.length; i++) {
-                        const x = b.k.bueschel[i];
-                        if (x.vorlage === v) neu.push(v, b.s + j++, Math.hypot(x.x - cam.x, x.z - cam.z) <= NW.stufe1 ? 1 : 0); // prettier-ignore
-                    }
+            let summe = 0;
+            for (let i = 0; i < N.index.size; i++) {
+                [N.cap[i], N.basis[i]] = [raum(N.hoch[i]), summe];
+                summe += N.cap[i];
+            }
+            N.zustand = dev.createBuffer({ label: "nahe-zustand", size: Math.max(summe, 64) * 2 * 4, usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST }); // prettier-ignore
+            N.senken.forEach((senken, i) => {
+                for (const a of senken || AnazhRealm.STAND_LEER)
+                    if (a.mesh && a.mesh.__wahlFenster) a.mesh.__wahlFenster = [5, a.mesh.__wahlFenster[1], N.basis[i], a.mesh.__wahlFenster[3]]; // prettier-ignore
             });
         }
-        const u = new Uint32Array(2);
         for (let i = 0; i < neu.length; i += 3) {
-            u.fill(neu[i + 2]);
-            dev.queue.writeBuffer(nw.zustand, (neu[i] * nw.zustandCap + neu[i + 1]) * 8, u);
+            const nah = neu[i + 2],
+                u = new Uint32Array(nah.length * 2);
+            for (let j = 0; j < nah.length; j++) u[2 * j] = u[2 * j + 1] = nah[j];
+            dev.queue.writeBuffer(N.zustand, (N.basis[N.index.get(neu[i])] + neu[i + 1]) * 8, u);
         }
     }
 
     // DAS AUGE DER WIESE JE HAUPTBILD (`_passSicht`, vor der Wahl der GPU — die CPU schreibt je Bild nur Kamera und Zeit): die
     // Lage und die Höhe über dem eigenen Boden (`_wieseAuge`) — der Stoff der Ferne und der Schale liest sie (`_halmFerneAuge`),
     // die Wahl der GPU ebenso (`nw.auge`, die Lage `auge.w`); die Breite des Pixels der Szene (`_halmFernePixel`: der EINE Schirm
-    // `_schirm` × die Szenen-Skala); ein Sprung des Auges (`_augeSprung`) lässt die Stufe der Nähe einmal aus dem Jetzt wählen.
+    // `_schirm` × die Szenen-Skala); ein Sprung des Auges (`_augeSprung`) lässt die Stufe jeder Nähe einmal aus dem Jetzt wählen.
     // Bis w25-gpu-wahl wählte hier der Sicht-Satz (`_nahWieseSicht`) je neuer Lage jedes Büschel der Nähe und hielt die Ferne
     // über den Weg (`_nahWieseFernSatz`, `_wieseFernWahl` je Kachel an der Schranke ihres Ankers) — beides wählt jetzt die GPU.
     _wieseAugeTakt(kamera) {
         const nw = this.state.nahWiese;
-        if (!nw || !kamera) return;
+        if (!kamera) return;
         const we = kamera.matrixWorld.elements;
-        if (this._augeSprung(nw, we[12], we[13], we[14])) nw.sprung = true;
+        // ein Sprung des Auges: die Stufe jeder Nähe (Wiese und Streu) wählt einmal aus dem Jetzt
+        const N = this.state.nahe;
+        if (N && this._augeSprung(N, we[12], we[13], we[14])) N.sprung = true;
+        if (!nw) return;
         const auge = (nw.auge = this._wieseAuge({ x: we[12], y: we[13], z: we[14] }));
         if (this._halmFerneAuge) this._halmFerneAuge.value.set(auge.x, auge.y, auge.z, auge.h);
         if (this._halmFernePixel) {
@@ -1672,13 +1709,13 @@ class AnazhRealm_vegetation_wiese {
     // Zwilling (eigene Strip-/Kreuz-Geometrie je Art, Deko-Fernfeld, Deck-Streu) ist gefallen. Kosten an den SCHIRM
     // gebunden: ein Kachel-Ring um die Kamera (NAH_STREU), L0 im Armlängen-Kreis (`stufe0`), jenseits die leichte
     // Stufe der Art, das Rand-Band dünnt. Je Art × Gestalt × Stufe × Teil EINE Senke `streuNah:…` (die Daten des
-    // Rings), eine Kachel ist ein BLOCK darin; gezeichnet wird je STOFF (W7): jeder Block ist ein Bereich im Streu-Satz
-    // seines Stoffs, das Frustum jedes Passes wählt je Pflanze (`_streuSatzArt`). Jenseits des Rings trägt der Boden
-    // (Boden-Farbe) und die Strauch-/Blumen-Schicht der Streu-Regionen.
+    // Rings), eine Kachel ist ein BLOCK darin; gezeichnet wird je STOFF in seiner Arena, die EINE Wahl der GPU wählt je
+    // Pflanze und Pass Stufe, Rand-Band und Sicht (`_nahStreuBestand`). Jenseits des Rings trägt der Boden (Boden-Farbe) und
+    // die Strauch-/Blumen-Schicht der Streu-Regionen.
     static get NAH_STREU() {
         return this._einmal(
             "NAH_STREU",
-            Object.freeze({ kachel: 4, zelle: 2, stufe0: 3.5, radius: 24, rand: 5, kachelnJeTakt: 3 })
+            Object.freeze({ kachel: 4, zelle: 2, stufe0: 3.5, stufe0Rand: 0.75, radius: 24, rand: 5, kachelnJeTakt: 3 })
         );
     }
 
@@ -1829,12 +1866,12 @@ class AnazhRealm_vegetation_wiese {
     }
 
     // Die Senke einer (Art, Gestalt, Stufe, Teil): die DATEN des ganzen Rings — je Kachel ein Block (Matrizen = Ort ·
-    // Drehung · Skala · Welt-Skala des Teils, die Tint-Farben, die Ernte-Identitäten). Sie zeichnet nie selbst: jeder Block
-    // ist ein BEREICH im Satz ihres Stoffs (`_streuSatzArt`) — die Draw-Einheit der Nah-Streu ist ihr Stoff, nie ihre
-    // Gestalt. Sie hält die Studio-Geometrie ihres Teils (`_liveRefs` der Cache-Gruppe), solange sie lebt — eine
-    // LRU-Räumung zerstört sie nie (ein eintretender Block rechnet sich aus ihr). `wiegt`: die Art trägt weiches Gewebe —
-    // jeder ihrer Teile zeichnet mit dem wiegenden Studio-Stoff (derselbe Bauer `_foundryTreeMaterial`; die Höhe über der
-    // Wurzel in Metern und das Rauschen der Pflanze reisen im Satz als `aWiege`, `_satzBlock`).
+    // Drehung · Skala · Welt-Skala des Teils, die Tint-Farben, die Ernte-Identitäten, je Pflanze Fuß und Weite `fuss`) — und ihr
+    // Bestand für die Wahl der GPU (`mesh`, `_nahStreuBestand`): je Art und Gestalt EINE Familie, jede Senke beider Stufen trägt
+    // jede Pflanze. Sie hält die Studio-Geometrie ihres Teils (`_liveRefs` der Cache-Gruppe), solange sie lebt — eine
+    // LRU-Räumung zerstört sie nie. `wiegt`: die Art trägt weiches Gewebe — jeder ihrer Teile zeichnet mit dem wiegenden
+    // Studio-Stoff (derselbe Bauer `_foundryTreeMaterial`: die Höhe über der Wurzel aus der Instanz, das Rauschen der Pflanze
+    // aus ihrem Fuß); die stehende (Holz und Stein) wirft (`wurf`), die wiegende nie.
     _streuNahSenke(art, v, stufe, p, lf, wiegt) {
         const ns = this.state.nahStreu;
         const key = `${art.id}:${v}:L${stufe}:${p}`;
@@ -1846,6 +1883,7 @@ class AnazhRealm_vegetation_wiese {
             name: "streuNah:" + key,
             preset: art.id,
             ernte: art.ernte,
+            stufe,
             geo: lf.geom,
             mat: wiegt
                 ? this._foundryTreeMaterial(u.foundryKind, u.foundryMp, true, null, u.krone === true, {
@@ -1854,56 +1892,27 @@ class AnazhRealm_vegetation_wiese {
                 : lf.mat,
             lokal: lf.localMatrix,
             wiegt: !!wiegt,
+            wurf: !wiegt,
             leafKey: lf.leafKey,
             tint: u.useInstanceTint === true,
             quelle: lf._srcGroup || null,
             anzahl: 0,
             bloecke: new Map(),
-            satz: null,
+            mesh: null,
+            kap: 0,
+            wachse: 0,
         };
-        a.satz = this._streuSatzArt(a);
         if (a.quelle) a.quelle._liveRefs = (a.quelle._liveRefs || 0) + 1;
         ns.senken.set(key, a);
+        const fk = `${art.id}:${v}`;
+        if (!ns.familien.has(fk)) ns.familien.set(fk, { key: fk, senken: [], stufen: 1, nah: stufe });
+        ns.familien.get(fk).senken.push(a);
         return a;
     }
 
-    // DER STREU-SATZ (W7): je Stoff der Nah-Streu EIN Satz (`streuSatz|<Stoff>`, die Pool-Mechanik des Chunk-Satzes), sein
-    // Bereich ist der Block einer Kachel in einer Senke (`_streuNahSatz`), je Pflanze eine Zelle. Befund (echte GPU,
-    // Mess-Wiese −900/−850, `werkbank band`): je Art × Gestalt × Stufe × Teil zeichnete eine InstancedMesh den ganzen Ring —
-    // 15 Befehle und 46k Dreiecke im Hauptbild, auch hinter dem Blick (Haushalt 9 / 40k); der wiegende Stoff war je
-    // Studio-Skala ein eigener (Blüte 0,27 und Farn-Wedel 1,0: zwei Stoffe gleicher Regler). Jetzt zeichnet je Stoff EIN
-    // Befehl, und das Frustum jedes Passes wählt je Pflanze (`_chunkSatzPass`, der EINE Haken). Der wiegende Stoff trägt
-    // keine Dither-Stempel (die Nah-Streu blendet nie, ihr Stufen-Wechsel ist die Armlänge): Position · Normale · Farbe ·
-    // `aWiege`; ein stehender Stoff ist der Studio-Stoff (`lf.mat`) mit den Stempeln des Bau-Satzes. Fail-closed: ein Stoff,
-    // der eine Karte liest (uv — der Blatt-Atlas), hat im Satz keine Quelle. DER WURF (1310-11): der stehende Stoff (Holz und
-    // Stein — Geröll · Totstamm · Stumpf) wirft in die Kaskaden, der wiegende nie (Gras, Blüte, Farn bleiben schattenlos).
-    _streuSatzArt(a) {
-        const mat = a.mat;
-        const u = mat.userData || {};
-        if (mat.map || u.foundryKind === "foliageTex" || u.foundryKind === "schatten" || u.impostorBillboard === true)
-            throw new Error(
-                `_streuSatzArt(${a.name}): der Stoff liest eine Karte (uv) — der Streu-Satz trägt sie nicht`
-            );
-        const art = "streuSatz|" + mat.uuid;
-        const st = this.state;
-        if (!st.satzStoffe) st.satzStoffe = new Map();
-        if (!st.satzStoffe.has(art))
-            st.satzStoffe.set(art, {
-                name: "streuSatz",
-                mat,
-                wurf: !a.wiegt,
-                // das Laub der Art fällt im Winter (`_jahrLage`): ihr Satz trägt Mitte und Typ jeder Ecke
-                attr: (a.wiegt ? AnazhRealm.STREU_SATZ_ATTR : AnazhRealm.STREU_FEST_ATTR).concat(
-                    u.jahr === true ? AnazhRealm.JAHR_SATZ_ATTR : []
-                ),
-                kapazitaet: "streu",
-                userData: { streuSatz: "streuSatz" },
-            });
-        return art;
-    }
-
-    // DIE SENKE der Nah-Wiese (neu oder gewachsen): je Vorlage × Stufe × Teil EINE InstancedMesh über der geteilten
-    // Studio-Geometrie für den ganzen Ring. Sie wirft nicht (Budget schatten false); sie trägt den Bestand ihrer Familie
+    // DIE SENKE der Nähe (neu oder gewachsen): je Vorlage × Stufe × Teil der Wiese, je Art × Gestalt × Stufe × Teil der Streu
+    // EINE InstancedMesh über der geteilten Studio-Geometrie für den ganzen Ring. Die Wiese wirft nicht (Budget schatten
+    // false), die stehende Streu wirft (`wurf`); sie trägt den Bestand ihrer Familie
     // (`_nahWieseBestand`), die Wahl der GPU zieht je Büschel und Pass; der Inhalt bis zur Anzahl reist mit, die neue tritt in
     // der Arena der alten an ihren Platz (`tauschen`), dann verlässt die alte Graph und GPU (`_instanzAbschied`). `eltern` =
     // der Knoten der Senke.
@@ -1912,7 +1921,7 @@ class AnazhRealm_vegetation_wiese {
         const alt = a.mesh;
         const m = AnazhRealm._instanzMesh(a.geo, a.mat, kap);
         m.name = a.name;
-        m.castShadow = false;
+        m.castShadow = a.wurf === true; // die stehende Nah-Streu wirft (`_streuNahSenke`), die Wiese nie
         m.receiveShadow = true;
         m.frustumCulled = false;
         m.userData.leafKey = a.leafKey; // die Studio-Identität (Foundry-Leaf) für Inventur und Linsen
@@ -1936,83 +1945,43 @@ class AnazhRealm_vegetation_wiese {
         }
     }
 
-    // Ein Kachel-Block tritt ein (Matrizen n×16, Farben n×3 bei Tint-Senken, die Ernte-Identität je Pflanze): die Senke
-    // merkt ihn, der Satz ihres Stoffs trägt ihn als Bereich — ein neuer Block derselben Kachel tritt in den stehenden
-    // Bereich (er legt nur die geänderten Slots, `_streuNahSatz`).
-    _streuNahEin(a, kachelKey, matrizen, farben, ids) {
-        const alt = a.bloecke.get(kachelKey);
-        if (alt) a.anzahl -= alt.n;
+    // Ein Kachel-Block tritt ein (Matrizen n×16, Farben n×3 bei Tint-Senken, die Ernte-Identität je Pflanze, Fuß und Weite
+    // je Pflanze n×3): die Senke merkt ihn, ihr Bestand schreibt ihn bei seiner Geburt (`_nahStreuBestand`).
+    _streuNahEin(a, kachelKey, matrizen, farben, ids, fuss) {
         const n = matrizen.length / 16;
         if (a.tint && (!farben || farben.length !== n * 3))
             throw new Error(`_streuNahEin(${a.name}, ${kachelKey}): die Tint-Senke braucht n×3 Farben`);
         if (!ids || ids.length !== n)
             throw new Error(`_streuNahEin(${a.name}, ${kachelKey}): je Pflanze eine Ernte-Identität`);
-        const b = { n, ids, matrizen, farben: a.tint ? farben : null };
-        a.bloecke.set(kachelKey, b);
-        a.anzahl += n;
-        this._streuNahSatz(a, kachelKey, b);
+        if (!fuss || fuss.length !== n * 3)
+            throw new Error(`_streuNahEin(${a.name}, ${kachelKey}): je Pflanze Fuß und Weite (n×3)`);
+        a.bloecke.set(kachelKey, { n, ids, matrizen, farben: a.tint ? farben : null, fuss });
+        this.state.nahStreu.bestandNeu = true;
     }
 
-    // Ein Kachel-Block tritt aus: die Senke vergisst ihn, sein Bereich verlässt den Satz.
+    // Ein Kachel-Block tritt aus: die Senke vergisst ihn, ihr Bestand gibt seine Plätze frei.
     _streuNahAus(a, kachelKey) {
-        const b = a ? a.bloecke.get(kachelKey) : null;
-        if (!b) return false;
-        a.bloecke.delete(kachelKey);
-        a.anzahl -= b.n;
-        this._streuNahSatz(a, kachelKey, null);
+        if (!a || !a.bloecke.delete(kachelKey)) return false;
+        this.state.nahStreu.bestandNeu = true;
         return true;
     }
 
-    // Der Bereich eines Blocks im Satz seines Stoffs (Schlüssel `<Senke>@<Kachel>`): seine Pflanzen in Welt-Lage, je Pflanze
-    // eine Zelle; ein leerer Block verlässt den Satz. DER EINE LEGER DER STOFF-SÄTZE (Lehre 25, stadt-takt): der Block legt
-    // über den Bau-Satz (`_bauSatzLege`, die Senke ist seine Gruppe) — steht sein Bereich, legen nur die Slots, deren Stempel
-    // (Matrix, Farbe) sich änderten (`_bauSatzSlots`); vorher legte jede Ernte und jeder Neubau der Kachel den ganzen Block.
-    _streuNahSatz(a, kachelKey, b) {
-        const key = a.key + "@" + kachelKey;
-        if (!b || b.n === 0) {
-            this._chunkSatzAus(a.satz, key);
-            return;
-        }
-        const g = {
-            geom: a.geo,
-            satz: a.satz,
-            key: a.name + "@" + kachelKey,
-            liveCount: b.n,
-            mesh: {
-                material: a.geo,
-                instanceMatrix: { array: b.matrizen },
-                instanceColor: b.farben && { array: b.farben },
-            },
-        };
-        const s = this.state.chunkSaetze ? this.state.chunkSaetze.get(a.satz) : null;
-        this._bauSatzLege(key, a.satz, g, s ? s.bloecke.get(key) : null, Infinity);
-    }
-
     // Die Ernte: die Pflanze am Block-Index i tritt aus dem Block der Kachel aus — die letzte rückt an ihren Platz, der Block
-    // schrumpft um eine (eine geerntete Pflanze zeichnet nie), der Bereich legt den einen Slot neu und gibt den letzten frei.
-    // Der Kachel-Austritt (der ganze Block) geht über `_streuNahAus`.
+    // schrumpft um eine (eine geerntete Pflanze zeichnet nie). Ein NEUER Block: sein Bestand stirbt und wird neu geboren
+    // (`_bestandFamilie` liest die Identität). Der Kachel-Austritt (der ganze Block) geht über `_streuNahAus`.
     _streuNahLuecke(a, kachelKey, i) {
         const b = a.bloecke.get(kachelKey);
         const z = b.n - 1;
-        b.matrizen.copyWithin(i * 16, z * 16, z * 16 + 16);
-        b.matrizen = b.matrizen.subarray(0, z * 16);
-        if (b.farben) {
-            b.farben.copyWithin(i * 3, z * 3, z * 3 + 3);
-            b.farben = b.farben.subarray(0, z * 3);
-        }
-        b.ids[i] = b.ids[z];
-        b.ids.length = z;
-        b.n = z;
-        a.anzahl -= 1;
-        this._streuNahSatz(a, kachelKey, b);
-    }
-
-    // Der Block einer Kachel in einer Senke (Ernte, Sonden): {satz, bereich, n, ids} oder null.
-    _streuNahBereich(senkeKey, kachelKey) {
-        const ns = this.state.nahStreu;
-        const a = ns ? ns.senken.get(senkeKey) : null;
-        const b = a ? a.bloecke.get(kachelKey) : null;
-        return b ? { satz: a.satz, bereich: a.key + "@" + kachelKey, n: b.n, ids: b.ids } : null;
+        const nimm = (x, k) => {
+            if (!x) return null;
+            const y = x.slice(0, z * k);
+            if (i < z) y.set(x.subarray(z * k, z * k + k), i * k);
+            return y;
+        };
+        const ids = b.ids.slice(0, z);
+        if (i < z) ids[i] = b.ids[z];
+        a.bloecke.set(kachelKey, { n: z, ids, matrizen: nimm(b.matrizen, 16), farben: nimm(b.farben, 3), fuss: nimm(b.fuss, 3) }); // prettier-ignore
+        this.state.nahStreu.bestandNeu = true;
     }
 
     // Eine Kachel verlässt den Ring (oder baut neu): ihre Blöcke treten aus allen Senken aus.
@@ -2045,28 +2014,28 @@ class AnazhRealm_vegetation_wiese {
     }
 
     // Je Takt (scatterDeco, prio 2): Kacheln im Ring um die KAMERA anlegen (nah zuerst, ≤ kachelnJeTakt Neubauten),
-    // die Stufe je PFLANZE aus ihrer Distanz zur Kamera (die Armlänge `stufe0` trägt L0, sonst die leichteste
-    // deklarierte Stufe — `_foundryDeclaredStage`, mit Hysterese, `_nahStreuArmlaenge`), das Rand-Band dünnt über die
-    // Würfel-Ordnung (Viertel-Stufen), außerhalb
-    // fällt die Kachel. Ein Chunk-Neubau (Edit) baut die betroffenen Kacheln neu, eine Ernte nimmt aus, das
-    // Nachwachsen baut neu. Wartet eine Art auf ihr Studio-Asset, wartet die Kachel (die Anfrage läuft nah zuerst).
-    // Rückgabe: Zahl der Neubauten (0 = der Ring steht).
+    // außerhalb fällt die Kachel; jede Kachel trägt jede ihrer Pflanzen in BEIDEN Stufen ihrer Art (die Armlänge `stufe0` trägt
+    // L0, sonst die leichteste deklarierte Stufe — `_foundryDeclaredStage`), mit ihrer Weite (das Rand-Band, `_streuWeite`) —
+    // Stufe, Rand-Band und Sicht wählt die GPU je Pflanze und Pass (`_nahStreuBestand`, Art 5). Ein Chunk-Neubau (Edit) baut
+    // die betroffenen Kacheln neu, eine Ernte nimmt aus, das Nachwachsen baut neu. Wartet eine Art auf ihr Studio-Asset, wartet
+    // die Kachel (die Anfrage läuft nah zuerst). Bis w27-takt-streu wählte hier die CPU: je Kachel die Armlänge jeder Pflanze
+    // und das Rand-Band am Abstand der Kachel, jede Änderung baute ihre Blöcke neu, und das Frustum jedes Passes wählte je
+    // Pflanze im Streu-Satz ihres Stoffs (`_chunkSatzPass`). Rückgabe: Zahl der Neubauten (0 = der Ring steht).
     _tickNahStreu(deadline) {
         const st = this.state;
         if (!st.scene || !st.camera || typeof THREE === "undefined") return 0;
         const arten = this._nahStreuArten();
         if (!arten) return 0;
         const NS = AnazhRealm.NAH_STREU;
-        if (!st.nahStreu) st.nahStreu = { kacheln: new Map(), senken: new Map(), offen: 0 };
+        if (!st.nahStreu) st.nahStreu = { kacheln: new Map(), senken: new Map(), familien: new Map(), offen: 0, bestandNeu: false }; // prettier-ignore
         const ns = st.nahStreu;
+        // der Bestand für die Wahl der GPU: jeder Austritt und jede Ernte seit dem letzten Takt (auch aus fremden Takten)
+        this._nahStreuBestand();
         // DIE STAND-WACHE: stehen Auge, Chunks, Ernte und Buch, steht jede Kachel in ihrem Zustand — kein Gang.
         if (this._standRuht("nahStreu", 1, { pos: st.camera.position, rand: AnazhRealm.STAND_RAND_M }, "karte"))
             return 0;
         let gefallen = 0;
         const cam = st.camera.position;
-        // die Armlänge gilt dem stetigen Auge: nach einem Sprung (`_augeSprung`) wählt jede Pflanze aus dem Jetzt
-        if (this._augeSprung(ns, cam.x, cam.y, cam.z))
-            for (const k of ns.kacheln.values()) for (const it of k.items) it.nah = false;
         const tcx = Math.floor(cam.x / NS.kachel);
         const tcz = Math.floor(cam.z / NS.kachel);
         const reichweite = Math.ceil(NS.radius / NS.kachel) + 1;
@@ -2087,13 +2056,10 @@ class AnazhRealm_vegetation_wiese {
                 const tz = tcz + dz;
                 const d = Math.hypot((tx + 0.5) * NS.kachel - cam.x, (tz + 0.5) * NS.kachel - cam.z);
                 if (d > NS.radius + NS.kachel * 0.71) continue;
-                // die kürzeste Distanz Kamera → Kachel-Rechteck: reicht der Armlängen-Kreis hinein?
-                const ex = Math.max(tx * NS.kachel - cam.x, 0, cam.x - (tx + 1) * NS.kachel);
-                const ez = Math.max(tz * NS.kachel - cam.z, 0, cam.z - (tz + 1) * NS.kachel);
                 // dasselbe Rechteck wie der Satz der Kachel (`_nahStreuKachel`)
                 if (this._bodenKommtNie(tx * NS.kachel, tz * NS.kachel, (tx + 1) * NS.kachel, (tz + 1) * NS.kachel))
                     continue;
-                wunsch.push({ key: `${tx},${tz}`, tx, tz, d, imKreis: Math.hypot(ex, ez) <= NS.stufe0 + 1 });
+                wunsch.push({ key: `${tx},${tz}`, tx, tz, d });
             }
         }
         const gewollt = new Set(wunsch.map((w) => w.key));
@@ -2108,12 +2074,7 @@ class AnazhRealm_vegetation_wiese {
         ns.offen = 0;
         for (const w of wunsch) {
             let k = ns.kacheln.get(w.key);
-            // Je Art ihr Rand-Band vor ihrer Weite (Viertel-Stufen der Würfel-Ordnung): kleine Arten dünnen früher aus.
-            const anteile = arten.map(
-                (A) => Math.ceil(Math.max(0, Math.min(1, (A.weite - w.d) / NS.rand + 0.5)) * 4) / 4
-            );
-            const rand = anteile.join(",");
-            if (k && k.zustand === this._nahStreuArmlaenge(k, cam, w.imKreis) + "|" + rand) continue;
+            if (k && k.zustand !== null && !k.satzAlt) continue;
             if (
                 gebaut >= NS.kachelnJeTakt ||
                 (deadline && performance.now() > deadline) ||
@@ -2144,41 +2105,44 @@ class AnazhRealm_vegetation_wiese {
                         wasser: satz.wasser,
                         senken: new Set(),
                         zustand: null,
-                        nahZahl: 0,
                     };
                 ns.kacheln.set(w.key, k);
             }
-            const zustand = this._nahStreuArmlaenge(k, cam, w.imKreis) + "|" + rand;
-            // Je (Art, Gestalt, Stufe) die Studio-Teile — fehlt eines (Anfrage läuft), wartet die ganze Kachel; jede
+            // Je (Art, Gestalt) die Studio-Teile beider Stufen — fehlt eines (Anfrage läuft), wartet die ganze Kachel; jede
             // fehlende Gruppe fragt im selben Lauf an (die Anfragen reisen parallel, nah zuerst).
             const gruppen = new Map();
             const fehlend = new Set();
             const ernte = this._geerntetIn(w.key); // die Tat bleibt (feld.K4): das Gepflückte fehlt bis zu seiner Heilung
             let bereit = true;
             for (const it of k.items) {
-                if (it.ordnung >= anteile[it.art]) continue;
                 if (ernte.has(it.id)) continue;
                 const art = arten[it.art];
                 const v = this._foundryVariantFor(it.same, art.id);
-                const stufe = this._foundryDeclaredStage(art.id, it.nah ? 0 : 2);
-                const gk = `${it.art}:${v}:${stufe}`;
+                const gk = `${it.art}:${v}`;
                 if (fehlend.has(gk)) continue;
                 let g = gruppen.get(gk);
                 if (!g) {
+                    // die nahe Stufe zuerst (die Rolle 1 der Wahl), dieselbe Stufe einmal
+                    const stufen = [...new Set([0, 2].map((x) => this._foundryDeclaredStage(art.id, x)))];
                     // Der Ort reist mit: die Foundry-Schlange bedient nah zuerst (`_foundryAuftrag`).
                     const ort = { seed: it.same, position: { x: it.x, y: it.y, z: it.z } };
-                    const flat = v == null ? null : this._foundryFlattenFor(ort, art.id, stufe);
-                    if (flat === false) {
-                        this._nahStreuKaputt(art.id, stufe); // das Studio kann die Stufe nicht: laut, benannt
-                        fehlend.add(gk);
-                        continue;
+                    const flats = new Map();
+                    for (const stufe of stufen) {
+                        const flat = v == null ? null : this._foundryFlattenFor(ort, art.id, stufe);
+                        if (flat === false) {
+                            this._nahStreuKaputt(art.id, stufe); // das Studio kann die Stufe nicht: laut, benannt
+                            fehlend.add(gk);
+                            break;
+                        }
+                        if (!flat || !Array.isArray(flat.leaves) || !flat.leaves.length) {
+                            bereit = false;
+                            fehlend.add(gk);
+                            break;
+                        }
+                        flats.set(stufe, flat);
                     }
-                    if (!flat || !Array.isArray(flat.leaves) || !flat.leaves.length) {
-                        bereit = false;
-                        fehlend.add(gk);
-                        continue;
-                    }
-                    g = { art, v, stufe, flat, liste: [] };
+                    if (fehlend.has(gk)) continue;
+                    g = { art, v, stufen, flats, liste: [] };
                     gruppen.set(gk, g);
                 }
                 g.liste.push(it);
@@ -2189,34 +2153,21 @@ class AnazhRealm_vegetation_wiese {
             }
             this._nahStreuKachelEntsorgen(k);
             this._nahStreuBloecke(k, gruppen);
-            k.zustand = zustand;
+            k.zustand = "steht";
             gebaut++;
         }
+        if (gebaut + gefallen) this._nahStreuBestand(); // Geburt und Tod schreiben ihre Blöcke
         this._standMeldet("nahStreu", 1, gebaut + gefallen > 0, ns.offen > 0);
         return gebaut;
     }
 
-    // DIE ARMLÄNGE JE PFLANZE (Integration 05.10.): L0 trägt jede Pflanze im Kreis `stufe0` um die Kamera (Eintritt
-    // ≤ stufe0, Austritt > stufe0 + 0,75 m, horizontal), gleich in welcher Kachel sie steht. Bis 05.10. entschied die
-    // Kachel-MITTE (4-m-Kachel, L0 erst ab ≤ 2,5 m Mitten-Distanz): die Nachbar-Kachel zeigte ihren Farn auf 0,1 m als
-    // L1-Band (Prüfer Waldboden, Befund 5). Setzt `it.nah` und gibt die Signatur der L0-Pflanzen zurück — ändert sie
-    // sich, baut die Kachel neu (der Zustand der Kachel trägt sie). Eine Kachel jenseits des Kreises ohne L0 kostet nichts.
-    _nahStreuArmlaenge(k, cam, imKreis) {
-        if (!imKreis && !k.nahZahl) return "";
+    // DIE WEITE EINER PFLANZE (das Rand-Band der Art, Viertel-Stufen der Würfel-Ordnung): sie steht diesseits
+    // weite + rand · (½ − ⌊4 · Ordnung⌋ / 4) vom Auge — bis w27-takt-streu dieselbe Regel am Abstand der Kachel-Mitte, je Takt auf
+    // der CPU (der Anteil ⌈(½ + (weite − d)/rand) · 4⌉/4 der Ordnung, die die Kachel trug). Die Wahl der GPU liest sie in
+    // Element 11 jeder Matrix (Art 5).
+    static _streuWeite(weite, ordnung) {
         const NS = AnazhRealm.NAH_STREU;
-        let sig = "";
-        let n = 0;
-        for (let i = 0; i < k.items.length; i++) {
-            const it = k.items[i];
-            const d = imKreis ? Math.hypot(it.x - cam.x, it.z - cam.z) : Infinity;
-            it.nah = this._nahStufe(NS.stufe0, 0.75, d, it.nah);
-            if (it.nah) {
-                sig += i + ",";
-                n++;
-            }
-        }
-        k.nahZahl = n;
-        return sig;
+        return weite + NS.rand * (0.5 - Math.floor(4 * ordnung) / 4);
     }
 
     // Eine Art, deren Stufe das Studio nicht bauen kann (leere Antwort), fehlt im Bild — LAUT: einmal je (Art, Stufe)
@@ -2230,10 +2181,12 @@ class AnazhRealm_vegetation_wiese {
         this.log(`Nah-Streu: das Studio liefert ${k} leer — die Art fehlt im Bild`, "ERROR");
     }
 
-    // Die Blöcke einer Kachel: je Gruppe × Studio-Teil EIN Block in seiner Senke (Matrix = Ort · Drehung · Skala ·
-    // Welt-Skala des Teils), ein neutral-naher Tint je Instanz (±8 % Luminanz, ±3 % warm/kühl — aus einem eigenen
-    // Hash-Strom, nie aus den Platzierungs-Würfen).
+    // Die Blöcke einer Kachel: je Gruppe (Art, Gestalt) × Stufe × Studio-Teil EIN Block in seiner Senke (Matrix = Ort ·
+    // Drehung · Skala · Welt-Skala des Teils), ein neutral-naher Tint je Instanz (±8 % Luminanz, ±3 % warm/kühl — aus einem
+    // eigenen Hash-Strom, nie aus den Platzierungs-Würfen), je Pflanze Fuß und Weite (`_streuWeite`) — dieselbe Folge der
+    // Pflanzen in jeder Senke der Familie.
     _nahStreuBloecke(k, gruppen) {
+        const ns = this.state.nahStreu;
         const m4 = this._tmpStreuM4 || (this._tmpStreuM4 = new THREE.Matrix4());
         const q = this._tmpStreuQ || (this._tmpStreuQ = new THREE.Quaternion());
         const pv = this._tmpStreuP || (this._tmpStreuP = new THREE.Vector3());
@@ -2252,34 +2205,128 @@ class AnazhRealm_vegetation_wiese {
         };
         for (const g of gruppen.values()) {
             const n = g.liste.length;
-            const wiegt = g.flat.leaves.some(weich);
-            for (let p = 0; p < g.flat.leaves.length; p++) {
-                const lf = g.flat.leaves[p];
-                if (!lf || !lf.geom || !lf.mat || lf.shadowTwin) continue;
-                const a = this._streuNahSenke(g.art, g.v, g.stufe, p, lf, wiegt);
-                const matrizen = new Float32Array(n * 16);
-                const farben = a.tint ? new Float32Array(n * 3) : null;
-                const ids = new Array(n);
-                for (let i = 0; i < n; i++) {
-                    const it = g.liste[i];
-                    pv.set(it.x, it.y, it.z);
-                    q.setFromAxisAngle(up, it.rot);
-                    sv.set(it.s, it.s, it.s);
-                    m4.compose(pv, q, sv).multiply(a.lokal);
-                    m4.toArray(matrizen, i * 16);
-                    ids[i] = it.id;
-                    if (farben) {
-                        const l = 0.92 + tint(it.same, 0) * 0.16;
-                        const wk = (tint(it.same, 1) - 0.5) * 0.06;
-                        farben[i * 3] = Math.min(1.08, l + wk);
-                        farben[i * 3 + 1] = l;
-                        farben[i * 3 + 2] = Math.min(1.08, Math.max(0, l - wk));
+            const fuss = new Float32Array(n * 3);
+            const ids = new Array(n);
+            for (let i = 0; i < n; i++) {
+                const it = g.liste[i];
+                [fuss[i * 3], fuss[i * 3 + 1], fuss[i * 3 + 2]] = [
+                    it.x,
+                    it.z,
+                    AnazhRealm._streuWeite(g.art.weite, it.ordnung),
+                ];
+                ids[i] = it.id;
+            }
+            for (const stufe of g.stufen) {
+                const flat = g.flats.get(stufe);
+                const wiegt = flat.leaves.some(weich);
+                for (let p = 0; p < flat.leaves.length; p++) {
+                    const lf = flat.leaves[p];
+                    if (!lf || !lf.geom || !lf.mat || lf.shadowTwin) continue;
+                    const a = this._streuNahSenke(g.art, g.v, stufe, p, lf, wiegt);
+                    const fam = ns.familien.get(`${g.art.id}:${g.v}`);
+                    [fam.stufen, fam.nah] = [g.stufen.length, g.stufen[0]];
+                    const matrizen = new Float32Array(n * 16);
+                    const farben = a.tint ? new Float32Array(n * 3) : null;
+                    for (let i = 0; i < n; i++) {
+                        const it = g.liste[i];
+                        pv.set(it.x, it.y, it.z);
+                        q.setFromAxisAngle(up, it.rot);
+                        sv.set(it.s, it.s, it.s);
+                        m4.compose(pv, q, sv).multiply(a.lokal);
+                        m4.toArray(matrizen, i * 16);
+                        if (farben) {
+                            const l = 0.92 + tint(it.same, 0) * 0.16;
+                            const wk = (tint(it.same, 1) - 0.5) * 0.06;
+                            farben[i * 3] = Math.min(1.08, l + wk);
+                            farben[i * 3 + 1] = l;
+                            farben[i * 3 + 2] = Math.min(1.08, Math.max(0, l - wk));
+                        }
                     }
+                    this._streuNahEin(a, k.key, matrizen, farben, ids, fuss);
+                    k.senken.add(a.key);
                 }
-                this._streuNahEin(a, k.key, matrizen, farben, ids);
-                k.senken.add(a.key);
             }
         }
+    }
+
+    // DER BESTAND DER NAH-STREU (w27-takt-streu, Atlas Schnitt 2 — die Kachel ist Daten, die GPU wählt; die Klasse der Nah-Wiese,
+    // `_nahWieseBestand`): je Art und Gestalt EINE Familie (`ns.familien`), ihre Senken beider Stufen und jedes Teils tragen
+    // JEDE Pflanze ihres Rings, je Kachel ein Block, geschrieben nur bei Geburt, Tod und Ernte (`_bestandFamilie`; die
+    // Identität einer Kachel ist der Block ihres ersten Teils). Die vierte Zeile der Matrix trägt den Fuß (Element 3 x, 7 z) und
+    // die Weite (Element 11, `_streuWeite`). Die Wahl der GPU (`PASS_WAHL_WGSL`, Art 5) urteilt je Pflanze und Pass: das
+    // Rand-Band an ihrer Weite, die Stufe nach `_nahStufe` (L0 bis `stufe0`, gehalten 0,75 m dahinter — der ZUSTAND je Platz,
+    // `_naheZustand`, geschrieben vom ersten Teil der nahen Stufe), dann die Sicht — im Kaskaden-Pass mit der Licht-Kapsel der
+    // stehenden. Eine Art mit EINER Stufe wählt keine Stufe (Rolle 3). OHNE GEOMETRIE-ARENA (WebGL2, `__arenaOhne`) wählt niemand:
+    // die ferne Stufe zeichnet jede Pflanze des Rings ohne Rand-Band, die nahe nichts (die Grenze aus w25-gpu-wahl); der
+    // Null-Renderer zeichnet nie. Ohne Änderung (`bestandNeu`) kein Gang über Familien und Kacheln, nur der Stempel. Rückgabe:
+    // geschrieben?
+    _nahStreuBestand() {
+        const st = this.state,
+            ns = st.nahStreu,
+            NS = AnazhRealm.NAH_STREU;
+        if (!ns) return false;
+        const neu = ns.bestandNeu === true;
+        ns.bestandNeu = false;
+        const B = ns.bestand || (ns.bestand = new Map());
+        const cam = st.camera.position;
+        let anders = false;
+        for (const fam of neu ? ns.familien.values() : AnazhRealm.STAND_LEER) {
+            let F = B.get(fam.key);
+            // eine neue Senke in der Familie: jede Kachel wird in ihr neu geboren
+            if (!F || F.ident !== fam.senken.length)
+                B.set(fam.key, (F = { ident: fam.senken.length, frei: [], hoch: 0, bloecke: new Map() }));
+            const f = {
+                senken: fam.senken,
+                kacheln: fam.senken[0].bloecke,
+                block: (b, key) => ({
+                    n: b.n,
+                    schreib: (s0, senken, nah) => {
+                        for (const a of senken) {
+                            const q = a.bloecke.get(key),
+                                arr = a.mesh.instanceMatrix.array;
+                            arr.set(q.matrizen, s0 * 16);
+                            for (let j = 0; j < b.n; j++) [arr[(s0 + j) * 16 + 3], arr[(s0 + j) * 16 + 7], arr[(s0 + j) * 16 + 11]] = [b.fuss[j * 3], b.fuss[j * 3 + 1], b.fuss[j * 3 + 2]]; // prettier-ignore
+                            if (q.farben) a.mesh.instanceColor.array.set(q.farben, s0 * 3);
+                            else a.mesh.instanceColor.array.fill(1, s0 * 3, (s0 + b.n) * 3);
+                        }
+                        // der Zustand des Platzes aus dem Jetzt (`_nahStufe` ohne Gedächtnis)
+                        if (nah) for (let j = 0; j < b.n; j++) nah[j] = Math.hypot(b.fuss[j * 3] - cam.x, b.fuss[j * 3 + 1] - cam.z) <= NS.stufe0 ? 1 : 0; // prettier-ignore
+                    },
+                }),
+            };
+            const nahe = fam.stufen > 1 ? "streu:" + fam.key : null;
+            if (this._bestandFamilie(F, f, nahe)) anders = true;
+            if (nahe) this._naheMelden(nahe, F.hoch, fam.senken);
+        }
+        if (neu) this._naheZustand();
+        // DER STEMPEL DER WAHL auf jeder Senke (auch der gewachsenen): die Nähe (5), ihre Rolle (1 die nahe Stufe, 2 die ferne,
+        // 3 die EINE), die Basis ihres Zustands, wer ihn schreibt (der erste Teil der nahen Stufe), das Band (der Ring,
+        // die Armlänge, ihr Rand) und der Saum des Winds der wiegenden
+        const kann = AnazhRealm._arenaKann(st.renderer),
+            webgl = !kann && !!(st.renderer && st.renderer.backend && st.renderer.backend.isWebGLBackend === true);
+        for (const fam of ns.familien.values()) {
+            const F = B.get(fam.key);
+            if (!F) continue;
+            const basis = fam.stufen > 1 ? this._naheBasis("streu:" + fam.key) : 0;
+            let schreibt = fam.stufen > 1;
+            for (const a of fam.senken) {
+                if (!a.mesh) continue;
+                const rolle = fam.stufen > 1 ? (a.stufe === fam.nah ? 1 : 2) : 3;
+                const w = rolle === 1 && schreibt;
+                if (w) schreibt = false;
+                Object.assign(a.mesh, {
+                    __wahlGpu: true,
+                    __bereiche: true, // jeder Schreiber des Bestands setzt seine Bereiche (`_block` kopiert nur sie)
+                    __wahlFenster: [5, rolle, basis, w ? 1 : 0],
+                    __wahlNah: [NS.radius + NS.rand, NS.stufe0, NS.stufe0Rand],
+                    __wahlSaum: a.wiegt ? AnazhRealm.PASS_WAHL.pflanzeRandM : 0,
+                });
+                a.anzahl = F.hoch;
+                if (!a.mesh.__arena && kann) AnazhRealm._arenaMelden(a.mesh);
+                AnazhRealm._instanzZahl(a.mesh, kann || (webgl && rolle !== 1) ? F.hoch : 0);
+            }
+        }
+        return anders;
     }
 
     // Gras deferred (~34 ms/Chunk, der dominante Rebuild-Posten) → kein Aufschlag auf den Streaming-/Spawn-
@@ -2328,7 +2375,7 @@ class AnazhRealm_vegetation_wiese {
     }
 
     // ===== FORAGING: die Nah-Streu ist pflückbar =====
-    // Kein Parallel-System: der PICK prüft die Pflanzen der Senken (die Daten, die der Satz zeichnet: je Block die
+    // Kein Parallel-System: der PICK prüft die Pflanzen der Senken (die Daten, die ihr Bestand zeichnet: je Block die
     // Matrizen — die Sonde trägt Geometrie und Stoff der Senke, die Pflanze ihre Matrix) und nennt die Ernte-Identität
     // `gi|gj|art|i` der nächsten getroffenen Pflanze, die ERNTE nimmt die Pflanze in allen Teilen aus ihren Blöcken und
     // schreibt sie als Tat der Welt (`_tatSchreiben`, feld.K4; der Kachel-Bau lässt sie weg), geheilt wächst sie nach.
@@ -2345,7 +2392,7 @@ class AnazhRealm_vegetation_wiese {
             this._streuPick || (this._streuPick = { mesh: new THREE.Mesh(), kugel: new THREE.Sphere(), hits: [] });
         let best = null;
         for (const a of ns.senken.values()) {
-            if (a.anzahl === 0 || !a.ernte) continue;
+            if (a.bloecke.size === 0 || !a.ernte) continue;
             if (!a.geo.boundingSphere) a.geo.computeBoundingSphere();
             P.mesh.geometry = a.geo;
             P.mesh.material = a.mat;
@@ -2386,7 +2433,7 @@ class AnazhRealm_vegetation_wiese {
     // Die Pflanze `id` der Nah-Streu-Kachel `key` verlässt die Welt (Pflücken und Mahd). DIE TAT BLEIBT (feld.K4): die Ernte
     // ist ein Schreib-Akt der Welt (`_tatSchreiben`) — die Kachel lässt die Pflanze weg, bis ihre Narbe heilt (in Spielzeit,
     // nach dem Leben des Orts), über jeden Save und Reload. Sie verschwindet SOFORT in jedem ihrer Teile (Stiel + Blüte,
-    // Rute + Laub): sie tritt aus dem Block ihrer Kachel in jeder Senke aus, der Bereich im Satz legt sich neu
+    // Rute + Laub): sie tritt aus dem Block ihrer Kachel in jeder Senke aus, ihr Bestand legt den Block neu
     // (`_streuNahLuecke`). false: keine solche Pflanze, oder schon geerntet (Doppel-Klick-Race).
     _streuNehmen(key, id) {
         const ns = this.state.nahStreu;
@@ -3209,6 +3256,7 @@ class AnazhRealm_vegetation_wiese {
         let bodenX = NaN;
         let bodenZ = NaN;
         let bodenY = null;
+        const raender = this._ortRaender(); // die Ränder der Siedlungen (die Waldgrenze am Siedlungsrand, phyto-core `forestOrt`)
         const out =
             core && typeof core.planForestCell === "function"
                 ? core.planForestCell(cx, cz, seedInt, {
@@ -3216,6 +3264,9 @@ class AnazhRealm_vegetation_wiese {
                       baseH: (this.state && this.state.terrainBaseHeight) || 0,
                       extras: this._forestExtraSpecies(),
                       fbm: (px, pz) => this._forestFbm(px, pz),
+                      stand: (px, pz) => this._placementStandAt(px, pz, "forest"), // Lichtung und Schluss (phyto-core)
+                      // die Waldgrenze (phyto-core `forestWaldgrenze`): der Schnee des Sommers am Boden, Versatz 0 (die Sommer-Mitte)
+                      schnee: (px, pz, y) => globalThis.__gelaendeCore.schnee(this._gelaende(), y, px, pz, 0),
                       surfaceYAt: (x, z) => {
                           bodenX = x;
                           bodenZ = z;
@@ -3235,6 +3286,8 @@ class AnazhRealm_vegetation_wiese {
                       feuchteAt: (x, z, sy) => (typeof this._feuchteAt === "function" ? this._feuchteAt(x, z, sy) : 0),
                       // der Ort vor dem Wald (K10): keine Krone über dem Grund eines Orts (`_ortFrei`, der Erdbau)
                       ortFrei: (x, z, T) => this._ortFrei(x, z, T),
+                      // der Saum am Siedlungsrand: der Abstand jenseits des nächsten Rands (`_ortRaender`, wie der Faden `waldOrt`)
+                      ort: (x, z) => core.forestOrtAbstand(raender, x, z),
                   })
                 : [];
         if (vorlaeufig) out.vorlaeufig = true;
@@ -3524,16 +3577,17 @@ class AnazhRealm_vegetation_wiese {
         return (gx, gz) => F.some((f) => gx >= f[1] && gx <= f[2] && gz >= f[3] && gz <= f[4]);
     }
 
-    // Die gepackten Darts des Fadens (je Zelle `anzahl`, je Dart 11 Werte, die Arten als Tafel) → je Zelle die Darts, wie
-    // `_forestCellDarts` sie gibt (gate:worker-dichte Teil W vergleicht sie Wort für Wort).
+    // Die gepackten Darts des Fadens (je Zelle `anzahl`, je Dart 13 Werte, die Arten als Tafel) → je Zelle die Darts, wie
+    // `_forestCellDarts` sie gibt (gate:worker-dichte Teil W vergleicht sie Wort für Wort); der zwölfte der Schluss des Bestands
+    // (phyto-core `forestSchluss`), der dreizehnte die Schicht (`forestSchicht`: 1 das Dach, sonst `alter` des Unterstands).
     _waldDartsEntpacken(r, zellenZahl) {
         const w = r.werte;
         const alle = [];
         let j = 0;
         for (let i = 0; i < zellenZahl; i++) {
             const out = [];
-            for (let m = r.anzahl[i]; m > 0; m--, j += 11)
-                out.push({
+            for (let m = r.anzahl[i]; m > 0; m--, j += 13) {
+                const d = {
                     x: w[j],
                     z: w[j + 1],
                     sp: r.arten[w[j + 2]],
@@ -3545,7 +3599,11 @@ class AnazhRealm_vegetation_wiese {
                     rotY: w[j + 8],
                     seed: w[j + 9],
                     surfaceY: Number.isNaN(w[j + 10]) ? null : w[j + 10],
-                });
+                    schluss: w[j + 11],
+                };
+                if (w[j + 12] < 1) d.alter = w[j + 12];
+                out.push(d);
+            }
             alle.push(out);
         }
         return alle;
@@ -3554,28 +3612,6 @@ class AnazhRealm_vegetation_wiese {
 _stammZonen(AnazhRealm, [AnazhRealm_vegetation_wiese]);
 
 // ===== ATLAS · Vegetation/wiese — Außen-Konstanten =====
-// Die Attribute eines festen Streu-Satz-Bereichs (`_streuSatzArt`, der Stein der Nah-Streu): was der Studio-Stoff liest
-// (Vertex-Farbe, die Stufen-Stempel der Dither-Blende) — `_satzBlock` rechnet Position und Normale in Welt-Lage.
-AnazhRealm.STREU_FEST_ATTR = Object.freeze([
-    Object.freeze(["position", 3]),
-    Object.freeze(["normal", 3]),
-    Object.freeze(["color", 3]),
-    Object.freeze(["aLodLevel", 1]),
-    Object.freeze(["aH0", 1]),
-    Object.freeze(["aH0L", 1]),
-]);
-// Die Attribute eines wiegenden Streu-Satz-Bereichs (`_streuSatzArt`, W7): was der wiegende Stoff liest — Welt-Lage,
-// Normale, Farbe × Tint und das Wiegen der Ecke (`aWiege`: die Höhe über der Wurzel in m, das Rauschen der Pflanze aus ihrem
-// Fuß, `_satzKernWiege`); er blendet nie, Dither-Stempel trägt er keine.
-AnazhRealm.STREU_SATZ_ATTR = Object.freeze([
-    Object.freeze(["position", 3]),
-    Object.freeze(["normal", 3]),
-    Object.freeze(["color", 3]),
-    Object.freeze(["aWiege", 2]),
-]);
-// Dazu das JAHR (vegetation.K5) jedes Stoffs mit Laub oder Blüte (`userData.jahr`): die Mitte jedes Blatts in Welt-Lage
-// (`_satzBlock` rechnet sie wie die Lage) und sein Typ — der Stoff zieht das Laub im Winter auf seine Mitte (`_jahrLage`).
-AnazhRealm.JAHR_SATZ_ATTR = Object.freeze([Object.freeze(["aCenter", 3]), Object.freeze(["aType", 1])]);
 // Bekannte place.mode-Werte (Wörterbuch v1): `_placePolicyFor` liest fail-closed — ein unbekannter
 // mode platziert nicht ("none"), crasht nicht (must-ignore). site hat noch keinen Worldgen-Kanal
 // (`_placeDispatch` → null); settlement = spawnSettlement + Worldgen-Konsument `_tickAutoSettlement`.
@@ -3684,6 +3720,7 @@ AnazhRealm.FOREST = Object.freeze({
     slopeLo: 0.35, // ≤ so flach (|∇h|) = voller Grund; die AnazhRealm-Boden-Tauglichkeit
     slopeHi: 1.25, // ab so steil = kahle Felswand (kein Baum)
     dryScale: 40, // Höhen-Trockenheit relH/dryScale (Vorlage e/18 → AnazhRealm-Höhen-Skala)
+    standFreq: AnazhRealm.PLACEMENT_DENSITY.forestFreq, // der Stand des Bestands im Faden (`_placementStandAt`, phyto-core bestand)
     // DIE EINE Kronen-Tafel des Pflanz-Gesetzes (T2): phyto-core FOREST_PACK.crown (die gewachsene Krone je Art) unter den
     // Wirts-Namen (FOREST_SPECIES.labToHost, eine Auto-Art des Buchs unter dem Präfix ihrer Art) — kein zweiter Wert hier.
     crown: (() => {
@@ -3714,12 +3751,13 @@ AnazhRealm.WIESE_ACHT = Object.freeze(Array.from({ length: 16 }, (_, k) => (k & 
 AnazhRealm.STAND_RAND_M = 0.25;
 // DER WALD PLANT IM TAKT (K69, `_waldPlanSteht` · `_tickWaldPlan`): die Gestalt eines Baums liest den Bestand der Wald-Zellen
 // bis ±`reich` um seine Zelle (der Freistand ±4); der Bestand jeder Zelle trägt sein Urteil (die geborenen Darts der Zellen
-// ±`urteil`, die Reihe des Kerns `FOREST_URTEIL_REIHE` — die Kacheln dieser Nachbarn stehen vor jeder Bestellung). Ohne
+// ±`urteil` = phyto-core `FOREST_URTEIL_REICH`: das Dach ±2 der Reihe `FOREST_URTEIL_REIHE`, der Schirm des Unterstands ±1
+// darüber, w16-wald-innen — die Kacheln dieser Nachbarn stehen vor jeder Bestellung). Ohne
 // Wald-Faden plant der Takt frische Zellen höchstens `ms` lang, mit ihm reist jede bestellte Zelle sofort, in Aufträgen von
 // `faden` Zellen, alle im Flug (`_waldFadenSchicken`). Bis w4-b-pflanzen las die Gestalt ±6 (das Urteil im Haupt-Faden).
 AnazhRealm.WALD_PLAN = Object.freeze({
     reich: 4,
-    urteil: Math.max(...globalThis.__phytoCore.FOREST_URTEIL_REIHE.map(Math.abs)),
+    urteil: globalThis.__phytoCore.FOREST_URTEIL_REICH,
     ms: 3,
     faden: 64,
     zellen: 8192,

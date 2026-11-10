@@ -97,19 +97,12 @@ hauptLauf(async () => {
         if (st.nahWiese)
             for (const a of st.nahWiese.senken.values())
                 if (a.mesh && a.leafKey) meshKeys.set(a.mesh, ["nahWiese#" + a.leafKey]);
-        // Waldboden 04.10. — die Nah-Streu (Kamera-Ring aus den Studio-Bodenarten) zeichnet je Stoff im Streu-Satz (W7): ein
-        // Streu-Satz trägt die Foundry-Leaf-Keys seiner Senken wie ein Batch (die schlechteste Klasse gewinnt); ein Satz ohne
-        // Senke, eine Senke ohne Key bleibt unbekannt → Verletzung (fail-closed).
-        const streuKeys = new Map();
+        // Waldboden 04.10. — die Nah-Streu (Kamera-Ring aus den Studio-Bodenarten) zeichnet je Senke in der Arena ihres Stoffs
+        // (w27-takt-streu, wie die Nah-Wiese): je Senke ihr Foundry-Leaf-Key; eine Senke ohne Key bleibt unbekannt →
+        // Verletzung (fail-closed).
         if (st.nahStreu)
-            for (const a of st.nahStreu.senken.values()) {
-                if (!(a.anzahl > 0)) continue;
-                if (!streuKeys.has(a.satz)) streuKeys.set(a.satz, []);
-                streuKeys.get(a.satz).push(a.leafKey ? "nahStreu#" + a.leafKey : "nahStreu#?" + a.key);
-            }
-        if (st.chunkSaetze)
-            for (const [art, s] of st.chunkSaetze)
-                if (s.spec?.userData?.streuSatz && streuKeys.has(art)) meshKeys.set(s.mesh, streuKeys.get(art));
+            for (const a of st.nahStreu.senken.values())
+                if (a.mesh) meshKeys.set(a.mesh, [a.leafKey ? "nahStreu#" + a.leafKey : "nahStreu#?" + a.key]);
         // der Bau-Satz (`_bauSatzArt`): ein Satz-Mesh zeichnet die Bereiche seiner Gruppen — er trägt ihre
         // Schlüssel wie ein Batch (die schlechteste Klasse gewinnt); ein Bau-Satz ohne Bereich bleibt unbekannt.
         if (st.chunkSaetze)
