@@ -1,5 +1,7 @@
 ABGABE ab6c476fd6da48a2455999c41bedfca31059139a
 
+## 11.11. 00:31 — GPU-PROBE ab6c476f auf radeon-890m: GRÜN in 442 s (bild:dorf@0.5 GRÜN 84 s auf radeon-890m · bild:genesis@0.5 GRÜN 44 s auf radeon-890m · gate:wasser-leben:bild GRÜN 22 s auf radeon-890m) → probe-post/w28-stoff-gesetz/ab6c476f.md
+
 ## 11.11. w28-stoff-gesetz (Cloud) — neue Abgabe ab6c476f nach der Probe 8ebc2d5c
 - `bild:buehne@0.5` ROT war nicht der Schnitt: `werkbank bild --ort buehne` wirft an main 4e2df19b genauso (lokal auf swiftshader an main und am Kopf nachgestellt: „Cannot read properties of null (reading 'get')“). Wurzel: `state.archInstanceGroups` ist an der Bühne null; zwei Stellen der Linse geheilt (`scripts/lib/kamera-nah.cjs:164`, `:231`), die dritte liegt in `stamm/siedlung-bauten.js:2714` (Datei von w28-stadt-grammatik, Wunsch in `cloud-post/w28-stadt-grammatik.md`) — bis dahin bleibt `bild:buehne` an jedem Zweig ROT.
 - Darum die Proben des neuen Kopfs: `bild:dorf@0.5, bild:genesis@0.5, gate:wasser-leben:bild` (das Wasser urteilt auf echter GPU an seiner eigenen Bild-Wand).
