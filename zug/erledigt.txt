@@ -319,3 +319,4 @@ omen-gtx-z303-liste-1-cbe910ed ROT 0 GRÜN / 1 ROT / 2 UNGEMESSEN · ROT leib.K1
 2026-11-10 03:29 gpu-stufe Zwischenstand Bisekt: wartet · kein Schloss · zuletzt: ef6b3398 Boot 1 v1 zaehlt nicht (verdraengt oder ohne Band)
 2026-11-10 03:36 gpu-stufe Zwischenstand Bisekt: ef6b3398 Boot 1 v2: wiese-ego 22.82 ms (genesis-ego 14.19)
 2026-11-10 03:42 gpu-stufe Zwischenstand Bisekt: ef6b3398 Boot 2 v1: wiese-ego 22.78 ms (genesis-ego 14.22) ‖ Zweig: [12/23] ef6b3398 = gut · wiese-ego 22.82 / 22.78 ms (genesis-ego 14.19 / 14.22) · Abgabe w15-fern-hang: das Ersatz-Licht der Nacht lebt in der Dämmerung, das Richtlicht trä
+2026-11-10 03:47 gpu-stufe Zwischenstand Bisekt: af060762 Boot 1 v1: wiese-ego 25.98 ms (genesis-ego 15.65)
