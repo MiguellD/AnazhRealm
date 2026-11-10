@@ -1,7 +1,7 @@
 {
  "sha": "78d37554b2d5f98d96ef454cfa9f51752c0e45a0",
  "geraet": "gtx",
- "zeit": "2026-11-10T03:26:22.758Z",
+ "zeit": "2026-11-10T03:31:41.332Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "ferne.K1#2": {
@@ -1207,22 +1207,71 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "leib.K3#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen: Stille seit 24.3 s nach 45 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: @@ 20.6 s · umgestellt 1816/-6168 in 16805 ms)",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "Deckel 45 s gerissen: Stille seit 24.3 s nach 45 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: @@ 20.6 s · umgestellt 1816/-6168 in 16805 ms)",
+   "s": 45.2,
+   "fremd": {
+    "s": 46.7,
+    "takte": 21,
+    "fremdS": 85.08,
+    "kerne": 1.822,
+    "fensterKerne": 2.03,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      49.19
+     ],
+     [
+      "MsMpEng.exe",
+      9.33
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      8.89
+     ]
+    ],
+    "dienerS": 15.91,
+    "diener": [
+     [
+      "System",
+      6.63
+     ],
+     [
+      "dwm.exe",
+      6.2
+     ]
+    ],
+    "eigenS": 212.56,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-10T03:31:41.332Z",
+   "abdruck": "3ad18f4155ae",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-10T03:25:46.080Z",
+  "start": "2026-11-10T03:31:09.928Z",
   "port": 7804,
-  "warten": 0.01,
+  "warten": 0.02,
   "bootS": 7.3,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": "wiese",
-    "vor": "leib.K1#2",
-    "s": 27.9,
-    "takte": 568,
+    "ort": null,
+    "vor": "leib.K3#2",
+    "s": 22.5,
+    "takte": 785,
     "chunks": 81,
     "nach": null
    }
@@ -1231,20 +1280,27 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 3589,
-   "frameP95": 41.74,
-   "taktP95": 40.76,
-   "vramMax": 150.3,
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
-   "ortImDeckel": [],
-   "zapfen": 123,
+   "ortImDeckel": [
+    {
+     "probe": "leib.K3#2",
+     "m": 6430,
+     "ringVor": 4,
+     "ringMin": 0
+    }
+   ],
+   "zapfen": 70,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 128.8,
-  "minuten": 2.2
+  "fahrtS": 75.9,
+  "minuten": 1.32
  }
 }
