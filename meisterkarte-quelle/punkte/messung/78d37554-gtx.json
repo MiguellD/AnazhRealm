@@ -1,7 +1,7 @@
 {
  "sha": "78d37554b2d5f98d96ef454cfa9f51752c0e45a0",
  "geraet": "gtx",
- "zeit": "2026-11-10T06:00:52.770Z",
+ "zeit": "2026-11-10T06:06:14.273Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "ferne.K1#2": {
@@ -537,6 +537,54 @@
    },
    "zeit": "2026-11-10T06:00:52.770Z",
    "abdruck": "9d9ccc7071a0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "tiere.K3#2": {
+   "gruen": true,
+   "zahl": "Gangart 49/49 grün (Welt 17, Satz 16, Labor 16, Kreuz 16), Welt − Labor ≤ 0.05, Satz − Labor ≤ 0.02 Zyklus · Querhang 20.8°, Schlupf {\"wolf\":0.036,\"hirsch\":0.016} · Bühne wolf schritt 3 Füße, fuchs schritt 3 Füße, baer schritt 3 Füße, wesen schritt 4 Füße · tier-Pixel 3008/1305/6750/3865 in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.24 m · Luma 70.9 σ 34 schwarz 0.0 % weiß 0.0 % · Stand 18.546.238 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen",
+   "exit": 0,
+   "minuten": 0.66,
+   "gpu": "nvidia/pascal",
+   "s": 39.4,
+   "fremd": {
+    "s": 42,
+    "takte": 16,
+    "fremdS": 75.02,
+    "kerne": 1.786,
+    "fensterKerne": 2.247,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      39.27
+     ],
+     [
+      "MsMpEng.exe",
+      17.94
+     ],
+     [
+      "svchost.exe",
+      3.77
+     ]
+    ],
+    "dienerS": 12.05,
+    "diener": [
+     [
+      "System",
+      6.7
+     ],
+     [
+      "WmiPrvSE.exe",
+      2.44
+     ]
+    ],
+    "eigenS": 300.25,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-10T06:06:14.273Z",
+   "abdruck": "1f9ef06ae350",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
@@ -1894,7 +1942,7 @@
   }
  },
  "sitzung": {
-  "start": "2026-11-10T06:00:17.361Z",
+  "start": "2026-11-10T06:05:44.278Z",
   "port": 7804,
   "warten": 0.01,
   "bootS": 7,
@@ -1903,10 +1951,10 @@
   "freigaben": [],
   "orte": [
    {
-    "ort": "wiese",
-    "vor": "tiere.K1#2",
-    "s": 27.1,
-    "takte": 600,
+    "ort": null,
+    "vor": "tiere.K3#2",
+    "s": 21.6,
+    "takte": 785,
     "chunks": 81,
     "nach": null
    }
@@ -1923,19 +1971,12 @@
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
-   "ortImDeckel": [
-    {
-     "probe": "tiere.K1#2",
-     "m": 327,
-     "ringVor": 4,
-     "ringMin": 0
-    }
-   ],
-   "zapfen": 85,
-   "luecken": 1,
-   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+   "ortImDeckel": [],
+   "zapfen": 58,
+   "luecken": 0,
+   "letzteLuecke": null
   },
-  "fahrtS": 107.6,
-  "minuten": 1.88
+  "fahrtS": 70.6,
+  "minuten": 1.23
  }
 }
