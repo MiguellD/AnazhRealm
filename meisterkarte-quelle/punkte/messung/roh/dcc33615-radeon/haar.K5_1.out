@@ -42,7 +42,7 @@ $ C:\Program Files\nodejs\node.exe -e (async function fellHaushaltLauf() {
     return { herde: herde.length, fell, tierCmd: tier.reduce((a, k) => a + (k.cmd || 0), 0), klassen: tier.map((k) => [k.klasse, k.cmd || 0, k.je || {}]), gesamt: z.gesamt };
 }
 [linse-gpu] amd/rdna-3
-FELL-HAUSHALT {"fehler":"eval: {\"ms\":1408,\"fehler\":\"Cannot read properties of undefined (reading 'size')\",\"stapel\":[\"LC.getArrayBufferAsync (http://localhost:7804/vendor/three.webgpu.min.js:6:581380)\",\"VC.getArrayBufferAsync (http://localhost:7804/vendor/three.webgpu.min.js:6:599310)\",\"at lies (evaluate at lade (C:\\\\Users\\\\micha\\"}
+FELL-HAUSHALT {"fehler":"eval: {\"ms\":2011,\"fehler\":\"Cannot read properties of undefined (reading 'size')\",\"stapel\":[\"LC.getArrayBufferAsync (http://localhost:7804/vendor/three.webgpu.min.js:6:581380)\",\"VC.getArrayBufferAsync (http://localhost:7804/vendor/three.webgpu.min.js:6:599310)\",\"at lies (evaluate at lade (C:\\\\Users\\\\micha\\"}
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3

@@ -1,7 +1,7 @@
 {
  "sha": "dcc3361558060fce198f1666eba3720e574bf5a7",
  "geraet": "radeon",
- "zeit": "2026-11-10T03:55:41.360Z",
+ "zeit": "2026-11-10T10:28:17.596Z",
  "host": "MiguellD",
  "je": {
   "profiband.K4#1": {
@@ -151,48 +151,48 @@
   },
   "mensch.K4#1": {
    "gruen": false,
-   "zahl": "Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.12 m · third ROT strich 0.5 Soll [1,1] — gesicht 0.5 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei 0.5 [0.9, 1] · lippeL -15.66 [-14, -4] · lippeA 12.2 [4, 14] · hoehleL -10.2 [-12, 0] · hoehleA 9.58 [-2, 6] · haarDeckung 1 [0.9, 1]",
+   "zahl": "Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.11 m · third ROT strich 0.5 Soll [1,1] — gesicht 0.5 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei 0 [0.9, 1] · lippeL -15.11 [-14, -4] · lippeA 11.15 [4, 14] · hoehleL -8.44 [-12, 0] · hoehleA 9.41 [-2, 6] · haarDeckung 1 [0.9, 1]",
    "exit": 0,
-   "minuten": 0.43,
-   "grund": "ROT: Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.12 m · third ROT strich 0.5 Soll [1,1] — gesicht 0.5 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei 0.5 [0.9, 1] · lippeL -15.66 [-14, -4] · lippeA 12.2 [4, 14] · hoehleL -10.2 [-12, 0] · hoehleA 9.58 [-2, 6] · haarDeckung 1 [0.9, 1]",
+   "minuten": 0.56,
+   "grund": "ROT: Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.11 m · third ROT strich 0.5 Soll [1,1] — gesicht 0.5 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei 0 [0.9, 1] · lippeL -15.11 [-14, -4] · lippeA 11.15 [4, 14] · hoehleL -8.44 [-12, 0] · hoehleA 9.41 [-2, 6] · haarDeckung 1 [0.9, 1]",
    "gpu": "amd/rdna-3",
-   "s": 26,
+   "s": 33.4,
    "fremd": {
-    "s": 27,
-    "takte": 10,
-    "fremdS": 31.77,
-    "kerne": 1.177,
-    "fensterKerne": 1.288,
+    "s": 36.7,
+    "takte": 15,
+    "fremdS": 117.22,
+    "kerne": 3.19,
+    "fensterKerne": 3.838,
     "namen": [
      [
-      "svchost.exe",
-      10.42
-     ],
-     [
-      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      5.55
-     ],
-     [
       "MsMpEng.exe",
-      3.44
+      24.94
+     ],
+     [
+      "node scripts/diag-sprache.cjs --selftest",
+      12.22
+     ],
+     [
+      "svchost.exe",
+      9.91
      ]
     ],
-    "dienerS": 12.48,
+    "dienerS": 14.55,
     "diener": [
      [
-      "WmiPrvSE.exe",
-      5.55
+      "System",
+      6.42
      ],
      [
-      "dwm.exe",
-      3.78
+      "WmiPrvSE.exe",
+      4.52
      ]
     ],
-    "eigenS": 28.34,
+    "eigenS": 64.16,
     "schwelle": 0.5,
     "eich": "win32, Radeon 890M, 24 Kerne"
    },
-   "zeit": "2026-11-10T02:48:24.908Z",
+   "zeit": "2026-11-10T10:23:27.280Z",
    "abdruck": "54782bda6ad9",
    "port": 7804,
    "bahn": "sitzung",
@@ -249,48 +249,48 @@
   },
   "vegetation.K1#1": {
    "gruen": false,
-   "zahl": "ohne alle Schüsse: /zaehlen: {\"ms\":103,\"fehler\":\"Cannot read properties of undefined (reading 'size')\",\"stapel\":[\"at lies (evaluate at lade (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\werkbank.cjs:502:24), <anonymous>:176:61)\",\"at evaluate (evaluate at lade (C:\\\\Users\\\\micha\\\\AnazhRealm-",
+   "zahl": "ohne alle Schüsse: /zaehlen: {\"ms\":91,\"fehler\":\"Cannot read properties of undefined (reading 'size')\",\"stapel\":[\"at lies (evaluate at lade (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\werkbank.cjs:502:24), <anonymous>:176:61)\",\"at evaluate (evaluate at lade (C:\\\\Users\\\\micha\\\\AnazhRealm-p",
    "exit": 0,
-   "minuten": 0.35,
-   "grund": "ROT: ohne alle Schüsse: /zaehlen: {\"ms\":103,\"fehler\":\"Cannot read properties of undefined (reading 'size')\",\"stapel\":[\"at lies (evaluate at lade (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\werkbank.cjs:502:24), <anonymous>:176:61)\",\"at evaluate (evaluate at lade (C:\\\\Users\\\\micha\\\\AnazhRealm-",
+   "minuten": 0.39,
+   "grund": "ROT: ohne alle Schüsse: /zaehlen: {\"ms\":91,\"fehler\":\"Cannot read properties of undefined (reading 'size')\",\"stapel\":[\"at lies (evaluate at lade (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\werkbank.cjs:502:24), <anonymous>:176:61)\",\"at evaluate (evaluate at lade (C:\\\\Users\\\\micha\\\\AnazhRealm-p",
    "gpu": "amd/rdna-3",
-   "s": 21,
+   "s": 23.6,
    "fremd": {
-    "s": 23.6,
-    "takte": 9,
-    "fremdS": 17.53,
-    "kerne": 0.742,
-    "fensterKerne": 0.874,
+    "s": 26.6,
+    "takte": 11,
+    "fremdS": 46.91,
+    "kerne": 1.765,
+    "fensterKerne": 1.895,
     "namen": [
      [
+      "MsMpEng.exe",
+      6.77
+     ],
+     [
       "svchost.exe",
-      4.55
+      6.41
      ],
      [
       "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      4.31
-     ],
-     [
-      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      1.63
+      5.77
      ]
     ],
-    "dienerS": 9.25,
+    "dienerS": 9.83,
     "diener": [
      [
-      "WmiPrvSE.exe",
-      4.27
+      "System",
+      4.45
      ],
      [
-      "dwm.exe",
-      3.02
+      "WmiPrvSE.exe",
+      3.05
      ]
     ],
-    "eigenS": 22.98,
+    "eigenS": 33.5,
     "schwelle": 0.5,
     "eich": "win32, Radeon 890M, 24 Kerne"
    },
-   "zeit": "2026-11-10T02:49:24.542Z",
+   "zeit": "2026-11-10T10:24:03.667Z",
    "abdruck": "9c512329c038",
    "port": 7804,
    "bahn": "sitzung",
@@ -346,48 +346,48 @@
   },
   "vegetation.K5#2": {
    "gruen": false,
-   "zahl": "Krone sommer 175587 px · winter 6089 px · fruehling 135182 px → Winter 0.035 × Sommer, Wiese LAI 2–10 m sommer 2.50 · winter 1.32 · fruehling 1.81 → Winter 0.528 × Sommer",
+   "zahl": "Krone sommer 175608 px · winter 6084 px · fruehling 135179 px → Winter 0.035 × Sommer, Wiese LAI 2–10 m sommer 2.50 · winter 1.32 · fruehling 1.81 → Winter 0.528 × Sommer",
    "exit": 0,
-   "minuten": 1.31,
-   "grund": "ROT: Krone sommer 175587 px · winter 6089 px · fruehling 135182 px → Winter 0.035 × Sommer, Wiese LAI 2–10 m sommer 2.50 · winter 1.32 · fruehling 1.81 → Winter 0.528 × Sommer",
+   "minuten": 1.39,
+   "grund": "ROT: Krone sommer 175608 px · winter 6084 px · fruehling 135179 px → Winter 0.035 × Sommer, Wiese LAI 2–10 m sommer 2.50 · winter 1.32 · fruehling 1.81 → Winter 0.528 × Sommer",
    "gpu": "amd/rdna-3",
-   "s": 78.7,
+   "s": 83.5,
    "fremd": {
-    "s": 80.5,
-    "takte": 29,
-    "fremdS": 75.38,
-    "kerne": 0.936,
-    "fensterKerne": 1.279,
+    "s": 85.9,
+    "takte": 35,
+    "fremdS": 215.84,
+    "kerne": 2.513,
+    "fensterKerne": 5.545,
     "namen": [
      [
-      "svchost.exe",
-      21.59
-     ],
-     [
-      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      15.78
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-33444-profil-FiVZVs --no-p",
+      37.59
      ],
      [
       "MsMpEng.exe",
-      8.34
-     ]
-    ],
-    "dienerS": 38.95,
-    "diener": [
-     [
-      "WmiPrvSE.exe",
-      17.89
+      31.7
      ],
      [
-      "dwm.exe",
-      12.47
+      "svchost.exe",
+      25.73
      ]
     ],
-    "eigenS": 98.05,
+    "dienerS": 33.05,
+    "diener": [
+     [
+      "System",
+      12.98
+     ],
+     [
+      "WmiPrvSE.exe",
+      11.16
+     ]
+    ],
+    "eigenS": 101.77,
     "schwelle": 0.5,
     "eich": "win32, Radeon 890M, 24 Kerne"
    },
-   "zeit": "2026-11-10T02:50:10.809Z",
+   "zeit": "2026-11-10T10:24:29.902Z",
    "abdruck": "747a7379b842",
    "port": 7804,
    "bahn": "sitzung",
@@ -933,48 +933,48 @@
   },
   "material.K3#1": {
    "gruen": false,
-   "zahl": "Haus L0 0.1383 · L1/L0 0.943 · L2/L0 0.923 · Fels nur L0 (findling, basalt, sediment, zacken, geroell, kristalle), Welt-Y 0.1763 · Soll 0,95–1,05 · [linse-gpu] amd/rdna-3",
+   "zahl": "Haus L0 0.1381 · L1/L0 0.944 · L2/L0 0.924 · Fels nur L0 (findling, basalt, sediment, zacken, geroell, kristalle), Welt-Y 0.1763 · Soll 0,95–1,05 · [linse-gpu] amd/rdna-3",
    "exit": 0,
-   "minuten": 0.56,
-   "grund": "ROT: Haus L0 0.1383 · L1/L0 0.943 · L2/L0 0.923 · Fels nur L0 (findling, basalt, sediment, zacken, geroell, kristalle), Welt-Y 0.1763 · Soll 0,95–1,05 · [linse-gpu] amd/rdna-3",
+   "minuten": 0.54,
+   "grund": "ROT: Haus L0 0.1381 · L1/L0 0.944 · L2/L0 0.924 · Fels nur L0 (findling, basalt, sediment, zacken, geroell, kristalle), Welt-Y 0.1763 · Soll 0,95–1,05 · [linse-gpu] amd/rdna-3",
    "gpu": "amd/rdna-3",
-   "s": 33.5,
+   "s": 32.4,
    "fremd": {
-    "s": 36.4,
-    "takte": 14,
-    "fremdS": 30.48,
-    "kerne": 0.837,
-    "fensterKerne": 0.975,
+    "s": 34.3,
+    "takte": 15,
+    "fremdS": 43.7,
+    "kerne": 1.272,
+    "fensterKerne": 1.474,
     "namen": [
      [
       "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      8.22
+      7.83
      ],
      [
       "svchost.exe",
-      7.55
+      7.58
      ],
      [
       "MsMpEng.exe",
-      3.78
+      5.67
      ]
     ],
-    "dienerS": 19.08,
+    "dienerS": 13.64,
     "diener": [
      [
-      "WmiPrvSE.exe",
-      6.73
+      "System",
+      7.05
      ],
      [
       "dwm.exe",
-      6.47
+      3.64
      ]
     ],
-    "eigenS": 86.19,
+    "eigenS": 76.78,
     "schwelle": 0.5,
     "eich": "win32, Radeon 890M, 24 Kerne"
    },
-   "zeit": "2026-11-10T03:00:37.644Z",
+   "zeit": "2026-11-10T10:26:08.530Z",
    "abdruck": "67459632073f",
    "port": 7804,
    "bahn": "sitzung",
@@ -982,48 +982,48 @@
   },
   "material.K3#2": {
    "gruen": false,
-   "zahl": "haus@0.5 l1 0.943/l2 0.923 · birke@0.5 l1 1.002/karte 1.035 · fichte@0.5 l1 1.046/karte 0.960 · haus@0.27 l1 0.943/l2 0.923 · birke@0.27 l1 1.018/karte 1.051 · fichte@0.27 l1 1.046/karte 0.960 · Fels nur L0 · Soll 0,95–1,05 · [linse-gpu] amd/rdna-3",
+   "zahl": "haus@0.5 l1 0.944/l2 0.924 · birke@0.5 l1 1.020/karte 1.052 · fichte@0.5 l1 1.046/karte 0.959 · haus@0.27 l1 0.944/l2 0.924 · birke@0.27 l1 1.020/karte 1.052 · fichte@0.27 l1 1.046/karte 0.959 · Fels nur L0 · Soll 0,95–1,05 · [linse-gpu] amd/rdna-3",
    "exit": 0,
-   "minuten": 0.56,
-   "grund": "ROT: haus@0.5 l1 0.943/l2 0.923 · birke@0.5 l1 1.002/karte 1.035 · fichte@0.5 l1 1.046/karte 0.960 · haus@0.27 l1 0.943/l2 0.923 · birke@0.27 l1 1.018/karte 1.051 · fichte@0.27 l1 1.046/karte 0.960 · Fels nur L0 · Soll 0,95–1,05 · [linse-gpu] amd/rdna-3",
+   "minuten": 0.54,
+   "grund": "ROT: haus@0.5 l1 0.944/l2 0.924 · birke@0.5 l1 1.020/karte 1.052 · fichte@0.5 l1 1.046/karte 0.959 · haus@0.27 l1 0.944/l2 0.924 · birke@0.27 l1 1.020/karte 1.052 · fichte@0.27 l1 1.046/karte 0.959 · Fels nur L0 · Soll 0,95–1,05 · [linse-gpu] amd/rdna-3",
    "gpu": "amd/rdna-3",
-   "s": 33.5,
+   "s": 32.4,
    "fremd": {
-    "s": 36.4,
-    "takte": 14,
-    "fremdS": 30.48,
-    "kerne": 0.837,
-    "fensterKerne": 0.975,
+    "s": 34.3,
+    "takte": 15,
+    "fremdS": 43.7,
+    "kerne": 1.272,
+    "fensterKerne": 1.474,
     "namen": [
      [
       "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      8.22
+      7.83
      ],
      [
       "svchost.exe",
-      7.55
+      7.58
      ],
      [
       "MsMpEng.exe",
-      3.78
+      5.67
      ]
     ],
-    "dienerS": 19.08,
+    "dienerS": 13.64,
     "diener": [
      [
-      "WmiPrvSE.exe",
-      6.73
+      "System",
+      7.05
      ],
      [
       "dwm.exe",
-      6.47
+      3.64
      ]
     ],
-    "eigenS": 86.19,
+    "eigenS": 76.78,
     "schwelle": 0.5,
     "eich": "win32, Radeon 890M, 24 Kerne"
    },
-   "zeit": "2026-11-10T03:00:37.644Z",
+   "zeit": "2026-11-10T10:26:08.530Z",
    "abdruck": "87023a1ea196",
    "port": 7804,
    "bahn": "sitzung",
@@ -1032,48 +1032,48 @@
   },
   "material.K1#1": {
    "gruen": false,
-   "zahl": "Welt/Labor 0,9–1,1: 5/13 · im realen Band beidseits: 9/13 — rinde 1.7293 ∉ [0.07, 0.12] L 0.0894 W 0.1546 · laub 0.8207 ∉ [0.15, 0.26] L 0.1785 W 0.1465 · fels 0.7214 · boden 1.1214 · tor 0.1933 ∉ [0.25, 0.95] L 0.6496 W 0.1256 · haut 2.4393 · haar 11.735 · klinge 0.7946 ∉ [0.3, 0.95] L 0.3452 W 0.2743 · echt beide Seiten · [linse-gpu] amd/rdna-3",
+   "zahl": "Welt/Labor 0,9–1,1: 5/13 · im realen Band beidseits: 9/13 — rinde 1.5599 ∉ [0.07, 0.12] L 0.0893 W 0.1393 · laub 0.8184 ∉ [0.15, 0.26] L 0.1784 W 0.146 · fels 0.7205 · boden 1.1238 · tor 0.1933 ∉ [0.25, 0.95] L 0.6496 W 0.1256 · haut 2.4533 · haar 11.8291 · klinge 0.3853 ∉ [0.3, 0.95] L 0.3452 W 0.133 · echt beide Seiten · [linse-gpu] amd/rdna-3",
    "exit": 0,
-   "minuten": 0.93,
-   "grund": "ROT: Welt/Labor 0,9–1,1: 5/13 · im realen Band beidseits: 9/13 — rinde 1.7293 ∉ [0.07, 0.12] L 0.0894 W 0.1546 · laub 0.8207 ∉ [0.15, 0.26] L 0.1785 W 0.1465 · fels 0.7214 · boden 1.1214 · tor 0.1933 ∉ [0.25, 0.95] L 0.6496 W 0.1256 · haut 2.4393 · haar 11.735 · klinge 0.7946 ∉ [0.3, 0.95] L 0.3452 W 0.2743 · echt beide Seiten · [linse-gpu] amd/rdna-3",
+   "minuten": 0.97,
+   "grund": "ROT: Welt/Labor 0,9–1,1: 5/13 · im realen Band beidseits: 9/13 — rinde 1.5599 ∉ [0.07, 0.12] L 0.0893 W 0.1393 · laub 0.8184 ∉ [0.15, 0.26] L 0.1784 W 0.146 · fels 0.7205 · boden 1.1238 · tor 0.1933 ∉ [0.25, 0.95] L 0.6496 W 0.1256 · haut 2.4533 · haar 11.8291 · klinge 0.3853 ∉ [0.3, 0.95] L 0.3452 W 0.133 · echt beide Seiten · [linse-gpu] amd/rdna-3",
    "gpu": "amd/rdna-3",
-   "s": 55.7,
+   "s": 58.2,
    "fremd": {
-    "s": 59.2,
-    "takte": 22,
-    "fremdS": 64.36,
-    "kerne": 1.088,
-    "fensterKerne": 1.478,
+    "s": 61.4,
+    "takte": 25,
+    "fremdS": 200.98,
+    "kerne": 3.275,
+    "fensterKerne": 4.53,
     "namen": [
      [
-      "svchost.exe",
-      15.45
-     ],
-     [
-      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      12.69
-     ],
-     [
       "MsMpEng.exe",
-      12.02
+      69.41
+     ],
+     [
+      "svchost.exe",
+      37.64
+     ],
+     [
+      "node scripts/ci-zeiten.cjs",
+      17.56
      ]
     ],
-    "dienerS": 48.66,
+    "dienerS": 40.52,
     "diener": [
      [
       "System",
-      22.88
+      23.08
      ],
      [
       "dwm.exe",
-      12.45
+      8.77
      ]
     ],
-    "eigenS": 131.75,
+    "eigenS": 202.02,
     "schwelle": 0.5,
     "eich": "win32, Radeon 890M, 24 Kerne"
    },
-   "zeit": "2026-11-10T03:01:16.302Z",
+   "zeit": "2026-11-10T10:27:01.267Z",
    "abdruck": "3abc8b01e278",
    "port": 7804,
    "bahn": "sitzung",
@@ -1083,46 +1083,46 @@
    "gruen": false,
    "zahl": "Karte Welt 0.1795 · Labor terrain 0.1799, garage 0.18, portale 0.1799, schmiede 0.18, fachwerk 0.1799, koerperstudio 0.1799, tetrapoda 0.1799 · Soll 0.18 ± 0.003 · Zeilen NICHT alle im Soll und Band · echt beide Seiten · [linse-gpu] amd/rdna-3",
    "exit": 0,
-   "minuten": 0.93,
+   "minuten": 0.97,
    "grund": "ROT: Karte Welt 0.1795 · Labor terrain 0.1799, garage 0.18, portale 0.1799, schmiede 0.18, fachwerk 0.1799, koerperstudio 0.1799, tetrapoda 0.1799 · Soll 0.18 ± 0.003 · Zeilen NICHT alle im Soll und Band · echt beide Seiten · [linse-gpu] amd/rdna-3",
    "gpu": "amd/rdna-3",
-   "s": 55.7,
+   "s": 58.2,
    "fremd": {
-    "s": 59.2,
-    "takte": 22,
-    "fremdS": 64.36,
-    "kerne": 1.088,
-    "fensterKerne": 1.478,
+    "s": 61.4,
+    "takte": 25,
+    "fremdS": 200.98,
+    "kerne": 3.275,
+    "fensterKerne": 4.53,
     "namen": [
      [
-      "svchost.exe",
-      15.45
-     ],
-     [
-      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      12.69
-     ],
-     [
       "MsMpEng.exe",
-      12.02
+      69.41
+     ],
+     [
+      "svchost.exe",
+      37.64
+     ],
+     [
+      "node scripts/ci-zeiten.cjs",
+      17.56
      ]
     ],
-    "dienerS": 48.66,
+    "dienerS": 40.52,
     "diener": [
      [
       "System",
-      22.88
+      23.08
      ],
      [
       "dwm.exe",
-      12.45
+      8.77
      ]
     ],
-    "eigenS": 131.75,
+    "eigenS": 202.02,
     "schwelle": 0.5,
     "eich": "win32, Radeon 890M, 24 Kerne"
    },
-   "zeit": "2026-11-10T03:01:16.302Z",
+   "zeit": "2026-11-10T10:27:01.267Z",
    "abdruck": "564911886853",
    "port": 7804,
    "bahn": "sitzung",
@@ -2740,48 +2740,48 @@
   },
   "haar.K5#1": {
    "gruen": false,
-   "zahl": "Lauf: eval: {\"ms\":1408,\"fehler\":\"Cannot read properties of undefined (reading 'size')\",\"stapel\":[\"LC.getArrayBufferAsync (http://localhost:7804/vendor/three.webgpu.min.js:6:581380)\",\"VC.getArrayBufferAsync (http://localhost:7804/vendor/three.webgpu.min.js:6:599310)\",\"at lies (evaluate at lade (C:\\\\Users\\\\micha\\",
+   "zahl": "Lauf: eval: {\"ms\":2011,\"fehler\":\"Cannot read properties of undefined (reading 'size')\",\"stapel\":[\"LC.getArrayBufferAsync (http://localhost:7804/vendor/three.webgpu.min.js:6:581380)\",\"VC.getArrayBufferAsync (http://localhost:7804/vendor/three.webgpu.min.js:6:599310)\",\"at lies (evaluate at lade (C:\\\\Users\\\\micha\\",
    "exit": 0,
-   "minuten": 0.03,
-   "grund": "ROT: Lauf: eval: {\"ms\":1408,\"fehler\":\"Cannot read properties of undefined (reading 'size')\",\"stapel\":[\"LC.getArrayBufferAsync (http://localhost:7804/vendor/three.webgpu.min.js:6:581380)\",\"VC.getArrayBufferAsync (http://localhost:7804/vendor/three.webgpu.min.js:6:599310)\",\"at lies (evaluate at lade (C:\\\\Users\\\\micha\\",
+   "minuten": 0.04,
+   "grund": "ROT: Lauf: eval: {\"ms\":2011,\"fehler\":\"Cannot read properties of undefined (reading 'size')\",\"stapel\":[\"LC.getArrayBufferAsync (http://localhost:7804/vendor/three.webgpu.min.js:6:581380)\",\"VC.getArrayBufferAsync (http://localhost:7804/vendor/three.webgpu.min.js:6:599310)\",\"at lies (evaluate at lade (C:\\\\Users\\\\micha\\",
    "gpu": "amd/rdna-3",
-   "s": 1.5,
+   "s": 2.2,
    "fremd": {
-    "s": 5.4,
+    "s": 5,
     "takte": 2,
-    "fremdS": 5.44,
-    "kerne": 0.998,
-    "fensterKerne": 0.998,
+    "fremdS": 12.77,
+    "kerne": 2.57,
+    "fensterKerne": 2.57,
     "namen": [
      [
+      "MsMpEng.exe",
+      3.89
+     ],
+     [
       "svchost.exe",
-      1.72
+      2.72
      ],
      [
-      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      1.03
-     ],
-     [
-      "bash.exe zug-sammler7.sh z360 25 w27-haar-arm-2 w27-lod-baum w27-ort-pose w27-studio-mesh",
-      0.89
+      "node scripts/ci-zeiten.cjs",
+      1.5
      ]
     ],
-    "dienerS": 2.88,
+    "dienerS": 1.92,
     "diener": [
      [
       "WmiPrvSE.exe",
-      1.08
+      0.73
      ],
      [
       "dwm.exe",
-      1.03
+      0.61
      ]
     ],
-    "eigenS": 4.92,
+    "eigenS": 11.13,
     "schwelle": 0.5,
     "eich": "win32, Radeon 890M, 24 Kerne"
    },
-   "zeit": "2026-11-10T03:38:20.929Z",
+   "zeit": "2026-11-10T10:28:17.596Z",
    "abdruck": "722683a6b735",
    "port": 7804,
    "bahn": "sitzung",
@@ -6140,258 +6140,60 @@
   }
  },
  "sitzung": {
-  "start": "2026-11-10T02:46:28.637Z",
+  "start": "2026-11-10T10:22:48.038Z",
   "port": 7804,
-  "warten": 0.12,
+  "warten": 0.15,
   "bootS": 5.9,
   "grundstellungS": [
-   6.7,
-   0,
-   4.4,
-   2.8,
-   3.3,
-   3.7,
-   5.7,
-   0,
-   0,
-   0,
-   0,
-   0,
-   0,
-   5.2,
-   3.8
+   3.1,
+   2.4
   ],
-  "proben": 42,
+  "proben": 6,
   "freigaben": [],
-  "offen": [
-   "leib.K1#2",
-   "halten.K2#1",
-   "leib.K4#1",
-   "leib.K4#2",
-   "fahrzeug.K5#1",
-   "fahrzeug.K2#1",
-   "fahrzeug.K2#2",
-   "klang.K4#1",
-   "klang.K4#2",
-   "klang.K5#2",
-   "speicher.K4#2",
-   "wetter.K2#1",
-   "licht.K3#1",
-   "mensch.K1#1",
-   "mensch.K2#2",
-   "vegetation.K4#1",
-   "vegetation.K4#2",
-   "mensch.K5#1",
-   "siedlung.K1#2",
-   "schatten.K1#1",
-   "schatten.K1#2",
-   "wetter.K3#2",
-   "tiere.K3#2",
-   "tiere.K2#2",
-   "luftwasser.K5#2",
-   "haar.K5#1",
-   "studios.K2#2",
-   "studios.K3#2",
-   "pipeline.K4#1",
-   "pipeline.K4#2",
-   "ankunft.K2#1",
-   "ankunft.K3#1",
-   "ankunft.K1#1",
-   "ankunft.K1#2",
-   "ankunft.K5#1",
-   "bauen.K1#2",
-   "bauen.K5#2",
-   "studios.K4#1",
-   "studios.K4#2",
-   "siedlung.K2#1",
-   "siedlung.K2#2",
-   "siedlung.K5#1",
-   "siedlung.K5#2",
-   "siedlung.K4#2",
-   "leib.K2#1",
-   "leib.K2#2",
-   "leib.K3#2",
-   "halten.K5#1",
-   "halten.K5#2",
-   "halten.K1#2",
-   "tore.K1#1",
-   "tore.K3#1",
-   "tore.K3#2",
-   "streaming.K4#2",
-   "profiband.K1#1",
-   "profiband.K1#2",
-   "pflicht.E#1",
-   "profiband.K2#1",
-   "profiband.K2#2",
-   "profiband.K3#1",
-   "profiband.K3#2",
-   "speicher.K1#1",
-   "speicher.K1#2",
-   "speicher.K2#1",
-   "speicher.K2#2"
-  ],
   "orte": [
    {
     "ort": "wiese",
-    "vor": "gelaende.K5#2",
-    "s": 15,
-    "takte": 565,
+    "vor": "mensch.K4#1",
+    "s": 21,
+    "takte": 692,
     "chunks": 81,
     "nach": null
    },
    {
-    "ort": "wiese",
-    "vor": "klang.K2#1",
-    "s": 16.4,
-    "takte": 535,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
     "ort": "genesis",
-    "vor": "ferne.K1#1",
-    "s": 13.3,
-    "takte": 604,
+    "vor": "material.K3#1",
+    "s": 12.8,
+    "takte": 598,
     "chunks": 81,
     "nach": null
    },
    {
     "ort": "genesis",
     "vor": "material.K1#1",
-    "s": 2.2,
-    "takte": 120,
-    "chunks": 81,
-    "nach": "der Grundstellung"
-   },
-   {
-    "ort": "genesis",
-    "vor": "ankunft.K4#1",
-    "s": 14,
-    "takte": 599,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "dorf",
-    "vor": "licht.K3#2",
-    "s": 21,
-    "takte": 619,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "dorf",
-    "vor": "schatten.K2#1",
-    "s": 19.1,
-    "takte": 561,
+    "s": 15.9,
+    "takte": 616,
     "chunks": 81,
     "nach": "der Tür"
    },
    {
     "ort": null,
-    "vor": "affekt.K4#2",
-    "s": 14.6,
-    "takte": 733,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "wiese",
-    "vor": "gelaende.K2#1",
-    "s": 16.5,
-    "takte": 661,
-    "chunks": 81,
-    "nach": null
-   },
-   {
-    "ort": "wiese",
-    "vor": "wetter.K2#2",
-    "s": 15.2,
-    "takte": 580,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "wiese",
-    "vor": "physik.K2#2",
-    "s": 1.3,
-    "takte": 112,
-    "chunks": 81,
-    "nach": "der Grundstellung"
-   },
-   {
-    "ort": "wiese",
-    "vor": "tiere.K1#2",
-    "s": 3.8,
-    "takte": 200,
-    "chunks": 99,
-    "nach": "der Grundstellung"
-   },
-   {
-    "ort": "wiese",
-    "vor": "affekt.K1#2",
-    "s": 7.5,
-    "takte": 561,
-    "chunks": 91,
-    "nach": "der Grundstellung"
-   },
-   {
-    "ort": "wiese",
-    "vor": "oekologie.K4#2",
-    "s": 2.8,
-    "takte": 161,
-    "chunks": 91,
-    "nach": "der Grundstellung"
-   },
-   {
-    "ort": "wiese",
-    "vor": "haar.K1#1",
-    "s": 1.3,
-    "takte": 72,
-    "chunks": 91,
-    "nach": "der Grundstellung"
-   },
-   {
-    "ort": "wiese",
-    "vor": "fahrzeug.K3#1",
-    "s": 1.3,
-    "takte": 72,
-    "chunks": 91,
-    "nach": "der Grundstellung"
-   },
-   {
-    "ort": "wiese",
-    "vor": "fahrzeug.K3#2",
-    "s": 16.5,
-    "takte": 578,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "wiese",
-    "vor": "leib.K1#2",
-    "s": 15.6,
-    "takte": 576,
+    "vor": "haar.K5#1",
+    "s": 14.1,
+    "takte": 785,
     "chunks": 81,
     "nach": "der Tür"
    }
   ],
   "wegeTueren": [
    {
-    "vor": "ankunft.K4#1",
+    "vor": "material.K1#1",
     "wege": "wege +1 [-119.1,-274.9,279.2,201/272]",
-    "s": 4.4
+    "s": 3.1
    },
    {
-    "vor": "schatten.K2#1",
-    "wege": "wege +5 [-748.3,-821.3,-615.9,-784.1/28] [-784.3,-952.2,-631.7,-806.5/4] [-805.3,-801.4,-689.5,-574/6] …",
-    "s": 3.3
-   }
-  ],
-  "haenger": [
-   {
-    "probe": "profiband.K4#1",
-    "zurueck": 9
+    "vor": "haar.K5#1",
+    "wege": "wege +1 [-119.1,-274.9,279.2,201/272]",
+    "s": 2.4
    }
   ],
   "unerklaert": [
@@ -6402,741 +6204,25 @@
    {
     "probe": "material.K1#1",
     "wie": "werke +5 (−0)"
-   },
-   {
-    "probe": "licht.K3#2",
-    "wie": "orte +-3,-3 · wege +3 [-748.3,-821.3,-615.9,-784.1/28] [-805.3,-801.4,-689.5,-574/6] [-833.8,-834.7,-648.1,-574.2/76] (-3,-3, netz:-3,-3, netz:-3,-3|-4,-4)"
-   },
-   {
-    "probe": "gelaende.K3#1",
-    "wie": "orte +6,-25 +7,-24 · wege +6 [1410.2,-6310.3,1771.1,-6169.3/88] [1443.2,-6282.4,1737.7,-6193.4/6] [1723.8,-6196.8,1758.8,-5966.4/42] … (6,-25, 7,-24, netz:6,-25, netz:6,-25|7,-24)"
    }
   ],
-  "ciBlicke": 43,
+  "ciBlicke": 7,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 7855,
-   "frameP95": 58.34,
-   "taktP95": 38.94,
-   "vramMax": 173.5,
-   "seiten": 9,
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 3,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
-   "ortImDeckel": [
-    {
-     "probe": "gelaende.K3#1",
-     "m": 5981,
-     "ringVor": 4,
-     "ringMin": 0
-    },
-    {
-     "probe": "ferne.K1#1",
-     "m": 3592,
-     "ringVor": 4,
-     "ringMin": -1
-    },
-    {
-     "probe": "licht.K5#1",
-     "m": 3592,
-     "ringVor": 4,
-     "ringMin": 1
-    },
-    {
-     "probe": "streaming.K3#1",
-     "m": 2000,
-     "ringVor": 4,
-     "ringMin": 0
-    },
-    {
-     "probe": "gelaende.K2#1",
-     "m": 1718,
-     "ringVor": 4,
-     "ringMin": 0
-    },
-    {
-     "probe": "material.K2#1",
-     "m": 1083,
-     "ringVor": 4,
-     "ringMin": 0
-    },
-    {
-     "probe": "lod.K1#1",
-     "m": 1010,
-     "ringVor": 4,
-     "ringMin": 1
-    },
-    {
-     "probe": "tiere.K1#2",
-     "m": 328,
-     "ringVor": 4,
-     "ringMin": 0
-    },
-    {
-     "probe": "gelaende.K5#2",
-     "m": 312,
-     "ringVor": 4,
-     "ringMin": -1
-    }
-   ],
-   "zapfen": 1759,
-   "luecken": 5,
+   "ortImDeckel": [],
+   "zapfen": 300,
+   "luecken": 1,
    "letzteLuecke": "/eval ohne Antwort binnen 10 s"
   },
-  "fahrtS": 1805.3,
-  "grund": "die Fahrt riss 1800 s in leib.K1#2 — offen: leib.K1#2, halten.K2#1, leib.K4#1, leib.K4#2, fahrzeug.K5#1, fahrzeug.K2#1, fahrzeug.K2#2, klang.K4#1, klang.K4#2, klang.K5#2, speicher.K4#2, wetter.K2#1, licht.K3#1, mensch.K1#1, mensch.K2#2, vegetation.K4#1, vegetation.K4#2, mensch.K5#1, siedlung.K1#2, schatten.K1#1, schatten.K1#2, wetter.K3#2, tiere.K3#2, tiere.K2#2, luftwasser.K5#2, haar.K5#1, studios.K2#2, studios.K3#2, pipeline.K4#1, pipeline.K4#2, ankunft.K2#1, ankunft.K3#1, ankunft.K1#1, ankunft.K1#2, ankunft.K5#1, bauen.K1#2, bauen.K5#2, studios.K4#1, studios.K4#2, siedlung.K2#1, siedlung.K2#2, siedlung.K5#1, siedlung.K5#2, siedlung.K4#2, leib.K2#1, leib.K2#2, leib.K3#2, halten.K5#1, halten.K5#2, halten.K1#2, tore.K1#1, tore.K3#1, tore.K3#2, streaming.K4#2, profiband.K1#1, profiband.K1#2, pflicht.E#1, profiband.K2#1, profiband.K2#2, profiband.K3#1, profiband.K3#2, speicher.K1#1, speicher.K1#2, speicher.K2#1, speicher.K2#2",
-  "minuten": 30.28
- },
- "fortsetzung": [
-  {
-   "start": "2026-11-10T03:16:45.457Z",
-   "port": 7804,
-   "warten": 0.19,
-   "bootS": 5.8,
-   "grundstellungS": [
-    2.4,
-    2.9,
-    2.5,
-    2.8,
-    2.7,
-    2.8,
-    1.5,
-    1.4,
-    1.3,
-    3.1,
-    3.2,
-    2.6,
-    11.4,
-    4.4,
-    0,
-    0,
-    0.1,
-    0,
-    0,
-    0,
-    0.1,
-    0.1,
-    3.5,
-    2.1,
-    2.6,
-    2.9,
-    0,
-    4.2,
-    1.9
-   ],
-   "proben": 29,
-   "freigaben": [],
-   "offen": [
-    "siedlung.K4#2",
-    "leib.K2#1",
-    "leib.K2#2",
-    "leib.K3#2",
-    "halten.K5#1",
-    "halten.K5#2",
-    "halten.K1#2",
-    "tore.K1#1",
-    "tore.K3#1",
-    "tore.K3#2",
-    "streaming.K4#2",
-    "profiband.K1#1",
-    "profiband.K1#2",
-    "pflicht.E#1",
-    "profiband.K2#1",
-    "profiband.K2#2",
-    "profiband.K3#1",
-    "profiband.K3#2",
-    "speicher.K1#1",
-    "speicher.K1#2",
-    "speicher.K2#1",
-    "speicher.K2#2"
-   ],
-   "orte": [
-    {
-     "ort": "dorf",
-     "vor": "wetter.K2#1",
-     "s": 25.6,
-     "takte": 625,
-     "chunks": 81,
-     "nach": null
-    },
-    {
-     "ort": "dorf",
-     "vor": "licht.K3#1",
-     "s": 20.7,
-     "takte": 641,
-     "chunks": 81,
-     "nach": "der Tür"
-    },
-    {
-     "ort": "genesis",
-     "vor": "mensch.K1#1",
-     "s": 14.6,
-     "takte": 581,
-     "chunks": 81,
-     "nach": "der Tür"
-    },
-    {
-     "ort": "genesis",
-     "vor": "vegetation.K4#1",
-     "s": 14.3,
-     "takte": 605,
-     "chunks": 81,
-     "nach": "der Tür"
-    },
-    {
-     "ort": "genesis",
-     "vor": "mensch.K5#1",
-     "s": 14.6,
-     "takte": 660,
-     "chunks": 81,
-     "nach": "der Tür"
-    },
-    {
-     "ort": "genesis",
-     "vor": "siedlung.K1#2",
-     "s": 14.7,
-     "takte": 609,
-     "chunks": 81,
-     "nach": "der Tür"
-    },
-    {
-     "ort": "buehne",
-     "vor": "schatten.K1#1",
-     "s": 11.3,
-     "takte": 567,
-     "chunks": 84,
-     "nach": "der Tür"
-    },
-    {
-     "ort": "buehne",
-     "vor": "schatten.K1#2",
-     "s": 6,
-     "fehler": "Messort buehne: nach dem Wechsel steht die Seite nicht in pruefbuehne",
-     "nach": "der Tür (die Welt hing)"
-    },
-    {
-     "ort": "wiese",
-     "vor": "leib.K1#2",
-     "s": 16.5,
-     "takte": 568,
-     "chunks": 81,
-     "nach": "der Tür"
-    },
-    {
-     "ort": "wiese",
-     "vor": "leib.K4#1",
-     "s": 16.3,
-     "takte": 592,
-     "chunks": 81,
-     "nach": "der Tür"
-    },
-    {
-     "ort": "wiese",
-     "vor": "fahrzeug.K5#1",
-     "s": 16.5,
-     "takte": 597,
-     "chunks": 81,
-     "nach": "der Tür"
-    },
-    {
-     "ort": "wiese",
-     "vor": "fahrzeug.K2#1",
-     "s": 16.6,
-     "takte": 553,
-     "chunks": 81,
-     "nach": "der Tür"
-    },
-    {
-     "ort": "wiese",
-     "vor": "fahrzeug.K2#2",
-     "s": 16.5,
-     "takte": 573,
-     "chunks": 81,
-     "nach": "der Tür"
-    },
-    {
-     "ort": "wiese",
-     "vor": "klang.K4#1",
-     "s": 15.8,
-     "takte": 543,
-     "chunks": 81,
-     "nach": "der Tür"
-    },
-    {
-     "ort": "wiese",
-     "vor": "klang.K5#2",
-     "s": 0.8,
-     "takte": 63,
-     "chunks": 99,
-     "nach": "der Grundstellung"
-    },
-    {
-     "ort": "wiese",
-     "vor": "speicher.K4#2",
-     "s": 2.6,
-     "takte": 145,
-     "chunks": 109,
-     "nach": "der Grundstellung"
-    },
-    {
-     "ort": null,
-     "vor": "wetter.K3#2",
-     "s": 10.5,
-     "takte": 650,
-     "chunks": 81,
-     "nach": "der Grundstellung"
-    },
-    {
-     "ort": null,
-     "vor": "tiere.K3#2",
-     "s": 8.5,
-     "takte": 637,
-     "chunks": 81,
-     "nach": "der Grundstellung"
-    },
-    {
-     "ort": null,
-     "vor": "tiere.K2#2",
-     "s": 1.1,
-     "takte": 88,
-     "chunks": 81,
-     "nach": "der Grundstellung"
-    },
-    {
-     "ort": null,
-     "vor": "luftwasser.K5#2",
-     "s": 2.5,
-     "takte": 148,
-     "chunks": 90,
-     "nach": "der Grundstellung"
-    },
-    {
-     "ort": null,
-     "vor": "haar.K5#1",
-     "s": 3.6,
-     "takte": 170,
-     "chunks": 90,
-     "nach": "der Grundstellung"
-    },
-    {
-     "ort": null,
-     "vor": "studios.K2#2",
-     "s": 0.8,
-     "takte": 56,
-     "chunks": 90,
-     "nach": "der Grundstellung"
-    },
-    {
-     "ort": null,
-     "vor": "pipeline.K4#1",
-     "s": 14.2,
-     "takte": 734,
-     "chunks": 81,
-     "nach": "der Tür"
-    },
-    {
-     "ort": null,
-     "vor": "bauen.K1#2",
-     "s": 16.5,
-     "takte": 683,
-     "chunks": 81,
-     "nach": "der Tür"
-    },
-    {
-     "ort": null,
-     "vor": "bauen.K5#2",
-     "s": 14.8,
-     "takte": 636,
-     "chunks": 81,
-     "nach": "der Tür"
-    },
-    {
-     "ort": null,
-     "vor": "studios.K4#1",
-     "s": 15.5,
-     "takte": 683,
-     "chunks": 81,
-     "nach": "der Tür"
-    },
-    {
-     "ort": null,
-     "vor": "siedlung.K2#1",
-     "s": 4.6,
-     "takte": 228,
-     "chunks": 87,
-     "nach": "der Grundstellung"
-    },
-    {
-     "ort": null,
-     "vor": "siedlung.K5#1",
-     "s": 15.2,
-     "takte": 636,
-     "chunks": 81,
-     "nach": "der Tür"
-    },
-    {
-     "ort": null,
-     "vor": "siedlung.K4#2",
-     "s": 15,
-     "takte": 632,
-     "chunks": 81,
-     "nach": "der Tür"
-    }
-   ],
-   "wegeTueren": [
-    {
-     "vor": "licht.K3#1",
-     "wege": "wege +3 [-119.1,-274.9,279.2,201/272] [-784.3,-952.2,-631.7,-806.5/4] [-810.2,-986.5,-604,-776.9/95]",
-     "s": 2.4
-    },
-    {
-     "vor": "mensch.K1#1",
-     "wege": "wege +6 [-119.1,-274.9,279.2,201/272] [-748.3,-821.3,-615.9,-784.1/28] [-784.3,-952.2,-631.7,-806.5/4] …",
-     "s": 2.9
-    },
-    {
-     "vor": "vegetation.K4#1",
-     "wege": "wege +5 [-110,-230.5,17.6,-118.2/298] [-115.3,-244.9,7.2,-119.1/22] [-116.6,-234.8,9.9,-118.6/4] …",
-     "s": 2.5
-    },
-    {
-     "vor": "siedlung.K1#2",
-     "wege": "wege +5 [-110,-230.5,17.6,-118.2/298] [-115.3,-244.9,7.2,-119.1/22] [-116.6,-234.8,9.9,-118.6/4] …",
-     "s": 2.7
-    },
-    {
-     "vor": "fahrzeug.K2#1",
-     "wege": "wege +1 [-283.4,-1048.6,-205.4,-1042.6/1]",
-     "s": 2.6
-    },
-    {
-     "vor": "fahrzeug.K2#2",
-     "wege": "wege +21 [-119.1,-274.9,279.2,201/272] [-153.6,-1374.1,317.4,-940.2/202] [-16,-1673.7,240.8,-1629.6/3] …",
-     "s": 11.4
-    },
-    {
-     "vor": "klang.K4#1",
-     "wege": "wege +4 [537.1,162.4,1098.5,577.1/9] [660.6,288.3,1006,573.7/833] [663.2,262.5,1014.3,613.8/22] …",
-     "s": 4.4
-    },
-    {
-     "vor": "siedlung.K4#2",
-     "wege": "wege +4 [-1010.2,-1538.8,-664,-1198.8/20] [-119.1,-274.9,279.2,201/272] [-1195.9,-1543,-671.9,-971.7/900] …",
-     "s": 1.9
-    }
-   ],
-   "ciBlicke": 30,
-   "strom": {
-    "datei": "strom.ndjson",
-    "bilder": 8155,
-    "frameP95": 66.94,
-    "taktP95": 43.69,
-    "vramMax": 156.4,
-    "seiten": 27,
-    "marken": 0,
-    "fehler": 0,
-    "verloren": 0,
-    "ortImDeckel": [
-     {
-      "probe": "fahrzeug.K2#2",
-      "m": 1857,
-      "ringVor": 4,
-      "ringMin": 0
-     },
-     {
-      "probe": "siedlung.K5#1",
-      "m": 1798,
-      "ringVor": 4,
-      "ringMin": -1
-     },
-     {
-      "probe": "fahrzeug.K2#1",
-      "m": 1618,
-      "ringVor": 4,
-      "ringMin": 0
-     },
-     {
-      "probe": "siedlung.K2#1",
-      "m": 1350,
-      "ringVor": 4,
-      "ringMin": 0
-     },
-     {
-      "probe": "wetter.K3#2",
-      "m": 1162,
-      "ringVor": 4,
-      "ringMin": 0
-     },
-     {
-      "probe": "fahrzeug.K5#1",
-      "m": 1071,
-      "ringVor": 4,
-      "ringMin": -1
-     },
-     {
-      "probe": "siedlung.K4#2",
-      "m": 639,
-      "ringVor": 4,
-      "ringMin": 0
-     },
-     {
-      "probe": "luftwasser.K5#2",
-      "m": 497,
-      "ringVor": 4,
-      "ringMin": 4
-     },
-     {
-      "probe": "schatten.K1#1",
-      "m": 459,
-      "ringVor": 4,
-      "ringMin": 1
-     },
-     {
-      "probe": "leib.K4#1",
-      "m": 318,
-      "ringVor": 4,
-      "ringMin": -1
-     },
-     {
-      "probe": "vegetation.K4#1",
-      "m": 292,
-      "ringVor": 4,
-      "ringMin": -1
-     }
-    ],
-    "zapfen": 1787,
-    "luecken": 6,
-    "letzteLuecke": "THREE is not defined"
-   },
-   "fahrtS": 1802.9,
-   "grund": "die Fahrt riss 1800 s in siedlung.K4#2 — offen: siedlung.K4#2, leib.K2#1, leib.K2#2, leib.K3#2, halten.K5#1, halten.K5#2, halten.K1#2, tore.K1#1, tore.K3#1, tore.K3#2, streaming.K4#2, profiband.K1#1, profiband.K1#2, pflicht.E#1, profiband.K2#1, profiband.K2#2, profiband.K3#1, profiband.K3#2, speicher.K1#1, speicher.K1#2, speicher.K2#1, speicher.K2#2",
-   "minuten": 30.31
-  },
-  {
-   "start": "2026-11-10T03:47:04.046Z",
-   "port": 7804,
-   "warten": 0.11,
-   "bootS": 5.8,
-   "grundstellungS": [
-    2,
-    0,
-    0,
-    0.1,
-    2,
-    0.1,
-    1.8,
-    1.8,
-    3.6,
-    0
-   ],
-   "proben": 11,
-   "freigaben": [],
-   "orte": [
-    {
-     "ort": null,
-     "vor": "siedlung.K4#2",
-     "s": 17.3,
-     "takte": 830,
-     "chunks": 81,
-     "nach": null
-    },
-    {
-     "ort": null,
-     "vor": "leib.K2#1",
-     "s": 13.6,
-     "takte": 734,
-     "chunks": 81,
-     "nach": "der Tür"
-    },
-    {
-     "ort": null,
-     "vor": "leib.K3#2",
-     "s": 8.8,
-     "takte": 669,
-     "chunks": 81,
-     "nach": "der Grundstellung"
-    },
-    {
-     "ort": null,
-     "vor": "halten.K5#1",
-     "s": 9.5,
-     "takte": 675,
-     "chunks": 81,
-     "nach": "der Grundstellung"
-    },
-    {
-     "ort": null,
-     "vor": "halten.K1#2",
-     "s": 13.2,
-     "takte": 728,
-     "chunks": 81,
-     "nach": "der Grundstellung"
-    },
-    {
-     "ort": null,
-     "vor": "tore.K1#1",
-     "s": 12.5,
-     "takte": 683,
-     "chunks": 81,
-     "nach": "der Tür"
-    },
-    {
-     "ort": null,
-     "vor": "tore.K3#1",
-     "s": 8.9,
-     "takte": 634,
-     "chunks": 98,
-     "nach": "der Grundstellung"
-    },
-    {
-     "ort": null,
-     "vor": "streaming.K4#2",
-     "s": 12.2,
-     "takte": 683,
-     "chunks": 81,
-     "nach": "der Tür"
-    },
-    {
-     "ort": null,
-     "vor": "profiband.K1#1",
-     "s": 13.8,
-     "takte": 734,
-     "chunks": 81,
-     "nach": "der Tür"
-    },
-    {
-     "ort": null,
-     "vor": "speicher.K1#1",
-     "s": 11.5,
-     "takte": 631,
-     "chunks": 81,
-     "nach": "der Tür"
-    },
-    {
-     "ort": null,
-     "vor": "speicher.K2#1",
-     "s": 8.6,
-     "takte": 595,
-     "chunks": 81,
-     "nach": "der Grundstellung"
-    }
-   ],
-   "wegeTueren": [
-    {
-     "vor": "leib.K2#1",
-     "wege": "wege +7 [-119.1,-274.9,279.2,201/272] [152.6,505.5,647.4,926.8/331] [234.5,504.5,580.5,843.3/362] …",
-     "s": 2
-    },
-    {
-     "vor": "speicher.K1#1",
-     "wege": "wege +1 [-119.1,-274.9,279.2,201/272]",
-     "s": 3.6
-    }
-   ],
-   "anOrt": [
-    {
-     "vor": "tore.K1#1",
-     "anders": [
-      "playerPathBuckets"
-     ],
-     "wie": {
-      "playerPathBuckets": "{\"height\":{\"low\":0,\"mid\":0,\"high\":1},\"distance\":{\"center\":1,\"mid\":0,\"edge\":0},\"w → {\"height\":{\"low\":0,\"mid\":0,\"high\":1},\"distance\":{\"center\":1,\"mid\":0,\"edge\":0},\"w"
-     }
-    },
-    {
-     "vor": "streaming.K4#2",
-     "anders": [
-      "tools",
-      "materials"
-     ],
-     "wie": {
-      "tools": {
-       "vorher": 0,
-       "nachher": 1,
-       "fehlt": [],
-       "neu": [
-        "{\"label\":\"Konformanz-Feile\",\"opClass\":\"s"
-       ],
-       "anders": []
-      },
-      "materials": {
-       "vorher": 0,
-       "nachher": 1,
-       "fehlt": [],
-       "neu": [
-        "{\"label\":\"<b>Konformanz-Glut</b>\",\"color"
-       ],
-       "anders": []
-      }
-     }
-    },
-    {
-     "vor": "speicher.K1#1",
-     "anders": [
-      "playerPathBuckets"
-     ],
-     "wie": {
-      "playerPathBuckets": "{\"height\":{\"low\":0,\"mid\":0,\"high\":1},\"distance\":{\"center\":1,\"mid\":0,\"edge\":0},\"w → {\"height\":{\"low\":0,\"mid\":0,\"high\":1},\"distance\":{\"center\":1,\"mid\":0,\"edge\":0},\"w"
-     }
-    }
-   ],
-   "grundZustand": [
-    {
-     "vor": "speicher.K1#1",
-     "zurueck": [
-      "maxCreatures"
-     ]
-    }
-   ],
-   "ciBlicke": 12,
-   "strom": {
-    "datei": "strom.ndjson",
-    "bilder": 1745,
-    "frameP95": 159.07,
-    "taktP95": 108.73,
-    "vramMax": 163.9,
-    "seiten": 12,
-    "marken": 0,
-    "fehler": 0,
-    "verloren": 0,
-    "ortImDeckel": [
-     {
-      "probe": "leib.K3#2",
-      "m": 6430,
-      "ringVor": 4,
-      "ringMin": 0
-     },
-     {
-      "probe": "streaming.K4#2",
-      "m": 1158,
-      "ringVor": 4,
-      "ringMin": 0
-     },
-     {
-      "probe": "profiband.K1#1",
-      "m": 1092,
-      "ringVor": 4,
-      "ringMin": 0
-     },
-     {
-      "probe": "leib.K2#1",
-      "m": 1083,
-      "ringVor": 4,
-      "ringMin": -1
-     },
-     {
-      "probe": "siedlung.K4#2",
-      "m": 639,
-      "ringVor": 4,
-      "ringMin": 0
-     }
-    ],
-    "zapfen": 513,
-    "luecken": 12,
-    "letzteLuecke": "kein Renderer"
-   },
-   "fahrtS": 534.4,
-   "minuten": 9.09
-  }
- ]
+  "fahrtS": 324.3,
+  "minuten": 5.62
+ }
 }

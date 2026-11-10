@@ -1,0 +1,147 @@
+{
+ "ms": 741,
+ "kamera": [
+  -286.16,
+  30.11,
+  -1047.39
+ ],
+ "hell": 57.2,
+ "kontrast": 6.34,
+ "dc": 89,
+ "dreiecke": 435382,
+ "klasse": {
+  "ausdruck": "^spieler:kopf/",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 88,
+  "toene": [
+   "spieler:kopf/auge=255/80/80",
+   "spieler:kopf/hair=80/255/80",
+   "spieler:kopf/haut=80/120/255",
+   "spieler:kopf/skin=255/220/60"
+  ],
+  "klassen": {
+   "spieler:kopf/auge": {
+    "objekte": 2,
+    "spiegelTreue": null,
+    "spiegelEbene": 29.22,
+    "sp": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "zweiton": 0,
+    "weiss": 0,
+    "wt": 0,
+    "wtZiel": null,
+    "bunt": 3.66,
+    "pixel": 2,
+    "luma": 20.6,
+    "kante": null,
+    "kr": 0,
+    "strich": null,
+    "si": 0,
+    "bloecke": 0,
+    "glatt": null,
+    "glattDunkel": null,
+    "nyquist": null,
+    "beta": null
+   },
+   "spieler:kopf/hair": {
+    "objekte": 2,
+    "spiegelTreue": null,
+    "spiegelEbene": 29.284,
+    "sp": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "zweiton": 0,
+    "weiss": 0,
+    "wt": 0,
+    "wtZiel": null,
+    "bunt": 7.78,
+    "pixel": 136,
+    "luma": 71.3,
+    "kante": 0.1919,
+    "kr": 32,
+    "strich": null,
+    "si": 0,
+    "bloecke": 0,
+    "glatt": null,
+    "glattDunkel": null,
+    "nyquist": null,
+    "beta": null
+   },
+   "spieler:kopf/haut": {
+    "objekte": 1,
+    "spiegelTreue": null,
+    "spiegelEbene": 29.162,
+    "sp": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "zweiton": 0,
+    "weiss": 0,
+    "wt": 0,
+    "wtZiel": null,
+    "bunt": 9.7,
+    "pixel": 349,
+    "luma": 21.15,
+    "kante": 0.1527,
+    "kr": 85,
+    "strich": null,
+    "si": 0,
+    "bloecke": 1,
+    "glatt": 1,
+    "glattDunkel": 1,
+    "nyquist": 0.2134,
+    "beta": -1.1489
+   }
+  },
+  "abstand": null,
+  "gesicht": {
+   "augeFrei": 0.5,
+   "lippeL": -17.28,
+   "lippeA": 14.05,
+   "hoehleL": 7.54,
+   "hoehleA": -7.46,
+   "haarDeckung": 1,
+   "weiss": 0.1397,
+   "proben": {
+    "iris": 116,
+    "irisSicht": 58,
+    "lippe": 25,
+    "hoehle": 10,
+    "wange": 76,
+    "kalotte": 314,
+    "haarPixel": 136
+   },
+   "zeilen": {
+    "auge": 529.5,
+    "mund": 538.2
+   },
+   "irisDecke": {}
+  },
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\067bd771-radeon\\mensch.K4_1-third.maske.png"
+ },
+ "zeit": null,
+ "ist": "mensch-kopf → spec/abnahme/soll-tafel.json",
+ "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 6 m · Luma 49.3 σ 31.4 schwarz 0.1 % weiß 0.0 % · Stand 18.546.243 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3",
+ "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\067bd771-radeon\\mensch.K4_1-third.png",
+ "gesamtMs": 17888
+}

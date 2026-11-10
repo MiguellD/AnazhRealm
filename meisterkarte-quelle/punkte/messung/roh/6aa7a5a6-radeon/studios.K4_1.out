@@ -1,0 +1,9 @@
+$ C:/Program Files/Git/bin/bash.exe -c set -u; K=$(cygpath -m 'C:\Users\micha\AppData\Local\Temp\claude\w3\pm'); A=$(cygpath -m 'C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\6aa7a5a6-radeon\studios.K4_1.json'); export WERKBANK_PORT=$((7804+20000)); node "$K/meisterkarte-quelle/punkte/stationen/k4-bild.cjs" "$A" 7804 128
+K4 garage: Differenz 0.2691 ·  (16.8 s: buehne 1.8 · welt 5.1 · bild 9.1 · schuss 0.8)
+K4 portale: Differenz 0.9463 ·  (17 s: buehne 2.7 · welt 1.2 · bild 12.6 · schuss 0.5)
+K4 schmiede: Differenz 0.2655 ·  (9.8 s: buehne 0.6 · welt 0.9 · bild 7.7 · schuss 0.6)
+K4 fachwerk: Differenz 0.9744 ·  (12 s: buehne 4 · welt 1.4 · bild 5.7 · schuss 0.8)
+K4 terrain: Differenz — · ROT: bild: {"ms":12015,"fehler":"ABNAHME ROT [Ziel Blickziel verdeckt von Laub baum_eiche in 41.24 m] · beweis · Sicht 0.0 % · Ziel Blickziel im Bild VERDECKT 43.01 m · Luma 64.6 σ 23.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.245 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 — die Aufnahme speicher (16.1 s: buehne 3.3 · welt 0.7)
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3

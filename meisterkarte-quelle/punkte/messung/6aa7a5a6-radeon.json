@@ -1,0 +1,6033 @@
+{
+ "sha": "6aa7a5a6bfd01df56192e66b658681dac67a27a9",
+ "geraet": "radeon",
+ "zeit": "2026-11-10T13:28:23.328Z",
+ "host": "MiguellD",
+ "je": {
+  "gelaende.K5#2": {
+   "gruen": true,
+   "zahl": "alle Rollen im Soll — wiese fein 1.1 · streu 0.5 · huf 0.4 · rad 0.1 | hang fein 4.3 · streu 1 · huf 0.8 · rad 1.2 cm (p95, schlechtere Sicht)",
+   "exit": 0,
+   "minuten": 0.55,
+   "gpu": "amd/rdna-3",
+   "s": 33.2,
+   "fremd": {
+    "s": 37.3,
+    "takte": 15,
+    "fremdS": 169.33,
+    "kerne": 4.543,
+    "fensterKerne": 7.453,
+    "namen": [
+     [
+      "MsMpEng.exe",
+      26.06
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-29976-profil-Tgyg47 --no-p",
+      22.22
+     ],
+     [
+      "chrome.exe --type=gpu-process --no-sandbox --disable-breakpad --headless=new --enable-unsa",
+      17.39
+     ]
+    ],
+    "dienerS": 26.56,
+    "diener": [
+     [
+      "System",
+      12.27
+     ],
+     [
+      "dwm.exe",
+      7.95
+     ]
+    ],
+    "eigenS": 87.48,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T11:52:39.989Z",
+   "abdruck": "b1a1a81f99ba",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "mensch.K4#1": {
+   "gruen": false,
+   "zahl": "Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.11 m · third ROT strich 0.5 Soll [1,1] — gesicht 0.5 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei 1 [0.9, 1] · lippeL -14.1 [-14, -4] · lippeA 14.27 [4, 14] · hoehleL -5.96 [-12, 0] · hoehleA 10.29 [-2, 6] · haarDeckung 1 [0.9, 1]",
+   "exit": 0,
+   "minuten": 0.71,
+   "grund": "ROT: Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.11 m · third ROT strich 0.5 Soll [1,1] — gesicht 0.5 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei 1 [0.9, 1] · lippeL -14.1 [-14, -4] · lippeA 14.27 [4, 14] · hoehleL -5.96 [-12, 0] · hoehleA 10.29 [-2, 6] · haarDeckung 1 [0.9, 1]",
+   "gpu": "amd/rdna-3",
+   "s": 42.8,
+   "fremd": {
+    "s": 46.7,
+    "takte": 18,
+    "fremdS": 363.42,
+    "kerne": 7.781,
+    "fensterKerne": 14.606,
+    "namen": [
+     [
+      "chrome.exe --type=gpu-process --no-sandbox --disable-breakpad --headless=new --enable-unsa",
+      221.05
+     ],
+     [
+      "MsMpEng.exe",
+      25.16
+     ],
+     [
+      "svchost.exe",
+      14.94
+     ]
+    ],
+    "dienerS": 28.52,
+    "diener": [
+     [
+      "System",
+      11.14
+     ],
+     [
+      "dwm.exe",
+      9.58
+     ]
+    ],
+    "eigenS": 73.44,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T11:55:05.774Z",
+   "abdruck": "54782bda6ad9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "vegetation.K1#1": {
+   "gruen": false,
+   "zahl": "ohne alle Schüsse: /zaehlen: {\"ms\":92,\"fehler\":\"Cannot read properties of undefined (reading 'size')\",\"stapel\":[\"at lies (evaluate at lade (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\werkbank.cjs:502:24), <anonymous>:176:61)\",\"at evaluate (evaluate at lade (C:\\\\Users\\\\micha\\\\AnazhRealm-p",
+   "exit": 0,
+   "minuten": 0.5,
+   "grund": "ROT: ohne alle Schüsse: /zaehlen: {\"ms\":92,\"fehler\":\"Cannot read properties of undefined (reading 'size')\",\"stapel\":[\"at lies (evaluate at lade (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\werkbank.cjs:502:24), <anonymous>:176:61)\",\"at evaluate (evaluate at lade (C:\\\\Users\\\\micha\\\\AnazhRealm-p",
+   "gpu": "amd/rdna-3",
+   "s": 29.8,
+   "fremd": {
+    "s": 31.6,
+    "takte": 13,
+    "fremdS": 78.72,
+    "kerne": 2.489,
+    "fensterKerne": 2.708,
+    "namen": [
+     [
+      "MsMpEng.exe",
+      15.69
+     ],
+     [
+      "svchost.exe",
+      11.91
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      10.23
+     ]
+    ],
+    "dienerS": 16.66,
+    "diener": [
+     [
+      "dwm.exe",
+      5.73
+     ],
+     [
+      "System",
+      5.47
+     ]
+    ],
+    "eigenS": 52.2,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T11:56:59.797Z",
+   "abdruck": "9c512329c038",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "vegetation.K5#1": {
+   "gruen": true,
+   "zahl": "Krone sommer 77284 px · winter 2786 px → Winter 0.036 × Sommer",
+   "exit": 0,
+   "minuten": 0.46,
+   "gpu": "amd/rdna-3",
+   "s": 27.6,
+   "fremd": {
+    "s": 29.8,
+    "takte": 12,
+    "fremdS": 63.03,
+    "kerne": 2.112,
+    "fensterKerne": 2.733,
+    "namen": [
+     [
+      "MsMpEng.exe",
+      14.19
+     ],
+     [
+      "svchost.exe",
+      9.34
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      6.73
+     ]
+    ],
+    "dienerS": 15.14,
+    "diener": [
+     [
+      "System",
+      5.06
+     ],
+     [
+      "dwm.exe",
+      5.03
+     ]
+    ],
+    "eigenS": 48.28,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T11:57:31.105Z",
+   "abdruck": "50b89569ba89",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "vegetation.K5#2": {
+   "gruen": false,
+   "zahl": "ohne alle Schüsse: /bild: {\"ms\":4507,\"fehler\":\"ABNAHME ROT [Ziel Blickziel verdeckt von Natur baum_tanne in 46.03 m] · beweis · Sicht 0.0 % · Ziel Blickziel im Bild VERDECKT 61.46 m · Luma 83.3 σ 41.8 schwarz 0.0 % weiß 0.0 % · Stand 18.546.245 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 — die Aufnahme speichert nich",
+   "exit": 0,
+   "minuten": 0.66,
+   "grund": "ROT: ohne alle Schüsse: /bild: {\"ms\":4507,\"fehler\":\"ABNAHME ROT [Ziel Blickziel verdeckt von Natur baum_tanne in 46.03 m] · beweis · Sicht 0.0 % · Ziel Blickziel im Bild VERDECKT 61.46 m · Luma 83.3 σ 41.8 schwarz 0.0 % weiß 0.0 % · Stand 18.546.245 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 — die Aufnahme speichert nich",
+   "gpu": "amd/rdna-3",
+   "s": 39.3,
+   "fremd": {
+    "s": 41.2,
+    "takte": 17,
+    "fremdS": 78.5,
+    "kerne": 1.903,
+    "fensterKerne": 2.096,
+    "namen": [
+     [
+      "MsMpEng.exe",
+      16.42
+     ],
+     [
+      "svchost.exe",
+      9.17
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      7.59
+     ]
+    ],
+    "dienerS": 16.63,
+    "diener": [
+     [
+      "dwm.exe",
+      6.13
+     ],
+     [
+      "WmiPrvSE.exe",
+      5.84
+     ]
+    ],
+    "eigenS": 47.47,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T11:58:00.819Z",
+   "abdruck": "747a7379b842",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "licht.K2#1": {
+   "gruen": true,
+   "zahl": "Verhältnis 5.18 (5–12,5), Schatten-Anteil 0.1931 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1499 px, Uhr 0.5 sunny, [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.15,
+   "gpu": "amd/rdna-3",
+   "s": 9,
+   "fremd": {
+    "s": 9.5,
+    "takte": 4,
+    "fremdS": 14.34,
+    "kerne": 1.515,
+    "fensterKerne": 1.515,
+    "namen": [
+     [
+      "svchost.exe",
+      2.73
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      2.53
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      2.48
+     ]
+    ],
+    "dienerS": 3.97,
+    "diener": [
+     [
+      "System",
+      1.44
+     ],
+     [
+      "dwm.exe",
+      1.38
+     ]
+    ],
+    "eigenS": 14.19,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "grund": "GRÜN trotz Fremd-Last: svchost.exe 2,7 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 2,5 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 2,5 CPU-s — 1,52 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 14,3 CPU-s in 9,5 s)",
+   "zeit": "2026-11-10T11:58:42.127Z",
+   "abdruck": "7b94e8afee98",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "licht.K2#2": {
+   "gruen": false,
+   "zahl": "Uhr 0.5 klar (Sonne 74.2°) 5.18, Schatten-Anteil 0.1931 · Uhr 0.27 klar (Sonne 7.2°) 0.964 UNGÜLTIG (A/B 0.698, A/C 1.000, 1474 px) · Uhr 0.73 klar (Sonne 6.7°) 1.028 UNGÜLTIG (A/B 0.701, A/C 1.000, 1496 px) · Uhr 0.5 Regen (Sonne 74.2°) 1.182 UNGÜLTIG (A/B 0.714, A/C 1.011, 1499 px) · Uhr 0.27 Regen (Sonne 7.2°) 1 · Uhr 0.73 Regen (Sonne 6.7°) 1 · Himmel zur Sonne 1.216 (13030/13030 px, Belichtung 42.2213/42.2213, 20 m über dem Boden) · Soll klar 0,5: 5–12,5, 0,08–0,20, Himmel ≥ 1,2; klar 0,27/0,73 ≥ 2,5; Regen ≤ 1,5 · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 1.04,
+   "grund": "ROT: Uhr 0.5 klar (Sonne 74.2°) 5.18, Schatten-Anteil 0.1931 · Uhr 0.27 klar (Sonne 7.2°) 0.964 UNGÜLTIG (A/B 0.698, A/C 1.000, 1474 px) · Uhr 0.73 klar (Sonne 6.7°) 1.028 UNGÜLTIG (A/B 0.701, A/C 1.000, 1496 px) · Uhr 0.5 Regen (Sonne 74.2°) 1.182 UNGÜLTIG (A/B 0.714, A/C 1.011, 1499 px) · Uhr 0.27 Regen (Sonne 7.2°) 1 · Uhr 0.73 Regen (Sonne 6.7°) 1 · Himmel zur Sonne 1.216 (13030/13030 px, Belichtung 42.2213/42.2213, 20 m über dem Boden) · Soll klar 0,5: 5–12,5, 0,08–0,20, Himmel ≥ 1,2; klar 0,27/0,73 ≥ 2,5; Regen ≤ 1,5 · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 62.2,
+   "fremd": {
+    "s": 62.8,
+    "takte": 26,
+    "fremdS": 149.59,
+    "kerne": 2.383,
+    "fensterKerne": 3.812,
+    "namen": [
+     [
+      "MsMpEng.exe",
+      19.44
+     ],
+     [
+      "svchost.exe",
+      18.14
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      17.8
+     ]
+    ],
+    "dienerS": 30.61,
+    "diener": [
+     [
+      "System",
+      11.41
+     ],
+     [
+      "dwm.exe",
+      10.17
+     ]
+    ],
+    "eigenS": 62.17,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T11:58:51.628Z",
+   "abdruck": "c940abb1ac1e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "material.K2#1": {
+   "gruen": true,
+   "zahl": "boden 0.5 m glatt 0 nyquist 0.1686 (Arm 0.498), 1 m glatt 0 nyquist 0.1733 (Arm 0.998), 2 m glatt 0.0073 nyquist 0.1741 (Arm 1.996) · fels 0.5 m glatt 0 nyquist 0.1826 (Arm 0.493), 1 m glatt 0 nyquist 0.1741 (Arm 0.99), 2 m glatt 0 nyquist 0.1722 (Arm 1.93) · Soll nyquist ≥ 0,15, glatt ≤ 0,10 · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 1.44,
+   "gpu": "amd/rdna-3",
+   "s": 86.2,
+   "fremd": {
+    "s": 88.3,
+    "takte": 36,
+    "fremdS": 306.86,
+    "kerne": 3.476,
+    "fensterKerne": 4.539,
+    "namen": [
+     [
+      "MsMpEng.exe",
+      51.55
+     ],
+     [
+      "node scripts/diag-altlasten.cjs --selftest",
+      45.63
+     ],
+     [
+      "svchost.exe",
+      29.08
+     ]
+    ],
+    "dienerS": 58.14,
+    "diener": [
+     [
+      "System",
+      22.17
+     ],
+     [
+      "dwm.exe",
+      20.78
+     ]
+    ],
+    "eigenS": 170.25,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T11:59:54.429Z",
+   "abdruck": "7bd6fb2920dc",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "lod.K5#1": {
+   "gruen": false,
+   "zahl": "Baum 5.15 px · Haus 0.12 px · Tor 0.18 px · Wagen 0.03 px (Soll ≤ 1 px am Wechsel-Abstand, 1920 × 1080) · gate L2: Exemplar 135 px, [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.67,
+   "grund": "ROT: Baum 5.15 px · Haus 0.12 px · Tor 0.18 px · Wagen 0.03 px (Soll ≤ 1 px am Wechsel-Abstand, 1920 × 1080) · gate L2: Exemplar 135 px, [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 40.3,
+   "fremd": {
+    "s": 44.8,
+    "takte": 18,
+    "fremdS": 88.78,
+    "kerne": 1.981,
+    "fensterKerne": 2.223,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      12.73
+     ],
+     [
+      "svchost.exe",
+      10.84
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      10.72
+     ]
+    ],
+    "dienerS": 24.78,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      13.17
+     ],
+     [
+      "dwm.exe",
+      6.02
+     ]
+    ],
+    "eigenS": 45.23,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T12:11:36.940Z",
+   "abdruck": "bc5292910674",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "lod.K2#1": {
+   "gruen": true,
+   "zahl": "Gehen 4 m/s: 0.0399 % Pop-Pixel je Sekunde (827 px, Soll ≤ 0,05 %), je Schritt 36*/24*/400*/55*/55*/57*/85*/115* (* = Stufen-Wechsel), Laub 216–216 m, perfTarget 17 ms, [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.48,
+   "gpu": "amd/rdna-3",
+   "s": 28.9,
+   "fremd": {
+    "s": 32.4,
+    "takte": 13,
+    "fremdS": 73.33,
+    "kerne": 2.26,
+    "fensterKerne": 2.653,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      13.3
+     ],
+     [
+      "svchost.exe",
+      8.44
+     ],
+     [
+      "MsMpEng.exe",
+      8.31
+     ]
+    ],
+    "dienerS": 18.63,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      9.86
+     ],
+     [
+      "dwm.exe",
+      4.2
+     ]
+    ],
+    "eigenS": 22.97,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "grund": "GRÜN trotz Fremd-Last: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 13,3 CPU-s · svchost.exe 8,4 CPU-s · MsMpEng.exe 8,3 CPU-s — 2,65 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 73,3 CPU-s in 32,4 s)",
+   "zeit": "2026-11-10T12:12:32.302Z",
+   "abdruck": "7dd0abe80bea",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "spielgang.K3#1": {
+   "gruen": true,
+   "zahl": "HUD deckt 2.86 % (1920×1080, im Spiel) · INP HUD 80 ms (50) · Menü 152 ms (20)",
+   "exit": 0,
+   "minuten": 0.31,
+   "gpu": "amd/rdna-3",
+   "s": 18.7,
+   "fremd": {
+    "s": 19.6,
+    "takte": 8,
+    "fremdS": 38.2,
+    "kerne": 1.95,
+    "fensterKerne": 2.136,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      7.89
+     ],
+     [
+      "MsMpEng.exe",
+      5.19
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      4.66
+     ]
+    ],
+    "dienerS": 12.45,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      5.72
+     ],
+     [
+      "dwm.exe",
+      3.44
+     ]
+    ],
+    "eigenS": 22.02,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "grund": "GRÜN trotz Fremd-Last: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 7,9 CPU-s · MsMpEng.exe 5,2 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 4,7 CPU-s — 2,14 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 38,2 CPU-s in 19,6 s)",
+   "zeit": "2026-11-10T12:14:14.215Z",
+   "abdruck": "689117d1994b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "klang.K2#1": {
+   "gruen": true,
+   "zahl": "r 0.83 bei Lag 0 (n 101), Spitze 0.83 bei 0 s, CV Bild 0.38 / Ohr 0.52, 49.7 fps, Klang an",
+   "exit": 0,
+   "minuten": 0.43,
+   "gpu": "amd/rdna-3",
+   "s": 26,
+   "fremd": {
+    "s": 30.6,
+    "takte": 12,
+    "fremdS": 100.75,
+    "kerne": 3.297,
+    "fensterKerne": 3.546,
+    "namen": [
+     [
+      "MsMpEng.exe",
+      33.67
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      11.77
+     ],
+     [
+      "svchost.exe",
+      8.48
+     ]
+    ],
+    "dienerS": 23.27,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      9.91
+     ],
+     [
+      "dwm.exe",
+      6.53
+     ]
+    ],
+    "eigenS": 43.8,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "grund": "GRÜN trotz Fremd-Last: MsMpEng.exe 33,7 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 11,8 CPU-s · svchost.exe 8,5 CPU-s — 3,55 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 100,8 CPU-s in 30,6 s)",
+   "zeit": "2026-11-10T12:15:44.750Z",
+   "abdruck": "2122ade470cc",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "ferne.K1#1": {
+   "gruen": true,
+   "zahl": "Koschmieder T/T_soll 0.91–1.03 bei 1/2/5/8 km, Uhr 0,5, 4 Azimute, K1-1 GRUEN, [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.95,
+   "gpu": "amd/rdna-3",
+   "s": 57.1,
+   "fremd": {
+    "s": 61.4,
+    "takte": 24,
+    "fremdS": 224.06,
+    "kerne": 3.65,
+    "fensterKerne": 4.305,
+    "namen": [
+     [
+      "MsMpEng.exe",
+      66.81
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      22.92
+     ],
+     [
+      "git.exe",
+      21.38
+     ]
+    ],
+    "dienerS": 53.34,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      18.97
+     ],
+     [
+      "System",
+      17.48
+     ]
+    ],
+    "eigenS": 106.02,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T12:16:26.178Z",
+   "abdruck": "b6d080cc7435",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "ferne.K2#1": {
+   "gruen": true,
+   "zahl": "Restkontrast am Rand 1.3–1.7 % bei 18.4–23.1 km (≤ 2 %), 4 Azimute, K2-1 GRUEN, [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.95,
+   "gpu": "amd/rdna-3",
+   "s": 57.1,
+   "fremd": {
+    "s": 61.4,
+    "takte": 24,
+    "fremdS": 224.06,
+    "kerne": 3.65,
+    "fensterKerne": 4.305,
+    "namen": [
+     [
+      "MsMpEng.exe",
+      66.81
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      22.92
+     ],
+     [
+      "git.exe",
+      21.38
+     ]
+    ],
+    "dienerS": 53.34,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      18.97
+     ],
+     [
+      "System",
+      17.48
+     ]
+    ],
+    "eigenS": 106.02,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T12:16:26.178Z",
+   "abdruck": "802ccdf49463",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "ferne.K1#1",
+   "modus": "session"
+  },
+  "ferne.K1#2": {
+   "gruen": false,
+   "zahl": "K1-2 ROT (1 Befunde) · Farbton 8 km 1.14–10.58° (≤ 10°) · Sonnenseite Uhr 0,5/0,27 1.25/5.025 (≥ 1,2) · fernes Weiß R/B 6.248 (≥ 1,3) · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.95,
+   "grund": "ROT: K1-2 ROT (1 Befunde) · Farbton 8 km 1.14–10.58° (≤ 10°) · Sonnenseite Uhr 0,5/0,27 1.25/5.025 (≥ 1,2) · fernes Weiß R/B 6.248 (≥ 1,3) · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 57.1,
+   "fremd": {
+    "s": 61.4,
+    "takte": 24,
+    "fremdS": 224.06,
+    "kerne": 3.65,
+    "fensterKerne": 4.305,
+    "namen": [
+     [
+      "MsMpEng.exe",
+      66.81
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      22.92
+     ],
+     [
+      "git.exe",
+      21.38
+     ]
+    ],
+    "dienerS": 53.34,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      18.97
+     ],
+     [
+      "System",
+      17.48
+     ]
+    ],
+    "eigenS": 106.02,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T12:16:26.178Z",
+   "abdruck": "230798f8028a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "ferne.K1#1",
+   "modus": "session"
+  },
+  "ferne.K2#2": {
+   "gruen": false,
+   "zahl": "K2-2 GRUEN · Kanten-Linie Hügel 0/0/0.47/0.47°, Gipfel 0/0/0/0.47° (< 1°) · Boden ungemessen · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.95,
+   "grund": "ROT: K2-2 GRUEN · Kanten-Linie Hügel 0/0/0.47/0.47°, Gipfel 0/0/0/0.47° (< 1°) · Boden ungemessen · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 57.1,
+   "fremd": {
+    "s": 61.4,
+    "takte": 24,
+    "fremdS": 224.06,
+    "kerne": 3.65,
+    "fensterKerne": 4.305,
+    "namen": [
+     [
+      "MsMpEng.exe",
+      66.81
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      22.92
+     ],
+     [
+      "git.exe",
+      21.38
+     ]
+    ],
+    "dienerS": 53.34,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      18.97
+     ],
+     [
+      "System",
+      17.48
+     ]
+    ],
+    "eigenS": 106.02,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T12:16:26.178Z",
+   "abdruck": "0c789f30b179",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "ferne.K1#1",
+   "modus": "session"
+  },
+  "material.K3#1": {
+   "gruen": false,
+   "zahl": "Haus L0 0.1527 · L1/L0 0.906 · L2/L0 0.901 · Fels nur L0 (findling, basalt, sediment, zacken, geroell, kristalle), Welt-Y 0.1781 · Soll 0,95–1,05 · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.71,
+   "grund": "ROT: Haus L0 0.1527 · L1/L0 0.906 · L2/L0 0.901 · Fels nur L0 (findling, basalt, sediment, zacken, geroell, kristalle), Welt-Y 0.1781 · Soll 0,95–1,05 · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 42.3,
+   "fremd": {
+    "s": 45.9,
+    "takte": 18,
+    "fremdS": 229.09,
+    "kerne": 4.99,
+    "fensterKerne": 5.752,
+    "namen": [
+     [
+      "MsMpEng.exe",
+      71.13
+     ],
+     [
+      "SearchIndexer.exe",
+      27.42
+     ],
+     [
+      "git reset --hard --no-recurse-submodules --quiet",
+      27.33
+     ]
+    ],
+    "dienerS": 47.81,
+    "diener": [
+     [
+      "System",
+      28.19
+     ],
+     [
+      "dwm.exe",
+      10.33
+     ]
+    ],
+    "eigenS": 105.69,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T12:18:32.968Z",
+   "abdruck": "67459632073f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "material.K3#2": {
+   "gruen": false,
+   "zahl": "haus@0.5 l1 0.906/l2 0.901 · birke@0.5 l1 1.007/karte 1.038 · fichte@0.5 l1 1.039/karte 0.961 · haus@0.27 l1 0.906/l2 0.901 · birke@0.27 l1 1.023/karte 1.054 · fichte@0.27 l1 1.039/karte 0.961 · Fels nur L0 · Soll 0,95–1,05 · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.71,
+   "grund": "ROT: haus@0.5 l1 0.906/l2 0.901 · birke@0.5 l1 1.007/karte 1.038 · fichte@0.5 l1 1.039/karte 0.961 · haus@0.27 l1 0.906/l2 0.901 · birke@0.27 l1 1.023/karte 1.054 · fichte@0.27 l1 1.039/karte 0.961 · Fels nur L0 · Soll 0,95–1,05 · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 42.3,
+   "fremd": {
+    "s": 45.9,
+    "takte": 18,
+    "fremdS": 229.09,
+    "kerne": 4.99,
+    "fensterKerne": 5.752,
+    "namen": [
+     [
+      "MsMpEng.exe",
+      71.13
+     ],
+     [
+      "SearchIndexer.exe",
+      27.42
+     ],
+     [
+      "git reset --hard --no-recurse-submodules --quiet",
+      27.33
+     ]
+    ],
+    "dienerS": 47.81,
+    "diener": [
+     [
+      "System",
+      28.19
+     ],
+     [
+      "dwm.exe",
+      10.33
+     ]
+    ],
+    "eigenS": 105.69,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T12:18:32.968Z",
+   "abdruck": "87023a1ea196",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "material.K3#1",
+   "modus": "session"
+  },
+  "material.K1#1": {
+   "gruen": false,
+   "zahl": "Welt/Labor 0,9–1,1: 6/13 · im realen Band beidseits: 10/13 — rinde 1.7861 ∉ [0.07, 0.12] L 0.0893 W 0.1595 · fels 0.7287 · boden 1.1683 · tor 0.1909 ∉ [0.25, 0.95] L 0.6496 W 0.124 · haut 2.4867 · haar 11.9145 · klinge 0.7946 ∉ [0.3, 0.95] L 0.3452 W 0.2743 · echt beide Seiten · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 1.25,
+   "grund": "ROT: Welt/Labor 0,9–1,1: 6/13 · im realen Band beidseits: 10/13 — rinde 1.7861 ∉ [0.07, 0.12] L 0.0893 W 0.1595 · fels 0.7287 · boden 1.1683 · tor 0.1909 ∉ [0.25, 0.95] L 0.6496 W 0.124 · haut 2.4867 · haar 11.9145 · klinge 0.7946 ∉ [0.3, 0.95] L 0.3452 W 0.2743 · echt beide Seiten · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 74.7,
+   "fremd": {
+    "s": 79.3,
+    "takte": 32,
+    "fremdS": 300.84,
+    "kerne": 3.792,
+    "fensterKerne": 4.362,
+    "namen": [
+     [
+      "MsMpEng.exe",
+      60.81
+     ],
+     [
+      "git reset --hard --no-recurse-submodules --quiet",
+      49.47
+     ],
+     [
+      "SearchIndexer.exe",
+      34.73
+     ]
+    ],
+    "dienerS": 149.97,
+    "diener": [
+     [
+      "System",
+      113.27
+     ],
+     [
+      "dwm.exe",
+      19.11
+     ]
+    ],
+    "eigenS": 172.7,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T12:19:18.708Z",
+   "abdruck": "3abc8b01e278",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "material.K1#2": {
+   "gruen": false,
+   "zahl": "Karte Welt 0.1772 · Labor terrain 0.1799, garage 0.18, portale 0.1799, schmiede 0.18, fachwerk 0.1799, koerperstudio 0.1799, tetrapoda 0.1799 · Soll 0.18 ± 0.003 · Zeilen NICHT alle im Soll und Band · echt beide Seiten · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 1.25,
+   "grund": "ROT: Karte Welt 0.1772 · Labor terrain 0.1799, garage 0.18, portale 0.1799, schmiede 0.18, fachwerk 0.1799, koerperstudio 0.1799, tetrapoda 0.1799 · Soll 0.18 ± 0.003 · Zeilen NICHT alle im Soll und Band · echt beide Seiten · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 74.7,
+   "fremd": {
+    "s": 79.3,
+    "takte": 32,
+    "fremdS": 300.84,
+    "kerne": 3.792,
+    "fensterKerne": 4.362,
+    "namen": [
+     [
+      "MsMpEng.exe",
+      60.81
+     ],
+     [
+      "git reset --hard --no-recurse-submodules --quiet",
+      49.47
+     ],
+     [
+      "SearchIndexer.exe",
+      34.73
+     ]
+    ],
+    "dienerS": 149.97,
+    "diener": [
+     [
+      "System",
+      113.27
+     ],
+     [
+      "dwm.exe",
+      19.11
+     ]
+    ],
+    "eigenS": 172.7,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T12:19:18.708Z",
+   "abdruck": "564911886853",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "material.K1#1",
+   "modus": "session"
+  },
+  "licht.K3#2": {
+   "gruen": false,
+   "zahl": "fichte@0.5 Karte und Gestalt teilen kein Pixel · fichte@0.27 Karte und Gestalt teilen kein Pixel · fichte@0.05 Karte und Gestalt teilen kein Pixel · tanne@0.5 Karte und Gestalt teilen kein Pixel · tanne@0.27 Karte und Gestalt teilen kein Pixel · tanne@0.05 Karte und Gestalt teilen kein Pixel · ring@0.5 0.987 · ring@0.27 1.008 · ring@0.05 0.994 · feld@0.5 0.947 · feld@0.27 0.926 · feld@0.05 0.961 · feld0@0.5 0.922 · feld0@0.27 0.94 · feld0@0.05 0.967 · feld90@0.5 0.937 · feld90@0.27 0.938 · feld90@0.05 0.974 · feld180@0.5 0.937 · feld180@0.27 0.936 · feld180@0.05 0.975 · panorama@0.5 0.943 · panorama@0.27 0.969 · panorama@0.05 0.959 · spiegel@0.5 1.056 · spiegel@0.27 0.949 · spiegel@0.05 1.003 · spiegel180@0.5 0.942 · spiegel180@0.27 0.972 · spiegel180@0.05 0.995 · wasser@0.5 0.915 · wasser@0.27 0.95 · wasser@0.05 0.94 · Soll 0,9–1,1 · [linse-gpu] amd/rdna-3",
+   "exit": 1,
+   "minuten": 0.79,
+   "grund": "ROT: fichte@0.5 Karte und Gestalt teilen kein Pixel · fichte@0.27 Karte und Gestalt teilen kein Pixel · fichte@0.05 Karte und Gestalt teilen kein Pixel · tanne@0.5 Karte und Gestalt teilen kein Pixel · tanne@0.27 Karte und Gestalt teilen kein Pixel · tanne@0.05 Karte und Gestalt teilen kein Pixel · ring@0.5 0.987 · ring@0.27 1.008 · ring@0.05 0.994 · feld@0.5 0.947 · feld@0.27 0.926 · feld@0.05 0.961 · feld0@0.5 0.922 · feld0@0.27 0.94 · feld0@0.05 0.967 · feld90@0.5 0.937 · feld90@0.27 0.938 · feld90@0.05 0.974 · feld180@0.5 0.937 · feld180@0.27 0.936 · feld180@0.05 0.975 · panorama@0.5 0.943 · panorama@0.27 0.969 · panorama@0.05 0.959 · spiegel@0.5 1.056 · spiegel@0.27 0.949 · spiegel@0.05 1.003 · spiegel180@0.5 0.942 · spiegel180@0.27 0.972 · spiegel180@0.05 0.995 · wasser@0.5 0.915 · wasser@0.27 0.95 · wasser@0.05 0.94 · Soll 0,9–1,1 · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 47.4,
+   "fremd": {
+    "s": 51.6,
+    "takte": 21,
+    "fremdS": 128.5,
+    "kerne": 2.49,
+    "fensterKerne": 2.887,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      14.34
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      13.58
+     ],
+     [
+      "MsMpEng.exe",
+      11.86
+     ]
+    ],
+    "dienerS": 29.16,
+    "diener": [
+     [
+      "System",
+      10.67
+     ],
+     [
+      "dwm.exe",
+      9.63
+     ]
+    ],
+    "eigenS": 124.22,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T12:22:50.585Z",
+   "abdruck": "718982443ac8",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "schatten.K3#1": {
+   "gruen": true,
+   "zahl": "fuss Band 36.4 % des freien Bodens (frei mit/ohne 1, 20 Punkte gesehen, Sicht 1) · sockel Band 33.2 % des freien Bodens (frei mit/ohne 1, 20 Punkte gesehen, Sicht 1) (Soll 30–60 %, Himmel allein; Platz [-739,-837] Grün 0.0004) · Ort [-841,-861] · 1.21 s · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.17,
+   "gpu": "amd/rdna-3",
+   "s": 10.5,
+   "fremd": {
+    "s": 14.7,
+    "takte": 6,
+    "fremdS": 46,
+    "kerne": 3.135,
+    "fensterKerne": 3.352,
+    "namen": [
+     [
+      "MsMpEng.exe",
+      6.91
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      4.33
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.58
+     ]
+    ],
+    "dienerS": 9.23,
+    "diener": [
+     [
+      "System",
+      3.69
+     ],
+     [
+      "dwm.exe",
+      2.8
+     ]
+    ],
+    "eigenS": 18.5,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T12:24:02.632Z",
+   "abdruck": "2c1220d7339d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "schatten.K2#1",
+   "modus": "session"
+  },
+  "schatten.K4#1": {
+   "gruen": true,
+   "zahl": "Gewinn 68.0 % (Wand 0.2388 gegen 0.1422 mit Boden-Albedo 0; Soll ≥ 10 %), N·L -0.2722, Sonne 74.2°, Boden 0.5211 · Ort [-841,-861] · 2.47 s · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.17,
+   "gpu": "amd/rdna-3",
+   "s": 10.5,
+   "fremd": {
+    "s": 14.7,
+    "takte": 6,
+    "fremdS": 46,
+    "kerne": 3.135,
+    "fensterKerne": 3.352,
+    "namen": [
+     [
+      "MsMpEng.exe",
+      6.91
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      4.33
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.58
+     ]
+    ],
+    "dienerS": 9.23,
+    "diener": [
+     [
+      "System",
+      3.69
+     ],
+     [
+      "dwm.exe",
+      2.8
+     ]
+    ],
+    "eigenS": 18.5,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T12:24:02.632Z",
+   "abdruck": "0947391378b3",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "schatten.K2#1",
+   "modus": "session"
+  },
+  "schatten.K5#1": {
+   "gruen": false,
+   "zahl": "Kontrast 0.989:1 (Soll ≥ 3:1) am Pfosten 2 m von glutbrunnen (7.9246 m vom Spieler, im Pool true, im Blick true, Boden gesehen 0), ohne Pfosten 1.2579, Uhr 0 · Ort [-841,-861] · 1.94 s · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.17,
+   "grund": "ROT: Kontrast 0.989:1 (Soll ≥ 3:1) am Pfosten 2 m von glutbrunnen (7.9246 m vom Spieler, im Pool true, im Blick true, Boden gesehen 0), ohne Pfosten 1.2579, Uhr 0 · Ort [-841,-861] · 1.94 s · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 10.5,
+   "fremd": {
+    "s": 14.7,
+    "takte": 6,
+    "fremdS": 46,
+    "kerne": 3.135,
+    "fensterKerne": 3.352,
+    "namen": [
+     [
+      "MsMpEng.exe",
+      6.91
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      4.33
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.58
+     ]
+    ],
+    "dienerS": 9.23,
+    "diener": [
+     [
+      "System",
+      3.69
+     ],
+     [
+      "dwm.exe",
+      2.8
+     ]
+    ],
+    "eigenS": 18.5,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T12:24:02.632Z",
+   "abdruck": "7852171edeaa",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "schatten.K2#1",
+   "modus": "session"
+  },
+  "licht.K4#1": {
+   "gruen": true,
+   "zahl": "Maß durchlass: r 0.9888 bei Verschiebung [0,-3] Blöcke à 18.6722 m in 5 s (11.2033 m/s; ohne Verschiebung 0.8721; Soll r ≥ 0,6, das Muster zieht), der Zug erklärt 0.9121 der Änderung 0.0367 (≥ 0,5), Durchlass-σ 0.0727 (≥ 0,03) über 0.9708 besonnten Blöcken (≥ 0,3), Deckung [0,0.4] · Ort [-841,-861] · 1.09 s · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.17,
+   "gpu": "amd/rdna-3",
+   "s": 10.5,
+   "fremd": {
+    "s": 14.7,
+    "takte": 6,
+    "fremdS": 46,
+    "kerne": 3.135,
+    "fensterKerne": 3.352,
+    "namen": [
+     [
+      "MsMpEng.exe",
+      6.91
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      4.33
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.58
+     ]
+    ],
+    "dienerS": 9.23,
+    "diener": [
+     [
+      "System",
+      3.69
+     ],
+     [
+      "dwm.exe",
+      2.8
+     ]
+    ],
+    "eigenS": 18.5,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T12:24:02.632Z",
+   "abdruck": "d11a38e18be7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "schatten.K2#1",
+   "modus": "session"
+  },
+  "ferne.K3#1": {
+   "gruen": false,
+   "zahl": "Kohärenz 0.372 über 273 Kamm-Spalten 0,4–4 km (Soll < 0,3; REF real-mischwald 0,160), Umriss-Schwankung 6.4169 m über 256 Spalten 1,5–2,5 km (Soll ≥ 3 m), Relief über dem Gesetz 2.8491 m, Azimut 180° · Ort [-841,-861] · 1.87 s · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.17,
+   "grund": "ROT: Kohärenz 0.372 über 273 Kamm-Spalten 0,4–4 km (Soll < 0,3; REF real-mischwald 0,160), Umriss-Schwankung 6.4169 m über 256 Spalten 1,5–2,5 km (Soll ≥ 3 m), Relief über dem Gesetz 2.8491 m, Azimut 180° · Ort [-841,-861] · 1.87 s · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 10.5,
+   "fremd": {
+    "s": 14.7,
+    "takte": 6,
+    "fremdS": 46,
+    "kerne": 3.135,
+    "fensterKerne": 3.352,
+    "namen": [
+     [
+      "MsMpEng.exe",
+      6.91
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      4.33
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.58
+     ]
+    ],
+    "dienerS": 9.23,
+    "diener": [
+     [
+      "System",
+      3.69
+     ],
+     [
+      "dwm.exe",
+      2.8
+     ]
+    ],
+    "eigenS": 18.5,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T12:24:02.632Z",
+   "abdruck": "283edff7491d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "schatten.K2#1",
+   "modus": "session"
+  },
+  "ferne.K4#1": {
+   "gruen": true,
+   "zahl": "Schatten-/Lichthang 0.138 (je N·L, ohne Luft, am Pixel des Orts; Soll ≤ 0,4) aus 21/64 Orten im Bild, Auge 1500 m, Grat 5.3294 km, Sonne 5.0087° (Uhr 0.735) · Ort [-841,-861] · 0.38 s · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.17,
+   "gpu": "amd/rdna-3",
+   "s": 10.5,
+   "fremd": {
+    "s": 14.7,
+    "takte": 6,
+    "fremdS": 46,
+    "kerne": 3.135,
+    "fensterKerne": 3.352,
+    "namen": [
+     [
+      "MsMpEng.exe",
+      6.91
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      4.33
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.58
+     ]
+    ],
+    "dienerS": 9.23,
+    "diener": [
+     [
+      "System",
+      3.69
+     ],
+     [
+      "dwm.exe",
+      2.8
+     ]
+    ],
+    "eigenS": 18.5,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T12:24:02.632Z",
+   "abdruck": "b64151191ce8",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "schatten.K2#1",
+   "modus": "session"
+  },
+  "lod.K4#1": {
+   "gruen": false,
+   "zahl": "Luma-Sprung 7.27 % (Soll < 2 %) über 13957 px, die der Wechsel ändert (Auge 4 m; die Klassen zusammen), zweiton 0/0, Uhr 0.5 · Ort [-841,-861] · 1.14 s · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.17,
+   "grund": "ROT: Luma-Sprung 7.27 % (Soll < 2 %) über 13957 px, die der Wechsel ändert (Auge 4 m; die Klassen zusammen), zweiton 0/0, Uhr 0.5 · Ort [-841,-861] · 1.14 s · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 10.5,
+   "fremd": {
+    "s": 14.7,
+    "takte": 6,
+    "fremdS": 46,
+    "kerne": 3.135,
+    "fensterKerne": 3.352,
+    "namen": [
+     [
+      "MsMpEng.exe",
+      6.91
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      4.33
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.58
+     ]
+    ],
+    "dienerS": 9.23,
+    "diener": [
+     [
+      "System",
+      3.69
+     ],
+     [
+      "dwm.exe",
+      2.8
+     ]
+    ],
+    "eigenS": 18.5,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T12:24:02.632Z",
+   "abdruck": "1f3ef123b2e4",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "schatten.K2#1",
+   "modus": "session"
+  },
+  "affekt.K4#2": {
+   "gruen": false,
+   "zahl": "spieler → — (0 ms) · nexus → — (0 ms) · ROT spieler: ohne Modell (die KI der Sitzung ist aus); nexus: ohne Modell (die KI der Sitzung ist aus)",
+   "exit": 0,
+   "minuten": 0.01,
+   "grund": "ROT: spieler → — (0 ms) · nexus → — (0 ms) · ROT spieler: ohne Modell (die KI der Sitzung ist aus); nexus: ohne Modell (die KI der Sitzung ist aus)",
+   "gpu": "amd/rdna-3",
+   "s": 0.5,
+   "fremd": {
+    "s": 2.5,
+    "takte": 1,
+    "fremdS": 6.8,
+    "kerne": 2.703,
+    "fensterKerne": 2.703,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      0.78
+     ],
+     [
+      "MsMpEng.exe",
+      0.7
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      0.64
+     ]
+    ],
+    "dienerS": 1.42,
+    "diener": [
+     [
+      "dwm.exe",
+      0.58
+     ],
+     [
+      "System",
+      0.47
+     ]
+    ],
+    "eigenS": 2,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T12:25:22.646Z",
+   "abdruck": "1228061bda0b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "ferne.K5#1": {
+   "gruen": true,
+   "zahl": "Sicht im Sturm 1559 m (Azimute 1516/1550/1559/1746, Soll 1 500 m ±15 %), [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.29,
+   "gpu": "amd/rdna-3",
+   "s": 17.2,
+   "fremd": {
+    "s": 19.5,
+    "takte": 8,
+    "fremdS": 40.14,
+    "kerne": 2.06,
+    "fensterKerne": 2.135,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      6.23
+     ],
+     [
+      "MsMpEng.exe",
+      4.94
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      4.25
+     ]
+    ],
+    "dienerS": 10,
+    "diener": [
+     [
+      "dwm.exe",
+      3.61
+     ],
+     [
+      "System",
+      3.23
+     ]
+    ],
+    "eigenS": 31.16,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T12:25:24.524Z",
+   "abdruck": "4e2bdb4af190",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "material.K4#1": {
+   "gruen": false,
+   "zahl": "lack spiegelTreue 0.2699 (5372 px in der Ebene, 20 Blöcke, Einfall 81.9°, Normale [-0.004,1,0.002]) · glas spiegelTreue undefined UNGÜLTIG (keine Ebene) · Soll ≥ 0,5 an Lack oder Scheibe · first Uhr 0.5000000000000232 sunny · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.12,
+   "grund": "ROT: lack spiegelTreue 0.2699 (5372 px in der Ebene, 20 Blöcke, Einfall 81.9°, Normale [-0.004,1,0.002]) · glas spiegelTreue undefined UNGÜLTIG (keine Ebene) · Soll ≥ 0,5 an Lack oder Scheibe · first Uhr 0.5000000000000232 sunny · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 7.4,
+   "fremd": {
+    "s": 9.6,
+    "takte": 4,
+    "fremdS": 20.61,
+    "kerne": 2.143,
+    "fensterKerne": 2.143,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      3.11
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      2.89
+     ],
+     [
+      "MsMpEng.exe",
+      2.56
+     ]
+    ],
+    "dienerS": 5.47,
+    "diener": [
+     [
+      "System",
+      2.44
+     ],
+     [
+      "dwm.exe",
+      1.44
+     ]
+    ],
+    "eigenS": 18.95,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T12:25:43.901Z",
+   "abdruck": "ab82d80519be",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "material.K5#1": {
+   "gruen": true,
+   "zahl": "3 von 4 Klassen im Band (Soll ≥ 3): eisen θ50 10.265° NEBEN dem Band, ρ 7.15 im Band — black-oxidized-steel · bronze θ50 3.305° im Band, ρ 82.57 im Band — alum-bronze 7,79°/51,4, brass 1,31°/471,3 · quarz θ50 1.113° im Band, ρ 490.52 im Band — black-obsidian 0,63°/698,5, aventurnine 1,45°/437,3 · stahl θ50 0.48° im Band, ρ 848.76 im Band — steel, ss440, chrome-steel · Sonne 74.2°, Uhr 0.5 sunny, [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.25,
+   "gpu": "amd/rdna-3",
+   "s": 14.9,
+   "fremd": {
+    "s": 17,
+    "takte": 7,
+    "fremdS": 44.64,
+    "kerne": 2.627,
+    "fensterKerne": 2.831,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      5.41
+     ],
+     [
+      "MsMpEng.exe",
+      5
+     ],
+     [
+      "git.exe -c protocol.ext.allow=never -c core.alternateRefsCommand=f() { git --g… $1 for-eac",
+      4.23
+     ]
+    ],
+    "dienerS": 8.69,
+    "diener": [
+     [
+      "System",
+      3.06
+     ],
+     [
+      "dwm.exe",
+      3
+     ]
+    ],
+    "eigenS": 11.88,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T12:25:53.621Z",
+   "abdruck": "e10e7d60e9f2",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "wetter.K2#2": {
+   "gruen": true,
+   "zahl": "Wiese ego porös 0.782 (n 25920) · Glanz 16 · Regenbild 0.643 · Regen 144 | third porös 0.782 (n 25863) · Glanz 16 · Regenbild 0.605 · Regen 92",
+   "exit": 0,
+   "minuten": 0.3,
+   "gpu": "amd/rdna-3",
+   "s": 18,
+   "fremd": {
+    "s": 22.2,
+    "takte": 9,
+    "fremdS": 48.38,
+    "kerne": 2.179,
+    "fensterKerne": 2.592,
+    "namen": [
+     [
+      "MsMpEng.exe",
+      7.23
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      5
+     ],
+     [
+      "bash.exe -c source /c/Users/micha/.claude/shell-sna… origin/main dev/null git -C $R ls-rem",
+      4.7
+     ]
+    ],
+    "dienerS": 10.19,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      3.61
+     ],
+     [
+      "System",
+      3.31
+     ]
+    ],
+    "eigenS": 26.2,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T12:28:46.400Z",
+   "abdruck": "ad6438959910",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "wetter.K2#1": {
+   "gruen": true,
+   "zahl": "Dorf porös draußen 0.668 · innen unter dem Dach 1 · dicht 1 · Regen innen 0 / draußen 33 (n 6015/13289)",
+   "exit": 0,
+   "minuten": 0.29,
+   "gpu": "amd/rdna-3",
+   "s": 17.4,
+   "fremd": {
+    "s": 19.8,
+    "takte": 8,
+    "fremdS": 63.56,
+    "kerne": 3.218,
+    "fensterKerne": 3.471,
+    "namen": [
+     [
+      "git.exe -c protocol.ext.allow=never -c core.alternateRefsCommand=f() { git --g… $1 for-eac",
+      15.09
+     ],
+     [
+      "MsMpEng.exe",
+      8.5
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      6.73
+     ]
+    ],
+    "dienerS": 11.88,
+    "diener": [
+     [
+      "System",
+      4.64
+     ],
+     [
+      "dwm.exe",
+      4.53
+     ]
+    ],
+    "eigenS": 43.55,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T12:34:15.056Z",
+   "abdruck": "924f98239f52",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "physik.K2#2": {
+   "gruen": false,
+   "zahl": "Wagen fahrzeug_supersport 81.67 m/s (vmax 68.06 × 1.2), 20/20 Läufe ohne Durchtritt, Eindringen max 0 m · gestoßener Bär 68.95 m/s · im Bild an der Mauer: Wagen Spalt max 0.118 m, Eindringen max 0.021 m; Bär Spalt max 0 m, Eindringen max 0.158 m · 8 Verstöße (OFFEN (V) BILD ≠ KOLLISION: wagen 81.66 m/s @60 → _t_kontakt_mauer#2635 — im Bild Spalt 0 )",
+   "exit": 0,
+   "minuten": 1.1,
+   "grund": "ROT: Wagen fahrzeug_supersport 81.67 m/s (vmax 68.06 × 1.2), 20/20 Läufe ohne Durchtritt, Eindringen max 0 m · gestoßener Bär 68.95 m/s · im Bild an der Mauer: Wagen Spalt max 0.118 m, Eindringen max 0.021 m; Bär Spalt max 0 m, Eindringen max 0.158 m · 8 Verstöße (OFFEN (V) BILD ≠ KOLLISION: wagen 81.66 m/s @60 → _t_kontakt_mauer#2635 — im Bild Spalt 0 )",
+   "gpu": "amd/rdna-3",
+   "s": 65.8,
+   "fremd": {
+    "s": 70.2,
+    "takte": 29,
+    "fremdS": 134.34,
+    "kerne": 1.914,
+    "fensterKerne": 2.97,
+    "namen": [
+     [
+      "svchost.exe",
+      23.53
+     ],
+     [
+      "MsMpEng.exe",
+      18.44
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      16.75
+     ]
+    ],
+    "dienerS": 48.63,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      16.81
+     ],
+     [
+      "System",
+      16.14
+     ]
+    ],
+    "eigenS": 136.44,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T12:36:04.819Z",
+   "abdruck": "248052c0fc5e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "tiere.K1#2": {
+   "gruen": false,
+   "zahl": "(a)–(d) auf der Karte ROT: Kohäsion 1 / 1, Φ null über 0 Takte, letzter Flüchter 0 s (0 aus zweiter Hand), Fluchtweg 32.6 m, ID 600 s hält (Flucht 4 / 9 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 14.9 m: 46.9 m 5/5 fliehen, 4 sichtbar, 2 Fleck(en) (195 px) · 51.1 m 5/5 fliehen, 4 sichtbar, 2 Fleck(en) (208 px) · 55.3 m 5/5 fliehen, 4 sichtbar, 2 Fleck(en) (205 px)",
+   "exit": 0,
+   "minuten": 0.82,
+   "grund": "ROT: (a)–(d) auf der Karte ROT: Kohäsion 1 / 1, Φ null über 0 Takte, letzter Flüchter 0 s (0 aus zweiter Hand), Fluchtweg 32.6 m, ID 600 s hält (Flucht 4 / 9 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 14.9 m: 46.9 m 5/5 fliehen, 4 sichtbar, 2 Fleck(en) (195 px) · 51.1 m 5/5 fliehen, 4 sichtbar, 2 Fleck(en) (208 px) · 55.3 m 5/5 fliehen, 4 sichtbar, 2 Fleck(en) (205 px)",
+   "gpu": "amd/rdna-3",
+   "s": 49,
+   "fremd": {
+    "s": 51.9,
+    "takte": 21,
+    "fremdS": 78.92,
+    "kerne": 1.521,
+    "fensterKerne": 1.943,
+    "namen": [
+     [
+      "svchost.exe",
+      21.03
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      10.97
+     ],
+     [
+      "MsMpEng.exe",
+      9.09
+     ]
+    ],
+    "dienerS": 35.8,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      13.95
+     ],
+     [
+      "System",
+      10.92
+     ]
+    ],
+    "eigenS": 87.81,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T12:37:16.992Z",
+   "abdruck": "4cbb53e14031",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "affekt.K1#2": {
+   "gruen": true,
+   "zahl": "Tag first GRÜN: fällen -0.12 -4.7 dB · töten -0.03 -1.17 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.74 dB · töten -0.03 -1.17 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25)",
+   "exit": 0,
+   "minuten": 0.08,
+   "gpu": "amd/rdna-3",
+   "s": 4.6,
+   "fremd": {
+    "s": 7.2,
+    "takte": 3,
+    "fremdS": 13.03,
+    "kerne": 1.805,
+    "fensterKerne": 1.805,
+    "namen": [
+     [
+      "svchost.exe",
+      2.7
+     ],
+     [
+      "MsMpEng.exe",
+      1.89
+     ],
+     [
+      "bash.exe w4/wache-k10.sh",
+      1.61
+     ]
+    ],
+    "dienerS": 4.64,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      1.69
+     ],
+     [
+      "dwm.exe",
+      1.3
+     ]
+    ],
+    "eigenS": 11.17,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T12:38:15.111Z",
+   "abdruck": "cdeda7f5bf5c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "oekologie.K4#2": {
+   "gruen": true,
+   "zahl": "first GRÜN: Wurf 6 Wölfe, umstellt 16.25 s, Furcht chaos 0.884 (Gegenlauf 0), 4 Jäger fallen, Triumph joy+hope 0.462 (Gegenlauf 0)",
+   "exit": 0,
+   "minuten": 0.15,
+   "gpu": "amd/rdna-3",
+   "s": 8.9,
+   "fremd": {
+    "s": 11.9,
+    "takte": 5,
+    "fremdS": 19.3,
+    "kerne": 1.623,
+    "fensterKerne": 1.623,
+    "namen": [
+     [
+      "svchost.exe",
+      4.2
+     ],
+     [
+      "MsMpEng.exe",
+      2.73
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      2.66
+     ]
+    ],
+    "dienerS": 6.88,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      2.63
+     ],
+     [
+      "dwm.exe",
+      2.06
+     ]
+    ],
+    "eigenS": 20.31,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T12:38:26.047Z",
+   "abdruck": "8e4eb85ac8c6",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "haar.K1#1": {
+   "gruen": true,
+   "zahl": "arm GRÜN strich 0.6129 Soll [0.4358,0.6538] · third GRÜN strich 0.5593 Soll [0.4358,0.6538]",
+   "exit": 0,
+   "minuten": 0.71,
+   "gpu": "amd/rdna-3",
+   "s": 42.6,
+   "fremd": {
+    "s": 45.5,
+    "takte": 19,
+    "fremdS": 76.3,
+    "kerne": 1.676,
+    "fensterKerne": 1.83,
+    "namen": [
+     [
+      "svchost.exe",
+      13.61
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      10.19
+     ],
+     [
+      "MsMpEng.exe",
+      9.02
+     ]
+    ],
+    "dienerS": 28.34,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      10.98
+     ],
+     [
+      "System",
+      9.03
+     ]
+    ],
+    "eigenS": 43.34,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T12:38:37.315Z",
+   "abdruck": "69a7f9e9bd08",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "fahrzeug.K5#1": {
+   "gruen": true,
+   "zahl": "Federung im Bild: Drift-Wank 8.454 gegen Glatt 0.327 mm, Stoß-Antwort Glatt/Hang 7.561/7.335 mm (Mutante 2.241/1.612) · Rumble Drift 1 gegen Glatt 0.002, Summen 0.566/0.526 (Mutante 0, 0.137) · Motor 66.7 Hz je 1000 Upm (klang-zensus F) · RM1–3 ✅✅✅",
+   "exit": 0,
+   "minuten": 0.35,
+   "gpu": "amd/rdna-3",
+   "s": 21.2,
+   "fremd": {
+    "s": 24.3,
+    "takte": 10,
+    "fremdS": 48.77,
+    "kerne": 2.007,
+    "fensterKerne": 2.178,
+    "namen": [
+     [
+      "svchost.exe",
+      9.44
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      6.64
+     ],
+     [
+      "MsMpEng.exe",
+      4.3
+     ]
+    ],
+    "dienerS": 15.02,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      6.39
+     ],
+     [
+      "System",
+      3.89
+     ]
+    ],
+    "eigenS": 46.8,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T12:45:19.661Z",
+   "abdruck": "08857a40d5d8",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "fahrzeug.K2#1": {
+   "gruen": false,
+   "zahl": "in 4 Teilen · Route 2440 m (Weg 99.1 %), gefahren 1138 m · Steckenbleiber 1 · über 0,8 · Bezug 82.4 % von 6480 Sim-Schritten (Bezug Ø 44.2 km/h, vmax 229.8 km/h) · Boden Wiese 54.7 % / Wald 14.2 % / Dorf 31.1 % · außer Soll: an, steck · Exit 1",
+   "exit": 1,
+   "minuten": 2.04,
+   "grund": "ROT: in 4 Teilen · Route 2440 m (Weg 99.1 %), gefahren 1138 m · Steckenbleiber 1 · über 0,8 · Bezug 82.4 % von 6480 Sim-Schritten (Bezug Ø 44.2 km/h, vmax 229.8 km/h) · Boden Wiese 54.7 % / Wald 14.2 % / Dorf 31.1 % · außer Soll: an, steck · Exit 1",
+   "gpu": "amd/rdna-3",
+   "s": 38.3,
+   "teile": [
+    38.1,
+    38.2,
+    38.3,
+    7.7
+   ],
+   "fremd": {
+    "s": 127.3,
+    "takte": 50,
+    "fremdS": 337.95,
+    "kerne": 2.655,
+    "fensterKerne": 4.509,
+    "namen": [
+     [
+      "svchost.exe",
+      52.11
+     ],
+     [
+      "MsMpEng.exe",
+      49.27
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      41.19
+     ]
+    ],
+    "dienerS": 106.3,
+    "diener": [
+     [
+      "System",
+      40.67
+     ],
+     [
+      "WmiPrvSE.exe",
+      39.52
+     ]
+    ],
+    "eigenS": 548.89,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T12:46:02.550Z",
+   "abdruck": "2aa064c681c6",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "fahrzeug.K2#2": {
+   "gruen": false,
+   "zahl": "C ROT: der Verkehr der Stadt 10 Uhr ❌ fahrend je Minute [null] · ohne Ziel erreicht: Wagen 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 (0 Ankünfte) · bewegter Eintrag mit ve · 23 Uhr ❌ fahrend je Minute [null] · ohne Ziel erreicht: Wagen 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 (0 Ankünfte) · ohne Probe: 25°-Hang, Furt, Ego und Third — die 2 wartet auf sie",
+   "exit": 1,
+   "minuten": 1.17,
+   "grund": "ROT: C ROT: der Verkehr der Stadt 10 Uhr ❌ fahrend je Minute [null] · ohne Ziel erreicht: Wagen 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 (0 Ankünfte) · bewegter Eintrag mit ve · 23 Uhr ❌ fahrend je Minute [null] · ohne Ziel erreicht: Wagen 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 (0 Ankünfte) · ohne Probe: 25°-Hang, Furt, Ego und Third — die 2 wartet auf sie",
+   "gpu": "amd/rdna-3",
+   "s": 70.1,
+   "fremd": {
+    "s": 72.8,
+    "takte": 30,
+    "fremdS": 138.33,
+    "kerne": 1.901,
+    "fensterKerne": 2.149,
+    "namen": [
+     [
+      "svchost.exe",
+      22.95
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      21.95
+     ],
+     [
+      "bash.exe w4/wache-k10.sh",
+      17.66
+     ]
+    ],
+    "dienerS": 41.39,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      18.92
+     ],
+     [
+      "dwm.exe",
+      11.13
+     ]
+    ],
+    "eigenS": 247.47,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T12:48:33.907Z",
+   "abdruck": "774ab399b0f2",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "klang.K4#1": {
+   "gruen": true,
+   "zahl": "gras 6075 Hz (n 11) · laub 8572 Hz (n 9) · stein 4826 Hz (n 8) — kleinster Abstand 1249 Hz",
+   "exit": 0,
+   "minuten": 0.41,
+   "gpu": "amd/rdna-3",
+   "s": 24.6,
+   "fremd": {
+    "s": 29.6,
+    "takte": 12,
+    "fremdS": 49.91,
+    "kerne": 1.685,
+    "fensterKerne": 2.239,
+    "namen": [
+     [
+      "svchost.exe",
+      10.19
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      7.89
+     ],
+     [
+      "MsMpEng.exe",
+      5.52
+     ]
+    ],
+    "dienerS": 19.25,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      8.17
+     ],
+     [
+      "System",
+      5.94
+     ]
+    ],
+    "eigenS": 56.36,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T12:50:04.413Z",
+   "abdruck": "afd4cba1236c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "klang.K4#2": {
+   "gruen": true,
+   "zahl": "✅ Schritte gras 6075 Hz (n 11) · laub 8572 Hz (n 9) · stein 4826 Hz (n 8), kleinster Abstand 1249 Hz · ✅ Motor r 1.0000 (20 Abgriffe, 66.7 Hz je 1000 Upm) · ✅ Landung 0.42 dB je m/s, r 0.9975 (1 m 4.4 m/s -56.3 dB · 2 m 6.2 m/s -55.3 dB · 4 m 8.8 m/s -54.1 dB · 8 m 12.6 m/s -52.7 dB · 12 m 15.4 m/s -51.7 dB) · ✅ Doppler Steigung 0.9999 r 1.0000 (-9 m 21.3 m/s 1.0662/1.0662 · -4.5 m 16.3 m/s 1.0500/1.0500 · -2 m 8.5 m/s 1.0253/1.0253 · 2 m -10.3 m/s 0.9710/0.9710 · 4.5 m -15.5 m/s 0.9567/0.9567 · 9 m -17.8 m/s 0.9505/0.9505)",
+   "exit": 0,
+   "minuten": 0.41,
+   "gpu": "amd/rdna-3",
+   "s": 24.6,
+   "fremd": {
+    "s": 29.6,
+    "takte": 12,
+    "fremdS": 49.91,
+    "kerne": 1.685,
+    "fensterKerne": 2.239,
+    "namen": [
+     [
+      "svchost.exe",
+      10.19
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      7.89
+     ],
+     [
+      "MsMpEng.exe",
+      5.52
+     ]
+    ],
+    "dienerS": 19.25,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      8.17
+     ],
+     [
+      "System",
+      5.94
+     ]
+    ],
+    "eigenS": 56.36,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T12:50:04.413Z",
+   "abdruck": "765329f5a5d3",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "klang.K4#1",
+   "modus": "session"
+  },
+  "mensch.K1#1": {
+   "gruen": true,
+   "zahl": "Quote 81/81 = 1, Häuser ohne Bewohner 0, gegangene im Blick 17 Ego / 21 Third; Third-Bild am Dorfplatz um 08:00 (Soll 08:00) 18 Menschen im Bild, 0 gehend, 36.3 fps",
+   "exit": 0,
+   "minuten": 1.33,
+   "gpu": "amd/rdna-3",
+   "s": 79.6,
+   "fremd": {
+    "s": 83.1,
+    "takte": 33,
+    "fremdS": 221.11,
+    "kerne": 2.662,
+    "fensterKerne": 3.367,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      28.38
+     ],
+     [
+      "svchost.exe",
+      24.95
+     ],
+     [
+      "MsMpEng.exe",
+      22.72
+     ]
+    ],
+    "dienerS": 63.31,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      25
+     ],
+     [
+      "System",
+      21.3
+     ]
+    ],
+    "eigenS": 268.61,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T12:52:07.183Z",
+   "abdruck": "ac10e7df1f5a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "mensch.K2#2": {
+   "gruen": true,
+   "zahl": "Soll-Orte alle 81/81 ≥ 0,9 (min 0.983), Wege je Tag 5–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1296 Lagen über ±2 m (max 1.31 m), Sprünge 0, Plan bit-gleich true",
+   "exit": 0,
+   "minuten": 1.33,
+   "gpu": "amd/rdna-3",
+   "s": 79.6,
+   "fremd": {
+    "s": 83.1,
+    "takte": 33,
+    "fremdS": 221.11,
+    "kerne": 2.662,
+    "fensterKerne": 3.367,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      28.38
+     ],
+     [
+      "svchost.exe",
+      24.95
+     ],
+     [
+      "MsMpEng.exe",
+      22.72
+     ]
+    ],
+    "dienerS": 63.31,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      25
+     ],
+     [
+      "System",
+      21.3
+     ]
+    ],
+    "eigenS": 268.61,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T12:52:07.183Z",
+   "abdruck": "dab117ec1548",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "mensch.K1#1",
+   "modus": "session"
+  },
+  "mensch.K5#1": {
+   "gruen": true,
+   "zahl": "gasthaus/gasthaus #419347: Kopf-Zuwendung ab 3 m 0.267 / 0 / 0 / 0 s (Vorbeigang ab 72°, als Leib im Bild true/true/true/true) · Berührung 0/0/0/0 Takte, kleinster Abstand 2 / 1.335 / 1.335 / 1.952 m (Radien 0,7) · ohne Erinnerung 1.335, Gegenprobe 1.335, nach der Gewalt 1.952 m (Furcht 1)",
+   "exit": 0,
+   "minuten": 0.58,
+   "gpu": "amd/rdna-3",
+   "s": 34.6,
+   "fremd": {
+    "s": 38.3,
+    "takte": 15,
+    "fremdS": 102.98,
+    "kerne": 2.691,
+    "fensterKerne": 3.063,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      13.47
+     ],
+     [
+      "MsMpEng.exe",
+      13.05
+     ],
+     [
+      "svchost.exe",
+      12.72
+     ]
+    ],
+    "dienerS": 30.63,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      12.69
+     ],
+     [
+      "System",
+      10.69
+     ]
+    ],
+    "eigenS": 83.77,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "grund": "GRÜN trotz Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 13,5 CPU-s · MsMpEng.exe 13,1 CPU-s · svchost.exe 12,7 CPU-s — 3,06 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 103,0 CPU-s in 38,3 s)",
+   "zeit": "2026-11-10T12:55:37.815Z",
+   "abdruck": "fbd51bda5863",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "schatten.K1#1": {
+   "gruen": true,
+   "zahl": "Uhr 0.5 ego 2.1 cm (10 Kanten) · Uhr 0.5 third 2.1 cm (10 Kanten), [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.21,
+   "gpu": "amd/rdna-3",
+   "s": 12.4,
+   "fremd": {
+    "s": 15.2,
+    "takte": 6,
+    "fremdS": 43.83,
+    "kerne": 2.885,
+    "fensterKerne": 2.903,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      6.7
+     ],
+     [
+      "MsMpEng.exe",
+      5.03
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.95
+     ]
+    ],
+    "dienerS": 11.08,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      5.05
+     ],
+     [
+      "System",
+      3.13
+     ]
+    ],
+    "eigenS": 21.8,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T12:57:26.230Z",
+   "abdruck": "d37811cd7bb4",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "tiere.K3#2": {
+   "gruen": true,
+   "zahl": "Gangart 49/49 grün (Welt 17, Satz 16, Labor 16, Kreuz 16), Welt − Labor ≤ 0.05, Satz − Labor ≤ 0.02 Zyklus · Querhang 20.8°, Schlupf {\"wolf\":0.036,\"hirsch\":0.016} · Bühne wolf schritt 3 Füße, fuchs schritt 3 Füße, baer schritt 3 Füße, wesen schritt 4 Füße · tier-Pixel 2928/1285/6623/3803 in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.24 m · Luma 65.5 σ 32.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.245 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen",
+   "exit": 0,
+   "minuten": 0.7,
+   "gpu": "amd/rdna-3",
+   "s": 41.9,
+   "fremd": {
+    "s": 46.3,
+    "takte": 18,
+    "fremdS": 104.98,
+    "kerne": 2.269,
+    "fensterKerne": 2.571,
+    "namen": [
+     [
+      "MsMpEng.exe",
+      19.59
+     ],
+     [
+      "svchost.exe",
+      15.08
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      14.36
+     ]
+    ],
+    "dienerS": 35.48,
+    "diener": [
+     [
+      "System",
+      15.66
+     ],
+     [
+      "WmiPrvSE.exe",
+      14.38
+     ]
+    ],
+    "eigenS": 251.14,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T12:59:13.034Z",
+   "abdruck": "b25658892dc2",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "tiere.K2#2": {
+   "gruen": true,
+   "zahl": "Fressen 104.8 s nach dem Riss bei 40.1 s, am Aas fuchs 20.4 s, baer 16.5 s · Wolfsrevier wald, Riss 15.9 s, 3 fressen: tier:wolf 12473 px in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.22 m · Luma 94.2 σ 37.6 schwarz 0.0 % weiß 0.0 % · Stand 18.546.245 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen",
+   "exit": 0,
+   "minuten": 0.74,
+   "gpu": "amd/rdna-3",
+   "s": 44.7,
+   "fremd": {
+    "s": 47.9,
+    "takte": 20,
+    "fremdS": 111.61,
+    "kerne": 2.332,
+    "fensterKerne": 2.962,
+    "namen": [
+     [
+      "MsMpEng.exe",
+      21.73
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      13.58
+     ],
+     [
+      "svchost.exe",
+      11.28
+     ]
+    ],
+    "dienerS": 21.17,
+    "diener": [
+     [
+      "System",
+      8.27
+     ],
+     [
+      "dwm.exe",
+      6.11
+     ]
+    ],
+    "eigenS": 47.31,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T13:10:13.088Z",
+   "abdruck": "bae97aa89f8a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "haar.K5#1": {
+   "gruen": false,
+   "zahl": "Lauf: eval: {\"ms\":2053,\"fehler\":\"Cannot read properties of undefined (reading 'size')\",\"stapel\":[\"LC.getArrayBufferAsync (http://localhost:7804/vendor/three.webgpu.min.js:6:581380)\",\"VC.getArrayBufferAsync (http://localhost:7804/vendor/three.webgpu.min.js:6:599310)\",\"at lies (evaluate at lade (C:\\\\Users\\\\micha\\",
+   "exit": 0,
+   "minuten": 0.04,
+   "grund": "ROT: Lauf: eval: {\"ms\":2053,\"fehler\":\"Cannot read properties of undefined (reading 'size')\",\"stapel\":[\"LC.getArrayBufferAsync (http://localhost:7804/vendor/three.webgpu.min.js:6:581380)\",\"VC.getArrayBufferAsync (http://localhost:7804/vendor/three.webgpu.min.js:6:599310)\",\"at lies (evaluate at lade (C:\\\\Users\\\\micha\\",
+   "gpu": "amd/rdna-3",
+   "s": 2.4,
+   "fremd": {
+    "s": 5,
+    "takte": 2,
+    "fremdS": 11.5,
+    "kerne": 2.284,
+    "fensterKerne": 2.284,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      1.69
+     ],
+     [
+      "MsMpEng.exe",
+      1.19
+     ],
+     [
+      "SearchIndexer.exe",
+      1.13
+     ]
+    ],
+    "dienerS": 2.38,
+    "diener": [
+     [
+      "System",
+      0.8
+     ],
+     [
+      "dwm.exe",
+      0.75
+     ]
+    ],
+    "eigenS": 5.89,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T13:18:43.814Z",
+   "abdruck": "722683a6b735",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "ungemessen": {
+  "profiband.K4#1": {
+   "gruen": false,
+   "zahl": "Fremd-Last: chrome.exe --type=gpu-process --no-sandbox --disable-breakpad --headless=new --enable-unsa 141,4 CPU-s · chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-15640-profil-vGdAVt --no-p 31,7 CPU-s · MsMpEng.exe 31,7 CPU-s — 11,31 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 309,4 CPU-s in 43,7 s) — kein Urteil, UNGEMESSEN (die Probe sah: Gehen 25 Bilder · max 234.33 ms · 100.00 % > 33 ms · Fahrt 42 Bilder · max 100.48 ms · 97.62 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 9 Bild(er) > 100 ms (max 234.33), 100.00 % > 33 ms | Fahrt)",
+   "exit": 0,
+   "minuten": 0.66,
+   "grund": "Fremd-Last: chrome.exe --type=gpu-process --no-sandbox --disable-breakpad --headless=new --enable-unsa 141,4 CPU-s · chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-15640-profil-vGdAVt --no-p 31,7 CPU-s · MsMpEng.exe 31,7 CPU-s — 11,31 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 309,4 CPU-s in 43,7 s) — kein Urteil, UNGEMESSEN (die Probe sah: Gehen 25 Bilder · max 234.33 ms · 100.00 % > 33 ms · Fahrt 42 Bilder · max 100.48 ms · 97.62 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 9 Bild(er) > 100 ms (max 234.33), 100.00 % > 33 ms | Fahrt)",
+   "gpu": "amd/rdna-3",
+   "s": 39.7,
+   "fremd": {
+    "s": 43.7,
+    "takte": 16,
+    "fremdS": 309.38,
+    "kerne": 7.075,
+    "fensterKerne": 11.309,
+    "namen": [
+     [
+      "chrome.exe --type=gpu-process --no-sandbox --disable-breakpad --headless=new --enable-unsa",
+      141.39
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-15640-profil-vGdAVt --no-p",
+      31.72
+     ],
+     [
+      "MsMpEng.exe",
+      31.7
+     ]
+    ],
+    "dienerS": 43.33,
+    "diener": [
+     [
+      "System",
+      19.58
+     ],
+     [
+      "dwm.exe",
+      13.66
+     ]
+    ],
+    "eigenS": 221.47,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-10T11:51:36.981Z",
+   "abdruck": "52687a17b4ac",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "profiband.K4#2": {
+   "gruen": false,
+   "zahl": "Fremd-Last: chrome.exe --type=gpu-process --no-sandbox --disable-breakpad --headless=new --enable-unsa 141,4 CPU-s · chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-15640-profil-vGdAVt --no-p 31,7 CPU-s · MsMpEng.exe 31,7 CPU-s — 11,31 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 309,4 CPU-s in 43,7 s) — kein Urteil, UNGEMESSEN (die Probe sah: Gehen 25 Bilder · max 234.33 ms · 100.00 % > 33 ms · Fahrt 42 Bilder · max 100.48 ms · 97.62 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 9 Bild(er) > 100 ms (max 234.33), 100.00 % > 33 ms | Fahrt)",
+   "exit": 0,
+   "minuten": 0.66,
+   "grund": "Fremd-Last: chrome.exe --type=gpu-process --no-sandbox --disable-breakpad --headless=new --enable-unsa 141,4 CPU-s · chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-15640-profil-vGdAVt --no-p 31,7 CPU-s · MsMpEng.exe 31,7 CPU-s — 11,31 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 309,4 CPU-s in 43,7 s) — kein Urteil, UNGEMESSEN (die Probe sah: Gehen 25 Bilder · max 234.33 ms · 100.00 % > 33 ms · Fahrt 42 Bilder · max 100.48 ms · 97.62 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 9 Bild(er) > 100 ms (max 234.33), 100.00 % > 33 ms | Fahrt)",
+   "gpu": "amd/rdna-3",
+   "s": 39.7,
+   "fremd": {
+    "s": 43.7,
+    "takte": 16,
+    "fremdS": 309.38,
+    "kerne": 7.075,
+    "fensterKerne": 11.309,
+    "namen": [
+     [
+      "chrome.exe --type=gpu-process --no-sandbox --disable-breakpad --headless=new --enable-unsa",
+      141.39
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-15640-profil-vGdAVt --no-p",
+      31.72
+     ],
+     [
+      "MsMpEng.exe",
+      31.7
+     ]
+    ],
+    "dienerS": 43.33,
+    "diener": [
+     [
+      "System",
+      19.58
+     ],
+     [
+      "dwm.exe",
+      13.66
+     ]
+    ],
+    "eigenS": 221.47,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-10T11:51:36.981Z",
+   "abdruck": "73cb80a7cc5e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K4#1",
+   "modus": "session"
+  },
+  "tiere.K5#1": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine KREIS-Zeile in ego, third (Exit 1)) · Täter: PROBE-FEHLER Error: scripts/werkbank.cjs: keine Deklaration lauf auf oberster Ebene |     at tor.quelle ([eval]:89:15) |     at tierKreis ([eval]:194:22) |     at [eval]:371:3",
+   "exit": 1,
+   "minuten": 0,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine KREIS-Zeile in ego, third (Exit 1)) · Täter: PROBE-FEHLER Error: scripts/werkbank.cjs: keine Deklaration lauf auf oberster Ebene |     at tor.quelle ([eval]:89:15) |     at tierKreis ([eval]:194:22) |     at [eval]:371:3",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 0.3,
+   "teile": [
+    0.3
+   ],
+   "fremd": {
+    "s": 2.5,
+    "takte": 1,
+    "fremdS": 19.84,
+    "kerne": 8.011,
+    "fensterKerne": 8.011,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-29976-profil-Tgyg47 --no-p",
+      6.97
+     ],
+     [
+      "chrome.exe --type=gpu-process --no-sandbox --disable-breakpad --headless=new --enable-unsa",
+      6.5
+     ],
+     [
+      "MsMpEng.exe",
+      2.02
+     ]
+    ],
+    "dienerS": 3.72,
+    "diener": [
+     [
+      "System",
+      2.5
+     ],
+     [
+      "dwm.exe",
+      0.53
+     ]
+    ],
+    "eigenS": 1.78,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T11:53:15.992Z",
+   "abdruck": "f46b07b0a313",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "vegetation.K2#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 39 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
+   "exit": 1,
+   "minuten": 0.67,
+   "grund": "Deckel 39 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
+   "s": 40,
+   "fremd": {
+    "s": 41.9,
+    "takte": 14,
+    "fremdS": 559.3,
+    "kerne": 13.359,
+    "fensterKerne": 15.264,
+    "namen": [
+     [
+      "chrome.exe --type=gpu-process --no-sandbox --disable-breakpad --headless=new --enable-unsa",
+      403.95
+     ],
+     [
+      "MsMpEng.exe",
+      28.2
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      14.92
+     ]
+    ],
+    "dienerS": 49,
+    "diener": [
+     [
+      "System",
+      22.5
+     ],
+     [
+      "dwm.exe",
+      14.77
+     ]
+    ],
+    "eigenS": 85.33,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T11:53:18.508Z",
+   "abdruck": "e70ca47e767e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "haar.K2#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: POSE nach-third {\"leib\":[-280.4,28.10938,-1045.6,0,-0.83375,0,0.55214,0,-0.48251,0,0,0,0,1,0,0,0,0,0,0,1,0,-0.03648,0,0,0,0,1,0,3.18,0,-0.01,0.0002,0.02,0.99975)",
+   "exit": 1,
+   "minuten": 0.76,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: POSE nach-third {\"leib\":[-280.4,28.10938,-1045.6,0,-0.83375,0,0.55214,0,-0.48251,0,0,0,0,1,0,0,0,0,0,0,1,0,-0.03648,0,0,0,0,1,0,3.18,0,-0.01,0.0002,0.02,0.99975)",
+   "s": 45.5,
+   "fremd": {
+    "s": 47.6,
+    "takte": 20,
+    "fremdS": 116.94,
+    "kerne": 2.459,
+    "fensterKerne": 3.011,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      16.86
+     ],
+     [
+      "MsMpEng.exe",
+      16.63
+     ],
+     [
+      "svchost.exe",
+      13.77
+     ]
+    ],
+    "dienerS": 23.02,
+    "diener": [
+     [
+      "System",
+      9.23
+     ],
+     [
+      "dwm.exe",
+      7.53
+     ]
+    ],
+    "eigenS": 38.09,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T11:55:50.046Z",
+   "abdruck": "6f065278f827",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "lod.K1#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: auge · Exit 0)",
+   "exit": 1,
+   "minuten": 1.51,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: auge · Exit 0)",
+   "s": 90.4,
+   "fremd": {
+    "s": 91.1,
+    "takte": 37,
+    "fremdS": 310.53,
+    "kerne": 3.408,
+    "fensterKerne": 4.149,
+    "namen": [
+     [
+      "MsMpEng.exe",
+      38.06
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      30.41
+     ],
+     [
+      "svchost.exe",
+      27.91
+     ]
+    ],
+    "dienerS": 53.72,
+    "diener": [
+     [
+      "System",
+      21.14
+     ],
+     [
+      "dwm.exe",
+      16.61
+     ]
+    ],
+    "eigenS": 110.06,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T12:01:22.808Z",
+   "abdruck": "8c7876da1b59",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "leib.K1#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ LATENZ1)",
+   "exit": 1,
+   "minuten": 0.79,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ LATENZ1)",
+   "s": 45.4,
+   "fremd": {
+    "s": 50,
+    "takte": 20,
+    "fremdS": 123.42,
+    "kerne": 2.469,
+    "fensterKerne": 3.948,
+    "namen": [
+     [
+      "git.exe -c protocol.ext.allow=never -c core.alternateRefsCommand=f() { git --g… $1 for-eac",
+      19.02
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      15.64
+     ],
+     [
+      "MsMpEng.exe",
+      14.5
+     ]
+    ],
+    "dienerS": 32.98,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      15.44
+     ],
+     [
+      "dwm.exe",
+      10.02
+     ]
+    ],
+    "eigenS": 56.95,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T12:13:03.773Z",
+   "abdruck": "38f8e3e5fe0e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "streaming.K3#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
+   "exit": 1,
+   "minuten": 0.76,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
+   "s": 45.6,
+   "fremd": {
+    "s": 46.5,
+    "takte": 18,
+    "fremdS": 169.66,
+    "kerne": 3.65,
+    "fensterKerne": 4.809,
+    "namen": [
+     [
+      "MsMpEng.exe",
+      65.16
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      21.75
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      17.64
+     ]
+    ],
+    "dienerS": 39.63,
+    "diener": [
+     [
+      "dwm.exe",
+      16.38
+     ],
+     [
+      "WmiPrvSE.exe",
+      15.19
+     ]
+    ],
+    "eigenS": 164.56,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T12:14:33.601Z",
+   "abdruck": "0632b7e12e00",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "licht.K5#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: ✅ SELBSTTEST GRÜN — jeder injizierte Täter fällt rot und wird beim Namen genannt.)",
+   "exit": 1,
+   "minuten": 0.76,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: ✅ SELBSTTEST GRÜN — jeder injizierte Täter fällt rot und wird beim Namen genannt.)",
+   "s": 45.4,
+   "fremd": {
+    "s": 47.7,
+    "takte": 19,
+    "fremdS": 145.42,
+    "kerne": 3.046,
+    "fensterKerne": 3.291,
+    "namen": [
+     [
+      "MsMpEng.exe",
+      52.08
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      17.45
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      10.63
+     ]
+    ],
+    "dienerS": 32.53,
+    "diener": [
+     [
+      "System",
+      14.86
+     ],
+     [
+      "dwm.exe",
+      8.63
+     ]
+    ],
+    "eigenS": 79.63,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T12:17:24.811Z",
+   "abdruck": "23d7c58b3c12",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "ankunft.K4#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: POSE ego-0 58281 ms)",
+   "exit": 1,
+   "minuten": 1.51,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: POSE ego-0 58281 ms)",
+   "s": 90.4,
+   "fremd": {
+    "s": 92.6,
+    "takte": 37,
+    "fremdS": 256.28,
+    "kerne": 2.767,
+    "fensterKerne": 3.944,
+    "namen": [
+     [
+      "MsMpEng.exe",
+      28.78
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      25.44
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      22.08
+     ]
+    ],
+    "dienerS": 61,
+    "diener": [
+     [
+      "System",
+      24.97
+     ],
+     [
+      "dwm.exe",
+      15.66
+     ]
+    ],
+    "eigenS": 87.08,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T12:20:54.007Z",
+   "abdruck": "ea66260e5746",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "schatten.K2#1": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Zeile NEUN schatten.K2) · Täter: NEUN-ENDE 7 gemessen, ausgelassen am Budget 8.5 s: schatten.K2, vegetation.K3 · 10.3 s",
+   "exit": 0,
+   "minuten": 0.17,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Zeile NEUN schatten.K2) · Täter: NEUN-ENDE 7 gemessen, ausgelassen am Budget 8.5 s: schatten.K2, vegetation.K3 · 10.3 s",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 10.5,
+   "fremd": {
+    "s": 14.7,
+    "takte": 6,
+    "fremdS": 46,
+    "kerne": 3.135,
+    "fensterKerne": 3.352,
+    "namen": [
+     [
+      "MsMpEng.exe",
+      6.91
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      4.33
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.58
+     ]
+    ],
+    "dienerS": 9.23,
+    "diener": [
+     [
+      "System",
+      3.69
+     ],
+     [
+      "dwm.exe",
+      2.8
+     ]
+    ],
+    "eigenS": 18.5,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T12:24:02.632Z",
+   "abdruck": "dd57105c129b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "vegetation.K3#1": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Zeile NEUN vegetation.K3) · Täter: NEUN-ENDE 7 gemessen, ausgelassen am Budget 8.5 s: schatten.K2, vegetation.K3 · 10.3 s",
+   "exit": 0,
+   "minuten": 0.17,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Zeile NEUN vegetation.K3) · Täter: NEUN-ENDE 7 gemessen, ausgelassen am Budget 8.5 s: schatten.K2, vegetation.K3 · 10.3 s",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 10.5,
+   "fremd": {
+    "s": 14.7,
+    "takte": 6,
+    "fremdS": 46,
+    "kerne": 3.135,
+    "fensterKerne": 3.352,
+    "namen": [
+     [
+      "MsMpEng.exe",
+      6.91
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      4.33
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.58
+     ]
+    ],
+    "dienerS": 9.23,
+    "diener": [
+     [
+      "System",
+      3.69
+     ],
+     [
+      "dwm.exe",
+      2.8
+     ]
+    ],
+    "eigenS": 18.5,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T12:24:02.632Z",
+   "abdruck": "0ce895c09837",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "schatten.K2#1",
+   "modus": "session"
+  },
+  "gelaende.K3#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN",
+   "s": 45.3,
+   "fremd": {
+    "s": 47,
+    "takte": 19,
+    "fremdS": 124.92,
+    "kerne": 2.655,
+    "fensterKerne": 3.711,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      15.8
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      13.59
+     ],
+     [
+      "git.exe -c protocol.ext.allow=never -c core.alternateRefsCommand=f() { git --g… $1 for-eac",
+      13.05
+     ]
+    ],
+    "dienerS": 33.8,
+    "diener": [
+     [
+      "System",
+      15.06
+     ],
+     [
+      "dwm.exe",
+      10.55
+     ]
+    ],
+    "eigenS": 204.27,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T12:24:15.122Z",
+   "abdruck": "41a675d42d94",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "profiband.K5#1": {
+   "gruen": false,
+   "zahl": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 6,2 CPU-s · MsMpEng.exe 5,3 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 3,4 CPU-s — 2,25 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 44,2 CPU-s in 20,1 s) — kein Urteil, UNGEMESSEN (die Probe sah: keine Dauer: Strom der Sitzung 3114 Bilder in 11 Seite(n), Marke des Anfangs fehlt, des Endes fehlt · [linse-gpu] amd/rdna-3 — ROT 2: kein Stand des Anfangs (die Glätte fuhr nicht vor der Dauer) | kein Stand des Endes (brach: /puffer: Canno)",
+   "exit": 0,
+   "minuten": 0.31,
+   "grund": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 6,2 CPU-s · MsMpEng.exe 5,3 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 3,4 CPU-s — 2,25 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 44,2 CPU-s in 20,1 s) — kein Urteil, UNGEMESSEN (die Probe sah: keine Dauer: Strom der Sitzung 3114 Bilder in 11 Seite(n), Marke des Anfangs fehlt, des Endes fehlt · [linse-gpu] amd/rdna-3 — ROT 2: kein Stand des Anfangs (die Glätte fuhr nicht vor der Dauer) | kein Stand des Endes (brach: /puffer: Canno)",
+   "gpu": "amd/rdna-3",
+   "s": 18.7,
+   "fremd": {
+    "s": 20.1,
+    "takte": 8,
+    "fremdS": 44.22,
+    "kerne": 2.197,
+    "fensterKerne": 2.247,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      6.19
+     ],
+     [
+      "MsMpEng.exe",
+      5.31
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.42
+     ]
+    ],
+    "dienerS": 13.2,
+    "diener": [
+     [
+      "dwm.exe",
+      5.63
+     ],
+     [
+      "System",
+      3.75
+     ]
+    ],
+    "eigenS": 46.81,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-10T12:26:10.662Z",
+   "abdruck": "3895554d7dc0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "profiband.K5#2": {
+   "gruen": false,
+   "zahl": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 6,2 CPU-s · MsMpEng.exe 5,3 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 3,4 CPU-s — 2,25 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 44,2 CPU-s in 20,1 s) — kein Urteil, UNGEMESSEN (die Probe sah: keine Dauer: Strom der Sitzung 3114 Bilder in 11 Seite(n), Marke des Anfangs fehlt, des Endes fehlt · [linse-gpu] amd/rdna-3 — ROT 2: kein Stand des Anfangs (die Glätte fuhr nicht vor der Dauer) | kein Stand des Endes (brach: /puffer: Canno)",
+   "exit": 0,
+   "minuten": 0.31,
+   "grund": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 6,2 CPU-s · MsMpEng.exe 5,3 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 3,4 CPU-s — 2,25 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 44,2 CPU-s in 20,1 s) — kein Urteil, UNGEMESSEN (die Probe sah: keine Dauer: Strom der Sitzung 3114 Bilder in 11 Seite(n), Marke des Anfangs fehlt, des Endes fehlt · [linse-gpu] amd/rdna-3 — ROT 2: kein Stand des Anfangs (die Glätte fuhr nicht vor der Dauer) | kein Stand des Endes (brach: /puffer: Canno)",
+   "gpu": "amd/rdna-3",
+   "s": 18.7,
+   "fremd": {
+    "s": 20.1,
+    "takte": 8,
+    "fremdS": 44.22,
+    "kerne": 2.197,
+    "fensterKerne": 2.247,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      6.19
+     ],
+     [
+      "MsMpEng.exe",
+      5.31
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.42
+     ]
+    ],
+    "dienerS": 13.2,
+    "diener": [
+     [
+      "dwm.exe",
+      5.63
+     ],
+     [
+      "System",
+      3.75
+     ]
+    ],
+    "eigenS": 46.81,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-10T12:26:10.662Z",
+   "abdruck": "c2ed7bf06604",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K5#1",
+   "modus": "session"
+  },
+  "gelaende.K2#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: (b)(d) 10.0 s · Damm {\"krone\":27.99,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":25.08,\"ueberlauf\":24.3,\"fluss\":25.08},{\"d\":12,\"wasser\":25.18,\"ueberlauf\":24.38,\"flu)",
+   "exit": 1,
+   "minuten": 1.52,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: (b)(d) 10.0 s · Damm {\"krone\":27.99,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":25.08,\"ueberlauf\":24.3,\"fluss\":25.08},{\"d\":12,\"wasser\":25.18,\"ueberlauf\":24.38,\"flu)",
+   "s": 91.3,
+   "fremd": {
+    "s": 94.3,
+    "takte": 37,
+    "fremdS": 232.56,
+    "kerne": 2.467,
+    "fensterKerne": 3.608,
+    "namen": [
+     [
+      "MsMpEng.exe",
+      28.91
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      24.34
+     ],
+     [
+      "git.exe -c protocol.ext.allow=never -c core.alternateRefsCommand=f() { git --g… $1 for-eac",
+      18.42
+     ]
+    ],
+    "dienerS": 78.88,
+    "diener": [
+     [
+      "System",
+      39.11
+     ],
+     [
+      "dwm.exe",
+      21.25
+     ]
+    ],
+    "eigenS": 294.83,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T12:26:49.712Z",
+   "abdruck": "f25c6a11e95b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "gelaende.K2#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: (b)(d) 10.0 s · Damm {\"krone\":27.99,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":25.08,\"ueberlauf\":24.3,\"fluss\":25.08},{\"d\":12,\"wasser\":25.18,\"ueberlauf\":24.38,\"flu)",
+   "exit": 1,
+   "minuten": 1.52,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: (b)(d) 10.0 s · Damm {\"krone\":27.99,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":25.08,\"ueberlauf\":24.3,\"fluss\":25.08},{\"d\":12,\"wasser\":25.18,\"ueberlauf\":24.38,\"flu)",
+   "s": 91.3,
+   "fremd": {
+    "s": 94.3,
+    "takte": 37,
+    "fremdS": 232.56,
+    "kerne": 2.467,
+    "fensterKerne": 3.608,
+    "namen": [
+     [
+      "MsMpEng.exe",
+      28.91
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      24.34
+     ],
+     [
+      "git.exe -c protocol.ext.allow=never -c core.alternateRefsCommand=f() { git --g… $1 for-eac",
+      18.42
+     ]
+    ],
+    "dienerS": 78.88,
+    "diener": [
+     [
+      "System",
+      39.11
+     ],
+     [
+      "dwm.exe",
+      21.25
+     ]
+    ],
+    "eigenS": 294.83,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T12:26:49.712Z",
+   "abdruck": "8d8ec2507fc8",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "gelaende.K2#1",
+   "modus": "session"
+  },
+  "fahrzeug.K3#1": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Garage: keine Zeile MK2110 (Exit 0)) · Täter: (Welt 36.1 s · Garage 35.2 s im Fenster neben ihr)",
+   "exit": 0,
+   "minuten": 0.65,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Garage: keine Zeile MK2110 (Exit 0)) · Täter: (Welt 36.1 s · Garage 35.2 s im Fenster neben ihr)",
+   "gpu": "amd/rdna-3",
+   "gpuFremd": "google/swiftshader",
+   "ungemessen": true,
+   "s": 39.2,
+   "fremd": {
+    "s": 42.6,
+    "takte": 15,
+    "fremdS": 113.38,
+    "kerne": 2.664,
+    "fensterKerne": 2.994,
+    "namen": [
+     [
+      "MsMpEng.exe",
+      16.5
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      15.33
+     ],
+     [
+      "svchost.exe",
+      14.25
+     ]
+    ],
+    "dienerS": 47.81,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      15.77
+     ],
+     [
+      "System",
+      15.72
+     ]
+    ],
+    "eigenS": 466.92,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T12:39:22.845Z",
+   "abdruck": "1cdd86ceb799",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "fahrzeug.K3#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 45 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: gate:fahr-leben ohne Zeile T4/T5 (Exit 0)) · Täter: @@PUNKTE@@ FRIST 45 s der Probe gerissen — WELT (43.0 s)",
+   "exit": 0,
+   "minuten": 0.72,
+   "grund": "Frist der Probe 45 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: gate:fahr-leben ohne Zeile T4/T5 (Exit 0)) · Täter: @@PUNKTE@@ FRIST 45 s der Probe gerissen — WELT (43.0 s)",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 43.2,
+   "fremd": {
+    "s": 45.6,
+    "takte": 19,
+    "fremdS": 91.72,
+    "kerne": 2.011,
+    "fensterKerne": 2.261,
+    "namen": [
+     [
+      "svchost.exe",
+      12.42
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      12.03
+     ],
+     [
+      "node.exe punkte/punkte.cjs buchen --kopf 6aa7a5a6bfd01df56192e66b658681dac67a27a9",
+      11.94
+     ]
+    ],
+    "dienerS": 27.36,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      10.5
+     ],
+     [
+      "dwm.exe",
+      8.73
+     ]
+    ],
+    "eigenS": 41.63,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T12:40:29.564Z",
+   "abdruck": "60985c753910",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "fahrzeug.K4#1": {
+   "gruen": false,
+   "zahl": "Frist der Probe 45 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: gate:fahr-leben ohne Zeile T4 (Exit 0)) · Täter: @@PUNKTE@@ FRIST 45 s der Probe gerissen — WELT (43.0 s)",
+   "exit": 0,
+   "minuten": 0.72,
+   "grund": "Frist der Probe 45 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: gate:fahr-leben ohne Zeile T4 (Exit 0)) · Täter: @@PUNKTE@@ FRIST 45 s der Probe gerissen — WELT (43.0 s)",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 43.2,
+   "fremd": {
+    "s": 45.6,
+    "takte": 19,
+    "fremdS": 91.72,
+    "kerne": 2.011,
+    "fensterKerne": 2.261,
+    "namen": [
+     [
+      "svchost.exe",
+      12.42
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      12.03
+     ],
+     [
+      "node.exe punkte/punkte.cjs buchen --kopf 6aa7a5a6bfd01df56192e66b658681dac67a27a9",
+      11.94
+     ]
+    ],
+    "dienerS": 27.36,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      10.5
+     ],
+     [
+      "dwm.exe",
+      8.73
+     ]
+    ],
+    "eigenS": 41.63,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T12:40:29.564Z",
+   "abdruck": "eb0709e75bf9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "fahrzeug.K3#2",
+   "modus": "session"
+  },
+  "fahrzeug.K4#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 45 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: gate:fahr-leben ohne Zeile T4 (Exit 0)) · Täter: @@PUNKTE@@ FRIST 45 s der Probe gerissen — WELT (43.0 s)",
+   "exit": 0,
+   "minuten": 0.72,
+   "grund": "Frist der Probe 45 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: gate:fahr-leben ohne Zeile T4 (Exit 0)) · Täter: @@PUNKTE@@ FRIST 45 s der Probe gerissen — WELT (43.0 s)",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 43.2,
+   "fremd": {
+    "s": 45.6,
+    "takte": 19,
+    "fremdS": 91.72,
+    "kerne": 2.011,
+    "fensterKerne": 2.261,
+    "namen": [
+     [
+      "svchost.exe",
+      12.42
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      12.03
+     ],
+     [
+      "node.exe punkte/punkte.cjs buchen --kopf 6aa7a5a6bfd01df56192e66b658681dac67a27a9",
+      11.94
+     ]
+    ],
+    "dienerS": 27.36,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      10.5
+     ],
+     [
+      "dwm.exe",
+      8.73
+     ]
+    ],
+    "eigenS": 41.63,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T12:40:29.564Z",
+   "abdruck": "b37e885d49c3",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "fahrzeug.K3#2",
+   "modus": "session"
+  },
+  "leib.K1#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ LATENZ1)",
+   "exit": 1,
+   "minuten": 1.54,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ LATENZ1)",
+   "s": 90.6,
+   "fremd": {
+    "s": 96.7,
+    "takte": 38,
+    "fremdS": 249.63,
+    "kerne": 2.581,
+    "fensterKerne": 3.702,
+    "namen": [
+     [
+      "svchost.exe",
+      33.13
+     ],
+     [
+      "node.exe punkte/punkte.cjs buchen --kopf 6aa7a5a6bfd01df56192e66b658681dac67a27a9",
+      29.03
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      28.75
+     ]
+    ],
+    "dienerS": 67.81,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      29.56
+     ],
+     [
+      "System",
+      18.42
+     ]
+    ],
+    "eigenS": 153.81,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T12:41:36.005Z",
+   "abdruck": "93ae58d761ce",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "halten.K2#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ LATENZ1)",
+   "exit": 1,
+   "minuten": 1.54,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ LATENZ1)",
+   "s": 90.6,
+   "fremd": {
+    "s": 96.7,
+    "takte": 38,
+    "fremdS": 249.63,
+    "kerne": 2.581,
+    "fensterKerne": 3.702,
+    "namen": [
+     [
+      "svchost.exe",
+      33.13
+     ],
+     [
+      "node.exe punkte/punkte.cjs buchen --kopf 6aa7a5a6bfd01df56192e66b658681dac67a27a9",
+      29.03
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      28.75
+     ]
+    ],
+    "dienerS": 67.81,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      29.56
+     ],
+     [
+      "System",
+      18.42
+     ]
+    ],
+    "eigenS": 153.81,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T12:41:36.005Z",
+   "abdruck": "c4eb8f796007",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "leib.K1#2",
+   "modus": "session"
+  },
+  "leib.K4#1": {
+   "gruen": false,
+   "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: stamm baum_kiefer: 1102 Bilder · heran 8.29 → 0.64 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | fels felsturm: 1240 Bilder · heran 10.56 → 0.44 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | haus haus) · Täter: @@PUNKTE@@ PROBE 84.1 s · Exit 1",
+   "exit": 1,
+   "minuten": 1.41,
+   "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: stamm baum_kiefer: 1102 Bilder · heran 8.29 → 0.64 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | fels felsturm: 1240 Bilder · heran 10.56 → 0.44 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | haus haus) · Täter: @@PUNKTE@@ PROBE 84.1 s · Exit 1",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 84.3,
+   "fremd": {
+    "s": 86.8,
+    "takte": 36,
+    "fremdS": 183.52,
+    "kerne": 2.114,
+    "fensterKerne": 2.617,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      24.47
+     ],
+     [
+      "svchost.exe",
+      22.64
+     ],
+     [
+      "node.exe punkte/punkte.cjs buchen --kopf 6aa7a5a6bfd01df56192e66b658681dac67a27a9",
+      22.41
+     ]
+    ],
+    "dienerS": 47.05,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      22.52
+     ],
+     [
+      "dwm.exe",
+      11.7
+     ]
+    ],
+    "eigenS": 147.23,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T12:43:32.987Z",
+   "abdruck": "b64041c04ac5",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "leib.K4#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: innen haus_alemannisch: 1318 Bilder · heran 12.25 → 0.42 m · im Haus true · Kugel {} · Nah-Pixel {} · Ruck p95 0.0124 höchstens 0.677 m | innen-sprint haus_alemannisch: 870 Bilder · heran 12.25 → 1.94 m · im Haus true · Kugel {} · Nah-Pixel) · Täter: @@PUNKTE@@ PROBE 84.1 s · Exit 1",
+   "exit": 1,
+   "minuten": 1.41,
+   "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: innen haus_alemannisch: 1318 Bilder · heran 12.25 → 0.42 m · im Haus true · Kugel {} · Nah-Pixel {} · Ruck p95 0.0124 höchstens 0.677 m | innen-sprint haus_alemannisch: 870 Bilder · heran 12.25 → 1.94 m · im Haus true · Kugel {} · Nah-Pixel) · Täter: @@PUNKTE@@ PROBE 84.1 s · Exit 1",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 84.3,
+   "fremd": {
+    "s": 86.8,
+    "takte": 36,
+    "fremdS": 183.52,
+    "kerne": 2.114,
+    "fensterKerne": 2.617,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      24.47
+     ],
+     [
+      "svchost.exe",
+      22.64
+     ],
+     [
+      "node.exe punkte/punkte.cjs buchen --kopf 6aa7a5a6bfd01df56192e66b658681dac67a27a9",
+      22.41
+     ]
+    ],
+    "dienerS": 47.05,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      22.52
+     ],
+     [
+      "dwm.exe",
+      11.7
+     ]
+    ],
+    "eigenS": 147.23,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T12:43:32.987Z",
+   "abdruck": "7746589109f9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "leib.K4#1",
+   "modus": "session"
+  },
+  "klang.K5#2": {
+   "gruen": false,
+   "zahl": "Fremd-Last: svchost.exe 12,9 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 10,9 CPU-s · git.exe 9,6 CPU-s — 2,79 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 76,3 CPU-s in 35,7 s) — kein Urteil, UNGEMESSEN (die Probe sah: Klang-Takt p95 gehen 0.17 · fahrt 0.28 · nacht 0.18 ms · Aussetzer 0 in 29 s Wiedergabe (0 s still; verdichtet, Staffel: 10 min) (Exit 0))",
+   "exit": 0,
+   "minuten": 0.55,
+   "grund": "Fremd-Last: svchost.exe 12,9 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 10,9 CPU-s · git.exe 9,6 CPU-s — 2,79 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 76,3 CPU-s in 35,7 s) — kein Urteil, UNGEMESSEN (die Probe sah: Klang-Takt p95 gehen 0.17 · fahrt 0.28 · nacht 0.18 ms · Aussetzer 0 in 29 s Wiedergabe (0 s still; verdichtet, Staffel: 10 min) (Exit 0))",
+   "gpu": "amd/rdna-3",
+   "s": 33.2,
+   "fremd": {
+    "s": 35.7,
+    "takte": 14,
+    "fremdS": 76.34,
+    "kerne": 2.138,
+    "fensterKerne": 2.787,
+    "namen": [
+     [
+      "svchost.exe",
+      12.86
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      10.88
+     ],
+     [
+      "git.exe",
+      9.55
+     ]
+    ],
+    "dienerS": 25.36,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      11.06
+     ],
+     [
+      "System",
+      6.77
+     ]
+    ],
+    "eigenS": 69.44,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-10T12:50:32.452Z",
+   "abdruck": "9e34b74fc5be",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "speicher.K4#2": {
+   "gruen": false,
+   "zahl": "Fremd-Last: svchost.exe 20,2 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 15,0 CPU-s · MsMpEng.exe 14,4 CPU-s — 2,88 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 109,1 CPU-s in 43,8 s) — kein Urteil, UNGEMESSEN (die Probe sah: bild-diff 2.53 % (Soll ≤ 1; Rauschen ohne Neuladen 0.17 %) · Pflicht vor {\"bau\":true,\"grube\":true,\"wasser\":2} · nach {\"bau\":true,\"grube\":true,\"wasser\":2} · [linse-gpu] amd/rdna-3)",
+   "exit": 0,
+   "minuten": 0.69,
+   "grund": "Fremd-Last: svchost.exe 20,2 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 15,0 CPU-s · MsMpEng.exe 14,4 CPU-s — 2,88 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 109,1 CPU-s in 43,8 s) — kein Urteil, UNGEMESSEN (die Probe sah: bild-diff 2.53 % (Soll ≤ 1; Rauschen ohne Neuladen 0.17 %) · Pflicht vor {\"bau\":true,\"grube\":true,\"wasser\":2} · nach {\"bau\":true,\"grube\":true,\"wasser\":2} · [linse-gpu] amd/rdna-3)",
+   "gpu": "amd/rdna-3",
+   "s": 41.2,
+   "fremd": {
+    "s": 43.8,
+    "takte": 17,
+    "fremdS": 109.05,
+    "kerne": 2.488,
+    "fensterKerne": 2.884,
+    "namen": [
+     [
+      "svchost.exe",
+      20.17
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      15.02
+     ],
+     [
+      "MsMpEng.exe",
+      14.36
+     ]
+    ],
+    "dienerS": 39.19,
+    "diener": [
+     [
+      "System",
+      13.84
+     ],
+     [
+      "WmiPrvSE.exe",
+      13.52
+     ]
+    ],
+    "eigenS": 165.97,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-10T12:51:11.054Z",
+   "abdruck": "cf5db34c59c4",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "licht.K3#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: BERUHIGUNG 22 statt /lauf {\"sek\":5,\"ein\":8,\"ruhe\":120,\"regler\":\"voll\"}: die Welt steht nach 1 Takten, 0.1 s · 44.5 s)",
+   "exit": 1,
+   "minuten": 0.76,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: BERUHIGUNG 22 statt /lauf {\"sek\":5,\"ein\":8,\"ruhe\":120,\"regler\":\"voll\"}: die Welt steht nach 1 Takten, 0.1 s · 44.5 s)",
+   "s": 45.4,
+   "fremd": {
+    "s": 49.6,
+    "takte": 20,
+    "fremdS": 155.11,
+    "kerne": 3.125,
+    "fensterKerne": 4.644,
+    "namen": [
+     [
+      "git.exe -c protocol.ext.allow=never -c core.alternateRefsCommand=f() { git --g… $1 for-eac",
+      25.67
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      18.95
+     ],
+     [
+      "MsMpEng.exe",
+      16.89
+     ]
+    ],
+    "dienerS": 36.81,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      13.55
+     ],
+     [
+      "System",
+      13.31
+     ]
+    ],
+    "eigenS": 145.33,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T12:34:55.249Z",
+   "abdruck": "030727bdfc7f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "vegetation.K4#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 1.5 s)",
+   "exit": 1,
+   "minuten": 1.51,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 1.5 s)",
+   "s": 90.6,
+   "fremd": {
+    "s": 93.7,
+    "takte": 38,
+    "fremdS": 245.59,
+    "kerne": 2.62,
+    "fensterKerne": 3.482,
+    "namen": [
+     [
+      "svchost.exe",
+      34.19
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      30.81
+     ],
+     [
+      "MsMpEng.exe",
+      28.31
+     ]
+    ],
+    "dienerS": 68.64,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      31.25
+     ],
+     [
+      "System",
+      21.61
+     ]
+    ],
+    "eigenS": 267.59,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T12:53:48.545Z",
+   "abdruck": "363561aa5402",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "vegetation.K4#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 1.5 s)",
+   "exit": 1,
+   "minuten": 1.51,
+   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 1.5 s)",
+   "s": 90.6,
+   "fremd": {
+    "s": 93.7,
+    "takte": 38,
+    "fremdS": 245.59,
+    "kerne": 2.62,
+    "fensterKerne": 3.482,
+    "namen": [
+     [
+      "svchost.exe",
+      34.19
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      30.81
+     ],
+     [
+      "MsMpEng.exe",
+      28.31
+     ]
+    ],
+    "dienerS": 68.64,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      31.25
+     ],
+     [
+      "System",
+      21.61
+     ]
+    ],
+    "eigenS": 267.59,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T12:53:48.545Z",
+   "abdruck": "8c372d0d53d7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "vegetation.K4#1",
+   "modus": "session"
+  },
+  "siedlung.K1#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 18 von 18 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.20 m · Innen-Bild 0 von 18 lesbar (Plan 18), innen ÷ Außen-Schatten min undefined · Median undefined (Soll ≥ 0,15) · dunkel: haus_gotisch 0.005792304698108035/undefi) · Täter: haus_skandinavisch · Gang Hub 0.20 m · innen undefined ÷ außen undefined = undefined · Frist der Probe",
+   "exit": 0,
+   "minuten": 0.62,
+   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 18 von 18 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.20 m · Innen-Bild 0 von 18 lesbar (Plan 18), innen ÷ Außen-Schatten min undefined · Median undefined (Soll ≥ 0,15) · dunkel: haus_gotisch 0.005792304698108035/undefi) · Täter: haus_skandinavisch · Gang Hub 0.20 m · innen undefined ÷ außen undefined = undefined · Frist der Probe",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 37.4,
+   "fremd": {
+    "s": 40.1,
+    "takte": 16,
+    "fremdS": 123.58,
+    "kerne": 3.082,
+    "fensterKerne": 3.45,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      14.09
+     ],
+     [
+      "MsMpEng.exe",
+      12.48
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      12.27
+     ]
+    ],
+    "dienerS": 31.03,
+    "diener": [
+     [
+      "System",
+      11.95
+     ],
+     [
+      "WmiPrvSE.exe",
+      11.55
+     ]
+    ],
+    "eigenS": 127,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T12:56:33.244Z",
+   "abdruck": "07f57d259702",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "schatten.K1#2": {
+   "gruen": false,
+   "zahl": "Messort: buehne: Messort buehne: nach dem Wechsel steht die Seite nicht in pruefbuehne — kein Urteil, UNGEMESSEN (die Probe sah: Folge: punkte-radeon\\\\scripts\\\\werkbank.cjs:580:37)\",\n  \"at async IncomingMessage.<anonymous> (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\werkbank.cjs:1705:49)\"\n ]\n}\n) · Täter: @@PUNKTE@@ MESSORT buehne: Messort buehne: nach dem Wechsel steht die Seite nicht in pruefbuehne",
+   "exit": 1,
+   "minuten": 0.06,
+   "grund": "Messort: buehne: Messort buehne: nach dem Wechsel steht die Seite nicht in pruefbuehne — kein Urteil, UNGEMESSEN (die Probe sah: Folge: punkte-radeon\\\\scripts\\\\werkbank.cjs:580:37)\",\n  \"at async IncomingMessage.<anonymous> (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\werkbank.cjs:1705:49)\"\n ]\n}\n) · Täter: @@PUNKTE@@ MESSORT buehne: Messort buehne: nach dem Wechsel steht die Seite nicht in pruefbuehne",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 3.8,
+   "fremd": {
+    "s": 7.8,
+    "takte": 3,
+    "fremdS": 42.55,
+    "kerne": 5.484,
+    "fensterKerne": 5.484,
+    "namen": [
+     [
+      "MsMpEng.exe",
+      13.78
+     ],
+     [
+      "Runner.Worker.exe spawnclient 4008 4012",
+      5.2
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      3.67
+     ]
+    ],
+    "dienerS": 7.41,
+    "diener": [
+     [
+      "System",
+      3.02
+     ],
+     [
+      "WmiPrvSE.exe",
+      2.25
+     ]
+    ],
+    "eigenS": 32.83,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T12:57:48.523Z",
+   "abdruck": "bb691a8762eb",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "wetter.K3#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: KAMERA -253.174 27.657 -1128.143 -258.4 25.732 -1132.8)",
+   "exit": 1,
+   "minuten": 0.77,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: KAMERA -253.174 27.657 -1128.143 -258.4 25.732 -1132.8)",
+   "s": 46,
+   "fremd": {
+    "s": 47.5,
+    "takte": 19,
+    "fremdS": 116.16,
+    "kerne": 2.446,
+    "fensterKerne": 2.934,
+    "namen": [
+     [
+      "git.exe -c protocol.ext.allow=never -c core.alternateRefsCommand=f() { git --g… $1 for-eac",
+      15.77
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      14.39
+     ],
+     [
+      "MsMpEng.exe",
+      10.8
+     ]
+    ],
+    "dienerS": 30.72,
+    "diener": [
+     [
+      "WmiPrvSE.exe",
+      13.47
+     ],
+     [
+      "System",
+      9.98
+     ]
+    ],
+    "eigenS": 77.41,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T12:58:11.542Z",
+   "abdruck": "073499ead14e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "luftwasser.K5#2": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: ohne gezählten Frame) · Täter: SCHWARM {\"msMedian\":0.0838,\"msP95\":0.144,\"imBildMin\":100,\"paare\":13504,\"instanzen\":500,\"teileJe\":5,\"pose\":{\"kamera\":[284.66,45.69,274.79,321.07,87.54,291.37],\"abstand\":57.9}}",
+   "exit": 0,
+   "minuten": 0.01,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: ohne gezählten Frame) · Täter: SCHWARM {\"msMedian\":0.0838,\"msP95\":0.144,\"imBildMin\":100,\"paare\":13504,\"instanzen\":500,\"teileJe\":5,\"pose\":{\"kamera\":[284.66,45.69,274.79,321.07,87.54,291.37],\"abstand\":57.9}}",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 0.4,
+   "fremd": {
+    "s": 5.1,
+    "takte": 2,
+    "fremdS": 10.42,
+    "kerne": 2.04,
+    "fensterKerne": 2.04,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      2
+     ],
+     [
+      "bash.exe -c source /c/Users/micha/.claude/shell-sna… ^EXIT $S/st-kopf.out dev/null; do sle",
+      1.39
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      1.25
+     ]
+    ],
+    "dienerS": 2.47,
+    "diener": [
+     [
+      "dwm.exe",
+      0.97
+     ],
+     [
+      "WmiPrvSE.exe",
+      0.7
+     ]
+    ],
+    "eigenS": 6.53,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T13:18:21.686Z",
+   "abdruck": "62ceb936aee3",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "studios.K2#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: p95 Griff → Bild unter der Schranke in 0/8 (Gesetz-Wert höchstens 17 ms portale, Neubau höchstens 2335 ms koerperstudio, je Studio null Griffe) · Neuladen 6/8 · A/B 6/8) · Täter: @@ PROBE-FEHLER TargetCloseError: Protocol error (Runtime.callFunctionOn): Target closed |     at CallbackRegistry.clear (C:\\Users\\micha\\AnazhRealm-profiband\\node_modules\\puppeteer-core\\lib\\cjs\\puppeteer\\common\\CallbackRegistry.js:82:36) |     at CdpCDPSession.onClosed (C:\\Users\\micha\\AnazhRealm-pro",
+   "exit": 3,
+   "minuten": 1.41,
+   "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: p95 Griff → Bild unter der Schranke in 0/8 (Gesetz-Wert höchstens 17 ms portale, Neubau höchstens 2335 ms koerperstudio, je Studio null Griffe) · Neuladen 6/8 · A/B 6/8) · Täter: @@ PROBE-FEHLER TargetCloseError: Protocol error (Runtime.callFunctionOn): Target closed |     at CallbackRegistry.clear (C:\\Users\\micha\\AnazhRealm-profiband\\node_modules\\puppeteer-core\\lib\\cjs\\puppeteer\\common\\CallbackRegistry.js:82:36) |     at CdpCDPSession.onClosed (C:\\Users\\micha\\AnazhRealm-pro",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 84.7,
+   "fremd": {
+    "s": 86.8,
+    "takte": 36,
+    "fremdS": 221.36,
+    "kerne": 2.55,
+    "fensterKerne": 3.005,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      30.34
+     ],
+     [
+      "bash.exe -c source /c/Users/micha/.claude/shell-sna… ^EXIT $S/st-kopf.out dev/null; do sle",
+      29.94
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      26.39
+     ]
+    ],
+    "dienerS": 55.44,
+    "diener": [
+     [
+      "System",
+      29.42
+     ],
+     [
+      "dwm.exe",
+      13.2
+     ]
+    ],
+    "eigenS": 155.08,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T13:18:54.654Z",
+   "abdruck": "b814926a7e85",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "studios.K3#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Dreiecke, Befehle, VRAM und GPU-ms ±5 % in 0/7 Mesh-Studios (0 Stufen), Klang 8/8 Orte im Quantum (Audio-Graph höchstens 0.091 ms), ohne garage L0 GPU 0.2135 ms↔Bank 5.5925 (+1), schmiede L0 GPU 0.0231 ms↔Bank 0.6604, portale L0 GPU 0.5322 ) · Täter: @@ PROBE-FEHLER TargetCloseError: Protocol error (Runtime.callFunctionOn): Target closed |     at CallbackRegistry.clear (C:\\Users\\micha\\AnazhRealm-profiband\\node_modules\\puppeteer-core\\lib\\cjs\\puppeteer\\common\\CallbackRegistry.js:82:36) |     at CdpCDPSession.onClosed (C:\\Users\\micha\\AnazhRealm-pro",
+   "exit": 3,
+   "minuten": 1.41,
+   "grund": "Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Dreiecke, Befehle, VRAM und GPU-ms ±5 % in 0/7 Mesh-Studios (0 Stufen), Klang 8/8 Orte im Quantum (Audio-Graph höchstens 0.091 ms), ohne garage L0 GPU 0.2135 ms↔Bank 5.5925 (+1), schmiede L0 GPU 0.0231 ms↔Bank 0.6604, portale L0 GPU 0.5322 ) · Täter: @@ PROBE-FEHLER TargetCloseError: Protocol error (Runtime.callFunctionOn): Target closed |     at CallbackRegistry.clear (C:\\Users\\micha\\AnazhRealm-profiband\\node_modules\\puppeteer-core\\lib\\cjs\\puppeteer\\common\\CallbackRegistry.js:82:36) |     at CdpCDPSession.onClosed (C:\\Users\\micha\\AnazhRealm-pro",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 84.7,
+   "fremd": {
+    "s": 86.8,
+    "takte": 36,
+    "fremdS": 221.36,
+    "kerne": 2.55,
+    "fensterKerne": 3.005,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      30.34
+     ],
+     [
+      "bash.exe -c source /c/Users/micha/.claude/shell-sna… ^EXIT $S/st-kopf.out dev/null; do sle",
+      29.94
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      26.39
+     ]
+    ],
+    "dienerS": 55.44,
+    "diener": [
+     [
+      "System",
+      29.42
+     ],
+     [
+      "dwm.exe",
+      13.2
+     ]
+    ],
+    "eigenS": 155.08,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T13:18:54.654Z",
+   "abdruck": "6b9b5abda81d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "studios.K2#2",
+   "modus": "session"
+  },
+  "pipeline.K4#1": {
+   "gruen": false,
+   "zahl": "Frist der Probe 7 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Liefer-Zeile am Zweit-Boot (Exit 0)) · Täter: SPUR kalt {\"stand\":\"gemessen\",\"kontrolleMs\":1530,\"belegtMs\":382,\"laengsteMs\":95,\"langeN\":1,\"langeMs\":95,\"halter\":[\"verteilt ((anonym) [stamm/dirigent-ankunft.js:1] 46 · _weltVorlauf 31 · _ensureVibePass 13) hält den Haupt-Faden bis zum Ende 95 ms (bei 0.8 s; 1× ≥ 50 ms, Σ 95\"],\"laengste\":\"95 ms bei ",
+   "exit": 0,
+   "minuten": 0.06,
+   "grund": "Frist der Probe 7 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Liefer-Zeile am Zweit-Boot (Exit 0)) · Täter: SPUR kalt {\"stand\":\"gemessen\",\"kontrolleMs\":1530,\"belegtMs\":382,\"laengsteMs\":95,\"langeN\":1,\"langeMs\":95,\"halter\":[\"verteilt ((anonym) [stamm/dirigent-ankunft.js:1] 46 · _weltVorlauf 31 · _ensureVibePass 13) hält den Haupt-Faden bis zum Ende 95 ms (bei 0.8 s; 1× ≥ 50 ms, Σ 95\"],\"laengste\":\"95 ms bei ",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 3.4,
+   "fremd": {
+    "s": 7.5,
+    "takte": 3,
+    "fremdS": 19.84,
+    "kerne": 2.656,
+    "fensterKerne": 2.656,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.64
+     ],
+     [
+      "MsMpEng.exe",
+      3.36
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      2.28
+     ]
+    ],
+    "dienerS": 5.38,
+    "diener": [
+     [
+      "System",
+      2.63
+     ],
+     [
+      "dwm.exe",
+      1.47
+     ]
+    ],
+    "eigenS": 31.73,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T13:20:34.831Z",
+   "abdruck": "93ae1ab04000",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "pipeline.K4#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 7 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Art-Zeile oder kein Kern-Wechsel (Exit 0)) · Täter: SPUR kalt {\"stand\":\"gemessen\",\"kontrolleMs\":1530,\"belegtMs\":382,\"laengsteMs\":95,\"langeN\":1,\"langeMs\":95,\"halter\":[\"verteilt ((anonym) [stamm/dirigent-ankunft.js:1] 46 · _weltVorlauf 31 · _ensureVibePass 13) hält den Haupt-Faden bis zum Ende 95 ms (bei 0.8 s; 1× ≥ 50 ms, Σ 95\"],\"laengste\":\"95 ms bei ",
+   "exit": 0,
+   "minuten": 0.06,
+   "grund": "Frist der Probe 7 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Art-Zeile oder kein Kern-Wechsel (Exit 0)) · Täter: SPUR kalt {\"stand\":\"gemessen\",\"kontrolleMs\":1530,\"belegtMs\":382,\"laengsteMs\":95,\"langeN\":1,\"langeMs\":95,\"halter\":[\"verteilt ((anonym) [stamm/dirigent-ankunft.js:1] 46 · _weltVorlauf 31 · _ensureVibePass 13) hält den Haupt-Faden bis zum Ende 95 ms (bei 0.8 s; 1× ≥ 50 ms, Σ 95\"],\"laengste\":\"95 ms bei ",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 3.4,
+   "fremd": {
+    "s": 7.5,
+    "takte": 3,
+    "fremdS": 19.84,
+    "kerne": 2.656,
+    "fensterKerne": 2.656,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.64
+     ],
+     [
+      "MsMpEng.exe",
+      3.36
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      2.28
+     ]
+    ],
+    "dienerS": 5.38,
+    "diener": [
+     [
+      "System",
+      2.63
+     ],
+     [
+      "dwm.exe",
+      1.47
+     ]
+    ],
+    "eigenS": 31.73,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T13:20:34.831Z",
+   "abdruck": "f3b1a6627c8c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "pipeline.K4#1",
+   "modus": "session"
+  },
+  "ankunft.K2#1": {
+   "gruen": false,
+   "zahl": "Frist der Probe 7 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: kein Bild der Kontrolle (t(Kontrolle) 0 ms, Exit 0) · [linse-gpu] amd/rdna-3) · Täter: SPUR kalt {\"stand\":\"gemessen\",\"kontrolleMs\":1530,\"belegtMs\":382,\"laengsteMs\":95,\"langeN\":1,\"langeMs\":95,\"halter\":[\"verteilt ((anonym) [stamm/dirigent-ankunft.js:1] 46 · _weltVorlauf 31 · _ensureVibePass 13) hält den Haupt-Faden bis zum Ende 95 ms (bei 0.8 s; 1× ≥ 50 ms, Σ 95\"],\"laengste\":\"95 ms bei ",
+   "exit": 0,
+   "minuten": 0.06,
+   "grund": "Frist der Probe 7 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: kein Bild der Kontrolle (t(Kontrolle) 0 ms, Exit 0) · [linse-gpu] amd/rdna-3) · Täter: SPUR kalt {\"stand\":\"gemessen\",\"kontrolleMs\":1530,\"belegtMs\":382,\"laengsteMs\":95,\"langeN\":1,\"langeMs\":95,\"halter\":[\"verteilt ((anonym) [stamm/dirigent-ankunft.js:1] 46 · _weltVorlauf 31 · _ensureVibePass 13) hält den Haupt-Faden bis zum Ende 95 ms (bei 0.8 s; 1× ≥ 50 ms, Σ 95\"],\"laengste\":\"95 ms bei ",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 3.4,
+   "fremd": {
+    "s": 7.5,
+    "takte": 3,
+    "fremdS": 19.84,
+    "kerne": 2.656,
+    "fensterKerne": 2.656,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.64
+     ],
+     [
+      "MsMpEng.exe",
+      3.36
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      2.28
+     ]
+    ],
+    "dienerS": 5.38,
+    "diener": [
+     [
+      "System",
+      2.63
+     ],
+     [
+      "dwm.exe",
+      1.47
+     ]
+    ],
+    "eigenS": 31.73,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T13:20:34.831Z",
+   "abdruck": "429b5674fc30",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "pipeline.K4#1",
+   "modus": "session"
+  },
+  "ankunft.K3#1": {
+   "gruen": false,
+   "zahl": "Frist der Probe 7 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 0 von 2 Zweit-Boots mit Kontrolle von außen (Exit 0) · [linse-gpu] amd/rdna-3) · Täter: SPUR kalt {\"stand\":\"gemessen\",\"kontrolleMs\":1530,\"belegtMs\":382,\"laengsteMs\":95,\"langeN\":1,\"langeMs\":95,\"halter\":[\"verteilt ((anonym) [stamm/dirigent-ankunft.js:1] 46 · _weltVorlauf 31 · _ensureVibePass 13) hält den Haupt-Faden bis zum Ende 95 ms (bei 0.8 s; 1× ≥ 50 ms, Σ 95\"],\"laengste\":\"95 ms bei ",
+   "exit": 0,
+   "minuten": 0.06,
+   "grund": "Frist der Probe 7 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 0 von 2 Zweit-Boots mit Kontrolle von außen (Exit 0) · [linse-gpu] amd/rdna-3) · Täter: SPUR kalt {\"stand\":\"gemessen\",\"kontrolleMs\":1530,\"belegtMs\":382,\"laengsteMs\":95,\"langeN\":1,\"langeMs\":95,\"halter\":[\"verteilt ((anonym) [stamm/dirigent-ankunft.js:1] 46 · _weltVorlauf 31 · _ensureVibePass 13) hält den Haupt-Faden bis zum Ende 95 ms (bei 0.8 s; 1× ≥ 50 ms, Σ 95\"],\"laengste\":\"95 ms bei ",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 3.4,
+   "fremd": {
+    "s": 7.5,
+    "takte": 3,
+    "fremdS": 19.84,
+    "kerne": 2.656,
+    "fensterKerne": 2.656,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.64
+     ],
+     [
+      "MsMpEng.exe",
+      3.36
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      2.28
+     ]
+    ],
+    "dienerS": 5.38,
+    "diener": [
+     [
+      "System",
+      2.63
+     ],
+     [
+      "dwm.exe",
+      1.47
+     ]
+    ],
+    "eigenS": 31.73,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T13:20:34.831Z",
+   "abdruck": "206c6118fb40",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "pipeline.K4#1",
+   "modus": "session"
+  },
+  "ankunft.K1#1": {
+   "gruen": false,
+   "zahl": "Frist der Probe 7 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Kontrolle von außen (t(Kontrolle) 0, Exit 0) · [linse-gpu] amd/rdna-3) · Täter: SPUR kalt {\"stand\":\"gemessen\",\"kontrolleMs\":1530,\"belegtMs\":382,\"laengsteMs\":95,\"langeN\":1,\"langeMs\":95,\"halter\":[\"verteilt ((anonym) [stamm/dirigent-ankunft.js:1] 46 · _weltVorlauf 31 · _ensureVibePass 13) hält den Haupt-Faden bis zum Ende 95 ms (bei 0.8 s; 1× ≥ 50 ms, Σ 95\"],\"laengste\":\"95 ms bei ",
+   "exit": 0,
+   "minuten": 0.06,
+   "grund": "Frist der Probe 7 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Kontrolle von außen (t(Kontrolle) 0, Exit 0) · [linse-gpu] amd/rdna-3) · Täter: SPUR kalt {\"stand\":\"gemessen\",\"kontrolleMs\":1530,\"belegtMs\":382,\"laengsteMs\":95,\"langeN\":1,\"langeMs\":95,\"halter\":[\"verteilt ((anonym) [stamm/dirigent-ankunft.js:1] 46 · _weltVorlauf 31 · _ensureVibePass 13) hält den Haupt-Faden bis zum Ende 95 ms (bei 0.8 s; 1× ≥ 50 ms, Σ 95\"],\"laengste\":\"95 ms bei ",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 3.4,
+   "fremd": {
+    "s": 7.5,
+    "takte": 3,
+    "fremdS": 19.84,
+    "kerne": 2.656,
+    "fensterKerne": 2.656,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.64
+     ],
+     [
+      "MsMpEng.exe",
+      3.36
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      2.28
+     ]
+    ],
+    "dienerS": 5.38,
+    "diener": [
+     [
+      "System",
+      2.63
+     ],
+     [
+      "dwm.exe",
+      1.47
+     ]
+    ],
+    "eigenS": 31.73,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T13:20:34.831Z",
+   "abdruck": "8a321f302a0c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "pipeline.K4#1",
+   "modus": "session"
+  },
+  "ankunft.K1#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 7 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Kontrolle von außen (t(Kontrolle) 0, Exit 0) · [linse-gpu] amd/rdna-3) · Täter: SPUR kalt {\"stand\":\"gemessen\",\"kontrolleMs\":1530,\"belegtMs\":382,\"laengsteMs\":95,\"langeN\":1,\"langeMs\":95,\"halter\":[\"verteilt ((anonym) [stamm/dirigent-ankunft.js:1] 46 · _weltVorlauf 31 · _ensureVibePass 13) hält den Haupt-Faden bis zum Ende 95 ms (bei 0.8 s; 1× ≥ 50 ms, Σ 95\"],\"laengste\":\"95 ms bei ",
+   "exit": 0,
+   "minuten": 0.06,
+   "grund": "Frist der Probe 7 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Kontrolle von außen (t(Kontrolle) 0, Exit 0) · [linse-gpu] amd/rdna-3) · Täter: SPUR kalt {\"stand\":\"gemessen\",\"kontrolleMs\":1530,\"belegtMs\":382,\"laengsteMs\":95,\"langeN\":1,\"langeMs\":95,\"halter\":[\"verteilt ((anonym) [stamm/dirigent-ankunft.js:1] 46 · _weltVorlauf 31 · _ensureVibePass 13) hält den Haupt-Faden bis zum Ende 95 ms (bei 0.8 s; 1× ≥ 50 ms, Σ 95\"],\"laengste\":\"95 ms bei ",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 3.4,
+   "fremd": {
+    "s": 7.5,
+    "takte": 3,
+    "fremdS": 19.84,
+    "kerne": 2.656,
+    "fensterKerne": 2.656,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.64
+     ],
+     [
+      "MsMpEng.exe",
+      3.36
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      2.28
+     ]
+    ],
+    "dienerS": 5.38,
+    "diener": [
+     [
+      "System",
+      2.63
+     ],
+     [
+      "dwm.exe",
+      1.47
+     ]
+    ],
+    "eigenS": 31.73,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T13:20:34.831Z",
+   "abdruck": "4f76f2bf220f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "pipeline.K4#1",
+   "modus": "session"
+  },
+  "ankunft.K5#1": {
+   "gruen": false,
+   "zahl": "Frist der Probe 7 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: längste Aufgabe 95 ms (Soll ≤ 250) · Haupt-Faden belegt 0.38 s bis zur Kontrolle (Soll ≤ 4; 1 LongTasks 0.10 s) · Kontrolle 1.53 s Seiten-Uhr · die längste: 95 ms bei 0.8 s: verteilt ((anonym) [stamm/dirigent-ankunft.js:1] 46 · _weltVorlauf) · Täter: SPUR kalt {\"stand\":\"gemessen\",\"kontrolleMs\":1530,\"belegtMs\":382,\"laengsteMs\":95,\"langeN\":1,\"langeMs\":95,\"halter\":[\"verteilt ((anonym) [stamm/dirigent-ankunft.js:1] 46 · _weltVorlauf 31 · _ensureVibePass 13) hält den Haupt-Faden bis zum Ende 95 ms (bei 0.8 s; 1× ≥ 50 ms, Σ 95\"],\"laengste\":\"95 ms bei ",
+   "exit": 0,
+   "minuten": 0.06,
+   "grund": "Frist der Probe 7 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: längste Aufgabe 95 ms (Soll ≤ 250) · Haupt-Faden belegt 0.38 s bis zur Kontrolle (Soll ≤ 4; 1 LongTasks 0.10 s) · Kontrolle 1.53 s Seiten-Uhr · die längste: 95 ms bei 0.8 s: verteilt ((anonym) [stamm/dirigent-ankunft.js:1] 46 · _weltVorlauf) · Täter: SPUR kalt {\"stand\":\"gemessen\",\"kontrolleMs\":1530,\"belegtMs\":382,\"laengsteMs\":95,\"langeN\":1,\"langeMs\":95,\"halter\":[\"verteilt ((anonym) [stamm/dirigent-ankunft.js:1] 46 · _weltVorlauf 31 · _ensureVibePass 13) hält den Haupt-Faden bis zum Ende 95 ms (bei 0.8 s; 1× ≥ 50 ms, Σ 95\"],\"laengste\":\"95 ms bei ",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 3.4,
+   "fremd": {
+    "s": 7.5,
+    "takte": 3,
+    "fremdS": 19.84,
+    "kerne": 2.656,
+    "fensterKerne": 2.656,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.64
+     ],
+     [
+      "MsMpEng.exe",
+      3.36
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      2.28
+     ]
+    ],
+    "dienerS": 5.38,
+    "diener": [
+     [
+      "System",
+      2.63
+     ],
+     [
+      "dwm.exe",
+      1.47
+     ]
+    ],
+    "eigenS": 31.73,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T13:20:34.831Z",
+   "abdruck": "f9a20f49a011",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "pipeline.K4#1",
+   "modus": "session"
+  },
+  "bauen.K1#2": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Ausgabe des Bild-Wegs auf der Karte (Exit 2)) · Täter: @@ PROBE-FEHLER der Deckel des Laufs fehlt (argv „1“: der Läufer ersetzt den Platzhalter SEK)",
+   "exit": 2,
+   "minuten": 0.01,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Ausgabe des Bild-Wegs auf der Karte (Exit 2)) · Täter: @@ PROBE-FEHLER der Deckel des Laufs fehlt (argv „1“: der Läufer ersetzt den Platzhalter SEK)",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 0.7,
+   "fremd": {
+    "s": 5,
+    "takte": 2,
+    "fremdS": 16.16,
+    "kerne": 3.221,
+    "fensterKerne": 3.221,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      4.78
+     ],
+     [
+      "MsMpEng.exe",
+      1.59
+     ],
+     [
+      "bash.exe -c source /c/Users/micha/.claude/shell-sna… ^EXIT $S/st-kopf.out dev/null; do sle",
+      1.47
+     ]
+    ],
+    "dienerS": 2.89,
+    "diener": [
+     [
+      "System",
+      1.41
+     ],
+     [
+      "dwm.exe",
+      0.7
+     ]
+    ],
+    "eigenS": 4.86,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T13:21:14.406Z",
+   "abdruck": "b2ea14da4611",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "bauen.K5#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen: Stille seit 24.8 s nach 45 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: ✅ ki · Third · Leiter × klettern · 19.8 s)",
+   "exit": 1,
+   "minuten": 0.76,
+   "grund": "Deckel 45 s gerissen: Stille seit 24.8 s nach 45 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: ✅ ki · Third · Leiter × klettern · 19.8 s)",
+   "s": 45.4,
+   "fremd": {
+    "s": 47.2,
+    "takte": 19,
+    "fremdS": 120.95,
+    "kerne": 2.56,
+    "fensterKerne": 2.956,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      25.75
+     ],
+     [
+      "MsMpEng.exe",
+      18.25
+     ],
+     [
+      "svchost.exe",
+      14.39
+     ]
+    ],
+    "dienerS": 31.39,
+    "diener": [
+     [
+      "System",
+      13.58
+     ],
+     [
+      "dwm.exe",
+      10.47
+     ]
+    ],
+    "eigenS": 181.58,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T13:22:39.468Z",
+   "abdruck": "23a5c835e3b1",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "studios.K4#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 84 s gerissen: Stille seit 15 s nach 90.2 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: K4 terrain: Differenz — · ROT: bild: {\"ms\":12015,\"fehler\":\"ABNAHME ROT [Ziel Blickziel verdeckt von Laub baum_eiche in 41.24 m] · beweis · Sicht 0.0 % · Ziel Bl)",
+   "exit": 1,
+   "minuten": 1.52,
+   "grund": "Deckel 84 s gerissen: Stille seit 15 s nach 90.2 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: K4 terrain: Differenz — · ROT: bild: {\"ms\":12015,\"fehler\":\"ABNAHME ROT [Ziel Blickziel verdeckt von Laub baum_eiche in 41.24 m] · beweis · Sicht 0.0 % · Ziel Bl)",
+   "s": 90.9,
+   "fremd": {
+    "s": 94.1,
+    "takte": 38,
+    "fremdS": 194.47,
+    "kerne": 2.067,
+    "fensterKerne": 3.252,
+    "namen": [
+     [
+      "MsMpEng.exe",
+      31.95
+     ],
+     [
+      "svchost.exe",
+      23.88
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      22.17
+     ]
+    ],
+    "dienerS": 64.7,
+    "diener": [
+     [
+      "System",
+      27.22
+     ],
+     [
+      "dwm.exe",
+      22.41
+     ]
+    ],
+    "eigenS": 250.72,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T13:23:51.635Z",
+   "abdruck": "428b901d66ae",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "studios.K4#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 84 s gerissen: Stille seit 15 s nach 90.2 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: K4 terrain: Differenz — · ROT: bild: {\"ms\":12015,\"fehler\":\"ABNAHME ROT [Ziel Blickziel verdeckt von Laub baum_eiche in 41.24 m] · beweis · Sicht 0.0 % · Ziel Bl)",
+   "exit": 1,
+   "minuten": 1.52,
+   "grund": "Deckel 84 s gerissen: Stille seit 15 s nach 90.2 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: K4 terrain: Differenz — · ROT: bild: {\"ms\":12015,\"fehler\":\"ABNAHME ROT [Ziel Blickziel verdeckt von Laub baum_eiche in 41.24 m] · beweis · Sicht 0.0 % · Ziel Bl)",
+   "s": 90.9,
+   "fremd": {
+    "s": 94.1,
+    "takte": 38,
+    "fremdS": 194.47,
+    "kerne": 2.067,
+    "fensterKerne": 3.252,
+    "namen": [
+     [
+      "MsMpEng.exe",
+      31.95
+     ],
+     [
+      "svchost.exe",
+      23.88
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      22.17
+     ]
+    ],
+    "dienerS": 64.7,
+    "diener": [
+     [
+      "System",
+      27.22
+     ],
+     [
+      "dwm.exe",
+      22.41
+     ]
+    ],
+    "eigenS": 250.72,
+    "schwelle": 0.5,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-10T13:23:51.635Z",
+   "abdruck": "f3f24988eca2",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "studios.K4#1",
+   "modus": "session"
+  },
+  "siedlung.K2#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-10T13:28:23.283Z",
+   "abdruck": "45b9dd0216d0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "siedlung.K2#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-10T13:28:23.283Z",
+   "abdruck": "a8e05a2a6fe5",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "siedlung.K2#1",
+   "modus": "session"
+  },
+  "siedlung.K5#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-10T13:28:23.287Z",
+   "abdruck": "d25ae70e35f2",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "siedlung.K5#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-10T13:28:23.287Z",
+   "abdruck": "f3fd57d2afd2",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "siedlung.K5#1",
+   "modus": "session"
+  },
+  "siedlung.K4#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-10T13:28:23.290Z",
+   "abdruck": "50ecfdc66cea",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "leib.K2#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-10T13:28:23.294Z",
+   "abdruck": "a52b97079085",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "leib.K2#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-10T13:28:23.294Z",
+   "abdruck": "038ab2ac96db",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "leib.K2#1",
+   "modus": "session"
+  },
+  "leib.K3#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-10T13:28:23.298Z",
+   "abdruck": "3ad18f4155ae",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "halten.K5#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-10T13:28:23.302Z",
+   "abdruck": "f3375009056e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "halten.K5#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-10T13:28:23.302Z",
+   "abdruck": "baebe0627869",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "halten.K5#1",
+   "modus": "session"
+  },
+  "halten.K1#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-10T13:28:23.305Z",
+   "abdruck": "62e261bf735c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "tore.K1#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-10T13:28:23.308Z",
+   "abdruck": "248a1713c159",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "tore.K3#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-10T13:28:23.312Z",
+   "abdruck": "fe658a7efdd8",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "tore.K3#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-10T13:28:23.312Z",
+   "abdruck": "2eef9f974ab7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "tore.K3#1",
+   "modus": "session"
+  },
+  "streaming.K4#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-10T13:28:23.315Z",
+   "abdruck": "62ee48e6316f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "profiband.K1#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-10T13:28:23.318Z",
+   "abdruck": "a4809dc2e930",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "profiband.K1#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-10T13:28:23.318Z",
+   "abdruck": "ed7fcd8a82d3",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K1#1",
+   "modus": "session"
+  },
+  "pflicht.E#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-10T13:28:23.318Z",
+   "abdruck": "faadcb87e50f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K1#1",
+   "modus": "session"
+  },
+  "profiband.K2#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-10T13:28:23.318Z",
+   "abdruck": "bded3260dbec",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K1#1",
+   "modus": "session"
+  },
+  "profiband.K2#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-10T13:28:23.318Z",
+   "abdruck": "581af30fec74",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K1#1",
+   "modus": "session"
+  },
+  "profiband.K3#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-10T13:28:23.318Z",
+   "abdruck": "f53ad5c4b546",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K1#1",
+   "modus": "session"
+  },
+  "profiband.K3#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-10T13:28:23.318Z",
+   "abdruck": "79e11b5cf7b3",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K1#1",
+   "modus": "session"
+  },
+  "speicher.K1#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-10T13:28:23.325Z",
+   "abdruck": "f84abebec58b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "speicher.K1#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-10T13:28:23.325Z",
+   "abdruck": "4f9ddc930613",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "speicher.K1#1",
+   "modus": "session"
+  },
+  "speicher.K2#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-10T13:28:23.328Z",
+   "abdruck": "0a8e9bbebe36",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "speicher.K2#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-10T13:28:23.328Z",
+   "abdruck": "f93d36e16c03",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "speicher.K2#1",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-10T11:51:10.321Z",
+  "port": 7804,
+  "warten": 0.19,
+  "bootS": 6.9,
+  "grundstellungS": [
+   18.4,
+   3.5,
+   4.1,
+   3,
+   7.1,
+   4.7,
+   0.1,
+   2.8,
+   2.4,
+   2.5,
+   3.5,
+   6,
+   0
+  ],
+  "proben": 35,
+  "freigaben": [
+   {
+    "vor": "lod.K5#1",
+    "s": 502.3
+   }
+  ],
+  "offen": [
+   "physik.K2#2",
+   "tiere.K1#2",
+   "affekt.K1#2",
+   "oekologie.K4#2",
+   "haar.K1#1",
+   "fahrzeug.K3#1",
+   "fahrzeug.K3#2",
+   "fahrzeug.K4#1",
+   "fahrzeug.K4#2",
+   "leib.K1#2",
+   "halten.K2#1",
+   "leib.K4#1",
+   "leib.K4#2",
+   "fahrzeug.K5#1",
+   "fahrzeug.K2#1",
+   "fahrzeug.K2#2",
+   "klang.K4#1",
+   "klang.K4#2",
+   "klang.K5#2",
+   "speicher.K4#2",
+   "wetter.K2#1",
+   "licht.K3#1",
+   "mensch.K1#1",
+   "mensch.K2#2",
+   "vegetation.K4#1",
+   "vegetation.K4#2",
+   "mensch.K5#1",
+   "siedlung.K1#2",
+   "schatten.K1#1",
+   "schatten.K1#2",
+   "wetter.K3#2",
+   "tiere.K3#2",
+   "tiere.K2#2",
+   "luftwasser.K5#2",
+   "haar.K5#1",
+   "studios.K2#2",
+   "studios.K3#2",
+   "pipeline.K4#1",
+   "pipeline.K4#2",
+   "ankunft.K2#1",
+   "ankunft.K3#1",
+   "ankunft.K1#1",
+   "ankunft.K1#2",
+   "ankunft.K5#1",
+   "bauen.K1#2",
+   "bauen.K5#2",
+   "studios.K4#1",
+   "studios.K4#2",
+   "siedlung.K2#1",
+   "siedlung.K2#2",
+   "siedlung.K5#1",
+   "siedlung.K5#2",
+   "siedlung.K4#2",
+   "leib.K2#1",
+   "leib.K2#2",
+   "leib.K3#2",
+   "halten.K5#1",
+   "halten.K5#2",
+   "halten.K1#2",
+   "tore.K1#1",
+   "tore.K3#1",
+   "tore.K3#2",
+   "streaming.K4#2",
+   "profiband.K1#1",
+   "profiband.K1#2",
+   "pflicht.E#1",
+   "profiband.K2#1",
+   "profiband.K2#2",
+   "profiband.K3#1",
+   "profiband.K3#2",
+   "speicher.K1#1",
+   "speicher.K1#2",
+   "speicher.K2#1",
+   "speicher.K2#2"
+  ],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "gelaende.K5#2",
+    "s": 21.5,
+    "takte": 612,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": "wiese",
+    "vor": "mensch.K4#1",
+    "s": 45.9,
+    "takte": 589,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": "wiese",
+    "vor": "vegetation.K1#1",
+    "s": 18.6,
+    "takte": 579,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": "wiese",
+    "vor": "lod.K5#1",
+    "s": 16.6,
+    "takte": 555,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": "wiese",
+    "vor": "spielgang.K3#1",
+    "s": 16.9,
+    "takte": 589,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": "wiese",
+    "vor": "klang.K2#1",
+    "s": 17.6,
+    "takte": 533,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": "genesis",
+    "vor": "ferne.K1#1",
+    "s": 12.7,
+    "takte": 606,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": "genesis",
+    "vor": "material.K3#1",
+    "s": 15.7,
+    "takte": 533,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": "genesis",
+    "vor": "material.K1#1",
+    "s": 2.3,
+    "takte": 125,
+    "chunks": 81,
+    "nach": "der Grundstellung"
+   },
+   {
+    "ort": "genesis",
+    "vor": "ankunft.K4#1",
+    "s": 15.6,
+    "takte": 561,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": "dorf",
+    "vor": "licht.K3#2",
+    "s": 22.2,
+    "takte": 580,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": "dorf",
+    "vor": "schatten.K2#1",
+    "s": 19.4,
+    "takte": 567,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": null,
+    "vor": "affekt.K4#2",
+    "s": 16.7,
+    "takte": 733,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": "wiese",
+    "vor": "gelaende.K2#1",
+    "s": 19,
+    "takte": 564,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": "wiese",
+    "vor": "wetter.K2#2",
+    "s": 17.8,
+    "takte": 596,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": "wiese",
+    "vor": "physik.K2#2",
+    "s": 1.9,
+    "takte": 147,
+    "chunks": 81,
+    "nach": "der Grundstellung"
+   }
+  ],
+  "wegeTueren": [
+   {
+    "vor": "ankunft.K4#1",
+    "wege": "wege +1 [-119.1,-274.9,279.2,201/272]",
+    "s": 2.8
+   },
+   {
+    "vor": "schatten.K2#1",
+    "wege": "wege +5 [-748.3,-821.3,-615.9,-784.1/28] [-784.3,-952.2,-631.7,-806.5/4] [-805.3,-801.4,-689.5,-574/6] …",
+    "s": 2.5
+   }
+  ],
+  "haenger": [
+   {
+    "probe": "profiband.K4#1",
+    "zurueck": 9
+   }
+  ],
+  "unerklaert": [
+   {
+    "probe": "material.K3#1",
+    "wie": "werke +5 (−0)"
+   },
+   {
+    "probe": "material.K1#1",
+    "wie": "werke +5 (−0)"
+   },
+   {
+    "probe": "licht.K3#2",
+    "wie": "orte +-3,-3 · wege +3 [-748.3,-821.3,-615.9,-784.1/28] [-805.3,-801.4,-689.5,-574/6] [-833.8,-834.7,-648.1,-574.2/76] (-3,-3, netz:-3,-3, netz:-3,-3|-4,-4)"
+   },
+   {
+    "probe": "gelaende.K3#1",
+    "wie": "orte +6,-25 +7,-24 · wege +6 [1410.2,-6310.3,1771.1,-6169.3/88] [1443.2,-6282.4,1737.7,-6193.4/6] [1723.8,-6196.8,1758.8,-5966.4/42] … (6,-25, 7,-24, netz:6,-25, netz:6,-25|7,-24)"
+   }
+  ],
+  "ciBlicke": 35,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 4717,
+   "frameP95": 75.37,
+   "taktP95": 51.95,
+   "vramMax": 154.9,
+   "seiten": 12,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [
+    {
+     "probe": "gelaende.K3#1",
+     "m": 5981,
+     "ringVor": 4,
+     "ringMin": 0
+    },
+    {
+     "probe": "ferne.K1#1",
+     "m": 3592,
+     "ringVor": 4,
+     "ringMin": 0
+    },
+    {
+     "probe": "licht.K5#1",
+     "m": 3592,
+     "ringVor": 4,
+     "ringMin": 0
+    },
+    {
+     "probe": "gelaende.K2#1",
+     "m": 1718,
+     "ringVor": 4,
+     "ringMin": 0
+    },
+    {
+     "probe": "material.K2#1",
+     "m": 1083,
+     "ringVor": 4,
+     "ringMin": 0
+    },
+    {
+     "probe": "lod.K1#1",
+     "m": 1013,
+     "ringVor": 4,
+     "ringMin": 0
+    },
+    {
+     "probe": "streaming.K3#1",
+     "m": 1000,
+     "ringVor": 4,
+     "ringMin": 0
+    },
+    {
+     "probe": "gelaende.K5#2",
+     "m": 312,
+     "ringVor": 4,
+     "ringMin": -1
+    }
+   ],
+   "zapfen": 1724,
+   "luecken": 4,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+  },
+  "fahrtS": 1803.7,
+  "grund": "die Fahrt riss 1800 s in physik.K2#2 — offen: physik.K2#2, tiere.K1#2, affekt.K1#2, oekologie.K4#2, haar.K1#1, fahrzeug.K3#1, fahrzeug.K3#2, fahrzeug.K4#1, fahrzeug.K4#2, leib.K1#2, halten.K2#1, leib.K4#1, leib.K4#2, fahrzeug.K5#1, fahrzeug.K2#1, fahrzeug.K2#2, klang.K4#1, klang.K4#2, klang.K5#2, speicher.K4#2, wetter.K2#1, licht.K3#1, mensch.K1#1, mensch.K2#2, vegetation.K4#1, vegetation.K4#2, mensch.K5#1, siedlung.K1#2, schatten.K1#1, schatten.K1#2, wetter.K3#2, tiere.K3#2, tiere.K2#2, luftwasser.K5#2, haar.K5#1, studios.K2#2, studios.K3#2, pipeline.K4#1, pipeline.K4#2, ankunft.K2#1, ankunft.K3#1, ankunft.K1#1, ankunft.K1#2, ankunft.K5#1, bauen.K1#2, bauen.K5#2, studios.K4#1, studios.K4#2, siedlung.K2#1, siedlung.K2#2, siedlung.K5#1, siedlung.K5#2, siedlung.K4#2, leib.K2#1, leib.K2#2, leib.K3#2, halten.K5#1, halten.K5#2, halten.K1#2, tore.K1#1, tore.K3#1, tore.K3#2, streaming.K4#2, profiband.K1#1, profiband.K1#2, pflicht.E#1, profiband.K2#1, profiband.K2#2, profiband.K3#1, profiband.K3#2, speicher.K1#1, speicher.K1#2, speicher.K2#1, speicher.K2#2",
+  "minuten": 38.76
+ },
+ "fortsetzung": [
+  {
+   "start": "2026-11-10T12:29:55.633Z",
+   "port": 7804,
+   "warten": 3.5,
+   "bootS": 7.4,
+   "grundstellungS": [
+    2.3,
+    2.3,
+    0,
+    0,
+    0,
+    0,
+    0,
+    5.4,
+    3.6,
+    3.4,
+    3.5,
+    2.8,
+    9.4,
+    3.4,
+    0,
+    0,
+    0.1,
+    4.1,
+    3.5,
+    2.9,
+    2.6,
+    1.6,
+    1.5,
+    1.4,
+    2.6,
+    0.1,
+    0.1,
+    0.1,
+    0,
+    2.3,
+    2.1
+   ],
+   "proben": 31,
+   "freigaben": [
+    {
+     "vor": "tiere.K2#2",
+     "s": 614.6
+    },
+    {
+     "vor": "luftwasser.K5#2",
+     "s": 427.7
+    }
+   ],
+   "offen": [
+    "bauen.K5#2",
+    "studios.K4#1",
+    "studios.K4#2",
+    "siedlung.K2#1",
+    "siedlung.K2#2",
+    "siedlung.K5#1",
+    "siedlung.K5#2",
+    "siedlung.K4#2",
+    "leib.K2#1",
+    "leib.K2#2",
+    "leib.K3#2",
+    "halten.K5#1",
+    "halten.K5#2",
+    "halten.K1#2",
+    "tore.K1#1",
+    "tore.K3#1",
+    "tore.K3#2",
+    "streaming.K4#2",
+    "profiband.K1#1",
+    "profiband.K1#2",
+    "pflicht.E#1",
+    "profiband.K2#1",
+    "profiband.K2#2",
+    "profiband.K3#1",
+    "profiband.K3#2",
+    "speicher.K1#1",
+    "speicher.K1#2",
+    "speicher.K2#1",
+    "speicher.K2#2"
+   ],
+   "orte": [
+    {
+     "ort": "dorf",
+     "vor": "wetter.K2#1",
+     "s": 26.7,
+     "takte": 807,
+     "chunks": 81,
+     "nach": null
+    },
+    {
+     "ort": "dorf",
+     "vor": "licht.K3#1",
+     "s": 19.4,
+     "takte": 599,
+     "chunks": 81,
+     "nach": "der Tür"
+    },
+    {
+     "ort": "wiese",
+     "vor": "physik.K2#2",
+     "s": 19.7,
+     "takte": 545,
+     "chunks": 81,
+     "nach": "der Tür"
+    },
+    {
+     "ort": "wiese",
+     "vor": "tiere.K1#2",
+     "s": 3.8,
+     "takte": 175,
+     "chunks": 100,
+     "nach": "der Grundstellung"
+    },
+    {
+     "ort": "wiese",
+     "vor": "affekt.K1#2",
+     "s": 7.8,
+     "takte": 540,
+     "chunks": 91,
+     "nach": "der Grundstellung"
+    },
+    {
+     "ort": "wiese",
+     "vor": "oekologie.K4#2",
+     "s": 4.1,
+     "takte": 321,
+     "chunks": 91,
+     "nach": "der Grundstellung"
+    },
+    {
+     "ort": "wiese",
+     "vor": "haar.K1#1",
+     "s": 1.2,
+     "takte": 105,
+     "chunks": 91,
+     "nach": "der Grundstellung"
+    },
+    {
+     "ort": "wiese",
+     "vor": "fahrzeug.K3#1",
+     "s": 1.2,
+     "takte": 105,
+     "chunks": 91,
+     "nach": "der Grundstellung"
+    },
+    {
+     "ort": "wiese",
+     "vor": "fahrzeug.K3#2",
+     "s": 19.9,
+     "takte": 729,
+     "chunks": 81,
+     "nach": "der Tür"
+    },
+    {
+     "ort": "wiese",
+     "vor": "leib.K1#2",
+     "s": 17.8,
+     "takte": 587,
+     "chunks": 81,
+     "nach": "der Tür"
+    },
+    {
+     "ort": "wiese",
+     "vor": "leib.K4#1",
+     "s": 18.3,
+     "takte": 539,
+     "chunks": 81,
+     "nach": "der Tür"
+    },
+    {
+     "ort": "wiese",
+     "vor": "fahrzeug.K5#1",
+     "s": 17.8,
+     "takte": 586,
+     "chunks": 81,
+     "nach": "der Tür"
+    },
+    {
+     "ort": "wiese",
+     "vor": "fahrzeug.K2#1",
+     "s": 16.9,
+     "takte": 537,
+     "chunks": 81,
+     "nach": "der Tür"
+    },
+    {
+     "ort": "wiese",
+     "vor": "fahrzeug.K2#2",
+     "s": 17,
+     "takte": 568,
+     "chunks": 81,
+     "nach": "der Tür"
+    },
+    {
+     "ort": "wiese",
+     "vor": "klang.K4#1",
+     "s": 16.3,
+     "takte": 555,
+     "chunks": 81,
+     "nach": "der Tür"
+    },
+    {
+     "ort": "wiese",
+     "vor": "klang.K5#2",
+     "s": 0.9,
+     "takte": 60,
+     "chunks": 99,
+     "nach": "der Grundstellung"
+    },
+    {
+     "ort": "wiese",
+     "vor": "speicher.K4#2",
+     "s": 3.8,
+     "takte": 239,
+     "chunks": 99,
+     "nach": "der Grundstellung"
+    },
+    {
+     "ort": "genesis",
+     "vor": "mensch.K1#1",
+     "s": 13.7,
+     "takte": 621,
+     "chunks": 81,
+     "nach": "der Grundstellung"
+    },
+    {
+     "ort": "genesis",
+     "vor": "vegetation.K4#1",
+     "s": 15.5,
+     "takte": 617,
+     "chunks": 81,
+     "nach": "der Tür"
+    },
+    {
+     "ort": "genesis",
+     "vor": "mensch.K5#1",
+     "s": 14,
+     "takte": 609,
+     "chunks": 81,
+     "nach": "der Tür"
+    },
+    {
+     "ort": "genesis",
+     "vor": "siedlung.K1#2",
+     "s": 16.9,
+     "takte": 674,
+     "chunks": 81,
+     "nach": "der Tür"
+    },
+    {
+     "ort": "buehne",
+     "vor": "schatten.K1#1",
+     "s": 11.8,
+     "takte": 568,
+     "chunks": 84,
+     "nach": "der Tür"
+    },
+    {
+     "ort": "buehne",
+     "vor": "schatten.K1#2",
+     "s": 6.9,
+     "fehler": "Messort buehne: nach dem Wechsel steht die Seite nicht in pruefbuehne",
+     "nach": "der Tür (die Welt hing)"
+    },
+    {
+     "ort": null,
+     "vor": "wetter.K3#2",
+     "s": 15.1,
+     "takte": 734,
+     "chunks": 81,
+     "nach": "der Tür"
+    },
+    {
+     "ort": null,
+     "vor": "tiere.K3#2",
+     "s": 12.3,
+     "takte": 630,
+     "chunks": 81,
+     "nach": "der Tür"
+    },
+    {
+     "ort": null,
+     "vor": "tiere.K2#2",
+     "s": 1.6,
+     "takte": 125,
+     "chunks": 81,
+     "nach": "der Grundstellung"
+    },
+    {
+     "ort": null,
+     "vor": "luftwasser.K5#2",
+     "s": 3.9,
+     "takte": 209,
+     "chunks": 90,
+     "nach": "der Grundstellung"
+    },
+    {
+     "ort": null,
+     "vor": "haar.K5#1",
+     "s": 3.6,
+     "takte": 186,
+     "chunks": 90,
+     "nach": "der Grundstellung"
+    },
+    {
+     "ort": null,
+     "vor": "studios.K2#2",
+     "s": 6.3,
+     "takte": 487,
+     "chunks": 90,
+     "nach": "der Grundstellung"
+    },
+    {
+     "ort": null,
+     "vor": "pipeline.K4#1",
+     "s": 12.4,
+     "takte": 682,
+     "chunks": 81,
+     "nach": "der Tür"
+    },
+    {
+     "ort": null,
+     "vor": "bauen.K1#2",
+     "s": 31.6,
+     "takte": 2251,
+     "chunks": 81,
+     "nach": "der Tür"
+    }
+   ],
+   "wegeTueren": [
+    {
+     "vor": "licht.K3#1",
+     "wege": "wege +3 [-119.1,-274.9,279.2,201/272] [-784.3,-952.2,-631.7,-806.5/4] [-810.2,-986.5,-604,-776.9/95]",
+     "s": 2.3
+    },
+    {
+     "vor": "fahrzeug.K2#1",
+     "wege": "wege +1 [-283.4,-1048.6,-205.4,-1042.6/1]",
+     "s": 2.8
+    },
+    {
+     "vor": "fahrzeug.K2#2",
+     "wege": "wege +21 [-119.1,-274.9,279.2,201/272] [-153.6,-1374.1,317.4,-940.2/202] [-16,-1673.7,240.8,-1629.6/3] …",
+     "s": 9.4
+    },
+    {
+     "vor": "klang.K4#1",
+     "wege": "wege +4 [537.1,162.4,1098.5,577.1/9] [660.6,288.3,1006,573.7/833] [663.2,262.5,1014.3,613.8/22] …",
+     "s": 3.4
+    },
+    {
+     "vor": "vegetation.K4#1",
+     "wege": "wege +5 [-110,-230.5,17.6,-118.2/298] [-115.3,-244.9,7.2,-119.1/22] [-116.6,-234.8,9.9,-118.6/4] …",
+     "s": 4.1
+    },
+    {
+     "vor": "siedlung.K1#2",
+     "wege": "wege +5 [-110,-230.5,17.6,-118.2/298] [-115.3,-244.9,7.2,-119.1/22] [-116.6,-234.8,9.9,-118.6/4] …",
+     "s": 2.9
+    }
+   ],
+   "ciBlicke": 32,
+   "strom": {
+    "datei": "strom.ndjson",
+    "bilder": 4485,
+    "frameP95": 66.96,
+    "taktP95": 36.94,
+    "vramMax": 154.5,
+    "seiten": 22,
+    "marken": 0,
+    "fehler": 0,
+    "verloren": 0,
+    "ortImDeckel": [
+     {
+      "probe": "fahrzeug.K2#2",
+      "m": 1857,
+      "ringVor": 4,
+      "ringMin": 0
+     },
+     {
+      "probe": "fahrzeug.K2#1",
+      "m": 1618,
+      "ringVor": 4,
+      "ringMin": -1
+     },
+     {
+      "probe": "wetter.K3#2",
+      "m": 1162,
+      "ringVor": 4,
+      "ringMin": -1
+     },
+     {
+      "probe": "fahrzeug.K5#1",
+      "m": 1071,
+      "ringVor": 4,
+      "ringMin": -1
+     },
+     {
+      "probe": "schatten.K1#1",
+      "m": 459,
+      "ringVor": 4,
+      "ringMin": 0
+     },
+     {
+      "probe": "luftwasser.K5#2",
+      "m": 396,
+      "ringVor": 4,
+      "ringMin": 4
+     },
+     {
+      "probe": "tiere.K1#2",
+      "m": 327,
+      "ringVor": 4,
+      "ringMin": 0
+     },
+     {
+      "probe": "leib.K4#1",
+      "m": 318,
+      "ringVor": 4,
+      "ringMin": -1
+     },
+     {
+      "probe": "vegetation.K4#1",
+      "m": 292,
+      "ringVor": 4,
+      "ringMin": -1
+     }
+    ],
+    "zapfen": 1792,
+    "luecken": 5,
+    "letzteLuecke": "kein Renderer"
+   },
+   "fahrtS": 1829.8,
+   "grund": "die Fahrt riss 1800 s vor bauen.K5#2 — offen: bauen.K5#2, studios.K4#1, studios.K4#2, siedlung.K2#1, siedlung.K2#2, siedlung.K5#1, siedlung.K5#2, siedlung.K4#2, leib.K2#1, leib.K2#2, leib.K3#2, halten.K5#1, halten.K5#2, halten.K1#2, tore.K1#1, tore.K3#1, tore.K3#2, streaming.K4#2, profiband.K1#1, profiband.K1#2, pflicht.E#1, profiband.K2#1, profiband.K2#2, profiband.K3#1, profiband.K3#2, speicher.K1#1, speicher.K1#2, speicher.K2#1, speicher.K2#2",
+   "minuten": 51.54
+  },
+  {
+   "start": "2026-11-10T13:21:28.150Z",
+   "port": 7804,
+   "warten": 0.25,
+   "bootS": 6.6,
+   "grundstellungS": [
+    4.1
+   ],
+   "proben": 2,
+   "freigaben": [],
+   "orte": [
+    {
+     "ort": null,
+     "vor": "bauen.K5#2",
+     "s": 38.8,
+     "takte": 2387,
+     "chunks": 81,
+     "nach": null
+    },
+    {
+     "ort": null,
+     "vor": "studios.K4#1",
+     "s": 20.8,
+     "takte": 836,
+     "chunks": 81,
+     "nach": "der Tür"
+    }
+   ],
+   "wegeTueren": [],
+   "grund": "die Welt trägt nicht mehr vor siedlung.K2#1: /reload ohne Antwort binnen 180 s",
+   "ciBlicke": 4,
+   "strom": {
+    "datei": "strom.ndjson",
+    "bilder": 1485,
+    "frameP95": 58.65,
+    "taktP95": 48.57,
+    "vramMax": 142.8,
+    "seiten": 3,
+    "marken": 0,
+    "fehler": 0,
+    "verloren": 0,
+    "ortImDeckel": [],
+    "zapfen": 210,
+    "luecken": 0,
+    "letzteLuecke": null
+   },
+   "fahrtS": 399.9,
+   "minuten": 7.07
+  }
+ ]
+}

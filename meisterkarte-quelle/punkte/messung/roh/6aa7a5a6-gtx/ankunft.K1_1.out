@@ -435,14 +435,14 @@ H.fahre(async function probeAnkunftKalt(H) {
     await schliesse();
     j.spur = spur;
     return j;
-}); 7804 C:\Users\micha\Desktop\AnazhRealm-OMEN\n0611-pm\meisterkarte-quelle\punkte\messung\roh\6aa7a5a6-gtx\ankunft.K1_1.json 1761
-@@ 17.7 s · kalt: t(Kontrolle) 16.35 s
-@@ 29.5 s · kalt: Lücke 0.00 % nach 5.6 s bis zur Ruhe der Foundry
-SPUR kalt {"stand":"gemessen","kontrolleMs":16675,"belegtMs":15283,"laengsteMs":558,"langeN":91,"langeMs":13966,"halter":["build [three.webgpu.min.js] (vendor/three.webgpu.min.js:6) hält den Haupt-Faden bis zum Ende 85 ms (bei 12.3 s; 36× ≥ 50 ms, Σ 2093 ms)","_runFrameScheduler (stamm/dirigent-takt.js:2066) hält den Haupt-Faden bis zum Ende 102 ms (bei 4.1 s; 16× ≥ 50 ms, Σ 914 ms)","zeichne (stamm/bild-kosten.js:468) hält den Haupt-Faden bis zum Ende 84 ms (bei 2.3 s; 7× ≥ 50 ms, Σ 423 ms)"],"laengste":"558 ms bei 14.8 s: folger [koerper-core.js] 171 · tuchGitter [koerper-core.js] (verteilt) 111 · folger [koerper-core.js] 73 · 1 Pipelines synchron (szene:tiefenabbild)","klassen":"Jobs 5.64 · Bild 5.22 · Knoten-Bau 4.42 · program 0.63 · Himmel 0.45 · garbage collector 0.38 · Saat 0.33 · Streu 0.16 · Gruppen-Bau 0.14 · Buch 0.14 · Bauten 0.14 · Boden 0.12 · Wald-Plan 0.09"}
-  ❌ t(Kontrolle) warm 11.15 s von außen (Soll ≤ 5 s; W trug den Leib im Atem 20)
+}); 7804 C:\Users\micha\Desktop\AnazhRealm-OMEN\n0611-pm\meisterkarte-quelle\punkte\messung\roh\6aa7a5a6-gtx\ankunft.K3_1.json 1372
+@@ 22.9 s · kalt: t(Kontrolle) 21.73 s
+@@ 30.6 s · kalt: Lücke 0.01 % nach 2.4 s bis zur Ruhe der Foundry
+SPUR kalt {"stand":"gemessen","kontrolleMs":21851,"belegtMs":17967,"laengsteMs":460,"langeN":91,"langeMs":13822,"halter":["build [three.webgpu.min.js] (vendor/three.webgpu.min.js:6) hält den Haupt-Faden bis zum Ende 84 ms (bei 7.3 s; 39× ≥ 50 ms, Σ 2333 ms)","_runFrameScheduler (stamm/dirigent-takt.js:2066) hält den Haupt-Faden bis zum Ende 70 ms (bei 11.2 s; 14× ≥ 50 ms, Σ 757 ms)","_renderScene [three.webgpu.min.js] (vendor/three.webgpu.min.js:6) hält den Haupt-Faden bis zum Ende 82 ms (bei 13.9 s; 10× ≥ 50 ms, Σ 613 ms)"],"laengste":"460 ms bei 1.8 s: _runFrameScheduler (verteilt) 122 · _buildPbrNodeMaterial 100 · _knotenRate 53 · 1 Pipelines synchron (mipmap-r8unorm-2d-array)","klassen":"Jobs 6.67 · Bild 5.62 · Knoten-Bau 4.73 · program 1.06 · Himmel 0.48 · Saat 0.35 · garbage collector 0.35 · Buch 0.20 · Bauten 0.15 · Streu 0.15 · Gruppen-Bau 0.13 · Boden 0.11 · Wald-Plan 0.05"}
+  ❌ t(Kontrolle) warm 11.02 s von außen (Soll ≤ 5 s; W trug den Leib im Atem 22)
   ✅ LIEFERUNG zweit: 124 von 126 von der Platte (98.4 %) · Werk 0 · Haupt-Faden 2 · leer 0 · verschluckt 0
-  ✅ LIEFERUNG je Art: blatt-atlas 1/1 0 ms · dorf-export 1/1 0 ms · karte 13/13 11 ms
-  ❌ t(Kontrolle) warm 11.64 s von außen (Soll ≤ 5 s; W trug den Leib im Atem 15)
+  ✅ LIEFERUNG je Art: blatt-atlas 1/1 0 ms · dorf-export 1/1 0 ms · karte 13/13 13 ms
+  ❌ t(Kontrolle) warm 11.46 s von außen (Soll ≤ 5 s; W trug den Leib im Atem 16)
   ✅ KERN-WECHSEL fachwerk: 3 Leser neu · fremd 0  · alt 0 
 
 --- gpu-zeuge ---
