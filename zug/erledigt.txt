@@ -343,3 +343,4 @@ omen-gtx-gtx-stau-78d3-18-78d37554 UNGEMESSEN 0 GRÜN / 0 ROT / 1 UNGEMESSEN · 
 omen-gtx-gtx-stau-78d3-19-78d37554 UNGEMESSEN 0 GRÜN / 0 ROT / 1 UNGEMESSEN · UNGEMESSEN studios.K3#2 (punkte-maschine fca3a030 messung/78d37554-gtx.json)
 omen-gtx-gtx-stau-78d3-20-78d37554 ROT 0 GRÜN / 1 ROT / 0 UNGEMESSEN · ROT studios.K4#1 (punkte-maschine c4cbd5f5 messung/78d37554-gtx.json)
 omen-gtx-gtx-stau-78d3-21-78d37554 ROT 0 GRÜN / 1 ROT / 0 UNGEMESSEN · ROT studios.K4#2 (punkte-maschine 803f1395 messung/78d37554-gtx.json)
+omen-gtx-gtx-stau-78d3-22-78d37554 GRÜN 1 GRÜN / 0 ROT / 0 UNGEMESSEN · GRÜN tiere.K1#2 (punkte-maschine c7ab350b messung/78d37554-gtx.json)
