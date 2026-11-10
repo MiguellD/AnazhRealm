@@ -245,7 +245,7 @@ function rebuild(){
     gWeapon=new THREE.Group(); gWeapon.add(buildBogen(P,M.wood)); gWeapon.visible=show.steel; weapon.add(gWeapon);
     gSpine=new THREE.Group();gSection=new THREE.Group();gLehren=new THREE.Group();gMass=new THREE.Group();
     weapon.position.set(-((P.riserLen||0.13)+2*(P.limbLen||0.6))/2, 0.30, 0);
-    __weltLicht.wurfRecht(scene); renderBogenTafel(P); kostenLeiste.neu(); return;
+    renderBogenTafel(P); kostenLeiste.neu(); return;
   }
   const S=stations(P), m=measure(P), res=evalLehren(P);
   // — STAHL (die Haut) —
@@ -267,7 +267,6 @@ function rebuild(){
   gMass=buildMassStrip(P);gMass.visible=show.mass;weapon.add(gMass);
   // — zentrieren & auf Augenhöhe heben —
   weapon.position.set(-S.L/2,0.30,0);
-  __weltLicht.wurfRecht(scene);   // DAS WURF-RECHT DER WELT (welt-licht.js teilWirft): ein durchsichtiger Stoff und eine Glut werfen nicht
   renderTafel(res,m);
   kostenLeiste.neu();
 }

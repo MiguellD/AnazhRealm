@@ -3186,7 +3186,7 @@ class AnazhRealm_studio_bruecke {
     }
     // DAS WURF-RECHT EINES GELIEFERTEN TEILS (der Leser der Welt: `_foundryBuildMesh`): das EINE Gesetz steht im Licht-Baustein
     // (welt-licht.js `teilWirft` — Fell-Schale, Lichtquelle und durchsichtiger Stoff werfen nie); die Bühne jedes Studios wirft
-    // nach demselben (`wurfRecht`, geprüft in `buehneZeichnet`). r184 zöge einen doppelseitig-durchsichtigen Werfer im
+    // nach demselben (`stoffRecht` in jedem Bild, `buehneZeichnet`). r184 zöge einen doppelseitig-durchsichtigen Werfer im
     // Schattenpass zweimal (der Schatten-Stoff trägt kein forceSinglePass) — gemessen am GT k0 9 -> 7 Befehle, am Brunnen 2 -> 1.
     static _teilWirft(m) {
         return __weltLicht.teilWirft(m);
