@@ -1,7 +1,7 @@
 {
  "sha": "78d37554b2d5f98d96ef454cfa9f51752c0e45a0",
  "geraet": "gtx",
- "zeit": "2026-11-10T03:37:10.450Z",
+ "zeit": "2026-11-10T04:20:36.381Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "ferne.K1#2": {
@@ -1305,22 +1305,71 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "licht.K1#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen: Stille seit 15 s nach 94.6 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __tagKurve({\"uhren\":[0,0.01,0.02,0. (100 Uhren) · 20.6 s · 79.5 s)",
+   "exit": 1,
+   "minuten": 1.58,
+   "grund": "Deckel 90 s gerissen: Stille seit 15 s nach 94.6 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __tagKurve({\"uhren\":[0,0.01,0.02,0. (100 Uhren) · 20.6 s · 79.5 s)",
+   "s": 94.8,
+   "fremd": {
+    "s": 96.3,
+    "takte": 44,
+    "fremdS": 171.03,
+    "kerne": 1.776,
+    "fensterKerne": 2.122,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      102.23
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      19.47
+     ],
+     [
+      "MsMpEng.exe",
+      14.02
+     ]
+    ],
+    "dienerS": 30.2,
+    "diener": [
+     [
+      "dwm.exe",
+      12.92
+     ],
+     [
+      "System",
+      12.09
+     ]
+    ],
+    "eigenS": 214.22,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-10T04:20:36.381Z",
+   "abdruck": "f2bb1d6e25e9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-10T03:36:33.789Z",
+  "start": "2026-11-10T04:19:59.906Z",
   "port": 7804,
-  "warten": 0.01,
-  "bootS": 7.6,
+  "warten": 0.02,
+  "bootS": 7.5,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": "wiese",
-    "vor": "leib.K4#2",
-    "s": 27.8,
-    "takte": 541,
+    "ort": "genesis",
+    "vor": "licht.K1#1",
+    "s": 27.6,
+    "takte": 689,
     "chunks": 81,
     "nach": null
    }
@@ -1337,12 +1386,19 @@
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
-   "ortImDeckel": [],
-   "zapfen": 118,
+   "ortImDeckel": [
+    {
+     "probe": "licht.K1#1",
+     "m": 1083,
+     "ringVor": 4,
+     "ringMin": -1
+    }
+   ],
+   "zapfen": 122,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 127.8,
-  "minuten": 2.21
+  "fahrtS": 130.5,
+  "minuten": 2.25
  }
 }
