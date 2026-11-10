@@ -365,3 +365,4 @@ omen-gtx-gtx-landung-dcc33615-9-dcc33615 UNGEMESSEN 0 GRÜN / 0 ROT / 1 UNGEMESS
 09:16 GTX1050 ort-pose: Nässe-Heil-Patch auf main 900c28e6 (Baum 25bd4820), vom Koordinator 09:22 angewandt → w27-ort-pose 21e89623; am Baum gate:naesse:echt GRÜN (Lauf 2; Lauf 1 ROT allein „wiese Regenbild 1,276“, ungeklärt), bild:dorf@0.5, welt-boot, check:statik ganz GRÜN
 omen-gtx-gtx-landung-dcc33615-10-dcc33615 UNGEMESSEN 0 GRÜN / 0 ROT / 1 UNGEMESSEN · UNGEMESSEN leib.K1#2 (punkte-maschine 05ec2249 messung/dcc33615-gtx.json)
 omen-gtx-gtx-landung-dcc33615-11-dcc33615 UNGEMESSEN 0 GRÜN / 0 ROT / 1 UNGEMESSEN · UNGEMESSEN leib.K4#2 (punkte-maschine 14fb774b messung/dcc33615-gtx.json)
+omen-gtx-gtx-landung-dcc33615-12-dcc33615 UNGEMESSEN 0 GRÜN / 0 ROT / 1 UNGEMESSEN · UNGEMESSEN licht.K1#1 (punkte-maschine 1fc46940 messung/dcc33615-gtx.json)
