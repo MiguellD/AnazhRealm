@@ -946,7 +946,7 @@ const server = statikServer();
             // gemessen: 0 Löcher ohne Rand in 2805 Zellen) jede neue Lage in der alten trägt — erst quer wandern die Ebenen des
             // Frustums mit dem Auge, und nur der Halt als Rand (`L.halt`) trägt die Zellen an der Kante. Scharf: ohne Weg (`bruch`
             // "weg", der Punkt bis w24) legt jedes Bild neu an, der Weg ohne seinen Rand ("rand") reißt Löcher.
-            const fahrt = async (bruch) => {
+            const fahrt = async (bruch, yaw) => {
                 const [o, u] = [
                     { bilder: 30, neu: 0, geprueft: 0, loecher: 0, namen: [] },
                     st.lodUniforms.uLodAuge.value,
@@ -957,7 +957,7 @@ const server = statikServer();
                     vergiss();
                     for (let f = 0; f <= o.bilder; f++) {
                         await sleep(33);
-                        stelle(Math.PI / 5, 0, f * 0.667);
+                        stelle(yaw, 0, f * 0.667);
                         u.copy(cam.position);
                         const g0 = genHaupt();
                         frame();
@@ -972,7 +972,15 @@ const server = statikServer();
                 }
                 return o;
             };
-            [aus.fahrt, aus.fahrtOhneWeg, aus.fahrtOhneRand] = [await fahrt(), await fahrt("weg"), await fahrt("rand")];
+            // DIE STRECKE DER FAHRT trägt eine Kante: ob der Weg ohne seinen Rand Löcher reißt, hängt daran, dass die Fahrt das
+            // Fenster einer Zelle kreuzt — der Ort entscheidet das, nicht die Linse (z353 schräg, w27-wald-kosten-heim quer: am
+            // dichteren Bestand der Mess-Wiese, heim3-w20-wald-kosten, ließ die eine Strecke π/5 ohne Rand 0 Löcher in 5788 Zellen,
+            // die Linse fiel STUMPF). Die Fahrt wählt die erste Strecke der festen Reihe (π/5 zuerst, dann je π/4 gedreht), auf der
+            // der Täter ohne Rand Löcher reißt, und misst das Gesetz und den Täter ohne Weg auf GENAU dieser Strecke.
+            let yaw, FR;
+            for (let k = 0; k < 8 && !(FR?.loecher > 0); k++) FR = await fahrt("rand", (yaw = Math.PI * (0.2 + k / 4)));
+            [aus.fahrt, aus.fahrtOhneWeg, aus.fahrtOhneRand] = [await fahrt(0, yaw), await fahrt("weg", yaw), FR];
+            aus.fahrtYaw = +(yaw / Math.PI).toFixed(2);
             aus.saetze = [...st.chunkSaetze.values()].map((x) => x.art);
             const H = s.hoehle;
             aus.hoehle = H
@@ -1036,7 +1044,7 @@ const server = statikServer();
                 `${befund.drehTreue.geprueft} geprüft, ${befund.drehTreue.loecher} Löcher ${befund.drehTreue.namen.join(", ")}`
         );
     console.log(
-        `  Fahrt, ohne Weg, ohne Rand: ${JSON.stringify([befund.fahrt, befund.fahrtOhneWeg, befund.fahrtOhneRand])}`
+        `  Fahrt (Strecke ${befund.fahrtYaw} π), ohne Weg, ohne Rand: ${JSON.stringify([befund.fahrt, befund.fahrtOhneWeg, befund.fahrtOhneRand])}`
     );
     const v = urteil(befund);
     wandEnde(
