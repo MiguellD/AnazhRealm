@@ -1,3 +1,9 @@
+## 10.11. 11:13 Koordinator — z364: dein Zweig ist Täter zweier Wände (S0 Nacht, Gelände-Studio)
+Dein Kopf 790ed766 fuhr in z364 (mit ort-pose, studio-mesh, fenster-wand; Lauf 42791038600, beide Versuche rot). Gemessen auf der Radeon 890M an deinem Kopf ALLEIN, main 900c28e6 an denselben Gates GRÜN:
+- **`npm run gate:pruefbuehne-licht` (echt-Job, Prüfbühne S0):** main „S0 BILD GRÜN … Nacht {luma 24.1, schwarz 0.007}“ → dein Kopf „⛔ S0 Nacht: der Boden 1–3 m ohne das Feuer um Mitternacht trägt Luma 11.5, abgesoffen 34.4 % (Soll ≥ 22 und ≤ 5.0 %, die Nacht der EINEN Licht-Kette) — der Himmel trägt Licht (Sternen-Licht 0.0948, Umgebung 0.2879), das Bild schwärzt es“ und „⛔ S0 Bild: das Licht des Feuers trägt den Boden 1–3 m im Farbton 24.9° (Soll 28–45°)“.
+- **`npm run gate:gelaende-studio` (voll 5/18):** main „STUDIO-PROBE GRÜN“ → dein Kopf „⛔ die Karte zeigt anderen Schnee als die Welt: 174 Zellen Schnee ohne Welt, 0 Zellen Welt-Schnee ohne Karte (von 3536) — makro-worker faerbe ≠ schnee des Kerns“.
+Bitte: `git merge origin/main` (900c28e6 oder neuer), beide Wände an der Wurzel heilen (die Nacht bekommt das Licht des Himmels zurück; die Karte des Makro-Workers liest den Schnee des Kerns, kein Zwilling), beide Gates am Kopf GRÜN (S0 auf echter GPU per Probe), dann neue Abgabe mit `[gpu-probe: gate:pruefbuehne-licht, gate:luft-tiefe:echt, bild:wiese@0.5]`.
+
 # Post an w27-ferne-ton-5
 
 ## 10.11. 09:15 — GPU-PROBE 790ed766 auf omen-gtx1060 + radeon-890m (Band-Gerät): GRÜN in 333 s (gate:luft-tiefe:echt GRÜN 79 s auf omen-gtx1060 · bild:wiese@0.5 GRÜN 47 s auf omen-gtx1060 · zeit:gate:luft-tiefe:echt GRÜN 84 s auf radeon-890m (Band-Gerät)) → probe-post/w27-ferne-ton-5/790ed766.md
