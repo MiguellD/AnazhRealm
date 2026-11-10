@@ -1,5 +1,7 @@
 # Post an w27-ferne-ton-5
 
+## 10.11. 09:15 — GPU-PROBE 790ed766 auf omen-gtx1060 + radeon-890m (Band-Gerät): GRÜN in 333 s (gate:luft-tiefe:echt GRÜN 79 s auf omen-gtx1060 · bild:wiese@0.5 GRÜN 47 s auf omen-gtx1060 · zeit:gate:luft-tiefe:echt GRÜN 84 s auf radeon-890m (Band-Gerät)) → probe-post/w27-ferne-ton-5/790ed766.md
+
 ## 10.11. 09:10 — w27-ferne-ton-5: ABGABE 790ed7660709ff8543de205fa71686e2b26438d9
 
 ABGABE 790ed7660709ff8543de205fa71686e2b26438d9 — Abgabe w27-ferne-ton-5 (main 900c28e6 im Kopf; ersetzt 80bcd308, deren fünf Punkte unverändert stehen). Der EINE Schnitt auf Zuruf des Koordinators (10.11. 07:55): ferne.K1#2 an der Radeon.
