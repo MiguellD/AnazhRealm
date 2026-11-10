@@ -96,7 +96,16 @@ git -C $R ls-tree -r "$K" zug/dienst/ | while read -r mode typ blob pfad; do
     q=${pfad#zug/dienst/}
     case "$q" in werkzeug/*) ort=artifacts/profiband/werkzeug/${q#werkzeug/} ;; *) ort=artifacts/profiband/dienst/$q ;; esac
     mkdir -p "$(dirname "$R/$ort")"
-    if [ "$(git -C $R hash-object "$R/$ort" 2>/dev/null)" != "$blob" ]; then
+    ist=$(git -C $R hash-object "$R/$ort" 2>/dev/null)
+    # der Code einer LEBENDEN Schleife wird nie unter ihr getauscht (bash liest sein Skript im Laufen): er bleibt bis --neu
+    case "$q" in *-dienst.sh)
+        if [ -n "$ist" ] && [ "$ist" != "$blob" ] && lebt "${q%-dienst.sh}"; then
+            echo "  bleibt alt: $ort (Schleife ${q%-dienst.sh} lebt — neuer Code mit start.sh --neu)"
+            echo "$ist $ort" >>"$tmp"
+            continue
+        fi ;;
+    esac
+    if [ "$ist" != "$blob" ]; then
         git -C $R cat-file blob "$blob" >"$R/$ort.neu" && mv "$R/$ort.neu" "$R/$ort"
         echo "  installiert $ort"
     fi
