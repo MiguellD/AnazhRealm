@@ -374,3 +374,4 @@ omen-gtx-gtx-landung-dcc33615-15-dcc33615 ROT 0 GRÜN / 1 ROT / 0 UNGEMESSEN · 
 omen-gtx-gtx-landung-dcc33615-16-dcc33615 UNGEMESSEN 0 GRÜN / 0 ROT / 1 UNGEMESSEN · UNGEMESSEN profiband.K1#1 (punkte-maschine f73ebfee messung/dcc33615-gtx.json)
 omen-gtx-gtx-landung-dcc33615-17-dcc33615 UNGEMESSEN 0 GRÜN / 0 ROT / 1 UNGEMESSEN · UNGEMESSEN profiband.K1#2 (punkte-maschine 2be9a112 messung/dcc33615-gtx.json)
 omen-gtx-gtx-landung-dcc33615-18-dcc33615 UNGEMESSEN 0 GRÜN / 0 ROT / 1 UNGEMESSEN · UNGEMESSEN profiband.K2#1 (punkte-maschine 474fe5ba messung/dcc33615-gtx.json)
+omen-gtx-gtx-landung-dcc33615-19-dcc33615 UNGEMESSEN 0 GRÜN / 0 ROT / 1 UNGEMESSEN · UNGEMESSEN profiband.K2#2 (punkte-maschine 6ce9277e messung/dcc33615-gtx.json)
