@@ -971,6 +971,7 @@ async function zweiSeite(o, verkehr) {
     };
     // die Strecke a → b in jeder Sicht der Tafel
     const teil = async (T, a, b) => {
+        await window.sleep(); // die Naht vor jedem Ort (der erste Takt der Ankunft baut ohne Schlaf)
         window.__probeStand = `die Welt kommt an bei ${Math.round(a.x)}, ${Math.round(a.z)}`;
         await ankommen(a.x, a.z);
         for (const s of o.sichten) T[s] = await fahre(a, b, s);
@@ -1067,6 +1068,9 @@ async function zweiSeite(o, verkehr) {
     });
     let V;
     window.__probeStand = "die Stadt wird gegründet";
+    // die Gründung der Metropole (295 Häuser) und der Sprung der Uhr laufen ohne Schlaf bis zum ersten Takt der Linse: sie beginnen am
+    // Anfang eines Teils (die Naht hält hier, wenn die Frist des Teils schon läuft) — swiftshader 44,6 s ohne Halt in Teil 1, über der Frist
+    await window.sleep();
     try {
         V = await verkehr();
     } finally {
