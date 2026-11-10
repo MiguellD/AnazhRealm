@@ -1,0 +1,10 @@
+# Anhänge-Dateien des Messplatzes: mehrere Schreiber hängen Zeilen ans Ende (Koordinator, buche.sh, OMEN, GTX 1050, Richter). Ein
+# gewöhnlicher Merge meldet dort jedes Mal einen Konflikt (10.11. 23:11: die Buchung stand an zug/budget.txt) — sie mergen als
+# VEREINIGUNG beider Seiten. Jeder Leser ordnet nach der Zeit am Zeilenanfang, nie nach der Zeilen-Reihenfolge.
+zug/budget.txt merge=union
+zug/erledigt.txt merge=union
+zug/sitzung.txt merge=union
+zug/richter.txt merge=union
+zug/warteschlange.txt merge=union
+zug/abab.txt merge=union
+zug/vorpruefung.txt merge=union
