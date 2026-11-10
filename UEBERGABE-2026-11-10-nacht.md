@@ -139,3 +139,14 @@
   `/tmp/claude/w4/wald-heim`) und `w27-fenster-wand` (`/tmp/claude/w4/fenster-wand`). Mit Abgabe + grüner CI fahren sie von selbst.
 - **Buchung:** steht bei 224/330 am fbbeb318. main ist 20a01782 (z356, Decke gefallen); `nach-landung2.sh` misst noch `--offen` am
   fbbeb318 (seit 01:25) und bucht danach den neuen Kopf. Meisterkarte Version 4 = 224.
+
+## NOTBREMSE 02:51 (10.11.) — Fable 98 % (alle Modelle 67 %, Reset 14.11. 21:00 UTC)
+Der Koordinator (Fable) endet hier. Alles Folgende läuft OHNE LLM oder auf opus weiter.
+- **w27-ort-pose 8dedeab6 steht auf origin** (Patch der GTX 1050: drei Teile, ganzer Text und Patch gegen sha256, `git am` auf 20a01782, Tree-ID 870532b4 gleich; die GTX 1050 hat es per fetch nachgeprüft). Der Patch berührt `.github/workflows/gpu-probe.yml` Zeile 245–257 (Blick aus `umstellen`, `--ort` an `bild`); ich habe den Diff vor dem Push gelesen. Code-Check und GPU-Probe liefen um 02:48 an; bei GRÜN nimmt `zug-nie-leer.sh` den Zweig von selbst. Wand allein: Prüf +330 / Spiel +1156 (erlaubt 578).
+- **Züge:** z358 (boden-nah-2 + stadt-bild) fuhr um 02:47 noch ohne Urteil → z359 (K7-Linse, `z359-buendel.sh`) → z360–z365 (`zug-nie-leer.sh`, erster Kandidat w27-lod-baum). Urteile in `/tmp/claude/fahre-zNNNw.log`, Lauf-Log `/tmp/claude/w4/zug-nie-leer.log`, Wartende `/tmp/claude/w4/zug-nie-leer.wartet`.
+- **Wartet auf neuen Kopf der Cloud-Sitzung:** w27-studio-mesh da9919e3 (gate:studio-huelle ROT, Post liegt) · w27-ferne-ton-5 80bcd308 (gate:luft-tiefe:echt ROT: K2-1 Restkontrast 0,02149 > 0,02 bei 35,6 km, K1-2 Farbton 166,33° bei 8 km; KEINE Post geschrieben — der nächste Koordinator schreibt sie).
+- **Neu gesehen 02:44:** Abgabe w27-verkehr-station-pm c886dd47 (pm-Zweig; landet erst nach seinem Leser per `pm-nach-main.sh` und nur auf SELBSTTEST GRÜN — nicht gestartet).
+- **Arbeiter auf opus, laufen weiter:** w27-fenster-wand (Baum `/tmp/claude/w4/fenster-wand`), w27-wald-kosten-heim (Baum `/tmp/claude/w4/wald-heim`); mit Kopf „Abgabe …“ und grüner CI fahren sie von selbst.
+- **Die Wache läuft NICHT mehr** (`wache-k10.sh`; sie weckte nur den Fable-Koordinator). Folge: Lebenszeichen der GTX 1050 trägt niemand ein, ein STILLSTAND dort ist bis zum Neustart kein Urteil. Stand der GTX 1050 in ihrer Datei `C:\Users\User\AppData\Local\Temp\claude\fa3cf07272675d5a\8cb84fa6-3d4a-47fe-8150-2b487f2440fc\scratchpad\patch\UEBERGABE.txt`; dort läuft Pose 8 an stadt-voll (Messname bild:stadt-voll) und wartet auf eine CI-Lücke.
+- **Buchung:** 224/330 am fbbeb318; main 20a01782 ist noch nicht gebucht (`nach-landung2.sh` läuft und bucht am nächsten Kopf). Meisterkarte Version 4.
+- **Erster Schritt des nächsten Koordinators:** Urteile z358/z359 lesen (merge-base-Nachweis), `bash /tmp/claude/w4/zug-nie-leer.sh z365 366 370 --blick` zeigt, was wartet; Wache neu starten; Post an w27-ferne-ton-5.
