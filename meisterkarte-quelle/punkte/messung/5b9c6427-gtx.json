@@ -1,7 +1,7 @@
 {
  "sha": "5b9c6427d7e3db0712e20d104b012a83f8ffd68c",
  "geraet": "gtx",
- "zeit": "2026-11-10T19:21:37.367Z",
+ "zeit": "2026-11-10T19:27:04.316Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "ankunft.K1#1": {
@@ -299,10 +299,75 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "fahrzeug.K2#2": {
+   "gruen": false,
+   "zahl": "C ROT: der Verkehr der Stadt 10 Uhr ❌ fahrend je Minute [null] · ohne Ziel erreicht: Wagen 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 (0 Ankünfte) · Sim-Takt 1.032 ms · bew · 23 Uhr ❌ fahrend je Minute [null] · ohne Ziel erreicht: Wagen 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 (0 Ankünfte) · Sim-Takt 1.095 ms · ohne Probe: 25°-Hang, Furt, Ego und Third — die 2 wartet auf sie",
+   "exit": 1,
+   "minuten": 2,
+   "grund": "ROT: C ROT: der Verkehr der Stadt 10 Uhr ❌ fahrend je Minute [null] · ohne Ziel erreicht: Wagen 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 (0 Ankünfte) · Sim-Takt 1.032 ms · bew · 23 Uhr ❌ fahrend je Minute [null] · ohne Ziel erreicht: Wagen 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 (0 Ankünfte) · Sim-Takt 1.095 ms · ohne Probe: 25°-Hang, Furt, Ego und Third — die 2 wartet auf sie",
+   "gpu": "nvidia/pascal",
+   "s": 119.8,
+   "fremd": {
+    "s": 122.6,
+    "takte": 56,
+    "fremdS": 76.94,
+    "kerne": 0.628,
+    "fensterKerne": 1.024,
+    "namen": [
+     [
+      "BackgroundDownload.exe --child --activityId 6084168f-afd9-4773-bae6-2cbaf12460a8 --childCl",
+      34.05
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      20.08
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      7.38
+     ]
+    ],
+    "dienerS": 43.28,
+    "diener": [
+     [
+      "System",
+      21.03
+     ],
+     [
+      "dwm.exe",
+      14.22
+     ]
+    ],
+    "geraetS": 57.13,
+    "geraet": [
+     [
+      "svchost.exe",
+      38.88
+     ],
+     [
+      "MsMpEng.exe",
+      16
+     ],
+     [
+      "SearchIndexer.exe",
+      1
+     ]
+    ],
+    "eigenS": 422.66,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon"
+   },
+   "zeit": "2026-11-10T19:27:04.316Z",
+   "abdruck": "3288dc20437e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-10T19:21:04.773Z",
+  "start": "2026-11-10T19:26:27.075Z",
   "port": 7804,
   "warten": 0.01,
   "bootS": 6.4,
@@ -311,10 +376,10 @@
   "freigaben": [],
   "orte": [
    {
-    "ort": null,
-    "vor": "bauen.K1#2",
-    "s": 24.7,
-    "takte": 781,
+    "ort": "wiese",
+    "vor": "fahrzeug.K2#2",
+    "s": 29.6,
+    "takte": 601,
     "chunks": 81,
     "nach": null
    }
@@ -323,21 +388,28 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 2208,
-   "frameP95": 49.93,
-   "taktP95": 32.59,
-   "vramMax": 129.2,
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
-   "ortImDeckel": [],
-   "zapfen": 71,
+   "ortImDeckel": [
+    {
+     "probe": "fahrzeug.K2#2",
+     "m": 1857,
+     "ringVor": 4,
+     "ringMin": 0
+    }
+   ],
+   "zapfen": 149,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 77,
-  "minuten": 1.36
+  "fahrtS": 157.3,
+  "minuten": 2.7
  },
  "ungemessen": {
   "ankunft.K4#1": {
