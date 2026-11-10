@@ -21,9 +21,7 @@ const DUNKEL = { skinTone: "karamell", hairColor: "darkbrown" };
 const STAENDE = {
     a: [
         ["anker", null, null],
-        ["anker-ohne-kruemmung", null, { kern: 0, diffus: 0 }],
         ["dunkel", DUNKEL, null],
-        ["dunkel-ohne-kruemmung", DUNKEL, { kern: 0, diffus: 0 }],
     ],
     b: [["anker", null, null]],
 };
