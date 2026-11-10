@@ -1,7 +1,7 @@
 {
  "sha": "6aa7a5a6bfd01df56192e66b658681dac67a27a9",
  "geraet": "gtx",
- "zeit": "2026-11-10T12:41:32.734Z",
+ "zeit": "2026-11-10T12:56:43.928Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "haar.K2#1": {
@@ -592,6 +592,203 @@
    "bahn": "sitzung",
    "zwilling": "material.K1#1",
    "modus": "session"
+  },
+  "licht.K3#2": {
+   "gruen": false,
+   "zahl": "fichte@0.5 Karte und Gestalt teilen kein Pixel · fichte@0.27 Karte und Gestalt teilen kein Pixel · fichte@0.05 Karte und Gestalt teilen kein Pixel · tanne@0.5 Karte und Gestalt teilen kein Pixel · tanne@0.27 Karte und Gestalt teilen kein Pixel · tanne@0.05 Karte und Gestalt teilen kein Pixel · ring@0.5 0.987 · ring@0.27 1.008 · ring@0.05 0.995 · feld@0.5 0.947 · feld@0.27 0.925 · feld@0.05 0.961 · feld0@0.5 0.923 · feld0@0.27 0.94 · feld0@0.05 0.966 · feld90@0.5 0.937 · feld90@0.27 0.938 · feld90@0.05 0.974 · feld180@0.5 0.937 · feld180@0.27 0.935 · feld180@0.05 0.975 · panorama@0.5 0.944 · panorama@0.27 0.969 · panorama@0.05 0.96 · spiegel@0.5 1.056 · spiegel@0.27 0.949 · spiegel@0.05 1.003 · spiegel180@0.5 0.942 · spiegel180@0.27 0.972 · spiegel180@0.05 0.995 · wasser@0.5 0.919 · wasser@0.27 0.95 · wasser@0.05 0.941 · Soll 0,9–1,1 · [linse-gpu] nvidia/pascal",
+   "exit": 1,
+   "minuten": 1.01,
+   "grund": "ROT: fichte@0.5 Karte und Gestalt teilen kein Pixel · fichte@0.27 Karte und Gestalt teilen kein Pixel · fichte@0.05 Karte und Gestalt teilen kein Pixel · tanne@0.5 Karte und Gestalt teilen kein Pixel · tanne@0.27 Karte und Gestalt teilen kein Pixel · tanne@0.05 Karte und Gestalt teilen kein Pixel · ring@0.5 0.987 · ring@0.27 1.008 · ring@0.05 0.995 · feld@0.5 0.947 · feld@0.27 0.925 · feld@0.05 0.961 · feld0@0.5 0.923 · feld0@0.27 0.94 · feld0@0.05 0.966 · feld90@0.5 0.937 · feld90@0.27 0.938 · feld90@0.05 0.974 · feld180@0.5 0.937 · feld180@0.27 0.935 · feld180@0.05 0.975 · panorama@0.5 0.944 · panorama@0.27 0.969 · panorama@0.05 0.96 · spiegel@0.5 1.056 · spiegel@0.27 0.949 · spiegel@0.05 1.003 · spiegel180@0.5 0.942 · spiegel180@0.27 0.972 · spiegel180@0.05 0.995 · wasser@0.5 0.919 · wasser@0.27 0.95 · wasser@0.05 0.941 · Soll 0,9–1,1 · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "s": 60.6,
+   "fremd": {
+    "s": 62.7,
+    "takte": 29,
+    "fremdS": 34.78,
+    "kerne": 0.554,
+    "fensterKerne": 0.692,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      13.19
+     ],
+     [
+      "MsMpEng.exe",
+      6.17
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      4.14
+     ]
+    ],
+    "dienerS": 18.69,
+    "diener": [
+     [
+      "dwm.exe",
+      9.08
+     ],
+     [
+      "System",
+      6.36
+     ]
+    ],
+    "eigenS": 158.81,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-10T12:49:23.467Z",
+   "abdruck": "fd08d15b7871",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "licht.K3#1": {
+   "gruen": false,
+   "zahl": "fichte@0.5 Karte und Gestalt teilen kein Pixel · fichte@0.27 Karte und Gestalt teilen kein Pixel · fichte@0.05 Karte und Gestalt teilen kein Pixel · tanne@0.5 Karte und Gestalt teilen kein Pixel · tanne@0.27 Karte und Gestalt teilen kein Pixel · tanne@0.05 Karte und Gestalt teilen kein Pixel · ring@0.5 0.988 · ring@0.27 1.008 · ring@0.05 0.995 · Soll 0,9–1,1 · [linse-gpu] nvidia/pascal",
+   "exit": 1,
+   "minuten": 0.71,
+   "grund": "ROT: fichte@0.5 Karte und Gestalt teilen kein Pixel · fichte@0.27 Karte und Gestalt teilen kein Pixel · fichte@0.05 Karte und Gestalt teilen kein Pixel · tanne@0.5 Karte und Gestalt teilen kein Pixel · tanne@0.27 Karte und Gestalt teilen kein Pixel · tanne@0.05 Karte und Gestalt teilen kein Pixel · ring@0.5 0.988 · ring@0.27 1.008 · ring@0.05 0.995 · Soll 0,9–1,1 · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "s": 42.7,
+   "fremd": {
+    "s": 45.4,
+    "takte": 21,
+    "fremdS": 27.19,
+    "kerne": 0.599,
+    "fensterKerne": 1.048,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      10.16
+     ],
+     [
+      "MsMpEng.exe",
+      3.97
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      2.58
+     ]
+    ],
+    "dienerS": 13.3,
+    "diener": [
+     [
+      "dwm.exe",
+      6.38
+     ],
+     [
+      "System",
+      4.77
+     ]
+    ],
+    "eigenS": 92.38,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-10T12:50:58.014Z",
+   "abdruck": "bce4450f1b2a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "studios.K4#1": {
+   "gruen": false,
+   "zahl": "0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU pascal) · garage 27.1 %/– [Differenz 0.2705 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · portale 94.3 %/– [die Welt zeichnet an der Pose L2 (die Bühne L0) · Differenz 0.9433 > 0.021 Albedo ungemess] · schmiede 26.3 %/– [Differenz 0.2631 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · fachwerk 97.4 %/– [Differenz 0.9743 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · terrain –/– [ROT: bild: {\"ms\":4519,\"fehler\":\"ABNAHME ROT [Ziel Blickziel verdeckt von Laub baum_eiche i] · koerperstudio –/– [ungemessen: das Werk ist eine Prägung (der Leib des Spielers), kein gesetzter Bau] · tetrapoda –/– [ungemessen: das Werk ist ein Wesen (eine lebende Kreatur), kein gesetzter Bau]",
+   "exit": 0,
+   "minuten": 1.28,
+   "grund": "ROT: 0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU pascal) · garage 27.1 %/– [Differenz 0.2705 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · portale 94.3 %/– [die Welt zeichnet an der Pose L2 (die Bühne L0) · Differenz 0.9433 > 0.021 Albedo ungemess] · schmiede 26.3 %/– [Differenz 0.2631 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · fachwerk 97.4 %/– [Differenz 0.9743 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · terrain –/– [ROT: bild: {\"ms\":4519,\"fehler\":\"ABNAHME ROT [Ziel Blickziel verdeckt von Laub baum_eiche i] · koerperstudio –/– [ungemessen: das Werk ist eine Prägung (der Leib des Spielers), kein gesetzter Bau] · tetrapoda –/– [ungemessen: das Werk ist ein Wesen (eine lebende Kreatur), kein gesetzter Bau]",
+   "gpu": "nvidia/pascal",
+   "s": 76.9,
+   "fremd": {
+    "s": 78.4,
+    "takte": 36,
+    "fremdS": 56.05,
+    "kerne": 0.715,
+    "fensterKerne": 0.924,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      17.48
+     ],
+     [
+      "MsMpEng.exe",
+      11.25
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      6.66
+     ]
+    ],
+    "dienerS": 34.45,
+    "diener": [
+     [
+      "dwm.exe",
+      20.66
+     ],
+     [
+      "System",
+      9.13
+     ]
+    ],
+    "eigenS": 197.44,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-10T12:55:22.013Z",
+   "abdruck": "a576b62649d8",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "studios.K4#2": {
+   "gruen": false,
+   "zahl": "0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU pascal) · garage 27.1 %/– [Differenz 0.2705 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · portale 94.3 %/– [die Welt zeichnet an der Pose L2 (die Bühne L0) · Differenz 0.9433 > 0.021 Albedo ungemess] · schmiede 26.3 %/– [Differenz 0.2631 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · fachwerk 97.4 %/– [Differenz 0.9743 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · terrain –/– [ROT: bild: {\"ms\":4519,\"fehler\":\"ABNAHME ROT [Ziel Blickziel verdeckt von Laub baum_eiche i] · koerperstudio –/– [ungemessen: das Werk ist eine Prägung (der Leib des Spielers), kein gesetzter Bau] · tetrapoda –/– [ungemessen: das Werk ist ein Wesen (eine lebende Kreatur), kein gesetzter Bau]",
+   "exit": 0,
+   "minuten": 1.28,
+   "grund": "ROT: 0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU pascal) · garage 27.1 %/– [Differenz 0.2705 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · portale 94.3 %/– [die Welt zeichnet an der Pose L2 (die Bühne L0) · Differenz 0.9433 > 0.021 Albedo ungemess] · schmiede 26.3 %/– [Differenz 0.2631 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · fachwerk 97.4 %/– [Differenz 0.9743 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · terrain –/– [ROT: bild: {\"ms\":4519,\"fehler\":\"ABNAHME ROT [Ziel Blickziel verdeckt von Laub baum_eiche i] · koerperstudio –/– [ungemessen: das Werk ist eine Prägung (der Leib des Spielers), kein gesetzter Bau] · tetrapoda –/– [ungemessen: das Werk ist ein Wesen (eine lebende Kreatur), kein gesetzter Bau]",
+   "gpu": "nvidia/pascal",
+   "s": 76.9,
+   "fremd": {
+    "s": 78.4,
+    "takte": 36,
+    "fremdS": 56.05,
+    "kerne": 0.715,
+    "fensterKerne": 0.924,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      17.48
+     ],
+     [
+      "MsMpEng.exe",
+      11.25
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      6.66
+     ]
+    ],
+    "dienerS": 34.45,
+    "diener": [
+     [
+      "dwm.exe",
+      20.66
+     ],
+     [
+      "System",
+      9.13
+     ]
+    ],
+    "eigenS": 197.44,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-10T12:55:22.013Z",
+   "abdruck": "97b1e369c378",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "studios.K4#1",
+   "modus": "session"
   }
  },
  "ungemessen": {
@@ -791,73 +988,323 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "lod.K5#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen: Stille seit 41.1 s nach 45 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: umstellen · Exit 0)",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "Deckel 45 s gerissen: Stille seit 41.1 s nach 45 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: umstellen · Exit 0)",
+   "s": 45.1,
+   "fremd": {
+    "s": 47.1,
+    "takte": 22,
+    "fremdS": 23.81,
+    "kerne": 0.506,
+    "fensterKerne": 0.549,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      9.8
+     ],
+     [
+      "MsMpEng.exe",
+      4.2
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      2.97
+     ]
+    ],
+    "dienerS": 11.09,
+    "diener": [
+     [
+      "dwm.exe",
+      4.89
+     ],
+     [
+      "System",
+      4.42
+     ]
+    ],
+    "eigenS": 64.27,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-10T12:47:58.605Z",
+   "abdruck": "ca610f2672bb",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "siedlung.K1#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen: Stille seit 45 s nach 45 s (kein Lebenszeichen) — beendet, UNGEMESSEN",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "Deckel 45 s gerissen: Stille seit 45 s nach 45 s (kein Lebenszeichen) — beendet, UNGEMESSEN",
+   "s": 45.2,
+   "fremd": {
+    "s": 49,
+    "takte": 22,
+    "fremdS": 67.91,
+    "kerne": 1.387,
+    "fensterKerne": 1.758,
+    "namen": [
+     [
+      "SearchIndexer.exe",
+      15.97
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      12.16
+     ],
+     [
+      "SearchProtocolHost.exe",
+      11.83
+     ]
+    ],
+    "dienerS": 16.28,
+    "diener": [
+     [
+      "dwm.exe",
+      7.89
+     ],
+     [
+      "System",
+      5.2
+     ]
+    ],
+    "eigenS": 199.03,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-10T12:52:10.346Z",
+   "abdruck": "aee8fa98714b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "leib.K4#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen: Stille seit 89.9 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "exit": 1,
+   "minuten": 1.5,
+   "grund": "Deckel 90 s gerissen: Stille seit 89.9 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "s": 90.1,
+   "fremd": {
+    "s": 93.4,
+    "takte": 43,
+    "fremdS": 113.92,
+    "kerne": 1.22,
+    "fensterKerne": 1.756,
+    "namen": [
+     [
+      "SearchProtocolHost.exe",
+      36
+     ],
+     [
+      "SearchIndexer.exe",
+      22.95
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      18.44
+     ]
+    ],
+    "dienerS": 24.19,
+    "diener": [
+     [
+      "dwm.exe",
+      10.39
+     ],
+     [
+      "System",
+      8.67
+     ]
+    ],
+    "eigenS": 164.95,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-10T12:53:28.092Z",
+   "abdruck": "d92a3ff92ce9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "leib.K3#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen: Stille seit 20.1 s nach 45 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: @@ 24.8 s · umgestellt 1816/-6168 in 20504 ms)",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "Deckel 45 s gerissen: Stille seit 20.1 s nach 45 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: @@ 24.8 s · umgestellt 1816/-6168 in 20504 ms)",
+   "s": 45.1,
+   "fremd": {
+    "s": 48.4,
+    "takte": 22,
+    "fremdS": 27.83,
+    "kerne": 0.574,
+    "fensterKerne": 0.736,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      10.55
+     ],
+     [
+      "MsMpEng.exe",
+      4.2
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.31
+     ]
+    ],
+    "dienerS": 12.94,
+    "diener": [
+     [
+      "dwm.exe",
+      6.72
+     ],
+     [
+      "System",
+      3.31
+     ]
+    ],
+    "eigenS": 179.89,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-10T12:56:43.928Z",
+   "abdruck": "3ad18f4155ae",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-10T12:36:59.495Z",
+  "start": "2026-11-10T12:47:22.288Z",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 7,
+  "bootS": 6.5,
   "grundstellungS": [
-   4.8
+   4.5,
+   3.7,
+   3.5,
+   4,
+   4.5,
+   0.1
   ],
-  "proben": 4,
+  "proben": 7,
   "freigaben": [],
   "orte": [
    {
     "ort": "wiese",
-    "vor": "licht.K2#2",
-    "s": 28.7,
-    "takte": 548,
+    "vor": "lod.K5#1",
+    "s": 28.4,
+    "takte": 591,
     "chunks": 81,
     "nach": null
    },
    {
-    "ort": "genesis",
-    "vor": "ferne.K1#1",
-    "s": 22.8,
-    "takte": 577,
+    "ort": "dorf",
+    "vor": "licht.K3#2",
+    "s": 34.8,
+    "takte": 739,
     "chunks": 81,
     "nach": "der Tür"
+   },
+   {
+    "ort": "dorf",
+    "vor": "licht.K3#1",
+    "s": 29.8,
+    "takte": 693,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": "genesis",
+    "vor": "siedlung.K1#2",
+    "s": 25.4,
+    "takte": 576,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": "wiese",
+    "vor": "leib.K4#2",
+    "s": 26.6,
+    "takte": 724,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": null,
+    "vor": "studios.K4#1",
+    "s": 18.1,
+    "takte": 771,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": null,
+    "vor": "leib.K3#2",
+    "s": 3.8,
+    "takte": 175,
+    "chunks": 81,
+    "nach": "der Grundstellung"
    }
   ],
-  "wegeTueren": [],
+  "wegeTueren": [
+   {
+    "vor": "licht.K3#1",
+    "wege": "wege +6 [-119.1,-274.9,279.2,201/272] [-748.3,-821.3,-615.9,-784.1/28] [-784.3,-952.2,-631.7,-806.5/4] …",
+    "s": 3.7
+   },
+   {
+    "vor": "siedlung.K1#2",
+    "wege": "wege +6 [-119.1,-274.9,279.2,201/272] [-748.3,-821.3,-615.9,-784.1/28] [-784.3,-952.2,-631.7,-806.5/4] …",
+    "s": 3.5
+   }
+  ],
   "unerklaert": [
    {
-    "probe": "material.K1#1",
-    "wie": "werke +5 (−0)"
+    "probe": "lod.K5#1",
+    "wie": "werke +1 (−0)"
+   },
+   {
+    "probe": "licht.K3#2",
+    "wie": "orte +-3,-3 · wege +3 [-748.3,-821.3,-615.9,-784.1/28] [-805.3,-801.4,-689.5,-574/6] [-833.8,-834.7,-648.1,-574.2/76] (-3,-3, netz:-3,-3, netz:-3,-3|-4,-4)"
    }
   ],
-  "ciBlicke": 5,
+  "ciBlicke": 8,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 239,
-   "frameP95": 50.08,
-   "taktP95": 34.23,
-   "vramMax": 132.9,
-   "seiten": 2,
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 6,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [
     {
-     "probe": "ferne.K1#1",
-     "m": 3592,
-     "ringVor": 4,
-     "ringMin": -1
-    },
-    {
-     "probe": "material.K1#1",
-     "m": 3592,
+     "probe": "leib.K3#2",
+     "m": 6430,
      "ringVor": 4,
      "ringMin": 0
     }
    ],
-   "zapfen": 334,
-   "luecken": 1,
-   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+   "zapfen": 575,
+   "luecken": 0,
+   "letzteLuecke": null
   },
-  "fahrtS": 364.4,
-  "minuten": 6.15
+  "fahrtS": 607.5,
+  "minuten": 10.18
  }
 }
