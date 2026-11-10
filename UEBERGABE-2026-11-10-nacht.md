@@ -53,3 +53,16 @@
   Selbst-Regel der GTX 1050: keine Hand-Sitzung hält das Schloss länger als eine Probe (≤ 8 min). Nebenfund ort-pose: stadt-voll ROT
   (Platz-Mitte liegt in der Fahrbahn), Einzelheiten kündigt das Gerät an.
 - **Budget 00:53:** Woche 55 %, Fable 84 % — NOTBREMSE bei 98 % (ab ~95 % einleiten).
+
+## Stand 01:42 (10.11.)
+
+- **z355 gelandet 01:15:** main = `fbbeb318` (V18.546.240), w25-gpu-wahl-2 per merge-base belegt; gebucht **224/330 am fbbeb318** (01:28).
+  Ein ROT als Wackler ohne Täter gewertet: Fenster-Wand (voll 15/18) — steht in den Protokollen von 14 Zügen seit z330, Ursache ungeprüft.
+- **Kette neu: `/tmp/claude/w4/nach-landung2.sh`** (Aufgabe b839b0970, Start-Kopf a3782a65): misst am JÜNGSTEN Kopf, bucht neben der
+  Messung, nie zwei Buchungen zugleich, ein Lauf ohne Urteil steht als „KEIN URTEIL“ im Log. Am fbbeb318 sind 124 Radeon-Stationen
+  offen (Deckel Σ 74 min), Messung läuft seit 01:25. Die alte `nach-landung.sh` ist beendet.
+- **Abgabe w27-studio-mesh-pm 4846d777** (studios.K4-Probe, punkte-maschine-Seite): gehalten, bis die Abgabe von w27-studio-mesh in main
+  steht — `/tmp/claude/w4/pm-nach-main.sh w27-studio-mesh-pm w27-studio-mesh` (Log `pm-nach-main.log`), Push nur auf SELBSTTEST GRÜN.
+  Post: `cloud-post/w27-studio-mesh.md`.
+- **GTX 1050, w27-ort-pose:** Entscheid A (Abgabe dorf + stadt, stadt-voll offen als Folgeschnitt nach z356). Patch 10 Dateien +254/−152
+  liegt nur am Gerät — er landet nach dem GitHub-Login des Schöpfers dort.
