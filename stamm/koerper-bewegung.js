@@ -652,20 +652,22 @@ class AnazhRealm_koerper_bewegung {
                 if (k.oben <= leib.fuss + stufeTier || k.unten >= leib.fuss + leib.hoehe) continue;
                 for (let o = leib.halb > 0 ? -1 : 0; o <= (leib.halb > 0 ? 1 : 0); o++) {
                     const rc = leib.rad[o + 1]; // je Achse ihr Radius (`_kreaturLeib`)
-                    // der Abstand der Achse zur Hülle: die größte Stütz-Differenz über ihre Richtungen (innen negativ: der
-                    // kürzeste Weg hinaus), der Schub längs dieser Richtung
-                    const dx = cr.position.x + leib.fx * o * leib.halb - pos.x;
-                    const dz = cr.position.z + leib.fz * o * leib.halb - pos.z;
-                    let d = -Infinity;
-                    let jd = 0;
+                    // der Abstand der Achse zur Hülle: die größte Stütz-Differenz über ihre Richtungen (innen negativ), der
+                    // Schub längs DER Fläche, durch die sie in diesem Schritt kam — die Fläche, vor der sie an der Lage davor
+                    // (x0, z0) lag (die Seite des Eintritts, wie die Wand des Tiers „von AUSSEN"). Der kürzeste Weg hinaus
+                    // allein schob bei 81,67 m/s (1,36 m je Schritt) die End-Achse eines quer stehenden Bären durch die runde
+                    // Ecke des Bugs zur Seite, und der Wagen fuhr durch ihn (gate:kollision-bild, 4 von 4 Takten)
+                    const ax = cr.position.x + leib.fx * o * leib.halb;
+                    const az = cr.position.z + leib.fz * o * leib.halb;
+                    let [d, jd, d0, j0] = [-Infinity, 0, -Infinity, 0];
                     for (let j = 0; j < k.n; j++) {
-                        const e = dx * k.wx[j] + dz * k.wz[j] - k.h[j];
-                        if (e > d) {
-                            d = e;
-                            jd = j;
-                        }
+                        const e = (ax - pos.x) * k.wx[j] + (az - pos.z) * k.wz[j] - k.h[j];
+                        const e0 = (ax - x0) * k.wx[j] + (az - z0) * k.wz[j] - k.h[j];
+                        if (e > d) [d, jd] = [e, j];
+                        if (e0 > d0) [d0, j0] = [e0, j];
                     }
                     if (d >= rc) continue;
+                    if (d0 >= rc) [jd, d] = [j0, (ax - pos.x) * k.wx[j0] + (az - pos.z) * k.wz[j0] - k.h[j0]];
                     let sx = -k.wx[jd] * (rc - d);
                     let sz = -k.wz[jd] * (rc - d);
                     // Ein Wesen schiebt keinen Wagen: der Schub nimmt höchstens zurück, was der Wagen in DIESEM Schritt auf

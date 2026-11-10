@@ -1289,14 +1289,21 @@ class AnazhRealm_gelaende_kollision {
     // zeichnet, gibt es dem Eintrag (`_archInstanceAdd`, wie die Hülle des Hauses) — sein Umriss (`_fahrUmriss`), die Hülle des
     // Ritts (frisch) und seine Boxen lesen es. Ein Studio-Wagen, dessen Bau kein Maß trägt, ist ein KERN-PFLICHT-Bruch (ein
     // alter Kern auf der Platte), nie still die Stationen.
+    // DIE BREITE BLEIBT DIE DES GESETZES (±bw, exportDrive.huelle), ehrlich halb: die Hüfte über den Achsen (`haunch` der Rezepte
+    // und die Brauen der Radhäuser) zeichnet 6–12 cm je Flanke breiter, und die Fahrbahn der Städte plant mit der Breite des
+    // Gesetzes (fachwerk VERKEHR_GESETZ, begegnungM 0,1): mit der gezeichneten stießen die Wagen im Gegenverkehr aneinander
+    // (gate:fahr-leben VK 10 Uhr: 2–27 Stöße), mit ihr im Plan stand die Stadt (17 von 20 ohne Ziel). Bug, Heck und Ecken sind
+    // die gezeichneten.
     _wagenMassSetzen(entry, mass) {
-        if (!this._fahrzeugGesetzFor(entry) || (entry._gestaltMass && entry._gestaltMass.von === mass)) return;
+        const fzg = this._fahrzeugGesetzFor(entry);
+        if (!fzg || (entry._gestaltMass && entry._gestaltMass.von === mass)) return;
         const U = mass && mass.umriss;
         if (!Array.isArray(U) || U.length < 9 || U.length % 3 || !U.every(Number.isFinite) || !(mass.dach > 0))
             return AnazhRealm._kernPflichtBruch("vehicle:__mass (" + entry.type + ")");
+        const bw = fzg.drive.huelle.bw;
         const M = {
             von: mass,
-            ecken: U,
+            ecken: U.map((v, i) => (i % 3 === 2 ? Math.max(-bw, Math.min(bw, v)) : v)),
             dach: mass.dach,
             bug: -Infinity,
             heck: Infinity,
@@ -1306,7 +1313,7 @@ class AnazhRealm_gelaende_kollision {
         for (let i = 0; i < U.length; i += 3) {
             M.bug = Math.max(M.bug, U[i]);
             M.heck = Math.min(M.heck, U[i]);
-            M.hw = Math.max(M.hw, Math.abs(U[i + 2]));
+            M.hw = Math.max(M.hw, Math.abs(M.ecken[i + 2]));
         }
         entry._gestaltMass = M;
         entry._fahrHuelleKette = null;
