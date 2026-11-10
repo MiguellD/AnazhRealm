@@ -1120,15 +1120,15 @@ class AnazhRealm_bild_kosten {
     }
     // DIE ZEICHEN-REIHE DER WELT (T3): EIN Gesetz für alles Opake, die Bündel und jedes lose Objekt — wer vorn steht, zeichnet
     // zuerst und schreibt die Tiefe, hinter der die Übrigen ihre Fragmente verwerfen. Die Schichten vorn → hinten: die Bündel
-    // (r184 und die BUNDLE-REIHENFOLGE führen jedes vor jedem losen Draw aus) @global · die Regionen · @wahl, dann lose, was
-    // auf dem Boden steht (Bau-Satz, jede lose Senke, Tor, Membran, Leib — ohne Marke), der Boden, der Fern-Ring, der Himmel
+    // (r184 und die BUNDLE-REIHENFOLGE führen jedes vor jedem losen Draw aus) @global · die Regionen, dann lose, was auf dem
+    // Boden steht (Bau-Satz, jede lose Senke samt den Arenen der GPU-Wahl, Tor, Membran, Leib — ohne Marke), der Boden, der Fern-Ring, der Himmel
     // (im Unendlichen zahlt er zuletzt nur seine eigenen Pixel). Ein Erzeuger nennt seine Schicht als Laufzeit-Marke
     // (`userData.zeichenSchicht`). Bis T3 sortierte r184 die losen Opaken nach renderOrder · Tiefe · Objekt-id, die Satz-Hülle
     // liegt am Ursprung (gleiche Tiefe): die Boot-Ankunft entschied, der Himmel (id 20) zeichnete vor Boden und Bau. Gemessen
     // (Radeon 890M, EINE Welt, gpu-bank-Median): Genesis Ego 28,25 → 23,38 ms, Dorf Ego 27,27 → 22,05 ms, Wiese 22,02 → 21,78.
     static _zeichenRang(o) {
         const u = (o && o.userData) || {};
-        if (o && o.isBundleGroup === true) return u.regionKey === "@global" ? 0 : u.regionKey === "@wahl" ? 2 : 1;
+        if (o && o.isBundleGroup === true) return u.regionKey === "@global" ? 0 : 1;
         const s = u.zeichenSchicht;
         return s === "boden" ? 4 : s === "fern" ? 5 : s === "himmel" ? 6 : 3;
     }
@@ -2453,22 +2453,16 @@ class AnazhRealm_bild_kosten {
             if (kamera.isPerspectiveCamera === true) this._passMatrixWeit(S.m, kamera, AnazhRealm.PASS_WAHL.drehRand);
             this._passWahlLage(S, kamera, k);
         }
-        const L = S.lage;
-        // Die Instanz-Wahl: die Gruppen der Wahl (Baum- und Strauch-Stufen, die Karten) zeichnen in diesem Pass nur ihre
-        // gewählten Instanzen, danach wieder alle.
-        if (nach) {
-            if (kamera === this.state.camera) this._instanzWahlZurueck(S.wahlHaupt);
-            else if (this._schattenKameraIndex(kamera) >= 0) this._instanzWahlZurueck(S.wahlSchatten);
-        } else if (k >= 0) this._instanzWahlPass("schatten", S);
-        else if (kamera === this.state.camera) this._instanzWahlPass("haupt", S);
-        // die Wahl der GPU: die Arenen ihrer Senken legen die Aufträge dieses Passes, EIN Compute zählt sie (nach dem Takt) — je
-        // Bild neu, darum in der Lage des Auges (`L.auge`)
+        // DER TAKT DER ARENEN im Hauptbild, vor jedem Pass dieses Frames (die Kaskaden rendern verschachtelt in ihm), dann
+        // die Wahl der GPU: die Arenen legen die Aufträge dieses Passes, EIN Compute wählt jede Instanz jeder globalen Gruppe
+        if (!nach && k < 0 && kamera === this.state.camera) {
+            this._arenaTakt();
+            this._wieseAugeTakt(kamera); // das Auge der Wiese für Stoff und Wahl dieses Bilds (die Nah-Wiese wirft nie)
+        }
         if (!nach) this._instanzWahlGpu(kamera, S);
         // Die Sätze (Boden · Wasser · Bau · Streu) wählen ihren Abschnitt nach demselben Gesetz.
         this._chunkSatzPass(kamera, nach, k, S);
-        // Die Nah-Wiese legt ihren Satz für das Auge dieses Passes (eine Kaskade sieht sie nie: sie wirft nicht) — ihre Stufen und
-        // ihre Übergabe messen vom Auge dieses Bilds (`L.auge`)
-        if (!nach && k < 0) this._nahWieseSicht(kamera, L.auge);
+
         const map = this.state._regionBundles;
         if (!map || map.size === 0) return;
         if (k < 0) {
@@ -2487,21 +2481,19 @@ class AnazhRealm_bild_kosten {
     // frisch aus der Hülle dieses Takts) — beide nach dem EINEN Gesetz (`_passTrifftBox`); was nicht trifft, ruht für diesen
     // Pass (`ab` merkt es für die Rückkehr). Rückgabe: die Zahl der werfenden Bundles.
     // DIE WAHL STEHT (K72 — Welle C für den letzten Leser der Pass-Wahl): ein Bundle behält die Wahl dieses Passes (`L.key`),
-    // solange seine Lage (`L.gen`), sein Werfer-Stand (`_bundleWerferHuelle`) und die Instanz-Wahl dieses Passes stehen
-    // (`S.wahlNeu` — sie schaltet die Sicht der Wahl-Gruppen, die dieser Gang liest): kein Gang über die Kinder, keine
-    // Prüfung, nur die gemerkte Wahl. Gemessen 15.10. (Radeon, Genesis/Wiese Third, Ruhe): je Kaskaden-Render 18–37
+    // solange seine Lage (`L.gen`) und sein Werfer-Stand (`_bundleWerferHuelle`) stehen (die Gruppen der Wahl hängen nicht
+    // in Bündeln, ihre Wahl trifft die GPU, `_instanzWahlArt`): kein Gang über die Kinder, keine Prüfung, nur die gemerkte Wahl. Gemessen 15.10. (Radeon, Genesis/Wiese Third, Ruhe): je Kaskaden-Render 18–37
     // Prüfungen in 22 Gängen, in jedem Render dieselbe Wahl.
     _werferWahlPass(map, S) {
         const L = S.lage,
             ab = S.ab;
-        const instanzSteht = S.wahlNeu === 0;
         let n = 0;
         for (const bg of map.values()) {
             const h = this._bundleWerferHuelle(bg);
             const u = bg.userData;
             const je = u._werferJe || (u._werferJe = new Map());
             let w = je.get(L.key);
-            if (instanzSteht && w && w.gen === L.gen && w.stand === u._werferStand) {
+            if (w && w.gen === L.gen && w.stand === u._werferStand) {
                 bg.visible = w.vis;
                 if (!w.vis) continue;
                 n++;
@@ -2996,425 +2988,32 @@ class AnazhRealm_bild_kosten {
         );
     }
 
-    // DIE INSTANZ-WAHL JE PASS (Welle 7). Befund 06.10. (echte GPU, Mess-Wiese, Band in Ruhe, fester Blick): die Baum-
-    // Gruppen sind global (eine Instanz-Gruppe je Art × Gestalt × Stufe × Teil, ein Befehl je Pass), und jeder Pass zog JEDE
-    // Instanz — das Hauptbild 380k Baum-Dreiecke, davon im Blick 251k (yaw 0) bzw. 164k (yaw −0,88); jede Kaskade jeden
-    // Zwilling (k0 182k, k1 blickabhängig 14k oder 182k); und die Stufen-Bänder der CPU (Hysterese ±3,4 m AUSSERHALB der
-    // Dither-Fenster) hielten Stufen, deren Maske vom Auge alles verwirft (eine L0 jenseits d0 kostet 17k Dreiecke je Tanne
-    // und zeigt nichts). Ebenso die EINE Atlas-Gruppe der Karten: im @global-Bündel zeichnete sie jede Karte des Rings (1 889
-    // Karten bis 385 m, ein Drittel im Blick) — sie ist eine Gruppe der Wahl wie jede Pflanzen-Stufe (W7-Vereinigung: ihre
-    // Senken-Kopie je Sicht fiel). Jeder Pass wählt: die Gruppe ordnet ihre Slots (`_archGroupTausch`), die gewählten vorn,
-    // und zeichnet nur sie (`count` über `_instanzZahl`); nach dem Pass zählt sie wieder alle (die Slot-Wahrheit: count =
-    // liveCount außerhalb jedes Passes). Gewählt ist, was (1) das EINE Gesetz der Pass-Wahl trifft (`_passTrifft`: Kugel der
-    // Instanz gegen das Frustum, im Schatten-Pass ihre Licht-Kapsel gegen die Scheibe) und (2) dessen Stufen-Maske vom Auge
-    // etwas behält (`_instanzFenster` — nur, wenn der Stoff die Maske trägt). Eine Gruppe zeichnet in genau EINER Pass-Art
-    // (`_instanzWahlArt`): so schreibt kein Pass die Puffer eines anderen, auch nicht der Kaskaden-Pass mitten im
-    // Hauptbild. Das Hauptbild nimmt sein Bündel neu auf, wenn die Wahl sich ändert (Zahl oder Ordnung); die Kaskaden
-    // zeichnen Bündel-Kinder direkt.
-    // `S.wahlNeu` zählt die Gruppen, deren Wahl dieser Pass neu legte oder fallen ließ (0: die Wahl des Passes stand ganz —
-    // die Werfer-Wahl liest die Sicht der Wahl-Gruppen und hält ihre Wahl nur dann, `_werferWahlPass`).
-    _instanzWahlPass(art, S) {
-        const set = this._instanzWahlGruppen();
-        const liste = art === "haupt" ? S.wahlHaupt : S.wahlSchatten;
-        if (liste.length) this._instanzWahlZurueck(liste); // ein Pass ohne Nachher-Haken (Abbruch) hinterlässt nichts
-        S.wahlNeu = 0;
-        // die Arenen der Bündel lesen die Wahl des Hauptbilds (G1, `_arenaTakt`): ihre Plätze ziehen, was sie eben legte
-        if (set.size === 0) return void (art === "haupt" && this._arenaTakt());
-        const L = S.lage;
-        // DIE WAHL FOLGT DEM WEG (w20-leib-takt): der Abdruck dieser Lage, die Ränder ± wegM daneben (`_wahlRaender`)
-        const { A, weit, eng } = this._wahlRaender(S);
-        for (const g of set) {
-            if (g.wahl !== art) continue;
-            const m = g.mesh;
-            const n = g.liveCount | 0;
-            if (!m || n === 0 || m.visible === false) {
-                // Eine leere oder verborgene Gruppe zeichnet in diesem Pass nichts: ihre gehaltene Wahl fällt mit (die
-                // nächste sichtbare Belegung wählt neu). Sonst hielt sie die Marke eines freigegebenen Slots — CI 07.10.,
-                // gate:sicht-arbeit (I): der Stufen-Wechsel einer einzelnen Erle 1→0 leerte f:weide|1|1:0#S, k0 und k1
-                // hielten Slot −1.
-                if (g._wahlJe && L && g._wahlJe.delete(L.key)) S.wahlNeu++;
-                continue;
-            }
-            // die Wahl steht (Welle C): die Gruppe liegt (wieder), wie dieser Pass sie zuletzt ordnete
-            if (this._instanzWahlSteht(g, L)) {
-                AnazhRealm._instanzZahl(m, g._wahlJe.get(L.key).refs.length);
-                liste.push(g);
-                continue;
-            }
-            const fenster = L.an && this._instanzFensterGilt(g);
-            const nach = this._instanzWahlWeg(g, L, A, fenster);
-            if (nach >= 0) {
-                if (nach > 0) S.wahlNeu++;
-                liste.push(g);
-                continue;
-            }
-            S.wahlNeu++;
-            // die volle Wahl: je Instanz das Urteil und ob es über den Weg hält — trifft der weite Rand nicht, fehlt sie
-            // sicher, trifft der enge, steht sie sicher (das Gesetz ist im Rand monoton); nur dazwischen urteilt der Pass
-            const wack = [];
-            let kk = 0,
-                tausch = 0;
-            for (let i = 0; i < n; i++) {
-                let ja;
-                if (!this._instanzBehalten(g, i, weit, fenster)) ja = false;
-                else if (this._instanzBehalten(g, i, eng, fenster)) ja = true;
-                else ((ja = this._instanzBehalten(g, i, L, fenster)), wack.push(g.slotRef[i]));
-                if (!ja) continue;
-                if (i !== kk) {
-                    this._archGroupTausch(g, i, kk);
-                    tausch++;
-                }
-                kk++;
-            }
-            this._instanzWahlLegt(g, L, kk, tausch, art);
-            liste.push(g);
-            const w = g._wahlJe.get(L.key);
-            w.anker = (w.anker || new Float64Array(A.length)).fill(0);
-            w.anker.set(A);
-            w.wack = wack;
-        }
-        if (art === "haupt") this._arenaTakt();
-    }
-
-    // Die Zahl der Wahl legen: die Senke zeichnet ihre ersten kk Slots, das Hauptbild nimmt sein Bündel neu auf, wenn die
-    // Wahl sich änderte (Zahl oder Ordnung — die Arena liest sie im Takt, G1), und der Pass merkt sie (`_instanzWahlMerke`).
-    _instanzWahlLegt(g, L, kk, tausch, art) {
-        const m = g.mesh;
-        AnazhRealm._instanzZahl(m, kk);
-        if (art === "haupt" && !m.__arena && (tausch > 0 || g._wahlZahl !== kk)) this._archMeshBundleTouch(m);
-        if (art === "haupt") g._wahlZahl = kk;
-        this._instanzWahlMerke(g, L, kk);
-    }
-
-    // DIE WAHL FOLGT DEM WEG (w20-leib-takt, Gebot 7 — der Takt kostet, was sich ändert). Befund (headless, Holz voll, Mess-Wiese
-    // Third, Gang gegen Stand, je Bild): jeder Schritt über den Halt (haltM, 2 cm Auge) legte eine neue Lage, und jeder Pass
-    // urteilte jede Instanz seiner Gruppen neu — die Karten-Gruppe (2 295 Karten) im Hauptbild 2 311 Urteile je Bild, in den
-    // Kaskaden 1 224 · 333 · 245; die Instanz-Wahl der vier Pässe kostete im Gang 1,8 ms je Bild, im Stand 0,4. Jetzt merkt die
-    // volle Wahl je Instanz, ob ihr Urteil über den Weg `wegM` hält (es fällt unter dem weiten und dem engen Rand gleich), und
-    // den Abdruck ihrer Lage (`_wahlAbdruck`). Eine neue Lage mit denselben Richtungen, deren Weg vom Abdruck (`_wahlWeg`)
-    // unter wegM liegt, urteilt nur die wackligen Instanzen neu (die nahe einer Grenze) und ordnet nur, was kippt — die Wahl
-    // ist dieselbe wie die volle (jedes Urteil fällt am Gesetz dieser Lage; Gegenprobe 2,6 Mio. Urteile in Stand, Gang und
-    // Drehung, 0 Brüche). Gemessen A B im Wechsel (4 × 240 Bilder Gang): Instanz-Wahl 1,8 → 0,9 ms je Bild, Gang-Takt p95
-    // Third 21,8 → 19,8, Ego 24,7 → 20,7 ms. Rückgabe −1: die volle Wahl muss legen; sonst die Zahl der gekippten Instanzen.
-    _instanzWahlWeg(g, L, A, fenster) {
-        const w = g._wahlJe ? g._wahlJe.get(L.key) : null;
-        if (!w || !w.anker || !w.wack || !(this._wahlWeg(w.anker, A) <= AnazhRealm.PASS_WAHL.wegM)) return -1;
-        const m = g.mesh;
-        const jetzt = this._instanzSlotStand(g, this._slotStandJetzt || (this._slotStandJetzt = {}));
-        if (
-            jetzt.belegt !== w.belegt ||
-            jetzt.im !== w.im ||
-            jetzt.vMat !== w.vMat ||
-            jetzt.vKarte !== w.vKarte ||
-            w.geo !== m.geometry ||
-            w.mat !== g.mat ||
-            w.live !== (g.liveCount | 0)
-        )
-            return -1;
-        let tausch = 0;
-        if (w.ordnung !== (g._ordnung | 0))
-            for (let j = 0; j < w.refs.length; j++)
-                if (w.refs[j].slot !== j) (this._archGroupTausch(g, w.refs[j].slot, j), tausch++);
-        let kk = w.refs.length,
-            kipp = 0;
-        for (let q = 0; q < w.wack.length; q++) {
-            const i = w.wack[q].slot;
-            const ja = this._instanzBehalten(g, i, L, fenster);
-            if (ja === i < kk) continue;
-            kipp++;
-            const z = ja ? kk++ : --kk;
-            if (i !== z) (this._archGroupTausch(g, i, z), tausch++);
-        }
-        this._instanzWahlLegt(g, L, kk, tausch, g.wahl);
-        return kipp;
-    }
-
-    // DIE RÄNDER DER WAHL (die Wahl folgt dem Weg, je Pass einmal): der Abdruck der Lage dieses Passes und dieselbe Lage mit dem
-    // Halt ± wegM. Das Gesetz ist im Halt monoton: was der weite Rand nicht trifft, fehlt unter jeder Lage, deren Weg vom Abdruck
-    // unter wegM liegt; was der enge trifft, steht unter ihr. (Die Sätze, `_chunkSatzAbschnitt`, gewannen damit nichts: ihre
-    // Ordnung fällt im Gang mit `s.stand`, gemessen 0,39 gegen 0,45 ms je Bild — sie wählen voll.)
-    _wahlRaender(S) {
-        const L = S.lage;
-        const D = AnazhRealm.PASS_WAHL.wegM;
-        const R = S.raender || (S.raender = { A: null, weit: {}, eng: {} });
-        R.A = this._wahlAbdruck(L, S);
-        Object.assign(R.weit, L).halt = L.halt + D;
-        Object.assign(R.eng, L).halt = L.halt - D;
-        [R.weit.haltBlende, R.eng.haltBlende] = [L.haltBlende + D, L.haltBlende - D];
-        return R;
-    }
-
-    // DER ABDRUCK EINER LAGE (die Wahl folgt dem Weg): alles, was das Gesetz der Pass-Wahl (`_passTrifft`) und das Fenster
-    // (`_instanzFenster`) aus ihr lesen — Ebenen des Frustums, Scheibe und Basis der Kaskade, Licht, Auge, Auge der Blende,
-    // Ränder, Blende. In `S.abdruck`.
-    _wahlAbdruck(L, S) {
-        const a = S.abdruck || (S.abdruck = new Float64Array(80));
-        const eb = (P, o) => (
-            (a[o] = P.normal.x),
-            (a[o + 1] = P.normal.y),
-            (a[o + 2] = P.normal.z),
-            (a[o + 3] = P.constant)
-        );
-        for (let p = 0; p < 6; p++) eb(L.fr.planes[p], 4 * p);
-        const f = L.fit;
-        a[24] = f ? 1 : 0;
-        for (let p = 0; p < 6; p++) if (f) eb(f.ebenen[p], 25 + 4 * p);
-        // die Basis der Kapsel: ihre Drehung (Richtung) und ihre Tiefe (bi[14], ein Ort: v.z der Licht-Kapsel)
-        const bi = f ? f.basisInv.elements : null;
-        a[49] = f ? f.zb : 0;
-        a[50] = f ? f.saum : 0;
-        for (let i = 0; i < 9; i++) a[51 + i] = bi ? bi[AnazhRealm.WAHL_BASIS[i]] : 0;
-        a[60] = L.haltBlende;
-        a[61] = 0;
-        a[62] = bi ? bi[14] : 0;
-        a[63] = f ? L.dir.x : 0;
-        a[64] = f ? L.dir.y : 0;
-        a[65] = f ? L.dir.z : 0;
-        a[66] = L.ax;
-        a[67] = L.ay;
-        a[68] = L.az;
-        a[69] = L.an ? L.ex : 0;
-        a[70] = L.an ? L.ez : 0;
-        a[71] = L.licht;
-        a[72] = L.rand;
-        a[73] = L.dreh;
-        a[74] = L.halt;
-        const K = L.an ? L.kanten : null;
-        a[75] = L.an ? L.perf : 0;
-        a[76] = L.an ? L.ref : 0;
-        a[77] = K ? K.l0Aus + 3 * K.l1Ein : 0;
-        a[78] = K ? K.l1Aus + 3 * K.karteEin : 0;
-        a[79] = L.an ? 1 : 0;
-        return a;
-    }
-
-    // DER WEG ZWISCHEN ZWEI ABDRÜCKEN (`_wahlAbdruck`): um wie viel ein Urteil des Gesetzes höchstens wandert — die Konstante
-    // jeder Ebene des Frustums plus der Rand je Meter über den Weg des Auges, das Ende der Licht-Kapsel (Scheibe, Boden der Box,
-    // Tiefe der Basis) auf ihrem doppelten Halt, das Auge der Blende. Unendlich, wenn eine Richtung (Normalen, Basis, Licht)
-    // oder eine Zahl (Ränder, Blende, Saum) nicht dieselbe ist: dann wählt die Gruppe voll.
-    _wahlWeg(a, b) {
-        let eb = 0,
-            ef = 0;
-        for (let p = 0; p < 12; p++) {
-            const o = p < 6 ? 4 * p : 25 + 4 * (p - 6);
-            for (let j = 0; j < 3; j++) if (!(Math.abs(a[o + j] - b[o + j]) <= 1e-9)) return Infinity;
-            const d = Math.abs(a[o + 3] - b[o + 3]);
-            if (p < 6) eb = Math.max(eb, d);
-            else ef = Math.max(ef, d);
-        }
-        for (let i = 51; i < 66; i++) if (i !== 62 && !(Math.abs(a[i] - b[i]) <= 1e-9)) return Infinity;
-        if (a[24] !== b[24] || a[50] !== b[50]) return Infinity;
-        for (let i = 71; i < 80; i++) if (a[i] !== b[i]) return Infinity;
-        const auge = Math.hypot(a[66] - b[66], a[67] - b[67], a[68] - b[68]);
-        const kapsel = a[24] ? (ef + Math.abs(a[49] - b[49]) + Math.abs(a[62] - b[62])) / 2 : 0;
-        // die Rundung der Richtungen (1e-9) über Welt-Koordinaten (km) trägt höchstens Mikrometer
-        return Math.max(eb + (b[72] + b[73]) * auge, kapsel, Math.hypot(a[69] - b[69], a[70] - b[70])) + 1e-6;
-    }
-
-    // STEHT die Wahl einer Gruppe (Welle C)? Dieser Pass (`L.key`: haupt · k<i>) wählte sie zuletzt in derselben Lage
-    // (`L.gen`), ihr SLOT-STAND ist der, den er dabei merkte (`_instanzSlotStand`), und Geometrie, Stoff und Zahl sind dieselben.
-    // Eine Schatten-Gruppe ordnen BEIDE Kaskaden eines Frames (ein Puffer, zwei Präfixe): hat die andere sie umgeordnet, rücken
-    // die gemerkten Instanzen dieses Passes (ihre Slot-Marken, `slotRef`) wieder nach vorn — ein Tausch je verschobene, keine
-    // Prüfung. Gegenprüfung 07.10.: bis hier merkte die GRUPPE die Version ihrer Slots nach der letzten Wahl (`_wahlVer`) —
-    // ordnete k0 nach einem fremden Schreiber neu (der Stufen-Wechsel eines Baums: Freigeben + Belegen, die Zahl bleibt), fand
-    // k1 alles gleich und hielt ihre alten Marken, darunter eine freigegebene (Slot −1): der Tausch schrieb NaN in einen
-    // lebenden Slot und warf in jedem Frame dieser Kaskade (gate:sicht-arbeit (I): 2 Würfe, 2 NaN-Slots, 1 fehlender Werfer).
-    _instanzWahlSteht(g, L) {
-        const w = g._wahlJe ? g._wahlJe.get(L.key) : null;
-        if (!w || w.gen !== L.gen) return false;
-        const m = g.mesh;
-        const jetzt = this._instanzSlotStand(g, this._slotStandJetzt || (this._slotStandJetzt = {}));
-        if (
-            jetzt.belegt !== w.belegt ||
-            jetzt.im !== w.im ||
-            jetzt.vMat !== w.vMat ||
-            jetzt.vKarte !== w.vKarte ||
-            w.geo !== m.geometry ||
-            w.mat !== g.mat ||
-            w.live !== (g.liveCount | 0)
-        )
-            return false;
-        // DIE ORDNUNG STEHT (K72): tauschte seit der Wahl dieses Passes niemand einen Slot der Gruppe (`_archGroupTausch`
-        // zählt `g._ordnung`), liegen ihre gemerkten Instanzen noch vorn — kein Gang über die Marken
-        if (w.ordnung === (g._ordnung | 0)) return true;
-        const refs = w.refs;
-        let tausch = 0;
-        for (let j = 0; j < refs.length; j++) {
-            const i = refs[j].slot;
-            if (i === j) continue;
-            this._archGroupTausch(g, i, j);
-            tausch++;
-        }
-        w.ordnung = g._ordnung | 0;
-        if (tausch > 0 && g.wahl === "haupt" && !m.__arena) this._archMeshBundleTouch(m);
-        return true;
-    }
-
-    _instanzWahlMerke(g, L, kk) {
-        const je = g._wahlJe || (g._wahlJe = new Map());
-        let w = je.get(L.key);
-        if (!w)
-            je.set(
-                L.key,
-                (w = {
-                    gen: 0,
-                    geo: null,
-                    mat: null,
-                    live: 0,
-                    refs: null,
-                    belegt: 0,
-                    im: null,
-                    vMat: 0,
-                    vKarte: 0,
-                    ordnung: -1,
-                })
-            );
-        const m = g.mesh;
-        w.gen = L.gen;
-        w.geo = m.geometry;
-        w.mat = g.mat;
-        w.live = g.liveCount | 0;
-        w.refs = g.slotRef.slice(0, kk);
-        w.ordnung = g._ordnung | 0;
-        this._instanzSlotStand(g, w);
-    }
-
-    // DER SLOT-STAND einer Instanz-Gruppe (Welle C) — was ihre Slots trägt, ohne die Ordnung der Wahl: Belegen, Freigeben und
-    // Stempel (`g.slotStand`), der Puffer ihrer Instanz-Matrizen und die Versionen der Matrizen und des Karten-Stempels, von
-    // denen die Tausche der Wahl abgezogen sind (`_archGroupTausch` zählt, was sie selbst hebt). Ihn hebt jeder fremde
-    // Schreiber — auch eine Tür, die schwingt —, nie die Wahl eines Passes; jeder Pass merkt ihn in seiner Wahl. Schreibt den
-    // Stand in `aus`.
-    _instanzSlotStand(g, aus) {
-        const m = g.mesh;
-        const ak = m.geometry.attributes.aKarte;
-        aus.belegt = g.slotStand | 0;
-        aus.im = m.instanceMatrix;
-        aus.vMat = m.instanceMatrix.version - (g._tauschMat | 0);
-        aus.vKarte = ak ? ak.version - (g._tauschKarte | 0) : -1;
-        return aus;
-    }
-
-    _instanzWahlZurueck(liste) {
-        for (let i = 0; i < liste.length; i++) {
-            const g = liste[i];
-            if (g.mesh) AnazhRealm._instanzZahl(g.mesh, g.liveCount | 0);
-        }
-        liste.length = 0;
-    }
-
-    _instanzWahlGruppen() {
-        return this._wahlGruppen || (this._wahlGruppen = new Set());
-    }
-
-    // Welche Gruppe je Pass wählt: eine GLOBALE Gruppe, die in genau EINER Pass-Art zeichnet — die Pflanzen-Stufe (ihre
-    // Geometrie trägt den Stufen-Stempel der Studio-Blende, aLodLevel 1 L0 · 2 L1 · 3 Zwilling/einzige Nah-Stufe, und die
-    // Instanz-Fassade aH0): der Zwilling (SHADOW_TWIN_LAYER) nur in den Kaskaden, die Stufe ohne Schatten nur im Hauptbild;
-    // die Karte (die EINE Atlas-Gruppe, ihr Quad trägt aKarte) zeichnet im Hauptbild, ihr Zwilling (die Atlas-Gruppe "#S",
-    // w14-lod-sprung) in den Kaskaden. Eine Gruppe, die in beiden zeichnet, teilte ihre Puffer zwischen den Pässen eines
-    // Frames — sie zeichnet weiter jede Instanz.
-    // "gpu": JEDE Senke eines Gang-Satzes (`aGang`) — Haut, Kleid und Wurf der Bewohner, Fell, Glimmen, Rest und Wurf der
-    // Tiere — wählt auf der GPU (`_instanzWahlGpu`), in jedem Pass, der sie zieht: das Auge im Frustum, der Wurf je Kaskade
-    // mit seiner Licht-Kapsel. Sie betritt keine Gruppe der CPU-Wahl; die CPU-Wahl (`_instanzWahlPass`) trägt nur noch die
-    // Pflanzen-Stufen und die Karte (ihr Fenster der Blende liest aH0 · aKarte).
+    // EINE GPU-WAHL FÜR JEDE INSTANZ (w25-gpu-wahl, Atlas Schnitt 2; der Spike w25-spike-gpu-vegetation maß an der Mess-Wiese
+    // Ego im Gang, Radeon, ABAB: die CPU-Wahl `_instanzWahlPass` 3,7/11,4 ms Mittel/p95 je Bild, die GPU 0,045 ms für 3 262
+    // Instanzen). JEDE globale Gruppe — die Senke eines Gang-Satzes (`aGang`), die Pflanzen-Stufe und ihr Zwilling, die Karte
+    // und ihr Zwilling (die Atlas-Gruppe "#S"), jede übrige globale Gruppe — wählt die GPU (`_instanzWahlGpu`) in JEDEM Pass,
+    // der sie zieht, je Pass in ihrer eigenen Liste: das Auge im Frustum, der Wurf je Kaskade mit seiner Licht-Kapsel, das
+    // Fenster ihrer Stufe (`__wahlFenster`, `PASS_WAHL_WGSL`). Bis hier wählte die CPU die Pflanzen-Stufen und die Karte je
+    // Pass, ordnete ihre Slots und zählte sie zurück — eine Gruppe, die in beiden Pass-Arten zeichnete, zog jede Instanz.
+    // Regional (im Region-Bündel, sein Cull) und Tür-Flügel wählt niemand je Instanz.
     _instanzWahlArt(leaf, castShadow, regional) {
         if (regional || !leaf || leaf.tuer) return null;
-        const at = leaf.geom && leaf.geom.attributes;
-        if (!at) return null;
-        if (at.aGang) return "gpu";
-        if (leaf.atlasGruppe) return !at.aKarte ? null : leaf.shadowTwin ? "schatten" : castShadow ? null : "haupt";
-        if (!at.aH0 || !at.aLodLevel || !(at.aLodLevel.array[0] >= 1)) return null;
-        if (leaf.shadowTwin) return "schatten";
-        return castShadow ? null : "haupt";
+        return leaf.geom && leaf.geom.attributes ? "gpu" : null;
     }
 
-    // Trägt der Stoff der Gruppe die Maske, deren Fenster die Wahl liest — in dem Kanal, den ihr Pass liest? Die Stufen-
-    // Stoffe der Foundry markieren sie am Bau (`userData.foundryCrossfade` samt Kanal: der Schattenpass liest nur die Farbe,
-    // nie die Deckung), der Karten-Stoff ebenso (`userData.kartenMaske`, er zeichnet nur im Hauptbild). Ohne Maske zeichnet
-    // die GPU jede Instanz voll — ein Fenster schnitte dort ein Loch: die Wahl liest dann nur das Gesetz der Pass-Wahl.
-    _instanzFensterGilt(g) {
-        const ud = g.mat && g.mat.userData;
-        if (!ud) return false;
-        if (g.wahlStufe === "karte") return ud.kartenMaske === true;
-        return ud.foundryCrossfade === true && (g.wahl === "haupt" || ud.foundryCrossfadeKanal === "farbe");
-    }
-
-    // Behält der Pass die Instanz im Slot i? Ihr Körper (die Kugel der Geometrie × Instanz-Matrix + `pflanzeRandM` für den
-    // Wind; die Karte: ihr Quad auf der Stammachse, Höhe aKarte.z und Halbbreite aKarte.y × Instanz-Skala, das sich um die
-    // Hochachse zum Auge dreht) trifft nach dem EINEN Gesetz; trägt der Stoff die Maske, behält ihr Fenster etwas.
-    _instanzBehalten(g, i, L, fenster) {
-        const m = g.mesh;
-        const a = m.instanceMatrix.array;
-        const o = i * 16;
-        const mw = m.matrixWorld.elements;
-        let cx, cy, cz, r;
-        if (g.wahlStufe === "karte") {
-            const ak = m.geometry.attributes.aKarte.array;
-            const h = ak[i * 4 + 2] * 0.5;
-            const hw = ak[i * 4 + 1];
-            const s = Math.sqrt(a[o] * a[o] + a[o + 1] * a[o + 1] + a[o + 2] * a[o + 2]);
-            cx = a[o + 12] + a[o + 4] * h;
-            cy = a[o + 13] + a[o + 5] * h;
-            cz = a[o + 14] + a[o + 6] * h;
-            r = s * Math.sqrt(h * h + hw * hw);
-        } else {
-            const geo = m.geometry;
-            if (!geo.boundingSphere) geo.computeBoundingSphere();
-            const bs = geo.boundingSphere;
-            const c = bs.center;
-            const s2 = Math.max(
-                a[o] * a[o] + a[o + 1] * a[o + 1] + a[o + 2] * a[o + 2],
-                a[o + 4] * a[o + 4] + a[o + 5] * a[o + 5] + a[o + 6] * a[o + 6],
-                a[o + 8] * a[o + 8] + a[o + 9] * a[o + 9] + a[o + 10] * a[o + 10]
-            );
-            cx = a[o] * c.x + a[o + 4] * c.y + a[o + 8] * c.z + a[o + 12];
-            cy = a[o + 1] * c.x + a[o + 5] * c.y + a[o + 9] * c.z + a[o + 13];
-            cz = a[o + 2] * c.x + a[o + 6] * c.y + a[o + 10] * c.z + a[o + 14];
-            r = bs.radius * Math.sqrt(s2) + AnazhRealm.PASS_WAHL.pflanzeRandM;
-        }
-        // in die Welt (die Gruppe hängt an der Szene oder in ihrem Bündel, beide ohne Lage — die Matrix bleibt exakt)
-        const wx = mw[0] * cx + mw[4] * cy + mw[8] * cz + mw[12],
-            wy = mw[1] * cx + mw[5] * cy + mw[9] * cz + mw[13],
-            wz = mw[2] * cx + mw[6] * cy + mw[10] * cz + mw[14];
-        if (!this._passTrifft(L, wx, wy, wz, 0, 0, 0, r)) return false;
-        return !fenster || this._instanzFenster(g, i, L);
-    }
-
-    // DAS FENSTER DER STUFE: behält ihre Maske vom Auge auf der Instanz etwas? Die Maske misst je INSTANZ die Distanz vom
-    // Auge zu ihrem Ursprung in XZ × uLodPerf × min(uLodRef/Sichthöhe, 1) (`_instanzMitteNode`, Studio `_iw`; Stufen:
-    // Skelett-Metrik aH0, Blatt-Metrik aH0L; die Karte: zu ihrem Anker, Sichthöhe |aKarte.w|, ein negativer Stempel =
-    // verdeckt, sie blendet voll) — das Intervall ist der Punkt der Instanz, nur der Halt macht es breit; das Urteil fällt
-    // `_blendeBehaelt` an den Kanten des Blend-Gesetzes. Bis 1110-11 maß die Maske je Fragment und das Fenster über die
-    // Weite der Gestalt: die L1 einer Birke in 5 m (Krone 10 m) behielt ihre fernen Äste und wurde ganz gezeichnet. Das Auge der
-    // Maske hält wie jeder Ort der Lage um den halben Halt (`_blendeHaelt`) — die Distanz trägt den Halt als Rand (`L.halt`,
-    // wie `_passTrifft`): eine gehaltene Wahl verliert nichts, solange das Auge atmet.
-    _instanzFenster(g, i, L) {
-        const m = g.mesh;
-        const geo = m.geometry;
-        const a = m.instanceMatrix.array;
-        const o = i * 16;
-        const mw = m.matrixWorld.elements;
-        const dx = a[o + 12] + mw[12] - L.ex,
-            dz = a[o + 14] + mw[14] - L.ez;
-        const d = Math.sqrt(dx * dx + dz * dz);
-        // der Rand des Fensters (w24-fahrt-takt: getrennt vom Halt der Ebenen, `_lageAnker`) — eine Lage ohne ihn ist ein Bruch,
-        // nie ein stilles NaN im Fenster (z327: eine von Hand gebaute Lage trug nur `halt`)
-        const halt = L.haltBlende;
-        if (typeof halt !== "number")
-            throw new Error("_instanzFenster: die Lage trägt keinen Rand der Blende (`haltBlende`)");
-        if (g.wahlStufe === "karte") {
-            const ak = geo.attributes.aKarte.array;
-            const sicht = ak[i * 4 + 3];
-            const k = Math.min(L.ref / Math.max(Math.abs(sicht), 1e-3), 1);
-            const dSmin = Math.max(0, d - halt) * L.perf * k,
-                dSmax = (d + halt) * L.perf * k;
-            return AnazhRealm._blendeBehaelt(L.kanten, "karte", dSmin, dSmax, dSmin, dSmax, sicht < 0);
-        }
-        const dMin = Math.max(0, d - halt) * L.perf,
-            dMax = (d + halt) * L.perf;
-        const kS = Math.min(L.ref / Math.max(geo.attributes.aH0.array[i], 1e-3), 1);
-        const hL = geo.attributes.aH0L.array[i]; // das Vorzeichen: der Halt der Stufe ohne Partner (sie zeichnet voll)
-        const kL = Math.min(L.ref / Math.max(Math.abs(hL), 1e-3), 1);
-        return AnazhRealm._blendeBehaelt(L.kanten, g.wahlStufe, dMin * kS, dMax * kS, dMin * kL, dMax * kL, hL < 0);
+    // DAS FENSTER EINER GRUPPE (`__wahlFenster`, die Wahl der GPU liest es je Auftrag): [Art, gilt im Hauptbild, gilt in den
+    // Kaskaden, 0] — die Art 1 · 2 · 3 der Stufen-Stempel der Studio-Blende (aLodLevel: L0 · L1 · Zwilling/einzige Nah-Stufe,
+    // ihr Maß aH0 · aH0L), 4 die Karte (aKarte), 0 ohne Fenster. Es GILT, wo der Stoff die Maske im Kanal des Passes trägt: die
+    // Stufen-Stoffe der Foundry markieren sie am Bau (`userData.foundryCrossfade` samt Kanal — der Schattenpass liest nur die
+    // Farbe, nie die Deckung), der Karten-Stoff ebenso (`userData.kartenMaske`). Ohne Maske zeichnet die GPU jede Instanz voll
+    // — ein Fenster schnitte dort ein Loch: die Wahl liest dann nur das Gesetz der Pass-Wahl.
+    static _wahlFenster(leaf, atlasGruppe) {
+        const at = leaf.geom.attributes,
+            ud = (leaf.mat && leaf.mat.userData) || {};
+        if (atlasGruppe) return at.aKarte ? [4, +(ud.kartenMaske === true), +(ud.kartenMaske === true), 0] : [0, 0, 0, 0]; // prettier-ignore
+        if (!at.aH0 || !at.aLodLevel || !(at.aLodLevel.array[0] >= 1)) return [0, 0, 0, 0];
+        const blende = ud.foundryCrossfade === true;
+        return [at.aLodLevel.array[0], +blende, +(blende && ud.foundryCrossfadeKanal === "farbe"), 0];
     }
 
     // DIE WAHL DER GPU (Rang 7 des Luft-Urteils 28.10., gebaut nach dem Spike gpu-wahl). Befund (Luft-Urteil, Stadt-Gipfel
@@ -3425,7 +3024,7 @@ class AnazhRealm_bild_kosten {
     // ein, die Queue ordnet: Aufträge · Rechnung · Zug): sie legt die Aufträge dieser Kamera (`_wahlVor`: die Zahl jedes Zugs 0,
     // seine erste Instanz der Abschnitt der Liste dieser Kamera), und EIN Compute je Kamera prüft jede ihrer Instanzen nach dem
     // EINEN Gesetz der Pass-Wahl (`_passTrifft` als WGSL, `PASS_WAHL_WGSL`), schreibt die getroffenen verdichtet in die Liste
-    // und zählt die Zahl des Zugs atomar im Auftrags-Puffer der Arena; der Instanz-Knoten liest `matrizen[liste[instance_index]]`
+    // und schreibt die Zahl des Zugs in den Auftrags-Puffer der Arena (in der Folge der Instanzen, `PASS_WAHL_WGSL`); der Instanz-Knoten liest `matrizen[liste[instance_index]]`
     // (`_senkenKnoten`). Ein Wurf ist der Bruch der Arena (`_arenaBruch`): jedes Glied zeichnet wieder über seinen Zeichner.
     _instanzWahlGpu(kamera, S) {
         const reg = AnazhRealm.__arenen;
@@ -3438,7 +3037,8 @@ class AnazhRealm_bild_kosten {
                 const zug = a._wahlVor(rend, kamera);
                 if (zug && zug.wahl.length) arenen.push(a, zug);
             }
-            if (arenen.length) this._wahlRechnen(rend, S.lage.auge, arenen);
+            // je Bild neu, darum in der Lage des Auges (`L.auge`, w24-fahrt-takt: der Halt am Punkt, kein Weg)
+            if (arenen.length) this._wahlRechnen(rend, S.lage.auge, arenen, kamera === this.state.camera);
         } catch (e) {
             this._arenaBruch(e);
         }
@@ -3446,8 +3046,8 @@ class AnazhRealm_bild_kosten {
 
     // EIN COMPUTE JE KAMERA: die Lage (`_wahlLage`) und die Aufträge jeder Arena (`_wahlAuftraege`, je Arena ein Block nach der
     // Ausrichtung der Speicher-Versätze) in je EINEM Puffer, je Arena eine Bindegruppe (Matrizen, Liste, Auftrags-Puffer —
-    // gemerkt, solange ihre Puffer stehen) und EIN Dispatch (x: die Instanzen zu 64, y: ihre Züge).
-    _wahlRechnen(rend, L, arenen) {
+    // gemerkt, solange ihre Puffer stehen) und EIN Dispatch (y: ihre Züge, je Zug EINE Arbeitsgruppe, `PASS_WAHL_WGSL`).
+    _wahlRechnen(rend, L, arenen, haupt) {
         const be = rend.backend,
             dev = be.device,
             U = GPUBufferUsage;
@@ -3455,26 +3055,41 @@ class AnazhRealm_bild_kosten {
         if (!W || W.dev !== dev) {
             const lay = dev.createBindGroupLayout({
                 label: "pass-wahl",
-                entries: ["uniform", "read-only-storage", "read-only-storage", "storage", "storage"].map((type, i) => ({
+                entries: [
+                    "uniform",
+                    "read-only-storage",
+                    "read-only-storage",
+                    "storage",
+                    "storage",
+                    ...Array(3).fill("read-only-storage"),
+                    "storage",
+                ].map((type, i) => ({
                     binding: i,
                     visibility: GPUShaderStage.COMPUTE,
                     buffer: { type, hasDynamicOffset: i === 1 },
                 })),
             });
-            const module = dev.createShaderModule({ label: "pass-wahl", code: AnazhRealm.PASS_WAHL_WGSL });
+            const code = AnazhRealm.WIESE_WGSL + "\n" + AnazhRealm.PASS_WAHL_WGSL; // die Gesetze der Ferne (`WIESE_WGSL`)
+            const module = dev.createShaderModule({ label: "pass-wahl", code });
             const layout = dev.createPipelineLayout({ bindGroupLayouts: [lay] });
             const pipe = dev.createComputePipeline({
                 label: "pass-wahl",
                 layout,
                 compute: { module, entryPoint: "wahl" },
             });
-            const lage = dev.createBuffer({ label: "pass-wahl-lage", size: 272, usage: U.UNIFORM | U.COPY_DST });
+            const lage = dev.createBuffer({ label: "pass-wahl-lage", size: 304, usage: U.UNIFORM | U.COPY_DST });
+            // der Speicher einer Arena ohne Maß des Fensters (`aH0` · `aH0L` · `aKarte`)
+            const leer = dev.createBuffer({ label: "pass-wahl-leer", size: 16, usage: U.STORAGE });
+            const leerRW = dev.createBuffer({ label: "pass-wahl-leer-rw", size: 16, usage: U.STORAGE });
             W = AnazhRealm.__wahlGpu = {
                 dev,
                 lay,
                 pipe,
                 lage,
-                lageF: new Float32Array(68),
+                lageF: new Float32Array(76),
+                leer,
+                leerRW,
+                par: 0,
                 puffer: null,
                 f: null,
                 u: null,
@@ -3485,7 +3100,7 @@ class AnazhRealm_bild_kosten {
         let bytes = 0;
         for (let i = 1; i < arenen.length; i += 2) {
             off.push(bytes);
-            bytes += Math.ceil(((arenen[i].wahl.length / 5) * 48) / al) * al;
+            bytes += Math.ceil(((arenen[i].wahl.length / 5) * 64) / al) * al;
         }
         if (!W.puffer || W.puffer.size < bytes) {
             const size = Math.max(bytes, 2 * (W.puffer ? W.puffer.size : 0));
@@ -3494,31 +3109,75 @@ class AnazhRealm_bild_kosten {
             W.f = new Float32Array(size / 4);
             W.u = new Uint32Array(W.f.buffer);
         }
-        const nMax = off.map((o, j) => AnazhRealm._wahlAuftraege(arenen[2 * j + 1].wahl, W.f, W.u, o / 4));
-        dev.queue.writeBuffer(W.lage, 0, AnazhRealm._wahlLage(L, W.lageF));
+        off.forEach((o, j) => AnazhRealm._wahlAuftraege(arenen[2 * j + 1].wahl, W.f, W.u, o / 4));
+        // die Hälften des Zustands der Nah-Wiese wechseln je Hauptbild (gelesen die des letzten, geschrieben die andere —
+        // nur das Hauptbild schreibt); ein Sprung des Auges wählt einmal aus dem Jetzt (`_wieseAugeTakt`)
+        const F = AnazhRealm._wahlLage(L, W.lageF),
+            nw = this.state.nahWiese;
+        if (haupt) W.par ^= 1;
+        [F[30], F[31], F[67]] = [W.par, haupt ? 1 : 0, haupt && nw && nw.sprung ? 1 : 0];
+        F[27] = nw && nw.auge ? nw.auge.h : 0; // die Höhe des Auges über dem eigenen Boden (`_wieseAugeTakt`, die Ferne)
+        if (haupt && nw) nw.sprung = false;
+        dev.queue.writeBuffer(W.lage, 0, F);
         dev.queue.writeBuffer(W.puffer, 0, W.f.buffer, 0, bytes);
         const enc = dev.createCommandEncoder({ label: "pass-wahl" });
         const pass = enc.beginComputePass({ label: "pass-wahl" });
         pass.setPipeline(W.pipe);
         for (let j = 0; j < off.length; j++) {
             const a = arenen[2 * j],
+                zug = arenen[2 * j + 1],
                 q = a.__instanzQuelle,
-                n = arenen[2 * j + 1].wahl.length / 5;
-            for (const x of [q.instanceMatrix, q.liste]) rend._attributes.update(x, 3); // r184 AttributeType.STORAGE
-            const puf = [W.lage, W.puffer, ...[q.instanceMatrix, q.liste, a._ind].map((x) => be.get(x).buffer)];
-            let bg = a.__wahlBG;
+                n = zug.wahl.length / 5;
+            for (const x of [q.instanceMatrix, zug.liste]) rend._attributes.update(x, 3); // r184 AttributeType.STORAGE
+            const mass = ["aH0", "aH0L", "aKarte"].map((k) => (q[k] ? (rend._attributes.update(q[k], 3), be.get(q[k]).buffer) : W.leer)); // prettier-ignore
+            const puf = [
+                W.lage,
+                W.puffer,
+                ...[q.instanceMatrix, zug.liste, a._ind].map((x) => be.get(x).buffer), // die Liste dieser Kamera (`_wahlVor`)
+                ...mass,
+                // der Zustand der Stufe der Nah-Wiese (`_nahWieseZustand`), sonst ein leerer
+                (this.state.nahWiese && this.state.nahWiese.zustand) || W.leerRW,
+            ];
+            let bg = zug.__wahlBG; // je Zug: die Liste ist die seiner Kamera
             if (!bg || bg.n !== n || puf.some((p, k) => p !== bg.puf[k])) {
                 const entries = puf.map((buffer, i) => ({
                     binding: i,
-                    resource: { buffer, size: i === 1 ? n * 48 : undefined },
+                    resource: { buffer, size: i === 1 ? n * 64 : undefined },
                 }));
-                bg = a.__wahlBG = { n, puf, bg: dev.createBindGroup({ label: "pass-wahl", layout: W.lay, entries }) };
+                bg = zug.__wahlBG = { n, puf, bg: dev.createBindGroup({ label: "pass-wahl", layout: W.lay, entries }) };
             }
             pass.setBindGroup(0, bg.bg, [off[j]]);
-            pass.dispatchWorkgroups(Math.ceil(nMax[j] / 64), n);
+            pass.dispatchWorkgroups(1, n); // je Auftrag EINE Arbeitsgruppe: sie verdichtet in der Folge der Instanzen
         }
         pass.end();
+        // DIE ZAHL DER GPU FÜR DAS BUCH (w25-gpu-wahl, profiband.K3): je Zug die gezogenen Instanzen seiner Glieder zurück — ein
+        // Lesen im Flug je Zug, ein Bild Verzug —, `_auftraege` bucht damit die Dreiecke (`renderer.info`) statt der Obergrenze
+        const lesen = [];
+        for (let j = 0; j < off.length; j++) {
+            const a = arenen[2 * j],
+                zug = arenen[2 * j + 1];
+            if (zug.liest || !zug.offs.length) continue;
+            const b = zug.offs[0],
+                laenge = zug.offs[zug.offs.length - 1] - b + 20;
+            if (!zug.lies || zug.lies.size < laenge) {
+                if (zug.lies) zug.lies.destroy();
+                zug.lies = dev.createBuffer({ label: "pass-wahl-zahl", size: Math.ceil(laenge / 16) * 16 + 16, usage: U.MAP_READ | U.COPY_DST }); // prettier-ignore
+            }
+            enc.copyBufferToBuffer(be.get(a._ind).buffer, b, zug.lies, 0, Math.ceil(laenge / 4) * 4);
+            lesen.push([zug, zug.zuege.slice(), zug.offs.map((o) => (o - b) / 4 + 1)]);
+            zug.liest = true;
+        }
         dev.queue.submit([enc.finish()]);
+        for (const [zug, glieder, platz] of lesen)
+            zug.lies
+                .mapAsync(GPUMapMode.READ)
+                .then(() => {
+                    const u = new Uint32Array(zug.lies.getMappedRange());
+                    zug.gpuZahl = new Map(glieder.map((m, k) => [m, u[platz[k]]]));
+                    zug.lies.unmap();
+                    zug.liest = false;
+                })
+                .catch(() => (zug.liest = false)); // ein Puffer, der mit seiner Arena fiel
     }
 
     // Die Lage eines Passes für die GPU (das `Lage`-Gefüge von `PASS_WAHL_WGSL`, 68 Floats): je Ebene des Frustums Normale und
@@ -3538,31 +3197,40 @@ class AnazhRealm_bild_kosten {
         for (let p = 0; p < 6; p++) ebene(L.fr.planes[p], p * 4);
         aus.set([ax, ay, az, 0, L.halt + L.licht, L.rand + L.dreh, 0, 0], 24);
         const f = L.fit;
-        if (!f) return aus.fill(0, 32);
-        for (let p = 0; p < 6; p++) ebene(f.ebenen[p], 32 + p * 4);
-        const b = f.basisInv.elements,
-            d = L.dir;
-        aus.set([b[2], b[6], b[10], b[2] * ax + b[6] * ay + b[10] * az + b[14] - f.zb], 56);
-        aus.set([d.x, d.y, d.z, 1, f.saum + 2 * L.halt + L.licht, 0, 0, 0], 60);
+        if (!f) aus.fill(0, 32, 68);
+        else {
+            for (let p = 0; p < 6; p++) ebene(f.ebenen[p], 32 + p * 4);
+            const b = f.basisInv.elements,
+                d = L.dir;
+            aus.set([b[2], b[6], b[10], b[2] * ax + b[6] * ay + b[10] * az + b[14] - f.zb], 56);
+            aus.set([d.x, d.y, d.z, 1, f.saum + 2 * L.halt + L.licht, 0, 0, 0], 60);
+        }
+        // DAS FENSTER DER STUFE (w25-gpu-wahl): der Rand der Blende (`haltBlende`), ob die Maske gilt (`L.an`), die Kanten des EINEN Blend-Gesetzes
+        // (`_blendeKanten`, eine offene Kante als größte Zahl) und die Blende — das Auge der Maske, Perf-Streck, Bezug
+        // eine Lage ohne ihn ist ein Bruch, nie ein stilles NaN im Fenster (z327: eine von Hand gebaute Lage trug nur `halt`)
+        if (typeof L.haltBlende !== "number")
+            throw new Error("_wahlLage: die Lage trägt keinen Rand der Blende (`haltBlende`)");
+        [aus[65], aus[66]] = [L.haltBlende, L.an ? 1 : 0];
+        const K = L.an ? L.kanten : null;
+        aus.set(K ? [K.l0Aus, K.l1Ein, K.l1Aus, K.karteEin].map((x) => Math.min(x, 1e30)) : [0, 0, 0, 0], 68);
+        aus.set(L.an ? [L.ex, L.ez, L.perf, L.ref] : [0, 0, 0, 0], 72);
         return aus;
     }
 
-    // Die Aufträge einer Arena ab dem Wort `o` (das `Auftrag`-Gefüge, 12 Worte): die Kugel der Gestalt (`_gangSatzHuelle`),
+    // Die Aufträge einer Arena ab dem Wort `o` (das `Auftrag`-Gefüge, 16 Worte): die Kugel der Gestalt (`_gangSatzHuelle`),
     // erste Instanz · Zahl · Platz der Zahl im Auftrags-Puffer · Abschnitt der Liste, der Saum (die Gestalt des Gangs trägt
-    // keinen: ihre Kugel deckt jede Pose). `wahl` aus `_auftraege`: [Glied, erste Instanz, Zahl, Platz, Abschnitt] je Zug.
-    // Liefert die größte Zahl (die Breite des Dispatch).
+    // keinen: ihre Kugel deckt jede Pose; eine Pflanze `pflanzeRandM` für den Wind, `__wahlSaum`) und das Fenster ihrer Stufe
+    // (`__wahlFenster`, `_wahlFenster`). `wahl` aus `_auftraege`: [Glied, erste Instanz, Zahl, Platz, Abschnitt] je Zug.
     static _wahlAuftraege(wahl, f, u, o) {
-        let nMax = 0;
-        for (let j = 0; j < wahl.length; j += 5, o += 12) {
+        for (let j = 0; j < wahl.length; j += 5, o += 16) {
             const g = wahl[j].geometry;
             if (!g.boundingSphere) g.computeBoundingSphere();
             const s = g.boundingSphere;
             f.set([s.center.x, s.center.y, s.center.z, s.radius], o);
             u.set([wahl[j + 1], wahl[j + 2], wahl[j + 3], wahl[j + 4]], o + 4);
-            f.set([0, 0, 0, 0], o + 8);
-            nMax = Math.max(nMax, wahl[j + 2]);
+            f.set([wahl[j].__wahlSaum || 0, ...(wahl[j].__wahlNah || [0, 0, 0])], o + 8);
+            f.set(wahl[j].__wahlFenster || [0, 0, 0, 0], o + 12);
         }
-        return nMax;
     }
 
     // DIE KANTEN DES FENSTERS aus dem EINEN Blend-Gesetz (`gesetz` = `__phytoCore.lodCrossfadeMask`, die Quelle der Studio-
@@ -3814,9 +3482,6 @@ AnazhRealm.BAU_NEUTRAL = Object.freeze(["roughness", "metalness", "envMapIntensi
 // `lichtRandTexel` (Welle C, OMEN-Urteil 07.10.: der Tag steht im Spiel nie): der Licht-Rand eines Kaskaden-Passes in Texeln
 // seiner Karte — die Wahl der Kaskade hält über die Stufen der Sonne (`_sonnenWinkel`), bis die Drehung des Lichts seit der
 // Wahl, mal dem längsten Licht-Weg der Box (`fit.weg`), die Hälfte dieses Rands erreicht (`_wahlHaelt`).
-// `wegM` (w20-leib-takt, `_instanzWahlWeg`): so weit wandert ein Urteil der Instanz-Wahl (Auge, Ebenen, Scheibe), bevor die
-// Gruppe wieder voll wählt — darunter urteilt sie nur die Instanzen neu, deren Urteil unter den Rändern ± wegM nicht hält.
-// Im Gang (1,15 m/s) wählt sie so etwa jedes 26. Bild voll, unter 5 % der Bilder.
 AnazhRealm.PASS_WAHL = Object.freeze({
     sichtRand: 0.003,
     saumM: Object.freeze([2, 8, 24]),
@@ -3824,7 +3489,6 @@ AnazhRealm.PASS_WAHL = Object.freeze({
     haltM: 0.02,
     drehRand: (2 * Math.PI) / 180,
     lichtRandTexel: 32,
-    wegM: 0.5,
     // DER WEG DES AUGES (`_lageAnker`, w24-fahrt-takt): die Strecke, die das Auge in `zeitS` fährt, höchstens `wegMax`, quer `querM`
     // die Box der Kaskaden liegt über ihn erst in Fahrt (`kaskadeAb` m/s, zwei Schritte in Folge): im Gang hält sie ihre Größe
     weg: Object.freeze({ zeitS: 0.5, wegMax: 12, querM: 0.25, lotM: 0.5, drehRad: 0.05, kaskadeAb: 10 }),
@@ -3837,41 +3501,145 @@ AnazhRealm.WAHL_BASIS = Object.freeze([0, 1, 2, 4, 5, 6, 8, 9, 10]);
 // ihre Kugel (die Mitte der Gestalt durch die Instanz-Matrix, der Radius mal deren größte Streckung, dazu der Saum) gegen
 // jede Ebene des Frustums, relativ zum Auge, mit dem Rand der Lage; im Kaskaden-Pass dazu ihre LICHT-KAPSEL — die Kugel
 // entlang des Lichts, bis sie ganz unter der Box liegt — gegen jede Ebene der Scheibe: liegen beide Enden jenseits einer
-// Ebene, wirft sie dort nicht. Getroffen → ein Platz in der Liste ihres Abschnitts, die Zahl des Zugs atomar.
+// Ebene, wirft sie dort nicht. DIE VERDICHTUNG IST DETERMINISTISCH (w25-gpu-wahl, Atlas Schnitt 2): je Zug EINE Arbeitsgruppe
+// geht seine Instanzen in Blöcken zu 64 durch, eine Präfix-Summe im geteilten Speicher legt jede getroffene auf ihren Platz
+// in der Folge der Instanzen, die Zahl des Zugs schreibt sie am Ende. Bis hier zählte `atomicAdd` je Instanz: die Liste
+// ordnete sich je Bild anders (Spike w25: die Pop-Treue brach um 109–128 Bytes, zwei Aufnahmen derselben Pose wichen ab).
+// DAS FENSTER DER STUFE (`__wahlFenster`, `_wahlFenster`): behält die Maske der Blende vom Auge auf der Instanz etwas? Das Maß
+// je Instanz aus dem Speicher der Arena (`aH0`/`aH0L`, die Karte `aKarte`: Höhe, Halbbreite, ±Sichthöhe), die Distanz vom Auge
+// der Maske zum Ursprung der Instanz in XZ × Perf × min(Bezug/Sichthöhe, 1), mit dem Halt als Rand — und das Urteil an den
+// Kanten des EINEN Blend-Gesetzes (`_blendeKanten` → `_blendeBehaelt`, dieselbe Folge der Bedingungen; die Kanten trägt die
+// Lage). Die Karte wählt ihr Quad auf der Stammachse als Kugel. Das Fenster gilt je Pass-Art (Hauptbild · Kaskade).
+// DIE NÄHE DER NAH-WIESE (Art 5, `_nahWieseBestand`): ein toter Platz (Element 11 < 0) fällt; die Stufe nach `_nahStufe` — L1 bis
+// `stufe1`, gehalten bis `stufe1Rand` dahinter — mit dem ZUSTAND des Platzes (`zustand`, Basis + Platz im Glied, zwei Hälften:
+// gelesen die des letzten Hauptbilds, geschrieben die andere, nur im Hauptbild und nur vom ersten Teil der L1; nach einem
+// Sprung des Auges aus dem Jetzt); jenseits der Übergabe `radius` zeichnet die Ferne; jede Senke behält ihre Stufe.
+// DIE FERNE (Art 6) UND DIE SCHALE (Art 7, `_nahWieseBestand`): tot fällt, diesseits der Übergabe legt die Nähe; das Büschel steht,
+// solange seine Ordnung (Element 7) unter dem Anteil seines Gesetzes × (1 + Rand) liegt — `_wieseFern` am Fußabdruck-Abstand
+// `_wieseFuss` (der Fuß, die Ebene seines Hangs aus den waagrechten Achsen, die Höhe des Auges über dem eigenen Boden in
+// `auge.w`), mit seiner Grenze (Element 3) —, die Karte nach `_wieseSchale` am Abstand; beide aus `WIESE_WGSL` (dieselbe
+// Algebra wie der Stoff). Die Kugel des gestreckten Büschels: der Teil um seinen Fuß gespreizt, am Hang geneigt, die Halme breiter.
 AnazhRealm.PASS_WAHL_WGSL = `
 struct Lage {
     ebenen: array<vec4f, 6>, auge: vec4f, rand: vec4f,
-    kapsel: array<vec4f, 6>, tiefe: vec4f, licht: vec4f, saum: vec4f
+    kapsel: array<vec4f, 6>, tiefe: vec4f, licht: vec4f, saum: vec4f,
+    kanten: vec4f, blende: vec4f
 }
-struct Auftrag { kugel: vec4f, platz: vec4u, saum: vec4f }
+struct Auftrag { kugel: vec4f, platz: vec4u, saum: vec4f, fenster: vec4f }
 @group(0) @binding(0) var<uniform> lage: Lage;
 @group(0) @binding(1) var<storage, read> auftraege: array<Auftrag>;
 @group(0) @binding(2) var<storage, read> matrizen: array<mat4x4f>;
 @group(0) @binding(3) var<storage, read_write> liste: array<u32>;
-@group(0) @binding(4) var<storage, read_write> args: array<atomic<u32>>;
-@compute @workgroup_size(64)
-fn wahl(@builtin(global_invocation_id) id: vec3u) {
-    let a = auftraege[id.y];
-    if (id.x >= a.platz.y) { return; }
-    let i = a.platz.x + id.x;
+@group(0) @binding(4) var<storage, read_write> args: array<u32>;
+@group(0) @binding(5) var<storage, read> h0: array<f32>;
+@group(0) @binding(6) var<storage, read> h0l: array<f32>;
+@group(0) @binding(7) var<storage, read> karte: array<vec4f>;
+@group(0) @binding(8) var<storage, read_write> zustand: array<u32>;
+var<workgroup> summe: array<u32, 64>;
+fn haelt(art: u32, sLo: f32, sHi: f32, lLo: f32, lHi: f32) -> bool {
+    let K = lage.kanten;
+    if (art == 1u) { return lLo < K.x; }
+    if (art == 2u) { return lHi > K.y && sLo < K.z; }
+    if (art == 3u) { return sLo < K.z; }
+    return sHi > K.w;
+}
+fn fenster(art: u32, i: u32, m: mat4x4f) -> bool {
+    let B = lage.blende;
+    let d = length(vec2f(m[3].x - B.x, m[3].z - B.y));
+    let lo = max(0.0, d - lage.saum.y) * B.z;
+    let hi = (d + lage.saum.y) * B.z;
+    if (art == 4u) {
+        let s = karte[i].w;
+        let k = min(B.w / max(abs(s), 1e-3), 1.0);
+        return s < 0.0 || haelt(art, lo * k, hi * k, lo * k, hi * k);
+    }
+    let hl = h0l[i];
+    let kS = min(B.w / max(h0[i], 1e-3), 1.0);
+    let kL = min(B.w / max(abs(hl), 1e-3), 1.0);
+    return hl < 0.0 || haelt(art, lo * kS, hi * kS, lo * kL, hi * kL);
+}
+fn behalten(a: Auftrag, i: u32, j: u32) -> bool {
     let m = matrizen[i];
-    let c = (m * vec4f(a.kugel.xyz, 1.0)).xyz - lage.auge.xyz;
+    let art = u32(a.fenster.x);
+    if (art == 5u) {
+        if (m[2].w < 0.0) { return false; }
+        let d = length(vec2f(m[0].w, m[1].w) - lage.auge.xz);
+        let z = (u32(a.fenster.z) + j) * 2u;
+        let par = u32(lage.rand.z);
+        let war = zustand[z + par] == 1u && lage.saum.w < 0.5;
+        let l1 = d <= a.saum.z + select(0.0, a.saum.w, war);
+        if (a.fenster.w > 0.5 && lage.rand.w > 0.5) { zustand[z + 1u - par] = select(0u, 1u, l1); }
+        if (d >= a.saum.y || l1 != (a.fenster.y < 1.5)) { return false; }
+    }
+    var c = (m * vec4f(a.kugel.xyz, 1.0)).xyz - lage.auge.xyz;
     let s2 = max(dot(m[0].xyz, m[0].xyz), max(dot(m[1].xyz, m[1].xyz), dot(m[2].xyz, m[2].xyz)));
-    let r = a.kugel.w * sqrt(s2) + a.saum.x;
+    var r = a.kugel.w * sqrt(s2) + a.saum.x;
+    if (art == 4u) {
+        let k = karte[i];
+        let h = k.z * 0.5;
+        c = m[3].xyz + m[1].xyz * h - lage.auge.xyz;
+        r = length(m[0].xyz) * sqrt(h * h + k.y * k.y);
+    }
+    if (art >= 6u) {
+        if (m[2].w < 0.0) { return false; }
+        let fuss = m[3].xyz;
+        let d = length(fuss.xz - lage.auge.xz);
+        if (d < a.saum.y) { return false; }
+        if (art == 6u) {
+            let n = cross(m[2].xyz, m[0].xyz);
+            let G = wieseFern(d, wieseFuss(fuss - lage.auge.xyz, n, lage.auge.w), m[0].w);
+            if (m[1].w >= G.z * (1.0 + a.saum.z)) { return false; }
+            let hang = length(n.xz) / max(abs(n.y), 1e-3);
+            let quer = length((c + lage.auge.xyz - fuss).xz);
+            r = (r + quer) * max(G.y, 1.0) * (1.0 + hang) + a.fenster.y * sqrt(s2) * max(G.x - 1.0, 0.0);
+        } else {
+            let S = wieseSchale(d);
+            if (m[1].w >= S.x * (1.0 + a.saum.z)) { return false; }
+            c = fuss + vec3f(0.0, a.fenster.z * 0.5, 0.0) - lage.auge.xyz;
+            // die Breite nie über die größte ihrer Matrix, längs ihrer Breiten-Achse samt dem Hang (_wieseSchaleDaten)
+            let gk = length(m[0].xz) / a.fenster.y;
+            r = 0.5 * length(m[0].xyz) * min(1.0, S.y / max(gk, 1e-6)) + a.fenster.z;
+        }
+    }
     let rr = r + lage.rand.x + lage.rand.y * length(c);
     for (var p = 0u; p < 6u; p++) {
         let e = lage.ebenen[p];
-        if (dot(e.xyz, c) + e.w < -rr) { return; }
+        if (dot(e.xyz, c) + e.w < -rr) { return false; }
     }
     if (lage.licht.w > 0.5) {
         let ende = c + lage.licht.xyz * max(0.0, dot(lage.tiefe.xyz, c) + lage.tiefe.w + r);
         let st = r + lage.saum.x;
         for (var p = 0u; p < 6u; p++) {
             let e = lage.kapsel[p];
-            if (dot(e.xyz, c) + e.w < -st && dot(e.xyz, ende) + e.w < -st) { return; }
+            if (dot(e.xyz, c) + e.w < -st && dot(e.xyz, ende) + e.w < -st) { return false; }
         }
     }
-    liste[a.platz.w + atomicAdd(&args[a.platz.z], 1u)] = i;
+    let gilt = select(a.fenster.y, a.fenster.z, lage.licht.w > 0.5);
+    return art == 0u || art >= 5u || gilt < 0.5 || lage.saum.z < 0.5 || fenster(art, i, m);
+}
+@compute @workgroup_size(64)
+fn wahl(@builtin(local_invocation_id) lid: vec3u, @builtin(workgroup_id) wid: vec3u) {
+    let a = auftraege[wid.y];
+    let t = lid.x;
+    var basis = 0u;
+    for (var k = 0u; k < a.platz.y; k += 64u) {
+        let j = k + t;
+        var ja = 0u;
+        if (j < a.platz.y && behalten(a, a.platz.x + j, j)) { ja = 1u; }
+        summe[t] = ja;
+        workgroupBarrier();
+        for (var o = 1u; o < 64u; o *= 2u) {
+            var v = 0u;
+            if (t >= o) { v = summe[t - o]; }
+            workgroupBarrier();
+            summe[t] += v;
+            workgroupBarrier();
+        }
+        if (ja == 1u) { liste[a.platz.w + basis + summe[t] - 1u] = a.platz.x + j; }
+        basis += summe[63];
+        workgroupBarrier();
+    }
+    if (t == 0u) { args[a.platz.z] = basis; }
 }
 `;
 // DIE FARBSICHT (spielgang.K4, `_farbsichtMatrix`, die Post-Kette `_ensurePostProcessing`): die Simulation der Dichromasie nach
