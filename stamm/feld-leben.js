@@ -2355,7 +2355,21 @@ class AnazhRealm_feld_leben {
     // eine Stufe springt. Ohne Overlay 0: die Streu steht byte-gleich.
     _lebenStufe(x, z) {
         const S = AnazhRealm.LIFE_FIELD.stufen;
-        return Math.round(this._lifeOverlayAt(x, z) * S) / S;
+        return Math.round(this._lebenStufeHalt(x, z)[0] * S) / S;
+    }
+    // DIE STUFE HÄLT ZWEI TAKTE DES BESTANDS (w27-tiere-sicht): ihr Zerfall zählt erst zwei Takte (`taktS`) nach der letzten Schrift
+    // der Zelle — der Fraß der Herde schreibt je Takt, und die Stufe folgt dem Takt des Gesetzes, das sie schreibt, nie dem Zerfall
+    // dazwischen. Eine Funktion von Betrag und Stempel der Zelle (Stand und Mitspieler tragen beide): kein Pendel, keine Geschichte.
+    // Bis dahin stand eine abgeäste Wiesen-Zelle im Gleichgewicht des Fraßes (−0,065) an der Grenze der Stufe (−0,0625): jeder Takt
+    // malte sie −1 und der Zerfall 5 s später 0 (gate:stand-takt RUHE an der Mess-Wiese: nahStreu 1 014 Einheiten in 7 von 30
+    // Frames; 60 s Stand 192 Kacheln neu gewürfelt). Rückgabe [Betrag (unter epsilon 0), Beginn des Zerfalls].
+    _lebenStufeHalt(x, z) {
+        const L = AnazhRealm.LIFE_FIELD;
+        const e = this.state.lifeField && this.state.lifeField.get(this._lifeCellKey(x, z));
+        if (!e) return [0, 0];
+        const ab = e.t + 2 * AnazhRealm._bestandGesetz().B.taktS;
+        const a = e.a * Math.exp(-L.decayPerSec * Math.max(0, this.state.spielZeit - ab));
+        return [Math.abs(a) < L.epsilon ? 0 : a, ab];
     }
 
     // Die Stufe der Zelle (cx, cz) malen: springt sie gegen die zuletzt gemalte (`_lebenStand`), wächst die Nah-Streu darüber neu
@@ -2366,7 +2380,7 @@ class AnazhRealm_feld_leben {
         const st = this._lebenStand || (this._lebenStand = new Map());
         const key = cx + "," + cz;
         const [x, z] = [(cx + 0.5) * L.cell, (cz + 0.5) * L.cell];
-        const a = this._lifeOverlayAt(x, z);
+        const [a, ab] = this._lebenStufeHalt(x, z);
         const k = Math.round(a * L.stufen);
         const alt = st.get(key);
         if ((alt ? alt.k : 0) !== k)
@@ -2374,10 +2388,13 @@ class AnazhRealm_feld_leben {
         if (k === 0) return void st.delete(key); // gemalt heißt aus der Halde genommen (`_tickLebenStufen`): kein Platz bleibt
         if (alt) alt.k = k;
         else st.set(key, { key, k, wach: Infinity, i: -1 });
+        // der nächste Sprung: ab dem Beginn des Zerfalls (`_lebenStufeHalt`), bis |a| unter die halbe Stufe darunter fällt
         AnazhRealm._lebenWecken(
             this,
             key,
-            this.state.spielZeit + Math.log(Math.abs(a) / ((Math.abs(k) - 0.5) / L.stufen)) / L.decayPerSec + 1e-6
+            Math.max(this.state.spielZeit, ab) +
+                Math.log(Math.abs(a) / ((Math.abs(k) - 0.5) / L.stufen)) / L.decayPerSec +
+                1e-6
         );
     }
 
