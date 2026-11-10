@@ -1,5 +1,7 @@
 ABGABE da9919e3 (Zweig w27-studio-mesh, main fbbeb318 gemischt) · Station: w27-studio-mesh-pm c0d7963 (zwei Commits: 4846d77 Himmel des Wirts · fuss · PFAD, c0d7963 halbe Deckung)
 
+## 10.11. 01:59 — GPU-PROBE da9919e3 auf radeon-890m: ROT in 480 s (gate:studio-huelle ROT 152 s auf radeon-890m · gate:wasser-leben:bild GRÜN 32 s auf radeon-890m · bild:wiese@0.5 GRÜN 52 s auf radeon-890m) → probe-post/w27-studio-mesh/da9919e3.md
+
 ## 10.11. 01:55 — Abgabe w27-studio-mesh (Arbeiter w27-studio-mesh) — ZWISCHENSTAND, studios.K4 bleibt 0/7
 
 **Was ein Mesh-Studio erfüllen muss** (k4-bild.cjs, g4.js `k4Zahl`): die Bühne nennt über ihren Knopf ein Werk des Vertrags; die Welt nimmt es
