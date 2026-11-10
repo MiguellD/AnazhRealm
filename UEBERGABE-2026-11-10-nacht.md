@@ -36,3 +36,20 @@
 - **Champion K7** (opus, Zweig `w27-k7-l2-rand`, Baum `w4/k7-rand`): die Wurzel ist der L2-Rand-Leser `_wieseGrund`; bei „ZUG JA“ mit `heim3-w20-wald-kosten` @ f5283f22 in EINEN Zug (z358). Kommt kein Bericht: den Zweig lesen.
 - **Cloud:** neun Sitzungen laufen (Post nur per git `cloud-post/<zweig>.md`). GPU-PROBE: w27-boden-nah-2 2145a4a2 GRÜN, w27-haar-arm-2 fc424db8 GRÜN (Radeon), w27-ferne-ton-5 6b7d389a lief 00:42 auf der GTX 1050, w27-lod-baum 28e4b083 ABGEWIESEN. Abgaben in gebündelte Züge.
 - **Beim Schöpfer am Gerät:** AppHelperCap.exe (OMEN), GitHub-Login der GTX 1050, Modell der Cloud-Sitzungen.
+
+## Stand 01:00 (10.11.) — Nachtrag zum Block 00:50
+
+- **z354 gelandet 00:48:** main = `a3782a65` (V18.546.239), sechs Zweige per merge-base in main belegt (w26-winter-fichte-2, w27-karte-nadel,
+  w27-zeiger, w27-ankunft-erstbild, w26-klang-schritt, w26-probe-node). Gebucht ohne LLM: **224/330 am Kopf a3782a65** (Σ unverändert);
+  Meisterkarte neu veröffentlicht 01:00.
+- **Kette (ohne LLM):** z355 = w25-gpu-wahl-2 (Kandidat fbbeb318 auf integ-probe seit 00:55) → z356 = w26-eiche-kante + w26-leib-raum +
+  w27-werkbank-teil + w27-decke-wurzel → z357 = w27-takt-streu → **z358 = w27-boden-nah-2 + w27-stadt-bild** (neu angehängt).
+- **nach-landung.sh** läuft seit 00:46 (Log `/tmp/claude/w4/nach-landung.log`): je Landung buchen → Radeon `run --offen` am neuen Kopf → buchen.
+  Die Radeon-Messung am a3782a65 beginnt, sobald Stau-Scheibe 3 (am alten Kopf 78d37554) endet; die Stau-Schleife ist nach Scheibe 3
+  beendet (Scheibe 4 am alten Kopf entfällt, `--offen` am neuen Kopf deckt sie).
+- **Stillstand-Alarm feuerte erstmals echt (00:50, GTX 1050 nach 17 min):** Job GPU-Probe w27-ferne-ton-5 stand im Start-Hook. Ursache: eine
+  stehende Hand-Sitzung der GTX-1050-Sitzung hielt das Schloss (pid 10920 seit 00:26:37, gegen die Vorfahrt der CI). Sitzung beendet 00:54:13,
+  der Hook nahm das Schloss 4 s vor seiner 25-min-Frist. Zeilen: `zug/sitzung.txt` + `zug/erledigt.txt` (gtx1050-hook, 893b12f4).
+  Selbst-Regel der GTX 1050: keine Hand-Sitzung hält das Schloss länger als eine Probe (≤ 8 min). Nebenfund ort-pose: stadt-voll ROT
+  (Platz-Mitte liegt in der Fahrbahn), Einzelheiten kündigt das Gerät an.
+- **Budget 00:53:** Woche 55 %, Fable 84 % — NOTBREMSE bei 98 % (ab ~95 % einleiten).
