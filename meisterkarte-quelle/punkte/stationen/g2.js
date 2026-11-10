@@ -5997,3 +5997,27 @@ const sprungVon = (z) => (z.wege && z.wege.sprungN !== undefined ? z.wege.sprung
 
 module.exports = stationen;
 module.exports.fehlt = fehlt;
+
+// ─────────── DAS MASS DER ZEIT-STATIONEN (das Gesetz der Fremd-Last, punkte.cjs fremdUrteil; stationen/mass.cjs) ───────────
+// je Zeit-Station ein Feld NEBEN ihrem Urteil, nie im Abdruck: aus derselben Ausgabe die Zahlen, an denen ihr Urteil fällt, gegen ihr Soll
+require("./mass.cjs").massAn(module.exports, {
+    "luftwasser.K5#1": (j) => (!j || j.fehler || !(j.msMedian >= 0) ? [] : [{ wort: "Schwarm-Takt Median ms", wert: j.msMedian, soll: 0.3 }]),
+    // die Befehle der Klasse vogel hebt die Last nie: fest
+    "luftwasser.K5#2": (j) => {
+        const v = j && j.vogel;
+        return !j || j.fehler || !v ? [] : [{ wort: "Befehle der Klasse vogel", wert: v.cmd, soll: 10, fest: true }];
+    },
+    "mensch.K5#1": (j, lauf) => {
+        const z = probeZeile(lauf.stdout, "begegnung");
+        if (!z || z.fehler || ["zuS", "imBild", "dMin", "beruehrt"].some((k) => !Array.isArray(z[k]) || z[k].length !== 4)) return [];
+        const zu = z.zuS.filter((t) => t !== null);
+        return zu.length ? [{ wort: "Kopf-Zuwendung s (die langsamste)", wert: Math.max(...zu), soll: 0.5 }] : [];
+    },
+    // der Takt je 50 Bewohner und die Dreiecke der 50 (fest: die Vorlagen ihrer Typen) wie das Urteil sie rechnet
+    "mensch.K4#2": (j, lauf) => {
+        const z = probeZeile(lauf.stdout, "bewohner"), g = jsonZeile(lauf.stdout, /^GESICHT /), m = z && z.stadt && z.stadt.menge;
+        if (!m || !g) return [];
+        const T = m.typ, dreiecke = m.je.reduce((a, [, t, , , , nah]) => a + T[t].dreiecke[1] * m.kaskaden + (nah ? 0 : T[t].dreiecke[0]), 0);
+        return [{ wort: "Takt je 50 Bewohner ms", wert: (m.takt[0] / z.stadt.ring.gesamt) * 50, soll: 1 }, { wort: "Dreiecke der 50", wert: dreiecke, soll: 150000, fest: true }];
+    },
+});

@@ -3566,3 +3566,24 @@ Object.defineProperty(stationen, "neunSeite", { value: NEUN_SEITE, enumerable: f
 // der Saum am Kamm und seine Grenze (ferne.K3), nicht aufzählbar: der Selbsttest urteilt dieselbe Funktion (punkte.cjs SAUM)
 Object.defineProperty(stationen, "kammSaum", { value: kammSaum, enumerable: false });
 Object.defineProperty(stationen, "kammKroneM", { value: NEUN_C.kammKroneM, enumerable: false });
+
+// ─────────── DAS MASS DER ZEIT-STATIONEN (das Gesetz der Fremd-Last, punkte.cjs fremdUrteil; stationen/mass.cjs) ───────────
+// je Zeit-Station ein Feld NEBEN ihrem Urteil, nie im Abdruck: aus derselben Ausgabe die Zahlen, an denen ihr Urteil fällt, gegen ihr Soll
+require("./mass.cjs").massAn(module.exports, {
+    "licht.K2#1": "Verhältnis und Schatten-Anteil im Bild — ein Bild-Maß ohne geeichtes k",
+    "licht.K5#1": "der größte Sprung in EV je Sekunde über den Wetter-Zug — ein Bild-Maß ohne geeichtes k",
+    "lod.K2#1": "Pop-Pixel je Sekunde im Gang — ein Bild-Maß ohne geeichtes k",
+    // die Kosten der Kontakt-Kaskade k0 (das Soll gilt an der GTX)
+    "schatten.K1#2": (j, lauf) => {
+        if (!j && lauf && /^\s*{/.test(String(lauf.stdout)))
+            try {
+                j = JSON.parse(lauf.stdout);
+            } catch (_e) {
+                j = null;
+            }
+        const w = j && j.schritte && j.schritte.kontakt && j.schritte.kontakt.json;
+        if (!j || j.fehler || !w || !/nvidia/i.test(j.adapter || "")) return [];
+        const k0 = ((((j.dateien || {}).kosten || {}).auswertung || {}).zeilen || []).find((x) => x.id === "k0");
+        return [{ wort: "Kontakt-Kaskade k0 ms", wert: k0 ? k0.deltaMs : null, soll: 0.3 }];
+    },
+});

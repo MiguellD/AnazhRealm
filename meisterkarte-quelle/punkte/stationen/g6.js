@@ -4222,3 +4222,130 @@ module.exports.taktRot = taktRot;
 module.exports.fehlt = [
     { kriterium: "ankunft.K5", staffel: 2, befehl: null, grund: "nicht gebaut (p3-stationen-g456): die Spur des Kalt-Boots (ankunft.K5#1) misst längste Aufgabe und belegte Zeit bis zur Kontrolle; die Staffel 2 verlangt dazu die Antwort auf eine Kamera-Drehung im Lade-Bild — die Probe der Ankunft hält nur W (die Kontrolle von außen), eine Maus-Drehung mit gemessener Antwort (Event-Timing, das Bild dreht) trägt sie nicht" },
 ];
+
+// ─────────── DAS MASS DER ZEIT-STATIONEN (das Gesetz der Fremd-Last, punkte.cjs fremdUrteil; stationen/mass.cjs) ───────────
+// je Zeit-Station ein Feld NEBEN ihrem Urteil, nie im Abdruck: aus derselben Ausgabe die Zahlen, an denen ihr Urteil fällt, gegen ihr Soll.
+// DAS OHR AM RICHTER DES GANGS: die sieben Stationen über pbRichter nennen ihre Regeln EINMAL, im Urteil — ihr Maß fragt das Urteil, mit
+// welchen Regeln es richtet (pbRichter, Byte für Byte der des Abdrucks, wird für diesen einen Ruf belauscht), und misst jede Regel an
+// derselben Zeile PROFIBAND: jeden gemessenen Wert jeder Zelle (auch einer ungültigen: reißt ihr Wert geeicht, hält die Zelle nie) und
+// die gpu-bank jedes Bands. Befehle und Dreiecke hebt die Last nie (der Regler senkt sie nur): fest
+const PB_FEST = new Set(["Befehle p95", "Dreiecke p95"]);
+function pbGehoert(urteil, j, lauf) {
+    const vor = pbRichter, rufe = [];
+    pbRichter = (l, o) => (rufe.push(o), vor(l, o));
+    try {
+        urteil(j, lauf);
+    } finally {
+        pbRichter = vor;
+    }
+    return rufe;
+}
+function pbMass(lauf, { regeln = [], band = false } = {}) {
+    const z = pbZus(lauf, "gang");
+    if (!z) return [];
+    const mass = [];
+    for (const r of regeln)
+        for (const name of r.zellen) {
+            const c = z.zellen[name], v = c ? r.feld(c) : NaN;
+            if (Number.isFinite(v)) mass.push({ wort: name + " " + r.wort, wert: v, soll: r.soll, ...(PB_FEST.has(r.wort) ? { fest: true } : {}) });
+        }
+    if (band)
+        for (const name of PB_BAND) {
+            const b = z.baender[name];
+            if (b && Number.isFinite(b.gpu)) mass.push({ wort: "Band " + name + " gpu-bank ms", wert: b.gpu, soll: 12 });
+        }
+    return mass;
+}
+const pbMassDesUrteils = (j, lauf, urteil) => pbGehoert(urteil, j, lauf).flatMap((o) => pbMass(lauf, o));
+// DER LÄNGSTE FRAME JE FENSTER DER GLÄTTE (k4Richter, Soll 0 Bilder über 100 ms): Staffel 2 verlangt beide Fenster — jedes ist ein Maß;
+// Staffel 1 eines von beiden — ihr Maß ist das glattere, und nur, wenn beide gemessen sind (sonst wäre das fehlende in Ruhe vielleicht GRÜN)
+function k4Mass(lauf, staffel) {
+    const z = pbZus(lauf, "glaette");
+    if (!z) return [];
+    const art = { "k4-geh": "Gehen", "k4-fahrt": "Fahrt" }, g = z.glaette || {};
+    const m = ["k4-geh", "k4-fahrt"].filter((n) => g[n] && Number.isFinite(g[n].max)).map((n) => ({ wort: art[n] + " Frame max ms", wert: g[n].max, soll: 100 }));
+    return staffel === 1 ? (m.length === 2 ? [m.reduce((a, b) => (b.wert < a.wert ? b : a))] : []) : m;
+}
+// DIE DAUER (k5Richter): die Minuten am Stück (die Last verlängert sie nur: fest) und der Anker am Ende gegen den Anfang × 1,05
+function k5Mass(lauf) {
+    const z = pbZus(lauf, "dauer"), d = (z && z.dauer) || {};
+    if (!z || d.minuten == null) return [];
+    const m = [], an = d.anker || {};
+    if (Number.isFinite(d.minuten)) m.push({ wort: "am Stück min", wert: d.minuten, soll: PB_KONST.dauerMin, richtung: "≥", fest: true });
+    if (an.a && an.b && Number.isFinite(an.b.frame) && Number.isFinite(an.a.frame))
+        m.push({ wort: "Anker Bild-p95 am Ende ms (Soll: der Anfang × 1,05)", wert: an.b.frame, soll: an.a.frame * 1.05 });
+    return m;
+}
+// DIE ANKUNFT: t(Kontrolle) kalt gegen das Soll der Karte — auch über einem Bild, das nicht ganz war (dann ist t eine untere Schranke:
+// reißt schon sie geeicht, erklärt die Last das ROT nicht); der Median der Zweit-Boots; die Spur des Kalt-Boots
+const kaltMass = (j, sollMs) => (j && j.tK > 0 ? [{ wort: "t(Kontrolle) kalt s", wert: j.tK / 1000, soll: sollMs / 1000 }] : []);
+const warmMass = (lauf) => {
+    const w = [...String(lauf.stdout || "").matchAll(/t\(Kontrolle\) warm ([\d.]+) s von außen/g)].map((m) => +m[1]).sort((a, b) => a - b);
+    return w.length < 2 ? [] : [{ wort: "warm Median s", wert: (w[(w.length - 1) >> 1] + w[w.length >> 1]) / 2, soll: 5 }];
+};
+const spurMass = (s) => (s && s.stand === "gemessen" && s.kontrolleMs > 0 && s.belegtMs != null
+    ? [{ wort: "längste Aufgabe ms", wert: s.laengsteMs, soll: 250 }, { wort: "Haupt-Faden belegt s", wert: s.belegtMs / 1000, soll: 4 }] : []);
+// DER SPRUNG (streaming.K3#1): der Median der Frame-p95 der drei Sprünge
+const sprungMass = (lauf) => {
+    const s = [...String(lauf.stdout || "").matchAll(/^SPRUNG (\d) EXIT=(\d+) (\{.*\})$/gm)].map((m) => {
+        try {
+            return JSON.parse(m[3]);
+        } catch (_e) {
+            return {};
+        }
+    });
+    return s.length !== 3 ? [] : [{ wort: "Frame p95 Median ms", wert: s.map((b) => (b.frameMs ? b.frameMs.p95 : Infinity)).sort((x, y) => x - y)[1], soll: 50 }];
+};
+// DER TAB-TOD und DAS SPEICHER-BILD (speicher): das Alter des geladenen Stands; das Speicher-Bild je Phase
+const todMass = (j) => (j && Array.isArray(j.zyklen) && Math.max(0, ...j.zyklen.map((z) => z.eGeladen || 0)) > 0 && !(j.bauFehler > 0)
+    ? [{ wort: "Alter des Stands max s", wert: j.alterMax, soll: 10 }] : []);
+require("./mass.cjs").massAn(module.exports, {
+    "ankunft.K1#1": (j, lauf) => kaltMass(j || kaltJ(lauf), /nvidia/i.test(HW(String(lauf.stdout || "")).ad) ? 10000 : 5000),
+    "ankunft.K1#2": (j, lauf) => kaltMass(j || kaltJ(lauf), 5000),
+    "ankunft.K3#1": (j, lauf) => warmMass(lauf),
+    "ankunft.K5#1": (j, lauf) => spurMass(spurVon(j || kaltJ(lauf), lauf)),
+    "ankunft.K2#1": "die Lücke des Bilds zur Kontrolle gegen die Ruhe der Foundry — ein Bild-Maß, das die Last nicht linear dehnt (kein geeichtes k)",
+    "streaming.K3#1": (j, lauf) => sprungMass(lauf),
+    "streaming.K1#1": "Lücken-Bilder im Kegel — eine Zählung gegen 0, die die Last nicht linear dehnt (kein geeichtes k)",
+    "streaming.K2#1": "der Anteil fertig beim Eintritt in den Kegel — ein Anteil, den die Last nicht linear dehnt (kein geeichtes k)",
+    "streaming.K5#1": (j, lauf) => {
+        const f = /^\s*fahrt\s+([\d.]+) s · ([\d.]+) MB\/min am Empfang/m.exec(String(lauf.stdout || ""));
+        return f ? [{ wort: "MB/min am Empfang", wert: +f[2], soll: 5 }] : [];
+    },
+    "streaming.K5#2": (j, lauf) => {
+        const phasen = [...String(lauf.stdout || "").matchAll(/^\s*(\S+)\s+([\d.]+) s · ([\d.]+) MB\/min am Empfang: .*· Kopie ([\d.]+) MB/gm)];
+        const f = phasen.find((p) => p[1] === "fahrt");
+        if (!f) return [];
+        const kopie = phasen.filter((p) => p[1] !== "selbst").reduce((s, p) => s + +p[4], 0);
+        return [{ wort: "MB/min in der Fahrt", wert: +f[3], soll: 1 }, { wort: "Kopie MB", wert: kopie, soll: 0, fest: true }];
+    },
+    "profiband.K1#1": pbMassDesUrteils,
+    "profiband.K1#2": pbMassDesUrteils,
+    "pflicht.E#1": pbMassDesUrteils,
+    "profiband.K2#1": pbMassDesUrteils,
+    "profiband.K2#2": pbMassDesUrteils,
+    "profiband.K3#1": pbMassDesUrteils,
+    "profiband.K3#2": pbMassDesUrteils,
+    "profiband.K4#1": (j, lauf) => k4Mass(lauf, 1),
+    "profiband.K4#2": (j, lauf) => k4Mass(lauf, 2),
+    "profiband.K5#1": (j, lauf) => k5Mass(lauf),
+    "profiband.K5#2": (j, lauf) => k5Mass(lauf),
+    "klang.K2#1": "die Korrelation r von Bild und Ohr — ein Maß ohne geeichtes k",
+    "klang.K5#2": (j) => {
+        const ph = (j && j.phasen) || {};
+        return ["gehen", "fahrt", "nacht"].filter((n) => ph[n]).map((n) => ({ wort: "Klang-Takt p95 " + n + " ms", wert: ph[n].p95, soll: 0.2 }));
+    },
+    "speicher.K1#1": (j) => todMass(j),
+    "speicher.K1#2": (j) => todMass(j),
+    "speicher.K2#1": (j) => {
+        const f = j && j.frisch;
+        return f && f.bilder > 0 && f.staende >= 20 ? [{ wort: "Speicher-Bild frisch p95 ms", wert: f.p95, soll: 0.3 }] : [];
+    },
+    "speicher.K2#2": (j) => {
+        const ph = j ? [j.frisch, j.edits] : [];
+        if (!ph[0] || !ph[1] || ph.some((p) => !(p.staende >= 20 && p.bilder > 0)) || !(j.edits.n >= 10000)) return [];
+        return [["frisch", j.frisch], ["nach den Edits", j.edits]].flatMap(([n, p]) => [{ wort: "Speicher-Bild " + n + " p95 ms", wert: p.p95, soll: 0.1 },
+            { wort: "Speicher-Bild " + n + " max ms", wert: p.max, soll: 16.7 }]);
+    },
+    "speicher.K4#2": "bild-diff nach dem Neuladen gegen das Rauschen der Bahn — ein Bild-Maß ohne geeichtes k",
+});

@@ -1589,7 +1589,26 @@ function hebungScheiben(acorn, text) {
     const S2 = schleife.body.body;
     const K2 = schnitt(S2, "C", "oben", false);
     if (!K2.size) throw new Error(L + ": der Haupt-Lauf liest C.oben nicht (kein Druck-Block C6)");
-    return { kleber, drucke: quelle(S2, K2), teile: { kleber: [K1.size, S1.length], drucke: [K2.size, S2.length] } };
+    // DIE NAMEN DES HAUPT-LAUFS (w27-verkehr-station-pm; main a3782a65 druckt über die Kurzformen `const [J, log] = …` vor der Schleife —
+    // die Scheibe ohne sie warf „log is not defined“: lod.K3#1 und der Selbsttest der Maschine ROT am Kopf): was die Scheibe liest und
+    // weder sie noch die Schleife (C, errs) deklariert, deklariert der Rumpf des Haupt-Laufs vor der Schleife — diese Anweisungen, und
+    // rückwärts, was sie lesen, stehen ihr voran; ein Name, den dort keiner deklariert, ist global (JSON, console). C und errs sind die
+    // Parameter der Scheibe (die Station reicht ihr Fehler-Feld): der Rumpf deklariert sie nie für sie (`const errs = []` bleibt dort)
+    const rumpf = (haupt.arguments.find((f) => /Function/.test(f.type)) || {}).body;
+    const S0 = rumpf && rumpf.type === "BlockStatement" ? rumpf.body.filter((x) => x.end <= schleife.start) : [];
+    const K0 = new Set();
+    const steht = new Set(["C", "errs", ...[...K2].flatMap((i) => dekl(S2[i]))]);
+    const braucht = new Set([...K2].flatMap((i) => [...lies(S2[i], new Set())]).filter((x) => !steht.has(x)));
+    for (let mehr = true; mehr; ) {
+        mehr = false;
+        S0.forEach((x, i) => {
+            if (K0.has(i) || !dekl(x).some((n) => braucht.has(n)) || dekl(x).some((n) => n === "C" || n === "errs")) return;
+            K0.add(i);
+            lies(x, new Set()).forEach((n) => !steht.has(n) && braucht.add(n));
+            mehr = true;
+        });
+    }
+    return { kleber, drucke: (K0.size ? quelle(S0, K0) + "\n" : "") + quelle(S2, K2), teile: { kleber: [K1.size, S1.length], drucke: [K2.size, S2.length] } };
 }
 
 module.exports = { sitzungTor, torBefehl, kollisionTempo, bodenRollen, tierKreis, sprungKadenz, fadenZaehler, fahrWelt, fahrRueck, fahrWegenetz, fahrVerkehr, wasserGraben, naesseDorf, naesseWiese, werkbankLinse, karteHebung, hebungScheiben };

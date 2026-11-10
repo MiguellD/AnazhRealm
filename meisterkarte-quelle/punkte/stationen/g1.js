@@ -3752,3 +3752,32 @@ module.exports.fehlt = [
 ];
 // DIE WELT-PROBE für die Gruppe II (stationen/g2.js: luftwasser.K3, luftwasser.K4): der Lauf, der Grund, der Befehl und der Leser der Zeile
 module.exports.weltProbe = { lauf: weltProbeLauf, grund: weltGrund, befehl: weltBefehl, zeile: weltZeile };
+
+// ─────────── DAS MASS DER ZEIT-STATIONEN (das Gesetz der Fremd-Last, punkte.cjs fremdUrteil; stationen/mass.cjs) ───────────
+// je Zeit-Station ein Feld NEBEN ihrem Urteil, nie im Abdruck: aus derselben Ausgabe die Zahlen, an denen ihr Urteil fällt, gegen ihr Soll
+// der langsamste Graben bis gefüllt (≤ 2 s), je Sicht wie das Urteil
+const grabenMs = (m, sicht) => (m && Array.isArray(m.graeben) ? m.graeben : [])
+    .filter((x) => x.verb === "graben" && (!sicht || x.sicht === sicht) && x.nassEnde > x.nassVor).map((x) => x.gefuelltMs).filter((v) => v != null);
+require("./mass.cjs").massAn(module.exports, {
+    "gelaende.K2#1": (j) => {
+        const ms = grabenMs((j && j.third) || {});
+        return ms.length ? [{ wort: "gefüllt nach ms (der langsamste Graben)", wert: Math.max(...ms), soll: 2000 }] : [];
+    },
+    "gelaende.K2#2": (j) => {
+        if (!j) return [];
+        const ms = [...grabenMs(j.third), ...grabenMs(j.ego, "first")];
+        return ms.length ? [{ wort: "gefüllt nach ms (der langsamste Graben, Third und Ego)", wert: Math.max(...ms), soll: 2000 }] : [];
+    },
+    "stoffe.K2#2": (j, lauf) => {
+        const B = jsonZeile(lauf.stdout, /^BRAND \{/);
+        if (!B || !B.halt || !B.regen || !B.zeit || !B.asche || !B.asche.asche) return [];
+        const z = B.zeit;
+        return [{ wort: "Brand je Bild p95 ms", wert: z.bildMs, soll: 0.5 }, { wort: "Brand am Schirm ms", wert: z.schirmMs, soll: 1 }, { wort: "der Schritt hinter der Uhr s", wert: z.verzugS, soll: 2 }];
+    },
+    "physik.K3#2": (j, lauf) => {
+        const e = weltZeile(j, lauf, "einsturz");
+        if (!e || e.fehler) return [];
+        const f = (e.kosten && e.kosten.feld) || {};
+        return [{ wort: "100 wache Körper ms je Takt (Median)", wert: f.wachMedianMs, soll: 1 }, { wort: "der Schlaf ms je Takt (Median)", wert: f.ruhendMedianMs, soll: 0.05 }];
+    },
+});

@@ -5820,3 +5820,74 @@ module.exports.fehlt = [
     // keinen Weg so steil (die Trassen fallen höchstens um `gefaelle`), ein Hang-Teil braucht eine eigene Strecke am Messort hang
     // (−526/−853, 24,4°); die Seiten-Probe `fahrWegenetz` fährt EINE Sicht, Ego und Third getrennt misst keine.
 ];
+
+// ─────────── DAS MASS DER ZEIT-STATIONEN (das Gesetz der Fremd-Last, punkte.cjs fremdUrteil; stationen/mass.cjs) ───────────
+// je Zeit-Station ein Feld NEBEN ihrem Urteil, nie im Abdruck: aus derselben Ausgabe die Zahlen, an denen ihr Urteil fällt, gegen ihr Soll.
+// DAS OHR AM RICHTER DER LATENZ: leib.K1#1 · K1#2 · halten.K2#1 nennen Reihen und Soll EINMAL, im Urteil — ihr Maß fragt das Urteil, mit
+// welchen Reihen es latenzSchlechtester ruft (der Richter wird für diesen einen Ruf belauscht), und nimmt je Reihe das schlechteste p95
+function latenzGehoert(urteil, j, lauf) {
+    const vor = latenzSchlechtester, rufe = [];
+    latenzSchlechtester = (...a) => (rufe.push(a), vor(...a));
+    try {
+        urteil(j, lauf);
+    } finally {
+        latenzSchlechtester = vor;
+    }
+    return rufe;
+}
+const latenzMassDesUrteils = (j, lauf, urteil) => {
+    const da = ((j && j.laeufe) || []).filter((l) => l && l.reihen);
+    if (da.length < LAEUFE) return [];
+    // das Soll des Rufs, sonst die Vorgabe des Richters (50 ms)
+    return latenzGehoert(urteil, j, lauf).flatMap(([, ids, , soll = 50]) => ids.filter((id) => da.every((l) => l.reihen[id]))
+        .map((id) => ({ wort: id + " p95 ms", wert: Math.max(...da.map((l) => l.reihen[id].p95)), soll })));
+};
+const teilVon = (lauf, n) => lauf.stdout.split(/^@@PUNKTE@@ /m).find((s) => s.startsWith(n + "\n")) || "";
+require("./mass.cjs").massAn(module.exports, {
+    // die Rückkehr nach dem Orbit und der Ruck je Bild
+    "fahrzeug.K3#2": (j, lauf) => {
+        const t4 = jsonZeile(teilVon(lauf, "FAHR"), /^\s*(✅|❌) T4 /), t5 = jsonZeile(teilVon(lauf, "FAHR"), /^\s*(✅|❌) T5 /);
+        const b = jsonBlock(teilVon(lauf, "WELT")), w = b && (b.ergebnis || b);
+        if (!t4 || !t5 || !w || !w.drift || !w.rueck || w.fehler) return [];
+        return [{ wort: "Rückkehr nach dem Orbit s", wert: w.rueck.rueckS, soll: 1.5 }, { wort: "Ruck p95 m", wert: t4.ruckP95, soll: 0.02 }];
+    },
+    "leib.K1#1": latenzMassDesUrteils,
+    "leib.K1#2": latenzMassDesUrteils,
+    "halten.K2#1": latenzMassDesUrteils,
+    // der Ruck p95 je Gang gegen das Soll, das die Linse in ihrer K4-Zeile nennt
+    "leib.K4#1": (j, lauf) => {
+        const z = lauf.stdout.split(/\r?\n/).find((l) => /^\s*(✅|❌) K4 der Gang in Third/.test(l));
+        const ruckSoll = z && /Ruck p95 ≤ (\d+(?:,\d+)?) m/.exec(z);
+        if (!ruckSoll) return [];
+        return lauf.stdout.split(/\r?\n/).filter((l) => /^\s+(stamm|fels|haus)\s/.test(l)).map((l) => [l.trim().split(/\s+/).slice(0, 2).join(" "), /Ruck p95 (\d+(?:\.\d+)?)/.exec(l)])
+            .filter(([, m]) => m).map(([n, m]) => ({ wort: n + " Ruck p95 m", wert: +m[1], soll: +ruckSoll[1].replace(",", ".") }));
+    },
+    // je besuchtem Lauf t bis zur sichtbaren Eingabe und sein längster Frame
+    "tore.K1#1": (j, lauf) => {
+        const J = jsonZeile(String(lauf.stdout || ""), /^TOR_K1 \{/), S = TORE_K1_SOLL;
+        if (!J || !Array.isArray(J.laeufe)) return [];
+        return J.laeufe.filter((l) => !l.geboren).flatMap((l) => [{ wort: "#" + l.nr + " " + l.sicht + " t ms", wert: l.ms == null ? NaN : l.ms, soll: S.ms },
+            { wort: "#" + l.nr + " " + l.sicht + " Frame max ms", wert: l.frameMax == null ? NaN : l.frameMax, soll: S.frameMs }]);
+    },
+    // Klick bis gezeichnet, wie die Zeile ZEIT der Linse sie nennt (Soll ≤ 10 s)
+    "tore.K5#1": (j, lauf) => {
+        const z = String(lauf.stdout || "").split(/\r?\n/).find((x) => /^\s*(✅|❌) ZEIT: Klick bis Code \+ Enter bis gezeichnet ≤ 10 s/.test(x));
+        const ms = z && / — (\d+(?:\.\d+)?) ms\b/.exec(z);
+        return ms ? [{ wort: "Klick bis gezeichnet ms", wert: +ms[1], soll: 10000 }] : [];
+    },
+    // die Antwort auf die Eingabe (INP) an HUD und Menü
+    "spielgang.K3#1": (j, lauf) => {
+        const b = jsonBlock(teilVon(lauf, "BEDIENUNG"));
+        if (!b || !b.inp || !b.inp.hud || !b.inp.menue) return [];
+        return [{ wort: "INP HUD ms", wert: b.inp.hud.inpMs, soll: 200 }, { wort: "INP Menü ms", wert: b.inp.menue.inpMs, soll: 200 }];
+    },
+});
+// das erste Haus je nH (siedlung.K5#1 · K5#2: derselbe Lauf, dasselbe Soll)
+for (const staffel of [1, 2])
+    require("./mass.cjs").massAn(module.exports, {
+        ["siedlung.K5#" + staffel]: (j, lauf) => [12, 300].flatMap((nh) => {
+            const b = jsonBlock(teilVon(lauf, "NH" + nh)), e = b && (b.ergebnis || b);
+            const ms = e && !e.fehler && e.erstes ? e.erstes.ms : null;
+            return ms != null ? [{ wort: "nH " + nh + " erstes Haus ms", wert: ms, soll: 500 }] : [];
+        }),
+    });
