@@ -18,6 +18,7 @@
 #         start.sh --fenster  dazu den Messplatz-Blick im eigenen Fenster öffnen (über den Explorer, auch er hängt nicht an der App)
 #         start.sh --stopp [zug|radeon|buche]   Schleife(n) samt Kindern beenden (ein Zug in Fahrt wird beim nächsten Start aufgenommen)
 #         start.sh --neu      wie ohne Argument, aber lebende Schleifen zuerst beenden (neuer Code für alle)
+#         start.sh --lokal    nichts holen, nichts installieren: nur die Schleifen des installierten Stands starten (autostart.sh ohne Netz)
 R=/c/Users/micha/AnazhRealm-profiband
 ZIEL_D=$R/artifacts/profiband/dienst
 ZIEL_W=$R/artifacts/profiband/werkzeug
@@ -68,62 +69,67 @@ case "$1" in
 esac
 
 # 1+2 INSTALLIEREN (Hand-Änderung = ROT)
-git -C $R fetch -q origin "+refs/heads/koordination:refs/remotes/origin/koordination" || { echo "ROT: fetch koordination scheitert"; exit 1; }
-K=$(git -C $R rev-parse origin/koordination)
-hand=""
-if [ -s "$MAN" ]; then
-    while read -r blob ort; do
-        [ -f "$R/$ort" ] || continue
-        ist=$(git -C $R hash-object "$R/$ort")
-        [ "$ist" = "$blob" ] && continue
-        q=${ort#artifacts/profiband/dienst/}
-        [ "$q" = "$ort" ] && q=werkzeug/${ort#artifacts/profiband/werkzeug/}
-        [ "$ist" = "$(git -C $R rev-parse -q --verify "$K:zug/dienst/$q" 2>/dev/null)" ] && continue # schon der neue Stand
-        hand="$hand $ort"
-    done < <(tail -n +2 "$MAN")
-fi
-if [ -n "$hand" ]; then
-    echo "ROT — HAND-ÄNDERUNG am laufenden Ort (nicht in koordination zug/dienst):"
-    for h in $hand; do echo "  $h"; done
-    echo "erst nach zug/dienst committen + pushen, dann start.sh. Nichts installiert, nichts gestartet."
-    exit 1
-fi
-[ "$1" = "--neu" ] && stopp
-neu="$K $(date '+%Y-%m-%d %H:%M') installiert aus origin/koordination zug/dienst"
-tmp=$S/manifest.neu
-echo "$neu" >"$tmp"
-git -C $R ls-tree -r "$K" zug/dienst/ | while read -r mode typ blob pfad; do
-    q=${pfad#zug/dienst/}
-    case "$q" in werkzeug/*) ort=artifacts/profiband/werkzeug/${q#werkzeug/} ;; *) ort=artifacts/profiband/dienst/$q ;; esac
-    mkdir -p "$(dirname "$R/$ort")"
-    ist=$(git -C $R hash-object "$R/$ort" 2>/dev/null)
-    # der Code einer LEBENDEN Schleife wird nie unter ihr getauscht (bash liest sein Skript im Laufen): er bleibt bis --neu
-    case "$q" in *-dienst.sh)
-        if [ -n "$ist" ] && [ "$ist" != "$blob" ] && lebt "${q%-dienst.sh}"; then
-            echo "  bleibt alt: $ort (Schleife ${q%-dienst.sh} lebt — neuer Code mit start.sh --neu)"
-            echo "$ist $ort" >>"$tmp"
-            continue
-        fi ;;
-    esac
-    if [ "$ist" != "$blob" ]; then
-        git -C $R cat-file blob "$blob" >"$R/$ort.neu" && mv "$R/$ort.neu" "$R/$ort"
-        echo "  installiert $ort"
+if [ "$1" = "--lokal" ]; then
+    echo "LOKAL: nichts geholt, nichts installiert — es startet der Stand $(head -1 "$MAN" 2>/dev/null | cut -c1-8)"
+else
+    git -C $R fetch -q origin "+refs/heads/koordination:refs/remotes/origin/koordination" || { echo "ROT: fetch koordination scheitert"; exit 1; }
+    K=$(git -C $R rev-parse origin/koordination)
+    hand=""
+    if [ -s "$MAN" ]; then
+        while read -r blob ort; do
+            [ -f "$R/$ort" ] || continue
+            ist=$(git -C $R hash-object "$R/$ort")
+            [ "$ist" = "$blob" ] && continue
+            q=${ort#artifacts/profiband/dienst/}
+            [ "$q" = "$ort" ] && q=werkzeug/${ort#artifacts/profiband/werkzeug/}
+            [ "$ist" = "$(git -C $R rev-parse -q --verify "$K:zug/dienst/$q" 2>/dev/null)" ] && continue # schon der neue Stand
+            hand="$hand $ort"
+        done < <(tail -n +2 "$MAN")
     fi
-    case "$q" in *.sh | *.cjs) chmod +x "$R/$ort" ;; esac
-    echo "$blob $ort" >>"$tmp"
-done
-# ABGELÖST: was das alte Manifest trug und der Zweig nicht mehr, verschwindet vom laufenden Ort — nur unverändert (sein Blob) und nur,
-# wenn main die Datei nicht verfolgt (kein Zwilling bleibt liegen, kein Baum wird schmutzig)
-if [ -s "$MAN" ]; then
-    while read -r blob ort; do
-        grep -q " $ort$" "$tmp" && continue
-        [ -f "$R/$ort" ] || continue
-        git -C $R ls-files --error-unmatch "$ort" >/dev/null 2>&1 && { git -C $R checkout -q -- "$ort" 2>/dev/null; continue; }
-        [ "$(git -C $R hash-object "$R/$ort")" = "$blob" ] && rm -f "$R/$ort" && echo "  abgelöst $ort"
-    done < <(tail -n +2 "$MAN")
+    if [ -n "$hand" ]; then
+        echo "ROT — HAND-ÄNDERUNG am laufenden Ort (nicht in koordination zug/dienst):"
+        for h in $hand; do echo "  $h"; done
+        echo "erst nach zug/dienst committen + pushen, dann start.sh. Nichts installiert, nichts gestartet."
+        exit 1
+    fi
+    [ "$1" = "--neu" ] && stopp
+    neu="$K $(date '+%Y-%m-%d %H:%M') installiert aus origin/koordination zug/dienst"
+    tmp=$S/manifest.neu
+    echo "$neu" >"$tmp"
+    git -C $R ls-tree -r "$K" zug/dienst/ | while read -r mode typ blob pfad; do
+        q=${pfad#zug/dienst/}
+        case "$q" in werkzeug/*) ort=artifacts/profiband/werkzeug/${q#werkzeug/} ;; *) ort=artifacts/profiband/dienst/$q ;; esac
+        mkdir -p "$(dirname "$R/$ort")"
+        ist=$(git -C $R hash-object "$R/$ort" 2>/dev/null)
+        # der Code einer LEBENDEN Schleife wird nie unter ihr getauscht (bash liest sein Skript im Laufen): er bleibt bis --neu
+        case "$q" in *-dienst.sh)
+            if [ -n "$ist" ] && [ "$ist" != "$blob" ] && lebt "${q%-dienst.sh}"; then
+                echo "  bleibt alt: $ort (Schleife ${q%-dienst.sh} lebt — neuer Code mit start.sh --neu)"
+                echo "$ist $ort" >>"$tmp"
+                continue
+            fi ;;
+        esac
+        if [ "$ist" != "$blob" ]; then
+            git -C $R cat-file blob "$blob" >"$R/$ort.neu" && mv "$R/$ort.neu" "$R/$ort"
+            echo "  installiert $ort"
+        fi
+        case "$q" in *.sh | *.cjs) chmod +x "$R/$ort" ;; esac
+        echo "$blob $ort" >>"$tmp"
+    done
+    # ABGELÖST: was das alte Manifest trug und der Zweig nicht mehr, verschwindet vom laufenden Ort — nur unverändert (sein Blob) und nur,
+    # wenn main die Datei nicht verfolgt (kein Zwilling bleibt liegen, kein Baum wird schmutzig)
+    if [ -s "$MAN" ]; then
+        while read -r blob ort; do
+            grep -q " $ort$" "$tmp" && continue
+            [ -f "$R/$ort" ] || continue
+            git -C $R ls-files --error-unmatch "$ort" >/dev/null 2>&1 && { git -C $R checkout -q -- "$ort" 2>/dev/null; continue; }
+            [ "$(git -C $R hash-object "$R/$ort")" = "$blob" ] && rm -f "$R/$ort" && echo "  abgelöst $ort"
+        done < <(tail -n +2 "$MAN")
+    fi
+    mv "$tmp" "$MAN"
+    echo "INSTALLIERT ${K:0:8} ($(($(wc -l <"$MAN") - 1)) Dateien)"
+
 fi
-mv "$tmp" "$MAN"
-echo "INSTALLIERT ${K:0:8} ($(($(wc -l <"$MAN") - 1)) Dateien)"
 
 # 3 STARTEN, abgekoppelt von der App
 for n in $SCHLEIFEN; do
