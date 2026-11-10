@@ -4,6 +4,8 @@
 
 ABGABE 80bcd3089d038480f1988b8794799c473ae94f36
 
+Hinter der Abgabe liegt nur ein Diagnose-WIP (ef2bac5a, die Luft-Linse misst auf der Radeon den Schuss β 1 mit ruhender Horizont-Karte daneben) — er gehört nicht in den Zug; die Abgabe bleibt 80bcd308.
+
 ## 10.11. 02:24 — w27-ferne-ton-5: ABGABE 80bcd3089d038480f1988b8794799c473ae94f36
 
 ABGABE 80bcd3089d038480f1988b8794799c473ae94f36 — Abgabe w27-ferne-ton-5 (Zweig von w26-ferne-ton-4, main 20a01782 im Kopf). Die fünf offenen Punkte des Vorgängers fallen ganz.
