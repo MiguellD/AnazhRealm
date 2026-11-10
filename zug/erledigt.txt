@@ -358,3 +358,4 @@ omen-gtx-gtx-landung-dcc33615-5-dcc33615 UNGEMESSEN 0 GRÜN / 0 ROT / 1 UNGEMESS
 omen-gtx-gtx-landung-dcc33615-6-dcc33615 UNGEMESSEN 0 GRÜN / 0 ROT / 1 UNGEMESSEN · UNGEMESSEN gelaende.K2#2 (punkte-maschine 50203c48 messung/dcc33615-gtx.json)
 omen-gtx-gtx-landung-dcc33615-7-dcc33615 ROT 0 GRÜN / 1 ROT / 0 UNGEMESSEN · ROT haar.K2#1 (punkte-maschine 60d5fe47 messung/dcc33615-gtx.json)
 omen-gtx-gtx-landung-dcc33615-8-dcc33615 UNGEMESSEN 0 GRÜN / 0 ROT / 1 UNGEMESSEN · UNGEMESSEN klang.K5#2 (punkte-maschine cc86b9d7 messung/dcc33615-gtx.json)
+omen-gtx-gtx-landung-dcc33615-9-dcc33615 UNGEMESSEN 0 GRÜN / 0 ROT / 1 UNGEMESSEN · UNGEMESSEN leib.K1#1 (punkte-maschine 771356b9 messung/dcc33615-gtx.json)
