@@ -288,3 +288,4 @@ omen-gtx-z303-liste-1-cbe910ed ROT 0 GRÜN / 1 ROT / 2 UNGEMESSEN · ROT leib.K1
 2026-11-10 01:31 gpu-stufe Zwischenstand Bisekt: b5012e8b Boot 2 v1: wiese-ego ohne Band (genesis-ego 18.89) · verdrängt, zählt nicht
 2026-11-10 01:45 gpu-stufe Zwischenstand Bisekt: wartet · kein Schloss · zuletzt: b5012e8b Boot 2 v1 zaehlt nicht (verdraengt oder ohne Band)
 2026-11-10 01:52 gpu-stufe Zwischenstand Bisekt: b5012e8b Boot 2 v2: wiese-ego 31.89 ms (genesis-ego 19.13) ‖ erste Linie: [6/36] b5012e8b = schlecht · wiese-ego 32.68 / 31.89 ms (genesis-ego 18.87 / 19.13) · Merge w20-fern-hang in integ-probe
+2026-11-10 01:57 gpu-stufe Zwischenstand Bisekt: cd2dfafa Boot 1 v1: wiese-ego 20.65 ms (genesis-ego 13.09)
