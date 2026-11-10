@@ -2280,15 +2280,32 @@ function luftTiefe(o) {
                     const ms = async () => (await lies(A.rtMS, [[30, 0]])) + " o" + (E.offen ? E.offen.size : "-") + " w" + E.wartetN;
                     spur.push("W" + Wa.n + " " + Wa.meldungen.slice(0, 3).map((m) => m.quelle + ":" + m.kopf.slice(0, 90)).join("|"));
                     spur.push(`E a${E.absagenN} as${E.pipeAsync} b${E.bereitN} vb${r._einmalVorbau()} auf ${E.wartetAuf ? E.namen.get(E.wartetAuf) : "-"}`);
+                    const BE = RR.backend;
+                    const msP = [...RR._pipelines.caches.values()].filter((p) => p.fragmentProgram && /k < 64\.0/.test(p.fragmentProgram.code));
+                    spur.push("P " + msP.map((p) => { const h = BE.get(p); return `${h.pipeline ? "da" : "-"}${h.error ? ":err" : ""}:u${p.usedTimes}`; }).join(",")); // prettier-ignore
+                    if (msP[0] && BE.device) {
+                        const dev = BE.device;
+                        const vs = dev.createShaderModule({ code: "struct O { @builtin(position) p: vec4<f32>, @location(0) uv: vec2<f32> }; @vertex fn main(@builtin(vertex_index) i: u32) -> O { var o: O; let x = f32((i << 1u) & 2u); let y = f32(i & 2u); o.p = vec4<f32>(x * 2.0 - 1.0, y * 2.0 - 1.0, 0.0, 1.0); o.uv = vec2<f32>(x, y); return o; }" }); // prettier-ignore
+                        const fs = dev.createShaderModule({ code: msP[0].fragmentProgram.code.replace("0.07957747154594767", "0.0795774715459477") });
+                        const info = await fs.getCompilationInfo();
+                        const t1 = performance.now();
+                        let res = "ok";
+                        try {
+                            await dev.createRenderPipelineAsync({ layout: "auto", vertex: { module: vs, entryPoint: "main" }, fragment: { module: fs, entryPoint: "main", targets: [{ format: "rgba16float" }] } }); // prettier-ignore
+                        } catch (e) {
+                            res = "err:" + String(e && e.message).slice(0, 160);
+                        }
+                        spur.push(`C ${Math.round(performance.now() - t1)}ms ${res} ci${info.messages.length}`);
+                    }
                     spur.push("M0 " + (await ms()));
                     r._atmoZeichne(A.qMS, A.rtMS);
                     spur.push("M1 " + (await ms()));
                     const t0 = performance.now();
-                    for (let i = 0; i < 40; i++) {
+                    for (let i = 0; i < 20; i++) {
                         await new Promise((res) => setTimeout(res, 2000));
                         r._atmoZeichne(A.qMS, A.rtMS);
                         const m = await ms();
-                        if (!m.startsWith("0:0:0:0") || i === 39) {
+                        if (!m.startsWith("0:0:0:0") || i === 19) {
                             spur.push(`M${Math.round((performance.now() - t0) / 1000)}s ${m} W${(r._gpuWache || { n: 0 }).n}`);
                             break;
                         }
