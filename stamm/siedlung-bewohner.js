@@ -3267,16 +3267,20 @@ class AnazhRealm_siedlung_bewohner {
         S.listeRest = 0;
     }
 
-    // DER VOLLE PLATZ (`_bewohnerStandPruefen`): wessen Stand am Platz der Plan neben der Spur nicht trägt, geht seinen Tag ohne
-    // ihn — koerper-core `tagesPlan` liest je Ort `|| heim` (er bleibt zu den Stunden des Platzes vor seiner Tür), das Werk des
-    // Markts, der Tisch und der Abend am Platz werden der Stand vor der eigenen Tür (wie wo kein Ort trägt, `_bewohnerListe`); wer dort stand oder
-    // hinging, geht neu. Die Kreatur-Linse nennt ihn „ohne Platz". Ein Stand, der niemandes Platz ist, bleibt (false).
+    // DER VOLLE ORT (`_bewohnerStandPruefen`): wessen Stand an einem Ort seiner Bindung — am Platz, am Werk, am Tisch, am Abend,
+    // beim Besuch — der Plan neben der Spur nicht trägt, geht seinen Tag ohne ihn: koerper-core `tagesPlan` liest je Ort
+    // `|| heim` (er bleibt zu dessen Stunden vor seiner Tür); wer dort stand oder hinging, geht neu. Die Kreatur-Linse nennt
+    // den Platz „ohne Platz". Nur der Stand vor der eigenen Tür (`heim`) bleibt, und einer, der niemandes ist (false). Bis
+    // w28-ziel-plan fiel nur der Platz: ein Werk-Stand in der Wende eines Wagens blieb stehen, der Wagen 8 der Metropole
+    // berührte um 10 Uhr zwei Stehende 156-mal und erreichte kein Ziel (gate:fahr-leben --verkehr).
     // Bis hier rückte der Stand ohne sein Gesetz und ohne den Raum (w4-genesis-ort-wirt9): an der Metropole (stadt-voll) trägt
     // der Platz neben der Trasse 87 seiner Stände nicht (je ~810 Punkte mit Raum, alle im Grundriss eines Hauses)
     _bewohnerOhneStand(S, o) {
-        if (!S.liste.some((b) => b.orte.platz === o)) return false;
+        const K = AnazhRealm.BEWOHNER.staende;
+        if (S.liste.some((b) => b.orte.heim === o) || !S.liste.some((b) => K.some((k) => b.orte[k] === o)))
+            return false;
         for (const b of S.liste) {
-            for (const k of AnazhRealm.BEWOHNER.staende) if (b.orte[k] === o) b.orte[k] = null;
+            for (const k of K) if (b.orte[k] === o) b.orte[k] = null;
             if (b.leib && !b.drinnen && (b.ziel === o || b.stand === o)) {
                 if (b.ziel === o) b.da = false;
                 Object.assign(b, { weg: null, stand: null, wegRest: null });

@@ -3148,7 +3148,8 @@
     //    ohne ein Wort hier ein Ziel), und `tagesBindung` wählt je Mensch seine Orte EINMAL über die Nutzen-Wahl des Leibs
     //    (tetrapoda `zielWahl`: Güte × Nähe, die Menge verteilt sich aus dem Samen): sein WERK (wer in einem Haus mit Rolle
     //    wohnt: sein Haus; sonst ein Ort, der Arbeit bietet — der Markt, ein Acker, die Schmiede, die Burg, die Scheune),
-    //    seinen MITTAGSTISCH (vom Werk aus: das Gasthaus, der Markt oder der eigene Tisch, `daheim`), seinen ABEND (der
+    //    seinen MITTAGSTISCH (vom Werk aus: das Gasthaus, der Markt, die Brotzeit am Werk, `amWerk`, oder der eigene Tisch,
+    //    `daheim`), seinen ABEND (der
     //    Treff: Gasthaus, Platz, Kirche — oder die Bank vor der eigenen Tür) und den Markt seines Morgengangs. Die Güte ist
     //    auch das Maß der Menge: so viele zieht der Ort im Verhältnis; `wegM` je Bedürfnis ist der Weg, über den sich die
     //    Nähe halbiert (zielNaehe) — der Tag trägt den Gang hin und zurück. Bis hierher wählte der Wirt den Ort in einer
@@ -3206,6 +3207,10 @@
             sonst: Object.freeze({ arbeit: 3, treff: 1 }),
         }),
         daheim: Object.freeze({ mahl: 3, treff: 3 }),
+        // DIE BROTZEIT: das eigene Werk aus der Sicht dessen, der dort arbeitet — wer keinen Tisch in der Nähe hat, isst am Werk
+        // (bis hier ging er mittags heim, wie weit es auch war: an der Metropole war um 13 Uhr jeder Zweite unterwegs, und der
+        // Strom über die Fahrbahn hielt einen Wagen eine Minute lang auf 27 m, gate:fahr-leben --verkehr)
+        amWerk: Object.freeze({ mahl: 2 }),
         wegM: Object.freeze({ arbeit: 45, markt: 200, mahl: 30, treff: 45, besuch: 45 }),
         besuchFernM: 40,
     });
@@ -3248,7 +3253,7 @@
     function tagesBindung(TC, same, rolle, heimI, orte, ohne) {
         var G = TAGES_GESETZ,
             H = orte[heimI];
-        var wahl = function (art, von, wort, daheim, fern) {
+        var wahl = function (art, von, wort, daheim, fern, amWerk) {
             var drang = {};
             drang[art] = 1;
             var z = TC.zielWahl(drang, orte, von.x, von.z, {
@@ -3263,7 +3268,7 @@
                     return false;
                 },
                 bietet: function (o, i) {
-                    return i === heimI ? daheim : o.bietet;
+                    return i === heimI ? daheim : amWerk && i === werk ? amWerk : o.bietet;
                 },
             });
             return z ? z.i : -1;
@@ -3276,7 +3281,7 @@
         return {
             werk: werk,
             platz: platz,
-            mahl: wahl("mahl", orte[werk], "mahl", G.daheim),
+            mahl: wahl("mahl", orte[werk], "mahl", G.daheim, null, G.amWerk),
             abend: wahl("treff", H, "abend", G.daheim),
             besuch: wahl("besuch", H, "besuch", null, [H, orte[platz]]),
         };

@@ -2870,6 +2870,11 @@
     //  (e) Entscheidung + Antrieb — M koerper-core `tagesPlan` (Bewohner) + Eingabe · T stamm `_tickKreaturVerhalten`
     //      (Stimmung) + hier FURCHT_/JAGD_/ETHOGRAMM_GESETZ; die Wahl der Aktion `verhaltenWahl` (hier, Welt UND Labor —
     //      vorher würfelte das Labor `Math.random` über eigene Aktionen `getBeh`). Zwei Seelen, je ihr Gesetzbuch.
+    //      DIE ZIEL-KETTE (w28-ziel-plan, hier ZIEL_GESETZ): M EINS in allen drei Gliedern — das Ziel (`zielWahl` über die
+    //      Orte seiner Bindung, koerper-core `tagesBindung`), der Plan (`wegBaum` · `wegKette` · `wegTeile` über das Wege-
+    //      Netz), der Wunsch (`zielWunsch`). T liest den Wunsch (`zielWunsch` in stamm `_kreaturZiel`); sein Ziel wählt
+    //      weiter die Kaskade des Stamms (`updateCreatures`: Flucht · Aas · Jagd · Neugier · Wandern, die Tränke
+    //      `_tickCreatureDrink`) — ZWILLING (offen): zwei Wege zum Ziel, das Tier hat keinen Graphen (sein Plan ist das Ziel).
     // DER WIRT W (die Welt: stamm `_tierWirt`; das Labor: tetrapoda.js `wirt`): {M3 die THREE-Mathe des Wirts (Vector3 ·
     // Matrix4 · Quaternion · Euler — der Kern bleibt THREE-frei, er rechnet in den Objekten seines Halters), nowS() die
     // Kreatur-Uhr, boden(group, x, z) der Boden unter der Pfote, kipp(x, z, gier, y, group) die Neigung dort {laengs, quer},
