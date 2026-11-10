@@ -121,7 +121,7 @@
   },
   "ankunft.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: ankunft.K1#1 radeon: Station seit der Messung geändert — zuletzt an 2d5f4146: die Fahrt riss 1800 s (vor tore.K3#1) — offen, UNGEMESSEN · ankunft.K1#1 gtx: ROT: t(Kontrolle) kalt 14.26 s von außen (Eigenmeldung 12.99 s), Bild 0.01 % Lücke bis zur Ruhe, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht · [linse-gpu] nvidia/pascal · ROT trotz Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 13,2 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 4,9 CPU-s · LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio 3,0 CPU-s — 0,56 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon; Σ fremd 27,2 CPU-s in 59,8 s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 9,6 CPU-s · svchost.exe 3,2 CPU-s · SearchIndexer.exe 0,5 CPU-s) — geeicht ÷ 1,032 (1 + 5,6 % je fremdem Kern × 0,56): t(Kontrolle) kalt s 14,26 → geeicht 13,83 (Soll ≤ 10) an 2d5f4146 · ankunft.K1#2 radeon: Station seit der Messung geändert — zuletzt an 2d5f4146: die Fahrt riss 1800 s (vor tore.K3#1) — offen, UNGEMESSEN · ankunft.K1#2 gtx: ROT: t(Kontrolle) kalt 14.26 s von außen (Eigenmeldung 12.99 s), Bild 0.01 % Lücke bis zur Ruhe, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht · [linse-gpu] nvidia/pascal · ROT trotz Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 13,2 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 4,9 CPU-s · LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio 3,0 CPU-s — 0,56 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon; Σ fremd 27,2 CPU-s in 59,8 s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 9,6 CPU-s · svchost.exe 3,2 CPU-s · SearchIndexer.exe 0,5 CPU-s) — geeicht ÷ 1,032 (1 + 5,6 % je fremdem Kern × 0,56): t(Kontrolle) kalt s 14,26 → geeicht 13,83 (Soll ≤ 5) an 2d5f4146",
+   "beleg": "Maschine: 0 — offen: ankunft.K1#1 radeon: Station seit der Messung geändert — zuletzt an 2d5f4146: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen · ankunft.K1#1 gtx: ROT: t(Kontrolle) kalt 14.26 s von außen (Eigenmeldung 12.99 s), Bild 0.01 % Lücke bis zur Ruhe, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht · [linse-gpu] nvidia/pascal · ROT trotz Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 13,2 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 4,9 CPU-s · LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio 3,0 CPU-s — 0,56 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon; Σ fremd 27,2 CPU-s in 59,8 s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 9,6 CPU-s · svchost.exe 3,2 CPU-s · SearchIndexer.exe 0,5 CPU-s) — geeicht ÷ 1,032 (1 + 5,6 % je fremdem Kern × 0,56): t(Kontrolle) kalt s 14,26 → geeicht 13,83 (Soll ≤ 10) an 2d5f4146 · ankunft.K1#2 radeon: Station seit der Messung geändert — zuletzt an 2d5f4146: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen · ankunft.K1#2 gtx: ROT: t(Kontrolle) kalt 14.26 s von außen (Eigenmeldung 12.99 s), Bild 0.01 % Lücke bis zur Ruhe, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht · [linse-gpu] nvidia/pascal · ROT trotz Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 13,2 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 4,9 CPU-s · LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio 3,0 CPU-s — 0,56 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon; Σ fremd 27,2 CPU-s in 59,8 s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 9,6 CPU-s · svchost.exe 3,2 CPU-s · SearchIndexer.exe 0,5 CPU-s) — geeicht ÷ 1,032 (1 + 5,6 % je fremdem Kern × 0,56): t(Kontrolle) kalt s 14,26 → geeicht 13,83 (Soll ≤ 5) an 2d5f4146",
    "stationen": [
     {
      "id": "ankunft.K1#1",
@@ -129,7 +129,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 2d5f4146: die Fahrt riss 1800 s (vor tore.K3#1) — offen, UNGEMESSEN",
+     "grund": "Station seit der Messung geändert — zuletzt an 2d5f4146: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
      "ungemessen": true,
      "beide": true
     },
@@ -148,7 +148,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 2d5f4146: die Fahrt riss 1800 s (vor tore.K3#1) — offen, UNGEMESSEN",
+     "grund": "Station seit der Messung geändert — zuletzt an 2d5f4146: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
      "ungemessen": true
     },
     {
@@ -171,7 +171,7 @@
      "gruen": true,
      "zahl": "0.00 % Lücke nach 0.2 s bis zur Ruhe der Foundry · offen im Bild nichts · t(Kontrolle) kalt 8.78 s von außen (Eigenmeldung 8.00 s) · [linse-gpu] amd/rdna-3",
      "sha": "818b466db2fc417c3cd4a08945af0c80e143617f",
-     "grund": "Station seit der Messung geändert — zuletzt an 2d5f4146: die Fahrt riss 1800 s (vor tore.K3#1) — offen, UNGEMESSEN",
+     "grund": "Station seit der Messung geändert — zuletzt an 2d5f4146: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
      "gehalten": true
     },
     {
@@ -187,7 +187,7 @@
   },
   "ankunft.K3": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: ankunft.K3#1 radeon: Station seit der Messung geändert — zuletzt an 2d5f4146: die Fahrt riss 1800 s (vor tore.K3#1) — offen, UNGEMESSEN · ankunft.K3#1 gtx: ROT: warm Median 10.36 s (9.94 · 10.77, Zweit-Boot im warmen Browser) · [linse-gpu] nvidia/pascal · ROT trotz Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 13,2 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 4,9 CPU-s · LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio 3,0 CPU-s — 0,56 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon; Σ fremd 27,2 CPU-s in 59,8 s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 9,6 CPU-s · svchost.exe 3,2 CPU-s · SearchIndexer.exe 0,5 CPU-s) — geeicht ÷ 1,032 (1 + 5,6 % je fremdem Kern × 0,56): warm Median s 10,36 → geeicht 10,04 (Soll ≤ 5) an 2d5f4146",
+   "beleg": "Maschine: 0 — offen: ankunft.K3#1 radeon: Station seit der Messung geändert — zuletzt an 2d5f4146: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen · ankunft.K3#1 gtx: ROT: warm Median 10.36 s (9.94 · 10.77, Zweit-Boot im warmen Browser) · [linse-gpu] nvidia/pascal · ROT trotz Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 13,2 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 4,9 CPU-s · LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio 3,0 CPU-s — 0,56 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon; Σ fremd 27,2 CPU-s in 59,8 s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 9,6 CPU-s · svchost.exe 3,2 CPU-s · SearchIndexer.exe 0,5 CPU-s) — geeicht ÷ 1,032 (1 + 5,6 % je fremdem Kern × 0,56): warm Median s 10,36 → geeicht 10,04 (Soll ≤ 5) an 2d5f4146",
    "stationen": [
     {
      "id": "ankunft.K3#1",
@@ -195,7 +195,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 2d5f4146: die Fahrt riss 1800 s (vor tore.K3#1) — offen, UNGEMESSEN",
+     "grund": "Station seit der Messung geändert — zuletzt an 2d5f4146: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
      "ungemessen": true
     },
     {
@@ -210,7 +210,7 @@
   },
   "ankunft.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: ankunft.K4#1 radeon: ungemessen (R10) — zuletzt an 2d5f4146: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: POSE ego-45 43214 ms) · ankunft.K4#1 gtx: ungemessen (R10) — zuletzt an 2d5f4146: Deckel 139 s gerissen: Stille seit 15 s nach 151.6 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-45 64517 ms)",
+   "beleg": "Maschine: 0 — offen: ankunft.K4#1 radeon: ungemessen (R10) — zuletzt an 2d5f4146: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: POSE ego-0 50452 ms) · ankunft.K4#1 gtx: ungemessen (R10) — zuletzt an 2d5f4146: Deckel 139 s gerissen: Stille seit 15 s nach 151.6 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-45 64517 ms)",
    "stationen": [
     {
      "id": "ankunft.K4#1",
@@ -218,7 +218,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 2d5f4146: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: POSE ego-45 43214 ms)",
+     "grund": "ungemessen (R10) — zuletzt an 2d5f4146: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: POSE ego-0 50452 ms)",
      "ungemessen": true
     },
     {
@@ -234,7 +234,7 @@
   },
   "ankunft.K5": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: ankunft.K5#1 radeon: Station seit der Messung geändert — zuletzt an 2d5f4146: die Fahrt riss 1800 s (vor tore.K3#1) — offen, UNGEMESSEN",
+   "beleg": "Maschine: 0 — offen: ankunft.K5#1 radeon: Station seit der Messung geändert — zuletzt an 2d5f4146: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
    "stationen": [
     {
      "id": "ankunft.K5#1",
@@ -242,7 +242,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 2d5f4146: die Fahrt riss 1800 s (vor tore.K3#1) — offen, UNGEMESSEN",
+     "grund": "Station seit der Messung geändert — zuletzt an 2d5f4146: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
      "ungemessen": true
     }
    ]
@@ -369,7 +369,7 @@
      "gruen": true,
      "zahl": "6/6 Herkunft × Sicht × Werk tragen ihr Verb über die Taste (je Herkunft × Sicht ein Werk, jedes Werk einmal)",
      "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Station seit der Messung geändert — zuletzt an 2d5f4146: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 2/6 Herkunft × Sicht × Werk tragen ihr Verb über die Taste (je Herkunft × Sicht ein Werk, jedes Werk einmal) — offen: ki · Ego ·",
+     "grund": "Station seit der Messung geändert — zuletzt an 2d5f4146: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
      "gehalten": true
     },
     {
@@ -456,7 +456,7 @@
      "gruen": true,
      "zahl": "Garage FOV +9.07° Arm +18.1 % bei 15.21/16.00 m/s · Welt FOV +9.47° Arm +18.4 % bei 15.18 m/s (Ende ok)",
      "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Station seit der Messung geändert — zuletzt an 2d5f4146: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Garage: keine Zeile MK2110 (Exit 0)) · Täter: (Welt 36.6 s · Garage 35.0 s im Fenster neben ihr)",
+     "grund": "Station seit der Messung geändert — zuletzt an 2d5f4146: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Garage: keine Zeile MK2110 (Exit 0)) · Täter: (Welt 36.0 s · Garage 35.2 s im Fenster neben ihr)",
      "gehalten": true
     },
     {
@@ -821,7 +821,7 @@
   },
   "gelaende.K2": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 8 von 10 Gräben über das Verb, in 1752 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 34.4–203.2 ms (1 m 3, 3 m 5) an b3f9ae95 radeon · gehalten: 8 von 10 Gräben über das Verb, in 2180 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 45.7–366.6 ms (1 m 3, 3 m 5) an 715754fc gtx — offen: gelaende.K2#2 radeon: Station seit der Messung geändert — zuletzt an 2d5f4146: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: (b)(d) 8.8 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf · gelaende.K2#2 gtx: Station seit der Messung geändert — zuletzt an 2d5f4146: Deckel 206 s gerissen (der Anteil der Fahrt, mit Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: (b)(d) 15.7 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"flu",
+   "beleg": "Maschine: gehalten: 8 von 10 Gräben über das Verb, in 1752 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 34.4–203.2 ms (1 m 3, 3 m 5) an b3f9ae95 radeon · gehalten: 8 von 10 Gräben über das Verb, in 2180 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 45.7–366.6 ms (1 m 3, 3 m 5) an 715754fc gtx — offen: gelaende.K2#2 radeon: Station seit der Messung geändert — zuletzt an 2d5f4146: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: (b)(d) 9.7 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf · gelaende.K2#2 gtx: Station seit der Messung geändert — zuletzt an 2d5f4146: Deckel 206 s gerissen (der Anteil der Fahrt, mit Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: (b)(d) 15.7 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"flu",
    "stationen": [
     {
      "id": "gelaende.K2#1",
@@ -829,7 +829,7 @@
      "gruen": true,
      "zahl": "8 von 10 Gräben über das Verb, in 1752 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 34.4–203.2 ms (1 m 3, 3 m 5)",
      "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Station seit der Messung geändert — zuletzt an 2d5f4146: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: (b)(d) 8.8 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf",
+     "grund": "Station seit der Messung geändert — zuletzt an 2d5f4146: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: (b)(d) 9.7 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf",
      "gehalten": true
     },
     {
@@ -847,7 +847,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 2d5f4146: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: (b)(d) 8.8 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf",
+     "grund": "Station seit der Messung geändert — zuletzt an 2d5f4146: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: (b)(d) 9.7 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf",
      "ungemessen": true
     },
     {
@@ -1549,7 +1549,7 @@
   },
   "leib.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: stamm baum_kiefer: 1102 Bilder · heran 8.54 → 0.89 m · Kugel {\"rückwärts: im Stamm baum_kiefer\":18} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | fels felsturm: 1144 Bilder · heran 8.56 → 0.41 m · Kugel {\"orbit fern: im Stamm baum_tanne\":10} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.052 m | haus haus_alemannisch: 1091 Bilder · heran 12.17 → 4.75 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0053 höchstens 2.700 m an b3f9ae95 radeon · stamm baum_kiefer: 1102 Bilder · heran 8.29 → 0.64 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | fels felsturm: 1240 Bilder · heran 10.56 → 0.44 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | haus haus_alemannisch: 1090 Bilder · heran 12.17 → 4.75 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0070 höchstens 2.669 m an 2d5f4146 gtx — offen: leib.K4#2 radeon: Station seit der Messung geändert — zuletzt an 2d5f4146: Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: innen haus_alemannisch: 1318 Bilder · heran 12.25 → 0.41 m · im Haus true · Kugel {} · Nah-Pixel {} · Ruck p95 0.0127 höchstens  · leib.K4#2 gtx: Station seit der Messung geändert — zuletzt an 2d5f4146: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval ohne Antwort binnen 60 s) — ungemessen",
+   "beleg": "Maschine: gehalten: stamm baum_kiefer: 1102 Bilder · heran 8.54 → 0.89 m · Kugel {\"rückwärts: im Stamm baum_kiefer\":18} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | fels felsturm: 1144 Bilder · heran 8.56 → 0.41 m · Kugel {\"orbit fern: im Stamm baum_tanne\":10} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.052 m | haus haus_alemannisch: 1091 Bilder · heran 12.17 → 4.75 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0053 höchstens 2.700 m an b3f9ae95 radeon · stamm baum_kiefer: 1102 Bilder · heran 8.29 → 0.64 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | fels felsturm: 1240 Bilder · heran 10.56 → 0.44 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | haus haus_alemannisch: 1090 Bilder · heran 12.17 → 4.75 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0070 höchstens 2.669 m an 2d5f4146 gtx — offen: leib.K4#2 radeon: Station seit der Messung geändert — zuletzt an 2d5f4146: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen · leib.K4#2 gtx: Station seit der Messung geändert — zuletzt an 2d5f4146: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval ohne Antwort binnen 60 s) — ungemessen",
    "stationen": [
     {
      "id": "leib.K4#1",
@@ -1557,7 +1557,7 @@
      "gruen": true,
      "zahl": "stamm baum_kiefer: 1102 Bilder · heran 8.54 → 0.89 m · Kugel {\"rückwärts: im Stamm baum_kiefer\":18} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | fels felsturm: 1144 Bilder · heran 8.56 → 0.41 m · Kugel {\"orbit fern: im Stamm baum_tanne\":10} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.052 m | haus haus_alemannisch: 1091 Bilder · heran 12.17 → 4.75 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0053 höchstens 2.700 m",
      "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Station seit der Messung geändert — zuletzt an 2d5f4146: Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: stamm baum_kiefer: 1102 Bilder · heran 8.29 → 0.64 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | fels felstu",
+     "grund": "Station seit der Messung geändert — zuletzt an 2d5f4146: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
      "gehalten": true
     },
     {
@@ -1574,7 +1574,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 2d5f4146: Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: innen haus_alemannisch: 1318 Bilder · heran 12.25 → 0.41 m · im Haus true · Kugel {} · Nah-Pixel {} · Ruck p95 0.0127 höchstens ",
+     "grund": "Station seit der Messung geändert — zuletzt an 2d5f4146: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
      "ungemessen": true
     },
     {
@@ -1963,7 +1963,7 @@
      "gruen": true,
      "zahl": "Klasse vogel 2 Befehle {\"haupt\":2}, 585 Instanzen (500 des Schwarms, 5 Teile je Glied), 100 Glieder im Blick je Reihe (Soll ≤ 10 Befehle)",
      "sha": "e475c6b4ef837565b3c741f0da3daa79e303a8c0",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +24) — zuletzt an 2d5f4146: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: ohne gezählten Frame) · Täter: SCHWARM {\"msMedian\":0.0852,\"msP95\":0.1653,\"imBildMin\":100,\"paare\":13252,\"instanzen\":500,\"teileJe\":5,\"po",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +24) — zuletzt an 2d5f4146: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
      "gehalten": true
     },
     {
@@ -2627,7 +2627,7 @@
   },
   "profiband.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: profiband.K1#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +25) — zuletzt an 2d5f4146: die Fahrt riss 1800 s (vor tore.K3#1) — offen, UNGEMESSEN · profiband.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +26) — zuletzt an dcc33615: Fremd-Last: AppHelperCap.exe 90,5 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 16,9 CPU-s · MsMpEng.exe 15,3 CPU-s — 1,97 Kerne fremd im dichteste · profiband.K1#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +25) — zuletzt an 2d5f4146: die Fahrt riss 1800 s (vor tore.K3#1) — offen, UNGEMESSEN · profiband.K1#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +26) — zuletzt an dcc33615: Fremd-Last: AppHelperCap.exe 95,4 CPU-s · MsMpEng.exe 35,9 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 17,9 CPU-s — 3,07 Kerne fremd im dichteste",
+   "beleg": "Maschine: 0 — offen: profiband.K1#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +25) — zuletzt an 2d5f4146: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen · profiband.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +26) — zuletzt an dcc33615: Fremd-Last: AppHelperCap.exe 90,5 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 16,9 CPU-s · MsMpEng.exe 15,3 CPU-s — 1,97 Kerne fremd im dichteste · profiband.K1#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +25) — zuletzt an 2d5f4146: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen · profiband.K1#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +26) — zuletzt an dcc33615: Fremd-Last: AppHelperCap.exe 95,4 CPU-s · MsMpEng.exe 35,9 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 17,9 CPU-s — 3,07 Kerne fremd im dichteste",
    "stationen": [
     {
      "id": "profiband.K1#1",
@@ -2635,7 +2635,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +25) — zuletzt an 2d5f4146: die Fahrt riss 1800 s (vor tore.K3#1) — offen, UNGEMESSEN",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +25) — zuletzt an 2d5f4146: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
      "ungemessen": true,
      "beide": true
     },
@@ -2655,7 +2655,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +25) — zuletzt an 2d5f4146: die Fahrt riss 1800 s (vor tore.K3#1) — offen, UNGEMESSEN",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +25) — zuletzt an 2d5f4146: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
      "ungemessen": true
     },
     {
@@ -2671,7 +2671,7 @@
   },
   "profiband.K2": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: profiband.K2#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +25) — zuletzt an 2d5f4146: die Fahrt riss 1800 s (vor tore.K3#1) — offen, UNGEMESSEN · profiband.K2#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +26) — zuletzt an dcc33615: Fremd-Last: AppHelperCap.exe 91,9 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 17,1 CPU-s · MsMpEng.exe 17,0 CPU-s — 2,12 Kerne fremd im dichteste · profiband.K2#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +25) — zuletzt an 2d5f4146: die Fahrt riss 1800 s (vor tore.K3#1) — offen, UNGEMESSEN · profiband.K2#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +26) — zuletzt an dcc33615: Fremd-Last: AppHelperCap.exe 91,1 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 16,9 CPU-s · MsMpEng.exe 16,9 CPU-s — 2,23 Kerne fremd im dichteste",
+   "beleg": "Maschine: 0 — offen: profiband.K2#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +25) — zuletzt an 2d5f4146: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen · profiband.K2#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +26) — zuletzt an dcc33615: Fremd-Last: AppHelperCap.exe 91,9 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 17,1 CPU-s · MsMpEng.exe 17,0 CPU-s — 2,12 Kerne fremd im dichteste · profiband.K2#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +25) — zuletzt an 2d5f4146: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen · profiband.K2#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +26) — zuletzt an dcc33615: Fremd-Last: AppHelperCap.exe 91,1 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 16,9 CPU-s · MsMpEng.exe 16,9 CPU-s — 2,23 Kerne fremd im dichteste",
    "stationen": [
     {
      "id": "profiband.K2#1",
@@ -2679,7 +2679,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +25) — zuletzt an 2d5f4146: die Fahrt riss 1800 s (vor tore.K3#1) — offen, UNGEMESSEN",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +25) — zuletzt an 2d5f4146: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
      "ungemessen": true
     },
     {
@@ -2697,7 +2697,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +25) — zuletzt an 2d5f4146: die Fahrt riss 1800 s (vor tore.K3#1) — offen, UNGEMESSEN",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +25) — zuletzt an 2d5f4146: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
      "ungemessen": true
     },
     {
@@ -2713,7 +2713,7 @@
   },
   "profiband.K3": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: profiband.K3#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +25) — zuletzt an 2d5f4146: die Fahrt riss 1800 s (vor tore.K3#1) — offen, UNGEMESSEN · profiband.K3#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +26) — zuletzt an dcc33615: Fremd-Last: AppHelperCap.exe 86,2 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 16,2 CPU-s · MsMpEng.exe 13,9 CPU-s — 1,96 Kerne fremd im dichteste · profiband.K3#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +25) — zuletzt an 2d5f4146: die Fahrt riss 1800 s (vor tore.K3#1) — offen, UNGEMESSEN · profiband.K3#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +26) — zuletzt an dcc33615: Fremd-Last: AppHelperCap.exe 91,1 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 17,2 CPU-s · MsMpEng.exe 16,5 CPU-s — 1,98 Kerne fremd im dichteste",
+   "beleg": "Maschine: 0 — offen: profiband.K3#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +25) — zuletzt an 2d5f4146: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen · profiband.K3#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +26) — zuletzt an dcc33615: Fremd-Last: AppHelperCap.exe 86,2 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 16,2 CPU-s · MsMpEng.exe 13,9 CPU-s — 1,96 Kerne fremd im dichteste · profiband.K3#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +25) — zuletzt an 2d5f4146: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen · profiband.K3#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +26) — zuletzt an dcc33615: Fremd-Last: AppHelperCap.exe 91,1 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 17,2 CPU-s · MsMpEng.exe 16,5 CPU-s — 1,98 Kerne fremd im dichteste",
    "stationen": [
     {
      "id": "profiband.K3#1",
@@ -2721,7 +2721,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +25) — zuletzt an 2d5f4146: die Fahrt riss 1800 s (vor tore.K3#1) — offen, UNGEMESSEN",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +25) — zuletzt an 2d5f4146: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
      "ungemessen": true,
      "beide": true
     },
@@ -2741,7 +2741,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +25) — zuletzt an 2d5f4146: die Fahrt riss 1800 s (vor tore.K3#1) — offen, UNGEMESSEN",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +25) — zuletzt an 2d5f4146: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
      "ungemessen": true
     },
     {
@@ -2757,7 +2757,7 @@
   },
   "profiband.K4": {
    "punkte": 1,
-   "beleg": "Maschine: Gehen 45 Bilder · max 92.05 ms · 97.78 % > 33 ms · Fahrt 49 Bilder · max 83.66 ms · 93.88 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 97.78 % > 33 ms | Fahrt: 93.88 % > 33 ms an 2d5f4146 radeon — offen: profiband.K4#2 radeon: Station seit der Messung geändert — zuletzt an 2d5f4146: Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 8,4 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=co · profiband.K4#2 gtx: Station seit der Messung geändert — zuletzt an dcc33615: Fremd-Last: AppHelperCap.exe 43,1 CPU-s · MsMpEng.exe 13,6 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 10,1 CPU-s — 2,02 Kerne fremd im dichteste",
+   "beleg": "Maschine: Gehen 45 Bilder · max 92.05 ms · 97.78 % > 33 ms · Fahrt 49 Bilder · max 83.66 ms · 93.88 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 97.78 % > 33 ms | Fahrt: 93.88 % > 33 ms an 2d5f4146 radeon — offen: profiband.K4#2 radeon: ROT: Gehen 40 Bilder · max 100.43 ms · 97.50 % > 33 ms · Fahrt 44 Bilder · max 133.95 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 1 Bild(er) > 100 ms (max 100.43), 97.50 % > 33 ms | Fahrt: 1 Bild(er) > 100 ms (max 133.95), 100.00 % > 33 ms · ROT trotz Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 10,4 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 8,9 CPU-s · node.exe punkte/punkte.cjs buchen --kopf 2d5f414637a834dec1a5b816af5860709513a303 8,5 CPU-s — 1,55 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 48,1 CPU-s in 35,2 s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 13,1 CPU-s · svchost.exe 8,0 CPU-s · SearchIndexer.exe 0,5 CPU-s) — geeicht ÷ 1,087 (1 + 5,6 % je fremdem Kern × 1,55): Fahrt Frame max ms 133,9 → geeicht 123,2 (Soll ≤ 100) an 2d5f4146 · profiband.K4#2 gtx: Station seit der Messung geändert — zuletzt an dcc33615: Fremd-Last: AppHelperCap.exe 43,1 CPU-s · MsMpEng.exe 13,6 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 10,1 CPU-s — 2,02 Kerne fremd im dichteste",
    "stationen": [
     {
      "id": "profiband.K4#1",
@@ -2780,10 +2780,9 @@
      "id": "profiband.K4#2",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 2d5f4146: Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 8,4 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=co",
-     "ungemessen": true
+     "zahl": "Gehen 40 Bilder · max 100.43 ms · 97.50 % > 33 ms · Fahrt 44 Bilder · max 133.95 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 1 Bild(er) > 100 ms (max 100.43), 97.50 % > 33 ms | Fahrt: 1 Bild(er) > 100 ms (max 133.95), 100.00 % > 33 ms",
+     "sha": "2d5f414637a834dec1a5b816af5860709513a303",
+     "grund": "ROT: Gehen 40 Bilder · max 100.43 ms · 97.50 % > 33 ms · Fahrt 44 Bilder · max 133.95 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 1 Bild(er) > 100 ms (max 100.43), 97.50 % > 33 ms | Fahrt: 1 Bild(er) > 100 ms (max 133.95), 100.00 % > 33 ms · ROT trotz Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 10,4 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 8,9 CPU-s · node.exe punkte/punkte.cjs buchen --kopf 2d5f414637a834dec1a5b816af5860709513a303 8,5 CPU-s — 1,55 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 48,1 CPU-s in 35,2 s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 13,1 CPU-s · svchost.exe 8,0 CPU-s · SearchIndexer.exe 0,5 CPU-s) — geeicht ÷ 1,087 (1 + 5,6 % je fremdem Kern × 1,55): Fahrt Frame max ms 133,9 → geeicht 123,2 (Soll ≤ 100)"
     },
     {
      "id": "profiband.K4#2",
@@ -2798,7 +2797,7 @@
   },
   "profiband.K5": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: profiband.K5#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +25) — zuletzt an 2d5f4146: Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 7,4 CPU-s · bash.exe w4/wache-k10.sh 6,2 CPU-s · Claude.exe --type=renderer --user-data-dir=claud · profiband.K5#1 gtx: Station seit der Messung geändert — zuletzt an 78d37554: Fremd-Last: AppHelperCap.exe 29,0 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 5,9 CPU-s · OmenCommandCenterBackground.exe 3,8 CPU-s — 1,84 Kerne  · profiband.K5#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +25) — zuletzt an 2d5f4146: Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 7,4 CPU-s · bash.exe w4/wache-k10.sh 6,2 CPU-s · Claude.exe --type=renderer --user-data-dir=claud · profiband.K5#2 gtx: Station seit der Messung geändert — zuletzt an 78d37554: Fremd-Last: AppHelperCap.exe 29,0 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 5,9 CPU-s · OmenCommandCenterBackground.exe 3,8 CPU-s — 1,84 Kerne ",
+   "beleg": "Maschine: 0 — offen: profiband.K5#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +25) — zuletzt an 2d5f4146: Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 5,0 CPU-s · node.exe punkte/punkte.cjs buchen --kopf 2d5f414637a834dec1a5b816af5860709513a303 4,3 · profiband.K5#1 gtx: Station seit der Messung geändert — zuletzt an 78d37554: Fremd-Last: AppHelperCap.exe 29,0 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 5,9 CPU-s · OmenCommandCenterBackground.exe 3,8 CPU-s — 1,84 Kerne  · profiband.K5#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +25) — zuletzt an 2d5f4146: Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 5,0 CPU-s · node.exe punkte/punkte.cjs buchen --kopf 2d5f414637a834dec1a5b816af5860709513a303 4,3 · profiband.K5#2 gtx: Station seit der Messung geändert — zuletzt an 78d37554: Fremd-Last: AppHelperCap.exe 29,0 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 5,9 CPU-s · OmenCommandCenterBackground.exe 3,8 CPU-s — 1,84 Kerne ",
    "stationen": [
     {
      "id": "profiband.K5#1",
@@ -2806,7 +2805,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +25) — zuletzt an 2d5f4146: Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 7,4 CPU-s · bash.exe w4/wache-k10.sh 6,2 CPU-s · Claude.exe --type=renderer --user-data-dir=claud",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +25) — zuletzt an 2d5f4146: Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 5,0 CPU-s · node.exe punkte/punkte.cjs buchen --kopf 2d5f414637a834dec1a5b816af5860709513a303 4,3",
      "ungemessen": true
     },
     {
@@ -2824,7 +2823,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +25) — zuletzt an 2d5f4146: Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 7,4 CPU-s · bash.exe w4/wache-k10.sh 6,2 CPU-s · Claude.exe --type=renderer --user-data-dir=claud",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +25) — zuletzt an 2d5f4146: Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 5,0 CPU-s · node.exe punkte/punkte.cjs buchen --kopf 2d5f414637a834dec1a5b816af5860709513a303 4,3",
      "ungemessen": true
     },
     {
@@ -2936,7 +2935,7 @@
   },
   "siedlung.K1": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 1 von 8 Gängen Tür → Keller → Dachboden ganz, Hub max 0.20 m, Anti-Clip-Hub 0 an 6aa7a5a6 headless — offen: siedlung.K1#2 radeon: Station seit der Messung geändert — zuletzt an 2d5f4146: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 18 von 18 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.20 m · Innen-Bild 0 von 18 lesbar (Plan 18), innen ÷  · siedlung.K1#2 gtx: Station seit der Messung geändert — zuletzt an 2d5f4146: Deckel 70 s gerissen: Stille seit 70 s nach 70 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN",
+   "beleg": "Maschine: gehalten: 1 von 8 Gängen Tür → Keller → Dachboden ganz, Hub max 0.20 m, Anti-Clip-Hub 0 an 6aa7a5a6 headless — offen: siedlung.K1#2 radeon: Station seit der Messung geändert — zuletzt an 2d5f4146: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen · siedlung.K1#2 gtx: Station seit der Messung geändert — zuletzt an 2d5f4146: Deckel 70 s gerissen: Stille seit 70 s nach 70 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN",
    "stationen": [
     {
      "id": "siedlung.K1#1",
@@ -2953,7 +2952,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 2d5f4146: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 18 von 18 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.20 m · Innen-Bild 0 von 18 lesbar (Plan 18), innen ÷ ",
+     "grund": "Station seit der Messung geändert — zuletzt an 2d5f4146: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
      "ungemessen": true
     },
     {
@@ -2977,7 +2976,7 @@
      "gruen": true,
      "zahl": "Z1 7/8 Saaten · Boot-Seed anazh-realm-seed: Stadt -2,-6 nH 35 1424 m vom Genesis-Ort · Mauer 21 Segmente/3 Türme, Pool 48 · Schuss vom acker 103 m vor der Mitte, 3.4 m höher · ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 103.23 m · Luma 35.8 σ 16.3 schwarz 0.0 % weiß 0.0 % ·",
      "sha": "71ef6a0da8c1c3df64519e50c591010b7f561339",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-settlement.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +24) — zuletzt an 2d5f4146: Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ DAEMMERUNG)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-settlement.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +24) — zuletzt an 2d5f4146: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
      "gehalten": true
     },
     {
@@ -2995,7 +2994,7 @@
      "gruen": true,
      "zahl": "ZIPF ζ 1.022 [0.956; 1.158] über 8 Saaten, Mauer und Graph 7/7 · Boot-Seed anazh-realm-seed: Stadt -2,-6 nH 35 · Mauer 21 Segmente, Pool 48 · mittags ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild Uhr 0.5 · Dämmerung ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild Uhr 0.25 (Exit 0)",
      "sha": "71ef6a0da8c1c3df64519e50c591010b7f561339",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-settlement.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +24) — zuletzt an 2d5f4146: Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ DAEMMERUNG)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-settlement.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +24) — zuletzt an 2d5f4146: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
      "gehalten": true
     },
     {
@@ -3075,7 +3074,7 @@
      "gruen": true,
      "zahl": "nH 12 erstes Haus nach 304.7 ms (haus_tudor, huelle in 213.8 m, Bau-Hash 59e4fc62) · nH 300 erstes Haus nach 246 ms (haus_tudor, mesh in 49.5 m, Bau-Hash 84121d20)",
      "sha": "e475c6b4ef837565b3c741f0da3daa79e303a8c0",
-     "grund": "Station seit der Messung geändert — zuletzt an 2d5f4146: Frist der Probe 14 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: nH 12 erstes Haus nach 299.4 ms (haus_tudor, huelle in 216.2 m, Bau-Hash 59e4fc62) · nH 300 erstes Haus nach — (kein Haus, Bau-H",
+     "grund": "Station seit der Messung geändert — zuletzt an 2d5f4146: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
      "gehalten": true
     },
     {
@@ -3093,7 +3092,7 @@
      "gruen": true,
      "zahl": "nH 12 erstes Haus nach 304.7 ms (haus_tudor, huelle in 213.8 m, Bau-Hash 59e4fc62) · nH 300 erstes Haus nach 246 ms (haus_tudor, mesh in 49.5 m, Bau-Hash 84121d20)",
      "sha": "e475c6b4ef837565b3c741f0da3daa79e303a8c0",
-     "grund": "Station seit der Messung geändert — zuletzt an 2d5f4146: Frist der Probe 14 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: nH 12 erstes Haus nach 299.4 ms (haus_tudor, huelle in 216.2 m, Bau-Hash 59e4fc62) · nH 300 erstes Haus nach — (kein Haus, Bau-H",
+     "grund": "Station seit der Messung geändert — zuletzt an 2d5f4146: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
      "gehalten": true
     },
     {
@@ -3230,7 +3229,7 @@
      "gruen": true,
      "zahl": "bild-diff 0.69 % (Soll ≤ 1; Rauschen ohne Neuladen 0.19 %) · Pflicht vor {\"bau\":true,\"grube\":true,\"wasser\":2} · nach {\"bau\":true,\"grube\":true,\"wasser\":2} · [linse-gpu] amd/rdna-3",
      "sha": "e475c6b4ef837565b3c741f0da3daa79e303a8c0",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +24) — zuletzt an 2d5f4146: Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 14,4 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=c",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +24) — zuletzt an 2d5f4146: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
      "gehalten": true
     },
     {
@@ -3505,7 +3504,7 @@
      "gruen": true,
      "zahl": "Frame p95 Median 42.1 ms (42.1 · 42 · 42.2) · CPU-Takt p95 26.1 · 25.2 · 24.7 ms · die Welt steht nach 9 · 8.9 · 8.9 s · Bauten sonst 0/0/0 · 3 von 3 gültig · TAKT: _loopVoxelStreaming › _runFrameScheduler x9 | TAKT: verteilt x4 · [linse-gpu] amd/rdna-3",
      "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Station seit der Messung geändert — zuletzt an 2d5f4146: Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: SPRUNG 1 EXIT=0 {\"m\":1000,\"stehtS\":36.9,\"bau\":0,\"frames\":1424,\"frameMs\":{\"p50\":25.12,\"p95\":41.82,\"p99\":58.54,\"max\":158.75},\"taktMs\":{\"p50\":22.29,\"p",
+     "grund": "Station seit der Messung geändert — zuletzt an 2d5f4146: Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
      "gehalten": true
     },
     {
@@ -3601,7 +3600,7 @@
   },
   "studios.K2": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Undo wirkt in 8/8 Studios, Redo ungeprobt (der Gang fährt nur Strg+Z) an 6aa7a5a6 headless — offen: studios.K2#2 radeon: Station seit der Messung geändert — zuletzt an 2d5f4146: Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: p95 Griff → Bild unter der Schranke in 0/8 (Gesetz-Wert höchstens 11 ms portale, Neubau höchstens 1258 ms fachwerk, je Studio nu · studios.K2#2 gtx: ROT: p95 Griff → Bild unter der Schranke in 6/8 (Gesetz-Wert höchstens 14 ms portale, Neubau höchstens 4295 ms koerperstudio, je Studio 5 Griffe) · Neuladen 8/8 · A/B 8/8 · ROT trotz Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 23,0 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 9,2 CPU-s · RuntimeBroker.exe -Embedding 8,8 CPU-s — 1,28 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon; Σ fremd 82,3 CPU-s in 149,6 s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 46,7 CPU-s · svchost.exe 20,0 CPU-s · SearchIndexer.exe 1,6 CPU-s) — geeicht ÷ 1,072 (1 + 5,6 % je fremdem Kern × 1,28): fachwerk Neubau p95 ms 1371 → geeicht 1279 (Soll ≤ 1000) · koerperstudio Neubau p95 ms 4295 → geeicht 4007 (Soll ≤ 1000) an 2d5f4146",
+   "beleg": "Maschine: gehalten: Undo wirkt in 8/8 Studios, Redo ungeprobt (der Gang fährt nur Strg+Z) an 6aa7a5a6 headless — offen: studios.K2#2 radeon: Station seit der Messung geändert — zuletzt an 2d5f4146: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen · studios.K2#2 gtx: ROT: p95 Griff → Bild unter der Schranke in 6/8 (Gesetz-Wert höchstens 14 ms portale, Neubau höchstens 4295 ms koerperstudio, je Studio 5 Griffe) · Neuladen 8/8 · A/B 8/8 · ROT trotz Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 23,0 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 9,2 CPU-s · RuntimeBroker.exe -Embedding 8,8 CPU-s — 1,28 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon; Σ fremd 82,3 CPU-s in 149,6 s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 46,7 CPU-s · svchost.exe 20,0 CPU-s · SearchIndexer.exe 1,6 CPU-s) — geeicht ÷ 1,072 (1 + 5,6 % je fremdem Kern × 1,28): fachwerk Neubau p95 ms 1371 → geeicht 1279 (Soll ≤ 1000) · koerperstudio Neubau p95 ms 4295 → geeicht 4007 (Soll ≤ 1000) an 2d5f4146",
    "stationen": [
     {
      "id": "studios.K2#1",
@@ -3618,7 +3617,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 2d5f4146: Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: p95 Griff → Bild unter der Schranke in 0/8 (Gesetz-Wert höchstens 11 ms portale, Neubau höchstens 1258 ms fachwerk, je Studio nu",
+     "grund": "Station seit der Messung geändert — zuletzt an 2d5f4146: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
      "ungemessen": true
     },
     {
@@ -3633,7 +3632,7 @@
   },
   "studios.K3": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Dreiecke ±5 % gegen renderer.info in 7/7 Mesh-Studios (20 Stufen, größte Abweichung 0.0 %) an 6aa7a5a6 headless — offen: studios.K3#2 radeon: Station seit der Messung geändert — zuletzt an 2d5f4146: Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Dreiecke, Befehle, VRAM und GPU-ms ±5 % in 0/7 Mesh-Studios (0 Stufen), Klang 8/8 Orte im Quantum (Audio-Graph höchstens 0.083 m · studios.K3#2 gtx: Station seit der Messung geändert — zuletzt an 2d5f4146: Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 23,0 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=c",
+   "beleg": "Maschine: gehalten: Dreiecke ±5 % gegen renderer.info in 7/7 Mesh-Studios (20 Stufen, größte Abweichung 0.0 %) an 6aa7a5a6 headless — offen: studios.K3#2 radeon: Station seit der Messung geändert — zuletzt an 2d5f4146: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen · studios.K3#2 gtx: Station seit der Messung geändert — zuletzt an 2d5f4146: Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 23,0 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=c",
    "stationen": [
     {
      "id": "studios.K3#1",
@@ -3650,7 +3649,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 2d5f4146: Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Dreiecke, Befehle, VRAM und GPU-ms ±5 % in 0/7 Mesh-Studios (0 Stufen), Klang 8/8 Orte im Quantum (Audio-Graph höchstens 0.083 m",
+     "grund": "Station seit der Messung geändert — zuletzt an 2d5f4146: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
      "ungemessen": true
     },
     {
@@ -3865,7 +3864,7 @@
   },
   "tore.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: tore.K1#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +24) — zuletzt an 2d5f4146: Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 0,7 CPU-s · bash.exe w4/pm-nach-main.sh w27-studio-mesh-pm w27-studio-mesh 0,4 CPU-s · Claude.exe · tore.K1#1 gtx: ROT: t ego 4109 · third 6859 · ego — · third 3769 · ego 6560 ms (Soll ≤ 2000) · Luma min 0.043 · Frame max 396 ms · Geburt 10294 ms · rot: #1 ego b3ab675f→68349b03: t 4109 ms, 105 Bilder schwarz und 0 weiß (Luma 0.043–0.315), 17 Frames über 100 ms (bis 289); #2 third 68349b03→b3ab675f: t 6859 ms, 210 Bilder schwarz und 0 weiß (Luma 0.043–0.515), 28 Frames über 100 ms (bis 366), 3 Welt-Wechsel; #3 ego b3ab675f→68349b03: t ohne sichtbare Eingabe, 145 Bilder schwarz und 0 weiß (Luma 0.043–0.301), 17 Frames über 100 ms (bis 318); #4 third 68349b03→b3ab675f: t 3769 ms, 29 Bilder schwarz und 0 weiß (Luma 0.043–0.531), 20 Frames über 100 ms (bis 396); #5 ego b3ab675f→68349b03: t 6560 ms, 254 Bilder schwarz und 0 weiß (Luma 0.043–0.311), 22 Frames über 100 ms (bis 299), 3 Welt-Wechsel · es hielt (#2 bei 6402 ms): der Horizont wird geteilt · ROT trotz Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 8,2 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 6,0 CPU-s · LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio 1,5 CPU-s — 0,53 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon; Σ fremd 21,0 CPU-s in 48,4 s · Gerät (Grund-Last, nie fremd) svchost.exe 6,1 CPU-s · MsMpEng.exe 4,3 CPU-s · SearchIndexer.exe 0,3 CPU-s) — geeicht ÷ 1,03 (1 + 5,6 % je fremdem Kern × 0,53): #1 ego t ms 4109 → geeicht 3989 (Soll ≤ 2000) · #1 ego Frame max ms 289 → geeicht 280,6 (Soll ≤ 100) · #2 third t ms 6859 → geeicht 6659 (Soll ≤ 2000) an 2d5f4146",
+   "beleg": "Maschine: 0 — offen: tore.K1#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +24) — zuletzt an 2d5f4146: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen · tore.K1#1 gtx: ROT: t ego 4109 · third 6859 · ego — · third 3769 · ego 6560 ms (Soll ≤ 2000) · Luma min 0.043 · Frame max 396 ms · Geburt 10294 ms · rot: #1 ego b3ab675f→68349b03: t 4109 ms, 105 Bilder schwarz und 0 weiß (Luma 0.043–0.315), 17 Frames über 100 ms (bis 289); #2 third 68349b03→b3ab675f: t 6859 ms, 210 Bilder schwarz und 0 weiß (Luma 0.043–0.515), 28 Frames über 100 ms (bis 366), 3 Welt-Wechsel; #3 ego b3ab675f→68349b03: t ohne sichtbare Eingabe, 145 Bilder schwarz und 0 weiß (Luma 0.043–0.301), 17 Frames über 100 ms (bis 318); #4 third 68349b03→b3ab675f: t 3769 ms, 29 Bilder schwarz und 0 weiß (Luma 0.043–0.531), 20 Frames über 100 ms (bis 396); #5 ego b3ab675f→68349b03: t 6560 ms, 254 Bilder schwarz und 0 weiß (Luma 0.043–0.311), 22 Frames über 100 ms (bis 299), 3 Welt-Wechsel · es hielt (#2 bei 6402 ms): der Horizont wird geteilt · ROT trotz Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 8,2 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 6,0 CPU-s · LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio 1,5 CPU-s — 0,53 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon; Σ fremd 21,0 CPU-s in 48,4 s · Gerät (Grund-Last, nie fremd) svchost.exe 6,1 CPU-s · MsMpEng.exe 4,3 CPU-s · SearchIndexer.exe 0,3 CPU-s) — geeicht ÷ 1,03 (1 + 5,6 % je fremdem Kern × 0,53): #1 ego t ms 4109 → geeicht 3989 (Soll ≤ 2000) · #1 ego Frame max ms 289 → geeicht 280,6 (Soll ≤ 100) · #2 third t ms 6859 → geeicht 6659 (Soll ≤ 2000) an 2d5f4146",
    "stationen": [
     {
      "id": "tore.K1#1",
@@ -3873,7 +3872,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +24) — zuletzt an 2d5f4146: Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 0,7 CPU-s · bash.exe w4/pm-nach-main.sh w27-studio-mesh-pm w27-studio-mesh 0,4 CPU-s · Claude.exe",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +24) — zuletzt an 2d5f4146: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
      "ungemessen": true
     },
     {
@@ -3896,7 +3895,7 @@
      "gruen": true,
      "zahl": "30/30 Ring-Welten × Teile byte-gleich vor dem Tor · drüben · daheim (skeleton Apertur, fluid Apertur, terrain Apertur, garage Apertur, portale Apertur, schmiede Apertur, fachwerk Apertur, klang E, koerperstudio E, tetrapoda E)",
      "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Station seit der Messung geändert — zuletzt an 2d5f4146: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine K8-Tafel (Exit 2)) · Täter: @@PUNKTE@@ FEHLER TypeError: r._genesisPortalRing is not a function |     at evaluate (evaluate at t",
+     "grund": "Station seit der Messung geändert — zuletzt an 2d5f4146: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
      "gehalten": true
     },
     {
@@ -3914,7 +3913,7 @@
      "gruen": true,
      "zahl": "leib 10/10 · inventar 10/10 · wield 10/10 · reittier 10/10 · werk 10/10 Ziel-Seiten byte-gleich vor dem Tor · drüben · daheim",
      "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Station seit der Messung geändert — zuletzt an 2d5f4146: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine K8-Tafel (Exit 2)) · Täter: @@PUNKTE@@ FEHLER TypeError: r._genesisPortalRing is not a function |     at evaluate (evaluate at t",
+     "grund": "Station seit der Messung geändert — zuletzt an 2d5f4146: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
      "gehalten": true
     },
     {
@@ -4116,7 +4115,7 @@
   },
   "vegetation.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 42 Häuser des Start-Dorfs, 47/51 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 57343 px; ungemessen (ohne freies Auge) haus_skandinavisch 3-0 haupt · haus_provenzalisch 23-0 haupt · haus_italienisch 27-0 haupt · haus_provenzalisch 41-0 haupt an b3f9ae95 radeon · gehalten: 42 Häuser des Start-Dorfs, 47/51 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 57041 px; ungemessen (ohne freies Auge) haus_skandinavisch 3-0 haupt · haus_provenzalisch 23-0 haupt · haus_italienisch 27-0 haupt · haus_provenzalisch 41-0 haupt an b3f9ae95 gtx — offen: vegetation.K4#2 radeon: Station seit der Messung geändert — zuletzt an 2d5f4146: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 1.2 s) · vegetation.K4#2 gtx: Station seit der Messung geändert — zuletzt an 2d5f4146: Deckel 139 s gerissen: Stille seit 128.8 s nach 139 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 10.0 s)",
+   "beleg": "Maschine: gehalten: 42 Häuser des Start-Dorfs, 47/51 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 57343 px; ungemessen (ohne freies Auge) haus_skandinavisch 3-0 haupt · haus_provenzalisch 23-0 haupt · haus_italienisch 27-0 haupt · haus_provenzalisch 41-0 haupt an b3f9ae95 radeon · gehalten: 42 Häuser des Start-Dorfs, 47/51 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 57041 px; ungemessen (ohne freies Auge) haus_skandinavisch 3-0 haupt · haus_provenzalisch 23-0 haupt · haus_italienisch 27-0 haupt · haus_provenzalisch 41-0 haupt an b3f9ae95 gtx — offen: vegetation.K4#2 radeon: Station seit der Messung geändert — zuletzt an 2d5f4146: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen · vegetation.K4#2 gtx: Station seit der Messung geändert — zuletzt an 2d5f4146: Deckel 139 s gerissen: Stille seit 128.8 s nach 139 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 10.0 s)",
    "stationen": [
     {
      "id": "vegetation.K4#1",
@@ -4124,7 +4123,7 @@
      "gruen": true,
      "zahl": "42 Häuser des Start-Dorfs, 47/51 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 57343 px; ungemessen (ohne freies Auge) haus_skandinavisch 3-0 haupt · haus_provenzalisch 23-0 haupt · haus_italienisch 27-0 haupt · haus_provenzalisch 41-0 haupt",
      "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Station seit der Messung geändert — zuletzt an 2d5f4146: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 1.2 s)",
+     "grund": "Station seit der Messung geändert — zuletzt an 2d5f4146: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
      "gehalten": true
     },
     {
@@ -4142,7 +4141,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 2d5f4146: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 1.2 s)",
+     "grund": "Station seit der Messung geändert — zuletzt an 2d5f4146: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
      "ungemessen": true
     },
     {
@@ -4368,7 +4367,7 @@
   },
   "pflicht.E": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: pflicht.E#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +25) — zuletzt an 2d5f4146: die Fahrt riss 1800 s (vor tore.K3#1) — offen, UNGEMESSEN · pflicht.E#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +25) — zuletzt an 87537d3f: die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
+   "beleg": "Maschine: 0 — offen: pflicht.E#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +25) — zuletzt an 2d5f4146: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen · pflicht.E#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +25) — zuletzt an 87537d3f: die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
    "stationen": [
     {
      "id": "pflicht.E#1",
@@ -4376,7 +4375,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +25) — zuletzt an 2d5f4146: die Fahrt riss 1800 s (vor tore.K3#1) — offen, UNGEMESSEN",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +25) — zuletzt an 2d5f4146: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen",
      "ungemessen": true,
      "beide": true
     },
@@ -4393,24 +4392,9 @@
    ]
   }
  },
- "rueckfall": [
-  "fahrzeug.K2#1 radeon: in 3 Teilen · Route 2440 m (Weg 99.1 %), gefahren 1138 m · Steckenbleiber 1 · über 0,8 · Bezug 82.4 % von 6480 Sim-Schritten (Bezug Ø 44.2 km/h, vmax 229.8 km/h) · Boden Wiese 54.7 % / Wald 14.2 % / Dorf 31.1 % · außer Soll: an, steck · Exit 1 an 2d5f4146 (grün gebucht an e475c6b4)",
-  "ferne.K3#1 radeon: Kohärenz 0.3713 über 273 Kamm-Spalten 0,4–4 km (Soll < 0,3; REF real-mischwald 0,160), Umriss-Schwankung 6.41 m über 256 Spalten 1,5–2,5 km (Soll ≥ 3 m), Relief über dem Gesetz 2.8491 m, Azimut 180° · Ort [-841,-861] · 1.11 s · [linse-gpu] amd/rdna-3 an 2d5f4146 (grün gebucht an 067bd771)",
-  "gelaende.K3#1 radeon: spiegelTreue 0.47 (wasserSatz 21242 px, spiegelEbene 1.277) in 1920×1080, Pose = Kamera des Spiels, Ziel auf dem Wasser in 55.1 m (Gier-Versatz 0°), ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Wasser im Bild frei 55.05 m · Luma 87.1 σ 34.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.246 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 an 2d5f4146 (grün gebucht an e475c6b4)",
-  "haar.K5#1 radeon: Lauf: eval: {\"ms\":2002,\"fehler\":\"Cannot read properties of undefined (reading 'size')\",\"stapel\":[\"LC.getArrayBufferAsync (http://localhost:7804/vendor/three.webgpu.min.js:6:581380)\",\"VC.getArrayBufferAsync (http://localhost:7804/vendor/three.webgpu.min.js:6:599310)\",\"at lies (evaluate at lade (C:\\\\Users\\\\micha\\ an 2d5f4146 (grün gebucht an e475c6b4)",
-  "lod.K4#1 radeon: Luma-Sprung 7.13 % (Soll < 2 %) über 13894 px, die der Wechsel ändert (Auge 4 m; die Klassen zusammen), zweiton 0/0, Uhr 0.5 · Ort [-841,-861] · 0.89 s · [linse-gpu] amd/rdna-3 an 2d5f4146 (grün gebucht an 067bd771)",
-  "material.K1#1 radeon: Welt/Labor 0,9–1,1: 6/13 · im realen Band beidseits: 10/13 — rinde 1.7819 ∉ [0.07, 0.12] L 0.0894 W 0.1593 · fels 0.7353 · boden 1.1683 · tor 0.1917 ∉ [0.25, 0.95] L 0.6496 W 0.1245 · haut 2.4859 · haar 11.9316 · klinge 0.7946 ∉ [0.3, 0.95] L 0.3452 W 0.2743 · echt beide Seiten · [linse-gpu] amd/rdna-3 an 2d5f4146 (grün gebucht an e475c6b4)",
-  "material.K1#2 radeon: Karte Welt 0.1803 · Labor terrain 0.1799, garage 0.18, portale 0.1799, schmiede 0.18, fachwerk 0.1799, koerperstudio 0.1799, tetrapoda 0.1799 · Soll 0.18 ± 0.003 · Zeilen NICHT alle im Soll und Band · echt beide Seiten · [linse-gpu] amd/rdna-3 an 2d5f4146 (grün gebucht an e475c6b4)",
-  "material.K3#2 radeon: haus@0.5 l1 1.007/l2 0.999 · birke@0.5 l1 0.994/karte 1.037 · fichte@0.5 l1 1.041/karte 0.963 · haus@0.27 l1 1.007/l2 0.999 · birke@0.27 l1 1.009/karte 1.053 · fichte@0.27 l1 1.041/karte 0.963 · Fels nur L0 · Soll 0,95–1,05 · [linse-gpu] amd/rdna-3 an 2d5f4146 (grün gebucht an e475c6b4)",
-  "mensch.K4#1 radeon: Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.14 m · third ROT strich 0.5 Soll [1,1] — gesicht 0.5 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei — (irisL 4 px, 0 rein < 2×2, irisR 4 px, 0 rein < 2×2) · lippeL -10.59 [-14, -4] · lippeA 14.9 [4, 14] · hoehleL 11.48 [-12, 0] · hoehleA 2.67 [-2, 6] · haarDeckung 1 [0.9, 1] an 2d5f4146 (grün gebucht an da0e790f)",
-  "schatten.K5#1 radeon: Kontrast 0.989:1 (Soll ≥ 3:1) am Pfosten 2 m von glutbrunnen (7.9246 m vom Spieler, im Pool true, im Blick true, Boden gesehen 0), ohne Pfosten 1.2579, Uhr 0 · Ort [-841,-861] · 1.76 s · [linse-gpu] amd/rdna-3 an 2d5f4146 (grün gebucht an e475c6b4)",
-  "spielgang.K3#1 radeon: HUD deckt 2.86 % (1920×1080, im Spiel) · INP HUD 104 ms (50) · Menü 224 ms (21) an 2d5f4146 (grün gebucht an e475c6b4)",
-  "tiere.K2#2 radeon: Fressen 55.98 s nach dem Riss bei 38 s, am Aas fuchs 30.5 s, baer 24 s · Wolfsrevier wald, Riss 15.5 s, 3 fressen: tier:wolf 11957 px in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.32 m · Luma 52 σ 32 schwarz 0.6 % weiß 0.0 % · Stand 18.546.246 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen an 2d5f4146 (grün gebucht an e475c6b4)",
-  "vegetation.K1#1 radeon: ohne alle Schüsse: /zaehlen: {\"ms\":104,\"fehler\":\"Cannot read properties of undefined (reading 'size')\",\"stapel\":[\"at lies (evaluate at lade (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\werkbank.cjs:502:24), <anonymous>:176:61)\",\"at evaluate (evaluate at lade (C:\\\\Users\\\\micha\\\\AnazhRealm- an 2d5f4146 (grün gebucht an 03300ec8)",
-  "vegetation.K5#2 radeon: ohne alle Schüsse: /bild: {\"ms\":4080,\"fehler\":\"ABNAHME ROT [Ziel Blickziel verdeckt von Natur baum_tanne in 46.03 m] · beweis · Sicht 0.0 % · Ziel Blickziel im Bild VERDECKT 61.46 m · Luma 83.2 σ 41.8 schwarz 0.0 % weiß 0.0 % · Stand 18.546.246 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 — die Aufnahme speichert nich an 2d5f4146 (grün gebucht an e475c6b4)"
- ],
+ "rueckfall": [],
  "kopfVoll": "2d5f414637a834dec1a5b816af5860709513a303",
- "zeit": "2026-11-10T16:55:46.391Z",
+ "zeit": "2026-11-10T17:08:30.887Z",
  "vorher": "2d5f4146",
  "pflicht": {
   "dokument": "docs/PFLICHT-OFFEN.md",
@@ -4486,7 +4470,7 @@
      {
       "station": "ankunft.K1#1",
       "geraet": "radeon",
-      "zeile": "Station seit der Messung geändert — zuletzt an 2d5f4146: die Fahrt riss 1800 s (vor tore.K3#1) — offen, UNGEMESSEN"
+      "zeile": "Station seit der Messung geändert — zuletzt an 2d5f4146: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen"
      },
      {
       "station": "ankunft.K1#1",
@@ -4496,7 +4480,7 @@
      {
       "station": "ankunft.K1#2",
       "geraet": "radeon",
-      "zeile": "Station seit der Messung geändert — zuletzt an 2d5f4146: die Fahrt riss 1800 s (vor tore.K3#1) — offen, UNGEMESSEN"
+      "zeile": "Station seit der Messung geändert — zuletzt an 2d5f4146: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen"
      },
      {
       "station": "ankunft.K1#2",
@@ -4550,7 +4534,7 @@
      {
       "station": "profiband.K1#1",
       "geraet": "radeon",
-      "zeile": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +25) — zuletzt an 2d5f4146: die Fahrt riss 1800 s (vor tore.K3#1) — offen, UNGEMESSEN"
+      "zeile": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +25) — zuletzt an 2d5f4146: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort b"
      },
      {
       "station": "profiband.K1#1",
@@ -4560,7 +4544,7 @@
      {
       "station": "profiband.K2#1",
       "geraet": "radeon",
-      "zeile": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +25) — zuletzt an 2d5f4146: die Fahrt riss 1800 s (vor tore.K3#1) — offen, UNGEMESSEN"
+      "zeile": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +25) — zuletzt an 2d5f4146: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort b"
      },
      {
       "station": "profiband.K2#1",
@@ -4570,7 +4554,7 @@
      {
       "station": "profiband.K3#1",
       "geraet": "radeon",
-      "zeile": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +25) — zuletzt an 2d5f4146: die Fahrt riss 1800 s (vor tore.K3#1) — offen, UNGEMESSEN"
+      "zeile": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +25) — zuletzt an 2d5f4146: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort b"
      },
      {
       "station": "profiband.K3#1",
@@ -4580,7 +4564,7 @@
      {
       "station": "pflicht.E#1",
       "geraet": "radeon",
-      "zeile": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +25) — zuletzt an 2d5f4146: die Fahrt riss 1800 s (vor tore.K3#1) — offen, UNGEMESSEN"
+      "zeile": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +25) — zuletzt an 2d5f4146: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort b"
      },
      {
       "station": "pflicht.E#1",
