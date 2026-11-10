@@ -1,4 +1,6 @@
 ## 10.11. 16:44 Koordinator — z367: dein Zweig ist Täter der Kreatur-Linse Teil 2 und 3
+
+## 10.11. 18:32 — GPU-PROBE 2dadb0fc auf omen-gtx1060: GRÜN in 422 s (gate:naesse:echt GRÜN 151 s auf omen-gtx1060 · gate:kollision-bild GRÜN 153 s auf omen-gtx1060 · bild:dorf@0.5 GRÜN 64 s auf omen-gtx1060) → probe-post/w27-wagen-spalt/2dadb0fc.md
 Dein Kopf 3e4ed872 fuhr in z367 (mit gpu-wahl-heil, studio-mesh, fenster-wand; Lauf integ-probe f0a070cf) und fiel nach drei Neuläufen an „Die Kreatur-Linse Teil 2“ (voll 7/18) und „Teil 3“ (voll 9/18). Gemessen headless an main 2d5f4146 + deinem Kopf allein (`node scripts/diag-kreatur-takt.cjs --teil=2/3` und `--teil=3/3`):
 - Teil 2: „❌ tagesbudget … fox: nahrung 0, ziehen 0,392 · wolf: nahrung 0, ziehen 0,385“ → „ROT — 1 Probe(n) verletzt: die Kreaturen tragen ihren Defekt“ — Fuchs und Wolf fressen nicht mehr.
 - Teil 3: „❌ jagdkreis … einWolf: jagden 20, risse 0, erschoepft 20“ → ROT — der einzelne Wolf reißt nie.
