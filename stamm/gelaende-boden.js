@@ -1288,9 +1288,52 @@ class AnazhRealm_gelaende_boden {
         return this._terrainColumnContextIn(x, z, {});
     }
     // Füll-Variante: der Aufrufer stellt den Behälter (der ctx-lose Heiß-Pfad `_terrainBaseDensityAt` seinen Scratch).
+    // DIE SPALTE EINMAL (w27-ankunft-faden, Lehre 14: einmal statt je Takt): der Kontext ist eine reine Funktion von (x, z) und dem
+    // Stand, den `dichteSpalte` liest — Rausch der Saat, Basis-Höhe, Wasserspiegel, Erbgut, Erdbau (mit ihm der Keller), die
+    // Hydrosphäre und ihre Kacheln. Das Gedächtnis (`_spalten`) hält je Platz (x und z genau, direkt abgebildet auf
+    // SPALTEN_PLAETZE) die Felder des Kerns — welche, nennt der Kern selbst (die Schlüssel einer frischen Spalte); wechselt ein
+    // Stück des Stands, fällt es ganz. Befund kalt (swiftshader, main 6aa7a5a6, 25 s vor dem Weltbild): 34 608 Spalten, 6 130
+    // verschieden — der stehende Leib fragte je Fix-Schritt dieselben fünf (die Mitte und ±FIELD_GRAD_EPS: `_fieldResolveSphere`,
+    // `_fieldGradient`, `_fieldSurfaceBelow`) ~20-mal, 26 234 Rufe, 506 ms Haupt-Faden.
     _terrainColumnContextIn(x, z, out) {
-        globalThis.__gelaendeCore.dichteSpalte(this._gelaende(), x, z, out);
+        const st = this.state;
+        const L = this._gelaende();
+        const G = globalThis.__gelaendeCore;
+        const S = this._spalten || (this._spalten = { v: [], jetzt: [], gen: 0, felder: null, plaetze: [], neu: 0 });
+        const h = st.hydrosphere;
+        const t = st.hydroTiles;
+        const j = S.jetzt;
+        j[0] = L;
+        j[1] = this._voxelNoise;
+        j[2] = st.terrainBaseHeight;
+        j[3] = st.waterLevel;
+        j[4] = this._erbgutCache;
+        j[5] = this._erdbauLage();
+        j[6] = h;
+        j[7] = !!(h && h.ready);
+        j[8] = t;
+        j[9] = t ? t.size : 0;
+        for (let k = 0; k < j.length; k++)
+            if (!Object.is(j[k], S.v[k])) {
+                [S.v, S.jetzt, S.gen] = [j, S.v, S.gen + 1];
+                break;
+            }
+        if (!S.felder) S.felder = Object.keys(G.dichteSpalte(L, x, z, {})).concat("keller");
+        const q = Math.imul((x * 8) | 0, 0x9e3779b1) ^ Math.imul((z * 8) | 0, 0x85ebca77);
+        const i = (q ^ (q >>> 16)) & (AnazhRealm.SPALTEN_PLAETZE - 1);
+        const p = S.plaetze[i] || (S.plaetze[i] = { x: NaN, z: NaN, gen: -1, f: {} });
+        const F = S.felder;
+        if (p.gen === S.gen && Object.is(p.x, x) && Object.is(p.z, z)) {
+            for (let k = 0; k < F.length; k++) out[F[k]] = p.f[F[k]];
+            return out;
+        }
+        G.dichteSpalte(L, x, z, out);
         out.keller = this._kellerLage(x, z);
+        p.x = x;
+        p.z = z;
+        p.gen = S.gen;
+        S.neu++;
+        for (let k = 0; k < F.length; k++) p.f[F[k]] = out[F[k]];
         return out;
     }
 
@@ -3017,6 +3060,9 @@ AnazhRealm.WELT_INSELN = 3;
 // unter dem Ladeschirm auf den Boden des ersten Weltbilds (2 = 5×5 Chunks, `_weltbildLuecken`; auf kienspan zugleich das Ziel).
 AnazhRealm.RING_RAMP_START = 0;
 AnazhRealm.RING_EXIST_FLOOR = 2;
+// Die Plätze des Gedächtnisses der Spalte (`_terrainColumnContextIn`, eine Zweier-Potenz): die fünf Spalten des stehenden Leibs
+// überleben die Spalten, die ein Takt daneben fragt (Saat, Streu, Wiese: einige hundert verschiedene je Takt).
+AnazhRealm.SPALTEN_PLAETZE = 4096;
 // DIE ORT-WAHL eines Plans (K10, `_ortWahl`): Ringe um den Wunsch-Anker (`ringe` × `schrittM` = 128 m, die halbe
 // Siedlungs-Zelle fachwerk `SIEDLUNG.cellM`; auf jedem Ring Orte im Abstand ≤ `schrittM`), der nächste Ort, an dem der Plan
 // jedes Haus trägt (Ort-Faden `ortTraegt`, am Wirt `_ortTraegtWirt`), gewinnt. `grobM`: das Raster des ersten Urteils (die
