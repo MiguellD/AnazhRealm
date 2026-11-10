@@ -2642,13 +2642,41 @@ async function starte() {
                     }
                     return { o, ev };
                 };
+                // DER BODEN DES GERÄTS (w27-belegung-boden, `ZL.bodenAuswerten`): vor dem Lauf die LEERE WebGPU-Leinwand in einer zweiten
+                // Seite DESSELBEN Browsers (dieselben Schalter, derselbe Ursprung), so groß wie die Leinwand des Spiels, mit derselben Spur
+                // — 2 s Anlauf, `sek` s gemessen. Scheitert sie, trägt der Boden den Grund beim Namen, und die Belegung steht UNGEMESSEN.
+                const bodenMessen = async (sek = 6) => {
+                    let p = null;
+                    try {
+                        const masse = await page.evaluate(() => ["width", "height"].map((k) => document.getElementById("world-canvas")[k]));
+                        p = await browser.newPage();
+                        if (page.viewport()) await p.setViewport(page.viewport());
+                        await p.goto(`${ECHT ? ECHT_SEITE : `http://127.0.0.1:${SEITEN_PORT}`}/cores.manifest.json`);
+                        await p.bringToFront();
+                        await p.evaluate(ZL.bodenLeinwand, masse);
+                        await sleep(2000);
+                        const cdp = await p.target().createCDPSession(), ev = [];
+                        cdp.on("Tracing.dataCollected", (e) => ev.push(...e.value));
+                        await cdp.send("Tracing.start", { traceConfig: { includedCategories: ZL.BELEGUNG_SPUR } });
+                        await sleep(sek * 1000);
+                        const komplett = new Promise((r) => cdp.once("Tracing.tracingComplete", r));
+                        await cdp.send("Tracing.end").then(() => komplett);
+                        return Object.assign(ZL.bodenAuswerten(ev), { leinwand: masse, sek });
+                    } catch (e) {
+                        return { quelle: "leere WebGPU-Leinwand", fehler: fehlerText(e).split("\n")[0] };
+                    } finally {
+                        if (p) await p.close().catch(() => {});
+                        await page.bringToFront();
+                    }
+                };
                 const PROBEN = ["blink.user_timing", "disabled-by-default-v8.cpu_profiler", "gpu"];
                 if (req.url === "/lauf") {
+                    const boden = await bodenMessen();
                     const { o, ev } = await laufMitSpur(
                         { sek: Number(b.sek) || 20, ein: b.ein != null ? Number(b.ein) : 30, ruhe: Number(b.ruhe) || 0, regler: b.regler || "frei", wandern: b.wandern },
                         ZL.BELEGUNG_SPUR
                     );
-                    o.belegung = ZL.belegungAuswerten(ev);
+                    o.belegung = ZL.belegungAuswerten(ev, { boden });
                     o.stempel.warnung = stempelWarnung.n;
                     if (o.wetterHalt) o.wetterHalt = wetterUrteil(o.wetterHalt);
                     return send(Object.assign(o, { fehler: fehler.slice(-5) }));
@@ -3414,7 +3442,9 @@ hauptLauf(async () => {
         if (SELBST) {
             selbsttestEnde([...ZL.zweiGipfelSelbsttest(), ...ZL.belegungSelbsttest(), ...buehneSelbsttest()], "die Pass-Teilung trennt zwei Gipfel " +
                 "(rein = der untere, anteilOben genau) und lässt einhöckrige Pässe ganz; die Belegung nennt eine Pflicht-Last je " +
-                "Bild beim Klassen-Namen und lässt vertagbare Zeitgeber im Bild-Fenster GRÜN; die Bühne stellt n Tiere im Ring auf Land, " +
+                "Bild beim Klassen-Namen über dem Boden des Geräts (Spiel ohne Last auf einem schnellen und einem langsamen GRÜN, mit 1,0 ms " +
+                "Last auf beiden ROT, mit 0,3 ms GRÜN, ohne Leer-Messung UNGEMESSEN beim Namen) und lässt vertagbare Zeitgeber im " +
+                "Bild-Fenster GRÜN; die Bühne stellt n Tiere im Ring auf Land, " +
                 "füllt nur auf und bricht ohne Platz laut");
             process.exit(0);
         }
@@ -3431,7 +3461,8 @@ hauptLauf(async () => {
         // Die Wetter-Wache (ein Lauf, der das Wetter nicht hält) und die Belegung enden mit Exit 1 und nennen den Täter.
         const rot = [
             o.wetterHalt?.urteil === "ROT" && `WETTER-WACHE ROT: ${o.wetterHalt.taeter.join(" · ")}`,
-            o.belegung?.urteil === "ROT" && `BELEGUNG ROT: ${o.belegung.befund}`,
+            // UNGEMESSEN (der Boden des Geräts fehlt) urteilt nicht GRÜN: Exit 1 beim Namen wie ROT
+            /^(ROT|UNGEMESSEN)$/.test(o.belegung?.urteil || "") && `BELEGUNG ${o.belegung.urteil}: ${o.belegung.befund}`,
             o.buehnenTiere < Number(opt("--tiere")) && `BÜHNE ROT: ${o.buehnenTiere} von ${opt("--tiere")} Tieren stehen am Ende`,
         ].filter(Boolean);
         if (rot.length) endeMit(JSON.stringify(o, null, 1) + "\n" + rot.join("\n"));
