@@ -40,7 +40,8 @@ while read -r kopf pfad; do
     gd=$(git -C "$u" rev-parse --git-dir 2>/dev/null) || { bleibt=$((bleibt + 1)); echo "bleibt $pfad: kein lesbarer Baum" >>"$L"; continue; }
     t=$(stat -c %Y "$gd/HEAD" 2>/dev/null || echo "$jetzt")
     if [ $(((jetzt - t) / 3600)) -lt "$alter" ]; then bleibt=$((bleibt + 1)); continue; fi
-    if [ -z "$(git -C $R branch -r --contains "$kopf" 2>/dev/null | head -1)" ]; then
+    # schneller Weg zuerst: der Kopf liegt in main; sonst irgendein Zweig auf origin, der ihn enthält
+    if ! git -C $R merge-base --is-ancestor "$kopf" origin/main 2>/dev/null && [ -z "$(git -C $R for-each-ref --count=1 --contains "$kopf" refs/remotes/origin 2>/dev/null)" ]; then
         bleibt=$((bleibt + 1)); echo "bleibt $pfad: Kopf ${kopf:0:8} steht nicht auf origin" >>"$L"; continue
     fi
     if [ -n "$trocken" ]; then weg=$((weg + 1)); echo "ginge $pfad ${kopf:0:8}" >>"$L"; continue; fi

@@ -37,6 +37,8 @@ bereit() {
         git -C $R fetch -q origin "+$ref:refs/remotes/origin/$b" 2>/dev/null
         t=$(git -C $R log -1 --format=%s "$sha" 2>/dev/null)
         case "$t" in Abgabe*) ;; *) continue ;; esac
+        # jede neu gesehene Abgabe steht EINMAL in w3/abgabe.log (der Blick liest ABGABEN und STAU daraus; die alte Abgabe-Wache starb)
+        grep -q " ABGABE $b ${sha:0:8} " "$T/w3/abgabe.log" 2>/dev/null || echo "$(date +%H:%M) ABGABE $b ${sha:0:8} ${t#Abgabe }" >>"$T/w3/abgabe.log"
         git -C $R merge-base --is-ancestor "$sha" origin/main 2>/dev/null && continue
         c=$(bash "$D/ci.sh" "$b" </dev/null 2>&1)
         echo "$c" | grep "Code-Check:" | head -1 | grep -q "completed success" || {
