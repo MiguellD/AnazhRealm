@@ -1,0 +1,98 @@
+{
+ "laeufe": [
+  {
+   "mutante": null,
+   "minuten": 30,
+   "zeilen": 55,
+   "falschN": 6,
+   "falsch": [
+    {
+     "t": 641.8,
+     "text": "Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 48 m südwestlich von dir, weil lebendig am Ort hoch ist (>0.59). (Gesetz Nr. 16 des Nexus; dazu 5 weitere Taten seit der letzten Zeile)",
+     "falsch": [
+      "dazu 4 weitere Tat"
+     ]
+    },
+    {
+     "t": 701.8,
+     "text": "Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 48 m südwestlich von dir, weil lebendig am Ort hoch ist (>0.59). (Gesetz Nr. 16 des Nexus; dazu 5 weitere Taten seit der letzten Zeile)",
+     "falsch": [
+      "dazu 4 weitere Tat"
+     ]
+    },
+    {
+     "t": 941.8,
+     "text": "Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 48 m südwestlich von dir, weil lebendig am Ort hoch ist (>0.59). (Gesetz Nr. 18 des Nexus; dazu 19 weitere Taten seit der letzten Zeile)",
+     "falsch": [
+      "dazu 18 weitere Tat"
+     ]
+    },
+    {
+     "t": 1062.1,
+     "text": "Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 48 m südlich von dir, weil lebendig am Ort hoch ist (>0.59). (Gesetz Nr. 18 des Nexus; dazu 13 weitere Taten seit der letzten Zeile)",
+     "falsch": [
+      "dazu 12 weitere Tat"
+     ]
+    },
+    {
+     "t": 1363.1,
+     "text": "Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 48 m südwestlich von dir, weil lebendig am Ort hoch ist (>0.59). (Gesetz Nr. 18 des Nexus; dazu 5 weitere Taten seit der letzten Zeile)",
+     "falsch": [
+      "dazu 4 weitere Tat"
+     ]
+    },
+    {
+     "t": 1483.5,
+     "text": "Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 48 m südwestlich von dir, weil lebendig am Ort hoch ist (>0.59). (Gesetz Nr. 18 des Nexus; dazu 12 weitere Taten seit der letzten Zeile)",
+     "falsch": [
+      "dazu 6 weitere Tat"
+     ]
+    }
+   ],
+   "abstand": 30,
+   "offen": -14.4,
+   "ohneTat": [],
+   "begleiter": 2,
+   "klassen": {
+    "nexus": 50,
+    "rule:nexus": 330,
+    "llm": 3,
+    "rule:llm": 11,
+    "wunsch": 0,
+    "human": 2,
+    "fern": 157
+   },
+   "beispiele": [
+    "[3 s] Der Nexus färbt den Himmel — überall, aus eigenem Antrieb. (Programm evo_1)",
+    "[521.8 s] Ein Gesetz der Stimmung „hope“ setzt die Kreaturen-Stimmung auf „happy“ — überall, weil hope hoch ist. (Gesetz Nr. 4 der Stimmung „hope“; dazu 3 weitere Taten seit der letzten Zeile)",
+    "[881.8 s] Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 48 m südlich von dir, weil lebendig am Ort hoch ist (>0.59). (Gesetz Nr. 18 des Nexus; dazu 18 weitere Taten seit der letzten Zeile)",
+    "[1242.7 s] Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 48 m südlich von dir, weil lebendig am Ort hoch ist (>0.59). (Gesetz Nr. 18 des Nexus; dazu 5 weitere Taten seit der letzten Zeile)",
+    "[1603.9 s] Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 48 m südwestlich von dir, weil lebendig am Ort hoch ist (>0.59). (Gesetz Nr. 18 des Nexus; dazu 3 weitere Taten seit der letzten Zeile)"
+   ],
+   "verworfen": {
+    "weather rule": 2,
+    "weather@kappe rule": 58,
+    "weather@kappe nexus": 44,
+    "spawn_village@kappe nexus Unbekannter Ort „spawn_creature“": 1,
+    "spawn_creature@kappe nexus": 3,
+    "spawn_village@kappe nexus Unbekannter Ort „weather“": 1,
+    "spawn_creature@kappe nexus Unbekannter Ort „spawn_waterfall“": 1,
+    "spawn_creature@kappe nexus Unbekannter Ort „spawn_creature“": 1,
+    "deposit_life@kappe rule Unbekannter Ort „weather“": 15,
+    "deposit_life rule Unbekannter Ort „weather“": 1,
+    "weather nexus": 2,
+    "deposit_life@kappe rule Unbekannter Ort „spawn_creature“": 15
+   },
+   "rot": [
+    "keine wirkende Tat von wunsch",
+    "6 Zeilen falsch",
+    "falsch [641.8 s] dazu 4 weitere Tat: Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 48 m südwestlich von dir, weil lebendig am Ort hoch ist (>0.59). (Gesetz Nr. 16 des Nexus; dazu 5 weitere Taten seit der letzten Zeile)",
+    "falsch [701.8 s] dazu 4 weitere Tat: Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 48 m südwestlich von dir, weil lebendig am Ort hoch ist (>0.59). (Gesetz Nr. 16 des Nexus; dazu 5 weitere Taten seit der letzten Zeile)",
+    "falsch [941.8 s] dazu 18 weitere Tat: Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 48 m südwestlich von dir, weil lebendig am Ort hoch ist (>0.59). (Gesetz Nr. 18 des Nexus; dazu 19 weitere Taten seit der letzten Zeile)",
+    "falsch [1062.1 s] dazu 12 weitere Tat: Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 48 m südlich von dir, weil lebendig am Ort hoch ist (>0.59). (Gesetz Nr. 18 des Nexus; dazu 13 weitere Taten seit der letzten Zeile)",
+    "falsch [1363.1 s] dazu 4 weitere Tat: Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 48 m südwestlich von dir, weil lebendig am Ort hoch ist (>0.59). (Gesetz Nr. 18 des Nexus; dazu 5 weitere Taten seit der letzten Zeile)",
+    "falsch [1483.5 s] dazu 6 weitere Tat: Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 48 m südwestlich von dir, weil lebendig am Ort hoch ist (>0.59). (Gesetz Nr. 18 des Nexus; dazu 12 weitere Taten seit der letzten Zeile)"
+   ]
+  }
+ ]
+}
