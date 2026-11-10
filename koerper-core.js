@@ -807,7 +807,8 @@
     //   streu   die Streuung des Lappen-Arguments T'·H über die Strähnen EINES Pixels: der Wurf (jit/√3 = 0,115), die Rundung
     //           quer zur Strähne (|shift| × das Mittel von sin über ±rund ≈ 0,06) und die Streuung des Strichs (0,06–0,10 je
     //           Achse im Umkreis eines Pixels, gemessen an den 1215 Strähnen des Stils mittel) — √(0,115² + 0,06² + 0,10²) = 0,17
-    //   kern    die Breite des Filters in Pixeln der Szene (der Zitter der zeitlichen Auflösung legt jedes Pixel über zwei)
+    //   kern    die Breite des Fußabdrucks in Pixeln der Szene, über die die zeitliche Auflösung im Gang mittelt: der Zitter (1),
+    //           die Rekonstruktion (1) und der Weg des Bilds je Takt (seitwärts 1,5 m/s an der Kappe 6,4 m vor dem Auge: 1,4)
     //   radius  der Krümmungs-Radius des Haars im Kopf-Raum (die Kappe des Stils mittel: r × sc = 0,40 × 1,08): über `kern`
     //           Pixel dreht die Kappe ihre Strähnen um kern · Pixel-Meter / Radius — die Ableitung des Halbvektors über den
     //           Fußabdruck (Kaplanyan 2016), sie wächst mit dem Abstand und ist auf Armlänge 0
@@ -823,7 +824,7 @@
             wrap: 0.5,
             kd: 1,
             jit: 0.2,
-            fuss: Object.freeze({ breite: 2.45 * HAAR_STRICH.t, px: Object.freeze([1.5, 4]), streu: 0.17, kern: 2, radius: 0.43, diffus: 1 }),
+            fuss: Object.freeze({ breite: 2.45 * HAAR_STRICH.t, px: Object.freeze([1.5, 4]), streu: 0.17, kern: 4, radius: 0.43, diffus: 1 }),
             R: Object.freeze({ farbe: Object.freeze([0.046, 0.046, 0.046]), shift: -0.1, p: 80 }),
             TRT: Object.freeze({ amt: 0.5, shift: 0.1, p: 20 }),
         }),
@@ -927,7 +928,7 @@
             };
         var rund = HAAR_STRICH.rund,
             strich = 0.08,
-            D = [0, 0.1, 0.2, 0.3, 0.45, 0.6],
+            D = [0, 0.1, 0.2, 0.3, 0.45, 0.6, 0.75, 0.9],
             aus = {};
         [
             ["R", kk.R, 0.2126 * kk.R.farbe[0] + 0.7152 * kk.R.farbe[1] + 0.0722 * kk.R.farbe[2]],
@@ -976,20 +977,22 @@
     // DER SELBSTTEST DES GLANZES UNTER DEM PIXEL (w27-haar-arm-2; Leser: diag-kamera-laub K5 über `lichtSelbsttest`): das Gesetz
     // HAAR_LOOK.kk hält, die Mutanten fallen beim Namen. Die Szene ist die von K6 (gate:kamera-leib:echt): der Prüfplatz, Third, die
     // Kappe 6,4 m vor dem Auge, 1280 × 720 in der Skala der Szene 0,75 — ein Pixel 1,8 cm, die Kappe 8,6 cm Radius (k 0,21), die
-    // Strähne 0,3 Pixel breit (unter 1); das Haar Dunkelbraun (der Ton des Rezepts, 0,0127). Geeicht an der GTX 1050 (78bc6e29,
-    // Kopf je Probe, Soll ≤ 5 %): der Lappen R ohne Fußabdruck flimmert 0,197 — Kopf bis 11,0 %; mit streu 0,17 allein 0,077 — bis
-    // 12,2 %; mit 0,25 0,047 — bis 6,0 %; mit 0,5 0,017 — bis 3,1 % (main an der GTX 1050: bis 3,5 %). HAAR_FLIMMERN_MAX liegt
-    // dazwischen.
+    // Strähne 0,3 Pixel breit (unter 1); das Haar in beiden Tönen der Welt: Dunkelbraun (das Rezept, 0,0127 — dort trägt R das
+    // Flimmern) und Hellgrau (der Anker des Spielers am Prüfplatz, 0,6 — dort TRT, im Ton des Haars). Geeicht an K6 (Kopf je
+    // Probe, Soll ≤ 5 %): dunkel ohne Fußabdruck R 0,197 — GTX 1050 bis 11,0 %; streu 0,17 allein 0,077 — bis 12,2 %; 0,5 0,017 —
+    // bis 3,1 %; grau mit kern 2 TRT 0,058 — Radeon bis 5,5 % (f2311d42, ROT; main dort bis 2,7 %). HAAR_FLIMMERN_MAX liegt
+    // darunter.
     //   1 aufgelöst (unter 0, k 0) steht der Lappen des Vorgängers: sin^p · (p + 2) / 2π, bit-gleich
     //   2 am Prüfplatz flimmert kein Lappen über HAAR_FLIMMERN_MAX
     //   3 die Energie des Bands bleibt (±10 % bei unter 1, ±20 % am Prüfplatz), der Gipfel fällt
     //   Mutanten: ohne Fußabdruck (`fuss` fehlt: der Stand w26) · ohne die Krümmung (kern 0: streu allein) · der Wurf der Strähne
     //   bleibt · die Norm des geweiteten Lappens ohne die Wurzel ((p' + 2) / 2π: das Band verlöre Energie)
-    var HAAR_FLIMMERN_MAX = 0.03;
+    var HAAR_FLIMMERN_MAX = 0.032;
     function haarGlanzSelbsttest() {
         var v = [],
             kk = HAAR_LOOK.kk,
             ton = 0.0127,
+            grau = 0.6,
             kP = 0.018 / (0.198 * kk.fuss.radius),
             pz = function (x) {
                 return (+x).toFixed(4);
@@ -1000,10 +1003,11 @@
             v.push("Haar: aufgelöst steht nicht der Lappen sin^p · (p + 2) / 2π");
         var frei = haarFlimmern(kk, 0, ton, 0),
             fern = haarFlimmern(kk, 1, ton, 0),
-            platz = haarFlimmern(kk, 1, ton, kP);
+            platz = haarFlimmern(kk, 1, ton, kP),
+            hell = haarFlimmern(kk, 1, grau, kP);
         ["R", "TRT"].forEach(function (l) {
-            if (!(platz[l].flimmern <= HAAR_FLIMMERN_MAX))
-                v.push("Haar: der Lappen " + l + " flimmert am Prüfplatz " + pz(platz[l].flimmern) + " > " + HAAR_FLIMMERN_MAX);
+            if (!(platz[l].flimmern <= HAAR_FLIMMERN_MAX && hell[l].flimmern <= HAAR_FLIMMERN_MAX))
+                v.push("Haar: der Lappen " + l + " flimmert am Prüfplatz " + pz(platz[l].flimmern) + " (dunkel) · " + pz(hell[l].flimmern) + " (grau) > " + HAAR_FLIMMERN_MAX);
             if (!(Math.abs(fern[l].energie / frei[l].energie - 1) <= 0.1 && Math.abs(platz[l].energie / frei[l].energie - 1) <= 0.2 && platz[l].gipfel < frei[l].gipfel))
                 v.push("Haar: der Lappen " + l + " hält unter dem Pixel seine Energie nicht (" + pz(frei[l].energie) + " → " + pz(fern[l].energie) + " · " + pz(platz[l].energie) + ")");
         });
@@ -1012,6 +1016,8 @@
         if (!(ohne.R.flimmern > HAAR_FLIMMERN_MAX)) v.push("Haar-Mutante: der Lappen R ohne Fußabdruck bleibt ungenannt (" + pz(ohne.R.flimmern) + ")");
         var flach = haarFlimmern(Object.assign({}, kk, { fuss: Object.assign({}, kk.fuss, { kern: 0 }) }), 1, ton, kP);
         if (!(flach.R.flimmern > HAAR_FLIMMERN_MAX)) v.push("Haar-Mutante: der Lappen R ohne die Krümmung bleibt ungenannt (" + pz(flach.R.flimmern) + ")");
+        var schmal = haarFlimmern(Object.assign({}, kk, { fuss: Object.assign({}, kk.fuss, { kern: 2 }) }), 1, grau, kP);
+        if (!(schmal.TRT.flimmern > HAAR_FLIMMERN_MAX)) v.push("Haar-Mutante: der Lappen TRT im grauen Haar mit kern 2 bleibt ungenannt (" + pz(schmal.TRT.flimmern) + ")");
         var wurf = haarFlimmern(kk, 0, ton, 0, function (g, u, cos2) {
             var h = g.halb / (1 + g.weite);
             return Math.pow(Math.max(1 - cos2, 0), h) * g.norm * Math.sqrt((2 * h + 1.5) / g.fuss);
