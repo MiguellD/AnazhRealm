@@ -277,7 +277,7 @@ jobs:
         # Klasse (cpu · gpu), neben den 2 Puls-Gruppen genau die 20 Plätze des Kontos, hinter dem Kopf-Richter; gate:haus-welt
         # fährt seine 21 Welten in zwei Teilen, die Erst-Zeichnungs-Wand in zwei Teilen, npm und Chrome aus dem Cache. CW (16.10.):
         # die Waage misst — die Mediane der letzten 7 Läufe, die Job-Dauer je Gruppe, der Kopf der Quelle (vorher 6,9 min
-        # angenommen, gemessen bis 12,8 min je Gruppe); 7 CPU-Gruppen (1–7), 11 GPU-Gruppen (8–18), die Fenster-Wand allein in 8.
+        # angenommen, gemessen bis 12,8 min je Gruppe); 7 CPU-Gruppen (1–7), 11 GPU-Gruppen (8–18); die Fenster-Wand urteilt im Zug der echt-Job.
         name: voll ${{ matrix.gruppe }}/18 ${{ matrix.klasse }}
         needs: kopf
         if: needs.kopf.outputs.voll == 'ja'
@@ -1591,6 +1591,14 @@ jobs:
               timeout-minutes: 5
               if: ${{ !cancelled() }}
               run: npm run gate:ziel-zensus
+
+            - name: Fenster-Wand auf der Karte (ein Fenster-Wechsel macht die Welt nie wieder schwarz)
+              timeout-minutes: 5
+              if: ${{ !cancelled() }}
+              # die Zug-Stelle der Wand (R6 Schnitt B): auf swiftshader-Linux riss sie seit z330 in 26 von 43 Jobs nach 900 s im
+              # Pipeline-Bau VOR dem ersten Fenster-Wechsel (protocolTimeout in uferStellen, Laeufer-Zeit statt Verhalten; jedes
+              # Gruen 629-877 s), nie an einem E-Schritt. Auf der Karte am Ufer nach 12 s, die Wand samt Selbsttest-Taeter 20 s.
+              run: npm run gate:fenster-wechsel
 
 
             - name: Nah-Linse auf der Karte (kein Analog-Satz diesseits der Nah-Grenze 64 m)

@@ -3,7 +3,8 @@
 // Ein Fenster-Wechsel (Größe, DPR) lässt keine zerstörte Textur in einer Bindung („Destroyed texture … used in a submit"):
 // die Observer-Diät sieht das neu angelegte Tiefen-Abbild über ihren Vorher-Textur-Wächter (`_diaetVorTextur`).
 //
-// Die Wand fährt den ECHTEN Frame: WebGPU auf swiftshader, das Software-Holz (`?holz=kienspan`) mit der Pixel-Kappe des
+// Die Wand fährt den ECHTEN Frame: WebGPU an der Weiche — im Zug der echt-Job auf der Karte (auf swiftshader-Linux riss sie in
+// 26 von 43 Jobs nach 900 s im Pipeline-Bau vor dem ersten Wechsel), nachts und auf main swiftshader —, das Software-Holz (`?holz=kienspan`) mit der Pixel-Kappe des
 // Holzes nah (1,25 — die Kappe, die ein DPR-Wechsel trifft), am Ufer des Bachs der Mess-Wiese (das Wasser liest das Tiefen-
 // Abbild, dazu das Fern-Wasser), der Spiel-Loop LÄUFT. Je Schritt zählt die Wand gerendete Frames (die GPU-Leine), nie die Uhr:
 //   E1  vergrößern (640×360 → 704×396) — das resize-Ereignis, die Szenen-Tiefe wird neu angelegt
@@ -105,7 +106,7 @@ async function fensterSchritt(o) {
         "K der resize-Handler baut keinen Leser der Szenen-Tiefe neu (die Diät trägt jeden Größenwechsel)",
         stammLib.fehlt(RESIZE_KOPF, LESER_NEUBAU)
     );
-    console.log("=== E — der echte Frame mit laufendem Loop (WebGPU auf swiftshader, kienspan, Kappe 1,25, am Bach) ===");
+    console.log("=== E — der echte Frame mit laufendem Loop (WebGPU an der Weiche, kienspan 1,25, am Bach) ===");
     await server.lausche(0);
     // Erwartet: ES erntet ein Größen-Ziel — die Linse richtet die Meldung selbst (je Phase gezählt), jede andere bleibt ROT.
     const browser = await starteBrowser({ art: "linse", frist: 900000, erwartet: GROESSEN_ZIELE });
