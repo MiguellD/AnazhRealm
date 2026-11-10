@@ -7,7 +7,7 @@ TAKT: Push ab dem ersten Schritt je Schritt „WIP <zweig>: … [skip ci]“ —
 POST: Der Koordinator schreibt dir per git. Lies alle ~30 min und vor jedem Push: `git fetch -q origin koordination && git show origin/koordination:cloud-post/<zweig>.md` (neueste Nachricht oben) und handle danach.
 
 WÄNDE (jeder Zug fiel schon daran):
-- Die DECKE: `scripts/` hat eine Atom-Decke (in `npm run check`). Wer dort wächst, bezahlt im SELBEN Zweig (toten Code, Zwillinge, doppelte Helfer löschen).
+- Die WACHSTUMS-WAND (seit main 20a01782, 10.11.; die Atom-Decke von `scripts/` ist gefallen): `scripts/` + `spec/` dürfen im Fenster des ZUGS höchstens halb so viele Code-Atome wachsen wie das Spiel (`stamm/`, Wurzel-`*.js`, `index.html`, `worlds/`). Dein Zweig druckt nur seinen Stand (`gate:betriebsgesetz`), geurteilt wird an der Summe des Zugs. Presse deshalb nichts mehr für eine Decke. Nenne im Abgabe-Rumpf die Zeile „Wachstum … Prüf +X / Spiel +Y“: ein Linsen-Zweig fährt mit Spiel-Zweigen im selben Zug (z357 fiel allein an Prüf +1672 / Spiel +1217). Die Datei-Decke von 4 000 Zeilen bleibt.
 - Kein `bericht/`-Ordner im Spiel-Zweig (die Zitat-Wand). Kein Eintrag in docs/PFLICHT-OFFEN.md oder im Stand von CLAUDE.md (nur der Schöpfer setzt sie).
 - Keine neue GPU-Probe (die Fahrt-Wand steht bei 1798/1800 s je Karte).
 - Cloud hat keine GPU: swiftshader baut jede Pipeline synchron (42–292 s). Liefere Code + headless Beweis (Zähler, Byte-Diff, Faden-ms, Selbsttest der Linse) — KEINE Welt-Bilder zum Beweis; die Bilder macht der Koordinator auf der Radeon.

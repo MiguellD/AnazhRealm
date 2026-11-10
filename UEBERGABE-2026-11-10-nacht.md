@@ -80,3 +80,35 @@
 - **`heim3-w20-wald-kosten` f5283f22 merget nicht mehr:** Konflikt in `scripts/diag-sicht-arbeit.cjs` schon gegen main fbbeb318, dazu
   fünf gemeinsame Dateien mit w27-takt-streu (z357). Er braucht EINEN Heim-Schnitt nach der Landung von z357 und fährt dann hinter z359
   (K7 war sein einziges ROT). Das ist der erste bereite Hebel nach z357.
+
+## Stand 02:22 (10.11.) — die Wachstums-Wand urteilt jetzt am Zug
+
+- **z356 ist in main: 20a01782 (V18.546.241), darin `w27-decke-wurzel` 828232b1.** Die Atom-Decke von `scripts/` ist gefallen (Schöpfer
+  10.11. 00:03 „Ja, landen“, nur für diesen Zweig). Es urteilt die Wachstums-Wand: `scripts/` + `spec/` ≤ ½ Spiel-Wachstum, in Atomen,
+  im Fenster des ZUGS (`scripts/diag-betriebsgesetz.cjs` Abschnitt 6, gerufen von `zug.cjs` mit `--grund <basis>`). Gebucht ist noch
+  224 am fbbeb318; die Kette `nach-landung2.sh` misst die Radeon weiter und bucht am neuen Kopf.
+- **z357 (`w27-takt-streu` allein) FAHRT ROT 02:02 an genau dieser Wand:** Prüf +1672 bei Spiel +1217, erlaubt 608 (Täter
+  `diag-hitch-telemetrie.cjs` +1234, `diag-chunk-satz.cjs` +396, `diag-altlasten.cjs` +105). Kein Wackler. Statik und Playtest des
+  Kandidaten waren GRÜN.
+- **Die Regel daraus: Züge nach WAND-SUMME bündeln.** Werkzeug ohne LLM: `bash zug/werkzeug-w3/wand-summe.sh <zweig> [<zweig> …]`
+  (misst je Zweig und das Bündel gegen origin/main mit dem Gesetz von main; letzte Zeile BÜNDEL GRÜN/ROT/KONFLIKT; erprobt 02:19 am
+  Bündel von z359). Gemessen gegen 20a01782 (Prüf / Spiel, erlaubt):
+  takt-streu +1672 / +1217 (608, ROT) · boden-nah-2 −10 / +445 · k7-l2-rand −88 / 0 · studio-mesh 0 / +1334 (667) ·
+  heim3-wald-kosten +52 / +3239 gegen seine Basis (1619) · ort-pose +330 / +1156 (578, Zahl der GTX 1050) ·
+  takt-streu + wald-kosten rund +1724 / +4456 (2228, GRÜN).
+- **z358 fährt seit 02:03**, Kandidat dcc33615 (V18.546.242) mit `w27-boden-nah-2`. `w27-stadt-bild` e9ac6f9b fiel heraus: Konflikt in
+  `scripts/werkbank.cjs:653` (main trägt dort w25-stadt-takt-3). **stadt-bild ist zurückgezogen**, sein Inhalt (die Gründung wartet auf
+  den Akt statt auf den Deckel) lebt in `w27-ort-pose` der GTX 1050 auf dem neuen main; die Anker der Spec bleiben wie an main.
+- **z359** startet das Werkzeug `/tmp/claude/w4/z359-buendel.sh` (Aufgabe b776fsy8d) nach z358: `w27-k7-l2-rand` und, wenn seine
+  GPU-Probe am Kopf GRÜN ist, `w27-studio-mesh` da9919e3 (Wand des Bündels −88 / +1334, GRÜN). Danach pusht `pm-nach-main.sh` die
+  Probe-Seite `w27-studio-mesh-pm` nur auf SELBSTTEST GRÜN.
+- **z360 (noch nicht eingestellt):** Champion (opus) baut `w27-wald-kosten-heim` = main + takt-streu + heim3-wald-kosten als Merge (beide
+  Köpfe bleiben Vorfahren), Worktree `/tmp/claude/w4/wald-heim`, meldet „ZUG JA/NEIN“. Dazu `w27-ort-pose`, sobald der Patch der
+  GTX 1050 da ist (sie kann nicht pushen: `git format-patch -1 | gzip -9 | base64 -w0`, dazu Basis, Tree-ID, sha256; ich pushe nur bei
+  gleicher Tree-ID), und `w27-fenster-wand`, wenn dessen Champion „ZUG JA“ meldet. Vor dem Einstellen `wand-summe.sh` über das Bündel,
+  dann `zug-schlange6.sh z359w "z360:<zweige>"`.
+- **Stillstand-Alarm 02:14 an der GTX 1050 war ein Melde-Loch, kein Stillstand:** das Gerät arbeitete, seine Zeilen lagen als Nachricht
+  bei mir. Ich trage sie bei jeder Nachricht sofort in `zug/erledigt.txt` ein (02:03, 02:11, 02:19 stehen).
+- **OMEN:** Bisektion der GPU-ms-Stufe läuft mit Lebenszeichen; erste Linie Täter = Merge b5012e8b (w20-fern-hang), im Zweig bei
+  [11/23] 0ab95ff4 = gut (wiese-ego 23,0 ms). Schließende Zeile `gpu-stufe` steht aus.
+- `zug/brief-gemein.md` nennt jetzt die Wachstums-Wand statt der Decke.
