@@ -123,17 +123,26 @@ function pngLesen(datei) {
     return { w, h, d: out };
 }
 const luma = (u8, i) => 0.2126 * u8[i] + 0.7152 * u8[i + 1] + 0.0722 * u8[i + 2];
-// die Bild-Differenz über der Vereinigung der Masken
-function differenz(lA, mA, lB, mB) {
+// die Bild-Differenz über der Vereinigung der Masken — und JE SEH-KLASSE des Gesetzbuchs (`K`, die Klasse des Stoffs am Pixel der
+// Bühne, `userData.__seh`: glas · metall · stoff · glut, sonst; ein Pixel nur der Welt hat keine): wie viel der Vereinigung jede Klasse
+// trägt und wie viel davon springt — die Linse nennt den Stoff, der die Differenz macht (lokal, swiftshader, garage an der Prüfbühne:
+// Glas 11,6 von 22,3 Punkten, die Scheibe der Welt 65 Luma gegen 28)
+const KLASSEN = ["keine", "glas", "metall", "stoff", "glut", "sonst"];
+function differenz(lA, mA, lB, mB, K) {
     let [u, d, beide] = [0, 0, 0];
+    const je = K ? KLASSEN.map(() => [0, 0]) : null;
     for (let p = 0; p < mA.length; p++) {
         if (!mA[p] && !mB[p]) continue;
         u++;
         if (mA[p] && mB[p]) beide++;
-        if (!mA[p] || !mB[p] || Math.abs(lA[p] - lB[p]) > 18) d++;
+        const schlecht = !mA[p] || !mB[p] || Math.abs(lA[p] - lB[p]) > 18;
+        if (schlecht) d++;
+        if (je) je[K[p]][0]++, schlecht && je[K[p]][1]++;
     }
-    return { anteil: u ? +(d / u).toFixed(4) : null, gestalt: u, beide };
+    const klassen = je && u ? Object.fromEntries(KLASSEN.map((n, i) => [n, { anteil: +(je[i][0] / u).toFixed(4), schlecht: +(je[i][1] / u).toFixed(4) }]).filter(([, v]) => v.anteil > 0)) : null;
+    return { anteil: u ? +(d / u).toFixed(4) : null, gestalt: u, beide, klassen };
 }
+const klassenText = (k) => (k ? " (" + Object.entries(k).map(([n, v]) => n + " " + v.schlecht + "/" + v.anteil).join(" · ") + ")" : "");
 
 // ── DIE BÜHNE: die Studio-Seite im Rahmen einer Gastgeber-Seite — eine zweite Seite derselben Herkunft im Browser der Sitzung;
 // die Gastgeber-Seite liefert die Probe selbst (die Anfrage nach /__k4-<studio>.html beantwortet sie, jede andere geht an den
@@ -246,11 +255,34 @@ const SCHUSS = (o) => {
     // einen Saum fetter als die der Welt (ihr Ziel ist linear und ungeglättet, Pixel-Mitte) — Radeon da0e790f: garage 296 881
     // gegen 295 836 Pixel (0,35 % nur eine Seite), die dünne Klinge der schmiede 30 025 gegen 29 243 (2,6 %, über dem Soll 2,1 %
     // allein aus dem Raster).
+    // DIE SEH-KLASSE JE PIXEL (die Linse der Differenz): die Wurzel allein, jeder Stoff in der Farbe seiner Klasse (glas rot · metall
+    // grün · stoff blau · glut gelb · sonst weiß), über denselben Ausgabe-Weg wie die Maske
+    const FARBE = { glas: 0xff0000, metall: 0x00ff00, stoff: 0x0000ff, glut: 0xffff00 };
+    const tausch = [];
+    let klassenBild;
+    try {
+        nimm((x) => !(x.isMesh && x.visible && unter(x)));
+        wz.traverse((x) => {
+            if (!x.isMesh) return;
+            const seh = x.material && x.material.userData ? x.material.userData.__seh : null;
+            tausch.push([x, x.material]);
+            x.material = new T.MeshBasicMaterial({ color: FARBE[seh] ?? 0xffffff });
+        });
+        [sc.background, sc.fog, R.toneMapping] = [new T.Color(0, 0, 0), null, T.NoToneMapping];
+        R.render(sc, cam);
+        klassenBild = lies();
+    } finally {
+        for (const [x, m] of tausch) x.material.dispose(), (x.material = m);
+        zurueck();
+        [sc.background, sc.fog, R.toneMapping] = [alt.bg, alt.fog, alt.tm];
+    }
     const halb = R.outputColorSpace === "srgb" || R.outputEncoding === 3001 ? 187 : 127;
-    const L = new Uint8Array(o.W * o.H), M = new Uint8Array(o.W * o.H);
+    const L = new Uint8Array(o.W * o.H), M = new Uint8Array(o.W * o.H), KL = new Uint8Array(o.W * o.H);
     for (let p = 0; p < L.length; p++) {
         L[p] = Math.round(0.2126 * bild[p * 4] + 0.7152 * bild[p * 4 + 1] + 0.0722 * bild[p * 4 + 2]);
         M[p] = maske[p * 4] > halb ? 1 : 0;
+        const [r, g, b] = [klassenBild[p * 4] > halb, klassenBild[p * 4 + 1] > halb, klassenBild[p * 4 + 2] > halb];
+        KL[p] = r && g && b ? 5 : r && g ? 4 : r ? 1 : g ? 2 : b ? 3 : 0;
     }
     const b64 = (u) => {
         let s = "";
@@ -263,7 +295,7 @@ const SCHUSS = (o) => {
         k.getContext("2d").putImageData(new ImageData(Uint8ClampedArray.from(bild), o.W, o.H), 0, 0);
         return k.toDataURL("image/png");
     })();
-    return { luma: b64(L), maske: b64(M), png, rad: +rad.toFixed(3), mitte: c.toArray().map((v) => +v.toFixed(3)) };
+    return { luma: b64(L), maske: b64(M), klassen: b64(KL), png, rad: +rad.toFixed(3), mitte: c.toArray().map((v) => +v.toFixed(3)) };
 };
 
 // ── DIE WELT: das Werk setzen (je Studio vom Ort des Spielers beim Start der Probe aus), das Auge an die Pose, takten, bis es
@@ -509,9 +541,9 @@ H.fahre(async function k4Bild(H) {
             }
             const s = await frame().evaluate(SCHUSS, { S, W, H: HOEHE, fov: POSE.fov, lokal: rahmen.lokal });
             WB.pngDatei(path.join(DIR, sid + "-buehne.png"), s.png);
-            const [ls, ms] = [s.luma, s.maske].map((x) => new Uint8Array(Buffer.from(x, "base64")));
+            const [ls, ms, kl] = [s.luma, s.maske, s.klassen].map((x) => new Uint8Array(Buffer.from(x, "base64")));
             z.buehne = { R: s.rad, maske: "gestalt", pixel: ms.reduce((a, v) => a + v, 0) };
-            z.differenz = differenz(lw, kw, ls, ms);
+            z.differenz = differenz(lw, kw, ls, ms, kl);
             teil("schuss");
         } catch (e) {
             z.grund = "ROT: " + String((e && e.message) || e).slice(0, 300);
@@ -522,7 +554,7 @@ H.fahre(async function k4Bild(H) {
             await page.close().catch(() => {});
             await weltSeite.bringToFront().catch(() => {});
             const tl = Object.entries(z.teile).map(([k, v]) => k + " " + v).join(" · ");
-            console.log(`K4 ${sid}: Differenz ${z.differenz ? z.differenz.anteil : "—"} · ${z.grund || ""} (${z.sek} s${tl ? ": " + tl : ""})`);
+            console.log(`K4 ${sid}: Differenz ${z.differenz ? z.differenz.anteil + klassenText(z.differenz.klassen) : "—"} · ${z.grund || ""} (${z.sek} s${tl ? ": " + tl : ""})`);
         }
     }
     const imSoll = STUDIOS.filter((sid) => dOk(aus.studios[sid]));
