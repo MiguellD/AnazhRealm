@@ -3762,13 +3762,16 @@ const ohneStempel = (z) => VERSIONS_STEMPEL.reduce((s, [rx, e]) => s.replace(rx,
 // namen: git diff --no-renames --name-only · diffText: git diff --no-renames -U0 über dieselben Stände → { dateien: die Dateien, deren
 // Bytes ohne Stempel sich änderten (Werkzeug eingeschlossen — welches davon zählt, urteilt frischUrteil je Station) · zeilen: je
 // Text-Datei die geänderten Zeilen am ÄLTEREN Stand [von, bis] (ein Hunk aus reinen Versions-Stempeln fällt; eine reine Einfügung
-// nach Zeile a trifft a und a + 1 — sie liegt nur dann in nie ausgeführtem Code, wenn beide Nachbarn es sind) · neu: angelegte und
-// gelöschte Dateien (ein gelesenes Verzeichnis, konsumTreffer) }
+// nach Zeile a trifft a und a + 1 — sie liegt nur dann in nie ausgeführtem Code, wenn beide Nachbarn es sind; je Hunk `nurKommentar`
+// und `ein`, kommentarHunk) · neu: angelegte und gelöschte Dateien (ein gelesenes Verzeichnis, konsumTreffer) }
 function stempelDiff(namen, diffText) {
     const je = new Map();
     let cur = null, h = null;
+    // je Hunk dazu: bringt er nur Zeilen-Kommentare und Leerzeilen (`nurKommentar` — ob auch die alten Zeilen welche sind, urteilt
+    // kommentarHunk am Text des Mess-SHA), ist er eine reine Einfügung (`ein`)
     const hunkZu = () => {
-        if (h && h.weg.slice().sort().join("\n") !== h.neu.slice().sort().join("\n")) cur.zeilen.push(h.alt);
+        if (h && h.weg.slice().sort().join("\n") !== h.neu.slice().sort().join("\n"))
+            cur.zeilen.push(Object.assign(h.alt, { nurKommentar: h.neu.every((z) => /^\s*(\/\/.*)?$/.test(z)), ein: h.ein }));
         h = null;
     };
     for (const z of String(diffText).split("\n")) {
@@ -3784,7 +3787,7 @@ function stempelDiff(namen, diffText) {
         if (k) {
             hunkZu();
             const [a, n] = [+k[1], k[2] == null ? 1 : +k[2]];
-            h = { weg: [], neu: [], alt: n ? [a, a + n - 1] : [Math.max(1, a), a + 1] };
+            h = { weg: [], neu: [], alt: n ? [a, a + n - 1] : [Math.max(1, a), a + 1], ein: !n };
         } else if (/^(new|deleted) file mode /.test(z)) cur.angelegt = true;
         else if (/^Binary files /.test(z)) cur.bin = true;
         else if (z[0] === "-" || z[0] === "+") {
@@ -3905,11 +3908,15 @@ async function konsumDesLaufs(ordner, baum, sitz) {
 // Ausdruck das letzte Zeichen vor dem Rumpf: es gehört ihr, nie einer Funktion darin). Alles außerhalb jeder Funktion ist der
 // KOPF-CODE des Skripts (Tafeln, Konstanten, Zuweisungen, `module.exports`, Klassen-Felder): er läuft beim Laden — V8 nennt ihn nur,
 // solange die Skript-Funktion lebt (konsum-zeuge.cjs), der Parser immer. Ein Text, den er nicht liest, wirft (die Datei zählt ganz)
+// Dazu `kom`: die Zeilen-Kommentare (//) [von, bis) und `mehr`: was über Zeilen reicht, ohne Code zu sein — Block-Kommentare und
+// Schablonen-Texte (ein `//` darin ist Inhalt, kein Kommentar): der Boden von kommentarHunk
 function funktionenVon(text, acorn) {
-    let ast = null, fehler = null;
+    let ast = null, fehler = null, kom = [], mehr = [];
     for (const sourceType of ["script", "module"]) {
         try {
-            ast = acorn.parse(text, { ecmaVersion: "latest", sourceType, allowHashBang: true, allowReturnOutsideFunction: true, allowAwaitOutsideFunction: true });
+            [kom, mehr] = [[], []];
+            ast = acorn.parse(text, { ecmaVersion: "latest", sourceType, allowHashBang: true, allowReturnOutsideFunction: true, allowAwaitOutsideFunction: true,
+                onComment: (block, _t, a, e) => (block ? mehr : kom).push([a, e]) });
             break;
         } catch (e) {
             fehler = e;
@@ -3922,11 +3929,11 @@ function funktionenVon(text, acorn) {
             let p = n.body.start;
             if (n.body.type !== "BlockStatement") for (p--; p > n.start && /\s/.test(text[p]); ) p--;
             fn.push([n.start, n.end, p]);
-        }
+        } else if (n.type === "TemplateLiteral" || (n.type === "Literal" && typeof n.value === "string" && n.end - n.start > String(n.value).length + 2)) mehr.push([n.start, n.end]);
         for (const k of astKinder(n)) geh(k);
     };
     geh(ast);
-    return fn.sort((x, y) => x[0] - y[0] || y[1] - x[1]);
+    return { fn: fn.sort((x, y) => x[0] - y[0] || y[1] - x[1]), kom: new Map(kom), mehr };
 }
 // der Text eines Skripts mit seinen Funktionen, je Inhalt einmal geparst: { h (6 Hex des Texts), fn, start (Zeilen-Anfänge) } oder { fehler }
 const skriptCache = new Map();
@@ -3936,7 +3943,7 @@ function skriptVon(text, acorn) {
     if (!skriptCache.has(h)) {
         const start = [0];
         for (let i = 0; i < text.length; i++) if (text.charCodeAt(i) === 10) start.push(i + 1);
-        try { skriptCache.set(h, { h: h.slice(0, 6), len: text.length, fn: funktionenVon(text, acorn), start }); } catch (e) { skriptCache.set(h, { h: h.slice(0, 6), fehler: "Parser: " + String(e.message).slice(0, 80) }); }
+        try { skriptCache.set(h, { h: h.slice(0, 6), len: text.length, ...funktionenVon(text, acorn), start, text }); } catch (e) { skriptCache.set(h, { h: h.slice(0, 6), fehler: "Parser: " + String(e.message).slice(0, 80) }); }
     }
     return skriptCache.get(h);
 }
@@ -4083,10 +4090,30 @@ function konsumTreffer(K, d, st, seite, skript) {
             const [h, bits] = s.split(":");
             if (!q || q.fehler || q.h !== h) return true;
             const sp = (q.zeilen = q.zeilen || new Map()).get(bits) || q.zeilen.set(bits, skriptZeilen(q, bits)).get(bits);
-            if (d.zeilen.get(f).some(([a, b]) => sp.some(([x, y]) => a <= y && x <= b))) return true;
+            if (d.zeilen.get(f).some((hunk) => sp.some(([x, y]) => hunk[0] <= y && x <= hunk[1]) && !kommentarHunk(q, hunk))) return true;
         } else if (genannt.has(f)) return true;
         return !seite && !WERKZEUG_PFAD.test(f) && trifftPfad(f, st.pfad);
     });
+}
+// EIN KOMMENTAR FÜHRT NICHTS AUS (10.11.: der Kommentar über einer Funktion ändert sich hier mit ihr — er steht im Kopf-Code und machte
+// jeden Lader des Skripts alt, auch den, der die Funktion nie rief): ein Hunk, der nur Zeilen-Kommentare (//) und Leerzeilen bringt
+// (stempelDiff `nurKommentar`) und am Text des Mess-SHA nur solche ersetzt — oder zwischen zwei Zeilen einfügt —, ändert keinen Lauf.
+// Der Parser nennt die Kommentare (s.kom: Anfang → Ende); in einem Block-Kommentar oder Schablonen-Text (s.mehr) ist `//` Inhalt:
+// dort gilt die Regel nie. s = skriptVon am Mess-SHA, hunk = [von, bis] mit nurKommentar und ein
+function kommentarHunk(s, hunk) {
+    if (!hunk.nurKommentar || !s.kom) return false;
+    const inMehr = (p) => s.mehr.some(([a, e]) => a < p && p < e);
+    const zeile = (z) => [s.start[z - 1], z < s.start.length ? s.start[z] : s.len];
+    // die Einfügung zwischen Zeile a und a + 1: ihre Stelle (der Anfang von a + 1) liegt in keinem Block-Kommentar, keiner Schablone
+    if (hunk.ein) return hunk[1] > s.start.length ? !inMehr(s.len) : !inMehr(zeile(hunk[1])[0]);
+    for (let z = hunk[0]; z <= hunk[1]; z++) {
+        if (z > s.start.length) return false;
+        const [a, e] = zeile(z);
+        let i = a;
+        while (i < e && /\s/.test(s.text[i])) i++;
+        if (inMehr(i < e ? i : a) || (i < e && !s.kom.has(i))) return false;
+    }
+    return true;
 }
 // opt.skript der Buchung: (messSha) → (pfad) → skriptVon des Texts am Mess-SHA aus git (je Blob einmal gelesen und geparst)
 function skripteAm(repo) {
@@ -5706,6 +5733,18 @@ async function selbsttest(o = {}) {
         fall("KONSUM Text von `inSeite` (an die Seite gereicht, im Knoten nie gerufen) geändert → alt → 0", mitK, d("scripts/lib/linse.cjs", 9, 9), 0, /^Konsum/);
         fall("KONSUM Kopf-Code der Linse geändert (die Tafel, `module.exports`) → alt → 0", mitK, d("scripts/lib/linse.cjs", 11, 11), 0, /^Konsum/);
         fall("KONSUM Einfügung im Rumpf von `nein` → frisch → 1", mitK, d("scripts/lib/linse.cjs", 5, 6), 1);
+        // EIN KOMMENTAR FÜHRT NICHTS AUS: ein Hunk aus Zeilen-Kommentaren im Kopf-Code lässt die Station frisch — bringt er Code, nie;
+        // in einem Schablonen-Text ist `//` Inhalt (die Mutante), dort gilt die Regel nie
+        {
+            const kt = "// der Kopf\nconst A = 1;\n// über f\n// zweite Zeile\nfunction f() {\n    return A;\n}\nconst S = `\n// Inhalt\n`;\nmodule.exports = { f, S };\n";
+            const ks = skriptVon(kt, acorn), hk = (a, b, nurKommentar, ein = false) => Object.assign([a, b], { nurKommentar, ein });
+            pruef("KONSUM EIN KOMMENTAR FÜHRT NICHTS AUS: Zeilen-Kommentare ersetzt oder eingefügt → kein Treffer; Code statt Kommentar, ein Kommentar statt Code, `//` im Schablonen-Text (Mutanten) → Treffer",
+                kommentarHunk(ks, hk(3, 4, true)) && kommentarHunk(ks, hk(2, 3, true, true)) && kommentarHunk(ks, hk(11, 12, true, true)) &&
+                !kommentarHunk(ks, hk(3, 4, false)) && !kommentarHunk(ks, hk(2, 2, true)) && !kommentarHunk(ks, hk(9, 9, true)) && !kommentarHunk(ks, hk(8, 9, true, true)),
+                JSON.stringify([[3, 4, true], [2, 3, true, true], [11, 12, true, true], [3, 4, false], [2, 2, true], [9, 9, true], [8, 9, true, true]].map((x) => kommentarHunk(ks, hk(...x)))));
+            const wk = stempelDiff("a.js", ["diff --git a/a.js b/a.js", "@@ -3,2 +3 @@", "-// über f", "-// zweite Zeile", "+// über f, neu", "@@ -6 +5 @@", "-    return A;", "+    return A + 1; // mehr"].join("\n")).zeilen.get("a.js");
+            pruef("KONSUM Diff: der Hunk nennt, ob er nur Zeilen-Kommentare bringt", wk.length === 2 && wk[0].nurKommentar === true && wk[1].nurKommentar === false && !wk[0].ein, JSON.stringify(wk.map((x) => [...x, x.nurKommentar, x.ein])));
+        }
         fall("KONSUM Code ans Ende der Linse angefügt (Kopf-Code) → alt → 0", mitK, d("scripts/lib/linse.cjs", 12, 13), 0, /^Konsum/);
         fall("KONSUM Seite: `nie` geändert → frisch → 1", mitK, d("probe.js", 5, 5), 1);
         fall("KONSUM Seite: `getan` geändert → alt → 0", mitK, d("probe.js", 2, 2), 0, /^Konsum/);
