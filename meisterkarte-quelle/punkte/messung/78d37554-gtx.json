@@ -1,7 +1,7 @@
 {
  "sha": "78d37554b2d5f98d96ef454cfa9f51752c0e45a0",
  "geraet": "gtx",
- "zeit": "2026-11-10T06:06:14.273Z",
+ "zeit": "2026-11-10T06:11:44.432Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "ferne.K1#2": {
@@ -1939,22 +1939,71 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "vegetation.K4#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen: Stille seit 87.9 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 2.0 s)",
+   "exit": 1,
+   "minuten": 1.5,
+   "grund": "Deckel 90 s gerissen: Stille seit 87.9 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 2.0 s)",
+   "s": 90.2,
+   "fremd": {
+    "s": 93.5,
+    "takte": 42,
+    "fremdS": 145.56,
+    "kerne": 1.558,
+    "fensterKerne": 1.851,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      95.8
+     ],
+     [
+      "MsMpEng.exe",
+      16.02
+     ],
+     [
+      "OmenCommandCenterBackground.exe",
+      11.83
+     ]
+    ],
+    "dienerS": 21.58,
+    "diener": [
+     [
+      "System",
+      12.8
+     ],
+     [
+      "WmiPrvSE.exe",
+      4.86
+     ]
+    ],
+    "eigenS": 426.91,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-10T06:11:44.432Z",
+   "abdruck": "8b5a45974dff",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-10T06:05:44.278Z",
+  "start": "2026-11-10T06:11:10.094Z",
   "port": 7804,
-  "warten": 0.01,
+  "warten": 0.02,
   "bootS": 7,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": null,
-    "vor": "tiere.K3#2",
-    "s": 21.6,
-    "takte": 785,
+    "ort": "genesis",
+    "vor": "vegetation.K4#2",
+    "s": 25.8,
+    "takte": 693,
     "chunks": 81,
     "nach": null
    }
@@ -1971,12 +2020,19 @@
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
-   "ortImDeckel": [],
-   "zapfen": 58,
+   "ortImDeckel": [
+    {
+     "probe": "vegetation.K4#2",
+     "m": 298,
+     "ringVor": 4,
+     "ringMin": -1
+    }
+   ],
+   "zapfen": 118,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 70.6,
-  "minuten": 1.23
+  "fahrtS": 125.5,
+  "minuten": 2.15
  }
 }
