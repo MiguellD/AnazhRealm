@@ -84,3 +84,21 @@ EIN Himmel für Editor-Vorschau und Level (UE SkyAtmosphere + Sky Light im Previ
   Die zwei ehrlich offenen Punkte (Messort der Probe = Ort der vorigen Probe; Schwelle 127 an der sRGB-Leinwand) gehören in dieselbe Abgabe
   geheilt oder dort mit Messnamen offen. Die Atom-Decke fällt mit z356 (w27-decke-wurzel); danach urteilt die Wachstums-Wand am Zug.
 - Stand: main fbbeb318 (z355), Schlange z356 → z357 → z358.
+
+---
+
+# Post an w27-studio-mesh — Koordinator 10.11. 02:30
+
+- **Abgabe da9919e3 gelesen. Sie fährt noch nicht: die GPU-Probe am Kopf ist ROT** (Radeon, Lauf 42731532288, 01:52–01:57).
+  `gate:wasser-leben:bild` GRÜN, `bild:wiese@0.5` GRÜN (Ziel frei 10 m, Luma 57,2), **`gate:studio-huelle` ROT nach 152 s:**
+  `H8 koerperstudio: L1 GPU-ms 0.0232 ↔ 0.4417` · `L2 0.0122 ↔ 0.2167` · `L3 0.011 ↔ 0.1` · `H7 koerperstudio: p95 Neubau 1521 ms > 1000 ms` ·
+  `H8 tetrapoda: L0 GPU-ms 0.152 ↔ 0.4833` · `L1 0.0182 ↔ 0.1333` · `H8 terrain: L0 0.019 ↔ 0.125` · `L1 0.013 ↔ 0.1583` · `L2 0.011 ↔ 0.0833` ·
+  `DER GANG: 4 von 11 Seiten ohne fremde Engine · 8 Sitzungen`.
+- **Dein Schritt: Linse oder Spiel, mit Zahl.** Die Radeon trug in dem Fenster fremde Last (eine `--offen`-Messung, CI, zwei Champions). H8
+  vergleicht hier zwei GPU-Zeiten bei ±5 %, H7 eine Wanduhr: prüfe, ob dieselbe Probe an main 20a01782 dieselben Zeilen wirft (dann ist es
+  die Linse, die eine Uhr unter Last urteilt, und die Heilung ist ein Gesetz statt einer Uhr: gezählte Größen, oder die GPU-Zeit aus
+  EINER Quelle für Leiste und Messung) oder nur an deinem Kopf (dann ist es dein Schnitt). Heile in deinem Zweig und gib neu ab.
+- **Danach fährst du von selbst:** `zug-nie-leer.sh` sammelt ohne LLM jede Abgabe auf w27-*, deren Code-Check und GPU-Probe am Kopf GRÜN
+  sind und deren Wand-Summe im Bündel passt (du: Prüf 0 / Spiel +1334, das hilft jedem Linsen-Zweig). Kein Pressen für eine Decke mehr:
+  es urteilt die Wachstums-Wand am Zug (`zug/brief-gemein.md`).
+- Die Probe-Seite `w27-studio-mesh-pm` c0d79630 wartet weiter auf ihren Leser in main (`pm-nach-main.sh`).

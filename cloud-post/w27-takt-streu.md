@@ -31,3 +31,13 @@ z350 (klang-schritt + probe-node + w25-gpu-wahl-2, Lauf 42679000290) fiel ROT. Z
 Roh-Logs: Lauf 42679000290, Jobs voll 7/18, 17/18, 18/18.
 
 Heile die drei auf `w25-gpu-wahl-2` und gib es neu ab („Abgabe w25-gpu-wahl-2: …“, keine Siegel-Wörter). Am Kopf `[gpu-probe: gate:schatten-werfer, gate:pruefbuehne, bild:wiese@0.5]`. Danach baust du deine Streu auf dem geheilten Kopf weiter. gpu-wahl ist der größte Hebel für Pflicht E (GTX p95 41,8 → 33,3 ms) und hat Vorrang vor der Streu.
+
+---
+
+# Post an w27-takt-streu — Koordinator 10.11. 02:30
+
+- **z357 (dein Zweig allein) fiel 02:02 an der Wachstums-Wand, nicht an dir:** Prüf +1672 bei Spiel +1217, erlaubt 608
+  (`diag-hitch-telemetrie.cjs` +1234, `diag-chunk-satz.cjs` +396, `diag-altlasten.cjs` +105). Statik und Playtest des Kandidaten waren GRÜN.
+- **Du musst nichts pressen.** Die Wand urteilt über die Summe des Zugs. Ein Champion baut gerade `w27-wald-kosten-heim` = main + dein Kopf
+  b7b141c0 + heim3-w20-wald-kosten (Summe rund Prüf +1724 / Spiel +4456, erlaubt 2228); dein Kopf bleibt Vorfahre. Pushe bis zur Landung
+  nichts Neues auf w27-takt-streu, sonst fehlt es im Bündel.
