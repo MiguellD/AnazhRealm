@@ -780,14 +780,7 @@ function mergeEinen(z, sha) {
         .map(([d, k]) => `${path.basename(d)} ${Object.entries(k).map(([x, n]) => `${x}${n}`).join("")}`)
         .join(", ");
     git(["commit", "-q", "-m", `${msg}\n\nZug-Auflösung (Klasse a Kommentar · b Karte · c Version · e benachbart · f Leerraum · g Code gegen Kommentar · i Import-Namen): ${body}`.slice(0, 600)], ZUG);
-    // nach (g) fehlt der Kommentar-Seite ihr Abzug: die Decke dieses Merges allein (scripts wächst nie), sonst fällt NUR dieser Zweig
-    if (Object.values(kl).some((k) => k && k.g)) {
-        const d = laufe("node", ["scripts/diag-betriebsgesetz.cjs", "--grund", "HEAD^1", "--kopf", "HEAD"]);
-        if (!d.ok) {
-            git(["reset", "-q", "--hard", "HEAD^1"], ZUG);
-            return { drin: false, grund: `Decke nach Klasse g (der Kommentar-Abzug fiel mit der Code-Seite): ${d.rest}` };
-        }
-    }
+    // die Einzel-Decke je Merge nach Klasse g ist gefallen (10.11., Atom-Decke fällt): die Wachstums-Wand urteilt an der SUMME des Kandidaten (pruef unten)
     return { drin: true, kl };
 }
 function stelleWorktree() {

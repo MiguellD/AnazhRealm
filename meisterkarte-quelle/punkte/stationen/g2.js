@@ -49,7 +49,6 @@ async function vegetationK4Seite(H) {
 }
 const VEGETATION_K4 = seiteProbe(90, vegetationK4Seite, {
     mutiert: true,
-    ausnahme: "die Häuser des Start-Dorfs mit 112 Aufnahmen (Boxen, Third, Gegenprobe), das Haus des Spielers aus der Werkstatt und je Wasser-Ort Ego und Third — die Arbeit der Linse W9 nach der Welt in 1,0–1,8 s (Radeon und GTX seit 07.11. jede Fahrt am 45-s-Deckel gerissen, 87537d3f 45,4 / 45,2 s)",
 });
 
 // R6 der Tier-Gesetze (Zweig tier-gesetz-k5): Kern, Kreatur-Stamm, Leben-Feld, Leib und die Kreatur-Linse
@@ -1717,7 +1716,7 @@ async function platzAcht(r, T) {
 // — die Eich-Fahrt der Radeon am Kopf 399bcd92: 83,3 s (die Probe 53,5 s: das Dorf wächst 12,7 s, die stehende Welt 14,6 s, der Tag
 // 8,5 s, die Wiederkehr 10,6 s; dazu der Platz um 8 Uhr). Bis dahin rechnete der Tag nach `umstellen` aus der Tag-Länge des Halts
 // der Bühne (1e12) und endete nie: beide Urteile rissen 45 s, die Seite blieb belegt, die Sitzung starb (GTX fe57747a, 5fb21e29)
-const BEWOHNER_SITZUNG = { sek: 90, ausnahme: "das Start-Dorf wächst bis 81 Leiber, ihr Tag über 24 Spielstunden zu 0,1 s und die Wiederkehr in 16 Prüf-Stunden, dazu der Platz um 8 Uhr mit 8 Spiel-Sekunden im Takt — Radeon 83,3 s (399bcd92)", befehl: [
+const BEWOHNER_SITZUNG = { sek: 90, befehl: [
     "bash",
     "-c",
     [
@@ -1902,7 +1901,7 @@ const vegetationDeckel = (plan) => {
 const vegetationProbe = (plan, zaehlen = "") => {
     const sek = vegetationDeckel(plan);
     const n = (was) => plan.filter((p) => p[4] === was).length;
-    return { sek, ...(sek > 45 ? { ausnahme: n("krone") + " Schüsse der Krone und " + n("wiese") + " der Wiese je 10 s an einem Stand — die Arbeit des Plans, nie das Einschwingen" } : {}),
+    return { sek,
         befehl: ["node", "-e", "(" + knapp(vegetationLauf) + ")()", "{AUS}", "{PORT}", JSON.stringify(plan), ...(zaehlen ? [zaehlen] : [])] };
 };
 // `sek` der Deckel nach seiner Messung (sonst der des Plans; die Ausnahme nur über 45 s)
@@ -1910,7 +1909,7 @@ const wieseStation = (staffel, posen, quelle, sek) => ({
     kriterium: "vegetation.K1",
     staffel,
     geraet: ["radeon", "gtx"],
-    probe: ((p) => (sek == null ? p : { befehl: p.befehl, sek, ...(sek > 45 ? { ausnahme: p.ausnahme } : {}) }))(vegetationProbe(posen.map((p) => [...p, null, "wiese"]))),
+    probe: ((p) => (sek == null ? p : { befehl: p.befehl, sek }))(vegetationProbe(posen.map((p) => [...p, null, "wiese"]))),
     gpu: true,
     zeit: false,
     minuten: staffel === 1 ? 2 : 6,
@@ -2005,7 +2004,7 @@ const jahrStation = (staffel, lauf, eigen, zeiten, quelle, sek) => ({
     kriterium: "vegetation.K5",
     staffel,
     geraet: ["radeon", "gtx"],
-    probe: ((p) => (sek == null ? p : { befehl: p.befehl, sek, ...(sek > 45 ? { ausnahme: p.ausnahme } : {}) }))(vegetationProbe(lauf, "ohne-budget")),
+    probe: ((p) => (sek == null ? p : { befehl: p.befehl, sek }))(vegetationProbe(lauf, "ohne-budget")),
     gpu: true,
     zeit: false,
     minuten: staffel === 1 ? 2 : 6,
@@ -3767,7 +3766,7 @@ const stationen = [
         // warmen Ring — die Suche in der Welt b62542c9: Wiese 312 m (6 757 von 7 351 Orten ohne 15–30°), Genesis 252 m, Dorf 264 m; die
         // drei Schüsse stehen dort im kalten Ring (Radeon b62542c9: die Probe herde 10,5 s, die Szene 0,1 s, Schuss 1 samt Ring 24–32 s,
         // Schuss 2 12–17 s, Schuss 3 7–15 s — gesamt 59 s und 69 s). Der Deckel je Karte in deckel.json
-        probe: { sek: 41, ausnahme: "die Herde am Hang 300 m von der Mess-Wiese (der nächste, an dem der Wurf trägt), drei Schüsse im kalten Ring — Radeon 59–69 s", befehl: [
+        probe: { sek: 41, befehl: [
             "node",
             "-e",
             "(" + knapp(herdeHang) + ")()",
@@ -3906,7 +3905,7 @@ const stationen = [
         kriterium: "tiere.K3",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        probe: { sek: 90, ausnahme: "die Gangart in 49 Zeilen (Welt 17, Satz 16, Labor 16, Kreuz 16) samt Querhang und Bühne — die Arbeit (Radeon 30,2–32,6 s; GTX 87537d3f 44,8 s am Rand, 77265b04 bei 47,2 s am 45-s-Deckel gerissen)", befehl: [
+        probe: { sek: 90, befehl: [
             "bash",
             "-c",
             [
@@ -5430,7 +5429,7 @@ const stationen = [
     // nennt sie Genesis, die Sitzung stellt es VOR dem Deckel (`probeOrt`); dasselbe Dorf aus dem Samen der Welt, derselbe Gang.
     // DER DECKEL (w25-treue-kanten, 09.11.): nach der Grundstellung wächst das Start-Dorf neu — Radeon 35,1–45,7 s (95ba6fd6 bis
     // 28c74a9f), dreimal am Gesetz 45 s gerissen (UNGEMESSEN); die Ausnahme beim Namen, der Deckel der Tafel das Gesetz 90 s
-    probe: { sek: 10, ausnahme: "das Start-Dorf wächst nach der Grundstellung neu bis 81 Leiber, dann vier Gänge zu 1,4 m/s mit je einem Bild je Takt — Radeon 35,1–45,7 s", befehl: [
+    probe: { sek: 10, befehl: [
         "bash",
         "-c",
         [

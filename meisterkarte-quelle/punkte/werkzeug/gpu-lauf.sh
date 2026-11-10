@@ -34,7 +34,7 @@ nimm() { if [ "$ART" = zeit ]; then ganz_versuch "$NAME"; else platz_versuch "$N
 [ "$ART" = zeit ] && gs_vorrang "$NAME"
 trap 'gs_vorrang_weg' EXIT
 until nimm; do
-    schloss_verwaist
+    gs_uebernimm nimm "$NAME" && break
     jetzt=$(date +%s)
     # DIE WARTE-UHR zählt die Nachtruhe nie (26.10., Prüfung gpu-bahnen): sie sperrt jedes Nehmen und ist mit 50 min länger als
     # die Frist — wer um 03:26 zu warten begann, endete um 04:11 mit Exit 75, mitten in der Nacht, ohne dass ein Lauf die Karte hielt

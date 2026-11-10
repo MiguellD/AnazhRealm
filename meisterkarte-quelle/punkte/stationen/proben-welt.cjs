@@ -12,6 +12,15 @@
 // DAS TOR DER SITZUNG (läuft im Prozess der Probe, cwd = der Spiel-Baum): der Ruf an die Werkbank der Welt (WERKBANK_PORT), die
 // Adapter-Zeile ihres Logs (PUNKTE_SITZUNG_LOG), die Seite der Welt über puppeteer am Browser der Werkbank (/status nennt sein
 // Profil, dort steht DevToolsActivePort; ohne Viewport von außen, getrennt am Ende — der Browser bleibt), und die Quellen der Linsen.
+// DAS BÜNDEL (`tor.dekl` → `tor.buendel`, 09.11.): eine Liste nennt nur, WAS die Probe liest — was das Gelesene braucht, kommt mit: jede
+// Deklaration der obersten Ebene, die der gezogene Text als freien Bezeichner nennt, und ihre wieder (der Abschluss), in der Reihe der
+// Quelle. Befund Radeon 3ccb8f55: fahrzeug.K2#1 UNGEMESSEN — „ReferenceError: urteil is not defined … at Object.wegenetzVerdict“. Seit
+// heim2-w13-verkehr-heil (f18627146) rufen die Urteile der Fahr-Linse den Helfer `urteil`; die Listen nannten ihn nicht (fahrWegenetz
+// und fahrWelt: fahrzeug.K2#1, fahrzeug.K3#2, fahrzeug.K4#1/#2), fahrVerkehr trug ihn von Hand nach (7b2a3f926) — gesehen je erst am
+// Gerät, beim Ruf des Urteils. Das Bündel läuft in `new Function` und kennt kein `require`: braucht der gezogene Text einen Namen des
+// Moduls (require · module · exports · __filename · __dirname), wirft das ZIEHEN mit der Kette beim Namen („rueckBericht → check →
+// pruefer lädt mit require“), nie erst der Ruf. Was die Station selbst stellt (ein Parameter ihres `new Function`), nennt sie in
+// `gestellt` — das kommt nie mit. Dasselbe Bündel urteilt die Wand ANKER am Kopf, ohne Gerät (punkte.cjs toteAnker).
 function sitzungTor() {
     const fs = require("fs");
     const path = require("path");
@@ -102,19 +111,94 @@ function sitzungTor() {
         }
         throw new Error(datei + ": keine Deklaration " + name + " auf oberster Ebene");
     };
-    // die Deklarationen `namen` (Anweisungen der obersten Ebene) in der Reihe der Quelle — eine rechnet mit der vorigen
-    tor.dekl = (datei, namen) => {
-        const { text, ast } = baum(datei);
-        const da = new Set();
-        const teile = [];
-        for (const n of ast.body) {
-            const wer = n.type === "FunctionDeclaration" && n.id ? [n.id.name] : n.type === "VariableDeclaration" ? n.declarations.map((d) => d.id.name) : [];
-            if (wer.some((w) => namen.includes(w))) (teile.push(text.slice(n.start, n.end)), wer.forEach((w) => da.add(w)));
+    // DAS BÜNDEL (der Kopf dieser Funktion): die Deklarationen `namen` der obersten Ebene MIT ihrem Abschluss, in der Reihe der Quelle;
+    // `q` = { text, ast }, `gestellt` = die Namen, die die Station selbst stellt; ein Name des Moduls (require …) wirft mit der Kette
+    tor.buendel = (q, namen, gestellt, wo) => {
+        const kinder = (n) => Object.keys(n).filter((k) => k !== "type" && k !== "start" && k !== "end").flatMap((k) => (Array.isArray(n[k]) ? n[k] : [n[k]])).filter((c) => c && typeof c.type === "string");
+        const bindet = (p) =>
+            !p ? [] : p.type === "Identifier" ? [p.name] : p.type === "AssignmentPattern" ? bindet(p.left) : p.type === "RestElement" ? bindet(p.argument)
+                : p.type === "ArrayPattern" ? p.elements.flatMap(bindet) : p.type === "ObjectPattern" ? p.properties.flatMap((x) => bindet(x.type === "RestElement" ? x.argument : x.value)) : [];
+        const istFn = (n) => n.type === "FunctionDeclaration" || n.type === "FunctionExpression" || n.type === "ArrowFunctionExpression";
+        const dekl = (n) => ((n.type === "FunctionDeclaration" || n.type === "ClassDeclaration") && n.id ? [n.id.name] : n.type === "VariableDeclaration" ? n.declarations.flatMap((d) => bindet(d.id)) : []);
+        const block = (liste) => liste.filter((s) => s.type !== "VariableDeclaration" || s.kind !== "var").flatMap(dekl);
+        const vars = (n, aus = []) => {
+            if (n.type === "VariableDeclaration" && n.kind === "var") aus.push(...dekl(n));
+            for (const c of kinder(n)) if (!istFn(c)) vars(c, aus);
+            return aus;
+        };
+        // die freien Bezeichner eines Knotens: jeder Bezug, den keine Sicht darin bindet (Funktion: Parameter, var, arguments · Block: let, const, class, function · catch)
+        const frei = (wurzel) => {
+            const aus = new Set();
+            const muster = (p, sicht) => {
+                if (!p || p.type === "Identifier") return;
+                if (p.type === "AssignmentPattern") return void (muster(p.left, sicht), geh(p.right, sicht));
+                if (p.type === "RestElement") return muster(p.argument, sicht);
+                if (p.type === "ArrayPattern") return p.elements.forEach((e) => muster(e, sicht));
+                if (p.type === "ObjectPattern") return p.properties.forEach((x) => (x.type === "RestElement" ? muster(x.argument, sicht) : (x.computed && geh(x.key, sicht), muster(x.value, sicht))));
+                geh(p, sicht);
+            };
+            const geh = (n, sicht) => {
+                if (!n) return;
+                const mit = (neu) => [...sicht, new Set(neu)];
+                const t = n.type;
+                if (t === "Identifier") return void (sicht.some((s) => s.has(n.name)) || aus.add(n.name));
+                if (t === "MemberExpression") return void (geh(n.object, sicht), n.computed && geh(n.property, sicht));
+                if (t === "Property" || t === "PropertyDefinition" || t === "MethodDefinition") return void (n.computed && geh(n.key, sicht), geh(n.value, sicht));
+                if (t === "LabeledStatement") return geh(n.body, sicht);
+                if (t === "BreakStatement" || t === "ContinueStatement" || t === "MetaProperty") return;
+                if (t === "VariableDeclarator") return void (muster(n.id, sicht), geh(n.init, sicht));
+                if (istFn(n)) {
+                    const rumpf = n.body.type === "BlockStatement" ? n.body.body : null;
+                    const s = mit([...n.params.flatMap(bindet), ...(t === "ArrowFunctionExpression" ? [] : ["arguments"]), ...(t === "FunctionExpression" && n.id ? [n.id.name] : []), ...vars(n.body), ...(rumpf ? block(rumpf) : [])]);
+                    n.params.forEach((p) => muster(p, s));
+                    return void (rumpf ? rumpf.forEach((c) => geh(c, s)) : geh(n.body, s));
+                }
+                if (t === "ClassDeclaration" || t === "ClassExpression") {
+                    const s = t === "ClassExpression" && n.id ? mit([n.id.name]) : sicht;
+                    return void (geh(n.superClass, s), geh(n.body, s));
+                }
+                if (t === "BlockStatement" || t === "StaticBlock") {
+                    const s = mit(block(n.body));
+                    return n.body.forEach((c) => geh(c, s));
+                }
+                if (t === "SwitchStatement") {
+                    const s = mit(block(n.cases.flatMap((c) => c.consequent)));
+                    return void (geh(n.discriminant, sicht), n.cases.forEach((c) => (geh(c.test, s), c.consequent.forEach((x) => geh(x, s)))));
+                }
+                if (t === "ForStatement" || t === "ForInStatement" || t === "ForOfStatement") {
+                    const d = t === "ForStatement" ? n.init : n.left;
+                    const s = d && d.type === "VariableDeclaration" && d.kind !== "var" ? mit(dekl(d)) : sicht;
+                    return kinder(n).forEach((c) => geh(c, s));
+                }
+                if (t === "CatchClause") {
+                    const s = mit(bindet(n.param));
+                    return void (muster(n.param, s), geh(n.body, s));
+                }
+                kinder(n).forEach((c) => geh(c, sicht));
+            };
+            geh(wurzel, []);
+            return aus;
+        };
+        const oben = new Map();
+        for (const n of q.ast.body) for (const w of dekl(n)) oben.set(w, n);
+        const fehlt = namen.filter((x) => !oben.has(x));
+        if (fehlt.length) throw new Error(wo + ": keine Deklaration " + fehlt.join(", "));
+        const MODUL = ["require", "module", "exports", "__filename", "__dirname"];
+        const kette = new Map(namen.map((x) => [oben.get(x), [x]]));
+        for (const offen = [...kette.keys()]; offen.length; ) {
+            const n = offen.shift();
+            for (const f of frei(n)) {
+                if (gestellt.includes(f)) continue;
+                if (MODUL.includes(f))
+                    throw new Error(wo + ": " + kette.get(n).join(" → ") + " lädt mit " + f + " — das Bündel der Probe (new Function) kennt kein " + f + "; die Station stellt " +
+                        (kette.get(n).slice(1).join(" oder ") || f) + " selbst (tor.dekl(datei, namen, gestellt))");
+                const d = oben.get(f);
+                if (d && !kette.has(d)) (kette.set(d, [...kette.get(n), f]), offen.push(d));
+            }
         }
-        const fehlt = namen.filter((x) => !da.has(x));
-        if (fehlt.length) throw new Error(datei + ": keine Deklaration " + fehlt.join(", "));
-        return teile.join("\n");
+        return q.ast.body.filter((n) => kette.has(n)).map((n) => q.text.slice(n.start, n.end)).join("\n");
     };
+    tor.dekl = (datei, namen, gestellt = []) => tor.buendel(baum(datei), namen, gestellt, datei);
     tor.ende = async () => {
         if (tor.browser) await tor.browser.disconnect().catch(() => {});
     };
@@ -832,7 +916,7 @@ async function fahrRueck(tor) {
         const z = typeof detail === "object" && detail ? JSON.stringify(detail) : detail;
         console.log(`  ${ok ? "✅" : "❌"} ${name}${z ? " — " + z : ""}`);
     };
-    const d = new Function("check", tor.dekl(L, ["RUECK", "taktHz", "rueckMass", "rueckVerdict", "rueckBericht"]) + "\nreturn { RUECK, taktHz, rueckBericht };")(check);
+    const d = new Function("check", tor.dekl(L, ["RUECK", "taktHz", "rueckMass", "rueckVerdict", "rueckBericht"], ["check"]) + "\nreturn { RUECK, taktHz, rueckBericht };")(check);
     const koerperUrteil = new Function(tor.dekl(KZ, ["koerperUrteil"]) + "\nreturn koerperUrteil;")();
     const koerper = tor.quelle(KZ, "koerperSeite", [
         ['if (!mut || mut === "landung") {', 'if (mut === "landung") {'],
@@ -1098,7 +1182,7 @@ async function fahrVerkehr(tor) {
         process.exitCode = 1;
         return;
     }
-    const d = new Function(tor.dekl(L, ["urteil", "VERKEHR", "verkehrVerdict", "taktHz"]) + "\nreturn { VERKEHR, verkehrVerdict, taktHz };")();
+    const d = new Function(tor.dekl(L, ["VERKEHR", "verkehrVerdict", "taktHz"]) + "\nreturn { VERKEHR, verkehrVerdict, taktHz };")();
     const F = require(path.resolve(P));
     const mo = require(path.resolve("scripts/lib/band-urteil.cjs")).ladeSpec("wiese").ort.spieler;
     // probeLeben am SHA: vor dem Verkehr der Linse fahren Furt und Hang in ihrem Rumpf (EIN Anker, sonst wirft die Probe beim Namen;

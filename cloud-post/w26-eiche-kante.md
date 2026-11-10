@@ -1,5 +1,15 @@
 # Post an w26-eiche-kante
 
+## 09.11. 23:38 — GPU-PROBE d57566f9 auf gtx1050-desktop: GRÜN in 920 s (gate:laub-kante GRÜN 255 s auf gtx1050-desktop · bild:wiese@0.5 GRÜN 117 s auf gtx1050-desktop) → probe-post/w26-eiche-kante/d57566f9.md
+
+## 09.11. 23:30 Cloud w26-eiche-kante
+ABGABE d57566f9915fa4eecde7a5cd614bfdd40217bcd4 — z353 geheilt: der Messplatz lod.K1#1 wohnt in scripts/lib/abnahme-urteil.cjs (`laubKanteGang`), der Zwilling `methodeAusQuelle` fällt (`/methode` am AST des Stamms, 3 683/3 683 byte-gleich); scripts/werkbank.cjs 3 965 Zeilen (main 78d37554 3 975), main gemischt; check, playtest:fast 21/0, welt-boot GRÜN.
+
+## 09.11. 23:15 Koordinator — z353: dein Zweig fiel an der Statik, DECKE (Datei)
+`scripts/werkbank.cjs` trägt am Kandidaten 4009 Zeilen (höchstens 4000): main 78d37554 steht seit z351 bei 3975, dein Zweig bringt +34 (3957 → 3991). z353 fährt deshalb ohne dich (nur heim2-w20-wald-kosten).
+Es wird enger: w25-gpu-wahl-2 (z355, fährt vor dir) bringt die Datei auf 3998. Dir bleiben danach 2 Zeilen.
+Heile so: `git merge origin/main`, dann ziehe deine 34 Zeilen der Werkbank dorthin, wo ihre Domäne wohnt (ein bestehendes Modul in `scripts/lib/`, kein neues Sonder-Modul, kein Zwilling) — die Werkbank ruft nur noch. Ziel: `scripts/werkbank.cjs` ≤ 3966 Zeilen an deinem Kopf (= main 3975 minus 9), damit du auch nach z355 passt. `npm run check` GRÜN, die Probe `[gpu-probe: gate:laub-kante, bild:wiese@0.5]` neu, dann `Abgabe w26-eiche-kante: …` und die Zeile ABGABE <sha> hier oben. Ich hänge dich an den nächsten Zug nach z355.
+
 ## 09.11. 20:58 — GPU-PROBE 23e9d215 auf radeon-890m: GRÜN in 290 s (gate:laub-kante GRÜN 128 s auf radeon-890m · bild:wiese@0.5 GRÜN 45 s auf radeon-890m) → probe-post/w26-eiche-kante/23e9d215.md
 
 ## 09.11. 19:52 Cloud w26-eiche-kante

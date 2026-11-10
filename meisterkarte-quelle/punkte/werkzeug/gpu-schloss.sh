@@ -94,9 +94,15 @@ schloss_vor_neustart() {
     boot=$(($(date +%s) - $(cut -d. -f1 /proc/uptime)))
     [ -f "$f" ] && [ "$(stat -c %Y "$f")" -lt "$boot" ]
 }
+# der Job, den der Läufer gerade fährt: der Name der jüngsten „start ci-runner …“-Zeile von hook.log (beide Hooks schreiben
+# „<datum> <zeit> start <ich>: …“); leer ohne Zeile
+gs_hook_lauf() { grep -a " start ci-runner " "$GPU_HOOK_LOG" 2>/dev/null | tail -n 1 | tr -d '\r' | sed -n 's/^[0-9-]* [0-9:]* start \(ci-runner [^:]*\): .*/\1/p'; }
 # warum ein Halter (besitzer-Datei, Ordner) nicht mehr hält; leer: er hält
+# EIN LÄUFER FÄHRT EINEN JOB ZUR ZEIT (10.11., Auftrag gpu-stufe K10): hält „ci-runner A …“ das Schloss, während ein Runner.Worker lebt
+# und hook.log einen ANDEREN Job B nennt (B wartet in seinem Start-Hook), ist A tot — der Worker ist B selbst. Ohne die Regel galt
+# ein ci-runner-Schloss ohne pid-Zeile (Radeon: 29 Byte, nur Zeile 1) als gehalten, solange B wartete, und niemand brach es
 gs_verwaist_grund() {
-    local f="$1" d="$2" wer p seit
+    local f="$1" d="$2" wer p seit l
     wer=$(head -n 1 "$f" 2>/dev/null | tr -d '\r')
     p=$(gs_pid_von "$f")
     seit=$(stat -c %Y "$f" 2>/dev/null || stat -c %Y "$d" 2>/dev/null || date +%s)
@@ -104,6 +110,8 @@ gs_verwaist_grund() {
         echo "älter als der Systemstart"
     elif [ "${wer#ci-runner }" != "$wer" ] && ! gs_worker; then
         echo "ci-runner ohne lebenden Runner.Worker"
+    elif [ "${wer#ci-runner }" != "$wer" ] && l=$(gs_hook_lauf) && [ -n "$l" ] && [ "$l" != "$wer" ]; then
+        echo "der Läufer fährt '$l'"
     elif [ -n "$p" ] && ! pid_lebt "$p"; then
         echo "Halter pid=$p lebt nicht"
     elif [ -z "$p" ] && [ $(($(date +%s) - seit)) -gt 3600 ]; then
@@ -147,9 +155,21 @@ schloss_verwaist() {
     g=$(gs_verwaist_grund "$d/besitzer.txt" "$d")
     [ -n "$g" ] && [ "$(schloss_erster)" = "$wer" ] && [ ! -f "$d/plaetze" ] && {
         rm -rf "$d"
-        echo "$(date +%T) verwaistes Schloss '$wer' geloest - $g" >&2
+        GPU_VERWAIST="'$wer' ($g)"
+        echo "$(date +%T) VERWAIST: Halter $GPU_VERWAIST tot — Schloss gelöst" >&2
     }
     return 0
+}
+# DER WARTENDE BRICHT ES (10.11., Gebot 10): löst schloss_verwaist ein ganzes Schloss, versucht der Wartende sofort selbst zu nehmen
+# (sein Versuch $1…) und nennt die Übernahme; Vorfahrt (ein CI-Job läuft oder wartet) lässt das Schloss dem Hook. 0: genommen
+gs_uebernimm() {
+    GPU_VERWAIST=
+    schloss_verwaist
+    [ -n "$GPU_VERWAIST" ] || return 1
+    local w=$GPU_VERWAIST
+    GPU_VERWAIST=
+    "$@" || return 1
+    echo "$(date +%T) VERWAIST: Halter $w tot — Schloss übernommen von '$2'" >&2
 }
 
 # ein Versuch, das GANZE Schloss zu nehmen (Zeit-Lauf): 0 genommen
@@ -218,7 +238,7 @@ schloss_nehmen() {
     local n="$1" w=0
     gs_vorrang "$n"
     until ganz_versuch "$n"; do
-        schloss_verwaist
+        gs_uebernimm ganz_versuch "$n" && break
         [ $w = 0 ] && echo "$(date +%T) GPU-Schloss haelt '$(schloss_erster)' - warte" >&2
         w=1
         sleep 15

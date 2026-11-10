@@ -451,7 +451,6 @@ const K4_STUDIOS = ["garage", "portale", "schmiede", "fachwerk", "terrain", "koe
 // DIE AUSNAHME (w12-proben-frist): sieben Studios je mit eigener Seite und eigenem Renderer (die Bühne steht in 0,6–3,1 s) und je ein
 // Abnahme-Bild der Welt (`/bild` 4,3–9,7 s, das erste kompiliert) — Radeon 8ef49bef: fünf Studios in 34,9 s (7,0 s je Studio), an der
 // Frist 39 s fielen koerperstudio und tetrapoda aus; sieben ≈ 52 s Radeon, ≈ 68 s GTX (Faktor 1,3). Der Deckel je Karte in deckel.json.
-const K4_AUSNAHME = "sieben Studio-Seiten mit eigenem Renderer und je ein Abnahme-Bild der Welt: Radeon 7,0 s je Studio, sieben ≈ 52 s";
 // GRÜN zählt nur über der GESTALT beider Seiten (w16-studio-welt: das Werk allein in Weiß, Bühne SCHUSS · Welt WELT_GESTALT) —
 // eine Differenz über der Teilung der Werkbank trug den Boden (die Schatten-Sprenkel unter dem Wagen, Radeon 93fe1619: 51 762 Pixel
 // nur auf der Welt-Seite) und urteilt nie
@@ -575,7 +574,6 @@ async function probeStudios(H) {
 // Radeon 8ef49bef: fünf Studios in 39 s an der Frist (fachwerk allein 16 s), acht ≈ 62 s; GTX mit Faktor 1,3 ≈ 81 s
 const STUDIO_PROBE = {
     ...probeBefehl(probeStudios, 75),
-    ausnahme: "acht Studios je zwei Seiten mit eigenem Renderer (Besuch und Neuladen), 5 Griffe je Seite: Radeon fünf in 39 s",
 };
 // DER BILD-WEG (bauen.K1#2): die Linse diag-werkstatt-weg als Bibliothek (`wegHelfer` mit dem Haken am Render des Takts, `wegLauf` über
 // echte Eingaben) in der warmen Welt der Sitzung — die Bühne (Mittag · Sonne · Sommer), dann 8 Läufe: jedes Werk zweimal (kalt, warm),
@@ -1650,7 +1648,7 @@ const alle = [
         // DIE AUSNAHME (w12-proben-frist): acht Bau-Läufe über echte Eingaben, je Werk der erste kalt (die Linse räumt seine Körper aus der
         // Foundry, sie baut sie neu) — GTX e0139769 in der Eich-Fahrt 50,2 s für alle acht (ROT 0/8), Radeon 8ef49bef an der Frist 39 s im
         // ersten Lauf (werkstatt · schöpfer · Eiche · Ego kalt)
-        probe: { ...BILD_PROBE, mutiert: true, sek: 10, ausnahme: "acht Bau-Läufe über echte Eingaben, je Werk der erste kalt aus der leeren Foundry: GTX 50,2 s" },
+        probe: { ...BILD_PROBE, mutiert: true, sek: 10 },
         gpu: true,
         zeit: true,
         minuten: 1,
@@ -2146,7 +2144,7 @@ const alle = [
         kriterium: "studios.K4",
         staffel: 1,
         geraet: ["radeon", "gtx"],
-        probe: { sek: 33, mutiert: true, befehl: K4_BEFEHL, ausnahme: K4_AUSNAHME },
+        probe: { sek: 33, mutiert: true, befehl: K4_BEFEHL },
         gpu: true,
         zeit: false,
         minuten: 15,
@@ -2164,7 +2162,7 @@ const alle = [
         kriterium: "studios.K4",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        probe: { sek: 33, mutiert: true, befehl: K4_BEFEHL, ausnahme: K4_AUSNAHME },
+        probe: { sek: 33, mutiert: true, befehl: K4_BEFEHL },
         gpu: true,
         zeit: false,
         minuten: 15,

@@ -1,0 +1,159 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.238",
+  "sha": "78d37554b2d5f98d96ef454cfa9f51752c0e45a0"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": false,
+  "weltTakte": 0
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0.0816,
+   "taeter": {
+    "Laub baum_kiefer": 0.059,
+    "Rinde baum_tanne": 0.0191,
+    "Laub baum_tanne": 0.0035
+   }
+  }
+ },
+ "ziel": {
+  "name": "Herde",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "abstand": 51.24,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   -580.048,
+   55.211,
+   -874.103
+  ],
+  "blick": [
+   0.81595,
+   -0.34137,
+   -0.46658
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 72.6,
+  "sigma": 40.6,
+  "schwarz": 0.0001,
+  "weiss": 0
+ },
+ "wahl": {
+  "versucht": 4,
+  "gewaehlt": 7,
+  "posen": [
+   {
+    "k": 0,
+    "kamera": [
+     -538.44,
+     50.89,
+     -849.85
+    ],
+    "rot": [
+     "Ziel Herde verdeckt von an Punkt 2 Laub baum_tanne in 30.07 m"
+    ],
+    "ms": 147
+   },
+   {
+    "k": 5,
+    "kamera": [
+     -572.436,
+     56.689,
+     -864.097
+    ],
+    "rot": [
+     "Ziel Herde verdeckt von an Punkt 5 Natur baum_birke in 42.45 m"
+    ],
+    "ms": 121
+   },
+   {
+    "k": 3,
+    "kamera": [
+     -562.493,
+     55.817,
+     -856.402
+    ],
+    "rot": [
+     "Ziel Herde verdeckt von an Punkt 2 Laub baum_kiefer in 19.83 m"
+    ],
+    "ms": 123
+   },
+   {
+    "k": 7,
+    "kamera": [
+     -580.048,
+     55.211,
+     -874.103
+    ],
+    "rot": [],
+    "ms": 2607
+   }
+  ],
+  "ms": 2998
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Herde im Bild frei 51.24 m · Luma 72.6 σ 40.6 schwarz 0.0 % weiß 0.0 % · Stand 18.546.238 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 4 Posen",
+ "klasse": {
+  "ausdruck": "^tier",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 0,
+  "toene": [
+   "tier-satz=255/80/80",
+   "tier:bestaeuber=80/255/80",
+   "tier:wesen=80/120/255"
+  ],
+  "klassen": {
+   "tier-satz": {
+    "objekte": 4,
+    "pixel": 29
+   },
+   "tier:bestaeuber": {
+    "objekte": 1,
+    "pixel": 52
+   },
+   "tier:wesen": {
+    "objekte": 55,
+    "pixel": 189
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\78d37554-radeon\\tiere.K1_2-herde-3.maske.png"
+ }
+}
