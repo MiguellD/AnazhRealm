@@ -375,8 +375,7 @@ const cielab = (c) => {
 // Die Schwelle hält das GEMESSENE Rauschen: je Aufruf zwei gleiche Schüsse G und G2 (`bildRauschen`), die Tafel bricht über
 // RAUSCHEN_MAX.
 const RAUSCHEN_MAX = 0.002;
-function klassenTeilung(G, Os, W, H, schwelle) {
-    const t = schwelle == null ? 18 : schwelle;
+function klassenTeilung(G, Os, W, H, t) {
     const teil = new Uint8Array(W * H);
     const gemischt = new Uint8Array(W * H);
     let misch = 0;
@@ -403,8 +402,7 @@ function klassenTeilung(G, Os, W, H, schwelle) {
 }
 // Das Rauschen zweier gleicher Schüsse (rein, in der Seite als `__bildRauschen`): Anteil der Pixel über der Schwelle, größter
 // Unterschied.
-function bildRauschen(A, B, W, H, schwelle) {
-    const t = schwelle == null ? 18 : schwelle;
+function bildRauschen(A, B, W, H, t) {
     let n = 0,
         max = 0;
     for (let p = 0; p < W * H; p++) {
@@ -483,11 +481,12 @@ function spiegelDaten() {
 }
 
 // DAS URTEIL DER ARMLÄNGE (material.K2 Staffel 1, `werkbank bild --arm` → `klasse.urteil`): POSE — die Klasse steht im Ausgabe-Bild und
-// die Tiefe der Bildmitte trägt die Armlänge (≤ 1,5 × Soll + 0,1 m); MIKRO — je Teil-Klasse nyquist ≥ 0,15 und glatte Blöcke ≤ 10 %.
-// Rückgabe: die Befunde beim Namen, leer = grün.
+// die Tiefe der Bildmitte trägt die Armlänge (≤ 1,5 × Soll + 0,1 m); MIKRO — je Teil-Klasse nyquist ≥ 0,15 und glatte Blöcke ≤ 10 %,
+// beim Namen mit dem Anteil der glatten Blöcke im Dunkel (`glattDunkel`: der Boden im Schatten, w26-boden-nah). Rückgabe: die Befunde
+// beim Namen, leer = grün.
 const armUrteil = ({ ausdruck: x, arm: a, klassen: k }) =>
     (Object.keys(k).length && a.ist > 0 && a.ist <= 1.5 * a.soll + 0.1 ? [] : [`POSE ${x}: ${Object.keys(k).length} im Bild, Mitte ${a.ist} m`]).concat(
-        Object.entries(k).filter(([, m]) => !(m.nyquist >= 0.15 && m.glatt <= 0.1)).map(([n, m]) => `MIKRO ${n}: nyquist ${m.nyquist} glatt ${m.glatt}`)
+        Object.entries(k).filter(([, m]) => !(m.nyquist >= 0.15 && m.glatt <= 0.1)).map(([n, m]) => `MIKRO ${n}: nyquist ${m.nyquist} glatt ${m.glatt} dunkel ${m.glattDunkel}`)
     );
 
 // DIE KLASSEN-MASSE (rein, in der Seite als `__klassenMasse`): was das Bild F auf den Pixeln der Maske m zeigt (Luma = Rec. 709
@@ -713,12 +712,14 @@ function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
         [sp[0], sp[3], sp[4]] = [sp[0] + z[0], sp[3] + yy, sp[4] + yy];
         if (xx > 1e-6) sp[5] += yy * (xy / Math.sqrt(xx * yy));
     }
-    const mittel = n ? s / n : null;
     // DAS MIKRO-DETAIL (material.K2, `werkbank bild --arm`) je 8×8-Block ganz in der Klasse: `glatt` der Anteil mit Luma-σ < 4;
     // `nyquist` der Anteil der Schachbrett-Energie an der Gradient-Energie seiner 2×2-Zellen (k = (a−b−c+d)/4 gegen gx, gy: ein
     // Pixel-Raster 1, weißes Rauschen 1/3, eine glatte Fläche 0); `beta` die Steigung des Leistungsspektrums P ∝ f^−β aus der
     // Mittel-Pyramide (Band-Energie je Oktave ∝ f^(2−β): β = 2 + halbe Steigung von log2 E über die Stufen 0 … 2, Rauschen 0).
-    const mk = [0, 0, 0, 0, 0, 0, 0]; // Blöcke, glatte, Σk², Σ(gx² + gy²), E je Stufe 0 … 2
+    // `glattDunkel` der Anteil der glatten Blöcke mit Luma-Mittel < 32: der Täter beim Namen — glatt im Dunkel ist ein Boden, dessen
+    // Korn im Schatten unter 4 Stufen fällt (w26-boden-nah, Mess-Wiese 0,5 m: 84 % der glatten unter Luma 16), glatt im Hellen ein
+    // Stoff ohne Korn.
+    const mk = Array(8).fill(0); // Blöcke, glatte, Σk², Σ(gx² + gy²), E je Stufe 0 … 2, glatte im Dunkel
     for (let y0 = 0; y0 + 8 <= H; y0 += 8)
         for (let x0 = 0; x0 + 8 <= W; x0 += 8) {
             let voll = true;
@@ -731,7 +732,7 @@ function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
             if (!voll) continue;
             const mb = B.reduce((a, b) => a + b, 0) / 64;
             mk[0]++;
-            if (Math.sqrt(B.reduce((a, b) => a + (b - mb) * (b - mb), 0) / 64) < 4) mk[1]++;
+            if (B.reduce((a, b) => a + (b - mb) ** 2, 0) < 1024) mk[1]++, (mk[7] += mb < 32); // σ < 4: Σ(b − μ)² < 16 · 64
             for (let st = 0, q = 8, P = B; st < 3; st++, q >>= 1) {
                 const Q = new Float32Array((q * q) / 4);
                 for (let i = 0; i < Q.length; i++) {
@@ -745,26 +746,28 @@ function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
                 P = Q;
             }
         }
-    const r4 = (x) => (x == null || !Number.isFinite(x) ? null : +x.toFixed(4));
+    // die Rundung trägt den Fall ohne Nenner (0/0, x/0, log 0: nie endlich → null)
+    const r4 = (x) => (Number.isFinite(x) ? +x.toFixed(4) : null);
     return {
         spiegelTreue: r4(spiegelPearson(sp)),
         spiegelEbene: sa?.yw != null ? +sa.yw.toFixed(3) : null,
         sp: sp.map((v, i) => (i ? +v.toFixed(2) : v)),
-        zweiton: n ? r4(zt / n) : null,
-        weiss: n ? r4(wt / n) : null,
+        zweiton: r4(zt / n),
+        weiss: r4(wt / n),
         wt,
         wtZiel: ohne ? wtZiel : null,
         bunt: n ? +(cs / n).toFixed(2) : null,
         pixel: n,
-        luma: mittel == null ? null : +mittel.toFixed(2),
-        kante: kr ? r4(ks / kr) : null,
+        luma: n ? +(s / n).toFixed(2) : null,
+        kante: r4(ks / kr),
         kr,
-        strich: sn > 0 ? r4(sz / sn) : null,
+        strich: r4(sz / sn),
         si,
         bloecke: mk[0],
-        glatt: mk[0] ? r4(mk[1] / mk[0]) : null,
-        nyquist: mk[2] + mk[3] > 0 ? r4(mk[2] / (mk[2] + mk[3])) : null,
-        beta: mk[4] > 0 && mk[6] > 0 ? r4(2 + Math.log2(mk[6] / mk[4]) / 2) : null,
+        glatt: r4(mk[1] / mk[0]),
+        glattDunkel: r4(mk[7] / mk[1]),
+        nyquist: r4(mk[2] / (mk[2] + mk[3])),
+        beta: r4(2 + Math.log2(mk[6] / mk[4]) / 2),
     };
 }
 
@@ -1843,15 +1846,17 @@ function sollTafelSelbsttest(tafel, q) {
             grau = (f) => Uint8Array.from({ length: n * n * 4 }, (_, i) => (i % 4 === 3 ? 255 : f((i >> 2) % n, (i >> 2) / n | 0)));
         const sb = klassenMasse(grau((x, y) => ((x + y) & 1 ? 60 : 180)), v1, n, n);
         const vl = klassenMasse(grau((x) => 40 + x), v1, n, n);
-        if (!(sb.nyquist > 0.99 && vl.nyquist < 0.01 && vl.glatt === 1 && sb.glatt === 0))
-            v.push(`Maß Mikro: Schachbrett ${sb.nyquist}/${sb.glatt}, Verlauf ${vl.nyquist}/${vl.glatt} statt 1/0, 0/1`);
+        // das Korn im Schatten (Luma 6–8): glatt und beim Namen dunkel, der helle Verlauf glatt und nie dunkel
+        const kd = klassenMasse(grau((x, y) => 6 + ((x + 2 * y) % 3)), v1, n, n).glattDunkel;
+        if (!(sb.nyquist > 0.99 && vl.nyquist < 0.01 && vl.glatt === 1 && sb.glatt === 0 && vl.glattDunkel === 0 && kd === 1))
+            v.push(`Maß Mikro: Schachbrett ${sb.nyquist}/${sb.glatt}, Verlauf ${vl.nyquist}/${vl.glatt}/${vl.glattDunkel}, Schatten ${kd} statt 1/0, 0/1/0, 1`);
         for (const b of [0, 1, 2]) {
             const ist = klassenMasse(rauschBild(n, b, 7919), v1, n, n).beta;
             if (!(Math.abs(ist - b) < 0.35)) v.push(`Maß Mikro: β ${b} gemessen als ${ist}`);
         }
         // das Urteil der Armlänge: Korn (das Schachbrett) grün; ein Boden ohne Mikro-Term (der Verlauf) und eine Pose ohne Fels je ROT beim Namen
         const ab = [{ boden: sb }, { boden: vl }, {}].map((klassen) => armUrteil({ ausdruck: "fels", arm: { soll: 1, ist: 1 }, klassen })).join("|");
-        if (ab !== "|MIKRO boden: nyquist 0 glatt 1|POSE fels: 0 im Bild, Mitte 1 m") v.push(`Urteil Arm: ${ab}`);
+        if (ab !== "|MIKRO boden: nyquist 0 glatt 1 dunkel 0|POSE fels: 0 im Bild, Mitte 1 m") v.push(`Urteil Arm: ${ab}`);
     }
     // DIE SPIEGEL-TREUE (D10, A13) geeicht an einer gebauten Welt, je Pixel per Strahl (Kamera 2 m über dem See, waagrecht, 60°;
     // rechts ein Sandstreifen 0,4 m hoch, Bäume dahinter, fern ein Ufer mit Wald, Wolken-Bänder): der ideale Spiegel (F = 1) → ≥ 0,95
@@ -2447,6 +2452,43 @@ function sollIstAbweisung(alt, neu, q) {
     return gruende;
 }
 
+// DIE LAUB-SILHOUETTE WIE DIE STATION lod.K1#1 — der Messplatz des GPU-Probe-Dienstes (`werkbank kante`, `gate:laub-kante`; `wb` die
+// Rufe der Werkbank): frisch an der Mess-Wiese, 1920 × 1080, die Tafel-Pose der Klasse laub-kante (ihr `mass.werkzeug`), dann der
+// Spielgang der Station (Ego, 8 s auf der Bahn, das Auge zum Waldhang der Tafel, das Ziel vor dem Hang, höchstens 12 m); je Schuss die
+// Teil-Klassen ab 5 000 px mit ihrer Kante, Soll ≤ 0,22 und zweiton 0, die Bilder in die Post. Die Zahl misst, der Richter ist die Station
+async function laubKanteGang({ rufe, umstellen, evalRuf, eigeneWelt, ergebnis }) {
+    const w = jsonLesen("spec/abnahme/soll-tafel.json").klassen.find((k) => k.id === "laub-kante").mass.werkzeug.split(" ");
+    const [px, py, pz, lx, ly, lz] = w.slice(2);
+    const klasse = w[11].slice(1, -1);
+    const datei = (n) => process.env.RUNNER_TEMP && require("path").join(process.env.RUNNER_TEMP, "probe", n + ".png");
+    const urteil = (titel, b) => {
+        if (!b.klasse) throw new Error(`${titel}: /bild ohne Klasse: ${b.fehler} ${(b.stapel || []).join(" | ")}`);
+        const je = Object.entries(b.klasse.klassen).filter((e) => e[1].pixel >= 5000 && e[1].kante != null);
+        const gut = je.every((e) => e[1].kante <= 0.22 && !e[1].zweiton);
+        console.log(`lod.K1#1 ${titel} ${gut ? "GRÜN" : "ROT"}`, JSON.stringify(je.map((e) => [e[0], e[1].kante, e[1].pixel, e[1].zweiton])));
+        return b;
+    };
+    const halt = await eigeneWelt(["--ort", "wiese"]);
+    try {
+        await rufe("/fenster", { w: 1920, h: 1080 });
+        urteil("Tafel-Pose", await rufe("/bild", { px, py, pz, lx, ly, lz, w: 1920, h: 1080, ziel: w[9], klasse, datei: datei("tafel") }));
+        await umstellen({ ort: "wiese", sicht: "ego" });
+        await rufe("/lauf", { sek: 8, ein: 2, regler: "frei", tiere: "halten", ruhe: 0, wandern: "bahn" });
+        const [ax, ay, az, bx, by, bz] = ergebnis(
+            await evalRuf(
+                "const st = r.state, pm = st.playerMesh.position; st.yaw = r._blickGierZu(-269 - pm.x, -1036 - pm.z); st.pitch = 0; " +
+                    "for (let i = 0; i < 30; i++) r._loopCamera(performance.now() + i * 100); const c = st.camera, d = new T.Vector3(); c.getWorldDirection(d); " +
+                    "let t = 2; while (t < 100 && r._voxelSurfaceY(c.position.x + t * d.x, c.position.z + t * d.z) < c.position.y + t * d.y - 0.5) t++; " +
+                    "t = Math.max(3, Math.min(12, 0.6 * t)); return [c.position.x, c.position.y, c.position.z, c.position.x + t * d.x, c.position.y + t * d.y, c.position.z + t * d.z];"
+            )
+        );
+        const b = await rufe("/bild", { px: ax, py: ay, pz: az, lx: bx, ly: by, lz: bz, w: 1920, h: 1080, wahl: 0, klasse, datei: datei("spielgang") });
+        return urteil("Spielgang", b).abnahme;
+    } finally {
+        halt?.();
+    }
+}
+
 module.exports = {
     SCHWELLEN,
     armUrteil,
@@ -2459,6 +2501,7 @@ module.exports = {
     sollTafelZeile,
     sollTafelSelbsttest,
     sollIstAbweisung,
+    laubKanteGang,
     pngLesen,
     bildMasse,
     bildRauschen,

@@ -81,6 +81,19 @@ const SCHLUESSEL = [
     ["markt#5", "g:markt:L0"],
 ];
 
+// H4b — DAS HOLZ IST EIN AUSSEN (lod.K1#1, w26-eiche-kante): die Teilung (`_kopfKlasse`, Leser `werkbank bild --klasse`) nennt
+// den Teil einer Foundry-Gestalt, dessen Stoff Holz ist (phyto-core `budgetRegler(kind).rinde`: Rinde und Stiel), `<klasse>:holz`
+// — nie mit dem Namen ihres Laubs (Spielgang GTX 1050 30e94000: f:eiche:L1 0,3102 mit dem Stamm im Gras, 0,194 ohne). Das Laub
+// derselben Gruppe, das Holz der Streu (ihr Satz ist Boden) und ein Stoff ohne Studio-Art behalten ihren Namen.
+const HOLZ_TEILE = [
+    ["f:eiche|0|1:0", "bark", "f:eiche:L1:holz"],
+    ["f:eiche|0|1:1", "foliageTex", "f:eiche:L1"],
+    ["f:strauch|2|0:1", "stem", "f:strauch:L0:holz"],
+    ["f:tanne|1|0:2", "foliage", "f:tanne:L0"],
+    [null, "bark", "streuSatz"],
+    ["f:fachwerk_haus|3|1|ov:9f2c:4", "unknown", "f:fachwerk_haus:L1"],
+];
+
 function taeterWand(A) {
     const errs = [];
     const S = stammKlasse(A);
@@ -88,7 +101,17 @@ function taeterWand(A) {
         const ist = S.instanz(k);
         if (ist !== soll) errs.push(`_instanzKlasse("${k}") = ${ist}, erwartet ${soll}`);
     }
-    return { errs, n: SCHLUESSEL.length, S };
+    const scene = { type: "Scene" };
+    const welt = weltVon(A, { scene, playerMesh: null });
+    for (const [key, art, soll] of HOLZ_TEILE) {
+        const o = { type: "Mesh", name: key ? "" : "streuSatz", geometry: { attributes: {} }, parent: scene };
+        o.userData = key ? { archInstanceKey: key } : { streuSatz: "streuSatz" };
+        o.material = { userData: art ? { foundryKind: art } : {} };
+        const ist = A.prototype._kopfKlasse.call(welt, o).join(" ");
+        if (ist !== soll + " " + soll)
+            errs.push(`${/:holz$/.test(soll) ? "Rinde unter Laub-Namen" : "Holz-Teilung"}: ${key || "streuSatz"} (${art || "ohne Art"}) heißt ${ist}, Soll ${soll}`);
+    }
+    return { errs, n: SCHLUESSEL.length + HOLZ_TEILE.length, S };
 }
 
 // H7 — DIE ZEICHEN-REIHE (1310-1, T3): `_buendelReihe` über eine Szene, in der eine Region vor @global ankam — danach
@@ -443,9 +466,23 @@ function selbsttest() {
             BAND.erzeugerOf("tex:karte-albedo:eiche|3|summer rgba8unorm 1x1x1").erzeuger === "karte-albedo"
     );
 
-    // S8 — die Schlüssel-Formen des Stamms (H4) ergeben ihre Klasse.
+    // S8 — die Schlüssel-Formen des Stamms (H4) ergeben ihre Klasse; das Holz einer Foundry-Gestalt ist ein Außen (H4b): der Stamm
+    // ohne die Holz-Teilung (die Rinde unter dem Namen ihres Laubs), mit Rinde allein (der Stiel trüge den Namen des Laubs) und ohne
+    // die Grenze der Gestalt (das Holz der Streu fiele aus dem Boden) ist ROT beim Namen — je der veränderte Stamm als Klasse geladen
     const tw = taeterWand(A);
-    t(`Schlüssel-Formen des Stamms → ${SCHLUESSEL.length} Klassen`, !tw.errs.length);
+    const st8 = stammLib.text(root);
+    const holz = 'return holz ? [grob + ":holz", grob + ":holz"] : [grob, grob];';
+    const still8 = [
+        ["ohne Holz", [["_kopfKlasse", holz, "return [grob, grob];"]], /Rinde unter Laub-Namen: f:eiche\|0\|1:0 \(bark\) heißt f:eiche:L1 f:eiche:L1/],
+        ["nur Rinde", [["_kopfKlasse", "globalThis.__phytoCore.budgetRegler(art).rinde", 'art === "bark"']], /Rinde unter Laub-Namen: f:strauch\|2\|0:1 \(stem\)/],
+        ["ohne Grenze", [["_kopfKlasse", 'grob.startsWith("f:") && ', ""]], /Holz-Teilung: streuSatz \(bark\) heißt streuSatz:holz/],
+    ].filter(([, e, re]) => !taeterWand(klasseVon(stammLib.ersetze(st8, e))).errs.some((x) => re.test(x)));
+    t(
+        `Schlüssel-Formen des Stamms → ${SCHLUESSEL.length} Klassen, ${HOLZ_TEILE.length} Teile der Holz-Teilung; ohne Holz, nur Rinde, ohne Grenze rot` +
+            (tw.errs.length ? " — " + tw.errs.join("; ") : "") +
+            (still8.length ? " — still: " + still8.map(([n]) => n).join(", ") : ""),
+        !tw.errs.length && !still8.length
+    );
 
     // S9 — der Erzeuger einer Textur: ihr Name; ohne Namen ihr Ziel (die Tiefe, die r184 je Ziel anlegt →
     // `<ziel>:tiefe`, das Ausgabe-Ziel des Renderers → `r184-ausgabe`); ein namenloses Objekt ohne benanntes Ziel
@@ -1113,7 +1150,7 @@ function selbsttest() {
     // die Folge der losen Opaken im Renderer, mit dem Boden vor dem Bau, verkehrt, ohne die Reihe im Bündel, ohne den Abstand
     // und mit einem Anker, der jeden Frame stellt, wird die Wand rot (je der veränderte Stamm als Klasse geladen).
     {
-        const st = stammLib.text(root);
+        const st = st8;
         const fall = [
             ["@global hinten", "_zeichenRang", 'u.regionKey === "@global" ? 0 : 1', 'u.regionKey === "@global" ? 2 : 1', /Reihe der Bündel nach der Ankunft/],
             ["ohne Reihe", null, /(\n {4}_buendelReihe)\(/, "$1Alt(", /hängt an der Ankunft/],

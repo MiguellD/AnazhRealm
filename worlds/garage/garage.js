@@ -64,7 +64,7 @@ buehne.add(zifferblatt);
 const sonne=new THREE.DirectionalLight();sonne.castShadow=true;
 sonne.shadow.mapSize.set(1024,1024);sonne.shadow.bias=-0.0002;Object.assign(sonne.shadow.camera,{left:-6,right:6,top:6,bottom:-6,far:40});
 scene.add(sonne);scene.add(sonne.target);
-let welt=null;   // die Bühne der Welt (welt-licht.js `buehne`), sobald der Renderer steht
+let welt=null,himmelWirt=null;   // die Bühne der Welt (welt-licht.js `buehne`), sobald der Renderer steht; der Himmel, den die Heimat beim Betreten reicht
 // die Sonne über dem Punkt (x, y, z): ihr Ziel dort, sie selbst 20 m die Richtung zur Sonne hinauf (der Schatten folgt dem Wagen)
 function sonneUeber(x,y,z){sonne.target.position.set(x,y,z);sonne.target.updateMatrixWorld();
   if(welt)sonne.position.copy(sonne.target.position).addScaledVector(welt.richtung,20);}
@@ -782,7 +782,7 @@ const _softwareRaster=i=>!!i&&/swiftshader|llvmpipe|lavapipe|software|subzero/i.
 // DIE BÜHNE DER WELT steht, sobald der Renderer steht: Tafeln, Umgebung, Sonne, Tonkurve — die Belichtung, sobald die
 // Bestrahlungs-Tafel zurückkam (`welt.steht`); ein Bruch der Bühne bricht laut (kein Bild unter einem anderen Licht)
 R.init().then(()=>{const d=R.backend&&R.backend.device;if(d&&_softwareRaster(d.adapterInfo))R._samples=0;
-  welt=__weltLicht.buehne({renderer:R,szene:scene,sonne});sonneUeber(0,0,0);welt.steht.then(()=>{_wecke();_kamAlt=null;});});
+  welt=__weltLicht.buehne({renderer:R,szene:scene,sonne,himmel:himmelWirt});sonneUeber(0,0,0);welt.steht.then(()=>{_wecke();_kamAlt=null;});});
 presetSetzen('gt');if(LEICHT)leichtSetzen(true);werkOrbit();R.setAnimationLoop(animate);   // Welle L: das erste Laden geht denselben Weg (der Federraten-Regler zeigte 95 bei Zustand 100)
 addEventListener('resize',()=>{_wecke();cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();R.setSize(innerWidth,innerHeight);if(leicht)R.setPixelRatio(0.5);if(mode!=='fahren')werkOrbit();});
 
@@ -792,6 +792,13 @@ addEventListener('resize',()=>{_wecke();cam.aspect=innerWidth/innerHeight;cam.up
    gehört Esc dem Werkstatt-Exit (der Tasten-Hörer oben hält ihn an). */
 AnazhHuelle.bruecke({
     welt: "garage",
+    // DER HIMMEL DER HEIMAT (w27-studio-mesh): die Welt reicht beim Betreten ihren Himmel am Tor (Ort, Bild-Uhr, Zug der Wolken,
+    // Deckung) — die Bühne steht unter ihm (welt-licht `himmelSetzen`); kommt er vor dem Renderer, nimmt ihn die Bühne bei ihrem Bau
+    enter: function (_a, m) {
+        if (!m.himmel) return;
+        himmelWirt = m.himmel;
+        if (welt) welt.himmelSetzen(himmelWirt), _wecke(), (_kamAlt = null);
+    },
     // DAS ZIEL-BILD (D8): die Hülle rendert diese Welt als Panorama aus dem Blick ihrer Kamera — die Tor-Membran der Heimat zeigt es
     panorama: function () {
         return { THREE: THREE, renderer: R, scene: scene, kamera: cam };

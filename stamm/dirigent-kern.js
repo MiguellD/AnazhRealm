@@ -1125,6 +1125,8 @@ class AnazhRealm {
         P.vp.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
         P.U.vp.value.copy(P.vp);
         P.U.invVP.value.copy(P.vp).invert();
+        // dieselbe Rückrechnung um das Auge (die Ansicht ohne ihre Lage): die Normale aus der Tiefe (`_spiegelPass`)
+        P.U.invVPr.value.copy(cam.matrixWorldInverse).setPosition(0, 0, 0).premultiply(cam.projectionMatrix).invert();
         P.U.auge.value.setFromMatrixPosition(cam.matrixWorld);
         cam.getWorldDirection(P.U.vorn.value);
         P.U.nah.value = cam.near;
@@ -1885,7 +1887,7 @@ function _stammZonen(Ziel, zonen) {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.546.240";
+AnazhRealm.VERSION = "18.546.243";
 // Die Terme des ersten Weltbilds (`_weltbildLuecken`, K60): je Leser des ersten Frames ein Name — gate:ankunft L2a stellt je
 // Term einen Fall her, ein Term ohne Fall ist ROT.
 AnazhRealm.WELTBILD_TERME = Object.freeze([
