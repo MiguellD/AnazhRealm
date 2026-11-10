@@ -67,7 +67,7 @@ class AnazhRealm_studio_stoff {
     }
 
     // `wiegen` (true, optional): der Stoff einer weichen Boden-Art der Nah-Streu — er wiegt im EINEN Wind mit der Höhe über
-    // der Wurzel in Metern und dem Rauschen der Pflanze aus dem Satz-Attribut `aWiege` (`_satzBlock`), also für jede
+    // der Wurzel in Metern (Vorlage × Welt-Skala der Instanz) und dem Rauschen der Pflanze an ihrem Fuß, also für jede
     // Studio-Skala derselbe Stoff.
     // `mp.satzRegler` (true): der EINE Satz-Stoff des Bau-Satzes (`_satzStoff`, K43-2) — Rauheit, Metall und Deckkraft liest er
     // je Ecke aus `aRegler`, das Emissiv × Glut-Stärke aus `aGlut` (`_satzBlock`); `mp` trägt diese Regler dann nicht.
@@ -121,8 +121,7 @@ class AnazhRealm_studio_stoff {
         // CPU-Doppel-Mitgliedschaft `foundryCrossfade`. Bis lod-stufen las der Bau den Schalter: ein Körper, gebaut, während
         // eine Linse ihn ausschaltete, trug Stoff ohne Maske und keine Stempel — der Cache hielt beides über die Linse hinaus
         // (die Stufen-Linse: `_satzBlock(streuNah:stumpf…)` „Attribut aLodLevel fehlt", der Satz verlangt die Stempel immer).
-        // Der wiegende Stoff der Nah-Streu blendet nie (ihr Stufen-Wechsel ist die Armlänge, ihre Stempel tragen 0): sein Satz
-        // trägt keine Stempel (`STREU_SATZ_ATTR`). Der Stoff des Menschen (`ton`) blendet nie: sein Guss steht auf dem Null-Stempel
+        // Der wiegende Stoff der Nah-Streu blendet nie (ihr Stufen-Wechsel ist die Armlänge, die Wahl der GPU, Art 5). Der Stoff des Menschen (`ton`) blendet nie: sein Guss steht auf dem Null-Stempel
         // (die Maske wäre die Identität), und ihre drei Stempel sprengten neben dem Ton den Deckel der Vertex-Puffer (WebGPU 8: Lage ·
         // Knochen · Gewichte · Normale · Farbe · Ton · aH0L · aLodLevel · aH0 = 9) — das Gerät sagte 8 Programme ab, Auge und
         // Kleid zeichneten nie (mensch.K4, 30.10.); ohne Maske liest er 6 Puffer. Der STEIN-Stoff (`mp.stein`, w4-genesis-tore)
@@ -613,14 +612,14 @@ class AnazhRealm_studio_stoff {
         } else if (wiegen === true) {
             // DIE NAH-STREU WIEGT (Integration 05.10.): die weichen Boden-Arten (Farn · Schilf · Gestrüpp · Blume)
             // lesen dasselbe Wiegen wie das Gras aus der EINEN Quelle (`_windSwayOffset`: uWindTime · uWindDir · Böe ·
-            // uBend) — der Satz trägt je Ecke `aWiege` = (die Höhe über der Wurzel in Metern: Vorlage × Welt-Skala der
-            // Pflanze; das Rauschen der Pflanze aus ihrem Fuß, `_satzKernWiege`), seine Positionen liegen in Welt-Lage: Böe
-            // und Biegung lesen die Welt, der Versatz liegt in Welt-Richtung. Jeder Teil einer Pflanze trägt dieselbe Phase —
-            // Rute und Laub, Stiel und Blüte bleiben verbunden; der Charakter (laengs 1,2) ist der des gefallenen
-            // Klein-Vegetations-Zwillings.
+            // uBend) — je Instanz ihrer Senke (w27-takt-streu): die Höhe über der Wurzel in Metern ist die Vorlage × die
+            // Welt-Skala der Instanz (die Länge ihrer zweiten Spalte, `_weltNaht`), das Rauschen der Pflanze liest der Wind
+            // an ihrem Fuß (dem Anker der Instanz). Jeder Teil einer Pflanze steht an demselben Fuß — Rute und Laub, Stiel
+            // und Blüte wiegen in einer Phase; der Charakter (laengs 1,2) ist der des gefallenen Klein-Vegetations-Zwillings.
+            // Bis w27-takt-streu trug der Streu-Satz beides je Ecke (`aWiege`), seine Positionen lagen in Welt-Lage.
             this._windUniformsEnsure();
-            const _wiege = TSL.attribute("aWiege", "vec2");
-            const _sway = this._windSwayOffset(TSL, { laengs: 1.2, hoehe: _wiege.x, rausch: _wiege.y });
+            const _hoehe = TSL.positionGeometry.y.mul(this._weltNaht(TSL).spalte(1).length());
+            const _sway = this._windSwayOffset(TSL, { laengs: 1.2, hoehe: _hoehe });
             mat.positionNode = (jahr === true ? this._jahrLage(TSL) : TSL.positionLocal).add(_sway);
         }
         // DAS JAHR OHNE BAUM-WIND (die Blende aus): sonst webt `_baumWindStoff` die Lage des Jahrs in den Wind-Knoten

@@ -138,7 +138,7 @@ function selbsttest() {
         }),
         standBruch: Object.assign(phase(15072, 0, 0), {
             inhaltOhneFrames: 10,
-            inhaltOhneJe: { "streuSatz stand:ohne": 50, "boden stand:ohne": 10 },
+            inhaltOhneJe: { "formationenSatz stand:ohne": 50, "boden stand:ohne": 10 },
         }),
         augeAn: true,
         auge: Object.assign(phase(0, 0, 9), { kameraFrames: 0 }),
@@ -194,8 +194,8 @@ function selbsttest() {
         ["Stand ohne Inhalt", bytes100("boden wahl:stand haupt"), "ohne"],
         [
             "Stand-Bruch (der Satz zählt nur seinen Stand)",
-            bytes100("streuSatz wahl:stand haupt", {
-                inhalt: { streuSatz: { stand: 5, verdichtet: 0, bereiche: 0, keys: [] } },
+            bytes100("formationenSatz wahl:stand haupt", {
+                inhalt: { formationenSatz: { stand: 5, verdichtet: 0, bereiche: 0, keys: [] } },
             }),
             "ohne",
         ],
@@ -294,7 +294,7 @@ function selbsttest() {
         ["Folge (die offene Ordnung lief)", { arbeit: 57, jePass: jp, inhalt: { boden: { grund: "folge" } } }, 0],
         [
             "Stand-Bruch (der Satz zählt nur seinen Stand)",
-            { arbeit: 57, jePass: jp, inhalt: { streuSatz: { stand: 5, verdichtet: 0, bereiche: 0, keys: [] } } },
+            { arbeit: 57, jePass: jp, inhalt: { formationenSatz: { stand: 5, verdichtet: 0, bereiche: 0, keys: [] } } },
             57,
         ],
     ]) {
@@ -442,21 +442,21 @@ function selbsttest() {
         bytes: 0,
         bytesJe: {},
         bytesGrund: {},
-        warum: { "streuSatz stand": 5, "bauSatz stand": 2, "boden stand": 2 },
+        warum: { "formationenSatz stand": 5, "bauSatz stand": 2, "boden stand": 2 },
         aufrufe: { _chunkSatzAbschnitt: 16, _hoehlenSicht: 3, _hoehlenSichtLicht: 2 },
         pruefung: { _passTrifft: 12109, _hoehlenRect: 1227 },
         trifft: {},
         treffer: { _satzAbschnittSteht: 61 },
         verfehlt: { _satzAbschnittSteht: 10 },
-        neu: { "satz streuSatz|haupt": 5, "satz bauSatz|haupt": 2 },
+        neu: { "satz formationenSatz|haupt": 5, "satz bauSatz|haupt": 2 },
         jePass: { haupt: { pruefung: 13336, ecken: 9816 }, k0: { pruefung: 1736, ecken: 0 } },
         ecken: 9816,
         inhalt: {
-            streuSatz: { stand: 5, verdichtet: 0, bereiche: 0, keys: [] },
+            formationenSatz: { stand: 5, verdichtet: 0, bereiche: 0, keys: [] },
             bauSatz: { stand: 2, verdichtet: 0, bereiche: 0, keys: [] },
             boden: { stand: 1, verdichtet: 0, bereiche: 0, keys: [] },
         },
-        inhaltOhne: { "streuSatz stand:ohne": 5, "bauSatz stand:ohne": 2, "boden stand:ohne": 1 },
+        inhaltOhne: { "formationenSatz stand:ohne": 5, "bauSatz stand:ohne": 2, "boden stand:ohne": 1 },
         licht: 0,
         kamera: 0,
         tag: 0.5,
@@ -468,7 +468,7 @@ function selbsttest() {
         [
             "Stand-Churn ohne Ursache in Ruhe (der Täter der Gegenprüfung)",
             ["ruhe=", churnPhase()],
-            /RUHE: Satz-Arbeit ohne Ursache in 5 von 5 Frames — streuSatz stand:ohne ×25/,
+            /RUHE: Satz-Arbeit ohne Ursache in 5 von 5 Frames — formationenSatz stand:ohne ×25/,
         ],
         [
             "Stand-Churn ohne Ursache: die Arbeit ist Arbeit ohne Änderung",
@@ -494,7 +494,7 @@ function selbsttest() {
                     frames: 5,
                     kameraFrames: 0,
                     arbeitOhne: { frames: 5, median: 14999, max: 14999 },
-                    taeter: ["satz streuSatz|haupt ×5", "werfer regionBundle:3,4|k0 ×2"],
+                    taeter: ["satz formationenSatz|haupt ×5", "werfer regionBundle:3,4|k0 ×2"],
                 }),
             ],
             /AUGE: das Auge atmet unter dem Halt, doch die Sicht-Kette arbeitet ohne Änderung in 5 von 5 Frames \(Median 14999/,

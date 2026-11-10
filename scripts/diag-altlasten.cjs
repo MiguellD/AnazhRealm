@@ -536,8 +536,8 @@ const FORBIDDEN = [
     ["[4000, 1500, 1400]", "Welle 6 — der Strauch hat kein Rezept 0 (die Klingen-Krone)"],
     ["_chunkSatzLeert", "W7 — _chunkSatzVerdichten (der leere Satz ist der Fall Inhalt 0)"],
     ["s.leerSeit", "W7 — s.ueberSeit (die Frist zählt ab dem Überschreiten der Schwelle, für jeden Satz)"],
-    ["this._senkeMesh(a, 64, this.state.scene)", "W7 — die Nah-Streu-Senke zeichnet nie selbst (_streuSatzArt)"],
-    ["positionGeometry.y.mul(wiegen)", "W7 — die Höhe der wiegenden Nah-Streu ist aWiege (_satzBlock)"],
+    ["this._senkeMesh(a, 64, this.state.scene)", "w27-takt-streu — die Senke der Nah-Streu wächst im Bestand ihrer Familie (_bestandFamilie)"],
+    ["positionGeometry.y.mul(wiegen)", "w27-takt-streu — die Höhe der wiegenden Nah-Streu ist Vorlage × Skala der Instanz (_weltNaht)"],
     ['"|wiegt:"', "W7 — EIN wiegender Stoff je Regler, nie je Studio-Skala (|wiegt)"],
     ["kartenSicht", "W7-Vereinigung — die Karten wählt die GPU wie jede globale Gruppe (_instanzWahlGpu)"],
     ...[
@@ -567,6 +567,19 @@ const FORBIDDEN = [
     ...["_nahWieseSicht", "_nahWieseFernSatz", "_wieseFernAnker", "_wieseFernWahl", "_wieseFernSchreib", "fernHalt"].map(
         (token) => [token, "w25-gpu-wahl — Nähe, Ferne und Schale der Nah-Wiese wählt die GPU (_nahWieseBestand, _wieseAugeTakt)"]
     ),
+    ...[
+        "_streuSatzArt",
+        "_streuNahSatz",
+        "_streuNahBereich",
+        "_nahStreuArmlaenge",
+        "STREU_SATZ_ATTR",
+        "STREU_FEST_ATTR",
+        "JAHR_SATZ_ATTR",
+        "_satzKernWiege",
+        '"aWiege"',
+        "_nahWieseZustand",
+        "zustandCap",
+    ].map((token) => [token, "w27-takt-streu — die Nah-Streu wählt die GPU je Pflanze (_nahStreuBestand, der Zustand jeder Nähe _naheZustand)"]),
     ["_sichtKugel", "W7-Vereinigung — das EINE Gesetz der Pass-Wahl (_passTrifft)"],
     ["_instanzKapselTrifft", "W7-Vereinigung — die Licht-Kapsel gilt jedem Leser (_passTrifft)"],
     ["_instanzWahlLage", "W7-Vereinigung — EINE Lage je Pass für jeden Leser (_passWahlLage)"],
