@@ -112,3 +112,30 @@
 - **OMEN:** Bisektion der GPU-ms-Stufe läuft mit Lebenszeichen; erste Linie Täter = Merge b5012e8b (w20-fern-hang), im Zweig bei
   [11/23] 0ab95ff4 = gut (wiese-ego 23,0 ms). Schließende Zeile `gpu-stufe` steht aus.
 - `zug/brief-gemein.md` nennt jetzt die Wachstums-Wand statt der Decke.
+
+## Stand 02:41 (10.11.) — Fable 96 %, die Züge fahren ohne LLM weiter
+
+- **Budget:** Weekly · Fable **96 %** um 02:38 (alle Modelle 66 %, Reset 14.11. 21:00 UTC). Notbremse bei 98 %.
+- **Die Zug-Kette ohne LLM:** z358 fährt (boden-nah-2 + stadt-bild, Vorzug GRÜN 02:09). z359 = `z359-buendel.sh` (K7-Linse; studio-mesh
+  nur mit grüner Probe, sie ist ROT → die Linse fährt allein). **z360–z365 = `zug/werkzeug-w3/zug-nie-leer.sh z359 360 365`** (läuft seit
+  02:38, genau EINE Instanz, Log `/tmp/claude/w4/zug-nie-leer.log`, Wartende mit Grund in `zug-nie-leer.wartet`). Es sammelt nach jedem
+  Zug-Urteil die Abgaben auf **w27-*** (nie `-pm`, nie w26: die alten fuhren schon), deren Kopf noch in keinem Zug stand
+  (`/tmp/claude/w4/zug-gefahren.txt`), mit Code-Check GRÜN, mit GPU-Probe GRÜN, sobald der Zweig das Spiel berührt, konfliktfrei und mit
+  Wand-Summe GRÜN (`wand-summe.sh`), höchstens 4 je Zug. Ein gefahrener Kopf fährt erst mit neuem Kopf wieder. **Starte nie eine zweite
+  Schlange daneben** (`ps -ef | grep zug-nie-leer`). Der Blick 02:38: z360 würde `w27-lod-baum` e15fbe92 fahren.
+- **ROT an der Probe, beide warten auf einen neuen Kopf ihrer Cloud-Sitzung:**
+  `w27-studio-mesh` da9919e3: `gate:studio-huelle` ROT (H8 GPU-ms Leiste ↔ Messung an koerperstudio, tetrapoda, terrain; H7 p95 Neubau
+  1521 ms > 1000 ms). Gemessen unter fremder Last der Radeon; Linse oder Spiel ist NICHT entschieden, der Vergleich an main fehlt. Post
+  liegt in `cloud-post/w27-studio-mesh.md`.
+  `w27-ferne-ton-5` 80bcd308: `gate:luft-tiefe:echt` ROT nach 85 s (K2-1 Restkontrast 0,02149 > 0,02 bei 35,6 km · K1-2 FARBTON 166,33° von
+  der Luft bei 8 km · K1-2 JE KANAL Uhr 0,27 ungemessen, 0–1 Paare < 30 · K1-2 HIMMEL nicht blau). Kein Post von mir, der Probe-Bericht
+  liegt in `probe-post/w27-ferne-ton-5/80bcd308.md`.
+- **w27-ort-pose (GTX 1050, kann nicht pushen):** Dreier GRÜN am Baum 870532b4 auf 20a01782 (dorf, stadt, welt-boot; stadt-voll OFFEN).
+  Der Patch kommt als 3 Nachrichten (gzip + base64, sha256 des Patches 351a79a0f4ae2c8a94f0d1a9492132a451b07dbe1e68f3a4a16be018b5e1c8e2).
+  Weg: die Teile aus dem Transkript dieser Sitzung schneiden (nicht abtippen), `base64 -d | gunzip`, sha256 prüfen, `git am` auf 20a01782,
+  pushen NUR bei Tree-ID 870532b41e92504913e077f3de2a088afdb2d3ca. Danach sammelt `zug-nie-leer.sh` den Zweig von selbst, sobald
+  Code-Check und Probe grün sind. Wand: Prüf +330 / Spiel +1156, erlaubt 578.
+- **Champions (opus), beide noch ohne Bericht:** `w27-wald-kosten-heim` (takt-streu + heim3-w20-wald-kosten auf main, Worktree
+  `/tmp/claude/w4/wald-heim`) und `w27-fenster-wand` (`/tmp/claude/w4/fenster-wand`). Mit Abgabe + grüner CI fahren sie von selbst.
+- **Buchung:** steht bei 224/330 am fbbeb318. main ist 20a01782 (z356, Decke gefallen); `nach-landung2.sh` misst noch `--offen` am
+  fbbeb318 (seit 01:25) und bucht danach den neuen Kopf. Meisterkarte Version 4 = 224.
