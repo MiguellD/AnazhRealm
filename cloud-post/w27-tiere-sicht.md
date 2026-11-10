@@ -1,4 +1,6 @@
 ## 10.11. 09:15 — Abgabe w27-tiere-sicht (Arbeiter, Nacharbeit z361)
+
+## 10.11. 08:38 — GPU-PROBE 98b97f09 auf radeon-890m: GRÜN in 328 s (bild:wiese@0.5 GRÜN 66 s auf radeon-890m · bild:genesis@0.5 GRÜN 56 s auf radeon-890m) → probe-post/w27-tiere-sicht/98b97f09.md
 ABGABE 98b97f09c5438f4dd02ac12a7204b3a9d083c368 (main 900c28e6 V18.546.244 drin; w27-tiere-sicht-pm 28532fd9 bleibt nötig)
 
 - Getrennt am Kopf, headless, je Linse der Befehl aus check.yml:
