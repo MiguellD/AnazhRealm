@@ -1,7 +1,7 @@
 {
  "sha": "78d37554b2d5f98d96ef454cfa9f51752c0e45a0",
  "geraet": "gtx",
- "zeit": "2026-11-10T05:17:31.370Z",
+ "zeit": "2026-11-10T05:22:55.373Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "ferne.K1#2": {
@@ -294,6 +294,54 @@
    },
    "zeit": "2026-11-10T05:17:31.370Z",
    "abdruck": "ca610f2672bb",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "material.K1#2": {
+   "gruen": true,
+   "zahl": "Karte Welt 0.1799 · Labor terrain 0.1799, garage 0.1799, portale 0.1799, schmiede 0.1799, fachwerk 0.1799, koerperstudio 0.1799, tetrapoda 0.1799 · Soll 0.18 ± 0.003 · Zeilen alle im Soll und Band · echt beide Seiten · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.51,
+   "gpu": "nvidia/pascal",
+   "s": 90.4,
+   "fremd": {
+    "s": 92.4,
+    "takte": 42,
+    "fremdS": 172.06,
+    "kerne": 1.862,
+    "fensterKerne": 2.077,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      98.89
+     ],
+     [
+      "MsMpEng.exe",
+      18.83
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      17.58
+     ]
+    ],
+    "dienerS": 40.45,
+    "diener": [
+     [
+      "System",
+      17
+     ],
+     [
+      "dwm.exe",
+      16.84
+     ]
+    ],
+    "eigenS": 292.08,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-10T05:22:55.373Z",
+   "abdruck": "18928b5b08be",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
@@ -1553,24 +1601,30 @@
   }
  },
  "sitzung": {
-  "start": "2026-11-10T05:16:53.624Z",
+  "start": "2026-11-10T05:22:18.410Z",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 7.4,
+  "bootS": 7.6,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": "wiese",
-    "vor": "lod.K5#1",
-    "s": 28.9,
-    "takte": 541,
+    "ort": "genesis",
+    "vor": "material.K1#2",
+    "s": 27.7,
+    "takte": 709,
     "chunks": 81,
     "nach": null
    }
   ],
   "wegeTueren": [],
+  "unerklaert": [
+   {
+    "probe": "material.K1#2",
+    "wie": "werke +5 (−0)"
+   }
+  ],
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
@@ -1583,11 +1637,11 @@
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 73,
+   "zapfen": 116,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 79.6,
-  "minuten": 1.38
+  "fahrtS": 127.4,
+  "minuten": 2.2
  }
 }
