@@ -592,7 +592,8 @@ async function lebenBuehnen() {
     // Gegenlauf „Durst aus“ (drei Hirsche, 10 Spielstunden). DAS GESETZ IST EIN MITTEL (Pegel- und Magen-Bilanz): bis
     // w27-wagen-spalt-3 maß die Probe 24 Spielstunden, wenige Ruhe-Zyklen — der Hirsch ruhte je nach Ort und Rempelei 0,41–0,44
     // und zog 0,076–0,096 (Soll 0,1 ± 20 %: main an einem zweiten Ufer ROT 0,076, der Kopf im CI 0,079); über 72 Stunden steht er
-    // an main bei 0,402 · 0,500 · 0,098, mit der gezeichneten Haut bei 0,403 · 0,494 · 0,104 ──
+    // an main bei 0,402 · 0,500 · 0,098, mit der gezeichneten Haut bei 0,403 · 0,494 · 0,104. Woraus das Ziehen des Hirschs
+    // besteht (24 h, Kopf): entschieden 0,7 % — der Rest ist der Heimweg jenseits der Leine beim Äsen (6,2 %) und das Trinken ──
     await buehne("tagesbudget", async (restore) => {
         const LG = A._lebensraumGesetz(),
             SW = A._verhaltenGesetz().stimmung.schwellen;
