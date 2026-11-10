@@ -1,7 +1,7 @@
 {
  "sha": "5b9c6427d7e3db0712e20d104b012a83f8ffd68c",
  "geraet": "gtx",
- "zeit": "2026-11-10T18:56:16.038Z",
+ "zeit": "2026-11-10T19:16:17.422Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "ankunft.K1#1": {
@@ -215,19 +215,19 @@
   }
  },
  "sitzung": {
-  "start": "2026-11-10T18:55:44.679Z",
+  "start": "2026-11-10T19:15:43.784Z",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 7.4,
+  "bootS": 6.5,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": null,
-    "vor": "ankunft.K3#1",
-    "s": 22.7,
-    "takte": 831,
+    "ort": "genesis",
+    "vor": "ankunft.K4#1",
+    "s": 25.6,
+    "takte": 681,
     "chunks": 81,
     "nach": null
    }
@@ -236,20 +236,87 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 178,
-   "frameP95": 450.04,
-   "taktP95": 191.23,
-   "vramMax": 142.1,
-   "seiten": 5,
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 67,
-   "luecken": 5,
-   "letzteLuecke": "THREE is not defined"
+   "zapfen": 95,
+   "luecken": 8,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
   },
-  "fahrtS": 81.4,
-  "minuten": 1.42
+  "fahrtS": 183.9,
+  "minuten": 3.11
+ },
+ "ungemessen": {
+  "ankunft.K4#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 139 s gerissen: Stille seit 15 s nach 148.8 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-45 64976 ms)",
+   "exit": 1,
+   "minuten": 2.48,
+   "grund": "Deckel 139 s gerissen: Stille seit 15 s nach 148.8 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-45 64976 ms)",
+   "s": 149,
+   "fremd": {
+    "s": 152.2,
+    "takte": 71,
+    "fremdS": 68.67,
+    "kerne": 0.451,
+    "fensterKerne": 0.646,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      24.31
+     ],
+     [
+      "BackgroundDownload.exe --child --activityId 6084168f-afd9-4773-bae6-2cbaf12460a8 --childCl",
+      12.53
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      11.88
+     ]
+    ],
+    "dienerS": 43.14,
+    "diener": [
+     [
+      "System",
+      21.58
+     ],
+     [
+      "dwm.exe",
+      14.23
+     ]
+    ],
+    "geraetS": 20.97,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      9.94
+     ],
+     [
+      "svchost.exe",
+      9.17
+     ],
+     [
+      "OmenCommandCenterBackground.exe",
+      0.75
+     ]
+    ],
+    "eigenS": 146.52,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon"
+   },
+   "zeit": "2026-11-10T19:16:17.422Z",
+   "abdruck": "ea66260e5746",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
  }
 }
