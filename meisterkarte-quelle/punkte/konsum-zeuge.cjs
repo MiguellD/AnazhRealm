@@ -12,6 +12,8 @@
 //     Moduls ist kein Text-Lesen, seine Bereiche nennt die Coverage). Asynchrones Lesen ist in diesem Baum das Ausliefern eines
 //     Servers (save-server.js, statikServer) und zählt nie: was die Seite lud, nennt die Seite.
 //   · `geladen`: ein gelesenes Verzeichnis „pfad/“ („pfad/**“ rekursiv) — eine Datei, die dort dazukommt oder fällt, ändert den Lauf.
+//   · `npm`: der Prozess IST npm (npm-cli, npx) — nur dann zählt das Befehls-Verzeichnis `scripts` der package.json (jeder Prozess
+//     mit puppeteer liest package.json für dessen Einstellung; eine Skript-Zeile mehr ändert seinen Lauf nicht).
 //   · DIE SEITE (nur mit PUNKTE_KONSUM_SEITE=1: nie an einer Zeit-Station, nie in der Welt der Sitzung): die Precise Coverage je
 //     Funktion jeder Seite und jedes Workers — angeheftet, BEVOR das Ziel läuft (puppeteer schickt runIfWaitingForDebugger nach
 //     `sessionattached`) —, ein Skript über das Netz (`geladen`), eine Datei als Text oder Daten (`ganz`: fetch, JSON, Bild, Dokument)
@@ -267,7 +269,8 @@ if (KONSUM && BAUM) {
             for (const e of konsum.js.values()) if (e) e.an.fill(0);
             konsum.texte.clear();
         }
-        return JSON.stringify({ js, skripte: [...konsum.skripte], geladen: [...konsum.geladen], ganz: [...konsum.ganz], warum: konsum.warum, browser: konsum.browser, seite: SEITE });
+        return JSON.stringify({ js, skripte: [...konsum.skripte], geladen: [...konsum.geladen], ganz: [...konsum.ganz], warum: konsum.warum, browser: konsum.browser, seite: SEITE,
+            npm: /(^|[\\/])(npm-cli\.js|npx-cli\.js|npm|npx)$/.test(process.argv[1] || "") });
     };
     let zu = false;
     function abschluss() {

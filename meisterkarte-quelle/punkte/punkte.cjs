@@ -21,8 +21,12 @@
 //   node punkte.cjs vereine --sha <voll> --geraet headless --farm <name> --teile <dir> [--scheiben scheiben.json] [--beginn <s>]
 //        die Teil-Messungen der Scheiben zur EINEN messung/<sha8>-<geraet>.json samt Roh-Ausgaben
 //   node punkte.cjs buchen --kopf <sha> [--trocken]
-//        liest alle messung/*.json, urteilt R6 (Pfad und Linse unberührt seit der Messung) und R10, schreibt stand.json
+//        liest alle messung/*.json, urteilt R6 (NACH KONSUM: der Diff seit der Messung trifft, was der Lauf ausführte oder las — eine
+//        Messung ohne Konsum-Menge urteilt nach Pfad und Linse wie bisher, gezählt beim Namen) und R10, schreibt stand.json
 //        (--trocken: dieselben Zeilen samt RÜCKFALL, stand.json bleibt unberührt)
+//   node punkte.cjs beruehrt --basis <sha> --kopf <sha> [--json]   welche Stationen berührt der Diff eines Zweigs: je Gerät die Hälften,
+//        deren Messung an der Basis frisch gilt und am Kopf nicht mehr (dasselbe Frische-Urteil wie die Buchung, R6 nach Konsum) —
+//        `nur=…` für den Zug-Dienst und den Richter nach der Landung; daneben die Hälften, die schon an der Basis offen sind
 //   node punkte.cjs liste [--kopf <sha>]   die registrierten Stationen, geprüft gegen src/gN.js und jeder pfad-Glob gegen den
 //        Kopf (sonst origin/main des Spiel-Klons)
 //   node punkte.cjs gtx-nutzen --kopf <sha>   die GTX-Stationen, deren Messung am Kopf Punkte ändern kann (nur=… für die OMEN):
@@ -83,7 +87,8 @@
 // jede auf jedem ihrer Geräte grün ist (stufen). Ein Kriterium ohne Staffel-1-Station ist ROT.
 //
 // BUCHUNG (R2 · R6 · R10): je Station und Gerät zählt die JÜNGSTE Messung, deren Abdruck (Befehl, Urteil, Pfad, Hilfen)
-// der Station gleicht und deren Pfad und Linse zwischen Mess-SHA und Kopf ohne Stempel unberührt sind (stempelDateien, linsenVon). 1 = jede
+// der Station gleicht und deren KONSUM (Abschnitt „Konsum“: was ihr Lauf ausführte und las — konsum-zeuge.cjs) zwischen Mess-SHA und
+// Kopf ohne Stempel unberührt ist; trägt die Messung keinen Konsum, ihr Pfad und ihre Linse (stempelDiff, linsenVon). 1 = jede
 // Staffel-1-Station auf mindestens einem ihrer Geräte grün · 2 = dazu jede Staffel-2-Station auf JEDEM ihrer Geräte grün ·
 // sonst 0. Ein jüngeres ROT schlägt ein älteres GRÜN.
 // DIE RATSCHE (Schöpfer 30.10.: „Tests sichern nur den Rückfall, nie den Fortschritt — das jetzige Minimum sichern und mehr
@@ -3799,7 +3804,26 @@ function stempelDiff(namen, diffText) {
 }
 const stempelDateien = (namen, diffText) => stempelDiff(namen, diffText).dateien;
 // der Diff zweier Stände des Spiel-Klons für R6 — EINE Stelle für buchen, run --offen, plan und beruehrt
-const standDiff = (repo, von, bis) => stempelDiff(git(["diff", "--no-renames", "--name-only", von, bis], repo), git(["diff", "--no-renames", "-U0", "--no-color", von, bis], repo));
+// DAS BEFEHLS-VERZEICHNIS VON NPM (10.11.: 3 der letzten 39 Landungen änderten in package.json nur eine Skript-Zeile, und jeder Prozess
+// mit puppeteer liest package.json für dessen Einstellung): `nurNpmSkripte` nennt einen Diff, der in package.json außer `scripts` und
+// `version` nichts ändert — er trifft nur einen Lauf, in dem npm lief (der Zeuge sagt es: ":npm" im Konsum, konsumTreffer)
+const NPM_VERZEICHNIS = "package.json";
+function standDiff(repo, von, bis) {
+    const d = stempelDiff(git(["diff", "--no-renames", "--name-only", von, bis], repo), git(["diff", "--no-renames", "-U0", "--no-color", von, bis], repo));
+    // erst gelesen, wenn ein Konsum danach fragt (zwei `git show` je Mess-SHA)
+    let nur = null;
+    Object.defineProperty(d, "nurNpmSkripte", { enumerable: true, get() {
+        if (nur != null) return nur;
+        if (!d.dateien.includes(NPM_VERZEICHNIS) || d.neu.has(NPM_VERZEICHNIS)) return (nur = false);
+        try {
+            const [a, b] = [von, bis].map((s) => { const j = JSON.parse(git(["show", s + ":" + NPM_VERZEICHNIS], repo)); delete j.scripts; delete j.version; return JSON.stringify(j); });
+            return (nur = a === b);
+        } catch (_e) {
+            return (nur = false);
+        }
+    } });
+    return d;
+}
 
 // ───────────────────────────────── Konsum (R6) ─────────────────────────────────
 // R6 NACH KONSUM (10.11., Befund GROSSES BILD B2 + B6: an vier der fünf Landungen 900c28e6 … 4e2df19b machte EINE geänderte Datei der
@@ -3960,6 +3984,7 @@ function konsumFalten(stuecke, baum, acorn = konsumAcorn(baum)) {
             if (r.browser && !r.seite) seite = false;
             for (const p of r.ganz) ganz(p, (r.warum && r.warum[p]) || "gelesen");
             for (const p of r.geladen) ganz(p, "Verzeichnis");
+            if (r.npm) k[":npm"] = "*"; // kein Pfad: in diesem Lauf lief npm (standDiff nurNpmSkripte)
             for (const p of r.skripte || []) if (!js.has(p)) js.set(p, { len: null, bereiche: [] });
             for (const [p, e] of Object.entries(r.js)) {
                 const d = js.get(p) || { len: null, bereiche: [] };
@@ -4050,6 +4075,7 @@ function konsumTreffer(K, d, st, seite, skript) {
     return d.dateien.filter((f) => {
         const imDir = (p) => (p.endsWith("/**") ? p === "./**" || f.startsWith(p.slice(0, -2)) : (f.includes("/") ? f.slice(0, f.lastIndexOf("/") + 1) : "./") === p);
         if (d.neu && d.neu.has(f) && K.dirs.some(imDir)) return true;
+        if (f === NPM_VERZEICHNIS && d.nurNpmSkripte && !K.k[":npm"]) return false;
         const s = K.k[f];
         if (s) {
             if (s === "*" || !d.zeilen || !d.zeilen.has(f)) return true;
@@ -4276,6 +4302,46 @@ function planCli(opt) {
         console.log(g + " halten " + p.halten[g].length + " Stationen ~" + sum(p.halten[g]) + " min (Rückfall-Probe, prio 3) · nur=" + p.halten[g].join(","));
     }
     return p;
+}
+
+// DER ZWEITE NUTZEN DES KONSUMS (`beruehrt --basis <sha> --kopf <sha>`): welche Stationen berührt der Diff eines Zweigs? Zweimal das
+// EINE Frische-Urteil der Buchung über dieselben Messungen — an der Basis und am Kopf: BERÜHRT ist die Hälfte, deren Messung an der
+// Basis frisch gilt und am Kopf nicht mehr (der Zweig traf, was ihr Lauf ausführte oder las; ohne Konsum-Menge: ihre Linse, ihren
+// Glob); OFFEN die, die schon an der Basis keine frische Messung trägt (über sie sagt keine Messung etwas — der Richter misst sie
+// ohnehin); TOT die mit totem Glob am Kopf. anBasis/amKopf(messSha) → stempelDiff bis zum Stand; opt.basis/opt.kopf wie frischUrteil.
+// Rückgabe { je: { geraet: { haelften, beruehrt: [{ id, r6, grund }], offen: [id], tot: [id] } } }
+function beruehrt(stationen, messungen, anBasis, amKopf, hilfe = hilfeText(), opt = {}) {
+    const fb = frischUrteil(messungen, anBasis, hilfe, opt.basis || {}), fk = frischUrteil(messungen, amKopf, hilfe, opt.kopf || {});
+    const je = {};
+    for (const st of stationen)
+        for (const g of geraeteVon(st)) {
+            const z = je[g] || (je[g] = { haelften: 0, beruehrt: [], offen: [], tot: [] });
+            const id = schluessel(st), b = fb(st, g), k = fk(st, g);
+            z.haelften++;
+            if (k.tot) z.tot.push(id);
+            else if (b.ungemessen) z.offen.push(id);
+            else if (k.ungemessen) z.beruehrt.push({ id, r6: k.r6 || null, grund: k.grund });
+        }
+    return { je };
+}
+function beruehrtCli(opt) {
+    if (!opt.basis || !opt.kopf) throw new Error("beruehrt --basis <sha> --kopf <sha>");
+    const { stationen, fehler } = ladeGeprueft();
+    if (fehler.length) throw new Error("Stationen ROT:\n - " + fehler.join("\n - "));
+    const repo = spielRepo();
+    const [basis, kopf] = [voll(repo, opt.basis), voll(repo, opt.kopf)];
+    const seite = (sha) => ({ tot: ((d) => (st) => toteGlobs(st.pfad, d))(dateienAm(repo, sha)), roh: rohAus(), linsen: linsenAm(repo, sha), skript: skripteAm(repo) });
+    const r = beruehrt(stationen, ladeMessungen(), (s) => standDiff(repo, s, basis), (s) => standDiff(repo, s, kopf), hilfeText(), { basis: seite(basis), kopf: seite(kopf) });
+    Object.assign(r, { basis, kopf, dateien: standDiff(repo, basis, kopf).dateien.length });
+    if (opt.json) return (console.log(JSON.stringify(r)), r);
+    console.log("BERÜHRT " + basis.slice(0, 8) + " → " + kopf.slice(0, 8) + " · " + r.dateien + " Dateien im Diff");
+    for (const g of GERAETE.filter((x) => r.je[x])) {
+        const z = r.je[g], nk = z.beruehrt.filter((x) => x.r6 === "konsum").length;
+        console.log(g + " berührt " + z.beruehrt.length + " von " + z.haelften + " (nach Konsum " + nk + ", nach Linse und Glob " + (z.beruehrt.length - nk) + ") · nur=" + z.beruehrt.map((x) => x.id).join(","));
+        if (z.offen.length) console.log(g + " offen an der Basis " + z.offen.length + " (keine frische Messung: über sie urteilt kein Konsum) · nur=" + z.offen.join(","));
+        if (z.tot.length) console.log(g + " toter Glob am Kopf " + z.tot.length + " · " + z.tot.join(","));
+    }
+    return r;
 }
 
 function gtxNutzenCli(opt) {
@@ -5584,6 +5650,149 @@ async function selbsttest(o = {}) {
         w = buchen("kopf", [sl], ml, () => [], h, [], { linsen: () => { throw new Error("Linse scripts/diag-x.cjs unlesbar: x"); } });
         pruef("LINSE unlesbar → ungemessen beim Namen", w.je["gelaende.K4"].punkte === 0 && /Linse unlesbar — kein R6-Urteil/.test(radeon(w).grund), radeon(w).grund);
     }
+    // (5k) R6 NACH KONSUM (Abschnitt „Konsum“; die Linse mit ihren Mutanten): eine Station veraltet nur, wenn sie den geänderten Code
+    // AUSFÜHRTE. Ende zu Ende: der Läufer, der Zeuge in jedem node-Prozess, ein Browser mit Seite und Faden — die Linsen-Bibliothek
+    // scripts/lib/linse.cjs führt `ja` aus, reicht `inSeite` als Text an die Seite und ruft `nein` nie; die Seite führt `getan` aus und
+    // `nie` nie, der Faden `imFaden`, sie holt daten.json; ein Kind ruft `k` und wird getötet (der Zeuge bittet es vorher um den Abschluss)
+    {
+        const baum = fs.mkdtempSync(path.join(os.tmpdir(), "punkte-konsum-"));
+        const fn = (n, r) => "function " + n + "() {\n    return " + r + ";\n}\n";
+        const pp = path.join(spielRepo(), "node_modules", "puppeteer").split(path.sep).join("/");
+        const texte = {
+            "probe.html": '<!doctype html><script src="probe.js"></script>',
+            "probe.js": fn("getan", 1) + fn("nie", 2) + 'getan();\nnew Worker("faden.js").onmessage = (e) =>\n    fetch("daten.json").then((r) => r.json()).then((j) => (window.da = e.data + j.n));\n',
+            "faden.js": fn("imFaden", 5) + fn("nieFaden", 6) + "postMessage(imFaden());\n",
+            "kind.js": "exports.k = " + fn("", 1) + "exports.nie = " + fn("", 2),
+            "daten.json": '{ "n": 1 }',
+            "scripts/werk.sh": "echo 1\n",
+            "scripts/lib/linse.cjs": "const TAFEL = { soll: 1 };\n" + fn("ja", "TAFEL.soll") + fn("nein", 2) + fn("inSeite", 3) + "module.exports = { ja, nein, inSeite };\n",
+            "scripts/lauf.cjs": ['const http = require("http"), fs = require("fs"), path = require("path"), L = require("./lib/linse.cjs");', "L.ja();",
+                'const kind = require("child_process").spawn(process.execPath, ["-e", "require(\'./kind.js\').k(); console.log(1); setInterval(() => {}, 1000)"], { stdio: ["ignore", "pipe", "inherit"] });',
+                'kind.stdout.once("data", () => kind.kill());',
+                'const s = http.createServer((q, a) => fs.readFile(path.join(process.cwd(), q.url.slice(1)), (e, d) => a.end(e ? "" : d)));',
+                's.listen(0, "127.0.0.1", async () => {', '    const b = await require("' + pp + '").launch({ args: ["--no-sandbox"] });', "    const p = await b.newPage();",
+                '    await p.goto("http://127.0.0.1:" + s.address().port + "/probe.html");', "    await p.waitForFunction(() => window.da === 6, { timeout: 20000 });",
+                "    const drei = await p.evaluate(L.inSeite);", "    await b.close();", "    s.close();", "    fs.writeFileSync(process.argv[2], JSON.stringify({ n: drei - 3 }));", "});", ""].join("\n"),
+        };
+        for (const [n, x] of Object.entries(texte)) (fs.mkdirSync(path.dirname(path.join(baum, n)), { recursive: true }), fs.writeFileSync(path.join(baum, n), x));
+        const acorn = acornVon(spielRepo());
+        const sk = { ...st0, befehl: ["node", "scripts/lauf.cjs", "{AUS}"], urteil: lies, pfad: ["probe.js", "anders.js", "scripts/lib/linse.cjs"] };
+        const ek = await fahreStation(sk, { ...ctx("konsum"), baum, deckelMinS: 120 });
+        const K = ek.konsum ? konsumVon(ek, null).k : {};
+        const zeilen = (f) => (!K[f] || K[f] === "*" ? K[f] : skriptZeilen(skriptVon(texte[f], acorn), K[f].split(":")[1]).map(([x, y]) => (x === y ? x : x + "-" + y)).join(","));
+        // `nein` (Zeilen 5–7) und `nie` fehlen bis auf die Zeile ihrer schließenden Klammer (ihr Umbruch ist Kopf-Code)
+        const soll = { "scripts/lib/linse.cjs": "1-4,7-13", "probe.js": "1-3,6-11", "faden.js": "1-3,6-9", "kind.js": "1-4,6-8", "daten.json": "*", "probe.html": "*" };
+        pruef("KONSUM Ende zu Ende: ausgeführt und gelesen, nie das Nie — die Linsen-Bibliothek im Knoten (ihr Kopf-Code, `ja`, der Text von `inSeite`; nie `nein`), die Seite, der Faden, das getötete Kind, die JSON; die Seite trägt er (kein Zeit-Urteil)",
+            ek.gruen && ek.konsumSeite === true && Object.entries(soll).every(([f, s]) => zeilen(f) === s) && /^1-/.test(zeilen("scripts/lauf.cjs") || ""),
+            JSON.stringify({ gruen: ek.gruen, zahl: ek.zahl, seite: ek.konsumSeite, fehlt: ek.konsumFehlt, zeilen: Object.fromEntries(Object.keys(K).map((f) => [f, zeilen(f)])) }));
+        // DIE MUTANTEN an der Buchung: (a) eine Änderung in einer ausgeführten Funktion macht die Station alt, (b) eine Änderung in einer nie
+        // ausgeführten Funktion derselben Datei lässt sie frisch, (c) eine Station ohne Konsum-Menge urteilt wie bisher und ist beim Namen gezählt
+        const skript = () => (f) => (f in texte ? skriptVon(texte[f], acorn) : null);
+        const mk = (mehr) => ({ sha: "a1", geraet: "headless", je: { "gelaende.K4#1": { gruen: true, zahl: "z", zeit: "2026-11-10T10:00:00Z", abdruck: abdruck(sk, h), ...mehr } } });
+        const mitK = mk({ konsum: ek.konsum || "", konsumSeite: ek.konsumSeite });
+        const d = (f, a, b, neu = false) => () => ({ dateien: [f], zeilen: new Map([[f, [[a, b]]]]), neu: new Set(neu ? [f] : []) });
+        const buche = (m, g, linse = []) => buchen("kopf", [sk], [m], g, h, [], { skript, linsen: () => linse });
+        const fall = (name, m, g, punkte, grund, linse) => {
+            const b = buche(m, g, linse), x = b.je["gelaende.K4"], e = x.stationen[0];
+            pruef(name, x.punkte === punkte && (!grund || grund.test(e.grund || "")), x.beleg + " · r6 " + JSON.stringify(b.r6));
+            return b;
+        };
+        fall("KONSUM (a) Änderung in `ja` (ausgeführt) → alt beim Namen der Datei → 0", mitK, d("scripts/lib/linse.cjs", 3, 3), 0, /^Konsum seit der Messung geändert \(R6: scripts\/lib\/linse\.cjs\)$/);
+        const b = fall("KONSUM (b) Änderung in `nein` (nie ausgeführt, dieselbe Datei) → frisch → 1", mitK, d("scripts/lib/linse.cjs", 6, 6), 1);
+        pruef("KONSUM die Buchung zählt die Hälfte nach Konsum", b.r6.konsum === 1 && b.r6.naehe.length === 0 && b.r6.haelften === 1 && /^R6 nach Konsum: 1 von 1 Hälften/.test(r6Zeile(b.r6)), r6Zeile(b.r6));
+        const c = fall("KONSUM (c) dieselbe Änderung an einer Messung OHNE Konsum-Menge → die Linse urteilt wie bisher → alt → 0", mk({ konsumFehlt: "1 Prozess(e) ohne Ende" }), d("scripts/lib/linse.cjs", 6, 6), 0,
+            /^Linse seit der Messung geändert \(R6: scripts\/lib\/linse\.cjs\)$/, ["scripts/lib/linse.cjs"]);
+        pruef("KONSUM (c) die Station ohne Konsum-Menge ist beim Namen gezählt", c.r6.konsum === 0 && c.r6.naehe.join() === "gelaende.K4#1 headless" && /ohne Konsum-Menge \(R6 nach Linse und Glob wie bisher\) 1: gelaende\.K4#1 headless/.test(r6Zeile(c.r6)), r6Zeile(c.r6));
+        fall("KONSUM Text von `inSeite` (an die Seite gereicht, im Knoten nie gerufen) geändert → alt → 0", mitK, d("scripts/lib/linse.cjs", 9, 9), 0, /^Konsum/);
+        fall("KONSUM Kopf-Code der Linse geändert (die Tafel, `module.exports`) → alt → 0", mitK, d("scripts/lib/linse.cjs", 11, 11), 0, /^Konsum/);
+        fall("KONSUM Einfügung im Rumpf von `nein` → frisch → 1", mitK, d("scripts/lib/linse.cjs", 5, 6), 1);
+        fall("KONSUM Code ans Ende der Linse angefügt (Kopf-Code) → alt → 0", mitK, d("scripts/lib/linse.cjs", 12, 13), 0, /^Konsum/);
+        fall("KONSUM Seite: `nie` geändert → frisch → 1", mitK, d("probe.js", 5, 5), 1);
+        fall("KONSUM Seite: `getan` geändert → alt → 0", mitK, d("probe.js", 2, 2), 0, /^Konsum/);
+        fall("KONSUM geladene JSON geändert → alt → 0", mitK, () => ({ dateien: ["daten.json"], zeilen: new Map(), neu: new Set() }), 0, /^Konsum/);
+        fall("KONSUM nie geladene Datei im Glob geändert → frisch → 1", mitK, d("anders.js", 1, 1), 1);
+        fall("KONSUM ohne Zeilen (Liste) zählt die konsumierte Datei ganz → 0", mitK, () => ["scripts/lib/linse.cjs"], 0, /^Konsum/);
+        fall("KONSUM der Text am Mess-SHA ist nicht der gemessene (anderer Schlüssel) → die Datei zählt ganz → 0", mk({ konsum: { "scripts/lib/linse.cjs": "ffffff:" + K["scripts/lib/linse.cjs"].split(":")[1] }, konsumSeite: true }), d("scripts/lib/linse.cjs", 6, 6), 0, /^Konsum/);
+        // OHNE DIE SEITE (eine Zeit-Station, eine Probe der Sitzung): über die Spiel-Dateien urteilt weiter der Glob, über das Werkzeug der Konsum
+        const ohneSeite = mk({ konsum: ek.konsum || "", konsumSeite: false });
+        fall("KONSUM ohne Seite: eine Spiel-Datei im Glob geändert → alt nach dem Glob → 0", ohneSeite, d("anders.js", 1, 1), 0, /^Konsum seit der Messung geändert \(R6: anders\.js\)$/);
+        fall("KONSUM ohne Seite: `nein` der Linse geändert → frisch → 1", ohneSeite, d("scripts/lib/linse.cjs", 6, 6), 1);
+        // ein Shell-Skript im Befehl läuft ohne Zeugen: es zählt ganz; ein gelesenes Verzeichnis zählt, wenn eine Datei dazukommt
+        const mitSh = { ...sk, befehl: ["bash", "-c", "bash scripts/werk.sh && node scripts/lauf.cjs {AUS}"] };
+        const bSh = buchen("kopf", [mitSh], [{ sha: "a1", geraet: "headless", je: { "gelaende.K4#1": { gruen: true, zahl: "z", zeit: "2026-11-10T10:00:00Z", abdruck: abdruck(mitSh, h), konsum: ek.konsum || "", konsumSeite: true } } }],
+            d("scripts/werk.sh", 1, 1), h, [], { skript });
+        pruef("KONSUM ein im Befehl genanntes Shell-Skript (ohne Zeugen) zählt ganz → alt → 0", bSh.je["gelaende.K4"].punkte === 0 && /^Konsum seit der Messung geändert \(R6: scripts\/werk\.sh\)$/.test(bSh.je["gelaende.K4"].stationen[0].grund), bSh.je["gelaende.K4"].beleg);
+        const dir = mk({ konsum: { "worlds/": "*" }, konsumSeite: true });
+        fall("KONSUM gelesenes Verzeichnis bekommt eine Datei → alt → 0", dir, d("worlds/neu.js", 1, 1, true), 0, /^Konsum/);
+        fall("KONSUM gelesenes Verzeichnis, Unterordner bekommt eine Datei → frisch → 1", dir, d("worlds/a/neu.js", 1, 1, true), 1);
+        // package.json: eine Skript-Zeile mehr trifft nur einen Lauf, in dem npm lief
+        const pj = (npm) => mk({ konsum: { "package.json": "*", ...(npm ? { ":npm": "*" } : {}) }, konsumSeite: true });
+        const dp = (nur) => () => ({ dateien: ["package.json"], zeilen: new Map([["package.json", [[5, 5]]]]), neu: new Set(), nurNpmSkripte: nur });
+        fall("KONSUM package.json nur im Befehls-Verzeichnis `scripts` geändert, kein npm im Lauf → frisch → 1", pj(false), dp(true), 1);
+        fall("KONSUM package.json im Befehls-Verzeichnis geändert, npm lief → alt → 0", pj(true), dp(true), 0, /^Konsum/);
+        fall("KONSUM package.json außerhalb von `scripts` geändert → alt → 0", pj(false), dp(false), 0, /^Konsum/);
+        // der Diff: ein Hunk aus reinen Versions-Stempeln fällt, eine Einfügung trifft beide Nachbarn, Anlegen beim Namen
+        const wd = stempelDiff("probe.js\nneu.js", ["diff --git a/probe.js b/probe.js", "@@ -2 +2 @@", '-importScripts("a.js?v=1");', '+importScripts("a.js?v=2");',
+            "@@ -5,0 +6,2 @@", "+x();", "+y();", "diff --git a/neu.js b/neu.js", "new file mode 100644", "@@ -0,0 +1 @@", "+z();"].join("\n"));
+        pruef("KONSUM Diff: der Stempel-Hunk fällt, die Einfügung trifft 5 und 6, Anlegen beim Namen", JSON.stringify(wd.zeilen.get("probe.js")) === "[[5,6]]" && wd.neu.has("neu.js") && !wd.neu.has("probe.js"),
+            JSON.stringify([...wd.zeilen]) + " neu " + [...wd.neu]);
+        // DIE TAFEL der Mess-Datei: Zwillinge teilen EINEN Abdruck, vereine trägt ihn von Tafel zu Tafel, was kein Eintrag nennt, fällt
+        const mt = { sha: "a1", geraet: "headless", je: {} };
+        for (const id of ["a.K1#1", "a.K1#2"]) eintragen(mt, id, { gruen: true, zahl: "z", konsum: ek.konsum || "x", konsumSeite: true });
+        const ref = mt.je["a.K1#1"].konsum;
+        const v = vereineMessungen(null, [{ name: "teil-1", m: mt }], "a1", "headless", "farm").m;
+        eintragen(mt, "a.K1#1", { gruen: true, zahl: "z" });
+        eintragen(mt, "a.K1#2", { gruen: true, zahl: "z" });
+        pruef("KONSUM-TAFEL Zwillinge teilen EINEN Abdruck, die Buchung liest ihn aus der Tafel, vereine trägt ihn mit, ein Abdruck ohne Eintrag fällt",
+            KONSUM_REF.test(ref) && v.je["a.K1#2"].konsum === ref && Object.keys(v.konsumTafel).join() === ref && JSON.stringify(konsumVon(v.je["a.K1#1"], v).k) === JSON.stringify(K) &&
+            konsumVon(v.je["a.K1#1"], { konsumTafel: {} }) === null && !konsumRaeumen(mt).konsumTafel, JSON.stringify([ref, Object.keys(v.konsumTafel || {}), Object.keys(mt.konsumTafel || {})]));
+        // KEIN STILLER RÜCKFALL: ein Prozess ohne Ende (hart getötet) macht den Konsum ungültig — beim Namen, nie still klein
+        const ord = path.join(tmp, "getoetet.konsum");
+        fs.mkdirSync(ord, { recursive: true });
+        fs.writeFileSync(path.join(ord, "1.json"), JSON.stringify({ js: {}, skripte: [], geladen: [], ganz: [] }));
+        fs.writeFileSync(path.join(ord, "4194000.offen"), "");
+        const kf = await konsumDesLaufs(ord, baum, null);
+        pruef("KONSUM ein Prozess ohne Ende → keine Konsum-Menge, der Grund beim Namen", !kf.konsum && /^1 Prozess\(e\) ohne Ende \(hart getötet oder ohne Antwort\): 4194000$/.test(kf.konsumFehlt), JSON.stringify(kf));
+        // DIE FENSTER einer lebenden Welt (die Sitzung): das Boot, dann je Probe, was SEIT der letzten Nahme lief — `ja` im ersten Fenster,
+        // `nein` im zweiten und `ja` dort nicht mehr; der Kopf-Code des geladenen Moduls steht in jedem
+        {
+            fs.writeFileSync(path.join(baum, "welt.cjs"), 'const L = require("./scripts/lib/linse.cjs");\nprocess.stdin.on("data", (d) => {\n    const w = String(d).trim();\n    if (w === "ende") process.exit(0);\n    L[w]();\n    console.log("ok " + w);\n});\nconsole.log("bereit");\n');
+            const ordner = path.join(tmp, "welt.konsum"), env = { ...process.env };
+            konsumAn(env, ordner, baum, false);
+            const welt = spawn(process.execPath, ["welt.cjs"], { cwd: baum, env, stdio: ["pipe", "pipe", "inherit"] });
+            let aus = "";
+            welt.stdout.on("data", (x) => (aus += x));
+            const bis = async (re) => { for (const frist = Date.now() + 15000; !re.test(aus) && Date.now() < frist; ) await warteMs(20); return re.test(aus); };
+            const fenster = async (k) => { const n = await konsumNahme(ordner, k); return n.fehlt ? n.fehlt : zeilenVon(konsumVon(konsumFalten(n.stuecke, baum, acorn), null).k["scripts/lib/linse.cjs"]); };
+            const zeilenVon = (s) => skriptZeilen(skriptVon(texte["scripts/lib/linse.cjs"], acorn), s.split(":")[1]).map(([x, y]) => (x === y ? x : x + "-" + y)).join(",");
+            const bereit = await bis(/^bereit$/m);
+            const boot = await fenster("boot");
+            welt.stdin.write("ja\n");
+            await bis(/^ok ja$/m);
+            const f1 = await fenster(1);
+            welt.stdin.write("nein\n");
+            await bis(/^ok nein$/m);
+            const f2 = await fenster(2);
+            welt.stdin.write("ende\n");
+            await new Promise((r) => welt.on("exit", r));
+            const stumm = await konsumNahme(ordner, 3);
+            pruef("KONSUM-FENSTER einer lebenden Welt: das Boot (nur Kopf-Code), dann je Fenster, was SEIT der letzten Nahme lief (`ja`, danach `nein` ohne `ja`); eine Welt, die endete, beim Namen",
+                bereit && boot === "1,4,7,10-13" && f1 === "1-4,7,10-13" && f2 === "1,4-7,10-13" && /kein Prozess der Welt lebt/.test(stumm.fehlt || ""), JSON.stringify({ bereit, boot, f1, f2, stumm }));
+        }
+        // DER ZWEITE NUTZEN (`beruehrt`): der Diff eines Zweigs gegen dieselbe Konsum-Menge — berührt, wer an der Basis frisch gilt und am
+        // Kopf nicht mehr; wer schon an der Basis alt ist, steht als offen (kein Urteil aus dieser Messung)
+        {
+            const s2 = { ...sk, kriterium: "gelaende.K4", staffel: 2 };
+            const m2 = { sha: "a1", geraet: "headless", je: { "gelaende.K4#1": mitK.je["gelaende.K4#1"], "gelaende.K4#2": { ...mitK.je["gelaende.K4#1"], abdruck: abdruck(s2, h), konsum: { "scripts/lib/linse.cjs": "*" } } } };
+            const keinDiff = () => ({ dateien: [], zeilen: new Map(), neu: new Set() });
+            const r = beruehrt([sk, s2], [m2], keinDiff, d("scripts/lib/linse.cjs", 6, 6), h, { basis: { skript }, kopf: { skript } });
+            const r0 = beruehrt([sk, s2], [m2], d("scripts/lib/linse.cjs", 3, 3), d("scripts/lib/linse.cjs", 3, 3), h, { basis: { skript }, kopf: { skript } });
+            pruef("BERÜHRT der Zweig ändert `nein`: die Station, die es nie ausführte, bleibt frei, die die Datei ganz las, ist berührt (nach Konsum); schon an der Basis alt → offen",
+                r.je.headless.haelften === 2 && r.je.headless.beruehrt.map((x) => x.id + " " + x.r6).join() === "gelaende.K4#2 konsum" && !r.je.headless.offen.length &&
+                r0.je.headless.offen.join() === "gelaende.K4#1,gelaende.K4#2" && !r0.je.headless.beruehrt.length, JSON.stringify([r, r0]));
+        }
+        fs.rmSync(baum, { recursive: true, force: true });
+    }
     // (6) Übergang in gen.cjs
     const stand = { kopf: "abcd1234", je: { "gelaende.K4": { punkte: 2, beleg: "Maschine: z" } } };
     const k0 = { name: "n", punkte: 1, beleg: "Hand" };
@@ -5833,6 +6042,16 @@ async function selbsttest(o = {}) {
         pruef("SITZUNG DIE SEKUNDEN DER PROBE: jedes Ergebnis einer gefahrenen Probe trägt s (Start bis Ende ihres Prozesses) — b.K1 am Deckel 2 s nach 2 s, a.K1 in Sekunden",
             ["a.K1#1", "b.K1#1", "c.K1#1", "d.K1#1", "d.K1#2"].every((id) => typeof x[id].s === "number") && x["b.K1#1"].s >= 2 && x["b.K1#1"].s < 4 && x["a.K1#1"].s < 5,
             JSON.stringify(Object.entries(x).map(([id, e]) => id + " " + e.s)));
+        // DER KONSUM IN DER SITZUNG (R6 nach Konsum): der Zeuge in save-server und Werkbank der Welt (hier die Attrappe welt-stub.cjs im Baum),
+        // je geurteilter Probe ihr Fenster der Welt und EIN Boot-Abdruck für alle; eine Probe ohne Urteil (b.K1 am Deckel) trägt keinen
+        {
+            const mit = Object.keys(x).filter((id) => !x[id].ungemessen), ohne = Object.keys(x).filter((id) => x[id].ungemessen);
+            const kv = mit.map((id) => (x[id].konsum ? konsumVon(x[id], null) : null));
+            pruef("SITZUNG DER KONSUM DER WELT: jede geurteilte Probe trägt ihr Fenster der Welt (die Werkbank im Baum) und EINEN Boot-Abdruck für alle; die Probe ohne Urteil trägt keinen",
+                ["a.K1#1", "d.K1#1", "d.K1#2"].every((id) => mit.includes(id)) && ohne.includes("b.K1#1") &&
+                mit.every((id) => typeof x[id].konsum === "string" && x[id].konsumBoot === x["a.K1#1"].konsumBoot && !x[id].konsumFehlt) && kv.every((k) => k && /^[0-9a-f]{6}:/.test(k.k["welt-stub.cjs"] || "")) &&
+                ohne.every((id) => !("konsum" in x[id])), JSON.stringify(Object.keys(x).map((id) => [id, x[id].ungemessen ? "ungemessen" : x[id].konsumFehlt || (x[id].konsum || "").length, (x[id].konsumBoot || "").length])));
+        }
         pruef("SITZUNG das Schloss EINMAL für die ganze Sitzung (zeit, die Proben nehmen es nie)",
             !gl || (schloss.length === 1 && /^punkte-radeon-sitzung zeit \d+$/.test(schloss[0])), JSON.stringify(schloss));
         pruef("SITZUNG das Format von heute: je Station gruen, zahl, exit, minuten, zeit, abdruck, port, bahn und modus \"session\"; die Zeile liest zug.cjs",
@@ -6432,6 +6651,7 @@ if (require.main === module) {
             if (o.trocken) buchungZeigen(s, "(trocken: stand.json unberührt)");
         }
         else if (verb === "gtx-nutzen") gtxNutzenCli(o);
+        else if (verb === "beruehrt") beruehrtCli(o);
         else if (verb === "eichtafel") eichtafelCli(o);
         else if (verb === "plan") planCli(o);
         else if (verb === "gruppen") for (const g of zwillingsGruppen(ladeGeprueft().stationen, o.geraet, o.nur)) console.log(g.join(","));
@@ -6459,7 +6679,7 @@ if (require.main === module) {
         } else if (verb === "selbsttest") process.exitCode = await selbsttest(o);
         else if (verb === "fremdlast") process.exitCode = await fremdlastCli(o);
         else {
-            console.log("Verben: run --sha <sha> --geraet radeon|gtx|headless [--nur id,id] [--offen] [--eich] [--trocken] [--bahnen 3] [--port-basis 7700] [--farm <name>] · gruppen --geraet <g> [--nur id,id] · scheiben --sha <sha> --geraet headless [--jobs 12] [--offen|--nur …] · vereine --sha <voll> --geraet headless --farm <name> --teile <dir> [--scheiben <json>] [--beginn <s>] · buchen --kopf <sha> [--trocken] · liste [--kopf <sha>] · eichtafel --geraet radeon|gtx [--sha a,b] [--schreibe] · selbsttest [--ohne 3c] · fremdlast [--sek 60] [--takt 2000]");
+            console.log("Verben: run --sha <sha> --geraet radeon|gtx|headless [--nur id,id] [--offen] [--eich] [--trocken] [--bahnen 3] [--port-basis 7700] [--farm <name>] · gruppen --geraet <g> [--nur id,id] · scheiben --sha <sha> --geraet headless [--jobs 12] [--offen|--nur …] · vereine --sha <voll> --geraet headless --farm <name> --teile <dir> [--scheiben <json>] [--beginn <s>] · beruehrt --basis <sha> --kopf <sha> [--json] · buchen --kopf <sha> [--trocken] · liste [--kopf <sha>] · eichtafel --geraet radeon|gtx [--sha a,b] [--schreibe] · selbsttest [--ohne 3c] · fremdlast [--sek 60] [--takt 2000]");
             process.exitCode = 2;
         }
     })().catch((e) => {
@@ -6469,7 +6689,7 @@ if (require.main === module) {
 }
 
 module.exports = { liesStand, maschinenKriterium, standPruefen, buchen, liesPflicht, pflichtBand, pflichtEintraegeAus, pruefeStationen, trifftPfad, toteGlobs, gpuZeuge, gpuWand, abdruck, fahreStation,
-    frischUrteil, stempelDateien, linsenVon, linsenAm, ladeGeprueft, ladeMessungen, spielRepo, voll, git, schluessel, geraeteVon, hilfeText,
+    frischUrteil, stempelDateien, stempelDiff, standDiff, beruehrt, konsumFalten, konsumVon, konsumTreffer, skriptVon, skriptZeilen, skripteAm, r6Zaehlung, linsenVon, linsenAm, ladeGeprueft, ladeMessungen, spielRepo, voll, git, schluessel, geraeteVon, hilfeText,
     griffeVon, toteAnker, ankerLeser, acornVon,
     // DER STROM für die Probe der Sitzung (require(process.env.PUNKTE_MASCHINE)): EIN Zapfen, EINE Marke, EIN Leser, der Ruf mit Frist
     stromZapfen, stromMarke, stromLesen, rufFrist, STROM_SPALTEN };
