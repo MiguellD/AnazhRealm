@@ -877,14 +877,12 @@ class AnazhRealm_kreatur_verhalten {
         [h.t, h.nx, h.nz, h.cx, h.cz] = [this.state.creatureAnimationTime, nx / n, nz / n, cx, cz];
     }
 
-    // DER LEIB DES TIERS (D2, Welle L): EINE benannte Größe je Tier, gelesen von jedem Körper, der ein Tier berührt (der Hüllen-
-    // Kontakt _kreaturHuellenKontakt; der Wagen liest denselben Leib). Drei Achsen längs der Gier bei −halb · 0 · +halb (Becken,
-    // Rumpf-Mitte, Brust), je Achse der halbe Rumpf als Radius `rad[0..2]` — das Quer-Maß der GEZEICHNETEN Gestalt dort (`tb.quer`,
-    // physik.K2 Staffel 2; ohne Studio-Baum 0,3·L; nie der Wank am Hang: ihn glättet der Frame-Takt, die Sim läse die Bildrate),
-    // `radius` der größte; die Höhe vom Fuß bis zum Kopf (1,8·L). L ist die Hüft-Höhe der Gestalt. `out` wird überschrieben.
-    // Die REICHWEITE ist die waagrechte Spanne der ganzen Gestalt um die Mitte (halb + Höhe: an den End-Achsen hängt höchstens ein
-    // Glied von Leib-Höhe) — das Grob-Tor des Treffers (_trefferErreichbar) liest sie. Gemessen über die Treffer-Glieder, vier Gattungen
-    // × acht Größen im Spiel-Takt: Wolf 1,86 · Bär 2,00 · Hirsch 2,01 · Fuchs 2,21 L (die Rute) gegen 2,6 L (gate:kampf-gefuehl T12).
+    // DER LEIB DES TIERS (D2, Welle L): EINE benannte Größe je Tier, gelesen von jedem Körper, der ein Tier berührt (Hülle, Wagen,
+    // Leib an Leib). Drei Achsen längs der Gier bei −halb · 0 · +halb (Becken, Rumpf-Mitte, Brust), je Achse ihr Radius `rad[0..2]`
+    // — das Quer-Maß der GEZEICHNETEN Gestalt dort (`tb.quer`, physik.K2 Staffel 2; ohne Studio-Baum 0,3·L; nie der Wank am Hang),
+    // `radius` der größte, die Höhe vom Fuß bis zum Kopf (1,8·L); L die Hüft-Höhe. Die REICHWEITE (halb + Höhe: an den End-Achsen
+    // hängt höchstens ein Glied von Leib-Höhe) liest das Grob-Tor des Treffers (_trefferErreichbar); gemessen über die Treffer-Glieder
+    // im Spiel-Takt: Wolf 1,86 · Bär 2,00 · Hirsch 2,01 · Fuchs 2,21 L (die Rute) gegen 2,6 L (gate:kampf-gefuehl T12). `out` wird überschrieben.
     _kreaturLeib(creature, L, out) {
         const l = L > 0 ? L : this._kreaturHueftL(creature);
         const o = out || {};
@@ -1136,10 +1134,7 @@ class AnazhRealm_kreatur_verhalten {
             b.z + b.hz,
             nah
         );
-        // je Leib sein Radius an der Berührung: zwischen den Achsen (`rad`, das Quer-Maß der Gestalt dort) linear, s = −1 … +1
-        const r = (t, x, z, s = ((x - t.x) * t.hx + (z - t.z) * t.hz) / (t.hx * t.hx + t.hz * t.hz)) =>
-            t.rad && Number.isFinite(s) ? t.rad[1] + (t.rad[s < 0 ? 0 : 2] - t.rad[1]) * Math.abs(s) : t.r;
-        const tief = r(a, nah.px, nah.pz) + r(b, nah.qx, nah.qz) - nah.d;
+        const tief = this._leibRadAn(a, nah.px, nah.pz) + this._leibRadAn(b, nah.qx, nah.qz) - nah.d;
         if (!(tief > 0)) return false;
         const wich = tief > 1e-4; // ein Rest unter 0,1 mm ruft keinen weiteren Gang
         let nx;
@@ -1179,6 +1174,11 @@ class AnazhRealm_kreatur_verhalten {
         }
         this._stossPaar(a.q, b.q, nx, nz);
         return wich;
+    }
+    // DER RADIUS AN DER BERÜHRUNG (x, z) eines Teils: zwischen den Achsen (`rad`) linear, s = −1 … +1; ohne `rad` sein `r` (allokationsfrei)
+    _leibRadAn(t, x, z) {
+        const s = ((x - t.x) * t.hx + (z - t.z) * t.hz) / (t.hx * t.hx + t.hz * t.hz);
+        return t.rad && Number.isFinite(s) ? t.rad[1] + (t.rad[s < 0 ? 0 : 2] - t.rad[1]) * Math.abs(s) : t.r;
     }
     // DER WEG GEGEN DIE LEIBER (je Teil-Schritt des Wegs, `_kreaturWeg`): der gehende Leib c (Index i) gegen jeden anderen in
     // seiner Reichweite — das Paar des Kontakts Leib an Leib (`_leibPaar`). Der grobe Filter liest den weitesten Raum des
