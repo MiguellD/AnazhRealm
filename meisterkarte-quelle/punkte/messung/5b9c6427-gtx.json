@@ -1,7 +1,7 @@
 {
  "sha": "5b9c6427d7e3db0712e20d104b012a83f8ffd68c",
  "geraet": "gtx",
- "zeit": "2026-11-10T19:32:25.464Z",
+ "zeit": "2026-11-10T19:37:56.718Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "ankunft.K1#1": {
@@ -429,10 +429,75 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "ferne.K2#2": {
+   "gruen": false,
+   "zahl": "K2-2 GRUEN · Kanten-Linie Hügel 0/0/0.47/0.47°, Gipfel 0/0/0/0.47° (< 1°) · Boden ungemessen · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.93,
+   "grund": "ROT: K2-2 GRUEN · Kanten-Linie Hügel 0/0/0.47/0.47°, Gipfel 0/0/0/0.47° (< 1°) · Boden ungemessen · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "s": 55.6,
+   "fremd": {
+    "s": 58.6,
+    "takte": 27,
+    "fremdS": 29.23,
+    "kerne": 0.499,
+    "fensterKerne": 0.627,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      12.64
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      5.63
+     ],
+     [
+      "BackgroundDownload.exe --child --activityId 6084168f-afd9-4773-bae6-2cbaf12460a8 --childCl",
+      3.55
+     ]
+    ],
+    "dienerS": 22.53,
+    "diener": [
+     [
+      "System",
+      10.03
+     ],
+     [
+      "dwm.exe",
+      9.3
+     ]
+    ],
+    "geraetS": 11.98,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      6.89
+     ],
+     [
+      "svchost.exe",
+      4.05
+     ],
+     [
+      "SearchIndexer.exe",
+      0.5
+     ]
+    ],
+    "eigenS": 162.05,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon"
+   },
+   "zeit": "2026-11-10T19:37:56.718Z",
+   "abdruck": "0346d90df351",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-10T19:31:51.998Z",
+  "start": "2026-11-10T19:37:24.020Z",
   "port": 7804,
   "warten": 0.01,
   "bootS": 6.4,
@@ -442,9 +507,9 @@
   "orte": [
    {
     "ort": "genesis",
-    "vor": "ferne.K1#2",
-    "s": 25.7,
-    "takte": 608,
+    "vor": "ferne.K2#2",
+    "s": 25,
+    "takte": 627,
     "chunks": 81,
     "nach": null
    }
@@ -463,18 +528,18 @@
    "verloren": 0,
    "ortImDeckel": [
     {
-     "probe": "ferne.K1#2",
+     "probe": "ferne.K2#2",
      "m": 3592,
      "ringVor": 4,
      "ringMin": -1
     }
    ],
-   "zapfen": 83,
+   "zapfen": 81,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 89.2,
-  "minuten": 1.54
+  "fahrtS": 89.3,
+  "minuten": 1.55
  },
  "ungemessen": {
   "ankunft.K4#1": {
