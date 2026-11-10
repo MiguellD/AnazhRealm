@@ -290,3 +290,4 @@ omen-gtx-z303-liste-1-cbe910ed ROT 0 GRÜN / 1 ROT / 2 UNGEMESSEN · ROT leib.K1
 2026-11-10 01:52 gpu-stufe Zwischenstand Bisekt: b5012e8b Boot 2 v2: wiese-ego 31.89 ms (genesis-ego 19.13) ‖ erste Linie: [6/36] b5012e8b = schlecht · wiese-ego 32.68 / 31.89 ms (genesis-ego 18.87 / 19.13) · Merge w20-fern-hang in integ-probe
 2026-11-10 01:57 gpu-stufe Zwischenstand Bisekt: cd2dfafa Boot 1 v1: wiese-ego 20.65 ms (genesis-ego 13.09)
 2026-11-10 02:02 gpu-stufe Zwischenstand Bisekt: cd2dfafa Boot 2 v1: wiese-ego 20.69 ms (genesis-ego 13.18) ‖ erste Linie: [5/36] cd2dfafa = gut · wiese-ego 20.65 / 20.69 ms (genesis-ego 13.09 / 13.18) · Merge w22-t4-heil in integ-probe ‖ Taeter der ersten Linie = Merge b5012e8b (Merge w20-fern-hang in integ-probe): 23 Commits des Zweigs
+2026-11-10 02:07 gpu-stufe Zwischenstand Bisekt: 0ab95ff4 Boot 1 v1: wiese-ego 22.98 ms (genesis-ego 14.09)
