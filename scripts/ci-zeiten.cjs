@@ -1,8 +1,9 @@
 // ci-zeiten.cjs — DIE ZEITEN DER CI: je Schritt von check.yml sein Gewicht aus den letzten 7 Läufen auf integ-probe, deren Kopf
 // auf main gelandet ist (derselbe run-Text, je Job-Art; jeder Versuch, grün und rot) — im Puls der Median, in der vollen Stufe der p90 (der langsame Läufer, den
 // ihr Deckel hält) → spec/ci/ci-zeiten.json (die Waage von gate:ci-deckung); ohne Messung ROT, die Tafel bleibt. Er nimmt aus dem
-// Puls, was eine Gruppe über ihren Deckel trägt, verteilt die Voll-Gruppen je Klasse und je echt-Schritt die Frist
-// timeout-minutes = max(5, ⌈3 × p90⌉, ⌈1,2 × größter Lauf⌉).
+// Puls, was eine Gruppe über ihren Deckel trägt, verteilt die Voll-Gruppen (die Klasse cpu: ein Echt-Rezept dort ist ROT, seine
+// Stelle die Karte) und je echt-Schritt die Frist timeout-minutes = max(5, ⌈3 × p90⌉, ⌈1,2 × größter Lauf⌉); die Vorbereitung
+// der Karten je Läufer.
 //   node scripts/ci-zeiten.cjs                          misst und verteilt
 "use strict";
 const { execSync, spawnSync } = require("child_process");
@@ -33,6 +34,8 @@ const lauf = (s) =>
 // nie — seine Zeiten wiegen nie (z184–z188: w6-weiches trug die Kreatur-Linse Teil 1 214 → 723 s, der p90 hob jede voll-Frist)
 const gelandetAmMain = (sha) => spawnSync("git", ["merge-base", "--is-ancestor", sha, "origin/main"], { cwd: root }).status === 0;
 const frist = (z) => Math.max(5, Math.ceil((3 * z.p90) / 60), Math.ceil((1.2 * z.max) / 60));
+// die Karten des Jobs echt (matrix.karte)
+const karten = (doc) => [].concat(doc?.jobs?.echt?.strategy?.matrix?.karte || []);
 
 // die Schritte einer check.yml: Name → { run-Text, Job-Art } (ohne Vorbereitung)
 function schritteAus(doc) {
@@ -52,7 +55,8 @@ async function messe(api, jetzt, alt = {}, pause = 2000, gelandet = gelandetAmMa
     const nimm = (r) => r.head_branch === "integ-probe" && r.status === "completed" && gelandet(r.head_sha);
     const neueste = await alleLaeufe(api, "/actions/workflows/check.yml/runs", { nimm, seit: Date.now() - 14 * 864e5, hoechstens: HOECHSTENS, pause });
     const proben = new Map([...soll.keys()].map((n) => [n, []]));
-    const [vorb, ymlAm, gesehen] = [{ echt: [], sonst: [] }, new Map(), new Set()];
+    // die Vorbereitung: die volle Stufe und je Karte ihr Läufer (die Karte heißt wie der Läufer bis zum ersten Bindestrich)
+    const [vorb, ymlAm, gesehen] = [{ echt: new Map(), sonst: [] }, new Map(), new Set()];
     let [kopf, gelesen, gemessen] = [null, 0, 0];
     for (const r of neueste) {
         if ([...proben.values()].every((p) => p.length >= JE_SCHRITT) && vorb.sonst.length >= 25) break;
@@ -86,7 +90,8 @@ async function messe(api, jetzt, alt = {}, pause = 2000, gelandet = gelandetAmMa
                 [kopf, gemessen] = [kopf || r.head_sha, gemessen + 1];
             }
             // die Vorbereitung nur am grünen Job
-            const vb = vorb[echt ? "echt" : "sonst"];
+            const karte = String(job.runner_name || "?").split("-")[0];
+            const vb = echt ? vorb.echt.get(karte) || vorb.echt.set(karte, []).get(karte) : vorb.sonst;
             if (job.conclusion === "success" && vb.length < 25) vb.push(v);
         }
     }
@@ -112,7 +117,8 @@ async function messe(api, jetzt, alt = {}, pause = 2000, gelandet = gelandetAmMa
         kopf,
         je_schritt: JE_SCHRITT,
         vorbereitung_s: Math.round(median(vorb.sonst)),
-        echt: { vorbereitung_s: Math.round(median(vorb.echt)) },
+        // je Karte ihr Median; eine Karte ohne grünen Lauf behält ihre Zahl (eine neue trägt sie geschätzt, Lehre z364)
+        echt: { vorbereitung_s: Object.fromEntries(karten(jetzt).map((k) => [k, vorb.echt.get(k)?.length ? Math.round(median(vorb.echt.get(k))) : (alt.echt?.vorbereitung_s || {})[k]])) },
         schritte,
     };
     return { out, gelesen, ohne };
@@ -183,19 +189,17 @@ function verteile(jetzt, out) {
         }
         return last;
     };
-    // ein bedingter Schritt läuft als CPU (die Weiche urteilt zur Laufzeit)
-    const gpu = (s) => klasseDesLaufs(s.run, skripte).klasse === "gpu";
+    // DIE VOLLE BATTERIE IST CPU (w27-swift-raus): ein Schritt mit Echt-Rezept zeichnete hier swiftshader — seine EINE Stelle ist
+    // die Karte (Job echt), nie eine Gruppe; ein bedingter Schritt läuft als CPU (die Weiche urteilt zur Laufzeit). Die Gruppen-Zahl
+    // hat EINE Quelle: die Plätze des Kontos ohne die Puls-Gruppen.
+    const gpu = alle.filter((s) => klasseDesLaufs(s.run, skripte).klasse === "gpu");
+    if (gpu.length)
+        throw new Error(
+            `ROT (K) SWIFTSHADER: ${gpu.map((s) => `„${s.name}"`).join(" · ")} startet ein Echt-Rezept in der vollen Batterie — die Stelle ist die Karte (check.yml echt)`
+        );
     const frei = LAEUFER_PLAETZE - jetzt.jobs.puls.strategy.matrix.gruppe.length;
-    let best = null;
-    for (let kc = 1; kc < frei; kc++) {
-        const a = packe(
-            alle.filter((s) => !gpu(s)),
-            kc
-        ).map((g) => ({ ...g, klasse: "cpu" }));
-        const g = a.concat(packe(alle.filter(gpu), frei - kc).map((x) => ({ ...x, klasse: "gpu" })));
-        const max = Math.max(...g.map((x) => (x.n.length > 1 ? x.s : 0)));
-        if (!best || max < best.max) best = { max, g };
-    }
+    const g0 = packe(alle, frei);
+    const best = { max: Math.max(...g0.map((x) => (x.n.length > 1 ? x.s : 0))), g: g0 };
     const nr = new Map(best.g.flatMap((g, i) => g.n.map((s) => [s, i + 1])));
     const neu = jetzt.jobs.voll.steps
         .filter((s) => /matrix\.gruppe == \d+$/.test(String(s.if)))
@@ -213,9 +217,6 @@ function verteile(jetzt, out) {
         .replace(/(name: voll \$\{\{ matrix\.gruppe \}\}\/)\d+/, (m, x) => x + best.g.length)
         .replace(/^( {8}timeout-minutes: )\d+$/m, (m, x) => x + vollFrist)
         .replace(/^( +gruppe: )\[[\d, ]*\]/m, (m, x) => `${x}[${best.g.map((g, k) => k + 1).join(", ")}]`)
-        .replace(/^( +)- gruppe: \d+\n(?: +klasse: \w+\n| +- gruppe: \d+\n)*/m, (m, x) =>
-            best.g.map((g, k) => `${x}- gruppe: ${k + 1}\n${x}  klasse: ${g.klasse}\n`).join("")
-        )
         // die Gruppen-Zeile samt WEITER (die Bedingung bleibt, die Nummer wandert)
         .replace(/^( +if: .*matrix\.gruppe == )(\d+)$/gm, (m, x, alt) => x + (neu[zeile++] || alt));
     if (von < 0 || zeile !== neu.length)
@@ -257,7 +258,7 @@ if (require.main === module) {
         );
         fs.writeFileSync(path.join(root, AUS), text + "\n");
         console.log(
-            `${AUS}: ${Object.keys(out.schritte).length} Schritte, Vorbereitung ${out.vorbereitung_s} s (echt ${out.echt.vorbereitung_s} s), ${gelesen} Läufe, Kopf ${out.kopf}`
+            `${AUS}: ${Object.keys(out.schritte).length} Schritte, Vorbereitung ${out.vorbereitung_s} s (echt ${JSON.stringify(out.echt.vorbereitung_s)} s), ${gelesen} Läufe, Kopf ${out.kopf}`
         );
         if (ohne.length) console.log(`  ohne Messung (Eintrag mit „geschaetzt" nötig): ${ohne.join(" · ")}`);
         verteile(jetzt, out);
