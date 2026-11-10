@@ -3046,6 +3046,65 @@ module.exports = [
         quelle: "1 = ≥ 3 von 7 Wirkungen je Stoff bestehen ihre Mutation",
     },
 
+    // ── breite.stoffe ── gate:gegenstand-stoff --gesetz (Null-Renderer; w28-stoff-gesetz, der Breite-Richter der Staffel Breite §5:
+    // „Licht (Brechzahl, Dispersion), Bruch (Festigkeit, E-Modul) und Klang lesen dieselbe Stoff-Zeile“): je eingebautem Stoff
+    // verstellt die Probe EINE Spalte seiner Zeile (`state.materials`, seit w28 ein Zugriff auf schmiede-core `STOFF_GESETZ`) und
+    // misst jeden Leser am Chokepoint des Wirts — licht: Rauheit und Metall des gebauten Stoffs, die Brennweite der Linse
+    // (`_brennpunkte`), der Fresnel je Kanal des Wassers und des Eises; bruch: die Platte, die eine Säule trägt
+    // (`_failsUnderLoad`, schlank und gedrungen); klang: der Ton des Treffers (`_trefferPaar` im OfflineAudioContext) und der
+    // Schritt. Ein geltender Leser, der keiner Spalte folgt, trägt eine eigene Zahl (der Täter beim Namen); die Mutante im
+    // selben Lauf (`_stoff` liefert die Zeilen von vor der Mutation) macht jeden Leser ROT. An main 4e2df19b ROT: 42/81 Leser
+    // auf der Zeile, 39 Täter (jede Bruchlast und jeder Ton lasen Tag-Achsen, die Brennweite 1,5 r, der Spiegel das f0 des
+    // Terrain-Gesetzes), 0 Stoffe mit allen drei Bereichen; am Zweig w28-stoff-gesetz 82/82 und 17 Stoffe.
+    {
+        kriterium: "breite.stoffe",
+        breite: true,
+        staffel: 1,
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-gegenstand-stoff.cjs", "--gesetz"],
+        env: { GEGENSTAND_STOFF_PORT: "{PORT}" },
+        gpu: false,
+        zeit: false,
+        minuten: 3,
+        urteil: (j, lauf) => {
+            const G = jsonZeile(lauf.stdout, /^GESETZ \{/);
+            if (!G || !Array.isArray(G.taeter) || !Array.isArray(G.vorbei) || !G.je) return { gruen: false, zahl: "keine GESETZ-Zeile (Exit " + lauf.exit + ")" };
+            // jeder feste Stoff trägt alle drei Bereiche (Flüssigkeit und lebendes Gewebe tragen keine Säule): 17 der 21 Zeilen
+            const gruen = lauf.exit === 0 && /✅ GESETZ GRÜN/.test(lauf.stdout) && !G.taeter.length && !G.vorbei.length && G.dreifach >= 17;
+            return {
+                gruen,
+                zahl:
+                    G.leser + " Leser auf der Zeile · " + G.dreifach + "/" + Object.keys(G.je).length + " Stoffe mit Licht, Bruch und Klang" +
+                    (G.taeter.length ? " · eigene Zahl: " + G.taeter.slice(0, 6).join(", ") + (G.taeter.length > 6 ? " … (" + G.taeter.length + ")" : "") : "") +
+                    (G.vorbei.length ? " · an der Zeile vorbei: " + G.vorbei.join(", ") : " · Mutante ROT an jedem Leser"),
+            };
+        },
+        proben: [
+            { name: "der Kopf w28-stoff-gesetz", gruen: true, stdout: 'GESETZ {"je":{"stein":"bruch+klang+licht","wasser":"klang+licht"},"dreifach":17,"leser":"82/82","taeter":[],"vorbei":[]}\n✅ GESETZ GRÜN — 82/82 Leser auf der Zeile, 17 Stoffe mit Licht, Bruch und Klang\n' },
+            { name: "main 4e2df19b: Bruchlast und Ton lesen Tag-Achsen", gruen: false, stdout: 'GESETZ {"je":{"stein":"klang+licht"},"dreifach":0,"leser":"42/81","taeter":["stein.bruchlast","stein.ton","quarz.brennweite","wasser.spiegel"],"vorbei":[]}\n❌ GESETZ ROT — Leser mit eigener Zahl: stein.bruchlast\n' },
+            { name: "die Mutante: ein Leser folgt trotz alter Zeile", gruen: false, stdout: 'GESETZ {"je":{"stein":"bruch+klang+licht"},"dreifach":17,"leser":"82/82","taeter":[],"vorbei":["eisen.bruchlast"]}\n❌ GESETZ ROT — an der Zeile vorbei: eisen.bruchlast\n' },
+            { name: "ein Stoff verliert einen Bereich (16 von 17)", gruen: false, stdout: 'GESETZ {"je":{"stein":"klang+licht"},"dreifach":16,"leser":"81/81","taeter":[],"vorbei":[]}\n✅ GESETZ GRÜN — 81/81\n' },
+        ],
+        pfad: [
+            "schmiede-core.js",
+            "klang-core.js",
+            "vehicle-core.js",
+            "stamm/bau-*.js",
+            "stamm/klang.js",
+            "stamm/kampf.js",
+            "stamm/koerper-fahrt.js",
+            "stamm/wasser-*.js",
+            "stamm/bild-sicht.js",
+            "stamm/gelaende-fern.js",
+            "stamm/stoff-material.js",
+            "stamm/dirigent-*.js",
+            "stamm/daten.js",
+            "scripts/diag-gegenstand-stoff.cjs",
+            "scripts/lib/welt-boot.cjs",
+        ],
+        quelle: "BREITE stoffe = Licht (Brechzahl, Dispersion), Bruch (Festigkeit, E-Modul) und Klang lesen dieselbe Stoff-Zeile",
+    },
+
     // ── stoffe.K2 ── gate:stand-takt, der Brand-Block der Sim-Wecken (Null-Renderer, Mess-Wiese, Spielzeit-Takte): das Wort bewölkt
     // (Wind 0,3; die Bühne hält die Nässe trocken wie die W-Kette ihren Vorgänger), gezündet über den Weg des Brennglases
     // (`_brandEntfachen`), je Bild genau EIN Schritt des Brands. Die Front ist die kürzeste Lauf-Zeit vom Eintrittspunkt jeder
