@@ -3174,65 +3174,6 @@ class AnazhRealm_stoff_material {
         }
     }
 
-    // Die EINE LOD-Uniform-Quelle, die JEDES Laub-Karten-Material liest: `uLodRef` (pro Frame aus
-    // `state.lodRef` — dieselbe Zahl wie die CPU-`_lodPerceptionDistance`, live ohne Rebuild),
-    // `uLodMaskOn` (0 → harte Kanten, A/B) und `uDitherT` (golden-ratio-Rotation pro Frame → zeitliche
-    // Dither-Streuung). Lazy wie `windUniforms`; ohne TSL → null. `state.lodUniforms` gehört in die
-    // audit:strict-Whitelist.
-    _ensureLodUniforms() {
-        const st = this.state;
-        if (st.lodUniforms) return st.lodUniforms;
-        const _T = THREE.TSL;
-        const _ref = Number.isFinite(st.lodRef) && st.lodRef > 0 ? +st.lodRef : 14;
-        // Crossfade-Band-Zahlen als LIVE-Uniforms, geseedet aus der EINEN Quelle `AnazhRealm.LOD_DISTANCES`
-        // und pro Frame in `_loopRender` gespiegelt → ein Studio-Live-Ingest (`_foundryIngestRenderConfig`)
-        // greift sofort in der Shader-Maske (kein eingefrorener Zweit-Satz).
-        const _D = AnazhRealm.LOD_DISTANCES;
-        this._stufenSchirm(); // die Schwellen aus dem Gesetz des Schirms, bevor die Masken sie säen
-        const u = {
-            uLodRef: _T.uniform(_ref),
-            uLodMaskOn: _T.uniform(st.lodMaskOn === false ? 0 : 1),
-            uDitherT: _T.uniform(0),
-            // DER VERSATZ DES LAUBS (A3, `_laubVersatz`): xy die Phase der Deckungs-Probe dieses Frames — die Halton-Achsen 5
-            // und 7 am Frame der Geschichte (`_zeitAufloesung`), je Pixel gedreht —, z die Weite in Eingangs-Pixeln
-            // (LAUB_VERSATZ), ohne zeitliche Auflösung 0
-            uLaubVersatz: _T.uniform(new THREE.Vector3(0, 0, 0)),
-            uLodD0: _T.uniform(_D.thresh01),
-            uLodD1: _T.uniform(_D.thresh12),
-            uLodFade: _T.uniform(_D.fade),
-            uLodFade0: _T.uniform(_D.fade0),
-            // DIE WELT-UHR IN TAKTEN (`state.weltTakt`, je Bild gespiegelt): der Eintritt einer Karte blendet an ihr ein (`aEin`)
-            uLodTakt: _T.uniform(0),
-            // DAS AUGE: die Welt-Position der Haupt-Kamera, je Frame gespiegelt. Jede LOD-Maske misst von
-            // HIER, nie von `cameraPosition` — die ist im Schattenpass die Kaskaden-Kamera (r184:
-            // `renderer.render(scene, shadow.camera)`; bis V18.529 stand sie 200 m über der Box, heute über
-            // dem höchsten Werfer): dort lagen nahe Bäume 145 m „weit", jenseits jeder Stufe, und die Maske
-            // verwarf ihre Schatten-Fragmente alle.
-            uLodAuge: _T.uniform(new THREE.Vector3()),
-            // DER STRECK der Wahrnehmungs-Distanz (die Ankunft aus der Ferne `_ankunftsFerne`, je Frame gespiegelt; kein Regler,
-            // lod.K5): jede Maske misst die Auge-Distanz × uLodPerf — dieselbe Distanz, nach der die CPU die Stufen legt.
-            uLodPerf: _T.uniform(1),
-            // DAS ZIEL DER DURCHSICHT (xyz) und ihr Radius (w), dazu das Auge, für das es gilt (`uKamAuge`: die
-            // Stellung der Spieler-Kamera, nie die Kamera einer Sonde): `_kamZielSetzen` aus `_loopCamera`,
-            // gelesen von `_kameraDurchsichtNode` (der Sicht-Strahl vom Auge zum Ziel).
-            uKamZiel: _T.uniform(new THREE.Vector4(0, 0, 0, 0)),
-            uKamAuge: _T.uniform(new THREE.Vector3()),
-            // DIE NAH-KUGEL der Durchsicht um das Auge (Leben-Schau 2, 09.10.): ihr Radius je Stoff-Art — x Laub,
-            // y Rinde, z Boden (die wiegende Nah-Streu) — `_kamZielSetzen`; −Saum heißt: nichts fällt.
-            uKamNah: _T.uniform(
-                new THREE.Vector3(
-                    -AnazhRealm.KAMERA_DURCHSICHT.saumM,
-                    -AnazhRealm.KAMERA_DURCHSICHT.saumM,
-                    -AnazhRealm.KAMERA_DURCHSICHT.saumM
-                )
-            ),
-        };
-        // UNIFORM-HEIMAT: der geteilte LOD-Satz reist als EIN renderGroup-Buffer.
-        this._uniformHeimatTeilen(u);
-        st.lodUniforms = u;
-        return u;
-    }
-
     // DAS AUGE DER STUFEN (K36): EIN Ort, von dem jede Stufen-Frage misst — die Welt-Position der Haupt-Kamera. Die Maske
     // liest ihn je Frame (`uLodAuge`), die Stufen-Wahl, ihr Band, die Verdeckung und der Kalt-Schätzer je Takt; bis K36 maß
     // die CPU vom Spieler: in der Verfolger-Kamera (Arm 9,6 m) wählte sie für Tore und Bäume die Partner der Spieler-Distanz,
@@ -3258,23 +3199,6 @@ class AnazhRealm_stoff_material {
         out.copy(c);
         if (pm) out.add(pm).sub(r.pl); // der Sprung des Spielers seit der Setzung
         return out;
-    }
-
-    // DER URSPRUNG DER INSTANZ — das Maß der Blende (Studio foundry-core `_iw = instanceMatrix[3].xz`, `_cd =
-    // length(cameraPosition.xz − _iw)`): die Welt-XZ der Achse der gezeichneten Instanz, im Vertex-Takt aus der EINEN Naht
-    // (`_weltNaht`: Objekt × Instanz-Matrix; ohne Instanzen der Ursprung des Objekts, eine InstancedMesh ohne Matrix bricht
-    // laut). Die Blende misst je INSTANZ, wie die CPU ihre Stufen legt (`_lodPerceptionDistance` am Eintrag): je Fragment
-    // gemessen löste sich die ferne Krone eines nahen Baums auf, und die Stufen-Wahl musste dafür die zweite Stufe
-    // zeichnen (1110-11: die Birke in 5 m stand doppelt, 0,6–2,7 ms GPU an der Mess-Wiese).
-    _instanzMitteNode(T) {
-        if (this._instanzMitteKnoten) return this._instanzMitteKnoten;
-        if (!T.varying) {
-            const text = "URSPRUNG DER INSTANZ: r184 varying fehlt (Vendor-Drift)";
-            this.log(text, "ERROR");
-            throw new Error(text);
-        }
-        this._instanzMitteKnoten = T.varying(this._weltNaht(T).anker.xz, "vInstanzMitte");
-        return this._instanzMitteKnoten;
     }
 
     // DIE WELT IM POSITIONS-KNOTEN (K20-N1) — die EINE Naht zwischen Vorlage und Welt für jeden Stoff, der im positionNode
@@ -3356,17 +3280,6 @@ class AnazhRealm_stoff_material {
         return this._instanzMatrixKnoten;
     }
 
-    // DER BRUCH DER BLENDE (1110-11 Nachtrag): fehlt der Blende ein Glied (ein Uniform des LOD-Satzes, ein TSL-Knoten, die
-    // Distanz der Karte, der Kanal des Stoffs), bricht der Bau des Stoffs LAUT beim Namen. Bis hierher gab die Blende still
-    // null zurück (ihr catch legte den Fehler in eine Fenster-Variable, die niemand las), und jeder Aufrufer zeichnete weiter:
-    // der Baum-Stoff ohne Maske (L0 und Band-L1 deckungsgleich voll, die Instanz-Wahl ohne Fenster), die Karte ohne
-    // Ausblendung, die Blatt-Karte ohne Stufen-Blende — gate:foundry-crossfade (9) DIE LAUTE BLENDE.
-    _blendeBruch(was) {
-        const e = this._stoffBruch("BLENDE: " + was + " — kein Stoff zeichnet ohne seine Maske");
-        e.blende = true;
-        return e;
-    }
-
     // DER BRUCH DES STOFFS (K22): fehlt einem Stoff oder dem Render-Graphen ein Glied — ein Uniform-Satz, ein Knoten, eine
     // Karte, ein Bau-Schritt wirft —, bricht der Bau LAUT beim Namen: ERROR ins Log, ein Fehler mit der Marke `stoff`. Bis
     // hierher fingen 95 Stellen den Fehler still (ein catch ohne Wurf, eine Fenster-Variable ohne Leser, ein Wenn um ein
@@ -3379,148 +3292,6 @@ class AnazhRealm_stoff_material {
         const e = new Error(text);
         e.stoff = true;
         return e;
-    }
-
-    // DAS RAUSCHEN DER BLENDE: Interleaved-Gradient-Noise, BYTE-GENAU __phytoCore.lodDitherIGN (52.9829189 · 0.06711056 ·
-    // 0.00583715; foundry-core.js Z.212), zeitlich über uDitherT — EIN Knoten-Bauer für die Durchsicht, das Laub-Band und den
-    // Ring der Karte (lod.K3). `versatz` n schiebt das Raster um n · 5,588 px (die Ring-Wahl, unkorreliert mit der Blende).
-    // IN DER KASKADE STEHT DIE BLENDE AN DER WELT (schatten.K2): der Schatten-Pass liest die Blende über colorNode.a (Lehre 26) —
-    // mit der Rotation je Bild (`uDitherT`, `_loopRender`) und dem Pixel der Karte als Schlüssel trug JEDER Kaskaden-Render eines
-    // überblendenden Werfers (Stufen-Band, Ring der Karte) ein anderes Loch-Muster, und jede Neulage der Box (die nahe Kaskade beim
-    // Gehen 6–22 Mal in 2 s) schob es gegen die Welt: der Boden unter dem Werfer flackerte in ruhender
-    // Welt. In der Kaskade (orthographisch, m[3][3] = 1 — dieselbe Weiche wie `_laubVersatz`) dreht sie nicht, und ihr Schlüssel
-    // ist der Index des Welt-Rasters der Kaskade (Spalte + Ursprung, Ursprung − Zeile; `_kaskadeFit` legt den Ursprung,
-    // `_blendeRaster` reicht ihn je Pass), modulo `BLENDE_RASTER`: dasselbe Texel der Welt trägt in jedem Render dieselbe Schwelle.
-    _ditherIGN(T, versatz) {
-        const fc0 = versatz ? T.screenCoordinate.add(T.vec2(versatz * 5.588238)) : T.screenCoordinate;
-        const P = AnazhRealm.BLENDE_RASTER;
-        const R = this._blendeRaster();
-        const welt = T.vec2(T.floor(fc0.x).add(R.x), R.y.add(16 * P).sub(T.floor(fc0.y)))
-            .mod(P)
-            .add(0.5);
-        const kaskade = T.cameraProjectionMatrix.element(3).w.greaterThan(0.5);
-        const fc = kaskade.select(welt, fc0);
-        return T.fract(
-            T.float(52.9829189)
-                .mul(T.fract(fc.x.mul(0.06711056).add(fc.y.mul(0.00583715))))
-                .add(kaskade.select(T.float(0), this._ensureLodUniforms().uDitherT))
-        );
-    }
-
-    // DER URSPRUNG DES WELT-RASTERS je Pass (`_ditherIGN`): EINE Uniform der Render-Gruppe, gestellt je Render aus der Kamera des
-    // Passes — eine Kaskade reicht den Ursprung ihrer Box (`_kaskadeFit`, `raster`), jede andere Kamera 0.
-    _blendeRaster() {
-        if (this._blendeRasterU) return this._blendeRasterU;
-        const T = THREE.TSL;
-        const v = new THREE.Vector2();
-        this._blendeRasterU = T.uniform(v)
-            .setGroup(T.renderGroup)
-            .onRenderUpdate((frame) => {
-                const csm = this.state.csmNode;
-                const k = frame && frame.camera ? this._schattenKameraIndex(frame.camera) : -1;
-                const f = k >= 0 && csm && csm._anazhFit ? csm._anazhFit[k] : null;
-                return f && f.raster ? v.set(f.raster[0], f.raster[1]) : v.set(0, 0);
-            });
-        return this._blendeRasterU;
-    }
-
-    // Studio-Dither-Blende als TSL-Knoten = `__phytoCore.lodCrossfadeMask` symbolisch — jede Formel MUSS
-    // ihr entsprechen (Linse `gate:foundry-crossfade`); Zahlen aus uLodD0/uLodD1/uLodFade/uLodFade0 +
-    // `_ensureLodUniforms`. opts.impostor → fin-Einblendung (lod=2) aus opts.distNode × Wahrnehmungs-k;
-    // sonst 3D-Stufen über aLodLevel (1 = L0 · 2 = L1 · 0 = ungemaskt) + aH0/aH0L; opts.foliage = Laub
-    // vs. Rinde. Rückgabe: keep-Knoten (1 = behalten → der Aufrufer faltet ihn in die Alpha) oder null.
-    _lodCrossfadeMaskNode(T, opts) {
-        try {
-            const _lu = this._ensureLodUniforms();
-            if (!T || !_lu)
-                throw this._blendeBruch(!T ? "TSL fehlt" : "der LOD-Uniform-Satz fehlt (_ensureLodUniforms)");
-            const _fehlt = [
-                "uLodRef",
-                "uLodMaskOn",
-                "uDitherT",
-                "uLodD0",
-                "uLodD1",
-                "uLodFade",
-                "uLodFade0",
-                "uLodPerf",
-            ]
-                .filter((k) => !_lu[k])
-                .concat(
-                    ["float", "fract", "screenCoordinate", "cameraProjectionMatrix", "step", "mix"]
-                        .filter((k) => !T[k])
-                        .map((k) => "TSL." + k)
-                );
-            if (_fehlt.length) throw this._blendeBruch("es fehlt " + _fehlt.join(" · "));
-            // W5.4 (Schritt 3) — die Band-Zahlen als LIVE-Uniforms (Quelle LOD_DISTANCES via
-            // `_ensureLodUniforms`-Seed + `_loopRender`-Spiegel): Rampen-Kanten als Knoten-Mathe.
-            const _edge1 = _lu.uLodD1.sub(_lu.uLodFade); // D1 − FADE
-            const _edge0 = _lu.uLodD0.sub(_lu.uLodFade0); // D0 − FADE0
-            const _fadeW = _lu.uLodFade.max(T.float(1e-3));
-            const _fadeW0 = _lu.uLodFade0.max(T.float(1e-3));
-            // _dh — das EINE Rauschen der Blende (`_ditherIGN`, BYTE-GENAU __phytoCore.lodDitherIGN; in der Kaskade am
-            // Welt-Raster, schatten.K2) — bis w5-kontakt stand hier sein Zwilling mit dem Pixel der Karte und der Rotation.
-            const _dh = this._ditherIGN(T, 0);
-            if (opts && opts.impostor === true) {
-                // __phytoCore.lodCrossfadeMask lod=2: keep = max(min(2·f1,1), vOcc) ≥ dh — die Verdeckung reist als
-                // Instanz-Attribut (verdeckt-demotierte Bäume blenden VOLL; Default 0 = altes Verhalten).
-                const _dist = opts.distNode;
-                if (!_dist) throw this._blendeBruch("die Karte reicht keine Distanz (opts.distNode)");
-                let _vCD = _dist.mul(_lu.uLodPerf); // derselbe Streck wie die CPU (`_lodPerceptionDistance`)
-                if (opts.visHeightNode) {
-                    // × min(uLodRef/Sichthöhe, 1) AUF die gestreckte Distanz — bis 04.10. ersetzte dieser Zweig sie
-                    // durch die rohe: unter Last (Perf ×1,3) blendete die L1 nach der gestreckten Distanz aus, das
-                    // Billboard ohne Streck ein, bei 20 m stand der Baum zu 50 % durchsichtig.
-                    const _k = _lu.uLodRef.div(opts.visHeightNode.max(T.float(1e-3))).min(T.float(1.0));
-                    _vCD = _vCD.mul(_k);
-                }
-                const _f1i = _vCD.sub(_edge1).div(_fadeW).clamp(0.0, 1.0);
-                const _occl = opts.occlNode || null; // die Verdeckung der Karte (aKarte.w < 0)
-                const _fin = _f1i.mul(2.0).min(T.float(1.0));
-                const _keepFin = T.step(_dh, _occl ? _fin.max(_occl) : _fin);
-                return T.mix(T.float(1.0), _keepFin, _lu.uLodMaskOn);
-            }
-            // 3D-Stufen (Stufe L0/L1) — die Stempel-Attribute + die SSE-Distanzen, gemessen vom AUGE (`uLodAuge`):
-            // so maskiert der Schattenpass jede Stufe, wie das Auge sie sieht — jede Stufe wirft genau dort, wo sie
-            // gezeichnet wird.
-            const _auge = _lu.uLodAuge;
-            if (!T.attribute || !_auge || !T.length || !T.vec2)
-                throw this._blendeBruch("die 3D-Stufen-Maske: TSL.attribute · uLodAuge · TSL.length · TSL.vec2 fehlen");
-            const _aLod = T.attribute("aLodLevel", "float");
-            // die Instanz-Größen über den EINEN Leser (`_senkenKnoten().attribut`: in der Wahl am Index der Liste)
-            const _aH0 = AnazhRealm._senkenKnoten().attribut("aH0", "float");
-            const _aH0L = AnazhRealm._senkenKnoten().attribut("aH0L", "float");
-            // × uLodPerf: dieselbe Wahrnehmungs-Distanz, nach der die CPU die Stufen legt (`_lodPerceptionDistance`) — vom Auge zum
-            // URSPRUNG der Instanz (`_instanzMitteNode`), wie das Studio und die CPU, nie zum Fragment.
-            const _mitte = this._instanzMitteNode(T);
-            const _cd = T.length(T.vec2(_auge.x.sub(_mitte.x), _auge.z.sub(_mitte.y))).mul(_lu.uLodPerf);
-            const _lk = _lu.uLodRef.div(_aH0.max(T.float(1e-3))).min(T.float(1.0));
-            // |aH0L|: das Vorzeichen trägt den HALT (`_lodSlotStamp`), der Betrag die Blatt-Sichthöhe
-            const _lkL = _lu.uLodRef.div(_aH0L.abs().max(T.float(1e-3))).min(T.float(1.0));
-            const _dS = _cd.mul(_lk); // vLodD (Skelett-Metrik)
-            const _dL = _cd.mul(_lkL); // vLodDL (Blatt-Metrik)
-            // __phytoCore.lodCrossfadeMask: f1/f0/f1o — dieselben Rampen, symbolisch.
-            const _f1 = _dS.sub(_edge1).div(_fadeW).clamp(0.0, 1.0);
-            const _f0 = _dL.sub(_edge0).div(_fadeW0).clamp(0.0, 1.0);
-            const _f1o = _f1.mul(2.0).sub(1.0).clamp(0.0, 1.0);
-            const _foliage = !!(opts && opts.foliage);
-            // keep Stufe L0 (lod=0): Laub keep = clamp(2f0−1) < dh · Rinde keep = f0 < dh.
-            const _keep0 = _foliage ? T.step(_f0.mul(2.0).sub(1.0).clamp(0.0, 1.0), _dh) : T.step(_f0, _dh);
-            // keep Stufe L1 (lod=1): (Laub min(2f0,1) ≥ dh · Rinde f0 ≥ dh) UND f1o < dh. Die einzige Nah-Stufe einer
-            // Art ohne L0 (aLodLevel 3) blendet nie ein, nur zum Billboard aus: keep = f1o < dh.
-            const _fadeIn = _foliage ? T.step(_dh, _f0.mul(2.0).min(T.float(1.0))) : T.step(_dh, _f0);
-            const _keep1 = _fadeIn.max(T.step(T.float(2.5), _aLod)).mul(T.step(_f1o, _dh));
-            // Stufen-Wahl per aLodLevel (1 → keep0 · 2 → keep1) + das vLod>0.5-Gate (0 → ungemaskt).
-            // DER HALT (K36): aH0L < 0 — die Stufe steht ohne ihren Partner und weicht keinem Nichts, sie zeichnet voll.
-            const _halt = T.float(1.0).sub(T.step(T.float(0.0), _aH0L));
-            const _stageKeep = T.mix(_keep0, _keep1, T.step(T.float(1.5), _aLod)).max(_halt);
-            const _masked = T.step(T.float(0.5), _aLod);
-            const _keep = T.mix(T.float(1.0), _stageKeep, _masked);
-            return T.mix(T.float(1.0), _keep, _lu.uLodMaskOn);
-        } catch (_e) {
-            throw _e && _e.blende === true
-                ? _e
-                : this._blendeBruch("der Bau der Maske scheiterte: " + ((_e && _e.message) || _e));
-        }
     }
 
     // DIE DURCHSICHT DER KAMERA (Leben-Schau 07.10. L-Kamera, Gegenprüfung Runde 1): eine Pflanze zwischen Auge und Spieler
