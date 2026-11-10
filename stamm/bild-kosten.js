@@ -3107,45 +3107,63 @@ class AnazhRealm_bild_kosten {
             N = this.state.nahe;
         // die Lage dieses Passes (ein Sprung des Auges wählt einmal aus dem Jetzt, `_wieseAugeTakt`), verglichen ohne die Hälfte
         const F = AnazhRealm._wahlLage(L, W.lageF);
-        [F[30], F[31], F[67]] = [0, haupt ? 1 : 0, haupt && N && N.sprung ? 1 : 0];
+        F[30] = 0;
+        F[31] = haupt ? 1 : 0;
+        F[67] = haupt && N && N.sprung ? 1 : 0;
         F[27] = nw && nw.auge ? nw.auge.h : 0; // die Höhe des Auges über dem eigenen Boden (`_wieseAugeTakt`, die Ferne)
         if (haupt && N) N.sprung = false;
         const K = W.jeKamera.get(kamera) || (W.jeKamera.set(kamera, { lage: new Float32Array(76).fill(NaN) }), W.jeKamera.get(kamera)); // prettier-ignore
         let lageNeu = false;
         for (let i = 0; i < 76 && !lageNeu; i++) lageNeu = i !== 30 && K.lage[i] !== F[i];
         if (lageNeu) K.lage.set(F);
-        // je Arena: ihre Aufträge gepackt (`_wahlAuftraege`) und ihre Bindung; rechnet sie?
+        // je Arena: ihre Aufträge gepackt (`_wahlAuftraege`) und ihre Bindung; rechnet sie? DER GANG BAUT NICHTS (w27-takt-gc):
+        // die Zeilen der Prüfung (`W.rechnet`) bleiben, Puffer und Art werden ohne Array und Rückruf verglichen — vorher je Pass und
+        // Kamera je Arena zwei Arrays, ein Objekt und zwei Rückrufe, auch bei stehender Lage (GTX 1050, dorf Ego: 1,75 MB/s)
         const zustand = (N && N.zustand) || W.leerRW,
-            rechnet = [];
-        let nahe = false;
-        // die Puffer, die ihr Compute bindet: ein neuer (ein gewachsener Auftrags-Puffer trägt die Zahlen 0, eine neue Liste
-        // oder Instanz-Seite ist leer) rechnet
-        const gebunden = (a, zug, q) => [q.instanceMatrix, zug.liste, a._ind, q.aH0, q.aH0L, q.aKarte].map((x) => (x ? (be.get(x) || {}).buffer : W.leer)); // prettier-ignore
+            rechnet = W.rechnet || (W.rechnet = []);
+        let nahe = false,
+            nR = 0;
         for (let j = 0; j < arenen.length; j += 2) {
             const a = arenen[j],
                 zug = arenen[j + 1],
                 n = zug.wahl.length / 5,
-                bg0 = zug.__wahlBG;
+                bg0 = zug.__wahlBG,
+                q = a.__instanzQuelle;
             if (!zug.pack || zug.pack.length < n * 16) zug.pack = new Float32Array(Math.ceil(n * 1.5 + 4) * 16);
             const f = zug.pack,
                 alt = zug.packAlt,
                 u = zug.packU && zug.packU.buffer === f.buffer ? zug.packU : (zug.packU = new Uint32Array(f.buffer));
             AnazhRealm._wahlAuftraege(zug.wahl, f, u, 0);
             let neu = lageNeu || zug.argsNeu === true || zug.datenV !== a._datenV || !alt || alt.length !== n * 16 || zug.bindung !== zustand || !bg0 || bg0.n !== n; // prettier-ignore
-            if (!neu) neu = gebunden(a, zug, a.__instanzQuelle).some((b, k) => b !== bg0.puf[2 + k]);
+            // die Puffer, die ihr Compute bindet: ein neuer (ein gewachsener Auftrags-Puffer trägt die Zahlen 0, eine neue Liste
+            // oder Instanz-Seite ist leer) rechnet
+            for (let k = 0; !neu && k < 6; k++) {
+                const x = k === 0 ? q.instanceMatrix : k === 1 ? zug.liste : k === 2 ? a._ind : k === 3 ? q.aH0 : k === 4 ? q.aH0L : q.aKarte; // prettier-ignore
+                neu = (x ? (be.get(x) || {}).buffer : W.leer) !== bg0.puf[2 + k];
+            }
             for (let i = 0; !neu && i < n * 16; i++) neu = alt[i] !== f[i];
-            const art5 = zug.wahl.some((m, i) => i % 5 === 0 && m.__wahlFenster && m.__wahlFenster[0] === 5);
+            let art5 = false;
+            for (let i = 0; !art5 && i < zug.wahl.length; i += 5)
+                art5 = !!(zug.wahl[i].__wahlFenster && zug.wahl[i].__wahlFenster[0] === 5);
             if (art5 && neu) nahe = true;
-            rechnet.push({ a, zug, n, neu, art5 });
+            const x = rechnet[nR] || (rechnet[nR] = { a: null, zug: null, n: 0, neu: false, art5: false });
+            nR++;
+            x.a = a;
+            x.zug = zug;
+            x.n = n;
+            x.neu = neu;
+            x.art5 = art5;
         }
+        for (let i = nR; i < rechnet.length; i++) rechnet[i].a = rechnet[i].zug = null; // keine Arena über ihren Gang hinaus halten
         // die Familien der Nähe rechnen im Hauptbild zusammen, dann wechselt die Hälfte des Zustands
         if (haupt && nahe) {
-            for (const x of rechnet) if (x.art5) x.neu = true;
+            for (let i = 0; i < nR; i++) if (rechnet[i].art5) rechnet[i].neu = true;
             W.par ^= 1;
         }
         F[30] = W.par;
-        const D = rechnet.filter((x) => x.neu);
-        if (!D.length) return;
+        let D = null;
+        for (let i = 0; i < nR; i++) if (rechnet[i].neu) (D || (D = [])).push(rechnet[i]);
+        if (!D) return;
         const off = [];
         let bytes = 0;
         for (const x of D) {

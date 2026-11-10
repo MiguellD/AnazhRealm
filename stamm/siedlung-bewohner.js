@@ -104,10 +104,11 @@ class AnazhRealm_siedlung_bewohner {
                     saat: Math.random(), // das Muster des Teilchens (`_rauchZeichnen`)
                 });
         // DER RAUCH DES FEUERS ZIEHT MIT DEM EINEN WIND (`_windAt` am Teilchen, die Bild-Uhr): der Wind trägt jedes Teilchen mit
-        // seiner Geschwindigkeit in m/s × dt windab
+        // seiner Geschwindigkeit in m/s × dt windab — in EIN Objekt je Bild gefragt (`_windAt` mit `aus`, w27-takt-gc)
+        const w = this._rauchWind || (this._rauchWind = {});
         for (let k = dr.teilchen.length - 1; k >= 0; k--) {
             const T2 = dr.teilchen[k];
-            const w = this._windAt(T2.x, T2.z, this._bildZeit);
+            this._windAt(T2.x, T2.z, this._bildZeit, w);
             T2.y += T2.vy * f;
             T2.x += T2.dx * f + w.x * w.ms * s;
             T2.z += w.z * w.ms * s;
