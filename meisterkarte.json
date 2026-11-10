@@ -1,13 +1,13 @@
 {
-  "stand": "2026-11-09",
-  "kopf": "a3782a65",
-  "version": "V18.546.239",
+  "stand": "2026-11-10",
+  "kopf": "fbbeb318",
+  "version": "V18.546.240",
   "skala": "2.0",
   "summe": 224,
   "max": 330,
   "maschine": {
-    "kopf": "a3782a65",
-    "zeit": "2026-11-09T23:54:42.699Z",
+    "kopf": "fbbeb318",
+    "zeit": "2026-11-10T00:28:13.364Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -196,7 +196,7 @@
           {
             "station": "lod.K1#1",
             "geraet": "radeon",
-            "zeile": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/haenger-linse.cjs, scripts/lib/licht-linsen.cjs +2)"
+            "zeile": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/gpu-fehler.cjs, scripts/lib/haenger-linse.cjs +4)"
           },
           {
             "station": "lod.K1#1",
@@ -206,17 +206,17 @@
           {
             "station": "mensch.K4#1",
             "geraet": "gtx",
-            "zeile": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/haenger-linse.cjs, scripts/lib/licht-linsen.cjs +2)"
+            "zeile": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/gpu-fehler.cjs, scripts/lib/haenger-linse.cjs +4)"
           },
           {
             "station": "haar.K2#1",
             "geraet": "radeon",
-            "zeile": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/haenger-linse.cjs, scripts/lib/licht-linsen.cjs +2)"
+            "zeile": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/gpu-fehler.cjs, scripts/lib/haenger-linse.cjs +4)"
           },
           {
             "station": "haar.K2#1",
             "geraet": "gtx",
-            "zeile": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/haenger-linse.cjs, scripts/lib/licht-linsen.cjs +2)"
+            "zeile": "Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/gpu-fehler.cjs, scripts/lib/haenger-linse.cjs +4)"
           }
         ],
         "ohneRichter": [
@@ -1081,7 +1081,7 @@
           "punkte": 0,
           "staffel": "1 = im Mischwald (Ego, Mittag) Stamm-Dichte und Unterholz-Deckung im Band der REF und Licht-Flecken am Boden aus der Kaskade, an einem Gerät · 2 = auch im Gegenlicht (Strahlen durch die Kronen, Uhr 0,3) und an einer Lichtung, beide Geräte, im Haushalt baum ≤ 40 Befehle / 150k Dreiecke",
           "messung": "werkbank bild an der Spielgang-Station wald gegen REF real-mischwald: Stämme je Bildbreite, Unterholz-Deckung 0–2 m, Licht-Flecken-Anteil (Varianz der Boden-Luma unter Kronen gegen offenen Boden), Strahl-Kontrast im Gegenlicht ≥ 1,1; die Flecken müssen mit der Sonne wandern (zwei Uhrzeiten).",
-          "beleg": "Maschine: 0 — offen: vegetation.K3#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/haenger-linse.cjs, scripts/lib/licht-linsen.cjs +2) — zuletzt an da0e790f: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Zeile NEUN vegetation.K3) · Täter: NEUN-ENDE 8 gemessen, ausgelassen am Budget 8.5 s: vegetation.K3 · 8.8 s",
+          "beleg": "Maschine: 0 — offen: vegetation.K3#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/gpu-fehler.cjs, scripts/lib/haenger-linse.cjs +4) — zuletzt an da0e790f: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Zeile NEUN vegetation.K3) · Täter: NEUN-ENDE 8 gemessen, ausgelassen am Budget 8.5 s: vegetation.K3 · 8.8 s",
           "schlupfloch": "Ein gemaltes Licht-Fleck-Muster bewegt sich nicht mit der Sonne: die Flecken kommen aus der Kaskade, zwei Uhrzeiten verschieben sie; Luft-Nebel als Strahl-Ersatz scheitert am Gegenlicht-Kontrast.",
           "aenderung": "Neu (V21): der Umriss zählt LOD K1, der Kamm-Saum Ferne K3 — frei wurde die Tiefe, die RDR2 und Tsushima tragen und die keine Karte maß.",
           "maschine": true
@@ -1199,7 +1199,7 @@
           "punkte": 1,
           "staffel": "1 = der Fuß steht (Schlupf ≤ 0,05) · 2 = Fußfolge aus Fr für alle 4 Gattungen, Tastgrad im Band, Querhang 20°, Labor = Welt über die Phasen, Third-Bild aus 10 m",
           "messung": "gate:tier-gang (Schlupf des Stand-Fußes ≤ 0,05; Gangart und Tastgrad je Gattung bei v̂ 0,3 · 0,74 · 1,2 · 3,5 in Welt UND Labor, REF Schritt 0,6–0,7, Trab 0,4–0,6, Galopp 0,25–0,35; Welt − Labor ≤ 0,05 Zyklus) + gate:kreatur-takt Teil querhang (Hang 20,8° und Rampe 29,9°: Bein-Lot ≤ 10°, Schlupf ≤ 0,05); Schritt → Trab bei Fr ≈ 0,5, Trab → Galopp bei 2–3; Kreuz-Probe Stimmung × Tempo; das Gang-Bild aus 10 m (`werkbank bild … --ziel gang` mit der Bühne `gang-buehne.js`, je Tier drei Füße am Boden).",
-          "beleg": "Maschine: gehalten: Schlupf des Stand-Fußes max 0.011 in 25 Läufen als Leib (4 Gattungen), max 0.036 in 16 im Satz (4 Gattungen) an d3708675 headless · gehalten: Gangart 49/49 grün (Welt 17, Satz 16, Labor 16, Kreuz 16), Welt − Labor ≤ 0.05, Satz − Labor ≤ 0.02 Zyklus · Querhang 20.8°, Schlupf {\"wolf\":0.036,\"hirsch\":0.016} · Bühne wolf schritt 3 Füße, fuchs schritt 3 Füße, baer schritt 3 Füße, wesen schritt 4 Füße · tier-Pixel 2970/1315/6767/3864 in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.24 m · Luma 69.1 σ 35.6 schwarz 0.0 % weiß 0.0 % · Stand 18.546.217 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen an e475c6b4 radeon — offen: tiere.K3#2 gtx: Linse seit der Messung geändert (R6: koerper-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/haenger-linse.cjs +4)",
+          "beleg": "Maschine: gehalten: Schlupf des Stand-Fußes max 0.011 in 25 Läufen als Leib (4 Gattungen), max 0.036 in 16 im Satz (4 Gattungen) an d3708675 headless · gehalten: Gangart 49/49 grün (Welt 17, Satz 16, Labor 16, Kreuz 16), Welt − Labor ≤ 0.05, Satz − Labor ≤ 0.02 Zyklus · Querhang 20.8°, Schlupf {\"wolf\":0.036,\"hirsch\":0.016} · Bühne wolf schritt 3 Füße, fuchs schritt 3 Füße, baer schritt 3 Füße, wesen schritt 4 Füße · tier-Pixel 2970/1315/6767/3864 in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.24 m · Luma 69.1 σ 35.6 schwarz 0.0 % weiß 0.0 % · Stand 18.546.217 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen an e475c6b4 radeon — offen: tiere.K3#2 gtx: Linse seit der Messung geändert (R6: koerper-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/gpu-fehler.cjs +6)",
           "schlupfloch": "Den Galopp an die Stimmung flee zu hängen bestünde beim Flucht-Tempo zufällig: die Kreuz-Probe Stimmung × Tempo zeigt, dass nur Fr entscheidet; Labor = Welt wird über die Phasen gemessen, nie über den Code-Text; der Tastgrad ist ein Band nach oben UND unten je Gangart, nie eine Zeile im Gesetz.",
           "aenderung": "Die 1 stand auf dem Schlupf; geschnitten 1 → 2 (tier-gang-k3, e5003509): der Tastgrad kommt aus dem Gesetz, beide Geräte im Bild.; nach R6 (tier-satz, `_tierSatzGang`) 23.10. 2 → 1.",
           "maschine": true
@@ -1644,7 +1644,7 @@
           "punkte": 0,
           "staffel": "1 = Klasse haar (Strähnen-Kohärenz gegen REF, Albedo-Band) an einem Gerät · 2 = 50 Seeds ohne zwei gleiche Frisuren, beide Geräte",
           "messung": "werkbank bild --klasse haar auf Armlänge und im Third; Gestalt-Distanz je Seed-Paar.",
-          "beleg": "Maschine: 0 — offen: haar.K2#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/haenger-linse.cjs, scripts/lib/licht-linsen.cjs +2) · haar.K2#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/haenger-linse.cjs, scripts/lib/licht-linsen.cjs +2)",
+          "beleg": "Maschine: 0 — offen: haar.K2#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/gpu-fehler.cjs, scripts/lib/haenger-linse.cjs +4) · haar.K2#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/gpu-fehler.cjs, scripts/lib/haenger-linse.cjs +4)",
           "schlupfloch": "Ein Haar-Helm je Rolle bestünde die Klasse: 50 Seeds ohne zwei gleiche verlangen das Genom.",
           "maschine": true
         },
@@ -1874,7 +1874,7 @@
           "punkte": 1,
           "staffel": "1 = klar am Mittag Verhältnis 5–12,5 und Schatten-Anteil 0,08–0,20 an einem Gerät · 2 = alle Spalten Uhr 0,5/0,27/0,73 × klar/Regen, beide Geräte",
           "messung": "Spielgang-Station Mess-Wiese: eine 18-%- und eine Weiß-Kugel als Proben-Leib über das EINE Stoff-Programm der Welt (Albedo-Zeile der Tafel; ein eigenes MeshStandardMaterial auf der Kugel ist im Selbsttest ROT); aus der Luma von Sonnen- und Schattenseite im Ausgabe-Bild Licht-Verhältnis, Schatten-Anteil und Himmels-Azimut. Soll (Liu & Jordan 1960): klar mittags 5–12,5, Schatten-Anteil 0,08–0,20, Himmel zur Sonne ≥ 1,2; Sonne 10° ≥ 2,5; bedeckt ≤ 1,5.",
-          "beleg": "Maschine: gehalten: Verhältnis 5.311 (5–12,5), Schatten-Anteil 0.1883 (0,08–0,20), A/B 1.000, A/C 1.013, Kappe 1497 px, Uhr 0.5 sunny, [linse-gpu] amd/rdna-3 an e475c6b4 radeon · gehalten: Verhältnis 5.455 (5–12,5), Schatten-Anteil 0.1833 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1493 px, Uhr 0.5 sunny, [linse-gpu] nvidia/pascal an 94d9c5a6 gtx — offen: licht.K2#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/haenger-linse.cjs, scripts/lib/licht-linsen.cjs +2) · licht.K2#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/haenger-linse.cjs, scripts/lib/licht-linsen.cjs +2)",
+          "beleg": "Maschine: gehalten: Verhältnis 5.311 (5–12,5), Schatten-Anteil 0.1883 (0,08–0,20), A/B 1.000, A/C 1.013, Kappe 1497 px, Uhr 0.5 sunny, [linse-gpu] amd/rdna-3 an e475c6b4 radeon · gehalten: Verhältnis 5.455 (5–12,5), Schatten-Anteil 0.1833 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1493 px, Uhr 0.5 sunny, [linse-gpu] nvidia/pascal an 94d9c5a6 gtx — offen: licht.K2#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/gpu-fehler.cjs, scripts/lib/haenger-linse.cjs +4) · licht.K2#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/gpu-fehler.cjs, scripts/lib/haenger-linse.cjs +4)",
           "schlupfloch": "Wer die Rechnung misst, misst sich selbst: ein Fehler hinter der Rechnung (Stoff-Antwort, Ton-Kurve, Schatten-Knoten) bliebe grün. Eine Kugel mit eigenem Stoff mäße die Probe statt der Welt (B35).",
           "aenderung": "Karte 1.0 gab Licht K1 „Mittag GRÜN“ aus der Rechnung der Belichtung → 0; die Kugel muss über den Welt-Stoff zeichnen (B35).",
           "maschine": true
@@ -1996,7 +1996,7 @@
           "punkte": 1,
           "staffel": "1 = C = e^(−βd) ±15 % bei 1/2/5/8 km an einem Gerät, Uhr 0,5 · 2 = je Kanal (der Farbton rückt zum Himmel, Δh ≤ 10° bei 8 km), Sonnenseite/Gegenseite ≥ 1,2, bei Sonne 5° fernes Weiß R/B ≥ 1,3, Uhr 0,5 und 0,27, beide Geräte",
           "messung": "Spielgang-Station Hügel (Auge 120 m) und Augenhöhe: Grat gegen Himmel bei 1/2/5/8 km im Ausgabe-Bild; β aus einer EXTERNEN Referenz in spec (meteorologische Sichtweite je Wetter, Rayleigh-β je Kanal), nie aus LUFT gelesen.",
-          "beleg": "Maschine: gehalten: Koschmieder T/T_soll 0.86–1.08 bei 1/2/5/8 km, Uhr 0,5, 4 Azimute, K1-1 GRUEN, [linse-gpu] nvidia/pascal an b3f9ae95 gtx — offen: ferne.K1#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/haenger-linse.cjs, scripts/lib/licht-linsen.cjs +2) · ferne.K1#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/haenger-linse.cjs, scripts/lib/licht-linsen.cjs +2)",
+          "beleg": "Maschine: gehalten: Koschmieder T/T_soll 0.86–1.08 bei 1/2/5/8 km, Uhr 0,5, 4 Azimute, K1-1 GRUEN, [linse-gpu] nvidia/pascal an b3f9ae95 gtx — offen: ferne.K1#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/gpu-fehler.cjs, scripts/lib/haenger-linse.cjs +4) · ferne.K1#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/gpu-fehler.cjs, scripts/lib/haenger-linse.cjs +4)",
           "schlupfloch": "Ein Nebel, der die Ferne grau macht, senkt den Kontrast ohne Physik: Farb- und Mie-Bedingung. β aus LUFT prüfte nur, ob der Code sich selbst folgt (B36).",
           "aenderung": "Das Soll kommt aus einer externen Referenz (B36).",
           "maschine": true
@@ -2006,7 +2006,7 @@
           "punkte": 1,
           "staffel": "1 = Restkontrast am Rand der letzten Fern-Schale ≤ 2 % bei klarem Wetter an einem Gerät, 4 Azimute · 2 = keine waagrechte Kanten-Linie (Struktur-Tensor am Horizont), Hügel und Gipfel, im Boden-Haushalt, beide Geräte",
           "messung": "Station Hügel und Gipfel, klar, 4 Azimute: Restkontrast Gelände/Himmel am Rand der letzten Fern-Schale.",
-          "beleg": "Maschine: gehalten: Restkontrast am Rand 1.0–1.3 % bei 17.4–21.8 km (≤ 2 %), 4 Azimute, K2-1 GRUEN, [linse-gpu] nvidia/pascal an b3f9ae95 gtx · gehalten: K2-2 GRUEN · Kanten-Linie Hügel 0/0/0/0°, Gipfel 0/0.47/0/0.47° (< 1°) · Boden 8/12 Befehle, 65.9k/120k Dreiecke · [linse-gpu] nvidia/pascal an b3f9ae95 gtx — offen: ferne.K2#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/haenger-linse.cjs, scripts/lib/licht-linsen.cjs +2)",
+          "beleg": "Maschine: gehalten: Restkontrast am Rand 1.0–1.3 % bei 17.4–21.8 km (≤ 2 %), 4 Azimute, K2-1 GRUEN, [linse-gpu] nvidia/pascal an b3f9ae95 gtx · gehalten: K2-2 GRUEN · Kanten-Linie Hügel 0/0/0/0°, Gipfel 0/0.47/0/0.47° (< 1°) · Boden 8/12 Befehle, 65.9k/120k Dreiecke · [linse-gpu] nvidia/pascal an b3f9ae95 gtx — offen: ferne.K2#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/gpu-fehler.cjs, scripts/lib/haenger-linse.cjs +4)",
           "schlupfloch": "Mehr Nebel versteckt die Kante und verliert die Ferne — K1 verbietet das; bei Dunst gemessen wäre die Kante immer unsichtbar: darum klar.",
           "maschine": true
         },
@@ -2402,7 +2402,7 @@
           "punkte": 0,
           "staffel": "1 = kante ≤ 0,22 je Teil-Klasse (die schlechteste urteilt) an der Tafel-Pose UND einem Spielgang-Bild an einem Gerät, frisch am Kopf · 2 = Ego mit Blick 15° hoch, Third und Hügel, Haus- und Tor-Stufen L1–L3 halten milchweiss und zielTreue, beide Geräte",
           "messung": "werkbank bild --klasse 'Laub L0/L1/L2' --ist laub-kante an der Tafel-Pose und an Spielgang-Bildern; Kamera des Spiels.",
-          "beleg": "Maschine: 0 — offen: lod.K1#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/haenger-linse.cjs, scripts/lib/licht-linsen.cjs +2) · lod.K1#1 gtx: Station seit der Messung geändert — zuletzt an da0e790f: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: auge · Exit 0)",
+          "beleg": "Maschine: 0 — offen: lod.K1#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/gpu-fehler.cjs, scripts/lib/haenger-linse.cjs +4) · lod.K1#1 gtx: Station seit der Messung geändert — zuletzt an da0e790f: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: auge · Exit 0)",
           "schlupfloch": "Das Mittel über alle Stufen (0,1862) versteckt den Täter: die schlechteste Teil-Klasse urteilt; eine Pose ohne sichtbare Karte umgeht die Stufe: der Spielgang wählt die Bilder. Alpha-Dither senkt die Kohärenz ohne Gestalt: zweiton muss zugleich 0 sein.",
           "aenderung": "EIN Heim von laub-kante (vorher auch Vegetation K3, Pipeline K2, Klassen K1; B26, V21).",
           "maschine": true
@@ -2440,7 +2440,7 @@
           "punkte": 0,
           "staffel": "1 = je Familie (Baum, Haus, Tor, Wagen) ist am Wechsel-Abstand der Kanten-Versatz L0 ↔ Stufe ≤ 1 px bei 1920×1080, an einem Gerät · 2 = die Wechsel-Abstände bleiben bei 30/60/144 fps und Regler des Spielers ±10 % gleich (Pixelgröße statt Bildrate), beide Geräte",
           "messung": "werkbank bild: Klassen-Maske der Gestalt in L0 (erzwungen) gegen die gewählte Stufe am Wechsel-Abstand (Chamfer-Distanz); Wechsel-Abstände je Bildrate. Die Reduktion je Stufe zählt Pipeline K3, die Kosten Profiband K3 — in derselben Sitzung.",
-          "beleg": "Maschine: gehalten: 17 Läufe bei 30/60/144 fps, Puls und Regler ±10 % (loadScale 0–1): Abstände, Schwellen, Grenzen, Wahl und Ränder gleich, die Mutante (Regler-Term im Gesetz) wandert an d3708675 headless — offen: lod.K5#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/haenger-linse.cjs, scripts/lib/licht-linsen.cjs +2) · lod.K5#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/haenger-linse.cjs, scripts/lib/licht-linsen.cjs +2)",
+          "beleg": "Maschine: gehalten: 17 Läufe bei 30/60/144 fps, Puls und Regler ±10 % (loadScale 0–1): Abstände, Schwellen, Grenzen, Wahl und Ränder gleich, die Mutante (Regler-Term im Gesetz) wandert an d3708675 headless — offen: lod.K5#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/gpu-fehler.cjs, scripts/lib/haenger-linse.cjs +4) · lod.K5#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/gpu-fehler.cjs, scripts/lib/haenger-linse.cjs +4)",
           "schlupfloch": "Ein Wechsel weit draußen besteht ≤ 1 px und kostet E: die Kosten zählen in derselben Sitzung.",
           "aenderung": "Neu: die Synthese-K5 wiederholte das Profi-Band (B38, V26); die Reduktion je Stufe wohnt in Pipeline K3.",
           "maschine": true
@@ -2564,7 +2564,7 @@
           "punkte": 0,
           "staffel": "1 = ≥ 3/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 · 2 = 7/7 auf beiden Geräten",
           "messung": "Dasselbe Werk (Saat + ov) in Studio-Bühne und Welt bei gleicher Pose (Standard-Kamera der Bühne = Vorschau-Kamera der Welt) und Uhr, aus dem Ausgabe-Pfad (bild-diff.cjs-Rezept), Radeon UND GTX; die 18-%-Karte der Bühne bei Luma 110–130.",
-          "beleg": "Maschine: 0 — offen: studios.K4#1 radeon: Linse seit der Messung geändert (R6: scripts/diag-albedo-tafel.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +25) · studios.K4#1 gtx: Linse seit der Messung geändert (R6: scripts/diag-albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/haenger-linse.cjs +3) — zuletzt an 87537d3f: die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen · studios.K4#2 radeon: Linse seit der Messung geändert (R6: scripts/diag-albedo-tafel.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +25) · studios.K4#2 gtx: Linse seit der Messung geändert (R6: scripts/diag-albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/haenger-linse.cjs +3) — zuletzt an 87537d3f: die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
+          "beleg": "Maschine: 0 — offen: studios.K4#1 radeon: Linse seit der Messung geändert (R6: scripts/diag-albedo-tafel.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +25) · studios.K4#1 gtx: Linse seit der Messung geändert (R6: scripts/diag-albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/gpu-fehler.cjs +5) — zuletzt an 87537d3f: die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen · studios.K4#2 radeon: Linse seit der Messung geändert (R6: scripts/diag-albedo-tafel.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +25) · studios.K4#2 gtx: Linse seit der Messung geändert (R6: scripts/diag-albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/gpu-fehler.cjs +5) — zuletzt an 87537d3f: die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
           "schlupfloch": "r184 laden und eigenes Licht oder eine Bau-Kopie behalten: H6 wäre grün, Labor ≠ Welt bliebe — darum urteilt das Bild, nie die Netz-Anfrage; eine Pose, die niemand sieht, zählt nicht.",
           "aenderung": "EIN Heim von Labor = Welt im Bild (vorher auch Material K2, Tore K3(b), Siedlung K1; B39, V16).",
           "maschine": true
@@ -3342,7 +3342,7 @@
           "punkte": 0,
           "staffel": "1 = Taste → bewegter Leib im Ausgabe-Bild p95 ≤ 50 ms an einem Gerät (gehen, Sicht-Wechsel) · 2 = jedes Verb (gehen, springen, schwingen, einsteigen), beide Geräte",
           "messung": "Spielgang-Station leib: Eingabe-Ereignis (CDP) bis zum ersten Ausgabe-Bild mit Bewegung im Leib-Band, je 50 Proben, Ego und Third.",
-          "beleg": "Maschine: 0 — offen: leib.K1#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +22) — zuletzt an 78d37554: Fremd-Last: node scripts/diag-altlasten.cjs --selftest 30,7 CPU-s · MsMpEng.exe 15,9 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 11,2 CPU-s — 2,4 · leib.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +23) — zuletzt an 78d37554: Fremd-Last: AppHelperCap.exe 39,3 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 9,1 CPU-s · OmenCommandCenterBackground.exe 5,5 CPU-s — 2,20 Kerne  · leib.K1#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +22) — zuletzt an 87537d3f: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ LATENZ1) · leib.K1#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +23) — zuletzt an da0e790f: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ LATENZ1)",
+          "beleg": "Maschine: 0 — offen: leib.K1#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +22) — zuletzt an 78d37554: Fremd-Last: node scripts/diag-altlasten.cjs --selftest 30,7 CPU-s · MsMpEng.exe 15,9 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 11,2 CPU-s — 2,4 · leib.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +23) — zuletzt an 78d37554: Fremd-Last: AppHelperCap.exe 39,3 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 9,1 CPU-s · OmenCommandCenterBackground.exe 5,5 CPU-s — 2,20 Kerne  · leib.K1#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +22) — zuletzt an 78d37554: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ LATENZ1) · leib.K1#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +23) — zuletzt an da0e790f: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ LATENZ1)",
           "schlupfloch": "Taste bis Sim-Schritt wäre die Eigenmeldung: gezählt wird bis zum Pixel (das Maß von LDAT).",
           "aenderung": "Neu (V02); 22.10. jedes Verb an beiden Geräten gemessen 1 → 2.",
           "maschine": true
@@ -3984,7 +3984,7 @@
           "punkte": 0,
           "staffel": "1 = Frame p95 ≤ 33 ms (der Boden von PFLICHT E) in jeder Bewegungszelle an beiden Geräten · 2 = ≤ 16,7 ms in jeder Zelle",
           "messung": "`werkbank lauf` in Bewegung, ABAB 4 Boots je Gerät, Regler voll, Tiere frei, 1920×1080. Zellen: Gehen 4 m/s (Wiese Ego, Genesis Third), Sprint, GT-Fahrt mit Third↔Ego, Sturm mit 50 Tieren (Feld K3), Messort stadt (nH ≥ 120, dorfZug an) gehend durch die Hauptgasse.",
-          "beleg": "Maschine: 0 — offen: profiband.K1#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +24) — zuletzt an 78d37554: Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 23,3 CPU-s · svchost.exe 20,3 CPU-s · MsMpEng.exe 16,5 CPU-s — 1,84 Kerne fremd im dichtesten 10- · profiband.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +25) — zuletzt an 78d37554: Fremd-Last: AppHelperCap.exe 96,0 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 21,8 CPU-s · MsMpEng.exe 12,2 CPU-s — 2,27 Kerne fremd im dichteste · profiband.K1#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +24) — zuletzt an 87537d3f: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Zeile PROFIBAND des Gangs (Exit 3221226505) · [linse-gpu] amd/rdna-3) · Täter: [linse-gpu] amd/rdna-3 · profiband.K1#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +25) — zuletzt an 78d37554: Fremd-Last: AppHelperCap.exe 96,0 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 21,8 CPU-s · MsMpEng.exe 12,2 CPU-s — 2,27 Kerne fremd im dichteste",
+          "beleg": "Maschine: 0 — offen: profiband.K1#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +24) — zuletzt an 78d37554: Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 23,3 CPU-s · svchost.exe 20,3 CPU-s · MsMpEng.exe 16,5 CPU-s — 1,84 Kerne fremd im dichtesten 10- · profiband.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +25) — zuletzt an 78d37554: Fremd-Last: AppHelperCap.exe 96,0 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 21,8 CPU-s · MsMpEng.exe 12,2 CPU-s — 2,27 Kerne fremd im dichteste · profiband.K1#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +24) — zuletzt an 78d37554: Fremd-Last: chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-46460-profil-fZqWff --no-p 84,2 CPU-s · MsMpEng.exe 36,7 CPU-s · svchost.exe 26,4 CPU-s — 6,43 Kerne fremd im dichtesten 10- · profiband.K1#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +25) — zuletzt an 78d37554: Fremd-Last: AppHelperCap.exe 96,0 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 21,8 CPU-s · MsMpEng.exe 12,2 CPU-s — 2,27 Kerne fremd im dichteste",
           "schlupfloch": "Regler herunter, Sicht kürzen, Tiere anhalten, leeres Gelände: Regler voll und Tiere frei fest, die Bahn fest, und dieselbe Sitzung hält die A-Klassen am Ausgabe-Bild.",
           "aenderung": "EIN Heim des Bands (V26): LOD K5, Spielgang K3, der Band-Teil von Fahrzeug K2, Siedlung K5(b) und Feld K3 (Sturm) zählen hier als Zellen. Karte 1.0 maß im Stand (B63).",
           "maschine": true
@@ -4753,8 +4753,8 @@
       "was": "Mess-Takt 2 an 4a5f5e2c (Züge 26 und 28b: Gelände K1/K4 im Kern, Huf, Herde, Treffer-kalt, Temperatur aus EINER Quelle mit Stefan-Eis, Werkstatt-Bühnen über _buehneRenderer, Fahr-Gesetz in der Welt, Tore-Abdruck; headless 63/2, Radeon in Ruhe nachgemessen, GTX 28/8): gelaende.K1 und K4 → 2, feld.K2, tore.K3, fahrzeug.K1 und K4 → 2, speicher.K4 je +1; leib.K1 2 → 1 (zwei Hiebe ohne Treffer-Ereignis an der Radeon, Karte leib-k1-hieb)."
     },
     {
-      "stand": "2026-11-09",
-      "kopf": "a3782a65",
+      "stand": "2026-11-10",
+      "kopf": "fbbeb318",
       "summe": 224,
       "max": 330,
       "skala": "2.0",
@@ -4762,7 +4762,7 @@
     }
   ],
   "text": {
-    "titel": "MEISTERKARTE 2.0 des Ultiversums — Stand 09.11.2026, Kopf main a3782a65 (V18.546.239)",
+    "titel": "MEISTERKARTE 2.0 des Ultiversums — Stand 10.11.2026, Kopf main fbbeb318 (V18.546.240)",
     "einleitung": [
       "Lies zuerst DIE GOLDENE DEFINITION in CLAUDE.md — sie ist bindend.",
       "",
