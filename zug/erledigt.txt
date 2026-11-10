@@ -325,3 +325,4 @@ omen-gtx-z303-liste-1-cbe910ed ROT 0 GRÜN / 1 ROT / 2 UNGEMESSEN · ROT leib.K1
 omen-gtx-gtx-stau-78d3-1-78d37554 UNGEMESSEN 0 GRÜN / 0 ROT / 1 UNGEMESSEN · UNGEMESSEN ankunft.K4#1 (punkte-maschine 35658b89 messung/78d37554-gtx.json)
 omen-gtx-gtx-stau-78d3-2-78d37554 UNGEMESSEN 0 GRÜN / 0 ROT / 1 UNGEMESSEN · UNGEMESSEN bauen.K1#2 (punkte-maschine d83c6200 messung/78d37554-gtx.json)
 omen-gtx-gtx-stau-78d3-3-78d37554 UNGEMESSEN 0 GRÜN / 0 ROT / 1 UNGEMESSEN · UNGEMESSEN fahrzeug.K2#2 (punkte-maschine 96139d3e messung/78d37554-gtx.json)
+omen-gtx-gtx-stau-78d3-4-78d37554 ROT 0 GRÜN / 1 ROT / 0 UNGEMESSEN · ROT ferne.K1#2 (punkte-maschine 488b2020 messung/78d37554-gtx.json)
