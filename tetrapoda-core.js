@@ -1985,15 +1985,23 @@
     // saettigt und laesst seltene Beute liegen (Holling 1959, Typ III; der Jaeger wechselt zur haeufigen, Murdoch 1969). Die
     // Kaskade folgt aus den Lesern: ohne Woelfe waechst das Rotwild bis an seine Aesung und verbeisst den Jungwuchs (Ripple &
     // Beschta 2012).
+    // DIE DICHTE (tiere.K5, VERTRAGS-AKT 09.11.): dieselbe Gemeinschaft je Revier auf einem Drittel des Lands — revierM 200 → 113
+    // (12,6 → 4,0 ha, 4 × 4 statt 7 × 7 Zellen des Rasters rasterM), kopfJeHa 8 → 25 (K je Revier bleibt: 25 × 16 × 0,25 ha =
+    // 8 × 49 × 0,26 ha), fress 0,05 → 0,016 (der Verbiss je Zelle bleibt: derselbe Bestand aest auf 16 statt 49 Zellen). Was je
+    // Revier zaehlt (beuteVoll, geburt, tod, riss je Takt), bleibt — die Bilanz, die Kaskade und ihre Baender sind die des
+    // Reviers; nur das Land je Kopf faellt. Vorher trug das Gesetz 0,72 Koepfe je ha (16 ferne Reviere, 3 Spielstunden: je
+    // Revier Hirsch 4,8 · Wolf 2,5 · Baer 1,0 · Fuchs 0,8): am Weg eines Gehers (683 m in 10 Spielminuten) ankerten 3 von 110
+    // Tieren binnen 64 m, die Mess-Wiese zaehlte 1 Sichtung; die Karte verlangt 150 Tiere im 500-m-Ring (1,9 je ha). Ein
+    // dreifaches kopfJeHa allein hob den Bestand nur um die Haelfte (1,08 je ha: der Riss haelt das Rotwild je Revier bei ~5).
     var BESTAND_GESETZ = Object.freeze({
         taktS: 10,
-        revierM: 200,
+        revierM: 113,
         rasterM: 50,
-        kopfJeHa: 8,
+        kopfJeHa: 25,
         beuteVoll: 30,
         geburt: 0.1,
         tod: 0.2,
-        fress: 0.05,
+        fress: 0.016,
         riss: 0.6,
         rissHalb: 0.1,
     });

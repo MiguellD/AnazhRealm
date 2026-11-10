@@ -102,8 +102,8 @@ function wasserFluss() {
             }
         }
     }
-    quer.sort((a, b) => a - b);
-    buckel.sort((a, b) => a - b);
+    quer.sort(aufsteigend);
+    buckel.sort(aufsteigend);
     const q = (p, A = quer) => (A.length ? rang(A, p) : 0);
     const R = wasserRund(3);
     // Wasserfall-Doppel: ein Sturz je Ort (der geteilte Unterlauf zieht ihn sonst je Quelle).
@@ -204,7 +204,7 @@ async function wasserKoerper(o = {}) {
             c.position.z = mz;
             if (k >= 30 && ohneHopf && !(c.userData._hopH > 0)) tiefen.push(spiegel - c.position.y);
         }
-        tiefen.sort((a, b) => a - b);
+        tiefen.sort(aufsteigend);
         r.removeCreature(c);
         if (!tiefen.length) return null;
         const linie = tb?.bein ? tb.bein[0].h * (c.scale.x || 1) : null;
@@ -227,7 +227,7 @@ async function wasserKoerper(o = {}) {
                 if (st.playerEyesUnderwater) augenUnter++;
             }
         }
-        fuesse.sort((a, b) => a - b);
+        fuesse.sort(aufsteigend);
         aus.lage = {
             fussUnterSpiegelP50: R(-rang(fuesse), 3),
             sollFussUnterSpiegel: R(brust, 3),
@@ -907,7 +907,7 @@ function wasserFlaechen(r, x, z) {
             const y = n ? r.constructor._wasserNetzHoehe(n, x, z) : null;
             if (y !== null) ys.push(y);
         }
-    return ys.sort((a, b) => a - b).filter((y, j, l) => !j || y - l[j - 1] > 0.1);
+    return ys.sort(aufsteigend).filter((y, j, l) => !j || y - l[j - 1] > 0.1);
 }
 
 // ── gelaende.K2 (b) · (d): DER DAMM AM FLUSS ── 60 m stromab des Graben-Orts (längs des Laufs) quer über den Fluss aus dem
@@ -2286,7 +2286,7 @@ async function wasserQuelle(o = {}) {
                 beispiele.push(zeile);
         }
     }
-    const p50 = (A) => (A.length ? rang(A.slice().sort((a, b) => a - b)) : 0);
+    const p50 = (A) => (A.length ? rang(A.slice().sort(aufsteigend)) : 0);
     const h0 = huelleVon(st.hydrosphere)(0);
     return {
         quellen,
@@ -2351,7 +2351,7 @@ function quellTeileVereinen(teile) {
             fehler: `die Teile der Quell-Probe sehen verschiedene Kacheln (${abdruck(teile[0])} gegen ${abdruck(fremd)})`,
         };
     const R = wasserRund(2);
-    const p50 = (A) => (A.length ? rang(A.slice().sort((a, b) => a - b)) : 0);
+    const p50 = (A) => (A.length ? rang(A.slice().sort(aufsteigend)) : 0);
     const summe = (k) => teile.reduce((s, t) => s + (t[k] || 0), 0);
     const breiten0 = [].concat(...teile.map((t) => t.breiten0 || []));
     const tiefen0 = [].concat(...teile.map((t) => t.tiefen0 || []));
@@ -2619,7 +2619,7 @@ async function wasserBank(o = {}) {
             } else if (w > geroellGrad) geroell++;
         }
     }
-    const s = winkel.slice().sort((a, b) => a - b);
+    const s = winkel.slice().sort(aufsteigend);
     const q = (p) => (s.length ? rang(s, p) : 0);
     return {
         ort,
