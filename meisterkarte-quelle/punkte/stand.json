@@ -65,17 +65,16 @@
    ]
   },
   "affekt.K4": {
-   "punkte": 1,
-   "beleg": "Maschine: gehalten: 30 Spielminuten, 55 Zeilen, 0 falsch, Abstand 30 s, offen -6.9 s, ohne Tat 0, Klassen {\"nexus\":57,\"rule:nexus\":358,\"llm\":3,\"rule:llm\":11,\"wunsch\":24,\"human\":2,\"fern\":109}, verworfen 93 an d3708675 headless — offen: affekt.K4#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs +2) · affekt.K4#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +9) — zuletzt an 94d9c5a6: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: zeichner.postKette · wie {\"zeichner.postKette\":\"fort\"}) — ungemessen",
+   "punkte": 0,
+   "beleg": "Maschine: 0 — offen: affekt.K4#1 headless: ROT: 30 Spielminuten, 55 Zeilen, 6 falsch, Abstand 30 s, offen -14.4 s, ohne Tat 0, Klassen {\"nexus\":50,\"rule:nexus\":330,\"llm\":3,\"rule:llm\":11,\"wunsch\":0,\"human\":2,\"fern\":157}, verworfen 144 · keine wirkende Tat von wunsch · 6 Zeilen falsch · falsch [641.8 s] dazu 4 weitere Tat: Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 48 m südwestlich von dir, weil lebendig am Ort hoch ist (>0.59). (Gesetz Nr. 16 des Nexus; dazu 5 weitere Taten seit der letzten Zeile) an 6aa7a5a6 · affekt.K4#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs +2) · affekt.K4#2 gtx: ROT: spieler → — (0 ms) · nexus → — (0 ms) · ROT spieler: ohne Modell (die KI der Sitzung ist aus); nexus: ohne Modell (die KI der Sitzung ist aus) an 6aa7a5a6",
    "stationen": [
     {
      "id": "affekt.K4#1",
      "geraet": "headless",
-     "gruen": true,
-     "zahl": "30 Spielminuten, 55 Zeilen, 0 falsch, Abstand 30 s, offen -6.9 s, ohne Tat 0, Klassen {\"nexus\":57,\"rule:nexus\":358,\"llm\":3,\"rule:llm\":11,\"wunsch\":24,\"human\":2,\"fern\":109}, verworfen 93",
-     "sha": "d3708675d989fe690b916d0b798b4bd9d916c065",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +9)",
-     "gehalten": true
+     "gruen": false,
+     "zahl": "30 Spielminuten, 55 Zeilen, 6 falsch, Abstand 30 s, offen -14.4 s, ohne Tat 0, Klassen {\"nexus\":50,\"rule:nexus\":330,\"llm\":3,\"rule:llm\":11,\"wunsch\":0,\"human\":2,\"fern\":157}, verworfen 144 · keine wirkende Tat von wunsch · 6 Zeilen falsch · falsch [641.8 s] dazu 4 weitere Tat: Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 48 m südwestlich von dir, weil lebendig am Ort hoch ist (>0.59). (Gesetz Nr. 16 des Nexus; dazu 5 weitere Taten seit der letzten Zeile)",
+     "sha": "6aa7a5a6bfd01df56192e66b658681dac67a27a9",
+     "grund": "ROT: 30 Spielminuten, 55 Zeilen, 6 falsch, Abstand 30 s, offen -14.4 s, ohne Tat 0, Klassen {\"nexus\":50,\"rule:nexus\":330,\"llm\":3,\"rule:llm\":11,\"wunsch\":0,\"human\":2,\"fern\":157}, verworfen 144 · keine wirkende Tat von wunsch · 6 Zeilen falsch · falsch [641.8 s] dazu 4 weitere Tat: Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 48 m südwestlich von dir, weil lebendig am Ort hoch ist (>0.59). (Gesetz Nr. 16 des Nexus; dazu 5 weitere Taten seit der letzten Zeile)"
     },
     {
      "id": "affekt.K4#2",
@@ -90,10 +89,9 @@
      "id": "affekt.K4#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +9) — zuletzt an 94d9c5a6: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: zeichner.postKette · wie {\"zeichner.postKette\":\"fort\"}) — ungemessen",
-     "ungemessen": true
+     "zahl": "spieler → — (0 ms) · nexus → — (0 ms) · ROT spieler: ohne Modell (die KI der Sitzung ist aus); nexus: ohne Modell (die KI der Sitzung ist aus)",
+     "sha": "6aa7a5a6bfd01df56192e66b658681dac67a27a9",
+     "grund": "ROT: spieler → — (0 ms) · nexus → — (0 ms) · ROT spieler: ohne Modell (die KI der Sitzung ist aus); nexus: ohne Modell (die KI der Sitzung ist aus)"
     }
    ]
   },
@@ -254,16 +252,15 @@
   },
   "bauen.K1": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 72/72 Werke stehen über echte Ereignisse · werkstatt 24/24 (Eingaben 3–3) · rezeptbuch 24/24 (Eingaben 2–3) · hotbar 24/24 (Eingaben 2–2) an d3708675 headless — offen: bauen.K1#2 radeon: Station seit der Messung geändert — zuletzt an 900c28e6: Frist der Probe 53 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 4/8 Werke in L0 im Bild (Bau-Hash = L0-Bau, ≤ 3 Eingaben) · p95 bis zum Bild werkstatt kalt 5280 · warm null ms (2+0) · rezeptbu · bauen.K1#2 gtx: Station seit der Messung geändert — zuletzt an dcc33615: Fremd-Last: AppHelperCap.exe 54,8 CPU-s · MsMpEng.exe 10,7 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 10,5 CPU-s — 2,02 Kerne fremd im dichteste",
+   "beleg": "Maschine: 72/72 Werke stehen über echte Ereignisse · werkstatt 24/24 (Eingaben 3–3) · rezeptbuch 24/24 (Eingaben 2–3) · hotbar 24/24 (Eingaben 2–2) an 6aa7a5a6 headless — offen: bauen.K1#2 radeon: Station seit der Messung geändert — zuletzt an 900c28e6: Frist der Probe 53 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 4/8 Werke in L0 im Bild (Bau-Hash = L0-Bau, ≤ 3 Eingaben) · p95 bis zum Bild werkstatt kalt 5280 · warm null ms (2+0) · rezeptbu · bauen.K1#2 gtx: Station seit der Messung geändert — zuletzt an dcc33615: Fremd-Last: AppHelperCap.exe 54,8 CPU-s · MsMpEng.exe 10,7 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 10,5 CPU-s — 2,02 Kerne fremd im dichteste",
    "stationen": [
     {
      "id": "bauen.K1#1",
      "geraet": "headless",
      "gruen": true,
      "zahl": "72/72 Werke stehen über echte Ereignisse · werkstatt 24/24 (Eingaben 3–3) · rezeptbuch 24/24 (Eingaben 2–3) · hotbar 24/24 (Eingaben 2–2)",
-     "sha": "d3708675d989fe690b916d0b798b4bd9d916c065",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-werkstatt-weg.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +11)",
-     "gehalten": true
+     "sha": "6aa7a5a6bfd01df56192e66b658681dac67a27a9",
+     "grund": null
     },
     {
      "id": "bauen.K1#2",
@@ -986,7 +983,7 @@
   },
   "haar.K2": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: haar.K2#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs +7) — zuletzt an 067bd771: Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: POSE nach-third {\"leib\":[-280.4,28.10938,-1045.6,0,-0.83375,0,0.55214,0,-0.48251,0,0,0,0,1,0,0,0,0,0,0,1,0,-0.03648,0,0,0,0,1,0,3.18,0,-0.01,0.0002 · haar.K2#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs +7)",
+   "beleg": "Maschine: 0 — offen: haar.K2#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs +7) — zuletzt an 067bd771: Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: POSE nach-third {\"leib\":[-280.4,28.10938,-1045.6,0,-0.83375,0,0.55214,0,-0.48251,0,0,0,0,1,0,0,0,0,0,0,1,0,-0.03648,0,0,0,0,1,0,3.18,0,-0.01,0.0002 · haar.K2#1 gtx: ROT: EINE Pose: Leib Δ 0 · Haar-Feder Δ 0 m über 3 Lesungen · arm ROT strich 0.3155 Soll [0.3554,0.533] — strich 0.3155 < 0.3554 · albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:4bd9ed1722648959) · albedo — [0.01; 0.3] · third ROT strich 0.3498 Soll [0.3554,0.533] — strich 0.3498 < 0.3554 · albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:4bd9ed1722648959) · albedo — [0.01; 0.3] an 6aa7a5a6",
    "stationen": [
     {
      "id": "haar.K2#1",
@@ -1001,10 +998,9 @@
      "id": "haar.K2#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs +7)",
-     "ungemessen": true
+     "zahl": "EINE Pose: Leib Δ 0 · Haar-Feder Δ 0 m über 3 Lesungen · arm ROT strich 0.3155 Soll [0.3554,0.533] — strich 0.3155 < 0.3554 · albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:4bd9ed1722648959) · albedo — [0.01; 0.3] · third ROT strich 0.3498 Soll [0.3554,0.533] — strich 0.3498 < 0.3554 · albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:4bd9ed1722648959) · albedo — [0.01; 0.3]",
+     "sha": "6aa7a5a6bfd01df56192e66b658681dac67a27a9",
+     "grund": "ROT: EINE Pose: Leib Δ 0 · Haar-Feder Δ 0 m über 3 Lesungen · arm ROT strich 0.3155 Soll [0.3554,0.533] — strich 0.3155 < 0.3554 · albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:4bd9ed1722648959) · albedo — [0.01; 0.3] · third ROT strich 0.3498 Soll [0.3554,0.533] — strich 0.3498 < 0.3554 · albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:4bd9ed1722648959) · albedo — [0.01; 0.3]"
     }
    ]
   },
@@ -1436,16 +1432,15 @@
   },
   "klang.K5": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Welt-Abfragen je Takt vor {\"boden\":0.75,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":173.7} → nach 4000 Bauten + 200 Fluss-Läufen {\"boden\":0.8,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":0} · nichts wächst an d3708675 headless — offen: klang.K5#2 radeon: Linse seit der Messung geändert (R6: scripts/diag-klang-zensus.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +25) — zuletzt an 900c28e6: Fremd-Last: node scripts/diag-sprache.cjs --selftest 14,9 CPU-s · MsMpEng.exe 12,1 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 9,5 CPU-s — 3,10 K · klang.K5#2 gtx: Linse seit der Messung geändert (R6: scripts/diag-klang-zensus.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +25) — zuletzt an dcc33615: Fremd-Last: AppHelperCap.exe 36,5 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 7,4 CPU-s · MsMpEng.exe 6,8 CPU-s — 1,99 Kerne fremd im dichtesten ",
+   "beleg": "Maschine: Welt-Abfragen je Takt vor {\"boden\":0.75,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":195.82} → nach 4000 Bauten + 200 Fluss-Läufen {\"boden\":0.8,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":0} · nichts wächst an 6aa7a5a6 headless — offen: klang.K5#2 radeon: Linse seit der Messung geändert (R6: scripts/diag-klang-zensus.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +25) — zuletzt an 900c28e6: Fremd-Last: node scripts/diag-sprache.cjs --selftest 14,9 CPU-s · MsMpEng.exe 12,1 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 9,5 CPU-s — 3,10 K · klang.K5#2 gtx: Linse seit der Messung geändert (R6: scripts/diag-klang-zensus.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +25) — zuletzt an dcc33615: Fremd-Last: AppHelperCap.exe 36,5 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 7,4 CPU-s · MsMpEng.exe 6,8 CPU-s — 1,99 Kerne fremd im dichtesten ",
    "stationen": [
     {
      "id": "klang.K5#1",
      "geraet": "headless",
      "gruen": true,
-     "zahl": "Welt-Abfragen je Takt vor {\"boden\":0.75,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":173.7} → nach 4000 Bauten + 200 Fluss-Läufen {\"boden\":0.8,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":0} · nichts wächst",
-     "sha": "d3708675d989fe690b916d0b798b4bd9d916c065",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-klang-zensus.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +10)",
-     "gehalten": true
+     "zahl": "Welt-Abfragen je Takt vor {\"boden\":0.75,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":195.82} → nach 4000 Bauten + 200 Fluss-Läufen {\"boden\":0.8,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":0} · nichts wächst",
+     "sha": "6aa7a5a6bfd01df56192e66b658681dac67a27a9",
+     "grund": null
     },
     {
      "id": "klang.K5#2",
@@ -1553,16 +1548,15 @@
   },
   "leib.K3": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: ego: schwimmt 282/282, taucht 2.21 m (Augen unter 189) · Ruck Leib 0.012 / Kamera 0.019 m (p95 0.0029 / 0.0009) · third: schwimmt 283/283, taucht 2.21 m (Augen unter 189) · Ruck Leib 0.013 / Kamera 0.013 m (p95 0.003 / 0.003) · Mutante Ruck 0.203 m erkannt · Exit 0 an d3708675 headless — offen: leib.K3#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs +3) — zuletzt an 067bd771: die Fahrt riss 1800 s (vor ferne.K5#1) — offen, UNGEMESSEN · leib.K3#2 gtx: Station seit der Messung geändert — zuletzt an 78d37554: Deckel 45 s gerissen: Stille seit 24.3 s nach 45 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: @@ 20.6 s · umgestellt 1816/-6168 in 16805 ms)",
+   "beleg": "Maschine: ego: schwimmt 282/282, taucht 2.21 m (Augen unter 189) · Ruck Leib 0.012 / Kamera 0.019 m (p95 0.003 / 0.0009) · third: schwimmt 283/283, taucht 2.21 m (Augen unter 189) · Ruck Leib 0.013 / Kamera 0.013 m (p95 0.003 / 0.003) · Mutante Ruck 0.204 m erkannt · Exit 0 an 6aa7a5a6 headless — offen: leib.K3#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs +3) — zuletzt an 067bd771: die Fahrt riss 1800 s (vor ferne.K5#1) — offen, UNGEMESSEN · leib.K3#2 gtx: Station seit der Messung geändert — zuletzt an 78d37554: Deckel 45 s gerissen: Stille seit 24.3 s nach 45 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: @@ 20.6 s · umgestellt 1816/-6168 in 16805 ms)",
    "stationen": [
     {
      "id": "leib.K3#1",
      "geraet": "headless",
      "gruen": true,
-     "zahl": "ego: schwimmt 282/282, taucht 2.21 m (Augen unter 189) · Ruck Leib 0.012 / Kamera 0.019 m (p95 0.0029 / 0.0009) · third: schwimmt 283/283, taucht 2.21 m (Augen unter 189) · Ruck Leib 0.013 / Kamera 0.013 m (p95 0.003 / 0.003) · Mutante Ruck 0.203 m erkannt · Exit 0",
-     "sha": "d3708675d989fe690b916d0b798b4bd9d916c065",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +10)",
-     "gehalten": true
+     "zahl": "ego: schwimmt 282/282, taucht 2.21 m (Augen unter 189) · Ruck Leib 0.012 / Kamera 0.019 m (p95 0.003 / 0.0009) · third: schwimmt 283/283, taucht 2.21 m (Augen unter 189) · Ruck Leib 0.013 / Kamera 0.013 m (p95 0.003 / 0.003) · Mutante Ruck 0.204 m erkannt · Exit 0",
+     "sha": "6aa7a5a6bfd01df56192e66b658681dac67a27a9",
+     "grund": null
     },
     {
      "id": "leib.K3#2",
@@ -1652,7 +1646,7 @@
   },
   "licht.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: licht.K1#1 gtx: Station seit der Messung geändert — zuletzt an dcc33615: Deckel 90 s gerissen: Stille seit 15 s nach 92 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __tagKurve({\"uhren\":[0,0.01,0.02,0. (100 Uhren) · 19.4 s · 76.9 s)",
+   "beleg": "Maschine: 0 — offen: licht.K1#1 gtx: Station seit der Messung geändert — zuletzt an 6aa7a5a6: Deckel 90 s gerissen: Stille seit 21 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __tagKurve({\"uhren\":[0,0.01,0.02,0. (100 Uhren) · 22.4 s · 68.9 s)",
    "stationen": [
     {
      "id": "licht.K1#1",
@@ -1660,7 +1654,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an dcc33615: Deckel 90 s gerissen: Stille seit 15 s nach 92 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __tagKurve({\"uhren\":[0,0.01,0.02,0. (100 Uhren) · 19.4 s · 76.9 s)",
+     "grund": "Station seit der Messung geändert — zuletzt an 6aa7a5a6: Deckel 90 s gerissen: Stille seit 21 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __tagKurve({\"uhren\":[0,0.01,0.02,0. (100 Uhren) · 22.4 s · 68.9 s)",
      "ungemessen": true
     }
    ]
@@ -1868,7 +1862,7 @@
   },
   "lod.K5": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: 17 Läufe bei 30/60/144 fps, Puls und Regler ±10 % (loadScale 0–1): Abstände, Schwellen, Grenzen, Wahl und Ränder gleich, die Mutante (Regler-Term im Gesetz) wandert an d3708675 headless — offen: lod.K5#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/haenger-linse.cjs +8) — zuletzt an 067bd771: Deckel 43 s gerissen — beendet, UNGEMESSEN (zuletzt: umstellen · Exit 0) · lod.K5#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs +5)",
+   "beleg": "Maschine: 17 Läufe bei 30/60/144 fps, Puls und Regler ±10 % (loadScale 0–1): Abstände, Schwellen, Grenzen, Wahl und Ränder gleich, die Mutante (Regler-Term im Gesetz) wandert an 6aa7a5a6 headless — offen: lod.K5#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/haenger-linse.cjs +8) — zuletzt an 067bd771: Deckel 43 s gerissen — beendet, UNGEMESSEN (zuletzt: umstellen · Exit 0) · lod.K5#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs +5)",
    "stationen": [
     {
      "id": "lod.K5#1",
@@ -1893,9 +1887,8 @@
      "geraet": "headless",
      "gruen": true,
      "zahl": "17 Läufe bei 30/60/144 fps, Puls und Regler ±10 % (loadScale 0–1): Abstände, Schwellen, Grenzen, Wahl und Ränder gleich, die Mutante (Regler-Term im Gesetz) wandert",
-     "sha": "d3708675d989fe690b916d0b798b4bd9d916c065",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +12)",
-     "gehalten": true
+     "sha": "6aa7a5a6bfd01df56192e66b658681dac67a27a9",
+     "grund": null
     }
    ]
   },
@@ -2477,16 +2470,15 @@
   },
   "physik.K2": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: (V) Leiber 106/106 Takte ohne Durchtritt, Eindringen max 0.001 m, Spalt max 0 m (gestoßener Bär 68.95 m/s, Riese 13.52 m/s), Schmuggel durch · L8 nach 200 Schritten Bär 0 m, Wagen 0 m an d3708675 headless — offen: physik.K2#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/haenger-linse.cjs +8) — zuletzt an 067bd771: die Fahrt riss 1800 s (vor ferne.K5#1) — offen, UNGEMESSEN · physik.K2#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/gpu-fehler.cjs +11)",
+   "beleg": "Maschine: (V) Leiber 106/106 Takte ohne Durchtritt, Eindringen max 0.001 m, Spalt max 0 m (gestoßener Bär 68.95 m/s, Riese 13.52 m/s), Schmuggel durch · L8 nach 200 Schritten Bär 0 m, Wagen 0 m an 6aa7a5a6 headless — offen: physik.K2#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/haenger-linse.cjs +8) — zuletzt an 067bd771: die Fahrt riss 1800 s (vor ferne.K5#1) — offen, UNGEMESSEN · physik.K2#2 gtx: ROT: Wagen fahrzeug_supersport 81.67 m/s (vmax 68.06 × 1.2), 20/20 Läufe ohne Durchtritt, Eindringen max 0 m · gestoßener Bär 68.95 m/s · im Bild an der Mauer: Wagen Spalt max 0.144 m, Eindringen max 0.066 m; Bär Spalt max 0 m, Eindringen max 0.157 m · 9 Verstöße (OFFEN (V) BILD ≠ KOLLISION: wagen 81.66 m/s @144 → _t_kontakt_mauer#1559 — im Bild Spalt 0) an 6aa7a5a6",
    "stationen": [
     {
      "id": "physik.K2#1",
      "geraet": "headless",
      "gruen": true,
      "zahl": "(V) Leiber 106/106 Takte ohne Durchtritt, Eindringen max 0.001 m, Spalt max 0 m (gestoßener Bär 68.95 m/s, Riese 13.52 m/s), Schmuggel durch · L8 nach 200 Schritten Bär 0 m, Wagen 0 m",
-     "sha": "d3708675d989fe690b916d0b798b4bd9d916c065",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-fahr-leben.cjs, scripts/diag-kollision-bild.cjs, scripts/lib/abnahme-urteil.cjs +13) — zuletzt an 455e5be8: GPU-Schloss blockiert (gpu-lauf.sh Exit 75: SCHLOSS BLOCKIERT von heil-ci-portal-konformanz nach 2981 s Warten (ohne Nachtruhe; Wanduhr 2981 s)) — ungemessen",
-     "gehalten": true
+     "sha": "6aa7a5a6bfd01df56192e66b658681dac67a27a9",
+     "grund": null
     },
     {
      "id": "physik.K2#2",
@@ -2501,10 +2493,9 @@
      "id": "physik.K2#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/gpu-fehler.cjs +11)",
-     "ungemessen": true
+     "zahl": "Wagen fahrzeug_supersport 81.67 m/s (vmax 68.06 × 1.2), 20/20 Läufe ohne Durchtritt, Eindringen max 0 m · gestoßener Bär 68.95 m/s · im Bild an der Mauer: Wagen Spalt max 0.144 m, Eindringen max 0.066 m; Bär Spalt max 0 m, Eindringen max 0.157 m · 9 Verstöße (OFFEN (V) BILD ≠ KOLLISION: wagen 81.66 m/s @144 → _t_kontakt_mauer#1559 — im Bild Spalt 0)",
+     "sha": "6aa7a5a6bfd01df56192e66b658681dac67a27a9",
+     "grund": "ROT: Wagen fahrzeug_supersport 81.67 m/s (vmax 68.06 × 1.2), 20/20 Läufe ohne Durchtritt, Eindringen max 0 m · gestoßener Bär 68.95 m/s · im Bild an der Mauer: Wagen Spalt max 0.144 m, Eindringen max 0.066 m; Bär Spalt max 0 m, Eindringen max 0.157 m · 9 Verstöße (OFFEN (V) BILD ≠ KOLLISION: wagen 81.66 m/s @144 → _t_kontakt_mauer#1559 — im Bild Spalt 0)"
     }
    ]
   },
@@ -3009,16 +3000,15 @@
   },
   "siedlung.K1": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 1 von 8 Gängen Tür → Keller → Dachboden ganz, Hub max 0.20 m, Anti-Clip-Hub 0 an d3708675 headless — offen: siedlung.K1#2 radeon: Station seit der Messung geändert — zuletzt an 900c28e6: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 13 von 18 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.20 m · Innen-Bild 0 von 18 lesbar (Plan 18), innen ÷  · siedlung.K1#2 gtx: Station seit der Messung geändert — zuletzt an 78d37554: Deckel 45 s gerissen: Stille seit 45 s nach 45 s (kein Lebenszeichen) — beendet, UNGEMESSEN",
+   "beleg": "Maschine: 1 von 8 Gängen Tür → Keller → Dachboden ganz, Hub max 0.20 m, Anti-Clip-Hub 0 an 6aa7a5a6 headless — offen: siedlung.K1#2 radeon: Station seit der Messung geändert — zuletzt an 900c28e6: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 13 von 18 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.20 m · Innen-Bild 0 von 18 lesbar (Plan 18), innen ÷  · siedlung.K1#2 gtx: Station seit der Messung geändert — zuletzt an 78d37554: Deckel 45 s gerissen: Stille seit 45 s nach 45 s (kein Lebenszeichen) — beendet, UNGEMESSEN",
    "stationen": [
     {
      "id": "siedlung.K1#1",
      "geraet": "headless",
      "gruen": true,
      "zahl": "1 von 8 Gängen Tür → Keller → Dachboden ganz, Hub max 0.20 m, Anti-Clip-Hub 0",
-     "sha": "d3708675d989fe690b916d0b798b4bd9d916c065",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-haus-welt.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +11)",
-     "gehalten": true
+     "sha": "6aa7a5a6bfd01df56192e66b658681dac67a27a9",
+     "grund": null
     },
     {
      "id": "siedlung.K1#2",
@@ -3411,25 +3401,23 @@
   },
   "spielgang.K5": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 0 harte UI-Zeilen (Code 0 · DOM 0 von 1593 Zeilen, 1427 aus der Tafel, 166 Daten) · beim Wechsel auf en stehen 0 · Selbsttest im Lauf nennt beide Mutanten · Text-Quelle DE/EN: AnazhRealm.TEXTE (de 2366, en 2366) an d3708675 headless — offen: spielgang.K5#2 headless: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +10)",
+   "beleg": "Maschine: 0 harte UI-Zeilen (Code 0 · DOM 0 von 580 Zeilen, 574 aus der Tafel, 6 Daten) · beim Wechsel auf en stehen 0 · Selbsttest im Lauf nennt beide Mutanten · Text-Quelle DE/EN: AnazhRealm.TEXTE (de 2379, en 2379) an 6aa7a5a6 headless — offen: spielgang.K5#2 headless: ROT: de.regel 42 Sätze · 47 Zeilen, fremd 0 · de.nexus 43 Sätze · 161 Zeilen, fremd 0 · Prompt 43/43 · en.regel 42 Sätze · 46 Zeilen, fremd 0 · en.nexus 43 Sätze · 160 Zeilen, fremd 0 · Prompt 43/43 · Selbsttest 3/3 ROT · MODELL qwen3:4b-instruct @ http://127.0.0.1:11434: de 42 Sätze, 156/160 Zeilen in de, fremd 0 · en 42 Sätze, 157/160 Zeilen in en, fremd 1 · ROT de.regel nennt nicht den wahren Schreiber: nexus (regel); de.nexus nennt nicht den wahren Schreiber: nexus (nexus); en.regel nennt nicht den wahren Schreiber: nexus (regel); en.nexus nennt nicht den wahren Schreiber: nexus (nexus); Modell en fremd: „make me faster“ → (Grok's suggestion declined: The law of player_speed: 1.15–2.00, jetzt 2.00.) an 6aa7a5a6",
    "stationen": [
     {
      "id": "spielgang.K5#1",
      "geraet": "headless",
      "gruen": true,
-     "zahl": "0 harte UI-Zeilen (Code 0 · DOM 0 von 1593 Zeilen, 1427 aus der Tafel, 166 Daten) · beim Wechsel auf en stehen 0 · Selbsttest im Lauf nennt beide Mutanten · Text-Quelle DE/EN: AnazhRealm.TEXTE (de 2366, en 2366)",
-     "sha": "d3708675d989fe690b916d0b798b4bd9d916c065",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-sprache.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +10) — zuletzt an f69a7305: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine TEXTE-Zeile (Exit 0)) · Täter: ✅ GRÜN — gate:sprache — die Tafel trägt 1613 Zeilen, kein Text geht an ihr vorbei.",
-     "gehalten": true
+     "zahl": "0 harte UI-Zeilen (Code 0 · DOM 0 von 580 Zeilen, 574 aus der Tafel, 6 Daten) · beim Wechsel auf en stehen 0 · Selbsttest im Lauf nennt beide Mutanten · Text-Quelle DE/EN: AnazhRealm.TEXTE (de 2379, en 2379)",
+     "sha": "6aa7a5a6bfd01df56192e66b658681dac67a27a9",
+     "grund": null
     },
     {
      "id": "spielgang.K5#2",
      "geraet": "headless",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +10)",
-     "ungemessen": true
+     "zahl": "de.regel 42 Sätze · 47 Zeilen, fremd 0 · de.nexus 43 Sätze · 161 Zeilen, fremd 0 · Prompt 43/43 · en.regel 42 Sätze · 46 Zeilen, fremd 0 · en.nexus 43 Sätze · 160 Zeilen, fremd 0 · Prompt 43/43 · Selbsttest 3/3 ROT · MODELL qwen3:4b-instruct @ http://127.0.0.1:11434: de 42 Sätze, 156/160 Zeilen in de, fremd 0 · en 42 Sätze, 157/160 Zeilen in en, fremd 1 · ROT de.regel nennt nicht den wahren Schreiber: nexus (regel); de.nexus nennt nicht den wahren Schreiber: nexus (nexus); en.regel nennt nicht den wahren Schreiber: nexus (regel); en.nexus nennt nicht den wahren Schreiber: nexus (nexus); Modell en fremd: „make me faster“ → (Grok's suggestion declined: The law of player_speed: 1.15–2.00, jetzt 2.00.)",
+     "sha": "6aa7a5a6bfd01df56192e66b658681dac67a27a9",
+     "grund": "ROT: de.regel 42 Sätze · 47 Zeilen, fremd 0 · de.nexus 43 Sätze · 161 Zeilen, fremd 0 · Prompt 43/43 · en.regel 42 Sätze · 46 Zeilen, fremd 0 · en.nexus 43 Sätze · 160 Zeilen, fremd 0 · Prompt 43/43 · Selbsttest 3/3 ROT · MODELL qwen3:4b-instruct @ http://127.0.0.1:11434: de 42 Sätze, 156/160 Zeilen in de, fremd 0 · en 42 Sätze, 157/160 Zeilen in en, fremd 1 · ROT de.regel nennt nicht den wahren Schreiber: nexus (regel); de.nexus nennt nicht den wahren Schreiber: nexus (nexus); en.regel nennt nicht den wahren Schreiber: nexus (regel); en.nexus nennt nicht den wahren Schreiber: nexus (nexus); Modell en fremd: „make me faster“ → (Grok's suggestion declined: The law of player_speed: 1.15–2.00, jetzt 2.00.)"
     }
    ]
   },
@@ -3546,7 +3534,7 @@
   },
   "streaming.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: streaming.K1#1 headless: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +10) — zuletzt an 78d37554: Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 43,0 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=c",
+   "beleg": "Maschine: 0 — offen: streaming.K1#1 headless: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +10) — zuletzt an 6aa7a5a6: Fremd-Last: provjobd2898710562 13,8 CPU-s · Runner.Worker spawnclient 142 145 0,5 CPU-s · hv_kvp_daemon -n 0,2 CPU-s — 0,75 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, linux, 4 Kerne (Conta",
    "stationen": [
     {
      "id": "streaming.K1#1",
@@ -3554,14 +3542,14 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +10) — zuletzt an 78d37554: Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 43,0 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=c",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +10) — zuletzt an 6aa7a5a6: Fremd-Last: provjobd2898710562 13,8 CPU-s · Runner.Worker spawnclient 142 145 0,5 CPU-s · hv_kvp_daemon -n 0,2 CPU-s — 0,75 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, linux, 4 Kerne (Conta",
      "ungemessen": true
     }
    ]
   },
   "streaming.K2": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: streaming.K2#1 headless: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +10) — zuletzt an 78d37554: Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 43,0 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=c",
+   "beleg": "Maschine: 0 — offen: streaming.K2#1 headless: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +10) — zuletzt an 6aa7a5a6: Fremd-Last: provjobd2898710562 13,8 CPU-s · Runner.Worker spawnclient 142 145 0,5 CPU-s · hv_kvp_daemon -n 0,2 CPU-s — 0,75 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, linux, 4 Kerne (Conta",
    "stationen": [
     {
      "id": "streaming.K2#1",
@@ -3569,7 +3557,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +10) — zuletzt an 78d37554: Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 43,0 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=c",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +10) — zuletzt an 6aa7a5a6: Fremd-Last: provjobd2898710562 13,8 CPU-s · Runner.Worker spawnclient 142 145 0,5 CPU-s · hv_kvp_daemon -n 0,2 CPU-s — 0,75 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, linux, 4 Kerne (Conta",
      "ungemessen": true
     }
    ]
@@ -3681,16 +3669,15 @@
   },
   "studios.K2": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Undo wirkt in 8/8 Studios, Redo ungeprobt (der Gang fährt nur Strg+Z) an d3708675 headless — offen: studios.K2#2 radeon: Station seit der Messung geändert — zuletzt an 900c28e6: Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: p95 Griff → Bild unter der Schranke in 0/8 (Gesetz-Wert höchstens 13 ms portale, Neubau höchstens 4460 ms fachwerk, je Studio nu · studios.K2#2 gtx: Station seit der Messung geändert — zuletzt an 78d37554: Deckel 90 s gerissen: Stille seit 34.9 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: @@ 55 s · neue Seite der Linse)",
+   "beleg": "Maschine: Undo wirkt in 8/8 Studios, Redo ungeprobt (der Gang fährt nur Strg+Z) an 6aa7a5a6 headless — offen: studios.K2#2 radeon: Station seit der Messung geändert — zuletzt an 900c28e6: Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: p95 Griff → Bild unter der Schranke in 0/8 (Gesetz-Wert höchstens 13 ms portale, Neubau höchstens 4460 ms fachwerk, je Studio nu · studios.K2#2 gtx: Station seit der Messung geändert — zuletzt an 78d37554: Deckel 90 s gerissen: Stille seit 34.9 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: @@ 55 s · neue Seite der Linse)",
    "stationen": [
     {
      "id": "studios.K2#1",
      "geraet": "headless",
      "gruen": true,
      "zahl": "Undo wirkt in 8/8 Studios, Redo ungeprobt (der Gang fährt nur Strg+Z)",
-     "sha": "d3708675d989fe690b916d0b798b4bd9d916c065",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-studio-huelle.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +11)",
-     "gehalten": true
+     "sha": "6aa7a5a6bfd01df56192e66b658681dac67a27a9",
+     "grund": null
     },
     {
      "id": "studios.K2#2",
@@ -3714,16 +3701,15 @@
   },
   "studios.K3": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Dreiecke ±5 % gegen renderer.info in 7/7 Mesh-Studios (20 Stufen, größte Abweichung 0.0 %) an d3708675 headless — offen: studios.K3#2 radeon: Station seit der Messung geändert — zuletzt an 900c28e6: Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Dreiecke, Befehle, VRAM und GPU-ms ±5 % in 0/7 Mesh-Studios (0 Stufen), Klang 8/8 Orte im Quantum (Audio-Graph höchstens 0.085 m · studios.K3#2 gtx: Station seit der Messung geändert — zuletzt an 78d37554: Deckel 90 s gerissen: Stille seit 15 s nach 106.7 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: @@ 91.6 s · neue Seite der Linse)",
+   "beleg": "Maschine: Dreiecke ±5 % gegen renderer.info in 7/7 Mesh-Studios (20 Stufen, größte Abweichung 0.0 %) an 6aa7a5a6 headless — offen: studios.K3#2 radeon: Station seit der Messung geändert — zuletzt an 900c28e6: Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Dreiecke, Befehle, VRAM und GPU-ms ±5 % in 0/7 Mesh-Studios (0 Stufen), Klang 8/8 Orte im Quantum (Audio-Graph höchstens 0.085 m · studios.K3#2 gtx: Station seit der Messung geändert — zuletzt an 78d37554: Deckel 90 s gerissen: Stille seit 15 s nach 106.7 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: @@ 91.6 s · neue Seite der Linse)",
    "stationen": [
     {
      "id": "studios.K3#1",
      "geraet": "headless",
      "gruen": true,
      "zahl": "Dreiecke ±5 % gegen renderer.info in 7/7 Mesh-Studios (20 Stufen, größte Abweichung 0.0 %)",
-     "sha": "d3708675d989fe690b916d0b798b4bd9d916c065",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-studio-huelle.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +11)",
-     "gehalten": true
+     "sha": "6aa7a5a6bfd01df56192e66b658681dac67a27a9",
+     "grund": null
     },
     {
      "id": "studios.K3#2",
@@ -3813,16 +3799,15 @@
   },
   "tiere.K1": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Kohäsion wandernd 1 (5 Glieder), fliehend 1 (min 1, in Flucht 0.323) an d3708675 headless — offen: tiere.K1#2 radeon: Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +27) — zuletzt an 067bd771: die Fahrt riss 1800 s (vor ferne.K5#1) — offen, UNGEMESSEN · tiere.K1#2 gtx: Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +27) — zuletzt an da0e790f: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: ✅ GRÜN — herde)",
+   "beleg": "Maschine: Kohäsion wandernd 1 (5 Glieder), fliehend 0.981 (min 0.8, in Flucht 0.337) an 6aa7a5a6 headless — offen: tiere.K1#2 radeon: Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +27) — zuletzt an 067bd771: die Fahrt riss 1800 s (vor ferne.K5#1) — offen, UNGEMESSEN · tiere.K1#2 gtx: ROT: (a)–(d) auf der Karte ROT: Kohäsion 1 / 1, Φ null über 0 Takte, letzter Flüchter 0 s (0 aus zweiter Hand), Fluchtweg 32.6 m, ID 600 s hält (Flucht 4 / 9 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 14.9 m: 46.9 m 5/5 fliehen, 4 sichtbar, 2 Fleck(en) (213 px) · 51.1 m 5/5 fliehen, 4 sichtbar, 1 Fleck(en) (193 px) · 55.3 m 5/5 fliehen, 4 sichtbar, 1 Fleck(en) (210 px) an 6aa7a5a6",
    "stationen": [
     {
      "id": "tiere.K1#1",
      "geraet": "headless",
      "gruen": true,
-     "zahl": "Kohäsion wandernd 1 (5 Glieder), fliehend 1 (min 1, in Flucht 0.323)",
-     "sha": "d3708675d989fe690b916d0b798b4bd9d916c065",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +12)",
-     "gehalten": true
+     "zahl": "Kohäsion wandernd 1 (5 Glieder), fliehend 0.981 (min 0.8, in Flucht 0.337)",
+     "sha": "6aa7a5a6bfd01df56192e66b658681dac67a27a9",
+     "grund": null
     },
     {
      "id": "tiere.K1#2",
@@ -3837,10 +3822,9 @@
      "id": "tiere.K1#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +27) — zuletzt an da0e790f: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: ✅ GRÜN — herde)",
-     "ungemessen": true
+     "zahl": "(a)–(d) auf der Karte ROT: Kohäsion 1 / 1, Φ null über 0 Takte, letzter Flüchter 0 s (0 aus zweiter Hand), Fluchtweg 32.6 m, ID 600 s hält (Flucht 4 / 9 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 14.9 m: 46.9 m 5/5 fliehen, 4 sichtbar, 2 Fleck(en) (213 px) · 51.1 m 5/5 fliehen, 4 sichtbar, 1 Fleck(en) (193 px) · 55.3 m 5/5 fliehen, 4 sichtbar, 1 Fleck(en) (210 px)",
+     "sha": "6aa7a5a6bfd01df56192e66b658681dac67a27a9",
+     "grund": "ROT: (a)–(d) auf der Karte ROT: Kohäsion 1 / 1, Φ null über 0 Takte, letzter Flüchter 0 s (0 aus zweiter Hand), Fluchtweg 32.6 m, ID 600 s hält (Flucht 4 / 9 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 14.9 m: 46.9 m 5/5 fliehen, 4 sichtbar, 2 Fleck(en) (213 px) · 51.1 m 5/5 fliehen, 4 sichtbar, 1 Fleck(en) (193 px) · 55.3 m 5/5 fliehen, 4 sichtbar, 1 Fleck(en) (210 px)"
     }
    ]
   },
@@ -3878,17 +3862,16 @@
    ]
   },
   "tiere.K3": {
-   "punkte": 1,
-   "beleg": "Maschine: gehalten: Schlupf des Stand-Fußes max 0.011 in 25 Läufen als Leib (4 Gattungen), max 0.036 in 16 im Satz (4 Gattungen) an d3708675 headless · gehalten: Gangart 49/49 grün (Welt 17, Satz 16, Labor 16, Kreuz 16), Welt − Labor ≤ 0.05, Satz − Labor ≤ 0.02 Zyklus · Querhang 20.8°, Schlupf {\"wolf\":0.036,\"hirsch\":0.016} · Bühne wolf schritt 3 Füße, fuchs schritt 3 Füße, baer schritt 3 Füße, wesen schritt 4 Füße · tier-Pixel 2970/1315/6767/3864 in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.24 m · Luma 69.1 σ 35.6 schwarz 0.0 % weiß 0.0 % · Stand 18.546.217 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen an e475c6b4 radeon — offen: tiere.K3#2 gtx: Linse seit der Messung geändert (R6: koerper-core.js, scripts/diag-kreatur-leben.cjs, scripts/lib/abnahme-urteil.cjs +14)",
+   "punkte": 2,
+   "beleg": "Maschine: Schlupf des Stand-Fußes max 0.011 in 25 Läufen als Leib (4 Gattungen), max 0.036 in 16 im Satz (4 Gattungen) an 6aa7a5a6 headless · gehalten: Gangart 49/49 grün (Welt 17, Satz 16, Labor 16, Kreuz 16), Welt − Labor ≤ 0.05, Satz − Labor ≤ 0.02 Zyklus · Querhang 20.8°, Schlupf {\"wolf\":0.036,\"hirsch\":0.016} · Bühne wolf schritt 3 Füße, fuchs schritt 3 Füße, baer schritt 3 Füße, wesen schritt 4 Füße · tier-Pixel 2970/1315/6767/3864 in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.24 m · Luma 69.1 σ 35.6 schwarz 0.0 % weiß 0.0 % · Stand 18.546.217 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen an e475c6b4 radeon · Gangart 49/49 grün (Welt 17, Satz 16, Labor 16, Kreuz 16), Welt − Labor ≤ 0.05, Satz − Labor ≤ 0.02 Zyklus · Querhang 20.8°, Schlupf {\"wolf\":0.036,\"hirsch\":0.016} · Bühne wolf schritt 3 Füße, fuchs schritt 3 Füße, baer schritt 3 Füße, wesen schritt 4 Füße · tier-Pixel 2919/1237/6555/3783 in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.24 m · Luma 65.4 σ 32.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.245 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen an 6aa7a5a6 gtx",
    "stationen": [
     {
      "id": "tiere.K3#1",
      "geraet": "headless",
      "gruen": true,
      "zahl": "Schlupf des Stand-Fußes max 0.011 in 25 Läufen als Leib (4 Gattungen), max 0.036 in 16 im Satz (4 Gattungen)",
-     "sha": "d3708675d989fe690b916d0b798b4bd9d916c065",
-     "grund": "Linse seit der Messung geändert (R6: koerper-core.js, scripts/diag-tier-gang.cjs, scripts/lib/abnahme-urteil.cjs +11)",
-     "gehalten": true
+     "sha": "6aa7a5a6bfd01df56192e66b658681dac67a27a9",
+     "grund": null
     },
     {
      "id": "tiere.K3#2",
@@ -3902,11 +3885,10 @@
     {
      "id": "tiere.K3#2",
      "geraet": "gtx",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: koerper-core.js, scripts/diag-kreatur-leben.cjs, scripts/lib/abnahme-urteil.cjs +14)",
-     "ungemessen": true
+     "gruen": true,
+     "zahl": "Gangart 49/49 grün (Welt 17, Satz 16, Labor 16, Kreuz 16), Welt − Labor ≤ 0.05, Satz − Labor ≤ 0.02 Zyklus · Querhang 20.8°, Schlupf {\"wolf\":0.036,\"hirsch\":0.016} · Bühne wolf schritt 3 Füße, fuchs schritt 3 Füße, baer schritt 3 Füße, wesen schritt 4 Füße · tier-Pixel 2919/1237/6555/3783 in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.24 m · Luma 65.4 σ 32.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.245 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen",
+     "sha": "6aa7a5a6bfd01df56192e66b658681dac67a27a9",
+     "grund": null
     }
    ]
   },
@@ -4206,7 +4188,7 @@
   },
   "vegetation.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 42 Häuser des Start-Dorfs, 47/51 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 57343 px; ungemessen (ohne freies Auge) haus_skandinavisch 3-0 haupt · haus_provenzalisch 23-0 haupt · haus_italienisch 27-0 haupt · haus_provenzalisch 41-0 haupt an b3f9ae95 radeon · gehalten: 42 Häuser des Start-Dorfs, 47/51 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 57041 px; ungemessen (ohne freies Auge) haus_skandinavisch 3-0 haupt · haus_provenzalisch 23-0 haupt · haus_italienisch 27-0 haupt · haus_provenzalisch 41-0 haupt an b3f9ae95 gtx — offen: vegetation.K4#2 radeon: Station seit der Messung geändert — zuletzt an 900c28e6: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 1.8 s) · vegetation.K4#2 gtx: Station seit der Messung geändert — zuletzt an 78d37554: Deckel 90 s gerissen: Stille seit 87.9 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 2.0 s)",
+   "beleg": "Maschine: gehalten: 42 Häuser des Start-Dorfs, 47/51 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 57343 px; ungemessen (ohne freies Auge) haus_skandinavisch 3-0 haupt · haus_provenzalisch 23-0 haupt · haus_italienisch 27-0 haupt · haus_provenzalisch 41-0 haupt an b3f9ae95 radeon · gehalten: 42 Häuser des Start-Dorfs, 47/51 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 57041 px; ungemessen (ohne freies Auge) haus_skandinavisch 3-0 haupt · haus_provenzalisch 23-0 haupt · haus_italienisch 27-0 haupt · haus_provenzalisch 41-0 haupt an b3f9ae95 gtx — offen: vegetation.K4#2 radeon: Station seit der Messung geändert — zuletzt an 900c28e6: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 1.8 s) · vegetation.K4#2 gtx: Station seit der Messung geändert — zuletzt an 6aa7a5a6: Deckel 90 s gerissen: Stille seit 88.7 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 1.2 s)",
    "stationen": [
     {
      "id": "vegetation.K4#1",
@@ -4223,7 +4205,7 @@
      "gruen": true,
      "zahl": "42 Häuser des Start-Dorfs, 47/51 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 57041 px; ungemessen (ohne freies Auge) haus_skandinavisch 3-0 haupt · haus_provenzalisch 23-0 haupt · haus_italienisch 27-0 haupt · haus_provenzalisch 41-0 haupt",
      "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Station seit der Messung geändert",
+     "grund": "Station seit der Messung geändert — zuletzt an 6aa7a5a6: Deckel 90 s gerissen: Stille seit 88.7 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 1.2 s)",
      "gehalten": true
     },
     {
@@ -4241,7 +4223,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 78d37554: Deckel 90 s gerissen: Stille seit 87.9 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 2.0 s)",
+     "grund": "Station seit der Messung geändert — zuletzt an 6aa7a5a6: Deckel 90 s gerissen: Stille seit 88.7 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 1.2 s)",
      "ungemessen": true
     }
    ]
@@ -4488,10 +4470,12 @@
    ]
   }
  },
- "rueckfall": [],
+ "rueckfall": [
+  "affekt.K4#1 headless: 30 Spielminuten, 55 Zeilen, 6 falsch, Abstand 30 s, offen -14.4 s, ohne Tat 0, Klassen {\"nexus\":50,\"rule:nexus\":330,\"llm\":3,\"rule:llm\":11,\"wunsch\":0,\"human\":2,\"fern\":157}, verworfen 144 · keine wirkende Tat von wunsch · 6 Zeilen falsch · falsch [641.8 s] dazu 4 weitere Tat: Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 48 m südwestlich von dir, weil lebendig am Ort hoch ist (>0.59). (Gesetz Nr. 16 des Nexus; dazu 5 weitere Taten seit der letzten Zeile) an 6aa7a5a6 (grün gebucht an d3708675)"
+ ],
  "kopfVoll": "6aa7a5a6bfd01df56192e66b658681dac67a27a9",
- "zeit": "2026-11-10T11:55:58.635Z",
- "vorher": "900c28e6",
+ "zeit": "2026-11-10T12:45:30.475Z",
+ "vorher": "6aa7a5a6",
  "pflicht": {
   "dokument": "docs/PFLICHT-OFFEN.md",
   "eintraege": [
@@ -4535,7 +4519,7 @@
      {
       "station": "haar.K2#1",
       "geraet": "gtx",
-      "zeile": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs +7)"
+      "zeile": "ROT: EINE Pose: Leib Δ 0 · Haar-Feder Δ 0 m über 3 Lesungen · arm ROT strich 0.3155 Soll [0.3554,0.533] — strich 0.3155 < 0.3554 · albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:4bd9ed1722648959) · albedo —"
      }
     ],
     "ohneRichter": [
