@@ -255,15 +255,34 @@ async function teilNaht(a) {
     return x ? x.o : { teil: { lage: [Math.round(p.x), Math.round(p.z)], orte: r._bewohnerSiedlungen ? r._bewohnerSiedlungen.size : 0, stand: window.__probeStand || "" } };
 }
 // der Teil im Prozess: `vor(page)` einmal vor dem Lauf (Teil 1), dann die Naht; Rückgabe null am Halt (die Zeile `<kurz> Teil i/N`
-// und WEITER sind gesagt), sonst { o (das Ergebnis des Laufs), s, teil }
+// und WEITER sind gesagt), sonst { o (das Ergebnis des Laufs), s, teil }.
+// DIE FRIST: je Teil PUNKTE_TEIL_FRIST_S; ein Lauf in EINEM Prozess (ohne `teile`) hat die seines Deckels (PUNKTE_PROBE_DECKEL_S − 6 s,
+// punkte.cjs FRIST_VORLAUF_S) — reißt sie, wirft die Naht, der Lauf räumt auf und die Probe nennt die Frist; ohne Deckel keine.
+// DAS LEBENSZEICHEN (10.11., die Leine der Sitzung, punkte.cjs STILLE_S: über dem Grund-Deckel fällt eine Probe nach 15 s ohne Ausgabe):
+// alle 5 s fragt der Prozess die Seite nach dem Takt der Welt (`weltTakt`) und dem Stand des Laufs (`__probeStand`) und sagt eine
+// Zeile, wenn die Welt seitdem taktete — eine Seite, die hängt, schweigt, und die Leine nimmt sie beim Namen.
 async function teilLauf(page, kurz, code, arg, vor) {
     const [nr, n] = String(process.env.PUNKTE_TEIL || "1/1").split("/").map(Number);
-    const fristS = Number(process.env.PUNKTE_TEIL_FRIST_S) || 0;
+    const fristS = Number(process.env.PUNKTE_TEIL_FRIST_S) || Math.max(0, Number(process.env.PUNKTE_PROBE_DECKEL_S || 0) - 6);
     if (nr === 1 && vor) await vor(page);
     const t0 = Date.now();
-    // die Frist der Seite: der Rest der Teil-Frist seit dem Start des Prozesses, 1 s für Zeile und Abbau (ohne Teile: keine)
-    const ms = n > 1 ? Math.max(1000, fristS * 1000 - process.uptime() * 1000 - 1000) : 1e12;
-    const o = await page.evaluate(teilNaht, { code, arg, ms, letzter: nr >= n, neu: nr === 1 });
+    // die Frist der Seite: der Rest der Frist seit dem Start des Prozesses, 1 s für Zeile und Abbau
+    const ms = fristS > 0 ? Math.max(1000, fristS * 1000 - process.uptime() * 1000 - 1000) : 1e12;
+    let [takt, lebt] = [null, true];
+    const puls = (async () => {
+        while (lebt) {
+            await new Promise((w) => setTimeout(w, 5000));
+            const z = lebt && (await page.evaluate(() => [window.anazhRealm.state.weltTakt, window.__probeStand || ""]).catch(() => null));
+            if (z && z[0] !== takt && lebt) console.log(`  ${kurz} lebt: Takt ${(takt = z[0])}${z[1] ? " · " + z[1] : ""} · ${((Date.now() - t0) / 1000).toFixed(0)} s`);
+        }
+    })();
+    let o;
+    try {
+        o = await page.evaluate(teilNaht, { code, arg, ms, letzter: nr >= n, neu: nr === 1 });
+    } finally {
+        lebt = false;
+    }
+    await puls;
     const s = ((Date.now() - t0) / 1000).toFixed(1);
     if (o.teil) {
         console.log(`  ${kurz} Teil ${nr}/${n}: der Lauf hält nach ${s} s an der Naht (Spieler bei ${o.teil.lage.join(", ")}, ${o.teil.orte} Orte wach${o.teil.stand ? ", " + o.teil.stand : ""}) — weiter`);
@@ -1007,7 +1026,7 @@ async function fahrWegenetz(tor) {
 // DER TAKT IST DER DER LINSE (gemessen am Baum main 78d37554, Null-Renderer, 10 Uhr, 600 s): im Muster der Linse fährt der
 // langsamste Wagen seiner langsamsten Minute 56 m (142 Ankünfte, GRÜN); am Takt-Deckel des Spiels (0,1 s je Bild, ein Sechstel der
 // Takte) 20 m — ROT; mit Zwischen-Takten ohne Leben (das Bild jeden vierten Takt, `zwischen`) 20 m — ROT; jeder Takt ganz, das Bild
-// jeden achten (`bildJe`, unten) 66 m (143 Ankünfte, GRÜN); um 23 Uhr tragen alle dasselbe Urteil. Wer die Bewohner seltener schreiten
+// jeden achten 66 m, jeden sechzigsten (`bildJe`, unten) 57 m (je 143 Ankünfte, GRÜN); um 23 Uhr tragen alle dasselbe Urteil. Wer die Bewohner seltener schreiten
 // lässt, ändert am Tag das Urteil: die Probe kürzt keinen Takt, sie spart nur Bilder. DIE UHR (`uhr` in `zweiSeite`, an `_gameLoopTick` und `_uhrSetzen` geliehen) nennt, was das kostet: je Stunde
 // die Sekunden bis zum Anfang, die Sekunden und ms je Takt der 600 s, die Bilder der Karte — die Zeile `ZEIT {…}`, im Halt jedes
 // Teils der Stand (`__probeStand`). Kennt der Stand den Verkehr nicht, ROT beim Namen in Sekunden. Die Stadt erwacht, die Uhr
@@ -1117,7 +1136,7 @@ async function zweiSeite(o, verkehr) {
     // nachläuft (`_gpuLeineStraff`); der Takt selbst bleibt GANZ: der Loop der Sitzung ruht, und dem ruhenden Loop hält die Leine nur
     // das Bild (`zwischen` fällt, dirigent-takt) — Leben, Verkehr, Sim, Stufen und Strom rechnen jeden Takt. Gemessen am Baum main
     // 78d37554 (Null-Renderer, je 600 s, 10 / 23 Uhr): jedes Bild 142 / 156 Ankünfte, langsamste Minute 56 / 152 m; jedes achte 143 / 156,
-    // 66 / 152 m — dasselbe Urteil
+    // 66 / 152 m; jedes sechzigste 143 / 156, 57 / 152 m — dasselbe Urteil
     const uhr = { t0: performance.now(), stunden: {}, jetzt: null, halt: false };
     const [takt, bilder] = [r._gameLoopTick, () => (r._gpuLeine ? r._gpuLeine.gerendert : 0)];
     const misst = () => Object.prototype.hasOwnProperty.call(r, "_verkehrSchritt");
@@ -1792,7 +1811,26 @@ function hebungScheiben(acorn, text) {
     const S2 = schleife.body.body;
     const K2 = schnitt(S2, "C", "oben", false);
     if (!K2.size) throw new Error(L + ": der Haupt-Lauf liest C.oben nicht (kein Druck-Block C6)");
-    return { kleber, drucke: quelle(S2, K2), teile: { kleber: [K1.size, S1.length], drucke: [K2.size, S2.length] } };
+    // DIE NAMEN DES HAUPT-LAUFS (w27-verkehr-station-pm; main a3782a65 druckt über die Kurzformen `const [J, log] = …` vor der Schleife —
+    // die Scheibe ohne sie warf „log is not defined“: lod.K3#1 und der Selbsttest der Maschine ROT am Kopf): was die Scheibe liest und
+    // weder sie noch die Schleife (C, errs) deklariert, deklariert der Rumpf des Haupt-Laufs vor der Schleife — diese Anweisungen, und
+    // rückwärts, was sie lesen, stehen ihr voran; ein Name, den dort keiner deklariert, ist global (JSON, console). C und errs sind die
+    // Parameter der Scheibe (die Station reicht ihr Fehler-Feld): der Rumpf deklariert sie nie für sie (`const errs = []` bleibt dort)
+    const rumpf = (haupt.arguments.find((f) => /Function/.test(f.type)) || {}).body;
+    const S0 = rumpf && rumpf.type === "BlockStatement" ? rumpf.body.filter((x) => x.end <= schleife.start) : [];
+    const K0 = new Set();
+    const steht = new Set(["C", "errs", ...[...K2].flatMap((i) => dekl(S2[i]))]);
+    const braucht = new Set([...K2].flatMap((i) => [...lies(S2[i], new Set())]).filter((x) => !steht.has(x)));
+    for (let mehr = true; mehr; ) {
+        mehr = false;
+        S0.forEach((x, i) => {
+            if (K0.has(i) || !dekl(x).some((n) => braucht.has(n)) || dekl(x).some((n) => n === "C" || n === "errs")) return;
+            K0.add(i);
+            lies(x, new Set()).forEach((n) => !steht.has(n) && braucht.add(n));
+            mehr = true;
+        });
+    }
+    return { kleber, drucke: (K0.size ? quelle(S0, K0) + "\n" : "") + quelle(S2, K2), teile: { kleber: [K1.size, S1.length], drucke: [K2.size, S2.length] } };
 }
 
 module.exports = { sitzungTor, torBefehl, teilNaht, teilLauf, zweiSeite, kollisionTempo, bodenRollen, tierKreis, sprungKadenz, fadenZaehler, fahrWelt, fahrRueck, fahrWegenetz, fahrVerkehr, wasserGraben, naesseDorf, naesseWiese, werkbankLinse, karteHebung, hebungScheiben };

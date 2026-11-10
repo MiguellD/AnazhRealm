@@ -2191,7 +2191,7 @@ const K2_ZWEI = {
     sichten: ["first", "third"],
     kamera: { first: 2.5, third: 2.5 },
     bilderMax: 600,
-    bildJe: 8,
+    bildJe: 60,
 };
 // DAS URTEIL DER STAFFEL 2: jeder Teil beim Namen — der Verkehr (die Zeilen der Linse je Stunde und die Dauer ihrer Tafel in der
 // Zeile VERKEHR: ein Lauf unter PFLICHT_C.sek je Stunde ist nie GRÜN), der 25°-Hang, die Furt, Ego und Third (GELAENDE). ROT nennt,
@@ -2242,7 +2242,7 @@ function k2ZweiUrteil(lauf) {
     return {
         gruen: c && !rot.length,
         zahl: "C " + (c ? "GRÜN" : "ROT") + ": der Verkehr der Stadt " + cText + " · " + hang + " · " + furt + (rot.length ? " · ROT: " + rot.join("; ") : "") +
-            " · in " + (halte + 1) + " Teil" + (halte ? "en" : "") + ", " + C.sek + " s Spielzeit in " + uhr,
+            (halte ? " · in " + (halte + 1) + " Teilen" : "") + " · " + C.sek + " s Spielzeit in " + uhr,
     };
 }
 // die Attrappen der Staffel 2: der gesunde Lauf (am Baum main 78d37554: Hang −677/−889, Furt −198/−1173; der Verkehr der Linse 142
@@ -2264,17 +2264,18 @@ const K2_ZWEI_PROBEN = (() => {
     };
     const stunde = (o = {}) => ({ wagen: 20, soll: 20, sek: 600, ziele: { erreicht: 142, ohne: [], laengsteS: 198 }, weg60: [56, 9, 11, 9, null], ...o });
     const vk = (h, ok, w) => "  " + (ok ? "✅" : "❌") + " VK (PFLICHT-OFFEN C) der Verkehr der Stadt um " + h + " Uhr — " + w;
-    const halt = (i, n) => "  VK Teil " + i + "/" + n + ": der Lauf hält nach 38.0 s an der Naht (Spieler bei 836, 439, 1 Orte wach, 10 Uhr: 7104 Takte in 31.9 s, 4.41 ms je Takt) — weiter\n@@PUNKTE@@ TEIL WEITER\n";
+    // das Lebenszeichen der Leine (proben-welt `teilLauf`): alle 5 s, solange die Welt taktet
+    const puls = (i) => "  VK lebt: Takt " + (40000 + 1200 * i) + " · 10 Uhr: " + 1200 * i + " Takte in " + 5 * i + ".0 s, 4.41 ms je Takt · " + (60 + 5 * i) + " s\n";
     const zeit = 'ZEIT {"gesamtS":371.2,"stunden":{"10":{"takte":44210,"vorS":38.1,"laufS":158.6,"taktMs":4.32,"bilder":4410},"23":{"takte":36702,"vorS":2.9,"laufS":149.9,"taktMs":4.08,"bilder":4502}},"gruendungS":21.7}';
     const aus = ({ g = gel(), z10 = [true, "jeder fährt"], z23 = [true, "jeder fährt"], s10 = {}, s23 = {}, halte = 0, ohne = null } = {}) => {
         const V = { 10: stunde(s10), 23: stunde({ ziele: { erreicht: 156, ohne: [], laengsteS: 169 }, ...s23 }) };
         if (ohne) delete V[ohne];
-        return Array.from({ length: halte }, (_x, i) => halt(i + 1, 8)).join("") + ["[linse-gpu] amd/rdna-3", ...(g ? ["GELAENDE " + JSON.stringify(g)] : []), vk(10, ...z10), vk(23, ...z23),
-            "  (Teil " + (halte + 1) + "/8 21.4 s in der Welt der Sitzung, 600 s je Stunde)", zeit, "VERKEHR " + JSON.stringify(V)].join("\n");
+        return "[linse-gpu] amd/rdna-3\n" + Array.from({ length: halte }, (_x, i) => puls(i + 1)).join("") + [...(g ? ["GELAENDE " + JSON.stringify(g)] : []), vk(10, ...z10), vk(23, ...z23),
+            "  (Teil 1/1 372.4 s in der Welt der Sitzung, 600 s je Stunde)", zeit, "VERKEHR " + JSON.stringify(V)].join("\n");
     };
     return [
         { name: "Hang und Furt in Ego und Third, der Verkehr 600 s an beiden Stunden", stdout: aus(), gruen: true },
-        { name: "derselbe Lauf in acht Teil-Proben (sieben Halte an der Naht)", stdout: aus({ halte: 7 }), gruen: true },
+        { name: "derselbe Lauf mit 70 Lebenszeichen an der Leine", stdout: aus({ halte: 70 }), gruen: true },
         { name: "MUTANTE Hang: der Wagen steckt im Hang (Third)", stdout: aus({ g: gel({ "hang.third": { ende: false, weg: 21, steck: [21] } }) }), gruen: false },
         { name: "MUTANTE Hang: die Strecke trug am Wagen keine 25° (die andere Wand der Schlucht, 6,6 m)", stdout: aus({ g: gel({ "hang.first": { steilM: 6.56, steigMax: 25.56 }, "hang.third": { steilM: 6.56, steigMax: 25.56 } }) }), gruen: false },
         { name: "MUTANTE Hang: das Orts-Gesetz nennt keinen", stdout: aus({ g: gel({ hang: { fehler: "kein trockener Hang von im Mittel ≥ 25° (23–30°) über 20 m im Umkreis 800 m der Mess-Wiese" } }) }), gruen: false },
@@ -2289,8 +2290,8 @@ const K2_ZWEI_PROBEN = (() => {
         { name: "MUTANTE C: ein Wagen fährt um 10 Uhr eine Minute keine 30 m", stdout: aus({ z10: [false, "fahrend je Minute [20,1,11,8,null]"], s10: { weg60: [20, 1, 11, 8, null] } }), gruen: false },
         { name: "MUTANTE C: 12 s je Stunde statt der Tafel (die Probe bis w27 an einer Linse, die sie grün hieße)", stdout: aus({ s10: { sek: 12 }, s23: { sek: 12 } }), gruen: false },
         { name: "MUTANTE C: die Nacht fehlt in der Zeile", stdout: aus({ ohne: 23 }), gruen: false },
-        { name: "MUTANTE: die Teile reichten nicht — der letzte riss seine Frist, keine Zeile", stdout: Array.from({ length: 7 }, (_x, i) => halt(i + 1, 8)).join("") +
-            "@@PUNKTE@@ FRIST 39 s der Probe gerissen: Error: DIE TEILE DER FAHRT reichten nicht: die Frist des letzten Teils riss an der Naht (Teil 8/8)\nGELAENDE null\n" +
+        { name: "MUTANTE: die Frist des Deckels riss im Verkehr — keine Zeile", stdout: "[linse-gpu] amd/rdna-3\n" + Array.from({ length: 60 }, (_x, i) => puls(i + 1)).join("") +
+            "@@PUNKTE@@ FRIST 354 s der Probe gerissen: Error: DIE TEILE DER FAHRT reichten nicht: die Frist des letzten Teils riss an der Naht (Teil 1/1)\nGELAENDE null\n" +
             vk(10, false, "Error: DIE TEILE DER FAHRT reichten nicht: die Frist des letzten Teils riss an der Naht") + "\n" + vk(23, false, "Error: DIE TEILE DER FAHRT reichten nicht: die Frist des letzten Teils riss an der Naht") + "\nZEIT null\nVERKEHR undefined", gruen: false },
         { name: "der Stand kennt den Verkehr nicht", stdout: "keine VERKEHR-Zeile: probeLeben kennt den Verkehr der Stadt nicht (gate:fahr-leben --verkehr fehlt am Stand)", gruen: false },
     ];
@@ -5737,19 +5738,25 @@ const stationen = [
     // `verkehrVerdict` je Stunde. Das Urteil (`k2ZweiUrteil`) nennt jeden Teil beim Namen; ein Verkehr unter 600 s je Stunde ist nie grün.
     // DER TAKT: der der Linse, ganz — im Mess-Fenster hält die Leine jedes Bild außer jedem `bildJe`-ten (das Gesetz des ruhenden Loops:
     // die Leine hält nur das Bild, nie den Takt). Am Baum main 78d37554 (Null-Renderer, je 600 s, EIN Lauf je Art): jedes Bild (die
-    // Linse) — 10 Uhr 142 Ankünfte, langsamste Minute 56 m, 23 Uhr 156 / 152 m, GRÜN; jedes achte — 143 / 66 m, 156 / 152 m, GRÜN, jedes
-    // andere Maß gleich (Berührung, Stoß, Trasse, Sitz, Stufen 0); Zwischen-Takte ohne Leben (die Leine des laufenden Loops: 10 Uhr 20 m
-    // in Minute 8) und der Takt-Deckel (0,1 s je Bild: 127 Ankünfte, 20 m) ROT, 23 Uhr bei allen gleich — die Probe kürzt keinen Takt. DER DECKEL: 8 Teile je 45 s = 360 s (3 min je Stunde Verkehr; das Höchste des
-    // Gesetzes, TEILE_MAX), die Fahrt trägt sie (Radeon Σ 4 859 − 90 + 360 s). Die Uhr der Probe (`ZEIT`) und der Halt jedes Teils
-    // (`__probeStand`) nennen, was die Karte braucht; swiftshader (Cloud, 4 Kerne, nicht das Band) am Baum main: der Takt der Stadt
-    // ~5,5 ms, die Ankunft am Hang ~150 s. Reichen die Teile auf einer Karte nicht, steht sie UNGEMESSEN beim Namen samt Stand.
+    // Linse) — 10 Uhr 142 Ankünfte, langsamste Minute 56 m, 23 Uhr 156 / 152 m, GRÜN; jedes achte — 143 / 66 m, 156 / 152 m; jedes
+    // sechzigste (`bildJe`, ~1 Bild je Sekunde Spielzeit) — 143 / 57 m, 156 / 152 m, 3,10 ms je Takt; die swiftshader-Sitzung ließ ~1 von
+    // 400 hinaus (155 / 155 Ankünfte) — GRÜN, jedes andere Maß gleich (Berührung, Stoß, Trasse, Sitz, Stufen 0); Zwischen-Takte ohne
+    // Leben (die Leine des laufenden Loops: 10 Uhr 20 m
+    // in Minute 8) und der Takt-Deckel (0,1 s je Bild: 127 Ankünfte, 20 m) ROT, 23 Uhr bei allen gleich — die Probe kürzt keinen Takt. DER DECKEL
+    // (benannt, die lange Station): 360 s Grund-Deckel (3 min je Stunde Verkehr), EIN Prozess an der Leine der Sitzung — darüber lebt
+    // die Probe, solange sie Lebenszeichen gibt (alle 5 s eine Zeile „VK lebt: Takt …“, solange die Welt taktet) und ihr Anteil der Fahrt
+    // trägt; die Fahrt trägt den Bedarf (Radeon Σ 5 129 s, GTX 5 032 s von 3 × 1 740 s). GEMESSEN ist mehr: swiftshader (Cloud, 4 Kerne,
+    // nicht das Band) am Baum main 78d37554 in frischer Sitzung 656 s — die Gründung 14 s, die Stadt steht nach 87 s, 600 s Spielzeit
+    // in 273 s (10 Uhr, 6,31 ms je Takt) und 253 s (23 Uhr, 6,10 ms je Takt), dazu Furt und Hang je Ego und Third; der Null-Renderer 4,48
+    // ms je Takt (~160 s je Stunde). Der 3-min-Deckel hält dort nicht; was die Karte braucht, nennt die Uhr der Probe (`ZEIT`, je Stunde
+    // `laufS` und `taktMs`), den Grund-Deckel danach setzt die Eichung aus den Grün-Läufen (eichtafel). Reißt die Leine, steht die Probe
+    // UNGEMESSEN beim Namen samt dem letzten Lebenszeichen (wie weit der Verkehr kam).
     // Die Stadt erwacht, die Uhr springt, der Wagen räumt seine Bahn: mutiert.
     {
         kriterium: "fahrzeug.K2", staffel: 2, geraet: ["radeon", "gtx"],
         probe: {
             befehl: PW.torBefehl(PW.fahrVerkehr, PW.teilNaht, PW.teilLauf, PW.zweiSeite, JSON.stringify(K2_ZWEI)),
-            sek: 45,
-            teile: 8,
+            sek: 360,
             mutiert: true,
         },
         gpu: true, zeit: false, minuten: 12,
