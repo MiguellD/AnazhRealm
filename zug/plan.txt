@@ -1,11 +1,12 @@
 # zug/plan.txt — was ansteht (Koordinator schreibt, messplatz-blick zeigt): je Zeile Zustand · Was · Wer/Wo · Ziel
-# Stand 10.11. 23:30 · main 4e2df19b (z373) · gebucht 215/330 · Konto 11 (Koordinator Radeon)
+# Stand 11.11. 00:30 · main 4e2df19b (z373) · gebucht 215/330 · Konto 11 (Koordinator Radeon) · Woche 17 % / Fable 33 %
 gelandet zug/dienst  EIN versionierter Zug-Dienst (B3): zug · radeon · buche abgekoppelt über WMI  —  Laptop  —  überlebt den Konto-Wechsel
-rot     z375  takt-gc + takt-gc-2 fielen NUR am echt-Bein der GTX 1050 (Volle-Bühne-Prädikat W2; OMEN + Radeon GRÜN)  —  GTX 1050 misst A main ↔ B a2826f12  —  heilen oder Wackler beim Namen
-läuft   wald-saum  vegetation.K1 + ferne.K3 + lod.K4 (Täter im Merge heim3-w20-wald-kosten)  —  GTX 1050  —  +3 zurück
+läuft   z376  takt-gc + takt-gc-2 + w28-blick-zwilling-raus (z375 war ein Wackler an main: Volle-Bühne W2 auf der GTX 1050 fällt 1 von 2 an main UND am Kandidaten)  —  Zug-Dienst  —  Kandidat fa74c986 in CI
+läuft   foundry-halter, dann wald-saum  die Foundry liefert im roten Lauf nichts (BIBLIOTHEK warm false) · vegetation.K1 + ferne.K3 + lod.K4  —  GTX 1050  —  Halter beim Namen · +3 zurück
 gelandet dienst-omen + Richter nach der Landung (zug/dienst/richter.sh, B2 Stufe 1; Selbsttest 9/9, 6 Mutanten)  —  OMEN  —  hängt in landung (OMEN) und radeon-dienst (Laptop)
 läuft   w28-horizont-gtx  _horizontHimmel kostet nur auf der GTX ×1,5 gpu-bank  —  OMEN  —  wiese-ego ≤ 21 ms GPU (Pflicht E)
 läuft   Stadt-Grammatik (Breite siedlung: Viertel → Rolle → Bau-Typ → Gegenstand)  —  Champion lokal  —  ≥ 12 Bau-Typen aus ≥ 3 Kulturen im Ego-Lauf
+abgegeben w28-stadt-boden 0a721419  das Belag-Gesetz der Stadt (fachwerk BELAG_GESETZ: Rang × Größe × Jahr): Gasse, Platz und Vorplatz in Kopfstein statt Erde mit Halmen  —  Koordinator  —  Zug, sobald Code-Check + GPU-Probe GRÜN
 läuft   Breite: w28-ziel-plan (Ziel → Plan → Bewegung) · w28-stoff-gesetz (Periodensystem)  —  Cloud, vom Schöpfer gestartet 23:10  —  je EIN Kriterium der Staffel Breite
 danach  Breite Zeit (Abnutzung, Wandel der Viertel) · Breite Leib (Seitwärts, Klettern, Ausweichen)  —  nach der Stadt-Grammatik  —  dieselbe Datei fachwerk-core.js
 läuft   w28-r6-konsum  veraltet nur, was den geänderten Code ausführte (170 Stationen veraltet)  —  Cloud, vom Schöpfer gestartet 23:10  —  Zahl veraltet je Landung vorher → nachher
