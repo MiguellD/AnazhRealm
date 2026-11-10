@@ -135,7 +135,8 @@ const taeterVon = (je) =>
 // Fenster der eine Push: eine Linsen-Heilung brauchte Spiel-Partner im eigenen Zug und stand an der Wand, während der Tag
 // Prüf +2 223 / Spiel +11 482 maß (erlaubt 5 741) — sechs Heilungen warteten, darunter die des gemessenen Falls „reading 'size'".
 // Der Preis ist gewollt: ein Tag, der Spiel-Code streicht, senkt das Budget jedes Zugs dieses Tages. main nimmt nur den Vorlauf
-// von integ-probe, dessen jeder Push an dieser Wand stand — main misst nichts zweimal.
+// von integ-probe, dessen jeder Push an dieser Wand stand — main misst nichts zweimal. Gesetz des Schöpfers 10.11. 19:10:
+// „Ja, Tagesfenster".
 function tagGrund(kopf) {
     const vor = new Date((+git(["log", "-1", "--format=%ct", kopf]).trim() - 24 * 3600) * 1000).toISOString();
     const vorTag = git(["rev-list", "-1", "--first-parent", `--before=${vor}`, "origin/main"]).trim();
