@@ -144,6 +144,6 @@
     "Tier-Gang ohne Gleiten auf der Karte (Welle 5 — das Gang-Gesetz am echten Chokepoint)": {"s": 144, "n": 0, "p90": 150, "max": 150, "geschaetzt": true},
     "WebGL2-Rückfall auf der Karte (ohne WebGPU-Adapter bootet die Welt laut benannt auf GL und lebt)": {"s": 55, "n": 0, "p90": 65, "max": 70, "geschaetzt": true},
     "GPU-Churn-Linse auf der Karte (die Klasse hinter dem V18.322-Idle-Freeze)": {"s": 104, "n": 0, "p90": 110, "max": 120, "geschaetzt": true},
-    "Kamera-Treue und Stand-Wand auf der Karte (der Replay zeichnet wie der direkte Pfad, im Stand arbeitet die Diät nichts doppelt)": {"s": 75, "n": 0, "p90": 85, "max": 90, "geschaetzt": true}
+    "Kamera-Treue und Stand-Wand auf der Karte (der Replay zeichnet wie der direkte Pfad, im Stand arbeitet die Diät nichts doppelt)": {"s": 38, "n": 0, "p90": 45, "max": 50, "geschaetzt": true}
   }
 }

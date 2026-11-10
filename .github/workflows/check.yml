@@ -275,7 +275,7 @@ jobs:
         # neben den 2 Puls-Gruppen genau die 20 Plätze des Kontos, hinter dem Kopf-Richter; gate:haus-welt fährt seine 21 Welten in
         # zwei Teilen, npm und Chrome aus dem Cache. CW (16.10.): die Waage misst — die Mediane der letzten 7 Läufe, die Job-Dauer je
         # Gruppe, der Kopf der Quelle. KEINE GPU-KLASSE MEHR (w27-swift-raus, 10.11., der Schöpfer: „wieso noch die Übersetzung? …
-        # geprüft am System, wo's zählt"): bis hier zeichneten die Gruppen 15–18 auf GitHub-ubuntu mit swiftshader 29 Wände, 12 davon
+        # geprüft am System, wo's zählt"): bis hier zeichneten die Gruppen 15–18 auf GitHub-ubuntu mit swiftshader 29 Wände, 13 davon
         # Zwillinge der Karte, und z358–z366 war jedes ihrer ROT der 900-s-Abriss an createRenderPipelineAsync ohne Täter; jede Wand
         # der GPU-Klasse fährt jetzt an GENAU einer Stelle, auf der Karte (Job `echt`). Die Klasse dieses Jobs ist cpu: die Weiche
         # (scripts/lib/welt-boot.cjs, CI_KLASSE) und `werkbank start` nennen ein Echt-Rezept hier ROT, gate:ci-deckung (K) statisch.
@@ -1342,6 +1342,13 @@ jobs:
               if: ${{ !cancelled() && matrix.karte == 'omen' }}
               run: npm run gate:gpu-fehler
 
+            - name: Kamera-Treue und Stand-Wand auf der Karte (der Replay zeichnet wie der direkte Pfad, im Stand arbeitet die Diät nichts doppelt)
+              timeout-minutes: 5
+              if: ${{ !cancelled() && matrix.karte == 'omen' }}
+              # eine eigene Buehne mit Schatten: die Aufnahme verfolgt jeden Draw, der Replay zeichnet wie der direkte Pfad; die STAND-WAND:
+              # im Stand je Render kein Voll-Refresh, kein Upload, kein zweiter Gang; VERSCHACHTELT ueberlebt kein Stempel; --selftest zuerst
+              run: npm run gate:kamera-treue
+
             # ── DAS BEIN RADEON ──
             - name: Die Kamera-Leib-Linse auf der Karte (K06 - WE-05, FZ-07, NP-03 - nie im Fels, nie unter dem sichtbaren Boden, nie in einer Box)
               timeout-minutes: 10
@@ -1455,10 +1462,3 @@ jobs:
               # GL am Treiber (__anazhForceWebGL, der EINE Hook): W1 der Backend ist WebGL, W2 der Rueckfall wird einmal laut benannt, W3
               # Feld-Pass und Region-Bundles ruhen, W4 der Fern-Ring verfeinert auf CPU, W5 jedes Programm linkt, W6 ≤ 16 Sampler je Stoff
               run: npm run gate:webgl-probe
-
-            - name: Kamera-Treue und Stand-Wand auf der Karte (der Replay zeichnet wie der direkte Pfad, im Stand arbeitet die Diät nichts doppelt)
-              timeout-minutes: 5
-              if: ${{ !cancelled() && matrix.karte == 'gtx1050' }}
-              # eine eigene Buehne mit Schatten: die Aufnahme verfolgt jeden Draw, der Replay zeichnet wie der direkte Pfad; die STAND-WAND:
-              # im Stand je Render kein Voll-Refresh, kein Upload, kein zweiter Gang; VERSCHACHTELT ueberlebt kein Stempel; --selftest zuerst
-              run: npm run gate:kamera-treue
