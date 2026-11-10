@@ -551,29 +551,30 @@ class AnazhRealm_siedlung_verkehr {
                 // er steht schon in der Bahn, die einer beansprucht: verlässt er sie in der Dauer einer Querung, geht er hinüber;
                 // sonst RÄUMT ER SIE QUER (er gibt sie frei), nie längs
                 drin = true;
-                if (Q[1] > (2 * B) / sp + V.querRandS) raeum = { q: bQ, B, nx: -(c.z - a.z) / l, nz: (c.x - a.x) / l };
+                if (d > 0 && Q[1] > (2 * B) / sp + V.querRandS) raeum = { q: bQ, B, nx: -(c.z - a.z) / l, nz: (c.x - a.x) / l }; // prettier-ignore
                 continue;
             }
             traf = true;
             tritt = tritt || Q[0] * sp <= V.querSchrittM;
         }
-        // DER LEIB GIBT DIE BAHN FREI (w27-verkehr-leib): wer in ihr steht oder längs geht, tritt mit seinem Tempo quer aus ihr an
-        // den Rand neben der Fahrbahn (dort fährt kein Wagen) — die nähere Seite zuerst —, wo keine Wand den Schritt schneidet und
-        // kein Leib näher als zwei Kapseln steht; und wartet dort, bis die Bahn frei ist (oben). Trägt keine Seite, geht er seinen
-        // Weg, und der Wagen umfährt ihn (`_verkehrFolge`). Bis hier ging er, wohin sein Weg und sein Ausweichen ihn führten: an der
-        // Kreuzung am Markt tänzelten #7:58:0 und #7:54:4 längs der Bahn ihres Halters (stadt-voll 10 Uhr, 22–49 s, die Kreuzung
-        // stand, „fahrend je Minute“ 0 m)
+        // DER LEIB GIBT DIE BAHN FREI (w27-verkehr-leib): wer vor dem Bug in ihr steht oder längs geht, tritt mit seinem Tempo quer
+        // aus ihr an den Rand neben der Fahrbahn (dort fährt kein Wagen) — auf seiner Seite, nie über die Linie —, wo keine Wand
+        // den Schritt schneidet und auf ihm kein Leib näher als zwei Kapseln steht; und wartet dort, bis die Bahn frei ist (oben).
+        // Trägt seine Seite nicht, geht er seinen Weg, und der Wagen umfährt ihn (`_verkehrFolge`). Bis hier ging er, wohin sein Weg
+        // und sein Ausweichen ihn führten: an der Kreuzung am Markt tänzelten #7:58:0 und #7:54:4 längs der Bahn ihres Halters
+        // (stadt-voll 10 Uhr, 22–49 s, die Kreuzung stand, „fahrend je Minute“ 0 m)
         if (raeum) {
             const K = 2 * R + 0.01;
-            const s0 = Math.sign(raeum.q) || 1;
-            for (const s of [s0, -s0]) {
-                const w = raeum.B - s * raeum.q + V.querSchrittM; // so weit bis jenseits der Bahn
-                const [ux, uz] = [raeum.nx * s, raeum.nz * s];
-                const p = { x: x + ux * w, z: z + uz * w };
-                if (this._verkehrAufSpur(S, p.x, p.z, 0) || this._bewohnerWand({ x, z }, p)) continue;
-                if (this._bewohnerNaechster(S, b, p.x, p.z) >= K) return { vx: ux * sp, vz: uz * sp };
-            }
-            return false;
+            const s = Math.sign(raeum.q) || 1;
+            const w = raeum.B - s * raeum.q + V.querSchrittM; // so weit bis jenseits der Bahn
+            const [ux, uz] = [raeum.nx * s, raeum.nz * s];
+            const [p, m] = [1, 0.5].map((f) => ({ x: x + ux * w * f, z: z + uz * w * f }));
+            const frei =
+                !this._verkehrAufSpur(S, p.x, p.z, 0) &&
+                !this._bewohnerWand({ x, z }, p) &&
+                this._bewohnerNaechster(S, b, p.x, p.z) >= K &&
+                this._bewohnerNaechster(S, b, m.x, m.z) >= K;
+            return frei && { vx: ux * sp, vz: uz * sp };
         }
         return traf && tritt && !drin;
     }
