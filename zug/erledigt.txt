@@ -336,3 +336,4 @@ omen-gtx-gtx-stau-78d3-11-78d37554 ROT 0 GRÜN / 1 ROT / 0 UNGEMESSEN · ROT lic
 omen-gtx-gtx-stau-78d3-12-78d37554 ROT 0 GRÜN / 1 ROT / 0 UNGEMESSEN · ROT licht.K3#2 (punkte-maschine 1cbb6195 messung/78d37554-gtx.json)
 omen-gtx-gtx-stau-78d3-13-78d37554 ROT 0 GRÜN / 1 ROT / 0 UNGEMESSEN · ROT lod.K1#1 (punkte-maschine 6a0133d4 messung/78d37554-gtx.json)
 omen-gtx-gtx-stau-78d3-14-78d37554 ROT 0 GRÜN / 1 ROT / 0 UNGEMESSEN · ROT lod.K5#1 (punkte-maschine 78299df6 messung/78d37554-gtx.json)
+omen-gtx-gtx-stau-78d3-15-78d37554 GRÜN 1 GRÜN / 0 ROT / 0 UNGEMESSEN · GRÜN material.K1#2 (punkte-maschine 14617174 messung/78d37554-gtx.json)
