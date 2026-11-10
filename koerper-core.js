@@ -1528,6 +1528,22 @@
         const von = (z, f) => proben.filter((p) => p.z === z && (!f || f(p)));
         const r = (x, d) => (x == null || !Number.isFinite(x) ? null : +x.toFixed(d));
         const irisV = von("iris", (p) => p.vorn);
+        // DAS AUGE AUFGELÖST (w27-mensch-k4, dasselbe Gesetz wie Lippe und Höhle): je Auge (`seite`, der Knochen irisL/irisR)
+        // urteilen steht und frei erst ab 2 × 2 REINEN Pixeln seiner Iris (ihr Teil, keine zweite Klasse, keine zweite Zone);
+        // darunter ist augeFrei UNGEMESSEN beim Namen (`augeFreiGrund`), nie Zufall, nie GRÜN. An der Kamera des Spiels (6 m)
+        // trägt die Iris ≈ 1 Bildpunkt: ob ein Auge „stand", entschied die Phase eines Pixels im Schatten des Gesichts — dieselbe
+        // Pose las 0,667 und 0,5 (GTX 1050, 6,11 und 6,13 m; irisR auf 4 Pixeln der Haut, sein Fehlen änderte sie um 2–12).
+        // Ein Auge, dessen vordere Iris-Proben der Strahl der Kamera ALLE verdeckt findet (`frei`: Lid, Haut, Braue, Haar), ist
+        // nicht unaufgelöst, sondern verdeckt: es zählt als nicht frei (ROT beim Wert), wie viele Pixel es auch trägt
+        const seiten = [...new Set(irisV.map((p) => p.seite))];
+        const unaufgeloest = seiten
+            .map((s) => {
+                const l = irisV.filter((p) => p.seite === s);
+                const rp = new Set(l.filter(rein).map((p) => px(p.x, p.y))).size;
+                const verdeckt = l.some((p) => typeof p.frei === "boolean") && l.every((p) => p.frei === false);
+                return rp < 4 && !verdeckt ? `${s} ${new Set(l.map((p) => px(p.x, p.y))).size} px, ${rp} rein < 2×2` : null;
+            })
+            .filter(Boolean);
         const steht = new Set(irisV.filter(zeigt).map((p) => p.seite));
         const irisS = irisV.filter((p) => steht.has(p.seite) && (typeof p.frei === "boolean" ? p.frei : zeigt(p)));
         const mittelY = (l) => (l.length ? l.reduce((a, p) => a + p.y, 0) / l.length : null);
@@ -1572,7 +1588,8 @@
         }
         const d = (a, b, ch) => (a && b ? r(a[ch] - b[ch], 2) : null);
         return {
-            augeFrei: irisV.length ? r(irisS.length / irisV.length, 3) : null,
+            augeFrei: irisV.length && !unaufgeloest.length ? r(irisS.length / irisV.length, 3) : null,
+            augeFreiGrund: unaufgeloest.length ? unaufgeloest.join(", ") : null,
             lippeL: d(liL, wL, 0),
             lippeA: d(liL, wL, 1),
             hoehleL: d(hoL, wL, 0),
@@ -1603,8 +1620,10 @@
         const v = [], W = 12; // prettier-ignore
         // die Albedo (linear): Wange, Lippe (ΔL* −10 Δa* +9 gegen sie), Höhle (−6/+3), die Sklera
         const [haut, lippe, hoehle, weiss] = [[0.144, 0.054, 0.029], [0.1043, 0.0176, 0.0091], [0.1127, 0.0318, 0.0154], [0.6, 0.6, 0.6]];
+        // die Augen (w27-mensch-k4): je Auge 2 × 2 Bildpunkte in den Zeilen 0–1 (x 1–2 links, 8–9 rechts) — aufgelöst; `einPixel`
+        // malt je Auge nur einen (unaufgelöst), `einLid` deckt das rechte mit dem Lid (`frei` falsch, sein Pixel zeigt die Haut)
         const fall = (licht, o = {}) => {
-            const F = new Uint8Array(W * 24), teil = new Uint8Array(W * 6).fill(2), gemischt = new Uint8Array(W * 6), spur = new Uint8Array(W * 6); // prettier-ignore
+            const H = 7, F = new Uint8Array(W * H * 4), teil = new Uint8Array(W * H).fill(2), gemischt = new Uint8Array(W * H), spur = new Uint8Array(W * H); // prettier-ignore
             const proben = [];
             const male = (x, y, c, z, p) => {
                 const h = _linHex(c.map((k) => k * licht));
@@ -1612,20 +1631,23 @@
                 if (z) proben.push(Object.assign({ z, x, y, k: 2, vorn: true, bild: true }, p));
             };
             for (let x = 0; x < W; x++) {
-                const auge = x === 2 || x === 9,
-                    sklera = (o.sklera || o.braue) && x === 5;
-                if (auge && !o.ohneSpur) (teil[x] = 1), (spur[x] = 1);
-                male(x, 0, auge ? weiss : haut, auge && "iris", { k: 1, seite: x, frei: !o.lider });
-                male(x, 1, sklera ? weiss : hoehle, "hoehle", { a: hoehle });
-                gemischt[W + x] = o.sklera && sklera && !o.ohneMisch ? 1 : 0;
-                if (o.braue && sklera) proben.push({ z: "braue", x, y: 1, k: 2, vorn: !o.ohneZone, bild: true });
-                for (const y of [2, 3]) male(x, y, haut, "haut", { a: o.ohneAlbedo ? null : haut });
-                male(x, 4, o.lippeHaut ? haut : lippe, x < 3 || !o.schmal ? "lippe" : "haut", { a: lippe });
-                male(x, 5, haut);
+                const sklera = (o.sklera || o.braue) && x === 5;
+                for (const y of [0, 1]) {
+                    const auge = o.einPixel ? y === 0 && (x === 2 || x === 9) : x === 1 || x === 2 || x === 8 || x === 9;
+                    const lid = o.einLid && x > 6;
+                    if (auge && !o.ohneSpur && !lid) (teil[y * W + x] = 1), (spur[y * W + x] = 1);
+                    male(x, y, auge && !lid ? weiss : haut, auge && "iris", { k: 1, seite: x < 6 ? "irisL" : "irisR", frei: !o.lider && !lid }); // prettier-ignore
+                }
+                male(x, 2, sklera ? weiss : hoehle, "hoehle", { a: hoehle });
+                gemischt[2 * W + x] = o.sklera && sklera && !o.ohneMisch ? 1 : 0;
+                if (o.braue && sklera) proben.push({ z: "braue", x, y: 2, k: 2, vorn: !o.ohneZone, bild: true });
+                for (const y of [3, 4]) male(x, y, haut, "haut", { a: o.ohneAlbedo ? null : haut });
+                male(x, 5, o.lippeHaut ? haut : lippe, x < 3 || !o.schmal ? "lippe" : "haut", { a: lippe });
+                male(x, 6, haut);
                 // der Wurf-Zwilling: seine Haut in jedem Bildpunkt von Höhle und Lippe (dieselbe Klasse, die Kamera zeichnet ihn nie)
-                if (o.zwilling) for (const y of [1, 4]) proben.push({ z: "haut", x, y, k: 2, vorn: true, a: haut, bild: o.zwilling === "bild" });
+                if (o.zwilling) for (const y of [2, 5]) proben.push({ z: "haut", x, y, k: 2, vorn: true, a: haut, bild: o.zwilling === "bild" });
             }
-            return gesichtMasse(F, teil, W, 6, proben, [], { gemischt, spur: { 1: spur } });
+            return gesichtMasse(F, teil, W, H, proben, [], { gemischt, spur: { 1: spur } });
         };
         const nahe = (g, l, h) => [g.lippeL + 10, g.lippeA - 9, g.hoehleL + 6, g.hoehleA - 3].every((d) => Math.abs(d) <= 1) && g.augeFrei === 1 && Math.abs(g.weiss - l) <= l * h; // prettier-ignore
         for (const l of [0.07, 0.5]) if (!nahe(fall(l), l, 0.1)) v.push(`Gesicht unter Licht ${l}: ${JSON.stringify(fall(l))}`);
@@ -1637,7 +1659,10 @@
             ["die Sklera im Saum der Höhle", () => m({ sklera: 1 }).hoehleL < -5 && m({ sklera: 1, ohneMisch: 1 }).hoehleL > -3],
             ["die Braue im Pixel der Höhle", () => m({ braue: 1 }).hoehleL < -5 && m({ braue: 1, ohneZone: 1 }).hoehleL > -3],
             ["die Lider über der Iris", () => m({ lider: 1 }).augeFrei === 0],
-            ["das Auge ohne Spur im Bild", () => m({ ohneSpur: 1 }).augeFrei === 0],
+            // w27-mensch-k4: ein Auge ohne Spur im Bild trägt keinen reinen Pixel — ungemessen beim Namen, nie GRÜN
+            ["das Auge ohne Spur im Bild", () => m({ ohneSpur: 1 }).augeFrei === null && /irisL 4 px, 0 rein < 2×2/.test(m({ ohneSpur: 1 }).augeFreiGrund)], // prettier-ignore
+            ["das Auge auf einem Bildpunkt (unaufgelöst)", () => m({ einPixel: 1 }).augeFrei === null && /irisR 1 px, 1 rein < 2×2/.test(m({ einPixel: 1 }).augeFreiGrund)], // prettier-ignore
+            ["ein Auge wirklich verdeckt (Lid, kein reiner Pixel)", () => m({ einLid: 1 }).augeFrei === 0.5 && m({ einLid: 1 }).augeFreiGrund === null], // prettier-ignore
             ["die Lippe auf drei Bildpunkten (unaufgelöst)", () => m({ schmal: 1 }).lippeA === null],
             ["die Wange ohne Albedo", () => m({ ohneAlbedo: 1 }).lippeL === null && m({ ohneAlbedo: 1 }).weiss === null],
             ["der Wurf-Zwilling in Lippe und Höhle", () => nahe(m({ zwilling: 1 }), 0.07, 0.1) && m({ zwilling: "bild" }).lippeA === null && m({ zwilling: "bild" }).hoehleL === null], // prettier-ignore
