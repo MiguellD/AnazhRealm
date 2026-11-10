@@ -1514,8 +1514,8 @@ class AnazhRealm_gelaende_boden {
     // DIE BODEN-KARTE (V18.508): die Höhe des GERENDERTEN Bodens je Chunk, gerastert aus dem fertigen
     // Mesh (Surface-Nets-Vertices nach Glättung + Crop) auf ein Gitter von step/BODEN_KARTE_TEILUNG (LOD 0:
     // 0,45 m, Origin chunk − step, über das Pad (dim+3)·step); je Punkt die OBERSTE nicht-steile Fläche (Wände
-    // tragen nichts), NaN ohne Boden, dazu der Grün-Kanal (Uint8: die Wache über der Deckung des Stoffs je Vertex,
-    // die erste Zahl von `aStoff`, w26-ferne-ton-4 — nie über der Farbe). Vorher las die Karte die Dichte-Spalten
+    // tragen nichts), NaN ohne Boden, dazu der Grün-Kanal (Uint8: die Narbe des Stoffs je Vertex, die erste Zahl von
+    // `aStoff`, w26-ferne-ton-4 — nie die Farbe; die Wache schloss sie, wo sie entstand, `_bodenFarbeAt`). Vorher las die Karte die Dichte-Spalten
     // (Nulldurchgang an den Gitter-Ecken) — gemessen 01.10.: an der Mess-Wiese −1004/−790 liegt der gerenderte
     // Boden ±0,22 m (q05–q95, max +0,43) neben dem Gesetz, im Spawn-Chunk Median 45 cm; das 1,8-m-Netz trägt
     // die Feinform der Funktion nicht, die Glättung verdoppelt die Abweichung. Die Karte trifft das Mesh im
@@ -1530,14 +1530,13 @@ class AnazhRealm_gelaende_boden {
     // der Saum (`_bodenNaht`: `rand` die Vertices, `randTri` ihre Dreiecke) — die Suche nach bewegten geht nur ihn.
     // DIE RECHNUNG IST DER KERN (w4-b-boden, gelaende-core `bodenKarte`): der voxel-worker rastert die Karte jedes Netzes, das
     // er baut (der Einbau setzt sie nur ein); hier rastern der Sync-Bau, der Naht-Morph und die vorläufige Gestalt eines Edits.
-    // `deck` der Stoff je Vertex (`aStoff`: je drei Zahlen, die erste die Deckung), null: die Karte trägt nur die Höhe (die
+    // `deck` der Stoff je Vertex (`aStoff`: je drei Zahlen, die erste die Narbe), null: die Karte trägt nur die Höhe (die
     // Morph-Ziele).
     _bodenKarteAusMesh(pos, idx, deck, cx, cz, lod, basis = null, rand = null, anOrt = false) {
         if (!pos || !idx || idx.length < 3) return null;
         const G = globalThis.__gelaendeCore;
         const T = AnazhRealm.BODEN_KARTE_TEILUNG;
-        const W = AnazhRealm.WIESEN_GRUND.schwelle;
-        return G.bodenKarte(pos, idx, deck, cx, cz, this._voxelChunkConfig(lod || 0), T, W, basis, rand, anOrt);
+        return G.bodenKarte(pos, idx, deck, cx, cz, this._voxelChunkConfig(lod || 0), T, basis, rand, anOrt);
     }
 
     // Pass 0 — Density-Grid: Nx*Ny*Nz Eck-Werte vom Sample. Float32Array,
@@ -2351,8 +2350,8 @@ class AnazhRealm_gelaende_boden {
     // Werte roh als linear (der Stein 0,42/0,44/0,49 mit dem Magie-Violett darüber: weiß-lavendel, Blick-Tour 05).
     // Magie ist ein AKZENT in Flecken, der Seegrund unter jedem Wasser Schlick. Die Laubstreu liegt NICHT hier: sie
     // folgt den echten Kronen (`_kronenStreuNeu` → `_wegeBodenFarbe`). `out` = [r, g, b] (linear, wie das Vertex-
-    // Attribut); `aus` (optional) nimmt `deckung`, die Deckung des Stoffs (`WIESEN_GRUND.deckung`, 0 … 1: wie weit der Grund
-    // eine Grasnarbe trägt). Die Ferne (das Mittel der Flecken und Bänder über eine Fläche) rechnet der Fern-Faden (`bodenFarbe` im
+    // Attribut); `aus` (optional) nimmt `deckung`, die Narbe des Stoffs (0 … 1: wie weit der Grund eine geschlossene Grasnarbe
+    // trägt — die Wache über der Deckung der Klassen `WIESEN_GRUND.deckung`, unter dem Schnee). Die Ferne (das Mittel der Flecken und Bänder über eine Fläche) rechnet der Fern-Faden (`bodenFarbe` im
     // voxel-worker mit `fussM`, B2) — ohne fussM dieselben Zahlen wie hier.
     _bodenFarbeAt(x, y, z, out, aus) {
         // V9.60-b.2 — Sand-Variation: lazy-laden des deterministischen
@@ -2424,7 +2423,8 @@ class AnazhRealm_gelaende_boden {
         mix(violet, ss(0.55, 1.0, f.magieleitung) * magieFleck * 0.3);
         // Die Schneegrenze ist Gesetz (gelaende-core `schnee`: die Höhe über dem Meer, dieselbe Funktion ruft der Worker
         // in `attachFieldColors`) und liest den Pegel des Schnees (stoffe.K3-2): den Versatz, den die Welt trägt (`_schneeGilt`).
-        mix(snow, globalThis.__gelaendeCore.schnee(this._gelaende(), y, x, z, this._schneeGilt()), DK.schnee);
+        // Der Schnee DECKT: er liegt über Grund, Weg und Narbe und fällt als letzte Schicht (unten).
+        const schnee = globalThis.__gelaendeCore.schnee(this._gelaende(), y, x, z, this._schneeGilt());
         // Der Seegrund: unter JEDEM Wasser (Meer, See, Fluss — der Spiegel des Orts) liegt Schlick, voll ab 4 m
         // Tiefe (bis V18.530 nur unter dem Meeresspiegel y < −2: die Bergseen lagen auf Wiese und Streu).
         // Schlick und Strand sind Ufer-Bänder über beiden Bezügen (`_waterLevelAt`): See/Meer voll, der Fluss mit seiner
@@ -2453,18 +2453,26 @@ class AnazhRealm_gelaende_boden {
         const pathF = this._pathFieldAt(x, z, y);
         if (pathF > 0.01) mix(packedDirt, pathF * 0.6, DK.dirt);
         // DER WIESEN-GRUND (K53, `WIESEN_GRUND`): wo die Wache Grün sagt, deckt das Mittel des Halms den Grund, der Fleck
-        // (λ 7,7 m) lässt karge Stellen. Die Wache liest die Deckung des Stoffs, nie den Ton (w26-ferne-ton-4).
+        // (λ 7,7 m) lässt karge Stellen. Die Wache liest die Deckung des Stoffs, nie den Ton (w26-ferne-ton-4) — und sie rechnet
+        // HIER, EINMAL: die Narbe (0 … 1) ist ihr Schluss über dem Grund, jede Decke darüber nimmt sie mit ihrem Gewicht.
         const gruen = ss(0, WG.schwelle, d);
         if (gruen > 0) {
             const fleck = (sandNoise.noise2D(x * 0.13 + 5.3, z * 0.13 - 2.9) + 1) * 0.5;
             mix(WG.farbe, gruen * (0.5 + 0.5 * fleck));
         }
+        // DER SCHNEE LIEGT ÜBER DER NARBE (z364, w27-ferne-ton-5): Farbe, Narbe und Nässe nehmen sein Gewicht als Decke. Bis
+        // hierher fiel er vor Weg und Wiese, und die Wache las die Deckung unter ihm: 61 % Schnee über der Wiese trugen 39 %
+        // Deckung, die Wache schloss sie zu 81 % Narbe, und das Mittel des Halms malte über den Schnee (gate:gelaende-studio:
+        // 174 Zellen Schnee der Karte ohne Welt; Halm, Halm-Relief und Haftung „gras“ im Schnee). Der Ton der Wache (bis
+        // w26-ferne-ton-4) verbarg es: das Blau des Schnees senkte g − (r+b)/2 unter null.
+        mix(snow, schnee, DK.schnee);
         out[0] = c[0];
         out[1] = c[1];
         out[2] = c[2];
-        // die Deckung des Stoffs (vor dem Fels-Stoff des Netzes): der Chunk trägt sie je Vertex (`_attachVoxelFieldColors`)
+        // die Narbe des Stoffs (vor dem Fels-Stoff des Netzes): der Chunk trägt sie je Vertex (`_attachVoxelFieldColors`), die
+        // Boden-Karte, das Fragment und der Fels-Stoff lesen sie linear (gelaende-core `bodenKarte`, `felsStoff`)
         if (aus) {
-            aus.deckung = d;
+            aus.deckung = gruen + (DK.schnee - gruen) * schnee;
             aus.nass = n;
         }
         return out;

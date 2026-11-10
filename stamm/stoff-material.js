@@ -2941,9 +2941,8 @@ class AnazhRealm_stoff_material {
             const _roh = felsImVertex ? this._bodenStufenKnoten().stoff : null;
             const _stoff = _roh && (lagen && lagen.stoff ? lagen.stoff(_roh) : _roh.xy);
             const _nah = _T.float(1.0).sub(_camD.mul(_T.float(1.0 / 90.0)).clamp(0.0, 1.0)); // 1 am Fuß → 0 bei 90 m
-            const _green = _stoff
-                ? _T.smoothstep(_T.float(0.0), _T.float(AnazhRealm.WIESEN_GRUND.schwelle), _stoff.x)
-                : _T.float(0.0);
+            // die Narbe ist geschlossen, wo sie entstand (`_bodenFarbeAt`: die Wache über der Deckung, Schnee und Fels als Decke, z364)
+            const _green = _stoff ? _stoff.x.clamp(0.0, 1.0) : _T.float(0.0);
             const _damp = _stoff ? _stoff.y.clamp(0.0, 1.0) : _T.float(0.0);
             const _gMoss = au && au.geoMoss ? au.geoMoss : _T.float(1.0);
             const _mossDrive = _green.mul(_damp).mul(_gMoss).mul(_T.float(G.mossMax)).mul(_nah);

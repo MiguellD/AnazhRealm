@@ -616,7 +616,6 @@ function bodenKarteNaht(r, lage, art) {
                   r.cz,
                   voxelChunkConfig(r.lod),
                   BK.teilung,
-                  BK.wache,
                   alt,
                   r.naht,
                   !!alt
@@ -1343,8 +1342,8 @@ function applyStateSnapshot(snap) {
     // DER ERDBAU DER ORTE (K10): die Splat-Liste des Mains (`_erdbauRoh`), hier in die Normalform des Gesetzbuchs gelegt
     if (snap.erdbau !== undefined) state.erdbau = G.erdbauNormal((state.erdbauRoh = snap.erdbau));
     if (snap.felsStoff) state.felsStoff = snap.felsStoff;
-    // DIE BODEN-KARTE (w4-b-boden): Teilung und Wiesen-Wache des Stamms (`BODEN_KARTE_TEILUNG`, `WIESEN_GRUND.schwelle` über der
-    // Deckung) — dieselben Zahlen
+    // DIE BODEN-KARTE (w4-b-boden): die Teilung des Stamms (`BODEN_KARTE_TEILUNG`) — dieselbe Zahl; ihr Grün ist die Narbe des
+    // Stoffs (`bodenFarbe`)
     if (snap.bodenKarte) state.bodenKarte = snap.bodenKarte;
     // DIE FORMEN DES BODEN-SATZES (w4-b-boden2): je gepacktem Attribut [Name, Breite, Vertex-Form, Skalar der 4. Komponente] —
     // dieselben, mit denen der Satz des Mains packt (`BODEN_SATZ_ATTR`, `_satzForm`)
@@ -3100,7 +3099,7 @@ function bodenFarbe(x, y, z, out, fussM, aus) {
     // Die Schneegrenze ist Gesetz (gelaende-core \`schnee\`) und liest den Pegel (der Versatz des Mains, stoffe.K3-2).
     if (!Number.isFinite(state.schneeVersatz))
         throw new Error("bodenFarbe: der Versatz der Schneegrenze fehlt (schneeVersatz)");
-    mix(P.schnee, G.schnee(state, y, x, z, state.schneeVersatz), DK.schnee);
+    const schnee = G.schnee(state, y, x, z, state.schneeVersatz); // er deckt als letzte Schicht (wie `_bodenFarbeAt`, unten)
     // Schlick und Strand über beiden Bezügen: See/Meer voll, der Fluss mit seiner Kronen-Blende; mit fussM trägt jedes
     // Fluss-Band das Mittel seiner Kronen-Blende über die Fläche (\`flussAbdruck\`, je Segment sein Spiegel).
     const uf = { see: 0, fluss: null, ufer: 0 };
@@ -3143,19 +3142,22 @@ function bodenFarbe(x, y, z, out, fussM, aus) {
     const pathF = pathFieldAt(x, z, y, fussM);
     if (pathF > 0.01) mix(P.dirt, pathF * 0.6, DK.dirt);
     // DER WIESEN-GRUND (K53): wo die Wache Grün sagt, deckt das Mittel des Halms den Grund; die Fläche, die den Fleck nicht
-    // auflöst (\`fussM\`), trägt sein Mittel. Die Wache liest die Deckung des Stoffs, nie den Ton (w26-ferne-ton-4).
+    // auflöst (\`fussM\`), trägt sein Mittel. Die Wache liest die Deckung des Stoffs, nie den Ton (w26-ferne-ton-4), und
+    // schließt die Narbe HIER, einmal (wie `_bodenFarbeAt`).
     const gruen = ss(0, WG.schwelle, d);
     if (gruen > 0) {
         let fleck = (sandNoise.noise2D(x * 0.13 + 5.3, z * 0.13 - 2.9) + 1) * 0.5;
         if (oktav) fleck += (0.5 - fleck) * oktav(fussM, WG.rauschM);
         mix(WG.farbe, gruen * (0.5 + 0.5 * fleck));
     }
+    // der Schnee liegt über der Narbe (z364, wie `_bodenFarbeAt`): Farbe, Narbe und Nässe nehmen sein Gewicht als Decke
+    mix(P.schnee, schnee, DK.schnee);
     out[0] = c[0];
     out[1] = c[1];
     out[2] = c[2];
-    // die Deckung (vor dem Fels-Stoff des Netzes): der Chunk trägt sie je Vertex (`attachFieldColors`)
+    // die Narbe (vor dem Fels-Stoff des Netzes): der Chunk trägt sie je Vertex (`attachFieldColors`), die Boden-Karte liest sie linear
     if (aus) {
-        aus.deckung = d;
+        aus.deckung = gruen + (DK.schnee - gruen) * schnee;
         aus.nass = n;
     }
     return out;
@@ -3734,7 +3736,7 @@ function buildChunkMesh(cx, cz, lod, saat = null) {
     // ~4,5 ms je Chunk, GTX `_bodenKarteAusMesh` 176 ms Selbstzeit bis zum Bild).
     const BK = state.bodenKarte;
     if (!BK) throw new Error("buildChunkMesh: die Boden-Karte fehlt im Worker-Zustand (bodenKarte)");
-    const karte = G.bodenKarte(positionsF32, indicesU32, stoff, cx, cz, cfg, BK.teilung, BK.wache, null, null);
+    const karte = G.bodenKarte(positionsF32, indicesU32, stoff, cx, cz, cfg, BK.teilung, null, null);
     // DIE MULDE ENTSTEHT, WO DAS NETZ ENTSTEHT (wetter.K2): gelaende-core `muldeEcken` — die Senke des Gesetzes je Vertex, in der
     // der Regen als Pfütze steht; das Gedächtnis des Gitters teilt der Faden über seine Netze (`muldeMemo`)
     const mulde = G.muldeEcken(state, positionsF32, nV, lod, muldeMemo);
@@ -3746,9 +3748,7 @@ function buildChunkMesh(cx, cz, lod, saat = null) {
     const stufe = lod < 3 ? stufeZielNetz(positionsF32, normals, colors, ox, oy, oz, lod + 1) : null;
     // DIE KARTE DES ZIELS (K51-2, w4-b-boden): die Boden-Karte der Morph-Ziele (ohne Grün, wie `_bodenStufeMisch` sie liest) —
     // der Main rastert danach nur, was ein Naht-Morph oder ein Edit an den Zielen bewegt
-    const karteZiel = stufe
-        ? G.bodenKarte(stufe.ziel, indicesU32, null, cx, cz, cfg, BK.teilung, BK.wache, null, null)
-        : null;
+    const karteZiel = stufe ? G.bodenKarte(stufe.ziel, indicesU32, null, cx, cz, cfg, BK.teilung, null, null) : null;
     // V9.93 (Wasser-LOD-Naht-Heilung): Wasser-Cells IMMER LOD 0 für naht-
     // freie Wasseroberflächen über LOD-Boundaries hinweg. Für LOD-0-Chunks
     // teilen wir die schon gesampelte `density` (V9.81-Sharing wirkt). Für

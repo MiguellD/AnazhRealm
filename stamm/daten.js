@@ -622,7 +622,10 @@ class AnazhRealm_daten {
     // DIE WACHE LIEST DIE DECKUNG, NIE DEN TON (w26-ferne-ton-4): `deckung` je Boden-Klasse ist der Stoff, der die Narbe trägt
     // (Kern `BODEN_DECKUNG`); `_bodenFarbeAt` und der Faden mischen sie mit den Gewichten der Farbe, der Fels-Stoff nimmt sie am
     // Hang, im Schutt und in der Höhle (gelaende-core `felsStoff`), die Boden-Karte trägt sie als Grün-Kanal (`bodenKarte`) —
-    // Farbe, Halm, Haftung, Huf und Schritt lesen sie. `schwelle` (Einheit: Deckung) ist die Wache smoothstep(0, schwelle, d):
+    // Farbe, Halm, Haftung, Huf und Schritt lesen sie. Die Wache schließt die Narbe EINMAL, wo sie entsteht (z364): die Leser
+    // lesen die Narbe linear, und jede Decke über ihr (der Schnee, der Fels-Stoff, die Schichten der Wege-Karte) nimmt sie mit
+    // ihrem Gewicht — bis hierher schloss jeder Leser die Deckung UNTER dem Schnee (61 % Schnee: 81 % Halm, Wiese über dem
+    // Schnee). `schwelle` (Einheit: Deckung) ist die Wache smoothstep(0, schwelle, d):
     // ab 0,6 Deckung ist die Narbe geschlossen — die Breite der Wache, die bis hierher der Ton trug (gruenSchwelle 0,04 über dem
     // Grün 0,065 des Wiesen-Grunds 0x55632f). Bis hierher rechnete die Wache g − (r+b)/2 aus der Farbe: der Ton 0x3e5026 senkte
     // das Grün auf 0,046, und die Welt änderte ihr Verhalten (z347: Wagen 1,23 m tief, K7, Graben leer, Fahr-Linse K8/S1).

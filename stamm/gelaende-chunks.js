@@ -276,11 +276,10 @@ class AnazhRealm_gelaende_chunks {
             // Tönen und Schwellen wie der Sync-Bau des Stamms (`FELS_STOFF.basis` · `FELS_STOFF.netz`)
             felsStoff: { basis: AnazhRealm.FELS_STOFF.basis, netz: AnazhRealm.FELS_STOFF.netz },
             // DIE BODEN-KARTE reist mit (w4-b-boden): der Worker rastert sie beim Chunk-Bau (gelaende-core `bodenKarte`) mit
-            // DERSELBEN Teilung und Wiesen-Wache wie der Stamm (`_bodenKarteAusMesh`) — die Wache über der Deckung des Stoffs
-            // (`WIESEN_GRUND.schwelle`, w26-ferne-ton-4), nie über dem Ton der Farbe
+            // DERSELBEN Teilung wie der Stamm (`_bodenKarteAusMesh`) — ihr Grün ist die Narbe des Stoffs (w26-ferne-ton-4), die
+            // die Wache schloss, wo sie entstand (`bodenFarbe`, z364), nie der Ton der Farbe
             bodenKarte: {
                 teilung: AnazhRealm.BODEN_KARTE_TEILUNG,
-                wache: AnazhRealm.WIESEN_GRUND.schwelle,
             },
             // DIE FORMEN DES BODEN-SATZES reisen mit (w4-b-boden2): der Worker packt jede Vorlage in DENSELBEN Vertex-Formen wie
             // der Satz (`BODEN_SATZ_ATTR`, `_satzForm`)
