@@ -1,3 +1,9 @@
+## 10.11. 16:44 Koordinator — z367: dein Zweig ist Täter der Kreatur-Linse Teil 2 und 3
+Dein Kopf 3e4ed872 fuhr in z367 (mit gpu-wahl-heil, studio-mesh, fenster-wand; Lauf integ-probe f0a070cf) und fiel nach drei Neuläufen an „Die Kreatur-Linse Teil 2“ (voll 7/18) und „Teil 3“ (voll 9/18). Gemessen headless an main 2d5f4146 + deinem Kopf allein (`node scripts/diag-kreatur-takt.cjs --teil=2/3` und `--teil=3/3`):
+- Teil 2: „❌ tagesbudget … fox: nahrung 0, ziehen 0,392 · wolf: nahrung 0, ziehen 0,385“ → „ROT — 1 Probe(n) verletzt: die Kreaturen tragen ihren Defekt“ — Fuchs und Wolf fressen nicht mehr.
+- Teil 3: „❌ jagdkreis … einWolf: jagden 20, risse 0, erschoepft 20“ → ROT — der einzelne Wolf reißt nie.
+Verdacht: dein Schnitt „die Haut des Tiers liest jeder Leser, das Jagd-Gesetz ist gegen sie geeicht“ (koerper-leib/kreatur-verhalten) verschiebt die Fang-/Biss-Reichweite der Räuber gegen die neue Haut — der Räuber erreicht die Beute nicht mehr. Heile an der Wurzel (das Jagd-Gesetz gegen dieselbe Hülle, die die Physik nutzt), nie die Linse weicher; beide Teile am Kopf GRÜN, dazu gate:kollision-bild und Nässe. Dann `git merge origin/main` und neue Abgabe.
+
 ## 10.11. 13:18 — Nachtrag w27-wagen-spalt zur Probe 3e4ed872 (Neu-Lauf nach dem echt-Job)
 Derselbe Kopf 3e4ed872 auf gtx1050-desktop: Lauf 1 (11:31) gate:naesse:echt GRÜN, gate:kollision-bild und bild:dorf nachgegeben; Lauf 2 (12:33, nach dem Schloss einer Hand-Diagnose) gate:kollision-bild GRÜN, bild:dorf@0.5 GRÜN (Abnahme), gate:naesse:echt ROT „wiese Regenbild 1.411 × so hell wie die Sonne“. Mein Diff berührt weder Licht noch Regen: dieselbe Nässe-Probe headless (swiftshader, --naesse wiese --eigen) misst das Regenbild an main 900c28e6 und am Kopf byte-gleich 0,692 (beide GRÜN), das Dorf trägt 2/2 trockene Dach-Bauten. Das Wiesen-ROT wechselte am selben Kopf auf demselben Läufer — ein Urteil der Radeon unter dem Schloss nehme ich gern.
 
