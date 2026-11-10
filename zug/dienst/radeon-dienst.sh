@@ -88,7 +88,15 @@ while true; do
     if [ $f -ge 5 ]; then
         K0=$(git -C $R ls-remote origin refs/heads/main | cut -f1)
         miss "offene Stationen" --offen
-        if [ $? = 3 ]; then
+        rc=$?
+        # DER RICHTER NACH DER LANDUNG (richter.sh der OMEN, B2 Stufe 1): jede Station GRÜN → ROT gegen den gebuchten Stand wird
+        # halbiert und nennt ihren Täter in koordination zug/richter.txt — ohne LLM, mit CI-Vorfahrt wie die Messung
+        if [ $rc = 0 ]; then
+            puls radeon "Richter am ${K0:0:8}"
+            RICHTER_MAX=2 bash "$D/richter.sh" radeon --kopf "$K0" >>"$S/richter.out" 2>&1
+            echo "$(date +%H:%M) Richter ${K0:0:8}: $(grep -E "TÄTER|KEIN FALL|UNSCHARF|Fälle|FALL" "$S/richter.out" | tail -1 | cut -c1-220)" >>"$L"
+        fi
+        if [ $rc = 3 ]; then
             puls radeon "nichts offen am ${K0:0:8} — wartet auf einen neuen main-Kopf"
             until [ "$(git -C $R ls-remote origin refs/heads/main | cut -f1)" != "$K0" ]; do sleep 120; done
         fi
