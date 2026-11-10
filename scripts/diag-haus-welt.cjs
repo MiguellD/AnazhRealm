@@ -736,10 +736,10 @@ async function proben(phasen) {
             }
             return false;
         };
-        // die Natur der Nähe im Bild: die Sätze der Nah-Streu und die Senken der Nah-Wiese
+        // die Natur der Nähe im Bild: die Senken der Nah-Streu und der Nah-Wiese (jede zeichnet in der Arena ihres Stoffs)
         const natur = () =>
             [
-                ...[...s.chunkSaetze].filter(([k]) => k.startsWith("streuSatz|")).map(([, v]) => v.mesh),
+                ...[...(s.nahStreu ? s.nahStreu.senken.values() : [])].map((x) => x.mesh),
                 ...[...s.nahWiese.senken.values()].map((x) => x.mesh),
             ].filter(Boolean);
         // EIN BLICK aus dem Ausgabe-Pfad (die Kamera steht; die Natur — Nah-Wiese und Nah-Streu — wirft keinen Schatten, wie

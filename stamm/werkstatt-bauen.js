@@ -193,6 +193,7 @@ class AnazhRealm_werkstatt_bauen {
         bm.phantomWand = null;
         bm.phantomGrund = null;
         bm.phantomStudioPending = null; // B1 — kein Heil-Swap für einen verlassenen Bauplan
+        bm.reichMax = null; // die Klemme des nächsten Bau-Modus misst neu (`_phantomReichweite`)
         this._updateBuildModeHud();
     }
 
@@ -480,14 +481,18 @@ class AnazhRealm_werkstatt_bauen {
     tickBuildMode() {
         const bm = this.state.buildMode;
         if (!bm.active || !bm.phantomMesh || !this.state.playerMesh) return;
-        const target = this._resolvePhantomTarget();
+        let target = this._resolvePhantomTarget();
         // DAS PHANTOM ZEIGT DIE GESTALT SEINES ORTS (K20): wählt der Ort unter ihm eine andere Gestalt als die gezeigte (ein
-        // Baum tritt aus dem Bestand ins Freie — der Solitär), heilt es zu ihr wie der Donor-Ghost, sofort versucht.
+        // Baum tritt aus dem Bestand ins Freie — der Solitär), heilt es zu ihr wie der Donor-Ghost, sofort versucht. Bis die
+        // Gestalt seines Orts steht, ist es kein Studio-Phantom (`studioGhost` false): das Setzen stellt das Werk in die Gestalt
+        // seines Orts, nie in die eines verlassenen (w20-wald-kosten, z289 Werk-Same: das Phantom zeigte eiche|3, das Werk stand
+        // eiche|2 — am Waldrand stand der Solitär an seiner Klemme in der Freistand-Weite eines Baums des Bestands).
         const ud = bm.phantomMesh.userData;
         const bpJetzt = this.state.blueprints && this.state.blueprints[bm.blueprintName];
         if (ud.studioGhost && bpJetzt && ud.studioGestalt !== this._phantomGestalt(bpJetzt, target)) {
             if (bm.phantomStudioPending !== bm.blueprintName) bm._studioGhostRetryAt = 0;
             bm.phantomStudioPending = bm.blueprintName;
+            ud.studioGhost = false;
         }
         // B1 — der Donor-Ghost HEILT zur Studio-Gestalt, sobald das Asset dockt (fail-soft-
         // Rückweg der Geist-Vorschau; ratenbegrenzt — kein Per-Frame-Flatten-Versuch).
@@ -495,13 +500,22 @@ class AnazhRealm_werkstatt_bauen {
             const nowMs = performance.now();
             if (!bm._studioGhostRetryAt || nowMs >= bm._studioGhostRetryAt) {
                 bm._studioGhostRetryAt = nowMs + 500;
-                const studio = this._buildStudioPlacementGhost(this.state.blueprints[bm.blueprintName], target);
+                const bp = this.state.blueprints[bm.blueprintName];
+                const studio = this._buildStudioPlacementGhost(bp, target);
                 if (studio) {
                     if (this.state.scene) this.state.scene.remove(bm.phantomMesh);
                     this._disposeSoulGroup(bm.phantomMesh);
                     studio.name = "bau-phantom";
                     bm.phantomMesh = studio;
                     if (this.state.scene) this.state.scene.add(studio);
+                    // DER FIXPUNKT (w20-wald-kosten): die Reichweite der neuen Gestalt schiebt das Phantom an seine Klemme
+                    // (`_phantomAusserhalb`) — wählt sein Ort dort eine andere Gestalt, heilt es weiter, ehe es steht
+                    target = this._resolvePhantomTarget();
+                    if (studio.userData.studioGestalt !== this._phantomGestalt(bp, target)) {
+                        studio.userData.studioGhost = false;
+                        bm.phantomStudioPending = bm.blueprintName;
+                        bm._studioGhostRetryAt = 0;
+                    }
                 }
             }
         }
@@ -593,34 +607,42 @@ class AnazhRealm_werkstatt_bauen {
     // Vertex von der Hoch-Achse (WeakMap — Bauplan-Wechsel und Setzen fragen erneut), × die Skala des Teils, + sein
     // Versatz; am Phantom gemerkt. Der Spender-Geist (das Studio lädt noch, Foundry aus) misst die Spender-Teile
     // (`_blueprintFootprintRadius`). Befund: die Klemme maß die Spender-Teile der Eiche (3,01 m), die Krone der Studio-
-    // Eiche hing über der Kamera.
+    // Eiche hing über der Kamera. DIE KLEMME HÄLT DIE GRÖSSTE REICHWEITE (w20-wald-kosten, der Fixpunkt des Phantoms): je
+    // Bauplan im Bau-Modus die weiteste, die eine seiner Gestalten zeigte (`bm.reichMax`) — sonst schob der Solitär (11,5 m)
+    // das Phantom in den Bestand, dort stand die Bestand-Gestalt (kleiner), sie ließ es zurück ins Freie, der Solitär …
     _phantomReichweite() {
         const bm = this.state.buildMode;
         const ph = bm && bm.phantomMesh;
         if (!ph || !bm.blueprintName) return 0;
-        if (!ph.userData.studioGhost) return this._blueprintFootprintRadius(bm.blueprintName);
-        if (Number.isFinite(ph.userData.reichweite)) return ph.userData.reichweite;
-        const memo = this._geomReichweite || (this._geomReichweite = new WeakMap());
+        const M =
+            bm.reichMax && bm.reichMax.name === bm.blueprintName
+                ? bm.reichMax
+                : (bm.reichMax = { name: bm.blueprintName, r: 0 });
         let r = 0;
-        for (const teil of ph.children) {
-            const pos = teil.geometry && teil.geometry.attributes ? teil.geometry.attributes.position : null;
-            if (!pos) continue;
-            let rg = memo.get(teil.geometry);
-            if (rg === undefined) {
-                let q = 0;
-                for (let i = 0; i < pos.count; i++) {
-                    const x = pos.getX(i);
-                    const z = pos.getZ(i);
-                    if (x * x + z * z > q) q = x * x + z * z;
+        if (!ph.userData.studioGhost) r = this._blueprintFootprintRadius(bm.blueprintName);
+        else if (Number.isFinite(ph.userData.reichweite)) r = ph.userData.reichweite;
+        else {
+            const memo = this._geomReichweite || (this._geomReichweite = new WeakMap());
+            for (const teil of ph.children) {
+                const pos = teil.geometry && teil.geometry.attributes ? teil.geometry.attributes.position : null;
+                if (!pos) continue;
+                let rg = memo.get(teil.geometry);
+                if (rg === undefined) {
+                    let q = 0;
+                    for (let i = 0; i < pos.count; i++) {
+                        const x = pos.getX(i);
+                        const z = pos.getZ(i);
+                        if (x * x + z * z > q) q = x * x + z * z;
+                    }
+                    rg = Math.sqrt(q);
+                    memo.set(teil.geometry, rg);
                 }
-                rg = Math.sqrt(q);
-                memo.set(teil.geometry, rg);
+                const s = Math.max(Math.abs(teil.scale.x), Math.abs(teil.scale.z));
+                r = Math.max(r, Math.hypot(teil.position.x, teil.position.z) + rg * s);
             }
-            const s = Math.max(Math.abs(teil.scale.x), Math.abs(teil.scale.z));
-            r = Math.max(r, Math.hypot(teil.position.x, teil.position.z) + rg * s);
+            ph.userData.reichweite = r;
         }
-        ph.userData.reichweite = r;
-        return r;
+        return (M.r = Math.max(M.r, r));
     }
 
     // Tint 30 % grün (0x88ff88), wenn das Setzen trägt (stabiler Kontakt und `_setzUrteil`), sonst rot (0xff8888) — dort,

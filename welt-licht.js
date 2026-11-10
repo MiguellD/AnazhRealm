@@ -385,18 +385,23 @@ var __weltLicht = (function () {
         });
         // ── die Himmels-Sicht: Richtung ↔ Texel (Azimut absolut, Breite quadratisch um den Horizont des Auges) ──
         const horizontEl = () => T.acos(float(RG).div(U.hKm.add(RG))).negate();
-        const himmelUv = (dir) => {
-            const el = T.asin(clamp(dir.y, -1, 1)).toVar();
+        // die Breite der Tafel zur Höhe `el` (rad) — Richtungen gleicher Höhe teilen sie (das Band des Grats, `_horizontHimmel`)
+        const himmelBreite = (el) => {
             const hz = horizontEl().toVar();
             const oben = sqrt(max(el.sub(hz).div(float(PI / 2).sub(hz)), 0))
                 .mul(0.5)
                 .add(0.5);
             const unten = float(0.5).sub(sqrt(max(hz.sub(el).div(float(PI / 2).add(hz)), 0)).mul(0.5));
+            return subUv(select(el.greaterThanEqual(hz), oben, unten), Z.himmel[1]);
+        };
+        const himmelUv = (dir) => {
+            const el = T.asin(clamp(dir.y, -1, 1)).toVar();
+            const v = himmelBreite(el);
             const u = T.atan(dir.z, dir.x)
                 .div(2 * PI)
                 .add(1)
                 .fract();
-            return vec2(u, subUv(select(el.greaterThanEqual(hz), oben, unten), Z.himmel[1]));
+            return vec2(u, v);
         };
         // DER MARSCH längs v: die Quellen (Richtung, Gewicht in Einheiten von E0 — die Sonne 1, der Mond `mondE`) und das
         // Sternen-Licht (`nacht`, in E0). Die Himmels-Sicht ruft ihn mit Sonne, Mond und Sternen, die Bestrahlungs-Tafel mit
@@ -497,7 +502,9 @@ var __weltLicht = (function () {
         // (Wetter, Feld, Gefühl, DSL — relativ zum Himmel des Studios, `_dayNightApplySkybox`). Leser: die Kuppel, die Luft.
         // Der Texel der Himmels-Sicht in Richtung `dir` (rgb je Einheit E0, Alpha der Anteil der Sonne): ein Leser beider Kanäle
         // reicht ihn `himmelFarbe` und `himmelEinfach` (EINE Abtastung, die Luft der Welt).
-        const himmelTexel = (dir) => texture(rtSV.texture, himmelUv(dir)).level(float(0));
+        // `himmelTexelUv` an einer Lage der Tafel (u Azimut, v `himmelBreite`): wer die Lage schon kennt, rechnet sie nicht neu
+        const himmelTexelUv = (uv) => texture(rtSV.texture, uv).level(float(0));
+        const himmelTexel = (dir) => himmelTexelUv(himmelUv(dir));
         const himmelJeLicht = (dir) => himmelTexel(dir).rgb;
         const himmelFarbe = (dir, tx = null) => (tx ? tx.rgb : himmelJeLicht(dir)).mul(U.licht).mul(U.toenung);
         // DER ANTEIL DER SONNE (0 … 1) an der Himmels-Sicht in Richtung `dir`: ihre einfache Streuung (Alpha der Tafel) — was ein
@@ -565,6 +572,8 @@ var __weltLicht = (function () {
             himmelFarbe,
             himmelEinfach,
             himmelTexel,
+            himmelTexelUv,
+            himmelBreite,
             durchlass,
             RG,
             mediumBeta: null,

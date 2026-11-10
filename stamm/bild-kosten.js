@@ -3038,7 +3038,7 @@ class AnazhRealm_bild_kosten {
                 if (zug && zug.wahl.length) arenen.push(a, zug);
             }
             // je Bild neu, darum in der Lage des Auges (`L.auge`, w24-fahrt-takt: der Halt am Punkt, kein Weg)
-            if (arenen.length) this._wahlRechnen(rend, S.lage.auge, arenen, kamera === this.state.camera);
+            if (arenen.length) this._wahlRechnen(rend, S.lage.auge, arenen, kamera === this.state.camera, kamera);
         } catch (e) {
             this._arenaBruch(e);
         }
@@ -3047,7 +3047,14 @@ class AnazhRealm_bild_kosten {
     // EIN COMPUTE JE KAMERA: die Lage (`_wahlLage`) und die Aufträge jeder Arena (`_wahlAuftraege`, je Arena ein Block nach der
     // Ausrichtung der Speicher-Versätze) in je EINEM Puffer, je Arena eine Bindegruppe (Matrizen, Liste, Auftrags-Puffer —
     // gemerkt, solange ihre Puffer stehen) und EIN Dispatch (y: ihre Züge, je Zug EINE Arbeitsgruppe, `PASS_WAHL_WGSL`).
-    _wahlRechnen(rend, L, arenen, haupt) {
+    // DER STAND KOSTET NICHTS (w27-takt-streu, Lehre 25): eine Arena rechnet in diesem Pass nur, wenn sich etwas änderte, das
+    // ihre Wahl liest — die Lage dieser Kamera (ohne die Hälfte des Zustands), ihre Aufträge (je Zug gepackt und verglichen),
+    // ihre Daten (`_datenV`: ein Block kopierte), ihre Zahlen (`argsNeu`: ein neuer Auftrag setzte sie auf 0) oder ihre
+    // Bindung; sonst stehen Liste und Zahlen auf der GPU, wie sie der letzte Compute legte, und nichts geht hoch. Die Familien
+    // der Nähe (Art 5) rechnen im Hauptbild zusammen: nur dann wechselt die Hälfte des Zustands (gelesen die des letzten,
+    // geschrieben die andere). Bis w27-takt-streu rechnete jeder Pass jede Arena und lud alle Aufträge (gemessen an der
+    // Mess-Wiese im Stand: 6,5 KB je Bild, `_wahlRechnen` 0,69 ms je Bild allein im Hauptbild).
+    _wahlRechnen(rend, L, arenen, haupt, kamera) {
         const be = rend.backend,
             dev = be.device,
             U = GPUBufferUsage;
@@ -3092,42 +3099,78 @@ class AnazhRealm_bild_kosten {
                 par: 0,
                 puffer: null,
                 f: null,
-                u: null,
+                jeKamera: new WeakMap(), // je Kamera die Lage ihres letzten Computes (`lageNeu`)
             };
         }
         const al = dev.limits.minStorageBufferOffsetAlignment;
+        const nw = this.state.nahWiese,
+            N = this.state.nahe;
+        // die Lage dieses Passes (ein Sprung des Auges wählt einmal aus dem Jetzt, `_wieseAugeTakt`), verglichen ohne die Hälfte
+        const F = AnazhRealm._wahlLage(L, W.lageF);
+        [F[30], F[31], F[67]] = [0, haupt ? 1 : 0, haupt && N && N.sprung ? 1 : 0];
+        F[27] = nw && nw.auge ? nw.auge.h : 0; // die Höhe des Auges über dem eigenen Boden (`_wieseAugeTakt`, die Ferne)
+        if (haupt && N) N.sprung = false;
+        const K = W.jeKamera.get(kamera) || (W.jeKamera.set(kamera, { lage: new Float32Array(76).fill(NaN) }), W.jeKamera.get(kamera)); // prettier-ignore
+        let lageNeu = false;
+        for (let i = 0; i < 76 && !lageNeu; i++) lageNeu = i !== 30 && K.lage[i] !== F[i];
+        if (lageNeu) K.lage.set(F);
+        // je Arena: ihre Aufträge gepackt (`_wahlAuftraege`) und ihre Bindung; rechnet sie?
+        const zustand = (N && N.zustand) || W.leerRW,
+            rechnet = [];
+        let nahe = false;
+        // die Puffer, die ihr Compute bindet: ein neuer (ein gewachsener Auftrags-Puffer trägt die Zahlen 0, eine neue Liste
+        // oder Instanz-Seite ist leer) rechnet
+        const gebunden = (a, zug, q) => [q.instanceMatrix, zug.liste, a._ind, q.aH0, q.aH0L, q.aKarte].map((x) => (x ? (be.get(x) || {}).buffer : W.leer)); // prettier-ignore
+        for (let j = 0; j < arenen.length; j += 2) {
+            const a = arenen[j],
+                zug = arenen[j + 1],
+                n = zug.wahl.length / 5,
+                bg0 = zug.__wahlBG;
+            if (!zug.pack || zug.pack.length < n * 16) zug.pack = new Float32Array(Math.ceil(n * 1.5 + 4) * 16);
+            const f = zug.pack,
+                alt = zug.packAlt,
+                u = zug.packU && zug.packU.buffer === f.buffer ? zug.packU : (zug.packU = new Uint32Array(f.buffer));
+            AnazhRealm._wahlAuftraege(zug.wahl, f, u, 0);
+            let neu = lageNeu || zug.argsNeu === true || zug.datenV !== a._datenV || !alt || alt.length !== n * 16 || zug.bindung !== zustand || !bg0 || bg0.n !== n; // prettier-ignore
+            if (!neu) neu = gebunden(a, zug, a.__instanzQuelle).some((b, k) => b !== bg0.puf[2 + k]);
+            for (let i = 0; !neu && i < n * 16; i++) neu = alt[i] !== f[i];
+            const art5 = zug.wahl.some((m, i) => i % 5 === 0 && m.__wahlFenster && m.__wahlFenster[0] === 5);
+            if (art5 && neu) nahe = true;
+            rechnet.push({ a, zug, n, neu, art5 });
+        }
+        // die Familien der Nähe rechnen im Hauptbild zusammen, dann wechselt die Hälfte des Zustands
+        if (haupt && nahe) {
+            for (const x of rechnet) if (x.art5) x.neu = true;
+            W.par ^= 1;
+        }
+        F[30] = W.par;
+        const D = rechnet.filter((x) => x.neu);
+        if (!D.length) return;
         const off = [];
         let bytes = 0;
-        for (let i = 1; i < arenen.length; i += 2) {
+        for (const x of D) {
             off.push(bytes);
-            bytes += Math.ceil(((arenen[i].wahl.length / 5) * 64) / al) * al;
+            bytes += Math.ceil((x.n * 64) / al) * al;
         }
         if (!W.puffer || W.puffer.size < bytes) {
             const size = Math.max(bytes, 2 * (W.puffer ? W.puffer.size : 0));
             if (W.puffer) W.puffer.destroy();
             W.puffer = dev.createBuffer({ label: "pass-wahl-auftraege", size, usage: U.STORAGE | U.COPY_DST });
             W.f = new Float32Array(size / 4);
-            W.u = new Uint32Array(W.f.buffer);
         }
-        off.forEach((o, j) => AnazhRealm._wahlAuftraege(arenen[2 * j + 1].wahl, W.f, W.u, o / 4));
-        // die Hälften des Zustands der Nah-Wiese wechseln je Hauptbild (gelesen die des letzten, geschrieben die andere —
-        // nur das Hauptbild schreibt); ein Sprung des Auges wählt einmal aus dem Jetzt (`_wieseAugeTakt`)
-        const F = AnazhRealm._wahlLage(L, W.lageF),
-            nw = this.state.nahWiese;
-        if (haupt) W.par ^= 1;
-        [F[30], F[31], F[67]] = [W.par, haupt ? 1 : 0, haupt && nw && nw.sprung ? 1 : 0];
-        F[27] = nw && nw.auge ? nw.auge.h : 0; // die Höhe des Auges über dem eigenen Boden (`_wieseAugeTakt`, die Ferne)
-        if (haupt && nw) nw.sprung = false;
+        D.forEach((x, j) => {
+            W.f.set(x.zug.pack.subarray(0, x.n * 16), off[j] / 4);
+            x.zug.packAlt = x.zug.pack.slice(0, x.n * 16);
+            [x.zug.datenV, x.zug.argsNeu, x.zug.bindung] = [x.a._datenV, false, zustand];
+        });
         dev.queue.writeBuffer(W.lage, 0, F);
         dev.queue.writeBuffer(W.puffer, 0, W.f.buffer, 0, bytes);
         const enc = dev.createCommandEncoder({ label: "pass-wahl" });
         const pass = enc.beginComputePass({ label: "pass-wahl" });
         pass.setPipeline(W.pipe);
-        for (let j = 0; j < off.length; j++) {
-            const a = arenen[2 * j],
-                zug = arenen[2 * j + 1],
-                q = a.__instanzQuelle,
-                n = zug.wahl.length / 5;
+        for (let j = 0; j < D.length; j++) {
+            const { a, zug, n } = D[j],
+                q = a.__instanzQuelle;
             for (const x of [q.instanceMatrix, zug.liste]) rend._attributes.update(x, 3); // r184 AttributeType.STORAGE
             const mass = ["aH0", "aH0L", "aKarte"].map((k) => (q[k] ? (rend._attributes.update(q[k], 3), be.get(q[k]).buffer) : W.leer)); // prettier-ignore
             const puf = [
@@ -3135,8 +3178,7 @@ class AnazhRealm_bild_kosten {
                 W.puffer,
                 ...[q.instanceMatrix, zug.liste, a._ind].map((x) => be.get(x).buffer), // die Liste dieser Kamera (`_wahlVor`)
                 ...mass,
-                // der Zustand der Stufe der Nah-Wiese (`_nahWieseZustand`), sonst ein leerer
-                (this.state.nahWiese && this.state.nahWiese.zustand) || W.leerRW,
+                zustand, // der Zustand der Stufe jeder Nähe (`_naheZustand`: Wiese und Streu), sonst ein leerer
             ];
             let bg = zug.__wahlBG; // je Zug: die Liste ist die seiner Kamera
             if (!bg || bg.n !== n || puf.some((p, k) => p !== bg.puf[k])) {
@@ -3150,12 +3192,11 @@ class AnazhRealm_bild_kosten {
             pass.dispatchWorkgroups(1, n); // je Auftrag EINE Arbeitsgruppe: sie verdichtet in der Folge der Instanzen
         }
         pass.end();
-        // DIE ZAHL DER GPU FÜR DAS BUCH (w25-gpu-wahl, profiband.K3): je Zug die gezogenen Instanzen seiner Glieder zurück — ein
-        // Lesen im Flug je Zug, ein Bild Verzug —, `_auftraege` bucht damit die Dreiecke (`renderer.info`) statt der Obergrenze
+        // DIE ZAHL DER GPU FÜR DAS BUCH (w25-gpu-wahl, profiband.K3): je Zug, der rechnete, die gezogenen Instanzen seiner Glieder
+        // zurück — ein Lesen im Flug je Zug, ein Bild Verzug —, `_auftraege` bucht damit die Dreiecke (`renderer.info`) statt
+        // der Obergrenze; ein Zug, der steht, behält seine Zahl
         const lesen = [];
-        for (let j = 0; j < off.length; j++) {
-            const a = arenen[2 * j],
-                zug = arenen[2 * j + 1];
+        for (const { a, zug } of D) {
             if (zug.liest || !zug.offs.length) continue;
             const b = zug.offs[0],
                 laenge = zug.offs[zug.offs.length - 1] - b + 20;
@@ -3510,10 +3551,13 @@ AnazhRealm.WAHL_BASIS = Object.freeze([0, 1, 2, 4, 5, 6, 8, 9, 10]);
 // der Maske zum Ursprung der Instanz in XZ × Perf × min(Bezug/Sichthöhe, 1), mit dem Halt als Rand — und das Urteil an den
 // Kanten des EINEN Blend-Gesetzes (`_blendeKanten` → `_blendeBehaelt`, dieselbe Folge der Bedingungen; die Kanten trägt die
 // Lage). Die Karte wählt ihr Quad auf der Stammachse als Kugel. Das Fenster gilt je Pass-Art (Hauptbild · Kaskade).
-// DIE NÄHE DER NAH-WIESE (Art 5, `_nahWieseBestand`): ein toter Platz (Element 11 < 0) fällt; die Stufe nach `_nahStufe` — L1 bis
-// `stufe1`, gehalten bis `stufe1Rand` dahinter — mit dem ZUSTAND des Platzes (`zustand`, Basis + Platz im Glied, zwei Hälften:
-// gelesen die des letzten Hauptbilds, geschrieben die andere, nur im Hauptbild und nur vom ersten Teil der L1; nach einem
-// Sprung des Auges aus dem Jetzt); jenseits der Übergabe `radius` zeichnet die Ferne; jede Senke behält ihre Stufe.
+// DIE NÄHE (Art 5, `_bestandFamilie`: die Nah-Wiese und die Nah-Streu): ein toter Platz (Element 11 < 0) fällt, sonst trägt
+// Element 11 seine WEITE — die Wiese die Übergabe `radius`, an die die Ferne zeichnet, die Streu das Rand-Band ihrer Art
+// (`_streuWeite`: die Pflanze steht diesseits weite + rand · (½ − ⌊4 · Ordnung⌋/4), die Viertel-Stufen der Würfel-Ordnung);
+// die Stufe nach `_nahStufe` — die nahe bis `saum.z`, gehalten bis `saum.w` dahinter — mit dem ZUSTAND des Platzes (`zustand`,
+// Basis der Familie + Platz im Glied, zwei Hälften: gelesen die des letzten Rechnens, geschrieben die andere, nur im Hauptbild
+// und nur vom ersten Teil der nahen Stufe; nach einem Sprung des Auges aus dem Jetzt); jede Senke behält ihre Stufe (`fenster.y`
+// 1 die nahe, 2 die ferne, 3 eine Art mit EINER Stufe: keine Wahl der Stufe).
 // DIE FERNE (Art 6) UND DIE SCHALE (Art 7, `_nahWieseBestand`): tot fällt, diesseits der Übergabe legt die Nähe; das Büschel steht,
 // solange seine Ordnung (Element 7) unter dem Anteil seines Gesetzes × (1 + Rand) liegt — `_wieseFern` am Fußabdruck-Abstand
 // `_wieseFuss` (der Fuß, die Ebene seines Hangs aus den waagrechten Achsen, die Höhe des Auges über dem eigenen Boden in
@@ -3569,7 +3613,7 @@ fn behalten(a: Auftrag, i: u32, j: u32) -> bool {
         let war = zustand[z + par] == 1u && lage.saum.w < 0.5;
         let l1 = d <= a.saum.z + select(0.0, a.saum.w, war);
         if (a.fenster.w > 0.5 && lage.rand.w > 0.5) { zustand[z + 1u - par] = select(0u, 1u, l1); }
-        if (d >= a.saum.y || l1 != (a.fenster.y < 1.5)) { return false; }
+        if (d >= min(a.saum.y, m[2].w) || (a.fenster.y < 2.5 && l1 != (a.fenster.y < 1.5))) { return false; }
     }
     var c = (m * vec4f(a.kugel.xyz, 1.0)).xyz - lage.auge.xyz;
     let s2 = max(dot(m[0].xyz, m[0].xyz), max(dot(m[1].xyz, m[1].xyz), dot(m[2].xyz, m[2].xyz)));
