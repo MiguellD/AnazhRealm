@@ -1,7 +1,7 @@
 {
  "sha": "78d37554b2d5f98d96ef454cfa9f51752c0e45a0",
  "geraet": "gtx",
- "zeit": "2026-11-10T03:15:38.123Z",
+ "zeit": "2026-11-10T03:21:00.374Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "ferne.K1#2": {
@@ -49,6 +49,55 @@
    },
    "zeit": "2026-11-10T03:10:17.549Z",
    "abdruck": "9c259afc00c6",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "haar.K2#1": {
+   "gruen": false,
+   "zahl": "EINE Pose: Leib Δ 0 · Haar-Feder Δ 0 m über 3 Lesungen · arm ROT strich 0.5565 Soll [0.3554,0.533] — strich 0.5565 > 0.533 · albedo: veraltet seit 4ef6370e: koerper-core.js geändert (c:b70902b2e416b42b → c:c0846417374ac1bd) · albedo — [0.01; 0.3] · third ROT strich 0.3625 Soll [0.3554,0.533] — strich 0.3625 — albedo: veraltet seit 4ef6370e: koerper-core.js geändert (c:b70902b2e416b42b → c:c0846417374ac1bd) · albedo — [0.01; 0.3]",
+   "exit": 0,
+   "minuten": 0.53,
+   "grund": "ROT: EINE Pose: Leib Δ 0 · Haar-Feder Δ 0 m über 3 Lesungen · arm ROT strich 0.5565 Soll [0.3554,0.533] — strich 0.5565 > 0.533 · albedo: veraltet seit 4ef6370e: koerper-core.js geändert (c:b70902b2e416b42b → c:c0846417374ac1bd) · albedo — [0.01; 0.3] · third ROT strich 0.3625 Soll [0.3554,0.533] — strich 0.3625 — albedo: veraltet seit 4ef6370e: koerper-core.js geändert (c:b70902b2e416b42b → c:c0846417374ac1bd) · albedo — [0.01; 0.3]",
+   "gpu": "nvidia/pascal",
+   "s": 32,
+   "fremd": {
+    "s": 35.3,
+    "takte": 16,
+    "fremdS": 63.94,
+    "kerne": 1.809,
+    "fensterKerne": 2.029,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      35.56
+     ],
+     [
+      "MsMpEng.exe",
+      6.97
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      6.38
+     ]
+    ],
+    "dienerS": 10.27,
+    "diener": [
+     [
+      "dwm.exe",
+      4.67
+     ],
+     [
+      "System",
+      3.7
+     ]
+    ],
+    "eigenS": 74.17,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-10T03:21:00.374Z",
+   "abdruck": "ac98a8751e4d",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
@@ -1112,19 +1161,19 @@
   }
  },
  "sitzung": {
-  "start": "2026-11-10T03:14:59.307Z",
+  "start": "2026-11-10T03:20:23.523Z",
   "port": 7804,
   "warten": 0.02,
-  "bootS": 7.6,
+  "bootS": 7,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
     "ort": "wiese",
-    "vor": "gelaende.K2#2",
-    "s": 29.8,
-    "takte": 545,
+    "vor": "haar.K2#1",
+    "s": 27.9,
+    "takte": 616,
     "chunks": 81,
     "nach": null
    }
@@ -1133,27 +1182,20 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 1362,
-   "frameP95": 83.27,
-   "taktP95": 78.49,
-   "vramMax": 140.3,
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
-   "ortImDeckel": [
-    {
-     "probe": "gelaende.K2#2",
-     "m": 1718,
-     "ringVor": 4,
-     "ringMin": 0
-    }
-   ],
-   "zapfen": 120,
+   "ortImDeckel": [],
+   "zapfen": 59,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 129,
-  "minuten": 2.2
+  "fahrtS": 69.3,
+  "minuten": 1.23
  }
 }
