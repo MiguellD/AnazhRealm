@@ -1228,9 +1228,12 @@ hauptLauf(async () => {
         check("K5 haar.K1: Fell am Arm weich, am Third glatt, Mutanten darunter", f1.gruen, JSON.stringify(f1));
         // K5 mensch.K4 — DAS GESICHT UNTER SEINEM LICHT (w12-gesicht, koerper `gesichtSelbsttest`): das gemalte Gesicht liest seine
         // Albedo im Schatten der Kamera des Spiels wie in der Sonne, jede Mutante (Lippe im Ton der Wange, Sklera im Saum der Höhle,
-        // Lider über der Iris, das Auge ohne Spur, die Wange ohne Albedo) fällt beim Namen
-        const g1 = fadenScope(["koerper-core.js"]).__koerperCore.gesichtSelbsttest();
-        check("K5 mensch.K4: das Gesicht unter seinem Licht, jede Mutante beim Namen", g1.length === 0, g1.join(" · "));
+        // Lider über der Iris, das Auge ohne Spur, die Wange ohne Albedo) fällt beim Namen. K5 haar.K2 — DER GLANZ DES HAARS UNTER DEM
+        // PIXEL (w27-haar-arm-2, koerper `haarGlanzSelbsttest`; beide über `lichtSelbsttest`): wo ein Pixel mehrere Strähnen deckt,
+        // flimmert kein Lappen (das Maß geeicht an K6 der Radeon), sein Band hält die Energie; die Mutanten (ohne Fußabdruck — der
+        // Stand w26, Kopf 9,6–10,6 % durchsichtig —, mit dem Wurf der Strähne, die Norm ohne Wurzel) fallen beim Namen
+        const g1 = fadenScope(["koerper-core.js"]).__koerperCore.lichtSelbsttest();
+        check("K5 mensch.K4: Gesicht und Haar im Licht, jede Mutante beim Namen", g1.length === 0, g1.join(" · "));
         console.log(`   SOLL-TAFEL: ${sollU.rot} von ${sollU.zeilen.length} Klassen ROT (nach Wirkung):`);
         for (const z of sollU.zeilen) console.log(`     ${AU.sollTafelZeile(z)}`);
         selbsttestEnde(errs, "die Kamera-Laub-Linse nennt ihre Täter beim Namen.");

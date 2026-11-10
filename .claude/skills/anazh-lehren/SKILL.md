@@ -67,8 +67,10 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
   steht, nur Laub tönt), die Karte als Eingang ihres Bakes (`_karteJahr`, neu je Stufe `_karteJahrTakt`), die Ferne über phyto-core
   `kroneImJahr` (Ring, Boden, Kamm, Panorama); gate:asset-contract (J) nennt jede Nadel mit Laub-Ecke und jede Laub-Krone ohne.
 - BODEN Rausch-Gesetz, Fels und Halm-Schichten als reine WGSL-Funktionen, EIN Leser `_bodenSichtAt`, Fels-Stoff im Worker (`_felsStoff`).
-- LICHT EIN Leuchtquellen-Gesetz (`kelvin`, EIN Pool) · EIN Himmel (die Tafeln, Anker, Belichtung und Tag-Achse im Baustein
-  `welt-licht.js`, Welt und Studio-Bühne rufen ihn; die Luft selbst ist Kern: foundry-core `ATMO_GESETZ`) · EINE Koschmieder-Luft · Schatten 2 Kaskaden (`_schattenBias`), EIN
+- LICHT EIN Leuchtquellen-Gesetz (`kelvin`, EIN Pool) · EIN Himmel (die Tafeln, Anker, Belichtung, Tag-Achse und die Wolken —
+  `wolkenFeld` · `himmelSicht` — im Baustein `welt-licht.js`, Welt und Studio-Bühne rufen ihn; die Bühne trägt die Himmels-Sicht als
+  Grund und als Spiegel ihrer glatten Stoffe, `himmelTafel`, ihr Zustand reist beim Betreten, `enter.himmel` → `himmelSetzen`; die
+  Luft selbst ist Kern: foundry-core `ATMO_GESETZ`) · EINE Koschmieder-Luft · Schatten 2 Kaskaden (`_schattenBias`), EIN
   Werfer je Gestalt · Sätze EIN Pool je Stoff, EIN Programm je Signatur · alles Opake in EINER Reihe (`_zeichenRang`: Bau · Boden · Fern ·
   Himmel), Kinder `_buendelKinderReihe`. Heute doppelt: Tag-Achsen ×5, Belichtungs-Schreiber ×3, Lichtwege ×4 (W7).
 - KOSTEN die EINE Skala (TAAU: `SZENE_SKALA` 0,75, Spieler-Wahl `state.szeneSkala`, `_zeitAufloesung` auf volle Ausgabe) · `_passTrifft`
@@ -150,6 +152,8 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
     positionNode VOR der Instanz-Matrix (am Vendor entschieden, integ-547 08b57ed8; `gate:foundry-impostor` C4): dort sind
     `positionLocal`, `normalLocal` und `positionWorld` Vorlage — wer die Welt braucht (Wind, Blick der Karte, Blende), liest die EINE Naht
     `_weltNaht`; Höhen-Gewichte lesen `positionGeometry`.
+    Eine Lage aus der Tiefe rechnet der Pass um das Auge (`_spiegelPass` `invVPr`), nie in Welt-Koordinaten: 32 Bit löschen sich
+    mit dem Abstand vom Ursprung aus (400 m: 3 mm Lage, die Normale sprang 2–3° je Texel, der Lack der Welt sprenkelte).
 23. **WebGPU zieht jeden Draw einzeln:** BatchedMesh = `drawIndexed` je Instanz, ein Puffer ohne Namen heißt `NodeBuffer_<id>` (je
     Geometrie ein Programm), der Bundle-Replay bucht nichts ins Info (`werkbank zaehlen`). Ein Bundle trägt nur, was sein Replay refresht:
     `_renderScene` stapelt `_currentRenderBundle`, nimmt unter overrideMaterial nie auf; die Diät geht jeden Knoten EINMAL je
