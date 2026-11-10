@@ -43,11 +43,11 @@ class AnazhRealm_stoff_material {
 
     // DER HALM DER FERNE (w4-gras-saum, w4-gras-l2, `NAH_WIESE.fern`): derselbe Halm-Stoff (das Studio-Gras L2 der Nah-Wiese),
     // sein Positions-Knoten trägt das Gesetz der Ferne je Instanz — d der waagrechte Abstand ihres Fußes (der Ursprung der
-    // Instanz über die Naht `_weltNaht`) zum Auge der Wiese (`_halmFerneAuge`, das der Sicht-Satz für denselben Pass legt), ihr
+    // Instanz über die Naht `_weltNaht`) zum Auge der Wiese (`_halmFerneAuge`, das `_wieseAugeTakt` je Hauptbild legt), ihr
     // Fußabdruck-Abstand Q (`_wieseFuss`: der Fuß, die Ebene ihres Hangs aus den waagrechten Achsen der Instanz, die Höhe des
     // Auges über dem eigenen Boden), o ihre Ordnung (`_wieseOrdnung` über der Wort-Algebra des Stoffs: die Ziehung des Orts
     // `_ortZiehung`, Zug 0, geschichtet über dem Gitter der Wiese — dieselbe Rechnung wie die CPU), Anteil a und Streckung s aus
-    // dem EINEN Gesetz `_wieseFern` über der TSL-Algebra (Takt und Sicht-Satz
+    // dem EINEN Gesetz `_wieseFern` über der TSL-Algebra (der Takt in Zahlen, die Wahl der GPU als WGSL
     // rechnen es in Zahlen). Steht o unter a, steht das Büschel ganz; darüber, im Band bis a · (1 + `rand`), sinkt es in den
     // Boden (das Büschel × v um seinen Fuß) statt zu
     // springen — an der Übergabe (a = 1, s = 1) steht jedes, wie die Nähe es legt. DIE STRECKUNG: das Büschel spreizt seine
@@ -55,7 +55,7 @@ class AnazhRealm_stoff_material {
     // breiter), Neigung und Höhe bleiben;
     // die Ähre wandert mit ihrem Stängel, ihre Ährchen bleiben in ihrer Größe (gestreckt lasen sie im Modell der Station als
     // helle Striche am Horizont). Bis w4-gras-l2 rückten nur die Mitten (höchstens 2,5×) und die Füße um √f — die Halme
-    // blieben schmal, jenseits 30 m lag der Boden frei. Diesseits der Übergabe (d < radius) legt der Sicht-Satz dasselbe
+    // blieben schmal, jenseits 30 m lag der Boden frei. Diesseits der Übergabe (d < radius) wählt die GPU dasselbe
     // Büschel als Nah-Wiese — hier steht es nicht. EIN Knoten für jede Vorlage (EIN Programm); der Wind schwingt mit dem
     // Büschel (× v). DIE GRENZE (w21-wiese-fern): die Streckung endet an der Grenze des Büschels (`_wieseFernGrenzen`, in der
     // vierten Zeile seiner Instanz-Matrix) — es spreizt seine Halme nie über die Wiese der Nähe und seinen Boden hinaus.
@@ -80,7 +80,7 @@ class AnazhRealm_stoff_material {
 
             // DIE GRENZE DES BÜSCHELS (w21-wiese-fern): das erste Feld der vierten Zeile seiner Instanz-Matrix
             // (`_nahWieseFernBlock`) — so weit tragen es die Wiese der Nähe und sein Boden (`_wieseFernGrenzen`); die Spreizung
-            // seiner Füße endet an ihr (`spreiz`), wie im Sicht-Satz
+            // seiner Füße endet an ihr (`spreiz`), wie in der Wahl der GPU
             const grenze = this._instanzMatrixNode(T).element(0).w;
             const G = AnazhRealm._wieseFern(A, d, AnazhRealm._wieseFuss(A, v0.x, v0.y, v0.z, n.x, n.y, n.z, auge.w), grenze); // prettier-ignore
             const anteil = G.anteil;
@@ -100,7 +100,7 @@ class AnazhRealm_stoff_material {
             // w22-strauch-karte wurde der Halm quer um s breiter: das L2-Blatt (halbe Breite 4–9 cm) lag bei s = 14 als Keil von
             // 2,5 m Breite und 0,8 m Höhe in der Wiese — am See (Radeon, Mittag) große flache Pyramiden im mittleren Gras, mit
             // s ≥ 9 schon diesseits 20 m am abgewandten Hang. Die Ähre (ihr Anker über dem Boden: der Fuß ihres Stängels in der
-            // Höhe seiner Spitze, `_wieseAehrenFuss`) wandert mit ihrem Stängel, in ihrer Größe. Bis w14-wiese-saum streckte der
+            // Höhe seiner Spitze, geboren in emitGrass) wandert mit ihrem Stängel, in ihrer Größe. Bis w14-wiese-saum streckte der
             // Stoff jede waagrechte Lage um s: die Neigung der Halme (p50 0,34 der Höhe) mit ihr — bei s = 14 lag der Halm 12°
             // über dem Boden (der Saum der Mess-Wiese, swiftshader-Maske 06.11.)
             const c = T.attribute("aCenter", "vec3");
@@ -117,9 +117,11 @@ class AnazhRealm_stoff_material {
             const pixHalb = v0.length().mul(this._halmFernePixel).mul(0.5).div(naht.skala.max(1e-6));
             const breit = T.sign(u).mul(pixHalb.sub(halb).max(0)).mul(T.step(c.y, 1e-4));
             const lage = T.positionLocal.add(T.vec3(c.x, 0, c.z).mul(sp1)).add(t.mul(breit));
-            const ha = this._ensureSeasonUniforms().uLaubPraesenz.z; // die Gestalt des Halms im Jahr, wie die Nähe (vegetation.K5#2)
+            // die Gestalt des Halms im Jahr, wie die Nähe (vegetation.K5#2, `_halmImJahr`): um seinen gespreizten Fuß
+            const ha = this._ensureSeasonUniforms().uLaubPraesenz.z;
             const sway = this._windSwayOffset(T, { hoehe: T.positionGeometry.y.mul(sk).mul(ha) });
-            this._halmFerneKnoten = T.vec3(lage.x, lage.y.mul(ha), lage.z).mul(v).add(sway.mul(v));
+            const jahr = this._halmImJahr(T, T.vec3(c.x, 0, c.z).mul(G.spreiz), lage);
+            this._halmFerneKnoten = jahr.mul(v).add(sway.mul(v));
             this._halmFerneStoffe = new Map();
         }
         // der Klon trägt die Stoff-Werte des Halms (Zahlen; `userData` als Kopie, `_stoffWert` liest sie am Stoff)
@@ -127,6 +129,22 @@ class AnazhRealm_stoff_material {
         m.positionNode = this._halmFerneKnoten;
         this._halmFerneStoffe.set(mat, m);
         return m;
+    }
+
+    // DER HALM IM JAHR (w26-winter-fichte, vegetation.K5#2) — der EINE Leser der Gestalt des Halms im Stoff: phyto-core
+    // `halmImJahr` über der TSL-Algebra, der Halm kürzt sich längs seiner Achse um seinen Fuß (Höhe und Neigung × `ha`,
+    // `uLaubPraesenz.z`, `_saisonPraesenz`), die Breite bleibt — die Fläche fällt genau mit `ha`. `fuss` der Fuß am Boden (vec3,
+    // y 0: aCenter x/z der Vorlage, in der Ferne gespreizt), `lage` die Ecke in der Vorlage; die Ähre (aCenter y > 0) kürzt als
+    // Ganzes um den Fuß ihres Stängels (ihr Anker, geboren in emitGrass). Leser: der Gras-Stoff der Nah-Wiese (`_foundryTreeMaterial`)
+    // und ihre Ferne (`_halmFerne`). Bis hierher staute jeder Leser nur y: Neigung und Fußabdruck blieben, die Wiese deckte im
+    // Winter von oben wie im Sommer (Radeon 87537d3f: LAI 2–10 m Winter 0,567 × Sommer).
+    _halmImJahr(T, fuss, lage) {
+        const ha = this._ensureSeasonUniforms().uLaubPraesenz.z;
+        const n = T.normalGeometry;
+        const o = lage.sub(fuss);
+        const aehre = T.step(1e-4, T.attribute("aCenter", "vec3").y);
+        const J = globalThis.__phytoCore.halmImJahr(AnazhRealm._windTsl(T), ha, o.x, o.y, o.z, n.x, n.z, aehre);
+        return fuss.add(T.vec3(J.x, J.y, J.z));
     }
 
     // DAS WIEGEN IM EINEN WIND (w20-boee-bild) — die KANONISCHE Wind-Größe des Halms, jeder Halm-Leser LIEST sie (die Nah-Wiese,
@@ -946,7 +964,7 @@ class AnazhRealm_stoff_material {
                                     const _alg = AnazhRealm._windTsl(_Ta); // die Algebra der Gesetze (`karteRingHalbe`)
                                     const _uvRoh = _Ta.attribute("uv", "vec2"); // die Ecke im Gitter (`_uv` unten: wo sie steht)
                                     // (Schicht, Halbbreite, Höhe, ±Sichthöhe)
-                                    const _karte = _Ta.attribute("aKarte", "vec4");
+                                    const _karte = AnazhRealm._senkenKnoten().attribut("aKarte", "vec4");
                                     const _rahmen = _karte.yz;
                                     // die Schicht: ein interpolierter Instanz-Wert kann 2,9999 lesen — gerundet, nie gekappt
                                     const _schicht = _Ta.floor(_karte.x.add(_Ta.float(0.5)));
@@ -1225,7 +1243,7 @@ class AnazhRealm_stoff_material {
                                             // halb (w22-wald-geburt-heil). Bis w22-wald-geburt trat sie hart ein (GPU-Probe
                                             // aec208de, Radeon: 25 harte Eintritte in 4 m Gang, 0,0663 % Pop-Pixel/s)
                                             const _lu = this._ensureLodUniforms();
-                                            const _ein = _Ta.attribute("aEin", "float");
+                                            const _ein = AnazhRealm._senkenKnoten().attribut("aEin", "float");
                                             const _rampe = _lu.uLodTakt
                                                 .sub(_ein)
                                                 .div(_Ta.float(AnazhRealm.KARTEN_EINTRITT_TAKTE))
@@ -3334,8 +3352,9 @@ class AnazhRealm_stoff_material {
             if (!T.attribute || !_auge || !T.length || !T.vec2)
                 throw this._blendeBruch("die 3D-Stufen-Maske: TSL.attribute · uLodAuge · TSL.length · TSL.vec2 fehlen");
             const _aLod = T.attribute("aLodLevel", "float");
-            const _aH0 = T.attribute("aH0", "float");
-            const _aH0L = T.attribute("aH0L", "float");
+            // die Instanz-Größen über den EINEN Leser (`_senkenKnoten().attribut`: in der Wahl am Index der Liste)
+            const _aH0 = AnazhRealm._senkenKnoten().attribut("aH0", "float");
+            const _aH0L = AnazhRealm._senkenKnoten().attribut("aH0L", "float");
             // × uLodPerf: dieselbe Wahrnehmungs-Distanz, nach der die CPU die Stufen legt (`_lodPerceptionDistance`) — vom Auge zum
             // URSPRUNG der Instanz (`_instanzMitteNode`), wie das Studio und die CPU, nie zum Fragment.
             const _mitte = this._instanzMitteNode(T);
@@ -3508,8 +3527,8 @@ class AnazhRealm_stoff_material {
                     .map((x) => x[0]);
                 if (_fehlt.length) throw this._blendeBruch("die Blatt-Karte: es fehlt " + _fehlt.join(" · "));
                 {
-                    const _aH0 = _Tl.attribute("aH0", "float");
-                    const _aH0L = _Tl.attribute("aH0L", "float");
+                    const _aH0 = AnazhRealm._senkenKnoten().attribut("aH0", "float");
+                    const _aH0L = AnazhRealm._senkenKnoten().attribut("aH0L", "float");
                     const _cam = _lu.uLodAuge; // das AUGE, nie die Pass-Kamera (Schattenpass = Kaskaden-Kamera)
                     // xz-Distanz Auge → URSPRUNG der Instanz (`_instanzMitteNode`, Studio `_iw`), nie zum Vertex
                     const _mitte = this._instanzMitteNode(_Tl);

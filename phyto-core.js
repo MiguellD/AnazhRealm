@@ -5658,6 +5658,36 @@
             deckung: A.add(A.k(1), A.mul(delta, fiel(KRONE_JAHR.holz - 1))),
         };
     }
+    // DIE GESTALT DES HALMS IM JAHR (w26-winter-fichte, vegetation.K5#2, additiv): SAISON_GESETZ `ha` ist der Anteil der
+    // Sommer-LÄNGE, den der Halm im Jahr trägt — er kürzt sich längs seiner eigenen Achse um seinen Fuß (Höhe UND Neigung ×
+    // ha), seine Breite bleibt: die Blatt-Fläche fällt genau linear mit ha, wie das Gesetz sagt. Bis hierher staute der Leser
+    // nur y: die Neigung und der Fußabdruck jedes Halms blieben, die Fläche des Büschels fiel bei ha 0,35 nur auf 0,44 (L1) bzw.
+    // 0,46 (L2) und die Krone der Wiese deckte von oben wie im Sommer (Fläche von oben × 1,00) — Radeon 87537d3f, Mess-Wiese Ego:
+    // LAI 2–10 m Winter 0,567 × Sommer. Die Breite des Halms liegt waagrecht quer zu seiner Ebene (emitGrass: rt = dir × Y), die
+    // Normale steht senkrecht auf ihr — ihr waagrechter Teil (nx, nz) nennt die Ebene, q = (nz, 0, −nx) die Breite. Eingang: der
+    // Versatz (ox, oy, oz) der Ecke von ihrem Fuß AM BODEN (aCenter x/z, y 0), die Normale der Vorlage, `aehre` 1 an der Ähre (sie
+    // kürzt als Ganzes um den Fuß ihres Stängels — ihr Anker, geboren in emitGrass), 0 am Halm; ein fast flach liegendes
+    // Stück (|q| < quer) kürzt auch quer (ohne Ebene keine Breite). Rückgabe der Versatz im Jahr; Sommer (ha 1) exakt die Ecke. Über einer Algebra wie
+    // `kroneImJahr` (WIND_ZAHLEN die Linse, die TSL-Algebra Welt-Stoff, Ferne und Schale, WIND_GLSL das Labor).
+    var HALM_JAHR = Object.freeze({ quer: [0.02, 0.12] });
+    function halmImJahr(A, ha, ox, oy, oz, nx, nz, aehre) {
+        const Q = HALM_JAHR.quer;
+        const q2 = A.add(A.mul(nx, nx), A.mul(nz, nz));
+        const breit = A.mul(
+            A.min(A.max(A.mul(A.add(A.sqrt(q2), A.k(-Q[0])), A.k(1 / (Q[1] - Q[0]))), A.k(0)), A.k(1)),
+            A.add(A.k(1), A.mul(aehre, A.k(-1)))
+        );
+        // w · q ist der Teil des Versatzes längs der Breite: er kürzt nicht (× (1 − ha) zurück auf die volle Breite)
+        const w = A.mul(
+            A.mul(A.add(A.mul(ox, nz), A.mul(A.mul(oz, nx), A.k(-1))), A.pow(A.max(q2, A.k(1e-8)), A.k(-1))),
+            A.mul(breit, A.add(A.k(1), A.mul(ha, A.k(-1))))
+        );
+        return {
+            x: A.add(A.mul(ox, ha), A.mul(nz, w)),
+            y: A.mul(oy, ha),
+            z: A.add(A.mul(oz, ha), A.mul(A.mul(nx, w), A.k(-1))),
+        };
+    }
     // Die GLSL-Algebra des Terms (Laub- und Rinden-Shader des Labors, r128): jeder Ausdruck ist Text.
     var WIND_GLSL = Object.freeze({
         k: (n) => "(" + (Number.isInteger(n) ? n.toFixed(1) : String(n)) + ")",
@@ -6038,6 +6068,8 @@
         WIND_ZAHLEN: WIND_ZAHLEN, // K19 — die Zahlen-Algebra des Terms
         KRONE_JAHR: KRONE_JAHR, // w21 — das Holz der kahlen Krone (Anteil ihrer Sommer-Deckung)
         kroneImJahr: kroneImJahr, // w21 — DIE KRONE IM JAHR über einer Algebra (Fern-Krone: Ring, Boden, Kamm, Panorama)
+        HALM_JAHR: HALM_JAHR, // w26 — die Gestalt des Halms im Jahr: ab welcher waagrechten Normale er seine Breite trägt
+        halmImJahr: halmImJahr, // w26 — DER HALM IM JAHR über einer Algebra (Nah-Wiese, Ferne, Schale, Labor): Länge × ha, Breite bleibt
         WIND_GLSL: WIND_GLSL, // K19 — die GLSL-Algebra des Terms (Labor)
         LAUB_LICHT: LAUB_LICHT, // K19 — Durchlass des Blatts (tau = T/R je Laub/Nadel) und die Vorwärts-Keule
         laubDurchlass: laubDurchlass, // K19 — DER EINE Laub-Licht-Term über einer Algebra (Welt-Stoff, Labor-Shader, Linse)

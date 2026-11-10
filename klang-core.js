@@ -304,50 +304,6 @@
         return 1 + (c > 0.35 ? 1 : 0) + (c > 0.7 ? 1 : 0);
     }
 
-    // ── SCHRITT-TIMBRE (Zensus-Rest V18.488, rein additive DATEN-Zeile —
-    //    Praezedenz: hostEmergent/DORF_NORM): das MATERIAL→FILTER-Gesetz des
-    //    Schritt-Klangs (Farnell-Synthese: die Quelle ist immer ein Rausch-
-    //    Burst, das Material ist der Filter). Wanderte aus dem Stamm
-    //    (SCHRITT_KLANG.material, byte-gleiche Werte); die Bewegungs-SCHWELLE
-    //    (klangTempoMin) wohnt getrennt im koerper-Gesetzbuch — Timbre ist
-    //    Klang-Wissen, Schwelle ist Koerper-Wissen. stoffe.K1: JEDE Zeile der
-    //    Stoff-Tafel des Wirts traegt ihren Eintrag (ihre Klang-Spalte, ein
-    //    Zugriff), ein Stoff ohne Eintrag ist ein Bruch — kein Ersatz-Timbre. ──
-    // prettier-ignore
-    var SCHRITT_TIMBRE = {
-        material: {
-            erde:   { filter: 'lowpass',  freq: 420,  q: 0.8, dauer: 0.09, gain: 0.045 },
-            stein:  { filter: 'bandpass', freq: 1500, q: 1.6, dauer: 0.06, gain: 0.055 },
-            glut:   { filter: 'bandpass', freq: 800,  q: 1.0, dauer: 0.11, gain: 0.05 },
-            quarz:  { filter: 'bandpass', freq: 2600, q: 3.0, dauer: 0.08, gain: 0.045 },
-            eisen:  { filter: 'bandpass', freq: 2100, q: 2.4, dauer: 0.07, gain: 0.055 },
-            wasser: { filter: 'lowpass',  freq: 900,  q: 0.7, dauer: 0.16, gain: 0.06 },
-            // stoffe.K3 (rein additiv): das Eis — hart, kurz und hell wie Stein, eine Terz höher
-            eis:    { filter: 'bandpass', freq: 1900, q: 2.0, dauer: 0.05, gain: 0.05 },
-            // w27-ferne-ton-5 (rein additiv): der Sand des Strands — der Fuß sinkt ein, ein weiches, langes Rauschen ohne Kante
-            sand:   { filter: 'lowpass',  freq: 1400, q: 0.6, dauer: 0.13, gain: 0.04 },
-            // stoffe.K1 (rein additiv): die übrigen Zeilen — Holz hohl, Gras und Laub raschelnd, Metall klirrend, Leib dumpf
-            // klang.K4 (w4-heil-klang): die drei Pflanzen-Böden je eigen — trockenes Laub bricht und knistert am hellsten, Gras
-            //   raschelt, Kraut dämpft; Schwerpunkt am Abgriff (48 kHz) Kraut 4 707 · Gras 5 605 · Laub 6 395 Hz. Vorher
-            //   lagen sie in 433 Hz (Laub 2600/0,5 nur 87 Hz über Kraut 2800/0,6 und 346 Hz unter Gras), die Messung streut
-            //   σ 92 Hz — der Fuß auf Laub klang wie auf Gras.
-            holz:     { filter: 'bandpass', freq: 700,  q: 1.2, dauer: 0.08, gain: 0.055 },
-            gras:     { filter: 'bandpass', freq: 3200, q: 0.6, dauer: 0.12, gain: 0.035 },
-            laub:     { filter: 'bandpass', freq: 4000, q: 0.6, dauer: 0.15, gain: 0.045 },
-            kraut:    { filter: 'bandpass', freq: 2400, q: 0.6, dauer: 0.12, gain: 0.035 },
-            bronze:   { filter: 'bandpass', freq: 1800, q: 2.6, dauer: 0.08, gain: 0.05 },
-            stahl:    { filter: 'bandpass', freq: 2400, q: 2.8, dauer: 0.07, gain: 0.055 },
-            blech:    { filter: 'bandpass', freq: 1200, q: 3.0, dauer: 0.09, gain: 0.06 },
-            knochen:  { filter: 'bandpass', freq: 1300, q: 1.8, dauer: 0.05, gain: 0.05 },
-            schuppen: { filter: 'bandpass', freq: 1600, q: 1.4, dauer: 0.06, gain: 0.045 },
-            federn:   { filter: 'bandpass', freq: 4000, q: 0.5, dauer: 0.1,  gain: 0.02 },
-            leder:    { filter: 'lowpass',  freq: 600,  q: 0.8, dauer: 0.07, gain: 0.04 },
-            fleisch:  { filter: 'lowpass',  freq: 300,  q: 0.7, dauer: 0.08, gain: 0.04 },
-            leib:     { filter: 'lowpass',  freq: 320,  q: 0.7, dauer: 0.08, gain: 0.04 },
-            essenz:   { filter: 'lowpass',  freq: 1100, q: 0.9, dauer: 0.14, gain: 0.05 }
-        }
-    };
-
     // ── RHYTHMUS-MUSTER (Zensus-Rest V18.488, rein additive DATEN-Zeile):
     //    das Trommel-Muster je LAWS.rhythm-Option auf dem 8-Schritt-Raster des
     //    Wirts (Schritt-Indizes je Trommel; die volle Lab-Sim bleibt die
@@ -1471,6 +1427,128 @@
         return { quelle: src, hz: hz, E: E };
     }
 
+    // ── DER SCHRITT AUS DEM STOFF (klang.K4, w26-klang-schritt): der Fuß klingt nach dem Gesetz der Zeile, die ihn trägt —
+    //    HÄRTE, DÄMPFUNG und KÖRNUNG aus der Stoff-Tafel des Wirts (stoffe.K1: E in Pa, ρ in kg/m³, η der Verlustfaktor,
+    //    d die Körnung in m, null für einen festen Boden), keine Klang-Tafel daneben. Bis w26 trug der Kern 21 Hand-Filter je
+    //    Stoff (SCHRITT_TIMBRE), jeder Schritt ein Rausch-Klick fester Dauer: Stein 60 ms, am Abgriff der Station 0–38 ms —
+    //    auf der GTX fiel er zwischen ihre Abfragen (klang.K4 Stein n 4 von 6 Tritten, 4-fach gedrosselt lokal dieselben 4).
+    //    DER GANG: ein Schritt ist die LASTÜBERNAHME des Fußes — die Ferse schlägt auf, der Fuß rollt, der Ballen setzt nach
+    //      ladeSek auf: ⅙ des Stands (Perry: die Lastübernahme füllt 0–10 % des Gangzyklus bei 60 % Stand); der Wirt reicht
+    //      ladeSek aus seinem Gang (Tastgrad · Zyklus), sonst gilt der Schritt der Grundgeschwindigkeit. Der Fuß verlässt den
+    //      Boden dazwischen nie: das Rollen klingt leise weiter (`rollen` der Spitze).
+    //    HÄRTE: die Ferse ist ein starrer Stempel, ihr Schlag ein HERTZ-Kontakt mit dem Boden — sein Band f = kontaktHz ·
+    //      (E/1 GPa)^(2/5), dasselbe Gesetz wie der Treffer (TREFFER_PAAR, E* = E des Bodens), seine Spitzenkraft wächst mit
+    //      E^(2/5): weicher Boden schluckt den Schlag (Pegel (E/eVoll)^(2/5), voll ab Stein).
+    //    DÄMPFUNG: der Boden klingt nach mit seinem Verlustfaktor — die Hülle fällt mit 1/τ = π·η·f (die Energie einer
+    //      Schwingung verliert je Periode 2π·η): Stein η 0,01 bei 3,3 kHz τ 9,5 ms, die Stahl-Platte (η 0,0003) klingt über
+    //      eine Sekunde; ein Korn schwingt als Resonator mit Q = 1/η.
+    //    KÖRNUNG: ein loser Boden (d > 0) knistert — die Last zerdrückt Körner (PhISEM, Cook 1997): `koerner` Stöße über
+    //      Lastübernahme und Ballen, je einer der Hertz-Stoß zweier Körner, dessen Dauer mit d·(ρ/E)^(2/5) wächst — das Band
+    //      f = kornHz · (kornM/d) · ((E/ρ)/10⁶ m²/s²)^(2/5): das dünne Blatt der Laubstreu am hellsten, der Halm darunter, die
+    //      Krume der Erde dumpf; zwischen den Stößen fällt das Knistern auf das Rollen, nie in die Stille.
+    //    Die LANDUNG ist derselbe Schritt mit dem Mischpult des Wirts (lage.gain bis zu seiner Decke, freqFaktor, dauerFaktor).
+    //    Leser: die Stimme (`schrittKlang`) und die Stoff-Linse (`schrittBand`, gate:gegenstand-stoff --tafel). ──
+    // prettier-ignore
+    var SCHRITT = {
+        gain: 0.05, ladeAnteil: 1 / 6, zyklusSek: 1.05, tast: 0.6, ballen: 0.5, rollen: 0.08, eVoll: 5e10,
+        kornHz: 4200, kornM: 0.001, koerner: 28, kornSpann: 1.5, kornQ: 1.2, maxSek: 1.6
+    };
+    function schrittZahl(x) {
+        return typeof x === "number" && isFinite(x) ? x : NaN;
+    }
+    // schrittBand(boden, lage) → { ferseHz, fersePegel, ferseSek, kornHz, kornQ, kornSek, ladeSek, dauerSek } | null — rein:
+    // boden = { E, rho, eta, koernung } (die Zeile), lage = { ladeSek, freqFaktor, dauerFaktor } (der Wirt); null, wenn die
+    // Zeile Härte, Dichte oder Dämpfung nicht trägt (der Wirt hat beim Namen gebrochen, der Fuß schweigt).
+    function schrittBand(boden, lage) {
+        var S = SCHRITT, P = TREFFER_PAAR, b = boden || {}, L = lage || {};
+        var E = schrittZahl(b.E), rho = schrittZahl(b.rho), eta = schrittZahl(b.eta), d = schrittZahl(b.koernung);
+        if (!(E > 0) || !(rho > 0) || !(eta > 0)) return null;
+        var fk = schrittZahl(L.freqFaktor) > 0 ? L.freqFaktor : 1, dk = schrittZahl(L.dauerFaktor) > 0 ? L.dauerFaktor : 1;
+        var lade = schrittZahl(L.ladeSek) > 0 ? L.ladeSek : S.ladeAnteil * S.tast * S.zyklusSek;
+        var ferseHz = Math.max(P.minHz, P.kontaktHz * Math.pow(E / 1e9, 0.4)) * fk;
+        var ferseSek = dk / (Math.PI * eta * ferseHz);
+        var kornHz = d > 0 ? S.kornHz * (S.kornM / d) * Math.pow(E / rho / 1e6, 0.4) * fk : null;
+        var aus = {
+            ferseHz: ferseHz,
+            fersePegel: Math.min(1, Math.pow(E / S.eVoll, 0.4)),
+            ferseSek: ferseSek,
+            kornHz: kornHz,
+            kornQ: kornHz ? 1 / eta : null,
+            kornSek: kornHz ? dk / (Math.PI * eta * kornHz) : null,
+            ladeSek: lade * dk
+        };
+        // die Stimme klingt bis −60 dB nach dem Ballen (6,9 τ) bzw. dem letzten Korn, höchstens maxSek
+        aus.dauerSek = Math.min(S.maxSek, Math.max(aus.ladeSek + 6.9 * ferseSek, kornHz ? aus.ladeSek * S.kornSpann + 6.9 * Math.max(aus.kornSek, ferseSek) : 0));
+        return aus;
+    }
+    // Der Rausch-Vorrat des Schritts: EIN Puffer je Kontext (0,5 s, Saat fest), jede Stimme liest ihn in Schleife ab einem
+    // zufälligen Versatz — der Nachklang einer Platte (Stahl η 0,0003: über eine Sekunde) läuft nie über sein Ende hinaus.
+    var schrittRausch = new WeakMap();
+    function schrittPuffer(ctx) {
+        var p = schrittRausch.get(ctx);
+        if (p) return p;
+        var n = Math.max(1, Math.round(0.5 * ctx.sampleRate)), rnd = umweltRng(4711);
+        p = ctx.createBuffer(1, n, ctx.sampleRate);
+        var d = p.getChannelData(0);
+        for (var i = 0; i < n; i++) d[i] = 2 * rnd() - 1;
+        schrittRausch.set(ctx, p);
+        return p;
+    }
+    // schrittKlang(ctx, ausgang, boden, lage) → { quellen, band } | null — die Stimme EINES Schritts: die Ferse (Rauschen →
+    // Band der Härte → Hülle aus Ferse, Rollen, Ballen und Dämpfung) und, auf losem Boden, das Knistern (Rauschen → Band der
+    // Körnung, Q = 1/η → je Korn ein Stoß, dazwischen das Rollen). lage.gain ist die Spitze (der Wirt mischt Schritt und
+    // Landung). Math.random wählt Versatz und Körner: reiner Klang-Körper, keine Welt-Substanz.
+    function schrittKlang(ctx, ausgang, boden, lage) {
+        var S = SCHRITT, B = schrittBand(boden, lage), L = lage || {};
+        var spitze = schrittZahl(L.gain) >= 0 ? L.gain : S.gain; // 0 bleibt 0: die stumme Landung schweigt (S13), nur ein fehlender Pegel nimmt den des Stoffs
+        if (!B || !ctx || !ausgang) return null;
+        var t = ctx.currentTime, puf = schrittPuffer(ctx), quellen = [];
+        var stimme = function (hz, q, pegel, huelle) {
+            var src = ctx.createBufferSource(), band = ctx.createBiquadFilter(), g = ctx.createGain();
+            src.buffer = puf;
+            src.loop = true;
+            band.type = "bandpass";
+            band.frequency.value = Math.min(hz, 0.45 * ctx.sampleRate);
+            band.Q.value = q;
+            g.gain.setValueAtTime(0, t);
+            huelle(g.gain, pegel);
+            src.connect(band);
+            band.connect(g);
+            g.connect(ausgang);
+            src.onended = function () { try { band.disconnect(); g.disconnect(); } catch (_e) {} };
+            src.start(t, Math.random() * puf.duration);
+            src.stop(t + B.dauerSek + 0.02);
+            quellen.push(src);
+        };
+        // DIE FERSE, das Rollen und der BALLEN: Anstieg über den Hertz-Kontakt (1/f, 1–8 ms), Abfall mit τ der Dämpfung zum Rollen
+        var an = Math.min(0.008, Math.max(0.001, 1 / B.ferseHz)), lade = Math.max(2 * an, B.ladeSek), tau = Math.max(an, B.ferseSek);
+        stimme(B.ferseHz, TREFFER_PAAR.q, spitze * B.fersePegel, function (p, P) {
+            var roll = P * S.rollen, vor = roll + (P - roll) * Math.exp(-(lade - an) / tau);
+            p.linearRampToValueAtTime(P, t + an);
+            p.setTargetAtTime(roll, t + an, tau);
+            p.setValueAtTime(vor, t + lade);
+            p.linearRampToValueAtTime(Math.max(vor, P * S.ballen), t + lade + an);
+            p.setTargetAtTime(0, t + lade + an, tau);
+        });
+        // DIE KÖRNER: `koerner` Stöße über Lastübernahme und Ballen (kornSpann × ladeSek), jeder fällt mit τ des Korns zum Rollen;
+        // das schmale Band (Q = 1/η) trägt weniger Rauschen — die Spitze hebt es um √(Q/kornQ) auf den Pegel des breiten
+        if (B.kornHz) {
+            var spann = lade * S.kornSpann, ts = [];
+            for (var i = 0; i < S.koerner; i++) ts.push(Math.random() * spann);
+            ts.sort(function (a, b) { return a - b; });
+            var tk = Math.max(0.0005, B.kornSek), ende = Math.max(tk, B.ferseSek);
+            stimme(B.kornHz, B.kornQ, spitze * Math.sqrt(Math.max(1, B.kornQ / S.kornQ)), function (p, P) {
+                p.linearRampToValueAtTime(P * S.rollen, t + an);
+                for (var k = 0; k < ts.length; k++) {
+                    p.setValueAtTime(P * (0.35 + 0.65 * Math.random()), t + an + ts[k]);
+                    p.setTargetAtTime(P * S.rollen, t + an + ts[k], tk);
+                }
+                p.setTargetAtTime(0, t + an + spann, ende);
+            });
+        }
+        return { quellen: quellen, band: B };
+    }
+
     // ═══════════════════════════════════════════════════════════════════════
     //  DIE FAHRT (Leben-Schau 2, fahr-bahn, 10.10.; rein additiv) — der Klang eines
     //  Wagens folgt seiner Fahrt (Befund: Fahren war stumm).
@@ -1675,7 +1753,6 @@
         progressionDeg: progressionDeg,
         stack: stack,
         colorExt: colorExt,
-        SCHRITT_TIMBRE: SCHRITT_TIMBRE,
         RHYTHMUS_MUSTER: RHYTHMUS_MUSTER,
         RAUM: RAUM,
         // affekt.K5 Staffel 2 (rein additiv) — die Musik am Ohr: Tempo · Schicht · Phrase · Duck
@@ -1699,6 +1776,10 @@
         // halten.K2 Staffel 2 (rein additiv) — der Treffer aus dem Stoff-Paar
         TREFFER_PAAR: TREFFER_PAAR,
         trefferPaar: trefferPaar,
+        // klang.K4 (w26-klang-schritt) — der Schritt aus dem Stoff: Härte, Dämpfung und Körnung der Zeile
+        SCHRITT: SCHRITT,
+        schrittBand: schrittBand,
+        schrittKlang: schrittKlang,
         // Leben-Schau 2 (rein additiv) — die Stimme der Fahrt
         FAHRT: FAHRT,
         fahrtUpm: fahrtUpm,

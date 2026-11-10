@@ -115,7 +115,13 @@ jobs:
             run:
                 shell: bash
         steps:
+            # NODE IM PATH (09.11., gtx1050-desktop: setup-node ~10 s je Job, ~30 s nach dem Neustart, auf der HDD): trägt der Läufer Node 22
+            # schon im PATH, fällt setup-node; sonst stellt es Node 22 wie bisher aus dem Tool-Cache
+            - name: Node 22 im PATH?
+              id: node
+              run: echo "v=$(node --version 2> /dev/null || true)" >> "$GITHUB_OUTPUT"
             - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4, am SHA: der Job läuft auf einem eigenen Rechner
+              if: ${{ !startsWith(steps.node.outputs.v, 'v22.') }}
               with:
                   node-version: "22"
 

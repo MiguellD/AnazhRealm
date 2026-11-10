@@ -1205,7 +1205,7 @@ class AnazhRealm_siedlung_wege {
             const [tx, tz] = key.split(",").map(Number);
             return !((tx + 1) * K + rand < x0 || tx * K - rand > x1 || (tz + 1) * K + rand < z0 || tz * K - rand > z1);
         };
-        // Die Wiese-Kachel trägt nur Daten (der Sicht-Satz legt sich neu), die Streu-Kachel tritt aus ihren Senken aus. Die
+        // Die Wiese-Kachel trägt nur Daten (ihr Block im Bestand stirbt und wird neu geboren), die Streu-Kachel tritt aus ihren Senken aus. Die
         // Kacheln fallen HIER, unter dem Weckruf oben (kein Rückruf: die Schreiber-Wand deckt nur den eigenen Pfad).
         const nw = this.state.nahWiese;
         if (nw)

@@ -1140,7 +1140,7 @@ function appendArenaUI(){
     +'<div id="lockhint" style="position:absolute;left:50%;top:50%;transform:translate(-50%,44px);color:#d4a843;font-size:13px;background:rgba(18,18,26,.85);padding:8px 16px;border-radius:8px">Klick = Maus & Steuerung übernehmen</div>'+'<div id="pickup" style="position:absolute;left:50%;top:60%;transform:translateX(-50%);display:none;color:#1a1408;font-weight:700;font-size:14px;background:#d4a843;padding:7px 16px;border-radius:8px">E nehmen</div>';
   document.body.appendChild(ui);
   const cv=R.domElement;
-  cv.addEventListener('click',()=>{if(arena.active&&!arena.locked)cv.requestPointerLock();});
+  cv.addEventListener('click',()=>{if(arena.active&&!arena.locked)AnazhHuelle.zeiger(cv);});
   cv.addEventListener('contextmenu',e=>{if(arena.active)e.preventDefault();});
   document.addEventListener('pointerlockchange',()=>{arena.locked=(document.pointerLockElement===cv);const lh=document.getElementById('lockhint');if(lh)lh.style.display=arena.locked?'none':'block';});
   document.addEventListener('mousemove',e=>{if(!arena.active||!arena.locked)return;

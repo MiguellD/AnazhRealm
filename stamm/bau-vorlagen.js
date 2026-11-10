@@ -1528,8 +1528,12 @@ class AnazhRealm_bau_vorlagen {
     //            Orts), tiefe m, heiz J/kg (Heizwert), mx (die Erlöschungs-Feuchte) — die Brennstoff-Modelle von Anderson 1982:
     //            kurzes Gras (1) σ 3 500/ft, 0,034 lb/ft², Mx 12 % — die Tiefe ist die Halm-Höhe der Wiese (GRASS_BLADE_H, die
     //            der Wind beugt); Laub-Streu (9) σ 2 500/ft, 0,134 lb/ft², 0,2 ft, Mx 25 %; Heizwert 8 000 Btu/lb. Die Zünd-Wärme liest c und tZuend derselben Zeile, die Verdampfung L_v die Zeile wasser
-    //   klang    die Schritt-Spalte des Klang-Kerns (klang:SCHRITT_TIMBRE, ein Zugriff — wer die Zeile ändert, ändert den Schritt)
-    //   E        Pa — die Steifigkeit, aus der ein Treffer klingt (klang trefferPaar; die Metalle lesen MAT.E der Schmiede)
+    //   E        Pa — die Steifigkeit, aus der ein Treffer klingt (klang trefferPaar; die Metalle lesen MAT.E der Schmiede) und die
+    //            HÄRTE, aus der die Ferse auf dem Stoff schlägt (klang SCHRITT: Band und Pegel des Hertz-Kontakts)
+    //   eta      der Verlustfaktor η — die DÄMPFUNG, mit der der Stoff nachklingt (klang SCHRITT: τ = 1/(π·η·f), ein Korn mit Q = 1/η)
+    //   koernung m — die KÖRNUNG eines losen Bodens (null: fest): die Dicke dessen, was unter dem Fuß zerdrückt wird (klang SCHRITT:
+    //            das Band des Knisterns ∝ (E/ρ)^(2/5)/d, Hertz zweier Körner); der Schritt liest E, ρ, η und d derselben Zeile
+    //            (`_schrittKlangParams`), keine Klang-Tafel daneben
     // Tafel-Werte (Engineering ToolBox, CRC Handbook): Granit c 790, T_schmelz 1 500 K; Holz c 1 700, Zündung 573 K; Eisen c 449,
     // 1 811 K; Bronze 380, 1 223 K; Stahl 490, 1 723 K; Quarz 740, 1 986 K; trockenes Laub, Gras und Kraut c 1 800, Zündung
     // 523–533 K; trockener Boden c 800; Wasser c 4 186, 273,15 K; Eis ρ 917, c 2 050, L 334 000, k 2,2, μ 0,05; Huf und Sohle auf trockenem Fels
@@ -1585,31 +1589,39 @@ class AnazhRealm_bau_vorlagen {
         // 11 GPa, Quarzglas 72 GPa, Leder 0,2 GPa, kortikaler Knochen 18 GPa, Haut und Gewebe 1 MPa, Keratin (Federn, Schuppen)
         // 2,5 GPa, Holzkohle 3 GPa, Blatt und Halm 50 MPa, verdichteter Boden 50 MPa, Aluminium (die Hülle) 70 GPa, Wasser
         // (K) 2,2 GPa, Eis 9 GPa, loser Sand wie verdichteter Boden 50 MPa.
+        // DIE DÄMPFUNG UND DIE KÖRNUNG (klang.K4, w26-klang-schritt): η der Verlustfaktor (Cremer, Heckl, Petersson,
+        // Structure-Borne Sound, Tafel der Verlustfaktoren): Stahl 0,0001–0,0006, Messing und Bronze 0,001, Gusseisen 0,001–0,01,
+        // Glas 0,0006–0,002, Beton und Mauerwerk 0,005–0,02, Eiche 0,008–0,01, Leder und Kork 0,1–0,17, trockener Sand 0,12–0,6,
+        // Gewebe und Gummi 0,1–1; das Wasser schwingt in seinen Blasen (klang SUBSTANZ.wasser: β = 0,043·f0 + 0,0014·f0^1,5 bei
+        // 1 kHz → η = β/(π·f0) ≈ 0,03). Die Körnung d: der Halm ein Zylinder der Dicke 4/σ, das Blatt eine Platte der Dicke 2/σ
+        // (σ die Oberfläche je Volumen der Brennstoff-Modelle unten: Gras 0,35 mm, Laub 0,24 mm), die Krume des Bodens 2 mm, der
+        // Stängel des Krauts 1 mm, die Brocken der Glut 3 mm, der Tropfen des Spritzers 3 mm, das Korn des Strands 0,4 mm (mittlerer
+        // Sand, ISO 14688-1: 0,2–0,63 mm; η trockener Sand aus derselben Tafel); ein fester Stoff trägt keine.
         // prettier-ignore
         const SI = {
-            //         μ      c     T_zünd  T_schmelz  μ Rad  nass  E
-            stein:    [0.6,  790,  null,   1500,      0.8,   0.55, 5e10],
-            holz:     [0.6,  1700, 573,    null,      0.65,  0.4,  1.1e10],
-            eisen:    [0.5,  449,  null,   1811,      0.6,   0.35, null],
-            bronze:   [0.5,  380,  null,   1223,      0.6,   0.35, null],
-            stahl:    [0.5,  490,  null,   1723,      0.6,   0.35, null],
-            quarz:    [0.6,  740,  null,   1986,      0.6,   0.35, 7.2e10],
-            leder:    [0.6,  1500, 573,    null,      null,  null, 2e8],
-            knochen:  [0.5,  1300, null,   null,      null,  null, 1.8e10],
-            fleisch:  [0.5,  3500, null,   null,      null,  null, 1e6],
-            leib:     [0.5,  3500, null,   null,      null,  null, 1e6],
-            federn:   [0.4,  1500, 573,    null,      null,  null, 2.5e9],
-            schuppen: [0.4,  1500, null,   null,      null,  null, 2.5e9],
-            glut:     [0.6,  1000, 623,    null,      0.6,   0.45, 3e9],
-            laub:     [0.4,  1800, 523,    null,      0.45,  0.2,  5e7],
-            erde:     [0.6,  800,  null,   null,      0.7,   0.45, 5e7],
-            kraut:    [0.4,  1800, 533,    null,      null,  null, 5e7],
-            essenz:   [null, 4186, null,   null,      null,  null, 2.2e9],
-            blech:    [0.5,  460,  null,   1723,      0.6,   0.35, 7e10],
-            gras:     [0.6,  1800, 533,    null,      0.4,   0.2,  5e7],
-            wasser:   [null, 4186, null,   273.15,    null,  null, 2.2e9],
-            eis:      [0.05, 2050, null,   null,      null,  null, 9e9],
-            sand:     [0.55, 830,  null,   1986,      0.25,  0.35, 5e7],
+            //         μ      c     T_zünd  T_schmelz  μ Rad  nass  E        η       d
+            stein:    [0.6,  790,  null,   1500,      0.8,   0.55, 5e10,    0.01,   null],
+            holz:     [0.6,  1700, 573,    null,      0.65,  0.4,  1.1e10,  0.01,   null],
+            eisen:    [0.5,  449,  null,   1811,      0.6,   0.35, null,    0.002,  null],
+            bronze:   [0.5,  380,  null,   1223,      0.6,   0.35, null,    0.001,  null],
+            stahl:    [0.5,  490,  null,   1723,      0.6,   0.35, null,    0.0003, null],
+            quarz:    [0.6,  740,  null,   1986,      0.6,   0.35, 7.2e10,  0.001,  null],
+            leder:    [0.6,  1500, 573,    null,      null,  null, 2e8,     0.1,    null],
+            knochen:  [0.5,  1300, null,   null,      null,  null, 1.8e10,  0.02,   null],
+            fleisch:  [0.5,  3500, null,   null,      null,  null, 1e6,     0.3,    null],
+            leib:     [0.5,  3500, null,   null,      null,  null, 1e6,     0.3,    null],
+            federn:   [0.4,  1500, 573,    null,      null,  null, 2.5e9,   0.1,    null],
+            schuppen: [0.4,  1500, null,   null,      null,  null, 2.5e9,   0.05,   null],
+            glut:     [0.6,  1000, 623,    null,      0.6,   0.45, 3e9,     0.05,   0.003],
+            laub:     [0.4,  1800, 523,    null,      0.45,  0.2,  5e7,     0.3,    0.000244],
+            erde:     [0.6,  800,  null,   null,      0.7,   0.45, 5e7,     0.2,    0.002],
+            kraut:    [0.4,  1800, 533,    null,      null,  null, 5e7,     0.3,    0.001],
+            essenz:   [null, 4186, null,   null,      null,  null, 2.2e9,   0.03,   0.003],
+            blech:    [0.5,  460,  null,   1723,      0.6,   0.35, 7e10,    0.001,  null],
+            gras:     [0.6,  1800, 533,    null,      0.4,   0.2,  5e7,     0.3,    0.000348],
+            wasser:   [null, 4186, null,   273.15,    null,  null, 2.2e9,   0.03,   0.003],
+            eis:      [0.05, 2050, null,   null,      null,  null, 9e9,     0.01,   null],
+            sand:     [0.55, 830,  null,   1986,      0.25,  0.35, 5e7,     0.3,    0.0004],
         };
         // die Spalten L und k (oben): nur das Eis wächst im Kern; L_v des Wassers (2,257 MJ/kg) trocknet das Bett vor der Zündung
         const PHASE = { eis: { L: 334000, k: 2.2 }, wasser: { Lv: 2257000 } };
@@ -1668,15 +1680,13 @@ class AnazhRealm_bau_vorlagen {
             ],
         };
         const welt = this;
-        const TB = AnazhRealm._schrittTimbre().material;
         // Stahl, Blech und Leib sind Stoffe der Körper (die Klinge der Schmiede, die Hülle des Wagens, der Mensch), Gras, Wasser,
         // Eis und Sand Stoffe der Welt, keine Bau-Stoffe: die Welt hat keine Quelle, aus der man sie sammelt, die Werkstatt bietet
         // sie nicht an (`bauStoff`).
         const keinBauStoff = ["stahl", "blech", "leib", "gras", "wasser", "eis", "sand"];
         const make = (name, label, color, tags) => {
             const si = SI[name];
-            if (!si || !TB[name])
-                AnazhRealm._kernPflichtBruch("STOFF-TAFEL " + name + ": SI-Zeile und klang:SCHRITT_TIMBRE");
+            if (!si || !(si[7] > 0)) AnazhRealm._kernPflichtBruch("STOFF-TAFEL " + name + ": SI-Zeile mit Dämpfung η");
             const z = {
                 name,
                 etikett: [label],
@@ -1689,15 +1699,18 @@ class AnazhRealm_bau_vorlagen {
                 tSchmelz: si[3],
                 muRad: si[4],
                 muRadNass: si[5],
+                eta: si[7],
+                koernung: si[8],
                 ...PHASE[name],
                 brenn: BRENN[name] ? Object.freeze(BRENN[name]) : null,
             };
-            Object.defineProperty(z, "E", { enumerable: true, get: () => (si[6] === null ? sc.MAT[name].E : si[6]) });
-            Object.defineProperty(z, "klang", {
+            // E ein Zugriff wie ρ: die Metalle lesen und schreiben MAT.E der Schmiede (wer die Zeile ändert, ändert Klinge, Treffer und Schritt)
+            Object.defineProperty(z, "E", {
                 enumerable: true,
-                get: () => TB[name],
+                get: () => (si[6] === null ? sc.MAT[name].E : si[6]),
                 set: (v) => {
-                    TB[name] = v;
+                    if (si[6] === null) sc.MAT[name].E = +v;
+                    else si[6] = +v;
                 },
             });
             if (keinBauStoff.includes(name)) z.bauStoff = false;
