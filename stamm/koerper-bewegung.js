@@ -271,7 +271,8 @@ class AnazhRealm_koerper_bewegung {
     // das Maß, das der Kern an dem Bau misst, den er liefert (vehicle-core `gestaltMass`, Beipack `__mass` → `_wagenMassSetzen`)
     // × Größe × Welt-Skala. Bis hier las die Hülle die Stationen des Gesetzes (exportDrive.huelle noseX · tailX · bw): der
     // Supersport zeichnet 2,09 m Bug und 1,06 m halbe Breite gegen 1,95 m und 0,96 m — an der Mauer stand der gezeichnete Bug
-    // 8,2 cm in ihr (GTX da0e790f, headless dieselbe Zahl). Solange die Gestalt nicht gezeichnet ist, stehen die Stationen
+    // 8,2 cm in ihr (GTX da0e790f, headless dieselbe Zahl); die Breite bleibt die des Gesetzes (`_wagenMassSetzen`: die Fahrbahn der
+    // Städte plant mit ihr). Solange die Gestalt nicht gezeichnet ist, stehen die Stationen
     // (nichts im Bild widerspricht ihnen); ein Teile-Werk steht als die Gestalt seines Bauplans. Leser: die Hülle des Ritts und
     // des Platzes (`_fahrHuelleBau`), die Boxen des stehenden Wagens (`_fahrzeugBlockerParts`), die Natur-Wand (`_imWagen`).
     _fahrUmriss(entry) {
