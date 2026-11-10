@@ -1358,10 +1358,13 @@ function latenzSchlechtester(j, ids, n, soll = 50) {
         const fehlt = r.reduce((s, x) => s + x.fehlt, 0);
         return id + " " + Math.max(...r.map((x) => x.p95)) + (fehlt ? " (fehlt " + fehlt + ")" : "");
     };
+    // DAS MASS (das Gesetz der Fremd-Last, punkte.cjs fremdUrteil): je Reihe das schlechteste p95 aller Läufe gegen das Soll
+    const mass = ids.filter((id) => da.every((l) => l.reihen[id])).map((id) => ({ wort: id + " p95 ms", wert: Math.max(...da.map((l) => l.reihen[id].p95)), soll }));
     return {
         gruen: da.every(haelt),
         zahl: "schlechtester von " + LAEUFE + " Läufen p95 ms " + ids.map(schlecht).join(" · ") + " · Bild " + da.map((l) => l.bildMs).join("/") + " ms",
         da,
+        mass,
     };
 }
 // DIE LATENZ DER VERBEN UND DER HIT-STOP IN EINEM LAUF (leib.K1#2 und halten.K2#1, Zwillinge, 29.10.): die Haken des Spiels, die
@@ -3521,6 +3524,7 @@ const stationen = [
                 r >= 1 && r <= 1.5 && t4.ruckP95 <= 0.02 && t4.ruckN >= 100 && schreiber.length === 1;
             return {
                 gruen,
+                mass: [{ wort: "Rückkehr nach dem Orbit s", wert: r, soll: 1.5 }, { wort: "Ruck p95 m", wert: t4.ruckP95, soll: 0.02 }],
                 zahl:
                     "Drift Kamera ≤ " + d.kameraGegenFahrtMax + "° neben dem Fahrtvektor (Schlupf bis " + d.schlupfMax + "°) · Rückkehr " + r +
                     " s nach " + w.rueck.orbitGrad + "° Orbit · Ruck p95 " + t4.ruckP95 + " m (" + t4.ruckN + ") · FOV-Schreiber [" + schreiber + "]" +
@@ -3816,11 +3820,13 @@ const stationen = [
                 const ms = e.erstes ? e.erstes.ms : null;
                 return {
                     nh,
+                    ms,
                     ok: ms != null && ms <= 500 && !!e.hash,
                     text: "nH " + nh + " erstes Haus nach " + (ms == null ? "—" : ms + " ms") + " (" + (e.erstes ? e.erstes.typ + ", " + e.erstes.stufe + " in " + e.erstes.abstand + " m" : "kein Haus") + ", Bau-Hash " + e.hash + ")",
                 };
             });
-            return { gruen: je.every((x) => x.ok), zahl: je.map((x) => x.text).join(" · ") };
+            return { gruen: je.every((x) => x.ok), zahl: je.map((x) => x.text).join(" · "),
+                mass: je.filter((x) => x.ms != null).map((x) => ({ wort: "nH " + x.nh + " erstes Haus ms", wert: x.ms, soll: 500 })) };
         },
         pfad: [...DORF, "stamm/stoff-instanz.js", "stamm/studio-*.js", "stamm/vegetation-baum.js", "scripts/lib/welt-orte.cjs"],
         quelle:
@@ -4118,8 +4124,8 @@ const stationen = [
         zeit: true,
         minuten: 10,
         urteil: (j) => {
-            const { gruen, zahl } = latenzSchlechtester(j, ["ego/gehen", "third/gehen", "ego/wechsel", "third/wechsel"], LATENZ_PROBEN);
-            return { gruen, zahl };
+            const { gruen, zahl, mass } = latenzSchlechtester(j, ["ego/gehen", "third/gehen", "ego/wechsel", "third/wechsel"], LATENZ_PROBEN);
+            return { gruen, zahl, mass };
         },
         pfad: LATENZ,
         quelle: "1 = Taste → bewegter Leib im Ausgabe-Bild p95 ≤ 50 ms an einem Gerät (gehen, Sicht-Wechsel)",
@@ -4137,8 +4143,8 @@ const stationen = [
         minuten: 24,
         urteil: (j) => {
             const ids = ["gehen", "springen", "einsteigen", "hieb"].flatMap((v) => ["ego/" + v, "third/" + v]);
-            const { gruen, zahl } = latenzSchlechtester(j, ids, LATENZ_PROBEN);
-            return { gruen, zahl };
+            const { gruen, zahl, mass } = latenzSchlechtester(j, ids, LATENZ_PROBEN);
+            return { gruen, zahl, mass };
         },
         pfad: LATENZ,
         quelle: "2 = jedes Verb (gehen, springen, schwingen, einsteigen), beide Geräte",
@@ -4304,7 +4310,10 @@ const stationen = [
             const nie = /^\[welt-boot\] FEHLER klasse:.*zeichnet nie/m.test(lauf.stdout);
             const rot = [/❌/.test(z) ? z.split(" — ").slice(1).join(" — ") : null, wand ? "Wand-Pixel (Bau) im Nahbereich in " + wand + " Proben" : null,
                 nie ? "die Linse zeichnet nie (welt-boot: Rezept null)" : null].filter(Boolean);
-            return { gruen: /✅/.test(z) && !rot.length, zahl: (gaenge.join(" | ") || "keine Gang-Zeile") + (rot.length ? " — ROT: " + rot.join(" · ") : "") };
+            const ruckSoll = /Ruck p95 ≤ (\d+(?:,\d+)?) m/.exec(z);
+            const mass = !ruckSoll ? [] : zeilen.map((l) => [l.trim().split(/\s+/).slice(0, 2).join(" "), /Ruck p95 (\d+(?:\.\d+)?)/.exec(l)]).filter(([, m]) => m)
+                .map(([n, m]) => ({ wort: n + " Ruck p95 m", wert: +m[1], soll: +ruckSoll[1].replace(",", ".") }));
+            return { gruen: /✅/.test(z) && !rot.length, zahl: (gaenge.join(" | ") || "keine Gang-Zeile") + (rot.length ? " — ROT: " + rot.join(" · ") : ""), mass };
         },
         pfad: [
             "stamm/koerper-*.js",
@@ -4523,7 +4532,7 @@ const stationen = [
                 const e = s && s.ergebnis;
                 return e ? e.gesetzt + "-mal" + (e.gesetzt ? " (" + e.dauerMs.join("–") + " ms, gleitet bis " + e.gleitMm + " mm je Takt)" : "") : "ungezählt";
             });
-            return { gruen: r.gruen && halt >= 2, zahl: r.zahl + " · Hit-Stop im schlechtesten Lauf " + halt + " Bilder · im Spiel Halt gesetzt " + spiel.join(" / ") };
+            return { gruen: r.gruen && halt >= 2, zahl: r.zahl + " · Hit-Stop im schlechtesten Lauf " + halt + " Bilder · im Spiel Halt gesetzt " + spiel.join(" / "), mass: r.mass };
         },
         pfad: LATENZ,
         quelle: "1 = Eingabe → erstes Schwung-Bild ≤ 50 ms und Hit-Stop sichtbar im Ausgabe-Bild an einem Gerät",
@@ -5206,8 +5215,10 @@ const stationen = [
             if (fehlt.length) return { gruen: false, zahl: "Zeile fehlt: " + fehlt.join(", ") + " (Exit " + lauf.exit + ")" };
             const rot = soll.filter((_, i) => !/✅/.test(je[i])).map(([n]) => n);
             const nach = (i) => je[i].split(" — ").slice(1).join(" — ").slice(0, 160);
+            const zeitMs = / — (\d+(?:\.\d+)?) ms\b/.exec(je[4]);
             return {
                 gruen: !rot.length && lauf.exit === 0,
+                mass: zeitMs ? [{ wort: "Klick bis gezeichnet ms", wert: +zeitMs[1], soll: 10000 }] : [],
                 zahl: (rot.length ? "ROT: " + rot.join(", ") + " · " : "") + "Zeit " + nach(4) + " · " + nach(6) +
                     " · Profil A, B, Kontext-Probe: " + (je[0].match(/profile-[\w-]+/g) || ["?"]).join(" · "),
             };
@@ -5258,6 +5269,7 @@ const stationen = [
             const gruen = b.imSpiel === true && b.bild[0] === 1920 && b.deckungPct <= 5 && hud.n >= 30 && menue.n >= 15 && hud.inpMs <= 200 && menue.inpMs <= 200;
             return {
                 gruen,
+                mass: [{ wort: "INP HUD ms", wert: hud.inpMs, soll: 200 }, { wort: "INP Menü ms", wert: menue.inpMs, soll: 200 }],
                 zahl: "HUD deckt " + b.deckungPct + " % (" + b.bild.join("×") + (b.imSpiel ? ", im Spiel" : ", OHNE Zeiger-Fang") + ") · INP HUD " + hud.inpMs +
                     " ms (" + hud.n + ") · Menü " + menue.inpMs + " ms (" + menue.n + ")",
             };
@@ -5765,6 +5777,9 @@ function toreK1Urteil(lauf) {
     const lahm = besucht.filter((l) => l.ms != null).sort((a, b) => b.ms - a.ms)[0];
     const luecke = lahm && (J.luecken || []).filter((x) => x[0] === lahm.nr && x[2] && (x[1] == null || x[1] <= lahm.ms)).pop();
     const geb = J.laeufe.find((l) => l.geboren);
+    // DAS MASS (das Gesetz der Fremd-Last, punkte.cjs fremdUrteil): je besuchtem Lauf t bis zur sichtbaren Eingabe und sein längster Frame
+    const mass = besucht.flatMap((l) => [{ wort: "#" + l.nr + " " + l.sicht + " t ms", wert: l.ms == null ? NaN : l.ms, soll: S.ms },
+        { wort: "#" + l.nr + " " + l.sicht + " Frame max ms", wert: l.frameMax == null ? NaN : l.frameMax, soll: S.frameMs }]);
     const zahl =
         "t " + besucht.map((l) => l.sicht + " " + (l.ms == null ? "—" : l.ms)).join(" · ") + " ms (Soll ≤ " + S.ms + ")" +
         ((lm) => (lm.length ? " · Luma min " + Math.min(...lm) : ""))(besucht.map((l) => l.lumaMin).filter((v) => v != null)) +
@@ -5772,7 +5787,7 @@ function toreK1Urteil(lauf) {
         (geb ? " · Geburt " + (geb.ms == null ? "—" : geb.ms) + " ms" : "") + (J.heim === false ? " · endet nicht daheim" : "") +
         (fehlt.length ? " · " + fehlt.join(", ") : "") + (rot.length ? " · rot: " + rot.join("; ") : "") +
         (luecke && rot.length ? " · es hielt (#" + lahm.nr + " bei " + luecke[1] + " ms): " + luecke[2] : "");
-    return { gruen: !rot.length && !fehlt.length, zahl };
+    return { gruen: !rot.length && !fehlt.length, zahl, mass };
 }
 // die Roh-Ausgaben des Richters: fünf Läufe nach dem Soll und je Bruch der Staffel ein Mutant — das Tor ohne Vorwärmen (der Wechsel von
 // heute, 6,9 s) und das schwarze Zwischenbild (der Ladeschirm, Luma 0,043) zuerst

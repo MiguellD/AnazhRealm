@@ -2953,7 +2953,7 @@ const stationen = [
             const gtx = /nvidia/i.test(j.adapter || "");
             const gruen = hw && k.exit === 0 && z.every(([ok]) => ok) && (!gtx || (kz.exit === 0 && ms != null && ms <= 0.3));
             const treue = ["0.5", "0.3"].map((u) => (w[u] || {}).treueBytes).join("/");
-            return { gruen, zahl: z.map(([, s]) => s).join(" · ") + ` · Treue ${treue} Bytes · Kontakt-Kaskade k0 ${ms} ms${gtx ? " (GTX ≤ 0,3)" : ""}, ` + (j.adapter || "Adapter ungenannt") };
+            return { gruen, mass: gtx ? [{ wort: "Kontakt-Kaskade k0 ms", wert: ms, soll: 0.3 }] : [], zahl: z.map(([, s]) => s).join(" · ") + ` · Treue ${treue} Bytes · Kontakt-Kaskade k0 ${ms} ms${gtx ? " (GTX ≤ 0,3)" : ""}, ` + (j.adapter || "Adapter ungenannt") };
         },
         proben: (() => {
             const pose = (zu, fu = 2.1) => ({ fuss: { halbschattenCm: fu, kanten: 10, von: 12 }, zuwachs: { scheibeCmJeM: zu, kanten: 44, von: 44, wegM: 9.25 } });

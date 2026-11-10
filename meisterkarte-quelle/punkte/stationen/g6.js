@@ -1158,6 +1158,9 @@ function kaltKontrolle(j, lauf) {
         ((j.offen || []).join(" · ") || "nichts") + ((j.ohne || []).length ? ", halbes Weltbild" : "");
     return ganz ? { t: j.tK, zahl: z } : { t: null, grund: z + " — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht" };
 }
+// DAS MASS DER KONTROLLE (das Gesetz der Fremd-Last, punkte.cjs fremdUrteil): t(Kontrolle) kalt in s gegen das Soll der Karte — auch
+// über einem Bild, das nicht ganz war (dann ist t eine untere Schranke: reißt schon sie geeicht, erklärt die Last das ROT nicht)
+const kaltMass = (j, sollMs) => (j && j.tK > 0 ? [{ wort: "t(Kontrolle) kalt s", wert: j.tK / 1000, soll: sollMs / 1000 }] : []);
 const ANKUNFT_KALT_PFAD = [...ANKUNFT_PFAD, "scripts/lib/haenger-linse.cjs", "scripts/lib/ausgabe-aufnahme.cjs", "save-server.js"];
 // die Roh-Ausgaben der Kalt-Stationen (die Schlupflöcher als Mutanten): j = das JSON der Probe, stdout die Adapter-Zeile
 const kaltRoh = (o) => {
@@ -1594,16 +1597,17 @@ function pbFehl(name, z) {
     if (sicht && !(z.sicht.length === 1 && z.sicht[0] === sicht)) f.push("Sicht " + z.sicht.join("/"));
     return f;
 }
-// DER RICHTER des Gangs: je Regel { zellen, wort, soll, feld } die Zahl jeder Zelle gegen das Soll, jede Zelle gültig; `band`: jedes
+// DER RICHTER des Gangs: je Regel { zellen, wort, soll, feld, fest? } die Zahl jeder Zelle gegen das Soll, jede Zelle gültig; `band`: jedes
 // Band je Ort × Sicht (Haushalt, Ratsche, Befehle, Dreiecke, VRAM: sein Urteil), gpu-bank ≤ 12 ms, eingeschwungen, ungedrosselt, am
-// Messort, Skala, Tiere und Sicht. Eine Zelle, die die Uhr nicht trug oder deren Schritt brach, ist ROT beim Namen.
+// Messort, Skala, Tiere und Sicht. Eine Zelle, die die Uhr nicht trug oder deren Schritt brach, ist ROT beim Namen. DAS MASS (das Gesetz
+// der Fremd-Last, punkte.cjs fremdUrteil): jeder gemessene Wert jeder Regel und die gpu-bank jedes Bands gegen ihr Soll
 function pbRichter(lauf, { regeln = [], band = false }) {
     const t = String(lauf.stdout || "");
     const { ad, hw } = HW(t);
     const z = pbZus(lauf, "gang");
     if (!z) return { gruen: false, zahl: "keine Zeile PROFIBAND des Gangs (Exit " + lauf.exit + ") · " + ad };
     const warum = (n) => (z.offen.includes(n) ? "ungemessen (die Uhr " + PB_KONST.budget + " s trug den Schritt nicht)" : z.fehler[n] ? "brach: " + z.fehler[n] : "ungemessen");
-    const rot = [], teile = [];
+    const rot = [], teile = [], mass = [];
     for (const r of regeln) {
         const werte = r.zellen.map((name) => {
             const c = z.zellen[name];
@@ -1611,6 +1615,7 @@ function pbRichter(lauf, { regeln = [], band = false }) {
             const f = pbFehl(name, c);
             if (f.length) rot.push(name + ": " + f.join(", "));
             const v = r.feld(c);
+            if (Number.isFinite(v)) mass.push({ wort: name + " " + r.wort, wert: v, soll: r.soll, ...(r.fest ? { fest: true } : {}) });
             if (!(Number.isFinite(v) && v <= r.soll)) rot.push(name + " " + r.wort + " " + (Number.isFinite(v) ? v + " > " + r.soll : "ungemessen" + (z.fehler[name] ? " (" + z.fehler[name] + ")" : "")));
             return name + " " + v;
         });
@@ -1623,6 +1628,7 @@ function pbRichter(lauf, { regeln = [], band = false }) {
             else {
                 if (b.exit !== 0 || b.urteil !== "GRUEN") f.push("Band " + b.urteil + " " + (b.rot || []).join(" · ").slice(0, 160));
                 if (!(b.gpu <= 12)) f.push("gpu-bank " + b.gpu + " ms > 12");
+                if (Number.isFinite(b.gpu)) mass.push({ wort: "Band " + name + " gpu-bank ms", wert: b.gpu, soll: 12 });
                 if (b.eingeschwungen !== true) f.push("nicht eingeschwungen");
                 if (!(b.last >= 0.95)) f.push("gedrosselt (loadScale " + b.last + ")");
                 if (b.amMessort !== true || (b.gestellt || []).length) f.push("nicht am Messort");
@@ -1636,7 +1642,7 @@ function pbRichter(lauf, { regeln = [], band = false }) {
         teile.push("Band im Stand (Befehle · Dreiecke · VRAM · gpu-bank): " + werte.join(" | "));
     }
     if (!hw) rot.push("Adapter: " + ad);
-    return { gruen: rot.length === 0, zahl: teile.join(" ‖ ") + " · Gang " + z.sekunden + " s · " + ad + (rot.length ? " — ROT " + rot.length + ": " + rot.slice(0, 6).join(" | ") : "") };
+    return { gruen: rot.length === 0, zahl: teile.join(" ‖ ") + " · Gang " + z.sekunden + " s · " + ad + (rot.length ? " — ROT " + rot.length + ": " + rot.slice(0, 6).join(" | ") : ""), mass };
 }
 // DER RICHTER DER GLÄTTE (K4): je Fenster (Gehen mit V, Fahrt mit E aus und ein; Regler des Spielers) aus dem Strom: gültig mit
 // ≥ 10 Bildern je s und JEDEM Bild unter dem Regler des Spielers; Staffel 1 = eine Bewegungsart ohne Bild > 100 ms (bis 29.10. „in
@@ -1668,7 +1674,11 @@ function k4Richter(lauf, staffel) {
     }
     if (!hw) rot.push("Adapter: " + ad);
     const gruen = hw && (staffel === 1 ? ok["k4-geh"].hundert || ok["k4-fahrt"].hundert : ok["k4-geh"].voll && ok["k4-fahrt"].voll);
-    return { gruen, zahl: teile.join(" · ") + " (Regler des Spielers, " + PB_KONST.glaette.sek + " s je Fenster) · " + ad + (rot.length ? " — " + (gruen ? "daneben" : "ROT") + ": " + rot.join(" | ") : "") };
+    // DAS MASS (das Gesetz der Fremd-Last, punkte.cjs fremdUrteil): der längste Frame je gültigem Fenster gegen 100 ms — Staffel 1 urteilt
+    // die glattere Bewegungsart, Staffel 2 jede
+    const maxe = ["k4-geh", "k4-fahrt"].filter((n) => ok[n].gilt && Number.isFinite(z.glaette[n].max)).map((n) => ({ wort: art[n] + " Frame max ms", wert: z.glaette[n].max, soll: 100 }));
+    const mass = staffel === 1 ? maxe.sort((a, b) => a.wert - b.wert).slice(0, 1) : maxe;
+    return { gruen, zahl: teile.join(" · ") + " (Regler des Spielers, " + PB_KONST.glaette.sek + " s je Fenster) · " + ad + (rot.length ? " — " + (gruen ? "daneben" : "ROT") + ": " + rot.join(" | ") : ""), mass };
 }
 // DER RICHTER DER DAUER (K5): der Strom zwischen dem Stand des Anfangs (die Glätte, stellung anfang) und dem des Endes (diese Probe,
 // stellung ende) in EINER Seite (kein Neuladen) und ≥ PB_KONST.dauerMin min am Stück; das Anker-Fenster (Genesis Ego gehend, Regler
@@ -1681,13 +1691,14 @@ function k5Richter(lauf) {
     const { ad, hw } = HW(t);
     const z = pbZus(lauf, "dauer");
     if (!z) return { gruen: false, zahl: "keine Zeile PROFIBAND der Dauer (Exit " + lauf.exit + ") · " + ad };
-    const d = z.dauer || {}, rot = [];
+    const d = z.dauer || {}, rot = [], mass = [];
     if (!d.anfang) rot.push("kein Stand des Anfangs (die Glätte fuhr nicht vor der Dauer)");
     if (!d.ende) rot.push("kein Stand des Endes" + (z.fehler["dauer-ende"] ? " (brach: " + z.fehler["dauer-ende"] + ")" : ""));
     if (d.anfang && d.ende && d.minuten == null) rot.push("das Ende liegt vor dem Anfang");
     if (d.minuten != null) {
         if (d.seiten !== 1) rot.push(d.seiten + " Seiten zwischen Anfang und Ende (neu geladen — nie am Stück)");
         if (!(d.minuten >= PB_KONST.dauerMin)) rot.push(d.minuten + " min am Stück < " + PB_KONST.dauerMin);
+        if (Number.isFinite(d.minuten)) mass.push({ wort: "am Stück min", wert: d.minuten, soll: PB_KONST.dauerMin, richtung: "≥", fest: true });
         const a = (d.anker || {}).a, b = (d.anker || {}).b;
         if (!a || !b) rot.push("Anker " + ((d.anker || {}).laeufe || 0) + " von 2 Fenstern");
         else {
@@ -1695,6 +1706,7 @@ function k5Richter(lauf) {
             if (!(a.n >= min && b.n >= min)) rot.push("Anker blind (" + a.n + "/" + b.n + " Bilder)");
             if (!(a.voll >= 0.99 && b.voll >= 0.99)) rot.push("Anker nicht unter Regler voll");
             if (!(b.frame <= a.frame * 1.05)) rot.push("Drift: Bild-p95 am Ende " + b.frame + " > " + a.frame + " × 1,05");
+            if (Number.isFinite(b.frame) && Number.isFinite(a.frame)) mass.push({ wort: "Anker Bild-p95 am Ende ms (Soll: der Anfang × 1,05)", wert: b.frame, soll: a.frame * 1.05 });
         }
         if (!(Array.isArray(d.gang) && d.gang.length === 0)) rot.push("Gang: " + (d.gang || ["kein Urteil"]).join(" · "));
         if (!(d.weg >= 5000)) rot.push("Weg " + d.weg + " m < 5 km");
@@ -1717,6 +1729,7 @@ function k5Richter(lauf) {
         };
     return {
         gruen: rot.length === 0,
+        mass,
         zahl:
             "Dauer " + d.minuten + " min in " + d.seiten + " Seite(n), " + d.proben + " Proben: Dauerlast " + l.n + " Bilder · Bild-p95 " + l.frame + " (p99 " + l.p99 +
             ", max " + l.max + ") ms · Takt-p95 " + l.takt + " ms · VRAM-p95 " + l.vram + " MB · Anker Bild-p95 " + paar(an.a && an.a.frame, an.b && an.b.frame) +
@@ -2797,7 +2810,8 @@ module.exports = [
             const w = [...t.matchAll(/t\(Kontrolle\) warm ([\d.]+) s von außen/g)].map((m) => +m[1]).sort((a, b) => a - b);
             if (w.length < 2) return { gruen: false, zahl: w.length + " von 2 Zweit-Boots mit Kontrolle von außen (Exit " + lauf.exit + ") · " + ad };
             const med = (w[(w.length - 1) >> 1] + w[w.length >> 1]) / 2;
-            return { gruen: hw && med <= 5, zahl: "warm Median " + med.toFixed(2) + " s (" + w.map((x) => x.toFixed(2)).join(" · ") + ", Zweit-Boot im warmen Browser) · " + ad };
+            return { gruen: hw && med <= 5, zahl: "warm Median " + med.toFixed(2) + " s (" + w.map((x) => x.toFixed(2)).join(" · ") + ", Zweit-Boot im warmen Browser) · " + ad,
+                mass: [{ wort: "warm Median s", wert: med, soll: 5 }] };
         },
         pfad: [...ANKUNFT_PFAD, "stamm/speicher-*.js", "save-server.js"],
         quelle: "1 = warm ≤ 5 s an einem Gerät",
@@ -2823,9 +2837,9 @@ module.exports = [
             j = j || kaltJ(lauf);
             const { ad, hw } = HW(String(lauf.stdout || ""));
             const soll = /nvidia/i.test(ad) ? 10000 : 5000;
-            const k = kaltKontrolle(j, lauf);
-            if (k.t == null) return { gruen: false, zahl: k.grund + " · " + ad };
-            return { gruen: hw && k.t <= soll, zahl: k.zahl + " (Soll ≤ " + soll / 1000 + " s an dieser Karte, ein Kalt-Boot) · " + ad };
+            const k = kaltKontrolle(j, lauf), mass = kaltMass(j, soll);
+            if (k.t == null) return { gruen: false, zahl: k.grund + " · " + ad, mass };
+            return { gruen: hw && k.t <= soll, zahl: k.zahl + " (Soll ≤ " + soll / 1000 + " s an dieser Karte, ein Kalt-Boot) · " + ad, mass };
         },
         proben: [
             { name: "Radeon 4,2 s, das Bild ganz", stdout: kaltRoh({}), gruen: true },
@@ -2849,9 +2863,9 @@ module.exports = [
         urteil: (j, lauf) => {
             j = j || kaltJ(lauf);
             const { ad, hw } = HW(String(lauf.stdout || ""));
-            const k = kaltKontrolle(j, lauf);
-            if (k.t == null) return { gruen: false, zahl: k.grund + " · " + ad };
-            return { gruen: hw && k.t <= 5000, zahl: k.zahl + " (Soll ≤ 5 s, ein Kalt-Boot) · " + ad };
+            const k = kaltKontrolle(j, lauf), mass = kaltMass(j, 5000);
+            if (k.t == null) return { gruen: false, zahl: k.grund + " · " + ad, mass };
+            return { gruen: hw && k.t <= 5000, zahl: k.zahl + " (Soll ≤ 5 s, ein Kalt-Boot) · " + ad, mass };
         },
         proben: [
             { name: "4,2 s, das Bild ganz", stdout: kaltRoh({ ad: "nvidia/pascal" }), gruen: true },
@@ -2878,6 +2892,7 @@ module.exports = [
             if (!s) return { gruen: false, zahl: "keine Spur des Kalt-Boots (Exit " + lauf.exit + ") · " + ad };
             if (s.stand !== "gemessen" || !(s.kontrolleMs > 0) || s.belegtMs == null) return { gruen: false, zahl: "die Spur misst nicht: " + s.stand + " · " + ad };
             return {
+                mass: [{ wort: "längste Aufgabe ms", wert: s.laengsteMs, soll: 250 }, { wort: "Haupt-Faden belegt s", wert: s.belegtMs / 1000, soll: 4 }],
                 gruen: hw && s.laengsteMs <= 250 && s.belegtMs <= 4000,
                 zahl:
                     "längste Aufgabe " + s.laengsteMs + " ms (Soll ≤ 250) · Haupt-Faden belegt " + (s.belegtMs / 1000).toFixed(2) + " s bis zur Kontrolle (Soll ≤ 4; " +
@@ -2934,6 +2949,7 @@ module.exports = [
             const p95 = s.map((b) => (b.frameMs ? b.frameMs.p95 : Infinity)).sort((x, y) => x - y)[1];
             return {
                 gruen: hw && ok.length === 3 && p95 <= 50,
+                mass: [{ wort: "Frame p95 Median ms", wert: p95, soll: 50 }],
                 zahl:
                     "Frame p95 Median " + p95 + " ms (" + s.map((b) => (b.frameMs ? b.frameMs.p95 : "?")).join(" · ") + ") · CPU-Takt p95 " +
                     s.map((b) => (b.taktMs ? b.taktMs.p95 : "?")).join(" · ") + " ms · die Welt steht nach " +
@@ -3112,7 +3128,7 @@ module.exports = [
             const blind = /⛔ BLIND: (.*)/.exec(t);
             if (!f) return { gruen: false, zahl: "keine Fahrt-Zeile am Empfang (die Linse kennt --faden nicht?) · Exit " + lauf.exit };
             const gruen = !blind && +f[1] >= 55 && +f[2] <= 5;
-            return { gruen, zahl: f[2] + " MB/min am Empfang in " + f[1] + " s Fahrt" + (blind ? " · BLIND " + blind[1] : "") };
+            return { gruen, zahl: f[2] + " MB/min am Empfang in " + f[1] + " s Fahrt" + (blind ? " · BLIND " + blind[1] : ""), mass: [{ wort: "MB/min am Empfang", wert: +f[2], soll: 5 }] };
         },
         pfad: HYDRO_PFAD,
         quelle: "1 = Klon-MB je Minute am Empfang gemessen und ≤ 5 MB/min in 60 s Fahrt",
@@ -3141,6 +3157,7 @@ module.exports = [
             const gruen = !blind && +f[2] >= 55 && +f[3] <= 1 && kopie === 0 && speicher;
             return {
                 gruen,
+                mass: [{ wort: "MB/min in der Fahrt", wert: +f[3], soll: 1 }, { wort: "Kopie MB", wert: kopie, soll: 0, fest: true }],
                 zahl:
                     f[3] + " MB/min in " + f[2] + " s Fahrt · Kopie " + kopie.toFixed(2) + " MB · Speicher-Faden " +
                     (speicher ? "ja" : "nein") + " (Fäden: " + faeden.slice(0, 120) + ")",
@@ -3303,8 +3320,8 @@ module.exports = [
             pbRichter(lauf, {
                 band: true,
                 regeln: [
-                    { zellen: PB_ZELLEN, wort: "Befehle p95", soll: 208, feld: (z) => z.befehle },
-                    { zellen: PB_ZELLEN, wort: "Dreiecke p95", soll: 680000, feld: (z) => z.dreiecke },
+                    { zellen: PB_ZELLEN, wort: "Befehle p95", soll: 208, feld: (z) => z.befehle, fest: true },
+                    { zellen: PB_ZELLEN, wort: "Dreiecke p95", soll: 680000, feld: (z) => z.dreiecke, fest: true },
                     { zellen: PB_ZELLEN, wort: "VRAM MB", soll: 118, feld: (z) => z.vram },
                     { zellen: PB_ZELLEN, wort: "GPU p95", soll: 12, feld: (z) => (z.gpuN >= PB_KONST.gpuN ? z.gpu : NaN) },
                 ],
@@ -3866,6 +3883,7 @@ module.exports = [
                 !!a && a.n === 0 && a.s >= 15;
             return {
                 gruen,
+                mass: takt.filter((t) => t.p).map((t) => ({ wort: "Klang-Takt p95 " + t.n + " ms", wert: t.p.p95, soll: 0.2 })),
                 zahl:
                     "Klang-Takt p95 " + takt.map((t) => t.n + " " + (t.p ? t.p.p95 : "?")).join(" · ") + " ms · Aussetzer " +
                     (a ? a.n + " in " + a.s + " s Wiedergabe (" + a.still + " s still; verdichtet, Staffel: 10 min)" : "ungezählt") + " (Exit " + lauf.exit + ")",
@@ -3916,6 +3934,7 @@ module.exports = [
             const gruen = j.tode >= 4 && j.ueber10 === 0 && j.halbe === 0 && j.korrupt === 0 && verfehlt === 0 && j.alterMax <= 10;
             return {
                 gruen,
+                mass: [{ wort: "Alter des Stands max s", wert: j.alterMax, soll: 10 }],
                 zahl:
                     j.tode + " Tode: Alter max " + j.alterMax + " s, " + j.ueber10 + " über 10 s · " + j.korrupt + " korrupt · " +
                     j.halbe + " halbe Welten · " + verfehlt + " Haken verfehlt" + (oa.length ? " · ohne Alter " + oa.join(" · ") : ""),
@@ -3949,6 +3968,7 @@ module.exports = [
                 j.tode >= 4 && j.ueber10 === 0 && j.halbe === 0 && j.korrupt === 0 && verfehlt === 0 && j.alterMax <= 10 && arten.length === 4 && gang >= 2;
             return {
                 gruen,
+                mass: [{ wort: "Alter des Stands max s", wert: j.alterMax, soll: 10 }],
                 zahl:
                     j.tode + " Tode: Alter max " + j.alterMax + " s · " + j.korrupt + " korrupt · " + j.halbe + " halbe · " + verfehlt +
                     " verfehlt · Tod-Arten " + arten.join("/") + " · im laufenden Erwachen " + gang + (oa.length ? " · ohne Alter " + oa.join(" · ") : ""),
@@ -3977,6 +3997,7 @@ module.exports = [
             if (!(f.staende >= 20)) return { gruen: false, zahl: "Sonde blind: " + f.staende + " Stände in der frischen Welt" };
             return {
                 gruen: f.p95 <= 0.3,
+                mass: [{ wort: "Speicher-Bild frisch p95 ms", wert: f.p95, soll: 0.3 }],
                 zahl:
                     "je Speicher-Bild in der frischen Welt p50 " + f.p50 + " / p95 " + f.p95 + " / max " + f.max + " ms (Soll p95 ≤ 0,3; " +
                     f.staende + " Stände, " + f.bilder + " Speicher-Bilder" + (j.grundstellung ? ", Grundstellung vorher" : "") + ")",
@@ -4010,6 +4031,8 @@ module.exports = [
                 " Bildern > 16,7 ms durch Speichern";
             return {
                 gruen: ph.every((p) => p.p95 <= 0.1 && p.max <= 16.7 && p.wegen === 0),
+                mass: [["frisch", j.frisch], ["nach den Edits", j.edits]].flatMap(([n, p]) => [{ wort: "Speicher-Bild " + n + " p95 ms", wert: p.p95, soll: 0.1 },
+                    { wort: "Speicher-Bild " + n + " max ms", wert: p.max, soll: 16.7 }]),
                 zahl: "Speicher-Bild frisch " + zeile(j.frisch) + " · nach " + j.edits.n + " Edits " + zeile(j.edits) + " (Soll p95 ≤ 0,1)",
             };
         },

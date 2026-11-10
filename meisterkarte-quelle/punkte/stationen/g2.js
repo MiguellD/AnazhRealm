@@ -5373,6 +5373,7 @@ const stationen = [
                 return { gruen: false, zahl: "ohne Messung der Prüfbühne" + (j && j.fehler ? ": " + j.fehler : "") };
             return {
                 gruen: j.msMedian <= 0.3 && j.imBildMin >= 100,
+                mass: [{ wort: "Schwarm-Takt Median ms", wert: j.msMedian, soll: 0.3 }],
                 zahl:
                     "Schwarm-Takt " + j.msMedian + " ms je Takt (Median, p95 " + j.msP95 + ") bei " + j.imBildMin +
                     " Gliedern im Blick in jeder Reihe, " + j.paare + " Paare der Separation, Auge " + (j.pose && j.pose.abstand) +
@@ -5397,6 +5398,7 @@ const stationen = [
             if (!j || j.fehler || !v) return { gruen: false, zahl: "ohne gezählten Frame" + (j && j.fehler ? ": " + j.fehler : "") };
             return {
                 gruen: v.cmd >= 1 && v.cmd <= 10 && v.inst >= 100 * j.teileJe && j.imBildMin >= 100,
+                mass: [{ wort: "Befehle der Klasse vogel", wert: v.cmd, soll: 10, fest: true }],
                 zahl:
                     "Klasse vogel " + v.cmd + " Befehle " + JSON.stringify(v.je) + ", " + v.inst + " Instanzen (" + j.instanzen +
                     " des Schwarms, " + j.teileJe + " Teile je Glied), " + j.imBildMin + " Glieder im Blick je Reihe (Soll ≤ 10 Befehle)",
@@ -5455,8 +5457,10 @@ const stationen = [
         const kopf = z.zuS.every((t) => t !== null && t <= 0.5) && z.amEreignis >= 30 && z.imBild.every((x) => x === true);
         const ohne = z.beruehrt.every((n) => n === 0) && Math.min(...d) > 0.7;
         const erinnert = z.furcht > 0 && d[3] - d[1] >= 0.3 && Math.abs(d[2] - d[1]) <= 0.15;
+        const zu = z.zuS.filter((t) => t !== null);
         return {
             gruen: kopf && ohne && erinnert,
+            mass: zu.length ? [{ wort: "Kopf-Zuwendung s (die langsamste)", wert: Math.max(...zu), soll: 0.5 }] : [],
             zahl:
                 z.wer + ": Kopf-Zuwendung ab 3 m " + z.zuS.join(" / ") + " s (Vorbeigang ab " + z.amEreignis +
                 "°, als Leib im Bild " + z.imBild.join("/") + ") · Berührung " + z.beruehrt.join("/") + " Takte, kleinster Abstand " +
@@ -5655,6 +5659,7 @@ const stationen = [
             const fehlt = Object.keys(rot).filter((k) => rot[k]);
             return {
                 gruen: !fehlt.length,
+                mass: [{ wort: "Takt je 50 Bewohner ms", wert: takt50, soll: 1 }, { wort: "Dreiecke der 50", wert: dreiecke, soll: 150000, fest: true }],
                 zahl:
                     B.length + " Bewohner aus " + new Set(B.map((x) => x.seed)).size + " Samen, " + T.length + " Typen · Gestalt-Distanz min " + r3(min) + " px (" + paar + "; " + gleich + " Paare unter 1 px) · Höhe " +
                     r3(hMin) + "–" + r3(hMax) + " m um " + r3(mitte) + " · Gesicht " + (aus.length ? "außerhalb: " + aus.slice(0, 3).join(", ") : "50 von 50 in MENSCH_SOLL") + " · Leib/Wurf je Typ " +

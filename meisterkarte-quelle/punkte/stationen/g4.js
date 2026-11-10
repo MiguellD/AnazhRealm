@@ -794,6 +794,7 @@ const alle = [
                 n = hoch("n");
             return {
                 gruen: karte && zeit.length === 8 && bleibt === 8 && ab === 8,
+                mass: s.flatMap((z) => [{ wort: z.id + " Griff → Bild p95 ms", wert: z.u, soll: 200 }, { wort: z.id + " Neubau p95 ms", wert: z.n, soll: 1000 }]),
                 zahl:
                     (karte ? "" : "die Zeit ungeurteilt (kein Hardware-Adapter) · ") +
                     "p95 Griff → Bild unter der Schranke in " + zeit.length + "/8 (Gesetz-Wert höchstens " + u.v + " ms " + u.id +
@@ -915,6 +916,7 @@ const alle = [
             const klang = orte.length > 0 && imQuantum.length === orte.length;
             return {
                 gruen: !ohne.length && klang,
+                mass: orte.map((k, i) => ({ wort: "Klang Ort " + (i + 1) + " Audio-Graph ms", wert: +k.audio, soll: +k.audioDeckel })),
                 zahl:
                     "Dreiecke, Befehle, VRAM und GPU-ms ±5 % in " + (mesh.length - ohne.length) + "/" + mesh.length + " Mesh-Studios (" +
                     stufen + " Stufen), Klang " + imQuantum.length + "/" + orte.length + " Orte im Quantum" +
@@ -1386,6 +1388,7 @@ const alle = [
             const ms = (x) => (Number.isFinite(x) ? (x / 1000).toFixed(2) + " s" : "∞");
             return {
                 gruen: wort && n > 0 && s.length === n && pos.length > 0 && p95 <= 6000,
+                mass: [{ wort: "p95 Satz → Welt ms", wert: p95, soll: 6000 }],
                 zahl:
                     "p95 Satz → Welt " + ms(p95) + " über " + pos.length + " Positiv-Sätze (Soll lokal ≤ 6 s; ohne Wirkung " + pos.filter((x) => !Number.isFinite(x)).length +
                     ") · " + s.length + "/" + n + " Sätze gegen qwen3:4b-instruct @ 127.0.0.1:11434" + (wort ? "" : ", keine WORT-Zeile des echten Anbieters (Exit " + lauf.exit + ")"),
@@ -1656,7 +1659,7 @@ const alle = [
             if (!j || j.gestartet !== true || j.bild !== true || j.echt !== true || !j.wege)
                 return { gruen: false, zahl: "keine Ausgabe des Bild-Wegs auf der Karte (Exit " + lauf.exit + ")" };
             const p95 = (a) => (a.length ? [...a].sort((x, y) => x - y)[Math.ceil(0.95 * a.length) - 1] : null);
-            const rot = [];
+            const rot = [], mass = [];
             let n = 0, imBild = 0;
             const jeWeg = WEG_WEGE.map((weg) => {
                 const jeKlasse = { kalt: [], warm: [] };
@@ -1675,11 +1678,13 @@ const alle = [
                             jeKlasse[e.kalt ? "kalt" : "warm"].push(ms);
                         }
                 const k = p95(jeKlasse.kalt), w = p95(jeKlasse.warm);
+                for (const [art, v] of [["kalt", k], ["warm", w]]) if (Number.isFinite(v)) mass.push({ wort: weg + " p95 bis zum Bild " + art + " ms", wert: v, soll: 1000 });
                 if (!(k <= 1000) || !(w <= 1000)) rot.push(weg + " p95 kalt " + k + " · warm " + w + " ms");
                 return weg + " kalt " + k + " · warm " + w + " ms (" + jeKlasse.kalt.length + "+" + jeKlasse.warm.length + ")";
             });
             return {
                 gruen: n === BILD_FAELLE.length && imBild === n && !rot.length,
+                mass,
                 zahl: imBild + "/" + n + " Werke in L0 im Bild (Bau-Hash = L0-Bau, ≤ 3 Eingaben) · p95 bis zum Bild " + jeWeg.join(" · ") +
                     (rot.length ? " · ROT: " + rot.slice(0, 6).join(" · ") + (rot.length > 6 ? " … (" + rot.length + ")" : "") : ""),
             };
