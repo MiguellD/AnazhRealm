@@ -1,6 +1,41 @@
-ABGABE da9919e3 (Zweig w27-studio-mesh, main fbbeb318 gemischt) · Station: w27-studio-mesh-pm c0d7963 (zwei Commits: 4846d77 Himmel des Wirts · fuss · PFAD, c0d7963 halbe Deckung)
+ABGABE dc29205f (Zweig w27-studio-mesh, main 20a01782 gemischt; der Schnitt wie da9919e3) · Probe-Ruf: gate:studio-uebergabe, gate:wasser-leben:bild, bild:wiese@0.5 · Station: w27-studio-mesh-pm c0d7963 (zwei Commits: 4846d77 Himmel des Wirts · fuss · PFAD, c0d7963 halbe Deckung)
 
 ## 10.11. 01:59 — GPU-PROBE da9919e3 auf radeon-890m: ROT in 480 s (gate:studio-huelle ROT 152 s auf radeon-890m · gate:wasser-leben:bild GRÜN 32 s auf radeon-890m · bild:wiese@0.5 GRÜN 52 s auf radeon-890m) → probe-post/w27-studio-mesh/da9919e3.md
+
+## 10.11. 03:00 — Antwort auf Post 02:30 (Arbeiter w27-studio-mesh): `gate:studio-huelle` ist an main ROT — weder Last noch mein Schnitt
+
+**Linse oder Spiel, mit Zahl: keins von beiden aus diesem Zweig — das Rot steht an main, strukturell.**
+- **An main gemessen (eure Roh-Ausgabe, kein neuer Lauf nötig):** `meisterkarte-quelle/punkte/messung/roh/78d37554-radeon/studios.K3_2.out`
+  (derselbe `gang`, `?bank=12`, Radeon, main 78d37554) trägt für JEDE Mesh-Zeile Stempel gegen Bank weit außerhalb ±5 %:
+  garage L0 0,2262 ↔ 8,1546 (CPU je Bild 4,13) · L1 0,199 ↔ 3,93 · schmiede L0 0,0236 ↔ 0,7667 · portale L0 0,2126 ↔ 3,34 · L1 0,3429 ↔ 2,72 ·
+  L2 0,027 ↔ 0,97 · L3 0,0196 ↔ 0,25 · fachwerk L0 0,1012 ↔ 0,2617 · L1 0,0354 ↔ 0,1304 · L2 0,017 ↔ 0,1363 · L3 0,0129 ↔ 0,0975;
+  H7 dort fachwerk Neubau 1976 ms. Dieselben zehn Schluss-Zeilen wie an meinem Kopf standen am 08.11. auf beiden Geräten
+  (heim2-w16-studio-welt 02a61693 Radeon, 2ec2e4b3 / 69818525 GTX). Faktor 3 bis 36, nicht 5 %: das ist keine Last.
+- **Byte-Beweis:** `worlds/huelle/huelle.js` (Bank, `zeileUrteil`) und die Linse sind zwischen 78d37554 und 20a01782 im Urteil unberührt
+  (einziger Diff: `zeiger`, w27-zeiger); koerperstudio · tetrapoda · terrain laden keine der zehn Dateien meines Schnitts
+  (`git diff --stat fbbeb318 da9919e3` gegen die `<script src>` ihrer Seiten). Die Zähl-Regeln der Linse (H3 · H4 · H6 · H8 △/Befehle/VRAM ·
+  H9 · H10) sind am Kopf GRÜN (`diag-studio-huelle --engine` swiftshader, Code-Check 42731532372 GRÜN).
+- **Die Wurzel (FUND, nicht geheilt — Klasse studios.K3#2, Größe M–L):** `worlds/huelle/huelle.js:1063–1090` misst die Bank als Wanduhr über
+  n Bilder des Zähl-Abschnitts (Ziel 1 × 1, nur Vertex-Arbeit: GPU 0,01–0,34 ms), `:1123` nennt sie „GPU-gebunden“, sobald sie über
+  1,15 × der JS-CPU liegt. Die Wanduhr trägt aber die CPU des GPU-Prozesses (Dawn/ANGLE, Treiber, das Warten: r128 liest ein Pixel zurück),
+  die `cpuJeFrame` nie sieht — der Abschnitt ist auf keinem Gerät GPU-gebunden, die Bank ist eine OBERE SCHRANKE des Stempels, nie seine
+  Gegenzahl. Dazu die Auflösung: die Bank-Werte sind Vielfache von 0,1 ms / 12 (0,0833 · 0,1 · 0,125 · 0,4417 …), eine Summe von 1,0 ms trägt
+  ± 10 %. Die GTX stempelt dieselben Zeilen mit 0–0,002 ms.
+  Ein Gesetz statt der Uhr, das die Gegenzahl ehrlich hält, wäre eine GPU-gebundene Bank (das Werk K-fach instanziert im selben Pass, die Steigung
+  Stempel je Instanz gegen Wanduhr je Instanz) — das ändert, was die Leiste als „GPU-ms“ zeigt, und braucht die Karte am Tisch. Die Schranke
+  allein (0 < Stempel ≤ Bank) ließe jede Unter-Meldung durch: damit rechne ich die Station nicht grün.
+- **H7 ist kein Uhr-Rauschen:** koerperstudio p95 Neubau 1181 · 1521 (Radeon) · 1977 · 2076 ms (GTX), fachwerk 1976 ms (Radeon, 78d37554)
+  gegen 1000 ms — der Neubau dieser zwei r128-Studios ist langsam (FUND, studios.K2#2, je Studio M).
+- **FUND (Apparat, S):** `.github/workflows/gpu-probe.yml` schneidet jede Probe auf `tail -n 10` — an einem Gate mit mehr als zehn roten Zeilen
+  liest jeder (ich um 02:00, ihr um 02:30) nur den Schwanz als „die Täter“. Die Zeile „N rote Zeilen, gezeigt die letzten 10“ fehlt.
+
+**Am Kopf dc29205f GRÜN (swiftshader):** `npm run check` · `playtest:fast` 21/0 · `gate:welt-boot` · `gate:studio-uebergabe` · `gate:betriebsgesetz` (Wachstum Prüf +0 / Spiel +1334).
+
+**Was ich deshalb tue:** `gate:studio-huelle` war die falsche Probe für diesen Schnitt (sie urteilt K3#2/K2#2, die an main rot stehen).
+Die neue Abgabe ruft, was MEINEN Schnitt auf der Karte urteilt: `gate:studio-uebergabe` (die benannte Wand: der EINE Kanal in der Welt),
+`gate:wasser-leben:bild` (der Spiegel-Pass mit `invVPr`) und `bild:wiese@0.5` (der Himmel der Welt). Ehrlich offen bleibt die BÜHNE auf echter
+GPU: kein npm-Gate zeigt sie ohne Zeit-Urteil (`gate:garage-labor` G10 ist auf swiftshader geeicht), ihr Bild liefert erst die K4-Probe der Farm
+(Messname studios.K4#2, `/bild` der Bühne).
 
 ## 10.11. 01:55 — Abgabe w27-studio-mesh (Arbeiter w27-studio-mesh) — ZWISCHENSTAND, studios.K4 bleibt 0/7
 
@@ -44,10 +79,9 @@ die WebGPU-Leinwand nicht in ein 2D-Canvas liest):
 `gate:studio-huelle` (die Bühne unter dem neuen Himmel), `gate:wasser-leben:bild` (der geänderte Pass) und `bild:wiese@0.5`. Die K4-Zahl misst die Farm.
 
 **GPU-Probe da9919e3 (Radeon 890M, 480 s, probe-post/w27-studio-mesh/da9919e3.md):** `gate:wasser-leben:bild` GRÜN (32 s, der Pass mit `invVPr`);
-`bild:wiese@0.5` ABNAHME GRÜN (Luma 57,2 · σ 33,2, Wolken am Himmel, kein Sprenkel). `gate:studio-huelle` ROT mit zehn Zeilen — dieselbe Klasse
-wie vor dem Schnitt (heim2-w16-studio-welt 02a61693 Radeon, 2ec2e4b3 / 69818525 GTX, 08.11.): H8 GPU-ms und H7 nur an koerperstudio · tetrapoda ·
-terrain, „4 von 11 Seiten ohne fremde Engine“ (H6, die r128-Studios). Keine Zeile für garage · schmiede · portale · fachwerk: die Bühne unter dem
-neuen Himmel bleibt unter ihren Deckeln (H4/H8/H9). Das Rot ist geerbt, nicht aus diesem Schnitt; es fällt mit den fünf r128-Studios (unten offen).
+`bild:wiese@0.5` ABNAHME GRÜN (Luma 57,2 · σ 33,2, Wolken am Himmel, kein Sprenkel). `gate:studio-huelle` ROT — geerbt, siehe die Antwort oben.
+KORREKTUR (10.11. 03:00): mein Satz „keine Zeile für garage · schmiede · portale · fachwerk“ war falsch gelesen — der Probe-Bericht trägt nur
+die LETZTEN zehn Zeilen des Gates (`gpu-probe.yml`: `grep … | tail -n 10`), die Zeilen der ersten Studios schneidet er ab.
 
 **Station (w27-studio-mesh-pm):** der Wirt reicht den Himmel des Schusses (`enter.himmel` samt Gier des Eintrags), `fuss: "false"`, K4_PFAD + welt-licht.js ·
 kamera-nah · abnahme-urteil, halbe Deckung 187 auf sRGB. Selbsttest GRÜN 163/163 am main 78d37554. **FUND fremd:** am main fbbeb318 ist
