@@ -1,0 +1,34 @@
+{
+ "art": "dauer",
+ "sekunden": 20.1,
+ "schritte": [
+  [
+   "ende",
+   "Fehler"
+  ]
+ ],
+ "offen": [],
+ "fehler": {
+  "dauer-ende": "/puffer: Cannot read properties of undefined (reading 'size')"
+ },
+ "strom": {
+  "bloecke": 1594,
+  "bilder": 3543,
+  "seiten": 10,
+  "fehler": 0,
+  "verloren": 0
+ },
+ "dauer": {
+  "anfang": false,
+  "ende": false,
+  "torbau": {
+   "bau": true,
+   "tor": true,
+   "heim": true
+  },
+  "nacht": {
+   "nacht": 1.381341666666695e-14,
+   "mittag": 0.5000000000000099
+  }
+ }
+}
