@@ -103,6 +103,16 @@ git -C $R ls-tree -r "$K" zug/dienst/ | while read -r mode typ blob pfad; do
     case "$q" in *.sh | *.cjs) chmod +x "$R/$ort" ;; esac
     echo "$blob $ort" >>"$tmp"
 done
+# ABGELÖST: was das alte Manifest trug und der Zweig nicht mehr, verschwindet vom laufenden Ort — nur unverändert (sein Blob) und nur,
+# wenn main die Datei nicht verfolgt (kein Zwilling bleibt liegen, kein Baum wird schmutzig)
+if [ -s "$MAN" ]; then
+    while read -r blob ort; do
+        grep -q " $ort$" "$tmp" && continue
+        [ -f "$R/$ort" ] || continue
+        git -C $R ls-files --error-unmatch "$ort" >/dev/null 2>&1 && { git -C $R checkout -q -- "$ort" 2>/dev/null; continue; }
+        [ "$(git -C $R hash-object "$R/$ort")" = "$blob" ] && rm -f "$R/$ort" && echo "  abgelöst $ort"
+    done < <(tail -n +2 "$MAN")
+fi
 mv "$tmp" "$MAN"
 echo "INSTALLIERT ${K:0:8} ($(($(wc -l <"$MAN") - 1)) Dateien)"
 
