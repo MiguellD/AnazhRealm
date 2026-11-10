@@ -90,13 +90,13 @@ if [ -n "$hand" ]; then
 fi
 [ "$1" = "--neu" ] && stopp
 tmp=$S/manifest.neu
-echo "$K $(date '+%Y-%m-%d %H:%M') installiert aus origin/koordination zug/dienst-omen (+ zug/dienst/gemein.sh)" >"$tmp"
+echo "$K $(date '+%Y-%m-%d %H:%M') installiert aus origin/koordination zug/dienst-omen (+ zug/dienst: gemein, richter)" >"$tmp"
 {
     git -C $G ls-tree -r "$K" zug/dienst-omen/
-    git -C $G ls-tree "$K" zug/dienst/gemein.sh
+    git -C $G ls-tree "$K" zug/dienst/gemein.sh zug/dienst/richter.sh zug/dienst/richter-werk.cjs
 } | while read -r mode typ blob pfad; do
     case "$pfad" in
-        zug/dienst/gemein.sh) ort=p3/dienst-omen/gemein.sh ;;
+        zug/dienst/*) ort=p3/dienst-omen/${pfad#zug/dienst/} ;; # gemein.sh, richter.sh, richter-werk.cjs: EINE Quelle beim Laptop
         zug/dienst-omen/ort/*) ort=p3/${pfad#zug/dienst-omen/ort/} ;;
         *) ort=p3/dienst-omen/${pfad#zug/dienst-omen/} ;;
     esac

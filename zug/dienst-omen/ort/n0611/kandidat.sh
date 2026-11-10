@@ -7,7 +7,7 @@ N=/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/n0611; cd $N; L=$N/kette-0711.log; N
 M=/c/Users/micha/Desktop/AnazhRealm-OMEN/AnazhRealm-mess; PM=/c/Users/micha/Desktop/AnazhRealm-OMEN/n0611-pm
 H=/c/actions-runner/hooks/hook.log; D=/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/messplatz/dienst.log
 ROH=$PM/meisterkarte-quelle/punkte/messung/roh
-frei() { . /c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh; gpu_frei; }  # 10.11. (Auftrag gpu-stufe K10): die EINE Schloss-Quelle entscheidet und bricht ein verwaistes Schloss mit; das eigene frei() von vorher wartete vor toten Haltern
+frei() { [ -d $M/.claude/worktrees/punkte-gtx.sperre ] && return 1; . /c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh; gpu_frei; }  # 10.11. 23:10: nie IN der Baum-Sperre eines fremden punkte-Laufs warten (Richter-Schritt) — dessen Verdrängung zählte sonst als die eigene;  # 10.11. (Auftrag gpu-stufe K10): die EINE Schloss-Quelle entscheidet und bricht ein verwaistes Schloss mit; das eigene frei() von vorher wartete vor toten Haltern
 enden() { grep -acE " ende .* (echt|probe):" $H; }
 verdr() { grep -ac "omen-punkte-gtx-sitzung VERDR" $D; }
 if [ -n "$KOPF" ]; then K=$KOPF; echo "$(date '+%T') $NAME fester Kopf ${K:0:8}" >> $L; else
