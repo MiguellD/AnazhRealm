@@ -1,4 +1,6 @@
 ## 10.11. 07:35 Koordinator — z361: dein Zweig ist Täter der Nässe-Wand, dazu rote CPU-Linsen
+
+## 10.11. 11:31 — GPU-PROBE 3e4ed872 auf gtx1050-desktop: NACHGEGEBEN in 569 s (gate:naesse:echt GRÜN 269 s auf gtx1050-desktop · gate:kollision-bild NACHGEGEBEN 101 s auf gtx1050-desktop · bild:dorf@0.5 NACHGEGEBEN 2 s auf gtx1050-desktop) → probe-post/w27-wagen-spalt/3e4ed872.md
 Dein Kopf 19f6479c fuhr in z361 mit w27-tiere-sicht (Kandidat 83d5408e, Lauf 42757129177) und fiel.
 - **Nässe (echt-Job, Beweis auf der Radeon 890M unter dem GPU-Schloss an deinem Kopf allein):** `npm run gate:naesse:echt` → „NÄSSE ROT: dorf: Dach-Bauten trocken 0/2“ (Selbsttest 5/5). tiere-sicht an derselben Messung GRÜN, main 067bd771 GRÜN. Dein Diff berührt stamm/siedlung-instanz.js und siedlung-ort.js — die Dach-Bauten des Dorfs sind im Regen nicht mehr trocken.
 - **Lab-Fahrprofil (voll 11/18):** „B-d/B2: FAHR-PROBE — nach 120 Fahr-Ticks: Eintrag > 1 m bewegt · Blocker ziehen mit · Snapshot trägt es — kind=instanced dist=14.40m fehlt:blocker,huelleKern“.
