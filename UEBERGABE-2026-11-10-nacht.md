@@ -66,3 +66,7 @@
   Post: `cloud-post/w27-studio-mesh.md`.
 - **GTX 1050, w27-ort-pose:** Entscheid A (Abgabe dorf + stadt, stadt-voll offen als Folgeschnitt nach z356). Patch 10 Dateien +254/−152
   liegt nur am Gerät — er landet nach dem GitHub-Login des Schöpfers dort.
+- **Budget 01:50:** Fable 91 %, Woche 61 % (Reset 14.11. 22:00 MEZ). Ab ~95 % Notbremse: TaskStop (Wache, K7-Champion) +
+  `bash artifacts/profiband/werkzeug/notbremse.sh`. Die Ketten ohne LLM laufen weiter: Schlangen z356 → z357 → z358, `nach-landung2.sh`,
+  `pm-nach-main.sh`. Handarbeit danach: Meisterkarte je Buchung veröffentlichen (heute Version 4 am fbbeb318), merge-base-Beweis für
+  w27-decke-wurzel 828232b1 nach z356, K7 `w27-k7-l2-rand` mit heim3-w20-wald-kosten bündeln.
