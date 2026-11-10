@@ -38,12 +38,28 @@ blick() {
     done
     [ -s "$S/zug.fahrt" ] && echo "  in Fahrt: $(cat "$S/zug.fahrt" | cut -c1-200)"
 }
+# der MSYS-Baum ab PID $1, Kinder zuerst (10.11. 22:34: taskkill /T auf die Schleife ließ ihr Kind buche.sh leben — der
+# Windows-Elter eines MSYS-Kinds ist nicht immer sein Elter)
+baum() {
+    local k
+    for k in $(ps -ef | awk -v p="$1" '$3==p{print $2}'); do baum "$k"; done
+    echo "$1"
+}
 stopp() {
-    local n p
+    local n p m q w
     for n in ${1:-$SCHLEIFEN}; do
         p=$(cat "$S/$n.pid" 2>/dev/null)
-        if lebt $n; then taskkill //T //F //PID "$p" >/dev/null 2>&1 && echo "$n beendet (PID $p)"; fi
-        rm -f "$S/$n.pid"
+        m=$(cat "$S/$n.mpid" 2>/dev/null)
+        if lebt $n; then
+            [ -n "$m" ] && for q in $(baum "$m"); do
+                w=$(cat /proc/$q/winpid 2>/dev/null)
+                [ -n "$w" ] && taskkill //T //F //PID "$w" >/dev/null 2>&1
+                kill -9 "$q" 2>/dev/null
+            done
+            taskkill //T //F //PID "$p" >/dev/null 2>&1
+            echo "$n beendet (PID $p)"
+        fi
+        rm -f "$S/$n.pid" "$S/$n.mpid"
     done
 }
 case "$1" in

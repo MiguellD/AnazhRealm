@@ -1,7 +1,7 @@
 {
  "sha": "4e2df19b5c5103b093818b62b5a84ababf85b493",
  "geraet": "gtx",
- "zeit": "2026-11-10T21:29:18.143Z",
+ "zeit": "2026-11-10T21:34:57.460Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "affekt.K4#2": {
@@ -212,22 +212,109 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "bauen.K1#2": {
+   "gruen": false,
+   "zahl": "6/8 Werke in L0 im Bild (Bau-Hash = L0-Bau, ≤ 3 Eingaben) · p95 bis zum Bild werkstatt kalt 3319 · warm 788 ms (2+1) · rezeptbuch kalt null · warm null ms (0+0) · hotbar kalt 3924 · warm 1620 ms (1+2) · ROT: werkstatt p95 kalt 3319 · warm 788 ms · rezeptbuch · frieden mit Material · Haus · Third (Stufe 1) · rezeptbuch · pfad · Eiche · Third (Stufe 1) · hotbar p95 kalt 3924 · warm 1620 ms",
+   "exit": 0,
+   "minuten": 0.76,
+   "grund": "ROT: 6/8 Werke in L0 im Bild (Bau-Hash = L0-Bau, ≤ 3 Eingaben) · p95 bis zum Bild werkstatt kalt 3319 · warm 788 ms (2+1) · rezeptbuch kalt null · warm null ms (0+0) · hotbar kalt 3924 · warm 1620 ms (1+2) · ROT: werkstatt p95 kalt 3319 · warm 788 ms · rezeptbuch · frieden mit Material · Haus · Third (Stufe 1) · rezeptbuch · pfad · Eiche · Third (Stufe 1) · hotbar p95 kalt 3924 · warm 1620 ms",
+   "mass": [
+    {
+     "wort": "werkstatt p95 bis zum Bild kalt ms",
+     "wert": 3319,
+     "soll": 1000
+    },
+    {
+     "wort": "werkstatt p95 bis zum Bild warm ms",
+     "wert": 788,
+     "soll": 1000
+    },
+    {
+     "wort": "hotbar p95 bis zum Bild kalt ms",
+     "wert": 3924,
+     "soll": 1000
+    },
+    {
+     "wort": "hotbar p95 bis zum Bild warm ms",
+     "wert": 1620,
+     "soll": 1000
+    }
+   ],
+   "gpu": "nvidia/pascal",
+   "s": 45.4,
+   "fremd": {
+    "s": 47.8,
+    "takte": 22,
+    "fremdS": 18.67,
+    "kerne": 0.391,
+    "fensterKerne": 0.49,
+    "namen": [
+     [
+      "claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      8.34
+     ],
+     [
+      "claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.39
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      2.88
+     ]
+    ],
+    "dienerS": 15.19,
+    "diener": [
+     [
+      "dwm.exe",
+      7.16
+     ],
+     [
+      "System",
+      5.84
+     ]
+    ],
+    "geraetS": 11.67,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      6.48
+     ],
+     [
+      "svchost.exe",
+      4.17
+     ],
+     [
+      "SearchIndexer.exe",
+      0.48
+     ]
+    ],
+    "eigenS": 175.5,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon"
+   },
+   "zeit": "2026-11-10T21:34:57.460Z",
+   "abdruck": "16d0aff9ab8b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-10T21:28:46.043Z",
+  "start": "2026-11-10T21:34:11.184Z",
   "port": 7804,
-  "warten": 0.01,
-  "bootS": 6.9,
+  "warten": 0.02,
+  "bootS": 6.4,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": "genesis",
-    "vor": "ankunft.K4#1",
-    "s": 24,
-    "takte": 684,
+    "ort": null,
+    "vor": "bauen.K1#2",
+    "s": 38.5,
+    "takte": 2270,
     "chunks": 81,
     "nach": null
    }
@@ -236,21 +323,21 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 0,
-   "frameP95": null,
-   "taktP95": null,
-   "vramMax": null,
+   "bilder": 2232,
+   "frameP95": 50.03,
+   "taktP95": 37.71,
+   "vramMax": 138.4,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 90,
-   "luecken": 7,
-   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+   "zapfen": 86,
+   "luecken": 0,
+   "letzteLuecke": null
   },
-  "fahrtS": 178.5,
-  "minuten": 3.05
+  "fahrtS": 91.9,
+  "minuten": 1.59
  },
  "ungemessen": {
   "ankunft.K1#1": {

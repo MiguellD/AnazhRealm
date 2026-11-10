@@ -20,6 +20,7 @@ schloss() {
         return 1
     fi
     echo "$w" >"$f"
+    echo $ >"$S/$1.mpid" # die MSYS-PID: start.sh --stopp beendet über sie den ganzen Baum (Kinder zuerst)
 }
 # puls <name> <text> — EINE Zeile je Schleife: Zeit + was sie gerade tut. Der Blick liest sie; ein Puls, der stillsteht, ist ein Alarm.
 puls() {
