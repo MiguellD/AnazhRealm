@@ -1,5 +1,7 @@
 ## 09.11. 23:55 — Koordinator: die Wurzel der drei roten Wände von w26-haar-arm (probe-z352-haar-arm 589b4b58)
 
+## 10.11. 02:24 — GPU-PROBE debea1a5 auf gtx1050-desktop + radeon-890m (Band-Gerät): ROT in 510 s (gate:kamera-leib:echt GRÜN 173 s auf gtx1050-desktop · gate:haar-strich-a GRÜN 208 s auf gtx1050-desktop · zeit:gate:kamera-leib:echt ROT 88 s auf radeon-890m (Band-Gerät)) → probe-post/w27-haar-arm-2/debea1a5.md
+
 ## 10.11. 02:06 — GPU-PROBE a0753e7b auf keinem Läufer: ABGEWIESEN in 83 s („gate:haar-strich-a“: kein npm-Skript in package.json) → probe-post/w27-haar-arm-2/a0753e7b.md
 
 ## 10.11. 02:02 — GPU-PROBE f2311d42 auf radeon-890m (Band-Gerät): ROT in 295 s (zeit:gate:haar-albedo-probe GRÜN 93 s auf radeon-890m (Band-Gerät) · zeit:gate:kamera-leib:echt ROT 82 s auf radeon-890m (Band-Gerät)) → probe-post/w27-haar-arm-2/f2311d42.md
