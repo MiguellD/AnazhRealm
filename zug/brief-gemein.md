@@ -37,3 +37,16 @@ Die Arbeit läuft wieder. Der STOPP vom 17:48 gilt nicht mehr.
 - **GitHub Actions hatte um 19:20 einen großen Ausfall** (githubstatus.com: Actions major_outage). Solange er dauert, laufen weder Puls noch `[gpu-probe: …]`. Ein Lauf endet dann als „failure“ mit 0 Jobs, und das ist kein Urteil über deinen Code. Prüfe den Stand mit `curl -s https://www.githubstatus.com/api/v2/summary.json`. Arbeite bis dahin am Code und am headless-Beweis weiter. Nach dem Ausfall setzt du die Probe mit einem neuen Kopf-Commit, der den Tag trägt.
 - **Keine WIP-Nachricht mit Siegel-Wort**, auch nicht als Wortteil. w25-gpu-wahl fiel in z350 an „fertig“ in einer alten WIP-Nachricht. Der Zug prüft JEDEN Commit des Zweigs.
 - **Neu: ein Bau-Schloss im Zug** (`zug.cjs bau`). Den Zug fährt nur der Koordinator.
+
+## 10.11. 23:10 Koordinator (Konto 11) — DER ZUG-DIENST und die BREITE
+- **Die Zug-Maschine ist EIN versionierter Dienst** (koordination `zug/dienst/`, Einstieg `start.sh`): er sammelt alle 5 min die Zweige
+  `w27-*` und `w28-*`, deren Kopf-Commit mit „Abgabe“ beginnt, deren Code-Check GRÜN ist und — sobald der Zweig das Spiel berührt — deren
+  GPU-Probe GRÜN ist, bündelt höchstens vier konfliktfreie mit grüner Wand-Summe, fährt, urteilt und landet. Es gibt keine Hand-Fahrt mehr.
+  Ein gefahrener Kopf fährt erst mit NEUEM Kopf wieder. Neue Arbeit heißt `w28-<name>`.
+- **Die BREITE ist offen** (Schöpfer 10.11.: „Ja, Breite öffnen“): Gesetzbuch-Tiefe in den Kernen und Studios, je Auftrag EIN Kriterium der
+  Staffel Breite (`BEFUND-GROSSES-BILD-2026-11-10.md` §5), mit einem KONSUM-LESER im Ego-Lauf (Probe in einer bestehenden Familie + Selbsttest
+  + Mutante), bevor ein Punkt zählt. Den Stations-Eintrag liefert der Macher als eigenen Zweig `<zweig>-pm` von origin/punkte-maschine.
+- **Datei-Besitz der Breite:** `fachwerk-core.js` und `stamm/siedlung-ort.js · siedlung-bauten.js · siedlung-satz.js` gehören
+  `w28-stadt-grammatik`. Wer sie braucht, liest sie und schreibt seinen Wunsch nach `cloud-post/w28-stadt-grammatik.md`.
+- **Was das Auge am 10.11. sah** (main 4e2df19b, „dorf 7 300“): ein Mauerring R 173 m, innen fast leer; Häuser als Einzelreihe an Erdwegen,
+  Gras in der Gasse; 6 Rollen, 2 Kulturen; der Markt zwei Stände. Das ist der Ausgangspunkt, an dem jede Breite-Arbeit sich misst.
