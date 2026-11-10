@@ -1,7 +1,7 @@
 {
  "sha": "78d37554b2d5f98d96ef454cfa9f51752c0e45a0",
  "geraet": "gtx",
- "zeit": "2026-11-10T04:36:53.292Z",
+ "zeit": "2026-11-10T05:17:31.370Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "ferne.K1#2": {
@@ -245,6 +245,55 @@
    },
    "zeit": "2026-11-10T04:36:53.292Z",
    "abdruck": "13a0cc06ffb8",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "lod.K5#1": {
+   "gruen": false,
+   "zahl": "Baum 5.15 px · Haus 0.14 px · Tor 0.18 px · Wagen 0.08 px (Soll ≤ 1 px am Wechsel-Abstand, 1920 × 1080) · gate L2: Exemplar 73 px, [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.7,
+   "grund": "ROT: Baum 5.15 px · Haus 0.14 px · Tor 0.18 px · Wagen 0.08 px (Soll ≤ 1 px am Wechsel-Abstand, 1920 × 1080) · gate L2: Exemplar 73 px, [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "s": 41.8,
+   "fremd": {
+    "s": 43.5,
+    "takte": 20,
+    "fremdS": 75.34,
+    "kerne": 1.733,
+    "fensterKerne": 1.927,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      45.5
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      7.97
+     ],
+     [
+      "MsMpEng.exe",
+      6.91
+     ]
+    ],
+    "dienerS": 11.8,
+    "diener": [
+     [
+      "System",
+      4.61
+     ],
+     [
+      "dwm.exe",
+      4.59
+     ]
+    ],
+    "eigenS": 73.42,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-10T05:17:31.370Z",
+   "abdruck": "ca610f2672bb",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
@@ -1504,19 +1553,19 @@
   }
  },
  "sitzung": {
-  "start": "2026-11-10T04:36:15.683Z",
+  "start": "2026-11-10T05:16:53.624Z",
   "port": 7804,
-  "warten": 0.02,
-  "bootS": 7,
+  "warten": 0.01,
+  "bootS": 7.4,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
     "ort": "wiese",
-    "vor": "lod.K1#1",
+    "vor": "lod.K5#1",
     "s": 28.9,
-    "takte": 721,
+    "takte": 541,
     "chunks": 81,
     "nach": null
    }
@@ -1525,20 +1574,20 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 273,
-   "frameP95": 50.01,
-   "taktP95": 34.66,
-   "vramMax": 130.8,
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 96,
-   "luecken": 2,
-   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+   "zapfen": 73,
+   "luecken": 0,
+   "letzteLuecke": null
   },
-  "fahrtS": 127.1,
-  "minuten": 2.2
+  "fahrtS": 79.6,
+  "minuten": 1.38
  }
 }
