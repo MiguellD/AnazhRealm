@@ -41,3 +41,9 @@ echter Fall) · Zug-Dauer gemessen z370: 17 min bis zum Urteil (OMEN-Bein 15,7 m
 - Messen neben CI ist keine Messung (17:08–17:40 und 18:02 → radeon-nie-leer2 mit CI-Vorrang; nach-landung2.sh beendet).
 - Die OMEN-Platte war voll (0,4 GB) und legte Pushes und z368 still → nach dem Ja des Schöpfers 43,8 GB frei.
 - Die Uhr des Blicks: Schritt-Wechsel und Job-Ende sind Fortschritt; Sitzungs-Zeilen tragen HH:MM.
+
+## Nachtrag 20:15 — das große Bild
+BEFUND-GROSSES-BILD-2026-11-10.md ZUERST LESEN: sieben Blockaden mit Täter (B1 der Maßstab misst die falsche Breite · B2 der Richter steht nicht im Zug · B3 die Zug-Maschine lebt unversioniert in /tmp · B4 der Koordinator ist der Engpass · B5 die drei Karten werden zerrieben · B6 geteilter Mess-Code fächert aus · B7 die Studios sind keine EINE Engine), die Vision neben dem Bestand, der Plan (Phase 0 Erwachen der Geräte → 1 Wurzel-Schnitte des Prozesses → 2 zurück über 224 → 3 Breite als Gesetz nach dem Ja des Schöpfers).
+- z372 (Tagesfenster + gpu-wahl-heil + studio-mesh + ort-pose) Kandidat b269f840 seit 19:56 in CI; der Bau-Schnitt in zug.cjs (Fenster des Kandidaten-Gesetzes) trägt.
+- w27-takt-gc 575fcc91 heilt beide z370-Befunde (GTX 1050), fährt nach z372.
+- ferne.K3 + lod.K4: Täter per Halbierung 4f4b15a4 (Merge w27-wald-kosten-heim); Konsum-Probe main ohne Kappungs-Räumung (d03e4a5f) → /tmp/claude/w4/wald-probe.log.
