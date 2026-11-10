@@ -1311,6 +1311,7 @@ class AnazhRealm_gelaende_kollision {
         entry._gestaltMass = M;
         entry._fahrHuelleKette = null;
         if (entry.blockerAABBs) this._populateBlockerAABBs(entry);
+        if (entry._verkehrWagen) this._verkehrUmriss(entry._verkehrWagen, entry); // der Plan des Verkehrs misst mit
     }
 
     // Fels-/Kristall-Hülle: JEDES Werk, das das Studio als Fels zeichnet (sein Preset ist ein Fels-Rezept mit gemessener
