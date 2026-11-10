@@ -977,9 +977,12 @@ async function kreaturProben(r, T, opts) {
             // dichteren Walds (heim2-w20-wald-kosten) in 50 s nur auf 0,916 (Soll ≥ 0,9) auseinander, an main 0,791 — die Zahl der
             // Wanderung hing am Ort, nicht am Gesetz; der Verband hält, solange er wandert, also urteilt die Probe über 10–120 s
             t.takte = art === "blick" ? 1200 : fremd.length ? 36000 : art === "wander" ? 7200 : 3600;
+            // DER SPIELER STEHT JENSEITS DER NAH-REGEL (w27-wagen-spalt-3): `isInFrustum` nennt jedes Tier binnen 50 m sichtbar,
+            // wohin die Kamera auch blickt — bei 45 m sah der Blick-Vergleich den Täter `herde` nur an Gliedern, die zufällig über
+            // 50 m hinaus wanderten (main 1,47 m, mit der gezeichneten Haut 0,83 m, im CI 0: blind); bei 60 m 9,32 m
             for (let k = 0; k < t.takte; k++) {
                 const g0 = fremd.length && [6000, 18000].find((k0) => k >= k0 && k < k0 + 3600);
-                const x = flucht ? -30 + (1.4 * k) / 60 : g0 ? -30 + (1.4 * (k - g0)) / 60 : 45;
+                const x = flucht ? -30 + (1.4 * k) / 60 : g0 ? -30 + (1.4 * (k - g0)) / 60 : 60;
                 const q = neben(heim.x + x, heim.z + (g0 ? (g0 > 6000 ? 42 : -12) : 0));
                 pm.set(q.x, q.y, q.z);
                 if (k % 600 === 0) kamera(flucht || art === "blick" ? 1 : -1, 0);
