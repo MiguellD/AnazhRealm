@@ -1,5 +1,7 @@
 ABGABE d77c2744 (Zweig w27-studio-mesh, main 900c28e gemischt — dc29205f steht in main seit V18.546.243) · Probe-Ruf: gate:studio-uebergabe, gate:wasser-leben:bild, bild:wiese@0.5 · Station: w27-studio-mesh-pm d8ee61f (die Differenz je Seh-Klasse; davor 4846d77, c0d7963)
 
+## 10.11. 08:59 — GPU-PROBE d77c2744 auf gtx1050-desktop: GRÜN in 260 s (gate:studio-uebergabe GRÜN 85 s auf gtx1050-desktop · gate:wasser-leben:bild GRÜN 37 s auf gtx1050-desktop · bild:wiese@0.5 GRÜN 93 s auf gtx1050-desktop) → probe-post/w27-studio-mesh/d77c2744.md
+
 ## 10.11. 08:54 — GPU-PROBE 972a2bcf auf radeon-890m: ROT in 367 s (gate:garage-labor ROT 105 s auf radeon-890m · gate:studio-uebergabe GRÜN 49 s auf radeon-890m · bild:wiese@0.5 GRÜN 53 s auf radeon-890m) → probe-post/w27-studio-mesh/972a2bcf.md
 
 ## 10.11. 02:57 — GPU-PROBE dc29205f auf radeon-890m: GRÜN in 525 s (gate:studio-uebergabe GRÜN 63 s auf radeon-890m · gate:wasser-leben:bild GRÜN 42 s auf radeon-890m · bild:wiese@0.5 GRÜN 71 s auf radeon-890m) → probe-post/w27-studio-mesh/dc29205f.md
