@@ -189,7 +189,7 @@
   },
   "ankunft.K3": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: ankunft.K3#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/software-gpu.cjs, scripts/lib/welt-boot.cjs) — zuletzt an 6aa7a5a6: Frist der Probe 7 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 0 von 2 Zweit-Boots mit Kontrolle von außen (Exit 0) · [linse-gpu] amd/rdna-3) · Täter: SPUR kalt {\"stand\":\"gemessen\",\"kontrolleM · ankunft.K3#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/software-gpu.cjs, scripts/lib/welt-boot.cjs) — zuletzt an 6aa7a5a6: Fremd-Last: MsMpEng.exe 28,9 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 19,5 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjx",
+   "beleg": "Maschine: 0 — offen: ankunft.K3#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/software-gpu.cjs, scripts/lib/welt-boot.cjs) — zuletzt an 6aa7a5a6: Frist der Probe 7 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 0 von 2 Zweit-Boots mit Kontrolle von außen (Exit 0) · [linse-gpu] amd/rdna-3) · Täter: SPUR kalt {\"stand\":\"gemessen\",\"kontrolleM · ankunft.K3#1 gtx: ROT: warm Median 10.09 s (9.87 · 10.32, Zweit-Boot im warmen Browser) · [linse-gpu] nvidia/pascal · ROT trotz Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 9,1 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 5,0 CPU-s · LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio 2,7 CPU-s — 0,65 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon; Σ fremd 24,4 CPU-s in 52,0 s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 16,5 CPU-s · svchost.exe 4,6 CPU-s · SearchIndexer.exe 0,5 CPU-s) — geeicht ÷ 1,037 (1 + 5,6 % je fremdem Kern × 0,65): warm Median s 10,09 → geeicht 9,739 (Soll ≤ 5) an 5b9c6427",
    "stationen": [
     {
      "id": "ankunft.K3#1",
@@ -204,16 +204,15 @@
      "id": "ankunft.K3#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/software-gpu.cjs, scripts/lib/welt-boot.cjs) — zuletzt an 6aa7a5a6: Fremd-Last: MsMpEng.exe 28,9 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 19,5 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjx",
-     "ungemessen": true
+     "zahl": "warm Median 10.09 s (9.87 · 10.32, Zweit-Boot im warmen Browser) · [linse-gpu] nvidia/pascal",
+     "sha": "5b9c6427d7e3db0712e20d104b012a83f8ffd68c",
+     "grund": "ROT: warm Median 10.09 s (9.87 · 10.32, Zweit-Boot im warmen Browser) · [linse-gpu] nvidia/pascal · ROT trotz Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 9,1 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 5,0 CPU-s · LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio 2,7 CPU-s — 0,65 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon; Σ fremd 24,4 CPU-s in 52,0 s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 16,5 CPU-s · svchost.exe 4,6 CPU-s · SearchIndexer.exe 0,5 CPU-s) — geeicht ÷ 1,037 (1 + 5,6 % je fremdem Kern × 0,65): warm Median s 10,09 → geeicht 9,739 (Soll ≤ 5)"
     }
    ]
   },
   "ankunft.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: ankunft.K4#1 radeon: ungemessen (R10) — zuletzt an 2d5f4146: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: POSE ego-0 46917 ms) · ankunft.K4#1 gtx: ungemessen (R10) — zuletzt an 2d5f4146: Deckel 139 s gerissen: Stille seit 15 s nach 151.6 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-45 64517 ms)",
+   "beleg": "Maschine: 0 — offen: ankunft.K4#1 radeon: ungemessen (R10) — zuletzt an 2d5f4146: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: POSE ego-0 46917 ms) · ankunft.K4#1 gtx: ungemessen (R10) — zuletzt an 5b9c6427: Deckel 139 s gerissen: Stille seit 15 s nach 148.8 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-45 64976 ms)",
    "stationen": [
     {
      "id": "ankunft.K4#1",
@@ -230,7 +229,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 2d5f4146: Deckel 139 s gerissen: Stille seit 15 s nach 151.6 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-45 64517 ms)",
+     "grund": "ungemessen (R10) — zuletzt an 5b9c6427: Deckel 139 s gerissen: Stille seit 15 s nach 148.8 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-45 64976 ms)",
      "ungemessen": true
     }
    ]
@@ -4485,7 +4484,7 @@
  },
  "rueckfall": [],
  "kopfVoll": "5b9c6427d7e3db0712e20d104b012a83f8ffd68c",
- "zeit": "2026-11-10T19:14:30.856Z",
+ "zeit": "2026-11-10T19:25:29.630Z",
  "vorher": "5b9c6427",
  "pflicht": {
   "dokument": "docs/PFLICHT-OFFEN.md",
