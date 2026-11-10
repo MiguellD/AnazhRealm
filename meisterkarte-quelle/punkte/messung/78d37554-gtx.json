@@ -1,7 +1,7 @@
 {
  "sha": "78d37554b2d5f98d96ef454cfa9f51752c0e45a0",
  "geraet": "gtx",
- "zeit": "2026-11-10T04:20:36.381Z",
+ "zeit": "2026-11-10T04:26:03.963Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "ferne.K1#2": {
@@ -98,6 +98,55 @@
    },
    "zeit": "2026-11-10T03:21:00.374Z",
    "abdruck": "ac98a8751e4d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "licht.K2#2": {
+   "gruen": false,
+   "zahl": "Uhr 0.5 klar (Sonne 74.2°) 5.304, Schatten-Anteil 0.1885 · Uhr 0.27 klar (Sonne 7.2°) 1.301 UNGÜLTIG (A/B 0.855, A/C 1.000, 1481 px) · Uhr 0.73 klar (Sonne 6.7°) 1.035 UNGÜLTIG (A/B 0.699, A/C 1.000, 1496 px) · Uhr 0.5 Regen (Sonne 74.2°) 1.106 UNGÜLTIG (A/B 0.701, A/C 1.010, 1497 px) · Uhr 0.27 Regen (Sonne 7.2°) 1 · Uhr 0.73 Regen (Sonne 6.7°) 1 · Himmel zur Sonne 1.289 (13030/13030 px, Belichtung 42.2213/42.2213, 20 m über dem Boden) · Soll klar 0,5: 5–12,5, 0,08–0,20, Himmel ≥ 1,2; klar 0,27/0,73 ≥ 2,5; Regen ≤ 1,5 · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.99,
+   "grund": "ROT: Uhr 0.5 klar (Sonne 74.2°) 5.304, Schatten-Anteil 0.1885 · Uhr 0.27 klar (Sonne 7.2°) 1.301 UNGÜLTIG (A/B 0.855, A/C 1.000, 1481 px) · Uhr 0.73 klar (Sonne 6.7°) 1.035 UNGÜLTIG (A/B 0.699, A/C 1.000, 1496 px) · Uhr 0.5 Regen (Sonne 74.2°) 1.106 UNGÜLTIG (A/B 0.701, A/C 1.010, 1497 px) · Uhr 0.27 Regen (Sonne 7.2°) 1 · Uhr 0.73 Regen (Sonne 6.7°) 1 · Himmel zur Sonne 1.289 (13030/13030 px, Belichtung 42.2213/42.2213, 20 m über dem Boden) · Soll klar 0,5: 5–12,5, 0,08–0,20, Himmel ≥ 1,2; klar 0,27/0,73 ≥ 2,5; Regen ≤ 1,5 · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "s": 59.1,
+   "fremd": {
+    "s": 61.1,
+    "takte": 28,
+    "fremdS": 108.48,
+    "kerne": 1.775,
+    "fensterKerne": 1.947,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      64.67
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      11.22
+     ],
+     [
+      "MsMpEng.exe",
+      10.34
+     ]
+    ],
+    "dienerS": 18.72,
+    "diener": [
+     [
+      "System",
+      8.05
+     ],
+     [
+      "dwm.exe",
+      7.16
+     ]
+    ],
+    "eigenS": 80.61,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-10T04:26:03.963Z",
+   "abdruck": "455ca280d176",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
@@ -1357,19 +1406,19 @@
   }
  },
  "sitzung": {
-  "start": "2026-11-10T04:19:59.906Z",
+  "start": "2026-11-10T04:25:25.658Z",
   "port": 7804,
   "warten": 0.02,
-  "bootS": 7.5,
+  "bootS": 8.5,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": "genesis",
-    "vor": "licht.K1#1",
-    "s": 27.6,
-    "takte": 689,
+    "ort": "wiese",
+    "vor": "licht.K2#2",
+    "s": 28.5,
+    "takte": 565,
     "chunks": 81,
     "nach": null
    }
@@ -1386,19 +1435,12 @@
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
-   "ortImDeckel": [
-    {
-     "probe": "licht.K1#1",
-     "m": 1083,
-     "ringVor": 4,
-     "ringMin": -1
-    }
-   ],
-   "zapfen": 122,
+   "ortImDeckel": [],
+   "zapfen": 91,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 130.5,
-  "minuten": 2.25
+  "fahrtS": 98.1,
+  "minuten": 1.69
  }
 }
