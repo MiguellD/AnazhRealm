@@ -17,6 +17,7 @@
 # frei (z374 am 10.11.: takt-gc und takt-gc-2 standen als „gefahren“, ohne je gebaut zu sein). Drei Maschinen-Fehler in Folge = ALARM
 # im Puls, 15 min Halt.
 # Aufruf: zug-dienst.sh [--blick]   (--blick druckt, was jetzt führe, und fährt nichts)
+#         zug-dienst.sh --frei <zweig> …   (gefahrene Köpfe wieder frei geben: nur nach gemessenem Wackler an main)
 D=$(cd "$(dirname "$0")" && pwd)
 . "$D/gemein.sh"
 L=$W/zug-nie-leer.log
@@ -24,6 +25,17 @@ G=$W/zug-gefahren.txt
 touch "$G"
 ZWEIGE="refs/heads/w27-* refs/heads/w28-*" # die alten w26-Abgaben fuhren und fielen schon — sie führe der Dienst als Karussell
 blick="$1"
+# --frei <zweig> …: die Köpfe eines Zweigs fahren wieder, ohne neuen Kopf — NUR wenn sein Zug an einer Wand fiel, die gemessen auch an
+# main fällt (10.11. 23:45: z375 fiel am echt-Bein der GTX 1050; A main 1 von 2 rot, B Kandidat 1 von 2 rot → kein Täter im Zug)
+if [ "$1" = "--frei" ]; then
+    shift
+    for b in "$@"; do
+        grep -v "^$b " "$G" >"$G.neu"
+        mv "$G.neu" "$G"
+        echo "$(date +%H:%M) $b: Köpfe wieder frei (--frei)" >>"$L"
+    done
+    exit 0
+fi
 [ -n "$blick" ] || schloss zug || exit 0
 
 bereit() {

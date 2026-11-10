@@ -6,7 +6,10 @@
 # Sonst „[<zid>w] FAHRT ROT <schritte>“. Die nächste Schlange wartet auf <zid>w.
 Z="$1"; L=/tmp/claude/fahre-$Z.log; O=/tmp/claude/fahre-${Z}w.log
 R=MiguellD/AnazhRealm
-WACKEL='Stand-Takt|Fenster-Wand|Fahr-Linse des Lebens|Kreatur-Linse|Mehrspieler-Wand|Erst-Zeichnungs-Wand|Ziel-Zensus|Frost-Wand|Ego-Schatten|Kamera-Leib auf der Karte'
+# Volle-Bühne-Prädikat (10.11. 23:45, gemessen auf der GTX 1050 je frischer Lauf): main 4e2df19b 1 von 2 rot, Kandidat a2826f12 1 von 2
+# rot — in den roten Läufen liefert die Foundry nichts (BIBLIOTHEK warm false, LIEFERUNG 0 von 6). Wackler mit Neulauf, bis der Halter
+# beim Namen steht (Auftrag foundry-halter der GTX 1050); danach fällt die Zeile wieder.
+WACKEL='Stand-Takt|Fenster-Wand|Fahr-Linse des Lebens|Kreatur-Linse|Mehrspieler-Wand|Erst-Zeichnungs-Wand|Ziel-Zensus|Frost-Wand|Ego-Schatten|Kamera-Leib auf der Karte|Volle-Bühne-Prädikat'
 FREI='Fenster-Wand|Kamera-Leib auf der Karte'   # 08.11.: rot ohne je einen Täter → Landung ohne Neulauf (zug.cjs --wackler-frei)
 say() { echo "$(date +%H:%M:%S) [${Z}w] $*" | tee -a "$O"; }
 TOK=$(printf "protocol=https\nhost=github.com\n\n" | git -C /c/Users/micha/AnazhRealm-profiband credential fill | sed -n 's/^password=//p')
