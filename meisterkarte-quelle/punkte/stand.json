@@ -832,7 +832,7 @@
   },
   "gelaende.K2": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 8 von 10 Gräben über das Verb, in 1752 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 34.4–203.2 ms (1 m 3, 3 m 5) an b3f9ae95 radeon · gehalten: 8 von 10 Gräben über das Verb, in 2180 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 45.7–366.6 ms (1 m 3, 3 m 5) an 715754fc gtx — offen: gelaende.K2#2 radeon: Station seit der Messung geändert — zuletzt an 2d5f4146: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: (b)(d) 8.7 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf · gelaende.K2#2 gtx: Station seit der Messung geändert — zuletzt an 2d5f4146: Deckel 206 s gerissen (der Anteil der Fahrt, mit Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: (b)(d) 15.7 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"flu",
+   "beleg": "Maschine: gehalten: 8 von 10 Gräben über das Verb, in 1752 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 34.4–203.2 ms (1 m 3, 3 m 5) an b3f9ae95 radeon · gehalten: 8 von 10 Gräben über das Verb, in 2180 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 45.7–366.6 ms (1 m 3, 3 m 5) an 715754fc gtx — offen: gelaende.K2#2 radeon: Station seit der Messung geändert — zuletzt an 2d5f4146: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: (b)(d) 8.7 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf · gelaende.K2#2 gtx: Station seit der Messung geändert — zuletzt an 4e2df19b: Deckel 1759 s gerissen (der Anteil der Fahrt, mit Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: third FEHLER Runtime.callFunctionOn timed out. Increase the 'protocolTimeout' setting in launch/connect",
    "stationen": [
     {
      "id": "gelaende.K2#1",
@@ -867,7 +867,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 2d5f4146: Deckel 206 s gerissen (der Anteil der Fahrt, mit Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: (b)(d) 15.7 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"flu",
+     "grund": "Station seit der Messung geändert — zuletzt an 4e2df19b: Deckel 1759 s gerissen (der Anteil der Fahrt, mit Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: third FEHLER Runtime.callFunctionOn timed out. Increase the 'protocolTimeout' setting in launch/connect",
      "ungemessen": true
     }
    ]
@@ -4483,7 +4483,7 @@
  },
  "rueckfall": [],
  "kopfVoll": "4e2df19b5c5103b093818b62b5a84ababf85b493",
- "zeit": "2026-11-10T22:41:13.262Z",
+ "zeit": "2026-11-10T23:18:15.135Z",
  "vorher": "4e2df19b",
  "pflicht": {
   "dokument": "docs/PFLICHT-OFFEN.md",

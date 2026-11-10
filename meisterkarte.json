@@ -7,7 +7,7 @@
   "max": 330,
   "maschine": {
     "kopf": "4e2df19b",
-    "zeit": "2026-11-10T22:41:13.262Z",
+    "zeit": "2026-11-10T23:18:15.135Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -491,7 +491,7 @@
           "punkte": 1,
           "staffel": "1 = (a) im Ausgabe-Bild an einem Gerät · 2 = (a), (b) und (d) an beiden Geräten, Ego und Third",
           "messung": "Spielgang-Station graben (werkbank, Bach nahe Genesis, Kamera des Spiels): (a) Graben 1 m und 3 m jenseits der Krone: EINE Fläche, nie über dem Spiegel, ≤ 2 s gefüllt; (b) 3-m-Damm quer: Stausee bis zur Überlaufhöhe ±0,1 m, Abfluss stromab hält; (d) Fern-Ring und Hydro-Raster zeigen den Edit ≤ 1 s (byte-Diff am Ring); Speicher-Rundlauf byte-gleich. Die Ruhe des Automaten zählt Feld K3, das Bauen in der Höhe Bauen K4.",
-          "beleg": "Maschine: gehalten: 8 von 10 Gräben über das Verb, in 1752 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 34.4–203.2 ms (1 m 3, 3 m 5) an b3f9ae95 radeon · gehalten: 8 von 10 Gräben über das Verb, in 2180 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 45.7–366.6 ms (1 m 3, 3 m 5) an 715754fc gtx — offen: gelaende.K2#2 radeon: Station seit der Messung geändert — zuletzt an 2d5f4146: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: (b)(d) 8.7 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf · gelaende.K2#2 gtx: Station seit der Messung geändert — zuletzt an 2d5f4146: Deckel 206 s gerissen (der Anteil der Fahrt, mit Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: (b)(d) 15.7 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"flu",
+          "beleg": "Maschine: gehalten: 8 von 10 Gräben über das Verb, in 1752 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 34.4–203.2 ms (1 m 3, 3 m 5) an b3f9ae95 radeon · gehalten: 8 von 10 Gräben über das Verb, in 2180 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 45.7–366.6 ms (1 m 3, 3 m 5) an 715754fc gtx — offen: gelaende.K2#2 radeon: Station seit der Messung geändert — zuletzt an 2d5f4146: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: (b)(d) 8.7 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf · gelaende.K2#2 gtx: Station seit der Messung geändert — zuletzt an 4e2df19b: Deckel 1759 s gerissen (der Anteil der Fahrt, mit Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: third FEHLER Runtime.callFunctionOn timed out. Increase the 'protocolTimeout' setting in launch/connect",
           "schlupfloch": "Ein Sonderfall am Graben-Ort bestünde (a) an einer Stelle: die Station gräbt an Ufer-Punkten aus ≥ 5 Saaten. Ein Punkt aus Null-Renderer-Mechanik zählt nie als Bild (Lehre 16).",
           "aenderung": "Synthese gab 1 ohne 1-Stufe und ohne Bild → 0 (B08); die Ruhe ging nach Feld K3 (B23), das Hoch-Bauen nach Bauen K4 (V18); gemessen 21.10. im Ausgabe-Bild 0 → 1 (M2); nach R6 (feld-ruhe 8de57097) 22.10. 1 → 0; am Kopf 6cfce28a gemessen (M31) 22.10. 0 → 1.",
           "maschine": true
