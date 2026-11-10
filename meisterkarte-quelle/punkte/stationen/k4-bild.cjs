@@ -31,7 +31,17 @@
 // DIE ALBEDO: die Albedo-Tafel beider Seiten (spec/farbe/albedo-tafel.json; Welt `werkbank albedo --tafel` am Ort der Tafel,
 // Labor `diag-albedo-tafel` `messeLabor`), je Studio jede Zeile seines Labors: |Labor/Welt − 1| ≤ 0,10 — gemessen nur für die
 // Studios, deren Differenz im Soll liegt (nur sie kann die Albedo GRÜN machen; bis w4-stationen-schnell für jede gemessene).
-// Nach <AUS.json>: { geraet, studios: { <id>: { werk, welt, buehne, differenz, albedo, gruen, grund, sek } }, albedo, fehler }.
+// DER HIMMEL (w27-studio-mesh): die Welt spiegelt in Lack, Scheibe und Klinge ihren Himmel samt Wolken (`_spiegelPass`), und eine
+// Bühne der Welt (welt-licht.js `buehne`: garage, schmiede) steht unter dem Himmel, den ihr Wirt beim Betreten reicht (`enter.himmel`
+// → `himmelSetzen`). Die Probe ist der Wirt der Seite: nach dem Bild der Welt reicht sie der Bühne den Himmel DIESES Schusses — das
+// Auge auf der Wolken-Schicht, die Bild-Uhr, den Zug, die Deckung (`_himmelUniformen`) und die Gier, mit der die Welt das Werk
+// trägt (`_archEntryWorldMatrix`) —, dann schießt die Bühne. Ohne ihn stand die Bühne unter dem Himmel über dem Ursprung zur
+// Bild-Uhr 0, ungedreht: andere Wolken im selben Lack (Radeon da0e790f: garage 23,5 %, schmiede 24,4 % — Scheibe, Dach, Haube).
+// Eine Bühne, die keinen Himmel der Welt trägt (r128, eigenes Licht), bekommt keine Nachricht (`z.himmel` fehlt).
+// DAS ZIEL IST DAS WERK AN SEINER BOX (`fuss: "false"`): die Abnahme der Welt fragt sonst auch den Boden unter einem Ziel, das
+// 0,6–40 m über ihm steht (der Baum hinter der Kuppe) — die Klinge der Schmiede schwebt 1 m über dem Boden, die Pose steht 1,14 m
+// vor ihr, ihr Fuß liegt unter dem Bild („Ziel Blickziel nicht im Bild (ndc [0,0])“, je nach Boden am Ort des Setzens).
+// Nach <AUS.json>: { geraet, studios: { <id>: { werk, welt, buehne, himmel, differenz, albedo, gruen, grund, sek } }, albedo, fehler }.
 "use strict";
 const fs = require("fs");
 const path = require("path");
@@ -364,6 +374,15 @@ for (let y = 0; y < ${HOEHE}; y++) for (let x = 0; x < ${W}; x++) M[y * ${W} + x
 let b = "";
 for (let i = 0; i < M.length; i += 0x8000) b += String.fromCharCode.apply(null, M.subarray(i, i + 0x8000));
 return { maske: btoa(b), teile: sc.children.length };`;
+// DER HIMMEL DES SCHUSSES (die Uniforms des Himmels stehen am Auge und an der Bild-Uhr des letzten Bilds) und die Gier des Eintrags
+const HIMMEL = `const u = r._himmelUniformen(), M = new T.Matrix4();
+r._archEntryWorldMatrix(window.__k4Werk, M);
+return { ort: [u.auge.value.x, u.auge.value.z], zug: [u.zug.value.x, u.zug.value.y], zeit: u.time.value, deckung: u.cloudCover.value, gier: Math.atan2(M.elements[8], M.elements[10]) };`;
+// trägt die Bühne den Himmel der Welt (welt-licht.js `buehne`: `himmelSetzen`)? Dann ihr Zustand, sonst null
+const BUEHNEN_HIMMEL = () => {
+    const w = new Function('return typeof welt !== "undefined" ? welt : undefined;')();
+    return w && typeof w.himmelSetzen === "function" ? w.himmel : null;
+};
 const WEG = `if (window.__k4Werk) r.removeArchitecture(window.__k4Werk, { still: true }); window.__k4Werk = null; return 1;`;
 
 // `nur`: die Studios, deren Bild-Differenz im Soll liegt — nur ihre Albedo kann ein Urteil tragen (ein Studio ohne Differenz im Soll
@@ -461,7 +480,7 @@ H.fahre(async function k4Bild(H) {
             teil("welt");
             const datei = path.join(DIR, sid + "-welt.png");
             const [k, l] = [rahmen.kamera, rahmen.mitte];
-            const bild = await ruf("/bild", { px: k[0], py: k[1], pz: k[2], lx: l[0], ly: l[1], lz: l[2], w: W, h: HOEHE, fov: POSE.fov, wahl: "0", datei });
+            const bild = await ruf("/bild", { px: k[0], py: k[1], pz: k[2], lx: l[0], ly: l[1], lz: l[2], w: W, h: HOEHE, fov: POSE.fov, wahl: "0", fuss: "false", datei });
             if (!bild || !bild.datei || !fs.existsSync(datei)) throw new Error("bild: " + JSON.stringify(bild).slice(0, 300));
             const bw = pngLesen(datei);
             const lw = new Uint8Array(W * HOEHE);
@@ -469,9 +488,18 @@ H.fahre(async function k4Bild(H) {
             const gw = await welt(WELT_GESTALT(k, l, POSE.fov));
             const kw = new Uint8Array(Buffer.from(gw.maske, "base64"));
             z.welt = { ...gesetzt, takte: auge.takte, fuss: auge.fuss, stufe: auge.stufe, R: rahmen.R, dist: rahmen.dist, klassen: rahmen.klassen, maske: "gestalt", teile: gw.teile, pixel: kw.reduce((s, v) => s + v, 0), abnahme: bild.abnahme || null };
+            const himmel = await welt(HIMMEL);
             await welt(WEG);
             teil("bild");
             await page.bringToFront();
+            // die Probe als Wirt: der Himmel des Schusses reist wie beim Betreten (`enter.himmel`), zwei Bilder später steht er
+            if (await frame().evaluate(BUEHNEN_HIMMEL)) {
+                await page.evaluate((h) => document.getElementById("f").contentWindow.postMessage({ type: "enter", avatar: {}, himmel: h }, "*"), himmel);
+                await page.evaluate(BILD);
+                await page.evaluate(BILD);
+                z.himmel = await frame().evaluate(BUEHNEN_HIMMEL);
+                if (!z.himmel || z.himmel.zeit !== himmel.zeit || z.himmel.gier !== himmel.gier) throw new Error("die Bühne nahm den Himmel der Welt nicht (" + JSON.stringify(z.himmel) + ")");
+            }
             const s = await frame().evaluate(SCHUSS, { S, W, H: HOEHE, fov: POSE.fov, lokal: rahmen.lokal });
             WB.pngDatei(path.join(DIR, sid + "-buehne.png"), s.png);
             const [ls, ms] = [s.luma, s.maske].map((x) => new Uint8Array(Buffer.from(x, "base64")));

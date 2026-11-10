@@ -493,6 +493,7 @@ const K4_PFAD = [
     "worlds/tetrapoda/",
     "*-core.js",
     "foundry-bruecke.js",
+    "welt-licht.js",
     "stamm/werkstatt-vorschau.js",
     "stamm/werkstatt-bauen.js",
     "stamm/netz-portal.js",
@@ -507,6 +508,8 @@ const K4_PFAD = [
     "scripts/lib/albedo-tafel.cjs",
     "scripts/lib/licht-linsen.cjs",
     "scripts/lib/ausgabe-aufnahme.cjs",
+    "scripts/lib/abnahme-urteil.cjs",
+    "scripts/lib/kamera-nah.cjs",
     "scripts/lib/welt-boot.cjs",
     "scripts/lib/software-gpu.cjs",
 ];
