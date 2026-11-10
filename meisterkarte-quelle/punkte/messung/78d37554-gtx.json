@@ -1,7 +1,7 @@
 {
  "sha": "78d37554b2d5f98d96ef454cfa9f51752c0e45a0",
  "geraet": "gtx",
- "zeit": "2026-11-10T05:22:55.373Z",
+ "zeit": "2026-11-10T05:28:21.029Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "ferne.K1#2": {
@@ -342,6 +342,55 @@
    },
    "zeit": "2026-11-10T05:22:55.373Z",
    "abdruck": "18928b5b08be",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "physik.K2#2": {
+   "gruen": false,
+   "zahl": "Wagen fahrzeug_supersport 81.67 m/s (vmax 68.06 × 1.2), 20/20 Läufe ohne Durchtritt, Eindringen max 0 m · gestoßener Bär 68.95 m/s · im Bild an der Mauer: Wagen Spalt max 0.16 m, Eindringen max 0.034 m; Bär Spalt max 0 m, Eindringen max 0.158 m · 8 Verstöße (OFFEN (V) BILD ≠ KOLLISION: wagen 81.66 m/s @144 → _t_kontakt_mauer#2112 — im Bild Spalt 0)",
+   "exit": 0,
+   "minuten": 1.42,
+   "grund": "ROT: Wagen fahrzeug_supersport 81.67 m/s (vmax 68.06 × 1.2), 20/20 Läufe ohne Durchtritt, Eindringen max 0 m · gestoßener Bär 68.95 m/s · im Bild an der Mauer: Wagen Spalt max 0.16 m, Eindringen max 0.034 m; Bär Spalt max 0 m, Eindringen max 0.158 m · 8 Verstöße (OFFEN (V) BILD ≠ KOLLISION: wagen 81.66 m/s @144 → _t_kontakt_mauer#2112 — im Bild Spalt 0)",
+   "gpu": "nvidia/pascal",
+   "s": 84.9,
+   "fremd": {
+    "s": 87.2,
+    "takte": 40,
+    "fremdS": 150.97,
+    "kerne": 1.731,
+    "fensterKerne": 1.882,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      91.89
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      15.14
+     ],
+     [
+      "MsMpEng.exe",
+      13.52
+     ]
+    ],
+    "dienerS": 27.44,
+    "diener": [
+     [
+      "dwm.exe",
+      14.59
+     ],
+     [
+      "System",
+      8.45
+     ]
+    ],
+    "eigenS": 168.7,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-10T05:28:21.029Z",
+   "abdruck": "cd5b4a43c492",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
@@ -1601,30 +1650,24 @@
   }
  },
  "sitzung": {
-  "start": "2026-11-10T05:22:18.410Z",
+  "start": "2026-11-10T05:27:43.205Z",
   "port": 7804,
-  "warten": 0.01,
-  "bootS": 7.6,
+  "warten": 0.02,
+  "bootS": 7.3,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": "genesis",
-    "vor": "material.K1#2",
-    "s": 27.7,
-    "takte": 709,
+    "ort": "wiese",
+    "vor": "physik.K2#2",
+    "s": 28.6,
+    "takte": 589,
     "chunks": 81,
     "nach": null
    }
   ],
   "wegeTueren": [],
-  "unerklaert": [
-   {
-    "probe": "material.K1#2",
-    "wie": "werke +5 (−0)"
-   }
-  ],
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
@@ -1637,11 +1680,11 @@
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 116,
-   "luecken": 0,
-   "letzteLuecke": null
+   "zapfen": 80,
+   "luecken": 1,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
   },
-  "fahrtS": 127.4,
-  "minuten": 2.2
+  "fahrtS": 123.6,
+  "minuten": 2.15
  }
 }
