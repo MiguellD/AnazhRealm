@@ -1,7 +1,7 @@
 {
  "sha": "78d37554b2d5f98d96ef454cfa9f51752c0e45a0",
  "geraet": "gtx",
- "zeit": "2026-11-10T05:49:54.152Z",
+ "zeit": "2026-11-10T05:55:19.000Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "ferne.K1#2": {
@@ -440,6 +440,55 @@
    },
    "zeit": "2026-11-10T05:49:54.152Z",
    "abdruck": "a576b62649d8",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "studios.K4#2": {
+   "gruen": false,
+   "zahl": "0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU pascal) · garage 23.9 %/– [Differenz 0.2391 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · portale –/– [ROT: bild: {\"ms\":9132,\"fehler\":\"ABNAHME ROT [Ziel Blickziel verdeckt von portal-membran in] · schmiede 24.5 %/– [Differenz 0.2448 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · fachwerk –/– [ROT: bild: {\"ms\":3739,\"fehler\":\"ABNAHME ROT [Ziel Blickziel verdeckt von fern-ring in 27.0] · terrain 99.8 %/– [die Welt zeichnet an der Pose L1 (die Bühne L0) · Differenz 0.9983 > 0.021 Albedo ungemess] · koerperstudio –/– [ungemessen: das Werk ist eine Prägung (der Leib des Spielers), kein gesetzter Bau] · tetrapoda –/– [ungemessen: das Werk ist ein Wesen (eine lebende Kreatur), kein gesetzter Bau]",
+   "exit": 0,
+   "minuten": 1.19,
+   "grund": "ROT: 0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU pascal) · garage 23.9 %/– [Differenz 0.2391 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · portale –/– [ROT: bild: {\"ms\":9132,\"fehler\":\"ABNAHME ROT [Ziel Blickziel verdeckt von portal-membran in] · schmiede 24.5 %/– [Differenz 0.2448 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · fachwerk –/– [ROT: bild: {\"ms\":3739,\"fehler\":\"ABNAHME ROT [Ziel Blickziel verdeckt von fern-ring in 27.0] · terrain 99.8 %/– [die Welt zeichnet an der Pose L1 (die Bühne L0) · Differenz 0.9983 > 0.021 Albedo ungemess] · koerperstudio –/– [ungemessen: das Werk ist eine Prägung (der Leib des Spielers), kein gesetzter Bau] · tetrapoda –/– [ungemessen: das Werk ist ein Wesen (eine lebende Kreatur), kein gesetzter Bau]",
+   "gpu": "nvidia/pascal",
+   "s": 71.4,
+   "fremd": {
+    "s": 72.6,
+    "takte": 33,
+    "fremdS": 119.02,
+    "kerne": 1.64,
+    "fensterKerne": 1.821,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      79
+     ],
+     [
+      "MsMpEng.exe",
+      14.8
+     ],
+     [
+      "OmenCommandCenterBackground.exe",
+      9.17
+     ]
+    ],
+    "dienerS": 28.8,
+    "diener": [
+     [
+      "dwm.exe",
+      16.39
+     ],
+     [
+      "System",
+      7.83
+     ]
+    ],
+    "eigenS": 196.92,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-10T05:55:19.000Z",
+   "abdruck": "97b1e369c378",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
@@ -1846,19 +1895,19 @@
   }
  },
  "sitzung": {
-  "start": "2026-11-10T05:49:23.462Z",
+  "start": "2026-11-10T05:54:48.448Z",
   "port": 7804,
-  "warten": 0.02,
-  "bootS": 6.8,
+  "warten": 0.01,
+  "bootS": 6.9,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
     "ort": null,
-    "vor": "studios.K4#1",
-    "s": 22.5,
-    "takte": 782,
+    "vor": "studios.K4#2",
+    "s": 22.4,
+    "takte": 832,
     "chunks": 81,
     "nach": null
    }
@@ -1880,7 +1929,7 @@
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 104,
-  "minuten": 1.81
+  "fahrtS": 101.7,
+  "minuten": 1.77
  }
 }
