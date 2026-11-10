@@ -1,7 +1,7 @@
 {
  "sha": "6aa7a5a6bfd01df56192e66b658681dac67a27a9",
  "geraet": "gtx",
- "zeit": "2026-11-10T12:56:43.928Z",
+ "zeit": "2026-11-10T13:11:29.064Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "haar.K2#1": {
@@ -789,6 +789,55 @@
    "bahn": "sitzung",
    "zwilling": "studios.K4#1",
    "modus": "session"
+  },
+  "licht.K2#1": {
+   "gruen": true,
+   "zahl": "Verhältnis 5.161 (5–12,5), Schatten-Anteil 0.1938 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1499 px, Uhr 0.5 sunny, [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.2,
+   "gpu": "nvidia/pascal",
+   "s": 11.7,
+   "fremd": {
+    "s": 15.1,
+    "takte": 7,
+    "fremdS": 9.66,
+    "kerne": 0.641,
+    "fensterKerne": 0.7,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      3.94
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      1.31
+     ],
+     [
+      "SearchIndexer.exe",
+      1.23
+     ]
+    ],
+    "dienerS": 4.69,
+    "diener": [
+     [
+      "dwm.exe",
+      2.45
+     ],
+     [
+      "System",
+      1.52
+     ]
+    ],
+    "eigenS": 22.67,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "grund": "GRÜN trotz Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 3,9 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 1,3 CPU-s · SearchIndexer.exe 1,2 CPU-s — 0,70 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container); Σ fremd 9,7 CPU-s in 15,1 s)",
+   "zeit": "2026-11-10T13:03:25.596Z",
+   "abdruck": "2ccc636c8b4f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "ungemessen": {
@@ -1184,127 +1233,456 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "ankunft.K4#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen: Stille seit 18.7 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: POSE ego-0 67803 ms)",
+   "exit": 1,
+   "minuten": 1.5,
+   "grund": "Deckel 90 s gerissen: Stille seit 18.7 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: POSE ego-0 67803 ms)",
+   "s": 90.1,
+   "fremd": {
+    "s": 92.3,
+    "takte": 43,
+    "fremdS": 70.97,
+    "kerne": 0.769,
+    "fensterKerne": 1.715,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      17.52
+     ],
+     [
+      "SearchIndexer.exe",
+      14.44
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      10.89
+     ]
+    ],
+    "dienerS": 23.89,
+    "diener": [
+     [
+      "dwm.exe",
+      10.36
+     ],
+     [
+      "System",
+      9.28
+     ]
+    ],
+    "eigenS": 90.2,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-10T13:03:54.577Z",
+   "abdruck": "ea66260e5746",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "gelaende.K2#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen: Stille seit 72.1 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: (b)(d) 14.9 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"flu)",
+   "exit": 1,
+   "minuten": 1.5,
+   "grund": "Deckel 90 s gerissen: Stille seit 72.1 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: (b)(d) 14.9 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"flu)",
+   "s": 90.1,
+   "fremd": {
+    "s": 93.3,
+    "takte": 43,
+    "fremdS": 59.28,
+    "kerne": 0.635,
+    "fensterKerne": 0.901,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      20.84
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      7.77
+     ],
+     [
+      "SearchIndexer.exe",
+      7.45
+     ]
+    ],
+    "dienerS": 33.72,
+    "diener": [
+     [
+      "dwm.exe",
+      16.39
+     ],
+     [
+      "System",
+      12.47
+     ]
+    ],
+    "eigenS": 232.92,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-10T13:05:58.663Z",
+   "abdruck": "9172cb631177",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "gelaende.K2#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen: Stille seit 72.1 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: (b)(d) 14.9 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"flu)",
+   "exit": 1,
+   "minuten": 1.5,
+   "grund": "Deckel 90 s gerissen: Stille seit 72.1 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: (b)(d) 14.9 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"flu)",
+   "s": 90.1,
+   "fremd": {
+    "s": 93.3,
+    "takte": 43,
+    "fremdS": 59.28,
+    "kerne": 0.635,
+    "fensterKerne": 0.901,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      20.84
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      7.77
+     ],
+     [
+      "SearchIndexer.exe",
+      7.45
+     ]
+    ],
+    "dienerS": 33.72,
+    "diener": [
+     [
+      "dwm.exe",
+      16.39
+     ],
+     [
+      "System",
+      12.47
+     ]
+    ],
+    "eigenS": 232.92,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-10T13:05:58.663Z",
+   "abdruck": "fa8c75e7a77c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "gelaende.K2#1",
+   "modus": "session"
+  },
+  "fahrzeug.K2#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen: Stille seit 44.5 s nach 45 s (kein Lebenszeichen) in Teil 1/6 — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "Deckel 45 s gerissen: Stille seit 44.5 s nach 45 s (kein Lebenszeichen) in Teil 1/6 — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "s": 45.2,
+   "teile": [
+    45.2
+   ],
+   "fremd": {
+    "s": 48.4,
+    "takte": 22,
+    "fremdS": 29.66,
+    "kerne": 0.612,
+    "fensterKerne": 0.725,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      11.34
+     ],
+     [
+      "MsMpEng.exe",
+      4.69
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.73
+     ]
+    ],
+    "dienerS": 21.16,
+    "diener": [
+     [
+      "dwm.exe",
+      10.03
+     ],
+     [
+      "System",
+      8.25
+     ]
+    ],
+    "eigenS": 188.23,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-10T13:08:08.087Z",
+   "abdruck": "d6c6ee669406",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "fahrzeug.K2#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen: Stille seit 89.4 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "exit": 1,
+   "minuten": 1.5,
+   "grund": "Deckel 90 s gerissen: Stille seit 89.4 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "s": 90.2,
+   "fremd": {
+    "s": 92.1,
+    "takte": 42,
+    "fremdS": 58.58,
+    "kerne": 0.636,
+    "fensterKerne": 0.96,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      21.34
+     ],
+     [
+      "MsMpEng.exe",
+      9.25
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      7.25
+     ]
+    ],
+    "dienerS": 30.33,
+    "diener": [
+     [
+      "dwm.exe",
+      13.83
+     ],
+     [
+      "System",
+      11.02
+     ]
+    ],
+    "eigenS": 354.17,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-10T13:09:34.928Z",
+   "abdruck": "3288dc20437e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "studios.K2#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen: Stille seit 47 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: @@ 42.9 s · neue Seite der Linse)",
+   "exit": 1,
+   "minuten": 1.5,
+   "grund": "Deckel 90 s gerissen: Stille seit 47 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: @@ 42.9 s · neue Seite der Linse)",
+   "s": 90.1,
+   "fremd": {
+    "s": 93.2,
+    "takte": 43,
+    "fremdS": 72.81,
+    "kerne": 0.781,
+    "fensterKerne": 1.164,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      19.34
+     ],
+     [
+      "MsMpEng.exe",
+      14.16
+     ],
+     [
+      "SearchIndexer.exe",
+      8.94
+     ]
+    ],
+    "dienerS": 31.59,
+    "diener": [
+     [
+      "dwm.exe",
+      17.16
+     ],
+     [
+      "System",
+      7.64
+     ]
+    ],
+    "eigenS": 159.67,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-10T13:11:29.064Z",
+   "abdruck": "0729922f0665",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "studios.K3#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen: Stille seit 47 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: @@ 42.9 s · neue Seite der Linse)",
+   "exit": 1,
+   "minuten": 1.5,
+   "grund": "Deckel 90 s gerissen: Stille seit 47 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: @@ 42.9 s · neue Seite der Linse)",
+   "s": 90.1,
+   "fremd": {
+    "s": 93.2,
+    "takte": 43,
+    "fremdS": 72.81,
+    "kerne": 0.781,
+    "fensterKerne": 1.164,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      19.34
+     ],
+     [
+      "MsMpEng.exe",
+      14.16
+     ],
+     [
+      "SearchIndexer.exe",
+      8.94
+     ]
+    ],
+    "dienerS": 31.59,
+    "diener": [
+     [
+      "dwm.exe",
+      17.16
+     ],
+     [
+      "System",
+      7.64
+     ]
+    ],
+    "eigenS": 159.67,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-10T13:11:29.064Z",
+   "abdruck": "40e20c122980",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "studios.K2#2",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-10T12:47:22.288Z",
+  "start": "2026-11-10T13:02:47.433Z",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 6.5,
+  "bootS": 7.4,
   "grundstellungS": [
-   4.5,
-   3.7,
-   3.5,
-   4,
-   4.5,
-   0.1
+   5.2,
+   8.7,
+   11.2,
+   6.2
   ],
-  "proben": 7,
+  "proben": 6,
   "freigaben": [],
   "orte": [
    {
     "ort": "wiese",
-    "vor": "lod.K5#1",
-    "s": 28.4,
-    "takte": 591,
+    "vor": "licht.K2#1",
+    "s": 29.5,
+    "takte": 538,
     "chunks": 81,
     "nach": null
    },
    {
-    "ort": "dorf",
-    "vor": "licht.K3#2",
-    "s": 34.8,
-    "takte": 739,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "dorf",
-    "vor": "licht.K3#1",
-    "s": 29.8,
-    "takte": 693,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
     "ort": "genesis",
-    "vor": "siedlung.K1#2",
-    "s": 25.4,
-    "takte": 576,
+    "vor": "ankunft.K4#1",
+    "s": 15.4,
+    "takte": 603,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": "wiese",
+    "vor": "gelaende.K2#1",
+    "s": 26.7,
+    "takte": 603,
     "chunks": 81,
     "nach": "der Tür"
    },
    {
     "ort": "wiese",
-    "vor": "leib.K4#2",
-    "s": 26.6,
-    "takte": 724,
+    "vor": "fahrzeug.K2#1",
+    "s": 28.7,
+    "takte": 722,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": "wiese",
+    "vor": "fahrzeug.K2#2",
+    "s": 28.1,
+    "takte": 774,
     "chunks": 81,
     "nach": "der Tür"
    },
    {
     "ort": null,
-    "vor": "studios.K4#1",
-    "s": 18.1,
-    "takte": 771,
+    "vor": "studios.K2#2",
+    "s": 17.2,
+    "takte": 786,
     "chunks": 81,
     "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "leib.K3#2",
-    "s": 3.8,
-    "takte": 175,
-    "chunks": 81,
-    "nach": "der Grundstellung"
    }
   ],
-  "wegeTueren": [
-   {
-    "vor": "licht.K3#1",
-    "wege": "wege +6 [-119.1,-274.9,279.2,201/272] [-748.3,-821.3,-615.9,-784.1/28] [-784.3,-952.2,-631.7,-806.5/4] …",
-    "s": 3.7
-   },
-   {
-    "vor": "siedlung.K1#2",
-    "wege": "wege +6 [-119.1,-274.9,279.2,201/272] [-748.3,-821.3,-615.9,-784.1/28] [-784.3,-952.2,-631.7,-806.5/4] …",
-    "s": 3.5
-   }
-  ],
-  "unerklaert": [
-   {
-    "probe": "lod.K5#1",
-    "wie": "werke +1 (−0)"
-   },
-   {
-    "probe": "licht.K3#2",
-    "wie": "orte +-3,-3 · wege +3 [-748.3,-821.3,-615.9,-784.1/28] [-805.3,-801.4,-689.5,-574/6] [-833.8,-834.7,-648.1,-574.2/76] (-3,-3, netz:-3,-3, netz:-3,-3|-4,-4)"
-   }
-  ],
-  "ciBlicke": 8,
+  "wegeTueren": [],
+  "ciBlicke": 7,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 0,
-   "frameP95": null,
-   "taktP95": null,
-   "vramMax": null,
-   "seiten": 6,
+   "bilder": 1429,
+   "frameP95": 83.32,
+   "taktP95": 70.9,
+   "vramMax": 143.7,
+   "seiten": 5,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [
     {
-     "probe": "leib.K3#2",
-     "m": 6430,
+     "probe": "fahrzeug.K2#2",
+     "m": 1857,
      "ringVor": 4,
      "ringMin": 0
+    },
+    {
+     "probe": "gelaende.K2#1",
+     "m": 1718,
+     "ringVor": 4,
+     "ringMin": 0
+    },
+    {
+     "probe": "fahrzeug.K2#1",
+     "m": 1160,
+     "ringVor": 4,
+     "ringMin": -1
     }
    ],
-   "zapfen": 575,
-   "luecken": 0,
-   "letzteLuecke": null
+   "zapfen": 534,
+   "luecken": 4,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
   },
-  "fahrtS": 607.5,
-  "minuten": 10.18
+  "fahrtS": 612.3,
+  "minuten": 10.27
  }
 }
