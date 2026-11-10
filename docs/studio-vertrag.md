@@ -384,8 +384,9 @@ eines Gesetzbuchs als Primitive, asset-lokal (Vorlagen-Raum, Meter), JEDE Zahl a
   zeichnet (`{ umriss, dach }`: `umriss` je Richtung 2π · j / 64 der Ebene x/z der Stütz-Punkt `[x, y, z]` der gebauten Gestalt,
   `dach` ihr größtes y; Vorlagen-Raum, Raster 2^-12 — vehicle-core `gestaltMass`); der Flat reicht ihn als `mass` weiter, der EINE
   Leser `_wagenMassSetzen` gibt ihn dem Eintrag: die Hülle des Ritts (`_fahrUmriss` → `_fahrHuelleBau`) und die Boxen des stehenden
-  Wagens kollidieren mit der gezeichneten Gestalt, nie mit den Stationen `exportDrive.huelle` (fail-closed: KERN-PFLICHT). Wand:
-  `gate:kollision-bild` (V) BILD ≠ KOLLISION.
+  Wagens kollidieren mit Bug, Heck und Ecken der gezeichneten Gestalt, nie mit den Stationen `exportDrive.huelle` (fail-closed:
+  KERN-PFLICHT); ihre Breite bleibt ±`bw` des Gesetzes, ehrlich halb — die Hüfte der Rezepte zeichnet 6–12 cm je Flanke breiter, und
+  die Fahrbahn der Städte (fachwerk `VERKEHR_GESETZ`) plant mit `bw`. Wand: `gate:kollision-bild` (V) BILD ≠ KOLLISION.
 - **Der Kamin des Hauses (B3c):** die Hülle `__huelle` eines Hauses trägt additiv `kamin` (`[x, y, z]` haus-lokal auf dem
   Raster, die Spitze des Stapels aus `kaminSpitze` — derselben Formel wie der Slot des Exports; `null` = kein Kamin); der EINE
   Leser `_hausHuelleSetzen` gibt sie dem Eintrag ohne Spitze aus einem Export (Vorschau, KI) — der Wirt baut kein Haus, um sie
