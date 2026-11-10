@@ -1,7 +1,7 @@
 {
  "sha": "4e2df19b5c5103b093818b62b5a84ababf85b493",
  "geraet": "gtx",
- "zeit": "2026-11-10T21:40:05.457Z",
+ "zeit": "2026-11-10T22:05:58.132Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "affekt.K4#2": {
@@ -364,10 +364,75 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "ferne.K1#2": {
+   "gruen": false,
+   "zahl": "K1-2 ROT (1 Befunde) · Farbton 8 km 1.27–13.68° (≤ 10°) · Sonnenseite Uhr 0,5/0,27 1.25/5.025 (≥ 1,2) · fernes Weiß R/B 6.248 (≥ 1,3) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.02,
+   "grund": "ROT: K1-2 ROT (1 Befunde) · Farbton 8 km 1.27–13.68° (≤ 10°) · Sonnenseite Uhr 0,5/0,27 1.25/5.025 (≥ 1,2) · fernes Weiß R/B 6.248 (≥ 1,3) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "s": 61.4,
+   "fremd": {
+    "s": 63.9,
+    "takte": 29,
+    "fremdS": 40.44,
+    "kerne": 0.633,
+    "fensterKerne": 0.806,
+    "namen": [
+     [
+      "claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      16.25
+     ],
+     [
+      "claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      10.77
+     ],
+     [
+      "explorer.exe LOADSAVEDWINDOWS",
+      3.31
+     ]
+    ],
+    "dienerS": 22.05,
+    "diener": [
+     [
+      "System",
+      10.61
+     ],
+     [
+      "dwm.exe",
+      7.27
+     ]
+    ],
+    "geraetS": 26.92,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      18.16
+     ],
+     [
+      "svchost.exe",
+      6.81
+     ],
+     [
+      "SearchIndexer.exe",
+      0.91
+     ]
+    ],
+    "eigenS": 175.08,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon"
+   },
+   "zeit": "2026-11-10T22:05:58.132Z",
+   "abdruck": "9c259afc00c6",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-10T21:39:30.168Z",
+  "start": "2026-11-10T22:05:22.700Z",
   "port": 7804,
   "warten": 0.01,
   "bootS": 6.4,
@@ -376,10 +441,10 @@
   "freigaben": [],
   "orte": [
    {
-    "ort": "wiese",
-    "vor": "fahrzeug.K2#2",
-    "s": 27.4,
-    "takte": 624,
+    "ort": "genesis",
+    "vor": "ferne.K1#2",
+    "s": 27.7,
+    "takte": 574,
     "chunks": 81,
     "nach": null
    }
@@ -398,18 +463,18 @@
    "verloren": 0,
    "ortImDeckel": [
     {
-     "probe": "fahrzeug.K2#2",
-     "m": 1857,
+     "probe": "ferne.K1#2",
+     "m": 3592,
      "ringVor": 4,
-     "ringMin": 0
+     "ringMin": -1
     }
    ],
-   "zapfen": 126,
+   "zapfen": 91,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 133.3,
-  "minuten": 2.29
+  "fahrtS": 98.1,
+  "minuten": 1.69
  },
  "ungemessen": {
   "ankunft.K1#1": {
