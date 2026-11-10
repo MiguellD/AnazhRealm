@@ -2948,10 +2948,11 @@
         }
         // DER BRUCH: die Spannung in Pa, die ein gedrücktes Glied der Schlankheit λ = Höhe / kleinste Breite trägt —
         // das Kleinere aus der Streckgrenze (das gedrungene Glied zerdrückt) und der Knick-Spannung nach EULER für den
-        // gelenkig gelagerten Rechteck-Stab, π²·E / (12·λ²) (das schlanke knickt). Ohne Festigkeit trägt der Stoff nichts.
-        function tragSpannung(z, lambda) {
+        // gelenkig gelagerten Rechteck-Stab, π²·E / (12·λ²), geteilt durch die Sicherheit `knick` des Rufers (das schlanke
+        // knickt; Vorkrümmung, Schiefstand und Stoß lassen es weit unter Euler versagen). Ohne Festigkeit trägt der Stoff nichts.
+        function tragSpannung(z, lambda, knick) {
             if (!z || !(z.E > 0) || !(z.sigY > 0)) return 0;
-            return Math.min(z.sigY, (Math.PI * Math.PI * z.E) / (12 * lambda * lambda));
+            return Math.min(z.sigY, (Math.PI * Math.PI * z.E) / (12 * lambda * lambda) / (knick > 0 ? knick : 1));
         }
         // DIE EINE MISCH-REGEL (partielle Additivität): je Spalte wird gemittelt, was sich in der Mischung ADDIERT —
         //   das Volumen (ρ = 1 / Σ w/ρ, Amagat · Vegard) und daraus die Volumen-Anteile φ,

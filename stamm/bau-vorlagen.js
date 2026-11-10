@@ -1682,6 +1682,7 @@ class AnazhRealm_bau_vorlagen {
                 muRad: si[2],
                 muRadNass: si[3],
                 koernung: si[4],
+                bindung: g.bindung,
                 ...PHASE[name],
                 brenn: BRENN[name] ? Object.freeze(BRENN[name]) : null,
             };
