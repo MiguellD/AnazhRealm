@@ -328,3 +328,4 @@ omen-gtx-gtx-stau-78d3-3-78d37554 UNGEMESSEN 0 GRÜN / 0 ROT / 1 UNGEMESSEN · U
 omen-gtx-gtx-stau-78d3-4-78d37554 ROT 0 GRÜN / 1 ROT / 0 UNGEMESSEN · ROT ferne.K1#2 (punkte-maschine 488b2020 messung/78d37554-gtx.json)
 omen-gtx-gtx-stau-78d3-5-78d37554 UNGEMESSEN 0 GRÜN / 0 ROT / 1 UNGEMESSEN · UNGEMESSEN gelaende.K2#2 (punkte-maschine f17e3ed9 messung/78d37554-gtx.json)
 omen-gtx-gtx-stau-78d3-6-78d37554 ROT 0 GRÜN / 1 ROT / 0 UNGEMESSEN · ROT haar.K2#1 (punkte-maschine c81c1c0c messung/78d37554-gtx.json)
+omen-gtx-gtx-stau-78d3-7-78d37554 UNGEMESSEN 0 GRÜN / 0 ROT / 1 UNGEMESSEN · UNGEMESSEN leib.K1#2 (punkte-maschine f898279f messung/78d37554-gtx.json)
