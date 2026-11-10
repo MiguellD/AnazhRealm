@@ -4,8 +4,10 @@
 // Die Linse hüllt die Leser der Sicht-Kette (Prototyp-Methoden, wie die Takt-Linse) und zählt je Frame: die Pässe, die
 // Aufrufe je Leser, die geprüften KÖRPER (`_passTrifft` je Leser, `_hoehlenRect` und `_hoehlenLichtLage` je acht Ecken),
 // die Index-Bytes der Neuschreib-Linse der Sätze (`s.schreiben`) und die TREFFER (eine Wahl, deren Lage steht:
-// `_satzAbschnittSteht`). Die Instanzen der globalen Gruppen und die Büschel der Nah-Wiese wählt die GPU (`_instanzWahlGpu`,
-// w25-gpu-wahl) — die CPU prüft keine, die Linse zählt keine. Das Urteil (rein, im Selbsttest wie im Lauf):
+// `_satzAbschnittSteht`). Die Instanzen der globalen Gruppen, die Büschel der Nah-Wiese (w25-gpu-wahl) und die Pflanzen der
+// Nah-Streu (w27-takt-streu: ihr Streu-Satz fiel) wählt die GPU (`_instanzWahlGpu`) — die CPU prüft keine, die Linse zählt
+// keine; im Stand rechnet die Wahl nicht (die Linse STAND LÄDT NICHTS, gate:hitch-telemetrie Teil 1). Das Urteil (rein, im
+// Selbsttest wie im Lauf):
 // in RUHE (Kamera, Kaskaden und Welt stehen) verlangt die Sicht nach dem ersten Frame keine neue Arbeit — jede Prüfung,
 // jede Höhlen-Rechnung, jedes Byte in Ruhe ist ein Cache-Bruch; wer dreht oder geht, rechnet neu (eine Wahl, die über
 // eine neue Lage hält, wäre ein Loch).
@@ -274,7 +276,7 @@ function sichtLinse(cfg) {
             return o;
         };
     };
-    // die Index-Bytes je Satz-Familie (boden · wasser · bauSatz · streuSatz · formationenSatz), kumulativ
+    // die Index-Bytes je Satz-Familie (boden · wasser · bauSatz · formationenSatz), kumulativ
     const bytesJe = () => {
         const o = {};
         const ss = st.chunkSaetze;

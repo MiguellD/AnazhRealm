@@ -539,8 +539,8 @@ const FORBIDDEN = [
     ["[4000, 1500, 1400]", "Welle 6 — der Strauch hat kein Rezept 0 (die Klingen-Krone)"],
     ["_chunkSatzLeert", "W7 — _chunkSatzVerdichten (der leere Satz ist der Fall Inhalt 0)"],
     ["s.leerSeit", "W7 — s.ueberSeit (die Frist zählt ab dem Überschreiten der Schwelle, für jeden Satz)"],
-    ["this._senkeMesh(a, 64, this.state.scene)", "W7 — die Nah-Streu-Senke zeichnet nie selbst (_streuSatzArt)"],
-    ["positionGeometry.y.mul(wiegen)", "W7 — die Höhe der wiegenden Nah-Streu ist aWiege (_satzBlock)"],
+    ["this._senkeMesh(a, 64, this.state.scene)", "w27-takt-streu — die Senke der Nah-Streu wächst im Bestand ihrer Familie (_bestandFamilie)"],
+    ["positionGeometry.y.mul(wiegen)", "w27-takt-streu — die Höhe der wiegenden Nah-Streu ist Vorlage × Skala der Instanz (_weltNaht)"],
     ['"|wiegt:"', "W7 — EIN wiegender Stoff je Regler, nie je Studio-Skala (|wiegt)"],
     ["kartenSicht", "W7-Vereinigung — die Karten wählt die GPU wie jede globale Gruppe (_instanzWahlGpu)"],
     ...[
@@ -570,6 +570,19 @@ const FORBIDDEN = [
     ...["_nahWieseSicht", "_nahWieseFernSatz", "_wieseFernAnker", "_wieseFernWahl", "_wieseFernSchreib", "fernHalt"].map(
         (token) => [token, "w25-gpu-wahl — Nähe, Ferne und Schale der Nah-Wiese wählt die GPU (_nahWieseBestand, _wieseAugeTakt)"]
     ),
+    ...[
+        "_streuSatzArt",
+        "_streuNahSatz",
+        "_streuNahBereich",
+        "_nahStreuArmlaenge",
+        "STREU_SATZ_ATTR",
+        "STREU_FEST_ATTR",
+        "JAHR_SATZ_ATTR",
+        "_satzKernWiege",
+        '"aWiege"',
+        "_nahWieseZustand",
+        "zustandCap",
+    ].map((token) => [token, "w27-takt-streu — die Nah-Streu wählt die GPU je Pflanze (_nahStreuBestand, der Zustand jeder Nähe _naheZustand)"]),
     ["_sichtKugel", "W7-Vereinigung — das EINE Gesetz der Pass-Wahl (_passTrifft)"],
     ["_instanzKapselTrifft", "W7-Vereinigung — die Licht-Kapsel gilt jedem Leser (_passTrifft)"],
     ["_instanzWahlLage", "W7-Vereinigung — EINE Lage je Pass für jeden Leser (_passWahlLage)"],
@@ -2884,6 +2897,19 @@ function linsenDateien(root) {
         .map((f) => path.join(d, f));
 }
 
+// DIE BÄNDER RUFEN MIT (z363): ein Band des Läufers (scripts/playtest) ruft die Stamm-Methoden in der Seite am Realm `r` —
+// nach w27-takt-streu riefen das Nah-Streu-Band und die Ernte-Probe `r._streuNahBereich(…)`, erst der volle Playtest im Zug
+// fand es. Die Bänder tragen gefallene Namen auch als Suchtext ihrer Absenz-Proben, darum zählt dort nur der AUFRUF eines
+// gefallenen Methoden-Namens am Realm. `ersatz` (Selbsttest): { datei: Text } statt der Platte.
+function scanBandAufrufe(root, ersatz) {
+    const ruf = new RegExp(String.raw`\br\s*\.\s*(${FORBIDDEN.map((z) => z.token).filter((t) => /^_\w+$/.test(t)).join("|")})\s*\(`, "g"); // prettier-ignore
+    const texte = ersatz || Object.fromEntries(baender().map((f) => [f, ausDatei(path.join(root, f))]));
+    return Object.entries(texte).flatMap(([f, t]) => {
+        const code = stripComments(t);
+        return [...code.matchAll(ruf)].map((m) => `${f}:${code.slice(0, m.index).split("\n").length} ruft r.${m[1]}() (fiel: ${FORBIDDEN.find((z) => z.token === m[1]).fiel})`); // prettier-ignore
+    });
+}
+
 // DIE STAMM-LESER-WAND (Stamm-Zerlegung): der Name der Stamm-Datei steht als Lese-Ziel — ein String-
 // Literal, das die Datei nennt („anazhRealm.js", „/anazhRealm.js", „http://…/anazhRealm.js", mit ?v=) — nur in
 // scripts/lib/stamm.cjs. Jeder andere Leser liest den Stamm über die EINE Schnittstelle (stammLib.text · dateien · liefere
@@ -3303,6 +3329,16 @@ function main() {
         console.log(
             `✅ SELBST-TEST: die Linsen stehen in der Wand (${linsenDateien(root).length} Dateien in scripts/lib, der tote Aufruf in der Stand-Linse erkannt)`
         );
+        // Die Bänder rufen mit: der tote Aufruf aus z363 kehrt in ein Band zurück und wird beim Namen genannt; derselbe Name als
+        // Suchtext einer Absenz-Probe, im Kommentar und an einem fremden Objekt bleibt still, die Bänder heute ohne Fund.
+        const bandRot = scanBandAufrufe(root, {
+            x: 'const v = r._streuNahBereich(s, k);\n// r._streuNahBereich(s, k)\nconst t = "_streuNahBereich";\nq._streuNahBereich(s);\n',
+        }).concat(scanBandAufrufe(root));
+        if (bandRot.length !== 1 || !/^x:1 ruft r\._streuNahBereich\(\) \(fiel: w27-takt-streu/.test(bandRot[0])) {
+            console.log(`❌ SELBST-TEST: die Band-Aufruf-Wand — ${JSON.stringify(bandRot).slice(0, 400)}`);
+            process.exit(1);
+        }
+        console.log("✅ SELBST-TEST: die Band-Aufruf-Wand feuert (r._streuNahBereich im Band beim Namen; Suchtext, Kommentar, fremdes Objekt still; heute 0)"); // prettier-ignore
         // Die Stoff-Wand muss feuern: (1) JEDER laute Bruch des Stamms, wieder still gemacht
         // (sein catch meldet nur WARN, die Zeilen bleiben), ist rot an seiner Zeile — die Wand sieht jeden ihrer Schnitte,
         // gleich ob der Versuch TSL liest, ein Render-Objekt baut, den Graphen läuft oder einen Bauer ruft (bis hierher
@@ -3643,6 +3679,7 @@ function main() {
     }
 
     const errs = scan(files)
+        .concat(scanBandAufrufe(root))
         .concat(scanZwillinge())
         .concat(scanLabBuster())
         .concat(scanInstanzWand(stammLib.text(root)))
