@@ -4032,7 +4032,8 @@
       const kreis=(p,r)=>box(p.x,p.z,0,r,r);
       return [].concat((plan.slots||[]).filter(sl=>sl.obb).map(sl=>box(sl.obb.cx,sl.obb.cz,sl.obb.phi,sl.obb.ex,sl.obb.ez)),
         (plan.staende||[]).map(p=>box(p.x,p.z,0,A.marktstand.tritt.ex,A.marktstand.tritt.ez)), (plan.brunnen||[]).map(p=>kreis(p,A.brunnen.tritt.r)),
-        (plan.laternen||[]).filter(p=>!p.wand).map(p=>kreis(p,A.laterne.tritt.r)), (plan.trees||[]).map(p=>kreis(p,0.8)))
+        (plan.laternen||[]).filter(p=>!p.wand).map(p=>kreis(p,A.laterne.tritt.r)), (plan.trees||[]).map(p=>kreis(p,0.8)),
+        (plan.gegenstaende||[]).map(p=>box(p.x,p.z,p.th,A[p.art].tritt.ex,A[p.art].tritt.ez)))
         .filter(o=>isFinite(o.cx)&&isFinite(o.cz)); }
     function gesperrt(sperren, x, z){
       for(const o of sperren){ const c=Math.cos(o.phi), s=Math.sin(o.phi), dx=x-o.cx, dz=z-o.cz;
@@ -5533,6 +5534,9 @@
         // DIE WANDLATERNE (K66-2): derselbe Kopf am Arm vor der Hauswand — die Leuchte der dichten Gasse und der Tür von Gasthaus
         // und Schmiede; ihr Licht LICHT_GESETZ.wandlaterne. Der Tritt ist der Kopf (sie hängt, kein Fuß steht im Weg).
         wandlaterne: { lab: "Wandlaterne · Arm, Glas-Kopf, Haube", gestalten: 1, siteTag: "wand", salz: 0x5ea7, tritt: { typ: "kreis", r: 0.15 }, licht: "wandlaterne" },
+        // DER GRABSTEIN (STADT_GRAMMATIK, das Viertel kirchhof — rein additiv): das Grab des Friedhofs hinter der Kirche, je Same
+        // eine von drei Gestalten (die Stele mit Giebel, das Steinkreuz, die Stele mit Kopf); die Schrift-Seite ist −z
+        grabstein: { lab: "Grabstein · Sockel, Stele, Kreuz", gestalten: 3, siteTag: "friedhof", salz: 0x6c1d, tritt: { typ: "kasten", ex: 0.36, ez: 0.16 } },
     };
     // B4 — die Regler der Ausstattung (die Werkstatt baut ihre Slider daraus, der ov-Kanal liest dieselben ids).
     var AUS_PARAMS = [
@@ -6862,7 +6866,32 @@
         });
         ausTeil(g, geo, "nagel");
     }
-    var AUS_BAU = { feuerstelle: ausFeuerstelle, marktstand: ausMarktstand, brunnen: ausBrunnen, laterne: ausLaterne, wandlaterne: ausWandlaterne, sitzbank: ausSitzbank, podestleiter: ausPodestleiter, jochfeld: ausJochfeld };
+    // ── DER GRABSTEIN (Front −z): der Sockel, 0,2 m im Boden, darauf je Gestalt (aus dem Samen) die Stele mit Giebel — ein
+    //    Quadrat auf der Spitze über ihrer Schulter —, das Steinkreuz oder die Stele mit schmalem Kopf; nah mit gebrochenen
+    //    Kanten, fern die Blöcke scharf. EIN Stoff (stein): er altert wie jeder Stein der Ausstattung (Erdsaum, Moos, Belag). ──
+    function ausGrabstein(g, p, seed, stufe) {
+        var m = AUS_MASS.grabstein(p.groesse),
+            W = p.verwitterung,
+            fa = stufe === 0 ? 0.012 : 0,
+            ton = ausTon(ausZufall(seed, 0xb1), 0.07, 0.02),
+            art = (seed >>> 0) % 3;
+        var stein = function (geo) {
+            ausFaerbe(geo, "stein", W, function () {
+                return { ton: ton };
+            });
+            ausTeil(g, geo, "stein");
+        };
+        stein(ausSetze(ausKiste(m.sb, m.sh + 0.2, m.sd, fa), 0, (m.sh - 0.2) / 2, 0));
+        if (art === 1) {
+            stein(ausSetze(ausKiste(m.kb, m.h, m.d, fa), 0, m.sh + m.h / 2, 0));
+            stein(ausSetze(ausKiste(m.b, m.kb, m.d, fa), 0, m.sh + m.h * 0.68, 0));
+        } else {
+            stein(ausSetze(ausKiste(m.b, m.h * 0.82, m.d, fa), 0, m.sh + m.h * 0.41, 0));
+            if (art === 0) stein(ausSetze(ausKiste(m.b * Math.SQRT1_2, m.b * Math.SQRT1_2, m.d, fa), 0, m.sh + m.h * 0.82, 0, 0, 0, Math.PI / 4));
+            else stein(ausSetze(ausKiste(m.b * 0.62, m.h * 0.18, m.d, fa), 0, m.sh + m.h * 0.91, 0));
+        }
+    }
+    var AUS_BAU = { feuerstelle: ausFeuerstelle, marktstand: ausMarktstand, brunnen: ausBrunnen, laterne: ausLaterne, wandlaterne: ausWandlaterne, grabstein: ausGrabstein, sitzbank: ausSitzbank, podestleiter: ausPodestleiter, jochfeld: ausJochfeld };
     // DIE STUFE 3 DER AUSSTATTUNG (nurWurf, S3): die Grundform als EIN Gitter in EINEM Stoff (Rolle stein) — sie wirft für
     // die L1 (die L0 wirft selbst: nah, höchstens drei im Bild); ihre Hülle (`ausHuelle`) reist als Beipack `__fern`.
     // Dieselben Maße wie die Stufen 0/1 (Ring R + Steinbreite, Tisch und Plane, Kranz, Pfosten, First): Feuerstelle der
@@ -6896,6 +6925,10 @@
             var kh = 0.4 * G,
                 yL = LICHT_GESETZ.laterne.hoeheM * G;
             return { fr: 0.15 * G, fh: 0.55 * G, mr: 0.045 * G, kb: 0.26 * G, kh: kh, yL: yL, yK0: yL - kh / 2, yK1: yL + kh / 2, hb: 0.2 * G, yT: yL + kh / 2 + 0.2 * G };
+        },
+        grabstein: function (G) {
+            // die Stele b × h × d auf dem Sockel sb × sh × sd, das Kreuz aus Balken der Breite kb
+            return { b: 0.56 * G, h: 0.92 * G, d: 0.14, sb: 0.72 * G, sh: 0.1, sd: 0.32, kb: 0.2 * G };
         },
         wandlaterne: function (G) {
             // der Kopf der Laterne in 0,85 ihrer Maße um die Licht-Höhe LICHT_GESETZ.wandlaterne `hoeheM`; die Wand in `armM`
@@ -7748,6 +7781,8 @@
             for (var gs = -1; gs <= 1; gs += 2)
                 flaeche([[[-m.L / 2, 0, gs * m.zG], [m.L / 2, 0, gs * m.zG], [m.L / 2, m.gH, gs * m.zG], [-m.L / 2, m.gH, gs * m.zG]]]);
             for (var pk = 0; pk < m.zP.length; pk++) pfosten(m.xJ, m.zP[pk], m.yP, m.yJ, m.pr);
+        } else if (rezeptId === "grabstein") {
+            flaeche([[[-m.b / 2, 0, 0], [m.b / 2, 0, 0], [m.b / 2, m.sh + m.h, 0], [-m.b / 2, m.sh + m.h, 0]]]);
         } else if (rezeptId === "sitzbank") {
             // DIE BANK (20 Dreiecke): das Sitzbrett, die Lehne als EIN Viereck im Winkel der Pfosten, die vier Beine als Kreuze
             var c = Math.cos(m.phi),
@@ -7823,6 +7858,8 @@
             dazu(huelleTeil("box", -m.kb / 2, m.kb / 2, m.yK0, m.yK1, -m.kb / 2, m.kb / 2, F("glas")));
             dazu(huelleTeil("keil", -m.hb, m.hb, m.yK1, m.yT, -m.hb, 0, F("metall"), { first: "+z", walm: 1 }));
             dazu(huelleTeil("keil", -m.hb, m.hb, m.yK1, m.yT, 0, m.hb, F("metall"), { first: "-z", walm: 1 }));
+        } else if (rezeptId === "grabstein") {
+            dazu(huelleTeil("box", -m.b / 2, m.b / 2, 0, m.sh + m.h, -m.d / 2, m.d / 2, F("stein")));
         } else if (rezeptId === "sitzbank") {
             dazu(huelleTeil("box", -m.L / 2, m.L / 2, 0, m.H, -m.T / 2, m.T / 2, F("holz")));
             dazu(huelleTeil("box", -m.L / 2 + 0.02, m.L / 2 - 0.02, m.H, m.pB[0], m.pB[1] - 0.04, m.zH + 0.04, F("holz")));
@@ -7869,6 +7906,7 @@
         if (rezeptId === "feuerstelle") return { stein: pick([0x9a958a, 0x928d83, 0xa19a8f]), holz: pick([0x8a745c, 0x84705a]), lehm: 0xb4afa6 };
         if (rezeptId === "marktstand") return { holz: pick([0x8e7860, 0x977f66, 0x84705c]), tuch: pick(AUS_PLANE), lattung: 0x9a8358, stroh: 0xb39b68 };
         if (rezeptId === "laterne" || rezeptId === "wandlaterne") return { metall: pick([0x6b706a, 0x6e6b66]) }; // gestrichenes Guss-Eisen, das Glas des Fensters
+        if (rezeptId === "grabstein") return { stein: pick([0xa8a294, 0x9c9282, 0x8a8a86]) }; // Kalkstein, Sandstein, Granit
         // die Geräte: das vergraute Holz der Werke, das Eisen (verzinkt, gestrichen) und die Griffe der Kletterwand
         if (GERAETE[rezeptId]) return { holz: pick([0x8e7860, 0x977f66, 0x86705a]), metall: pick([0x7d8288, 0x737a80, 0x858a8e]), stein: pick([0x9a5a48, 0x56708c, 0x9a8a50]) };
         if (WERKE[rezeptId]) return { holz: pick([0x8e7860, 0x977f66, 0x86705a]) }; // die Werke: ungestrichenes Holz, vergraut

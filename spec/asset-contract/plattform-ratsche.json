@@ -81,8 +81,8 @@
         },
         "v6a": {
             "kern": "fachwerk-core.js",
-            "faelle": 28,
-            "probe": "jede Ausstattung (Feuerstelle, Marktstand, Brunnen, Laterne, Wandlaterne) x Gestalt x Stufe (0/1/3) + ov",
+            "faelle": 37,
+            "probe": "jede Ausstattung (Feuerstelle, Marktstand, Brunnen, Laterne, Wandlaterne, Grabstein) x Gestalt x Stufe (0/1/3) + ov. Gehoben an der Stadt-Grammatik (w28): der Grabstein des Friedhofs traegt 3 Gestalten x 3 Stufen = 9 Faelle mehr (28 -> 37), keiner kippt",
             "kippt": {},
             "soll": "0 - erreicht: ausRaster am Ausgang der Ausstattung (Architektur-Welle 05.10.)"
         },

@@ -541,6 +541,20 @@ class AnazhRealm_siedlung_ort {
     _ausstattungSame(plan, art, k) {
         return ((plan.seed >>> 0 || 1) + AnazhRealm.ORT_AUSSTATTUNG[art].ab + k * 7919) >>> 0;
     }
+    // DIE STÜCKE EINES PLANS (ORT_AUSSTATTUNG): je Art mit Bauplan, den die Welt kennt, {art, bauplan, kappe, gier, liste} —
+    // die Liste ihrer Schicht im Plan, in `gegenstaende` die Einträge ihrer Art. Leser: das Erlebnis (`_dorfErlebnis`) und
+    // der Vorrat (`_dorfVorbacken`).
+    _ortStuecke(plan) {
+        const [A, bp] = [AnazhRealm.ORT_AUSSTATTUNG, this.state.blueprints || {}];
+        return Object.keys(A)
+            .filter((art) => A[art].bauplan && bp[A[art].bauplan])
+            .map((art) => {
+                const Z = A[art];
+                const alle = Array.isArray(plan[Z.schicht]) ? plan[Z.schicht] : [];
+                const liste = Z.schicht === "gegenstaende" ? alle.filter((q) => q && q.art === art) : alle;
+                return { art, bauplan: Z.bauplan, kappe: Z.kappe, gier: Z.gier, liste };
+            });
+    }
     // DIE AUSSTATTUNG FÄLLT (siedlung.K4 Staffel 2): jede Laterne, jeder Brunnen, Stand und Hof-Baum des Plans `plan` (ihre
     // Samen, in seiner Welt am Ort) — der Plan seines neuen Jahrs stellt sie neu (`_dorfErlebnis`): ihre Nummern wechseln mit ihm.
     // Die Wandlaterne hängt an ihrem Haus und steht nur mit ihm (`_spawnSettlementSlot`): sie fällt nur an einem Haus aus `weg`
@@ -611,55 +625,38 @@ class AnazhRealm_siedlung_ort {
         }
         if (!Array.isArray(plan.brunnen) || !this.state.blueprints || !this.state.blueprints.brunnen_dorf) return;
         const AU = AnazhRealm.ORT_AUSSTATTUNG;
-        let n = 0;
-        for (const b of plan.brunnen) {
-            if (n >= AU.brunnen.kappe) break; // Kappe (Kernel-Brunnen + je 8 Häuser einer)
-            if (!b || !Number.isFinite(b.x) || !Number.isFinite(b.z)) continue;
-            const wx = origin.x + b.x;
-            const wz = origin.z + b.z;
-            const same = this._ausstattungSame(plan, "brunnen", n); // deterministisch je Siedlung+Platz
-            if (this._dorfBelegt(wx, wz, same) && ++n) continue;
-            if (!this._landAt(wx, wz, 0.2)) continue; // die Wasser-Wand (EINE Quelle)
-            const wy = this.getTerrainHeightAt(wx, wz);
-            if (!Number.isFinite(wy)) continue;
-            if (!this._bauFreiRund("brunnen_dorf", wx, wz, wy)) continue; // die Bau-Wand: nie in einem Bau
-            const entry = this.spawnArchitecture(
-                "brunnen_dorf",
-                { x: wx, y: wy + 0.5, z: wz },
-                { seed: same, silent: true, autonomous: !!(so && so.autonomous), ausGesetz: true }
-            );
-            if (entry) n++;
-        }
-        // SCHICHT-VOLLENDUNG (18.07.) — DIE MARKTSTÄNDE (staende-Schicht, nur
-        // Markt-Plätze): das brunnen_dorf-Muster — builtIn-Bauplan, der EINE
-        // Chokepoint, Kappe 3, Wasser-Wand, deterministisch je Siedlung+Platz.
-        if (Array.isArray(plan.staende) && this.state.blueprints && this.state.blueprints.marktstand_dorf) {
-            let m = 0;
-            for (const st of plan.staende) {
-                if (m >= AU.stand.kappe) break;
-                if (!st || !Number.isFinite(st.x) || !Number.isFinite(st.z)) continue;
-                const wx = origin.x + st.x;
-                const wz = origin.z + st.z;
-                const same = this._ausstattungSame(plan, "stand", m);
-                if (this._dorfBelegt(wx, wz, same) && ++m) continue;
+        // DIE STÜCKE DES PLANS (`_ortStuecke`, ORT_AUSSTATTUNG): der Brunnen, der Marktstand und die Gegenstände der Viertel
+        // (fachwerk STADT_GRAMMATIK, `gegenstaende`: das Grab des Friedhofs) — EINE Schleife über die EINE Tafel: je Art ihr
+        // Bauplan, ihre Kappe, der Same je Stück, die Wasser-Wand (EINE Quelle) und die Bau-Wand (nie in einem Bau); der Zähler
+        // der Art zählt, was steht. Bis zur Stadt-Grammatik je Art eine eigene Schleife (Brunnen, Stand) — eine dritte Art
+        // wäre ihre dritte Kopie gewesen.
+        let stueck = 0;
+        for (const Z of this._ortStuecke(plan)) {
+            let n = 0;
+            for (const q of Z.liste) {
+                if (n >= Z.kappe) break;
+                if (!q || !Number.isFinite(q.x) || !Number.isFinite(q.z)) continue;
+                const wx = origin.x + q.x;
+                const wz = origin.z + q.z;
+                const same = this._ausstattungSame(plan, Z.art, n); // deterministisch je Siedlung+Platz
+                if (this._dorfBelegt(wx, wz, same) && ++n) continue;
                 if (!this._landAt(wx, wz, 0.2)) continue;
                 const wy = this.getTerrainHeightAt(wx, wz);
                 if (!Number.isFinite(wy)) continue;
-                if (!this._bauFreiRund("marktstand_dorf", wx, wz, wy)) continue; // die Bau-Wand: nie in einem Bau
-                // Die Front (−z des Gesetzbuch-Stands) schaut zur Platz-Mitte — dieselbe Regel wie das Labor-Dorf.
-                const pz = plan.platz;
+                if (!this._bauFreiRund(Z.bauplan, wx, wz, wy)) continue;
                 const entry = this.spawnArchitecture(
-                    "marktstand_dorf",
+                    Z.bauplan,
                     { x: wx, y: wy + 0.5, z: wz },
                     {
                         seed: same,
-                        rotationY: pz && Number.isFinite(pz.cx) ? Math.atan2(-(pz.cx - st.x), -(pz.cz - st.z)) : 0,
+                        ...(Z.gier ? { rotationY: Z.gier(q, plan) } : null),
                         silent: true,
                         autonomous: !!(so && so.autonomous),
                         ausGesetz: true,
                     }
                 );
-                if (entry) m++;
+                if (entry) n++;
+                if (++stueck % AnazhRealm.AUTO_SETTLEMENT.laternenJeTakt === 0) yield; // die Stücke gehen in Raten wie die Laternen
             }
         }
         // Hof-Bäume der Siedlung: die Export-Plätze ({x,z,h}) heben als Studio-Bäume durch spawnArchitecture;
@@ -1863,18 +1860,14 @@ class AnazhRealm_siedlung_ort {
                         studioOv: AnazhRealm._stempelVon(sl.ov),
                     });
             }
-            const [AU, plan, bp] = [AnazhRealm.ORT_AUSSTATTUNG, w.v2, this.state.blueprints || {}];
+            const [plan, bp] = [w.v2, this.state.blueprints || {}];
             const stuecke = [];
             let mast = 0;
             (plan.laternen || []).forEach((l, k) => {
                 if (l) stuecke.push([l.wand ? "wandlaterne_dorf" : "laterne_dorf", l, l.wand ? k : mast++, "laterne"]);
             });
-            (plan.brunnen || [])
-                .slice(0, AU.brunnen.kappe)
-                .forEach((b, n) => stuecke.push(["brunnen_dorf", b, n, "brunnen"]));
-            (plan.staende || [])
-                .slice(0, AU.stand.kappe)
-                .forEach((s, m) => stuecke.push(["marktstand_dorf", s, m, "stand"]));
+            for (const Z of this._ortStuecke(plan))
+                Z.liste.slice(0, Z.kappe).forEach((q, k) => stuecke.push([Z.bauplan, q, k, Z.art]));
             for (const [type, q, k, art] of stuecke)
                 if (bp[type] && q && Number.isFinite(q.x) && Number.isFinite(q.z))
                     bedarf({
@@ -3105,11 +3098,26 @@ AnazhRealm.WEGENETZ = Object.freeze({
 AnazhRealm.WERK_LAND_M = 0.2;
 // DIE AUSSTATTUNG EINES ORTS (`_ausstattungSame`): je Art der Versatz ihres Samens und ihre Kappe (Brunnen: der Kernel-Brunnen und je
 // 8 Häuser einer; Stände: Markt-Plätze; Hof-Bäume: das Architektur-LOD/Instanzen-Budget; die Laterne zählt die Liste des Plans)
+// DIE STÜCKE (`_ortStuecke`, `_dorfErlebnis`): eine Art mit `bauplan` steht aus der Schicht `schicht` des Plans (in
+// `gegenstaende` die Einträge ihrer Art), gedreht nach `gier(q, plan)` — der Stand nach seinem Plan (`th`: die Reihen des
+// Markts der Stadt), sonst zur Mitte des Platzes (die Front −z des Gesetzbuch-Stands, dieselbe Regel wie das Labor-Dorf); das
+// Grab in der Flucht seines Friedhofs. Kappen: der Markt der Stadt trägt bis 12 Stände (das Dorf 2–3), der Friedhof 36 Gräber.
 AnazhRealm.ORT_AUSSTATTUNG = Object.freeze({
     laterne: Object.freeze({ ab: 97 }),
-    brunnen: Object.freeze({ ab: 0, kappe: 5 }),
-    stand: Object.freeze({ ab: 53, kappe: 3 }),
+    brunnen: Object.freeze({ ab: 0, kappe: 5, bauplan: "brunnen_dorf", schicht: "brunnen" }),
+    stand: Object.freeze({
+        ab: 53,
+        kappe: 12,
+        bauplan: "marktstand_dorf",
+        schicht: "staende",
+        gier: (st, plan) => {
+            const pz = plan.platz;
+            if (Number.isFinite(st.th)) return st.th;
+            return pz && Number.isFinite(pz.cx) ? Math.atan2(-(pz.cx - st.x), -(pz.cz - st.z)) : 0;
+        },
+    }),
     baum: Object.freeze({ ab: 31, kappe: 12 }),
+    grabstein: Object.freeze({ ab: 71, kappe: 36, bauplan: "grabstein_dorf", schicht: "gegenstaende", gier: (q) => q.th || 0 }),
 });
 // DAS WACHSTUM DER ORTE IN DER WELT (siedlung.K4 Staffel 2, `_ortWachstumTakt`): je so viele s der Welt-Uhr rechnet ein naher
 // Ort sein Gesetz (fachwerk `wachstum`, taktfrei: ein seltenerer Takt holt nach) und zeigt, was gewachsen ist
