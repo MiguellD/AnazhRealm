@@ -1,7 +1,7 @@
 {
  "sha": "dcc3361558060fce198f1666eba3720e574bf5a7",
  "geraet": "gtx",
- "zeit": "2026-11-10T07:27:35.630Z",
+ "zeit": "2026-11-10T07:44:30.616Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "haar.K2#1": {
@@ -452,22 +452,71 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "leib.K1#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen: Stille seit 87.2 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ LATENZ1)",
+   "exit": 1,
+   "minuten": 1.54,
+   "grund": "Deckel 90 s gerissen: Stille seit 87.2 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ LATENZ1)",
+   "s": 90.2,
+   "fremd": {
+    "s": 94.6,
+    "takte": 43,
+    "fremdS": 173.2,
+    "kerne": 1.831,
+    "fensterKerne": 2.079,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      101.08
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      18.92
+     ],
+     [
+      "MsMpEng.exe",
+      15.16
+     ]
+    ],
+    "dienerS": 42.31,
+    "diener": [
+     [
+      "dwm.exe",
+      22.92
+     ],
+     [
+      "System",
+      13.34
+     ]
+    ],
+    "eigenS": 215.91,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-10T07:44:30.616Z",
+   "abdruck": "69bb8ec1c19c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-10T07:26:56.636Z",
+  "start": "2026-11-10T07:43:53.111Z",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 8.9,
+  "bootS": 6.9,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
     "ort": "wiese",
-    "vor": "leib.K1#1",
-    "s": 28.6,
-    "takte": 632,
+    "vor": "leib.K1#2",
+    "s": 29,
+    "takte": 537,
     "chunks": 81,
     "nach": null
    }
@@ -476,20 +525,20 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 983,
-   "frameP95": 41.75,
-   "taktP95": 36.64,
-   "vramMax": 156.9,
+   "bilder": 3577,
+   "frameP95": 41.71,
+   "taktP95": 34.6,
+   "vramMax": 157.3,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 66,
+   "zapfen": 120,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 74.1,
-  "minuten": 1.31
+  "fahrtS": 129.1,
+  "minuten": 2.22
  }
 }
