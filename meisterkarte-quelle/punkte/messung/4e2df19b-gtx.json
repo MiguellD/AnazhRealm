@@ -1,7 +1,7 @@
 {
  "sha": "4e2df19b5c5103b093818b62b5a84ababf85b493",
  "geraet": "gtx",
- "zeit": "2026-11-10T21:24:12.798Z",
+ "zeit": "2026-11-10T21:29:18.143Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "affekt.K4#2": {
@@ -215,19 +215,19 @@
   }
  },
  "sitzung": {
-  "start": "2026-11-10T21:23:27.606Z",
+  "start": "2026-11-10T21:28:46.043Z",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 6.3,
+  "bootS": 6.9,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": null,
-    "vor": "ankunft.K3#1",
-    "s": 37.5,
-    "takte": 2336,
+    "ort": "genesis",
+    "vor": "ankunft.K4#1",
+    "s": 24,
+    "takte": 684,
     "chunks": 81,
     "nach": null
    }
@@ -236,21 +236,21 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 205,
-   "frameP95": 491.63,
-   "taktP95": 186.06,
-   "vramMax": 137.7,
-   "seiten": 5,
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 87,
-   "luecken": 5,
-   "letzteLuecke": "kein Renderer"
+   "zapfen": 90,
+   "luecken": 7,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
   },
-  "fahrtS": 97.8,
-  "minuten": 1.71
+  "fahrtS": 178.5,
+  "minuten": 3.05
  },
  "ungemessen": {
   "ankunft.K1#1": {
@@ -322,6 +322,71 @@
    "ungemessen": true,
    "zeit": "2026-11-10T21:13:21.968Z",
    "abdruck": "4e36edaf41f7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "ankunft.K4#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 139 s gerissen: Stille seit 15 s nach 146.8 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-45 63419 ms)",
+   "exit": 1,
+   "minuten": 2.45,
+   "grund": "Deckel 139 s gerissen: Stille seit 15 s nach 146.8 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-45 63419 ms)",
+   "s": 146.9,
+   "fremd": {
+    "s": 149.2,
+    "takte": 70,
+    "fremdS": 49.19,
+    "kerne": 0.33,
+    "fensterKerne": 0.523,
+    "namen": [
+     [
+      "claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      25.5
+     ],
+     [
+      "claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      9
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      5.39
+     ]
+    ],
+    "dienerS": 38.75,
+    "diener": [
+     [
+      "dwm.exe",
+      17.14
+     ],
+     [
+      "System",
+      15.2
+     ]
+    ],
+    "geraetS": 17.52,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      8.52
+     ],
+     [
+      "svchost.exe",
+      7.83
+     ],
+     [
+      "OmenCommandCenterBackground.exe",
+      0.47
+     ]
+    ],
+    "eigenS": 146.94,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon"
+   },
+   "zeit": "2026-11-10T21:29:18.143Z",
+   "abdruck": "ea66260e5746",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
