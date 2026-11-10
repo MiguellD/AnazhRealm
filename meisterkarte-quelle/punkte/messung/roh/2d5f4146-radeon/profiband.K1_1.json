@@ -1,6 +1,6 @@
 {
  "art": "gang",
- "sekunden": 78.1,
+ "sekunden": 79.1,
  "schritte": [
   [
    "genesis-ego",
@@ -12,7 +12,7 @@
   ],
   [
    "genesis-third-geht",
-   3.5
+   3.3
   ],
   [
    "wiese-ego",
@@ -20,7 +20,7 @@
   ],
   [
    "wiese-ego-geht",
-   3.4
+   3.2
   ],
   [
    "wiese-third",
@@ -28,11 +28,11 @@
   ],
   [
    "wiese-sprint",
-   4.1
+   4
   ],
   [
    "wiese-fahrt",
-   7.5
+   7.3
   ],
   [
    "wiese-sturm",
@@ -64,26 +64,26 @@
   "wiese-third-steht": "/band: Cannot read properties of undefined (reading 'size')"
  },
  "strom": {
-  "bloecke": 639,
-  "bilder": 1357,
-  "seiten": 10,
+  "bloecke": 1419,
+  "bilder": 10541,
+  "seiten": 20,
   "fehler": 0,
   "verloren": 0
  },
  "zellen": {
   "wiese-ego-geht": {
-   "n": 34,
-   "frame": 100.21,
-   "p99": 100.45,
-   "max": 100.45,
-   "ueber33": 32,
-   "ueber100": 2,
-   "takt": 43.78,
-   "vram": 145.2,
-   "gpu": 24.3,
-   "gpuN": 7,
-   "befehle": 183,
-   "dreiecke": 861035,
+   "n": 39,
+   "frame": 83.68,
+   "p99": 92.21,
+   "max": 92.21,
+   "ueber33": 37,
+   "ueber100": 0,
+   "takt": 25.67,
+   "vram": 146.6,
+   "gpu": 8.04,
+   "gpuN": 8,
+   "befehle": 182,
+   "dreiecke": 763036,
    "voll": 1,
    "halt": false,
    "last": 1,
@@ -96,14 +96,14 @@
     "sunny"
    ],
    "buehne": 0,
-   "eigen": 34,
+   "eigen": 39,
    "fremd": 0,
    "fenster": {
     "ein": 0.5,
     "sek": 2,
     "regler": "voll",
-    "belegung": 93.49,
-    "pflicht": 7.79,
+    "belegung": 83.98,
+    "pflicht": 6.26,
     "wache": "GRUEN",
     "wetter": "sunny",
     "weg": 8,
@@ -120,18 +120,18 @@
    }
   },
   "wiese-ego-sprint": {
-   "n": 26,
-   "frame": 92.23,
-   "p99": 92.36,
-   "max": 92.36,
-   "ueber33": 25,
-   "ueber100": 0,
-   "takt": 40.57,
-   "vram": 146,
-   "gpu": 29.11,
-   "gpuN": 7,
+   "n": 36,
+   "frame": 83.68,
+   "p99": 100.44,
+   "max": 100.44,
+   "ueber33": 33,
+   "ueber100": 1,
+   "takt": 27.98,
+   "vram": 145.7,
+   "gpu": 23.86,
+   "gpuN": 8,
    "befehle": 196,
-   "dreiecke": 759178,
+   "dreiecke": 693008,
    "voll": 1,
    "halt": false,
    "last": 1,
@@ -144,14 +144,14 @@
     "sunny"
    ],
    "buehne": 0,
-   "eigen": 26,
+   "eigen": 36,
    "fremd": 0,
    "fenster": {
     "ein": 0.5,
     "sek": 2,
     "regler": "voll",
-    "belegung": 93.67,
-    "pflicht": 6.15,
+    "belegung": 87.91,
+    "pflicht": 5.98,
     "wache": "GRUEN",
     "wetter": "sunny",
     "weg": 11,
@@ -168,18 +168,18 @@
    }
   },
   "wiese-fahrt": {
-   "n": 42,
-   "frame": 66.91,
-   "p99": 75.31,
-   "max": 75.31,
-   "ueber33": 39,
+   "n": 38,
+   "frame": 75.3,
+   "p99": 83.88,
+   "max": 83.88,
+   "ueber33": 34,
    "ueber100": 0,
-   "takt": 43.06,
-   "vram": 151.6,
-   "gpu": 22.39,
-   "gpuN": 8,
-   "befehle": 218,
-   "dreiecke": 582792,
+   "takt": 47.89,
+   "vram": 147.3,
+   "gpu": 26.36,
+   "gpuN": 7,
+   "befehle": 233,
+   "dreiecke": 693334,
    "voll": 1,
    "halt": false,
    "last": 1,
@@ -192,14 +192,14 @@
     "sunny"
    ],
    "buehne": 0,
-   "eigen": 42,
+   "eigen": 38,
    "fremd": 0,
    "fenster": {
     "ein": 0.5,
     "sek": 2,
     "regler": "voll",
-    "belegung": 64,
-    "pflicht": 3.68,
+    "belegung": 72.89,
+    "pflicht": 4.53,
     "wache": "GRUEN",
     "wetter": "sunny",
     "weg": 42,
@@ -216,18 +216,18 @@
    }
   },
   "genesis-third-geht": {
-   "n": 68,
-   "frame": 49.63,
-   "p99": 58.38,
-   "max": 58.38,
-   "ueber33": 23,
+   "n": 66,
+   "frame": 50.12,
+   "p99": 58.58,
+   "max": 58.58,
+   "ueber33": 26,
    "ueber100": 0,
-   "takt": 40.13,
-   "vram": 132.8,
-   "gpu": 13.48,
+   "takt": 30.76,
+   "vram": 139.1,
+   "gpu": 18.77,
    "gpuN": 8,
-   "befehle": 140,
-   "dreiecke": 418346,
+   "befehle": 161,
+   "dreiecke": 512446,
    "voll": 1,
    "halt": false,
    "last": 1,
@@ -240,17 +240,17 @@
     "sunny"
    ],
    "buehne": 0,
-   "eigen": 68,
+   "eigen": 66,
    "fremd": 0,
    "fenster": {
     "ein": 0.5,
     "sek": 2,
     "regler": "voll",
-    "belegung": 42.5,
-    "pflicht": 2.03,
+    "belegung": 51.21,
+    "pflicht": 2.73,
     "wache": "GRUEN",
     "wetter": "sunny",
-    "weg": 9,
+    "weg": 8,
     "buehne": 0,
     "last": 1,
     "skala": 0.75,

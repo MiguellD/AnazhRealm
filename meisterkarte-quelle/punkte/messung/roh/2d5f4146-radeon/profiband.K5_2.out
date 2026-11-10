@@ -261,7 +261,7 @@ $ C:\Program Files\nodejs\node.exe -e /* richter 9e65c086fa */ const K = {"budge
     console.log("PROFIBAND " + JSON.stringify(zus));
 })(process.argv[1], process.argv[2]).catch((e) => { console.log("PROBE ROT: " + String((e && e.stack) || e).split("\n").slice(0, 3).join(" | ")); process.exitCode = 1; }); dauer C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\2d5f4146-radeon\profiband.K5_1.json
 [linse-gpu] amd/rdna-3
-PROFIBAND {"art":"dauer","sekunden":14,"schritte":[["ende","Fehler"]],"offen":[],"fehler":{"dauer-ende":"/puffer: Cannot read properties of undefined (reading 'size')"},"strom":{"bloecke":236,"bilder":1545,"seiten":3,"fehler":0,"verloren":0},"dauer":{"anfang":false,"ende":false,"torbau":{"bau":true,"tor":true,"heim":true},"nacht":{"nacht":9.623833333333329e-15,"mittag":0.500000000000008}}}
+PROFIBAND {"art":"dauer","sekunden":20,"schritte":[["ende","Fehler"]],"offen":[],"fehler":{"dauer-ende":"/puffer: Cannot read properties of undefined (reading 'size')"},"strom":{"bloecke":234,"bilder":1773,"seiten":3,"fehler":0,"verloren":0},"dauer":{"anfang":false,"ende":false,"torbau":{"bau":true,"tor":true,"heim":true},"nacht":{"nacht":7.669083333333346e-15,"mittag":0.5000000000000082}}}
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3

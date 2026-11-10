@@ -81,7 +81,7 @@ code = code || 3;
 }
 console.log("@@PUNKTE@@ PROBE " + uhr() + " s · Exit " + code);
 process.exit(code);
-})() C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\2d5f4146-radeon\tore.K1_1.json 7804 1 async function toreK1Seite(H) {
+})() C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\2d5f4146-radeon\tore.K1_1.json 7804 133 async function toreK1Seite(H) {
 const GANG = async function toreK1Gang(o) {
 const R = window.anazhRealm;
 const jetzt = () => performance.now();
@@ -315,8 +315,13 @@ console.log("TOR_K1 " + JSON.stringify(e));
 return 0;
 }
 [linse-gpu] amd/rdna-3
-@@PUNKTE@@ FEHLER Error: der Deckel des Laufs fehlt (argv „1“: der Läufer ersetzt den Platzhalter SEK) |     at seiteLauf ([eval]:68:25) |     at [eval]:84:3 |     at runScriptInThisContext (node:internal/vm:219:10)
-@@PUNKTE@@ PROBE 0.0 s · Exit 2
+@@PUNKTE@@ ZEIT an tore-k1-42793 0.6 s
+@@PUNKTE@@ ZEIT lauf 0 7c442f2b → fe6db067 6.3 s
+@@PUNKTE@@ ZEIT lauf 1 fe6db067 → 7c442f2b 11.0 s
+@@PUNKTE@@ ZEIT lauf 2 7c442f2b → fe6db067 nach 15000 ms nicht: die Apertur gekreuzt (enterPortal) 28.4 s
+@@PUNKTE@@ ZEIT ende 28.5 s
+TOR_K1 {"luecken":[[0,2278,"der Boden wächst (15 Stücke im Bild) · der Horizont wächst (42 %) · das Licht des Orts wird gemessen · 1 Wald-Böden werden bepflanzt · 2 Wald-Stücke warten auf "],[0,3379,"1 Bäume und Bauten wachsen"],[0,4121,"4 Wald-Stücke warten auf ihre Gestalt"],[1,1172,"der Horizont wächst (41 %) · 130 Bäume und Bauten wachsen · 2 Wald-Böden werden bepflanzt · 1 Wald-Stücke warten auf ihre Gestalt"],[1,1742,"9 Bäume und Bauten wachsen"],[1,2524,"3 Wald-Stücke warten auf ihre Gestalt"]],"schirmLuma":0.043,"heim":true,"laeufe":[{"nr":0,"sicht":"ego","geboren":true,"von":"7c442f2b","ziel":"fe6db067","ms":null,"anlaufMs":1046,"ankunftMs":1985,"schirmMs":4506,"bilder":40,"lumaMin":0.023,"lumaMax":0.277,"dunkel":31,"hell":0,"ohneBild":0,"frameMax":953,"ueber100":16,"wechsel":1,"fehler":null},{"nr":1,"sicht":"ego","geboren":false,"von":"fe6db067","ziel":"7c442f2b","ms":null,"anlaufMs":1852,"ankunftMs":514,"schirmMs":2787,"bilder":90,"lumaMin":0.004,"lumaMax":0.423,"dunkel":83,"hell":0,"ohneBild":0,"frameMax":184,"ueber100":11,"wechsel":1,"fehler":null},{"nr":2,"sicht":"third","geboren":false,"von":"7c442f2b","ziel":"fe6db067","ms":null,"anlaufMs":null,"ankunftMs":null,"schirmMs":0,"bilder":0,"lumaMin":null,"lumaMax":null,"dunkel":0,"hell":0,"ohneBild":0,"frameMax":null,"ueber100":0,"wechsel":0,"fehler":"nach 15000 ms nicht: die Apertur gekreuzt (enterPortal)"}]}
+@@PUNKTE@@ PROBE 28.5 s · Exit 0
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3

@@ -1,6 +1,6 @@
 {
  "art": "dauer",
- "sekunden": 14,
+ "sekunden": 20,
  "schritte": [
   [
    "ende",
@@ -12,8 +12,8 @@
   "dauer-ende": "/puffer: Cannot read properties of undefined (reading 'size')"
  },
  "strom": {
-  "bloecke": 236,
-  "bilder": 1545,
+  "bloecke": 234,
+  "bilder": 1773,
   "seiten": 3,
   "fehler": 0,
   "verloren": 0
@@ -27,8 +27,8 @@
    "heim": true
   },
   "nacht": {
-   "nacht": 9.623833333333329e-15,
-   "mittag": 0.500000000000008
+   "nacht": 7.669083333333346e-15,
+   "mittag": 0.5000000000000082
   }
  }
 }
