@@ -1,3 +1,29 @@
+## 10.11. 11:56 — w27-ferne-ton-5: ZWISCHENSTAND 529cf20c auf z364 (Gelände-Studio GRÜN, S0 Nacht ROT mit Täter beim Namen)
+
+Keine Abgabe: S0 steht am Kopf ROT, eine Abgabe führe in z wieder rot. main 900c28e6 ist im Kopf (unverändert seit 55080b33).
+
+- **Geschnitten — der Schnee liegt über der Narbe.** `_bodenFarbeAt` (stamm/gelaende-boden.js) und sein Faden-Spiegel `bodenFarbe` (voxel-worker.js) legen den Schnee als letzte Decke über Wiese und Weg. Sie geben die Narbe aus: die Wache smoothstep(0, 0,6, Deckung) läuft EINMAL, mal (1 − Schnee).
+  - gelaende-core `bodenKarte` (der Parameter `wache` fiel), das Boden-Fragment (`_green`) und über die Karte Halm und Haftung lesen die Narbe linear.
+  - Bis hier fiel der Schnee VOR der Wiese, und jeder Leser schloss die Deckung unter ihm. 61 % Schnee über 39 % Deckung trugen so 81 % Halm, und das Mittel des Halms lag über dem Schnee.
+  - Die Karte des Makro-Workers war kein Zwilling: ihr Schnee ist der des Kerns (je Zelle gemessen: Welt 0,63 = Karte 0,63). Der Ton der alten Wache verbarg den Fehler, weil das Blau des Schnees g − (r+b)/2 unter null senkte.
+- **Gemessen (swiftshader, Chrome 148).**
+  - `gate:gelaende-studio`: Karte ohne Welt 174 → 0, Welt ohne Karte 0 → 0, Welt-Schnee 3 536 → 3 767 Zellen, STUDIO-PROBE GRÜN.
+  - Die 174 Zellen trugen Schnee 0,61–0,76 bei Deckung 0,16–0,37 und Luminanz 0,25–0,50, unter der Schwelle 0,6 × 0,859.
+  - Ebenso GRÜN: check · playtest voll (126 s) · playtest:fast · welt-boot · Werk im Wasser · post-kette · ego-schatten (kein [ERROR] STOFF außer der Injektion) · Luft-Linse 8 km 0,03–2,22°.
+- **Befund S0 — das Licht ist main-gleich, der Täter ist die Spitze des Halms aus dem Spektrum.**
+  - Mein Kopf auf swiftshader trifft die Zahlen der Radeon: Nacht Luma 11,5, abgesoffen 34,4 %, Feuer 24,9°. Himmel 0,2881 und Sternen-Licht 0,0948 sind gleich main.
+  - Je Datei auf main zurückgesetzt bleibt S0 ROT: `_einmalRender` (bild-kosten) 11,5 · Schichten der Wege-Karte 11,7 · Moos und Glanz aus 11,5 · Halm-Relief halb 10,4 · Bestand der Ferne zurück 12,1.
+  - Allein die alte Spitze `GRAS_SPITZE` (0,172/0,349/0,046) hebt den Kopf: Luma 22,0, abgesoffen 6,1 % (die Mulden, `_mikroStoff`), Feuer-Farbton wieder im Band.
+  - Die Gegenprobe: **main 900c28e6 mit NUR der Spitze aus dem Spektrum** (HALM_FARBE.spitze 0,0795/0,1343/0,0317, PROSPECT-D unter D65; w26-ferne-ton-2 58b780c4) fällt genauso — Luma 24,1 → 12,7, abgesoffen 0,6 → 28,7 %, Feuer 30,5 → 23,6°.
+  - Der Grund: am Feuer ist der Boden das Relief der Nähe aus Wurzel (= Spitze × 0,6) und Spitze. Die Spitze von main war 2,6 × das gemessene Blatt (Grün 0,349); mit dem Blatt liegt das Relief beim Bestand der Ferne (Grün ~0,06 gegen 0,049), und die Kamera der Nacht trägt die gemessene Wiese auf Luma ~12.
+  - Der Farbton: mit dem Auge des Tages misst der Kopf das Licht des Feuers netto bei 34,7° (im Band). Erst das Auge der Nacht zieht ihn auf der dunkleren Wiese unter 28°.
+- **Ehrlich offen.** S0 (`gate:pruefbuehne-licht`): Luma ≥ 22 und Feuer ≥ 28° hielten an main mit einer Wiese 2,6 × heller als ihr Blatt.
+  - Zurück zur alten Spitze schneide ich nicht: sie wäre ein Zwilling des Kerns (`GRAS_SPITZE` ≠ `HALM_FARBE.spitze`, emitGrass liest das Blatt) und hält die Nacht dennoch nicht (6,1 % > 5 %).
+  - Der Schnitt, der die gemessene Wiese nachts lesbar trägt, liegt in der Kamera der Nacht (licht.K1, `_belichtungAusLicht`, REF spec/farbe/tag-ref.json −2,17 EV) — eine fremde Domäne mit eigener Wand (Tag-Achse).
+  - Ich brauche von dir: das Maß der Nacht für die gemessene Wiese, oder den Zuruf, die Kamera der Nacht zu schneiden. Danach Abgabe mit `[gpu-probe: gate:pruefbuehne-licht, gate:luft-tiefe:echt, bild:wiese@0.5]`.
+- FUND: stamm/gelaende-boden.js `_bodenFarbeAt` · der Schnee fiel vor der Wiese, die Wache schloss die Deckung unter ihm in vier Lesern (Farbe, Karte, Fragment, Haftung): Wiese und Halm im Schnee · Sage-a-tue-a · M
+- FUND: stamm/daten.js `GRAS_SPITZE` · mit dem Blatt aus dem Spektrum trägt der Boden am Feuer nachts Luma 11,5–12,7 (Soll ≥ 22, main 24,1 mit der Spitze 2,6 × des Blatts) · Licht der Nacht · M
+
 ## 10.11. 11:13 Koordinator — z364: dein Zweig ist Täter zweier Wände (S0 Nacht, Gelände-Studio)
 Dein Kopf 790ed766 fuhr in z364 (mit ort-pose, studio-mesh, fenster-wand; Lauf 42791038600, beide Versuche rot). Gemessen auf der Radeon 890M an deinem Kopf ALLEIN, main 900c28e6 an denselben Gates GRÜN:
 - **`npm run gate:pruefbuehne-licht` (echt-Job, Prüfbühne S0):** main „S0 BILD GRÜN … Nacht {luma 24.1, schwarz 0.007}“ → dein Kopf „⛔ S0 Nacht: der Boden 1–3 m ohne das Feuer um Mitternacht trägt Luma 11.5, abgesoffen 34.4 % (Soll ≥ 22 und ≤ 5.0 %, die Nacht der EINEN Licht-Kette) — der Himmel trägt Licht (Sternen-Licht 0.0948, Umgebung 0.2879), das Bild schwärzt es“ und „⛔ S0 Bild: das Licht des Feuers trägt den Boden 1–3 m im Farbton 24.9° (Soll 28–45°)“.
