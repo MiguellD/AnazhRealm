@@ -86,6 +86,13 @@ async function albedo() {
     };
     const l = lauf(["--labor", "--echt", "--nur", "koerperstudio", "--datei", path.join(d, "labor.json")]);
     console.log("✅ LABOR " + (l.split("\n").find((z) => /^haar\b/.test(z.trim())) || l.trim().split("\n").pop()).trim());
+    // die Eichung beider Seiten und das Welt-Exemplar des Haars (welt.json): fällt die Eichung, steht hier, an welcher Karte
+    try {
+        const W = JSON.parse(require("fs").readFileSync(path.join(d, "welt.json"), "utf8"));
+        console.log("✅ EICHUNG welt " + JSON.stringify(W.eichung).slice(0, 400) + " · haar " + JSON.stringify(W.welt && W.welt.haar).slice(0, 300));
+    } catch (e) {
+        console.log("❌ EICHUNG welt.json unlesbar: " + e.message);
+    }
     const n = lauf(["--nachziehen", path.join(d, "welt.json"), path.join(d, "labor.json"), "--nur", "haar"]);
     console.log("✅ NACHZUG " + n.trim().split("\n").slice(-3).join(" | "));
     const z = JSON.parse(require("fs").readFileSync(path.join(ROOT, "spec/farbe/albedo-tafel.json"), "utf8")).zeilen.find((x) => x.id === "haar");
