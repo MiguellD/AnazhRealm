@@ -123,10 +123,9 @@ async function zielLesen(ziel, W, H, renderer = st.renderer) {
 // dort nicht (gefallen, nie geladen, oder kein Puffer: die Liste der Wahl je Kamera ist seit w25-gpu-wahl-2 eine Karte), nennt sie
 // Leser und Puffer; r184 brach anonym („reading 'size'" in getArrayBufferAsync: haar.K5, vegetation.K1 seit fbbeb318)
 function pufferLesen(puffer, wer, renderer = st.renderer) {
-    const be = renderer.backend,
-        q = puffer && puffer.isInterleavedBufferAttribute ? puffer.data : puffer;
-    if (!q || !be.has(q) || !be.get(q).buffer)
-        throw new Error(`DIE PUFFER-LESUNG (${wer}): ${(q && (q.name || q.constructor.name)) || q} liegt nicht auf der GPU`);
+    const q = puffer?.isInterleavedBufferAttribute ? puffer.data : puffer;
+    if (!q || !renderer.backend.has(q) || !renderer.backend.get(q).buffer)
+        throw new Error(`DIE PUFFER-LESUNG (${wer}): ${q?.name || q?.constructor.name} liegt nicht auf der GPU`);
     return renderer.getArrayBufferAsync(puffer);
 }
 async function seitenTakt() {

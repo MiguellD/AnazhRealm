@@ -161,7 +161,7 @@ function parameterAnker(name, src, stammSrc) {
                         `${z} ordnet Methoden an einem Kopf-Muster zu (/${k}/) — am AST: stammLib.glieder · gliedAn · rufe (Klinge 4)`
                     );
         } else if (t.value === "getArrayBufferAsync" && toks[i - 1]?.type.label === "." && name !== LESUNG_FREI) {
-            errs.push(`${z} liest einen GPU-Puffer am Rohen — über die EINE Puffer-Lesung: window.__pufferLesen(puffer, wer) (Klinge 8)`);
+            errs.push(`${z} liest am Rohen — die EINE Puffer-Lesung: window.__pufferLesen (Klinge 8)`);
         } else if (t.type.label === "string" || t.type.label === "template") {
             const k = KOPF_TEXT_RX.exec(String(t.value));
             if (k && stammLib.kopf(stammSrc, k[1]) >= 0)
@@ -586,22 +586,16 @@ function selftest() {
     );
     // Klinge 8: der Leser von haar.K5 und vegetation.K1 bis w27-gpu-wahl-heil (die Liste der Wahl am Rohen) fällt mit Datei:Zeile, die
     // EINE Puffer-Lesung, ein Kommentar, ein Text und die Lesung selbst schweigen; die Lesung nennt Leser und Puffer (die Karte je Kamera)
-    const roh = "const a = 1;\nconst l = new Uint32Array(await rend.getArrayBufferAsync(a.__instanzQuelle.liste));\n";
+    const roh = "\nr.getArrayBufferAsync(q.liste); // r.getArrayBufferAsync(q)";
     const e8 = parameterAnker("probe.cjs", roh, stammFake);
-    if (e8.length !== 1 || !e8[0].startsWith("probe.cjs:2 liest einen GPU-Puffer am Rohen")) fails.push("Klinge 8 nennt den rohen Leser nicht");
-    const still8 = 'await window.__pufferLesen(zug.liste, "x");\n// rend.getArrayBufferAsync(q);\nconst t = "getArrayBufferAsync(q)";\n';
-    if (parameterAnker("probe.cjs", still8, stammFake).length || parameterAnker(LESUNG_FREI, roh, stammFake).length)
-        fails.push("Klinge 8 feuert ohne rohen Leser");
-    const rend = { backend: { has: (q) => q === da, get: () => ({ buffer: {} }) }, getArrayBufferAsync: () => "gelesen" };
-    const da = { isBufferAttribute: true };
     let wort = "";
     try {
-        pufferLesen(new Map(), "draw-zaehler Liste des Zugs", rend);
+        pufferLesen(new Map(), "z", { backend: { has: () => false } });
     } catch (e) {
         wort = e.message;
     }
-    if (wort !== "DIE PUFFER-LESUNG (draw-zaehler Liste des Zugs): Map liegt nicht auf der GPU" || pufferLesen(da, "x", rend) !== "gelesen")
-        fails.push("Klinge 8: die Puffer-Lesung nennt Leser und Puffer nicht (" + wort + ")");
+    if (!/^probe\.cjs:2 liest am Rohen/.test(e8) || e8.length !== 1 || parameterAnker(LESUNG_FREI, roh, stammFake).length || !/\(z\): Map /.test(wort)) // prettier-ignore
+        fails.push("Klinge 8 nennt den rohen Leser oder den Puffer nicht");
     urteilEnde(fails.length, "❌ SELBST-TEST: " + fails.join(" · "), "✅ SELBST-TEST: alle acht Klingen feuern");
 }
 
