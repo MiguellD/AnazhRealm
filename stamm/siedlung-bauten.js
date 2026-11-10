@@ -2699,6 +2699,27 @@ class AnazhRealm_siedlung_bauten {
         return true;
     }
 
+    // DIE ZELLE EINES SATZES AN EINEM PUNKT (w27-ort-pose): die kleinste Zelle eines gezeichneten Satzes, in deren Kasten der
+    // Punkt `p` liegt (0,5 m Saum für die Tiefe eines Bilds) — { rad, obj, e } mit dem Radius ihrer Hülle, dem Netz des Satzes
+    // und, im Bau-Satz, dem Eintrag ihres Slots (`slotEntry`). `ohne`: die Netze, die der Frager nicht zeichnet. Leser: die
+    // Abnahme des Beweisbilds (scripts/lib/kamera-nah.cjs `sieht`) nennt damit den Satz, der ein Ziel verdeckt, beim Namen.
+    _satzZelleBei(p, ohne = new Set()) {
+        let h = null;
+        const kugel = new THREE.Sphere();
+        for (const s of this.state.chunkSaetze ? this.state.chunkSaetze.values() : []) {
+            if (!s.mesh.visible || ohne.has(s.mesh)) continue;
+            for (const b of s.bloecke.values()) {
+                const se = this.state.archInstanceGroups.get(b.key)?.slotEntry;
+                (b.zellen || []).forEach((z, i) => {
+                    if (!(z.huelle.distanceToPoint(p) < 0.5) || h?.rad <= z.huelle.getBoundingSphere(kugel).radius)
+                        return;
+                    h = { rad: kugel.radius, obj: s.mesh, e: se?.[i] || null };
+                });
+            }
+        }
+        return h;
+    }
+
     // Ein CPU-Schreiber (Geomorph) hat Attribute seines Bereichs geändert → genau dieser Bereich lädt hoch; `nur`: er bewegte
     // nur diese Vertices (die Hülle, `_chunkSatzHuelle`).
     _chunkSatzMarke(art, key, namen, nur = null) {
