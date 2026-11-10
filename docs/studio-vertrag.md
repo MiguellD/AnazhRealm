@@ -390,8 +390,9 @@ eines Gesetzbuchs als Primitive, asset-lokal (Vorlagen-Raum, Meter), JEDE Zahl a
 - **Die Haut des Tiers (physik.K2 Staffel 2):** der Leib eines Tiers (`_kreaturLeib`) trägt je Achse den Radius, der die gezeichnete
   Gestalt dort deckt (`_tierQuerMass` aus der Bind-Pose des tetrapoda-Baums, je Hüft-Höhe) — Hülle, Wagen, Leib an Leib und der
   persönliche Raum lesen ihn, nie mehr 0,3 Hüft-Höhen für jede Gattung. Das Jagd-Gesetz (tetrapoda `JAGD_GESETZ`) ist gegen diese
-  Haut geeicht: `wundExp` 1 (bis w27-wagen-spalt-2 1,3, geeicht gegen das Fett, an dem das Maul die Beute verfehlte) — vier Wölfe
-  reißen 18 von 60 (MacNulty et al. 2007/2012: ≈ 0,3 je Jagd). Wand: `gate:kreatur-takt` jagdkreis, abstand (der Raum des Spielers).
+  Haut geeicht: `wundExp` 0,9 (bis w27-wagen-spalt-2 1,3, geeicht gegen das Fett, an dem das Maul die Beute verfehlte) — vier
+  Wölfe reißen 17 von 60 (MacNulty et al. 2007/2012: ≈ 0,3 je Jagd). Wand: `gate:kreatur-takt` jagdkreis, abstand (der Raum des
+  Spielers), herde (der Blick-Vergleich jenseits der Nah-Regel von `isInFrustum`, 50 m).
 - **Der Kamin des Hauses (B3c):** die Hülle `__huelle` eines Hauses trägt additiv `kamin` (`[x, y, z]` haus-lokal auf dem
   Raster, die Spitze des Stapels aus `kaminSpitze` — derselben Formel wie der Slot des Exports; `null` = kein Kamin); der EINE
   Leser `_hausHuelleSetzen` gibt sie dem Eintrag ohne Spitze aus einem Export (Vorschau, KI) — der Wirt baut kein Haus, um sie
