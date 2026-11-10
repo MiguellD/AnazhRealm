@@ -992,23 +992,19 @@ async function WELLE_L(ort) {
         const cv = document.getElementById("world-canvas");
         let griffe = 0;
         r.tryMouseBreak = () => (griffe++, true);
+        // EIN Klick auf den Canvas (gedrückt, gelöst)
+        const klick = () => ["mousedown", "mouseup"].forEach((e) => cv.dispatchEvent(new MouseEvent(e, { button: 0, bubbles: true })));
         try {
             r.toggleDrawer("werkstatt");
             const offen = !!document.querySelector('.drawer[data-drawer="werkstatt"]:not([hidden])');
             s.isPointerLocked = true; // der Zeiger war gefangen, als die Schublade aufging (Befund V-D2)
-            for (let i = 0; i < 4 && cv; i++) {
-                cv.dispatchEvent(new MouseEvent("mousedown", { button: 0, bubbles: true }));
-                cv.dispatchEvent(new MouseEvent("mouseup", { button: 0, bubbles: true }));
-            }
+            for (let i = 0; i < 4 && cv; i++) klick();
             w.z.werkstattGriffe = cv ? griffe : null;
             r.closeAllDrawers();
             // Gegenprobe: ohne Schublade greift derselbe Klick in die Welt
             s.isPointerLocked = true;
             griffe = 0;
-            if (cv) {
-                cv.dispatchEvent(new MouseEvent("mousedown", { button: 0, bubbles: true }));
-                cv.dispatchEvent(new MouseEvent("mouseup", { button: 0, bubbles: true }));
-            }
+            if (cv) klick();
             w.z.ohneWerkstattGriffe = cv ? griffe : null;
             w.c.werkstattTaub = offen && w.z.werkstattGriffe === 0 && w.z.ohneWerkstattGriffe === 1;
         } finally {

@@ -1698,11 +1698,13 @@ function laubGegenlicht(opts) {
                 if (opts.karte === 1) return (window.__karteGestalt = Object.assign(out, b, { stufe: stufeJetzt, ziel })), { stufe: out.stufe };
                 const g = window.__karteGestalt;
                 const lab = window.__lab;
+                // die Karte gegen ihre Gestalt: Leuchtdichte im Verhältnis, Helligkeit und Buntheit als Abstand, die zwei Bilder
+                const vergleich = (lg, lk) => ({ gestalt: lg, karte: lk, verhaeltnis: +(lk.Y / lg.Y).toFixed(3), dL: +(lk.L - lg.L).toFixed(2), dC: +(lk.C - lg.C).toFixed(2), png: [g.png, b.png] }); // prettier-ignore
                 if (opts.boden) {
                     const mittel = (x, m = x.maske.reduce(addiere, 0)) => m ? Object.assign(lab([0, 1, 2].map((q) => x.Cp.reduce((s, v, i) => (i % 3 === q && x.maske[(i / 3) | 0] ? s + v : s), 0) / m)), { pixel: m }) : null;
                     const [lg, lk] = [mittel(g), mittel(b)];
                     if (!lg || !lk) return { fehler: "die Stelle zeichnet kein Pixel" };
-                    return Object.assign(out, { stufe: g.stufe + " → " + stufeJetzt, paar: "fern/nah", karte: { gestalt: lg, karte: lk, verhaeltnis: +(lk.Y / lg.Y).toFixed(3), dL: +(lk.L - lg.L).toFixed(2), dC: +(lk.C - lg.C).toFixed(2), png: [g.png, b.png] } });
+                    return Object.assign(out, { stufe: g.stufe + " → " + stufeJetzt, paar: "fern/nah", karte: vergleich(lg, lk) });
                 }
                 const sg = [0, 0, 0], sk = [0, 0, 0];
                 let n = 0;
@@ -1727,7 +1729,7 @@ function laubGegenlicht(opts) {
                     }
                 if (!n) return { fehler: g ? "Karte und Gestalt teilen kein Pixel" : "kein Schuss der Gestalt (karte: 1)" };
                 const lg = lab(sg.map((v) => v / n)), lk = lab(sk.map((v) => v / n));
-                return Object.assign(out, { stufe: opts.haus || opts.boden ? g.stufe + " → " + stufeJetzt : g.stufe, paar: opts.haus || opts.boden ? "fern/nah" : undefined, pixel: n, karte: { gestalt: lg, karte: lk, verhaeltnis: +(lk.Y / lg.Y).toFixed(3), dL: +(lk.L - lg.L).toFixed(2), dC: +(lk.C - lg.C).toFixed(2), png: [g.png, b.png] } });
+                return Object.assign(out, { stufe: opts.haus || opts.boden ? g.stufe + " → " + stufeJetzt : g.stufe, paar: opts.haus || opts.boden ? "fern/nah" : undefined, pixel: n, karte: vergleich(lg, lk) });
             }
             if (opts.oben) {
                 // DIE KRONE VON OBEN (Nordstern §4.5 „Bestandes-Albedo … von oben im Ausgabe-Pfad“): das Auge lotrecht

@@ -3870,6 +3870,17 @@
     // fichte 0,1575 → 0,1500 · tanne 0,1775 → 0,1612 · strauch 0,3515 → 0,2109; GTX 41d69a4f (der w23-Saum in derselben Welt
     // → dieser) birke 0,2056 → 0,1753 · eiche 0,1788 → 0,1417 · fichte 0,1474 → 0,1470 · tanne 0,1691 → 0,1636 · strauch
     // 0,3242 → 0,2083.
+    //   lappen        DIE LAPPEN DER GLATTEN KETTE (w26-eiche-kante, lod.K1#1): die Zelle des Laub-Musters (`karteSaumMuster`, 1 − F1)
+    //                 in Stufe-0-Texeln, dieselbe in jeder Stufe — ab der Stufe, auf der das Blatt des Baum-Zweigs unter zwei
+    //                 Texel fällt (`lappenAb`, ZWEIG_BLATT.laenge), bis die Lappen-Zelle unter einen BC-Block fällt (`minSeite`:
+    //                 Stufen 3 und 4), trägt die geglättete Deckung des Blatt-Atlas den Faktor 2^(saum · (Muster − ½)) (`impostorMips`
+    //                 glatt) — die Wahl folgt dem Muster, die Alpha der Lücke bleibt über 0 (die Farbe liest zwei Oktaven über der
+    //                 Deckung, BLATT_FARBE_OKTAVE: ein linearer Faktor mit Lücken bei 0 trug gate:pflanzen-nah Farb-Korn bc 0,0165 →
+    //                 0,0370 > 0,0358, die Lappen auf Stufe 5 die BC3-Fracht der Weide auf 16 px 3 % zu dunkel). Bis hier schmolz jede
+    //                 Laub-Karte der L1 ab Stufe 3 zu ihrer Hülle (Stufe 4 ein Klecks, das „Riesenblatt" von K58 am Baum-Zweig), die
+    //                 Krone aus 147 Klecksen trug runde Bögen: Radeon, Spielgang der Station, f:eiche:L1 0,3261. Kronen-Modell (147
+    //                 Karten, Test an ½, kante je λ 2–4, die schlechteste): Zelle 0 · 1 · 2 · 3 main 0,243 · 0,208 · 0,202 · 0,160 →
+    //                 0,175 · 0,208 (λ 2, unberührt) · 0,168 · 0,163 (Zelle 48: Zelle 0 0,210; ab Stufe 2: λ 2 0,150 → 0,201)
     var KARTEN_GESETZ = {
         schwelle: 0.45,
         normalTeiler: 2,
@@ -3883,6 +3894,7 @@
         saumBand: 8,
         saumMin: 0.02,
         saumWeite: 3,
+        lappen: 64,
     };
     // linear (0..1) → sRGB-Byte, und die Tabelle der 256 linearen Eingangs-Bytes
     function linZuSrgb8(x) {
@@ -4200,6 +4212,8 @@
             glatt = !!(opt && opt.glatt),
             saum = opt && opt.saum && !glatt && !quer ? opt.saum : null;
         if (glatt && !blut) throw new Error("impostorMips: glatt braucht blut (die Farbe jedes deckenden Texels)");
+        // die Stufe, auf der das Blatt des Baum-Zweigs unter zwei Texel fällt (14 px → 3): ab ihr trägt die glatte Kette die Lappen
+        const lappenAb = Math.ceil(Math.log2(ZWEIG_BLATT.laenge / 2));
         const hA = quer ? h : (h / V) | 0,
             wA = quer ? (w / V) | 0 : w;
         const n0 = w * h;
@@ -4330,6 +4344,27 @@
                     // wählbar: glatt jeder Texel mit Deckung in der Nachbarschaft (er trägt die Blut-Farbe), sonst nur mit
                     // eigener (die Karte trägt die Farbe ihrer Kinder); der Gleichstand über die eigene Deckung
                     if (!saum) schluessel[i] = glatt || s > 0 ? dicht[i] + (1e-6 * s) / fuss : 0;
+                    // DIE LAPPEN (KARTEN_GESETZ.lappen): unter dem Blatt trägt die glatte Deckung das Laub-Muster, am selben
+                    // Stufe-0-Ort in jeder Stufe — der Filter mischt zwei Stufen, ihre Büschel decken sich
+                    if (
+                        glatt &&
+                        k >= lappenAb &&
+                        KARTEN_GESETZ.lappen >> k >= KARTEN_GESETZ.minSeite &&
+                        schluessel[i] > 0
+                    ) {
+                        const o = tex(v, i);
+                        schluessel[i] *= Math.pow(
+                            2,
+                            KARTEN_GESETZ.saum *
+                                (karteSaumMuster(
+                                    ((o % nw) + 0.5) * (1 << k),
+                                    (((o / nw) | 0) + 0.5) * (1 << k),
+                                    KARTEN_GESETZ.lappen,
+                                    false
+                                ) -
+                                    0.5)
+                        );
+                    }
                     if (schluessel[i] > 0) positiv++;
                 }
                 // die Farbe des Bands: die Summen der Kinder im Kern des Saums (ein gewählter Texel ohne eigene Deckung)
@@ -5658,6 +5693,36 @@
             deckung: A.add(A.k(1), A.mul(delta, fiel(KRONE_JAHR.holz - 1))),
         };
     }
+    // DIE GESTALT DES HALMS IM JAHR (w26-winter-fichte, vegetation.K5#2, additiv): SAISON_GESETZ `ha` ist der Anteil der
+    // Sommer-LÄNGE, den der Halm im Jahr trägt — er kürzt sich längs seiner eigenen Achse um seinen Fuß (Höhe UND Neigung ×
+    // ha), seine Breite bleibt: die Blatt-Fläche fällt genau linear mit ha, wie das Gesetz sagt. Bis hierher staute der Leser
+    // nur y: die Neigung und der Fußabdruck jedes Halms blieben, die Fläche des Büschels fiel bei ha 0,35 nur auf 0,44 (L1) bzw.
+    // 0,46 (L2) und die Krone der Wiese deckte von oben wie im Sommer (Fläche von oben × 1,00) — Radeon 87537d3f, Mess-Wiese Ego:
+    // LAI 2–10 m Winter 0,567 × Sommer. Die Breite des Halms liegt waagrecht quer zu seiner Ebene (emitGrass: rt = dir × Y), die
+    // Normale steht senkrecht auf ihr — ihr waagrechter Teil (nx, nz) nennt die Ebene, q = (nz, 0, −nx) die Breite. Eingang: der
+    // Versatz (ox, oy, oz) der Ecke von ihrem Fuß AM BODEN (aCenter x/z, y 0), die Normale der Vorlage, `aehre` 1 an der Ähre (sie
+    // kürzt als Ganzes um den Fuß ihres Stängels — ihr Anker, geboren in emitGrass), 0 am Halm; ein fast flach liegendes
+    // Stück (|q| < quer) kürzt auch quer (ohne Ebene keine Breite). Rückgabe der Versatz im Jahr; Sommer (ha 1) exakt die Ecke. Über einer Algebra wie
+    // `kroneImJahr` (WIND_ZAHLEN die Linse, die TSL-Algebra Welt-Stoff, Ferne und Schale, WIND_GLSL das Labor).
+    var HALM_JAHR = Object.freeze({ quer: [0.02, 0.12] });
+    function halmImJahr(A, ha, ox, oy, oz, nx, nz, aehre) {
+        const Q = HALM_JAHR.quer;
+        const q2 = A.add(A.mul(nx, nx), A.mul(nz, nz));
+        const breit = A.mul(
+            A.min(A.max(A.mul(A.add(A.sqrt(q2), A.k(-Q[0])), A.k(1 / (Q[1] - Q[0]))), A.k(0)), A.k(1)),
+            A.add(A.k(1), A.mul(aehre, A.k(-1)))
+        );
+        // w · q ist der Teil des Versatzes längs der Breite: er kürzt nicht (× (1 − ha) zurück auf die volle Breite)
+        const w = A.mul(
+            A.mul(A.add(A.mul(ox, nz), A.mul(A.mul(oz, nx), A.k(-1))), A.pow(A.max(q2, A.k(1e-8)), A.k(-1))),
+            A.mul(breit, A.add(A.k(1), A.mul(ha, A.k(-1))))
+        );
+        return {
+            x: A.add(A.mul(ox, ha), A.mul(nz, w)),
+            y: A.mul(oy, ha),
+            z: A.add(A.mul(oz, ha), A.mul(A.mul(nx, w), A.k(-1))),
+        };
+    }
     // Die GLSL-Algebra des Terms (Laub- und Rinden-Shader des Labors, r128): jeder Ausdruck ist Text.
     var WIND_GLSL = Object.freeze({
         k: (n) => "(" + (Number.isInteger(n) ? n.toFixed(1) : String(n)) + ")",
@@ -6038,6 +6103,8 @@
         WIND_ZAHLEN: WIND_ZAHLEN, // K19 — die Zahlen-Algebra des Terms
         KRONE_JAHR: KRONE_JAHR, // w21 — das Holz der kahlen Krone (Anteil ihrer Sommer-Deckung)
         kroneImJahr: kroneImJahr, // w21 — DIE KRONE IM JAHR über einer Algebra (Fern-Krone: Ring, Boden, Kamm, Panorama)
+        HALM_JAHR: HALM_JAHR, // w26 — die Gestalt des Halms im Jahr: ab welcher waagrechten Normale er seine Breite trägt
+        halmImJahr: halmImJahr, // w26 — DER HALM IM JAHR über einer Algebra (Nah-Wiese, Ferne, Schale, Labor): Länge × ha, Breite bleibt
         WIND_GLSL: WIND_GLSL, // K19 — die GLSL-Algebra des Terms (Labor)
         LAUB_LICHT: LAUB_LICHT, // K19 — Durchlass des Blatts (tau = T/R je Laub/Nadel) und die Vorwärts-Keule
         laubDurchlass: laubDurchlass, // K19 — DER EINE Laub-Licht-Term über einer Algebra (Welt-Stoff, Labor-Shader, Linse)

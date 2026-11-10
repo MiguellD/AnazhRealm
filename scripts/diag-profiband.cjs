@@ -18,7 +18,7 @@
 //   H4  die Täter-Klasse des Stamms (die echte Klasse im vm, `stammLib.ladeKlasse`) klassifiziert die Schlüssel-Formen,
 //       die der Stamm heute baut (Studio-Leaf als Schlüssel, Schatten-Zwilling `#S`, ov-Hash, Karte, Streu, Bauplan)
 //   H7  DIE ZEICHEN-REIHE (1310-1, T3) an der echten Klasse: EIN Gesetz `_zeichenRang` für alles Opake — die Bündel
-//       (`_buendelReihe`) @global · Regionen · @wahl, die losen Opaken jedes Renders (`_configureRenderer` setzt
+//       (`_buendelReihe`) @global · Regionen, die losen Opaken jedes Renders (`_configureRenderer` setzt
 //       `_zeichenFolge`) Bau · Boden · Fern · Himmel, gleich wer beim Boot zuerst ankam (Objekt-id: der Bau-Satz nach dem
 //       Boden, gpu-bank +1,4–1,55 ms); im Bündel L0 zuerst, in der Stufe vorn zuerst, neu nur beim Anker-Wechsel
 //   P   DIE PROJEKTION (S3): Σ Zensus der Mess-Wiese (spec/profiband/zensus-wiese.json) × Golden-Dreiecke je Art × Stufe ×
@@ -48,7 +48,7 @@
 //
 //   node scripts/diag-profiband.cjs [--selftest] [--messung <boot.json …>]          (npm run gate:profiband)
 "use strict";
-const { selbsttestEnde, SELBSTTEST, path, fs, stammLib, jsonLesen, ROOT: root, jsonKlon } = require("./lib/welt-boot.cjs");
+const { selbstTafel, SELBSTTEST, path, fs, stammLib, jsonLesen, ROOT: root, jsonKlon } = require("./lib/welt-boot.cjs");
 const DZ = require("./lib/draw-zaehler.cjs");
 const BAND = require("./lib/band-urteil.cjs");
 
@@ -81,6 +81,19 @@ const SCHLUESSEL = [
     ["markt#5", "g:markt:L0"],
 ];
 
+// H4b — DAS HOLZ IST EIN AUSSEN (lod.K1#1, w26-eiche-kante): die Teilung (`_kopfKlasse`, Leser `werkbank bild --klasse`) nennt
+// den Teil einer Foundry-Gestalt, dessen Stoff Holz ist (phyto-core `budgetRegler(kind).rinde`: Rinde und Stiel), `<klasse>:holz`
+// — nie mit dem Namen ihres Laubs (Spielgang GTX 1050 30e94000: f:eiche:L1 0,3102 mit dem Stamm im Gras, 0,194 ohne). Das Laub
+// derselben Gruppe, das Holz der Streu (ihr Satz ist Boden) und ein Stoff ohne Studio-Art behalten ihren Namen.
+const HOLZ_TEILE = [
+    ["f:eiche|0|1:0", "bark", "f:eiche:L1:holz"],
+    ["f:eiche|0|1:1", "foliageTex", "f:eiche:L1"],
+    ["f:strauch|2|0:1", "stem", "f:strauch:L0:holz"],
+    ["f:tanne|1|0:2", "foliage", "f:tanne:L0"],
+    [null, "bark", "streuSatz"],
+    ["f:fachwerk_haus|3|1|ov:9f2c:4", "unknown", "f:fachwerk_haus:L1"],
+];
+
 function taeterWand(A) {
     const errs = [];
     const S = stammKlasse(A);
@@ -88,11 +101,22 @@ function taeterWand(A) {
         const ist = S.instanz(k);
         if (ist !== soll) errs.push(`_instanzKlasse("${k}") = ${ist}, erwartet ${soll}`);
     }
-    return { errs, n: SCHLUESSEL.length, S };
+    const scene = { type: "Scene" };
+    const welt = weltVon(A, { scene, playerMesh: null });
+    for (const [key, art, soll] of HOLZ_TEILE) {
+        const o = { type: "Mesh", name: key ? "" : "streuSatz", geometry: { attributes: {} }, parent: scene };
+        o.userData = key ? { archInstanceKey: key } : { streuSatz: "streuSatz" };
+        o.material = { userData: art ? { foundryKind: art } : {} };
+        const ist = A.prototype._kopfKlasse.call(welt, o).join(" ");
+        if (ist !== soll + " " + soll)
+            errs.push(`${/:holz$/.test(soll) ? "Rinde unter Laub-Namen" : "Holz-Teilung"}: ${key || "streuSatz"} (${art || "ohne Art"}) heißt ${ist}, Soll ${soll}`);
+    }
+    return { errs, n: SCHLUESSEL.length + HOLZ_TEILE.length, S };
 }
 
-// H7 — DIE ZEICHEN-REIHE (1310-1, T3): `_buendelReihe` über eine Szene, in der @wahl vor einer Region und @global ankam —
-// danach tragen die Bündel-Plätze @global · die Regionen (in Ankunft) · @wahl, jedes andere Kind steht, wo es stand. Die losen
+// H7 — DIE ZEICHEN-REIHE (1310-1, T3): `_buendelReihe` über eine Szene, in der eine Region vor @global ankam — danach
+// tragen die Bündel-Plätze @global · die Regionen (in Ankunft), jedes andere Kind steht, wo es stand (das Bündel der
+// CPU-Wahl "@wahl" fiel mit w25-gpu-wahl: die Gruppen der Wahl hängen lose in der Szene). Die losen
 // Opaken in Boot-Ankunft (Himmel, Fern, Boden vor dem Bau, gleiche Tiefe) folgen `_zeichenFolge` als Bau · Boden · Fern ·
 // Himmel, der Feld-Pass (renderOrder) zuletzt; `_configureRenderer` setzt sie. Gefahren an der echten Klasse `A`.
 function buendelReiheWand(A) {
@@ -110,10 +134,10 @@ function buendelReiheWand(A) {
     const istL = [L("himmel", 0, "himmel", 20), L("feld-pass", 9998, null, 51), L("fern-ring", 0, "fern", 47), L("bodenSatz", 0, "boden", 46), L("bauSatz", 0, null, 6361)].sort(A._zeichenFolge).map((x) => x.object.name).join(" · ");
     if (istL !== "bauSatz · bodenSatz · fern-ring · himmel · feld-pass") errs.push(`die losen Opaken nach der Ankunft Himmel · Feld · Fern · Boden · Bau: ${istL} — Soll bauSatz · bodenSatz · fern-ring · himmel · feld-pass`);
     const B = (k) => ({ isBundleGroup: true, name: "regionBundle:" + k, userData: { regionKey: k } });
-    const scene = { children: [{ name: "voxelChunk:0,0" }, B("@wahl"), B("3,4"), { name: "himmel" }, B("@global"), B("s:1,2")] };
+    const scene = { children: [{ name: "voxelChunk:0,0" }, B("3,4"), { name: "himmel" }, B("@global"), B("s:1,2")] };
     A.prototype._buendelReihe.call(weltVon(A, {}), scene);
-    const ist = scene.children.map((c) => (c.userData ? c.userData.regionKey : c.name)).join(" · "), soll = "voxelChunk:0,0 · @global · 3,4 · himmel · s:1,2 · @wahl";
-    if (ist !== soll) errs.push(`die Reihe der Bündel nach der Ankunft @wahl · 3,4 · @global · s:1,2: ${ist} — Soll ${soll}`);
+    const ist = scene.children.map((c) => (c.userData ? c.userData.regionKey : c.name)).join(" · "), soll = "voxelChunk:0,0 · @global · himmel · 3,4 · s:1,2";
+    if (ist !== soll) errs.push(`die Reihe der Bündel nach der Ankunft 3,4 · @global · s:1,2: ${ist} — Soll ${soll}`);
     // DIE REIHE IM BÜNDEL (1310-8): die Gruppen eines Bündels nach ihrer Stufe (L0 zuerst, die Atlas-Karte zuletzt), im
     // Gleichstand nach Schlüssel.
     if (typeof A._buendelKinderReihe !== "function") return { errs: errs.concat(["_buendelKinderReihe fehlt im Stamm — die Gruppen eines Bündels zeichnen in der Ankunft"]), n: 3 };
@@ -135,7 +159,7 @@ function buendelReiheWand(A) {
     const istA = fernVorn.children.map((c) => c.userData.archInstanceKey).join(" · "), sollA = "f:b|1|0:0 · f:a|1|0:0 · f:z|1|1:0";
     if (istA !== sollA) errs.push(`die Reihe nach Abstand (L0 bei 40 m · L1 bei 1 m · L0 bei 50 m und 3 m): ${istA} — Soll ${sollA}`);
     const M = A.BUENDEL_ANKER_M;
-    const B1 = { isBundleGroup: true, userData: { regionKey: "@wahl" }, needsUpdate: false, children: [I(0, "f:a|1|0:0", [40, 0]), I(0, "f:b|1|0:0", [3, 0])] };
+    const B1 = { isBundleGroup: true, userData: { regionKey: "@global" }, needsUpdate: false, children: [I(0, "f:a|1|0:0", [40, 0]), I(0, "f:b|1|0:0", [3, 0])] };
     const welt = weltVon(A, { scene: { children: [B1] } });
     const erst = welt._buendelAnkerPruefen({ x: 0, z: 0 });
     B1.needsUpdate = false;
@@ -336,8 +360,7 @@ function selbsttest() {
     const { haushalt, ratsche } = BAND.ladeSpec("wiese", { geraet: "radeon", sicht: "ego" });
     const A = klasseVon();
     const S = stammKlasse(A);
-    const tests = [];
-    const t = (name, ok) => tests.push({ name, ok: !!ok });
+    const { t, ende } = selbstTafel();
     // Die Selbsttests urteilen gegen eine UNGEMESSENE Ratsche desselben Schemas mit fester Toleranz — die gemessenen
     // Werte der echten (die Hülle der Serie) dürfen keinen Selbsttest färben.
     const rt = jsonKlon(ratsche);
@@ -443,9 +466,23 @@ function selbsttest() {
             BAND.erzeugerOf("tex:karte-albedo:eiche|3|summer rgba8unorm 1x1x1").erzeuger === "karte-albedo"
     );
 
-    // S8 — die Schlüssel-Formen des Stamms (H4) ergeben ihre Klasse.
+    // S8 — die Schlüssel-Formen des Stamms (H4) ergeben ihre Klasse; das Holz einer Foundry-Gestalt ist ein Außen (H4b): der Stamm
+    // ohne die Holz-Teilung (die Rinde unter dem Namen ihres Laubs), mit Rinde allein (der Stiel trüge den Namen des Laubs) und ohne
+    // die Grenze der Gestalt (das Holz der Streu fiele aus dem Boden) ist ROT beim Namen — je der veränderte Stamm als Klasse geladen
     const tw = taeterWand(A);
-    t(`Schlüssel-Formen des Stamms → ${SCHLUESSEL.length} Klassen`, !tw.errs.length);
+    const st8 = stammLib.text(root);
+    const holz = 'return holz ? [grob + ":holz", grob + ":holz"] : [grob, grob];';
+    const still8 = [
+        ["ohne Holz", [["_kopfKlasse", holz, "return [grob, grob];"]], /Rinde unter Laub-Namen: f:eiche\|0\|1:0 \(bark\) heißt f:eiche:L1 f:eiche:L1/],
+        ["nur Rinde", [["_kopfKlasse", "globalThis.__phytoCore.budgetRegler(art).rinde", 'art === "bark"']], /Rinde unter Laub-Namen: f:strauch\|2\|0:1 \(stem\)/],
+        ["ohne Grenze", [["_kopfKlasse", 'grob.startsWith("f:") && ', ""]], /Holz-Teilung: streuSatz \(bark\) heißt streuSatz:holz/],
+    ].filter(([, e, re]) => !taeterWand(klasseVon(stammLib.ersetze(st8, e))).errs.some((x) => re.test(x)));
+    t(
+        `Schlüssel-Formen des Stamms → ${SCHLUESSEL.length} Klassen, ${HOLZ_TEILE.length} Teile der Holz-Teilung; ohne Holz, nur Rinde, ohne Grenze rot` +
+            (tw.errs.length ? " — " + tw.errs.join("; ") : "") +
+            (still8.length ? " — still: " + still8.map(([n]) => n).join(", ") : ""),
+        !tw.errs.length && !still8.length
+    );
 
     // S9 — der Erzeuger einer Textur: ihr Name; ohne Namen ihr Ziel (die Tiefe, die r184 je Ziel anlegt →
     // `<ziel>:tiefe`, das Ausgabe-Ziel des Renderers → `r184-ausgabe`); ein namenloses Objekt ohne benanntes Ziel
@@ -1109,13 +1146,13 @@ function selbsttest() {
             nwOhne.errs.some((x) => /keine Dreiecke/.test(x))
     );
 
-    // S30 — DIE ZEICHEN-REIHE (H7) an der echten Klasse: der Stamm hält sie; mit @wahl im ersten Rang, ohne die Reihe, ohne
+    // S30 — DIE ZEICHEN-REIHE (H7) an der echten Klasse: der Stamm hält sie; mit @global hinter den Regionen, ohne die Reihe, ohne
     // die Folge der losen Opaken im Renderer, mit dem Boden vor dem Bau, verkehrt, ohne die Reihe im Bündel, ohne den Abstand
     // und mit einem Anker, der jeden Frame stellt, wird die Wand rot (je der veränderte Stamm als Klasse geladen).
     {
-        const st = stammLib.text(root);
+        const st = st8;
         const fall = [
-            ["@wahl vorn", "_zeichenRang", 'u.regionKey === "@global" ? 0 : u.regionKey === "@wahl" ? 2 : 1', 'u.regionKey === "@wahl" ? 0 : u.regionKey === "@global" ? 2 : 1', /Reihe der Bündel nach der Ankunft/],
+            ["@global hinten", "_zeichenRang", 'u.regionKey === "@global" ? 0 : 1', 'u.regionKey === "@global" ? 2 : 1', /Reihe der Bündel nach der Ankunft/],
             ["ohne Reihe", null, /(\n {4}_buendelReihe)\(/, "$1Alt(", /hängt an der Ankunft/],
             ["ohne Folge", "_configureRenderer", "else renderer.setOpaqueSort(AnazhRealm._zeichenFolge);", "", /setOpaqueSort/],
             ["Boden vorn", "_zeichenRang", 'return s === "boden" ? 4 :', 'return s === "boden" ? 2 :', /losen Opaken nach der Ankunft/],
@@ -1126,7 +1163,7 @@ function selbsttest() {
         ];
         const still = fall.filter(([, glied, alt, neu, re]) => !buendelReiheWand(klasseVon(stammLib.ersetze(st, glied, alt, neu))).errs.some((x) => re.test(x)));
         t(
-            "Zeichen-Reihe: @global · Regionen · @wahl, lose Bau · Boden · Fern · Himmel, im Bündel L0 zuerst und vorn zuerst; " +
+            "Zeichen-Reihe: @global · Regionen, lose Bau · Boden · Fern · Himmel, im Bündel L0 zuerst und vorn zuerst; " +
                 fall.map(([n]) => n).join(", ") +
                 " rot" +
                 (still.length ? " — still: " + still.map(([n]) => n).join(", ") : ""),
@@ -1268,9 +1305,7 @@ function selbsttest() {
     // DER GANG (K5, `werkbank puffer --gang`): ein ungedeckelter Cache ist rot beim Pfad, ein gedeckelter nicht
     t("Gang: Heap je Minute und VRAM-Drift urteilen, der Halter steht beim Pfad", DZ.gangSelbsttest().length === 0);
 
-    const rot = tests.filter((x) => !x.ok);
-    for (const x of tests) console.log(`${x.ok ? "✅" : "❌"} SELBST-TEST: ${x.name}`);
-    selbsttestEnde(rot.map((x) => x.name), `die Band-Wand feuert (${tests.length}/${tests.length})`);
+    ende("die Band-Wand feuert");
 }
 
 function main() {
@@ -1368,7 +1403,7 @@ function main() {
             `H2 Ratsche ${haushalt.klassen.length} Klassen × ${paesse.length} Pässe je Ort × Gerät × Sicht · ` +
             `H2b ${ratschen.length} Ratschen frisch an V${version}${messungen.length ? ` gegen ${messungen.length} Messungen` : ""} · ` +
             `H4 Täter-Klasse des Stamms: ${tw.n} Schlüssel-Formen · ` +
-            `Messorte ${ortZeile} · H1 Wiese am Gesetz ${wiese.messungen.map((m) => `${m.ort} ${m.x}/${m.z} Hang ${m.hang}° · Krone ${m.krone} · Kranz ${m.kranz} · Horizont ${m.horizont}°`).join("; ")} · H7 die Zeichen-Reihe (Bündel @global · Regionen · @wahl, lose Bau · Boden · Fern · Himmel) und die Reihe im Bündel (Stufe).`
+            `Messorte ${ortZeile} · H1 Wiese am Gesetz ${wiese.messungen.map((m) => `${m.ort} ${m.x}/${m.z} Hang ${m.hang}° · Krone ${m.krone} · Kranz ${m.kranz} · Horizont ${m.horizont}°`).join("; ")} · H7 die Zeichen-Reihe (Bündel @global · Regionen, lose Bau · Boden · Fern · Himmel) und die Reihe im Bündel (Stufe).`
     );
 }
 

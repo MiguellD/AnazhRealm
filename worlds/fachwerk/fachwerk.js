@@ -1004,7 +1004,7 @@ function enterWalk(){mode='walk';$('ui').style.display='none';
   renderer.clippingPlanes=[];$('cut').checked=false;expRegler.setzen({exp:0},true);explode=0;
   const sp=dorf?dorf.spawn:(haus?haus.spawn:(lodSpawn||{x:0,z:-8}));                        // LOD-SONDE: begehbar ohne Kollision (durchlaufen = inspizieren)
   player.pos.set(sp.x,(dorf&&dorfBodenY)?dorfBodenY(sp.x,sp.z):0,sp.z);player.vy=0;player.groundY=player.pos.y;yaw=Math.PI;pitch=0;
-  cv.requestPointerLock();}
+  AnazhHuelle.zeiger(cv);}
 function exitWalk(){mode='orbit';$('ui').style.display='';
   $('hud').style.display='none';$('esc').style.display='none';dhint.style.display='none';
   if(document.pointerLockElement)document.exitPointerLock();applyOrbit();}
@@ -1015,7 +1015,7 @@ addEventListener('keydown',e=>{keys[e.code]=true;if(e.code==='Escape'&&mode==='w
 addEventListener('keyup',e=>{keys[e.code]=false;});
 document.addEventListener('mousemove',e=>{if(mode!=='walk'||document.pointerLockElement!==cv)return;
   yaw-=e.movementX*0.0024;pitch-=e.movementY*0.0024;pitch=Math.max(-1.45,Math.min(1.45,pitch));});
-cv.addEventListener('click',()=>{if(mode==='walk'&&document.pointerLockElement!==cv)cv.requestPointerLock();});
+cv.addEventListener('click',()=>{if(mode==='walk'&&document.pointerLockElement!==cv)AnazhHuelle.zeiger(cv);});
 
 function walkUpdate(dt){
   const sp=(keys['ShiftLeft']?5.0:2.8)*dt;

@@ -76,7 +76,7 @@
 "use strict";
 const { fehlerText, statikServer, startePuppeteer, werkbankRuf, werkbankTor, seitenAbbruch, ROOT: root, selbsttestEnde, sleep, hauptLauf, argOpt: opt, pngDatei, WARTEN_SEITE, ausDatei, path, fs, stammLib, jsonLesen, jsonSchreiben, ortZug } = require("./lib/welt-boot.cjs");
 const http = require("http");
-const { AUSGABE_INSTALL, wetterUrteil } = require("./lib/ausgabe-aufnahme.cjs");
+const { AUSGABE_INSTALL, wetterUrteil, buehneSelbsttest } = require("./lib/ausgabe-aufnahme.cjs");
 const LL = require("./lib/licht-linsen.cjs");
 // die Fälle eines Selbsttests [ist, soll] (soll: Wert oder Muster), die nicht treffen — Nässe und Laub-Licht
 const istSoll = (f) => f.filter(([ist, soll]) => (soll instanceof RegExp ? !soll.test(ist) : ist !== soll));
@@ -209,19 +209,6 @@ const eigeneWelt = async (zusatz, tor) => (hat("eigen") ? ((tor = werkbankTor(PO
 const dateiAb = (o) => opt("--datei") && jsonAb(path.resolve(opt("--datei")), o);
 const urteilEnde = (name, u) => endeMit(`${name} ${u.urteil}${u.befunde.length ? ": " + u.befunde.join(" | ") : ""}`, u.urteil === "GRUEN");
 
-// Eine Klassen-Methode (4 Leerzeichen eingerückt, prettier-Form, auch ein Gang) aus dem Quelltext schneiden.
-function methodeAusQuelle(quelle, name) {
-    const kopf = new RegExp(`\\n    (async |\\*)?${name}\\(([^)]*)\\) \\{\\n`);
-    const m = kopf.exec(quelle);
-    if (!m) return null;
-    const start = m.index + 1;
-    const ende = quelle.indexOf("\n    }\n", start);
-    if (ende < 0) return null;
-    const text = quelle.slice(start, ende + 6);
-    const art = m[1] === "*" ? "function*" : `${m[1] || ""}function`;
-    return `(${art} ${name}(${m[2]}) {${text.slice(text.indexOf("{\n") + 1)})`;
-}
-
 // DIE SICHTBARE BÖE (vegetation.K2 Staffel 1, `bild --zeit Δt`): die zeitliche Luma-Varianz zweier Ausgabe-Bilder (Rec. 709 auf
 // sRGB 0–255, `luma709`, Δt auseinander unter der Bild-Uhr der Bühne) auf den Pixeln der Maske `nah` (0–15 m), in der Seite `__boeVarianz`.
 // Das Urteil: das Nah-Feld trägt ≥ 5 % des Bilds (NAH), am Kamm der Böe liegt die Varianz ≥ 2× über dem Rausch-Boden (die Paare
@@ -250,439 +237,6 @@ function boeSelbsttest() {
         if (rot !== soll) f.push(`${soll} ≠ ${rot}`);
     }
     return f;
-}
-
-// DER ECHTE LAUF (Seiten-Kontext): der Spiel-Loop läuft über rAF wie im Spiel; nach dem Einschwingen
-// zählt jeder Frame — Intervall (rAF-Zeitstempel = was der Spieler sieht), CPU-Takt, GPU-Zeit des Frames
-// (r184-Pool löst den LETZTEN Frame auf, Summe aller Pässe), Befehle/Dreiecke je gerendertem Frame und je Pass
-// (renderer.info, die Quelle von HUD und Flugschreiber). Die Bühne (Mittag · Sonne · Sommer) und stille Tiere halten den Vergleich
-// gleich; „voll" hebt die Regler-Decke, der PID wächst loadScale → 1 (die volle Welt, wie die Cloud maß).
-
-function lauf(k) {
-    return (async () => {
-        const st = r.state;
-        const rend = st.renderer;
-        // DIE BÜHNE: Mittag · Sonne · Sommer, oder das Wort des Spielers (`--wetter stormy`) und n Tiere frei im Ring
-        // (`--tiere 50`) — Profiband K1 „Sturm"
-        const tiereN = /^\d+$/.test(k.tiere) ? Number(k.tiere) : 0;
-        if (!tiereN && k.tiere !== "frei" && k.tiere !== "halten") throw new Error(`--tiere ${k.tiere}: halten · frei · <n>`);
-        __buehne({ wetter: k.wetter, tiere: tiereN });
-        // DIE WETTER-WACHE: der Zustand nach der Bühne (Wort und Uhr des Auto-Zugs — eine Uhr unter 0 ist eingefroren, der Halt)
-        // und die Marke im Buch des Wetter-Spions. Dreht im Lauf ein Schreiber das Wetter, schreibt einer am
-        // `_setWeather` vorbei, taut die Uhr oder ist ein eingefrorenes Wort danach ein anderes, ist der Lauf ROT und nennt den
-        // Täter (`wetterUrteil`, scripts/lib/ausgabe-aufnahme.cjs).
-        const wetterVor = { wetter: st.weather, uhr: st.weatherEffectTime, seq: __wetterBuch().seq };
-        // Die Tiere halten still (Vergleichbarkeit) — außer `--tiere frei` oder n: der Halte-Griff setzt x/z je Takt zurück,
-        // die Tier-KI sucht dann jeden Takt neu (Feld-Raycasts), das kostet CPU, die das Spiel so nie zahlt.
-        if (k.tiere === "halten") __halten();
-        const decke = st.perfTargetMs;
-        if (k.regler === "voll") st.perfTargetMs = 1000;
-        st.playerMesh.visible = true;
-        // DIE PASS-UHR (scripts/lib/zerlege-linse.cjs, dieselbe wie `zerlegen`): je Render-Pass die ms (`__passName`), dazu je
-        // Frame Befehle und Dreiecke je Pass, exklusiv (`uhr.frameZ`, renderer.info).
-        const uhr = __passUhr();
-        const proben = [];
-        let messen = false, tRenderVor = null, gpuAm = r._gpuTsAtMs, erledigtVor = r._gpuLeine.erledigt;
-        // DIE HÄNGER-LINSE (`k.haenger`, scripts/lib/haenger-linse.cjs) misst in DIESEM Lauf: je Takt Beginn, Ende, gerendert
-        // und die Geräte-Aufträge im Takt und davor (`__haengerAn`); `probe` schmuggelt 250 ms in den Takt.
-        // DIE BAHN (`wandern: "bahn"`): 4 m/s die Kette des Orts (haushalt.json `bahn`) oder −z 0 → −60 m, hin und zurück;
-        // der Geher lebt IM Lauf.
-        const H = k.haenger ? __haengerAn() : null, T = { t: [], c0: [], c1: [], g: [], innen: [], aussen: [] };
-        const diff = (a, b) => {
-            const o = {};
-            for (const x in a) if (a[x] !== (b[x] || 0)) o[x] = +(a[x] - (b[x] || 0)).toFixed(2);
-            return Object.keys(o).length ? o : 0;
-        };
-        const ort = st.playerMesh.position.clone();
-        const bahn = k.wandern === "bahn" ? { t0: null, weg: 0 } : null;
-        // DIE FAHRT (`wandern: "fahrt"`, OMEN „GT-Fahrt Third ↔ Ego"): aufgestiegen im GT, V alle 4 s; die Bahn legt Wagen
-        // (`_fahr`) und Reiter vor dem Takt auf +x, 20 m/s 0 → 800 m und zurück (gegen die Natur-Wand stünde er nach 39 m).
-        const fahrt = k.wandern === "fahrt" ? { t0: null } : null;
-        // DER KREIS (`wandern: "kreis"`, tiere.K5 „Begegnung im Bild"): der Spieler GEHT (Taste W, das Tempo des Spiels) und dreht
-        // den Blick gleichmäßig (alle 250 ms um 2π · Δs / sek), eine Runde im Fenster; das Fenster zählt `sek` SPIEL-Sekunden (`kreisGang`).
-        const kreis = k.wandern === "kreis" ? { gier: st.yaw, gesehen: new Map(), schuesse: 0, imBlick: 0, max: 0 } : null;
-        // DER SPRUNG (`wandern: "sprung"`, streaming.K3): mit dem Mess-Fenster steht der Spieler 1 km weiter auf +x am Boden des
-        // Gesetzes (der Loop übernimmt den Teleport, `_loopFixedStep`); gemessen wird die Kadenz, während die Welt dort neu
-        // entsteht, dazu nach wie vielen s sie steht (A9 `_weltSteht`) und jeder Bau im Haupt-Faden (`_syncBauten`).
-        const sprung = k.wandern === "sprung" && { m: 1000, stehtS: null };
-        const kette = window.__ortBahn || [[ort.x, ort.z], [ort.x, ort.z - 60]];
-        const laenge = kette.slice(1).reduce((s, q, i) => s + Math.hypot(q[0] - kette[i][0], q[1] - kette[i][1]), 0);
-        // DER WEG des Spielers im Mess-Fenster (die Bahn oder ein Geher von außen) — „Weg 0 m" nennt eine stehende Zerlegung
-        const lage = ort.clone();
-        let weg = 0;
-        let snap = H && Object.assign({}, H.acc), probeTakt = 0;
-        // DIE SICHTUNG: ein Tier (`_tierBaum`, die Klasse `tier:` der Teilung) deckt ≥ 200 px der Klassen-Maske am Maß 1280×720 —
-        // drei Schüsse des Ausgabe-Pfads unter der EINEN Uhr: G und G2 mit, dann O ohne Tiere (`toggleCreatures`, das Wort des
-        // Spiels: Leib, Feld und Satz — das Wieder-Einschalten wirkt erst im nächsten Takt, darum steht O zuletzt); ein Pixel ist
-        // Tier, wenn G UND G2 von O abweichen (`__klassenTeilung`): was zwischen zwei Schüssen wandert (headless 0,5 % des Bilds,
-        // die Welt streamt im Gang), steht in O wie in G2 und fällt heraus; ein Pixel gehört unter ALLEN Tieren im Blick dem, dessen Körper-Kugel
-        // (`_kreaturAusserBlick`) ihn deckt und dessen Mitte im Bild ihm relativ zum Radius am nächsten liegt (ein Glied des
-        // Verbands schluckt nie die Pixel seiner Nachbarn); der Schatten am Boden zählt mit (mittags unter dem Leib, im flachen
-        // Blick verkürzt). Geschossen wird höchstens alle 2 Spiel-s und nur, wenn ein ungesehenes Tier im Blick
-        // 200 px decken KANN: seine Gestalt passt in 2 · Reichweite × Höhe (`_kreaturLeib`; die Kugel R = Reichweite + Höhe/2, ihre
-        // Mitte Höhe/2 über dem Fuß). `imBlick` zählt Tiere, die im Blick erschienen (das Schlupfloch der Staffel).
-        const kreisGang = async () => {
-            const T = THREE, cam = st.camera, db = rend.getDrawingBufferSize(new T.Vector2()), fr = new T.Frustum(), v = new T.Vector3();
-            const W = db.x, H = db.y, soll = (200 * W * H) / 921600, alt = new Set(st.creatures);
-            const taste = (art) => dispatchEvent(new KeyboardEvent(art, { bubbles: true, code: "KeyW", key: "w" }));
-            const schuss = async () => (await __ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
-            kreis.z0 = st.spielZeit;
-            taste("keydown");
-            try {
-                for (let s = 0, naechst = 0; s < k.sek; s = st.spielZeit - kreis.z0) {
-                    await sleep(250);
-                    st.yaw = kreis.gier + (2 * Math.PI * s) / k.sek;
-                    cam.updateMatrixWorld();
-                    fr.setFromProjectionMatrix(new T.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse));
-                    kreis.max = Math.max(kreis.max, st.creatures.length);
-                    const kand = [];
-                    for (const c of st.creatures) {
-                        const u = c.userData, blick = u._tierBaum && !r._kreaturAusserBlick(c, fr, 0);
-                        if (!alt.has(c)) alt.add(c), (kreis.imBlick += blick ? 1 : 0);
-                        if (!blick) continue;
-                        const d = v.set(c.position.x, c.position.y + u._ruheKugelH, c.position.z).distanceTo(cam.position);
-                        const f = H / (2 * d * Math.tan((cam.fov * Math.PI) / 360)), neu = !kreis.gesehen.has(c) && s >= naechst;
-                        v.project(cam);
-                        kand.push({ c, d, rp: u._ruheKugelR * f, x: ((v.x + 1) * W) / 2, y: ((1 - v.y) * H) / 2, px: 0, neu: neu && 4 * (u._ruheKugelR - u._ruheKugelH) * u._ruheKugelH * f * f >= soll });
-                    }
-                    if (!kand.some((q) => q.neu)) continue;
-                    naechst = s + 2;
-                    rend.setAnimationLoop(null);
-                    kreis.schuesse++;
-                    const G = [await schuss(), await schuss()];
-                    r.toggleCreatures(false);
-                    const O = await schuss().finally(() => r.toggleCreatures(true));
-                    await wieder();
-                    const [teil, auch] = G.map((g) => __klassenTeilung(g, [O], W, H, 18).teil);
-                    for (let p = 0; p < W * H; p++) {
-                        let q = null, e = 1;
-                        if (teil[p] && auch[p]) for (const k of kand) e > (k.e = ((k.x - (p % W)) ** 2 + (k.y - Math.floor(p / W)) ** 2) / k.rp ** 2) && ((e = k.e), (q = k));
-                        if (q) q.px++;
-                    }
-                    for (const q of kand)
-                        if (q.neu && q.px >= soll) kreis.gesehen.set(q.c, [q.c.userData.soul, Math.round((q.px * 200) / soll) + " px", Math.round(q.d) + " m", Math.round(s) + " s"]);
-                }
-            } finally {
-                taste("keyup");
-            }
-        };
-        const takt = (t) => {
-            // DIE BELEGUNG: zwei Marken je Takt nennen den Rückruf, der ihn trägt (`belegungAuswerten`: der Takt ist seine Hülle).
-            const spur = messen && k.spur;
-            if (spur) performance.mark("anazh-takt");
-            // Das Wetter hält die Wetter-Wache der Bühne (scripts/lib/ausgabe-aufnahme.cjs) je Takt.
-            __wetterHalten();
-            const c0 = performance.now();
-            const g0 = r._gpuLeine.gerendert;
-            const z = (uhr.frameZ = {}), aussen = H && diff(H.acc, snap);
-            if (H) snap = Object.assign({}, H.acc);
-            if (bahn) {
-                bahn.weg = (4 * (t - (bahn.t0 ??= t))) / 1000;
-                let s = laenge - Math.abs((bahn.weg % (2 * laenge)) - laenge);
-                for (let i = 1; i < kette.length; i++) {
-                    const [ax, az] = kette[i - 1], [bx, bz] = kette[i], l = Math.hypot(bx - ax, bz - az);
-                    if (s > l && i < kette.length - 1) s -= l;
-                    else {
-                        st.playerMesh.position.set(ax + ((bx - ax) * s) / l, st.playerMesh.position.y, az + ((bz - az) * s) / l);
-                        break;
-                    }
-                }
-            }
-            if (fahrt?.e) {
-                const x = fahrt.x0 + 800 - Math.abs(((20 * (t - (fahrt.t0 ??= t))) / 1000) % 1600 - 800), fz = fahrt.e._fahr;
-                if (fz) [fz.x, fz.vlong, fz.vlat] = [x, 0, 0];
-                fahrt.e.position.x = st.playerMesh.position.x = x;
-            }
-            try {
-                if (window.__ortSchritt) __ortSchritt();
-                if (probeTakt > 0) {
-                    __haengerProbe(probeTakt);
-                    probeTakt = 0;
-                }
-                r._gameLoopTick(t);
-            } finally {
-                uhr.frameZ = null;
-            }
-            const c1 = performance.now(), innen = H && diff(H.acc, snap);
-            if (H) snap = Object.assign({}, H.acc);
-            // Unter der GPU-Leine rendert nicht jeder Takt — gezählt werden GERENDERTE Frames (der Takt läuft weiter).
-            const gerendert = r._gpuLeine.gerendert > g0;
-            const pm = st.playerMesh.position;
-            if (messen) weg += Math.hypot(pm.x - lage.x, pm.z - lage.z);
-            lage.copy(pm);
-            if (!messen) {
-                if (gerendert) tRenderVor = t;
-                return;
-            }
-            const p = { cpu: c1 - c0, gerendert };
-            if (H) [t, c0, c1, gerendert ? 1 : 0, innen, aussen]
-                .forEach((x, i) => Object.values(T)[i].push(typeof x === "number" ? +x.toFixed(2) : x));
-            if (gerendert) {
-                p.dtRender = tRenderVor == null ? null : t - tRenderVor;
-                tRenderVor = t;
-                p.jePass = z;
-            }
-            if (r._gpuTsAtMs !== gpuAm) {
-                p.gpu = r._gpuTsLast;
-                gpuAm = r._gpuTsAtMs;
-            }
-            // DIE GPU-WAHRHEIT: die Pass-Stempel sahen nur einen Teil (das Wasser bricht den Hauptpass für die
-            // Tiefen-Kopie, der Neustart überschreibt die Stempel; Arbeit außerhalb der Pässe fehlt ganz). Der
-            // Abstand der Zeitpunkte, an denen die GPU ein Bild abgearbeitet hat, ist der echte Durchsatz — die Leine
-            // des Spiels zählt sie (`erledigt`).
-            const L = r._gpuLeine;
-            if (L.erledigt !== erledigtVor) {
-                p.erledigt = L.erledigt - erledigtVor;
-                p.gpuErledigt = L.erledigtMs;
-                erledigtVor = L.erledigt;
-            }
-            proben.push(p);
-            if (spur) performance.mark(gerendert ? "anazh-bild" : "anazh-leer");
-        };
-        rend.setAnimationLoop(takt);
-        // DIE WELT RUHT, WÄHREND DAS INSTRUMENT ARBEITET (die Schüsse der Sichtung, der Anlauf der Spur): die Schleife steht
-        // (`setAnimationLoop(null)`), niemand zeichnet, und `wieder` nimmt sie wieder auf — die Lücke ist kein Frame, weder im Lauf
-        // (`tRenderVor`) noch im Strom der Sitzung (sein Haken beginnt mit jeder neuen Schleife neu). Bis w11-stoss hielt die
-        // Sichtung nur den Takt an (er kehrte ohne Bild zurück): der Strom zählte die Lücke ins nächste Bild. Hielt das Instrument
-        // den Faden, während ein Bild schon begonnen hatte, liegt dessen rAF-Stempel VOR der Lücke (Radeon: Bild-Beginn 51 164,
-        // Rückruf 51 921) — 50 ms ohne Schleife tragen ihn ab, erst danach zeichnet sie wieder.
-        const wieder = async () => {
-            await sleep(50);
-            tRenderVor = null;
-            rend.setAnimationLoop(takt);
-        };
-        try {
-            if (fahrt) {
-                const { x, z } = st.playerMesh.position;
-                const e = r.spawnArchitecture("fahrzeug_gt", { x: x + 4, y: r.getTerrainHeightAt(x + 4, z) + 0.5, z }, { silent: true, id: "werkbank-fahrt" });
-                await __gebautNach(e, { takt: () => sleep(16) });
-                r.mountArchitecture(e);
-                if (st.player.mountedArch !== e.id) throw new Error("--wandern fahrt: der Spieler steigt nicht in den GT");
-                const v = (art) => dispatchEvent(new KeyboardEvent(art, { bubbles: true, code: "KeyV", key: "v" }));
-                Object.assign(fahrt, { e, x0: e.position.x, uhr: setInterval(() => (v("keydown"), v("keyup")), 4000) });
-            }
-            await sleep(k.ein * 1000);
-            // DIE RUHE: zwischen frischen Welten streute die GPU um ±5 ms (Foundry, Karten-Bäcker, Streaming noch
-            // unterwegs). Mit `--ruhe <max s>` misst der Lauf erst, wenn 3 s lang alles steht: Chunks gleich, Foundry-
-            // Schlange + Ingest leer, Karten-Bäcker ohne Wartende/Hängende, die Mesh-Zone fertig oder 10 s ohne Fortschritt.
-            const ruheZustand = () => {
-                const z = r._impostorCensus() || {};
-                return {
-                    chunks: st.voxelChunks.size,
-                    foundry: r._weltOffen().foundry, // wie das Wort „die Welt steht" sie zählt (A9)
-                    karten: (r._impostorBakeQueue || []).length + (z.wartend || 0), meshOffen: __ungebaut(),
-                };
-            };
-            let ruhe = null;
-            if (k.ruhe > 0) {
-                const t0 = performance.now();
-                let vor = ruheZustand(), ruhigSeit = performance.now(), offenSeit = performance.now(), ruhig = false;
-                while (performance.now() - t0 < k.ruhe * 1000) {
-                    await sleep(250);
-                    const z = ruheZustand();
-                    if (z.meshOffen !== vor.meshOffen) offenSeit = performance.now();
-                    const still = z.chunks === vor.chunks && z.foundry === 0 && z.karten === 0 &&
-                        (z.meshOffen === 0 || performance.now() - offenSeit > 10000);
-                    if (!still) ruhigSeit = performance.now();
-                    vor = z;
-                    if (performance.now() - ruhigSeit >= 3000) {
-                        ruhig = true;
-                        break;
-                    }
-                }
-                ruhe = Object.assign({ ruhig, sek: +((performance.now() - t0) / 1000).toFixed(1) }, vor);
-            }
-            const v0 = Object.assign({}, window.__vram);
-            const wache = window.__stempelWache;
-            const s0 = wache();
-            // DAS INSTRUMENT LÄUFT AN (w11-stoss): `Tracing.start` mit dem Stich-Profiler (PROBEN, `disabled-by-default-v8.cpu_profiler`)
-            // schreibt beim Anlauf jeden übersetzten Code der Seite ins Profil — der Haupt-Faden stand dabei 343–502 ms (Radeon, 18 von
-            // 18 Fenstern der Sitzungen 10770eb5 … f69a7305; GTX bis 825 ms) im Takt, den der Strom der Sitzung als Bild zählt: das
-            // größte Bild jedes profiband.K4-Fensters war die Linse selbst. Ohne Schleife steht der Anlauf in keinem Bild.
-            if (k.spur) {
-                rend.setAnimationLoop(null);
-                await __spurAn();
-                await wieder();
-            }
-            // die Erst-Zeichnung (der EINE Ort in _configureRenderer): ihre Zähler über den Lauf
-            const ERST = ["verschoben", "pipeAsync", "neubauN"], E = r._erstZeichnung;
-            const erst0 = ERST.map((x) => E[x] || 0), probe = [];
-            const tMess0 = performance.now();
-            if (H) {
-                H.namen.length = 0;
-                H.an = true;
-            }
-            if (H && k.probe) {
-                setTimeout(() => {
-                    probe.push({ art: "takt", t: performance.now() });
-                    probeTakt = 250;
-                }, (k.sek * 1000) / 3);
-                setTimeout(() => {
-                    probe.push({ art: "neben", t: performance.now() });
-                    __haengerProbe(250);
-                }, (k.sek * 2000) / 3);
-            }
-            if (sprung) {
-                const p = st.playerMesh.position, x = p.x + sprung.m;
-                p.set(x, r._voxelSurfaceY(x, p.z) + 1.8, p.z);
-                Object.assign(sprung, { t0: performance.now(), bau: r._syncBauten() });
-            }
-            messen = uhr.messen = true;
-            // der Sprung misst in Bau-Ereignissen (`__deckel`), bis die Welt am Ziel steht (nachdem sie dort einmal nicht stand), dann 1 s
-            if (sprung) {
-                for (const weiter = __deckel("der Sprung um 1 km"); weiter() && !(sprung.offen && r._weltSteht()); await sleep(250))
-                    sprung.offen ||= !r._weltSteht();
-                sprung.stehtS = performance.now();
-            }
-            await (kreis ? kreisGang() : sleep(sprung ? 1000 : k.sek * 1000));
-            messen = uhr.messen = false;
-            if (H) H.an = false;
-            const haenger = H && {
-                takte: T, namen: H.namen.slice(), probe, k, tMess: [tMess0, performance.now()], kreaturen: st.creatures.length, wetter: st.weather,
-                chunks: st.voxelChunks.size,
-                sprung: sprung && Object.assign(sprung, { bau: [sprung.bau, r._syncBauten()] }),
-                loadScale: +st.perfSense.loadScale.toFixed(2),
-                erst: Object.assign(Object.fromEntries(ERST.map((x, i) => [x, +((E[x] || 0) - erst0[i]).toFixed(1)])),
-                    { offen: E.offen.size }),
-            };
-            for (const m of ["anazh-takt", "anazh-bild", "anazh-leer"]) performance.clearMarks(m);
-            const s1 = wache();
-            rend.setAnimationLoop(null);
-            // Die GPU-Fertig-Meldungen laufen der CPU hinterher — warten, bis die Schlange leer ist.
-            await rend.backend.device.queue.onSubmittedWorkDone();
-            await sleep(50);
-            const jePassFrame = (await uhr.lesen()) || {};
-            const quant = (arr, q) => {
-                const a = arr.filter(Number.isFinite).sort(aufsteigend);
-                return a.length ? +rang(a, q).toFixed(2) : null;
-            };
-            const spalte = (f) => proben.map((p) => p[f]).filter(Number.isFinite);
-            const dt = spalte("dtRender"), gpu = spalte("gpu");
-            const cpu = proben.filter((p) => p.gerendert).map((p) => p.cpu);
-            const zahl = (a) => ({ p50: quant(a, 0.5), p95: quant(a, 0.95), p99: quant(a, 0.99), max: quant(a, 1) });
-            // Je gerendertem Frame: die Summe (Mittel · p95 · max — ihr p50 springt zwischen den Pass-Moden) und je Pass
-            // der Anteil der Frames, in denen er lief, und seine Zahl, WENN er lief.
-            const jeFrame = proben.filter((p) => p.jePass);
-            const passZahl = (feld) => {
-                const n = jeFrame.length;
-                const summe = jeFrame.map((p) => Object.values(p.jePass).reduce((a, e) => a + e[feld], 0));
-                const passe = [...new Set(jeFrame.flatMap((p) => Object.keys(p.jePass)))];
-                const jePass = {};
-                for (const ps of passe) {
-                    const w = jeFrame.filter((p) => p.jePass[ps]).map((p) => p.jePass[ps][feld]);
-                    jePass[ps] = { anteil: n ? +(w.length / n).toFixed(2) : null, p50: quant(w, 0.5), max: quant(w, 1) };
-                }
-                const mittel = n ? Math.round(summe.reduce(addiere, 0) / n) : null;
-                return { frames: n, mittel, p95: quant(summe, 0.95), max: quant(summe, 1), jePass };
-            };
-            const s = st.perfSense, v = window.__vram;
-            const mb = (b) => (Number.isFinite(b) ? +(b / 1048576).toFixed(1) : null);
-            const cam = st.camera, dir = new THREE.Vector3();
-            cam.getWorldDirection(dir);
-            return {
-                regler: k.regler,
-                sekunden: k.sek,
-                frames: dt.length,
-                fps: dt.length ? +((1000 * dt.length) / dt.reduce(addiere, 0)).toFixed(1) : null,
-                frameMs: zahl(dt),
-                cpuTaktMs: zahl(cpu),
-                leine: { ausgesetztPct: +((100 * proben.filter((p) => !p.gerendert).length) / Math.max(1, proben.length)).toFixed(1), imFlug: r._gpuLeine.imFlug },
-                gpuMs: Object.assign(zahl(gpu), { n: gpu.length, quelle: s.gpuQuelle || null }),
-                gpuDurchsatzMs: (() => {
-                    const g = proben.filter((p) => p.erledigt);
-                    return zahl(g.slice(1).map((p, i) => (p.gpuErledigt - g[i].gpuErledigt) / p.erledigt));
-                })(),
-                // DIE PASS-ZAHL: die Pascal-Pass-Stempel tragen präsentations-gebundene Fremdzeit, der p50 kippt bei
-                // Anteil 0,5. ABAB-Urteile über
-                // Pass-Kosten lesen `rein` (unterer Gipfel; `__zweiGipfel`, scripts/lib/zerlege-linse.cjs) oder gpu-bank.
-                gpuJePassMs: Object.fromEntries(
-                    Object.entries(jePassFrame).map(([p, e]) => [p, __zweiGipfel(Object.values(e))])
-                ),
-                // Die Pass-Stempel gelten nur, wenn im Fenster kein Pass ohne Abfrage blieb (ein voller Pool schreibt
-                // seine Stempel in fremde Plätze — `__stempelWache`).
-                stempel: { imLauf: s1.ueberlauf - s0.ueberlauf, seitBoot: s1.ueberlauf, spitze: s1.spitze, pool: s1.pool, gueltig: s1.ueberlauf === s0.ueberlauf },
-                befehle: passZahl("dc"),
-                dreiecke: passZahl("tri"),
-                vramMB: {
-                    jetzt: mb(v.puffer + v.texturen), puffer: mb(v.puffer), texturen: mb(v.texturen), spitze: mb(v.spitze),
-                    nPuffer: v.nPuffer, nTexturen: v.nTexturen,
-                    wuchsImFenster: mb(v.puffer + v.texturen - (v0.puffer + v0.texturen)),
-                    gross: __vramBericht(14),
-                },
-                stellgroessen: {
-                    loadScale: +s.loadScale.toFixed(2),
-                    szeneSkala: r._szeneSkalaWirk(),
-                    pixelRatio: rend.getPixelRatio(),
-                    foliageRadius: st.foliageRadius != null ? Math.round(st.foliageRadius) : null,
-                    foliageDichte: st._foliageDensityScale != null ? +(+st._foliageDensityScale).toFixed(2) : null,
-                    archRadius: Math.round(st.architectureCullingRadius),
-                    ring: st._activeRingRadius,
-                    schattenIntervall: +st._shadowMinInterval.toFixed(1),
-                    holz: st._holzProfil,
-                },
-                phasenEwmaMs: Object.fromEntries(Object.entries(s.phase).map(([a, b]) => [a, +(+b).toFixed(2)])),
-                kamera: {
-                    pos: [cam.position.x, cam.position.y, cam.position.z].map((x) => +x.toFixed(1)),
-                    blick: [dir.x, dir.y, dir.z].map((x) => +x.toFixed(2)),
-                },
-                chunks: st.voxelChunks.size,
-                ruhe,
-                wetter: st.weather,
-                // das Rohe der Wetter-Wache — das Urteil spricht die Werkbank (`wetterUrteil`)
-                wetterHalt: {
-                    vorher: wetterVor.wetter, nachher: st.weather,
-                    uhrVorher: Number.isFinite(wetterVor.uhr) ? +wetterVor.uhr.toFixed(1) : null,
-                    uhrNachher: Number.isFinite(st.weatherEffectTime) ? +st.weatherEffectTime.toFixed(1) : null,
-                    buch: __wetterBuch(wetterVor.seq).buch,
-                },
-                saison: st.season,
-                bahnM: Math.round(weg),
-                kreis: kreis && { ...kreis, sicht: st.cameraMode, spielS: Math.round(st.spielZeit - kreis.z0), gesehen: [...kreis.gesehen.values()] },
-                buehnenTiere: st.creatures.filter((c) => c.userData.buehne).length,
-                haenger,
-            };
-        } finally {
-            messen = false;
-            if (H) H.an = false;
-            rend.setAnimationLoop(null);
-            uhr.ab();
-            st.perfTargetMs = decke;
-            if (bahn || kreis) st.playerMesh.position.copy(ort);
-            if (kreis) st.yaw = kreis.gier;
-            if (fahrt?.e) (clearInterval(fahrt.uhr), r.dismountArchitecture(), r.removeArchitecture(fahrt.e));
-        }
-    })();
-}
-
-// DIE GPU-BANK (Seiten-Kontext): n Frames direkt hintereinander rendern (ohne rAF, ohne VSync), dann auf die GPU
-// warten. Liegt die GPU je Frame über der CPU, ist Gesamtzeit / n die reine GPU-Zeit je Frame — die rAF-Kadenz rastet
-// am VSync ein und misst nur bei tiefer Schlange die GPU.
-function gpuBank(k) {
-    return (async () => {
-        const rend = r.state.renderer;
-        rend.setAnimationLoop(null);
-        __buehne();
-        // DIE EINE BANK-RUNDE (scripts/lib/zerlege-linse.cjs) — dieselbe Messung, die `zerlegen` je Schalter fährt.
-        const runde = (n) => __bankRunde(n);
-        await runde(3); // warm
-        const n = k.n || 12;
-        const rr = [];
-        for (let i = 0; i < (k.runden || 3); i++) rr.push(await runde(n));
-        const med = (key) => {
-            const v = rr.map((x) => x[key]).sort(aufsteigend);
-            return +rang(v).toFixed(2);
-        };
-        const jeFrame = med("jeFrame"),
-            cpu = med("cpuJeFrame");
-        return {
-            n,
-            runden: rr.length,
-            gpuJeFrameMs: jeFrame,
-            cpuJeFrameMs: cpu,
-            gpuGebunden: jeFrame > cpu * 1.15,
-            nachlaufMs: med("nachlauf"),
-        };
-    })();
 }
 
 // DER TIER-ZÄHLER (Seiten-Kontext): die Tiere streuen zwischen Boots stark und stören jede ABAB-Folge — je Messung steht
@@ -827,11 +381,21 @@ function popGang() {
                 const p1 = start.clone().addScaledVector(fwd, (i + 1) / 2);
                 await geh(start.clone().addScaledVector(fwd, i / 2));
                 const vor = new Map(st.architectures.filter(Boolean).map((e) => [e, stufe(e)]));
-                const a = await schuss(p1);
+                const folgen = () => r.constructor.__arenaFolgen | 0, fA = folgen();
+                // die Zahl der GPU-Wahl je Glied und Kamera nach dem Schuss (`zug.gpuZahl`, ein Bild Verzug) — wählt A anders als A2?
+                const zahlen = async (z = new Map()) => { await sleep(80); for (const ar of r.constructor.__arenen.values()) for (const [k, zug] of ar._zuege || []) for (const [m, n] of zug.gpuZahl || []) z.set(`${r._taeterKlasse(m).slice(0, 40)}·${m.id}@${k === cam ? "auge" : "k" + k.id}`, n); return z; }; // prettier-ignore
+                const a = await schuss(p1), zA = await zahlen();
                 if (aus.treue === undefined) {
-                    const a2 = await schuss(p1);
+                    // der Täter beim Namen: jede Senke der GPU-Wahl, die in A außerhalb ihrer Arena stand (sie zeichnete ohne Wahl oder nicht)
+                    const ohne = [];
+                    st.scene.traverse((o) => o.__wahlGpu === true && !o.__arena && ohne.push(o.name || o.uuid.slice(0, 8)));
+                    const [a2, fA2, zA2] = [await schuss(p1), folgen(), await zahlen()];
+                    const wahl = [...new Set([...zA.keys(), ...zA2.keys()])].filter((k) => zA.get(k) !== zA2.get(k)).map((k) => `${k} ${zA.get(k) ?? "-"}→${zA2.get(k) ?? "-"}`); // prettier-ignore
                     aus.treue = a.reduce((n, x, k) => n + (x !== a2[k]), 0);
-                    if (aus.treue) throw new Error(`die Treue: zwei Aufnahmen derselben Szene weichen in ${aus.treue} Bytes ab`);
+                    // der Ort beim Namen: abweichende Pixel je Feld (4 × 3, Zeilen oben → unten), der größte Luma-Sprung, und ob ein
+                    // dritter Schuss dem zweiten gleicht (A unfertig) oder nicht (die Szene flackert)
+                    const ort = (x, y) => { const f = Array(12).fill(0); let d = 0; for (let k = 0; k < W * H * 4; k += 4) if (x[k] !== y[k] || x[k + 1] !== y[k + 1] || x[k + 2] !== y[k + 2]) { const i = k / 4; f[Math.floor(((i / W) | 0) * 3 / H) * 4 + Math.floor((i % W) * 4 / W)]++; d = Math.max(d, Math.abs(luma709(x, k) - luma709(y, k))); } return `${f.join("/")} max ΔY ${d.toFixed(0)}`; }; // prettier-ignore
+                    if (aus.treue) throw new Error(`die Treue: zwei Aufnahmen derselben Szene weichen in ${aus.treue} Bytes ab — Felder ${ort(a, a2)}; A2↔A3 ${ort(a2, await schuss(p1))}; Arena-Folgen vor A ${fA}, bis A2 ${fA2 - fA}; Wahl A↔A2 ${wahl.length} von ${zA.size} Zügen anders${wahl.length ? ": " + wahl.slice(0, 8).join(", ") : ""}${ohne.length ? ` — in A ohne Arena: ${ohne.join(", ")}` : ""}`); // prettier-ignore
                 }
                 await geh(p1);
                 const b = await schuss(p1);
@@ -1951,11 +1515,13 @@ async function starte() {
                     .evaluate(() => (window.__stempelWache ? __stempelWache() : null))
                     .then((w) => Object.assign({ warnung: stempelWarnung.n }, w || {}))
                     .catch(() => null);
+            // DER KURZE LAUF vor dem Bild des Spielers (Schirm, Bedienung): 1 s einschwingen, 0,5 s echter Loop, die Tiere gehalten
+            const kurzLauf = (regler) => page.evaluate(ZL.lauf, { sek: 0.5, ein: 1, regler, tiere: "halten" });
             await stempel();
             try {
                 // DER SCHIRM: was der Spieler sieht — der präsentierte Canvas nach einer Sekunde echter Loop.
                 if (req.url === "/schirm") {
-                    await page.evaluate(lauf, { sek: 0.5, ein: 1, regler: b.regler || "frei", tiere: "halten" });
+                    await kurzLauf(b.regler || "frei");
                     await page.evaluate("__loop(1)");
                     await sleep(300);
                     const datei = zeitAblage(b.datei, "schirm", "png");
@@ -2019,7 +1585,7 @@ async function starte() {
                         await loopAus();
                         return send(Object.assign(o, { ort: aktOrt }));
                     }
-                    await page.evaluate(lauf, { sek: 0.5, ein: 1, regler: "frei", tiere: "halten" });
+                    await kurzLauf("frei");
                     if (await page.evaluate(`${r}._ladeschirmSteht()`)) throw new Error("bedienung: der Ladeschirm steht — kein Bild des Spielers");
                     // der Klick fängt den Zeiger wie beim Spieler: im Spiel (`body.im-spiel`), die Übergänge laufen aus
                     await page.bringToFront();
@@ -2054,7 +1620,7 @@ async function starte() {
                 }
                 if (req.url === "/gpu-bank")
                     return send(
-                        await page.evaluate(gpuBank, { n: +b.n || 12, runden: +b.runden || 3 })
+                        await page.evaluate(ZL.gpuBank, { n: +b.n || 12, runden: +b.runden || 3 })
                     );
                 // DIE WACHEN der Mess-Folge (scripts/omen-messfolge.cjs, nach jedem Schritt): der Stempel-Pool, das Buch des
                 // Wetter-Spions seit `seit` und das des Welt-Akt-Spions seit `seitWelt`, der gestellte Ort (Aufstellung,
@@ -2121,8 +1687,11 @@ async function starte() {
                     );
                 }
                 // DIE GPU-FEHLER-LINSE (V-D7): jede Device-Meldung und jeder Draw ohne gesetzten Vertex-Slot, mit Objekt.
-                if (req.url === "/gpu-fehler")
+                if (req.url === "/gpu-fehler") {
+                    // `--selbsttest`: ein zerstörter Quell-Puffer einer Kopie MUSS als zerstörte Bindung beim Namen stehen
+                    if (b.selbsttest) await page.evaluate(() => { const d = st.renderer.backend.device, U = GPUBufferUsage, [q, z] = [0, 1].map(() => d.createBuffer({ size: 16, usage: U.COPY_SRC | U.COPY_DST })), e = d.createCommandEncoder({ label: "selbsttest" }); e.copyBufferToBuffer(q, 0, z, 0, 16); const c = e.finish(); q.destroy(); d.queue.submit([c]); }); // prettier-ignore
                     return send(await page.evaluate(() => window.__gpuFehler || { fehlt: "Abgriff nicht installiert" }));
+                }
                 if (req.url === "/umstellen") {
                     if (b.ort) {
                         const { ort, haushalt } = BAND.ladeSpec(b.ort);
@@ -2278,8 +1847,10 @@ async function starte() {
                     // `--quelle <datei>`: die Methode aus einem anderen Stand (die Basis eines A/B in EINER Welt)
                     // die Quelle ist eine Stamm-Datei oder ein Baum (scripts/lib/stamm.cjs: beide Formen, laut)
                     const quelle = stammLib.text(b.quelle ? path.resolve(b.quelle) : root);
-                    const src = methodeAusQuelle(quelle, b.name);
-                    if (!src) return send({ fehler: `Methode ${b.name} nicht gefunden` });
+                    // die Methode am AST (scripts/lib/stamm.cjs `glieder`, Lehre 12): ihr Funktions-Ausdruck mit async und Gang
+                    const g = stammLib.glieder(quelle).find((x) => x.name === b.name && x.art === "method" && !x.statisch), f = g?.knoten.value;
+                    if (!f) return send({ fehler: `Methode ${b.name} nicht gefunden` });
+                    const src = `(${f.async ? "async " : ""}function${f.generator ? "*" : ""} ${b.name}${quelle.slice(f.start, f.end)})`;
                     const o = await page.evaluate(
                         (name, src, terrain) => {
                             const fn = (0, eval)(src);
@@ -2783,7 +2354,7 @@ async function starte() {
                         const pm = st.playerMesh.position;
                         return { spieler: [pm.x, pm.z].map((x) => +x.toFixed(1)), fluss: window.__flussBericht ? __flussBericht() : null };
                     }));
-                    const gpu = await page.evaluate(gpuBank, { n: 12, runden: 3 });
+                    const gpu = await page.evaluate(ZL.gpuBank, { n: 12, runden: 3 });
                     const w3 = await stempel();
                     const ue = (a, c) =>
                         a && c && Number.isFinite(c.ueberlauf) ? c.ueberlauf - (a.ueberlauf || 0) : null;
@@ -3052,7 +2623,7 @@ async function starte() {
                         if (last && !last.weg) await seite("__zerlegeLast", { an: false });
                     }
                 }
-                // DIE EINE SPUR (CDP-Trace) um den Lauf, nur im Mess-Fenster: die Belegung liest den Faden (`BELEGUNG_SPUR`,
+                // DIE EINE SPUR (CDP-Trace) um den Lauf (`ZL.lauf`, scripts/lib/zerlege-linse.cjs), nur im Mess-Fenster: die Belegung liest den Faden (`BELEGUNG_SPUR`,
                 // `belegungAuswerten`), Profil und Hänger-Linse lesen Stichproben aus derselben Spur (`HL.spurProfil`) — nie ein
                 // zweites Instrument; ein langer Hänger-Lauf nimmt nur Marken, Stichproben und die Aufträge des GPU-Prozesses
                 // (`gpu`: eine Leine ohne Auftrag der Seite heißt nach ihm) — der Faden voll sprengt den Puffer.
@@ -3062,7 +2633,7 @@ async function starte() {
                     let an = false, o;
                     spur.an = () => cdp.send("Tracing.start", { traceConfig: { includedCategories: kategorien } }).then(() => (an = true));
                     try {
-                        o = await page.evaluate(lauf, Object.assign({ regler: b.regler || "voll", tiere: b.tiere || "halten", wetter: b.wetter, spur: true }, k));
+                        o = await page.evaluate(ZL.lauf, Object.assign({ regler: b.regler || "voll", tiere: b.tiere || "halten", wetter: b.wetter, spur: true }, k));
                     } finally {
                         spur.an = null;
                         const komplett = an && new Promise((r) => cdp.once("Tracing.tracingComplete", r));
@@ -3082,7 +2653,7 @@ async function starte() {
                     if (o.wetterHalt) o.wetterHalt = wetterUrteil(o.wetterHalt);
                     return send(Object.assign(o, { fehler: fehler.slice(-5) }));
                 }
-                // DIE HÄNGER-LINSE (scripts/lib/haenger-linse.cjs): der echte Lauf (`lauf`, `k.haenger`) mit den Stichproben der
+                // DIE HÄNGER-LINSE (scripts/lib/haenger-linse.cjs): der echte Lauf (`ZL.lauf`, `k.haenger`) mit den Stichproben der
                 // Spur (1 ms), je Frame über der Schwelle die Ursache beim Namen (TAKT · NEBEN · GC · GPU und die Engstelle);
                 // `spitze` urteilt die Takt-Spitze (`takt`), `wandern: bahn` geht die Bahn der OMEN-Zellen „geht".
                 if (req.url === "/haenger") {
@@ -3217,12 +2788,17 @@ hauptLauf(async () => {
             await rufe("/fenster", { w: 1920, h: 1080 });
             await umstellen({ ort: "wiese", sicht: "ego" });
             o = ergebnis(await evalRuf(`return await (${popGang})();`));
+            o.block = ergebnis(await evalRuf(`return await (${SICHT.blockTreue})();`)); // die Blöcke des letzten Bilds (sicht-linse)
             o.bank = await rufe("/gpu-bank", {}); // die GPU-Zeit je Bild am Ende des Gangs (`gpuBank`)
         } finally {
             halt?.();
         }
         const je = (o.schritte || []).map((s) => s.pop + (s.wechsel ? "*" : "") + (s.ein.length ? `+${s.ein.length}@${Math.min(...s.ein)}` : ""));
+        if (typeof o.fehler === "string") console.log(`lod.K2#1 ROT — der Gang brach: ${o.fehler}`.slice(0, 590));
         if (je.length) console.log(`lod.K2#1 ${o.anteilJeSekunde <= 0.05 ? "GRÜN" : "ROT"} ${o.anteilJeSekunde} % Pop-Pixel/s (${o.popPixel} px) · ${je.join("/")} · Laub ${o.laub} · dc, Dreiecke ${o.kosten.at(-1)} · GPU ${o.bank.gpuJeFrameMs} ms, CPU ${o.bank.cpuJeFrameMs} ms je Bild`);
+        const B = o.block || {}, rot = (B.rot || []).concat(B.fehler ? [B.fehler] : [], B.glieder > 0 ? [] : ["LEER: kein Glied einer Arena der Wahl im Hauptbild"], /^BLIND|^$/.test(B.selbsttest || "") ? [`SELBSTTEST ${B.selbsttest || "fehlt"}`] : []);
+        console.log(rot.length ? `BLOCK-TREUE ROT:\n  ${rot.join("\n  ")}` : `BLOCK-TREUE GRÜN ${B.glieder} Blöcke treu · Selbsttest nennt ${B.selbsttest}`);
+        if (rot.length) o.fehler = "BLOCK-TREUE ROT"; // ein fremder Block, ein blinder Selbsttest oder kein geprüftes Glied
     }
     else if (cmd === "bedienung") o = await rufe("/bedienung", { runden: opt("--runden", 3), staffel: opt("--staffel") });
     else if (cmd === "albedo" && hat("nah-fern")) {
@@ -3836,8 +3412,7 @@ hauptLauf(async () => {
         );
     } else if (cmd === "lauf") {
         if (SELBST) {
-            const f = [...ZL.zweiGipfelSelbsttest(), ...ZL.belegungSelbsttest(), ...require("./lib/ausgabe-aufnahme.cjs").buehneSelbsttest()];
-            selbsttestEnde(f, "die Pass-Teilung trennt zwei Gipfel " +
+            selbsttestEnde([...ZL.zweiGipfelSelbsttest(), ...ZL.belegungSelbsttest(), ...buehneSelbsttest()], "die Pass-Teilung trennt zwei Gipfel " +
                 "(rein = der untere, anteilOben genau) und lässt einhöckrige Pässe ganz; die Belegung nennt eine Pflicht-Last je " +
                 "Bild beim Klassen-Namen und lässt vertagbare Zeitgeber im Bild-Fenster GRÜN; die Bühne stellt n Tiere im Ring auf Land, " +
                 "füllt nur auf und bricht ohne Platz laut");
@@ -3901,7 +3476,12 @@ hauptLauf(async () => {
         process.exit(o.befunde.length ? 1 : 0);
     } else if (cmd === "schirm") o = await rufe("/schirm", { datei: opt("--datei"), regler: opt("--regler", "frei") });
     else if (cmd === "fenster") o = await rufe("/fenster", { w: a[0], h: a[1] });
-    else if (cmd === "gpu-fehler") o = await rufe("/gpu-fehler", {});
+    else if (cmd === "gpu-fehler") {
+        o = await rufe("/gpu-fehler", { selbsttest: SELBST });
+        const Z = o.zerstoert || [], s = Z.find((z) => z.pass === "selbsttest");
+        if (SELBST) endeMit(s && /destroy/.test(s.zerstoerer) ? `SELBSTTEST GRÜN — die zerstörte Bindung steht beim Namen: ${s.weg}, ${s.zerstoerer.slice(0, 120)}` : `SELBSTTEST ROT — blind (${Z.length} genannt)`, !!s); // prettier-ignore
+        if (Z.length) console.log(`ZERSTÖRTE BINDUNG ROT ×${Z.length}: ${Z.slice(0, 3).map((z) => `${z.pass} · ${z.weg} · ${z.objekt || "?"} · ${z.zerstoerer}`).join(" | ")}`.slice(0, 1200)); // prettier-ignore
+    }
     else if (cmd === "gpu-bank") o = await rufe("/gpu-bank", { n: a[0], runden: opt("--runden", 3) });
     else if (cmd === "latenz") {
         if (SELBST) {
@@ -3924,6 +3504,7 @@ hauptLauf(async () => {
         if (selbst) console.log(`VERZUGPROBE ${gut ? "GRÜN" : "ROT"}: Verzug 3 Bilder hebt p50 um ${hub} ms ${o.fehler || mit.fehler || ""}`);
         process.exit(gut ? 0 : 1);
     }
+    else if (cmd === "kante") o = await AU.laubKanteGang({ rufe, umstellen, evalRuf, eigeneWelt, ergebnis }); // lod.K1#1, gate:laub-kante
     else if (cmd === "ziele") {
         o = await rufe("/ziele", { n: opt("--n"), json: opt("--json") });
         if (o?.tabelle) endeMit(o.tabelle + "\n" + o.datei, o.ok);

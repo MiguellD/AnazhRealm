@@ -248,15 +248,17 @@ var SAISON_GESETZ = {
     // (typ.bluete) auf seine Mitte (injectWind: transformed = mix(aCenter, transformed, pres)), Labor UND Welt (`_jahrLage`);
     // Rinde 0, Nadel 2 und der Halm ausserhalb des Gras-Stoffs (Schilf) stehen. Die Karte hebt ihre Alpha-Schwelle um
     // (1 - pr) * karteSchwelle (der Studio-Impostor, die Welt-Karte) — die gebackene Karte ist Sommer (volle Krone).
-    // vegetation.K5#2 (05.11., additiv) — DIE GESTALT DES HALMS: `ha` staucht jeden Halm des Grases (der Gras-Stoff, Halm 4)
-    // ueber seiner Wurzel auf diesen Anteil seiner Hoehe, VOR dem Wind (injectWind: transformed.y *= uHalm; die Welt:
-    // der Gras-Stoff und `_halmFerne` ueber `_saisonPraesenz` z). Die Wiese waechst im Fruehling nach (0,7 der Sommer-
+    // vegetation.K5#2 (05.11., additiv) — DIE GESTALT DES HALMS: `ha` kuerzt jeden Halm des Grases (der Gras-Stoff, Halm 4)
+    // laengs seiner Achse um seinen Fuss auf diesen Anteil seiner Laenge, die Breite bleibt, VOR dem Wind (w26: phyto-core
+    // `halmImJahr` — injectWind `halmJahrGlsl`; die Welt: der Gras-Stoff und `_halmFerne` ueber `_halmImJahr`, die Schale ihre
+    // Hoehe; bis w26 staute jeder Leser nur y). Die Wiese waechst im Fruehling nach (0,7 der Sommer-
     // Hoehe), steht im Sommer ganz (1 — jeder Koerper bleibt byte-gleich), ist im Herbst gemaeht und vergilbt (0,8) und
     // liegt im Winter abgestorben und vom Schnee gedrueckt (0,35): die Halm-Flaeche und mit ihr der LAI fallen etwa linear
     // mit der Hoehe. Bis dahin stand die Winter-Wiese so hoch wie im Sommer (LAI 2–10 m Winter 1,058 × Sommer, Radeon 8ef49bef).
     // w14-wiese-saum (06.11., additiv) — DER HALM (`halm`, emitGrass): seine Mitte (aCenter) ist der Fuss des Halms am Boden, die
-    // der Aehre die Spitze ihres Staengels; das Jahr zieht ihn nie, die Ferne der Welt streckt das Bueschel um diese Mitten
-    // (`_halmFerne`: der Halm quer, die Aehre wandert nur). Bis dahin stand die 4 als Ziffer im Gras — die Bytes bleiben gleich.
+    // der Aehre der Fuss ihres Staengels in der Hoehe seiner Spitze (y > 0 die Marke der Aehre, geboren in emitGrass seit
+    // w26-winter-fichte-2; bis dahin die Spitze selbst); das Jahr zieht ihn nie, die Ferne der Welt streckt das Bueschel um diese
+    // Mitten (`_halmFerne`: der Halm quer, die Aehre wandert nur). Bis dahin stand die 4 als Ziffer im Gras.
     typ: { laub: 1, bluete: 3, halm: 4 },
     karteSchwelle: 0.5,
 };
@@ -829,6 +831,18 @@ function baumWindGlsl(foliage) {
         (foliage ? "transformed+=normalize(normal)*(" + w.flattern + "*_wAn/_wSk);\n" : "")
     );
 }
+// DER HALM IM JAHR IM LABOR (w26-winter-fichte, additiv): derselbe Term wie der Gras-Stoff der Welt (phyto-core `halmImJahr`,
+// hier über der GLSL-Algebra WIND_GLSL) — der Halm kürzt sich längs seiner Achse um seinen Fuß (aCenter x/z, y 0), Höhe und
+// Neigung × uHalm, die Breite bleibt; die Ähre (aCenter y > 0, der Fuß ihres Stängels, geboren in emitGrass) kürzt als
+// Ganzes. Bis w26 staute das Labor nur y (`transformed.y *= uHalm`).
+function halmJahrGlsl() {
+    const PC = self.__phytoCore;
+    const J = PC.halmImJahr(PC.WIND_GLSL, "_hHa", "_hO.x", "_hO.y", "_hO.z", "objectNormal.x", "objectNormal.z", "_hAe");
+    return (
+        "{float _hHa=clamp(uHalm,0.0,1.0); vec3 _hF=vec3(aCenter.x,0.0,aCenter.z); vec3 _hO=transformed-_hF; float _hAe=step(0.0001,aCenter.y);\n" +
+        "transformed=_hF+vec3(" + J.x + "," + J.y + "," + J.z + ");}\n"
+    );
+}
 // `krone` (K68-N1): das Laub einer Krone (emitTreeRezept: Karte, Klinge, Nadel) trägt die Normale der Krone (phyto-core
 // kronenNormalen) und liest sie FLIP-FREI — die doppelseitige Rückseite kehrte sie nach innen (die Welt: `_laubStoffNormale`).
 function injectWind(mat, foliage, isGrass, baum, krone) {
@@ -860,8 +874,8 @@ function injectWind(mat, foliage, isGrass, baum, krone) {
             "#include <begin_vertex>\nfloat wT=aType;\n" +
                 (foliage ? "vSeasW=(wT==" + SAISON_GESETZ.typ.laub.toFixed(1) + "||wT==" + SAISON_GESETZ.typ.bluete.toFixed(1) + ")?1.0:0.0;\n" : "") +
                 "float pres=(wT==" + SAISON_GESETZ.typ.laub.toFixed(1) + ")?uLeafPresence:(wT==" + SAISON_GESETZ.typ.bluete.toFixed(1) + "?uBloom:1.0);\ntransformed=mix(aCenter,transformed,clamp(pres,0.0,1.0));\nfloat _sw=aWind.x,_ph=aWind.y,_om=aWind.z;\n" +
-                // die Gestalt des Halms im Jahr (SAISON_GESETZ `ha`): der Halm staucht sich ueber seiner Wurzel (y 0), VOR dem Wind
-                (isGrass ? "transformed.y*=clamp(uHalm,0.0,1.0);\n" : "") +
+                // die Gestalt des Halms im Jahr (SAISON_GESETZ `ha`): der Halm kuerzt sich um seinen Fuss (`halmJahrGlsl`), VOR dem Wind
+                (isGrass ? halmJahrGlsl() : "") +
                 "#ifdef USE_INSTANCING\n vec2 _iw=instanceMatrix[3].xz;\n#else\n vec2 _iw=vec2(0.0);\n#endif\n" +
                 "vLod=aLodLevel;\n#ifdef USE_INSTANCING\n float _isy=length(instanceMatrix[1].xyz); float _cd=length(cameraPosition.xz-_iw); float _lk=(aH0>0.001)?min(uLodRef/(aH0*_isy),1.0):1.0; vLodD=_cd*_lk; float _lkL=(aH0L>0.001)?min(uLodRef/(aH0L*_isy),1.0):1.0; vLodDL=_cd*_lkL;\n#else\n vLodD=length(cameraPosition.xz-_iw); vLodDL=vLodD;\n#endif\n" +
                 (foliage
@@ -3288,10 +3302,14 @@ function emitGrass(P) {
                 pi.push(v0, aussen ? v0 + 1 : v0 + 2, aussen ? v0 + 2 : v0 + 1);
                 pu.push(0, 0, (breit * S) / HG.aderM, 0, 0, 0);
                 const cc = seedCol.clone().multiplyScalar((0.85 + 0.3 * t) * (0.92 + 0.16 * wurf[(2 + e) % wurf.length]));
+                // DER ANKER DER ÄHRE (w26-winter-fichte-2): der Fuß ihres Stängels (bx, bz) in der Höhe seiner Spitze — geboren,
+                // wo die Ähre entsteht; jeder Leser (Gras-Stoff, Ferne, Labor) kürzt bzw. spreizt sie um diesen Fuß, keiner sucht
+                // ihn nach. Bis w26-winter-fichte trug sie die Spitze (tip), der Wirt verlegte sie je Lieferung per Float-Schlüssel
+                // (`halmAehrenFuss`) und warf an jedem Halm-Typ ohne Ähre (Schilf: 748 Würfe je Fernwald-Lauf).
                 for (let q = 0; q < 3; q++) {
                     pc.push(cc.r, cc.g, cc.b);
                     pw.push(swT, la * 1.3 + i, 1.0);
-                    pct.push(tip[0], tip[1], tip[2]);
+                    pct.push(bx, tip[1], bz);
                     pty.push(SAISON_GESETZ.typ.halm);
                 }
             }
@@ -6037,18 +6055,24 @@ function __fettDepot(geo, depot, skinJoints) {
     if (!depot) return;
     if (!pa || !na || !si || !sw) throw new Error("FETT-DEPOT: die Hülle trägt keine Normale oder keine Gelenk-Gewichte (fail-closed)");
     for (let i = 0; i < pa.count; i++) {
-        let dk = 0;
-        for (let k = 0; k < 4; k++) {
-            const w = sw.array[i * 4 + k];
-            if (!w) continue;
-            const j = skinJoints[si.array[i * 4 + k]];
-            const g = depot.gelenk[j] || 0;
-            dk += w * g * (depot.vorn.includes(j) ? 1 + depot.bauch * Math.max(0, na.getZ(i)) : 1);
-        }
-        const s = dk * depot.d;
+        const s = __fettMass(depot, si.array, sw.array, i, na.getZ(i), skinJoints);
         if (s) pa.setXYZ(i, pa.getX(i) + na.getX(i) * s, pa.getY(i) + na.getY(i) * s, pa.getZ(i) + na.getZ(i) * s);
     }
     geo.computeVertexNormals();
+}
+// Das Maß des Fett-Depots an der Ecke i (die EINE Rechnung des Depots, `__fettDepot` und der Leib-Raum lesen sie): Σ Gewicht ×
+// Dicke ihres Gelenks × (vorn: 1 + bauch · n_z) × die Abweichung vom Mittel; 0 ohne Depot.
+function __fettMass(depot, siA, swA, i, nz, skinJoints) {
+    if (!depot) return 0;
+    let dk = 0;
+    for (let k = 0; k < 4; k++) {
+        const w = swA[i * 4 + k];
+        if (!w) continue;
+        const j = skinJoints[siA[i * 4 + k]];
+        const g = depot.gelenk[j] || 0;
+        dk += w * g * (depot.vorn.includes(j) ? 1 + depot.bauch * Math.max(0, nz) : 1);
+    }
+    return dk * depot.d;
 }
 
 // Gewichte: 1/d⁴ über Teil-Zentren (Lab-Bindung), aggregiert je Gelenk, Top-4 — je Ecke [x, y, z] (die Hüllen-Maschine; der
@@ -6778,6 +6802,19 @@ var MENSCH_MENGE = Object.freeze({
 function __mengenLeib(kern, B, dials, matFuer, gelenkVon, skinJoints, fern, ziel) {
     const MM = MENSCH_MENGE;
     const vox = fern ? MM.voxFern : MM.vox;
+    const { prims, hoehlen, zonen } = __mengenPrims(kern, B, dials, matFuer, gelenkVon, vox);
+    const F = __tierFeld(prims, vox, MM.blend);
+    const roh = __huelleAusFeld(kern, F.f, F.nx, F.ny, F.nz, F.lo, vox, 0, 0, null, null, 0, undefined, true);
+    if (!roh) throw new Error("MENGEN-LEIB: der Guss lieferte keine Fläche (fail-closed)");
+    return __mengenLeibAusFeld(kern, B, matFuer, skinJoints, prims, hoehlen, zonen, F, roh, vox, ziel);
+}
+
+// DIE PRIMITIVE DES MENGEN-LEIBS (die EINE Rechnung vor dem Feld, `__mengenLeib` und der Leib-Raum `__leibRaumTafel` lesen sie):
+// die Kappe des Haars am Kopf, die Kugeln und Zylinder der Klassen, die Höhlen, je Primitiv sein Teil, seine Zone und ihre
+// Auflage (der Stoff liegt um seine Dicke über dem Leib). `p.ti` ist sein Platz im Baum — dieselbe Zahl in jedem Baum desselben
+// Gesetzes, gleich welche Dials ihn formen (der Leib-Raum paart daran die Primitive zweier Leiber).
+function __mengenPrims(kern, B, dials, matFuer, gelenkVon, vox) {
+    const MM = MENSCH_MENGE;
     const kopf = B.parts.head;
     const kappen = kern.haarKappe(dials).map((k) => {
         const m = new THREE.Mesh(new THREE.SphereGeometry(k.r, 8, 6), matFuer("haarKappe"));
@@ -6790,6 +6827,9 @@ function __mengenLeib(kern, B, dials, matFuer, gelenkVon, skinJoints, fern, ziel
     const prims = __tierPrims(B.character, B.character, () => true, vox, MM.blend, gelenkVon, MM.klassen, true);
     // die Höhlen der Augen (Klasse socket) formen nichts: sie sind ein Ton der Haut wie in der Kopf-Haut der Nah-Stufe
     const hoehlen = __tierPrims(B.character, B.character, () => true, vox, MM.blend, gelenkVon, ["socket"], true);
+    const platz = new Map();
+    B.character.traverse((o) => o.isMesh && platz.set(o, platz.size));
+    for (const p of prims) p.ti = platz.get(p.node);
     for (const m of kappen) kopf.remove(m);
     const zonen = kern.kleidZonen(dials) || [];
     const teilVon = new Map();
@@ -6822,9 +6862,23 @@ function __mengenLeib(kern, B, dials, matFuer, gelenkVon, skinJoints, fern, ziel
             if (!(z.dicke > 0) && !z.sohle) [p.blend, p.ext] = [MM.fall, p.ext + MM.fall - MM.blend];
         }
     }
-    const F = __tierFeld(prims, vox, MM.blend);
-    const roh = __huelleAusFeld(kern, F.f, F.nx, F.ny, F.nz, F.lo, vox, 0, 0, null, null, 0, undefined, true);
-    if (!roh) throw new Error("MENGEN-LEIB: der Guss lieferte keine Fläche (fail-closed)");
+    return { prims, hoehlen, zonen };
+}
+
+// DIE GEWICHTE DES MENGEN-LEIBS an den Ecken q (x, y, z je Ecke; die EINE Rechnung, der Guss und der Leib-Raum lesen sie): je Ecke
+// die Tier-Regel über den Abstand zur Oberfläche der Primitive, im Rahmen [lo, hi] ihres Felds (`__primRahmen`).
+function __mengenGewichte(prims, lo, hi, vox, q, skinJoints) {
+    const MM = MENSCH_MENGE;
+    const H = hi[1] - lo[1];
+    const { zentren, kandidaten } = __primGewichte(prims, H, MM.blend, vox, lo, hi);
+    const eW = TIER_HAUT.eW * H;
+    const ecken = [];
+    for (let i = 0; i < q.length; i += 3) ecken.push([q[i], q[i + 1], q[i + 2]]);
+    return __hautGewichte(ecken, zentren, skinJoints, eW * eW, kandidaten);
+}
+
+// Der Mengen-Leib ab seinem Feld: die Zonen je Ecke, der Farb-Schnitt, der Kollaps auf die Zeile, die Gewichte.
+function __mengenLeibAusFeld(kern, B, matFuer, skinJoints, prims, hoehlen, zonen, F, roh, vox, ziel) {
     // je Ecke der Abstand zu jeder Zone (die Schranke zuerst: ein Primitiv, dessen |v − c| − Reichweite über dem Minimum seiner
     // Zone liegt, erreicht es nie), geschnitten, mit der Naht kollabiert
     const K = 2 + zonen.length;
@@ -6849,13 +6903,7 @@ function __mengenLeib(kern, B, dials, matFuer, gelenkVon, skinJoints, fern, ziel
     const zone = geo === S.geo ? S.zone : geo.userData.zone;
     if (geo !== S.geo) S.geo.dispose();
     // die Gewichte an den Ecken, die bleiben (Tier-Regel: der Abstand zur Oberfläche der Primitive)
-    const H = F.hi[1] - F.lo[1];
-    const { zentren, kandidaten } = __primGewichte(prims, H, MM.blend, vox, F.lo, F.hi);
-    const eW = TIER_HAUT.eW * H;
-    const q = geo.attributes.position.array;
-    const ecken = [];
-    for (let i = 0; i < q.length; i += 3) ecken.push([q[i], q[i + 1], q[i + 2]]);
-    const { sIdx, sWgt } = __hautGewichte(ecken, zentren, skinJoints, eW * eW, kandidaten);
+    const { sIdx, sWgt } = __mengenGewichte(prims, F.lo, F.hi, vox, geo.attributes.position.array, skinJoints);
     geo.setAttribute("skinIndex", new THREE.BufferAttribute(sIdx, 4));
     geo.setAttribute("skinWeight", new THREE.BufferAttribute(sWgt, 4));
     geo.setAttribute("aSpreiz", geo.attributes.position.clone()); // die Töne der Haut fragen den Ort der Spreiz-Pose
@@ -6865,6 +6913,180 @@ function __mengenLeib(kern, B, dials, matFuer, gelenkVon, skinJoints, fern, ziel
     B.character.add(mesh);
     return { mesh, prims, hoehlen, zonen, zone };
 }
+
+// ── DER LEIB-RAUM (w26-leib-raum, REFERENZ-ATLAS Schnitt 4 — SMPL: Loper et al., SIGGRAPH Asia 2015): der Leib der Menge ist EINE
+// Vorlage je Stufe an den Mittel-Knoten (koerper LEIB_RAUM), und jede Person ist ein Punkt in ihrem Raum — kein eigener Guss. Je
+// Achse (ein Dial des Genoms, die Kappe des Haars als drei Achsen) trägt die Tafel an ihren Knoten den Weg jeder Ecke der Vorlage:
+// die Ecke mit den Primitiven des Leibs getragen (Gewicht nach ihrem Abstand) und per Newton auf das Nullniveau des Felds des
+// verschobenen Leibs gelegt, als Differenz zur Vorlage auf ihrem eigenen Feld (die Fläche des Rasters bleibt, nur die Änderung des
+// Gesetzes wandert), dazu der Unterschied des Fett-Depots entlang der Normale. Gemessen (w26-leib-raum, Stufe 2, gegen den Guss
+// jeder Person am Ofen vor dem Schnitt, 8 Samen über das ganze Genom): Raum Mittel 5,7 mm, p95 21 mm; die beste von 8 Gestalten
+// 7,4 / 24; die Vorlage allein 11,7 / 29. Nächster Punkt und rein lineare Formziele trugen nicht (schlechter als die Vorlage allein).
+// DAS FELD (`__leibRaumFeld`) ist das des Gusses ohne Raster: dieselbe Reihe, dieselbe Schranke, dieselbe Tiefe wie `__tierFeld` —
+// ein Primitiv erreicht nur seine Kugel `ext`, darin ändert es nichts, wo |p − c| − (ext − blend − 2·vox) über a + blend liegt, und
+// unter TIEF (−3·vox) ist der Punkt innen.
+function __leibRaumFeld(prims, vox, x, y, z) {
+    const MM = MENSCH_MENGE;
+    const TIEF = -3 * vox;
+    let a = 8 * vox;
+    for (const p of prims) {
+        if (a < TIEF) break;
+        const ex = x - p.c[0],
+            ey = y - p.c[1],
+            ez = z - p.c[2];
+        const d2 = ex * ex + ey * ey + ez * ez;
+        if (d2 > p.ext * p.ext) continue;
+        const bl = p.blend || MM.blend;
+        if (Math.sqrt(d2) - (p.ext - bl - 2 * vox) >= a + bl) continue;
+        const b = p.dickeWeg ? __tierAbstand(p, x, y, z) + p.dickeWeg(x, y, z) : __tierAbstand(p, x, y, z);
+        const dab = a > b ? a - b : b - a;
+        if (dab >= bl) {
+            if (b < a) a = b;
+            continue;
+        }
+        const h = (bl - dab) / bl;
+        a = (a < b ? a : b) - h * h * bl * 0.25;
+    }
+    return a;
+}
+// Die Ecken V (x, y, z je Ecke, Spreiz-Pose) vom Leib mit den Primitiven P0 auf den Leib mit P1 (gepaart über `ti`): getragen von
+// den nächsten Primitiven (Gewicht e^(−Abstand/LEIB_RAUM.tragen) über dem nächsten), dann `LEIB_RAUM.newton` Schritte auf das
+// Nullniveau des Felds von P1 (Schritt höchstens `LEIB_RAUM.schritt`).
+function __leibRaumRefit(V, P0, P1, vox) {
+    const LR = LEIB_RAUM;
+    const nach = new Map(P1.map((p) => [p.ti, p]));
+    const paare = [];
+    for (const p of P0) {
+        const q = nach.get(p.ti);
+        if (!q) continue;
+        const A = new THREE.Matrix4().fromArray(Array.from(q.Mi)).invert().multiply(new THREE.Matrix4().fromArray(Array.from(p.Mi)));
+        paare.push({ p, e: A.elements });
+    }
+    if (!paare.length) throw new Error("LEIB-RAUM: kein Primitiv des Leibs findet seinen Partner (fail-closed)");
+    const out = new Float64Array(V.length);
+    const ds = new Float64Array(paare.length);
+    const h = LR.gradient;
+    const f = (x, y, z) => __leibRaumFeld(P1, vox, x, y, z);
+    for (let i = 0; i < V.length; i += 3) {
+        const x = V[i],
+            y = V[i + 1],
+            z = V[i + 2];
+        let dmin = Infinity;
+        for (let k = 0; k < paare.length; k++) {
+            const d = Math.max(0, __tierAbstand(paare[k].p, x, y, z));
+            ds[k] = d;
+            if (d < dmin) dmin = d;
+        }
+        let W = 0,
+            px = 0,
+            py = 0,
+            pz = 0;
+        for (let k = 0; k < paare.length; k++) {
+            const w = Math.exp(-(ds[k] - dmin) / LR.tragen);
+            if (w < 1e-4) continue;
+            const e = paare[k].e;
+            px += w * (e[0] * x + e[4] * y + e[8] * z + e[12]);
+            py += w * (e[1] * x + e[5] * y + e[9] * z + e[13]);
+            pz += w * (e[2] * x + e[6] * y + e[10] * z + e[14]);
+            W += w;
+        }
+        px /= W;
+        py /= W;
+        pz /= W;
+        for (let it = 0; it < LR.newton; it++) {
+            const v = f(px, py, pz);
+            if (Math.abs(v) < 1e-4) break;
+            const gx = (f(px + h, py, pz) - f(px - h, py, pz)) / (2 * h),
+                gy = (f(px, py + h, pz) - f(px, py - h, pz)) / (2 * h),
+                gz = (f(px, py, pz + h) - f(px, py, pz - h)) / (2 * h);
+            const g2 = gx * gx + gy * gy + gz * gz;
+            if (!(g2 > 1e-12)) break;
+            let st = v / g2;
+            const L = Math.abs(st) * Math.sqrt(g2);
+            if (L > LR.schritt) st *= LR.schritt / L;
+            px -= st * gx;
+            py -= st * gy;
+            pz -= st * gz;
+        }
+        out[i] = px;
+        out[i + 1] = py;
+        out[i + 2] = pz;
+    }
+    return out;
+}
+// DIE TAFEL DES LEIB-RAUMS (in der Ruhe-Pose): `achsen` = [{ achse, knoten: [Werte] }] — `achse` ein Dial (mass, tone, age,
+// gender …) oder `__kappe0/1/2` (die Kappe des Haars: Dicke, Höhe, Front um das Tripel `dials.__kappe`). `leibVon(d)` liefert den
+// Leib an den Dials d in der Spreiz-Pose: seine Primitive und je Gelenk (`skinJoints`) das Delta Spreiz → Ruhe — JEDER Knoten
+// kehrt um SEINE Gelenke in die Ruhe zurück (die Person dreht ihre Arme um ihre eigene Schulter; gemessen: mit dem Delta der
+// Vorlage trugen Alter und Geschlecht nichts, Maxima > 200 mm). Rückgabe { achsen, n, ziele: Float32Array [Ecke][Knoten][xyz] } —
+// der Weg jeder Ecke der Vorlage an jedem Knoten jeder Achse (die übrigen Dials an der Vorlage), Ruhe gegen Ruhe.
+function __leibRaumTafel(kern, geo, P0, dials, achsen, leibVon, skinJoints, vox) {
+    if (!Array.isArray(achsen) || !achsen.length) throw new Error("LEIB-RAUM: ohne Achsen keine Tafel (fail-closed)");
+    const pa = geo.attributes.position.array,
+        na = geo.attributes.normal.array,
+        siA = geo.attributes.skinIndex.array,
+        swA = geo.attributes.skinWeight.array;
+    const n = pa.length / 3;
+    const V = Float64Array.from(pa);
+    // die EINE LBS-Formel des Rückwegs (wie die Hüllen in bakeMenschInstance): je Ecke Σ Gewicht × Delta ihres Gelenks — mit den
+    // Gewichten DIESES Leibs an seinen Ecken (`__mengenGewichte`, wie sein Guss sie rechnete: an der Achsel mischt jeder Leib nach
+    // seinen Primitiven; gemessen mit den Gewichten der Vorlage p95 20–27 mm gegen den Guss)
+    const ruhe = (W, L) => {
+        const R = __primRahmen(L.prims);
+        const { sIdx, sWgt } = __mengenGewichte(L.prims, R.lo, R.hi, vox, W, skinJoints);
+        const delta = L.delta;
+        const out = new Float64Array(W.length);
+        for (let i = 0; i < n; i++) {
+            const x = W[i * 3],
+                y = W[i * 3 + 1],
+                z = W[i * 3 + 2];
+            for (let k = 0; k < 4; k++) {
+                const w = sWgt[i * 4 + k];
+                if (!w) continue;
+                const e = delta[sIdx[i * 4 + k]].elements;
+                out[i * 3] += w * (e[0] * x + e[4] * y + e[8] * z + e[12]);
+                out[i * 3 + 1] += w * (e[1] * x + e[5] * y + e[9] * z + e[13]);
+                out[i * 3 + 2] += w * (e[2] * x + e[6] * y + e[10] * z + e[14]);
+            }
+        }
+        return out;
+    };
+    const L0 = leibVon(dials);
+    const N0 = ruhe(__leibRaumRefit(V, P0, L0.prims, vox), L0);
+    const depot0 = kern.fettDepot(dials);
+    const slots = achsen.reduce((s, a) => s + a.knoten.length, 0);
+    const ziele = new Float32Array(n * slots * 3);
+    let slot = 0;
+    for (const a of achsen) {
+        const kj = /^__kappe([012])$/.exec(a.achse);
+        if (kj && !(Array.isArray(dials.__kappe) && dials.__kappe.length === 3))
+            throw new Error("LEIB-RAUM: die Achse " + a.achse + " ohne das Tripel dials.__kappe (fail-closed)");
+        for (const wert of a.knoten) {
+            const d2 = Object.assign({}, dials);
+            if (kj) (d2.__kappe = dials.__kappe.slice())[+kj[1]] = wert;
+            else d2[a.achse] = wert;
+            const Lk = leibVon(d2);
+            // das Fett-Depot entlang der Normale der Spreiz-Pose, mit den Positionen in die Ruhe getragen
+            const Wk = __leibRaumRefit(V, P0, Lk.prims, vox);
+            const depot = kern.fettDepot(d2);
+            for (let i = 0; i < n; i++) {
+                const nz = na[i * 3 + 2];
+                const fs = __fettMass(depot, siA, swA, i, nz, skinJoints) - __fettMass(depot0, siA, swA, i, nz, skinJoints);
+                for (let c = 0; c < 3; c++) Wk[i * 3 + c] += na[i * 3 + c] * fs;
+            }
+            const W = ruhe(Wk, Lk);
+            for (let i = 0; i < n; i++) {
+                const o = (i * slots + slot) * 3;
+                for (let c = 0; c < 3; c++) ziele[o + c] = W[i * 3 + c] - N0[i * 3 + c];
+            }
+            slot++;
+        }
+    }
+    return { achsen: achsen.map((a) => ({ achse: a.achse, knoten: a.knoten.slice() })), n, ziele };
+}
+// Die Zahlen des Re-Fits: `tragen` die Weite (m), über die das nächste Primitiv eine Ecke trägt; `newton` die Schritte auf das
+// Nullniveau, `schritt` (m) ihr größter, `gradient` (m) die Weite des Differenzen-Gradienten.
+var LEIB_RAUM = Object.freeze({ tragen: 0.03, newton: 8, schritt: 0.05, gradient: 1e-3 });
 
 // ── DIE HAUT IST EIN GUSS (w21-leib-bau, koerper MENSCH_GESTALT.leibHaut): die Haut der Nah- und der Grobstufe ist EIN glattes
 // Feld über JEDEM ihrer Primitive — Rumpf, Hals, Glieder (die Muskeln unter der Haut: `dicke` darüber) und der Kopf (Schädel,
@@ -7306,12 +7528,13 @@ function __farbSchnitt(geo, D, K) {
 }
 
 // DIE NAHT TEILT SICH (nach dem Kollaps): jede Ecke einmal je Zone ihrer Flächen — eigene Farbe, eigene Normale (die Kante des
-// Kleids). Liefert die Geometrie und die Zone je Ecke.
+// Kleids). Liefert die Geometrie, die Zone je Ecke und je Ecke ihre Quelle im Netz vor der Naht (der Leib-Raum folgt ihr).
 function __naehteTeilen(geo, fz) {
     const ia = geo.index.array;
     const namen = Object.keys(geo.attributes).filter((nm) => nm !== "normal");
     const aus = namen.map(() => []);
     const vz = [];
+    const quelle = [];
     const kopie = new Map();
     const idx = [];
     for (let t = 0; t < ia.length; t++) {
@@ -7321,6 +7544,7 @@ function __naehteTeilen(geo, fz) {
         if (!kopie.has(key)) {
             kopie.set(key, vz.length);
             vz.push(z);
+            quelle.push(v);
             namen.forEach((nm, q) => {
                 const a = geo.attributes[nm];
                 for (let k = 0; k < a.itemSize; k++) aus[q].push(a.array[v * a.itemSize + k]);
@@ -7335,7 +7559,7 @@ function __naehteTeilen(geo, fz) {
     });
     ng.setIndex(new THREE.BufferAttribute(Uint32Array.from(idx), 1));
     ng.computeVertexNormals();
-    return { geo: ng, zone: Uint8Array.from(vz) };
+    return { geo: ng, zone: Uint8Array.from(vz), quelle: Uint32Array.from(quelle) };
 }
 
 // DIE FARBEN DES LEIBS (nach der Rück-Pose): die Naht teilt sich (`__naehteTeilen`), jede Ecke trägt die Farbe ihrer Zone
@@ -7382,6 +7606,21 @@ function __mengenFarben(kern, L, toene) {
     g.setAttribute("aTon", new THREE.BufferAttribute(ton, 1));
     L.mesh.geometry.dispose();
     L.mesh.geometry = g;
+    L.quelle = S.quelle;
+}
+// Die Tafel des Leib-Raums folgt der Naht (`__naehteTeilen`): jede geteilte Ecke trägt den Weg ihrer Quelle.
+function __leibRaumNaht(tafel, quelle) {
+    const slots = tafel.ziele.length / 3 / tafel.n;
+    const z = new Float32Array(quelle.length * slots * 3);
+    for (let i = 0; i < quelle.length; i++) z.set(tafel.ziele.subarray(quelle[i] * slots * 3, (quelle[i] + 1) * slots * 3), i * slots * 3);
+    return { achsen: tafel.achsen, n: quelle.length, ziele: __leibRaumRaster(z) };
+}
+// DAS RASTER DES LEIB-RAUMS (Plattform-Probe, w26-leib-raum): jede Zahl der Tafel und der Vorlage auf 2⁻²⁰ Einheiten (0,3 µm) — der
+// Re-Fit trägt exp, hypot, atan2 und asin, deren letztes Bit eine andere V8 anders rundet (gemessen höchstens 5·10⁻¹³ Einheiten);
+// das Raster schluckt sie, die Bytes bleiben plattformgleich (die Null ohne Vorzeichen: −0 trägt andere Bytes). In place.
+function __leibRaumRaster(a) {
+    for (let i = 0; i < a.length; i++) a[i] = Math.round(a[i] * 1048576) / 1048576 || 0;
+    return a;
 }
 
 // DAS RASTER EINER KUGEL folgt ihrer GRÖSSE (V18.497, der Tier-Guss): eine 7-mm-Kralle trug
@@ -7862,7 +8101,8 @@ function __feldVerdeckung(F, vox, x, y, z, V) {
 // dessen Abstand (untere Schranke |p−c| − R) um blend über dem Feld liegt, ändert nichts — beide
 // überspringen die Abstands-Rechnung. Die Primitive werden __nichtGiessen (gegossen wird die Haut). rahmen = [[x0, x1], [y0, y1],
 // [z0, z1]] (w21-leib-bau): das Raster deckt nur diesen Kasten (die zwei Raster der EINEN Haut, je ihr Teil des Leibs).
-function __tierFeld(prims, vox, blend, anker, rahmen) {
+// Der Rahmen eines Felds: der Kasten um jedes Primitiv samt seiner Reichweite (der Mengen-Leib und der Leib-Raum lesen ihn).
+function __primRahmen(prims) {
     const lo = [1e9, 1e9, 1e9],
         hi = [-1e9, -1e9, -1e9];
     for (const p of prims)
@@ -7870,6 +8110,10 @@ function __tierFeld(prims, vox, blend, anker, rahmen) {
             lo[d] = Math.min(lo[d], p.c[d] - p.ext);
             hi[d] = Math.max(hi[d], p.c[d] + p.ext);
         }
+    return { lo, hi };
+}
+function __tierFeld(prims, vox, blend, anker, rahmen) {
+    const { lo, hi } = __primRahmen(prims);
     if (rahmen)
         for (let d = 0; d < 3; d++) {
             lo[d] = Math.max(lo[d], rahmen[d][0]);
@@ -8478,7 +8722,14 @@ function __bakeGelenkBaum(root, rootName, nodeName, fein, beipack) {
 // linear via mp wie beim Tier). Gelenke = die Rig-Gruppen (torso·head·arm/
 // elbow/hand·hip/knee/ankle je Seite) — dieselben Namen liest der Stamm-Rig. ──
 function bakeMenschInstance(kern, presetId, seed, lod, ov) {
-    const dials = Object.assign({}, kern.START_PARAMS || {}, (ov && ov.dials) || {});
+    // DIE MENGEN-STUFEN SIND DER LEIB-RAUM (w26-leib-raum, REFERENZ-ATLAS §4): Stufe 2 und 3 gießen nie eine Person, sondern EINE
+    // Vorlage — jede Achse des Raums (koerper LEIB_RAUM) auf ihrem Mittel-Knoten, gleich welche Dials die Bestellung trägt (nur die
+    // Tracht und die Farben gelten) — und ihre Formziel-Tafel (`__leibRaumTafel`, unten). Ohne Gesetz keine Menge (fail-closed).
+    const mengenStufe = (lod | 0) >= 2;
+    if (mengenStufe && !(kern.LEIB_RAUM && typeof kern.leibRaumVorlage === "function"))
+        throw new Error("MENGEN-LEIB: koerper-Kern ohne LEIB_RAUM — die Menge ist ein Punkt im Leib-Raum (fail-closed)");
+    const dials0 = Object.assign({}, kern.START_PARAMS || {}, (ov && ov.dials) || {});
+    const dials = mengenStufe ? kern.leibRaumVorlage(dials0) : dials0;
     // BOOT-LITERAL-ABSCHIED (18.07.): der ov-lose Bake zieht seine Default-
     // Töne aus den KERN-Paletten (benannte Anker karamell/darkbrown — der
     // Bäcker hält das Gesetzbuch ja in der Hand), nie mehr aus paletten-
@@ -8570,6 +8821,10 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         },
         zylinder: (rt, rb, h, k) => new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, segZ, 1), matFuer(k)),
     };
+    // DER LEIB-RAUM (w26-leib-raum): die Achsen der Tafel sind das Gesetz (koerper LEIB_RAUM) — jede Mengen-Stufe trägt ihn; ihre
+    // Leiber an den Knoten baut die rohe Fabrik der Menge (ohne das Volumen-Buch unten), in derselben Spreiz-Pose
+    const raumAchsen = menge ? kern.LEIB_RAUM.achsen : null;
+    const rohF = menge ? { gruppe: F.gruppe, kugel: F.kugel, zylinder: F.zylinder } : null;
     // die Form jedes Teils, wie das Gesetz sie nennt (physik K1): das Volumen des Leibs misst sie im Netz der Nah-Stufe, gleich
     // welche Stufe gegossen wird (die Mengen-Stufen gießen jedes Teil in EINE Hülle)
     const formen = new Map();
@@ -8634,6 +8889,7 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         throw new Error("MENSCH-GUSS: koerper-Kern ohne menschTon/brauTon — die Farbe folgt dem Samen (fail-closed)");
     const tonStempel = (geo, t) => geo.setAttribute("aTon", new THREE.BufferAttribute(new Float32Array(geo.attributes.position.count).fill(t), 1));
     let mengenLeib = null;
+    let raumTafel = null; // der Leib-Raum (w26-leib-raum, `__leibRaumTafel`): jede Mengen-Stufe trägt ihn
     let leib = null; // die EINE Haut (w21-leib-bau, `__leibHaut`): der Leib und — nah — die Haut des Kopfs über die Naht
     // DIE FÜLLE DES LEIBS (studios.K1): das Unterhaut-Fett je Gelenk aus dem Gesetz (koerper `fettDepot`, null im Mittel)
     if (typeof kern.fettDepot !== "function") throw new Error("MENSCH-GUSS: koerper-Kern ohne fettDepot — die Fülle folgt dem Gesetz (fail-closed)");
@@ -8776,6 +9032,35 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         // DER LEIB DER MENGE (mensch.K4): EINE Hülle; seine Sohle ist die Unterkante der Füße, beschuht oder bloß (Gelände H5)
         if (menge) {
             mengenLeib = __mengenLeib(kern, B, dials, matFuer, animAhnH, skinJoints, fern, zeilenZiel);
+            {
+                const vox = fern ? MENSCH_MENGE.voxFern : MENSCH_MENGE.vox;
+                const leibVon = (d2) => {
+                    const B2 = kern.bauMensch(rohF);
+                    kern.morphAuf(B2, d2);
+                    for (const pn of ["pelvis", "glute1", "glute-1"]) if (B2.parts[pn] && B2.parts[pn].material) B2.parts[pn].material = matFuer("shorts");
+                    for (const jn of Object.keys(SPREIZ)) if (B2.parts[jn]) B2.parts[jn].rotation.z += SPREIZ[jn];
+                    B2.character.updateMatrixWorld(true);
+                    // der Gelenk-Ahn eines Knotens dieses Leibs (derselbe Gang wie `animAhnH` über seinen Baum)
+                    const namen2 = new Map([[B2.character, "mensch"]]);
+                    for (const nm of skinJoints) if (nm !== "mensch" && B2.parts[nm]) namen2.set(B2.parts[nm], nm);
+                    const ahn2 = (node) => {
+                        for (let c = node; c; c = c.parent) if (namen2.has(c)) return namen2.get(c);
+                        return "mensch";
+                    };
+                    const prims = __mengenPrims(kern, B2, d2, matFuer, ahn2, vox).prims;
+                    // je Gelenk das Delta Spreiz → Ruhe dieses Leibs (derselbe Rückweg wie die Hüllen unten)
+                    const inv2 = new THREE.Matrix4().copy(B2.character.matrixWorld).invert();
+                    const knoten = skinJoints.map((nm) => (nm === "mensch" ? B2.character : B2.parts[nm] || null));
+                    const mSp = knoten.map((nd) => (nd ? new THREE.Matrix4().multiplyMatrices(inv2, nd.matrixWorld) : null));
+                    for (const jn of Object.keys(SPREIZ)) if (B2.parts[jn]) B2.parts[jn].rotation.z -= SPREIZ[jn];
+                    B2.character.updateMatrixWorld(true);
+                    const delta = knoten.map((nd, i) =>
+                        nd ? new THREE.Matrix4().multiplyMatrices(inv2, nd.matrixWorld).multiply(mSp[i].clone().invert()) : new THREE.Matrix4()
+                    );
+                    return { prims, delta };
+                };
+                raumTafel = __leibRaumTafel(kern, mengenLeib.mesh.geometry, mengenLeib.prims, dials, raumAchsen, leibVon, skinJoints, vox);
+            }
             __fettDepot(mengenLeib.mesh.geometry, fett, skinJoints);
             gebauteHuellen.push(mengenLeib.mesh);
             const fuss = [];
@@ -8976,6 +9261,8 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
                 hoehle: lin(KT0.socket),
             };
             __mengenFarben(kern, mengenLeib, toene);
+            if (!raumTafel) throw new Error("MENGEN-LEIB: die Vorlage ohne ihre Formziel-Tafel (fail-closed)");
+            raumTafel = __leibRaumNaht(raumTafel, mengenLeib.quelle);
             B.character.traverse((n) => {
                 if (n.isMesh && n !== mengenLeib.mesh) n.userData.__nichtGiessen = true;
             });
@@ -9415,6 +9702,9 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         }
         leibV = __vereinigungsVolumen(netze, 0.06); // 0,06 E (1,6 cm): ±0,1 % gegen 0,02 E
     }
+    // DER RAUM TRÄGT SEINE VORLAGE (w26-leib-raum): die Ecken des Leibs der Menge, wie die Stufe sie gießt (Ruhe-Pose, Rahmen des
+    // Leibs) — Vorlage + Formziele ist der EINE Leib-Raum der Stufe (die Linsen rechnen ihn ohne den Baum, `_leibRaumLeib`)
+    if (raumTafel) raumTafel.lage = __leibRaumRaster(Float32Array.from(mengenLeib.mesh.geometry.attributes.position.array));
     return __bakeGelenkBaum(B.character, "mensch", nodeName, fein, {
         art: presetId,
         base: skinCol,
@@ -9424,6 +9714,8 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         ...(fein ? {} : { handMitte }),
         // das Volumen des Leibs am Gelenk der Hülle (1310-15, physik K1) — die Masse liest es
         ...(leibV > 0 ? { leibV } : {}),
+        // der Leib-Raum der Menge (w26-leib-raum): die Wege der Ecken der Vorlage je Achse und Knoten — jede Mengen-Stufe
+        ...(raumTafel ? { raum: raumTafel } : {}),
     });
 }
 

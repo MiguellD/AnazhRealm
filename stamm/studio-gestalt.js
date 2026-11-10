@@ -219,7 +219,10 @@ class AnazhRealm_studio_gestalt {
         // Mitte (`_jahrLage`), die Ferne der Wiese streckt das Büschel um die Mitten seiner Halme (`_halmFerne`); die Schale
         // liefert sie nur an Teilen mit Laub, Blüte oder Halm, immer als Paar. Sie liegen mit uv in EINEM verschränkten Puffer
         // (`_jahrEcken`): die Blatt-Karte belegt ohne sie schon 8 Vertex-Puffer (WebGPU `maxVertexBuffers`). Das JAHR trägt der
-        // Stoff nur, wo eine Ecke Laub oder Blüte ist — der Halm steht im Jahr (seine Gestalt staucht der Gras-Stoff, `ha`).
+        // Stoff nur, wo eine Ecke Laub oder Blüte ist — der Halm steht im Jahr (seine Gestalt kürzt der Gras-Stoff, phyto-core
+        // `halmImJahr`). Die Ecken reisen, wie das Studio sie gebiert: der Anker der Ähre IST der Fuß ihres Stängels (emitGrass,
+        // w26-winter-fichte-2), der Wirt schreibt keine Ecke um (gate:asset-contract, die Ähren-Wand Ä). Bis dahin verlegte er sie
+        // je Lieferung per Float-Schlüssel und warf an jedem Halm-Typ ohne Ähre (Schilf, 748 Würfe je Fernwald-Lauf).
         const paar = !!(m.aCenter && m.aCenter.array) + !!(m.aType && m.aType.array);
         if (paar === 1) throw new Error("_foundryBuildMesh: die Ecken reisen nur als Paar (aCenter · aType)");
         const SG = paar ? AnazhRealm._saisonGesetz().typ : null;
