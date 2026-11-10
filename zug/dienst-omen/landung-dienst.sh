@@ -7,6 +7,7 @@
 # AUFNEHMEN STATT NEU: Stationen, die an diesem Kopf schon einen Eintrag in der gepushten Mess-Datei tragen, fährt ein neu
 #   gestarteter Dienst nicht noch einmal (stufe/offen-am-kopf.cjs) — ein Neustart kostet höchstens die Station, die gerade lief.
 # PLATTE: unter $PLATTE_UNTEN GB frei beginnt keine Liste (der Platz ist Teil des Messplatzes; platte-dienst.sh hält eine laufende an).
+# NACH DER LISTE DER RICHTER: richter.sh gtx --kopf <K> (Fälle gegen die letzte Buchung, Halbierung, EINE Zeile TÄTER).
 # Halt zwischen zwei Listen: Datei zustand/landung.halt. Wartet die Karte, alle 14 min eine Zeile. Gebucht wird am Laptop.
 D=$(cd "$(dirname "$0")" && pwd)
 . "$D/gemein.sh"
@@ -19,6 +20,17 @@ halt() { [ -f "$S/landung.halt" ] && { log "HALT (landung.halt)"; rm -f "$S/land
 sag() { melde la "$1" >>"$L" 2>&1; }
 summe() { echo "$3" >"$ST/liste-$2.txt"; ZEILE_NAME="gpu-stufe $2" ZEILE_DIR=$ST node "$N/zeile-da0e.cjs" "$1" "$ST/liste-$2.txt" >>"$L" 2>&1; }
 zahl() { echo "$1" | tr ',' '\n' | grep -c .; }
+# DER RICHTER NACH DER LANDUNG (zug/dienst/richter.sh): GRÜN → ROT gegen die letzte Buchung ist ein FALL, er halbiert und nennt den
+# Täter in zug/richter.txt — nach der Liste, vor der nächsten Landung (ein schon genannter Fall wird nicht noch einmal halbiert)
+richte() {
+    bash "$D/richter.sh" gtx --kopf "$1" >>"$L" 2>&1 &
+    local rp=$!
+    while kill -0 $rp 2>/dev/null; do
+        puls landung "Richter am main ${1:0:8}: $(tail -n 1 "$S/richter/richter.log" 2>/dev/null | cut -c21-170)"
+        sleep 30
+    done
+    wait $rp
+}
 log "START landung-dienst (PID $(cat "$S/landung.pid"), MSYS $$)"
 ALT=
 still=$(date +%s)
@@ -54,8 +66,10 @@ while :; do
             done
             wait $kp
             summe "$K" "gtx-${K:0:8}" "$BILD"
+            richte "$K"
         elif [ "$n" -gt 0 ]; then
             log "main ${K:0:8}: alle $n Stationen tragen schon einen Eintrag"
+            richte "$K"
         else
             sag "landung Zwischenstand main ${K:0:8}: gtx-nutzen nennt $a Stationen, nur profiband.* (ruhen) — die GTX wartet"
         fi
