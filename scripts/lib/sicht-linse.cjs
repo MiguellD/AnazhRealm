@@ -285,7 +285,7 @@ function sichtLinse(cfg) {
             }
         return o;
     };
-    const bytes = () => Object.values(bytesJe()).reduce((a, b) => a + b, 0);
+    const bytes = () => Object.values(bytesJe()).reduce(addiere, 0);
     let b0 = 0,
         bj0 = {};
     // DER INHALT der Sätze je Frame — nur aus UNABHÄNGIGEN Belegen: ein Bereich kam (+), ging (−) oder
@@ -479,7 +479,7 @@ function sichtLinse(cfg) {
             for (const n of cfg.ruheLeser) ruhe += o.trifft[n] || 0;
             for (const n of ["_hoehlenSicht", "_hoehlenSichtLicht", "_chunkSatzAbschnitt"]) ruhe += o.aufrufe[n] || 0;
             o.arbeit = ruhe;
-            o.trefferSumme = Object.values(o.treffer).reduce((a, b) => a + b, 0);
+            o.trefferSumme = Object.values(o.treffer).reduce(addiere, 0);
             o.fehlt = fehlt;
             lichtOffen = lichtDreht() || lichtOffen;
             o.licht = lichtOffen;

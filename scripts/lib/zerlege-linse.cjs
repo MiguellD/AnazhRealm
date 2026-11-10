@@ -1484,7 +1484,7 @@ function zerlegeMessen(k) {
             const jePass = {};
             let stempel = 0;
             for (const [p, e] of Object.entries(je)) {
-                const s = Object.values(e).reduce((a, b) => a + b, 0) / n;
+                const s = Object.values(e).reduce(addiere, 0) / n;
                 jePass[p] = +s.toFixed(3);
                 stempel += s;
             }
