@@ -206,7 +206,7 @@ hauptLauf(async () => {
     }
 
     // G10 die Bildzeit, auf swiftshader geeicht (W5)
-    const { browser, page } = await nullWelt(server, { port: PORT, art: "linse", bild: true, frist: 120000, zeit: true, fenster: { width: 1280, height: 720 } }, 60000, "worlds/garage/index.html", "load"); // prettier-ignore
+    const { browser, page } = await nullWelt(server, { port: PORT, art: "linse", bild: true, frist: 120000, fenster: { width: 1280, height: 720 } }, 60000, "worlds/garage/index.html", "load"); // prettier-ignore
     await page.waitForFunction(() => typeof __vehicleCore === "object" && document.querySelector("canvas") && !document.getElementById("start").disabled, { timeout: 30000 });
     await sleep(500);
     const m = { geladen: true };

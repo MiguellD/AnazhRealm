@@ -686,7 +686,7 @@ hauptLauf(async () => {
     // (LongTasks) ist auf swiftshader geeicht. Die Bau-Uhr sitzt vor dem ersten Skript der Seite: jeder Pipeline-Bau des Boots steht
     // in ihr (die Ruhe wartet auch auf ihn). KEIN Null-Renderer — die Zähler brauchen den echten WebGPU-Pfad (Tap + Pipelines).
     // Software-Holz (Lehre 26): auf „voll" kostet auf swiftshader ein Compile 50–70 s; die Linse prüft Zähler und Gesetz.
-    const { browser, page } = await nullWelt(server, { art: "linse", bild: true, frist: 600000, zeit: true, fenster: { width: 640, height: 360 }, vor: bauUhrInstall }, 60000, "index.html?holz=kienspan"); // prettier-ignore
+    const { browser, page } = await nullWelt(server, { art: "linse", bild: true, frist: 600000, fenster: { width: 640, height: 360 }, vor: bauUhrInstall }, 60000, "index.html?holz=kienspan"); // prettier-ignore
 
     const out = await page.evaluate(async (laufzeitMs) => {
         const res = {};
