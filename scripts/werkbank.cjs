@@ -547,6 +547,9 @@ async function starte() {
     // Zug und Blick, der Ort-Takt ist leer.
     // Der Ort, an dem die Werkbank zuletzt umstellte (`umstellen --ort`) — die Albedo-Tafel nennt ihn.
     let aktOrt = null;
+    // DER STAND dieser Aufstellung ([x, z], wie `umstellen` ihn meldet): an einem Ort mit Pose aus dem Plan (`ortPose`) der Messort
+    // der Band — die Spec trägt dort keinen (stadt) oder nur den Start (dorf), `/band` las `ort.spieler` und brach (w27-ort-pose)
+    let aktStand = null;
     // DIE SICHT des gestellten Orts: Ego oder Third-Person — der Ort wird in ihr aufgestellt, die Band richtet die
     // Ratsche dieses Orts × Geräts × Sicht.
     let aktSicht = null;
@@ -660,15 +663,14 @@ async function starte() {
                         // jede Probe am Ort stand still. Gegründet wird mit dem Ort des Ankers, wie der Richter des Verkehrs
                         // (fahr-proben `verkehr`); ein Wunsch-Ort, der den Spieler nicht berührt, bleibt, wie er ist.
                         const [, seed, nH] = g.wort.split(" ").map(Number);
-                        r.spawnSettlement({ verlangt: "human", seed, nH, position: { x: g.anker[0], y: 0, z: g.anker[1] } });
-                        // die Schleife schläft ohne Takt: ihr Deckel zählt JEDEN Gang (`false`, 120 × 250 ms) — mit dem Offenen der Welt
-                        // zählte er nur stille Gänge und warf erst nach 3 600 (900 s): an z331 (Anker ±1 mm) schwieg die Stadt bis
-                        // zum Deckel jeder GPU-Probe (480 s; w25-stadt-takt-3 b464baaf · db8635ef, gpu-wahl 3fcecab7)
-                        try {
-                            for (const weiter = __deckel(`die Gründung „${g.wort}"`, 120, false); !steht() && weiter(); ) await sleep(250);
-                        } catch (f) {
-                            throw new Error(`${f.message} · Anker ${g.anker}, die Zellen ${JSON.stringify(zellen().map((c) => [c.seed, c.x, c.z]))}`);
-                        }
+                        // DER AKT IST DIE BEREIT-BEDINGUNG (w27-ort-pose): die Probe wartet auf sein Versprechen (`spawnSettlement`,
+                        // Buch · Export · Ort-Wahl im Faden · Zug), dann urteilt sie mit den Zellen. Bis hier zählte ein Deckel jeden
+                        // Gang ohne Takt (120 × 250 ms): 30 s Wanduhr, und die GTX 1050 brauchte länger — „DER BAU STEHT NICHT: die
+                        // Gründung nach 120 Takten" an stadt und stadt-voll (78d37554, 41 s); davor zählte er nur stille Gänge (900 s).
+                        // Das Gesetz der Siedlung im Buch zuerst (wie der Richter des Verkehrs): sonst gab der Akt nach seiner Frist
+                        // (45 s) an der kalten GTX 1050 ohne Stadt auf
+                        await __weltDa(() => AnazhRealm._siedlungGesetz());
+                        await r.spawnSettlement({ verlangt: "human", seed, nH, position: { x: g.anker[0], y: 0, z: g.anker[1] } });
                     }
                     if (!steht())
                         throw new Error(`Messort ${o.ort}: „${g.wort}" steht nicht am Anker ${g.anker} (${JSON.stringify(zellen())})`);
@@ -705,12 +707,20 @@ async function starte() {
                             const x = k[i - 1][0] + ((k[i][0] - k[i - 1][0]) * s) / l, z = k[i - 1][1] + ((k[i][1] - k[i - 1][1]) * s) / l;
                             if (!r._aufWeg(x, z, 0)) throw new Error(`Messort ${o.ort}: die Bahn verlässt die Gasse bei ${x.toFixed(1)} ${z.toFixed(1)}`);
                         }
-                    if (o?.anlauf) {
-                        r.state.playerMesh.position.set(x, o.dach ? o.dach + AnazhRealm.PLAYER_FOOT_OFFSET : r._voxelSurfaceY(x, z) + 1.8, z);
-                        takte += await __weltStehtNach(takt);
-                        // der Träger der Kapsel (`_stepCharacter`): steht der Spieler auf dem Bau in der Höhe des Dachs?
-                        if (o.dach && !(r.state._kapselStruktur && Math.abs(r.state._kapselTraegerY - o.dach) < 0.5))
-                            throw new Error(`Messort ${o.ort}: kein Dach bei ${o.dach} m (Träger ${r.state._kapselTraegerY})`);
+                    // DIE POSE AUS DEM PLAN (`ortPose`, w27-ort-pose): der Ort steht auf dem Platz seiner Siedlung und blickt auf
+                    // ihren ersten freien Bau (`_ortPose`) — gerechnet hier, nie eine Zahl der Spec. IN ZWEI GÄNGEN: der Bestand der
+                    // Welt um den Platz (`_blockerUmPlatz`) ist erst gebaut, wenn der Spieler dort steht — der zweite Gang
+                    // fragt den Blick am Platz neu. Ohne Siedlung, Platz oder freien Bau bricht der Stamm beim Namen
+                    for (let gang = o?.ortPose ? 2 : 1; gang--; ) {
+                        var P = o?.ortPose && r._ortPose(g ? g.anker : [x, z]);
+                        if (P) [x, z, r.state.yaw, r.state.pitch] = [P.x, P.z, P.gier, 0];
+                        if (o?.anlauf || P) {
+                            r.state.playerMesh.position.set(x, o.dach ? o.dach + AnazhRealm.PLAYER_FOOT_OFFSET : r._voxelSurfaceY(x, z) + 1.8, z);
+                            takte += await __weltStehtNach(takt);
+                            // der Träger der Kapsel (`_stepCharacter`): steht der Spieler auf dem Bau in der Höhe des Dachs?
+                            if (o.dach && !(r.state._kapselStruktur && Math.abs(r.state._kapselTraegerY - o.dach) < 0.5))
+                                throw new Error(`Messort ${o.ort}: kein Dach bei ${o.dach} m (Träger ${r.state._kapselTraegerY})`);
+                        }
                     }
                 } finally {
                     st.perfTargetMs = decke;
@@ -727,6 +737,8 @@ async function starte() {
                 return {
                     takte,
                     steht: r._weltSteht(),
+                    spieler: [x, z],
+                    blick: P && [P.ziel.x, P.ziel.z],
                     chunks: r.state.voxelChunks ? r.state.voxelChunks.size : 0,
                     gier: +r.state.yaw.toFixed(4),
                     dorfZug: window.__anazhAutoSettlement !== false,
@@ -1714,10 +1726,12 @@ async function starte() {
                                 `Messort ${ort.id}: keine Pose „${b.pose}" (posen: ${(ort.posen || []).map((p) => p.id).join(", ")})`
                             );
                         const stelle = pose || ort;
-                        const o = await umstellen(stelle.spieler[0], stelle.spieler[1], {
+                        // ein Ort mit Pose aus dem Plan (`ortPose`) trägt keine: er beginnt am Anlauf
+                        const o = await umstellen(...(stelle.spieler || stelle.anlauf), {
                             ort: ort.id,
+                            ortPose: ort.ortPose,
                             anker: ort.anker || null,
-                            gier: BAND.ortGier(stelle),
+                            gier: stelle.blick && BAND.ortGier(stelle),
                             dorfZug: ort.dorfZug,
                             takt: ort.ortTakt,
                             stell: ort.stell || null,
@@ -1727,6 +1741,7 @@ async function starte() {
                             anlauf: ort.anlauf || null,
                             dach: ort.dach || null,
                         });
+                        aktStand = o.spieler;
                         // DIE WIESE: ein Ort mit Wiesen-Gesetz (`wiese`) hält es in der Welt, die eben stand — dieselbe
                         // Messung wie gate:profiband H1 (scripts/lib/welt-orte.cjs), dazu das Gras der gebauten Boden-Karte. Ein
                         // Ort, der keine Wiese ist, bricht die Aufstellung laut.
@@ -1751,6 +1766,7 @@ async function starte() {
                     }
                     aktOrt = null;
                     aktSicht = null;
+                    aktStand = null;
                     return send(await umstellen(+b.x, +b.z));
                 }
                 if (req.url === "/bild") {
@@ -1764,6 +1780,11 @@ async function starte() {
                     // DIE LEINWAND DER KLASSE: die Soll-Tafel misst im Pixel des Schirms, 1920 × 1080 wie ihre Messungen — das
                     // Fenster wie ein Spieler (`/fenster`), bis die Welt es trägt; danach das Fenster der Sitzung
                     const vp = page.viewport();
+                    // DER INHALT DES ORTS (`imBild`, w27-ort-pose): was der Ort IST, zeigt das Bild — je Klasse der Teilung ein
+                    // Mindest-Anteil seiner Pixel, sonst ROT beim Namen, ungespeichert (am Dorf ohne Haus stand GRÜN, 78d37554).
+                    // Der Anteil gilt der Leinwand der Klasse unten (1920 × 1080: dort zählt die Teilung, nie in `--w`/`--h`)
+                    const inhalt = b.ort && BAND.ladeSpec(b.ort).ort.imBild;
+                    if (inhalt) b.klasse = `^(${Object.keys(inhalt).join("|")})$`;
                     if (b.klasse) {
                         await page.setViewport({ width: 1920, height: 1080, deviceScaleFactor: 1 });
                         await page.waitForFunction(() => st.renderer.domElement.clientWidth === 1920);
@@ -1771,6 +1792,8 @@ async function starte() {
                     if (b.zeit != null) await page.evaluate(`window.__boeVarianz = ${boeVarianz}`);
                     const o = await bild(Object.assign({ w: 640, h: 360, nahM: BOE.nahM, viertel: BOE.viertel }, b));
                     if (b.klasse) await page.setViewport(vp);
+                    const fehlt = Object.keys(inhalt || {}).filter((k) => !(o.klasse.klassen[k]?.pixel >= inhalt[k] * 1920 * 1080));
+                    if (fehlt.length) throw new Error(`ABNAHME ROT [kein ${fehlt.join(", kein ")} im Bild] · ${b.ort}: ${o.abnahme.zeile}`);
                     const datei = zeitAblage(b.datei, "bild", "png");
                     ordnerFuer(datei);
                     pngDatei(datei, o.png);
@@ -2398,8 +2421,8 @@ async function starte() {
                         for (const f of Object.keys(fl)) fl[f] += k[f] || 0;
                     }
                     if (fl) for (const f of ["mb", "platteMb", "neuMb"]) fl[f] = +fl[f].toFixed(1);
-                    const am = ort.spieler;
-                    const amMessort = Math.hypot(roh.spieler[0] - am[0], roh.spieler[1] - am[1]) <= 8;
+                    const am = ort.ortPose ? aktStand : ort.spieler;
+                    const amMessort = !!am && Math.hypot(roh.spieler[0] - am[0], roh.spieler[1] - am[1]) <= 8;
                     // DER GESTELLTE ORT (die Orts-Wache, `BAND.ortGestellt`): was beim Zählen wirklich stand — der Ort der
                     // letzten Aufstellung, der Dorf-Zug, der Ort-Takt, die Gier —, nicht nur der Ort, den der Aufruf nennt.
                     const zustand = Object.assign(
@@ -2771,6 +2794,7 @@ hauptLauf(async () => {
             ziel: opt("--ziel"),
             wahl: opt("--wahl"),
             klasse: opt("--klasse"),
+            ort: opt("--ort"),
             spieler: argv.includes("--spieler"),
             abstand: argv.includes("--abstand"),
             gesicht: opt("--gesicht"),
@@ -3365,7 +3389,7 @@ hauptLauf(async () => {
             const n = path.basename(dateien[i]);
             if (!u.roh) fehler.push(`${n}: kein Rohes (eine Messung vor der Serien-Ratsche)`);
             if (u.echt !== true) fehler.push(`${n}: nicht die echte GPU (start --echt)`);
-            if (u.amMessort !== true) fehler.push(`${n}: nicht am Messort ${ort.id} ${ort.spieler.join(" ")}`);
+            if (u.amMessort !== true) fehler.push(`${n}: nicht am Messort ${ort.id} ${ort.ortPose ? "(Pose aus dem Plan)" : ort.spieler.join(" ")}`);
             // Die Orts-Wache: der Lauf stand im Zustand des Orts (Aufstellung, Dorf-Zug, Ort-Takt, Blick, Sicht).
             for (const f of BAND.ortGestellt(ort, u.zustand, sicht)) fehler.push(`${n}: ${f}`);
             if (!u.messung || u.messung.eingeschwungen !== true) fehler.push(`${n}: nicht eingeschwungen`);

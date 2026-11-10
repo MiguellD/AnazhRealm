@@ -737,6 +737,71 @@ class AnazhRealm_siedlung_ort {
         };
     }
 
+    // DIE POSE DES ORTS (w27-ort-pose): wo ein Auge die Siedlung `S` (`_bewohnerSiedlungen`) sieht — auf ihrem Platz, wo die
+    // Menge steht und keine Wand nah ist, der Blick die lange Achse des Platzes entlang auf den nächsten Bau des Plans (erst
+    // 20° neben der Achse, dann 45°, dann rundum; die Mitte des Baus ab 12 m), zu dem die Sichtlinie frei ist: kein anderer
+    // Grundriss (`obb`), Baum, Stand oder Brunnen quer in ihr. Aus dem Plan, den die Welt trägt — nie eine Zahl in der Spec (die
+    // Spec nennt die Regel, `ortPose`; bis hier stand die Probe an Koordinaten: das Dorf bestand die Abnahme ohne ein Haus im Bild).
+    // { x, z, gier, ziel: {x, z} } — ohne Siedlung, ohne Platz, ohne freien Bau bricht sie beim Namen (die Probe stünde
+    // sonst an einem Ort, den keiner gerechnet hat).
+    _ortPose(nahe) {
+        // die Siedlung ist die nächste binnen 200 m: die gegründete an ihrem Anker (die Ort-Wahl rückt ihn um Bruchteile
+        // eines mm), das Dorf des Zugs vor seinem Zell-Ort (`_siedlungsAnker`)
+        let [S, dMin] = [null, 200];
+        for (const q of (this._bewohnerSiedlungen || new Map()).values()) {
+            const d = Math.hypot(q.ox - nahe[0], q.oz - nahe[1]);
+            if (d < dMin) [S, dMin] = [q, d];
+        }
+        const p = S && S.plan;
+        const pz = p && p.platz;
+        if (!pz || !Number.isFinite(pz.cx))
+            throw new Error(
+                `_ortPose: ${S ? "die Siedlung trägt keinen Platz im Plan" : "keine Siedlung binnen 200 m"} um ${nahe.join(" ")}`
+            );
+        const [c, s] = [Math.cos(pz.phi || 0), Math.sin(pz.phi || 0)];
+        const M = { x: S.ox + pz.cx, z: S.oz + pz.cz };
+        const u = pz.ex >= pz.ez ? [c, -s] : [s, c];
+        const bau = (p.slots || [])
+            .filter((q) => q && q.obb)
+            .map((q) => ({ x: S.ox + q.obb.cx, z: S.oz + q.obb.cz, r: Math.min(q.obb.ex, q.obb.ez), obb: q.obb }));
+        // die Bäume, Stände und Brunnen des Plans (ein Marktstand 8 m vor dem Auge verdeckte das Gasthaus der Stadt) und DER
+        // BESTAND DER WELT um den Platz, soweit er Natur ist (`_istNatur`): der wilde Wurf steht in keinem Plan. Er ist erst
+        // gebaut, wenn der Spieler am Platz steht: die Probe fragt den Blick dort ein zweites Mal. Die Hindernisse sind Kreise
+        // im Grundriss (2,5 m) — was niedrig vor dem Fuß des Ziels steht, sieht erst die Abnahme
+        const stuecke = [...(p.trees || []), ...(p.staende || []), ...(p.brunnen || [])];
+        const wild = this._blockerUmPlatz(M.x, M.z, 80, []).filter((e) => this._istNatur(e));
+        const hinder = bau.concat(
+            stuecke.map((t) => ({ x: S.ox + t.x, z: S.oz + t.z, r: 2.5 })),
+            wild.map((e) => ({ x: e.position.x, z: e.position.z, r: 2.5 }))
+        );
+        let best = null;
+        // der Kegel um die Achse weitet sich, bis ein Bau frei steht (20° · 45° · rundum): am Dorf der Zelle −4,−4 liegt
+        // binnen 20° nur das Gasthaus, und seine Sichtlinie ist verstellt
+        for (const kegel of [0.94, 0.7, 0]) {
+            for (const b of best ? [] : bau) {
+                const [dx, dz] = [b.x - M.x, b.z - M.z];
+                const d = Math.hypot(dx, dz);
+                if (d < 12 || Math.abs(dx * u[0] + dz * u[1]) < kegel * d || (best && d >= best.d)) continue;
+                const quer = (h) => {
+                    const t = ((h.x - M.x) * dx + (h.z - M.z) * dz) / (d * d);
+                    return h !== b && t > 0 && t < 1 && Math.hypot(M.x + dx * t - h.x, M.z + dz * t - h.z) < h.r;
+                };
+                if (hinder.some(quer)) continue;
+                // DAS ZIEL IST DIE FASSADE: der Punkt, an dem die Sichtlinie in den Grundriss tritt — die Mitte liegt hinter
+                // der Wand, und die Abnahme nennt sie verdeckt (Mutant „Ziel = Mitte" auf pascal: dorf „verdeckt von bauSatz in
+                // 5.82 m", stadt „verdeckt von an Punkt 1 Gelände in 20.37 m")
+                const [bc, bs] = [Math.cos(b.obb.phi || 0), Math.sin(b.obb.phi || 0)];
+                const k = Math.min(b.obb.ex / Math.abs(dx * bc - dz * bs), b.obb.ez / Math.abs(dx * bs + dz * bc));
+                best = { d, ziel: { x: b.x - dx * k, z: b.z - dz * k } };
+            }
+        }
+        if (!best)
+            throw new Error(
+                `_ortPose: kein Bau mit freier Sichtlinie vom Platz ${M.x.toFixed(1)} ${M.z.toFixed(1)} (${bau.length} Bauten, ${hinder.length - bau.length} Hindernisse)`
+            );
+        return { x: M.x, z: M.z, gier: this._blickGierZu(best.ziel.x - M.x, best.ziel.z - M.z), ziel: best.ziel };
+    }
+
     // DAS DORF VOR DIR (Leben-Schau 07.10.: „dorf 7 18" umringte den Spieler — die Mitte 16 m bei cos +0,56, die drei
     // nächsten Häuser HINTER ihm, cos −1,00 / −0,48 / −0,12): der Anker kam aus der Klemme `_structureSpawnPos` mit dem
     // geschätzten Fußabdruck „haus_basis × 3", der Plan des Studios reichte weiter. Jetzt misst der Akt den Plan selbst

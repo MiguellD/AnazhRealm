@@ -247,12 +247,13 @@ jobs:
                       grep -h "\[linse-gpu\]" "$wl"
                       node scripts/werkbank.cjs umstellen --ort "$1" --port $W > "$OUT/umstellen-$1.json" || rc=1
                       grep -E '"(ort|sicht|spieler|fehler)"' "$OUT/umstellen-$1.json"
-                      d=$(node -e 'const o = require("./spec/profiband/haushalt.json").messorte.find((x) => x.id === process.argv[1]); console.log(Math.hypot(o.blick[0] - o.spieler[0], o.blick[1] - o.spieler[1]).toFixed(1))' "$1")
+                      # der Blick des Orts aus `umstellen` (ein Ort mit Pose aus dem Plan, `ortPose`, trägt ihn nur dort), sonst aus der Spec
+                      d=$(node -e 'const u = require(process.argv[2]), o = require("./spec/profiband/haushalt.json").messorte.find((x) => x.id === process.argv[1]); const [s, b] = [u.spieler || o.spieler, u.blick || o.blick]; console.log(Math.hypot(b[0] - s[0], b[1] - s[1]).toFixed(1))' "$1" "$(cygpath -w "$OUT/umstellen-$1.json")")
                       kam=$(node scripts/werkbank.cjs eval "for (let i = 0; i < 30; i++) r._loopCamera(performance.now() + i * 100); const c = r.state.camera; const v = c.getWorldDirection(new T.Vector3()).multiplyScalar($d).add(c.position); return [c.position.x, c.position.y, c.position.z, v.x, v.y, v.z].map((x) => x.toFixed(2)).join(' ');" --port $W | sed -n 's/.*"ergebnis": "\(.*\)".*/\1/p')
                       echo "Kamera des Spiels → Blick ($d m): ${kam:-ungelesen}"
                       [ -n "$kam" ] || rc=1
                       if [ $rc = 0 ]; then
-                          node scripts/werkbank.cjs bild $kam --wahl 0 --w 960 --h 540 --datei "$3" --port $W ${2:+--uhr "$2"} > "$OUT/bild-$1.json" || rc=1
+                          node scripts/werkbank.cjs bild $kam --wahl 0 --w 960 --h 540 --datei "$3" --port $W ${2:+--uhr "$2"} --ort "$1" > "$OUT/bild-$1.json" || rc=1
                           grep -E '"(abnahme|fehler|gesamtMs)"' "$OUT/bild-$1.json"
                           grep -q '"abnahme": "ABNAHME GRÜN' "$OUT/bild-$1.json" || rc=1
                       fi
