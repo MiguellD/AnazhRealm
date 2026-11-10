@@ -638,7 +638,7 @@ async function messeOrt(page, name, ort, stubs) {
                 um.sattel = st.player.mountedArch != null;
                 // aus dem Sattel: die Stimme der Fahrt (klang:FAHRT, ihre Quellen trägt sie selbst) verklingt im nächsten Takt
                 if (sz.e) (r.dismountArchitecture(), r.removeArchitecture(sz.e, { still: true }), W.takt());
-                const med = (a) => +(rang(a.sort((x, y) => x - y)) || 0).toFixed(2);
+                const med = (a) => +(rang(a.sort(aufsteigend)) || 0).toFixed(2);
                 const laufend = W.laufend();
                 const zensus = W.zensus();
                 if (zensus) zensus.leiber.flug = { mps: med(weg), hoeheM: med(hoch) };

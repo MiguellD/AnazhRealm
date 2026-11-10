@@ -262,16 +262,16 @@ function belegungAuswerten(ev, { bildMs = 1000 / 60, schwelle = 1 } = {}) {
         }
         let nt = 0;
         for (; ti < takte.length && takte[ti] < bilder[i + 1]; ti++) nt += takte[ti] >= bilder[i];
-        const ms = z.map((v) => v / 100), belegt = ms.reduce((a, b) => a + b, 0) - ms[0];
+        const ms = z.map((v) => v / 100), belegt = ms.reduce(addiere, 0) - ms[0];
         // die Pflicht je Klasse: der Takt-Rahmen über seinem Boden × Takte des Bilds, der Zeitgeber nur über dem Bild-Fenster
         const pf = ms.map((v, k) => (k === 2 ? Math.max(0, v - nt * BROWSER_BODEN_MS) : k && k < TAKT && k !== GS && (k !== ZG || belegt > bildMs) ? v : 0));
-        jeBild.push({ ms, belegt, pf, pflicht: pf.reduce((a, b) => a + b, 0), nt });
+        jeBild.push({ ms, belegt, pf, pflicht: pf.reduce(addiere, 0), nt });
     }
     const q = (a, f) => {
         const s = [...a].sort(aufsteigend);
         return s.length ? +rang(s, f).toFixed(2) : null;
     };
-    const zahl = (a) => ({ p50: q(a, 0.5), p95: q(a, 0.95), mittel: q([a.reduce((a, b) => a + b, 0) / (a.length || 1)], 0) });
+    const zahl = (a) => ({ p50: q(a, 0.5), p95: q(a, 0.95), mittel: q([a.reduce(addiere, 0) / (a.length || 1)], 0) });
     const jeKlasse = Object.fromEntries(KL.slice(1).map((k, i) => [k, zahl(jeBild.map((b) => b.ms[i + 1]))]));
     const pflicht = zahl(jeBild.map((b) => b.pflicht)), nb = Math.max(1, jeBild.length);
     const anteil = KL.map((k, i) => [k, zahl(jeBild.map((b) => b.pf[i]))]).filter(([, z]) => z.mittel >= 0.05);

@@ -645,7 +645,7 @@ function sichtPhase(frames, ab) {
         const x = reihe(g);
         if (!x.length) return { mittel: 0, median: 0, max: 0 };
         return {
-            mittel: +(x.reduce((a, b) => a + b, 0) / x.length).toFixed(1),
+            mittel: +(x.reduce(addiere, 0) / x.length).toFixed(1),
             median: rang(x),
             max: x[x.length - 1],
         };

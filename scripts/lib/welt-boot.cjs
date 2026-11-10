@@ -522,7 +522,7 @@ function fadenScope(quellen) {
     sb.THREE = ENGINE_THREE();
     require("vm").createContext(sb);
     for (const f of quellen)
-        require("vm").runInContext((QUELL_TEXT[f] ||= fs.readFileSync(path.join(ROOT, f), "utf8")), sb, {
+        require("vm").runInContext((QUELL_TEXT[f] ||= ausDatei(f)), sb, {
             filename: f,
         });
     return sb;
@@ -2027,7 +2027,7 @@ async function selbsttest() {
         .map((f) => f.replace(/\\/g, "/"))
         .filter((f) => /\.cjs$/.test(f) && f !== "lib/welt-boot.cjs")
         .sort()
-        .map((f) => [f, ohneKommentare(fs.readFileSync(path.join(ROOT, "scripts", f), "utf8"))]);
+        .map((f) => [f, ohneKommentare(ausDatei("scripts/" + f))]);
     const zwillinge = code.filter(([f, c]) => f !== "werkbank.cjs" && /\.on\("pageerror"/.test(c)).map(([f]) => f);
     // DIE NAMENS-WAND: die Namen der Seiten-Werkzeuge (`CODE_OF_SEITE`) gehören welt-boot — setzt ein Skript einen selbst, nimmt es
     // der Seite das Werkzeug oder liest das Werkzeug als seinen Schalter (diag-mp-sync hielt die Pumpe an `window.__ruht`, die
