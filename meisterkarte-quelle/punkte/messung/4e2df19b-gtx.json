@@ -1,7 +1,7 @@
 {
  "sha": "4e2df19b5c5103b093818b62b5a84ababf85b493",
  "geraet": "gtx",
- "zeit": "2026-11-10T22:05:58.132Z",
+ "zeit": "2026-11-10T22:11:10.087Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "affekt.K4#2": {
@@ -429,22 +429,86 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "ferne.K2#2": {
+   "gruen": true,
+   "zahl": "K2-2 GRUEN · Kanten-Linie Hügel 0/0/0.47/0.47°, Gipfel 0/0/0/0.47° (< 1°) · Boden 8/12 Befehle, 43.5k/64k Dreiecke · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.02,
+   "gpu": "nvidia/pascal",
+   "s": 61.1,
+   "fremd": {
+    "s": 63.3,
+    "takte": 29,
+    "fremdS": 34.44,
+    "kerne": 0.544,
+    "fensterKerne": 0.669,
+    "namen": [
+     [
+      "claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      16
+     ],
+     [
+      "claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      8.5
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      2.28
+     ]
+    ],
+    "dienerS": 29.42,
+    "diener": [
+     [
+      "dwm.exe",
+      12.3
+     ],
+     [
+      "System",
+      10.66
+     ]
+    ],
+    "geraetS": 19.86,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      9.5
+     ],
+     [
+      "svchost.exe",
+      9.11
+     ],
+     [
+      "SearchIndexer.exe",
+      0.55
+     ]
+    ],
+    "eigenS": 173.02,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon"
+   },
+   "zeit": "2026-11-10T22:11:10.087Z",
+   "abdruck": "0346d90df351",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-10T22:05:22.700Z",
+  "start": "2026-11-10T22:10:35.929Z",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 6.4,
+  "bootS": 7.3,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
     "ort": "genesis",
-    "vor": "ferne.K1#2",
-    "s": 27.7,
-    "takte": 574,
+    "vor": "ferne.K2#2",
+    "s": 25.7,
+    "takte": 588,
     "chunks": 81,
     "nach": null
    }
@@ -463,18 +527,18 @@
    "verloren": 0,
    "ortImDeckel": [
     {
-     "probe": "ferne.K1#2",
+     "probe": "ferne.K2#2",
      "m": 3592,
      "ringVor": 4,
      "ringMin": -1
     }
    ],
-   "zapfen": 91,
+   "zapfen": 88,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 98.1,
-  "minuten": 1.69
+  "fahrtS": 95.3,
+  "minuten": 1.64
  },
  "ungemessen": {
   "ankunft.K1#1": {
