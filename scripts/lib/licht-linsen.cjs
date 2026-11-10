@@ -2201,8 +2201,8 @@ function luftTiefe(o) {
             try {
                 const u8 = (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
                 // DIAG (w27-ferne-ton-5, fällt vor der Abgabe): je Schuss β · Belichtung · Sonnen-Stufe · Schlüssel der Himmels-Sicht · Tafel · Leine
-                const AL = st.atmoLut || {};
-                spur.push([b, +st.renderer.toneMappingExposure.toFixed(4), st._sonne && st._sonne.winkel, AL.himmelSchluessel, AL.tafel ? 1 : 0, r._gpuLeineStraff() ? 1 : 0].join("/"));
+                const K = st.horizontKarte || { U: { aktiv: {} } };
+                spur.push([b, +st.renderer.toneMappingExposure.toFixed(4), K.bereit ? 1 : 0, K.malZahl, K.U.aktiv.value, K.gebrochen ? 1 : 0].join("/"));
                 return u8;
             } finally {
                 dichte = null;
@@ -2269,7 +2269,16 @@ function luftTiefe(o) {
             const D = await window.__spiegelDaten();
             const L0 = await schuss(0, k);
             const S = await schuss(1, k);
-            D.iv = new T.Matrix4().fromArray(D.ivp);
+            // DIAG (fällt vor der Abgabe): derselbe Schuss β 1 mit ruhender Horizont-Karte (Sicht 1) — das Mittel der unteren Hälfte je Kanal
+            if (!spur.h) {
+                spur.h = true;
+                const ht = r._horizontKarteTakt;
+                r._horizontKarteTakt = function () { const K = ht.apply(this, arguments); if (K) K.U.aktiv.value = 0; return K; }; // prettier-ignore
+                const S2 = await schuss(1, k);
+                delete r._horizontKarteTakt;
+                const mit = (u8) => { const m = [0, 0, 0]; let n = 0; for (let yy = H >> 1; yy < H; yy += 4) for (let xx = 4; xx < W; xx += 8) { const c = roh(u8, (yy * W + xx) * 4); if (c) (c.forEach((v, i) => (m[i] += v)), n++); } return m.map((v) => +(v / Math.max(1, n)).toFixed(4)).join(":"); }; // prettier-ignore
+                spur.push("H " + mit(S) + " | ohne " + mit(S2));
+            }
             const bd = R.baenderM.map((d) => ({ d, q: [[], [], []], dk: [], dh: [] }));
             const gez = [];
             const fern = {};
