@@ -507,27 +507,19 @@ async function strom(page, urform) {
     }, urform);
 }
 
-// TEIL E — DIE SPALTE EINMAL (w27-ankunft-faden): der Kontext einer Spalte (`_terrainColumnContextIn`) rechnet je Stand EINMAL
-// und trägt das Gesetz des Kerns (`dichteSpalte` samt Keller) Feld für Feld; ein neuer Stand (der Wasserspiegel) rechnet neu.
-// `vergisst` (Selbsttest): das Gedächtnis vergisst vor jedem Ruf — ROT beim Namen.
-const SPALTE_SOLL = "neu 1 · 0 · 1 · Gesetz gleich";
-async function spalteEinmal(page, vergisst) {
-    return page.evaluate((vergisst) => {
-        const [G, p, wl] = [globalThis.__gelaendeCore, st.playerMesh.position, st.waterLevel];
-        let gleich = true;
-        const ruf = (x = p.x + 0.37, z = p.z - 1.13) => {
-            if (vergisst) r._spalten.gen++;
-            const [n, c] = [r._spalten.neu, r._terrainColumnContextIn(x, z, {})];
-            const g = Object.assign(G.dichteSpalte(r._gelaende(), x, z, {}), { keller: r._kellerLage(x, z) });
-            for (const k of Object.keys(g)) gleich &&= Object.is(c[k], g[k]) || JSON.stringify(c[k]) === JSON.stringify(g[k]);
-            return r._spalten.neu - n;
-        };
+// TEIL E — DIE SPALTE EINMAL (w27-ankunft-faden): `_terrainColumnContextIn` rechnet je Stand EINMAL (neu je Ruf: 1, 0) und trägt
+// das Gesetz des Kerns (`dichteSpalte` samt Keller, sonst NaN); ein neuer Stand (der Wasserspiegel) rechnet neu. `vergisst`
+// (Selbsttest): das Gedächtnis vergisst vor jedem Ruf — ROT beim Namen.
+const SPALTE_SOLL = "1,0,1";
+const spalteEinmal = (page, vergisst) =>
+    page.evaluate((vergisst, wl = st.waterLevel, x = st.playerMesh.position.x + 0.37, z = st.playerMesh.position.z) => {
+        const ruf = (S = r._spalten, n = S.neu, c = (vergisst && S.gen++, r._terrainColumnContextIn(x, z, {}))) =>
+            JSON.stringify({ ...__gelaendeCore.dichteSpalte(r._gelaende(), x, z, {}), keller: r._kellerLage(x, z) }) === JSON.stringify(c) ? S.neu - n : NaN; // prettier-ignore
         st.waterLevel = wl + 0.25;
         const neu = [ruf(), ruf()];
         st.waterLevel = wl;
-        return `neu ${neu.concat(ruf()).join(" · ")} · Gesetz ${gleich ? "gleich" : "VERSCHIEDEN"}`;
+        return neu.concat(ruf()).join();
     }, vergisst);
-}
 
 // Der Selbsttest: der Voxel-Faden lädt den Kern mit der Höhe + 1 cm — die Probe MUSS ihn bei Ort, Gitter, Ferne und Wald nennen.
 async function probeVerfaelscht(page, url) {
@@ -2177,8 +2169,8 @@ hauptLauf(async () => {
             if (SELBSTTEST)
                 console.log(`  SELBSTTEST Strom (die Urform, Soll ROT): ${(urform = await strom(page, true))}`);
             const sp = await spalteEinmal(page, false);
-            console.log(`    Die Spalte einmal (Teil E, \`_terrainColumnContextIn\`): ${sp}`);
-            if (sp !== SPALTE_SOLL) (console.log(`  ⛔ SPALTE: \`_terrainColumnContextIn\` — Soll ${SPALTE_SOLL}`), (rot = true));
+            console.log(`    Die Spalte einmal (Teil E, \`_terrainColumnContextIn\`, neu je Ruf): ${sp} (Soll ${SPALTE_SOLL})`);
+            rot ||= sp !== SPALTE_SOLL;
             if (SELBSTTEST) console.log(`  SELBSTTEST Spalte (vergisst, Soll ROT): ${(vergisst = await spalteEinmal(page, true))}`);
         }
         const rep = await probe(page, weltArg, !!ABDRUCK);
@@ -2283,7 +2275,7 @@ hauptLauf(async () => {
             selbst.wuchs > 0 &&
             urform &&
             urform.endsWith("Reihe verzögert") &&
-            vergisst.startsWith("neu 1 · 1 · 1") &&
+            vergisst === "1,1,1" &&
             selbst.namen === "FERN-RING";
         console.log(`  SELBSTTEST Stoff des Walds: ${selbst ? selbst.wald : "?"} abweichende Zellen · Wuchs ${selbst?.wuchs} (Soll > 0)`);
         console.log(`  SELBSTTEST Höhen der Ferne: ${selbst ? selbst.ferne : "?"} abweichende Punkte (Soll > 0)`);

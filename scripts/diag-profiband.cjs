@@ -296,15 +296,13 @@ function ferneWand(A) {
     let [deckung, schirm] = [1, 0];
     for (let j = R * T.je; j < (F.bis - F.saum) * T.je; j++)
         [deckung, schirm] = [j > 40 * T.je ? deckung : Math.min(deckung, T.anteil[j] * T.streck[j]), Math.max(schirm, T.anteil[j] * (j / T.je / F.fuss) ** 3)];
-    const rest = new Set();
-    for (let k = 0; k < 64; k++) if (A._wieseOrdnung((k & 7) * 0.72, (k >> 3) * 0.72) < 0.25) rest.add(k & 9);
-    // DER RANG DER ZELLE (w27-ankunft-faden): `_ortRang` ist die untere Schranke der Ordnung jedes Punkts seiner Zelle (der Jitter
-    // ±0,34 m) — über ihm verwirft die Ferne die Zelle vor jedem Wurf (`_nahWieseKachelBueschel`); `brueche` zählt, wo nicht
-    const W = A._wortAlgebra();
+    // DER RANG DER ZELLE (w27-ankunft-faden): `_ortRang` ist die untere Schranke der Ordnung jedes Punkts seiner Zelle — über ihm
+    // verwirft die Ferne die Zelle vor jedem Wurf (`_nahWieseKachelBueschel`); `brueche` zählt, wo nicht
+    const [rest, W] = [new Set(), A._wortAlgebra()];
     let brueche = 0;
-    for (let k = 0; k < 512; k++) {
-        const [x, z] = [(k & 15) * 0.72 + ((k * 0.37) % 0.68) - 0.34, (k >> 4) * 0.72 - ((k * 0.61) % 0.68) + 0.34];
-        const [o, u] = [A._wieseOrdnung(x, z), W.anteil(A._ortRang(W, x, z, A._wieseSchritt()))];
+    for (let k = 0, o, u; k < 64; k++) {
+        [o, u] = [A._wieseOrdnung((k & 7) * 0.72, (k >> 3) * 0.72), W.anteil(A._ortRang(W, (k & 7) * 0.72, (k >> 3) * 0.72, A._wieseSchritt()))];
+        if (o < 0.25) rest.add(k & 9);
         brueche += !(u <= o && o < u + 1 / 256);
     }
     const zeile = `Deckung bis 40 m ${deckung.toFixed(2)} · Schirm ${schirm.toFixed(2)}× · Restklassen ${rest.size} · Rang-Brüche ${brueche}`;
