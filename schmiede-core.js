@@ -2854,6 +2854,8 @@
     //     und `metall` FOLGT aus der Bindung: freie Elektronen spiegeln (Metall, Karbid, gelöstes Metall 1, sonst 0). null: die Spalte gilt dem Stoff nicht (eine Flüssigkeit streckt sich nicht, ein
     //     opaker Stoff bricht kein Bild) oder die Dichte ist der Eintrag eines anderen Gesetzbuchs (`rhoVon`: der Wirt
     //     verbindet sie — das Wasser des Fahr-Kerns, das Gewebe der Leiber).
+    //   Die Linse: gate:gegenstand-stoff (`--gesetz`) verstellt je Stoff eine Spalte und nennt jeden Leser des Wirts, der ihr
+    //     nicht folgt, beim Namen (Licht · Bruch · Klang; die Mutante im selben Lauf).
     // prettier-ignore
     var STOFF_GESETZ = (function () {
         var ELEMENTE = {
