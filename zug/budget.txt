@@ -258,3 +258,4 @@
 2026-11-10T16:24 karte=224 (gebucht am 2d5f4146, buche.sh)
 2026-11-10T17:55 karte=212 (gebucht am 2d5f4146, buche.sh)
 2026-11-10T18:08 karte=212 (gebucht am 2d5f4146, buche.sh)
+2026-11-10T18:50 karte=212 (gebucht am 5b9c6427, buche.sh)
