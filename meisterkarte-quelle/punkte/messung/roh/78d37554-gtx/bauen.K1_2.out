@@ -257,15 +257,15 @@ H.fahre(async function probeBildWeg(H) {
     offen = false;
     Object.assign(j, await L.bauWeg(page, "ende"));
     return j;
-}); 7804 C:\Users\micha\Desktop\AnazhRealm-OMEN\n0611-pm\meisterkarte-quelle\punkte\messung\roh\78d37554-gtx\bauen.K1_2.json 90
-  [bild] werkstatt · schöpfer · Eiche · Ego kalt 4638 ms, Bau-Hash = L0 · eingabe 2053 · steht 103 · l0 2437 · bild 26 · gpu 19 
-  [bild] rezeptbuch · frieden mit Material · Haus · Third kalt 5865 ms, Bau-Hash ≠ L0 · eingabe 2473 · steht 154 · l0 2804 · bild 416 · gpu 18 
-  [bild] hotbar · pfad · GT · Ego kalt 3654 ms, Bau-Hash = L0 · eingabe 376 · steht 116 · l0 0 · bild 3144 · gpu 18 
-  [bild] werkstatt · frieden mit Material · Teil · Third kalt 2602 ms, Bau-Hash = L0 · eingabe 734 · steht 163 · l0 0 · bild 1690 · gpu 15 
-  [bild] rezeptbuch · pfad · Eiche · Third warm 489 ms, Bau-Hash = L0 · eingabe 374 · steht 71 · l0 0 · bild 9 · gpu 35 
-  [bild] hotbar · schöpfer · Haus · Ego warm 1134 ms, Bau-Hash = L0 · eingabe 126 · steht 51 · l0 0 · bild 934 · gpu 23 
-  [bild] werkstatt · pfad · GT · Ego warm 879 ms, Bau-Hash = L0 · eingabe 650 · steht 148 · l0 0 · bild 18 · gpu 63 
-  [bild] hotbar · frieden mit Material · Teil · Third warm 407 ms, Bau-Hash = L0 · eingabe 227 · steht 106 · l0 0 · bild 36 · gpu 38 
+}); 7804 C:\Users\micha\Desktop\AnazhRealm-OMEN\n0611-pm\meisterkarte-quelle\punkte\messung\roh\78d37554-gtx\bauen.K1_2.json 1768
+  [bild] werkstatt · schöpfer · Eiche · Ego kalt 4489 ms, Bau-Hash = L0 · eingabe 1981 · steht 127 · l0 2327 · bild 11 · gpu 43 
+  [bild] rezeptbuch · frieden mit Material · Haus · Third kalt 5608 ms, Bau-Hash ≠ L0 · eingabe 2307 · steht 165 · l0 2891 · bild 220 · gpu 25 
+  [bild] hotbar · pfad · GT · Ego kalt 3544 ms, Bau-Hash = L0 · eingabe 446 · steht 107 · l0 0 · bild 2974 · gpu 17 
+  [bild] werkstatt · frieden mit Material · Teil · Third kalt 2512 ms, Bau-Hash = L0 · eingabe 710 · steht 186 · l0 1 · bild 1587 · gpu 28 
+  [bild] rezeptbuch · pfad · Eiche · Third warm 601 ms, Bau-Hash = L0 · eingabe 476 · steht 92 · l0 0 · bild 10 · gpu 23 
+  [bild] hotbar · schöpfer · Haus · Ego warm 1231 ms, Bau-Hash = L0 · eingabe 138 · steht 50 · l0 0 · bild 1023 · gpu 20 
+  [bild] werkstatt · pfad · GT · Ego warm 1481 ms, Bau-Hash = L0 · eingabe 1246 · steht 156 · l0 0 · bild 20 · gpu 59 
+  [bild] hotbar · frieden mit Material · Teil · Third warm 730 ms, Bau-Hash = L0 · eingabe 374 · steht 230 · l0 1 · bild 36 · gpu 89 
 
 --- gpu-zeuge ---
 [linse-gpu] nvidia/pascal
