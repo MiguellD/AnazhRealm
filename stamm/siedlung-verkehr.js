@@ -503,9 +503,10 @@ class AnazhRealm_siedlung_verkehr {
         const VG = globalThis.__fachwerkCore.VERKEHR_GESETZ;
         const sp = Math.hypot(vx, vz);
         const [nx, nz] = [x + (vx / sp) * V.querSchrittM, z + (vz / sp) * V.querSchrittM];
-        // der billige Filter zuerst (Lehre 25): wer nicht an die Fahrbahn tritt, fragt keinen Wagen; wer auf ihr ist, quert schon
-        if (!(sp > 0) || !this._verkehrAufSpur(S, nx, nz) || this._verkehrAufSpur(S, x, z, 0)) return false;
-        let [traf, drin, tritt] = [false, false, this._verkehrAufSpur(S, nx, nz, 0)];
+        // der billige Filter zuerst (Lehre 25): wer nicht an die Fahrbahn tritt, fragt keinen Wagen; wer von außen auf sie tritt,
+        // fragt seine ganze Querung, wer auf ihr geht, jede Bahn, in die er tritt (die Kreuzung: Fahrbahn von Rand zu Rand)
+        if (!(sp > 0) || !this._verkehrAufSpur(S, nx, nz)) return false;
+        let [traf, drin, tritt] = [false, false, !this._verkehrAufSpur(S, x, z, 0) && this._verkehrAufSpur(S, nx, nz, 0)];
         for (const W of S.verkehr.wagen) {
             const e = W.entry;
             const F = W.F;
