@@ -1,0 +1,183 @@
+{
+ "sha": "5b9c6427d7e3db0712e20d104b012a83f8ffd68c",
+ "geraet": "gtx",
+ "zeit": "2026-11-10T18:50:56.473Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "ankunft.K1#1": {
+   "gruen": false,
+   "zahl": "t(Kontrolle) kalt 13.86 s von außen (Eigenmeldung 12.75 s), Bild 0.03 % Lücke bis zur Ruhe, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.19,
+   "grund": "ROT: t(Kontrolle) kalt 13.86 s von außen (Eigenmeldung 12.75 s), Bild 0.03 % Lücke bis zur Ruhe, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht · [linse-gpu] nvidia/pascal · ROT trotz Fremd-Last: chrome.exe --type=gpu-process --no-sandbox --disable-breakpad --headless=new --use-angle=s 68,5 CPU-s · chrome.exe --type=renderer --noerrdialogs --user-data-dir=puppeteer_dev_chrome_profile-v7m 55,6 CPU-s · chrome.exe --type=renderer --noerrdialogs --user-data-dir=puppeteer_dev_chrome_profile-E6n 41,9 CPU-s — 3,36 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon; Σ fremd 214,5 CPU-s in 73,9 s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 27,7 CPU-s · svchost.exe 10,7 CPU-s · SearchIndexer.exe 3,6 CPU-s) — geeicht ÷ 1,189 (1 + 5,6 % je fremdem Kern × 3,36): t(Kontrolle) kalt s 13,86 → geeicht 11,65 (Soll ≤ 10)",
+   "mass": [
+    {
+     "wort": "t(Kontrolle) kalt s",
+     "wert": 13.858,
+     "soll": 10
+    }
+   ],
+   "gpu": "nvidia/pascal",
+   "s": 71.3,
+   "fremd": {
+    "s": 73.9,
+    "takte": 30,
+    "fremdS": 214.5,
+    "kerne": 2.902,
+    "fensterKerne": 3.36,
+    "namen": [
+     [
+      "chrome.exe --type=gpu-process --no-sandbox --disable-breakpad --headless=new --use-angle=s",
+      68.48
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=puppeteer_dev_chrome_profile-v7m",
+      55.56
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=puppeteer_dev_chrome_profile-E6n",
+      41.86
+     ]
+    ],
+    "dienerS": 43.03,
+    "diener": [
+     [
+      "dwm.exe",
+      18.89
+     ],
+     [
+      "System",
+      16.84
+     ]
+    ],
+    "geraetS": 43.03,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      27.66
+     ],
+     [
+      "svchost.exe",
+      10.67
+     ],
+     [
+      "SearchIndexer.exe",
+      3.63
+     ]
+    ],
+    "eigenS": 424.5,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon"
+   },
+   "zeit": "2026-11-10T18:42:51.091Z",
+   "abdruck": "4e36edaf41f7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "affekt.K4#2": {
+   "gruen": false,
+   "zahl": "spieler → — (0 ms) · nexus → — (0 ms) · ROT spieler: ohne Modell (die KI der Sitzung ist aus); nexus: ohne Modell (die KI der Sitzung ist aus)",
+   "exit": 0,
+   "minuten": 0,
+   "grund": "ROT: spieler → — (0 ms) · nexus → — (0 ms) · ROT spieler: ohne Modell (die KI der Sitzung ist aus); nexus: ohne Modell (die KI der Sitzung ist aus)",
+   "gpu": "nvidia/pascal",
+   "s": 0.1,
+   "fremd": {
+    "s": 2.2,
+    "takte": 1,
+    "fremdS": 1.22,
+    "kerne": 0.563,
+    "fensterKerne": 0.563,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      0.45
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      0.31
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      0.25
+     ]
+    ],
+    "dienerS": 0.61,
+    "diener": [
+     [
+      "dwm.exe",
+      0.31
+     ],
+     [
+      "System",
+      0.19
+     ]
+    ],
+    "geraetS": 0.36,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      0.17
+     ],
+     [
+      "svchost.exe",
+      0.11
+     ],
+     [
+      "OmenCommandCenterBackground.exe",
+      0.03
+     ]
+    ],
+    "eigenS": 1.97,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon"
+   },
+   "zeit": "2026-11-10T18:50:56.473Z",
+   "abdruck": "cf772722618e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-10T18:50:25.954Z",
+  "port": 7804,
+  "warten": 0.01,
+  "bootS": 6.9,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": null,
+    "vor": "affekt.K4#2",
+    "s": 22.2,
+    "takte": 730,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 25,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 30.3,
+  "minuten": 0.59
+ }
+}
