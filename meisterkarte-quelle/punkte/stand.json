@@ -979,7 +979,7 @@
   },
   "haar.K2": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: haar.K2#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +14) — zuletzt an b269f840: Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: BILD third 0) · haar.K2#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +14)",
+   "beleg": "Maschine: 0 — offen: haar.K2#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +14) — zuletzt an b269f840: Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: BILD third 0) · haar.K2#1 gtx: ROT: EINE Pose: Leib Δ 0 · Haar-Feder Δ 0 m über 3 Lesungen · arm ROT strich 0.3157 Soll [0.3554,0.533] — strich 0.3157 < 0.3554 · albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:c69a8110a4ddbf20) · albedo — [0.01; 0.3] · third ROT strich 0.3498 Soll [0.3554,0.533] — strich 0.3498 < 0.3554 · albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:c69a8110a4ddbf20) · albedo — [0.01; 0.3] an 4e2df19b",
    "stationen": [
     {
      "id": "haar.K2#1",
@@ -994,10 +994,9 @@
      "id": "haar.K2#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +14)",
-     "ungemessen": true
+     "zahl": "EINE Pose: Leib Δ 0 · Haar-Feder Δ 0 m über 3 Lesungen · arm ROT strich 0.3157 Soll [0.3554,0.533] — strich 0.3157 < 0.3554 · albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:c69a8110a4ddbf20) · albedo — [0.01; 0.3] · third ROT strich 0.3498 Soll [0.3554,0.533] — strich 0.3498 < 0.3554 · albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:c69a8110a4ddbf20) · albedo — [0.01; 0.3]",
+     "sha": "4e2df19b5c5103b093818b62b5a84ababf85b493",
+     "grund": "ROT: EINE Pose: Leib Δ 0 · Haar-Feder Δ 0 m über 3 Lesungen · arm ROT strich 0.3157 Soll [0.3554,0.533] — strich 0.3157 < 0.3554 · albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:c69a8110a4ddbf20) · albedo — [0.01; 0.3] · third ROT strich 0.3498 Soll [0.3554,0.533] — strich 0.3498 < 0.3554 · albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:c69a8110a4ddbf20) · albedo — [0.01; 0.3]"
     }
    ]
   },
@@ -4483,7 +4482,7 @@
  },
  "rueckfall": [],
  "kopfVoll": "4e2df19b5c5103b093818b62b5a84ababf85b493",
- "zeit": "2026-11-10T23:18:15.135Z",
+ "zeit": "2026-11-10T23:49:59.347Z",
  "vorher": "4e2df19b",
  "pflicht": {
   "dokument": "docs/PFLICHT-OFFEN.md",
@@ -4533,7 +4532,7 @@
      {
       "station": "haar.K2#1",
       "geraet": "gtx",
-      "zeile": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +14)"
+      "zeile": "ROT: EINE Pose: Leib Δ 0 · Haar-Feder Δ 0 m über 3 Lesungen · arm ROT strich 0.3157 Soll [0.3554,0.533] — strich 0.3157 < 0.3554 · albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:c69a8110a4ddbf20) · albedo —"
      }
     ],
     "ohneRichter": [

@@ -7,7 +7,7 @@
   "max": 330,
   "maschine": {
     "kopf": "4e2df19b",
-    "zeit": "2026-11-10T23:18:15.135Z",
+    "zeit": "2026-11-10T23:49:59.347Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -221,7 +221,7 @@
           {
             "station": "haar.K2#1",
             "geraet": "gtx",
-            "zeile": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +14)"
+            "zeile": "ROT: EINE Pose: Leib Δ 0 · Haar-Feder Δ 0 m über 3 Lesungen · arm ROT strich 0.3157 Soll [0.3554,0.533] — strich 0.3157 < 0.3554 · albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:c69a8110a4ddbf20) · albedo —"
           }
         ],
         "ohneRichter": [
@@ -1649,7 +1649,7 @@
           "punkte": 0,
           "staffel": "1 = Klasse haar (Strähnen-Kohärenz gegen REF, Albedo-Band) an einem Gerät · 2 = 50 Seeds ohne zwei gleiche Frisuren, beide Geräte",
           "messung": "werkbank bild --klasse haar auf Armlänge und im Third; Gestalt-Distanz je Seed-Paar.",
-          "beleg": "Maschine: 0 — offen: haar.K2#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +14) — zuletzt an b269f840: Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: BILD third 0) · haar.K2#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +14)",
+          "beleg": "Maschine: 0 — offen: haar.K2#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +14) — zuletzt an b269f840: Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: BILD third 0) · haar.K2#1 gtx: ROT: EINE Pose: Leib Δ 0 · Haar-Feder Δ 0 m über 3 Lesungen · arm ROT strich 0.3157 Soll [0.3554,0.533] — strich 0.3157 < 0.3554 · albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:c69a8110a4ddbf20) · albedo — [0.01; 0.3] · third ROT strich 0.3498 Soll [0.3554,0.533] — strich 0.3498 < 0.3554 · albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:c69a8110a4ddbf20) · albedo — [0.01; 0.3] an 4e2df19b",
           "schlupfloch": "Ein Haar-Helm je Rolle bestünde die Klasse: 50 Seeds ohne zwei gleiche verlangen das Genom.",
           "maschine": true
         },
