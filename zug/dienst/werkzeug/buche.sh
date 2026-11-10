@@ -17,8 +17,13 @@ if [ "${1:-}" = "--warte" ]; then
     done
     say "erledigt: $(git -C "$KO" show FETCH_HEAD:zug/erledigt.txt | grep "^$ID " | tail -1 | cut -c1-160)"
 fi
-git -C "$KO" fetch -q origin +refs/heads/koordination:refs/remotes/origin/koordination +refs/heads/punkte-maschine:refs/remotes/origin/punkte-maschine &&
-    git -C "$KO" merge -q --no-edit origin/koordination origin/punkte-maschine || { say "Baum koordination merget nicht"; exit 1; }
+git -C "$KO" fetch -q origin +refs/heads/koordination:refs/remotes/origin/koordination +refs/heads/punkte-maschine:refs/remotes/origin/punkte-maschine || { say "ROT: fetch scheitert"; exit 1; }
+# ZWEI Schritte statt Oktopus (10.11. 22:28: die OMEN pusht dieselbe Mess-Datei getrennt nach koordination und punkte-maschine; traf
+# die Buchung zwischen beide Pushes, fiel der Oktopus an „both added“ und ließ den Baum im Konflikt stehen — jede weitere Buchung
+# fiel wortlos). Die Messung gehört punkte-maschine: bei Streit gewinnt ihre Seite. Ein Merge, der trotzdem fällt, wird
+# zurückgenommen (der Baum bleibt nie im Konflikt) und nennt sich beim Namen.
+git -C "$KO" merge -q --no-edit origin/koordination || { w=$(git -C "$KO" status --short | grep -v '^??' | head -3 | tr '\n' ' '); git -C "$KO" merge --abort 2>/dev/null; say "ROT: der Baum merget origin/koordination nicht ($w)"; exit 1; }
+git -C "$KO" merge -q --no-edit -X theirs origin/punkte-maschine || { w=$(git -C "$KO" status --short | grep -v '^??' | head -3 | tr '\n' ' '); git -C "$KO" merge --abort 2>/dev/null; say "ROT: der Baum merget origin/punkte-maschine nicht ($w)"; exit 1; }
 # DER MESS-KOPF (Luft holen, Rang 1): gebucht wird am Kopf, an dem der Takt gemessen hat (zug/mess-kopf.txt, erste Zeile „<sha40> <takt>“),
 # nie am wandernden main — ohne Datei gilt main
 MK=$(head -1 "$KO/zug/mess-kopf.txt" 2>/dev/null | grep -oE "^[0-9a-f]{40}")
