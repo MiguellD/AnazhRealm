@@ -3184,19 +3184,12 @@ class AnazhRealm_studio_bruecke {
         this._weltFeldFrei(entry._ziegelSlot);
         entry._ziegelSlot = null;
     }
-    // DAS WURF-RECHT EINES GELIEFERTEN TEILS (der EINE Leser: `_foundryBuildMesh`; gate:regler-wirkt liest ihn aus der
-    // Quelle). Die Fell-Schalen werfen keinen Schatten (die Haut darunter wirft ihn — sechs Schalen wären sechs Ränder).
-    // Eine LICHTQUELLE wirft nie (Seh-Klasse glut, vom Gesetzbuch gestempelt: Glutbett und Flamme der Feuerstelle, das
-    // Herdfeuer, die Leucht-Linien der Tore) — dieselbe Regel wie `_archTeilLeuchtet` für die Wirts-Teile. Ein
-    // DURCHSICHTIGER Stoff (Scheibe, Fenster, Brunnen-Wasser; Deckkraft < 1 aus dem Gesetzbuch) wirft auch keinen: das
-    // Licht geht durch ihn, und r184 zieht einen doppelseitig-durchsichtigen Werfer im Schattenpass zweimal (der
-    // Schatten-Stoff trägt kein forceSinglePass) — gemessen am GT k0 9 -> 7 Befehle, am Brunnen 2 -> 1 (Integration W5).
+    // DAS WURF-RECHT EINES GELIEFERTEN TEILS (der Leser der Welt: `_foundryBuildMesh`): das EINE Gesetz steht im Licht-Baustein
+    // (welt-licht.js `teilWirft` — Fell-Schale, Lichtquelle und durchsichtiger Stoff werfen nie); die Bühne jedes Studios wirft
+    // nach demselben (`stoffRecht` in jedem Bild, `buehneZeichnet`). r184 zöge einen doppelseitig-durchsichtigen Werfer im
+    // Schattenpass zweimal (der Schatten-Stoff trägt kein forceSinglePass) — gemessen am GT k0 9 -> 7 Befehle, am Brunnen 2 -> 1.
     static _teilWirft(m) {
-        return (
-            m.kind !== "fellSchale" &&
-            !(m.mat && m.mat.seh === "glut") &&
-            !(m.mat && typeof m.mat.opacity === "number" && m.mat.opacity < 1)
-        );
+        return __weltLicht.teilWirft(m);
     }
     // DIE KOSTEN-REGEL DES WURFS (1110-9, docs/studio-vertrag.md N5): geworfen wird von der billigeren Stufe — wirft eine
     // gezeigte Stufe über ihre NUR-WURF-Stufe, nimmt der Wirt deren Zwilling nur, wo er WENIGER Dreiecke in die Kaskaden

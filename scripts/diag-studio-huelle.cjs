@@ -368,15 +368,23 @@ function selbsttest() {
         if (!treffer) ok = false;
     }
     // H9 — der Täter am Gesetz (Faden-Scope, three r184): ein Licht neben der Sonne (das Haupt der Matrix-Antike) und eine
-    // Belichtung neben der des Gesetzes brechen laut beim Namen; den sauberen Fall zeichnen garage und schmiede im Gang
+    // Belichtung neben der des Gesetzes brechen laut beim Namen; dasselbe Bild zeichnet jedes Mesh nach dem Recht der Welt (die
+    // Scheibe und die Glut werfen nicht, die Scheibe zeichnet in EINEM Zug, der opake Lack wirft) — den sauberen Fall zeichnen
+    // garage und schmiede im Gang
     const { THREE: T, __weltLicht: L } = fadenScope(["foundry-core.js", "welt-licht.js"]);
+    const werfer = (m) => Object.assign(new T.Mesh(new T.BufferGeometry(), m), { castShadow: true });
+    const glut = new T.MeshStandardMaterial();
+    glut.userData.__seh = "glut";
+    const [scheibe, licht, lack] = [werfer(new T.MeshStandardMaterial({ transparent: true, opacity: 0.42, side: T.DoubleSide })), werfer(glut), werfer(new T.MeshStandardMaterial())];
     let h9 = "";
     try {
-        L.buehneZeichnet({ sonne: 0, belichtung: 1 }, new T.Scene().add(new T.PointLight()), {});
+        L.buehneZeichnet({ sonne: 0, belichtung: 1 }, new T.Scene().add(new T.PointLight(), scheibe, licht, lack), {});
     } catch (e) {
         h9 = e.message;
     }
-    const h9ok = /ein Licht PointLight .* die Belichtung undefined statt 1 · ein Himmel neben/.test(h9);
+    const recht = !scheibe.castShadow && scheibe.material.forceSinglePass === true && !licht.castShadow && lack.castShadow && !lack.material.forceSinglePass;
+    h9 += ` · Recht der Welt ${recht ? "angewandt" : "NICHT angewandt"} (Scheibe ${scheibe.castShadow ? "wirft" : "-"}/${scheibe.material.forceSinglePass ? "ein Zug" : "zwei Züge"}, Glut ${licht.castShadow ? "wirft" : "-"}, Lack ${lack.castShadow ? "wirft" : "-"})`;
+    const h9ok = /ein Licht PointLight .* die Belichtung undefined statt 1 · ein Himmel neben/.test(h9) && recht;
     console.log(`${h9ok ? "✅" : "❌"} SELBST-TEST H9 ${h9}`);
     return ok && h9ok && !gangBasis.length;
 }
