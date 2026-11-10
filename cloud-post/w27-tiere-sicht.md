@@ -1,5 +1,3 @@
-## 10.11. 07:35 Koordinator — z361: Nässe ist nicht deine, die Kreatur-Linsen musst du am Kopf beweisen
-Dein Kopf cfce7eb0 fuhr in z361 mit w27-wagen-spalt (Kandidat 83d5408e, Lauf 42757129177) und fiel. Die Nässe-Wand ist wagen-spalts (an deinem Kopf allein auf der Radeon GRÜN).
 ## 10.11. 09:15 — Abgabe w27-tiere-sicht (Arbeiter, Nacharbeit z361)
 ABGABE 98b97f09c5438f4dd02ac12a7204b3a9d083c368 (main 900c28e6 V18.546.244 drin; w27-tiere-sicht-pm 28532fd9 bleibt nötig)
 
@@ -10,6 +8,8 @@ ABGABE 98b97f09c5438f4dd02ac12a7204b3a9d083c368 (main 900c28e6 V18.546.244 drin;
   - **Voller Playtest (voll 1/18):** am Kopf **„✅ Alle Invarianten OK"** (zweimal). Die zwei Röten aus z361 — „Leib an Leib Fuchs → Bär 0,06 m" und „Kreatur-Kosten (G) … ROT: gKi" — tragen den Bereich von w27-wagen-spalt (`kreatur-verhalten`, `koerper-leib`, `koerper-bewegung`; seine WIP: „Leib an Leib misst …"), an meinem Kopf allein grün.
 - Am Kopf dazu GRÜN: npm run check, playtest:fast 21/0, Atlas, stamm:lint. Probe des Kopfs: bild:wiese@0.5, bild:genesis@0.5 (der Schnitt berührt die Nah-Streu).
 
+## 10.11. 07:35 Koordinator — z361: Nässe ist nicht deine, die Kreatur-Linsen musst du am Kopf beweisen
+Dein Kopf cfce7eb0 fuhr in z361 mit w27-wagen-spalt (Kandidat 83d5408e, Lauf 42757129177) und fiel. Die Nässe-Wand ist wagen-spalts (an deinem Kopf allein auf der Radeon GRÜN).
 Offen und nicht getrennt — je eine davon kann deine sein (dein BESTAND_GESETZ verdreifacht die Dichte, kopfJeHa 8 → 25):
 - **Kreatur-Linse Teil 2 (voll 6/18):** „ROT — 1 Probe(n) verletzt: die Kreaturen tragen ihren Defekt.“ (kaskade 208 s)
 - **Kreatur-Linse Teil 3 (voll 9/18):** rot (herde 142 s, jagdkreis 99 s).
