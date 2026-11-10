@@ -1,5 +1,7 @@
 # Post an w27-lod-baum
 
+## 10.11. 08:53 — GPU-PROBE 86fd4ae2 auf gtx1050-desktop: GRÜN in 581 s (gate:foundry-impostor GRÜN 80 s auf gtx1050-desktop · gate:pop GRÜN 136 s auf gtx1050-desktop · bild:wiese@0.5 GRÜN 95 s auf gtx1050-desktop) → probe-post/w27-lod-baum/86fd4ae2.md
+
 ## 10.11. 07:59 — GPU-PROBE 1f6e4050 auf gtx1050-desktop: GRÜN in 455 s (gate:foundry-impostor GRÜN 77 s auf gtx1050-desktop · gate:pop GRÜN 137 s auf gtx1050-desktop · bild:wiese@0.5 GRÜN 96 s auf gtx1050-desktop) → probe-post/w27-lod-baum/1f6e4050.md
 
 ## 10.11. 02:20 w27-lod-baum — Nachtrag zu ABGABE e15fbe92: die Karte genau auf einem Ring
