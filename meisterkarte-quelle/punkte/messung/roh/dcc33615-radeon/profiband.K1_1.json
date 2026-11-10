@@ -1,0 +1,318 @@
+{
+ "art": "gang",
+ "sekunden": 84.2,
+ "schritte": [
+  [
+   "genesis-ego",
+   "Fehler"
+  ],
+  [
+   "genesis-third",
+   "Fehler"
+  ],
+  [
+   "genesis-third-geht",
+   3.3
+  ],
+  [
+   "wiese-ego",
+   "Fehler"
+  ],
+  [
+   "wiese-ego-geht",
+   3.3
+  ],
+  [
+   "wiese-third",
+   "Fehler"
+  ],
+  [
+   "wiese-sprint",
+   4
+  ],
+  [
+   "wiese-fahrt",
+   7.5
+  ],
+  [
+   "wiese-sturm",
+   7.8
+  ],
+  [
+   "dorf",
+   "Uhr"
+  ],
+  [
+   "stadt",
+   "Uhr"
+  ]
+ ],
+ "offen": [
+  "band:dorf-ego",
+  "band:dorf-third",
+  "stadt-ego-geht"
+ ],
+ "fehler": {
+  "band:genesis-ego": "/band: Cannot read properties of undefined (reading 'size')",
+  "genesis-ego-steht": "/band: Cannot read properties of undefined (reading 'size')",
+  "band:genesis-third": "/band: Cannot read properties of undefined (reading 'size')",
+  "genesis-third-steht": "/band: Cannot read properties of undefined (reading 'size')",
+  "band:wiese-ego": "/band: Cannot read properties of undefined (reading 'size')",
+  "wiese-ego-steht": "/band: Cannot read properties of undefined (reading 'size')",
+  "band:wiese-third": "/band: Cannot read properties of undefined (reading 'size')",
+  "wiese-third-steht": "/band: Cannot read properties of undefined (reading 'size')"
+ },
+ "strom": {
+  "bloecke": 426,
+  "bilder": 1207,
+  "seiten": 7,
+  "fehler": 0,
+  "verloren": 0
+ },
+ "zellen": {
+  "wiese-ego-geht": {
+   "n": 41,
+   "frame": 58.68,
+   "p99": 67.04,
+   "max": 67.04,
+   "ueber33": 39,
+   "ueber100": 0,
+   "takt": 35.52,
+   "vram": 147.8,
+   "gpu": 13.72,
+   "gpuN": 7,
+   "befehle": 161,
+   "dreiecke": 1344930,
+   "voll": 1,
+   "halt": false,
+   "last": 1,
+   "sicht": [
+    1
+   ],
+   "sichtWechsel": 0,
+   "sattel": "0",
+   "wetter": [
+    "sunny"
+   ],
+   "buehne": 0,
+   "eigen": 41,
+   "fremd": 0,
+   "fenster": {
+    "ein": 0.5,
+    "sek": 2,
+    "regler": "voll",
+    "belegung": 61.5,
+    "pflicht": 4.68,
+    "wache": "GRUEN",
+    "wetter": "sunny",
+    "weg": 8,
+    "buehne": 0,
+    "last": 1,
+    "skala": 0.75,
+    "probe": {
+     "gehalten": false,
+     "sicht": "first",
+     "speed": 1.15,
+     "sprint": 5.175,
+     "skala": 0.75
+    }
+   }
+  },
+  "wiese-ego-sprint": {
+   "n": 46,
+   "frame": 58.61,
+   "p99": 100.98,
+   "max": 100.98,
+   "ueber33": 38,
+   "ueber100": 1,
+   "takt": 33.07,
+   "vram": 147,
+   "gpu": 18.88,
+   "gpuN": 7,
+   "befehle": 167,
+   "dreiecke": 640376,
+   "voll": 1,
+   "halt": false,
+   "last": 1,
+   "sicht": [
+    1
+   ],
+   "sichtWechsel": 0,
+   "sattel": "0",
+   "wetter": [
+    "sunny"
+   ],
+   "buehne": 0,
+   "eigen": 46,
+   "fremd": 0,
+   "fenster": {
+    "ein": 0.5,
+    "sek": 2,
+    "regler": "voll",
+    "belegung": 56.5,
+    "pflicht": 11.67,
+    "wache": "GRUEN",
+    "wetter": "sunny",
+    "weg": 11,
+    "buehne": 0,
+    "last": 1,
+    "skala": 0.75,
+    "probe": {
+     "gehalten": false,
+     "sicht": "first",
+     "speed": 1.15,
+     "sprint": 5.175,
+     "skala": 0.75
+    }
+   }
+  },
+  "wiese-fahrt": {
+   "n": 45,
+   "frame": 66.74,
+   "p99": 75.23,
+   "max": 75.23,
+   "ueber33": 42,
+   "ueber100": 0,
+   "takt": 48.83,
+   "vram": 156.9,
+   "gpu": 14.79,
+   "gpuN": 7,
+   "befehle": 211,
+   "dreiecke": 706427,
+   "voll": 1,
+   "halt": false,
+   "last": 1,
+   "sicht": [
+    2
+   ],
+   "sichtWechsel": 0,
+   "sattel": "1",
+   "wetter": [
+    "sunny"
+   ],
+   "buehne": 0,
+   "eigen": 45,
+   "fremd": 0,
+   "fenster": {
+    "ein": 0.5,
+    "sek": 2,
+    "regler": "voll",
+    "belegung": 65.34,
+    "pflicht": 3.5,
+    "wache": "GRUEN",
+    "wetter": "sunny",
+    "weg": 41,
+    "buehne": 0,
+    "last": 1,
+    "skala": 0.75,
+    "probe": {
+     "gehalten": false,
+     "sicht": "first",
+     "speed": 1.15,
+     "sprint": 5.175,
+     "skala": 0.75
+    }
+   }
+  },
+  "genesis-third-geht": {
+   "n": 82,
+   "frame": 33.56,
+   "p99": 66.71,
+   "max": 66.71,
+   "ueber33": 10,
+   "ueber100": 0,
+   "takt": 26.26,
+   "vram": 131.2,
+   "gpu": 15.77,
+   "gpuN": 8,
+   "befehle": 149,
+   "dreiecke": 454100,
+   "voll": 1,
+   "halt": false,
+   "last": 1,
+   "sicht": [
+    2
+   ],
+   "sichtWechsel": 0,
+   "sattel": "0",
+   "wetter": [
+    "sunny"
+   ],
+   "buehne": 0,
+   "eigen": 82,
+   "fremd": 0,
+   "fenster": {
+    "ein": 0.5,
+    "sek": 2,
+    "regler": "voll",
+    "belegung": 32.48,
+    "pflicht": 1.16,
+    "wache": "GRUEN",
+    "wetter": "sunny",
+    "weg": 9,
+    "buehne": 0,
+    "last": 1,
+    "skala": 0.75,
+    "probe": {
+     "gehalten": false,
+     "sicht": "third",
+     "speed": 1.15,
+     "sprint": 5.175,
+     "skala": 0.75
+    }
+   }
+  },
+  "wiese-ego-sturm": {
+   "n": 40,
+   "frame": 67.01,
+   "p99": 67.02,
+   "max": 67.02,
+   "ueber33": 37,
+   "ueber100": 0,
+   "takt": 63.91,
+   "vram": 162.2,
+   "gpu": 14.25,
+   "gpuN": 8,
+   "befehle": 300,
+   "dreiecke": 1179568,
+   "voll": 1,
+   "halt": false,
+   "last": 1,
+   "sicht": [
+    1
+   ],
+   "sichtWechsel": 0,
+   "sattel": "0",
+   "wetter": [
+    "stormy"
+   ],
+   "buehne": 50,
+   "eigen": 40,
+   "fremd": 0,
+   "fenster": {
+    "ein": 0.5,
+    "sek": 2,
+    "regler": "voll",
+    "belegung": 67.37,
+    "pflicht": 4.25,
+    "wache": "GRUEN",
+    "wetter": "stormy",
+    "weg": 9,
+    "buehne": 50,
+    "last": 1,
+    "skala": 0.75,
+    "probe": {
+     "gehalten": false,
+     "sicht": "first",
+     "speed": 1.15,
+     "sprint": 5.175,
+     "skala": 0.75
+    }
+   }
+  }
+ },
+ "baender": {},
+ "sonst": {
+  "geraeumt": 50
+ }
+}

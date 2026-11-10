@@ -1,0 +1,72 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.242",
+  "sha": "dcc3361558060fce198f1666eba3720e574bf5a7"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": false,
+  "weltTakte": 271
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 0.5722478499450008,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 0.57,
+   "deckung": 0,
+   "taeter": {}
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "abstand": 1.14,
+  "gestalt": [
+   "klinge_langschwert w-klinge_langschwert-1"
+  ],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   17.495,
+   90.665,
+   16.613
+  ],
+  "blick": [
+   -0.78347,
+   -0.31458,
+   -0.53592
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 67.2,
+  "sigma": 18.6,
+  "schwarz": 0,
+  "weiss": 0
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 1.14 m · Luma 67.2 σ 18.6 schwarz 0.0 % weiß 0.0 % · Stand 18.546.242 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3"
+}
