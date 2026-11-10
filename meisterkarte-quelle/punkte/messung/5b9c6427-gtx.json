@@ -1,7 +1,7 @@
 {
  "sha": "5b9c6427d7e3db0712e20d104b012a83f8ffd68c",
  "geraet": "gtx",
- "zeit": "2026-11-10T19:16:17.422Z",
+ "zeit": "2026-11-10T19:21:37.367Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "ankunft.K1#1": {
@@ -212,22 +212,109 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "bauen.K1#2": {
+   "gruen": false,
+   "zahl": "6/8 Werke in L0 im Bild (Bau-Hash = L0-Bau, ≤ 3 Eingaben) · p95 bis zum Bild werkstatt kalt 3567 · warm 726 ms (2+1) · rezeptbuch kalt null · warm null ms (0+0) · hotbar kalt 3739 · warm 1579 ms (1+2) · ROT: werkstatt p95 kalt 3567 · warm 726 ms · rezeptbuch · frieden mit Material · Haus · Third (Stufe 1) · rezeptbuch · pfad · Eiche · Third (Stufe 1) · hotbar p95 kalt 3739 · warm 1579 ms",
+   "exit": 0,
+   "minuten": 0.72,
+   "grund": "ROT: 6/8 Werke in L0 im Bild (Bau-Hash = L0-Bau, ≤ 3 Eingaben) · p95 bis zum Bild werkstatt kalt 3567 · warm 726 ms (2+1) · rezeptbuch kalt null · warm null ms (0+0) · hotbar kalt 3739 · warm 1579 ms (1+2) · ROT: werkstatt p95 kalt 3567 · warm 726 ms · rezeptbuch · frieden mit Material · Haus · Third (Stufe 1) · rezeptbuch · pfad · Eiche · Third (Stufe 1) · hotbar p95 kalt 3739 · warm 1579 ms · ROT trotz Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 6,9 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 6,6 CPU-s · BackgroundDownload.exe --child --activityId 6084168f-afd9-4773-bae6-2cbaf12460a8 --childCl 5,8 CPU-s — 0,75 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon; Σ fremd 25,3 CPU-s in 46,5 s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 6,9 CPU-s · svchost.exe 5,3 CPU-s · SearchIndexer.exe 0,6 CPU-s) — geeicht ÷ 1,042 (1 + 5,6 % je fremdem Kern × 0,75): werkstatt p95 bis zum Bild kalt ms 3567 → geeicht 3423 (Soll ≤ 1000) · hotbar p95 bis zum Bild kalt ms 3739 → geeicht 3588 (Soll ≤ 1000) · hotbar p95 bis zum Bild warm ms 1579 → geeicht 1515 (Soll ≤ 1000)",
+   "mass": [
+    {
+     "wort": "werkstatt p95 bis zum Bild kalt ms",
+     "wert": 3567,
+     "soll": 1000
+    },
+    {
+     "wort": "werkstatt p95 bis zum Bild warm ms",
+     "wert": 726,
+     "soll": 1000
+    },
+    {
+     "wort": "hotbar p95 bis zum Bild kalt ms",
+     "wert": 3739,
+     "soll": 1000
+    },
+    {
+     "wort": "hotbar p95 bis zum Bild warm ms",
+     "wert": 1579,
+     "soll": 1000
+    }
+   ],
+   "gpu": "nvidia/pascal",
+   "s": 43.2,
+   "fremd": {
+    "s": 46.5,
+    "takte": 21,
+    "fremdS": 25.25,
+    "kerne": 0.543,
+    "fensterKerne": 0.746,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      6.88
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      6.58
+     ],
+     [
+      "BackgroundDownload.exe --child --activityId 6084168f-afd9-4773-bae6-2cbaf12460a8 --childCl",
+      5.75
+     ]
+    ],
+    "dienerS": 18.81,
+    "diener": [
+     [
+      "System",
+      9.06
+     ],
+     [
+      "dwm.exe",
+      7.14
+     ]
+    ],
+    "geraetS": 13.11,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      6.89
+     ],
+     [
+      "svchost.exe",
+      5.27
+     ],
+     [
+      "SearchIndexer.exe",
+      0.55
+     ]
+    ],
+    "eigenS": 157.14,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon"
+   },
+   "zeit": "2026-11-10T19:21:37.367Z",
+   "abdruck": "16d0aff9ab8b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-10T19:15:43.784Z",
+  "start": "2026-11-10T19:21:04.773Z",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 6.5,
+  "bootS": 6.4,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": "genesis",
-    "vor": "ankunft.K4#1",
-    "s": 25.6,
-    "takte": 681,
+    "ort": null,
+    "vor": "bauen.K1#2",
+    "s": 24.7,
+    "takte": 781,
     "chunks": 81,
     "nach": null
    }
@@ -236,21 +323,21 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 0,
-   "frameP95": null,
-   "taktP95": null,
-   "vramMax": null,
+   "bilder": 2208,
+   "frameP95": 49.93,
+   "taktP95": 32.59,
+   "vramMax": 129.2,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 95,
-   "luecken": 8,
-   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+   "zapfen": 71,
+   "luecken": 0,
+   "letzteLuecke": null
   },
-  "fahrtS": 183.9,
-  "minuten": 3.11
+  "fahrtS": 77,
+  "minuten": 1.36
  },
  "ungemessen": {
   "ankunft.K4#1": {
