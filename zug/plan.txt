@@ -1,11 +1,13 @@
 # zug/plan.txt — was ansteht (Koordinator schreibt, messplatz-blick zeigt): je Zeile Zustand · Was · Wer/Wo · Ziel
-# Stand 10.11. 23:05 · main 4e2df19b (z373) · gebucht 215/330 · Konto 11 (Koordinator Radeon)
+# Stand 10.11. 23:30 · main 4e2df19b (z373) · gebucht 215/330 · Konto 11 (Koordinator Radeon)
 gelandet zug/dienst  EIN versionierter Zug-Dienst (B3): zug · radeon · buche abgekoppelt über WMI  —  Laptop  —  überlebt den Konto-Wechsel
-läuft   z375  w27-takt-gc + w27-takt-gc-2 (Bauten 7 → 2 je 65 s)  —  Zug-Dienst  —  Radeon misst am neuen Kopf, Buchung folgt
+rot     z375  takt-gc + takt-gc-2 fielen NUR am echt-Bein der GTX 1050 (Volle-Bühne-Prädikat W2; OMEN + Radeon GRÜN)  —  GTX 1050 misst A main ↔ B a2826f12  —  heilen oder Wackler beim Namen
 läuft   wald-saum  vegetation.K1 + ferne.K3 + lod.K4 (Täter im Merge heim3-w20-wald-kosten)  —  GTX 1050  —  +3 zurück
-läuft   dienst-omen, dann der Richter nach der Landung (B2 Stufe 1: Fall → Halbierung → Täter beim Namen)  —  OMEN  —  kein Fall landet unbemerkt
+gelandet dienst-omen + Richter nach der Landung (zug/dienst/richter.sh, B2 Stufe 1; Selbsttest 9/9, 6 Mutanten)  —  OMEN  —  hängt in landung (OMEN) und radeon-dienst (Laptop)
+läuft   w28-horizont-gtx  _horizontHimmel kostet nur auf der GTX ×1,5 gpu-bank  —  OMEN  —  wiese-ego ≤ 21 ms GPU (Pflicht E)
 läuft   Stadt-Grammatik (Breite siedlung: Viertel → Rolle → Bau-Typ → Gegenstand)  —  Champion lokal  —  ≥ 12 Bau-Typen aus ≥ 3 Kulturen im Ego-Lauf
-danach  Breite: Ziel → Plan → Bewegung · Stoff-Gesetz · Zeit und Abnutzung  —  Cloud (Karten liegen beim Schöpfer)  —  je EIN Kriterium der Staffel Breite
-danach  R6 nach Konsum (170 Stationen veraltet)  —  Cloud  —  veraltet nur, was den geänderten Code ausführte
+läuft   Breite: w28-ziel-plan (Ziel → Plan → Bewegung) · w28-stoff-gesetz (Periodensystem)  —  Cloud, vom Schöpfer gestartet 23:10  —  je EIN Kriterium der Staffel Breite
+danach  Breite Zeit (Abnutzung, Wandel der Viertel) · Breite Leib (Seitwärts, Klettern, Ausweichen)  —  nach der Stadt-Grammatik  —  dieselbe Datei fachwerk-core.js
+läuft   w28-r6-konsum  veraltet nur, was den geänderten Code ausführte (170 Stationen veraltet)  —  Cloud, vom Schöpfer gestartet 23:10  —  Zahl veraltet je Landung vorher → nachher
 offen   schatten.K5 · vegetation.K5#2 · material.K1 · mensch.K4 · _horizontHimmel ×1,5 nur GTX  —  nach wald-saum  —  zurück über 224
 Regel   EIN Auftrag je Gerät · Hand-Fahrten gibt es nicht · jede Zahl, die stillsteht, ist ein Alarm · Einstieg je Konto: bash zug/dienst/start.sh
