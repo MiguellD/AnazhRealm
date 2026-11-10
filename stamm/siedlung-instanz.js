@@ -896,11 +896,13 @@ class AnazhRealm_siedlung_instanz {
         // Solids des Gesetzbuchs (Böden, Tritte, Wände mit Öffnungen), JEDE Stufe dieselben (die fernen tragen die Solids der
         // Stufe 0, `hausSolids`); ein Stufen-Wechsel mit derselben Zeile schreibt die Blocker nicht neu.
         if (flat && flat.foundry && flat.huelle) this._hausHuelleSetzen(entry, flat.huelle);
-        // DAS MASS DER STUFE (physik.K2 Staffel 2): ein Wagen kollidiert mit dem Umriss, den er zeichnet (`_wagenMassSetzen`;
-        // jede Mesh-Stufe trägt das Feld — die Karte nicht —, einem Studio-Wagen ohne Maß bricht der Leser laut)
-        if (flat && flat.foundry && flat.mass !== undefined) this._wagenMassSetzen(entry, flat.mass);
         // ein Bau ohne Haus-Hülle, dessen Form oben schließt (Marktstand · Brunnen · Tor), trägt seine Decke in den Dach-Pool
         else if (flat && flat.foundry && entry._dachKasten === undefined) this._dachKastenSetzen(entry, flat.leaves);
+        // DAS MASS DER STUFE (physik.K2 Staffel 2): ein Wagen kollidiert mit dem Umriss, den er zeichnet (`_wagenMassSetzen`;
+        // jede Mesh-Stufe trägt das Feld — die Karte nicht —, einem Studio-Wagen ohne Maß bricht der Leser laut). Ein eigener
+        // Satz, nie ein Glied der Kette darüber: bis w27-wagen-spalt-2 nahm er ihr das `else` — kein Marktstand, Brunnen und Tor
+        // trug seine Decke in den Dach-Pool (gate:naesse:echt „dorf: Dach-Bauten trocken 0/2", Radeon z361)
+        if (flat && flat.foundry && flat.mass !== undefined) this._wagenMassSetzen(entry, flat.mass);
         // Merker: aus dem Studio (Foundry) platziert → der LOD-Tick (`_switchArchitectureLOD`) serviert die
         // neue Stufe aus der Foundry statt aus `grown_..._lodN`. Transientes Render-Feld (wie
         // `instanced`/`instSlots`) — nicht im Snapshot.

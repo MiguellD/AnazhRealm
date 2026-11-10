@@ -1295,8 +1295,10 @@ class AnazhRealm_gelaende_kollision {
     // (gate:fahr-leben VK 10 Uhr: 2–27 Stöße), mit ihr im Plan stand die Stadt (17 von 20 ohne Ziel). Bug, Heck und Ecken sind
     // die gezeichneten.
     _wagenMassSetzen(entry, mass) {
+        // EINMAL je Eintrag (der erste Flat gewinnt — L0 und L1 messen auf 0,5 mm gleich): ein Wechsel der Stufe stellt weder
+        // Hülle noch Boxen neu (jeder Neubau der Boxen weckte die Natur-Wand um den Wagen, gate:stand-takt RUHE nahStreu)
         const fzg = this._fahrzeugGesetzFor(entry);
-        if (!fzg || (entry._gestaltMass && entry._gestaltMass.von === mass)) return;
+        if (!fzg || entry._gestaltMass) return;
         const U = mass && mass.umriss;
         if (!Array.isArray(U) || U.length < 9 || U.length % 3 || !U.every(Number.isFinite) || !(mass.dach > 0))
             return AnazhRealm._kernPflichtBruch("vehicle:__mass (" + entry.type + ")");

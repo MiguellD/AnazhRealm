@@ -1489,10 +1489,12 @@ async function checkBandTierSeparation({ page, check }) {
                     az: c.position.z - leib.fz * leib.halb,
                     bx: c.position.x + leib.fx * leib.halb,
                     bz: c.position.z + leib.fz * leib.halb,
-                    r: leib.radius,
+                    rad: leib.rad.slice(),
                 };
             };
-            // der Abstand zweier Strecken in der Ebene (die Linse rechnet ihn selbst)
+            // der Abstand zweier Leiber in der Ebene (die Linse rechnet ihn selbst): je Punkt der Strecke ihr Radius dort, zwischen
+            // den drei Achsen linear (`rad`, das Quer-Maß der Gestalt — physik.K2 Staffel 2), die Kapsel ihr `r`
+            const radAn = (P, t) => (P.rad ? P.rad[1] + (P.rad[t < 0.5 ? 0 : 2] - P.rad[1]) * Math.abs(2 * t - 1) : P.r);
             const streckeAbstand = (P, Q) => {
                 let best = Infinity;
                 const N = 24;
@@ -1503,7 +1505,7 @@ async function checkBandTierSeparation({ page, check }) {
                     const uz = Q.bz - Q.az;
                     const ll = ux * ux + uz * uz;
                     const t = ll > 1e-12 ? Math.max(0, Math.min(1, ((px - Q.ax) * ux + (pz - Q.az) * uz) / ll)) : 0;
-                    best = Math.min(best, Math.hypot(px - (Q.ax + ux * t), pz - (Q.az + uz * t)));
+                    best = Math.min(best, Math.hypot(px - (Q.ax + ux * t), pz - (Q.az + uz * t)) - radAn(P, i / N) - radAn(Q, t));
                 }
                 return best;
             };
@@ -1546,7 +1548,7 @@ async function checkBandTierSeparation({ page, check }) {
                         takt(1 / 60);
                         const PA = achse(a);
                         const PB = achse(b);
-                        res.minAbstand = Math.min(res.minAbstand, streckeAbstand(PA, PB) - PA.r - PB.r);
+                        res.minAbstand = Math.min(res.minAbstand, streckeAbstand(PA, PB));
                         if (res.kontakt < 0 && vx(b) > 1e-6) {
                             res.kontakt = k;
                             res.dvZiel = vx(b);
@@ -1603,7 +1605,7 @@ async function checkBandTierSeparation({ page, check }) {
                                 bz: pmM.position.z,
                                 r: A.PLAYER_WALL_RADIUS,
                             };
-                            sp.minAbstand = Math.min(sp.minAbstand, streckeAbstand(PW, PS) - PW.r - PS.r);
+                            sp.minAbstand = Math.min(sp.minAbstand, streckeAbstand(PW, PS));
                             sp.dvSpieler = Math.max(sp.dvSpieler, Math.hypot(s.playerVel.x(), s.playerVel.z()));
                         }
                     } finally {
