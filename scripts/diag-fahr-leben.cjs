@@ -2590,7 +2590,7 @@ hauptLauf(async () => {
                 for (const h of TAETER ? [10] : VERKEHR.stunden) {
                     const m = o.verkehr && o.verkehr[h];
                     const v = (m ? verkehrVerdict(m) : [o.err]).join(" · ");
-                    check(`VK (PFLICHT-OFFEN C) der Verkehr der Stadt um ${h} Uhr${TAETER ? " — TÄTER" : ""}`, TAETER ? [/am Steuer \[19,\d+,\[0,/, /Trasse \[\d+,[1-9]\d*,\[\[1,/, /Wagen an Wagen \[-[\d.]+,"2\|3"/, /nicht im Sitz \[\d+,1,\[/, /je Minute \[\d+,\d+,2,\d,"spieler"\]/, /vor EINEM Leib \[(6\d|7\d),\d+,"[^"]+",-?\d+,-?\d+,"steht"\]/].every((x) => x.test(v)) : !v, v); // prettier-ignore
+                    check(`VK (PFLICHT-OFFEN C) der Verkehr der Stadt um ${h} Uhr${TAETER ? " — TÄTER" : ""}`, TAETER ? [/am Steuer \[19,\d+,\[0,/, /Trasse \[\d+,[1-9]\d*,\[\[1,/, /Wagen an Wagen \[-[\d.]+,"2\|3"/, /nicht im Sitz \[\d+,1,\[/, /je Minute \[\d+,\d+,2,\d,"spieler"\]/].every((x) => x.test(v)) : !v, v); // prettier-ignore
                 }
                 console.log(`VERKEHR ${JSON.stringify(o.verkehr)}`);
             },

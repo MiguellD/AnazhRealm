@@ -877,23 +877,11 @@ async function probeLeben(expected) {
                     if (W.uhr - W.fahrtAb > m.fahrt) [m.fahrt, m.fahrtWer] = [W.uhr - W.fahrtAb, W];
                 // DER WAGEN VOR EINEM LEIB (w27-verkehr-leib): je Wagen, wie lange er vor DEMSELBEN Bewohner steht (seine Uhr, Grund
                 // `leib`), der längste [s, Wagen, Leib, Ort, Zustand] — die Querung hält ihn ihre Dauer, wer die Bahn nicht verlässt,
-                // gibt sie frei. Der sechste Täter: ab der zweiten Minute steht ein Bewohner 20 m vor einem Fahrenden und weicht nie
+                // gibt sie frei (die Mutante: eine Minute hinter einem Stehenden, Selbst-Test VK)
                 for (const W of fahrend) {
                     const [b, h] = [W.grund === "leib" && W.entry._fahr.vlong < 0.5 && W.wer, T.lh.get(W)];
                     if (!b || !h || h[0] !== b) T.lh.set(W, b && [b, W.uhr]);
                     else if (W.uhr - h[1] > T.lhMax[0]) T.lhMax = [Math.round(W.uhr - h[1]), W.nr, b.seed, ...ort2(b.leib.position), Math.hypot(b.vx || 0, b.vz || 0) < 0.3 ? "steht" : "geht"]; // prettier-ignore
-                }
-                const TW = o.taeter && !T.taeter && tMs - T.t0 >= 61000 && fahrend.find((W) => W.F.lang - W.F.s > 40 && W.entry._fahr.vlong > 1); // prettier-ignore
-                const TB = TW && S.liste.find((y) => y.leib && !y.drinnen && !y.amSteuer && !y.wagen && !y.weg);
-                if (TB) {
-                    const q = TW.F.pts[TW.F.bogen.findIndex((s) => s > TW.F.s + TW.hl + 20)];
-                    r._bewohnerStellen(TB, TB.leib, q.x, q.z);
-                    Object.assign(TB, { da: true, vx: 0, vz: 0 });
-                    [T.taeter] = [TB, r._bewohnerRasterLage(S, TB)];
-                    const P0 = P._bewohnerPlatz;
-                    r._bewohnerPlatz = function (S2, o2, ...a) {
-                        return o2 !== TB && P0.call(this, S2, o2, ...a);
-                    };
                 }
                 for (const b of S.liste)
                     if (b.leib && b.weg && !b.drinnen && !b.amSteuer)
@@ -986,7 +974,7 @@ async function probeLeben(expected) {
                             m.knapp = [+t.toFixed(2), LA[a][0].nr + "|" + LA[b][0].nr, k, ...ort2(LA[a][1]), LA[a][0].grund, LA[b][0].grund]; // prettier-ignore
                     }
             }
-            for (const n of ["_verkehrSchritt", "_verkehrUmfahren", "_bewohnerPlatz"]) delete r[n];
+            for (const n of ["_verkehrSchritt", "_verkehrUmfahren"]) delete r[n];
             // DIE ANKUNFT SIEHT DIE HÜLLE DES WAGENS (`_bewohnerNaechster`: die Frage der Ankunft nach dem Sprung der Uhr und des
             // Platz-Machens, ob ein Leib den Punkt hält): ein Punkt in der Hülle eines fahrenden Wagens, zwischen den Mitten seiner
             // Leiber im Gedränge (`_verkehrImRaster`, Mitte und Bug) und eine Handbreit innen an seiner Flanke, liegt näher als zwei
