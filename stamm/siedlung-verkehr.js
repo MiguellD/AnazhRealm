@@ -513,7 +513,10 @@ class AnazhRealm_siedlung_verkehr {
             const F = W.F;
             if (W.zustand !== "faehrt" || !e || !e._fahr || !F) continue;
             const v = Math.max(0, e._fahr.vlong);
-            let bahn = W.leibS >= V.vorrangWarteS ? V.vorrangM : 0;
+            // ohne Zeit beansprucht: die Lücke im Strom (`vorrangM`, wer schon `vorrangWarteS` vor Leibern steht) und die Bahn durch
+            // den Ort, den er hält
+            let bahn = 0;
+            if (W.leibS >= V.vorrangWarteS) bahn = V.vorrangM;
             for (const y of W.zonen) if (y.hat && !y.weg) bahn = Math.max(bahn, y.aus - F.s - W.hl);
             const r0 = W.hw + R + V.seitM;
             // so weit fährt er, während einer eine Breite der Fahrbahn samt seiner Bahn quert
