@@ -1,19 +1,31 @@
-// DER ZEUGE DES KONSUMS (R6 in punkte.cjs): der Läufer lädt diese Datei in JEDEN node-Prozess der Station (NODE_OPTIONS
-// --require, wie gpu-zeuge.cjs) — an jedem SHA, in jede Linse und die Werkbank, in jeden Browser, den ein Prozess startet.
+// DER ZEUGE DES KONSUMS (R6 nach Konsum, punkte.cjs Abschnitt „Konsum“): der Läufer lädt diese Datei in JEDEN node-Prozess der
+// Station (NODE_OPTIONS --require, wie gpu-zeuge.cjs) — an jedem SHA, in jede Linse, die Werkbank und den save-server.
 // Er nennt, was die Station WIRKLICH ausführte und las:
-//   · die Precise Coverage je FUNKTION (callCount false, detailed false) jeder Seite und jedes Workers — angeheftet, BEVOR
-//     das Ziel läuft (puppeteer schickt runIfWaitingForDebugger nach `sessionattached`) — und des Node-Prozesses ab dem Start.
-//     Eine gerufene Funktion zählt ganz, auch ihr nie genommener Zweig. Block-Coverage (detailed true) kostete die JS-Last
-//     +69 % (Median 53,4 gegen 31,6 ms, 6 Runden verschränkt, headless 26.10.) und verfälschte jede Zeit-Station und jeden
-//     Deckel (mensch.K2#1 riss 16 min); je Funktion kostet sie nichts messbar (31,7 ms), der Debugger ebenso;
-//   · `geladen`: ein Skript über das Netz (zählt über seine Bereiche, ohne sie ganz) und ein gelesenes Verzeichnis „pfad/“
-//     („pfad/**“ rekursiv);
-//   · `ganz`: eine Datei als Text oder Daten (fetch, JSON, Bild, Dokument, readFileSync) und jedes Skript eines Ziels, das ohne
-//     Coverage ging (ein Worker endete, ein Prozess-Wechsel, ein Ende ohne Schließen);
-//   · ein Funktions-Text, den eine Seite las (toString, __codeOf), zählt als ausgeführt.
-// Je Prozess `<pid>.offen` beim Start und `<pid>.json` = { js: { pfad: { len, bereiche: [[von, bis)] } }, geladen, ganz }
-// (Zeichen-Offsets der ausgelieferten Datei) am Ende — ein `.offen` ohne Ende (getötet) macht den Konsum der Station ungültig,
-// nie still klein. Pfade relativ zum Spiel-Baum PUNKTE_KONSUM_BAUM, ohne node_modules. Er ändert keine Ausgabe.
+//   · DER KNOTEN (immer): die Precise Coverage je FUNKTION des Node-Prozesses ab dem Start (binär, V8 `Profiler.startPreciseCoverage`
+//     über `inspector`). Eine gerufene Funktion zählt ganz, auch ihr nie genommener Zweig. Ein Funktions-Text, den der Prozess las
+//     (`fn.toString()` — puppeteer schickt so jede Funktion in die Seite), zählt als ausgeführt.
+//   · `skripte`: jedes geladene Skript (Modul des Prozesses, Skript der Seite). Sein KOPF-CODE (alles außerhalb seiner Funktionen:
+//     Tafeln, Konstanten, `module.exports`) zählt, sobald es geladen ist — die Faltung der Maschine liest ihn aus dem Parser, nie aus
+//     der Coverage: V8 verliert die Skript-Funktion nach der GC (10.11., diag-kopplung an 900c28e6: 9 von 88 Skripten der Seite ohne
+//     Eintrag, stamm/gelaende-boden.js ohne seine Skript-Funktion), und mit ihr jede nie gerufene Funktion darunter.
+//   · `ganz`: eine Datei, die der Prozess als Text oder Daten SYNCHRON las (readFileSync: JSON, Tafel, ein Text-Scan; das Laden eines
+//     Moduls ist kein Text-Lesen, seine Bereiche nennt die Coverage). Asynchrones Lesen ist in diesem Baum das Ausliefern eines
+//     Servers (save-server.js, statikServer) und zählt nie: was die Seite lud, nennt die Seite.
+//   · `geladen`: ein gelesenes Verzeichnis „pfad/“ („pfad/**“ rekursiv) — eine Datei, die dort dazukommt oder fällt, ändert den Lauf.
+//   · DIE SEITE (nur mit PUNKTE_KONSUM_SEITE=1: nie an einer Zeit-Station, nie in der Welt der Sitzung): die Precise Coverage je
+//     Funktion jeder Seite und jedes Workers — angeheftet, BEVOR das Ziel läuft (puppeteer schickt runIfWaitingForDebugger nach
+//     `sessionattached`) —, ein Skript über das Netz (`geladen`), eine Datei als Text oder Daten (`ganz`: fetch, JSON, Bild, Dokument)
+//     und ein Funktions-Text, den die Seite las. Gemessen (10.11., headless): der Zähl-Modus (callCount) nimmt TurboFan — Faktor 2,5
+//     auf ruf-lastigem Code —, der Binär-Modus +15 % dort und nichts Messbares an der Last des Spiels (26.10.: 31,6 → 31,7 ms), die
+//     Wanduhr eines Boot-lastigen Laufs +7…22 %: darum trägt eine Station mit Zeit-Urteil die Seite nie (ihr Spiel-Pfad urteilt
+//     weiter nach dem Glob, `seite: false` beim Namen). Startet ein Prozess einen Browser ohne den Seiten-Zeugen, sagt er es (`browser`).
+// DIE FENSTER (die Welt der Sitzung lebt über viele Proben): legt der Läufer `nimm.<k>` in den Ordner, schreibt jeder lebende Prozess
+// `<id>.seg.<k>.json` — was er SEIT der letzten Nahme ausführte — und beginnt die Coverage neu (stop + start: der Binär-Modus meldet
+// eine Funktion sonst nur beim ersten Mal; gemessen an Node 22). `skripte`, `ganz` und `geladen` bleiben über die Fenster stehen (ein
+// geladenes Modul und eine gelesene Tafel wirken in jedem späteren Fenster).
+// Je Prozess `<id>.offen` beim Start und `<id>.json` am Ende = { js: { pfad: { len, bereiche: [[von, bis)] } }, skripte, geladen, ganz,
+// warum, browser, seite } (Zeichen-Offsets der Datei im Baum) — ein `.offen` ohne Ende (hart getötet) macht den Konsum der Station ungültig, nie still
+// klein. Pfade relativ zum Spiel-Baum PUNKTE_KONSUM_BAUM, ohne node_modules. Er ändert keine Ausgabe.
 "use strict";
 const KONSUM = process.env.PUNKTE_KONSUM;
 const BAUM = process.env.PUNKTE_KONSUM_BAUM;
@@ -22,63 +34,96 @@ if (KONSUM && BAUM) {
     const path = require("path");
     const { fileURLToPath, pathToFileURL } = require("url");
     const Module = require("module");
-    const { readFileSync: lies, readdirSync: liste, writeFileSync: schreibe } = fs;
-    const konsum = { js: new Map(), geladen: new Set(), ganz: new Set(), texte: new Set(), ziele: new Set() };
+    const faden = require("worker_threads");
+    const SEITE = process.env.PUNKTE_KONSUM_SEITE === "1";
+    const ICH = process.pid + (faden.isMainThread ? "" : "-" + faden.threadId);
+    const { readFileSync: lies, readdirSync: liste, writeFileSync: schreibe, existsSync: gibt } = fs;
+    const konsum = { js: new Map(), skripte: new Set(), geladen: new Set(), ganz: new Set(), texte: new Set(), ziele: new Set(), browser: false, warum: {} };
+    // eine Datei zählt GANZ — mit dem ersten Grund beim Namen (`warum`, die Faltung zählt ihn)
+    const ganz = (p, grund) => (konsum.ganz.add(p), (konsum.warum[p] = konsum.warum[p] || grund));
     const relativ = (abs) => path.relative(BAUM, abs).split(path.sep).join("/");
-    const imBaum = (p) => p !== "" && !/^(\.\.|node_modules(\/|$))/.test(p) && !path.isAbsolute(p);
+    const imBaum = (p) => p !== "" && !/^(\.\.|node_modules(\/|$)|\.git(\/|$))/.test(p) && !path.isAbsolute(p);
+    const pfadCache = new Map();
     const pfadVon = (wo) => {
-        let p;
+        if (pfadCache.has(wo)) return pfadCache.get(wo);
+        let p = null;
         try {
             const u = new URL(wo);
             if (u.protocol === "file:") p = relativ(fileURLToPath(u));
             else if (/^https?:$/.test(u.protocol) && /^(127\.0\.0\.1|localhost)$/.test(u.hostname))
                 p = decodeURIComponent(u.pathname).slice(1) || "index.html";
-            else return null;
         } catch (_e) {
-            return null;
+            p = null;
         }
-        return imBaum(p) && fs.existsSync(path.join(BAUM, p)) ? p : null;
+        p = p && imBaum(p) && gibt(path.join(BAUM, p)) ? p : null;
+        pfadCache.set(wo, p);
+        return p;
     };
-    const eintrag = (p, len) => {
-        if (!konsum.js.has(p)) konsum.js.set(p, { len, an: new Uint8Array(len) });
+    // die Datei im Baum: ihre Länge in Zeichen ist das Maß der Offsets; eine Datei mit BOM zählt ganz
+    const eintrag = (p) => {
+        if (!konsum.js.has(p)) {
+            let len = -1;
+            try {
+                const t = lies(path.join(BAUM, p), "utf8");
+                len = t.charCodeAt(0) === 0xfeff ? -1 : t.length;
+            } catch (_e) {
+                len = -1;
+            }
+            konsum.js.set(p, len < 0 ? null : { len, an: new Uint8Array(len) });
+        }
         const e = konsum.js.get(p);
-        return e.len === len ? e : (konsum.ganz.add(p), null);
+        if (!e) ganz(p, "nicht lesbar oder BOM");
+        return e;
     };
-    // die Coverage eines Isolats: je Skript die Bereiche nach Größe, der innere übermalt den äußeren (count 0 = nie ausgeführt);
-    // eine zweite Nahme trägt nur das Neue — die Vereinigung hält alles
+    // die Coverage eines Isolats: je Skript die Bereiche nach Größe, der innere übermalt den äußeren (count 0 = nie ausgeführt; V8
+    // nennt eine nie gerufene Funktion genau dann, wenn ihre Eltern-Funktion lief). Jedes Skript, das die Coverage nennt, ist geladen
     const male = (skripte) => {
         for (const s of skripte) {
             const p = pfadVon(s.url);
             if (!p) continue;
             if (!/\.[cm]?js$/.test(p)) {
-                konsum.ganz.add(p); // ein Inline-Skript zählt sein Dokument ganz
+                ganz(p, "Inline-Skript"); // ein Inline-Skript zählt sein Dokument ganz
                 continue;
             }
+            konsum.skripte.add(p);
             const r = s.functions.flatMap((f) => f.ranges);
-            const len = Math.max(0, ...r.map((x) => x.endOffset));
-            const e = eintrag(p, len);
+            if (!r.some((x) => x.count > 0)) continue;
+            const e = eintrag(p, null);
             if (!e) continue;
-            const neu = new Uint8Array(len);
+            if (r.some((x) => x.endOffset > e.len)) {
+                ganz(p, "Bereich hinter dem Ende der Datei (" + e.len + " Zeichen)");
+                konsum.js.set(p, null);
+                continue;
+            }
+            const neu = new Uint8Array(e.len);
             r.sort((a, b) => b.endOffset - b.startOffset - (a.endOffset - a.startOffset));
             for (const x of r) neu.fill(x.count > 0 ? 1 : 0, x.startOffset, x.endOffset);
-            for (let i = 0; i < len; i++) e.an[i] |= neu[i];
+            for (let i = 0; i < e.len; i++) e.an[i] |= neu[i];
         }
     };
 
-    // ── der Browser: je Isolat EINE Sitzung (die angehefteten Kinder: die Seite unter ihrem Tab, Worker, Frames) — die Nahme
-    // einer zweiten Sitzung am selben Isolat trüge nur das Delta
+    // ── die Seite (PUNKTE_KONSUM_SEITE): je Isolat EINE Sitzung (die angehefteten Kinder: die Seite unter ihrem Tab, Worker, Frames)
     const TEXT = `(() => { const b = globalThis.__punkteKonsumText, o = Function.prototype.toString, schon = new Set(); if (b)
         Object.defineProperty(Function.prototype, "toString", { configurable: true, writable: true, value: function toString() {
             const t = o.call(this); if (!schon.has(t)) (schon.add(t), b(t)); return t; } }); })()`;
     const netz = (e) => {
         const p = pfadVon(e.request.url);
-        if (p) konsum[/\.[cm]?js$/.test(p) && !/^(Fetch|XHR)$/.test(e.type) ? "geladen" : "ganz"].add(p);
+        if (p) /\.[cm]?js$/.test(p) && !/^(Fetch|XHR)$/.test(e.type) ? konsum.skripte.add(p) : ganz(p, "Netz " + e.type);
     };
     const ziel = (s, seite) => {
         if (s.parentSession() === s && !seite) return;
-        const z = { s, seite, skripte: new Map(), gesehen: new Set(), zu: false };
+        const z = { s, seite, skripte: new Map(), zu: false };
         konsum.ziele.add(z);
-        s.on("Debugger.scriptParsed", (e) => e.url && z.skripte.set(e.scriptId, e.url));
+        // ein Skript der Seite: geladen; lieferte der Server andere Bytes als die Datei im Baum (`wandle` des Statik-Servers), zählt es ganz
+        s.on("Debugger.scriptParsed", (e) => {
+            if (!e.url) return;
+            z.skripte.set(e.scriptId, e.url);
+            const p = pfadVon(e.url);
+            if (!p || !/\.[cm]?js$/.test(p)) return;
+            konsum.skripte.add(p);
+            const d = eintrag(p, null);
+            if (d && e.length != null && e.length !== d.len) (ganz(p, "Länge des Skripts " + e.length + " ≠ Datei " + d.len), konsum.js.set(p, null));
+        });
         s.on("Network.requestWillBeSent", netz);
         s.on("Runtime.bindingCalled", (e) => e.name === "__punkteKonsumText" && konsum.texte.add(e.payload));
         for (const [m, p] of [
@@ -91,20 +136,18 @@ if (KONSUM && BAUM) {
         ])
             s.send(m, p).catch(() => {});
     };
-    // ein Skript, das die Coverage nie trug, zählt ganz; `alle`: das Ziel ging außerhalb eines Schließens (ein beendeter
-    // Worker) — was es nach seiner letzten Nahme ausführte, kennt niemand
-    const verloren = (z, alle) => {
-        for (const [id, u] of z.skripte) if ((alle || !z.gesehen.has(id)) && pfadVon(u)) konsum.ganz.add(pfadVon(u));
+    // ein Ziel, das ohne Nahme ging (ein beendeter Worker, ein Prozess-Ende ohne Schließen des Browsers): was es nach seiner letzten
+    // Nahme ausführte, kennt niemand — jedes seiner Skripte zählt ganz
+    const verloren = (z) => {
+        for (const u of z.skripte.values()) if (pfadVon(u)) ganz(pfadVon(u), "Ziel ohne Nahme");
     };
     const nimm = async () => {
         for (const z of konsum.ziele)
             if (!z.s.detached)
                 try {
-                    const r = (await z.s.send("Profiler.takePreciseCoverage")).result;
-                    male(r);
-                    for (const x of r) z.gesehen.add(x.scriptId);
+                    male((await z.s.send("Profiler.takePreciseCoverage")).result);
                 } catch (_e) {
-                    // ein Ziel im Abbau: seine ungenommenen Skripte fallen ganz
+                    verloren(z);
                 }
     };
     const seiten = new WeakSet();
@@ -123,7 +166,7 @@ if (KONSUM && BAUM) {
         const verbindung = (await browser.target().createCDPSession()).connection();
         verbindung.on("sessionattached", (s) => ziel(s));
         verbindung.on("sessiondetached", (s) => {
-            for (const z of konsum.ziele) if (z.s === s) (konsum.ziele.delete(z), verloren(z, !z.zu && !verbindung.zu));
+            for (const z of konsum.ziele) if (z.s === s) (konsum.ziele.delete(z), z.zu || verbindung.zu || verloren(z));
         });
         for (const t of browser.targets())
             if (t.type() === "page") {
@@ -133,10 +176,16 @@ if (KONSUM && BAUM) {
             }
         browser.on("targetcreated", (t) => t.type() === "page" && t.page().then((p) => p && seitenZu(Object.getPrototypeOf(p)), () => {}));
         const zu = browser.close.bind(browser);
-        browser.close = async (...a) => (await nimm(), (verbindung.zu = true), zu(...a));
+        browser.close = async (...a) => {
+            await nimm();
+            verbindung.zu = true;
+            for (const z of konsum.ziele) z.zu = true;
+            return zu(...a);
+        };
         return browser;
     };
-    // jeder puppeteer, den ein Modul lädt (die Bündel-Datei und ihr Standard-Objekt tragen je ein gebundenes launch)
+    // jeder puppeteer, den ein Modul lädt (die Bündel-Datei und ihr Standard-Objekt tragen je ein gebundenes launch): der Start eines
+    // Browsers ist beim Namen (`browser`), mit dem Seiten-Zeugen trägt er die Coverage jeder Seite
     const laden = Module._load;
     const gefasst = new WeakSet();
     Module._load = function () {
@@ -144,25 +193,34 @@ if (KONSUM && BAUM) {
         for (const o of [m, m && m.default])
             if (o && typeof o.launch === "function" && typeof o.executablePath === "function" && !gefasst.has(o)) {
                 gefasst.add(o);
-                const start = o.launch;
-                o.launch = async (...a) => anBrowser(await start.apply(o, a));
+                for (const weg of ["launch", "connect"]) {
+                    const start = o[weg];
+                    if (typeof start !== "function") continue;
+                    o[weg] = async (...a) => {
+                        konsum.browser = true;
+                        const b = await start.apply(o, a);
+                        return SEITE ? anBrowser(b) : b;
+                    };
+                }
             }
         return m;
     };
 
-    // ── der Node-Prozess: Coverage ab hier, Text-Lesen und Verzeichnisse — das Laden eines Moduls ist kein Text-Lesen (seine
-    // Bereiche nennt die Coverage)
+    // ── der Node-Prozess: Coverage ab hier, Text-Lesen, Verzeichnisse und gelesene Funktions-Texte
     fs.mkdirSync(KONSUM, { recursive: true });
-    schreibe(path.join(KONSUM, process.pid + ".offen"), "");
+    schreibe(path.join(KONSUM, ICH + ".offen"), "");
     const sitz = new (require("inspector").Session)();
     sitz.connect();
     sitz.post("Profiler.enable");
-    sitz.post("Profiler.startPreciseCoverage", { callCount: false, detailed: false });
+    const beginne = () => sitz.post("Profiler.startPreciseCoverage", { callCount: false, detailed: false });
+    beginne();
     const modul = new Set();
     for (const x of [".js", ".cjs"].filter((e) => Module._extensions[e])) {
         const o = Module._extensions[x];
         Module._extensions[x] = function (m, f) {
             modul.add(f);
+            const p = pfadVon(pathToFileURL(f).href);
+            if (p) konsum.skripte.add(p);
             return o.apply(this, arguments);
         };
     }
@@ -170,51 +228,105 @@ if (KONSUM && BAUM) {
     fs.readFileSync = function (f) {
         const r = lies.apply(this, arguments);
         const p = wo(f) && !modul.delete(wo(f)) && pfadVon(pathToFileURL(wo(f)).href);
-        if (p) konsum.ganz.add(p);
+        if (p) ganz(p, "gelesen");
         return r;
     };
     fs.readdirSync = function (d) {
         const r = liste.apply(this, arguments);
         const p = wo(d) && relativ(wo(d));
         const tief = arguments[1] && arguments[1].recursive ? "**" : "";
-        if (p !== null && (p === "" || imBaum(p))) konsum.geladen.add((p || ".") + "/" + tief);
+        if (p != null && (p === "" || imBaum(p))) konsum.geladen.add((p || ".") + "/" + tief);
         return r;
     };
-    // DER ABSCHLUSS am Ende jedes Prozesses — auch eines getöteten Kindes: vor `kill()` bittet der Zeuge des Elternteils das
-    // Kind (`<pid>.bitte`, bis 5 s), unter Linux fängt er SIGTERM/SIGINT (und gibt das Signal weiter, wenn sonst niemand
-    // lauscht); ein Kind, das nicht antwortet, bleibt `.offen`
-    const toeten = require("child_process").ChildProcess.prototype.kill;
-    require("child_process").ChildProcess.prototype.kill = function (...a) {
-        const bitte = path.join(KONSUM, this.pid + ".bitte");
-        if (this.pid && fs.existsSync(path.join(KONSUM, this.pid + ".offen"))) {
-            schreibe(bitte, "");
-            for (const frist = Date.now() + 5000; fs.existsSync(bitte) && Date.now() < frist; )
-                Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 20);
-        }
-        return toeten.apply(this, a);
-    };
-    const meineBitte = path.join(KONSUM, process.pid + ".bitte");
-    setInterval(() => fs.existsSync(meineBitte) && (abschluss(), fs.rmSync(meineBitte, { force: true })), 100).unref();
-    for (const sig of ["SIGTERM", "SIGINT"])
-        process.on(sig, function fang() {
-            abschluss();
-            if (process.listenerCount(sig) === 1) (process.removeListener(sig, fang), process.kill(process.pid, sig));
-        });
-    process.on("exit", () => abschluss());
-    function abschluss() {
+    const textVon = Function.prototype.toString;
+    Object.defineProperty(Function.prototype, "toString", { configurable: true, writable: true, value: function toString() {
+        const t = textVon.call(this);
+        if (t.length > 12 && !konsum.texte.has(t) && !t.endsWith("{ [native code] }")) konsum.texte.add(t);
+        return t;
+    } });
+
+    // EINE NAHME des Node-Prozesses → das Roh-Stück; `neu`: das Fenster schließt, die Coverage beginnt neu (die Bereiche des Fensters
+    // fallen; die geladenen Skripte, das Gelesene und die Verzeichnisse bleiben)
+    const stueck = (neu) => {
         sitz.post("Profiler.takePreciseCoverage", (e, r) => r && male(r.result));
-        for (const z of konsum.ziele) verloren(z, false);
         const texte = [...konsum.texte];
         const js = {};
         for (const [p, e] of konsum.js) {
-            const q = lies(path.join(BAUM, p), "utf8");
-            if (q.length === e.len)
+            if (!e) continue;
+            if (texte.length) {
+                const q = lies(path.join(BAUM, p), "utf8");
                 for (const t of texte) for (let i = q.indexOf(t); i >= 0; i = q.indexOf(t, i + 1)) e.an.fill(1, i, i + t.length);
+            }
             const b = [];
             for (let i = 0; i < e.len; i++) if (e.an[i]) b.length && b[b.length - 1][1] === i ? b[b.length - 1][1]++ : b.push([i, i + 1]);
-            js[p] = { len: e.len, bereiche: b };
+            if (b.length) js[p] = { len: e.len, bereiche: b };
         }
-        schreibe(path.join(KONSUM, process.pid + ".json"), JSON.stringify({ js, geladen: [...konsum.geladen], ganz: [...konsum.ganz] }));
-        fs.rmSync(path.join(KONSUM, process.pid + ".offen"), { force: true });
+        if (neu) {
+            sitz.post("Profiler.stopPreciseCoverage");
+            beginne();
+            for (const e of konsum.js.values()) if (e) e.an.fill(0);
+            konsum.texte.clear();
+        }
+        return JSON.stringify({ js, skripte: [...konsum.skripte], geladen: [...konsum.geladen], ganz: [...konsum.ganz], warum: konsum.warum, browser: konsum.browser, seite: SEITE });
+    };
+    let zu = false;
+    function abschluss() {
+        if (zu) return;
+        zu = true;
+        for (const z of konsum.ziele) if (!z.zu) verloren(z);
+        schreibe(path.join(KONSUM, ICH + ".json"), stueck(false));
+        fs.rmSync(path.join(KONSUM, ICH + ".offen"), { force: true });
     }
+    // DER RUF DES LÄUFERS (fs.watch auf den Ordner, ohne den Prozess zu halten): `nimm.<k>` → das Fenster-Stück `<id>.seg.<k>.json`;
+    // `<id>.bitte` → der Abschluss vor dem Töten (der Zeuge des Elternteils bittet das Kind vor `kill()`, bis 5 s)
+    const beantwortet = new Set();
+    const ruf = () => {
+        if (zu) return;
+        let da;
+        try {
+            da = liste(KONSUM);
+        } catch (_e) {
+            return;
+        }
+        for (const n of da) {
+            const m = /^nimm\.([\w-]+)$/.exec(n);
+            if (m && !beantwortet.has(n)) {
+                beantwortet.add(n);
+                const ziel = path.join(KONSUM, ICH + ".seg." + m[1] + ".json");
+                schreibe(ziel + ".teil", stueck(true));
+                fs.renameSync(ziel + ".teil", ziel);
+            }
+        }
+        if (da.includes(ICH + ".bitte")) (abschluss(), fs.rmSync(path.join(KONSUM, ICH + ".bitte"), { force: true }));
+    };
+    try {
+        fs.watch(KONSUM, { persistent: false }, ruf);
+    } catch (_e) {
+        // ohne Wache antwortet der Prozess keinem Ruf: der Läufer nennt ihn beim Namen (kein Fenster-Stück)
+    }
+    if (faden.isMainThread) {
+        const toeten = require("child_process").ChildProcess.prototype.kill;
+        const bitteVor = (pid) => {
+            const bitte = path.join(KONSUM, pid + ".bitte");
+            if (!gibt(path.join(KONSUM, pid + ".offen"))) return;
+            schreibe(bitte, "");
+            for (const frist = Date.now() + 5000; gibt(bitte) && Date.now() < frist; ) Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 20);
+            fs.rmSync(bitte, { force: true });
+        };
+        require("child_process").ChildProcess.prototype.kill = function (...a) {
+            if (this.pid && this.exitCode == null && a[0] !== 0) bitteVor(this.pid);
+            return toeten.apply(this, a);
+        };
+        const stoss = process.kill;
+        process.kill = function (pid, sig) {
+            if (pid > 0 && pid !== process.pid && sig !== 0) bitteVor(pid);
+            return stoss.apply(this, arguments);
+        };
+        for (const sig of ["SIGTERM", "SIGINT"])
+            process.on(sig, function fang() {
+                abschluss();
+                if (process.listenerCount(sig) === 1) (process.removeListener(sig, fang), process.kill(process.pid, sig));
+            });
+    }
+    process.on("exit", () => abschluss());
 }
