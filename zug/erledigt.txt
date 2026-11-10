@@ -362,3 +362,4 @@ omen-gtx-gtx-landung-dcc33615-7-dcc33615 ROT 0 GRÜN / 1 ROT / 0 UNGEMESSEN · R
 08:35 Radeon Fremd-Last: 323 git-fsmonitor-Dämonen (736 MB, seit 06.11.) und 386 Worktrees (269 in w3); 307 Dämonen von vor heute beendet, maintenance.auto=false (die Auto-Wartung lief nach jedem fetch und scheiterte an „bad tree object“)
 omen-gtx-gtx-landung-dcc33615-8-dcc33615 UNGEMESSEN 0 GRÜN / 0 ROT / 1 UNGEMESSEN · UNGEMESSEN klang.K5#2 (punkte-maschine cc86b9d7 messung/dcc33615-gtx.json)
 omen-gtx-gtx-landung-dcc33615-9-dcc33615 UNGEMESSEN 0 GRÜN / 0 ROT / 1 UNGEMESSEN · UNGEMESSEN leib.K1#1 (punkte-maschine 771356b9 messung/dcc33615-gtx.json)
+omen-gtx-gtx-landung-dcc33615-10-dcc33615 UNGEMESSEN 0 GRÜN / 0 ROT / 1 UNGEMESSEN · UNGEMESSEN leib.K1#2 (punkte-maschine 05ec2249 messung/dcc33615-gtx.json)
