@@ -1,5 +1,24 @@
 # Post an w27-ferne-ton-5
 
+## 10.11. 09:10 — w27-ferne-ton-5: ABGABE 790ed7660709ff8543de205fa71686e2b26438d9
+
+ABGABE 790ed7660709ff8543de205fa71686e2b26438d9 — Abgabe w27-ferne-ton-5 (main 900c28e6 im Kopf; ersetzt 80bcd308, deren fünf Punkte unverändert stehen). Der EINE Schnitt auf Zuruf des Koordinators (10.11. 07:55): ferne.K1#2 an der Radeon.
+
+- **Geschnitten.** Der Einmal-Render außerhalb des Vorbaus (stamm/bild-kosten.js:924 `_einmalRender`) ist nur noch ganz, wenn kein Draw auf eine Pipeline wartete, die ein Takt asynchron begann; der Draw einer fremden Szene, der dort nicht zeichnen konnte, zählt wie im Vorbau (`einmalOffen`, stamm/bild-kosten.js:579). Bis hier galt er dort stets als ganz: die Radeon übersetzt die Pipeline der Mehrfachstreuung 1 040 ms (OMEN 67 ms) — ein Leser außerhalb des Takts traf sie im Bau, der Draw fiel aus, und `_atmoTakt` setzte die Tafeln frisch über einer leeren Ψ_ms; die Himmels-Sicht trug nur die einfache Streuung bis zum nächsten Medium. Die Linse: gate:luft-tiefe liest Durchlass und Ψ_ms zurück und nennt eine Tafel ohne Bild (`K1-2 TAFEL Mehrfachstreuung: n Texel ohne Bild`); Mutanten „leere Ψ_ms“ und „ungelesene Tafel“ ROT, ohne die Prüfung beide GRÜN.
+- **Gemessen.**
+  - Radeon 638183fb (Diagnose): Ψ_ms 0:0:0:0 (Alpha 0) bei stehender Pipeline (`da`, 1 Nutzer, keine GPU-Meldung, keine Absage); nach EINEM Neuzeichnen 0,03516/0,03891/0,04367 — bit-gleich mit GTX und swiftshader.
+  - ferne.K1#2 Radeon: 638183fb ROT (Farbton 8 km 162–171°, Himmel 0,1287/0,1182/0,1066 grau, Kante 3,3 %) → 48b576d2 LUFT GRÜN, alle vier Stufen, Farbton 0,04–2,75°. GTX 1050 0,03–2,71°, swiftshader 0,11–2,46°.
+  - bild:wiese@0.5 GTX 1050 Luma 43,8, angesehen: Wiese in Sonne und Schatten, Bäume, Himmel blau zwischen dem Laub.
+  - Lokal am Kopf GRÜN (Chrome 148 wie die CI): check · playtest:fast · welt-boot · post-kette und ego-schatten (kein [ERROR] STOFF außer der Injektion des Selbsttests) · Fernwald (957 Bäume) · Werk im Wasser · luft-tiefe.
+  - Wachstum (Merge-Basis integ-probe): Prüf +234 / Spiel +3 281 Atome, erlaubt 1 640; werkbank.cjs ohne neue Zeile, die Diagnose fiel.
+- **Ehrlich offen.**
+  - Die OMEN ist am Kopf nicht geprobt (zuletzt 638183fb LUFT GRÜN); die Probe der Abgabe ruft zeit: und gate: erneut.
+  - Die anderen Leser außerhalb des Takts (Prüfbühne `_himmelFrisch`, Aufnahme, Wasser-Linse) lesen jetzt false statt einer leeren Tafel, solange ihre Pipeline übersetzt — auf echter GPU nur an der Luft-Linse gemessen.
+  - `_horizontHimmel` (stamm/dirigent-ankunft.js) blieb unberührt; ich brauche dort nichts.
+- FUND: stamm/bild-kosten.js:924 `_einmalRender` · außerhalb des Vorbaus galt jeder Einmal-Render als ganz, auch wenn sein Draw auf die Pipeline eines Takts wartete (Radeon: Ψ_ms leer, Himmel grau, ferne.K1#2 ROT an main und Zweig) · fail-soft · M
+- FUND: welt-licht.js `passMehrfach` · die Übersetzung der Ψ_ms (Schleife 64 × 20 mit Durchlass je Schritt) dauert auf der Radeon 1 040 ms, OMEN 67 ms · Ankunft B · S
+- Die Besten: Unreal PSO-Precaching (ein Draw, dessen PSO noch übersetzt, wird übersprungen und als solcher gezählt, nie als gezeichnet); Hillaire 2020 (die Tafeln der Luft sind eine Kette — der Leser von Ψ_ms liest nur eine bestätigte Tafel).
+
 ## 10.11. 08:56 — GPU-PROBE 48b576d2 auf gtx1050-desktop + radeon-890m (Band-Gerät): GRÜN in 451 s (gate:luft-tiefe:echt GRÜN 140 s auf gtx1050-desktop · bild:wiese@0.5 GRÜN 93 s auf gtx1050-desktop · zeit:gate:luft-tiefe:echt GRÜN 72 s auf radeon-890m (Band-Gerät)) → probe-post/w27-ferne-ton-5/48b576d2.md
 
 ## 10.11. 08:43 — GPU-PROBE 638183fb auf omen-gtx1060 + radeon-890m (Band-Gerät): ROT in 286 s (gate:luft-tiefe:echt GRÜN 75 s auf omen-gtx1060 · zeit:gate:luft-tiefe:echt ROT 98 s auf radeon-890m (Band-Gerät)) → probe-post/w27-ferne-ton-5/638183fb.md
