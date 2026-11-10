@@ -769,10 +769,22 @@ hauptLauf(async () => {
                     ? rend._pipelines.caches.size
                     : null,
         };
-        // (4) Upload-Bytes: der Queue-Tap muss sitzen + kumuliert > 1 MB nach Boot.
+        // (4) Upload-Bytes: der Queue-Tap sitzt und zählt JEDES Byte — zwei Schreiben bekannter Größe (ganz und in Elementen)
+        // heben seinen Akku um genau 4 224 Bytes —, und die Faltung je Bild trägt die Uploads der Welt in `upBytes`
         const q = rend.backend && rend.backend.device && rend.backend.device.queue;
+        let probe = null;
+        if (q && q.__anazhTap === true) {
+            const pb = rend.backend.device.createBuffer({ label: "hitch-probe", size: 4096, usage: GPUBufferUsage.COPY_DST });
+            const vor = r._uploadBytesAcc || 0;
+            q.writeBuffer(pb, 0, new Uint8Array(4096));
+            q.writeBuffer(pb, 1024, new Float32Array(64), 16, 32);
+            probe = (r._uploadBytesAcc || 0) - vor;
+            r._uploadBytesAcc = vor; // die Probe ist kein Upload der Welt
+            pb.destroy();
+        }
         res.up = {
             tapDa: !!(q && q.__anazhTap === true),
+            probe,
             upBytes: fr.upBytes,
             uploadBytesEwma: sns.uploadBytesEwma,
         };
@@ -957,13 +969,16 @@ hauptLauf(async () => {
         }`
     );
 
-    // Band 4 — Upload-Bytes: Tap sitzt + kumuliert > 1 MB (Chunks/Assets wurden hochgeladen).
+    // Band 4 — Upload-Bytes: der Tap sitzt und zählt jedes Byte (die Probe: 4 224 Bytes genau), die Welt lädt durch ihn
+    // (kumuliert > 0). Bis w25-gpu-wahl-2 verlangte das Band kumuliert > 1 MB: das trugen die Slot-Tausche der Instanz-Wahl
+    // der CPU und die Neu-Kopie jedes Lagers nach einem Bild über GPU_KEHRAUS_MS — beide fielen (Lehre 25: der Stand lädt
+    // nichts), der Beweis des Konsums ist das genaue Zählen, nie die Menge.
     const up = out.up;
     const upMB = (up.upBytes || 0) / 1048576;
     bandIn(1)(
-        up.tapDa && upMB > 1,
+        up.tapDa && up.probe === 4224 && up.upBytes > 0,
         "UPLOAD-BYTES (Konsum)",
-        `Tap=${up.tapDa} · kumuliert=${upMB.toFixed(1)} MB · EwmaProFrame=${
+        `Tap=${up.tapDa} · Probe ${up.probe} von 4224 Bytes · kumuliert=${upMB.toFixed(2)} MB · EwmaProFrame=${
             up.uploadBytesEwma != null ? (up.uploadBytesEwma / 1024).toFixed(1) + " KB" : "—"
         }`
     );

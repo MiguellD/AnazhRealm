@@ -645,8 +645,6 @@ class AnazhRealm_bild_schatten {
             band1: 0,
             ab: [],
             saum: [0, 1],
-            wahlHaupt: [], // die Gruppen, die der Haupt-Pass gewählt hat (sein Nachher-Haken gibt sie zurück)
-            wahlSchatten: [], // dasselbe für den laufenden Kaskaden-Pass
         };
         return this._kaskadenS;
     }
@@ -678,6 +676,10 @@ class AnazhRealm_bild_schatten {
                 const h = this._bundleWerferHuelle(bg);
                 if (h) aus.push(h);
             }
+        // die Gruppen der GPU-Wahl (`_gpuWahlWirt`, kein Bündel): ihre hohen Bäume heben die nahe Ebene der Box wie zuvor im Bündel
+        const gw = this.state.gpuWahlWirt;
+        const hw = gw && gw.parent ? this._bundleWerferHuelle(gw) : null;
+        if (hw) aus.push(hw);
         // Jeder werfende Satz (der Boden, die werfenden Bau-Sätze) trägt seine Bereichs-Hüllen bei — nach seiner Grund-Sicht,
         // nie nach seiner Sicht im letzten Pass (ein Blick in den Himmel zeigt keinen Abschnitt).
         const saetze = this.state.chunkSaetze;

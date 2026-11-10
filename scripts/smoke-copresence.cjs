@@ -104,33 +104,14 @@ const { starteBrowser, halteBis, waitFor, pruefer, zweiImMesh } = require("./lib
 
         // Die WELT selbst hat den Gefährten gesehen: ihr peer-join-Callback
         // postete {type:"event"} durch die null-origin-Wand ins Journal.
-        await waitFor(
-            pageB,
-            () => {
-                const j = st.worldJournal;
-                return !!(j?.entries && j.entries.some((e) => /erschien neben dir/.test(e.text)));
-            },
-            "B's Begegnungs-Welt meldete die Begegnung (Journal)"
-        );
-        const journalB = await pageB.evaluate(() => {
-            const j = st.worldJournal;
-            const hit = j.entries.filter((e) => /erschien neben dir/.test(e.text));
-            return hit.length ? hit[hit.length - 1].text : "";
-        });
+        // die Begegnung im Journal der Seite (`wer` ihr Name): gewartet, bis sie steht, dann der Text ihres letzten Eintrags
+        const begegnung = async (page, wer) => {
+            await waitFor(page, () => (st.worldJournal?.entries || []).some((e) => /erschien neben dir/.test(e.text)), `${wer}'s Begegnungs-Welt meldete die Begegnung (Journal)`); // prettier-ignore
+            return page.evaluate(() => st.worldJournal.entries.filter((e) => /erschien neben dir/.test(e.text)).at(-1).text);
+        };
+        const journalB = await begegnung(pageB, "B");
         check("B: die Welt rendert A (Journal-Beweis durch die Sandbox-Wand)", /Anna/.test(journalB), journalB);
-        await waitFor(
-            pageA,
-            () => {
-                const j = st.worldJournal;
-                return !!(j?.entries && j.entries.some((e) => /erschien neben dir/.test(e.text)));
-            },
-            "A's Begegnungs-Welt meldete die Begegnung (Journal)"
-        );
-        const journalA = await pageA.evaluate(() => {
-            const j = st.worldJournal;
-            const hit = j.entries.filter((e) => /erschien neben dir/.test(e.text));
-            return hit.length ? hit[hit.length - 1].text : "";
-        });
+        const journalA = await begegnung(pageA, "A");
         check("A: die Welt rendert B (Gegenrichtung)", /Bo/.test(journalA), journalA);
 
         // W18-C — die INPUT-BRÜCKE (Variante A): die Welt deklarierte

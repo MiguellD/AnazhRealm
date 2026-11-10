@@ -891,17 +891,18 @@ class AnazhRealm_klang {
         if (n <= 0) return;
         k.halb = halb;
         if (n > T.maxProTick) n = T.maxProTick; // Frame-Hänger → kein Burst-Schwall
-        for (let i = 0; i < n; i++) this._schrittKlangEreignis(mesh, false, 0);
+        for (let i = 0; i < n; i++) this._schrittKlangEreignis(mesh, false, 0, halter._gait);
     }
 
     // SCHRITT-EREIGNIS (Chokepoint für Schritt UND Landung): zählt IMMER (headless messbar), holt das
-    // Material am FUSS (position.y − FOOT_OFFSET), die Stimme nur hinter der s.enabled-Wand.
-    _schrittKlangEreignis(mesh, landung, impact) {
+    // Material am FUSS (position.y − FOOT_OFFSET), die Stimme nur hinter der s.enabled-Wand. `gang` der Gang des Halters
+    // (`_gait`: ω und Tastgrad) — aus ihm dauert die Lastübernahme des Fußes (klang SCHRITT).
+    _schrittKlangEreignis(mesh, landung, impact, gang) {
         const k = this.state._schrittKlang;
         if (!k) return;
         const fussY = mesh.position.y - AnazhRealm.PLAYER_FOOT_OFFSET;
         const material = this._schrittMaterialAt(mesh.position.x, mesh.position.z, fussY);
-        const param = this._schrittKlangParams(material, landung, impact);
+        const param = this._schrittKlangParams(material, landung, impact, gang);
         if (landung) k.landungen++;
         else k.schritte++;
         k.letzter = param;
@@ -918,67 +919,41 @@ class AnazhRealm_klang {
         return stoff !== "eis" && this._nassAt(x, z, 0.02, y) ? "wasser" : stoff;
     }
 
-    // Stoff → Timbre aus der Klang-Spalte seiner Zeile der Stoff-Tafel (`_stoff`, stoffe.K1; ein eigener Stoff klingt wie sein
-    // nächster Verwandter). Die LANDUNG ist derselbe Burst, STÄRKER mit dem Aufprall-Tempo (√(2gh)): vom Pegel des Schritts
-    // linear bis zur Decke beim Aufprall landVollMs — jeder Stoff steigt über die ganze Spanne (bis klang.K4 deckelte ein
-    // Zusatz ab 11,7 m/s: 12 m klangen wie 8 m), länger und tiefer.
-    _schrittKlangParams(material, landung, impact) {
+    // Der Stoff klingt nach seinem GESETZ (klang SCHRITT, klang.K4): Härte E, Dichte ρ, Dämpfung η und Körnung d seiner Zeile der
+    // Stoff-Tafel (`_stoff`, stoffe.K1; ein eigener Stoff klingt wie sein nächster Verwandter), die Lastübernahme aus dem Gang
+    // (`gang`: ⅙ des Stands, Tastgrad × 2π/ω). Die LANDUNG ist derselbe Schritt, STÄRKER mit dem Aufprall-Tempo (√(2gh)): vom
+    // Pegel des Schritts linear bis zur Decke beim Aufprall landVollMs — jeder Stoff steigt über die ganze Spanne (bis klang.K4
+    // deckelte ein Zusatz ab 11,7 m/s: 12 m klangen wie 8 m), länger und tiefer.
+    _schrittKlangParams(material, landung, impact, gang) {
         const T = AnazhRealm.SCHRITT_KLANG;
+        const S = AnazhRealm._schrittGesetz();
         const zeile = this._stoff(material);
         if (!zeile) return null; // der Melder hat gesprochen (`_stoff`), der Fuß schweigt
-        const m = zeile.klang;
+        const g = gang && gang.omega > 0 && gang.tast > 0 ? gang : null;
         const p = {
             material: zeile.name,
-            filter: m.filter,
-            freq: m.freq,
-            q: m.q,
-            dauer: m.dauer,
-            gain: m.gain,
+            boden: { E: zeile.E, rho: zeile.rho, eta: zeile.eta, koernung: zeile.koernung },
+            gain: S.gain,
+            ladeSek: g ? S.ladeAnteil * g.tast * ((2 * Math.PI) / g.omega) : null,
             landung: !!landung,
         };
         if (landung) {
             const im = Number.isFinite(impact) && impact > 0 ? impact : 0;
             p.aufprall = im;
-            p.gain = m.gain + (Math.max(m.gain, T.gainDeckel) - m.gain) * Math.min(1, im / T.landVollMs);
-            p.dauer = m.dauer * T.landDauerFaktor;
-            p.freq = m.freq * T.landFreqFaktor;
+            p.gain = S.gain + (Math.max(S.gain, T.gainDeckel) - S.gain) * Math.min(1, im / T.landVollMs);
+            p.dauerFaktor = T.landDauerFaktor;
+            p.freqFaktor = T.landFreqFaktor;
         }
         return p;
     }
 
-    // Die Stimme: gefilterter Rausch-Burst über state.symphony.masterGain (KEIN zweiter AudioContext;
-    // Symphonie aus → stumm). EIN geteilter Rausch-Buffer je Kontext, zufälliger Start-Offset.
-    // Math.random ist hier legal: reiner Klang-Körper, keine Welt-Substanz.
+    // Die Stimme: der Schritt des Klang-Kerns (`schrittKlang`: Ferse, Rollen und Ballen im Band der Härte, das Knistern der
+    // Körnung, alles mit der Dämpfung der Zeile) über state.symphony.masterGain (KEIN zweiter AudioContext; Symphonie aus →
+    // stumm, ein Boden ohne Gesetz → stumm).
     _playSchrittOneShot(param) {
         const s = this.state.symphony;
         if (!s || !s.enabled || !s.ctx || !s.masterGain || !param) return false;
-        const ctx = s.ctx;
-        let buf = s._schrittNoiseCtx === ctx ? s._schrittNoise : null;
-        if (!buf) {
-            const n = Math.max(1, Math.floor(ctx.sampleRate * 0.25));
-            buf = ctx.createBuffer(1, n, ctx.sampleRate);
-            const ch = buf.getChannelData(0);
-            for (let i = 0; i < n; i++) ch[i] = Math.random() * 2 - 1;
-            s._schrittNoise = buf;
-            s._schrittNoiseCtx = ctx;
-        }
-        const t = ctx.currentTime;
-        const src = ctx.createBufferSource();
-        src.buffer = buf;
-        const filt = ctx.createBiquadFilter();
-        filt.type = param.filter;
-        filt.frequency.value = param.freq;
-        filt.Q.value = param.q;
-        const gain = ctx.createGain();
-        gain.gain.setValueAtTime(0, t);
-        gain.gain.linearRampToValueAtTime(param.gain, t + 0.004);
-        gain.gain.exponentialRampToValueAtTime(0.0001, t + param.dauer);
-        src.connect(filt);
-        filt.connect(gain);
-        gain.connect(s.masterGain);
-        const spielraum = buf.duration - param.dauer - 0.02;
-        src.start(t, spielraum > 0 ? Math.random() * spielraum : 0);
-        src.stop(t + param.dauer + 0.02);
+        if (!AnazhRealm._schrittGesetz().schrittKlang(s.ctx, s.masterGain, param.boden, param)) return false;
         this._musikDuck("schritt");
         return true;
     }
@@ -2216,17 +2191,18 @@ class AnazhRealm_klang {
 _stammZonen(AnazhRealm, [AnazhRealm_klang]);
 
 // ===== ATLAS · Klang — Außen-Konstanten =====
-// Der EINE Timbre-Leser: das Material→Filter-Gesetz des Schritt-Klangs aus dem klang-Gesetzbuch
-// (SCHRITT_TIMBRE); die Bewegungs-Schwelle wohnt getrennt im koerper-Gesetzbuch. Fail-closed; Memo
-// nur im Erfolgs-Fall.
-AnazhRealm._schrittTimbre = function () {
-    if (AnazhRealm._schrittTimbreMemo) return AnazhRealm._schrittTimbreMemo;
-    const t = AnazhRealm.Gesetz("klang:SCHRITT_TIMBRE", null);
-    if (t && t.material && t.material.stein) {
-        AnazhRealm._schrittTimbreMemo = t;
-        return t;
+// Der EINE Leser des Schritt-Gesetzs: der Schritt aus dem Stoff im klang-Gesetzbuch (SCHRITT: Pegel und Lastübernahme,
+// `schrittKlang` die Stimme aus Härte, Dämpfung und Körnung der Zeile); die Bewegungs-Schwelle wohnt getrennt im
+// koerper-Gesetzbuch. Fail-closed; Memo nur im Erfolgs-Fall.
+AnazhRealm._schrittGesetz = function () {
+    if (AnazhRealm._schrittGesetzMemo) return AnazhRealm._schrittGesetzMemo;
+    const S = AnazhRealm.Gesetz("klang:SCHRITT", null);
+    const stimme = AnazhRealm.Gesetz("klang:schrittKlang", null);
+    if (S && S.gain > 0 && S.ladeAnteil > 0 && typeof stimme === "function") {
+        AnazhRealm._schrittGesetzMemo = { gain: S.gain, ladeAnteil: S.ladeAnteil, schrittKlang: stimme };
+        return AnazhRealm._schrittGesetzMemo;
     }
-    return AnazhRealm._kernPflichtBruch("klang:SCHRITT_TIMBRE");
+    return AnazhRealm._kernPflichtBruch("klang:SCHRITT");
 };
 // Der EINE Umwelt-Klang-Leser (Welle 5 Klang): das Klang-Gesetz der Welt (UMWELT: Stimmen · Ohr · Tier · Orte) und
 // die reinen Funktionen des Gesetzbuchs (Mischung · Graph · Tier-Ruf). Fail-closed: ein alter Kern ist ein Bruch,
@@ -2353,12 +2329,11 @@ AnazhRealm.LOFI_VORLAUF_S = 0.3; // so weit vor seinem Einsatz plant `_lofiTick`
 // Das Trommel-Muster wohnt im klang-Gesetzbuch (RHYTHMUS_MUSTER, Leser _lofiGroovePattern), der
 // Swing in fx.klang.dna.swing je Genre (Leser _grooveSwing) — beide fail-closed.
 AnazhRealm.MOUNT_SPEED_FACTOR = 0.7; // Compounds fahren etwas langsamer als zu Fuß
-// ═══ SCHRITT-KLANG — Material → Timbre (gate:schritt-klang) ═══
-// Asset-freie Farnell-Synthese: Quelle ist immer ein Rausch-Burst, das MATERIAL ist der Filter (erde
-// dumpf · stein hell · glut warm · quarz/eisen klirrend · wasser platschig); gain bewusst dezent unter
-// dem Kampf-One-Shot. Die Bewegungs-Schwelle wohnt in bewegung.schritt.klangTempoMin, das
-// Material→Timbre-Gesetz im klang-Gesetzbuch (SCHRITT_TIMBRE), gelesen als Klang-Spalte der Stoff-Tafel (`_stoff`);
-// Tick-Deckel und Landungs-Wichtung sind Wirts-Mischpult.
+// ═══ SCHRITT-KLANG — der Schritt aus dem Stoff (gate:schritt-klang, klang.K4) ═══
+// Asset-freie Synthese: der Stoff unter dem Fuß klingt nach seinem Gesetz im klang-Gesetzbuch (SCHRITT, `schrittKlang`) —
+// Härte, Dämpfung und Körnung derselben Zeile der Stoff-Tafel (`_stoff`), die Lastübernahme aus dem Gang; gain bewusst
+// dezent unter dem Kampf-One-Shot. Die Bewegungs-Schwelle wohnt in bewegung.schritt.klangTempoMin; Tick-Deckel und
+// Landungs-Wichtung sind Wirts-Mischpult.
 AnazhRealm.SCHRITT_KLANG = Object.freeze({
     get tempoMin() {
         // m/s — darunter (Mikro-Rutsch im Stand) feuert kein Schritt
