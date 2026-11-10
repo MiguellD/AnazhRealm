@@ -176,3 +176,8 @@ Der Koordinator (Fable) endet hier. Alles Folgende läuft OHNE LLM oder auf opus
 - **wald-kosten-heim** a98f0db6: leerer Kopf mit drei statt vier Proben, Probe GRÜN → fährt im nächsten Zug. **fenster-wand** 46bff653: Code-Check rot nur an VK + Fenster-Wand (Wackler), Neulauf läuft.
 - **OMEN:** Bisekt fertig, Täter b5012e8b (w20-fern-hang) = `_horizontHimmel` in dirigent-ankunft.js je Fragment (wiese-ego 20,7 → 32,3 ms) → Champion w27-horizont-kosten. Labels gpu-probe + gpu-zeit wieder am Läufer omen-gtx1060.
 - **Buchung:** 07:43 buchte buche.sh am 067bd771 NICHT (keine Zeile in budget.txt, vermutlich die Wand „Summe fällt“ vor der Messung); nach-landung2 bucht nach der Radeon-Messung `run --offen` (läuft seit 07:28).
+
+## Nachtrag 08:35 — z362 gelandet, Fremd-Last durch git
+- **z362 GELANDET** 900c28e6 → main (w27-haar-arm-2, merge-base). z363 sammelt lod-baum 1f6e4050 + wald-kosten-heim a98f0db6 (Bündel vorab GRÜN, Prüf +1831 / Spiel +5326); fenster-wand fährt erst mit grünem Code-Check.
+- **Fremd-Last auf der Radeon:** 323 `git fsmonitor--daemon` liefen (je Worktree einer, seit 06.11. nie beendet, 736 MB), 386 Worktrees sind registriert (269 unter /tmp/claude/w3). 307 Dämonen von vor heute beendet. `git config maintenance.auto false` im Repo: jede Auto-Wartung nach einem fetch scheiterte an „bad tree object“ (geometric repack) und lief beim nächsten fetch wieder. Offen: die 269 alten w3-Worktrees aufräumen (nur saubere, von keinem Werkzeug genutzte), dann einmal in Ruhe `git maintenance run`.
+- **ort-pose (GTX 1050):** Täter war die Nässe-Linse selbst (der Strahl durch die Tür traf die nasse Wand des Nachbarhauses; Pfützen-Punkte im porösen Median). Patch auf main 900c28e6 folgt.
