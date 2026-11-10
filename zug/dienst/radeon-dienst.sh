@@ -13,7 +13,16 @@ L=$W/radeon-nie-leer.log
 GS="${TEMP:-/tmp}/claude/gpu-schloss"
 A="-c user.name=MiguellD -c user.email=87209049+MiguellD@users.noreply.github.com"
 ci() { tasklist -FI "IMAGENAME eq Runner.Worker.exe" 2>/dev/null | grep -qi Runner.Worker; }
-frei() { [ ! -f "$GS/besitzer.txt" ] && ! ps -ef | grep -q "[p]unkte.cjs run" && ! ci; }
+# DER ORDNER ist das Schloss (atomar mkdir, gpu-schloss.sh) — nie nur besitzer.txt lesen
+frei() { [ ! -d "$GS" ] && ! ps -ef | grep -q "[p]unkte.cjs run" && ! ci; }
+# verwaist: der Halter (pid= in besitzer.txt) lebt nicht mehr, oder der Ordner steht seit > 2 min ohne Halter (10.11. 21:54: der
+# Konto-Wechsel beendete die Messung, ihr Schloss hing 35 min an pid 30944 — CI und Messung hätten daran gewartet)
+verwaist() {
+    local p
+    [ -d "$GS" ] || return 1
+    p=$(grep -m1 "^pid=" "$GS/besitzer.txt" 2>/dev/null | tr -dc 0-9)
+    if [ -z "$p" ]; then [ $(($(date +%s) - $(stat -c %Y "$GS"))) -gt 120 ]; else ! tasklist -FI "PID eq $p" -NH 2>/dev/null | grep -qw "$p"; fi
+}
 echo "$(date +%H:%M) START radeon-dienst (CI vor Messung, PID $(cat "$S/radeon.pid"))" >>"$L"
 miss() { # $1 = Name im Log, Rest = Argumente für punkte.cjs
     local name=$1 K p ab w n g j
@@ -46,7 +55,7 @@ miss() { # $1 = Name im Log, Rest = Argumente für punkte.cjs
     if [ $ab = 1 ]; then
         git checkout -q -- meisterkarte-quelle/punkte/messung 2>/dev/null
         git clean -fdq meisterkarte-quelle/punkte/messung 2>/dev/null
-        grep -q "^punkte" "$GS/besitzer.txt" 2>/dev/null && rm -f "$GS/besitzer.txt" # das Schloss des eigenen, beendeten Laufs — die Karte gehört jetzt der CI
+        verwaist && rm -rf "$GS" # das Schloss des eigenen, beendeten Laufs — die Karte gehört jetzt der CI
         echo "$(date +%H:%M) $name ABGEBROCHEN: CI-Job auf der Karte — Messung verworfen" >>"$L"
         return 2
     fi
@@ -68,6 +77,10 @@ miss() { # $1 = Name im Log, Rest = Argumente für punkte.cjs
 }
 f=0
 while true; do
+    if verwaist; then
+        echo "$(date +%H:%M) verwaistes GPU-Schloss gelöst ($(head -1 "$GS/besitzer.txt" 2>/dev/null | tr -d "") · $(grep -m1 "^pid=" "$GS/besitzer.txt" 2>/dev/null), Halter tot)" >>"$L"
+        rm -rf "$GS"
+    fi
     if frei; then f=$((f + 1)); else
         f=0
         puls radeon "wartet: Karte belegt ($(head -1 "$GS/besitzer.txt" 2>/dev/null || echo CI/Messung))"
