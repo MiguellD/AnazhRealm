@@ -917,6 +917,30 @@ var __weltLicht = (function () {
         })();
     }
 
+    // DAS WURF-RECHT EINES TEILS (studios.K4 — EIN Gesetz für Welt und Bühne): die Fell-Schalen werfen keinen Schatten (die Haut
+    // darunter wirft ihn — sechs Schalen wären sechs Ränder), eine LICHTQUELLE nie (Seh-Klasse glut: Glutbett, Flamme, die Lichter
+    // des Wagens, die Leucht-Linien der Tore), ein DURCHSICHTIGER Stoff (Scheibe, Fenster, Brunnen-Wasser; Deckkraft < 1 aus dem
+    // Gesetzbuch) auch keinen: das Licht geht durch ihn. Das Teil in der Gestalt, wie die Brücke es reicht (foundry-bruecke
+    // `__extractAssetMesh`: `kind`, `mat.seh`, `mat.opacity`) — die Welt fragt je geliefertem Teil (`_teilWirft`), die Bühne je
+    // Mesh (`wurfRecht`), die Treue der Bühne prüft jedes Bild (`buehneZeichnet`). Bis w27-studio-mesh lebte das Gesetz nur in der
+    // Welt, die Bühne warf mit jedem Teil: Scheibe und Lichter beschatteten den Innenraum des Wagens, die Welt zeigte ihn hell.
+    function teilWirft(t) {
+        const m = t && t.mat;
+        return !!t && t.kind !== "fellSchale" && !(m && m.seh === "glut") && !(m && typeof m.opacity === "number" && m.opacity < 1);
+    }
+    // das Teil eines Meshes der Bühne in der Gestalt der Brücke (die Deckkraft reist nur am durchsichtigen Stoff)
+    function meshTeil(o) {
+        const m = o.material,
+            u = (m && m.userData) || {};
+        return { kind: u.__klasse, mat: { seh: u.__seh, opacity: m && m.transparent && m.opacity < 1 ? m.opacity : undefined } };
+    }
+    // die Bühne wirft nach dem Gesetz der Welt: jedes Mesh unter `wurzel`, das es nicht darf, wirft nicht (beim Bau, vor der Faltung)
+    function wurfRecht(wurzel) {
+        wurzel.traverse((o) => {
+            if (o.isMesh && o.castShadow && !teilWirft(meshTeil(o))) o.castShadow = false;
+        });
+    }
+
     // DIE BÜHNE DER WELT (studios.K4, w12-studio-buehne — Studio = Modus der Welt-Engine): ein Studio zeichnet sein Werk im Licht
     // der Welt. Dieselbe Luft (der Kern: `ATMO_GESETZ`, klares Medium über dem Boden `ATMO_BODEN`), dieselben Tafeln
     // (`atmoTafeln`), dieselbe Sonne (E0 · Durchlass, `ATMO_RECHNUNG.sonne`), dieselbe Umgebung (`umgebungZeichnen` und
@@ -1099,8 +1123,8 @@ var __weltLicht = (function () {
 
     // DIE TREUE DER BÜHNE (studios.K4, w13-buehne-lack): jedes Bild der Bühne fragt vor dem Zeichnen, ob es unter dem Licht der Welt
     // ALLEIN steht — false, solange die Belichtung nicht liegt; ein Licht neben ihrer Sonne, die Sonne oder die Belichtung (samt
-    // Tonkurve) neben dem Gesetz, ein Himmel neben ihrem Knoten (Stärke 1, der Himmel als Grund in E0) oder ein Stoff mit eigener
-    // Umgebung (envNode/envMap) bricht LAUT beim Namen, nie still (der Sammler jeder Linse, die die Seite fährt, nennt ihn).
+    // Tonkurve) neben dem Gesetz, ein Himmel neben ihrem Knoten (Stärke 1, der Himmel als Grund in E0), ein Stoff mit eigener
+    // Umgebung (envNode/envMap) oder ein Werfer gegen das Wurf-Recht der Welt (`teilWirft`) bricht LAUT beim Namen, nie still (der Sammler jeder Linse, die die Seite fährt, nennt ihn).
     // Bis w12-studio-buehne zeichnete die garage unter drei Lichtern am Blick bei Belichtung 1,04: ihr Lack „glänzte" (iso, Lack-Pixel
     // Luma 92,5, p95/p50 2,11). GEMESSEN 06.11. (swiftshader, garage iso, Lack-Pixel): im Licht der Welt 46,0 / p95/p50 1,14 — ohne
     // die Sonne 30,9 / 1,55 (der Himmels-Spiegel steht, das Licht der Sonne auf Dach und Haube deckt ihn), bei Belichtung 1,04
@@ -1122,6 +1146,8 @@ var __weltLicht = (function () {
             else if (o.isLight) fremd.add(`ein Licht ${o.type} „${o.name}"`);
             for (const m of [o.material].flat())
                 if (m && (m.envNode || m.envMap)) fremd.add(`eine eigene Umgebung am Stoff „${m.name || m.type}"`);
+            if (o.isMesh && o.castShadow && !teilWirft(meshTeil(o)))
+                fremd.add(`ein Werfer gegen das Wurf-Recht der Welt („${o.material.name || o.material.type}" ${o.material.userData.__seh || o.material.userData.__klasse || "durchsichtig"})`);
         });
         if (!sonne || B.sonne.intensity !== B.staerke) fremd.add(`die Sonne ${B.sonne.intensity} statt ${B.staerke}`);
         if (R.toneMappingExposure !== B.belichtung || R.toneMapping !== globalThis.THREE[BELICHTUNG.kurve])
@@ -1177,6 +1203,8 @@ var __weltLicht = (function () {
         wolkenMenge,
         himmelSicht,
         himmelTafel,
+        teilWirft,
+        wurfRecht,
         buehne,
         buehneZeichnet,
     });

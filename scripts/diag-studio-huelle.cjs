@@ -367,16 +367,24 @@ function selbsttest() {
         console.log(`${treffer ? "✅" : "❌"} SELBST-TEST ${name}${treffer ? " — " + treffer : " — nicht rot"}`);
         if (!treffer) ok = false;
     }
-    // H9 — der Täter am Gesetz (Faden-Scope, three r184): ein Licht neben der Sonne (das Haupt der Matrix-Antike) und eine
-    // Belichtung neben der des Gesetzes brechen laut beim Namen; den sauberen Fall zeichnen garage und schmiede im Gang
+    // H9 — der Täter am Gesetz (Faden-Scope, three r184): ein Licht neben der Sonne (das Haupt der Matrix-Antike), eine
+    // Belichtung neben der des Gesetzes und ein Werfer gegen das Wurf-Recht der Welt (die Scheibe, die Glut — der opake Lack
+    // wirft) brechen laut beim Namen; den sauberen Fall zeichnen garage und schmiede im Gang
     const { THREE: T, __weltLicht: L } = fadenScope(["foundry-core.js", "welt-licht.js"]);
+    const werfer = (m, seh) => Object.assign(new T.Mesh(new T.BufferGeometry(), Object.assign(m, { name: seh })), { castShadow: true });
+    const glut = new T.MeshStandardMaterial();
+    glut.userData.__seh = "glut";
     let h9 = "";
     try {
-        L.buehneZeichnet({ sonne: 0, belichtung: 1 }, new T.Scene().add(new T.PointLight()), {});
+        const sz = new T.Scene().add(new T.PointLight());
+        sz.add(werfer(new T.MeshStandardMaterial({ transparent: true, opacity: 0.42 }), "scheibe"), werfer(glut, "licht"), werfer(new T.MeshStandardMaterial(), "lack"));
+        L.buehneZeichnet({ sonne: 0, belichtung: 1 }, sz, {});
     } catch (e) {
         h9 = e.message;
     }
-    const h9ok = /ein Licht PointLight .* die Belichtung undefined statt 1 · ein Himmel neben/.test(h9);
+    const h9ok =
+        /ein Licht PointLight .* ein Werfer gegen das Wurf-Recht der Welt \(„scheibe" durchsichtig\) · ein Werfer gegen das Wurf-Recht der Welt \(„licht" glut\) · .*die Belichtung undefined statt 1 · ein Himmel neben/.test(h9) &&
+        !/„lack"/.test(h9);
     console.log(`${h9ok ? "✅" : "❌"} SELBST-TEST H9 ${h9}`);
     return ok && h9ok && !gangBasis.length;
 }

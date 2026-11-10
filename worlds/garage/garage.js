@@ -250,6 +250,7 @@ function rebuild(){_wecke();RAEDER.length=0;sonne.shadow.needsUpdate=true;
   taperBody(gFrame,scal(H,PE),PE);   // der Rahmen folgt derselben Sektion wie Karosserie und Bauraum
   gSprung.position.set(0,0,0);gSprung.rotation.set(0,0,0);
   const gelenke=new Set([...corners.flatMap(c=>[c.grp,c.wheelSpin]),...doors.map(d=>d.pv)]);
+  __weltLicht.wurfRecht(scene);   // DAS WURF-RECHT DER WELT (welt-licht.js teilWirft): Scheibe und Lichter werfen nicht — vor der Faltung (sie trennt nach castShadow)
   for(const s of[gPackage,gBody,gWheels,gFrame])falten(s,gelenke);
   explosionsPlan(PE);   // die Achsen der Explosion stehen am neuen Bau; die Ansicht legt sie im selben Bild an
   raederFalten();
