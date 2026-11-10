@@ -1,7 +1,7 @@
 {
  "sha": "78d37554b2d5f98d96ef454cfa9f51752c0e45a0",
  "geraet": "gtx",
- "zeit": "2026-11-10T05:33:44.998Z",
+ "zeit": "2026-11-10T05:39:03.405Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "ferne.K1#2": {
@@ -1696,22 +1696,71 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "studios.K2#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen: Stille seit 34.9 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: @@ 55 s · neue Seite der Linse)",
+   "exit": 1,
+   "minuten": 1.5,
+   "grund": "Deckel 90 s gerissen: Stille seit 34.9 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: @@ 55 s · neue Seite der Linse)",
+   "s": 90.1,
+   "fremd": {
+    "s": 91.2,
+    "takte": 42,
+    "fremdS": 141.48,
+    "kerne": 1.551,
+    "fensterKerne": 1.802,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      96.81
+     ],
+     [
+      "MsMpEng.exe",
+      16.95
+     ],
+     [
+      "OmenCommandCenterBackground.exe",
+      11.5
+     ]
+    ],
+    "dienerS": 20.16,
+    "diener": [
+     [
+      "dwm.exe",
+      9.16
+     ],
+     [
+      "System",
+      6.38
+     ]
+    ],
+    "eigenS": 169.69,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-10T05:39:03.405Z",
+   "abdruck": "0729922f0665",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-10T05:33:08.629Z",
+  "start": "2026-11-10T05:38:33.865Z",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 7.2,
+  "bootS": 6.8,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": "genesis",
-    "vor": "siedlung.K1#2",
-    "s": 27.8,
-    "takte": 664,
+    "ort": null,
+    "vor": "studios.K2#2",
+    "s": 21.4,
+    "takte": 840,
     "chunks": 81,
     "nach": null
    }
@@ -1729,11 +1778,11 @@
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 74,
+   "zapfen": 116,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 83,
-  "minuten": 1.46
+  "fahrtS": 119.6,
+  "minuten": 2.06
  }
 }
