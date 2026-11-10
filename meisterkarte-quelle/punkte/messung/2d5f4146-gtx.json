@@ -1,0 +1,497 @@
+{
+ "sha": "2d5f414637a834dec1a5b816af5860709513a303",
+ "geraet": "gtx",
+ "zeit": "2026-11-10T14:24:35.768Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "lod.K1#1": {
+   "gruen": false,
+   "zahl": "Tafel-Pose schlechteste fimp:strauch:L2 0.2560 · Karte fimp:birke:L2 0.1299 (12451 px), fimp:buche:L2 0.1930 (14153 px), fimp:eiche:L2 0.1483 (55999 px), fimp:fichte:L2 0.1662 (107119 px), fimp:strauch:L2 0.2560 (23194 px), fimp:tanne:L2 0.1507 (157163 px) | Spielgang schlechteste fimp:buche:L2 0.2289 · Karte fimp:birke:L2 0.1859 (29285 px), fimp:buche:L2 0.2289 (14517 px), fimp:eiche:L2 0.1435 (55208 px), fimp:fichte:L2 0.1744 (107270 px), fimp:strauch:L2 0.1998 (27188 px), fimp:tanne:L2 0.1512 (134754 px) · zweiton ≠ 0: fimp:fichte:L2, fimp:tanne:L2 (Soll kante ≤ 0,22 je Teil-Klasse, zweiton 0) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.46,
+   "grund": "ROT: Tafel-Pose schlechteste fimp:strauch:L2 0.2560 · Karte fimp:birke:L2 0.1299 (12451 px), fimp:buche:L2 0.1930 (14153 px), fimp:eiche:L2 0.1483 (55999 px), fimp:fichte:L2 0.1662 (107119 px), fimp:strauch:L2 0.2560 (23194 px), fimp:tanne:L2 0.1507 (157163 px) | Spielgang schlechteste fimp:buche:L2 0.2289 · Karte fimp:birke:L2 0.1859 (29285 px), fimp:buche:L2 0.2289 (14517 px), fimp:eiche:L2 0.1435 (55208 px), fimp:fichte:L2 0.1744 (107270 px), fimp:strauch:L2 0.1998 (27188 px), fimp:tanne:L2 0.1512 (134754 px) · zweiton ≠ 0: fimp:fichte:L2, fimp:tanne:L2 (Soll kante ≤ 0,22 je Teil-Klasse, zweiton 0) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "s": 87.8,
+   "fremd": {
+    "s": 90.2,
+    "takte": 42,
+    "fremdS": 43.48,
+    "kerne": 0.482,
+    "fensterKerne": 1.128,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      18.84
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      7.89
+     ],
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      6.5
+     ]
+    ],
+    "dienerS": 25.05,
+    "diener": [
+     [
+      "System",
+      11.14
+     ],
+     [
+      "dwm.exe",
+      9.17
+     ]
+    ],
+    "geraetS": 10.41,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      6.94
+     ],
+     [
+      "svchost.exe",
+      2.36
+     ],
+     [
+      "SearchIndexer.exe",
+      0.45
+     ]
+    ],
+    "eigenS": 104.61,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon"
+   },
+   "zeit": "2026-11-10T14:15:03.075Z",
+   "abdruck": "13a0cc06ffb8",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "lod.K5#1": {
+   "gruen": false,
+   "zahl": "Baum 5.05 px · Haus 0.13 px · Tor 0.18 px · Wagen 0.03 px (Soll ≤ 1 px am Wechsel-Abstand, 1920 × 1080) · gate L2: Exemplar 140 px, [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.74,
+   "grund": "ROT: Baum 5.05 px · Haus 0.13 px · Tor 0.18 px · Wagen 0.03 px (Soll ≤ 1 px am Wechsel-Abstand, 1920 × 1080) · gate L2: Exemplar 140 px, [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "s": 44.5,
+   "fremd": {
+    "s": 45.1,
+    "takte": 21,
+    "fremdS": 19.69,
+    "kerne": 0.437,
+    "fensterKerne": 0.531,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      9.53
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.42
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      1.84
+     ]
+    ],
+    "dienerS": 11.06,
+    "diener": [
+     [
+      "System",
+      5.03
+     ],
+     [
+      "dwm.exe",
+      4.03
+     ]
+    ],
+    "geraetS": 6.41,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      4.16
+     ],
+     [
+      "svchost.exe",
+      1.58
+     ],
+     [
+      "SearchIndexer.exe",
+      0.23
+     ]
+    ],
+    "eigenS": 51.83,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon"
+   },
+   "zeit": "2026-11-10T14:16:31.456Z",
+   "abdruck": "ca610f2672bb",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "licht.K1#1": {
+   "gruen": false,
+   "zahl": "genesis: Karte Luma 126.6, Sprung 0.551 EV, Buckel 0.52 EV, Sonne 10° -0.59 EV R/B ×0.90 | -0.47 EV R/B ×0.94, Nacht -1.68 EV Luma 58.3 · wiese: Karte Luma 126.6, Sprung 0.263 EV, Buckel 0.09 EV, Sonne 10° -0.98 EV R/B ×0.98 | -1.25 EV R/B ×0.77, Nacht -3.32 EV Luma 34.9 · Linse TAG-ACHSE ROT: REF genesis: Uhr 0 (Sonne -74.21°) 0.85 Stufen neben der REF | REF genesis: Uhr 0.01 (Sonne -74.28°) 0.86 Stufen neben der REF | REF genesis: Uhr 0.02 (Sonne -73.56°) 0.86 Stufen neben  · [linse-gpu] nvidia/pascal",
+   "exit": 1,
+   "minuten": 1.51,
+   "grund": "ROT: genesis: Karte Luma 126.6, Sprung 0.551 EV, Buckel 0.52 EV, Sonne 10° -0.59 EV R/B ×0.90 | -0.47 EV R/B ×0.94, Nacht -1.68 EV Luma 58.3 · wiese: Karte Luma 126.6, Sprung 0.263 EV, Buckel 0.09 EV, Sonne 10° -0.98 EV R/B ×0.98 | -1.25 EV R/B ×0.77, Nacht -3.32 EV Luma 34.9 · Linse TAG-ACHSE ROT: REF genesis: Uhr 0 (Sonne -74.21°) 0.85 Stufen neben der REF | REF genesis: Uhr 0.01 (Sonne -74.28°) 0.86 Stufen neben der REF | REF genesis: Uhr 0.02 (Sonne -73.56°) 0.86 Stufen neben  · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "s": 90.5,
+   "fremd": {
+    "s": 92.7,
+    "takte": 43,
+    "fremdS": 38.08,
+    "kerne": 0.411,
+    "fensterKerne": 0.522,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      20.56
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      8.59
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      2.59
+     ]
+    ],
+    "dienerS": 28.7,
+    "diener": [
+     [
+      "System",
+      12.98
+     ],
+     [
+      "dwm.exe",
+      11.09
+     ]
+    ],
+    "geraetS": 13.53,
+    "geraet": [
+     [
+      "svchost.exe",
+      6.64
+     ],
+     [
+      "MsMpEng.exe",
+      5.69
+     ],
+     [
+      "OmenCommandCenterBackground.exe",
+      0.47
+     ]
+    ],
+    "eigenS": 116.67,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon"
+   },
+   "zeit": "2026-11-10T14:17:31.359Z",
+   "abdruck": "f2bb1d6e25e9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "ungemessen": {
+  "vegetation.K4#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 139 s gerissen: Stille seit 128.8 s nach 139 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 10.0 s)",
+   "exit": 1,
+   "minuten": 2.32,
+   "grund": "Deckel 139 s gerissen: Stille seit 128.8 s nach 139 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 10.0 s)",
+   "s": 139.1,
+   "fremd": {
+    "s": 141.1,
+    "takte": 65,
+    "fremdS": 52.3,
+    "kerne": 0.371,
+    "fensterKerne": 0.627,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      24.86
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      11.58
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      4.3
+     ]
+    ],
+    "dienerS": 42.88,
+    "diener": [
+     [
+      "System",
+      20.75
+     ],
+     [
+      "dwm.exe",
+      13.47
+     ]
+    ],
+    "geraetS": 25.17,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      12.17
+     ],
+     [
+      "svchost.exe",
+      10.45
+     ],
+     [
+      "SearchIndexer.exe",
+      1.11
+     ]
+    ],
+    "eigenS": 448.42,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon"
+   },
+   "zeit": "2026-11-10T14:19:02.185Z",
+   "abdruck": "9367b1dd9277",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "vegetation.K4#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 139 s gerissen: Stille seit 128.8 s nach 139 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 10.0 s)",
+   "exit": 1,
+   "minuten": 2.32,
+   "grund": "Deckel 139 s gerissen: Stille seit 128.8 s nach 139 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 10.0 s)",
+   "s": 139.1,
+   "fremd": {
+    "s": 141.1,
+    "takte": 65,
+    "fremdS": 52.3,
+    "kerne": 0.371,
+    "fensterKerne": 0.627,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      24.86
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      11.58
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      4.3
+     ]
+    ],
+    "dienerS": 42.88,
+    "diener": [
+     [
+      "System",
+      20.75
+     ],
+     [
+      "dwm.exe",
+      13.47
+     ]
+    ],
+    "geraetS": 25.17,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      12.17
+     ],
+     [
+      "svchost.exe",
+      10.45
+     ],
+     [
+      "SearchIndexer.exe",
+      1.11
+     ]
+    ],
+    "eigenS": 448.42,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon"
+   },
+   "zeit": "2026-11-10T14:19:02.185Z",
+   "abdruck": "8b5a45974dff",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "vegetation.K4#1",
+   "modus": "session"
+  },
+  "siedlung.K1#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 70 s gerissen: Stille seit 70 s nach 70 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN",
+   "exit": 1,
+   "minuten": 1.17,
+   "grund": "Deckel 70 s gerissen: Stille seit 70 s nach 70 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN",
+   "s": 70.2,
+   "fremd": {
+    "s": 72.9,
+    "takte": 33,
+    "fremdS": 22.16,
+    "kerne": 0.304,
+    "fensterKerne": 0.486,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      10.83
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.73
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      2.67
+     ]
+    ],
+    "dienerS": 15.61,
+    "diener": [
+     [
+      "System",
+      7
+     ],
+     [
+      "dwm.exe",
+      5.03
+     ]
+    ],
+    "geraetS": 7.66,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      4.94
+     ],
+     [
+      "svchost.exe",
+      2.13
+     ],
+     [
+      "OmenCommandCenterBackground.exe",
+      0.28
+     ]
+    ],
+    "eigenS": 87.81,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon"
+   },
+   "zeit": "2026-11-10T14:21:52.684Z",
+   "abdruck": "aee8fa98714b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "leib.K4#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval ohne Antwort binnen 60 s) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval ohne Antwort binnen 60 s) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-10T14:24:35.767Z",
+   "abdruck": "d92a3ff92ce9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "leib.K3#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval ohne Antwort binnen 60 s) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval ohne Antwort binnen 60 s) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-10T14:24:35.768Z",
+   "abdruck": "3ad18f4155ae",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-10T14:14:23.407Z",
+  "port": 7804,
+  "warten": 0.01,
+  "bootS": 5.9,
+  "grundstellungS": [
+   6.9
+  ],
+  "proben": 5,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "lod.K1#1",
+    "s": 32.5,
+    "takte": 785,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": "genesis",
+    "vor": "licht.K1#1",
+    "s": 14.9,
+    "takte": 611,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": "genesis",
+    "vor": "siedlung.K1#2",
+    "s": 22.5,
+    "takte": 575,
+    "chunks": 81,
+    "nach": "der Tür"
+   }
+  ],
+  "wegeTueren": [],
+  "grund": "die Welt trägt nicht mehr vor leib.K4#2: /eval ohne Antwort binnen 60 s",
+  "ciBlicke": 7,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 247,
+   "frameP95": 50.11,
+   "taktP95": 26.81,
+   "vramMax": 132.5,
+   "seiten": 2,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [
+    {
+     "probe": "vegetation.K4#1",
+     "m": 1148,
+     "ringVor": 4,
+     "ringMin": -1
+    },
+    {
+     "probe": "licht.K1#1",
+     "m": 1083,
+     "ringVor": 4,
+     "ringMin": 1
+    }
+   ],
+   "zapfen": 440,
+   "luecken": 10,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+  },
+  "fahrtS": 621.5,
+  "minuten": 11.08
+ }
+}
