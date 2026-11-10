@@ -351,3 +351,4 @@ omen-gtx-gtx-stau-78d3-24-78d37554 UNGEMESSEN 0 GRÜN / 0 ROT / 1 UNGEMESSEN · 
 omen-gtx-gtx-landung-dcc33615-1-dcc33615 UNGEMESSEN 0 GRÜN / 0 ROT / 1 UNGEMESSEN · UNGEMESSEN ankunft.K1#1 (punkte-maschine a7f6d6fd messung/dcc33615-gtx.json)
 omen-gtx-gtx-landung-dcc33615-2-dcc33615 UNGEMESSEN 0 GRÜN / 0 ROT / 1 UNGEMESSEN · UNGEMESSEN ankunft.K1#2 (punkte-maschine 3e45c5ad messung/dcc33615-gtx.json)
 omen-gtx-gtx-landung-dcc33615-3-dcc33615 UNGEMESSEN 0 GRÜN / 0 ROT / 1 UNGEMESSEN · UNGEMESSEN ankunft.K3#1 (punkte-maschine 30476c9f messung/dcc33615-gtx.json)
+omen-gtx-gtx-landung-dcc33615-4-dcc33615 UNGEMESSEN 0 GRÜN / 0 ROT / 1 UNGEMESSEN · UNGEMESSEN ankunft.K4#1 (punkte-maschine dd28e313 messung/dcc33615-gtx.json)
