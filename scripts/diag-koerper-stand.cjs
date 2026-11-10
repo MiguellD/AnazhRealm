@@ -20,8 +20,9 @@
 //       Start (Träger 0,5 m über dem Boden) trifft die gezeichneten Dreiecke (Strahl auf das Mesh) auf 25 cm; die Pfote am
 //       Mesh misst K8
 //   K7  WIESE UND STREU AM CHUNK-RAND: der Boden hat EINEN Leser (`_bodenSichtAt`) — an der Mess-Wiese (die Chunks einer
-//       Stufe im Umkreis 120 m) stehen Büschel und Pflanzen im Rand-Streifen so dicht wie in der Chunk-Mitte daneben (L0 0,9–2,7 m):
-//       Wiese ±10 %, Streu ±10 % oder drei Unschärfen (Konsum-Leser: `_nahWieseKachelBueschel`, `_nahStreuKachel`)
+//       Stufe im Umkreis 160 m) stehen Büschel und Pflanzen im Rand-Streifen so dicht wie in der Chunk-Mitte daneben (L0 0,9–2,7 m):
+//       Wiese ±10 %, Streu ±10 % oder drei Unschärfen — der Jackknife über die Chunks, die Wiese je Zelle ihres Gitters
+//       (Konsum-Leser: `_nahWieseKachelBueschel`, `_nahStreuKachel`)
 //   K8  EINE BODEN-HÖHE JE ROLLE (Gelände H5, Lehre 22, Welt mit Foundry): an der Mess-Wiese und am 25°-Hang (der nächste
 //       trockene Hang 24–26° um sie) steht jeder Kontakt auf den gezeichneten Dreiecken (`__gezeichnet`), je Rolle 200, p95 ≤ 3 cm:
 //       der Fuß (der Vertex, den der Knöchel trägt, mit dem kleinsten Abstand zum Boden, im Fuß-Lock des Gangs — längs der
@@ -49,12 +50,14 @@ const K8_UMFANG = 200; // Kontakte je Ort × Rolle
 
 // DIE KARTE DES EIGNERS (die Karte des Chunks unter dem Punkt, bilinear, null an einer leeren Ecke): seit K21 liest das Spiel nur
 // `_bodenSichtAt` über alle Nachbarn — die Linse fragt den EINEN Karten-Leser des Spiels für den Eigner allein, ohne das Gewicht
-// der Stufe (`_bodenKarteBilinear`, Stufe 0; Seite: `window.__eignerKarte`, Proben und Täter „rand").
-function eignerKarte(r, x, z) {
+// der Stufe (`_bodenKarteBilinear`, Stufe 0; Seite: `window.__eignerKarte`, Proben und Täter „rand" und „wiese"), `aus` nimmt
+// sein Grün.
+function eignerKarte(r, x, z, aus) {
     const span = r._voxelChunkConfig(0).span;
     const [cx, cz] = [Math.floor(x / span), Math.floor(z / span)];
     const e = r.state.voxelChunks && r.state.voxelChunks.get(`${cx},${cz}`);
-    const k = e && e.surfMap && r._bodenKarteBilinear(e, cx, cz, x, z, null, 0);
+    const k = e && e.surfMap && r._bodenKarteBilinear(e, cx, cz, x, z, aus, 0);
+    if (k && aus) aus.gruen = k.gruen;
     return k ? k.y : null;
 }
 
@@ -172,19 +175,13 @@ function taeter(inj) {
         r._blockerFugen = (boxes) => (boxes || []).forEach((x) => (x.gedeckt = false));
         for (const e of st.architectures || []) r._blockerFugen(e.blockerAABBs);
     }
-    // rand: der Stand-Leser liest nur die Karte des Eigners (vor K07); wiese: Nah-Wiese und Nah-Streu lesen im Rand-Streifen
-    // nichts (vor K21)
-    if (inj === "rand")
-        ueber("_standSicht", function () {
-            this._bodenSichtAt = (x, z) => window.__eignerKarte(this, x, z);
-        });
-    const C = r._voxelChunkConfig(0);
-    const rest = (w) => w - Math.floor(w / C.span) * C.span;
-    const streifen = (x, z) => rest(x) < C.step / 2 || rest(z) < C.step / 2;
-    if (inj === "wiese")
-        for (const n of ["_nahWieseKachelBueschel", "_nahStreuKachel"])
+    // rand: der Stand-Leser liest nur die Karte des Eigners (vor K07); wiese: Nah-Wiese und Nah-Streu ebenso (vor K21) — im
+    // Rand-Streifen JEDER Stufe zeichnet der Nachbar (w27-k7-l2-rand: bis hierher leerte der Täter nur den Streifen von L0,
+    // 0,9 m; im Streifen von L2, 3,6 m, fehlte so ein Viertel)
+    if (inj === "rand" || inj === "wiese")
+        for (const n of inj === "rand" ? ["_standSicht"] : ["_nahWieseKachelBueschel", "_nahStreuKachel"])
             ueber(n, function () {
-                this._bodenSichtAt = (x, z, g) => (streifen(x, z) ? null : P._bodenSichtAt.call(this, x, z, g));
+                this._bodenSichtAt = (x, z, g) => window.__eignerKarte(this, x, z, g);
             });
     // rolle (K8): der Fuß der Streu las das Gesetz bilinear im 8-m-Raster des Feld-Bakes (vor H5), die Pfote stand auf dem
     // Träger ihres Leibs (vor Welle LF), das Rad federte auf das Gesetz und sein Reifen wölbte 0,12 radR (0,2 Federweg) unter
@@ -242,7 +239,7 @@ const server = statikServer({ root: ROOT });
 // der Selbsttest feuerte 1 von 2 Mal (K69-2 N2, gates/koerper-stand.log blind, ks-nachher.log 0,533).
 const K7_UMFANG = Object.freeze({ bueschel: 1000, pflanzen: 500 });
 
-async function proben(mitWiese, umfang) {
+async function proben(mitWiese) {
     const s = st;
     const T = window.THREE;
     const A = AnazhRealm;
@@ -664,15 +661,9 @@ async function proben(mitWiese, umfang) {
         const verwickelt = (x, z, g) => {
             const x0 = Math.floor(x / hR) * hR;
             const z0 = Math.floor(z / hR) * hR;
-            let lo = g;
-            let hi = g;
-            for (const [px, pz] of [
-                [x0, z0],
-                [x0 + hR, z0],
-                [x0, z0 + hR],
-                [x0 + hR, z0 + hR],
-            ]) {
-                const y = gezeichnet(px, pz);
+            let [lo, hi] = [g, g];
+            for (let k = 0; k < 4; k++) {
+                const y = gezeichnet(x0 + (k & 1) * hR, z0 + (k >> 1) * hR);
                 if (y === null || G.steil) return true;
                 lo = Math.min(lo, y);
                 hi = Math.max(hi, y);
@@ -704,13 +695,10 @@ async function proben(mitWiese, umfang) {
                             leser.max = d;
                             leser.wo = [Math.round(x * 100) / 100, Math.round(z * 100) / 100];
                             // die Stufen der vier Chunks, deren Karten der Leser dort fragt (Eigner und untere Nachbarn)
-                            leser.stufen = [
-                                [0, 0],
-                                [-1, 0],
-                                [0, -1],
-                                [-1, -1],
-                            ].map(([a, b]) => {
-                                const e = s.voxelChunks.get(`${Math.floor(x / span) + a},${Math.floor(z / span) + b}`);
+                            leser.stufen = [0, 1, 2, 3].map((k) => {
+                                const e = s.voxelChunks.get(
+                                    `${Math.floor(x / span) - (k & 1)},${Math.floor(z / span) - (k >> 1)}`
+                                );
                                 return e ? `L${e.lod || 0}${e.surfMap ? "" : " ohne Karte"}` : "fehlt";
                             });
                         }
@@ -729,90 +717,81 @@ async function proben(mitWiese, umfang) {
     // „wiese"; zuletzt, denn der Spieler zieht dafür um. ──
     if (mitWiese) {
         const [X, Z] = window.__messWiese;
-        const setz = () => {
-            pm.position.set(X, r.getTerrainHeightAt(X, Z) + 2, Z);
-            s._fixedSimPos = null;
-            if (s.playerVel) s.playerVel.setValue(0, 0, 0); // er hängt still über dem Ort: das Auge ruht, die Welt kann stehen
-        };
         // Ruhe heißt: die Welt steht (das EINE Einschwingen, welt-boot `__weltStehtNach`), und der Wald der Mesh-Zone steht — die
         // Antwort des Weltbilds (`_weltbildLuecken`, Terme `pflanzung` und `streu`). Seit K69 pflanzt die Schlange des Walds im
         // Takt; die Ruhe der Chunks allein maß die Streu vor ihren Kronen (K69-2 N2: 209 Pflanzen neben dem Streifen, σ 0,155).
-        const waldOffen = () => r._weltbildLuecken(true).some((l) => l.term === "pflanzung" || l.term === "streu");
-        await __weltStehtNach(() => (setz(), takt()));
-        o.k7wald = !waldOffen();
-        const C = r._voxelChunkConfig(0);
+        await __weltStehtNach(() => {
+            pm.position.set(X, r.getTerrainHeightAt(X, Z) + 2, Z);
+            s._fixedSimPos = null;
+            if (s.playerVel) s.playerVel.setValue(0, 0, 0); // er hängt still über dem Ort: das Auge ruht, die Welt kann stehen
+            takt();
+        });
+        o.k7wald = !r._weltbildLuecken(true).some((l) => l.term === "pflanzung" || l.term === "streu");
         // der Rand-Streifen in der Breite der Stufe (ein halber Schritt, K51: die Nah-Zone ist 3 × 3 — die Kacheln jeder Stufe
         // zählen, der Leser liest jede Naht)
         const fach = (x, z, stufe) => {
             const halb = r._voxelChunkConfig(stufe).step / 2;
-            const lx = x - Math.floor(x / C.span) * C.span;
-            const lz = z - Math.floor(z / C.span) * C.span;
-            if (lx < halb || lz < halb) return 0; // der Rand-Streifen
-            if (lx < 3 * halb || lz < 3 * halb) return 1; // die Mitte daneben
-            return 2;
+            const l = Math.min(x - Math.floor(x / span) * span, z - Math.floor(z / span) * span);
+            return l < halb ? 0 : l < 3 * halb ? 1 : 2; // der Rand-Streifen, die Mitte daneben, die Mitte
         };
         // jeder Chunk der Kachel und seine unteren Nachbarn gebaut und in EINER Stufe (die Linse rechnet das selbst, nie über den
         // Leser): die Stufe, sonst -1
         const eineStufe = (x0, z0, x1, z1) => {
             let stufe = -1;
-            for (let cz = Math.floor(z0 / C.span) - 1; cz <= Math.floor(z1 / C.span); cz++)
-                for (let cx = Math.floor(x0 / C.span) - 1; cx <= Math.floor(x1 / C.span); cx++) {
+            for (let cz = Math.floor(z0 / span) - 1; cz <= Math.floor(z1 / span); cz++)
+                for (let cx = Math.floor(x0 / span) - 1; cx <= Math.floor(x1 / span); cx++) {
                     const e = s.voxelChunks.get(`${cx},${cz}`);
-                    if (!e) return -1;
-                    if (stufe < 0) stufe = e.lod || 0;
-                    else if ((e.lod || 0) !== stufe) return -1;
+                    if (!e || (stufe >= 0 && (e.lod || 0) !== stufe)) return -1;
+                    stufe = e.lod || 0;
                 }
             return stufe;
         };
-        let R = 120;
-        const zaehle = (K, rand, bau) => {
-            const zahl = [0, 0, 0];
-            const flaeche = [0, 0, 0];
-            let kacheln = 0;
+        const R = 160;
+        // DIE FLÄCHE IST DAS GITTER DES WURFS (w27-k7-l2-rand): der Jitter trägt ein Büschel bis 0,34 m neben seine Zelle und über
+        // die Kante seiner Kachel — die Wiese zählt darum je Fach die ZELLEN (`_wieseSchritt`, die Zelle des Wurfs `gi`/`gj`) und
+        // ihre Würfe, die Streu wie bisher ihre Lage gegen 0,1 m. Bis hierher zählte die Wiese die Lage gegen die Fläche der Kachel:
+        // an den Rändern der gezählten Menge (sie beginnen an den UNTEREN Chunk-Kanten, `eineStufe` fragt die unteren Nachbarn)
+        // stand ein Überschuss im Streifen — Kandidaten je m² an main 78d37554, Umkreis 240 m: L0 2,16 · L1 1,93 · L2 2,08 im
+        // Streifen gegen 1,91 daneben (das Gitter trägt 1,93), die Erwartung der Jitter-Geometrie allein 2,16 · 1,93 · 2,08.
+        // DIE UNSCHÄRFE IST DIE DER WIESE: Streifen und Mitte daneben liegen auf verschiedenem Boden, das Grün des Gesetzes liegt
+        // in Flecken von Metern bis Dutzenden Metern — die Unschärfe ist der Jackknife über die Chunks (je Chunk sein Streifen und
+        // seine Mitte daneben, einer ausgelassen), nie Poisson je Büschel. Gemessen an main, L2 innen im Umkreis 240 m an drei Orten
+        // (Mess-Wiese, +1730/−860, −1300/+1900): Büschel z-Kante 1,25 · 0,55 · 0,95, x-Kante 1,00 · 1,06 · 0,82, das Grün des
+        // Gesetzes an denselben Punkten 1,03 · 0,58 · 1,00 und 0,91 · 1,21 · 0,97 — der Leser liest dort das gezeichnete Netz
+        // (Karte gegen den Strahl aufs Netz 0,3506 gegen 0,3513), das Netz trägt an jedem Vertex das Gesetz (Abstand 0,0000); die
+        // Wand las mit Poisson ± 3 % den Fleck der Mess-Wiese (L2 1,243) als Naht.
+        const zaehle = (K, rand, bau, g = 0.1, o = 0.05) => {
+            const [je, S] = [new Map(), [0, 0, 0, 0]]; // je Chunk und in Summe Büschel und Fläche im Streifen und daneben
+            const buche = (x, z, stufe, n, a) => {
+                const [f, c] = [fach(x, z, stufe), `${Math.floor(x / span)},${Math.floor(z / span)}`];
+                const v = f < 2 && (je.get(c) || je.set(c, [0, 0, 0, 0]).get(c));
+                if (v) [v[f], v[2 + f], S[f], S[2 + f]] = [v[f] + n, v[2 + f] + a, S[f] + n, S[2 + f] + a];
+            };
             for (let tz = Math.floor((Z - R) / K); tz <= Math.floor((Z + R) / K); tz++)
                 for (let tx = Math.floor((X - R) / K); tx <= Math.floor((X + R) / K); tx++) {
                     const stufe = eineStufe(tx * K - rand, tz * K - rand, (tx + 1) * K + rand, (tz + 1) * K + rand);
-                    if (stufe < 0) continue;
-                    const liste = bau(tx, tz);
+                    const liste = stufe < 0 ? null : bau(tx, tz);
                     if (!liste) continue;
-                    kacheln++;
-                    for (let a = 0.05; a < K; a += 0.1)
-                        for (let b = 0.05; b < K; b += 0.1) flaeche[fach(tx * K + a, tz * K + b, stufe)] += 0.01;
-                    for (const q of liste) zahl[fach(q.x, q.z, stufe)]++;
+                    for (let j = Math.ceil((tz * K - o) / g); j * g + o < tz * K + K; j++)
+                        for (let i = Math.ceil((tx * K - o) / g); i * g + o < tx * K + K; i++)
+                            buche(i * g + o, j * g + o, stufe, 0, g * g);
+                    for (const q of liste) buche(o ? q.x : q.gi * g, o ? q.z : q.gj * g, stufe, 1, 0);
                 }
-            const d = zahl.map((n, i) => (flaeche[i] > 0 ? n / flaeche[i] : 0));
-            const verh = d[1] > 0 ? d[0] / d[1] : 0;
-            // die Unschärfe des Verhältnisses unter gleicher Dichte (Poisson: die im Streifen erwartete Zahl und die daneben)
-            const erwartet = d[1] * flaeche[0];
-            const sigma = erwartet > 0 && zahl[1] > 0 ? Math.sqrt(1 / erwartet + 1 / zahl[1]) : 1;
-            return {
-                kacheln,
-                streifen: zahl[0],
-                daneben: zahl[1],
-                mitte: zahl[2],
-                dichte: d.map((v) => Math.round(v * 1000) / 1000),
-                verh: Math.round(verh * 1000) / 1000,
-                sigma: Math.round(sigma * 1000) / 1000,
-            };
+            const ohne = (v) => ((S[0] - v[0]) * (S[3] - v[3])) / ((S[1] - v[1]) * (S[2] - v[2]));
+            const [verh, teile] = [ohne([0, 0, 0, 0]), [...je.values()].map(ohne)];
+            const sigma = Math.sqrt(
+                ((teile.length - 1) / teile.length) * teile.reduce((s, w) => s + (w - verh) ** 2, 0)
+            );
+            return { chunks: teile.length, streifen: S[0], daneben: S[1], verh, sigma };
         };
-        const NW = A.NAH_WIESE;
-        const NS = A.NAH_STREU;
-        const arten = r._nahStreuArten();
-        // der Umkreis wächst in 20-m-Schritten (höchstens 240 m), bis die Probe ihren Umfang trägt (K55-2: an der Mess-Wiese
-        // −278/−1038 trug der Umkreis 120 m 866 Büschel und 70 Pflanzen neben dem Streifen, die Aue ist offener als der alte Hang)
-        // Je Probe ihr eigener Umkreis: die Wiese steht, sobald sie ihren Umfang trägt; die Streu wächst weiter bis zu ihrem.
-        for (R = 120; R <= 240; R += 20) {
-            if (!(o.k7wiese && o.k7wiese.daneben >= umfang.bueschel)) {
-                o.k7wiese = zaehle(NW.kachel, 0.34, (tx, tz) => r._nahWieseKachelBueschel(tx, tz));
-                o.k7umkreis = R;
-            }
-            o.k7streu = zaehle(NS.kachel, 0, (tx, tz) => {
-                const satz = r._nahStreuKachel(tx, tz, arten);
-                return satz ? satz.items : null;
-            });
-            o.k7umkreisStreu = R;
-            if (o.k7wiese.daneben >= umfang.bueschel && o.k7streu.daneben >= umfang.pflanzen) break;
-        }
+        // DER UMKREIS 160 m (w27-k7-l2-rand): die Unschärfe misst der Jackknife selbst, kein Umfang wächst ihn mehr — bis hierher
+        // wuchs er in 20-m-Schritten, bis Poisson 3 % trug (1 000 Büschel, 500 Pflanzen neben dem Streifen)
+        o.k7wiese = zaehle(A.NAH_WIESE.kachel, 0.34, r._nahWieseKachelBueschel.bind(r), A._wieseSchritt(), 0);
+        o.k7streu = zaehle(
+            A.NAH_STREU.kachel,
+            0,
+            (tx, tz) => (r._nahStreuKachel(tx, tz, r._nahStreuArten()) || {}).items
+        );
     }
     return o;
 }
@@ -1149,7 +1128,8 @@ function urteil(o) {
         );
     if (!(L.meshe > 0)) f.push("K6 Aufbau: kein gezeichnetes Chunk-Mesh für den Strahl");
     // K7 dort, wo gemessen (der Lauf ohne Defekt und der Defekt „wiese“): Wiese und Streu im Band ±10 % oder drei Unschärfen,
-    // was weiter ist — EINE Regel. Die Wiese hielt ±10 % fest, gerechnet auf ≈ 3 % Unschärfe bei 1 000 Büscheln; in der Aue
+    // was weiter ist — EINE Regel; die Unschärfe ist seit w27-k7-l2-rand der Jackknife über die Chunks (`zaehle`). Die Wiese hielt
+    // ±10 % fest, gerechnet auf ≈ 3 % Unschärfe bei 1 000 Büscheln (Poisson); in der Aue
     // −278/−1038 trägt der Streifen 748 Büschel (σ 4,4 %), und die Kronen-Streu und das Grün des Bodens liegen in Flecken,
     // nicht unabhängig je Büschel: dort lag das Verhältnis 1,12 ± 0,044, und die Erwartung aus den Faktoren des Lesers selbst
     // (Σp je Kandidat, Stufe 0/1/2 einzeln) 1,07 — Streifen über und unter 1 je Stufe, keine Naht. Der Täter der Klasse (K21:
@@ -1160,7 +1140,7 @@ function urteil(o) {
         if (!(w.daneben >= n)) f.push(`K7 Aufbau: ${w.daneben} ${name} neben dem Rand-Streifen (Soll ≥ ${n})`);
         else if (!(Math.abs(w.verh - 1) <= toleranz(w)))
             f.push(
-                `K7 ${name === "Büschel" ? "Wiese" : "Streu"} im Rand-Streifen: Dichte ${w.dichte[0]} gegen ${w.dichte[1]} je m² daneben (Verhältnis ${w.verh} ± ${w.sigma}, Soll 1 ± ${Math.round(toleranz(w) * 100)} %; ${w.streifen}/${w.daneben} in ${w.kacheln} Kacheln) — Täter: der Leser der Kachel (_nahWieseKachelBueschel/_nahStreuKachel) liest nicht _bodenSichtAt`
+                `K7 ${name === "Büschel" ? "Wiese" : "Streu"} im Rand-Streifen: Dichte gegen daneben ${w.verh.toFixed(3)} ± ${w.sigma.toFixed(3)} (Soll 1 ± ${Math.round(toleranz(w) * 100)} %; ${w.streifen}/${w.daneben} in ${w.chunks} Chunks) — Täter: der Leser der Kachel (_nahWieseKachelBueschel/_nahStreuKachel) liest nicht _bodenSichtAt`
             );
     };
     if (o.k7wald === false)
@@ -1250,7 +1230,7 @@ hauptLauf(async () => {
             );
             const o = k8
                 ? await page.evaluate(rollen, K8_UMFANG)
-                : await page.evaluate(proben, inj == null || inj === "wiese", K7_UMFANG);
+                : await page.evaluate(proben, inj == null || inj === "wiese");
             await kontext.close();
             return { o };
         };

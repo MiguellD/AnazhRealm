@@ -747,6 +747,175 @@ var __weltLicht = (function () {
     function himmelDerStoffe(quelle, U, richtung, stufe) {
         return globalThis.THREE.TSL.pmremTexture(quelle, richtung, stufe).mul(umgebungLicht(U));
     }
+    // DIE BESTRAHLUNG ERKANNT: r184 reicht der Umgebung die Stufe der Bestrahlung als Variable über der Konstanten 1 (`float(1)`
+    // in einer VarNode, gelesen am Vendor 03.11.), die der Spiegelung als Rauheit des Stoffs — der Spiegel (Welt
+    // `_spiegelUmgebung`, Bühne `buehne`) trägt nur die Spiegelung.
+    const stufeKonstant = (n) => !!n && (n.isConstNode === true || (n.isVarNode === true && stufeKonstant(n.node)));
+
+    // DIE WOLKEN-SCHICHT (licht.K4, `wolkenFeld` · Stamm `_wolkenKarte` · `_wolkenSchatten`): die Höhe der Wolke `hoeheM` — über dem
+    // Auge für die Kuppel, über dem Meeresspiegel für den Wurf — die Basis des Schönwetter-Kumulus (0,6–1,5 km); 1 Einheit des groben
+    // fbm ≈ 0,73 · hoeheM (580 m). Dieselbe Schicht trägt das Licht der Wolke (`himmelSicht`). Die Karte des Wurfs: `karte`² Texel
+    // à `zelleM` (±4,1 km), neu nach `zugS` Sekunden der Bild-Uhr; die Mip-Stufe steigt ab `rand` (Anteil des halben Rands) bis
+    // zum Mittel. `steilMin` klemmt den Sonnen-Strahl über dem Horizont (sin der Sonnenhöhe). `deckung` die Achse des Wetters [klar,
+    // Regen]: die Deckung, die `_dayNightApplySkybox` schreibt, und der Nullpunkt des Wurfs (`_wolkenGewicht`). `mittelMin` der Boden
+    // des mittleren Durchlasses, gegen den der Wurf misst (im Regen ist die Karte fast ganz Wolke).
+    const WOLKEN_SCHICHT = Object.freeze({
+        hoeheM: 800,
+        steilMin: 0.05,
+        karte: 512,
+        zelleM: 16,
+        zugS: 0.1,
+        rand: 0.8,
+        mittelMin: 0.05,
+        deckung: Object.freeze([0.12, 0.9]),
+    });
+    // DER GLANZ, DER SPIEGELT (material.K4): ganz bis zur Rauheit [0], nicht mehr ab [1] — dieselbe Kurve wiegt den Spiegel-Pass der
+    // Welt (Stamm `SPIEGEL.glanzRauheit`, `_glanzKnoten`, `_spiegelUmgebung`) und den Himmels-Spiegel der Bühne (`buehne`).
+    const GLANZ_RAUHEIT = Object.freeze([0.25, 0.45]);
+    // DIE HIMMELS-TAFEL (`himmelTafel`): Equirekt [Breite, Höhe] — 0,7° je Texel, 1 MB Halb-Float.
+    const HIMMEL_TAFEL = Object.freeze([512, 256]);
+
+    // DER EINE HIMMEL MIT SEINEN WOLKEN (w27-studio-mesh, studios.K4) — Feld, Menge und Sicht, wörtlich aus dem Stamm
+    // (bild-himmel.js `_wolkenFeld` · `_wolkenMenge` · `_himmelSicht`, die sie jetzt rufen): die Welt zeichnet mit ihnen Kuppel,
+    // Spiegel und Wurf, die Bühne der Studios ihren Grund und den Spiegel jedes glatten Stoffs. Bis hier lebten sie nur im Stamm,
+    // den eine Studio-Seite nie lädt: die Bühne stand unter der Atmosphäre OHNE Wolken, die Welt spiegelt sie in Lack, Scheibe und
+    // Klinge (Radeon da0e790f, Station studios.K4: garage 23,5 %, schmiede 24,4 % der Gestalt-Pixel über ΔLuma 18 — Scheibe, Dach
+    // und Haube; auf der kahlen Prüfbühne unter freiem Himmel dasselbe Muster). `HG` das HIMMEL_GESETZ des Rufers (foundry-core),
+    // `H` die Uniforms seines Himmels { time, cloudCover, zug, auge, sunDir, sunCol }.
+    // DAS WOLKEN-FELD (licht.K4): die Menge der Wolke (0 … 1) am Punkt `sp` der Schicht (ein TSL-vec2, in Einheiten
+    // (1 + projY) · hoeheM) — EINE Funktion für die Kuppel (`wolkenMenge`) und die Karte des Wurfs (Stamm `_wolkenKarte`). Sie folgt
+    // HIMMEL_GESETZ (foundry-core — dieselben Zahlen injiziert das Studio in sein GLSL): zwei fbm-Abtastungen (h21/vn verbatim),
+    // Deckungs-smoothstep aus uCloudCover, weiche Ränder. DIE BEWEGUNG hat EINE Quelle, den Wind (`zug`, `_dayNightApplySkybox`):
+    // die Fronten ziehen mit `WIND_FELD.front.zugMS` (850 hPa) längs der Grundrichtung der Saat (phyto-core `windGrund`), die
+    // Luft trägt beide Felder — das Muster wandert in der Welt über den Boden, zur Bild-Uhr (`time`). `drift`/`drift2` des
+    // Gesetzes bewegen den Himmel des Studios, der keinen Wind kennt; in der Welt zogen sie das feine Feld 24 m/s gegen das
+    // grobe, das Muster verformte sich statt zu wandern (licht.K4: der Wurf stand bei r0 0,90). Die Bausteine (h21 · vn2 · fbm2)
+    // entstehen einmal je Gesetz.
+    let wolkenBau = null;
+    function wolkenFeld(HG, H, sp) {
+        const TSL = globalThis.THREE.TSL;
+        const { vec2, float, dot, floor, fract, mix, smoothstep, clamp, Fn } = TSL;
+        if (!wolkenBau || wolkenBau.HG !== HG) {
+            const h21 = Fn(([q]) => {
+                const p = fract(q.mul(vec2(123.34, 345.45)));
+                const p2 = p.add(dot(p, p.add(34.345)));
+                return fract(p2.x.mul(p2.y));
+            });
+            const vn2 = Fn(([q]) => {
+                const i = floor(q);
+                const f0 = fract(q);
+                const f = f0.mul(f0).mul(float(3.0).sub(f0.mul(2.0)));
+                return mix(
+                    mix(h21(i), h21(i.add(vec2(1.0, 0.0))), f.x),
+                    mix(h21(i.add(vec2(0.0, 1.0))), h21(i.add(vec2(1.0, 1.0))), f.x),
+                    f.y
+                );
+            });
+            const fbm2 = Fn(([q]) => {
+                let s = float(0.0);
+                let p = q;
+                let a = 0.5;
+                for (let o = 0; o < HG.fbm.okt; o++) {
+                    s = s.add(vn2(p).mul(a));
+                    p = p.mul(HG.fbm.lac).add(HG.fbm.off);
+                    a *= 0.5;
+                }
+                return s;
+            });
+            wolkenBau = { HG, fbm2 };
+        }
+        const { fbm2 } = wolkenBau;
+        const { time: uTime, cloudCover: cov, zug } = H;
+        const luft = sp.add(zug.mul(uTime));
+        const nA = fbm2(luft.mul(HG.s1));
+        const nB = fbm2(luft.mul(HG.s2));
+        const dens = smoothstep(
+            float(HG.dens[0]).sub(cov.mul(HG.dens[1])),
+            float(HG.dens[2]).sub(cov.mul(HG.dens[3])),
+            nA.mul(HG.mixN[0]).add(nB.mul(HG.mixN[1]))
+        );
+        const edgeW = smoothstep(float(0.0), float(HG.edge[0]), nB).mul(HG.edge[1]).add(HG.edge[2]);
+        return clamp(dens.mul(edgeW).mul(HG.deck), float(0.0), float(1.0));
+    }
+    // DIE WOLKE DER KUPPEL in Richtung `dir` (normiert) vom Auge: Himmelsebenen-Projektion sp = dir.xz/(dir.y+projY) plus der Ort
+    // des Auges auf der Schicht (`auge.xz / ((1 + projY) · hoeheM)`, im Zenit genau die Lage über ihm) — die Kuppel zeigt das Feld
+    // der Welt, das die Karte des Wurfs trägt; Horizont-Ausklang; max(y, hor0) klemmt den Nenner unter dem Horizont (TSL brancht
+    // nicht wie das Studio) — sonst NaN.
+    function wolkenMenge(HG, H, dir) {
+        const T = globalThis.THREE.TSL;
+        const anker = H.auge.xz.mul(1 / ((1 + HG.projY) * WOLKEN_SCHICHT.hoeheM));
+        const sp = dir.xz.div(T.max(dir.y, T.float(HG.hor[0])).add(HG.projY)).add(anker);
+        return wolkenFeld(HG, H, sp).mul(T.smoothstep(T.float(HG.hor[0]), T.float(HG.hor[1]), dir.y));
+    }
+    // DIE HIMMELS-SICHT in Richtung `vDir` (normiert, ein TSL-Knoten): die EINE Atmosphäre (`A`, die Tafeln) und die Wolken des
+    // HIMMEL_GESETZ — die Kuppel der Welt zeichnet sie (vDir = normalize(positionLocal), V8.26), ihr Wasser und jeder glatte Stoff
+    // spiegeln sie (`_wasserBlick`, `_spiegelPass`), die Bühne der Studios malt sie in ihre Himmels-Tafel (`buehne`).
+    // DER HIMMEL IST DIE ATMOSPHÄRE (D3): die Himmels-Sicht der EINEN Atmosphäre (Hillaire) — Rayleigh-Blau, Mie-Hof um die Sonne,
+    // Dämmerung und Mondnacht aus dem Medium; bis D3 eine Nebel-Kuppel (Indigo-Noise × Tint-Farbe, Horizont-Dunst, drei
+    // Halo-Schichten), getunt statt gerechnet. Die Scheibe der Sonne trägt ihr Körper (`sunMesh`), den Hof die Mie-Phase der Tafel.
+    // DIE HIMMELS-TAFEL (w27-studio-mesh): die Himmels-Sicht mit ihren Wolken als Equirekt-Lage (`HIMMEL_TAFEL`, das Bild von
+    // three `equirectUV`) — der Himmel, den eine glatte Fläche spiegelt, BAND-BEGRENZT: EIN bilinearer Abgriff in Richtung des
+    // Spiegels statt zweier Rausch-Summen je Pixel. Leser: der Spiegel-Pass der Welt für Glas, Lack und Metall (`_spiegelPass`)
+    // und die Bühne der Studios (`buehne`: ihr Grund und der Spiegel ihrer Stoffe). GEMESSEN (swiftshader, Prüfbühne, der GT in
+    // 5,7 m): die Normale aus der Tiefe springt von Pixel zu Pixel um p90 0,22° (p99 0,89°, depth24 auf 5 mm Texel) — das feine
+    // Feld (5 Oktaven, steile Deckungs-Schwelle) kippte darunter je ¼-Texel des Passes zwischen Wolke und Blau (eine Zeile über
+    // das Dach: 0,18 · 1,15 · 0,71 · 0,30 · 0,17 · 0,45 · 0,26 · 1,19), der Lack der Welt las gesprenkelt. → { rt, q }: das Ziel
+    // und sein Schirm-Pass; gemalt vom Halter, wenn der Himmel wechselt (Kosten an Änderung).
+    function himmelTafel(A, HG, H) {
+        const THREE = globalThis.THREE;
+        const T = THREE.TSL;
+        const rt = new THREE.RenderTarget(HIMMEL_TAFEL[0], HIMMEL_TAFEL[1], {
+            type: THREE.HalfFloatType,
+            depthBuffer: false,
+            generateMipmaps: false,
+            minFilter: THREE.LinearFilter,
+            magFilter: THREE.LinearFilter,
+        });
+        rt.name = rt.texture.name = "himmel-tafel";
+        rt.texture.wrapS = THREE.RepeatWrapping;
+        rt.texture.mapping = THREE.EquirectangularReflectionMapping;
+        const q = schirmDreieck(
+            T.Fn(() => T.vec4(himmelSicht(A, HG, H, umgebungRichtung(T.uv()).toVar()), 1)),
+            "himmel-tafel"
+        );
+        return { rt, q };
+    }
+    function himmelSicht(A, HG, H, vDir) {
+        const TSL = globalThis.THREE.TSL;
+        const { vec3, float, normalize, dot, mix, clamp, max, Fn } = TSL;
+        const { cloudCover: uCloudCover, sunDir: uSunDir, sunCol: uSunCol } = H;
+        // DIE WOLKE NUR, WO SIE IST (A1-n1, Gebot 7): unter `hor[0]` klingt sie auf null aus — dort rechnet die Sicht die
+        // Atmosphäre allein (exakt dasselbe Bild); der Spiegel des fernen Wassers liegt ganz darunter (2,6 m Auge, 170 m weit).
+        return Fn(() => {
+            const sicht = A.himmelFarbe(vDir).toVar();
+            TSL.If(vDir.y.greaterThan(HG.hor[0]), () => {
+                const cov = uCloudCover;
+                const saW = clamp(dot(vDir, normalize(uSunDir)).mul(0.5).add(0.5), float(0.0), float(1.0));
+                const litW = mix(
+                    vec3(HG.litGrau[0], HG.litGrau[1], HG.litGrau[2]),
+                    uSunCol.mul(HG.litSonne[0]).add(HG.litSonne[1]),
+                    saW.mul(HG.litSa)
+                );
+                const cloudAmt = wolkenMenge(HG, H, vDir);
+                // Wolken-Farbe = Studio-Gesetz: grau → sonnenbeschienen (litW), bedeckt → dunkler (HG.bedeckt).
+                const cloudColor = mix(litW, vec3(HG.bedeckt[0], HG.bedeckt[1], HG.bedeckt[2]), cov.mul(HG.bedecktK));
+                // DAS LICHT DER WOLKE aus den Tafeln: Sonne und Mond durch die Atmosphäre bis zur Wolken-Ebene (`WOLKEN_SCHICHT`
+                // über dem Auge — dieselbe Schicht, die ihren Schatten wirft) auf ihre Oberseite, dazu der Himmel von oben (der
+                // Zenit der Himmels-Sicht, E/π) — Lambert. So ist die Mittags-Wolke weiß über dem Blau und die Nacht-Wolke dunkler
+                // als die 18-%-Karte im Mondlicht.
+                const U = A.U;
+                const rW = U.hKm.add(A.RG + WOLKEN_SCHICHT.hoeheM / 1000);
+                const lichtWolke = A.durchlass(rW, U.sonne.y)
+                    .mul(max(U.sonne.y, 0))
+                    .add(U.mondE.mul(A.durchlass(rW, U.mond.y)).mul(max(U.mond.y, 0)))
+                    .mul(U.licht.div(Math.PI))
+                    .add(A.himmelFarbe(vec3(0, 1, 0)));
+                const wolkeHell = dot(lichtWolke, vec3(0.2126, 0.7152, 0.0722));
+                sicht.assign(mix(sicht, cloudColor.mul(wolkeHell), cloudAmt));
+            });
+            return sicht;
+        })();
+    }
 
     // DIE BÜHNE DER WELT (studios.K4, w12-studio-buehne — Studio = Modus der Welt-Engine): ein Studio zeichnet sein Werk im Licht
     // der Welt. Dieselbe Luft (der Kern: `ATMO_GESETZ`, klares Medium über dem Boden `ATMO_BODEN`), dieselben Tafeln
@@ -811,14 +980,53 @@ var __weltLicht = (function () {
         A.tafelnFrisch = true;
         const umgebung = umgebungZeichnen(new THREE.PMREMGenerator(R), A);
         szene.environment = umgebung.texture;
-        const knoten = (szene.environmentNode = himmelDerStoffe(umgebung.texture, U));
-        // der Grund ist der Himmel: die Equirekt-Tafel (je Einheit des Lichts) × E0 — als `background` (eine Textur, kein Knoten:
-        // die Sonden schwärzen für ihre Masken `background`, ein `backgroundNode` hätte Vorrang und malte den Himmel in die Maske)
-        szene.background = A.rtEq.texture;
-        szene.backgroundIntensity = U.licht.value;
-        szene.fog = null;
         // die Sonne: E0 · Durchlass am Auge, ihr Farbton der Durchlass der EINEN Luft
         const a = AR.sonne(G, M, hKm, s[1], ATMO_LUT.schritte.durchlass, [0, 0, 0]);
+        // DER HIMMEL DER BÜHNE IST DER HIMMEL DER WELT (w27-studio-mesh): die Himmels-Sicht mit ihren Wolken (`himmelSicht`, dieselbe
+        // Funktion wie die Kuppel der Welt) in der EINEN Himmels-Tafel (`himmelTafel`, dieselbe wie der Spiegel-Pass der Welt) — der
+        // Grund der Bühne und der Spiegel jedes glatten Stoffs.
+        // Ihr Zustand `himmel` { ort [x, z] · zeit · zug [x, y] · deckung · gier } ist der Himmel der Welt an einem Ort zu einer
+        // Bild-Uhr, gesehen aus dem Rahmen eines Werks, das die Welt um `gier` gedreht trägt (`himmelSetzen`: der Wirt der Seite
+        // reicht ihn); ohne Wort: über dem Ursprung zur Bild-Uhr 0 bei klarem Wetter (`WOLKEN_SCHICHT.deckung[0]`, „Sonne“ —
+        // verstreute Wolken, kein wolkenloser Himmel), ungedreht. Bis hier war der Grund die Tafel der Atmosphäre ohne Wolken und
+        // die Umgebung ihr PMREM allein.
+        const HG = KERN.HIMMEL_GESETZ;
+        const H = {
+            time: T.uniform(0),
+            cloudCover: T.uniform(WOLKEN_SCHICHT.deckung[0]),
+            zug: T.uniform(new THREE.Vector2()),
+            auge: T.uniform(new THREE.Vector3()),
+            sunDir: T.uniform(new THREE.Vector3(s[0], s[1], s[2])),
+            sunCol: T.uniform(new THREE.Color(a.col.r, a.col.g, a.col.b)),
+        };
+        // die Gier des Werks in der Welt [cos, sin]: eine Richtung der Bühne, in die Welt gedreht (um die Senkrechte)
+        const dreh = T.uniform(new THREE.Vector2(1, 0));
+        const inWelt = (d) => T.vec3(dreh.x.mul(d.x).add(dreh.y.mul(d.z)), d.y, dreh.x.mul(d.z).sub(dreh.y.mul(d.x)));
+        const { rt: rtH, q: qH } = himmelTafel(A, HG, H);
+        // DIE UMGEBUNG DER STOFFE wie in der Welt (`_spiegelUmgebung`): die Bestrahlung und die raue Spiegelung lesen den Himmel der
+        // EINEN Atmosphäre (PMREM), die glatte Fläche spiegelt die Himmels-Sicht in ihrer Richtung — mit dem Gewicht des Glanzes
+        // (`GLANZ_RAUHEIT`), das auch der Spiegel-Pass der Welt trägt. Die Bühne hat kein Bild, das sich spiegelt: ihr Spiegel ist
+        // der Himmel (was der Pass der Welt reicht, wo sein Strahl nichts trifft).
+        class BuehnenUmgebung extends Object.getPrototypeOf(THREE.InstanceNode) {
+            constructor() {
+                super("vec3");
+            }
+            setup(builder) {
+                const stufe = builder.context.getTextureLevel ? builder.context.getTextureLevel(this, builder) : null;
+                if (!stufe) return himmelDerStoffe(umgebung.texture, U);
+                const dir = inWelt(builder.context.getUV(this, builder)).toVar();
+                const himmel = himmelDerStoffe(umgebung.texture, U, dir, stufe);
+                if (stufeKonstant(stufe)) return himmel;
+                const sp = T.texture(rtH.texture, T.equirectUV(dir)).level(T.float(0));
+                return T.mix(himmel, sp.rgb, T.float(1).sub(T.smoothstep(GLANZ_RAUHEIT[0], GLANZ_RAUHEIT[1], stufe)));
+            }
+        }
+        const knoten = (szene.environmentNode = T.nodeObject(new BuehnenUmgebung()));
+        // der Grund ist der Himmel: seine Tafel (die Himmels-Sicht, schon im Licht jetzt) — als `background` (eine Textur, kein
+        // Knoten: die Sonden schwärzen für ihre Masken `background`, ein `backgroundNode` hätte Vorrang und malte den Himmel in die Maske)
+        szene.background = rtH.texture;
+        szene.backgroundIntensity = 1;
+        szene.fog = null;
         const sonne = o.sonne || new THREE.DirectionalLight();
         sonne.color.setRGB(a.col.r, a.col.g, a.col.b);
         sonne.intensity = E0 * a.lum;
@@ -833,10 +1041,43 @@ var __weltLicht = (function () {
             tafeln: A,
             umgebung,
             knoten,
+            grund: rtH.texture,
+            himmel: null,
             achse,
             belichtung: null,
             imFlug: 0,
         };
+        // DER HIMMEL AN SEINEM ORT: der Zustand in die Uniforms, die Tafel neu gemalt (EIN Schirm-Pass, nur bei Wechsel — die
+        // Bühne steht, ihre Wolken ziehen nicht; der Ort des Auges auf der Schicht ist der der Bühne, das Werk wenige Meter daneben
+        // verschiebt das Feld um Tausendstel seiner Zelle). DIE GIER dreht den Himmel der Welt in den Rahmen des Werks: der Grund,
+        // jede Abtastung der Umgebung (`inWelt`) und die Sonne (ihre Richtung, das Richtlicht an seinem Ziel) — die Tafeln selbst
+        // stehen in der Welt. Fail-closed: ein Zustand, der nicht ganz aus Zahlen ist, bricht laut.
+        B.himmelSetzen = (z) => {
+            const h = z || {};
+            const [ort, zug, zeit, gier] = [h.ort || [0, 0], h.zug || [0, 0], h.zeit || 0, h.gier || 0];
+            const deckung = h.deckung ?? WOLKEN_SCHICHT.deckung[0];
+            if (![...ort, ...zug, zeit, deckung, gier].every(Number.isFinite) || ort.length !== 2 || zug.length !== 2)
+                throw new Error(
+                    "DIE BÜHNE DER WELT: der Himmel { ort [x, z], zug [x, y], zeit, deckung, gier } aus Zahlen, nie " +
+                        JSON.stringify(z)
+                );
+            H.auge.value.set(ort[0], 0, ort[1]);
+            H.zug.value.set(zug[0], zug[1]);
+            H.time.value = zeit;
+            H.cloudCover.value = deckung;
+            const [c, sn] = [Math.cos(gier), Math.sin(gier)];
+            dreh.value.set(c, sn);
+            szene.backgroundRotation.set(0, -gier, 0);
+            B.richtung.set(c * s[0] - sn * s[2], s[1], sn * s[0] + c * s[2]);
+            const weit = sonne.position.distanceTo(sonne.target.position);
+            if (weit > 0) sonne.position.copy(sonne.target.position).addScaledVector(B.richtung, weit);
+            B.himmel = { ort: [...ort], zug: [...zug], zeit, deckung, gier };
+            const ziel = R.getRenderTarget();
+            R.setRenderTarget(rtH);
+            R.render(qH, qH.userData.kamera);
+            R.setRenderTarget(ziel);
+        };
+        B.himmelSetzen(o.himmel);
         const W = A.rtBS.width;
         B.steht = R.readRenderTargetPixelsAsync(A.rtBS, 0, 0, W, 1).then((px) => {
             const werte = tafelAusPixeln(px, W);
@@ -885,12 +1126,11 @@ var __weltLicht = (function () {
         if (!sonne || B.sonne.intensity !== B.staerke) fremd.add(`die Sonne ${B.sonne.intensity} statt ${B.staerke}`);
         if (R.toneMappingExposure !== B.belichtung || R.toneMapping !== globalThis.THREE[BELICHTUNG.kurve])
             fremd.add(`die Belichtung ${R.toneMappingExposure} statt ${B.belichtung}`);
-        const U = B.tafeln.U;
         if (
             szene.environmentNode !== B.knoten ||
             szene.environmentIntensity !== 1 ||
-            szene.background !== B.tafeln.rtEq.texture ||
-            szene.backgroundIntensity !== U.licht.value
+            szene.background !== B.grund ||
+            szene.backgroundIntensity !== 1
         )
             fremd.add("ein Himmel neben dem Knoten des Gesetzes");
         if (fremd.size)
@@ -930,6 +1170,13 @@ var __weltLicht = (function () {
         umgebungLicht,
         umgebungZeichnen,
         himmelDerStoffe,
+        stufeKonstant,
+        WOLKEN_SCHICHT,
+        GLANZ_RAUHEIT,
+        wolkenFeld,
+        wolkenMenge,
+        himmelSicht,
+        himmelTafel,
         buehne,
         buehneZeichnet,
     });

@@ -40,23 +40,15 @@ function nahDeckungInSeite(o) {
     const UEBER = o.ueber || {};
     const lu = st.lodUniforms || {};
     // die Werte, die die GPU liest (uKamAuge · uKamZiel · uKamNah)
-    const auge = lu.uKamAuge ? lu.uKamAuge.value.clone() : null;
-    const ziel = lu.uKamZiel ? lu.uKamZiel.value.clone() : null;
-    const nah = lu.uKamNah ? lu.uKamNah.value.clone() : null;
+    const auge = lu.uKamAuge?.value;
+    const ziel = lu.uKamZiel?.value;
+    const nah = lu.uKamNah?.value;
     const knoten = r._kamDurchKnoten || null; // die Masken-Knoten je Art (Laub · Rinde), falls der Stamm sie hält
     const gewicht = (p, art) => {
         if (!auge || !ziel) return 1;
         const n = nah ? (art === "rinde" ? nah.y : art === "boden" ? nah.z : nah.x) : undefined;
-        return K._durchsichtGewicht(
-            K.DURCHSICHT_ZAHLEN,
-            p,
-            { x: auge.x, y: auge.y, z: auge.z },
-            { x: ziel.x, y: ziel.y, z: ziel.z },
-            ziel.w,
-            n
-        );
+        return K._durchsichtGewicht(K.DURCHSICHT_ZAHLEN, p, auge, ziel, ziel.w, n);
     };
-    const player = pm;
     const ritt = st.player?.mountedArch != null ? r._mountedEntry : null;
     const unter = (obj, wurzel) => {
         for (let p = obj; p; p = p.parent) if (p === wurzel) return true;
@@ -68,22 +60,22 @@ function nahDeckungInSeite(o) {
         if (e?.mesh) archNachMesh.set(e.mesh, e);
         if (e?.id != null) eintragNachId.set(e.id, e);
     }
+    // DIE MEMBRAN GEHÖRT IHREM TOR (studios.K4, w27-studio-mesh): die Welt zeichnet sie als eigenes Mesh neben dem Rahmen
+    // (`_membranBauFor`, `_portalMembranes`) — ohne Eintrag hieß sie fremd, und das Tor am Ziel verdeckte sich selbst (Radeon
+    // da0e790f: „Ziel Blickziel verdeckt von portal-membran in 18.98 m“, kein Bild der Welt für das Tor-Studio)
+    r._portalMembranes?.forEach((q) => archNachMesh.set(q.mesh, q.entry));
     const eintragVon = (obj, inst) => {
         // der Pool der Fundamente (`st.archFundament`, EIN Mesh für jedes Bauwerk, `idAt[slot]` = die id des Eintrags)
         const fu = st.archFundament;
         if (fu && obj === fu.mesh) return eintragNachId.get(fu.idAt[inst]) || null;
-        if (obj.isInstancedMesh && obj.userData.archInstanceKey && st.archInstanceGroups) {
-            const g = st.archInstanceGroups.get(obj.userData.archInstanceKey);
-            return g?.slotEntry?.[inst] || null;
-        }
+        if (obj.isInstancedMesh && obj.userData.archInstanceKey)
+            return st.archInstanceGroups?.get(obj.userData.archInstanceKey)?.slotEntry?.[inst] || null;
         for (let p = obj; p; p = p.parent) if (archNachMesh.has(p)) return archNachMesh.get(p);
         return null;
     };
     const artVonStoff = (mat) => {
         const k = mat?.userData?.foundryKind;
-        if (k === "foliage" || k === "foliageTex") return "laub";
-        if (k === "bark" || k === "stem") return "rinde";
-        return null;
+        return k === "foliage" || k === "foliageTex" ? "laub" : k === "bark" || k === "stem" ? "rinde" : null;
     };
     // die Klasse einer Fläche: { klasse, name } — klasse ∈ Laub · Rinde · Fels · Wagen (Täter) | Boden · Bau (halten)
     // | null (nie gezählt: Himmel, Wasser, Spieler, Kreatur)
@@ -122,7 +114,7 @@ function nahDeckungInSeite(o) {
         !obj.userData.gang &&
         obj.name !== "himmel" &&
         !obj.userData.isHydrosphere &&
-        !unter(obj, player);
+        !unter(obj, pm);
     const TAETER = {};
     for (const [k, v] of Object.entries(R)) if (v > 0) TAETER[k] = v;
     // die Stoffe der wiegenden Nah-Streu: ihr Schlüssel im Stoff-Speicher des Stamms trägt das Glied „|wiegt", wo auch immer —
@@ -133,7 +125,7 @@ function nahDeckungInSeite(o) {
     // die Blatt-Karte schneidet ihr Alpha aus dem EINEN Atlas (RGBA; ein komprimierter Atlas zählt die ganze Karte)
     const atlas = r._foliageAtlasTex?.image || null;
     const atlasA =
-        atlas?.data?.length === atlas.width * atlas.height * 4
+        atlas && atlas.data?.length === atlas.width * atlas.height * 4 // ohne Atlas (eine Welt ohne Laub: die Prüfbühne nach dem Laden) zählt die ganze Karte — bis w27-studio-mesh warf die Zeile dort (`atlas.width` von null)
             ? (u, v) => {
                   const x = Math.min(atlas.width - 1, Math.max(0, Math.floor(u * atlas.width)));
                   const y = Math.min(atlas.height - 1, Math.max(0, Math.floor(v * atlas.height)));
@@ -167,6 +159,8 @@ function nahDeckungInSeite(o) {
     const satzVon = new Map();
     for (const s of st.chunkSaetze ? st.chunkSaetze.values() : []) satzVon.set(s.mesh, s);
     const zs = new T.Sphere();
+    // die Zelle k eines Bau-Bereichs gehört dem Ziel (`o.ohne`): der Eintrag ihres Slots
+    const zielZelle = (b, k) => OHNE.has(st.archInstanceGroups.get(b.key)?.slotEntry?.[k]?.id);
     const legeDreiecke = (obj, inst, nimm, sammle, kugel) => {
         const g = obj.geometry;
         const pos = g.attributes.position;
@@ -180,13 +174,8 @@ function nahDeckungInSeite(o) {
         const satz = satzVon.get(obj);
         const gruppen = [];
         if (satz)
-            for (const b of satz.bloecke.values()) {
-                const se = st.archInstanceGroups.get(b.key)?.slotEntry;
-                b.zellen.forEach((z, i) => {
-                    if (!OHNE.has(se?.[i]?.id) && kugel(z.huelle.getBoundingSphere(zs)))
-                        gruppen.push([z.idx, 0, z.idx.length, 0]);
-                });
-            }
+            for (const b of satz.bloecke.values())
+                b.zellen.forEach((z, i) => !zielZelle(b, i) && kugel(z.huelle.getBoundingSphere(zs)) && gruppen.push([z.idx, 0, z.idx.length, 0]));
         else
             for (const gr of g.groups?.length && Array.isArray(obj.material)
                 ? g.groups
@@ -314,6 +303,13 @@ function nahDeckungInSeite(o) {
             // „fern-ring“, die einzige Hülle über ihrem Fuß (stadt, GTX 1050: „Ziel Blickziel verdeckt von fern-ring in 24.2 m“)
             let h = r._satzZelleBei(W0, S.boden.aus);
             const traegt = (s) => Math.hypot(s.center.x - W0.x, s.center.z - W0.z) <= s.radius + 0.25 && W0.y >= s.center.y - s.radius;
+            // DAS ZIEL IM SATZ (wie `legeDreiecke`: die Zelle eines Bau-Bereichs gehört `slotEntry[i]` ihrer Gruppe): steht die Fläche
+            // über der Zelle eines Eintrags des Ziels, ist sie das Ziel. Die Suche unten liest keinen Satz — ein Haus, das der
+            // Bau-Satz zeichnet, fand so nie seinen Eigner, und die kleinste fremde Hülle über dem Punkt hieß Verdecker (Radeon
+            // da0e790f, das Fachwerk-Haus der Station studios.K4: „Ziel Blickziel verdeckt von fern-ring in 27.09 m“)
+            for (const s of satzVon.values())
+                for (const b of s.bloecke.values())
+                    if (b.zellen.some((z, k) => zielZelle(b, k) && traegt(z.huelle.getBoundingSphere(zs)))) return { d };
             st.scene.traverseVisible((obj) => zaehlt(obj) && !S.boden.aus.has(obj) && !satzVon.has(obj) && jeInstanz(obj, traegt, (ob, k) => !(h?.rad <= bs.radius) && (h = { rad: bs.radius, obj: ob, e: eintragVon(ob, k) }))); // prettier-ignore
             if (h?.e && OHNE.has(h.e.id)) return { d };
             return { d: W0.distanceTo(E), vor: h ? klasseVon(h.obj, Array.isArray(h.obj.material) ? h.obj.material[0] : h.obj.material, h.e).name : "Satz oder Gelände" };
