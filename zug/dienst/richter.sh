@@ -15,7 +15,8 @@
 # CI VOR MESSUNG, SCHLOSS: jeder Schritt wartet auf die freie Karte. gtx: p3/gpu-schloss.sh (gpu_frei) und gpu-lauf.sh, das
 # einem wartenden CI-Job weicht — ein verdrängter Schritt zählt nicht und fährt neu. radeon: wie radeon-bisekt.sh — startet ein
 # Runner.Worker, fällt der Schritt samt Baum und fährt neu. Die Mess-Dateien der Schritte werden NIE gepusht oder gebucht: was
-# vor dem Schritt im Mess-Baum lag, liegt danach wieder dort; der Beleg des Schritts bleibt unter <zustand>/schritte/.
+# vor dem Schritt im Mess-Baum lag, liegt danach wieder dort; der Beleg des Schritts bleibt unter <zustand>/schritte/. Sein
+# Urteil liest der Richter aus der eigenen Ausgabe des Schritts, nie aus der Mess-Datei des (geteilten) Baums.
 # Aufruf: richter.sh <gtx|radeon>                       Fälle am jüngsten main-Kopf
 #         richter.sh <geraet> --kopf <sha>              Fälle an einem festen Kopf
 #         richter.sh <geraet> --fall <station> <gut> <schlecht>   einen genannten Fall halbieren (misst auch <schlecht> nach)
@@ -68,7 +69,7 @@ kurz() { git -C "$R" rev-parse "$1" | cut -c1-8; }
 
 # miss <sha40> → GRÜN | ROT | OFFEN | ABBRUCH (stdout); die Zahl der Station steht danach in $ZU/schritt.zahl
 miss() {
-    local x=$1 x8 mj rj d0 p ab=0 w t0 u
+    local x=$1 x8 mj rj d0 p ab=0 w t0 u z ende
     x8=${x:0:8}
     : >"$ZU/schritt.zahl"
     if [ -n "$RICHTER_SCHEIN_ROT_AB" ]; then # die Schein-Messung des Selbsttests: ROT ab einem genannten Commit, „nie“ = immer GRÜN
@@ -101,16 +102,21 @@ miss() {
     done
     wait $p 2>/dev/null
     [ "$(verdr)" != "$d0" ] && ab=1
+    # DAS URTEIL steht in der EIGENEN Ausgabe des Schritts (die Zeile „  GRÜN|ROT|OFFEN <station> · <zahl>“ von punkte.cjs), nie in
+    # der Mess-Datei des Baums: am 10.11. 23:19 legte ein fremder `checkout --force` im geteilten Mess-Baum die alte, verfolgte Datei
+    # zurück, bevor der Schritt las — sein GRÜN (Winter 0,109 × Sommer) wurde als „OFFEN, Deckel gerissen“ vom 08.11. gelesen.
     u=OFFEN
-    # nur eine Mess-Datei, die DIESER Schritt schrieb, trägt sein Urteil (ein fremder checkout kann eine alte zurücklegen)
-    if [ $ab = 0 ] && [ -e "$mj" ] && [ "$(stat -c %Y "$mj")" -ge "$t0" ]; then
-        u=$(STATION="$STATION" node -e 'const fs = require("fs"); const m = JSON.parse(fs.readFileSync(process.argv[1], "utf8")), s = process.env.STATION;
-            const v = (m.je || {})[s], n = (m.ungemessen || {})[s];
-            const offen = !v || v.ungemessen || (n && String(n.zeit || "") >= String(v.zeit || ""));
-            fs.writeFileSync(process.argv[2], String((v && (v.zahl || v.grund)) || (n && (n.grund || n.zahl)) || "ohne Eintrag").replace(/\s+/g, " ").slice(0, 300) + "\n");
-            console.log(offen ? "OFFEN" : v.gruen ? "GRÜN" : "ROT");' "$mj" "$ZU/schritt.zahl" 2>/dev/null || echo OFFEN)
-        cp "$mj" "$ZU/schritte/${STATION//#/_}-$x8-$t0.json" 2>/dev/null
+    ende=$(date +%s)
+    z=$(grep -a -F -e "  GRÜN $STATION · " -e "  ROT  $STATION · " -e "  ROT $STATION · " -e "  OFFEN $STATION · " "$ZU/schritt.out" | tail -n 1)
+    if [ $ab = 0 ]; then
+        case "$z" in "  GRÜN "*) u=GRÜN ;; "  ROT "*) u=ROT ;; esac
     fi
+    echo "${z#*" · "}" | cut -c1-300 >"$ZU/schritt.zahl"
+    [ -n "$z" ] || tail -n 1 "$ZU/schritt.out" | cut -c1-300 >"$ZU/schritt.zahl"
+    # die Uhr des Schritts: Dauer, und wie lange der Lauf nach seiner letzten Zeile noch lebte (die Baum-Sperre hält er so lange)
+    echo "$((ende - t0)) s, davon $((ende - $(stat -c %Y "$ZU/schritt.out"))) s nach der letzten Zeile" >"$ZU/schritt.uhr"
+    log "    Uhr $x8: $(cat "$ZU/schritt.uhr")"
+    [ -e "$mj" ] && cp "$mj" "$ZU/schritte/${STATION//#/_}-$x8-$t0.json" 2>/dev/null
     cp "$ZU/schritt.out" "$ZU/schritte/${STATION//#/_}-$x8-$t0.out" 2>/dev/null
     rm -rf "$mj" "$rj"
     [ -e "$ZU/vor/m.json" ] && cp -p "$ZU/vor/m.json" "$mj"
