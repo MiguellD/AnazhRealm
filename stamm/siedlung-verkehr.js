@@ -530,18 +530,10 @@ class AnazhRealm_siedlung_verkehr {
         const fz = (e._fahr = vc.fahrZustand(p.x, p.z, p.fahrt - Math.PI / 2));
         vc.fahrStand(fz, G, this._fahrBoden(e), 0);
         if (Number.isFinite(fz.y)) this._wagenLage(e, fz);
-        this._verkehrUmriss(W, e);
-        this._verkehrBild(e);
-        return true;
-    }
-
-    // DER WAGEN IM PLAN misst, womit er stößt (physik.K2 Staffel 2): halbe Länge, halbe Breite und Bug aus dem EINEN Umriss
-    // (`_fahrUmriss`) — beim Stellen und wenn das Maß seiner gezeichneten Gestalt ankommt (`_wagenMassSetzen`). Bis dahin hielt der
-    // Plan Abstand nach dem Umriss beim Stellen, die Hülle stieß mit dem gezeichneten (VK 10 Uhr: zwei Stöße Wagen an Wagen, einer
-    // fuhr 13 m in einer Minute).
-    _verkehrUmriss(W, e) {
         const um = this._fahrUmriss(e);
         [W.hl, W.hw, W.bug] = [(um.bug - um.heck) / 2, um.hw, um.bug];
+        this._verkehrBild(e);
+        return true;
     }
 
     // IM BLICK DER KAMERA: die Kugel (Mitte des Wagens, Radius r) schneidet das Frustum der Kamera dieses Schritts (ohne Kamera:
