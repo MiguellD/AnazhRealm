@@ -16,8 +16,9 @@
 // trifft eine Stelle des Stamms über die EINE Engstelle (stammLib.ersetze/treffer), nie am ersten Text-Treffer.
 // Siebte Aufgabe (Klinge 7, w22-gpu-probe, w26-probe-zeit): der Einlass der GPU-Probe lässt nur gate:, zeit:gate: und bild:
 // durch, zeit: nur auf die Band-Geräte.
+// Achte Aufgabe (Klinge 8, w27-gpu-wahl-heil): jede Linse liest einen GPU-Puffer über die EINE Puffer-Lesung, nie am Rohen.
 //
-// Selbst-Test: --selftest beweist alle sieben Klingen (kein vakuöses Grün; der Grün-Satz nennt nur die Zahl, die Klingen
+// Selbst-Test: --selftest beweist alle acht Klingen (kein vakuöses Grün; der Grün-Satz nennt nur die Zahl, die Klingen
 // stehen hier — Ratchet, Katalog, Parameter-Anker beim Namen, Kopf-Muster am AST, Taste nach der Wanduhr, eigener Schneider
 // und erster Treffer im ganzen Stamm, GPU-Probe; Kommentare zählen nicht):
 // (1) eine injizierte typeof-Probe hebt den Zähler über den Ratchet, ein Kommentar nicht; (2) ein erfundenes Katalog-Symbol
@@ -31,7 +32,7 @@
 //     neben dem Einlass, ein Einlass, der alles durchlässt) fällt sie beim Namen.
 // ============================================================================
 "use strict";
-const { urteilEnde, ausDatei, taeterFaelle, rotListe, SELBSTTEST, ROOT, path, fs, stammLib } = require("./lib/welt-boot.cjs");
+const { urteilEnde, ausDatei, taeterFaelle, rotListe, SELBSTTEST, ROOT, path, fs, stammLib, pufferLesen } = require("./lib/welt-boot.cjs");
 
 // Kommentare strippen, Strings BEWAHREN (der EINE Stripper, scripts/lib/stamm.cjs).
 const stripComments = stammLib.ohneKommentare;
@@ -126,6 +127,10 @@ function kopfMuster(pattern) {
     }
     return out;
 }
+// KLINGE 8 (w27-gpu-wahl-heil): jede Linse liest einen GPU-Puffer über die EINE Puffer-Lesung (welt-boot `pufferLesen`), die Leser
+// und Puffer nennt, wenn er nicht auf der GPU liegt — r184 `getArrayBufferAsync` am Rohen brach anonym („reading 'size'": der
+// Draw-Zähler las die Liste der Wahl, die seit w25-gpu-wahl-2 eine Karte je Kamera ist; haar.K5 und vegetation.K1 ROT ohne Täter).
+const LESUNG_FREI = "scripts/lib/welt-boot.cjs";
 function parameterAnker(name, src, stammSrc) {
     const acorn = require("acorn");
     let toks;
@@ -142,7 +147,7 @@ function parameterAnker(name, src, stammSrc) {
         return [`${name}: nicht lesbar (${e.message}) — die Klinge urteilt über jede Linse`];
     }
     const errs = [];
-    for (const t of toks) {
+    for (const [i, t] of toks.entries()) {
         const z = `${name}:${t.loc.start.line}`;
         if (t.type.label === "regexp") {
             for (const m of t.value.pattern.matchAll(PARAM_ANKER_RX))
@@ -155,6 +160,8 @@ function parameterAnker(name, src, stammSrc) {
                     errs.push(
                         `${z} ordnet Methoden an einem Kopf-Muster zu (/${k}/) — am AST: stammLib.glieder · gliedAn · rufe (Klinge 4)`
                     );
+        } else if (t.value === "getArrayBufferAsync" && toks[i - 1]?.type.label === "." && name !== LESUNG_FREI) {
+            errs.push(`${z} liest einen GPU-Puffer am Rohen — über die EINE Puffer-Lesung: window.__pufferLesen(puffer, wer) (Klinge 8)`);
         } else if (t.type.label === "string" || t.type.label === "template") {
             const k = KOPF_TEXT_RX.exec(String(t.value));
             if (k && stammLib.kopf(stammSrc, k[1]) >= 0)
@@ -577,7 +584,25 @@ function selftest() {
         probeGesetz,
         { fehler: fails, gruen: require("js-yaml").load(ausDatei(PROBE_DATEI)) }
     );
-    urteilEnde(fails.length, "❌ SELBST-TEST: " + fails.join(" · "), "✅ SELBST-TEST: alle sieben Klingen feuern");
+    // Klinge 8: der Leser von haar.K5 und vegetation.K1 bis w27-gpu-wahl-heil (die Liste der Wahl am Rohen) fällt mit Datei:Zeile, die
+    // EINE Puffer-Lesung, ein Kommentar, ein Text und die Lesung selbst schweigen; die Lesung nennt Leser und Puffer (die Karte je Kamera)
+    const roh = "const a = 1;\nconst l = new Uint32Array(await rend.getArrayBufferAsync(a.__instanzQuelle.liste));\n";
+    const e8 = parameterAnker("probe.cjs", roh, stammFake);
+    if (e8.length !== 1 || !e8[0].startsWith("probe.cjs:2 liest einen GPU-Puffer am Rohen")) fails.push("Klinge 8 nennt den rohen Leser nicht");
+    const still8 = 'await window.__pufferLesen(zug.liste, "x");\n// rend.getArrayBufferAsync(q);\nconst t = "getArrayBufferAsync(q)";\n';
+    if (parameterAnker("probe.cjs", still8, stammFake).length || parameterAnker(LESUNG_FREI, roh, stammFake).length)
+        fails.push("Klinge 8 feuert ohne rohen Leser");
+    const rend = { backend: { has: (q) => q === da, get: () => ({ buffer: {} }) }, getArrayBufferAsync: () => "gelesen" };
+    const da = { isBufferAttribute: true };
+    let wort = "";
+    try {
+        pufferLesen(new Map(), "draw-zaehler Liste des Zugs", rend);
+    } catch (e) {
+        wort = e.message;
+    }
+    if (wort !== "DIE PUFFER-LESUNG (draw-zaehler Liste des Zugs): Map liegt nicht auf der GPU" || pufferLesen(da, "x", rend) !== "gelesen")
+        fails.push("Klinge 8: die Puffer-Lesung nennt Leser und Puffer nicht (" + wort + ")");
+    urteilEnde(fails.length, "❌ SELBST-TEST: " + fails.join(" · "), "✅ SELBST-TEST: alle acht Klingen feuern");
 }
 
 function main() {
