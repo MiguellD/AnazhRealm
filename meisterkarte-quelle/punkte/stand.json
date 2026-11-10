@@ -66,7 +66,7 @@
   },
   "affekt.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: affekt.K4#1 headless: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +10) · affekt.K4#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs +4) · affekt.K4#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +10) — zuletzt an 94d9c5a6: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: zeichner.postKette · wie {\"zeichner.postKette\":\"fort\"}) — ungemessen",
+   "beleg": "Maschine: 0 — offen: affekt.K4#1 headless: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +10) · affekt.K4#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs +4) · affekt.K4#2 gtx: ROT: spieler → — (0 ms) · nexus → — (0 ms) · ROT spieler: ohne Modell (die KI der Sitzung ist aus); nexus: ohne Modell (die KI der Sitzung ist aus) an 5b9c6427",
    "stationen": [
     {
      "id": "affekt.K4#1",
@@ -90,10 +90,9 @@
      "id": "affekt.K4#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +10) — zuletzt an 94d9c5a6: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: zeichner.postKette · wie {\"zeichner.postKette\":\"fort\"}) — ungemessen",
-     "ungemessen": true
+     "zahl": "spieler → — (0 ms) · nexus → — (0 ms) · ROT spieler: ohne Modell (die KI der Sitzung ist aus); nexus: ohne Modell (die KI der Sitzung ist aus)",
+     "sha": "5b9c6427d7e3db0712e20d104b012a83f8ffd68c",
+     "grund": "ROT: spieler → — (0 ms) · nexus → — (0 ms) · ROT spieler: ohne Modell (die KI der Sitzung ist aus); nexus: ohne Modell (die KI der Sitzung ist aus)"
     }
    ]
   },
@@ -123,7 +122,7 @@
   },
   "ankunft.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: ankunft.K1#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/software-gpu.cjs, scripts/lib/welt-boot.cjs) — zuletzt an 6aa7a5a6: Frist der Probe 7 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Kontrolle von außen (t(Kontrolle) 0, Exit 0) · [linse-gpu] amd/rdna-3) · Täter: SPUR kalt {\"stand\":\"gemessen\",\"kontrolleMs\" · ankunft.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/software-gpu.cjs, scripts/lib/welt-boot.cjs) — zuletzt an 6aa7a5a6: Fremd-Last: MsMpEng.exe 28,9 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 19,5 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjx · ankunft.K1#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/software-gpu.cjs, scripts/lib/welt-boot.cjs) — zuletzt an 6aa7a5a6: Frist der Probe 7 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Kontrolle von außen (t(Kontrolle) 0, Exit 0) · [linse-gpu] amd/rdna-3) · Täter: SPUR kalt {\"stand\":\"gemessen\",\"kontrolleMs\" · ankunft.K1#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/software-gpu.cjs, scripts/lib/welt-boot.cjs) — zuletzt an 6aa7a5a6: Fremd-Last: MsMpEng.exe 28,9 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 19,5 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjx",
+   "beleg": "Maschine: 0 — offen: ankunft.K1#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/software-gpu.cjs, scripts/lib/welt-boot.cjs) — zuletzt an 6aa7a5a6: Frist der Probe 7 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Kontrolle von außen (t(Kontrolle) 0, Exit 0) · [linse-gpu] amd/rdna-3) · Täter: SPUR kalt {\"stand\":\"gemessen\",\"kontrolleMs\" · ankunft.K1#1 gtx: ROT: t(Kontrolle) kalt 13.86 s von außen (Eigenmeldung 12.75 s), Bild 0.03 % Lücke bis zur Ruhe, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht · [linse-gpu] nvidia/pascal · ROT trotz Fremd-Last: chrome.exe --type=gpu-process --no-sandbox --disable-breakpad --headless=new --use-angle=s 68,5 CPU-s · chrome.exe --type=renderer --noerrdialogs --user-data-dir=puppeteer_dev_chrome_profile-v7m 55,6 CPU-s · chrome.exe --type=renderer --noerrdialogs --user-data-dir=puppeteer_dev_chrome_profile-E6n 41,9 CPU-s — 3,36 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon; Σ fremd 214,5 CPU-s in 73,9 s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 27,7 CPU-s · svchost.exe 10,7 CPU-s · SearchIndexer.exe 3,6 CPU-s) — geeicht ÷ 1,189 (1 + 5,6 % je fremdem Kern × 3,36): t(Kontrolle) kalt s 13,86 → geeicht 11,65 (Soll ≤ 10) an 5b9c6427 · ankunft.K1#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/software-gpu.cjs, scripts/lib/welt-boot.cjs) — zuletzt an 6aa7a5a6: Frist der Probe 7 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Kontrolle von außen (t(Kontrolle) 0, Exit 0) · [linse-gpu] amd/rdna-3) · Täter: SPUR kalt {\"stand\":\"gemessen\",\"kontrolleMs\" · ankunft.K1#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/software-gpu.cjs, scripts/lib/welt-boot.cjs) — zuletzt an 6aa7a5a6: Fremd-Last: MsMpEng.exe 28,9 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 19,5 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjx",
    "stationen": [
     {
      "id": "ankunft.K1#1",
@@ -139,10 +138,9 @@
      "id": "ankunft.K1#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/software-gpu.cjs, scripts/lib/welt-boot.cjs) — zuletzt an 6aa7a5a6: Fremd-Last: MsMpEng.exe 28,9 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 19,5 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjx",
-     "ungemessen": true,
+     "zahl": "t(Kontrolle) kalt 13.86 s von außen (Eigenmeldung 12.75 s), Bild 0.03 % Lücke bis zur Ruhe, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht · [linse-gpu] nvidia/pascal",
+     "sha": "5b9c6427d7e3db0712e20d104b012a83f8ffd68c",
+     "grund": "ROT: t(Kontrolle) kalt 13.86 s von außen (Eigenmeldung 12.75 s), Bild 0.03 % Lücke bis zur Ruhe, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht · [linse-gpu] nvidia/pascal · ROT trotz Fremd-Last: chrome.exe --type=gpu-process --no-sandbox --disable-breakpad --headless=new --use-angle=s 68,5 CPU-s · chrome.exe --type=renderer --noerrdialogs --user-data-dir=puppeteer_dev_chrome_profile-v7m 55,6 CPU-s · chrome.exe --type=renderer --noerrdialogs --user-data-dir=puppeteer_dev_chrome_profile-E6n 41,9 CPU-s — 3,36 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon; Σ fremd 214,5 CPU-s in 73,9 s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 27,7 CPU-s · svchost.exe 10,7 CPU-s · SearchIndexer.exe 3,6 CPU-s) — geeicht ÷ 1,189 (1 + 5,6 % je fremdem Kern × 3,36): t(Kontrolle) kalt s 13,86 → geeicht 11,65 (Soll ≤ 10)",
      "beide": true
     },
     {
@@ -4487,7 +4485,7 @@
  },
  "rueckfall": [],
  "kopfVoll": "5b9c6427d7e3db0712e20d104b012a83f8ffd68c",
- "zeit": "2026-11-10T18:29:00.889Z",
+ "zeit": "2026-11-10T19:04:32.766Z",
  "vorher": "5b9c6427",
  "pflicht": {
   "dokument": "docs/PFLICHT-OFFEN.md",
@@ -4568,7 +4566,7 @@
      {
       "station": "ankunft.K1#1",
       "geraet": "gtx",
-      "zeile": "Linse seit der Messung geändert (R6: scripts/lib/software-gpu.cjs, scripts/lib/welt-boot.cjs) — zuletzt an 6aa7a5a6: Fremd-Last: MsMpEng.exe 28,9 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=W"
+      "zeile": "ROT: t(Kontrolle) kalt 13.86 s von außen (Eigenmeldung 12.75 s), Bild 0.03 % Lücke bis zur Ruhe, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht · [linse-gpu] nvidia/pa"
      },
      {
       "station": "ankunft.K1#2",
