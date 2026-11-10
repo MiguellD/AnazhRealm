@@ -1,7 +1,7 @@
 {
  "sha": "78d37554b2d5f98d96ef454cfa9f51752c0e45a0",
  "geraet": "gtx",
- "zeit": "2026-11-10T03:10:17.549Z",
+ "zeit": "2026-11-10T03:15:38.123Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "ferne.K1#2": {
@@ -917,48 +917,48 @@
   "gelaende.K2#2": {
    "gruen": false,
    "ungemessen": true,
-   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: (b)(d) 16.3 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"flu)",
+   "zahl": "Deckel 90 s gerissen: Stille seit 71.3 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: (b)(d) 16.1 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"flu)",
    "exit": 1,
    "minuten": 1.5,
-   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: (b)(d) 16.3 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"flu)",
+   "grund": "Deckel 90 s gerissen: Stille seit 71.3 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: (b)(d) 16.1 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"flu)",
    "s": 90.2,
    "fremd": {
-    "s": 92.2,
+    "s": 92,
     "takte": 42,
-    "fremdS": 174.09,
-    "kerne": 1.889,
-    "fensterKerne": 2.253,
+    "fremdS": 162.89,
+    "kerne": 1.77,
+    "fensterKerne": 2.131,
     "namen": [
      [
       "AppHelperCap.exe",
-      101.91
+      98.64
      ],
      [
       "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      20.39
+      17.3
      ],
      [
-      "OmenCommandCenterBackground.exe",
-      14.38
+      "MsMpEng.exe",
+      13.72
      ]
     ],
-    "dienerS": 32.34,
+    "dienerS": 31.02,
     "diener": [
      [
       "dwm.exe",
-      16.72
+      16.69
      ],
      [
       "System",
-      10.28
+      8.75
      ]
     ],
-    "eigenS": 262.84,
+    "eigenS": 251.81,
     "schwelle": 0.3,
     "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
    },
-   "zeit": "2026-11-09T21:44:24.903Z",
-   "abdruck": "0f54a91aa37d",
+   "zeit": "2026-11-10T03:15:38.123Z",
+   "abdruck": "fa8c75e7a77c",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
@@ -1112,19 +1112,19 @@
   }
  },
  "sitzung": {
-  "start": "2026-11-10T03:09:35.119Z",
+  "start": "2026-11-10T03:14:59.307Z",
   "port": 7804,
   "warten": 0.02,
-  "bootS": 10.2,
+  "bootS": 7.6,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": "genesis",
-    "vor": "ferne.K1#2",
-    "s": 30.1,
-    "takte": 666,
+    "ort": "wiese",
+    "vor": "gelaende.K2#2",
+    "s": 29.8,
+    "takte": 545,
     "chunks": 81,
     "nach": null
    }
@@ -1133,27 +1133,27 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 0,
-   "frameP95": null,
-   "taktP95": null,
-   "vramMax": null,
+   "bilder": 1362,
+   "frameP95": 83.27,
+   "taktP95": 78.49,
+   "vramMax": 140.3,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [
     {
-     "probe": "ferne.K1#2",
-     "m": 3592,
+     "probe": "gelaende.K2#2",
+     "m": 1718,
      "ringVor": 4,
-     "ringMin": -1
+     "ringMin": 0
     }
    ],
-   "zapfen": 93,
+   "zapfen": 120,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 104.5,
-  "minuten": 1.82
+  "fahrtS": 129,
+  "minuten": 2.2
  }
 }
