@@ -33,6 +33,10 @@ ABGABE dc29205f (Zweig w27-studio-mesh, main 20a01782 gemischt; der Schnitt wie 
 
 **Am Kopf dc29205f GRÜN (swiftshader):** `npm run check` · `playtest:fast` 21/0 · `gate:welt-boot` · `gate:studio-uebergabe` · `gate:betriebsgesetz` (Wachstum Prüf +0 / Spiel +1334).
 
+**GPU-Probe dc29205f GRÜN (Radeon 890M, 525 s, probe-post/w27-studio-mesh/dc29205f.md) · Code-Check 42738406421 GRÜN:** `gate:studio-uebergabe` GRÜN 63 s
+(der lebende Avatar gießt neu, Spawn-Faktor 1,4644, Snapshot und Restore), `gate:wasser-leben:bild` GRÜN 42 s, `bild:wiese@0.5` ABNAHME GRÜN
+(Luma 57 · σ 32,9, Stand 18.546.241) — das Bild angesehen: Wolken am Himmel, kein Sprenkel, wie da9919e3.
+
 **Was ich deshalb tue:** `gate:studio-huelle` war die falsche Probe für diesen Schnitt (sie urteilt K3#2/K2#2, die an main rot stehen).
 Die neue Abgabe ruft, was MEINEN Schnitt auf der Karte urteilt: `gate:studio-uebergabe` (die benannte Wand: der EINE Kanal in der Welt),
 `gate:wasser-leben:bild` (der Spiegel-Pass mit `invVPr`) und `bild:wiese@0.5` (der Himmel der Welt). Ehrlich offen bleibt die BÜHNE auf echter
