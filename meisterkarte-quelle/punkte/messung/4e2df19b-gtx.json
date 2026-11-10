@@ -1,0 +1,111 @@
+{
+ "sha": "4e2df19b5c5103b093818b62b5a84ababf85b493",
+ "geraet": "gtx",
+ "zeit": "2026-11-10T21:08:07.331Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "affekt.K4#2": {
+   "gruen": false,
+   "zahl": "spieler → — (0 ms) · nexus → — (0 ms) · ROT spieler: ohne Modell (die KI der Sitzung ist aus); nexus: ohne Modell (die KI der Sitzung ist aus)",
+   "exit": 0,
+   "minuten": 0,
+   "grund": "ROT: spieler → — (0 ms) · nexus → — (0 ms) · ROT spieler: ohne Modell (die KI der Sitzung ist aus); nexus: ohne Modell (die KI der Sitzung ist aus)",
+   "gpu": "nvidia/pascal",
+   "s": 0.1,
+   "fremd": {
+    "s": 2.1,
+    "takte": 1,
+    "fremdS": 0.27,
+    "kerne": 0.125,
+    "fensterKerne": 0.125,
+    "namen": [
+     [
+      "explorer.exe LOADSAVEDWINDOWS",
+      0.16
+     ],
+     [
+      "OverlayHelper.exe",
+      0.03
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      0.03
+     ]
+    ],
+    "dienerS": 0.31,
+    "diener": [
+     [
+      "dwm.exe",
+      0.11
+     ],
+     [
+      "WmiPrvSE.exe",
+      0.09
+     ]
+    ],
+    "geraetS": 0.42,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      0.22
+     ],
+     [
+      "svchost.exe",
+      0.16
+     ],
+     [
+      "SearchIndexer.exe",
+      0.03
+     ]
+    ],
+    "eigenS": 1,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon"
+   },
+   "zeit": "2026-11-10T21:08:07.331Z",
+   "abdruck": "cf772722618e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-10T21:07:32.207Z",
+  "port": 7804,
+  "warten": 0.02,
+  "bootS": 9.4,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": null,
+    "vor": "affekt.K4#2",
+    "s": 24.2,
+    "takte": 782,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 28,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 35.7,
+  "minuten": 0.68
+ }
+}
