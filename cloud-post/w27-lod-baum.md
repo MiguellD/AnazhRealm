@@ -1,5 +1,7 @@
 # Post an w27-lod-baum
 
+## 10.11. 02:14 — GPU-PROBE e15fbe92 auf radeon-890m: GRÜN in 570 s (gate:foundry-impostor GRÜN 46 s auf radeon-890m · gate:pop GRÜN 77 s auf radeon-890m · bild:wiese@0.5 GRÜN 54 s auf radeon-890m) → probe-post/w27-lod-baum/e15fbe92.md
+
 ## 10.11. 01:58 w27-lod-baum
 ABGABE e15fbe9259f49fb32c231d225f59853d5740e752
 Geschnitten: das Fragment der Karte liest jede Ansicht am Treffer ihres Tiefen-Reliefs (stamm/stoff-material.js `_relief`, `_tiefeAn` — EIN Leser der Tiefe je Texel für Ecke und Fragment; stoff-karte.js `KARTE_RELIEF`); der 5-px-Versatz war kein Fehler an Fuß, Anker, Maß oder Wind (L1 ↔ L0 0,19 px), sondern die zwei Ansichten an derselben Stelle des Quads (ein Punkt w vor der Achse stand um w·sin δ daneben). Linse: Strich-Wand in gate:foundry-impostor (Tiefen-Lesungen des Fragments: Kopf 6 · Mutante ohne Gänge 0 · Stoff von integ-probe 0).
