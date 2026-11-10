@@ -1,7 +1,7 @@
 {
  "sha": "4e2df19b5c5103b093818b62b5a84ababf85b493",
  "geraet": "gtx",
- "zeit": "2026-11-10T21:08:07.331Z",
+ "zeit": "2026-11-10T21:13:21.968Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "affekt.K4#2": {
@@ -71,19 +71,19 @@
   }
  },
  "sitzung": {
-  "start": "2026-11-10T21:07:32.207Z",
+  "start": "2026-11-10T21:12:50.413Z",
   "port": 7804,
-  "warten": 0.02,
-  "bootS": 9.4,
+  "warten": 0.01,
+  "bootS": 6.3,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
     "ort": null,
-    "vor": "affekt.K4#2",
-    "s": 24.2,
-    "takte": 782,
+    "vor": "ankunft.K1#1",
+    "s": 23.8,
+    "takte": 781,
     "chunks": 81,
     "nach": null
    }
@@ -92,20 +92,95 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 0,
-   "frameP95": null,
-   "taktP95": null,
-   "vramMax": null,
-   "seiten": 1,
+   "bilder": 217,
+   "frameP95": 358.34,
+   "taktP95": 190.36,
+   "vramMax": 152.7,
+   "seiten": 5,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 28,
-   "luecken": 0,
-   "letzteLuecke": null
+   "zapfen": 71,
+   "luecken": 5,
+   "letzteLuecke": "kein Renderer"
   },
-  "fahrtS": 35.7,
-  "minuten": 0.68
+  "fahrtS": 81.4,
+  "minuten": 1.42
+ },
+ "ungemessen": {
+  "ankunft.K1#1": {
+   "gruen": false,
+   "zahl": "Fremd-Last: claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 10,6 CPU-s · LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio 2,6 CPU-s · claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 2,5 CPU-s — 0,51 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon; Σ fremd 20,3 CPU-s in 51,9 s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 7,8 CPU-s · svchost.exe 4,8 CPU-s · SearchIndexer.exe 0,6 CPU-s) — kein Maß reißt (1 gemessen): das ROT liegt in einer Bedingung ohne Zahl — kein Urteil, UNGEMESSEN (die Probe sah: t(Kontrolle) kalt 9.65 s von außen (Eigenmeldung 8.99 s), Bild 0.01 % Lücke bis zur Ruhe, offen im Bild der Horizont wird geteilt · 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht · )",
+   "exit": 0,
+   "minuten": 0.83,
+   "grund": "Fremd-Last: claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 10,6 CPU-s · LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio 2,6 CPU-s · claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 2,5 CPU-s — 0,51 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon; Σ fremd 20,3 CPU-s in 51,9 s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 7,8 CPU-s · svchost.exe 4,8 CPU-s · SearchIndexer.exe 0,6 CPU-s) — kein Maß reißt (1 gemessen): das ROT liegt in einer Bedingung ohne Zahl — kein Urteil, UNGEMESSEN (die Probe sah: t(Kontrolle) kalt 9.65 s von außen (Eigenmeldung 8.99 s), Bild 0.01 % Lücke bis zur Ruhe, offen im Bild der Horizont wird geteilt · 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht · )",
+   "mass": [
+    {
+     "wort": "t(Kontrolle) kalt s",
+     "wert": 9.654,
+     "soll": 10
+    }
+   ],
+   "gpu": "nvidia/pascal",
+   "s": 49.8,
+   "fremd": {
+    "s": 51.9,
+    "takte": 23,
+    "fremdS": 20.25,
+    "kerne": 0.39,
+    "fensterKerne": 0.511,
+    "namen": [
+     [
+      "claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      10.61
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      2.56
+     ],
+     [
+      "claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      2.52
+     ]
+    ],
+    "dienerS": 26.98,
+    "diener": [
+     [
+      "System",
+      11.88
+     ],
+     [
+      "dwm.exe",
+      11.61
+     ]
+    ],
+    "geraetS": 13.72,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      7.77
+     ],
+     [
+      "svchost.exe",
+      4.75
+     ],
+     [
+      "SearchIndexer.exe",
+      0.58
+     ]
+    ],
+    "eigenS": 355,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-10T21:13:21.968Z",
+   "abdruck": "4e36edaf41f7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
  }
 }
