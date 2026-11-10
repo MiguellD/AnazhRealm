@@ -265,3 +265,4 @@
 2026-11-10T20:25 karte=212 (gebucht am 5b9c6427, buche.sh)
 2026-11-10T20:49 karte=214 (gebucht am b269f840, buche.sh)
 2026-11-10T21:07 karte=215 (gebucht am b269f840, buche.sh)
+2026-11-10T22:45 woche=0 konto=neu karte=215 kopf=4e2df19b (Konto 11, Reset 17.11. 09:00 MEZ; die Schleifen des Laptops starben am Konto-Wechsel 21:52 — ab jetzt zug/dienst/start.sh)

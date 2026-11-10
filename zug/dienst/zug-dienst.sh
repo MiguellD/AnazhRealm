@@ -1,0 +1,154 @@
+#!/bin/bash
+# zug-dienst.sh — DER EINE ZUG-DIENST, ohne LLM (Konto 11, 10.11. 22:40; Blockade B3 des Blatts „großes Bild“: die
+# Integrations-Maschine lebte unversioniert in /tmp und starb am 10.11. 21:52 mit dem Konto-Wechsel mitten im Bau von z374).
+# EINE Schleife, ein Zug nach dem anderen: sammeln → bündeln → fahren (zug-sammler7 → fahre.sh) → urteilen und landen (zug-weiter3).
+# Sie ersetzt zug-nie-leer → zug-schlange6 → das von Hand je Zug gestartete zug-weiter3 und jedes z<NNN>-hand.sh: niemand wartet mehr
+# auf die Log-Zeile eines Vorgängers, und eine Hand-Fahrt neben dem Dienst gibt es nicht (das Schloss weist den Zweiten ab).
+#
+# BEREIT heißt, alles zugleich: der Kopf-Betreff beginnt mit „Abgabe“ · der Kopf stand noch in keinem Zug (zug-gefahren.txt: ein
+# gefahrener Kopf fährt erst mit neuem Kopf wieder — kein Heil-Karussell) und steht nicht in main · Code-Check am Kopf GRÜN ·
+# berührt der Zweig das Spiel oder trägt der Betreff [gpu-probe: …], dann die GPU-Probe am Kopf GRÜN („nie sichtbare Änderung ohne
+# Bild landen“) · das Bündel ist konfliktfrei und seine WAND-SUMME GRÜN (wand-summe.sh). Nie -pm-Zweige. Höchstens 4 Zweige je Zug.
+#
+# ZUSTAND (in /tmp/claude/dienst, überlebt jeden Neustart): zug.nr = die jüngste Zug-Nummer · zug.fahrt = „<id> <zweig@sha> …“,
+# solange ein Zug unterwegs ist. Stirbt der Dienst mitten im Zug, nimmt der nächste Start ihn wieder auf: mit Kandidat ab dem
+# Urteil (FAHRT_WEITER), ohne Kandidat schließt er das Log und gibt die Köpfe frei.
+# URTEIL ≠ MASCHINE: stirbt der Bau an der Maschine („zug bau FEHLER“), ist das kein Urteil über die Zweige — ihre Köpfe werden wieder
+# frei (z374 am 10.11.: takt-gc und takt-gc-2 standen als „gefahren“, ohne je gebaut zu sein). Drei Maschinen-Fehler in Folge = ALARM
+# im Puls, 15 min Halt.
+# Aufruf: zug-dienst.sh [--blick]   (--blick druckt, was jetzt führe, und fährt nichts)
+D=$(cd "$(dirname "$0")" && pwd)
+. "$D/gemein.sh"
+L=$W/zug-nie-leer.log
+G=$W/zug-gefahren.txt
+touch "$G"
+ZWEIGE="refs/heads/w27-* refs/heads/w28-*" # die alten w26-Abgaben fuhren und fielen schon — sie führe der Dienst als Karussell
+blick="$1"
+[ -n "$blick" ] || schloss zug || exit 0
+
+bereit() {
+    : >"$W/zug-nie-leer.wartet"
+    git -C $R fetch -q origin "+refs/heads/main:refs/remotes/origin/main" 2>/dev/null
+    git -C $R ls-remote origin $ZWEIGE 2>/dev/null >"$W/zug-nie-leer.refs"
+    while read -r sha ref; do
+        b=${ref#refs/heads/}
+        case "$b" in *-pm) continue ;; esac
+        grep -q "^$b $sha$" "$G" && continue
+        git -C $R fetch -q origin "+$ref:refs/remotes/origin/$b" 2>/dev/null
+        t=$(git -C $R log -1 --format=%s "$sha" 2>/dev/null)
+        case "$t" in Abgabe*) ;; *) continue ;; esac
+        git -C $R merge-base --is-ancestor "$sha" origin/main 2>/dev/null && continue
+        c=$(bash "$D/ci.sh" "$b" </dev/null 2>&1)
+        echo "$c" | grep "Code-Check:" | head -1 | grep -q "completed success" || {
+            echo "$b ${sha:0:8}: Code-Check nicht GRÜN ($(echo "$c" | grep "Code-Check:" | head -1 | cut -c1-80))" >>"$W/zug-nie-leer.wartet"
+            continue
+        }
+        # das Bild ist Pflicht, sobald der Zweig das SPIEL berührt — auch ohne Tag im Betreff
+        sp=$(git -C $R diff --name-only "origin/main...$sha" 2>/dev/null | grep -cE "^(stamm/|worlds/|index[.]html$|[^/]+[.]js$)")
+        case "$t" in *"[gpu-probe:"*) sp=1 ;; esac
+        [ "$sp" -gt 0 ] && {
+            echo "$c" | grep "GPU-Probe" | head -1 | grep -q "completed success" || {
+                echo "$b ${sha:0:8}: GPU-Probe nicht GRÜN ($(echo "$c" | grep "GPU-Probe" | head -1 | cut -c1-110))" >>"$W/zug-nie-leer.wartet"
+                continue
+            }
+        }
+        echo "$b"
+    done <"$W/zug-nie-leer.refs"
+}
+buendel() { # zwei Durchgänge: ein Linsen-Zweig, der allein an der Wand fällt, fährt im zweiten mit den Spiel-Zweigen
+    local Z="" b u pass
+    for pass in 1 2; do
+        for b in $1; do
+            case " $Z " in *" $b "*) continue ;; esac
+            [ "$(echo $Z | wc -w)" -ge 4 ] && break
+            u=$(bash "$D/wand-summe.sh" $Z $b 2>&1 | tail -1)
+            case "$u" in "BÜNDEL GRÜN"*) Z="$Z $b" ;; *) [ $pass = 2 ] && echo "$b: bleibt draußen — ${u:0:200}" >>"$W/zug-nie-leer.wartet" ;; esac
+        done
+    done
+    echo $Z
+}
+frei_geben() { # <zweig@sha> … — die Köpfe eines Zugs, über den kein Urteil fiel, fahren wieder
+    local z
+    for z in "$@"; do grep -v "^${z%@*} ${z#*@}$" "$G" >"$G.neu"; mv "$G.neu" "$G"; done
+}
+infra=0
+urteilen() { # <id> <zweig@sha> … — schreibt das Urteil [<id>w], landet bei GRÜN, gibt bei Maschinen-Fehler die Köpfe frei
+    local id=$1 F=$T/fahre-$1.log O=$T/fahre-${1}w.log u
+    shift
+    if grep -qE "\[$id\] (GELANDET|FAHRT ROT)" "$F" 2>/dev/null; then
+        puls zug "$id urteilt"
+        bash "$D/zug-weiter3.sh" "$id" >"$T/w3/zug-weiter-$id.out" 2>&1
+    else
+        echo "$(date +%H:%M:%S) [${id}w] FAHRT ROT ohne Fahrt — $(grep -v EXIT= "$T/w3/kette-$id.out" 2>/dev/null | tail -1 | cut -c1-200)" >>"$O"
+    fi
+    u=$(grep -E "\[${id}w\] (GELANDET|FAHRT ROT)" "$O" 2>/dev/null | tail -1)
+    echo "$(date +%H:%M) $id ende: ${u:0:200}" >>"$L"
+    if grep -q "zug bau FEHLER" "$F" 2>/dev/null; then
+        infra=$((infra + 1))
+        frei_geben "$@"
+        echo "$(date +%H:%M) $id: der Bau starb an der MASCHINE (kein Urteil über die Zweige) — Köpfe wieder frei: $*" >>"$L"
+    else infra=0; fi
+    rm -f "$S/zug.fahrt"
+}
+
+[ -n "$blick" ] && {
+    B=$(bereit | tr "\n" " ")
+    Z=""
+    [ -n "$B" ] && Z=$(buendel "$B")
+    echo "führe jetzt: ${Z:-nichts} · bereit: ${B:-nichts}"
+    echo "wartend:"
+    cat "$W/zug-nie-leer.wartet"
+    exit 0
+}
+
+n=$(cat "$S/zug.nr" 2>/dev/null)
+[ -n "$n" ] || n=$(ls $T/fahre-z*.log 2>/dev/null | sed -n 's/.*fahre-z\([0-9]*\)\.log$/\1/p' | sort -n | tail -1)
+echo "$(date +%H:%M) zug-dienst START (jüngster Zug z$n, PID $(cat "$S/zug.pid"))" >>"$L"
+
+# WIEDERAUFNAHME: ein Zug war unterwegs, als der Dienst starb
+if [ -s "$S/zug.fahrt" ]; then
+    read -r id rest <"$S/zug.fahrt"
+    F=$T/fahre-$id.log
+    if grep -qE "\[$id\] (GELANDET|FAHRT ROT)" "$F" 2>/dev/null; then
+        :
+    elif K=$(grep -oE "Kandidat [0-9a-f]{40}" "$F" 2>/dev/null | tail -1 | cut -d' ' -f2) && [ -n "$K" ]; then
+        echo "$(date +%H:%M) $id WIEDERAUFNAHME am Kandidaten ${K:0:8} (ab dem Urteil)" >>"$L"
+        puls zug "$id Wiederaufnahme am Kandidaten ${K:0:8}"
+        (cd $R && FAHRT_WEITER=$K FAHRT_OHNE_PUNKTE=1 bash "$WZ/fahre.sh" "$id" $rest >>"$F" 2>&1)
+    else
+        echo "$(date +%H:%M:%S) [$id] FAHRT ROT bau: kein Kandidat (zug bau FEHLER: der Dienst endete vor dem Bau)" >>"$F"
+    fi
+    urteilen "$id" $rest
+fi
+
+while true; do
+    if [ $infra -ge 3 ]; then
+        puls zug "ALARM: 3 Bauten in Folge an der Maschine gestorben — hält 15 min (Log: fahre-z$n.log)"
+        sleep 900
+        infra=0
+    fi
+    puls zug "sammelt (jüngster Zug z$n)"
+    B=$(bereit | tr "\n" " ")
+    Z=""
+    [ -n "$B" ] && Z=$(buendel "$B")
+    if [ -z "$Z" ]; then
+        puls zug "wartet auf bereite Abgaben ($(grep -c . "$W/zug-nie-leer.wartet") wartend, jüngster Zug z$n)"
+        sleep 300
+        continue
+    fi
+    n=$((n + 1))
+    id=z$n
+    echo $n >"$S/zug.nr"
+    zs=""
+    for b in $Z; do
+        s=$(git -C $R rev-parse "origin/$b")
+        echo "$b $s" >>"$G"
+        zs="$zs $b@$s"
+    done
+    echo "$id$zs" >"$S/zug.fahrt"
+    echo "$(date +%H:%M) $id fährt: $Z · bereit waren: $B · wartend: $(tr "\n" "|" <"$W/zug-nie-leer.wartet" | cut -c1-600)" >>"$L"
+    puls zug "$id fährt: $Z"
+    (cd "$T/w3" && bash "$D/zug-sammler7.sh" "$id" 25 $Z >"$T/w3/kette-$id.out" 2>&1)
+    echo "$id EXIT=$?" >>"$T/w3/kette-$id.out"
+    urteilen "$id" $zs
+done
