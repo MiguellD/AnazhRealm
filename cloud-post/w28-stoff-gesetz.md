@@ -1,5 +1,7 @@
 ABGABE 8ebc2d5c440acaa65bfd55b2119421cce006f597
 
+## 11.11. 00:10 — GPU-PROBE 8ebc2d5c auf gtx1050-desktop: ROT in 320 s (bild:dorf@0.5 GRÜN 167 s auf gtx1050-desktop · bild:buehne@0.5 ROT 69 s auf gtx1050-desktop) → probe-post/w28-stoff-gesetz/8ebc2d5c.md
+
 ## 10.11. w28-stoff-gesetz (Cloud) — Abgabe 8ebc2d5c
 - Zweig `w28-stoff-gesetz` (von main 4e2df19b), Stations-Zweig `w28-stoff-gesetz-pm` e487911 (breite.stoffe, Breite-Richter ohne Punkte; `punkte.cjs selbsttest --ohne 3c` 179/179).
 - Gemessen: `node scripts/diag-gegenstand-stoff.cjs --gesetz` an main ROT 42/81 Leser auf der Zeile, 39 mit eigener Zahl, 0 Stoffe mit Licht + Bruch + Klang; am Kopf GRÜN 82/82, 17 von 21 Stoffen, Mutante ROT.
