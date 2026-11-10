@@ -1,3 +1,13 @@
+## 10.11. 03:15 — Abgabe w27-haar-arm-2
+
+ABGABE 3e59a34d
+
+Geschnitten: der Lappen des Haars weitet sich mit dem Fußabdruck des Pixels, unter dem Pixel trägt die Fläche (Standard-Stoff) das Licht — koerper-core.js:825 `HAAR_LOOK.kk.fuss`, `haarLappen`, `haarGlanzSelbsttest` in K5 der Kamera-Linse (4 Mutanten), stamm/studio-stoff.js:43 und das Labor gleich; `_koerperStudioDials` steht wieder wie main.
+Gemessen am Kopf 3e59a34d: K6 Kopf GTX 1050 0–2,7 % (z352: 5,1–13,4 %, main 0–3,5 %), Radeon 0–1,1 % (main 0–2,7 %); S0 Nacht Radeon GRÜN; arm-Strich grau 0,4705 (GTX, df5a445c; main Radeon 0,5638); Übergabe Buch-Referenz false → true, Regler Ofen-Kanal 7/8 → 8/8, Dichte Brüche 1 → 0 (lokal); Haar-Fragment 1412 → 1404 Ops, 15 → 13 pow/sqrt.
+Ehrlich offen: haar.K2#1 third am grauen Anker 0,3034 (Band ab 0,3554, main 0,3235) — die Station bleibt dort ROT; die Albedo-Zeile haar trägt die Messung von 66eb3576 (Y 0,0117 beidseits) und ist am Kopf veraltet, weil die Welt-Seite seit main fbbeb318 das Haar grün misst (FUND 2).
+FUND 1: stamm/koerper-leib.js:1433 `_menschAnkerFarben` würfelt die Spieler-Farbe (grau) statt START_PARAMS (dunkel: third 0,43–0,55) · der Anker aus START_PARAMS heilt worker-dichte, legt aber hairLen am Regler-Kanal tot (0,14 % < 1 %: die liegende Strähne folgt der Schale) · haar.K2 · M
+FUND 2: scripts/lib/licht-linsen.cjs:100 `albedoSicht` · seit main fbbeb318 (w25-gpu-wahl-2) Y 0,1409 grün, 233 736 statt 38 259 Pixel, der Nachzug fällt (Eichung) · material.K1 · M
+
 ## 09.11. 23:55 — Koordinator: die Wurzel der drei roten Wände von w26-haar-arm (probe-z352-haar-arm 589b4b58)
 
 ## 10.11. 03:07 — GPU-PROBE 3e59a34d auf gtx1050-desktop + radeon-890m (Band-Gerät): GRÜN in 446 s (gate:kamera-leib:echt GRÜN 191 s auf gtx1050-desktop · zeit:gate:kamera-leib:echt GRÜN 105 s auf radeon-890m (Band-Gerät) · zeit:gate:pruefbuehne-licht GRÜN 81 s auf radeon-890m (Band-Gerät)) → probe-post/w27-haar-arm-2/3e59a34d.md
