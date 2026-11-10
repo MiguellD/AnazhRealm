@@ -351,3 +351,7 @@ omen-gtx-gtx-stau-78d3-24-78d37554 UNGEMESSEN 0 GRÜN / 0 ROT / 1 UNGEMESSEN · 
 omen-gtx-gtx-landung-dcc33615-1-dcc33615 UNGEMESSEN 0 GRÜN / 0 ROT / 1 UNGEMESSEN · UNGEMESSEN ankunft.K1#1 (punkte-maschine a7f6d6fd messung/dcc33615-gtx.json)
 07:46 z361 Täter gemessen (Radeon, gate:naesse:echt je Kopf): ort-pose 9374df33 ROT (0,022 / 7 innen = z360), wagen-spalt 19f6479c ROT (Dach-Bauten 0/2 = z361), haar-arm-2 + tiere-sicht GRÜN; haar-arm-2 aus zug-gefahren genommen; Post an wagen-spalt und tiere-sicht
 07:46 z359 GELANDET wackler-frei 067bd771 → main (k7-l2-rand + studio-mesh dc29205f per merge-base): rot nur VK 10 Uhr (Werte je Versuch [15,15,11,8] / [20,8,11,8], auch auf fenster-wand ohne Spiel-Diff rot) + Fenster-Wand (swiftshader 900-s-Abriss)
+omen-gtx-gtx-landung-dcc33615-2-dcc33615 UNGEMESSEN 0 GRÜN / 0 ROT / 1 UNGEMESSEN · UNGEMESSEN ankunft.K1#2 (punkte-maschine 3e45c5ad messung/dcc33615-gtx.json)
+omen-gtx-gtx-landung-dcc33615-3-dcc33615 UNGEMESSEN 0 GRÜN / 0 ROT / 1 UNGEMESSEN · UNGEMESSEN ankunft.K3#1 (punkte-maschine 30476c9f messung/dcc33615-gtx.json)
+omen-gtx-gtx-landung-dcc33615-4-dcc33615 UNGEMESSEN 0 GRÜN / 0 ROT / 1 UNGEMESSEN · UNGEMESSEN ankunft.K4#1 (punkte-maschine dd28e313 messung/dcc33615-gtx.json)
+omen-gtx-gtx-landung-dcc33615-5-dcc33615 UNGEMESSEN 0 GRÜN / 0 ROT / 1 UNGEMESSEN · UNGEMESSEN bauen.K1#2 (punkte-maschine 661128d8 messung/dcc33615-gtx.json)
