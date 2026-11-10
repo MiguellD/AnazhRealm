@@ -317,3 +317,4 @@ omen-gtx-z303-liste-1-cbe910ed ROT 0 GRÜN / 1 ROT / 2 UNGEMESSEN · ROT leib.K1
 03:14 Heil-Patch ort-pose angewandt: w27-ort-pose 9374df33 auf origin (Text- und Patch-Hash gleich, Baum 774c1efb gleich, 1 Datei +1/-1, Selbsttest am Baum grün); Code-Check und GPU-Probe laufen am Kopf, zug-nie-leer nimmt ihn bei GRÜN
 2026-11-10 03:15 gpu-stufe Zwischenstand Bisekt: ef6b3398 Boot 1 v1: wiese-ego ohne Band (genesis-ego 14.18) · verdrängt, zählt nicht
 2026-11-10 03:29 gpu-stufe Zwischenstand Bisekt: wartet · kein Schloss · zuletzt: ef6b3398 Boot 1 v1 zaehlt nicht (verdraengt oder ohne Band)
+2026-11-10 03:36 gpu-stufe Zwischenstand Bisekt: ef6b3398 Boot 1 v2: wiese-ego 22.82 ms (genesis-ego 14.19)
