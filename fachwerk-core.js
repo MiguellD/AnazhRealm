@@ -3629,14 +3629,12 @@
     // Abzweig, der erste Abzweig der Hintergasse von einer Gasse, die kürzeste und die längste; fluchtM: so nah an einer anderen Straße schließt sie an; mauerM: so weit vor dem Ring
     // endet sie. markt*: die Tiefe des Platzes je Breite und ihr Band; standRandM: der Rand des Platzes ohne Stand. zug*: der
     // Radius, den ein Viertel um seinen Anker hält (Burg, Kirche, je Los des Handwerks), und der Bruchteil des Rings, auf dem
-    // das Handwerk liegt. friedhof: seine halbe Tiefe (so breit wie die Kirche), sein Rand ohne Grab und der Abstand zur Kirche. pflasterAb: ab diesem Band trägt
-    // jede Gasse im Ring Pflaster — davor der Markt und die Straßen (Stufe 0) der Großstadt.
+    // das Handwerk liegt. friedhof: seine halbe Tiefe (so breit wie die Kirche), sein Rand ohne Grab und der Abstand zur Kirche.
     var STADT_DICHTE = {
         gasseM: 2.8, gasseTeilung: 28, gasseAb: 14, gasseHinterM: 22, gasseMinM: 18, gasseLangM: 54, fluchtM: 7, mauerM: 16,
         marktJeBreite: 1.3, marktTief: [12, 24], standRandM: 2.6,
         zugBurgM: 24, zugKircheM: 16, zugJeLosM2: 170, zugSeite: 0.6, zugFremd: 300,
         friedhof: { tiefM: 7.5, randM: 1.4, abM: 1.5 },
-        pflasterAb: "fruehneuzeit",
     };
     // DIE VIERTEL EINES PLANS (DORF): je Los der Gründungs-Folge sein Viertel, je Bau des Loses (der Bau der Gegenwart `geb[i]`
     // und seine früheren `fr[i]`) der Bau-Typ der Zeile seines Bands — die Rolle des LOSES durch die Zeit, wie Gasthaus und
@@ -4632,8 +4630,8 @@
     if(platz.typ==='weg'){ const MS=AUSSTATTUNG.marktstand.tritt, rS=Math.hypot(MS.ex,MS.ez), zt=plan.schnitt||plan;
       const standFrei=(s)=>!zt.staedtisch||roads.every(rd=>{ if((rd.w||0)<VERKEHR_GESETZ.breiteM) return true; const P=rd.pts; for(let k=0;k+1<P.length;k++){ const A=P[k], B=P[k+1], dx=B.x-A.x, dz=B.z-A.z, L2=dx*dx+dz*dz; let t=L2>1e-9?((s.x-A.x)*dx+(s.z-A.z)*dz)/L2:0; t=t<0?0:t>1?1:t; if(Math.hypot(s.x-A.x-dx*t, s.z-A.z-dz*t)<rd.w/2+rS) return false; } return true; });   /*DER STAND STEHT NIE IN DER TRASSE (PFLICHT-OFFEN C): in der Stadt haelt sein Tritt (der Umkreis seines Kastens) jede Strasse ab `breiteM` frei — bis hier stand der mittlere Stand jeder Metropole auf der Achse der Strasse, die vom Markt nach Norden geht (0/10,2), und der linke 1,9 m neben ihr: ihre Spuren wichen ihm aus, bis eine Laterne die andere Seite sperrte (die Strecke fiel), oder die Strecke trug eine Enge am Markt*/
       const reihen=stadt&&SG.viertel.markt.dinge.find(q=>q.art==='marktstand');                 /*DER MARKT DER STADT traegt die Staende seiner Zeile: Reihen im Raster ueber dem Platz, ausser der Trasse (bis hier zwei bis drei Staende an festen Bruchteilen des Platzes)*/
-      if(reihen){ const [gx,gz]=reihen.rasterM;
-        for(let z=platz.cz-platz.ez+SD.standRandM; z<=platz.cz+platz.ez-SD.standRandM+1e-6; z+=gz) for(let x=-PW+SD.standRandM; x<=PW-SD.standRandM+1e-6; x+=gx){ const s={x,z}; if(staende.length<reihen.max&&standFrei(s)) staende.push(s); } }
+      if(reihen){ const [gx,gz]=reihen.rasterM; let zi=0;                                       /*je Reihe die Front (`th`) nach Norden oder Sueden: zwei Reihen stehen einander ueber ihrer Gasse gegenueber*/
+        for(let z=platz.cz-platz.ez+SD.standRandM; z<=platz.cz+platz.ez-SD.standRandM+1e-6; z+=gz, zi++) for(let x=-PW+SD.standRandM; x<=PW-SD.standRandM+1e-6; x+=gx){ const s={x,z,th:zi%2?0:Math.PI}; if(staende.length<reihen.max&&standFrei(s)) staende.push(s); } }
       else for(const s of [{x:-PW*0.45,z:sW/2+PD*0.45},{x:PW*0.45,z:sW/2+PD*0.55}].concat(nG>18?[{x:0,z:sW/2+PD*0.82}]:[])) if(standFrei(s)) staende.push(s); } }
   else brunnen.push({x:sW/2+2.4,z:sW/2+2.4});
   const platzObb= platz? {cx:platz.cx,cz:platz.cz,phi:0,ex:platz.ex,ez:platz.ez} : null;
@@ -4863,15 +4861,11 @@
   const sp=at(roads[0],Math.min(roads[0].len||8,8));
   const nzyk=roads.length-(G.nodes.length+sack-1);                                           // Zyklen = E − V + 1 (zusammenhängend)
   let viertel=null;
-  if(stadt){                                                                                 /*DER GRUND DER STADT (STADT_DICHTE.pflasterAb): ab seinem Band traegt jede Gasse im Ring Pflaster, davor der Markt und die Strassen (Stufe 0) der Grossstadt — die Vorstadt bleibt Erde (bis hier lag jede Gasse jeder Stadt als Erdweg)*/
-    const bi=SG.zeit.findIndex(z=>plan.jahr>=z[1]&&plan.jahr<z[2]), jede=bi>=SG.zeit.findIndex(z=>z[0]===SD.pflasterAb), gross=plan.groesse==='grossstadt'||plan.groesse==='metropole';
-    for(const rd of roads) if(!rd.vor&&(jede||(gross&&rd.gen===0))) rd.belag='pflaster';
-    if(jede||gross) platz.belag='pflaster';
-    const V={};                                                                               /*DIE VIERTEL DES PLANS: je Rolle die Mitte ihrer stehenden Lose und der Radius, der sie fasst*/
+  if(stadt){ const V={};                                                                               /*DIE VIERTEL DES PLANS: je Rolle die Mitte ihrer stehenden Lose und der Radius, der sie fasst*/
     plan.houses.forEach((h,i)=>{ const q=pl[i]; if(h.viertel&&q&&q.obb&&Math.abs(q.obb.cz)<5000) (V[h.viertel]=V[h.viertel]||[]).push(q.obb); });
     viertel=Object.keys(V).map(rolle=>{ const L=V[rolle], x=L.reduce((a,o)=>a+o.cx,0)/L.length, z=L.reduce((a,o)=>a+o.cz,0)/L.length;
       return {rolle, x, z, r:L.reduce((a,o)=>Math.max(a,Math.hypot(o.cx-x,o.cz-z)+Math.hypot(o.ex,o.ez)),0), lose:L.length}; }); }
-  return Object.assign({pl, roads:roads.map(rd=>({pts:rd.pts.filter((_,k2)=>k2*DS<=(rd.len||0)+DS), w:rd.w, gen:rd.gen, len:rd.len||0, quer:rd.quer||false, belag:rd.belag, treppe:rd.treppe||undefined})),   /*Whitelist +quer — das Flag starb an dieser Kopie (#1-Sonde: 0 Gassen im lay)*/
+  return Object.assign({pl, roads:roads.map(rd=>({pts:rd.pts.filter((_,k2)=>k2*DS<=(rd.len||0)+DS), w:rd.w, gen:rd.gen, len:rd.len||0, quer:rd.quer||false, vor:rd.vor||undefined, treppe:rd.treppe||undefined})),   /*Whitelist +quer — das Flag starb an dieser Kopie (#1-Sonde: 0 Gassen im lay)*/
           feldwege, platz, brunnen, fences, felder, staende, spawn:{x:sp.x,z:sp.z}, trees, jitAmp, DS, mauer,
           laternen, marken,
           graph:{nV:G.nodes.length+sack, nE:roads.length, zyklen:Math.max(0,nzyk)},
@@ -8588,6 +8582,16 @@
             aus.viertel = lay.viertel;
             aus.zonen = lay.zonen;
             aus.gegenstaende = lay.gegenstaende;
+            // DIE KAPPE DES PLANS (der Leser: der Maler des Bodens, `_stlWegeBuild` `plan.kappe`): so viele Formen trägt sein Boden —
+            // jedes Wegstück, der Platz, je Slot Vorplatz und Stufe, jeder Acker, jede Zone. Ohne sie malt der Wirt 900: an
+            // stadt-voll (1 406 Wegstücke vor der Grammatik) blieben die Gassen jenseits des 900. Stücks, die Feldwege, der Platz
+            // und die Vorplätze der Türen ungemalt.
+            var stuecke = function (L) {
+                return L.reduce(function (a, w) {
+                    return a + Math.max(0, w.pts.length - 1);
+                }, 0);
+            };
+            aus.kappe = stuecke(lay.roads) + stuecke(lay.feldwege) + 1 + 2 * slots.length + lay.felder.length + lay.zonen.length + 64; // + die Vorplätze eines Nachbarn im Umkreis
         }
         if (Htr) aus.trasse = { aussen: Htr.mass.aussen }; // der Rahmen trug jeden Lese-Punkt der Trasse (die Linse verlangt 0)
         // die Mauer des Schnitts liegt in der Welt des Plans wie die der Gestalt (dorfLayout: ihr Radius + 8 m, der Rand 9 m)
@@ -10722,6 +10726,8 @@
         siedlungsEpoche: siedlungsEpoche,
         GROESSE_N: GROESSE_N,
         STADTMAUER: STADTMAUER,
+        STADT_GRAMMATIK: STADT_GRAMMATIK, // die Stadt-Grammatik (Viertel · Bau-Typen · Gegenstände; Leser: DORF, dorfLayout, die Linse)
+        STADT_DICHTE: STADT_DICHTE,
         EPOCHEN: EPOCHEN,
         zeitachse: zeitachse, // die Epochen einer Region nach dem Jahr (siedlung.K4; Leser: DORF, gate:settlement J)
         epocheBei: epocheBei, // die Epoche eines Jahrs (Tracht, Kirche; Leser: DORF, gate:settlement J)

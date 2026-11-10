@@ -1316,10 +1316,7 @@ class AnazhRealm_siedlung_wege {
         if (key) this._stlWegeKeys.add(key);
         const wk = this._wegeKarteEnsure();
         let n = 0;
-        // DER PLAN TRÄGT JEDE SEINER FORMEN: eine Kappe nur, wo ein Plan sie nennt (`kappe`). Bis zur Stadt-Grammatik stand hier
-        // still 900 — die Metropole des Messorts stadt-voll trägt 1 406 Wegstücke: nach dem 900. malte der Boden keinen Weg mehr,
-        // nie die Feldwege, den Platz, die Vorplätze der Türen und die Äcker (Gras in der Gasse, der Markt eine Wiese).
-        const MAX = plan.kappe || Infinity;
+        const MAX = plan.kappe || 900; // Kappe je Siedlung (der Boden des Verkehrs trägt keine: `_verkehrAnlegen`)
         // Die Siedlung merkt ihre Formen samt Hülle (der Fenster-Umzug verwirft ferne Siedlungen in O(1)).
         const box = { x0: Infinity, z0: Infinity, x1: -Infinity, z1: -Infinity, formen: [], plan };
         const form = (f) => {
@@ -1332,15 +1329,7 @@ class AnazhRealm_siedlung_wege {
             box.z1 = Math.max(box.z1, f.az + r, f.bz + r);
             n++;
         };
-        // DER BELAG DES WEGS (fachwerk STADT_DICHTE: `belag` der Straße und des Platzes der Stadt — Pflaster): sein Kanal und
-        // Vorzeichen aus der EINEN Tafel `WEGE_KARTE.belag`, ohne Wort getretene Erde; ein Belag, den der Boden nicht kennt, wirft
-        const belagVon = (name) => {
-            const B = AnazhRealm.WEGE_KARTE.belag[name || "weg"];
-            if (!B) throw new Error(`Wege-Karte: der Weg trägt den Belag „${name}", den der Boden nicht kennt`);
-            return B;
-        };
-        const strasse = (pts, w, belag) => {
-            const B = belagVon(belag);
+        const strasse = (pts, w) => {
             if (!Array.isArray(pts)) return;
             for (let i = 0; i + 1 < pts.length && n < MAX; i++) {
                 const ax = origin.x + pts[i].x;
@@ -1349,10 +1338,10 @@ class AnazhRealm_siedlung_wege {
                 const bz = origin.z + pts[i + 1].z;
                 if (!(Math.hypot(bx - ax, bz - az) > 0.01)) continue;
                 if (!this._landAt((ax + bx) / 2, (az + bz) / 2, 0.2)) continue; // die Wasser-Wand
-                form({ typ: "segment", kanal: B.kanal, wert: B.wert, ax, az, bx, bz, halb: Math.max(1.2, w || 2.5) / 2 });
+                form({ typ: "segment", kanal: 0, ax, az, bx, bz, halb: Math.max(1.2, w || 2.5) / 2 });
             }
         };
-        for (const rd of plan.roads || []) strasse(rd.pts, rd.w, rd.belag);
+        for (const rd of plan.roads || []) strasse(rd.pts, rd.w);
         for (const fw of plan.feldwege || []) strasse(fw.pts, fw.w);
         // DIE FLÄCHEN EINES PLANS (fachwerk `zonen`, der Genesis-Ort): jede Fläche mit Belag in ihrem Kanal und Vorzeichen
         // (`WEGE_KARTE.belag`), gemalt mit dem Rand ihres Gesetzbuchs (`zone`, `genesisZoneRand`) — eine Art, die die Karte nicht
@@ -1422,12 +1411,10 @@ class AnazhRealm_siedlung_wege {
             const wx = origin.x + pz.cx;
             const wz = origin.z + pz.cz;
             const anger = pz.typ === "gras";
-            const B = belagVon(pz.belag);
             if (this._landAt(wx, wz, 0.2))
                 form({
                     typ: "kasten",
-                    kanal: anger ? -1 : B.kanal,
-                    wert: B.wert,
+                    kanal: anger ? -1 : 0,
                     ax: wx,
                     az: wz,
                     bx: wx,
