@@ -1,7 +1,5 @@
 ABGABE da9919e3 (Zweig w27-studio-mesh, main fbbeb318 gemischt) · Station: w27-studio-mesh-pm c0d7963 (zwei Commits: 4846d77 Himmel des Wirts · fuss · PFAD, c0d7963 halbe Deckung)
 
-## 10.11. 01:59 — GPU-PROBE da9919e3 auf radeon-890m: ROT in 480 s (gate:studio-huelle ROT 152 s auf radeon-890m · gate:wasser-leben:bild GRÜN 32 s auf radeon-890m · bild:wiese@0.5 GRÜN 52 s auf radeon-890m) → probe-post/w27-studio-mesh/da9919e3.md
-
 ## 10.11. 01:55 — Abgabe w27-studio-mesh (Arbeiter w27-studio-mesh) — ZWISCHENSTAND, studios.K4 bleibt 0/7
 
 **Was ein Mesh-Studio erfüllen muss** (k4-bild.cjs, g4.js `k4Zahl`): die Bühne nennt über ihren Knopf ein Werk des Vertrags; die Welt nimmt es
@@ -42,6 +40,12 @@ die WebGPU-Leinwand nicht in ein 2D-Canvas liest):
 
 **Echte GPU:** studios.K4 ist eine Sitzungs-Probe ohne npm-Gate — der Ruf `[gpu-probe: …]` kann sie nicht fahren. Am Kopf rufe ich
 `gate:studio-huelle` (die Bühne unter dem neuen Himmel), `gate:wasser-leben:bild` (der geänderte Pass) und `bild:wiese@0.5`. Die K4-Zahl misst die Farm.
+
+**GPU-Probe da9919e3 (Radeon 890M, 480 s, probe-post/w27-studio-mesh/da9919e3.md):** `gate:wasser-leben:bild` GRÜN (32 s, der Pass mit `invVPr`);
+`bild:wiese@0.5` ABNAHME GRÜN (Luma 57,2 · σ 33,2, Wolken am Himmel, kein Sprenkel). `gate:studio-huelle` ROT mit zehn Zeilen — dieselbe Klasse
+wie vor dem Schnitt (heim2-w16-studio-welt 02a61693 Radeon, 2ec2e4b3 / 69818525 GTX, 08.11.): H8 GPU-ms und H7 nur an koerperstudio · tetrapoda ·
+terrain, „4 von 11 Seiten ohne fremde Engine“ (H6, die r128-Studios). Keine Zeile für garage · schmiede · portale · fachwerk: die Bühne unter dem
+neuen Himmel bleibt unter ihren Deckeln (H4/H8/H9). Das Rot ist geerbt, nicht aus diesem Schnitt; es fällt mit den fünf r128-Studios (unten offen).
 
 **Station (w27-studio-mesh-pm):** der Wirt reicht den Himmel des Schusses (`enter.himmel` samt Gier des Eintrags), `fuss: "false"`, K4_PFAD + welt-licht.js ·
 kamera-nah · abnahme-urteil, halbe Deckung 187 auf sRGB. Selbsttest GRÜN 163/163 am main 78d37554. **FUND fremd:** am main fbbeb318 ist
