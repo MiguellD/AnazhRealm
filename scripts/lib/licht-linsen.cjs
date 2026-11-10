@@ -2192,7 +2192,6 @@ function luftTiefe(o) {
             belichten.apply(this, a);
             st.renderer.toneMappingExposure *= blende;
         };
-        const spur = []; // DIAG (fällt vor der Abgabe): die Tafeln der Atmosphäre, zurückgelesen
         const schuss = async (b, k) => {
             const alt = U.beta.value;
             const e = st.renderer.toneMappingExposure;
@@ -2260,6 +2259,20 @@ function luftTiefe(o) {
             const sd = r._sonnenRichtung();
             return { sonne: +((Math.asin(sd.y) * 180) / Math.PI).toFixed(2), az: Math.atan2(sd.x, -sd.z) };
         };
+        // DIE TAFELN DER LUFT (ferne.K1#2): Durchlass und Ψ_ms schreiben in jeden Texel Alpha 1 — ein Texel ohne Bild ist eine Tafel,
+        // die als gezeichnet galt, ohne zu zeichnen (`_einmalRender`; Radeon 638183fb: Ψ_ms leer, nach EINEM Neuzeichnen GTX-gleich)
+        let tafeln = null;
+        const ohneBild = async (rt) => {
+            const px = await st.renderer.readRenderTargetPixelsAsync(rt, 0, 0, rt.width, rt.height);
+            const z = px.length / rt.height;
+            let n = 0;
+            for (let y = 0; y < rt.height; y++)
+                for (let x = 0; x < rt.width; x++) {
+                    const a = px[y * z + x * 4 + 3];
+                    if (!((px instanceof Uint16Array ? T.DataUtils.fromHalfFloat(a) : a) > 0.5)) n++;
+                }
+            return n;
+        };
         // die Schwellen L0 − S gehen mit der Blende k
         const sicht = async (az, k) => {
             blick(az);
@@ -2267,52 +2280,8 @@ function luftTiefe(o) {
             const D = await window.__spiegelDaten();
             const L0 = await schuss(0, k);
             const S = await schuss(1, k);
-            if (!spur.length)
-                try {
-                    const A = st.atmoLut, RR = st.renderer, half = T.DataUtils.fromHalfFloat, AU = A.U;
-                    const lies = async (rt, pts) => {
-                        const px = await RR.readRenderTargetPixelsAsync(rt, 0, 0, rt.width, rt.height);
-                        const z = px.length / rt.height;
-                        const f = (i) => (px instanceof Uint16Array ? half(px[i]) : px[i]);
-                        return pts.map(([x, y]) => [0, 1, 2, 3].map((c) => +f(y * z + x * 4 + c).toPrecision(4)).join(":")).join(" ");
-                    };
-                    const E = r._erstZeichnung || {}, Wa = r._gpuWache || { n: 0, meldungen: [] };
-                    const ms = async () => (await lies(A.rtMS, [[30, 0]])) + " o" + (E.offen ? E.offen.size : "-") + " w" + E.wartetN;
-                    spur.push("W" + Wa.n + " " + Wa.meldungen.slice(0, 3).map((m) => m.quelle + ":" + m.kopf.slice(0, 90)).join("|"));
-                    spur.push(`E a${E.absagenN} as${E.pipeAsync} b${E.bereitN} vb${r._einmalVorbau()} auf ${E.wartetAuf ? E.namen.get(E.wartetAuf) : "-"}`);
-                    const BE = RR.backend;
-                    const msP = [...RR._pipelines.caches.values()].filter((p) => p.fragmentProgram && /k < 64\.0/.test(p.fragmentProgram.code));
-                    spur.push("P " + msP.map((p) => { const h = BE.get(p); return `${h.pipeline ? "da" : "-"}${h.error ? ":err" : ""}:u${p.usedTimes}`; }).join(",")); // prettier-ignore
-                    if (msP[0] && BE.device) {
-                        const dev = BE.device;
-                        const vs = dev.createShaderModule({ code: "struct O { @builtin(position) p: vec4<f32>, @location(0) uv: vec2<f32> }; @vertex fn main(@builtin(vertex_index) i: u32) -> O { var o: O; let x = f32((i << 1u) & 2u); let y = f32(i & 2u); o.p = vec4<f32>(x * 2.0 - 1.0, y * 2.0 - 1.0, 0.0, 1.0); o.uv = vec2<f32>(x, y); return o; }" }); // prettier-ignore
-                        const fs = dev.createShaderModule({ code: msP[0].fragmentProgram.code.replace("0.07957747154594767", "0.0795774715459477") });
-                        const info = await fs.getCompilationInfo();
-                        const t1 = performance.now();
-                        let res = "ok";
-                        try {
-                            await dev.createRenderPipelineAsync({ layout: "auto", vertex: { module: vs, entryPoint: "main" }, fragment: { module: fs, entryPoint: "main", targets: [{ format: "rgba16float" }] } }); // prettier-ignore
-                        } catch (e) {
-                            res = "err:" + String(e && e.message).slice(0, 160);
-                        }
-                        spur.push(`C ${Math.round(performance.now() - t1)}ms ${res} ci${info.messages.length}`);
-                    }
-                    spur.push("M0 " + (await ms()));
-                    r._atmoZeichne(A.qMS, A.rtMS);
-                    spur.push("M1 " + (await ms()));
-                    const t0 = performance.now();
-                    for (let i = 0; i < 20; i++) {
-                        await new Promise((res) => setTimeout(res, 2000));
-                        r._atmoZeichne(A.qMS, A.rtMS);
-                        const m = await ms();
-                        if (!m.startsWith("0:0:0:0") || i === 19) {
-                            spur.push(`M${Math.round((performance.now() - t0) / 1000)}s ${m} W${(r._gpuWache || { n: 0 }).n}`);
-                            break;
-                        }
-                    }
-                } catch (e) {
-                    spur.push("FEHLER " + String(e && e.stack).slice(0, 300));
-                }
+            const A = r._atmoLutBau();
+            if (!tafeln) tafeln = { Durchlass: await ohneBild(A.rtT), Mehrfachstreuung: await ohneBild(A.rtMS) };
             D.iv = new T.Matrix4().fromArray(D.ivp);
             const bd = R.baenderM.map((d) => ({ d, q: [[], [], []], dk: [], dh: [] }));
             const gez = [];
@@ -2403,7 +2372,7 @@ function luftTiefe(o) {
             cam.updateProjectionMatrix();
             window.__buehne();
         }
-        return { gy: Math.round(gy), zeilen, weiss, diag: spur.join(" ; ").replace(/[\n]/g, " ") };
+        return { gy: Math.round(gy), zeilen, weiss, tafeln };
     })();
 }
 
@@ -2484,6 +2453,10 @@ function luftTiefeUrteil(m, R) {
             const k = ((zs || []).find((x) => x.uhr === 0.5 && x.az === az) || {}).kante || { spalten: 0 };
             if (!(k.spalten >= M.spalten && k.linie < B.linie)) liste.push(`K2-2 KANTENLINIE ${ort} Azimut ${az}°: Linie ${k.linie}° Stufe ${k.stufe} (${k.rand}/${k.spalten} Spalten)`);
         }
+    for (const n of ["Durchlass", "Mehrfachstreuung"]) {
+        const t = m.tafeln && m.tafeln[n];
+        if (t !== 0) liste.push(`K1-2 TAFEL ${n}: ${t == null ? "ungelesen" : t + " Texel ohne Bild"} — sie galt als gezeichnet (_einmalRender)`);
+    }
     const staffel = {};
     for (const k of ["K1-1", "K1-2", "K2-1", "K2-2"]) staffel[k] = liste.some((b) => b.startsWith(k)) ? "ROT" : "GRUEN";
     return { urteil: liste.length ? "ROT" : "GRUEN", staffel, befunde: liste };
@@ -2550,7 +2523,8 @@ function luftTiefeSelbsttest(R) {
                 baender: R.baenderM.map((d) => ({ d, n, q, dk, nk: n, dh: 5 })),
             }))
         );
-    const urteil = (zeilen, gipfel = zeilen, weiss = { RB: 1.5 }) => luftTiefeUrteil({ zeilen, gipfel: { zeilen: gipfel }, weiss }, R);
+    const urteil = (zeilen, gipfel = zeilen, weiss = { RB: 1.5 }, tafeln = { Durchlass: 0, Mehrfachstreuung: 0 }) =>
+        luftTiefeUrteil({ zeilen, gipfel: { zeilen: gipfel }, weiss, tafeln }, R);
     const leer = urteil(sichten(null, null, 0)).staffel;
     const k = ref[2] - ref[0];
     // das Bild einer Welt-Kante: Himmel 0,5 über einer Stufe `c` ab Zeile 100 (`zacke`: je zweite Spalte 8 px tiefer)
@@ -2568,6 +2542,9 @@ function luftTiefeSelbsttest(R) {
         urteil(sichten(k, 0.005, 50, 0, 1.15)).befunde.join().includes("SONNENSEITE") || "die Sonnenseite 1,15 ist nicht ROT",
         urteil(sichten(k, 0.005, 50, 0, 1.3, [0.39, 0.45, 0.39])).befunde.some((b) => /HIMMEL.*\(Duv 0\.008\)/.test(b)) || "ein grüner Horizont ist nicht ROT",
         urteil(sichten(k, 0.005), undefined, null).befunde.join().includes("FERNES WEISS") || "ein ungemessenes fernes Weiß ist nicht ROT",
+        // die Tafel der Radeon (638183fb): Ψ_ms ohne Bild, der Durchlass voll — die Linse nennt die leere Tafel, nie den Horizont
+        urteil(sichten(k, 0.005), undefined, undefined, { Durchlass: 0, Mehrfachstreuung: 1024 }).befunde.some((b) => b.startsWith("K1-2 TAFEL Mehrfachstreuung: 1024")) || "eine leere Ψ_ms ist nicht ROT",
+        urteil(sichten(k, 0.005), undefined, undefined, {}).befunde.some((b) => b.includes("TAFEL Durchlass: ungelesen")) || "eine ungelesene Tafel ist nicht ROT",
         (bild(0.05) >= 400 && bild(0.01) === 0 && bild(0.05, true) <= 8) || `Linie bei Stufe 5 % ${bild(0.05)} px, 1 % ${bild(0.01)}, Zacken ${bild(0.05, true)}`,
         (leer["K1-1"] === "ROT" && leer["K1-2"] === "ROT" && leer["K2-1"] === "ROT" && leer["K2-2"] === "ROT") || "eine leere Messung ist nicht ROT",
         urteil([]).urteil === "ROT" || "eine Messung ohne Sicht ist nicht ROT",

@@ -575,9 +575,11 @@ class AnazhRealm_bild_kosten {
                 // Graphen am Stück neben der Frist: headless kalt (main da0e790f) hielten Umgebung (PMREM-Filter 138 ms),
                 // Rückstrahl (114), Spiegel (126) und Atmosphäre (37–72) im Takt des Lade-Bilds 451 ms in 13 langen Aufgaben, die
                 // längste 704 ms. Wartet sein Bau, ist der Render nicht ganz (`einmalOffen`), sein Leser zeichnet im nächsten Takt neu.
+                // Auch außerhalb des Vorbaus zählt ein Draw, der nicht zeichnen konnte (seine Pipeline aus einem Takt noch im Bau).
                 if (scene !== welt.state.scene && !buehne && scene !== welt._buehneJetzt) {
-                    if (!welt._psoVorbau() && !E.einmalSammel) zeichne(this, ro, aufnahme, false);
-                    else if (E.einmalSammel && ungebautVon(N, ro) && !welt._knotenRate(N, ro, E)) {
+                    if (!welt._psoVorbau() && !E.einmalSammel) {
+                        if (!zeichne(this, ro, aufnahme, false)) E.einmalOffen++;
+                    } else if (E.einmalSammel && ungebautVon(N, ro) && !welt._knotenRate(N, ro, E)) {
                         E.verschoben++;
                         E.einmalOffen++;
                     } else if (!zeichne(this, ro, aufnahme, true)) {
@@ -925,11 +927,15 @@ class AnazhRealm_bild_kosten {
         const E = this._erstZeichnungStand();
         const W = E.einmalWarte || (E.einmalWarte = new WeakMap());
         const w = W.get(schluessel);
-        // außerhalb des Vorbaus (ein Leser außerhalb des Takts, der ruhende Loop) zeichnet er ganz, worauf er auch wartete
+        // außerhalb des Vorbaus (ein Leser außerhalb des Takts, der ruhende Loop) zeichnet er synchron — ganz ist er nur, wenn
+        // kein Draw auf eine Pipeline wartete, die ein Takt asynchron begann. Bis hier galt er dort stets als ganz: die Radeon
+        // (Übersetzung der Ψ_ms 1 040 ms, OMEN 67) setzte die Tafeln frisch über einer leeren Mehrfachstreuung, der Horizont
+        // trug die Luft ohne Ψ_ms bis zum nächsten Medium (ferne.K1#2: Farbton 8 km 166°, Himmel grau; gate:luft-tiefe TAFEL).
         if (!this._einmalVorbau()) {
             W.delete(schluessel);
+            const vor = E.einmalOffen;
             fn();
-            return true;
+            return E.einmalOffen === vor;
         }
         if (w) {
             for (const p of w) if (E.offen.has(p)) return false;
