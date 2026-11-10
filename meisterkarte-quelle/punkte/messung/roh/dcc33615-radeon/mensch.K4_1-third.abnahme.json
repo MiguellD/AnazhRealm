@@ -10,7 +10,7 @@
   "uhr": 0.5,
   "bildUhr": 12.5,
   "tiereGehalten": false,
-  "weltTakte": 52
+  "weltTakte": 55
  },
  "geraet": {
   "backend": "WebGPU",
@@ -60,22 +60,22 @@
  "bild": {
   "w": 1920,
   "h": 1080,
-  "mittel": 49.3,
+  "mittel": 49.2,
   "sigma": 31.4,
   "schwarz": 0.0006,
   "weiss": 0
  },
  "ok": true,
- "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 6 m · Luma 49.3 σ 31.4 schwarz 0.1 % weiß 0.0 % · Stand 18.546.242 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3",
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 6 m · Luma 49.2 σ 31.4 schwarz 0.1 % weiß 0.0 % · Stand 18.546.242 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3",
  "klasse": {
   "ausdruck": "^spieler:kopf/",
   "schwelle": 18,
   "rauschen": {
    "anteil": 0,
    "pixel": 0,
-   "max": 0
+   "max": 2
   },
-  "misch": 89,
+  "misch": 104,
   "toene": [
    "spieler:kopf/auge=255/80/80",
    "spieler:kopf/hair=80/255/80",
@@ -86,7 +86,7 @@
    "spieler:kopf/auge": {
     "objekte": 2,
     "spiegelTreue": null,
-    "spiegelEbene": 29.218,
+    "spiegelEbene": 29.22,
     "sp": [
      0,
      0,
@@ -99,9 +99,9 @@
     "weiss": 0,
     "wt": 0,
     "wtZiel": null,
-    "bunt": 1.22,
-    "pixel": 1,
-    "luma": 27.65,
+    "bunt": 5.86,
+    "pixel": 2,
+    "luma": 20.52,
     "kante": null,
     "kr": 0,
     "strich": null,
@@ -115,7 +115,7 @@
    "spieler:kopf/hair": {
     "objekte": 2,
     "spiegelTreue": null,
-    "spiegelEbene": 29.285,
+    "spiegelEbene": 29.286,
     "sp": [
      0,
      0,
@@ -128,11 +128,11 @@
     "weiss": 0,
     "wt": 0,
     "wtZiel": null,
-    "bunt": 9.27,
-    "pixel": 142,
-    "luma": 70.31,
-    "kante": 0.1949,
-    "kr": 31,
+    "bunt": 7.26,
+    "pixel": 140,
+    "luma": 71.61,
+    "kante": 0.1806,
+    "kr": 32,
     "strich": null,
     "si": 0,
     "bloecke": 0,
@@ -144,7 +144,7 @@
    "spieler:kopf/haut": {
     "objekte": 1,
     "spiegelTreue": null,
-    "spiegelEbene": 29.165,
+    "spiegelEbene": 29.166,
     "sp": [
      0,
      0,
@@ -157,40 +157,11 @@
     "weiss": 0,
     "wt": 0,
     "wtZiel": null,
-    "bunt": 9.76,
-    "pixel": 342,
-    "luma": 21.68,
-    "kante": 0.156,
-    "kr": 85,
-    "strich": null,
-    "si": 0,
-    "bloecke": 1,
-    "glatt": 1,
-    "glattDunkel": 1,
-    "nyquist": 0.187,
-    "beta": -0.4383
-   },
-   "spieler:kopf/skin": {
-    "objekte": 1,
-    "spiegelTreue": null,
-    "spiegelEbene": 29.201,
-    "sp": [
-     0,
-     0,
-     0,
-     0,
-     0,
-     0
-    ],
-    "zweiton": 0,
-    "weiss": 0,
-    "wt": 0,
-    "wtZiel": null,
-    "bunt": 3.46,
-    "pixel": 1,
-    "luma": 6.12,
-    "kante": 0,
-    "kr": 1,
+    "bunt": 8.54,
+    "pixel": 335,
+    "luma": 18.79,
+    "kante": 0.1389,
+    "kr": 83,
     "strich": null,
     "si": 0,
     "bloecke": 0,
@@ -202,25 +173,25 @@
   },
   "abstand": null,
   "gesicht": {
-   "augeFrei": 0.5,
-   "lippeL": -15.66,
-   "lippeA": 12.2,
-   "hoehleL": -10.2,
-   "hoehleA": 9.58,
+   "augeFrei": 0,
+   "lippeL": -15.11,
+   "lippeA": 11.15,
+   "hoehleL": -8.44,
+   "hoehleA": 9.41,
    "haarDeckung": 1,
-   "weiss": 0.103,
+   "weiss": 0.1087,
    "proben": {
     "iris": 116,
-    "irisSicht": 58,
-    "lippe": 17,
-    "hoehle": 7,
-    "wange": 74,
-    "kalotte": 312,
-    "haarPixel": 142
+    "irisSicht": 0,
+    "lippe": 20,
+    "hoehle": 9,
+    "wange": 76,
+    "kalotte": 317,
+    "haarPixel": 140
    },
    "zeilen": {
-    "auge": 529.2,
-    "mund": 538
+    "auge": 529.4,
+    "mund": 538.2
    },
    "irisDecke": {}
   },

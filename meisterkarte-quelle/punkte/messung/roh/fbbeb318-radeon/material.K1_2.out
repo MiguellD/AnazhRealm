@@ -321,17 +321,17 @@ H.fahre(async function probeAlbedo(H) {
     console.log(j.adapter || "[linse-gpu] ungenannt");
     console.log(j.fehler ? "ALBEDO-TAFEL ROT: " + j.fehler : "ALBEDO-TAFEL " + j.zeilen.length + " Zeilen beider Seiten" + (j.laborFehler ? " — " + j.laborFehler : ""));
     return j;
-}); 7804 C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\fbbeb318-radeon\material.K1_1.json 90
-@@ 1.9 s · ort · 59 Takte
+}); 7804 C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\fbbeb318-radeon\material.K1_1.json 1480
+@@ 2 s · ort · 100 Takte
 LABOR terrain 6
-@@ 34.1 s · welt · 29 Zeilen, Karte 0.1766
 LABOR garage 1
 LABOR portale 1
 LABOR schmiede 1
 LABOR fachwerk 1
 LABOR koerperstudio 2
+@@ 51.8 s · welt · 29 Zeilen, Karte 0.1792
 LABOR tetrapoda 1
-@@ 69.1 s · Labor 13 Zeilen · ANGLE (AMD, AMD Radeon(TM) 890M Graphics (0x0000150E) Direct3D11 vs_5_0 ps_5_0, D3D11)
+@@ 51.8 s · Labor 13 Zeilen · ANGLE (AMD, AMD Radeon(TM) 890M Graphics (0x0000150E) Direct3D11 vs_5_0 ps_5_0, D3D11)
 [linse-gpu] amd/rdna-3
 ALBEDO-TAFEL 13 Zeilen beider Seiten
 

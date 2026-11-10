@@ -65,11 +65,11 @@ console.log("VEGETATION " + JSON.stringify(erg));
 })() C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\fbbeb318-radeon\vegetation.K1_1.json 7804 [["wiese","third",0.5,null,"wiese"]]
 [linse-gpu] amd/rdna-3
 SCHRITT /fenster 0.0 s
-SCHRITT /umstellen 2.5 s
+SCHRITT /umstellen 3.1 s
 SCHRITT /eval 0.0 s
-SCHRITT /bild 31.6 s
+SCHRITT /bild 21.2 s
 SCHRITT /zaehlen 0.1 s
-VEGETATION {"schuesse":[],"fehler":"/zaehlen: {\"ms\":93,\"fehler\":\"Cannot read properties of undefined (reading 'size')\",\"stapel\":[\"at lies (evaluate at lade (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\werkbank.cjs:948:24), <anonymous>:176:61)\",\"at evaluate (evaluate at lade (C:\\\\Users\\\\micha\\\\AnazhRealm-p"}
+VEGETATION {"schuesse":[],"fehler":"/zaehlen: {\"ms\":88,\"fehler\":\"Cannot read properties of undefined (reading 'size')\",\"stapel\":[\"at lies (evaluate at lade (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\.claude\\\\worktrees\\\\punkte-radeon\\\\scripts\\\\werkbank.cjs:948:24), <anonymous>:176:61)\",\"at evaluate (evaluate at lade (C:\\\\Users\\\\micha\\\\AnazhRealm-p"}
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3

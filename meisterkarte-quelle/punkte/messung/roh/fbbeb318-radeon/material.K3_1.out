@@ -321,9 +321,9 @@ H.fahre(async function probeAlbedo(H) {
     console.log(j.adapter || "[linse-gpu] ungenannt");
     console.log(j.fehler ? "ALBEDO-TAFEL ROT: " + j.fehler : "ALBEDO-TAFEL " + j.zeilen.length + " Zeilen beider Seiten" + (j.laborFehler ? " — " + j.laborFehler : ""));
     return j;
-}); 7804 C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\fbbeb318-radeon\material.K3_1.json 90
-@@ 1.4 s · ort · 102 Takte
-@@ 36.5 s · welt · 29 Zeilen, Karte 0.1766
+}); 7804 C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\fbbeb318-radeon\material.K3_1.json 787
+@@ 1.5 s · ort · 116 Takte
+@@ 32.8 s · welt · 29 Zeilen, Karte 0.1792
 [linse-gpu] amd/rdna-3
 ALBEDO-TAFEL 0 Zeilen beider Seiten
 
