@@ -161,7 +161,7 @@ function nahDeckungInSeite(o) {
     for (const s of st.chunkSaetze ? st.chunkSaetze.values() : []) satzVon.set(s.mesh, s);
     const zs = new T.Sphere();
     // die Zelle k eines Bau-Bereichs gehört dem Ziel (`o.ohne`): der Eintrag ihres Slots
-    const zielZelle = (b, k) => OHNE.has(st.archInstanceGroups.get(b.key)?.slotEntry?.[k]?.id);
+    const zielZelle = (b, k) => OHNE.has(st.archInstanceGroups?.get(b.key)?.slotEntry?.[k]?.id);
     const legeDreiecke = (obj, inst, nimm, sammle, kugel) => {
         const g = obj.geometry;
         const pos = g.attributes.position;
@@ -228,7 +228,7 @@ function nahDeckungInSeite(o) {
         }
     };
     // was sich dreht, steht nie im Speicher: der Tür- und Tor-Flügel (seine Gruppe trägt `tuer`, `_tickTorFluegel`)
-    const dreht = (obj) => !!st.archInstanceGroups.get(obj.userData.archInstanceKey)?.tuer;
+    const dreht = (obj) => !!st.archInstanceGroups?.get(obj.userData.archInstanceKey)?.tuer;
     // … und was wandert: jede Instanz-Schar ohne Gruppe der Welt (die Vögel, `vogel`, setzt jeder Takt neu) — je Frage frisch gelegt,
     // nie im Speicher. Bis w12-proben-tempo hielt der Speicher die Vögel seiner letzten Lage (er legte ohnehin fast jede Frage neu)
     const wandert = (obj) => obj.isInstancedMesh && !obj.userData.archInstanceKey;
