@@ -1690,8 +1690,10 @@
     //      (Dijkstra 1959, binaerer Haufen), `frei(i, j)` fragt den Wirt nach der Kante (seine Wand); die Kette nennt die
     //      Knoten vom Anfang zum Ziel, die Teile sagen vorab, wohin kein Plan fuehrt (kein Ziel ohne Plan). Wer keinen Graphen
     //      hat (das Tier der Wildnis), dessen Plan ist das Ziel selbst.
-    //  (3) DER WUNSCH (wegWunsch): der Wunsch (Welt-XZ, m/s) zum naechsten Punkt des Plans im Tempo des Ankunfts-Gesetzes
-    //      ueber den Rest des Wegs — der Leib bremst vor dem Ende, nie vor einem Punkt unterwegs.
+    //  (3) DER WUNSCH (zielWunsch): der Wunsch (Welt-XZ, m/s) zum Ziel oder zum naechsten Punkt des Plans im Tempo des
+    //      Ankunfts-Gesetzes ueber den Rest bis zum Halt — der Leib bremst vor dem Halt, nie vor einem Punkt unterwegs. Leser:
+    //      der Wirt je Tier (`_kreaturZiel`: Folgen, Pirsch, Neugier, Sammeln, Bauen, Trinken, Aas) und je Bewohner
+    //      (`_bewohnerGehen`: sein Schritt der Frist, den die Fahrbahn fragt).
     var ZIEL_GESETZ = Object.freeze({ halbM: 60, halten: 1.25 });
     function zielNaehe(d, halbM) {
         var q = d / halbM;
@@ -1835,22 +1837,19 @@
         kette.push(a);
         return kette.reverse();
     }
-    // (x, z) = die Lage, weg = [{x, z}, …] der Plan, wi = sein naechster Punkt, vMax = das Tempo (m/s). Liefert out {x, z, rest}:
-    // den Wunsch (m/s) und den Rest des Wegs bis zum Ende (m) — am Ende und ohne Plan 0.
-    function wegWunsch(x, z, weg, wi, vMax, out) {
-        var o = out || { x: 0, z: 0, rest: 0 };
-        o.x = o.z = o.rest = 0;
-        if (!weg || !(wi < weg.length)) return o;
-        var dx = weg[wi].x - x,
-            dz = weg[wi].z - z,
-            d = Math.hypot(dx, dz),
-            rest = d;
-        for (var i = wi + 1; i < weg.length; i++) rest += Math.hypot(weg[i].x - weg[i - 1].x, weg[i].z - weg[i - 1].z);
-        o.rest = rest;
-        if (!(d > 1e-6) || !(vMax > 0)) return o;
+    // (dx, dz) = die Richtung zum Ziel (oder zum naechsten Punkt des Plans), rest = die Meter bis zum Halt (Infinity: kein Halt
+    // voraus), vMax = das Tempo (m/s). Liefert out {x, z, v}: den Wunsch (m/s) und sein Tempo — ohne Richtung, Rest oder Tempo 0.
+    function zielWunsch(dx, dz, rest, vMax, out) {
+        var o = out || { x: 0, z: 0, v: 0 };
+        var d = Math.hypot(dx, dz);
+        if (!(d > 1e-6) || !(rest > 0) || !(vMax > 0)) {
+            o.x = o.z = o.v = 0;
+            return o;
+        }
         var v = ankunftTempo(rest, vMax);
         o.x = (dx / d) * v;
         o.z = (dz / d) * v;
+        o.v = v;
         return o;
     }
     // DER VERBAND (S6 18.10.): das Rudel, die Herde — der Wurf, den die Geburt bindet — ist ein DATUM, kein Zufall der
@@ -5114,7 +5113,7 @@
         wegBaum: wegBaum,
         wegTeile: wegTeile,
         wegKette: wegKette,
-        wegWunsch: wegWunsch,
+        zielWunsch: zielWunsch,
         VERBAND_GESETZ: VERBAND_GESETZ,
         verbandZug: verbandZug,
         rudelPlatz: rudelPlatz,

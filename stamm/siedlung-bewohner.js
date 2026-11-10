@@ -2322,8 +2322,9 @@ class AnazhRealm_siedlung_bewohner {
         if (S.verkehr && b.weg && !b.drinnen && dt > 0) {
             const T = Math.max(dtW, AnazhRealm.BEWOHNER.lenkS);
             const e = lenk ? null : this._bewohnerLinie(b, x0, z0);
-            const l = e ? Math.hypot(e.x - x0, e.z - z0) : 0;
-            const [vx, vz] = lenk ? [lenk.vx, lenk.vz] : l > 1e-6 ? [((e.x - x0) / l) * b.tempo, ((e.z - z0) / l) * b.tempo] : [0, 0]; // prettier-ignore
+            // (sein Wunsch zum nächsten Punkt seines Plans: tetrapoda `zielWunsch`, die Ziel-Kette — kein Halt voraus)
+            const w = e && TC.zielWunsch(e.x - x0, e.z - z0, Infinity, b.tempo);
+            const [vx, vz] = lenk ? [lenk.vx, lenk.vz] : w ? [w.x, w.z] : [0, 0];
             const [nx, nz] = [x0 + vx * T, z0 + vz * T];
             if ((vx || vz) && this._verkehrVorrang(S, nx, nz, b) && !this._verkehrVorrang(S, x0, z0, b))
                 lenk = { vx: 0, vz: 0 };
