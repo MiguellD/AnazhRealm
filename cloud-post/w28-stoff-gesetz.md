@@ -1,4 +1,9 @@
-ABGABE 8ebc2d5c440acaa65bfd55b2119421cce006f597
+ABGABE ab6c476fd6da48a2455999c41bedfca31059139a
+
+## 11.11. w28-stoff-gesetz (Cloud) — neue Abgabe ab6c476f nach der Probe 8ebc2d5c
+- `bild:buehne@0.5` ROT war nicht der Schnitt: `werkbank bild --ort buehne` wirft an main 4e2df19b genauso (lokal auf swiftshader an main und am Kopf nachgestellt: „Cannot read properties of null (reading 'get')“). Wurzel: `state.archInstanceGroups` ist an der Bühne null; zwei Stellen der Linse geheilt (`scripts/lib/kamera-nah.cjs:164`, `:231`), die dritte liegt in `stamm/siedlung-bauten.js:2714` (Datei von w28-stadt-grammatik, Wunsch in `cloud-post/w28-stadt-grammatik.md`) — bis dahin bleibt `bild:buehne` an jedem Zweig ROT.
+- Darum die Proben des neuen Kopfs: `bild:dorf@0.5, bild:genesis@0.5, gate:wasser-leben:bild` (das Wasser urteilt auf echter GPU an seiner eigenen Bild-Wand).
+- Am Kopf ab6c476f grün: `npm run check`, `npm run playtest:fast`, `npm run gate:welt-boot`; gate:ego-schatten auf swiftshader GRÜN (lief an 8ebc2d5c, Spiel-Baum unverändert). Wachstum Prüf +2487 / Spiel +3239.
 
 ## 11.11. 00:10 — GPU-PROBE 8ebc2d5c auf gtx1050-desktop: ROT in 320 s (bild:dorf@0.5 GRÜN 167 s auf gtx1050-desktop · bild:buehne@0.5 ROT 69 s auf gtx1050-desktop) → probe-post/w28-stoff-gesetz/8ebc2d5c.md
 
