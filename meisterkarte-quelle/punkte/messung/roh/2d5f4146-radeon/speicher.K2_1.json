@@ -1,0 +1,25 @@
+{
+ "frisch": {
+  "staende": 20,
+  "bilder": 3137,
+  "p50": 0.01,
+  "p95": 0.03,
+  "max": 0.79,
+  "ueber": 49,
+  "wegen": 0
+ },
+ "edits": {
+  "staende": 20,
+  "bilder": 2503,
+  "p50": 0.01,
+  "p95": 0.04,
+  "max": 0.79,
+  "ueber": 71,
+  "wegen": 0,
+  "n": 10000
+ },
+ "grubenS": 13.2,
+ "isoliert": true,
+ "grundstellung": false,
+ "sek": 23.9
+}
