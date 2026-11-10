@@ -250,9 +250,10 @@ leibPx: +(2 * (rs[rs.length >> 1] || 0)).toFixed(1),
 
   ✅ herde     {"dorf":["-1,-3",0],"fremdN":5,"blickDiffM":0,"verband":{"fensterRaum":2.5,"wander":{"n":5,"wurfAnteil":0.8,"mittel":1,"fluchtAnteil":0,"fluchtMittel":null,"fluchtMin":null,"enge":1.05,"engst":[0.93,"Joro","Una",52]},"flucht":{"n":5,"wurfAnteil":0.8,"mittel":1,"fluchtAnteil":0.323,"fluchtMittel":1,"fluchtMin":1,"enge":0.83,"engst":[0.54,"Joro","Yto",41]}},"ausrichtung":{"mittel":0.992,"takte":1182},"alarm":{"laufen":5,"zweiteHand":4,"letzterS":0.58},"fluchtWegM":33.9,"id":{"bruch":null,"fluchtS":[5,6]}}
 
-  (19 s)
+  (17 s)
 
 ✅ GRÜN — herde
+HERDE AM HANG {"szene":{"kamera":[-575.02,39.25,-925.58,-548.92,41.08,-891.41],"abstand":43,"punkte":[[-549.49,41.67,-891.13],[-547.85,40.63,-894.04],[-548.99,41.95,-888.74],[-551.45,41.76,-892.31],[-546.84,40.82,-890.83]],"glieder":5,"fliehen":5,"takte":1996,"hang":{"x":-550.6,"z":-889.6,"neigung":21.2,"lebensraum":false},"wurf":5,"fluchtBei":14.7},"fehler":null,"serie":[[46.7,"5/5",{"glieder":5,"sichtbar":5,"je":[84,143,84,68,84],"flecken":1,"kruemel":7,"pixel":254,"leibPx":37.3},null,49],[51.3,"5/5",{"glieder":5,"sichtbar":5,"je":[74,128,78,65,78],"flecken":1,"kruemel":4,"pixel":235,"leibPx":33.8},null,63.3],[55.9,"5/5",{"glieder":5,"sichtbar":5,"je":[68,109,79,64,79],"flecken":1,"kruemel":3,"pixel":231,"leibPx":30.9},null,71.2]],"zeiten":{"herdeS":17.3,"szeneS":17.5}}
 
 --- gpu-zeuge ---
 [linse-gpu] nvidia/pascal
