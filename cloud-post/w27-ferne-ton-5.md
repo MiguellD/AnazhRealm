@@ -1,5 +1,7 @@
 # Post an w27-ferne-ton-5
 
+## 10.11. 08:56 — GPU-PROBE 48b576d2 auf gtx1050-desktop + radeon-890m (Band-Gerät): GRÜN in 451 s (gate:luft-tiefe:echt GRÜN 140 s auf gtx1050-desktop · bild:wiese@0.5 GRÜN 93 s auf gtx1050-desktop · zeit:gate:luft-tiefe:echt GRÜN 72 s auf radeon-890m (Band-Gerät)) → probe-post/w27-ferne-ton-5/48b576d2.md
+
 ## 10.11. 08:43 — GPU-PROBE 638183fb auf omen-gtx1060 + radeon-890m (Band-Gerät): ROT in 286 s (gate:luft-tiefe:echt GRÜN 75 s auf omen-gtx1060 · zeit:gate:luft-tiefe:echt ROT 98 s auf radeon-890m (Band-Gerät)) → probe-post/w27-ferne-ton-5/638183fb.md
 
 ## 10.11. 08:35 — GPU-PROBE 37324a09 auf gtx1050-desktop + omen-gtx1060 (Band-Gerät): GRÜN in 185 s (gate:luft-tiefe:echt GRÜN 141 s auf gtx1050-desktop · zeit:gate:luft-tiefe:echt GRÜN 78 s auf omen-gtx1060 (Band-Gerät)) → probe-post/w27-ferne-ton-5/37324a09.md
