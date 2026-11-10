@@ -23,7 +23,7 @@ wait
 echo "@@PUNKTE@@ Z"; cat "$L/zipf.out"
 @@PUNKTE@@ WAHL
 {
- "ms": 12,
+ "ms": 7,
  "ergebnis": {
   "seed": "anazh-realm-seed",
   "staedte": 3,
@@ -45,20 +45,20 @@ echo "@@PUNKTE@@ Z"; cat "$L/zipf.out"
 
 @@PUNKTE@@ STAND
 {
- "ms": 10944,
+ "ms": 10508,
  "ergebnis": {
   "mauer": 48,
   "zug": false,
   "pending": null,
   "haeuser": 49,
-  "takte": 101,
+  "takte": 96,
   "zugHaken": false
  }
 }
 
 @@PUNKTE@@ KAMERA
 {
- "ms": 4,
+ "ms": 3,
  "ergebnis": {
   "pose": [
    -470.09,
@@ -78,22 +78,24 @@ echo "@@PUNKTE@@ Z"; cat "$L/zipf.out"
 
 @@PUNKTE@@ MITTAG
 {
- "ms": 374,
+ "ms": 304,
  "kamera": [
   -468.45,
   39.62,
   -1308.43
  ],
- "hell": 59.3,
- "kontrast": 2.14,
- "dc": 87,
- "dreiecke": 484900,
+ "hell": 64.4,
+ "kontrast": 3.81,
+ "dc": 99,
+ "dreiecke": 513866,
  "klasse": null,
  "zeit": null,
- "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 66.38 m · Luma 76.3 σ 34.2 schwarz 0.4 % weiß 0.0 % · Stand 18.546.246 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 4 Posen",
+ "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 66.38 m · Luma 86.1 σ 49.6 schwarz 0.3 % weiß 0.0 % · Stand 18.546.246 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 4 Posen",
  "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\punkte-g5-27804\\stadt-mittag.png",
- "gesamtMs": 19642
+ "gesamtMs": 20631
 }
+@@PUNKTE@@ EXIT 0
+@@PUNKTE@@ DAEMMERUNG
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3

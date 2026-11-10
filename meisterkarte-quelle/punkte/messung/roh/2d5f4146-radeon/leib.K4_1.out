@@ -119,8 +119,8 @@ return errs.length ? 1 : 0;
   stamm baum_kiefer: 1102 Bilder · heran 8.29 → 0.64 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m
   fels  felsturm: 1239 Bilder · heran 10.56 → 0.41 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.063 m
   haus  haus_alemannisch: 1090 Bilder · heran 12.17 → 4.75 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0065 höchstens 1.210 m
-  innen haus_alemannisch: 1318 Bilder · heran 12.25 → 0.4 m · im Haus true · Kugel {} · Nah-Pixel {} · Ruck p95 0.0126 höchstens 0.679 m
-  innen-sprint haus_alemannisch: 869 Bilder · heran 12.25 → 1.88 m · im Haus true · Kugel {} · Nah-Pixel {} · Ruck p95 0.0540 höchstens 1.498 m
+  innen haus_alemannisch: 1318 Bilder · heran 12.25 → 0.41 m · im Haus true · Kugel {} · Nah-Pixel {} · Ruck p95 0.0127 höchstens 0.834 m
+  innen-sprint haus_alemannisch: 869 Bilder · heran 12.25 → 1.89 m · im Haus true · Kugel {} · Nah-Pixel {} · Ruck p95 0.0542 höchstens 1.498 m
   der Arm ohne Flügel-Leib: 1 Proben mit Bau
   Steilhang {"art":"hang","x":-532.694803998486,"z":-852.0248676214696,"y":46.67513040350168,"abstand":318,"mitte":[-280.4,-1045.6],"neigung":25.9,"gier":-0.7209050814895401} (Weltbild fehlt 0) · die Kamera im Hang: undefined von 10 Bildern mit Täter
   ❌ K4 der Gang in Third: die Kugel der Linse nie in Fels oder Bau, 0 Nah-Pixel von Fels, Gelände, Rinde und Bau, Ruck p95 ≤ 0,02 m, die Linse nennt den Arm ohne Flügel-Leib — Täter: Gang: Error: die Frist der Probe

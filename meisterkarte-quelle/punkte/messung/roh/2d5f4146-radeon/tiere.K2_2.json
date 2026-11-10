@@ -25,7 +25,7 @@
   "deckung": 0,
   "taeter": {},
   "vordergrund": {
-   "radius": 4.19,
+   "radius": 4.16,
    "deckung": 0,
    "taeter": {}
   }
@@ -40,29 +40,29 @@
   "frei": true,
   "vor": null,
   "vorAbstand": null,
-  "abstand": 8.38,
+  "abstand": 8.32,
   "gestalt": [],
   "gezeichnet": true
  },
  "pose": {
   "kamera": [
-   64.98,
-   91.56,
-   0.11
+   121.18,
+   95.89,
+   -0.1
   ],
   "blick": [
-   -0.95513,
-   -0.29609,
-   0.00718
+   -0.96165,
+   -0.27287,
+   0.02766
   ]
  },
  "seitenfehler": 0,
  "bild": {
   "w": 1920,
   "h": 1080,
-  "mittel": 82.1,
-  "sigma": 40.6,
-  "schwarz": 0.0084,
+  "mittel": 52,
+  "sigma": 32,
+  "schwarz": 0.0059,
   "weiss": 0
  },
  "wahl": {
@@ -72,18 +72,18 @@
    {
     "k": 0,
     "kamera": [
-     64.98,
-     91.56,
-     0.11
+     121.18,
+     95.89,
+     -0.1
     ],
     "rot": [],
-    "ms": 501
+    "ms": 382
    }
   ],
-  "ms": 501
+  "ms": 382
  },
  "ok": true,
- "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.38 m · Luma 82.1 σ 40.6 schwarz 0.8 % weiß 0.0 % · Stand 18.546.246 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen",
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.32 m · Luma 52 σ 32 schwarz 0.6 % weiß 0.0 % · Stand 18.546.246 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen",
  "klasse": {
   "ausdruck": "^tier:",
   "schwelle": 18,
@@ -92,7 +92,7 @@
    "pixel": 0,
    "max": 0
   },
-  "misch": 25,
+  "misch": 6,
   "toene": [
    "tier:bestaeuber=255/80/80",
    "tier:wesen=80/255/80",
@@ -102,7 +102,7 @@
    "tier:bestaeuber": {
     "objekte": 1,
     "spiegelTreue": null,
-    "spiegelEbene": 89.152,
+    "spiegelEbene": 93.885,
     "sp": [
      0,
      0,
@@ -115,11 +115,11 @@
     "weiss": 0,
     "wt": 0,
     "wtZiel": null,
-    "bunt": 36.89,
-    "pixel": 46,
-    "luma": 95.92,
-    "kante": 0.0102,
-    "kr": 43,
+    "bunt": 29.66,
+    "pixel": 19,
+    "luma": 72.44,
+    "kante": 0.0994,
+    "kr": 17,
     "strich": null,
     "si": 0,
     "bloecke": 0,
@@ -131,7 +131,7 @@
    "tier:wesen": {
     "objekte": 11,
     "spiegelTreue": null,
-    "spiegelEbene": 89.068,
+    "spiegelEbene": 93.419,
     "sp": [
      0,
      0,
@@ -144,47 +144,47 @@
     "weiss": 0,
     "wt": 0,
     "wtZiel": null,
-    "bunt": 32.6,
-    "pixel": 1241,
-    "luma": 68.54,
-    "kante": 0.513,
-    "kr": 369,
-    "strich": 0.2451,
-    "si": 4,
-    "bloecke": 2,
-    "glatt": 0.5,
-    "glattDunkel": 0,
-    "nyquist": 0.0413,
-    "beta": 2.7493
+    "bunt": 30.5,
+    "pixel": 173,
+    "luma": 62.64,
+    "kante": 0.1178,
+    "kr": 124,
+    "strich": null,
+    "si": 0,
+    "bloecke": 0,
+    "glatt": null,
+    "glattDunkel": null,
+    "nyquist": null,
+    "beta": null
    },
    "tier:wolf": {
-    "objekte": 51,
-    "spiegelTreue": 0.157,
-    "spiegelEbene": 89.243,
+    "objekte": 52,
+    "spiegelTreue": 0.0236,
+    "spiegelEbene": 93.865,
     "sp": [
-     46,
+     65,
      0,
      0,
-     16438.32,
-     16438.32,
-     2581.21
+     46418.9,
+     46418.9,
+     1097.49
     ],
-    "zweiton": 0.005,
+    "zweiton": 0,
     "weiss": 0,
     "wt": 0,
     "wtZiel": null,
-    "bunt": 17.72,
-    "pixel": 7782,
-    "luma": 55.48,
-    "kante": 0.4068,
-    "kr": 1376,
-    "strich": 0.4192,
-    "si": 509,
-    "bloecke": 46,
-    "glatt": 0.1957,
-    "glattDunkel": 0.3333,
-    "nyquist": 0.1709,
-    "beta": 2.6097
+    "bunt": 15.67,
+    "pixel": 11957,
+    "luma": 45.93,
+    "kante": 0.4525,
+    "kr": 1693,
+    "strich": 0.553,
+    "si": 1618,
+    "bloecke": 91,
+    "glatt": 0.2857,
+    "glattDunkel": 0.1538,
+    "nyquist": 0.1703,
+    "beta": 2.5308
    }
   },
   "abstand": null,

@@ -12,17 +12,18 @@ cp "$B-wolfsrevier.abnahme.json" "$A"
 
 ===== DIE KREATUR-LINSE (gate:kreatur-takt) — sichtbares Fenster, echte GPU (Werkbank :27804) =====
 
-  ✅ mahl      {"riss":{"quote":{"einWolf":{"jagden":0,"risse":0,"erschoepft":0},"rudel":{"jagden":7,"risse":1,"erschoepft":6,"hp0":168},"kitz":{"jagden":0,"risse":0,"erschoepft":0}},"rissS":40.1,"fleisch0":56.5,"fleischEnde":0,"fressS":104.8,"gaeste":[{"seele":"fuchs","kommtS":20.4,"frissS":25.38},{"seele":"baer","kommtS":16.5,"frissS":31.32}]}}
+  ❌ mahl      {"riss":{"quote":{"einWolf":{"jagden":0,"risse":0,"erschoepft":0},"rudel":{"jagden":1,"risse":1,"erschoepft":0,"hp0":168},"kitz":{"jagden":0,"risse":0,"erschoepft":0}},"rissS":38,"fleisch0":56.5,"fleischEnde":0,"fressS":55.98,"gaeste":[{"seele":"fuchs","kommtS":30.5,"frissS":19.42},{"seele":"baer","kommtS":24,"frissS":24.48}]}}
+       ↳ das Rudel frisst nicht: 55.98 s am Kadaver in 120 s nach dem Riss (Soll ≥ 60 s)
 
-  (10 s)
-
-✅ GRÜN — mahl
-ORT [50,0]
-REVIER {"ort":"wald","kamera":[64.98,91.56,0.11,56.98,89.08,0.17],"klasse":"wald","rissS":13.6,"fressen":3,"nah":4,"woelfe":4}
-BILD "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.38 m · Luma 82.1 σ 40.6 schwarz 0.8 % weiß 0.0 % · Stand 18.546.246 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen"
+  (2 s)
+ORT [118.5,-0.9]
+REVIER {"ort":"wald","kamera":[121.18,95.89,-0.1,113.18,93.62,0.13],"klasse":"wald","rissS":15.5,"fressen":3,"nah":4,"woelfe":4}
+BILD "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.32 m · Luma 52 σ 32 schwarz 0.6 % weiß 0.0 % · Stand 18.546.246 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen"
 
 --- stderr ---
 tr: warning: an unescaped backslash at end of string is not portable
+
+❌ ROT — 1 Probe(n) verletzt: die Kreaturen tragen ihren Defekt.
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3

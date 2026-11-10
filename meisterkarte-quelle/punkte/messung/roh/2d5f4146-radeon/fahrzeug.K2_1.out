@@ -250,8 +250,14 @@ $ C:\Program Files\nodejs\node.exe -e const tor = (function sitzungTor() {
   WN Teil 1/6: der Lauf hält nach 37.4 s an der Naht (Spieler bei 679, -1697, 3 Orte wach) — weiter
 @@PUNKTE@@ TEIL WEITER
 [linse-gpu] amd/rdna-3
+  WN Teil 2/6: der Lauf hält nach 37.5 s an der Naht (Spieler bei 12, -1127, 6 Orte wach) — weiter
+@@PUNKTE@@ TEIL WEITER
+[linse-gpu] amd/rdna-3
+  ❌ WN (fahrzeug.K2) die Fahrt auf dem Wegenetz — nicht angekommen (1138 m) · Steckenbleiber bei 1138 m · 37.5 s in der Welt der Sitzung (Teil 3/6)
+WEGENETZ {"lang":2440,"weg":1138,"ende":false,"schritte":6480,"tempo":[606,23,13,72,73,73,127,151,155,5145,42],"steck":[1138],"anteil":0.8243827160493827,"bezug":{"kmh":{"ortsdurchfahrt":50,"wohnstrasse":30,"gasse":25,"feldweg":40},"vmax":63.81970403432012,"mittel":12.268089849107938},"wegAnteil":0.9905660377358491,"boden":{"wiese":0.5471698113207547,"wald":0.14150943396226415,"dorf":0.3113207547169811},"lage":[510.85527187160045,-1609.180395328055],"grund":{"anfahrt":103,"kurve":688,"bogen":347},"taeter":[{"s":1125,"n":603,"grund":"kurve","v":-2.1,"r":null},{"s":275,"n":104,"grund":"bogen","v":4.3,"r":12.1},{"s":0,"n":101,"grund":"anfahrt","v":0,"r":null},{"s":950,"n":93,"grund":"bogen","v":5,"r":null},{"s":700,"n":84,"grund":"bogen","v":7.1,"r":null},{"s":300,"n":69,"grund":"kurve","v":4.9,"r":13.5},{"s":525,"n":62,"grund":"bogen","v":7.9,"r":null},{"s":975,"n":18,"grund":"kurve","v":7.2,"r":14.6},{"s":225,"n":2,"grund":"anfahrt","v":11,"r":null},{"s":750,"n":2,"grund":"kurve","v":10.9,"r":null}]}
 
 --- gpu-zeuge ---
+[linse-gpu] amd/rdna-3
 [linse-gpu] amd/rdna-3
 [linse-gpu] amd/rdna-3
 [linse-gpu] amd/rdna-3

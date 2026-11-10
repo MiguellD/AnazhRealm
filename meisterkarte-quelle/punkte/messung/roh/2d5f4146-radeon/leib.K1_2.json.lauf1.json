@@ -1,5 +1,5 @@
 {
- "ms": 86343,
+ "ms": 88733,
  "fehler": "Execution context was destroyed, most likely because of a navigation.",
  "stapel": [
   "at rewriteError (C:\\Users\\micha\\AnazhRealm-profiband\\node_modules\\puppeteer-core\\lib\\cjs\\puppeteer\\cdp\\ExecutionContext.js:458:15)",
