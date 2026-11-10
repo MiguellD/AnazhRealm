@@ -1,7 +1,7 @@
 {
  "sha": "dcc3361558060fce198f1666eba3720e574bf5a7",
  "geraet": "gtx",
- "zeit": "2026-11-10T08:37:40.928Z",
+ "zeit": "2026-11-10T08:43:06.973Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "haar.K2#1": {
@@ -147,6 +147,55 @@
    },
    "zeit": "2026-11-10T08:37:40.928Z",
    "abdruck": "b8eb79afff76",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "mensch.K4#1": {
+   "gruen": false,
+   "zahl": "Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.14 m · third ROT strich 0.667 Soll [1,1] — gesicht 0.667 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei 1 [0.9, 1] · lippeL -15.04 [-14, -4] · lippeA 10.06 [4, 14] · hoehleL -8.95 [-12, 0] · hoehleA 9.24 [-2, 6] · haarDeckung 1 [0.9, 1]",
+   "exit": 0,
+   "minuten": 0.57,
+   "grund": "ROT: Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.14 m · third ROT strich 0.667 Soll [1,1] — gesicht 0.667 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei 1 [0.9, 1] · lippeL -15.04 [-14, -4] · lippeA 10.06 [4, 14] · hoehleL -8.95 [-12, 0] · hoehleA 9.24 [-2, 6] · haarDeckung 1 [0.9, 1]",
+   "gpu": "nvidia/pascal",
+   "s": 34.3,
+   "fremd": {
+    "s": 35.1,
+    "takte": 16,
+    "fremdS": 65.14,
+    "kerne": 1.854,
+    "fensterKerne": 2.039,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      35.64
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      6.78
+     ],
+     [
+      "MsMpEng.exe",
+      6.66
+     ]
+    ],
+    "dienerS": 10.58,
+    "diener": [
+     [
+      "dwm.exe",
+      5.44
+     ],
+     [
+      "System",
+      3.23
+     ]
+    ],
+    "eigenS": 79.22,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-10T08:43:06.973Z",
+   "abdruck": "a171d6454add",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
@@ -700,30 +749,24 @@
   }
  },
  "sitzung": {
-  "start": "2026-11-10T08:37:04.922Z",
+  "start": "2026-11-10T08:42:28.306Z",
   "port": 7804,
   "warten": 0.02,
-  "bootS": 6.9,
+  "bootS": 7.5,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": "genesis",
-    "vor": "material.K1#1",
-    "s": 27.7,
-    "takte": 613,
+    "ort": "wiese",
+    "vor": "mensch.K4#1",
+    "s": 29.7,
+    "takte": 579,
     "chunks": 81,
     "nach": null
    }
   ],
   "wegeTueren": [],
-  "unerklaert": [
-   {
-    "probe": "material.K1#1",
-    "wie": "werke +5 (−0)"
-   }
-  ],
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
@@ -736,11 +779,11 @@
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 125,
-   "luecken": 0,
-   "letzteLuecke": null
+   "zapfen": 49,
+   "luecken": 1,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
   },
-  "fahrtS": 133.9,
-  "minuten": 2.3
+  "fahrtS": 72.3,
+  "minuten": 1.3
  }
 }
