@@ -674,7 +674,7 @@
   },
   "ferne.K1": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Koschmieder T/T_soll 0.86–1.08 bei 1/2/5/8 km, Uhr 0,5, 4 Azimute, K1-1 GRUEN, [linse-gpu] nvidia/pascal an b3f9ae95 gtx — offen: ferne.K1#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/haenger-linse.cjs +8) — zuletzt an 067bd771: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: band · Exit 1) · ferne.K1#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/gpu-fehler.cjs +11)",
+   "beleg": "Maschine: Koschmieder T/T_soll 0.89–1.02 bei 1/2/5/8 km, Uhr 0,5, 4 Azimute, K1-1 GRUEN, [linse-gpu] nvidia/pascal an 6aa7a5a6 gtx — offen: ferne.K1#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/haenger-linse.cjs +8) — zuletzt an 067bd771: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: band · Exit 1) · ferne.K1#2 gtx: ROT: K1-2 ROT (1 Befunde) · Farbton 8 km 1.27–13.68° (≤ 10°) · Sonnenseite Uhr 0,5/0,27 1.25/5.025 (≥ 1,2) · fernes Weiß R/B 6.248 (≥ 1,3) · [linse-gpu] nvidia/pascal an 6aa7a5a6",
    "stationen": [
     {
      "id": "ferne.K1#1",
@@ -689,10 +689,9 @@
      "id": "ferne.K1#1",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "Koschmieder T/T_soll 0.86–1.08 bei 1/2/5/8 km, Uhr 0,5, 4 Azimute, K1-1 GRUEN, [linse-gpu] nvidia/pascal",
-     "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/gpu-fehler.cjs +11)",
-     "gehalten": true
+     "zahl": "Koschmieder T/T_soll 0.89–1.02 bei 1/2/5/8 km, Uhr 0,5, 4 Azimute, K1-1 GRUEN, [linse-gpu] nvidia/pascal",
+     "sha": "6aa7a5a6bfd01df56192e66b658681dac67a27a9",
+     "grund": null
     },
     {
      "id": "ferne.K1#2",
@@ -707,16 +706,15 @@
      "id": "ferne.K1#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/gpu-fehler.cjs +11)",
-     "ungemessen": true
+     "zahl": "K1-2 ROT (1 Befunde) · Farbton 8 km 1.27–13.68° (≤ 10°) · Sonnenseite Uhr 0,5/0,27 1.25/5.025 (≥ 1,2) · fernes Weiß R/B 6.248 (≥ 1,3) · [linse-gpu] nvidia/pascal",
+     "sha": "6aa7a5a6bfd01df56192e66b658681dac67a27a9",
+     "grund": "ROT: K1-2 ROT (1 Befunde) · Farbton 8 km 1.27–13.68° (≤ 10°) · Sonnenseite Uhr 0,5/0,27 1.25/5.025 (≥ 1,2) · fernes Weiß R/B 6.248 (≥ 1,3) · [linse-gpu] nvidia/pascal"
     }
    ]
   },
   "ferne.K2": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Restkontrast am Rand 1.0–1.3 % bei 17.4–21.8 km (≤ 2 %), 4 Azimute, K2-1 GRUEN, [linse-gpu] nvidia/pascal an b3f9ae95 gtx · gehalten: K2-2 GRUEN · Kanten-Linie Hügel 0/0/0/0°, Gipfel 0/0.47/0/0.47° (< 1°) · Boden 8/12 Befehle, 65.9k/120k Dreiecke · [linse-gpu] nvidia/pascal an b3f9ae95 gtx — offen: ferne.K2#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/haenger-linse.cjs +8) — zuletzt an 067bd771: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: band · Exit 1)",
+   "beleg": "Maschine: Restkontrast am Rand 1.1–1.9 % bei 18.4–23.1 km (≤ 2 %), 4 Azimute, K2-1 GRUEN, [linse-gpu] nvidia/pascal an 6aa7a5a6 gtx — offen: ferne.K2#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/haenger-linse.cjs +8) — zuletzt an 067bd771: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: band · Exit 1) · ferne.K2#2 gtx: ROT: K2-2 GRUEN · Kanten-Linie Hügel 0/0/0.47/0.47°, Gipfel 0/0/0/0.47° (< 1°) · Boden ungemessen · [linse-gpu] nvidia/pascal an 6aa7a5a6",
    "stationen": [
     {
      "id": "ferne.K2#1",
@@ -731,10 +729,9 @@
      "id": "ferne.K2#1",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "Restkontrast am Rand 1.0–1.3 % bei 17.4–21.8 km (≤ 2 %), 4 Azimute, K2-1 GRUEN, [linse-gpu] nvidia/pascal",
-     "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/gpu-fehler.cjs +11)",
-     "gehalten": true
+     "zahl": "Restkontrast am Rand 1.1–1.9 % bei 18.4–23.1 km (≤ 2 %), 4 Azimute, K2-1 GRUEN, [linse-gpu] nvidia/pascal",
+     "sha": "6aa7a5a6bfd01df56192e66b658681dac67a27a9",
+     "grund": null
     },
     {
      "id": "ferne.K2#2",
@@ -748,11 +745,10 @@
     {
      "id": "ferne.K2#2",
      "geraet": "gtx",
-     "gruen": true,
-     "zahl": "K2-2 GRUEN · Kanten-Linie Hügel 0/0/0/0°, Gipfel 0/0.47/0/0.47° (< 1°) · Boden 8/12 Befehle, 65.9k/120k Dreiecke · [linse-gpu] nvidia/pascal",
-     "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/gpu-fehler.cjs +11)",
-     "gehalten": true
+     "gruen": false,
+     "zahl": "K2-2 GRUEN · Kanten-Linie Hügel 0/0/0.47/0.47°, Gipfel 0/0/0/0.47° (< 1°) · Boden ungemessen · [linse-gpu] nvidia/pascal",
+     "sha": "6aa7a5a6bfd01df56192e66b658681dac67a27a9",
+     "grund": "ROT: K2-2 GRUEN · Kanten-Linie Hügel 0/0/0.47/0.47°, Gipfel 0/0/0/0.47° (< 1°) · Boden ungemessen · [linse-gpu] nvidia/pascal"
     }
    ]
   },
@@ -1661,7 +1657,7 @@
   },
   "licht.K2": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Verhältnis 5.368 (5–12,5), Schatten-Anteil 0.1863 (0,08–0,20), A/B 0.999, A/C 1.000, Kappe 1497 px, Uhr 0.5 sunny, [linse-gpu] amd/rdna-3 an 067bd771 radeon · gehalten: Verhältnis 5.455 (5–12,5), Schatten-Anteil 0.1833 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1493 px, Uhr 0.5 sunny, [linse-gpu] nvidia/pascal an 94d9c5a6 gtx — offen: licht.K2#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/haenger-linse.cjs +8) — zuletzt an 067bd771: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: los-5 · Exit 0) · licht.K2#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/gpu-fehler.cjs +11)",
+   "beleg": "Maschine: gehalten: Verhältnis 5.368 (5–12,5), Schatten-Anteil 0.1863 (0,08–0,20), A/B 0.999, A/C 1.000, Kappe 1497 px, Uhr 0.5 sunny, [linse-gpu] amd/rdna-3 an 067bd771 radeon · gehalten: Verhältnis 5.455 (5–12,5), Schatten-Anteil 0.1833 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1493 px, Uhr 0.5 sunny, [linse-gpu] nvidia/pascal an 94d9c5a6 gtx — offen: licht.K2#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/haenger-linse.cjs +8) — zuletzt an 067bd771: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: los-5 · Exit 0) · licht.K2#2 gtx: ROT: Uhr 0.5 klar (Sonne 74.2°) 5.161, Schatten-Anteil 0.1938 · Uhr 0.27 klar (Sonne 7.2°) 0.964 UNGÜLTIG (A/B 0.700, A/C 1.000, 1474 px) · Uhr 0.73 klar (Sonne 6.7°) 1.035 UNGÜLTIG (A/B 0.699, A/C 1.000, 1496 px) · Uhr 0.5 Regen (Sonne 74.2°) 1.18 UNGÜLTIG (A/B 0.712, A/C 1.011, 1499 px) · Uhr 0.27 Regen (Sonne 7.2°) 0.889 · Uhr 0.73 Regen (Sonne 6.7°) 1 · Himmel zur Sonne 1.206 (13030/13030 px, Belichtung 42.2213/42.2213, 20 m über dem Boden) · Soll klar 0,5: 5–12,5, 0,08–0,20, Himmel ≥ 1,2; klar 0,27/0,73 ≥ 2,5; Regen ≤ 1,5 · [linse-gpu] nvidia/pascal an 6aa7a5a6",
    "stationen": [
     {
      "id": "licht.K2#1",
@@ -1694,10 +1690,9 @@
      "id": "licht.K2#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/gpu-fehler.cjs +11)",
-     "ungemessen": true
+     "zahl": "Uhr 0.5 klar (Sonne 74.2°) 5.161, Schatten-Anteil 0.1938 · Uhr 0.27 klar (Sonne 7.2°) 0.964 UNGÜLTIG (A/B 0.700, A/C 1.000, 1474 px) · Uhr 0.73 klar (Sonne 6.7°) 1.035 UNGÜLTIG (A/B 0.699, A/C 1.000, 1496 px) · Uhr 0.5 Regen (Sonne 74.2°) 1.18 UNGÜLTIG (A/B 0.712, A/C 1.011, 1499 px) · Uhr 0.27 Regen (Sonne 7.2°) 0.889 · Uhr 0.73 Regen (Sonne 6.7°) 1 · Himmel zur Sonne 1.206 (13030/13030 px, Belichtung 42.2213/42.2213, 20 m über dem Boden) · Soll klar 0,5: 5–12,5, 0,08–0,20, Himmel ≥ 1,2; klar 0,27/0,73 ≥ 2,5; Regen ≤ 1,5 · [linse-gpu] nvidia/pascal",
+     "sha": "6aa7a5a6bfd01df56192e66b658681dac67a27a9",
+     "grund": "ROT: Uhr 0.5 klar (Sonne 74.2°) 5.161, Schatten-Anteil 0.1938 · Uhr 0.27 klar (Sonne 7.2°) 0.964 UNGÜLTIG (A/B 0.700, A/C 1.000, 1474 px) · Uhr 0.73 klar (Sonne 6.7°) 1.035 UNGÜLTIG (A/B 0.699, A/C 1.000, 1496 px) · Uhr 0.5 Regen (Sonne 74.2°) 1.18 UNGÜLTIG (A/B 0.712, A/C 1.011, 1499 px) · Uhr 0.27 Regen (Sonne 7.2°) 0.889 · Uhr 0.73 Regen (Sonne 6.7°) 1 · Himmel zur Sonne 1.206 (13030/13030 px, Belichtung 42.2213/42.2213, 20 m über dem Boden) · Soll klar 0,5: 5–12,5, 0,08–0,20, Himmel ≥ 1,2; klar 0,27/0,73 ≥ 2,5; Regen ≤ 1,5 · [linse-gpu] nvidia/pascal"
     }
    ]
   },
@@ -1784,7 +1779,7 @@
   },
   "lod.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: lod.K1#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/haenger-linse.cjs +8) — zuletzt an 067bd771: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: auge · Exit 0) · lod.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/gpu-fehler.cjs +11) — zuletzt an da0e790f: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: auge · Exit 0)",
+   "beleg": "Maschine: 0 — offen: lod.K1#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/haenger-linse.cjs +8) — zuletzt an 067bd771: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: auge · Exit 0) · lod.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/gpu-fehler.cjs +11) — zuletzt an 6aa7a5a6: Deckel 90 s gerissen: Stille seit 36.8 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: auge · Exit 0)",
    "stationen": [
     {
      "id": "lod.K1#1",
@@ -1801,7 +1796,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/gpu-fehler.cjs +11) — zuletzt an da0e790f: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: auge · Exit 0)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/gpu-fehler.cjs +11) — zuletzt an 6aa7a5a6: Deckel 90 s gerissen: Stille seit 36.8 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: auge · Exit 0)",
      "ungemessen": true
     }
    ]
@@ -2023,7 +2018,7 @@
   },
   "material.K1": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Welt/Labor 0,9–1,1: 13/13 · im realen Band beidseits: 13/13 · echt beide Seiten · [linse-gpu] amd/rdna-3 an e475c6b4 radeon · gehalten: Karte Welt 0.1799 · Labor terrain 0.1799, garage 0.1799, portale 0.1799, schmiede 0.1799, fachwerk 0.1799, koerperstudio 0.1799, tetrapoda 0.1799 · Soll 0.18 ± 0.003 · Zeilen alle im Soll und Band · echt beide Seiten · [linse-gpu] amd/rdna-3 an e475c6b4 radeon — offen: material.K1#2 gtx: Linse seit der Messung geändert (R6: scripts/diag-albedo-tafel.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +13) — zuletzt an da0e790f: Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Karte Welt undefined · Labor stumm · Soll undefined ± undefined · Zeilen NICHT alle im Soll und Band · echt NEIN · [linse-gpu] n",
+   "beleg": "Maschine: gehalten: Welt/Labor 0,9–1,1: 13/13 · im realen Band beidseits: 13/13 · echt beide Seiten · [linse-gpu] amd/rdna-3 an e475c6b4 radeon · gehalten: Karte Welt 0.1799 · Labor terrain 0.1799, garage 0.1799, portale 0.1799, schmiede 0.1799, fachwerk 0.1799, koerperstudio 0.1799, tetrapoda 0.1799 · Soll 0.18 ± 0.003 · Zeilen alle im Soll und Band · echt beide Seiten · [linse-gpu] amd/rdna-3 an e475c6b4 radeon — offen: material.K1#2 gtx: ROT: Karte Welt 0.1803 · Labor terrain 0.1799, garage 0.1799, portale 0.1799, schmiede 0.1799, fachwerk 0.1799, koerperstudio 0.1799, tetrapoda 0.1799 · Soll 0.18 ± 0.003 · Zeilen NICHT alle im Soll und Band · echt beide Seiten · [linse-gpu] nvidia/pascal an 6aa7a5a6",
    "stationen": [
     {
      "id": "material.K1#1",
@@ -2038,10 +2033,9 @@
      "id": "material.K1#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs +6) — zuletzt an 87537d3f: Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Welt/Labor 0,9–1,1: 0/0 · im realen Band beidseits: 0/0 · echt NEIN · [linse-gpu] nvidia/pascal) · Täter: ALBEDO-TAFEL 0 Zeilen ",
-     "ungemessen": true
+     "zahl": "Welt/Labor 0,9–1,1: 6/13 · im realen Band beidseits: 10/13 — rinde 1.5996 ∉ [0.07, 0.12] L 0.0894 W 0.143 · fels 0.7349 · boden 1.1671 · tor 0.1918 ∉ [0.25, 0.95] L 0.6496 W 0.1246 · haut 2.5008 · haar 12.0342 · klinge 0.3853 ∉ [0.3, 0.95] L 0.3452 W 0.133 · echt beide Seiten · [linse-gpu] nvidia/pascal",
+     "sha": "6aa7a5a6bfd01df56192e66b658681dac67a27a9",
+     "grund": "ROT: Welt/Labor 0,9–1,1: 6/13 · im realen Band beidseits: 10/13 — rinde 1.5996 ∉ [0.07, 0.12] L 0.0894 W 0.143 · fels 0.7349 · boden 1.1671 · tor 0.1918 ∉ [0.25, 0.95] L 0.6496 W 0.1246 · haut 2.5008 · haar 12.0342 · klinge 0.3853 ∉ [0.3, 0.95] L 0.3452 W 0.133 · echt beide Seiten · [linse-gpu] nvidia/pascal"
     },
     {
      "id": "material.K1#2",
@@ -2056,10 +2050,9 @@
      "id": "material.K1#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-albedo-tafel.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +13) — zuletzt an da0e790f: Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Karte Welt undefined · Labor stumm · Soll undefined ± undefined · Zeilen NICHT alle im Soll und Band · echt NEIN · [linse-gpu] n",
-     "ungemessen": true
+     "zahl": "Karte Welt 0.1803 · Labor terrain 0.1799, garage 0.1799, portale 0.1799, schmiede 0.1799, fachwerk 0.1799, koerperstudio 0.1799, tetrapoda 0.1799 · Soll 0.18 ± 0.003 · Zeilen NICHT alle im Soll und Band · echt beide Seiten · [linse-gpu] nvidia/pascal",
+     "sha": "6aa7a5a6bfd01df56192e66b658681dac67a27a9",
+     "grund": "ROT: Karte Welt 0.1803 · Labor terrain 0.1799, garage 0.1799, portale 0.1799, schmiede 0.1799, fachwerk 0.1799, koerperstudio 0.1799, tetrapoda 0.1799 · Soll 0.18 ± 0.003 · Zeilen NICHT alle im Soll und Band · echt beide Seiten · [linse-gpu] nvidia/pascal"
     }
    ]
   },
@@ -4471,10 +4464,10 @@
   }
  },
  "rueckfall": [
-  "affekt.K4#1 headless: 30 Spielminuten, 55 Zeilen, 6 falsch, Abstand 30 s, offen -14.4 s, ohne Tat 0, Klassen {\"nexus\":50,\"rule:nexus\":330,\"llm\":3,\"rule:llm\":11,\"wunsch\":0,\"human\":2,\"fern\":157}, verworfen 144 · keine wirkende Tat von wunsch · 6 Zeilen falsch · falsch [641.8 s] dazu 4 weitere Tat: Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 48 m südwestlich von dir, weil lebendig am Ort hoch ist (>0.59). (Gesetz Nr. 16 des Nexus; dazu 5 weitere Taten seit der letzten Zeile) an 6aa7a5a6 (grün gebucht an d3708675)"
+  "ferne.K2#2 gtx: K2-2 GRUEN · Kanten-Linie Hügel 0/0/0.47/0.47°, Gipfel 0/0/0/0.47° (< 1°) · Boden ungemessen · [linse-gpu] nvidia/pascal an 6aa7a5a6 (grün gebucht an b3f9ae95)"
  ],
  "kopfVoll": "6aa7a5a6bfd01df56192e66b658681dac67a27a9",
- "zeit": "2026-11-10T12:45:30.475Z",
+ "zeit": "2026-11-10T12:58:26.125Z",
  "vorher": "6aa7a5a6",
  "pflicht": {
   "dokument": "docs/PFLICHT-OFFEN.md",
@@ -4504,7 +4497,7 @@
      {
       "station": "lod.K1#1",
       "geraet": "gtx",
-      "zeile": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/gpu-fehler.cjs +11) — zuletzt an da0e790f: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: auge · Exit 0)"
+      "zeile": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/gpu-fehler.cjs +11) — zuletzt an 6aa7a5a6: Deckel 90 s gerissen: Stille seit 36.8 s nach 90 s (kein Lebenszeichen) — beendet,"
      },
      {
       "station": "mensch.K4#1",
