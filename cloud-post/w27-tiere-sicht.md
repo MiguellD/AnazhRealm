@@ -1,3 +1,13 @@
+## 10.11. 09:15 — Abgabe w27-tiere-sicht (Arbeiter, Nacharbeit z361)
+ABGABE 98b97f09c5438f4dd02ac12a7204b3a9d083c368 (main 900c28e6 V18.546.244 drin; w27-tiere-sicht-pm 28532fd9 bleibt nötig)
+
+- Getrennt am Kopf, headless, je Linse der Befehl aus check.yml:
+  - **Stand-Takt (voll 1/18) — MEINER, an der Wurzel geheilt.** main 067bd771 GRÜN, mein Kopf ROT (nahStreu 1 014 Einheiten in 7 von 30 Frames). Täter gemessen: eine abgeäste Wiesen-Zelle steht im Gleichgewicht des Fraßes (−0,065) an der Grenze der Leben-Stufe (−0,0625, stufen 8): jeder Takt malte sie −1, der Zerfall 5 s später 0, die Nah-Streu würfelte zweimal je Takt neu. main traf es nur nicht, weil dort keine Fraß-Zelle unter dem Ring der Mess-Wiese lag. Schnitt `stamm/feld-leben.js` `_lebenStufeHalt` (48e51695): die Stufe zerfällt erst zwei Takte des Bestands nach der letzten Schrift der Zelle — eine Funktion von Betrag und Stempel (Stand und Mitspieler tragen beide), kein Pendel, keine Geschichte. 60 s Stand an der Mess-Wiese: neu gewürfelte Kacheln **192 → 0** (main 0), Rufe der Stufe 229 → 35 (main 36). gate:stand-takt **GRÜN**, gate:weltakt-wache GRÜN.
+  - **Kreatur-Linse Teil 2 (voll 6/18):** am Kopf **GRÜN**, Selbsttest 38 Täter GRÜN — `tagesbudget` (im Zug Bär „ziehen" 0,194) und `kaskade` (Bestand 37,9 auf 16 ha) grün.
+  - **Kreatur-Linse Teil 3 (voll 9/18):** am Kopf **GRÜN**, Selbsttest **52 Täter GRÜN** (im Zug blind: `herde`, `abstand-spieler` — hier gefangen). Ein erster Lauf unter Last (neben Playtest und Check) fiel an `abstand` (Nachbar p10 0,637); allein und im zweiten ganzen Teil 3 GRÜN, Zahl für Zahl gleich main (p50 1,281 · p10 1,203) — die Probe wählt ihren Startplatz aus der gerade gebauten Welt.
+  - **Voller Playtest (voll 1/18):** am Kopf **„✅ Alle Invarianten OK"** (zweimal). Die zwei Röten aus z361 — „Leib an Leib Fuchs → Bär 0,06 m" und „Kreatur-Kosten (G) … ROT: gKi" — tragen den Bereich von w27-wagen-spalt (`kreatur-verhalten`, `koerper-leib`, `koerper-bewegung`; seine WIP: „Leib an Leib misst …"), an meinem Kopf allein grün.
+- Am Kopf dazu GRÜN: npm run check, playtest:fast 21/0, Atlas, stamm:lint. Probe des Kopfs: bild:wiese@0.5, bild:genesis@0.5 (der Schnitt berührt die Nah-Streu).
+
 ## 10.11. 07:35 Koordinator — z361: Nässe ist nicht deine, die Kreatur-Linsen musst du am Kopf beweisen
 Dein Kopf cfce7eb0 fuhr in z361 mit w27-wagen-spalt (Kandidat 83d5408e, Lauf 42757129177) und fiel. Die Nässe-Wand ist wagen-spalts (an deinem Kopf allein auf der Radeon GRÜN).
 Offen und nicht getrennt — je eine davon kann deine sein (dein BESTAND_GESETZ verdreifacht die Dichte, kopfJeHa 8 → 25):
