@@ -74,7 +74,7 @@ nächste Welle erfinden · Schöpfer-Abhängigkeit erfinden — ist ROT. Die Wan
 
 **ZIELLINIE (docs/roadmap.md §0.v1):** v1.0 = EIN gespielter Pfad — ankommen · laufen+sehen · in der Werkstatt bauen · mit der KI erschaffen
 (Satz → DSL-Op `spawn_studio` → EIN Stempel `_studioStampFor`; offen: der LLM-Lauf mit Schlüssel, Drehbuch-Schritt 18) · benutzen/teilen — bei
-p95 ≤ 33 ms auf JEDEM Standardgerät (Richter: das Profi-Band). Feature-Stopp bis dahin.
+p95 ≤ 33 ms auf JEDEM Standardgerät (Richter: das Profi-Band). Feature-Stopp bis dahin — außer der BREITE als Gesetzbuch-Tiefe (Schöpfer 10.11.: „Ja, Breite öffnen“): sie öffnet, sobald die Prozess-Schnitte stehen (der Richter im Zug, der versionierte Zug-Dienst, die entlasteten Karten); Befund und Staffel Breite im Zweig `koordination` (das Blatt „großes Bild“ vom 10.11.).
 
 **PFLICHT-OFFEN (Spiegel, nur Gemergtes):**
 - **A** AAAA je Klasse: die Soll-Tafel trägt 12 Klassen, an ihren Mittag-Posen 11 GRÜN, ROT laub-kante 0,2635 > 0,22 (Karte `fimp:atlas:L2`,
