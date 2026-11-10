@@ -6,7 +6,7 @@
 
 ABGABE 80bcd3089d038480f1988b8794799c473ae94f36
 
-Hinter der Abgabe liegt nur ein Diagnose-WIP (ef2bac5a, die Luft-Linse misst auf der Radeon den Schuss β 1 mit ruhender Horizont-Karte daneben) — er gehört nicht in den Zug; die Abgabe bleibt 80bcd308.
+Hinter der Abgabe lag ein Diagnose-WIP (ef2bac5a), der Kopf des Zweigs trägt wieder genau den Baum von 80bcd308 (die Abgabe bleibt 80bcd308). Befund auf der Radeon: die Horizont-Karte ist aktiv und gemalt, der Schuss β 1 mit ruhender Karte ist bit-gleich grau (0,1279/0,118/0,1059) — der Luftschatten (`luftSicht`) ist NICHT der Täter; die graue In-Streuung kommt aus der Himmels-Sicht selbst (`himmelFarbe`, stamm/bild-himmel.js), auf swiftshader blau 0,2515/0,2584/0,2672.
 
 ## 10.11. 02:24 — w27-ferne-ton-5: ABGABE 80bcd3089d038480f1988b8794799c473ae94f36
 
@@ -27,8 +27,8 @@ ABGABE 80bcd3089d038480f1988b8794799c473ae94f36 — Abgabe w27-ferne-ton-5 (Zwei
 - **Ehrlich offen.**
   - Die Probe der Abgabe 80bcd308 lief auf der Radeon: ROT mit genau den Zahlen von main (6b7d389a, Vorher am main-Baum) — K1-2 ist auf der
     GTX 1050 GRÜN an 78b11fb7 (derselbe Baum vor den Merges mit main fbbeb318 und 20a01782; sie berühren die Luft nicht).
-  - ferne.K1#2 auf der Radeon ROT, an main identisch (6b7d389a): HIMMEL „nicht blau“ 0,1287/0,1182/0,1066, JE KANAL Uhr 0,27 ungemessen, KANTE 2,15 %. Der Horizont trägt die In-Streuung ohne die einfache Streuung der Sonne — Verdacht der Luftschatten (`luftSicht` über `_horizontSicht`) im Weg `--eigen`; die Station der Radeon (Sitzung) maß an 87537d3f nur FARBTON. Nicht geschnitten.
-- FUND: stamm/bild-himmel.js:2361 `luftSicht` · die Radeon liest im Schuss β 1 die In-Streuung ohne Sonne, GTX und swiftshader nicht · ferne.K1#2 Radeon (HIMMEL, JE KANAL, KANTE) · M
+  - ferne.K1#2 auf der Radeon ROT, an main identisch (6b7d389a): HIMMEL „nicht blau“ 0,1287/0,1182/0,1066, JE KANAL Uhr 0,27 ungemessen, KANTE 2,15 %. Der Horizont trägt die In-Streuung ohne die einfache Streuung der Sonne — der Luftschatten ist widerlegt (ef2bac5a); die Station der Radeon (Sitzung) maß an 87537d3f nur FARBTON. Nicht geschnitten.
+- FUND: stamm/bild-himmel.js `himmelFarbe` (die Himmels-Sicht der Atmosphäre) · auf der Radeon im Weg `--eigen` grau-warm am Horizont (0,128/0,118/0,106), die Horizont-Karte widerlegt (ef2bac5a) · ferne.K1#2 Radeon (HIMMEL, JE KANAL, KANTE, FARBTON) · M
 - FUND: scripts/lib/welt-boot.cjs Rezept `null` · lokale Linsen fahren Chromium 153 (PUPPETEER_EXECUTABLE_PATH), die CI Chrome 148 — andere Welt ohne Bild bis zu dieser Abgabe · Linsen-Parität · S
 - Die Besten: Unreal Landscape (die Layer-Weight-Map trägt das Physical Material, Haftung und Klang lesen die Schicht, nie die Textur); Frostbite Terrain (Schicht-Gewichte als Vertex-Kanal neben der Farbe).
 
