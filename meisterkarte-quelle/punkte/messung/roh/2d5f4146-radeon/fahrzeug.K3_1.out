@@ -276,7 +276,7 @@ H.fahre(async function probeTempoGarage(H) {
 @@PUNKTE@@ FRIST 39 s der Probe gerissen — der Ritt (tempo4.js): /eval ohne Antwort binnen 33 s
 @@PUNKTE@@ WELT
 {
- "ms": 36585,
+ "ms": 35957,
  "fehler": "/eval ohne Antwort binnen 33 s"
 }
 @@PUNKTE@@ EXIT 1
@@ -285,7 +285,7 @@ H.fahre(async function probeTempoGarage(H) {
   ✅ G11 die Prüfstrecke (die fliegende Runde) — {"t0":62.449999999997736,"kurven":[{"R":70,"bank":10,"aQ":1.11,"vScheitel":28.1},{"R":30,"bank":0,"aQ":0.89,"vScheitel":15.6},{"R":70,"bank":0,"aQ":0.91,"vScheitel":23.7},{"R":45,"bank":8,"aQ":1.05,"vScheitel":21.8}],"fluege":[{"weite":0.8,"stoss":-0.16},{"weite":18.7,"stoss":-0.16},{"weite":0.4,"stoss":-0.16}],"hubMin":-0.08,"anschlag":2,"nick":0.03303964232217319,"wank":0.056111256802818636,"boden":3524,"schritte":3576,"ablage":2.31,"zeit":59.6,"kontakt":0.985} 
 [linse-gpu] google/swiftshader
 @@PUNKTE@@ EXIT 124
-  (Welt 36.6 s · Garage 35.0 s im Fenster neben ihr)
+  (Welt 36.0 s · Garage 35.2 s im Fenster neben ihr)
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3
