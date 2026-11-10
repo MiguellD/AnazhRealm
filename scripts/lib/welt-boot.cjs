@@ -17,7 +17,7 @@ const fs = require("fs");
 const http = require("http");
 const path = require("path");
 const os = require("os");
-const { linsenWebGpuArgs, linsenWebglArgs, echteWebGpuArgs, adapterZeile, zeitZeile } = require("./software-gpu.cjs");
+const { linsenWebGpuArgs, linsenWebglArgs, echteWebGpuArgs, adapterZeile } = require("./software-gpu.cjs");
 const stammLib = require("./stamm.cjs");
 const { ohneKommentare, ast, wandere, zeileVon } = stammLib;
 
@@ -607,12 +607,12 @@ function statikServer({ root = ROOT, start = "/index.html", seiten = null, keinC
 const ortZug = (page, id) => page.evaluateOnNewDocument((z) => window.__anazhAutoSettlement ??= z, require("./welt-orte.cjs").messort(id).dorfZug);
 
 // Die Browser-Rezepte: null (kein GPU-Prozess, der Null-Renderer) · webgl (WebGL2 an der Weiche) · standard (Chromes Wahl) ·
-// linse (WebGPU an der Weiche: lokal die Karte, die CI swiftshader) · echt (der Hardware-Adapter); `zeit: true` → swiftshader.
+// linse (WebGPU an der Weiche: lokal und auf den Karten der CI die Karte, ohne Karte swiftshader) · echt (der Hardware-Adapter).
 const REZEPTE = {
     null: () => ["--no-sandbox", "--disable-gpu"],
-    webgl: (o) => linsenWebglArgs(process.env, process.platform, o),
+    webgl: () => linsenWebglArgs(),
     standard: () => ["--no-sandbox", "--disable-setuid-sandbox"],
-    linse: (o) => linsenWebGpuArgs(process.env, process.platform, o),
+    linse: () => linsenWebGpuArgs(),
     echt: () => echteWebGpuArgs(),
 };
 // DIE KLASSE DER CI: diese Rezepte zeichnen mit einem Echt-Renderer; in einer CPU-Gruppe (CI_KLASSE) ist eines ROT beim Namen,
@@ -620,13 +620,13 @@ const REZEPTE = {
 const GPU_REZEPTE = ["linse", "webgl", "echt"];
 
 // Die Start-Optionen: `frist` = protocolTimeout (ms), `zusatz` hinter dem Rezept, `viewport`, `profil` = userDataDir; headless.
-function browserOptionen({ art, frist, zusatz = [], headless = true, viewport, profil, zeit = false } = {}) {
+function browserOptionen({ art, frist, zusatz = [], headless = true, viewport, profil } = {}) {
     if (!REZEPTE[art])
         throw new Error(`welt-boot: unbekanntes Rezept "${art}" — erlaubt: ${Object.keys(REZEPTE).join(" · ")}`);
     const o = { headless, userDataDir: profil };
     if (frist != null) o.protocolTimeout = frist;
     if (viewport !== undefined) o.defaultViewport = viewport;
-    o.args = [...REZEPTE[art]({ zeit }), ...zusatz];
+    o.args = [...REZEPTE[art](), ...zusatz];
     return o;
 }
 
@@ -1133,7 +1133,7 @@ async function starteBrowser(opts = {}) {
     const b = {
         stderr: [],
         cdp: null,
-        stapel: !opts.zeit && opts.art !== "echt",
+        stapel: opts.art !== "echt",
         stallMs: opts.stallMs || 20000,
         offen: true,
     };
@@ -1228,12 +1228,9 @@ async function starteBrowser(opts = {}) {
         }
     });
     // jede GPU-Linse nennt den Adapter, den der Browser WIRKLICH liefert (gate:start-rezept W4), die WebGL-Linse ihren
-    // WebGL2-Renderer; die ZEIT-ZEILE (W5): eine Zeit-Linse auf der Karte ist ROT beim Namen
-    if (opts.art === "linse" || opts.art === "echt" || opts.art === "webgl") {
-        const info = (browser.adapter = await adapterZeile(browser, { webgl: opts.art === "webgl" }));
-        const rot = zeitZeile({ zeit: !!opts.zeit, art: opts.art, info });
-        if (rot) melde("zeit-linse", rot);
-    }
+    // WebGL2-Renderer
+    if (opts.art === "linse" || opts.art === "echt" || opts.art === "webgl")
+        browser.adapter = await adapterZeile(browser, { webgl: opts.art === "webgl" });
     return browser;
 }
 

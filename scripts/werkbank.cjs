@@ -420,6 +420,10 @@ function popGang() {
 
 // ── Server ──────────────────────────────────────────────────────────────────────────────────────
 async function starte() {
+    // DIE WEICHE DER CI (welt-boot `starteBrowser`): die Werkbank zeichnet — eine CPU-Gruppe der CI trägt sie nie, ihre Stelle ist
+    // die Karte (check.yml `echt`). Bis w27-swift-raus fuhren gate:nah-fern und gate:schatten-terminator so still swiftshader.
+    if (process.env.CI_KLASSE === "cpu")
+        throw new Error("CI_KLASSE=cpu: die Werkbank zeichnet — ihre Stelle ist die Karte");
     const { linsenWebGpuArgs, adapterZeile, echteWebGpuArgs } = require("./lib/software-gpu.cjs");
     const seiten = statikServer();
     if (ECHT) {

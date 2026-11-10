@@ -1,13 +1,21 @@
 // ci-klasse.cjs — DIE KLASSE EINES CI-SCHRITTS: braucht er einen Echt-Renderer? Der run-Text wird über package.json bis
 // auf die Befehle aufgelöst, jedes `node <datei>` samt seinen lokalen `require` nach dem Rezept an der Weiche durchsucht
 // (welt-boot `starteBrowser({ art })`): ein Echt-Rezept (GPU_REZEPTE) ohne Bedingung macht ihn `gpu`; im Zweig
-// (`art: X ? "linse" : "null"`) entscheidet der Befehl, ob er X setzt (Schalter oder Umgebung) — sonst `bedingt`. Der Richter
-// ist die Laufzeit: die Weiche nennt ein Echt-Rezept in einer CPU-Gruppe ROT und eines, das nie zeichnet.
+// (`art: X ? "linse" : "null"`) entscheidet der Befehl, ob er X setzt (Schalter oder Umgebung) — sonst `bedingt`. Die Werkbank
+// startet ihre Welt an der Weiche vorbei (`startePuppeteer` mit `linsenWebGpuArgs`): ihr Start (`werkbank.cjs start`, `--eigen`,
+// `werkbankTor(` in einer Linse) ist `gpu` — bis w27-swift-raus zeichneten gate:nah-fern und gate:schatten-terminator so still
+// auf swiftshader in CPU-Gruppen. Der Richter ist die Laufzeit: die Weiche und `werkbank start` nennen ein Echt-Rezept in einer
+// CPU-Gruppe ROT, die Weiche eines, das nie zeichnet.
 "use strict";
 const { GPU_REZEPTE, ausDatei, path, fs, ROOT } = require("./welt-boot.cjs");
 
 const ART = /\bart:\s*([^\n,}]+)/g;
 const REZEPT_RE = new RegExp(`["'](${GPU_REZEPTE.join("|")})["']`);
+// DIE WERKBANK ZEICHNET: ihr Start als Befehl (`start`, oder `--eigen`: die Welt als Kind) und als Ruf einer Linse (welt-boot
+// `werkbankTor`, nie seine Definition); jeder andere Werkbank-Befehl spricht mit einer laufenden Werkbank oder prüft sich selbst
+const WERKBANK_BEFEHL = /\bscripts\/werkbank\.cjs\b/;
+const WERKBANK_START = /\bwerkbank\.cjs\s+start\b|\s--eigen(?=\s|$)/;
+const WERKBANK_TOR = /(?<!function\s)\bwerkbankTor\(/;
 
 // die Befehle eines run-Texts: `npm run x` wird über die Skripte aufgelöst (&& · ; · Zeilen trennen)
 function befehle(text, skripte, tiefe = 0) {
@@ -43,10 +51,17 @@ function klasseDerDatei(datei, lies, gesehen = new Set(), befehl = "") {
     gesehen.add(datei);
     const t = lies(datei);
     if (t == null) return { klasse: null };
+    const rel = path.relative(ROOT, datei).replace(/\\/g, "/");
+    if (WERKBANK_TOR.test(t)) return { klasse: "gpu", wo: `${rel} (werkbankTor: die Werkbank zeichnet)` };
     let bedingt = null;
     for (const m of t.matchAll(ART)) {
         if (!REZEPT_RE.test(m[1])) continue;
-        const wo = `${path.relative(ROOT, datei).replace(/\\/g, "/")} (art: ${m[1].trim()})`;
+        // DER LAUF HINTER EINEM SCHALTER (`if (argv.includes("--licht")) return lichtLauf();`): ein Start in der Funktion, die nur
+        // der Schalter ruft, gilt nur dem Befehl mit ihm — gate:pruefbuehne (ohne --licht, Rezept standard) zeichnet nie
+        const fn = [...t.slice(0, m.index).matchAll(/\bfunction\s+([\w$]+)\s*\(/g)].pop();
+        const tor = fn && new RegExp(`\\bargv\\.includes\\(\\s*["'](--[\\w-]+)["']\\s*\\)\\s*\\)\\s*return\\s+${fn[1]}\\(`).exec(t);
+        if (tor && !String(befehl).split(/\s+/).includes(tor[1])) continue;
+        const wo = `${rel} (art: ${m[1].trim()})`;
         // jeder Zweig ein Echt-Rezept (`ECHT ? "echt" : "linse"`) ist so fest wie keiner
         const zweige = [...m[1].matchAll(/["']([\w-]+)["']/g)].map((x) => x[1]);
         if (!/\?/.test(m[1]) || zweige.every((z) => GPU_REZEPTE.includes(z))) return { klasse: "gpu", wo };
@@ -61,7 +76,7 @@ function klasseDerDatei(datei, lies, gesehen = new Set(), befehl = "") {
         let f = path.resolve(path.dirname(datei), m[1]);
         if (!/\.c?js$/.test(f)) f += ".cjs";
         const k = klasseDerDatei(f, lies, gesehen, befehl);
-        if (k.klasse === "gpu") return { klasse: "gpu", wo: `${path.relative(ROOT, datei).replace(/\\/g, "/")} → ${k.wo}` };
+        if (k.klasse === "gpu") return { klasse: "gpu", wo: `${rel} → ${k.wo}` };
         if (k.klasse === "bedingt") bedingt = bedingt || k;
     }
     return bedingt || { klasse: null };
@@ -73,6 +88,10 @@ const liesPlatte = (f) => (fs.existsSync(f) ? ausDatei(f) : null);
 function klasseDesLaufs(run, skripte, lies = liesPlatte, root = ROOT) {
     let bedingt = null;
     for (const b of befehle(run, skripte)) {
+        if (WERKBANK_BEFEHL.test(b)) {
+            if (WERKBANK_START.test(b)) return { klasse: "gpu", wo: `„${b}" (die Werkbank startet ihre Welt)` };
+            continue;
+        }
         const m = /\bnode\s+(?:--\S+\s+)*([\w./-]+\.c?js)\b/.exec(b);
         if (!m) continue;
         const k = klasseDerDatei(path.resolve(root, m[1]), lies, new Set(), b);
@@ -194,20 +213,12 @@ function r6Text(text, skripte, urteil, bericht, tiefe = 0) {
         })
         .join("\n");
 }
-// SCHNITT B — EINE ZUG-STELLE JE WAND: im Zug (Push auf integ-probe) urteilt der echt-Job eine Wand auf der GTX; derselbe
-// Schritt der vollen Batterie fährt dort nicht noch einmal auf swiftshader (der echte Renderer ist der stärkere Richter,
-// Lehre 17). Nachts, auf main und auf einem Zweig mit [ci voll] (dort läuft kein echt) fährt die swiftshader-Fassung.
-const r6ZugStelle = (run, doc, e) =>
-    e.GITHUB_EVENT_NAME === "push" &&
-    e.GITHUB_REF === "refs/heads/integ-probe" &&
-    doc.jobs.echt.steps.find((s) => s.run && s.run.trim() === run.trim());
+// (SCHNITT B — die Zug-Stelle einer Wand, die der echt-Job auf der Karte UND die volle Batterie auf swiftshader trug — fiel mit
+// w27-swift-raus: die GPU-Klasse fährt nur noch auf der Karte, jede Wand an GENAU einer Stelle, gate:ci-deckung (D) (K) (E).)
 // als Shell: `node scripts/lib/ci-klasse.cjs <skript>` (check.yml `voll`)
 if (require.main === module) {
     const [f, text, e] = [process.argv[2], ausDatei(process.argv[2]), process.env];
-    const echt =
-        /^npm run gate:\S+$/.test(text.trim()) &&
-        r6ZugStelle(text, require("js-yaml").load(ausDatei(path.join(ROOT, ".github/workflows/check.yml"))), e);
-    const b = echt ? [`R6 ruht: ${text.trim()} — die Zug-Stelle der Wand ist der echt-Job („${echt.name}")`] : [];
+    const b = [];
     let kx;
     const kontext = () => {
         try {
@@ -218,14 +229,12 @@ if (require.main === module) {
     };
     fs.writeFileSync(
         f + ".r6",
-        echt
-            ? ""
-            : r6Text(
-                  text,
-                  JSON.parse(ausDatei(path.join(ROOT, "package.json"))).scripts,
-                  (x) => r6Urteil(x, (kx ||= kontext())),
-                  b
-              )
+        r6Text(
+            text,
+            JSON.parse(ausDatei(path.join(ROOT, "package.json"))).scripts,
+            (x) => r6Urteil(x, (kx ||= kontext())),
+            b
+        )
     );
     if (b.length) console.log(b.join("\n"));
     process.exit(require("child_process").spawnSync("bash", ["-e", f + ".r6"], { stdio: "inherit" }).status ?? 1);
@@ -241,5 +250,4 @@ module.exports = {
     r6Urteil,
     r6Text,
     r6Immer,
-    r6ZugStelle,
 };
