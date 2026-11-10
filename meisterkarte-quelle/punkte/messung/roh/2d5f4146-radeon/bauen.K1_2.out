@@ -258,10 +258,14 @@ H.fahre(async function probeBildWeg(H) {
     Object.assign(j, await L.bauWeg(page, "ende"));
     return j;
 }); 7804 C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\2d5f4146-radeon\bauen.K1_2.json 45
-  [bild] werkstatt · schöpfer · Eiche · Ego kalt 3267 ms, Bau-Hash = L0 · eingabe 1349 · steht 112 · l0 1763 · bild 9 · gpu 34 
-  [bild] rezeptbuch · frieden mit Material · Haus · Third kalt 4999 ms, Bau-Hash ≠ L0 · eingabe 1972 · steht 148 · l0 2114 · bild 723 · gpu 42 
-@@PUNKTE@@ FRIST 39 s der Probe gerissen — Fall hotbar · pfad · GT · Ego an der Frist
-  [bild] hotbar · pfad · GT · Ego warm undefined ms, Bau-Hash = L0 · eingabe NaN · steht NaN · l0 NaN · bild NaN · gpu NaN Frist der Probe
+  [bild] werkstatt · schöpfer · Eiche · Ego kalt 1513 ms, Bau-Hash = L0 · eingabe 838 · steht 61 · l0 587 · bild 8 · gpu 19 
+  [bild] rezeptbuch · frieden mit Material · Haus · Third kalt 3548 ms, Bau-Hash ≠ L0 · eingabe 1597 · steht 100 · l0 463 · bild 1370 · gpu 18 
+  [bild] hotbar · pfad · GT · Ego kalt 292 ms, Bau-Hash = L0 · eingabe 191 · steht 62 · l0 0 · bild 17 · gpu 22 
+  [bild] werkstatt · frieden mit Material · Teil · Third kalt 1800 ms, Bau-Hash = L0 · eingabe 495 · steht 119 · l0 0 · bild 1168 · gpu 18 
+  [bild] rezeptbuch · pfad · Eiche · Third warm 676 ms, Bau-Hash ≠ L0 · eingabe 513 · steht 85 · l0 28 · bild 9 · gpu 41 
+  [bild] hotbar · schöpfer · Haus · Ego warm 1339 ms, Bau-Hash = L0 · eingabe 156 · steht 45 · l0 0 · bild 1121 · gpu 17 
+  [bild] werkstatt · pfad · GT · Ego warm 787 ms, Bau-Hash = L0 · eingabe 597 · steht 135 · l0 0 · bild 13 · gpu 42 
+  [bild] hotbar · frieden mit Material · Teil · Third warm 314 ms, Bau-Hash = L0 · eingabe 170 · steht 79 · l0 0 · bild 15 · gpu 50 
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3

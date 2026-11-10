@@ -215,8 +215,8 @@ $ C:\Program Files\nodejs\node.exe -e const windSeite = async function windSeite
     return { ...zeile, fen, ohrProben: w.ohrProben, lags, reiheBild: B, reiheOhr: A };
 }); C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\2d5f4146-radeon\klang.K2_1.json C:\Users\micha\AppData\Local\Temp\claude\w3\pm
 [linse-gpu] amd/rdna-3
-{"stand":{"ctx":"running","enabled":true,"um":true,"paare":6,"steht":true},"wahl":{"hz":245.54776000976562,"kandidaten":14,"zensus":[["wind",-32.3]]},"fpsVor":47.8,"bilder":132,"fenster":95,"r0":{"lagS":0,"r":0.7458933578389982,"n":95,"cvX":0.31011198874805324,"cvY":0.5096549534796352},"best":{"lagS":-1,"r":0.7713965428222253,"n":90,"cvX":0.31575810912744356,"cvY":0.5209100267223356}}
-PROBE 25.3 s
+{"stand":{"ctx":"running","enabled":true,"um":true,"paare":6,"steht":true},"wahl":{"hz":206.9823760986328,"kandidaten":14,"zensus":[["wind",-32.6]]},"fpsVor":53.1,"bilder":168,"fenster":102,"r0":{"lagS":0,"r":0.8660058517902929,"n":102,"cvX":0.37649615943115866,"cvY":0.5560204049566873},"best":{"lagS":-0.2,"r":0.8674266719355671,"n":101,"cvX":0.3775928260902248,"cvY":0.5591519776613935}}
+PROBE 24.8 s
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3

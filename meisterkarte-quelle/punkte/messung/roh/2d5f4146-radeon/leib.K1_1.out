@@ -9,6 +9,12 @@ timeout 120 $W umstellen --ort wiese > /dev/null 2>&1
 teil LATENZ1 $W latenz --proben 15 --sicht ego,third --verb gehen,wechsel --json "C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\2d5f4146-radeon\leib.K1_1.json.lauf1.json"
 node -e 'const fs = require("fs"); const [aus, ...f] = process.argv.slice(1); fs.writeFileSync(aus, JSON.stringify({ laeufe: f.map((x) => { try { return JSON.parse(fs.readFileSync(x, "utf8")); } catch (_e) { return null; } }) }));' "C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\2d5f4146-radeon\leib.K1_1.json" "C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\2d5f4146-radeon\leib.K1_1.json.lauf1.json"
 @@PUNKTE@@ LATENZ1
+ego/gehen {"n":15,"fehlt":0,"p50":47.8,"p95":67.7,"max":67.7,"eingabe":0.5,"hoerer":0.1,"kette":20.4,"kurve":25.4,"takte":6}
+ego/wechsel {"n":15,"fehlt":0,"p50":21.7,"p95":38.6,"max":38.6,"eingabe":0.4,"hoerer":0.4,"kette":20.9,"kurve":0,"takte":2}
+third/gehen {"n":15,"fehlt":0,"p50":42.4,"p95":82.1,"max":82.1,"eingabe":0.5,"hoerer":0,"kette":23.5,"kurve":21.4,"takte":5}
+third/wechsel {"n":15,"fehlt":0,"p50":16.2,"p95":29.2,"max":29.2,"eingabe":0.5,"hoerer":0.4,"kette":15.7,"kurve":0,"takte":2}
+LATENZ ROT (Bild 33.66 ms) ego/gehen p95 67.7 ms > 50 (fehlt 0) — Täter kurve 25.4 ms, 6 Takte · third/gehen p95 82.1 ms > 50 (fehlt 0) — Täter kette 23.5 ms, 5 Takte
+@@PUNKTE@@ EXIT 1
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3

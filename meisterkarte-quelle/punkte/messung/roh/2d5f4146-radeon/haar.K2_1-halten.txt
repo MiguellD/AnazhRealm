@@ -1,7 +1,8 @@
 {
- "ms": 2149,
+ "ms": 2032,
  "ergebnis": {
   "gehalten": [
+   "spiegel",
    "leib"
   ],
   "takte": 16,
