@@ -1,7 +1,7 @@
 {
  "sha": "dcc3361558060fce198f1666eba3720e574bf5a7",
  "geraet": "gtx",
- "zeit": "2026-11-10T08:26:57.223Z",
+ "zeit": "2026-11-10T08:32:20.893Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "haar.K2#1": {
@@ -49,6 +49,55 @@
    },
    "zeit": "2026-11-10T06:52:17.566Z",
    "abdruck": "ac98a8751e4d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "lod.K5#1": {
+   "gruen": false,
+   "zahl": "Baum 4.84 px · Haus 0.13 px · Tor 0.18 px · Wagen 0.03 px (Soll ≤ 1 px am Wechsel-Abstand, 1920 × 1080) · gate L2: Exemplar 68 px, [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.73,
+   "grund": "ROT: Baum 4.84 px · Haus 0.13 px · Tor 0.18 px · Wagen 0.03 px (Soll ≤ 1 px am Wechsel-Abstand, 1920 × 1080) · gate L2: Exemplar 68 px, [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "s": 43.7,
+   "fremd": {
+    "s": 45.9,
+    "takte": 21,
+    "fremdS": 81.63,
+    "kerne": 1.777,
+    "fensterKerne": 1.894,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      46.77
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      8.28
+     ],
+     [
+      "MsMpEng.exe",
+      8.06
+     ]
+    ],
+    "dienerS": 16.08,
+    "diener": [
+     [
+      "System",
+      7.05
+     ],
+     [
+      "dwm.exe",
+      6.23
+     ]
+    ],
+    "eigenS": 85.25,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-10T08:32:20.893Z",
+   "abdruck": "ca610f2672bb",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
@@ -602,7 +651,7 @@
   }
  },
  "sitzung": {
-  "start": "2026-11-10T08:26:21.377Z",
+  "start": "2026-11-10T08:31:43.739Z",
   "port": 7804,
   "warten": 0.01,
   "bootS": 6.8,
@@ -611,10 +660,10 @@
   "freigaben": [],
   "orte": [
    {
-    "ort": "genesis",
-    "vor": "licht.K1#1",
-    "s": 27.5,
-    "takte": 608,
+    "ort": "wiese",
+    "vor": "lod.K5#1",
+    "s": 28.8,
+    "takte": 626,
     "chunks": 81,
     "nach": null
    }
@@ -631,19 +680,12 @@
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
-   "ortImDeckel": [
-    {
-     "probe": "licht.K1#1",
-     "m": 1083,
-     "ringVor": 4,
-     "ringMin": 0
-    }
-   ],
-   "zapfen": 120,
+   "ortImDeckel": [],
+   "zapfen": 74,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 129.1,
-  "minuten": 2.21
+  "fahrtS": 80.7,
+  "minuten": 1.42
  }
 }
