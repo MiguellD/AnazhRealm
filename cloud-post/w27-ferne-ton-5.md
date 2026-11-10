@@ -21,6 +21,8 @@ ABGABE 80bcd3089d038480f1988b8794799c473ae94f36 — Abgabe w27-ferne-ton-5 (Zwei
   - Bild wiese@0,5 GTX 1050 Luma 44,1 (vorher 43,9), kein Rückfall gesehen.
   - Lokal am Kopf GRÜN (Chrome 148 wie die CI): check · lint · format · playtest voll · playtest:fast · welt-boot · Fernwald · Werk im Wasser · Körper-Stand · Wasser-Leben · weg-boden · chunk-satz · asset-contract · post-kette und ego-schatten (kein [ERROR] STOFF).
 - **Ehrlich offen.**
+  - Die Probe der Abgabe 80bcd308 lief auf der Radeon: ROT mit genau den Zahlen von main (6b7d389a, Vorher am main-Baum) — K1-2 ist auf der
+    GTX 1050 GRÜN an 78b11fb7 (derselbe Baum vor den Merges mit main fbbeb318 und 20a01782; sie berühren die Luft nicht).
   - ferne.K1#2 auf der Radeon ROT, an main identisch (6b7d389a): HIMMEL „nicht blau“ 0,1287/0,1182/0,1066, JE KANAL Uhr 0,27 ungemessen, KANTE 2,15 %. Der Horizont trägt die In-Streuung ohne die einfache Streuung der Sonne — Verdacht der Luftschatten (`luftSicht` über `_horizontSicht`) im Weg `--eigen`; die Station der Radeon (Sitzung) maß an 87537d3f nur FARBTON. Nicht geschnitten.
 - FUND: stamm/bild-himmel.js:2361 `luftSicht` · die Radeon liest im Schuss β 1 die In-Streuung ohne Sonne, GTX und swiftshader nicht · ferne.K1#2 Radeon (HIMMEL, JE KANAL, KANTE) · M
 - FUND: scripts/lib/welt-boot.cjs Rezept `null` · lokale Linsen fahren Chromium 153 (PUPPETEER_EXECUTABLE_PATH), die CI Chrome 148 — andere Welt ohne Bild bis zu dieser Abgabe · Linsen-Parität · S
