@@ -1038,25 +1038,27 @@ async function himmelProbe(page, taub) {
 // 27,0 ohne Sternen-Licht, die Umgebung 0,290 → 0,029). Der Schein „sterne" kann den Boden darum nie mehr schwärzen; der Schein
 // „kamera" (Selbsttest) legt die Stufen der Kamera 2 tiefer (linear × 1/4: Luma 27 → ~9 sRGB), die Probe MUSS
 // `_dayNightApplyBelichtung` nennen. Das Sternen-Licht selbst wacht die Umgebung (der Himmel folgt dem Sprung, unten), den
-// Kontrast der Nacht gate:post-kette (h), die Dämmerung die Tag-Achse.
+// Kontrast der Nacht gate:post-kette (h), die Dämmerung die Tag-Achse. DER TÄTER BEIM NAMEN (w27-boden-nah-2): trägt das Mittel
+// und reißt nur der Anteil abgesoffen, ist es der STOFF — das Himmels-Bild des Mikro-Reliefs (`_mikroStoff`) hält seinen Boden
+// nicht (`TERRAIN_BUMP.mulde`). Der Zug z352 fiel so (w26-boden-nah, Korn × Kavität 3,6 linear: Luma 24,6, abgesoffen 10,0 % auf
+// der Radeon wie auf swiftshader; main mit 2,1 stand bei 4,0 %, pascal bei 6,4 %), und das Urteil nannte Belichtung und
+// Post-Kette. Der Zweig „kein Sternen-Licht" fiel dafür: seit licht.K1 schwärzt es den Boden nie (oben). Selbsttest: die Zahlen
+// von z352 MÜSSEN `_mikroStoff` nennen. Die letzte Zeile des Laufs trägt Luma und Anteil der Nacht (der Probe-Post liest sie).
 const S0_NACHT = { nacht: { luma: 22, schwarz: 0.05 } };
-function s0NachtUrteil(k, e, soll) {
-    const b = [];
-    const wann = "um Mitternacht";
+function s0NachtUrteil(e, soll) {
     const g = e.grund;
-    if (!g) return [`S0 Nacht: kein Boden im Schuss ${wann} — die Probe ist blind`];
-    if (g.luma >= soll.luma && g.schwarz <= soll.schwarz) return b;
+    if (!g) return ["S0 Nacht: kein Boden im Schuss um Mitternacht — die Probe ist blind"];
+    if (g.luma >= soll.luma && g.schwarz <= soll.schwarz) return [];
     const taeter =
-        e.stern == null || !(e.stern > 0)
-            ? `der Himmel der Nacht trägt kein eigenes Licht (Sternen-Licht ${e.stern}, \`_atmoSternenLicht\` über ` +
-              "`ATMO_GESETZ.nacht.himmel`): nur der Mond streut"
+        g.luma >= soll.luma
+            ? "das Mittel trägt, die Mulden saufen ab — das Himmels-Bild des Mikro-Reliefs hält seinen Boden nicht (`_mikroStoff`, " +
+              "`TERRAIN_BUMP.mulde`)"
             : `der Himmel trägt Licht (Sternen-Licht ${e.stern}, Umgebung ${e.himmel}), das Bild schwärzt es — die Belichtung ` +
               "der Nacht (`_dayNightApplyBelichtung`) oder die Post-Kette (Kontrast 25c, gate:post-kette (h))";
-    b.push(
-        `S0 Nacht: der Boden 1–3 m ohne das Feuer ${wann} trägt Luma ${g.luma}, abgesoffen ${(100 * g.schwarz).toFixed(1)} % ` +
-            `(Soll ≥ ${soll.luma} und ≤ ${(100 * soll.schwarz).toFixed(1)} %, die Nacht der EINEN Licht-Kette) — ${taeter}`
-    );
-    return b;
+    return [
+        `S0 Nacht: der Boden 1–3 m ohne das Feuer um Mitternacht trägt Luma ${g.luma}, abgesoffen ${(100 * g.schwarz).toFixed(1)} % ` +
+            `(Soll ≥ ${soll.luma} und ≤ ${(100 * soll.schwarz).toFixed(1)} %, die Nacht der EINEN Licht-Kette) — ${taeter}`,
+    ];
 }
 const S0_FRIST_S = Math.max(30, Number(opt("--frist", 170)) || 170);
 async function lichtLauf() {
@@ -1507,12 +1509,11 @@ async function lichtLauf() {
         );
     }
     // DIE NACHT ohne das Feuer (oben `S0_NACHT`)
-    for (const k of ["nacht"])
-        if (sauber && !sauber.fehler) {
-            const e = ergebnis[k];
-            if (!e) befunde.push(`S0 Nacht (${k}): der Schuss lief nicht`);
-            else if (!e.fehler) befunde.push(...s0NachtUrteil(k, e, S0_NACHT[k]));
-        }
+    const nacht = ergebnis.nacht;
+    if (sauber && !sauber.fehler) {
+        if (!nacht) befunde.push("S0 Nacht: der Schuss lief nicht");
+        else if (!nacht.fehler) befunde.push(...s0NachtUrteil(nacht, S0_NACHT.nacht));
+    }
     for (const [k, e] of Object.entries(himmel))
         for (const h of e.himmel)
             console.log(
@@ -1631,16 +1632,18 @@ async function lichtLauf() {
         );
         const st = ergebnis.kamera;
         const kameraTreffer =
-            st && !st.fehler ? s0NachtUrteil("nacht", st, S0_NACHT.nacht).find((b) => /`_dayNightApplyBelichtung`/.test(b)) : null;
+            st && !st.fehler ? s0NachtUrteil(st, S0_NACHT.nacht).find((b) => /`_dayNightApplyBelichtung`/.test(b)) : null;
         console.log(
-            `  SELBSTTEST S0 NACHT (die Kamera der Nacht 2 Stufen tiefer): ${kameraTreffer ? "getroffen — " + kameraTreffer.split(" — ")[0] + " — " + kameraTreffer.split(" — ")[1].slice(0, 60) : "BLIND " + JSON.stringify(st && (st.grund || st.fehler))}`
+            `  SELBSTTEST S0 NACHT (die Kamera der Nacht 2 Stufen tiefer): ${kameraTreffer ? "getroffen — " + kameraTreffer.slice(0, 230) : "BLIND " + JSON.stringify(st && (st.grund || st.fehler))}`
         );
         pass =
             pass && getroffen && farbGetroffen && tagGetroffen && bindGetroffen && k17Getroffen && nahGetroffen && liesGetroffen && wacheGetroffen;
-        pass = pass && taubGetroffen && !!kameraTreffer;
+        const stoffTreffer = /`_mikroStoff`/.test(s0NachtUrteil({ grund: { luma: 24.6, schwarz: 0.1 } }, S0_NACHT.nacht));
+        console.log(`  SELBSTTEST S0 NACHT (z352): ${stoffTreffer ? "getroffen — der Stoff" : "BLIND"}`);
+        pass = pass && taubGetroffen && !!kameraTreffer && stoffTreffer;
     }
     console.log(
-        `\n${pass ? "✅" : "⛔"} S0 BILD ${pass ? "GRÜN: die Feuerstelle trägt den Feuerkreis aus 2 m in der Ausgabe" : "ROT"} (${Math.round((Date.now() - t0) / 1000)} s, ${ECHT ? "echte GPU" : adapter.fehlt || adapter.vendor + "/" + adapter.architecture} · Holz ${HOLZ})\n`
+        `\n${pass ? "✅" : "⛔"} S0 BILD ${pass ? "GRÜN: die Feuerstelle trägt den Feuerkreis aus 2 m in der Ausgabe" : "ROT"} · Nacht ${JSON.stringify(nacht?.grund)} (${Math.round((Date.now() - t0) / 1000)} s, ${ECHT ? "echte GPU" : adapter.fehlt || adapter.vendor + "/" + adapter.architecture} · Holz ${HOLZ})\n`
     );
     process.exit(pass ? 0 : 1);
 }
