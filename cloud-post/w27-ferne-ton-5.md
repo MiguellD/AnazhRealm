@@ -13,8 +13,8 @@ ABGABE 790ed7660709ff8543de205fa71686e2b26438d9 — Abgabe w27-ferne-ton-5 (main
   - bild:wiese@0.5 GTX 1050 Luma 43,8, angesehen: Wiese in Sonne und Schatten, Bäume, Himmel blau zwischen dem Laub.
   - Lokal am Kopf GRÜN (Chrome 148 wie die CI): check · playtest:fast · welt-boot · post-kette und ego-schatten (kein [ERROR] STOFF außer der Injektion des Selbsttests) · Fernwald (957 Bäume) · Werk im Wasser · luft-tiefe.
   - Wachstum (Merge-Basis integ-probe): Prüf +234 / Spiel +3 281 Atome, erlaubt 1 640; werkbank.cjs ohne neue Zeile, die Diagnose fiel.
+- **Probe der Abgabe 790ed766: GRÜN.** OMEN GTX 1060 gate:luft-tiefe:echt LUFT GRÜN, Farbton 8 km 0,03–2,71° (vorher main 78d37554 13,77°); Radeon zeit:gate:luft-tiefe:echt LUFT GRÜN 0,05–2,75°; bild:wiese@0.5 OMEN Luma 43,8. Der Punkt „OMEN am Kopf ungeprobt“ fällt.
 - **Ehrlich offen.**
-  - Die OMEN ist am Kopf nicht geprobt (zuletzt 638183fb LUFT GRÜN); die Probe der Abgabe ruft zeit: und gate: erneut.
   - Die anderen Leser außerhalb des Takts (Prüfbühne `_himmelFrisch`, Aufnahme, Wasser-Linse) lesen jetzt false statt einer leeren Tafel, solange ihre Pipeline übersetzt — auf echter GPU nur an der Luft-Linse gemessen.
   - `_horizontHimmel` (stamm/dirigent-ankunft.js) blieb unberührt; ich brauche dort nichts.
 - FUND: stamm/bild-kosten.js:924 `_einmalRender` · außerhalb des Vorbaus galt jeder Einmal-Render als ganz, auch wenn sein Draw auf die Pipeline eines Takts wartete (Radeon: Ψ_ms leer, Himmel grau, ferne.K1#2 ROT an main und Zweig) · fail-soft · M
