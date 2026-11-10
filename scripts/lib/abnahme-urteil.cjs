@@ -469,7 +469,7 @@ function spiegelDaten() {
             a = S.instancedArray(tw * th, "float"),
             i = S.instanceIndex;
         r.state.renderer.compute(S.Fn(() => a.element(i).assign(S.texture(q).load(S.ivec2(S.int(i.mod(tw)), S.int(i.div(tw)))).r))().compute(tw * th));
-        const tiefe = new Float32Array(await r.state.renderer.getArrayBufferAsync(a.value));
+        const tiefe = new Float32Array(await window.__pufferLesen(a.value, "spiegelDaten Tiefe"));
         r._gpuAbschied(a.value);
         cam.updateMatrixWorld(true);
         const T = window.THREE,
