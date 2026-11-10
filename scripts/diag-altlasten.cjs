@@ -2894,6 +2894,19 @@ function linsenDateien(root) {
         .map((f) => path.join(d, f));
 }
 
+// DIE BÄNDER RUFEN MIT (z363): ein Band des Läufers (scripts/playtest) ruft die Stamm-Methoden in der Seite am Realm `r` —
+// nach w27-takt-streu riefen das Nah-Streu-Band und die Ernte-Probe `r._streuNahBereich(…)`, erst der volle Playtest im Zug
+// fand es. Die Bänder tragen gefallene Namen auch als Suchtext ihrer Absenz-Proben, darum zählt dort nur der AUFRUF eines
+// gefallenen Methoden-Namens am Realm. `ersatz` (Selbsttest): { datei: Text } statt der Platte.
+function scanBandAufrufe(root, ersatz) {
+    const ruf = new RegExp(String.raw`\br\s*\.\s*(${FORBIDDEN.map((z) => z.token).filter((t) => /^_\w+$/.test(t)).join("|")})\s*\(`, "g"); // prettier-ignore
+    const texte = ersatz || Object.fromEntries(baender().map((f) => [f, ausDatei(path.join(root, f))]));
+    return Object.entries(texte).flatMap(([f, t]) => {
+        const code = stripComments(t);
+        return [...code.matchAll(ruf)].map((m) => `${f}:${code.slice(0, m.index).split("\n").length} ruft r.${m[1]}() (fiel: ${FORBIDDEN.find((z) => z.token === m[1]).fiel})`); // prettier-ignore
+    });
+}
+
 // DIE STAMM-LESER-WAND (Stamm-Zerlegung): der Name der Stamm-Datei steht als Lese-Ziel — ein String-
 // Literal, das die Datei nennt („anazhRealm.js", „/anazhRealm.js", „http://…/anazhRealm.js", mit ?v=) — nur in
 // scripts/lib/stamm.cjs. Jeder andere Leser liest den Stamm über die EINE Schnittstelle (stammLib.text · dateien · liefere
@@ -3313,6 +3326,16 @@ function main() {
         console.log(
             `✅ SELBST-TEST: die Linsen stehen in der Wand (${linsenDateien(root).length} Dateien in scripts/lib, der tote Aufruf in der Stand-Linse erkannt)`
         );
+        // Die Bänder rufen mit: der tote Aufruf aus z363 kehrt in ein Band zurück und wird beim Namen genannt; derselbe Name als
+        // Suchtext einer Absenz-Probe, im Kommentar und an einem fremden Objekt bleibt still, die Bänder heute ohne Fund.
+        const bandRot = scanBandAufrufe(root, {
+            x: 'const v = r._streuNahBereich(s, k);\n// r._streuNahBereich(s, k)\nconst t = "_streuNahBereich";\nq._streuNahBereich(s);\n',
+        }).concat(scanBandAufrufe(root));
+        if (bandRot.length !== 1 || !/^x:1 ruft r\._streuNahBereich\(\) \(fiel: w27-takt-streu/.test(bandRot[0])) {
+            console.log(`❌ SELBST-TEST: die Band-Aufruf-Wand — ${JSON.stringify(bandRot).slice(0, 400)}`);
+            process.exit(1);
+        }
+        console.log("✅ SELBST-TEST: die Band-Aufruf-Wand feuert (r._streuNahBereich im Band beim Namen; Suchtext, Kommentar, fremdes Objekt still; heute 0)"); // prettier-ignore
         // Die Stoff-Wand muss feuern: (1) JEDER laute Bruch des Stamms, wieder still gemacht
         // (sein catch meldet nur WARN, die Zeilen bleiben), ist rot an seiner Zeile — die Wand sieht jeden ihrer Schnitte,
         // gleich ob der Versuch TSL liest, ein Render-Objekt baut, den Graphen läuft oder einen Bauer ruft (bis hierher
@@ -3653,6 +3676,7 @@ function main() {
     }
 
     const errs = scan(files)
+        .concat(scanBandAufrufe(root))
         .concat(scanZwillinge())
         .concat(scanLabBuster())
         .concat(scanInstanzWand(stammLib.text(root)))
