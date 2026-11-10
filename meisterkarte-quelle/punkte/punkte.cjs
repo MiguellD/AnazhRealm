@@ -5687,8 +5687,9 @@ async function selbsttest(o = {}) {
     }
     // (5k) R6 NACH KONSUM (Abschnitt „Konsum“; die Linse mit ihren Mutanten): eine Station veraltet nur, wenn sie den geänderten Code
     // AUSFÜHRTE. Ende zu Ende: der Läufer, der Zeuge in jedem node-Prozess, ein Browser mit Seite und Faden — die Linsen-Bibliothek
-    // scripts/lib/linse.cjs führt `ja` aus, reicht `inSeite` als Text an die Seite und ruft `nein` nie; die Seite führt `getan` aus und
-    // `nie` nie, der Faden `imFaden`, sie holt daten.json; ein Kind ruft `k` und wird getötet (der Zeuge bittet es vorher um den Abschluss)
+    // scripts/lib/linse.cjs führt `ja` aus, reicht `inSeite` als Text an die Seite und ruft `nein` nie; beim Laden gießt sie `gegossen`
+    // und `nieGegossen` in Install-Texte, die Linse gibt nur den ersten an die Seite; die Seite führt `getan` aus und `nie` nie, der
+    // Faden `imFaden`, sie holt daten.json; ein Kind ruft `k` und wird getötet (der Zeuge bittet es vorher um den Abschluss)
     {
         const baum = fs.mkdtempSync(path.join(os.tmpdir(), "punkte-konsum-"));
         const fn = (n, r) => "function " + n + "() {\n    return " + r + ";\n}\n";
@@ -5700,14 +5701,16 @@ async function selbsttest(o = {}) {
             "kind.js": "exports.k = " + fn("", 1) + "exports.nie = " + fn("", 2),
             "daten.json": '{ "n": 1 }',
             "scripts/werk.sh": "echo 1\n",
-            "scripts/lib/linse.cjs": "const TAFEL = { soll: 1 };\n" + fn("ja", "TAFEL.soll") + fn("nein", 2) + fn("inSeite", 3) + "module.exports = { ja, nein, inSeite };\n",
+            "scripts/lib/linse.cjs": "const TAFEL = { soll: 1 };\n" + fn("ja", "TAFEL.soll") + fn("nein", 2) + fn("inSeite", 3) + fn("gegossen", 4) + fn("nieGegossen", 5) +
+                "const INSTALL = `window.__g = ${gegossen.toString()};`;\nconst NIE_INSTALL = `window.__n = ${nieGegossen.toString()};`;\nmodule.exports = { ja, nein, inSeite, INSTALL, NIE_INSTALL };\n",
             "scripts/lauf.cjs": ['const http = require("http"), fs = require("fs"), path = require("path"), L = require("./lib/linse.cjs");', "L.ja();",
                 'const kind = require("child_process").spawn(process.execPath, ["-e", "require(\'./kind.js\').k(); console.log(1); setInterval(() => {}, 1000)"], { stdio: ["ignore", "pipe", "inherit"] });',
                 'kind.stdout.once("data", () => kind.kill());',
                 'const s = http.createServer((q, a) => fs.readFile(path.join(process.cwd(), q.url.slice(1)), (e, d) => a.end(e ? "" : d)));',
                 's.listen(0, "127.0.0.1", async () => {', '    const b = await require("' + pp + '").launch({ args: ["--no-sandbox"] });', "    const p = await b.newPage();",
                 '    await p.goto("http://127.0.0.1:" + s.address().port + "/probe.html");', "    await p.waitForFunction(() => window.da === 6, { timeout: 20000 });",
-                "    const drei = await p.evaluate(L.inSeite);", "    await b.close();", "    s.close();", "    fs.writeFileSync(process.argv[2], JSON.stringify({ n: drei - 3 }));", "});", ""].join("\n"),
+                "    const drei = await p.evaluate(L.inSeite);", "    await p.evaluate(L.INSTALL);", '    const vier = await p.evaluate("window.__g()");', "    await b.close();", "    s.close();",
+                "    fs.writeFileSync(process.argv[2], JSON.stringify({ n: drei - 3 + vier - 4 }));", "});", ""].join("\n"),
         };
         for (const [n, x] of Object.entries(texte)) (fs.mkdirSync(path.dirname(path.join(baum, n)), { recursive: true }), fs.writeFileSync(path.join(baum, n), x));
         const acorn = acornVon(spielRepo());
@@ -5715,9 +5718,9 @@ async function selbsttest(o = {}) {
         const ek = await fahreStation(sk, { ...ctx("konsum"), baum, deckelMinS: 120 });
         const K = ek.konsum ? konsumVon(ek, null).k : {};
         const zeilen = (f) => (!K[f] || K[f] === "*" ? K[f] : skriptZeilen(skriptVon(texte[f], acorn), K[f].split(":")[1]).map(([x, y]) => (x === y ? x : x + "-" + y)).join(","));
-        // `nein` (Zeilen 5–7) und `nie` fehlen bis auf die Zeile ihrer schließenden Klammer (ihr Umbruch ist Kopf-Code)
-        const soll = { "scripts/lib/linse.cjs": "1-4,7-13", "probe.js": "1-3,6-11", "faden.js": "1-3,6-9", "kind.js": "1-4,6-8", "daten.json": "*", "probe.html": "*" };
-        pruef("KONSUM Ende zu Ende: ausgeführt und gelesen, nie das Nie — die Linsen-Bibliothek im Knoten (ihr Kopf-Code, `ja`, der Text von `inSeite`; nie `nein`), die Seite, der Faden, das getötete Kind, die JSON; die Seite trägt er (kein Zeit-Urteil)",
+        // `nein` (Zeilen 5–7), `nieGegossen` (14–16) und `nie` fehlen bis auf die Zeile ihrer schließenden Klammer (ihr Umbruch ist Kopf-Code)
+        const soll = { "scripts/lib/linse.cjs": "1-4,7-13,16-21", "probe.js": "1-3,6-11", "faden.js": "1-3,6-9", "kind.js": "1-4,6-8", "daten.json": "*", "probe.html": "*" };
+        pruef("KONSUM Ende zu Ende: ausgeführt und gelesen, nie das Nie — die Linsen-Bibliothek im Knoten (ihr Kopf-Code, `ja`, der Text von `inSeite`, der an die Seite gegebene Install-Text; nie `nein`, nie der nur gegossene), die Seite, der Faden, das getötete Kind, die JSON; die Seite trägt er (kein Zeit-Urteil)",
             ek.gruen && ek.konsumSeite === true && Object.entries(soll).every(([f, s]) => zeilen(f) === s) && /^1-/.test(zeilen("scripts/lauf.cjs") || ""),
             JSON.stringify({ gruen: ek.gruen, zahl: ek.zahl, seite: ek.konsumSeite, fehlt: ek.konsumFehlt, zeilen: Object.fromEntries(Object.keys(K).map((f) => [f, zeilen(f)])) }));
         // DIE MUTANTEN an der Buchung: (a) eine Änderung in einer ausgeführten Funktion macht die Station alt, (b) eine Änderung in einer nie
@@ -5739,7 +5742,9 @@ async function selbsttest(o = {}) {
             /^Linse seit der Messung geändert \(R6: scripts\/lib\/linse\.cjs\)$/, ["scripts/lib/linse.cjs"]);
         pruef("KONSUM (c) die Station ohne Konsum-Menge ist beim Namen gezählt", c.r6.konsum === 0 && c.r6.naehe.join() === "gelaende.K4#1 headless" && /ohne Konsum-Menge \(R6 nach Linse und Glob wie bisher\) 1: gelaende\.K4#1 headless/.test(r6Zeile(c.r6)), r6Zeile(c.r6));
         fall("KONSUM Text von `inSeite` (an die Seite gereicht, im Knoten nie gerufen) geändert → alt → 0", mitK, d("scripts/lib/linse.cjs", 9, 9), 0, /^Konsum/);
-        fall("KONSUM Kopf-Code der Linse geändert (die Tafel, `module.exports`) → alt → 0", mitK, d("scripts/lib/linse.cjs", 11, 11), 0, /^Konsum/);
+        fall("KONSUM Kopf-Code der Linse geändert (die Tafel, `module.exports`) → alt → 0", mitK, d("scripts/lib/linse.cjs", 19, 19), 0, /^Konsum/);
+        fall("KONSUM `gegossen` geändert (beim Laden in den Install-Text gegossen UND an die Seite gegeben) → alt → 0", mitK, d("scripts/lib/linse.cjs", 12, 12), 0, /^Konsum/);
+        fall("KONSUM `nieGegossen` geändert (beim Laden gegossen, nie ausgegeben: eine Konstante führt nichts aus) → frisch → 1", mitK, d("scripts/lib/linse.cjs", 15, 15), 1);
         fall("KONSUM Einfügung im Rumpf von `nein` → frisch → 1", mitK, d("scripts/lib/linse.cjs", 5, 6), 1);
         // EIN KOMMENTAR FÜHRT NICHTS AUS: ein Hunk aus Zeilen-Kommentaren im Kopf-Code lässt die Station frisch — bringt er Code, nie;
         // in einem Schablonen-Text ist `//` Inhalt (die Mutante), dort gilt die Regel nie
@@ -5753,7 +5758,7 @@ async function selbsttest(o = {}) {
             const wk = stempelDiff("a.js", ["diff --git a/a.js b/a.js", "@@ -3,2 +3 @@", "-// über f", "-// zweite Zeile", "+// über f, neu", "@@ -6 +5 @@", "-    return A;", "+    return A + 1; // mehr"].join("\n")).zeilen.get("a.js");
             pruef("KONSUM Diff: der Hunk nennt, ob er nur Zeilen-Kommentare bringt", wk.length === 2 && wk[0].nurKommentar === true && wk[1].nurKommentar === false && !wk[0].ein, JSON.stringify(wk.map((x) => [...x, x.nurKommentar, x.ein])));
         }
-        fall("KONSUM Code ans Ende der Linse angefügt (Kopf-Code) → alt → 0", mitK, d("scripts/lib/linse.cjs", 12, 13), 0, /^Konsum/);
+        fall("KONSUM Code ans Ende der Linse angefügt (Kopf-Code) → alt → 0", mitK, d("scripts/lib/linse.cjs", 20, 21), 0, /^Konsum/);
         fall("KONSUM Seite: `nie` geändert → frisch → 1", mitK, d("probe.js", 5, 5), 1);
         fall("KONSUM Seite: `getan` geändert → alt → 0", mitK, d("probe.js", 2, 2), 0, /^Konsum/);
         fall("KONSUM geladene JSON geändert → alt → 0", mitK, () => ({ dateien: ["daten.json"], zeilen: new Map(), neu: new Set() }), 0, /^Konsum/);
@@ -5830,7 +5835,7 @@ async function selbsttest(o = {}) {
             await new Promise((r) => welt.on("exit", r));
             const stumm = await konsumNahme(ordner, 3);
             pruef("KONSUM-FENSTER einer lebenden Welt: das Boot (nur Kopf-Code), dann je Fenster, was SEIT der letzten Nahme lief (`ja`, danach `nein` ohne `ja`); eine Welt, die endete, beim Namen",
-                bereit && boot === "1,4,7,10-13" && f1 === "1-4,7,10-13" && f2 === "1,4-7,10-13" && /kein Prozess der Welt lebt/.test(stumm.fehlt || ""), JSON.stringify({ bereit, boot, f1, f2, stumm }));
+                bereit && boot === "1,4,7,10,13,16-21" && f1 === "1-4,7,10,13,16-21" && f2 === "1,4-7,10,13,16-21" && /kein Prozess der Welt lebt/.test(stumm.fehlt || ""), JSON.stringify({ bereit, boot, f1, f2, stumm }));
         }
         // DER ZWEITE NUTZEN (`beruehrt`): der Diff eines Zweigs gegen dieselbe Konsum-Menge — berührt, wer an der Basis frisch gilt und am
         // Kopf nicht mehr; wer schon an der Basis alt ist, steht als offen (kein Urteil aus dieser Messung)

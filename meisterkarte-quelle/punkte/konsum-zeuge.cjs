@@ -2,8 +2,13 @@
 // Station (NODE_OPTIONS --require, wie gpu-zeuge.cjs) — an jedem SHA, in jede Linse, die Werkbank und den save-server.
 // Er nennt, was die Station WIRKLICH ausführte und las:
 //   · DER KNOTEN (immer): die Precise Coverage je FUNKTION des Node-Prozesses ab dem Start (binär, V8 `Profiler.startPreciseCoverage`
-//     über `inspector`). Eine gerufene Funktion zählt ganz, auch ihr nie genommener Zweig. Ein Funktions-Text, den der Prozess las
-//     (`fn.toString()` — puppeteer schickt so jede Funktion in die Seite), zählt als ausgeführt.
+//     über `inspector`). Eine gerufene Funktion zählt ganz, auch ihr nie genommener Zweig. Ein Funktions-Text, den der Prozess zur
+//     LAUFZEIT las (`fn.toString()` — puppeteer schickt so jede Funktion in die Seite), zählt als ausgeführt. Ein Text, den ein Modul
+//     BEIM LADEN las (die Linsen-Bibliotheken gießen ihre Seiten-Funktionen dort in Install-Texte: 87 Stellen unter scripts/lib,
+//     draw-zaehler.cjs `ZAEHLER_INSTALL` — jeder Lader hätte sonst jede davon „ausgeführt“), zählt erst, wenn der Prozess ihn AUSGIBT:
+//     an eine Seite (CDP), an einen Dienst (HTTP — die Probe an die Werkbank), an ein Kind (argv, Umgebung, Eingabe), in eine Datei
+//     oder in eine vm. Hält er ihn nur als Konstante, führt ihn niemand aus. (Nicht gesehen: `eval`/`new Function` im Prozess selbst,
+//     IPC und stdout — dorthin gießt unter scripts/ am 10.11. keine Stelle einen beim Laden gelesenen Text.)
 //   · `skripte`: jedes geladene Skript (Modul des Prozesses, Skript der Seite). Sein KOPF-CODE (alles außerhalb seiner Funktionen:
 //     Tafeln, Konstanten, `module.exports`) zählt, sobald es geladen ist — die Faltung der Maschine liest ihn aus dem Parser, nie aus
 //     der Coverage: V8 verliert die Skript-Funktion nach der GC (10.11., diag-kopplung an 900c28e6: 9 von 88 Skripten der Seite ohne
@@ -24,8 +29,9 @@
 //     weiter nach dem Glob, `seite: false` beim Namen). Startet ein Prozess einen Browser ohne den Seiten-Zeugen, sagt er es (`browser`).
 // DIE FENSTER (die Welt der Sitzung lebt über viele Proben): legt der Läufer `nimm.<k>` in den Ordner, schreibt jeder lebende Prozess
 // `<id>.seg.<k>.json` — was er SEIT der letzten Nahme ausführte — und beginnt die Coverage neu (stop + start: der Binär-Modus meldet
-// eine Funktion sonst nur beim ersten Mal; gemessen an Node 22). `skripte`, `ganz` und `geladen` bleiben über die Fenster stehen (ein
-// geladenes Modul und eine gelesene Tafel wirken in jedem späteren Fenster).
+// eine Funktion sonst nur beim ersten Mal; gemessen an Node 22). `skripte`, `ganz`, `geladen` und jeder gelesene oder ausgegebene
+// Funktions-Text bleiben über die Fenster stehen (ein geladenes Modul, eine gelesene Tafel und eine Funktion, die einmal in der Seite
+// liegt, wirken in jedem späteren Fenster).
 // Je Prozess `<id>.offen` beim Start und `<id>.json` am Ende = { js: { pfad: { len, bereiche: [[von, bis)] } }, skripte, geladen, ganz,
 // warum, browser, seite } (Zeichen-Offsets der Datei im Baum) — ein `.offen` ohne Ende (hart getötet) macht den Konsum der Station ungültig, nie still
 // klein. Pfade relativ zum Spiel-Baum PUNKTE_KONSUM_BAUM, ohne node_modules. Er ändert keine Ausgabe.
@@ -41,7 +47,26 @@ if (KONSUM && BAUM) {
     const SEITE = process.env.PUNKTE_KONSUM_SEITE === "1";
     const ICH = process.pid + (faden.isMainThread ? "" : "-" + faden.threadId);
     const { readFileSync: lies, readdirSync: liste, writeFileSync: schreibe, existsSync: gibt } = fs;
-    const konsum = { js: new Map(), skripte: new Set(), geladen: new Set(), ganz: new Set(), texte: new Set(), ziele: new Set(), browser: false, warum: {}, blind: [] };
+    const konsum = { js: new Map(), skripte: new Set(), geladen: new Set(), ganz: new Set(), texte: new Set(), wartend: new Set(), ziele: new Set(), browser: false, warum: {}, blind: [] };
+    // DIE AUSGABE: jeder Text, den der Prozess aus der Hand gibt — trägt er einen beim Laden gelesenen Funktions-Text, zählt der als ausgeführt
+    const { createHash } = require("crypto");
+    const gesehen = new Set();
+    const ausgabe = (x) => {
+        if (!konsum.wartend.size || x == null) return;
+        if (typeof x !== "string") {
+            if (Buffer.isBuffer(x) && x.length < 4 << 20) return ausgabe(x.toString("utf8"));
+            if (Array.isArray(x)) return x.forEach(ausgabe);
+            if (typeof x === "object") for (const k of Object.keys(x)) ausgabe(x[k]);
+            return;
+        }
+        if (x.length < 13) return;
+        const k = x.length > 256 ? createHash("sha1").update(x).digest("base64") : x;
+        if (gesehen.has(k)) return;
+        gesehen.add(k);
+        for (const t of konsum.wartend) if (t.length <= x.length && x.includes(t)) (konsum.wartend.delete(t), konsum.texte.add(t));
+        // ein JSON-Rumpf trägt den Text verpackt
+        if (konsum.wartend.size && /^\s*[[{]/.test(x)) try { ausgabe(JSON.parse(x)); } catch (_e) { /* kein JSON */ }
+    };
     // eine Datei zählt GANZ — mit dem ersten Grund beim Namen (`warum`, die Faltung zählt ihn)
     const ganz = (p, grund) => (konsum.ganz.add(p), (konsum.warum[p] = konsum.warum[p] || grund));
     const relativ = (abs) => path.relative(BAUM, abs).split(path.sep).join("/");
@@ -193,6 +218,24 @@ if (KONSUM && BAUM) {
         };
         return browser;
     };
+    // was der Prozess an eine Seite gibt, geht durch die EINE `send` der CDP-Sitzungen (ihr Prototyp, einmal gefasst)
+    let cdpGefasst = false;
+    const cdpAusgabe = async (browser) => {
+        if (cdpGefasst) return;
+        try {
+            const s = await browser.target().createCDPSession();
+            const P = Object.getPrototypeOf(s), send = P.send;
+            P.send = function (methode, params) {
+                if (params && konsum.wartend.size) ausgabe(params);
+                return send.apply(this, arguments);
+            };
+            cdpGefasst = true;
+            await s.detach().catch(() => {});
+        } catch (_e) {
+            // ohne die send der Sitzungen bleibt die Ausgabe an die Seite ungesehen: jeder wartende Text zählt (stueck)
+            konsum.cdpBlind = true;
+        }
+    };
     // jeder puppeteer, den ein Modul lädt (die Bündel-Datei und ihr Standard-Objekt tragen je ein gebundenes launch): der Start eines
     // Browsers ist beim Namen (`browser`), mit dem Seiten-Zeugen trägt er die Coverage jeder Seite
     const laden = Module._load;
@@ -208,6 +251,7 @@ if (KONSUM && BAUM) {
                     o[weg] = async (...a) => {
                         konsum.browser = true;
                         const b = await start.apply(o, a);
+                        await cdpAusgabe(b);
                         return SEITE ? anBrowser(b) : b;
                     };
                 }
@@ -224,13 +268,19 @@ if (KONSUM && BAUM) {
     const beginne = () => sitz.post("Profiler.startPreciseCoverage", { callCount: false, detailed: false });
     beginne();
     const modul = new Set();
+    let ladeTiefe = 0; // > 0: der Kopf-Code eines Moduls läuft gerade
     for (const x of [".js", ".cjs"].filter((e) => Module._extensions[e])) {
         const o = Module._extensions[x];
         Module._extensions[x] = function (m, f) {
             modul.add(f);
             const p = pfadVon(pathToFileURL(f).href);
             if (p) konsum.skripte.add(p);
-            return o.apply(this, arguments);
+            ladeTiefe++;
+            try {
+                return o.apply(this, arguments);
+            } finally {
+                ladeTiefe--;
+            }
         };
     }
     const wo = (f) => (typeof f === "string" || f instanceof URL ? path.resolve(f instanceof URL ? fileURLToPath(f) : f) : null);
@@ -250,15 +300,40 @@ if (KONSUM && BAUM) {
     const textVon = Function.prototype.toString;
     Object.defineProperty(Function.prototype, "toString", { configurable: true, writable: true, value: function toString() {
         const t = textVon.call(this);
-        if (t.length > 12 && !konsum.texte.has(t) && !t.endsWith("{ [native code] }")) konsum.texte.add(t);
+        if (t.length > 12 && !konsum.texte.has(t) && !t.endsWith("{ [native code] }")) (ladeTiefe > 0 ? konsum.wartend : konsum.texte).add(t);
         return t;
     } });
+    // DIE AUSGÄNGE des Prozesses neben der Seite: eine Datei, eine vm, ein Dienst (HTTP-Rumpf, fetch), eine Antwort des eigenen Servers
+    for (const weg of ["writeFileSync", "appendFileSync", "writeFile", "appendFile"]) {
+        const alt = fs[weg];
+        fs[weg] = function (_f, daten) { ausgabe(daten); return alt.apply(this, arguments); };
+    }
+    for (const weg of ["writeFile", "appendFile"]) {
+        const alt = fs.promises[weg];
+        fs.promises[weg] = function (_f, daten) { ausgabe(daten); return alt.apply(this, arguments); };
+    }
+    const vm = require("vm");
+    for (const weg of ["runInContext", "runInNewContext", "runInThisContext", "compileFunction"]) {
+        const alt = vm[weg];
+        vm[weg] = function (code) { ausgabe(code); return alt.apply(this, arguments); };
+    }
+    vm.Script = new Proxy(vm.Script, { construct(Z, a, neu) { ausgabe(a[0]); return Reflect.construct(Z, a, neu); } });
+    const http = require("http");
+    for (const K of [http.ClientRequest, http.ServerResponse])
+        for (const weg of ["write", "end"]) {
+            const alt = K.prototype[weg];
+            K.prototype[weg] = function (stueck) { if (typeof stueck === "string" || (K === http.ClientRequest && Buffer.isBuffer(stueck))) ausgabe(stueck); return alt.apply(this, arguments); };
+        }
+    if (typeof globalThis.fetch === "function") {
+        const hole = globalThis.fetch;
+        globalThis.fetch = function (_u, o) { if (o && o.body) ausgabe(o.body); return hole.apply(this, arguments); };
+    }
 
     // EINE NAHME des Node-Prozesses → das Roh-Stück; `neu`: das Fenster schließt, die Coverage beginnt neu (die Bereiche des Fensters
     // fallen; die geladenen Skripte, das Gelesene und die Verzeichnisse bleiben)
     const stueck = (neu) => {
         sitz.post("Profiler.takePreciseCoverage", (e, r) => r && male(r.result));
-        const texte = [...konsum.texte];
+        const texte = [...konsum.texte, ...(konsum.cdpBlind ? konsum.wartend : [])];
         const js = {};
         for (const [p, e] of konsum.js) {
             if (!e) continue;
@@ -273,8 +348,8 @@ if (KONSUM && BAUM) {
         if (neu) {
             sitz.post("Profiler.stopPreciseCoverage");
             beginne();
+            // die gelesenen und ausgegebenen Funktions-Texte bleiben stehen: was einmal in der Seite liegt, wirkt in jedem späteren Fenster
             for (const e of konsum.js.values()) if (e) e.an.fill(0);
-            konsum.texte.clear();
         }
         return JSON.stringify({ js, skripte: [...konsum.skripte], geladen: [...konsum.geladen], ganz: [...konsum.ganz], warum: konsum.warum, browser: konsum.browser, seite: SEITE,
             npm: /(^|[\\/])(npm-cli\.js|npx-cli\.js|npm|npx)$/.test(process.argv[1] || ""), blind: konsum.blind });
@@ -325,6 +400,7 @@ if (KONSUM && BAUM) {
         kp.ChildProcess.prototype.spawn = function (o) {
             const env = o && Array.isArray(o.envPairs) ? Object.fromEntries(o.envPairs.map((x) => [x.slice(0, x.indexOf("=")), x.slice(x.indexOf("=") + 1)])) : null;
             if (o && laeufer(o.file) && !traegt(env)) merke(o.file, (o.args || []).slice(1));
+            if (o) (ausgabe(o.args), ausgabe(env && Object.values(env).filter((v) => v.length > 64)));
             return starte.apply(this, arguments);
         };
         for (const weg of ["spawnSync", "execFileSync", "execSync"]) {
@@ -332,6 +408,7 @@ if (KONSUM && BAUM) {
             kp[weg] = function (f, a, o) {
                 const opt = [a, o].find((x) => x && typeof x === "object" && !Array.isArray(x));
                 if (opt && opt.env && !traegt(opt.env) && (weg === "execSync" || opt.shell || laeufer(f))) merke(f, a);
+                ausgabe(f), ausgabe(a), opt && (ausgabe(opt.input), opt.env && ausgabe(Object.values(opt.env).filter((v) => typeof v === "string" && v.length > 64)));
                 return alt.apply(this, arguments);
             };
         }
