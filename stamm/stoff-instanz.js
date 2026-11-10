@@ -1252,6 +1252,7 @@ class AnazhRealm_stoff_instanz {
                 g.boundingSphere = new T.Sphere(new T.Vector3(), Infinity);
             }
             nehmen(m) {
+                this._geordnet = -1; // die Glieder wechseln: der nächste Pass ordnet selbst (`_wahlVor`)
                 // nach dem ersten Zug wächst die Instanz-Seite nicht mehr: reicht ihr Platz nicht, folgt eine Arena mit Platz
                 // für den Bedarf
                 if (this.__instanzQuelle.instanceMatrix && !this._nPasst(platz(m.count | 0))) {
@@ -1292,6 +1293,7 @@ class AnazhRealm_stoff_instanz {
                 this._neuAuf();
             }
             lassen(m, zurueck) {
+                this._geordnet = -1; // die Glieder wechseln: der nächste Pass ordnet selbst (`_wahlVor`)
                 const i = this.glieder.indexOf(m);
                 if (i < 0) return;
                 this.glieder.splice(i, 1);
@@ -1327,6 +1329,7 @@ class AnazhRealm_stoff_instanz {
             // nach dem Frame — an der Mess-Wiese in jedem frischen Boot im ersten Schuss (L1 und L2 der Vorlage 1, 810 → 1 294
             // Plätze; die echte GPU brach die Treue des Pop-Gangs um 1 126 Bytes). false: die alte war kein Glied.
             tauschen(alt, neu) {
+                this._geordnet = -1; // die Glieder wechseln: der nächste Pass ordnet selbst (`_wahlVor`)
                 const i = this.glieder.indexOf(alt);
                 if (i < 0) return false;
                 this.glieder[i] = neu;
@@ -1372,7 +1375,11 @@ class AnazhRealm_stoff_instanz {
             // Arena des Lagers neu), dann schreiben die Bündel-Arenen ihre Aufträge — auf die Lage, die dieser Frame zeichnet
             _takt(auftraege) {
                 if (!this._rend) return;
-                if (!auftraege) return void (this._bereit = this._ordnen(this._rend, true));
+                if (!auftraege) {
+                    this._bereit = this._ordnen(this._rend, true);
+                    this._geordnet = AnazhRealm.__arenaJetzt;
+                    return;
+                }
                 if (this._bereit && this.glieder.length)
                     for (const z of this._zuegeB.values()) this._auftraege(z, null, this._rend, false);
             }
@@ -1382,7 +1389,12 @@ class AnazhRealm_stoff_instanz {
             // nach dem Frame (der Band-Zähler, die Blick-Sonde) eine Liste ohne Puffer („reading 'size'").
             _wahlVor(rend, camera) {
                 this._rend = rend;
-                if (!this._ordnen(rend, false)) return null;
+                // DER TAKT ORDNETE DIESES BILD SCHON (`_arenaTakt`, vor jedem Pass; w27-takt-streu): jeder Pass liest sein Ergebnis,
+                // solange kein Glied seither kam, ging oder seine Zahl wechselte (`_geordnet`) — ein zweites Ordnen je Pass ging
+                // jedes Glied umsonst
+                const takt = this._geordnet !== undefined && this._geordnet === AnazhRealm.__arenaJetzt;
+                const bereit = takt ? this._bereit : this._ordnen(rend, false);
+                if (!bereit) return null;
                 const zug = this._zugFuer(camera, false),
                     q = this.__instanzQuelle;
                 // DIE LISTE JE KAMERA, so lang wie die Instanz-Seite, für das Leben der Arena (auch über das Verdrängen ihres Zugs):
@@ -1707,7 +1719,9 @@ class AnazhRealm_stoff_instanz {
                 if (c) [st[k], st[k + 1]] = [c, c.version];
                 st[0] = im.version;
                 const neu = n > z.n || mwNeu || quellen.some((x) => x[2]);
-                if (!neu) return;
+                if (!neu) return false;
+                // DIE DATEN DER ARENA ÄNDERTEN SICH (w27-takt-streu): die Wahl der GPU rechnet ihre Züge neu (`_wahlRechnen`)
+                this._datenV = (this._datenV | 0) + 1;
                 // DIE KOSTEN AN DER ÄNDERUNG (w25-gpu-wahl, Lehre 25): stand der Block (gefüllt, nicht umgezogen, dieselbe Welt-Matrix,
                 // die Einheit) und trägt jede geänderte Quelle ihre Bereiche (`addUpdateRange`), kopiert er nur sie — eine neue Kachel
                 // der Nah-Wiese schreibt ihren Block, nie den Ring. Nur ein Glied, das jeden Schreiber an Bereiche bindet (`__bereiche`,
@@ -1739,6 +1753,7 @@ class AnazhRealm_stoff_instanz {
                     // die Quelle eines Glieds lädt r184 nie (die Arena zeichnet): ihre Bereiche sind hier verbraucht
                     a.clearUpdateRanges();
                 }
+                return true;
             }
             // der Zug je Kamera — lose je Pass, im Bündel die aufgenommenen Plätze —, jeder ein Abschnitt des EINEN
             // Auftrags-Puffers, so lang wie die Glieder
@@ -1904,7 +1919,14 @@ class AnazhRealm_stoff_instanz {
                     ziehen++;
                     if (k >= platz) continue; // die Plätze des Bündels reichen nicht: es nimmt neu auf (unten)
                     n = Math.min(n, z.cap);
-                    this._block(m, z, n);
+                    // DER BLOCK EINMAL JE BILD (w27-takt-streu): zwischen den Pässen eines Bilds ändert kein Schreiber die Daten —
+                    // der erste Pass prüft und kopiert, jeder weitere liest den Block, wie er liegt (ein neuer Block, `z.n` < 0, und
+                    // ein Zuwachs kopieren immer)
+                    const jetzt = AnazhRealm.__arenaJetzt;
+                    if (jetzt === undefined || z.blockJetzt !== jetzt || z.n < 0 || n > z.n) {
+                        z.blockJetzt = jetzt;
+                        this._block(m, z, n);
+                    }
                     const o = k * 5;
                     // in der Wahl zählt der Compute die Instanzen, die erste ist der Block in der Liste dieser Kamera (`_wahlVor`)
                     const li = z.erst;
@@ -1936,7 +1958,19 @@ class AnazhRealm_stoff_instanz {
                         zug.zuege.push(this);
                     }
                 }
-                if (k > 0) schreib(renderer, this._ind, basis, k * 5);
+                // DIE AUFTRÄGE GEHEN NUR BEI ÄNDERUNG auf die GPU (w27-takt-streu, Lehre 25): gleichen sie denen, die dieser Zug
+                // zuletzt schrieb, steht der Puffer — in der Wahl der GPU mit den Zahlen, die der Compute zählte; ein neuer Auftrag
+                // setzt sie auf 0 zurück, der Compute dieses Passes zählt sie neu (`argsNeu`, `_wahlRechnen`)
+                if (k > 0) {
+                    const alt = zug.argsAlt;
+                    let gleich = !!alt && alt.length === k * 5;
+                    for (let i = 0; gleich && i < k * 5; i++) gleich = alt[i] === args[i];
+                    if (!gleich) {
+                        schreib(renderer, this._ind, basis, k * 5);
+                        zug.argsAlt = args.slice(0, k * 5);
+                        zug.argsNeu = true;
+                    }
+                }
             }
             raycast() {}
         }
@@ -2374,6 +2408,7 @@ class AnazhRealm_stoff_instanz {
         if (vor > 0 !== n > 0) AnazhRealm._regtHalter(mesh); // die Werfer-Hülle ihres Bündels (das Register)
         // die Arena zählt ihre Glieder mit Instanzen: ohne eines betritt sie keinen Pass (kein leeres Render-Objekt)
         const a = mesh.__arena;
+        if (a && vor !== n) a._geordnet = -1; // eine neue Zahl: der nächste Pass ordnet selbst (`_wahlVor`)
         if (a && vor > 0 !== n > 0) {
             a._lebend += n > 0 ? 1 : -1;
             a._sicht();
