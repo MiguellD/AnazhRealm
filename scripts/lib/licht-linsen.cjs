@@ -2192,6 +2192,7 @@ function luftTiefe(o) {
             belichten.apply(this, a);
             st.renderer.toneMappingExposure *= blende;
         };
+        const spur = []; // DIAG (fällt vor der Abgabe): die Tafeln der Atmosphäre, zurückgelesen
         const schuss = async (b, k) => {
             const alt = U.beta.value;
             const e = st.renderer.toneMappingExposure;
@@ -2266,6 +2267,27 @@ function luftTiefe(o) {
             const D = await window.__spiegelDaten();
             const L0 = await schuss(0, k);
             const S = await schuss(1, k);
+            if (!spur.length)
+                try {
+                    const A = st.atmoLut, RR = st.renderer, half = T.DataUtils.fromHalfFloat, AU = A.U;
+                    const lies = async (rt, pts) => {
+                        const px = await RR.readRenderTargetPixelsAsync(rt, 0, 0, rt.width, rt.height);
+                        const z = px.length / rt.height;
+                        const f = (i) => (px instanceof Uint16Array ? half(px[i]) : px[i]);
+                        return pts.map(([x, y]) => [0, 1, 2, 3].map((c) => +f(y * z + x * 4 + c).toPrecision(4)).join(":")).join(" ");
+                    };
+                    const so = AU.sonne.value, sw = A.rtSV.width;
+                    const xs = Math.floor(((Math.atan2(so.z, so.x) / (2 * Math.PI) + 1) % 1) * sw);
+                    const xg = (xs + (sw >> 1)) % sw;
+                    const zeilen = [30, 50, 52, 53, 54, 55, 56, 58, 62, 80, 107];
+                    spur.push("U h" + AU.hKm.value + " so" + so.toArray().map((v) => v.toFixed(3)) + " bR" + AU.betaR.value.toArray().map((v) => v.toPrecision(3)) + " mE" + AU.mieExt.value.toArray().map((v) => v.toPrecision(3)) + " mS" + AU.mieSca.value.toArray().map((v) => v.toPrecision(3)) + " alb" + AU.albedo.value.toArray().map((v) => v.toPrecision(3)) + " erde" + AU.erde.value.toArray().map((v) => v.toPrecision(3)) + " oz" + AU.ozon.value.toArray().map((v) => v.toPrecision(3)) + " g" + AU.g.value + " HR" + AU.HR.value + " HM" + AU.HM.value); // prettier-ignore
+                    spur.push("SV@" + xs + " " + (await lies(A.rtSV, zeilen.map((y) => [xs, y]))));
+                    spur.push("SVg@" + xg + " " + (await lies(A.rtSV, zeilen.map((y) => [xg, y]))));
+                    spur.push("T " + (await lies(A.rtT, [[0, 0], [128, 0], [255, 0], [0, 63], [128, 32], [255, 63], [250, 1]])));
+                    spur.push("MS " + (await lies(A.rtMS, [[0, 0], [16, 16], [31, 31], [16, 0], [0, 31], [8, 2]])));
+                } catch (e) {
+                    spur.push("FEHLER " + String(e && e.stack).slice(0, 300));
+                }
             D.iv = new T.Matrix4().fromArray(D.ivp);
             const bd = R.baenderM.map((d) => ({ d, q: [[], [], []], dk: [], dh: [] }));
             const gez = [];
@@ -2356,7 +2378,7 @@ function luftTiefe(o) {
             cam.updateProjectionMatrix();
             window.__buehne();
         }
-        return { gy: Math.round(gy), zeilen, weiss };
+        return { gy: Math.round(gy), zeilen, weiss, diag: spur.join(" ; ").replace(/[\n]/g, " ") };
     })();
 }
 
