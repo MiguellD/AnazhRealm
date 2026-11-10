@@ -1,5 +1,7 @@
 ## 09.11. 23:55 — Koordinator: die Wurzel der drei roten Wände von w26-haar-arm (probe-z352-haar-arm 589b4b58)
 
+## 10.11. 02:51 — GPU-PROBE df5a445c auf gtx1050-desktop + radeon-890m (Band-Gerät): ROT in 685 s (gate:kamera-leib:echt GRÜN 193 s auf gtx1050-desktop · gate:haar-strich-a GRÜN 165 s auf gtx1050-desktop · zeit:gate:kamera-leib:echt ROT 89 s auf radeon-890m (Band-Gerät)) → probe-post/w27-haar-arm-2/df5a445c.md
+
 ## 10.11. 02:34 — GPU-PROBE f8fa2154 auf gtx1050-desktop + radeon-890m (Band-Gerät): GRÜN in 551 s (gate:haar-kopf-a GRÜN 190 s auf gtx1050-desktop · zeit:gate:haar-kopf-a GRÜN 111 s auf radeon-890m (Band-Gerät) · zeit:gate:haar-kopf-b GRÜN 100 s auf radeon-890m (Band-Gerät)) → probe-post/w27-haar-arm-2/f8fa2154.md
 
 ## 10.11. 02:24 — GPU-PROBE debea1a5 auf gtx1050-desktop + radeon-890m (Band-Gerät): ROT in 510 s (gate:kamera-leib:echt GRÜN 173 s auf gtx1050-desktop · gate:haar-strich-a GRÜN 208 s auf gtx1050-desktop · zeit:gate:kamera-leib:echt ROT 88 s auf radeon-890m (Band-Gerät)) → probe-post/w27-haar-arm-2/debea1a5.md
