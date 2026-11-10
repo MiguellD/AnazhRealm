@@ -1,7 +1,7 @@
 {
  "sha": "78d37554b2d5f98d96ef454cfa9f51752c0e45a0",
  "geraet": "gtx",
- "zeit": "2026-11-10T05:28:21.029Z",
+ "zeit": "2026-11-10T05:33:44.998Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "ferne.K1#2": {
@@ -1647,22 +1647,71 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "siedlung.K1#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen: Stille seit 45 s nach 45 s (kein Lebenszeichen) — beendet, UNGEMESSEN",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "Deckel 45 s gerissen: Stille seit 45 s nach 45 s (kein Lebenszeichen) — beendet, UNGEMESSEN",
+   "s": 45.2,
+   "fremd": {
+    "s": 48.8,
+    "takte": 22,
+    "fremdS": 82.63,
+    "kerne": 1.692,
+    "fensterKerne": 2.082,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      50.52
+     ],
+     [
+      "MsMpEng.exe",
+      9.53
+     ],
+     [
+      "OmenCommandCenterBackground.exe",
+      5.92
+     ]
+    ],
+    "dienerS": 15.58,
+    "diener": [
+     [
+      "System",
+      9.11
+     ],
+     [
+      "dwm.exe",
+      3.19
+     ]
+    ],
+    "eigenS": 219.84,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-10T05:33:44.998Z",
+   "abdruck": "aee8fa98714b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-10T05:27:43.205Z",
+  "start": "2026-11-10T05:33:08.629Z",
   "port": 7804,
-  "warten": 0.02,
-  "bootS": 7.3,
+  "warten": 0.01,
+  "bootS": 7.2,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": "wiese",
-    "vor": "physik.K2#2",
-    "s": 28.6,
-    "takte": 589,
+    "ort": "genesis",
+    "vor": "siedlung.K1#2",
+    "s": 27.8,
+    "takte": 664,
     "chunks": 81,
     "nach": null
    }
@@ -1680,11 +1729,11 @@
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 80,
-   "luecken": 1,
-   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+   "zapfen": 74,
+   "luecken": 0,
+   "letzteLuecke": null
   },
-  "fahrtS": 123.6,
-  "minuten": 2.15
+  "fahrtS": 83,
+  "minuten": 1.46
  }
 }
