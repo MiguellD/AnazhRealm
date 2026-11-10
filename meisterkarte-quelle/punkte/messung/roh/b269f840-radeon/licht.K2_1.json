@@ -1,0 +1,614 @@
+{
+ "plan": "licht.K2#1",
+ "adapter": "[linse-gpu] amd/rdna-3",
+ "schritte": {
+  "fenster": {
+   "exit": 0,
+   "json": {
+    "ms": 2,
+    "fenster": [
+     1920,
+     1080
+    ]
+   },
+   "rest": "{\n \"ms\": 2,\n \"fenster\": [\n  1920,\n  1080\n ]\n}\n"
+  },
+  "umstellen": {
+   "exit": 0,
+   "json": {
+    "ms": 741,
+    "ort": "wiese",
+    "sicht": "ego",
+    "pose": null,
+    "welt": null,
+    "spieler": [
+     -280.4,
+     -1045.6
+    ],
+    "wiese": {
+     "messung": {
+      "x": -280.4,
+      "z": -1045.6,
+      "y": 27.48,
+      "hang": 1.81,
+      "rauh": 0.14,
+      "nass": 0,
+      "krone": 0.114,
+      "baeume": 8,
+      "kranz": 0.253,
+      "imBlick": 0,
+      "horizont": 2.6,
+      "blick": [
+       -289.6,
+       -1049.5
+      ],
+      "gras": 1
+     },
+     "befunde": []
+    },
+    "takte": 72,
+    "steht": true,
+    "chunks": 81,
+    "gier": -1.9717,
+    "dorfZug": false,
+    "ortTakt": [],
+    "dorfSchwebt": null
+   },
+   "rest": "{\n \"ms\": 741,\n \"ort\": \"wiese\",\n \"sicht\": \"ego\",\n \"pose\": null,\n \"welt\": null,\n \"spieler\": [\n  -280.4,\n  -1045.6\n ],\n \"wiese\": {\n  \"messung\": {\n   \"x\": -280.4,\n   \"z\": -1045.6,\n   \"y\": 27.48,\n   \"hang\": 1.81,\n   \"rauh\": 0.14,\n   \"nass\": 0,\n   \"krone\": 0.114,\n   \"baeume\": 8,\n   \"kranz\": 0.253,\n   \"imBlick\": 0,\n   \"horizont\": 2.6,\n   \"blick\": [\n    -289.6,\n    -1049.5\n   ],\n   \"gras\": 1\n  },\n  \"befunde\": []\n },\n \"takte\": 72,\n \"steht\": true,\n \"chunks\": 81,\n \"gier\": -1.9717,\n \"dorfZug\": false,\n \"ortTakt\": [],\n \"dorfSchwebt\": null\n}\n"
+  },
+  "kugel": {
+   "exit": 0,
+   "json": {
+    "ms": 8613,
+    "ergebnis": {
+     "ende": "ok",
+     "stand": {
+      "version": "18.546.248",
+      "uhr": 0.5,
+      "wetter": "sunny",
+      "saison": "summer"
+     },
+     "puffer": [
+      1920,
+      1080
+     ],
+     "u8len": 8294400,
+     "kurve": 7,
+     "belicht": 0.5341,
+     "csm": true,
+     "dlWirft": true,
+     "kaskaden": 3,
+     "sonne": [
+      0,
+      0.962,
+      0.272
+     ],
+     "sonnenHoeheGrad": 74.2,
+     "spieler": [
+      -280.4,
+      28.1,
+      -1045.6
+     ],
+     "auge": [
+      -289.61,
+      33.72,
+      -1055
+     ],
+     "kugeln": [
+      {
+       "name": "W-sonne",
+       "alb": 0.8,
+       "c": [
+        -292.61,
+        28.32,
+        -1049.5
+       ],
+       "scheibe": null
+      },
+      {
+       "name": "G-sonne",
+       "alb": 0.18,
+       "c": [
+        -290.61,
+        28.25,
+        -1049.5
+       ],
+       "scheibe": null
+      },
+      {
+       "name": "G-schatten",
+       "alb": 0.18,
+       "c": [
+        -288.61,
+        28.2,
+        -1049.5
+       ],
+       "scheibe": [
+        -288.61,
+        33.97,
+        -1047.87
+       ]
+      },
+      {
+       "name": "W-schatten",
+       "alb": 0.8,
+       "c": [
+        -286.61,
+        28.16,
+        -1049.5
+       ],
+       "scheibe": [
+        -286.61,
+        33.93,
+        -1047.87
+       ]
+      }
+     ],
+     "ortSuche": 1,
+     "ort": [
+      -289.6,
+      28.1,
+      -1049.5
+     ],
+     "varianten": [
+      {
+       "tag": "A-welt",
+       "dlIntensitaet": 6.924
+      },
+      {
+       "tag": "B-ohneEmpfang",
+       "dlIntensitaet": 6.924
+      },
+      {
+       "tag": "C-ohneSonne",
+       "dlIntensitaet": 0
+      }
+     ],
+     "dlIntensitaet": 6.924,
+     "schuesse": [
+      {
+       "W-sonne": {
+        "px": 17799,
+        "clip": 0,
+        "mitte": [
+         1411,
+         530
+        ],
+        "rPx": 70,
+        "oben": {
+         "Y": 1.8902,
+         "n": 1507,
+         "sRGB": 234
+        },
+        "sonne": {
+         "Y": 1.9039,
+         "n": 840
+        },
+        "abgewandt": {
+         "Y": null,
+         "n": 0
+        },
+        "profilNS": {
+         "-0.8": "0.1637/3",
+         "-0.6": "0.1582/537",
+         "-0.4": "0.1664/1138",
+         "-0.2": "0.1707/1658",
+         "0.0": "0.189/2116",
+         "0.2": "0.3985/2464",
+         "0.4": "0.6477/2753",
+         "0.6": "0.9778/2892",
+         "0.8": "1.6072/2854",
+         "1.0": "1.8902/1384"
+        }
+       },
+       "G-sonne": {
+        "px": 16521,
+        "clip": 0,
+        "mitte": [
+         1109,
+         537
+        ],
+        "rPx": 74,
+        "oben": {
+         "Y": 0.3605,
+         "n": 1499,
+         "sRGB": 108
+        },
+        "sonne": {
+         "Y": 0.3645,
+         "n": 858
+        },
+        "abgewandt": {
+         "Y": null,
+         "n": 0
+        },
+        "profilNS": {
+         "-0.6": "0.0418/373",
+         "-0.4": "0.0429/971",
+         "-0.2": "0.0439/1476",
+         "0.0": "0.0473/1921",
+         "0.2": "0.1002/2280",
+         "0.4": "0.1576/2574",
+         "0.6": "0.2229/2747",
+         "0.8": "0.3019/2772",
+         "1.0": "0.3641/1407"
+        }
+       },
+       "G-schatten": {
+        "px": 16345,
+        "clip": 0,
+        "mitte": [
+         811,
+         543
+        ],
+        "rPx": 74,
+        "oben": {
+         "Y": 0.0696,
+         "n": 1486,
+         "sRGB": 31
+        },
+        "sonne": {
+         "Y": 0.0707,
+         "n": 868
+        },
+        "abgewandt": {
+         "Y": null,
+         "n": 0
+        },
+        "profilNS": {
+         "-0.6": "0.0447/348",
+         "-0.4": "0.0448/960",
+         "-0.2": "0.0463/1444",
+         "0.0": "0.0465/1894",
+         "0.2": "0.0473/2250",
+         "0.4": "0.0497/2551",
+         "0.6": "0.0547/2730",
+         "0.8": "0.0626/2757",
+         "1.0": "0.0705/1411"
+        }
+       },
+       "W-schatten": {
+        "px": 17249,
+        "clip": 0,
+        "mitte": [
+         516,
+         547
+        ],
+        "rPx": 69,
+        "oben": {
+         "Y": 0.2636,
+         "n": 1485,
+         "sRGB": 91
+        },
+        "sonne": {
+         "Y": 0.2632,
+         "n": 851
+        },
+        "abgewandt": {
+         "Y": null,
+         "n": 0
+        },
+        "profilNS": {
+         "-0.6": "0.1568/467",
+         "-0.4": "0.1655/1079",
+         "-0.2": "0.1703/1584",
+         "0.0": "0.1718/2022",
+         "0.2": "0.1787/2393",
+         "0.4": "0.1891/2666",
+         "0.6": "0.2108/2822",
+         "0.8": "0.2415/2821",
+         "1.0": "0.2636/1395"
+        }
+       }
+      },
+      {
+       "W-sonne": {
+        "px": 17799,
+        "clip": 0,
+        "mitte": [
+         1411,
+         530
+        ],
+        "rPx": 70,
+        "oben": {
+         "Y": 1.8902,
+         "n": 1507,
+         "sRGB": 234
+        },
+        "sonne": {
+         "Y": 1.9039,
+         "n": 840
+        },
+        "abgewandt": {
+         "Y": null,
+         "n": 0
+        },
+        "profilNS": {
+         "-0.8": "0.1724/3",
+         "-0.6": "0.1724/537",
+         "-0.4": "0.1798/1138",
+         "-0.2": "0.1832/1658",
+         "0.0": "0.1988/2116",
+         "0.2": "0.4058/2464",
+         "0.4": "0.6549/2753",
+         "0.6": "0.9802/2892",
+         "0.8": "1.6072/2854",
+         "1.0": "1.8902/1384"
+        }
+       },
+       "G-sonne": {
+        "px": 16521,
+        "clip": 0,
+        "mitte": [
+         1109,
+         537
+        ],
+        "rPx": 74,
+        "oben": {
+         "Y": 0.3605,
+         "n": 1499,
+         "sRGB": 108
+        },
+        "sonne": {
+         "Y": 0.3645,
+         "n": 858
+        },
+        "abgewandt": {
+         "Y": null,
+         "n": 0
+        },
+        "profilNS": {
+         "-0.6": "0.0452/373",
+         "-0.4": "0.0461/971",
+         "-0.2": "0.0459/1476",
+         "0.0": "0.0493/1921",
+         "0.2": "0.1018/2280",
+         "0.4": "0.1595/2574",
+         "0.6": "0.2229/2747",
+         "0.8": "0.3023/2772",
+         "1.0": "0.3641/1407"
+        }
+       },
+       "G-schatten": {
+        "px": 16345,
+        "clip": 0,
+        "mitte": [
+         811,
+         543
+        ],
+        "rPx": 74,
+        "oben": {
+         "Y": 0.3597,
+         "n": 1486,
+         "sRGB": 108
+        },
+        "sonne": {
+         "Y": 0.3601,
+         "n": 868
+        },
+        "abgewandt": {
+         "Y": null,
+         "n": 0
+        },
+        "profilNS": {
+         "-0.6": "0.0479/348",
+         "-0.4": "0.0478/960",
+         "-0.2": "0.0482/1444",
+         "0.0": "0.0515/1894",
+         "0.2": "0.1034/2250",
+         "0.4": "0.1603/2551",
+         "0.6": "0.2238/2730",
+         "0.8": "0.3022/2757",
+         "1.0": "0.3593/1411"
+        }
+       },
+       "W-schatten": {
+        "px": 17249,
+        "clip": 0,
+        "mitte": [
+         516,
+         547
+        ],
+        "rPx": 69,
+        "oben": {
+         "Y": 1.8408,
+         "n": 1485,
+         "sRGB": 234
+        },
+        "sonne": {
+         "Y": 1.842,
+         "n": 851
+        },
+        "abgewandt": {
+         "Y": null,
+         "n": 0
+        },
+        "profilNS": {
+         "-0.6": "0.1711/467",
+         "-0.4": "0.1793/1079",
+         "-0.2": "0.1809/1584",
+         "0.0": "0.1943/2022",
+         "0.2": "0.3997/2393",
+         "0.4": "0.6376/2666",
+         "0.6": "0.9685/2822",
+         "0.8": "1.5785/2821",
+         "1.0": "1.8408/1395"
+        }
+       }
+      },
+      {
+       "W-sonne": {
+        "px": 17799,
+        "clip": 0,
+        "mitte": [
+         1411,
+         530
+        ],
+        "rPx": 70,
+        "oben": {
+         "Y": 0.2644,
+         "n": 1507,
+         "sRGB": 91
+        },
+        "sonne": {
+         "Y": 0.264,
+         "n": 840
+        },
+        "abgewandt": {
+         "Y": null,
+         "n": 0
+        },
+        "profilNS": {
+         "-0.8": "0.0605/3",
+         "-0.6": "0.0761/537",
+         "-0.4": "0.0905/1138",
+         "-0.2": "0.1081/1658",
+         "0.0": "0.1238/2116",
+         "0.2": "0.1424/2464",
+         "0.4": "0.1649/2753",
+         "0.6": "0.1945/2892",
+         "0.8": "0.2352/2854",
+         "1.0": "0.2632/1384"
+        }
+       },
+       "G-sonne": {
+        "px": 16521,
+        "clip": 0,
+        "mitte": [
+         1109,
+         537
+        ],
+        "rPx": 74,
+        "oben": {
+         "Y": 0.0697,
+         "n": 1499,
+         "sRGB": 31
+        },
+        "sonne": {
+         "Y": 0.0721,
+         "n": 858
+        },
+        "abgewandt": {
+         "Y": null,
+         "n": 0
+        },
+        "profilNS": {
+         "-0.6": "0.0228/373",
+         "-0.4": "0.0273/971",
+         "-0.2": "0.0285/1476",
+         "0.0": "0.0329/1921",
+         "0.2": "0.0373/2280",
+         "0.4": "0.0435/2574",
+         "0.6": "0.0498/2747",
+         "0.8": "0.0601/2772",
+         "1.0": "0.0707/1407"
+        }
+       },
+       "G-schatten": {
+        "px": 16345,
+        "clip": 0,
+        "mitte": [
+         811,
+         543
+        ],
+        "rPx": 74,
+        "oben": {
+         "Y": 0.0696,
+         "n": 1486,
+         "sRGB": 31
+        },
+        "sonne": {
+         "Y": 0.0697,
+         "n": 868
+        },
+        "abgewandt": {
+         "Y": null,
+         "n": 0
+        },
+        "profilNS": {
+         "-0.6": "0.0234/348",
+         "-0.4": "0.0277/960",
+         "-0.2": "0.0321/1444",
+         "0.0": "0.0332/1894",
+         "0.2": "0.0375/2250",
+         "0.4": "0.0442/2551",
+         "0.6": "0.0506/2730",
+         "0.8": "0.0603/2757",
+         "1.0": "0.0697/1411"
+        }
+       },
+       "W-schatten": {
+        "px": 17249,
+        "clip": 0,
+        "mitte": [
+         516,
+         547
+        ],
+        "rPx": 69,
+        "oben": {
+         "Y": 0.2597,
+         "n": 1485,
+         "sRGB": 90
+        },
+        "sonne": {
+         "Y": 0.2597,
+         "n": 851
+        },
+        "abgewandt": {
+         "Y": null,
+         "n": 0
+        },
+        "profilNS": {
+         "-0.6": "0.0761/467",
+         "-0.4": "0.0907/1079",
+         "-0.2": "0.1072/1584",
+         "0.0": "0.121/2022",
+         "0.2": "0.1395/2393",
+         "0.4": "0.1606/2666",
+         "0.6": "0.1918/2822",
+         "0.8": "0.2309/2821",
+         "1.0": "0.2597/1395"
+        }
+       }
+      }
+     ],
+     "bilanz": {
+      "verhaeltnisG_oben": 5.18,
+      "verhaeltnisW_oben": 7.171,
+      "schattenAnteilG": 0.1931,
+      "schattenAnteilW": 0.1395,
+      "eigeneKugel_sonneZuAbgewandtG": null,
+      "weissZuGrau_oben_sonne": 5.243,
+      "weissZuGrau_oben_schatten": 3.787,
+      "scheibeVerdecktHimmel": 0.0204
+     },
+     "bilder": [
+      {
+       "name": "kugel-voll"
+      },
+      {
+       "name": "kugel-reihe",
+       "crop": [
+        368,
+        308,
+        1191,
+        387
+       ]
+      },
+      {
+       "name": "kugel-reihe-B",
+       "crop": [
+        368,
+        308,
+        1191,
+        387
+       ]
+      }
+     ]
+    }
+   },
+   "rest": "TzRH3v476qYDnv8VCtOFBIpVNKURalhbvAClJmu8Ubnnkwgq6RFcmzGGK/sTyxt/soeEPOLl3f1pz7WUc3z8bJWNIv0/OfHsuv12T3FyCm9yxNyWha5bhNLazOGFWasIonN1rcOljL9Nf+QwtzLF/Ax2E+3myuGAWsc5gEBvkA97xsaGG79m2L25SIlBJs+C0Z6EbMWxK6SHKPSEh08OZrjFyI55yQ5AaYpoA1coc9edhJvcmrjF9vIJEEnV3cyPTmo6GtQJdRY73IYcue0UigqmX4dNHpUsgYogRP0xkEQKk0+52V0fWSTldTJChn+jc2Ct9WGQIhTq9DvpSZH0yaH2To/Um+YG7qKo0gtdDuKI94tgIGEgqiDjAajB/XQfBYzd1BEfzWXU46dtrAg4xW9z1rhA8O1utORY7DhaWJZVpkuPtHR5z/VdNN/+5unzY2Ns/FNAW/z6TamUQ567OEzWw/nNDzoIqPN+rxmvsGDK3GyxaTW9ujdIzigoCl2jWhkvAekHtwvVfOi6c9ENUC9PVPbPU3WTYtiqQd3ptq/O9Hx0Yxm14yrUFTTtdpqStWMreXwd6JXrkqV5QzcHx0tgBUafkaR0+mJPQt+orjNGzX+OUIfB/jeVidRCs0ePg7RuQ1imY2roMG5Mx1jmB7snzYwjd6stYAnEujriaSjqLYeUgnDDFcrFi/eWAxorJVwGLV5fqjjw5lmJ6XiOGr8vo1y0BO4KXGANue968cyPSjYXCvyXAba/L3xqbIJ5VhDSa7vVLlKgQ7W3/CyYl0sF3LI6Fr0PUXLqQjlsvH27l6xrng00Nq5HGNxQJOGq7lsc26XXdlJMlXiEr3cX9dbE3QG5AyXZ+KhVlbaykj6jC0myxa+etjr6OD6N3X31jvQn+oD4uiCNTuikODH/upQJbk+t6o6A5UgU1EK/MkSHlfUdVO81jkscvBGXJUvVeCHsiyCX+DpYCWOLRBTB6wVn3q+0milkum6wQZNm64pDG/m/vbXKsXoRRRLH5wUzTvri/qosWUftHW+LU9tuuWNkbbGLWLZvfHTYFn9qPzazXva6ff0ub1VbLxQFnpyZazaRYqIAfYrsRgGQaIgTzQqlE7RSaaEZLEz7qlf9XT9g6ne/8aBxu+eqPOE0RFpVqIf9UxL/jPBOKHHk0S63dJadkX9/kAVMchwNToanOjY0EKD5alZ2lJzGUO4oZlvyf6tO+vvDSaNVYgVWfDhbUQOn+Mra94l3QDKtUznfM38wKG7Pn1hm57S//LO2SGhtTlaDq4vDQP4JTkavaRxq62boa3VUaa13Y7sSpJYzjklrBNGa5k1MZsjlhbQVClvQae1ulqf/JkN7Rlwevz2d46JxNL/FwAA//+PjHmbAAAABklEQVQDAPoi2DOSQSEiAAAAAElFTkSuQmCC\",\n    \"crop\": [\n     368,\n     308,\n     1191,\n     387\n    ]\n   }\n  ]\n }\n}\n"
+  }
+ },
+ "dateien": {}
+}
