@@ -1,0 +1,224 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.244",
+  "sha": "900c28e6c0b11593877cf07c1e439bbd75e64af2"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": false,
+  "weltTakte": 0
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 5.12,
+   "deckung": 0,
+   "taeter": {}
+  }
+ },
+ "ziel": {
+  "name": "gang",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "abstand": 10.24,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   0.32,
+   92.31,
+   14
+  ],
+  "blick": [
+   0,
+   -0.21672,
+   0.97623
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 70.5,
+  "sigma": 33.9,
+  "schwarz": 0.0004,
+  "weiss": 0
+ },
+ "wahl": {
+  "versucht": 1,
+  "gewaehlt": 0,
+  "posen": [
+   {
+    "k": 0,
+    "kamera": [
+     0.32,
+     92.31,
+     14
+    ],
+    "rot": [],
+    "ms": 716
+   }
+  ],
+  "ms": 716
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.24 m · Luma 70.5 σ 33.9 schwarz 0.0 % weiß 0.0 % · Stand 18.546.244 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen",
+ "klasse": {
+  "ausdruck": "^tier:",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 0,
+  "toene": [
+   "tier:baer=255/80/80",
+   "tier:fuchs=80/255/80",
+   "tier:wesen=80/120/255",
+   "tier:wolf=255/220/60"
+  ],
+  "klassen": {
+   "tier:baer": {
+    "objekte": 13,
+    "spiegelTreue": 0.3062,
+    "spiegelEbene": 90.307,
+    "sp": [
+     50,
+     0,
+     0,
+     4042.79,
+     4042.79,
+     1237.86
+    ],
+    "zweiton": 0,
+    "weiss": 0,
+    "wt": 0,
+    "wtZiel": null,
+    "bunt": 16.22,
+    "pixel": 6625,
+    "luma": 30.96,
+    "kante": 0.4732,
+    "kr": 871,
+    "strich": 0.6933,
+    "si": 1982,
+    "bloecke": 63,
+    "glatt": 0.5079,
+    "glattDunkel": 0.2813,
+    "nyquist": 0.1156,
+    "beta": 2.55
+   },
+   "tier:fuchs": {
+    "objekte": 11,
+    "spiegelTreue": null,
+    "spiegelEbene": 89.929,
+    "sp": [
+     3,
+     0,
+     0,
+     10429.27,
+     10429.27,
+     -3991.71
+    ],
+    "zweiton": 0,
+    "weiss": 0,
+    "wt": 0,
+    "wtZiel": null,
+    "bunt": 27.64,
+    "pixel": 1269,
+    "luma": 54.48,
+    "kante": 0.3502,
+    "kr": 458,
+    "strich": null,
+    "si": 0,
+    "bloecke": 3,
+    "glatt": 0.3333,
+    "glattDunkel": 0,
+    "nyquist": 0.0673,
+    "beta": 2.5613
+   },
+   "tier:wesen": {
+    "objekte": 11,
+    "spiegelTreue": -0.1772,
+    "spiegelEbene": 90.331,
+    "sp": [
+     19,
+     0,
+     0,
+     83.64,
+     83.64,
+     -14.82
+    ],
+    "zweiton": 0,
+    "weiss": 0,
+    "wt": 0,
+    "wtZiel": null,
+    "bunt": 25.63,
+    "pixel": 3798,
+    "luma": 43.71,
+    "kante": 0.537,
+    "kr": 567,
+    "strich": 0.7278,
+    "si": 491,
+    "bloecke": 23,
+    "glatt": 0.3043,
+    "glattDunkel": 0,
+    "nyquist": 0.0372,
+    "beta": 3.153
+   },
+   "tier:wolf": {
+    "objekte": 13,
+    "spiegelTreue": null,
+    "spiegelEbene": 90.095,
+    "sp": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "zweiton": 0,
+    "weiss": 0,
+    "wt": 0,
+    "wtZiel": null,
+    "bunt": 14.65,
+    "pixel": 2916,
+    "luma": 41.31,
+    "kante": 0.4527,
+    "kr": 669,
+    "strich": 0.3264,
+    "si": 30,
+    "bloecke": 11,
+    "glatt": 0.1818,
+    "glattDunkel": 0.5,
+    "nyquist": 0.1148,
+    "beta": 2.4675
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\900c28e6-radeon\\tiere.K3_2-gang.maske.png"
+ }
+}
