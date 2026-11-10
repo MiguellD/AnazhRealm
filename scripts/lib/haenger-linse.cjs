@@ -216,7 +216,7 @@ function spurProfil(ev, marke = "anazh-takt") {
     const ch = ev.filter((x) => x.name === "ProfileChunk" && x.pid === kopf.pid && x.id === kopf.id).sort((x, y) => x.ts - y.ts);
     const startTime = kopf.args.data.startTime;
     let [t, vor] = [startTime, 0];
-    const ab = ch.map((e) => (e.args.data.timeDeltas ? e.ts - (t += e.args.data.timeDeltas.reduce((a, b) => a + b, 0)) : Infinity));
+    const ab = ch.map((e) => (e.args.data.timeDeltas ? e.ts - (t += e.args.data.timeDeltas.reduce(addiere, 0)) : Infinity));
     for (let i = ab.length - 2; i >= 0; i--) ab[i] = Math.min(ab[i], ab[i + 1]);
     const [nodes, samples, timeDeltas] = [[], [], []];
     ch.forEach((e, i) => {
@@ -1005,7 +1005,7 @@ function selbsttest() {
     const roh = { takte: T, namen, tMess: [1000, ende] };
     // je Chunk die Proben von 300 Knoten-Plätzen, sein ts 0,1 ms hinter seiner letzten Probe (wie V8 ihn schreibt)
     const chunk = (von, bis, k = nodes.slice(von, bis)) => ({
-        name: "ProfileChunk", pid: 1, id: "0x1", ts: V + 989100 + deltas.slice(0, bis * 300).reduce((a, b) => a + b, 0),
+        name: "ProfileChunk", pid: 1, id: "0x1", ts: V + 989100 + deltas.slice(0, bis * 300).reduce(addiere, 0),
         args: { data: { cpuProfile: { nodes: k, samples: samples.slice(von * 300, bis * 300) }, timeDeltas: deltas.slice(von * 300, bis * 300) } },
     });
     const ev = [chunk(8, 99), { name: "Profile", pid: 1, tid: 1, id: "0x1", args: { data: { startTime: V + 989e3 } } },

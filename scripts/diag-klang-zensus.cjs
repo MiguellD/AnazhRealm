@@ -1505,7 +1505,7 @@ async function gesehenSeite(m) {
 // Je Paar die Kreuzkorrelation in 0,5-s-Fenstern (5 Proben), Lag −3 … +3 s; grün: r bei Lag 0 ≥ Soll, n ≥ 60, CV beider ≥ 0,1, und
 // das Ohr schweigt nie, wo das Bild zeigt: höchstens 2 % der Fenster mit Bild ≥ 10 % seiner Spitze tragen ein Ohr unter 10⁻³ RMS.
 function gesehenUrteil(proben, ohr, bild) {
-    const mittel = (z) => z.reduce((x, w) => x + w, 0) / z.length;
+    const mittel = (z) => z.reduce(addiere, 0) / z.length;
     const reihe = (k) =>
         Array.from({ length: Math.floor(proben.length / 5) }, (_, i) =>
             mittel(proben.slice(5 * i, 5 * i + 5).map((p) => p[k]))

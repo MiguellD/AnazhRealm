@@ -1545,7 +1545,7 @@ async function checkBandV18199GammaMLichen({ page, check }) {
             samplesDryStone.push(calcLichen(0.1, 0.7, x, z)); // trocken + stein
             samplesWetErde.push(calcLichen(0.8, 0.1, x, z)); // feucht + erde
         }
-        const avg = (arr) => arr.reduce((a, b) => a + b, 0) / arr.length;
+        const avg = (arr) => arr.reduce(addiere, 0) / arr.length;
         out.lichenAvgWetStone = avg(samplesPositive);
         out.lichenAvgDryStone = avg(samplesDryStone);
         out.lichenAvgWetErde = avg(samplesWetErde);
