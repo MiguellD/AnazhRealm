@@ -1,7 +1,7 @@
 {
  "sha": "78d37554b2d5f98d96ef454cfa9f51752c0e45a0",
  "geraet": "gtx",
- "zeit": "2026-11-10T04:31:45.518Z",
+ "zeit": "2026-11-10T04:36:53.292Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "ferne.K1#2": {
@@ -196,6 +196,55 @@
    },
    "zeit": "2026-11-10T04:31:45.518Z",
    "abdruck": "fd08d15b7871",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "lod.K1#1": {
+   "gruen": false,
+   "zahl": "Tafel-Pose schlechteste fimp:strauch:L2 0.2096 · Karte fimp:birke:L2 0.1668 (29473 px), fimp:eiche:L2 0.1379 (65137 px), fimp:fichte:L2 0.1415 (50384 px), fimp:strauch:L2 0.2096 (22713 px), fimp:tanne:L2 0.1595 (134958 px) | Spielgang schlechteste f:eiche:L1 0.3265 · Karte fimp:birke:L2 0.1351 (26567 px), fimp:eiche:L2 0.1545 (63699 px), fimp:fichte:L2 0.1294 (40777 px), fimp:strauch:L2 0.2025 (29877 px), fimp:tanne:L2 0.1450 (98608 px) (Soll kante ≤ 0,22 je Teil-Klasse, zweiton 0) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.48,
+   "grund": "ROT: Tafel-Pose schlechteste fimp:strauch:L2 0.2096 · Karte fimp:birke:L2 0.1668 (29473 px), fimp:eiche:L2 0.1379 (65137 px), fimp:fichte:L2 0.1415 (50384 px), fimp:strauch:L2 0.2096 (22713 px), fimp:tanne:L2 0.1595 (134958 px) | Spielgang schlechteste f:eiche:L1 0.3265 · Karte fimp:birke:L2 0.1351 (26567 px), fimp:eiche:L2 0.1545 (63699 px), fimp:fichte:L2 0.1294 (40777 px), fimp:strauch:L2 0.2025 (29877 px), fimp:tanne:L2 0.1450 (98608 px) (Soll kante ≤ 0,22 je Teil-Klasse, zweiton 0) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "s": 88.8,
+   "fremd": {
+    "s": 91.5,
+    "takte": 42,
+    "fremdS": 158.14,
+    "kerne": 1.728,
+    "fensterKerne": 1.933,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      97.45
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      14.78
+     ],
+     [
+      "OmenCommandCenterBackground.exe",
+      13.25
+     ]
+    ],
+    "dienerS": 30.09,
+    "diener": [
+     [
+      "System",
+      13.05
+     ],
+     [
+      "dwm.exe",
+      11.39
+     ]
+    ],
+    "eigenS": 131.94,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-10T04:36:53.292Z",
+   "abdruck": "13a0cc06ffb8",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
@@ -1455,47 +1504,41 @@
   }
  },
  "sitzung": {
-  "start": "2026-11-10T04:30:50.493Z",
+  "start": "2026-11-10T04:36:15.683Z",
   "port": 7804,
   "warten": 0.02,
-  "bootS": 6.3,
+  "bootS": 7,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": "dorf",
-    "vor": "licht.K3#2",
-    "s": 47.2,
-    "takte": 1449,
+    "ort": "wiese",
+    "vor": "lod.K1#1",
+    "s": 28.9,
+    "takte": 721,
     "chunks": 81,
     "nach": null
    }
   ],
   "wegeTueren": [],
-  "unerklaert": [
-   {
-    "probe": "licht.K3#2",
-    "wie": "orte +-3,-3 · wege +3 [-748.3,-821.3,-615.9,-784.1/28] [-805.3,-801.4,-689.5,-574/6] [-833.8,-834.7,-648.1,-574.2/76] (-3,-3, netz:-3,-3, netz:-3,-3|-4,-4)"
-   }
-  ],
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 0,
-   "frameP95": null,
-   "taktP95": null,
-   "vramMax": null,
+   "bilder": 273,
+   "frameP95": 50.01,
+   "taktP95": 34.66,
+   "vramMax": 130.8,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 111,
-   "luecken": 0,
-   "letzteLuecke": null
+   "zapfen": 96,
+   "luecken": 2,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
   },
-  "fahrtS": 118.2,
-  "minuten": 2.02
+  "fahrtS": 127.1,
+  "minuten": 2.2
  }
 }
