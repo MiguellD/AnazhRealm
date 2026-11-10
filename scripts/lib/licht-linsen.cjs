@@ -2276,13 +2276,23 @@ function luftTiefe(o) {
                         const f = (i) => (px instanceof Uint16Array ? half(px[i]) : px[i]);
                         return pts.map(([x, y]) => [0, 1, 2, 3].map((c) => +f(y * z + x * 4 + c).toPrecision(4)).join(":")).join(" ");
                     };
-                    const so = AU.sonne.value, sw = A.rtSV.width;
-                    const xs = Math.floor(((Math.atan2(so.z, so.x) / (2 * Math.PI) + 1) % 1) * sw);
-                    const xg = (xs + (sw >> 1)) % sw;
-                    const zeilen = [30, 50, 52, 53, 54, 55, 56, 58, 62, 80, 107];
-                    spur.push("MS " + (await lies(A.rtMS, [[30, 0], [31, 0], [24, 0], [16, 0], [30, 1], [30, 8], [16, 16], [31, 31]])));
-                    spur.push("T " + (await lies(A.rtT, [[0, 0], [128, 0], [0, 63], [128, 32], [200, 10]])));
-                    spur.push("SV " + (await lies(A.rtSV, [[xs, 55]])));
+                    const E = r._erstZeichnung || {}, Wa = r._gpuWache || { n: 0, meldungen: [] };
+                    const ms = async () => (await lies(A.rtMS, [[30, 0]])) + " o" + (E.offen ? E.offen.size : "-") + " w" + E.wartetN;
+                    spur.push("W" + Wa.n + " " + Wa.meldungen.slice(0, 3).map((m) => m.quelle + ":" + m.kopf.slice(0, 90)).join("|"));
+                    spur.push(`E a${E.absagenN} as${E.pipeAsync} b${E.bereitN} vb${r._einmalVorbau()} auf ${E.wartetAuf ? E.namen.get(E.wartetAuf) : "-"}`);
+                    spur.push("M0 " + (await ms()));
+                    r._atmoZeichne(A.qMS, A.rtMS);
+                    spur.push("M1 " + (await ms()));
+                    const t0 = performance.now();
+                    for (let i = 0; i < 40; i++) {
+                        await new Promise((res) => setTimeout(res, 2000));
+                        r._atmoZeichne(A.qMS, A.rtMS);
+                        const m = await ms();
+                        if (!m.startsWith("0:0:0:0") || i === 39) {
+                            spur.push(`M${Math.round((performance.now() - t0) / 1000)}s ${m} W${(r._gpuWache || { n: 0 }).n}`);
+                            break;
+                        }
+                    }
                 } catch (e) {
                     spur.push("FEHLER " + String(e && e.stack).slice(0, 300));
                 }
