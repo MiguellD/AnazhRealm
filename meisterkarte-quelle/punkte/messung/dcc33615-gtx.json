@@ -1,7 +1,7 @@
 {
  "sha": "dcc3361558060fce198f1666eba3720e574bf5a7",
  "geraet": "gtx",
- "zeit": "2026-11-10T07:44:30.616Z",
+ "zeit": "2026-11-10T08:06:39.931Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "haar.K2#1": {
@@ -501,22 +501,71 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "leib.K4#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen: Stille seit 89.9 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "exit": 1,
+   "minuten": 1.5,
+   "grund": "Deckel 90 s gerissen: Stille seit 89.9 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "s": 90.1,
+   "fremd": {
+    "s": 93.6,
+    "takte": 43,
+    "fremdS": 166.28,
+    "kerne": 1.776,
+    "fensterKerne": 1.987,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      99.61
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      16.36
+     ],
+     [
+      "MsMpEng.exe",
+      14.02
+     ]
+    ],
+    "dienerS": 22.73,
+    "diener": [
+     [
+      "dwm.exe",
+      10.78
+     ],
+     [
+      "System",
+      6.67
+     ]
+    ],
+    "eigenS": 180.95,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-10T08:06:39.931Z",
+   "abdruck": "d92a3ff92ce9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-10T07:43:53.111Z",
+  "start": "2026-11-10T08:06:02.696Z",
   "port": 7804,
-  "warten": 0.01,
-  "bootS": 6.9,
+  "warten": 0.02,
+  "bootS": 7.2,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
     "ort": "wiese",
-    "vor": "leib.K1#2",
-    "s": 29,
-    "takte": 537,
+    "vor": "leib.K4#2",
+    "s": 28.5,
+    "takte": 567,
     "chunks": 81,
     "nach": null
    }
@@ -525,10 +574,10 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 3577,
-   "frameP95": 41.71,
-   "taktP95": 34.6,
-   "vramMax": 157.3,
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
@@ -538,7 +587,7 @@
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 129.1,
-  "minuten": 2.22
+  "fahrtS": 127.9,
+  "minuten": 2.19
  }
 }
