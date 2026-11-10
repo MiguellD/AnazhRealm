@@ -137,7 +137,7 @@ function nahDeckungInSeite(o) {
     // die Blatt-Karte schneidet ihr Alpha aus dem EINEN Atlas (RGBA; ein komprimierter Atlas zählt die ganze Karte)
     const atlas = r._foliageAtlasTex?.image || null;
     const atlasA =
-        atlas?.data?.length === atlas.width * atlas.height * 4
+        atlas && atlas.data?.length === atlas.width * atlas.height * 4 // ohne Atlas (eine Welt ohne Laub: die Prüfbühne nach dem Laden) zählt die ganze Karte — bis w27-studio-mesh warf die Zeile dort (`atlas.width` von null)
             ? (u, v) => {
                   const x = Math.min(atlas.width - 1, Math.max(0, Math.floor(u * atlas.width)));
                   const y = Math.min(atlas.height - 1, Math.max(0, Math.floor(v * atlas.height)));

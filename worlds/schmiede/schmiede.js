@@ -29,7 +29,7 @@ const grid=new THREE.GridHelper(4.5,18,0x241b10,0x130d07);grid.position.y=FLOOR_
 const sonne=new THREE.DirectionalLight();sonne.castShadow=true;
 sonne.shadow.mapSize.set(2048,2048);sonne.shadow.bias=-0.00018;Object.assign(sonne.shadow.camera,{left:-1.3,right:1.3,top:1.3,bottom:-1.3,near:0.5,far:9});
 scene.add(sonne);scene.add(sonne.target);sonne.target.position.set(0,LIFT,0);
-let welt=null;   // die Bühne der Welt, sobald der Renderer steht (`R.init`)
+let welt=null,himmelWirt=null;   // die Bühne der Welt, sobald der Renderer steht (`R.init`); der Himmel, den die Heimat beim Betreten reicht
 
 // DIE KUGEL DES BLICKS (die Hülle, `AnazhHuelle.kugel` — dieselbe Gestalt wie die OrbitControls der terrain-Familie)
 const controls=AnazhHuelle.kugel(cam,R.domElement);controls.enableDamping=true;controls.dampingFactor=0.08;
@@ -1228,7 +1228,7 @@ addEventListener('keydown',e=>{if(arena.active)return;const k=e.key.toLowerCase(
 gattungWaehlen(currentGattung);buildSliders();rebuild();appendArenaUI();
 // DIE BÜHNE DER WELT steht, sobald der Renderer steht (Tafeln, Umgebung, Sonne, Tonkurve; die Belichtung, sobald die Bestrahlungs-
 // Tafel zurückkam); der Takt läuft an der Bild-Uhr des Renderers (r184 wartet mit ihm auf `init`)
-R.init().then(()=>{welt=__weltLicht.buehne({renderer:R,szene:scene,sonne});sonne.position.copy(sonne.target.position).addScaledVector(welt.richtung,4);});
+R.init().then(()=>{welt=__weltLicht.buehne({renderer:R,szene:scene,sonne,himmel:himmelWirt});sonne.position.copy(sonne.target.position).addScaledVector(welt.richtung,4);});
 R.setAnimationLoop(animate);
 
 /* ==================== DIE BRÜCKE ZUR HEIMAT (die Hülle, K41) ==================== */
@@ -1264,6 +1264,12 @@ R.setAnimationLoop(animate);
     }
     AnazhHuelle.bruecke({
         welt: "schmiede",
+        // DER HIMMEL DER HEIMAT (w27-studio-mesh, wie die Garage): die Bühne steht unter dem Himmel, den die Welt beim Betreten reicht
+        enter: function (_a, m) {
+            if (!m.himmel) return;
+            himmelWirt = m.himmel;
+            if (welt) welt.himmelSetzen(himmelWirt);
+        },
         // DAS ZIEL-BILD (D8): die Hülle rendert diese Welt als Panorama aus dem Blick ihrer Kamera — die Tor-Membran der Heimat zeigt es
         panorama: function () {
             return { THREE: THREE, renderer: R, scene: scene, kamera: cam };
