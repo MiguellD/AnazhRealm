@@ -20,17 +20,12 @@ const json = (t) => {
 const DUNKEL = { skinTone: "karamell", hairColor: "darkbrown" };
 const STAENDE = {
     a: [
-        ["dunkel", DUNKEL, null],
-        ["dunkel-streu-0.25", DUNKEL, { streu: 0.25 }],
-        ["dunkel-streu-0.35", DUNKEL, { streu: 0.35 }],
-        ["dunkel-streu-0.5", DUNKEL, { streu: 0.5 }],
-    ],
-    b: [
         ["anker", null, null],
-        ["anker-streu-0.35", null, { streu: 0.35 }],
-        ["dunkel-ohne-filter", DUNKEL, { streu: 0 }],
-        ["dunkel#2", DUNKEL, null],
+        ["anker-ohne-kruemmung", null, { kern: 0, diffus: 0 }],
+        ["dunkel", DUNKEL, null],
+        ["dunkel-ohne-kruemmung", DUNKEL, { kern: 0, diffus: 0 }],
     ],
+    b: [["anker", null, null]],
 };
 // die Farbe: die Prägung des Mensch-Rezepts über den EINEN Übergabe-Kanal (null: ohne Prägung), der Leib gießt neu
 const FARBE = (f) => `if (r.state.workshop) r.state.workshop.studioOv = {}; ${f ? `r._studioUebergabeEmpfang({ type: "uebergabe", world: "probe", kind: "koerper", preset: "mensch", seed: 0, ov: ${JSON.stringify(f)} });` : `r.applyPlayerSoul(r.state.player.soul || "human");`}

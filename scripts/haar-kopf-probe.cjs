@@ -14,16 +14,16 @@ const STRAFE = { dt: 1000 / 60, warm: 40, zwischen: 30, je: 4, kontrast: 60, hal
 const DUNKEL = { skinTone: "karamell", hairColor: "darkbrown" };
 const SAETZE = {
     a: [
-        ["dunkel", DUNKEL, null],
-        ["dunkel-streu-0.25", DUNKEL, { streu: 0.25 }],
-        ["dunkel-streu-0.35", DUNKEL, { streu: 0.35 }],
         ["anker", null, null],
+        ["anker-ohne-kruemmung", null, { kern: 0, diffus: 0 }],
+        ["dunkel", DUNKEL, null],
+        ["anker#2", null, null],
     ],
     b: [
-        ["dunkel-streu-0.5", DUNKEL, { streu: 0.5 }],
-        ["dunkel-ohne-filter", DUNKEL, { streu: 0 }],
-        ["anker-streu-0.35", null, { streu: 0.35 }],
         ["dunkel#2", DUNKEL, null],
+        ["dunkel-ohne-kruemmung", DUNKEL, { kern: 0, diffus: 0 }],
+        ["anker-diffus-0", null, { diffus: 0 }],
+        ["anker#3", null, null],
     ],
 };
 
