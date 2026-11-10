@@ -2280,11 +2280,9 @@ function luftTiefe(o) {
                     const xs = Math.floor(((Math.atan2(so.z, so.x) / (2 * Math.PI) + 1) % 1) * sw);
                     const xg = (xs + (sw >> 1)) % sw;
                     const zeilen = [30, 50, 52, 53, 54, 55, 56, 58, 62, 80, 107];
-                    spur.push("U h" + AU.hKm.value + " so" + so.toArray().map((v) => v.toFixed(3)) + " bR" + AU.betaR.value.toArray().map((v) => v.toPrecision(3)) + " mE" + AU.mieExt.value.toArray().map((v) => v.toPrecision(3)) + " mS" + AU.mieSca.value.toArray().map((v) => v.toPrecision(3)) + " alb" + AU.albedo.value.toArray().map((v) => v.toPrecision(3)) + " erde" + AU.erde.value.toArray().map((v) => v.toPrecision(3)) + " oz" + AU.ozon.value.toArray().map((v) => v.toPrecision(3)) + " g" + AU.g.value + " HR" + AU.HR.value + " HM" + AU.HM.value); // prettier-ignore
-                    spur.push("SV@" + xs + " " + (await lies(A.rtSV, zeilen.map((y) => [xs, y]))));
-                    spur.push("SVg@" + xg + " " + (await lies(A.rtSV, zeilen.map((y) => [xg, y]))));
-                    spur.push("T " + (await lies(A.rtT, [[0, 0], [128, 0], [255, 0], [0, 63], [128, 32], [255, 63], [250, 1]])));
-                    spur.push("MS " + (await lies(A.rtMS, [[0, 0], [16, 16], [31, 31], [16, 0], [0, 31], [8, 2]])));
+                    spur.push("MS " + (await lies(A.rtMS, [[30, 0], [31, 0], [24, 0], [16, 0], [30, 1], [30, 8], [16, 16], [31, 31]])));
+                    spur.push("T " + (await lies(A.rtT, [[0, 0], [128, 0], [0, 63], [128, 32], [200, 10]])));
+                    spur.push("SV " + (await lies(A.rtSV, [[xs, 55]])));
                 } catch (e) {
                     spur.push("FEHLER " + String(e && e.stack).slice(0, 300));
                 }
