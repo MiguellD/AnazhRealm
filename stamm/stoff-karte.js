@@ -1791,9 +1791,11 @@ AnazhRealm.KARTE_GITTER = Object.freeze({ zellen: Object.freeze([2, 2]), px: Obj
 // des Auges ihr Relief trifft — der Festpunkt beginnt `start` Rahmen-Halbbreiten vor der Ebene der Ansicht und liest `gaenge`-mal
 // die Tiefe je Texel, auf der Mip-Stufe, deren Texel `texel` Texel der Albedo misst (die Ablage mittelt dort die deckenden: die
 // Hülle der Krone, nie das einzelne Blatt — an ihm springt der Festpunkt); rückt der letzte Gang die Tiefe um mehr als `halt`
-// Rahmen-Halbbreiten, trifft der Strahl nichts. Am CPU-Modell der Station (L0 gegen Karte am Wechsel, Deckung beider/Vereinigung):
-// Weide 0,82 → 0,88 · Eiche 0,83 → 0,91 · Karst 0,70 → 0,89 · Birke 0,81 → 0,87. 0 Gänge: jede Ansicht an der Stelle des Quads
-// (die Karte bis w27, der Selbsttest von gate:foundry-impostor C9).
+// Rahmen-Halbbreiten, trifft der Strahl nichts. Am CPU-Modell der Station (Pose der Mess-Wiese: Peilung 67°, Auge 0,87 m über dem
+// Fuß, 26 m; es trifft die GPU-Zahl der Weide, 5,26 gegen 5,16 px) der Kanten-Versatz L0 ↔ Karte ohne → mit Relief: Weide 5,26 → 3,16 ·
+// Eiche 2,78 → 1,50 · Birke 3,43 → 1,58 · Karst 5,96 → 2,41 · Fichte 3,27 → 2,66 px; die Grenze des Texels (die Karte genau aus dem
+// Auge gebacken, 128 × 256) liegt bei der Weide bei 1,7 px. 0 Gänge: jede Ansicht an der Stelle des Quads (die Karte bis w27, die
+// Mutante der Strich-Wand in gate:foundry-impostor).
 AnazhRealm.KARTE_RELIEF = Object.freeze({ gaenge: 3, texel: 4, start: 0.48, halt: 0.48 });
 
 // DAS JAHR DER KARTE (w21-laub-jahr-fern, `_karteJahr`): `stufen` Stufen je Jahr — die Karte backt ihr Laub in der Präsenz und
