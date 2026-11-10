@@ -1,4 +1,6 @@
-ABGABE 972a2bcf (Zweig w27-studio-mesh, main 900c28e gemischt — dc29205f steht in main seit V18.546.243) · Probe-Ruf: gate:garage-labor, gate:studio-uebergabe, bild:wiese@0.5 · Station: w27-studio-mesh-pm d8ee61f (die Differenz je Seh-Klasse; davor 4846d77, c0d7963)
+ABGABE d77c2744 (Zweig w27-studio-mesh, main 900c28e gemischt — dc29205f steht in main seit V18.546.243) · Probe-Ruf: gate:studio-uebergabe, gate:wasser-leben:bild, bild:wiese@0.5 · Station: w27-studio-mesh-pm d8ee61f (die Differenz je Seh-Klasse; davor 4846d77, c0d7963)
+
+## 10.11. 08:54 — GPU-PROBE 972a2bcf auf radeon-890m: ROT in 367 s (gate:garage-labor ROT 105 s auf radeon-890m · gate:studio-uebergabe GRÜN 49 s auf radeon-890m · bild:wiese@0.5 GRÜN 53 s auf radeon-890m) → probe-post/w27-studio-mesh/972a2bcf.md
 
 ## 10.11. 02:57 — GPU-PROBE dc29205f auf radeon-890m: GRÜN in 525 s (gate:studio-uebergabe GRÜN 63 s auf radeon-890m · gate:wasser-leben:bild GRÜN 42 s auf radeon-890m · bild:wiese@0.5 GRÜN 71 s auf radeon-890m) → probe-post/w27-studio-mesh/dc29205f.md
 
@@ -28,6 +30,9 @@ studio-stoff), gate:regler-wirkt liest sie, und `buehneZeichnet` wendet beide in
 Scheibe und Lichtern und zog ihr Glas in zwei Zügen. Wirkung auf K4: KEINE messbare (die Scheibe der Bühne 28,3 Luma vorher wie nachher) — eine Wahrheit
 der Bühne, kein Punkt. **Geliefert (Station `d8ee61f`):** die Differenz je Seh-Klasse in Ausgabe und Zeile („glas s/a · metall s/a …“), damit die Farm auf
 echter GPU den Stoff nennt, der springt.
+
+**Probe 972a2bcf (Radeon):** gate:studio-uebergabe GRÜN, bild:wiese@0.5 GRÜN (gegen dc29205f mittlere |Δ| 0,04 Luma — die Welt unverändert), gate:garage-labor in
+sich GRÜN, doch auf swiftshader (die Linse wählt ihren Adapter selbst) — die Probe urteilt das ROT; neu abgegeben als d77c2744 mit Proben, die auf der Karte urteilen.
 
 **Ehrlich offen (mit Messnamen):**
 - **studios.K4 Kamera der Bühne:** die Bühne zeigt ohne die Foto-Kette der Welt (Bloom, zeitliche Auflösung); Glas und Klinge springen am Bloom. M.
