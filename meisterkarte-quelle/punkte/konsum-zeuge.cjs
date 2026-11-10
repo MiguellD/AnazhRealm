@@ -12,6 +12,7 @@
 //     Moduls ist kein Text-Lesen, seine Bereiche nennt die Coverage). Asynchrones Lesen ist in diesem Baum das Ausliefern eines
 //     Servers (save-server.js, statikServer) und zählt nie: was die Seite lud, nennt die Seite.
 //   · `geladen`: ein gelesenes Verzeichnis „pfad/“ („pfad/**“ rekursiv) — eine Datei, die dort dazukommt oder fällt, ändert den Lauf.
+//   · `blind`: ein Kind (node, eine Shell), das der Prozess mit einer Umgebung OHNE den Zeugen startete — sein Code bliebe ungenannt.
 //   · `npm`: der Prozess IST npm (npm-cli, npx) — nur dann zählt das Befehls-Verzeichnis `scripts` der package.json (jeder Prozess
 //     mit puppeteer liest package.json für dessen Einstellung; eine Skript-Zeile mehr ändert seinen Lauf nicht).
 //   · DIE SEITE (nur mit PUNKTE_KONSUM_SEITE=1: nie an einer Zeit-Station, nie in der Welt der Sitzung): die Precise Coverage je
@@ -40,7 +41,7 @@ if (KONSUM && BAUM) {
     const SEITE = process.env.PUNKTE_KONSUM_SEITE === "1";
     const ICH = process.pid + (faden.isMainThread ? "" : "-" + faden.threadId);
     const { readFileSync: lies, readdirSync: liste, writeFileSync: schreibe, existsSync: gibt } = fs;
-    const konsum = { js: new Map(), skripte: new Set(), geladen: new Set(), ganz: new Set(), texte: new Set(), ziele: new Set(), browser: false, warum: {} };
+    const konsum = { js: new Map(), skripte: new Set(), geladen: new Set(), ganz: new Set(), texte: new Set(), ziele: new Set(), browser: false, warum: {}, blind: [] };
     // eine Datei zählt GANZ — mit dem ersten Grund beim Namen (`warum`, die Faltung zählt ihn)
     const ganz = (p, grund) => (konsum.ganz.add(p), (konsum.warum[p] = konsum.warum[p] || grund));
     const relativ = (abs) => path.relative(BAUM, abs).split(path.sep).join("/");
@@ -132,6 +133,7 @@ if (KONSUM && BAUM) {
             ["Profiler.enable"],
             ["Profiler.startPreciseCoverage", { callCount: false, detailed: false }],
             ["Debugger.enable"],
+            ["Debugger.setSkipAllPauses", { skip: true }],
             ["Network.enable"],
             ["Runtime.addBinding", { name: "__punkteKonsumText" }],
             ["Page.addScriptToEvaluateOnNewDocument", { source: TEXT }],
@@ -152,10 +154,15 @@ if (KONSUM && BAUM) {
                     verloren(z);
                 }
     };
+    // vor jedem Schritt der Linse, der Ziele beendet (die Seite schließt; sie lädt neu: ihre Fäden enden mit dem alten Dokument), die Nahme
     const seiten = new WeakSet();
     const seitenZu = (P) => {
         if (seiten.has(P)) return;
         seiten.add(P);
+        for (const weg of ["goto", "reload", "setContent", "goBack", "goForward"]) {
+            const alt = P[weg];
+            if (typeof alt === "function") P[weg] = async function (...a) { await nimm(); return alt.apply(this, a); };
+        }
         const zu = P.close;
         P.close = async function (...a) {
             await nimm();
@@ -270,7 +277,7 @@ if (KONSUM && BAUM) {
             konsum.texte.clear();
         }
         return JSON.stringify({ js, skripte: [...konsum.skripte], geladen: [...konsum.geladen], ganz: [...konsum.ganz], warum: konsum.warum, browser: konsum.browser, seite: SEITE,
-            npm: /(^|[\\/])(npm-cli\.js|npx-cli\.js|npm|npx)$/.test(process.argv[1] || "") });
+            npm: /(^|[\\/])(npm-cli\.js|npx-cli\.js|npm|npx)$/.test(process.argv[1] || ""), blind: konsum.blind });
     };
     let zu = false;
     function abschluss() {
@@ -308,6 +315,26 @@ if (KONSUM && BAUM) {
         // ohne Wache antwortet der Prozess keinem Ruf: der Läufer nennt ihn beim Namen (kein Fenster-Stück)
     }
     if (faden.isMainThread) {
+        // EIN KIND OHNE ZEUGEN: startet der Prozess node oder eine Shell mit einer Umgebung, die den Zeugen nicht trägt, läuft dort Code,
+        // den niemand nennt — beim Namen (`blind`; die Faltung der Maschine verwirft dann den Konsum des Laufs, nie still klein)
+        const kp = require("child_process");
+        const traegt = (env) => !env || (env.PUNKTE_KONSUM === KONSUM && /konsum-zeuge\.cjs/.test(env.NODE_OPTIONS || ""));
+        const laeufer = (f) => /(^|[\\/])(node|nodejs|bash|sh|zsh|cmd|powershell|pwsh|npm|npx)(\.exe|\.cmd)?$/i.test(String(f || ""));
+        const merke = (f, a) => konsum.blind.length < 8 && konsum.blind.push([f, ...(Array.isArray(a) ? a : [])].join(" ").slice(0, 160));
+        const starte = kp.ChildProcess.prototype.spawn;
+        kp.ChildProcess.prototype.spawn = function (o) {
+            const env = o && Array.isArray(o.envPairs) ? Object.fromEntries(o.envPairs.map((x) => [x.slice(0, x.indexOf("=")), x.slice(x.indexOf("=") + 1)])) : null;
+            if (o && laeufer(o.file) && !traegt(env)) merke(o.file, (o.args || []).slice(1));
+            return starte.apply(this, arguments);
+        };
+        for (const weg of ["spawnSync", "execFileSync", "execSync"]) {
+            const alt = kp[weg];
+            kp[weg] = function (f, a, o) {
+                const opt = [a, o].find((x) => x && typeof x === "object" && !Array.isArray(x));
+                if (opt && opt.env && !traegt(opt.env) && (weg === "execSync" || opt.shell || laeufer(f))) merke(f, a);
+                return alt.apply(this, arguments);
+            };
+        }
         const toeten = require("child_process").ChildProcess.prototype.kill;
         const bitteVor = (pid) => {
             const bitte = path.join(KONSUM, pid + ".bitte");

@@ -3833,9 +3833,14 @@ function standDiff(repo, von, bis) {
 // Linsen-Hülle — abnahme-urteil.cjs, welt-boot.cjs — 388 von 388 Stations-Hälften alt, an der fünften 315; die Messung holt die
 // Integration nie ein). Eine Station veraltet nur, wenn sie den geänderten Code AUSFÜHRTE: der Zeuge konsum-zeuge.cjs fährt in jedem
 // node-Prozess des Laufs (Vorarbeit r6-konsum-koord, 26.10.), die Faltung legt seinen Konsum komprimiert in den Eintrag der Messung —
-// je Datei die ausgeführten Zeilen am Mess-SHA ("3-40,52") oder "*" (ganz gelesen: Daten, Dokument, Text-Scan; ein Skript ohne
-// Coverage) und je gelesenes Verzeichnis "pfad/" ("pfad/**" rekursiv). Eine Messung MIT Konsum ist alt, wenn der Diff seit ihr eine
-// Zeile in einer ausgeführten Spanne ändert, eine ganz gelesene Datei ändert, einem gelesenen Verzeichnis eine Datei gibt oder nimmt
+// je Skript EIN Bit je Funktion des Parsers am Text des Mess-SHA ("<h>:<Bits>", skriptBits; der Kopf-Code eines geladenen Skripts zählt
+// immer) oder "*" (ganz gelesen: Daten, Dokument, Text-Scan; ein Skript ohne Coverage) und je gelesenes Verzeichnis "pfad/" ("pfad/**"
+// rekursiv). IM EINTRAG der Mess-Datei: `konsum` (der Abdruck des Laufs, sein Schlüssel in m.konsumTafel — Zwillinge teilen ihn),
+// `konsumBoot` (in der Sitzung: der Abdruck des Boots ihrer Welt, EINER für alle Proben), `konsumN` (Dateien), `konsumSeite`,
+// `konsumGanz` ({ Grund: Zahl } der ganz gezählten Dateien) — oder `konsumFehlt` (der Grund, warum der Lauf keinen trägt).
+// Eine Messung MIT Konsum ist alt, wenn der Diff seit ihr eine Zeile ändert, die der Lauf ausführte (Kopf-Code, der Rumpf einer
+// gerufenen Funktion — ein reiner Kommentar-Hunk nie, kommentarHunk), eine ganz gelesene Datei ändert (package.json nur außerhalb
+// ihres Befehls-Verzeichnisses, solange kein npm lief — standDiff), einem gelesenen Verzeichnis eine Datei gibt oder nimmt
 // oder eine im Befehl genannte Datei trifft, die der Konsum nicht als Skript trägt (ein Shell-Skript läuft ohne Zeugen). Die statische
 // require-Hülle (linsenVon) und der Glob urteilen über sie nicht mehr — AUSSER: trägt der Konsum die SEITE nicht (`konsumSeite`
 // false: eine Zeit-Station, eine Probe der Sitzung — der Zeuge misst dort nie in der Seite, konsum-zeuge.cjs), urteilt über die
@@ -3987,6 +3992,9 @@ function konsumFalten(stuecke, baum, acorn = konsumAcorn(baum)) {
         const k = {}, js = new Map(), warum = {};
         const ganz = (p, grund) => ((k[p] = "*"), (warum[p] = warum[p] || grund));
         let seite = true;
+        // ein Kind ohne Zeugen (konsum-zeuge.cjs `blind`): der Lauf führte Code aus, den niemand nennt — kein Konsum, beim Namen
+        const blind = stuecke.flatMap((r) => r.blind || []);
+        if (blind.length) return { konsumFehlt: "ein Kind ohne Zeugen (seine Umgebung trägt ihn nicht): " + blind[0] };
         for (const r of stuecke) {
             if (r.browser && !r.seite) seite = false;
             for (const p of r.ganz) ganz(p, (r.warum && r.warum[p]) || "gelesen");
@@ -5792,6 +5800,12 @@ async function selbsttest(o = {}) {
         fs.writeFileSync(path.join(ord, "4194000.offen"), "");
         const kf = await konsumDesLaufs(ord, baum, null);
         pruef("KONSUM ein Prozess ohne Ende → keine Konsum-Menge, der Grund beim Namen", !kf.konsum && /^1 Prozess\(e\) ohne Ende \(hart getötet oder ohne Antwort\): 4194000$/.test(kf.konsumFehlt), JSON.stringify(kf));
+        // EIN KIND OHNE ZEUGEN (die Mutante: die Linse startet node mit leerer Umgebung): der Lauf trägt keinen Konsum — beim Namen
+        {
+            fs.writeFileSync(path.join(baum, "scripts", "blind.cjs"), 'require("child_process").spawnSync(process.execPath, ["-e", "require(\'./kind.js\').k()"], { env: { PATH: process.env.PATH } });\nrequire("fs").writeFileSync(process.argv[2], JSON.stringify({ n: 0 }));\n');
+            const eb = await fahreStation({ ...sk, befehl: ["node", "scripts/blind.cjs", "{AUS}"] }, { ...ctx("konsum-blind"), baum, deckelMinS: 60 });
+            pruef("KONSUM ein node-Kind mit einer Umgebung ohne den Zeugen → keine Konsum-Menge, der Grund beim Namen", eb.gruen && !eb.konsum && /^ein Kind ohne Zeugen \(seine Umgebung trägt ihn nicht\): /.test(eb.konsumFehlt || ""), JSON.stringify({ gruen: eb.gruen, fehlt: eb.konsumFehlt, konsum: !!eb.konsum }));
+        }
         // DIE FENSTER einer lebenden Welt (die Sitzung): das Boot, dann je Probe, was SEIT der letzten Nahme lief — `ja` im ersten Fenster,
         // `nein` im zweiten und `ja` dort nicht mehr; der Kopf-Code des geladenen Moduls steht in jedem
         {
