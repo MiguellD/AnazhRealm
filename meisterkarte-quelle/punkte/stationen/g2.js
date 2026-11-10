@@ -4499,6 +4499,7 @@ const stationen = [
             "stamm/dirigent-takt.js",
             "save-server.js",
             "scripts/werkbank.cjs",
+            "scripts/lib/zerlege-linse.cjs",
             "scripts/lib/ausgabe-aufnahme.cjs",
             "scripts/lib/abnahme-urteil.cjs",
             "scripts/lib/software-gpu.cjs",
