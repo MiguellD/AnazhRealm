@@ -1,7 +1,7 @@
 {
  "sha": "78d37554b2d5f98d96ef454cfa9f51752c0e45a0",
  "geraet": "gtx",
- "zeit": "2026-11-10T04:26:03.963Z",
+ "zeit": "2026-11-10T04:31:45.518Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "ferne.K1#2": {
@@ -147,6 +147,55 @@
    },
    "zeit": "2026-11-10T04:26:03.963Z",
    "abdruck": "455ca280d176",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "licht.K3#2": {
+   "gruen": false,
+   "zahl": "fichte@0.5 0.317 · fichte@0.27 0.426 · fichte@0.05 0.666 · tanne@0.5 1.021 · tanne@0.27 0.806 · tanne@0.05 0.668 · ring@0.5 0.988 · ring@0.27 1.013 · ring@0.05 0.995 · feld@0.5 0.947 · feld@0.27 0.925 · feld@0.05 0.961 · feld0@0.5 0.923 · feld0@0.27 0.94 · feld0@0.05 0.966 · feld90@0.5 0.937 · feld90@0.27 0.938 · feld90@0.05 0.974 · feld180@0.5 0.937 · feld180@0.27 0.935 · feld180@0.05 0.975 · panorama@0.5 0.944 · panorama@0.27 0.969 · panorama@0.05 0.96 · spiegel@0.5 1.056 · spiegel@0.27 0.949 · spiegel@0.05 1.003 · spiegel180@0.5 0.942 · spiegel180@0.27 0.972 · spiegel180@0.05 0.995 · wasser@0.5 0.919 · wasser@0.27 0.95 · wasser@0.05 0.941 · Soll 0,9–1,1 · [linse-gpu] nvidia/pascal",
+   "exit": 1,
+   "minuten": 1.06,
+   "grund": "ROT: fichte@0.5 0.317 · fichte@0.27 0.426 · fichte@0.05 0.666 · tanne@0.5 1.021 · tanne@0.27 0.806 · tanne@0.05 0.668 · ring@0.5 0.988 · ring@0.27 1.013 · ring@0.05 0.995 · feld@0.5 0.947 · feld@0.27 0.925 · feld@0.05 0.961 · feld0@0.5 0.923 · feld0@0.27 0.94 · feld0@0.05 0.966 · feld90@0.5 0.937 · feld90@0.27 0.938 · feld90@0.05 0.974 · feld180@0.5 0.937 · feld180@0.27 0.935 · feld180@0.05 0.975 · panorama@0.5 0.944 · panorama@0.27 0.969 · panorama@0.05 0.96 · spiegel@0.5 1.056 · spiegel@0.27 0.949 · spiegel@0.05 1.003 · spiegel180@0.5 0.942 · spiegel180@0.27 0.972 · spiegel180@0.05 0.995 · wasser@0.5 0.919 · wasser@0.27 0.95 · wasser@0.05 0.941 · Soll 0,9–1,1 · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "s": 63.6,
+   "fremd": {
+    "s": 66,
+    "takte": 30,
+    "fremdS": 117.75,
+    "kerne": 1.785,
+    "fensterKerne": 2.072,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      69.73
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      12.47
+     ],
+     [
+      "MsMpEng.exe",
+      11.16
+     ]
+    ],
+    "dienerS": 18.91,
+    "diener": [
+     [
+      "dwm.exe",
+      9.22
+     ],
+     [
+      "System",
+      5.67
+     ]
+    ],
+    "eigenS": 193.83,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-10T04:31:45.518Z",
+   "abdruck": "fd08d15b7871",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
@@ -1406,24 +1455,30 @@
   }
  },
  "sitzung": {
-  "start": "2026-11-10T04:25:25.658Z",
+  "start": "2026-11-10T04:30:50.493Z",
   "port": 7804,
   "warten": 0.02,
-  "bootS": 8.5,
+  "bootS": 6.3,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": "wiese",
-    "vor": "licht.K2#2",
-    "s": 28.5,
-    "takte": 565,
+    "ort": "dorf",
+    "vor": "licht.K3#2",
+    "s": 47.2,
+    "takte": 1449,
     "chunks": 81,
     "nach": null
    }
   ],
   "wegeTueren": [],
+  "unerklaert": [
+   {
+    "probe": "licht.K3#2",
+    "wie": "orte +-3,-3 · wege +3 [-748.3,-821.3,-615.9,-784.1/28] [-805.3,-801.4,-689.5,-574/6] [-833.8,-834.7,-648.1,-574.2/76] (-3,-3, netz:-3,-3, netz:-3,-3|-4,-4)"
+   }
+  ],
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
@@ -1436,11 +1491,11 @@
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 91,
+   "zapfen": 111,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 98.1,
-  "minuten": 1.69
+  "fahrtS": 118.2,
+  "minuten": 2.02
  }
 }
