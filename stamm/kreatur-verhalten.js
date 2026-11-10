@@ -1229,7 +1229,7 @@ class AnazhRealm_kreatur_verhalten {
         const leib = this._kreaturLeib(c, L, this._kreaturWegLeib || (this._kreaturWegLeib = {}));
         const T = AnazhRealm.LEIB_TEIL;
         const weg = Math.hypot(v.x, v.z) * dt;
-        const teile = Math.max(1, Math.ceil(weg / Math.max(T.minM, T.radius * Math.min(...leib.rad)))); // die schmalste Achse
+        const teile = Math.max(1, Math.ceil(weg / Math.max(T.minM, T.radius * leib.radius)));
         const h = dt / teile;
         for (let k = 0; k < teile; k++) {
             const x0 = c.position.x;

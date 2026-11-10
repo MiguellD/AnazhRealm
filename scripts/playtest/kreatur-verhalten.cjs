@@ -2558,7 +2558,7 @@ async function checkBandKreaturKosten({ page, check }) {
         // ── (G) DER RUHENDE LEIB (K59, Gebot 7): außer Bild, fern, ohne Zustand → grober Takt, kein Matrix-Gang ──
         // Der Null-Renderer backt kein Feld (`_tickKreaturZiegel` schweigt headless): die Probe trägt den Bake-Versuch
         // (`_kzVersuch`) wie ein ferner Leib, dessen Feld steht. Der Frustum kommt wie im Loop aus `_loopFrustumCulling`;
-        // der Matrix-Gang ist `scene.updateMatrixWorld()` wie im Render. Gezählt: volle Schritte (`_kreaturHuellenKontakt`
+        // der Matrix-Gang ist `scene.updateMatrixWorld()` wie im Render. Gezählt: volle Schritte (`_kreaturWeg`
         // je Schritt), die Zeit der Schritte (`_kreaturLaufTakt` trägt das dt), die Gänge in ein angehängtes Kind.
         o.g = (() => {
             const T3 = window.THREE;
@@ -2584,9 +2584,11 @@ async function checkBandKreaturKosten({ page, check }) {
             };
             probe.add(kind);
             const P = Object.getPrototypeOf(r);
-            r._kreaturHuellenKontakt = function (c) {
+            // je Schritt des Leibs EIN Weg (`_kreaturWeg`) — nie seine Teil-Schritte gegen die Hülle: ein schmaler Leib (das Quer-Maß
+            // der Gestalt, physik.K2 Staffel 2) teilt seinen Weg öfter, die Kadenz der KI bleibt die seiner Schritte
+            r._kreaturWeg = function (c) {
                 if (c === probe) g.schritte++;
-                return P._kreaturHuellenKontakt.apply(this, arguments);
+                return P._kreaturWeg.apply(this, arguments);
             };
             r._kreaturLaufTakt = function (c, dt) {
                 if (c === probe) g.zeit += dt;
@@ -2805,7 +2807,7 @@ async function checkBandKreaturKosten({ page, check }) {
                 g.g11 = { band: r._detailBand(400 / 43.2).aiDiv, ruht: u._ruht === true, schritte: g.schritte, ki };
                 delete r._tickCreatureTaskDirection;
             } finally {
-                delete r._kreaturHuellenKontakt;
+                delete r._kreaturWeg;
                 delete r._kreaturLaufTakt;
                 delete r._leibMatrix;
                 delete r._kzBesitztFeld;
