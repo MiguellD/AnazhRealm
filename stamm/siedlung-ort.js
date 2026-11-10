@@ -274,13 +274,26 @@ class AnazhRealm_siedlung_ort {
         const d = Object.assign({}, dp || {});
         const ort = d.ort;
         delete d.ort;
+        // DAS WASSER DES RASTERS (die Stadt-Grammatik liest es, fachwerk `dorfLayout`): der Faden nennt je Zelle im Umkreis des
+        // größten Rings samt Vorstadt, ob dort das Wasser des Gesetzes steht (`nass`, das Urteil der Ort-Wahl) — seine Kacheln
+        // liegen, bevor er urteilt (`_ensureHydroTilesAround`, wie die Ort-Wahl)
+        const nassR = AnazhRealm.ORT_WASSER_M;
+        const wasser =
+            ort && this._ensureHydroTilesAround(ort.x, ort.z, nassR)
+                ? Promise.all([...this._hydroBestellt.values()].map((e) => e.zusage))
+                : Promise.resolve();
         const raster = ort
-            ? this._nebenAuftrag("ort", {
-                  type: "ort-raster",
-                  x: ort.x,
-                  z: ort.z,
-                  rahmen: globalThis.__fachwerkCore.trasseRahmen(d.nH),
-              }).then(
+            ? wasser
+                  .then(() =>
+                      this._nebenAuftrag("ort", {
+                          type: "ort-raster",
+                          x: ort.x,
+                          z: ort.z,
+                          rahmen: globalThis.__fachwerkCore.trasseRahmen(d.nH),
+                          nass: { W: AnazhRealm.ORT_WAHL, M: AnazhRealm.WERK_LAND_M, r: nassR },
+                      })
+                  )
+                  .then(
                   (r) => r.raster,
                   (e) => (
                       this.log(`SIEDLUNG: der Export wartet auf das Höhen-Raster — ${(e && e.message) || e}`, "INFO"),
@@ -3093,6 +3106,9 @@ AnazhRealm.WEGENETZ = Object.freeze({
     zugangM: 60,
     entwurfKmh: Object.freeze({ ortsdurchfahrt: 50, wohnstrasse: 30, gasse: 25, feldweg: 40 }),
 });
+// DAS WASSER IM RASTER EINES PLANS (`_foundryRequestSettlement`, voxel-worker `ort-raster`): so weit um den Ort nennt der Faden
+// das Wasser des Gesetzes je Zelle — der größte Ring (fachwerk `dorfLayout`: 195 m) samt der Ausfallstraße der Metropole (230 m)
+AnazhRealm.ORT_WASSER_M = 440;
 // DAS LAND EINES WERKS (m über dem Wasser des Gesetzes, `_fundamentLand` → `_landAt`): so hoch liegt jeder Punkt eines
 // Fundaments samt Saum und Vorplatz über dem Spiegel — die Wand jedes Werks und die Ort-Wahl (`ortTraegt` im Ort-Faden) urteilen gleich.
 AnazhRealm.WERK_LAND_M = 0.2;

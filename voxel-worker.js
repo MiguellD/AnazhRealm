@@ -319,7 +319,25 @@ function nachricht(e) {
             // DAS HÖHEN-RASTER DER TRASSE (siedlung.K3): der Grund im Rahmen `rahmen` (fachwerk `trasseRahmen`) um den Ort x/z am
             // Zustand des Gesetzes (gelaende-core `hoehenRaster`) — der Wirt reicht es dem Export, dessen Gassen ihm folgen
             const raster = G.hoehenRaster(state, msg.x, msg.z, msg.rahmen);
-            self.postMessage({ type: "ort-raster-result", requestId: msg.requestId, raster }, [raster.h.buffer]);
+            // DAS WASSER DES RASTERS (die Stadt-Grammatik, fachwerk `hoeheAusRaster` nass): je Zelle im Umkreis `nass.r`, ob das
+            // Urteil der Ort-Wahl (`ortNass` mit ihrem W und M, ohne Erdbau) an einem ihrer neun Punkte (im Drittel ihrer Kante:
+            // ein Bach ist schmaler als die Zelle) Wasser nennt — der Plan stellt dort kein Los und keine Gasse hin, statt dass
+            // die Ort-Wahl den ganzen Ort rückt
+            const transfer = [raster.h.buffer];
+            if (msg.nass) {
+                const { x0, z0, d, n } = raster;
+                raster.nass = new Uint8Array(n * n);
+                for (let j = 0; j < n; j++)
+                    for (let i = 0; i < n; i++) {
+                        const [x, z] = [x0 + i * d, z0 + j * d];
+                        if (Math.hypot(x, z) > msg.nass.r) continue;
+                        for (let k = 0; k < 9 && !raster.nass[i + j * n]; k++)
+                            if (ortNass(msg.nass, null, msg.x + x + ((k % 3) - 1) * (d / 3), msg.z + z + (((k / 3) | 0) - 1) * (d / 3)))
+                                raster.nass[i + j * n] = 1;
+                    }
+                transfer.push(raster.nass.buffer);
+            }
+            self.postMessage({ type: "ort-raster-result", requestId: msg.requestId, raster }, transfer);
         } else if (msg.type === "ort-weg") {
             // DER FELDWEG ZWISCHEN ZWEI ORTEN (fahrzeug.K2): das Raster seines Rahmens am Zustand des Gesetzes und sein Lauf
             // über dem Grund von den Wegen des einen Orts (a) zu denen des anderen (b, fachwerk `wegZwischen`) — beides im

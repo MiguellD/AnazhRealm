@@ -2,7 +2,8 @@
 // Teil Z (`--nur-z` allein): das Rang-Gesetz (`rangZensus`) · K (`--nur-k` nach Z): die Kreuzung als EINE Fläche
 // (`kreuzungsUrteil`) · N: der Export
 // deterministisch und eingefroren (spec/asset-contract/v6/golden/siedlung.json, gemintet nur ohne Datei) · B (Browser): Worker,
-// Slots am Anker, Wasser- und fail-closed-Wand, Erlebnis-Schichten · C: die Auto-Zellen · O: der Ort auf dem Gelände.
+// Slots am Anker, Wasser- und fail-closed-Wand, Erlebnis-Schichten · C: die Auto-Zellen · O: der Ort auf dem Gelände ·
+// `--breite [--ort stadt-voll]` allein: die Breite der Stadt im Gang durch ihre Gassen (lib/stadt-proben.cjs, die Zeile `BREITE {…}`).
 // --selftest: jede Wand feuert an injizierten Brüchen.
 const {
     statikServer,
@@ -21,7 +22,9 @@ const {
     jsonSchreiben,
     jsonKlon,
     fehlerStapel,
+    taeterFaelle,
 } = require("./lib/welt-boot.cjs");
+const { stadtBreite, breiteUrteil, breiteSelbsttest, BREITE } = require("./lib/stadt-proben.cjs");
 
 const goldenDir = path.join(root, "spec/asset-contract/v6/golden");
 const goldenFile = path.join(goldenDir, "siedlung.json");
@@ -967,6 +970,8 @@ const FIXTURES = [
 
 hauptLauf(async () => {
     const FC = studioKern("fachwerk-core.js", "__fachwerkCore");
+    // die Bau-Typen der EINEN Grammatik: ihre Tafel und die Rollen des Gesetzes davor (das Haus, die Kirche, der Palas, die Scheune)
+    const breiteRollen = [...Object.keys(FC.STADT_GRAMMATIK.bau), "wohnhaus", "kirche", "burg", "scheune"];
 
     // ===== SELBST-TEST =====
     if (SELBSTTEST) {
@@ -1192,8 +1197,23 @@ hauptLauf(async () => {
         // V-C2: der Ort hält den Zug — die Ruhe am Null-Renderer (vor w12-dorf-probe) und ein Takt, der unter dem Haken bestellt,
         // fallen beim Namen
         check("Selbst-Test C2", !dorfZugAmOrt({ still: 1 }) && dorfZugAmOrt({ ohne: 1, still: 1 }));
+        errs.push(...breiteSelbsttest(taeterFaelle, breiteRollen)); // die Breite der Stadt: der grüne Gang und seine Täter
         selbsttestEnde(errs);
         process.exit(0);
+    }
+    // ===== DIE BREITE DER STADT (siedlung, Staffel Breite): die Stadt des Messorts steht in der Welt, der Gang durch jede Gasse
+    // zählt, was steht und im Bild ist (lib/stadt-proben.cjs) =====
+    if (process.argv.includes("--breite")) {
+        const ort = process.argv.includes("--ort") ? process.argv[process.argv.indexOf("--ort") + 1] : BREITE.ort;
+        const server = statikServer();
+        const { browser, page } = await nullWelt(server, { port: Number(process.env.SETTLEMENT_PORT || 4436), frist: 900000 });
+        const m = await page.evaluate(stadtBreite, { ...BREITE, ort });
+        await browser.close();
+        server.close();
+        const v = breiteUrteil(m, breiteRollen);
+        check(`BREITE (siedlung) die Stadt am Messort ${m.ort} im Gang durch ihre Gassen`, !v.length, v.join(" · "));
+        console.log(`BREITE ${JSON.stringify(m)}`);
+        process.exit(errs.length ? 1 : 0);
     }
 
     // Teil J urteilt über das Gesetz und seine Mutanten: ohne Erbe bricht die Überdeckung, der Turm von 1455 (bis K4 die

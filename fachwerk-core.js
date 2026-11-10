@@ -3627,13 +3627,13 @@
     // DAS GEWEBE UND DER GRUND DER STADT (dorfLayout, die Stadt der Grammatik: ummauert, um ihren Markt). gasse*: die Fußgasse
     // der Dichte — Breite (unter VERKEHR_GESETZ.breiteM: kein Wagen), Abstand zweier Gassen längs ihrer Straße, der erste
     // Abzweig, der erste Abzweig der Hintergasse von einer Gasse, die kürzeste und die längste; fluchtM: so nah an einer anderen Straße schließt sie an; mauerM: so weit vor dem Ring
-    // endet sie. markt*: die Tiefe des Platzes je Breite und ihr Band; standRandM: der Rand des Platzes ohne Stand. zug*: der
+    // endet sie; wasserM: so weit hält ein Los und eine Gasse vom Wasser des Rasters. markt*: die Tiefe des Platzes je Breite und ihr Band; standRandM: der Rand des Platzes ohne Stand. zug*: der
     // Radius, den ein Viertel um seinen Anker hält (Burg, Kirche, je Los des Handwerks), und der Bruchteil des Rings, auf dem
     // das Handwerk liegt. friedhof: seine halbe Tiefe (so breit wie die Kirche), sein Rand ohne Grab und der Abstand zur Kirche.
     var STADT_DICHTE = {
         gasseM: 2.8, gasseTeilung: 28, gasseAb: 14, gasseHinterM: 22, gasseMinM: 18, gasseLangM: 54, fluchtM: 7, mauerM: 16,
         marktJeBreite: 1.3, marktTief: [12, 24], standRandM: 2.6,
-        zugBurgM: 24, zugKircheM: 16, zugJeLosM2: 170, zugSeite: 0.6, zugFremd: 300,
+        wasserM: 3, zugBurgM: 24, zugKircheM: 16, zugJeLosM2: 170, zugSeite: 0.6, zugFremd: 300,
         friedhof: { tiefM: 7.5, randM: 1.4, abM: 1.5 },
     };
     // DIE VIERTEL EINES PLANS (DORF): je Los der Gründungs-Folge sein Viertel, je Bau des Loses (der Bau der Gegenwart `geb[i]`
@@ -3881,6 +3881,9 @@
         if(!(fx>=0&&fz>=0&&fx<=n-1&&fz<=n-1)){ mass.aussen++; fx=Math.max(0,Math.min(n-1,fx||0)); fz=Math.max(0,Math.min(n-1,fz||0)); }
         const i=Math.min(n-2,fx|0), j=Math.min(n-2,fz|0), u=fx-i, v=fz-j, k=i+j*n;
         return (h[k]*(1-u)+h[k+1]*u)*(1-v)+(h[k+n]*(1-u)+h[k+n+1]*u)*v; };
+      /*DAS WASSER DES RASTERS (`nass`, optional: der Ort-Faden nennt es je Zelle, voxel-worker `ort-raster`): steht am Punkt Wasser des Gesetzes? Die Zelle, in der er liegt, und — `saum` m um ihn — ihre Nachbarn. Leser: die Stadt der Grammatik (`dorfLayout`: kein Los, keine Gasse im Wasser)*/
+      const N=r.nass&&r.nass.length===n*n?r.nass:null, zelle=(x,z)=>{ const i=Math.round((x-r.x0)/d), j=Math.round((z-r.z0)/d); return i>=0&&j>=0&&i<n&&j<n&&N[i+j*n]===1; };
+      H.nass=N?(x,z,saum)=>{ const s=saum||0; return zelle(x,z)||(s>0&&(zelle(x-s,z)||zelle(x+s,z)||zelle(x,z-s)||zelle(x,z+s))); }:null;
       H.mass=mass; return H; }
     // DER FELDWEG ZWISCHEN ORTEN (fahrzeug.K2): das Wegenetz der Welt verbindet je zwei benachbarte Orte über einen Feldweg, der
     // dem Grund folgt — der günstigste Lauf von einem Punkt der Wege des einen Orts (`A`) zu einem des anderen (`B`) über das
@@ -4623,6 +4626,7 @@
           roads.push({a:-1,b:-1,pts:qp,w:lw,gen:2,vor:true}); edepth.push(8); } } } }
   const pl=new Array(n), obbs=(plan.belegt||[]).map(o=>({i:'belegt',o})), brunnen=[], fences=[], felder=[], staende=[];   /*belegt: Grundrisse, die vor jedem Haus stehen (der Kern eines Rings, `ringUm`)*/
   let platz=null;
+  const nassAm=(x,z,saum)=>!!(H&&H.nass&&H.nass(x,z,saum));
   const SG=STADT_GRAMMATIK, SD=STADT_DICHTE, stadt=walled&&plan.kernel==='markt'&&!!plan.grammatik;   /*DIE STADT DER GRAMMATIK (DORF `grammatik`) in ihrem Ring um ihren Markt: Viertel, Gewebe, Flaechen und Gegenstaende*/
   const zonen=[], dinge=[];                                                                   /*die Flaechen (`zoneVon`) und die Gegenstaende der Viertel*/
   if(!staedt||plan.kernel==='markt'){ const PW=Math.max(7,5+Math.min(nG,40)*0.30), PD=stadt?Math.max(SD.marktTief[0],Math.min(SD.marktTief[1],PW*SD.marktJeBreite)):Math.max(6,PW*0.55);   /*der Markt der Stadt ist ein Platz, kein Streifen (stadt-voll: 34 × 9,4 m → 34 × 22 m)*/
@@ -4646,7 +4650,7 @@
     const nah=(x,z,ohne,d)=>{ for(let m=0;m<roads.length;m++){ if(m===ohne) continue; if(m<nR?fernKasten(x,z,K[m],d):false) continue; if(punktAuf(roads[m],x,z).d<d) return m; } return -1; };
     const gasse=(i,P,th)=>{ const rd=roads[i], cs=Math.cos(th), sn=Math.sin(th), pts=[{x:P.x,z:P.z,th}]; let x=P.x, z=P.z, durch=false;
       for(let s=DS; s<=SD.gasseLangM; s+=DS){ const nx=x+cs*DS, nz=z+sn*DS;
-        if(Math.hypot(nx,nz)>Rw-SD.mauerM||(H&&Math.abs(H(nx,nz)-H(x,z))/DS>steil)||distPunktOBB(nx,nz,platzObb)<1) break;
+        if(Math.hypot(nx,nz)>Rw-SD.mauerM||(H&&Math.abs(H(nx,nz)-H(x,z))/DS>steil)||distPunktOBB(nx,nz,platzObb)<1||nassAm(nx,nz,SD.wasserM)) break;
         if(s>2*DS&&punktAuf(rd,nx,nz).d<s*0.6) return;                                        /*die Gasse laeuft nicht an ihrer eigenen Strasse entlang (die Kurve)*/
         const m=nah(nx,nz,i,SD.fluchtM);
         if(m>=0){ if(s<SD.gasseMinM) return; const q=punktAuf(roads[m],nx,nz); pts.push({x:q.x,z:q.z,th}); durch=true; break; }
@@ -4678,6 +4682,7 @@
       const oL=hof?{cx:ccx+cu.side*q.nx*(SD.friedhof.abM/2+hofT), cz:ccz+cu.side*q.nz*(SD.friedhof.abM/2+hofT), phi, ex:exH, ez:ezH+SD.friedhof.abM/2+hofT}:o;
       let ok=true;
       if(hof&&Math.hypot(oL.cx,oL.cz)+Math.hypot(oL.ex,oL.ez)>Rw-3) ok=false;
+      if(ok&&stadt&&nassAm(ccx,ccz,Math.hypot(exH,ezH)+SD.wasserM)) ok=false;                   /*DAS LOS DER STADT STEHT NIE IM WASSER (`H.nass`): bis hier kannte der Plan nur die Hoehe — an stadt-voll nahm der Bach ein Haus, und die Ort-Wahl rueckte die ganze Stadt 112 m vom Anker ihres Messorts*/
       if(Rw){ const rc=Math.hypot(ccx,ccz), rq=Math.hypot(exH,ezH);                          // MAUER: Stadt innen, Vorstadt außen, Mauerband tabu
         if(!rd.vor&&rc>Rw-2.2-rq) ok=false;                                                  /*die Strasse der Vorstadt traegt ihr Wort `vor` — bis zur Stadt-Grammatik hiess jede Gasse der Stufe 2 Vorstadt: die 16 Gassen des Baums im Ring von stadt-voll (768 m) trugen nie ein Haus*/
         if(rd.vor&&rc<Rw+1.2+rq) ok=false; if(!ok&&rd.quer)QD.mauer++;
