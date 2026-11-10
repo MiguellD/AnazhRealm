@@ -833,7 +833,7 @@ function zeichnetHaken() {
         ])
             if (K?.prototype[m]) K.prototype[m] = merke(K.prototype[m]);
 }
-// DIE WEICHE: ein Echt-Rezept, dessen Welt-Seiten nie zeichnen, belegt eine GPU-Gruppe (und die Karte) umsonst — ROT beim Namen
+// DIE WEICHE: ein Echt-Rezept, dessen Welt-Seiten nie zeichnen, belegt die Karte umsonst — ROT beim Namen
 async function weicheUrteil(browser, art) {
     const welt = (await browser.pages().catch(() => [])).filter((p) => /^https?:/.test(p.url()));
     const genutzt = async (p) => p.evaluate(() => !!window.__gpuGenutzt).catch(() => true);
@@ -1126,7 +1126,7 @@ async function starteBrowser(opts = {}) {
     if (process.env.CI_KLASSE === "cpu" && GPU_REZEPTE.includes(opts.art))
         melde(
             "klasse",
-            `${path.basename(process.argv[1] || "?")} startet das Echt-Rezept „${opts.art}" in einer CPU-Gruppe der CI — der Schritt gehört in eine GPU-Gruppe (check.yml matrix.klasse)`
+            `${path.basename(process.argv[1] || "?")} startet das Echt-Rezept „${opts.art}" in einer CPU-Gruppe der CI — der Schritt gehört auf die Karte (check.yml echt)`
         );
     const browser = await startePuppeteer(browserOptionen(opts));
     // die Stall-Akte des Browsers: Stderr-Ring (Chrome, GPU-Prozess), Browser-Sitzung für CPU je Prozess, die Schwelle
