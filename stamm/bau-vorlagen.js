@@ -1553,15 +1553,14 @@ class AnazhRealm_bau_vorlagen {
         // Bruchfestigkeit, Brechzahl und Abbe-Zahl, Wärme, Schmelze und Dämpfung jedes Stoffs sind EIN Zugriff auf seine Zeile
         // dort — Stahl, Eisen und Bronze folgen aus ihren Teilen (Eisen + Zementit, Kupfer + Zinn). Bis w28 standen ρ hier
         // (RHO, 17 Zahlen) und c, T_schmelz, E und η in der Tafel SI darunter (84 Zahlen), die Metalle lasen MAT der Schmiede.
-        // Vier Dichten sind der Eintrag eines anderen Gesetzbuchs (`rhoVon` der Zeile), der Wirt verbindet sie:
+        // Vier Dichten sind der Eintrag eines anderen Gesetzbuchs (`rhoVon` der Zeile), der Wirt verbindet sie (`verbinde`):
         const SG = sc.STOFF_GESETZ;
-        if (!SG || !SG.zeile || !SG.SPALTEN) AnazhRealm._kernPflichtBruch("schmiede:STOFF_GESETZ");
-        const RHO_FREMD = {
-            fleisch: { wert: fleisch },
-            leib: { wert: leib },
-            blech: { wert: FG.huelleDichte * FG.wasserRho },
-            wasser: im(globalThis.__vehicleCore.FAHR.wasser, "rho"),
-        };
+        if (!SG || !SG.zeile || !SG.SPALTEN || !SG.verbinde) AnazhRealm._kernPflichtBruch("schmiede:STOFF_GESETZ");
+        const wert = (v) => ({ get: () => v, set: (n) => (v = n) });
+        SG.verbinde("fleisch", wert(fleisch));
+        SG.verbinde("leib", wert(leib));
+        SG.verbinde("blech", wert(FG.huelleDichte * FG.wasserRho));
+        SG.verbinde("wasser", im(globalThis.__vehicleCore.FAHR.wasser, "rho"));
         // DIE HAFTUNG DES RADS (fahrzeug.K1): je Stoff, auf dem ein Rad stehen kann, μ des Reifens trocken und voll nass (`muRad`,
         // `muRadNass`; Bezug der Asphalt des Labors, μ 1) — Tafel-Werte der Reibung Reifen auf Fahrbahn: verdichtete Erde
         // 0,7/0,45, Gras 0,4/0,2, rauer Fels 0,8/0,55, Bohle 0,65/0,4, Metall 0,6/0,35, Laubstreu 0,45/0,2. Leser: der Reibkreis am
@@ -1688,23 +1687,21 @@ class AnazhRealm_bau_vorlagen {
             };
             // die Spalten des Gesetzes: je ein Zugriff auf die Zeile im Kern (wer sie ändert, ändert Klinge, Treffer, Schritt,
             // Knick-Last, Brennpunkt und Spiegel); die Dichte zählt den Stoff-Stand, an dem die Gedächtnisse der Masse hängen
-            const fremd = RHO_FREMD[name];
-            if (fremd && !fremd.get) ((fremd.get = () => fremd.wert), (fremd.set = (v) => (fremd.wert = v)));
-            if (name !== "holz" && !fremd !== !g.rhoVon) AnazhRealm._kernPflichtBruch("STOFF-TAFEL " + name + ": die Dichte hat genau EINE Quelle");
             for (const k of SG.SPALTEN) {
-                const q = k === "rho" && fremd ? fremd : im(g, k);
+                const q = im(g, k);
                 Object.defineProperty(z, k, {
                     enumerable: true,
                     get: q.get,
                     set: (v) => {
                         q.set(v === null ? null : +v);
                         if (k === "rho") AnazhRealm._stoffStand = (AnazhRealm._stoffStand || 0) + 1;
+                        if ((k === "n" || k === "abbe" || k === "rho") && (name === "wasser" || name === "eis")) welt._wasserOptikWirkt();
                     },
                 });
             }
             if (!(z.rho > 0)) throw new Error("STOFF-ZEILE ohne Dichte: " + name);
             // DIE SCHALLGESCHWINDIGKEIT folgt aus der Zeile (√(E/ρ), m/s): der Ton eines Treffers liest sie (klang trefferPaar)
-            Object.defineProperty(z, "schall", { enumerable: true, get: () => SG.schall(z.E, z.rho) });
+            Object.defineProperty(z, "schall", { enumerable: true, get: () => g.schall });
             if (keinBauStoff.includes(name)) z.bauStoff = false;
             if (ALTER[name])
                 z.alter = Object.freeze(

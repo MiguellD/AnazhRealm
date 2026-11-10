@@ -2898,7 +2898,7 @@
             laub:       [null,                 "faser",       300,   5e7,     1e6,    1e7,    null,   null, 1800, null,   0.3],
             erde:       [null,                 "korn",        1500,  5e7,     2e5,    2e4,    null,   null, 800,  null,   0.2],
             kraut:      [null,                 "faser",       400,   5e7,     1e6,    1e7,    null,   null, 1800, null,   0.3],
-            essenz:     [null,                 "wasserstoff", 1000,  2.2e9,   null,   null,   null,   null, 4186, null,   0.03],
+            essenz:     [null,                 "wasserstoff", 1000,  2.2e9,   null,   null,   1.333,  55.8, 4186, null,   0.03],
             gras:       [null,                 "faser",       350,   5e7,     1e6,    1e7,    null,   null, 1800, null,   0.3]
         };
         // die Dichte als Eintrag eines anderen Gesetzbuchs (der Wirt verbindet sie beim Bau seiner Tafel) bzw. dieses Kerns
@@ -2948,19 +2948,20 @@
         }
         // DER BRUCH: die Spannung in Pa, die ein gedrücktes Glied der Schlankheit λ = Höhe / kleinste Breite trägt —
         // das Kleinere aus der Streckgrenze (das gedrungene Glied zerdrückt) und der Knick-Spannung nach EULER für den
-        // gelenkig gelagerten Rechteck-Stab, π²·E / (12·λ²), geteilt durch die Sicherheit `knick` des Rufers (das schlanke
-        // knickt; Vorkrümmung, Schiefstand und Stoß lassen es weit unter Euler versagen). Ohne Festigkeit trägt der Stoff nichts.
-        function tragSpannung(z, lambda, knick) {
+        // gelenkig gelagerten Rechteck-Stab, π²·E / (12·λ²) (das schlanke knickt), je geteilt durch die Sicherheit des
+        // Rufers (`druck`, `knick`: Vorkrümmung, Schiefstand und Stoß lassen ein Glied weit unter Euler versagen). Ohne
+        // Festigkeit trägt der Stoff nichts.
+        function tragSpannung(z, lambda, knick, druck) {
             if (!z || !(z.E > 0) || !(z.sigY > 0)) return 0;
-            return Math.min(z.sigY, (Math.PI * Math.PI * z.E) / (12 * lambda * lambda) / (knick > 0 ? knick : 1));
+            return Math.min(z.sigY / (druck > 0 ? druck : 1), (Math.PI * Math.PI * z.E) / (12 * lambda * lambda) / (knick > 0 ? knick : 1));
         }
         // DIE EINE MISCH-REGEL (partielle Additivität): je Spalte wird gemittelt, was sich in der Mischung ADDIERT —
         //   das Volumen (ρ = 1 / Σ w/ρ, Amagat · Vegard) und daraus die Volumen-Anteile φ,
         //   die Wärme je Masse (c = Σ w·c, Kopp-Neumann),
         //   Steifigkeit und Nachgiebigkeit (E = ½ (Σ φ·E + 1 / Σ φ/E), Voigt-Reuss-Hill),
         //   die Fließ-Spannung der Phasen (σ = Σ φ·σ) plus die Härtung der gelösten Atome (Σ loest · √x, Fleischer),
-        //   die Mol-Refraktion ((n² − 1)/(n² + 2) = Σ φ · (n² − 1)/(n² + 2), Lorentz-Lorenz) an den Linien F, d und C —
-        //   aus ihnen die Abbe-Zahl der Mischung.
+        //   die Brechkraft (n − 1 = Σ φ · (n − 1), Gladstone-Dale: die Brechkraft je Masse ist die Konstante des Stoffs) an
+        //   den Linien F, d und C — aus ihnen die Abbe-Zahl der Mischung.
         function mische(def, spalte) {
             var k, w, sumV = 0, phi = {}, mol = {}, sumMol = 0, T = def.teile;
             for (k in T) sumV += T[k] / zeile(k).rho;
@@ -2990,9 +2991,9 @@
                     for (k in T) {
                         w = brechzahl(zeile(k).n, zeile(k).abbe, LINIE[L]);
                         if (w === null) return null;
-                        s += (phi[k] * (w * w - 1)) / (w * w + 2);
+                        s += phi[k] * (w - 1);
                     }
-                    nL[L] = Math.sqrt((1 + 2 * s) / (1 - s));
+                    nL[L] = 1 + s;
                 }
                 return spalte === "n" ? nL.d : (nL.d - 1) / (nL.F - nL.C);
             }
@@ -3004,11 +3005,35 @@
             if (!z) throw new Error("STOFF-GESETZ: der Stoff " + name + " trägt keine Zeile");
             return z;
         }
+        // DIE BRECHZAHL FOLGT DER DICHTE (Gladstone-Dale, n − 1 ∝ ρ): die Zahl der Tafel gilt an der Dichte der Tafel (`an`) —
+        // wer den Stoff verdichtet, bricht das Licht stärker; wer n setzt, setzt es an der Dichte von jetzt.
+        function brechend(z) {
+            var n0 = z.n, an = z.rho;
+            Object.defineProperty(z, "n", {
+                enumerable: true,
+                get: function () {
+                    if (!(an > 0)) an = z.rho;
+                    return n0 === null || !(an > 0) || z.rho === an ? n0 : 1 + ((n0 - 1) * z.rho) / an;
+                },
+                set: function (v) { (n0 = v), (an = z.rho); }
+            });
+        }
+        function klingend(z) {
+            Object.defineProperty(z, "schall", { enumerable: true, get: function () { return schall(z.E, z.rho); } });
+        }
         Object.keys(REIN).forEach(function (name) {
             var R = REIN[name], z = { name: name, formel: R[0], bindung: R[1], rhoVon: RHO_VON[name] || null };
             SPALTEN.forEach(function (s, i) { z[s] = R[i + 2]; });
+            brechend(z);
+            klingend(z);
             ZEILEN[name] = z;
         });
+        // DIE DICHTE EINES ANDEREN GESETZBUCHS (`rhoVon`): der Wirt verbindet die Spalte mit ihrer Quelle (ein Zugriff)
+        function verbinde(name, zugriff) {
+            var z = zeile(name);
+            if (!z.rhoVon || name === "holz") throw new Error("STOFF-GESETZ: die Dichte von " + name + " ist Eintrag dieser Tafel");
+            Object.defineProperty(z, "rho", { enumerable: true, configurable: true, get: zugriff.get, set: zugriff.set });
+        }
         // die gemischte Zeile: jede Spalte der Regel ist ein Zugriff — sie folgt ihren Teilen sofort; wer sie setzt, eicht sie
         // (das Verhältnis zum Wert der Regel bleibt an der Zeile, die Teile ziehen sie weiter mit)
         Object.keys(MISCH).forEach(function (name) {
@@ -3025,6 +3050,7 @@
                     set: function (v) { eich[s] = +v / mische(def, s); }
                 });
             });
+            klingend(z);
             ZEILEN[name] = z;
         });
         // der Gefrierpunkt des Wassers IST die Phasen-Grenze des Eises (EINE Zahl an zwei Zeilen)
@@ -3034,7 +3060,7 @@
         return {
             ELEMENTE: ELEMENTE, SPALTEN: SPALTEN, ZEILEN: ZEILEN, LINIE: LINIE, KANAL: KANAL,
             zeile: zeile, molMasse: molMasse, mische: mische, brechzahl: brechzahl, kanaele: kanaele, fresnel0: fresnel0,
-            bogenGrad: bogenGrad, schall: schall, tragSpannung: tragSpannung
+            bogenGrad: bogenGrad, schall: schall, tragSpannung: tragSpannung, verbinde: verbinde
         };
     })();
     // ════ DAS FUNDAMENT — {E, σ_y, K_IC, ρ} real (SI). Härte=3σ_y (Tabor). Resilienz=σ_y²/2E. ════

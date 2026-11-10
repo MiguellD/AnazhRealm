@@ -1857,8 +1857,8 @@ class AnazhRealm_bau_buch {
     // (b) VERSAGEN: knickt oder bricht eine Ebene schlanker Glieder unter der LAST, die sie trägt? Jedes Glied trägt die
     // Spannung seiner Stoff-Zeile (schmiede `STOFF_GESETZ.tragSpannung`): das Kleinere aus seiner Streckgrenze σ_y (das
     // gedrungene zerdrückt) und der Knick-Spannung nach EULER π²·E / (12·λ²) (das schlanke knickt, λ = Höhe / kleinste
-    // Breite) geteilt durch die Sicherheit des Richters (`knickSicherheit`: Vorkrümmung, Schiefstand und Stoß eines Baus, den
-    // niemand vermessen hat). Die Last ist das GEWICHT über der halben Höhe des Glieds — die Masse der Teile darüber und
+    // Breite), je geteilt durch die Sicherheit des Richters (`druckSicherheit`, `knickSicherheit`: Vorkrümmung, Schiefstand
+    // und Stoß eines Baus, den niemand vermessen hat). Die Last ist das GEWICHT über der halben Höhe des Glieds — die Masse der Teile darüber und
     // seines eigenen oberen Teils aus ρ und Gestalt (`_teilMasse`) mal der Schwere der Welt —, getragen von jedem Glied, das
     // diese Ebene kreuzt: sie versagen, wenn die Last die Summe ihrer Trag-Kräfte übersteigt. Ein Glied ohne Last (ein
     // Zierstab, der Webstuhl-Pfosten) knickt nicht, die überladene Plattform schon; trägt ein gedrungenes Glied oder eine
@@ -1888,7 +1888,7 @@ class AnazhRealm_bau_buch {
                 lambda,
                 // die Kraft in N, die das Glied trägt: Spannung der Zeile × mittlerer Querschnitt seiner Gestalt (Volumen / Höhe —
                 // die kannelierte Säule trägt mit ihrem Stein, nicht mit ihrer Hüll-Box) / Sicherheit
-                kraft: z ? SG.tragSpannung(z, lambda, P.knickSicherheit) * (this._teilVolumen(p) / Math.max(1e-6, ext.ey || 0)) : 0,
+                kraft: z ? SG.tragSpannung(z, lambda, P.knickSicherheit, P.druckSicherheit) * (this._teilVolumen(p) / Math.max(1e-6, ext.ey || 0)) : 0,
                 masse: this._teilMasse(p),
             };
         });
@@ -2583,6 +2583,9 @@ AnazhRealm.PHYSIS = {
     // Anker des Richters: die frei stehende Stein-Säule trägt sich bis 1:28, unter dem Gewicht von 9,5 m Stein bis 1:18
     // (Euler mit E 50 GPa: 124 MPa / 500 = 247 kPa).
     knickSicherheit: 500,
+    // … und gegen das Zerdrücken: ein Glied trägt ein Zehntel der Streckgrenze seiner Zeile (die Regel der Baumeister für
+    // Mauerwerk: zulässige Pressung = Druckfestigkeit / 10) — Stein 13 MPa, Holz 5 MPa, verdichtete Erde 20 kPa.
+    druckSicherheit: 10,
     wallBraceRatio: 4, // Ω-Φ3-b: ab dieser Breite:Dicke ist ein Glied eine WAND (verstrebt), keine Säule
 };
 // Stat-Klemme am LESER (taille-spec §3): je Achse die lokale Trag-Decke = max(Built-in-Materialien
