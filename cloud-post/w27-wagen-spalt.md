@@ -1,5 +1,7 @@
 ## 10.11. 11:33 — ABGABE w27-wagen-spalt (main 900c28e6 eingemischt, Probe gate:naesse:echt GRÜN auf gtx1050-desktop)
 
+## 10.11. 13:08 — GPU-PROBE 3e4ed872 auf gtx1050-desktop: GRÜN in 6400 s (gate:naesse:echt GRÜN 292 s auf gtx1050-desktop · gate:kollision-bild GRÜN 241 s auf gtx1050-desktop · bild:dorf@0.5 GRÜN 121 s auf gtx1050-desktop) → probe-post/w27-wagen-spalt/3e4ed872.md
+
 ## 10.11. 12:33 — GPU-PROBE 3e4ed872 auf gtx1050-desktop: ROT in 4276 s (gate:naesse:echt ROT 306 s auf gtx1050-desktop · gate:kollision-bild GRÜN 228 s auf gtx1050-desktop · bild:dorf@0.5 GRÜN 128 s auf gtx1050-desktop) → probe-post/w27-wagen-spalt/3e4ed872.md
 ABGABE 3e4ed872e11c8f6716596b64c9e8285d411acf37
 Geschnitten: der Täter der Nässe-Wand war meine Zeile in der else-Kette des Dach-Pools (`_wagenMassSetzen` zwischen `_hausHuelleSetzen` und `else _dachKastenSetzen`, stamm/siedlung-instanz.js:898–902 — die Kette zurück, das Maß des Wagens danach, einmal je Eintrag); FAHR-PROBE fährt den Ritt im Sim-Schritt und misst die gezeichnete Länge (scripts/diag-vehicle-drive.cjs:228/240), Leib an Leib misst den Radius an der Berührung allokationsfrei (`_leibRadAn`), Kreatur-Kosten (G) zählt die Schritte des Wegs (`_kreaturWeg`), die Kreatur-Linse misst den Raum des Spielers (der Täter abstand-spieler war mit der gezeichneten Haut unsichtbar, kreatur-proben.cjs:3625), und das Jagd-Gesetz bremst die Wunde linear (tetrapoda-core.js:1861 wundExp 1,3 → 1 — es war gegen das Fett von 0,3 Hüft-Höhen geeicht, an dem das Maul die Haut der Beute verfehlte).
