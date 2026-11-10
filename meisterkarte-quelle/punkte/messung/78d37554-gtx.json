@@ -1,7 +1,7 @@
 {
  "sha": "78d37554b2d5f98d96ef454cfa9f51752c0e45a0",
  "geraet": "gtx",
- "zeit": "2026-11-09T21:49:45.371Z",
+ "zeit": "2026-11-10T02:54:04.882Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {},
  "ungemessen": {
@@ -961,22 +961,71 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "ankunft.K4#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen: Stille seit 15 s nach 95.5 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: POSE ego-0 75748 ms)",
+   "exit": 1,
+   "minuten": 1.59,
+   "grund": "Deckel 90 s gerissen: Stille seit 15 s nach 95.5 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: POSE ego-0 75748 ms)",
+   "s": 95.7,
+   "fremd": {
+    "s": 98.4,
+    "takte": 45,
+    "fremdS": 240.84,
+    "kerne": 2.447,
+    "fensterKerne": 3.083,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      103.61
+     ],
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      31.7
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      27.22
+     ]
+    ],
+    "dienerS": 28.38,
+    "diener": [
+     [
+      "dwm.exe",
+      12
+     ],
+     [
+      "System",
+      11.02
+     ]
+    ],
+    "eigenS": 110.7,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-10T02:54:04.882Z",
+   "abdruck": "ea66260e5746",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-09T21:49:05.283Z",
+  "start": "2026-11-10T02:53:23.871Z",
   "port": 7804,
-  "warten": 0.02,
-  "bootS": 7.5,
+  "warten": 0.01,
+  "bootS": 8.2,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": "wiese",
-    "vor": "tiere.K1#2",
-    "s": 31,
-    "takte": 589,
+    "ort": "genesis",
+    "vor": "ankunft.K4#1",
+    "s": 31.4,
+    "takte": 611,
     "chunks": 81,
     "nach": null
    }
@@ -993,19 +1042,12 @@
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
-   "ortImDeckel": [
-    {
-     "probe": "tiere.K1#2",
-     "m": 317,
-     "ringVor": 4,
-     "ringMin": 0
-    }
-   ],
-   "zapfen": 105,
-   "luecken": 1,
+   "ortImDeckel": [],
+   "zapfen": 76,
+   "luecken": 5,
    "letzteLuecke": "/eval ohne Antwort binnen 10 s"
   },
-  "fahrtS": 130,
-  "minuten": 2.25
+  "fahrtS": 136.5,
+  "minuten": 2.35
  }
 }
