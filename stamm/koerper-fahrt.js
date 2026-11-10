@@ -2306,7 +2306,9 @@ class AnazhRealm_koerper_fahrt {
             const zeile = this._stoff(part.material, "die Linse aus „" + part.material + "“ bündelt kein Licht");
             if (!zeile) continue;
             if (!(zeile.n > 1)) {
-                this._bruchMelden("STOFF-ZEILE ohne Brechzahl: die Linse aus „" + part.material + "“ bündelt kein Licht");
+                this._bruchMelden(
+                    "STOFF-ZEILE ohne Brechzahl: die Linse aus „" + part.material + "“ bündelt kein Licht"
+                );
                 continue;
             }
             const f = (zeile.n * r) / (2 * (zeile.n - 1));

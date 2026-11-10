@@ -66,6 +66,12 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
   Quelle (`uLaubPraesenz` · `uSeasonMul`, `_tickSeason`): die Gestalt im Stoff (`_jahrLage`: Laub Typ 1 fällt, der Wedel ist Nadel 2 und
   steht, nur Laub tönt), die Karte als Eingang ihres Bakes (`_karteJahr`, neu je Stufe `_karteJahrTakt`), die Ferne über phyto-core
   `kroneImJahr` (Ring, Boden, Kamm, Panorama); gate:asset-contract (J) nennt jede Nadel mit Laub-Ecke und jede Laub-Krone ohne.
+- STOFF = EIN Gesetz (schmiede-core `STOFF_GESETZ`: Elemente → Phasen → EINE Misch-Regel `mische`; je Stoff EINE Zeile mit ρ, E,
+  σ_y, σ_B, n, Abbe-Zahl, c, T_schmelz, η und Rauheit, `metall` folgt der Bindung, n der Dichte), der Wirt verbindet sie mit seinen
+  Wirkungs-Spalten (`_defaultMaterials`, EIN Leser `_stoff`); Licht (`_wasserOptik`, `_brennpunkte`, `_stoffOptik`), Bruch
+  (`_failsUnderLoad`) und Klang (klang `trefferTon`, `schrittBand`) lesen sie, `gate:gegenstand-stoff` (`--gesetz`) nennt jeden
+  Leser mit eigener Zahl. Heute stehen die Vergütungs-Zustände der Schmiede (`MAT` sigY, KIC), Reibung, Zündung, Körnung, Farbe
+  und Tags in eigenen Tafeln, und das Terrain-Labor liest ein eigenes Fresnel-f0 (`WASSER_GESETZ`).
 - BODEN Rausch-Gesetz, Fels und Halm-Schichten als reine WGSL-Funktionen, EIN Leser `_bodenSichtAt`, Fels-Stoff im Worker (`_felsStoff`).
 - LICHT EIN Leuchtquellen-Gesetz (`kelvin`, EIN Pool) · EIN Himmel (die Tafeln, Anker, Belichtung, Tag-Achse und die Wolken —
   `wolkenFeld` · `himmelSicht` — im Baustein `welt-licht.js`, Welt und Studio-Bühne rufen ihn; die Bühne trägt die Himmels-Sicht als

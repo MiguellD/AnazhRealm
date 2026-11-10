@@ -1888,7 +1888,10 @@ class AnazhRealm_bau_buch {
                 lambda,
                 // die Kraft in N, die das Glied trägt: Spannung der Zeile × mittlerer Querschnitt seiner Gestalt (Volumen / Höhe —
                 // die kannelierte Säule trägt mit ihrem Stein, nicht mit ihrer Hüll-Box) / Sicherheit
-                kraft: z ? SG.tragSpannung(z, lambda, P.knickSicherheit, P.druckSicherheit) * (this._teilVolumen(p) / Math.max(1e-6, ext.ey || 0)) : 0,
+                kraft: z
+                    ? SG.tragSpannung(z, lambda, P.knickSicherheit, P.druckSicherheit) *
+                      (this._teilVolumen(p) / Math.max(1e-6, ext.ey || 0))
+                    : 0,
                 masse: this._teilMasse(p),
             };
         });

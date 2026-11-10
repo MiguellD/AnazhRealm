@@ -774,7 +774,11 @@ class AnazhRealm_wasser_hydro {
         const ndvW = clamp(dot(o.n, o.viewDir), 0.0, 1.0);
         const WO = this._wasserOptikLeser(TSL);
         const f0 = mix(WO.f0, WO.f0Eis, o.eis);
-        const fresK = f0.add(vec3(1.0).sub(f0).mul(pow(float(1.0).sub(ndvW), float(5.0))));
+        const fresK = f0.add(
+            vec3(1.0)
+                .sub(f0)
+                .mul(pow(float(1.0).sub(ndvW), float(5.0)))
+        );
         const fres = fresK.y; // die Deckung liest EINEN Kanal (Grün, die Mitte des Bilds)
         // DER SPIEGEL DER WELT (D10, A1): was der gespiegelte Strahl trifft — Ufer, Hang, Krone, Haus, Wolke, sonst der Himmel
         // (`_spiegelPass`, 1/teil Auflösung: zuerst das gezeichnete Bild, jenseits des Schirms das Spiegel-Feld des Gesetzes,
@@ -829,7 +833,8 @@ class AnazhRealm_wasser_hydro {
         const SG = globalThis.__schmiedeCore.STOFF_GESETZ;
         const w = this._stoff("wasser", "das Wasser spiegelt nicht");
         const e = this._stoff("eis", "das Eis spiegelt nicht");
-        if (!w || !e || !(w.n > 1) || !(e.n > 1)) AnazhRealm._kernPflichtBruch("STOFF-ZEILE wasser/eis: die Brechzahl n");
+        if (!w || !e || !(w.n > 1) || !(e.n > 1))
+            AnazhRealm._kernPflichtBruch("STOFF-ZEILE wasser/eis: die Brechzahl n");
         const n = SG.kanaele(w);
         return { n, f0: n.map(SG.fresnel0), f0Eis: SG.kanaele(e).map(SG.fresnel0) };
     }

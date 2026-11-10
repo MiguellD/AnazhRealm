@@ -1528,7 +1528,7 @@ class AnazhRealm_bau_vorlagen {
     //            Orts), tiefe m, heiz J/kg (Heizwert), mx (die Erlöschungs-Feuchte) — die Brennstoff-Modelle von Anderson 1982:
     //            kurzes Gras (1) σ 3 500/ft, 0,034 lb/ft², Mx 12 % — die Tiefe ist die Halm-Höhe der Wiese (GRASS_BLADE_H, die
     //            der Wind beugt); Laub-Streu (9) σ 2 500/ft, 0,134 lb/ft², 0,2 ft, Mx 25 %; Heizwert 8 000 Btu/lb. Die Zünd-Wärme liest c und tZuend derselben Zeile, die Verdampfung L_v die Zeile wasser
-    //   E        Pa — die Steifigkeit, aus der ein Treffer klingt (klang trefferPaar; die Metalle lesen MAT.E der Schmiede) und die
+    //   E        Pa — die Steifigkeit, aus der ein Treffer klingt (klang trefferPaar: das Band des Kontakts und, mit ρ, der Ton √(E/ρ)), die ein Glied vor dem Knicken trägt (`_failsUnderLoad`), und die
     //            HÄRTE, aus der die Ferse auf dem Stoff schlägt (klang SCHRITT: Band und Pegel des Hertz-Kontakts)
     //   eta      der Verlustfaktor η — die DÄMPFUNG, mit der der Stoff nachklingt (klang SCHRITT: τ = 1/(π·η·f), ein Korn mit Q = 1/η)
     //   koernung m — die KÖRNUNG eines losen Bodens (null: fest): die Dicke dessen, was unter dem Fuß zerdrückt wird (klang SCHRITT:
@@ -1568,8 +1568,9 @@ class AnazhRealm_bau_vorlagen {
         // Beutel, auch nicht: die Wiese unter Rad, Huf und Schritt ist EINE Zeile, gras. μ des Leibs (`mu`) und μ des Rads sind
         // zwei Paare (Huf auf Fels 0,6, Reifen auf Fels 0,8), je eine Spalte derselben Zeile.
         // DIE STEIFIGKEIT (halten.K2): E in Pa, der Elastizitäts-Modul — der Treffer klingt aus ihm (klang trefferPaar, Hertz: der
-        // Kontakt zweier Stoffe ist so kurz, wie E* = 1/(1/E₁ + 1/E₂) es erlaubt). Die Metalle lesen MAT.E der Schmiede (null
-        // hier), eine Flüssigkeit trägt ihren Kompressions-Modul. Tafel-Werte (Engineering ToolBox): Granit 50 GPa, Eiche längs
+        // Kontakt zweier Stoffe ist so kurz, wie E* = 1/(1/E₁ + 1/E₂) es erlaubt). Die Zahl steht seit w28 in der
+        // Zeile des Stoff-Gesetzes (schmiede-core; die Metalle folgen dort aus ihren Teilen), eine Flüssigkeit trägt ihren
+        // Kompressions-Modul. Tafel-Werte (Engineering ToolBox): Granit 50 GPa, Eiche längs
         // 11 GPa, Quarzglas 72 GPa, Leder 0,2 GPa, kortikaler Knochen 18 GPa, Haut und Gewebe 1 MPa, Keratin (Federn, Schuppen)
         // 2,5 GPa, Holzkohle 3 GPa, Blatt und Halm 50 MPa, verdichteter Boden 50 MPa, Aluminium (die Hülle) 70 GPa, Wasser
         // (K) 2,2 GPa, Eis 9 GPa.
@@ -1663,7 +1664,8 @@ class AnazhRealm_bau_vorlagen {
         const make = (name, label, color, tags) => {
             const si = SI[name];
             const g = SG.zeile(name);
-            if (!si || !(g.eta > 0)) AnazhRealm._kernPflichtBruch("STOFF-TAFEL " + name + ": Wirkungs-Spalten und Dämpfung η");
+            if (!si || !(g.eta > 0))
+                AnazhRealm._kernPflichtBruch("STOFF-TAFEL " + name + ": Wirkungs-Spalten und Dämpfung η");
             const z = {
                 name,
                 etikett: [label],
@@ -1689,7 +1691,8 @@ class AnazhRealm_bau_vorlagen {
                     set: (v) => {
                         q.set(v === null ? null : +v);
                         if (k === "rho") AnazhRealm._stoffStand = (AnazhRealm._stoffStand || 0) + 1;
-                        if ((k === "n" || k === "abbe" || k === "rho") && (name === "wasser" || name === "eis")) welt._wasserOptikWirkt();
+                        if ((k === "n" || k === "abbe" || k === "rho") && (name === "wasser" || name === "eis"))
+                            welt._wasserOptikWirkt();
                         if (k === "rauheit") welt._stoffOptikWirkt(name);
                     },
                 });
@@ -1702,7 +1705,8 @@ class AnazhRealm_bau_vorlagen {
                 z.alter = Object.freeze(
                     ALTER[name].map((s) => Object.freeze(Object.assign({}, s, { ziel: Object.freeze(s.ziel) })))
                 );
-            if (!Number.isFinite(g.rauheit)) AnazhRealm._kernPflichtBruch("STOFF-TAFEL " + name + ": die Optik (Rauheit)");
+            if (!Number.isFinite(g.rauheit))
+                AnazhRealm._kernPflichtBruch("STOFF-TAFEL " + name + ": die Optik (Rauheit)");
             Object.defineProperty(z, "metall", {
                 enumerable: true,
                 get: () => g.metall,
