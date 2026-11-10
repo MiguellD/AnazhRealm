@@ -1551,6 +1551,8 @@ class AnazhRealm_dirigent_ankunft {
             // Abtastungen laufen nur, wo es trägt (w20-fern-hang: sie liefen auf jedem Pixel jedes Stoffs und wurden erst am Ende
             // genullt — gpu-bank GTX wiese-ego 22,8 → 29,9 ms). Wo es 0 ist, war das Produkt 0; wo nicht, rechnet derselbe Term.
             // Was die Schleife liest, steht vor dem Zweig (Lehre 26): `n` baut der Stoff, die Karte und das Licht dieser Rumpf.
+            // Gemessen (Radeon 890M, gpu-bank in EINER Welt, der Term je Runde getauscht, Median aus 4): wiese-ego 27,7 → 26,6 ms
+            // (ohne Term 26,2), genesis-ego 17,3 → 16,7 ms (15,9). Mittags trägt das Band an der Wiese auf 96 % des Bodens (1 km).
             const w = tanA
                 .div(T.sqrt(tanA.mul(tanA).add(1)))
                 .mul((2 * H.gratRad) / (3 * Math.PI))
