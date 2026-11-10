@@ -1,0 +1,708 @@
+{
+ "sha": "6aa7a5a6bfd01df56192e66b658681dac67a27a9",
+ "geraet": "headless",
+ "zeit": "2026-11-10T12:08:37.096Z",
+ "host": "farm:42813026346",
+ "je": {
+  "spielgang.K5#2": {
+   "gruen": false,
+   "zahl": "de.regel 42 Sätze · 47 Zeilen, fremd 0 · de.nexus 43 Sätze · 161 Zeilen, fremd 0 · Prompt 43/43 · en.regel 42 Sätze · 46 Zeilen, fremd 0 · en.nexus 43 Sätze · 160 Zeilen, fremd 0 · Prompt 43/43 · Selbsttest 3/3 ROT · MODELL qwen3:4b-instruct @ http://127.0.0.1:11434: de 42 Sätze, 156/160 Zeilen in de, fremd 0 · en 42 Sätze, 157/160 Zeilen in en, fremd 1 · ROT de.regel nennt nicht den wahren Schreiber: nexus (regel); de.nexus nennt nicht den wahren Schreiber: nexus (nexus); en.regel nennt nicht den wahren Schreiber: nexus (regel); en.nexus nennt nicht den wahren Schreiber: nexus (nexus); Modell en fremd: „make me faster“ → (Grok's suggestion declined: The law of player_speed: 1.15–2.00, jetzt 2.00.)",
+   "exit": 0,
+   "minuten": 7.79,
+   "grund": "ROT: de.regel 42 Sätze · 47 Zeilen, fremd 0 · de.nexus 43 Sätze · 161 Zeilen, fremd 0 · Prompt 43/43 · en.regel 42 Sätze · 46 Zeilen, fremd 0 · en.nexus 43 Sätze · 160 Zeilen, fremd 0 · Prompt 43/43 · Selbsttest 3/3 ROT · MODELL qwen3:4b-instruct @ http://127.0.0.1:11434: de 42 Sätze, 156/160 Zeilen in de, fremd 0 · en 42 Sätze, 157/160 Zeilen in en, fremd 1 · ROT de.regel nennt nicht den wahren Schreiber: nexus (regel); de.nexus nennt nicht den wahren Schreiber: nexus (nexus); en.regel nennt nicht den wahren Schreiber: nexus (regel); en.nexus nennt nicht den wahren Schreiber: nexus (nexus); Modell en fremd: „make me faster“ → (Grok's suggestion declined: The law of player_speed: 1.15–2.00, jetzt 2.00.)",
+   "fremd": {
+    "s": 468,
+    "takte": 234,
+    "fremdS": 879.42,
+    "kerne": 1.879,
+    "fensterKerne": 2.12,
+    "namen": [
+     [
+      "llama-server --model blobs/sha256-85e4a5b7b8ef0e48af0e8658f5aaab9c2324c76c1641493f4d1e25fc",
+      822.89
+     ],
+     [
+      "provjobd1941282399",
+      50.93
+     ],
+     [
+      "ollama serve",
+      1.34
+     ]
+    ],
+    "dienerS": 1.14,
+    "diener": [
+     [
+      "[kworker/u16:0+iou_exit]",
+      0.22
+     ],
+     [
+      "[kworker/u16:1-ext4-rsv-conversion]",
+      0.2
+     ]
+    ],
+    "eigenS": 114.11,
+    "schwelle": 0.3,
+    "eich": "linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-10T12:08:37.096Z",
+   "abdruck": "59af6c2932a2",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:42813026346/1"
+  },
+  "tiere.K3#1": {
+   "gruen": true,
+   "zahl": "Schlupf des Stand-Fußes max 0.011 in 25 Läufen als Leib (4 Gattungen), max 0.036 in 16 im Satz (4 Gattungen)",
+   "exit": 0,
+   "minuten": 0.62,
+   "fremd": {
+    "s": 37.7,
+    "takte": 19,
+    "fremdS": 13.8,
+    "kerne": 0.366,
+    "fensterKerne": 0.843,
+    "namen": [
+     [
+      "provjobd921593910",
+      13.42
+     ],
+     [
+      "Runner.Worker spawnclient 142 145",
+      0.23
+     ],
+     [
+      "hv_kvp_daemon -n",
+      0.07
+     ]
+    ],
+    "dienerS": 0.61,
+    "diener": [
+     [
+      "[kworker/u16:4-flush-8:0]",
+      0.27
+     ],
+     [
+      "[kworker/u16:0+iou_exit]",
+      0.16
+     ]
+    ],
+    "eigenS": 112.18,
+    "schwelle": 0.3,
+    "eich": "linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-10T12:07:41.195Z",
+   "abdruck": "5fd4f2469c38",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:42813026346/10"
+  },
+  "spielgang.K5#1": {
+   "gruen": true,
+   "zahl": "0 harte UI-Zeilen (Code 0 · DOM 0 von 580 Zeilen, 574 aus der Tafel, 6 Daten) · beim Wechsel auf en stehen 0 · Selbsttest im Lauf nennt beide Mutanten · Text-Quelle DE/EN: AnazhRealm.TEXTE (de 2379, en 2379)",
+   "exit": 0,
+   "minuten": 0.15,
+   "fremd": {
+    "s": 9.4,
+    "takte": 5,
+    "fremdS": 6.22,
+    "kerne": 0.66,
+    "fensterKerne": 0.66,
+    "namen": [
+     [
+      "provjobd1369250114",
+      5.33
+     ],
+     [
+      "hv_kvp_daemon -n",
+      0.8
+     ],
+     [
+      "Runner.Worker spawnclient 142 145",
+      0.06
+     ]
+    ],
+    "dienerS": 0.31,
+    "diener": [
+     [
+      "[kworker/u16:1-iou_exit]",
+      0.16
+     ],
+     [
+      "[kworker/u16:4-iou_exit]",
+      0.06
+     ]
+    ],
+    "eigenS": 11.82,
+    "schwelle": 0.3,
+    "eich": "linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-10T12:07:41.231Z",
+   "abdruck": "1436e3310de8",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:42813026346/11"
+  },
+  "tiere.K1#1": {
+   "gruen": true,
+   "zahl": "Kohäsion wandernd 1 (5 Glieder), fliehend 0.981 (min 0.8, in Flucht 0.337)",
+   "exit": 0,
+   "minuten": 0.48,
+   "fremd": {
+    "s": 28.6,
+    "takte": 15,
+    "fremdS": 10.48,
+    "kerne": 0.367,
+    "fensterKerne": 0.936,
+    "namen": [
+     [
+      "provjobd1369250114",
+      10.27
+     ],
+     [
+      "Runner.Worker spawnclient 142 145",
+      0.15
+     ],
+     [
+      "init",
+      0.01
+     ]
+    ],
+    "dienerS": 0.24,
+    "diener": [
+     [
+      "[kworker/u16:1-iou_exit]",
+      0.1
+     ],
+     [
+      "[kworker/u16:3+iou_exit]",
+      0.05
+     ]
+    ],
+    "eigenS": 51.38,
+    "schwelle": 0.3,
+    "eich": "linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-10T12:07:50.307Z",
+   "abdruck": "f68c482c512c",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:42813026346/11"
+  },
+  "leib.K3#1": {
+   "gruen": true,
+   "zahl": "ego: schwimmt 282/282, taucht 2.21 m (Augen unter 189) · Ruck Leib 0.012 / Kamera 0.019 m (p95 0.003 / 0.0009) · third: schwimmt 283/283, taucht 2.21 m (Augen unter 189) · Ruck Leib 0.013 / Kamera 0.013 m (p95 0.003 / 0.003) · Mutante Ruck 0.204 m erkannt · Exit 0",
+   "exit": 0,
+   "minuten": 0.45,
+   "fremd": {
+    "s": 27.3,
+    "takte": 14,
+    "fremdS": 6.79,
+    "kerne": 0.249,
+    "fensterKerne": 0.582,
+    "namen": [
+     [
+      "provjobd543135511",
+      6.57
+     ],
+     [
+      "Runner.Worker spawnclient 142 145",
+      0.15
+     ],
+     [
+      "python3 -u bin/WALinuxAgent-2.16.0.2-py3.12.egg -run-exthandlers",
+      0.02
+     ]
+    ],
+    "dienerS": 0.29,
+    "diener": [
+     [
+      "[kworker/u16:1+iou_exit]",
+      0.15
+     ],
+     [
+      "[kworker/u16:4-writeback]",
+      0.07
+     ]
+    ],
+    "eigenS": 41.84,
+    "schwelle": 0.3,
+    "eich": "linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-10T12:07:41.566Z",
+   "abdruck": "05daf18f7fdf",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:42813026346/12"
+  },
+  "bauen.K1#1": {
+   "gruen": true,
+   "zahl": "72/72 Werke stehen über echte Ereignisse · werkstatt 24/24 (Eingaben 3–3) · rezeptbuch 24/24 (Eingaben 2–3) · hotbar 24/24 (Eingaben 2–2)",
+   "exit": 0,
+   "minuten": 3.58,
+   "fremd": {
+    "s": 215.3,
+    "takte": 108,
+    "fremdS": 17.02,
+    "kerne": 0.079,
+    "fensterKerne": 0.926,
+    "namen": [
+     [
+      "provjobd2556792560",
+      12.77
+     ],
+     [
+      "hv_kvp_daemon -n",
+      2.68
+     ],
+     [
+      "Runner.Worker spawnclient 142 145",
+      0.79
+     ]
+    ],
+    "dienerS": 0.85,
+    "diener": [
+     [
+      "[kworker/u16:1-flush-8:0]",
+      0.39
+     ],
+     [
+      "[kworker/u16:3+iou_exit]",
+      0.09
+     ]
+    ],
+    "eigenS": 295.73,
+    "schwelle": 0.3,
+    "eich": "linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-10T12:07:41.182Z",
+   "abdruck": "5e2b75b2f19a",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:42813026346/2"
+  },
+  "studios.K2#1": {
+   "gruen": true,
+   "zahl": "Undo wirkt in 8/8 Studios, Redo ungeprobt (der Gang fährt nur Strg+Z)",
+   "exit": 0,
+   "minuten": 2.73,
+   "fremd": {
+    "s": 164,
+    "takte": 82,
+    "fremdS": 10.75,
+    "kerne": 0.066,
+    "fensterKerne": 0.757,
+    "namen": [
+     [
+      "provjobd523263398",
+      9.63
+     ],
+     [
+      "Runner.Worker spawnclient 142 145",
+      0.53
+     ],
+     [
+      "hv_kvp_daemon -n",
+      0.15
+     ]
+    ],
+    "dienerS": 0.76,
+    "diener": [
+     [
+      "[kworker/u16:1-ext4-rsv-conversion]",
+      0.14
+     ],
+     [
+      "[kworker/u16:3-flush-259:0]",
+      0.14
+     ]
+    ],
+    "eigenS": 432.25,
+    "schwelle": 0.3,
+    "eich": "linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-10T12:07:40.642Z",
+   "abdruck": "c9f9969260f0",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:42813026346/3"
+  },
+  "studios.K3#1": {
+   "gruen": true,
+   "zahl": "Dreiecke ±5 % gegen renderer.info in 7/7 Mesh-Studios (20 Stufen, größte Abweichung 0.0 %)",
+   "exit": 0,
+   "minuten": 2.73,
+   "fremd": {
+    "s": 164,
+    "takte": 82,
+    "fremdS": 10.75,
+    "kerne": 0.066,
+    "fensterKerne": 0.757,
+    "namen": [
+     [
+      "provjobd523263398",
+      9.63
+     ],
+     [
+      "Runner.Worker spawnclient 142 145",
+      0.53
+     ],
+     [
+      "hv_kvp_daemon -n",
+      0.15
+     ]
+    ],
+    "dienerS": 0.76,
+    "diener": [
+     [
+      "[kworker/u16:1-ext4-rsv-conversion]",
+      0.14
+     ],
+     [
+      "[kworker/u16:3-flush-259:0]",
+      0.14
+     ]
+    ],
+    "eigenS": 432.25,
+    "schwelle": 0.3,
+    "eich": "linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-10T12:07:40.642Z",
+   "abdruck": "bc00357d75be",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:42813026346/3",
+   "zwilling": "studios.K2#1"
+  },
+  "physik.K2#1": {
+   "gruen": true,
+   "zahl": "(V) Leiber 106/106 Takte ohne Durchtritt, Eindringen max 0.001 m, Spalt max 0 m (gestoßener Bär 68.95 m/s, Riese 13.52 m/s), Schmuggel durch · L8 nach 200 Schritten Bär 0 m, Wagen 0 m",
+   "exit": 0,
+   "minuten": 3.21,
+   "fremd": {
+    "s": 192.8,
+    "takte": 97,
+    "fremdS": 11.99,
+    "kerne": 0.062,
+    "fensterKerne": 0.837,
+    "namen": [
+     [
+      "provjobd2074267236",
+      10.35
+     ],
+     [
+      "Runner.Worker spawnclient 142 145",
+      0.56
+     ],
+     [
+      "hv_kvp_daemon -n",
+      0.51
+     ]
+    ],
+    "dienerS": 0.58,
+    "diener": [
+     [
+      "[kworker/u16:2-ext4-rsv-conversion]",
+      0.14
+     ],
+     [
+      "[kworker/u16:3+iou_exit]",
+      0.12
+     ]
+    ],
+    "eigenS": 299.07,
+    "schwelle": 0.3,
+    "eich": "linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-10T12:07:41.640Z",
+   "abdruck": "fefe280e8f4d",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:42813026346/5"
+  },
+  "klang.K5#1": {
+   "gruen": true,
+   "zahl": "Welt-Abfragen je Takt vor {\"boden\":0.75,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":195.82} → nach 4000 Bauten + 200 Fluss-Läufen {\"boden\":0.8,\"wasser\":2,\"stroemung\":0,\"fluss\":0,\"segmente\":0,\"bauten\":0} · nichts wächst",
+   "exit": 0,
+   "minuten": 2.33,
+   "fremd": {
+    "s": 140.4,
+    "takte": 71,
+    "fremdS": 184.57,
+    "kerne": 1.315,
+    "fensterKerne": 0.886,
+    "namen": [
+     [
+      "chrome --type=renderer --crashpad-handler-pid=2605 --enable-crash-reporter=, --noerrdialog",
+      169.47
+     ],
+     [
+      "provjobd3724848085",
+      12.26
+     ],
+     [
+      "hv_kvp_daemon -n",
+      1.91
+     ]
+    ],
+    "dienerS": 0.66,
+    "diener": [
+     [
+      "[kworker/u16:1+iou_exit]",
+      0.3
+     ],
+     [
+      "[kworker/u16:3-iou_exit]",
+      0.15
+     ]
+    ],
+    "eigenS": 8.93,
+    "schwelle": 0.3,
+    "eich": "linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-10T12:07:42.241Z",
+   "abdruck": "3ed436f90cd1",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:42813026346/6"
+  },
+  "lod.K5#2": {
+   "gruen": true,
+   "zahl": "17 Läufe bei 30/60/144 fps, Puls und Regler ±10 % (loadScale 0–1): Abstände, Schwellen, Grenzen, Wahl und Ränder gleich, die Mutante (Regler-Term im Gesetz) wandert",
+   "exit": 0,
+   "minuten": 1.91,
+   "fremd": {
+    "s": 114.8,
+    "takte": 58,
+    "fremdS": 19.03,
+    "kerne": 0.166,
+    "fensterKerne": 0.946,
+    "namen": [
+     [
+      "provjobd2134428689",
+      16.45
+     ],
+     [
+      "hv_kvp_daemon -n",
+      1.75
+     ],
+     [
+      "Runner.Worker spawnclient 142 145",
+      0.45
+     ]
+    ],
+    "dienerS": 0.73,
+    "diener": [
+     [
+      "[kworker/u16:2-events_power_efficient]",
+      0.31
+     ],
+     [
+      "[kworker/u16:7-mlx5_fc]",
+      0.17
+     ]
+    ],
+    "eigenS": 193.62,
+    "schwelle": 0.3,
+    "eich": "linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-10T12:07:42.721Z",
+   "abdruck": "c7cbf2655b4f",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:42813026346/7"
+  },
+  "affekt.K4#1": {
+   "gruen": false,
+   "zahl": "30 Spielminuten, 55 Zeilen, 6 falsch, Abstand 30 s, offen -14.4 s, ohne Tat 0, Klassen {\"nexus\":50,\"rule:nexus\":330,\"llm\":3,\"rule:llm\":11,\"wunsch\":0,\"human\":2,\"fern\":157}, verworfen 144 · keine wirkende Tat von wunsch · 6 Zeilen falsch · falsch [641.8 s] dazu 4 weitere Tat: Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 48 m südwestlich von dir, weil lebendig am Ort hoch ist (>0.59). (Gesetz Nr. 16 des Nexus; dazu 5 weitere Taten seit der letzten Zeile)",
+   "exit": 0,
+   "minuten": 1.5,
+   "grund": "ROT: 30 Spielminuten, 55 Zeilen, 6 falsch, Abstand 30 s, offen -14.4 s, ohne Tat 0, Klassen {\"nexus\":50,\"rule:nexus\":330,\"llm\":3,\"rule:llm\":11,\"wunsch\":0,\"human\":2,\"fern\":157}, verworfen 144 · keine wirkende Tat von wunsch · 6 Zeilen falsch · falsch [641.8 s] dazu 4 weitere Tat: Ein Gesetz des Nexus trägt Leben ins Feld dorthin, wo es am meisten fehlt — 48 m südwestlich von dir, weil lebendig am Ort hoch ist (>0.59). (Gesetz Nr. 16 des Nexus; dazu 5 weitere Taten seit der letzten Zeile)",
+   "fremd": {
+    "s": 90.7,
+    "takte": 46,
+    "fremdS": 13.73,
+    "kerne": 0.151,
+    "fensterKerne": 0.856,
+    "namen": [
+     [
+      "provjobd3095473696",
+      12.79
+     ],
+     [
+      "Runner.Worker spawnclient 142 145",
+      0.48
+     ],
+     [
+      "hv_kvp_daemon -n",
+      0.13
+     ]
+    ],
+    "dienerS": 0.59,
+    "diener": [
+     [
+      "[kworker/u16:0-flush-8:0]",
+      0.3
+     ],
+     [
+      "[kworker/u16:3-flush-8:0]",
+      0.08
+     ]
+    ],
+    "eigenS": 131.05,
+    "schwelle": 0.3,
+    "eich": "linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-10T12:07:41.397Z",
+   "abdruck": "5f07443490eb",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:42813026346/8"
+  },
+  "siedlung.K1#1": {
+   "gruen": true,
+   "zahl": "1 von 8 Gängen Tür → Keller → Dachboden ganz, Hub max 0.20 m, Anti-Clip-Hub 0",
+   "exit": 0,
+   "minuten": 1.71,
+   "fremd": {
+    "s": 102.9,
+    "takte": 52,
+    "fremdS": 19.07,
+    "kerne": 0.185,
+    "fensterKerne": 1.041,
+    "namen": [
+     [
+      "provjobd1522274309",
+      16.16
+     ],
+     [
+      "hv_kvp_daemon -n",
+      2.17
+     ],
+     [
+      "Runner.Worker spawnclient 142 145",
+      0.39
+     ]
+    ],
+    "dienerS": 0.59,
+    "diener": [
+     [
+      "[kworker/u16:8-ext4-rsv-conversion]",
+      0.18
+     ],
+     [
+      "[kworker/u16:6-ext4-rsv-conversion]",
+      0.18
+     ]
+    ],
+    "eigenS": 189.83,
+    "schwelle": 0.3,
+    "eich": "linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-10T12:07:48.736Z",
+   "abdruck": "768e344398dc",
+   "port": 7704,
+   "bahn": "1/1",
+   "host": "farm:42813026346/9"
+  }
+ },
+ "ungemessen": {
+  "streaming.K1#1": {
+   "gruen": false,
+   "zahl": "Fremd-Last: provjobd2898710562 13,8 CPU-s · Runner.Worker spawnclient 142 145 0,5 CPU-s · hv_kvp_daemon -n 0,2 CPU-s — 0,75 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, linux, 4 Kerne (Container); Σ fremd 14,9 CPU-s in 144,6 s) — kein Urteil, UNGEMESSEN (die Probe sah: sprint 5.175 m/s 60.003 s: 4771 von 5412 Bildern mit Lücke (karte 29744; a:-4584,-9318:karte karte 211 m · a:-4688,-11412:karte karte 211 m · a:-4651,-9294:karte karte 218 m) · gt 63.82 m/s 60.085 s: 1754 von 1794 Bildern mit Lücke (karte 1)",
+   "exit": 0,
+   "minuten": 2.41,
+   "grund": "Fremd-Last: provjobd2898710562 13,8 CPU-s · Runner.Worker spawnclient 142 145 0,5 CPU-s · hv_kvp_daemon -n 0,2 CPU-s — 0,75 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, linux, 4 Kerne (Container); Σ fremd 14,9 CPU-s in 144,6 s) — kein Urteil, UNGEMESSEN (die Probe sah: sprint 5.175 m/s 60.003 s: 4771 von 5412 Bildern mit Lücke (karte 29744; a:-4584,-9318:karte karte 211 m · a:-4688,-11412:karte karte 211 m · a:-4651,-9294:karte karte 218 m) · gt 63.82 m/s 60.085 s: 1754 von 1794 Bildern mit Lücke (karte 1)",
+   "fremd": {
+    "s": 144.6,
+    "takte": 73,
+    "fremdS": 14.93,
+    "kerne": 0.103,
+    "fensterKerne": 0.75,
+    "namen": [
+     [
+      "provjobd2898710562",
+      13.76
+     ],
+     [
+      "Runner.Worker spawnclient 142 145",
+      0.5
+     ],
+     [
+      "hv_kvp_daemon -n",
+      0.15
+     ]
+    ],
+    "dienerS": 0.64,
+    "diener": [
+     [
+      "[kworker/u16:4-iou_exit]",
+      0.21
+     ],
+     [
+      "[kworker/u16:3-flush-259:0]",
+      0.14
+     ]
+    ],
+    "eigenS": 328.95,
+    "schwelle": 0.3,
+    "eich": "linux, 4 Kerne (Container)"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-10T12:07:41.497Z",
+   "abdruck": "6caf085861a3",
+   "port": 7704,
+   "bahn": "allein",
+   "host": "farm:42813026346/4"
+  },
+  "streaming.K2#1": {
+   "gruen": false,
+   "zahl": "Fremd-Last: provjobd2898710562 13,8 CPU-s · Runner.Worker spawnclient 142 145 0,5 CPU-s · hv_kvp_daemon -n 0,2 CPU-s — 0,75 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, linux, 4 Kerne (Container); Σ fremd 14,9 CPU-s in 144,6 s) — kein Urteil, UNGEMESSEN (die Probe sah: fertig beim Eintritt: boden 1521/1557 (97.7 %, spät -1/-1/-1 s) · baum 2146/3672 (58.4 %, spät -1/-1/-1 s) · karte 6417/12875 (49.8 %, spät -1/-1/-1 s) · bau 967/1047 (92.4 %, spät -1/-1/-1 s) · wuchs 823/823 (100 %) · streu 47/47 (100 %) ·)",
+   "exit": 0,
+   "minuten": 2.41,
+   "grund": "Fremd-Last: provjobd2898710562 13,8 CPU-s · Runner.Worker spawnclient 142 145 0,5 CPU-s · hv_kvp_daemon -n 0,2 CPU-s — 0,75 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, linux, 4 Kerne (Container); Σ fremd 14,9 CPU-s in 144,6 s) — kein Urteil, UNGEMESSEN (die Probe sah: fertig beim Eintritt: boden 1521/1557 (97.7 %, spät -1/-1/-1 s) · baum 2146/3672 (58.4 %, spät -1/-1/-1 s) · karte 6417/12875 (49.8 %, spät -1/-1/-1 s) · bau 967/1047 (92.4 %, spät -1/-1/-1 s) · wuchs 823/823 (100 %) · streu 47/47 (100 %) ·)",
+   "fremd": {
+    "s": 144.6,
+    "takte": 73,
+    "fremdS": 14.93,
+    "kerne": 0.103,
+    "fensterKerne": 0.75,
+    "namen": [
+     [
+      "provjobd2898710562",
+      13.76
+     ],
+     [
+      "Runner.Worker spawnclient 142 145",
+      0.5
+     ],
+     [
+      "hv_kvp_daemon -n",
+      0.15
+     ]
+    ],
+    "dienerS": 0.64,
+    "diener": [
+     [
+      "[kworker/u16:4-iou_exit]",
+      0.21
+     ],
+     [
+      "[kworker/u16:3-flush-259:0]",
+      0.14
+     ]
+    ],
+    "eigenS": 328.95,
+    "schwelle": 0.3,
+    "eich": "linux, 4 Kerne (Container)"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-10T12:07:41.497Z",
+   "abdruck": "812b543d4746",
+   "port": 7704,
+   "bahn": "allein",
+   "host": "farm:42813026346/4",
+   "zwilling": "streaming.K1#1"
+  }
+ }
+}
