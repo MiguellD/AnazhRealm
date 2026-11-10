@@ -3047,7 +3047,7 @@ addEventListener("keyup", (e) => {
 function wireForest() {
     if (THREE.PointerLockControls) plControls = new THREE.PointerLockControls(camera, renderer.domElement);
     renderer.domElement.addEventListener("click", () => {
-        if (forestMode && plControls && !plControls.isLocked && !plFallback) plControls.lock();
+        if (forestMode && plControls && !plControls.isLocked && !plFallback) AnazhHuelle.zeiger(renderer.domElement);
     });
     // PORTAL-FIX V18.384: scheitert der Lock (Browser/iframe-Policy), faellt die Steuerung
     // graziös auf Drag-Umsehen + freie WASD (statt eines toten Waldes). Kein PointerLockControls
