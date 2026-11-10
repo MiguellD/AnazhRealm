@@ -64,7 +64,7 @@ ci() { tasklist -FI "IMAGENAME eq Runner.Worker.exe" 2>/dev/null | grep -qi Runn
 # Laufs — punkte.cjs selbst übernimmt eine tote pid, die bloße Ordner-Frage tat es nicht)
 sperre_lebt() {
     local p
-    p=$(tr -dc 0-9 <"$R/.claude/worktrees/punkte-$GERAET.sperre/pid" 2>/dev/null)
+    p=$(cat "$R/.claude/worktrees/punkte-$GERAET.sperre/pid" 2>/dev/null | tr -dc 0-9)
     [ -n "$p" ] && tasklist -FI "PID eq $p" -NH 2>/dev/null | grep -qw "$p"
 }
 frei() {
@@ -76,7 +76,7 @@ kurz() { git -C "$R" rev-parse "$1" | cut -c1-8; }
 
 # miss <sha40> → GRÜN | ROT | OFFEN | ABBRUCH (stdout); die Zahl der Station steht danach in $ZU/schritt.zahl
 miss() {
-    local x=$1 x8 mj rj d0 p ab=0 w t0 u z ende
+    local x=$1 x8 mj rj d0 p ab=0 w t0 u z ende lauf=0 stand=0
     x8=${x:0:8}
     : >"$ZU/schritt.zahl"
     if [ -n "$RICHTER_SCHEIN_ROT_AB" ]; then # die Schein-Messung des Selbsttests: ROT ab einem genannten Commit, „nie“ = immer GRÜN
@@ -95,11 +95,16 @@ miss() {
     rm -rf "$mj" "$rj"
     d0=$(verdr)
     t0=$(date +%s)
-    (cd "$PM/meisterkarte-quelle/punkte" && exec timeout "${RICHTER_FRIST_S:-1800}" node punkte.cjs run --sha "$x" --geraet "$GERAET" --nur "$STATION") >"$ZU/schritt.out" 2>&1 &
+    (cd "$PM/meisterkarte-quelle/punkte" && exec node punkte.cjs run --sha "$x" --geraet "$GERAET" --nur "$STATION") >"$ZU/schritt.out" 2>&1 &
     p=$!
+    # DIE FRIST zählt die Fahrt des Schritts, nie sein Warten vor dem Spiel-Baum: zwei Schleifen sehen die Karte im selben Takt frei
+    # und starten beide, punkte.cjs reiht sie selbst („der Spiel-Baum … ist belegt (pid N), warte“). Am 10.11. 23:35 wartete der
+    # Schritt so 1808 s hinter einer Station der Landung, die ihren Deckel riss — `timeout 1800` um den ganzen Lauf beendete ihn
+    # ungemessen (OFFEN), ehe er eine Sekunde fuhr. Das Warten trägt eine eigene, weite Frist (RICHTER_WARTE_S).
     while kill -0 $p 2>/dev/null; do
-        if [ $CI_ABBRUCH = 1 ] && ci; then
-            ab=1
+        if [ $CI_ABBRUCH = 1 ] && ci; then ab=1; fi
+        if tail -n 1 "$ZU/schritt.out" 2>/dev/null | grep -aq "ist belegt"; then stand=$((stand + 10)); else lauf=$((lauf + 10)); fi
+        if [ $ab = 1 ] || [ $lauf -ge "${RICHTER_FRIST_S:-1800}" ] || [ $stand -ge "${RICHTER_WARTE_S:-7200}" ]; then
             w=$(cat /proc/$p/winpid 2>/dev/null)
             [ -n "$w" ] && taskkill //T //F //PID "$w" >/dev/null 2>&1
             kill $p 2>/dev/null
@@ -121,7 +126,7 @@ miss() {
     echo "${z#*" · "}" | cut -c1-300 >"$ZU/schritt.zahl"
     [ -n "$z" ] || tail -n 1 "$ZU/schritt.out" | cut -c1-300 >"$ZU/schritt.zahl"
     # die Uhr des Schritts: Dauer, und wie lange der Lauf nach seiner letzten Zeile noch lebte (die Baum-Sperre hält er so lange)
-    echo "$((ende - t0)) s, davon $((ende - $(stat -c %Y "$ZU/schritt.out"))) s nach der letzten Zeile" >"$ZU/schritt.uhr"
+    echo "$((ende - t0)) s (Fahrt $lauf s, vor dem belegten Spiel-Baum $stand s), davon $((ende - $(stat -c %Y "$ZU/schritt.out"))) s nach der letzten Zeile" >"$ZU/schritt.uhr"
     log "    Uhr $x8: $(cat "$ZU/schritt.uhr")"
     [ -e "$mj" ] && cp "$mj" "$ZU/schritte/${STATION//#/_}-$x8-$t0.json" 2>/dev/null
     cp "$ZU/schritt.out" "$ZU/schritte/${STATION//#/_}-$x8-$t0.out" 2>/dev/null
