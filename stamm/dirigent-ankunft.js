@@ -1544,26 +1544,36 @@ class AnazhRealm_dirigent_ankunft {
                 ),
                 0
             ).toVar();
-            const el = T.atan(tanA).mul(0.5).toVar();
-            const [ce, se] = [T.cos(el).toVar(), T.sin(el).toVar()];
-            const a = L.xz.div(flach).toVar();
+            // DAS GEWICHT DES BANDS (sin α × Δω/π, 0 außerhalb der Karte, wo sie ruht und ohne Grat) VOR der Schleife: die drei
+            // Abtastungen laufen nur, wo es trägt (w20-fern-hang: sie liefen auf jedem Pixel jedes Stoffs und wurden erst am Ende
+            // genullt — gpu-bank GTX wiese-ego 22,8 → 29,9 ms). Wo es 0 ist, war das Produkt 0; wo nicht, rechnet derselbe Term.
+            // Was die Schleife liest, steht vor dem Zweig (Lehre 26): `n` baut der Stoff, die Karte und das Licht dieser Rumpf.
+            const w = tanA
+                .div(T.sqrt(tanA.mul(tanA).add(1)))
+                .mul((2 * H.gratRad) / (3 * Math.PI))
+                .mul(AnazhRealm._imEinheitsQuadrat(q))
+                .mul(K.U.aktiv)
+                .toVar();
             const summe = T.vec3(0).toVar();
-            T.Loop(3, ({ i }) => {
-                const d = T.float(i)
-                    .sub(1)
-                    .mul((2 / 3) * H.gratRad)
-                    .toVar();
-                const [c, s] = [T.cos(d), T.sin(d)];
-                const dir = T.vec3(a.x.mul(c).sub(a.y.mul(s)).mul(ce), se, a.x.mul(s).add(a.y.mul(c)).mul(ce)).toVar();
-                summe.addAssign(strahlung(dir).mul(T.max(n.dot(dir), 0)));
+            T.If(w.greaterThan(0), () => {
+                const el = T.atan(tanA).mul(0.5).toVar();
+                const [ce, se] = [T.cos(el).toVar(), T.sin(el).toVar()];
+                const a = L.xz.div(flach).toVar();
+                T.Loop(3, ({ i }) => {
+                    const d = T.float(i)
+                        .sub(1)
+                        .mul((2 / 3) * H.gratRad)
+                        .toVar();
+                    const [c, s] = [T.cos(d), T.sin(d)];
+                    const dir = T.vec3(
+                        a.x.mul(c).sub(a.y.mul(s)).mul(ce),
+                        se,
+                        a.x.mul(s).add(a.y.mul(c)).mul(ce)
+                    ).toVar();
+                    summe.addAssign(strahlung(dir).mul(T.max(n.dot(dir), 0)));
+                });
             });
-            return summe.mul(
-                tanA
-                    .div(T.sqrt(tanA.mul(tanA).add(1)))
-                    .mul((2 * H.gratRad) / (3 * Math.PI))
-                    .mul(AnazhRealm._imEinheitsQuadrat(q))
-                    .mul(K.U.aktiv)
-            );
+            return summe.mul(w);
         })();
     }
 
