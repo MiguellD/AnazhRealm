@@ -60,8 +60,15 @@ ci() { tasklist -FI "IMAGENAME eq Runner.Worker.exe" 2>/dev/null | grep -qi Runn
 # (die Schloss-Quelle meldet ein gelöstes verwaistes Schloss auf stdout — das gehört ins Log, nie in ein Urteil)
 # Frei heißt auch: kein anderer punkte-Lauf hält den Spiel-Baum des Geräts (die Sperre von punkte.cjs) — sonst stünde der Schritt
 # IN der Sperre, und eine Verdrängung des fremden Laufs zählte als seine.
+# (nur eine Sperre, deren Halter LEBT: am 10.11. 23:19–23:31 standen Landung und Richter 11 min vor der Sperre eines beendeten
+# Laufs — punkte.cjs selbst übernimmt eine tote pid, die bloße Ordner-Frage tat es nicht)
+sperre_lebt() {
+    local p
+    p=$(tr -dc 0-9 <"$R/.claude/worktrees/punkte-$GERAET.sperre/pid" 2>/dev/null)
+    [ -n "$p" ] && tasklist -FI "PID eq $p" -NH 2>/dev/null | grep -qw "$p"
+}
 frei() {
-    [ -d "$R/.claude/worktrees/punkte-$GERAET.sperre" ] && return 1
+    sperre_lebt && return 1
     if [ -n "$SCHLOSS_LIB" ] && [ -f "$SCHLOSS_LIB" ]; then (. "$SCHLOSS_LIB" && gpu_frei) >>"$L" 2>&1; else [ ! -d "$GS" ] && ! ci; fi
 }
 verdr() { if [ -n "$VERDR_LOG" ] && [ -f "$VERDR_LOG" ]; then grep -ac "VERDR" "$VERDR_LOG"; else echo 0; fi; }
