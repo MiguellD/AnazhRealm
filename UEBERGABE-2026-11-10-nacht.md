@@ -70,3 +70,13 @@
   `bash artifacts/profiband/werkzeug/notbremse.sh`. Die Ketten ohne LLM laufen weiter: Schlangen z356 → z357 → z358, `nach-landung2.sh`,
   `pm-nach-main.sh`. Handarbeit danach: Meisterkarte je Buchung veröffentlichen (heute Version 4 am fbbeb318), merge-base-Beweis für
   w27-decke-wurzel 828232b1 nach z356, K7 `w27-k7-l2-rand` mit heim3-w20-wald-kosten bündeln.
+
+## Stand 02:00 (10.11.)
+
+- **K7-Champion zurück, Abgabe `w27-k7-l2-rand` 71367ab5** (1 Datei `scripts/diag-koerper-stand.cjs`, +79/−99): der Spiel-Leser ist
+  unschuldig, die Linse zählte die Wiese gegen die Kachel-Fläche und rechnete mit Poisson ± 3 %. Neu: je Zelle des Gitters, Jackknife
+  über die Chunks. K7 L2 an main 1,242 → 1,118 ± 0,151 (Zahlen des Champions, von mir nur der Diff gelesen). **Fährt als z359** nach z358
+  (Aufgabe bilh2rnsl). Die Wand ist dafür gröber: Fund-Register 10.11. 02:00.
+- **`heim3-w20-wald-kosten` f5283f22 merget nicht mehr:** Konflikt in `scripts/diag-sicht-arbeit.cjs` schon gegen main fbbeb318, dazu
+  fünf gemeinsame Dateien mit w27-takt-streu (z357). Er braucht EINEN Heim-Schnitt nach der Landung von z357 und fährt dann hinter z359
+  (K7 war sein einziges ROT). Das ist der erste bereite Hebel nach z357.
