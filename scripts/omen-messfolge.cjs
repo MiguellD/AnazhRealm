@@ -45,6 +45,7 @@
 const { fehlerText, loesche, werkbankRuf, lebt, hauptLauf, sleep, selbsttestEnde, argOpt: opt, path, fs, os, jsonLesen, jsonSchreiben, ROOT: root } = require("./lib/welt-boot.cjs");
 const { spawn, execSync } = require("child_process");
 const BAND = require("./lib/band-urteil.cjs");
+const sag = console.log; // die Kurzform der Ausgabe
 const { wetterUrteil, weltaktUrteil } = require("./lib/ausgabe-aufnahme.cjs");
 
 const argv = process.argv.slice(2);
@@ -491,7 +492,7 @@ function wachenUrteil(name, vor, nach, ort, gehalten) {
                 continue;
             }
             for (const f of BAND.ortGestellt(ort, w.ort, SICHT)) v.push(`ORT ${name} (${wann}): ${f}`);
-            const d = Math.hypot(w.ort.spieler[0] - ort.spieler[0], w.ort.spieler[1] - ort.spieler[1]);
+            const d = !ort.ortPose ? Math.hypot(w.ort.spieler[0] - ort.spieler[0], w.ort.spieler[1] - ort.spieler[1]) : 0;
             if (!(d <= 8))
                 v.push(
                     `ORT ${name} (${wann}): der Spieler steht ${d.toFixed(1)} m vom Messort ${ort.spieler.join(" ")}`
@@ -588,7 +589,7 @@ async function folgeMitNeulauf() {
         const weg = r.datei.replace(/\.json$/, "") + `-verworfen-${v}.json`;
         fs.renameSync(r.datei, weg);
         versuche.push({ versuch: v, datei: path.basename(weg), takte: r.einschwung.takte, offen: r.einschwung.offen });
-        console.log(
+        sag(
             `[folge] Lauf ${v} NICHT eingeschwungen (offen ${JSON.stringify(r.einschwung.offen)}) — Neulauf ${v + 1} von höchstens ${NEULAUF_MAX + 1}`
         );
         if (r.profilFrisch) loesche(r.profilFrisch);
@@ -692,7 +693,7 @@ async function folge(neu = { versuch: 1, versuche: [], letzter: true }) {
         const t0 = Date.now();
         const e = { name, ergebnis: null, ms: 0, befunde: [] };
         aus.schritte.push(e);
-        console.log(`[folge] ${name} …`);
+        sag(`[folge] ${name} …`);
         e.ergebnis = await tat();
         e.ms = Date.now() - t0;
         gefahren.push(name);
@@ -708,7 +709,7 @@ async function folge(neu = { versuch: 1, versuche: [], letzter: true }) {
             e.befunde.push(`WETTER buehne: „${nach.wetter.wetter}" nach der Bühne`);
         if (abbruchVon(e.ergebnis)) e.befunde.push(`SCHRITT ${name}: ${abbruchVon(e.ergebnis)}`);
         aus.befunde.push(...e.befunde);
-        for (const b of e.befunde) console.log(`  ROT ${b}`);
+        for (const b of e.befunde) sag(`  ROT ${b}`);
         if (nach?.version) aus.stand.version = nach.version;
         vor = nach;
         schreibe();
@@ -727,7 +728,7 @@ async function folge(neu = { versuch: 1, versuche: [], letzter: true }) {
         if (db) {
             aus.schritte[aus.schritte.length - 1].befunde.push(db);
             aus.befunde.push(db);
-            console.log(`  ROT ${db}`);
+            sag(`  ROT ${db}`);
         }
         await schritt("buehne", () => R("/eval", { code: "return window.__buehne();" }));
         // die Tiere des zuletzt gefahrenen Schritts (aus seiner Wache) — neben jede Kurzfassung
@@ -816,7 +817,8 @@ async function folge(neu = { versuch: 1, versuche: [], letzter: true }) {
                         je[String(g)].takt = m.takt;
                     }
                 }
-                await blick(BAND.ortGier(ort));
+                // ein Ort mit Pose aus dem Plan (`ortPose`) kehrt über `umstellen` zu ihr zurück, nie über eine Zahl der Spec
+                await (ort.blick ? blick(BAND.ortGier(ort)) : R("/umstellen", { ort: ORT }));
                 return je;
             });
             aus.kurz.gpuBank = {};
@@ -854,7 +856,7 @@ async function folge(neu = { versuch: 1, versuche: [], letzter: true }) {
             if (eb) {
                 aus.schritte[aus.schritte.length - 1].befunde.push(eb);
                 aus.befunde.push(eb);
-                console.log(`  ROT ${eb}`);
+                sag(`  ROT ${eb}`);
             }
             // die Band urteilt ihre eigene Aufzeichnung: der gestellte Ort, Gerät und Sicht und jede Rot-Zeile der Linse, die
             // die Basis-Seite A nicht trägt
@@ -863,7 +865,7 @@ async function folge(neu = { versuch: 1, versuche: [], letzter: true }) {
                 const bb = bandBefunde(messung, basis);
                 e.befunde.push(...bb);
                 aus.befunde.push(...bb);
-                for (const b of bb) console.log(`  ROT ${b}`);
+                for (const b of bb) sag(`  ROT ${b}`);
             }
             schreibe();
             const vram = messung?.vram ? messung.vram.mb : null;
@@ -914,30 +916,30 @@ async function folge(neu = { versuch: 1, versuche: [], letzter: true }) {
         aus.werkbankLog = log.slice(-40);
         schreibe();
     }
-    console.log(`\nMESS-FOLGE ${aus.urteil}${abbruch ? ": " + abbruch : ""} — ${aus.befunde.length} Befunde\n${datei}`);
+    sag(`\nMESS-FOLGE ${aus.urteil}${abbruch ? ": " + abbruch : ""} — ${aus.befunde.length} Befunde\n${datei}`);
     for (const k of ["laufVoll", "laufFrei"]) {
         const l = aus.kurz[k];
         if (l?.frameMs)
-            console.log(
+            sag(
                 `  ${k}: ${l.fps} fps · Frame p50/p95/max ${l.frameMs.p50}/${l.frameMs.p95}/${l.frameMs.max} ms · CPU p50/p95 ` +
                     `${l.cpuTaktMs.p50}/${l.cpuTaktMs.p95} · render-Wanduhr (EWMA, mit CPU-Zustand) ${l.renderEwmaMs} · ${tierZeile(l.tiere)}`
             );
     }
     for (const [g, b] of Object.entries(aus.kurz.gpuBank || {}))
         if (b && b.gpuJeFrameMs != null)
-            console.log(
+            sag(
                 b.werte
                     ? `  gpu-bank Pose ${g}: ${b.gpuJeFrameMs} ms je Frame (${b.werte.join(" · ")}; CPU ${b.cpuJeFrameMs}, Chunks ${b.chunks}; Takt ${b.takt ? b.takt.mhz + " MHz, " + b.takt.temp + " °C, Drossel " + Object.keys(b.takt.drossel).join("/") : "—"})`
                     : `  gpu-bank Gier ${g}: ${b.gpuJeFrameMs} ms je Frame (CPU ${b.cpuJeFrameMs}) · ${tierZeile(b.tiere)}`
             );
     if (aus.kurz.band?.urteil)
-        console.log(
+        sag(
             `  band: ${aus.kurz.band.urteil} (Linse ${aus.kurz.band.linse}, Stempel ${aus.kurz.band.stempel}) · ` +
                 tierZeile(aus.kurz.band.tiere)
         );
     if (aus.kurz.profil?.cpuMs)
-        console.log(`  profil: CPU-Takt p95 ${aus.kurz.profil.cpuMs.p95} ms · ${tierZeile(aus.kurz.profil.tiere)}`);
-    console.log(`  Werkbank-Ende: ${aus.werkbankEnde}`);
+        sag(`  profil: CPU-Takt p95 ${aus.kurz.profil.cpuMs.p95} ms · ${tierZeile(aus.kurz.profil.tiere)}`);
+    sag(`  Werkbank-Ende: ${aus.werkbankEnde}`);
     return {
         code: abbruch ? 2 : aus.befunde.length ? 1 : 0,
         einschwung: aus.einschwung,
@@ -954,7 +956,7 @@ async function selbsttest() {
     const pruefe = (name, v, muss) => {
         const ok = muss ? v.some((x) => muss.test(x)) : v.length === 0;
         if (!ok) fehler.push(`${name}: ${v.join(" · ") || "(grün)"}`);
-        console.log(`  ${ok ? "✅" : "❌"} ${name} → ${v.join(" · ") || "grün"}`);
+        sag(`  ${ok ? "✅" : "❌"} ${name} → ${v.join(" · ") || "grün"}`);
     };
     pruefe("die Folge", folgeUrteil(FOLGE), null);
     const tausch = FOLGE.slice();
@@ -1477,7 +1479,7 @@ function streuungCli() {
     const laeufe = dateien.map((d) => ({ name: path.basename(d), lauf: jsonLesen(d) }));
     const orte = [...new Set(laeufe.map((l) => l.lauf.parameter && l.lauf.parameter.ort))];
     if (orte.length !== 1) {
-        console.log(
+        sag(
             `❌ STREUUNG: die Läufe stehen an ${orte.join(", ") || "keinem Ort"} — ein Urteil braucht EINEN Ort`
         );
         process.exit(1);
@@ -1488,20 +1490,20 @@ function streuungCli() {
         laeufe.map((l) => Object.assign({ name: l.name }, bankJe(l.lauf))),
         soll
     );
-    console.log(
+    sag(
         `\n=== DIE WIEDERHOLBARKEIT am Ort ${ort.id}: ${laeufe.length} Sitzungen, Soll Spanne ≤ ${soll} ms ===`
     );
     for (const z of u.zeilen)
-        console.log(
+        sag(
             `  ${z.k}: ${z.werte.map((x) => x.toFixed(2)).join(" · ")} ms bei ${z.takt.map((x) => (x ? x.toFixed(0) : "?")).join(" · ")} MHz → Mittel ${z.mittel}, Spanne ${z.spanne}, σ ${z.sigma} ` +
                 `(2σ ${(2 * z.sigma).toFixed(3)})`
         );
     if (u.befunde.length) {
-        for (const b of u.befunde) console.log("  ROT " + b);
-        console.log(`\n❌ STREUUNG ROT — der Ort ${ort.id} ist für Toggle-Urteile unter ${soll} ms blind.`);
+        for (const b of u.befunde) sag("  ROT " + b);
+        sag(`\n❌ STREUUNG ROT — der Ort ${ort.id} ist für Toggle-Urteile unter ${soll} ms blind.`);
         process.exit(1);
     }
-    console.log(`\n✅ STREUUNG GRÜN — der Ort ${ort.id} richtet Toggle-Urteile ab ${soll} ms.`);
+    sag(`\n✅ STREUUNG GRÜN — der Ort ${ort.id} richtet Toggle-Urteile ab ${soll} ms.`);
     process.exit(0);
 }
 
@@ -1512,20 +1514,20 @@ function schalterCli() {
     const datei = opt("--schalter");
     const { bloecke } = jsonLesen(datei);
     const u = schalterUrteil(bloecke.filter(Boolean));
-    console.log(`\n=== DAS SCHALTER-URTEIL: ${bloecke.length} Blöcke, Grund σ ${u.sigma} ms, Erst-Zeichnung der Grund-Blöcke ${u.erstGrund} ms ===`);
+    sag(`\n=== DAS SCHALTER-URTEIL: ${bloecke.length} Blöcke, Grund σ ${u.sigma} ms, Erst-Zeichnung der Grund-Blöcke ${u.erstGrund} ms ===`);
     for (const z of u.zeilen)
-        console.log(
+        sag(
             `  ${z.schalter}: Δ ${z.delta >= 0 ? "+" : ""}${z.delta.toFixed(3)} ms (je Block ${z.je.join(" · ")}) · Rauschband ±${z.rauschband} · ` +
                 `Erst-Zeichnung ${z.erst} ms → ${z.urteil}`
         );
-    for (const b of u.verworfen) console.log("  VERWORFEN " + b);
-    if (u.takt) console.log(`  Takt über die Sitzung ${u.takt.erst} → ${u.takt.letzt} MHz`);
+    for (const b of u.verworfen) sag("  VERWORFEN " + b);
+    if (u.takt) sag(`  Takt über die Sitzung ${u.takt.erst} → ${u.takt.letzt} MHz`);
     if (u.befunde.length) {
-        for (const b of u.befunde) console.log("  ROT " + b);
-        console.log("\n❌ SCHALTER ROT — das Urteil ist blind oder die Methode misst den Eingriff mit.");
+        for (const b of u.befunde) sag("  ROT " + b);
+        sag("\n❌ SCHALTER ROT — das Urteil ist blind oder die Methode misst den Eingriff mit.");
         process.exit(1);
     }
-    console.log("\n✅ SCHALTER GRÜN — der Null-Schalter liegt im Rauschen, jeder Schalter steht mit Δ und Erst-Zeichnung.");
+    sag("\n✅ SCHALTER GRÜN — der Null-Schalter liegt im Rauschen, jeder Schalter steht mit Δ und Erst-Zeichnung.");
     process.exit(0);
 }
 
@@ -1539,12 +1541,12 @@ function urteilCli() {
     const wachen = (j.befunde || []).filter((b) => !/^(BAND|BAND-LINSE|BASIS|ORT band|RAHMEN-ZIEL band)\b/.test(b));
     const band = (j.folge || []).includes("band") || bandMessungAus(j) ? bandBefunde(bandMessungAus(j), basis) : [];
     const p = j.parameter || {};
-    console.log(
+    sag(
         `=== DER LESER: ${p.ort || "?"} · Sicht ${p.sicht || "?"} · ${(j.stand?.version) || "?"}${bd ? " gegen die Basis " + bd : ""} ===`
     );
-    for (const b of [...wachen, ...band]) console.log("  ROT " + b);
+    for (const b of [...wachen, ...band]) sag("  ROT " + b);
     const n = wachen.length + band.length;
-    console.log(n ? `\n❌ LESER ROT — ${n} Befunde (gespeichert: ${j.urteil})` : `\n✅ LESER GRÜN (gespeichert: ${j.urteil})`);
+    sag(n ? `\n❌ LESER ROT — ${n} Befunde (gespeichert: ${j.urteil})` : `\n✅ LESER GRÜN (gespeichert: ${j.urteil})`);
     process.exit(n ? 1 : 0);
 }
 

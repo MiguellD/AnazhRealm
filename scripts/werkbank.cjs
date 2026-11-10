@@ -260,7 +260,6 @@ function boeSelbsttest() {
 
 function lauf(k) {
     return (async () => {
-        const st = r.state;
         const rend = st.renderer;
         // DIE BÜHNE: Mittag · Sonne · Sommer, oder das Wort des Spielers (`--wetter stormy`) und n Tiere frei im Ring
         // (`--tiere 50`) — Profiband K1 „Sturm"
@@ -659,7 +658,7 @@ function lauf(k) {
 // am VSync ein und misst nur bei tiefer Schlange die GPU.
 function gpuBank(k) {
     return (async () => {
-        const rend = r.state.renderer;
+        const rend = st.renderer;
         rend.setAnimationLoop(null);
         __buehne();
         // DIE EINE BANK-RUNDE (scripts/lib/zerlege-linse.cjs) — dieselbe Messung, die `zerlegen` je Schalter fährt.
@@ -692,7 +691,6 @@ function gpuBank(k) {
 // dessen Körper-Kugel das Frustum der Kaskaden-Kamera trifft), die Arten (die Gattung) gesamt und im Sichtkegel.
 function tierZahl() {
     const T = THREE;
-    const st = r.state;
     const frustum = (kam) =>
         kam && new T.Frustum().setFromProjectionMatrix(new T.Matrix4().multiplyMatrices(kam.projectionMatrix, kam.matrixWorldInverse), kam.coordinateSystem);
     const cam = st.camera;
@@ -730,7 +728,6 @@ function tierZahl() {
 // dann `eingeschwungen: false`, und die Ratsche verweigert den Nachzug.
 function bandEinschwingen(k) {
     return (async () => {
-        const st = r.state;
         const RUHIG = k.ruhig || 30;
         // DIE VOLLE WELT: der Regler maß hier Takte mit 50 ms Pause (65 ms je Frame) und drosselte auf loadScale 0 —
         // je nach Vorgeschichte stand die Messung auf einer anderen Welt (Streu-Stufen, Laub-Radius). Die Decke geht hoch
@@ -786,7 +783,7 @@ function bandProben(k) {
             if (i) for (let t = 0; t < (k.zwischen || 20); t++) await __werkTakt(); // ein Bild je Takt, wie das Einschwingen
             __buehne();
             try {
-                if (r.state.fernRing) r._tickFeldPass(r.state.fernRing);
+                if (st.fernRing) r._tickFeldPass(st.fernRing);
             } catch {}
             proben.push(await __drawZensus({ alle: true }));
         }
@@ -942,7 +939,7 @@ async function starte() {
         // ungebauten Werke in der Mesh-Zone (`architectureCullingRadius` um den Spieler)
         await page.evaluate(() => {
             // DER LOOP der Werkbank: an (der Spiel-Loop über rAF) oder aus (die Welt steht zwischen den Befehlen)
-            window.__loop = (an, r = anazhRealm) => r.state.renderer.setAnimationLoop(an ? (t) => r._gameLoopTick(t) : null);
+            window.__loop = (an, r = anazhRealm) => st.renderer.setAnimationLoop(an ? (t) => r._gameLoopTick(t) : null);
             window.__werkTakt = () => {
                 try {
                     __buehne();
@@ -1061,18 +1058,18 @@ async function starte() {
                     : null;
                 window.__ortSchritt = () => {
                     if (window.__ortStell) __ortStell();
-                    const pm = r.state.playerMesh.position;
+                    const pm = st.playerMesh.position;
                     for (const m of window.__ortTakt) r[m](pm);
                 };
                 if (window.__ortStell) __ortStell();
                 if (o && Number.isFinite(o.gier)) {
-                    r.state.yaw = o.gier;
-                    r.state.pitch = 0;
+                    st.yaw = o.gier;
+                    st.pitch = 0;
                 }
                 // DER ANLAUF (haushalt.json `anlauf`): dort steht der Spieler zuerst und schwingt ein — er gründet die Stadt, der Zug baut
                 // kein Haus auf ihm, eine Stadt erwacht erst, wenn er naht —, dann steht er am Ort: am Boden oder auf dem Dach (`dach`, m)
                 const a = o?.anlauf || [x, z];
-                r.state.playerMesh.position.set(a[0], r._voxelSurfaceY(a[0], a[1]) + 1.8, a[1]);
+                st.playerMesh.position.set(a[0], r._voxelSurfaceY(a[0], a[1]) + 1.8, a[1]);
                 // DIE GRÜNDUNG (haushalt.json `gruendung`, die Stadt): Same und Größe aus dem Wort, der Ort am Anker der Spec (bis w25-stadt-takt-3 sprach der Spieler sein Wort am Anlauf mit dem Blick des Orts, wie im
                 // Spiel (Chat)) — die Siedlung steht danach am Anker der Spec (±1 mm, sonst laut: die Ort-Wahl wanderte mit der Welt; der
                 // Richter des Verkehrs stellt die Stadt genau dorthin — bis w12-verkehr ±1 m, und 0,28 m daneben stand eine andere
@@ -1082,7 +1079,7 @@ async function starte() {
                 window.__ortBahn = o?.bahn || null;
                 if (g) {
                     const same = g.wort.split(" ")[1];
-                    const zellen = () => Object.values(r.state.worldMeta.settlementCells || {});
+                    const zellen = () => Object.values(st.worldMeta.settlementCells || {});
                     const steht = () =>
                         zellen().find((c) => String(c.seed) === same && Math.hypot(c.x - g.anker[0], c.z - g.anker[1]) <= 1e-3);
                     if (!steht()) {
@@ -1092,15 +1089,14 @@ async function starte() {
                         // jede Probe am Ort stand still. Gegründet wird mit dem Ort des Ankers, wie der Richter des Verkehrs
                         // (fahr-proben `verkehr`); ein Wunsch-Ort, der den Spieler nicht berührt, bleibt, wie er ist.
                         const [, seed, nH] = g.wort.split(" ").map(Number);
-                        r.spawnSettlement({ verlangt: "human", seed, nH, position: { x: g.anker[0], y: 0, z: g.anker[1] } });
-                        // die Schleife schläft ohne Takt: ihr Deckel zählt JEDEN Gang (`false`, 120 × 250 ms) — mit dem Offenen der Welt
-                        // zählte er nur stille Gänge und warf erst nach 3 600 (900 s): an z331 (Anker ±1 mm) schwieg die Stadt bis
-                        // zum Deckel jeder GPU-Probe (480 s; w25-stadt-takt-3 b464baaf · db8635ef, gpu-wahl 3fcecab7)
-                        try {
-                            for (const weiter = __deckel(`die Gründung „${g.wort}"`, 120, false); !steht() && weiter(); ) await sleep(250);
-                        } catch (f) {
-                            throw new Error(`${f.message} · Anker ${g.anker}, die Zellen ${JSON.stringify(zellen().map((c) => [c.seed, c.x, c.z]))}`);
-                        }
+                        // DER AKT IST DIE BEREIT-BEDINGUNG (w27-ort-pose): die Probe wartet auf sein Versprechen (`spawnSettlement`,
+                        // Buch · Export · Ort-Wahl im Faden · Zug), dann urteilt sie mit den Zellen. Bis hier zählte ein Deckel jeden
+                        // Gang ohne Takt (120 × 250 ms): 30 s Wanduhr, und die GTX 1050 brauchte länger — „DER BAU STEHT NICHT: die
+                        // Gründung nach 120 Takten" an stadt und stadt-voll (78d37554, 41 s); davor zählte er nur stille Gänge (900 s)
+                        // das Gesetz der Siedlung im Buch zuerst (wie der Richter des Verkehrs): sonst gab der Akt nach seiner Frist
+                        // (45 s) an der kalten GTX 1050 ohne Stadt auf
+                        await __weltDa(() => AnazhRealm._siedlungGesetz());
+                        await r.spawnSettlement({ verlangt: "human", seed, nH, position: { x: g.anker[0], y: 0, z: g.anker[1] } });
                     }
                     if (!steht())
                         throw new Error(`Messort ${o.ort}: „${g.wort}" steht nicht am Anker ${g.anker} (${JSON.stringify(zellen())})`);
@@ -1137,12 +1133,20 @@ async function starte() {
                             const x = k[i - 1][0] + ((k[i][0] - k[i - 1][0]) * s) / l, z = k[i - 1][1] + ((k[i][1] - k[i - 1][1]) * s) / l;
                             if (!r._aufWeg(x, z, 0)) throw new Error(`Messort ${o.ort}: die Bahn verlässt die Gasse bei ${x.toFixed(1)} ${z.toFixed(1)}`);
                         }
-                    if (o?.anlauf) {
-                        r.state.playerMesh.position.set(x, o.dach ? o.dach + AnazhRealm.PLAYER_FOOT_OFFSET : r._voxelSurfaceY(x, z) + 1.8, z);
-                        takte += await __weltStehtNach(takt);
-                        // der Träger der Kapsel (`_stepCharacter`): steht der Spieler auf dem Bau in der Höhe des Dachs?
-                        if (o.dach && !(r.state._kapselStruktur && Math.abs(r.state._kapselTraegerY - o.dach) < 0.5))
-                            throw new Error(`Messort ${o.ort}: kein Dach bei ${o.dach} m (Träger ${r.state._kapselTraegerY})`);
+                    // DIE POSE AUS DEM PLAN (`ortPose`, w27-ort-pose): der Ort steht auf dem Platz seiner Siedlung und blickt auf
+                    // ihren ersten freien Bau (`_ortPose`) — gerechnet hier, nie eine Zahl der Spec. IN ZWEI GÄNGEN: der Bestand der
+                    // Welt um den Platz (`_blockerUmPlatz`) ist erst gebaut, wenn der Spieler dort steht — der zweite Gang
+                    // fragt den Blick am Platz neu. Ohne Siedlung, Platz oder freien Bau bricht der Stamm beim Namen
+                    for (let gang = o?.ortPose ? 2 : 1; gang--; ) {
+                        var P = o?.ortPose && r._ortPose(g ? g.anker : [x, z]);
+                        if (P) [x, z, st.yaw, st.pitch] = [P.x, P.z, P.gier, 0];
+                        if (o?.anlauf || P) {
+                            st.playerMesh.position.set(x, o.dach ? o.dach + AnazhRealm.PLAYER_FOOT_OFFSET : r._voxelSurfaceY(x, z) + 1.8, z);
+                            takte += await __weltStehtNach(takt);
+                            // der Träger der Kapsel (`_stepCharacter`): steht der Spieler auf dem Bau in der Höhe des Dachs?
+                            if (o.dach && !(st._kapselStruktur && Math.abs(st._kapselTraegerY - o.dach) < 0.5))
+                                throw new Error(`Messort ${o.ort}: kein Dach bei ${o.dach} m (Träger ${st._kapselTraegerY})`);
+                        }
                     }
                 } finally {
                     st.perfTargetMs = decke;
@@ -1158,9 +1162,11 @@ async function starte() {
                         : null;
                 return {
                     takte,
+                    spieler: [x, z],
+                    blick: P && [P.ziel.x, P.ziel.z],
                     steht: r._weltSteht(),
-                    chunks: r.state.voxelChunks ? r.state.voxelChunks.size : 0,
-                    gier: +r.state.yaw.toFixed(4),
+                    chunks: st.voxelChunks ? st.voxelChunks.size : 0,
+                    gier: +st.yaw.toFixed(4),
                     dorfZug: window.__anazhAutoSettlement !== false,
                     ortTakt: window.__ortTakt,
                     dorfSchwebt,
@@ -1173,7 +1179,7 @@ async function starte() {
 
     const bild = (k) =>
         page.evaluate(async (k) => {
-            const rend = r.state.renderer;
+            const rend = st.renderer;
             const boden = (x, z, v) =>
                 typeof v === "string" && v[0] === "+" ? r._voxelSurfaceY(x, z) + Number(v.slice(1)) : Number(v);
             // DAS GESICHT (`--gesicht <m>`): die Kamera steht <m> vor dem Kopf des Spielers (sein Kopf-Gelenk, 8 cm darüber
@@ -1181,7 +1187,7 @@ async function starte() {
             let gpos = null;
             if (k.gesicht != null) {
                 const T = THREE;
-                const pm = r.state.playerMesh;
+                const pm = st.playerMesh;
                 let kopf = null;
                 pm.updateMatrixWorld(true);
                 pm.traverse((o) => {
@@ -1201,14 +1207,14 @@ async function starte() {
             // daneben, die Station maß 0 Fels-Pixel. `mitte(S, i)`: der Welt-Punkt des Tiefe-Pixels i (ohne i die Bildmitte).
             const mitte = (S, i = (S.th >> 1) * S.tw + (S.tw >> 1)) => S.punkt(i);
             if (k.arm != null) {
-                if (r.state.cameraMode !== "first" || !k.klasse) throw new Error("--arm: Ego (--sicht ego) und --klasse");
+                if (st.cameraMode !== "first" || !k.klasse) throw new Error("--arm: Ego (--sicht ego) und --klasse");
                 for (let i = 0; i < 30; i++) r._loopCamera(performance.now() + i * 100);
-                const a = r.state.camera.position.clone();
+                const a = st.camera.position.clone();
                 const tiefe = async () => (await __ausgabeAufnahme(64, 36, 1, { satz: "messung", tiefe: true }), await __spiegelDaten());
                 const re = new RegExp(k.klasse),
                     aus = [],
                     S = await tiefe();
-                r.state.scene.traverse((o) => o.visible === true && o.isMesh && re.test(r._taeterKlasse(o)) && aus.push(o));
+                st.scene.traverse((o) => o.visible === true && o.isMesh && re.test(r._taeterKlasse(o)) && aus.push(o));
                 aus.forEach((o) => (o.visible = false));
                 bundlesNeu();
                 const O = await tiefe();
@@ -1238,7 +1244,7 @@ async function starte() {
             // die Kamera VOR der Bühne: die Bühne setzt Tag und Nacht neu, und das Licht des Auges steht an der Kamera
             // (`_dayNightApplyAugenLicht`, seine Stärke aus dem Himmel am Auge) — danach gesetzt, stand es an der Kamera des
             // letzten Schusses (das Auge in der Höhle schwarz, Helligkeit 0, das Licht lag draußen unter dem Himmel)
-            const cam = r.state.camera,
+            const cam = st.camera,
                 fov0 = cam.fov; // `--fov v`: das Blickfeld (vertikal) dieses Schusses, danach wieder das des Spiels
             if (k.fov) (cam.fov = Number(k.fov)), cam.updateProjectionMatrix();
             cam.position.set(px, py, pz);
@@ -1249,7 +1255,7 @@ async function starte() {
             // sprang der Uhr-Schreiber); Himmel und Umgebung springen mit ihr, die Leuchtquellen folgen ihr (der Pool zu seinem
             // Fixpunkt in der Bühne)
             __buehne(k);
-            if (r.state.playerMesh) r.state.playerMesh.visible = !!k.spieler;
+            if (st.playerMesh) st.playerMesh.visible = !!k.spieler;
             // DAS ZIEL des Bilds ist der Blick-Punkt: die Aufnahme prüft, ob es im Bild und frei ist, und die Blick-Wahl
             // sucht bis zu `wahl` Posen um den Ort (Standard drei Runden, 42; `--wahl 0` schießt nur die genannte Pose).
             // Das Ziel einer Pose aus dem Leib (`--gesicht`, `--arm`) ist der Kopf oder die Fläche auf Armlänge, kein Werk hinter
@@ -1265,7 +1271,7 @@ async function starte() {
             if (wahl > 0 && window.__buehneUhr) await __weltStehtWarten();
             const gewaehlt = wahl > 0 ? await __blickWahl({ ziel, wahl }) : null;
             try {
-                if (r.state.fernRing) r._tickFeldPass(r.state.fernRing);
+                if (st.fernRing) r._tickFeldPass(st.fernRing);
             } catch {}
             const auf = await __ausgabeAufnahme(k.w, k.h, 1, { ziel, wahl: gewaehlt });
             // Die Welt RUHT zwischen den Befehlen (nur `umstellen` tickt): im Leerlauf fraß der Loop unter
@@ -1303,7 +1309,7 @@ async function starte() {
                 // (`_chunkSatzAus`), und kehrt über den EINEN Weg zurück (`_bauSatzMarke` → `_tickBauSatz`); ein Nur-Wurf-Satz
                 // zeichnet nie ins Bild und bleibt, wie er ist.
                 const bauSaetze = new Map();
-                for (const [art, s] of r.state.chunkSaetze || [])
+                for (const [art, s] of st.chunkSaetze || [])
                     if (s.mesh?.userData?.bauSatz && !s.spec.nurWurf)
                         bauSaetze.set(s.mesh, { art, s });
                 // DIE KARTE IN ARTEN (w4-laub-karte): der EINE Karten-Atlas zeichnet jede Art aus EINER Gruppe
@@ -1312,7 +1318,7 @@ async function starte() {
                 // den Atlas verbarg sie. Eine Art verbirgt sich, indem ihre Instanzen für den Schuss unter die Welt ziehen (die
                 // Matrix, gemerkt an der Slot-Marke `slotRef` — die Wahl je Pass ordnet die Slots um), und kehrt danach an ihre
                 // Marke zurück.
-                const kg = r.state.archInstanceGroups?.get(r.constructor.IMPOSTOR_ATLAS_GRUPPE),
+                const kg = st.archInstanceGroups?.get(r.constructor.IMPOSTOR_ATLAS_GRUPPE),
                     arten = new Map();
                 if (kg?.mesh?.geometry.attributes.aKarte) {
                     const art = new Map([...r._kartenAtlas.zellen.values()].map((z) => [z.idx, r.constructor._instanzKlasse(z.key)]));
@@ -1321,7 +1327,7 @@ async function starte() {
                         arten.set(kl, [...(arten.get(kl) || []), kg.slotRef[i]]);
                     }
                 }
-                r.state.scene.traverse((o) => {
+                st.scene.traverse((o) => {
                     if (!zeichnet(o)) return;
                     const bs = bauSaetze.get(o);
                     if (bs) {
@@ -1406,7 +1412,7 @@ async function starte() {
                     // — rang-treu über Belichtung, Tonkurve und sRGB. Die Welle (≤ Amplitude) und die Brechung des Films sind nicht gerechnet.
                     const zielTreue = (m) => {
                         const T = THREE;
-                        const cam = r.state.camera;
+                        const cam = st.camera;
                         cam.updateMatrixWorld(true);
                         const recs = [];
                         for (const rec of r._portalMembranes ? r._portalMembranes.values() : []) {
@@ -1561,7 +1567,7 @@ async function starte() {
                         const v = new T.Vector3();
                         // DIE ALBEDO DER ECKE (das Licht des Gesichts, `gesichtMasse` weiss): ihre Farbe im Guss (linear), für einen
                         // Bewohner mal dem Verhältnis seiner Palette zu der seiner Gestalt am Ton der Ecke (`_tonFaktor`, die Ton-Tafel)
-                        const tafel = r.state.tonTafel?.image ? r.state.tonTafel.image : null;
+                        const tafel = st.tonTafel?.image ? st.tonTafel.image : null;
                         const albedo = (o, i) => {
                             const c = o.geometry.attributes.color;
                             if (!c) return null;
@@ -1798,7 +1804,7 @@ async function starte() {
                             augeUeberBoden: +(pos.y - (r._bodenSichtAt(pos.x, pos.z) || 0)).toFixed(2),
                             cos: cosS.map((s, b) => (cosN[b] ? +(s / cosN[b]).toFixed(4) : null)),
                             klassen: zahl,
-                            farbton: { kachel: 2, band: [2, 5], belichtung: +r.state.renderer.toneMappingExposure.toFixed(4) },
+                            farbton: { kachel: 2, band: [2, 5], belichtung: +st.renderer.toneMappingExposure.toFixed(4) },
                         };
                         abstand.farbton.kacheln = [...ftK].map(([kk, a]) => [kk, a[0], +a[1].toFixed(3), +a[2].toFixed(3), a[3]]);
                     }
@@ -2064,7 +2070,6 @@ async function starte() {
                 if (req.url === "/wache") {
                     const w = await page.evaluate(
                         (a) => {
-                            const st = r.state;
                             const pm = st.playerMesh.position;
                             const db = st.renderer.getDrawingBufferSize(new THREE.Vector2());
                             return {
@@ -2098,7 +2103,6 @@ async function starte() {
                 }
                 if (req.url === "/status") {
                     const s = await page.evaluate(() => {
-                        const st = anazhRealm.state;
                         const p = st.playerMesh.position;
                         return {
                             spieler: [p.x, p.y, p.z].map((v) => +v.toFixed(1)),
@@ -2141,10 +2145,12 @@ async function starte() {
                                 `Messort ${ort.id}: keine Pose „${b.pose}" (posen: ${(ort.posen || []).map((p) => p.id).join(", ")})`
                             );
                         const stelle = pose || ort;
-                        const o = await umstellen(stelle.spieler[0], stelle.spieler[1], {
+                        // ein Ort mit Pose aus dem Plan (`ortPose`) trägt keine: er beginnt am Anlauf
+                        const o = await umstellen(...(stelle.spieler || stelle.anlauf), {
                             ort: ort.id,
+                            ortPose: ort.ortPose,
                             anker: ort.anker || null,
-                            gier: BAND.ortGier(stelle),
+                            gier: stelle.blick && BAND.ortGier(stelle),
                             dorfZug: ort.dorfZug,
                             takt: ort.ortTakt,
                             stell: ort.stell || null,
@@ -2191,6 +2197,11 @@ async function starte() {
                     // DIE LEINWAND DER KLASSE: die Soll-Tafel misst im Pixel des Schirms, 1920 × 1080 wie ihre Messungen — das
                     // Fenster wie ein Spieler (`/fenster`), bis die Welt es trägt; danach das Fenster der Sitzung
                     const vp = page.viewport();
+                    // DER INHALT DES ORTS (`imBild`, w27-ort-pose): was der Ort IST, zeigt das Bild — je Klasse der Teilung ein
+                    // Mindest-Anteil seiner Pixel, sonst ROT beim Namen, ungespeichert (am Dorf ohne Haus stand GRÜN, 78d37554).
+                    // Der Anteil gilt der Leinwand der Klasse unten (1920 × 1080: dort zählt die Teilung, nie in `--w`/`--h`)
+                    const inhalt = b.ort && BAND.ladeSpec(b.ort).ort.imBild;
+                    if (inhalt) b.klasse = `^(${Object.keys(inhalt).join("|")})$`;
                     if (b.klasse) {
                         await page.setViewport({ width: 1920, height: 1080, deviceScaleFactor: 1 });
                         await page.waitForFunction(() => st.renderer.domElement.clientWidth === 1920);
@@ -2198,6 +2209,8 @@ async function starte() {
                     if (b.zeit != null) await page.evaluate(`window.__boeVarianz = ${boeVarianz}`);
                     const o = await bild(Object.assign({ w: 640, h: 360, nahM: BOE.nahM, viertel: BOE.viertel }, b));
                     if (b.klasse) await page.setViewport(vp);
+                    const fehlt = Object.keys(inhalt || {}).filter((k) => !(o.klasse.klassen[k]?.pixel >= inhalt[k] * 1920 * 1080));
+                    if (fehlt.length) throw new Error(`ABNAHME ROT [kein ${fehlt.join(", kein ")} im Bild] · ${b.ort}: ${o.abnahme.zeile}`);
                     const datei = zeitAblage(b.datei, "bild", "png");
                     ordnerFuer(datei);
                     pngDatei(datei, o.png);
@@ -2286,11 +2299,11 @@ async function starte() {
                             Object.getPrototypeOf(r)[name] = fn;
                             const aus = { getauscht: name };
                             if (terrain) {
-                                const alt = r.state.voxelChunkMaterial;
-                                r.state.voxelChunkMaterial = null;
+                                const alt = st.voxelChunkMaterial;
+                                st.voxelChunkMaterial = null;
                                 const neu = r._getVoxelChunkMaterial();
                                 let n = 0;
-                                r.state.scene.traverse((m) => {
+                                st.scene.traverse((m) => {
                                     if (m.material === alt) {
                                         m.material = neu;
                                         n++;
@@ -2314,7 +2327,6 @@ async function starte() {
                     // DAS QUADRAT DER LINSE ist das 5 × 5 der Chunks um den Chunk des SPIELERS (die Linse wählt ihre Orte um
                     // ihn): jeder steht im Boden-Satz oder ist leer. `_builtRingRadius` misst um `lastPlayerVoxelChunk` — in
                     const welt = await page.evaluate(async () => {
-                        const st = r.state;
                         const t0 = performance.now();
                         const quadrat = () => {
                             const satz = st.chunkSaetze?.get("boden");
@@ -2389,7 +2401,6 @@ async function starte() {
                     // (r184 `_textures`), sonst zeichnet der Boden im Spiel ein altes Bild. Vor dem Textur-Wächter der Diät
                     // hielt die GPU 20 Takte lang die alte.
                     const upload = await page.evaluate(async () => {
-                        const st = r.state;
                         const rend = st.renderer;
                         const texe = [];
                         if (st.fernKroneNah) texe.push(st.fernKroneNah.tex);
@@ -2735,13 +2746,13 @@ async function starte() {
                                 typeof v === "string" && v[0] === "+"
                                     ? r._voxelSurfaceY(x, z) + Number(v.slice(1))
                                     : Number(v);
-                            const cam = r.state.camera;
+                            const cam = st.camera;
                             cam.position.set(+k.px, boden(+k.px, +k.pz, k.py), +k.pz);
                             cam.lookAt(+k.lx, boden(+k.lx, +k.lz, k.ly), +k.lz + 1e-4);
                             cam.updateMatrixWorld(true);
                         }
                         try {
-                            if (r.state.fernRing) r._tickFeldPass(r.state.fernRing);
+                            if (st.fernRing) r._tickFeldPass(st.fernRing);
                         } catch {}
                         return __drawZensus({ top: 16, alle: !!k.alle });
                     }, b);
@@ -3169,6 +3180,7 @@ async function starte() {
 }
 
 hauptLauf(async () => {
+    const [J, log] = [JSON.stringify, console.log]; // die Kurzformen der Befehle
     const cmd = argv[0];
     if (cmd === "start") return starte();
     const a = argv.slice(1).filter((x, i, arr) => !x.startsWith("--") && !(i > 0 && arr[i - 1].startsWith("--")));
@@ -3196,6 +3208,7 @@ hauptLauf(async () => {
             ziel: opt("--ziel"),
             wahl: opt("--wahl"),
             klasse: opt("--klasse"),
+            ort: opt("--ort"),
             spieler: argv.includes("--spieler"),
             abstand: argv.includes("--abstand"),
             gesicht: opt("--gesicht"),
@@ -3222,7 +3235,7 @@ hauptLauf(async () => {
             halt?.();
         }
         const je = (o.schritte || []).map((s) => s.pop + (s.wechsel ? "*" : "") + (s.ein.length ? `+${s.ein.length}@${Math.min(...s.ein)}` : ""));
-        if (je.length) console.log(`lod.K2#1 ${o.anteilJeSekunde <= 0.05 ? "GRÜN" : "ROT"} ${o.anteilJeSekunde} % Pop-Pixel/s (${o.popPixel} px) · ${je.join("/")} · Laub ${o.laub} · dc, Dreiecke ${o.kosten.at(-1)} · GPU ${o.bank.gpuJeFrameMs} ms, CPU ${o.bank.cpuJeFrameMs} ms je Bild`);
+        if (je.length) log(`lod.K2#1 ${o.anteilJeSekunde <= 0.05 ? "GRÜN" : "ROT"} ${o.anteilJeSekunde} % Pop-Pixel/s (${o.popPixel} px) · ${je.join("/")} · Laub ${o.laub} · dc, Dreiecke ${o.kosten.at(-1)} · GPU ${o.bank.gpuJeFrameMs} ms, CPU ${o.bank.cpuJeFrameMs} ms je Bild`);
     }
     else if (cmd === "bedienung") o = await rufe("/bedienung", { runden: opt("--runden", 3), staffel: opt("--staffel") });
     else if (cmd === "albedo" && hat("nah-fern")) {
@@ -3363,28 +3376,28 @@ hauptLauf(async () => {
         if (o?.zeilen) {
             const w = o.messung?.welt;
             if (w)
-                console.log(
+                log(
                     `  Welt ${w.gestanden ? "steht" : "STAND NICHT"} nach ${w.ms} ms (${w.takte} Takte): Chunk ${w.chunk}, ` +
                         `fehlt ${w.fehlt.length}, gebaut ${w.gebaut}, Ring ${w.ring}, im Bau ${w.imBau}, Karte ${w.karte}`
                 );
             for (const z of o.zeilen)
-                console.log(
+                log(
                     `  ${z.klasse.padEnd(5)} ${z.ort.join("/").padEnd(12)} Deckung ${z.deckung} · nah Y ${z.nahY} · fern Y ${z.fernY} · ` +
                         `${(z.dY * 100).toFixed(0)} % · Gesetz Y ${z.gesetzY}: nah ${z.nahGesetz} (Grün ${z.gruenNah}), fern ${z.fernGesetz} (Grün ${z.gruenFern}) · Runden ${z.runden}`
                 );
             const up = o.messung?.upload;
             if (up)
-                console.log(
+                log(
                     `  Upload im Hauptbild (${up.ruhig ? "ruhig" : "UNRUHIG"}, Versuch ${up.versuche}, ${up.bilder} Bilder): ` +
                         (up.texe || []).map((u) => `${u.name} GPU ${u.gpu}/${u.soll}`).join(" · ")
                 );
-            for (const b of o.befunde) console.log("  ROT " + b);
-            console.log(
+            for (const b of o.befunde) log("  ROT " + b);
+            log(
                 o.befunde.length
                     ? "\n❌ NAH-FERN ROT — zwei Farben derselben Stelle"
                     : "\n✅ NAH-FERN GRÜN — EINE Boden-Farbe je Ort"
             );
-            if (o.datei) console.log(o.datei);
+            if (o.datei) log(o.datei);
             process.exit(o.befunde.length ? 1 : 0);
         }
     } else if (cmd === "albedo") {
@@ -3398,7 +3411,7 @@ hauptLauf(async () => {
         // `--kurz` und `--eigen` die Wand der Karte, `--ordner d` die Bilder, `--datei f.json` die Messung.
         const halt = await eigeneWelt();
         const welt = {};
-        const kurve =(uhren, png) => evalRuf(`return await __tagKurve(${JSON.stringify({ uhren, png })});`);
+        const kurve =(uhren, png) => evalRuf(`return await __tagKurve(${J({ uhren, png })});`);
         try {
             for (const ort of String(opt("--orte", "genesis,wiese")).split(",")) {
                 await umstellen({ ort, sicht: "ego" });
@@ -3416,7 +3429,7 @@ hauptLauf(async () => {
         }
         dateiAb(welt);
         const u = LL.tagKurveUrteil(welt);
-        console.log(JSON.stringify(u.kurven, null, 1));
+        log(J(u.kurven, null, 1));
         urteilEnde("TAG-ACHSE", u);
     } else if (cmd === "licht" && hat("kontakt")) {
         // DER KONTAKT-SCHATTEN (schatten.K1): `kontaktSicht` an der Platte saat-s7-platte der Prüfbühne je Uhr, das Urteil `kontaktUrteil`
@@ -3425,7 +3438,7 @@ hauptLauf(async () => {
         // Namen). Bühne und Platte stehen EINMAL vor den Uhren (die Uhr springt in der Sicht): je Uhr zwei Umstellen kosteten an der
         // Radeon drei kalte Ringe, 17,9 s
         const fehl = LL.kontaktSelbsttest();
-        console.log(`KONTAKT Selbsttest ${fehl.length ? "ROT: " + fehl.join(" | ") : "4/4"}`);
+        log(`KONTAKT Selbsttest ${fehl.length ? "ROT: " + fehl.join(" | ") : "4/4"}`);
         if (fehl.length || SELBST) process.exit(fehl.length ? 1 : 0);
         const welt = {};
         const P = require("../spec/pruefbuehne/welt.json").architectures.find((a) => a.id === "saat-s7-platte");
@@ -3433,12 +3446,12 @@ hauptLauf(async () => {
         await umstellen({ x: P.position.x, z: P.position.z - 8 });
         for (const uhr of opt("--uhr", "0.5").split(",").map(Number)) {
             const o = { uhr, png: !!opt("--bilder"), platte: P.id };
-            const m = (welt[uhr] = ergebnis(await evalRuf(`return await (${LL.kontaktSicht})(${JSON.stringify(o)});`)));
+            const m = (welt[uhr] = ergebnis(await evalRuf(`return await (${LL.kontaktSicht})(${J(o)});`)));
             for (const [pose, p] of Object.entries(m?.posen || {}))
                 if (p.png) pngDatei(path.resolve(opt("--bilder"), `kontakt-${uhr}-${pose}.png`), p.png), delete p.png;
         }
         const rot = Object.entries(welt).flatMap(([uhr, m]) => LL.kontaktUrteil(m, hat("zuwachs")).befunde.map((b) => `Uhr ${uhr} ${b}`));
-        console.log(JSON.stringify(welt, null, 1));
+        log(J(welt, null, 1));
         endeMit(`KONTAKT ${rot.length ? "ROT: " + rot.join(" | ") : "GRUEN"}`, !rot.length);
     } else if (cmd === "licht" && hat("naesse")) {
         // DIE NÄSSE (wetter.K2): Selbsttest Basis, Nässe ohne Dach, Regen im Haus und nasse Punkte unter dem Dach bei Median 1 (die
@@ -3452,7 +3465,7 @@ hauptLauf(async () => {
             [LL.naesseUrteil({}).urteil, "ROT"],
         ];
         const fehl = istSoll(f);
-        console.log(`NÄSSE Selbsttest: ${f.length - fehl.length}/${f.length}`);
+        log(`NÄSSE Selbsttest: ${f.length - fehl.length}/${f.length}`);
         if (fehl.length || SELBST) process.exit(fehl.length ? 1 : 0);
         const halt = await eigeneWelt();
         const welt = {};
@@ -3461,7 +3474,7 @@ hauptLauf(async () => {
             for (const wahl of /^(wiese|dorf)/.test(opt("--naesse", "")) ? opt("--naesse").split(",") : ["wiese", "wiese:third", "dorf"]) {
                 const [ort, sicht = "ego"] = wahl.split(":");
                 await umstellen({ ort, sicht });
-                const lauf = (o) => evalRuf(`return await (${LL.naesseSicht})(${JSON.stringify(o)});`);
+                const lauf = (o) => evalRuf(`return await (${LL.naesseSicht})(${J(o)});`);
                 let dach;
                 // DIE STÄNDE DES DORFS: am Ort wählt der Spieler das Haus (das nächste mit Hülle und Tür, seine Schwelle) und den
                 // nächsten Dach-Bau, dann tritt er an den Dach-Bau (der Dach-Pool trägt die Dächer um ihn) und an die Schwelle. Bis
@@ -3484,7 +3497,7 @@ hauptLauf(async () => {
         }
         dateiAb(welt);
         const u = LL.naesseUrteil(welt);
-        console.log(JSON.stringify(welt, null, 1));
+        log(J(welt, null, 1));
         urteilEnde("NÄSSE", u);
     } else if (cmd === "licht" && hat("luft")) {
         // DIE LUFT IM BILD (ferne-luft): `luftTiefe` vom Hügel am Ort (`--ort`, Standard Genesis: offen) je Uhr der Referenz,
@@ -3498,7 +3511,7 @@ hauptLauf(async () => {
         if (SELBST) process.exit(0);
         const halt = await eigeneWelt();
         const seite = async (f, o) =>
-            ergebnis(await evalRuf(`const kantenLinie = ${LL.kantenLinie}, luftBetaRef = ${LL.luftBetaRef}, luftAufgeloest = ${LL.luftAufgeloest}, farbTon = ${LL.farbTon}, tonDesBands = ${LL.tonDesBands}; return await (${f})(${JSON.stringify(o)});`));
+            ergebnis(await evalRuf(`const kantenLinie = ${LL.kantenLinie}, luftBetaRef = ${LL.luftBetaRef}, luftAufgeloest = ${LL.luftAufgeloest}, farbTon = ${LL.farbTon}, tonDesBands = ${LL.tonDesBands}; return await (${f})(${J(o)});`));
         const wort = opt("--wetter");
         const zug = wort && argv.includes("--zug");
         const mittag = { ...ref, uhren: [0.5] };
@@ -3507,7 +3520,7 @@ hauptLauf(async () => {
             await umstellen({ ort: opt("--ort", "genesis"), sicht: "ego" });
             m = zug ? { wort, ...(await seite(LL.wetterZug, { wort, sek: 60 })) } : await seite(LL.luftTiefe, { ref: wort ? mittag : ref, augeM: 120, wetter: wort });
             const g = !wort && (await rufe("/eval", {
-                code: "const p = r.state.playerMesh.position; let g = [0, 0, -1e9]; for (let x = -3e3; x <= 3e3; x += 50) for (let z = -3e3; z <= 3e3; z += 50) " +
+                code: "const p = st.playerMesh.position; let g = [0, 0, -1e9]; for (let x = -3e3; x <= 3e3; x += 50) for (let z = -3e3; z <= 3e3; z += 50) " +
                     "{ const y = r._terrainMacroSurfaceY(p.x + x, p.z + z, false); if (y > g[2]) g = [p.x + x, p.z + z, y]; } return g;",
             })).ergebnis;
             if (g) {
@@ -3520,10 +3533,10 @@ hauptLauf(async () => {
         dateiAb(m);
         if (m.fehler) throw new Error("LUFT: " + m.fehler);
         const w = wort && LL.wetterLuftUrteil(m, ref);
-        if (zug) endeMit(`ZUG ${w.zug.gruen ? "GRUEN" : "ROT"} · Sprung ${JSON.stringify(w.zug.sprung)} EV/s (Soll ≤ ${ref.wetter.zugEvS}) · klar → ${wort} → klar gezogen ${w.zug.gezogen}, ${m.reihe.length} s`, w.zug.gruen);
+        if (zug) endeMit(`ZUG ${w.zug.gruen ? "GRUEN" : "ROT"} · Sprung ${J(w.zug.sprung)} EV/s (Soll ≤ ${ref.wetter.zugEvS}) · klar → ${wort} → klar gezogen ${w.zug.gezogen}, ${m.reihe.length} s`, w.zug.gruen);
         if (wort) endeMit(`SICHT ${w.sicht.gruen ? "GRUEN" : "ROT"} · Sicht im Wetter ${wort} ${w.sicht.ist} m (Soll ${ref.wetter.sichtSturmM} ±${ref.wetter.band * 100} %, ${w.sicht.n} Azimute)`, w.sicht.gruen);
         const u = LL.luftTiefeUrteil(m, ref);
-        for (const b of u.befunde.map((x) => "ROT " + x).concat(u.offen.map((x) => "OFFEN " + x))) console.log("  " + b);
+        for (const b of u.befunde.map((x) => "ROT " + x).concat(u.offen.map((x) => "OFFEN " + x))) log("  " + b);
         endeMit(`LUFT ${u.urteil} · ${Object.entries(u.staffel).map((e) => e.join(" ")).join(" · ")} (offen: ${Object.keys(ref.offen).join(", ")})`, u.urteil === "GRUEN");
     } else if (cmd === "licht" && hat("laub")) {
         // DAS LAUB IM GEGENLICHT: je Art der nächste Baum, der Spieler am Augen-Ort (die Stufe folgt ihm), Gegenlicht
@@ -3563,7 +3576,7 @@ hauptLauf(async () => {
                 // DIE FERNE JE STUNDE (F6): Fern-Ring gegen Boden-Satz nachts über Mittag ROT beim Namen
                 [lu({ "ring@0.5": fz(1.072, 1.97, -7.21), "ring@0": fz(1.604, 7.04, -4.17) }).befunde.join(), /FERN ring@0: fern\/nah gegen Mittag \(bodenSatz → fern-ring\) Luma 1\.496/],
                 [lu({ "ring@0.5": fz(1.038, 0.96, -5.6), "ring@0": fz(1.047, 0.45, -2.82) }).urteil, "GRUEN"],
-                [JSON.stringify(lu({ "haus@0.5": fz(0.788, -5.35, -1.7), "haus@0": fz(0.763, -4.17, 1.04) }).zeilen[1]), /"karte":0\.968.*"mittag":0\.788/],
+                [J(lu({ "haus@0.5": fz(0.788, -5.35, -1.7), "haus@0": fz(0.763, -4.17, 1.04) }).zeilen[1]), /"karte":0\.968.*"mittag":0\.788/],
                 [lu({ "haus@0": fz(0.763, -4.17, 1.04) }).befunde.join(), /FERN haus@0: ohne die Zeile zu Mittag/],
                 // die Krone von oben: Zwei-Strom-Band über der gemessenen Blatt-Albedo
                 [LL.kronenReflexionSoll(0.164, [0.5, 1]).join("/"), "0.0705/0.099"],
@@ -3616,10 +3629,10 @@ hauptLauf(async () => {
                 const anker = haus || boden ? dorf.spieler : wiese.spieler;
                 if ((haus || boden) && !(welt[`haus@${uhren[0]}`] || welt[`ring@${uhren[0]}`])) await umstellen({ ort: "dorf" });
                 const spiel = `wechsel: ${Number(opt("--wechsel", 0)) || 0}, augeH: ${Number(opt("--auge", 1.7)) || 1.7}, hang: ${Number(opt("--hang", 0)) || 0}, uhr: ${uhr}, haus: ${haus}, boden: ${boden}`;
-                const c = `return await __laubGegenlicht(Object.assign({ art: ${JSON.stringify(art)} }, __o));`;
+                const c = `return await __laubGegenlicht(Object.assign({ art: ${J(art)} }, __o));`;
                 const ein = () => hat("karte") && rufe("/lauf", { sek: 5, ein: 8, ruhe: 120, regler: "voll" });
                 // `--abstand m`: der Augen-Ort so weit vom Fuß (die Stufe folgt dem Spieler: nah L0, weiter L1)
-                const planRuf = () => rufe("/eval", { code: `const __o = { plan: true, anker: ${JSON.stringify(anker)}, abstand: ${Number(opt("--abstand", 8)) || 8}, ${spiel} }; ${c}` });
+                const planRuf = () => rufe("/eval", { code: `const __o = { plan: true, anker: ${J(anker)}, abstand: ${Number(opt("--abstand", 8)) || 8}, ${spiel} }; ${c}` });
                 if (plan) await planRuf(), await ein();
                 else {
                     // am Anker stehen: welche Bäume eine nahe Stufe (eine Laub-Senke) tragen, folgt dem Spieler
@@ -3636,7 +3649,7 @@ hauptLauf(async () => {
                 }
                 // `--karte` (A7): dasselbe Auge, erst die Gestalt in ihrer Stufe, dann die Karte (Schwellen 0,3/0,6 m), danach zurück
                 // — auch der Boden: Boden-Satz und Fern-Ring aus dem fernen Auge der Naht (zwei Augen maßen den Blickwinkel mit, Licht K3)
-                const k = (n) => evalRuf(`const __o = { ziel: ${JSON.stringify(plan.ziel)}, auge: ${JSON.stringify(boden ? plan.fern : plan.auge)}, karte: ${n}, stufe: ${haus ? (n === 1 ? 0 : 2) : null}, ${spiel} }; ${c}`);
+                const k = (n) => evalRuf(`const __o = { ziel: ${J(plan.ziel)}, auge: ${J(boden ? plan.fern : plan.auge)}, karte: ${n}, stufe: ${haus ? (n === 1 ? 0 : 2) : null}, ${spiel} }; ${c}`);
                 // `plan.l1` hält das Exemplar im Spiel-Abstand auf L1, 0,6 m jede Krone auf der Karte, null stellt zurück; das Haus: Schuss 1
                 // in L0 (`t01`: beide Schwellen über dem Auge), Schuss 2 in L2 (`stufe`, sonst urteilt die Linse laut)
                 const stufen = async (t12, t01) => {
@@ -3655,7 +3668,7 @@ hauptLauf(async () => {
                 }
                 const w = hat("karte")
                     ? (await k(2)).ergebnis
-                    : (await evalRuf(`const __o = { ziel: ${JSON.stringify(plan.ziel)}, oben: ${oben} }; ${c}`)).ergebnis;
+                    : (await evalRuf(`const __o = { ziel: ${J(plan.ziel)}, oben: ${oben} }; ${c}`)).ergebnis;
                 if (hat("karte") && !boden) await stufen(null);
                 const ordner = opt("--ordner");
                 if (w?.karte && ordner)
@@ -3679,19 +3692,19 @@ hauptLauf(async () => {
         }
         if (oben) {
             const u = LL.kronenObenUrteil({ welt });
-            console.log(JSON.stringify({ welt, zeilen: u.zeilen }, null, 1));
+            log(J({ welt, zeilen: u.zeilen }, null, 1));
             urteilEnde("KRONE-OBEN", u);
         }
         const u = LL.laubLichtUrteil({ welt });
         // `--datei`: die Welt-Seite für das Labor-Urteil (diag-albedo-tafel.cjs --laub --welt <datei>)
         dateiAb({ welt });
-        console.log(JSON.stringify({ welt, zeilen: u.zeilen }, null, 1));
+        log(J({ welt, zeilen: u.zeilen }, null, 1));
         urteilEnde("LAUB-LICHT", u);
     } else if (cmd === "licht") o = await rufe("/licht", { ist: opt("--ist"), uhr: opt("--uhr") && Number(opt("--uhr")) });
     else if (cmd === "fluss") o = await rufe("/fluss", {});
     else if (cmd === "puffer" && hat("gang")) {
         o = await rufe("/gang", { min: opt("--gang") });
-        console.log(JSON.stringify(o, null, 1));
+        log(J(o, null, 1));
         endeMit(o.urteil && !o.urteil.length ? "GANG GRÜN" : "GANG ROT", o.urteil && !o.urteil.length);
     } else if (cmd === "puffer") o = await rufe("/puffer", { top: opt("--top") });
     else if (cmd === "diaet") {
@@ -3794,7 +3807,7 @@ hauptLauf(async () => {
         const h = BAND.bandHuelle(laeufe.map((u) => u.roh));
         const u = BAND.bandUrteil(Object.assign({ haushalt, ratsche: alt, ort, ratscheDatei: ratscheSpec.ratscheDatei }, h));
         Object.assign(u, { messung: null, boot: null });
-        console.log(BAND.bandTabelle(u));
+        log(BAND.bandTabelle(u));
         // `--nur vram` zieht nur den Speicher nach: dann zählen nur die Speicher-Befunde der LINSE; der Re-Mint lässt die
         // Ratschen-Zeilen der alten Ratsche aus (er ersetzt sie), Haushalt, Namen und Lecks nie.
         const linse = (u.rot || []).filter((r) => ["unbenannt", "haushalt", "ratsche", "leck"].includes(r.art));
@@ -3852,14 +3865,14 @@ hauptLauf(async () => {
             ruhe: opt("--ruhe", 0),
             wandern: opt("--wandern"),
         });
-        if (o.kreis) console.log("KREIS " + JSON.stringify(o.kreis));
+        if (o.kreis) log("KREIS " + J(o.kreis));
         // Die Wetter-Wache (ein Lauf, der das Wetter nicht hält) und die Belegung enden mit Exit 1 und nennen den Täter.
         const rot = [
             o.wetterHalt?.urteil === "ROT" && `WETTER-WACHE ROT: ${o.wetterHalt.taeter.join(" · ")}`,
             o.belegung?.urteil === "ROT" && `BELEGUNG ROT: ${o.belegung.befund}`,
             o.buehnenTiere < Number(opt("--tiere")) && `BÜHNE ROT: ${o.buehnenTiere} von ${opt("--tiere")} Tieren stehen am Ende`,
         ].filter(Boolean);
-        if (rot.length) endeMit(JSON.stringify(o, null, 1) + "\n" + rot.join("\n"));
+        if (rot.length) endeMit(J(o, null, 1) + "\n" + rot.join("\n"));
     } else if (cmd === "haenger" || cmd === "takt") {
         // `takt` ist die Takt-Spitze des Gehens (Bahn, 30 s nach 2 s Einschwingen), `haenger` die Hänger über der Schwelle
         const spitze = cmd === "takt";
@@ -3878,8 +3891,8 @@ hauptLauf(async () => {
         if (opt("--auswerten")) {
             const { roh, spur } = jsonLesen(opt("--auswerten"));
             const w = HL.linseWerten(roh, spur, { spitze, schwelle: opt("--schwelle"), posten: opt("--posten") });
-            console.log(w.tabelle);
-            if (w.befunde.length) console.log("\nLINSE ROT:\n  " + w.befunde.join("\n  "));
+            log(w.tabelle);
+            if (w.befunde.length) log("\nLINSE ROT:\n  " + w.befunde.join("\n  "));
             process.exit(w.befunde.length ? 1 : 0);
         }
         o = await rufe("/haenger", {
@@ -3896,8 +3909,8 @@ hauptLauf(async () => {
             json: opt("--json"),
         });
         if (!o || o.fehler || !o.tabelle) endeMit(o);
-        console.log(o.tabelle + "\n\n" + o.datei);
-        if (o.befunde.length) console.log("\nLINSE ROT:\n  " + o.befunde.join("\n  "));
+        log(o.tabelle + "\n\n" + o.datei);
+        if (o.befunde.length) log("\nLINSE ROT:\n  " + o.befunde.join("\n  "));
         process.exit(o.befunde.length ? 1 : 0);
     } else if (cmd === "schirm") o = await rufe("/schirm", { datei: opt("--datei"), regler: opt("--regler", "frei") });
     else if (cmd === "fenster") o = await rufe("/fenster", { w: a[0], h: a[1] });
@@ -3915,13 +3928,13 @@ hauptLauf(async () => {
         const mit = selbst && (await rufe("/latenz", Object.assign({ verzug: 3 }, klein)));
         if (opt("--json")) jsonSchreiben(opt("--json"), selbst ? { ohne: o, mit } : o);
         for (const x of [o, mit].filter(Boolean)) {
-            for (const [n, e] of Object.entries(x.reihen || {})) console.log(n, JSON.stringify(e));
-            console.log(`LATENZ ${x.urteil} (Bild ${x.bildMs} ms) ${x.rot ? x.rot.join(" · ") : x.fehler}`);
+            for (const [n, e] of Object.entries(x.reihen || {})) log(n, J(e));
+            log(`LATENZ ${x.urteil} (Bild ${x.bildMs} ms) ${x.rot ? x.rot.join(" · ") : x.fehler}`);
         }
         const g = (x) => ((x.reihen || {})["ego/gehen"] || {}).p50; // ein Lauf mit `fehler` trägt keine Reihe
         const hub = mit && +(g(mit) - g(o)).toFixed(1);
         const gut = selbst ? mit.urteil === "ROT" && hub >= 2 * o.bildMs : o.urteil === "GRÜN";
-        if (selbst) console.log(`VERZUGPROBE ${gut ? "GRÜN" : "ROT"}: Verzug 3 Bilder hebt p50 um ${hub} ms ${o.fehler || mit.fehler || ""}`);
+        if (selbst) log(`VERZUGPROBE ${gut ? "GRÜN" : "ROT"}: Verzug 3 Bilder hebt p50 um ${hub} ms ${o.fehler || mit.fehler || ""}`);
         process.exit(gut ? 0 : 1);
     }
     else if (cmd === "ziele") {
@@ -3959,9 +3972,9 @@ hauptLauf(async () => {
         });
         // Ein Fehler ist nie grün: ohne Tabelle und Urteil endet der Befehl mit Exit 1.
         if (!o || o.fehler || !o.tabelle || !Array.isArray(o.rot)) endeMit(o);
-        console.log(o.tabelle + (o.ordner ? "\n" + o.ordner : ""));
+        log(o.tabelle + (o.ordner ? "\n" + o.ordner : ""));
         if (o.stoff)
-            console.log("\n" + o.stoff.tabelle + "\nBudget " + o.stoff.name + " " + JSON.stringify(o.stoff.budget));
+            log("\n" + o.stoff.tabelle + "\nBudget " + o.stoff.name + " " + J(o.stoff.budget));
         endeMit(o.rot.length ? "\nROT:\n  " + o.rot.join("\n  ") : "\nGRÜN", !o.rot.length);
     } else if (cmd === "reload") o = await rufe("/reload");
     else if (cmd === "stop") o = await rufe("/stop");

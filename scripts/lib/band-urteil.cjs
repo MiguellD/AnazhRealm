@@ -133,7 +133,7 @@ function ortGestellt(ort, z, sicht) {
     if (z.dorfZug !== ort.dorfZug) f.push(`Dorf-Zug ${z.dorfZug ? "läuft" : "ruht"}, der Ort will ${ort.dorfZug ? "laufend" : "ruhend"}`);
     const takt = (ort.ortTakt || []).join(",");
     if ((z.ortTakt || []).join(",") !== takt) f.push(`Ort-Takt [${(z.ortTakt || []).join(", ")}], der Ort will [${takt}]`);
-    const d = Math.atan2(Math.sin(z.gier - ortGier(ort)), Math.cos(z.gier - ortGier(ort)));
+    const d = ort.ortPose ? 0 : Math.atan2(Math.sin(z.gier - ortGier(ort)), Math.cos(z.gier - ortGier(ort)));
     if (!Number.isFinite(z.gier) || Math.abs(d) > 0.01)
         f.push(`Gier ${Number.isFinite(z.gier) ? z.gier.toFixed(3) : "?"}, der Blick des Orts ${ortGier(ort).toFixed(3)}`);
     return f;
@@ -153,10 +153,14 @@ function messortePruefen(h) {
             f.push(`Messort ohne/mit doppelter id: ${o && o.id}`);
         ids.add(o && o.id);
         if (!o.titel) f.push(`${o.id}: titel fehlt`);
-        if (!xz(o.spieler)) f.push(`${o.id}: spieler ist kein [x, z]`);
-        if (!xz(o.blick)) f.push(`${o.id}: blick ist kein [x, z]`);
-        else if (xz(o.spieler) && Math.hypot(o.blick[0] - o.spieler[0], o.blick[1] - o.spieler[1]) < 1)
-            f.push(`${o.id}: blick liegt auf dem Spieler (keine Richtung)`);
+        // DIE POSE AUS DEM PLAN (`ortPose` „platz“, w27-ort-pose): der Ort trägt weder spieler noch blick, die Werkbank rechnet sie
+        // aus der Siedlung seiner Gründung (`_ortPose`; ohne Gründung bricht `umstellen` beim Namen)
+        if (!o.ortPose) {
+            if (!xz(o.spieler)) f.push(`${o.id}: spieler ist kein [x, z]`);
+            if (!xz(o.blick)) f.push(`${o.id}: blick ist kein [x, z]`);
+            else if (xz(o.spieler) && Math.hypot(o.blick[0] - o.spieler[0], o.blick[1] - o.spieler[1]) < 1)
+                f.push(`${o.id}: blick liegt auf dem Spieler (keine Richtung)`);
+        }
         if (typeof o.dorfZug !== "boolean") f.push(`${o.id}: dorfZug ist kein Wahrheitswert`);
         if (!Array.isArray(o.ortTakt) || o.ortTakt.some((m) => typeof m !== "string" || !/^_?[A-Za-z]\w*$/.test(m)))
             f.push(`${o.id}: ortTakt ist keine Liste von Methoden-Namen`);
@@ -171,7 +175,7 @@ function messortePruefen(h) {
         if ((g || o.dach || o.anlauf) !== undefined && !xz(o.anlauf)) f.push(`${o.id}: anlauf ist kein [x, z]`);
         if (g !== undefined && (!g || !/^dorf \d+ \d+$/.test(g.wort) || !xz(g.anker)))
             f.push(`${o.id}: gruendung ohne wort „dorf <same> <häuser>" oder anker [x, z]`);
-        if (g !== undefined && !(Array.isArray(o.bahn) && o.bahn.length > 1 && o.bahn.every(xz) && `${o.bahn[0]}` === `${o.spieler}`))
+        if (g !== undefined && !(Array.isArray(o.bahn) && o.bahn.length > 1 && o.bahn.every(xz) && (o.ortPose || `${o.bahn[0]}` === `${o.spieler}`)))
             f.push(`${o.id}: bahn ist keine Kette [x, z] ab dem Spieler`);
         // DAS WIESEN-GESETZ (K55, `wiese`): die Mess-Wiese trägt es — jede Schwelle eine Zahl, Kranz und Fernblick als [von, bis];
         // das Urteil am Ort spricht gate:profiband H1 (am Gesetz) und `werkbank umstellen --ort` (in der Welt, mit Gras).
