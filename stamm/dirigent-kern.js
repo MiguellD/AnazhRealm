@@ -1125,6 +1125,8 @@ class AnazhRealm {
         P.vp.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
         P.U.vp.value.copy(P.vp);
         P.U.invVP.value.copy(P.vp).invert();
+        // dieselbe Rückrechnung um das Auge (die Ansicht ohne ihre Lage): die Normale aus der Tiefe (`_spiegelPass`)
+        P.U.invVPr.value.copy(cam.matrixWorldInverse).setPosition(0, 0, 0).premultiply(cam.projectionMatrix).invert();
         P.U.auge.value.setFromMatrixPosition(cam.matrixWorld);
         cam.getWorldDirection(P.U.vorn.value);
         P.U.nah.value = cam.near;
