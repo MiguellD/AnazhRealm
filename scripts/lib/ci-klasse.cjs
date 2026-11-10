@@ -238,11 +238,8 @@ module.exports = {
     klasseDesLaufs,
     ueber,
     R6_SHELL,
-    SELBST_RE,
     r6Urteil,
     r6Text,
-    r6Abhaengig,
     r6Immer,
-    r6Diff,
     r6ZugStelle,
 };

@@ -288,7 +288,8 @@ function taeterRinde(sb) {
             s4.gebrochen > 0 && s4.gpu > 0 && !!s4.sha && s4.sha.startsWith(RINDE_SHA),
             `${s4.ms} ms`
         );
-        selbsttestEnde(errs, "ein verschobenes Gelenk und eine falsche Stoff-Zuordnung werden rot beim Namen.");
+        // der Selbsttest: ein verschobenes Gelenk und eine falsche Stoff-Zuordnung werden rot beim Namen.
+        selbsttestEnde(errs);
         process.exit(0);
     }
 

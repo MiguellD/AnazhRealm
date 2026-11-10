@@ -21,7 +21,7 @@
 // Port: ALBEDO_PORT (Standard 4587). `--echt` fährt die echte GPU (scripts/lib/software-gpu.cjs echteWebGpuArgs), sonst
 // die Weiche des EINEN Start-Rezepts (linsenWebGpuArgs: lokal der Hardware-Adapter, in der CI swiftshader).
 "use strict";
-const { statikServer, starteBrowser, hauptLauf, sleep, argOpt: opt, pngDatei, selbsttestEnde, ausDatei, path, fs, SELBSTTEST, jsonLesen, jsonSchreiben } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, hauptLauf, sleep, argOpt: opt, pngDatei, selbstTafel, ausDatei, path, fs, SELBSTTEST, jsonLesen, jsonSchreiben } = require("./lib/welt-boot.cjs");
 const AT = require("./lib/albedo-tafel.cjs");
 const { kartenEichung } = require("./lib/licht-linsen.cjs");
 // der Code-Abdruck einer Datei des Baums und der Stand einer Messung (abnahme-urteil `standLeser`, derselbe wie Werkzeug und
@@ -223,8 +223,7 @@ function messungZumTest(t, faktor) {
 }
 
 async function selbsttest() {
-    const tests = [];
-    const t = (name, ok) => tests.push({ name, ok: !!ok });
+    const { t, ende } = selbstTafel();
     const T0 = tafelZumTest();
     const hatRot = (u, art) => u.rot.some((r) => r.art === art);
     // S0 — DER STAND: beide Seiten am Code-
@@ -496,9 +495,7 @@ window.__bereit = true;
                 LL.kronenObenUrteil({}).urteil === "ROT"
         );
     }
-    const rot = tests.filter((x) => !x.ok);
-    for (const x of tests) console.log(`${x.ok ? "✅" : "❌"} SELBST-TEST: ${x.name}`);
-    selbsttestEnde(rot.map((x) => x.name), `die Albedo-Wand feuert (${tests.length}/${tests.length})`);
+    ende("die Albedo-Wand feuert");
 }
 
 // Die gespeicherte Tafel als Messung (für das Urteil ohne GPU).

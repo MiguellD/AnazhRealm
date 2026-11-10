@@ -369,6 +369,27 @@ function wurfUrteil(mess, budget) {
 // Wedel der Konifere Laub (Typ 1): Fichte, Tanne und Mammut standen im Winter nah kahl, ihre Karte voll.
 const jahrUrteil = (mess) =>
     mess.filter((m) => (m.nadel ? m.laub : m.blatt && !m.laub)).map((m) => `Jahr: ${m.fall} ${m.nadel ? "Nadel fällt" : "Laub steht"} im Winter`);
+// (Ä) DIE ÄHRE AM FUSS UND DER WIRT JEDER GESTALT (w26-winter-fichte-2, die Ecken des Jahrs): der Wirt (`_foundryBuildMesh` der
+// geladenen Klasse) baut JEDE gelieferte Gestalt ohne Wurf — ein Wurf am Bau cacht nie, die Welt bestellt neu und wirft
+// tausendfach —, und emitGrass gebiert den Anker jeder Ähre (Typ `halm`, aCenter y > 0) auf dem Fuß ihres Stängels (aCenter
+// x/z einer Halm-Ecke mit y 0) in der Höhe einer Ecke dieses Halms (seiner Spitze). Bis w26-winter-fichte-2 trug die Ähre die
+// Spitze, der Wirt suchte den Fuß je Lieferung per Float-Schlüssel (`halmAehrenFuss`) und warf am Schilf (Rohr und Rispe tragen
+// Typ halm um ihre Achse): Fernwald 748 Fehler der Welt, der Zug z349 fiel an 12 Wänden. Eine zweite Verlegung über den
+// geborenen Ankern findet keinen Schlüssel und bricht (die Mutante „Nachsuche"). → null oder der Täter des Baus `fall`
+const WIRT = (t) => KLASSE.AnazhRealm.prototype._foundryBuildMesh.call({ _foundryTreeMaterial() {}, _haarAchse() {} }, t);
+// die erste Ähren-Ecke (aCenter y > 0) von `t`, deren Anker keinen Schlüssel `s` einer Ecke am Boden (aCenter y 0) trifft
+const ohneFuss = ({ position: { array: p }, aCenter: { array: c } }, s, an = new Set(Array.from(p, (y, i) => i % 3 == 1 && !(c[i] > 1e-4) && s(p, c, i - 1)))) => c.findIndex((y, i) => i % 3 == 1 && y > 1e-4 && !an.has(c.slice(i - 1, i + 2) + "")); // prettier-ignore
+function aehre(fall, teile, wirt = WIRT) {
+    for (const t of teile) {
+        const ohne = t.kind == "grass" ? ohneFuss(t, (p, c, i) => [c[i], p[i + 1], c[i + 2]] + "") : -1;
+        try {
+            wirt(t);
+        } catch (e) {
+            return `${fall}: der Wirt bricht (${e.message})`;
+        }
+        if (ohne >= 0) return `${fall}: Ähre ohne Fuß (Anker ${t.aCenter.array.slice(ohne - 1, ohne + 2)})`;
+    }
+}
 // (D) DAS BILD JE BLICK-HEBUNG gegen die Bild-Tafel (TAFEL_STAND), zweistufig: das Mittel einer ART über ihre Gestalten je
 // Stufe und Hebung hält BILD_BAND — die systematische Abweichung (die Koniferen-L1 verlor
 // 22–34 % ihrer Seitenansicht in jeder Gestalt); jede einzelne GESTALT hält GESTALT_BAND — eine Gestalt wächst anders als
@@ -446,6 +467,7 @@ hauptLauf(async () => {
     const bildMess = {};
     const wurfMess = [];
     const jahrMess = [];
+    const [aehren, aehrenProbe] = [[], {}];
     let kronenProbe = null;
     await runWithWorker(PORT, async ({ build, kostenListe, bauHashListe, getData, atlas, atlasAlpha, probeLauf }) => {
         // Die Atlas-Alpha zuerst: die Kronen-Kosten (L/Q/D0) lesen sie an jedem gebauten Baum.
@@ -568,6 +590,8 @@ hauptLauf(async () => {
             kroneWand(c, a, fall);
             kronenMass(c, a);
             if (!tafelSchreiben && c.lod === 1 && artVon(c.presetId) === "tree") wurfMass(c, a, fall);
+            const teile = teileAus(a.meshes);
+            aehren.push(aehre(fall, teile)), (aehrenProbe[artVon(c.presetId)] ||= teile);
         };
         for (const f of files) {
             const c = parseName(f);
@@ -746,6 +770,23 @@ hauptLauf(async () => {
         const jS = jahrUrteil([{ nadel: 1, laub: 1 }, { blatt: 1 }]).length === 2;
         console.log(`Jahres-Wand (J): ${jahrMess.length} Gestalten · Selbsttest ${jS ? "✅" : "❌"}`);
         if (!jS) fails.push("Selbsttest der Jahres-Wand feuert nicht");
+        // (Ä) DIE ÄHRE AM FUSS und ihr Selbsttest an den gebauten Teilen: die Geburt bis w26 (der Anker auf der Spitze seines
+        // Stängels) und die zweite Verlegung im Wirt (`halmAehrenFuss` über den geborenen Ankern, am Gras wie am Schilf) MÜSSEN rot werden
+        fails.push(...aehren.filter(Boolean).map((x) => "Ähre: " + x));
+        const { grass: aG = [], reed: aR = [] } = aehrenProbe;
+        // die Nachsuche bis w26-winter-fichte-2 (phyto-core `halmAehrenFuss` im Wirt): der Stängel jeder Ähre am Float-Schlüssel ihres Ankers
+        const nachsuche = (t) => {
+            if (t.aCenter && ohneFuss(t, (p, c, i) => p.slice(i, i + 3) + "") >= 0) throw Error("eine Ähre ohne Stängel");
+            return WIRT(t);
+        };
+        const aS = [
+            aehre("Gras, Ähre verrückt", aG.map((t) => ({ ...t, aCenter: { array: t.aCenter.array.map((v, i, c) => v + (i % 3 == 0 && c[i + 1] > 1e-4) * 0.01) } }))), // prettier-ignore
+            aehre("Gras mit Nachsuche", aG, nachsuche),
+            aehre("Schilf mit Nachsuche", aR, nachsuche),
+        ];
+        const aOk = ["ohne Fuß", "bricht", "bricht"].every((w, i) => String(aS[i]).includes(w));
+        console.log(`Ähren-Wand (Ä): ${aehren.length} Gestalten durch den Wirt · Selbsttest ${aOk ? "✅" : "❌"} — ${aS.join(" · ")}`);
+        if (!aOk) fails.push("Selbsttest der Ähren-Wand feuert nicht");
         // DIE PLATTFORM-PROBE (S1 Wände, scripts/lib/plattform-probe.cjs): jeder Golden-Fall mit Samen 7 im Sommer baut
         // in einem zweiten Worker noch einmal, während dessen Transzendenten ±1 ULP verschoben rechnen. Die Pflanzen
         // sind ungerastert: ihre Zeile in spec/asset-contract/plattform-ratsche.json nennt je Funktion die kippenden

@@ -407,6 +407,14 @@ function kernUrteil(VC) {
 async function probe(A) {
     const out = {};
     const soll = (n) => !A.nur || A.nur.includes(n); // `--nur`: Werkbank-Fragen (das Gate fährt alle)
+    // DIE BAHN FREI (Rampe, Furt; gemessen wird das Wasser, nie der Wald): ab (sx, sz) längs (ux, uz) bis `lang` m fallen die Bauten
+    // im Streifen ±4 m, mit `tiere` tauchen die Tiere im Streifen ±5 m 500 m ab (jedes einmal)
+    const bahnRaeumen = (sx, sz, ux, uz, lang, tiere) => {
+        const streifen = (p, b, dx = p.x - sx, dz = p.z - sz, l = dx * ux + dz * uz) => l > -6 && l < lang && Math.abs(dx * uz - dz * ux) < b; // prettier-ignore
+        for (const e of st.architectures.slice())
+            if (e && e.blockerAABBs && e.position && !/^fahrzeug_/.test(e.type || "") && streifen(e.position, 4)) r.removeArchitecture(e);
+        for (const c of (tiere && st.creatures) || []) if (streifen(c.position, 5) && c.position.y > -400) c.position.y -= 500;
+    };
     await window.__weltDa((w) => w.state.hydrosphere && w.state.hydrosphere.ready);
     const faden = st.voxelWorker;
     const f = r._ensureAssetFoundry();
@@ -889,23 +897,7 @@ async function probe(A) {
                 const rampe = { x: px, z: pz, ux, uz, tief, steigung: +((A.ansaugTief - t0) / tief).toFixed(3) };
                 const sx = rampe.x - rampe.ux * 26;
                 const sz = rampe.z - rampe.uz * 26;
-                const bahnFrei = () => {
-                    for (const e of st.architectures.slice()) {
-                        if (!e || !e.blockerAABBs || !e.position || /^fahrzeug_/.test(e.type || "")) continue;
-                        const dx = e.position.x - sx;
-                        const dz = e.position.z - sz;
-                        const l = dx * rampe.ux + dz * rampe.uz;
-                        if (l > -6 && l < 72 && Math.abs(dx * rampe.uz - dz * rampe.ux) < 4) r.removeArchitecture(e);
-                    }
-                    for (const c of st.creatures || []) {
-                        const dx = c.position.x - sx;
-                        const dz = c.position.z - sz;
-                        const l = dx * rampe.ux + dz * rampe.uz;
-                        if (l > -6 && l < 72 && Math.abs(dx * rampe.uz - dz * rampe.ux) < 5 && c.position.y > -400)
-                            c.position.y -= 500;
-                    }
-                };
-                bahnFrei();
+                bahnRaeumen(sx, sz, rampe.ux, rampe.uz, 72, true);
                 const fahrt = Math.atan2(rampe.ux, rampe.uz);
                 const gt = gtAn(sx, sz, fahrt);
                 // Aussteigen an Land (der Anlauf ist trocken): wo steht der Spieler, gemessen am Boden unter ihm?
@@ -1074,22 +1066,8 @@ async function probe(A) {
                 const sx = furt.x - furt.ux * 26;
                 const sz = furt.z - furt.uz * 26;
                 // die Bahn frei (gemessen wird das Wasser, nie der Wald)
-                const raeumen = () => {
-                    for (const e of st.architectures.slice()) {
-                        if (!e || !e.blockerAABBs || !e.position || /^fahrzeug_/.test(e.type || "")) continue;
-                        const dx = e.position.x - sx;
-                        const dz = e.position.z - sz;
-                        const l = dx * furt.ux + dz * furt.uz;
-                        if (l > -6 && l < 40 && Math.abs(dx * furt.uz - dz * furt.ux) < 4) r.removeArchitecture(e);
-                    }
-                };
-                raeumen();
-                for (const c of st.creatures || []) {
-                    const dx = c.position.x - sx;
-                    const dz = c.position.z - sz;
-                    const l = dx * furt.ux + dz * furt.uz;
-                    if (l > -6 && l < 40 && Math.abs(dx * furt.uz - dz * furt.ux) < 5) c.position.y -= 500;
-                }
+                const raeumen = () => bahnRaeumen(sx, sz, furt.ux, furt.uz, 40);
+                bahnRaeumen(sx, sz, furt.ux, furt.uz, 40, true);
                 const fahrt = Math.atan2(furt.ux, furt.uz); // Fahrt-Richtung (sin, cos)
                 const gt = gtAn(sx, sz, fahrt);
                 aufsitzen(gt);
@@ -2171,7 +2149,8 @@ function selbsttest() {
             /K4 über der Ansaugung/,
         ],
     ].map(giftFall("Kern"))], (gift) => kernUrteil(require("./lib/asset-worker-harness.cjs").kernAusText(gift(kernSrc), "__vehicleCore")), { fehler });
-    selbsttestEnde(fehler, "Befund, Leser und Kern nennen jeden eingeschmuggelten Täter beim Namen.");
+    // der Selbsttest: Befund, Leser und Kern nennen jeden eingeschmuggelten Täter beim Namen.
+    selbsttestEnde(fehler);
     process.exit(0);
 }
 

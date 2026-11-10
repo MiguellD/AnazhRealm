@@ -13,19 +13,9 @@ const SKRIPTE = path.join(__dirname, "..");
 async function checkBandOmegaWerkstattSpiegel({ page, check }) {
     const res = await page.evaluate(() => {
         const C = AnazhRealm;
-        const mats = st.materials || {};
-        let dense = mats.eisen ? "eisen" : null,
-            light = mats.holz ? "holz" : null;
-        if (!dense || !light) {
-            let dd = -1,
-                ld = 2;
-            for (const m in mats) {
-                const d = mats[m] && mats[m].tags && mats[m].tags.dichte;
-                if (typeof d !== "number") continue;
-                if (d > dd) ((dd = d), (dense = m));
-                if (d < ld) ((ld = d), (light = m));
-            }
-        }
+        // dicht und leicht: Eisen und Holz, eingebaute Zeilen der EINEN Stoff-Tafel (`_defaultMaterials` bricht ohne sie laut —
+        // der Rückfall auf die dichteste und leichteste Zeile nach Tags war toter Code, klang.K4)
+        const [dense, light] = ["eisen", "holz"];
         const pt = (x, y, z, sx, sy, sz, m) => ({
             position: { x, y, z },
             size: { x: sx, y: sy, z: sz },

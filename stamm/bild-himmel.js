@@ -381,9 +381,14 @@ class AnazhRealm_bild_himmel {
     // Deferierter Fern-Deko-Bau: das Sternfeld (mit den Wandelsternen) erscheint EINMAL, sobald die Bühne steht —
     // synchron im Boot stähle er dem Boden-Streaming den Frame. No-op ohne `_fernDekoDeferred`
     // (headless baut sofort in createGalaxySkybox).
+    // DAS GESETZ DES ERSTEN BILDS (w27-ankunft-erstbild, ankunft.K5): zeigt der Himmel der Ankunft keinen Stern (`_sterneZeigen`,
+    // dieselbe Frage, die das Feld zeichnen lässt), baut es erst nach dem Rundblick (`_nachlauf` durch) — headless kalt hielt sein
+    // Bau 64 ms am Stück im Takt unter dem Ladeschirm, mittags für ein Bild ohne einen Stern.
     _tickBootFernDeko() {
         if (!this._fernDekoDeferred) return;
         if (!this._buehneSteht()) return;
+        const st = this.state;
+        if (this._sterneZeigen === false && (!st._weltbildDa || st._nachlauf != null)) return;
         this._fernDekoDeferred = false;
         try {
             this._buildStarField();
@@ -511,14 +516,11 @@ class AnazhRealm_bild_himmel {
         starMat.forceSinglePass = true;
         AnazhRealm._himmelImUnendlichen(starMat);
 
-        // Der hellste Punkt des Himmels (kleinste Größenklasse): liegt die Grenzgröße mehr als ½ Klasse darüber, ist
-        // kein Punkt sichtbar und das Feld zeichnet nicht (_dayNightApplyStarField).
-        let hellste = Infinity;
-        for (let i = 0; i < STAR_COUNT; i++) if (mags[i] < hellste) hellste = mags[i];
+        // Der hellste Punkt des Himmels ist Gesetz (`STERN_HELLSTE`): liegt die Grenzgröße mehr als ½ Klasse darüber, ist kein
+        // Punkt sichtbar und das Feld zeichnet nicht (_dayNightApplyStarField).
         this.state.starFieldUniforms = {
             opacity: uOpacity,
             grenze: uGrenze,
-            hellste,
         };
 
         const starField = AnazhRealm._instanzMesh(planeGeo, starMat, STAR_COUNT);
@@ -1849,15 +1851,16 @@ class AnazhRealm_bild_himmel {
     // Stern-Feld: die Dämmerung setzt die Grenzgröße (Physik der Sichtbarkeit, nie ein Nacht-Faktor; der Kanal `grenze` der
     // EINEN Tag-Achse), das Wetter dämpft (Wolken); die Uniforms leben in state.starFieldUniforms.
     _dayNightApplyStarField(achse, skyMul) {
+        // Kein Punkt sichtbar (mittags liegt die Grenzgröße über jedem Stern, unter Wolken ist die Deckkraft 0): das Feld
+        // zeichnet nicht — es zog am Tag zwei Befehle für ein schwarzes Bild (Band-Linse, Mess-Wiese, Welle 6) — und sein Bau
+        // wartet, solange das erste Bild keinen zeigt (`_tickBootFernDeko`): die EINE Frage für beide
+        const zeigt = (this._sterneZeigen = skyMul > 0 && achse.grenze - AnazhRealm.STERN_HELLSTE + 0.5 > 0);
         const u = this.state.starFieldUniforms;
         if (!u || !u.opacity) return;
         u.opacity.value = skyMul;
         if (u.grenze) u.grenze.value = achse.grenze;
-        // Kein Punkt sichtbar (mittags liegt die Grenzgröße über jedem Stern, unter Wolken ist die Deckkraft 0): das Feld
-        // zeichnet nicht — es zog am Tag zwei Befehle für ein schwarzes Bild (Band-Linse, Mess-Wiese, Welle 6).
         const sf = this.state.starField;
-        if (sf && u.grenze && Number.isFinite(u.hellste))
-            sf.visible = skyMul > 0 && u.grenze.value - u.hellste + 0.5 > 0;
+        if (sf && u.grenze) sf.visible = zeigt;
     }
 
     // DER DURCHLASS ZUM MOND (S7): derselbe Durchlass der EINEN Atmosphäre wie zur Sonne (`ATMO_RECHNUNG.durchlass`, das Medium
@@ -3308,6 +3311,10 @@ AnazhRealm.HIMMEL = Object.freeze({
     sonneWinkelGrad: 0.53,
     sonneLeucht: 4,
 });
+// DER HELLSTE PUNKT DES FELDS (`_buildStarField`): die Größenklasse eines Sterns liegt in [−1, sternMagSchwach] (sein Wurf
+// `sternMagSchwach − (sternMagSchwach + 1) · roll³`), ein Wandelstern trägt seine eigene — der kleinste Wert des Gesetzes, nie
+// gezählt am gebauten Feld (der Bau des Felds fragt ihn, bevor es steht).
+AnazhRealm.STERN_HELLSTE = Math.min(-1, ...AnazhRealm.HIMMEL.wandelsterne.map((w) => w.mag));
 // MONDLICHT: nachts wird das Haupt-Richtlicht zur Mondquelle (gegenüber der Sonne, kühl + gedämpft →
 // gerichtete Nacht-Schattierung mit tiefen Schwärzen) statt die Nacht per Post-FX aufzuhellen.
 // `r/g/b` = HUE (Purkinje-Mond 0x9fb8dc aus dem Gesetz `ATMO_GESETZ.nacht.mond` — `_atmoSonne(e)` und das Labor lerpen

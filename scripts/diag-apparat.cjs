@@ -254,13 +254,14 @@ function tasteNachWanduhr(name, src) {
 // seiner DEFINITION), nie mit eigenem Klammer-Zähler (der ERSTE Text-Treffer hängt an der Datei-Reihenfolge). Ein
 // Klammer-Zähler ist ein Vergleich mit "{" (Token: `=== "{"`, `"{" ===`,
 // `case "{"`); frei sind der EINE Schneider und der WGSL-Leser, Kommentare zählen nicht.
+// die Optionen des EINEN Parsers (acorn), Tokenizer und Baum
+const ACORN_OPT = { ecmaVersion: "latest", locations: true, allowHashBang: true, allowReturnOutsideFunction: true };
 const SCHNEIDER_FREI = new Set(["scripts/lib/stamm.cjs", "scripts/lib/shader-kosten.cjs"]);
 function eigenerSchneider(name, src) {
     if (SCHNEIDER_FREI.has(name)) return [];
     let toks;
     try {
-        const opt = { ecmaVersion: "latest", locations: true, allowHashBang: true, allowReturnOutsideFunction: true };
-        toks = [...require("acorn").tokenizer(src, opt)];
+        toks = [...require("acorn").tokenizer(src, ACORN_OPT)];
     } catch {
         return []; // nicht lesbar: das nennt Klinge 3 beim Namen
     }
@@ -279,8 +280,7 @@ function ersterTreffer(name, src) {
     if (SCHNEIDER_FREI.has(name) || !/lib\/stamm\.cjs/.test(src)) return [];
     let baum;
     try {
-        const opt = { ecmaVersion: "latest", locations: true, allowHashBang: true, allowReturnOutsideFunction: true };
-        baum = require("acorn").parse(src, opt);
+        baum = require("acorn").parse(src, ACORN_OPT);
     } catch {
         return [];
     }

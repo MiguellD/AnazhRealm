@@ -148,10 +148,7 @@ async function driveImpostor(page) {
                 return out;
             }
             // Die Zellen treiben: erst lädt die Gestalt der Karte (null), dann steht die Zelle mit Rahmen.
-            let rec = null,
-                rec2 = null,
-                flat1 = null,
-                flat2 = null;
+            let rec, rec2, flat1, flat2;
             for (const weiter = __deckel("die Impostor-Rekorde", 1500); weiter(); ) {
                 __handTakt();
                 rec = r._foundryEnsureImpostorRecord("eiche", 1) || rec;
@@ -515,6 +512,16 @@ async function kleberProbe(page, fmtWunsch) {
                     v.length >= 2 ? "" : "keine Vorlage gelesen — die Wand ist blind",
                     ...v,
                 ].filter(Boolean);
+                // DIE WACHE DER REIHEN (`_laubLichtStoff`, w27-karte-nadel): die Nadel wächst über ihre Länge (`_karteNadel`), der Neubau
+                // liest je Name EINEN Knoten — sie schweigt; SELBSTTEST: ein zweiter Knoten desselben Namens (das alte Wachsen: die
+                // Albedo hält den alten) nennt sie beim Namen. Vor w27 meldete sie schon das echte Wachsen (zwei Meldungen)
+                const [U, b, n0] = [at.nadelU, [], at.n];
+                const z0 = leihe(r, { _bruchMelden: (m) => b.push(m) });
+                at.n = 99;
+                (r._karteNadel(T.TSL), mat.setupLightingModel(), (at.n = n0));
+                at.nadelU = Object.create(U);
+                (mat.setupLightingModel(), z0(), (at.nadelU = U));
+                if (b.length - 1 || !/2 Knoten „karteNadel/.test(b)) out.wachsen.push(`Wache der Reihen (${b.length} Meldungen, Soll 1): ${b}`);
                 // SELBSTTEST: das Wachsen bis 16.10. (neue Texturen, der Knoten-Wert getauscht, die alten entsorgt) — an der
                 // BC-Stufe (die rgba8-Schichten sind Ziel-Texturen eines Render-Ziels, ein Klon zeichnet dort nie)
                 if (at.fmt !== "bc") return (out.wachsenSelbst = ["nur bc"]), ren.dispose(), out;
@@ -719,8 +726,10 @@ async function windProbe(page) {
 }
 
 hauptLauf(async () => {
+    const [J, log] = [JSON.stringify, console.log]; // die Kurzformen der Auswertung
     await server.lausche(0);
     const errs = [];
+    const E = (...x) => errs.push(...x);
 
     // ===== TEIL A — MECHANIK (Null-Renderer, HART) =====
     const browserA = await starteBrowser({ art: "webgl", frist: 180000 });
@@ -733,17 +742,17 @@ hauptLauf(async () => {
     const C4 = await windProbe(pageA);
     await browserA.close();
 
-    console.log("=== P5/BÄCKER-VEREINIGUNG + W6 DER EINE KARTEN-ATLAS — TEIL A: MECHANIK (Null-Renderer) ===");
-    console.log(`  Worker ready: ${A.ready}`);
-    console.log(`  Atlas-Zelle: ${JSON.stringify(A.rec)}`);
-    console.log(`  Atlas (Quad/Material geteilt, Schichten): ${JSON.stringify(A.atlas)}`);
-    console.log(`  Gruppen (Streu ×2 Arten + gesetzt): ${JSON.stringify(A.gruppen)}`);
-    if (A.err) console.log(`  Fehler: ${A.err}`);
+    log("=== P5/BÄCKER-VEREINIGUNG + W6 DER EINE KARTEN-ATLAS — TEIL A: MECHANIK (Null-Renderer) ===");
+    log(`  Worker ready: ${A.ready}`);
+    log(`  Atlas-Zelle: ${J(A.rec)}`);
+    log(`  Atlas (Quad/Material geteilt, Schichten): ${J(A.atlas)}`);
+    log(`  Gruppen (Streu ×2 Arten + gesetzt): ${J(A.gruppen)}`);
+    if (A.err) log(`  Fehler: ${A.err}`);
 
     // je Befund der Mechanik: fehlt er, die erste Zeile, sonst jedes falsche Merkmal beim Namen
     const merkmale = (o, fehlt, je) =>
-        errs.push(...(o ? Object.keys(je).filter((k) => !o[k]) : [null]).map((k) => "A: " + (k ? je[k] : fehlt)));
-    if (!A.ready) errs.push("A: der Worker wurde nicht ready");
+        E(...(o ? Object.keys(je).filter((k) => !o[k]) : [null]).map((k) => "A: " + (k ? je[k] : fehlt)));
+    if (!A.ready) E("A: der Worker wurde nicht ready");
     merkmale(A.rec, "keine Atlas-Zelle entstanden (die Gestalt lud nicht?)", {
         imAtlas: "die Zelle steht nicht im EINEN Atlas (_impostorAtlas().zellen)",
         hasFrame: "die Zelle hat keinen Rahmen",
@@ -759,155 +768,143 @@ hauptLauf(async () => {
     if (A.gruppen) {
         const G = A.gruppen;
         if (G.karten.length !== 1)
-            errs.push(`A: ${G.karten.length} Karten-Gruppen statt EINER (${G.karten.slice(0, 4).join(" · ")})`);
+            E(`A: ${G.karten.length} Karten-Gruppen statt EINER (${G.karten.slice(0, 4).join(" · ")})`);
         if (!G.slotGruppen.every((k) => k === "impostor#fimp:atlas"))
-            errs.push(`A: die Probe-Slots liegen nicht in der Atlas-Gruppe (${G.slotGruppen.join(" · ")})`);
-        if (!G.instanziert) errs.push("A: aKarte ist kein Instanz-vec4 der Karten-Gruppe");
+            E(`A: die Probe-Slots liegen nicht in der Atlas-Gruppe (${G.slotGruppen.join(" · ")})`);
+        if (!G.instanziert) E("A: aKarte ist kein Instanz-vec4 der Karten-Gruppe");
         if (!(G.vertexPuffer <= 8))
-            errs.push(
+            E(
                 `A: die Karten-Pipeline trägt ${G.vertexPuffer} Vertex-Puffer (WebGPU-Grenze 8): ${G.attribute.join(" · ")}`
             );
         else {
-            if (JSON.stringify(G.zellen) !== JSON.stringify(G.erwartet))
-                errs.push(`A: aKarte.x je Slot ${JSON.stringify(G.zellen)} ≠ ${JSON.stringify(G.erwartet)}`);
+            if (J(G.zellen) !== J(G.erwartet))
+                E(`A: aKarte.x je Slot ${J(G.zellen)} ≠ ${J(G.erwartet)}`);
             const rOk = G.rahmen.every((v, i) => Math.abs(v - G.erwartetRahmen[i]) < 1e-5);
-            if (!rOk) errs.push(`A: aKarte.yz je Slot ${JSON.stringify(G.rahmen)} ≠ ${JSON.stringify(G.erwartetRahmen)}`);
+            if (!rOk) E(`A: aKarte.yz je Slot ${J(G.rahmen)} ≠ ${J(G.erwartetRahmen)}`);
             // die Sichthöhe der Maske: die Höhe der Höhen-Stufe × Instanz-Skala (der aH0-Stempel der L1), frei = positiv,
             // VOLL (verdeckt, Brücke, die Stufe im Halt — K36) = negativ
             const sOk = G.sicht.every(
                 (v, i) => v < 0 === G.voll[i] && Math.abs(Math.abs(v) - G.erwartetSicht[i]) < 1e-3 * Math.max(1, G.erwartetSicht[i])
             );
-            if (!sOk) errs.push(`A: aKarte.w je Slot ${JSON.stringify(G.sicht)} ≠ ±${JSON.stringify(G.erwartetSicht)} voll ${JSON.stringify(G.voll)} (Sichthöhe × Skala)`);
+            if (!sOk) E(`A: aKarte.w je Slot ${J(G.sicht)} ≠ ±${J(G.erwartetSicht)} voll ${J(G.voll)} (Sichthöhe × Skala)`);
         }
     }
     if (A.strich) {
         const s = A.strich;
-        console.log(`  Strich-Wand am Graphen: ${JSON.stringify(s)} · Selbsttest ${JSON.stringify(A.strichSelbst)}`);
+        log(`  Strich-Wand am Graphen: ${J(s)} · Selbsttest ${J(A.strichSelbst)}`);
         // die Albedo je Ansicht (2) und die Normale der nächsten (1) mit Gradienten der stetigen Koordinate, die Tiefe an der Ecke auf
         // ihrer Stufe (heil-laub-tiefe), nie im Fragment (frag: depthNode → frag_depth)
         if (!(s.gradMap === 2 && s.gradNmap === 1 && !s.frag && s.ohne === 0 && s.springend === 0))
-            errs.push(`A: Strich-Wand — Albedo 2 · Normale 1 stetig abgeleitet, keine Probe ohne, keine Tiefe im Fragment (${JSON.stringify(s)})`);
+            E(`A: Strich-Wand — Albedo 2 · Normale 1 stetig abgeleitet, keine Probe ohne, keine Tiefe im Fragment (${J(s)})`);
         if (!(A.strichSelbst?.ohne === 1 && A.strichSelbst.springend === 1 && A.strichSelbst.frag))
-            errs.push("A-SELBSTTEST: ein Atlas-Stoff ohne Gradienten oder mit springender Ableitung bleibt ungesehen");
-    } else if (A.ready) errs.push("A: die Strich-Proben liefen nicht");
+            E("A-SELBSTTEST: ein Atlas-Stoff ohne Gradienten oder mit springender Ableitung bleibt ungesehen");
+    } else if (A.ready) E("A: die Strich-Proben liefen nicht");
 
     const OHNE_BC = "  (die Welt wählt auf dem Probe-Renderer rgba8 — WebGL2 bzw. ohne texture-compression-bc; die BC-Stufe misst die Werkbank)";
-    console.log(`\n  RUHE VOR TEIL C: die Welt steht nach ${ruhe.takte} Takten · mit einer wartenden Karte: ${ruhe.karte}`);
-    if (ruhe.karte) errs.push("C: eine wartende Karte bricht die Ruhe nicht (`_weltSteht` true)");
+    log(`\n  RUHE VOR TEIL C: die Welt steht nach ${ruhe.takte} Takten · mit einer wartenden Karte: ${ruhe.karte}`);
+    if (ruhe.karte) E("C: eine wartende Karte bricht die Ruhe nicht (`_weltSteht` true)");
     for (const C of Cs) {
         const F = `C[${C.fmt}]`;
-        console.log(
+        log(
             `\n=== TEIL C [${C.fmt}] — DIE KARTEN-WAND (Layout + befreite Slots zeichnen NICHTS, echter Renderer) ===`
         );
         if (C.ohneFeature) {
-            console.log(OHNE_BC);
+            log(OHNE_BC);
             continue;
         }
-        console.log(`  geschrieben ${C.geschrieben} · Wiring ${C.billboard} · Eichung der Lese-Richtung ${JSON.stringify(C.eichung)}`);
-        console.log(`  LAYOUT (Karte: links oben opak) — Quadranten px und Zeilen ${JSON.stringify(C.layout)} · Schirm-Box ${JSON.stringify(C.box)}`);
-        console.log(`  Selbsttest Monster-Slot (Skala 1000, MUSS fluten) ${C.monsterPx} px · verdichtet (count 1, der Lebende in Slot 0) ${C.umzug} · nach _archGroupFree lebend ${C.lebtPx} px, befreit ${C.totPx} px`);
+        log(`  geschrieben ${C.geschrieben} · Wiring ${C.billboard} · Eichung der Lese-Richtung ${J(C.eichung)}`);
+        log(`  LAYOUT (Karte: links oben opak) — Quadranten px und Zeilen ${J(C.layout)} · Schirm-Box ${J(C.box)}`);
+        log(`  Selbsttest Monster-Slot (Skala 1000, MUSS fluten) ${C.monsterPx} px · verdichtet (count 1, der Lebende in Slot 0) ${C.umzug} · nach _archGroupFree lebend ${C.lebtPx} px, befreit ${C.totPx} px`);
         if (C.err) {
-            console.log(`  Fehler: ${C.err}`);
-            errs.push(`${F}: Karten-Probe brach ab — ${C.err}`);
+            log(`  Fehler: ${C.err}`);
+            E(`${F}: Karten-Probe brach ab — ${C.err}`);
             continue;
         }
-        if (!C.billboard) errs.push(`${F}: das Atlas-TSL-Wiring kam nicht zustande (kein Billboard-Marker)`);
-        if (!C.geschrieben) errs.push(`${F}: die kodierte Schicht wurde nicht in den Atlas geschrieben`);
-        if (!(C.eichung && C.eichung.markerPx > 4)) errs.push(`${F}: die Eichung sah den Marker nicht (Probe blind)`);
+        if (!C.billboard) E(`${F}: das Atlas-TSL-Wiring kam nicht zustande (kein Billboard-Marker)`);
+        if (!C.geschrieben) E(`${F}: die kodierte Schicht wurde nicht in den Atlas geschrieben`);
+        if (!(C.eichung && C.eichung.markerPx > 4)) E(`${F}: die Eichung sah den Marker nicht (Probe blind)`);
         const L = C.layout || {};
         const rest = (L.ro || 0) + (L.lu || 0) + (L.ru || 0);
         if (!(L.lo > 40 && L.lo > 6 * rest))
-            errs.push(
+            E(
                 `${F}: die Karte steht NICHT links oben (lo ${L.lo} · Rest ${rest}) — Layout gedreht oder gespiegelt`
             );
         if (!(C.monsterPx > 200))
-            errs.push(
+            E(
                 `${F}-SELBSTTEST: der Monster-Slot flutete den Schirm NICHT (${C.monsterPx} px) — die Linse ist blind`
             );
         if (C.fremd?.length)
-            errs.push(`${F}: die Welt lieferte in den Probe-Atlas (${C.fremd.join(", ")}) — Teil C begann vor der Ruhe`);
-        if (!C.umzug) errs.push(`${F}: _archGroupFree verdichtete nicht (count, Marke oder Matrix des Umzugs falsch)`);
+            E(`${F}: die Welt lieferte in den Probe-Atlas (${C.fremd.join(", ")}) — Teil C begann vor der Ruhe`);
+        if (!C.umzug) E(`${F}: _archGroupFree verdichtete nicht (count, Marke oder Matrix des Umzugs falsch)`);
         if (!(C.lebtPx > 40))
-            errs.push(`${F}: der LEBENDE Slot zeichnet zu wenig (${C.lebtPx} px ≤ 40) — die Probe ist blind`);
+            E(`${F}: der LEBENDE Slot zeichnet zu wenig (${C.lebtPx} px ≤ 40) — die Probe ist blind`);
         if (!(C.totPx <= 8))
-            errs.push(`${F}: der befreite Slot zeichnet noch ${C.totPx} px (> 8) — die Gruppe ist NICHT dicht`);
+            E(`${F}: der befreite Slot zeichnet noch ${C.totPx} px (> 8) — die Gruppe ist NICHT dicht`);
         // C5 DAS WACHSEN (der EINE Abschied, `_texturAbschied`)
-        console.log(`  C5 WACHSEN: ${(C.wachsen || []).join(" · ") || "GRÜN"} · Selbsttest: ${C.wachsenSelbst}`);
-        for (const f of C.wachsen || ["keine Messung"]) errs.push(`${F} C5: ${f}`);
+        log(`  C5 WACHSEN: ${(C.wachsen || []).join(" · ") || "GRÜN"} · Selbsttest: ${C.wachsenSelbst}`);
+        for (const f of C.wachsen || ["keine Messung"]) E(`${F} C5: ${f}`);
         // C6 AUS JEDER BLICK-HEBUNG (lod.K3): je Soll-Hebung Deckung ≥ 0,75 und IoU ≥ 0,65; die waagrecht gebackene Karte fällt von oben
         const O = C.oben || { je: {} };
         const hb = (p, w) => `${p}° ${w.deckung}/${w.iou}`;
-        console.log(`  C6 HEBUNG [${C.fmt}]: ${Object.entries(O.je).map(([p, w]) => hb(p, w.karte)).join(" · ")} | waagrecht ${O.je[80] ? hb(80, O.je[80].selbst) : "—"} · Ringe ${O.hebungen} · Schicht ${O.schichtB} B`);
+        log(`  C6 HEBUNG [${C.fmt}]: ${Object.entries(O.je).map(([p, w]) => hb(p, w.karte)).join(" · ")} | waagrecht ${O.je[80] ? hb(80, O.je[80].selbst) : "—"} · Ringe ${O.hebungen} · Schicht ${O.schichtB} B`);
         for (const p of [-20, 0, 40, 80])
-            if (!(O.je[p]?.karte.deckung >= 0.75 && O.je[p].karte.iou >= 0.65)) errs.push(`${F} C6: aus ${p}° ${JSON.stringify(O.je[p] && O.je[p].karte)} (Soll Deckung ≥ 0,75, IoU ≥ 0,65)`);
-        if (!(O.je[80]?.selbst.iou < 0.65)) errs.push(`${F} C6-SELBSTTEST: die waagrecht gebackene Karte besteht von oben — die Linse ist blind`);
+            if (!(O.je[p]?.karte.deckung >= 0.75 && O.je[p].karte.iou >= 0.65)) E(`${F} C6: aus ${p}° ${J(O.je[p] && O.je[p].karte)} (Soll Deckung ≥ 0,75, IoU ≥ 0,65)`);
+        if (!(O.je[80]?.selbst.iou < 0.65)) E(`${F} C6-SELBSTTEST: die waagrecht gebackene Karte besteht von oben — die Linse ist blind`);
         // C7 DIE TIEFE: vor der Tafel steht die Karte wie ihre Gestalt (≥ 0,6), ohne die Tiefe nicht (< 0,2)
         const Ti = C.tiefe || {},
             teil = (n) => +(n / Math.max(1, Ti.gestalt)).toFixed(3);
-        console.log(`  C7 TIEFE [${C.fmt}]: vor der Tafel Gestalt ${Ti.gestalt} px (Soll ≥ 80) · Karte ${teil(Ti.karte)} (Soll ≥ 0,6) · ohne Tiefe ${teil(Ti.selbst)} (MUSS < 0,2)`);
-        if (!(Ti.gestalt >= 80 && teil(Ti.selbst) < 0.2)) errs.push(`${F} C7-SELBSTTEST: die Gestalt steht nicht vor der Tafel oder die Karte ohne Tiefe nicht dahinter — die Linse ist blind`);
-        else if (!(teil(Ti.karte) >= 0.6)) errs.push(`${F} C7: die Karte steht hinter der Tafel — ihre Ecken lesen ihre Tiefe nicht (vertexNode)`);
+        log(`  C7 TIEFE [${C.fmt}]: vor der Tafel Gestalt ${Ti.gestalt} px (Soll ≥ 80) · Karte ${teil(Ti.karte)} (Soll ≥ 0,6) · ohne Tiefe ${teil(Ti.selbst)} (MUSS < 0,2)`);
+        if (!(Ti.gestalt >= 80 && teil(Ti.selbst) < 0.2)) E(`${F} C7-SELBSTTEST: die Gestalt steht nicht vor der Tafel oder die Karte ohne Tiefe nicht dahinter — die Linse ist blind`);
+        else if (!(teil(Ti.karte) >= 0.6)) E(`${F} C7: die Karte steht hinter der Tafel — ihre Ecken lesen ihre Tiefe nicht (vertexNode)`);
         // C9 DIE TIEFEN-PARALLAXE: die Karte steht, wo ihre Gestalt steht (IoU ≥ 0,8); ohne Gänge stehen zwei Kugeln (< 0,6)
         const [g9, k9, o9] = C.parallaxe || [];
-        console.log(`  C9 PARALLAXE [${C.fmt}]: Gestalt ${g9} px · IoU Karte ${k9} (Soll ≥ 0,8) · ohne Gänge ${o9} (MUSS < 0,6)`);
-        if (!(g9 >= 400 && o9 < 0.6 && k9 >= 0.8)) errs.push(`${F} C9: ${o9 < 0.6 ? "die Karte steht neben ihrer Gestalt (stoff-material _relief)" : "SELBSTTEST blind"}`);
+        log(`  C9 PARALLAXE [${C.fmt}]: Gestalt ${g9} px · IoU Karte ${k9} (Soll ≥ 0,8) · ohne Gänge ${o9} (MUSS < 0,6)`);
+        if (!(g9 >= 400 && o9 < 0.6 && k9 >= 0.8)) E(`${F} C9: ${o9 < 0.6 ? "die Karte steht neben ihrer Gestalt (stoff-material _relief)" : "SELBSTTEST blind"}`);
         // C8 JENSEITS DER FERN-EBENE zeichnet die Karte nichts (Selbsttest: C6 aus 0°, dieselbe Karte diesseits)
-        if (C.fern) errs.push(`${F} C8: jenseits der Fern-Ebene ${C.fern} px`);
+        if (C.fern) E(`${F} C8: jenseits der Fern-Ebene ${C.fern} px`);
     }
     {
-        console.log("\n=== TEIL C4 — DER WIND WEHT IN DER WELT (eine Säule im Sturm, drei Drehungen, zwei Skalen) ===");
-        if (C4.err) errs.push(`C4: Wind-Probe brach ab — ${C4.err}`);
+        log("\n=== TEIL C4 — DER WIND WEHT IN DER WELT (eine Säule im Sturm, drei Drehungen, zwei Skalen) ===");
+        if (C4.err) E(`C4: Wind-Probe brach ab — ${C4.err}`);
         else {
             for (const m of C4.mess)
-                console.log(`  ${m.stoff || "rinde"} Drehung ${m.phi}° Skala ${m.s}: Versatz (${m.dx}, ${m.dz}) m`);
-            if (C4.mess.length !== WIND_FAELLE.length) errs.push("C4: nicht jeder Fall gemessen — die Probe ist blind");
-            errs.push(...windUrteil(C4.mess).map((x) => "C4: " + x));
+                log(`  ${m.stoff || "rinde"} Drehung ${m.phi}° Skala ${m.s}: Versatz (${m.dx}, ${m.dz}) m`);
+            if (C4.mess.length !== WIND_FAELLE.length) E("C4: nicht jeder Fall gemessen — die Probe ist blind");
+            E(...windUrteil(C4.mess).map((x) => "C4: " + x));
         }
-        const selbstRot =
-            windUrteil([
-                { phi: 0, s: 1, dx: 0.8, dz: 0 },
-                { phi: 90, s: 1, dx: 0, dz: -0.8 },
-            ]).length === 1;
-        const selbstLang =
-            windUrteil([
-                { phi: 0, s: 2, dx: 0.8, dz: 0 },
-                { phi: 90, s: 2, dx: 1.6, dz: 0 },
-            ]).length === 1;
-        const selbstGruen =
-            windUrteil([
-                { phi: 0, s: 1, dx: 0.8, dz: 0.02 },
-                { phi: 90, s: 1, dx: 0.79, dz: -0.03 },
-            ]).length === 0;
-        console.log(
+        // je Fall Skala s, der Versatz bei 0° (a, b) und bei 90° (c, d)
+        const w = (s, a, b, c, d) => windUrteil([{ phi: 0, s, dx: a, dz: b }, { phi: 90, s, dx: c, dz: d }]).length;
+        const [selbstRot, selbstLang, selbstGruen] = [w(1, 0.8, 0, 0, -0.8) === 1, w(2, 0.8, 0, 1.6, 0) === 1, !w(1, 0.8, 0.02, 0.79, -0.03)];
+        log(
             `  Selbsttest: der gedrehte Wind feuert ${selbstRot} · der skalierte feuert ${selbstLang} · der Welt-Wind schweigt ${selbstGruen}`
         );
         if (!(selbstRot && selbstLang && selbstGruen))
-            errs.push("C4-SELBSTTEST: das Wind-Urteil unterscheidet Welt- und Instanz-Wind nicht");
+            E("C4-SELBSTTEST: das Wind-Urteil unterscheidet Welt- und Instanz-Wind nicht");
     }
     for (const C2 of C2s) {
         const F = `C2[${C2.fmt}]`;
-        console.log(
+        log(
             `\n=== TEIL ${F} — DIE VERGRÖSSERTE KARTE (Treppe der Kanten-Kontur, ein Texel ~${C2.pxJeTexel} px) ===`
         );
         if (C2.ohneFeature) {
-            console.log(OHNE_BC);
+            log(OHNE_BC);
             continue;
         }
         if (C2.err) {
-            errs.push(`${F}: Kanten-Probe brach ab — ${C2.err}`);
+            E(`${F}: Kanten-Probe brach ab — ${C2.err}`);
             continue;
         }
         const k = C2.kante || {},
             s = C2.selbst || {};
-        console.log(`  glatte Kante: Treppe ${k.treppe} über ${k.zeilen} Zeilen (Soll ≤ 0,35) · Selbsttest 8-Texel-Stufen: Treppe ${s.treppe} über ${s.zeilen} Zeilen (MUSS > 0,6)`);
+        log(`  glatte Kante: Treppe ${k.treppe} über ${k.zeilen} Zeilen (Soll ≤ 0,35) · Selbsttest 8-Texel-Stufen: Treppe ${s.treppe} über ${s.zeilen} Zeilen (MUSS > 0,6)`);
         if (!(k.zeilen >= 40))
-            errs.push(`${F}: die Kante liegt nicht im Bild (${k.zeilen} Zeilen) — die Probe ist blind`);
+            E(`${F}: die Kante liegt nicht im Bild (${k.zeilen} Zeilen) — die Probe ist blind`);
         else if (!(k.treppe <= 0.35))
-            errs.push(
+            E(
                 `${F}: die vergrößerte Karte steht in Texel-Treppen (Treppe ${k.treppe} > 0,35) — _liesA liest sie nicht kubisch`
             );
         if (!(s.zeilen >= 40 && s.treppe > 0.6))
-            errs.push(`${F}-SELBSTTEST: die 8-Texel-Stufen stehen nicht treppig (${s.treppe}) — die Linse ist blind`);
+            E(`${F}-SELBSTTEST: die 8-Texel-Stufen stehen nicht treppig (${s.treppe}) — die Linse ist blind`);
     }
     server.close();
     wandEnde(errs, "die Welt-Fernstufe liest die im Welt-Renderer gebackene Karte über EINEN Karten-Atlas (eine Gruppe, ein Material, Schicht + Rahmen je Instanz), die Karte steht richtig herum und in der Tiefe ihrer Gestalt, befreite Slots zeichnen nichts (die Gruppe verdichtet), jede Atlas-Stichprobe trägt die Gradienten der stetigen Koordinate (kein Stamm-Strich).");

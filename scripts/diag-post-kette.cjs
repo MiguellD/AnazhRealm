@@ -355,7 +355,8 @@ function selbsttest() {
         ["Zugang fehlt", ["zugang"], /ZUGANG: lief nicht/],
     ];
     taeterFaelle(faelle, urteil, { fehler, gruen });
-    selbsttestEnde(fehler, "die Shader-Kosten-Linse zählt richtig, jeder injizierte Täter fällt rot und wird beim Namen genannt.");
+    // der Selbsttest: die Shader-Kosten-Linse zählt richtig, jeder injizierte Täter fällt rot und wird beim Namen genannt.
+    selbsttestEnde(fehler);
 }
 
 if (SELBSTTEST) {

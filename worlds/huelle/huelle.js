@@ -34,7 +34,7 @@
  *   matrix(opt)                DIE MATRIX-TAFEL (w11-leib): der Kern-Zustand des gezeigten Leibs — Skelett, Gang-Phase je Fuß,
  *                              der Schwerpunkt über der Stützfläche (der Stand aus tetrapoda `gangFuss`); Körper-Studio und
  *                              Tetrapoda lesen sie, `stand()` hält den letzten Einblick für die Linsen
- *   toast(text, ms) · zufall(seed) · knopfMitText(wurzel, wort)
+ *   toast(text, ms) · zufall(seed) · knopfMitText(wurzel, wort) · zeiger(el) — DER EINE Zeiger-Fang jeder Seite
  *
  * Die Hülle ändert keine Bau-Bytes: sie reicht Werte durch, die Gesetzbücher bauen (gate:asset-contract unverändert).
  * Die Wand: gate:studio-huelle (scripts/diag-studio-huelle.cjs) — kein Hand-Regler, keine Brücken-Kopie außerhalb.
@@ -66,6 +66,19 @@
             t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
             return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
         };
+    }
+
+    // ── DER ZEIGER — EIN Fang je Seite (w27-zeiger): requestPointerLock wirft synchron oder lehnt sein Versprechen ab — ohne Geste,
+    // ohne Fokus (im sichtbaren Fenster der Proben: „WrongDocumentError … not valid for pointer lock“ aus enterPlay des Körper-Studios,
+    // tiere.K3#2 an da0e790f ROT). Beides ist kein Seiten-Fehler: der nächste Klick fängt den Zeiger.
+    function zeiger(el) {
+        if (!el || typeof el.requestPointerLock !== "function") return;
+        try {
+            const p = el.requestPointerLock();
+            if (p && typeof p.catch === "function") p.catch(function () {});
+        } catch (_e) {
+            /* ohne Geste kein Lock */
+        }
     }
 
     // ── TOAST — EINE Meldungs-Zeile je Seite ──
@@ -2075,6 +2088,7 @@
         panorama: panorama,
         panoramaBild: panoramaBild,
         toast: toast,
+        zeiger: zeiger,
         zufall: zufall,
         knopfMitText: knopfMitText,
         kugel: kugel,
