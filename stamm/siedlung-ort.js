@@ -791,8 +791,11 @@ class AnazhRealm_siedlung_ort {
         );
         let best = null;
         // der Kegel um die Achse weitet sich, bis ein Bau frei steht (20° · 45° · rundum): am Dorf der Zelle −4,−4 liegt
-        // binnen 20° nur das Gasthaus, und seine Sichtlinie ist verstellt
-        for (const kegel of [0.94, 0.7, 0]) {
+        // binnen 20° nur das Gasthaus, und seine Sichtlinie ist verstellt. DANN DER KEGEL (w27-ort-pose-voll): zuerst nur
+        // Sichtlinien, die keine Spur kreuzen (`_verkehrFahrbahnM` ohne Rand, je halben Meter) — ein Wagen in ihr steht vor dem
+        // Ziel; an der vollen Stadt hält vom Stand auf der Achse nur das Wohnhaus Süd beides frei. Kreuzt jede eine Spur (die
+        // Stadt: ihr Platz liegt zwischen den Gassen, „kein Bau mit freier Sichtlinie" bei 91 Bauten), gilt der Kegel ohne sie
+        for (const [kegel, spurfrei] of [0.94, 0.7, 0, 0.94, 0.7, 0].map((k, i) => [k, i < 3])) {
             for (const b of best ? [] : bau) {
                 const [dx, dz] = [b.x - M.x, b.z - M.z];
                 const d = Math.hypot(dx, dz);
@@ -808,9 +811,7 @@ class AnazhRealm_siedlung_ort {
                 const [bc, bs] = [Math.cos(b.obb.phi || 0), Math.sin(b.obb.phi || 0)];
                 const k = Math.min(b.obb.ex / Math.abs(dx * bc - dz * bs), b.obb.ez / Math.abs(dx * bs + dz * bc));
                 const ziel = { x: b.x - dx * k, z: b.z - dz * k };
-                // DANN DER KEGEL: die Sichtlinie kreuzt keine Spur (`_verkehrFahrbahnM` ohne Rand, je halben Meter) — ein Wagen in
-                // ihr steht vor dem Ziel. An der vollen Stadt hält vom Stand auf der Achse nur das Wohnhaus Süd beides frei
-                if (this._verkehrFahrbahnM(S, M, [ziel], 0)) continue;
+                if (spurfrei && this._verkehrFahrbahnM(S, M, [ziel], 0)) continue;
                 best = { d, ziel };
             }
         }
