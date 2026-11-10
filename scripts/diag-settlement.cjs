@@ -294,14 +294,16 @@ function erdbauMedian(v2, grund) {
 // (0 Häuser nach 9000 Takten, mit Renderer 16).
 const dorfZugAmOrt = (c) => c.ohne && c.still;
 // DER BELAG DER GASSEN (w28-stadt-boden, fachwerk BELAG_GESETZ): je Gasse { i, gen, quer, soll, pflaster, erde } — das Gesetz neben
-// den gemalten Bytes ihrer Mitte (`_wegeFeldAt`). → die Täter beim Namen: eine gepflasterte Gasse ohne Pflaster (bis
+// den gemalten Bytes ihrer Mitte und ihres Gehwegs 0,4 m vor der Bauflucht (`_wegeBelagAt`). → die Täter beim Namen: eine gepflasterte Gasse ohne Pflaster (bis
 // w28-stadt-boden malte der Wirt jede Gasse als Erde), eine Erd-Gasse mit Pflaster oder ohne Erde.
 const belagUrteil = (gassen) =>
     (gassen || [])
-        .filter((g) => (g.soll === "pflaster" ? !(g.pflaster >= 0.9) : !(g.pflaster <= 0.1 && g.erde >= 0.9)))
+        .filter((g) =>
+            g.soll === "pflaster" ? !(g.pflaster >= 0.9 && g.gehweg >= 0.8) : !(g.pflaster <= 0.1 && g.erde >= 0.9)
+        )
         .map(
             (g) =>
-                `Gasse ${g.i} (gen ${g.gen}${g.quer ? " quer" : ""}): Gesetz ${g.soll}, Karte Pflaster ${g.pflaster} · Erde ${g.erde}`
+                `Gasse ${g.i} (gen ${g.gen}${g.quer ? " quer" : ""}): Gesetz ${g.soll}, Karte Pflaster ${g.pflaster} · Erde ${g.erde} · Gehweg ${g.gehweg}`
         );
 
 function lokal(cx, cz, phi, x, z) {
@@ -1035,12 +1037,21 @@ hauptLauf(async () => {
         check("Selbst-Test 11: ohne Weg erreicht keine Tür ein Ziel", u3.tuerenOk === 0 && u3.tuerenN === 1);
         // der Belag: Gesetz = Karte hält; die Mutante des alten Wirts (Pflaster-Gasse als Erde gemalt) und Pflaster auf der
         // Erd-Gasse fallen beim Namen
-        const gasse = (soll, pflaster, erde) => ({ i: 3, gen: 0, quer: false, soll, pflaster, erde });
-        const bF = belagUrteil([gasse("pflaster", 0, 1), gasse("weg", 0.5, 1)]);
+        const gasse = (soll, pflaster, erde, gehweg = pflaster) => ({
+            i: 3,
+            gen: 0,
+            quer: false,
+            soll,
+            pflaster,
+            erde,
+            gehweg,
+        });
+        const bF = belagUrteil([gasse("pflaster", 0, 1), gasse("weg", 0.5, 1), gasse("pflaster", 1, 0, 0.2)]);
         check(
-            "Selbst-Test 11b: der Belag — Gesetz = Karte hält, die Pflaster-Gasse in Erde und Pflaster auf der Erd-Gasse fallen beim Namen",
+            "Selbst-Test 11b: der Belag — Gesetz = Karte hält; die Pflaster-Gasse in Erde, Pflaster auf der Erd-Gasse und ein Gehweg ohne Pflaster fallen beim Namen",
             belagUrteil([gasse("pflaster", 1, 0), gasse("weg", 0, 1)]).length === 0 &&
-                bF.length === 2 &&
+                bF.length === 3 &&
+                /Gehweg 0.2/.test(bF[2]) &&
                 /Gasse 3 \(gen 0\): Gesetz pflaster, Karte Pflaster 0/.test(bF[0]),
             bF
         );
@@ -2776,13 +2787,13 @@ hauptLauf(async () => {
                                 );
                         });
                     // DER BELAG DER GASSEN (w28-stadt-boden): je Gasse des Plans das Gesetz (fachwerk `gassenBelag`: Rang × Größe ×
-                    // Jahr) neben den GEMALTEN Bytes ihrer Mitte (`_wegeFeldAt` — was Boden, Wiese und Schritt lesen); eine Mitte im
+                    // Jahr) neben den GEMALTEN Bytes ihrer Mitte (`_wegeBelagAt` — was Boden, Wiese und Schritt lesen); eine Mitte im
                     // Band einer anders belegten Gasse (die Kreuzung) zählt nicht. Das Urteil fällt in `belagUrteil`.
                     const FCb = window.__fachwerkCore;
                     res.belag = [];
                     if (P.ort)
                         (P.roads || []).forEach((rd, i) => {
-                            const m = rd.pts[rd.pts.length >> 1];
+                            const m = rang(rd.pts); // die Mitte der Gasse (DER EINE Rang, welt-boot)
                             const soll = FCb.gassenBelag(P, rd);
                             if (!m || !r._landAt(P.ort.x + m.x, P.ort.z + m.z, 0.2)) return;
                             const kreuzt = P.roads.some(
@@ -2794,8 +2805,15 @@ hauptLauf(async () => {
                             );
                             if (kreuzt) return;
                             const aus = {};
-                            r._wegeFeldAt(P.ort.x + m.x, P.ort.z + m.z, aus);
+                            r._wegeBelagAt(P.ort.x + m.x, P.ort.z + m.z, aus);
                             const z2 = (v) => Math.round((v || 0) * 100) / 100;
+                            // und der GEHWEG (der gemalte Saum bis zur Bauflucht, fachwerk `gassenBreite`): 0,4 m vor ihr, quer zur Gasse
+                            const k = rd.pts.indexOf(m);
+                            const n2 = rd.pts[k + 1] || rd.pts[k - 1];
+                            const [dx, dz] = [n2.x - m.x, n2.z - m.z];
+                            const ab = (FCb.gassenBreite(P, rd) / 2 - 0.4) / (Math.hypot(dx, dz) || 1);
+                            const geh = {};
+                            r._wegeBelagAt(P.ort.x + m.x - dz * ab, P.ort.z + m.z + dx * ab, geh);
                             res.belag.push({
                                 i,
                                 gen: rd.gen,
@@ -2803,6 +2821,7 @@ hauptLauf(async () => {
                                 soll,
                                 pflaster: z2(aus.pflaster),
                                 erde: z2(aus.erde),
+                                gehweg: z2(geh.pflaster),
                             });
                         });
                     if (P.ort && pmW) r._tickWegeKarte(pmW.position);

@@ -360,7 +360,7 @@ class AnazhRealm_siedlung_wege {
     // (`zone`) bis zur Ecke ihrer Hülle.
     static _wegeFormRadius(f) {
         if (f.typ === "zone") return Math.hypot(f.q.huelle[2] - f.q.huelle[0], f.q.huelle[3] - f.q.huelle[1]) / 2;
-        return f.halb + (f.typ === "kasten" ? Math.hypot(f.ex, f.ez) : 0);
+        return f.halb + (f.saum || 0) + (f.typ === "kasten" ? Math.hypot(f.ex, f.ez) : 0);
     }
 
     // Der EINE Abstand eines Punkts zu einer Form (m, innen negativ): der gedrehte Kasten um (ax, az) mit den Halbachsen ex/ez
@@ -469,6 +469,9 @@ class AnazhRealm_siedlung_wege {
             const w = t * (Math.abs(Math.cos(f.phi || 0)) + Math.abs(Math.sin(f.phi || 0))) + rand;
             f = { ...f, ex: f.ex + w, ez: f.ez + w };
         } else rand = Math.max(f.rand !== undefined ? f.rand : AnazhRealm.WEGE_KARTE.randM, S.randMinM);
+        // DER GEMALTE SAUM (der gepflasterte Gehweg einer Gasse, `_stlWegeBuild`): der Maler deckt die Form um ihn breiter, die Form
+        // selbst bleibt die Fahrbahn — EINE gemerkte Mal-Form je Gasse
+        if (f.saum) f = f._mal || (f._mal = { ...f, halb: f.halb + f.saum, saum: 0 });
         const x0w = stufe.mitteX - S.fensterM / 2;
         const z0w = stufe.mitteZ - S.fensterM / 2;
         const ausdehnung = AnazhRealm._wegeFormRadius(f) + rand;
@@ -1330,8 +1333,10 @@ class AnazhRealm_siedlung_wege {
             n++;
         };
         // DER BELAG DER GASSE (fachwerk BELAG_GESETZ: Rang × Größe × Jahr): die Gasse trägt Kanal und Vorzeichen ihres Belags wie die
-        // Flächen des Genesis-Orts, das Pflaster in der Breite ihrer Bauflucht (`gassenBreite`). Bis w28-stadt-boden malte der Wirt
-        // jede Gasse als getretene Erde (Kanal 0): die Hauptgasse der Metropole stand in Halmen (Auge 10.11., „dorf 7 300“).
+        // Flächen des Genesis-Orts. Die FORM bleibt die Fahrbahn (`halb` = w/2: an ihr messen die Natur-Wand, die Laterne am
+        // Wegrand und der Vorplatz); das Pflaster deckt dazu den Gehweg bis zur Bauflucht als gemalten `saum` (fachwerk
+        // `gassenBreite` − w, je Seite) — der Maler und die Hülle lesen ihn, sonst niemand. Bis w28-stadt-boden malte der Wirt jede
+        // Gasse als getretene Erde (Kanal 0): die Hauptgasse der Metropole stand in Halmen (Auge 10.11., „dorf 7 300“).
         // Eine Art, die die Karte nicht kennt, wirft laut (kein stiller Rückfall auf Erde).
         const FC = globalThis.__fachwerkCore;
         const belagVon = (art, wer) => {
@@ -1339,7 +1344,7 @@ class AnazhRealm_siedlung_wege {
             if (!B) throw new Error(`Wege-Karte: ${wer} trägt den Belag „${art}", den der Boden nicht kennt`);
             return B;
         };
-        const strasse = (pts, w, belag) => {
+        const strasse = (pts, w, belag, saum) => {
             if (!Array.isArray(pts)) return;
             const B = belagVon(belag, "eine Gasse");
             for (let i = 0; i + 1 < pts.length && n < MAX; i++) {
@@ -1358,11 +1363,13 @@ class AnazhRealm_siedlung_wege {
                     bx,
                     bz,
                     halb: Math.max(1.2, w || 2.5) / 2,
+                    ...(saum > 0 ? { saum } : {}),
                 });
             }
         };
-        for (const rd of plan.roads || []) strasse(rd.pts, FC.gassenBreite(plan, rd), FC.gassenBelag(plan, rd));
-        for (const fw of plan.feldwege || []) strasse(fw.pts, fw.w, "weg");
+        for (const rd of plan.roads || [])
+            strasse(rd.pts, rd.w, FC.gassenBelag(plan, rd), (FC.gassenBreite(plan, rd) - rd.w) / 2);
+        for (const fw of plan.feldwege || []) strasse(fw.pts, fw.w, "weg", 0);
         // DIE FLÄCHEN EINES PLANS (fachwerk `zonen`, der Genesis-Ort): jede Fläche mit Belag in ihrem Kanal und Vorzeichen
         // (`WEGE_KARTE.belag`), gemalt mit dem Rand ihres Gesetzbuchs (`zone`, `genesisZoneRand`) — eine Art, die die Karte nicht
         // kennt, wirft laut (kein stiller Rückfall auf Erde). Das Wasser des Plans, das nach einer Fläche kommt, nimmt sie aus
