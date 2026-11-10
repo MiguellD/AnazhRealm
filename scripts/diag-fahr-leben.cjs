@@ -827,7 +827,7 @@ const wegenetzVerdict = (m) =>
 // der Spuren springt (`stufen`), keiner steckt, keiner berührt einen Bewohner oder einen anderen Wagen, keiner ist ohne
 // Schlüssel im Ort (Kreuzung, Enge, fahrend in der Wende — der Täter beim Namen), keiner stößt an einen Bau, keiner verlässt seine Spur, der Takt bleibt billig, und die Gehenden
 // teilen die Straße nach dem EINEN Gesetz: höchstens `fahrbahn` ihrer Schritte auf der Fahrbahn (die Querungen). ════
-const VERKEHR = { stunden: [10, 23], sek: 600, wagen: 20, fristS: 300, fahrbahn: 0.05, weg60M: 30, raumM: 0.2 };
+const VERKEHR = { stunden: [10, 23], sek: 600, wagen: 20, fristS: 300, fahrbahn: 0.05, weg60M: 30, raumM: 0.2, leibS: 20 };
 const verkehrVerdict = (m) =>
     urteil([
         // DER RICHTER VON PFLICHT-OFFEN C (pflicht.C#1), gezählt am SOLL des Gesetzes: in jeder Probe fährt jeder Wagen des Solls
@@ -838,6 +838,9 @@ const verkehrVerdict = (m) =>
         [m.amSteuer[0] >= m.soll, `am Steuer ${JSON.stringify(m.amSteuer)} von ${m.soll}`],
         [!m.trasse[1], `abseits der Trasse ${JSON.stringify(m.trasse)}`],
         [m.weg60[2] > 0 && m.weg60[0] >= VERKEHR.weg60M, `fahrend je Minute ${JSON.stringify(m.weg60)}`],
+        // DER WAGEN VOR EINEM LEIB (w27-verkehr-leib): die Querung hält ihn ihre Dauer, wer die Bahn nicht verlässt, gibt sie frei —
+        // länger als `leibS` vor DEMSELBEN Bewohner [s, Wagen, Leib, Ort, Zustand] ist der Täter beim Namen
+        [!(m.leibHalt[0] > VERKEHR.leibS), `Wagen vor EINEM Leib ${JSON.stringify(m.leibHalt)} (Soll ≤ ${VERKEHR.leibS} s)`],
         [m.sitz[0] > 0 && !m.sitz[1], `Fahrer nicht im Sitz ${JSON.stringify(m.sitz)}`],
         [m.enden >= 1 && m.wenden === m.enden, `Wenden ${m.wenden} an ${m.enden} Enden`],
         [!m.stufen.length, `Stufen der Spuren ${JSON.stringify(m.stufen)}`],
@@ -2417,6 +2420,7 @@ hauptLauf(async () => {
                 amSteuer: [20, 0],
                 trasse: [9e4, 0, []],
                 weg60: [210, 4, 10],
+                leibHalt: [4, 2, "7:55:3", 821, 466, "geht"],
                 sitz: [4800, 0],
                 ziele: { erreicht: 160, ohne: [], laengsteS: 120 },
                 fahrbahn: { geh: 9e4, auf: 1500, anteil: 0.017 },
@@ -2432,6 +2436,7 @@ hauptLauf(async () => {
                 [{ amSteuer: [7, 8, [1, "steht"]] }, /am Steuer \[7,8,\[1,"steht"\]\] von 20/],
                 [{ trasse: [9e4, 3, [[1, 905, 300]]] }, /Trasse \[90000,3,\[\[1,905/],
                 [{ weg60: [0, 17, 1, 1, "spieler"] }, /je Minute \[0,17,1,1,"spieler"\]/], // die Radeon 06.11.: der Spieler in der Kreuzung
+                [{ leibHalt: [61, 4, "7:55:3", 821, 466, "steht"] }, /vor EINEM Leib \[61,4,"7:55:3",821,466,"steht"\]/], // eine Minute hinter einem Stehenden
                 [{ sitz: [0, 0] }, /nicht im Sitz \[0,0\]/],
                 [{ sitz: [500, 120, [1, 4, 1.94, 1.44]] }, /nicht im Sitz \[500,120,\[1,4,1.94,1.44/], // auf dem Dach (23 Uhr)
                 [{ ziele: { erreicht: 150, ohne: [], laengsteS: 410, wer: 4 } }, /Fahrt 410 s > 300 s \(Wagen 4/],
@@ -2585,7 +2590,7 @@ hauptLauf(async () => {
                 for (const h of TAETER ? [10] : VERKEHR.stunden) {
                     const m = o.verkehr && o.verkehr[h];
                     const v = (m ? verkehrVerdict(m) : [o.err]).join(" · ");
-                    check(`VK (PFLICHT-OFFEN C) der Verkehr der Stadt um ${h} Uhr${TAETER ? " — TÄTER" : ""}`, TAETER ? [/am Steuer \[19,\d+,\[0,/, /Trasse \[\d+,[1-9]\d*,\[\[1,/, /Wagen an Wagen \[-[\d.]+,"2\|3"/, /nicht im Sitz \[\d+,1,\[/, /je Minute \[\d+,\d+,2,\d,"spieler"\]/].every((x) => x.test(v)) : !v, v); // prettier-ignore
+                    check(`VK (PFLICHT-OFFEN C) der Verkehr der Stadt um ${h} Uhr${TAETER ? " — TÄTER" : ""}`, TAETER ? [/am Steuer \[19,\d+,\[0,/, /Trasse \[\d+,[1-9]\d*,\[\[1,/, /Wagen an Wagen \[-[\d.]+,"2\|3"/, /nicht im Sitz \[\d+,1,\[/, /je Minute \[\d+,\d+,2,\d,"spieler"\]/, /vor EINEM Leib \[(6\d|7\d),\d+,"[^"]+",-?\d+,-?\d+,"steht"\]/].every((x) => x.test(v)) : !v, v); // prettier-ignore
                 }
                 console.log(`VERKEHR ${JSON.stringify(o.verkehr)}`);
             },
