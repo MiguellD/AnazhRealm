@@ -1,7 +1,7 @@
 {
  "sha": "6aa7a5a6bfd01df56192e66b658681dac67a27a9",
  "geraet": "gtx",
- "zeit": "2026-11-10T13:25:31.670Z",
+ "zeit": "2026-11-10T13:29:28.448Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "haar.K2#1": {
@@ -1981,81 +1981,94 @@
    "bahn": "sitzung",
    "zwilling": "ankunft.K3#1",
    "modus": "session"
+  },
+  "klang.K5#2": {
+   "gruen": false,
+   "zahl": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 8,8 CPU-s · MsMpEng.exe 4,3 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 4,0 CPU-s — 0,71 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container); Σ fremd 24,0 CPU-s in 39,1 s) — kein Urteil, UNGEMESSEN (die Probe sah: Klang-Takt p95 gehen 0.13 · fahrt 0.41 · nacht 0.21 ms · Aussetzer 0 in 34.1 s Wiedergabe (0 s still; verdichtet, Staffel: 10 min) (Exit 0))",
+   "exit": 0,
+   "minuten": 0.64,
+   "grund": "Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 8,8 CPU-s · MsMpEng.exe 4,3 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 4,0 CPU-s — 0,71 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container); Σ fremd 24,0 CPU-s in 39,1 s) — kein Urteil, UNGEMESSEN (die Probe sah: Klang-Takt p95 gehen 0.13 · fahrt 0.41 · nacht 0.21 ms · Aussetzer 0 in 34.1 s Wiedergabe (0 s still; verdichtet, Staffel: 10 min) (Exit 0))",
+   "gpu": "nvidia/pascal",
+   "s": 38.1,
+   "fremd": {
+    "s": 39.1,
+    "takte": 18,
+    "fremdS": 24,
+    "kerne": 0.614,
+    "fensterKerne": 0.706,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      8.78
+     ],
+     [
+      "MsMpEng.exe",
+      4.28
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      3.98
+     ]
+    ],
+    "dienerS": 17.27,
+    "diener": [
+     [
+      "dwm.exe",
+      8.23
+     ],
+     [
+      "System",
+      5.2
+     ]
+    ],
+    "eigenS": 103.67,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-10T13:29:28.448Z",
+   "abdruck": "811932f22285",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-10T13:18:23.583Z",
+  "start": "2026-11-10T13:28:51.043Z",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 7.4,
-  "grundstellungS": [
-   5.4,
-   4.9,
-   0.1,
-   0.1
-  ],
-  "proben": 6,
+  "bootS": 7.1,
+  "grundstellungS": [],
+  "proben": 1,
   "freigaben": [],
   "orte": [
    {
     "ort": "wiese",
-    "vor": "leib.K1#1",
-    "s": 30.2,
-    "takte": 728,
+    "vor": "klang.K5#2",
+    "s": 29.1,
+    "takte": 538,
     "chunks": 81,
     "nach": null
-   },
-   {
-    "ort": "wiese",
-    "vor": "leib.K4#1",
-    "s": 30.2,
-    "takte": 748,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "bauen.K1#2",
-    "s": 19.3,
-    "takte": 876,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "tore.K1#1",
-    "s": 3,
-    "takte": 150,
-    "chunks": 90,
-    "nach": "der Grundstellung"
-   },
-   {
-    "ort": null,
-    "vor": "ankunft.K3#1",
-    "s": 10.6,
-    "takte": 610,
-    "chunks": 98,
-    "nach": "der Grundstellung"
    }
   ],
   "wegeTueren": [],
-  "ciBlicke": 7,
+  "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 7275,
-   "frameP95": 74.98,
-   "taktP95": 58.32,
-   "vramMax": 155.6,
-   "seiten": 7,
+   "bilder": 1044,
+   "frameP95": 58.35,
+   "taktP95": 52.37,
+   "vramMax": 150.8,
+   "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 478,
-   "luecken": 5,
-   "letzteLuecke": "kein Renderer"
+   "zapfen": 67,
+   "luecken": 0,
+   "letzteLuecke": null
   },
-  "fahrtS": 495.9,
-  "minuten": 8.31
+  "fahrtS": 75.1,
+  "minuten": 1.31
  }
 }
