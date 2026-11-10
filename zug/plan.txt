@@ -1,12 +1,11 @@
 # zug/plan.txt — was ansteht (Koordinator schreibt, messplatz-blick zeigt): je Zeile Zustand · Was · Wer/Wo · Ziel
-# Stand 08.11. 20:30 · main 53b2fc7a (z326) · gebucht 221/330
-gelandet z322–z326  Ferne-Heil · Karte L2 4/5 · Geh-Takt · Ankunft-Faden · K6 · Verkehr · Haus-Umriss · Fell · Gang-Frist  —  Zug  —  gezielt messen + buchen
-läuft   z328  w24-rueckfall-ruhe (die ferne Wiese baute nie fertig) · Wald · Verkehrs-Richter (C) · Studio  —  Zug  —  danach gezielte Messung + Buchung
-rot     z327  w24-fahrt-takt: foundry-crossfade-Selbsttest verliert die L1 der Birke  —  Cloud heilt  —  neu BEREIT
-läuft   Strauch (A: alle Arten ≤ 0,22) · Ton der Kronen klären + Merge  —  Cloud  —  z329
-läuft   Heimholer: Laub-Jahr + Prüf-Welt nach z328 mergen  —  Cloud  —  z329/z330
-läuft   w24-wiese-ferne  Ferne der Wiese gegen den fertigen Bau  —  Cloud  —  Bild ≥ vorher
-läuft   w25-ankunft-block (B) · w25-stadt-takt (E) · w25-lod-pop (lod.K5) · w25-ferne-licht (ferne.K1/K4) · w25-haar-albedo (haar.K2)  —  Cloud  —  je Station GRÜN
-läuft   Rückfall-Reste: material.K1, gelaende.K3 (Linsen), schatten.K5 (Bisektion)  —  champion lokal  —  Buchung ohne Rückfall
-danach  gpu-probe „sichtbar“ (OMEN, Fenster) als Opt-in  —  Koordinator  —  der Schöpfer sieht zu
-Regel   keine Voll-Messung · nach jeder Landung nur die beanspruchten Stationen messen und sofort buchen · jede Abgabe binnen 4 h im Zug oder abgelöst
+# Stand 10.11. 23:05 · main 4e2df19b (z373) · gebucht 215/330 · Konto 11 (Koordinator Radeon)
+gelandet zug/dienst  EIN versionierter Zug-Dienst (B3): zug · radeon · buche abgekoppelt über WMI  —  Laptop  —  überlebt den Konto-Wechsel
+läuft   z375  w27-takt-gc + w27-takt-gc-2 (Bauten 7 → 2 je 65 s)  —  Zug-Dienst  —  Radeon misst am neuen Kopf, Buchung folgt
+läuft   wald-saum  vegetation.K1 + ferne.K3 + lod.K4 (Täter im Merge heim3-w20-wald-kosten)  —  GTX 1050  —  +3 zurück
+läuft   dienst-omen, dann der Richter nach der Landung (B2 Stufe 1: Fall → Halbierung → Täter beim Namen)  —  OMEN  —  kein Fall landet unbemerkt
+läuft   Stadt-Grammatik (Breite siedlung: Viertel → Rolle → Bau-Typ → Gegenstand)  —  Champion lokal  —  ≥ 12 Bau-Typen aus ≥ 3 Kulturen im Ego-Lauf
+danach  Breite: Ziel → Plan → Bewegung · Stoff-Gesetz · Zeit und Abnutzung  —  Cloud (Karten liegen beim Schöpfer)  —  je EIN Kriterium der Staffel Breite
+danach  R6 nach Konsum (170 Stationen veraltet)  —  Cloud  —  veraltet nur, was den geänderten Code ausführte
+offen   schatten.K5 · vegetation.K5#2 · material.K1 · mensch.K4 · _horizontHimmel ×1,5 nur GTX  —  nach wald-saum  —  zurück über 224
+Regel   EIN Auftrag je Gerät · Hand-Fahrten gibt es nicht · jede Zahl, die stillsteht, ist ein Alarm · Einstieg je Konto: bash zug/dienst/start.sh
