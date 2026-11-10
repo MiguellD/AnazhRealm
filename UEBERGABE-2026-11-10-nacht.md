@@ -162,3 +162,8 @@ Der Koordinator (Fable) endet hier. Alles Folgende läuft OHNE LLM oder auf opus
 - **w27-ort-pose 8dedeab6:** Code-Check ROT am Fixpunkt `spec/stamm/modul-karte.json` (Zeile 89 ohne das Leerzeichen des Generators). Die GTX 1050 heilt an der Quelle (`node scripts/stamm-umzug.cjs --nach-karte`), der Heil-Patch auf Basis 8dedeab6 steht aus. Zum Anwenden in `ort-pose-landen.sh` und `patch-aus-transkript.cjs` (Scratchpad) Basis, Tree-ID und die Hashes anpassen.
 - **Gebucht bleibt 224/330 am fbbeb318**; main steht bei dcc33615. `nach-landung2.sh` bucht am nächsten Kopf, die Meisterkarte ist nicht neu veröffentlicht.
 - **Ohne Post:** w27-ferne-ton-5 80bcd308 (Probe ROT, gate:luft-tiefe:echt K2-1 Restkontrast 0,02149 > 0,02 bei 35,6 km, K1-2 Farbton 166,33° bei 8 km).
+
+## Nachtrag 03:14 — Heil-Patch ort-pose steht auf origin
+- **w27-ort-pose = 9374df33** (Eltern 8dedeab6, Baum 774c1efb gleich der Meldung der GTX 1050; Text-sha256 ed72d58a…, Patch-sha256 57e080d2…; 1 Datei +1/−1 `spec/stamm/modul-karte.json`; `bump-version.cjs --selftest` am Baum grün). Der Betreff trägt `[gpu-probe: bild:dorf@0.5, bild:stadt@0.5, gate:welt-boot]`.
+- Code-Check und Probe am Kopf sind noch NICHT gelesen. `zug-nie-leer.sh` nimmt den Zweig von selbst, sobald beide GRÜN sind (Wand allein GRÜN: Prüf +330 / Spiel +1156).
+- Werkzeug dafür: `heil-aus-transkript.cjs` im Scratchpad (ein base64-Text, Hash-Prüfung, Siegel-Gesetz).
