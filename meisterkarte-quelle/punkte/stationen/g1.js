@@ -1415,7 +1415,6 @@ function einsturzUrteil(e, rl) {
     const z = (x) => (x === null || x === undefined ? "–" : String(x).replace(".", ","));
     return {
         gruen: !rot.length,
-        mass: [{ wort: "100 wache Körper ms je Takt (Median)", wert: f.wachMedianMs, soll: 1 }, { wort: "der Schlaf ms je Takt (Median)", wert: f.ruhendMedianMs, soll: 0.05 }],
         zahl: "Same " + e.same + ": " + M.map((m) => "ohne " + m.fehlt.join("+") + " → " + (m.koerper || []).length + "/" + m.fallend.length + " Trümmer").join(", ") +
             ", Ruhe " + z(e.ruheS) + " s, 10 min " + z(e.wanderM) + " m · Reload " + (rl && !rl.fehler ? rl.da + "/" + rl.truemmer + ", Lage " + z(rl.lageM) + " m, Drehung " + z(rl.drehGrad) + "° (ohne sie ≥ " + z(rl.ohneDrehungGrad) + "°)" : "–") +
             " · 100 Körper wach: Trümmerfeld " + z(f.wachMedianMs) + " ms (p75 " + z(f.wachP75Ms) + "), Haufen 4 hoch " + z(h.wachMedianMs) + " ms (p75 " + z(h.wachP75Ms) + "), schlafend " + z(f.ruhendMedianMs) + " ms" +
@@ -1717,7 +1716,6 @@ module.exports = [
                 lauf.exit === 0 && !t.fehler && g.length >= alle.length - 1 && doppelt === 0 && ueber === 0 && leer === 0 && langsam.length === 0 && je(1) >= 1 && je(3) >= 1;
             return {
                 gruen,
-                mass: ms.length ? [{ wort: "gefüllt nach ms (der langsamste Graben)", wert: Math.max(...ms), soll: 2000 }] : [],
                 zahl:
                     g.length + " von " + alle.length + " Gräben über das Verb, in " + bilder + " Bildern doppelt " + doppelt + " und über dem Spiegel " +
                     ueber + ", gefüllt nach " + (ms.length ? Math.min(...ms) + "–" + Math.max(...ms) + " ms" : "?") + " (1 m " + je(1) + ", 3 m " + je(3) +
@@ -1775,8 +1773,7 @@ module.exports = [
                     (!sicht || [1, 3].every((a) => g.some((x) => x.abstand === a && (x.bild || []).includes("2s"))));
                 // Ego: je Abstand ein Bild 2 s nach dem Klick von einem freien Stand (die Abnahme des Blicks)
                 const bild = sicht ? ", Bild " + g.filter((x) => (x.bild || []).includes("2s")).map((x) => "s" + x.saat + "/" + x.abstand + " m").join(" ") : "";
-                return { ok, zahl: g.length + "/" + alle.length + " Gräben (1 m " + je(1) + ", 3 m " + je(3) + bild + ")" + (m && m.fehler ? " " + m.fehler : ""),
-                    ms: neu.map((x) => x.gefuelltMs).filter((v) => v != null) };
+                return { ok, zahl: g.length + "/" + alle.length + " Gräben (1 m " + je(1) + ", 3 m " + je(3) + bild + ")" + (m && m.fehler ? " " + m.fehler : "") };
             };
             const [t, e] = [graben(j.third), graben(j.ego, "first")];
             // (b) G6 · G7 — (d) G8, wie die Wand sie urteilt
@@ -1790,10 +1787,8 @@ module.exports = [
             const f = (j.ferne && j.ferne.ring) || {};
             // der Faden je Ring-Punkt wie die Wand (diag-wasser-leben G8: faden === punkte), nicht je Säule (5/21 am 27.10. war die Station)
             const fern = f.punkte >= 3 && f.anders === f.punkte && f.hubM >= 1 && f.faden === f.punkte;
-            const ms = [...t.ms, ...e.ms];
             return {
                 gruen: t.ok && e.ok && b && fern,
-                mass: ms.length ? [{ wort: "gefüllt nach ms (der langsamste Graben, Third und Ego)", wert: Math.max(...ms), soll: 2000 }] : [],
                 zahl:
                     "(a) Third " + t.zahl + " · Ego " + e.zahl + " · (b) stromauf " + auf.map((u) => u.wasser + "/" + u.ueberlauf).join(", ") +
                     " m Wasser/Überlauf über Fluss " + auf.map((u) => u.fluss).join(", ") + ", stromab " + ab.map((u) => u.wasser + "/" + u.fluss).join(", ") +
@@ -3176,8 +3171,6 @@ module.exports = [
                 z.verzugS <= 2;
             return {
                 gruen,
-                mass: [{ wort: "Brand je Bild p95 ms", wert: z.bildMs, soll: 0.5 }, { wort: "Brand am Schirm ms", wert: z.schirmMs, soll: 1 },
-                    { wort: "der Schritt hinter der Uhr s", wert: z.verzugS, soll: 2 }],
                 zahl:
                     "Halt: " + h.brannte + " Zellen brannten, die Front hielt " + h.nass + "× am nassen Gras (ohne die Feuchte des Orts brannten " +
                     m.nassGebrannt + " nasse, sie hielt " + m.wasser + "× am Wasser) · Fels " + h.fels + "× gehalten" +
@@ -3759,3 +3752,32 @@ module.exports.fehlt = [
 ];
 // DIE WELT-PROBE für die Gruppe II (stationen/g2.js: luftwasser.K3, luftwasser.K4): der Lauf, der Grund, der Befehl und der Leser der Zeile
 module.exports.weltProbe = { lauf: weltProbeLauf, grund: weltGrund, befehl: weltBefehl, zeile: weltZeile };
+
+// ─────────── DAS MASS DER ZEIT-STATIONEN (das Gesetz der Fremd-Last, punkte.cjs fremdUrteil; stationen/mass.cjs) ───────────
+// je Zeit-Station ein Feld NEBEN ihrem Urteil, nie im Abdruck: aus derselben Ausgabe die Zahlen, an denen ihr Urteil fällt, gegen ihr Soll
+// der langsamste Graben bis gefüllt (≤ 2 s), je Sicht wie das Urteil
+const grabenMs = (m, sicht) => (m && Array.isArray(m.graeben) ? m.graeben : [])
+    .filter((x) => x.verb === "graben" && (!sicht || x.sicht === sicht) && x.nassEnde > x.nassVor).map((x) => x.gefuelltMs).filter((v) => v != null);
+require("./mass.cjs").massAn(module.exports, {
+    "gelaende.K2#1": (j) => {
+        const ms = grabenMs((j && j.third) || {});
+        return ms.length ? [{ wort: "gefüllt nach ms (der langsamste Graben)", wert: Math.max(...ms), soll: 2000 }] : [];
+    },
+    "gelaende.K2#2": (j) => {
+        if (!j) return [];
+        const ms = [...grabenMs(j.third), ...grabenMs(j.ego, "first")];
+        return ms.length ? [{ wort: "gefüllt nach ms (der langsamste Graben, Third und Ego)", wert: Math.max(...ms), soll: 2000 }] : [];
+    },
+    "stoffe.K2#2": (j, lauf) => {
+        const B = jsonZeile(lauf.stdout, /^BRAND \{/);
+        if (!B || !B.halt || !B.regen || !B.zeit || !B.asche || !B.asche.asche) return [];
+        const z = B.zeit;
+        return [{ wort: "Brand je Bild p95 ms", wert: z.bildMs, soll: 0.5 }, { wort: "Brand am Schirm ms", wert: z.schirmMs, soll: 1 }, { wort: "der Schritt hinter der Uhr s", wert: z.verzugS, soll: 2 }];
+    },
+    "physik.K3#2": (j, lauf) => {
+        const e = weltZeile(j, lauf, "einsturz");
+        if (!e || e.fehler) return [];
+        const f = (e.kosten && e.kosten.feld) || {};
+        return [{ wort: "100 wache Körper ms je Takt (Median)", wert: f.wachMedianMs, soll: 1 }, { wort: "der Schlaf ms je Takt (Median)", wert: f.ruhendMedianMs, soll: 0.05 }];
+    },
+});

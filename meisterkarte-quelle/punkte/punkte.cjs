@@ -55,8 +55,9 @@
 //   DER ZEUGE DER FREMD-LAST urteilt sie: über FREMD_SCHWELLE_KERNE fremden Kernen nach dem GESETZ DER FREMD-LAST (ihr Maß geeicht,
 //   im Band UNGEMESSEN: Fremd-Last: <Name> <x> CPU-s), fremdZeuge · fremdUrteil; false: Bild oder Funktion, sie verträgt parallele
 //   Bahnen und trägt den Bericht nur; je Station Pflicht) · minuten (Deckel = 2 × minuten, mindestens 2 min) · urteil (j, lauf) →
-//   { gruen, zahl, mass? } mit j = JSON aus {AUS} oder null, lauf = { exit, stdout, stderr }; mass (an jeder Zeit-Station, wo sie
-//   zählt): [{ wort, wert, soll, richtung "≤"|"≥" (Vorgabe ≤), fest? }] die Zahlen, an denen das Urteil fiel · pfad: Globs des gemessenen Pfads
+//   { gruen, zahl } mit j = JSON aus {AUS} oder null, lauf = { exit, stdout, stderr } · mass (j, lauf, urteil) → [{ wort, wert, soll,
+//   richtung "≤"|"≥" (Vorgabe ≤), fest? }] die Zahlen, an denen das Urteil fällt, ODER ohneMass (der Grund) — genau eines an jeder
+//   Zeit-Station, an keiner anderen; beide NIE im Abdruck (stationen/mass.cjs, die Tafel am Ende jeder gN.js) · pfad: Globs des gemessenen Pfads
 //   (R6) · quelle: der Staffel-Text wörtlich (Teil der Staffel in src/gN.js) · beide (optional, nur true an Staffel 1 auf
 //   radeon und gtx: die Staffel nennt beide Geräte, die 1 zählt erst, wenn JEDES grün ist — Pflicht, wo die quelle sie nennt) ·
 //   proben (optional): [{ name, stdout | j, gruen }] Roh-Ausgaben des Befehls (stdout) oder seine Rohdatei (j, das JSON an {AUS})
@@ -292,6 +293,13 @@ function pruefeStationen(liste, karte) {
         if (typeof st.zeit !== "boolean") f.push("zeit nicht boolesch (true: das Urteil fällt in ms, die Station fährt allein)");
         if (!(st.minuten > 0)) f.push("minuten fehlt");
         if (typeof st.urteil !== "function") f.push("urteil ist keine Funktion");
+        // DAS MASS (das Gesetz der Fremd-Last, stationen/mass.cjs): jede Zeit-Station trägt genau eines — mass (eine Funktion) oder ohneMass
+        // (der Grund) —, keine andere eines; beide nie im Abdruck
+        const mF = st.mass !== undefined, oF = st.ohneMass !== undefined;
+        if (mF && typeof st.mass !== "function") f.push("mass ist keine Funktion");
+        if (oF && !(typeof st.ohneMass === "string" && st.ohneMass.length >= 8)) f.push("ohneMass ohne Grund");
+        if (st.zeit === true && mF === oF) f.push("eine Zeit-Station trägt genau eines von mass und ohneMass (das Gesetz der Fremd-Last)");
+        if (st.zeit !== true && (mF || oF)) f.push("mass und ohneMass nur an einer Zeit-Station");
         if (!Array.isArray(st.pfad) || !st.pfad.length || st.pfad.some((p) => typeof p !== "string" || !p))
             f.push("pfad leer (R6 könnte nie fallen)");
         if (typeof st.quelle !== "string" || st.quelle.length < 8) f.push("quelle fehlt");
@@ -366,16 +374,31 @@ function pruefeFehlt(fehlt, karte, stationen) {
     }
     return fehler;
 }
-// DAS URTEIL EINER STATION über einen Lauf: { gruen, zahl, mass? } — oder { fehler } beim Namen (es warf, es ist ungültig). Das Maß
-// (`mass`, das Gesetz der Fremd-Last (2)) reist nur, wo das Urteil es nennt: seine Werte gegen ihr Soll, gelesen von fremdUrteil
+// DAS URTEIL EINER STATION über einen Lauf: { gruen, zahl, mass? | massFehler? } — oder { fehler } beim Namen (es warf, es ist ungültig).
+// Das Maß (massDerStation, das Gesetz der Fremd-Last (2)) liest das Feld der Station über denselben Lauf, gelesen von fremdUrteil
 function urteilVon(st, j, lauf) {
     try {
         const u = st.urteil(j, lauf);
         if (!u || typeof u.gruen !== "boolean" || typeof u.zahl !== "string" || !u.zahl) return { fehler: "Urteil ungültig (verlangt { gruen: bool, zahl: Text })" };
-        return { gruen: u.gruen, zahl: u.zahl, ...(Array.isArray(u.mass) ? { mass: massVon(u.mass) } : {}) };
+        return { gruen: u.gruen, zahl: u.zahl, ...massDerStation(st, j, lauf, u) };
     } catch (e) {
         return { fehler: "Urteil warf: " + String((e && e.message) || e).split("\n")[0] };
     }
+}
+// DAS MASS EINER STATION über denselben Lauf (st.mass, das Gesetz der Fremd-Last (2)): ein Feld NEBEN dem Urteil, nie im Abdruck — es
+// ändert nicht, was die Station misst, nur wie die Maschine ihr ROT unter Last liest. Es wirft nie ins Urteil: ein Maß, das wirft, das
+// keine Liste gibt, das schief ist oder unter einem GRÜN reißt (es widerspräche seinem Urteil — die Linse an JEDEM Lauf), zählt nicht
+// und steht beim Namen (`massFehler`); unter Last bleibt ein ROT dann UNGEMESSEN
+function massDerStation(st, j, lauf, u) {
+    if (typeof st.mass !== "function") return {};
+    let m;
+    try {
+        m = st.mass(j, lauf, st.urteil);
+    } catch (e) {
+        return { massFehler: "das Maß warf: " + String((e && e.message) || e).split("\n")[0].slice(0, 160) };
+    }
+    const fehl = massFehl({ gruen: u.gruen, mass: m });
+    return fehl ? { massFehler: fehl } : { mass: massVon(m) };
 }
 // KEIN URTEIL (w4-sitzung-urteil; die Regel des Koordinators mit der Ratsche des Schöpfers — 3ed95dcf GTX: sechs Proben trugen als
 // jüngste Messung ein „ROT“, das kein Urteil über das Spiel war: „kein K8 der Linse (Exit 2)“, „keine Art-Zeile oder kein Kern-Wechsel“,
@@ -430,8 +453,12 @@ function probenUrteil(stationen) {
             // Grund verschweigt („ohne Abnahme (Exit 0)" über einem geurteilten Schuss, siedlung.K4#2), ist eine falsche Probe
             else if (p.zahl && !p.zahl.test(String(u.zahl || "")))
                 falsch.push(schluessel(st) + " " + p.name + ": die Zahl nennt nicht " + p.zahl + " (" + String(u.zahl || "").slice(-160) + ")");
-            // DAS MASS (das Gesetz der Fremd-Last, fremdUrteil): ein Urteil, das sein Maß nennt, nennt es wohlgeformt und im Einklang mit sich
-            else if (u.mass !== undefined && massFehl(u)) falsch.push(schluessel(st) + " " + p.name + ": " + massFehl(u));
+            // DAS MASS (das Gesetz der Fremd-Last, massDerStation): das Feld der Station über dieselbe Probe — wohlgeformt, im Einklang mit
+            // ihrem Urteil (nie ein reißendes Maß unter einem GRÜN), nie ein Wurf
+            else if (typeof st.mass === "function") {
+                const m = massDerStation(st, p.j || null, { exit: 0, stdout: p.stdout || "", stderr: "" }, u);
+                if (m.massFehler) falsch.push(schluessel(st) + " " + p.name + ": " + m.massFehler);
+            }
         }
     return falsch;
 }
@@ -944,18 +971,19 @@ const istZeit = (sts) => sts.some((st) => st.zeit === true);
 //       (HP: AppHelperCap und seine Insights-Geschwister, das OMEN Command Center) — ist Grund-Last wie FREMD_DIENER: das Profi-Band
 //       muss auf dem Standardgerät MIT ihr halten. Sie steht im Bericht beim Namen (`geraetS`, `geraet`), zählt nie in `fensterKerne`.
 //       Fremd bleibt, was ein Spieler nicht hätte: Claude.exe, fremde node/chrome, git, bash, CI-Runner, Compiler.
-//   (2) ROT UNTER LAST WIRD GEMESSEN, NICHT VERWORFEN (fremdUrteil): jede Zeit-Station nennt ihr Maß (`mass`: [{ wort, wert, soll,
-//       richtung "≤"|"≥", fest? }] im Ergebnis ihres Urteils, urteilVon trägt es); unter F fremden Kernen (über der Schwelle) teilt die
+//   (2) ROT UNTER LAST WIRD GEMESSEN, NICHT VERWORFEN (fremdUrteil): jede Zeit-Station nennt ihr Maß (`mass(j, lauf, urteil)` →
+//       [{ wort, wert, soll, richtung "≤"|"≥", fest? }], ein Feld NEBEN ihrem Urteil — nie im Abdruck: es ändert nicht, was die Station
+//       misst, nur wie die Maschine ihr ROT unter Last liest; massDerStation liest es über denselben Lauf); unter F fremden Kernen teilt die
 //       Eichung jeden Wert durch k = 1 + effekt · F (ein „≥“-Maß mal k; ein `fest`-Maß — Befehle, Dreiecke, Kopien, Minuten am Stück:
 //       die Last hebt sie nie — bleibt). Reißt ein Maß auch geeicht sein Soll, ist das ROT ein Urteil (die Last erklärt es nicht);
 //       reißt es nur ungeeicht, ist es UNGEMESSEN beim Namen mit BEIDEN Zahlen (das Band der Last); ein ROT ohne reißendes Maß (ein
 //       Abbruch, ein Bild, das unter Last nicht ganz wurde) bleibt UNGEMESSEN wie bisher. GRÜN trotz Last zählt wie seit dem 09.11.
 //       DAS MASS trägt jede Zeit-Station, deren Urteil an einer Dauer fällt (ms, s, p95 je Bild, Takt, Latenz, Belegung) oder an einem
-//       festen Bestand (Befehle, Dreiecke, Kopien, Minuten am Stück); ohne Maß bleiben die acht, deren Urteil ein Bild-, Zähl- oder
+//       festen Bestand (Befehle, Dreiecke, Kopien, Minuten am Stück); ohne Maß (`ohneMass`: der Grund) bleiben die acht, deren Urteil ein Bild-, Zähl- oder
 //       Korrelations-Maß ohne geeichtes k spricht — ankunft.K2#1 (Lücke), klang.K2#1 (r), licht.K2#1 (Verhältnis), licht.K5#1 (EV je s),
 //       lod.K2#1 (Pop-Pixel je s), speicher.K4#2 (bild-diff), streaming.K1#1 (Lücken-Bilder), streaming.K2#1 (Anteil fertig): ihr ROT
 //       unter Last bleibt UNGEMESSEN beim Namen. Den Einklang jedes Maßes mit seinem Urteil (nie GRÜN über einem reißenden Maß) prüft
-//       probenUrteil an jeder Probe (massFehl).
+//       massDerStation an jedem Lauf und probenUrteil an jeder Probe (massFehl); dass jede Zeit-Station genau eines trägt, FORMAT.
 //   (3) DIE OMEN (GTX 1060, i7-8750H, 12 Kerne) urteilt bis zu ihrer eigenen Messung mit der Eichung der Radeon als Näherung und sagt es
 //       („geeicht nach Radeon“); die Vorschrift ihrer Messung steht im Eintrag (`vorschrift`, fremdlastCli druckt sie). Gemessen 10.11. dort
 //       im Leerlauf (`fremdlast --sek 20`, der Koordinator): mit AppHelperCap 2,74 Kerne im Mittel, 3,54 im dichtesten Fenster; nach dem Halt
@@ -1295,7 +1323,9 @@ function fremdUrteil(st, e, b) {
     const reisst = ms.filter((m) => massReisst(m)), hart = reisst.filter((m) => massReisst(m, geeicht(m)));
     if (hart.length) return { ...mit, grund: (e.grund ? e.grund + " · " : "") + "ROT trotz " + was + " — " + eichText + ": " + hart.slice(0, 3).map(nenn).join(" · ") };
     const warum = !k ? "" : reisst.length ? " — im Band der Last, " + eichText + ": " + reisst.slice(0, 3).map(nenn).join(" · ")
-        : ms.length ? " — kein Maß reißt (" + ms.length + " gemessen): das ROT liegt in einer Bedingung ohne Zahl" : " — die Station nennt kein Maß";
+        : ms.length ? " — kein Maß reißt (" + ms.length + " gemessen): das ROT liegt in einer Bedingung ohne Zahl"
+            : e.massFehler ? " — das Maß fehlt: " + e.massFehler : st.ohneMass ? " — ohne Maß: " + st.ohneMass
+                : Array.isArray(e.mass) ? " — kein Maß gemessen (die Probe trug keine Zahl)" : " — die Station nennt kein Maß";
     const grund = (ab ? e.grund + " · " : "") + was + warum + " — kein Urteil, UNGEMESSEN (die Probe sah: " + String(e.zahl).slice(0, 240) + ")";
     return { ...mit, gruen: false, ungemessen: true, grund, zahl: grund };
 }
@@ -1562,7 +1592,7 @@ function fahreGruppe(sts, ctx) {
                 if (u.fehler) return r(u.fehler);
                 if (absturz) return r(absturz + " · " + u.zahl);
                 if (wand) return { gruen: false, zahl: "Wand GPU: " + wand + " · " + u.zahl, exit: code, minuten: m, grund: "Wand GPU: " + wand, ...gz };
-                return { gruen: u.gruen, zahl: u.zahl, exit: code, minuten: m, ...(u.gruen ? {} : { grund: "ROT: " + u.zahl }), ...(u.mass ? { mass: u.mass } : {}), ...gz };
+                return { gruen: u.gruen, zahl: u.zahl, exit: code, minuten: m, ...(u.gruen ? {} : { grund: "ROT: " + u.zahl }), ...(u.mass ? { mass: u.mass } : {}), ...(u.massFehler ? { massFehler: u.massFehler } : {}), ...gz };
             }));
         };
         starte();
@@ -4042,6 +4072,19 @@ async function selbsttest(o = {}) {
     deckelTafel = {}; // die echte Deckel-Tafel prüft FORMAT (ladeGeprueft); die erfundenen Stationen danach fahren ohne sie
     pruef("FORMAT echte Stationen gegen src/gN.js", echt.fehler.length === 0 && echt.stationen.length > 0,
         echt.stationen.length + " Stationen, " + echt.fehlt.length + " fehlt, " + echt.fehler.length + " Fehler" + (echt.fehler.length ? ": " + echt.fehler.join(" | ") : ""));
+    // (1d) DER ABDRUCK TRÄGT, WAS DIE MESSUNG ERZEUGT (das Gesetz der Fremd-Last, Koordinator 10.11.: „nie, wie die Maschine ihr Ergebnis
+    // unter Last liest“): das Maß einer Zeit-Station (mass, ohneMass) ändert nicht, was sie misst — ihr Abdruck bleibt Byte für Byte, mit,
+    // ohne und mit anderem Maß; ein geänderter Befehl der Probe und ein geändertes Urteil machen die Messung weiterhin alt (die Mutanten)
+    {
+        const st = echt.stationen.find((x) => schluessel(x) === "profiband.K1#1"), h = hilfeText(), g = "gtx", ohne = { ...st };
+        delete ohne.mass;
+        const ab = abdruck(st, h, g);
+        const gleich = [abdruck(ohne, h, g), abdruck({ ...st, mass: () => [{ wort: "x", wert: 1, soll: 0 }] }, h, g), abdruck({ ...ohne, ohneMass: "ein Grund ohne Zahl" }, h, g)];
+        const befehl = abdruck({ ...st, probe: { ...st.probe, befehl: [...st.probe.befehl, "--mutante"] } }, h, g);
+        const urteil = abdruck({ ...st, urteil: (j, lauf) => ({ ...st.urteil(j, lauf), gruen: true }) }, h, g);
+        pruef("ABDRUCK ohne Maß: profiband.K1#1 mit, ohne und mit anderem Maß Byte für Byte derselbe; ein geänderter Befehl der Probe und ein geändertes Urteil machen die Messung alt (Mutanten)",
+            typeof st.mass === "function" && gleich.every((x) => x === ab) && befehl !== ab && urteil !== ab, JSON.stringify([ab, gleich, befehl, urteil]));
+    }
     // (1a) DIE PROBEN: jede Station urteilt ihre Roh-Ausgaben (die Mutanten der Soll-Tafel ROT), eine falsche Probe beim Namen
     {
         const n = echt.stationen.reduce((s, st) => s + (st.proben || []).length, 0);
@@ -4053,13 +4096,15 @@ async function selbsttest(o = {}) {
         const stumm = probenUrteil([{ kriterium: "a.K1", staffel: 1, urteil: (j, l) => ({ gruen: false, zahl: /GRUND/.test(l.stdout) ? "ROT: GRUND" : "ohne Abnahme" }),
             proben: [{ name: "nennt", stdout: "GRUND", gruen: false, zahl: /GRUND$/ }, { name: "schweigt", stdout: "-", gruen: false, zahl: /GRUND$/ }] }]);
         pruef("PROBEN eine Zahl, die ihren Grund verschweigt, beim Namen", stumm.join() === "a.K1#1 schweigt: die Zahl nennt nicht /GRUND$/ (ohne Abnahme)", stumm.join());
-        // DAS MASS (das Gesetz der Fremd-Last): ein Maß, das unter einem GRÜN reißt (die Mutante: das Soll falsch herum), und ein schiefes
-        // Maß beim Namen; ein Maß, das reißt, unter einem ROT und ein ungemessener Wert (NaN) still
-        const mU = (mass, gruen) => ({ kriterium: "a.K1", staffel: 1, urteil: () => ({ gruen, zahl: "z", mass }), proben: [{ name: "Roh", stdout: "-", gruen }] });
+        // DAS MASS (das Gesetz der Fremd-Last, das Feld der Station neben ihrem Urteil): ein Maß, das unter einem GRÜN reißt (die Mutante: das
+        // Soll falsch herum), ein schiefes und eines, das wirft, beim Namen; ein Maß, das reißt, unter einem ROT und ein ungemessener Wert (NaN) still
+        const mU = (mass, gruen) => ({ kriterium: "a.K1", staffel: 1, urteil: () => ({ gruen, zahl: "z" }), mass: typeof mass === "function" ? mass : () => mass, proben: [{ name: "Roh", stdout: "-", gruen }] });
         const luegtMass = probenUrteil([mU([{ wort: "Bild-p95 ms", wert: 30, soll: 33, richtung: "≥" }], true), mU([{ wort: "Bild-p95", wert: 30, soll: "33" }], false),
-            mU([{ wort: "Bild-p95 ms", wert: 40, soll: 33 }, { wort: "VRAM", wert: NaN, soll: 118, fest: true }], false), mU([{ wort: "fps", wert: NaN, soll: 30, richtung: "≥" }], true)]);
-        pruef("PROBEN ein Maß, das unter einem GRÜN reißt, und ein schiefes Maß beim Namen; ein reißendes Maß unter ROT und ein ungemessener Wert still",
-            luegtMass.length === 2 && luegtMass[0] === "a.K1#1 Roh: GRÜN mit reißendem Maß Bild-p95 ms 30 (Soll ≥ 33)" && /^a\.K1#1 Roh: das Maß ist schief: \{"wort":"Bild-p95"/.test(luegtMass[1]),
+            mU([{ wort: "Bild-p95 ms", wert: 40, soll: 33 }, { wort: "VRAM", wert: NaN, soll: 118, fest: true }], false), mU([{ wort: "fps", wert: NaN, soll: 30, richtung: "≥" }], true),
+            mU(() => { throw new Error("die Zeile fehlt"); }, false)]);
+        pruef("PROBEN ein Maß, das unter einem GRÜN reißt, ein schiefes und eines, das wirft, beim Namen; ein reißendes Maß unter ROT und ein ungemessener Wert still",
+            luegtMass.length === 3 && luegtMass[0] === "a.K1#1 Roh: GRÜN mit reißendem Maß Bild-p95 ms 30 (Soll ≥ 33)" && /^a\.K1#1 Roh: das Maß ist schief: \{"wort":"Bild-p95"/.test(luegtMass[1]) &&
+                luegtMass[2] === "a.K1#1 Roh: das Maß warf: die Zeile fehlt",
             luegtMass.join(" | "));
     }
     // (1c) DER LEERE LAUF (w4-sitzung-urteil): jede echte Station urteilt über ihn ROT — die Voraussetzung von keinUrteil; die Mutanten
@@ -4126,7 +4171,16 @@ async function selbsttest(o = {}) {
         pruef("FORMAT-ROT fehlt ohne Grund · fehlt zugleich fahrbar", fl.length === 2 && /grund fehlt/.test(fl[0]) && /zugleich fahrbare/.test(fl[1]), fl.join(" | "));
         // `beide`: eine Staffel 1, deren Text beide Geräte nennt, trägt es; nie an Staffel 2 oder an einem Gerät
         const pb = { ...st0, kriterium: "profiband.K1", geraet: ["radeon", "gtx"], gpu: true, zeit: true, befehl: undefined, probe: { befehl: ["node", "-e", "0"], sek: 30 },
-            quelle: "1 = Frame p95 ≤ 33 ms (der Boden von PFLICHT E) in jeder Bewegungszelle an beiden Geräten" };
+            quelle: "1 = Frame p95 ≤ 33 ms (der Boden von PFLICHT E) in jeder Bewegungszelle an beiden Geräten", mass: () => [] };
+        // DAS MASS (das Gesetz der Fremd-Last): eine Zeit-Station ohne mass und ohneMass, eine mit beiden, ein ohneMass ohne Grund, ein mass,
+        // das keine Funktion ist, und ein Maß an einer Bild-Station — je ROT beim Namen; ohneMass mit Grund still
+        const fm = (mut, basis = { ...pb, beide: true }) => pruefeStationen([{ ...basis, ...mut }], karte).fehler.join(" | ");
+        const fmr = [fm({ mass: undefined }), fm({ ohneMass: "das Bild-Maß ohne k" }), fm({ mass: undefined, ohneMass: "kurz" }), fm({ mass: 3 }), fm({ mass: () => [] }, st0),
+            fm({ mass: undefined, ohneMass: "das Bild-Maß ohne k" })];
+        pruef("FORMAT-ROT das Maß: eine Zeit-Station ohne mass und ohneMass · mit beiden · ohneMass ohne Grund · mass keine Funktion · ein Maß an einer Bild-Station; ohneMass mit Grund still",
+            fmr.slice(0, 2).every((x) => /trägt genau eines von mass und ohneMass/.test(x)) && /ohneMass ohne Grund/.test(fmr[2]) && /mass ist keine Funktion/.test(fmr[3]) &&
+                /mass und ohneMass nur an einer Zeit-Station/.test(fmr[4]) && fmr[5] === "",
+            fmr.join(" || "));
         const bf = [pb, { ...pb, beide: true, geraet: "radeon" }, { ...st0, staffel: 2, beide: true, geraet: ["radeon", "gtx"], gpu: true, quelle: "2 = überall, dazu endet jeder Lauf in See oder Meer" }]
             .map((s) => pruefeStationen([s, ...(s.staffel === 2 ? [st0] : [])], karte).fehler.join(" | "));
         pruef("FORMAT-ROT die Staffel 1 nennt beide Geräte ohne beide · beide an einem Gerät · beide an Staffel 2",
@@ -4851,7 +4905,7 @@ async function selbsttest(o = {}) {
         // einer ROTEN Zeit-Station → sie urteilt; die App (Claude.exe 1,5 Kerne) neben einer Station, die ihr Maß nennt (n gegen 33): knapp
         // darüber UNGEMESSEN mit beiden Zahlen, weit darüber ROT, darunter GRÜN — das Maß reist vom Urteil durch urteilVon in den Eintrag
         const GERAET = [[81, "AppHelperCap.exe", "AppHelperCap.exe", 2], [82, "MsMpEng.exe", "MsMpEng.exe", 1]], APP = [[83, "Claude.exe", "Claude.exe --type=gpu-process", 1.5]];
-        const massSt = (n) => ({ ...zeitSt, urteil: (j) => ({ gruen: j.n <= 33, zahl: "n " + j.n, mass: [{ wort: "n", wert: j.n, soll: 33 }] }),
+        const massSt = (n) => ({ ...zeitSt, urteil: (j) => ({ gruen: j.n <= 33, zahl: "n " + j.n }), mass: (j) => [{ wort: "n", wert: j.n, soll: 33 }],
             befehl: [...zeitSt.befehl.slice(0, 4), String(n)] });
         const geraetRot = await fahreStation(rotSt, mitZeuge("fremd-geraet", attrappe(0, GERAET)));
         const appKnapp = await fahreStation(massSt(35), mitZeuge("fremd-app-knapp", attrappe(0, APP)));

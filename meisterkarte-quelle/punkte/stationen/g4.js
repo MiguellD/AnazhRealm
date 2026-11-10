@@ -794,7 +794,6 @@ const alle = [
                 n = hoch("n");
             return {
                 gruen: karte && zeit.length === 8 && bleibt === 8 && ab === 8,
-                mass: s.flatMap((z) => [{ wort: z.id + " Griff → Bild p95 ms", wert: z.u, soll: 200 }, { wort: z.id + " Neubau p95 ms", wert: z.n, soll: 1000 }]),
                 zahl:
                     (karte ? "" : "die Zeit ungeurteilt (kein Hardware-Adapter) · ") +
                     "p95 Griff → Bild unter der Schranke in " + zeit.length + "/8 (Gesetz-Wert höchstens " + u.v + " ms " + u.id +
@@ -916,7 +915,6 @@ const alle = [
             const klang = orte.length > 0 && imQuantum.length === orte.length;
             return {
                 gruen: !ohne.length && klang,
-                mass: orte.map((k, i) => ({ wort: "Klang Ort " + (i + 1) + " Audio-Graph ms", wert: +k.audio, soll: +k.audioDeckel })),
                 zahl:
                     "Dreiecke, Befehle, VRAM und GPU-ms ±5 % in " + (mesh.length - ohne.length) + "/" + mesh.length + " Mesh-Studios (" +
                     stufen + " Stufen), Klang " + imQuantum.length + "/" + orte.length + " Orte im Quantum" +
@@ -1388,7 +1386,6 @@ const alle = [
             const ms = (x) => (Number.isFinite(x) ? (x / 1000).toFixed(2) + " s" : "∞");
             return {
                 gruen: wort && n > 0 && s.length === n && pos.length > 0 && p95 <= 6000,
-                mass: [{ wort: "p95 Satz → Welt ms", wert: p95, soll: 6000 }],
                 zahl:
                     "p95 Satz → Welt " + ms(p95) + " über " + pos.length + " Positiv-Sätze (Soll lokal ≤ 6 s; ohne Wirkung " + pos.filter((x) => !Number.isFinite(x)).length +
                     ") · " + s.length + "/" + n + " Sätze gegen qwen3:4b-instruct @ 127.0.0.1:11434" + (wort ? "" : ", keine WORT-Zeile des echten Anbieters (Exit " + lauf.exit + ")"),
@@ -1659,7 +1656,7 @@ const alle = [
             if (!j || j.gestartet !== true || j.bild !== true || j.echt !== true || !j.wege)
                 return { gruen: false, zahl: "keine Ausgabe des Bild-Wegs auf der Karte (Exit " + lauf.exit + ")" };
             const p95 = (a) => (a.length ? [...a].sort((x, y) => x - y)[Math.ceil(0.95 * a.length) - 1] : null);
-            const rot = [], mass = [];
+            const rot = [];
             let n = 0, imBild = 0;
             const jeWeg = WEG_WEGE.map((weg) => {
                 const jeKlasse = { kalt: [], warm: [] };
@@ -1678,13 +1675,11 @@ const alle = [
                             jeKlasse[e.kalt ? "kalt" : "warm"].push(ms);
                         }
                 const k = p95(jeKlasse.kalt), w = p95(jeKlasse.warm);
-                for (const [art, v] of [["kalt", k], ["warm", w]]) if (Number.isFinite(v)) mass.push({ wort: weg + " p95 bis zum Bild " + art + " ms", wert: v, soll: 1000 });
                 if (!(k <= 1000) || !(w <= 1000)) rot.push(weg + " p95 kalt " + k + " · warm " + w + " ms");
                 return weg + " kalt " + k + " · warm " + w + " ms (" + jeKlasse.kalt.length + "+" + jeKlasse.warm.length + ")";
             });
             return {
                 gruen: n === BILD_FAELLE.length && imBild === n && !rot.length,
-                mass,
                 zahl: imBild + "/" + n + " Werke in L0 im Bild (Bau-Hash = L0-Bau, ≤ 3 Eingaben) · p95 bis zum Bild " + jeWeg.join(" · ") +
                     (rot.length ? " · ROT: " + rot.slice(0, 6).join(" · ") + (rot.length > 6 ? " … (" + rot.length + ")" : "") : ""),
             };
@@ -2270,3 +2265,62 @@ module.exports.fehlt = alle.filter((st) => st.befehl === null).concat([
     { kriterium: "pipeline.K5", staffel: 2, befehl: null, grund: "nicht gebaut (p3-stationen-g456): „kalt bereit ≤ 300 ms an beiden Geräten“ verlangt die Bereitschaft des Foundry-Fadens am Kalt-Boot auf jeder Karte — die Probe der Ankunft in der Sitzung nennt sie nicht, ein eigener Lauf hat in der Fahrt keinen Platz (Radeon 1 790 / 1 800 s)" },
     { kriterium: "ki.K5", staffel: 2, befehl: null, grund: "nicht gebaut (p3-stationen-g456): Prompt ≤ 4 000 Tokens (der Prompt ist nie gezählt: kein Zähler am Chat-Pfad), 0 Hänger > 100 ms während die KI-Werke bauen (`werkbank haenger` in derselben Sitzung — die Korpus-Linse läuft am Null-Renderer), ≤ 0,002 $ je Satz (kein Preis am lokalen Modell), beide Geräte (das Modell läuft nur am Laptop)" },
 ]);
+
+// ─────────── DAS MASS DER ZEIT-STATIONEN (das Gesetz der Fremd-Last, punkte.cjs fremdUrteil; stationen/mass.cjs) ───────────
+// je Zeit-Station ein Feld NEBEN ihrem Urteil, nie im Abdruck: aus derselben Ausgabe die Zahlen, an denen ihr Urteil fällt, gegen ihr Soll
+require("./mass.cjs").massAn(module.exports, {
+    // je Studio Griff → Bild und Neubau (p95)
+    "studios.K2#2": (j, lauf) => {
+        const je = {};
+        for (const l of zeilen(String(lauf.stdout || ""))) {
+            const t = /^\s{2}⏱ (\S+)\s+Griff → Bild p95 Gesetz-Wert (\S+) ms · Neubau (\S+) ms · (\d+) Griffe mit Bild · Neuladen (\d+)\/(\d+)/.exec(l);
+            if (t && SEITEN[t[1]]) je[t[1]] = { u: +t[2], n: +t[3] };
+        }
+        return Object.keys(SEITEN).flatMap((id) => [{ wort: id + " Griff → Bild p95 ms", wert: (je[id] || {}).u, soll: 200 }, { wort: id + " Neubau p95 ms", wert: (je[id] || {}).n, soll: 1000 }]);
+    },
+    // der Audio-Graph je Ort gegen sein Quantum
+    "studios.K3#2": (j, lauf) => {
+        const je = {};
+        for (const l of zeilen(lauf.stdout)) {
+            const m = /^\s{2}(\S+)\s+\d+ Anfragen · .* · Kosten (\[.*\])\s*$/.exec(l);
+            if (m && SEITEN[m[1]]) je[m[1]] = JSON.parse(m[2]);
+        }
+        return (je.klang || []).map((k, i) => ({ wort: "Klang Ort " + (i + 1) + " Audio-Graph ms", wert: +k.audio, soll: +k.audioDeckel }));
+    },
+    // Satz → Welt, das p95 über die Positiv-Sätze
+    "ki.K5#1": (j, lauf) => {
+        const out = String(lauf.stdout || ""), anb = anbieterVon(out);
+        if (!anb || anb.traegt !== true) return [];
+        let neg = null;
+        try {
+            neg = JSON.parse((/^NEGATIV (.*)$/m.exec(out) || [])[1]);
+        } catch (_e) {
+            neg = null;
+        }
+        if (!neg) return [];
+        const pos = [];
+        for (const l of zeilen(out)) {
+            const m = /^\s*(?:✓|✗)(?: ungültig)?(?: BRUCH)? „(.+?)“ (\d+) ms → Welt (—|\d+ ms)/.exec(l);
+            if (m && !neg.includes(m[1])) pos.push(m[3] === "—" ? Infinity : parseInt(m[3], 10));
+        }
+        pos.sort((a, b) => a - b);
+        return [{ wort: "p95 Satz → Welt ms", wert: pos.length ? pos[Math.ceil(0.95 * pos.length) - 1] : Infinity, soll: 6000 }];
+    },
+    // je Weg das p95 bis zum Bild, kalt und warm, über die Werke, die das Urteil zählt
+    "bauen.K1#2": (j) => {
+        if (!j || j.gestartet !== true || j.bild !== true || j.echt !== true || !j.wege) return [];
+        const p95 = (a) => (a.length ? [...a].sort((x, y) => x - y)[Math.ceil(0.95 * a.length) - 1] : null);
+        return WEG_WEGE.flatMap((weg) => {
+            const jeKlasse = { kalt: [], warm: [] };
+            for (const [w, lage, werk, sicht] of BILD_FAELLE)
+                if (w === weg) {
+                    const e = ((((j.wege[lage] || {})[weg] || {})[werk] || {})[sicht]) || null;
+                    const ms = e && Array.isArray(e.zeiten) ? e.zeiten[4] : null;
+                    if (e && !e.fehler && e.steht === 1 && !(e.unecht > 0) && e.eingaben > 0 && e.eingaben <= 3 && Number.isFinite(ms) && e.bau && e.bau === e.soll)
+                        jeKlasse[e.kalt ? "kalt" : "warm"].push(ms);
+                }
+            return [["kalt", p95(jeKlasse.kalt)], ["warm", p95(jeKlasse.warm)]].filter(([, v]) => Number.isFinite(v))
+                .map(([art, v]) => ({ wort: weg + " p95 bis zum Bild " + art + " ms", wert: v, soll: 1000 }));
+        });
+    },
+});

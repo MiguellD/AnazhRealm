@@ -5373,7 +5373,6 @@ const stationen = [
                 return { gruen: false, zahl: "ohne Messung der Prüfbühne" + (j && j.fehler ? ": " + j.fehler : "") };
             return {
                 gruen: j.msMedian <= 0.3 && j.imBildMin >= 100,
-                mass: [{ wort: "Schwarm-Takt Median ms", wert: j.msMedian, soll: 0.3 }],
                 zahl:
                     "Schwarm-Takt " + j.msMedian + " ms je Takt (Median, p95 " + j.msP95 + ") bei " + j.imBildMin +
                     " Gliedern im Blick in jeder Reihe, " + j.paare + " Paare der Separation, Auge " + (j.pose && j.pose.abstand) +
@@ -5398,7 +5397,6 @@ const stationen = [
             if (!j || j.fehler || !v) return { gruen: false, zahl: "ohne gezählten Frame" + (j && j.fehler ? ": " + j.fehler : "") };
             return {
                 gruen: v.cmd >= 1 && v.cmd <= 10 && v.inst >= 100 * j.teileJe && j.imBildMin >= 100,
-                mass: [{ wort: "Befehle der Klasse vogel", wert: v.cmd, soll: 10, fest: true }],
                 zahl:
                     "Klasse vogel " + v.cmd + " Befehle " + JSON.stringify(v.je) + ", " + v.inst + " Instanzen (" + j.instanzen +
                     " des Schwarms, " + j.teileJe + " Teile je Glied), " + j.imBildMin + " Glieder im Blick je Reihe (Soll ≤ 10 Befehle)",
@@ -5457,10 +5455,8 @@ const stationen = [
         const kopf = z.zuS.every((t) => t !== null && t <= 0.5) && z.amEreignis >= 30 && z.imBild.every((x) => x === true);
         const ohne = z.beruehrt.every((n) => n === 0) && Math.min(...d) > 0.7;
         const erinnert = z.furcht > 0 && d[3] - d[1] >= 0.3 && Math.abs(d[2] - d[1]) <= 0.15;
-        const zu = z.zuS.filter((t) => t !== null);
         return {
             gruen: kopf && ohne && erinnert,
-            mass: zu.length ? [{ wort: "Kopf-Zuwendung s (die langsamste)", wert: Math.max(...zu), soll: 0.5 }] : [],
             zahl:
                 z.wer + ": Kopf-Zuwendung ab 3 m " + z.zuS.join(" / ") + " s (Vorbeigang ab " + z.amEreignis +
                 "°, als Leib im Bild " + z.imBild.join("/") + ") · Berührung " + z.beruehrt.join("/") + " Takte, kleinster Abstand " +
@@ -5659,7 +5655,6 @@ const stationen = [
             const fehlt = Object.keys(rot).filter((k) => rot[k]);
             return {
                 gruen: !fehlt.length,
-                mass: [{ wort: "Takt je 50 Bewohner ms", wert: takt50, soll: 1 }, { wort: "Dreiecke der 50", wert: dreiecke, soll: 150000, fest: true }],
                 zahl:
                     B.length + " Bewohner aus " + new Set(B.map((x) => x.seed)).size + " Samen, " + T.length + " Typen · Gestalt-Distanz min " + r3(min) + " px (" + paar + "; " + gleich + " Paare unter 1 px) · Höhe " +
                     r3(hMin) + "–" + r3(hMax) + " m um " + r3(mitte) + " · Gesicht " + (aus.length ? "außerhalb: " + aus.slice(0, 3).join(", ") : "50 von 50 in MENSCH_SOLL") + " · Leib/Wurf je Typ " +
@@ -6002,3 +5997,27 @@ const sprungVon = (z) => (z.wege && z.wege.sprungN !== undefined ? z.wege.sprung
 
 module.exports = stationen;
 module.exports.fehlt = fehlt;
+
+// ─────────── DAS MASS DER ZEIT-STATIONEN (das Gesetz der Fremd-Last, punkte.cjs fremdUrteil; stationen/mass.cjs) ───────────
+// je Zeit-Station ein Feld NEBEN ihrem Urteil, nie im Abdruck: aus derselben Ausgabe die Zahlen, an denen ihr Urteil fällt, gegen ihr Soll
+require("./mass.cjs").massAn(module.exports, {
+    "luftwasser.K5#1": (j) => (!j || j.fehler || !(j.msMedian >= 0) ? [] : [{ wort: "Schwarm-Takt Median ms", wert: j.msMedian, soll: 0.3 }]),
+    // die Befehle der Klasse vogel hebt die Last nie: fest
+    "luftwasser.K5#2": (j) => {
+        const v = j && j.vogel;
+        return !j || j.fehler || !v ? [] : [{ wort: "Befehle der Klasse vogel", wert: v.cmd, soll: 10, fest: true }];
+    },
+    "mensch.K5#1": (j, lauf) => {
+        const z = probeZeile(lauf.stdout, "begegnung");
+        if (!z || z.fehler || ["zuS", "imBild", "dMin", "beruehrt"].some((k) => !Array.isArray(z[k]) || z[k].length !== 4)) return [];
+        const zu = z.zuS.filter((t) => t !== null);
+        return zu.length ? [{ wort: "Kopf-Zuwendung s (die langsamste)", wert: Math.max(...zu), soll: 0.5 }] : [];
+    },
+    // der Takt je 50 Bewohner und die Dreiecke der 50 (fest: die Vorlagen ihrer Typen) wie das Urteil sie rechnet
+    "mensch.K4#2": (j, lauf) => {
+        const z = probeZeile(lauf.stdout, "bewohner"), g = jsonZeile(lauf.stdout, /^GESICHT /), m = z && z.stadt && z.stadt.menge;
+        if (!m || !g) return [];
+        const T = m.typ, dreiecke = m.je.reduce((a, [, t, , , , nah]) => a + T[t].dreiecke[1] * m.kaskaden + (nah ? 0 : T[t].dreiecke[0]), 0);
+        return [{ wort: "Takt je 50 Bewohner ms", wert: (m.takt[0] / z.stadt.ring.gesamt) * 50, soll: 1 }, { wort: "Dreiecke der 50", wert: dreiecke, soll: 150000, fest: true }];
+    },
+});
