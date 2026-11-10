@@ -13,3 +13,4 @@
 2026-11-10 14:50 belegung START geraet=gtx1050 BELEGUNG im Ego-Lauf dorf (Pflicht außerhalb des Takts p95 2,6–3,1 ms > 1), Täter rueckruf beim Namen, Schnitt an der Wurzel, Δ relativ per ABAB (Herrscher der GTX 1050)
 2026-11-10 15:52 belegung-boden START geraet=gtx1050 Browser-Boden je Gerät in derselben Sitzung messen statt fester 0,27 ms (Linse urteilt den Überschuss über dem Boden), Mutanten auf jedem Gerät (Herrscher der GTX 1050)
 2026-11-10 16:40 takt-gc START geraet=gtx1050 Müllabfuhr neben dem Takt beim Namen (Allokationen im Takt-Pfad), Schnitt an der Wurzel, Δ per ABAB mit der Boden-Linse (Herrscher der GTX 1050)
+2026-11-10 18:27 takt-gc-2 START geraet=gtx1050 Basis w27-takt-gc eab8e8b3: die übrigen 7 Knoten-Bauten je 65 s (mit Knochen-Raster) beim Namen, Schnitt an der Wurzel (kein eigener Graph je Leib für Mensch-Stoffe gleicher Felder), ABAB je frischer Boot; Ziel Bauten 7 → ≤ 1 je 65 s, Frame p95 ≤ 17 ms (Herrscher der GTX 1050)
