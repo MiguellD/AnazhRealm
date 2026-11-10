@@ -496,7 +496,8 @@ class AnazhRealm_siedlung_verkehr {
     // auf der Fahrbahn oder in einer beanspruchten Bahn ist, hält seine Reservierung und geht zu Ende — der Wagen wartet die Dauer
     // seiner Querung (`_verkehrFolge`). Bis w27-verkehr-leib fragte er nur den nächsten Schritt (0,1 s) gegen die Bahn eines Wagens
     // binnen `lueckeS` (höchstens `vorrangM`): wer die erste Spur betrat, stand in ihr vor dem Wagen der zweiten, und der Wagen der
-    // ersten hielt vor ihm (stadt-voll 10 Uhr: Halte vor Querenden ~250 Wagen-Sekunden je Stunde). Liefert, ob er am Rand wartet.
+    // ersten hielt vor ihm (stadt-voll 10 Uhr: Halte vor Querenden ~250 Wagen-Sekunden je Stunde). Liefert true (er wartet am Rand),
+    // das Tempo, mit dem er eine Bahn quer räumt (unten), oder false.
     _verkehrVorrang(S, x, z, vx, vz, b) {
         const V = AnazhRealm.VERKEHR;
         const R = AnazhRealm.PLAYER_WALL_RADIUS;
@@ -506,11 +507,11 @@ class AnazhRealm_siedlung_verkehr {
         // der billige Filter zuerst (Lehre 25): wer nicht an die Fahrbahn tritt, fragt keinen Wagen; wer von außen auf sie tritt,
         // fragt seine ganze Querung, wer auf ihr geht, jede Bahn, in die er tritt (die Kreuzung: Fahrbahn von Rand zu Rand)
         if (!(sp > 0) || !this._verkehrAufSpur(S, nx, nz)) return false;
-        let [traf, drin, tritt] = [false, false, !this._verkehrAufSpur(S, x, z, 0) && this._verkehrAufSpur(S, nx, nz, 0)];
+        let [traf, drin, tritt, raeum] = [false, false, !this._verkehrAufSpur(S, x, z, 0) && this._verkehrAufSpur(S, nx, nz, 0), null]; // prettier-ignore
         for (const W of S.verkehr.wagen) {
             const e = W.entry;
             const F = W.F;
-            if (drin || W.zustand !== "faehrt" || !e || !e._fahr || !F) continue;
+            if (W.zustand !== "faehrt" || !e || !e._fahr || !F) continue;
             const v = Math.max(0, e._fahr.vlong);
             let bahn = W.leibS >= V.vorrangWarteS ? V.vorrangM : 0;
             for (const y of W.zonen) if (y.hat && !y.weg) bahn = Math.max(bahn, y.aus - F.s - W.hl);
@@ -541,10 +542,31 @@ class AnazhRealm_siedlung_verkehr {
                 (Math.abs(bQ + (u / sp) * V.querSchrittM) <= B ? [0, Infinity] : null);
             if (!Q || Math.abs(bQ) > B + VG.breiteM) continue;
             const belegt = Math.max(0, d) <= bahn || (v * (Q[1] + V.querRandS) > d && d + 2 * (W.hl + R) > v * Q[0]);
-            if (!belegt) continue;
-            if (Math.abs(bQ) <= B) drin = true; // er steht schon in der Bahn, die einer beansprucht: er geht hinüber
-            traf = true;
-            tritt = tritt || Q[0] * sp <= V.querSchrittM;
+            if (!belegt && W.wer !== b) continue;
+            if (Math.abs(bQ) <= B) {
+                // er steht schon in der Bahn, die einer beansprucht oder die er hält: verlässt er sie in der Dauer einer Querung,
+                // geht er hinüber; sonst RÄUMT ER SIE QUER (er gibt sie frei), nie längs
+                drin = true;
+                if (Q[1] > (2 * B) / sp + V.querRandS) raeum = { q: bQ, nx: -(c.z - a.z) / l, nz: (c.x - a.x) / l };
+                continue;
+            }
+            traf = belegt || traf;
+            tritt = tritt || (belegt && Q[0] * sp <= V.querSchrittM);
+        }
+        // DER LEIB GIBT DIE BAHN FREI (w27-verkehr-leib): wer in ihr steht oder längs geht, tritt mit seinem Tempo quer aus ihr —
+        // auf seiner Seite, sonst der anderen —, wo keine Wand und kein Leib näher als zwei Kapseln steht. Bis hier ging er, wohin
+        // sein Weg und sein Ausweichen ihn führten: an der Kreuzung am Markt tänzelten #7:58:0 und #7:54:4 längs der Bahn ihres
+        // Halters (stadt-voll 10 Uhr, 22–49 s, die Kreuzung stand, „fahrend je Minute“ 0 m)
+        if (raeum) {
+            const K = 2 * R + 0.01;
+            const k0 = this._bewohnerNaechster(S, b, x, z);
+            for (const s of [Math.sign(raeum.q) || 1, -(Math.sign(raeum.q) || 1)]) {
+                const [ux, uz] = [raeum.nx * s, raeum.nz * s];
+                const p = { x: x + ux * V.querSchrittM, z: z + uz * V.querSchrittM };
+                if (!this._bewohnerWand({ x, z }, p) && this._bewohnerNaechster(S, b, p.x, p.z) >= Math.min(K, k0))
+                    return { vx: ux * sp, vz: uz * sp };
+            }
+            return false;
         }
         return traf && tritt && !drin && !S.verkehr.wagen.some((W) => W.wer === b);
     }

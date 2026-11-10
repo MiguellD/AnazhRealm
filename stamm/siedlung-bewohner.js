@@ -2279,7 +2279,8 @@ class AnazhRealm_siedlung_bewohner {
             const e = lenk ? null : this._bewohnerLinie(b, x0, z0);
             const l = e ? Math.hypot(e.x - x0, e.z - z0) : 0;
             const [vx, vz] = lenk ? [lenk.vx, lenk.vz] : l > 1e-6 ? [((e.x - x0) / l) * b.tempo, ((e.z - z0) / l) * b.tempo] : [0, 0]; // prettier-ignore
-            if ((vx || vz) && this._verkehrVorrang(S, x0, z0, vx, vz, b)) lenk = { vx: 0, vz: 0 };
+            const vr = (vx || vz) && this._verkehrVorrang(S, x0, z0, vx, vz, b);
+            if (vr) lenk = vr === true ? { vx: 0, vz: 0 } : vr; // er wartet am Rand, oder er räumt die Bahn quer
         }
         const bewegt = this._bewohnerSchritt(b, dtW, lenk);
         b.vx = (g.position.x - x0) / dt;
