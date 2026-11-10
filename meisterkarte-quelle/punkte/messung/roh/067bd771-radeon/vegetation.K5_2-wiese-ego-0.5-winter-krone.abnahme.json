@@ -10,7 +10,7 @@
   "uhr": 0.5,
   "bildUhr": 12.5,
   "tiereGehalten": false,
-  "weltTakte": 514
+  "weltTakte": 206
  },
  "geraet": {
   "backend": "WebGPU",
@@ -44,7 +44,7 @@
   "vorAbstand": null,
   "abstand": 14.67,
   "gestalt": [
-   "baum_birke 23"
+   "baum_birke 24"
   ],
   "gezeichnet": true
  },
@@ -64,13 +64,13 @@
  "bild": {
   "w": 1920,
   "h": 1080,
-  "mittel": 69.2,
-  "sigma": 42.3,
+  "mittel": 69,
+  "sigma": 42.2,
   "schwarz": 0,
   "weiss": 0
  },
  "ok": true,
- "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 14.67 m · Luma 69.2 σ 42.3 schwarz 0.0 % weiß 0.0 % · Stand 18.546.243 · Bühne winter sunny 0.50 · Gerät WebGPU amd rdna-3",
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 14.67 m · Luma 69 σ 42.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.243 · Bühne winter sunny 0.50 · Gerät WebGPU amd rdna-3",
  "klasse": {
   "ausdruck": "^f:(eiche|birke|buche):L[01]$",
   "schwelle": 18,
@@ -93,7 +93,7 @@
    },
    "f:eiche:L1": {
     "objekte": 4,
-    "pixel": 5063
+    "pixel": 5061
    }
   },
   "abstand": null,

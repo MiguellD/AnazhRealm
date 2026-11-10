@@ -1,0 +1,293 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.239",
+  "sha": "a3782a6513292a1d116268b6988cc6dc555b548c"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": false,
+  "weltTakte": 0
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 7.38,
+   "deckung": 0.0035,
+   "taeter": {
+    "Streu-Stein": 0.0035
+   }
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "abstand": 14.76,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   -274.642,
+   30.109,
+   -1043.811
+  ],
+  "blick": [
+   -0.90819,
+   -0.16436,
+   -0.38495
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 50.5,
+  "sigma": 29.2,
+  "schwarz": 0.0002,
+  "weiss": 0
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 14.76 m · Luma 50.5 σ 29.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.239 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3",
+ "klasse": {
+  "ausdruck": "^(nahWiese:.*|streuSatz|bodenSatz)$",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 104550,
+  "toene": [
+   "bodenSatz=255/80/80",
+   "nahWiese:L1=80/255/80",
+   "nahWiese:L2=80/120/255",
+   "nahWiese:Lf=255/220/60",
+   "nahWiese:Lf:schale=255/80/255",
+   "streuSatz=60/230/230"
+  ],
+  "klassen": {
+   "bodenSatz": {
+    "objekte": 1,
+    "pixel": 78246
+   },
+   "nahWiese:L1": {
+    "objekte": 2,
+    "pixel": 418562
+   },
+   "nahWiese:L2": {
+    "objekte": 2,
+    "pixel": 320952
+   },
+   "nahWiese:Lf": {
+    "objekte": 2,
+    "pixel": 107231
+   },
+   "nahWiese:Lf:schale": {
+    "objekte": 1,
+    "pixel": 213418
+   },
+   "streuSatz": {
+    "objekte": 4,
+    "pixel": 11433
+   }
+  },
+  "abstand": {
+   "baender": [
+    0,
+    2,
+    5,
+    10,
+    20,
+    40,
+    80,
+    200
+   ],
+   "ring": 10,
+   "augeUeberBoden": 2.61,
+   "cos": [
+    null,
+    0.5672,
+    0.3578,
+    0.1903,
+    0.0813,
+    0.0375,
+    0.0234
+   ],
+   "klassen": {
+    "nahWiese:Lf:schale": [
+     0,
+     0,
+     0,
+     47158,
+     104558,
+     36748,
+     531
+    ],
+    "nahWiese:Lf": [
+     0,
+     0,
+     40,
+     84221,
+     17116,
+     1841,
+     706
+    ],
+    "bodenSatz": [
+     0,
+     45865,
+     16854,
+     776,
+     0,
+     146,
+     5789
+    ],
+    "bodenSatz:weg": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     11
+    ],
+    "streuSatz": [
+     0,
+     1008,
+     5305,
+     4242,
+     878,
+     0,
+     0
+    ],
+    "nahWiese:L2": [
+     0,
+     250,
+     271245,
+     49441,
+     0,
+     0,
+     0
+    ],
+    "nahWiese:L1": [
+     0,
+     336433,
+     82129,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "farbton": {
+    "kachel": 2,
+    "band": [
+     2,
+     5
+    ],
+    "belichtung": 0.5126,
+    "kacheln": [
+     [
+      "-140,-523",
+      10257,
+      -4409.606,
+      8754.652,
+      10217
+     ],
+     [
+      "-140,-524",
+      2686,
+      -1286.624,
+      2305.123,
+      2684
+     ],
+     [
+      "-140,-522",
+      18264,
+      -9149.977,
+      15066.588,
+      18230
+     ],
+     [
+      "-139,-524",
+      23543,
+      -10482.804,
+      20230.113,
+      23476
+     ],
+     [
+      "-139,-525",
+      2871,
+      -1185.092,
+      2546.06,
+      2871
+     ],
+     [
+      "-139,-523",
+      22022,
+      -8706.52,
+      19516.351,
+      21975
+     ],
+     [
+      "-140,-521",
+      8301,
+      -4353.863,
+      6684.842,
+      8216
+     ],
+     [
+      "-139,-522",
+      10666,
+      -5068.408,
+      8936.099,
+      10603
+     ],
+     [
+      "-138,-525",
+      3483,
+      -1453.537,
+      3098.856,
+      3483
+     ],
+     [
+      "-138,-524",
+      2388,
+      -863.267,
+      2167.661,
+      2388
+     ],
+     [
+      "-139,-521",
+      26,
+      -19.944,
+      16.482,
+      26
+     ]
+    ]
+   }
+  },
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\a3782a65-radeon\\vegetation.K1_1-wiese-third-0.5--wiese.maske.png"
+ }
+}
