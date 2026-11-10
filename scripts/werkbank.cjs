@@ -543,6 +543,9 @@ async function starte() {
     // Zug und Blick, der Ort-Takt ist leer.
     // Der Ort, an dem die Werkbank zuletzt umstellte (`umstellen --ort`) — die Albedo-Tafel nennt ihn.
     let aktOrt = null;
+    // DER STAND dieser Aufstellung ([x, z], wie `umstellen` ihn meldet): an einem Ort mit Pose aus dem Plan (`ortPose`) der Messort
+    // der Band — die Spec trägt dort keinen (stadt) oder nur den Start (dorf), `/band` las `ort.spieler` und brach (w27-ort-pose)
+    let aktStand = null;
     // DIE SICHT des gestellten Orts: Ego oder Third-Person — der Ort wird in ihr aufgestellt, die Band richtet die
     // Ratsche dieses Orts × Geräts × Sicht.
     let aktSicht = null;
@@ -1734,6 +1737,7 @@ async function starte() {
                             anlauf: ort.anlauf || null,
                             dach: ort.dach || null,
                         });
+                        aktStand = o.spieler;
                         // DIE WIESE: ein Ort mit Wiesen-Gesetz (`wiese`) hält es in der Welt, die eben stand — dieselbe
                         // Messung wie gate:profiband H1 (scripts/lib/welt-orte.cjs), dazu das Gras der gebauten Boden-Karte. Ein
                         // Ort, der keine Wiese ist, bricht die Aufstellung laut.
@@ -1758,6 +1762,7 @@ async function starte() {
                     }
                     aktOrt = null;
                     aktSicht = null;
+                    aktStand = null;
                     return send(await umstellen(+b.x, +b.z));
                 }
                 if (req.url === "/bild") {
@@ -2412,8 +2417,8 @@ async function starte() {
                         for (const f of Object.keys(fl)) fl[f] += k[f] || 0;
                     }
                     if (fl) for (const f of ["mb", "platteMb", "neuMb"]) fl[f] = +fl[f].toFixed(1);
-                    const am = ort.spieler;
-                    const amMessort = Math.hypot(roh.spieler[0] - am[0], roh.spieler[1] - am[1]) <= 8;
+                    const am = ort.ortPose ? aktStand : ort.spieler;
+                    const amMessort = !!am && Math.hypot(roh.spieler[0] - am[0], roh.spieler[1] - am[1]) <= 8;
                     // DER GESTELLTE ORT (die Orts-Wache, `BAND.ortGestellt`): was beim Zählen wirklich stand — der Ort der
                     // letzten Aufstellung, der Dorf-Zug, der Ort-Takt, die Gier —, nicht nur der Ort, den der Aufruf nennt.
                     const zustand = Object.assign(
@@ -3380,7 +3385,7 @@ hauptLauf(async () => {
             const n = path.basename(dateien[i]);
             if (!u.roh) fehler.push(`${n}: kein Rohes (eine Messung vor der Serien-Ratsche)`);
             if (u.echt !== true) fehler.push(`${n}: nicht die echte GPU (start --echt)`);
-            if (u.amMessort !== true) fehler.push(`${n}: nicht am Messort ${ort.id} ${ort.spieler.join(" ")}`);
+            if (u.amMessort !== true) fehler.push(`${n}: nicht am Messort ${ort.id} ${ort.ortPose ? "(Pose aus dem Plan)" : ort.spieler.join(" ")}`);
             // Die Orts-Wache: der Lauf stand im Zustand des Orts (Aufstellung, Dorf-Zug, Ort-Takt, Blick, Sicht).
             for (const f of BAND.ortGestellt(ort, u.zustand, sicht)) fehler.push(`${n}: ${f}`);
             if (!u.messung || u.messung.eingeschwungen !== true) fehler.push(`${n}: nicht eingeschwungen`);
