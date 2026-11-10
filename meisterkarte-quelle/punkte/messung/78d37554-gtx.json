@@ -1,7 +1,7 @@
 {
  "sha": "78d37554b2d5f98d96ef454cfa9f51752c0e45a0",
  "geraet": "gtx",
- "zeit": "2026-11-10T05:55:19.000Z",
+ "zeit": "2026-11-10T06:00:52.770Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "ferne.K1#2": {
@@ -489,6 +489,54 @@
    },
    "zeit": "2026-11-10T05:55:19.000Z",
    "abdruck": "97b1e369c378",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "tiere.K1#2": {
+   "gruen": true,
+   "zahl": "(a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.992 über 1182 Takte, letzter Flüchter 0.58 s (4 aus zweiter Hand), Fluchtweg 33.9 m, ID 600 s hält (Flucht 5 / 6 s) · Bild-Serie „Herde am Hang“ GRÜN am Hang 21.2° -550.6/-889.6, Flucht bei 14.7 m: 46.7 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (254 px) · 51.3 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (235 px) · 55.9 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (231 px)",
+   "exit": 0,
+   "minuten": 1.19,
+   "gpu": "nvidia/pascal",
+   "s": 71.4,
+   "fremd": {
+    "s": 73.7,
+    "takte": 34,
+    "fremdS": 105.95,
+    "kerne": 1.438,
+    "fensterKerne": 1.66,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      74.86
+     ],
+     [
+      "OmenCommandCenterBackground.exe",
+      9.98
+     ],
+     [
+      "MsMpEng.exe",
+      9.83
+     ]
+    ],
+    "dienerS": 12.47,
+    "diener": [
+     [
+      "System",
+      5.88
+     ],
+     [
+      "WmiPrvSE.exe",
+      3.47
+     ]
+    ],
+    "eigenS": 122.61,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-10T06:00:52.770Z",
+   "abdruck": "9d9ccc7071a0",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
@@ -1403,55 +1451,6 @@
    "bahn": "sitzung",
    "modus": "session"
   },
-  "tiere.K1#2": {
-   "gruen": false,
-   "ungemessen": true,
-   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: ✅ GRÜN — herde)",
-   "exit": 1,
-   "minuten": 1.5,
-   "grund": "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: ✅ GRÜN — herde)",
-   "s": 90.2,
-   "fremd": {
-    "s": 92.1,
-    "takte": 42,
-    "fremdS": 205.66,
-    "kerne": 2.233,
-    "fensterKerne": 2.712,
-    "namen": [
-     [
-      "AppHelperCap.exe",
-      100.77
-     ],
-     [
-      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
-      27.56
-     ],
-     [
-      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
-      26.97
-     ]
-    ],
-    "dienerS": 30.53,
-    "diener": [
-     [
-      "dwm.exe",
-      14.17
-     ],
-     [
-      "System",
-      11
-     ]
-    ],
-    "eigenS": 170.53,
-    "schwelle": 0.3,
-    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
-   },
-   "zeit": "2026-11-09T21:49:45.371Z",
-   "abdruck": "9d9ccc7071a0",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session"
-  },
   "ankunft.K4#1": {
    "gruen": false,
    "ungemessen": true,
@@ -1895,19 +1894,19 @@
   }
  },
  "sitzung": {
-  "start": "2026-11-10T05:54:48.448Z",
+  "start": "2026-11-10T06:00:17.361Z",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 6.9,
+  "bootS": 7,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": null,
-    "vor": "studios.K4#2",
-    "s": 22.4,
-    "takte": 832,
+    "ort": "wiese",
+    "vor": "tiere.K1#2",
+    "s": 27.1,
+    "takte": 600,
     "chunks": 81,
     "nach": null
    }
@@ -1924,12 +1923,19 @@
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
-   "ortImDeckel": [],
-   "zapfen": 92,
-   "luecken": 0,
-   "letzteLuecke": null
+   "ortImDeckel": [
+    {
+     "probe": "tiere.K1#2",
+     "m": 327,
+     "ringVor": 4,
+     "ringMin": 0
+    }
+   ],
+   "zapfen": 85,
+   "luecken": 1,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
   },
-  "fahrtS": 101.7,
-  "minuten": 1.77
+  "fahrtS": 107.6,
+  "minuten": 1.88
  }
 }
