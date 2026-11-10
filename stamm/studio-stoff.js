@@ -30,25 +30,80 @@ class AnazhRealm_studio_stoff {
     // × die Bestrahlung der Quelle wie Lambert (lightColor trägt den Schatten der Kaskade, × N·L ÷ π). Ohne direktes Licht — im
     // Schatten, unter dem weißen Umgebungslicht der Albedo-Tafel — glänzt nichts. Das Labor rechnet dasselbe (`laborStoff`: der
     // Glanz × das direkte Diffuse ÷ die Albedo).
+    // KAJIYA-KAY AN DER FASER (w26-haar-arm): diffus sin(T, L) × die Form (N·L umwickelt, `wrap`), Glanz als zwei Lappen
+    // sin(T', H)^p mit der Tangente um `shift` + Wurf × `jit` zur Normale gekippt (R farblos, TRT im Ton des Haars; Scheuermann
+    // 2004), normiert (p + 2) / 2π — die Rundung der Normale quer zur Strähne trägt kein Licht mehr (die Streifen je Band, die den
+    // Strich am Arm über das Band hoben). Ohne Tangente (die Braue, die Kappe der Grobstufe) das Licht des Standard-Stoffs.
+    // DIE FASER AM PIXEL (w27-haar-arm-2, koerper HAAR_LOOK.kk.fuss · `haarLappen`): wo ein Pixel der Szene mehrere Strähnen deckt
+    // (`unter` → 1), weiten sich die Lappen zum Mittel ihrer Strähnen — die halbe Potenz und die Norm je Lappen rechnet die Ecke
+    // (`HaarLicht.lappen`: [h, Norm] von R und TRT, energie-treu geweitet), das Fragment nur (1 − cos²)^h × Norm —, der Wurf der
+    // einzelnen Strähne fällt, und das Licht geht zur Fläche: die Faser trägt den Anteil `faser.anteil` = (1 − unter · flaeche),
+    // den Rest der Standard-Stoff an der Normale der Kappe. Bis hier flimmerte die Faser im Gang (K6, Radeon: Kopf 9,6–10,6 % der
+    // Pixel über halb zum Grund; geweitet und grau noch bis 5,9 %, das Licht der Fläche 0,4–1,4 %).
     static _haarLichtModell() {
         if (AnazhRealm._haarLichtK) return AnazhRealm._haarLichtK;
         const T = THREE.TSL;
         const Basis = THREE.MeshStandardNodeMaterial.prototype.setupLightingModel.call(null).constructor;
         class HaarLicht extends Basis {
-            constructor(glanz) {
+            constructor(kk, faser) {
                 super();
-                this.glanz = glanz;
+                this.kk = kk;
+                this.faser = faser;
             }
             direct(e, builder) {
-                super.direct(e, builder);
-                e.reflectedLight.directSpecular.addAssign(
+                const { kk, faser } = this;
+                const L = e.lightDirection,
+                    N = T.normalView;
+                const nl = N.dot(L);
+                const tl = faser.t.normalize();
+                const form = nl
+                    .mul(kk.wrap)
+                    .add(1 - kk.wrap)
+                    .clamp(0.0, 1.0);
+                const sinTL = T.float(1).sub(tl.dot(L).pow(2)).max(0.0).sqrt();
+                const diffus = T.mix(nl.max(0.0), sinTL.mul(form), kk.kd).mul(faser.anteil);
+                e.reflectedLight.directDiffuse.addAssign(
                     e.lightColor
-                        .mul(T.normalView.dot(e.lightDirection).max(0.0))
-                        .mul(this.glanz)
+                        .mul(diffus)
+                        .mul(T.diffuseColor.rgb)
                         .mul(1 / Math.PI)
+                );
+                const H = L.add(T.positionViewDirection.normalize()).normalize();
+                // sin^p' = (1 − cos²)^h mit der halben Potenz h der Ecke (`HaarLicht.lappen`: hn = [h, Norm])
+                const lappen = (shift, hn) => {
+                    const th = tl
+                        .add(N.mul(faser.wurf.mul(kk.jit).add(shift)))
+                        .normalize()
+                        .dot(H);
+                    return T.float(1).sub(th.mul(th)).max(0.0).pow(hn.x).mul(hn.y);
+                };
+                const glanz = T.vec3(...kk.R.farbe)
+                    .mul(lappen(kk.R.shift, faser.lappen.xy))
+                    .add(T.diffuseColor.rgb.mul(kk.TRT.amt).mul(lappen(kk.TRT.shift, faser.lappen.zw)));
+                e.reflectedLight.directSpecular.addAssign(e.lightColor.mul(form).mul(glanz).mul(faser.anteil));
+                // ohne Faser und unter dem Pixel der Standard-Stoff (Lambert + GGX)
+                super.direct(
+                    Object.assign({}, e, { lightColor: e.lightColor.mul(T.float(1).sub(faser.anteil)) }),
+                    builder
                 );
             }
         }
+        // die Lappen der Ecke: [h, Norm] von R und TRT aus dem Gesetz des Kerns (koerper `haarLappen`) und dem Fußabdruck `unter`
+        HaarLicht.lappen = (kk, unter) => {
+            const hn = (p) => {
+                const G = globalThis.__koerperCore.haarLappen(p, kk);
+                const h = T.float(G.halb).div(unter.mul(G.weite).add(1.0));
+                return [
+                    h,
+                    h
+                        .mul(2 / G.fuss)
+                        .add(1.5 / G.fuss)
+                        .sqrt()
+                        .mul(G.norm),
+                ];
+            };
+            return T.vertexStage(T.vec4(...hn(kk.R.p), ...hn(kk.TRT.p)));
+        };
         AnazhRealm._haarLichtK = HaarLicht;
         return HaarLicht;
     }
@@ -311,21 +366,6 @@ class AnazhRealm_studio_stoff {
                             ? tkC && tkC.FELL_LOOK && tkC.FELL_LOOK.koerper
                             : tkC && tkC.FELL_LOOK && tkC.FELL_LOOK.straehne;
                 if (L) {
-                    // DIE ACHSE DES HAARS (w25-haar-albedo) ist seine Gestalt: `aStraehne` [Achse, Länge] je Ecke (koerper
-                    // `haarAchse`, am Bau `_haarAchse`) — der Anteil Wurzel → Spitze. Die Farbe trägt seit HAAR_STRICH den Ton jeder
-                    // Strähne und Locke (±20 %, ±30 %) über einer Wurzel von 0,85: ihr Quotient zum Ton-Anker war der Würfel des Tons,
-                    // und der Glanz schaltete je Strähne ganz an oder aus. Ohne Achse (die Braue, die Kappe der Grobstufe) trägt das
-                    // Haar keinen Glanz der Spitze.
-                    const haarT =
-                        kind === "hair"
-                            ? TSL.Fn((b) =>
-                                  b.geometry && b.geometry.hasAttribute("aStraehne")
-                                      ? ((a) => a.x.div(a.y.max(1e-6)).clamp(0.0, 1.0))(
-                                            TSL.attribute("aStraehne", "vec2")
-                                        )
-                                      : TSL.float(0)
-                              )()
-                            : null;
                     const ndv = TSL.normalView.normalize().dot(TSL.positionViewDirection).clamp(-1.0, 1.0);
                     const rim = TSL.float(1.0).sub(ndv.abs()).clamp(0.0, 1.0);
                     let add = null;
@@ -419,16 +459,14 @@ class AnazhRealm_studio_stoff {
                         }
                         const sT = schale
                             ? TSL.mix(TSL.float(FS.mittel.t), aS.x, zeigt)
-                            : haarT
-                              ? haarT
-                              : tonL !== null
-                                ? vcolRoh
-                                      .dot(TSL.vec3(0.2126, 0.7152, 0.0722))
-                                      .div(tonL)
-                                      .sub(wA)
-                                      .div(Math.max(1e-3, 1 - wA))
-                                      .clamp(0.0, 1.0)
-                                : TSL.float(1.0);
+                            : tonL !== null
+                              ? vcolRoh
+                                    .dot(TSL.vec3(0.2126, 0.7152, 0.0722))
+                                    .div(tonL)
+                                    .sub(wA)
+                                    .div(Math.max(1e-3, 1 - wA))
+                                    .clamp(0.0, 1.0)
+                              : TSL.float(1.0);
                         if (Number.isFinite(L.tipRimPow) && Array.isArray(L.tipRimFarbe))
                             term(L.tipRimFarbe, rim.pow(L.tipRimPow).mul(sT));
                         if (Number.isFinite(L.specPow) && Array.isArray(L.specFarbe))
@@ -450,12 +488,40 @@ class AnazhRealm_studio_stoff {
                             term(mf.farbe, rim.pow(3.0).mul(TSL.step(mf.schwelle, hsh)).mul(mf.amt));
                         }
                     }
-                    if (add && kind === "hair") {
-                        // DER GLANZ DES HAARS IST LICHT (w25-haar-albedo): die Terme von HAAR_LOOK wiegen je direktem Licht im
-                        // Lichtmodell des Haars (`_haarLichtModell`) — nie als Emission. Bis hier leuchtete der Glanz von selbst: im
-                        // Schatten des Walds stand das dunkelbraune Haar (Albedo 0,0117) weiß (Radeon 53b2fc7a, haar.K2#1 arm 0,6263).
+                    if (kind === "hair" && L.kk) {
+                        // DER GLANZ DES HAARS IST LICHT (w25-haar-albedo) AN DER FASER (w26-haar-arm): Kajiya-Kay je direktem Licht im
+                        // Lichtmodell des Haars (`_haarLichtModell`), nie als Emission. Die Tangente der Strähne (`aHaarT`, koerper
+                        // `haarAchse`) trägt diffus und Glanz; über die Naht in die Welt (die Instanz der Menge mit), dann ins Auge.
                         const K = AnazhRealm._haarLichtModell();
-                        mat.setupLightingModel = () => new K(add);
+                        const naht = this._weltNaht(TSL);
+                        const a = TSL.Fn((b) =>
+                            b.geometry && b.geometry.hasAttribute("aHaarT")
+                                ? TSL.attribute("aHaarT", "vec4")
+                                : TSL.vec4(0.0)
+                        )();
+                        const welt = naht.spalte(0).mul(a.x).add(naht.spalte(1).mul(a.y)).add(naht.spalte(2).mul(a.z));
+                        // DER FUSSABDRUCK DES PIXELS an der Strähne (`kk.fuss`, w27-haar-arm-2): Meter je Pixel der Szene am Ort der
+                        // Ecke (Tiefe, Projektion und Höhe des Ziels — wie das Schutt-Korn des Bodens) gegen die Breite der Strähne
+                        // (Kopf-Raum × die Skala der Naht): `unter` 0, wo das Pixel die Strähne auflöst, 1, wo es mehrere deckt
+                        const F = L.kk.fuss;
+                        const pxM = TSL.positionView.z
+                            .negate()
+                            .max(1e-4)
+                            .mul(2.0)
+                            .div(TSL.cameraProjectionMatrix.element(1).y.mul(TSL.screenSize.y));
+                        const unter = TSL.float(1.0).sub(
+                            TSL.smoothstep(F.px[0], F.px[1], naht.skala.mul(F.breite).div(pxM))
+                        );
+                        const faser = {
+                            t: TSL.vertexStage(TSL.cameraViewMatrix.mul(TSL.vec4(welt, 0.0)).xyz),
+                            wurf: TSL.vertexStage(a.w.mul(unter.oneMinus())),
+                            unter,
+                            anteil: TSL.vertexStage(
+                                TSL.step(0.5, a.xyz.length()).mul(TSL.float(1.0).sub(unter.mul(F.flaeche)))
+                            ),
+                            lappen: K.lappen(L.kk, unter),
+                        };
+                        mat.setupLightingModel = () => new K(L.kk, faser);
                         const schluessel = mat.customProgramCacheKey;
                         mat.customProgramCacheKey = function () {
                             return schluessel.call(this) + "|haarLicht";
