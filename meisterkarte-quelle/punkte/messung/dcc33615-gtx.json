@@ -1,7 +1,7 @@
 {
  "sha": "dcc3361558060fce198f1666eba3720e574bf5a7",
  "geraet": "gtx",
- "zeit": "2026-11-10T08:26:57.223Z",
+ "zeit": "2026-11-10T09:20:14.494Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "haar.K2#1": {
@@ -49,6 +49,153 @@
    },
    "zeit": "2026-11-10T06:52:17.566Z",
    "abdruck": "ac98a8751e4d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "lod.K5#1": {
+   "gruen": false,
+   "zahl": "Baum 4.84 px · Haus 0.13 px · Tor 0.18 px · Wagen 0.03 px (Soll ≤ 1 px am Wechsel-Abstand, 1920 × 1080) · gate L2: Exemplar 68 px, [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.73,
+   "grund": "ROT: Baum 4.84 px · Haus 0.13 px · Tor 0.18 px · Wagen 0.03 px (Soll ≤ 1 px am Wechsel-Abstand, 1920 × 1080) · gate L2: Exemplar 68 px, [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "s": 43.7,
+   "fremd": {
+    "s": 45.9,
+    "takte": 21,
+    "fremdS": 81.63,
+    "kerne": 1.777,
+    "fensterKerne": 1.894,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      46.77
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      8.28
+     ],
+     [
+      "MsMpEng.exe",
+      8.06
+     ]
+    ],
+    "dienerS": 16.08,
+    "diener": [
+     [
+      "System",
+      7.05
+     ],
+     [
+      "dwm.exe",
+      6.23
+     ]
+    ],
+    "eigenS": 85.25,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-10T08:32:20.893Z",
+   "abdruck": "ca610f2672bb",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "material.K1#1": {
+   "gruen": false,
+   "zahl": "Welt/Labor 0,9–1,1: 5/13 · im realen Band beidseits: 9/13 — rinde 1.5622 ∉ [0.07, 0.12] L 0.0893 W 0.1395 · laub 0.8185 ∉ [0.15, 0.26] L 0.1785 W 0.1461 · fels 0.7201 · boden 1.125 · tor 0.1935 ∉ [0.25, 0.95] L 0.6496 W 0.1257 · haut 2.4493 · haar 11.8205 · klinge 0.3853 ∉ [0.3, 0.95] L 0.3452 W 0.133 · echt beide Seiten · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.64,
+   "grund": "ROT: Welt/Labor 0,9–1,1: 5/13 · im realen Band beidseits: 9/13 — rinde 1.5622 ∉ [0.07, 0.12] L 0.0893 W 0.1395 · laub 0.8185 ∉ [0.15, 0.26] L 0.1785 W 0.1461 · fels 0.7201 · boden 1.125 · tor 0.1935 ∉ [0.25, 0.95] L 0.6496 W 0.1257 · haut 2.4493 · haar 11.8205 · klinge 0.3853 ∉ [0.3, 0.95] L 0.3452 W 0.133 · echt beide Seiten · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "s": 98.1,
+   "fremd": {
+    "s": 100.4,
+    "takte": 45,
+    "fremdS": 187.08,
+    "kerne": 1.864,
+    "fensterKerne": 2.353,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      106.13
+     ],
+     [
+      "MsMpEng.exe",
+      20.69
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      19.89
+     ]
+    ],
+    "dienerS": 45.11,
+    "diener": [
+     [
+      "System",
+      19.53
+     ],
+     [
+      "dwm.exe",
+      18.77
+     ]
+    ],
+    "eigenS": 337.78,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-10T08:37:40.928Z",
+   "abdruck": "b8eb79afff76",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "mensch.K4#1": {
+   "gruen": false,
+   "zahl": "Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.14 m · third ROT strich 0.667 Soll [1,1] — gesicht 0.667 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei 1 [0.9, 1] · lippeL -15.04 [-14, -4] · lippeA 10.06 [4, 14] · hoehleL -8.95 [-12, 0] · hoehleA 9.24 [-2, 6] · haarDeckung 1 [0.9, 1]",
+   "exit": 0,
+   "minuten": 0.57,
+   "grund": "ROT: Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.14 m · third ROT strich 0.667 Soll [1,1] — gesicht 0.667 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei 1 [0.9, 1] · lippeL -15.04 [-14, -4] · lippeA 10.06 [4, 14] · hoehleL -8.95 [-12, 0] · hoehleA 9.24 [-2, 6] · haarDeckung 1 [0.9, 1]",
+   "gpu": "nvidia/pascal",
+   "s": 34.3,
+   "fremd": {
+    "s": 35.1,
+    "takte": 16,
+    "fremdS": 65.14,
+    "kerne": 1.854,
+    "fensterKerne": 2.039,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      35.64
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      6.78
+     ],
+     [
+      "MsMpEng.exe",
+      6.66
+     ]
+    ],
+    "dienerS": 10.58,
+    "diener": [
+     [
+      "dwm.exe",
+      5.44
+     ],
+     [
+      "System",
+      3.23
+     ]
+    ],
+    "eigenS": 79.22,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-10T08:43:06.973Z",
+   "abdruck": "a171d6454add",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
@@ -599,51 +746,391 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "profiband.K1#1": {
+   "gruen": false,
+   "zahl": "Fremd-Last: AppHelperCap.exe 90,5 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 16,9 CPU-s · MsMpEng.exe 15,3 CPU-s — 1,97 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container); Σ fremd 156,8 CPU-s in 86,0 s) — kein Urteil, UNGEMESSEN (die Probe sah: Bild-p95 ≤ 33: wiese-ego-geht 50.07 · wiese-ego-sprint 50.1 · wiese-fahrt ? · genesis-third-geht 33.41 · stadt-ego-geht ? · wiese-ego-sturm ? · Gang 83.5 s · [linse-gpu] nvidia/pascal — ROT 6: wiese-ego-geht Bild-p95 50.07 > 33 | wiese-ego-)",
+   "exit": 0,
+   "minuten": 1.39,
+   "grund": "Fremd-Last: AppHelperCap.exe 90,5 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 16,9 CPU-s · MsMpEng.exe 15,3 CPU-s — 1,97 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container); Σ fremd 156,8 CPU-s in 86,0 s) — kein Urteil, UNGEMESSEN (die Probe sah: Bild-p95 ≤ 33: wiese-ego-geht 50.07 · wiese-ego-sprint 50.1 · wiese-fahrt ? · genesis-third-geht 33.41 · stadt-ego-geht ? · wiese-ego-sturm ? · Gang 83.5 s · [linse-gpu] nvidia/pascal — ROT 6: wiese-ego-geht Bild-p95 50.07 > 33 | wiese-ego-)",
+   "gpu": "nvidia/pascal",
+   "s": 83.6,
+   "fremd": {
+    "s": 86,
+    "takte": 39,
+    "fremdS": 156.8,
+    "kerne": 1.824,
+    "fensterKerne": 1.967,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      90.52
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      16.92
+     ],
+     [
+      "MsMpEng.exe",
+      15.3
+     ]
+    ],
+    "dienerS": 36.72,
+    "diener": [
+     [
+      "dwm.exe",
+      18.27
+     ],
+     [
+      "System",
+      13.34
+     ]
+    ],
+    "eigenS": 291.83,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-10T08:48:22.314Z",
+   "abdruck": "d99cb8f5d547",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "profiband.K1#2": {
+   "gruen": false,
+   "zahl": "Fremd-Last: AppHelperCap.exe 95,4 CPU-s · MsMpEng.exe 35,9 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 17,9 CPU-s — 3,07 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container); Σ fremd 190,7 CPU-s in 91,5 s) — kein Urteil, UNGEMESSEN (die Probe sah: Bild-p95 ≤ 16.7: wiese-ego-steht ? · wiese-third-steht ? · genesis-ego-steht ? · genesis-third-steht ? · wiese-ego-geht 49.98 · wiese-ego-sprint 58.59 · wiese-fahrt 66.7 · genesis-third-geht 49.88 · stadt-ego-geht ? · wiese-ego-sturm ? · Ga)",
+   "exit": 0,
+   "minuten": 1.47,
+   "grund": "Fremd-Last: AppHelperCap.exe 95,4 CPU-s · MsMpEng.exe 35,9 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 17,9 CPU-s — 3,07 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container); Σ fremd 190,7 CPU-s in 91,5 s) — kein Urteil, UNGEMESSEN (die Probe sah: Bild-p95 ≤ 16.7: wiese-ego-steht ? · wiese-third-steht ? · genesis-ego-steht ? · genesis-third-steht ? · wiese-ego-geht 49.98 · wiese-ego-sprint 58.59 · wiese-fahrt 66.7 · genesis-third-geht 49.88 · stadt-ego-geht ? · wiese-ego-sturm ? · Ga)",
+   "gpu": "nvidia/pascal",
+   "s": 88.2,
+   "fremd": {
+    "s": 91.5,
+    "takte": 41,
+    "fremdS": 190.73,
+    "kerne": 2.086,
+    "fensterKerne": 3.071,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      95.41
+     ],
+     [
+      "MsMpEng.exe",
+      35.86
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      17.86
+     ]
+    ],
+    "dienerS": 39.53,
+    "diener": [
+     [
+      "dwm.exe",
+      18.41
+     ],
+     [
+      "System",
+      15
+     ]
+    ],
+    "eigenS": 314.7,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-10T08:53:47.273Z",
+   "abdruck": "cf1ffc5a5e15",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "profiband.K2#1": {
+   "gruen": false,
+   "zahl": "Fremd-Last: AppHelperCap.exe 91,9 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 17,1 CPU-s · MsMpEng.exe 17,0 CPU-s — 2,12 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container); Σ fremd 160,5 CPU-s in 88,0 s) — kein Urteil, UNGEMESSEN (die Probe sah: Belegung p95 ≤ 5.8: wiese-ego-steht ? · wiese-third-steht ? · genesis-ego-steht ? · genesis-third-steht ? · Gang 84.5 s · [linse-gpu] nvidia/pascal — ROT 4: wiese-ego-steht: brach: /band: Cannot read properties of undefined (reading 'size'))",
+   "exit": 0,
+   "minuten": 1.41,
+   "grund": "Fremd-Last: AppHelperCap.exe 91,9 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 17,1 CPU-s · MsMpEng.exe 17,0 CPU-s — 2,12 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container); Σ fremd 160,5 CPU-s in 88,0 s) — kein Urteil, UNGEMESSEN (die Probe sah: Belegung p95 ≤ 5.8: wiese-ego-steht ? · wiese-third-steht ? · genesis-ego-steht ? · genesis-third-steht ? · Gang 84.5 s · [linse-gpu] nvidia/pascal — ROT 4: wiese-ego-steht: brach: /band: Cannot read properties of undefined (reading 'size'))",
+   "gpu": "nvidia/pascal",
+   "s": 84.6,
+   "fremd": {
+    "s": 88,
+    "takte": 40,
+    "fremdS": 160.48,
+    "kerne": 1.823,
+    "fensterKerne": 2.123,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      91.94
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      17.14
+     ],
+     [
+      "MsMpEng.exe",
+      17.02
+     ]
+    ],
+    "dienerS": 34.77,
+    "diener": [
+     [
+      "dwm.exe",
+      17.88
+     ],
+     [
+      "System",
+      11.16
+     ]
+    ],
+    "eigenS": 290.84,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-10T08:59:08.442Z",
+   "abdruck": "c1988d88f42c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "profiband.K2#2": {
+   "gruen": false,
+   "zahl": "Fremd-Last: AppHelperCap.exe 91,1 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 16,9 CPU-s · MsMpEng.exe 16,9 CPU-s — 2,23 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container); Σ fremd 164,2 CPU-s in 86,1 s) — kein Urteil, UNGEMESSEN (die Probe sah: Belegung p95 ≤ 5.8: wiese-ego-steht ? · wiese-third-steht ? · genesis-ego-steht ? · genesis-third-steht ? ‖ Belegung p95 ≤ 8: wiese-ego-geht 54.27 · wiese-ego-sprint 50.08 · wiese-fahrt ? · genesis-third-geht 37.6 · stadt-ego-geht ? · wiese)",
+   "exit": 0,
+   "minuten": 1.41,
+   "grund": "Fremd-Last: AppHelperCap.exe 91,1 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 16,9 CPU-s · MsMpEng.exe 16,9 CPU-s — 2,23 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container); Σ fremd 164,2 CPU-s in 86,1 s) — kein Urteil, UNGEMESSEN (die Probe sah: Belegung p95 ≤ 5.8: wiese-ego-steht ? · wiese-third-steht ? · genesis-ego-steht ? · genesis-third-steht ? ‖ Belegung p95 ≤ 8: wiese-ego-geht 54.27 · wiese-ego-sprint 50.08 · wiese-fahrt ? · genesis-third-geht 37.6 · stadt-ego-geht ? · wiese)",
+   "gpu": "nvidia/pascal",
+   "s": 84.7,
+   "fremd": {
+    "s": 86.1,
+    "takte": 39,
+    "fremdS": 164.17,
+    "kerne": 1.907,
+    "fensterKerne": 2.231,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      91.05
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      16.92
+     ],
+     [
+      "MsMpEng.exe",
+      16.91
+     ]
+    ],
+    "dienerS": 34.09,
+    "diener": [
+     [
+      "dwm.exe",
+      17.2
+     ],
+     [
+      "System",
+      11.41
+     ]
+    ],
+    "eigenS": 292.39,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-10T09:04:30.272Z",
+   "abdruck": "0a6126d9fbfe",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "profiband.K3#1": {
+   "gruen": false,
+   "zahl": "Fremd-Last: AppHelperCap.exe 86,2 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 16,2 CPU-s · MsMpEng.exe 13,9 CPU-s — 1,96 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container); Σ fremd 148,2 CPU-s in 83,0 s) — kein Urteil, UNGEMESSEN (die Probe sah: Band im Stand (Befehle · Dreiecke · VRAM · gpu-bank): wiese-ego ? | wiese-third ? | genesis-ego ? | genesis-third ? | dorf-ego ? | dorf-third ? · Gang 79.5 s · [linse-gpu] nvidia/pascal — ROT 6: Band wiese-ego: brach: /band: Cannot read pro)",
+   "exit": 0,
+   "minuten": 1.33,
+   "grund": "Fremd-Last: AppHelperCap.exe 86,2 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 16,2 CPU-s · MsMpEng.exe 13,9 CPU-s — 1,96 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container); Σ fremd 148,2 CPU-s in 83,0 s) — kein Urteil, UNGEMESSEN (die Probe sah: Band im Stand (Befehle · Dreiecke · VRAM · gpu-bank): wiese-ego ? | wiese-third ? | genesis-ego ? | genesis-third ? | dorf-ego ? | dorf-third ? · Gang 79.5 s · [linse-gpu] nvidia/pascal — ROT 6: Band wiese-ego: brach: /band: Cannot read pro)",
+   "gpu": "nvidia/pascal",
+   "s": 79.6,
+   "fremd": {
+    "s": 83,
+    "takte": 37,
+    "fremdS": 148.16,
+    "kerne": 1.786,
+    "fensterKerne": 1.963,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      86.23
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      16.23
+     ],
+     [
+      "MsMpEng.exe",
+      13.92
+     ]
+    ],
+    "dienerS": 34.41,
+    "diener": [
+     [
+      "dwm.exe",
+      16.69
+     ],
+     [
+      "System",
+      12.23
+     ]
+    ],
+    "eigenS": 282.78,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-10T09:09:53.629Z",
+   "abdruck": "34ac4a105f22",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "profiband.K3#2": {
+   "gruen": false,
+   "zahl": "Fremd-Last: AppHelperCap.exe 91,1 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 17,2 CPU-s · MsMpEng.exe 16,5 CPU-s — 1,98 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container); Σ fremd 159,4 CPU-s in 85,9 s) — kein Urteil, UNGEMESSEN (die Probe sah: Befehle p95 ≤ 208: wiese-ego-steht ? · wiese-third-steht ? · genesis-ego-steht ? · genesis-third-steht ? · wiese-ego-geht 161 · wiese-ego-sprint 168 · wiese-fahrt ? · genesis-third-geht 149 · stadt-ego-geht ? · wiese-ego-sturm ? ‖ Dreiecke )",
+   "exit": 0,
+   "minuten": 1.41,
+   "grund": "Fremd-Last: AppHelperCap.exe 91,1 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 17,2 CPU-s · MsMpEng.exe 16,5 CPU-s — 1,98 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container); Σ fremd 159,4 CPU-s in 85,9 s) — kein Urteil, UNGEMESSEN (die Probe sah: Befehle p95 ≤ 208: wiese-ego-steht ? · wiese-third-steht ? · genesis-ego-steht ? · genesis-third-steht ? · wiese-ego-geht 161 · wiese-ego-sprint 168 · wiese-fahrt ? · genesis-third-geht 149 · stadt-ego-geht ? · wiese-ego-sturm ? ‖ Dreiecke )",
+   "gpu": "nvidia/pascal",
+   "s": 84.5,
+   "fremd": {
+    "s": 85.9,
+    "takte": 39,
+    "fremdS": 159.39,
+    "kerne": 1.855,
+    "fensterKerne": 1.978,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      91.11
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      17.22
+     ],
+     [
+      "MsMpEng.exe",
+      16.47
+     ]
+    ],
+    "dienerS": 35.95,
+    "diener": [
+     [
+      "dwm.exe",
+      17.97
+     ],
+     [
+      "System",
+      12.97
+     ]
+    ],
+    "eigenS": 292.41,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-10T09:15:14.973Z",
+   "abdruck": "4cc877868786",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "profiband.K4#2": {
+   "gruen": false,
+   "zahl": "Fremd-Last: AppHelperCap.exe 43,1 CPU-s · MsMpEng.exe 13,6 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 10,1 CPU-s — 2,02 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container); Σ fremd 84,8 CPU-s in 45,1 s) — kein Urteil, UNGEMESSEN (die Probe sah: Gehen 46 Bilder · max 133.37 ms · 80.43 % > 33 ms · Fahrt 36 Bilder · max 141.64 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 2 Bild(er) > 100 ms (max 133.37), 80.43 % > 33 ms | Fah)",
+   "exit": 0,
+   "minuten": 0.71,
+   "grund": "Fremd-Last: AppHelperCap.exe 43,1 CPU-s · MsMpEng.exe 13,6 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 10,1 CPU-s — 2,02 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container); Σ fremd 84,8 CPU-s in 45,1 s) — kein Urteil, UNGEMESSEN (die Probe sah: Gehen 46 Bilder · max 133.37 ms · 80.43 % > 33 ms · Fahrt 36 Bilder · max 141.64 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 2 Bild(er) > 100 ms (max 133.37), 80.43 % > 33 ms | Fah)",
+   "gpu": "nvidia/pascal",
+   "s": 42.6,
+   "fremd": {
+    "s": 45.1,
+    "takte": 19,
+    "fremdS": 84.8,
+    "kerne": 1.879,
+    "fensterKerne": 2.02,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      43.11
+     ],
+     [
+      "MsMpEng.exe",
+      13.56
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      10.09
+     ]
+    ],
+    "dienerS": 18.98,
+    "diener": [
+     [
+      "dwm.exe",
+      11.28
+     ],
+     [
+      "System",
+      4.94
+     ]
+    ],
+    "eigenS": 262.58,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-10T09:20:14.494Z",
+   "abdruck": "5f426b5e8a53",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-10T08:26:21.377Z",
+  "start": "2026-11-10T09:20:06.153Z",
   "port": 7804,
-  "warten": 0.01,
-  "bootS": 6.8,
+  "warten": 0.02,
+  "bootS": 6.9,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
-  "orte": [
+  "orte": [],
+  "wegeTueren": [],
+  "haenger": [
    {
-    "ort": "genesis",
-    "vor": "licht.K1#1",
-    "s": 27.5,
-    "takte": 608,
-    "chunks": 81,
-    "nach": null
+    "probe": "profiband.K4#2",
+    "zurueck": 9
    }
   ],
-  "wegeTueren": [],
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 0,
-   "frameP95": null,
-   "taktP95": null,
-   "vramMax": null,
+   "bilder": 89,
+   "frameP95": 116.7,
+   "taktP95": 106.86,
+   "vramMax": 153.5,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
-   "ortImDeckel": [
-    {
-     "probe": "licht.K1#1",
-     "m": 1083,
-     "ringVor": 4,
-     "ringMin": 0
-    }
-   ],
-   "zapfen": 120,
+   "ortImDeckel": [],
+   "zapfen": 42,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 129.1,
-  "minuten": 2.21
+  "fahrtS": 50.3,
+  "minuten": 0.9
  }
 }
