@@ -164,10 +164,10 @@ function runVergleich(morphFn, labPropFn, labLandmarksFn) {
 // 7,2 h und 0 h je 1 000 von 1 000 an ihrem Werk). Bis w4-bewohner-wache schlief um 0 h jeder Bewohner drinnen (`h ≥ ruhe`):
 // die Nacht-Zellen von mensch-kopf und haar standen ohne Bild (am alten Kern 217 459 von 480 000 Proben ohne Wache). Leser:
 // der Wirt (`_bewohnerSoll` → tagesPlan). Täter (Selbsttest): die Nacht-Wache ohne Versatz.
-const wacheLeer = (P, b = "nachtwaechter", a = "waechter", W = {}) => {
+const wacheLeer = (P, b = "nachtwaechter", a = "waechter", W = {}, O = { heim: 0, werk: W, platz: W, besuch: {} }) => {
     let n = 0;
     for (let s = 0; s < 2000; s += 2)
-        for (let h = 0; h < 24; h += 0.05) n += P(s, a, 0, W, h, W, {}).ort !== W && P(s + 1, b, 0, W, h, W, {}).ort !== W;
+        for (let h = 0; h < 24; h += 0.05) n += P(s, a, h, O).ort !== W && P(s + 1, b, h, O).ort !== W;
     return n;
 };
 

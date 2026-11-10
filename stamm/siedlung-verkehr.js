@@ -711,10 +711,7 @@ class AnazhRealm_siedlung_verkehr {
             const nah = (o) => o && Math.hypot(o.x - q.x, o.z - q.z) < W.hl + 1;
             const unter = (b) =>
                 (b.leib && !b.drinnen && !b.amSteuer && nah(b.leib.position)) ||
-                nah(b.orte.heim) ||
-                nah(b.orte.platz) ||
-                nah(b.orte.werk) ||
-                nah(b.orte.besuch);
+                AnazhRealm.BEWOHNER.staende.some((k) => nah(b.orte[k]));
             if (S.liste.some(unter)) continue;
             if (W.zonen.some((z) => s + W.hl >= z.ein - 2 && s - W.hl <= z.aus + 2)) continue;
             const fahrt = Math.atan2(r.x - q.x, r.z - q.z);

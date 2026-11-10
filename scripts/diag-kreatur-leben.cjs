@@ -814,27 +814,32 @@ async function lebenBuehnen() {
         };
         const pz = plan.platz && Number.isFinite(plan.platz.cx) ? plan.platz : null;
         const aecker = (plan.felder || []).filter((f) => f && Number.isFinite(f.cx) && Number.isFinite(f.ex));
-        // DER ORT EINES PUNKTS: der Kern des Platzes; der Ring der Stände vor der eigenen Tür (bis 16 m), dann vor dem nächsten
-        // Haus mit Rolle; der Rand des Platzes (`platzRandM`); der Ring vor dem nächsten Wohnhaus; ein Acker — sonst keiner
+        // DER ORT EINES PUNKTS: der Kern des Platzes oder eines Ackers; der Ring der Stände vor der eigenen Tür oder der eines
+        // Hauses mit Rolle (die nähere, bis 20 m); der Rand des Platzes (`platzRandM`); der Ring vor dem nächsten Wohnhaus (bis
+        // 16 m); der Rand eines Ackers — sonst keiner
         const ortVon = (p, heim) => {
             const platz = (rand) => (pz && im(pz, p.x, p.z, rand) ? { k: "platz", rolle: "platz" } : null);
-            const tuer = (wahl) => {
-                let [t, d] = [null, 16];
+            const tuer = (wahl, bis) => {
+                let [t, d] = [null, bis];
                 for (const q of tueren) if (wahl(q) && ab(p, q) < d) [t, d] = [q, ab(p, q)];
                 return t && { k: t.k, rolle: t.rolle, haus: true };
             };
-            const f = () => aecker.findIndex((q) => im(q, p.x, p.z, 1, true));
+            const feld = (rand, f = aecker.findIndex((q) => im(q, p.x, p.z, rand, true))) =>
+                f >= 0 ? { k: "feld#" + f, rolle: "feld" } : null;
             return (
                 platz(0) ||
-                tuer((q) => q.k === heim) ||
-                tuer((q) => q.rolle !== "wohnhaus") ||
+                feld(0) ||
+                tuer((q) => q.k === heim || q.rolle !== "wohnhaus", 20) ||
                 platz(A.BEWOHNER.platzRandM + 2) ||
-                tuer(() => true) ||
-                (f() >= 0 ? { k: "feld#" + f(), rolle: "feld" } : null)
+                tuer(() => true, 16) ||
+                feld(1)
             );
         };
-        // (der Fahrer: sein Werk ist sein Wagen — am Steuer oder am Stand neben ihm; der Frühaufsteher geht schon über den Platz)
-        const passt = (o, h, b, drinnen) => {
+        // (der Fahrer: sein Werk ist sein Wagen — am Steuer oder am Stand neben ihm; der Frühaufsteher geht schon über den Platz;
+        // die Nachtschicht, `versatzH` des Tages-Gesetzes, lebt die Gegen-Stunde: um 10 und 13 Uhr schläft sie, um 23 arbeitet sie)
+        const NACHT = { 6: 18, 10: 23, 13: 23, 18: 6, 23: 10 };
+        const passt = (o, uhr, b, drinnen) => {
+            const h = (window.__koerperCore.TAGES_GESETZ.rollen[b.rolle] || {}).versatzH ? NACHT[uhr] : uhr;
             const [eigen, hr] = [
                 !!o && o.k === "haus#" + b.heim,
                 (heimVon.get("haus#" + b.heim) || {}).rolle || "wohnhaus",
@@ -851,7 +856,12 @@ async function lebenBuehnen() {
                 const z = alt.call(r, b, h);
                 return z.drinnen ? z : { ziel: b.orte.platz || b.orte.heim, drinnen: false, akt: z.akt };
             });
-        const [je, fremd, rollen] = [{}, new Map(), {}];
+        const [je, fremd, rollen, bruch] = [{}, new Map(), {}, []];
+        // die lauten Brüche der Bewohner im Tag (kein Weg, kein Ort): je Text einmal
+        decke(
+            "_bruchMelden",
+            (alt) => (t) => (/^BEWOHNER/.test(t) && !bruch.includes(t) && bruch.push(t), alt.call(r, t))
+        );
         for (const t of tueren) if (t.rolle !== "wohnhaus") rollen[t.rolle] = [0, (rollen[t.rolle] || [0, 0])[1] + 1];
         const liste = () => S.liste.filter((b) => b.leib);
         for (const h of [6, 10, 13, 18, 23]) {
@@ -886,6 +896,8 @@ async function lebenBuehnen() {
             zielOrte: fremd.size,
             orte: tueren.filter((t) => t.rolle !== "wohnhaus").length + (pz ? 1 : 0) + aecker.length,
             rollen,
+            bruchN: bruch.length,
+            bruch: bruch.slice(0, 3),
         };
     });
 }

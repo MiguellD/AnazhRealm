@@ -2820,7 +2820,7 @@ async function kreaturProben(r, T, opts) {
             gehend = liste.filter((b) => b.weg && b.leib && b.leib.userData._satz === true);
             if (gehend.length) gang.messen(SZ);
         };
-        // DER BLICK DER STEHENDEN (mensch.K2): am Platz zur Mitte, vor der Tür vom Haus fort; die Streuung je Sektor von 30°
+        // DER BLICK DER STEHENDEN (mensch.K2): am Platz zur Mitte, vor einer Tür vom Haus fort; die Streuung je Sektor von 30°
         const blicke = { n: 0, treffer: 0, sektor: new Array(12).fill(0) };
         const blickMessen = () => {
             for (const b of liste) {
@@ -2830,11 +2830,12 @@ async function kreaturProben(r, T, opts) {
                 const o = b.orte;
                 const th = g.rotation.y;
                 blicke.sektor[((Math.round(th / (Math.PI / 6)) % 12) + 12) % 12]++;
+                // (der Stand im Ring vor einer Tür — der eigenen, der seines Werks, seines Tischs, seines Besuchs — trägt sie als `anker`)
                 const soll =
                     b.ziel === o.platz
                         ? Math.atan2(pc.x - g.position.x, pc.z - g.position.z)
-                        : b.ziel === o.heim || (b.ziel === o.werk && b.beruf !== "feld" && b.beruf !== "markt")
-                          ? Math.atan2(g.position.x - o.tuer.x, g.position.z - o.tuer.z)
+                        : b.ziel.anker
+                          ? Math.atan2(g.position.x - b.ziel.anker.x, g.position.z - b.ziel.anker.z)
                           : null;
                 if (soll === null) continue;
                 blicke.n++;
@@ -2880,7 +2881,7 @@ async function kreaturProben(r, T, opts) {
             for (const b of planFn ? liste : []) {
                 const o = b.orte;
                 const sh = (stunde + (hat("bewohner-plan6") ? 6 : 0)) % 24;
-                const planJetzt = () => planFn(b.same, b.rolle, o.heim, o.werk, sh, o.platz, o.besuch);
+                const planJetzt = () => planFn(b.same, b.rolle, sh, o);
                 const soll = planJetzt();
                 if (JSON.stringify(soll) !== JSON.stringify(planJetzt())) planGleich = false;
                 const ziel = soll.drinnen ? o.tuer : soll.ort;
