@@ -696,15 +696,11 @@ class AnazhRealm_bild_sicht {
                     // die Strahlung im Band des Grats ist die Himmels-Sicht der Atmosphäre selbst (die Luft bindet ihre Tafel in
                     // jedem Stoff schon)
                     const n = builder.context.getUV(this, builder);
-                    const strahlung = (dir) => wirt._atmoLutBau().himmelFarbe(dir);
                     // der Ort des Empfängers: die Schatten-Position seines Stoffs (der Ring: der Boden des Gesetzes), sonst
                     // positionWorld — `shadowPositionWorld` steht nur in Stoffen, die Schatten empfangen. Der Grat nimmt nur, wo
                     // der Renderer Schatten zeichnet (`_wirftImStoff`: unter kienspan ruht die Karte)
                     const ort = builder.material.receivedShadowPositionNode || T.positionWorld;
-                    const frei = wirt._wirftImStoff(
-                        T.max(himmel.sub(wirt._horizontHimmel(ort, n, strahlung)), T.vec3(0)),
-                        himmel
-                    );
+                    const frei = wirt._wirftImStoff(T.max(himmel.sub(wirt._horizontHimmel(ort, n)), T.vec3(0)), himmel);
                     return wirt._rueckstrahlHalbraum(frei, n);
                 }
                 const clip = L.vp.mul(T.vec4(T.positionWorld, 1));
