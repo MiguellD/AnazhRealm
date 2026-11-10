@@ -1553,7 +1553,7 @@
   },
   "leib.K3": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: ego: schwimmt 282/282, taucht 2.21 m (Augen unter 189) · Ruck Leib 0.012 / Kamera 0.019 m (p95 0.003 / 0.0009) · third: schwimmt 283/283, taucht 2.21 m (Augen unter 189) · Ruck Leib 0.013 / Kamera 0.013 m (p95 0.003 / 0.003) · Mutante Ruck 0.204 m erkannt · Exit 0 an 6aa7a5a6 headless — offen: leib.K3#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs +3) — zuletzt an 6aa7a5a6: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen · leib.K3#2 gtx: Station seit der Messung geändert — zuletzt an 6aa7a5a6: Deckel 45 s gerissen: Stille seit 20.1 s nach 45 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: @@ 24.8 s · umgestellt 1816/-6168 in 20504 ms)",
+   "beleg": "Maschine: gehalten: ego: schwimmt 282/282, taucht 2.21 m (Augen unter 189) · Ruck Leib 0.012 / Kamera 0.019 m (p95 0.003 / 0.0009) · third: schwimmt 283/283, taucht 2.21 m (Augen unter 189) · Ruck Leib 0.013 / Kamera 0.013 m (p95 0.003 / 0.003) · Mutante Ruck 0.204 m erkannt · Exit 0 an 6aa7a5a6 headless — offen: leib.K3#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs +3) — zuletzt an 6aa7a5a6: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen · leib.K3#2 gtx: Station seit der Messung geändert — zuletzt an 2d5f4146: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval ohne Antwort binnen 60 s) — ungemessen",
    "stationen": [
     {
      "id": "leib.K3#1",
@@ -1579,14 +1579,14 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 6aa7a5a6: Deckel 45 s gerissen: Stille seit 20.1 s nach 45 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: @@ 24.8 s · umgestellt 1816/-6168 in 20504 ms)",
+     "grund": "Station seit der Messung geändert — zuletzt an 2d5f4146: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval ohne Antwort binnen 60 s) — ungemessen",
      "ungemessen": true
     }
    ]
   },
   "leib.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: stamm baum_kiefer: 1102 Bilder · heran 8.54 → 0.89 m · Kugel {\"rückwärts: im Stamm baum_kiefer\":18} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | fels felsturm: 1144 Bilder · heran 8.56 → 0.41 m · Kugel {\"orbit fern: im Stamm baum_tanne\":10} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.052 m | haus haus_alemannisch: 1091 Bilder · heran 12.17 → 4.75 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0053 höchstens 2.700 m an b3f9ae95 radeon · gehalten: stamm baum_kiefer: 1102 Bilder · heran 8.54 → 0.89 m · Kugel {\"rückwärts: im Stamm baum_kiefer\":18} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | fels felsturm: 1144 Bilder · heran 8.56 → 0.41 m · Kugel {\"orbit fern: im Stamm baum_tanne\":10} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.052 m | haus haus_alemannisch: 1091 Bilder · heran 12.17 → 4.75 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0053 höchstens 2.700 m an b3f9ae95 gtx — offen: leib.K4#2 radeon: Station seit der Messung geändert — zuletzt an 6aa7a5a6: Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: innen haus_alemannisch: 1318 Bilder · heran 12.25 → 0.42 m · im Haus true · Kugel {} · Nah-Pixel {} · Ruck p95 0.0124 höchstens  · leib.K4#2 gtx: Station seit der Messung geändert — zuletzt an 6aa7a5a6: Deckel 90 s gerissen: Stille seit 89.9 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "beleg": "Maschine: gehalten: stamm baum_kiefer: 1102 Bilder · heran 8.54 → 0.89 m · Kugel {\"rückwärts: im Stamm baum_kiefer\":18} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | fels felsturm: 1144 Bilder · heran 8.56 → 0.41 m · Kugel {\"orbit fern: im Stamm baum_tanne\":10} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.052 m | haus haus_alemannisch: 1091 Bilder · heran 12.17 → 4.75 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0053 höchstens 2.700 m an b3f9ae95 radeon · gehalten: stamm baum_kiefer: 1102 Bilder · heran 8.54 → 0.89 m · Kugel {\"rückwärts: im Stamm baum_kiefer\":18} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.057 m | fels felsturm: 1144 Bilder · heran 8.56 → 0.41 m · Kugel {\"orbit fern: im Stamm baum_tanne\":10} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.052 m | haus haus_alemannisch: 1091 Bilder · heran 12.17 → 4.75 m · Kugel {} · Nah-Pixel {} · Ruck p95 0.0053 höchstens 2.700 m an b3f9ae95 gtx — offen: leib.K4#2 radeon: Station seit der Messung geändert — zuletzt an 6aa7a5a6: Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: innen haus_alemannisch: 1318 Bilder · heran 12.25 → 0.42 m · im Haus true · Kugel {} · Nah-Pixel {} · Ruck p95 0.0124 höchstens  · leib.K4#2 gtx: Station seit der Messung geändert — zuletzt an 2d5f4146: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval ohne Antwort binnen 60 s) — ungemessen",
    "stationen": [
     {
      "id": "leib.K4#1",
@@ -1621,7 +1621,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 6aa7a5a6: Deckel 90 s gerissen: Stille seit 89.9 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+     "grund": "Station seit der Messung geändert — zuletzt an 2d5f4146: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval ohne Antwort binnen 60 s) — ungemessen",
      "ungemessen": true
     }
    ]
@@ -1652,16 +1652,15 @@
   },
   "licht.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: licht.K1#1 gtx: Station seit der Messung geändert — zuletzt an 6aa7a5a6: Deckel 90 s gerissen: Stille seit 21 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __tagKurve({\"uhren\":[0,0.01,0.02,0. (100 Uhren) · 22.4 s · 68.9 s)",
+   "beleg": "Maschine: 0 — offen: licht.K1#1 gtx: ROT: genesis: Karte Luma 126.6, Sprung 0.551 EV, Buckel 0.52 EV, Sonne 10° -0.59 EV R/B ×0.90 | -0.47 EV R/B ×0.94, Nacht -1.68 EV Luma 58.3 · wiese: Karte Luma 126.6, Sprung 0.263 EV, Buckel 0.09 EV, Sonne 10° -0.98 EV R/B ×0.98 | -1.25 EV R/B ×0.77, Nacht -3.32 EV Luma 34.9 · Linse TAG-ACHSE ROT: REF genesis: Uhr 0 (Sonne -74.21°) 0.85 Stufen neben der REF | REF genesis: Uhr 0.01 (Sonne -74.28°) 0.86 Stufen neben der REF | REF genesis: Uhr 0.02 (Sonne -73.56°) 0.86 Stufen neben  · [linse-gpu] nvidia/pascal an 2d5f4146",
    "stationen": [
     {
      "id": "licht.K1#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 6aa7a5a6: Deckel 90 s gerissen: Stille seit 21 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __tagKurve({\"uhren\":[0,0.01,0.02,0. (100 Uhren) · 22.4 s · 68.9 s)",
-     "ungemessen": true
+     "zahl": "genesis: Karte Luma 126.6, Sprung 0.551 EV, Buckel 0.52 EV, Sonne 10° -0.59 EV R/B ×0.90 | -0.47 EV R/B ×0.94, Nacht -1.68 EV Luma 58.3 · wiese: Karte Luma 126.6, Sprung 0.263 EV, Buckel 0.09 EV, Sonne 10° -0.98 EV R/B ×0.98 | -1.25 EV R/B ×0.77, Nacht -3.32 EV Luma 34.9 · Linse TAG-ACHSE ROT: REF genesis: Uhr 0 (Sonne -74.21°) 0.85 Stufen neben der REF | REF genesis: Uhr 0.01 (Sonne -74.28°) 0.86 Stufen neben der REF | REF genesis: Uhr 0.02 (Sonne -73.56°) 0.86 Stufen neben  · [linse-gpu] nvidia/pascal",
+     "sha": "2d5f414637a834dec1a5b816af5860709513a303",
+     "grund": "ROT: genesis: Karte Luma 126.6, Sprung 0.551 EV, Buckel 0.52 EV, Sonne 10° -0.59 EV R/B ×0.90 | -0.47 EV R/B ×0.94, Nacht -1.68 EV Luma 58.3 · wiese: Karte Luma 126.6, Sprung 0.263 EV, Buckel 0.09 EV, Sonne 10° -0.98 EV R/B ×0.98 | -1.25 EV R/B ×0.77, Nacht -3.32 EV Luma 34.9 · Linse TAG-ACHSE ROT: REF genesis: Uhr 0 (Sonne -74.21°) 0.85 Stufen neben der REF | REF genesis: Uhr 0.01 (Sonne -74.28°) 0.86 Stufen neben der REF | REF genesis: Uhr 0.02 (Sonne -73.56°) 0.86 Stufen neben  · [linse-gpu] nvidia/pascal"
     }
    ]
   },
@@ -1790,7 +1789,7 @@
   },
   "lod.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: lod.K1#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/haenger-linse.cjs +8) — zuletzt an 6aa7a5a6: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: auge · Exit 0) · lod.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/gpu-fehler.cjs +11) — zuletzt an 6aa7a5a6: Deckel 90 s gerissen: Stille seit 36.8 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: auge · Exit 0)",
+   "beleg": "Maschine: 0 — offen: lod.K1#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/haenger-linse.cjs +8) — zuletzt an 6aa7a5a6: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: auge · Exit 0) · lod.K1#1 gtx: ROT: Tafel-Pose schlechteste fimp:strauch:L2 0.2560 · Karte fimp:birke:L2 0.1299 (12451 px), fimp:buche:L2 0.1930 (14153 px), fimp:eiche:L2 0.1483 (55999 px), fimp:fichte:L2 0.1662 (107119 px), fimp:strauch:L2 0.2560 (23194 px), fimp:tanne:L2 0.1507 (157163 px) | Spielgang schlechteste fimp:buche:L2 0.2289 · Karte fimp:birke:L2 0.1859 (29285 px), fimp:buche:L2 0.2289 (14517 px), fimp:eiche:L2 0.1435 (55208 px), fimp:fichte:L2 0.1744 (107270 px), fimp:strauch:L2 0.1998 (27188 px), fimp:tanne:L2 0.1512 (134754 px) · zweiton ≠ 0: fimp:fichte:L2, fimp:tanne:L2 (Soll kante ≤ 0,22 je Teil-Klasse, zweiton 0) · [linse-gpu] nvidia/pascal an 2d5f4146",
    "stationen": [
     {
      "id": "lod.K1#1",
@@ -1805,10 +1804,9 @@
      "id": "lod.K1#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/gpu-fehler.cjs +11) — zuletzt an 6aa7a5a6: Deckel 90 s gerissen: Stille seit 36.8 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: auge · Exit 0)",
-     "ungemessen": true
+     "zahl": "Tafel-Pose schlechteste fimp:strauch:L2 0.2560 · Karte fimp:birke:L2 0.1299 (12451 px), fimp:buche:L2 0.1930 (14153 px), fimp:eiche:L2 0.1483 (55999 px), fimp:fichte:L2 0.1662 (107119 px), fimp:strauch:L2 0.2560 (23194 px), fimp:tanne:L2 0.1507 (157163 px) | Spielgang schlechteste fimp:buche:L2 0.2289 · Karte fimp:birke:L2 0.1859 (29285 px), fimp:buche:L2 0.2289 (14517 px), fimp:eiche:L2 0.1435 (55208 px), fimp:fichte:L2 0.1744 (107270 px), fimp:strauch:L2 0.1998 (27188 px), fimp:tanne:L2 0.1512 (134754 px) · zweiton ≠ 0: fimp:fichte:L2, fimp:tanne:L2 (Soll kante ≤ 0,22 je Teil-Klasse, zweiton 0) · [linse-gpu] nvidia/pascal",
+     "sha": "2d5f414637a834dec1a5b816af5860709513a303",
+     "grund": "ROT: Tafel-Pose schlechteste fimp:strauch:L2 0.2560 · Karte fimp:birke:L2 0.1299 (12451 px), fimp:buche:L2 0.1930 (14153 px), fimp:eiche:L2 0.1483 (55999 px), fimp:fichte:L2 0.1662 (107119 px), fimp:strauch:L2 0.2560 (23194 px), fimp:tanne:L2 0.1507 (157163 px) | Spielgang schlechteste fimp:buche:L2 0.2289 · Karte fimp:birke:L2 0.1859 (29285 px), fimp:buche:L2 0.2289 (14517 px), fimp:eiche:L2 0.1435 (55208 px), fimp:fichte:L2 0.1744 (107270 px), fimp:strauch:L2 0.1998 (27188 px), fimp:tanne:L2 0.1512 (134754 px) · zweiton ≠ 0: fimp:fichte:L2, fimp:tanne:L2 (Soll kante ≤ 0,22 je Teil-Klasse, zweiton 0) · [linse-gpu] nvidia/pascal"
     }
    ]
   },
@@ -1868,7 +1866,7 @@
   },
   "lod.K5": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: 17 Läufe bei 30/60/144 fps, Puls und Regler ±10 % (loadScale 0–1): Abstände, Schwellen, Grenzen, Wahl und Ränder gleich, die Mutante (Regler-Term im Gesetz) wandert an 6aa7a5a6 headless — offen: lod.K5#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/haenger-linse.cjs +8) — zuletzt an 067bd771: Deckel 43 s gerissen — beendet, UNGEMESSEN (zuletzt: umstellen · Exit 0) · lod.K5#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs +5) — zuletzt an 6aa7a5a6: Deckel 45 s gerissen: Stille seit 41.1 s nach 45 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: umstellen · Exit 0)",
+   "beleg": "Maschine: gehalten: 17 Läufe bei 30/60/144 fps, Puls und Regler ±10 % (loadScale 0–1): Abstände, Schwellen, Grenzen, Wahl und Ränder gleich, die Mutante (Regler-Term im Gesetz) wandert an 6aa7a5a6 headless — offen: lod.K5#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/haenger-linse.cjs +8) — zuletzt an 067bd771: Deckel 43 s gerissen — beendet, UNGEMESSEN (zuletzt: umstellen · Exit 0) · lod.K5#1 gtx: ROT: Baum 5.05 px · Haus 0.13 px · Tor 0.18 px · Wagen 0.03 px (Soll ≤ 1 px am Wechsel-Abstand, 1920 × 1080) · gate L2: Exemplar 140 px, [linse-gpu] nvidia/pascal an 2d5f4146",
    "stationen": [
     {
      "id": "lod.K5#1",
@@ -1883,10 +1881,9 @@
      "id": "lod.K5#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs +5) — zuletzt an 6aa7a5a6: Deckel 45 s gerissen: Stille seit 41.1 s nach 45 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: umstellen · Exit 0)",
-     "ungemessen": true
+     "zahl": "Baum 5.05 px · Haus 0.13 px · Tor 0.18 px · Wagen 0.03 px (Soll ≤ 1 px am Wechsel-Abstand, 1920 × 1080) · gate L2: Exemplar 140 px, [linse-gpu] nvidia/pascal",
+     "sha": "2d5f414637a834dec1a5b816af5860709513a303",
+     "grund": "ROT: Baum 5.05 px · Haus 0.13 px · Tor 0.18 px · Wagen 0.03 px (Soll ≤ 1 px am Wechsel-Abstand, 1920 × 1080) · gate L2: Exemplar 140 px, [linse-gpu] nvidia/pascal"
     },
     {
      "id": "lod.K5#2",
@@ -3009,7 +3006,7 @@
   },
   "siedlung.K1": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 1 von 8 Gängen Tür → Keller → Dachboden ganz, Hub max 0.20 m, Anti-Clip-Hub 0 an 6aa7a5a6 headless — offen: siedlung.K1#2 radeon: Station seit der Messung geändert — zuletzt an 6aa7a5a6: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 18 von 18 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.20 m · Innen-Bild 0 von 18 lesbar (Plan 18), innen ÷  · siedlung.K1#2 gtx: Station seit der Messung geändert — zuletzt an 6aa7a5a6: Deckel 45 s gerissen: Stille seit 45 s nach 45 s (kein Lebenszeichen) — beendet, UNGEMESSEN",
+   "beleg": "Maschine: gehalten: 1 von 8 Gängen Tür → Keller → Dachboden ganz, Hub max 0.20 m, Anti-Clip-Hub 0 an 6aa7a5a6 headless — offen: siedlung.K1#2 radeon: Station seit der Messung geändert — zuletzt an 6aa7a5a6: Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 18 von 18 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.20 m · Innen-Bild 0 von 18 lesbar (Plan 18), innen ÷  · siedlung.K1#2 gtx: Station seit der Messung geändert — zuletzt an 2d5f4146: Deckel 70 s gerissen: Stille seit 70 s nach 70 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN",
    "stationen": [
     {
      "id": "siedlung.K1#1",
@@ -3035,7 +3032,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 6aa7a5a6: Deckel 45 s gerissen: Stille seit 45 s nach 45 s (kein Lebenszeichen) — beendet, UNGEMESSEN",
+     "grund": "Station seit der Messung geändert — zuletzt an 2d5f4146: Deckel 70 s gerissen: Stille seit 70 s nach 70 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN",
      "ungemessen": true
     }
    ]
@@ -4206,7 +4203,7 @@
   },
   "vegetation.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 42 Häuser des Start-Dorfs, 47/51 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 57343 px; ungemessen (ohne freies Auge) haus_skandinavisch 3-0 haupt · haus_provenzalisch 23-0 haupt · haus_italienisch 27-0 haupt · haus_provenzalisch 41-0 haupt an b3f9ae95 radeon · gehalten: 42 Häuser des Start-Dorfs, 47/51 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 57041 px; ungemessen (ohne freies Auge) haus_skandinavisch 3-0 haupt · haus_provenzalisch 23-0 haupt · haus_italienisch 27-0 haupt · haus_provenzalisch 41-0 haupt an b3f9ae95 gtx — offen: vegetation.K4#2 radeon: Station seit der Messung geändert — zuletzt an 6aa7a5a6: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 1.5 s) · vegetation.K4#2 gtx: Station seit der Messung geändert — zuletzt an 6aa7a5a6: Deckel 90 s gerissen: Stille seit 88.7 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 1.2 s)",
+   "beleg": "Maschine: gehalten: 42 Häuser des Start-Dorfs, 47/51 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 57343 px; ungemessen (ohne freies Auge) haus_skandinavisch 3-0 haupt · haus_provenzalisch 23-0 haupt · haus_italienisch 27-0 haupt · haus_provenzalisch 41-0 haupt an b3f9ae95 radeon · gehalten: 42 Häuser des Start-Dorfs, 47/51 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 57041 px; ungemessen (ohne freies Auge) haus_skandinavisch 3-0 haupt · haus_provenzalisch 23-0 haupt · haus_italienisch 27-0 haupt · haus_provenzalisch 41-0 haupt an b3f9ae95 gtx — offen: vegetation.K4#2 radeon: Station seit der Messung geändert — zuletzt an 6aa7a5a6: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 1.5 s) · vegetation.K4#2 gtx: Station seit der Messung geändert — zuletzt an 2d5f4146: Deckel 139 s gerissen: Stille seit 128.8 s nach 139 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 10.0 s)",
    "stationen": [
     {
      "id": "vegetation.K4#1",
@@ -4223,7 +4220,7 @@
      "gruen": true,
      "zahl": "42 Häuser des Start-Dorfs, 47/51 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 57041 px; ungemessen (ohne freies Auge) haus_skandinavisch 3-0 haupt · haus_provenzalisch 23-0 haupt · haus_italienisch 27-0 haupt · haus_provenzalisch 41-0 haupt",
      "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Station seit der Messung geändert — zuletzt an 6aa7a5a6: Deckel 90 s gerissen: Stille seit 88.7 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 1.2 s)",
+     "grund": "Station seit der Messung geändert — zuletzt an 2d5f4146: Deckel 139 s gerissen: Stille seit 128.8 s nach 139 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 10.0 s)",
      "gehalten": true
     },
     {
@@ -4241,7 +4238,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an 6aa7a5a6: Deckel 90 s gerissen: Stille seit 88.7 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 1.2 s)",
+     "grund": "Station seit der Messung geändert — zuletzt an 2d5f4146: Deckel 139 s gerissen: Stille seit 128.8 s nach 139 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 10.0 s)",
      "ungemessen": true
     }
    ]
@@ -4490,8 +4487,8 @@
  },
  "rueckfall": [],
  "kopfVoll": "2d5f414637a834dec1a5b816af5860709513a303",
- "zeit": "2026-11-10T13:52:45.869Z",
- "vorher": "6aa7a5a6",
+ "zeit": "2026-11-10T14:41:48.104Z",
+ "vorher": "2d5f4146",
  "pflicht": {
   "dokument": "docs/PFLICHT-OFFEN.md",
   "eintraege": [
@@ -4520,7 +4517,7 @@
      {
       "station": "lod.K1#1",
       "geraet": "gtx",
-      "zeile": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/gpu-fehler.cjs +11) — zuletzt an 6aa7a5a6: Deckel 90 s gerissen: Stille seit 36.8 s nach 90 s (kein Lebenszeichen) — beendet,"
+      "zeile": "ROT: Tafel-Pose schlechteste fimp:strauch:L2 0.2560 · Karte fimp:birke:L2 0.1299 (12451 px), fimp:buche:L2 0.1930 (14153 px), fimp:eiche:L2 0.1483 (55999 px), fimp:fichte:L2 0.1662 (107119 px), fimp:strauch:L2 0.2560 (23194 px), fimp:tanne:"
      },
      {
       "station": "mensch.K4#1",
