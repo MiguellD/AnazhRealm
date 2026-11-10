@@ -1645,7 +1645,7 @@ async function kreaturProben(r, T, opts) {
                     ab(c.position, vorher[i]) +
                     Math.abs(wrap(c.rotation.y - vorher[i].g)) * S[i].halb;
             });
-            if (k >= N / 2) spRaum.push(Math.min(...tiere.map((c, i) => ab(c.position, pm) / (S[i].kugel + A.PLAYER_WALL_RADIUS))));
+            if (k >= N / 2) spRaum.push(Math.min(...S.map((s, i) => ab(tiere[i].position, pm) / (s.kugel + RP))));
             if (k >= N / 2)
                 for (let i = 0; i < tiere.length; i++) {
                     let m = Infinity;
@@ -1689,7 +1689,6 @@ async function kreaturProben(r, T, opts) {
             nachbarRaumP10: rund(quantil(nnRaum, 0.1), 3),
             nachbarRaumP50: rund(quantil(nnRaum, 0.5), 3),
             spielerRaumP10: rund(quantil(spRaum, 0.1), 3),
-            spielerRaumP50: rund(quantil(spRaum, 0.5), 3),
         };
     });
 
@@ -2547,7 +2546,7 @@ async function kreaturProben(r, T, opts) {
                 const je = liste.map((b) => ({ wer: wer(b), ...wSpur.get(b) }));
                 const vier = (n, l) => ({ [n + "N"]: l.length, [n]: l.slice(0, 4) });
                 return {
-                    wandN: [...WG.wand.values()].reduce((a, b) => a + b, 0),
+                    wandN: [...WG.wand.values()].reduce(addiere, 0),
                     wand: [...WG.wand]
                         .sort((a, b) => b[1] - a[1])
                         .slice(0, 4)
@@ -2612,7 +2611,7 @@ async function kreaturProben(r, T, opts) {
                     })),
                     pxM: r._schirm().pxJeM / A.BEWOHNER.nahM,
                     kaskaden: A.SCHATTEN_KASKADE.texelM.length,
-                    takt: [q3(ms.reduce((a, b) => a + b, 0) / ms.length), q3(rang(ms, 0.95))],
+                    takt: [q3(ms.reduce(addiere, 0) / ms.length), q3(rang(ms, 0.95))],
                 };
             },
         });
@@ -2959,7 +2958,7 @@ async function kreaturProben(r, T, opts) {
                     Math.max(...blicke.sektor) /
                         Math.max(
                             1,
-                            blicke.sektor.reduce((a, b) => a + b, 0)
+                            blicke.sektor.reduce(addiere, 0)
                         )
                 ),
             },
@@ -3623,10 +3622,7 @@ function urteil(name, z) {
         // nächste Leib steht in neun von zehn Takten mindestens Kugel an Kugel. Bis w27-wagen-spalt-2 sah die Linse nur den
         // Leib IM Spieler — mit der gezeichneten Haut der Bären (physik.K2 Staffel 2) hält der EINE Löser die Schar ohne
         // Spieler-Separation bis auf 0,2 cm aus ihm (Täter `abstand-spieler` unsichtbar), sie drängt sich aber an ihn: p10 0,909
-        soll(
-            z.spielerRaumP10 >= 1 && z.spielerRaumP50 >= 1,
-            `der Spieler hat keinen Raum: der nächste Leib p50 ${z.spielerRaumP50} / p10 ${z.spielerRaumP10} der Körper-Kugeln (Soll ≥ 1)`
-        );
+        soll(z.spielerRaumP10 >= 1, `der Spieler hat keinen Raum: p10 ${z.spielerRaumP10} Körper-Kugeln (Soll ≥ 1)`);
         // Der persönliche Raum über die zweite Hälfte des Laufs (je Tier und Takt der nächste Nachbar in Körper-Kugeln):
         // die Schar steht im Mittel mindestens Kugel an Kugel, kaum enger.
         soll(
@@ -3810,7 +3806,7 @@ const TAETER = {
     ],
     abstand: [
         ["abstand", /Durchdringung|kein persönlicher Raum/],
-        ["abstand-spieler", /Leib im Spieler|der Spieler hat keinen Raum/],
+        ["abstand-spieler", /Leib im Spieler|keinen Raum/],
     ],
     jagdkreis: [
         ["jagd-gradient", /kein Riss/],
