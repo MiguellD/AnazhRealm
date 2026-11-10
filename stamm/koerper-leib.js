@@ -1028,14 +1028,14 @@ class AnazhRealm_koerper_leib {
     // Erbgut und der Stufe. Jeder neue Leib baute so Graph und Programm neu, obwohl er Graph, Geometrie und Stoff mit dem
     // vorigen teilte (dorf Ego eingelaufen, GTX 1050 7ce5b9b6: 17 Knoten-Bauten in 36 s, jeder ein neuer Leib, keiner
     // verdrängt; zwei Wölfe unterschieden sich nur in 29 ↔ 21 und 10 ↔ 7 Knochen). Jede Ofen-Bindung füllt ihr Skelett darum
-    // bis zum nächsten Vielfachen von KNOCHEN_RASTER auf, mit EINEM Platzhalter ohne Ecken (kein skinIndex zeigt auf ihn,
-    // three rechnet ihn als Einheit): der Knochen-Index, `__skinJoints` und jeder Leser über sie bleiben, wie sie waren.
+    // bis zum nächsten Vielfachen von KNOCHEN_RASTER auf — mit ihrem ERSTEN EIGENEN Gelenk, nie einem fremden Knochen: jeder
+    // Knochen der Reihe bleibt ein Gelenk des Leibs (die Kreatur-Kosten-Invariante `rZwillingKnochen` zählt jeden, der keins
+    // ist — ein Platzhalter ohne Namen färbte z370 rot). Kein skinIndex zeigt auf die Füllplätze; der Knochen-Index, `indexOf`
+    // (der erste Platz ist der echte), `__skinJoints` und jeder Leser über sie bleiben, wie sie waren.
     static _ofenSkelett(bones) {
         const n = Math.ceil(bones.length / AnazhRealm.KNOCHEN_RASTER) * AnazhRealm.KNOCHEN_RASTER;
-        if (n === bones.length) return new THREE.Skeleton(bones);
-        const platz = AnazhRealm.__knochenPlatz || (AnazhRealm.__knochenPlatz = new THREE.Bone());
         const alle = bones.slice();
-        while (alle.length < n) alle.push(platz);
+        while (alle.length < n) alle.push(bones[0]);
         return new THREE.Skeleton(alle);
     }
     // DIE STARR-BINDUNG (Mensch UND Tier, am EINEN Ofen-Chokepoint): jedes starre Teil (Pfote · Ohr · Lid ·
@@ -3005,7 +3005,7 @@ AnazhRealm._landungGesetz = function () {
 // (dichteLeib 1000 über eine Kapsel aus der Hüft-Höhe — der Hirsch wog 436 kg, der Bär 255 —, dichteWagen 150).
 AnazhRealm.LEIB_KLASSEN = Object.freeze(["fell", "haut"]); // die Material-Klassen der geschlossenen Haut eines Leibs
 // DAS KNOCHEN-RASTER (`_ofenSkelett`): die Knochen-Reihe jeder Ofen-Haut ist ein Vielfaches davon — Leiber eines Graphen mit
-// 17 bis 32 Knochen teilen EIN Programm (die Reihe kostet je Platzhalter 64 B Knochen-Matrix je Bild).
+// 17 bis 32 Knochen teilen EIN Programm (die Reihe kostet je Füllplatz 64 B Knochen-Matrix je Bild).
 AnazhRealm.KNOCHEN_RASTER = 16;
 // DIE KOPF-KLASSE (`_kopfKlasse`, mensch-kopf und haar): gelenk = die Gelenke des Kopfs (Kopf, Augen, Iris, Lider des Rigs) ·
 // iris = das Gelenk, an dem ein Teil ohne Stoff-Klasse das Auge ist · anteil = ab diesem Anteil seiner Haut-Gewichte an ihnen
