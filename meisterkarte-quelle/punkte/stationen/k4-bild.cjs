@@ -240,10 +240,17 @@ const SCHUSS = (o) => {
         zurueck();
         [sc.background, sc.fog, sc.overrideMaterial, R.toneMapping] = [alt.bg, alt.fog, alt.ov, alt.tm];
     }
+    // DIE HALBE DECKUNG (w27-studio-mesh): die Gestalt der Bühne liest eine geglättete Leinwand — ein Rand-Pixel trägt Weiß × seine
+    // Deckung, und eine sRGB-Leinwand (r184 `outputColorSpace`, r128 `outputEncoding` 3001) kodiert die halbe Deckung als 188, nie
+    // als 128. Bis hier galt 127 für jede Leinwand: auf sRGB zählte ein Rand-Pixel ab 21 % Deckung, die Gestalt der Bühne war um
+    // einen Saum fetter als die der Welt (ihr Ziel ist linear und ungeglättet, Pixel-Mitte) — Radeon da0e790f: garage 296 881
+    // gegen 295 836 Pixel (0,35 % nur eine Seite), die dünne Klinge der schmiede 30 025 gegen 29 243 (2,6 %, über dem Soll 2,1 %
+    // allein aus dem Raster).
+    const halb = R.outputColorSpace === "srgb" || R.outputEncoding === 3001 ? 187 : 127;
     const L = new Uint8Array(o.W * o.H), M = new Uint8Array(o.W * o.H);
     for (let p = 0; p < L.length; p++) {
         L[p] = Math.round(0.2126 * bild[p * 4] + 0.7152 * bild[p * 4 + 1] + 0.0722 * bild[p * 4 + 2]);
-        M[p] = maske[p * 4] > 127 ? 1 : 0;
+        M[p] = maske[p * 4] > halb ? 1 : 0;
     }
     const b64 = (u) => {
         let s = "";
