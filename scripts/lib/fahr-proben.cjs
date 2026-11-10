@@ -1,6 +1,6 @@
 "use strict";
 // scripts/lib/fahr-proben.cjs — die Seiten-Probe der Leben-Prüfung „Fahren“ (gate:fahr-leben), am Domänen-Tag Fahrt geteilt
-// (Datei-Decke 4 000, PFLICHT-OFFEN D(3)): eine Seiten-Funktion, die scripts/diag-fahr-leben.cjs per page.evaluate fährt.
+// (Datei-Decke 4 000, gate:betriebsgesetz 6b): eine Seiten-Funktion, die scripts/diag-fahr-leben.cjs per page.evaluate fährt.
 
 // ── DIE PROBE IN DER SEITE (Funktionsrumpf; r = die Welt). Fährt den echten Frame. ──
 async function probeLeben(expected) {

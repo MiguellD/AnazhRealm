@@ -50,7 +50,8 @@ jobs:
             contents: read
         steps:
             - uses: actions/checkout@v4
-              # Die Wachstums-Wand (gate:betriebsgesetz in der Statik) misst je Zweig ab der Merge-Basis mit dem Mutter-Zweig:
+              # Die Wachstums-Wand (gate:betriebsgesetz in der Statik) misst je Zweig ab der Merge-Basis mit dem Mutter-Zweig (am
+              # Zweig druckt sie den Stand, ROT nur am Push von integ-probe und am Zug-Kandidaten mit --grund):
               # die ganze Geschichte ohne Blobs (Commits + Bäume ~7 MB), die Blobs der geänderten Dateien holt `git diff` in
               # einem Zug nach. Ohne Geschichte ist die Wand ROT (Grund nicht auflösbar), nie still grün.
               with:
@@ -134,7 +135,7 @@ jobs:
               # `gate:*` und jeder Teil dieser Statik in einem Workflow — oder steht mit Klasse und Grund in der
               # Ausnahme-Liste von scripts/diag-ci-deckung.cjs. gate:taille startet den save-server selbst (TAILLE_PORT,
               # sonst ein freier Port des Systems, welt-boot `eigenePorte`) und liest ihn mit einem Chromium. WACHSTUM_VORHER: der Kopf vor dem Push —
-              # auf integ-probe misst die Wachstums-Wand jeden Merge des Pushes einzeln.
+              # auf integ-probe urteilt die Wachstums-Wand über das Fenster des Pushes.
               env:
                   WACHSTUM_VORHER: ${{ github.event.before }}
               run: npm run check:statik
