@@ -1,8 +1,41 @@
-ABGABE dc29205f (Zweig w27-studio-mesh, main 20a01782 gemischt; der Schnitt wie da9919e3) · Probe-Ruf: gate:studio-uebergabe, gate:wasser-leben:bild, bild:wiese@0.5 · Station: w27-studio-mesh-pm c0d7963 (zwei Commits: 4846d77 Himmel des Wirts · fuss · PFAD, c0d7963 halbe Deckung)
+ABGABE 972a2bcf (Zweig w27-studio-mesh, main 900c28e gemischt — dc29205f steht in main seit V18.546.243) · Probe-Ruf: gate:garage-labor, gate:studio-uebergabe, bild:wiese@0.5 · Station: w27-studio-mesh-pm d8ee61f (die Differenz je Seh-Klasse; davor 4846d77, c0d7963)
 
 ## 10.11. 02:57 — GPU-PROBE dc29205f auf radeon-890m: GRÜN in 525 s (gate:studio-uebergabe GRÜN 63 s auf radeon-890m · gate:wasser-leben:bild GRÜN 42 s auf radeon-890m · bild:wiese@0.5 GRÜN 71 s auf radeon-890m) → probe-post/w27-studio-mesh/dc29205f.md
 
 ## 10.11. 01:59 — GPU-PROBE da9919e3 auf radeon-890m: ROT in 480 s (gate:studio-huelle ROT 152 s auf radeon-890m · gate:wasser-leben:bild GRÜN 32 s auf radeon-890m · bild:wiese@0.5 GRÜN 52 s auf radeon-890m) → probe-post/w27-studio-mesh/da9919e3.md
+
+## 10.11. 08:40 — Neuer Anlauf studios.K4 (Arbeiter w27-studio-mesh) — ZWISCHENSTAND, studios.K4 bleibt 0/7
+
+Anlass: dc29205f ist gelandet (V18.546.243), K4 stand weiter bei 0/7 — der Schöpfer verlangte einen neuen Anlauf. Gemessen wurde lokal
+(swiftshader, kienspan, 960 × 540) mit der Station als Bibliothek; neu ist die Zerlegung je Seh-Klasse (Station `d8ee61f`, unten).
+
+**Die Zerlegung (garage an der Prüfbühne, 22,3 %):** Glas 11,6 · Lack (metall) 9,7 · Glut 0,5 · Stoff 0,4 Punkte. schmiede 20,0 %: die Klinge (metall) 19,1.
+**Was die Differenz trägt, gemessen:**
+- **Messort:** derselbe Lauf am Ort neben der Grundstellung der Wiese 28,3 % → Prüfbühne 22,0 % (Lack 16,0 → 9,5 Punkte): Bäume und Gras im Spiegel
+  der Welt (das Spiegel-Feld trägt die Kronen als grüne 2-m-Blöcke in der Scheibe), die Bühne hat kein Feld. Die Probe misst also auch den Ort.
+- **Glas = das Bloom der Welt:** die durchsichtige Scheibe der Welt ist heller als ihre beiden Schichten (65,4 Luma; opakes Glas 30,6, Innenraum ohne
+  Glas 32,6). Mit `bloomStrength` 0 fällt sie auf 30,8 (Bühne 25,3), garage 22,3 → 18,7 %, schmiede 18,2 % (mit Bloom 20–58 % je Lauf: die Klinge
+  glitzert in der Welt, 70,7 gegen 52,3 Luma — die Bühne zeichnet ohne Bloom). Nicht ortsgleich gemessen (die Probe setzt je Lauf 16 m weiter).
+- **Die Bloom-Schwelle der Welt** urteilt die Szene VOR der Belichtung (0,86 ≈ 0,44 im Bild bei Belichtung 0,51; der Kommentar will „nicht der
+  diffuse Himmel“). Ortsgleich (K4_P fest, Wiese) ohne Wirkung: 16,81 % alt gegen 16,84 % belichtet — nicht geliefert.
+- **Die Kamera der Welt in der Bühne** (dasselbe Bloom als EIN Knoten in welt-licht.js, die Bühne zeichnet durch eine Pipeline): gebaut, lokal NICHT
+  sauber messbar (die Rücklesung der WebGPU-Bühne über ein Render-Ziel wartet asynchron, die Bühne zeichnete zweimal aus ihrer Labor-Kamera hinein) —
+  nicht geliefert; der Versuch liegt als Diff vor (193 Zeilen), er braucht eine Messung auf echter GPU.
+
+**Geliefert (Spiel):** EIN Recht der Welt an den Stoffen der Bühne. Das Wurf-Recht (`teilWirft`: Fell-Schale, Glut und Durchsichtiges werfen nie) und
+die Durchsicht (`durchsicht`: transparent, Deckkraft, beide Seiten in EINEM Zug) stehen im Licht-Baustein; die Welt liest sie (`_teilWirft`,
+studio-stoff), gate:regler-wirkt liest sie, und `buehneZeichnet` wendet beide in jedem Bild an jedem Mesh jeder Bühne an — bis hier warf die Bühne mit
+Scheibe und Lichtern und zog ihr Glas in zwei Zügen. Wirkung auf K4: KEINE messbare (die Scheibe der Bühne 28,3 Luma vorher wie nachher) — eine Wahrheit
+der Bühne, kein Punkt. **Geliefert (Station `d8ee61f`):** die Differenz je Seh-Klasse in Ausgabe und Zeile („glas s/a · metall s/a …“), damit die Farm auf
+echter GPU den Stoff nennt, der springt.
+
+**Ehrlich offen (mit Messnamen):**
+- **studios.K4 Kamera der Bühne:** die Bühne zeigt ohne die Foto-Kette der Welt (Bloom, zeitliche Auflösung); Glas und Klinge springen am Bloom. M.
+- **studios.K4 Messort:** der Ort der vorigen Probe; die Prüfbühne senkt die garage um 6 Punkte, die Fahrt-Wand trägt keinen Welt-Wechsel. Entscheid Koordinator.
+- **studios.K4 Spiegel der Umgebung:** der Lack der Welt spiegelt Boden und Gras des Orts (Flanke, Felge, Schweller), die Bühne den Boden der Atmosphäre
+  (`ATMO_BODEN`); die Welt misst ihren Boden je Bild (`_rueckstrahlLeser().boden`), die Bühne könnte ihn mit dem Himmel erhalten (`enter.himmel`). M.
+- Die fünf r128-Studios (portale, fachwerk, terrain, koerperstudio, tetrapoda), je L — unverändert.
+- FUND (fremd, wie zuvor): `selbsttest --ohne 3c` an main ab fbbeb318 ROT „log is not defined“ (lod.K3#1 OHNE GERÄT).
 
 ## 10.11. 03:00 — Antwort auf Post 02:30 (Arbeiter w27-studio-mesh): `gate:studio-huelle` ist an main ROT — weder Last noch mein Schnitt
 
