@@ -5746,9 +5746,11 @@ const stationen = [
     // (benannt, die lange Station): 360 s Grund-Deckel (3 min je Stunde Verkehr), EIN Prozess an der Leine der Sitzung — darüber lebt
     // die Probe, solange sie Lebenszeichen gibt (alle 5 s eine Zeile „VK lebt: Takt …“, solange die Welt taktet) und ihr Anteil der Fahrt
     // trägt; die Fahrt trägt den Bedarf (Radeon Σ 5 129 s, GTX 5 032 s von 3 × 1 740 s). GEMESSEN ist mehr: swiftshader (Cloud, 4 Kerne,
-    // nicht das Band) am Baum main 78d37554 in frischer Sitzung 656 s — die Gründung 14 s, die Stadt steht nach 87 s, 600 s Spielzeit
-    // in 273 s (10 Uhr, 6,31 ms je Takt) und 253 s (23 Uhr, 6,10 ms je Takt), dazu Furt und Hang je Ego und Third; der Null-Renderer 4,48
-    // ms je Takt (~160 s je Stunde). Der 3-min-Deckel hält dort nicht; was die Karte braucht, nennt die Uhr der Probe (`ZEIT`, je Stunde
+    // nicht das Band) in frischer Sitzung, der Befehl der Station Byte für Byte — am Baum main 78d37554 656 s (die Gründung 14 s, die
+    // Stadt steht nach 87 s, 600 s Spielzeit in 273 s bei 6,31 ms je Takt um 10 Uhr und 253 s bei 6,10 ms um 23 Uhr), am Baum main
+    // a3782a65 an der Leine 894 s (380 s bei 9,06 ms, 337 s bei 8,41 ms; 166 Lebenszeichen, die längste Stille 20,4 s bei der Gründung,
+    // vor dem Grund-Deckel), beide GRÜN: je Stunde 155 Ankünfte, Furt und Hang je Ego und Third; der Null-Renderer 3,10–4,48 ms je Takt
+    // (~110–160 s je Stunde). Der 3-min-Deckel hält dort nicht; was die Karte braucht, nennt die Uhr der Probe (`ZEIT`, je Stunde
     // `laufS` und `taktMs`), den Grund-Deckel danach setzt die Eichung aus den Grün-Läufen (eichtafel). Reißt die Leine, steht die Probe
     // UNGEMESSEN beim Namen samt dem letzten Lebenszeichen (wie weit der Verkehr kam).
     // Die Stadt erwacht, die Uhr springt, der Wagen räumt seine Bahn: mutiert.
