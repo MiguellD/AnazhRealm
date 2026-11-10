@@ -1,7 +1,7 @@
 {
  "sha": "78d37554b2d5f98d96ef454cfa9f51752c0e45a0",
  "geraet": "gtx",
- "zeit": "2026-11-10T03:31:41.332Z",
+ "zeit": "2026-11-10T03:37:10.450Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "ferne.K1#2": {
@@ -1256,22 +1256,71 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "leib.K4#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen: Stille seit 89.9 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "exit": 1,
+   "minuten": 1.5,
+   "grund": "Deckel 90 s gerissen: Stille seit 89.9 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "s": 90.2,
+   "fremd": {
+    "s": 93.5,
+    "takte": 43,
+    "fremdS": 173.66,
+    "kerne": 1.858,
+    "fensterKerne": 2.808,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      98.36
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      16.66
+     ],
+     [
+      "MsMpEng.exe",
+      14.22
+     ]
+    ],
+    "dienerS": 24.42,
+    "diener": [
+     [
+      "dwm.exe",
+      11.55
+     ],
+     [
+      "System",
+      7.56
+     ]
+    ],
+    "eigenS": 173.91,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-10T03:37:10.450Z",
+   "abdruck": "d92a3ff92ce9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-10T03:31:09.928Z",
+  "start": "2026-11-10T03:36:33.789Z",
   "port": 7804,
-  "warten": 0.02,
-  "bootS": 7.3,
+  "warten": 0.01,
+  "bootS": 7.6,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": null,
-    "vor": "leib.K3#2",
-    "s": 22.5,
-    "takte": 785,
+    "ort": "wiese",
+    "vor": "leib.K4#2",
+    "s": 27.8,
+    "takte": 541,
     "chunks": 81,
     "nach": null
    }
@@ -1288,19 +1337,12 @@
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
-   "ortImDeckel": [
-    {
-     "probe": "leib.K3#2",
-     "m": 6430,
-     "ringVor": 4,
-     "ringMin": 0
-    }
-   ],
-   "zapfen": 70,
+   "ortImDeckel": [],
+   "zapfen": 118,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 75.9,
-  "minuten": 1.32
+  "fahrtS": 127.8,
+  "minuten": 2.21
  }
 }
