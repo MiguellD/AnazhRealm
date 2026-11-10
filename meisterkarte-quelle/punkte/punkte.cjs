@@ -152,7 +152,7 @@ function hilfeText() {
 // Probe 39 s“ mit 10/18 Häusern und 2/8 Werken gesehen, leib.K3#2 „/umstellen binnen 11 s“ —, die Fahrt lief 505 s von 1 800; die
 // Inventur 07.11.: 762 Deckel-Risse, 60 % der GPU-Ereignisse UNGEMESSEN): je Probe ihr GRUND-Deckel (probeSek: deckel.json je Karte aus
 // ihren Grün-Läufen, eichTafel, sonst probe.sek, Vorgabe PROBE_DECKEL_S) — bis dahin tötet nichts; darüber lebt sie, solange sie
-// Lebenszeichen gibt (jede Ausgabe auf stdout/stderr, Stille höchstens STILLE_S) und ihr ANTEIL der Fahrt trägt (fahreSitzung: der Rest
+// Lebenszeichen gibt (jede Ausgabe auf stdout/stderr oder ein Bild ihrer Welt im Strom, Stille höchstens STILLE_S) und ihr ANTEIL der Fahrt trägt (fahreSitzung: der Rest
 // der Fahrt nach Bedarf unter die offenen Proben geteilt — eine `--nur`-Fahrt mit wenigen teilt das ganze Budget unter diesen wenigen).
 // Die eigene Frist der Probe ({SEK}, PUNKTE_PROBE_DECKEL_S, PUNKTE_TEIL_FRIST_S) folgt demselben EINEN Deckel. Ein Abbruch bleibt
 // UNGEMESSEN beim Namen (Stille, Anteil, Fahrt); der Deckel ändert nie ein Urteil
@@ -182,6 +182,18 @@ const probeSek = (st, geraet) => {
     if (t && t[schluessel(st)] != null) return t[schluessel(st)];
     const e = Object.values(deckelEintraege(st));
     return geraet ? sekRoh(st) : Math.max(sekRoh(st), ...e);
+};
+// DER DECKEL IST EINE FUNKTION DES GERÄTS (10.11., Koordinator: die OMEN maß 41 veraltete Stationen am main 6aa7a5a6, 17 rissen „Deckel
+// 90 s gerissen: Stille …“ — die Tafel der GTX trug die Zahlen der Radeon und lernte nie, denn jeder Riss zählt zensiert): an der Leine
+// (fahreGruppe) ist der Grund-Deckel einer Karte nie kleiner als der der Radeon × ihr TAKT-FAKTOR (taktVon, FREMD_EICH `takt` — dieselbe
+// Eichung wie die Fremd-Last, gemessen oder nach Radeon), gekappt am Teil der Fahrt je Teil der Probe; eine Zahl der Tafel, die schon
+// darüber liegt (die eigenen Grün-Läufe der Karte), bleibt. Die Tafel (probeSek), der Plan der Fahrt (fahrtSumme, der Anteil) und der
+// Abdruck bleiben Byte für Byte: mit dem Faktor im Plan stünde die Fahrt der GTX bei 7 394 s in 5 Teilen über dem Gesetz von 3 — die
+// Probe, die länger braucht, nimmt ihre Zeit an der Leine, und was über die Fahrt reicht, misst die Fortsetzung
+const grundDeckel = (st, geraet) => {
+    const eigen = probeSek(st, geraet), f = taktVon(geraet);
+    if (!(f > 1)) return eigen;
+    return Math.max(eigen, Math.min(Math.floor((FAHRT_MAX_S - SITZUNG_BOOT_S) / teileVon(st)), Math.ceil(+(probeSek(st, "radeon") * f).toFixed(6))));
 };
 // der Abdruck JE KARTE (geraet): der Deckel dieser Karte aus der Deckel-Tafel steht darin — ein neuer Radeon-Deckel misst die Radeon
 // neu, nie die GTX; ohne Eintrag (und ohne Karte) Byte für Byte wie bisher
@@ -994,16 +1006,19 @@ const FREMD_FENSTER_S = 10;
 // effekt der relative Effekt je fremdem Kern auf der empfindlichsten Zeit-Station · schwelle = 0,03 / effekt (gerundet nach unten)
 // ABAB 09.11. an d3512932 (oben): F und Sekunden der Ankunft je Seite, der Effekt je Kern an ankunft und, mit 25/15, an profiband
 const FREMD_RADEON = { ort: "win32, Radeon 890M, 24 Kerne", plattform: "win32", kerne: 24, cpu: "AMD Ryzen AI 9 HX 370 w/ Radeon 890M", app: 3.24, brenner6: 9.03,
-    ankunftApp: 11.05, ankunftBrenner: 13.21, effektAnkunft: 0.0338, effekt: (0.0338 * 25) / 15, schwelle: 0.5 };
+    ankunftApp: 11.05, ankunftBrenner: 13.21, effektAnkunft: 0.0338, effekt: (0.0338 * 25) / 15, schwelle: 0.5, takt: 1 };
 const FREMD_EICH = [
     // `fremdlast --sek 40`, 08.11., ef667956: die Last des Befunds gemessen, ihr Effekt aus dem Befund der Radeon (+25 % profiband)
     { ort: "linux, 4 Kerne (Container)", plattform: "linux", kerne: 4, leerlauf: 0.01, playtestFast: 2.07, statikUndPlaytestFast: 2.68,
         effekt: 0.25 / 2.68, schwelle: 0.3 },
     FREMD_RADEON,
     // DIE OMEN bis zu ihrer Messung (10.11.): Effekt und Schwelle der Radeon (Näherung — 12 statt 24 Kerne, ein fremder Kern nimmt ihr
-    // eher mehr), der Leerlauf gemessen (die dichtesten 10-s-Fenster, `fremdlast --sek 20`: mit dem HP-Dienst, nach seinem Halt)
+    // eher mehr), der Leerlauf gemessen (die dichtesten 10-s-Fenster, `fremdlast --sek 20`: mit dem HP-Dienst, nach seinem Halt). DER
+    // TAKT-FAKTOR (probeSek: der Deckel ist eine Funktion des Geräts) GEMESSEN aus allen Mess-Dateien am 10.11.: je Station, die beide Karten
+    // in der Sitzung mindestens zweimal maßen (60, die Radeon ≥ 5 s), der Median ihrer Sekunden GTX ÷ Radeon — Median 1,11, p75 1,38, p90
+    // 1,54; der Deckel nimmt das p90 (neun von zehn Proben tragen ihn; die längsten, an der Leine zensiert, stehen in keiner Zahl)
     { ort: "win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon", plattform: "win32", kerne: 12, cpu: "Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
-        nach: FREMD_RADEON.ort, leerlaufMitHp: 3.54, leerlauf: 0.63, effekt: FREMD_RADEON.effekt, schwelle: FREMD_RADEON.schwelle,
+        nach: FREMD_RADEON.ort, leerlaufMitHp: 3.54, leerlauf: 0.63, effekt: FREMD_RADEON.effekt, schwelle: FREMD_RADEON.schwelle, takt: 1.54, taktMedian: 1.11, taktStationen: 60,
         vorschrift: "OMEN eichen (am Messplatz, nichts sonst startet): A `node punkte.cjs fremdlast --sek 40` in Ruhe · B dasselbe neben dem Brenner " +
             "`node -e \"const { Worker } = require('worker_threads'); for (let i = 0; i < 4; i++) new Worker('for (;;);', { eval: true })\"` in einer zweiten Konsole · " +
             "dann ABAB je 2 Läufe `node punkte.cjs run --sha <Kopf> --geraet gtx --nur ankunft.K1#1` ohne (A) und mit dem Brenner (B) → je Lauf t aus " +
@@ -1016,6 +1031,9 @@ function fremdEich(r = { plattform: process.platform, kerne: os.cpus().length, c
     return { ort: "ungeeicht (" + r.plattform + ", " + r.kerne + " Kerne, " + String(r.cpu).trim() + ") — die strengste Schwelle, " + streng.ort,
         schwelle: streng.schwelle, effekt: streng.effekt, ungeeicht: true };
 }
+// DER TAKT-FAKTOR JE KARTE (probeSek): die Karte und ihr Rechner — die Radeon ist das Maß (1), die GTX steht an der OMEN
+const TAKT_KARTE = { radeon: FREMD_RADEON, gtx: FREMD_EICH.find((x) => /OMEN/.test(x.ort)) };
+const taktVon = (geraet) => (TAKT_KARTE[geraet] && TAKT_KARTE[geraet].takt) || 1;
 const FREMD_HIER = fremdEich();
 const FREMD_SCHWELLE_KERNE = FREMD_HIER.schwelle;
 const FREMD_DIENER = /^(system|registry|memory compression|secure system|dwm\.exe|csrss\.exe|audiodg\.exe|wmiprvse\.exe|xorg|xwayland|gnome-shell|kwin_x11|kwin_wayland|pipewire|pulseaudio)$/i;
@@ -1412,7 +1430,7 @@ function fahreGruppe(sts, ctx) {
         // in der Sitzung DER EINE DECKEL der Probe je Teil: ihr Grund-Deckel (probeSek, bis dahin tötet nichts) oder ihr Anteil der Fahrt
         // (sitz.anteilS, fahreSitzung), das größere — gekappt am Rest der Fahrt (sitz.restS); die Leine (unten) tötet zwischen Grund und
         // Deckel nur die Stille
-        const grundS = sitz ? probeSek(st, ctx.geraet) : null;
+        const grundS = sitz ? grundDeckel(st, ctx.geraet) : null;
         const sitzDeckelS = sitz ? Math.max(grundS, Math.floor((sitz.anteilS || 0) / teileN)) : null;
         let fahrtKappt = !!sitz && sitz.restS != null && sitz.restS < sitzDeckelS;
         let deckelS = sitz ? (fahrtKappt ? Math.max(1, Math.floor(sitz.restS)) : sitzDeckelS) : Math.max(ctx.deckelMinS != null ? ctx.deckelMinS : 120, Math.ceil(st.minuten * 60 * 2));
@@ -1477,7 +1495,11 @@ function fahreGruppe(sts, ctx) {
         let tLeben = 0, riss = null;
         const leine = (tA) => {
             clearTimeout(uhr);
-            const k = kind, t = Date.now(), lauf = (t - tA) / 1000, still = (t - tLeben) / 1000;
+            // DIE STILLE (10.11., Koordinator: „kein Lebenszeichen der Probe (Takt/Log), nicht kein Ergebnis in 90 s“): eine Zeile der Probe
+            // ODER ein Bild ihrer Welt (der Zapfen der Sitzung brachte Bilder: die Probe treibt einen Loop — zwischen den Befehlen steht die
+            // Welt) ist ein Lebenszeichen; eine Probe, die in der Seite rechnet und Bilder zeigt, schweigt nie
+            const leben = Math.max(tLeben, (sitz && typeof sitz.lebt === "function" && sitz.lebt()) || 0);
+            const k = kind, t = Date.now(), lauf = (t - tA) / 1000, still = (t - leben) / 1000;
             if (lauf >= deckelS || (lauf >= grundS && still >= stilleS)) {
                 riss = lauf >= deckelS ? { art: "deckel" } : { art: "stille", still: +still.toFixed(1), lauf: +lauf.toFixed(1) };
                 tot = true;
@@ -1554,7 +1576,7 @@ function fahreGruppe(sts, ctx) {
             // DIE WACHE DER FAHRT: in der Sitzung ist eine Probe an der Leine UNGEMESSEN beim Namen (sie misst nicht, was sie soll — nie ROT,
             // nie GRÜN): die Stille über ihrem Grund-Deckel, ihr Anteil der Fahrt, oder der Rest der Fahrt kappte sie (FAHRT_MAX_S)
             const imTeil = teileN > 1 ? " in Teil " + teil + "/" + teileN : "";
-            if (tot && sitz) return offen((riss && riss.art === "stille" ? "Deckel " + grundS + " s gerissen: Stille seit " + riss.still + " s nach " + riss.lauf + " s (kein Lebenszeichen)"
+            if (tot && sitz) return offen((riss && riss.art === "stille" ? "Deckel " + grundS + " s gerissen: Stille seit " + riss.still + " s nach " + riss.lauf + " s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt)"
                 : fahrtKappt ? "Deckel der Fahrt " + (sitz.fahrtMaxS || FAHRT_MAX_S) + " s gerissen nach " + deckelS + " s der Probe"
                     : "Deckel " + deckelS + " s gerissen" + (deckelS > grundS ? " (der Anteil der Fahrt, mit Lebenszeichen)" : "")) + imTeil + " — beendet, UNGEMESSEN" + wobei, code);
             if (ohneEnde) return offen("die Teile reichten nicht: Teil " + teil + "/" + teileN + " sagte WEITER — der Lauf ohne Ende, UNGEMESSEN" + wobei, code);
@@ -2833,10 +2855,12 @@ async function fahreSitzung(gruppen0, ctx, melde) {
     // DER ZAPF-TAKT: nie zwei Zapfen der Sitzung zugleich; während der Grundstellung ruht er. `seite`: die Seite des letzten Zapfens
     // (stromSeite zieht je Seite einen Haken ein) — eine neue Seite hat keinen gebauten Ring (DER WARME START)
     const W = ctx.port + 20000, zz = { zapfen: 0, luecken: 0, letzteLuecke: null };
+    // das letzte Bild der Welt (die Leine liest es als Lebenszeichen der Probe, fahreGruppe): der Zapfen, der Bilder brachte
+    let bildZuletzt = 0;
     let aktuell = "(sitzung)", laeuft = null, ruht = false, seite = null;
     const zapf = (probe) => {
         laeuft = (laeuft || Promise.resolve()).then(() => stromZapfen(W, strom, probe)).then((z) => {
-            if (z.ok) (zz.zapfen++, (seite = z.seite));
+            if (z.ok) (zz.zapfen++, (seite = z.seite), z.n > 0 && (bildZuletzt = Date.now()));
             else (zz.luecken++, (zz.letzteLuecke = z.grund));
         });
         return laeuft;
@@ -3010,7 +3034,7 @@ async function fahreSitzung(gruppen0, ctx, melde) {
         if (leihe.fehler) console.log("  SITZUNG die Leihe der Hänger-Linse vor " + schluessel(g[0]) + " nicht lesbar: " + leihe.fehler);
         const zeit = new Date().toISOString();
         aktuell = schluessel(g[0]);
-        const es = await fahreGruppe(g, { ...ctx, ...aus, sitzung: { log, zeuge, strom, grund, probe: aktuell, restS: restS(), anteilS: anteil(gruppen.indexOf(g)), fahrtMaxS } });
+        const es = await fahreGruppe(g, { ...ctx, ...aus, sitzung: { log, zeuge, strom, grund, probe: aktuell, restS: restS(), anteilS: anteil(gruppen.indexOf(g)), fahrtMaxS, lebt: () => bildZuletzt } });
         if (es.some((e) => /^Deckel der Fahrt /.test(e.grund || ""))) (gerissen = "in " + aktuell), kopf.offen.push(...g.map(schluessel));
         await zapf(aktuell);
         aktuell = "(sitzung)";
@@ -5459,7 +5483,7 @@ async function selbsttest(o = {}) {
         const zeile = /^  (GRÜN|ROT ) (\S+) · .* · Exit \S+ · ([\d.]+) min( \(Zwilling von \S+\))?$/;
         const schloss = gl && fs.existsSync(glLog) ? fs.readFileSync(glLog, "utf8").trim().split("\n") : [];
         pruef("SITZUNG EINE Welt: jede Probe darin (WERKBANK_PORT, das Log, der Zeuge der Welt), der Deckel der Probe beim Namen ihrer letzten Zeile, nach dem Fehler die nächste in DERSELBEN Welt, Zwillinge EIN Lauf",
-            r1.z.filter((l) => l === "start").length === 1 && x["a.K1#1"].gruen && /^Deckel 2 s gerissen: Stille seit [\d.]+ s nach [\d.]+ s \(kein Lebenszeichen\) — beendet, UNGEMESSEN \(zuletzt: SCHRITT \/umstellen 41\.3 s\)$/.test(x["b.K1#1"].grund) && x["b.K1#1"].ungemessen === true &&
+            r1.z.filter((l) => l === "start").length === 1 && x["a.K1#1"].gruen && /^Deckel 2 s gerissen: Stille seit [\d.]+ s nach [\d.]+ s \(kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt\) — beendet, UNGEMESSEN \(zuletzt: SCHRITT \/umstellen 41\.3 s\)$/.test(x["b.K1#1"].grund) && x["b.K1#1"].ungemessen === true &&
             x["c.K1#1"].gruen === false && x["c.K1#1"].exit === 1 &&
             x["d.K1#1"].gruen && x["d.K1#2"].gruen && x["d.K1#2"].zwilling === "d.K1#1" && x["a.K1#1"].gpu === "amd/stub-sitzung" && r1.kopf.proben === 4, JSON.stringify([r1.z, x]));
         pruef("SITZUNG der Grund nach der Reihe anfang, die Grundstellung nur nach einem Abbruch oder einer mutierenden Probe — nie vor jeder; nach dem Abbruch (b.K1 am Deckel) durch die Tür (die Seite neu: die Arbeit der gefallenen Probe endet in der Seite); nie ein zweiter Start; am Ende stop",
@@ -5495,13 +5519,33 @@ async function selbsttest(o = {}) {
         const xl = rl.es, sekEnv = (/ sek (\d+) env (\d+)$/.exec((xl["l.K1#1"] || {}).zahl || "") || []).slice(1).map(Number);
         pruef("LEINE (a) die stille Probe fällt über ihrem Grund-Deckel 2 s nach 1 s Stille beim Namen, die Fahrt läuft weiter; die LEBENDE (4 s Arbeit am Grund 2 s) misst GRÜN, " +
             "ihre Frist folgt dem EINEN Deckel ({SEK} = PUNKTE_PROBE_DECKEL_S = der Anteil > 2 s); (c) ROT im Maß nach 3 s am Grund 1 s bleibt ROT gemessen",
-            !!xl["s.K1#1"] && xl["s.K1#1"].ungemessen === true && /^Deckel 2 s gerissen: Stille seit [\d.]+ s nach [\d.]+ s \(kein Lebenszeichen\) — beendet, UNGEMESSEN$/.test(xl["s.K1#1"].grund) && xl["s.K1#1"].s < 4 &&
+            !!xl["s.K1#1"] && xl["s.K1#1"].ungemessen === true && /^Deckel 2 s gerissen: Stille seit [\d.]+ s nach [\d.]+ s \(kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt\) — beendet, UNGEMESSEN$/.test(xl["s.K1#1"].grund) && xl["s.K1#1"].s < 4 &&
             !!xl["l.K1#1"] && xl["l.K1#1"].gruen === true && !xl["l.K1#1"].ungemessen && xl["l.K1#1"].s >= 4 && sekEnv.length === 2 && sekEnv[0] > 2 && sekEnv[0] === sekEnv[1] &&
             !!xl["r.K1#1"] && xl["r.K1#1"].gruen === false && !xl["r.K1#1"].ungemessen && /^n 7/.test(xl["r.K1#1"].zahl) && xl["r.K1#1"].s >= 3 && !!xl["n.K1#1"] && xl["n.K1#1"].gruen === true,
             JSON.stringify(Object.entries(xl).map(([id, e]) => [id, e.gruen, e.ungemessen, e.s, e.grund || e.zahl])));
         // DIE MUTANTE der festen Uhr: trägt die Fahrt keinen Rest (60 s, nach l ein Bedarf von 1 000 s), ist ihr Anteil null und der Deckel der
         // Grund — die lebende fällt nach 2 s beim Namen, wie jede bis 10.11.; die Fahrt läuft weiter
         const rm = await lauf([[S("l.K1", 1, { befehl: lebt, sek: 2 }, nN)], [S("n.K1", 1, { befehl: [...ruf, "return 1"], sek: 1000 }, warm)]], "gut", null, 60);
+        // DIE WELT LEBT (10.11., Koordinator: „Stille heißt kein Lebenszeichen der Probe (Takt/Log)“): eine Probe, die 3 s schweigt, aber den
+        // Loop der Welt treibt (ihre Bilder kommen im Zapfen an), misst über ihrem Grund-Deckel 2 s GRÜN; dieselbe ohne Loop (die Welt steht
+        // zwischen den Befehlen) fällt wie bisher — die Mutante, die nur Zeilen der Probe zählte. DER DECKEL DES GERÄTS: dieselbe stille
+        // Probe (3 s, Grund 2 s) reißt auf der Radeon (Takt-Faktor 1) und misst auf der GTX (Takt-Faktor 1,54: der Grund-Deckel ⌈2 × 1,54⌉ = 4 s)
+        const schweigt = (loop) => ["node", "-e", 'const fs = require("fs"), http = require("http"); const e = (c) => new Promise((ok) => http.request({ host: "127.0.0.1", ' +
+            'port: Number(process.env.WERKBANK_PORT), path: "/eval", method: "POST" }, (r) => { r.resume(); r.on("end", ok); }).end(JSON.stringify({ code: c }))); ' +
+            '(async () => { ' + (loop ? 'await e("loop an"); ' : "") + 'await new Promise((w) => setTimeout(w, 3000)); ' + (loop ? 'await e("loop aus"); ' : "") +
+            'fs.writeFileSync(process.argv[1], JSON.stringify({ n: 0 })); })();', "{AUS}"];
+        const rw = await lauf([[S("w.K1", 1, { befehl: schweigt(true), sek: 2 }, nN)], [S("v.K1", 1, { befehl: schweigt(false), sek: 2 }, nN)]], "gut");
+        const rg = await lauf([[S("v.K1", 1, { befehl: schweigt(false), sek: 2 }, nN)]], "gut", null, null, null, { geraet: "gtx" });
+        const stille = /^Deckel 2 s gerissen: Stille seit [\d.]+ s nach [\d.]+ s \(kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt\) — beendet, UNGEMESSEN$/;
+        pruef("LEINE DIE WELT LEBT: die stille Probe, die den Loop der Welt treibt, misst über ihrem Grund-Deckel 2 s GRÜN; dieselbe ohne Loop fällt nach der Stille beim Namen (die Mutante: nur Zeilen zählten)",
+            !!rw.es["w.K1#1"] && rw.es["w.K1#1"].gruen === true && !rw.es["w.K1#1"].ungemessen && rw.es["w.K1#1"].s >= 3 &&
+                !!rw.es["v.K1#1"] && rw.es["v.K1#1"].ungemessen === true && stille.test(rw.es["v.K1#1"].grund), JSON.stringify(Object.entries(rw.es).map(([id, e]) => [id, e.gruen, e.s, e.grund || e.zahl])));
+        const vSt = S("v.K1", 1, { befehl: schweigt(false), sek: 2 }, nN);
+        pruef("LEINE DER DECKEL DES GERÄTS: dieselbe stille Probe (3 s, Grund 2 s) reißt mit Faktor 1 (Radeon) und misst mit dem Takt-Faktor der GTX (Grund an der Leine " +
+            grundDeckel(vSt, "gtx") + " s); die Radeon behält ihren Deckel, Tafel und Plan der Fahrt bleiben Byte für Byte",
+            taktVon("radeon") === 1 && taktVon("gtx") > 1.5 && grundDeckel(vSt, "radeon") === 2 && probeSek(vSt, "gtx") === 2 && grundDeckel(vSt, "gtx") === Math.ceil(2 * taktVon("gtx")) &&
+                !!rg.es["v.K1#1"] && rg.es["v.K1#1"].gruen === true && !rg.es["v.K1#1"].ungemessen && rg.es["v.K1#1"].s >= 3 && stille.test(rw.es["v.K1#1"].grund),
+            JSON.stringify([rg.es["v.K1#1"], rw.es["v.K1#1"] && rw.es["v.K1#1"].grund]));
         pruef("LEINE die MUTANTE ohne Rest der Fahrt: der Deckel ist der Grund, die lebende Probe fällt nach 2 s beim Namen (Deckel 2 s, kein Anteil), die nächste misst GRÜN",
             !!rm.es["l.K1#1"] && rm.es["l.K1#1"].ungemessen === true && /^Deckel 2 s gerissen — beendet, UNGEMESSEN \(zuletzt: @@ Schritt\)$/.test(rm.es["l.K1#1"].grund) && rm.es["l.K1#1"].s < 4 &&
             !!rm.es["n.K1#1"] && rm.es["n.K1#1"].gruen === true, JSON.stringify(rm.es));
