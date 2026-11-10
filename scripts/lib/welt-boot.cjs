@@ -1457,6 +1457,34 @@ const abwandlung = (gruen) => (pfad, wert) => {
     Object.assign(pfad ? pfad.split(".").reduce((o, k) => o[k], z) : z, wert);
     return z;
 };
+// DIE TAFEL EINES SELBSTTESTS (`const { t, ende } = selbstTafel()`): `t(name, ok)` trägt einen Fall ein, `ende(satz)` schreibt jede
+// Zeile und schließt mit `selbsttestEnde` — bis w26-winter-fichte-2 derselbe Zwilling in diag-albedo-tafel und diag-profiband
+function selbstTafel(tests = []) {
+    const ende = (satz) => {
+        for (const x of tests) console.log(`${x.ok ? "✅" : "❌"} SELBST-TEST: ${x.name}`);
+        selbsttestEnde(tests.filter((x) => !x.ok).map((x) => x.name), `${satz} (${tests.length}/${tests.length})`);
+    };
+    return { t: (name, ok) => tests.push({ name, ok: !!ok }), ende };
+}
+// DIE BRÜCHE EINES GESUNDEN BEFUNDS (`bruchFaelle(check, faelle)`): je Fall `[kurz, urteil, gesund, brueche]` nennt der gesunde
+// Befund keinen Täter, jeder Bruch `[name, mischung, soll]` (in den gesunden gemischt) einen, der mit `soll` beginnt — bis
+// w26-winter-fichte-2 dieselbe Schleife in diag-ankunft und diag-v1-pfad
+function bruchFaelle(check, faelle) {
+    for (const [kurz, urteil, gesund, brueche] of faelle) {
+        check(`Selbst-Test ${kurz}: gesund == 0 Täter`, !urteil(gesund).length, urteil(gesund).join(" · "));
+        for (const [name, bruch, soll] of brueche) {
+            const v = urteil(Object.assign({}, gesund, bruch));
+            check(`Selbst-Test ${kurz}: ‚${name}' → die Linse nennt ${soll}`, v.some((t) => t.startsWith(soll)), v.join(" · "));
+        }
+    }
+}
+// DAS URTEIL EINER PROBE (`probeUrteil(check, kurz, name, m, urteil, zeile)`): ihre Ausnahme ist ROT, sonst stehen die Täter des
+// `urteil`s beim Namen, `zeile` das Detail der gestarteten Probe — bis w26-winter-fichte-2 derselbe Zwilling in diag-ankunft und diag-v1-pfad
+function probeUrteil(check, kurz, name, m, urteil, zeile, mm = m || {}) {
+    if (mm.err) check(`${kurz} Probe ohne Ausnahme`, false, mm.err.split("\n")[0]);
+    const v = urteil(mm);
+    check(`${kurz} ${name}`, !v.length, `${mm.gestartet ? zeile(mm) : "nicht gestartet"}${v.length ? " — Täter: " + v.join(", ") : ""}`);
+}
 function selbsttestEnde(fehler, satz = "jeder injizierte Täter fällt rot und wird beim Namen genannt.") {
     if (fehler.length) {
         console.log("\n❌ SELBSTTEST ROT — die Wand ist vakuös: " + fehler.join(" · "));
@@ -1837,6 +1865,9 @@ module.exports = {
     rahmen,
     pruefer,
     taeterFaelle,
+    bruchFaelle,
+    selbstTafel,
+    probeUrteil,
     abwandlung,
     selbsttestEnde,
     wandEnde,

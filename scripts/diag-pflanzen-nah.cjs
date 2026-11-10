@@ -437,9 +437,10 @@ function halmUrteil(fall, t, rc, lod, S) {
         const [b, x, y] = I.slice(i, i + 3), fl = Math.hypot(...kreuz(d(b, x), d(b, y))) / 2, a = c.slice(b * 3, b * 3 + 3); // prettier-ignore
         A += fl;
         if (!a[1]) continue;
-        // je Anker (die Spitze des Stängels): Ährchen, Breite (die Höhe über der Achse), Länge (die fernste Spitze)
-        const e = uv[x * 2] > 0 ? y : x, z = ae.get(a.join()) || [0, 0, 0]; // prettier-ignore
-        ae.set(a.join(), [z[0] + 1, Math.max(z[1], (2 * fl) / Math.hypot(...d(b, e))), Math.max(z[2], Math.hypot(...p.slice(e * 3, e * 3 + 3).map((q, j) => q - a[j])))]); // prettier-ignore
+        // je Anker (der Fuß des Stängels in der Höhe seiner Spitze, emitGrass): Ährchen, Breite (die Höhe über der Achse), Länge (die
+        // fernste Spitze von der Basis des ersten Ährchens, der Spitze des Stängels)
+        const e = uv[x * 2] > 0 ? y : x, z = ae.get(a.join()) || [0, 0, 0, p.slice(b * 3, b * 3 + 3)]; // prettier-ignore
+        ae.set(a.join(), [z[0] + 1, Math.max(z[1], (2 * fl) / Math.hypot(...d(b, e))), Math.max(z[2], Math.hypot(...p.slice(e * 3, e * 3 + 3).map((q, j) => q - z[3][j]))), z[3]]); // prettier-ignore
     }
     const lam = A * (S / rc.understory.grassStep) ** 2, fuss = Math.max(...uv.filter((_, i) => i % 2)), aeh = [...ae.values()]; // prettier-ignore
     return [

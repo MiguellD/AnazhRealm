@@ -34,7 +34,7 @@
 //   node scripts/diag-ankunft.cjs [--selftest]          Port: ANKUNFT_PORT (Standard 4601)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { fehlerText, statikServer, hauptLauf, pruefer, wandEnde, selbsttestEnde, SELBSTTEST, stammLib, jsonKlon, fehlerStapel, nullWelt } = require("./lib/welt-boot.cjs");
+const { fehlerText, statikServer, hauptLauf, pruefer, wandEnde, selbsttestEnde, SELBSTTEST, stammLib, jsonKlon, fehlerStapel, nullWelt, bruchFaelle, probeUrteil } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.ANKUNFT_PORT || 4601);
 
@@ -1970,13 +1970,7 @@ hauptLauf(async () => {
                 ],
             ],
         ];
-        for (const [kurz, urteil, gesund, brueche] of faelle) {
-            check(`Selbst-Test ${kurz}: gesund == 0 Täter`, urteil(gesund).length === 0, urteil(gesund).join(" · "));
-            for (const [name, bruch, soll] of brueche) {
-                const v = urteil(Object.assign({}, gesund, bruch));
-                check(`Selbst-Test ${kurz}: ‚${name}' → die Linse nennt ${soll}`, v.some((t) => t.startsWith(soll)), v.join(" · "));
-            }
-        }
+        bruchFaelle(check, faelle);
         const gruen = wand();
         check("Selbst-Test W: der Arbeitsbaum ist grün", gruen.every((w) => w[1]), gruen.filter((w) => !w[1]).map((w) => w[0]).join(" | "));
         const kopfMit = (n, rein) => [null, new RegExp(`(\\n {4}${n}\\([^)]*\\) \\{)`), `$1 ${rein};`];
@@ -2012,12 +2006,7 @@ hauptLauf(async () => {
     await browser.close();
     server.close();
 
-    const zeige = (kurz, name, m, urteil, zeile) => {
-        const mm = m || {};
-        if (mm.err) check(`${kurz} Probe ohne Ausnahme`, false, mm.err.split("\n")[0]);
-        const v = urteil(mm);
-        check(`${kurz} ${name}`, v.length === 0, `${mm.gestartet ? zeile(mm) : "nicht gestartet"}${v.length ? " — Täter: " + v.join(", ") : ""}`);
-    };
+    const zeige = (...a) => probeUrteil(check, ...a);
     console.log("=== L2a · L1 · L2b · L3 · L7 — ANKOMMEN ===");
     zeige(
         "L2a",

@@ -664,15 +664,18 @@ class AnazhRealm_studio_stoff {
         // Böe am Ort, die Phase je Büschel aus seinem Fuß) mit der Halm-Höhe in Metern (Vorlage × Studio-Skala `gras`), und der
         // Spieler biegt die Halme (uBend). r184 rechnet den Versatz VOR der Instanzierung (K20-N1): Böe, Rauschen und Biegung
         // lesen die Welt über die Naht `_weltNaht`, der Versatz geht über sie in die Vorlage zurück.
-        // DIE GESTALT DES JAHRS IM HALM (vegetation.K5#2, SAISON_GESETZ `ha` über `_saisonPraesenz` z): jeder Halm staucht sich
-        // über seiner Wurzel (die Vorlage, y 0 am Fuß) VOR dem Wind, und der Wind wiegt die gestauchte Höhe — im Winter liegt
-        // die Wiese bei 0,35 ihrer Höhe, im Sommer steht sie ganz (×1, byte-gleich). Bis dahin trug das Jahr dem Gras nur Farbe.
+        // DIE GESTALT DES JAHRS IM HALM (vegetation.K5#2, SAISON_GESETZ `ha` über `_saisonPraesenz` z): jeder Halm kürzt sich
+        // längs seiner Achse um seinen Fuß (`_halmImJahr`, phyto-core `halmImJahr`: Höhe und Neigung × ha, die Breite bleibt) VOR
+        // dem Wind, und der Wind wiegt die gekürzte Höhe — im Winter trägt die Wiese 0,35 ihrer Sommer-Fläche, im Sommer steht sie
+        // ganz (×1). Bis w26 staute der Stoff nur y (Fläche 0,44, von oben 1,00 — LAI 2–10 m Winter 0,567 × Sommer, Radeon
+        // 87537d3f); bis vegetation.K5#2 trug das Jahr dem Gras nur Farbe.
         if (kind === "grass") {
             this._windUniformsEnsure();
             const _sk = this._foundryWorldScaleMatrix("gras").elements[0];
             const _ha = _suF.uLaubPraesenz.z;
             const _sway = this._windSwayOffset(TSL, { hoehe: TSL.positionGeometry.y.mul(_sk).mul(_ha) });
-            mat.positionNode = TSL.positionLocal.mul(TSL.vec3(1, _ha, 1)).add(_sway);
+            const _c = TSL.attribute("aCenter", "vec3");
+            mat.positionNode = this._halmImJahr(TSL, TSL.vec3(_c.x, 0, _c.z), TSL.positionLocal).add(_sway);
         } else if (wiegen === true) {
             // DIE NAH-STREU WIEGT (Integration 05.10.): die weichen Boden-Arten (Farn · Schilf · Gestrüpp · Blume)
             // lesen dasselbe Wiegen wie das Gras aus der EINEN Quelle (`_windSwayOffset`: uWindTime · uWindDir · Böe ·

@@ -860,7 +860,7 @@ function ankunftsHalter(spur, seite, opts) {
     out.halter = [...je.values()].sort((a, b) => b.summeMs - a.summeMs);
     out.befunde = out.halter.map(
         (h) =>
-            `${h.name}${h.ort ? ` (${h.ort})` : ""} hält den Haupt-Faden vor dem ersten Bild ${h.maxMs} ms (bei ${(h.t / 1000).toFixed(1)} s; ${h.n}× ≥ ${S} ms, Σ ${h.summeMs} ms)`
+            `${h.name}${h.ort ? ` (${h.ort})` : ""} hält den Haupt-Faden bis zum Ende ${h.maxMs} ms (bei ${(h.t / 1000).toFixed(1)} s; ${h.n}× ≥ ${S} ms, Σ ${h.summeMs} ms)`
     );
     return out;
 }
@@ -869,7 +869,7 @@ function ankunftsHalterTafel(a, nAufgaben = 10, nSummen = 15) {
     const z = [];
     const kl = a.klasse || {};
     z.push(
-        `  DER HAUPT-FADEN bis zum Bild (${((a.bisMs || 0) / 1000).toFixed(2)} s): belegt ${a.belegtMs} ms · Collector ${kl["(garbage collector)"] || 0} · ` +
+        `  DER HAUPT-FADEN bis zum Ende (${((a.bisMs || 0) / 1000).toFixed(2)} s): belegt ${a.belegtMs} ms · Collector ${kl["(garbage collector)"] || 0} · ` +
             `Programm ${kl["(program)"] || 0} · leer ${kl["(idle)"] || 0} ms`
     );
     if (a.meilensteine?.length)
@@ -877,7 +877,7 @@ function ankunftsHalterTafel(a, nAufgaben = 10, nSummen = 15) {
             `  die Phasen (t · Haupt-Faden belegt bis dahin): ${a.meilensteine.map((m) => `${m.name} ${(m.t / 1000).toFixed(2)} s · ${m.belegtMs} ms`).join(" | ")}`
         );
     z.push(
-        `  die ${Math.min(nAufgaben, a.aufgaben.length)} längsten Aufgaben vor dem Bild (von ${a.aufgaben.length} ≥ ${ANKUNFT_HALT_MS} ms):`
+        `  die ${Math.min(nAufgaben, a.aufgaben.length)} längsten Aufgaben vor dem Ende (von ${a.aufgaben.length} ≥ ${ANKUNFT_HALT_MS} ms):`
     );
     for (const x of a.aufgaben.slice(0, nAufgaben))
         z.push(
@@ -887,7 +887,7 @@ function ankunftsHalterTafel(a, nAufgaben = 10, nSummen = 15) {
                     .map((h) => `${h.name}${h.ort ? ` ${h.ort}` : ""} ${h.ms}`)
                     .join(" · ")
         );
-    z.push(`  die Funktionen vor dem Bild (inklusiv · selbst ms):`);
+    z.push(`  die Funktionen vor dem Ende (inklusiv · selbst ms):`);
     for (const x of a.summen.slice(0, nSummen))
         z.push(
             `    ${String(x.ms).padStart(6)} · ${String(x.selbstMs).padStart(5)}  ${x.name}${x.ort ? ` ${x.ort}` : ""}`
@@ -1146,7 +1146,7 @@ function ankunftsSelbsttest() {
     if (
         a.befunde.some((b) => /_lastNachBild/.test(b)) ||
         !a.befunde.some((b) =>
-            /^_lastVorBild \(stamm\/dienst\.js:123\) hält den Haupt-Faden vor dem ersten Bild 120 ms/.test(b)
+            /^_lastVorBild \(stamm\/dienst\.js:123\) hält den Haupt-Faden bis zum Ende 120 ms/.test(b)
         )
     )
         f.push(`Halter: das Urteil nennt den Täter vor dem Bild nicht (oder einen nach ihm): ${a.befunde.join(" | ")}`);

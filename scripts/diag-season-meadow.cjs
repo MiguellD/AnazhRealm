@@ -15,6 +15,8 @@
 //       und Tönung des EINEN Gesetzes;
 //   F5  die Ferne (phyto-core `kroneImJahr`, ihre Leser Ring, Boden, Feld und Kamm `_kammKroneSaison`): Sommer exakt, das Laub
 //       deckt im Winter ≤ 0,3, die Nadel steht ungetönt.
+//   F6  der Halm im Jahr (phyto-core `halmImJahr`, w26): Fläche und Fläche von oben × ha, der Stoff (`_halmImJahr`) und das Labor
+//       (`halmJahrGlsl`) lesen das Gesetz, kein Leser staucht nur y.
 //   node scripts/diag-season-meadow.cjs [--selftest]          (npm run gate:season-meadow)
 "use strict";
 const { selbsttestEnde, wandEnde, SELBSTTEST, stammLib, ROOT: root } = require("./lib/welt-boot.cjs");
@@ -35,21 +37,21 @@ function pruefe(o) {
     const folgt = herbst(0.625) !== vor;
     if (SG) SG.stuetzen[2].ti = alt;
     pruef(
-        "F0 der Stamm liest das SAISON_GESETZ des Kerns (+ __terrainCore), eine Kern-Stützstelle ändert die Welt",
+        "F0 der Stamm liest das SAISON_GESETZ des Kerns",
         SG && ctx.__terrainCore.SAISON_GESETZ === SG && A._saisonGesetz() === SG && folgt
     );
     const werte = {};
     for (const [n, ph] of Object.entries({ spring: 0.125, summer: 0.375, autumn: 0.625, winter: 0.875 })) werte[n] = o.welt(ph);
     const d = (x, y) => (x && y ? Math.abs(x.r - y.r) + Math.abs(x.g - y.g) + Math.abs(x.b - y.b) : 0);
     pruef(
-        "F1 Sommer-Mitte exakt ×1, Herbst und Winter deutlich verschieden",
+        "F1 Sommer ×1, Herbst und Winter verschieden",
         werte.summer && d(werte.summer, { r: 1, g: 1, b: 1 }) < 1e-12 && d(werte.autumn, werte.summer) > 0.3 && d(werte.winter, werte.summer) > 0.3,
         Object.entries(werte)
             .map(([n, c]) => `${n} (${c.r.toFixed(2)},${c.g.toFixed(2)},${c.b.toFixed(2)})`)
             .join(" · ")
     );
     pruef(
-        "F2a die Shell trägt keine Paletten-Literale (Stützstellen nur im SAISON_GESETZ)",
+        "F2a keine Paletten-Literale in der Shell",
         stammLib.fehlt(null, /0x6a9a3e|0xb0702a|0x6e6650/, { datei: SHELL, wandel: o.shell }),
         stammLib.fehlt.wo
     );
@@ -64,7 +66,7 @@ function pruefe(o) {
     A.prototype._tickSeason.call(w);
     A.prototype._tickSeason.call(w);
     pruef(
-        "F3 _tickSeason fährt uSeasonMul aus _saisonMul und bestellt die Karten anderer Stufe",
+        "F3 _tickSeason tönt und bestellt die Karten",
         d(u.uSeasonMul.value, o.welt(0.625)) < 1e-12 && d(u.uSeasonMul.value, { r: 1, g: 1, b: 1 }) > 0.3 && w.state.season === "autumn" && w._impostorBakeQueue + "" === "a,b", // prettier-ignore
         JSON.stringify(u.uSeasonMul.value) + w._impostorBakeQueue
     );
@@ -83,29 +85,43 @@ function pruefe(o) {
         so.farbe === 3 && so.deckung === 1 && la.deckung <= 0.3 && na.farbe === 3 && na.deckung === 1 && ecke[0] <= 0.3 && ecke[1] === 1, // prettier-ignore
         [la.deckung, ecke[0], ecke[1]]
     );
+    // F6 DER HALM IM JAHR (w26-winter-fichte, vegetation.K5#2): `ha` ist der Anteil der Sommer-LÄNGE (phyto-core `halmImJahr`) — an
+    // den zwei Kanten einer Zeile eines geneigten Halms (Mitte m, Breite ±w quer zu seiner Ebene, die Normale in ihr) kürzt die
+    // Mitte auf ha · m, die Breite bleibt (die Fläche fällt genau mit ha), die Ähre kürzt als Ganzes, der Sommer ist exakt; der Stoff
+    // der Welt (`_halmImJahr`, Gras-Stoff und Ferne) und das Labor (`halmJahrGlsl` = WIND_GLSL) lesen das Gesetz, kein Leser
+    // staucht nur y (bis w26: Fläche 0,44, von oben 1,00 — LAI 2–10 m Winter 0,567 × Sommer, Radeon 87537d3f)
+    const [PC, ha] = [ctx.__phytoCore, SG.stuetzen[3].ha];
+    const J = (h, ae = 0) => Object.values((o.halm || PC.halmImJahr)(PC.WIND_ZAHLEN, h, 0.3, 0.9, 0.04, -0.95, 0, ae)).map((q, i) => (q / [0.3, 0.9, 0.04][i]).toFixed(9)); // prettier-ignore
+    pruef(
+        "F6 der Halm kürzt seine Länge",
+        [J(ha), J(ha, 1)] + "" === [ha, ha, 1, ha, ha, ha].map((q) => q.toFixed(9)) + "" && ["_halmFerne", "_foundryTreeMaterial"].every((g) => !stammLib.fehlt(g, /_halmImJahr\(/, { wandel: o.stamm })) // prettier-ignore
+    );
     return aus;
 }
 const WELT = (ph) => A.prototype._saisonMul.call(null, ph, {});
 
 const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 if (SELBSTTEST) {
-    console.log("=== SAISON-FARBE — SELBST-TEST: die Linse feuert auf injizierte Brüche ===");
+    console.log("=== SAISON-FARBE — SELBST-TEST ===");
     const roh = (o, wer) => pruefe(Object.assign({ welt: WELT }, o)).find((g) => g[0].startsWith(wer))[1] === false;
-    check("Selbst-Test 1: Welt ohne Phasen-Versatz (+0,125) → F1 rot", roh({ welt: (ph) => WELT(ph + 0.125) }, "F1"));
-    check("Selbst-Test 2: die Welt mit eigenem Gesetz (folgt der Kern-Stützstelle nicht) → F0 rot", roh({ welt: (ph) => (ph === 0.625 ? { r: 1.2, g: 0.9, b: 0.7 } : WELT(ph)) }, "F0"));
+    check("Selbst-Test 1: ohne Phasen-Versatz → F1 rot", roh({ welt: (ph) => WELT(ph + 0.125) }, "F1"));
+    check("Selbst-Test 2: eigenes Gesetz → F0 rot", roh({ welt: (ph) => (ph === 0.625 ? { r: 1.2, g: 0.9, b: 0.7 } : WELT(ph)) }, "F0"));
     check(
-        "Selbst-Test 3: eine Paletten-Kopie zurück in die Shell → F2a rot",
+        "Selbst-Test 3: Paletten-Kopie → F2a rot",
         roh({ shell: (t) => t.replace("const seq = SAISON_GESETZ.stuetzen;", "const seq = [{ ti: 0x6a9a3e }];") }, "F2a")
     );
-    check("Selbst-Test 5: _tickSeason ohne Leser (der Mul schreibt nicht) → F3 rot", roh({ mul: () => null }, "F3"));
+    check("Selbst-Test 5: ohne Leser → F3 rot", roh({ mul: () => null }, "F3"));
     // die Brüche des Befunds (w21): der Takt bestellt nie, die Karte backt Sommer, Ferne und Kamm tragen nur Farbe
-    check("Selbst-Test 6: der Takt bestellt nie → F3 rot", roh({ takt() {} }, "F3"));
-    check("Selbst-Test 7: die Karte backt Sommer → F4 rot", roh({ karteJahr: () => ({ praesenz: { x: 1 } }) }, "F4"));
-    check("Selbst-Test 8: die Ferne ohne Präsenz → F5 rot", roh({ krone: (Z, p, S, K) => ({ farbe: K, deckung: 1 }) }, "F5"));
-    check("Selbst-Test 9: der Kamm färbt nur → F5 rot", roh({ kamm() {} }, "F5"));
-    selbsttestEnde(errs, "die Saison-Farb-Linse feuert auf jede injizierte Bruch-Klasse.");
+    check("Selbst-Test 6: Takt bestellt nie → F3 rot", roh({ takt() {} }, "F3"));
+    check("Selbst-Test 7: Karte backt Sommer → F4 rot", roh({ karteJahr: () => ({ praesenz: { x: 1 } }) }, "F4"));
+    check("Selbst-Test 8: Ferne ohne Präsenz → F5 rot", roh({ krone: (Z, p, S, K) => ({ farbe: K, deckung: 1 }) }, "F5"));
+    check("Selbst-Test 9: Kamm färbt nur → F5 rot", roh({ kamm() {} }, "F5"));
+    // die Brüche des Befunds (w26): das Gesetz und die Ferne stauchen nur y (das Labor liest das Gesetz über WIND_GLSL, `halmJahrGlsl`)
+    check("Selbst-Test 10: Gesetz → F6 rot", roh({ halm: (Z, h, x, y, z) => ({ x, y: y * h, z }) }, "F6"));
+    check("Selbst-Test 11: Ferne → F6 rot", roh({ stamm: (s) => s.replace("jahr = this._halmImJahr(T,", "jahr = (") }, "F6"));
+    selbsttestEnde(errs, "die Jahres-Linse feuert.");
     process.exit(0);
 }
-console.log("=== DIE SAISON IST EINE FARBE — uSeasonMul nach dem Studio-Gesetz (Node, die geladene Klasse) ===");
+console.log("=== DAS JAHR DER WELT ===");
 for (const [n, ok, d] of pruefe({ welt: WELT })) check(n, ok, d);
-wandEnde(errs, "die Welt färbt ihr Jahr wie das Studio: EINE Uniform, keine Saison im Körper.");
+wandEnde(errs, "das Jahr der Welt ist das des Studios.");

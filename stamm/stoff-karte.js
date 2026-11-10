@@ -1671,26 +1671,26 @@ class AnazhRealm_stoff_karte {
     // DIE NADEL DER KARTE (K19): je Atlas-Schicht 1 für die Nadel-Art (der Phänotyp der Zelle, K24), sonst 0 — EINE
     // Uniform-Reihe für jede Karte jeder Art. Wächst der Atlas über die Reihe, wächst sie mit (verdoppelnd) und die Karte baut
     // ihr Programm neu (die Länge steht im Programm-Schlüssel); ohne Wachsen kostet sie nichts.
+    // EIN KNOTEN JE ATLAS (w27-karte-nadel): Nadel und Jahr wachsen IN ihrem Knoten (r184 liest die Länge je Programm-Bau,
+    // `UniformArrayNode.setup`), wie die Texturen des Atlas nur ihren Wert tauschen. Bis hier legte das Wachsen einen neuen
+    // Knoten desselben Namens an: die Albedo (`_buildPbrNodeMaterial`) hielt den alten, das Laub-Licht (`_laubLichtStoff`) holte
+    // je Programm-Bau den neuen — „redeclaration of karteNadelStruct", die Karte der vollen Stadt sagte ab (GTX 1050, 09.11.)
     _karteNadel(T, z) {
         const at = this._impostorAtlas();
         const tab = globalThis.__terrainCore && globalThis.__terrainCore.PHYTO_PRESETS;
         if (!tab) return AnazhRealm._kernPflichtBruch("terrain:PHYTO_PRESETS");
-        let n = at.nadelU ? at.nadelU.array.length : 0;
+        // DER FESTE NAME (w4-b-knoten, Lehre 23): ohne ihn schreibt r184 `NodeBuffer_<Knoten-id>` ins WGSL — die Bytes der
+        // Karten-Arena wanderten mit jeder Änderung der Bau-Reihenfolge (headless kalt 01.11.: NodeBuffer_189313 → _198261)
+        if (!at.nadelU) {
+            at.nadelU = (T || THREE.TSL).uniformArray([], "float").setName("karteNadel");
+            at.jahrU = (T || THREE.TSL).uniformArray([], "vec4").setName("karteJahr");
+        }
+        const [a, j] = [at.nadelU.array, at.jahrU.array];
+        let n = a.length;
         if (n < Math.max(at.n, 1)) {
-            const alt = at.nadelU ? at.nadelU.array : [];
             while (n < Math.max(at.n, 1)) n = Math.max(32, n * 2);
-            const a = new Array(n).fill(0);
-            for (let i = 0; i < alt.length; i++) a[i] = alt[i];
-            // DER FESTE NAME (w4-b-knoten, Lehre 23): ohne ihn schreibt r184 `NodeBuffer_<Knoten-id>` ins WGSL — die Bytes der
-            // Karten-Arena wanderten mit jeder Änderung der Bau-Reihenfolge (headless kalt 01.11.: NodeBuffer_189313 → _198261)
-            at.nadelU = (T || THREE.TSL).uniformArray(a, "float").setName("karteNadel");
             // die Reihe des Jahrs (`_karteJahrFarbe`) wächst mit: EINE Länge je Schicht, sie steht im Programm-Schlüssel
-            const j = new Array(n);
-            for (let i = 0; i < n; i++) {
-                const alt = at.jahrU && at.jahrU.array[i];
-                j[i] = new THREE.Vector4(alt ? alt.x : 1, alt ? alt.y : 1, alt ? alt.z : 1, 1);
-            }
-            at.jahrU = (T || THREE.TSL).uniformArray(j, "vec4").setName("karteJahr");
+            while (a.length < n) (a.push(0), j.push(new THREE.Vector4(1, 1, 1, 1)));
             if (at.mat) at.mat.needsUpdate = true;
         }
         if (z) {
