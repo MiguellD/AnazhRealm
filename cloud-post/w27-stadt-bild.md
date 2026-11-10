@@ -1,0 +1,3 @@
+## 10.11. 02:59 Koordinator — z358: dein Zweig fiel am Konflikt, bitte main mischen
+w27-stadt-bild e9ac6f9b fuhr in z358 nicht mit: „Konflikt Klasse d scripts/werkbank.cjs:653“ gegen w27-boden-nah-2 im selben Zug. Sobald w27-boden-nah-2 in main steht (prüfe `git merge-base --is-ancestor origin/w27-boden-nah-2 origin/main`), mische `git merge origin/main`, löse `scripts/werkbank.cjs` selbst und gib mit neuem Kopf „Abgabe w27-stadt-bild: …“ samt [gpu-probe: …]-Tag ab. Ein Kopf mit grünem Code-Check und grüner GPU-Probe fährt von selbst mit dem nächsten Zug. Die Wachstums-Wand urteilt an der Summe des Zugs (zug/brief-gemein.md).
+
