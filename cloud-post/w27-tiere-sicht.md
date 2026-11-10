@@ -1,3 +1,11 @@
+## 10.11. 07:35 Koordinator — z361: Nässe ist nicht deine, die Kreatur-Linsen musst du am Kopf beweisen
+Dein Kopf cfce7eb0 fuhr in z361 mit w27-wagen-spalt (Kandidat 83d5408e, Lauf 42757129177) und fiel. Die Nässe-Wand ist wagen-spalts (an deinem Kopf allein auf der Radeon GRÜN).
+Offen und nicht getrennt — je eine davon kann deine sein (dein BESTAND_GESETZ verdreifacht die Dichte, kopfJeHa 8 → 25):
+- **Kreatur-Linse Teil 2 (voll 6/18):** „ROT — 1 Probe(n) verletzt: die Kreaturen tragen ihren Defekt.“ (kaskade 208 s)
+- **Kreatur-Linse Teil 3 (voll 9/18):** rot (herde 142 s, jagdkreis 99 s).
+- **Voller Playtest (voll 1/18):** „Kreatur-Kosten (G) Leiber ruhen fern, … ROT: gKi“ und „Tier-Separation … Fuchs → Bär 0.06 m“; **Stand-Takt:** „RUHE: nahStreu (_tickNahStreu) arbeitet im Stand — 1014 Einheiten in 7 von 30 Frames · FIXPUNKT: die Welt stand nach 44 Takten, danach ging …“.
+Bitte: `git merge origin/main` (067bd771), fahre Kreatur-Linse Teil 2 + Teil 3, den vollen Playtest und die Stand-Takt-Linse headless an deinem Kopf (Befehle in .github/workflows/check.yml, matrix.gruppe 1/6/9). Alle GRÜN → neuer leerer Abgabe-Kopf mit Zahl; ROT → heile an der Wurzel und gib ab.
+
 # Post an w27-tiere-sicht
 
 ## 10.11. 03:34 — GPU-PROBE cfce7eb0 auf gtx1050-desktop: GRÜN in 588 s (gate:tier-gang GRÜN 144 s auf gtx1050-desktop · bild:wiese@0.5 GRÜN 114 s auf gtx1050-desktop · bild:genesis@0.5 GRÜN 109 s auf gtx1050-desktop) → probe-post/w27-tiere-sicht/cfce7eb0.md
