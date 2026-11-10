@@ -4777,7 +4777,7 @@
         for(const k in zug){ const F=zug[k]; if(F&&offen[k]>0&&Math.hypot(q.x-F.x,q.z-F.z)<F.r) m+=SD.zugFremd; } }
       return m; };
     let best=null,bs=1e9;
-    for(const cu of curs){ const m=curMetric(cu)+rnd()*2-(roads[cu.rd].quer?12:0); if(m<bs){bs=m;best=cu;} }   /*QUER-BONUS (#1): die Metrik (edepth·4) liess Binnengassen NIE gewinnen — jetzt bauen sie zuerst ihre Haeuser*/
+    for(const cu of curs){ const m=curMetric(cu)+rnd()*2-(roads[cu.rd].quer&&!roads[cu.rd].gasse?12:0); if(m<bs){bs=m;best=cu;} }   /*die Gasse der Dichte traegt keinen Bonus: erst schliesst die Strasse ihre Reihe, dann fuellt sich der Block (die Kleinstadt von 20 Haeusern stand sonst verstreut an ihren Gassen, keine Wand an der anderen)*/   /*QUER-BONUS (#1): die Metrik (edepth·4) liess Binnengassen NIE gewinnen — jetzt bauen sie zuerst ihre Haeuser*/
     if(g.viertel) offen[g.viertel]--;
     let placedP=tryPlace(i,best,-1);
     if(!placedP){ const so=curs.slice().sort((a,b2)=>curMetric(a)-curMetric(b2));
@@ -6880,15 +6880,21 @@
             });
             ausTeil(g, geo, "stein");
         };
-        stein(ausSetze(ausKiste(m.sb, m.sh + 0.2, m.sd, fa), 0, (m.sh - 0.2) / 2, 0));
-        if (art === 1) {
-            stein(ausSetze(ausKiste(m.kb, m.h, m.d, fa), 0, m.sh + m.h / 2, 0));
-            stein(ausSetze(ausKiste(m.b, m.kb, m.d, fa), 0, m.sh + m.h * 0.68, 0));
-        } else {
-            stein(ausSetze(ausKiste(m.b, m.h * 0.82, m.d, fa), 0, m.sh + m.h * 0.41, 0));
-            if (art === 0) stein(ausSetze(ausKiste(m.b * Math.SQRT1_2, m.b * Math.SQRT1_2, m.d, fa), 0, m.sh + m.h * 0.82, 0, 0, 0, Math.PI / 4));
-            else stein(ausSetze(ausKiste(m.b * 0.62, m.h * 0.18, m.d, fa), 0, m.sh + m.h * 0.91, 0));
-        }
+        grabsteinBloecke(m, art, fa).forEach(stein);
+    }
+    // DIE BLÖCKE DES GRABSTEINS (EINE Form für Bau und Wurf, `ausWurf`): der Sockel, dann die Stele mit Giebel (0) oder Kopf (2)
+    // oder das Kreuz aus zwei Balken (1); `fa` die Fase der Kanten
+    function grabsteinBloecke(m, art, fa) {
+        var B = [ausSetze(ausKiste(m.sb, m.sh + 0.2, m.sd, fa), 0, (m.sh - 0.2) / 2, 0)];
+        if (art === 1) B.push(ausSetze(ausKiste(m.kb, m.h, m.d, fa), 0, m.sh + m.h / 2, 0), ausSetze(ausKiste(m.b, m.kb, m.d, fa), 0, m.sh + m.h * 0.68, 0));
+        else
+            B.push(
+                ausSetze(ausKiste(m.b, m.h * 0.82, m.d, fa), 0, m.sh + m.h * 0.41, 0),
+                art === 0
+                    ? ausSetze(ausKiste(m.b * Math.SQRT1_2, m.b * Math.SQRT1_2, m.d, fa), 0, m.sh + m.h * 0.82, 0, 0, 0, Math.PI / 4)
+                    : ausSetze(ausKiste(m.b * 0.62, m.h * 0.18, m.d, fa), 0, m.sh + m.h * 0.91, 0)
+            );
+        return B;
     }
     var AUS_BAU = { feuerstelle: ausFeuerstelle, marktstand: ausMarktstand, brunnen: ausBrunnen, laterne: ausLaterne, wandlaterne: ausWandlaterne, grabstein: ausGrabstein, sitzbank: ausSitzbank, podestleiter: ausPodestleiter, jochfeld: ausJochfeld };
     // DIE STUFE 3 DER AUSSTATTUNG (nurWurf, S3): die Grundform als EIN Gitter in EINEM Stoff (Rolle stein) — sie wirft für
@@ -7669,6 +7675,7 @@
     // (`userData.fass` = [x, z] oder fehlt) — die Stufe 3 liest sie aus der L1 derselben Gestalt (dieselbe Funktion,
     // derselbe Strom), nie aus einem zweiten Würfel.
     function ausWahl(rezeptId, p, sd, kol) {
+        if (rezeptId === "grabstein") return { art: (sd >>> 0) % 3 }; // die Gestalt des Steins (`ausGrabstein`: Giebel · Kreuz · Kopf)
         if (rezeptId !== "marktstand") return {};
         var tmp = new THREE.Group();
         AUS_BAU[rezeptId](tmp, p, sd, 1, kol);
@@ -7781,7 +7788,7 @@
                 flaeche([[[-m.L / 2, 0, gs * m.zG], [m.L / 2, 0, gs * m.zG], [m.L / 2, m.gH, gs * m.zG], [-m.L / 2, m.gH, gs * m.zG]]]);
             for (var pk = 0; pk < m.zP.length; pk++) pfosten(m.xJ, m.zP[pk], m.yP, m.yJ, m.pr);
         } else if (rezeptId === "grabstein") {
-            flaeche([[[-m.b / 2, 0, 0], [m.b / 2, 0, 0], [m.b / 2, m.sh + m.h, 0], [-m.b / 2, m.sh + m.h, 0]]]);
+            grabsteinBloecke(m, wahl ? wahl.art : 0, 0).forEach(teil); // seine Blöcke ohne Fase: ein Stein wirft als Körper, nie als Fläche
         } else if (rezeptId === "sitzbank") {
             // DIE BANK (20 Dreiecke): das Sitzbrett, die Lehne als EIN Viereck im Winkel der Pfosten, die vier Beine als Kreuze
             var c = Math.cos(m.phi),

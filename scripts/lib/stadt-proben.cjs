@@ -172,14 +172,15 @@ function breiteSelbsttest(taeterFaelle, rollen) {
         viertel: { markt: 19, kirchhof: 3, burg: 4, hafen: 6, handwerk: 40, wohnen: 150, vorstadt: 58 },
         stuecke: { stand: [12, 12], grab: [24, 20], brunnen: [5, 5] },
     };
+    // gemessen am 11.11. headless an main 4e2df19b (dieselbe Probe): 253 von 300 Slots stehen, 103 im Ring (bebaut 0,158)
     const main = {
-        slots: 307,
-        steht: 295,
-        lauf: { stationen: 500, laengeM: 4900, gesehen: 290 },
-        typen: { wohnhaus: 280, scheune: 6, kirche: 1, gasthaus: 1, schmiede: 1, burg: 1 },
-        kulturen: { provenzalisch: 146, italienisch: 142, barock: 1, gotisch: 1 },
-        viertel: { ohne: 290 },
-        stuecke: { stand: [2, 2], grab: [0, 0], brunnen: [5, 5] },
+        slots: 300,
+        steht: 253,
+        lauf: { stationen: 520, laengeM: 4218, gesehen: 249 },
+        typen: { kirche: 1, gasthaus: 1, wohnhaus: 242, schmiede: 1, burg: 1, scheune: 3 },
+        kulturen: { barock: 1, provenzalisch: 117, italienisch: 130, gotisch: 1 },
+        viertel: { ohne: 249 },
+        stuecke: { stand: [1, 1], grab: [0, 0], brunnen: [5, 5] },
     };
     return taeterFaelle(
         [
@@ -191,7 +192,7 @@ function breiteSelbsttest(taeterFaelle, rollen) {
             ["ein Typ außerhalb der Tafel", (z) => (z.typen.tankstelle = 1), /außerhalb der Grammatik \[tankstelle\]/],
             ["Häuser ohne Viertel", (z) => (z.viertel.ohne = 7), /7 Häuser im Gang ohne Viertel/],
             ["keins steht im Gang", (z) => (z.lauf.gesehen = 0), /kein Haus im Gang/],
-            { name: "main vor der Grammatik", z: main, muss: [/Bau-Typen im Gang 6 < 12/, /Kulturen im Gang .* 2 < 3/, /Viertel markt/, /Viertel hafen/, /290 Häuser im Gang ohne Viertel/] }, // prettier-ignore
+            { name: "main vor der Grammatik", z: main, muss: [/Bau-Typen im Gang 6 < 12/, /Kulturen im Gang .* 2 < 3/, /Viertel markt/, /Viertel hafen/, /249 Häuser im Gang ohne Viertel/] }, // prettier-ignore
         ],
         (z) => breiteUrteil(z, rollen),
         { gruen }
