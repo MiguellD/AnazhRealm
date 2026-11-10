@@ -1,7 +1,7 @@
 {
  "sha": "dcc3361558060fce198f1666eba3720e574bf5a7",
  "geraet": "gtx",
- "zeit": "2026-11-10T06:41:34.756Z",
+ "zeit": "2026-11-10T06:46:58.197Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {},
  "ungemessen": {
@@ -253,22 +253,71 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "gelaende.K2#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 90 s gerissen: Stille seit 71.3 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: (b)(d) 16.1 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"flu)",
+   "exit": 1,
+   "minuten": 1.5,
+   "grund": "Deckel 90 s gerissen: Stille seit 71.3 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: (b)(d) 16.1 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"flu)",
+   "s": 90.2,
+   "fremd": {
+    "s": 92.2,
+    "takte": 42,
+    "fremdS": 167.88,
+    "kerne": 1.822,
+    "fensterKerne": 1.999,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      98.59
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      17.67
+     ],
+     [
+      "MsMpEng.exe",
+      14.27
+     ]
+    ],
+    "dienerS": 33.03,
+    "diener": [
+     [
+      "dwm.exe",
+      16.67
+     ],
+     [
+      "System",
+      10.88
+     ]
+    ],
+    "eigenS": 264.61,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "zeit": "2026-11-10T06:46:58.197Z",
+   "abdruck": "fa8c75e7a77c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-10T06:41:01.843Z",
+  "start": "2026-11-10T06:46:20.784Z",
   "port": 7804,
-  "warten": 0.01,
-  "bootS": 7.2,
+  "warten": 0.02,
+  "bootS": 7.4,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": null,
-    "vor": "bauen.K1#2",
-    "s": 24.4,
-    "takte": 785,
+    "ort": "wiese",
+    "vor": "gelaende.K2#2",
+    "s": 28.7,
+    "takte": 548,
     "chunks": 81,
     "nach": null
    }
@@ -277,20 +326,27 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 2214,
-   "frameP95": 58.24,
-   "taktP95": 38.81,
-   "vramMax": 138.3,
+   "bilder": 1425,
+   "frameP95": 75.05,
+   "taktP95": 74.22,
+   "vramMax": 147.7,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
-   "ortImDeckel": [],
-   "zapfen": 78,
+   "ortImDeckel": [
+    {
+     "probe": "gelaende.K2#2",
+     "m": 1718,
+     "ringVor": 4,
+     "ringMin": 0
+    }
+   ],
+   "zapfen": 121,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 82.1,
-  "minuten": 1.44
+  "fahrtS": 127.5,
+  "minuten": 2.2
  }
 }
