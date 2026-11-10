@@ -3026,6 +3026,8 @@
             });
             ZEILEN[name] = z;
         });
+        // der Gefrierpunkt des Wassers IST die Phasen-Grenze des Eises (EINE Zahl an zwei Zeilen)
+        Object.defineProperty(ZEILEN.eis, "tSchmelz", { enumerable: true, get: function () { return ZEILEN.wasser.tSchmelz; }, set: function (v) { ZEILEN.wasser.tSchmelz = v; } });
         // das Holz wiegt, was dieser Kern wiegt (RHO.holz — ein Zugriff, keine zweite Zahl)
         Object.defineProperty(ZEILEN.holz, "rho", { enumerable: true, get: function () { return RHO.holz; }, set: function (v) { RHO.holz = +v; } });
         return {
