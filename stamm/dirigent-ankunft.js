@@ -1514,8 +1514,8 @@ class AnazhRealm_dirigent_ankunft {
     // über dem Boden h₀ des Texels) abzüglich (y − h₀) je kürzestem Schritt; ohne Grat 0. Der Punkt des Schattens allein ist nicht
     // der Grat: ein Berg 3 km fern wirft ihn, der Kamm 200 m vor dem Hang steht höher (Dorf, Sonne 5°: die Karte las 8,1° im
     // Median, das Gesetz 10,3°, nahe Grate bis 10° zu flach). Das verdeckte Band 0 … α über `gratRad` beidseits des Azimuts der Sonne (die Karte kennt den
-    // Horizont nur zur Sonne: der Grat gilt dort als Wand) trägt je Abtastung die Strahlung des Himmels in Richtung ω (`strahlung`:
-    // die Himmels-Sicht der Atmosphäre, `himmelFarbe`) × max(n·ω, 0) × Δω/π — der Abzug von der mittleren Strahlung der
+    // Horizont nur zur Sonne: der Grat gilt dort als Wand) trägt je Abtastung die Strahlung des Himmels in Richtung ω (die
+    // Himmels-Sicht der Atmosphäre, `himmelFarbe`) × max(n·ω, 0) × Δω/π — der Abzug von der mittleren Strahlung der
     // Bestrahlung (`_spiegelUmgebung`). Außerhalb der Karte und wo sie ruht 0. Bis ferne.K4 sah der Hang hinter dem Grat den
     // ganzen Himmel; die freie 18-%-Karte 45 m über dem Dorf verliert nichts (Himmel 0,662 ↔ 0,684). Bis w25-ferne-licht las die
     // Strahlung die Umgebung der Stoffe in der Rauheit 0,5: ihre Keule mittelte am Horizont den Boden darunter, der Grat nahm dem
@@ -1525,10 +1525,13 @@ class AnazhRealm_dirigent_ankunft {
     // des Gesetzes mit seiner Normale; die PMREM-Stufe 1 trifft die Kosinus-Bestrahlung der Tafel auf 7 %).
     // Die drei Abtastungen (−⅔, 0, +⅔ · `gratRad` um das Azimut der Sonne) laufen in EINER Schleife (wie `falte`, K17-3): die
     // Strahlung steht einmal im Programm — ausgeschrieben stand sie dreimal in jedem Stoff (Boden der Bühne S0: +9 580 Zeichen).
-    _horizontHimmel(p, n, strahlung) {
+    // Sie teilen die Höhe el: die Breite der Tafel (`himmelBreite`) und das Azimut der Sonne stehen einmal vor der Schleife, je
+    // Abtastung nur die Lage um ±⅔ · `gratRad` versetzt (bis hier je Abtastung asin, acos und atan der vollen Richtung).
+    _horizontHimmel(p, n) {
         const T = THREE.TSL;
         const K = this._horizontKarte();
         const H = AnazhRealm.HORIZONT_KARTE;
+        const A = this._atmoLutBau();
         return T.Fn(() => {
             const q = K.zuUv(p.xz).toVar();
             const t = T.texture(K.rt.texture, q).level(0).toVar();
@@ -1559,6 +1562,11 @@ class AnazhRealm_dirigent_ankunft {
                 const el = T.atan(tanA).mul(0.5).toVar();
                 const [ce, se] = [T.cos(el).toVar(), T.sin(el).toVar()];
                 const a = L.xz.div(flach).toVar();
+                const v = A.himmelBreite(el).toVar();
+                const u = T.atan(a.y, a.x)
+                    .div(2 * Math.PI)
+                    .add(1)
+                    .toVar();
                 T.Loop(3, ({ i }) => {
                     const d = T.float(i)
                         .sub(1)
@@ -1570,7 +1578,9 @@ class AnazhRealm_dirigent_ankunft {
                         se,
                         a.x.mul(s).add(a.y.mul(c)).mul(ce)
                     ).toVar();
-                    summe.addAssign(strahlung(dir).mul(T.max(n.dot(dir), 0)));
+                    // die Strahlung des Himmels in Richtung dir: die Himmels-Sicht der Atmosphäre (`himmelFarbe`) an ihrer Lage
+                    const tx = A.himmelTexelUv(T.vec2(u.add(d.div(2 * Math.PI)).fract(), v));
+                    summe.addAssign(A.himmelFarbe(null, tx).mul(T.max(n.dot(dir), 0)));
                 });
             });
             return summe.mul(w);
