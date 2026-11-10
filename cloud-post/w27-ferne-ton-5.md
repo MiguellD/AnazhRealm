@@ -1,3 +1,21 @@
+## 10.11. 17:40 — w27-ferne-ton-5: ZWISCHENSTAND 155abda9 (main 2d5f4146 im Kopf) — S0 und die Tag-Achse halten nicht zugleich mit der gemessenen Wiese
+
+Auf deinen Zuruf (die 11:13 ist der Auftrag) habe ich die Kette der Nacht selbst vermessen. Keine Abgabe: S0 steht am gemergten Kopf ROT (Luma 11,5, abgesoffen 35,0 %, Feuer 25,0°); Gelände-Studio bleibt GRÜN (529cf20c).
+
+- **Vor der Tonkurve trägt der Boden am Feuer nachts 0,63 × main.** Das ist genau das Verhältnis der Albedo und dasselbe wie unter dem Feuer (netto 0,64 ×).
+  - Rückgerechnet aus der Ausgabe über Khronos PBR Neutral (der Fuß x − 6,25 x² unter 0,08): main (0,0306/0,0339/0,0288), Kopf (0,0199/0,0212/0,0196).
+  - Im Bild werden daraus 0,38 ×, weil die ganze Nacht im quadratischen Fuß der Kurve liegt. Das Licht ist main-gleich.
+- **Die Kamera der Nacht kann es nicht tragen.**
+  - `gate:tag-achse:echt` am Kopf (swiftshader): TAG-ACHSE GRÜN, die Mess-Wiese um Mitternacht −3,61 EV unter dem Mittag. Das Band NACHT liegt bei −5 … −3 EV (main am Rand: −3,03).
+  - Der Knoten der Nacht (`BELICHTUNG.stufen` [−20, −2,17]) hat damit höchstens +0,61 EV Raum. Der Ring von S0 braucht +1,2 EV (Luma 11,5 → 22), am Rand des Bands steht er bei ≈ 16,5.
+- **Ehrlich offen (Pflicht, beim Namen).** Mit dem gemessenen Blatt der Wiese (`HALM_FARBE.spitze`, w26-ferne-ton-2, der Boden von ferne.K1#2) halten diese Maße nicht zugleich:
+  - S0 Nacht Luma ≥ 22,
+  - S0 Feuer ≥ 28°,
+  - Tag-Achse NACHT ≤ −3 EV.
+  - Alle drei sind an der Spitze 2,6 × des Blatts geeicht; der Kommentar der Kamera selbst nennt „die Nacht −2,17 Stufen 3,14 EV darunter bei Luma 44“ an der alten Wiese.
+  - Der eine Hebel in meinem Feld wäre die alte Spitze: ein Zwilling des Kerns, und auch sie lässt S0 rot (abgesoffen 6,1 %).
+  - Welches dieser Maße der gemessenen Wiese folgt, setzt du (oder der Schöpfer). Auf ein Maß hin schneide ich am Knoten der Nacht samt REF (spec/farbe/tag-ref.json, spec/farbe/tag-kurve.json), dann folgt die Abgabe mit `[gpu-probe: gate:pruefbuehne-licht, gate:luft-tiefe:echt, bild:wiese@0.5]`.
+
 ## 10.11. 11:56 — w27-ferne-ton-5: ZWISCHENSTAND 529cf20c auf z364 (Gelände-Studio GRÜN, S0 Nacht ROT mit Täter beim Namen)
 
 Keine Abgabe: S0 steht am Kopf ROT, eine Abgabe führe in z wieder rot. main 900c28e6 ist im Kopf (unverändert seit 55080b33).
