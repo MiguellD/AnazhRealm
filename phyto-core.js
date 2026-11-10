@@ -3870,6 +3870,17 @@
     // fichte 0,1575 → 0,1500 · tanne 0,1775 → 0,1612 · strauch 0,3515 → 0,2109; GTX 41d69a4f (der w23-Saum in derselben Welt
     // → dieser) birke 0,2056 → 0,1753 · eiche 0,1788 → 0,1417 · fichte 0,1474 → 0,1470 · tanne 0,1691 → 0,1636 · strauch
     // 0,3242 → 0,2083.
+    //   lappen        DIE LAPPEN DER GLATTEN KETTE (w26-eiche-kante, lod.K1#1): die Zelle des Laub-Musters (`karteSaumMuster`, 1 − F1)
+    //                 in Stufe-0-Texeln, dieselbe in jeder Stufe — ab der Stufe, auf der das Blatt des Baum-Zweigs unter zwei
+    //                 Texel fällt (`lappenAb`, ZWEIG_BLATT.laenge), bis die Lappen-Zelle unter einen BC-Block fällt (`minSeite`:
+    //                 Stufen 3 und 4), trägt die geglättete Deckung des Blatt-Atlas den Faktor 2^(saum · (Muster − ½)) (`impostorMips`
+    //                 glatt) — die Wahl folgt dem Muster, die Alpha der Lücke bleibt über 0 (die Farbe liest zwei Oktaven über der
+    //                 Deckung, BLATT_FARBE_OKTAVE: ein linearer Faktor mit Lücken bei 0 trug gate:pflanzen-nah Farb-Korn bc 0,0165 →
+    //                 0,0370 > 0,0358, die Lappen auf Stufe 5 die BC3-Fracht der Weide auf 16 px 3 % zu dunkel). Bis hier schmolz jede
+    //                 Laub-Karte der L1 ab Stufe 3 zu ihrer Hülle (Stufe 4 ein Klecks, das „Riesenblatt" von K58 am Baum-Zweig), die
+    //                 Krone aus 147 Klecksen trug runde Bögen: Radeon, Spielgang der Station, f:eiche:L1 0,3261. Kronen-Modell (147
+    //                 Karten, Test an ½, kante je λ 2–4, die schlechteste): Zelle 0 · 1 · 2 · 3 main 0,243 · 0,208 · 0,202 · 0,160 →
+    //                 0,175 · 0,208 (λ 2, unberührt) · 0,168 · 0,163 (Zelle 48: Zelle 0 0,210; ab Stufe 2: λ 2 0,150 → 0,201)
     var KARTEN_GESETZ = {
         schwelle: 0.45,
         normalTeiler: 2,
@@ -3883,6 +3894,7 @@
         saumBand: 8,
         saumMin: 0.02,
         saumWeite: 3,
+        lappen: 64,
     };
     // linear (0..1) → sRGB-Byte, und die Tabelle der 256 linearen Eingangs-Bytes
     function linZuSrgb8(x) {
@@ -4200,6 +4212,8 @@
             glatt = !!(opt && opt.glatt),
             saum = opt && opt.saum && !glatt && !quer ? opt.saum : null;
         if (glatt && !blut) throw new Error("impostorMips: glatt braucht blut (die Farbe jedes deckenden Texels)");
+        // die Stufe, auf der das Blatt des Baum-Zweigs unter zwei Texel fällt (14 px → 3): ab ihr trägt die glatte Kette die Lappen
+        const lappenAb = Math.ceil(Math.log2(ZWEIG_BLATT.laenge / 2));
         const hA = quer ? h : (h / V) | 0,
             wA = quer ? (w / V) | 0 : w;
         const n0 = w * h;
@@ -4330,6 +4344,27 @@
                     // wählbar: glatt jeder Texel mit Deckung in der Nachbarschaft (er trägt die Blut-Farbe), sonst nur mit
                     // eigener (die Karte trägt die Farbe ihrer Kinder); der Gleichstand über die eigene Deckung
                     if (!saum) schluessel[i] = glatt || s > 0 ? dicht[i] + (1e-6 * s) / fuss : 0;
+                    // DIE LAPPEN (KARTEN_GESETZ.lappen): unter dem Blatt trägt die glatte Deckung das Laub-Muster, am selben
+                    // Stufe-0-Ort in jeder Stufe — der Filter mischt zwei Stufen, ihre Büschel decken sich
+                    if (
+                        glatt &&
+                        k >= lappenAb &&
+                        KARTEN_GESETZ.lappen >> k >= KARTEN_GESETZ.minSeite &&
+                        schluessel[i] > 0
+                    ) {
+                        const o = tex(v, i);
+                        schluessel[i] *= Math.pow(
+                            2,
+                            KARTEN_GESETZ.saum *
+                                (karteSaumMuster(
+                                    ((o % nw) + 0.5) * (1 << k),
+                                    (((o / nw) | 0) + 0.5) * (1 << k),
+                                    KARTEN_GESETZ.lappen,
+                                    false
+                                ) -
+                                    0.5)
+                        );
+                    }
                     if (schluessel[i] > 0) positiv++;
                 }
                 // die Farbe des Bands: die Summen der Kinder im Kern des Saums (ein gewählter Texel ohne eigene Deckung)

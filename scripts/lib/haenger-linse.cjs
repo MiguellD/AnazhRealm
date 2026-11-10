@@ -17,7 +17,7 @@
 // Die größte der vier Zeiten ist die Klasse; die Tabelle zählt Hänger je Ursache (Klasse · Engstelle).
 //
 //   Seite:     HAENGER_INSTALL (idempotent; die Geräte-Haken laufen nur, solange ein Lauf misst)
-//              der Lauf ist `werkbank lauf` (`k.haenger`): je Takt Beginn, Ende, Geräte-Aufträge → Rohdaten (Takte);
+//              der Lauf ist `werkbank lauf` (zerlege-linse `lauf`, `k.haenger`): je Takt Beginn, Ende, Geräte-Aufträge → Rohdaten (Takte);
 //              die Stichproben trägt die EINE Spur des Laufs (`spurProfil`), ihre Takt-Marken legen sie auf die Takte
 //   Werkbank:  `haenger` und `takt` (die Takt-Spitze, unten) — Aufruf in der Hilfe von scripts/werkbank.cjs;
 //              `--selbsttest` (ohne Welt: die Auswertung gegen erfundene Hänger und Spitzen)
