@@ -143,7 +143,7 @@
     "Fern-Ring auf der Karte (jenseits des Streaming-Rings zeichnet das EINE Höhen-Gesetz)": {"s": 68, "n": 7, "p90": 75, "max": 75},
     "Schatten-Bias auf der Karte (das Gesetz der Kaskade)": {"s": 2, "n": 7, "p90": 4, "max": 4},
     "Ziel-Zensus auf der Karte (jedes GPU-Ziel hat einen Leser, die Schatten-Karte zeichnet ohne Farbe)": {"s": 27, "n": 7, "p90": 33, "max": 33},
-    "Fenster-Wand auf der Karte (ein Fenster-Wechsel macht die Welt nie wieder schwarz)": {"s": 17, "n": 10, "p90": 22, "max": 25},
+    "Fenster-Wand auf der Karte (ein Fenster-Wechsel macht die Welt nie wieder schwarz)": {"s": 17, "n": 10, "p90": 22, "max": 25, "geschaetzt": true},
     "Nah-Linse auf der Karte (kein Analog-Satz diesseits der Nah-Grenze 64 m)": {"s": 27, "n": 7, "p90": 31, "max": 31},
     "Foundry-Impostor auf der Karte (auf dem EINEN Haupt-Renderer)": {"s": 25, "n": 7, "p90": 30, "max": 30},
     "Pruefbuehne S0 auf der Karte (der Feuerkreis aus 2 m traegt Luma >= 0,15 in der Ausgabe)": {"s": 40, "n": 7, "p90": 47, "max": 47},
