@@ -1,7 +1,7 @@
 {
  "sha": "dcc3361558060fce198f1666eba3720e574bf5a7",
  "geraet": "gtx",
- "zeit": "2026-11-10T09:09:53.629Z",
+ "zeit": "2026-11-10T09:15:14.973Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "haar.K2#1": {
@@ -996,22 +996,72 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "profiband.K3#2": {
+   "gruen": false,
+   "zahl": "Fremd-Last: AppHelperCap.exe 91,1 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 17,2 CPU-s · MsMpEng.exe 16,5 CPU-s — 1,98 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container); Σ fremd 159,4 CPU-s in 85,9 s) — kein Urteil, UNGEMESSEN (die Probe sah: Befehle p95 ≤ 208: wiese-ego-steht ? · wiese-third-steht ? · genesis-ego-steht ? · genesis-third-steht ? · wiese-ego-geht 161 · wiese-ego-sprint 168 · wiese-fahrt ? · genesis-third-geht 149 · stadt-ego-geht ? · wiese-ego-sturm ? ‖ Dreiecke )",
+   "exit": 0,
+   "minuten": 1.41,
+   "grund": "Fremd-Last: AppHelperCap.exe 91,1 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 17,2 CPU-s · MsMpEng.exe 16,5 CPU-s — 1,98 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,30, ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container); Σ fremd 159,4 CPU-s in 85,9 s) — kein Urteil, UNGEMESSEN (die Probe sah: Befehle p95 ≤ 208: wiese-ego-steht ? · wiese-third-steht ? · genesis-ego-steht ? · genesis-third-steht ? · wiese-ego-geht 161 · wiese-ego-sprint 168 · wiese-fahrt ? · genesis-third-geht 149 · stadt-ego-geht ? · wiese-ego-sturm ? ‖ Dreiecke )",
+   "gpu": "nvidia/pascal",
+   "s": 84.5,
+   "fremd": {
+    "s": 85.9,
+    "takte": 39,
+    "fremdS": 159.39,
+    "kerne": 1.855,
+    "fensterKerne": 1.978,
+    "namen": [
+     [
+      "AppHelperCap.exe",
+      91.11
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      17.22
+     ],
+     [
+      "MsMpEng.exe",
+      16.47
+     ]
+    ],
+    "dienerS": 35.95,
+    "diener": [
+     [
+      "dwm.exe",
+      17.97
+     ],
+     [
+      "System",
+      12.97
+     ]
+    ],
+    "eigenS": 292.41,
+    "schwelle": 0.3,
+    "eich": "ungeeicht (win32, 12 Kerne, Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz) — die strengste Schwelle, linux, 4 Kerne (Container)"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-10T09:15:14.973Z",
+   "abdruck": "4cc877868786",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-10T09:09:19.659Z",
+  "start": "2026-11-10T09:14:42.323Z",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 6.9,
+  "bootS": 7,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
     "ort": null,
-    "vor": "profiband.K3#1",
-    "s": 25.7,
-    "takte": 783,
+    "vor": "profiband.K3#2",
+    "s": 24.4,
+    "takte": 730,
     "chunks": 81,
     "nach": null
    }
@@ -1020,27 +1070,27 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 202,
-   "frameP95": 58.43,
-   "taktP95": 60.44,
-   "vramMax": 149.6,
+   "bilder": 239,
+   "frameP95": 44.21,
+   "taktP95": 34.81,
+   "vramMax": 150.6,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [
     {
-     "probe": "profiband.K3#1",
+     "probe": "profiband.K3#2",
      "m": 1091,
      "ringVor": 4,
      "ringMin": 0
     }
    ],
-   "zapfen": 107,
+   "zapfen": 110,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 114.7,
-  "minuten": 1.99
+  "fahrtS": 117.3,
+  "minuten": 2.03
  }
 }
