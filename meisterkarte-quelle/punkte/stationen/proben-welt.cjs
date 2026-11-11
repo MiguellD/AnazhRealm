@@ -401,7 +401,7 @@ async function tierKreis(tor) {
         ["const nWarm = Math.max(warm ?? 1, st.traaNode ? 32 : 0);", "const nWarm = 0;"],
         ["if (BW === W && BH === H) return { u8: voll, info, ms, tiefe, abnahme: abnahme(voll, W, H, m) };", "if (BW === W && BH === H) return { u8: voll, info, ms, tiefe };"],
     ]);
-    const lauf = tor.quelle("scripts/werkbank.cjs", "lauf", [
+    const lauf = tor.quelle("scripts/lib/zerlege-linse.cjs", "lauf", [
         ['const kreis = k.wandern === "kreis" ? { gier: st.yaw, gesehen: new Map(), schuesse: 0, imBlick: 0, max: 0 } : null;',
             'const kreis = k.wandern === "kreis" ? { gier: st.yaw, gesehen: new Map(), masken: 0, maskeMs: 0, pruefungen: 0, imBlick: 0, max: 0 } : null;\n        window.__kreis = kreis;'],
         ["await sleep(250);\n                    st.yaw = kreis.gier",

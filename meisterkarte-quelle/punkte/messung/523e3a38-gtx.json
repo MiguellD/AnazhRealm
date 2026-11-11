@@ -1,0 +1,363 @@
+{
+ "sha": "523e3a3806a6450b9d05d14a2cb7744f0c7ec5b4",
+ "geraet": "gtx",
+ "zeit": "2026-11-11T12:17:51.017Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "affekt.K4#2": {
+   "gruen": false,
+   "zahl": "spieler → — (0 ms) · nexus → — (0 ms) · ROT spieler: ohne Modell (die KI der Sitzung ist aus); nexus: ohne Modell (die KI der Sitzung ist aus)",
+   "exit": 0,
+   "minuten": 0.02,
+   "grund": "ROT: spieler → — (0 ms) · nexus → — (0 ms) · ROT spieler: ohne Modell (die KI der Sitzung ist aus); nexus: ohne Modell (die KI der Sitzung ist aus)",
+   "gpu": "nvidia/pascal",
+   "konsum": "kb564861b2050",
+   "konsumN": 26,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 3
+   },
+   "konsumBoot": "kb557ee283661",
+   "s": 0.2,
+   "fremd": {
+    "s": 4.3,
+    "takte": 2,
+    "fremdS": 7.38,
+    "kerne": 1.704,
+    "fensterKerne": 1.704,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      3.48
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      1.36
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      0.98
+     ]
+    ],
+    "dienerS": 1.98,
+    "diener": [
+     [
+      "dwm.exe",
+      0.86
+     ],
+     [
+      "System",
+      0.69
+     ]
+    ],
+    "geraetS": 3.16,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      1.44
+     ],
+     [
+      "svchost.exe",
+      0.77
+     ],
+     [
+      "SearchIndexer.exe",
+      0.77
+     ]
+    ],
+    "eigenS": 5.78,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon"
+   },
+   "zeit": "2026-11-11T11:30:45.561Z",
+   "abdruck": "cf772722618e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "ankunft.K1#1": {
+   "gruen": false,
+   "zahl": "t(Kontrolle) kalt 17.14 s von außen (Eigenmeldung 15.85 s), Bild 0.00 % Lücke bis zur Ruhe, offen im Bild der Horizont wird geteilt · 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.14,
+   "grund": "ROT: t(Kontrolle) kalt 17.14 s von außen (Eigenmeldung 15.85 s), Bild 0.00 % Lücke bis zur Ruhe, offen im Bild der Horizont wird geteilt · 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht · [linse-gpu] nvidia/pascal · ROT trotz Fremd-Last: git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 39,4 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 22,6 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 21,2 CPU-s — 2,19 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon; Σ fremd 111,5 CPU-s in 71,5 s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 30,8 CPU-s · svchost.exe 15,0 CPU-s · SearchIndexer.exe 2,9 CPU-s) — geeicht ÷ 1,123 (1 + 5,6 % je fremdem Kern × 2,19): t(Kontrolle) kalt s 17,14 → geeicht 15,26 (Soll ≤ 10)",
+   "mass": [
+    {
+     "wort": "t(Kontrolle) kalt s",
+     "wert": 17.14,
+     "soll": 10
+    }
+   ],
+   "gpu": "nvidia/pascal",
+   "konsum": "k890e64626184",
+   "konsumN": 28,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 5
+   },
+   "konsumBoot": "ka8301df88eb3",
+   "s": 67,
+   "fremd": {
+    "s": 71.5,
+    "takte": 29,
+    "fremdS": 111.52,
+    "kerne": 1.56,
+    "fensterKerne": 2.19,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      39.42
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      22.63
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      21.19
+     ]
+    ],
+    "dienerS": 56.83,
+    "diener": [
+     [
+      "dwm.exe",
+      26.28
+     ],
+     [
+      "System",
+      19.33
+     ]
+    ],
+    "geraetS": 49.61,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      30.8
+     ],
+     [
+      "svchost.exe",
+      14.95
+     ],
+     [
+      "SearchIndexer.exe",
+      2.88
+     ]
+    ],
+    "eigenS": 463.45,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon"
+   },
+   "zeit": "2026-11-11T11:35:59.432Z",
+   "abdruck": "4e36edaf41f7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "ankunft.K1#2": {
+   "gruen": false,
+   "zahl": "t(Kontrolle) kalt 12.88 s von außen (Eigenmeldung 11.21 s), Bild 0.00 % Lücke bis zur Ruhe, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.11,
+   "grund": "ROT: t(Kontrolle) kalt 12.88 s von außen (Eigenmeldung 11.21 s), Bild 0.00 % Lücke bis zur Ruhe, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht · [linse-gpu] nvidia/pascal · ROT trotz Fremd-Last: git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 43,1 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 21,5 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 11,2 CPU-s — 1,60 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon; Σ fremd 94,4 CPU-s in 68,9 s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 25,3 CPU-s · svchost.exe 9,3 CPU-s · SearchIndexer.exe 2,2 CPU-s) — geeicht ÷ 1,09 (1 + 5,6 % je fremdem Kern × 1,60): t(Kontrolle) kalt s 12,88 → geeicht 11,81 (Soll ≤ 5)",
+   "mass": [
+    {
+     "wort": "t(Kontrolle) kalt s",
+     "wert": 12.879,
+     "soll": 5
+    }
+   ],
+   "gpu": "nvidia/pascal",
+   "konsum": "k79c5e6808cb5",
+   "konsumN": 28,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 5
+   },
+   "konsumBoot": "kb557ee283661",
+   "s": 65.1,
+   "fremd": {
+    "s": 68.9,
+    "takte": 29,
+    "fremdS": 94.41,
+    "kerne": 1.37,
+    "fensterKerne": 1.601,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      43.05
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      21.52
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      11.19
+     ]
+    ],
+    "dienerS": 49.63,
+    "diener": [
+     [
+      "dwm.exe",
+      25.69
+     ],
+     [
+      "System",
+      18.11
+     ]
+    ],
+    "geraetS": 37.56,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      25.33
+     ],
+     [
+      "svchost.exe",
+      9.3
+     ],
+     [
+      "SearchIndexer.exe",
+      2.16
+     ]
+    ],
+    "eigenS": 443.03,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon"
+   },
+   "zeit": "2026-11-11T12:03:03.395Z",
+   "abdruck": "201ca904c048",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "ankunft.K3#1": {
+   "gruen": false,
+   "zahl": "warm Median 11.29 s (10.97 · 11.60, Zweit-Boot im warmen Browser) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.15,
+   "grund": "ROT: warm Median 11.29 s (10.97 · 11.60, Zweit-Boot im warmen Browser) · [linse-gpu] nvidia/pascal · ROT trotz Fremd-Last: git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 45,5 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 21,3 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 10,1 CPU-s — 1,74 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon; Σ fremd 98,3 CPU-s in 70,4 s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 25,3 CPU-s · svchost.exe 10,0 CPU-s · SearchIndexer.exe 1,8 CPU-s) — geeicht ÷ 1,098 (1 + 5,6 % je fremdem Kern × 1,74): warm Median s 11,29 → geeicht 10,28 (Soll ≤ 5)",
+   "mass": [
+    {
+     "wort": "warm Median s",
+     "wert": 11.285,
+     "soll": 5
+    }
+   ],
+   "gpu": "nvidia/pascal",
+   "konsum": "k79c5e6808cb5",
+   "konsumN": 28,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 5
+   },
+   "konsumBoot": "kc0e33608e79c",
+   "s": 68.2,
+   "fremd": {
+    "s": 70.4,
+    "takte": 30,
+    "fremdS": 98.34,
+    "kerne": 1.396,
+    "fensterKerne": 1.74,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      45.52
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      21.3
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      10.08
+     ]
+    ],
+    "dienerS": 48.17,
+    "diener": [
+     [
+      "dwm.exe",
+      23.25
+     ],
+     [
+      "System",
+      18.38
+     ]
+    ],
+    "geraetS": 38.13,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      25.25
+     ],
+     [
+      "svchost.exe",
+      10.02
+     ],
+     [
+      "SearchIndexer.exe",
+      1.78
+     ]
+    ],
+    "eigenS": 424.36,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon"
+   },
+   "zeit": "2026-11-11T12:17:51.017Z",
+   "abdruck": "3b4659c456d4",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "konsumTafel": {
+  "kb564861b2050": "fVTbbqMwEP2XPG6XmhAuBqkPThupXana9BPGZgwUAsiGsJvV/vvKBJLgVOsXLjpnzpmL58+qBVFCho+fuqlXyerb6vtKwxEdjeqI6vFTr5LVOlpTCBJ2PoQx9mxgQhVtp0lVcAK8hvyATq86LKpHMdIEj2MRJ2TYsYc9eSUb+mTTKo5p43QgcSbx1Is2kNjAXmfA0YFejkITOBRr140TMh7K2D46vw47W4lDnS7d+dJz43RMaseebHxaAHZOVdR61hJpwDfepGU07jkKBucEmFeoJhINwzX1Z4M2QVa91gsRybmg7oi3sFnbO/I2NHAOlNuFygHrDNUyaBhHrkjIL8o+fph836ZOst3tV3lfhRIOqMCpIZ+7E4a+H98U4S6nqhD5VLh6InmeLwCvJEJIPAjG2Itv3reXv3R/dvLC2Id5ZoyxLbMEdA4pKqdsdHdRkH4QbcR5QJ8ZI9m7bUtfbU2cFCX1o4Wr7QPb27xGdgModLK2n4joYxCZ2/B2J9LB4TBbEh7SwG6P7swcLsbKEzIcxyozFl7vx+qo4OAAz1Qh5USKeSCkaUNsj8mAVefwpukmZBSFAGlCTqS+pPmbmrL+78ivojaqm00HPHSln8ijGQFhGz6hqjDDRZpeBJu1mxDT913+PKr8NI1mlzm4Hrq1IxZYOSesda/nixVHaSyTL27igKrkUJcTcA3S9/3zaOyzMW33hS6yJex93AEmSItiXmakLJyyUW2vF8vRIFrVyMKsFJJDr3Oouivk7z8=",
+  "kb557ee283661": "fVTbjpswEP2XPHbLQggXY2kfJtmou5WqJp8wNmNgQyCyYWm36r9XEEiCs+q8cNGcOWfmjP1ncUJ5wIwe30xdLfjiy+LrwuA7OYb0O+nHN7Pgi2W8ZBhyOIcLAN/6NKmLU2PcshAuigrzIzmtbqgoH+UAkyJJZMLdbgsPO/fFXTG4xAae7BKloLR2GlQ0FRCpH6+Q24mtyVCQg60aSMfkSC49L+HuEAxgF59fu63NJLBK50oD5XtJyl87gC082flpgdQ4ZVGZiUumoVj5I1fPcY/R2DkfSHlJegSxKFqyYBJoA1TZGjMjUUJI5g35Vm52ah11WxqFQCbsQeVIVUZ6XjRKYk9y9xeD/ffeiNfJke3t1+F+Cgc8kkanwnxyJ4qCILkZwl1PZSHzcXDVCPL9QCJdQQNQAsBz0L+uLz/Z7qzkGWDfPzMAWINFYHJMSTuH2jQXBhWE8UryccvAzX7YssxV1ohJSbEgnqlaP8DOxtWq6VCTk53aEUgBhXHI4ROSBo/HSZL0iYW2Pabp93C2Vr5U0bBWWS/h5X6t3jUeHRSZLpQaQYkIpeptSOw16ahsHFHXzZgZxxFiyt2VW13a/M0yWGeXY/kKBm7Dg70tYaha62YSHYrIUwFXZyft7A/SJWU0a9OPcbX0+OD7Nt8MRD97o+GyB9dga7tiQaXzQZVpzXSwkjhN1Nm9bupjNrqO9EFgdRgBS1RBEHDoO99la3jZbJNnBv+PDcD+XPRE0j3pWhX9ReLm2Jocy+Z6g/79Bw==",
+  "k890e64626184": "bVTbbqMwEP2XPG7XNRDCTeqDSSO1D1WznzA2Y0NDILIhSFntv6/MJQ3QeQmxzpk5M3PsvxtRazTPZ6gKiaZ5/jJ1tUk2vza/NxJE3qE+EQt5/jLj8QXECRQ+Ig1ckRjUV9QDzg3dCHYJG4IyxvYWJnRxaQzNClCE13VDTGMziXvuCVEWnAKvID8jaXWDRTmCBI9jESe0O7CnI32j2+hlSSs5ZjVpQOJE4pkXbiFZAlujgCOBVvaFRnAgXMeJE9pHxNgxHD67w7IShyqbq/Ol58RZ3/aBvSzxWQHYkLKozFRLZDu+9cZatsaao6EjN8C8RD2SoiBwI38SuCTIsjVmVkRyLiKnxy+w6tIS+ZgaOIeILweVA1YK9TxpEIeOGETsPj4Zex93nT7ZqU3/TuspnOCMGkgF+bSdIPD9+GEIq57KQuTj4KqR5Hm+APwmUUrjTjDGXn37nd5Po+Og5JWxP/ZXWY1sUcDkkKEmp9o09wrS34VbMVh4zxhVH0tZ5lvWyMlQRn44U5U+seOSV8umA41EXdqRiD7uQntf3ldFGjifJ0nCw+h+qx5iZU3TWG/OrOYJGfRWU1bW29pqVw1nAlzpQsqRFPOdkHY18dI6HZZNf4VHZBgGAFlCb7S6t36LFEvXYqdQa2/0WWvdTKJ3PHCkn8irtYVYom+oS1Q4a9MLYes6CbVeOOT7vtCnXT67e+M7onSZscCS3LAyrZkuWxxmsUx+uJ32ZeRQnUagC9L3/WE3R5Uytk/d12jW8JUJljqPJ4MRLyjoRdeysA8KzaE1OZQPL/G//w==",
+  "ka8301df88eb3": "fVTbbptAEP0XHpsSMF6uUh7GjtWkUlX7E2aXWSDGYO1CaFP13ytutllHnRcumjPnzJzZ/WOdURwxo8c3XVdWYn2xvloa38nWpN5JPb5pK7FW4SpCP4ExHAD41qcJVZwb7ZQFd5BXmJ/IblVDRfkoBpjgcSzixOl28LB3Xpx1BJfYwpNZouSU1naDkuYCPPXCNSZmYqsz5GRjKwfSKTkQK9eNE2eICGAfjq/dzmTiWKVLpUx6bpwmrx3ADp7M/LRAauyyqPTMJVKfr72Jq+e4xyjs7A+kvCQ1gaIgWEVsFmgCZNlqvSCRnIvIHfKN3Ozc2vK2NHKOETcHlSNVGall0SAOXZE4vyI4fO+NeJ0d2d1+He+ncMQTKbQrzGd3goCx+GYIdz2VhcinwVUTyPOYQLqCBqAAgGfWv24uP6P9qOQZ4NA/MwDYgEGgc0xJ2cdaNxcGyfxwLZJpy8DJfpiy9FXWhElJRixcqNo8wN7E1bLpUJGdndsJSIz80E/gE5IGT6dZkvAo8k17dNPv4WKtPCGDYa2yXsLL/Vq9KzzZyDNVSDmBYu4L2dsQm2vSUdnYvK6bKTMMA8Q0cdZOdWnzd5TBJrscSwYabsOFgylhqFqrZhbt88CVLJGjk2b2B6mSMlq06YW4XrnJ4Psu3w5EP3uj4bIH14g2ZsWCSvuDKt3q+WDFYRrL0b1urPK63N+O1JFjdZwAK5SMsQT6zvfZBl62u/g5gv/HFuAwFj2TcM6qlkV/kTg5tjrHsrneoH//AQ==",
+  "k79c5e6808cb5": "bVTbbqMwEP2XPG7XNRDCTeqDSSO1D1WznzA2Y0NDILIhSFntv6/MJQ3QeQmxzpk5M3PsvxtRazTPZ6gKiaZ5/jJ1tUk2vza/NxJE3qE+EQt5/jLj8QXECRQ+Ig1ckRjUV9QDzg3dCHYJG4IyxvYWJnRxaQzNClCE13VDTGMziXvuCVEWnAKvID8jaXWDRTmCBI9jESe0O7CnI32j2+hlSSs5ZjVpQOJE4pkXbiFZAlujgCOBVvaFRnAgXMeJE9pHxNgxHD67w7IShyqbq/Ol58RZ3/aBvSzxWQHYkLKozFRLZDu+9cZatsaao6EjN8C8RD2SoiBwI38SuCTIsjVmVkRyLiKnxy+w6tIS+ZgaOIeILweVA1YK9TxpEIeOGETsPj4Zex93nT7ZqU3/TuspnOCMGkgF+bSdIPD9+GEIq57KQuTj4KqR5Hm+APwmUUrjTjDGXn37nd5Po+Og5JWxP/ZXWY1sUcDkkKEmp9o09wrS34VbMVh4zxhVH0tZ5lvWyMlQRn44U5U+seOSV8umA41EXdqRiD7uQntf3ldFGjifJ0nCw+h+qx5iZU3TWG/OrOYJGfRWU1bW29pqVw1nAlzpQsqRFPOdkHY18dI6HZZNf4VHZBgGAFlCb7S6t36LFEvXYqdQa2/0WWvdTKJ3PHCkn8irtYVYom+oS1Q4a9MLYes6CbVeOOT7vtCnXT67e+M7onSZscCS3LAyrZkuWxxmsUx+uJ32ZeRQnUagC9L3/WE3R5Uytk/d12jW8JV9sNR5PBmMeEFBL7qWhX1QaA6tyaF8eIn//Qc=",
+  "kc0e33608e79c": "fVTbbptAEP0XHpsSMOayIOVh7FhNKlW1P2F2mQViDNYuhDZV/73iZpt11HnhojlzzsyZ3T/WGcURM3p803VlJdYX66ul8Z1sTeqd1OObthJrFa0YBgmM4QDAtz5NqOLcaKcsuIO8wvxEdqsaKspHMcAEj2MRJ063g4e98+KsGVxiC09miZJTWtsNSpoL8NSL1piYia3OkJONrRxIp+RQrFw3TpwhGMA+Gl+7ncnEsUqXSn3puXGavHYAO3gy89MCqbHLotIzl0gDvvYmrp7jHqOwsz+Q8pLUBGJhuGL+LNAEyLLVekEiORfMHfKN3Ozc2vK2NHKOjJuDypGqjNSyaBhHrkicXwwO33sjXmdHdrdfx/spHPFECu0K89mdMPT9+GYIdz2VhcinwVUTyPN8gXQFDUABAM9+/7q5/GT7UckzwKF/ZgCwAYNA55iSso+1bi4M0g+itUimLQMn+2HK0ldZEyYlyfxooWrzAHsTV8umQ0V2dm4nIPkUREECn5A0eDrNkoRHLDDt0U2/h4u18oQMh7XKegkv92v1rvBkI89UIeUEinkgZG9DbK5JR2Vj87pupswoChHTxFk71aXN3yyDTXY9l6DhNlw4mBKGqrVqZtEBD13pJ3J00sz+IFVSRos2vQjXKzcZfN/l24HoZ280XPbgGmxjViyotD+o0q2eD1YcpbEc3evGKq/L/e1IHTlWxwmwQun7fgJ95/tsAy/bXfzM4P+xBTiMRc8knLOqZdFfJE6Orc6xbK436N9/"
+ },
+ "sitzung": {
+  "start": "2026-11-11T12:17:16.401Z",
+  "port": 7804,
+  "warten": 0.01,
+  "bootS": 6.8,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": null,
+    "vor": "ankunft.K3#1",
+    "s": 25.5,
+    "takte": 831,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 382,
+   "frameP95": 341.7,
+   "taktP95": 186.7,
+   "vramMax": 147.6,
+   "seiten": 5,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 82,
+   "luecken": 7,
+   "letzteLuecke": "kein Renderer"
+  },
+  "fahrtS": 102.3,
+  "minuten": 1.78
+ }
+}

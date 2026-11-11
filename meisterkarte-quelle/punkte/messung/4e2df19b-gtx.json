@@ -1,7 +1,7 @@
 {
  "sha": "4e2df19b5c5103b093818b62b5a84ababf85b493",
  "geraet": "gtx",
- "zeit": "2026-11-11T04:24:21.721Z",
+ "zeit": "2026-11-11T08:31:48.164Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "affekt.K4#2": {
@@ -1142,10 +1142,512 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "material.K1#2": {
+   "gruen": false,
+   "zahl": "Karte Welt 0.1799 · Labor terrain 0.1799, garage 0.1799, portale 0.1799, schmiede 0.1799, fachwerk 0.1799, koerperstudio 0.1799, tetrapoda 0.1799 · Soll 0.18 ± 0.003 · Zeilen NICHT alle im Soll und Band · echt beide Seiten · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.58,
+   "grund": "ROT: Karte Welt 0.1799 · Labor terrain 0.1799, garage 0.1799, portale 0.1799, schmiede 0.1799, fachwerk 0.1799, koerperstudio 0.1799, tetrapoda 0.1799 · Soll 0.18 ± 0.003 · Zeilen NICHT alle im Soll und Band · echt beide Seiten · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "s": 94.9,
+   "fremd": {
+    "s": 97.4,
+    "takte": 43,
+    "fremdS": 126.67,
+    "kerne": 1.301,
+    "fensterKerne": 2.28,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      40.59
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      28.17
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      24.73
+     ]
+    ],
+    "dienerS": 49.8,
+    "diener": [
+     [
+      "dwm.exe",
+      19.28
+     ],
+     [
+      "System",
+      16.27
+     ]
+    ],
+    "geraetS": 50.34,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      28.95
+     ],
+     [
+      "svchost.exe",
+      18.42
+     ],
+     [
+      "SearchIndexer.exe",
+      1.23
+     ]
+    ],
+    "eigenS": 317.09,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon"
+   },
+   "zeit": "2026-11-11T05:31:49.664Z",
+   "abdruck": "18928b5b08be",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "mensch.K4#1": {
+   "gruen": false,
+   "zahl": "Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.11 m · third ROT strich 0.5 Soll [1,1] — gesicht 0.5 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei — (irisL 5 px, 0 rein < 2×2, irisR 4 px, 0 rein < 2×2) · lippeL -15.35 [-14, -4] · lippeA 12.58 [4, 14] · hoehleL 9.77 [-12, 0] · hoehleA -0.37 [-2, 6] · haarDeckung 1 [0.9, 1]",
+   "exit": 0,
+   "minuten": 0.52,
+   "grund": "ROT: Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.11 m · third ROT strich 0.5 Soll [1,1] — gesicht 0.5 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei — (irisL 5 px, 0 rein < 2×2, irisR 4 px, 0 rein < 2×2) · lippeL -15.35 [-14, -4] · lippeA 12.58 [4, 14] · hoehleL 9.77 [-12, 0] · hoehleA -0.37 [-2, 6] · haarDeckung 1 [0.9, 1]",
+   "gpu": "nvidia/pascal",
+   "s": 31.3,
+   "fremd": {
+    "s": 32.9,
+    "takte": 15,
+    "fremdS": 12.42,
+    "kerne": 0.377,
+    "fensterKerne": 0.483,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      5.88
+     ],
+     [
+      "explorer.exe LOADSAVEDWINDOWS",
+      1.38
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      1.28
+     ]
+    ],
+    "dienerS": 9.8,
+    "diener": [
+     [
+      "System",
+      4.09
+     ],
+     [
+      "dwm.exe",
+      3.38
+     ]
+    ],
+    "geraetS": 10.09,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      5.47
+     ],
+     [
+      "svchost.exe",
+      4.16
+     ],
+     [
+      "SearchIndexer.exe",
+      0.27
+     ]
+    ],
+    "eigenS": 67.91,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon"
+   },
+   "zeit": "2026-11-11T05:51:21.266Z",
+   "abdruck": "a171d6454add",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "studios.K2#2": {
+   "gruen": false,
+   "zahl": "p95 Griff → Bild unter der Schranke in 5/8 (Gesetz-Wert höchstens 15 ms portale, Neubau höchstens 4070 ms koerperstudio, je Studio 5 Griffe) · Neuladen 8/8 · A/B 8/8",
+   "exit": 0,
+   "minuten": 2.43,
+   "grund": "ROT: p95 Griff → Bild unter der Schranke in 5/8 (Gesetz-Wert höchstens 15 ms portale, Neubau höchstens 4070 ms koerperstudio, je Studio 5 Griffe) · Neuladen 8/8 · A/B 8/8 · ROT trotz Fremd-Last: git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 49,1 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 36,7 CPU-s · node.exe scripts/diag-fachwerk-contract.cjs 33,9 CPU-s — 2,35 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon; Σ fremd 184,4 CPU-s in 149,3 s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 32,9 CPU-s · svchost.exe 19,7 CPU-s · SearchIndexer.exe 1,4 CPU-s) — geeicht ÷ 1,133 (1 + 5,6 % je fremdem Kern × 2,35): fachwerk Neubau p95 ms 1576 → geeicht 1392 (Soll ≤ 1000) · koerperstudio Neubau p95 ms 4070 → geeicht 3594 (Soll ≤ 1000)",
+   "mass": [
+    {
+     "wort": "garage Neubau p95 ms",
+     "wert": 346,
+     "soll": 1000
+    },
+    {
+     "wort": "schmiede Neubau p95 ms",
+     "wert": 48,
+     "soll": 1000
+    },
+    {
+     "wort": "portale Griff → Bild p95 ms",
+     "wert": 15,
+     "soll": 200
+    },
+    {
+     "wort": "portale Neubau p95 ms",
+     "wert": 312,
+     "soll": 1000
+    },
+    {
+     "wort": "klang Griff → Bild p95 ms",
+     "wert": 10,
+     "soll": 200
+    },
+    {
+     "wort": "fachwerk Neubau p95 ms",
+     "wert": 1576,
+     "soll": 1000
+    },
+    {
+     "wort": "koerperstudio Neubau p95 ms",
+     "wert": 4070,
+     "soll": 1000
+    },
+    {
+     "wort": "tetrapoda Neubau p95 ms",
+     "wert": 1051,
+     "soll": 1000
+    },
+    {
+     "wort": "terrain Neubau p95 ms",
+     "wert": 389,
+     "soll": 1000
+    }
+   ],
+   "gpu": "nvidia/pascal",
+   "s": 145.7,
+   "fremd": {
+    "s": 149.3,
+    "takte": 68,
+    "fremdS": 184.44,
+    "kerne": 1.235,
+    "fensterKerne": 2.353,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      49.06
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      36.66
+     ],
+     [
+      "node.exe scripts/diag-fachwerk-contract.cjs",
+      33.92
+     ]
+    ],
+    "dienerS": 65.22,
+    "diener": [
+     [
+      "dwm.exe",
+      33.58
+     ],
+     [
+      "System",
+      16.14
+     ]
+    ],
+    "geraetS": 55.34,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      32.94
+     ],
+     [
+      "svchost.exe",
+      19.69
+     ],
+     [
+      "SearchIndexer.exe",
+      1.44
+     ]
+    ],
+    "eigenS": 237.48,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon"
+   },
+   "zeit": "2026-11-11T06:59:28.354Z",
+   "abdruck": "0729922f0665",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "studios.K4#1": {
+   "gruen": false,
+   "zahl": "0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU pascal) · garage 23.8 %/– [Differenz 0.2382 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · portale 94.3 %/– [die Welt zeichnet an der Pose L2 (die Bühne L0) · Differenz 0.9426 > 0.021 Albedo ungemess] · schmiede 26.5 %/– [Differenz 0.2653 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · fachwerk 97.4 %/– [Differenz 0.9736 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · terrain –/– [ROT: bild: {\"ms\":3839,\"fehler\":\"ABNAHME ROT [Ziel Blickziel verdeckt von Laub baum_eiche i] · koerperstudio –/– [ungemessen: das Werk ist eine Prägung (der Leib des Spielers), kein gesetzter Bau] · tetrapoda –/– [ungemessen: das Werk ist ein Wesen (eine lebende Kreatur), kein gesetzter Bau]",
+   "exit": 0,
+   "minuten": 1.37,
+   "grund": "ROT: 0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU pascal) · garage 23.8 %/– [Differenz 0.2382 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · portale 94.3 %/– [die Welt zeichnet an der Pose L2 (die Bühne L0) · Differenz 0.9426 > 0.021 Albedo ungemess] · schmiede 26.5 %/– [Differenz 0.2653 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · fachwerk 97.4 %/– [Differenz 0.9736 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · terrain –/– [ROT: bild: {\"ms\":3839,\"fehler\":\"ABNAHME ROT [Ziel Blickziel verdeckt von Laub baum_eiche i] · koerperstudio –/– [ungemessen: das Werk ist eine Prägung (der Leib des Spielers), kein gesetzter Bau] · tetrapoda –/– [ungemessen: das Werk ist ein Wesen (eine lebende Kreatur), kein gesetzter Bau]",
+   "gpu": "nvidia/pascal",
+   "s": 82.5,
+   "fremd": {
+    "s": 84,
+    "takte": 38,
+    "fremdS": 154.34,
+    "kerne": 1.836,
+    "fensterKerne": 3.107,
+    "namen": [
+     [
+      "node.exe scripts/diag-fachwerk-contract.cjs",
+      67.36
+     ],
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      27.13
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      21.77
+     ]
+    ],
+    "dienerS": 45.73,
+    "diener": [
+     [
+      "dwm.exe",
+      24.39
+     ],
+     [
+      "System",
+      15.56
+     ]
+    ],
+    "geraetS": 29.58,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      18.27
+     ],
+     [
+      "svchost.exe",
+      9.41
+     ],
+     [
+      "SearchIndexer.exe",
+      0.78
+     ]
+    ],
+    "eigenS": 220.63,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon"
+   },
+   "zeit": "2026-11-11T07:19:54.709Z",
+   "abdruck": "a576b62649d8",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "studios.K4#2": {
+   "gruen": false,
+   "zahl": "0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU pascal) · garage 23.9 %/– [Differenz 0.2386 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · portale 94.3 %/– [die Welt zeichnet an der Pose L2 (die Bühne L0) · Differenz 0.9435 > 0.021 Albedo ungemess] · schmiede 26.5 %/– [Differenz 0.2653 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · fachwerk 97.4 %/– [Differenz 0.9744 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · terrain –/– [ROT: bild: {\"ms\":4723,\"fehler\":\"ABNAHME ROT [Ziel Blickziel verdeckt von Laub baum_eiche i] · koerperstudio –/– [ungemessen: das Werk ist eine Prägung (der Leib des Spielers), kein gesetzter Bau] · tetrapoda –/– [ungemessen: das Werk ist ein Wesen (eine lebende Kreatur), kein gesetzter Bau]",
+   "exit": 0,
+   "minuten": 1.37,
+   "grund": "ROT: 0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU pascal) · garage 23.9 %/– [Differenz 0.2386 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · portale 94.3 %/– [die Welt zeichnet an der Pose L2 (die Bühne L0) · Differenz 0.9435 > 0.021 Albedo ungemess] · schmiede 26.5 %/– [Differenz 0.2653 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · fachwerk 97.4 %/– [Differenz 0.9744 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · terrain –/– [ROT: bild: {\"ms\":4723,\"fehler\":\"ABNAHME ROT [Ziel Blickziel verdeckt von Laub baum_eiche i] · koerperstudio –/– [ungemessen: das Werk ist eine Prägung (der Leib des Spielers), kein gesetzter Bau] · tetrapoda –/– [ungemessen: das Werk ist ein Wesen (eine lebende Kreatur), kein gesetzter Bau]",
+   "gpu": "nvidia/pascal",
+   "s": 82,
+   "fremd": {
+    "s": 84.6,
+    "takte": 38,
+    "fremdS": 172.45,
+    "kerne": 2.038,
+    "fensterKerne": 2.742,
+    "namen": [
+     [
+      "node.exe scripts/diag-fachwerk-contract.cjs",
+      97.69
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      23.05
+     ],
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      22.75
+     ]
+    ],
+    "dienerS": 46.52,
+    "diener": [
+     [
+      "dwm.exe",
+      25.36
+     ],
+     [
+      "System",
+      15.33
+     ]
+    ],
+    "geraetS": 24.67,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      15.17
+     ],
+     [
+      "svchost.exe",
+      7.5
+     ],
+     [
+      "SearchIndexer.exe",
+      0.63
+     ]
+    ],
+    "eigenS": 217.95,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon"
+   },
+   "zeit": "2026-11-11T07:25:12.983Z",
+   "abdruck": "97b1e369c378",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "tiere.K1#2": {
+   "gruen": false,
+   "zahl": "(a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.992 über 1182 Takte, letzter Flüchter 0.58 s (4 aus zweiter Hand), Fluchtweg 33.9 m, ID 600 s hält (Flucht 5 / 6 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 15.1 m: 46.6 m 5/5 fliehen, 0 sichtbar, 0 Fleck(en) (37 px) · 1044.6 m 0/0 fliehen, 0 sichtbar, 0 Fleck(en) (0 px) · 1090.8 m 0/0 fliehen ABNAHME ROT [Vordergrund 38.0 % näher als 8 m (der halbe Ziel-Abstand): Gelände 16.5 %, Laub baum_eiche 9.4 %, Rinde baum_birke 6.3 % · Ziel Herde verdeckt von Rinde baum_birke in 9.03 m] · beweis · Sicht 0.8 % (Rinde baum_kiefer 0.8 %) · Ziel Herde im Bild VERDECKT 1044.64 m · Luma 24 σ 14.7 schwarz 2.5 % weiß 0.0 % · Stand 18.546.249 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 14 Posen — die Blick-Wahl fand in 14 Posen keine freie — die Aufnahme speichert nichts",
+   "exit": 0,
+   "minuten": 1.42,
+   "grund": "ROT: (a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.992 über 1182 Takte, letzter Flüchter 0.58 s (4 aus zweiter Hand), Fluchtweg 33.9 m, ID 600 s hält (Flucht 5 / 6 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 15.1 m: 46.6 m 5/5 fliehen, 0 sichtbar, 0 Fleck(en) (37 px) · 1044.6 m 0/0 fliehen, 0 sichtbar, 0 Fleck(en) (0 px) · 1090.8 m 0/0 fliehen ABNAHME ROT [Vordergrund 38.0 % näher als 8 m (der halbe Ziel-Abstand): Gelände 16.5 %, Laub baum_eiche 9.4 %, Rinde baum_birke 6.3 % · Ziel Herde verdeckt von Rinde baum_birke in 9.03 m] · beweis · Sicht 0.8 % (Rinde baum_kiefer 0.8 %) · Ziel Herde im Bild VERDECKT 1044.64 m · Luma 24 σ 14.7 schwarz 2.5 % weiß 0.0 % · Stand 18.546.249 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 14 Posen — die Blick-Wahl fand in 14 Posen keine freie — die Aufnahme speichert nichts",
+   "gpu": "nvidia/pascal",
+   "s": 85,
+   "fremd": {
+    "s": 87.9,
+    "takte": 40,
+    "fremdS": 98.53,
+    "kerne": 1.121,
+    "fensterKerne": 1.989,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      40.59
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      21.64
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      18.08
+     ]
+    ],
+    "dienerS": 30.88,
+    "diener": [
+     [
+      "dwm.exe",
+      13.75
+     ],
+     [
+      "System",
+      11.09
+     ]
+    ],
+    "geraetS": 29.61,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      19.92
+     ],
+     [
+      "svchost.exe",
+      7.95
+     ],
+     [
+      "SearchIndexer.exe",
+      0.72
+     ]
+    ],
+    "eigenS": 174.34,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon"
+   },
+   "zeit": "2026-11-11T07:30:35.227Z",
+   "abdruck": "9d9ccc7071a0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "vegetation.K1#1": {
+   "gruen": false,
+   "zahl": "wiese-third-0.5--wiese: LAI 2–5 2.97 · 5–10 2.54 · 10–20 2.68 · 20–40 Grund 0.061 % > 0.020 % (Saum springt > 15 %), Farbton 2–5 m 11.87°, nahWiese 4 Befehle / 51271 Dreiecke",
+   "exit": 0,
+   "minuten": 0.72,
+   "grund": "ROT: wiese-third-0.5--wiese: LAI 2–5 2.97 · 5–10 2.54 · 10–20 2.68 · 20–40 Grund 0.061 % > 0.020 % (Saum springt > 15 %), Farbton 2–5 m 11.87°, nahWiese 4 Befehle / 51271 Dreiecke",
+   "gpu": "nvidia/pascal",
+   "s": 43,
+   "fremd": {
+    "s": 45.3,
+    "takte": 21,
+    "fremdS": 28.56,
+    "kerne": 0.631,
+    "fensterKerne": 1.219,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      9.63
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      9.5
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      2.72
+     ]
+    ],
+    "dienerS": 11.5,
+    "diener": [
+     [
+      "System",
+      4.47
+     ],
+     [
+      "dwm.exe",
+      4.45
+     ]
+    ],
+    "geraetS": 13.41,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      8.63
+     ],
+     [
+      "svchost.exe",
+      4.16
+     ],
+     [
+      "SearchIndexer.exe",
+      0.3
+     ]
+    ],
+    "eigenS": 74.91,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon"
+   },
+   "zeit": "2026-11-11T08:26:29.796Z",
+   "abdruck": "6b1dbe84a49f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-11T04:23:48.831Z",
+  "start": "2026-11-11T08:31:11.855Z",
   "port": 7804,
   "warten": 0.01,
   "bootS": 6.3,
@@ -1155,20 +1657,14 @@
   "orte": [
    {
     "ort": "genesis",
-    "vor": "material.K1#1",
-    "s": 25.4,
-    "takte": 610,
+    "vor": "vegetation.K4#2",
+    "s": 28.9,
+    "takte": 661,
     "chunks": 81,
     "nach": null
    }
   ],
   "wegeTueren": [],
-  "unerklaert": [
-   {
-    "probe": "material.K1#1",
-    "wie": "werke +5 (−0)"
-   }
-  ],
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
@@ -1180,13 +1676,20 @@
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
-   "ortImDeckel": [],
-   "zapfen": 109,
+   "ortImDeckel": [
+    {
+     "probe": "vegetation.K4#2",
+     "m": 292,
+     "ringVor": 4,
+     "ringMin": -1
+    }
+   ],
+   "zapfen": 167,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 119.3,
-  "minuten": 2.04
+  "fahrtS": 175.5,
+  "minuten": 3
  },
  "ungemessen": {
   "ankunft.K1#1": {
@@ -1466,6 +1969,270 @@
    },
    "zeit": "2026-11-11T00:52:46.999Z",
    "abdruck": "d92a3ff92ce9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "physik.K2#2": {
+   "gruen": false,
+   "zahl": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "exit": null,
+   "minuten": 0,
+   "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "ungemessen": true,
+   "zeit": "2026-11-11T06:36:26.997Z",
+   "abdruck": "cd5b4a43c492",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "siedlung.K1#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 70 s gerissen: Stille seit 70 s nach 70 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN",
+   "exit": 1,
+   "minuten": 1.17,
+   "grund": "Deckel 70 s gerissen: Stille seit 70 s nach 70 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN",
+   "s": 70.2,
+   "fremd": {
+    "s": 72.5,
+    "takte": 32,
+    "fremdS": 118.92,
+    "kerne": 1.639,
+    "fensterKerne": 2.249,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      37.05
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      23.53
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      22.92
+     ]
+    ],
+    "dienerS": 40.94,
+    "diener": [
+     [
+      "System",
+      18.88
+     ],
+     [
+      "dwm.exe",
+      14.19
+     ]
+    ],
+    "geraetS": 45.47,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      27.36
+     ],
+     [
+      "svchost.exe",
+      15
+     ],
+     [
+      "SearchIndexer.exe",
+      1.84
+     ]
+    ],
+    "eigenS": 308.56,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon"
+   },
+   "zeit": "2026-11-11T06:54:14.281Z",
+   "abdruck": "aee8fa98714b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "studios.K3#2": {
+   "gruen": false,
+   "zahl": "Fremd-Last: node.exe scripts/diag-haus-fern.cjs 161,2 CPU-s · git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 50,3 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 34,7 CPU-s — 2,75 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon; Σ fremd 290,2 CPU-s in 148,6 s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 29,3 CPU-s · svchost.exe 12,4 CPU-s · SearchIndexer.exe 0,9 CPU-s) — kein Maß reißt (8 gemessen): das ROT liegt in einer Bedingung ohne Zahl — kein Urteil, UNGEMESSEN (die Probe sah: Dreiecke, Befehle, VRAM und GPU-ms ±5 % in 0/7 Mesh-Studios (0 Stufen), Klang 8/8 Orte im Quantum (Audio-Graph höchstens 0.138 ms), ohne garage L0 GPU 0.0236 ms↔Bank 7.6987 (+1), schmiede L0 GPU 0.0051 ms↔Bank 1.6771, portale L0 Bank 4.2358)",
+   "exit": 0,
+   "minuten": 2.44,
+   "grund": "Fremd-Last: node.exe scripts/diag-haus-fern.cjs 161,2 CPU-s · git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 50,3 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 34,7 CPU-s — 2,75 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon; Σ fremd 290,2 CPU-s in 148,6 s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 29,3 CPU-s · svchost.exe 12,4 CPU-s · SearchIndexer.exe 0,9 CPU-s) — kein Maß reißt (8 gemessen): das ROT liegt in einer Bedingung ohne Zahl — kein Urteil, UNGEMESSEN (die Probe sah: Dreiecke, Befehle, VRAM und GPU-ms ±5 % in 0/7 Mesh-Studios (0 Stufen), Klang 8/8 Orte im Quantum (Audio-Graph höchstens 0.138 ms), ohne garage L0 GPU 0.0236 ms↔Bank 7.6987 (+1), schmiede L0 GPU 0.0051 ms↔Bank 1.6771, portale L0 Bank 4.2358)",
+   "mass": [
+    {
+     "wort": "Klang Ort 1 Audio-Graph ms",
+     "wert": 0.1383,
+     "soll": 2.6667
+    },
+    {
+     "wort": "Klang Ort 2 Audio-Graph ms",
+     "wert": 0.0606,
+     "soll": 2.6667
+    },
+    {
+     "wort": "Klang Ort 3 Audio-Graph ms",
+     "wert": 0.0502,
+     "soll": 2.6667
+    },
+    {
+     "wort": "Klang Ort 4 Audio-Graph ms",
+     "wert": 0.0607,
+     "soll": 2.6667
+    },
+    {
+     "wort": "Klang Ort 5 Audio-Graph ms",
+     "wert": 0.0667,
+     "soll": 2.6667
+    },
+    {
+     "wort": "Klang Ort 6 Audio-Graph ms",
+     "wert": 0.0606,
+     "soll": 2.6667
+    },
+    {
+     "wort": "Klang Ort 7 Audio-Graph ms",
+     "wert": 0.056,
+     "soll": 2.6667
+    },
+    {
+     "wort": "Klang Ort 8 Audio-Graph ms",
+     "wert": 0.0505,
+     "soll": 2.6667
+    }
+   ],
+   "gpu": "nvidia/pascal",
+   "s": 146.4,
+   "fremd": {
+    "s": 148.6,
+    "takte": 68,
+    "fremdS": 290.16,
+    "kerne": 1.953,
+    "fensterKerne": 2.753,
+    "namen": [
+     [
+      "node.exe scripts/diag-haus-fern.cjs",
+      161.19
+     ],
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      50.33
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      34.73
+     ]
+    ],
+    "dienerS": 58.25,
+    "diener": [
+     [
+      "dwm.exe",
+      33.11
+     ],
+     [
+      "System",
+      16
+     ]
+    ],
+    "geraetS": 43.94,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      29.27
+     ],
+     [
+      "svchost.exe",
+      12.41
+     ],
+     [
+      "SearchIndexer.exe",
+      0.88
+     ]
+    ],
+    "eigenS": 243.89,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-11T07:14:43.938Z",
+   "abdruck": "40e20c122980",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "tore.K1#1": {
+   "gruen": false,
+   "zahl": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "exit": null,
+   "minuten": 0,
+   "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "ungemessen": true,
+   "zeit": "2026-11-11T08:01:31.620Z",
+   "abdruck": "248a1713c159",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "vegetation.K4#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 139 s gerissen: Stille seit 137 s nach 139 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 1.9 s)",
+   "exit": 1,
+   "minuten": 2.32,
+   "grund": "Deckel 139 s gerissen: Stille seit 137 s nach 139 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 1.9 s)",
+   "s": 139.2,
+   "fremd": {
+    "s": 141.9,
+    "takte": 64,
+    "fremdS": 144.38,
+    "kerne": 1.017,
+    "fensterKerne": 1.758,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      38.73
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      36.78
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      30.91
+     ]
+    ],
+    "dienerS": 49.16,
+    "diener": [
+     [
+      "dwm.exe",
+      22.83
+     ],
+     [
+      "System",
+      16.06
+     ]
+    ],
+    "geraetS": 53,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      34.7
+     ],
+     [
+      "svchost.exe",
+      15.69
+     ],
+     [
+      "SearchIndexer.exe",
+      1.64
+     ]
+    ],
+    "eigenS": 527.67,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon"
+   },
+   "zeit": "2026-11-11T08:31:48.164Z",
+   "abdruck": "8b5a45974dff",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
