@@ -1,7 +1,7 @@
 {
  "sha": "e38e7acf150b7863416554cb2ea2d1fe2fa0ed9c",
  "geraet": "gtx",
- "zeit": "2026-11-11T21:12:39.985Z",
+ "zeit": "2026-11-11T21:23:08.730Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "affekt.K4#2": {
@@ -75,26 +75,106 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "ankunft.K1#1": {
+   "gruen": false,
+   "zahl": "t(Kontrolle) kalt 13.98 s von außen (Eigenmeldung 12.77 s), Bild 0.01 % Lücke bis zur Ruhe, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.12,
+   "grund": "ROT: t(Kontrolle) kalt 13.98 s von außen (Eigenmeldung 12.77 s), Bild 0.01 % Lücke bis zur Ruhe, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht · [linse-gpu] nvidia/pascal · ROT trotz Fremd-Last: OmenCap.exe 80,1 CPU-s · git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 18,2 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 16,3 CPU-s — 2,37 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon; Σ fremd 133,9 CPU-s in 71,2 s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 26,0 CPU-s · svchost.exe 18,1 CPU-s · OmenCommandCenterBackground.exe 1,7 CPU-s) — geeicht ÷ 1,133 (1 + 5,6 % je fremdem Kern × 2,37): t(Kontrolle) kalt s 13,98 → geeicht 12,33 (Soll ≤ 10)",
+   "mass": [
+    {
+     "wort": "t(Kontrolle) kalt s",
+     "wert": 13.979,
+     "soll": 10
+    }
+   ],
+   "gpu": "nvidia/pascal",
+   "konsum": "kf04a9a07719b",
+   "konsumN": 28,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 5
+   },
+   "konsumBoot": "k330f0daaf8d6",
+   "s": 65.8,
+   "fremd": {
+    "s": 71.2,
+    "takte": 29,
+    "fremdS": 133.86,
+    "kerne": 1.881,
+    "fensterKerne": 2.368,
+    "namen": [
+     [
+      "OmenCap.exe",
+      80.05
+     ],
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      18.22
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      16.33
+     ]
+    ],
+    "dienerS": 39.17,
+    "diener": [
+     [
+      "dwm.exe",
+      17.78
+     ],
+     [
+      "System",
+      15.02
+     ]
+    ],
+    "geraetS": 47.14,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      26
+     ],
+     [
+      "svchost.exe",
+      18.14
+     ],
+     [
+      "OmenCommandCenterBackground.exe",
+      1.72
+     ]
+    ],
+    "eigenS": 431.91,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon"
+   },
+   "zeit": "2026-11-11T21:23:08.730Z",
+   "abdruck": "4e36edaf41f7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
   "ke921171a5645": "fVTbbptAEP0XHptu1ua6IOVhE0dyHqo6nzC7zAIBA9oF07rqv1fc4gBW5wWEzpmZM3OYP1YNMocEHz9MVVqR9c36bhm4IDGoL6gfP4wVWftgz8CL+BiUc/7Sw6TO6sbQIhMURAnpGUmrG8yKRznQAs8LHTui3Stnp4cTddjTmlYIjCvSgMKZJGI7cCBaA1uTgEACrRoKTeAwcIKdHdEhGOenYHz9takkoIyX3bnK3oXxIOqVP63xcQbYkCIrzVxLxp5w5lqU0m7L0dCRK2BaoJ5IzPf3zJ0bXBNU0RqzKMKc2LNZRGlIV9ikbon6mhqEACbWg0oBywT1MmngetKN7kwlhzNqICWk81BchzlwE0nZ84pSZDKdBlPOe3Z3kjlfSJSGnRy90sfD4fM7fx899JPf4nk7fZNCjJrklWk+q7huYAsYTfjCOU1+bFi31iaOLfydx77Kofy4mYKpVNOBRpLU7UREF72gd/zbBtzA+TyhlLSReesVmKb32sI6tlT+YJ2kb+K4tc5Fw5mASHSm1Oxt4UkV3rNCh0VDRFU1s8ogiIWI6JWWn0J/s36w/4lDx983bQyZK93MjXvC3yk3Upfe73KNvqIuMMGFVNiHdm+gaf9jKXd8vh3oIrrNJq4ZFuSKpWnN7N0wiEMV3fnjOtS5gDKfgL4f7yEY7XFKBum7A1tITo5s8E6fpEY5Hy2aZySvdN2axRHsEbWuVNafDppCa1Iomhvk7z8=",
-  "k330f0daaf8d6": "hVRdj5swEPwvPPbqc8KXjaV7cC5R76RWzf2ENayBC4HIhtCm6n+vCJAEEqnzAkI7O7uzI/44B4h3kOLzp61KRzhfnK+OhSMSi+aI5vnTOsJZsiWHQMgeVEr5rSuLTX6oLS1yRUGVkO2RNKbGvHiOzzQWBJHnCtpuJN8+banH5QWv8mXeolCYVKQGjWMDlbjMAzEvbGwKCgk0+iw6FEfMYwtX0DO4lFvWv/7icyUFZTKd1NfuIkrEeyvlRr7M65McsCZFXtpRK04C5Y1alNL2nmOgJSfArEAzkHgYLrk/Djgn6KKxdiLCvSRwuaA0orPa9NAQfdsalAKu5kZlgGWKZtqU+UHsiweu7GCPBkgJ2WiK73EPrktSvppRijzOBmPK8eb+IubeDalzJ+5z0+FpffksP/oo/LymQq7u3bcZJGjIrrL1RcX3matADEmSNP1xx7qONnBcFS4CfrsOlW93LthK1y0YJOmhGYjoY8ACIR+I1LDfD1U6dpEH8xPYusvaJDpurMNzdNJuiLf76BwN7Amo1ORaj9lWQayjR1FosaiJqqp63JKxRClBPVpeFv3NU7lKryZ/f5cTbBbzEc5dK1OPQwcqXGhf6P6a8+oTmgJTnKwJy8jtwjPc/oy13z/f13SC9u4KpxwLcsLSNnbMbcSSSPfXa4c206y0aHYKyt1ACMNkCUzIbvNtupJvr5tozeX/0V/5gDE9mErn3c+CZtDYDIr6+pf8+w8="
+  "k330f0daaf8d6": "hVRdj5swEPwvPPbqc8KXjaV7cC5R76RWzf2ENayBC4HIhtCm6n+vCJAEEqnzAkI7O7uzI/44B4h3kOLzp61KRzhfnK+OhSMSi+aI5vnTOsJZsiWHQMgeVEr5rSuLTX6oLS1yRUGVkO2RNKbGvHiOzzQWBJHnCtpuJN8+banH5QWv8mXeolCYVKQGjWMDlbjMAzEvbGwKCgk0+iw6FEfMYwtX0DO4lFvWv/7icyUFZTKd1NfuIkrEeyvlRr7M65McsCZFXtpRK04C5Y1alNL2nmOgJSfArEAzkHgYLrk/Djgn6KKxdiLCvSRwuaA0orPa9NAQfdsalAKu5kZlgGWKZtqU+UHsiweu7GCPBkgJ2WiK73EPrktSvppRijzOBmPK8eb+IubeDalzJ+5z0+FpffksP/oo/LymQq7u3bcZJGjIrrL1RcX3matADEmSNP1xx7qONnBcFS4CfrsOlW93LthK1y0YJOmhGYjoY8ACIR+I1LDfD1U6dpEH8xPYusvaJDpurMNzdNJuiLf76BwN7Amo1ORaj9lWQayjR1FosaiJqqp63JKxRClBPVpeFv3NU7lKryZ/f5cTbBbzEc5dK1OPQwcqXGhf6P6a8+oTmgJTnKwJy8jtwjPc/oy13z/f13SC9u4KpxwLcsLSNnbMbcSSSPfXa4c206y0aHYKyt1ACMNkCUzIbvNtupJvr5tozeX/0V/5gDE9mErn3c+CZtDYDIr6+pf8+w8=",
+  "kf04a9a07719b": "bVTbjpswEP2XPLb1OuFmg7QPzibS7kPV9BPGZgxsCEQ2hCpV/73ilnDZeQFZ58yc8Zzx340qDdqXCxSZRlu9fNqy2ESbb5sfGw0qbdCcSQt5+bTD8RXUGRKcIi3ckFg0NzQ9bsd2HPxI9EGFEG8tTJnsWlkaZ5AQWZYVsVWbST1yj4g8kxRkAekFSW0qzPIBxHw/dJ2INkfBT99P1OWvS1ouMS5JBRpHkowd5kK0BNY2AYkEat0VGsAhc9nWiWgXXIgT63//rCpJKOK5Ok872zDu2j6K1yU+zgArkmeFHWup2JfuWItS2qw5BhpyB0xzNAOJB8GOe6PAJUHntbWzItyNfYdHlIZ0gU2uNdHT1CAlcLm8qBSwSNDMkzLPV4MIftyLMX4dGG3UUtQZLmiAFJCOF+W53IVn45TvF5Q8U+lwWcU4e2+ruDshURo2qndYG98Pj3Pxe5AjnrFfT8SmEKMh59JWjyqexxwJvXXfhKDJzxXrKW3gODLY+nzaDhXvq9HYUlcNGCTJtR6I6KHP2j35WIEruFwGlFYO8sc2TeL4BauI5xZzlA46iyWtsPe1xW4GLgRkYjKtxx2QvtLhV5ZpMK+61R07ZyyWMqJ3Wjyav/NE7Ndin5EsJXRZS1ONon0ZbLUX6Vu7Eys33dHkmOCsTdiFTmuowQ9dHLz++3Ggs2hWk7lnmJM7Fra2o79DFoc6+mIr2xdRQnEegEEQ74D1szkleyHe9rsDn7f7roTXeml6NpjxiopeTamz9jGhKdQ2hXzyCv/7Dw=="
  },
  "sitzung": {
-  "start": "2026-11-11T21:12:06.009Z",
+  "start": "2026-11-11T21:22:31.380Z",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 5.8,
+  "bootS": 8.4,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
     "ort": null,
-    "vor": "affekt.K4#2",
-    "s": 26.1,
-    "takte": 780,
+    "vor": "ankunft.K1#1",
+    "s": 26.9,
+    "takte": 784,
     "chunks": 81,
     "nach": null
    }
@@ -103,20 +183,20 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 0,
-   "frameP95": null,
-   "taktP95": null,
-   "vramMax": null,
-   "seiten": 1,
+   "bilder": 436,
+   "frameP95": 366.64,
+   "taktP95": 178.01,
+   "vramMax": 148.3,
+   "seiten": 5,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 28,
-   "luecken": 0,
-   "letzteLuecke": null
+   "zapfen": 91,
+   "luecken": 4,
+   "letzteLuecke": "THREE is not defined"
   },
-  "fahrtS": 34.7,
-  "minuten": 0.68
+  "fahrtS": 105,
+  "minuten": 1.85
  }
 }
