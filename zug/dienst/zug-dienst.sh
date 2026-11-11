@@ -113,7 +113,7 @@ urteilen() { # <id> <zweig@sha> … — schreibt das Urteil [<id>w], landet bei 
     # DER ROTE TEXT STEHT BEIM URTEIL (z380): je rotem Job seine ❌-Zeilen in $W/zug-rot-<id>.txt, die ersten im Protokoll — der Täter
     # ist dann lesbar, bevor jemand halbiert (rot-text.cjs)
     case "$u" in *"FAHRT ROT"*)
-        local lauf; lauf=$(grep -oE "Lauf [0-9]+" "$F" "$O" 2>/dev/null | tail -1 | grep -oE "[0-9]+")
+        local lauf; lauf=$(grep -hoE "Lauf [0-9]{8,}" "$F" "$O" 2>/dev/null | tail -1 | grep -oE "[0-9]{8,}")
         if [ -n "$lauf" ]; then
             TOKEN=$(printf 'protocol=https\nhost=github.com\n\n' | git -C $R credential fill 2>/dev/null | sed -n 's/^password=//p') \
                 node "$D/rot-text.cjs" "$lauf" >"$W/zug-rot-$id.txt" 2>&1
