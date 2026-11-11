@@ -416,8 +416,9 @@ async function kaltLauf() {
 hauptLauf(async () => {
     if (ARGV.includes("--kalt")) return kaltLauf();
     const { browser, page } = await nullWelt(server, { port: PORT, frist: 300000, vor: SELBSTTEST && SCHLUCK }, 120000, "index.html", "networkidle0");
-    // das erste Weltbild (der Null-Renderer setzt es beim Renderer-Bau; eine Zeit trägt nur die Kalt-Zeile, von außen)
-    await page.evaluate(() => __weltDa((r) => r.state._weltbildDa));
+    // das erste Weltbild (der Null-Renderer setzt es beim Renderer-Bau; eine Zeit trägt nur die Kalt-Zeile, von außen) UND das Buch
+    // der Studios (`_foundryBuchOffen`): sein Faden bootet in Wanduhr, kein Takt bringt ihn — die Pumpe beginnt nach seinem Ereignis
+    await page.evaluate(() => __weltDa((r) => r.state._weltbildDa && !r._foundryBuchOffen()));
     const out = await page.evaluate(async (selftest, r = window.anazhRealm, st = r.state) => {
         const o = { stage: 0 };
         // ── DER INIT BAUT NICHTS VERBORGENES (ankunft.K5, w16-lade-atem) — am ersten Weltbild, bevor eine Tafel sich zeigte und
@@ -445,14 +446,20 @@ hauptLauf(async () => {
             };
         };
         const sichtM = () => (st.luft ? r._luftSichtM(st.playerMesh ? st.playerMesh.position.y : 0) : -1);
-        // ── PUMPEN, bis das Prädikat schließt (jeder Term steht; in Takten) ──
-        for (let t = 1; t <= 6000 && !o.stage; t++) {
-            try {
+        // ── PUMPEN, bis das Prädikat schließt (jeder Term steht; in Takten) — am EINEN Deckel (welt-boot `__deckel`): er zählt
+        // einen Takt nur, wenn die Welt nichts mehr offen hat (`_weltOffen`), und bricht nach 6000 solchen beim Namen; wartet sie
+        // auf einen Faden, atmet jeder Takt (die Antwort landet zwischen zwei Takten), sonst jeder fünfte. Ein Wurf des Takts
+        // bricht beim Namen. Bis w27-foundry-halter zählte die Pumpe JEDEN Takt (6000 ≈ 17,5 s an der GTX 1050) gegen den Faden
+        // des Buchs, der dort 9–25 s später steht, und schluckte jeden Wurf: 7 von 12 Läufen ROT ohne Täter im Spiel.
+        try {
+            for (let t = 1, weiter = __deckel("die volle Bühne", 6000); !o.stage && weiter(); t++) {
                 r._gameLoopTick();
-            } catch {}
-            o.terms = terms();
-            if (Object.values(o.terms).every(Boolean)) o.stage = t;
-            else if (t % 5 === 0) await sleep(0);
+                o.terms = terms();
+                if (Object.values(o.terms).every(Boolean)) o.stage = t;
+                else if (t % 5 === 0 || Object.values(r._weltOffen()).some(Boolean)) await sleep(0);
+            }
+        } catch (e) {
+            [o.bruch, o.terms] = [String((e && e.message) || e).slice(0, 500), terms()];
         }
         o.terms._streuWartet = r._streuWartet(st.playerMesh ? st.playerMesh.position : null);
         Object.assign(o, {
@@ -482,6 +489,14 @@ hauptLauf(async () => {
                 t.deckelSteht = frag(true, true);
                 t.deckelWarnt = warnt() > w0;
                 [st.renderer._isHeadlessNull, st._buehneStand, r._buehneT0] = merk;
+                // das Buch, das sich noch öffnet, hält die Welt offen (`_foundryBuchOffen` → `_weltOffen`): ohne Rezepte ein
+                // Offenes mehr, mit ihnen wie zuvor — der Deckel jeder Linse liest es dort
+                const [f, vor] = [r._foundry, r._weltOffen().foundry];
+                const rz = f.recipes;
+                f.recipes = null;
+                t.buchOffen = r._foundryBuchOffen() && r._weltOffen().foundry === vor + 1;
+                f.recipes = rz;
+                t.buchZu = !r._foundryBuchOffen() && r._weltOffen().foundry === vor;
             // (W4.3, der Wachhund eines hängenden Bakes, fiel mit S2: die Karte backt synchron im Takt)
         }
         return o;
@@ -504,7 +519,7 @@ hauptLauf(async () => {
             `STREU steht — keine Region in Reichweite fehlt, wartet oder trägt eine offene Scheibe (\`_streuWartet\` ${T._streuWartet})`,
         ],
         [T.biblio && T.impost, `BIBLIOTHEK warm (${T.biblio}) · IMPOSTOREN idle (${T.impost})`],
-        [!!out.stage, "die BÜHNE wurde erreicht (das Prädikat schloss)"],
+        [!!out.stage, "die BÜHNE wurde erreicht (das Prädikat schloss)" + (out.bruch ? " — " + out.bruch : "")],
         [!out.verborgen.length, `DER INIT BAUT NICHTS VERBORGENES ${out.verborgen}`],
     ];
     if (SELBSTTEST)
@@ -517,6 +532,7 @@ hauptLauf(async () => {
                 s.deckelSteht && s.deckelWarnt,
                 `SELBST-TEST: der Deckel der Bühne öffnet laut — ohne Regionen-Karte hinter BUEHNE_SETTLE_CAP_MS ${s.deckelSteht ? "steht sie" : "steht sie NICHT"}, das Log ${s.deckelWarnt ? "nennt die Lücke (WARN)" : "SCHWEIGT"}`,
             ],
+            [s.buchOffen && s.buchZu, `SELBST-TEST: das Buch, das sich noch öffnet, hält die Welt offen (\`_weltOffen\`) — ohne Rezepte ${s.buchOffen ? "ein Offenes mehr" : "NICHTS offen"}, mit ihnen ${s.buchZu ? "wie zuvor" : "ANDERS als zuvor"}`],
             [out.liefer.weg === 1, `SELBST-TEST: die verschluckte Lieferung ist ROT — ${out.liefer.zeile}`]
         );
     // das Urteil des Kern-Wechsels an Bruch-Daten: gesund GRÜN, ein fremder Neubau (e) und ein alter Leser (d) ROT
