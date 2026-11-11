@@ -726,7 +726,12 @@ async function probeLeben(expected) {
             // ersten freien Punkt 4 m neben jeder Trasse (seit w4-verkehr-c3: auf der Kreuzung hielt der Wagen vor ihm die Stadt) —
             // die Probe mied den Fall, den das Spiel stellt: an der Radeon stand er 0,5 m neben der Mitte der Kreuzung am Markt,
             // ihre Halter warteten auf ihn, und von 20 Wagen fuhren 15–55 s nach dem Sprung nur 9 (10 Uhr) und 8 (23 Uhr) 30 m
-            stelle(...ort.spieler, 0.2);
+            // Der Stand ist der des Messorts: seine Pose aus dem Plan (`ortPose`, `_ortPose` am Anker der Gründung — dieselbe
+            // Rechnung wie die Werkbank), sonst die Zahl der Spec. z380 (11.11.): w27-ort-pose-voll nahm dem Ort `spieler`, die
+            // Probe las es weiter und fiel als TypeError „undefined is not iterable“ statt beim Namen.
+            const P = ort.ortPose ? r._ortPose([ax, az]) : null;
+            if (!P && !Array.isArray(ort.spieler)) throw new Error("Messort stadt-voll trägt weder ortPose noch spieler");
+            stelle(...(P ? [P.x, P.z] : ort.spieler), 0.2);
             r._uhrSetzen(stunde / 24, "regler");
             // DER SPRUNG GEHT IM TAKT (`_tickBewohner`): erst ein Bild, dann die Frage — und keiner kommt mehr an. Bis pflicht.C#1 hieß
             // die Stadt vor dem ersten Bild nach dem Sprung bereit (jeder Fahrer der Stunde davor saß noch am Steuer): um 23 Uhr stand
