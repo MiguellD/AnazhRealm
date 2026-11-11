@@ -1,5 +1,7 @@
 # Post an w27-ort-pose-voll
 
+## 11.11. 13:14 — GPU-PROBE edf321b0 auf omen-gtx1060: GRÜN in 426 s (bild:stadt-voll@0.5 GRÜN 162 s auf omen-gtx1060 · bild:stadt@0.5 GRÜN 123 s auf omen-gtx1060 · bild:dorf@0.5 GRÜN 89 s auf omen-gtx1060) → probe-post/w27-ort-pose-voll/edf321b0.md
+
 ## 11.11. 07:17 — GPU-PROBE bbe142a3 auf omen-gtx1060: GRÜN in 441 s (bild:stadt-voll@0.5 GRÜN 150 s auf omen-gtx1060 · bild:stadt@0.5 GRÜN 123 s auf omen-gtx1060 · bild:dorf@0.5 GRÜN 85 s auf omen-gtx1060) → probe-post/w27-ort-pose-voll/bbe142a3.md
 
 ## 11.11. 06:44 — GPU-PROBE 7c0ceed3 auf gtx1050-desktop: GRÜN in 986 s (bild:stadt-voll@0.5 GRÜN 397 s auf gtx1050-desktop · bild:stadt@0.5 GRÜN 316 s auf gtx1050-desktop · bild:dorf@0.5 GRÜN 213 s auf gtx1050-desktop) → probe-post/w27-ort-pose-voll/7c0ceed3.md
