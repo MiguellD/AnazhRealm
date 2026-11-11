@@ -1663,23 +1663,58 @@ function baumAmSha(repo, geraet, sha) {
     return baum;
 }
 
-// die Sperre des Spiel-Baums: ein Ordner mit der pid des Halters; eine tote pid gilt als verwaist, gelöst wird beim Prozess-Ende
-async function baumSperre(repo, geraet) {
+// DER HALTER EINER SPERRE IST pid + START, NIE DIE pid ALLEIN (11.11., Koordinator): das System vergibt eine freie Nummer neu. Die
+// Sperre punkte-radeon hing 12:01–12:30 an pid 24876 — ihr Lauf fiel 12:07 am CI-Abbruch (taskkill, kein exit-Haken), ab 12:21 trug ein
+// fremdes bash.exe die Nummer, und die Radeon wartete „belegt“ statt zu messen. Der Halter schrieb seine Marke NACH seinem Start: trägt
+// die Nummer heute ein Prozess, der erst nach der Marke begann, ist der Halter tot. prozessStart: ms, null = kein Prozess, NaN =
+// unlesbar (dann gilt er als lebend — eine lebende Sperre bricht nie an einer Frage ohne Antwort)
+const START_SPIEL_MS = 2000; // Uhr des Dateisystems gegen die Uhr der Prozess-Tafel
+function prozessStart(pid) {
+    try { process.kill(pid, 0); } catch (e) { if (e.code !== "EPERM") return null; }
+    try {
+        if (process.platform === "win32") {
+            const r = spawnSync("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command",
+                "$p = Get-CimInstance -ClassName Win32_Process -Filter 'ProcessId=" + Number(pid) + "' -Property CreationDate; if ($p -and $p.CreationDate) { ([DateTimeOffset]$p.CreationDate).ToUnixTimeMilliseconds() } elseif ($p) { 'x' } else { 'tot' }"],
+                { encoding: "utf8", windowsHide: true, timeout: 30000 });
+            const t = String(r.stdout || "").trim();
+            return t === "tot" ? null : /^\d+$/.test(t) ? Number(t) : NaN;
+        }
+        const s = fs.readFileSync("/proc/" + pid + "/stat", "utf8"), f = s.slice(s.lastIndexOf(")") + 2).split(" ");
+        const hz = Number(spawnSync("getconf", ["CLK_TCK"], { encoding: "utf8" }).stdout.trim()) || 100;
+        return 1000 * Number((/^btime (\d+)$/m.exec(fs.readFileSync("/proc/stat", "utf8")) || [])[1]) + (+f[19] / hz) * 1000;
+    } catch (_e) {
+        return NaN;
+    }
+}
+// lebt der Halter, der seine Marke zur Zeit `marke` (ms) schrieb? `start` ist prozessStart(pid)
+const halterLebt = (start, marke) => start != null && !(start > marke + START_SPIEL_MS);
+// die Sperre des Spiel-Baums: ein Ordner mit der pid des Halters; ein toter Halter (halterLebt) gilt als verwaist, gelöst wird beim
+// Prozess-Ende. `o` nur für den Selbsttest: startVon (statt prozessStart), wartMs, einmal (true: ein belegter Baum kehrt mit false heim)
+async function baumSperre(repo, geraet, o = {}) {
     const sperre = path.join(repo, ".claude", "worktrees", "punkte-" + geraet + ".sperre");
     fs.mkdirSync(path.dirname(sperre), { recursive: true }); // ein frischer Klon trägt den Ordner noch nicht (sonst ENOENT vor dem ersten Baum)
-    const lebt = (pid) => { try { process.kill(pid, 0); return true; } catch (e) { return e.code === "EPERM"; } };
     for (let gemeldet = false; ; ) {
         try {
             fs.mkdirSync(sperre);
             fs.writeFileSync(path.join(sperre, "pid"), String(process.pid));
             process.on("exit", () => fs.rmSync(sperre, { recursive: true, force: true }));
-            return;
+            return true;
         } catch (e) {
             if (e.code !== "EEXIST") throw e;
-            const pid = Number((fs.existsSync(path.join(sperre, "pid")) && fs.readFileSync(path.join(sperre, "pid"), "utf8")) || 0);
-            if (pid && !lebt(pid)) { fs.rmSync(sperre, { recursive: true, force: true }); continue; }
+            const datei = path.join(sperre, "pid"), da = fs.existsSync(datei);
+            const pid = Number((da && fs.readFileSync(datei, "utf8")) || 0);
+            // ein Ordner ohne Marke: sein Halter fiel zwischen Ordner und Marke — nach einer Minute verwaist
+            if (!pid && Date.now() - fs.statSync(sperre).mtimeMs > 60000) { fs.rmSync(sperre, { recursive: true, force: true }); continue; }
+            const start = pid ? (o.startVon || prozessStart)(pid) : NaN;
+            if (pid && !halterLebt(start, fs.statSync(datei).mtimeMs)) {
+                console.log("Punkte-Maschine: die Sperre des Spiel-Baums " + geraet + " ist verwaist (pid " + pid + (start == null ? " lebt nicht mehr" : " trägt heute ein Prozess, der " +
+                    Math.round((start - fs.statSync(datei).mtimeMs) / 1000) + " s nach der Marke begann") + ") — gelöst");
+                fs.rmSync(sperre, { recursive: true, force: true });
+                continue;
+            }
+            if (o.einmal) return false;
             if (!gemeldet) { console.log("Punkte-Maschine: der Spiel-Baum " + geraet + " ist belegt (pid " + pid + "), warte"); gemeldet = true; }
-            await new Promise((r) => setTimeout(r, 30000));
+            await new Promise((r) => setTimeout(r, o.wartMs || 30000));
         }
     }
 }
@@ -4561,6 +4596,29 @@ async function selbsttest(o = {}) {
         const urteil = abdruck({ ...st, urteil: (j, lauf) => ({ ...st.urteil(j, lauf), gruen: true }) }, h, g);
         pruef("ABDRUCK ohne Maß: profiband.K1#1 mit, ohne und mit anderem Maß Byte für Byte derselbe; ein geänderter Befehl der Probe und ein geändertes Urteil machen die Messung alt (Mutanten)",
             typeof st.mass === "function" && gleich.every((x) => x === ab) && befehl !== ab && urteil !== ab, JSON.stringify([ab, gleich, befehl, urteil]));
+    }
+    // (1s) DIE SPERRE DES SPIEL-BAUMS KENNT IHREN HALTER AN pid + START (11.11.: die Radeon wartete 29 min an einer Nummer, die Windows
+    // neu vergeben hatte): eine Marke, die älter ist als der Prozess, der ihre Nummer heute trägt, ist verwaist — gelesen am ECHTEN
+    // prozessStart dieser Karte (der Selbsttest selbst trägt die Nummer); der lebende Halter und die Frage ohne Antwort halten
+    {
+        const repo = path.join(tmp, "sperre-repo"), sp = path.join(repo, ".claude", "worktrees", "punkte-selbst.sperre"), marke = path.join(sp, "pid");
+        const lege = (pid, vorS) => { fs.rmSync(sp, { recursive: true, force: true }); fs.mkdirSync(sp, { recursive: true }); fs.writeFileSync(marke, String(pid));
+            if (vorS) { const t = new Date(Date.now() - vorS * 1000); fs.utimesSync(marke, t, t); } };
+        const start = prozessStart(process.pid), still = console.log;
+        const nimm = async (o) => { console.log = () => {}; try { return await baumSperre(repo, "selbst", { einmal: true, ...o }); } finally { console.log = still; } };
+        lege(process.pid, 3600); // die Marke eine Stunde vor diesem Prozess: die Nummer wurde neu vergeben
+        const neuVergeben = await nimm(), alteRegel = start != null; // die alte Regel (pid lebt) hielte sie für belegt
+        lege(process.pid, 0); // die Marke von jetzt, der Prozess begann davor: der Halter lebt
+        const lebend = await nimm();
+        const kind = spawnSync(process.execPath, ["-e", "0"]);
+        lege(kind.pid, 0); // der Halter ist fort
+        const tot = prozessStart(kind.pid) == null ? await nimm() : true; // trägt die Nummer schon wieder jemand, urteilt (neuVergeben)
+        lege(process.pid, 3600);
+        const unlesbar = await nimm({ startVon: () => NaN });
+        fs.rmSync(sp, { recursive: true, force: true });
+        pruef("SPERRE pid + Start: die neu vergebene Nummer ist verwaist (die alte Regel hielte sie), der lebende Halter und die Frage ohne Antwort halten, der tote fällt",
+            Number.isFinite(start) && Math.abs(Date.now() - process.uptime() * 1000 - start) < 5000 && neuVergeben === true && alteRegel && lebend === false && tot === true && unlesbar === false,
+            JSON.stringify({ start, gegenUptimeMs: Math.round(Date.now() - process.uptime() * 1000 - start), neuVergeben, lebend, tot, unlesbar }));
     }
     // (1a) DIE PROBEN: jede Station urteilt ihre Roh-Ausgaben (die Mutanten der Soll-Tafel ROT), eine falsche Probe beim Namen
     {
