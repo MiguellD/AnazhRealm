@@ -827,6 +827,8 @@ async function probeLeben(expected) {
                 querOrt: null,
                 takte: 0,
                 ms: 0,
+                eich: 0,
+                eichN: 0,
                 ...{ fahrt: 0, fahrtWer: null, geh: 0, fahrbahn: 0, bau: 0, bauOrte: [] },
             };
             // DAS NETZ IN SEINER RICHTUNG (`VK.folge`): jeder verbotene Abbieger einer Kreuzung samt dem Täter — die Sperre des Plans
@@ -880,10 +882,15 @@ async function probeLeben(expected) {
             const ausNetz = VK.strecken.filter(
                 (s, si) => s.fahrbar && !(VK.folge[2 * si].length && VK.folge[2 * si + 1].length)
             );
+            // DER SIM-TAKT GEGEN DIE EICHUNG (w28-sim-takt-eich): je achtem Schritt die feste Arbeit `__eichMs(eichN)` (welt-boot)
+            // unmittelbar daneben im selben Faden — fremde Last trifft Schritt und Eichung gleich. Die Mutante (`mutanteTakt`)
+            // rechnet jeden Schritt zweimal (die Stadt fährt doppelt so schnell): die Arbeit wächst, nie die Wanduhr allein
             r._verkehrSchritt = function (dt) {
                 const t0 = performance.now();
+                if (o.mutanteTakt) P._verkehrSchritt.call(this, dt);
                 P._verkehrSchritt.call(this, dt);
                 [m.ms, m.takte] = [m.ms + performance.now() - t0, m.takte + 1];
+                if (!(m.takte & 7)) [m.eich, m.eichN] = [m.eich + __eichMs(o.eichN), m.eichN + 1];
             };
             const ziele0 = new Map(VK.wagen.map((W) => [W, W.ziele]));
             const stoss0 = { ...VK.zahl.stoss };
@@ -1074,6 +1081,8 @@ async function probeLeben(expected) {
                 querMax: +m.quer.toFixed(2),
                 querOrt: m.querOrt,
                 msJeSchritt: +(m.ms / Math.max(1, m.takte)).toFixed(3),
+                eichMs: +(m.eich / Math.max(1, m.eichN)).toFixed(4),
+                taktEich: m.eichN ? +(m.ms / m.takte / (m.eich / m.eichN)).toFixed(2) : null,
                 stufe: SK,
                 sek: o.sek,
                 ziele: {

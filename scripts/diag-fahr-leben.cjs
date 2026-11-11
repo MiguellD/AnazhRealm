@@ -7,6 +7,7 @@
 "use strict";
 const {
     statikServer,
+    eichMs,
     nullRenderer,
     ROOT: root,
     hauptLauf,
@@ -249,9 +250,9 @@ function kernProbe(VC) {
     const r8 = (out.reifen = reifenMessung(VC)); // die Zeile REIFEN liest die Station fahrzeug.K1
     const v8 = reifenVerdict(r8);
     out.push([
-        "K8 Reifen (fahrzeug.K1): Spitze je Achse und Rezept bei 6–10°, bis 30° ≥ 15 % Abfall; Takt ≥ 240 Hz, ≤ 50 µs je Schritt",
+        `K8 Reifen (fahrzeug.K1): Spitze je Achse und Rezept bei 6–10°, bis 30° ≥ 15 % Abfall; Takt ≥ 240 Hz, die Kosten gegen die Eichung (≤ ${TAKT_EICH.k8} Eichungen je 1000 Schritte)`,
         !v8.length,
-        `Takt ${r8.hz} Hz · ${r8.kostenUs} µs ${v8.join(" · ")}`,
+        `Takt ${r8.hz} Hz · ${r8.kostenUs} µs · ${r8.kostenEich} Eichungen je 1000 (Eichung ${r8.eichMs} ms) ${v8.join(" · ")}`,
     ]);
     const [G9, m9] = [gesetzVon(VC, "gt"), { achse: 0, lenk: 0, schwimm: 0 }];
     lauf(
@@ -300,7 +301,7 @@ const gefuehlVerdict = (m) =>
 // ── K8 DER REIFEN: die Seitenkraft je 0,1° Schlupf bis 30°, vorn vlat = c·ω, hinten −b·ω (die andere Achse schlupffrei);
 // der Takt (`taktHz`) bei 12 m/s, Vollgas und vollem Einschlag; in der Welt (W-Kette, `reifenWeltVerdict`) der Bremsweg
 // 50 → 0 km/h Gras gegen Weg (`boden`), nass gegen trocken auf beiden (KETTE.nass), μ(gras) halb in der Stoff-Zeile (`zeile`) ──
-const REIFEN = { spitze: [6, 10], abfall: 0.15, hz: 240, kostenUs: 50, boden: 1.5, nass: 1.3, zeile: 1.3, labor: 1 };
+const REIFEN = { spitze: [6, 10], abfall: 0.15, hz: 240, boden: 1.5, nass: 1.3, zeile: 1.3, labor: 1 };
 // DER TAKT des Fahr-Schritts an EINEM Aufruf (z, e, G, dt): die gröbste Teilung in n gleiche Aufrufe, die Tempo, Gier und
 // Lenkung nicht mehr ändert, als Rate n / dt — K8 am Kern, in der Seite (`__taktHz`) an jedem Schritt der Welt (S1).
 function taktHz(VC, z0, e, G, dt) {
@@ -332,9 +333,16 @@ function reifenMessung(VC) {
         }
     }
     m.hz = taktHz(VC, Object.assign(VC.fahrZustand(0, 0, 0), { vlong: 12 }), { throttle: 1, steer: 1 }, G, 1 / 60);
-    const [z, t0] = [VC.fahrZustand(0, 0, 0), process.hrtime.bigint()];
-    for (let i = 0; i < 20000; i++) VC.fahrKraefte(z, { throttle: 1, steer: i & 64 ? 1 : -1 }, G, 1 / 60);
-    m.kostenUs = +(Number(process.hrtime.bigint() - t0) / 2e7).toFixed(2);
+    // DIE KOSTEN GEGEN DIE EICHUNG (`eichMs`): 20 Blöcke zu 1000 Kräfte-Schritten, je Block die Eichung daneben
+    const z = VC.fahrZustand(0, 0, 0);
+    let [ms, eich] = [0, 0];
+    for (let b = 0; b < 20; b++) {
+        const t0 = performance.now();
+        for (let i = 0; i < 1000; i++) VC.fahrKraefte(z, { throttle: 1, steer: i & 64 ? 1 : -1 }, G, 1 / 60);
+        ms += performance.now() - t0;
+        eich += eichMs(TAKT_EICH.eichN);
+    }
+    [m.kostenUs, m.eichMs, m.kostenEich] = [+(ms / 20).toFixed(2), +(eich / 20).toFixed(4), +(ms / eich).toFixed(2)];
     return m;
 }
 function reifenVerdict(m) {
@@ -345,7 +353,7 @@ function reifenVerdict(m) {
             [a.abfall >= REIFEN.abfall, `abfall ${a.wo} ${Math.round(a.abfall * 100)} %`],
         ]),
         [m.hz >= REIFEN.hz, `takt ${m.hz} Hz`],
-        [m.kostenUs <= REIFEN.kostenUs, `kosten ${m.kostenUs} µs`],
+        [m.kostenEich != null && m.kostenEich <= TAKT_EICH.k8, `kosten ${m.kostenEich} Eichungen je 1000 Schritte (Soll ≤ ${TAKT_EICH.k8}; ${m.kostenUs} µs, Eichung ${m.eichMs} ms)`], // prettier-ignore
     ]);
 }
 
@@ -830,6 +838,13 @@ const wegenetzVerdict = (m) =>
 // der Spuren springt (`stufen`), keiner steckt, keiner berührt einen Bewohner oder einen anderen Wagen, keiner ist ohne
 // Schlüssel im Ort (Kreuzung, Enge, fahrend in der Wende — der Täter beim Namen), keiner stößt an einen Bau, keiner verlässt seine Spur, der Takt bleibt billig, und die Gehenden
 // teilen die Straße nach dem EINEN Gesetz: höchstens `fahrbahn` ihrer Schritte auf der Fahrbahn (die Querungen). ════
+// DIE KOSTEN GEGEN DIE EICHUNG (w28-sim-takt-eich, `eichMs` in welt-boot): `vk` = der Sim-Takt des Verkehrs in Eichungen
+// (`eichN` = 6000 Schritte) je Schritt, `k8` = 1000 Kräfte-Schritte des Reifens in Eichungen — nie die Wanduhr des Läufers.
+// Hergeleitet am Radeon-Laptop 11.11. (60 s um 10 Uhr): VK 0,97–1,33 Eichungen je Schritt unter fremder Last (54–82 %), 22
+// CPU-Brennern und 12 Speicher-Brennern, die Wanduhr dabei 0,51–1,05 ms; die Mutante (jeder Schritt zweimal) 2,27 und unter
+// Speicher-Last 1,83 — das Soll 1,6 liegt dazwischen (das geometrische Mittel). K8 1,95–2,81 in Ruhe wie unter 14 Brennern (die
+// Wanduhr 1,4 → 5,0 µs); das Soll ist das Gesetz fahrzeug.K1 (50 µs je Schritt) an der Eichung der Ruhe (0,58 ms)
+const TAKT_EICH = { eichN: 6000, vk: 1.6, k8: 86 };
 const VERKEHR = { stunden: [10, 23], sek: 600, wagen: 20, fristS: 300, fahrbahn: 0.05, weg60M: 30, raumM: 0.2, zwillingS: 20 };
 // DIE STUNDE OHNE VORGESCHICHTE (mensch.K2, w28-verkehr-takt; `vorgeschichte` in fahr-proben): die erste Stunde zuerst als
 // Zwilling (`zwillingS` Sekunden), dann ihr Lauf — jedes Bild bitgenau wie im Zwilling [Bilder beider Läufe, das erste Bild, das
@@ -905,7 +920,7 @@ const verkehrVerdict = (m) =>
             m.querMax <= 1.5,
             `neben der Spur (außer im Ort, den er allein hält) ${m.querMax} m ${JSON.stringify(m.querOrt)}`,
         ],
-        [m.msJeSchritt <= 1, `Sim-Takt ${m.msJeSchritt} ms`],
+        [m.taktEich != null && m.taktEich <= TAKT_EICH.vk, `Sim-Takt ${m.taktEich} Eichungen je Schritt (Soll ≤ ${TAKT_EICH.vk}; ${m.msJeSchritt} ms, Eichung ${m.eichMs} ms)`], // prettier-ignore
         // DAS EINE STUFEN-GESETZ (Komposit erbt, Bewegte prüfen; die Probe `stufe` in fahr-proben)
         [m.stufe.nah >= 20, `kein Wagen im 3D-Raum (${m.stufe.nah})`],
         [
@@ -2364,7 +2379,7 @@ hauptLauf(async () => {
                 const k8 = reifenVerdict(reifenMessung(VCs)).join(" · ");
                 [R8.spitzeGrad, R8.C, R8.taktHz] = alt8;
                 const p8 = [[], [{ spitze: 8, abfall: 1 }]].map((achsen) =>
-                    reifenVerdict({ achsen, hz: 240, kostenUs: 180 })
+                    reifenVerdict({ achsen, hz: 240, kostenUs: 180, eichMs: 0.2, kostenEich: 900 })
                 );
                 // in der Welt (die Lagen des W-Selbsttests): grün bleibt grün, ein konstantes μ (Gras = Weg, die Zeile wirkt nicht) ROT
                 const w8 = {
@@ -2380,7 +2395,7 @@ hauptLauf(async () => {
                 check(
                     "Selbst-Test K8: Spitze 12°, C 1,1, Takt 60 Hz, 180 µs, keine Achse; in der Welt ein konstantes μ → beim Namen",
                     /^spitze gt vorn 12° · abfall gt vorn 0 %.* · takt 60 Hz$/.test(k8) &&
-                        p8.join() === "reifen ohne Achse,kosten 180 µs" &&
+                        String(p8[0]) === "reifen ohne Achse" && /^kosten 900 Eichungen je 1000 Schritte .*180 µs/.test(String(p8[1])) && reifenVerdict({ achsen: [{ spitze: 8, abfall: 1 }], hz: 240 }).length === 1 &&
                         W8.join() === ",boden 1,zeile 1",
                     `${k8.slice(0, 40)} … ${k8.slice(-10)} · ${p8.join(" · ")} · ${W8}`
                 );
@@ -2432,6 +2447,8 @@ hauptLauf(async () => {
                 stoss: { wagen: 0, bau: 0, leib: 0 },
                 querMax: 0.35,
                 msJeSchritt: 0.82,
+                eichMs: 0.2,
+                taktEich: 1.2,
                 sek: 600,
                 amSteuer: [20, 0],
                 trasse: [9e4, 0, []],
@@ -2471,7 +2488,8 @@ hauptLauf(async () => {
                 ],
                 [{ stoss: { wagen: 0, bau: 5 } }, /Stoß/],
                 [{ querMax: 2.3 }, /Spur/],
-                [{ msJeSchritt: 2.4 }, /Takt 2.4/],
+                [{ taktEich: 2.3, msJeSchritt: 1.8 }, /Sim-Takt 2.3 Eichungen je Schritt .*1.8 ms/],
+                [{ taktEich: null }, /Sim-Takt null/],
                 [{ stufe: { nah: 3 } }, /kein Wagen im 3D-Raum \(3/],
                 [{ stufe: { nah: 99, ohneBild: 7 } }, /ohne Bild mit gezeichnetem Fahrer 7/],
                 [{ stufe: { nah: 99, veraltet: 2 } }, /veralteter Stufe 2/],
@@ -2614,7 +2632,7 @@ hauptLauf(async () => {
             // `--taeter` (pflicht.C#1): um 10 Uhr 130 s (zwei volle Minuten), Wagen 0 ohne Fahrer, Wagen 1 neben der Trasse, Wagen 2
             // in Wagen 3, der erste gemessene Fahrer auf dem Dach, und keiner umfährt den stehenden Spieler in der Kreuzung — jeder
             // beim Namen (der letzte als Kopf der Reihe der kürzesten Minute, `spieler`)
-            { verkehr: { ...VERKEHR, ...(STUNDE != null && { stunden: [STUNDE] }), ...(SEK != null && { sek: SEK }), ...(TAETER && { stunden: [10], sek: 130, taeter: 1, zwillingS: 0 }) } }, // prettier-ignore
+            { verkehr: { ...VERKEHR, eichN: TAKT_EICH.eichN, mutanteTakt: schalter("--mutante-takt"), ...(STUNDE != null && { stunden: [STUNDE] }), ...(SEK != null && { sek: SEK }), ...(TAETER && { stunden: [10], sek: 130, taeter: 1, zwillingS: 0 }) } }, // prettier-ignore
             (o) => {
                 const vg = o.verkehr && o.verkehr.vorgeschichte;
                 if (!TAETER) check("VK-V (mensch.K2) die Stunde ohne Vorgeschichte: dieselbe Saat, dasselbe Bild", !vorgeschichteVerdict(vg).length, vorgeschichteVerdict(vg).join(" · ") || JSON.stringify(vg)); // prettier-ignore
