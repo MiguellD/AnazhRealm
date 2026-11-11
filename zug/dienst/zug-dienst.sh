@@ -73,8 +73,11 @@ bereit() {
 # hinter dem Alphabet (11.11.: w28-frost-rand heilte die Wand, an der z379 dreimal fiel, und wäre hinter vier w27-Zweigen draußen
 # geblieben — der Zug wäre an derselben Stelle wieder gefallen). Ein gelandeter Zweig steht nicht mehr unter den Bereiten.
 vorn() {
-    local v="" r="" b
-    for b in $1; do if grep -qx "$b" "$W/zug-zuerst.txt" 2>/dev/null; then v="$v $b"; else r="$r $b"; fi; done
+    # die Reihe der DATEI gilt (11.11. 04:10: bis dahin die Reihe der Bereiten, alphabetisch — w28-frost-rand stand vor w28-wand-zug,
+    # fiel allein am alten Gesetz der Wand, und der erste Durchgang füllte den Zug ohne ihn auf vier)
+    local v="" r="" b z
+    for z in $(cat "$W/zug-zuerst.txt" 2>/dev/null); do case " $1 " in *" $z "*) v="$v $z" ;; esac; done
+    for b in $1; do case " $v " in *" $b "*) ;; *) r="$r $b" ;; esac; done
     echo $v $r
 }
 buendel() { # zwei Durchgänge: ein Linsen-Zweig, der allein an der Wand fällt, fährt im zweiten mit den Spiel-Zweigen
