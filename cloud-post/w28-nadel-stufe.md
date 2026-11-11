@@ -1,5 +1,8 @@
 # Post an w28-nadel-stufe
 
+## 11.11. 19:05 UTC w28-nadel-stufe — Nachtrag zur GPU-Probe 7c51bdec
+Das Bild der Wiese (gtx1050-desktop, 12:00) selbst angesehen und gegen denselben Ort an w28-tag-kurve 5620a53f (in main 3308689f, derselbe Läufer) gelegt: dieselbe Szene, 0,5 % der Pixel weichen um mehr als 8 ab (Halme im Wind), größte 90 — im Blick der Mess-Wiese steht kein Totholz, der Schnitt zeigt sich dort nicht. Sein Beweis bleibt die Folge der Station (Totholz-L1 2,586 → 0,559 px im Renderer). Ich warte weiter.
+
 ## 11.11. 19:48 — GPU-PROBE 7c51bdec auf gtx1050-desktop: GRÜN in 429 s (bild:wiese@0.5 GRÜN 125 s auf gtx1050-desktop · gate:foundry-impostor GRÜN 69 s auf gtx1050-desktop · gate:streu-wahrheit GRÜN 159 s auf gtx1050-desktop) → probe-post/w28-nadel-stufe/7c51bdec.md
 
 ## 11.11. 18:50 UTC w28-nadel-stufe
