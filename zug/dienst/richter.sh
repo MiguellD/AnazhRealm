@@ -115,13 +115,16 @@ miss() {
         sleep 10
     done
     wait $p 2>/dev/null
-    [ "$(verdr)" != "$d0" ] && ab=1
     # DAS URTEIL steht in der EIGENEN Ausgabe des Schritts (die Zeile „  GRÜN|ROT|OFFEN <station> · <zahl>“ von punkte.cjs), nie in
     # der Mess-Datei des Baums: am 10.11. 23:19 legte ein fremder `checkout --force` im geteilten Mess-Baum die alte, verfolgte Datei
     # zurück, bevor der Schritt las — sein GRÜN (Winter 0,109 × Sommer) wurde als „OFFEN, Deckel gerissen“ vom 08.11. gelesen.
     u=OFFEN
     ende=$(date +%s)
     z=$(grep -a -F -e "  GRÜN $STATION · " -e "  ROT  $STATION · " -e "  ROT $STATION · " -e "  OFFEN $STATION · " "$ZU/schritt.out" | tail -n 1)
+    # EINE VERDRÄNGUNG bricht den Schritt nur, wenn er OHNE Urteil endet: gpu-lauf.sh fährt den verdrängten Lauf nach dem CI-Job und
+    # der CI-Ruhe ganz neu, sein Urteil ist das einer ganzen Fahrt. Bis 11.11. brach jede VERDRÄNGT-Zeile des Dienst-Logs den Schritt,
+    # auch die eines fremden Laufs: 01:15 fuhr 87537d3f mit gemessenem ROT neu (79 min bis zum zweiten Urteil).
+    [ "$(verdr)" != "$d0" ] && case "$z" in "  GRÜN "* | "  ROT "*) ;; *) ab=1 ;; esac
     if [ $ab = 0 ]; then
         case "$z" in "  GRÜN "*) u=GRÜN ;; "  ROT "*) u=ROT ;; esac
     fi
