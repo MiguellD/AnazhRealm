@@ -114,6 +114,15 @@ function messDateien(k) {
         l.push({ von: rohDir(k) + "/" + f, pfad: MDIR + "/roh/" + k.slice(0, 8) + "-gtx/" + f });
     return l;
 }
+// DIE ABLAGE DER REFERENZFAHRTEN (punkte-maschine 601f375a, Koordinator 12.11. 01:20): messung/referenz-<host>.json, je Rechner EINE
+// Datei mit den jüngsten 600 Fahrten — der Pool der Ruhe liest nur sie. Der Push nach punkte-maschine nimmt sie mit, sonst füllt jeder
+// Lauf aus einem frischen Checkout neu auf und die 14-Tage-Sicht fehlt; nur nach punkte-maschine (EINE Quelle, wie die Mess-Datei).
+// Der Name wie in punkte.cjs (`referenzAblageVon`): os.hostname(), jedes Zeichen außer [A-Za-z0-9_-] als „_".
+function referenzDateien() {
+    const name = "referenz-" + String(require("os").hostname()).replace(/[^A-Za-z0-9_-]/g, "_") + ".json";
+    const von = PUNKTE + "/messung/" + name;
+    return fs.existsSync(von) ? [{ von, pfad: MDIR + "/" + name }] : [];
+}
 // die Zahl eines Rots: steht ein „ROT“ in der Zahl (Teil-Urteile), beginnt der Auszug an dem Abschnitt, der es trägt
 const rotKern = (z) => {
     const t = String(z).replace(/\s+/g, " ").trim(), i = t.search(/\bROT\b/);
@@ -256,4 +265,4 @@ async function main() {
     }
 }
 if (require.main === module && !process.env.DAUER_TEST) main().catch((e) => { log("MELDEN Absturz: " + (e.stack || e.message)); process.exit(1); });
-module.exports = { pushe, zeile, messDateien, frei, lsRemote, plan };
+module.exports = { pushe, zeile, messDateien, referenzDateien, frei, lsRemote, plan };
