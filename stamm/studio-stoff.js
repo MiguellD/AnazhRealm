@@ -297,13 +297,16 @@ class AnazhRealm_studio_stoff {
         const _suF =
             kind === "foliage" || kind === "foliageTex" || kind === "grass" ? this._ensureSeasonUniforms() : null;
         const _toent = kind === "grass" || jahr === true;
-        // DIE STEHENDE ECKE TÖNT NIE (w28-nadel-laub): die Krone der Nadel trägt den Stoff des Laubs mit der stehenden Ecke
-        // (`JAHR_STEHT`, `_foundryBuildMesh`) — sie trägt den Ton als 1 (`select`: exakt uSeasonMul oder 1, kein Mischen), jede
-        // andere Ecke eines Jahres-Stoffs tönt wie bisher (die Regel des Stoffs: dessen Ecken Laub oder Blüte tragen)
+        // DER TON JE ECKE (w28-baum-programm): jeder Teil einer Art des Jahrs trägt Ecken und den Stoff des Jahrs
+        // (`_foundryBuildMesh`, `JAHR_ARTEN`) — die Regel, die bis dahin am Stoff stand (ein Teil mit Laub- oder Blüten-Ecken tönt
+        // ganz, jeder andere nie), steht an der Ecke: es tönt jede Ecke außer der stehenden (`JAHR_STEHT`: die Nadel, der Wedel, ein
+        // Teil ohne Laub) und dem Halm (Typ 4: das Schilf, dessen Teil kein Laub trägt). `select`: exakt uSeasonMul oder 1.
+        const _halm = AnazhRealm._saisonGesetz().typ.halm;
+        const _typ = TSL.vertexStage(TSL.attribute("aType", "float"));
         const _tonJeEcke =
             jahr === true && kind !== "grass" && _suF && _suF.uSeasonMul
                 ? TSL.select(
-                      TSL.vertexStage(TSL.attribute("aType", "float")).greaterThan(AnazhRealm.JAHR_STEHT + 0.5),
+                      _typ.greaterThan(AnazhRealm.JAHR_STEHT + 0.5).and(_typ.sub(_halm).abs().greaterThan(0.5)),
                       _suF.uSeasonMul,
                       TSL.vec3(1)
                   )
