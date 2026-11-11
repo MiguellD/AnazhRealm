@@ -19,7 +19,7 @@ const T0 = Date.now();
 const anfragen = [];
 let bericht = null;
 // (Seite, vor jedem Skript) Null-Renderer und Ort wie das Geschirr, der Blick in den Foundry-Faden, die Pumpe des Tors, die Meldung
-function VOR_SEITE(dorfZug, INIT, ECHT, ZERLEGE, INIT_MS, INIT_BIS, INIT_VON, OHNE, EINGRIFF, PLATTE) {
+function VOR_SEITE(dorfZug, INIT, ECHT, ZERLEGE, INIT_MS, INIT_BIS, INIT_VON, OHNE, EINGRIFF, PLATTE, SHADER) {
     // (FREI_EINGRIFF=<datei.js>) ein Eingriff zum Messen: der Rumpf einer Funktion (P = der Prototyp, null vor der Klasse) —
     // er reist als Funktion im Vorspann-Skript (die CSP der Seite verbietet new Function)
     if (EINGRIFF) EINGRIFF(null);
@@ -137,8 +137,30 @@ function VOR_SEITE(dorfZug, INIT, ECHT, ZERLEGE, INIT_MS, INIT_BIS, INIT_VON, OH
         if (window.GPUDevice && GPUDevice.prototype.createRenderPipelineAsync) {
             const GP = GPUDevice.prototype;
             const [a0, s0] = [GP.createRenderPipelineAsync, GP.createRenderPipeline];
+            // (FREI_SHADER) je Shader-Modul sein Text (gemerkt am Modul), je Pipeline Länge und Kennung (FNV-1a) von Vertex- und
+            // Fragment-Text; die Texte der Standard-Stoffe reisen ganz mit (z.shader) — unterscheiden sich zwei Arten nur in Zahlen?
+            const texte = new WeakMap();
+            const m0 = GP.createShaderModule;
+            GP.createShaderModule = function (d) {
+                const m = m0.call(this, d);
+                texte.set(m, String((d && d.code) || ""));
+                return m;
+            };
+            const fnv = (s) => {
+                let h = 0x811c9dc5;
+                for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 0x01000193) >>> 0;
+                return h.toString(16);
+            };
+            z.shader = {};
             GP.createRenderPipelineAsync = function (d) {
                 const e = [Math.round(performance.now()), null, String((d && d.label) || "")];
+                try {
+                    const [v, f] = [texte.get(d.vertex.module) || "", (d.fragment && texte.get(d.fragment.module)) || ""];
+                    e.push(v.length + ":" + fnv(v), f.length + ":" + fnv(f));
+                    if (SHADER && /MeshStandard/.test(e[2])) for (const t of [v, f]) z.shader[t.length + ":" + fnv(t)] = t;
+                } catch (err) {
+                    e.push("?", String(err.message));
+                }
                 z.pipes.push(e);
                 const p = a0.call(this, d);
                 p.then(
@@ -325,7 +347,7 @@ function VOR_SEITE(dorfZug, INIT, ECHT, ZERLEGE, INIT_MS, INIT_BIS, INIT_VON, OH
 }
 const server = statikServer({
     seiten: {
-        "/__vor.js": () => "(" + VOR_SEITE.toString() + ")(" + JSON.stringify(dorfZug) + "," + [Number(process.env.FREI_INIT || 0), ECHT ? 1 : 0, ZERLEGE ? 1 : 0, Number(process.env.FREI_INIT_MS || 15), Number(process.env.FREI_INIT_BIS || 9000), Number(process.env.FREI_INIT_VON || 0), JSON.stringify(process.env.FREI_OHNE || ""), process.env.FREI_EINGRIFF ? "function (P) {" + String.fromCharCode(10) + fs.readFileSync(process.env.FREI_EINGRIFF, "utf8") + String.fromCharCode(10) + "}" : "null", JSON.stringify(process.env.FREI_PLATTE || "")].join(",") + ");",
+        "/__vor.js": () => "(" + VOR_SEITE.toString() + ")(" + JSON.stringify(dorfZug) + "," + [Number(process.env.FREI_INIT || 0), ECHT ? 1 : 0, ZERLEGE ? 1 : 0, Number(process.env.FREI_INIT_MS || 15), Number(process.env.FREI_INIT_BIS || 9000), Number(process.env.FREI_INIT_VON || 0), JSON.stringify(process.env.FREI_OHNE || ""), process.env.FREI_EINGRIFF ? "function (P) {" + String.fromCharCode(10) + fs.readFileSync(process.env.FREI_EINGRIFF, "utf8") + String.fromCharCode(10) + "}" : "null", JSON.stringify(process.env.FREI_PLATTE || ""), process.env.FREI_SHADER ? 1 : 0].join(",") + ");",
         "/__sonde": (req) =>
             new Promise((ok) => {
                 let b = "";

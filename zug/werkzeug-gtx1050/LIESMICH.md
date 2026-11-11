@@ -15,6 +15,11 @@ Nachrichten je Faden, Bauten je Foundry-Faden, Pipelines der GPU. Zeile 3 liest 
 `pipe-lesen.cjs` (Pipelines), `post-lesen.cjs <json> <faden>`, `karte-lesen.cjs`, `summe-lesen.cjs` (mit `FREI_INIT=<tiefe>`,
 `FREI_INIT_VON/BIS`: das Ruf-Profil des Prototyps) lesen Teile.
 
+Programme: `FREI_SHADER=1` merkt je Pipeline Länge und Kennung von Vertex- und Fragment-Text und die Texte der Standard-Stoffe;
+`shader-lesen.cjs` (gemeinsamer Kern, Paare), `shader-kern.cjs` (Bindungen, Abtastungen, das ähnlichste Paar ganz), `pipe-schlange.cjs`
+(Belegung der Übersetzer-Schlange), `programm-lesen.cjs` mit `FREI_EINGRIFF=eingriff/programm-log.js` (Knoten-Bau je Stoff mit den
+Gliedern seiner Arena, daneben seine Pipeline).
+
 Weitere Schalter: ohne `FREI_ECHT` der Null-Renderer wie das Tor (`BÜHNE im Takt`). `FREI_PROFIL=<ordner>` hält das Profil über
 zwei Läufe (Zweit-Boot), `FREI_PLATTE=leer|atlas|alles` fegt davor die Foundry-Platte im Faden (`blob`: die CSP-Probe).
 `FREI_EINGRIFF=<datei.js>` lädt einen Eingriff zum Messen (Rumpf einer Funktion, `P` = der Prototyp; Beispiele in `eingriff/`),
