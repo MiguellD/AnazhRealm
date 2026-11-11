@@ -26,6 +26,9 @@ DO=$O/p3/dienst-omen
 S=$DO/zustand
 MAN=$S/manifest.txt
 SCHLEIFEN="landung platte puls"
+# der Abdruck DIESES Skripts beim Start: installiert es unten eine neue Fassung von sich selbst, läuft die alte im Speicher weiter
+# (11.11. 20:22: der erste Aufruf trug noch SCHLEIFEN="landung platte", installierte puls-dienst.sh und startete puls NICHT)
+SELBST=$(git hash-object --no-filters "$0" 2>/dev/null)
 mkdir -p "$S"
 lebt() { local p; p=$(cat "$S/$1.pid" 2>/dev/null); [ -n "$p" ] && tasklist //FI "PID eq $p" 2>/dev/null | grep -qi bash; }
 blick() {
@@ -113,6 +116,11 @@ mv "$tmp" "$MAN"
 n=$(($(wc -l <"$MAN") - 1))
 [ "$n" -ge 5 ] || { echo "ROT: das Manifest trägt nur $n Dateien — zug/dienst-omen fehlt in ${K:0:8}? Nichts gestartet."; exit 1; }
 echo "INSTALLIERT ${K:0:8} ($n Dateien)"
+# start.sh hat sich selbst ersetzt → EINMAL als neue Fassung weiterlaufen (sie kennt die neuen Schleifen); START_NEU hält die Schleife auf
+if [ -n "$SELBST" ] && [ "$(git hash-object --no-filters "$0" 2>/dev/null)" != "$SELBST" ] && [ -z "$START_NEU" ]; then
+    echo "start.sh ist neu — läuft als neue Fassung weiter"
+    START_NEU=1 exec bash "$0" "$@"
+fi
 
 # 3 STARTEN, abgekoppelt von der App
 for n in $SCHLEIFEN; do
