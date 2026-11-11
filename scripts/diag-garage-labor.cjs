@@ -14,7 +14,10 @@
 // Die Seite läuft in ihrem echten Renderer (r184 WebGPU, die Engine der Welt) im Kopflos-Browser; gezählt wird an der Seite selbst.
 // Die Prüfungen G2–G6 und G8 lesen das EINE Verdikt (`laborVerdict`, je Täter ein Präfix) — Browser-Probe und Selbst-Test.
 //   G10 der Schirm (04.11.): im Standard belegt die Leiste ≤ 15 % des Schirms (vorher 51 %), am Wagen steht kein Schild; „Lehren"
-//      bringt Tafel und Maß-Schilder, „Leicht" (`?leicht`) halbe Auflösung, der Schatten-Pass ruht (≥ 40 % weniger Bildzeit).
+//      bringt Tafel und Maß-Schilder, „Leicht" (`?leicht`) halbe Auflösung, der Schatten-Pass ruht, das Bild auf der Leinwand; die
+//      Bildzeit voll gegen leicht nennt die Linse. (Ihr Band „≥ 40 % weniger Bildzeit" war auf swiftshader geeicht, wo das Bild am
+//      Pixel hängt; auf der Karte zeichnet die Garage voll und leicht in 6 ms — Radeon 890M, 10.11., kein GPU-gebundenes Bild, die
+//      Zeit urteilt dort nichts. Mit w27-swift-raus fiel die Klausel, die Linse urteilt auf der Karte, was Leicht tut.)
 //   G9 die Zeit-Achse (04.11., Node am Kern): vmax folgt der Technik der Stufe (Schlitten · Ochsenkarren < Kutsche < Motorwagen
 //      < heute < Zukunft je Gattung, Bänder km/h), der Lack der Leiste färbt den Körper jeder Stufe, jeder Regler wirkt in jeder,
 //      jede Gattung fährt heute ihr eigenes Tempo (H7, vorher gate:vehicle-drive A3).
@@ -40,13 +43,13 @@ function laborVerdict(m) {
     if (m.kulturAb !== true) out.push("kultur bleibt");
     if (m.schilderFahrt !== 0 || !(m.schilderWerkstatt > 0)) out.push(`lehren ${m.schilderFahrt} in der Fahrt, ${m.schilderWerkstatt} danach`);
     // G10 der Schirm gehört dem Wagen: im Standard ≤ 15 % Leiste und kein Schild am Wagen; der Knopf „Lehren" bringt Tafel und
-    // Schilder; „Leicht" halbiert die Auflösung, lässt den Schatten-Pass ruhen und nimmt mindestens 40 % der Bildzeit
+    // Schilder; „Leicht" halbiert die Auflösung und lässt den Schatten-Pass ruhen (die Bildzeit steht als Zahl im Befund)
     const s = m.schirm || {};
     if (!(s.anteil <= 15 && s.schilder === 0)) out.push(`schirm ${s.anteil} % Leiste, ${s.schilder} Schilder im Standard`);
     if (!(s.lehrenSchilder > 0 && s.lehrenTafel === true)) out.push(`lehren-knopf ${s.lehrenSchilder} Schilder, Tafel ${s.lehrenTafel}`);
     const l = m.leicht || {};
     // die Bildzeit gilt nur auf der Leinwand: ein Ziel abseits (das Ausgabe-Ziel von G8, 160×90) halbiert keine Auflösung
-    if (!(l.pr <= 0.5 && l.schatten === false && l.leinwand && l.leicht < 0.6 * l.voll)) out.push(`leicht ${l.leicht} ms gegen ${l.voll} ms, Auflösung ×${l.pr}, Schatten ${l.schatten}, Leinwand ${l.leinwand}`);
+    if (!(l.pr <= 0.5 && l.schatten === false && l.leinwand)) out.push(`leicht ${l.leicht} ms gegen ${l.voll} ms, Auflösung ×${l.pr}, Schatten ${l.schatten}, Leinwand ${l.leinwand}`);
     for (const n of ANSICHTEN) {
         // ein Bild ohne Spannweite trägt den Anteil „leer“: der blinde Leser (der 2D-Abzug der CI, z152), nie ein Wagen
         const [b, a] = m.ansicht?.[n] || [];
@@ -174,7 +177,6 @@ hauptLauf(async () => {
             ["schirm", { schirm: { ...schirm, schilder: 5 } }],
             ["lehren-knopf", { schirm: { ...schirm, lehrenTafel: false } }],
             ["leicht", { leicht: { ...leicht, schatten: true } }],
-            ["leicht", { leicht: { ...leicht, leicht: 160 } }],
             ["leicht", { leicht: { ...leicht, leinwand: false } }],
         ]) {
             const v = laborVerdict({ ...gesund, ...bruch });
@@ -205,8 +207,8 @@ hauptLauf(async () => {
         return;
     }
 
-    // G10 die Bildzeit, auf swiftshader geeicht (W5)
-    const { browser, page } = await nullWelt(server, { port: PORT, art: "linse", bild: true, frist: 120000, zeit: true, fenster: { width: 1280, height: 720 } }, 60000, "worlds/garage/index.html", "load"); // prettier-ignore
+    // G10 der Schirm und Leicht auf der Karte (die Bildzeit voll gegen leicht als Zahl)
+    const { browser, page } = await nullWelt(server, { port: PORT, art: "linse", bild: true, frist: 120000, fenster: { width: 1280, height: 720 } }, 60000, "worlds/garage/index.html", "load"); // prettier-ignore
     await page.waitForFunction(() => typeof __vehicleCore === "object" && document.querySelector("canvas") && !document.getElementById("start").disabled, { timeout: 30000 });
     await sleep(500);
     const m = { geladen: true };
@@ -362,7 +364,7 @@ hauptLauf(async () => {
         ["G5 die Kultur lässt sich abwählen", "kultur"],
         ["G6 keine Lehren in der Probefahrt, zurück in der Werkstatt", "lehren", `${m.schilderFahrt} · ${m.schilderWerkstatt}`],
         ["G8 die Ansicht zeigt den Wagen je Modus (≥ 1,5 % des Bildes) in ≤ 120 Befehlen", ANSICHTEN.join(" "), m.ansicht],
-        ["G10 der Schirm gehört dem Wagen: ≤ 15 % Leiste, Lehren auf Knopf, Leicht nimmt ≥ 40 % der Bildzeit", "schirm lehren-knopf leicht", `${JSON.stringify(m.schirm)} ${JSON.stringify(m.leicht)}`],
+        ["G10 der Schirm gehört dem Wagen: ≤ 15 % Leiste, Lehren auf Knopf, Leicht halbiert die Auflösung und lässt den Schatten ruhen", "schirm lehren-knopf leicht", `${JSON.stringify(m.schirm)} ${JSON.stringify(m.leicht)}`],
     ])
         check(name, !v.some((t) => frei.split(" ").includes(t.split(" ")[0])), detail);
     check("G7 die Probefahrt atmet das Tempo wie der Ritt", !v7.length, `${JSON.stringify(m.tempo)} ${v7}`);

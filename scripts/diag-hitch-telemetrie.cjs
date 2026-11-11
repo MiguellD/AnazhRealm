@@ -3,7 +3,7 @@
 // Pipeline-Compiles · Upload-Bytes), nie bloße Existenz (Lehre 5), und DIE ERST-ZEICHNUNG: kein Frame trägt eine
 // synchrone Pipeline der Welt, ein Bundle-Bürger steht nach seiner fertigen Pipeline wieder in der Aufnahme, Beweis-
 // Aufnahme und Absage nennen ihren Täter — jede Probe mit ihrem Gegen-Lauf, der rot sein MUSS (die Bänder unten). Ein
-// ECHTER WebGPU-Lauf (swiftshader-Vulkan, Software-Holz kienspan): der Boot SELBST ist der Konsum-Beweis.
+// ECHTER WebGPU-Lauf (auf der Karte, Software-Holz kienspan): der Boot SELBST ist der Konsum-Beweis.
 //
 //   node scripts/diag-hitch-telemetrie.cjs --teil=1|2
 //   DIE ZWEI TEILE (je eine Welt, je eine CI-Gruppe): Teil 1 trägt den Boot-Konsum (Bänder 1–5, Konsum im Boot, Selbst-Test), die
@@ -682,11 +682,12 @@ function erstWandInstall(BUNDLE_FRAMES) {
 }
 
 hauptLauf(async () => {
-    // Echtes WebGPU auf swiftshader — die Schalter je Plattform trägt das EINE Rezept (scripts/lib/software-gpu.cjs); Band 1
-    // (LongTasks) ist auf swiftshader geeicht. Die Bau-Uhr sitzt vor dem ersten Skript der Seite: jeder Pipeline-Bau des Boots steht
-    // in ihr (die Ruhe wartet auch auf ihn). KEIN Null-Renderer — die Zähler brauchen den echten WebGPU-Pfad (Tap + Pipelines).
-    // Software-Holz (Lehre 26): auf „voll" kostet auf swiftshader ein Compile 50–70 s; die Linse prüft Zähler und Gesetz.
-    const { browser, page } = await nullWelt(server, { art: "linse", bild: true, frist: 600000, zeit: true, fenster: { width: 640, height: 360 }, vor: bauUhrInstall }, 60000, "index.html?holz=kienspan"); // prettier-ignore
+    // Echtes WebGPU an der Weiche — die Schalter je Plattform trägt das EINE Rezept (scripts/lib/software-gpu.cjs): seit
+    // w27-swift-raus auf der Karte (Radeon 890M, 10.11.: beide Teile GRÜN in 81 s; Band 1 zählt die LongTasks des Boots, ohne
+    // LongTask Existenz und Typ). Die Bau-Uhr sitzt vor dem ersten Skript der Seite: jeder Pipeline-Bau des Boots steht in ihr (die
+    // Ruhe wartet auch auf ihn). KEIN Null-Renderer — die Zähler brauchen den echten WebGPU-Pfad (Tap + Pipelines). Software-Holz
+    // (Lehre 26): die Linse prüft Zähler und Gesetz, nie den Stoff des vollen Holzes.
+    const { browser, page } = await nullWelt(server, { art: "linse", bild: true, frist: 600000, fenster: { width: 640, height: 360 }, vor: bauUhrInstall }, 60000, "index.html?holz=kienspan"); // prettier-ignore
 
     const out = await page.evaluate(async (laufzeitMs) => {
         const res = {};

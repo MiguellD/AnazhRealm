@@ -17,7 +17,7 @@ const fs = require("fs");
 const http = require("http");
 const path = require("path");
 const os = require("os");
-const { linsenWebGpuArgs, linsenWebglArgs, echteWebGpuArgs, adapterZeile, zeitZeile } = require("./software-gpu.cjs");
+const { linsenWebGpuArgs, linsenWebglArgs, echteWebGpuArgs, adapterZeile } = require("./software-gpu.cjs");
 const stammLib = require("./stamm.cjs");
 const { ohneKommentare, ast, wandere, zeileVon } = stammLib;
 
@@ -118,6 +118,15 @@ async function zielLesen(ziel, W, H, renderer = st.renderer) {
     const u8 = new Uint8Array(zeile * H);
     for (let y = 0; y < H; y++) u8.set(roh.subarray(y * schritt, y * schritt + zeile), y * zeile);
     return u8;
+}
+// DIE EINE PUFFER-LESUNG (`await window.__pufferLesen(puffer, wer)`, gate:apparat Klinge 8): ein Puffer zurück von der GPU — liegt er
+// dort nicht (gefallen, nie geladen, oder kein Puffer: die Liste der Wahl je Kamera ist seit w25-gpu-wahl-2 eine Karte), nennt sie
+// Leser und Puffer; r184 brach anonym („reading 'size'" in getArrayBufferAsync: haar.K5, vegetation.K1 seit fbbeb318)
+function pufferLesen(puffer, wer, renderer = st.renderer) {
+    const q = puffer?.isInterleavedBufferAttribute ? puffer.data : puffer;
+    if (!q || !renderer.backend.has(q) || !renderer.backend.get(q).buffer)
+        throw new Error(`DIE PUFFER-LESUNG (${wer}): ${q?.name || q?.constructor.name} liegt nicht auf der GPU`);
+    return renderer.getArrayBufferAsync(puffer);
 }
 async function seitenTakt() {
     const vor = r._weltStand ? r._weltStand.takte : -1;
@@ -478,7 +487,7 @@ const rahmen = (b) =>
         hx: (b.maxX - b.minX) / 2,
         hz: (b.maxZ - b.minZ) / 2,
     };
-const WARTEN_SEITE = `${weltR} window.rahmen = ${rahmen}; window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.sleep = ${sleep}; window.leihe = ${leihe}; window.__fremd = ${fremd}; window.__loopBild = ${loopBild}; window.__zielLesen = ${zielLesen}; window.jsonKlon = ${jsonKlon}; window.fehlerText = ${fehlerText}; window.fehlerStapel = ${fehlerStapel}; window.__seitenTakt = ${seitenTakt}; window.__bedienung2 = ${bedienung2}; window.__takte = ${takte}; window.__streuTakte = ${streuTakte}; window.__bildAus = ${bildAus}; window.__MUSTER = [16.7, 8.3, 25, 16.7, 33.3, 11.1, 20, 16.7]; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__farben = ${farben}; window.__lin = ${lin}; window.__stand = ${stand}; window.__standJson = ${standJson}; window.__werkPutz = ${werkPutz}; window.__bautenLeer = ${bautenLeer}; window.__bautenSeit = ${bautenSeit}; window.__peersWeg = ${peersWeg}; window.__rufe = ${rufe};`;
+const WARTEN_SEITE = `${weltR} window.rahmen = ${rahmen}; window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.sleep = ${sleep}; window.leihe = ${leihe}; window.__fremd = ${fremd}; window.__loopBild = ${loopBild}; window.__zielLesen = ${zielLesen}; window.__pufferLesen = ${pufferLesen}; window.jsonKlon = ${jsonKlon}; window.fehlerText = ${fehlerText}; window.fehlerStapel = ${fehlerStapel}; window.__seitenTakt = ${seitenTakt}; window.__bedienung2 = ${bedienung2}; window.__takte = ${takte}; window.__streuTakte = ${streuTakte}; window.__bildAus = ${bildAus}; window.__MUSTER = [16.7, 8.3, 25, 16.7, 33.3, 11.1, 20, 16.7]; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__farben = ${farben}; window.__lin = ${lin}; window.__stand = ${stand}; window.__standJson = ${standJson}; window.__werkPutz = ${werkPutz}; window.__bautenLeer = ${bautenLeer}; window.__bautenSeit = ${bautenSeit}; window.__peersWeg = ${peersWeg}; window.__rufe = ${rufe};`;
 const CODE_OF_SEITE = `window.__codeOf = ((oK) => (f) => oK(String(f)))(${ohneKommentare}); window.__dokuOf = (f) => String(f); window.__fehlt = (f, re) => [].concat(f).every((g, i) => { if (typeof g !== "function") throw new Error("__fehlt: Glied " + i + " ist keine Funktion (" + typeof g + ") — die Absenz misst nichts"); re.lastIndex = 0; return !re.test(window.__codeOf(g)); }); ${WARTEN_SEITE}`;
 
 const ROOT = path.resolve(__dirname, "..", "..");
@@ -607,12 +616,12 @@ function statikServer({ root = ROOT, start = "/index.html", seiten = null, keinC
 const ortZug = (page, id) => page.evaluateOnNewDocument((z) => window.__anazhAutoSettlement ??= z, require("./welt-orte.cjs").messort(id).dorfZug);
 
 // Die Browser-Rezepte: null (kein GPU-Prozess, der Null-Renderer) · webgl (WebGL2 an der Weiche) · standard (Chromes Wahl) ·
-// linse (WebGPU an der Weiche: lokal die Karte, die CI swiftshader) · echt (der Hardware-Adapter); `zeit: true` → swiftshader.
+// linse (WebGPU an der Weiche: lokal und auf den Karten der CI die Karte, ohne Karte swiftshader) · echt (der Hardware-Adapter).
 const REZEPTE = {
     null: () => ["--no-sandbox", "--disable-gpu"],
-    webgl: (o) => linsenWebglArgs(process.env, process.platform, o),
+    webgl: () => linsenWebglArgs(),
     standard: () => ["--no-sandbox", "--disable-setuid-sandbox"],
-    linse: (o) => linsenWebGpuArgs(process.env, process.platform, o),
+    linse: () => linsenWebGpuArgs(),
     echt: () => echteWebGpuArgs(),
 };
 // DIE KLASSE DER CI: diese Rezepte zeichnen mit einem Echt-Renderer; in einer CPU-Gruppe (CI_KLASSE) ist eines ROT beim Namen,
@@ -620,13 +629,13 @@ const REZEPTE = {
 const GPU_REZEPTE = ["linse", "webgl", "echt"];
 
 // Die Start-Optionen: `frist` = protocolTimeout (ms), `zusatz` hinter dem Rezept, `viewport`, `profil` = userDataDir; headless.
-function browserOptionen({ art, frist, zusatz = [], headless = true, viewport, profil, zeit = false } = {}) {
+function browserOptionen({ art, frist, zusatz = [], headless = true, viewport, profil } = {}) {
     if (!REZEPTE[art])
         throw new Error(`welt-boot: unbekanntes Rezept "${art}" — erlaubt: ${Object.keys(REZEPTE).join(" · ")}`);
     const o = { headless, userDataDir: profil };
     if (frist != null) o.protocolTimeout = frist;
     if (viewport !== undefined) o.defaultViewport = viewport;
-    o.args = [...REZEPTE[art]({ zeit }), ...zusatz];
+    o.args = [...REZEPTE[art](), ...zusatz];
     return o;
 }
 
@@ -833,7 +842,7 @@ function zeichnetHaken() {
         ])
             if (K?.prototype[m]) K.prototype[m] = merke(K.prototype[m]);
 }
-// DIE WEICHE: ein Echt-Rezept, dessen Welt-Seiten nie zeichnen, belegt eine GPU-Gruppe (und die Karte) umsonst — ROT beim Namen
+// DIE WEICHE: ein Echt-Rezept, dessen Welt-Seiten nie zeichnen, belegt die Karte umsonst — ROT beim Namen
 async function weicheUrteil(browser, art) {
     const welt = (await browser.pages().catch(() => [])).filter((p) => /^https?:/.test(p.url()));
     const genutzt = async (p) => p.evaluate(() => !!window.__gpuGenutzt).catch(() => true);
@@ -1126,14 +1135,14 @@ async function starteBrowser(opts = {}) {
     if (process.env.CI_KLASSE === "cpu" && GPU_REZEPTE.includes(opts.art))
         melde(
             "klasse",
-            `${path.basename(process.argv[1] || "?")} startet das Echt-Rezept „${opts.art}" in einer CPU-Gruppe der CI — der Schritt gehört in eine GPU-Gruppe (check.yml matrix.klasse)`
+            `${path.basename(process.argv[1] || "?")} startet das Echt-Rezept „${opts.art}" in einer CPU-Gruppe der CI — der Schritt gehört auf die Karte (check.yml echt)`
         );
     const browser = await startePuppeteer(browserOptionen(opts));
     // die Stall-Akte des Browsers: Stderr-Ring (Chrome, GPU-Prozess), Browser-Sitzung für CPU je Prozess, die Schwelle
     const b = {
         stderr: [],
         cdp: null,
-        stapel: !opts.zeit && opts.art !== "echt",
+        stapel: opts.art !== "echt",
         stallMs: opts.stallMs || 20000,
         offen: true,
     };
@@ -1228,12 +1237,9 @@ async function starteBrowser(opts = {}) {
         }
     });
     // jede GPU-Linse nennt den Adapter, den der Browser WIRKLICH liefert (gate:start-rezept W4), die WebGL-Linse ihren
-    // WebGL2-Renderer; die ZEIT-ZEILE (W5): eine Zeit-Linse auf der Karte ist ROT beim Namen
-    if (opts.art === "linse" || opts.art === "echt" || opts.art === "webgl") {
-        const info = (browser.adapter = await adapterZeile(browser, { webgl: opts.art === "webgl" }));
-        const rot = zeitZeile({ zeit: !!opts.zeit, art: opts.art, info });
-        if (rot) melde("zeit-linse", rot);
-    }
+    // WebGL2-Renderer
+    if (opts.art === "linse" || opts.art === "echt" || opts.art === "webgl")
+        browser.adapter = await adapterZeile(browser, { webgl: opts.art === "webgl" });
     return browser;
 }
 
@@ -1835,6 +1841,7 @@ module.exports = {
     fs,
     path,
     stammLib,
+    pufferLesen,
     crypto: require("crypto"),
     os,
     vm: require("vm"),

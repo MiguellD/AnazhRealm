@@ -2553,8 +2553,8 @@ function kartenEichung(kurve, ev = 1) {
 
 // DIE NÄSSE IM BILD (wetter.K2): eine Pose unter der Bühne klar · Regen frisch · Regen 10 min (`naesse: 600`); je Rasterpunkt
 // nass/frisch trennt die Nässe vom Licht, nass gegen nass ohne Regen-Sprite zählt die Schlieren je Klasse. Im Dorf trifft der
-// Strahl Hülle, Tür-Flügel oder Boden: „innen" ist, was am Treffer unter dem Dach-Pool des Wirts liegt (`unterDach`, dieselbe
-// Regel wie `_offenerHimmel` im Stoff), sonst „aussen"; die Dach-Bauten ohne Hülle (`NAESSE.dachArten`) im Umkreis 24 m prüfen
+// Strahl Hülle, Tür-Flügel, jeden anderen Bau mit Decke (`bauTreffer`) oder Boden: „innen" ist, was am Treffer unter dem Dach-Pool des Wirts liegt (`unterDach`, dieselbe
+// Regel wie `_offenerHimmel` im Stoff), auf dem Boden mit stehendem Wasser „pfuetze" (`pfuetzeBei`), sonst „aussen"; die Dach-Bauten ohne Hülle (`NAESSE.dachArten`) im Umkreis 24 m prüfen
 // den Pool an ihrer Mitte. `haus`: nur die Schwelle, an die der Spieler tritt (die Tür öffnet). DIE DECKE DES WIRTS, NIE EINE
 // SCHÄTZUNG (w20-innen-regen): bis hier rechnete die Probe „innen" gegen ihre eigene Decke (die höchste Box mit der halben
 // Fläche der größten) — denselben Zwilling, den der Dach-Pool bis w18-innen-licht trug. DAS REGENBILD gilt dem Bild unter offenem
@@ -2633,7 +2633,54 @@ function naesseSicht(o) {
         const ohne = await schuss("rainy", 0);
         if (sprite) sprite.layers.enable(0);
         const strahl = new T.Vector3();
-        // je Rasterpunkt „innen" · „aussen" · „fluegel" (der Tür-Flügel und sein Schwenk) · „himmel" (kein Treffer in 40 m; auf
+        // DER STRAHL TRIFFT JEDEN BAU MIT DECKE (w27-ort-pose): neben dem gemessenen Haus jede Hülle und jeden Dach-Kasten
+        // (`_dachKasten`), die der Pool kennt, je in ihrem Rahmen (Lage, Gier, Skala; die Hülle über Lage − 0,5 m, der Kasten über
+        // Lage + dy wie `_dachTakt`) — die Entfernung des nächsten Treffers bis `best`. Am Haus am Markt sah die Probe durch die
+        // offene Tür die Wand des Nachbarn; ihr Strahl ging durch sie hindurch in seinen Grundriss, unter seine Decke („innen"),
+        // und die nasse Außenwand zählte als Nässe unter dem Dach (GTX 1050, 9374df33: 296 Punkte am Fuß der Wand gegenüber,
+        // Anteil 0,022, 7 Schlieren „innen"; ohne die 3 153 Leiber der Bewohner dieselben Zahlen). Je Bau eine Kugel um seine
+        // Kästen: ein Strahl, der sie verfehlt, prüft ihre Kästen nicht
+        const bauten = !e ? [] : st.architectures.flatMap((q) => {
+            if (q === e || !q.position || Math.hypot(q.position.x - cam.position.x, q.position.z - cam.position.z) > 80) return [];
+            const fest = q._hausHuelle && q._hausHuelle.teile.filter((b) => b.art === "box" && b.rolle === "fest");
+            const K = !q._hausHuelle && q._dachKasten;
+            const [kq, oy, kaesten] = fest && fest.length ? [q._hausHuelleSkala || 1, q.position.y - 0.5, fest] : K ? [K.k, q.position.y + K.dy, [K]] : [];
+            if (!kaesten) return [];
+            const [c, s] = [Math.cos(q.rotationY || 0), Math.sin(q.rotationY || 0)];
+            const lok = (v) => [((v.x - q.position.x) * c - (v.z - q.position.z) * s) / kq, (v.y - oy) / kq, ((v.x - q.position.x) * s + (v.z - q.position.z) * c) / kq];
+            const R = kq * Math.max(...kaesten.map((b) => Math.hypot(Math.abs(b.c[0]) + b.h[0], Math.abs(b.c[1]) + b.h[1], Math.abs(b.c[2]) + b.h[2])));
+            return [{ mitte: new T.Vector3(q.position.x, oy, q.position.z), R, lok, kaesten }];
+        });
+        const bauTreffer = (best) => {
+            for (const B of bauten) {
+                const m = B.mitte.clone().sub(cam.position);
+                const tc = m.dot(strahl);
+                if (tc < -B.R || tc > best + B.R || m.lengthSq() - tc * tc > B.R * B.R) continue;
+                const a = B.lok(cam.position);
+                const d = B.lok(cam.position.clone().add(strahl)).map((v, i) => v - a[i]);
+                for (const b of B.kaesten) {
+                    let t0 = 0;
+                    let t1 = best;
+                    for (let i = 0; i < 3 && t0 <= t1; i++) {
+                        const u = (b.c[i] - b.h[i] - a[i]) / d[i];
+                        const v = (b.c[i] + b.h[i] - a[i]) / d[i];
+                        t0 = Math.max(t0, Math.min(u, v));
+                        t1 = Math.min(t1, Math.max(u, v));
+                    }
+                    if (t0 <= t1 && t0 > 0.05) best = t0;
+                }
+            }
+            return best;
+        };
+        // DIE PFÜTZE AM TREFFER (w27-ort-pose): auf dem Boden steht der Regen in den Mulden des Gesetzes als Pfütze (gelaende-core
+        // `muldeEcken` am Treffer wie der Boden-Stoff, `_pfuetzeGesetz` in Zahlen mit dem Film der Welt; nah 1, der Strahl endet vor
+        // `PFUETZE.fernM`) — ihre Deckung 0 … 1. Ein Punkt mit Pfütze ist keine Nässe poröser Fläche: unter der Pfütze ist der Boden
+        // ganz getränkt, ihr Spiegel ist Wasser. Am Haus am Markt lagen 2 029 der 3 837 Boden-Punkte vor der Tür in einer Pfütze
+        // (Median nass/frisch 0,351), der benetzte Boden ohne sie bei 0,507 — gemischt hieß das Urteil „porös draußen 0,498"
+        const mulden = new Map();
+        const zahl = { k: (n) => n, mul: (a, b) => a * b, sub: (a, b) => a - b, max: Math.max, klemm: (v) => Math.min(1, Math.max(0, v)), ecke: (v) => v };
+        const pfuetzeBei = (h) => AnazhRealm._pfuetzeGesetz(zahl, globalThis.__gelaendeCore.muldeEcken(r._gelaende(), [h.x, h.y, h.z], 1, 0, mulden)[0], st.naesse, 1).deckung;
+        // je Rasterpunkt „innen" · „aussen" · „pfuetze" · „fluegel" (der Tür-Flügel und sein Schwenk) · „himmel" (kein Treffer in 40 m; auf
         // der Wiese die obere Bildhälfte)
         const klasse = (x, y) => {
             if (!e) return y > H * 0.55 ? "aussen" : "himmel";
@@ -2653,17 +2700,21 @@ function naesseSicht(o) {
                 }
                 if (t0 <= t1 && t0 > 0.05) [best, flue] = [t0, !!b.tuer];
             }
+            const bau = bauTreffer(best);
+            if (bau < best) [best, flue] = [bau, false];
+            let boden = false;
             for (let s = 0.3; s < best; s += 0.1 + s * 0.02) {
                 const q = cam.position.clone().addScaledVector(strahl, s);
-                if (q.y < r._terrainMacroSurfaceY(q.x, q.z, false)) [best, flue] = [s, false];
+                if (q.y < r._terrainMacroSurfaceY(q.x, q.z, false)) [best, flue, boden] = [s, false, true];
             }
             if (flue) return "fluegel";
             if (best >= 40) return "himmel";
             const h = cam.position.clone().addScaledVector(strahl, best);
-            return unterDach(h.x, h.y, h.z) ? "innen" : "aussen";
+            if (unterDach(h.x, h.y, h.z)) return "innen";
+            return boden && pfuetzeBei(h) > 0 ? "pfuetze" : "aussen";
         };
-        const je = { innen: [], aussen: [] };
-        const regen = { innen: 0, aussen: 0 };
+        const je = { innen: [], aussen: [], pfuetze: [] };
+        const regen = { innen: 0, aussen: 0, pfuetze: 0 };
         // je Klasse die Luma klar · nass ihrer Rasterpunkte: unter offenem Himmel („aussen" und „himmel") das Regenbild, unter der
         // Decke `innen.bild` (auf der Wiese trägt das Raster das ganze Bild: 0,7043 gegen 0,7067 je Pixel, swiftshader)
         const summe = { innen: [0, 0], aussen: [0, 0] };
@@ -2671,7 +2722,7 @@ function naesseSicht(o) {
             for (let x = 1; x < W; x += 2) {
                 const i = (y * W + x) * 4;
                 const c = klasse(x, y);
-                const s = summe[c === "himmel" ? "aussen" : c];
+                const s = summe[c === "himmel" || c === "pfuetze" ? "aussen" : c];
                 if (!s) continue;
                 s[0] += luma709(klar, i);
                 s[1] += luma709(nass, i);
@@ -2693,6 +2744,8 @@ function naesseSicht(o) {
             // Median allein sah 43 % nasse Gefache nicht
             innen: { n: je.innen.length, verhaeltnis: med(je.innen), nass: +(je.innen.filter((v) => v < 0.95).length / je.innen.length).toFixed(3), bild: bild(summe.innen) },
             aussen: { n: je.aussen.length, verhaeltnis: med(je.aussen) },
+            // gemeldet, nie geurteilt: das Wasser der Pfütze (`pfuetzeBei`)
+            pfuetze: { n: je.pfuetze.length, verhaeltnis: med(je.pfuetze) },
             dicht: dicht ? +dicht.faktor.toFixed(3) : null,
             glanz: poroes ? +((0.8 / poroes.rauh) ** 4).toFixed(2) : null,
             regen,

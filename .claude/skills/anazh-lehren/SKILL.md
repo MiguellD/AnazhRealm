@@ -191,9 +191,11 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
   `npm run format:check` · `npm run atlas` (+ `--find`).
 - Lokal der Puls der berührten Methoden + playtest:fast; der Integrator fährt den VOLLEN Playtest je Merge, die volle Batterie einmal je
   Version; gemergt bei grüner Zweig-CI.
-- CI (`.github/workflows/check.yml`): Puls in 2 Gruppen je Push; die volle Batterie in 18 Gruppen (1–7 CPU, 8–18 GPU; Playtest = Gruppe 1)
-  auf integ-probe, main, nachts und bei `[ci voll]` in der Commit-Message, hinter dem Kopf-Richter; `node scripts/ci-zeiten.cjs` misst und
-  verteilt, `gate:ci-deckung` hält die Waage; `[skip ci]` überspringt beides.
+- CI (`.github/workflows/check.yml`): Puls in 2 Gruppen je Push; die volle Batterie in 18 CPU-Gruppen (Playtest = Gruppe 1) auf
+  integ-probe, main, nachts und bei `[ci voll]` in der Commit-Message, hinter dem Kopf-Richter; die GPU-Klasse fährt NUR auf der Karte
+  (Job `echt`, drei Beine zugleich: omen · radeon · gtx1050, Läufer-Label `<karte>-gpu`, je Wand GENAU eine Stelle, nie swiftshader im
+  Zug) auf integ-probe, zug-a, zug-b und nachts; `node scripts/ci-zeiten.cjs` misst und verteilt, `gate:ci-deckung` hält die Waage
+  und die Klasse ((K): ein Echt-Rezept in der vollen Batterie ist ROT beim Namen); `[skip ci]` überspringt beides.
 - GPU-Zeit nur `werkbank gpu-bank` (OMEN = GTX 1060; die Radeon 890M lokal per `werkbank --echt`), A/B bei gleicher Szene oder ≥ 4 Boots
   je Seite; Aufträge und Berichte der Messplätze leben im Zweig `koordination`, nie in main.
 - Bild-Urteile auf ECHTER GPU aus jedem Zweig (`.github/workflows/gpu-probe.yml`): die Kopf-Commit-Message trägt
