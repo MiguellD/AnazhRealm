@@ -70,7 +70,7 @@
   },
   "affekt.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: affekt.K4#1 headless: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +10) · affekt.K4#2 radeon: ROT: spieler → — (0 ms) · nexus → — (0 ms) · ROT spieler: ohne Modell (die KI der Sitzung ist aus); nexus: ohne Modell (die KI der Sitzung ist aus) an e6f0cf7e · affekt.K4#2 gtx: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/fluss-linse.cjs +10) — zuletzt an 94d9c5a6: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: zeichner.postKette · wie {\"zeichner.postKette\":\"fort\"}) — ungemessen",
+   "beleg": "Maschine: 0 — offen: affekt.K4#1 headless: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +10) · affekt.K4#2 radeon: ROT: spieler → — (0 ms) · nexus → — (0 ms) · ROT spieler: ohne Modell (die KI der Sitzung ist aus); nexus: ohne Modell (die KI der Sitzung ist aus) an e6f0cf7e · affekt.K4#2 gtx: ROT: spieler → — (0 ms) · nexus → — (0 ms) · ROT spieler: ohne Modell (die KI der Sitzung ist aus); nexus: ohne Modell (die KI der Sitzung ist aus) an e6f0cf7e",
    "stationen": [
     {
      "id": "affekt.K4#1",
@@ -95,10 +95,9 @@
      "id": "affekt.K4#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/fluss-linse.cjs +10) — zuletzt an 94d9c5a6: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: zeichner.postKette · wie {\"zeichner.postKette\":\"fort\"}) — ungemessen",
-     "ungemessen": true,
+     "zahl": "spieler → — (0 ms) · nexus → — (0 ms) · ROT spieler: ohne Modell (die KI der Sitzung ist aus); nexus: ohne Modell (die KI der Sitzung ist aus)",
+     "sha": "e6f0cf7ecd16027cf892c0409c327f267d998b7e",
+     "grund": "ROT: spieler → — (0 ms) · nexus → — (0 ms) · ROT spieler: ohne Modell (die KI der Sitzung ist aus); nexus: ohne Modell (die KI der Sitzung ist aus)",
      "r6": "konsum"
     }
    ]
@@ -131,7 +130,7 @@
   },
   "ankunft.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: ankunft.K1#1 radeon: Linse seit der Messung geändert (R6: scripts/diag-boot-stage.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +8) — zuletzt an e6f0cf7e: die Fahrt riss 1800 s (in leib.K1#2) — offen, UNGEMESSEN · ankunft.K1#1 gtx: Konsum seit der Messung geändert (R6: scripts/diag-boot-stage.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +18) — zuletzt an e699a834: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten · ankunft.K1#2 radeon: Linse seit der Messung geändert (R6: scripts/diag-boot-stage.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +8) — zuletzt an e6f0cf7e: die Fahrt riss 1800 s (in leib.K1#2) — offen, UNGEMESSEN · ankunft.K1#2 gtx: Konsum seit der Messung geändert (R6: scripts/diag-boot-stage.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +17) — zuletzt an 6aa7a5a6: Fremd-Last: MsMpEng.exe 28,9 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 19,5 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjx",
+   "beleg": "Maschine: 0 — offen: ankunft.K1#1 radeon: Linse seit der Messung geändert (R6: scripts/diag-boot-stage.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +8) — zuletzt an e6f0cf7e: die Fahrt riss 1800 s (in leib.K1#2) — offen, UNGEMESSEN · ankunft.K1#1 gtx: ROT: t(Kontrolle) kalt 14.44 s von außen (Eigenmeldung 13.54 s), Bild 0.01 % Lücke bis zur Ruhe, offen im Bild 1 Programm des Bilds entsteht · 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht · [linse-gpu] nvidia/pascal · ROT trotz Fremd-Last: OmenCap.exe 72,5 CPU-s · git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 34,7 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 19,4 CPU-s — 2,73 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon; Σ fremd 157,9 CPU-s in 71,7 s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 19,1 CPU-s · svchost.exe 15,5 CPU-s · SearchProtocolHost.exe 11,0 CPU-s) — geeicht ÷ 1,154 (1 + 5,6 % je fremdem Kern × 2,73): t(Kontrolle) kalt s 14,44 → geeicht 12,52 (Soll ≤ 10) an e6f0cf7e · ankunft.K1#2 radeon: Linse seit der Messung geändert (R6: scripts/diag-boot-stage.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +8) — zuletzt an e6f0cf7e: die Fahrt riss 1800 s (in leib.K1#2) — offen, UNGEMESSEN · ankunft.K1#2 gtx: ROT: t(Kontrolle) kalt 14.87 s von außen (Eigenmeldung 13.94 s), Bild 0.00 % Lücke bis zur Ruhe, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht · [linse-gpu] nvidia/pascal · ROT trotz Fremd-Last: OmenCap.exe 76,3 CPU-s · mscorsvw.exe 35,9 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 19,4 CPU-s — 2,89 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon; Σ fremd 165,5 CPU-s in 72,9 s · Gerät (Grund-Last, nie fremd) SearchIndexer.exe 23,2 CPU-s · svchost.exe 19,0 CPU-s · MsMpEng.exe 16,1 CPU-s) — geeicht ÷ 1,163 (1 + 5,6 % je fremdem Kern × 2,89): t(Kontrolle) kalt s 14,87 → geeicht 12,79 (Soll ≤ 5) an e6f0cf7e",
    "stationen": [
     {
      "id": "ankunft.K1#1",
@@ -148,10 +147,9 @@
      "id": "ankunft.K1#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/diag-boot-stage.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +18) — zuletzt an e699a834: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
-     "ungemessen": true,
+     "zahl": "t(Kontrolle) kalt 14.44 s von außen (Eigenmeldung 13.54 s), Bild 0.01 % Lücke bis zur Ruhe, offen im Bild 1 Programm des Bilds entsteht · 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht · [linse-gpu] nvidia/pascal",
+     "sha": "e6f0cf7ecd16027cf892c0409c327f267d998b7e",
+     "grund": "ROT: t(Kontrolle) kalt 14.44 s von außen (Eigenmeldung 13.54 s), Bild 0.01 % Lücke bis zur Ruhe, offen im Bild 1 Programm des Bilds entsteht · 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht · [linse-gpu] nvidia/pascal · ROT trotz Fremd-Last: OmenCap.exe 72,5 CPU-s · git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 34,7 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 19,4 CPU-s — 2,73 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon; Σ fremd 157,9 CPU-s in 71,7 s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 19,1 CPU-s · svchost.exe 15,5 CPU-s · SearchProtocolHost.exe 11,0 CPU-s) — geeicht ÷ 1,154 (1 + 5,6 % je fremdem Kern × 2,73): t(Kontrolle) kalt s 14,44 → geeicht 12,52 (Soll ≤ 10)",
      "r6": "konsum",
      "beide": true
     },
@@ -169,10 +167,9 @@
      "id": "ankunft.K1#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/diag-boot-stage.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +17) — zuletzt an 6aa7a5a6: Fremd-Last: MsMpEng.exe 28,9 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 19,5 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjx",
-     "ungemessen": true,
+     "zahl": "t(Kontrolle) kalt 14.87 s von außen (Eigenmeldung 13.94 s), Bild 0.00 % Lücke bis zur Ruhe, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht · [linse-gpu] nvidia/pascal",
+     "sha": "e6f0cf7ecd16027cf892c0409c327f267d998b7e",
+     "grund": "ROT: t(Kontrolle) kalt 14.87 s von außen (Eigenmeldung 13.94 s), Bild 0.00 % Lücke bis zur Ruhe, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht · [linse-gpu] nvidia/pascal · ROT trotz Fremd-Last: OmenCap.exe 76,3 CPU-s · mscorsvw.exe 35,9 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 19,4 CPU-s — 2,89 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon; Σ fremd 165,5 CPU-s in 72,9 s · Gerät (Grund-Last, nie fremd) SearchIndexer.exe 23,2 CPU-s · svchost.exe 19,0 CPU-s · MsMpEng.exe 16,1 CPU-s) — geeicht ÷ 1,163 (1 + 5,6 % je fremdem Kern × 2,89): t(Kontrolle) kalt s 14,87 → geeicht 12,79 (Soll ≤ 5)",
      "r6": "konsum"
     }
    ]
@@ -229,7 +226,7 @@
   },
   "ankunft.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: ankunft.K4#1 radeon: ungemessen (R10) — zuletzt an e6f0cf7e: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: POSE ego-45 39029 ms) · ankunft.K4#1 gtx: ungemessen (R10) — zuletzt an 523e3a38: Deckel 310 s gerissen: Stille seit 44.4 s nach 310 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-135 85445 ms)",
+   "beleg": "Maschine: 0 — offen: ankunft.K4#1 radeon: ungemessen (R10) — zuletzt an e6f0cf7e: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: POSE ego-0 50168 ms) · ankunft.K4#1 gtx: ungemessen (R10) — zuletzt an 523e3a38: Deckel 310 s gerissen: Stille seit 44.4 s nach 310 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-135 85445 ms)",
    "stationen": [
     {
      "id": "ankunft.K4#1",
@@ -237,7 +234,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an e6f0cf7e: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: POSE ego-45 39029 ms)",
+     "grund": "ungemessen (R10) — zuletzt an e6f0cf7e: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: POSE ego-0 50168 ms)",
      "ungemessen": true
     },
     {
@@ -496,7 +493,7 @@
      "gruen": true,
      "zahl": "Garage FOV +9.07° Arm +18.1 % bei 15.21/16.00 m/s · Welt FOV +9.47° Arm +18.4 % bei 15.18 m/s (Ende ok)",
      "sha": "25ac4c0c485570ed887cffb7f175d430264f86bf",
-     "grund": "Station seit der Messung geändert — zuletzt an e6f0cf7e: Frist der Probe 83 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Welt: kein Ergebnis von tempo4.js — /eval ohne Antwort binnen 78 s) · Täter: (Welt 82.0 s · Garage 62.9 s im Fenster neben ihr)",
+     "grund": "Station seit der Messung geändert — zuletzt an e6f0cf7e: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: Garage: keine Zeile MK2110 (Exit 3))",
      "gehalten": true
     },
     {
@@ -886,7 +883,7 @@
   },
   "gelaende.K2": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 8 von 10 Gräben über das Verb, in 1752 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 34.4–203.2 ms (1 m 3, 3 m 5) an b3f9ae95 radeon · gehalten: 8 von 10 Gräben über das Verb, in 2180 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 45.7–366.6 ms (1 m 3, 3 m 5) an 715754fc gtx — offen: gelaende.K2#2 radeon: Station seit der Messung geändert — zuletzt an e6f0cf7e: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: (b)(d) 8.4 s · Damm {\"krone\":27.99,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":25.08,\"ueberlauf\":24.3,\"fluss\":25.08},{\"d\":12,\"wasser\":25.18,\"ueberlauf · gelaende.K2#2 gtx: Station seit der Messung geändert — zuletzt an 4e2df19b: Deckel 1759 s gerissen (der Anteil der Fahrt, mit Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: third FEHLER Runtime.callFunctionOn timed out. Increase the 'protocolTimeout' setting in launch/connect",
+   "beleg": "Maschine: gehalten: 8 von 10 Gräben über das Verb, in 1752 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 34.4–203.2 ms (1 m 3, 3 m 5) an b3f9ae95 radeon · gehalten: 8 von 10 Gräben über das Verb, in 2180 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 45.7–366.6 ms (1 m 3, 3 m 5) an 715754fc gtx — offen: gelaende.K2#2 radeon: Station seit der Messung geändert — zuletzt an e6f0cf7e: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: (b)(d) 9.8 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf · gelaende.K2#2 gtx: Station seit der Messung geändert — zuletzt an 4e2df19b: Deckel 1759 s gerissen (der Anteil der Fahrt, mit Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: third FEHLER Runtime.callFunctionOn timed out. Increase the 'protocolTimeout' setting in launch/connect",
    "stationen": [
     {
      "id": "gelaende.K2#1",
@@ -894,7 +891,7 @@
      "gruen": true,
      "zahl": "8 von 10 Gräben über das Verb, in 1752 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 34.4–203.2 ms (1 m 3, 3 m 5)",
      "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Station seit der Messung geändert — zuletzt an e6f0cf7e: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: (b)(d) 8.4 s · Damm {\"krone\":27.99,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":25.08,\"ueberlauf\":24.3,\"fluss\":25.08},{\"d\":12,\"wasser\":25.18,\"ueberlauf",
+     "grund": "Station seit der Messung geändert — zuletzt an e6f0cf7e: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: (b)(d) 9.8 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf",
      "gehalten": true
     },
     {
@@ -912,7 +909,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert — zuletzt an e6f0cf7e: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: (b)(d) 8.4 s · Damm {\"krone\":27.99,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":25.08,\"ueberlauf\":24.3,\"fluss\":25.08},{\"d\":12,\"wasser\":25.18,\"ueberlauf",
+     "grund": "Station seit der Messung geändert — zuletzt an e6f0cf7e: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: (b)(d) 9.8 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf",
      "ungemessen": true
     },
     {
@@ -2993,7 +2990,7 @@
   },
   "profiband.K4": {
    "punkte": 1,
-   "beleg": "Maschine: Gehen 51 Bilder · max 92.18 ms · 82.35 % > 33 ms · Fahrt 57 Bilder · max 83.67 ms · 87.72 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 82.35 % > 33 ms | Fahrt: 87.72 % > 33 ms an e6f0cf7e radeon — offen: profiband.K4#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/shader-kosten.cjs, scripts/lib/welt-boot.cjs, stamm/bild-himmel.js +5) — zuletzt an e6f0cf7e: Fremd-Last: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 11,0 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=c · profiband.K4#2 gtx: Station seit der Messung geändert — zuletzt an dcc33615: Fremd-Last: AppHelperCap.exe 43,1 CPU-s · MsMpEng.exe 13,6 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 10,1 CPU-s — 2,02 Kerne fremd im dichteste",
+   "beleg": "Maschine: Gehen 51 Bilder · max 92.18 ms · 82.35 % > 33 ms · Fahrt 57 Bilder · max 83.67 ms · 87.72 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 82.35 % > 33 ms | Fahrt: 87.72 % > 33 ms an e6f0cf7e radeon — offen: profiband.K4#2 radeon: ROT: Gehen 39 Bilder · max 117.36 ms · 94.87 % > 33 ms · Fahrt 45 Bilder · max 100.38 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 2 Bild(er) > 100 ms (max 117.36), 94.87 % > 33 ms | Fahrt: 1 Bild(er) > 100 ms (max 100.38), 100.00 % > 33 ms · ROT trotz Fremd-Last: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 16,7 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 12,4 CPU-s · node.exe punkte/punkte.cjs buchen --kopf e6f0cf7ecd16027cf892c0409c327f267d998b7e 10,0 CPU-s — 1,76 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 71,9 CPU-s in 49,4 s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 38,1 CPU-s · svchost.exe 7,0 CPU-s · SearchIndexer.exe 2,4 CPU-s) — geeicht ÷ 1,099 (1 + 5,6 % je fremdem Kern × 1,76): Gehen Frame max ms 117,4 → geeicht 106,8 (Soll ≤ 100) an e6f0cf7e · profiband.K4#2 gtx: Station seit der Messung geändert — zuletzt an dcc33615: Fremd-Last: AppHelperCap.exe 43,1 CPU-s · MsMpEng.exe 13,6 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 10,1 CPU-s — 2,02 Kerne fremd im dichteste",
    "stationen": [
     {
      "id": "profiband.K4#1",
@@ -3017,10 +3014,9 @@
      "id": "profiband.K4#2",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/shader-kosten.cjs, scripts/lib/welt-boot.cjs, stamm/bild-himmel.js +5) — zuletzt an e6f0cf7e: Fremd-Last: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 11,0 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=c",
-     "ungemessen": true,
+     "zahl": "Gehen 39 Bilder · max 117.36 ms · 94.87 % > 33 ms · Fahrt 45 Bilder · max 100.38 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 2 Bild(er) > 100 ms (max 117.36), 94.87 % > 33 ms | Fahrt: 1 Bild(er) > 100 ms (max 100.38), 100.00 % > 33 ms",
+     "sha": "e6f0cf7ecd16027cf892c0409c327f267d998b7e",
+     "grund": "ROT: Gehen 39 Bilder · max 117.36 ms · 94.87 % > 33 ms · Fahrt 45 Bilder · max 100.38 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 2 Bild(er) > 100 ms (max 117.36), 94.87 % > 33 ms | Fahrt: 1 Bild(er) > 100 ms (max 100.38), 100.00 % > 33 ms · ROT trotz Fremd-Last: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 16,7 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 12,4 CPU-s · node.exe punkte/punkte.cjs buchen --kopf e6f0cf7ecd16027cf892c0409c327f267d998b7e 10,0 CPU-s — 1,76 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 71,9 CPU-s in 49,4 s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 38,1 CPU-s · svchost.exe 7,0 CPU-s · SearchIndexer.exe 2,4 CPU-s) — geeicht ÷ 1,099 (1 + 5,6 % je fremdem Kern × 1,76): Gehen Frame max ms 117,4 → geeicht 106,8 (Soll ≤ 100)",
      "r6": "konsum"
     },
     {
@@ -4756,13 +4752,7 @@
    ]
   }
  },
- "rueckfall": [
-  "gelaende.K3#1 radeon: spiegelTreue 0.3266 (wasserSatz 21014 px, spiegelEbene 1.246) in 1920×1080, Pose = Kamera des Spiels, Ziel auf dem Wasser in 51.1 m (Gier-Versatz 0°), ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Wasser im Bild frei 51.05 m · Luma 87.1 σ 34 schwarz 0.0 % weiß 0.0 % · Stand 18.546.253 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 an e6f0cf7e (grün gebucht an e699a834)",
-  "halten.K2#1 radeon: schlechtester von 1 Läufen p95 ms third/hieb 61.9 · ego/hieb 104.5 · Bild 24.41 ms · Hit-Stop im schlechtesten Lauf 7 Bilder · im Spiel Halt gesetzt 25-mal (136–184 ms, gleitet bis 7.5 mm je Takt) an e6f0cf7e (grün gebucht an e699a834)",
-  "licht.K2#1 radeon: Verhältnis 5.16 (5–12,5), Schatten-Anteil 0.1938 (0,08–0,20), A/B 0.999, A/C 1.022, Kappe 1499 px, Uhr 0.5 sunny, [linse-gpu] amd/rdna-3 an e6f0cf7e (grün gebucht an e699a834)",
-  "lod.K2#1 radeon: Gehen 4 m/s: 0.0661 % Pop-Pixel je Sekunde (1370 px, Soll ≤ 0,05 %), je Schritt 67*/108*/455*/140/231*/77*/138*/154* (* = Stufen-Wechsel), Laub 216–216 m, perfTarget 17 ms, [linse-gpu] amd/rdna-3 an e6f0cf7e (grün gebucht an e699a834)",
-  "vegetation.K4#1 radeon: 42 Häuser des Start-Dorfs, 47/51 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 0 px; ungemessen (ohne freies Auge) haus_provenzalisch 5-0 haupt · haus_italienisch 9-0 haupt · haus_provenzalisch 23-0 haupt · haus_skandinavisch 39-0 haupt an e6f0cf7e (grün gebucht an b3f9ae95)"
- ],
+ "rueckfall": [],
  "r6": {
   "haelften": 388,
   "konsum": 71,
@@ -5030,8 +5020,8 @@
   "ohne": 58
  },
  "kopfVoll": "e6f0cf7ecd16027cf892c0409c327f267d998b7e",
- "zeit": "2026-11-11T16:12:44.714Z",
- "vorher": "e699a834",
+ "zeit": "2026-11-11T16:25:32.338Z",
+ "vorher": "e6f0cf7e",
  "pflicht": {
   "dokument": "docs/PFLICHT-OFFEN.md",
   "eintraege": [
@@ -5111,7 +5101,7 @@
      {
       "station": "ankunft.K1#1",
       "geraet": "gtx",
-      "zeile": "Konsum seit der Messung geändert (R6: scripts/diag-boot-stage.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +18) — zuletzt an e699a834: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten"
+      "zeile": "ROT: t(Kontrolle) kalt 14.44 s von außen (Eigenmeldung 13.54 s), Bild 0.01 % Lücke bis zur Ruhe, offen im Bild 1 Programm des Bilds entsteht · 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zäh"
      },
      {
       "station": "ankunft.K1#2",
@@ -5121,7 +5111,7 @@
      {
       "station": "ankunft.K1#2",
       "geraet": "gtx",
-      "zeile": "Konsum seit der Messung geändert (R6: scripts/diag-boot-stage.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +17) — zuletzt an 6aa7a5a6: Fremd-Last: MsMpEng.exe 28,9 CPU-s · Claude.exe --type=gpu-process --user-data-d"
+      "zeile": "ROT: t(Kontrolle) kalt 14.87 s von außen (Eigenmeldung 13.94 s), Bild 0.00 % Lücke bis zur Ruhe, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht · [linse-gpu] nvidia/pa"
      }
     ],
     "ohneRichter": []
