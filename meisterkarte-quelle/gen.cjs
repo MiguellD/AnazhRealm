@@ -69,6 +69,20 @@ function bauen() {
     buergschaft: meta.buergschaft,
     messschuld: meta.messschuld.map(([id, kriterium, messung, erwartung]) => ({ id, kriterium, messung, erwartung })),
     top5: [],
+    // GEBUCHT HEISST GEHALTEN (11.11., Schöpfer: „eigentlich ist das unehrlich“): die Ratsche hält ein gemessenes GRÜN, bis ein
+    // frisches ROT es nimmt — die Summe sagt nicht, was HEUTE bestätigt ist. Die Karte nennt deshalb die Punkte an Kriterien,
+    // deren Stationen im Stand nicht alle grün sind, mit der Art je offener Station.
+    ...(stand ? { bestaetigung: (() => {
+      const o = { voll: 0, offen: 0, kriterien: [], art: { linse: 0, ungemessen: 0, rot: 0, anderes: 0 } };
+      for (const [id, e] of Object.entries(stand.je)) {
+        if (!e.punkte) continue;
+        const ng = (e.stationen || []).filter((x) => !x.gruen);
+        if (!ng.length) { o.voll += e.punkte; continue; }
+        o.offen += e.punkte; o.kriterien.push(id + "+" + e.punkte);
+        for (const x of ng) o.art[/Linse seit der Messung/.test(x.grund || "") ? "linse" : /UNGEMESSEN|Deckel/.test(x.grund || "") ? "ungemessen" : /ROT/.test(x.grund || "") ? "rot" : "anderes"]++;
+      }
+      return o;
+    })() } : {}),
     // was nach allen Hebeln offen BLEIBT: Punkte, für die die Tafel keinen Schnitt nennt (der Rest von `offen`)
     ohneHebel: Object.entries(offen).filter(([, v]) => v > 0).map(([k, v]) => k + "+" + v),
     verlauf: [
@@ -179,6 +193,11 @@ function render(j) {
     P(); P("---"); P();
   }
   P("## Punktestand: " + j.summe + " / " + j.max); P();
+  if (j.bestaetigung) {
+    const B = j.bestaetigung;
+    P("**Gebucht heißt gehalten.** Jeder Punkt stammt aus einer Messung, die an ihrer Station GRÜN war; die Ratsche hält ihn, bis ein frisches ROT ihn nimmt. Im Stand liegen **" + B.voll + " Punkte** an Kriterien, deren Stationen alle grün sind, und **" + B.offen + " Punkte** an " + B.kriterien.length + " Kriterien mit mindestens einer Station, die es nicht ist (Linse seit der Messung geändert " + B.art.linse + " · ungemessen " + B.art.ungemessen + " · rot " + B.art.rot + " · anderes " + B.art.anderes + ")" + (B.kriterien.length ? ": " + bewegtText(j, B.kriterien).replace(/ \+(\d)/g, " ($1 P)") : "") + ". Eine Station urteilt an ihrem Messort, unter ihrer Bedingung, über ihr Gesetz und ihre Schwelle — nicht darüber, ob das Bild überall wie AAAA aussieht; das entscheidet das Auge (Pflicht-Offen A).");
+    P();
+  }
   P("Verlauf — alte Skala (9 Bereiche, max 90): " + alt.map((v) => tag(v) + " " + v.summe).join(" · ") + " (letzter Stand " + a.summe + "/90 an " + a.kopf + "). Neue Skala (" + j.bereiche.length + " Bereiche, max " + j.max + "): " + neu.map((v, i) => (i === neu.length - 1 ? tag(v) + " **" + v.summe + "/" + v.max + "** an " + v.kopf : tag(v) + " " + v.summe + " an " + v.kopf)).join(" · ") + ". " + T.messschuldErwartung);
   P();
   for (const v of neu.slice(1)) P("- **" + tag(v) + " " + v.kopf + " — " + v.summe + "/" + v.max + ".** " + v.was);
