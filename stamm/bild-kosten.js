@@ -677,6 +677,12 @@ class AnazhRealm_bild_kosten {
                     }
                     bau = performance.now();
                 }
+                // DER GAST DER ANKUNFT BESTELLT SEINE PIPELINE MIT DEM BILD (w28-leben-vorbau): unter dem Ladeschirm baut er nur
+                // seinen Knoten-Graphen (dort ist der Haupt-Faden frei, `_gastDerAnkunftBaut`), der Pass bleibt vorgemerkt — das
+                // erste Bild nach dem Ladeschirm bestellt die Pipeline, der GPU-Prozess übersetzt sie neben dem Spiel, lange bevor
+                // die Daten kommen. Bestellte er sie unter dem Ladeschirm, übersetzte der GPU-Prozess seine 76 KB neben denen, auf
+                // die das Bild wartet (GTX 1050, 4 ↔ 4: das Weltbild kalt +0,4…+2,2 s, im Mittel +1,2 s; am Zweit-Boot +0,2 s).
+                if (gastArt === "ankunft" && welt._ladeTakt()) return;
                 const gezeichnet = zeichne(this, ro, aufnahme, true, vorbau);
                 if (bau >= 0) {
                     const ms = performance.now() - bau;
