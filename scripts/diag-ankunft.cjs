@@ -128,6 +128,17 @@ function ladeschirmVerdict(m) {
     if (!f.zeichnungOhneAussicht) out.push(`ein Bürger ohne Aussicht: ${ohne("zeichnungOhneAussicht")}`);
     else if (!f.zeichnungOhneAussicht.weg) out.push("ein Bürger, dessen Programm nie kommt, hält den Spieler für immer vor der Welt (kein Deckel am Term „zeichnung“)");
     else if (!f.zeichnungOhneAussicht.bruch) out.push("ein Bürger ohne Aussicht weicht ohne Bruch beim Namen (`_bruchMelden`: „WELTBILD NICHT GANZ … <Etikett> nicht gezeichnet“)");
+    // DAS PROGRAMM VOR DEN DATEN (w28-leben-vorbau): wessen Programm unter dem Ladeschirm bekannt ist und wessen Daten erst nach dem
+    // Bild kommen, baut es als Gast der Ankunft davor — die Kamm-Krone beim Namen; ihre Rechnung bleibt nach dem Bild
+    const kv = m.kammVorbau;
+    if (!kv) out.push("das Programm der Kamm-Krone vor den Daten: keine Probe (Vorbedingung)");
+    else {
+        if (!kv.gast) out.push("die Kamm-Krone baut ihr Programm erst nach dem Bild — ihr Takt hängt vor dem ersten Weltbild keinen Gast der Ankunft in die Welt-Szene (`_kammKroneVorbau`): ihr erstes Netz wartet im Gang auf Knoten-Bau und Pipeline");
+        else if (kv.art !== "ankunft" || !kv.stoff || kv.form !== "aDeckt,color,normal,position") out.push(`der Gast der Kamm-Krone trägt nicht ihr Programm (Art „${kv.art}“, ihr Stoff ${kv.stoff}, Form ${kv.form}) — sein Bau träfe den Schlüssel des Netzes nicht`);
+        if (kv.bestellt) out.push(`die Kamm-Krone bestellt ${kv.bestellt}-mal beim Kamm-Faden vor dem ersten Weltbild — die Rechnung gehört nach dem Bild, nur das Programm davor`);
+        if (kv.wahl !== "bauen,merken,merken,merken") out.push(`der Gast der Ankunft baut unter dem Ladeschirm nicht („${kv.wahl}“ statt „bauen,merken,merken,merken“: Gast der Ankunft · Arena · Gast der Bedienung · der Gast, solange ein Bürger baut, \`_vorbauWahl\`) — sein Programm entstünde erst im Gang`);
+        if (kv.letzter !== "frei,wartet,wartet") out.push(`der Gast der Ankunft baut nicht als Letzter („${kv.letzter}“ statt „frei,wartet,wartet“: kein Bau offen · der Bau eines Bürgers wartet in diesem Bild · in dem davor, \`_bauWartet\`) — sein Bau nähme den Bürgern der Welt die Frist, das Weltbild käme später`);
+    }
     const g = m.weichtGanz;
     if (!g) out.push("das Weichen des Ladeschirms: kein Fall (Vorbedingung)");
     else if (!g.hidden || g.display !== "none" || g.animationen)
@@ -613,6 +624,29 @@ async function probe(arg) {
                 const b0 = bruch();
                 fall("zeichnungOhneAussicht", an(true), aus, () => (st._weltbildErsteFrage = performance.now() - (AnazhRealm.WELTBILD_DECKEL_MS || 60000) - 1));
                 m.faelle.zeichnungOhneAussicht.bruch = Math.max(0, bruch() - b0);
+            }
+            // (4e''') DAS PROGRAMM VOR DEN DATEN (w28-leben-vorbau): vor dem ersten Weltbild hängt der Takt der Kamm-Krone ihren Gast der
+            // Ankunft in die Welt-Szene (ihr Stoff, die Form ihres Netzes) und bestellt NICHTS beim Kamm-Faden; `_vorbauWahl` baut für
+            // ihn unter dem Ladeschirm, wo eine Arena und ein Gast der Bedienung nur merken. Der Null-Renderer trägt keine
+            // Erst-Zeichnung: die Probe leiht ihre Marke für den einen Ruf.
+            {
+                const R = st.renderer;
+                const merk = [st.kammKrone, R.__anazhErstZeichnung, st._weltbildDa, r._fernAuftrag];
+                const kv = (m.kammVorbau = { gast: false, art: null, stoff: false, form: "", bestellt: 0, wahl: "", letzter: "" });
+                try {
+                    [st.kammKrone, R.__anazhErstZeichnung, st._weltbildDa] = [null, true, 0];
+                    r._fernAuftrag = () => (kv.bestellt++, new Promise(() => {}));
+                    r._kammKroneTakt({ ready: true, anchorX: 0, anchorZ: 0 });
+                    const g = st.kammKrone && st.kammKrone.gast;
+                    if (g) Object.assign(kv, { gast: g.parent === st.scene, art: g.__vorbauGast, stoff: g.material === st.kammKrone.stoff, form: Object.keys(g.geometry.attributes).sort().join(",") });
+                    const E2 = () => ({ vorgemerkt: new WeakMap(), vorgebaut: new WeakMap(), vorbauBild: -1 });
+                    kv.letzter = [{ bauVor: false, bildWartet: new Map() }, { bauVor: false, bildWartet: new Map([[1, { fest: true }]]) }, { bauVor: true, bildWartet: new Map() }].map((e) => (AnazhRealm._bauWartet(e) ? "wartet" : "frei")).join(",");
+                    kv.wahl = ["ankunft", false, true, "wartet"].map((art) => String(AnazhRealm._vorbauWahl(E2(), {}, "p", true, 0, 1, art))).join(",");
+                } finally {
+                    if (st.kammKrone) r._kammKroneDispose();
+                    [st.kammKrone, R.__anazhErstZeichnung, st._weltbildDa, r._fernAuftrag] = merk;
+                    if (merk[3] === Object.getPrototypeOf(r)._fernAuftrag) delete r._fernAuftrag;
+                }
             }
             // (4f) DAS DORF: fällig, im Export oder mit Häusern in der Schlange hält es das Bild (headless trägt der Hook)
             const dorfAn = [window, { __anazhAutoSettlement: true }];
@@ -1776,6 +1810,8 @@ hauptLauf(async () => {
         const halt = (stand, t) => ({ weg: false, stand, warn: 0, terme: [t] });
         const weicht = { weg: true, stand: "", warn: 0, terme: [] };
         const hilfeGut = { unbekannt: false, fehlt: [], tastenFehlen: [], v1: true }; // die Antwort auf „hilfe“, die alles nennt
+        // der gesunde Vorbau der Kamm-Krone (w28-leben-vorbau; je Mutante ein Teil getauscht)
+        const kammGut = { gast: true, art: "ankunft", stoff: true, form: "aDeckt,color,normal,position", bestellt: 0, wahl: "bauen,merken,merken,merken", letzter: "frei,wartet,wartet" };
         const l2aFaelle = {
             ohneBoden: halt("Boden", "boden"),
             baumUngebaut: halt("Bäume und Bauten", "bauten"),
@@ -1821,6 +1857,7 @@ hauptLauf(async () => {
                     wald: { ferne: 169, steht: false, zusage: true, kam: true, rest: 128 },
                     blick: { n: [4, 6], vor1: 1, geweckt: true, nach2: 1 }, takt: { lief: 4 },
                     vorrat: vr({ nachBild: 2, ende: true }),
+                    kammVorbau: kammGut,
                 },
                 [
                     ["ein Loch hinter dem Spieler hält das erste Bild", { faelle: mitFall(l2aFaelle, { baumHinten: { weg: false } }) }, "mit einem Baum hinter"],
@@ -1871,6 +1908,12 @@ hauptLauf(async () => {
                     ["eine stehende Pipeline hält weiter", { faelle: mitFall(l2aFaelle, { zeichnungSteht: { weg: false } }) }, "ein Bürger, dessen Pipeline steht, hält"],
                     ["ein Bürger ohne Aussicht hält für immer", { faelle: mitFall(l2aFaelle, { zeichnungOhneAussicht: { weg: false } }) }, "ein Bürger, dessen Programm nie"],
                     ["ein Bürger ohne Aussicht weicht still", { faelle: mitFall(l2aFaelle, { zeichnungOhneAussicht: { weg: true, bruch: 0 } }) }, "ein Bürger ohne Aussicht weicht ohne"],
+                    ["ein Bürger, der nach dem Bild erst sein Programm baut, ist ROT beim Namen (die Kamm-Krone ohne Gast, w28-leben-vorbau)", { kammVorbau: { ...kammGut, gast: false } }, "die Kamm-Krone baut ihr Programm erst nach"],
+                    ["der Gast der Ankunft merkt nur (wie vor w28-leben-vorbau)", { kammVorbau: { ...kammGut, wahl: "merken,merken,merken" } }, "der Gast der Ankunft baut unter"],
+                    ["der Gast der Ankunft baut mitten unter den Bürgern", { kammVorbau: { ...kammGut, letzter: "frei,frei,frei" } }, "der Gast der Ankunft baut nicht als"],
+                    ["der Gast trägt einen fremden Stoff", { kammVorbau: { ...kammGut, stoff: false } }, "der Gast der Kamm-Krone trägt nicht"],
+                    ["die Rechnung der Krone vor dem Bild", { kammVorbau: { ...kammGut, bestellt: 1 } }, "die Kamm-Krone bestellt 1-mal"],
+                    ["der Vorbau der Kamm-Krone ohne Probe", { kammVorbau: undefined }, "das Programm der Kamm-Krone vor"],
                     ["ein Fall ohne Grund", { faelle: mitFall(l2aFaelle, { karteOffen: undefined }) }, "mit der offenen Karte eines Baums im"],
                     ["kein Ladeschirm", { imHtml: false }, "kein Ladeschirm im HTML"],
                     ["unter der UI", { zIndex: 5 }, "der Ladeschirm liegt unter"],

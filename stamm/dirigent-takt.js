@@ -63,7 +63,7 @@ class AnazhRealm_dirigent_takt {
                 const bild = this._gpuLeineFrei();
                 // DAS BILD ZÄHLT SICH SELBST (w28-bild-ganz): wer in DIESEM Bild zeichnen will und nicht zeichnet, trägt sich ab
                 // hier neu ein (`_erstWartet` (3)) — das erste Weltbild liest die Liste nach dem Render (`_bildWartet`)
-                if (bild) this._erstZeichnungStand().bildWartet.clear();
+                if (bild) this._bildBeginnt();
                 const ruht = !bild && this._ladeTakt();
                 // DER BILD-TAKT UNTER DEM LADESCHIRM teilt die EINE Frist der Aufgabe mit der Zeichnung (`_ladeFrist`)
                 this._ladeBildTakt = bild && this._ladeTakt();

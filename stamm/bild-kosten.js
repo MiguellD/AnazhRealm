@@ -542,8 +542,11 @@ class AnazhRealm_bild_kosten {
                 // DER GAST DER ANKUNFT (w28-leben-vorbau, `__vorbauGast` "ankunft"): wessen Programm unter dem Ladeschirm bekannt ist
                 // und wessen Daten erst nach dem Bild kommen (die Kamm-Krone, `_kammKroneVorbau`), baut schon unter dem Ladeschirm
                 // — er wartet auf keine ruhende Eingabe, und er hält das Bild nie (kein Zug, kein Eintrag in `bildWartet`).
+                // ER BAUT ALS LETZTER (`_gastDerAnkunftBaut`): unter dem Ladeschirm erst, wenn kein Bürger der Welt-Szene mehr auf
+                // seinen Knoten-Bau wartet — dann wartet die Welt nur noch auf den GPU-Prozess, der Haupt-Faden ist frei.
                 const gastArt = object.__vorbauGast;
                 const gast = gastArt === true || gastArt === "ankunft";
+                const gastWahl = gastArt === "ankunft" && !welt._gastDerAnkunftBaut(E) ? "wartet" : gastArt;
                 const vorbau = gast || ro.getDrawParameters() === null;
                 const ctx = this._currentRenderContext.id;
                 const k = passId == null ? ctx : ctx + "|" + passId;
@@ -562,7 +565,7 @@ class AnazhRealm_bild_kosten {
                                   welt._ladeTakt(),
                                   welt.state._weltbildDa,
                                   N.nodeFrame.frameId,
-                                  gast ? gastArt : false
+                                  gast ? gastWahl : false
                               );
                     if (wahl !== "bauen") {
                         // ein Gast im Bündel (der Leib) wartet wie ein Bürger ohne Bau: sein Bündel nimmt neu auf, bis er
@@ -727,6 +730,7 @@ class AnazhRealm_bild_kosten {
                 vorgebaut: new WeakMap(), // Arena → die Pässe, in denen der Vorbau ihr Programm ohne Draw baute
                 vorgemerkt: new WeakMap(), // Arena → die Pässe ohne Draw unter dem Ladeschirm: ihr Vorbau folgt nach dem Bild
                 bildWartet: new Map(), // Pipeline bzw. Stoff → der Bürger der Welt-Szene, der in DIESEM Bild nicht zeichnete (`_bildWartet`)
+                bauVor: false, // im Bild davor wartete der Knoten-Bau eines Bürgers der Welt-Szene (`_bildBeginnt`, `_bauWartet`)
                 vorbauBild: -1, // das Bild (nodeFrame.frameId) des letzten Vorbaus nach dem Bild — höchstens einer je Bild
             };
         return this._erstZeichnung;
@@ -1075,6 +1079,28 @@ class AnazhRealm_bild_kosten {
     // zeichnen). Zwischen zwei Bildern fällt, wessen Pipeline steht (`offen` der Warteschlange): das nächste Bild ist dann
     // sofort fällig (`_ladeBildFaellig`). `fest` bleibt bis zum nächsten Bild: der Knoten-Bau in Raten (er macht es selbst
     // fällig, `ladeSchuld`) und jeder Wartende des WebGL2-Rückfalls (dort führt die Warteschlange keine Pipeline).
+    // DAS BILD BEGINNT (der Loop, die Phase des Takts): die Liste der Wartenden leert sich — vorher merkt sie, ob in dem Bild
+    // davor der Knoten-Bau eines Bürgers wartete (`bauVor`: der Gast der Ankunft baut erst danach, `_gastDerAnkunftBaut`).
+    _bildBeginnt() {
+        const E = this._erstZeichnungStand();
+        E.bauVor = false;
+        for (const b of E.bildWartet.values()) if (b.fest) E.bauVor = true;
+        E.bildWartet.clear();
+    }
+    // Wartet der Knoten-Bau eines Bürgers der Welt-Szene — in diesem Bild bis hier, oder in dem davor? (`fest`: sein Bau in Raten)
+    static _bauWartet(E) {
+        if (E.bauVor) return true;
+        for (const b of E.bildWartet.values()) if (b.fest) return true;
+        return false;
+    }
+    // DER GAST DER ANKUNFT BAUT ALS LETZTER (w28-leben-vorbau): nach dem Bild sofort (seine Daten sind unterwegs); unter dem
+    // Ladeschirm erst über dem Bild aus der Ferne (davor stehen Licht und Umgebung der Szene noch nicht — sein Schlüssel
+    // wechselte, der Bau fiele zweimal an: GTX 1050, 228 statt 132–184 ms) und erst, wenn kein Bürger der Welt-Szene mehr auf
+    // seinen Knoten-Bau wartet: dann hält nur noch der GPU-Prozess das Bild, und sein Bau nimmt keinem die Frist. Baute er
+    // mitten unter ihnen, kamen ihre Pipelines später (GTX 1050, 4 ↔ 4: das Weltbild kalt im Mittel +1,3 s, am Zweit-Boot +0,4 s).
+    _gastDerAnkunftBaut(E) {
+        return !this._ladeTakt() || (!this._fernbildVoraus() && !AnazhRealm._bauWartet(E));
+    }
     _bildWartet() {
         const E = this._erstZeichnung;
         let n = 0;
