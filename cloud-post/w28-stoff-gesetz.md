@@ -1,4 +1,11 @@
-ABGABE ab6c476fd6da48a2455999c41bedfca31059139a
+ABGABE 7e890b9d755e997108b776a44b12fa3ff459c8b5
+
+## 11.11. w28-stoff-gesetz (Cloud) — Abgabe 7e890b9d auf die Post z377 (zwei Wände)
+- **Wand 1, `gate:kampf-gefuehl` halten.K2 Staffel 2:** lokal nachgestellt an ab6c476f ROT (642 / 649 / 405 Hz wie im Zug), main GRÜN (954 / 2179 / 192 Hz). Schnitt im Gesetz, `klang-core.js:1420` `trefferPaar`: wie laut und wie hell ein Partner singt, folgt aus BEIDEN Zeilen — der Pegel aus der Teilung der Stoß-Energie E*/Eᵢ (Hertz: der weichere Partner nimmt sie), die Teiltöne des freien Stabs aus dem Spektrum des Kontakt-Stoßes 1/(1 + (f/f_K)²). Am Kopf GRÜN: Stahl/Holz 607 Hz · Stahl/Stein 1008 Hz · Holz/Fleisch 46 Hz, kleinster Abstand 401 Hz; die Schwelle 300 ist unberührt.
+- **Wand 2, LAUB-LICHT wasser:** kein Bruch im Spiel, der Spiegel verlor kein Laub. Die Stelle beim Namen: `scripts/lib/licht-linsen.cjs:1976` rief `AnazhRealm._wasserKoerper(Gesetz)` ohne die Brechzahl; mein Schnitt `stamm/bild-sicht.js:225` machte `n` (je Kanal, aus der Zeile wasser) zur Pflicht — der Aufruf warf, und `scripts/werkbank.cjs:3244` verschluckte den Wurf zu „kein Laub-Pixel“. Geheilt: die Linse reicht `r._wasserOptik().n` (dieselbe Zahl wie der Wasser-Stoff), die Werkbank trägt den Wurf als `fehler` (der vorhandene Helfer `ergebnis`, kein neues Linsen-Atom-Paket: Prüf +7).
+- Lokal auf swiftshader, `werkbank licht --laub wasser --uhr 0.5 --eigen`: an ab6c476f ROT mit derselben Zeile wie die Karte · am Kopf GRÜN Weg/Welt 0,923 (main 0,92) · Mutante mit dem alten Aufruf ROT „Cannot read properties of undefined (reading '0')“. Gemessen ist damit 1 von 18 Zeilen der Wand (nur wasser@0.5, nur swiftshader) — die Probe `gate:licht-weg:echt` urteilt auf der Karte.
+- Am Kopf 7e890b9d grün: `npm run check`, `npm run playtest:fast`, `npm run gate:welt-boot`, `npm run gate:kampf-gefuehl`, `gate:gegenstand-stoff` (GESETZ 82/82, 17 Stoffe), `gate:klang-zensus`. Wachstum Prüf +2494 / Spiel +3317.
+- Mein Versäumnis: `gate:kampf-gefuehl` lief vor der ersten Abgabe nicht (steht nicht in `npm run check`), die Lichtweg-Linse ebenso wenig.
 
 ## 11.11. 00:31 — GPU-PROBE ab6c476f auf radeon-890m: GRÜN in 442 s (bild:dorf@0.5 GRÜN 84 s auf radeon-890m · bild:genesis@0.5 GRÜN 44 s auf radeon-890m · gate:wasser-leben:bild GRÜN 22 s auf radeon-890m) → probe-post/w28-stoff-gesetz/ab6c476f.md
 
