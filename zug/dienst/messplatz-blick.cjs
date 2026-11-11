@@ -414,12 +414,12 @@ function geraetAmpel(name, mp, l, job, belegt, arbeit) {
     if (mp && mp.still) return `${rot("●")} ${name} still ${dauer(mp.alter)}`;
     if (mp && !mp.zu) return `${gelb("●")} ${name} misst ${kurzId(mp.id)}${mp.stand ? ` ${mp.stand.i}/${mp.stand.n}` : ""}${mp.eta ? ` · Ende ≈ ${hhmm(mp.eta)}` : ""}`;
     if (job) return `${gelb("●")} ${name} ${job.job.name.split(" ")[0]}-Job${arbeit ? ` · ${arbeit}` : ""}`;
+    if (arbeit && /^BLIND/.test(arbeit)) return `${rot("●")} ${name} ${arbeit}`; // ohne Puls nie „frei“ (messplatz-uhr pulsUrteil)
     if (arbeit) return `${gelb("●")} ${name} ${arbeit}`;
     if (belegt) return `${gelb("●")} ${name} GPU belegt`;
     return `${gruen("●")} ${name} frei`;
 }
 // die Arbeit der Arbeiter auf der Radeon neben den Stationen: das GPU-Schloss (Halter, seit) und jede offene Welt beim Namen ihres Bands
-const schlossName = (s) => String(s || "").split(" ")[0];
 function weltenJe(S) {
     const je = new Map();
     for (const w of S.werkbaenke || []) {
@@ -432,12 +432,13 @@ function weltenJe(S) {
 }
 function arbeitRadeon(S) {
     const je = weltenJe(S);
-    const t = [je.size ? `${je.size} ${je.size > 1 ? "Welten" : "Welt"} offen (${[...je.keys()].join(", ")})` : "", S.schloss ? `Schloss ${schlossName(S.schloss)}` : ""];
-    return t.filter(Boolean).join(" · ") || null;
+    // das Schloss nennt die Uhr (der Puls des Schlosses, uhrHalter) — hier nur die offenen Welten
+    return je.size ? `${je.size} ${je.size > 1 ? "Welten" : "Welt"} offen (${[...je.keys()].join(", ")})` : null;
 }
 function werkbankZeilen(S) {
     const out = [];
-    if (S.schloss) out.push(`  ${gelb("●")} GPU-Schloss: ${schlossName(S.schloss)} ${grau(`seit ${S.schlossT ? hhmm(S.schlossT) : "?"}`)}`);
+    const h = S.uhr && (S.uhr.geraete.find((g) => g.name === "RADEON") || {}).halter; // das Schloss nennt sein Puls (messplatz-uhr), nie ein zweiter Leser
+    if (h) out.push(`  ${gelb("●")} GPU-Schloss: ${UHR.belegtText(h, Math.floor(+S.jetzt / 1000))}`);
     for (const [n, e] of weltenJe(S)) out.push(`  ${gelb("●")} Welt offen: ${spalte(n, 14)} ${grau(`:${e.ports.join(" :")} · seit ${e.seit}`)}`);
     if (!out.length) out.push(`  ${grau("keine Welt offen · GPU-Schloss frei")}`);
     return out;
@@ -1054,10 +1055,12 @@ function ampelZeilen(S) {
     const lauerArbeit = S.lauer ? `Ruhe-Läufer ${/RUHE/.test(S.lauer.letzte) ? "misst" : "wartet"}` : null;
     // 10.11.: die Ampel sagte „OMEN frei“, während ihre Sitzung je Station die Mess-Datei pushte — sie liest jetzt die Lage der Uhr (EINE Wahrheit)
     const uhrMisst = (n) => { const u = S.uhr && S.uhr.geraete.find((g) => g.name === n); return u && u.zustand === "MISST" && !u.job ? (u.mess && !u.misst.length ? `misst (Mess-Datei ${hhmm(new Date(u.mess.t * 1000))})` : "misst") : null; };
+    // 11.11.: die Ampel sagte „OMEN frei“, während gate:haus-welt 16 min unter gpu-lauf lief — das Schloss meldet seinen Halter (Puls), sonst BLIND
+    const uhrHalter = (n) => { const u = S.uhr && S.uhr.geraete.find((g) => g.name === n); return !u ? null : u.halter ? UHR.belegtText(u.halter, Math.floor(+S.jetzt / 1000)) : u.zustand === "BLIND" ? "BLIND (kein Puls des Schlosses)" : null; };
     const a = [
-        geraetAmpel("OMEN", S.omen, S.lO, S.jO, false, sitz("omen") || uhrMisst("OMEN")),
-        geraetAmpel("RADEON", S.radeon, S.lR, S.jR, S.schloss && !(S.radeon && !S.radeon.zu), [arbeitRadeon(S), sitz("radeon"), lauerArbeit].filter(Boolean).join(" · ") || uhrMisst("RADEON")),
-        S.l3 ? geraetAmpel("GTX1050", null, S.l3, S.j3, false, sitz("gtx1050") || uhrMisst("GTX1050")) : `${grau("●")} GTX1050 nicht registriert`,
+        geraetAmpel("OMEN", S.omen, S.lO, S.jO, false, [sitz("omen"), uhrHalter("OMEN")].filter(Boolean).join(" · ") || uhrMisst("OMEN")),
+        geraetAmpel("RADEON", S.radeon, S.lR, S.jR, false, [arbeitRadeon(S), sitz("radeon"), lauerArbeit, uhrHalter("RADEON")].filter(Boolean).join(" · ") || uhrMisst("RADEON")),
+        S.l3 ? geraetAmpel("GTX1050", null, S.l3, S.j3, false, [sitz("gtx1050"), uhrHalter("GTX1050")].filter(Boolean).join(" · ") || uhrMisst("GTX1050")) : `${grau("●")} GTX1050 nicht registriert`,
         S.actions && S.actions !== "operational" ? `${rot("●")} CI ${rot("Actions " + S.actions)}` :
         `${ciRot ? rot("●") : S.runs.length ? gelb("●") : gruen("●")} CI ${lauf.length} läuft${warte.length ? ` · ${warte.length} wartet` : ""}${ciRot ? rot(` · ✗ ${ciRot} rot`) : ""}`,
         !g ? `${grau("●")} ZUG keine Logs` : g.tot ? `${rot("●")} ZUG ${g.name} ohne Prozess` : g.still ? `${grau("●")} ZUG ${g.name} still` : g.exit == null ? `${gelb("●")} ZUG ${g.name} läuft` : g.exit === 2 ? `${grau("●")} ZUG ${g.name} abgebrochen` : `${g.exit ? rot("●") : gruen("●")} ZUG ${g.name} EXIT=${g.exit}`,

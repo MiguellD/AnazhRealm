@@ -36,6 +36,7 @@ const LAUF_STAND = path.join(W4, "uhr-lauf.json");
 const GELB_S = 600, ALARM_S = 900; // das Wort des Schöpfers: nach 15 min Alarm; gelb ab 10
 const LUECKE_S = 300; // zwei Verlauf-Zeilen weiter auseinander: der Blick lief nicht — die Zeit dazwischen zählt nie
 const WACHE_STILL_S = 600; // die Wache schrieb ihren Stand so lange nicht: ihr Abdruck ist alt
+const PULS_BLIND_S = 300; // schloss-puls.cjs pusht spätestens je 120 s: kein Puls seit 5 min heißt BLIND, nie „Frei“
 const ZUG_FASST = 4; // zug-nie-leer.sh: „Höchstens 4 Zweige je Zug“
 const STAU_ZUEGE = 2, MESSEN_MIN = 120; // der Engpass: mehr fertig als 2 Züge fassen · mehr als 2 h veraltet bei 3 Geräten
 const H6 = 6 * 3600;
@@ -53,16 +54,40 @@ const dauerS = (s) => { const m = Math.max(0, Math.round((s || 0) / 60)); return
 // ── REINE FUNKTIONEN (der Selbsttest urteilt jede) ─────────────────────────────────────────────────────────────────────
 // DAS URTEIL DER UHR: l = { zustand, fortschritt (s), wache: { verwaist }, job: { schrittSeit }, station: { seit } }, jetzt in s
 function uhrUrteil(l, jetzt) {
-    const uhren = [["Fortschritt", l.fortschritt], ["Schritt", l.job && l.job.schrittSeit], ["Station", l.station && l.station.seit]]
+    const uhren = [["Fortschritt", l.fortschritt], ["Schritt", l.job && l.job.schrittSeit], ["Station", l.station && l.station.seit], ["Halter", l.halter && l.halter.regt]]
         .filter(([, t]) => t != null).map(([q, t]) => [q, Math.max(0, jetzt - t)]);
-    // bei Gleichstand gewinnt die genauere Uhr (Schritt vor Fortschritt, Station vor Schritt): ein klemmender Schritt heißt SCHRITT KLEMMT
+    // bei Gleichstand gewinnt die genauere Uhr (Schritt vor Fortschritt, Station vor Schritt, Halter zuletzt): ein klemmender Schritt heißt SCHRITT KLEMMT
     const top = uhren.reduce((a, b) => (b[1] >= a[1] ? b : a), ["Fortschritt", null]);
     const s = top[1];
     let stufe = s == null ? "?" : s >= ALARM_S ? "alarm" : s >= GELB_S ? "gelb" : "ok", grund = null;
     if (l.wache && l.wache.verwaist) { stufe = "alarm"; grund = "VERWAIST"; }
-    else if (stufe === "alarm") grund = top[0] === "Schritt" ? "SCHRITT KLEMMT" : top[0] === "Station" ? "STATION KLEMMT" : l.zustand === "FREI" ? "LEERLAUF" : "STILLSTAND";
+    else if (l.zustand === "BLIND") { stufe = "alarm"; grund = "BLIND"; } // ohne Puls weiß die Uhr nicht, ob das Gerät frei ist — sie sagt es
+    else if (stufe === "alarm") grund = top[0] === "Halter" ? "HALTER STILL" : top[0] === "Schritt" ? "SCHRITT KLEMMT" : top[0] === "Station" ? "STATION KLEMMT" : l.zustand === "FREI" ? "LEERLAUF" : "STILLSTAND";
     return { s, quelle: top[0], stufe, grund };
 }
+// DER PULS DES SCHLOSSES (schloss-puls.cjs je Gerät, Ref refs/puls/<gerät>, 11.11.: die OMEN trug 16 min gate:haus-welt unter gpu-lauf, die Uhr
+// zeigte „Frei“ und ALARM): p = puls.json oder null → { zustand BLIND | FREI | BELEGT, alter, halter { wer, art, seit, regt, lebt, cpu }, warten }
+function pulsUrteil(p, jetzt) {
+    if (!p || p.t == null) return { zustand: "BLIND", alter: null, warten: 0, wartende: [] };
+    const alter = Math.max(0, jetzt - p.t);
+    if (alter > PULS_BLIND_S) return { zustand: "BLIND", alter, warten: 0, wartende: [] };
+    if (p.frei) return { zustand: "FREI", alter, warten: p.warten || 0, wartende: p.wartende || [] };
+    const h = p.halter || {};
+    return { zustand: "BELEGT", alter, warten: p.warten || 0, wartende: p.wartende || [],
+        halter: { wer: h.wer || "?", art: h.art || "LAUF", seit: h.seit ?? null, regt: h.regt ?? h.seit ?? null, lebt: h.lebt !== false, cpu: h.cpu ?? null } };
+}
+// der Puls in der Lage: ein lebendes Lebenszeichen ist Fortschritt (die Halter-Uhr hält es fest), „Frei“ nur, wenn das Gerät selbst frei meldet
+function pulsEin(l, pu) {
+    const o = { ...l, puls: pu };
+    if (pu.zustand === "BELEGT") {
+        o.halter = { ...pu.halter, warten: pu.warten, wartende: pu.wartende };
+        if (pu.halter.regt != null) o.fortschritt = Math.max(o.fortschritt ?? pu.halter.regt, pu.halter.regt);
+        if (o.zustand === "FREI") o.zustand = "BELEGT";
+    } else if (pu.zustand === "BLIND" && o.zustand === "FREI") o.zustand = "BLIND";
+    return o;
+}
+// „belegt: <wer> seit mm:ss · n warten“ — die Zeile des Halters (Seite, kurz, Ampel)
+const belegtText = (h, jetzt) => `belegt: ${h.wer.replace(/ \d{4}-\d\d-\d\dT\S+| pid=\d+/g, "")} seit ${zeitText(jetzt - h.seit).text} · ${h.warten || 0} warten${h.lebt ? "" : " · Halter-Prozess tot"}`;
 // die Kriterien-Ids einer Abgabe-Nachricht: <domäne>.K<n>#<staffel>, je einmal; eine FUND-Zeile nennt die Arbeit anderer („Kriterium X gegen Y“)
 const KRITERIUM = /\b([a-z][a-z0-9]*\.K\d+#\d+)\b/g;
 function kriterienAus(nachricht) {
@@ -244,7 +269,7 @@ function laeufe(ps, jetzt) {
 // die Lage eines Geräts aus dem Stand des Blicks (S): Job mit Schritt, Messung, Auftrag, Schloss, Welten, Lebenszeichen
 function lageVon(S, g, laufe, wache, jetzt = sek(Date.now())) {
     const L = S[g.l] || null, J = S[g.j] || null, mp = g.mp ? S[g.mp] : null, sitz = S.sitzungVon ? S.sitzungVon(g.sitz) : [];
-    const o = { name: g.name, titel: g.titel, offline: !!(L && L.status !== "online"), job: null, misst: [], auftrag: [], schloss: null, welten: [], wache: wache || null, station: null, lebens: [] };
+    const o = { name: g.name, titel: g.titel, offline: !!(L && L.status !== "online"), job: null, misst: [], auftrag: [], halter: null, welten: [], wache: wache || null, station: null, lebens: [] };
     const fort = [wache && wache.ab];
     const mess = commitVon((/(?:^| )m=([0-9a-f]{7,40})/.exec((wache && wache.sig) || "") || [])[1]);
     if (mess) fort.push(mess.t);
@@ -267,7 +292,7 @@ function lageVon(S, g, laufe, wache, jetzt = sek(Date.now())) {
     }
     if (g.name === "RADEON") {
         if (S.lauer) o.misst.push(`Ruhe-Läufer seit ${hm(sek(S.lauer.start))}`);
-        if (S.schloss) o.schloss = { wer: String(S.schloss).split(" ")[0], seit: sek(S.schlossT) };
+        // das Schloss liest die Uhr nie mehr selbst (nur hier, nur für die Radeon): es meldet sich für jedes Gerät gleich im Puls (pulsEin)
         o.welten = [...new Set((S.werkbaenke || []).map((w) => w.name))];
     }
     for (const s of sitz) {
@@ -279,7 +304,7 @@ function lageVon(S, g, laufe, wache, jetzt = sek(Date.now())) {
     // eine Mess-Datei, gepusht vor weniger als ALARM_S, ohne andere Arbeit: das Gerät misst (die Sitzung pusht je Station)
     const messJung = mess && jetzt - mess.t < ALARM_S;
     if (mess) o.mess = { t: mess.t, betreff: mess.betreff.replace(/^OMEN GTX: messung |^Messung /, "") };
-    o.zustand = o.job ? o.job.art : o.misst.length ? "MISST" : o.auftrag.length ? "AUFTRAG" : o.schloss ? "MISST" : messJung ? "MISST" : o.welten.length ? "WERKBANK" : "FREI";
+    o.zustand = o.job ? o.job.art : o.misst.length ? "MISST" : o.auftrag.length ? "AUFTRAG" : messJung ? "MISST" : o.welten.length ? "WERKBANK" : "FREI";
     // das Ende des letzten Jobs ist Fortschritt (10.11. 19:18: nach ihrem echt-Bein von z370 fiel die Radeon auf den Mess-Push von 18:00
     // zurück und stand mit 78:41 im ALARM, Minuten nach getaner Arbeit) — frei bleibt sie danach höchstens 15 min ohne Alarm
     const vz = (S[g.v] || [])[0];
@@ -304,10 +329,28 @@ function verlaufAnhaengen(datei, zeile, jetzt) {
         if (fs.statSync(datei).size > 1 << 20) fs.writeFileSync(datei, verlaufLesen(datei, jetzt - 2 * 86400).map((x) => JSON.stringify(x)).join("\n") + "\n");
     } catch (_e) { /* ohne w4 kein Verlauf: die Seite sagt „noch kein Verlauf“ */ }
 }
+// DIE PULSE der Geräte: refs/puls/<gerät> (schloss-puls.cjs) — geholt im Hintergrund höchstens je 30 s (der Takt wartet nie aufs Netz),
+// gelesen aus dem Klon. Ein Ref, der fehlt oder nicht lesbar ist, ist null: pulsUrteil sagt BLIND
+let pulsHolt = null, pulsGeholt = 0;
+function pulseLesen(jetzt) {
+    const fetchArgs = ["-C", REPO, "fetch", "-q", "--no-tags", "--no-write-fetch-head", "origin", "+refs/puls/*:refs/puls/*"];
+    if (!pulsGeholt) { // der erste Takt (und jedes --kurz) wartet einmal auf den Stand — sonst läse er den Puls vom letzten Mal
+        pulsGeholt = jetzt;
+        try { execFileSync("git", fetchArgs, { timeout: 30000, windowsHide: true, stdio: "ignore" }); } catch (_e) { /* ohne Netz: der alte Stand, sein Alter macht ihn BLIND */ }
+    } else if (!pulsHolt && jetzt - pulsGeholt >= 30) {
+        pulsGeholt = jetzt;
+        pulsHolt = execFile("git", fetchArgs, { timeout: 60000, windowsHide: true }, () => { pulsHolt = null; });
+    }
+    const je = {};
+    for (const g of GERAETE) {
+        try { je[g.sitz] = JSON.parse(execFileSync("git", ["-C", REPO, "cat-file", "blob", `refs/puls/${g.sitz}:puls.json`], { encoding: "utf8", timeout: 8000, windowsHide: true, stdio: ["ignore", "pipe", "ignore"] })); } catch (_e) { je[g.sitz] = null; }
+    }
+    return je;
+}
 // JE TAKT: Lage, Urteil und Verlauf je Gerät (der Blick ruft es am Ende von holen; schreiben = false nur im Selbsttest)
-function lagen(S, { jetzt = sek(Date.now()), ps = null, schreiben = true, datei = VERLAUF } = {}) {
-    const w = wacheLesen(), laufe = laeufe(ps, jetzt);
-    const geraete = GERAETE.map((g) => { const l = lageVon(S, g, laufe, w.je[g.name], jetzt); l.urteil = uhrUrteil(l, jetzt); return l; });
+function lagen(S, { jetzt = sek(Date.now()), ps = null, schreiben = true, datei = VERLAUF, pulse = null } = {}) {
+    const w = wacheLesen(), laufe = laeufe(ps, jetzt), pu = pulse || pulseLesen(jetzt);
+    const geraete = GERAETE.map((g) => { const l = pulsEin(lageVon(S, g, laufe, w.je[g.name], jetzt), pulsUrteil(pu[g.sitz], jetzt)); l.urteil = uhrUrteil(l, jetzt); return l; });
     const zeile = { t: jetzt, je: Object.fromEntries(geraete.map((l) => [l.name, [l.zustand, l.urteil.stufe === "alarm" ? 1 : 0]])) };
     const ab = sek(new Date(new Date(jetzt * 1000).toDateString()));
     const zeilen = verlaufLesen(datei, ab - LUECKE_S);
@@ -455,13 +498,15 @@ const farbeVon = (T, st) => (st === "alarm" ? T.rot : st === "gelb" ? T.gelb : s
 const ALARM_MARKE = (T) => T.f("41;97;1", " ALARM ");
 // die Urteile neu zur Uhrzeit (die Uhr zählt zwischen den Takten weiter; der Blick zeichnet die Seite je Sekunde)
 const urteileJetzt = (U, jetzt) => U.geraete.map((l) => ({ ...l, urteil: uhrUrteil(l, jetzt) }));
+// der Zusatz des Pulses: der Halter beim Namen, oder warum die Uhr blind ist
+const pulsText = (l, jetzt) => l.halter ? `: ${belegtText(l.halter, jetzt)}` : l.zustand === "BLIND" ? `: kein Puls${l.puls && l.puls.alter != null ? ` seit ${zeitText(l.puls.alter).text}` : " (refs/puls fehlt)"}` : "";
 function kopf(U, LU, T, jetzt = sek(Date.now())) {
     const g = U ? urteileJetzt(U, jetzt).map((l) => { const z = zeitText(l.urteil.s).text; return `${l.name.replace("GTX1050", "1050")} ${l.urteil.stufe === "alarm" ? T.f("41;97;1", z) : farbeVon(T, l.urteil.stufe)(z)}`; }).join(T.grau(" · ")) : T.grau("?");
     const st = LU && LU.stau, va = LU && LU.veraltet, ep = LU && LU.engpass;
     return `${T.fett("UHR")} ${g} ${T.grau("│")} ${st ? `STAU ${T.fett(st.nZug)}${st.nPm ? T.grau(`+${st.nPm}pm`) : ""} · ≤ ${T.gruen("+" + st.bisZu)} P` : T.grau("STAU ?")} ${T.grau("│")} ${va ? `VERALTET ${T.fett(dauerS(va.parallel * 60).replace(" min", ""))}` : T.grau("VERALTET ?")} ${T.grau("│")} ${ep ? T.fett("→ " + ep[0].was) : ""}`;
 }
 function kurz(U, LU, jetzt = sek(Date.now())) {
-    const g = U ? urteileJetzt(U, jetzt).map((l) => `${l.name} ${zeitText(l.urteil.s).text} ${l.urteil.stufe}${l.urteil.grund ? " " + l.urteil.grund : ""} (${l.zustand})`).join(" · ") : "?";
+    const g = U ? urteileJetzt(U, jetzt).map((l) => `${l.name} ${zeitText(l.urteil.s).text} ${l.urteil.stufe}${l.urteil.grund ? " " + l.urteil.grund : ""} (${l.zustand}${pulsText(l, jetzt)})`).join(" · ") : "?";
     const st = LU && LU.stau, va = LU && LU.veraltet, ep = LU && LU.engpass;
     return `UHR ${g} | STAU ${st ? `${st.nZug} abgegeben${st.nPm ? ` +${st.nPm} pm` : ""} · bis zu +${st.bisZu} P` : "?"} | VERALTET ${va ? `${va.stationen} St. ≈ ${dauerS(va.parallel * 60)} bei 3 Geräten` : "?"} | ENGPASS ${ep ? ep.map((e) => e.was).join(" > ") : "?"}`;
 }
@@ -500,7 +545,9 @@ function seite(S, LU, T, jetzt = sek(Date.now())) {
         if (l.mess && (l.zustand === "MISST" || jetzt - l.mess.t < 3600) && !l.station) teile.push(`Mess-Datei ${hm(l.mess.t)} ${l.mess.betreff}`);
         for (const z of l.lebens) teile.push(`Lebenszeichen ${z.id} ${hm(z.t)} (vor ${zeitText(jetzt - z.t).text}): ${z.text.replace(/^Zwischenstand:?\s*/, "")}`);
         if (l.zustand === "FREI") teile.unshift("kein Job, keine Messung, kein Auftrag" + (l.zuletzt ? ` · zuletzt ${l.zuletzt.was} ${l.zuletzt.zweig} ${l.zuletzt.wort === "success" ? "✓" : l.zuletzt.wort === "failure" ? "✗" : l.zuletzt.wort} ${hm(l.zuletzt.ende)}` : ""));
-        if (l.schloss) teile.push(`Schloss ${l.schloss.wer} seit ${hm(l.schloss.seit)}`);
+        if (l.halter) teile.unshift(`${belegtText(l.halter, jetzt)} · Lebenszeichen vor ${zeitText(jetzt - l.halter.regt).text}${l.halter.cpu != null ? ` (CPU ${Math.round(l.halter.cpu)} s)` : ""}`);
+        else if (l.zustand === "BLIND") teile.unshift(T.rot(`BLIND — ${pulsText(l, jetzt).slice(2)}: ob das Gerät frei ist, weiß nur sein schloss-puls (puls-dienst.sh)`));
+        else if (l.puls && l.puls.warten) teile.push(`${l.puls.warten} warten am freien Schloss`);
         if (l.welten.length) teile.push(`Welt offen: ${l.welten.join(", ")}`);
         if (l.offline) teile.push(T.rot("Läufer offline"));
         if (l.wache && l.wache.verwaist) teile.push(T.rot(`Schloss verwaist: ${l.wache.verwaist}`));
@@ -586,6 +633,16 @@ function faelle(F) {
     p("U6 die Lauf-Ausgabe wächst (30 s), die Station steht 16 min ⇒ ALARM STATION KLEMMT", u("MISST", 30, null, 960).grund === "STATION KLEMMT");
     p("U7 die Lauf-Ausgabe wächst, die Station 4 min ⇒ ok", u("MISST", 30, null, 240).stufe === "ok");
     p("U8 verwaistes Schloss ⇒ ALARM VERWAIST", u("MISST", 10, null, null, "ci-runner 9/1").grund === "VERWAIST");
+    // PULS — das Schloss meldet seinen Halter (11.11. 19:33–19:49: die OMEN trug gate:haus-welt unter gpu-lauf, die Uhr zeigte „Frei“ und ALARM)
+    const lagePuls = (puls) => { const l = F.pulsEin({ zustand: "FREI", fortschritt: t0 - 1200, job: null, station: null, wache: {} }, F.pulsUrteil(puls, t0)); return { l, u: F.uhrUrteil(l, t0) }; };
+    const halterPuls = (regtVor) => ({ t: t0 - 40, frei: false, halter: { wer: "gate:haus-welt 2026-11-11T19:33:49+01:00 pid=4711", art: "TOR", seit: t0 - 960, regt: t0 - regtVor, lebt: true, cpu: 412 }, warten: 1, wartende: ["punkte-gtx"] });
+    const k1 = lagePuls(halterPuls(30));
+    p("K1 Halter lebt, Lebenszeichen vor 30 s, 20 min ohne Push ⇒ „belegt: gate:haus-welt seit 16:00 · 1 warten“ ok, nie Frei/ALARM", k1.l.zustand === "BELEGT" && k1.u.stufe === "ok" && k1.l.halter && belegtText(k1.l.halter, t0) === "belegt: gate:haus-welt seit 16:00 · 1 warten");
+    const k2 = lagePuls(halterPuls(960));
+    p("K2 Halter still 16 min ⇒ ALARM HALTER STILL", k2.u.stufe === "alarm" && k2.u.grund === "HALTER STILL");
+    p("K3 kein Puls oder 5 min alt ⇒ BLIND, nie Frei", lagePuls(null).l.zustand === "BLIND" && lagePuls(null).u.grund === "BLIND" && lagePuls({ ...halterPuls(30), t: t0 - 301 }).l.zustand === "BLIND");
+    const k4 = lagePuls({ t: t0 - 20, frei: true, warten: 0 });
+    p("K4 frei gemeldet ⇒ FREI (20 min ohne Arbeit: LEERLAUF)", k4.l.zustand === "FREI" && k4.u.grund === "LEERLAUF");
     // PUNKTE — offen nur, was stand.json noch nicht trägt; FUND-Zeilen nennen nie den Anspruch
     const je = { "mensch.K4": { punkte: 0 }, "lod.K5": { punkte: 1 }, "haar.K1": { punkte: 2 } };
     const msg = "Abgabe w: mensch.K4#1 und lod.K5#2, dazu haar.K1#1 (gehalten), lod.K5#2 noch einmal\nFUND: x.js:1 · Kriterium lod.K5 gegen pipeline.K3#2\nunbekannt.K9#1";
@@ -623,12 +680,15 @@ function faelle(F) {
     rot.n = n;
     return rot;
 }
-const ECHT = { uhrUrteil, kriterienAus, punkteBewertung, punkteSumme, engpass, verlaufSumme, parallelMin, veraltetVon, laufStand, lebenszeichenVon, sammelnVon };
+const ECHT = { uhrUrteil, pulsUrteil, pulsEin, kriterienAus, punkteBewertung, punkteSumme, engpass, verlaufSumme, parallelMin, veraltetVon, laufStand, lebenszeichenVon, sammelnVon };
 // die Mutanten: je reiner Funktion der Fehler, den sie abwehrt (der alte Leser, die bequeme Abkürzung)
 const MUTANTEN = {
     "Uhr: ALARM erst ab 16 min (die Frist der Wache, 960 s)": { uhrUrteil: (l, j) => { const u = uhrUrteil(l, j); return u.s === 900 ? { ...u, stufe: "gelb", grund: null } : u; } },
     "Uhr: belegt = Arbeit (der Job-Schritt zählt nie)": { uhrUrteil: (l, j) => uhrUrteil({ ...l, job: null }, j) },
     "Uhr: die Station zählt nie (die Wache vor dem 10.11. 13:58)": { uhrUrteil: (l, j) => uhrUrteil({ ...l, station: null }, j) },
+    "Uhr ohne Halter-Leser (der Puls zählt nie — die Uhr vor dem 11.11.)": { pulsEin: (l) => l },
+    "Puls: kein Puls = Frei (fail-soft)": { pulsUrteil: (p, j) => (p ? pulsUrteil(p, j) : { zustand: "FREI", alter: null, warten: 0, wartende: [] }) },
+    "Halter: Belegung = Arbeit (das Lebenszeichen ist immer jetzt)": { pulsUrteil: (p, j) => { const o = pulsUrteil(p, j); return o.halter ? { ...o, halter: { ...o.halter, regt: j } } : o; } },
     "Kriterien: auch aus FUND-Zeilen": { kriterienAus: (m) => [...new Set(String(m).match(KRITERIUM) || [])].sort() },
     "Punkte: das Gebuchte zählt mit": { punkteBewertung: (ids, je) => { const o = punkteBewertung(ids, je); return { ...o, plus: o.plus + o.gebucht.length }; } },
     "Punkte: dieselbe Staffel zweier Zweige doppelt": { punkteSumme: (l, je) => l.reduce((n, x) => n + punkteBewertung(x, je).plus, 0) },
@@ -652,9 +712,9 @@ if (require.main === module) {
     if (process.argv.includes("--selbsttest")) {
         const o = pruefe(), mn = Object.keys(MUTANTEN).length, gefangen = Object.values(o.je).filter((x) => x.length).length;
         if (process.argv.includes("-v")) for (const [m, f] of Object.entries(o.je)) console.log(`  Mutante „${m}“ ROT an: ${f.join(" · ") || "—"}`);
-        console.log(o.rot.length ? `messplatz-uhr SELBSTTEST ROT ${o.rot.length}: ${o.rot.join(" · ")}` : `messplatz-uhr SELBSTTEST GRÜN: ${o.faelle} Fälle grün, ${gefangen}/${mn} Mutanten ROT (Uhr 10/15 min · Schritt · Station · Punkte · FUND · Engpass · Verlauf · Mitternacht · parallel · Deckel · Lauf · Lebenszeichen · Sammeln)`);
+        console.log(o.rot.length ? `messplatz-uhr SELBSTTEST ROT ${o.rot.length}: ${o.rot.join(" · ")}` : `messplatz-uhr SELBSTTEST GRÜN: ${o.faelle} Fälle grün, ${gefangen}/${mn} Mutanten ROT (Uhr 10/15 min · Schritt · Station · Puls des Schlosses · Punkte · FUND · Engpass · Verlauf · Mitternacht · parallel · Deckel · Lauf · Lebenszeichen · Sammeln)`);
         process.exitCode = o.rot.length ? 1 : 0;
     } else console.log("Aufruf: node messplatz-uhr.cjs --selbsttest (die Seite zeichnet messplatz-blick.cjs, Taste 0)");
 }
 
-module.exports = { lagen, langsam, seite, kopf, kurz, pruefe, uhrUrteil, kriterienAus, punkteBewertung, punkteSumme, engpass, verlaufSumme, parallelMin, veraltetVon, laufStand, lebenszeichenVon, zeitText, gross, GERAETE, ZUG_FASST };
+module.exports = { lagen, langsam, seite, kopf, kurz, pruefe, uhrUrteil, pulsUrteil, pulsEin, belegtText, kriterienAus, punkteBewertung, punkteSumme, engpass, verlaufSumme, parallelMin, veraltetVon, laufStand, lebenszeichenVon, zeitText, gross, GERAETE, ZUG_FASST };

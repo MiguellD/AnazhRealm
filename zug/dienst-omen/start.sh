@@ -15,17 +15,17 @@
 #   3 STARTEN, abgekoppelt: jede Schleife startet über WMI (Elter WmiPrvSE, nicht die App) — sie überlebt App-Neustart und
 #     Konto-Wechsel. Eine lebende Schleife wird nie doppelt gestartet (PID-Schloss in gemein.sh). Ohne Fenster (ShowWindow 0):
 #     bis 11.11. öffnete jeder Start ein Terminal-Fenster auf dem Schirm des Schöpfers, das Schließen des Fensters tötete den Lauf.
-# Aufruf: start.sh            installieren + alle Schleifen starten, die nicht leben (landung · platte)
+# Aufruf: start.sh            installieren + alle Schleifen starten, die nicht leben (landung · platte · puls)
 #         start.sh --eich     wie oben, aber die Landung beginnt mit der Eichung (weiter.sh: eich.sh, dann die Schleife)
 #         start.sh --blick    Stand je Schleife (lebt? Puls, Alter des Pulses) — schreibt nichts
-#         start.sh --stopp [landung|platte]   Schleife(n) samt Baum beenden; ein Schloss, dessen Halter dabei starb, wird gelöst
+#         start.sh --stopp [landung|platte|puls]   Schleife(n) samt Baum beenden; ein Schloss, dessen Halter dabei starb, wird gelöst
 #         start.sh --neu      wie ohne Argument, aber lebende Schleifen zuerst beenden (neuer Code für alle)
 O=/c/Users/micha/Desktop/AnazhRealm-OMEN
 G=$O/AnazhRealm-mess # der Klon, der origin kennt
 DO=$O/p3/dienst-omen
 S=$DO/zustand
 MAN=$S/manifest.txt
-SCHLEIFEN="landung platte"
+SCHLEIFEN="landung platte puls"
 mkdir -p "$S"
 lebt() { local p; p=$(cat "$S/$1.pid" 2>/dev/null); [ -n "$p" ] && tasklist //FI "PID eq $p" 2>/dev/null | grep -qi bash; }
 blick() {
@@ -91,13 +91,13 @@ if [ -n "$hand" ]; then
 fi
 [ "$1" = "--neu" ] && stopp
 tmp=$S/manifest.neu
-echo "$K $(date '+%Y-%m-%d %H:%M') installiert aus origin/koordination zug/dienst-omen (+ zug/dienst: gemein, richter)" >"$tmp"
+echo "$K $(date '+%Y-%m-%d %H:%M') installiert aus origin/koordination zug/dienst-omen (+ zug/dienst: gemein, richter, puls)" >"$tmp"
 {
     git -C $G ls-tree -r "$K" zug/dienst-omen/
-    git -C $G ls-tree "$K" zug/dienst/gemein.sh zug/dienst/richter.sh zug/dienst/richter-werk.cjs
+    git -C $G ls-tree "$K" zug/dienst/gemein.sh zug/dienst/richter.sh zug/dienst/richter-werk.cjs zug/dienst/puls-dienst.sh zug/dienst/schloss-puls.cjs
 } | while read -r mode typ blob pfad; do
     case "$pfad" in
-        zug/dienst/*) ort=p3/dienst-omen/${pfad#zug/dienst/} ;; # gemein.sh, richter.sh, richter-werk.cjs: EINE Quelle beim Laptop
+        zug/dienst/*) ort=p3/dienst-omen/${pfad#zug/dienst/} ;; # gemein.sh, richter.sh, richter-werk.cjs, puls-dienst.sh, schloss-puls.cjs: EINE Quelle beim Laptop
         zug/dienst-omen/ort/*) ort=p3/${pfad#zug/dienst-omen/ort/} ;;
         *) ort=p3/dienst-omen/${pfad#zug/dienst-omen/} ;;
     esac
