@@ -125,9 +125,17 @@ $ C:\Program Files\nodejs\node.exe -e (function spawnBlick(AUS, PORT) {
         process.exit(1);
     });
 })(process.argv[1], process.argv[2]) C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\e699a834-radeon\ankunft.K4_1.json 7804
-POSE ego-0 48503 ms
-POSE ego-45 51278 ms
-POSE ego-135 52801 ms
+POSE ego-0 43100 ms
+POSE ego-45 44694 ms
+POSE ego-135 45719 ms
+POSE ego-225 38305 ms
+POSE ego-315 39230 ms
+POSE third-0 41225 ms
+POSE third-0-kopf 51346 ms
+POSE third-45 44352 ms
+POSE third-45-kopf 54743 ms
+POSE third-135 45480 ms
+POSE third-135-kopf 55915 ms
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3

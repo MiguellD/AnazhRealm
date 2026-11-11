@@ -1,0 +1,201 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.251",
+  "sha": "e699a8343c1197102e1cd7047a56460a613bad8a"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 0
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 3,
+   "deckung": 0,
+   "taeter": {}
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "abstand": 6,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   -4.667,
+   92.805,
+   -3.818
+  ],
+  "blick": [
+   0.69748,
+   -0.1644,
+   0.69749
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 108.6,
+  "sigma": 46.7,
+  "schwarz": 0.0013,
+  "weiss": 0
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 6 m · Luma 108.6 σ 46.7 schwarz 0.1 % weiß 0.0 % · Stand 18.546.251 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3",
+ "klasse": {
+  "ausdruck": "^spieler:kopf/",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 131,
+  "toene": [
+   "spieler:kopf/auge=255/80/80",
+   "spieler:kopf/hair=80/255/80",
+   "spieler:kopf/haut=80/120/255",
+   "spieler:kopf/skin=255/220/60"
+  ],
+  "klassen": {
+   "spieler:kopf/auge": {
+    "objekte": 2,
+    "spiegelTreue": null,
+    "spiegelEbene": 91.923,
+    "sp": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "zweiton": 0,
+    "weiss": 0,
+    "wt": 0,
+    "wtZiel": null,
+    "bunt": 6.81,
+    "pixel": 3,
+    "luma": 44.98,
+    "kante": 0.1009,
+    "kr": 1,
+    "strich": null,
+    "si": 0,
+    "bloecke": 0,
+    "glatt": null,
+    "glattDunkel": null,
+    "nyquist": null,
+    "beta": null
+   },
+   "spieler:kopf/hair": {
+    "objekte": 2,
+    "spiegelTreue": null,
+    "spiegelEbene": 91.989,
+    "sp": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "zweiton": 0,
+    "weiss": 0.6643,
+    "wt": 93,
+    "wtZiel": null,
+    "bunt": 6.5,
+    "pixel": 140,
+    "luma": 143.13,
+    "kante": 0.1545,
+    "kr": 33,
+    "strich": null,
+    "si": 0,
+    "bloecke": 0,
+    "glatt": null,
+    "glattDunkel": null,
+    "nyquist": null,
+    "beta": null
+   },
+   "spieler:kopf/haut": {
+    "objekte": 1,
+    "spiegelTreue": null,
+    "spiegelEbene": 91.873,
+    "sp": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "zweiton": 0,
+    "weiss": 0.0114,
+    "wt": 4,
+    "wtZiel": null,
+    "bunt": 15.24,
+    "pixel": 351,
+    "luma": 33.66,
+    "kante": 0.1612,
+    "kr": 72,
+    "strich": null,
+    "si": 0,
+    "bloecke": 0,
+    "glatt": null,
+    "glattDunkel": null,
+    "nyquist": null,
+    "beta": null
+   }
+  },
+  "abstand": null,
+  "gesicht": {
+   "augeFrei": null,
+   "augeFreiGrund": "irisL 4 px, 0 rein < 2×2, irisR 6 px, 0 rein < 2×2",
+   "lippeL": -12.02,
+   "lippeA": 15.86,
+   "hoehleL": 2.16,
+   "hoehleA": 1.82,
+   "haarDeckung": 1,
+   "weiss": 0.2113,
+   "proben": {
+    "iris": 116,
+    "irisSicht": 116,
+    "lippe": 22,
+    "hoehle": 9,
+    "wange": 76,
+    "kalotte": 320,
+    "haarPixel": 140
+   },
+   "zeilen": {
+    "auge": 528.1,
+    "mund": 537.1
+   },
+   "irisDecke": {}
+  },
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\e699a834-radeon\\ankunft.K4_1-blick\\third-135-kopf.maske.png"
+ }
+}

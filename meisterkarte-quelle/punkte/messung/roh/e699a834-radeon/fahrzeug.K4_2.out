@@ -290,10 +290,15 @@ $ C:\Program Files\nodejs\node.exe -e const tor = (function sitzungTor() {
 [linse-gpu] amd/rdna-3
 @@PUNKTE@@ WELT
 {
- "fehler": "/eval: Frist 91889 ms"
+ "fehler": "/eval: Cannot set properties of undefined (setting 'w')"
 }
 @@PUNKTE@@ EXIT 1
-@@PUNKTE@@ FRIST 96 s der Probe gerissen — WELT (94.0 s)
+@@PUNKTE@@ BLICK
+{
+ "fehler": "/eval: Frist 29652 ms"
+}
+@@PUNKTE@@ EXIT 1
+@@PUNKTE@@ FRIST 198 s der Probe gerissen — BLICK (196.0 s)
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3
