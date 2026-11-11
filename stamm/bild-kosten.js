@@ -545,7 +545,9 @@ class AnazhRealm_bild_kosten {
                 // ER BAUT ALS LETZTER (`_gastDerAnkunftBaut`): unter dem Ladeschirm erst, wenn kein Bürger der Welt-Szene mehr auf
                 // seinen Knoten-Bau wartet — dann wartet die Welt nur noch auf den GPU-Prozess, der Haupt-Faden ist frei.
                 const gastArt = object.__vorbauGast;
-                const gast = gastArt === true || gastArt === "ankunft";
+                // EIN GAST NIMMT KEINEN RAUM (`_gastOhneRaum`): trägt ein Bürger die Prägung, ist das ein Bruch beim Namen, und er
+                // zeichnet wie jeder Bürger — die Ausnahme ist nie das Loch.
+                const gast = (gastArt === true || gastArt === "ankunft") && welt._gastOhneRaum(object);
                 const gastWahl = gastArt === "ankunft" && !welt._gastDerAnkunftBaut(E) ? "wartet" : gastArt;
                 const vorbau = gast || ro.getDrawParameters() === null;
                 const ctx = this._currentRenderContext.id;

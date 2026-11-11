@@ -1450,6 +1450,19 @@ class AnazhRealm_siedlung_bauten {
         return gruppe;
     }
 
+    // EIN GAST NIMMT KEINEN RAUM — die Probe an der EINEN Stelle, die ihn vom Zeichnen ausnimmt (die Erst-Zeichnung,
+    // `_renderObjectDirect`), und jeder Zählung, die ihn ausnimmt (die Kalt-Zeile „am Bild gezeichnet“): die Prägung allein
+    // (`__vorbauGast`) genügt nie, sein Maßstab ist 0 (`_vorbauGast`). Trägt ein Objekt die Prägung und steht doch mit Maßstab
+    // in der Welt, ist es ein Bürger: ein Bruch beim Namen über den EINEN Melder, und es zeichnet — sonst fehlte es im Bild,
+    // und keine Zählung nennte es (w28-leben-vorbau: seit dem Gast der Ankunft stehen Gäste schon unter dem Ladeschirm).
+    _gastOhneRaum(o) {
+        if (o.matrixWorld.determinant() === 0) return true;
+        this._bruchMelden(
+            `GAST MIT RAUM: ${o.name || (o.parent && o.parent.name) || o.type} trägt die Gast-Prägung (\`__vorbauGast\`) und nimmt Raum — er zeichnet als Bürger`
+        );
+        return false;
+    }
+
     // WAS EINEM GAST DES VORBAUS FEHLT (0: er steht): je sichtbarem Teil die Pässe, in die er gehört (das Auge und, wirft er,
     // der Schatten), vorgebaut oder gezeichnet — und jedes seiner Render-Objekte trägt seinen Knoten-Bau und eine fertige
     // Pipeline. Der Leser: `_geistVorbau` und `_leibVorwaermen`.

@@ -884,7 +884,9 @@ class AnazhRealm_gelaende_fern {
         if (kk.gast === false || kk.mesh || st._holzProfil === "kienspan" || !R || !R.__anazhErstZeichnung || !st.scene)
             return;
         const geo = this._kammKroneNetz(new Float32Array(9), new Float32Array(9), 3, [0, 1, 2]);
-        kk.gast = this._vorbauGast(this._kammKroneMesh(geo, this._kammKroneStoff(kk)), "vorbau:kamm-krone", "ankunft");
+        const gast = this._kammKroneMesh(geo, this._kammKroneStoff(kk));
+        gast.matrixAutoUpdate = true; // der Gast nimmt keinen Raum (Maßstab 0, `_vorbauGast`, `_gastOhneRaum`)
+        kk.gast = this._vorbauGast(gast, "vorbau:kamm-krone", "ankunft");
     }
 
     // Der Abschied (Ring-Besitz, `_fernRingDispose`): Netz, Gast, Stoff, der Auftrag im Flug fällt (`gen`).
