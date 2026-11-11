@@ -1642,16 +1642,15 @@
   },
   "licht.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: licht.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/band-urteil.cjs, scripts/lib/draw-zaehler.cjs +8) — zuletzt an 6aa7a5a6: Deckel 90 s gerissen: Stille seit 21 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __tagKurve({\"uhren\":[0,0.01,0.02,0. (100 Uhren) · 22.4 s · 68.9 s)",
+   "beleg": "Maschine: 0 — offen: licht.K1#1 gtx: ROT: genesis: Karte Luma 126.6, Sprung 0.550 EV, Buckel 0.52 EV, Sonne 10° -0.59 EV R/B ×0.90 | -0.48 EV R/B ×0.94, Nacht -1.69 EV Luma 58.2 · wiese: Karte Luma 126.6, Sprung 0.264 EV, Buckel 0.09 EV, Sonne 10° -0.98 EV R/B ×0.98 | -1.25 EV R/B ×0.77, Nacht -3.32 EV Luma 34.9 · Linse TAG-ACHSE ROT: REF genesis: Uhr 0 (Sonne -74.21°) 0.85 Stufen neben der REF | REF genesis: Uhr 0.01 (Sonne -74.28°) 0.85 Stufen neben der REF | REF genesis: Uhr 0.02 (Sonne -73.56°) 0.86 Stufen neben  · [linse-gpu] nvidia/pascal an 4e2df19b",
    "stationen": [
     {
      "id": "licht.K1#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/band-urteil.cjs, scripts/lib/draw-zaehler.cjs +8) — zuletzt an 6aa7a5a6: Deckel 90 s gerissen: Stille seit 21 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __tagKurve({\"uhren\":[0,0.01,0.02,0. (100 Uhren) · 22.4 s · 68.9 s)",
-     "ungemessen": true
+     "zahl": "genesis: Karte Luma 126.6, Sprung 0.550 EV, Buckel 0.52 EV, Sonne 10° -0.59 EV R/B ×0.90 | -0.48 EV R/B ×0.94, Nacht -1.69 EV Luma 58.2 · wiese: Karte Luma 126.6, Sprung 0.264 EV, Buckel 0.09 EV, Sonne 10° -0.98 EV R/B ×0.98 | -1.25 EV R/B ×0.77, Nacht -3.32 EV Luma 34.9 · Linse TAG-ACHSE ROT: REF genesis: Uhr 0 (Sonne -74.21°) 0.85 Stufen neben der REF | REF genesis: Uhr 0.01 (Sonne -74.28°) 0.85 Stufen neben der REF | REF genesis: Uhr 0.02 (Sonne -73.56°) 0.86 Stufen neben  · [linse-gpu] nvidia/pascal",
+     "sha": "4e2df19b5c5103b093818b62b5a84ababf85b493",
+     "grund": "ROT: genesis: Karte Luma 126.6, Sprung 0.550 EV, Buckel 0.52 EV, Sonne 10° -0.59 EV R/B ×0.90 | -0.48 EV R/B ×0.94, Nacht -1.69 EV Luma 58.2 · wiese: Karte Luma 126.6, Sprung 0.264 EV, Buckel 0.09 EV, Sonne 10° -0.98 EV R/B ×0.98 | -1.25 EV R/B ×0.77, Nacht -3.32 EV Luma 34.9 · Linse TAG-ACHSE ROT: REF genesis: Uhr 0 (Sonne -74.21°) 0.85 Stufen neben der REF | REF genesis: Uhr 0.01 (Sonne -74.28°) 0.85 Stufen neben der REF | REF genesis: Uhr 0.02 (Sonne -73.56°) 0.86 Stufen neben  · [linse-gpu] nvidia/pascal"
     }
    ]
   },
@@ -4480,7 +4479,7 @@
  },
  "rueckfall": [],
  "kopfVoll": "4e2df19b5c5103b093818b62b5a84ababf85b493",
- "zeit": "2026-11-11T01:06:32.505Z",
+ "zeit": "2026-11-11T01:48:29.827Z",
  "vorher": "4e2df19b",
  "pflicht": {
   "dokument": "docs/PFLICHT-OFFEN.md",
