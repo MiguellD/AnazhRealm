@@ -1531,6 +1531,22 @@ class AnazhRealm_bild_kosten {
                 super.setViewOffset(e.x, e.y);
                 const v = this.camera.view;
                 this._zitter.value.set(v.offsetX, v.offsetY);
+                // DAS MESS-FENSTER (w27-traa-fenster): ein Schuss der Linse zeigt denselben Blick k-fach vergrößert um die Mitte
+                // (cx, cy) des ungefensterten Bilds — das Fenster ist ein Ausschnitt des k-fachen Bilds in Eingangs-Größe, der
+                // Halton-Versatz liegt auf ihm, die unverzitterte Projektion des Geschwindigkeits-Passes ist die des Fensters.
+                // Nach dem Durchlauf löscht `clearViewOffset` beides: zwischen den Bildern sieht der Takt die ungefensterte Kamera.
+                // Die WAHL bleibt die des Spiels: `F.wahl` trägt die ungefensterte, unverzitterte Projektion (`_wahlMatrix`)
+                const F = realm.state.messFenster;
+                if (F) {
+                    F.wahl = (F.wahl || new THREE.Matrix4()).copy(this._originalProjectionMatrix);
+                    const [jx, jy] = [v.offsetX, v.offsetY];
+                    const [x0, y0] = [F.cx * e.x * F.k - e.x / 2, F.cy * e.y * F.k - e.y / 2];
+                    this.camera.setViewOffset(e.x * F.k, e.y * F.k, x0, y0, e.x, e.y);
+                    this._originalProjectionMatrix.copy(this.camera.projectionMatrix);
+                    this._velocityNode.setProjectionMatrix(this._originalProjectionMatrix);
+                    this.camera.setViewOffset(e.x * F.k, e.y * F.k, x0 + jx, y0 + jy, e.x, e.y);
+                    F.getragen = (F.getragen || 0) + 1; // der Träger zählt: ein Fenster ohne ihn misst die Linse nie
+                }
                 // DER VERSATZ DES LAUBS (A3, `_laubVersatz`) gehört zur Folge des Frames: die Halton-Achsen 5 und 7 am Frame
                 // seit dem Beginn der Geschichte (ein Neubeginn steht an, wenn ihre Größe nicht die der Ausgabe ist) als Phase, die
                 // der Stoff je Pixel dreht (`_laubVersatz`), z die Weite ±LAUB_VERSATZ Eingangs-Pixel. Bis A3b lief er am Index
@@ -2536,7 +2552,7 @@ class AnazhRealm_bild_kosten {
         // Die Höhlen-Sicht liest ihre Schirm-Rechtecke aus S.m: perspektivisch um den Dreh-Rand geweitet (`_passMatrixWeit`),
         // damit ihre Wahl über eine kleine Drehung hält wie das Gesetz (`drehRand`).
         if (!nach) {
-            S.m.copy(kamera.projectionMatrix);
+            S.m.copy(this._wahlMatrix(kamera));
             if (kamera.isPerspectiveCamera === true) S.m.elements[8] = S.m.elements[9] = 0;
             S.m.multiply(kamera.matrixWorldInverse);
             S.frustum.setFromProjectionMatrix(S.m, kamera.coordinateSystem);
@@ -2762,12 +2778,21 @@ class AnazhRealm_bild_kosten {
         return W;
     }
 
+    // DIE PROJEKTION DER WAHL (w27-traa-fenster): Sicht, Stufen, Abschnitte, Instanzen, Streu und Werfer wählen aus der Kamera
+    // des SPIELS. Trägt ihr Durchlauf das Mess-Fenster (`state.messFenster`; die zeitliche Auflösung legt `wahl` ab, die
+    // ungefensterte, unverzitterte Projektion), wählt jeder Pass aus ihr: die Lage steht wie im Bild davor (`_passLageGen`),
+    // jeder Leser behält seine Wahl — das Fenster misst nur feiner, was der Spieler sieht. Ohne Fenster die der Kamera selbst.
+    _wahlMatrix(kamera) {
+        const F = this.state.messFenster;
+        return F && F.wahl && kamera === this.state.camera ? F.wahl : kamera.projectionMatrix;
+    }
+
     // Die Matrix einer Perspektive ohne den Versatz der zeitlichen Auflösung, ihr Sichtfeld je Halbwinkel um 1,5 × `dreh`
     // geweitet: jeder Strahl, den eine um höchstens `dreh` gedrehte Kamera sieht, liegt darin (der Abstand eines Strahls zur
     // Seiten-Ebene wächst um höchstens `dreh`, sein Winkel in der Bild-Achse um höchstens dreh / cos(Höhe) — an den Ecken
     // eines 75°-Bilds 16:9 das 1,1-Fache).
     _passMatrixWeit(aus, kamera, dreh) {
-        aus.copy(kamera.projectionMatrix);
+        aus.copy(this._wahlMatrix(kamera));
         const e = aus.elements;
         e[8] = e[9] = 0;
         const zu = 1.5 * dreh;
@@ -2829,7 +2854,7 @@ class AnazhRealm_bild_kosten {
         // s[84] = 1); orthogonal: die Ebenen, ohne die nahe
         s[84] = ortho ? 0 : 1;
         if (!ortho) {
-            const pe = kamera.projectionMatrix.elements;
+            const pe = this._wahlMatrix(kamera).elements;
             for (let i = 0; i < 24; i++) s[3 + i] = i < 16 && i !== 8 && i !== 9 ? pe[i] : 0;
         } else
             for (let p = 0; p < 6; p++) {
