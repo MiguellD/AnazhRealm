@@ -1032,8 +1032,10 @@ function tagKurveSelbsttest() {
         if (fall === "BUCKEL") z(0.33).Y = z(0.5).Y * 1.2;
         if (fall === "SPRUNG") z(0.276).Y *= 1.2;
         if (fall === "GOLD") z(0.276).Y = z(0.278).Y = z(0.5).Y;
+        if (fall === "WARM") z(0.276).warm = z(0.278).warm = z(0.5).warm;
         if (fall === "REF") z(0.33).X *= 1.5;
         if (fall === "NACHT") z(0).hell = 10;
+        if (fall === "NACHT-HELL") z(0).Y *= 4;
         if (fall === "ASYNC") z(0.722).sofort *= 2;
         const m = { zeilen: alle, schreiber: { _dayNightApplyBelichtung: 1 }, karte: fall === "ANKER" ? 170 : q.karte, bahn: fall !== "WAND" };
         if (fall === "SCHREIBER") m.schreiber._tickPortalMembranes = 1;
@@ -1048,7 +1050,7 @@ function tagKurveSelbsttest() {
     };
     return [
         [kurve(T.kopf, "WAND"), ""],
-        [kurve(T.kopf).replace(/ wiese:[^,]*/g, ""), "REF,REF,REF,REF,WARM,WARM"],
+        [kurve(T.kopf).replace(/ wiese:[^,]*/g, ""), "WARM,WARM"],
         [kurve(T.kopf, "REF"), /REF wiese: Uhr 0\.33 /],
         ...["ANKER", "SPRUNG", "BUCKEL", "GOLD", "NACHT", "ASYNC", "SCHREIBER", "BLIND"].map((f) => [kurve(T.kopf, f), new RegExp(`(^|,)${f} wiese`)]),
         [gesetz(), ""],
