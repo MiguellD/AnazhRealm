@@ -67,6 +67,7 @@ function ladeschirmVerdict(m) {
         ["saat", "mit einem Chunk im Laub-Radius, dessen Wald noch nicht gesät ist", /bepflanzt/],
         ["horizont", "ohne den Horizont (der Fern-Ring steht nicht ganz)", /Horizont/],
         ["licht", "ohne das Licht des Orts", /Licht des Orts/],
+        ["zeichnungWartet", "mit einem Bürger des Bilds, dessen Programm noch entsteht (gesetzt, nicht gezeichnet)", /Programm/],
         ["dorfExport", "mit dem Export eines Dorfs der Ankunft unterwegs", /Dorf/],
         ["dorfSchlange", "mit den Häusern eines Dorfs der Mesh-Zone in der Schlange", /Dorf/],
         ["dorfFaellig", "mit einem fälligen, noch nicht bestellten Start-Dorf am Genesis-Ort", /Dorf/],
@@ -120,6 +121,13 @@ function ladeschirmVerdict(m) {
     if (!f.lueckeFlackert) out.push(`eine flackernde Lücke: ${ohne("lueckeFlackert")}`);
     else if (!f.lueckeFlackert.weg) out.push("eine flackernde Lücke hält den Ladeschirm ohne Grenze (kein Deckel)");
     else if (!f.lueckeFlackert.warn) out.push("eine flackernde Lücke weicht ohne Wort im Log");
+    // DAS BILD IST GEZEICHNET (w28-bild-ganz): steht die Pipeline eines Wartenden, hält er nichts mehr; kommt sie nie (der
+    // Deckel), weicht der Ladeschirm — und der EINE Melder nennt ihn beim Etikett, nie still
+    if (!f.zeichnungSteht) out.push(`ein Bürger, dessen Pipeline steht: ${ohne("zeichnungSteht")}`);
+    else if (!f.zeichnungSteht.weg) out.push("ein Bürger, dessen Pipeline steht, hält das Bild weiter (`_bildWartet` fällt ihn nicht — das Bild stünde erst mit dem nächsten Lade-Bild)");
+    if (!f.zeichnungOhneAussicht) out.push(`ein Bürger ohne Aussicht: ${ohne("zeichnungOhneAussicht")}`);
+    else if (!f.zeichnungOhneAussicht.weg) out.push("ein Bürger, dessen Programm nie kommt, hält den Spieler für immer vor der Welt (kein Deckel am Term „zeichnung“)");
+    else if (!f.zeichnungOhneAussicht.bruch) out.push("ein Bürger ohne Aussicht weicht ohne Bruch beim Namen (`_bruchMelden`: „WELTBILD NICHT GANZ … <Etikett> nicht gezeichnet“)");
     const g = m.weichtGanz;
     if (!g) out.push("das Weichen des Ladeschirms: kein Fall (Vorbedingung)");
     else if (!g.hidden || g.display !== "none" || g.animationen)
@@ -590,6 +598,22 @@ async function probe(arg) {
             fallMit("horizont", [window, { __anazhFernRing: true }], [st, { fernRing: { ready: false, cursor: 0, totalVerts: 1 } }]);
             // (4e') die Belichtung schrieb noch nicht aus dem Licht (S7)
             fallMit("licht", [st, { _belichtungSteht: false }]);
+            // (4e'') DAS BILD IST GEZEICHNET (w28-bild-ganz): ein Bürger der Welt-Szene wollte im letzten Bild zeichnen, seine Pipeline
+            // entsteht noch (die Warteschlange der Erst-Zeichnung trägt sie offen, `_erstWartet`) — er hält das Bild beim Etikett;
+            // steht sie, hält er nichts mehr; kommt sie nie (der Deckel), weicht der Ladeschirm mit einem Bruch beim Namen
+            if (!(r._erstZeichnungStand().bildWartet instanceof Map) || typeof r._bildWartet !== "function")
+                m.ohneFall.zeichnungWartet = m.ohneFall.zeichnungSteht = m.ohneFall.zeichnungOhneAussicht = "die Erst-Zeichnung führt keine Liste der Wartenden des Bilds (`bildWartet`, `_bildWartet`) — das Weltbild zählt Gesetztes, nie Gezeichnetes";
+            else {
+                const [EZ, pipeL] = [r._erstZeichnungStand(), { linse: "pipeline" }];
+                const an = (offen) => () => (offen && EZ.offen.set(pipeL, new Set()), EZ.namen.set(pipeL, "renderPipeline_LinseStoff_7"), EZ.bildWartet.set(pipeL, { ro: null, fest: false }));
+                const aus = () => (EZ.offen.delete(pipeL), EZ.bildWartet.delete(pipeL));
+                const bruch = () => st.logBuffer.slice(-30).filter((z) => /WELTBILD NICHT GANZ.*LinseStoff_7 nicht gezeichnet/.test(z)).length;
+                fall("zeichnungWartet", an(true), aus);
+                fall("zeichnungSteht", an(false), aus);
+                const b0 = bruch();
+                fall("zeichnungOhneAussicht", an(true), aus, () => (st._weltbildErsteFrage = performance.now() - (AnazhRealm.WELTBILD_DECKEL_MS || 60000) - 1));
+                m.faelle.zeichnungOhneAussicht.bruch = Math.max(0, bruch() - b0);
+            }
             // (4f) DAS DORF: fällig, im Export oder mit Häusern in der Schlange hält es das Bild (headless trägt der Hook)
             const dorfAn = [window, { __anazhAutoSettlement: true }];
             fallMit("dorfExport", dorfAn, [r, { _autoSettlementPendingKey: "start" }]);
@@ -1737,7 +1761,7 @@ async function probe(arg) {
 hauptLauf(async () => {
     if (SELBSTTEST) {
         console.log("=== SELBST-TEST — die Ankunfts-Linse nennt ihre Täter ===");
-        const l2aTerme = ["welt", "boden", "horizont", "licht", "leib", "buch", "bauten", "pflanzung", "streu", "karten", "dorf"];
+        const l2aTerme = ["welt", "boden", "horizont", "licht", "leib", "zeichnung", "buch", "bauten", "pflanzung", "streu", "karten", "dorf"];
         // die gesunden Köpfe der Ankunft (ihre Mutanten tauschen je einen Teil)
         const koepfe = { orte: [{ wer: "die Nah-Wiese", art: "gras L1", blick: true }, { wer: "der Gesetz-Fit", art: "blume L0", blick: true }], leib: { bestellt: ["vor L1 Kopf", "nach L0"], ohneFein: true, egoRoh: true, baut: ["vor 1", "nach 0"] }, dorf: { kopf: true, export: true, kopfRang: true } };
         // der kleine Satz der Stand-Zeile (je Mutante ein Fall getauscht)
@@ -1765,6 +1789,9 @@ hauptLauf(async () => {
             saat: halt("bepflanzt", "pflanzung"),
             horizont: halt("Horizont", "horizont"),
             licht: halt("Licht des Orts", "licht"),
+            zeichnungWartet: halt("1 Programm des Bilds entsteht", "zeichnung"),
+            zeichnungSteht: weicht,
+            zeichnungOhneAussicht: { weg: true, stand: "", warn: 1, bruch: 1 },
             dorfExport: halt("Dorf", "dorf"),
             dorfSchlange: halt("Dorf", "dorf"),
             dorfFaellig: halt("Dorf", "dorf"),
@@ -1839,6 +1866,11 @@ hauptLauf(async () => {
                     ["das erste Weltbild ohne Dorf", { faelle: mitFall(l2aFaelle, { dorfSchlange: weicht }) }, "mit den Häusern eines"],
                     ["das fällige Start-Dorf ohne Fall", { faelle: mitFall(l2aFaelle, { dorfFaellig: undefined }), ohneFall: { dorfFaellig: "400 m" } }, "mit einem fälligen, noch"],
                     ["eine arbeitende Lücke weicht", { faelle: mitFall(l2aFaelle, { lueckeArbeitet: { weg: true } }) }, "eine arbeitende Lücke weicht"],
+                    ["gesetzt, nicht gezeichnet: der Ladeschirm weicht vor dem wartenden Bürger (w28-bild-ganz)", { faelle: mitFall(l2aFaelle, { zeichnungWartet: weicht }) }, "mit einem Bürger des Bilds"],
+                    ["der Term „zeichnung“ ohne Fall", { faelle: mitFall(l2aFaelle, { zeichnungWartet: undefined }), ohneFall: { zeichnungWartet: "keine Erst-Zeichnung" } }, "mit einem Bürger des Bilds"],
+                    ["eine stehende Pipeline hält weiter", { faelle: mitFall(l2aFaelle, { zeichnungSteht: { weg: false } }) }, "ein Bürger, dessen Pipeline steht, hält"],
+                    ["ein Bürger ohne Aussicht hält für immer", { faelle: mitFall(l2aFaelle, { zeichnungOhneAussicht: { weg: false } }) }, "ein Bürger, dessen Programm nie"],
+                    ["ein Bürger ohne Aussicht weicht still", { faelle: mitFall(l2aFaelle, { zeichnungOhneAussicht: { weg: true, bruch: 0 } }) }, "ein Bürger ohne Aussicht weicht ohne"],
                     ["ein Fall ohne Grund", { faelle: mitFall(l2aFaelle, { karteOffen: undefined }) }, "mit der offenen Karte eines Baums im"],
                     ["kein Ladeschirm", { imHtml: false }, "kein Ladeschirm im HTML"],
                     ["unter der UI", { zIndex: 5 }, "der Ladeschirm liegt unter"],
