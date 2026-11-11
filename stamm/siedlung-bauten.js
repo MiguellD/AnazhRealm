@@ -188,6 +188,7 @@ class AnazhRealm_siedlung_bauten {
             gang.push(e);
         }
         let besucht = 0;
+        let wartet = null; // der erste, dessen Urteil wartet (`z.offen`) — der Name, wenn die Welt auf die Stufen-Wahl wartet
         const Z = W.zusagen;
         // DIE EINE FRIST DER BAU-ARBEIT (`_bauFrist`, w19-gang-hitch): ein Urteil baut die Stufe, die es wählt (die Platte der Karte,
         // die Instanz) — nach dem ersten Urteil geht der Gang nur, solange die Frist offen ist; der Rest bleibt vorn. Bis hier
@@ -198,7 +199,9 @@ class AnazhRealm_siedlung_bauten {
             besucht++;
             W.wach.delete(entry);
             W.zusage.delete(entry); // sein Urteil sagt neu, ob er wartet
+            const offen0 = z.offen;
             let rest = this._zusagenVon(entry.position, () => this._archStufeUrteil(entry, pm, occlOn, z), Z);
+            if (z.offen > offen0 && !wartet) wartet = entry;
             if (entry._stufeEimer === -1) continue; // der Abbau nahm ihn während seines Urteils
             // DER WARTENDE SCHLÄFT AUF SEINER ZUSAGE (`_schlafen`, die EINE Regel jedes Wartenden): lädt seine Höhe, seine Stufe
             // oder sein Partner, holt ihn die Zusage zurück — oder der Weg einer Hysterese-Breite der Bäume (LOD_DISTANCES
@@ -236,7 +239,22 @@ class AnazhRealm_siedlung_bauten {
         // über ungeurteilten Einträgen (gate:stand-takt TREUE-LÜCKE „33 → 27 Einheiten": nach dem Fixpunkt wechselten 7 Bäume in
         // 51–93 m, die Runde 2 807 endete, die neue maß 33 gegen 2 048 leere Gänge — 6 Bäume schliefen ungeurteilt wach).
         if (wirkt || offen) W.rest = 0;
-        this._standMeldet("archLod", besucht, wirkt, offen);
+        // WORAUF SIE WARTET, BEIM NAMEN (w28-stadt-grammatik): bis hier hieß es nur „Fege-Takt archLod wartet“, auch als nichts mehr
+        // offen war (bild:stadt 3733677a, Radeon: 2170 Takte ohne Ruhe) — jetzt nennt die Wache den Grund und den ersten Wartenden
+        const nenne = (e) =>
+            e
+                ? `${e.type} L${e._lodLevel} in ${Math.round(Math.hypot(e.position.x - pm.x, e.position.z - pm.z))} m`
+                : "";
+        const warum = !offen
+            ? null
+            : z.offen > 0
+              ? `${z.offen} Stufen laden, zuerst ${nenne(wartet)}${wartet && wartet._lodHaltWartet === true ? " (Partner)" : ""}`
+              : W.zusage.size > 0
+                ? `${W.zusage.size} Zusagen, zuerst ${nenne(W.zusage.values().next().value)}`
+                : gitterAlt
+                  ? "das Gitter der Verdeckung ist älter als die Welt"
+                  : `Nachlese ${W.nach}`;
+        this._standMeldet("archLod", besucht, wirkt, offen, warum);
         return bewegt + z.switches;
     }
 

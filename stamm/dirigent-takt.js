@@ -503,7 +503,7 @@ class AnazhRealm_dirigent_takt {
         if (this._standWache)
             for (const [n, t] of this._standWache.takte)
                 if (t.leer < t.runde)
-                    geht = `${geht ? `${geht}, ` : ""}${n} ${t.offen ? "wartet" : `${t.leer}/${t.runde}`}`;
+                    geht = `${geht ? `${geht}, ` : ""}${n} ${t.offen ? `wartet${t.warum ? ` (${t.warum})` : ""}` : `${t.leer}/${t.runde}`}`;
         return geht;
     }
     // Was die Welt noch baut: Foundry-Aufträge (wartend, im Flug, Antworten vor der Freigabe — auch die gehaltenen: Laub-Körper
