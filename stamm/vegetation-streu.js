@@ -1879,7 +1879,8 @@ class AnazhRealm_vegetation_streu {
         const f = this._foundry;
         const rec = vorlage != null && f && f.recipes ? f.recipes[vorlage] : null;
         S = AnazhRealm.BAUM_OHNE_STRECK;
-        if (rec && AnazhRealm.LOD_SCHIRM.fehler[rec.kind] && AnazhRealm.KIND_POLICY[rec.kind].impostor === true) {
+        const karte = rec ? AnazhRealm.KIND_POLICY[rec.kind] : null;
+        if (karte && karte.impostor === true && AnazhRealm.LOD_SCHIRM.fehler[rec.kind]) {
             const ref = this.state && this.state.lodRef > 0 ? this.state.lodRef : D.lodRef;
             S = Object.freeze(
                 [1, 2].map(
@@ -2182,7 +2183,8 @@ class AnazhRealm_vegetation_streu {
         const f = this._foundry;
         const rec = vorlage != null && f && f.recipes ? f.recipes[vorlage] : null;
         const T = rec ? AnazhRealm.LOD_SCHIRM.fehler[rec.kind] : null;
-        if (!T || AnazhRealm.KIND_POLICY[rec.kind].impostor !== true) return 0;
+        const karte = rec ? AnazhRealm.KIND_POLICY[rec.kind] : null;
+        if (!T || !(karte && karte.impostor === true)) return 0;
         if (!T[vorlage]) return AnazhRealm._kernPflichtBruch("LOD_SCHIRM.fehler." + rec.kind + "." + vorlage);
         return T[vorlage][2] > 0 ? T[vorlage][2] : 0;
     }
