@@ -1990,7 +1990,7 @@ class AnazhRealm_vegetation_streu {
         // DER SCHIRM WECHSELT (w28-baum-wechsel): der Streck jeder Baum-Vorlage folgt ihm (`_baumStreck`: Fehler × Brennweite) —
         // die Schirm-Höhen der stehenden Instanzen und der Teiler des Winds ziehen im selben Takt nach, die Wahl beginnt neu
         const B = neu ? null : this._baumGrenzen;
-        if (neu) this._schirmHoehenNeu(ref);
+        if (neu) this._schirmHoehenNeu();
         if (B && B.M === M && B.grenzen[0].ab === D.thresh01 && B.grenzen[1].ab === D.thresh12) return;
         // EINE NEUE EPOCHE: die Hysterese der alten Grenzen gilt nicht mehr — die nahen Bäume wählen im nächsten Gang am Abstand
         // (`_tickArchitectureLOD`); bis dahin hielt sie die Fichte aus 8 m auf L0 (die Hysterese 3,4 m über der Schwelle 0,6)
@@ -2125,9 +2125,8 @@ class AnazhRealm_vegetation_streu {
     // (`uLodSchirm`: Brennweite × Bezug ÷ Haushalt der Karten-Grenze — `_baumWindStoff` rechnet mit der Zeile der Art den Streck
     // heraus), jede Vorlage und jede stehende Instanz-Fassade einer Baum-Stufe (ihr Stempel × neuer ÷ alter Streck; die Fassade
     // kennt ihre Vorlage, `_lodInstanceFacade`), jede Karte der Atlas-Gruppe (ihre Sichthöhe, die Schicht nennt die Vorlage).
-    _schirmHoehenNeu(ref) {
+    _schirmHoehenNeu() {
         const st = this.state;
-        const D = AnazhRealm.LOD_DISTANCES;
         const lu = st && st.lodUniforms;
         if (lu && lu.uLodSchirm) lu.uLodSchirm.value = this._schirmJeZeileJetzt();
         const gruppen = st && st.archInstanceGroups;
