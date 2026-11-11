@@ -1,0 +1,2206 @@
+{
+ "sha": "df6c47214350ccc522d9f4c65d712609d91e25c8",
+ "geraet": "radeon",
+ "zeit": "2026-11-11T20:02:26.626Z",
+ "host": "MiguellD",
+ "je": {
+  "profiband.K4#1": {
+   "gruen": false,
+   "zahl": "Gehen 29 Bilder · max 184.11 ms · 100.00 % > 33 ms · Fahrt 32 Bilder · max 175.7 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 9 Bild(er) > 100 ms (max 184.11), 100.00 % > 33 ms | Fahrt: 7 Bild(er) > 100 ms (max 175.7), 100.00 % > 33 ms",
+   "exit": 0,
+   "minuten": 1.02,
+   "grund": "ROT: Gehen 29 Bilder · max 184.11 ms · 100.00 % > 33 ms · Fahrt 32 Bilder · max 175.7 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 9 Bild(er) > 100 ms (max 184.11), 100.00 % > 33 ms | Fahrt: 7 Bild(er) > 100 ms (max 175.7), 100.00 % > 33 ms · ROT trotz Fremd-Last: git.exe grep -n Konsum seit der Messung origin/main origin/punkte-maschine origin/koordina 107,0 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 65,1 CPU-s · node scripts/diag-haus-fern.cjs 57,6 CPU-s — 11,04 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 382,7 CPU-s in 65,5 s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 144,2 CPU-s · svchost.exe 27,3 CPU-s · SearchIndexer.exe 2,3 CPU-s) — geeicht ÷ 1,622 (1 + 5,6 % je fremdem Kern × 11,04): Fahrt Frame max ms 175,7 → geeicht 108,3 (Soll ≤ 100)",
+   "mass": [
+    {
+     "wort": "Fahrt Frame max ms",
+     "wert": 175.7,
+     "soll": 100
+    }
+   ],
+   "gpu": "amd/rdna-3",
+   "konsum": "k7be51e889d8d",
+   "konsumN": 25,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kebe00d82f8ad",
+   "s": 60.8,
+   "fremd": {
+    "s": 65.5,
+    "takte": 22,
+    "fremdS": 382.66,
+    "kerne": 5.844,
+    "fensterKerne": 11.037,
+    "namen": [
+     [
+      "git.exe grep -n Konsum seit der Messung origin/main origin/punkte-maschine origin/koordina",
+      106.98
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      65.06
+     ],
+     [
+      "node scripts/diag-haus-fern.cjs",
+      57.56
+     ]
+    ],
+    "dienerS": 89.63,
+    "diener": [
+     [
+      "System",
+      45.27
+     ],
+     [
+      "dwm.exe",
+      26.08
+     ]
+    ],
+    "geraetS": 174.17,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      144.2
+     ],
+     [
+      "svchost.exe",
+      27.3
+     ],
+     [
+      "SearchIndexer.exe",
+      2.31
+     ]
+    ],
+    "eigenS": 282.88,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-11T19:56:28.234Z",
+   "abdruck": "52687a17b4ac",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "profiband.K4#2": {
+   "gruen": false,
+   "zahl": "Gehen 29 Bilder · max 184.11 ms · 100.00 % > 33 ms · Fahrt 32 Bilder · max 175.7 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 9 Bild(er) > 100 ms (max 184.11), 100.00 % > 33 ms | Fahrt: 7 Bild(er) > 100 ms (max 175.7), 100.00 % > 33 ms",
+   "exit": 0,
+   "minuten": 1.02,
+   "grund": "ROT: Gehen 29 Bilder · max 184.11 ms · 100.00 % > 33 ms · Fahrt 32 Bilder · max 175.7 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 9 Bild(er) > 100 ms (max 184.11), 100.00 % > 33 ms | Fahrt: 7 Bild(er) > 100 ms (max 175.7), 100.00 % > 33 ms · ROT trotz Fremd-Last: git.exe grep -n Konsum seit der Messung origin/main origin/punkte-maschine origin/koordina 107,0 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 65,1 CPU-s · node scripts/diag-haus-fern.cjs 57,6 CPU-s — 11,04 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 382,7 CPU-s in 65,5 s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 144,2 CPU-s · svchost.exe 27,3 CPU-s · SearchIndexer.exe 2,3 CPU-s) — geeicht ÷ 1,622 (1 + 5,6 % je fremdem Kern × 11,04): Gehen Frame max ms 184,1 → geeicht 113,5 (Soll ≤ 100) · Fahrt Frame max ms 175,7 → geeicht 108,3 (Soll ≤ 100)",
+   "mass": [
+    {
+     "wort": "Gehen Frame max ms",
+     "wert": 184.11,
+     "soll": 100
+    },
+    {
+     "wort": "Fahrt Frame max ms",
+     "wert": 175.7,
+     "soll": 100
+    }
+   ],
+   "gpu": "amd/rdna-3",
+   "konsum": "k7be51e889d8d",
+   "konsumN": 25,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kebe00d82f8ad",
+   "s": 60.8,
+   "fremd": {
+    "s": 65.5,
+    "takte": 22,
+    "fremdS": 382.66,
+    "kerne": 5.844,
+    "fensterKerne": 11.037,
+    "namen": [
+     [
+      "git.exe grep -n Konsum seit der Messung origin/main origin/punkte-maschine origin/koordina",
+      106.98
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      65.06
+     ],
+     [
+      "node scripts/diag-haus-fern.cjs",
+      57.56
+     ]
+    ],
+    "dienerS": 89.63,
+    "diener": [
+     [
+      "System",
+      45.27
+     ],
+     [
+      "dwm.exe",
+      26.08
+     ]
+    ],
+    "geraetS": 174.17,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      144.2
+     ],
+     [
+      "svchost.exe",
+      27.3
+     ],
+     [
+      "SearchIndexer.exe",
+      2.31
+     ]
+    ],
+    "eigenS": 282.88,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-11T19:56:28.234Z",
+   "abdruck": "73cb80a7cc5e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K4#1",
+   "modus": "session"
+  },
+  "gelaende.K5#2": {
+   "gruen": true,
+   "zahl": "alle Rollen im Soll — wiese fein 1.1 · streu 0.5 · huf 0.1 · rad 0.1 | hang fein 4.3 · streu 1 · huf 0.6 · rad 1.2 cm (p95, schlechtere Sicht)",
+   "exit": 0,
+   "minuten": 0.79,
+   "gpu": "amd/rdna-3",
+   "konsum": "kaaeca818a299",
+   "konsumN": 26,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 3
+   },
+   "konsumBoot": "kebe00d82f8ad",
+   "s": 47.2,
+   "fremd": {
+    "s": 49,
+    "takte": 18,
+    "fremdS": 257.98,
+    "kerne": 5.263,
+    "fensterKerne": 8.789,
+    "namen": [
+     [
+      "git.exe grep -n -A3 \"/|profiband.K[1-5]: origin/punkte-maschine -- meisterkarte-quelle",
+      55.11
+     ],
+     [
+      "node scripts/diag-haus-fern.cjs",
+      51.66
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      45.34
+     ]
+    ],
+    "dienerS": 47.3,
+    "diener": [
+     [
+      "System",
+      22.2
+     ],
+     [
+      "dwm.exe",
+      11.98
+     ]
+    ],
+    "geraetS": 100.91,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      81.72
+     ],
+     [
+      "svchost.exe",
+      17.44
+     ],
+     [
+      "SearchIndexer.exe",
+      1.42
+     ]
+    ],
+    "eigenS": 126.42,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-11T19:57:58.205Z",
+   "abdruck": "b1a1a81f99ba",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "vegetation.K2#1": {
+   "gruen": true,
+   "zahl": "Kamm 406.0 über Rausch-Boden 0.000 (×406.0), Tal 67.5 — Kamm/Tal 6.02 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 54.1 % in 0–15 m, Δt 0.25 s",
+   "exit": 0,
+   "minuten": 0.88,
+   "gpu": "amd/rdna-3",
+   "konsum": "k24c6d125df33",
+   "konsumN": 25,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kebe00d82f8ad",
+   "s": 52.6,
+   "fremd": {
+    "s": 55.5,
+    "takte": 19,
+    "fremdS": 439.8,
+    "kerne": 7.923,
+    "fensterKerne": 12.106,
+    "namen": [
+     [
+      "git.exe grep -l -iE ACTIONS_RUNNER_HOOK_JOB_STARTED|job-sta… origin/koordination",
+      143.19
+     ],
+     [
+      "git.exe grep -h -o Netz [A-Za-z]*/\": |/\"Ziel ohne Nahme/\": |/\"Länge des \"]*/\": [0-9]* orig",
+      63.95
+     ],
+     [
+      "git.exe grep -h -o konsumGanz/\":{[^}]*} origin/punkte-maschine -- meisterkarte-quelle",
+      50.13
+     ]
+    ],
+    "dienerS": 60.52,
+    "diener": [
+     [
+      "System",
+      29.05
+     ],
+     [
+      "dwm.exe",
+      13.42
+     ]
+    ],
+    "geraetS": 111.58,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      88.47
+     ],
+     [
+      "svchost.exe",
+      21.38
+     ],
+     [
+      "SearchIndexer.exe",
+      1.5
+     ]
+    ],
+    "eigenS": 63.06,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-11T19:58:49.457Z",
+   "abdruck": "e70ca47e767e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "mensch.K4#1": {
+   "gruen": false,
+   "zahl": "Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.12 m · third ROT strich 0.5 Soll [1,1] — gesicht 0.5 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei — (irisL 4 px, 0 rein < 2×2, irisR 4 px, 0 rein < 2×2) · lippeL -16.55 [-14, -4] · lippeA 13.93 [4, 14] · hoehleL 8.28 [-12, 0] · hoehleA -1.06 [-2, 6] · haarDeckung 1 [0.9, 1]",
+   "exit": 0,
+   "minuten": 0.71,
+   "grund": "ROT: Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.12 m · third ROT strich 0.5 Soll [1,1] — gesicht 0.5 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei — (irisL 4 px, 0 rein < 2×2, irisR 4 px, 0 rein < 2×2) · lippeL -16.55 [-14, -4] · lippeA 13.93 [4, 14] · hoehleL 8.28 [-12, 0] · hoehleA -1.06 [-2, 6] · haarDeckung 1 [0.9, 1]",
+   "gpu": "amd/rdna-3",
+   "konsum": "k33d153ad0e0d",
+   "konsumN": 112,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 85,
+    "Verzeichnis": 1
+   },
+   "konsumBoot": "kebe00d82f8ad",
+   "s": 42,
+   "fremd": {
+    "s": 43.5,
+    "takte": 14,
+    "fremdS": 399.56,
+    "kerne": 9.179,
+    "fensterKerne": 14.097,
+    "namen": [
+     [
+      "git.exe grep -l -iE ACTIONS_RUNNER_HOOK_JOB_STARTED|job-sta… origin/koordination",
+      222.31
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      39.56
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      31.88
+     ]
+    ],
+    "dienerS": 47.44,
+    "diener": [
+     [
+      "System",
+      21.41
+     ],
+     [
+      "dwm.exe",
+      12.77
+     ]
+    ],
+    "geraetS": 79.91,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      60.23
+     ],
+     [
+      "svchost.exe",
+      17.84
+     ],
+     [
+      "SearchIndexer.exe",
+      1.61
+     ]
+    ],
+    "eigenS": 46.7,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-11T19:59:45.093Z",
+   "abdruck": "54782bda6ad9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "haar.K2#1": {
+   "gruen": false,
+   "zahl": "EINE Pose: Leib Δ 0 · Haar-Feder Δ 0 m über 3 Lesungen · arm ROT strich 0.3153 Soll [0.3554,0.533] — strich 0.3153 < 0.3554 · albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:c69a8110a4ddbf20) · albedo — [0.01; 0.3] · third ROT strich 0.3431 Soll [0.3554,0.533] — strich 0.3431 < 0.3554 · albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:c69a8110a4ddbf20) · albedo — [0.01; 0.3]",
+   "exit": 0,
+   "minuten": 0.95,
+   "grund": "ROT: EINE Pose: Leib Δ 0 · Haar-Feder Δ 0 m über 3 Lesungen · arm ROT strich 0.3153 Soll [0.3554,0.533] — strich 0.3153 < 0.3554 · albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:c69a8110a4ddbf20) · albedo — [0.01; 0.3] · third ROT strich 0.3431 Soll [0.3554,0.533] — strich 0.3431 < 0.3554 · albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:c69a8110a4ddbf20) · albedo — [0.01; 0.3]",
+   "gpu": "amd/rdna-3",
+   "konsum": "k33d153ad0e0d",
+   "konsumN": 112,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 85,
+    "Verzeichnis": 1
+   },
+   "konsumBoot": "kebe00d82f8ad",
+   "s": 56.6,
+   "fremd": {
+    "s": 59.4,
+    "takte": 20,
+    "fremdS": 586.98,
+    "kerne": 9.88,
+    "fensterKerne": 14.419,
+    "namen": [
+     [
+      "git.exe grep -n -iE gpu-wahl-2|wald-kosten-heim origin/koordination -- . :!*.json",
+      288.03
+     ],
+     [
+      "git.exe grep -n -i cd2dfafa origin/koordination",
+      62.94
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      48.14
+     ]
+    ],
+    "dienerS": 61.47,
+    "diener": [
+     [
+      "System",
+      30.81
+     ],
+     [
+      "dwm.exe",
+      15.2
+     ]
+    ],
+    "geraetS": 108.17,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      79.56
+     ],
+     [
+      "svchost.exe",
+      26.66
+     ],
+     [
+      "SearchIndexer.exe",
+      1.66
+     ]
+    ],
+    "eigenS": 57.52,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-11T20:00:28.063Z",
+   "abdruck": "6f065278f827",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "konsumTafel": {
+  "k7be51e889d8d": "fVRdb6MwEPwvPF7PdcKnsdQHp4nUSldd+hPWZg0kBCIbwjWn++8nCDQJVJ0nhGZ2Z71j/3WOoPaQ4uPOVqXDnR/OT8fCCYlFc0LzuLMOd5bRkkHAxbvoQIUQzx1NmfxYW1rkkoIsITsgaUyNefGoelkUBLHnctpuBNs+bKnHnqayQmJSkRo0jiKZuJEHfEpsbAoSCTS6bzSQ48iLFi6nPZgQ2+jyOe8koUzu3fnaXcQJf/0QYiOepvwkB6xJkZd27KWSQHpjL0ppO9cYaMkZMCvQDCIWhkvmjwanAl001t41YV4SuIxTGtMJNz02RN+WBimByelBZYBliua+aOQHqjehex/2Y6v/MCFWYmpoDwc0QErIxkPyPebBdWjKVhNJkatsOKhy3Lu/UMy7EVEat+qSnQ4P68//Q6TEb3HFar4Nm0GChuwrW3928f3IlcB7ybMQNH2bqa7WBo0rw0XAbseh4mW2FlvpugWDJD02gxB9DKKAC/E6I9dwOAwsrVxkARczbL5Qlcl9vFylwz5eaWfsZR6vk4EDAZmaXOsx/zJQOv4qLi0WNZFVVY+TR1EiZVe+/Bz+o8/AN3ifWuirVqYeTQcyXGif61N3H9SUfUZTYIp3Y8IydrtAtZco0vPNrfW39A7tbDPnHAtyxtI2dsx2HCWx5l/cyBbNXkK5H4hhmCwh4r+6ubZpN/ZusaaiNzAgfVGXLHV4EyvxuqbroegRFT2aSufdQ0IzaGwGRX19Nf/9Bw==",
+  "kebe00d82f8ad": "hVRdj5swEPwvPPbqc8KXjaV7cC5R76RWzf2ENayBC4HIhtCm6n+vCJAEEqnzAkI7O7uzI/44B4h3kOLzp61KRzhfnK+OhSMSi+aI5vnTOsJZsiWHQMgeVEr5rSuLTX6oLS1yRUGVkO2RNKbGvHiOzzQWBJHnCtpuJN8+banH5QWv8mXeolCYVKQGjWMDlbjMAzEvbGwKCgk0+iw6FEfMYwtX0DO4lFvWv/7icyUFZTKd1NfuIkrEeyvlRr7M65McsCZFXtpRK04C5Y1alNL2nmOgJSfArEAzkHgYLrk/Djgn6KKxdiLCvSRwuaA0orPa9NAQfdsalAKu5kZlgGWKZtqU+UHsiweu7GCPBkgJ2WiK73EPrktSvppRijzOBmPK8eb+IubeDalzJ+5z0+FpffksP/oo/LymQq7u3bcZJGjIrrL1RcX3matADEmSNP1xx7qONnBcFS4CfrsOlW93LthK1y0YJOmhGYjoY8ACIR+I1LDfD1U6dpEH8xPYusvaJDpurMNzdNJuiLf76BwN7Amo1ORaj9lWQayjR1FosaiJqqp63JKxRClBPVpeFv3NU7lKryZ/l1NsFvMRzl0rU49DBypcaF/o/prz6hOaAlOcrAnLyO3CM9z+jLXfP9/XdIL27gqnHAtywtI2dsxtxJJI99drhzbTrLRodgrK3UAIw2QJTMhu8226km+vm2jN5f/RX/mAMT2YSufdz4Jm0NgMivr6l/z7Dw==",
+  "kaaeca818a299": "fVTLbqMwFP0Xlu24TngaS124SaV0MZr0E67NNdAQQDaEaUbz7yMo5AHV3BU259zH8bH/ODWoA6T49GGr0uHOg/PDsXBCYtGc0Dx9WIc762jNIOD9L2XyurE0ySElhwpNjYbYBsrkSQ3QhxtQkUsKsoTsiKQ1DebFCIqCIPZcTrtXwfaPe+qx5zmtkJhUpAGNE0kmbuQBnwNbm4JEAq0eCo3gOPKilcvpEEyIffT1+XtRSUKZ3Hfna3cVJ/ztU4hX8TzHJzlgQ4q8tFMtlQTSm2pRSrslx0BHzoBZgWYksTBcM39qcE7QRWvtXRHmJYHLOKUxnWHTuiX6NjVICUzOhcoAyxTNfdLID5TPv1HlAEc0QErIJlF8j3lwHZKylxmlyFU2ClNO5+yvFPNuSJTGnRJ9DIvH7WVfvA/b4pe4xstSfZtBgoYcKttcqvh+5ErgA2UjBE1/LljX1kaOK8NVwG7HoWK3UMFWuunAIEnrdiSij0EUcCHeFuAGjscRpZWLLJgfwXBP7q3jKh0O1kn7JnZL65wMHAnI1ORaT96WgdLxd1bosGiIrKpmmjKKEik59Wh5GfST9cL+J97nLQxZK9NMTQcyXGmf61PvdTVHn9EUmOLdmLCO3d4849mLrbjeSH9P76JbnMI5x4KcsbStnXwbR0ms+Te3rUNzkFAeRmAYJmuIvqyxT/uxX1ZbKuiZXcZNd0r4m83X4q2XZtNrMCStUdHaVDrvHwmaQWszKJrrU/n3Hw==",
+  "k24c6d125df33": "fVTbjpswEP0XHrv1OuFmY6kP3ou6W6lqVuoPjM0Y2BCIbFjaVP33ChaSAKvOE5c5c2bOHPuPdwS9hwxvX11decL75H32HLwhcWjf0N6+Ok94W7blEIn+l7bFsXG0LBQFVUF+QNLaBovyVg+pLIqSwBe0e5R8d7OjAZfneJRfliVKhWlNGjA4FVCpzwJYcbUuA4UEWjOQjskJC9jGF3QILuWOvT/+4ksmBVU67zQ0/iZJxfPvobFlfloANqQsKjdx6TRSwcRFKe3WGAsdOQHmJdoRxON4y8OpwSXAlK1zMxIepJHPBaUJXeRmx5aY69KgFHC1FCoHrDK086IsjHQoPlBlDwe0QCrIJ1HCgAdwGZLyuwWkLHQ+ClNNOw83mgdXIEqTTg8rH15uHs7f5cu7FX5cXCHv1uq7HFK0ZF+75swShsxXIAbIvZQ0+75CXVobMb6KNxG/HofKp5UKrjZNBxZJdmxHIIYYsUhI+bxKbuBwGLOM9pGvzoVreq/NrONrEw/WyfomntbWebNwIKAyWxgzeVtF2iQfWaHDsiGqrptpSsZSpfry1XnQE++F/U/87OTLqo2hcm2bqfFIxRsTCjP4XS+zT2hLzHA2KmwTvzfQuH/5IC+nMtzRWXSrTZwKLMkJK9e6ybsJSxMjPjhxHdq9gmo/JsZxugUmvkkps50bRt88UDkjDLgMv95nQ2PPvTz3chLhiJoebW2K/qKgObQuh7K53Ip//wE=",
+  "k33d153ad0e0d": "fZdfc6M2EMC/Sx6bYhzbGMzMPXCXtneduWnuqdPHFVohHUJiJGESd/rdO8Lg2AiHhwTvb3e1u1r94d+HUhu0qwaUYGjd6qfV6iF/+OXh1wcGJe/R1JFXWf20k1h3ipq3mbRCCagozsRCUXxdcdfIUVBLUNVMqdZoWjQzaQtlDRVeR9TyN6fnato4mMksHDGyaI5ozsKn9CmDJPeo5I3AIE5bGtE6G0tBYiAKeINRZxwKuSoHpTRJDttNHvffi+zl8SX2z3b4G2csfiRxViw9X6pPn+buJUGqIwcMJ+eEbtIt5HNFa9FFvTY1moiDUWjtaMAIYes0L/pxmG9FMEpnKyAYQceGbEbDQ7pN15t8DLwoXtLz62s2d0BA0dsS7NhmfaD5t7ei+K0I0qIC0EVSKDuNVdKEbKex4jjuQxsDfXQC5BLNaJTt90/ZbgpwbsBkZ+3NINmWJpssj+NDPNOt2i5i166BEMjIvMocUFVobp2mu6Tc5QtVqaFBA5ECPhVlt8228J5knH2emxitUN34Xx+2yeZpHokUJR8rqKau263LbHvl3ZexHKZ8eH98voiLH+dW+Ouq+z6H09RKcI5p00St0WQKCIGy5DAPyHKgaKJaW3eJaLdLNwTyc3MXRVx9n49g39MYbTZkv06y6xrFxdegtFYz14PBqGq7KawdJmmSF8W3QNlB00yLodxgluRT0o9/Zr8PL8/136GVorc9uinZfujRygf2NezRo4EmAlIZwdi0iEhSssNSz/UoXUS0dlPmaUoJ8e7VVfZ+Yj54tn3xIwhj8KyNmwJPyH7Ndjk7d8Rc+4RGYoU3qcLTYeM7deyf4rl4X/67l5sWi/tgdk4CZXRCZbtpD8oOKT2w86z2l23o2s4fHgRUPRrs9/QJ0jx5iWMRV0MJ1s9xcTPwNit2fzx/Gb19Hnrsxz+D0xbLaWuODbKIoZSrVlXTDj7nHMDc41ZLOe7AV8fLoMLAELzdpOcqrdFM+P0x5tBZDvLm2BxaM775QaCLSFfyq/PmIvcbLC6BozYSKlQBE5JGw267SLhomiHmEI0LeQnZkoO7C/2KnhMKC+pUoLKhqjCiQuUiUHWn2H1eo1lwOUKDlZzO8wXsoA4cM/SlskE1BrlEEiYwEIWvnV0ktjVQ8mC6Lpcfomno8/1qxDtVB44vmC1kf4G1llJYoQONGpqWBUJ/ywqE4zWLYI9Vd58z4CYo5QUaFPeYREHuMYsYtnltEFznR+wU3IOL8zTBIxq//kIFhe4UCYrKCbewVAbcbtplub9SBk1jBVLZqSoi0C0M+I6x11yFnXpREMqfQ6e7XIfVvzAL7r6h0/cHPaKpkd/nPVbB9NgWRcn9xMJCW1+oP5oWsNOMRdVCH57JvSoMsAZ/0i2iBhwasTA9rqNCR8R0WNYLtgOt0Lrzdr1Ipf8yCGt0psPwc3bECh04oZVvi+YDbJ3B7gPeC7RB2L3/BjARf6NG32EnlDKsvj96rQPnfFgfYa6DnK5gR+9Dq08L0/DOj9r4U+UqZ4fOQKvp/HPtiFyUcv5JdkRFtYmtaFqJr5HSwobUcYO4asRVhsNNSd4eWb02ktqYd75Y47+J/vc/"
+ },
+ "ungemessen": {
+  "tiere.K5#1": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine KREIS-Zeile in ego, third (Exit 1)) · Täter: PROBE-FEHLER Error: ANKER fehlt in scripts/lib/zerlege-linse.cjs lauf: const schuss = async () => (await __ausgabeAufnahme(W, H, 1, { satz: \"messung\" })).u8; |     at ankern ([eval]:75:32) |     at tor.quelle ([eval]:84:88) |     at tierKreis ([eval]:194:22)",
+   "exit": 1,
+   "minuten": 0.01,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine KREIS-Zeile in ego, third (Exit 1)) · Täter: PROBE-FEHLER Error: ANKER fehlt in scripts/lib/zerlege-linse.cjs lauf: const schuss = async () => (await __ausgabeAufnahme(W, H, 1, { satz: \"messung\" })).u8; |     at ankern ([eval]:75:32) |     at tor.quelle ([eval]:84:88) |     at tierKreis ([eval]:194:22)",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 0.2,
+   "teile": [
+    0.2
+   ],
+   "fremd": {
+    "s": 2.5,
+    "takte": 1,
+    "fremdS": 11.63,
+    "kerne": 4.678,
+    "fensterKerne": 4.678,
+    "namen": [
+     [
+      "node scripts/diag-haus-fern.cjs",
+      3.25
+     ],
+     [
+      "git.exe grep -h -o konsumGanz/\":{[^}]*} origin/punkte-maschine -- meisterkarte-quelle",
+      3.23
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      1.81
+     ]
+    ],
+    "dienerS": 1.88,
+    "diener": [
+     [
+      "System",
+      0.8
+     ],
+     [
+      "dwm.exe",
+      0.56
+     ]
+    ],
+    "geraetS": 3.66,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      3.31
+     ],
+     [
+      "svchost.exe",
+      0.27
+     ],
+     [
+      "SearchIndexer.exe",
+      0.08
+     ]
+    ],
+    "eigenS": 0.98,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-11T19:58:46.571Z",
+   "abdruck": "f620ec61c59e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "vegetation.K1#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 41 s gerissen — beendet, UNGEMESSEN (zuletzt: SCHRITT /eval 0.0 s)",
+   "exit": 1,
+   "minuten": 0.69,
+   "grund": "Deckel 41 s gerissen — beendet, UNGEMESSEN (zuletzt: SCHRITT /eval 0.0 s)",
+   "s": 41.5,
+   "fremd": {
+    "s": 44.1,
+    "takte": 16,
+    "fremdS": 245.23,
+    "kerne": 5.567,
+    "fensterKerne": 9.509,
+    "namen": [
+     [
+      "git.exe grep -n -iE Konto 10.*Landung|10 Landungen origin/koordination",
+      83.63
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      33.59
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      23.52
+     ]
+    ],
+    "dienerS": 36.44,
+    "diener": [
+     [
+      "System",
+      15.58
+     ],
+     [
+      "WmiPrvSE.exe",
+      9.25
+     ]
+    ],
+    "geraetS": 84.22,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      60.52
+     ],
+     [
+      "svchost.exe",
+      19.11
+     ],
+     [
+      "SearchIndexer.exe",
+      4.48
+     ]
+    ],
+    "eigenS": 38.03,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-11T20:01:27.583Z",
+   "abdruck": "9c512329c038",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "vegetation.K5#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:25.894Z",
+   "abdruck": "50b89569ba89",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "vegetation.K5#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:25.897Z",
+   "abdruck": "747a7379b842",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "licht.K2#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:25.913Z",
+   "abdruck": "7b94e8afee98",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "licht.K2#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:25.929Z",
+   "abdruck": "c940abb1ac1e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "material.K2#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:25.938Z",
+   "abdruck": "7bd6fb2920dc",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "lod.K1#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:25.942Z",
+   "abdruck": "8c7876da1b59",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "lod.K5#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:25.947Z",
+   "abdruck": "bc5292910674",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "lod.K2#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:25.956Z",
+   "abdruck": "7dd0abe80bea",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "leib.K1#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:25.964Z",
+   "abdruck": "38f8e3e5fe0e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "spielgang.K3#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:25.968Z",
+   "abdruck": "689117d1994b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "streaming.K3#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:25.971Z",
+   "abdruck": "0632b7e12e00",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "klang.K2#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:25.975Z",
+   "abdruck": "2122ade470cc",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "ferne.K1#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:25.978Z",
+   "abdruck": "b6d080cc7435",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "ferne.K2#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:25.978Z",
+   "abdruck": "802ccdf49463",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "ferne.K1#1",
+   "modus": "session"
+  },
+  "ferne.K1#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:25.978Z",
+   "abdruck": "230798f8028a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "ferne.K1#1",
+   "modus": "session"
+  },
+  "ferne.K2#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:25.978Z",
+   "abdruck": "0c789f30b179",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "ferne.K1#1",
+   "modus": "session"
+  },
+  "licht.K5#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:25.983Z",
+   "abdruck": "23d7c58b3c12",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "material.K3#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:25.985Z",
+   "abdruck": "67459632073f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "material.K3#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:25.985Z",
+   "abdruck": "87023a1ea196",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "material.K3#1",
+   "modus": "session"
+  },
+  "material.K1#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:25.990Z",
+   "abdruck": "3abc8b01e278",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "material.K1#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:25.990Z",
+   "abdruck": "564911886853",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "material.K1#1",
+   "modus": "session"
+  },
+  "ankunft.K4#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:25.996Z",
+   "abdruck": "ea66260e5746",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "licht.K3#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.002Z",
+   "abdruck": "718982443ac8",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "schatten.K2#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.006Z",
+   "abdruck": "dd57105c129b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "schatten.K3#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.006Z",
+   "abdruck": "2c1220d7339d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "schatten.K2#1",
+   "modus": "session"
+  },
+  "schatten.K4#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.006Z",
+   "abdruck": "0947391378b3",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "schatten.K2#1",
+   "modus": "session"
+  },
+  "schatten.K5#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.006Z",
+   "abdruck": "7852171edeaa",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "schatten.K2#1",
+   "modus": "session"
+  },
+  "licht.K4#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.006Z",
+   "abdruck": "d11a38e18be7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "schatten.K2#1",
+   "modus": "session"
+  },
+  "ferne.K3#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.006Z",
+   "abdruck": "283edff7491d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "schatten.K2#1",
+   "modus": "session"
+  },
+  "ferne.K4#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.006Z",
+   "abdruck": "b64151191ce8",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "schatten.K2#1",
+   "modus": "session"
+  },
+  "lod.K4#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.006Z",
+   "abdruck": "1f3ef123b2e4",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "schatten.K2#1",
+   "modus": "session"
+  },
+  "vegetation.K3#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.006Z",
+   "abdruck": "0ce895c09837",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "schatten.K2#1",
+   "modus": "session"
+  },
+  "gelaende.K3#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.010Z",
+   "abdruck": "41a675d42d94",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "affekt.K4#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.018Z",
+   "abdruck": "1228061bda0b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "ferne.K5#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.021Z",
+   "abdruck": "4e2bdb4af190",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "material.K4#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.026Z",
+   "abdruck": "ab82d80519be",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "material.K5#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.033Z",
+   "abdruck": "e10e7d60e9f2",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "profiband.K5#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.039Z",
+   "abdruck": "3895554d7dc0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "profiband.K5#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.039Z",
+   "abdruck": "c2ed7bf06604",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K5#1",
+   "modus": "session"
+  },
+  "gelaende.K2#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.050Z",
+   "abdruck": "f25c6a11e95b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "gelaende.K2#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.050Z",
+   "abdruck": "8d8ec2507fc8",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "gelaende.K2#1",
+   "modus": "session"
+  },
+  "wetter.K2#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.054Z",
+   "abdruck": "ad6438959910",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "physik.K2#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.058Z",
+   "abdruck": "248052c0fc5e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "tiere.K1#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.062Z",
+   "abdruck": "4cbb53e14031",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "affekt.K1#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.066Z",
+   "abdruck": "cdeda7f5bf5c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "oekologie.K4#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.070Z",
+   "abdruck": "8e4eb85ac8c6",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "haar.K1#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.074Z",
+   "abdruck": "69a7f9e9bd08",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "fahrzeug.K3#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.088Z",
+   "abdruck": "1cdd86ceb799",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "fahrzeug.K3#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.125Z",
+   "abdruck": "60985c753910",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "fahrzeug.K4#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.125Z",
+   "abdruck": "eb0709e75bf9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "fahrzeug.K3#2",
+   "modus": "session"
+  },
+  "fahrzeug.K4#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.125Z",
+   "abdruck": "b37e885d49c3",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "fahrzeug.K3#2",
+   "modus": "session"
+  },
+  "leib.K1#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.143Z",
+   "abdruck": "93ae58d761ce",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "halten.K2#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.143Z",
+   "abdruck": "c4eb8f796007",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "leib.K1#2",
+   "modus": "session"
+  },
+  "leib.K4#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.153Z",
+   "abdruck": "b64041c04ac5",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "leib.K4#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.153Z",
+   "abdruck": "7746589109f9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "leib.K4#1",
+   "modus": "session"
+  },
+  "fahrzeug.K5#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.163Z",
+   "abdruck": "08857a40d5d8",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "fahrzeug.K2#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.170Z",
+   "abdruck": "2aa064c681c6",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "fahrzeug.K2#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.176Z",
+   "abdruck": "774ab399b0f2",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "klang.K4#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.184Z",
+   "abdruck": "afd4cba1236c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "klang.K4#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.184Z",
+   "abdruck": "765329f5a5d3",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "klang.K4#1",
+   "modus": "session"
+  },
+  "klang.K5#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.188Z",
+   "abdruck": "9e34b74fc5be",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "speicher.K4#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.194Z",
+   "abdruck": "cf5db34c59c4",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "wetter.K2#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.208Z",
+   "abdruck": "924f98239f52",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "licht.K3#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.226Z",
+   "abdruck": "030727bdfc7f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "mensch.K1#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.234Z",
+   "abdruck": "ac10e7df1f5a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "mensch.K2#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.234Z",
+   "abdruck": "dab117ec1548",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "mensch.K1#1",
+   "modus": "session"
+  },
+  "vegetation.K4#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.240Z",
+   "abdruck": "363561aa5402",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "vegetation.K4#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.240Z",
+   "abdruck": "8c372d0d53d7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "vegetation.K4#1",
+   "modus": "session"
+  },
+  "mensch.K5#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.267Z",
+   "abdruck": "fbd51bda5863",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "siedlung.K1#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.280Z",
+   "abdruck": "07f57d259702",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "schatten.K1#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.288Z",
+   "abdruck": "d37811cd7bb4",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "schatten.K1#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.292Z",
+   "abdruck": "bb691a8762eb",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "wetter.K3#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.305Z",
+   "abdruck": "073499ead14e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "tiere.K3#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.315Z",
+   "abdruck": "b25658892dc2",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "tiere.K2#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.322Z",
+   "abdruck": "bae97aa89f8a",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "luftwasser.K5#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.330Z",
+   "abdruck": "62ceb936aee3",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "haar.K5#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.335Z",
+   "abdruck": "722683a6b735",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "studios.K2#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.369Z",
+   "abdruck": "b814926a7e85",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "studios.K3#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.369Z",
+   "abdruck": "6b9b5abda81d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "studios.K2#2",
+   "modus": "session"
+  },
+  "pipeline.K4#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.396Z",
+   "abdruck": "93ae1ab04000",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "pipeline.K4#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.396Z",
+   "abdruck": "f3b1a6627c8c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "pipeline.K4#1",
+   "modus": "session"
+  },
+  "ankunft.K2#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.396Z",
+   "abdruck": "429b5674fc30",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "pipeline.K4#1",
+   "modus": "session"
+  },
+  "ankunft.K3#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.396Z",
+   "abdruck": "206c6118fb40",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "pipeline.K4#1",
+   "modus": "session"
+  },
+  "ankunft.K1#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.396Z",
+   "abdruck": "8a321f302a0c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "pipeline.K4#1",
+   "modus": "session"
+  },
+  "ankunft.K1#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.396Z",
+   "abdruck": "4f76f2bf220f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "pipeline.K4#1",
+   "modus": "session"
+  },
+  "ankunft.K5#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.396Z",
+   "abdruck": "f9a20f49a011",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "pipeline.K4#1",
+   "modus": "session"
+  },
+  "bauen.K1#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.497Z",
+   "abdruck": "b2ea14da4611",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "bauen.K5#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.502Z",
+   "abdruck": "23a5c835e3b1",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "studios.K4#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.516Z",
+   "abdruck": "428b901d66ae",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "studios.K4#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.516Z",
+   "abdruck": "f3f24988eca2",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "studios.K4#1",
+   "modus": "session"
+  },
+  "siedlung.K2#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.525Z",
+   "abdruck": "45b9dd0216d0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "siedlung.K2#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.525Z",
+   "abdruck": "a8e05a2a6fe5",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "siedlung.K2#1",
+   "modus": "session"
+  },
+  "siedlung.K5#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.532Z",
+   "abdruck": "d25ae70e35f2",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "siedlung.K5#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.532Z",
+   "abdruck": "f3fd57d2afd2",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "siedlung.K5#1",
+   "modus": "session"
+  },
+  "siedlung.K4#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.536Z",
+   "abdruck": "50ecfdc66cea",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "leib.K2#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.540Z",
+   "abdruck": "a52b97079085",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "leib.K2#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.540Z",
+   "abdruck": "038ab2ac96db",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "leib.K2#1",
+   "modus": "session"
+  },
+  "leib.K3#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.546Z",
+   "abdruck": "3ad18f4155ae",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "halten.K5#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.554Z",
+   "abdruck": "f3375009056e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "halten.K5#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.554Z",
+   "abdruck": "baebe0627869",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "halten.K5#1",
+   "modus": "session"
+  },
+  "halten.K1#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.559Z",
+   "abdruck": "62e261bf735c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "tore.K1#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.562Z",
+   "abdruck": "248a1713c159",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "tore.K3#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.569Z",
+   "abdruck": "fe658a7efdd8",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "tore.K3#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.569Z",
+   "abdruck": "2eef9f974ab7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "tore.K3#1",
+   "modus": "session"
+  },
+  "streaming.K4#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.598Z",
+   "abdruck": "62ee48e6316f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "profiband.K1#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.615Z",
+   "abdruck": "a4809dc2e930",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "profiband.K1#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.615Z",
+   "abdruck": "ed7fcd8a82d3",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K1#1",
+   "modus": "session"
+  },
+  "pflicht.E#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.615Z",
+   "abdruck": "faadcb87e50f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K1#1",
+   "modus": "session"
+  },
+  "profiband.K2#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.615Z",
+   "abdruck": "bded3260dbec",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K1#1",
+   "modus": "session"
+  },
+  "profiband.K2#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.615Z",
+   "abdruck": "581af30fec74",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K1#1",
+   "modus": "session"
+  },
+  "profiband.K3#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.615Z",
+   "abdruck": "f53ad5c4b546",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K1#1",
+   "modus": "session"
+  },
+  "profiband.K3#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.615Z",
+   "abdruck": "79e11b5cf7b3",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K1#1",
+   "modus": "session"
+  },
+  "speicher.K1#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.621Z",
+   "abdruck": "f84abebec58b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "speicher.K1#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.621Z",
+   "abdruck": "4f9ddc930613",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "speicher.K1#1",
+   "modus": "session"
+  },
+  "speicher.K2#1": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.626Z",
+   "abdruck": "0a8e9bbebe36",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "speicher.K2#2": {
+   "gruen": false,
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}) — ungemessen",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:02:26.626Z",
+   "abdruck": "f93d36e16c03",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "speicher.K2#1",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-11T19:56:15.620Z",
+  "port": 7804,
+  "warten": 0.03,
+  "bootS": 7.4,
+  "grundstellungS": [],
+  "proben": 7,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "gelaende.K5#2",
+    "s": 26.4,
+    "takte": 546,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "haenger": [
+   {
+    "probe": "profiband.K4#1",
+    "zurueck": 9
+   }
+  ],
+  "grund": "die Welt trägt nicht mehr vor vegetation.K5#1: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestand\",\"Lumin:verband/bestand\",\"Hira:verband/bestand\"]}}",
+  "ciBlicke": 9,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 103,
+   "frameP95": 133.89,
+   "taktP95": 120,
+   "vramMax": 151,
+   "seiten": 2,
+   "marken": 1,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [
+    {
+     "probe": "gelaende.K5#2",
+     "m": 312,
+     "ringVor": 4,
+     "ringMin": -1
+    }
+   ],
+   "zapfen": 291,
+   "luecken": 3,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+  },
+  "fahrtS": 366.9,
+  "minuten": 6.25
+ }
+}
