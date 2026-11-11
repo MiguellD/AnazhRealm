@@ -19,7 +19,7 @@ const T0 = Date.now();
 const anfragen = [];
 let bericht = null;
 // (Seite, vor jedem Skript) Null-Renderer und Ort wie das Geschirr, der Blick in den Foundry-Faden, die Pumpe des Tors, die Meldung
-function VOR_SEITE(dorfZug, INIT, ECHT, ZERLEGE, INIT_MS, INIT_BIS, INIT_VON, OHNE, EINGRIFF, PLATTE, SHADER) {
+function VOR_SEITE(dorfZug, INIT, ECHT, ZERLEGE, INIT_MS, INIT_BIS, INIT_VON, OHNE, EINGRIFF, PLATTE, SHADER, NACH) {
     // (FREI_EINGRIFF=<datei.js>) ein Eingriff zum Messen: der Rumpf einer Funktion (P = der Prototyp, null vor der Klasse) —
     // er reist als Funktion im Vorspann-Skript (die CSP der Seite verbietet new Function)
     if (EINGRIFF) EINGRIFF(null);
@@ -299,6 +299,8 @@ function VOR_SEITE(dorfZug, INIT, ECHT, ZERLEGE, INIT_MS, INIT_BIS, INIT_VON, OH
                 z.adapter = "kein Adapter: " + e.message;
             }
             z.backend = !!(st.renderer && st.renderer.backend && st.renderer.backend.isWebGPUBackend);
+            // (FREI_NACH=<ms>) so lange läuft das Spiel nach dem ersten Weltbild weiter, bevor die Sonde endet
+            if (NACH > 0) await sleep(Math.max(0, z.weltbildMs + NACH - performance.now()));
             z.ende = true;
             await sleep(600);
             melde();
@@ -347,7 +349,21 @@ function VOR_SEITE(dorfZug, INIT, ECHT, ZERLEGE, INIT_MS, INIT_BIS, INIT_VON, OH
 }
 const server = statikServer({
     seiten: {
-        "/__vor.js": () => "(" + VOR_SEITE.toString() + ")(" + JSON.stringify(dorfZug) + "," + [Number(process.env.FREI_INIT || 0), ECHT ? 1 : 0, ZERLEGE ? 1 : 0, Number(process.env.FREI_INIT_MS || 15), Number(process.env.FREI_INIT_BIS || 9000), Number(process.env.FREI_INIT_VON || 0), JSON.stringify(process.env.FREI_OHNE || ""), process.env.FREI_EINGRIFF ? "function (P) {" + String.fromCharCode(10) + fs.readFileSync(process.env.FREI_EINGRIFF, "utf8") + String.fromCharCode(10) + "}" : "null", JSON.stringify(process.env.FREI_PLATTE || ""), process.env.FREI_SHADER ? 1 : 0].join(",") + ");",
+        "/__vor.js": () => "(" + VOR_SEITE.toString() + ")(" + JSON.stringify(dorfZug) + "," + [Number(process.env.FREI_INIT || 0), ECHT ? 1 : 0, ZERLEGE ? 1 : 0, Number(process.env.FREI_INIT_MS || 15), Number(process.env.FREI_INIT_BIS || 9000), Number(process.env.FREI_INIT_VON || 0), JSON.stringify(process.env.FREI_OHNE || ""), process.env.FREI_EINGRIFF ? "function (P) {" + String.fromCharCode(10) + fs.readFileSync(process.env.FREI_EINGRIFF, "utf8") + String.fromCharCode(10) + "}" : "null", JSON.stringify(process.env.FREI_PLATTE || ""), process.env.FREI_SHADER ? 1 : 0, Number(process.env.FREI_NACH || 0)].join(",") + ");",
+        // (Eingriff) ein Bild der Leinwand als Daten-URL: neben FREI_JSON abgelegt als <lauf>-<name>.jpg
+        "/__bild": (req) =>
+            new Promise((ok) => {
+                let b = "";
+                req.on("data", (d) => (b += d));
+                req.on("end", () => {
+                    try {
+                        const { name, daten } = JSON.parse(b);
+                        const ziel = String(process.env.FREI_JSON || path.join(os.tmpdir(), "frei-sonde.json")).replace(/[.]json$/, "") + "-" + String(name).replace(/[^a-z0-9]/gi, "") + ".jpg";
+                        fs.writeFileSync(ziel, Buffer.from(String(daten).split(",")[1] || "", "base64"));
+                    } catch {}
+                    ok("ok");
+                });
+            }),
         "/__sonde": (req) =>
             new Promise((ok) => {
                 let b = "";
