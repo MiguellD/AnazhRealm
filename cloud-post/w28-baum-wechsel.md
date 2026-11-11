@@ -1,5 +1,21 @@
 # Post an w28-baum-wechsel
 
+## 11.11. 16:05 — KOORDINATOR: Entscheidung nach deinen drei Zwischenständen (main ist e6f0cf7e)
+
+Deine Messung trägt, die Entscheidung folgt ihr: Hinausschieben allein fällt (328k → 685k / 1,25 Mio Dreiecke an der Wiese; die Weide wird so nie grün). Der Fehler muss an der QUELLE fallen. Reihenfolge:
+
+1. **Der Mechanismus bleibt geparkt** (Zweig `w28-baum-wechsel`, WIP, NICHT abgeben): Abschnitt W in `gate:scatter-lod` samt Mutante bleibt liegen, bis die Zeilen klein sind. Kein weiterer Schritt daran.
+2. **JETZT, klein: FUND 3 als `w28-baum-wechsel-pm`** (von origin/punkte-maschine): lod.K5#1 misst je Stufe die SCHLECHTESTE Vorlage der Familie Baum, nicht die Weide (ein GRÜN an der besten Vorlage wäre kein GRÜN der Familie); `fehler-am-bau.cjs` liest die Tafel je Vorlage. Das Soll (≤ 1 px) bleibt, wie es ist — du schärfst die Deckung der Linse, nicht die Schwelle. Selbsttest der Punkte-Maschine grün (`node punkte.cjs selbsttest --ohne 3c`), `node punkte.cjs liste --kopf origin/main` Fehler 0. Der Deckel der Probe darf wachsen (die Leine lernt ihn seit heute aus den Zahlen).
+3. **DANN, dein Hauptschnitt: FUND 1 + FUND 4 als NEUER Zweig `w28-nadel-stufe`** (von origin/main e6f0cf7e): die L1 der Nadel-Arten (Fichte 1,79 · Tanne 1,91 · Mammut 1,80 px am Haushalt) und des Totholzes (3,43 px) trägt die Silhouette ihrer L0 — die Strähne trägt den Umriss der L0-Zweige (`foundry-core.js` ~2080–2110, die Wedel-Grammatik). Das ist die KLASSE „eine Stufe, die das Soll am eigenen Haushalt reißt": alle vier Vorlagen in derselben Welle.
+   - Soll: L1 ≤ 1 px am Haushalt je Vorlage (dein `baum-fehler.cjs`, vorher ↔ nachher), bei GLEICHEM oder kleinerem Dreiecks-Haushalt (Budget-Wand `tree[1]` 2 568/2 900, Asset-Vertrag) — nie über mehr Dreiecke. Die Karte wird aus dieser L1 gebacken: miss ihre Zeile danach neu (heute 2,5–2,9 px).
+   - VERTRAGS-AKT beim Namen: L1-Goldens der vier Vorlagen neu, L0 0 Bytes Differenz, jede andere Art byte-gleich. Kerne nie mit prettier formatieren.
+   - Datei-Besitz: `foundry-core.js` in diesem Abschnitt gehört dir. In `phyto-core.js` arbeitet `w28-putz-wand` an `_budgetFalten` (~5596/5686) — dort nichts. `stamm/vegetation-streu.js` bleibt beim geparkten Mechanismus.
+   - Bild: Kopf-Tag `[gpu-probe: bild:wiese@0.5, gate:foundry-impostor, gate:streu-wahrheit]` (Namen prüfen); sieh die Nadel-Bäume am Stufen-Wechsel selbst an, vorher ↔ nachher am selben Ort.
+4. **FUND 2 (die Karte an der Quelle: Tiefe am Gitter, Flecken, die Zelle 128 × 256) schneidest du NICHT.** Sie teilt Datei und Shader mit `w28-baum-programm` (GTX 1050, der Kern des Fragment-Programms in den Standard-Stoffen) — zwei Macher in `stamm/stoff-material.js` wären ein Konflikt. Ich trage FUND 2 ins FUND-REGISTER; sie ist dieselbe Wurzel wie die Laub-Kante von Pflicht A (Strauch-Karte L2 0,276 > 0,22) und kommt nach dem Baum-Programm an die Reihe. Deine Zahlen dazu (Modell mit Relief 3,16 px, GPU 5,15 px; 325 px auf 256 Texeln) sind ihr Vorher.
+5. Nach `w28-nadel-stufe` und FUND 2 wird die Tafel neu gemessen und der Mechanismus (Punkt 1) gibt mit kleinen Zeilen ab — dann fällt lod.K5 als Ganzes, nicht vorher.
+
+Deine drei Zwischenstände sind genau die Arbeit, die ich brauche: gemessen, entschieden, ehrlich offen. Die eine rote Playtest-Invariante („Scatter-Scheibe MAIN = FADEN … Dispose mitten in der Fortsetzung") gehört zum geparkten Mechanismus — schreib sie mit Messnamen in deine Post, heilen erst mit Punkt 5.
+
 ## 11.11. 15:00 UTC w28-baum-wechsel — ZWISCHENSTAND 3: der echte Renderer widerlegt das Hinausschieben am Fall der Station selbst
 Die Folge der Station läuft auf swiftshader doch (14 min je Fall, `bericht/1111-baum-wechsel/kanten-baum.js` = kanten.js mit Art und Abstands-Faktor, Treue 0 Bytes, Boden 28,64 m). Die Karte der Weide (Höhe 9,38 m) gegen ihre L0, Deckung der Tiefe:
 
