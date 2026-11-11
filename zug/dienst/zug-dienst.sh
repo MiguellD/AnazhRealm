@@ -69,13 +69,21 @@ bereit() {
         echo "$b"
     done <"$W/zug-nie-leer.refs"
 }
+# vorn <zweige> — DIE VORRANG-LISTE ($W/zug-zuerst.txt, je Zeile ein Zweig): was eine Wand der Züge heilt, fährt im NÄCHSTEN Zug, nie
+# hinter dem Alphabet (11.11.: w28-frost-rand heilte die Wand, an der z379 dreimal fiel, und wäre hinter vier w27-Zweigen draußen
+# geblieben — der Zug wäre an derselben Stelle wieder gefallen). Ein gelandeter Zweig steht nicht mehr unter den Bereiten.
+vorn() {
+    local v="" r="" b
+    for b in $1; do if grep -qx "$b" "$W/zug-zuerst.txt" 2>/dev/null; then v="$v $b"; else r="$r $b"; fi; done
+    echo $v $r
+}
 buendel() { # zwei Durchgänge: ein Linsen-Zweig, der allein an der Wand fällt, fährt im zweiten mit den Spiel-Zweigen
     local Z="" b u pass
     for pass in 1 2; do
         for b in $1; do
             case " $Z " in *" $b "*) continue ;; esac
             [ "$(echo $Z | wc -w)" -ge 4 ] && break
-            u=$(bash "$D/wand-summe.sh" $Z $b 2>&1 | tail -1)
+            u=$(bash "$D/wand-summe.sh" --nur-buendel $Z $b 2>&1 | tail -1)
             case "$u" in "BÜNDEL GRÜN"*) Z="$Z $b" ;; *) [ $pass = 2 ] && echo "$b: bleibt draußen — ${u:0:200}" >>"$W/zug-nie-leer.wartet" ;; esac
         done
     done
@@ -149,6 +157,7 @@ while true; do
     fi
     puls zug "sammelt (jüngster Zug z$n)"
     B=$(bereit | tr "\n" " ")
+    B=$(vorn "$B")
     Z=""
     [ -n "$B" ] && Z=$(buendel "$B")
     if [ -z "$Z" ]; then

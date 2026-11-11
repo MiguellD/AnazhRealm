@@ -8,7 +8,10 @@ export NODE_PATH="C:/Users/micha/AnazhRealm-profiband/node_modules"
 # 10.11. 19:05: ein Baum JE LAUF — zwei gleichzeitige Läufe (Kette und Koordinator) teilten wand-mess, zogen sich den Baum weg und
 # meldeten „KONFLIKT gegen main" ohne SHA für w27-takt-gc, das sauber mergt
 trap 'git -C $R worktree remove --force $W 2>/dev/null' EXIT
-[ $# -ge 1 ] || { echo "Aufruf: wand-summe.sh <zweig> [<zweig> …]"; exit 2; }
+# --nur-buendel: ohne die Zeile je Zweig — der Zug-Dienst fragt je Kandidat nur das Urteil des Bündels (je Zweig eine Messung von
+# ~70 s gespart; 11.11.: das Sammeln eines Zugs aus acht Bereiten dauerte so über zehn Minuten)
+NB=""; [ "$1" = "--nur-buendel" ] && { NB=1; shift; }
+[ $# -ge 1 ] || { echo "Aufruf: wand-summe.sh [--nur-buendel] <zweig> [<zweig> …]"; exit 2; }
 git -C $R fetch -q origin "+refs/heads/main:refs/remotes/origin/main" 2>/dev/null
 for b in "$@"; do git -C $R fetch -q origin "+refs/heads/$b:refs/remotes/origin/$b" 2>/dev/null || { echo "$b: kein Zweig auf origin"; exit 2; }; done
 git -C $R worktree remove --force $W 2>/dev/null; git -C $R worktree add -q --detach $W origin/main || exit 2
@@ -24,7 +27,8 @@ mess() {
 }
 K=$G
 for b in "$@"; do
-  if T=$(git merge-tree --write-tree $G origin/$b 2>/dev/null | head -1) && git merge-tree --write-tree $G origin/$b >/dev/null 2>&1; then
+  if [ -n "$NB" ]; then :
+  elif T=$(git merge-tree --write-tree $G origin/$b 2>/dev/null | head -1) && git merge-tree --write-tree $G origin/$b >/dev/null 2>&1; then
     echo "$b $(git rev-parse --short=8 origin/$b): $(mess $(git $A commit-tree $T -p $G -m "wand-summe $b"))"
   else echo "$b $(git rev-parse --short=8 origin/$b): KONFLIKT gegen main"; fi
   if [ -n "$K" ]; then
