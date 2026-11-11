@@ -1973,7 +1973,7 @@ function lichtWeg(opts) {
                 const h = r._weltKapselSpawn("lichtweg:" + opts.weg, m, () => [{ box: true, c: new T.Vector3(), h: senkrecht ? new T.Vector3(0.5, 20, 20) : new T.Vector3(20, 0.5, 20), farbe: { r: 0.18, g: 0.18, b: 0.18 } }]);
                 weg = await lies(fp.march, senkrecht ? nh.clone().negate() : unten).finally(() => r._weltFeldFrei(h));
             } else {
-                const mit = await lies(see, unten), R = AnazhRealm._wasserKoerper(AnazhRealm.Gesetz("terrain:WASSER_GESETZ"));
+                const mit = await lies(see, unten), R = AnazhRealm._wasserKoerper(AnazhRealm.Gesetz("terrain:WASSER_GESETZ"), r._wasserOptik().n);
                 WL.forEach((u) => (u.value = u.value.clone ? u.value.setScalar(0) : 0));
                 const ohne = await lies(see, unten);
                 weg = mit.map((v, c) => ((v - ohne[c]) / R[c]) * 0.18);

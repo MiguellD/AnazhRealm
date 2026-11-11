@@ -218,13 +218,12 @@ class AnazhRealm_bild_sicht {
     // für den Wasser-Stoff und jeden Fern-Leser (Ring, Feld-Pass). Bis K16 trug die Ferne ein eigenes Fern-Blau
     // (`FERN_FARBE.wasser`, 0x265273): der Fluss im Ring 4,8× heller als der gebaute (Luma 0,255 gegen 0,053).
     // DURCH DIE FLÄCHE (A12-n1): die Strahldichte unter Wasser tritt um n² verdünnt aus (L/n² bleibt über die Grenze erhalten;
-    // n aus dem Fresnel des Gesetzes, f0 = ((n − 1)/(n + 1))² = 0,02 → n 1,329) — der Körper zeigt R∞/n², den Fresnel (1 − F)
-    // legt der Blick darauf (`_wasserBlick`). Bis A12-n1 trat er unverdünnt aus: 1,77× zu hell, das Blau des Körpers deckte
-    // das Bild im Spiegel (der See zu blau, spiegelTreue an der Tafel 0,52).
-    static _wasserKoerper(WG) {
-        const w = Math.sqrt(WG.fresnel[0]);
-        const n = (1 + w) / (1 - w);
-        return WG.wK.map((k) => (0.33 * WG.koerperStreu) / (k + WG.koerperStreu) / (n * n));
+    // n je Kanal aus der Stoff-Zeile wasser, `_wasserOptik` — bis w28 rückwärts aus dem eingetragenen Fresnel des Terrain-
+    // Gesetzes, f0 0,02 → n 1,329 für jede Farbe) — der Körper zeigt R∞/n², den Fresnel (1 − F) legt der Blick darauf
+    // (`_wasserBlick`). Bis A12-n1 trat er unverdünnt aus: 1,77× zu hell, das Blau des Körpers deckte das Bild im Spiegel
+    // (der See zu blau, spiegelTreue an der Tafel 0,52).
+    static _wasserKoerper(WG, n) {
+        return WG.wK.map((k, i) => (0.33 * WG.koerperStreu) / (k + WG.koerperStreu) / (n[i] * n[i]));
     }
 
     // DAS SPIEGEL-FELD (D10, der See spiegelt die Welt): n × n Zellen à texel m um das Auge aus dem GEBAUTEN Boden des Workers
@@ -1240,7 +1239,7 @@ class AnazhRealm_bild_sicht {
         // 0,025, ein dunkles Blaugrün, im Licht des Orts 3–4× dunkler als die Wiese. Bis 05.10. stand hier das tiefe
         // Anzeige-Blau des Studios (exp(−wK·tief), als sRGB-Absicht dekodiert 0,0003/0,027/0,107): aus 45 m ein
         // leuchtendes Königsblau. Schaum: weiß, eine diffuse Fläche.
-        const koerperAlbedo = vec3(...AnazhRealm._wasserKoerper(WG));
+        const koerperAlbedo = vec3(...AnazhRealm._wasserKoerper(WG, this._wasserOptik().n));
         const uFoam = uniform(new THREE.Color().setRGB(WG.schaum.farbe[0], WG.schaum.farbe[1], WG.schaum.farbe[2]));
         // Das Licht des Orts: E/π einer waagrechten Fläche aus dem EINEN Baustein (`_weltLicht`: Sonne, Himmel, Hemi, Ambient —
         // dieselben Quellen wie jedes Mesh), der Glanz in der Rayleigh-Sonnenfarbe (uSunCol × uLight = die Sonne selbst).

@@ -1489,7 +1489,7 @@ class AnazhRealm_gelaende_fern {
         if (this._fernWasserR) return this._fernWasserR;
         const WG =
             AnazhRealm.Gesetz("terrain:WASSER_GESETZ", null) || AnazhRealm._kernPflichtBruch("terrain:WASSER_GESETZ");
-        return (this._fernWasserR = AnazhRealm._wasserKoerper(WG));
+        return (this._fernWasserR = AnazhRealm._wasserKoerper(WG, this._wasserOptik().n));
     }
 
     // DAS EINE WASSER (1110-2, die Ufer-Klumpen): der Ring trägt das Wasser nur, wo kein Wasser-Stoff es trägt. Lebt das
