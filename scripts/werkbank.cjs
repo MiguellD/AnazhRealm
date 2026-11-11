@@ -1290,7 +1290,70 @@ async function starte() {
                                 m[p] = Math.abs(G[i] - O[i]) + Math.abs(G[i + 1] - O[i + 1]) + Math.abs(G[i + 2] - O[i + 2]) > schwelle ? 1 : 0;
                             spur[j + 1] = m;
                         });
-                        gesicht = Object.assign(K.gesichtMasse(u8, teil, W, H, proben, haarK, { gemischt, spur }), { irisDecke: decktZu });
+                        const ungefenstert = K.gesichtMasse(u8, teil, W, H, proben, haarK, { gemischt, spur });
+                        // DAS GESICHT IM MESS-FENSTER (w27-traa-fenster): an der Kamera des Spiels trägt die Iris ≈ 1 Bildpunkt, Lippe
+                        // und Höhle wenige — ihre Züge las die Linse nach der Phase des Bildpunkts (gesicht 0,667 / 0,5 und lippeA
+                        // 12,62 / 14,25 / 15,08 an derselben Pose, 6,11–6,13 m). Derselbe Blick, dieselbe Welt, k-fach vergrößert um
+                        // die Mitte des Kopfs: die zeitliche Auflösung trägt das Fenster (`state.messFenster`, bild-kosten), die Teilung,
+                        // die Spur und die Proben stehen im Fenster; Strahl, Vorderseite und Kalotte bleiben die des Spiels. Wählt die
+                        // TRAA es nicht (kein Träger), misst die Linse nichts — sonst läse sie wieder die Phase.
+                        const fk = 4; // vierfach: die Iris von ≈ 1 auf ≈ 4 Bildpunkte je Achse (≥ 2 × 2 rein, koerper `gesichtMasse`)
+                        const mc = mitte.clone().project(cam);
+                        const F = { k: fk, cx: (mc.x + 1) / 2, cy: (1 - mc.y) / 2, getragen: 0 };
+                        // DIE WAHL STEHT (Bedingung des Koordinators): die Lage des Hauptbilds (`_passLageGen`, ihre Generation) vor
+                        // und nach den Fenster-Schüssen — wählt jeder Pass aus der Projektion des Spiels (`_wahlMatrix`), bleibt sie
+                        // dieselbe, und jeder Leser (Abschnitte, Instanzen, Streu, Werfer) behält die Wahl des Spiel-Bilds
+                        // — dazu die Kaskaden (Projektion und Lage jeder Schatten-Kamera, größte Abweichung im Fenster-Schuss)
+                        const lageGen = () => r._passLagen?.get("haupt")?.gen ?? null;
+                        const kaskaden = () => (r.state.csmNode?.lights || []).flatMap((l) => [...l.shadow.camera.projectionMatrix.elements, ...l.shadow.camera.matrixWorld.elements]); // prettier-ignore
+                        const [genVor, kVor] = [lageGen(), kaskaden()];
+                        r.state.messFenster = F;
+                        const Gf = [],
+                            Osf = [];
+                        let genErst = null,
+                            kIn = [];
+                        try {
+                            Gf.push(await schuss([]));
+                            [genErst, kIn] = [lageGen(), kaskaden()];
+                            for (const n of namen) Osf.push(await schuss(teile.get(n)));
+                        } finally {
+                            delete r.state.messFenster;
+                        }
+                        const wahl = { gen: [genVor, genErst, lageGen()] };
+                        wahl.steht = wahl.gen.every((g) => g === genVor);
+                        wahl.kaskaden = kVor.length === kIn.length && kVor.length ? Math.max(...kVor.map((x, i) => Math.abs(x - kIn[i]))) : null;
+                        const fenster = { k: fk, mitte: [+F.cx.toFixed(4), +F.cy.toFixed(4)], getragen: F.getragen, wahl };
+                        if (!F.getragen || !wahl.steht) {
+                            const grund = !F.getragen
+                                ? "das Mess-Fenster ohne Träger (die zeitliche Auflösung setzte es nicht) — die Linse läse die Phase des Bildpunkts"
+                                : `die Wahl folgte dem Fenster (Lage des Hauptbilds ${wahl.gen.join(" → ")}) — die Linse mäße eine andere Welt als die gezeichnete`;
+                            gesicht ={ augeFrei: null, augeFreiGrund: grund, lippeL: null, lippeA: null, hoehleL: null, hoehleA: null, haarDeckung: null, weiss: null, irisDecke: decktZu, fenster, ungefenstert }; // prettier-ignore
+                        } else {
+                            const tf = __klassenTeilung(Gf[0], Osf, W, H, schwelle);
+                            const camF = cam.clone();
+                            camF.setViewOffset(W * fk, H * fk, F.cx * W * fk - W / 2, F.cy * H * fk - H / 2, W, H);
+                            const vf = new T.Vector3();
+                            const probenF = proben
+                                .map((p) => {
+                                    vf.copy(p.w).project(camF);
+                                    return { ...p, x: Math.floor(((vf.x + 1) / 2) * W), y: Math.floor(((1 - vf.y) / 2) * H) };
+                                })
+                                .filter((p) => p.x >= 0 && p.y >= 0 && p.x < W && p.y < H);
+                            const spurF = {};
+                            namen.forEach((n, j) => {
+                                if (!/:kopf\/auge$/.test(n)) return;
+                                const [Gx, O] = [Gf[0], Osf[j]],
+                                    m = new Uint8Array(W * H);
+                                for (let p = 0, i = 0; p < W * H; p++, i += 4)
+                                    m[p] = Math.abs(Gx[i] - O[i]) + Math.abs(Gx[i + 1] - O[i + 1]) + Math.abs(Gx[i + 2] - O[i + 2]) > schwelle ? 1 : 0;
+                                spurF[j + 1] = m;
+                            });
+                            gesicht = Object.assign(K.gesichtMasse(Gf[0], tf.teil, W, H, probenF, haarK, { gemischt: tf.gemischt, spur: spurF }), {
+                                irisDecke: decktZu,
+                                fenster,
+                                ungefenstert,
+                            });
+                        }
                     }
                     let abstand = null;
                     if (k.abstand) {

@@ -748,7 +748,24 @@ async function probeLeben(expected) {
                 return P._loopErrorBoundary.call(this, e);
             },
         });
-        for (const stunde of o.stunden) {
+        // DIE STUNDE OHNE VORGESCHICHTE (w28-verkehr-takt, mensch.K2: der Tag nach dem Sprung ist f(Same, t)): vor allen Stunden
+        // springt die Uhr einmal in die erste (`zwillingS` Sekunden, der Zwilling: nur der Abdruck) — ihr Lauf danach trägt
+        // seine Vorgeschichte, das Gesetz nicht: der Abdruck jedes Bilds (die Lage jedes Leibs und jedes Wagens, bitgenau) gleicht
+        // dem des Zwillings, sonst nennt die Linse das erste Bild, das sich trennt. Bis hier hing die Stunde an dem, was vor ihrem
+        // Sprung geschah — wie lange die Stadt zum Stehen brauchte (1 965 · 2 021 · 2 133 · 4 725 Bilder, je Läufer und Lauf):
+        // dieselbe Saat, fünf Läufe an main, fahrend je Minute 39 · 39 · 48 · 52 · 67 m, im Zug 28 (ROT)
+        const laeufe = o.stunden.map((h, nr) => [h, o.sek, nr]);
+        if (o.zwillingS) laeufe.unshift([o.stunden[0], o.zwillingS, o.stunden.length]);
+        const abdruckJetzt = (VK) => {
+            const [dv, h] = [new DataView(new ArrayBuffer(8)), [0]];
+            const mische = (v) => (dv.setFloat64(0, v), (h[0] = (Math.imul(h[0], 31) + dv.getUint32(0) + 7 * dv.getUint32(4)) | 0)); // prettier-ignore
+            for (const b of S.liste) if (b.leib) mische(b.leib.position.x), mische(b.leib.position.z);
+            for (const W of VK.wagen) if (W.entry) mische(W.entry.position.x), mische(W.entry.position.z);
+            return h[0];
+        };
+        const Z = {};
+        for (const [lauf, [stunde, sek, nr]] of laeufe.entries()) {
+            const zwilling = nr === o.stunden.length;
             // DER SPIELER STEHT, WO DAS SPIEL DEN HARTEN FALL STELLT: in der Kreuzung am Markt im Gedränge (oben, der Anfang der
             // Bahn des Messorts — das Profi-Band und die Radeon stellten ihn dorthin), vom Sprung
             // der Uhr an, und die Stadt fließt um ihn. Bis w13-verkehr-heil trat er an den
@@ -786,6 +803,12 @@ async function probeLeben(expected) {
                     `verkehr: der Stand ${sx.toFixed(1)} ${sz.toFixed(1)} (bahn[0] des Messorts) liegt außer der Bahn der Wagen — der Richter prüft den Spieler in ihr`
                 );
             [st._fixedAccumulator, st._fixedSimTime, i] = [0, 86400 * stunde, i + 8 - (i % 8)];
+            // DIE UHREN DER STUNDE BEGINNEN BEI FESTEN ZAHLEN: die Welt-Uhr (`spielZeit`, der Wetter-Zug) am Rand ihres Tags, die
+            // Bild-Uhr der Probe (`tMs`) je Lauf weiter vorn in EINER Binade (2^23–2^24 ms: jede Summe des Musters rundet gleich, in
+            // jedem Lauf) und weit genug vor jedem Bild davor (der Takt deckelt den Sprung, `TAKT_DECKEL_S`). Bis hier zählte `tMs`
+            // ab `performance.now()` beim Start der Seite: die Wanduhr der Probe ging ins letzte Bit jedes Takts (der Gang der
+            // Bewohner, `_tickBewohner(delta)`; die Uhr des Tags) und von dort ins Gedränge der Wagen
+            [tMs, st.spielZeit] = [1e7 + 1e6 * lauf, 86400 * stunde];
             for (const h of [stunde + 6, stunde]) {
                 r._uhrSetzen((h % 24) / 24, "regler");
                 frame(i++);
@@ -883,14 +906,17 @@ async function probeLeben(expected) {
             // DER FAHRER IM SITZ [Proben, außer der Kabine, je Wagen Probe, Höhe des Sitz-Knochens, Dach]. Die Täter (`o.taeter`):
             // Wagen 0 fährt ohne Fahrer, Wagen 1 steht für die Linse 20 m neben seiner Lage, Wagen 2 1 m hinter Wagen 3, der
             // Sitz-Knochen des ersten gemessenen Fahrers 1,3 m höher (auf dem Dach, wie um 23 Uhr an der Radeon)
-            const T = { tr: [0, 0, []], st: [Infinity], weg: new Map(VK.wagen.map((W) => [W, W.weg])), t0: tMs, min: 0, w60: [Infinity] }; // prettier-ignore
+            const T = { tr: [0, 0, []], st: [Infinity], weg: new Map(VK.wagen.map((W) => [W, W.weg])), t0: tMs, min: 0, w60: [Infinity], lh: new Map(), lhMax: [0] }; // prettier-ignore
             const [SZ, V1, V2] = [[0, 0], new THREE.Vector3(), new THREE.Vector3()];
             if (o.taeter) VK.wagen[0].b.amSteuer = false;
             // der fünfte Täter: die Stadt fließt nicht um den stehenden Spieler (kein Wagen umfährt ihn) — die Minute nennt ihn
             if (o.taeter) r._verkehrUmfahren = () => false;
-            for (let k = 0; k < o.sek * 60; k++, i++) {
+            const abdruck = [];
+            for (let k = 0; k < sek * 60; k++, i++) {
                 frame(i);
                 if (i % 8 === 7) await window.sleep();
+                if (k < (o.zwillingS | 0) * 60) abdruck.push(abdruckJetzt(VK));
+                if (zwilling) continue;
                 if (tMs - T.t0 >= 60000 * (T.min + 1) && ++T.min) {
                     const [w, W] = VK.wagen.map((W) => [W.weg - T.weg.get(W), W, T.weg.set(W, W.weg)]).sort((a, b) => a[0] - b[0])[0]; // prettier-ignore
                     // der Täter am Kopf seiner Reihe: wer vor ihm steht (der Wagen, der Halter des Orts, auf den er wartet), bis einer aus
@@ -911,6 +937,14 @@ async function probeLeben(expected) {
                 // Gesetz der Straße, `_verkehrAufSpur` mit dem halben Wagen)
                 for (const W of fahrend)
                     if (W.uhr - W.fahrtAb > m.fahrt) [m.fahrt, m.fahrtWer] = [W.uhr - W.fahrtAb, W];
+                // DER WAGEN VOR EINEM LEIB (w27-verkehr-leib): je Wagen, wie lange er vor DEMSELBEN Bewohner steht (seine Uhr, Grund
+                // `leib`), der längste [s, Wagen, Leib, Ort, Zustand] — die Querung hält ihn ihre Dauer, wer die Bahn nicht verlässt,
+                // gibt sie frei (die Mutante: eine Minute hinter einem Stehenden, Selbst-Test VK)
+                for (const W of fahrend) {
+                    const [b, h] = [W.grund === "leib" && W.entry._fahr.vlong < 0.5 && W.wer, T.lh.get(W)];
+                    if (!b || !h || h[0] !== b) T.lh.set(W, b && [b, W.uhr]);
+                    else if (W.uhr - h[1] > T.lhMax[0]) T.lhMax = [Math.round(W.uhr - h[1]), W.nr, b.seed, ...ort2(b.leib.position), Math.hypot(b.vx || 0, b.vz || 0) < 0.3 ? "steht" : "geht"]; // prettier-ignore
+                }
                 for (const b of S.liste)
                     if (b.leib && b.weg && !b.drinnen && !b.amSteuer)
                         [m.geh, m.fahrbahn] = [m.geh + 1, m.fahrbahn + r._verkehrAufSpur(S, b.leib.position.x, b.leib.position.z, -R)]; // prettier-ignore
@@ -1002,6 +1036,14 @@ async function probeLeben(expected) {
                     }
             }
             for (const n of ["_verkehrSchritt", "_verkehrUmfahren"]) delete r[n];
+            if (zwilling) {
+                Z.abdruck = abdruck;
+                continue;
+            }
+            if (Z.abdruck && !nr) {
+                const erst = Z.abdruck.findIndex((x, j) => x !== abdruck[j]);
+                aus.vorgeschichte = { stunde, bilder: [Z.abdruck.length, abdruck.length], erst };
+            }
             // DIE ANKUNFT SIEHT DIE HÜLLE DES WAGENS (`_bewohnerNaechster`: die Frage der Ankunft nach dem Sprung der Uhr und des
             // Platz-Machens, ob ein Leib den Punkt hält): ein Punkt in der Hülle eines fahrenden Wagens, zwischen den Mitten seiner
             // Leiber im Gedränge (`_verkehrImRaster`, Mitte und Bug) und eine Handbreit innen an seiner Flanke, liegt näher als zwei
@@ -1052,6 +1094,7 @@ async function probeLeben(expected) {
                 amSteuer: T.st,
                 trasse: T.tr,
                 weg60: T.w60,
+                leibHalt: T.lhMax,
                 sitz: SZ,
                 wurf: wurf.slice(),
                 stand: [+sx.toFixed(2), +sz.toFixed(2)],
