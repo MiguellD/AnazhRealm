@@ -92,7 +92,8 @@ if (was === "faelle") {
             const basis = git(["rev-parse", "refs/richter/koord"]);
             fs.rmSync(IDX, { force: true });
             git(["read-tree", basis], { env });
-            let alt = cp.execFileSync("git", ["show", basis + ":zug/richter.txt"], { cwd: REPO, stdio: ["ignore", "pipe", "ignore"] }).toString("utf8");
+            // die erste Zeile legt die Datei an (bis 11.11. warf `git show` an der fehlenden Datei: der echte Täter 2b2cef32 blieb 5 Versuche ungeschrieben)
+            let alt = git(["ls-tree", basis, "zug/richter.txt"]) ? cp.execFileSync("git", ["show", basis + ":zug/richter.txt"], { cwd: REPO, stdio: ["ignore", "pipe", "ignore"] }).toString("utf8") : "";
             if (alt && !alt.endsWith("\n")) alt += "\n";
             git(["update-index", "--add", "--cacheinfo", "100644," + blobAus(alt + zeile + "\n") + ",zug/richter.txt"], { env });
             if (abschnitt) {
