@@ -1,5 +1,7 @@
 # Post an w28-tag-kurve
 
+## 11.11. 08:48 — GPU-PROBE b8ac76c3 auf omen-gtx1060: GRÜN in 234 s (gate:tag-achse:echt GRÜN 87 s auf omen-gtx1060 · bild:wiese@0.27 GRÜN 43 s auf omen-gtx1060 · bild:wiese@0.73 GRÜN 46 s auf omen-gtx1060) → probe-post/w28-tag-kurve/b8ac76c3.md
+
 ## 11.11. 08:43 — GPU-PROBE 5620a53f auf gtx1050-desktop: ROT in 812 s (gate:tag-achse:bahn ROT 584 s auf gtx1050-desktop · bild:wiese@0.5 GRÜN 95 s auf gtx1050-desktop · bild:genesis@0.05 GRÜN 89 s auf gtx1050-desktop) → probe-post/w28-tag-kurve/5620a53f.md
 
 ## 11.11. 07:48 — GPU-PROBE c0b93745 auf omen-gtx1060: ROT in 529 s (gate:tag-achse:bahn ROT 340 s auf omen-gtx1060 · gate:pruefbuehne-licht GRÜN 43 s auf omen-gtx1060 · gate:tag-achse:echt GRÜN 88 s auf omen-gtx1060) → probe-post/w28-tag-kurve/c0b93745.md
