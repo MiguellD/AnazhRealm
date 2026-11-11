@@ -156,6 +156,16 @@ function ladeschirmVerdict(m) {
     }
     if (!m.nachBootWeg) out.push("nach dem Boot (Null-Renderer) steht der Ladeschirm über der UI");
     if (m.schleifeFragt === false) out.push("die Render-Schleife fragt das Weltbild nicht (`_loopRender` → `_ankunftsBild`)");
+    // DER LOOP VOR DEM INIT DES RENDERERS (w28-loop-vor-init): r184 legt die Bild-Schleife erst in `init()` an, sein
+    // `getAnimationLoop()` wirft davor. Kam eine Antwort der Foundry in dieses Fenster (GTX 1050: 7 von 126 Zweit-Boots, die
+    // Vorlage des Leibs 44–64 ms vor `rendererReady`), riss der Wurf ihre Kette — der Bau goss beide Stufen des Leibs im
+    // Haupt-Faden (EINE Aufgabe 3,3–3,9 s). Vor dem init kommt kein Takt: der Loop ruht, der Wächter hält nichts.
+    const lv = m.loopVorInit;
+    if (!lv) out.push("der Loop vor dem init des Renderers: keine Probe (`_loopRuht` am Renderer des Vendors, dessen init nie lief)");
+    else if (lv.vendor !== "wirft" && lv.vendor !== "antwortet") out.push(`der Loop vor dem init des Renderers: ${lv.vendor} (Vorbedingung)`);
+    else if (lv.wurf) out.push(`der Loop-Stand wirft vor dem init des Renderers („${lv.wurf}“): jede Antwort der Foundry in diesem Fenster reißt ihre Kette — die Vorlagen des Spielers fallen, der Leib gießt im Haupt-Faden (\`_loopRuht\`)`);
+    else if (lv.ruht !== true) out.push(`vor dem init des Renderers kommt kein Takt, und der Loop ruht nicht (\`_loopRuht\` → ${lv.ruht}): der Wächter der Foundry hielte jede Antwort für einen Takt, der noch nicht läuft`);
+    else if (lv.waechter !== true) out.push("der Wächter der Foundry hält eine Antwort vor dem init des Renderers (`_foundryIngestTakt`): die Vorlage des Leibs wartet auf den ersten Takt statt im Memo zu liegen");
     const A = m.ankunft; // DIE ANKUNFT AUS DER FERNE (B2): das erste Weltbild verlangt je Ding die billigste ganze Stufe
     if (!A || !A.n) out.push("die Ankunft aus der Ferne: keine Probe oder kein Ding der Mesh-Zone (Vorbedingung)");
     else {
@@ -448,6 +458,40 @@ async function probe(arg) {
         st._weltbildDa = 0;
         m.schleifeFragt = __rufe(r, "_loopRender", r, "_ankunftsBild", [performance.now()]) > 0;
         st._weltbildDa = daVor;
+        // der Loop vor dem init des Renderers (w28-loop-vor-init): ein ECHTER Renderer des Vendors, dessen `init()` nie lief —
+        // die Lage jedes Boots zwischen Geburt und `rendererReady`. Der Loop-Stand und der Wächter der Foundry antworten in ihr.
+        {
+            const lv = (m.loopVorInit = { vendor: "", ruht: null, wurf: "", waechter: null });
+            const [r0, b0, q0] = [st.renderer, st.rendererReady, r._foundryIngestQueue];
+            try {
+                const roh = new THREE.WebGPURenderer({ canvas: document.createElement("canvas") });
+                try {
+                    roh.getAnimationLoop();
+                    lv.vendor = "antwortet";
+                } catch (_e) {
+                    lv.vendor = "wirft";
+                }
+                st.renderer = roh;
+                st.rendererReady = false;
+                r._foundryIngestQueue = [];
+                try {
+                    lv.ruht = r._loopRuht();
+                    let durch = false;
+                    r._foundryIngestTakt({ probe: true }, null).then(() => (durch = true));
+                    await Promise.resolve();
+                    await Promise.resolve();
+                    lv.waechter = durch;
+                } catch (e) {
+                    lv.wurf = String(e && e.message);
+                }
+            } catch (e) {
+                lv.vendor = "kein Renderer des Vendors — " + String(e && e.message);
+            } finally {
+                st.renderer = r0;
+                st.rendererReady = b0;
+                r._foundryIngestQueue = q0;
+            }
+        }
         if (ls) {
             // Die Welt wächst, bis sie steht (`_weltbildFehlt` leer, höchstens 90 s) — vor dem Rundblick im Blick, vor den Fällen
             // RUNDUM: die Mesh-Zone des Null-Renderers atmet je Takt mit dem Regler, und die Fälle hinter dem Spieler drehen die
@@ -1856,6 +1900,7 @@ hauptLauf(async () => {
                     htmlVersteckt: false,
                     zIndex: 2147483000,
                     nachBootWeg: true,
+                    loopVorInit: { vendor: "wirft", ruht: true, wurf: "", waechter: true },
                     tastenHinter: { w: false, enter: "BODY", omnibox: false },
                     weichtGanz: { hidden: true, display: "none", animationen: 0 },
                     faelle: l2aFaelle,
@@ -1936,6 +1981,11 @@ hauptLauf(async () => {
                     ["ruhende Lücke still", { faelle: mitFall(l2Klein, { lueckeRuht: { weg: true, warn: 0 } }) }, "eine ruhende Lücke weicht"],
                     ["blockt die Linsen", { nachBootWeg: false }, "nach dem Boot"],
                     ["Schleife fragt das Weltbild nicht", { schleifeFragt: false }, "die Render-Schleife fragt das"],
+                    ["der Loop-Stand wirft vor dem init des Renderers (der Leib gießt im Haupt-Faden, w28-loop-vor-init)", { loopVorInit: { vendor: "wirft", ruht: null, wurf: "Cannot read properties of null (reading 'getAnimationLoop')", waechter: null } }, "der Loop-Stand wirft vor dem init"],
+                    ["der Loop läuft vor dem init des Renderers", { loopVorInit: { vendor: "wirft", ruht: false, wurf: "", waechter: false } }, "vor dem init des Renderers kommt kein Takt"],
+                    ["der Wächter hält vor dem init des Renderers", { loopVorInit: { vendor: "wirft", ruht: true, wurf: "", waechter: false } }, "der Wächter der Foundry hält eine Antwort vor dem init"],
+                    ["der Loop vor dem init ohne Renderer des Vendors", { loopVorInit: { vendor: "kein Renderer des Vendors — x", ruht: null, wurf: "", waechter: null } }, "der Loop vor dem init des Renderers: kein Renderer"],
+                    ["der Loop vor dem init ohne Probe", { loopVorInit: undefined }, "der Loop vor dem init des Renderers: keine Probe"],
                     ["flackernde Lücke ohne Deckel", { faelle: mitFall(l2Klein, { lueckeFlackert: { weg: false, warn: 0 } }) }, "eine flackernde Lücke hält"],
                     ["W hinter dem Ladeschirm", { tastenHinter: { w: true, enter: "BODY", omnibox: false } }, "hinter dem Ladeschirm läuft"],
                     ["Enter hinter dem Ladeschirm", { tastenHinter: { w: false, enter: "chat-input", omnibox: false } }, "hinter dem Ladeschirm öffnet Enter"],

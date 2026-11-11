@@ -667,6 +667,24 @@ function taeter(re, t = []) {
     sammlung.fehler = sammlung.fehler.filter((f) => !re.test(f) || !t.push(f));
     return t;
 }
+// DAS BRUCH-BUCH GEHT IN DENSELBEN SAMMLER (w28-loop-vor-init): der EINE Melder des Spiels (`_bruchMelden`) schreibt jeden Bruch
+// in sein Buch und als ERROR-Zeile über console.log — der Sammler las davon nur zwei Wörter (die Post-Kette, den Wurf im Takt).
+// Eine Linse, die das Buch der Seite zu ihrem Zeitpunkt liest (die Kalt-Zeile von gate:boot-stage: am ersten Weltbild), reicht
+// die Einträge `[Text, Zahl]` hier herein: jeder ist ROT beim Wort wie ein Wurf, ein gepflanzter fällt über `taeter(/^bruch: /)`.
+// Was der Sammler aus der Konsole schon trägt, zählt nicht doppelt. Befund 11.11. (GTX 1050, 7 von 126 Zweit-Boots): „STOFF: die
+// Spieler-Vorlagen …" und zweimal „FADEN-UMGANGEN: Guss „mensch“ …" standen vor dem Bild im Buch, der Leib goss 3,3–3,9 s im
+// Haupt-Faden, und kein Tor las es. → die neu gesammelten Zeilen
+function bruchBuch(eintraege, wann) {
+    const neu = [];
+    for (const [text, n] of eintraege || []) {
+        const kern = String(text).slice(0, 120);
+        if (sammlung.fehler.some((f) => f.includes(kern))) continue;
+        const vor = sammlung.fehler.length;
+        melde("bruch", `${wann} — ${n > 1 ? `${n}× ` : ""}${text}`);
+        if (sammlung.fehler.length > vor) neu.push(sammlung.fehler[vor]);
+    }
+    return neu;
+}
 
 function melde(art, text) {
     const t = String(text || "")
@@ -1928,6 +1946,7 @@ module.exports = {
     teilAus,
     selbsttest: (name) => (sammlung.selbsttest = name),
     taeter,
+    bruchBuch,
 };
 
 // DER SELBSTTEST DER STALL-AKTE (gate:welt-boot, Null-Rezept): eine JS-Schleife steht als JS-SCHLEIFE mit Namen in der Akte, ein
