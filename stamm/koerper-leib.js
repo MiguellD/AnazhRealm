@@ -1019,8 +1019,24 @@ class AnazhRealm_koerper_leib {
         klon.traverse((n) => {
             if (!n.isSkinnedMesh || !n.userData.__skinJoints) return;
             const bones = n.userData.__skinJoints.map((nm) => teile[nm]).filter(Boolean);
-            if (bones.length) n.bind(new THREE.Skeleton(bones), n.bindMatrix.clone());
+            if (bones.length) n.bind(AnazhRealm._ofenSkelett(bones), n.bindMatrix.clone());
         });
+    }
+    // DAS KNOCHEN-RASTER (w27-takt-gc): r184 schlüsselt den Knoten-Bau einer SkinnedMesh mit der Zahl ihrer Knochen
+    // (`getMaterialCacheKey`: `skeleton.bones.length` — der Shader legt die Knochen-Reihe mit fester Länge an), und die Haut
+    // eines Tiers bindet nur die Gelenke, die eines ihrer Primitive trägt (foundry-core `skinJoints`): die Zahl folgt dem
+    // Erbgut und der Stufe. Jeder neue Leib baute so Graph und Programm neu, obwohl er Graph, Geometrie und Stoff mit dem
+    // vorigen teilte (dorf Ego eingelaufen, GTX 1050 7ce5b9b6: 17 Knoten-Bauten in 36 s, jeder ein neuer Leib, keiner
+    // verdrängt; zwei Wölfe unterschieden sich nur in 29 ↔ 21 und 10 ↔ 7 Knochen). Jede Ofen-Bindung füllt ihr Skelett darum
+    // bis zum nächsten Vielfachen von KNOCHEN_RASTER auf — mit ihrem ERSTEN EIGENEN Gelenk, nie einem fremden Knochen: jeder
+    // Knochen der Reihe bleibt ein Gelenk des Leibs (die Kreatur-Kosten-Invariante `rZwillingKnochen` zählt jeden, der keins
+    // ist — ein Platzhalter ohne Namen färbte z370 rot). Kein skinIndex zeigt auf die Füllplätze; der Knochen-Index, `indexOf`
+    // (der erste Platz ist der echte), `__skinJoints` und jeder Leser über sie bleiben, wie sie waren.
+    static _ofenSkelett(bones) {
+        const n = Math.ceil(bones.length / AnazhRealm.KNOCHEN_RASTER) * AnazhRealm.KNOCHEN_RASTER;
+        const alle = bones.slice();
+        while (alle.length < n) alle.push(bones[0]);
+        return new THREE.Skeleton(alle);
     }
     // DIE STARR-BINDUNG (Mensch UND Tier, am EINEN Ofen-Chokepoint): jedes starre Teil (Pfote · Ohr · Lid ·
     // Kopf · Kiefer · Schwanzspitze …) hing als eigenes Mesh an seinem Gelenk — ein Draw plus ein Schatten-Draw
@@ -1132,7 +1148,7 @@ class AnazhRealm_koerper_leib {
             for (const t of teile) t.mesh.parent.remove(t.mesh);
             root.add(starr);
             starr.updateMatrixWorld(true);
-            starr.bind(new THREE.Skeleton(bones), starr.matrixWorld.clone());
+            starr.bind(AnazhRealm._ofenSkelett(bones), starr.matrixWorld.clone());
             // Die Bind-Box reist mit (wie die der Haut aus dem Assemble): Box3-Leser der Welt-Gestalt messen den
             // Klon sonst über ein frisch umgebundenes, noch nicht posiertes Skelett.
             geo.computeBoundingBox();
@@ -1196,7 +1212,7 @@ class AnazhRealm_koerper_leib {
             root.traverse((n) => {
                 if (!n.isSkinnedMesh) return;
                 n.userData.__skinJoints = skelett.skinJoints.slice();
-                n.bind(new THREE.Skeleton(bones), n.matrixWorld.clone());
+                n.bind(AnazhRealm._ofenSkelett(bones), n.matrixWorld.clone());
             });
         }
         // DIE SOHLE steht auf dem Boden, nie das Fell darunter (Integration W5-Körper): die Fell-Schalen (aSchale) reichen
@@ -2988,6 +3004,9 @@ AnazhRealm._landungGesetz = function () {
 // Menschen aus dem Ofen; carPhys des Wagens). Bis 0710-4 hielt STOSS zwei Studio-Größen
 // (dichteLeib 1000 über eine Kapsel aus der Hüft-Höhe — der Hirsch wog 436 kg, der Bär 255 —, dichteWagen 150).
 AnazhRealm.LEIB_KLASSEN = Object.freeze(["fell", "haut"]); // die Material-Klassen der geschlossenen Haut eines Leibs
+// DAS KNOCHEN-RASTER (`_ofenSkelett`): die Knochen-Reihe jeder Ofen-Haut ist ein Vielfaches davon — Leiber eines Graphen mit
+// 17 bis 32 Knochen teilen EIN Programm (die Reihe kostet je Füllplatz 64 B Knochen-Matrix je Bild).
+AnazhRealm.KNOCHEN_RASTER = 16;
 // DIE KOPF-KLASSE (`_kopfKlasse`, mensch-kopf und haar): gelenk = die Gelenke des Kopfs (Kopf, Augen, Iris, Lider des Rigs) ·
 // iris = das Gelenk, an dem ein Teil ohne Stoff-Klasse das Auge ist · anteil = ab diesem Anteil seiner Haut-Gewichte an ihnen
 // gehört ein Teil zum Kopf — die Werte der Teilung, die bis w4-bewohner-wache in der Werkbank stand (haar.K2)
