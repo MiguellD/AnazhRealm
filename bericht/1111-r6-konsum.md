@@ -17,7 +17,8 @@ Glob; die Buchung zählt sie beim Namen (`R6 nach Konsum: n von m Hälften · oh
 ## Gemessen: veraltet je Landung (eine frische Messung am Vorgänger, geurteilt an der Landung)
 
 Heute, alle 388 Hälften: 388 · 388 · 388 · 388 · 315 (an vier Landungen jede über die Linsen-Hülle; `vorher.cjs`).
-headless mit Zeugen an 900c28e6 (79 Läufe, 128 Einträge, 119 mit Konsum-Menge, 11 ungemessen):
+headless mit Zeugen an 900c28e6 (79 Läufe, 128 Einträge, 119 mit Konsum-Menge, 11 ungemessen) und an b269f840 (135 Einträge,
+132 mit Konsum-Menge, 3 ohne — „6 Prozess(e) ohne Ende“ beim Namen —, 4 ungemessen):
 
 | Landung | heute | nach Konsum | die Täter |
 | --- | --- | --- | --- |
@@ -25,9 +26,9 @@ headless mit Zeugen an 900c28e6 (79 Läufe, 128 Einträge, 119 mit Konsum-Menge,
 | 6aa7a5a6 → 2d5f4146 | 119/119 | ≤ 37/119 | koerper-core.js 37; abnahme-urteil.cjs traf keine (die geänderten Zeilen führte keine aus) |
 | 2d5f4146 → 5b9c6427 | 119/119 | ≤ 119/119 | `starteBrowser`, `linsenGpu` (welt-boot.cjs, software-gpu.cjs): jeder Lauf startet durch sie |
 | 5b9c6427 → b269f840 | 119/119 | ≤ 119/119 | welt-boot.cjs 115, `messort` (welt-orte.cjs) 90, haushalt.json 84 |
-| b269f840 → 4e2df19b | 60/119 | ≤ 115/119 | index.html 111, stamm/gelaende-boden.js 110, vegetation-wiese.js 105 — der Glob war für 55 blind |
+| b269f840 → 4e2df19b (gemessen) | 71/132 | 128/132 | index.html 124, stamm/gelaende-boden.js 123, vegetation-wiese.js 118 — der Glob war für 57 blind |
 
-„≤“: aus der Messung an 900c28e6 auf den Vorgänger übertragen (eine Funktion gleichen Texts trägt ihr Bit, eine geänderte zählt
+„≤“ (Landung 2–4): aus der Messung an 900c28e6 auf den Vorgänger übertragen (eine Funktion gleichen Texts trägt ihr Bit, eine geänderte zählt
 als ausgeführt). **Das Urteil der Zahl:** vier der fünf Landungen ändern Code, den fast jede Station ausführt (Kern-Tafeln, Welt-Bau,
 Browser-Start, Boden); dort ist „alle alt“ wahr. Wo eine Landung schmal ist (die zweite), fällt die Zahl auf ein Drittel.
 
@@ -37,7 +38,8 @@ Browser-Start, Boden); dort ist „alle alt“ wahr. Wo eine Landung schmal ist 
 - V8 Precise Coverage in der Seite: Zähl-Modus Faktor 2,5 auf ruf-lastigem Code, Binär-Modus +15 % dort — darum trägt eine
   Zeit-Station und die Welt der Sitzung die Seite nie.
 - Die Nahme je Probe der Sitzung an der echten Werkbank (Software-Renderer, Last 10–15): 84–439 ms.
-- Der Abdruck: 3 KB je Lauf (72 Abdrücke 213 KB für 128 Einträge; Zwillinge und das Boot der Sitzung über `konsumTafel` geteilt).
+- Der Abdruck: 3 KB je Lauf (72 Abdrücke 213 KB für 128 Einträge, 76 Abdrücke 222 KB für 135; Zwillinge und das Boot der Sitzung
+  über `konsumTafel` geteilt).
 - Selbsttest 222/222 in 284,7–286,7 s (vorher 187/187 in 282,6 s auf demselben Rechner).
 
 ## Offen (mit Zahl)
