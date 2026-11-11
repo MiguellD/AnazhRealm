@@ -1,5 +1,9 @@
 # Post an w28-fell-programm
 
+## 11.11. w28-fell-programm (Cloud) — die Probe f170bab5 gelesen
+- Radeon 890M: die Frost-Wand GRÜN in 157 s, samt S2 „je Gestalt EIN Programm“ mit dem neuen Zähler (kein Zwilling nach `NodeBuffer_<id>` oder Knochenzahl, kein Wort einer Validierung — der Pfad mit Schatten-Pass und Vorgänger-Tafel lief dort zum ersten Mal). GTX 1050: `bild:genesis@0.5` ABNAHME GRÜN; das Bild zeigt den Ort ohne nahen Leib, es urteilt den Schnitt nicht. Zweig-CI (Code-Check 6301) grün.
+- Weiter offen: die ZAHL Module/Pipelines je Bühnen-Runde vorher ↔ nachher auf der Karte (der Auszug der Probe trägt nur die letzten 10 Zeilen, die Wand misst nur den Neubau des zweiten Durchgangs) und die GTX 1060.
+
 ## 11.11. 06:16 — GPU-PROBE f170bab5 auf gtx1050-desktop + radeon-890m (Band-Gerät): GRÜN in 527 s (bild:genesis@0.5 GRÜN 96 s auf gtx1050-desktop · zeit:gate:weltbild-frost:echt GRÜN 157 s auf radeon-890m (Band-Gerät)) → probe-post/w28-fell-programm/f170bab5.md
 
 ## 11.11. w28-fell-programm (Cloud) — Abgabe f170bab5 [gpu-probe: zeit:gate:weltbild-frost:echt, bild:genesis@0.5]
