@@ -320,9 +320,10 @@ function nachricht(e) {
             // Zustand des Gesetzes (gelaende-core `hoehenRaster`) — der Wirt reicht es dem Export, dessen Gassen ihm folgen
             const raster = G.hoehenRaster(state, msg.x, msg.z, msg.rahmen);
             // DAS WASSER DES RASTERS (die Stadt-Grammatik, fachwerk `hoeheAusRaster` nass): je Zelle im Umkreis `nass.r`, ob das
-            // Urteil der Ort-Wahl (`ortNass` mit ihrem W und M, ohne Erdbau) an einem ihrer neun Punkte (im Drittel ihrer Kante:
-            // ein Bach ist schmaler als die Zelle) Wasser nennt — der Plan stellt dort kein Los und keine Gasse hin, statt dass
-            // die Ort-Wahl den ganzen Ort rückt
+            // Urteil der Ort-Wahl (`ortNass` mit ihrem W und M, ohne Erdbau) an einem ihrer 25 Punkte (im Fünftel ihrer Kante,
+            // 1,8 m in der Zelle der Metropole: ein Bach ist schmaler als die Zelle, im Drittel 3 m ginge er zwischen den Punkten
+            // durch) Wasser nennt — der Plan stellt dort kein Los, keine Gasse und keine Laterne hin, statt dass die Ort-Wahl
+            // den ganzen Ort rückt (nH 300 samt den Höhen 0,32 s im Faden)
             const transfer = [raster.h.buffer];
             if (msg.nass) {
                 const { x0, z0, d, n } = raster;
@@ -331,13 +332,13 @@ function nachricht(e) {
                     for (let i = 0; i < n; i++) {
                         const [x, z] = [x0 + i * d, z0 + j * d];
                         if (Math.hypot(x, z) > msg.nass.r) continue;
-                        for (let k = 0; k < 9 && !raster.nass[i + j * n]; k++)
+                        for (let k = 0; k < 25 && !raster.nass[i + j * n]; k++)
                             if (
                                 ortNass(
                                     msg.nass,
                                     null,
-                                    msg.x + x + ((k % 3) - 1) * (d / 3),
-                                    msg.z + z + (((k / 3) | 0) - 1) * (d / 3)
+                                    msg.x + x + ((k % 5) - 2) * (d / 5),
+                                    msg.z + z + (((k / 5) | 0) - 2) * (d / 5)
                                 )
                             )
                                 raster.nass[i + j * n] = 1;

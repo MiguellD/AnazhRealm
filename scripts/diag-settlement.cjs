@@ -2132,8 +2132,9 @@ hauptLauf(async () => {
                 r.spawnSettlement = orig;
             }
             // C-K5 — DAS ERSTE HAUS AM ERWACHEN (siedlung.K5): die Zelle von C3, der Spieler naht durch den Vorlauf-Ring; `haus` =
-            // Takte vom Erwachen bis zum ersten Slot, `plaene` = Pläne v2 (`ortPlan`) im Haupt-Thread und im Ort-Faden
-            // (`_ortWahlMass.kandidaten`); `alt` (Selbsttest) stellt die Schichten des Gangs vor das erste Haus
+            // Takte vom Erwachen bis zum ersten Slot, `plaene` = Pläne v2 (`ortPlan`) im Haupt-Thread und im Ort-Faden (die
+            // Kandidaten JEDER Wahl des Laufs; `letzteWahl` und `runden` nennen die Trasse); `alt` (Selbsttest) stellt die
+            // Schichten des Gangs vor das erste Haus
             res.c.k5 = {};
             window.__marke("C-K5");
             const FC = globalThis.__fachwerkCore;
@@ -2164,10 +2165,18 @@ hauptLauf(async () => {
                     _autoSettlementQueue: null,
                 });
                 delete wm.settlementCells[key];
-                let [wach, erst, haus, haupt] = [false, null, -1, 1];
+                let [wach, erst, haus, haupt, faden] = [false, null, -1, 1, 0];
                 FC.ortPlan = function (p, ...a) {
                     haupt += wach && p?.slots ? 1 : 0;
                     return ortPlan0.call(this, p, ...a);
+                };
+                // JEDER Plan des Ort-Fadens in JEDER Runde der Trasse (`_ortMitTrasse`): `_ortWahlMass` nennt nur die letzte Wahl —
+                // das Dorf, das nach 11 Plänen 48 m rückte und am neuen Ort 2 rechnete, zählte 2, die Stadt in EINER Runde alle
+                const neben = r._nebenAuftrag;
+                r._nebenAuftrag = function (wer, msg, ...a) {
+                    const p = neben.call(this, wer, msg, ...a);
+                    if (msg?.type === "ort-wahl") p.then((x) => (faden += x.kandidaten), () => {});
+                    return p;
                 };
                 const lift = AnazhRealm.prototype._spawnSettlementSlot;
                 r._spawnSettlementSlot = function (sl, o, ...a) {
@@ -2235,7 +2244,7 @@ hauptLauf(async () => {
                     if (e) erstes = { typ: e.type, stufe: stufe(e), d: +d(e.position).toFixed(1) };
                     await sleep(5);
                 }
-                r._dorfZug = zug;
+                [r._dorfZug, r._nebenAuftrag] = [zug, neben];
                 const nahImSchirm = (erst ? erst.plan.slots : []).some((s) => {
                     const q = { x: erst.origin.x + s.x, z: erst.origin.z + s.z };
                     return d(q) <= R && r._imErstenBlick(q.x, q.z, 0, true);
@@ -2243,7 +2252,9 @@ hauptLauf(async () => {
                 return (
                     erst && {
                         nH,
-                        plaene: haupt + r._ortWahlMass.kandidaten,
+                        plaene: haupt + faden,
+                        letzteWahl: r._ortWahlMass.kandidaten,
+                        runden: r._ortTrasseMass.runden,
                         haus,
                         vorrat: vr?.vorgebacken,
                         bild,

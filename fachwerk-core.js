@@ -3887,10 +3887,10 @@
         if(!(fx>=0&&fz>=0&&fx<=n-1&&fz<=n-1)){ mass.aussen++; fx=Math.max(0,Math.min(n-1,fx||0)); fz=Math.max(0,Math.min(n-1,fz||0)); }
         const i=Math.min(n-2,fx|0), j=Math.min(n-2,fz|0), u=fx-i, v=fz-j, k=i+j*n;
         return (h[k]*(1-u)+h[k+1]*u)*(1-v)+(h[k+n]*(1-u)+h[k+n+1]*u)*v; };
-      /*DAS WASSER DES RASTERS (`nass`, optional: der Ort-Faden nennt es je Zelle, voxel-worker `ort-raster`): steht am Punkt Wasser des Gesetzes? Jede Zelle, deren Mitte näher liegt als `saum` + die halbe Zelle. Leser: die Stadt der Grammatik (`dorfLayout`: kein Los, keine Gasse im Wasser)*/
+      /*DAS WASSER DES RASTERS (`nass`, optional: der Ort-Faden nennt es je Zelle, voxel-worker `ort-raster`): steht am Punkt Wasser des Gesetzes? Jede nasse Zelle, deren QUADRAT (Mitte ± die halbe Zelle) näher liegt als `saum` — die eigene Zelle des Punkts immer. Leser: die Stadt der Grammatik (`dorfLayout`: kein Los, keine Gasse, keine Laterne im Wasser)*/
       const N=r.nass&&r.nass.length===n*n?r.nass:null;
-      H.nass=N?(x,z,saum)=>{ const s=(saum||0)+d/2, i0=Math.max(0,Math.floor((x-s-r.x0)/d)), i1=Math.min(n-1,Math.ceil((x+s-r.x0)/d)), j0=Math.max(0,Math.floor((z-s-r.z0)/d)), j1=Math.min(n-1,Math.ceil((z+s-r.z0)/d));
-        for(let j=j0;j<=j1;j++) for(let i=i0;i<=i1;i++) if(N[i+j*n]===1){ const dx=r.x0+i*d-x, dz=r.z0+j*d-z; if(dx*dx+dz*dz<=s*s) return true; }   /*jede nasse Zelle im Umkreis: ihre Mitte naeher als saum + die halbe Zelle*/
+      H.nass=N?(x,z,saum)=>{ const sa=saum||0, e=d/2, s=sa+e, i0=Math.max(0,Math.floor((x-s-r.x0)/d)), i1=Math.min(n-1,Math.ceil((x+s-r.x0)/d)), j0=Math.max(0,Math.floor((z-s-r.z0)/d)), j1=Math.min(n-1,Math.ceil((z+s-r.z0)/d));
+        for(let j=j0;j<=j1;j++) for(let i=i0;i<=i1;i++) if(N[i+j*n]===1){ const dx=Math.max(0,Math.abs(r.x0+i*d-x)-e), dz=Math.max(0,Math.abs(r.z0+j*d-z)-e); if(dx*dx+dz*dz<=sa*sa) return true; }   /*der Abstand zum Quadrat der Zelle, nie zu ihrer Mitte: in der Ecke seiner eigenen Zelle liegt ein Punkt 0,71 Zellen von ihr — der Kreis um die Mitte (saum + die halbe Zelle) liess sie aus, die Laterne am Ufer stand im Bach, und die Ort-Wahl wies den Wunsch-Ort der Stadt ab (gate:settlement C-K5, Zelle −6,−6: Laterne 75,5/−31,5, die Mitte ihrer Zelle 5,7 m entfernt)*/
         return false; }:null;
       H.mass=mass; return H; }
     // DER FELDWEG ZWISCHEN ORTEN (fahrzeug.K2): das Wegenetz der Welt verbindet je zwei benachbarte Orte über einen Feldweg, der
