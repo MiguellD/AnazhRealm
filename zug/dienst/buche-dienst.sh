@@ -1,6 +1,6 @@
 #!/bin/bash
-# buche-dienst.sh — bucht ohne LLM und ohne Ende nach JEDER neuen Mess-Scheibe am JÜNGSTEN main-Kopf (ein Push auf
-# punkte-maschine, der messung/<kopf8>-*.json berührt — OMEN, Radeon oder Farm). Nachfolger von buche-je-scheibe.sh, das nach 8 h
+# buche-dienst.sh — bucht ohne LLM und ohne Ende am JÜNGSTEN main-Kopf nach JEDER neuen Mess-Scheibe (ein Push auf
+# punkte-maschine, der messung/*.json berührt — OMEN, Radeon oder Farm, an welchem Kopf auch immer) und nach jedem neuen Kopf. Nachfolger von buche-je-scheibe.sh, das nach 8 h
 # still endete. Die Wand von buche.sh bleibt: fällt die Summe, wird nichts gebucht (ein echter Fall braucht BUCHE_FALL=1 von Hand).
 # Log: /tmp/claude/w4/buche-je-scheibe.log — jede Zeile nennt Kopf, Scheibe und das Wort der Buchung.
 D=$(cd "$(dirname "$0")" && pwd)
@@ -13,7 +13,11 @@ while true; do
     git -C $R fetch -q origin "+refs/heads/main:refs/remotes/origin/main" "+refs/heads/punkte-maschine:refs/remotes/origin/punkte-maschine" 2>/dev/null
     K=$(git -C $R rev-parse origin/main)
     k8=${K:0:8}
-    neu=$(git -C $R log -1 --format=%H origin/punkte-maschine -- "meisterkarte-quelle/punkte/messung/${k8}-*.json" 2>/dev/null)
+    # JEDE neue Mess-Scheibe zählt, an welchem Kopf auch immer (bis 11.11. nur messung/<jüngster kopf>-*: die Züge landen alle ~30 min,
+    # die Karte misst in Fenstern von 15 min — 20:32 behielt die Radeon 16 Stationen (7 GRÜN) am bc0a4aed, main stand seit 20:23 auf
+    # df6c4721, die Scheibe löste nie eine Buchung aus). Gebucht wird am jüngsten Kopf aus ALLEN Mess-Dateien; ob eine Messung an einem
+    # älteren Kopf noch gilt, urteilt R6 nach Konsum (punkte.cjs), nicht der Dateiname. Auch ein neuer Kopf allein bucht einmal.
+    neu=$(git -C $R log -1 --format=%H origin/punkte-maschine -- "meisterkarte-quelle/punkte/messung" 2>/dev/null)
     if [ -n "$neu" ] && [ "$K:$neu" != "$alt" ]; then
         puls buche "bucht am $k8 (Scheibe ${neu:0:8})"
         out=$(cd $R && BUCHE_KOPF=$K timeout 900 bash "$WZ/buche.sh" 2>&1)
