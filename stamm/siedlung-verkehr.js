@@ -473,9 +473,8 @@ class AnazhRealm_siedlung_verkehr {
         return m;
     }
 
-    // DER VORRANG DER FAHRBAHN: beansprucht ein Wagen der Stadt (er fährt) den Punkt (x, z) gegen den Bewohner b? Er liegt vor
-    // seinem Bug, näher als der Wagen in der Zeitlücke `lueckeS` fährt (höchstens `vorrangM`: wer dort hinüber will, wäre noch in
-    // seiner Bahn, wenn er ankommt), und in seiner Bahn (unten) — außer b hält selbst einen Wagen (`W.wer`, `_verkehrFolge`): dann
+    // DER VORRANG DER FAHRBAHN: beansprucht ein Wagen der Stadt (er fährt) die Querung des Bewohners b? Sie liegt vor seinem Bug,
+    // in seiner Bahn, und er ist dort, bevor b hinüber ist (unten) — außer b hält selbst einen Wagen (`W.wer`, `_verkehrFolge`): dann
     // geht b zuerst. Wer steht, beansprucht nichts: vor dem
     // wartenden Wagen geht man hinüber. Bis hier beanspruchte auch der stehende Wagen den Punkt — der Gehende am Rand wartete auf
     // ihn, er auf einen anderen, und der Halter der Kreuzung auf den Gehenden (stadt-voll 10 Uhr, 250 s, 18 Wagen dahinter); davor
@@ -489,25 +488,98 @@ class AnazhRealm_siedlung_verkehr {
     // ihn bis zu seinem Ende (der Ort gehört ihm, bis er hinaus ist). Wer selbst einen Wagen hält, geht zu Ende — ihm gilt kein
     // Vorrang. Bis hier fragte der Strahl geradeaus: in der Kurve der Kreuzung am Markt (stadt-voll 10 Uhr) lag die Bahn des
     // Halters neben ihm, und die Querenden traten hinein — 28 % der Zeit hielt ein Leib den Halter der Kreuzung (jetzt 21–23 %).
-    _verkehrVorrang(S, x, z, b) {
+    // DIE QUERUNG IST EINE RAUM-ZEIT-RESERVIERUNG (w27-verkehr-leib; Dresner & Stone: wer den geteilten Raum betritt, hat seine
+    // Durchfahrt bis hinter ihn): wer mit dem Tempo (vx, vz) von (x, z) auf die Fahrbahn oder in die Bahn eines Wagens träte, prüft
+    // seine GANZE Querung — jede Bahn, die er binnen einer Breite der Fahrbahn kreuzt, mit der Zeit, in der er sie belegt
+    // (`_verkehrQuerung`): ein Wagen beansprucht sie, wenn er an seinem Ort ist, bevor er sie verlassen hat (samt `querRandS`), und
+    // nicht schon vorbei, wenn er hineintritt; ohne Zeit, was ein Halter durch seinen Ort fährt und die Lücke im Strom. Wer schon
+    // auf der Fahrbahn oder in einer beanspruchten Bahn ist, hält seine Reservierung und geht zu Ende — der Wagen wartet die Dauer
+    // seiner Querung (`_verkehrFolge`). Bis w27-verkehr-leib fragte er nur den nächsten Schritt (0,1 s) gegen die Bahn eines Wagens
+    // binnen `lueckeS` (höchstens `vorrangM`): wer die erste Spur betrat, stand in ihr vor dem Wagen der zweiten, und der Wagen der
+    // ersten hielt vor ihm (stadt-voll 10 Uhr: Halte vor Querenden ~250 Wagen-Sekunden je Stunde). Liefert true (er wartet am Rand),
+    // das Tempo, mit dem er eine Bahn quer räumt (unten), oder false.
+    _verkehrVorrang(S, x, z, vx, vz, b) {
         const V = AnazhRealm.VERKEHR;
         const R = AnazhRealm.PLAYER_WALL_RADIUS;
-        let traf = false;
+        const VG = globalThis.__fachwerkCore.VERKEHR_GESETZ;
+        const sp = Math.hypot(vx, vz);
+        const [nx, nz] = [x + (vx / sp) * V.querSchrittM, z + (vz / sp) * V.querSchrittM];
+        // der billige Filter zuerst (Lehre 25): wer nicht an die Fahrbahn tritt, fragt keinen Wagen; wer von außen auf sie tritt,
+        // fragt seine ganze Querung, wer auf ihr geht, jede Bahn, in die er tritt (die Kreuzung: Fahrbahn von Rand zu Rand)
+        if (!(sp > 0) || !this._verkehrAufSpur(S, nx, nz)) return false;
+        let [traf, drin, tritt, raeum] = [false, false, !this._verkehrAufSpur(S, x, z, 0) && this._verkehrAufSpur(S, nx, nz, 0), null]; // prettier-ignore
         for (const W of S.verkehr.wagen) {
             const e = W.entry;
             const F = W.F;
-            if (traf || W.zustand !== "faehrt" || !e || !e._fahr || !F) continue;
-            let bahn = Math.min(V.vorrangM, W.leibS >= V.vorrangWarteS ? V.vorrangM : Math.max(0, e._fahr.vlong) * V.lueckeS); // prettier-ignore
+            if (W.zustand !== "faehrt" || !e || !e._fahr || !F) continue;
+            const v = Math.max(0, e._fahr.vlong);
+            // ohne Zeit beansprucht: die Lücke im Strom (`vorrangM`, wer schon `vorrangWarteS` vor Leibern steht) und die Bahn durch
+            // den Ort, den er hält
+            let bahn = 0;
+            if (W.leibS >= V.vorrangWarteS) bahn = V.vorrangM;
             for (const y of W.zonen) if (y.hat && !y.weg) bahn = Math.max(bahn, y.aus - F.s - W.hl);
             const r0 = W.hw + R + V.seitM;
-            if (!(bahn > 0) || (x - e.position.x) ** 2 + (z - e.position.z) ** 2 > (W.hl + bahn + r0 + 1) ** 2)
+            // so weit fährt er, während einer eine Breite der Fahrbahn samt seiner Bahn quert
+            const H = Math.min(V.folgeM, Math.max(bahn, (v * (2 * r0 + VG.breiteM)) / sp + v * V.querRandS));
+            if (!(H > 0) || (x - e.position.x) ** 2 + (z - e.position.z) ** 2 > (W.hl + H + r0 + VG.breiteM + 1) ** 2)
                 continue;
-            for (let i = F.i; !traf && i < F.pts.length && F.bogen[i] <= F.s + W.hl + bahn; i++) {
-                const r = r0 + F.rund[i];
-                traf = F.bogen[i] > F.s + W.hl && (x - F.pts[i].x) ** 2 + (z - F.pts[i].z) ** 2 < r * r;
+            // sein Ort an der Linie voraus (der Fußpunkt, `_verkehrFolge`): quer (rechts +) und längs, je Stück der Linie
+            let [bq, bi, bs, bQ] = [Infinity, -1, 0, 0];
+            for (let i = F.i; i + 1 < F.pts.length && F.bogen[i] <= F.s + W.hl + H; i++) {
+                const [a, c] = [F.pts[i], F.pts[i + 1]];
+                const [dx, dz] = [c.x - a.x, c.z - a.z];
+                const l = Math.hypot(dx, dz) || 1;
+                const t = Math.max(0, Math.min(1, ((x - a.x) * dx + (z - a.z) * dz) / (l * l)));
+                const q2 = (x - a.x - dx * t) ** 2 + (z - a.z - dz * t) ** 2;
+                if (q2 < bq) [bq, bi, bs, bQ] = [q2, i, F.bogen[i] + t * l, ((x - a.x) * -dz + (z - a.z) * dx) / l];
             }
+            const d = bs - F.s - W.hl - R;
+            if (bi < 0 || d < -R) continue;
+            const [a, c] = [F.pts[bi], F.pts[bi + 1]];
+            const l = Math.hypot(c.x - a.x, c.z - a.z) || 1;
+            const B = r0 + F.rund[bi];
+            const u = (vx * -(c.z - a.z) + vz * (c.x - a.x)) / l;
+            // wer längs in die Bahn tritt (quer langsamer als `querMs`), belegt sie, solange er in ihr ginge
+            const Q =
+                AnazhRealm._verkehrQuerung(bQ, u, B) ||
+                (Math.abs(bQ + (u / sp) * V.querSchrittM) <= B ? [0, Infinity] : null);
+            if (!Q || Math.abs(bQ) > B + VG.breiteM) continue;
+            // der Wagen, der vor ihm hält (`W.wer`), beansprucht seine Bahn gegen ihn: wer aus ihr trat, tritt nicht wieder hinein
+            const belegt =
+                W.wer === b ||
+                Math.max(0, d) <= bahn ||
+                (v * (Q[1] + V.querRandS) > d && d + 2 * (W.hl + R) > v * Q[0]);
+            if (!belegt) continue;
+            if (Math.abs(bQ) <= B) {
+                // er steht schon in der Bahn, die einer beansprucht: verlässt er sie in der Dauer einer Querung, geht er hinüber;
+                // sonst RÄUMT ER SIE QUER (er gibt sie frei), nie längs
+                drin = true;
+                if (d > 0 && Q[1] > (2 * B) / sp + V.querRandS) raeum = { q: bQ, B, nx: -(c.z - a.z) / l, nz: (c.x - a.x) / l }; // prettier-ignore
+                continue;
+            }
+            traf = true;
+            tritt = tritt || Q[0] * sp <= V.querSchrittM;
         }
-        return traf && !S.verkehr.wagen.some((W) => W.wer === b);
+        // DER LEIB GIBT DIE BAHN FREI (w27-verkehr-leib): wer vor dem Bug in ihr steht oder längs geht, tritt mit seinem Tempo quer
+        // aus ihr an den Rand neben der Fahrbahn (dort fährt kein Wagen) — auf seiner Seite, nie über die Linie —, wo keine Wand
+        // den Schritt schneidet und auf ihm kein Leib näher als zwei Kapseln steht; und wartet dort, bis die Bahn frei ist (oben).
+        // Trägt seine Seite nicht, geht er seinen Weg, und der Wagen umfährt ihn (`_verkehrFolge`). Bis hier ging er, wohin sein Weg
+        // und sein Ausweichen ihn führten: an der Kreuzung am Markt tänzelten #7:58:0 und #7:54:4 längs der Bahn ihres Halters
+        // (stadt-voll 10 Uhr, 22–49 s, die Kreuzung stand, „fahrend je Minute“ 0 m)
+        if (raeum) {
+            const K = 2 * R + 0.01;
+            const s = Math.sign(raeum.q) || 1;
+            const w = raeum.B - s * raeum.q + V.querSchrittM; // so weit bis jenseits der Bahn
+            const [ux, uz] = [raeum.nx * s, raeum.nz * s];
+            const [p, m] = [1, 0.5].map((f) => ({ x: x + ux * w * f, z: z + uz * w * f }));
+            const frei =
+                !this._verkehrAufSpur(S, p.x, p.z, 0) &&
+                !this._bewohnerWand({ x, z }, p) &&
+                this._bewohnerNaechster(S, b, p.x, p.z) >= K &&
+                this._bewohnerNaechster(S, b, m.x, m.z) >= K;
+            return frei && { vx: ux * sp, vz: uz * sp };
+        }
+        return traf && tritt && !drin;
     }
 
     // DER WAGEN STEHT AUF SEINEM PLATZ: das Werk des Gesetzes (`fahrzeug_<typ>`, ausGesetz, präzise — die Wende ist sein Platz),
@@ -707,10 +779,16 @@ class AnazhRealm_siedlung_verkehr {
             const r = F.pts[i + 1];
             if (andere.some((o) => Math.hypot(o.entry.position.x - q.x, o.entry.position.z - q.z) < V.ankunftAbstandM))
                 continue;
-            // kein Leib und kein Stand eines Bewohners unter ihm (wer dort steht, geht oder noch hinkommt, stünde in der Hülle)
+            // kein Leib und kein Stand eines Bewohners unter ihm (wer dort steht, geht oder noch hinkommt, stünde in der Hülle).
+            // WER NOCH ANKOMMT, STEHT NIRGENDS (w28-verkehr-takt, mensch.K2: der Tag nach dem Sprung ist f(Same, t)): sein Leib
+            // steht, wo er VOR dem Sprung stand — das Raster der Leiber führt ihn nicht (`_bewohnerRasterLage`, seit heil-wackler),
+            // der Wagen sah ihn hier weiter. Der Fahrer steigt in der Reihe der Liste ein, die Köpfe hinter ihm kommen erst an:
+            // stand einer von ihnen vor dem Sprung auf dem Punkt des Samens, rückte der Wagen weiter oder blieb am Platz, und die
+            // Stunde danach hing an der Vorgeschichte der Seite (stadt-voll 10 Uhr, vier Läufe desselben Stands: Wagen 16 begann
+            // 82,9 · 0 · 0 · 98,0 m auf seiner Route; fahrend je Minute 67 · 67 · 48 · 39 · 39 · 52 m, im Zug 28)
             const nah = (o) => o && Math.hypot(o.x - q.x, o.z - q.z) < W.hl + 1;
             const unter = (b) =>
-                (b.leib && !b.drinnen && !b.amSteuer && nah(b.leib.position)) ||
+                (b.leib && !b.drinnen && !b.amSteuer && !b.ankunft && nah(b.leib.position)) ||
                 nah(b.orte.heim) ||
                 nah(b.orte.platz) ||
                 nah(b.orte.werk) ||
@@ -1382,13 +1460,18 @@ class AnazhRealm_siedlung_verkehr {
         };
         // er hält `abstandM` hinter dem Punkt, an dem der vor ihm hielte (v² = vO² + 2·b·(Lücke − Abstand); wer näher ist als der
         // Abstand, fährt langsamer als der vor ihm, im Maß der Lücke — ohne Lücke steht er, nie in ihn)
-        const halt = (gap, vO, grund, wer = null) => {
-            const w =
+        // DIE RAUM-ZEIT DER QUERUNG (`tAus`, `_verkehrQuerung`): verlässt der Leib die Bahn, bevor der Wagen an seinem Ort ist, fährt
+        // er so, dass er erst `querRandS` danach dort ankommt (Lücke durch Zeit), nie schneller, als er vor dem Leib noch hielte, wenn
+        // der stehen bliebe (`querHaltM` vor seiner Kapsel) — er wartet die Dauer der Querung, nie bis zum Stand
+        const halt = (gap, vO, grund, wer = null, tAus = Infinity) => {
+            let w =
                 gap > V.abstandM
                     ? Math.sqrt(vO * vO + 2 * V.bremsMs2 * (gap - V.abstandM))
                     : gap > 0
                       ? vO * (gap / V.abstandM)
                       : 0;
+            if (tAus < Infinity)
+                w = Math.max(w, Math.min(gap / (tAus + V.querRandS), Math.sqrt(2 * V.bremsMs2 * Math.max(0, gap - V.querHaltM)))); // prettier-ignore
             if (w < deckel) [deckel, W.grund, W.wer] = [w, grund, wer]; // der Täter beim Namen (die Linse VK)
         };
         // DER WAGEN VOR IHM: nur wer in der Hülle des Fensters steht (samt seiner halben Länge und der Bahn), wird gefragt.
@@ -1487,35 +1570,47 @@ class AnazhRealm_siedlung_verkehr {
         // kommt, vor dem hält er
         const pruefe = (x, z, leib, vx, vz) => {
             const a = auf(x, z, jL);
-            if (!a || a.s <= F.s + W.hl - R || a.quer > W.hw + R + V.seitM + rundAn(a.i)) return;
+            if (!a || a.s <= F.s + W.hl - R) return;
             const gap = a.s - F.s - W.hl - R;
-            const b = F.pts[Math.min(F.pts.length - 1, a.i + 1)];
-            const l = Math.hypot(b.x - F.pts[a.i].x, b.z - F.pts[a.i].z) || 1;
-            halt(
-                gap,
-                Math.max(0, ((vx || 0) * (b.x - F.pts[a.i].x) + (vz || 0) * (b.z - F.pts[a.i].z)) / l),
-                "leib",
-                leib
-            );
+            const [p, b] = [F.pts[a.i], F.pts[Math.min(F.pts.length - 1, a.i + 1)]];
+            const l = Math.hypot(b.x - p.x, b.z - p.z) || 1;
+            const [tx, tz] = [(b.x - p.x) / l, (b.z - p.z) / l];
+            // DER RAUM NEBEN IHM wie neben einem Wagen (oben): an dem, der steht oder ihm entgegenkommt, genügt der Raum der
+            // Begegnung, wer quert oder vor ihm geht, braucht den Seitenraum (bis w27-verkehr-leib jeder: wer am Rand entgegenkam,
+            // hielt ihn, ~150 Wagen-Sekunden je Stunde, stadt-voll 10 Uhr)
+            const sp = Math.hypot(vx || 0, vz || 0);
+            const B = W.hw + R + rundAn(a.i) + (sp < V.umfahrMs || (vx || 0) * tx + (vz || 0) * tz < -0.5 * sp ? V.begegnungM : V.seitM); // prettier-ignore
+            if (a.quer > B) return;
+            // wer quert, ist nach `tAus` aus seiner Bahn (quer zur Linie am Fußpunkt, rechts +: (−tz, tx)) — der Wagen wartet die
+            // Dauer der Querung; wer steht oder ihr folgt, hält ihn, bis er beiseite tritt (unten)
+            const Q = AnazhRealm._verkehrQuerung((x - p.x) * -tz + (z - p.z) * tx, (vx || 0) * -tz + (vz || 0) * tx, B);
+            const tAus = Q ? Q[1] : Infinity;
+            halt(gap, Math.max(0, (vx || 0) * tx + (vz || 0) * tz), "leib", leib, tAus);
             // WER STEHT UND NICHT WEICHT, um den fährt er (`_verkehrUmfahren`), den nächsten zuerst: der Spieler (`leib` null — kein
             // Gedränge fragt ihn nach Platz) sofort, ein Bewohner, der nach `umfahrNachS` noch in der Bahn steht (sein Platz fand
             // keinen Ort; bis w13-verkehr-heil hielt er drei Wagen eine Minute vor der Wende 924/354, 10 Uhr)
-            const steht = Math.hypot(vx || 0, vz || 0) < V.umfahrMs;
+            // (wer die Bahn nicht verlässt, w27-verkehr-leib: wer steht, und wer in ihr längs geht — `tAus` Infinity — wie er)
+            const steht = sp < V.umfahrMs || (leib && tAus === Infinity);
             if (steht && (!leib || W.leibS >= V.umfahrNachS) && !(W.umfahr && W.umfahr.s <= a.s))
                 W.umfahr = { x, z, i: a.i, s: a.s };
-            // Platz verlangt er von dem, der ihn `platzS` lang hält — dem Stehenden wie dem Gehenden, der nicht aus der Bahn kommt
-            // (ein langsamer Gänger hielt die Enge 30 s, sechs Wagen dahinter) — gegen die Bahn AM ORT des Leibs (das Stück der
-            // Linie um seinen Fußpunkt, je `platzBahnM` davor und dahinter, jedes Stück der Bahn — nie ihre Sehne) und je `platzS`
-            // wieder, solange er bleibt: auch wer schon beiseite trat (für einen anderen oder zu knapp), tritt weiter. Bis hier fragte
-            // er nur, wer noch nie beiseite trat, gegen die Sehne von 6 m — in der Kurve der Kreuzung lag der Platz „daneben" 0,6 m
-            // in der Bahn, und Wagen und Bewohner warteten aufeinander (10 Uhr: Kreuzung und Enge der Metropole standen 40 s)
-            if (leib && gap < V.abstandM + 1 && v < 0.5 && (W.warteS += h) > V.platzS) {
+            // Platz verlangt er von dem, der ihn hält — dem Stehenden wie dem Gehenden, der nicht aus der Bahn kommt (ein langsamer
+            // Gänger hielt die Enge 30 s, sechs Wagen dahinter) — gegen die Bahn AM ORT des Leibs (das Stück der Linie um seinen
+            // Fußpunkt, je `platzBahnM` davor und dahinter, jedes Stück der Bahn — nie ihre Sehne) und je `platzS` wieder, solange
+            // er bleibt: auch wer schon beiseite trat (für einen anderen oder zu knapp), tritt weiter. Bis hier fragte er nur, wer
+            // noch nie beiseite trat, gegen die Sehne von 6 m — in der Kurve der Kreuzung lag der Platz „daneben" 0,6 m in der Bahn,
+            // und Wagen und Bewohner warteten aufeinander (10 Uhr: Kreuzung und Enge der Metropole standen 40 s). DER LEIB, DER DIE
+            // BAHN NICHT VERLÄSST (`tAus` Infinity: er steht in ihr, er folgt ihr, er kommt entgegen), GIBT SIE FREI: er tritt
+            // beiseite, sobald er den Wagen hält, nie erst nach `platzS` — wer quert, ist nach der Querung aus ihr. Bis w27-verkehr-leib
+            // wartete der Wagen vor jedem `platzS`, der Querende wie der Stehende (stadt-voll 10 Uhr: ~210 Halte vor Leibern je
+            // Stunde, die Reihen dahinter 640–760 Wagen-Sekunden)
+            const frage = tAus === Infinity && !(W.warteS > 0);
+            if (leib && gap < V.abstandM + 1 && v < 0.5 && ((W.warteS += h) > V.platzS || frage)) {
                 let [i0, i2] = [a.i, a.i + 1];
                 while (i0 > 0 && F.bogen[a.i] - F.bogen[i0] < V.platzBahnM) i0--;
                 while (i2 < F.pts.length - 1 && F.bogen[i2] - F.bogen[a.i] < V.platzBahnM) i2++;
                 const q = F.pts[i2];
                 const fuer = W.platzLeib || (W.platzLeib = { leib: e, weg: [q], wi: 0, drinnen: false, kF: 0 });
-                [fuer.weg[0], fuer.kF, W.warteS] = [q, W.hw + R + V.seitM + rundAn(a.i), 0];
+                [fuer.weg[0], fuer.kF, W.warteS] = [q, W.hw + R + V.seitM + rundAn(a.i), 1e-9]; // gefragt: wieder nach `platzS`
                 this._bewohnerPlatz(S, leib, F.pts.slice(i0, i2 + 1), null, fuer, fuer.kF);
             }
         };
@@ -1954,8 +2049,11 @@ AnazhRealm._verkehrEcken = Object.freeze([
 // den halben Wagen und die Kapsel hinaus von jeder Spur (der Seitenraum `seitM` und das Ausscheren in der engsten Kurve,
 // (parkL/2)²/(2·kurveR) = 0,66 m: kein Stand liegt in der Bahn, vor der ein Wagen hält) · querBreiten = so viele Breiten der
 // Fahrbahn trägt ein Bein des Fußes in ihr, das sie quert (`_verkehrQuert`; mehr geht längs) · vorrangM = so weit vor seinem
-// Bug beansprucht ein Wagen die Fahrbahn höchstens, lueckeS = so viele Sekunden seiner Fahrt (die Zeitlücke): wer dort in sie
-// treten will, wartet am Rand (`_verkehrVorrang`; wer steht, beansprucht nichts — außer er wartet schon `vorrangWarteS` vor Leibern) · stil = der Fahrstil der Stadt (`_fahrerLinie`):
+// Bug beansprucht ein Wagen die Fahrbahn auch stehend, wenn er schon `vorrangWarteS` vor Leibern wartet (die Lücke im Strom;
+// sonst beansprucht er sie in der Zeit, `_verkehrVorrang`) · DIE RAUM-ZEIT DER QUERUNG (`_verkehrQuerung`): querMs = wer quer
+// langsamer geht, quert nicht (er steht, folgt, kommt entgegen), querRandS = so lange nach dem Ende der Querung ist ein Wagen
+// frühestens an ihrem Ort, querHaltM = so weit vor der Kapsel eines Querenden hielte der Wagen noch, bliebe der stehen,
+// querSchrittM = so weit vor der Fahrbahn oder einer Bahn entscheidet der Leib seine Querung · stil = der Fahrstil der Stadt (`_fahrerLinie`):
 // quer = so viel des Reibkreises trägt seine Kurve (3,9 m/s² quer), lenk = so viel des Einschlags, den die Säule bei diesem Tempo
 // trägt, brems = so fest bremst er vor ihr (3,9 m/s²), kriechMs = so langsam fährt er höchstens um eine Kehre; bis hier fuhr die
 // Stadt den Stil des Ritts (85 % des Reibkreises, 8,3 m/s²
@@ -1997,8 +2095,11 @@ AnazhRealm.VERKEHR = Object.freeze({
     spurRandM: 1,
     querBreiten: 2,
     vorrangM: 8,
-    lueckeS: 3,
     vorrangWarteS: 3,
+    querMs: 0.3,
+    querRandS: 0.5,
+    querHaltM: 0.5,
+    querSchrittM: 0.5,
     stil: Object.freeze({ quer: 0.4, lenk: 1, brems: 0.4, kriechMs: 2.5 }),
     bodenM: 0.5,
     bodenRandM: 1.5,
@@ -2066,4 +2167,17 @@ AnazhRealm._verkehrLos = function (Z, W) {
     const k = Z.halter.indexOf(W);
     if (k >= 0) Z.halter.splice(k, 1);
     if (!Z.halter.length) Z.richtung = null;
+};
+
+// DIE RAUM-ZEIT DER QUERUNG (w27-verkehr-leib, Dresner & Stone): ein Leib quer zur Linie eines Wagens — Abstand q, Tempo u quer
+// (rechts +) — belegt dessen Bahn (halbe Breite B) von [0] bis [1] Sekunden ab jetzt; wer quer langsamer als `querMs` geht (er
+// steht, er folgt ihr, er kommt entgegen), belegt sie, solange er in ihr ist (Infinity); wer neben ihr nicht in sie geht, nie
+// (null). Das EINE Gesetz, nach dem Wagen und Leib den Raum der Straße in der Zeit teilen: der Wagen wartet die Dauer der Querung
+// (`_verkehrFolge`), der Leib betritt die Bahn nur, wo kein Wagen vor ihrem Ende an seinem Ort ist (`_verkehrVorrang`).
+AnazhRealm._verkehrQuerung = function (q, u, B) {
+    const drin = Math.abs(q) <= B;
+    if (!(Math.abs(u) >= AnazhRealm.VERKEHR.querMs)) return drin ? [0, Infinity] : null;
+    const [s, au] = [Math.sign(u), Math.abs(u)];
+    const aus = (B - q * s) / au;
+    return aus > 0 ? [Math.max(0, (-B - q * s) / au), aus] : null;
 };

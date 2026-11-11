@@ -8804,6 +8804,74 @@
         var c = Math.cos(p.phi || 0);
         return { cx: p.cx - s * h, cz: p.cz - c * h, phi: p.phi || 0, ex: p.ex, ez: p.ez + h };
     }
+    // DAS BELAG-GESETZ DER STADT (Breite siedlung, 10.11.2026; Auge am Messort „dorf 7 300“: die Hauptgasse der Metropole war getretene
+    // Erde, Halme standen bis an die Fassaden, der Markt ein Erd-Rechteck). Der Belag einer Gasse und des Platzes ist eine Funktion
+    // von RANG × GRÖSSE × JAHR, nie eine Wahl des Wirts: Pflaster ist teuer, es beginnt am Markt und wandert mit der Klasse der
+    // Siedlung und den Jahrhunderten nach außen. `reife` = die Stufe der Größen-Klasse (GROESSE_BAND: weiler 0 … metropole 5) + die
+    // Zeit seit `jahr0` in Schritten von `jeJahre`; ein Rang trägt Pflaster ab seiner Schwelle `ab` — der Platz (2: der Markt um
+    // 1200), die Hauptgasse (gen 0 — 3: die Stadt um 1200, der Markt um 1400, das Dorf um 1600), die Nebengasse (gen 1 — 4), die
+    // Binnengasse (`quer` — 5: die Metropole um 1200), die Gasse der Vorstadt (6). Ein Feldweg bleibt Erde, ein Gras-Anger Wiese.
+    // EINE Gasse altert so durch ihre Beläge, wenn der Ort wächst und sein Jahr steigt (derselbe Plan, `jahr` + `spanne`).
+    // Das Pflaster deckt die Gasse von Bauflucht zu Bauflucht (`gassenBreite`: die Fahrbahn + beidseits der Gehweg der Norm,
+    // DORF_NORM.gehweg — der Setzer stellt jede Fassade genau dorthin, `dorfLayout` `fr`), die Erde nur die Fahrspur.
+    // Leser: der Maler der Wege-Karte (`_stlWegeBuild` → `WEGE_KARTE.belag`), über ihn der Boden (Kopfstein, porta
+    // STEIN_GESETZ.kopfstein), die Wiese (kein Halm auf Pflaster) und der Schritt (Stein).
+    var BELAG_GESETZ = { jahr0: 1200, jeJahre: 200, ab: { platz: 2, haupt: 3, neben: 4, binnen: 5, vorstadt: 6 } };
+    function belagReife(plan) {
+        var g = 0;
+        for (var k = 0; k < GROESSE_BAND.length; k++) if (GROESSE_BAND[k][0] === plan.groesse) g = k;
+        return g + ((isFinite(plan.jahr) ? plan.jahr : BELAG_GESETZ.jahr0) - BELAG_GESETZ.jahr0) / BELAG_GESETZ.jeJahre;
+    }
+    function gassenRang(rd) {
+        return rd.gen === 0 ? "haupt" : rd.gen === 1 ? "neben" : rd.quer ? "binnen" : "vorstadt";
+    }
+    function gassenBelag(plan, rd) {
+        return belagReife(plan) >= BELAG_GESETZ.ab[gassenRang(rd)] ? "pflaster" : "weg";
+    }
+    function gassenBreite(plan, rd) {
+        return gassenBelag(plan, rd) === "pflaster" ? rd.w + 2 * DORF_NORM.gehweg : rd.w;
+    }
+    function platzBelag(plan) {
+        var pz = plan.platz;
+        if (!pz) return null;
+        if (pz.typ === "gras") return "gras";
+        return belagReife(plan) >= BELAG_GESETZ.ab.platz ? "pflaster" : "weg";
+    }
+    // der Belag am Punkt (plan-lokal): der der nächsten Gasse, deren Bauflucht ihn trägt (Abstand zur Mittellinie ≤ ihre halbe
+    // `gassenBreite` + `saum`), sonst der des Platzes, auf dem er liegt, sonst null. Leser: der Vorplatz eines Hauses — vor einer
+    // gepflasterten Gasse ist er gepflastert, vor einer Erd-Gasse getretene Erde.
+    function belagAm(plan, x, z, saum) {
+        var best = Infinity,
+            art = null,
+            s = isFinite(saum) ? saum : 0,
+            roads = plan.roads || [];
+        for (var r = 0; r < roads.length; r++) {
+            var rd = roads[r],
+                P = rd.pts,
+                halb = gassenBreite(plan, rd) / 2 + s;
+            for (var i = 0; i + 1 < P.length; i++) {
+                var dx = P[i + 1].x - P[i].x,
+                    dz = P[i + 1].z - P[i].z,
+                    ll = dx * dx + dz * dz;
+                var h = ll > 1e-9 ? ((x - P[i].x) * dx + (z - P[i].z) * dz) / ll : 0;
+                h = h < 0 ? 0 : h > 1 ? 1 : h;
+                var d = Math.hypot(x - (P[i].x + dx * h), z - (P[i].z + dz * h));
+                if (d <= halb && d < best) {
+                    best = d;
+                    art = gassenBelag(plan, rd);
+                }
+            }
+        }
+        var pz = plan.platz;
+        if (art === null && pz && isFinite(pz.cx)) {
+            var c = Math.cos(pz.phi || 0),
+                sn = Math.sin(pz.phi || 0),
+                rx = x - pz.cx,
+                rz = z - pz.cz;
+            if (Math.abs(c * rx - sn * rz) <= pz.ex + s && Math.abs(sn * rx + c * rz) <= pz.ez + s) art = platzBelag(plan);
+        }
+        return art === "gras" ? null : art; // am Gras-Anger bleibt der Vorplatz getretene Erde (kein Gassen-Belag)
+    }
     // DAS WASSER EINES HAUSES (K10): ein Slot `sl` (plan-lokal), dessen Grund samt Saum oder dessen Vorplatz Welt-Wasser trägt
     // (`wasserAm(x, z)` plan-lokal: ctx.wasserAt, dasselbe Urteil wie das Brücken-Etikett; das Raster des Wirts,
     // `_fundamentRaster`: je Meter ein Punkt, höchstens 13 je Seite), fällt aus dem Plan, BEVOR sein Erdbau entsteht — keine
@@ -10957,6 +11025,12 @@
         vorplatzFlaeche: vorplatzFlaeche,
         vorplatzBoden: vorplatzBoden,
         eingangVon: eingangVon,
+        // das Belag-Gesetz der Stadt: Rang × Größe × Jahr (Leser: der Maler der Wege-Karte, `_stlWegeBuild`)
+        BELAG_GESETZ: BELAG_GESETZ,
+        gassenBelag: gassenBelag,
+        gassenBreite: gassenBreite,
+        platzBelag: platzBelag,
+        belagAm: belagAm,
         lichtFlackern: lichtFlackern,
         // K11b — die Farbe aus der Farbtemperatur, der Abfall 1/d² mit Kern und Saum (die Welt rechnet ihn im Stoff)
         lichtFarbe: lichtFarbe,
