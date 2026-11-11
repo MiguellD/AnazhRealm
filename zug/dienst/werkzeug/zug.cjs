@@ -56,11 +56,25 @@ async function runsFuer(sha, zweige = []) {
     return [...je.values()].filter((x) => x.name === "Code-Check");
 }
 async function jobsAlle(run) {
-    const out = [];
-    for (let s = 1; ; s++) {
-        const j = await api(`/actions/runs/${run.id}/jobs?filter=all&per_page=100&page=${s}`);
-        out.push(...(j.jobs || []));
-        if (!j.jobs || j.jobs.length < 100) return out;
+    // 10.11. (z366, Lauf 42813031685, 4 Versuche): GitHub antwortet auf filter=all dauerhaft 502, filter=latest 200 — dann je Versuch
+    // einzeln (/attempts/<n>/jobs), das gibt dieselbe Liste aller Versuche; nie fällt das Urteil am Abruf
+    try {
+        const out = [];
+        for (let s = 1; ; s++) {
+            const j = await api(`/actions/runs/${run.id}/jobs?filter=all&per_page=100&page=${s}`);
+            out.push(...(j.jobs || []));
+            if (!j.jobs || j.jobs.length < 100) return out;
+        }
+    } catch (e) {
+        if (!/\b5\d\d\b/.test(String(e.message || e))) throw e;
+        const out = [];
+        for (let a = 1; a <= (run.run_attempt || 1); a++)
+            for (let s = 1; ; s++) {
+                const j = await api(`/actions/runs/${run.id}/attempts/${a}/jobs?per_page=100&page=${s}`);
+                out.push(...(j.jobs || []));
+                if (!j.jobs || j.jobs.length < 100) break;
+            }
+        return out;
     }
 }
 const kurz = (n) => n.replace(/ (cpu|gpu)$/, "").replace(/ \(.*\)$/, "");
@@ -143,7 +157,21 @@ async function bereit(args) {
 
 // ── urteil ───────────────────────────────────────────────────────────────────────────────────────────────────────────
 // die Wackler ohne je einen Täter (08.11., z296–z322: Fenster-Wand 6×, K6 5× rot, 0 Täter) — kein Neulauf, sie blockieren nie (landen --wackler-frei)
-const WACKEL_RE = new RegExp(process.env.ZUG_WACKEL || "Fenster-Wand|Kamera-Leib auf der Karte");
+const WACKEL_RE = new RegExp(process.env.ZUG_WACKEL || "Fenster-Wand|Kamera-Leib auf der Karte|Fahr-Linse des Lebens|Erst-Zeichnungs-Wand");
+// DER SWIFTSHADER-ZWILLING IST NIE EIN HALT (10.11., Schöpfer: „wieso haben wir noch immer switshader, dachte das ist weg mit gpu-probe“):
+// die voll-Jobs der Klasse gpu zeichnen auf GitHub-ubuntu mit swiftshader dieselben Render-Wände, die der echt-Job auf der Karte trägt
+// (dazu je Zweig die GPU-Probe). z358–z366: jedes ROT dort war der 900-s-Abriss an createRenderPipelineAsync, kein einziger Täter,
+// je Zug bis zu drei Neuläufe à ~20 min. Ist am Kopf JEDES Rot ein swiftshader-gpu-Job UND der echt-Job auf der Karte GRÜN, ist das
+// Urteil GRÜN mit Hinweis — der Kopf landet ohne Neulauf. Fällt auch echt, oder ein cpu-Job, urteilt der Zug wie bisher.
+const SWIFT_JOB = /^voll \d+\/\d+ gpu$/;
+function swiftHinweis(letzte) {
+    const rotJobs = [...letzte].filter(([, j]) => ROT.has(j.conclusion));
+    const echt = [...letzte].filter(([n]) => /^echt/.test(n));
+    if (!rotJobs.length || !echt.length) return null;
+    if (!rotJobs.every(([n]) => SWIFT_JOB.test(n))) return null;
+    if (!echt.every(([, j]) => j.conclusion === "success")) return null;
+    return rotJobs.map(([n, j]) => `${kurz(n)}/${rotSchritte(j).join("+") || "?"}`).join(", ");
+}
 async function urteilVon(sha, { neulauf = true } = {}) {
     const alle = await runsFuer(sha, ["integ-probe", "zug-a", "zug-b"]);
     const runs = alle.filter((r) => r.conclusion !== "cancelled" || r.status !== "completed");
@@ -190,6 +218,8 @@ async function urteilVon(sha, { neulauf = true } = {}) {
             ? { wort: "GRUEN", run, wackler, zeile: `GRUEN mit Wackler ${wackler.join(", ")}${zus}` }
             : { wort: fehlt.length ? "UNVOLL" : "GRUEN", run, zeile: `${fehlt.length ? "UNVOLL" : "GRUEN"}${zus}` };
     }
+    const swift = swiftHinweis(letzte);
+    if (swift) return { wort: "GRUEN", run, swift, zeile: `GRUEN (echt auf der Karte GRÜN · swiftshader-Hinweis, kein Halt: ${swift}) · ${ort}` };
     const nur = rot.every((r) => r.n.startsWith("echt"));
     const namen = rot.map((r) => `${r.n}/${r.s}`).join(", ");
     if (run.run_attempt < 2 && neulauf && !rot.every((r) => WACKEL_RE.test(r.s))) {
@@ -780,7 +810,14 @@ function mergeEinen(z, sha) {
         .map(([d, k]) => `${path.basename(d)} ${Object.entries(k).map(([x, n]) => `${x}${n}`).join("")}`)
         .join(", ");
     git(["commit", "-q", "-m", `${msg}\n\nZug-Auflösung (Klasse a Kommentar · b Karte · c Version · e benachbart · f Leerraum · g Code gegen Kommentar · i Import-Namen): ${body}`.slice(0, 600)], ZUG);
-    // die Einzel-Decke je Merge nach Klasse g ist gefallen (10.11., Atom-Decke fällt): die Wachstums-Wand urteilt an der SUMME des Kandidaten (pruef unten)
+    // nach (g) fehlt der Kommentar-Seite ihr Abzug: die Decke dieses Merges allein (scripts wächst nie), sonst fällt NUR dieser Zweig
+    if (Object.values(kl).some((k) => k && k.g)) {
+        const d = laufe("node", ["scripts/diag-betriebsgesetz.cjs", "--grund", "HEAD^1", "--kopf", "HEAD"]);
+        if (!d.ok) {
+            git(["reset", "-q", "--hard", "HEAD^1"], ZUG);
+            return { drin: false, grund: `Decke nach Klasse g (der Kommentar-Abzug fiel mit der Code-Seite): ${d.rest}` };
+        }
+    }
     return { drin: true, kl };
 }
 function stelleWorktree() {
@@ -866,10 +903,15 @@ function bauRumpf(args, { trocken = false } = {}) {
     const pkg = JSON.parse(fs.readFileSync(path.join(ZUG, "package.json"), "utf8"));
     const v = pkg.version.replace(/(\d+)$/, (n) => String(Number(n) + 1));
     const msg = `V${v}: Versions-Stufe nach ${undListe(drin)} (alle versionierten Dateien tragen den neuen ?v=) [ci voll]`;
+    // DAS FENSTER WÄHLT DAS GESETZ DES KANDIDATEN (10.11. 19:42: z371 trug w27-wand-tag, das Gesetz des Schöpfers „Ja, Tagesfenster",
+    // und fiel trotzdem beim Bau, weil dieser Aufruf `--grund <basis>` erzwang — je Zug: Prüf +1 697 / Spiel +1 372). Kennt das
+    // Gesetz am Kandidaten das Tagesfenster, misst der Bau wie CI auf integ-probe (`--grund tag`); sonst wie bisher gegen die Basis.
+    const tagFenster = /function tagGrund\(/.test(fs.readFileSync(path.join(ZUG, "scripts/diag-betriebsgesetz.cjs"), "utf8"));
+    const grundArg = tagFenster ? "tag" : basis;
     const pruef = [
         ["diag-atlas --check", "node", ["scripts/diag-atlas.cjs", "--check"]],
         ["stamm:lint", "npm", ["run", "-s", "stamm:lint"]],
-        [`betriebsgesetz --grund ${basis.slice(0, 8)}`, "node", ["scripts/diag-betriebsgesetz.cjs", "--grund", basis]],
+        [`betriebsgesetz --grund ${tagFenster ? "tag" : basis.slice(0, 8)}`, "node", ["scripts/diag-betriebsgesetz.cjs", "--grund", grundArg]],
         // die Zwillings-Wände einer Decke-Zahlstelle fassen die Zwillinge der ANDEREN Mitglieder (26.10. z37: ein setTimeout-Schlaf
         // aus b-streu-faden, 36 min CI-ROT für eine Zeile) — der Selbsttest fährt sie in ~25 s
         ["gate:welt-boot (Zwillings-Wände)", "node", ["scripts/lib/welt-boot.cjs", "--selbsttest"]],
@@ -1006,10 +1048,14 @@ async function landen(args) {
     if (nurWackler) console.log(`landen: nur Wackler rot, übergangen — ${u.zeile}`);
     // echt ist Pflicht am Lande-SHA, auch für Werkzeug (die echt-Linsen sind Werkzeug) — 23.10.: ff6d7d51 landete ohne echt,
     // weil der Push nach integ-probe abgewiesen war und urteil echt nur als Rot kannte
+    // 10.11. (w27-swift-raus): der echt-Job ist eine Matrix aus drei Karten-Beinen (omen · radeon · gtx1050) — JEDES Bein muss in
+    // seinem letzten Versuch grün sein (vorher reichte EIN grüner echt-Job, das hätte ein rotes Bein durchgelassen)
     let echtGruen = false;
-    for (const r of await runsFuer(sha, ["integ-probe"]))
-        if ((await jobsAlle(r)).some((j) => /^echt/.test(j.name) && (j.conclusion === "success" || (nurWackler && j.conclusion === "failure"))))
-            echtGruen = true;
+    for (const r of await runsFuer(sha, ["integ-probe"])) {
+        const { letzte } = lesart(await jobsAlle(r));
+        const beine = [...letzte].filter(([n]) => /^echt/.test(n)).map(([, j]) => j);
+        if (beine.length && beine.every((j) => j.conclusion === "success" || (nurWackler && j.conclusion === "failure"))) echtGruen = true;
+    }
     if (!echtGruen) {
         console.log(`landen ABBRUCH: kein grüner echt-Lauf am ${sha.slice(0, 8)} (integ-probe trägt ihn)`);
         return 1;

@@ -1,0 +1,18 @@
+#!/bin/bash
+# ci.sh <zweig> … — je Zweig die letzten Läufe am Kopf mit Urteil und roten Jobs
+cd /c/Users/micha/AnazhRealm-profiband
+TOK=$(printf 'protocol=https\nhost=github.com\n\n' | git credential fill 2>/dev/null | sed -n 's/^password=//p')
+API=https://api.github.com/repos/MiguellD/AnazhRealm
+for z in "$@"; do
+  sha=$(git ls-remote origin "refs/heads/$z" | cut -c1-40)
+  echo "== $z ${sha:0:8}"
+  curl -s -H "Authorization: Bearer $TOK" "$API/actions/runs?head_sha=$sha&per_page=20" | node -e '
+let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const j=JSON.parse(s);for(const r of (j.workflow_runs||[]))console.log(r.id+"\t"+r.name+"\t"+r.status+"\t"+(r.conclusion||"-"));})' > /tmp/claude/w4/ci-runs.tmp
+  while IFS=$'\t' read -r id name st co; do
+    echo "  $name: $st $co"
+    if [ "$co" = failure ]; then
+      curl -s -H "Authorization: Bearer $TOK" "$API/actions/runs/$id/jobs?per_page=100&filter=latest" | node -e '
+let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const j=JSON.parse(s);const f=(j.jobs||[]).filter(x=>x.conclusion==="failure");console.log("    rot ("+f.length+"/"+(j.jobs||[]).length+"): "+f.map(x=>x.name+" ["+((x.steps||[]).filter(s=>s.conclusion==="failure").map(s=>s.name).join(","))+"]").join(" · "));})'
+    fi
+  done < /tmp/claude/w4/ci-runs.tmp
+done

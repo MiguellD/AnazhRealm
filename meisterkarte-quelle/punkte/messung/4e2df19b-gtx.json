@@ -1,7 +1,7 @@
 {
  "sha": "4e2df19b5c5103b093818b62b5a84ababf85b493",
  "geraet": "gtx",
- "zeit": "2026-11-10T21:40:05.457Z",
+ "zeit": "2026-11-11T00:25:27.309Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "affekt.K4#2": {
@@ -364,52 +364,405 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "ferne.K1#2": {
+   "gruen": false,
+   "zahl": "K1-2 ROT (1 Befunde) · Farbton 8 km 1.27–13.68° (≤ 10°) · Sonnenseite Uhr 0,5/0,27 1.25/5.025 (≥ 1,2) · fernes Weiß R/B 6.248 (≥ 1,3) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.02,
+   "grund": "ROT: K1-2 ROT (1 Befunde) · Farbton 8 km 1.27–13.68° (≤ 10°) · Sonnenseite Uhr 0,5/0,27 1.25/5.025 (≥ 1,2) · fernes Weiß R/B 6.248 (≥ 1,3) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "s": 61.4,
+   "fremd": {
+    "s": 63.9,
+    "takte": 29,
+    "fremdS": 40.44,
+    "kerne": 0.633,
+    "fensterKerne": 0.806,
+    "namen": [
+     [
+      "claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      16.25
+     ],
+     [
+      "claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      10.77
+     ],
+     [
+      "explorer.exe LOADSAVEDWINDOWS",
+      3.31
+     ]
+    ],
+    "dienerS": 22.05,
+    "diener": [
+     [
+      "System",
+      10.61
+     ],
+     [
+      "dwm.exe",
+      7.27
+     ]
+    ],
+    "geraetS": 26.92,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      18.16
+     ],
+     [
+      "svchost.exe",
+      6.81
+     ],
+     [
+      "SearchIndexer.exe",
+      0.91
+     ]
+    ],
+    "eigenS": 175.08,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon"
+   },
+   "zeit": "2026-11-10T22:05:58.132Z",
+   "abdruck": "9c259afc00c6",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "ferne.K2#2": {
+   "gruen": true,
+   "zahl": "K2-2 GRUEN · Kanten-Linie Hügel 0/0/0.47/0.47°, Gipfel 0/0/0/0.47° (< 1°) · Boden 8/12 Befehle, 43.5k/64k Dreiecke · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.02,
+   "gpu": "nvidia/pascal",
+   "s": 61.1,
+   "fremd": {
+    "s": 63.3,
+    "takte": 29,
+    "fremdS": 34.44,
+    "kerne": 0.544,
+    "fensterKerne": 0.669,
+    "namen": [
+     [
+      "claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      16
+     ],
+     [
+      "claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      8.5
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      2.28
+     ]
+    ],
+    "dienerS": 29.42,
+    "diener": [
+     [
+      "dwm.exe",
+      12.3
+     ],
+     [
+      "System",
+      10.66
+     ]
+    ],
+    "geraetS": 19.86,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      9.5
+     ],
+     [
+      "svchost.exe",
+      9.11
+     ],
+     [
+      "SearchIndexer.exe",
+      0.55
+     ]
+    ],
+    "eigenS": 173.02,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon"
+   },
+   "zeit": "2026-11-10T22:11:10.087Z",
+   "abdruck": "0346d90df351",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "haar.K2#1": {
+   "gruen": false,
+   "zahl": "EINE Pose: Leib Δ 0 · Haar-Feder Δ 0 m über 3 Lesungen · arm ROT strich 0.3157 Soll [0.3554,0.533] — strich 0.3157 < 0.3554 · albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:c69a8110a4ddbf20) · albedo — [0.01; 0.3] · third ROT strich 0.3498 Soll [0.3554,0.533] — strich 0.3498 < 0.3554 · albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:c69a8110a4ddbf20) · albedo — [0.01; 0.3]",
+   "exit": 0,
+   "minuten": 0.53,
+   "grund": "ROT: EINE Pose: Leib Δ 0 · Haar-Feder Δ 0 m über 3 Lesungen · arm ROT strich 0.3157 Soll [0.3554,0.533] — strich 0.3157 < 0.3554 · albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:c69a8110a4ddbf20) · albedo — [0.01; 0.3] · third ROT strich 0.3498 Soll [0.3554,0.533] — strich 0.3498 < 0.3554 · albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:c69a8110a4ddbf20) · albedo — [0.01; 0.3]",
+   "gpu": "nvidia/pascal",
+   "s": 31.7,
+   "fremd": {
+    "s": 35.6,
+    "takte": 16,
+    "fremdS": 34.05,
+    "kerne": 0.957,
+    "fensterKerne": 1.418,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      9
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      8.97
+     ],
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      7.72
+     ]
+    ],
+    "dienerS": 15.05,
+    "diener": [
+     [
+      "System",
+      6.06
+     ],
+     [
+      "dwm.exe",
+      4.98
+     ]
+    ],
+    "geraetS": 11.16,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      6.56
+     ],
+     [
+      "svchost.exe",
+      3.88
+     ],
+     [
+      "SearchIndexer.exe",
+      0.31
+     ]
+    ],
+    "eigenS": 62.03,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon"
+   },
+   "zeit": "2026-11-10T23:38:07.637Z",
+   "abdruck": "ac98a8751e4d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "leib.K1#1": {
+   "gruen": false,
+   "zahl": "schlechtester von 1 Läufen p95 ms ego/gehen 67.5 · third/gehen 63 · ego/wechsel 26.3 · third/wechsel 33.3 · Bild 33.6 ms",
+   "exit": 0,
+   "minuten": 0.62,
+   "grund": "ROT: schlechtester von 1 Läufen p95 ms ego/gehen 67.5 · third/gehen 63 · ego/wechsel 26.3 · third/wechsel 33.3 · Bild 33.6 ms · ROT trotz Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 9,9 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 8,0 CPU-s · git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 7,8 CPU-s — 1,50 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon; Σ fremd 33,9 CPU-s in 39,7 s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 5,6 CPU-s · svchost.exe 4,5 CPU-s · SearchIndexer.exe 0,5 CPU-s) — geeicht ÷ 1,085 (1 + 5,6 % je fremdem Kern × 1,50): ego/gehen p95 ms 67,5 → geeicht 62,23 (Soll ≤ 50) · third/gehen p95 ms 63 → geeicht 58,08 (Soll ≤ 50)",
+   "mass": [
+    {
+     "wort": "ego/gehen p95 ms",
+     "wert": 67.5,
+     "soll": 50
+    },
+    {
+     "wort": "third/gehen p95 ms",
+     "wert": 63,
+     "soll": 50
+    },
+    {
+     "wort": "ego/wechsel p95 ms",
+     "wert": 26.3,
+     "soll": 50
+    },
+    {
+     "wort": "third/wechsel p95 ms",
+     "wert": 33.3,
+     "soll": 50
+    }
+   ],
+   "gpu": "nvidia/pascal",
+   "s": 37.5,
+   "fremd": {
+    "s": 39.7,
+    "takte": 18,
+    "fremdS": 33.94,
+    "kerne": 0.855,
+    "fensterKerne": 1.503,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      9.94
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      8.02
+     ],
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      7.84
+     ]
+    ],
+    "dienerS": 18.89,
+    "diener": [
+     [
+      "dwm.exe",
+      9.86
+     ],
+     [
+      "System",
+      6.11
+     ]
+    ],
+    "geraetS": 11.17,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      5.56
+     ],
+     [
+      "svchost.exe",
+      4.47
+     ],
+     [
+      "SearchIndexer.exe",
+      0.48
+     ]
+    ],
+    "eigenS": 81.88,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon"
+   },
+   "zeit": "2026-11-10T23:49:47.188Z",
+   "abdruck": "cd8f3cd2b132",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "leib.K1#2": {
+   "gruen": false,
+   "zahl": "schlechtester von 1 Läufen p95 ms ego/gehen 68.9 · third/gehen 80.8 · ego/springen 26.3 · third/springen 28.5 · ego/einsteigen 99.3 · third/einsteigen 55.7 · ego/hieb 51.1 · third/hieb 44.7 · Bild 22.62 ms",
+   "exit": 0,
+   "minuten": 1.63,
+   "grund": "ROT: schlechtester von 1 Läufen p95 ms ego/gehen 68.9 · third/gehen 80.8 · ego/springen 26.3 · third/springen 28.5 · ego/einsteigen 99.3 · third/einsteigen 55.7 · ego/hieb 51.1 · third/hieb 44.7 · Bild 22.62 ms · ROT trotz Fremd-Last: git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 27,2 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 25,2 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 11,7 CPU-s — 1,64 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon; Σ fremd 85,1 CPU-s in 99,7 s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 25,1 CPU-s · svchost.exe 14,4 CPU-s · SearchIndexer.exe 1,0 CPU-s) — geeicht ÷ 1,092 (1 + 5,6 % je fremdem Kern × 1,64): ego/gehen p95 ms 68,9 → geeicht 63,07 (Soll ≤ 50) · third/gehen p95 ms 80,8 → geeicht 73,96 (Soll ≤ 50) · ego/einsteigen p95 ms 99,3 → geeicht 90,89 (Soll ≤ 50)",
+   "mass": [
+    {
+     "wort": "ego/gehen p95 ms",
+     "wert": 68.9,
+     "soll": 50
+    },
+    {
+     "wort": "third/gehen p95 ms",
+     "wert": 80.8,
+     "soll": 50
+    },
+    {
+     "wort": "ego/springen p95 ms",
+     "wert": 26.3,
+     "soll": 50
+    },
+    {
+     "wort": "third/springen p95 ms",
+     "wert": 28.5,
+     "soll": 50
+    },
+    {
+     "wort": "ego/einsteigen p95 ms",
+     "wert": 99.3,
+     "soll": 50
+    },
+    {
+     "wort": "third/einsteigen p95 ms",
+     "wert": 55.7,
+     "soll": 50
+    },
+    {
+     "wort": "ego/hieb p95 ms",
+     "wert": 51.1,
+     "soll": 50
+    },
+    {
+     "wort": "third/hieb p95 ms",
+     "wert": 44.7,
+     "soll": 50
+    }
+   ],
+   "gpu": "nvidia/pascal",
+   "s": 97.9,
+   "fremd": {
+    "s": 99.7,
+    "takte": 45,
+    "fremdS": 85.13,
+    "kerne": 0.853,
+    "fensterKerne": 1.642,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      27.17
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      25.17
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      11.72
+     ]
+    ],
+    "dienerS": 51.64,
+    "diener": [
+     [
+      "dwm.exe",
+      23.45
+     ],
+     [
+      "System",
+      18.47
+     ]
+    ],
+    "geraetS": 41.31,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      25.11
+     ],
+     [
+      "svchost.exe",
+      14.38
+     ],
+     [
+      "SearchIndexer.exe",
+      0.95
+     ]
+    ],
+    "eigenS": 205.52,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon"
+   },
+   "zeit": "2026-11-11T00:05:53.749Z",
+   "abdruck": "69bb8ec1c19c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-10T21:39:30.168Z",
+  "start": "2026-11-11T00:15:27.140Z",
   "port": 7804,
-  "warten": 0.01,
-  "bootS": 6.4,
+  "warten": 10,
   "grundstellungS": [],
-  "proben": 1,
+  "proben": 0,
   "freigaben": [],
-  "orte": [
-   {
-    "ort": "wiese",
-    "vor": "fahrzeug.K2#2",
-    "s": 27.4,
-    "takte": 624,
-    "chunks": 81,
-    "nach": null
-   }
-  ],
-  "wegeTueren": [],
-  "ciBlicke": 2,
-  "strom": {
-   "datei": "strom.ndjson",
-   "bilder": 0,
-   "frameP95": null,
-   "taktP95": null,
-   "vramMax": null,
-   "seiten": 1,
-   "marken": 0,
-   "fehler": 0,
-   "verloren": 0,
-   "ortImDeckel": [
-    {
-     "probe": "fahrzeug.K2#2",
-     "m": 1857,
-     "ringVor": 4,
-     "ringMin": 0
-    }
-   ],
-   "zapfen": 126,
-   "luecken": 0,
-   "letzteLuecke": null
-  },
-  "fahrtS": 133.3,
-  "minuten": 2.29
+  "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+  "minuten": 10.01
  },
  "ungemessen": {
   "ankunft.K1#1": {
@@ -546,6 +899,84 @@
    },
    "zeit": "2026-11-10T21:29:18.143Z",
    "abdruck": "ea66260e5746",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "gelaende.K2#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 1759 s gerissen (der Anteil der Fahrt, mit Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: third FEHLER Runtime.callFunctionOn timed out. Increase the 'protocolTimeout' setting in launch/connect calls for a higher timeout if needed.)",
+   "exit": 1,
+   "minuten": 29.32,
+   "grund": "Deckel 1759 s gerissen (der Anteil der Fahrt, mit Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: third FEHLER Runtime.callFunctionOn timed out. Increase the 'protocolTimeout' setting in launch/connect calls for a higher timeout if needed.)",
+   "s": 1759.1,
+   "fremd": {
+    "s": 1762.3,
+    "takte": 799,
+    "fremdS": 896.05,
+    "kerne": 0.508,
+    "fensterKerne": 2.153,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      380.41
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      170.25
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      67.78
+     ]
+    ],
+    "dienerS": 695.67,
+    "diener": [
+     [
+      "System",
+      263.83
+     ],
+     [
+      "dwm.exe",
+      219.16
+     ]
+    ],
+    "geraetS": 565.45,
+    "geraet": [
+     [
+      "svchost.exe",
+      265.34
+     ],
+     [
+      "MsMpEng.exe",
+      225.78
+     ],
+     [
+      "SearchIndexer.exe",
+      46.5
+     ]
+    ],
+    "eigenS": 2986.06,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon"
+   },
+   "zeit": "2026-11-10T22:36:06.148Z",
+   "abdruck": "fa8c75e7a77c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "leib.K3#2": {
+   "gruen": false,
+   "zahl": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "exit": null,
+   "minuten": 0,
+   "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "ungemessen": true,
+   "zeit": "2026-11-11T00:25:27.309Z",
+   "abdruck": "3ad18f4155ae",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"

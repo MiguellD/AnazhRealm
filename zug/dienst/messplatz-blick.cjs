@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 "use strict";
 // messplatz-blick.cjs — was die Messplätze, der Zug und die CI tun, als Text, alle 60 s (Rumpf von messplatz-blick.sh).
-// Vier Seiten, Taste 1–4, q beendet (ohne TTY oder mit --einmal alle nacheinander; --kurz ≤ 25 Zeilen; --selbsttest prüft die Tafel):
+// Fünf Seiten, Taste 0–4, q beendet (ohne TTY oder mit --einmal alle nacheinander; --kurz ≤ 25 Zeilen; --selbsttest prüft Tafel und Uhr):
+// UHR   — die Startseite (messplatz-uhr.cjs, 10.11.): je Gerät die Uhr seit dem letzten FORTSCHRITT (gelb 10, ALARM 15 min), frei heute, der STAU
+//         fertiger Abgaben mit ihren Punkten, VERALTET, die Zug-Kette, die BALANCE mit dem Engpass; ihre drei Zahlen stehen im Kopf jeder Seite.
 // JETZT — Ampel, OMEN (zug/fortschritt.txt + offene Warteschlange), Radeon (zug/fortschritt-radeon.txt, zug.sh punkte schreibt
 //         sie), Logs des Koordinators ($TEMP/claude), laufende Runs mit Jobs und Läufer, Zweige mit Push in 6 h, Abgaben 6 h, Last.
 // KURS  — EFFIZIENZ (Pflicht · Ertrag ehrlich aus stand.json · Budget je % · Fluss der Züge, kein Gesamt-Wert), Punkte- und
@@ -20,6 +22,7 @@ const { execFile } = require("child_process");
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
+const UHR = require("./messplatz-uhr.cjs");
 
 const REPO = "MiguellD/AnazhRealm";
 const API = `https://api.github.com/repos/${REPO}`;
@@ -145,11 +148,14 @@ const dauer = (ms) => {
     return m < 60 ? `${m} min` : `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, "0")} min`;
 };
 const s8 = (s) => String(s || "").slice(0, 8);
+const T = { f, gruen, rot, gelb, grau, fett, sicht, spalte, rechts, kappe, linie, BREITE }; // die Farben und Spalten des Blicks für messplatz-uhr.cjs
 
 // ── Lesen: Fortschritt, Warteschlange, Budget, Plan ──────────────────────────────────────────────────────────────────
-// eine Fortschritts-Zeile: `<datum> <zeit> <id> <rest>` (Ortszeit des Schreibers; OMEN und Laptop teilen die Zone)
+// eine Fortschritts-Zeile: `<datum> <zeit> <id> <rest>` (Ortszeit des Schreibers; OMEN und Laptop teilen die Zone). Die Sekunden sind
+// KANN: die Sitzungs-Zeilen der Geräte tragen `HH:MM` (10.11.: der Blick verlangte `HH:MM:SS`, verlor jede START-Zeile seit dem 10.11. und
+// zeigte die GTX 1050 FREI, während sie am Auftrag takt-gc arbeitete)
 function zeilenVon(text) {
-    return String(text || "").split(/\r?\n/).map((l) => /^(\d{4}-\d\d-\d\d) (\d\d:\d\d:\d\d) (\S+) (.*)$/.exec(l))
+    return String(text || "").split(/\r?\n/).map((l) => /^(\d{4}-\d\d-\d\d) (\d\d:\d\d(?::\d\d)?) (\S+) (.*)$/.exec(l))
         .filter(Boolean).map((m) => ({ t: new Date(`${m[1]}T${m[2]}`), zeit: m[2], id: m[3], rest: m[4] }));
 }
 // zug/erledigt.txt in BEIDEN Formen: der Dienst schreibt „<id> …“, die Sweeps einer Geräte-Sitzung „<datum> <zeit> <id> …“ (09.11.: der
@@ -463,7 +469,8 @@ function messplatzZeilen(mp, l, job, verlauf, lokal) {
 // GraphQL liest Kopf, Datum und Check-Zustand aller Zweige (678 am 25.10., 7 Seiten); verglichen mit main wird nur, wer grün und
 // jung ist (der Vergleich in GraphQL kostete je Seite 3 statt 1,8 s), per REST-compare, zwischengespeichert je main- und Kopf-SHA
 const vergleich = new Map(); // `${main}:${kopf}` → Commits des Zweigs, die main fehlen
-async function kandidaten(jetzt, main) {
+// DIE ZWEIGE, EIN Abruf je langsamem Takt: aus ihnen die Kandidaten UND die Abgaben (abgabenAusRefs) für WARTEND und den STAU der Uhr
+async function zweigeAlle() {
     const Q = `query($nach:String){repository(owner:"MiguellD",name:"AnazhRealm"){refs(refPrefix:"refs/heads/",first:100,after:$nach){pageInfo{hasNextPage endCursor} nodes{name target{... on Commit{oid committedDate messageHeadline statusCheckRollup{state}}}}}}}`;
     const alle = [];
     for (let s = 0, nach = null; s < 12; s++) {
@@ -472,6 +479,21 @@ async function kandidaten(jetzt, main) {
         if (!r.pageInfo.hasNextPage) break;
         nach = r.pageInfo.endCursor;
     }
+    return alle;
+}
+// DIE ABGABEN AUS DEN KÖPFEN (10.11., Uhr): jeder Zweig, dessen Kopf-Betreff „Abgabe …“ ist, Kopf ≤ 48 h — die EINE Liste für WARTEND und den STAU.
+// Bis hier las WARTEND w3/abgabe.log (gespeist aus den Pushes der letzten 6 h, solange der Blick lief): w26-ferne-ton und w26-laub-kante standen als
+// „grün ohne Abgabe“ unter KANDIDATEN, ihr Kopf IST eine Abgabe. Ein WIP-Kopf nach der Abgabe wartet nicht (zug-nie-leer nimmt nur Abgabe-Köpfe)
+function abgabenAusRefs(alle, jetzt) {
+    const je = new Map();
+    for (const n of alle || []) {
+        const c = n.target;
+        if (!c || !c.oid || CLOUD_AUS.test(n.name) || !/^Abgabe /.test(c.messageHeadline || "") || jetzt - new Date(c.committedDate) > 2 * 864e5 || je.has(c.oid)) continue;
+        je.set(c.oid, { t: new Date(c.committedDate), zweig: n.name, sha: c.oid, titel: c.messageHeadline.replace(/^Abgabe [^:]+:\s*/, "") });
+    }
+    return [...je.values()].sort((a, b) => b.t - a.t);
+}
+async function kandidaten(jetzt, main, alle) {
     const grenze = +jetzt - 48 * 3600e3;
     const je = new Map(); // je Kopf-SHA EIN Zweig: der claude/*-Spiegel tritt hinter den Namen zurück
     for (const n of alle.filter((n) => n.target && n.target.committedDate && new Date(n.target.committedDate) >= grenze && !KANDIDAT_AUS.test(n.name) &&
@@ -697,7 +719,7 @@ async function verlaufJe(jobs, versuch, jetzt) {
             if (js && run.status === "completed") fertigeJobs.set(k, js);
         }
         for (const j of js || [])
-            if (j.runner_name && /omen|radeon/i.test(j.runner_name) && j.status === "completed" && j.completed_at) {
+            if (j.runner_name && /omen|radeon|gtx1050/i.test(j.runner_name) && j.status === "completed" && j.completed_at) { // 10.11.: ohne gtx1050 stand v3 immer leer
                 if (!je.has(j.runner_name)) je.set(j.runner_name, []);
                 je.get(j.runner_name).push({ name: j.name.replace(/ \(.*$/, ""), lauf: run.name.split(" ")[0], zweig: run.head_branch, sha: run.head_sha, wort: j.conclusion, start: new Date(j.started_at), ende: new Date(j.completed_at) });
             }
@@ -719,12 +741,12 @@ function standKurz(s, t) {
 const kontoStart = (b) => (b.find((x) => x.konto === (b[b.length - 1] || {}).konto) || {}).t || null; // die erste Zeile des laufenden Kontos
 const p50 = (a) => { const s = a.filter((x) => x != null && isFinite(x)).sort((x, y) => x - y), n = s.length; return n ? (n % 2 ? s[(n - 1) / 2] : (s[n / 2 - 1] + s[n / 2]) / 2) : null; };
 // die Zahlen der Tafel, rein (der Selbsttest füttert sie mit einer nachgebauten Welt): St = Kurzformen {jetzt, start, vor24}, zuege aus zugLaeufe
-function tafelZahlen({ b, St, zuege, abgaben: A, wartend, ci, jetzt }) {
+function tafelZahlen({ b, St, zuege, abgaben: A, wartend, ci, jetzt, inMain }) {
     const P0 = St.start && St.start.pflicht, d = (x) => (St.jetzt && x ? St.jetzt.ehrlich - x.ehrlich : null);
     const T = { pflicht: (St.jetzt ? St.jetzt.pflicht : []).map((e) => ({ ...e, d: P0 ? e.gruen - (P0.find((x) => x.id === e.id) || e).gruen : null })) };
     const E = (T.ertrag = St.jetzt ? { ...St.jetzt, d24: d(St.vor24), dKonto: d(St.start) } : null);
     // ein Zug je Nummer: die Basis mit „bau gegen“ und Kandidat; GELANDET in ihr oder einem Neben-Log (w: Wackler-Neulauf) heißt grün, sonst FAHRT ROT rot
-    const Z = (zuege || []).filter((z) => z.name === "z" + z.nr && z.bau && z.kand && z.start).map((z) => { const n = zuege.filter((x) => x.nr === z.nr), land = n.map((x) => x.land).filter(Boolean).sort((p, q) => p - q)[0], rt = n.map((x) => x.rotT).filter(Boolean).sort((p, q) => q - p)[0]; return { ...z, urteil: land ? "grün" : rt ? "rot" : null, ende: land || rt || null }; }).sort((p, q) => p.start - q.start);
+    const Z = (zuege || []).filter((z) => z.name === "z" + z.nr && z.bau && z.kand && z.start).map((z) => { const n = zuege.filter((x) => x.nr === z.nr), land = n.map((x) => x.land).filter(Boolean).sort((p, q) => p - q)[0], rt = n.map((x) => x.rotT).filter(Boolean).sort((p, q) => q - p)[0]; const drinMain = !land && inMain && inMain.has(z.kand); return { ...z, urteil: land || drinMain ? "grün" : rt ? "rot" : null, ende: land || rt || (drinMain ? z.t : null), vonHand: drinMain }; }).sort((p, q) => p.start - q.start); // 10.11.: ein Kandidat in main ist gelandet, auch ohne GELANDET im Log (z365 von Hand, wackler-frei)
     const t0 = kontoStart(b), w = b.filter((x) => x.roh != null), wj = w[w.length - 1], t24 = new Date(+jetzt - 864e5), w24 = [...w].reverse().find((x) => x.t <= t24);
     const landungen = Z.filter((z) => t0 && z.urteil === "grün" && z.ende >= t0).length, dw24 = wj && w24 ? wj.woche - w24.woche : null;
     T.budget = { konto: wj ? wj.roh : null, t: wj && wj.t, notiz: wj ? wj.notiz : "", t0, landungen, jeKonto: E && E.dKonto != null && wj && wj.roh > 0 ? E.dKonto / wj.roh : null, je24: E && E.d24 != null && dw24 > 0 ? E.d24 / dw24 : null, jeLandung: landungen && wj ? wj.roh / landungen : null,
@@ -732,6 +754,7 @@ function tafelZahlen({ b, St, zuege, abgaben: A, wartend, ci, jetzt }) {
     const z24 = Z.filter((z) => jetzt - z.start <= 864e5 && z.urteil), gel = z24.filter((z) => z.urteil === "grün"), fertig = Z.filter((z) => z.urteil).slice(-5);
     const al = gel.flatMap((z) => z.drin.map((x) => A.filter((a) => a.zweig === x.z && a.t <= z.start).sort((p, q) => q.t - p.t)[0]).filter(Boolean).map((a) => (z.ende - a.t) / 60000)); // Abgabe→Landung
     T.fluss = { gruen: gel.length, rot: z24.length - gel.length, wand: p50(z24.map((z) => (z.ende - z.start) / 60000)), al: p50(al), nAL: al.length, wartend: wartend || [], fertig, ci: p50(fertig.map((z) => ci[z.name])), nCi: fertig.filter((z) => ci[z.name] != null).length };
+    T.zuege = Z; // die Züge mit Urteil: die Kette und die Integration der Uhr lesen dieselben
     return T;
 }
 const vz = (d) => (d == null ? grau(" —") : d > 0 ? gruen(` +${d}`) : d < 0 ? rot(` ${d}`) : grau(" ±0")); const minText = (m) => (m == null ? "—" : dauer(m * 60000));
@@ -791,15 +814,21 @@ async function wartendVon(A, abgeloestT, jetzt) {
     const r = await git(["rev-parse", "origin/main", "origin/main^{tree}", "origin/punkte-maschine", "origin/punkte-maschine^{tree}"]), [mS, mB, pS, pB] = r.out.trim().split(/\r?\n/);
     if (r.e || !pB) throw new Error("git rev-parse origin/main origin/punkte-maschine: " + (r.e ? r.e.message.split("\n")[0] : "leer"));
     const abg = new Map(String(abgeloestT || "").split(/\r?\n/).map((l) => l.trim()).filter((l) => l && !l.startsWith("#")).map((l) => [l.split(/\s+/)[0], l.replace(/^\S+\s*/, "")]));
-    const je = new Map(), W = { wartend: [], abgeloest: [], main: mS, pm: pS }, alt = speicher.ziel, neu = (speicher.ziel = {});
+    const je = new Map(), W = { wartend: [], abgeloest: [], main: mS, pm: pS, fehler: [] }, alt = speicher.ziel, neu = (speicher.ziel = {});
     for (const a of A) if (jetzt - a.t <= 2 * 864e5 && !je.has(a.zweig)) je.set(a.zweig, { ...a, pm: /-pm$/.test(a.zweig), ziel: /-pm$/.test(a.zweig) ? pS : mS }); // A: jüngste zuerst
-    for (const a of je.values()) { const v = alt[a.sha]; if (!abg.has(a.zweig) && (v === true || (v && v.ziel === a.ziel))) neu[a.sha] = v; }
+    for (const a of je.values()) { const v = alt[a.sha]; if (!abg.has(a.zweig) && (v === true || (v && (v.ziel === a.ziel || v.ohneVorfahr)))) neu[a.sha] = v; }
     const pruef = [...je.values()].filter((a) => !abg.has(a.zweig) && !neu[a.sha]);
     const da = pruef.length ? (await git(["cat-file", "--batch-check"], pruef.map((a) => a.sha).join("\n") + "\n")).out.split(/\r?\n/) : [], ok = pruef.filter((a, i) => / commit /.test(da[i] || ""));
     const mt = ok.length ? await git(["merge-tree", "--write-tree", "--allow-unrelated-histories", "--name-only", "--no-messages", "--stdin"], ok.map((a) => `${a.ziel} ${a.sha}`).join("\n") + "\n") : { out: "" };
     if (mt.e) throw new Error("git merge-tree --stdin: " + mt.e.message.split("\n")[0]);
     ok.forEach((a, i) => { const [glatt, baum] = (mt.out.split("\0\0")[i] || "").split("\0"); if (glatt === "1" && baum === (a.pm ? pB : mB)) neu[a.sha] = true; });
-    await Promise.all(pruef.filter((a) => !neu[a.sha]).map(async (a) => (neu[a.sha] = { ziel: a.ziel, vor: ok.includes(a) ? (await api(`/compare/${a.ziel}...${a.sha}?per_page=1&page=2`)).ahead_by : null })));
+    // 10.11.: compare ohne gemeinsamen Vorfahren antwortet 404 (w25-referenz-atlas) — EIN Vergleich warf die ganze Liste; jetzt wartet der Zweig mit „+?“, laut
+    await Promise.all(pruef.filter((a) => !neu[a.sha]).map(async (a) => {
+        let vor = null;
+        let ohneVorfahr = false;
+        if (ok.includes(a)) try { vor = (await api(`/compare/${a.ziel}...${a.sha}?per_page=1&page=2`)).ahead_by; } catch (e) { if (/HTTP 404/.test(e.message)) ohneVorfahr = true; else W.fehler.push(`${a.zweig}: ${e.message}`); }
+        neu[a.sha] = { ziel: a.ziel, vor, ...(ohneVorfahr ? { ohneVorfahr } : {}) };
+    }));
     for (const a of je.values()) if (abg.has(a.zweig)) W.abgeloest.push({ ...a, grund: abg.get(a.zweig) }); else if (neu[a.sha] !== true) W.wartend.push({ ...a, vor: neu[a.sha].vor });
     for (const l of [W.wartend, W.abgeloest]) l.sort((p, q) => p.t - q.t);
     return W;
@@ -840,7 +869,8 @@ async function holen() {
     const ps = await psListe();
     letztePs = ps; // der Zug lebt nur mit seinem Prozess (zugLebt)
     const lokal = (ps || []).map((p) => [p, /punkte\.cjs run --sha ([0-9a-f]{7,40}) --geraet (\w+)/.exec(p.cmd)]).filter(([, m]) => m)
-        .map(([p, m]) => ({ sha: m[1], geraet: m[2], offen: /--offen/.test(p.cmd), start: p.start }));
+        .map(([p, m]) => ({ sha: m[1], geraet: m[2], offen: /--offen/.test(p.cmd), start: p.start }))
+        .filter((x, i, a) => a.findIndex((y) => y.sha === x.sha && y.geraet === x.geraet && y.offen === x.offen) === i); // 10.11.: bash -c, timeout und node trugen denselben Lauf zwei- und dreifach
     // der Ruhe-Läufer der Radeon (w3/zeit-lauer*.sh) wartet auf < 0,5 fremde Kerne: er ist Arbeit, auch bevor er misst
     const lauer = (ps || []).filter((p) => /zeit-lauer\d*\.sh/.test(p.cmd) && !/^bash -c/.test(p.cmd)).slice(0, 1).map((p) => {
         const f = path.join(TEMP_CLAUDE, "w3", (/(zeit-lauer\d*)\.sh/.exec(p.cmd) || [])[1] + ".out");
@@ -896,8 +926,8 @@ async function holen() {
     takt++;
     const lauferVon = (n) => (laeufer || []).find((x) => x.name === n);
     const jobsVon = (r) => (jobs.get(r.id) || { jobs: [] }).jobs;
-    return {
-        jetzt, fehler, main, koord, mk, budget, fort, fortR, schloss, schlossT, ruht, cpu, gpu, zweige, runs, jobsVon, werkbaenke, abgaben,
+    const S = {
+        jetzt, fehler, main, koord, mk, budget, fort, fortR, schloss, schlossT, ruht, cpu, gpu, zweige, runs, jobsVon, werkbaenke, abgaben, erledigtT: erledigt,
         version: paket ? (/"version":\s*"([^"]+)"/.exec(paket) || [])[1] : null,
         omen: messplatz(fort, (id) => erledigtJe.get(id), jetzt),
         radeon: messplatz(fortR, (id, l) => (/^(ENDE|ABBRUCH) /.test(l.rest) ? l.rest.replace(/^ENDE /, "") : null), jetzt),
@@ -914,6 +944,9 @@ async function holen() {
         rotVon: (r) => jobsVon(r).filter((j) => j.status === "completed" && !["success", "skipped", "neutral"].includes(j.conclusion)).length,
         api: { ...zahl },
     };
+    // DIE UHR je Takt (Seite 0, Kopf jeder Seite): Lage, Urteil und Verlauf je Gerät; ein Bruch ist laut, nie ein leerer Blick
+    try { S.uhr = UHR.lagen(S, { ps }); } catch (e) { fehler.push("Uhr: " + e.message); S.uhr = null; }
+    return S;
 }
 // KURS und PLAN: Versions-Stufen auf main, Zug-Logs, CI-Takt integ-probe, Qualität je Gerät, Kandidaten
 async function holenLangsam(jetzt, main, koord, budget, abgaben, abgeloestT) {
@@ -921,10 +954,26 @@ async function holenLangsam(jetzt, main, koord, budget, abgaben, abgeloestT) {
     const v = async (was, fn) => { try { return await fn(); } catch (e) { R.fehler.push(`${was}: ${e.message}`); return null; } };
     R.seit = budget.length ? budget[0].t : new Date(+jetzt - 7 * 864e5);
     R.zuege = zugLaeufe(jetzt);
+    // die Zweige (EIN GraphQL-Abruf) tragen die Kandidaten und die Abgaben für WARTEND und den STAU der Uhr
+    const pRefs = TOKEN ? v("Zweige", () => zweigeAlle()) : Promise.resolve(null);
+    // die Commits von main seit Wochen-Start (Versions-Stufen, Qualität; die Tafel liest aus ihnen, welcher Kandidat in main steckt, die Uhr die Merges)
+    const pCommits = (async () => {
+        let c = [];
+        for (let p = `/commits?sha=main&since=${R.seit.toISOString()}&per_page=100`, s = 0; p && s < 6; s++) {
+            const x = await v("Commits main", () => api(p));
+            if (!x) break;
+            c = c.concat(x);
+            p = weiterVon(p);
+        }
+        return c;
+    })();
+    const pPs = psListe();
     // die EFFIZIENZ als eigener Strang: WARTEND, stand.json (ETag) je gebrauchtem Stand (jetzt, Kontostart, vor 24 h), die CI-Minuten fertiger Züge
     // (alle Versuche ihres Code-Check-Laufs auf integ-probe am Kandidaten — der Lauf auf main am selben Kopf ist nicht der Zug), einmal je Zug
     const pTafel = (async () => {
-        if (abgaben) R.W = await v("Wartend", () => wartendVon(abgaben, abgeloestT, jetzt));
+        const alle = await pRefs;
+        if (alle) R.W = await v("Wartend", () => wartendVon(abgabenAusRefs(alle, jetzt), abgeloestT, jetzt));
+        if (R.W && R.W.fehler.length) R.fehler.push("Wartend (+? beim Zweig): " + R.W.fehler.join(" · "));
         const SL = TOKEN ? ((await v("stand.json", () => api(`/commits?sha=punkte-maschine&path=${STAND}&per_page=30`))) || []).map((c) => ({ sha: c.sha, t: new Date(c.commit.committer.date) })) : [];
         const amT = (t) => t && SL.find((c) => c.t <= t), St = {};
         for (const [k, c] of [["jetzt", SL[0]], ["start", amT(kontoStart(budget))], ["vor24", amT(new Date(+jetzt - 864e5))]].filter(([, c]) => c)) {
@@ -932,7 +981,8 @@ async function holenLangsam(jetzt, main, koord, budget, abgaben, abgeloestT) {
             St[k] = speicher.stand[c.sha];
         }
         if (SL.length) speicher.stand = Object.fromEntries(SL.filter((c) => speicher.stand[c.sha]).map((c) => [c.sha, speicher.stand[c.sha]]));
-        const tz = () => tafelZahlen({ b: budget, St, zuege: R.zuege, abgaben: abgaben || [], wartend: R.W && R.W.wartend, ci: speicher.ciZug, jetzt });
+        const inMain = new Set((await pCommits).map((c) => c.sha));
+        const tz = () => tafelZahlen({ b: budget, St, zuege: R.zuege, abgaben: abgaben || [], wartend: R.W && R.W.wartend, ci: speicher.ciZug, jetzt, inMain });
         for (const z of TOKEN ? tz().fluss.fertig.filter((z) => speicher.ciZug[z.name] == null) : []) await v("CI " + z.name, async () => {
             const rs = ((await api(`/actions/runs?head_sha=${z.kand}&per_page=10`)).workflow_runs || []).filter((r) => r.name === "Code-Check" && r.head_branch === "integ-probe");
             if (!rs.length || rs.some((r) => r.status !== "completed")) return;
@@ -941,11 +991,11 @@ async function holenLangsam(jetzt, main, koord, budget, abgaben, abgeloestT) {
             speicher.ciZug[z.name] = ms / 60000;
         });
         R.tafel = tz();
+        R.SL0 = SL[0];
     })();
     // unabhängige Stränge zugleich: Kandidaten (die Zweig-Liste trägt die Wandzeit), CI-Takt, Stufen → Qualität, die FRESSER-Quellen
     // (Prozesse des Laptops, wann jede Warteschlangen-Zeile kam, Wackler über die Zweige)
-    const pKand = TOKEN && main ? v("Kandidaten", () => kandidaten(jetzt, main)) : null;
-    const pPs = psListe();
+    const pKand = TOKEN && main ? pRefs.then((alle) => alle && v("Kandidaten", () => kandidaten(jetzt, main, alle))) : null;
     const pBlame = koord && TOKEN ? v("Blame Warteschlange", () => blameVon(koord, "zug/warteschlange.txt")) : null;
     const pWackler = TOKEN ? v("Wackler", () => wacklerSuche(jetzt)) : null;
     // CI-Takt: die letzten 10 abgeschlossenen integ-probe-Runs; ein Rot nur in Gruppe 1 (voll 1/18) heißt Wackler
@@ -960,13 +1010,7 @@ async function holenLangsam(jetzt, main, koord, budget, abgaben, abgeloestT) {
         return { n: zehn.length, p50: q(0.5), p95: q(0.95), rot: rotR.length, wackler, neulauf: zehn.filter((r) => r.conclusion === "success" && r.run_attempt > 1).length, abgebrochen: zehn.filter((r) => r.conclusion === "cancelled").length };
     })();
     const pListe = koord && TOKEN ? v("Messungen", () => api(`/contents/meisterkarte-quelle/punkte/messung?ref=${koord}`)) : null;
-    let commits = [];
-    for (let p = `/commits?sha=main&since=${R.seit.toISOString()}&per_page=100`, s = 0; p && s < 6; s++) {
-        const c = await v("Commits main", () => api(p));
-        if (!c) break;
-        commits = commits.concat(c);
-        p = weiterVon(p);
-    }
+    const commits = await pCommits;
     R.stufen = commits.filter((c) => /Versions-Stufe/.test(c.commit.message)).map((c) => ({ sha: c.sha, t: new Date(c.commit.committer.date), titel: c.commit.message.split("\n")[0] }));
     // Qualität: Kopf (main) gegen den Vorkopf, je Gerät. Vorkopf = die jüngste ältere Versions-Stufe, deren Messung mindestens
     // die Hälfte der Stationen des Kopfs trägt (ein Einzel-Lauf wie 36c4275a-radeon mit 1 Station ist kein Vergleich), sonst die
@@ -990,12 +1034,17 @@ async function holenLangsam(jetzt, main, koord, budget, abgaben, abgeloestT) {
     R.kandidaten = await pKand;
     R.wfStill = workflowStill(jetzt);
     [R.ps, R.blame, R.wackler] = await Promise.all([pPs, pBlame, pWackler, pTafel]);
+    // DIE UHR (Seite 0): Stau, Veraltet, Kette, Balance aus denselben Quellen — WARTEND, stand.json, Zug-Logs, die Merges auf main, budget.txt
+    const kNun = wertAm(budget, "karte", jetzt), k6 = wertAm(budget, "karte", new Date(+jetzt - 6 * 3600e3));
+    const gelandet = [...new Set(commits.filter((c) => +jetzt - new Date(c.commit.committer.date) <= 6 * 3600e3).map((c) => (/^Merge (\S+) in integ-probe/.exec(c.commit.message) || [])[1]).filter(Boolean))];
+    R.uhr = await v("Uhr", () => UHR.langsam({ W: R.W, SL0: R.SL0, standText: (sha) => datei(sha, STAND), api, rotSchritte, speicher, Z: R.tafel && R.tafel.zuege, zuege: R.zuege, ps: R.ps,
+        abgaben: abgaben || [], gelandet, dPunkte: kNun != null && k6 != null ? kNun - k6 : null, karte: kNun, wandMin: R.tafel && R.tafel.fluss.wand, jetzt, v }));
     sichern();
     return R;
 }
 
 // ── Zeichnen: Kopf (Ampel + Reiter) auf jeder Seite, darunter die Seite ────────────────────────────────────────────────
-const SEITEN = ["JETZT", "KURS", "PLAN", "FRESSER"];
+const SEITEN = ["UHR", "JETZT", "KURS", "PLAN", "FRESSER"]; // Taste = Index: 0 UHR (die Startseite), 1–4 wie bisher
 function ampelZeilen(S) {
     const lauf = S.runs.filter((r) => r.status === "in_progress"), warte = S.runs.filter((r) => r.status !== "in_progress");
     const ciRot = S.runs.reduce((s, r) => s + S.rotVon(r), 0);
@@ -1003,10 +1052,12 @@ function ampelZeilen(S) {
     // die Arbeit einer Geräte-Sitzung (zug/sitzung.txt) zählt wie ein Job: das Gerät ist nicht frei
     const sitz = (g) => { const s = (S.sitzungVon ? S.sitzungVon(g) : [])[0]; return s ? `Sitzung ${sitzungKurz(s)}` : null; };
     const lauerArbeit = S.lauer ? `Ruhe-Läufer ${/RUHE/.test(S.lauer.letzte) ? "misst" : "wartet"}` : null;
+    // 10.11.: die Ampel sagte „OMEN frei“, während ihre Sitzung je Station die Mess-Datei pushte — sie liest jetzt die Lage der Uhr (EINE Wahrheit)
+    const uhrMisst = (n) => { const u = S.uhr && S.uhr.geraete.find((g) => g.name === n); return u && u.zustand === "MISST" && !u.job ? (u.mess && !u.misst.length ? `misst (Mess-Datei ${hhmm(new Date(u.mess.t * 1000))})` : "misst") : null; };
     const a = [
-        geraetAmpel("OMEN", S.omen, S.lO, S.jO, false, sitz("omen")),
-        geraetAmpel("RADEON", S.radeon, S.lR, S.jR, S.schloss && !(S.radeon && !S.radeon.zu), [arbeitRadeon(S), sitz("radeon"), lauerArbeit].filter(Boolean).join(" · ") || null),
-        S.l3 ? geraetAmpel("GTX1050", null, S.l3, S.j3, false, sitz("gtx1050")) : `${grau("●")} GTX1050 nicht registriert`,
+        geraetAmpel("OMEN", S.omen, S.lO, S.jO, false, sitz("omen") || uhrMisst("OMEN")),
+        geraetAmpel("RADEON", S.radeon, S.lR, S.jR, S.schloss && !(S.radeon && !S.radeon.zu), [arbeitRadeon(S), sitz("radeon"), lauerArbeit].filter(Boolean).join(" · ") || uhrMisst("RADEON")),
+        S.l3 ? geraetAmpel("GTX1050", null, S.l3, S.j3, false, sitz("gtx1050") || uhrMisst("GTX1050")) : `${grau("●")} GTX1050 nicht registriert`,
         S.actions && S.actions !== "operational" ? `${rot("●")} CI ${rot("Actions " + S.actions)}` :
         `${ciRot ? rot("●") : S.runs.length ? gelb("●") : gruen("●")} CI ${lauf.length} läuft${warte.length ? ` · ${warte.length} wartet` : ""}${ciRot ? rot(` · ✗ ${ciRot} rot`) : ""}`,
         !g ? `${grau("●")} ZUG keine Logs` : g.tot ? `${rot("●")} ZUG ${g.name} ohne Prozess` : g.still ? `${grau("●")} ZUG ${g.name} still` : g.exit == null ? `${gelb("●")} ZUG ${g.name} läuft` : g.exit === 2 ? `${grau("●")} ZUG ${g.name} abgebrochen` : `${g.exit ? rot("●") : gruen("●")} ZUG ${g.name} EXIT=${g.exit}`,
@@ -1016,12 +1067,13 @@ function ampelZeilen(S) {
     return sicht(text).length <= BREITE ? [text] : [a.slice(0, 3).join("  "), a.slice(3).join("  ")];
 }
 function reiter(seite) {
-    return SEITEN.map((s, i) => (i === seite ? fett(`[${i + 1} ${s}]`) : grau(` ${i + 1} ${s} `))).join(" ") + grau("  · Taste 1–4 · q beendet");
+    return SEITEN.map((s, i) => (i === seite ? fett(`[${i} ${s}]`) : grau(` ${i} ${s} `))).join(" ") + grau("  · Taste 0–4 · q beendet");
 }
 function fuss(S) {
     return grau(`Blick ${S.jetzt.toTimeString().slice(0, 8)}${EINMAL ? "" : ` · nächster ${new Date(+S.jetzt + TAKT_S * 1000).toTimeString().slice(0, 8)}`} · KURS/PLAN von ${hhmm(L.t)} · API ${S.api.rest}/${S.api.limit} · ${S.api.neu} neu, ${S.api.gleich}× 304`) + (TOKEN ? "" : rot(" · ohne Token: Jobs, Läufer, Cloud, Kandidaten ausgelassen"));
 }
 
+const seiteUhr = (S) => UHR.seite(S, L.uhr, T);
 function seiteJetzt(S) {
     const out = [];
     out.push(grau(`main ${s8(S.main)}${S.version ? " · V" + S.version : ""} · Karte gebucht ${S.mk ? `${S.mk.stand} am ${S.mk.kopf}` : "?"} · koordination ${s8(S.koord)}`));
@@ -1180,7 +1232,7 @@ function seitePlan(S) {
     const W = L.W, wann = (t) => grau(`${tag(t)}. ${hhmm(t)}`); // WARTEND zuerst, jeder Zweig beim Namen; ✓ grün = sein Abgabe-Kopf ist Kandidat
     if (!W) out.push(linie("WARTEND · nicht gelesen (w3/abgabe.log, git — siehe FEHLER)"), "");
     else out.push(linie(`WARTEND · ${W.wartend.length} Abgaben (48 h), Inhalt nicht im Ziel · ${W.abgeloest.length} abgelöst · gegen origin/main ${s8(W.main)}, -pm origin/punkte-maschine ${s8(W.pm)}`) + (S.main && S.main !== W.main ? gelb(` · lokal ≠ main ${s8(S.main)}: git fetch`) : ""),
-        ...W.wartend.map((a) => `  ${wann(a.t)}  ${spalte(a.zweig, 28)} ${grau(a.sha)} ${rechts(a.vor == null ? "+?" : "+" + a.vor, 4)}${a.pm ? grau(" pm") : ""}${(L.kandidaten || []).some((k) => k.sha.startsWith(a.sha)) ? gruen(" ✓ grün") : ""}  ${a.titel}`),
+        ...W.wartend.map((a) => `  ${wann(a.t)}  ${spalte(a.zweig, 28)} ${grau(s8(a.sha))} ${rechts(a.vor == null ? "+?" : "+" + a.vor, 4)}${a.pm ? grau(" pm") : ""}${(L.kandidaten || []).some((k) => k.sha.startsWith(a.sha)) ? gruen(" ✓ grün") : ""}  ${a.titel}`),
         ...W.abgeloest.slice(-5).map((a) => `  ${wann(a.t)}  ${spalte(a.zweig, 28)} ${grau("abgelöst: " + a.grund)}`), "");
     out.push(linie("PLAN · zug/plan.txt"));
     if (!S.plan.length) out.push(grau("  zug/plan.txt fehlt oder ist leer"));
@@ -1211,6 +1263,7 @@ function kurzText(S) {
     const o = [];
     o.push(`Blick ${S.jetzt.toTimeString().slice(0, 5)} · main ${s8(S.main)} V${S.version || "?"} · koordination ${s8(S.koord)} · Karte ${S.mk ? `${S.mk.summe}/${S.mk.max}` : "?"}`);
     o.push(ampelZeilen(S).join("  ").replace(/●|★/g, "").replace(/\s{2,}/g, " | ").trim());
+    o.push(UHR.kurz(S.uhr, L.uhr)); // die Uhr oben: die 25-Zeilen-Grenze schneidet unten
     const fe = [...S.fehler, ...L.fehler]; // oben: die 25-Zeilen-Grenze schneidet unten
     if (fe.length) o.push(`FEHLER ${fe.join(" · ")}`);
     const st = (mp) => (mp && mp.stand ? ` · zuletzt ${mp.stand.station} ${mp.stand.wort} ${zk(mp.stand.min)} (${mp.stand.zeit})` : "");
@@ -1243,10 +1296,10 @@ function zeichne() {
     if (KURZ) return void process.stdout.write(kurzText(S) + "\n");
     const fe = [...S.fehler, ...L.fehler.map((e) => "KURS/PLAN " + e)];
     const fehlerZ = fe.length ? ["", rot("FEHLER (nächster Versuch im nächsten Takt):"), ...fe.map((e) => "  " + rot(e))] : [];
-    const kopf = ampelZeilen(S);
-    const koerper = [seiteJetzt, seiteKurs, seitePlan, seiteFresser];
+    const kopf = [...ampelZeilen(S), UHR.kopf(S.uhr, L.uhr, T)]; // die drei Zahlen der Uhr auf jeder Seite
+    const koerper = [seiteUhr, seiteJetzt, seiteKurs, seitePlan, seiteFresser];
     let out;
-    if (EINMAL || !process.stdout.isTTY) out = [...kopf, ...koerper.flatMap((s, i) => ["", grau(`════ ${i + 1} ${SEITEN[i]} ════`), ...s(S)]), ...fehlerZ, "", fuss(S)];
+    if (EINMAL || !process.stdout.isTTY) out = [...kopf, ...koerper.flatMap((s, i) => ["", grau(`════ ${i} ${SEITEN[i]} ════`), ...s(S)]), ...fehlerZ, "", fuss(S)];
     else {
         const k = koerper[seite](S);
         const platz = SEITE_MAX - kopf.length - 3 - fehlerZ.length; // eine Seite ≤ SEITE_MAX Zeilen
@@ -1258,17 +1311,19 @@ function zeichne() {
 }
 if (process.stdout.isTTY && !EINMAL) { process.stdout.write("\x1b[?1049h\x1b[H\x1b[J"); process.on("exit", () => process.stdout.write("\x1b[?1049l")); }
 
-// Tasten: 1/2/3 wählen die Seite und zeichnen aus dem Stand (keine Abfrage), q oder Strg+C beendet
+// Tasten: 0–4 wählen die Seite und zeichnen aus dem Stand (keine Abfrage), q oder Strg+C beendet
 if (process.stdin.isTTY && process.stdout.isTTY && !EINMAL) {
     process.stdin.setRawMode(true);
     process.stdin.resume();
     process.stdin.on("data", (d) => {
         const k = String(d);
         if (k === "q" || k === "\u0003") { process.stdin.setRawMode(false); process.exit(0); }
-        const i = "1234".indexOf(k);
+        const i = "01234".indexOf(k);
         if (i >= 0 && i !== seite) { seite = i; zeichne(); }
     });
 }
+// DIE UHR ZÄHLT (Seite 0): je Sekunde neu gezeichnet aus dem Stand — keine Abfrage, nur die Urteile zur Uhrzeit
+if (process.stdout.isTTY && !EINMAL) setInterval(() => { if (seite === 0 && stand && L) zeichne(); }, 1000);
 // SELBSTTEST der Tafel an einer nachgebauten Welt (aus w22-blick): ungemessen nie Ertrag, ein Rückfall zieht je Stufe einmal ab, z2w (Wackler-Neulauf,
 // baut neu) macht z2 grün und ist kein eigener Zug, z4 ohne Kandidat zählt nicht, CI-Minuten fehlen ehrlich, die Notiz trägt keine Werte, die Abgaben laufen über Mitternacht zurück
 function selbsttest() {
@@ -1299,9 +1354,19 @@ function selbsttest() {
     const ab2 = path.join(d, "abgabe2.log"), gestern = new Date(2026, 10, 8, 16, 40), heute = new Date(2026, 10, 9, 19, 50);
     fs.writeFileSync(ab2, "16:30 ABGABE w1-alt dddd4444 Abgabe w1-alt: gestern\n"), fs.utimesSync(ab2, gestern, gestern);
     const nS = abgabeSchreiben([{ z: "w1-neu", sha: "eeee5555ffff", t: new Date(2026, 10, 9, 19, 38), titel: "Abgabe w1-neu: heute" }, { z: "w1-wip", sha: "1234abcd", t: new Date(2026, 10, 9, 19, 40), titel: "WIP w1-wip" }], heute, ab2);
+    fs.utimesSync(ab2, heute, heute); // 10.11.: das Anhängen setzt die Datei-Zeit auf die ECHTE Uhr — der Fall schrieb „heute“ (am 09.11. grün, danach rot)
     const a2 = (abgabenVon(heute, ab2) || []).map((a) => `${a.zweig} ${tag(a.t)} ${hhmm(a.t)}`).join(" · ");
     if (nS !== 2 || a2 !== "w1-neu 09.11 19:38 · w1-alt 08.11 16:30" || abgabeSchreiben([{ z: "w1-neu", sha: "eeee5555ffff", t: heute, titel: "Abgabe w1-neu: heute" }], heute, ab2) !== 0) fehler.push(`Abgaben-Schreiber (V3): ${nS} Zeilen · ${a2}`);
-    fs.rmSync(d, { recursive: true, force: true }); console.log(fehler.length ? "messplatz-blick SELBSTTEST ROT: " + fehler.join(" · ") : "messplatz-blick Selbsttest grün: Tafel (ungemessen nie Ertrag, Rückfall zieht ab, Neulauf grün, ohne Kandidat kein Zug, Notiz ohne Werte), Abgaben über Mitternacht");
+    // (V4, 10.11.) DIE ABGABEN AUS DEN KÖPFEN: ein Kopf „Abgabe …“ ≤ 48 h wartet, auch wenn w3/abgabe.log ihn nie sah (alt: w26-ferne-ton stand als
+    // „grün ohne Abgabe“); der claude/-Spiegel, ein WIP-Kopf, ein Kopf über 48 h und heim-* nie
+    const refs = [["w26-ferne-ton", "a", "Abgabe w26-ferne-ton: eins", 20 * h], ["claude/w26-ferne-ton", "a", "Abgabe w26-ferne-ton: eins", 20 * h], ["w27-wip", "b", "WIP w27-wip: zwei", h], ["w25-alt", "c", "Abgabe w25-alt: drei", 49 * h], ["heim-z9", "e", "Abgabe heim-z9: vier", h]]
+        .map(([name, x, messageHeadline, ms]) => ({ name, target: { oid: x.repeat(40), messageHeadline, committedDate: new Date(j - ms).toISOString() } }));
+    const aR = abgabenAusRefs(refs, new Date(j)).map((a) => `${a.zweig} ${a.titel}`).join(" · ");
+    if (aR !== "w26-ferne-ton eins") fehler.push("Abgaben aus den Köpfen (V4): " + aR);
+    // (V5) DIE UHR (messplatz-uhr.cjs): ihre Fälle grün, jede Mutante ROT
+    const pu = UHR.pruefe();
+    if (pu.rot.length) fehler.push("Uhr (V5): " + pu.rot.join(" · "));
+    fs.rmSync(d, { recursive: true, force: true }); console.log(fehler.length ? "messplatz-blick SELBSTTEST ROT: " + fehler.join(" · ") : `messplatz-blick Selbsttest grün: Tafel (ungemessen nie Ertrag, Rückfall zieht ab, Neulauf grün, ohne Kandidat kein Zug, Notiz ohne Werte), Abgaben über Mitternacht, Abgaben aus den Köpfen, Uhr ${pu.faelle} Fälle / ${Object.keys(pu.je).length} Mutanten ROT`);
     process.exitCode = fehler.length ? 1 : 0;
 }
 if (SELBSTTEST) selbsttest();
