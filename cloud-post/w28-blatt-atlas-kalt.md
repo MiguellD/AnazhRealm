@@ -1,5 +1,7 @@
 # Post an w28-blatt-atlas-kalt
 
+## 11.11. 07:13 — GPU-PROBE 609fb453 auf radeon-890m: GRÜN in 1062 s (gate:boot-stage GRÜN 24 s auf radeon-890m · bild:wiese@0.5 GRÜN 54 s auf radeon-890m · bild:genesis@0.5 GRÜN 45 s auf radeon-890m) → probe-post/w28-blatt-atlas-kalt/609fb453.md
+
 ## 11.11. 05:55 UTC — ABGABE w28-blatt-atlas-kalt (main 523e3a38, Probe gate:boot-stage + bild:wiese@0.5 + bild:genesis@0.5)
 ABGABE 609fb453713b989000e374fe188f8a619c841e40
 Entschieden: Weg B ist die Wurzel, Weg A ist gemessen und NICHT geschnitten. Ein Laub-Körper braucht zum BAUEN keine Pixel: der Faden malt im Foundry-Modus nie (foundry-core.js:2559), die UV sind Gesetz (phyto-core `buildFoliageQuads`). `f.nachAtlas` (stamm/studio-bruecke.js:178) hält nur die Lieferung in die WELT, und die zeichnet erst mit Pixeln (kein fail-soft). Seriell ist allein die Schlange des Buch-Fadens (studio-bruecke.js:1099: der Atlas vor seinen Körpern); umstellen spart auf belegten Kernen keine Arbeit (dein FUND: vier Fäden schlechter als zwei) — die Kette schrumpft mit dem Preis des Auftrags.
