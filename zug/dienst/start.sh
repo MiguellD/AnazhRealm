@@ -26,7 +26,8 @@ S=/tmp/claude/dienst
 MAN=$S/manifest.txt
 SCHLEIFEN="zug radeon buche"
 mkdir -p "$S" "$ZIEL_D" "$ZIEL_W"
-lebt() { local p; p=$(cat "$S/$1.pid" 2>/dev/null); [ -n "$p" ] && tasklist //FI "PID eq $p" 2>/dev/null | grep -qi bash; }
+. "$(cd "$(dirname "$0")" && pwd)/gemein.sh" # halter_lebt: EINE Regel, wer eine PID-Datei hält (pid + Start)
+lebt() { halter_lebt "$S/$1.pid" bash; }
 blick() {
     local n p a jetzt t
     jetzt=$(date +%s)
