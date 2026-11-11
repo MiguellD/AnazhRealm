@@ -8793,25 +8793,25 @@
     // weist nur ab, was `_bauFrei` am Plan abwiese; alles andere urteilt der Wirt am Plan wie bisher. Eine Schranke aus dem
     // Grund unter dem Los trägt das Urteil nicht (gemessen an der Zelle −6,−6: die Hülle der stehenden Häuser ragt 1,2–2,4 m
     // über den höchsten Grund unter dem Los, der Boden der Häuser liegt 2,2 m darunter bis 4,7 m darüber).
-    function ortBauWand(fp, boxen) {
+    function ortBauWand(fp, quader) {
         var Z = 16;
         var netz = new Map();
-        for (var b = 0; 9 * b < boxen.length; b++) {
-            var r = Math.hypot(boxen[9 * b + 3], boxen[9 * b + 4]);
-            for (var ix = Math.floor((boxen[9 * b] - r) / Z); ix <= Math.floor((boxen[9 * b] + r) / Z); ix++)
-                for (var iz = Math.floor((boxen[9 * b + 1] - r) / Z); iz <= Math.floor((boxen[9 * b + 1] + r) / Z); iz++) {
+        for (var b = 0; 9 * b < quader.length; b++) {
+            var r = Math.hypot(quader[9 * b + 3], quader[9 * b + 4]);
+            for (var ix = Math.floor((quader[9 * b] - r) / Z); ix <= Math.floor((quader[9 * b] + r) / Z); ix++)
+                for (var iz = Math.floor((quader[9 * b + 1] - r) / Z); iz <= Math.floor((quader[9 * b + 1] + r) / Z); iz++) {
                     var key = ix * 2097152 + iz;
                     var lst = netz.get(key);
                     if (!lst) netz.set(key, (lst = []));
                     lst.push(b);
                 }
         }
-        return { fp: fp, boxen: boxen, netz: netz, Z: Z };
+        return { fp: fp, quader: quader, netz: netz, Z: Z };
     }
     function ortImBau(plan, origin, wand, hoch) {
         var ox = Number(origin.x);
         var oz = Number(origin.z);
-        var B = wand.boxen;
+        var B = wand.quader;
         var fp = wand.fp;
         var Z = wand.Z;
         var T = 0.06; // der Wirt nimmt 5 cm (Berührung ist kein Überlapp), der Vor-Filter einen mehr

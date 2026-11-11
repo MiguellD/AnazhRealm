@@ -1131,7 +1131,7 @@ class AnazhRealm_gelaende_boden {
                     bauten,
                     ohne,
                 },
-                [raster.lx.buffer, raster.lz.buffer, raster.fp.buffer, bauten.boxen.buffer]
+                [raster.lx.buffer, raster.lz.buffer, raster.fp.buffer, bauten.quader.buffer]
             );
             // ein Kandidat, den der Faden an einem stehenden Bau abwies, ist ein Urteil des Wirts: die Wahl ist berührt
             if (r.imBau) unberuehrt = false;

@@ -890,7 +890,7 @@ function ortWahl(msg) {
     // Höhen ohne den Rest des Plans; `boden` zählt die Gänge, `msBoden` ihre Zeit). Bis hier rechnete er den ganzen Plan, und
     // erst der Wirt wies ihn ab (`_ortTraegtWirt`): C-K5 OHNE VORLAUF, nH 300 in der Zelle eines stehenden Dorfs, 35 von 47.
     const B = msg.bauten;
-    const wand = B && B.boxen.length && msg.raster.fp ? FC.ortBauWand(msg.raster.fp, B.boxen) : null;
+    const wand = B && B.quader.length && msg.raster.fp ? FC.ortBauWand(msg.raster.fp, B.quader) : null;
     let [boden, msBoden] = [0, 0];
     const hochAm = (o) => {
         let y;
