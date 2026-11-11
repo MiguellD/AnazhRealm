@@ -968,7 +968,8 @@ function tagKurveUrteil(welt) {
         return i < 1 ? R[Math.max(i, 0)][2] : R[i][2] + ((R[i - 1][2] - R[i][2]) * (h - R[i][0])) / (R[i - 1][0] - R[i][0]);
     };
     const befunde = [],
-        kurven = {};
+        kurven = {},
+        zahlen = {};
     const ev = (a, b) => Math.log2(Math.max(a, 1e-9) / Math.max(b, 1e-9));
     const r2 = (v) => v.toFixed(2);
     for (const [ort, m] of Object.entries(welt)) {
@@ -983,25 +984,39 @@ function tagKurveUrteil(welt) {
         const ref = (x) => ev(x.X, mittag.X) - stufen(x.sonne) + stufen(mittag.sonne);
         kurven[ort] = `Karte ${m.karte} · ` + alle.map((x) => `${x.uhr}:${r2(e(x))}/${r2(ref(x))}`).join(" ");
         if (!(m.karte >= S.karte[0] && m.karte <= S.karte[1])) rot("ANKER", `die 18-%-Karte mittags Luma ${m.karte}`);
+        // die Spitzen der Messung [Betrag, Uhr]: der größte Schritt, die hellste Stunde, die weiteste Stunde neben der REF
+        const spitze = { sprung: [0, 0], buckel: [-Infinity, 0], ref: [0, 0] };
+        const hoch = (k, v, uhr, betrag = v) => betrag > Math.abs(spitze[k][0]) && (spitze[k] = [v, uhr]);
         alle.forEach((x, i) => {
             const a = alle[i - 1];
-            if (a && x.uhr - a.uhr < 0.0105 && Math.abs(e(x) - e(a)) > S.sprung) rot("SPRUNG", `Uhr ${a.uhr} → ${x.uhr} ${r2(e(x) - e(a))} EV`);
+            const d = a && x.uhr - a.uhr < 0.0105 ? e(x) - e(a) : 0;
+            hoch("sprung", d, x.uhr, Math.abs(d));
+            if (e(x) > spitze.buckel[0]) spitze.buckel = [e(x), x.uhr];
+            hoch("ref", ref(x), x.uhr, Math.abs(ref(x)));
+            if (Math.abs(d) > S.sprung) rot("SPRUNG", `Uhr ${a.uhr} → ${x.uhr} ${r2(d)} EV`);
             if (e(x) > S.buckel) rot("BUCKEL", `Uhr ${x.uhr} (Sonne ${x.sonne}°) ${r2(e(x))} EV über dem Mittag`);
             if (Math.abs(ref(x)) > S.ref) rot("REF", `Uhr ${x.uhr} (Sonne ${x.sonne}°) ${r2(ref(x))} Stufen neben der REF`);
             if (Math.abs(ev(x.sofort, x.frisch)) > S.async) rot("ASYNC", `Uhr ${x.uhr} ${r2(ev(x.sofort, x.frisch))} EV`);
         });
+        const gold = [];
         for (const s of [alle.filter((x) => x.uhr < 0.5), alle.filter((x) => x.uhr > 0.5)]) {
             const i = s.findIndex((x, j) => j && (s[j - 1].sonne - 10) * (x.sonne - 10) <= 0);
             const t = i > 0 && (10 - s[i - 1].sonne) / (s[i].sonne - s[i - 1].sonne || 1);
             const [g, w] = i > 0 ? [e, (x) => x.warm].map((f) => f(s[i - 1]) + (f(s[i]) - f(s[i - 1])) * t) : [NaN, NaN];
+            gold.push(`${r2(g)} EV R/B ×${r2(w / mittag.warm)}`);
             if (!(g >= S.gold[0] && g <= S.gold[1])) rot("GOLD", `Sonne 10° ${r2(g)} EV`);
             if (!(w >= S.warm * mittag.warm)) rot("WARM", `Sonne 10° R/B ${r2(w)} gegen ${mittag.warm} mittags`);
         }
         if (!(e(nacht) >= S.nacht[0] && e(nacht) <= S.nacht[1] && nacht.hell >= S.nachtLuma)) rot("NACHT", `${r2(e(nacht))} EV, Luma ${nacht.hell}`);
         const n = Object.keys(m.schreiber || {});
         if (n.length !== 1) rot("SCHREIBER", n.join(", ") || "keiner");
+        // DIE SECHS ZAHLEN DES ORTS (das Soll der Karte licht.K1 in einer Zeile, wie die Station sie nennt — der Probe-Post trägt sie)
+        const sp = (k) => `${r2(spitze[k][0])} (Uhr ${spitze[k][1]})`;
+        zahlen[ort] =
+            `Karte ${m.karte} · Sprung ${sp("sprung")} · Buckel ${sp("buckel")} · Sonne 10° ${gold.join(" | ")} · ` +
+            `Nacht ${r2(e(nacht))} EV Luma ${nacht.hell} · REF ${sp("ref")}${m.bahn ? "" : " · nur die Wand (--kurz)"}`;
     }
-    return { urteil: befunde.length ? "ROT" : "GRUEN", befunde, kurven };
+    return { urteil: befunde.length ? "ROT" : "GRUEN", befunde, kurven, zahlen };
 }
 
 // DER SELBSTTEST DES TAG-URTEILS an GEMESSENEN Kurven (spec/farbe/tag-kurve.json): am Kopf (Mess-Wiese) steht die Wand und die

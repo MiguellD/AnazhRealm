@@ -3051,6 +3051,8 @@ hauptLauf(async () => {
         dateiAb(welt);
         const u = LL.tagKurveUrteil(welt);
         console.log(JSON.stringify(u.kurven, null, 1));
+        // je Ort die sechs Zahlen und sein Urteil in EINER Zeile (der Probe-Post liest die Zeilen mit ROT/GRUEN)
+        for (const [ort, z] of Object.entries(u.zahlen)) console.log(`TAG ${ort} ${u.befunde.some((b) => b.includes(` ${ort}: `)) ? "ROT" : "GRUEN"}: ${z}`);
         urteilEnde("TAG-ACHSE", u);
     } else if (cmd === "licht" && hat("kontakt")) {
         // DER KONTAKT-SCHATTEN (schatten.K1): `kontaktSicht` an der Platte saat-s7-platte der Prüfbühne je Uhr, das Urteil `kontaktUrteil`

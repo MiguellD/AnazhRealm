@@ -1757,13 +1757,13 @@ class AnazhRealm_dirigent_ankunft {
             }
             n++;
         };
+        const p = cam.position;
         for (const x of [G.seed, G.baseHeight, G.waterLevel, G.erbgut, G.erdbau]) merk(x);
-        for (const x of [cam.position.x, cam.position.y, cam.position.z]) merk(x);
+        for (const x of [p.x, p.y, p.z]) merk(x);
         for (const x of cam.matrixWorld.elements) merk(x);
         for (const x of cam.projectionMatrixInverse.elements) merk(x);
         if (gleich) return S.P;
         const M = AnazhRealm.HORIZONT_KARTE.messer;
-        const p = cam.position;
         const ebene = this._terrainMacroSurfaceY(p.x, p.z, true);
         const r = this._messerStrahl || (this._messerStrahl = new THREE.Vector3());
         const P = [];
@@ -1828,7 +1828,8 @@ class AnazhRealm_dirigent_ankunft {
         const cam = this.state.camera;
         if (!pool || !pool.plaetze.length || !cam) return out;
         let P = this._messerBoden();
-        if (!P.length) P = [[cam.position.x, cam.position.y, cam.position.z, 0, 1, 0, 1]];
+        const p = cam.position;
+        if (!P.length) P = [[p.x, p.y, p.z, 0, 1, 0, 1]];
         const ab = globalThis.__fachwerkCore.lichtAbfall;
         const L = this._leuchtAbfallL || (this._leuchtAbfallL = { reichweiteM: 0, abfall: 0, kernM: 0 });
         for (const q of pool.plaetze) {
