@@ -40,7 +40,7 @@ fi
 
 bereit() {
     : >"$W/zug-nie-leer.wartet"
-    git -C $R fetch -q origin "+refs/heads/main:refs/remotes/origin/main" 2>/dev/null
+    git -C $R fetch -q origin "+refs/heads/main:refs/remotes/origin/main" "+refs/heads/punkte-maschine:refs/remotes/origin/punkte-maschine" 2>/dev/null
     git -C $R ls-remote origin $ZWEIGE 2>/dev/null >"$W/zug-nie-leer.refs"
     while read -r sha ref; do
         b=${ref#refs/heads/}
@@ -52,6 +52,10 @@ bereit() {
         # jede neu gesehene Abgabe steht EINMAL in w3/abgabe.log (der Blick liest ABGABEN und STAU daraus; die alte Abgabe-Wache starb)
         grep -q " ABGABE $b ${sha:0:8} " "$T/w3/abgabe.log" 2>/dev/null || echo "$(date +%H:%M) ABGABE $b ${sha:0:8} ${t#Abgabe }" >>"$T/w3/abgabe.log"
         git -C $R merge-base --is-ancestor "$sha" origin/main 2>/dev/null && continue
+        # ein Zweig der Punkte-Maschine OHNE die Endung -pm, der dort schon liegt, ist gelandet — er hat keinen Code-Check (sein Baum
+        # trägt keine check.yml) und stand sonst für immer als „Code-Check nicht GRÜN ()“ in der Warteliste (11.11.: w28-r6-konsum
+        # eec204c0 lag seit 11:53 in punkte-maschine und galt den ganzen Tag als wartend)
+        git -C $R merge-base --is-ancestor "$sha" origin/punkte-maschine 2>/dev/null && continue
         c=$(bash "$D/ci.sh" "$b" </dev/null 2>&1)
         echo "$c" | grep "Code-Check:" | head -1 | grep -q "completed success" || {
             echo "$b ${sha:0:8}: Code-Check nicht GRÜN ($(echo "$c" | grep "Code-Check:" | head -1 | cut -c1-80))" >>"$W/zug-nie-leer.wartet"
