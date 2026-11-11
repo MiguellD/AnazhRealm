@@ -137,7 +137,8 @@ function messen(geraet, alt, jetzt = sek(Date.now())) {
     const s = schlossSehen(), ps = prozesse(); // auch frei: wer vor dem Schloss wartet
     const la = lage(s, ps), r = regung(alt, la, jetzt);
     if (la.halter) la.halter.regt = r.regt;
-    return { puls: { v: 1, geraet, t: jetzt, host: os.hostname(), ...la }, stand: r.stand };
+    // KEIN Rechnername im Puls: das Repo ist öffentlich, `geraet` nennt das Gerät, und kein Leser las je `host` (11.11.)
+    return { puls: { v: 1, geraet, t: jetzt, ...la }, stand: r.stand };
 }
 
 // ── PUSHEN: ein eltern-loser Commit in einem eigenen nackten Repo (die Geschichte keines Zweigs wächst, der Klon sammelt keine Objekte) ──
