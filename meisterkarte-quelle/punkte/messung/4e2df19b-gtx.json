@@ -1,7 +1,7 @@
 {
  "sha": "4e2df19b5c5103b093818b62b5a84ababf85b493",
  "geraet": "gtx",
- "zeit": "2026-11-11T05:31:49.664Z",
+ "zeit": "2026-11-11T05:51:21.266Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "affekt.K4#2": {
@@ -1207,33 +1207,92 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "mensch.K4#1": {
+   "gruen": false,
+   "zahl": "Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.11 m · third ROT strich 0.5 Soll [1,1] — gesicht 0.5 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei — (irisL 5 px, 0 rein < 2×2, irisR 4 px, 0 rein < 2×2) · lippeL -15.35 [-14, -4] · lippeA 12.58 [4, 14] · hoehleL 9.77 [-12, 0] · hoehleA -0.37 [-2, 6] · haarDeckung 1 [0.9, 1]",
+   "exit": 0,
+   "minuten": 0.52,
+   "grund": "ROT: Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.11 m · third ROT strich 0.5 Soll [1,1] — gesicht 0.5 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei — (irisL 5 px, 0 rein < 2×2, irisR 4 px, 0 rein < 2×2) · lippeL -15.35 [-14, -4] · lippeA 12.58 [4, 14] · hoehleL 9.77 [-12, 0] · hoehleA -0.37 [-2, 6] · haarDeckung 1 [0.9, 1]",
+   "gpu": "nvidia/pascal",
+   "s": 31.3,
+   "fremd": {
+    "s": 32.9,
+    "takte": 15,
+    "fremdS": 12.42,
+    "kerne": 0.377,
+    "fensterKerne": 0.483,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      5.88
+     ],
+     [
+      "explorer.exe LOADSAVEDWINDOWS",
+      1.38
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      1.28
+     ]
+    ],
+    "dienerS": 9.8,
+    "diener": [
+     [
+      "System",
+      4.09
+     ],
+     [
+      "dwm.exe",
+      3.38
+     ]
+    ],
+    "geraetS": 10.09,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      5.47
+     ],
+     [
+      "svchost.exe",
+      4.16
+     ],
+     [
+      "SearchIndexer.exe",
+      0.27
+     ]
+    ],
+    "eigenS": 67.91,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon"
+   },
+   "zeit": "2026-11-11T05:51:21.266Z",
+   "abdruck": "a171d6454add",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-11T05:31:10.814Z",
+  "start": "2026-11-11T05:50:45.104Z",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 6.8,
+  "bootS": 5.3,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": "genesis",
-    "vor": "material.K1#2",
-    "s": 30.8,
-    "takte": 654,
+    "ort": "wiese",
+    "vor": "mensch.K4#1",
+    "s": 29.8,
+    "takte": 911,
     "chunks": 81,
     "nach": null
    }
   ],
   "wegeTueren": [],
-  "unerklaert": [
-   {
-    "probe": "material.K1#2",
-    "wie": "werke +5 (−0)"
-   }
-  ],
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
@@ -1246,12 +1305,12 @@
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 122,
-   "luecken": 0,
-   "letzteLuecke": null
+   "zapfen": 51,
+   "luecken": 1,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
   },
-  "fahrtS": 134.6,
-  "minuten": 2.32
+  "fahrtS": 67.1,
+  "minuten": 1.17
  },
  "ungemessen": {
   "ankunft.K1#1": {
