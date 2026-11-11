@@ -2796,11 +2796,18 @@ class AnazhRealm_koerper_leib {
     }
     // DIE EINE GESTALT-DIAL-QUELLE: liest die acht Morph-Dials des Da-Vinci-Studios LIVE
     // (f.recipes[mensch].s). Kaltes Buch → null → Avatar aus den Host-Konstanten (_buildHumanGroup).
+    // VOLL ODER NULL (w28-loop-wurf): die Prägung steht ÜBER dem Buch — ohne Buch gibt es keinen Satz, auch mit Prägung. Bis
+    // hier trug der Leser bei kaltem Buch die Prägung ALLEIN (`{height}` ohne mass/tone): der Kern brach an ihr fail-closed
+    // (`leibGroesse`, seit 4b1e4eee), der Restore eines Stands mit Mensch-Prägung rechnet die Lebenswerte vor dem Buch — die Welt
+    // erwachte nie (kein Takt, main e699a834), und die Heimat ohne Foundry warf im Takt in die Fehler-Grenze des Loops (z385:
+    // `tickPlayerBoosts` → `recomputePlayerStats`). Jetzt baut der Leib kalt aus den Konstanten, und das Buch gießt ihn EINMAL nach
+    // (`_foundryIngestBook`), mit der Prägung. gate:studio-uebergabe (K)
     _koerperStudioDials() {
         const f = this._foundry;
         const rec = f && f.recipes ? f.recipes[AnazhRealm.KOERPER_HOST_RECIPE] : null;
         const s0 = rec && rec.s;
         const s = s0 && typeof s0 === "object" ? s0 : null;
+        if (!s) return null;
         // DIE PRÄGUNG DES MENSCH-REZEPTS = VORRANG-Quelle (ws.studioOv, geschrieben vom EINEN Übergabe-Kanal und den
         // Werkstatt-Reglern): Dials und Gestalt-Wahlen ÜBER das Buch (bmDials → Mensch-Ofen-Memo-Key → bakeMenschInstance).
         // Beim Peer-Avatar-Guss FÜHRT die Prägung des SENDERS: _p2pApplyPeerSoul setzt sie transient in
@@ -2809,7 +2816,7 @@ class AnazhRealm_koerper_leib {
             this._activePeerUebergabe !== undefined && this._activePeerUebergabe !== null
                 ? this._activePeerUebergabe
                 : this._studioPraegung(AnazhRealm.KOERPER_HOST_RECIPE);
-        return ue && Object.keys(ue).length ? Object.assign({}, s || {}, ue) : s;
+        return ue && Object.keys(ue).length ? Object.assign({}, s, ue) : s;
     }
 
     // Der Mensch hängt an derselben Größen-Achse: die koerperstudio-Dials tragen den Größen-Faktor in
