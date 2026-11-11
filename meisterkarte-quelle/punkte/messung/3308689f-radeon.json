@@ -1,0 +1,251 @@
+{
+ "sha": "3308689ff1c260632bd61e631eda708be9a98a31",
+ "geraet": "radeon",
+ "zeit": "2026-11-11T17:46:39.457Z",
+ "host": "MiguellD",
+ "je": {
+  "profiband.K4#2": {
+   "gruen": false,
+   "zahl": "Gehen 36 Bilder · max 108.99 ms · 97.22 % > 33 ms · Fahrt 35 Bilder · max 133.88 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 1 Bild(er) > 100 ms (max 108.99), 97.22 % > 33 ms | Fahrt: 7 Bild(er) > 100 ms (max 133.88), 100.00 % > 33 ms",
+   "exit": 0,
+   "minuten": 0.79,
+   "grund": "ROT: Gehen 36 Bilder · max 108.99 ms · 97.22 % > 33 ms · Fahrt 35 Bilder · max 133.88 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 1 Bild(er) > 100 ms (max 108.99), 97.22 % > 33 ms | Fahrt: 7 Bild(er) > 100 ms (max 133.88), 100.00 % > 33 ms · ROT trotz Fremd-Last: chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-7992-profil-mbyk6n --no-pr 51,4 CPU-s · chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-36544-profil-ZhTpgY --no-p 51,0 CPU-s · chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-35820-profil-5zwSn3 --no-p 50,4 CPU-s — 4,84 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 216,4 CPU-s in 49,1 s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 22,8 CPU-s · svchost.exe 9,5 CPU-s · SearchIndexer.exe 1,2 CPU-s) — geeicht ÷ 1,273 (1 + 5,6 % je fremdem Kern × 4,84): Fahrt Frame max ms 133,9 → geeicht 105,2 (Soll ≤ 100)",
+   "mass": [
+    {
+     "wort": "Gehen Frame max ms",
+     "wert": 108.99,
+     "soll": 100
+    },
+    {
+     "wort": "Fahrt Frame max ms",
+     "wert": 133.88,
+     "soll": 100
+    }
+   ],
+   "gpu": "amd/rdna-3",
+   "konsum": "k095306ab5302",
+   "konsumN": 25,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k5fc4af883383",
+   "s": 46.9,
+   "fremd": {
+    "s": 49.1,
+    "takte": 19,
+    "fremdS": 216.42,
+    "kerne": 4.409,
+    "fensterKerne": 4.841,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-7992-profil-mbyk6n --no-pr",
+      51.39
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-36544-profil-ZhTpgY --no-p",
+      50.97
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-35820-profil-5zwSn3 --no-p",
+      50.44
+     ]
+    ],
+    "dienerS": 38.83,
+    "diener": [
+     [
+      "dwm.exe",
+      17.77
+     ],
+     [
+      "System",
+      10.81
+     ]
+    ],
+    "geraetS": 33.84,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      22.8
+     ],
+     [
+      "svchost.exe",
+      9.47
+     ],
+     [
+      "SearchIndexer.exe",
+      1.16
+     ]
+    ],
+    "eigenS": 227.88,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-11T17:45:30.986Z",
+   "abdruck": "73cb80a7cc5e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K4#1",
+   "modus": "session"
+  },
+  "gelaende.K5#2": {
+   "gruen": true,
+   "zahl": "alle Rollen im Soll — wiese fein 1.1 · streu 0.5 · huf 0.4 · rad 0.1 | hang fein 4.3 · streu 1 · huf 1.3 · rad 1.2 cm (p95, schlechtere Sicht)",
+   "exit": 0,
+   "minuten": 0.42,
+   "gpu": "amd/rdna-3",
+   "konsum": "k93af728b213c",
+   "konsumN": 26,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 3
+   },
+   "konsumBoot": "k5fc4af883383",
+   "s": 24.8,
+   "fremd": {
+    "s": 28.4,
+    "takte": 12,
+    "fremdS": 29.97,
+    "kerne": 1.054,
+    "fensterKerne": 1.344,
+    "namen": [
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      10.69
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      7.88
+     ],
+     [
+      "claude.exe --output-format stream-json --verbose --input-format stream-json --effort=xhigh",
+      2.11
+     ]
+    ],
+    "dienerS": 13.78,
+    "diener": [
+     [
+      "dwm.exe",
+      5.72
+     ],
+     [
+      "System",
+      4.16
+     ]
+    ],
+    "geraetS": 10.64,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      6.67
+     ],
+     [
+      "svchost.exe",
+      3.53
+     ],
+     [
+      "SearchIndexer.exe",
+      0.3
+     ]
+    ],
+    "eigenS": 62.55,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-11T17:46:39.457Z",
+   "abdruck": "b1a1a81f99ba",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "konsumTafel": {
+  "k095306ab5302": "fVTbjpswEP0XHrv1mnAJxtI+OJtIWamrpp8wNmNgQyCyIXRT9d8rCOQCq54nhM6ZOeM59h/nCGoPKT5/2Kp0uPPN+e5YOCGxaE5onj+sw51FtGAQcvFLdKBCiNeOpkx+rC0tcklBlpAdkDSmxrx4Vr0sCsPY9zhtN4LtnnbUZy9TWSExqUgNGkeRTLzIBz4lNjYFiQQa3TcayMz14yjktAcTYhddPttZJwll8ugu0J4bJ/ztU4iNeJnykxywJkVe2rGXSkLZTTOinWsMtOQMmBVoRoPL5YIFo8GpQBeNtQ9NmJ+EHuOUxnTCTY8N0felQUpgcnpQGWCZonksGgWh6k3o3of93OnfTIiVmBrawwENkBKy8ZACn/lwG5qy1URS5CobDqoc9x64ivl3IkrjVl2y0+Fpff0/REr8FDes5tuwGSRoyL6y9bVLEESeBN5LXoWg6ftMdbM2aDy5dEN2Pw4V29labKXrFgyS9NgMQgwwjEIuxNuMXMPhMLC08pCFXMyw+UJVJo/x8pRe9vFKO2PbebxOBg4EZGpyrQdRLEOl46/i0mJRE1lV9biThC0uk5fX4T/7DPwHM9t91crUo+lQLl0dcH3q7oOass9oCkxxugH0F5y2lyjS892tDXb0AfNbfM6xIGcsbWPHbMdREmv+xY1s0ewllPuB6Ma4iJD/6Obapd3YH+6ait7AgHSrLlnq8C5W4m1N10PRIyp6NJXOu4eEZtDYDIr69mr+/Qc=",
+  "k5fc4af883383": "hVRdb6MwEPwvPF7PdQI4GEt9cJLq2ofTpT9hDWtDQyCyodzldP/9RIB8QKXOCwjt7M7OjvjrHSHZg8HHd1eVnvC+ed89Bx9IHNoPtI/vzhPeMlpyYEL2oFLKH11ZYvNj7WiRKwqqhOyApLE15sVjcqZFjMWBL2j7LPnuYUcDLi/YyKdpi0JhWpEaNI4NVOpHAYhpYeMMKCTQ6PPQoZgvgjhigp7BpdxF/Wv7czpJQZneKw21v4hT8dpK+SyfpvVpDliTIi/dOCtJmeo2G9HOORZacgLMCrSjwNVqycNR4JSgi8a5uyE8SJnPBaUxndSaY0P0bWtQCriaGpUBlgbtfdMoZEko6O+ZgD0c0AIpIRtNCQMewHVJytcTSpEn2WBMOd48XCQ8uCF17iR9bjo8bC+f5VsfhV/XVMj13H2XQYqW7CtXX6aEYeQrEEOSJDWzG7urtIHjq9WC8dt1qHyZueAqXbdgkZhjMxAxRBYxIT8ZUsPhMFTpxEfOpidwdZe1u+j4iV6do2M6ES/z6HxYOBBQxuZaD6RYsUTHn0WhxaImqqrq0f+UL7stA1peFv3DjVybi8dm08pbvK1ni527VrYeRTO1WuhQ6P6a0+oT2gINTt3GYCnG25+xDfvn65beoZ1d4ZRjQU5YusaNuY2jNNb99Qb5r/dZadHuFZT7gbCIcRmhkN3mO7OWL5vneMvl1+jNOGJCj7bSefezoBk0LoOivv4l//0H",
+  "k93af728b213c": "fVTbbqMwEP0XHtt1TbgEY6kPTlqpfVht+gljMwYaAsiGsM1q/30FgVyg2nnC5hzPmTNj/3FqUHtI8enTVqXDnQfnh2PhiMSiOaJ5+rQOd1bRikHI+1/K5HVjaZJDSvYVmhoNsQ2UyZMaoA83oCKXFGQJ2QFJaxrMixEUhWHse5x2r4LtHnfUZ89zWiExqUgDGieSTLzIBz4HtjYFiQRaPSQawcz14yjkdAgmxC46f3Y/55kklMm9ukB7bpzw9y8hXsXzHJ/kgA0p8tJOuVQSyr6aKbolx0BHToBZgWYSuF6vWDAJnBN00Vp7l4T5SegxTmlMZ9i0bom+PRqkBCbnRmWAZYrm/tAoCFXA6e+FgD0c0AApIZtMCXzmw7VIyjYzSpGrbDSmnPocuIr5NyRK406JPobF48tlX3wM2+KXuMZm6b7NIEFD9pVtLlmCIPIk8IGyFYKmix7bq7SR48m1G7Lbcqh4W7hgK910YJCkdTsSMcAwCrkQ7wtwA4fDiNLKQxbOWzDck/vR8ZReD6OT9iLelqNzNHAgIFOTaz2SYhkqHX83Ch0WDZFV1Uz+J2zVV+nT8lLoF+uN/U+8ziUMp1ammUSHcu3qgOtjP+tqjj6hKTDFudvorzgdey9exPVGBjt6F92iC6ccC3LC0rZ2mts4SmLNv7ltHZq9hHI/At0YVxGeR2OX9mVv3Bcq6Ildyk3flAi22/PivbdmK8TH+dAaFa1NpfP+kaAZtDaDork+lX//AQ=="
+ },
+ "ungemessen": {
+  "profiband.K4#1": {
+   "gruen": false,
+   "zahl": "Fremd-Last: chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-7992-profil-mbyk6n --no-pr 51,4 CPU-s · chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-36544-profil-ZhTpgY --no-p 51,0 CPU-s · chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-35820-profil-5zwSn3 --no-p 50,4 CPU-s — 4,84 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 216,4 CPU-s in 49,1 s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 22,8 CPU-s · svchost.exe 9,5 CPU-s · SearchIndexer.exe 1,2 CPU-s) — im Band der Last, geeicht ÷ 1,273 (1 + 5,6 % je fremdem Kern × 4,84): Gehen Frame max ms 109 → geeicht 85,64 (Soll ≤ 100) — kein Urteil, UNGEMESSEN (die Probe sah: Gehen 36 Bilder · max 108.99 ms · 97.22 % > 33 ms · Fahrt 35 Bilder · max 133.88 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 1 Bild(er) > 100 ms (max 108.99), 97.22 % > 33 ms | Fahrt:)",
+   "exit": 0,
+   "minuten": 0.79,
+   "grund": "Fremd-Last: chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-7992-profil-mbyk6n --no-pr 51,4 CPU-s · chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-36544-profil-ZhTpgY --no-p 51,0 CPU-s · chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-35820-profil-5zwSn3 --no-p 50,4 CPU-s — 4,84 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 216,4 CPU-s in 49,1 s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 22,8 CPU-s · svchost.exe 9,5 CPU-s · SearchIndexer.exe 1,2 CPU-s) — im Band der Last, geeicht ÷ 1,273 (1 + 5,6 % je fremdem Kern × 4,84): Gehen Frame max ms 109 → geeicht 85,64 (Soll ≤ 100) — kein Urteil, UNGEMESSEN (die Probe sah: Gehen 36 Bilder · max 108.99 ms · 97.22 % > 33 ms · Fahrt 35 Bilder · max 133.88 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 1 Bild(er) > 100 ms (max 108.99), 97.22 % > 33 ms | Fahrt:)",
+   "mass": [
+    {
+     "wort": "Gehen Frame max ms",
+     "wert": 108.99,
+     "soll": 100
+    }
+   ],
+   "gpu": "amd/rdna-3",
+   "konsum": "k095306ab5302",
+   "konsumN": 25,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k5fc4af883383",
+   "s": 46.9,
+   "fremd": {
+    "s": 49.1,
+    "takte": 19,
+    "fremdS": 216.42,
+    "kerne": 4.409,
+    "fensterKerne": 4.841,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-7992-profil-mbyk6n --no-pr",
+      51.39
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-36544-profil-ZhTpgY --no-p",
+      50.97
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-35820-profil-5zwSn3 --no-p",
+      50.44
+     ]
+    ],
+    "dienerS": 38.83,
+    "diener": [
+     [
+      "dwm.exe",
+      17.77
+     ],
+     [
+      "System",
+      10.81
+     ]
+    ],
+    "geraetS": 33.84,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      22.8
+     ],
+     [
+      "svchost.exe",
+      9.47
+     ],
+     [
+      "SearchIndexer.exe",
+      1.16
+     ]
+    ],
+    "eigenS": 227.88,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-11T17:45:30.986Z",
+   "abdruck": "52687a17b4ac",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ }
+}
