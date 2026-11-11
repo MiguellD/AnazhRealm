@@ -1,5 +1,18 @@
 # Post an w28-baum-wechsel
 
+## 11.11. 15:00 UTC w28-baum-wechsel — ZWISCHENSTAND 3: der echte Renderer widerlegt das Hinausschieben am Fall der Station selbst
+Die Folge der Station läuft auf swiftshader doch (14 min je Fall, `bericht/1111-baum-wechsel/kanten-baum.js` = kanten.js mit Art und Abstands-Faktor, Treue 0 Bytes, Boden 28,64 m). Die Karte der Weide (Höhe 9,38 m) gegen ihre L0, Deckung der Tiefe:
+
+| Abstand | Kanten-Versatz | Exemplar |
+|---|---|---|
+| 26 m (Haushalt, heute) | 4,96 px (Radeon 5,15 · GTX 5,05) | 27 941 Pixel |
+| 130 m (5 ×) | 1,46 px | 410 Pixel |
+| 245 m (der Abstand ihrer Zeile) | 2,03 px | 30 Pixel — unter der 200-Pixel-Schranke des Urteils: ein Bruch |
+
+Die Weide wird durch Hinausschieben NIE grün: bei 130 m trägt sie noch 1,46 px, jenseits ~185 m deckt sie weniger als 200 Pixel und die Station bricht (dieselbe Klasse wie das Geisttor bei 134 m, w26). Der Fehler der Karte muss an der Quelle fallen (FUND 2: Tiefe am Gitter, Flecken, die Zelle 128 × 256 für eine Krone 14 m breit und 9 m hoch — 3 px je Texel waagrecht am Haushalt); der Mechanismus dieses Zweigs trägt danach die Rest-Faktoren.
+**Stand des Zweigs** (Kopf f54eba48, WIP [skip ci]): `gate:scatter-lod` GRÜN mit dem neuen Abschnitt W — die EINE Wahl betritt L1 und Karte am Abstand des Gesetzes je Vorlage (9 von 9), der Wind teilt genau den Streck heraus, 5 stehende Fassaden tragen die Schirm-Höhe, der doppelte Schirm stempelt nach und zurück, eine Vorlage ohne Zeile bricht (KERN-PFLICHT …tree.__w28), die Mutante „ohne Vorlage hält der Haushalt" ROT bei 9 von 9 (eiche 24,0/52,0 statt 24,0/110,7 m …); `npm run check` Exit 0, playtest:fast 21/0. Voller Playtest: 1 Invariante ROT — „Scatter-Scheibe MAIN = FADEN … Dispose mitten in der Fortsetzung" (`rebuildOk` false: mit den Zeilen tragen ferne Bäume die asynchron gelieferte L1 statt der Karte, der Neubau der Region trifft den Schnappschuss von vorher nicht) — vor einer Landung zu heilen.
+**Läuft noch:** die Eiche im echten Renderer (Karte am Haushalt und bei 2 ×), ich trage die zwei Zahlen nach.
+
 ## 11.11. 14:40 UTC w28-baum-wechsel — ZWISCHENSTAND 2: der Schnitt steht, die Messung verbietet seine Landung (KEINE Abgabe)
 **Geschnitten** (Zweig `w28-baum-wechsel`, Kopf 32152798, WIP [skip ci], NICHT zur Landung): der Baum fragt das Gesetz mit Vorlage. `LOD_SCHIRM.fehler.tree` trägt neun Zeilen je Meter Sichthöhe (stamm/vegetation-streu.js:3038); `_baumStreck(vorlage)` (:1871) teilt den Abstand von `_wechselGesetz` durch den Haushalt, je Grenze; die Stufen tragen ihn als SCHIRM-HÖHE ihrer Grenze — `aH0L` × Streck der 01-Grenze, `aH0` und die Sichthöhe der Karte × Streck der 12-Grenze (`_foundryStufenHoeheAngleichen` :2106, studio-gestalt.js:1199, studio-bruecke.js:2847). Maske (stoff-karte.js `_lodCrossfadeMaskNode`) und Wahl der GPU (`PASS_WAHL_WGSL`) bleiben byte-gleich: sie messen wie bisher d · min(Bezug / Stempel, 1); der Wind teilt den Streck wieder heraus (vierte Art-Größe `windArt.w` = die Zeile, Uniform `uLodSchirm`, stoff-instanz.js:245/274/568); die Wahl der CPU liest je Grenze die Schirm-Höhe (`_chooseLODForDistance` :2213, `_lodBandPartnerFor` und `_archStufeSpiel` in siedlung-bauten.js, `_streuZelleMerke`); der Wechsel des Schirms stempelt Fassaden und Karten neu (`_schirmHoehenNeu`). playtest:fast 21/0, `npm run check` grün (Exit 0), Atlas-Ratsche OK, Werkbank swiftshader: die Welt steht, kein STOFF-Bruch.
 **Gemessen** (Werkbank swiftshader, EINE Welt, Mess-Wiese Ego 1920 × 1080, `zaehlen`, A/B über `_baumStreck`):
