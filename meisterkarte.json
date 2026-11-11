@@ -7,7 +7,7 @@
   "max": 330,
   "maschine": {
     "kopf": "e6f0cf7e",
-    "zeit": "2026-11-11T16:25:32.338Z",
+    "zeit": "2026-11-11T16:57:57.436Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -3764,7 +3764,7 @@
           "punkte": 0,
           "staffel": "1 = warm ≤ 5 s an einem Gerät · 2 = warm ≤ 1,5 s und nach der Versions-Stufe ≤ 3 s an beiden",
           "messung": "`diag-boot-stage --echt` Zweit-Zeile (Platte warm, gleiche Version) und Versions-Zeile (nach bump-version), t wie K1, frischer Browser-Prozess je Boot, ≥ 4 je Gerät. Der Anteil der Platten-Lieferungen zählt Pipeline K4.",
-          "beleg": "Maschine: 0 — offen: ankunft.K3#1 radeon: Linse seit der Messung geändert (R6: scripts/diag-boot-stage.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +8) — zuletzt an e6f0cf7e: die Fahrt riss 1800 s (in leib.K1#2) — offen, UNGEMESSEN · ankunft.K3#1 gtx: Konsum seit der Messung geändert (R6: scripts/diag-boot-stage.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +18) — zuletzt an 6aa7a5a6: Fremd-Last: MsMpEng.exe 28,9 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 19,5 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjx",
+          "beleg": "Maschine: 0 — offen: ankunft.K3#1 radeon: Linse seit der Messung geändert (R6: scripts/diag-boot-stage.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +8) — zuletzt an e6f0cf7e: die Fahrt riss 1800 s (in leib.K1#2) — offen, UNGEMESSEN · ankunft.K3#1 gtx: ROT: warm Median 11.52 s (9.09 · 13.94, Zweit-Boot im warmen Browser) · [linse-gpu] nvidia/pascal · ROT trotz Fremd-Last: OmenCap.exe 74,1 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 17,7 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 7,0 CPU-s — 1,92 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon; Σ fremd 115,0 CPU-s in 68,2 s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 22,4 CPU-s · SearchProtocolHost.exe 16,6 CPU-s · SearchIndexer.exe 15,9 CPU-s) — geeicht ÷ 1,108 (1 + 5,6 % je fremdem Kern × 1,92): warm Median s 11,52 → geeicht 10,39 (Soll ≤ 5) an e6f0cf7e",
           "schlupfloch": "Einen offenen Tab oder den bfcache als warm messen: frischer Prozess je Boot, nur die Platte bleibt.",
           "maschine": true
         },
