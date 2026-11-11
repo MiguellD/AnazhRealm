@@ -1,0 +1,14 @@
+{
+ "plan": "licht.K2#2",
+ "adapter": "[linse-gpu] amd/rdna-3",
+ "schritte": {
+  "fenster": {
+   "exit": 3221226505,
+   "json": null,
+   "rest": ""
+  }
+ },
+ "dateien": {},
+ "fehler": "fenster: Exit 3221226505 ",
+ "messort": "fenster: Exit 3221226505"
+}

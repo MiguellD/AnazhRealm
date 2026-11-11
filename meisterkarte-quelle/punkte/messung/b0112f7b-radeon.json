@@ -1,0 +1,899 @@
+{
+ "sha": "b0112f7b17e30914f9cac67843c59bfbb06bd31b",
+ "geraet": "radeon",
+ "zeit": "2026-11-11T18:12:05.860Z",
+ "host": "MiguellD",
+ "je": {
+  "profiband.K4#1": {
+   "gruen": false,
+   "zahl": "Gehen 31 Bilder · max 184.08 ms · 100.00 % > 33 ms · Fahrt 22 Bilder · max 309.69 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 9 Bild(er) > 100 ms (max 184.08), 100.00 % > 33 ms | Fahrt: blind (22 Bilder in 2.5 s), 15 Bild(er) > 100 ms (max 309.69), 100.00 % > 33 ms",
+   "exit": 0,
+   "minuten": 1.02,
+   "grund": "ROT: Gehen 31 Bilder · max 184.08 ms · 100.00 % > 33 ms · Fahrt 22 Bilder · max 309.69 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 9 Bild(er) > 100 ms (max 184.08), 100.00 % > 33 ms | Fahrt: blind (22 Bilder in 2.5 s), 15 Bild(er) > 100 ms (max 309.69), 100.00 % > 33 ms · ROT trotz Fremd-Last: chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-27028-profil-5UUWja --no-p 128,6 CPU-s · chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-33156-profil-5Fe7hQ --no-p 122,0 CPU-s · node scripts/diag-altlasten.cjs 42,9 CPU-s — 13,88 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 515,6 CPU-s in 63,8 s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 49,8 CPU-s · SearchIndexer.exe 29,5 CPU-s · svchost.exe 15,3 CPU-s) — geeicht ÷ 1,782 (1 + 5,6 % je fremdem Kern × 13,88): Gehen Frame max ms 184,1 → geeicht 103,3 (Soll ≤ 100)",
+   "mass": [
+    {
+     "wort": "Gehen Frame max ms",
+     "wert": 184.08,
+     "soll": 100
+    }
+   ],
+   "gpu": "amd/rdna-3",
+   "konsum": "k8e7a97a0003c",
+   "konsumN": 25,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k5129687e6354",
+   "s": 60.7,
+   "fremd": {
+    "s": 63.8,
+    "takte": 23,
+    "fremdS": 515.56,
+    "kerne": 8.078,
+    "fensterKerne": 13.876,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-27028-profil-5UUWja --no-p",
+      128.61
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-33156-profil-5Fe7hQ --no-p",
+      122.03
+     ],
+     [
+      "node scripts/diag-altlasten.cjs",
+      42.86
+     ]
+    ],
+    "dienerS": 82.41,
+    "diener": [
+     [
+      "System",
+      39.94
+     ],
+     [
+      "dwm.exe",
+      27.8
+     ]
+    ],
+    "geraetS": 95.25,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      49.77
+     ],
+     [
+      "SearchIndexer.exe",
+      29.47
+     ],
+     [
+      "svchost.exe",
+      15.27
+     ]
+    ],
+    "eigenS": 267.59,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-11T18:05:04.160Z",
+   "abdruck": "52687a17b4ac",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "profiband.K4#2": {
+   "gruen": false,
+   "zahl": "Gehen 31 Bilder · max 184.08 ms · 100.00 % > 33 ms · Fahrt 22 Bilder · max 309.69 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 9 Bild(er) > 100 ms (max 184.08), 100.00 % > 33 ms | Fahrt: blind (22 Bilder in 2.5 s), 15 Bild(er) > 100 ms (max 309.69), 100.00 % > 33 ms",
+   "exit": 0,
+   "minuten": 1.02,
+   "grund": "ROT: Gehen 31 Bilder · max 184.08 ms · 100.00 % > 33 ms · Fahrt 22 Bilder · max 309.69 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — ROT: Gehen: 9 Bild(er) > 100 ms (max 184.08), 100.00 % > 33 ms | Fahrt: blind (22 Bilder in 2.5 s), 15 Bild(er) > 100 ms (max 309.69), 100.00 % > 33 ms · ROT trotz Fremd-Last: chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-27028-profil-5UUWja --no-p 128,6 CPU-s · chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-33156-profil-5Fe7hQ --no-p 122,0 CPU-s · node scripts/diag-altlasten.cjs 42,9 CPU-s — 13,88 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 515,6 CPU-s in 63,8 s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 49,8 CPU-s · SearchIndexer.exe 29,5 CPU-s · svchost.exe 15,3 CPU-s) — geeicht ÷ 1,782 (1 + 5,6 % je fremdem Kern × 13,88): Gehen Frame max ms 184,1 → geeicht 103,3 (Soll ≤ 100) · Fahrt Frame max ms 309,7 → geeicht 173,8 (Soll ≤ 100)",
+   "mass": [
+    {
+     "wort": "Gehen Frame max ms",
+     "wert": 184.08,
+     "soll": 100
+    },
+    {
+     "wort": "Fahrt Frame max ms",
+     "wert": 309.69,
+     "soll": 100
+    }
+   ],
+   "gpu": "amd/rdna-3",
+   "konsum": "k8e7a97a0003c",
+   "konsumN": 25,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k5129687e6354",
+   "s": 60.7,
+   "fremd": {
+    "s": 63.8,
+    "takte": 23,
+    "fremdS": 515.56,
+    "kerne": 8.078,
+    "fensterKerne": 13.876,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-27028-profil-5UUWja --no-p",
+      128.61
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-33156-profil-5Fe7hQ --no-p",
+      122.03
+     ],
+     [
+      "node scripts/diag-altlasten.cjs",
+      42.86
+     ]
+    ],
+    "dienerS": 82.41,
+    "diener": [
+     [
+      "System",
+      39.94
+     ],
+     [
+      "dwm.exe",
+      27.8
+     ]
+    ],
+    "geraetS": 95.25,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      49.77
+     ],
+     [
+      "SearchIndexer.exe",
+      29.47
+     ],
+     [
+      "svchost.exe",
+      15.27
+     ]
+    ],
+    "eigenS": 267.59,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-11T18:05:04.160Z",
+   "abdruck": "73cb80a7cc5e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K4#1",
+   "modus": "session"
+  },
+  "gelaende.K5#2": {
+   "gruen": true,
+   "zahl": "alle Rollen im Soll — wiese fein 1.1 · streu 0.5 · huf 0.4 · rad 0.1 | hang fein 4.3 · streu 1 · huf 0.6 · rad 1.2 cm (p95, schlechtere Sicht)",
+   "exit": 0,
+   "minuten": 0.77,
+   "gpu": "amd/rdna-3",
+   "konsum": "k3f4a3c9d14f2",
+   "konsumN": 26,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 3
+   },
+   "konsumBoot": "k5129687e6354",
+   "s": 46.2,
+   "fremd": {
+    "s": 48.5,
+    "takte": 19,
+    "fremdS": 249.63,
+    "kerne": 5.142,
+    "fensterKerne": 6.32,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-27028-profil-5UUWja --no-p",
+      44.19
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-33156-profil-5Fe7hQ --no-p",
+      40.89
+     ],
+     [
+      "git reset --hard --no-recurse-submodules",
+      34.23
+     ]
+    ],
+    "dienerS": 61.58,
+    "diener": [
+     [
+      "System",
+      39.8
+     ],
+     [
+      "dwm.exe",
+      11.27
+     ]
+    ],
+    "geraetS": 61.11,
+    "geraet": [
+     [
+      "SearchIndexer.exe",
+      26.92
+     ],
+     [
+      "MsMpEng.exe",
+      21.44
+     ],
+     [
+      "svchost.exe",
+      12.61
+     ]
+    ],
+    "eigenS": 123.81,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-11T18:06:37.788Z",
+   "abdruck": "b1a1a81f99ba",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "vegetation.K2#1": {
+   "gruen": true,
+   "zahl": "Kamm 405.8 über Rausch-Boden 0.000 (×405.8), Tal 67.5 — Kamm/Tal 6.02 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 54.1 % in 0–15 m, Δt 0.25 s",
+   "exit": 0,
+   "minuten": 0.76,
+   "gpu": "amd/rdna-3",
+   "konsum": "k7764f98e586d",
+   "konsumN": 25,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "k5129687e6354",
+   "s": 45.7,
+   "fremd": {
+    "s": 47.4,
+    "takte": 19,
+    "fremdS": 212.55,
+    "kerne": 4.486,
+    "fensterKerne": 6.284,
+    "namen": [
+     [
+      "node scripts/diag-kamera-laub.cjs --selftest",
+      36.11
+     ],
+     [
+      "git reset --hard --no-recurse-submodules",
+      31.61
+     ],
+     [
+      "node scripts/diag-altlasten.cjs --selftest",
+      29.56
+     ]
+    ],
+    "dienerS": 58.28,
+    "diener": [
+     [
+      "System",
+      40.38
+     ],
+     [
+      "dwm.exe",
+      8.53
+     ]
+    ],
+    "geraetS": 58.95,
+    "geraet": [
+     [
+      "SearchIndexer.exe",
+      25.88
+     ],
+     [
+      "MsMpEng.exe",
+      22.39
+     ],
+     [
+      "svchost.exe",
+      10.36
+     ]
+    ],
+    "eigenS": 48.66,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-11T18:07:27.448Z",
+   "abdruck": "e70ca47e767e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "mensch.K4#1": {
+   "gruen": false,
+   "zahl": "Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.11 m · third ROT strich 0.333 Soll [1,1] — gesicht 0.333 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei — (irisL 4 px, 0 rein < 2×2, irisR 6 px, 0 rein < 2×2) · lippeL -14.32 [-14, -4] · lippeA 16.14 [4, 14] · hoehleL -7.17 [-12, 0] · hoehleA 11.56 [-2, 6] · haarDeckung 1 [0.9, 1]",
+   "exit": 0,
+   "minuten": 0.76,
+   "grund": "ROT: Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.11 m · third ROT strich 0.333 Soll [1,1] — gesicht 0.333 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei — (irisL 4 px, 0 rein < 2×2, irisR 6 px, 0 rein < 2×2) · lippeL -14.32 [-14, -4] · lippeA 16.14 [4, 14] · hoehleL -7.17 [-12, 0] · hoehleA 11.56 [-2, 6] · haarDeckung 1 [0.9, 1]",
+   "gpu": "amd/rdna-3",
+   "konsum": "k7132bf84c123",
+   "konsumN": 112,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 85,
+    "Verzeichnis": 1
+   },
+   "konsumBoot": "k5129687e6354",
+   "s": 44.8,
+   "fremd": {
+    "s": 47.5,
+    "takte": 18,
+    "fremdS": 497.27,
+    "kerne": 10.478,
+    "fensterKerne": 13.507,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-16532-profil-6udA81 --no-p",
+      159.09
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-29356-profil-utinm7 --no-p",
+      158.72
+     ],
+     [
+      "node scripts/diag-altlasten.cjs --selftest",
+      44.19
+     ]
+    ],
+    "dienerS": 46.45,
+    "diener": [
+     [
+      "System",
+      24.95
+     ],
+     [
+      "dwm.exe",
+      11.47
+     ]
+    ],
+    "geraetS": 51.83,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      22.66
+     ],
+     [
+      "SearchIndexer.exe",
+      19.16
+     ],
+     [
+      "svchost.exe",
+      9.86
+     ]
+    ],
+    "eigenS": 51.36,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-11T18:08:15.125Z",
+   "abdruck": "54782bda6ad9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "haar.K2#1": {
+   "gruen": false,
+   "zahl": "EINE Pose: Leib Δ 0 · Haar-Feder Δ 0 m über 3 Lesungen · arm ROT strich 0.3154 Soll [0.3554,0.533] — strich 0.3154 < 0.3554 · albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:c69a8110a4ddbf20) · albedo — [0.01; 0.3] · third ROT strich 0.3431 Soll [0.3554,0.533] — strich 0.3431 < 0.3554 · albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:c69a8110a4ddbf20) · albedo — [0.01; 0.3]",
+   "exit": 0,
+   "minuten": 0.64,
+   "grund": "ROT: EINE Pose: Leib Δ 0 · Haar-Feder Δ 0 m über 3 Lesungen · arm ROT strich 0.3154 Soll [0.3554,0.533] — strich 0.3154 < 0.3554 · albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:c69a8110a4ddbf20) · albedo — [0.01; 0.3] · third ROT strich 0.3431 Soll [0.3554,0.533] — strich 0.3431 < 0.3554 · albedo: veraltet seit 66eb3576: koerper-core.js geändert (c:9de369efbad0b0fe → c:c69a8110a4ddbf20) · albedo — [0.01; 0.3]",
+   "gpu": "amd/rdna-3",
+   "konsum": "k7132bf84c123",
+   "konsumN": 112,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 85,
+    "Verzeichnis": 1
+   },
+   "konsumBoot": "k5129687e6354",
+   "s": 37.9,
+   "fremd": {
+    "s": 40.3,
+    "takte": 15,
+    "fremdS": 308.05,
+    "kerne": 7.644,
+    "fensterKerne": 8.649,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-29356-profil-utinm7 --no-p",
+      70.11
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-16532-profil-6udA81 --no-p",
+      69.38
+     ],
+     [
+      "git reset --hard --no-recurse-submodules",
+      32.98
+     ]
+    ],
+    "dienerS": 50,
+    "diener": [
+     [
+      "System",
+      30.05
+     ],
+     [
+      "dwm.exe",
+      9.8
+     ]
+    ],
+    "geraetS": 68.95,
+    "geraet": [
+     [
+      "SearchIndexer.exe",
+      30.28
+     ],
+     [
+      "MsMpEng.exe",
+      28.69
+     ],
+     [
+      "svchost.exe",
+      9.73
+     ]
+    ],
+    "eigenS": 43.27,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-11T18:09:02.545Z",
+   "abdruck": "6f065278f827",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "vegetation.K1#1": {
+   "gruen": true,
+   "zahl": "wiese-third-0.5--wiese: LAI 2–5 2.97 · 5–10 2.55 · 10–20 2.82 · 20–40 gedeckt, Grund 0.005 %, Farbton 2–5 m 11.68°, nahWiese 4 Befehle / 54904 Dreiecke",
+   "exit": 0,
+   "minuten": 0.58,
+   "gpu": "amd/rdna-3",
+   "konsum": "k792ce9f5ab62",
+   "konsumN": 112,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 85,
+    "Verzeichnis": 1
+   },
+   "konsumBoot": "k5129687e6354",
+   "s": 34.8,
+   "fremd": {
+    "s": 37.4,
+    "takte": 14,
+    "fremdS": 251.31,
+    "kerne": 6.718,
+    "fensterKerne": 8.658,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-39868-profil-Ct307n --no-p",
+      46.33
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-29356-profil-utinm7 --no-p",
+      43.88
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-16532-profil-6udA81 --no-p",
+      43.39
+     ]
+    ],
+    "dienerS": 41.19,
+    "diener": [
+     [
+      "System",
+      25.83
+     ],
+     [
+      "WmiPrvSE.exe",
+      7.52
+     ]
+    ],
+    "geraetS": 45.88,
+    "geraet": [
+     [
+      "SearchIndexer.exe",
+      18.7
+     ],
+     [
+      "MsMpEng.exe",
+      18.36
+     ],
+     [
+      "svchost.exe",
+      8.61
+     ]
+    ],
+    "eigenS": 29.02,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-11T18:09:42.906Z",
+   "abdruck": "9c512329c038",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "vegetation.K5#1": {
+   "gruen": true,
+   "zahl": "Krone sommer 77332 px · winter 2779 px → Winter 0.036 × Sommer",
+   "exit": 0,
+   "minuten": 0.51,
+   "gpu": "amd/rdna-3",
+   "konsum": "k792ce9f5ab62",
+   "konsumN": 112,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 85,
+    "Verzeichnis": 1
+   },
+   "konsumBoot": "k5129687e6354",
+   "s": 30.3,
+   "fremd": {
+    "s": 32.8,
+    "takte": 13,
+    "fremdS": 103.78,
+    "kerne": 3.16,
+    "fensterKerne": 3.671,
+    "namen": [
+     [
+      "node scripts/diag-kamera-laub.cjs --selftest",
+      32.22
+     ],
+     [
+      "git reset --hard --no-recurse-submodules",
+      23.98
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      9.53
+     ]
+    ],
+    "dienerS": 34.81,
+    "diener": [
+     [
+      "System",
+      24.47
+     ],
+     [
+      "WmiPrvSE.exe",
+      5.25
+     ]
+    ],
+    "geraetS": 42.56,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      20.78
+     ],
+     [
+      "SearchIndexer.exe",
+      15.2
+     ],
+     [
+      "svchost.exe",
+      6.28
+     ]
+    ],
+    "eigenS": 25.16,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-11T18:10:20.063Z",
+   "abdruck": "50b89569ba89",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "vegetation.K5#2": {
+   "gruen": false,
+   "zahl": "ohne alle Schüsse: /bild: {\"ms\":4592,\"fehler\":\"ABNAHME ROT [Ziel Blickziel verdeckt von Natur baum_tanne in 46.07 m] · beweis · Sicht 0.0 % · Ziel Blickziel im Bild VERDECKT 61.46 m · Luma 83.1 σ 41.9 schwarz 0.0 % weiß 0.0 % · Stand 18.546.254 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 — die Aufnahme speichert nich",
+   "exit": 0,
+   "minuten": 0.92,
+   "grund": "ROT: ohne alle Schüsse: /bild: {\"ms\":4592,\"fehler\":\"ABNAHME ROT [Ziel Blickziel verdeckt von Natur baum_tanne in 46.07 m] · beweis · Sicht 0.0 % · Ziel Blickziel im Bild VERDECKT 61.46 m · Luma 83.1 σ 41.9 schwarz 0.0 % weiß 0.0 % · Stand 18.546.254 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 — die Aufnahme speichert nich",
+   "gpu": "amd/rdna-3",
+   "konsum": "k0f7874add934",
+   "konsumN": 112,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 85,
+    "Verzeichnis": 1
+   },
+   "konsumBoot": "k5129687e6354",
+   "s": 55,
+   "fremd": {
+    "s": 57.2,
+    "takte": 22,
+    "fremdS": 189.47,
+    "kerne": 3.314,
+    "fensterKerne": 3.97,
+    "namen": [
+     [
+      "git reset --hard --no-recurse-submodules",
+      39.3
+     ],
+     [
+      "node scripts/diag-kamera-laub.cjs --selftest",
+      26.28
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      17.67
+     ]
+    ],
+    "dienerS": 57.53,
+    "diener": [
+     [
+      "System",
+      35.67
+     ],
+     [
+      "WmiPrvSE.exe",
+      10.48
+     ]
+    ],
+    "geraetS": 67.06,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      26.92
+     ],
+     [
+      "SearchIndexer.exe",
+      25.42
+     ],
+     [
+      "svchost.exe",
+      14.34
+     ]
+    ],
+    "eigenS": 55.72,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-11T18:10:52.821Z",
+   "abdruck": "747a7379b842",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "konsumTafel": {
+  "k8e7a97a0003c": "fVTbjpswEP0XHrv1OuFqLO2Ds4mUlbpq+gljMwY2BCIbQjdV/72CQC6w6nlC6JyZM55j/3GOoPaQ4vOHrUqHO9+c746FExKL5oTm+cM63FlGSwYBF79EByqEeO1oyuTH2tIilxRkCdkBSWNqzItn1cuiIIg9l9N2I9juaUc99jKVFRKTitSgcRTJxI084FNiY1OQSKDRfaOBHEdetHA57cGE2EWXz3knCWXy6M7X7iJO+NunEBvxMuUnOWBNiry0Yy+VBNIbe1FK27nGQEvOgFmBZhCxMFwyfzQ4FeiisfahCfOSwGWc0phOuOmxIfq+NEgJTE4PKgMsUzSPRSM/UL0J3fuwnzv9mwmxElNDezigAVJCNh6S7zEPbkNTtppIilxlw0GV4979hWLenYjSuFWX7HR4Wl//D5ESP8UNq/k2bAYJGrKvbH3t4vuRK4H3klchaPo+U92sDRpXhouA3Y9DxXa2FlvpugWDJD02gxB9DKKAC/E2I9dwOAwsrVxkARczbL5QlcljvFylwz5eaWdsO4/XycCBgExNrvWYfxkoHX8VlxaLmsiqqsedJGx5mby8Dv/ZZ+A/mNnuq1amHk0HMlxon+tTdx/UlH1GU2CKD2PCMna7QLWXKNLz3a31d/QB7Wwz5xwLcsbSNnbMdhwlseZf3MgWzV5CuR+IYZgsIeI/url2aTf2x2JNRW9gQLpVlyx1eBcr8bam66HoERU9mkrn3UNCM2hsBkV9ezX//gM=",
+  "k5129687e6354": "hVRdb5tAEPwvPDa9nM3ncVIeznHU5KGq8xP2YO8gxmDdQWhd9b9XGLANWMq8gNDOzu7siL/OEZI9aHz8sFXpcOeb892x8InEovlE8/hhHe6sozWDgIseVAjxoytLTH6sLS1ySUGWkB2QNKbGvHhMzrQoCGLP5bR9EWz3sKMeExc8i6d5i0JiWpEaFI4NZOpGHvB5YWM1SCTQqLPoUBxHXrRyOT2DCbGL+tffbK4koUynk/rKXcUpf2uFeBFP8/o0B6xJkZd21ErSQHqjFqW0XXIMtOQEmBVoBhILwzXzxwHnBFU01k5EmJcGLuOUxnRWq48NUbetQUpgcm5UBlhqNNOmkR8kPr/jyh4OaICUkI2m+B7z4LokZZsZpciTbDCmHG/urxLm3ZA6d5I+Nx0etpfP4r2Pwq9rKsRm6b7NIEVD9pWtLyq+H7kS+JAkQfXPBes62sBxZbgK2O06VLwuXLCVqlswSPSxGYjoYxAFXNwRqeFwGKpU4iIL5iewdZe1SXTcRIXn6OhuiNdldD4NHAhIbXKlxmzLIFHxvSi0WNREVlU9+p+ydbelR8vLon+YFht98Vg/t+IW75vFYueulanHoQMZrpTPVX/NefUJTYEaJ2vCOna78Ay3P2Pr98+3LZ2gXVzhlGNBTljaxo65jaM0Vv31hvHfpllp0ewllPuBEIbpGiIuus13eiNen1/iLRNfozfjiAk9mkrl3c+CZtDYDIr6+pf89x8=",
+  "k3f4a3c9d14f2": "fVTLbqMwFP0Xlu24TngapC7ctFK7GE36Cdf2NdAQQDaEaUbz7yMI5AHR3BU259zH8bH/ODXIHaT49GWr0kmcB+eHY+GAxKI5oHn6sk7irKM1gyDpf0mT142lKoeU7Co0NRpiGyjVkxygD1egIhcURAnZHklrGsyLERQFQey5Ce3eONs+bqnHnue0QqCqSAMaJ5JQbuRBMge2NgWBBFo9FBrBceRFKzehQzDOt9Hp8/eikoBS3Xbna3cVq+Tjm/M3/jzHqxywIUVe2qmWVIHwplqU0m7JMdCRI2BWoBlJLAzXzJ8anBN00Vp7U4R5KnBZQmlMZ9i0bom+Tg1CABNzoTLAMkVzmzTyA+knd1TZwR4NkBKySRTfYx5chqTsZUYpcpmNwpTTOfsrybwrEqVxJ3kfw+Lx9bzPP4dt/otf4mWpvs1AoSG7yjbnKr4fuQKSgbLhnKY/F6xLayPHFeEqYNfjUP6+UMFWuunAIEnrdiSij0EUJJx/LMAN7PcjSksXWTA/guGe3FrHlTocrJP2TbwvrXMwsCcgUpNrPXlbBFLH96zQYdEQUVXNpL9i635Kj5bnQb9ZL+x/4m3ewpC1Ms3UdCDClfYTfei9LufoI5oCU7wZE9ax25tnPHv+yi830t/Sm+gWp3DMsSBHLG1rJ9/GkYp1cue2dWh2AsrdCAxDtYboZI1t2o/9snqlnB7Zedz0XXJ/szktPnppNpx/npLWKGltKp33jwTNoLUZFM3lqfz7Dw==",
+  "k7764f98e586d": "fVTbjpswEP0XHrv1OuFqLPXBm2y7W6lq9hPGZgxsCEQ2LG2q/nsFgSRA1HniMmfOzJlj/3GOoPaQ4uO7rUqHO5+cz46FDyQWzQeax3frcGcdrRkEvPulTH6sLS1ySUGWkB2QNKbGvHhUfWoUBLHncto+C7Z72FGPiUs8iy/zEoXEpCI1aBwLyMSNPFhwNTYFiQQa3ZMOyXHkRSuX0z6YELvo/PiLzZkklMm0U1+7qzjhr7/7xub5SQ5YkyIv7cilkkB6IxeltF1iDLTkBJgVaAYQC8M188cG5wBdNNZOSJiXBC7jlMZ0lpseG6JvS4OUwORcqAywTNFMi0Z+oHx+R5U9HNAAKSEbRfE95sF1SMqeZpAiV9kgTDnu3F8p5t2AKI1b1a+8f3nYXr6Lt7MVfl5dIZ6W6tsMEjRkX9n6wuL7kSuB95CNEDT9sUBdWxswrgxXAbsdh4qXhQq20nULBkl6bAYg+hhEARfidZFcw+EwZGnlIlucC1t3XptYx1U67K2Tdk28LK3zYeBAQKYm13r0tgyUju9ZocWiJrKq6lH/hK3PU5aXQU+sE/Y/8ZXdq1qZemw6kOFK+1z3Xlfzhk9oCkxxMiasY7czz7B7sRXXE+nv6CTaxRZOORbkhKVt7OjbOEpize+cthbNXkK5HxLDMFlDxL8LIdKd7cdebamYEHpM+N82ad/YayfNRoi3c9EjKno0lc67S4Jm0NgMivp6I/79Bw==",
+  "k7132bf84c123": "fZdLk6M2EID/yxwzwfjFGFO1B3YnyW6qNpk9pXJsoRbSIiRKEmbGqfz3LWHw2AiWwwzur9Xqlx7891Bog3ZVgxIMrVt9t1o9ZA+/PPz6wKDgHZoq8iqr73YU61ZR8zaRligBFcWJWCiKryvuajkIKgmqnChVGk2DZiJtoKigxFuPGv7m9FRNGwcTmYUTRhbNCc1FuDlsUkgyjwpeCwz8tIURjbOxFCQGooDXGLXGoZCrolc6JMlxt83i7muevjy+xP7Z9X/jlMWPJE7zuedT+eHD1LwkSHXkgOFonNDtYQfZVNFadFGnTYUm4mAUWjsMYISw9SHLu2GaL3kwS2tLIBhBy/pohoHHw+6w3maD43n+cri8vqZTAwQUvU/Bnm3XR5p9ecvz3/IgLCoAXSSFsuNcBU3IbpwrjuMuHGOgi86AXKIZBqVPT5t0Pzo4HcBka+3dJOmOJts0i+NjPNEtmzZit6aBEEjJNMscUJVo7o0e9kmxz2ayUkGNBiIFfEzKfpfu4D3IOP04HWK0QnVnf33cJdvN1BMpCj5kUI1dt18X6e7Guk9j0Ze8f398vorzb5dW+Pum+z6GZWokOMe0qaPGaDI6hEBZcpw6ZDlQNFGlrbt6tN8ftgSyS3PneVx+nc5g38MYxmzJ0zpJb3MU55+D1FrNXAcGo7JpR7f2mBySLM+/BMoO6npcDMUW0yQbg378M/29f3mu/glHKXrfo9uCPfU9WnrHPoc9ejJQR0BKIxgbFxFJCnac67kOpYuI1m6sH003l8jVTfS+MIvPt/yvdM6qNm50OiFPa7bP2KUbpg6f0Ugs8S5M2By3vkuH3smf8/elv3+5a6+4CypzFiijMyrbjvtPejzQI7tUtLtuQbfj/MFBQFXDgKcnuoFDlrzEsYjLPvz1c5zfTbxL8/0fz58Gax/7/vr2b2+0wWLclmODLGIo5apR5bh7TzkHMEvcaimH3ffmaOlVGBiC9xv0VKUxmgm/N8YcWstB3h2ZfVvGdz8ItBFpC35z1lzlfnPFOXDSRkKJKmBC0qjfaWcJF3Xd+xyiYRHPIVtwcIvQr+YpoTCjTgUqG6oKI0pULgJVtYot8wrNjMkBGizleJbPYAdVYJihT5UNstHLJZIwgJ4ofG3tLLGNgYIH5bpefIimoc33axFvVRUYvmI2E/0VVlpKYYUONCqoGxYI/Q0rEA5XLIIdlu0yZ8BNkMorNCiWmERBlphFDNu8Mgiu9TO2CpbgbJ1GeELj11+ooNCdI0FROeFmlkqPm20zL/fXyaBprEAqW1VGBNqZCd8xdpqrsFOvCkL5M+i8yHWY/Suz4JYHOr086QlNhXyZd1gG5bENioL7wsJMW1+pP5pmsNOMReVMH17IUhZ6WIE/6WZRDQ6NmCmPa6nQETEtFtXM2J6WaN1lu56l0n8VhDm60H76KTthiQ6c0Mq3Rf0TbJ3B9ie8E2gDtzt//zcRf6NGL7AzShlm3x+91oFz3q2fYa6DmG5gS5eh1eeZMrzzkzb+VLmJ2aEz0Gg6/VQ7IReFnH6OnVBRbWIr6kbia6S0sCF13CCuanETYX9TkvdHVqeNpDbmrU/W8G+k//8A",
+  "k792ce9f5ab62": "fZdbs+MmDID/y3lsS5ybEyczffBe2t3OdHr2JwgjDGsMHsDxOen0v3dw4lyMffySWJ8QkhAC//tSGItuUYOWHJ1f/HRGvxxffnn57YVDITq0FQkqi59uEJtWM/s+kpaoADXDkVhqhm8L4Wt1FVQKdDlSqgzaBu1I2kBRQYmPHjXi3ZuxmrEeRjIHJyQO7QntRbjarzJIjwEVopYY+ekKKxvvEiVpAlSDqJG01qNUi6JX2qfpYbM+Jt3XPHv99TXZZPnt+Zr/PjahKDJDPHAcDFC23m/gOFZ0Dj3pjK3QEgFWo3PXAZxSvtxHA1pXAkUCLe+9vCof9pv9cn1M+ifL89f95e9bNnaNgmbPoW35enlgx+/vfSRjfSYBPVFSu2GugqV0M8yVJEkXj7HQkTOgUGivg7LdbpVtBwfHA7hqnXuaJNuwdJ0dk+SQjHTLpiX80TRQChkdJ0oA6hLts9H9Ni22x4msVFCjBaJBDEnZbrIN3INMsk/jIdZo1E/2l4dNul6NPVGyENcM6qGatssi2zxYT5JDV/TF1L/8+uUmz39ciuyfe73ln+JlahR4z42tSWMNHRxCYDw9jB1yAhhaUhnnbx5tt/s1hWNv/nOeJ+Xf4xncPYzrmDXdLdPsMUdJ/i1KrTPcd2CRlE07uLXFdJ8e8/x7pOyhrocNUKwxSyPnfSjgp3pcF3zX12MZnPgW1+PJQk2AllZyPmwYmhb8MFVfHSpPqDF+WCuWrS5R6lug5ywswgfPH9mUVWP94HRKd0u+PfJT2EDF2OEzWoUlPoUJq8M6VOS1TvIv+X2bb1+Tp6eLVuEsUZEzatcO/SU77NmBHye2cGj6FHR1Vdzt2Ar2x7/yPC9fyz7s5Zckf5pwk+XbPz9/7h37nn/ra+jHxWiDxdBSE4uccFRq0ehy6LxjLgDsHHdGqWtXfTgWehUOluJz4x2rNNZwGfpfIqB1AtTTcdeXXvL0QqEltC3Ewzlxk4cGilPgZKyCEnXEpGKk76aTRMi67n2O0XWjTiFXCPCzMOzYMWEwoc4kaherSitL1J6ArlrN53mFdsLkFVos1XAOT2APVWSYY0iVi7LRyxXSOICeaHxr3SRxjYVCRMt1u7RQw2Kb9yuNaHUVGb5hPhH9DVZGKemkiTQqqBseCcPtKBJer0cUOyzbec5B2CiVN2hRzjGFks4xhxiXeWURfBtmbDXMwcl1GuAJbdh/sYJGfyaSofbST2yVHjfrZloeroJR0TiJTLW6JBTaiQnvGDsjdFypNwWpw9lznuUmzv6NOfDzA72Zn/SEtkIxzzsso+VxDcpChIWFibK+0XAkTWBvOCflRB1eyFwWelhBOOEmUQ0erZxYHt8yaQi1LRbVxNieluj8pV1PUhVu9HGOLrSffsxOWKIHL40OZVF/gJ232H7AO4kucrsL93pLxDuzZoadUak4++HodR68D259hIWJYnqALZuHzpwnluHOT8aGU+UhZo/eQmPY+DPrhEIWavwpdULNjE2crBuFb0Qb6WLqhUVc1PIhwv6GpJ6PrM5YxVwi2pCs689A//sf",
+  "k0f7874add934": "fZdbs+MmDID/y3lsS5ybEyczffBe2t3OdHr2JwgjDGsMHsDxOen0v3dw4lyMffySWJ8QkhAC//tSGItuUYOWHJ1f/HRGvxxffnn57YVDITq0FQkqi59uEJtWM/s+kpaoADXDkVhqhm8L4Wt1FVQKdDlSqgzaBu1I2kBRQYmPHjXi3ZuxmrEeRjIHJyQO7QntRbjarzJIjwEVopYY+ekKKxvvEiVpAlSDqJG01qNUi6JX2qfpYbM+Jt3XPHv99TXZZPnt+Zr/PjahKDJDPHAcDFC23m/gOFZ0Dj3pjK3QEgFWo3PXAZxSvtxHA1pXAkUCLe+9vCof9pv9cn1M+ifL89f95e9bNnaNgmbPoW35enlgx+/vfSRjfSYBPVFSu2GugqV0M8yVJEkXj7HQkTOgUGivg7LdbpVtBwfHA7hqnXuaJNuwdJ0dk+SQjHTLpiX80TRQChkdJ0oA6hLts9H9Ni22x4msVFCjBaJBDEnZbrIN3INMsk/jIdZo1E/2l4dNul6NPVGyENcM6qGatssi2zxYT5JDV/TF1L/8+uUmz39ciuyfe73ln+JlahR4z42tSWMNHRxCYDw9jB1yAhhaUhnnbx5tt/s1hWNv/nOeJ+Xf4xncPYzrmDXdLdPsMUdJ/i1KrTPcd2CRlE07uLXFdJ8e8/x7pOyhrocNUKwxSyPnfSjgp3pcF3zX12MZnPgW1+PJQk2AllZyPmwYmhb8MFVfHSpPqDF+WCuWrS5R6lug5ywswgfPH9mUVWP94HRKd0u+PfJT2EDF2OEzWoUlPoUJq8M6VOS1TvIv+X2bb1+Tp6eLVuEsUZEzatcO/SU77NmBHye2cGj6FHR1Vdzt2Ar2x7/yPC9fyz7s5Zckf5pwk+XbPz9/7h37nn8LNVT+uBhtsBhaamKRE45KLRpdDp13zAWAnePOKHXtqg/HQq/CwVJ8brxjlcYaLkP/SwS0ToB6Ou760kueXii0hLaFeDgnbvLQQHEKnIxVUKKOmFSM9N10kghZ173PMbpu1CnkCgF+FoYdOyYMJtSZRO1iVWllidoT0FWr+Tyv0E6YvEKLpRrO4QnsoYoMcwypclE2erlCGgfQE41vrZskrrFQiGi5bpcWalhs836lEa2uIsM3zCeiv8HKKCWdNJFGBXXDI2G4HUXC6/WIYodlO885CBul8gYtyjmmUNI55hDjMq8sgm/DjK2GOTi5TgM8oQ37L1bQ6M9EMtRe+omt0uNm3UzLw1UwKhonkalWl4RCOzHhHWNnhI4r9aYgdTh7zrPcxNm/MQd+fqA385Oe0FYo5nmHZbQ8rkFZiLCwMFHWNxqOpAnsDeeknKjDC5nLQg8rCCfcJKrBo5UTy+NbJg2htsWimhjb0xKdv7TrSarCjT7O0YX204/ZCUv04KXRoSzqD7DzFtsPeCfRRW534V5viXhn1sywMyoVZz8cvc6D98Gtj7AwUUwPsGXz0JnzxDLc+cnYcKo8xOzRW2gMG39mnVDIQo0/pU6ombGJk3Wj8I1oI11MvbCIi1o+RNjfkNTzkdUZq5hLRBuSdf0Z6H//Aw==",
+  "kcda620aac04e": "fZdLk6M2EID/yxyzwfiFjV21B3ZnKzOHJDPHHFuohbQIiZKEmXEq/z0lDH4gWF/G01+r1S+15H+fcm3QLipQgqF1i59Wq6fj029Pvz8xyHmLpoy8yuKnHcS6UdR8jqQFSkBFcSQWiuLHgrtK9oJSgipGSqVGU6MZSWvISyjw3qOafzo9VtPGwUhm4YSRRXNCcxGu9qsUkqNHOa8EBn7a3Ija2VgKEgNRwCuMGuNQyEXeKe2T5LBZH+P2R5a+fXmLN2l2/XzPvo5NSIJURw4YDgYIXe83cBwrWosuarUp0UQcjEJr+wWMELbcBwsaWwDBCBrWedkrH/ab/XJ9jLtPmmVv+8vXj3TsGgFFH0PbsvXyQI+vn1n2I/s61qcC0EVSKDvsldOEbIa94jhuwzUG2ugMyCWaflG6263S7eDgeAGTjbUPm6QbmqzTYxwf4pFuUTcRuzcNhEBKxonigKpA82h0v03y7XEiKyVUaCBSwIekbDfpBm5Bxum38RKjFaoH+8vDJlmvxp5IkfM+g2ropu0yTzd31n0a866Zuu9fnq/i7P3SZH/f+i37FpapluAc06aKaqPJ4BACZclh7JDlQNFEpbbu6tF2u18TOPb9nMXFn+Md7C2Mfs2a7JZJep+jOHsJUms1cy0YjIq6GdzaYrJPjln2Gig7qKrhAORrTJPAeecb+KEf1znbdf1YeCdewn48GagiIIURjA0HhiQ5O0z1V4vSRURrN9SKpisf5SZW10A/U1+E2c979lc6ZVUbNzidkN2SbY/sUvmxw2c0Egt8CBNWh7XvyL5Psufsdsy3bw+tFLdBFc4CZXRGZZthvqSHPT2wS/Xai8nXx77yw5+AKvsFux1dwf6YZc+FiIsu/OVznMX7u403abb94/v33tpL10vv/3RGa8yH0RobZBFDKRe1KoYJPOYcwMxxq6Xsp+vd9dCpMDAEHwfwWKU2mgk/B2MOjeUgH669rgXjh38INBFpcn53X1zlfpDiFDhpI6FAFTAhadRN1UnCRVV1PoeoP7BTyOYc3Cz0J3dMKEyoU4HKhqrCiAKVi0CVjWLzvEQzYbKHBgs53McT2EEZGGboU2WDbHRyiSQMoCMKPxo7SWxtIOdBua6PF6JpaPP2tOGNKgPDV8wmor/CUksprNCBRglVzQKhfyUFwv6ZRLDFopnnDLgJUnmFBsUckyjIHLOIYZuXBsE1fsdGwRycrNMAT2j8+QsVFLpzJCgqJ9zEUelwva6n5f5JGDSNFUhlo4qIQDOx4Q1jq7kKO/WqIJS/g86zXIfZvzILbn6h0/ObntCUyOd5i0VQHlujyLkvLEy09ZX6q2kCO81YVEz04YXMZaGDJfibbhJV4NCIifK4hgodEdNgXk6s7WiB1l3G9SSV/mUf5uhCu+3H7IQFOnBCK98W1S+wdQabX/BWoA3cbv373kT8kxo9w84oZZh9f/VaB855t36FuQ5iuoMNnYdWnyfKcOMnbfytchezQ2eg1nT8c+uEXORy/JPqhIpqE1tR1RI/IqWFDanjBnFRibsIu5eSfLyyWm0ktTFvfLL6PwP9738=",
+  "ke913264cbecd": "fZdLc9s2EID/i49NKepFidJMDoydidOZts6xxwWxIBCCAAcARVud/vcOKFIPgowulvdbLPaFBfTvU64N2kUFSjC0bvHTavV0fPrt6fcnBjlv0ZSRV1n8tINYN4qaj5G0QAmoKI7EQlF8X3BXyV5QSlDFSKnUaGo0I2kNeQkF3ntU8w+nx2raOBjJLJwwsmhOaC7C1X6VQnL0KOeVwMBPmxtROxtLQWIgCniFUWMcCrnIO6V9khw262Pcfs3St09xvEmz6+db9nlsQhKkOnLAcDBA6Hq/geNY0Vp0UatNiSbiYBRa2y9ghLDlPljQ2AIIRtCwzste+bDf7JfrY9x90ix721++vqdj1wgo+hjalq2XB3r8/pFlX7PPY30qAF0khbLDXjlNyGbYK47jNlxjoI3OgFyi6Relu90q3Q4Ojhcw2Vj7sEm6ock6PcbxIR7pFnUTsXvTQAikZJwoDqgKNI9G99sk3x4nslJChQYiBXxIynaTbuAWZJx+GS8xWqF6sL88bJL1auyJFDnvM6iGbtou83RzZ92nMe+aqfv+6eUqzn5cmuzvW79lX8Iy1RKcY9pUUW00GRxCoCw5jB2yHCiaqNTWXT3abvdrAsfO/HOWxcWf4x3sLYx+zZrslkl6n6M4ew1SazVzLRiMiroZ3Npisk+OWfY9UHZQVcMByNeYJoHzzjfwQz+uc7br+rHwTryG/XgyUEVACiMYGw4MSXJ2mOqvFqWLiNZuqBVNV5co1TXQc+qLMPv5kf2VTlnVxg1OJ2S3ZNsju1R+7PAZjcQCH8KE1WHtO7Lvk+wlux3z7dtDK8VtUIWzQBmdUdlmmC/pYU8P7FK99mLy+2Nf+eFPQJX9gt2OrmB//CN7KURcdOEvX+LsYeNNmm2/PT/31l67XvrxT2e0xnwYrbFBFjGUclGrYpjAY84BzBy3Wsp+ut5dD50KA0PwcQCPVWqjmfBzMObQWA7y4drrWjB++IdAE5Em53f3xVXuBylOgZM2EgpUAROSRt1UnSRcVFXnc4j6AzuFbM7BzUJ/cseEwoQ6FahsqCqMKFC5CFTZKDbPSzQTJntosJDDfTyBHZSBYYY+VTbIRieXSMIAOqLwvbGTxNYGch6U6/p4IZqGNm9PG96oMjB8xWwi+isstZTCCh1olFDVLBD6V1Ig7J9JBFssmnnOgJsglVdoUMwxiYLMMYsYtnlpEFzjd2wUzMHJOg3whMafv1BBoTtHgqJywk0clQ7X63pa7p+EQdNYgVQ2qogINBMb3jC2mquwU68KQvk76DzLdZj9K7Pg5hc6Pb/pCU2JfJ63WATlsTWKnPvCwkRbX6m/miaw04xFxUQfXshcFjpYgr/pJlEFDo2YKI9rqNARMQ3m5cTajhZo3WVcT1LpX/Zhji60237MTligAye08m1R/QJbZ7D5BW8F2sDt1r/vTcQ/qNEz7IxShtn3V6914Jx361eY6yCmO9jQeWj1eaIMN37Sxt8qdzE7dAZqTcc/t07IRS7HP6lOqKg2sRVVLfE9UlrYkDpuEBeVuIuweynJxyur1UZSG/PGJ6v/M9D//gc="
+ },
+ "ungemessen": {
+  "tiere.K5#1": {
+   "gruen": false,
+   "zahl": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine KREIS-Zeile in ego, third (Exit 1)) · Täter: PROBE-FEHLER Error: ANKER fehlt in scripts/lib/zerlege-linse.cjs lauf: const schuss = async () => (await __ausgabeAufnahme(W, H, 1, { satz: \"messung\" })).u8; |     at ankern ([eval]:75:32) |     at tor.quelle ([eval]:84:88) |     at tierKreis ([eval]:194:22)",
+   "exit": 1,
+   "minuten": 0.01,
+   "grund": "die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine KREIS-Zeile in ego, third (Exit 1)) · Täter: PROBE-FEHLER Error: ANKER fehlt in scripts/lib/zerlege-linse.cjs lauf: const schuss = async () => (await __ausgabeAufnahme(W, H, 1, { satz: \"messung\" })).u8; |     at ankern ([eval]:75:32) |     at tor.quelle ([eval]:84:88) |     at tierKreis ([eval]:194:22)",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 0.3,
+   "teile": [
+    0.3
+   ],
+   "fremd": {
+    "s": 2.4,
+    "takte": 1,
+    "fremdS": 7.94,
+    "kerne": 3.342,
+    "fensterKerne": 3.342,
+    "namen": [
+     [
+      "node scripts/diag-kamera-laub.cjs --selftest",
+      2.25
+     ],
+     [
+      "git reset --hard --no-recurse-submodules",
+      1.67
+     ],
+     [
+      "git.exe",
+      1.05
+     ]
+    ],
+    "dienerS": 3.22,
+    "diener": [
+     [
+      "System",
+      2.44
+     ],
+     [
+      "dwm.exe",
+      0.42
+     ]
+    ],
+    "geraetS": 3.94,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      2.44
+     ],
+     [
+      "SearchIndexer.exe",
+      1.11
+     ],
+     [
+      "svchost.exe",
+      0.38
+     ]
+    ],
+    "eigenS": 0.64,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-11T18:07:25.030Z",
+   "abdruck": "f620ec61c59e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "licht.K2#1": {
+   "gruen": false,
+   "zahl": "Fremd-Last: node scripts/diag-sprache.cjs --selftest 13,5 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 5,6 CPU-s · chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-38848-profil-9AZ6B4 --no-p 5,0 CPU-s — 3,23 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 40,6 CPU-s in 12,5 s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 8,6 CPU-s · svchost.exe 5,0 CPU-s · SearchIndexer.exe 1,2 CPU-s) — ohne Maß: Verhältnis und Schatten-Anteil im Bild — ein Bild-Maß ohne geeichtes k — kein Urteil, UNGEMESSEN (die Probe sah: Verhältnis 5.157 (5–12,5), Schatten-Anteil 0.1939 (0,08–0,20), A/B 1.000, A/C 1.024, Kappe 1499 px, Uhr 0.5 sunny, [linse-gpu] amd/rdna-3)",
+   "exit": 0,
+   "minuten": 0.2,
+   "grund": "Fremd-Last: node scripts/diag-sprache.cjs --selftest 13,5 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 5,6 CPU-s · chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-38848-profil-9AZ6B4 --no-p 5,0 CPU-s — 3,23 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 40,6 CPU-s in 12,5 s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 8,6 CPU-s · svchost.exe 5,0 CPU-s · SearchIndexer.exe 1,2 CPU-s) — ohne Maß: Verhältnis und Schatten-Anteil im Bild — ein Bild-Maß ohne geeichtes k — kein Urteil, UNGEMESSEN (die Probe sah: Verhältnis 5.157 (5–12,5), Schatten-Anteil 0.1939 (0,08–0,20), A/B 1.000, A/C 1.024, Kappe 1499 px, Uhr 0.5 sunny, [linse-gpu] amd/rdna-3)",
+   "gpu": "amd/rdna-3",
+   "konsum": "kcda620aac04e",
+   "konsumN": 112,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 85,
+    "Verzeichnis": 1
+   },
+   "konsumBoot": "k5129687e6354",
+   "s": 12,
+   "fremd": {
+    "s": 12.5,
+    "takte": 5,
+    "fremdS": 40.56,
+    "kerne": 3.234,
+    "fensterKerne": 3.234,
+    "namen": [
+     [
+      "node scripts/diag-sprache.cjs --selftest",
+      13.5
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      5.58
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-38848-profil-9AZ6B4 --no-p",
+      5
+     ]
+    ],
+    "dienerS": 11.27,
+    "diener": [
+     [
+      "System",
+      5.09
+     ],
+     [
+      "WmiPrvSE.exe",
+      3
+     ]
+    ],
+    "geraetS": 15.03,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      8.61
+     ],
+     [
+      "svchost.exe",
+      5
+     ],
+     [
+      "SearchIndexer.exe",
+      1.17
+     ]
+    ],
+    "eigenS": 12.34,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-11T18:11:49.942Z",
+   "abdruck": "7b94e8afee98",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "licht.K2#2": {
+   "gruen": false,
+   "zahl": "Messort: fenster: Exit 3221226505 — kein Urteil, UNGEMESSEN (die Probe sah: Folge: fenster: Exit 3221226505 ) · Täter: @@PUNKTE@@ MESSORT fenster: Exit 3221226505",
+   "exit": 1,
+   "minuten": 0.01,
+   "grund": "Messort: fenster: Exit 3221226505 — kein Urteil, UNGEMESSEN (die Probe sah: Folge: fenster: Exit 3221226505 ) · Täter: @@PUNKTE@@ MESSORT fenster: Exit 3221226505",
+   "gpu": "amd/rdna-3",
+   "ungemessen": true,
+   "s": 0.8,
+   "fremd": {
+    "s": 2.4,
+    "takte": 1,
+    "fremdS": 2.95,
+    "kerne": 1.237,
+    "fensterKerne": 1.237,
+    "namen": [
+     [
+      "node scripts/diag-ci-deckung.cjs --selftest",
+      0.59
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      0.56
+     ],
+     [
+      "gamingservices.exe",
+      0.28
+     ]
+    ],
+    "dienerS": 1.64,
+    "diener": [
+     [
+      "System",
+      0.83
+     ],
+     [
+      "WmiPrvSE.exe",
+      0.42
+     ]
+    ],
+    "geraetS": 5.22,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      3.58
+     ],
+     [
+      "svchost.exe",
+      1.11
+     ],
+     [
+      "SearchIndexer.exe",
+      0.47
+     ]
+    ],
+    "eigenS": 0.67,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, Radeon 890M, 24 Kerne"
+   },
+   "zeit": "2026-11-11T18:12:02.511Z",
+   "abdruck": "c940abb1ac1e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ }
+}
