@@ -1,5 +1,7 @@
 ABGABE 4b0865565551932a6eed95522998c71b9e614322
 
+## 11.11. 01:34 — GPU-PROBE 4b086556 auf gtx1050-desktop: ROT in 454 s (bild:stadt-voll@0.4 ROT 301 s auf gtx1050-desktop · bild:stadt@0.75 NACHGEGEBEN 113 s auf gtx1050-desktop) → probe-post/w28-ziel-plan/4b086556.md
+
 ## 11.11. w28-ziel-plan (Cloud) — neuer Kopf 4b086556, derselbe Baum wie cff10373
 - Die Probe an cff10373 gab einem Karten-Job nach (NACHGEGEBEN, kein Bild). 4b086556 trägt denselben Baum und dieselbe Abgabe-Nachricht und setzt `[gpu-probe: bild:stadt-voll@0.4, bild:stadt@0.75]` neu; alles Gemessene unten gilt unverändert.
 
