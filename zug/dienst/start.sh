@@ -79,7 +79,7 @@ else
     if [ -s "$MAN" ]; then
         while read -r blob ort; do
             [ -f "$R/$ort" ] || continue
-            ist=$(git -C $R hash-object "$R/$ort")
+            ist=$(git -C $R hash-object --no-filters "$R/$ort") # die BYTES, wie installiert: ohne --no-filters wandelt git die Zeilenenden und eine CRLF-Datei (desktop/*.cmd) hiesse Hand-Aenderung (11.11. 17:45: der Dienst startete nicht)
             [ "$ist" = "$blob" ] && continue
             q=${ort#artifacts/profiband/dienst/}
             [ "$q" = "$ort" ] && q=werkzeug/${ort#artifacts/profiband/werkzeug/}
