@@ -24,7 +24,7 @@ const {
     fehlerStapel,
     taeterFaelle,
 } = require("./lib/welt-boot.cjs");
-const { stadtBreite, breiteUrteil, breiteSelbsttest, BREITE } = require("./lib/stadt-proben.cjs");
+const { stadtBreite, breiteUrteil, breiteOhne, breiteSelbsttest, BREITE } = require("./lib/stadt-proben.cjs");
 
 const goldenDir = path.join(root, "spec/asset-contract/v6/golden");
 const goldenFile = path.join(goldenDir, "siedlung.json");
@@ -1206,12 +1206,21 @@ hauptLauf(async () => {
     if (process.argv.includes("--breite")) {
         const ort = process.argv.includes("--ort") ? process.argv[process.argv.indexOf("--ort") + 1] : BREITE.ort;
         const server = statikServer();
-        const { browser, page } = await nullWelt(server, { port: Number(process.env.SETTLEMENT_PORT || 4436), frist: 900000 });
+        const { browser, page } = await nullWelt(server, {
+            port: Number(process.env.SETTLEMENT_PORT || 4436),
+            frist: 900000,
+        });
         const m = await page.evaluate(stadtBreite, { ...BREITE, ort });
         await browser.close();
         server.close();
         const v = breiteUrteil(m, breiteRollen);
-        check(`BREITE (siedlung) die Stadt am Messort ${m.ort} im Gang durch ihre Gassen`, !v.length, v.join(" · "));
+        // was der Ort nicht tragen kann, steht beim Namen in der Zeile (die Rolle folgt der Lage, `breiteOhne`)
+        const ohne = breiteOhne(m);
+        check(
+            `BREITE (siedlung) die Stadt am Messort ${m.ort} im Gang durch ihre Gassen${ohne.length ? ` — ${ohne.join(" · ")}` : ""}`,
+            !v.length,
+            v.join(" · ")
+        );
         console.log(`BREITE ${JSON.stringify(m)}`);
         process.exit(errs.length ? 1 : 0);
     }
@@ -1537,8 +1546,7 @@ hauptLauf(async () => {
                 );
         }
         alleDs.sort(aufsteigend);
-        const mq = (q) =>
-            alleDs.length ? rang(alleDs, q) : Infinity;
+        const mq = (q) => (alleDs.length ? rang(alleDs, q) : Infinity);
         if (!Number.isFinite(FC.LICHT_MARKE_M)) lichtFehl.push("der Kern trägt kein LICHT_MARKE_M (das Soll je Meter)");
         if (!(mq(0.9) <= MARKE_P90)) lichtFehl.push(`p90 je Meter ${mq(0.9).toFixed(1)} m (Soll ≤ ${MARKE_P90} m)`);
         console.log(
@@ -2046,14 +2054,14 @@ hauptLauf(async () => {
                     st.architectures.filter((e) => e && e.position && portalArten.includes(e.type) && d2M(e) <= 30 * 30)
                         .length;
                 const ringVorher = imRing();
-                for (let t5 = 0; t5 < 30 && !wm5.genesisOrt?.steht; t5++)
-                    r._genesisOrt({ x: M5.x, y: 1, z: M5.z });
+                for (let t5 = 0; t5 < 30 && !wm5.genesisOrt?.steht; t5++) r._genesisOrt({ x: M5.x, y: 1, z: M5.z });
                 res.c.ring.stempel = !!wm5.genesisOrt?.steht;
                 res.c.ring.gebaut = imRing() - ringVorher;
                 res.c.ring.stehen = imRing();
                 const archRing = st.architectures.filter((e) => portalArten.includes(e.type)).length;
                 r._genesisOrt({ x: M5.x, y: 1, z: M5.z }); // Idempotenz: die id jedes Tors trägt
-                res.c.ring.idempotent = st.architectures.filter((e) => portalArten.includes(e.type)).length === archRing;
+                res.c.ring.idempotent =
+                    st.architectures.filter((e) => portalArten.includes(e.type)).length === archRing;
                 // Slot-Probe: jedes Tor des Plans sitzt auf seinem Slot (± 0,5 m), dem Ring-Weg R 22
                 const P5 = r._genesisPlan;
                 res.c.ring.radiusOk = P5.tore.every((t) => {
@@ -2175,7 +2183,11 @@ hauptLauf(async () => {
                 const neben = r._nebenAuftrag;
                 r._nebenAuftrag = function (wer, msg, ...a) {
                     const p = neben.call(this, wer, msg, ...a);
-                    if (msg?.type === "ort-wahl") p.then((x) => (faden += x.kandidaten), () => {});
+                    if (msg?.type === "ort-wahl")
+                        p.then(
+                            (x) => (faden += x.kandidaten),
+                            () => {}
+                        );
                     return p;
                 };
                 const lift = AnazhRealm.prototype._spawnSettlementSlot;

@@ -23,9 +23,12 @@ async function stadtBreite(o) {
     const [plan, ox, oz] = [S.plan, S.ox, S.oz];
     // WAS STEHT: der Bau der Welt mit dem Samen des Slots an seinem Ort; die Stücke nach ihrem Bauplan im Rahmen des Plans
     const jeSame = new Map();
-    for (const e of st.architectures) if (e && e.position) jeSame.set(e.seed >>> 0, [...(jeSame.get(e.seed >>> 0) || []), e]);
+    for (const e of st.architectures)
+        if (e && e.position) jeSame.set(e.seed >>> 0, [...(jeSame.get(e.seed >>> 0) || []), e]);
     const steht = plan.slots.filter((sl) =>
-        (jeSame.get(sl.seed >>> 0) || []).some((e) => Math.hypot(e.position.x - ox - sl.x, e.position.z - oz - sl.z) < 1)
+        (jeSame.get(sl.seed >>> 0) || []).some(
+            (e) => Math.hypot(e.position.x - ox - sl.x, e.position.z - oz - sl.z) < 1
+        )
     );
     const stuecke = st.architectures.filter(
         (e) => e && e.position && o.stuecke[e.type] && Math.hypot(e.position.x - ox, e.position.z - oz) < 600
@@ -90,7 +93,8 @@ async function stadtBreite(o) {
                 for (const e of stuecke) {
                     const [sx, sz] = [e.position.x - ox, e.position.z - oz];
                     if (stueckGesehen.has(e) || Math.hypot(sx - ex, sz - ez) > o.sichtM) continue;
-                    if (imBild(e.position.x, e.position.y + 0.5, e.position.z) && frei(sx, sz, null)) stueckGesehen.add(e);
+                    if (imBild(e.position.x, e.position.y + 0.5, e.position.z) && frei(sx, sz, null))
+                        stueckGesehen.add(e);
                 }
             }
         }
@@ -113,6 +117,7 @@ async function stadtBreite(o) {
         typen: zahl(G, (sl) => sl.rolle),
         kulturen: zahl(G, (sl) => sl.kultur),
         viertel: zahl(G, (sl) => sl.viertel || "ohne"),
+        lage: plan.lage || null,
         stuecke: Object.fromEntries(
             Object.keys(o.stuecke).map((t) => [
                 o.stuecke[t],
@@ -140,20 +145,39 @@ const BREITE = {
     kulturAb: 3, // ein Wahrzeichen allein ist keine Kultur der Stadt: sie zählt ab so vielen Häusern im Gang
     // je Viertel seine Rolle im Gang: ein Haus des Viertels im Bild, dazu das Stück, das seine Rolle trägt
     viertel: { markt: "stand", kirchhof: "grab", burg: null, hafen: null },
+    // DIE ROLLE FOLGT DER LAGE: das Viertel verlangt die Probe nur, wo der Plan sie tragen kann (`plan.lage`, fachwerk dorfLayout:
+    // `wasser` = die Punkte seines Rings mit Wasser) — nennt der Plan die Lage 0, steht die Rolle beim Namen in `breiteOhne`,
+    // nie still gestrichen; ein Plan ohne Lage (vor dem Gesetz) trägt keinen Freibrief, und ein Hafen ohne Wasser ist ein Täter
+    lage: { hafen: "wasser" },
 };
+// WAS DER ORT NICHT TRAGEN KANN (mit Grund, je Rolle eine Zeile): die Rollen, deren Lage der Plan mit 0 nennt
+function breiteOhne(m, S = BREITE) {
+    return Object.entries(S.lage || {})
+        .filter(([, l]) => m.lage && m.lage[l] === 0)
+        .map(([rolle, l]) => `Viertel ${rolle}: der Ort trägt es nicht (${l} am Ring 0)`);
+}
 // DAS URTEIL: die Täter beim Namen (leer = GRÜN). `rollen` = die Bau-Typen der Grammatik (fachwerk STADT_GRAMMATIK.bau und die
 // Rollen des Gesetzes davor): ein Haus im Gang mit einem Typ außerhalb der Tafel oder ohne Viertel kommt nicht aus der EINEN Grammatik.
 function breiteUrteil(m, rollen, S = BREITE) {
     const v = [];
     const typen = Object.keys(m.typen);
     const kult = Object.keys(m.kulturen).filter((k) => m.kulturen[k] >= S.kulturAb);
-    if (!(m.lauf.gesehen > 0)) return [`kein Haus im Gang (${m.steht} von ${m.slots} stehen, ${m.lauf.stationen} Stationen)`];
+    if (!(m.lauf.gesehen > 0))
+        return [`kein Haus im Gang (${m.steht} von ${m.slots} stehen, ${m.lauf.stationen} Stationen)`];
     if (typen.length < S.typen) v.push(`Bau-Typen im Gang ${typen.length} < ${S.typen} [${typen.join(" ")}]`);
     if (kult.length < S.kulturen)
-        v.push(`Kulturen im Gang (ab ${S.kulturAb} Häusern) ${kult.length} < ${S.kulturen} ${JSON.stringify(m.kulturen)}`);
+        v.push(
+            `Kulturen im Gang (ab ${S.kulturAb} Häusern) ${kult.length} < ${S.kulturen} ${JSON.stringify(m.kulturen)}`
+        );
     for (const [rolle, stueck] of Object.entries(S.viertel)) {
+        const l = (S.lage || {})[rolle];
+        if (l && m.lage && m.lage[l] === 0) {
+            if (m.viertel[rolle]) v.push(`Viertel ${rolle}: ${m.viertel[rolle]} Häuser im Gang ohne ${l} am Ring`);
+            continue;
+        }
         if (!m.viertel[rolle]) v.push(`Viertel ${rolle}: kein Haus im Gang`);
-        else if (stueck && !(m.stuecke[stueck] && m.stuecke[stueck][1] > 0)) v.push(`Viertel ${rolle}: kein ${stueck} im Gang`);
+        else if (stueck && !(m.stuecke[stueck] && m.stuecke[stueck][1] > 0))
+            v.push(`Viertel ${rolle}: kein ${stueck} im Gang`);
     }
     const fremd = typen.filter((t) => !rollen.includes(t));
     if (fremd.length) v.push(`Bau-Typ außerhalb der Grammatik [${fremd.join(" ")}]`);
@@ -171,6 +195,7 @@ function breiteSelbsttest(taeterFaelle, rollen) {
         kulturen: { provenzalisch: 140, italienisch: 130, gotisch: 4, marokkanisch: 4 },
         viertel: { markt: 19, kirchhof: 3, burg: 4, hafen: 6, handwerk: 40, wohnen: 150, vorstadt: 58 },
         stuecke: { stand: [12, 12], grab: [24, 20], brunnen: [5, 5] },
+        lage: { wasser: 9 },
     };
     // gemessen am 11.11. headless an main 4e2df19b (dieselbe Probe): 253 von 300 Slots stehen, 103 im Ring (bebaut 0,158)
     const main = {
@@ -182,21 +207,43 @@ function breiteSelbsttest(taeterFaelle, rollen) {
         viertel: { ohne: 249 },
         stuecke: { stand: [1, 1], grab: [0, 0], brunnen: [5, 5] },
     };
-    return taeterFaelle(
-        [
-            ["lauter Wohnhäuser", (z) => (z.typen = { wohnhaus: 280 }), /Bau-Typen im Gang 1 < 12/],
-            ["zwei Kulturen und zwei Wahrzeichen", (z) => (z.kulturen = { provenzalisch: 140, italienisch: 130, gotisch: 1, barock: 1 }), /Kulturen im Gang \(ab 3 Häusern\) 2 < 3/], // prettier-ignore
-            ["der Friedhof ohne Grab", (z) => (z.stuecke.grab = [0, 0]), /Viertel kirchhof: kein grab im Gang/],
-            ["die Stadt ohne Herrn", (z) => delete z.viertel.burg, /Viertel burg: kein Haus im Gang/],
-            ["die Stadt ohne Hafen", (z) => delete z.viertel.hafen, /Viertel hafen: kein Haus im Gang/],
-            ["ein Typ außerhalb der Tafel", (z) => (z.typen.tankstelle = 1), /außerhalb der Grammatik \[tankstelle\]/],
-            ["Häuser ohne Viertel", (z) => (z.viertel.ohne = 7), /7 Häuser im Gang ohne Viertel/],
-            ["keins steht im Gang", (z) => (z.lauf.gesehen = 0), /kein Haus im Gang/],
-            { name: "main vor der Grammatik", z: main, muss: [/Bau-Typen im Gang 6 < 12/, /Kulturen im Gang .* 2 < 3/, /Viertel markt/, /Viertel hafen/, /249 Häuser im Gang ohne Viertel/] }, // prettier-ignore
-        ],
-        (z) => breiteUrteil(z, rollen),
-        { gruen }
+    // DIE LAGE TRÄGT DIE ROLLE: die Stadt ohne Wasser und ohne Hafen ist kein Täter, die Rolle steht beim Namen (`breiteOhne`)
+    const trocken = { ...gruen, viertel: { ...gruen.viertel }, lage: { wasser: 0 } };
+    delete trocken.viertel.hafen;
+    const lageFehler =
+        breiteUrteil(trocken, rollen).length ||
+        !/Viertel hafen: der Ort trägt es nicht/.test(breiteOhne(trocken).join()) ||
+        breiteOhne(gruen).length
+            ? [
+                  `Selbsttest BREITE Lage: die Stadt ohne Wasser richtet [${breiteUrteil(trocken, rollen).join(" · ")}], nennt [${breiteOhne(trocken).join(" · ")}]`,
+              ]
+            : [];
+    return lageFehler.concat(
+        taeterFaelle(
+            [
+                ["lauter Wohnhäuser", (z) => (z.typen = { wohnhaus: 280 }), /Bau-Typen im Gang 1 < 12/],
+                ["zwei Kulturen und zwei Wahrzeichen", (z) => (z.kulturen = { provenzalisch: 140, italienisch: 130, gotisch: 1, barock: 1 }), /Kulturen im Gang \(ab 3 Häusern\) 2 < 3/], // prettier-ignore
+                ["der Friedhof ohne Grab", (z) => (z.stuecke.grab = [0, 0]), /Viertel kirchhof: kein grab im Gang/],
+                ["die Stadt ohne Herrn", (z) => delete z.viertel.burg, /Viertel burg: kein Haus im Gang/],
+                ["die Stadt ohne Hafen", (z) => delete z.viertel.hafen, /Viertel hafen: kein Haus im Gang/],
+                [
+                    "der Hafen ohne Wasser",
+                    (z) => (z.lage.wasser = 0),
+                    /Viertel hafen: 6 Häuser im Gang ohne wasser am Ring/,
+                ],
+                [
+                    "ein Typ außerhalb der Tafel",
+                    (z) => (z.typen.tankstelle = 1),
+                    /außerhalb der Grammatik \[tankstelle\]/,
+                ],
+                ["Häuser ohne Viertel", (z) => (z.viertel.ohne = 7), /7 Häuser im Gang ohne Viertel/],
+                ["keins steht im Gang", (z) => (z.lauf.gesehen = 0), /kein Haus im Gang/],
+                { name: "main vor der Grammatik", z: main, muss: [/Bau-Typen im Gang 6 < 12/, /Kulturen im Gang .* 2 < 3/, /Viertel markt/, /Viertel hafen/, /249 Häuser im Gang ohne Viertel/] }, // prettier-ignore
+            ],
+            (z) => breiteUrteil(z, rollen),
+            { gruen }
+        )
     );
 }
 
-module.exports = { stadtBreite, breiteUrteil, breiteSelbsttest, BREITE };
+module.exports = { stadtBreite, breiteUrteil, breiteOhne, breiteSelbsttest, BREITE };

@@ -3602,6 +3602,7 @@
           bauten:{mittelalter:[{typ:'wohnturm',je:5,wenn:(p,f)=>p.wohl>=1.1&&f<0.45},{typ:'patrizierhaus',wenn:(p,f)=>p.wohl>=1.1&&f<0.45}], fruehneuzeit:[{typ:'patrizierhaus',wenn:(p,f)=>p.wohl>=1.05&&f<0.5}]},
           dinge:[] },
         vorstadt:{ lage:'vor der Mauer', lose:()=>[0,0], bauten:{}, dinge:[] },              // was vor der Mauer steht (dorfLayout: der Überlauf des Wohnens)
+        hafen:{ lage:'wasser', lose:()=>[0,0], bauten:{}, dinge:[] },                         // was im Ring am Wasser steht (dorfLayout: Handwerk und Wohnen binnen STADT_DICHTE.hafenM am Wasser des Rasters) — die Rolle folgt der LAGE: ohne Wasser am Ring trägt die Stadt keinen Hafen (`lage.wasser` 0)
       },
       // DER BAU-TYP: sein Parameter-Satz über dem Haus der Kultur (p), o = {region, band}
       bau:{
@@ -3637,6 +3638,8 @@
         friedhof: { tiefM: 7.5, randM: 1.4, abM: 1.5 },
         torplatz: { abM: 14, winkel: 2, halbM: 13 }, // die Mitte `abM` vom Ende der Trasse im Winkel `winkel` (rad, neben und hinter ihm: 6 m vor dem Ende, 13 m neben der Achse), das Geviert ± halbM
         standTrasseM: 3, // so weit hält die Reihe der Stände vom Rand jeder Trasse (VERKEHR_GESETZ.ausweichM: der Wagen umfährt den Stehenden)
+        hafenM: 14, // so nah am Wasser des Rasters (vom Rand seines Grundrisses) steht ein Los des Hafens; `hafenRasterM`: der Schritt, in dem der Plan das Wasser in seinem Ring zählt (`lage.wasser`)
+        hafenRasterM: 8,
     };
     // DIE VIERTEL EINES PLANS (DORF): je Los der Gründungs-Folge sein Viertel, je Bau des Loses (der Bau der Gegenwart `geb[i]`
     // und seine früheren `fr[i]`) der Bau-Typ der Zeile seines Bands — die Rolle des LOSES durch die Zeit, wie Gasthaus und
@@ -4825,6 +4828,7 @@
     if(!placedP){ pl[i]={x:0,z:9999+i*20,phi:0,obb:{cx:0,cz:9999+i*20,phi:0,ex:1,ez:1}}; continue; }
     if(stadt&&i===0){ zug.kirchhof={x:placedP.obb.cx, z:placedP.obb.cz, r:SD.zugKircheM}; friedhof(placedP.obb, placedP.hof); }
     if(stadt&&g.viertel==='wohnen'&&Math.hypot(placedP.obb.cx,placedP.obb.cz)>Rw) g.viertel='vorstadt';   /*was vor der Mauer wohnt, ist Vorstadt*/
+    if(stadt&&(g.viertel==='wohnen'||g.viertel==='handwerk')&&Math.hypot(placedP.obb.cx,placedP.obb.cz)<=Rw&&nassAm(placedP.obb.cx,placedP.obb.cz,Math.hypot(placedP.obb.ex,placedP.obb.ez)+SD.hafenM)) g.viertel='hafen';   /*DIE ROLLE HAFEN FOLGT DER LAGE: was im Ring am Wasser des Rasters wohnt und wirkt, ist Hafen (Speicher, Gerberei und Werkstatt des Handwerks, die Haeuser am Ufer) — ohne Wasser (`H.nass`) entsteht keiner*/
     const cu=parentCu[i];
     if(g.rolle!=='kirche'&&i>0&&i%8===0){ const q=at(roads[cu.rd],Math.max(2,cu.cur-2));
       brunnen.push({x:q.x+cu.side*q.nx*(roads[cu.rd].w/2+0.6), z:q.z+cu.side*q.nz*(roads[cu.rd].w/2+0.6)}); }
@@ -4912,7 +4916,9 @@
       for(let du=0; du<=DORF_LICHT_WEG/2-1; du+=1){ if((u+du<L&&(amWeg(rd,u+du,fl)||amWeg(rd,u+du,-fl)))||(du&&u-du>0&&(amWeg(rd,u-du,fl)||amWeg(rd,u-du,-fl)))) break; } } } }
   const sp=at(roads[0],Math.min(roads[0].len||8,8));
   const nzyk=roads.length-(G.nodes.length+sack-1);                                           // Zyklen = E − V + 1 (zusammenhängend)
-  let viertel=null;
+  let viertel=null, lage=null;
+  if(stadt){ let wz=0; if(H&&H.nass) for(let x=-Rw;x<=Rw;x+=SD.hafenRasterM) for(let z=-Rw;z<=Rw;z+=SD.hafenRasterM) if(Math.hypot(x,z)<=Rw&&H.nass(x,z,0)) wz++;   /*DIE LAGE DES PLANS: so viele Punkte seines Rings (je `hafenRasterM`) tragen Wasser des Rasters — 0: der Ort traegt keinen Hafen, der Leser der Breite nennt es beim Namen statt zu richten (lib/stadt-proben.cjs)*/
+    lage={wasser:wz}; }
   if(stadt){ const V={};                                                                               /*DIE VIERTEL DES PLANS: je Rolle die Mitte ihrer stehenden Lose und der Radius, der sie fasst*/
     plan.houses.forEach((h,i)=>{ const q=pl[i]; if(h.viertel&&q&&q.obb&&Math.abs(q.obb.cz)<5000) (V[h.viertel]=V[h.viertel]||[]).push(q.obb); });
     viertel=Object.keys(V).map(rolle=>{ const L=V[rolle], x=L.reduce((a,o)=>a+o.cx,0)/L.length, z=L.reduce((a,o)=>a+o.cz,0)/L.length;
@@ -4921,7 +4927,7 @@
           feldwege, platz, brunnen, fences, felder, staende, spawn:{x:sp.x,z:sp.z}, trees, jitAmp, DS, mauer,
           laternen, marken,
           graph:{nV:G.nodes.length+sack, nE:roads.length, zyklen:Math.max(0,nzyk)},
-          welt:{x0:X0-9,x1:X1+9,z0:Z0-9,z1:Z1+9}}, stadt?{zonen, gegenstaende:dinge, viertel}:null);   /*die Stadt der Grammatik traegt ihre Flaechen, die Gegenstaende ihrer Viertel und die Viertel selbst*/
+          welt:{x0:X0-9,x1:X1+9,z0:Z0-9,z1:Z1+9}}, stadt?{zonen, gegenstaende:dinge, viertel, lage}:null);   /*die Stadt der Grammatik traegt ihre Flaechen, die Gegenstaende ihrer Viertel und die Viertel selbst*/
 }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -8639,6 +8645,7 @@
         // {art, viertel, x, z, th} (der Leser: `_dorfErlebnis` über ORT_AUSSTATTUNG, das Labor über `ausstattungAm`)
         if (lay.viertel) {
             aus.viertel = lay.viertel;
+            aus.lage = lay.lage; // die Lage des Plans: was sein Ort tragen kann (der Hafen nur mit Wasser am Ring)
             aus.zonen = lay.zonen;
             aus.gegenstaende = lay.gegenstaende;
             // DIE KAPPE DES PLANS (der Leser: der Maler des Bodens, `_stlWegeBuild` `plan.kappe`): so viele Formen trägt sein Boden —

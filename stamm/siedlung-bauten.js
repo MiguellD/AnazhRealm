@@ -334,6 +334,14 @@ class AnazhRealm_siedlung_bauten {
     _stufeWecken(entry, art) {
         const W = this._stufenWacheStand;
         if (!W || !entry || W.epoche[0] !== this.state.architectures) return;
+        // DER FAHRENDE URTEILT SICH SELBST (`_archFahrende`: der Wagen des Verkehrs zwischen Einsteigen und Parken) — in jedem
+        // Takt, in dem er oder das Auge wandert (`_archBewegteUrteilen`); sein Schritt weckt keinen Gang über die Wachen („die
+        // Kosten tragen die Bewegten, nie die Menge“), wer parkt, tritt wieder in die Wache (`_archFahrt`). Bis hier begann
+        // jeder Schritt jedes Wagens die Runde der Stufen-Wahl neu (`_blockerBewegt` → `_cullWecken`): wo mehr Einträge wach
+        // bleiben, als ein Gang geht (STUFEN_GANG 256 — die Verdeckung hält jede 3D-Stufe jenseits `occDist` wach), endete die
+        // Runde nie. Messort stadt-voll der Stadt-Grammatik, Radeon: 349 Wache (209 Laternen, 80 Wandlaternen, 24 Grabsteine),
+        // 21 Wagen, 1550 Weckrufe in 360 Takten, die längste Ruhe 0 Takte — „Fege-Takt archLod 256/355“, die Welt stand nie.
+        if (art === undefined && this._archFahrende && this._archFahrende.has(entry)) return;
         W.zusage.delete(entry);
         W.schlaf.delete(entry);
         if (art === "weg") {
@@ -585,7 +593,7 @@ class AnazhRealm_siedlung_bauten {
     _archFahrt(entry, an) {
         const F = this._archFahrende || (this._archFahrende = new Set());
         if (an) F.add(entry);
-        else F.delete(entry);
+        else if (F.delete(entry)) this._cullWecken(entry); // er steht: Cull und Stufen-Wahl urteilen ihn wieder aus ihrer Wache
     }
 
     // Instanced Architektur auf andere LOD-Stufe: _archInstanceRemove → entry.type auf den neuen
