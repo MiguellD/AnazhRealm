@@ -1,7 +1,7 @@
 {
  "sha": "4e2df19b5c5103b093818b62b5a84ababf85b493",
  "geraet": "gtx",
- "zeit": "2026-11-11T07:25:12.983Z",
+ "zeit": "2026-11-11T07:30:35.227Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "affekt.K4#2": {
@@ -1514,22 +1514,87 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "tiere.K1#2": {
+   "gruen": false,
+   "zahl": "(a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.992 über 1182 Takte, letzter Flüchter 0.58 s (4 aus zweiter Hand), Fluchtweg 33.9 m, ID 600 s hält (Flucht 5 / 6 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 15.1 m: 46.6 m 5/5 fliehen, 0 sichtbar, 0 Fleck(en) (37 px) · 1044.6 m 0/0 fliehen, 0 sichtbar, 0 Fleck(en) (0 px) · 1090.8 m 0/0 fliehen ABNAHME ROT [Vordergrund 38.0 % näher als 8 m (der halbe Ziel-Abstand): Gelände 16.5 %, Laub baum_eiche 9.4 %, Rinde baum_birke 6.3 % · Ziel Herde verdeckt von Rinde baum_birke in 9.03 m] · beweis · Sicht 0.8 % (Rinde baum_kiefer 0.8 %) · Ziel Herde im Bild VERDECKT 1044.64 m · Luma 24 σ 14.7 schwarz 2.5 % weiß 0.0 % · Stand 18.546.249 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 14 Posen — die Blick-Wahl fand in 14 Posen keine freie — die Aufnahme speichert nichts",
+   "exit": 0,
+   "minuten": 1.42,
+   "grund": "ROT: (a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.992 über 1182 Takte, letzter Flüchter 0.58 s (4 aus zweiter Hand), Fluchtweg 33.9 m, ID 600 s hält (Flucht 5 / 6 s) · Bild-Serie „Herde am Hang“ ROT am Hang 21.2° -550.6/-889.6, Flucht bei 15.1 m: 46.6 m 5/5 fliehen, 0 sichtbar, 0 Fleck(en) (37 px) · 1044.6 m 0/0 fliehen, 0 sichtbar, 0 Fleck(en) (0 px) · 1090.8 m 0/0 fliehen ABNAHME ROT [Vordergrund 38.0 % näher als 8 m (der halbe Ziel-Abstand): Gelände 16.5 %, Laub baum_eiche 9.4 %, Rinde baum_birke 6.3 % · Ziel Herde verdeckt von Rinde baum_birke in 9.03 m] · beweis · Sicht 0.8 % (Rinde baum_kiefer 0.8 %) · Ziel Herde im Bild VERDECKT 1044.64 m · Luma 24 σ 14.7 schwarz 2.5 % weiß 0.0 % · Stand 18.546.249 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 14 Posen — die Blick-Wahl fand in 14 Posen keine freie — die Aufnahme speichert nichts",
+   "gpu": "nvidia/pascal",
+   "s": 85,
+   "fremd": {
+    "s": 87.9,
+    "takte": 40,
+    "fremdS": 98.53,
+    "kerne": 1.121,
+    "fensterKerne": 1.989,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      40.59
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      21.64
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      18.08
+     ]
+    ],
+    "dienerS": 30.88,
+    "diener": [
+     [
+      "dwm.exe",
+      13.75
+     ],
+     [
+      "System",
+      11.09
+     ]
+    ],
+    "geraetS": 29.61,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      19.92
+     ],
+     [
+      "svchost.exe",
+      7.95
+     ],
+     [
+      "SearchIndexer.exe",
+      0.72
+     ]
+    ],
+    "eigenS": 174.34,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon"
+   },
+   "zeit": "2026-11-11T07:30:35.227Z",
+   "abdruck": "9d9ccc7071a0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-11T07:24:38.641Z",
+  "start": "2026-11-11T07:29:54.295Z",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 6.3,
+  "bootS": 5.8,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": null,
-    "vor": "studios.K4#2",
-    "s": 26.9,
-    "takte": 832,
+    "ort": "wiese",
+    "vor": "tiere.K1#2",
+    "s": 33.9,
+    "takte": 546,
     "chunks": 81,
     "nach": null
    }
@@ -1546,13 +1611,20 @@
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
-   "ortImDeckel": [],
-   "zapfen": 102,
-   "luecken": 0,
-   "letzteLuecke": null
+   "ortImDeckel": [
+    {
+     "probe": "tiere.K1#2",
+     "m": 1805,
+     "ringVor": 4,
+     "ringMin": -1
+    }
+   ],
+   "zapfen": 101,
+   "luecken": 1,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
   },
-  "fahrtS": 116.3,
-  "minuten": 2
+  "fahrtS": 127.3,
+  "minuten": 2.18
  },
  "ungemessen": {
   "ankunft.K1#1": {
