@@ -99,9 +99,10 @@ async function selftest() {
 }
 
 // DER BOOT ALS LAUF (B3a): die Geburt des Wirts (`_ensureAssetFoundry` der echten Klasse im vm, `ladeKlasse`) baut den
-// Boot-Blob synchron, und der Blob läuft in einem Schein-Faden, der das Manifest `text` per fetch liefert, Engine (das
-// import() — die Engine der Welt, three r184, beim Namen), Laden, synchrones XHR, Abruf und Digest mitschreibt. Das Soll
-// kommt aus dem echten Manifest und der Import-Karte von index.html; ohne Blob bei der Geburt nennt `fehler` den Täter.
+// Boot-Blob synchron, und der Blob läuft in einem Schein-Faden, der das Manifest `text` und jede Quelle über den EINEN
+// synchronen Abruf des Fadens liefert (`_foundryHole`, w28-foundry-frueh), Engine (das import() ihres Blob-Moduls — die
+// Engine der Welt, three r184, beim Namen), Laden und Digest mitschreibt. Das Soll kommt aus dem echten Manifest und der
+// Import-Karte von index.html; ohne Blob bei der Geburt nennt `fehler` den Täter.
 async function bootLauf(text) {
     const vm = require("vm");
     const { AnazhRealm: A, ctx } = stammLib.ladeKlasse(PK.ROOT);
@@ -124,18 +125,22 @@ async function bootLauf(text) {
     aus.sollStempel = echt.map((c) => je(c).join("\n")).join("\n\n");
     if (!blob) return Object.assign(aus, { fehler: "kein Boot-Blob bei der Geburt — der Haupt-Faden holt das Manifest (fetch) vor ihr" }); // prettier-ignore
     const ord = [];
-    // der Schein trägt kein XMLHttpRequest: ein synchrones XHR des Boots bricht beim Namen (`fehler`)
-    const w = { TextEncoder, URL, indexedDB: {}, addEventListener: (t) => ord.push(t), removeEventListener() {}, postMessage: (m) => (aus.post = m) }; // prettier-ignore
+    // der Schein trägt kein fetch: ein asynchroner Abruf des Boots bricht beim Namen (`fehler`) — im Spiel stünde seine Antwort
+    // hinter den Skript-Stempeln der Seite an (gate:fluss S9). Sein XMLHttpRequest antwortet synchron: das Manifest `text`,
+    // je Quelle `<url>`; sein Blob trägt den Text, seine Blob-URL nennt ihn — der Lader liest daran die Datei der Engine.
+    const w = { TextEncoder, indexedDB: {}, addEventListener: (t) => ord.push(t), removeEventListener() {}, postMessage: (m) => (aus.post = m) }; // prettier-ignore
+    w.XMLHttpRequest = function () { this.open = (_m, u) => (this.u = u); this.send = () => Object.assign(this, { status: 200, responseText: /cores\.manifest\.json/.test(this.u) ? text : `<${this.u}>` }); }; // prettier-ignore
+    w.Blob = function (teile) { this.text = teile.join(""); }; // prettier-ignore
+    w.URL = class extends URL { static createObjectURL(b) { return "blob:" + b.text; } static revokeObjectURL() {} }; // prettier-ignore
     w.setTimeout = (f) => { try { f(); } catch (e) { aus.fehler = e.message; } }; // prettier-ignore
     // die Schale (ihr Hörer) steht vor JEDEM Laden: der Halte-Hörer der Geburt und der Kanal-Hörer der Schale (die Rufe in Folge)
     w.importScripts = (...u) => (aus.laden = ord.length > 1 && !/nicht davor/.test(aus.laden) ? [aus.laden, ...u].filter(Boolean).join(" ") : "die Schale steht nicht davor"); // prettier-ignore
-    w.fetch = (u) => Promise.resolve({ ok: true, json: async () => JSON.parse(text), text: async () => `<${u}>` });
     const st = [];
     w.crypto = { subtle: { digest: (_a, b) => (st.push(new TextDecoder().decode(b)), (aus.stempel = st.join("\n\n")), new Promise(() => {})) } }; // prettier-ignore
     w.self = w.globalThis = w;
-    // der Lader des Scheins: das import() des Boots (die Engine) holt den Namensraum der Engine-Datei und schreibt seine
-    // URL mit (vm lädt Module nur unter --experimental-vm-modules — der Schein ersetzt den Lader wie fetch)
-    w.__lader = async (u) => ((aus.motor = u), ENGINE_THREE());
+    // der Lader des Scheins: das import() des Boots (das Blob-Modul der Engine) holt den Namensraum der Engine-Datei und
+    // schreibt die URL mit, deren Text der Blob trägt (vm lädt Module nur unter --experimental-vm-modules)
+    w.__lader = async (u) => ((aus.motor = String(u).replace(/^blob:<(.*)>$/, "$1")), ENGINE_THREE());
     vm.runInContext(blob.replace(/\bimport\(/, "__lader("), vm.createContext(w));
     for (let i = 0; i < 250 && !aus.fehler && (!aus.laden || st.length < echt.length); i++) await new Promise((r) => setImmediate(r)); // prettier-ignore
     w.postMessage({ type: "asset", meshes: [{ position: { array: new Float32Array(3) }, aWind: { array: new Float32Array(3) } }] }); // prettier-ignore

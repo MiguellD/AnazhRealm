@@ -25,8 +25,9 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
   Kugel der Hülle, `AnazhHuelle.kugel`); auf ihr zeichnen garage und schmiede, `gelaende` fährt die Welt selbst
   (`index.html?studio=gelaende`). Heute zeichnen portale · fachwerk · terrain · koerperstudio · tetrapoda mit eigenem
   r128-`WebGLRenderer` und eigenem Licht — Labor = Welt ist dort Gesetz, nicht Stand.
-- **Worker:** Foundry lädt die EINE Brücke `foundry-bruecke.js` auf der Engine der Welt (three r184 per `import()` aus ihrer
-  Import-Karte, Manifest `engine`; kein ColorManagement, die Kerne rechnen ihr FARB-GESETZ selbst; Manifest per fetch) (`get-book` 1×Boot · `build-asset(id,seed,lod,ov)` ·
+- **Worker:** Foundry lädt die EINE Brücke `foundry-bruecke.js` auf der Engine der Welt (three r184 aus ihrer
+  Import-Karte als Blob-Modul, Manifest `engine`; kein ColorManagement, die Kerne rechnen ihr FARB-GESETZ selbst; der Faden holt
+  nur synchron, `_foundryHole` — eine asynchrone Antwort steht hinter den Skript-Stempeln der Seite an, gate:fluss S9) (`get-book` 1×Boot · `build-asset(id,seed,lod,ov)` ·
   `export-settlement`; die IDB-Platte der Schale trägt jede Lieferung — build-asset · Dorf-Export · Blatt-Atlas · Karte —
   unter dem Gesetz-SHA der Kerne, die sie liest) · `voxel-worker.js`. **Server:** save-server
   (state/.bak · perf-trace · llm-proxy · vendor) · signaling (WS→WebRTC; pos · input-Lockstep · dsl · soul · vibe).

@@ -89,7 +89,8 @@ class AnazhRealm_studio_bruecke {
                           .concat(Object.values(module))
                     : [],
             };
-            // die Helfer des Fadens reisen als Quelltext (die Schale, die EINE Signatur-Prüfung, das Auspacken eines Buchs)
+            // die Helfer des Fadens reisen als Quelltext (die Schale, die EINE Signatur-Prüfung, das Auspacken eines Buchs,
+            // der EINE Abruf des Fadens)
             const fn = (m) => {
                 const q = m.toString();
                 return q.startsWith("async ") ? "async function " + q.slice(6) : "function " + q;
@@ -103,6 +104,7 @@ class AnazhRealm_studio_bruecke {
                     fn(AnazhRealm._foundrySchale),
                     fn(AnazhRealm._ed25519Pruefe),
                     fn(AnazhRealm._buchAuspacke),
+                    fn(AnazhRealm._foundryHole),
                 ].join(",") +
                 ");"; // die Brücke startet sich selbst (Foundry-Modus, Kanal-Hörer, ready)
             f.bootUrl = URL.createObjectURL(new Blob([boot], { type: "text/javascript" }));
@@ -608,13 +610,34 @@ class AnazhRealm_studio_bruecke {
         const f = this._foundry;
         return f && f.recipes ? f.recipes[preset] || null : null;
     }
+    // DER EINE ABRUF DES STUDIO-FADENS (w28-foundry-frueh): synchron. KEIN ABRUF DES FADENS STEHT HINTER DER SEITE AN — jede
+    // ASYNCHRONE Antwort an einen Faden (fetch, import() von http) hält Chrome, bis sein Code-Cache-Faden im Browser-Prozess
+    // ihre Rückfrage beantwortet; der arbeitet der Reihe nach und stempelt davor jedes Skript, das die Seite lud (GTX 1050,
+    // HDD, Chrome 148: 196 Nachrichten zu ~130 ms). Ein synchroner Abruf fragt dort nicht. Er läuft als Quelltext im Faden
+    // (der Boot-Blob, `_ensureAssetFoundry`); mit ihm holen der Start (`_foundryStart`: Manifest, Engine) und die
+    // Transport-Schale (`_foundrySchale`: die Quellen der Kerne für das Gesetz der Platte, die des Wirts für den Stempel der
+    // Karte) — der Faden tut bis dahin nichts anderes. Gemessen im Spiel (GTX 1050 kalt, echter Renderer, je 3 frische Läufe
+    // im Wechsel): das Buch offen 30,5–44,6 s → 5,8–6,4 s nach der Navigation, das erste Weltbild 41,3–57,1 s → 24,0–25,1 s;
+    // mit Manifest und Engine allein kamen die Quellen der Schale noch bei 26,7 s an, so lange fragte kein Körper die Platte.
+    // Die Wand: gate:fluss S9 (kein fetch, kein import() von http im Faden), gate:pack-contract fährt den Boot ohne fetch.
+    static _foundryHole(u) {
+        const x = new globalThis.XMLHttpRequest();
+        x.open("GET", u, false);
+        x.send();
+        if (x.status !== 200) throw new Error("STOFF: der Foundry-Faden holt nicht — " + u + " antwortet " + x.status);
+        return x.responseText;
+    }
     // DER START DES STUDIO-FADENS (B3a): läuft als Quelltext im Faden (der Boot-Blob, `_ensureAssetFoundry`) und greift auf
     // nichts außerhalb seines Rumpfs zu. DER FADEN RECHNET AUF DER ENGINE DER WELT (w5-pipeline, pipeline.K5): die Kerne
     // lesen `THREE` — das ist das Modul, das die Import-Karte der Welt für den Namen ihres Manifest-Felds `engine` nennt
-    // (`b.module`, aufgelöst im Haupt-Faden; three r184, dieselbe URL, derselbe Cache), geholt per `import()`; keine zweite
+    // (`b.module`, aufgelöst im Haupt-Faden; three r184, dieselbe URL, derselbe HTTP-Cache); keine zweite
     // three im Faden, kein Addon. Die Farbe trägt kein ColorManagement: die Kerne rechnen ihr FARB-GESETZ selbst (die
     // sRGB-Kurve beim Bau, wie unter r128, das keines kannte) — die Komponente ist, was der Kern setzt. Das Kern-Manifest
-    // kommt per fetch (ALLES aus cores.manifest.json, EINE Quelle, ?v= Pflicht; kein synchrones XHR). Bis Engine und
+    // (ALLES aus cores.manifest.json, EINE Quelle, ?v= Pflicht) und die Engine holt der Faden mit seinem EINEN Abruf
+    // (`hole`, `_foundryHole`: synchron); die Engine wird samt jedem relativen Import ihrer Module ein Blob-Modul (`modul`) —
+    // ein Blob-Modul fragt den Code-Cache so wenig wie der synchrone Abruf. Einzeln trägt keiner der beiden Schritte (unter
+    // dem Null-Renderer das Buch ab Navigation: Stand 22,6–29,2 s, das Manifest allein 23,6–26,6 s, die Engine allein
+    // 22,5–26,6 s), zusammen 9,2–10,1 s. Bis Engine und
     // Kerne stehen, HÄLT der Faden jede Nachricht (der erste Hörer, `halte`) und reicht sie danach in ihrer Folge weiter —
     // dann steht die Transport-Schale VOR dem Studio (ihr Kanal-Hörer zuerst) und die Kerne laden in Manifest-Folge
     // (phyto- VOR foundry-core), danach die Bücher des Spielers → die Brücke ZULETZT (K42: keine Labor-Shell im Faden); importScripts braucht ABSOLUTE URLs
@@ -629,7 +652,7 @@ class AnazhRealm_studio_bruecke {
     // wie jede des Servers, VOR der Schale: die Schale stempelt es,
     // die Brücke liest es als Zweit-Kern (Rezepte, Stufen, Budget, Regler, KIND_POLICY). Ein Buch, das fällt, fällt beim
     // Namen (`buch-abgewiesen`, der Wirt meldet es laut), nie die Welt.
-    static _foundryStart(b, schale, pruefe, auspacken) {
+    static _foundryStart(b, schale, pruefe, auspacken, hole) {
         const W = globalThis;
         const url = (p) => new URL(p + b.v, b.base).href;
         const gehalten = [];
@@ -647,12 +670,25 @@ class AnazhRealm_studio_bruecke {
                 );
             return u;
         };
-        fetch(url("cores.manifest.json"))
-            .then((r) => {
-                if (!r.ok) throw new Error("STOFF: die Foundry bootet nicht — das Kern-Manifest antwortet " + r.status);
-                return r.json();
-            })
-            .then((manifest) => {
+        // das Modul `u` als Blob-Modul, jeder relative Import darin das Blob-Modul SEINER Datei (three r184: module → core);
+        // ein Kreis ließe sich so nicht tragen und bricht beim Namen
+        const blobs = new Map();
+        const modul = (u) => {
+            if (blobs.get(u) === null)
+                throw new Error("STOFF: die Foundry bootet nicht — die Engine importiert im Kreis (" + u + ")");
+            if (!blobs.has(u)) {
+                blobs.set(u, null);
+                const q = hole(u).replace(
+                    /(\bfrom\s*|\bimport\s*)(["'])(\.{1,2}\/[^"']+)\2/g,
+                    (_, vor, a, rel) => vor + a + modul(new URL(rel, u).href) + a
+                );
+                blobs.set(u, URL.createObjectURL(new Blob([q], { type: "text/javascript" })));
+            }
+            return blobs.get(u);
+        };
+        Promise.resolve()
+            .then(() => {
+                const manifest = JSON.parse(hole(url("cores.manifest.json")));
                 if (!Array.isArray(manifest) || !manifest.length)
                     throw new Error("STOFF: die Foundry bootet nicht — das Kern-Manifest trägt keinen Kern");
                 // eine Bibliothek neben den Kernen (`lib`, bis w5-pipeline three r128 + BufferGeometryUtils) wäre eine zweite
@@ -665,7 +701,10 @@ class AnazhRealm_studio_bruecke {
                 const motoren = [...new Set(manifest.map(engine).filter(Boolean))];
                 if (motoren.length !== 1)
                     throw new Error("STOFF: die Foundry bootet nicht — " + motoren.length + " Engines im Manifest");
-                return import(motoren[0]).then((T) => [manifest, T, motoren[0]]);
+                return import(modul(motoren[0])).then((T) => {
+                    for (const u of blobs.values()) URL.revokeObjectURL(u);
+                    return [manifest, T, motoren[0]];
+                });
             })
             .then(([manifest, T, motor]) =>
                 Promise.all(
@@ -724,6 +763,7 @@ class AnazhRealm_studio_bruecke {
                     platte: b.platte,
                     kerne,
                     wirt: b.wirt || [],
+                    hole,
                 });
                 T.ColorManagement.enabled = false;
                 W.THREE = Object.assign({}, T);
@@ -800,6 +840,8 @@ class AnazhRealm_studio_bruecke {
                 "STOFF: die Transport-Schale kennt die Typen der gelesenen Ecken nicht (cfg.ecken, SAISON_GESETZ typ)"
             );
         const ECKEN = new Set(cfg.ecken);
+        if (typeof cfg.hole !== "function")
+            throw new Error("STOFF: die Transport-Schale kennt den Abruf des Fadens nicht (cfg.hole, _foundryHole)");
         const roh = W.postMessage.bind(W);
         const schreibAuftrag = new Map(); // reqId (der Atlas: "blatt-atlas") → die Lieferung des Studio-Baus, der gerade läuft
         // DIE PLATTE HÄLT KEINEN FADEN. Die Studio-Fäden (Werk und Helfer, `_foundryHelfer`) teilen EINE IndexedDB. Ein
@@ -847,7 +889,9 @@ class AnazhRealm_studio_bruecke {
             crypto.subtle
                 .digest("SHA-256", new TextEncoder().encode(s))
                 .then((b) => Array.from(new Uint8Array(b), (x) => x.toString(16).padStart(2, "0")).join(""));
-        const text = (u) => fetch(u).then((r) => r.text());
+        // die Quellen holt der EINE Abruf des Fadens (`cfg.hole`, synchron): eine asynchrone Antwort stünde hinter den
+        // Skript-Stempeln der Seite an (`_foundryHole`) — und mit ihr jede Lieferung, die die Platte fragt
+        const text = (u) => new Promise((ok) => ok(cfg.hole(u)));
         const kerne = cfg.kerne || [];
         let G = null;
         const huelle = (eigner) => {
