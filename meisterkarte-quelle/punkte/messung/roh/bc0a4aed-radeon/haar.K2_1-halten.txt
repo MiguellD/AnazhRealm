@@ -1,0 +1,11 @@
+{
+ "ms": 2225,
+ "ergebnis": {
+  "gehalten": [
+   "spiegel",
+   "leib"
+  ],
+  "takte": 15,
+  "ruht": true
+ }
+}

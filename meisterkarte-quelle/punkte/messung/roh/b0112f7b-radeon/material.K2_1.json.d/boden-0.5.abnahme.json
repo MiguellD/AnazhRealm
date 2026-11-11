@@ -10,7 +10,7 @@
   "uhr": 0.5,
   "bildUhr": 12.5,
   "tiereGehalten": false,
-  "weltTakte": 40
+  "weltTakte": 64
  },
  "geraet": {
   "backend": "WebGPU",
@@ -61,13 +61,13 @@
  "bild": {
   "w": 1920,
   "h": 1080,
-  "mittel": 62.2,
-  "sigma": 23.3,
+  "mittel": 62.3,
+  "sigma": 23.4,
   "schwarz": 0,
   "weiss": 0
  },
  "ok": true,
- "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 0.5 m · Luma 62.2 σ 23.3 schwarz 0.0 % weiß 0.0 % · Stand 18.546.254 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3",
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 0.5 m · Luma 62.3 σ 23.4 schwarz 0.0 % weiß 0.0 % · Stand 18.546.254 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3",
  "klasse": {
   "ausdruck": "^bodenSatz$",
   "schwelle": 18,
@@ -83,28 +83,28 @@
   "klassen": {
    "bodenSatz": {
     "objekte": 1,
-    "spiegelTreue": 0.1972,
+    "spiegelTreue": 0.1946,
     "spiegelEbene": 27.624,
     "sp": [
-     1407,
+     1405,
      0,
      0,
-     619952.56,
-     619952.56,
-     122257.47
+     621950.23,
+     621950.23,
+     121047.2
     ],
     "zweiton": 0,
     "weiss": 0,
     "wt": 0,
     "wtZiel": null,
-    "bunt": 40.4,
-    "pixel": 408709,
-    "luma": 83.5,
-    "kante": 0.7498,
-    "kr": 5247,
-    "strich": 0.2325,
-    "si": 269088,
-    "bloecke": 5364,
+    "bunt": 40.42,
+    "pixel": 408706,
+    "luma": 83.6,
+    "kante": 0.7449,
+    "kr": 5280,
+    "strich": 0.2318,
+    "si": 266904,
+    "bloecke": 5355,
     "glatt": 0,
     "glattDunkel": null,
     "nyquist": 0.1686,
