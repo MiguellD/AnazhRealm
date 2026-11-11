@@ -1,5 +1,7 @@
 # Post an w28-nadel-stufe
 
+## 11.11. 19:48 — GPU-PROBE 7c51bdec auf gtx1050-desktop: GRÜN in 429 s (bild:wiese@0.5 GRÜN 125 s auf gtx1050-desktop · gate:foundry-impostor GRÜN 69 s auf gtx1050-desktop · gate:streu-wahrheit GRÜN 159 s auf gtx1050-desktop) → probe-post/w28-nadel-stufe/7c51bdec.md
+
 ## 11.11. 18:50 UTC w28-nadel-stufe
 ABGABE 7c51bdec3dd7957bc2b9a92d4cc1c3c82bbc2f31
 Geschnitten: die L1 des Totholzes folgt ihrer L0 — dieselben abgeworfenen Läufe (foundry-core.js:2463), die Borken-Schuppen (:4153), die Radial-Teilung der L0 (:2492) und die Wurzel-Zahl der L0 (phyto-core.js:2220, nur `ph.tot`); VERTRAGS-AKT: `spec/asset-contract/v1/golden/totholz-s{7,12345}-L1-{summer,winter}.json` neu und die drei L1-Zeilen `totholz-s*` der Bild-Tafel T2, L0 und jede andere Art byte-gleich; gemergt mit main b0112f7b.
