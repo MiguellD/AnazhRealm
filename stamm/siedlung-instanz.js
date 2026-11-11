@@ -367,6 +367,7 @@ class AnazhRealm_siedlung_instanz {
         g2.userData._lodFacade = true;
         g2.userData._h0Tpl = h0;
         g2.userData._h0LTpl = h0L;
+        g2.userData._schirmQuelle = srcGeom; // die Vorlage merkt ihre wahren Höhen (`_schirmHoehenNeu`)
         return g2;
     }
     // Grow-Pfad der Fassade: die Instanz-Arrays auf die neue Kapazität heben (Werte

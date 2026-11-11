@@ -626,7 +626,14 @@ class AnazhRealm_vegetation_streu {
                 return null;
             }
             const distAuge = Math.hypot(tf.x - auge.x, tf.z - auge.z); // die Stufen-Distanz: vom Auge (K36)
-            const lod = this._chooseLODForDistance(distAuge, undefined, visH);
+            const lod = this._chooseLODForDistance(
+                distAuge,
+                undefined,
+                visH,
+                layer.kind === "tree"
+                    ? this._baumStreck(this._foundryEnabled() ? this._foundryPresetFor(species) : null)
+                    : undefined
+            );
             // Trägt die Foundry die Baum-Art, serviert der Scatter IHR Asset (fern = Studio-Billboard, nah =
             // Studio-Geometrie) — nie ein paralleles Grammatik-Baum-System (Doppel-Bake + Look-Bruch nah/fern).
             // Foundry-gegated; headless (Foundry aus) bleibt Grammatik.
@@ -992,7 +999,7 @@ class AnazhRealm_vegetation_streu {
             const _curLod = Number.isFinite(foundryFlat.lod) ? foundryFlat.lod : lod;
             bandDient = _curLod;
             bandHalt = true;
-            const _partner = this._lodBandPartnerFor(dist, visH, _curLod, tf.scale);
+            const _partner = this._lodBandPartnerFor(dist, visH, _curLod, tf.scale, this._baumStreck(foundryPreset));
             if (_partner != null && _partner !== _curLod) {
                 bandWunsch = _partner;
                 const pf0 = this._foundryFlattenFor({ seed: fseed, wo: tf }, foundryPreset, _partner);
@@ -1235,7 +1242,12 @@ class AnazhRealm_vegetation_streu {
                 if (!this._schlafen(cell, Z, wunsch, wecke)) offen++;
                 continue; // die Höhen-Stufe lädt: die Zelle hält ihre Stufe
             }
-            const newLod = this._chooseLODForDistance(dist, cell.lod, visH);
+            // der Streck der Vorlage (`_baumStreck`): jede Wahl dieser Zelle misst an der Schirm-Höhe ihrer Grenze
+            const S =
+                layer.kind === "tree"
+                    ? this._baumStreck(this._foundryEnabled() ? this._foundryPresetFor(cell.species) : null)
+                    : undefined;
+            const newLod = this._chooseLODForDistance(dist, cell.lod, visH, S);
             // DIE NAH-GRENZE wechselt die Bahn auch ohne Stufen-Wechsel — dieselbe Grenze wie der Zellen-Chokepoint
             // (`_streuFernBahn`, ANALOG_NAH_M): eine Fernform-Zelle (Gesetz-Platz oder Boden), die näher kommt, tauscht
             // auf ihr Studio-Mesh; eine Mesh-Zelle, die sich entfernt, zieht erst jenseits des Felds der Tiere in ihre Fernform
@@ -1279,7 +1291,7 @@ class AnazhRealm_vegetation_streu {
             // _scatterFreeSlots (jede leere Gruppe fällt durch den Leer-Chokepoint).
             if (hatRegional) {
                 const fadeM = AnazhRealm.LOD_DISTANCES.fade;
-                if (newLod !== 2 || this._chooseLODForDistance(Math.max(0, dist - fadeM), cell.lod, visH) !== 2)
+                if (newLod !== 2 || this._chooseLODForDistance(Math.max(0, dist - fadeM), cell.lod, visH, S) !== 2)
                     continue;
             }
             let layerSalt = 0;
@@ -1353,31 +1365,36 @@ class AnazhRealm_vegetation_streu {
     _streuZelleMerke(cell, layer, dist, visH, tf, ruh) {
         const cfg = AnazhRealm.LOD_DISTANCES;
         if (!cfg || !(visH >= 0) || !Number.isFinite(dist)) return;
-        const k = visH > 0 ? this._lodPerceptionDistance(1, visH) : 1;
-        if (!(k > 0)) return;
-        const dn = dist * k;
+        // je Grenze die Wahrnehmungs-Distanz ihrer Schirm-Höhe (`_baumStreck`: die 01-Grenze, die 12-Grenze)
+        const S =
+            layer.kind === "tree"
+                ? this._baumStreck(this._foundryPresetFor(cell.species))
+                : AnazhRealm.BAUM_OHNE_STRECK;
+        const K = [0, 1].map((i) => (visH > 0 ? this._lodPerceptionDistance(1, visH * S[i]) : 1));
+        if (!(K[0] > 0 && K[1] > 0)) return;
         let spiel = Infinity;
         const G = this._baumGrenzen;
         const st = Math.max(0, Math.min(2, cell.lod | 0));
-        for (const g of G.grenzen) {
+        G.grenzen.forEach((g, i) => {
             const h = g.h > 0 ? g.h : G.h;
-            spiel = Math.min(spiel, Math.abs(dn - (st >= g.stufe ? g.ab * (1 - h) : g.ab * (1 + h))) / k);
-        }
+            spiel = Math.min(spiel, Math.abs(dist * K[i] - (st >= g.stufe ? g.ab * (1 - h) : g.ab * (1 + h))) / K[i]);
+        });
         if (Number.isFinite(cell.dient) && this.state.foundryCrossfade === true) {
             const M = cfg.hysteresis;
             const b = Math.max(0, Math.min(2, cell.dient | 0));
             if (b === 0) {
                 const sS = Number.isFinite(tf.scale) && tf.scale > 0 ? tf.scale : 1;
-                const kL = visH > 0 ? this._lodPerceptionDistance(1, Math.min(visH / sS, cfg.leafVisCap) * sS) : 1;
+                const kL =
+                    visH > 0 ? this._lodPerceptionDistance(1, Math.min(visH / sS, cfg.leafVisCap) * sS * S[0]) : 1;
                 if (!(kL > 0)) return;
                 spiel = Math.min(spiel, Math.abs(dist * kL - (cfg.thresh01 - cfg.fade0 - M)) / kL);
             } else if (b === 1)
                 spiel = Math.min(
                     spiel,
-                    Math.abs(dn - (cfg.thresh01 + M)) / k,
-                    Math.abs(dn - (cfg.thresh12 - cfg.fade - M)) / k
+                    Math.abs(dist * K[0] - (cfg.thresh01 + M)) / K[0],
+                    Math.abs(dist * K[1] - (cfg.thresh12 - cfg.fade - M)) / K[1]
                 );
-            else spiel = Math.min(spiel, Math.abs(dn - (cfg.thresh12 + M)) / k);
+            else spiel = Math.min(spiel, Math.abs(dist * K[1] - (cfg.thresh12 + M)) / K[1]);
         }
         if (layer.kind !== "tree")
             for (const g of this._feldGrenzen(false).grenzen) {
@@ -1402,7 +1419,8 @@ class AnazhRealm_vegetation_streu {
     // und er steht jetzt. Eine Zelle ohne Foundry-Band (Grammatik, Nicht-Baum) wechselt nie.
     _streuBandWechsel(cell, dist, visH, tf) {
         if (!Number.isFinite(cell.dient) || this.state.foundryCrossfade !== true) return false;
-        const w = this._lodBandPartnerFor(dist, visH, cell.dient, tf.scale);
+        const S = this._baumStreck(this._foundryPresetFor(cell.species));
+        const w = this._lodBandPartnerFor(dist, visH, cell.dient, tf.scale, S);
         const wunsch = w != null && w !== cell.dient ? w : null;
         if (wunsch !== (cell.bandWunsch == null ? null : cell.bandWunsch)) return true;
         if (cell.halt !== "wartet" || wunsch === null) return false;
@@ -1841,6 +1859,42 @@ class AnazhRealm_vegetation_streu {
         return AnazhRealm._wechselGesetz(kind, stufe, groesse, this._schirm().hoehe, undefined, vorlage);
     }
 
+    // DER STRECK EINER BAUM-VORLAGE (lod.K5, w28-baum-wechsel): je Grenze (L0 ↔ L1, L1 ↔ Karte) der Abstand, den das Gesetz aus der
+    // ZEILE DER VORLAGE legt, geteilt durch den Haushalt des Buchs (die Schwelle der Maske, `_stufenSchirm`) — ≥ 1. Die Stufen eines
+    // Baums tragen ihn als SCHIRM-HÖHE ihrer Grenze (Sichthöhe × Streck: die Stempel `aH0L` der 01-Grenze, `aH0` und die Sichthöhe
+    // der Karte der 12-Grenze — `_foundryStufenHoeheAngleichen`, `_foundryBuildImpostorFlat`): Maske, Wahl der GPU und Wahl der CPU
+    // messen so, ohne eine Zeile ihrer Formel zu ändern, an d · min(Bezug / (Höhe × Streck), 1) — der Wechsel fällt bei
+    // max(Fehler × Brennweite × Höhe, Haushalt), je Vorlage. Bis hier fragte der Baum ohne Vorlage, es hielt der Haushalt allein
+    // (lod.K5#1 11.11.: Radeon 5,15 px, GTX 5,05 px an der Karte der Weide). Der Wind liest die wahre Höhe (`_baumWindStoff` teilt
+    // den Streck der Karten-Grenze heraus). Eine Art ohne Tafel (Strauch, Streu, Wagen) trägt [1, 1]; eine Baum-Vorlage ohne
+    // Zeile bricht beim Namen (`_wechselGesetz`). Je Schirm und Buch gemerkt.
+    _baumStreck(vorlage) {
+        const D = AnazhRealm.LOD_DISTANCES;
+        const z = this._schirm().hoehe;
+        let M = this._baumStreckM;
+        if (!M || M.z !== z || M.d0 !== D.thresh01 || M.d1 !== D.thresh12)
+            M = this._baumStreckM = Object.assign(new Map(), { z, d0: D.thresh01, d1: D.thresh12 });
+        let S = M.get(vorlage);
+        if (S !== undefined) return S;
+        const f = this._foundry;
+        const rec = vorlage != null && f && f.recipes ? f.recipes[vorlage] : null;
+        S = AnazhRealm.BAUM_OHNE_STRECK;
+        if (rec && AnazhRealm.LOD_SCHIRM.fehler[rec.kind] && AnazhRealm.KIND_POLICY[rec.kind].impostor === true) {
+            const ref = this.state && this.state.lodRef > 0 ? this.state.lodRef : D.lodRef;
+            S = Object.freeze(
+                [1, 2].map(
+                    (s) => this._wechselAbstand(rec.kind, s, ref, vorlage) / this._wechselAbstand(rec.kind, s, ref)
+                )
+            );
+        }
+        M.set(vorlage, S);
+        return S;
+    }
+    // der Streck eines gesetzten Eintrags (seine Vorlage im Buch; der Grammatik-Baum trägt keine Zeile)
+    _baumStreckVon(entry) {
+        return this._baumStreck(this._foundryEnabled() ? this._foundryPresetForEntry(entry) : null);
+    }
+
     // DIE GRENZEN DER LEIBER (das EINE Stufen-Gesetz für Mensch und Tier): die Grobstufe der Gelenk-Gestalt (Stufe 1) ab dem
     // Haushalt der Zeile ihres Ofens (`ab`, `hyst` — `_gelenkGestalt`), das Feld (Stufe 3: die Glieder-Kapseln im Welt-March)
     // jenseits der EINEN Nah-Grenze (ANALOG_NAH_M) — der Mensch der Menge (`_menge`), sobald sein Leib am Schirm unter
@@ -1924,7 +1978,8 @@ class AnazhRealm_vegetation_streu {
         const ref = this.state && this.state.lodRef > 0 ? this.state.lodRef : D.lodRef;
         const h = this._schirm().hoehe;
         const M = D.hysteresis;
-        if (!(h === this._stufenSchirmH && ref === this._stufenSchirmRef && M === this._stufenSchirmM)) {
+        const neu = !(h === this._stufenSchirmH && ref === this._stufenSchirmRef && M === this._stufenSchirmM);
+        if (neu) {
             [this._stufenSchirmH, this._stufenSchirmRef, this._stufenSchirmM] = [h, ref, M];
             D.thresh01 = this._wechselAbstand("tree", 1, ref);
             D.thresh12 = this._wechselAbstand("tree", 2, ref);
@@ -1932,11 +1987,14 @@ class AnazhRealm_vegetation_streu {
         // die Grenzen der Wahl folgen den Schwellen (EINE Quelle): wer sie stellt — das Gesetz des Schirms oder die Linse der Karte
         // (`werkbank licht --laub --karte`, die Stufen jedes Baums auf die Karte) —, stellt die Wahl; bis w8-linsen-blick hielt die Wahl
         // die Grenzen des letzten Schirms, und die Karte des Exemplars erschien nie (licht.K3: Karte und Gestalt 0 Pixel)
-        const B = this._baumGrenzen;
+        // DER SCHIRM WECHSELT (w28-baum-wechsel): der Streck jeder Baum-Vorlage folgt ihm (`_baumStreck`: Fehler × Brennweite) —
+        // die Schirm-Höhen der stehenden Instanzen und der Teiler des Winds ziehen im selben Takt nach, die Wahl beginnt neu
+        const B = neu ? null : this._baumGrenzen;
+        if (neu) this._schirmHoehenNeu(ref);
         if (B && B.M === M && B.grenzen[0].ab === D.thresh01 && B.grenzen[1].ab === D.thresh12) return;
         // EINE NEUE EPOCHE: die Hysterese der alten Grenzen gilt nicht mehr — die nahen Bäume wählen im nächsten Gang am Abstand
         // (`_tickArchitectureLOD`); bis dahin hielt sie die Fichte aus 8 m auf L0 (die Hysterese 3,4 m über der Schwelle 0,6)
-        this._baumEpoche = !!B;
+        this._baumEpoche = !!this._baumGrenzen;
         this._baumGrenzen = {
             erste: 0,
             M,
@@ -2042,32 +2100,130 @@ class AnazhRealm_vegetation_streu {
     // Rinde == aH0) — VOR dem Flat-Bau, also bevor eine Instanz-Fassade die Vorlage liest. Gemessen 04.10.: L0 und L1
     // derselben Variante wichen je Stufen-Ausdehnung 1–4 % (eiche|15 23,19 / 24,15 m) — im L0/L1-Band ein Lochgitter
     // in der Rinde.
-    _foundryStufenHoeheAngleichen(group, h0) {
+    // DIE SCHIRM-HÖHE (w28-baum-wechsel, `_baumStreck`): jeder Stempel trägt die Höhe × den Streck SEINER Grenze aus der Zeile
+    // der Vorlage `vorlage` — `aH0L` die 01-Grenze (L0 ↔ L1), `aH0` die 12-Grenze (L1 ↔ Karte); die Vorlage merkt ihre wahren
+    // Höhen (`userData._schirm`), der Wechsel des Schirms stempelt daraus neu (`_schirmHoehenNeu`).
+    _foundryStufenHoeheAngleichen(group, h0, vorlage) {
         const D = AnazhRealm.LOD_DISTANCES;
         const capL = D.leafVisCap;
+        const S = this._baumStreck(vorlage);
         for (const ch of group.children) {
             const at = ch.geometry && ch.geometry.attributes;
             if (!at || !at.aH0 || !at.aH0L) continue;
             const fk = ch.material && ch.material.userData ? ch.material.userData.foundryKind : null;
             const fol = fk === "foliage" || fk === "foliageTex" || fk === "grass";
-            at.aH0.array.fill(h0);
-            at.aH0L.array.fill(fol ? Math.min(h0, capL) : h0);
+            const h0L = fol ? Math.min(h0, capL) : h0;
+            ch.geometry.userData._schirm = { h0, h0L, vorlage };
+            at.aH0.array.fill(h0 * S[1]);
+            at.aH0L.array.fill(h0L * S[0]);
             at.aH0.needsUpdate = true;
             at.aH0L.needsUpdate = true;
         }
+    }
+
+    // DIE SCHIRM-HÖHEN NACH DEM WECHSEL DES SCHIRMS (aus `_stufenSchirm`, Kosten an Änderung): der Teiler des Winds
+    // (`uLodSchirm`: Brennweite × Bezug ÷ Haushalt der Karten-Grenze — `_baumWindStoff` rechnet mit der Zeile der Art den Streck
+    // heraus), jede Vorlage und jede stehende Instanz-Fassade einer Baum-Stufe (ihr Stempel × neuer ÷ alter Streck; die Fassade
+    // kennt ihre Vorlage, `_lodInstanceFacade`), jede Karte der Atlas-Gruppe (ihre Sichthöhe, die Schicht nennt die Vorlage).
+    _schirmHoehenNeu(ref) {
+        const st = this.state;
+        const D = AnazhRealm.LOD_DISTANCES;
+        const lu = st && st.lodUniforms;
+        if (lu && lu.uLodSchirm) lu.uLodSchirm.value = this._schirmJeZeileJetzt();
+        const gruppen = st && st.archInstanceGroups;
+        if (!gruppen) return;
+        const karten = this._karteVorlagen();
+        for (const g of gruppen.values()) {
+            const geom = g && g.geom;
+            const ud = geom && geom.userData;
+            if (!ud || !ud._lodFacade) continue;
+            const at = geom.attributes;
+            let neu = false;
+            const Q = ud._schirmQuelle && ud._schirmQuelle.userData._schirm;
+            if (Q && at.aH0 && at.aH0L) {
+                const S = this._baumStreck(Q.vorlage);
+                const [r2, r1] = [(Q.h0 * S[1]) / ud._h0Tpl, (Q.h0L * S[0]) / ud._h0LTpl];
+                const q = ud._schirmQuelle.attributes;
+                q.aH0.array.fill(Q.h0 * S[1]);
+                q.aH0L.array.fill(Q.h0L * S[0]);
+                q.aH0.needsUpdate = q.aH0L.needsUpdate = true;
+                if (r1 !== 1 || r2 !== 1) {
+                    for (let i = 0; i < at.aH0.array.length; i++) at.aH0.array[i] *= r2;
+                    for (let i = 0; i < at.aH0L.array.length; i++) at.aH0L.array[i] *= r1;
+                    [ud._h0Tpl, ud._h0LTpl] = [Q.h0 * S[1], Q.h0L * S[0]];
+                    at.aH0.needsUpdate = at.aH0L.needsUpdate = neu = true;
+                }
+            }
+            if (at.aKarte && karten) {
+                const a = at.aKarte.array;
+                let k = false;
+                for (let i = 0; i < a.length; i += 4) {
+                    const r = a[i + 3] !== 0 ? karten.get(a[i]) : undefined;
+                    if (r === undefined) continue;
+                    a[i + 3] *= r;
+                    k = true;
+                }
+                if (k) at.aKarte.needsUpdate = neu = true;
+            }
+            if (neu) {
+                g.slotStand = (g.slotStand | 0) + 1;
+                if (g.mesh && !g.mesh.__arena) this._archMeshBundleTouch(g.mesh);
+            }
+        }
+    }
+    // der Teiler des Winds am Schirm dieses Takts (`uLodSchirm`; der Stoff sät ihn, `_ensureLodUniforms`)
+    _schirmJeZeileJetzt() {
+        const D = AnazhRealm.LOD_DISTANCES;
+        const ref = this.state && this.state.lodRef > 0 ? this.state.lodRef : D.lodRef;
+        return AnazhRealm._schirmJeZeile(this._schirm().hoehe, ref, AnazhRealm._wechselHaushalt("tree", 2) * ref);
+    }
+    // DIE ZEILE DER KARTEN-STUFE einer Vorlage (der Stoff trägt sie als Art-Größe neben denen des Winds, `_baumWindDaten`):
+    // eine Art ohne Tafel 0 — ihr Stempel ist die wahre Höhe
+    _baumZeile(vorlage) {
+        const f = this._foundry;
+        const rec = vorlage != null && f && f.recipes ? f.recipes[vorlage] : null;
+        const T = rec ? AnazhRealm.LOD_SCHIRM.fehler[rec.kind] : null;
+        if (!T || AnazhRealm.KIND_POLICY[rec.kind].impostor !== true) return 0;
+        if (!T[vorlage]) return AnazhRealm._kernPflichtBruch("LOD_SCHIRM.fehler." + rec.kind + "." + vorlage);
+        return T[vorlage][2] > 0 ? T[vorlage][2] : 0;
+    }
+    // die Karten des Atlas nach dem Wechsel des Schirms: je Schicht, deren Streck wechselte, neuer ÷ alter Streck; das Blatt der
+    // Karte (`_foundryBuildImpostorFlat`: ihre Sichthöhe × Streck) zieht mit. null: noch kein Atlas.
+    _karteVorlagen() {
+        const at = this._kartenAtlas;
+        if (!at || !at.zellen) return null;
+        const M = new Map();
+        for (const z of at.zellen.values()) {
+            if (!(z.sichtWahr > 0)) continue;
+            const streck = this._baumStreck(z.preset)[1];
+            if (streck === z.streck) continue;
+            M.set(z.idx, streck / z.streck);
+            z.streck = streck;
+            if (z._flat) for (const lf of z._flat.leaves) lf.sicht = z.sichtWahr * streck;
+        }
+        return M;
     }
 
     // DIE STUFE DER KARTEN-ARTEN (Baum, Strauch, Streu, Wagen) — die EINE Wahl (`_stufeNachGrenzen`) über den Schwellen der Maske:
     // MIT Sichthöhe auf der Wahrnehmungs-Distanz (die Maske misst dieselbe, V18.387), ohne roh. Ohne Zustand (Spawn) die Schwelle
     // selbst; liegt die Distanz jenseits ZWEIER Schwellen, springt die Wahl durch (Teleport, rollender Streu-Tick — ein Schritt je
     // Aufruf ließ region-private Fern-Streu für immer auf L0 stehen, 04.10.: 1121 Blumen/Geröll in 85–384 m).
-    _chooseLODForDistance(distance, currentLOD, visHeight) {
+    // `S` = der Streck der Vorlage (`_baumStreck`; ohne ihn [1, 1]): jede Grenze misst an der Wahrnehmungs-Distanz IHRER
+    // Schirm-Höhe (Sichthöhe × Streck) — dieselbe, die ihr Stempel der Maske reicht. Die EINE Wahl liest dafür die Grenzen in
+    // Metern dieses Baums (Schwelle ÷ Wahrnehmungs-Faktor der Grenze), auf dem EINEN gemerkten Grenzen-Paar der Wahl.
+    _chooseLODForDistance(distance, currentLOD, visHeight, S) {
         if (!AnazhRealm.LOD_DISTANCES) return 0;
         this._stufenSchirm();
-        const d =
-            Number.isFinite(visHeight) && visHeight > 0 ? this._lodPerceptionDistance(distance, visHeight) : distance;
         const cur = Number.isFinite(currentLOD) ? Math.max(0, Math.min(2, currentLOD | 0)) : undefined;
-        return AnazhRealm._stufeNachGrenzen(d, cur, this._baumGrenzen, 1);
+        const B = this._baumGrenzen;
+        if (!(Number.isFinite(visHeight) && visHeight > 0)) return AnazhRealm._stufeNachGrenzen(distance, cur, B, 1);
+        const W = this._baumWahlG || (this._baumWahlG = { erste: 0, grenzen: [{ stufe: 1 }, { stufe: 2 }] });
+        for (let i = 0; i < 2; i++) {
+            const k = this._lodPerceptionDistance(1, visHeight * (S ? S[i] : 1));
+            W.grenzen[i].ab = B.grenzen[i].ab / k;
+            W.grenzen[i].h = B.grenzen[i].h;
+        }
+        return AnazhRealm._stufeNachGrenzen(distance, cur, W, 1);
     }
 
     // Die EINE Varianten-Wahl (ohne Geometrie-Bau): regionSeed → eine von VARIANTS_PER_SPECIES
@@ -2857,8 +3013,9 @@ AnazhRealm.LOD_DISTANCES = (() => {
 // Metern bei Welt-Skala 1: trägt die Stufe das Soll am Haushalt, ihr Versatz dort (der Wechsel bleibt am Haushalt); sonst der
 // GEMESSENE Abstand, an dem ihr Versatz × 1,1 einen Bildpunkt trägt (fern skaliert er nicht mehr mit 1 / d). Die Linse misst jede
 // Zeile an der Grenze des Gesetzes nach (gate:haus-fern P: Haus, Ausstattung, Tor), ein Täter nennt seine Zeile. Bis hier stand je
-// Art EINE Zahl (die schlechteste Vorlage, 29.10.), die der Haushalt deckelte. DER BAUM trägt keine Zeile: seine Masken wechseln je Art (uLodD0/uLodD1 der Karten-Arten), nie je Vorlage — sein Wechsel
-// steht am Haushalt; der Wagen wechselt an der Maske des Baums (die Limousine trägt dort 0,02 px). `px` = die Bildpunkte, die ein
+// Art EINE Zahl (die schlechteste Vorlage, 29.10.), die der Haushalt deckelte. DER BAUM trägt je Vorlage ihre Zeile je Meter Sichthöhe (w28-baum-wechsel): seine Masken
+// lesen sie als Schirm-Höhe ihrer Grenze (`_baumStreck`); Strauch, Streu und Wagen tragen keine Tafel, ihr Wechsel steht am
+// Haushalt (die Limousine trägt dort 0,02 px). `px` = die Bildpunkte, die ein
 // Wechsel tragen darf (das Soll, Nanite: < 1 Pixel). `zeilen` = der Schirm des Solls (1920 × 1080). `hyst` = die Hysterese der gebauten Arten ohne eigene im Buch
 // (`_stufeNachGrenzen`: hinein ab (1 + h)·d, zurück unter (1 − h)·d). `leib` = der Haushalt des Felds der Leiber (`_feldGrenzen`):
 // das Feld trägt jenseits der Nah-Grenze, zurück erst `feldHystM` diesseits; der Mensch der Menge, sobald sein Leib
@@ -2876,7 +3033,20 @@ AnazhRealm.LOD_SCHIRM = Object.freeze({
                 Object.fromEntries(Object.entries(t).map(([v, z]) => [v, Object.freeze({ 1: z[0], 2: z[1] })]))
             );
         return Object.freeze({
-            tree: je({}),
+            // die Zeilen der Bäume (w28-baum-wechsel; je Meter Sichthöhe — die Messung der Station am Bau, die Karte als ihre nächste
+            // gebackene Ansicht in den Texeln ihrer Zelle: am Haushalt 26 m je 12 m trägt jede Karte 2,5–6,0 px (ein Baum ≥ 12 m steht
+            // dort 325 px hoch, die Zelle trägt 256 Texel), die Weide der Station 5,99 px (Radeon 5,15) — die Karte erst ab ihrem Pixel)
+            tree: je({
+                eiche: [0.00007, 0.0118],
+                fichte: [0.007, 0.015],
+                birke: [0.00007, 0.0147],
+                weide: [0.00034, 0.0371],
+                mammut: [0.0057, 0.0129],
+                tanne: [0.0078, 0.0157],
+                buche: [0.00007, 0.0093],
+                karst: [0.00034, 0.0283],
+                totholz: [0.0079, 0.0164],
+            }),
             // die Zeilen der Tore (w25-lod-pop; L2 Geisttor 8,28 · Lyra 8,30 · Ruine 3,51 · Vitruv 2,76 px am Haushalt 12 m: das Anteil-
             // Gesetz der Quote pipeline.K3 legt ihr Filigran unter den Pixel — die L1 hält bis zum Pixel-Term)
             gate: je({
@@ -2939,6 +3109,13 @@ AnazhRealm.LOD_SCHIRM = Object.freeze({
         });
     })(),
 });
+// OHNE STRECK: eine Art ohne Tafel, ein Baum ohne Vorlage im Buch (der Grammatik-Baum) — beide Grenzen am Haushalt (`_baumStreck`)
+AnazhRealm.BAUM_OHNE_STRECK = Object.freeze([1, 1]);
+// DER SCHIRM JE ZEILE (der Teiler des Winds, `_schirmHoehenNeu`): der Streck der Karten-Grenze einer Vorlage ist
+// max(1, Zeile × dieser Wert) — der Pixel-Term des Gesetzes (Fehler × Brennweite ÷ px) × Bezug ÷ Haushalt `d1` der Karten-Grenze
+AnazhRealm._schirmJeZeile = function (zeilen, ref, d1) {
+    return (AnazhRealm._brennweite(zeilen) * ref) / (AnazhRealm.LOD_SCHIRM.px * d1);
+};
 // DAS GESETZ DES WECHSELS als reine Funktion (der Wirt ruft es über `_wechselAbstand` mit der Höhe des EINEN Schirms) —
 // PIXELGRÖSSE STATT METER (w25-lod-pop): eine Stufe zeigt sich nie näher als der Abstand, an dem der Fehler IHRER VORLAGE
 // LOD_SCHIRM.px Bildpunkte trägt (Fehler × Größe × Brennweite / px, die Brennweite aus der Höhe des Zeichenpuffers `zeilen` im

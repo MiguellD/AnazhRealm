@@ -27,6 +27,9 @@ class AnazhRealm_stoff_karte {
             uLodD1: _T.uniform(_D.thresh12),
             uLodFade: _T.uniform(_D.fade),
             uLodFade0: _T.uniform(_D.fade0),
+            // DER SCHIRM JE ZEILE (w28-baum-wechsel, `_schirmJeZeileJetzt`): der Stempel `aH0` eines Baums trägt die Schirm-Höhe
+            // seiner Karten-Grenze (Höhe × Streck der Vorlage) — der Wind teilt den Streck max(1, Zeile × uLodSchirm) heraus
+            uLodSchirm: _T.uniform(this._schirmJeZeileJetzt()),
             // DIE WELT-UHR IN TAKTEN (`state.weltTakt`, je Bild gespiegelt): der Eintritt einer Karte blendet an ihr ein (`aEin`)
             uLodTakt: _T.uniform(0),
             // DAS AUGE: die Welt-Position der Haupt-Kamera, je Frame gespiegelt. Jede LOD-Maske misst von

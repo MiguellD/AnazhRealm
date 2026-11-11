@@ -180,7 +180,7 @@ class AnazhRealm_stoff_instanz {
             for (const d of this._windDeltaJeArt.values()) s += d;
             this._karteWindDelta().value = s / this._windDeltaJeArt.size;
         }
-        return { ht: top, delta, an };
+        return { ht: top, delta, an, zeile: this._baumZeile(preset) };
     }
 
     // Die TSL-Algebra des Wind-Terms (phyto-core `windAusschlag`) — Rinde, Laub und Karte der Welt rechnen über ihr.
@@ -240,7 +240,14 @@ class AnazhRealm_stoff_instanz {
         this._windUniformsEnsure();
         const laub = kind === "foliage" || kind === "foliageTex";
         // ohne Wind-Daten (Stumpf, liegender Stamm, Fels) steht der Stoff still (an 0) und teilt doch das Programm der Bäume
-        mat.userData.windArt = new THREE.Vector3(baum ? baum.ht : 1, baum ? baum.delta : 0, baum ? baum.an : 0);
+        // die vierte Art-Größe: die Zeile der Karten-Stufe (`_baumZeile`, LOD_SCHIRM.fehler) — der Stempel aH0 trägt die Schirm-
+        // Höhe der Karten-Grenze (`_baumStreck`), der Wind teilt ihren Streck heraus und rechnet an der wahren Höhe
+        mat.userData.windArt = new THREE.Vector4(
+            baum ? baum.ht : 1,
+            baum ? baum.delta : 0,
+            baum ? baum.an : 0,
+            baum && baum.zeile > 0 ? baum.zeile : 0
+        );
         mat.userData.baumWind = baum ? { ht: baum.ht, delta: baum.delta, an: baum.an } : null;
         if (!this._baumWindKnoten) this._baumWindKnoten = {};
         // die Gestalt mit Jahres-Ecken (`_jahrEcken`): ihr Laub zieht sich zuerst auf seine Mitte (`_jahrLage`), dann weht es
@@ -256,13 +263,16 @@ class AnazhRealm_stoff_instanz {
         const WG = globalThis.__phytoCore.WIND_GESETZ;
         const B = AnazhRealm.WIND_BOE;
         // die Art-Größen: der Stoff-Wert — zeichnet die Arena (`_arenaNimmt`, viele Arten in EINEM Zug), trägt ihn die Instanz
-        const uB = AnazhRealm._windArtKnoten(this._stoffWert(T, "userData.windArt", "vec3"));
+        const uB = AnazhRealm._windArtKnoten(this._stoffWert(T, "userData.windArt", "vec4"));
         const A = AnazhRealm._windTsl(T);
         const pG = T.positionGeometry;
         const naht = this._weltNaht(T);
         const pW = naht.lage;
         const ht = uB.x.max(1e-3);
-        const H = AnazhRealm._senkenKnoten().attribut("aH0", "float").max(0.5);
+        const H = AnazhRealm._senkenKnoten()
+            .attribut("aH0", "float")
+            .div(uB.w.mul(this._ensureLodUniforms().uLodSchirm).max(1.0))
+            .max(0.5);
         const ort = pW.x.mul(wu.uWindDir.x).add(pW.z.mul(wu.uWindDir.y));
         const g = T.sin(wu.uWindTime.mul(B.omega).sub(ort.mul(B.k)))
             .mul(B.amp)
@@ -555,7 +565,7 @@ class AnazhRealm_stoff_instanz {
         // Arena belegt genau die Vertex-Puffer ihres Zeichners (r184 bindet je gelesenes Attribut einen; WebGPU trägt höchstens
         // `maxVertexBuffers` 8). Befund 16.10. (Radeon, Genesis Third, GPU-Wache): `aWindArt` als neunter Vertex-Puffer, „Vertex
         // buffer count (9) exceeds the maximum" — die Pipeline des Laubs abgesagt, jede nahe Krone fehlte im Bild.
-        const windArt = new SenkenPuffer("windArt", "vec4", 4, "arenaWindArt").toReadOnly().element(index).xyz;
+        const windArt = new SenkenPuffer("windArt", "vec4", 4, "arenaWindArt").toReadOnly().element(index);
         // DER EINE LESER EINES INSTANZ-ATTRIBUTS (w25-gpu-wahl): in der Wahl am Index der Liste aus dem Speicher-Puffer der Arena
         // (`_instanzSeite` legt jedes unter seinem Namen in ihre Quelle), wie Matrix und Gang — als Vertex-Attribut läse r184 es am
         // Index des ZUGS (erste Instanz = der Abschnitt der Liste dieser Kamera): jede gewählte Instanz trüge Farbe, Höhe der
@@ -857,7 +867,7 @@ class AnazhRealm_stoff_instanz {
             const N = Object.getPrototypeOf(THREE.InstanceNode);
             AnazhRealm.__windArtK = class WindArt extends N {
                 constructor(q) {
-                    super("vec3");
+                    super("vec4");
                     this.stoffWert = q;
                 }
                 setup(builder) {
@@ -1689,6 +1699,7 @@ class AnazhRealm_stoff_instanz {
                         wa.array[i] = art ? art.x : 1;
                         wa.array[i + 1] = art ? art.y : 0;
                         wa.array[i + 2] = art ? art.z : 0;
+                        wa.array[i + 3] = art ? art.w : 0;
                     }
                     schreib(this._rend, wa, z.erst * 4, z.cap * 4);
                 }
@@ -2599,7 +2610,7 @@ class AnazhRealm_stoff_instanz {
         const visH = this._lodTreeVisHeight(entry);
         // ein Baum ohne bekannte Höhe hat in der Ankunft kein Urteil der Nähe: er steht als Karte (sie bestellt die Höhe)
         if (visH === null && this._ankunftsFerne() > 1) return 2;
-        return this._chooseLODForDistance(d, undefined, visH);
+        return this._chooseLODForDistance(d, undefined, visH, this._baumStreckVon(entry));
     }
 }
 _stammZonen(AnazhRealm, [AnazhRealm_stoff_instanz]);

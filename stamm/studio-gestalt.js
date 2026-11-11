@@ -1190,10 +1190,13 @@ class AnazhRealm_studio_gestalt {
             }
             // EINE Sichthöhe je Baum über alle Stufen (vor dem Flat: die Instanz-Fassaden lesen die Vorlage). Ohne
             // bekannte Höhe der Höhen-Stufe wartet die Stufe (nie mit eigenem Stempel).
-            if (this._foundryPresetIsTree(preset) && lod !== this._foundryHoehenStufe(preset)) {
-                const hz = this._foundryBaumHoehe(preset, entry);
+            // Jede Stufe — auch die Höhen-Stufe selbst — stempelt die SCHIRM-HÖHE ihrer Grenzen aus der Zeile der Vorlage
+            // (w28-baum-wechsel, `_baumStreck`): die Höhe des Buchs bleibt die wahre.
+            if (this._foundryPresetIsTree(preset)) {
+                const hz =
+                    lod === this._foundryHoehenStufe(preset) ? group._hoehe : this._foundryBaumHoehe(preset, entry);
                 if (hz == null) return null;
-                this._foundryStufenHoeheAngleichen(group, hz);
+                this._foundryStufenHoeheAngleichen(group, hz, preset);
             }
             const leaves = [];
             // Template→Welt-Übersetzung: das Studio platziert mit `SCALE[sp] · tr.s · 0.82` (eiche 4.16 · fichte

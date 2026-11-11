@@ -2841,7 +2841,11 @@ class AnazhRealm_studio_bruecke {
         if (hz == null) return null;
         // PARITÄT: der Rahmen ist TEMPLATE-lokal → dieselbe Template→Welt-Übersetzung wie die 3D-Stufen
         // (localMatrix), sonst wäre der ferne Baum ⅓ so groß wie sein nahes Pendant (LOD-Pop beim Übergang).
-        const leaf = this._impostorLeaf(z, this._foundryWorldScaleMatrix(preset), hz);
+        // DIE SCHIRM-HÖHE DER KARTE (w28-baum-wechsel): ihre Sichthöhe × der Streck der Karten-Grenze ihrer Vorlage
+        // (`_baumStreck`) — die Karte blendet erst, wo ihr Fehler einen Bildpunkt trägt; die Zelle merkt die wahre Höhe
+        // und den Streck (der Wechsel des Schirms stempelt neu, `_karteVorlagen`).
+        [z.sichtWahr, z.streck] = [hz, this._baumStreck(preset)[1]];
+        const leaf = this._impostorLeaf(z, this._foundryWorldScaleMatrix(preset), hz * z.streck);
         if (!leaf) return false;
         // der Wurf der Karte (B2c: sie wirft sich selbst) reist als ihr Zwilling (`_impostorWurfLeaf`, w14-lod-sprung)
         const wurf = this._impostorWurfLeaf(leaf, preset);

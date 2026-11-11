@@ -371,19 +371,24 @@ class AnazhRealm_siedlung_bauten {
             return spiel;
         }
         const cfg = AnazhRealm.LOD_DISTANCES;
-        const k = visH > 0 ? this._lodPerceptionDistance(1, visH) : 1;
-        if (!(k > 0)) return -1;
-        const dn = dist * k;
-        for (const g of this._baumGrenzen.grenzen) {
+        // je Grenze die Wahrnehmungs-Distanz ihrer Schirm-Höhe (`_baumStreck`: die Zeile der Vorlage, w28-baum-wechsel)
+        const S = this._baumStreckVon(entry);
+        const K = [0, 1].map((i) => (visH > 0 ? this._lodPerceptionDistance(1, visH * S[i]) : 1));
+        if (!(K[0] > 0 && K[1] > 0)) return -1;
+        this._baumGrenzen.grenzen.forEach((g, i) => {
             const h = g.h > 0 ? g.h : this._baumGrenzen.h;
-            spiel = Math.min(spiel, Math.abs(dn - g.ab * (1 - h)) / k, Math.abs(dn - g.ab * (1 + h)) / k);
-        }
+            spiel = Math.min(
+                spiel,
+                Math.abs(dist * K[i] - g.ab * (1 - h)) / K[i],
+                Math.abs(dist * K[i] - g.ab * (1 + h)) / K[i]
+            );
+        });
         const [M, D0, D1] = [cfg.hysteresis, cfg.thresh01, cfg.thresh12];
-        const dnA = distAuge * k;
-        for (const t of [D0 + M, D1 - cfg.fade - M, D1 + M, D1 - cfg.fade])
-            spiel = Math.min(spiel, Math.abs(dnA - t) / k);
+        spiel = Math.min(spiel, Math.abs(distAuge * K[0] - (D0 + M)) / K[0]);
+        for (const t of [D1 - cfg.fade - M, D1 + M, D1 - cfg.fade])
+            spiel = Math.min(spiel, Math.abs(distAuge * K[1] - t) / K[1]);
         const sS = Number.isFinite(entry.scale) && entry.scale > 0 ? entry.scale : 1;
-        const kL = visH > 0 ? this._lodPerceptionDistance(1, Math.min(visH / sS, cfg.leafVisCap) * sS) : 1;
+        const kL = visH > 0 ? this._lodPerceptionDistance(1, Math.min(visH / sS, cfg.leafVisCap) * sS * S[0]) : 1;
         if (kL > 0) spiel = Math.min(spiel, Math.abs(distAuge * kL - (D0 - cfg.fade0 - M)) / kL);
         return spiel;
     }
@@ -448,6 +453,8 @@ class AnazhRealm_siedlung_bauten {
         if (ferne > 1) entry._lodAmAbstand = false;
         const zustand = entry._lodAmAbstand === true ? entry._lodLevel : undefined;
         const grenzen = treeLike ? null : this._archStufenGrenzen(entry);
+        // der Streck der Vorlage (`_baumStreck`, w28-baum-wechsel): die Wahl misst je Grenze an ihrer Schirm-Höhe
+        const streck = grenzen ? null : this._baumStreckVon(entry);
         let newLOD = grenzen
             ? AnazhRealm._stufeNachGrenzen(
                   dist * ferne,
@@ -455,7 +462,7 @@ class AnazhRealm_siedlung_bauten {
                   grenzen,
                   Number.isFinite(entry.scale) && entry.scale > 0 ? entry.scale : 1
               )
-            : this._chooseLODForDistance(dist, entry._bruecke ? undefined : zustand, visH);
+            : this._chooseLODForDistance(dist, entry._bruecke ? undefined : zustand, visH, streck);
         // DIE STUFE DECKT DAS AUGE (w22-pop-heil): die Bahn wählt die L0 eines Baums voraus, ihr Paar (L0, L1) deckt die Maske aber
         // nur, solange die Karte am Auge nicht blendet (diesseits D1 − FADE) — jenseits hätte die Karte keinen Platz im Paar und
         // spränge, wenn die L0 kommt. Dort steht die L1 voraus (ihr Paar ist die Karte, `_lodBandPartnerFor`), die L0 folgt am Rand.
@@ -464,7 +471,7 @@ class AnazhRealm_siedlung_bauten {
             !grenzen &&
             st.foundryCrossfade === true &&
             entry.instFoundry === true &&
-            this._lodPerceptionDistance(distAuge, visH) >
+            this._lodPerceptionDistance(distAuge, visH * streck[1]) >
                 AnazhRealm.LOD_DISTANCES.thresh12 - AnazhRealm.LOD_DISTANCES.fade &&
             this._foundryPresetIsTree(this._foundryPresetForEntry(entry))
         )
@@ -673,13 +680,17 @@ class AnazhRealm_siedlung_bauten {
     // undefined = die Höhe ist (noch) nicht bekannt: kein Urteil, das Band bleibt.
     _foundryLodBandPartner(entry, dist) {
         const visH = this._lodTreeVisHeight(entry);
-        return visH === null ? undefined : this._lodBandPartnerFor(dist, visH, entry._lodLevel | 0, entry.scale);
+        return visH === null
+            ? undefined
+            : this._lodBandPartnerFor(dist, visH, entry._lodLevel | 0, entry.scale, this._baumStreckVon(entry));
     }
     // Entry-freier Partner-Kern: Architektur-Einträge UND der Scatter fragen DIESELBE Regel, welche
     // zweite Stufe im Dither-Crossfade-Band wohnt (Mitgliedschaft ±M um die Fade-Fenster).
     // s = die Instanz-Skala: die Blatt-Kappe gilt der VORLAGE (Stempel aH0L = min(Vorlage, Kappe) × s, Studio
     // phytogenesis Z.2582 bhL = min(H0, Kappe) · sc — CPU == GPU), nie der skalierten Höhe.
-    _lodBandPartnerFor(dist, visH, cur, s) {
+    // `S` = der Streck der Vorlage (`_baumStreck`, w28-baum-wechsel; ohne ihn [1, 1]): die Ränder der 01-Grenze messen an der
+    // Schirm-Höhe × S[0], die der Karten-Grenze an × S[1] — wie die Stempel der Maske (aH0L, aH0, die Sichthöhe der Karte).
+    _lodBandPartnerFor(dist, visH, cur, s, S = AnazhRealm.BAUM_OHNE_STRECK) {
         const cfg = AnazhRealm.LOD_DISTANCES;
         if (!cfg) return null;
         this._stufenSchirm();
@@ -688,7 +699,8 @@ class AnazhRealm_siedlung_bauten {
             D1 = cfg.thresh12,
             FADE = cfg.fade,
             FADE0 = cfg.fade0;
-        const dn = visH > 0 ? this._lodPerceptionDistance(dist, visH) : dist;
+        const dn0 = visH > 0 ? this._lodPerceptionDistance(dist, visH * S[0]) : dist;
+        const dn = visH > 0 ? this._lodPerceptionDistance(dist, visH * S[1]) : dist;
         cur = Math.max(0, Math.min(2, cur | 0));
         if (cur === 0) {
             // DAS PAAR TRÄGT NUR EIN BAND (w22-pop-heil): steht die L0 an einem Auge, an dem die Karte blendet (jenseits D1 − FADE —
@@ -697,11 +709,11 @@ class AnazhRealm_siedlung_bauten {
             if (dn > D1 - FADE) return null;
             const capL = cfg.leafVisCap;
             const sS = Number.isFinite(s) && s > 0 ? s : 1;
-            const dnL = visH > 0 ? this._lodPerceptionDistance(dist, Math.min(visH / sS, capL) * sS) : dist;
+            const dnL = visH > 0 ? this._lodPerceptionDistance(dist, Math.min(visH / sS, capL) * sS * S[0]) : dist;
             return dnL > D0 - FADE0 - M ? 1 : null;
         }
         if (cur === 1) {
-            if (dn < D0 + M) return 0;
+            if (dn0 < D0 + M) return 0;
             if (dn > D1 - FADE - M) return 2;
             return null;
         }
