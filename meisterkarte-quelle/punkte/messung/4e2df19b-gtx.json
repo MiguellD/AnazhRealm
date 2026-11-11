@@ -1,7 +1,7 @@
 {
  "sha": "4e2df19b5c5103b093818b62b5a84ababf85b493",
  "geraet": "gtx",
- "zeit": "2026-11-11T02:56:58.499Z",
+ "zeit": "2026-11-11T03:07:59.133Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "affekt.K4#2": {
@@ -882,23 +882,88 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "licht.K3#2": {
+   "gruen": false,
+   "zahl": "fichte@0.5 Karte und Gestalt teilen kein Pixel · fichte@0.27 Karte und Gestalt teilen kein Pixel · fichte@0.05 Karte und Gestalt teilen kein Pixel · tanne@0.5 Karte und Gestalt teilen kein Pixel · tanne@0.27 Karte und Gestalt teilen kein Pixel · tanne@0.05 Karte und Gestalt teilen kein Pixel · ring@0.5 0.989 · ring@0.27 1.01 · ring@0.05 0.999 · feld@0.5 0.947 · feld@0.27 0.925 · feld@0.05 0.961 · feld0@0.5 0.923 · feld0@0.27 0.94 · feld0@0.05 0.966 · feld90@0.5 0.937 · feld90@0.27 0.938 · feld90@0.05 0.974 · feld180@0.5 0.937 · feld180@0.27 0.935 · feld180@0.05 0.975 · panorama@0.5 0.944 · panorama@0.27 0.969 · panorama@0.05 0.96 · spiegel@0.5 1.056 · spiegel@0.27 0.949 · spiegel@0.05 1.003 · spiegel180@0.5 0.942 · spiegel180@0.27 0.972 · spiegel180@0.05 0.995 · wasser@0.5 0.919 · wasser@0.27 0.95 · wasser@0.05 0.941 · Soll 0,9–1,1 · [linse-gpu] nvidia/pascal",
+   "exit": 1,
+   "minuten": 1.58,
+   "grund": "ROT: fichte@0.5 Karte und Gestalt teilen kein Pixel · fichte@0.27 Karte und Gestalt teilen kein Pixel · fichte@0.05 Karte und Gestalt teilen kein Pixel · tanne@0.5 Karte und Gestalt teilen kein Pixel · tanne@0.27 Karte und Gestalt teilen kein Pixel · tanne@0.05 Karte und Gestalt teilen kein Pixel · ring@0.5 0.989 · ring@0.27 1.01 · ring@0.05 0.999 · feld@0.5 0.947 · feld@0.27 0.925 · feld@0.05 0.961 · feld0@0.5 0.923 · feld0@0.27 0.94 · feld0@0.05 0.966 · feld90@0.5 0.937 · feld90@0.27 0.938 · feld90@0.05 0.974 · feld180@0.5 0.937 · feld180@0.27 0.935 · feld180@0.05 0.975 · panorama@0.5 0.944 · panorama@0.27 0.969 · panorama@0.05 0.96 · spiegel@0.5 1.056 · spiegel@0.27 0.949 · spiegel@0.05 1.003 · spiegel180@0.5 0.942 · spiegel180@0.27 0.972 · spiegel180@0.05 0.995 · wasser@0.5 0.919 · wasser@0.27 0.95 · wasser@0.05 0.941 · Soll 0,9–1,1 · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "s": 94.8,
+   "fremd": {
+    "s": 98.4,
+    "takte": 44,
+    "fremdS": 106.02,
+    "kerne": 1.077,
+    "fensterKerne": 2.037,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      34.97
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      23.53
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      23.38
+     ]
+    ],
+    "dienerS": 41.94,
+    "diener": [
+     [
+      "dwm.exe",
+      16.73
+     ],
+     [
+      "System",
+      12.27
+     ]
+    ],
+    "geraetS": 32.83,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      17.63
+     ],
+     [
+      "svchost.exe",
+      13.61
+     ],
+     [
+      "SearchIndexer.exe",
+      0.84
+     ]
+    ],
+    "eigenS": 206.22,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon"
+   },
+   "zeit": "2026-11-11T03:07:59.133Z",
+   "abdruck": "fd08d15b7871",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-11T02:56:18.562Z",
+  "start": "2026-11-11T03:06:47.053Z",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 6.3,
+  "bootS": 7,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": "wiese",
-    "vor": "licht.K2#2",
-    "s": 32.5,
-    "takte": 573,
-    "chunks": 81,
+    "ort": "dorf",
+    "vor": "licht.K3#2",
+    "s": 64,
+    "takte": 1341,
+    "chunks": 96,
     "nach": null
    }
   ],
@@ -915,12 +980,12 @@
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 95,
+   "zapfen": 151,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 100.1,
-  "minuten": 1.72
+  "fahrtS": 168.3,
+  "minuten": 2.86
  },
  "ungemessen": {
   "ankunft.K1#1": {
