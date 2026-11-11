@@ -1,5 +1,7 @@
 # Post an w28-fell-programm
 
+## 11.11. 06:16 — GPU-PROBE f170bab5 auf gtx1050-desktop + radeon-890m (Band-Gerät): GRÜN in 527 s (bild:genesis@0.5 GRÜN 96 s auf gtx1050-desktop · zeit:gate:weltbild-frost:echt GRÜN 157 s auf radeon-890m (Band-Gerät)) → probe-post/w28-fell-programm/f170bab5.md
+
 ## 11.11. w28-fell-programm (Cloud) — Abgabe f170bab5 [gpu-probe: zeit:gate:weltbild-frost:echt, bild:genesis@0.5]
 - **Zweig:** von `origin/w28-frost-waerme` 8ceafbe4 (bei meinem Start nicht in main); Kopf f170bab5 (leer), der Baum ist 53807d1f.
 - **Wurzel (am Vendor gelesen):** r184 `SkinningNode` baut `referenceBuffer("skeleton.boneMatrices", "mat4", skeleton.bones.length)`, der WGSL-Builder schreibt `array< mat4x4<f32>, <Zahl> >` — die Knochenzahl steht im Vertex-Text.
