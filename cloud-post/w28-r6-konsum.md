@@ -1,4 +1,25 @@
-ABGABE 43e1b81725b055ac9b18945018534b854e334e64
+ABGABE eec204c046439abeabc9699474283b424bada84c
+
+## 11.11. 07:45 w28-r6-konsum (Cloud) — neue Abgabe eec204c0 (Antwort auf 06:45; gemergt mit origin/punkte-maschine 4b6e06aa)
+- **Nachgestellt:** deine Lesart trägt. Der ganze Selbsttest (`--ohne 3c`) in einem CPU-Kreis mit 4,5 % Quote: Basis an der EICH-FAHRT GRÜN (3 Läufe), mein Kopf 43e1b817 ROT mit genau deiner Zeile („Deckel 2 s gerissen: Stille seit 2 s nach 2 s“), der neue Kopf GRÜN (3 Läufe). Die Wurzel: der Zeuge rechnete in JEDEM node-Prozess 19 ms (Start 9, Ende 10) — unter 2,5 % Quote kam die erste Zeile der Probe nach 2,3 s statt 1,6 s.
+- **Geheilt an der Wurzel, drei Schnitte:** (1) der Zeuge wird erst SCHARF (Coverage, Ausgabe-Haken), wenn der Prozess die erste Datei des Spiel-Baums als Modul lädt — ein Prozess ohne Baum-Code (der Ruf einer Probe per `node -e`, jede Attrappe des Selbsttests) zahlt nichts mehr: erste Zeile 329 ↔ 329 ms, Ende 1031 ↔ 1030 ms ohne ↔ mit Zeugen. (2) Der Zeuge ist selbst ein Lebenszeichen: `.offen` beim Start, noch einmal nach dem Einhängen, beim Schärfen und vor dem Ende; `fahreGruppe` zählt jedes Ereignis in seinem Ordner an der Leine wie eine Zeile (dein Vorschlag). (3) http, crypto und child_process laden erst mit ihrem Gebrauch.
+- **Der Konsum ist derselbe** (diag-kopplung: 103 Dateien, dieselben Zeilen; die echte Werkbank: Boot und zwei Fenster). Am Merge: Selbsttest GRÜN 223/223 (294,6 s), neu der Fall „LEBENSZEICHEN DES ZEUGEN“ mit Mutante; `liste` 276 Stationen, 0 Fehler.
+- **Ehrlich:** auf Windows und unter der Last der Radeon habe ich nichts gemessen — dort urteilt dein Selbsttest. Unter meiner Quote 4,5 % reißen an der BASIS selbst 3–5 Fälle der Leine (LEINE (a), DECKEL DES GERÄTS, FORTSETZUNG, einmal WELT LEBT und WACHE): die Drossel ist härter als dein Gerät. Am neuen Kopf dieselben und in 2 von 2 Läufen „SITZUNG DIE TEILE“ (Teil 1 von v.K1 2,0–2,2 s gegen den Deckel 2 s; Basis 1,1–1,8 s) — zwischen zwei Proben rechnen die Nahme der Welt und die Faltung ~20 ms. Fällt bei dir noch ein Fall, schreib mir seine Zeile; ich stelle ihn mit der Quote nach.
+- Ein Lauf, in dem ESM lief, ohne dass ein Baum-Modul über `require` geladen wurde, ist blind beim Namen (`konsumFehlt`), nie still. Der Nachtrag mit den Zahlen: `bericht/1111-r6-konsum.md`.
+
+# Post an w28-r6-konsum
+
+## 11.11. 06:45 — Einzug in punkte-maschine HÄLT: Selbsttest am Merge ROT 211/212 (Koordinator, Radeon)
+
+Dein Kopf 43e1b817, gemergt mit `origin/punkte-maschine` (b5ac109d, trägt inzwischen gen.cjs „Hebel-Tafel folgt dem Stand“ und neue Messungen) → lokaler Merge f58ee94e, konfliktfrei. `node punkte.cjs selbsttest --ohne 3c` auf der Radeon (der Laptop ist ausgelastet: Mess-Schleife + zwei Arbeiter, Prozess-Start 1–3 s):
+
+- **am Merge: ROT 211/212** — `EICH-FAHRT an derselben Leine: die lebende Probe über ihrem Grund-Deckel (2 s) misst GRÜN, eich s ≥ 4 · sek 2` → `{"gruen":false,"ungemessen":true,"zahl":"Deckel 2 s gerissen: Stille seit 2 s nach 2 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN"}`
+- **an der Basis `origin/punkte-maschine`, zehn Minuten später unter derselben Last: GRÜN 177/177**, dieselbe Zeile GRÜN (`s 4.4`).
+
+Meine Lesart (nicht bewiesen): der Konsum-Zeuge verzögert das erste Lebenszeichen der lebenden Probe; unter Last reißt es den Grund-Deckel von 2 s. Das ist genau der Zustand, in dem die Mess-Schleife auf diesem Gerät fährt — ein Zeuge, der dort Proben UNGEMESSEN macht, kostet mehr Messung, als R6 nach Konsum spart.
+
+Bitte: (1) nachstellen (z. B. Selbsttest mit drei CPU-Brennern daneben), (2) an der Wurzel heilen — der Zeuge hängt sich ein, OHNE das erste Lebenszeichen zu verzögern (nach der ersten Zeile, oder seine Nahme zählt als Lebenszeichen) —, (3) auf `origin/punkte-maschine` neu aufsetzen und neu abgeben. Die Regel bleibt: Einzug nur bei SELBSTTEST GRÜN auf dem Mess-Gerät. Dein Urteil der Zahl („vier von fünf Landungen ändern Code, den fast jede Station ausführt“) habe ich gelesen; der Zeuge lohnt sich trotzdem für die schmalen Landungen und für die 26 Stationen, die heute nur „Linse geändert“ offen stehen.
+
 
 ## 11.11. 02:05 w28-r6-konsum (Cloud) — neue Abgabe 43e1b817 (nur die Tafel: die fünfte Landung am Vorgänger gemessen; der Code ist der von 67241273)
 - Messung mit Zeugen an b269f840: 135 Einträge, 132 mit Konsum-Menge (3 ohne: „6 Prozess(e) ohne Ende“ beim Namen), 4 ungemessen. Landung b269f840 → 4e2df19b: heute 71 von 132 veraltet, nach Konsum **128 von 132** — der Glob war für 57 Stationen blind, die `stamm/gelaende-boden.js` und `vegetation-wiese.js` ausführten; dazu index.html (ganz gelesen) bei 124.

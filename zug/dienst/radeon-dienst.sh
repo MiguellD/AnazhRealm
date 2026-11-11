@@ -1,6 +1,6 @@
 #!/bin/bash
 # radeon-dienst.sh — die Radeon misst, ohne LLM und ohne Ende („Radeon nie leer“ 22.10.; Nachfolger von radeon-nie-leer2.sh):
-# sobald die Karte 5 min frei ist (kein GPU-Schloss, keine laufende Messung, kein CI-Job), misst sie am jüngsten main die offenen
+# sobald die Karte 2 min frei ist (bis 11.11. 5: seit ein Abbruch behält, was er maß, kostet ein früher Start nichts — das Fenster zwischen zwei Zügen ist 15–20 min) (kein GPU-Schloss, keine laufende Messung, kein CI-Job), misst sie am jüngsten main die offenen
 # Stationen (`punkte.cjs run --offen`) und pusht die Mess-Dateien nach punkte-maschine; buche-dienst.sh bucht daraus.
 # CI VOR MESSUNG (10.11.: 17:08–17:40 maß sie neben CI-Jobs, ihre ROTs flossen als „echter Fall“ in die Buchung): startet während
 # einer Messung ein Runner.Worker-Job, bricht sie ab (taskkill über den Baum) und verwirft ihre Datei.
@@ -25,7 +25,7 @@ verwaist() {
 }
 echo "$(date +%H:%M) START radeon-dienst (CI vor Messung, PID $(cat "$S/radeon.pid"))" >>"$L"
 miss() { # $1 = Name im Log, Rest = Argumente für punkte.cjs
-    local name=$1 K p ab w n g j
+    local name=$1 K p ab w n g j bis
     shift
     K=$(git -C $R ls-remote origin refs/heads/main | cut -f1)
     [ -n "$K" ] || return 1
@@ -43,6 +43,7 @@ miss() { # $1 = Name im Log, Rest = Argumente für punkte.cjs
     while kill -0 $p 2>/dev/null; do
         if ci; then
             ab=1
+            bis=$(date -u -d "30 seconds ago" +%Y-%m-%dT%H:%M:%SZ)
             w=$(cat /proc/$p/winpid 2>/dev/null)
             [ -n "$w" ] && taskkill //T //F //PID "$w" >/dev/null 2>&1
             kill $p 2>/dev/null
@@ -53,10 +54,26 @@ miss() { # $1 = Name im Log, Rest = Argumente für punkte.cjs
     wait $p 2>/dev/null
     cd "$PM" || return 1
     if [ $ab = 1 ]; then
-        git checkout -q -- meisterkarte-quelle/punkte/messung 2>/dev/null
-        git clean -fdq meisterkarte-quelle/punkte/messung 2>/dev/null
         verwaist && rm -rf "$GS" # das Schloss des eigenen, beendeten Laufs — die Karte gehört jetzt der CI
-        echo "$(date +%H:%M) $name ABGEBROCHEN: CI-Job auf der Karte — Messung verworfen" >>"$L"
+        # WAS VOR DEM JOB GEMESSEN WAR, BLEIBT (11.11.: die Züge lassen der Karte Fenster von 15–20 min, die volle Fahrt braucht mehr —
+        # 06:55 · 12:07 · 12:41 fiel jedes Mal die GANZE Datei, 12:41 mit 14 fertigen Stationen; die Radeon buchte den Tag über nichts):
+        # punkte.cjs behalte kappt jeden Eintrag, dessen Lauf nach $bis endete ($bis = der Abbruch − 30 s: der Takt dieser Wache 15 s
+        # + 15 s Spiel), und hält den Rest; `--offen` misst beim nächsten Fenster nur, was fehlt
+        (cd "$PM/meisterkarte-quelle/punkte" && node punkte.cjs behalte --sha "$K" --geraet radeon --bis "$bis" >"$W/radeon-behalte.out" 2>&1)
+        if [ $? = 0 ]; then
+            git add -A meisterkarte-quelle/punkte/messung && git $A commit -qm "Messung ${K:0:8} radeon: $name bis zum CI-Job ($(head -1 "$W/radeon-behalte.out" | cut -c1-80), radeon-dienst)" >/dev/null 2>&1
+            for j in 1 2 3 4 5; do
+                git fetch -q origin "+refs/heads/punkte-maschine:refs/remotes/origin/punkte-maschine"
+                git rebase -q origin/punkte-maschine && git push -q origin HEAD:punkte-maschine && break
+                git rebase --abort >/dev/null 2>&1
+                sleep 20
+            done
+            echo "$(date +%H:%M) $name ABGEBROCHEN: CI-Job auf der Karte — $(head -1 "$W/radeon-behalte.out" | cut -c1-200)" >>"$L"
+        else
+            git checkout -q -- meisterkarte-quelle/punkte/messung 2>/dev/null
+            git clean -fdq meisterkarte-quelle/punkte/messung 2>/dev/null
+            echo "$(date +%H:%M) $name ABGEBROCHEN: CI-Job auf der Karte — nichts vor dem Job gemessen ($(head -1 "$W/radeon-behalte.out" | cut -c1-120))" >>"$L"
+        fi
         return 2
     fi
     n=$(grep -cE "^  (GRÜN|ROT|OFFEN)" "$W/radeon-nie-leer-lauf.out")
@@ -85,7 +102,7 @@ while true; do
         f=0
         puls radeon "wartet: Karte belegt ($(head -1 "$GS/besitzer.txt" 2>/dev/null || echo CI/Messung))"
     fi
-    if [ $f -ge 5 ]; then
+    if [ $f -ge 2 ]; then
         K0=$(git -C $R ls-remote origin refs/heads/main | cut -f1)
         miss "offene Stationen" --offen
         rc=$?
@@ -101,6 +118,6 @@ while true; do
             until [ "$(git -C $R ls-remote origin refs/heads/main | cut -f1)" != "$K0" ]; do sleep 120; done
         fi
         f=0
-    elif [ $f -gt 0 ]; then puls radeon "Karte frei seit $f min — misst ab 5"; fi
+    elif [ $f -gt 0 ]; then puls radeon "Karte frei seit $f min — misst ab 2"; fi
     sleep 60
 done

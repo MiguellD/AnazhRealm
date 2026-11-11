@@ -90,3 +90,7 @@ c5a9a2f565f517a92cbf8ada22cebe9c4df5023d nicht-langsamer z163-abab
 877d3e04ea99e07f27e71600df4e4564c1378187 LANGSAMER z7-abab
 f20a52418564a0aa55089f9842766694568c9a7c nicht-langsamer w28-horizont-gtx-abab
 ca9fb9938a0b029363489c4515a8926abb7cdde0 nicht-langsamer w28-horizont-gtx-abab
+4c5023cf47d32682903debe750d075149e0562ef LANGSAMER w28-geister-wand-abab
+4c63d33c8499b6350265f039bb9cb0b756f05e76 nicht-langsamer w28-putz-wand-abab
+a576a954d09f4324c1f8cb56de4f29fb6012b5b4 nicht-langsamer w28-putz-wand-abab
+05f2ba5f9d9aa2ee78b9d3724b5f0fa0550643ee nicht-langsamer w28-putz-wand-abab
