@@ -513,7 +513,7 @@ function lauf(k) {
             const T = THREE, cam = st.camera, db = rend.getDrawingBufferSize(new T.Vector2()), fr = new T.Frustum(), v = new T.Vector3();
             const W = db.x, H = db.y, soll = (200 * W * H) / 921600, alt = new Set(st.creatures);
             const taste = (art) => dispatchEvent(new KeyboardEvent(art, { bubbles: true, code: "KeyW", key: "w" }));
-            const schuss = async () => (await __ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
+            const schuss = async (rueckstrahl) => (await __ausgabeAufnahme(W, H, 1, { satz: "messung", rueckstrahl })).u8;
             kreis.z0 = st.spielZeit;
             taste("keydown");
             try {
@@ -539,7 +539,7 @@ function lauf(k) {
                     kreis.schuesse++;
                     const G = [await schuss(), await schuss()];
                     r.toggleCreatures(false);
-                    const O = await schuss().finally(() => r.toggleCreatures(true));
+                    const O = await schuss("halten").finally(() => r.toggleCreatures(true)); // das Licht von unten steht wie in G
                     await wieder();
                     const [teil, auch] = G.map((g) => __klassenTeilung(g, [O], W, H, 18).teil);
                     for (let p = 0; p < W * H; p++) {
