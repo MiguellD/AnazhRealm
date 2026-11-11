@@ -223,11 +223,26 @@ class AnazhRealm_studio_gestalt {
         // `halmImJahr`). Die Ecken reisen, wie das Studio sie gebiert: der Anker der Ähre IST der Fuß ihres Stängels (emitGrass,
         // w26-winter-fichte-2), der Wirt schreibt keine Ecke um (gate:asset-contract, die Ähren-Wand Ä). Bis dahin verlegte er sie
         // je Lieferung per Float-Schlüssel und warf an jedem Halm-Typ ohne Ähre (Schilf, 748 Würfe je Fernwald-Lauf).
+        // DIE KRONE OHNE JAHRES-ECKEN STEHT (w28-nadel-laub): ein Teil der Krone eines Baums (`baum`, Laub oder Karte), dem die
+        // Schale keine Ecken lässt (die Nadel, der Wedel: ihre Typen liest kein Leser des Wirts), trägt die STEHENDE Ecke
+        // (`JAHR_STEHT`, die Mitte ist die Ecke selbst) — so baut die Krone der Nadel DENSELBEN Stoff wie die des Laubs
+        // (die Signatur `jahr`), und die Ankunft übersetzt EIN Programm der Kronen statt zwei. Sie fällt nie (`_jahrLage`:
+        // jeder Typ außer Laub und Blüte steht) und tönt nie (`_foundryTreeMaterial`). Gemessen an 3308689f (GTX 1050, Ankunft
+        // an der Genesis): 6 Kronen-Teile ohne Ecken mit 12 384 Ecken — 16 B je Ecke mehr im Grafikspeicher (~0,2 MB), kein Byte
+        // mehr auf Platte und Faden (die Ecke entsteht hier).
         const paar = !!(m.aCenter && m.aCenter.array) + !!(m.aType && m.aType.array);
         if (paar === 1) throw new Error("_foundryBuildMesh: die Ecken reisen nur als Paar (aCenter · aType)");
+        const steht = !paar && !!baum && (m.kind === "foliage" || m.kind === "foliageTex");
         const SG = paar ? AnazhRealm._saisonGesetz().typ : null;
-        const jahr = !!SG && m.aType.array.some((t) => t === SG.laub || t === SG.bluete);
+        const jahr = steht || (!!SG && m.aType.array.some((t) => t === SG.laub || t === SG.bluete));
         if (paar) AnazhRealm._jahrEcken(geo, m.uv && m.uv.array, m.aCenter.array, m.aType.array);
+        else if (steht)
+            AnazhRealm._jahrEcken(
+                geo,
+                m.uv && m.uv.array,
+                m.position.array,
+                new Float32Array(vcount).fill(AnazhRealm.JAHR_STEHT)
+            );
         else if (m.uv && m.uv.array) geo.setAttribute("uv", new T.BufferAttribute(m.uv.array, 2));
         // Das Schalen-Fell (V18.497) trägt seine Wurzel (Bind-Punkt der Haar-Maske) und die Schalen-Daten.
         for (const nm of ["aWurzel", "aSchale"])
@@ -1482,3 +1497,7 @@ AnazhRealm.FOUNDRY_BEIPACK = Object.freeze({
 // DIE PHASEN DES VORRATS (`_foundryPrefetchLibrary`, Merker `f._vorrat`): er wartet auf das erste Weltbild, dann bestellt er;
 // durch ist er false. Jeder Leser (Kalt-Zeile, Warm-Anker, gate:ankunft) nennt die Phase, nie nur „an".
 AnazhRealm.VORRAT_PHASE = Object.freeze({ wartet: "wartet auf das erste Bild", bestellt: "bestellt" });
+// DIE STEHENDE ECKE (w28-nadel-laub, `_foundryBuildMesh`): der Typ der Jahres-Ecke einer Krone, der die Schale keine Ecken lässt
+// (die Nadel) — kein Typ des Gesetzbuchs (SAISON_GESETZ `typ`: Laub 1, Blüte 3, Halm 4; „Rinde 0, Nadel 2 … stehen"): sie steht
+// (`_jahrLage`: nur Laub und Blüte ziehen sich auf ihre Mitte) und tönt nie (`_foundryTreeMaterial`).
+AnazhRealm.JAHR_STEHT = -1;
