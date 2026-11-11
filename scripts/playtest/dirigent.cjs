@@ -5,6 +5,7 @@
 
 const path = require("path");
 const SK = require("../lib/shader-kosten.cjs");
+const { taeter } = require("../lib/welt-boot.cjs");
 const { safeEvaluate } = require("../playtest.cjs");
 const SKRIPTE = path.join(__dirname, "..");
 
@@ -185,6 +186,11 @@ async function checkBandV18278LoopErrorBoundary({ page, check }) {
         "CONSUM: der abgefangene Fehler wird gezählt (_loopErrorCount steigt, die Wurzel sichtbar)",
         res.errorCounted
     );
+    // DIE MUTANTE DES EINEN SAMMLERS (w28-loop-wurf): derselbe gefangene Wurf — die echte Grenze, der echte Melder — steht im
+    // Fehler-Sammler jeder Linse beim Namen (welt-boot `LOOP_WURF`); die Linse nimmt ihren Täter heraus (`taeter`), fehlt er, ist
+    // der Sammler blind und jede Linse über einem werfenden Takt still grün (11.11.: der Schritt des Verkehrs, 0 Ankünfte)
+    const [gesehen] = taeter(/V18278-test-throw/);
+    check("LINSE: der gefangene Wurf steht im EINEN Sammler beim Namen (loop-wurf)", /^loop-wurf: .* at /.test(gesehen), gesehen);
 }
 
 // EIN PID-Regler misst die Last je Subsystem (perfSense) und fährt ALLE Stellgrößen (die Architektur-Domäne am

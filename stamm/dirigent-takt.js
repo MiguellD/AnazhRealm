@@ -61,6 +61,9 @@ class AnazhRealm_dirigent_takt {
                 // Spiel-Glied (515–1 007 ms); mit der Phase ruft es jedes Lade-Bild (24 von 210 Takten, 281 ms), das Netz
                 // jeder Takt.
                 const bild = this._gpuLeineFrei();
+                // DAS BILD ZÄHLT SICH SELBST (w28-bild-ganz): wer in DIESEM Bild zeichnen will und nicht zeichnet, trägt sich ab
+                // hier neu ein (`_erstWartet` (3)) — das erste Weltbild liest die Liste nach dem Render (`_bildWartet`)
+                if (bild) this._erstZeichnungStand().bildWartet.clear();
                 const ruht = !bild && this._ladeTakt();
                 // DER BILD-TAKT UNTER DEM LADESCHIRM teilt die EINE Frist der Aufgabe mit der Zeichnung (`_ladeFrist`)
                 this._ladeBildTakt = bild && this._ladeTakt();
@@ -417,12 +420,23 @@ class AnazhRealm_dirigent_takt {
     // freigibt oder baut, wartet dann auf keinen: der Wächter der Foundry hält nichts (`_foundryWaechterRuht`), und die Ankunft
     // eines Körpers platziert nichts von selbst (`_foundryRewarmColdTrees`) — die ruhende Welt ändert sich nur, wo einer fragt.
     // Der Null-Renderer kennt keinen Loop: headless ruht er nie (der Wächter lässt dort ohnehin alles durch).
+    // VOR DEM INIT DES RENDERERS KOMMT KEIN TAKT (w28-loop-vor-init): r184 legt die Bild-Schleife erst in `init()` an
+    // (`_animation`), sein `getAnimationLoop()` wirft davor (TypeError auf null) — und `setAnimationLoop` wartet auf das init. Die
+    // Lage sagt die EINE Quelle des Spiels (`state.rendererReady`, ihr Schreiber: das Ende von `renderer.init()`): davor ruht
+    // der Loop. Bis hier fragte der Stand den Vendor ungeprüft: eine Antwort der Foundry in diesem Fenster warf im Wächter
+    // (`_foundryIngestTakt` → `_foundryWaechterRuht`), die Kette der Spieler-Vorlagen riss („STOFF: die Spieler-Vorlagen …“),
+    // `_leibBereit` gab den Bau trotzdem frei, und er goss beide Stufen des Leibs im Haupt-Faden („FADEN-UMGANGEN: Guss
+    // „mensch“ …“). GTX 1050, main e6f0cf7e: in 7 von 126 Zweit-Boots kam die Vorlage 44–64 ms vor `rendererReady` — EINE
+    // Aufgabe 3,3–3,9 s (`_ofenMenschTemplate` 2 813 + 496 ms), das Weltbild 15,3–19,8 statt 12,4–15,8 s. Jeder Leser fällt mit
+    // (`_bauFristOhneEnde`, `_foundryRewarmColdTrees`). Linsen: gate:ankunft L2a (`loopVorInit`), die Kalt-Zeile von
+    // gate:boot-stage („die Ankunft bricht nicht“).
     _loopRuht() {
         // das Portal friert die Heimat ein (der Takt kehrt vor jedem Tick um): sie ruht wie ohne Bild-Schleife — der Wächter
         // hält nichts, das Bäcker-Bild baut am Stück (der Abzug der Karte für das Labor, pipeline.K2)
         if (this._portalOverlay) return true;
         const r = this.state.renderer;
-        return !!r && typeof r.getAnimationLoop === "function" && !r.getAnimationLoop();
+        if (!r || typeof r.getAnimationLoop !== "function") return false;
+        return this.state.rendererReady !== true || !r.getAnimationLoop();
     }
 
     // ═══ DAS WORT „DIE WELT STEHT" (A9) ═══

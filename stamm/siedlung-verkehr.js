@@ -779,10 +779,16 @@ class AnazhRealm_siedlung_verkehr {
             const r = F.pts[i + 1];
             if (andere.some((o) => Math.hypot(o.entry.position.x - q.x, o.entry.position.z - q.z) < V.ankunftAbstandM))
                 continue;
-            // kein Leib und kein Stand eines Bewohners unter ihm (wer dort steht, geht oder noch hinkommt, stünde in der Hülle)
+            // kein Leib und kein Stand eines Bewohners unter ihm (wer dort steht, geht oder noch hinkommt, stünde in der Hülle).
+            // WER NOCH ANKOMMT, STEHT NIRGENDS (w28-verkehr-takt, mensch.K2: der Tag nach dem Sprung ist f(Same, t)): sein Leib
+            // steht, wo er VOR dem Sprung stand — das Raster der Leiber führt ihn nicht (`_bewohnerRasterLage`, seit heil-wackler),
+            // der Wagen sah ihn hier weiter. Der Fahrer steigt in der Reihe der Liste ein, die Köpfe hinter ihm kommen erst an:
+            // stand einer von ihnen vor dem Sprung auf dem Punkt des Samens, rückte der Wagen weiter oder blieb am Platz, und die
+            // Stunde danach hing an der Vorgeschichte der Seite (stadt-voll 10 Uhr, vier Läufe desselben Stands: Wagen 16 begann
+            // 82,9 · 0 · 0 · 98,0 m auf seiner Route; fahrend je Minute 67 · 67 · 48 · 39 · 39 · 52 m, im Zug 28)
             const nah = (o) => o && Math.hypot(o.x - q.x, o.z - q.z) < W.hl + 1;
             const unter = (b) =>
-                (b.leib && !b.drinnen && !b.amSteuer && nah(b.leib.position)) ||
+                (b.leib && !b.drinnen && !b.amSteuer && !b.ankunft && nah(b.leib.position)) ||
                 nah(b.orte.heim) ||
                 nah(b.orte.platz) ||
                 nah(b.orte.werk) ||

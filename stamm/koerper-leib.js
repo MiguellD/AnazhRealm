@@ -2796,11 +2796,18 @@ class AnazhRealm_koerper_leib {
     }
     // DIE EINE GESTALT-DIAL-QUELLE: liest die acht Morph-Dials des Da-Vinci-Studios LIVE
     // (f.recipes[mensch].s). Kaltes Buch → null → Avatar aus den Host-Konstanten (_buildHumanGroup).
+    // VOLL ODER NULL (w28-loop-wurf): die Prägung steht ÜBER dem Buch — ohne Buch gibt es keinen Satz, auch mit Prägung. Bis
+    // hier trug der Leser bei kaltem Buch die Prägung ALLEIN (`{height}` ohne mass/tone): der Kern brach an ihr fail-closed
+    // (`leibGroesse`, seit 4b1e4eee), der Restore eines Stands mit Mensch-Prägung rechnet die Lebenswerte vor dem Buch — die Welt
+    // erwachte nie (kein Takt, main e699a834), und die Heimat ohne Foundry warf im Takt in die Fehler-Grenze des Loops (z385:
+    // `tickPlayerBoosts` → `recomputePlayerStats`). Jetzt baut der Leib kalt aus den Konstanten, und das Buch gießt ihn EINMAL nach
+    // (`_foundryIngestBook`), mit der Prägung. gate:studio-uebergabe (K)
     _koerperStudioDials() {
         const f = this._foundry;
         const rec = f && f.recipes ? f.recipes[AnazhRealm.KOERPER_HOST_RECIPE] : null;
         const s0 = rec && rec.s;
         const s = s0 && typeof s0 === "object" ? s0 : null;
+        if (!s) return null;
         // DIE PRÄGUNG DES MENSCH-REZEPTS = VORRANG-Quelle (ws.studioOv, geschrieben vom EINEN Übergabe-Kanal und den
         // Werkstatt-Reglern): Dials und Gestalt-Wahlen ÜBER das Buch (bmDials → Mensch-Ofen-Memo-Key → bakeMenschInstance).
         // Beim Peer-Avatar-Guss FÜHRT die Prägung des SENDERS: _p2pApplyPeerSoul setzt sie transient in
@@ -2809,7 +2816,7 @@ class AnazhRealm_koerper_leib {
             this._activePeerUebergabe !== undefined && this._activePeerUebergabe !== null
                 ? this._activePeerUebergabe
                 : this._studioPraegung(AnazhRealm.KOERPER_HOST_RECIPE);
-        return ue && Object.keys(ue).length ? Object.assign({}, s || {}, ue) : s;
+        return ue && Object.keys(ue).length ? Object.assign({}, s, ue) : s;
     }
 
     // Der Mensch hängt an derselben Größen-Achse: die koerperstudio-Dials tragen den Größen-Faktor in
@@ -3042,9 +3049,11 @@ AnazhRealm._landungGesetz = function () {
 // Menschen aus dem Ofen; carPhys des Wagens). Bis 0710-4 hielt STOSS zwei Studio-Größen
 // (dichteLeib 1000 über eine Kapsel aus der Hüft-Höhe — der Hirsch wog 436 kg, der Bär 255 —, dichteWagen 150).
 AnazhRealm.LEIB_KLASSEN = Object.freeze(["fell", "haut"]); // die Material-Klassen der geschlossenen Haut eines Leibs
-// DAS KNOCHEN-RASTER (`_ofenSkelett`): die Knochen-Reihe jeder Ofen-Haut ist ein Vielfaches davon — Leiber eines Graphen mit
-// 17 bis 32 Knochen teilen EIN Programm (die Reihe kostet je Füllplatz 64 B Knochen-Matrix je Bild).
-AnazhRealm.KNOCHEN_RASTER = 16;
+// DAS KNOCHEN-RASTER (`_ofenSkelett`): die Knochen-Reihe jeder Ofen-Haut ist ein Vielfaches davon. EINE Klasse für jeden Leib
+// (w28-fell-programm): das größte Teil trägt 33 Knochen (Fuchs, Grobstufe) — mit 16 standen drei Klassen (16 · 32 · 48) und je
+// Leib-Stoff bis zu drei Vertex-Programme, die nur die Zahl trennt; die Frost-Wand S2 nennt jeden solchen Zwilling mit seinen
+// Knochenzahlen. Die Reihe kostet je Füllplatz 64 B Knochen-Matrix und eine Matrix-Multiplikation je Bild.
+AnazhRealm.KNOCHEN_RASTER = 40;
 // DIE KOPF-KLASSE (`_kopfKlasse`, mensch-kopf und haar): gelenk = die Gelenke des Kopfs (Kopf, Augen, Iris, Lider des Rigs) ·
 // iris = das Gelenk, an dem ein Teil ohne Stoff-Klasse das Auge ist · anteil = ab diesem Anteil seiner Haut-Gewichte an ihnen
 // gehört ein Teil zum Kopf — die Werte der Teilung, die bis w4-bewohner-wache in der Werkbank stand (haar.K2)
