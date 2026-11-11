@@ -946,7 +946,7 @@ async function starte() {
                     r._kopfKahl(aus);
                     bundlesNeu();
                     try {
-                        return (await __ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
+                        return (await __ausgabeAufnahme(W, H, 1, { satz: "messung", rueckstrahl: aus.length ? "halten" : null })).u8; // ohne Teil steht das Licht von unten wie in G
                     } finally {
                         for (const o of aus) zeig(o);
                         r._kopfKahl([]);
