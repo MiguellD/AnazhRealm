@@ -1,7 +1,7 @@
 {
  "sha": "4e2df19b5c5103b093818b62b5a84ababf85b493",
  "geraet": "gtx",
- "zeit": "2026-11-11T03:29:14.424Z",
+ "zeit": "2026-11-11T03:35:08.687Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "affekt.K4#2": {
@@ -1012,22 +1012,87 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "lod.K5#1": {
+   "gruen": false,
+   "zahl": "Baum 5.05 px · Haus 0.13 px · Tor 0.18 px · Wagen 0.03 px (Soll ≤ 1 px am Wechsel-Abstand, 1920 × 1080) · gate L2: Exemplar 140 px, [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.78,
+   "grund": "ROT: Baum 5.05 px · Haus 0.13 px · Tor 0.18 px · Wagen 0.03 px (Soll ≤ 1 px am Wechsel-Abstand, 1920 × 1080) · gate L2: Exemplar 140 px, [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "s": 46.7,
+   "fremd": {
+    "s": 50.2,
+    "takte": 23,
+    "fremdS": 51.25,
+    "kerne": 1.021,
+    "fensterKerne": 1.548,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      16.52
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      13.42
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      9.17
+     ]
+    ],
+    "dienerS": 16.5,
+    "diener": [
+     [
+      "dwm.exe",
+      6.53
+     ],
+     [
+      "System",
+      6.42
+     ]
+    ],
+    "geraetS": 16.3,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      10.98
+     ],
+     [
+      "svchost.exe",
+      4.48
+     ],
+     [
+      "SearchIndexer.exe",
+      0.38
+     ]
+    ],
+    "eigenS": 73.41,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon"
+   },
+   "zeit": "2026-11-11T03:35:08.687Z",
+   "abdruck": "ca610f2672bb",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-11T03:27:32.052Z",
+  "start": "2026-11-11T03:34:24.434Z",
   "port": 7804,
-  "warten": 1.09,
-  "bootS": 5.8,
+  "warten": 0.01,
+  "bootS": 7,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
     "ort": "wiese",
-    "vor": "lod.K1#1",
-    "s": 30.9,
-    "takte": 637,
+    "vor": "lod.K5#1",
+    "s": 35.6,
+    "takte": 681,
     "chunks": 81,
     "nach": null
    }
@@ -1036,21 +1101,21 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 238,
-   "frameP95": 50.27,
-   "taktP95": 34.78,
-   "vramMax": 130.4,
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 111,
-   "luecken": 2,
-   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+   "zapfen": 83,
+   "luecken": 0,
+   "letzteLuecke": null
   },
-  "fahrtS": 142,
-  "minuten": 3.5
+  "fahrtS": 91.6,
+  "minuten": 1.59
  },
  "ungemessen": {
   "ankunft.K1#1": {
