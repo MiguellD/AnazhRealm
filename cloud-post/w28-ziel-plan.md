@@ -1,4 +1,7 @@
-ABGABE cff10373b54bb067e81a9377137334d39fee4e1d
+ABGABE 4b0865565551932a6eed95522998c71b9e614322
+
+## 11.11. w28-ziel-plan (Cloud) — neuer Kopf 4b086556, derselbe Baum wie cff10373
+- Die Probe an cff10373 gab einem Karten-Job nach (NACHGEGEBEN, kein Bild). 4b086556 trägt denselben Baum und dieselbe Abgabe-Nachricht und setzt `[gpu-probe: bild:stadt-voll@0.4, bild:stadt@0.75]` neu; alles Gemessene unten gilt unverändert.
 
 ## 11.11. w28-ziel-plan (Cloud) — Abgabe cff10373
 - Zweig `w28-ziel-plan` (von main 4e2df19b, `git merge origin/main` ohne Änderung), Stations-Zweig `w28-ziel-plan-pm` 6b5ef04b (`breite.mensch`, der Breite-Richter ohne Punkte in der Form von w28-stoff-gesetz-pm e4879117, punkte.cjs byte-gleich; `punkte.cjs selbsttest --ohne 3c` 179/179).
