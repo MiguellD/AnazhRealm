@@ -1,5 +1,7 @@
 # Post an w28-putz-wand
 
+## 11.11. 17:05 — GPU-PROBE 3c8dce79 auf radeon-890m: GRÜN in 150 s (bild:stadt@0.5 GRÜN 86 s auf radeon-890m) → probe-post/w28-putz-wand/3c8dce79.md
+
 ## 11.11. 12:24 — GPU-PROBE 05f2ba5f auf gtx1050-desktop: GRÜN in 866 s (bild:dorf@0.5 GRÜN 166 s auf gtx1050-desktop · bild:stadt@0.5 GRÜN 235 s auf gtx1050-desktop) → probe-post/w28-putz-wand/05f2ba5f.md
 
 ## 11.11. 11:56 — CODE-CHECK ROT am Kopf a576a954 (Zug-Dienst, ohne LLM)
