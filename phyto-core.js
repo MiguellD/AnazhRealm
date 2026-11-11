@@ -5811,6 +5811,22 @@
         out.index = index;
         return out;
     }
+    // DIE STÜCKE EINES EIMERS — EINE Rechnung für den Plan (`zaehle`) und die Fügung: jedes Teil in das ERSTE Stück, das es noch
+    // trägt (bis `teilVertsMax`; ein Teil, das seine Rückseite mitbringt, zählt doppelt). Bis w28-putz-wand zählte der Plan
+    // ceil(Ecken / teilVertsMax), die Fügung aber schloss ein Stück, sobald das nächste Teil nicht mehr passte — ein späteres
+    // kleines fand das frühere Stück nicht (Haus gotisch bend=1 L0: 353 856 Ecken, Plan 2, gefügt 122 016 · 173 844 · 57 996 = 3
+    // Teile, draws 13 > 12). Wo die Reihe schon aufging, bleibt die Fügung byte-gleich.
+    function _budgetStuecke(ps, rueck) {
+        const st = [];
+        for (const p of ps) {
+            const pv = (p.m.position.array.length / 3) * (rueck(p) ? 2 : 1);
+            let s = st.find((x) => x.v + pv <= BUDGET_GESETZ.teilVertsMax);
+            if (!s) st.push((s = { v: 0, ps: [] }));
+            s.ps.push(p);
+            s.v += pv;
+        }
+        return st;
+    }
     function _budgetFalten(meshes, ziel, bericht) {
         const teile = [],
             beipack = [];
@@ -5882,7 +5898,12 @@
                     if (vorlagen.some((v) => zwilling(v, g))) continue;
                     vorlagen.push(g);
                 }
-                n += Math.max(1, Math.ceil(g.verts / BUDGET_GESETZ.teilVertsMax));
+                // der Plan zählt die Stücke, die die Fügung unten baut (dieselbe Rechnung, ohne Gelenk: ein Stoff an Gelenken ist
+                // EIN Befehl, der Ofen bindet seine Eimer starr) — nie weniger als das Maß der Ecken, das er bis hier allein las
+                const ecken = Math.max(1, Math.ceil(g.verts / BUDGET_GESETZ.teilVertsMax));
+                n += g.teile.some((p) => p.m.joint)
+                    ? ecken
+                    : Math.max(ecken, _budgetStuecke(g.teile, (p) => p.seite === 2 && g.seite !== 2).length);
             }
             return n;
         };
@@ -5960,25 +5981,13 @@
                     out.push(ps[0].m);
                     continue;
                 }
-                let stueck = [],
-                    v = 0;
-                const flush = () => {
-                    if (!stueck.length) return;
+                for (const { ps: stueck } of _budgetStuecke(ps, (p) => p.rueck)) {
                     const e = _budgetVerbinden(stueck, g, attrs);
                     if (j) e.joint = j;
                     if (stueck[0].m.tuer) e.tuer = stueck[0].m.tuer;
                     if (stueck[0].m.rad) e.rad = stueck[0].m.rad;
                     out.push(e);
-                    stueck = [];
-                    v = 0;
-                };
-                for (const p of ps) {
-                    const pv = (p.m.position.array.length / 3) * (p.rueck ? 2 : 1);
-                    if (stueck.length && v + pv > BUDGET_GESETZ.teilVertsMax) flush();
-                    stueck.push(p);
-                    v += pv;
                 }
-                flush();
             }
         }
         for (const b of beipack) out.push(b);
