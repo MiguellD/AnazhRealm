@@ -2458,6 +2458,8 @@ function emitTreeRezept(P, stufe) {
         // der Nadel-Ast: was an ihm waechst, ist sein Wedel; er selbst ist in der L0 bis `ab` Roehre, in der L1 ganz Wedel
         if (_wedel && _astVon.has(rid) && !(_aeste.has(rid) && _wedel.ab > 0)) continue;
         if (_L0 && !P.conifer && runs.get(rid)[0].r0 < nodes.trunkR * _rz.ast && !_traeger.has(rid)) continue;
+        // DAS TOTHOLZ TRÄGT SEINE L1 WIE SEINE L0 (w28-nadel-stufe, lod.K5): ohne Krone trägt keine Karte den feinen Strang —
+        // die L1 wirft dieselben Läufe ab wie die L0 (unter `rinde.ast`), stand bis hier mit Ästen, die der L0 fehlen.
         if (P.tot && __lod === 1 && runs.get(rid)[0].r0 < nodes.trunkR * _b0.rinde.ast) continue;
         if (_L0 && _laubKrone && runs.get(rid)[0].r0 < nodes.trunkR * _b0.geruest) continue;
         let rings = strandRings(rid);
@@ -2486,6 +2488,7 @@ function emitTreeRezept(P, stufe) {
                 { c: [cx, -bd * 0.18, cz], r: R0 * 0.84, sway: 0, depth: baseRing.depth, fuss: true },
             ].concat(rings);
         }
+        // die Totholz-L1 in der Radial-Teilung ihrer L0: der Umriss des kahlen Stamms ist ihr ganzes Bild
         buildTube(barkGeos, rings, P, barkBase, barkTip, nodes.trunkR, undefined, undefined, P.tot && __lod === 1 ? 0 : _roehre);
         if (_wurfR > 0 && baseRing.r >= _wurfR) _wurfRinge.push(rings);
         const s0 = runs.get(rid)[0];
@@ -4146,6 +4149,7 @@ function __totholzSchnitt(nodes, P, seed) {
 function __totholzRinde(barkGeos, nodes, P) {
     const PZ = Object.assign({}, P, { zerfall: 0.75 });
     for (const g of barkGeos) __holzZerfall(g, PZ, P._bphase || 0);
+    // die Schuppen der Borke trägt auch die L1 (w28-nadel-stufe): sie stehen vom Stamm ab und sind ein Teil seines Umrisses
     if (__lod > 1) return;
     const hr = mulberry32(((Math.floor(SEED) ^ 0x7a11) + 3) >>> 0),
         stamm = nodes.segs.filter((s) => s.depth === 0);

@@ -2215,7 +2215,9 @@
             crownBase: ph.crownBase,
             whorlSpacing: ph.whorlSpacing,
             flare: ph.flare,
-            roots: ph.roots * (rezept === 0 ? 1 : rezept === 1 ? 0.8 : 0.6),
+            // Das Totholz trägt seine L1 mit den Wurzeln seiner L0 (w28-nadel-stufe, lod.K5): ohne Krone ist der Fuß die halbe
+            // Silhouette — vier dickere Wurzeln statt fünf standen am Haushalt 12 m über einen Bildpunkt neben der L0.
+            roots: ph.roots * (rezept === 0 || (ph.tot && rezept === 1) ? 1 : rezept === 1 ? 0.8 : 0.6),
             basalStems: ph.basalStems,
             // Keine Tiefen-Reduktion je Stufe: das Skelett wächst immer voll (gleicher Same, gleicher Stamm).
             maxDepth: ph.kind === "shrub" && rezept === 2 ? 3 : Math.max(4, ph.maxDepth),
