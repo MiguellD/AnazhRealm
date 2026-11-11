@@ -7,7 +7,7 @@
   "max": 330,
   "maschine": {
     "kopf": "4e2df19b",
-    "zeit": "2026-11-11T00:17:03.243Z",
+    "zeit": "2026-11-11T00:37:51.976Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -3367,7 +3367,7 @@
           "punkte": 1,
           "staffel": "1 = Ufer → Schwimmen → Tauchen ohne Sprung (Lage, Kamera) an einem Gerät · 2 = Unterwasser-Bild aus der EINEN Wasser-Wahrheit (Sicht-Abfall nach Tiefe gegen REF), Höhle mit Licht-Abfall, beide Geräte",
           "messung": "Spielgang-Station see (1816/−6168): Kamera-Bahn und Leib-Lage je Frame beim Übergang; Unterwasser-Luma gegen Tiefe; Höhle über gate:hoehlen-sicht als Mechanik plus Bild.",
-          "beleg": "Maschine: gehalten: ego: schwimmt 282/282, taucht 2.21 m (Augen unter 189) · Ruck Leib 0.012 / Kamera 0.019 m (p95 0.003 / 0.0009) · third: schwimmt 283/283, taucht 2.21 m (Augen unter 189) · Ruck Leib 0.013 / Kamera 0.013 m (p95 0.003 / 0.003) · Mutante Ruck 0.204 m erkannt · Exit 0 an 6aa7a5a6 headless — offen: leib.K3#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +8) — zuletzt an 6aa7a5a6: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen · leib.K3#2 gtx: Station seit der Messung geändert — zuletzt an 2d5f4146: die Welt der Sitzung trägt nicht mehr (Grundstellung: /eval ohne Antwort binnen 60 s) — ungemessen",
+          "beleg": "Maschine: gehalten: ego: schwimmt 282/282, taucht 2.21 m (Augen unter 189) · Ruck Leib 0.012 / Kamera 0.019 m (p95 0.003 / 0.0009) · third: schwimmt 283/283, taucht 2.21 m (Augen unter 189) · Ruck Leib 0.013 / Kamera 0.013 m (p95 0.003 / 0.003) · Mutante Ruck 0.204 m erkannt · Exit 0 an 6aa7a5a6 headless — offen: leib.K3#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/band-urteil.cjs +8) — zuletzt an 6aa7a5a6: die Welt der Sitzung trägt nicht mehr (Grundstellung: /reload ohne Antwort binnen 180 s) — ungemessen · leib.K3#2 gtx: Station seit der Messung geändert — zuletzt an 4e2df19b: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
           "schlupfloch": "Ein blauer Filter unter dem Spiegel wäre Kulisse: der Sicht-Abfall nach Tiefe aus der Wasser-Wahrheit.",
           "aenderung": "Neu (V02; Sicht-Räume aus der Fehlliste B).",
           "maschine": true
