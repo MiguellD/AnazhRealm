@@ -50,8 +50,8 @@ class AnazhRealm_bild_kosten {
             };
             IN.__anazhName = true;
         }
-        // DER STABILE KNOCHEN-NAME: dieselbe Klasse für die Haut jedes Leibs (`_knochenPufferName`)
-        this._knochenPufferName();
+        // DER TEXT DES KNOCHEN-PUFFERS: dieselbe Klasse für die Haut jedes Leibs (`_knochenPufferText`: Name und Feldgröße)
+        this._knochenPufferText();
         // DIE SCHATTEN-DIÄT: r184 zeichnet jede Kaskade mit EINEM geteilten Schatten-Material je Licht
         // (isShadowPassMaterial), in das je Objekt die Knoten des Original-Materials gehängt werden. Sein Beobachter
         // meldet über context.getShadow immer hasNode → jedes Diät-Objekt refreshte je Kaskade und Frame

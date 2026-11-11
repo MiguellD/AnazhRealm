@@ -1889,7 +1889,7 @@ async function checkBandKreaturKosten({ page, check }) {
         const T3 = window.THREE;
         const recW = A.TETRAPODA_SOUL_MAP && A.TETRAPODA_SOUL_MAP.wolf;
         const starrZensus = (root) => {
-            const z = { meshes: 0, skins: 0, unverschmolzen: 0, ungecullt: 0, ohneKugel: 0, breit: [] };
+            const z = { meshes: 0, skins: 0, unverschmolzen: 0, ungecullt: 0, ohneKugel: 0, tafel: 0, breit: [] };
             const seen = new Set();
             root.traverse((n) => {
                 if (!n.isMesh || !n.geometry) return;
@@ -1906,6 +1906,8 @@ async function checkBandKreaturKosten({ page, check }) {
                     z.skins++;
                     if (n.frustumCulled === false) z.ungecullt++;
                     if (!n.boundingSphere) z.ohneKugel++;
+                    // (K) DIE KNOCHEN-TAFEL (`_knochenTafel`): ihr Puffer steht in der Klasse, kein Gewicht liest einen freien Platz
+                    if (n.skeleton.boneMatrices.length % (16 * A.KNOCHEN_KLASSE) || gs.attributes.skinIndex.array.some((b, i) => sw.array[i] && b >= n.skeleton.bones.length)) z.tafel++;
                     return;
                 }
                 const g = n.geometry;
@@ -1926,6 +1928,10 @@ async function checkBandKreaturKosten({ page, check }) {
         o.rMensch = mfM?.nah ? starrZensus(mfM.nah) : null;
         o.checks.rWolfStarr = !!o.rWolf && o.rWolf.unverschmolzen === 0 && o.rWolf.skins >= 2;
         o.checks.rMenschStarr = !!o.rMensch && o.rMensch.unverschmolzen === 0;
+        const kl = A.KNOCHEN_KLASSE;
+        A.KNOCHEN_KLASSE = 7; // der Täter der Tafel: eine fremde Klasse
+        o.checks.rKnochenTafel = o.rWolf?.tafel + o.rMensch?.tafel === 0 && starrZensus(wolfT.root).tafel > 0;
+        A.KNOCHEN_KLASSE = kl;
         o.checks.rKugel =
             !!o.rWolf &&
             !!o.rMensch &&
@@ -2866,7 +2872,7 @@ async function checkBandKreaturKosten({ page, check }) {
     gruppe(`(A) die Anim-Raten-Leiter: nah ${n.voll}/100 · halb ${n.halb} · viertel ${n.viertel} · jenseits ${n.hinter}, monoton, eingefroren`, ["aVoll", "aHalb", "aViertel", "aHinter", "aFernOrdnung", "aEingefroren"]);
     gruppe("(B) jenseits der Grenze die neutrale Stance (Prämisse mid-step, Schwanz ruht, Freeze lief)", ["bMidStepPremise", "bNeutralStance", "bTailNeutral", "bFrozen"]);
     gruppe("(C) die gelenkige Grobstufe des Menschen: Vertex- und Mesh-Differenz, der EINE Schalter, der Peer-Tick nah↔fern", ["cFernGebaut", "cVertexDiff", "cMeshDiff", "cToggle", "cPeerFern", "cPeerNah"]);
-    gruppe("(R)(T)(W) Starr-Bindung je Material, Körper-Kugel, Pose in der Kugel, Zwillings-Knochen, schmal, Absenz", ["rWolfStarr", "rMenschStarr", "rKugel", "rPoseInKugel", "rZwillingKnochen", "tSchmal", "wAbsenz"]);
+    gruppe("(R)(T)(W) Starr-Bindung je Material, Körper-Kugel, Pose in der Kugel, Zwillings-Knochen, schmal, Absenz", ["rWolfStarr", "rMenschStarr", "rKugel", "rPoseInKugel", "rZwillingKnochen", "rKnochenTafel", "tSchmal", "wAbsenz"]);
     gruppe("(F) Mensch und Kopie ruhen (je mit Prämisse)", ["fMenschPraemisse", "fMenschRuhe", "fKopiePraemisse", "fKopieRuhe"]);
     // (W) je Gestalt: der Wurf-Teil der Grobstufe hält sein Soll, der Zwilling wirft den Umriss der feinen Stufe (DECKUNG IoU)
     const w = out.w || [];

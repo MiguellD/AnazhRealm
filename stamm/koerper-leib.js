@@ -215,29 +215,33 @@ class AnazhRealm_koerper_leib {
         return this._buendelTraegt() ? new THREE.BundleGroup() : new THREE.Group();
     }
 
-    // DER STABILE KNOCHEN-NAME (dieselbe Klasse, die Haut): r184s SkinningNode liest die Knochen-Matrizen jeder
-    // SkinnedMesh über `referenceBuffer("skeleton.boneMatrices")` (für die Bewegungs-Spur der Zeit-Auflösung dazu
-    // `previousBoneMatrices`) — ohne Namen schreibt der WGSL-Builder `NodeBuffer_<Knoten-id>`, und jeder Knoten-Bau
-    // eines Leibs trug seinen EIGENEN Quelltext: der Seelenwechsel in ein Tier kompilierte in der Welt bei JEDEM Wechsel
-    // neu (Frost-Wand S2, Radeon +8 Module / +7 Pipelines je Durchgang, GTX +7/+6; zwei Wolf-Leiber unterschieden sich
-    // im Vertex-Quelltext nur in `NodeBuffer_512404` ↔ `NodeBuffer_546844`). Je Draw gibt es genau EINE Knochen-Reihe
-    // und ihre Vorgängerin → ein fester Name macht gleiche Gestalten gleich: ein Leib zeichnet mit den Programmen, die
-    // die Welt für dieselbe Gestalt schon hat. Die Klasse reicht der TSL-Bauer `skinning` (das Bündel exportiert sie
-    // nicht an window.THREE): sein Knoten an einer Probe-Haut mit einem Knochen.
-    _knochenPufferName() {
+    // DER TEXT DES KNOCHEN-PUFFERS (dieselbe Klasse, die Haut): r184s SkinningNode liest die Knochen-Matrizen jeder
+    // SkinnedMesh über `referenceBuffer("skeleton.boneMatrices", "mat4", skeleton.bones.length)` (für die Bewegungs-Spur der
+    // Zeit-Auflösung dazu `previousBoneMatrices`) — der WGSL-Builder schreibt daraus `<Name> : array< mat4x4<f32>, <Zahl> >`.
+    // DER NAME: ohne Namen `NodeBuffer_<Knoten-id>`, und jeder Knoten-Bau eines Leibs trug seinen EIGENEN Quelltext: der
+    // Seelenwechsel in ein Tier kompilierte in der Welt bei JEDEM Wechsel neu (Frost-Wand S2, Radeon +8 Module / +7 Pipelines
+    // je Durchgang, GTX +7/+6). Je Draw gibt es genau EINE Knochen-Reihe und ihre Vorgängerin → ein fester Name.
+    // DIE ZAHL: die Knochenzahl des Skeletts stand im Text, jedes gehäutete Teil mit eigener Zahl trug sein EIGENES
+    // Vertex-Programm (GTX 1060, main ab2f2eed: acht Abdrücke für 29/27/22/21/10/7/6/3 Knochen, die nur die Zahl trennt).
+    // Der Text nennt die Größe des PUFFERS, den der Knoten liest — die Tafel steht in ihrer Klasse (`_knochenTafel`), gleiche
+    // Stoffe zeichnen mit EINEM Programm. Die Klasse reicht der TSL-Bauer `skinning` (das Bündel exportiert sie nicht an
+    // window.THREE): sein Knoten an einer Probe-Haut mit einem Knochen.
+    _knochenPufferText() {
         const probeHaut = new THREE.SkinnedMesh();
         probeHaut.bind(new THREE.Skeleton([new THREE.Bone()]));
         const SN = THREE.TSL.skinning(probeHaut).constructor;
         if (typeof SN.prototype.getSkinnedPosition !== "function")
             this.log(
-                "KNOCHEN-PUFFER-NAME: r184-SkinningNode.getSkinnedPosition nicht gefunden (Vendor-Drift)",
+                "KNOCHEN-PUFFER-TEXT: r184-SkinningNode.getSkinnedPosition nicht gefunden (Vendor-Drift)",
                 "ERROR"
             );
         else if (!SN.__anazhName) {
             const lageRoh = SN.prototype.getSkinnedPosition;
             SN.prototype.getSkinnedPosition = function (knochen = this.boneMatricesNode, lage = this.positionNode) {
-                if (knochen && knochen.name == null && typeof knochen.setName === "function")
+                if (knochen && knochen.name == null && typeof knochen.setName === "function") {
                     knochen.setName(knochen === this.previousBoneMatricesNode ? "knochenMatrixVor" : "knochenMatrix");
+                    knochen.count = knochen.getValueFromReference(this.skinnedMesh).length / 16;
+                }
                 return lageRoh.call(this, knochen, lage);
             };
             SN.__anazhName = true;
@@ -1013,13 +1017,28 @@ class AnazhRealm_koerper_leib {
         }
         return recId + "|" + (lod | 0) + "|" + d;
     }
+    // DIE KNOCHEN-TAFEL (der EINE Ort, an dem der Ofen ein Skelett baut: Guss, Starr-Bindung, Klon): ihre Puffer stehen in
+    // EINER Größen-Klasse (`KNOCHEN_KLASSE` Plätze, darüber das nächste Vielfache — die Frost-Wand S2 nennt dann den Zwilling),
+    // sodass der Vertex-Text jedes Stoffs gleich ist, wie viele Knochen sein Teil auch trägt (`_knochenPufferText`). Die
+    // Knochen-Liste bleibt die echte: `Skeleton.update` rechnet je Bild nur sie, jeder Leser von `bones` sieht nur sie. Die
+    // freien Plätze stehen einmal auf Identität und werden von keinem Gewicht gelesen (skinIndex < bones.length; Playtest
+    // `rKnochenTafel`). Der Preis: je Teil und Bild lädt r184 die ganze Tafel hoch (Klasse × 64 B statt Knochen × 64 B).
+    static _knochenTafel(bones) {
+        const S = new THREE.Skeleton(bones);
+        const K = AnazhRealm.KNOCHEN_KLASSE;
+        const tafel = new Float32Array(Math.ceil(bones.length / K) * K * 16);
+        for (let i = bones.length * 16; i < tafel.length; i += 16)
+            tafel[i] = tafel[i + 5] = tafel[i + 10] = tafel[i + 15] = 1;
+        S.boneMatrices = tafel;
+        return S;
+    }
     // KLON-REBIND (V18.463, ein Gesetz für Mensch UND Tier): SkinnedMesh.clone teilt das Template-Skelett —
     // jede Instanz bindet auf IHRE geklonten Bones um (Bind-Matrix bleibt).
     static _ofenKlonRebind(klon, teile) {
         klon.traverse((n) => {
             if (!n.isSkinnedMesh || !n.userData.__skinJoints) return;
             const bones = n.userData.__skinJoints.map((nm) => teile[nm]).filter(Boolean);
-            if (bones.length) n.bind(new THREE.Skeleton(bones), n.bindMatrix.clone());
+            if (bones.length) n.bind(AnazhRealm._knochenTafel(bones), n.bindMatrix.clone());
         });
     }
     // DIE STARR-BINDUNG (Mensch UND Tier, am EINEN Ofen-Chokepoint): jedes starre Teil (Pfote · Ohr · Lid ·
@@ -1132,7 +1151,7 @@ class AnazhRealm_koerper_leib {
             for (const t of teile) t.mesh.parent.remove(t.mesh);
             root.add(starr);
             starr.updateMatrixWorld(true);
-            starr.bind(new THREE.Skeleton(bones), starr.matrixWorld.clone());
+            starr.bind(AnazhRealm._knochenTafel(bones), starr.matrixWorld.clone());
             // Die Bind-Box reist mit (wie die der Haut aus dem Assemble): Box3-Leser der Welt-Gestalt messen den
             // Klon sonst über ein frisch umgebundenes, noch nicht posiertes Skelett.
             geo.computeBoundingBox();
@@ -1196,7 +1215,7 @@ class AnazhRealm_koerper_leib {
             root.traverse((n) => {
                 if (!n.isSkinnedMesh) return;
                 n.userData.__skinJoints = skelett.skinJoints.slice();
-                n.bind(new THREE.Skeleton(bones), n.matrixWorld.clone());
+                n.bind(AnazhRealm._knochenTafel(bones), n.matrixWorld.clone());
             });
         }
         // DIE SOHLE steht auf dem Boden, nie das Fell darunter (Integration W5-Körper): die Fell-Schalen (aSchale) reichen
@@ -2988,6 +3007,7 @@ AnazhRealm._landungGesetz = function () {
 // Menschen aus dem Ofen; carPhys des Wagens). Bis 0710-4 hielt STOSS zwei Studio-Größen
 // (dichteLeib 1000 über eine Kapsel aus der Hüft-Höhe — der Hirsch wog 436 kg, der Bär 255 —, dichteWagen 150).
 AnazhRealm.LEIB_KLASSEN = Object.freeze(["fell", "haut"]); // die Material-Klassen der geschlossenen Haut eines Leibs
+AnazhRealm.KNOCHEN_KLASSE = 40; // die Plätze der Knochen-Tafel (`_knochenTafel`): das größte Teil trägt 33 Knochen (Fuchs, Grobstufe)
 // DIE KOPF-KLASSE (`_kopfKlasse`, mensch-kopf und haar): gelenk = die Gelenke des Kopfs (Kopf, Augen, Iris, Lider des Rigs) ·
 // iris = das Gelenk, an dem ein Teil ohne Stoff-Klasse das Auge ist · anteil = ab diesem Anteil seiner Haut-Gewichte an ihnen
 // gehört ein Teil zum Kopf — die Werte der Teilung, die bis w4-bewohner-wache in der Werkbank stand (haar.K2)
