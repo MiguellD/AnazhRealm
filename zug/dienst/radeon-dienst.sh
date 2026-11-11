@@ -20,6 +20,11 @@ frei() { [ ! -d "$GS" ] && ! ps -ef | grep -q "[p]unkte.cjs run" && ! ci; }
 verwaist() {
     local p
     [ -d "$GS" ] || return 1
+    # DAS SCHLOSS EINES LAUFENDEN CI-JOBS IST NIE VERWAIST (12.11.: der Start-Hook des Läufers schreibt „ci-runner <lauf>/<versuch> <job>“
+    # OHNE pid — die 2-min-Regel unten löschte es dem laufenden Job weg, 40× im Log seit dem 10.11.; 00:32 fiel daran die Probe
+    # 43120264912 von w28-stadt-grammatik mit „das GPU-Schloss hält ‚niemand‘, nicht dieser Job“). Solange ein Runner.Worker lebt,
+    # gehört ein ci-runner-Schloss ihm; verwaist ist es erst, wenn kein Job mehr läuft.
+    case "$(head -1 "$GS/besitzer.txt" 2>/dev/null)" in ci-runner*) ci && return 1 ;; esac
     p=$(grep -m1 "^pid=" "$GS/besitzer.txt" 2>/dev/null | tr -dc 0-9)
     if [ -z "$p" ]; then [ $(($(date +%s) - $(stat -c %Y "$GS"))) -gt 120 ]; else ! tasklist -FI "PID eq $p" -NH 2>/dev/null | grep -qw "$p"; fi
 }
