@@ -230,7 +230,7 @@
   },
   "ankunft.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: ankunft.K4#1 radeon: ungemessen (R10) — zuletzt an ab2f2eed: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: POSE ego-0 63446 ms) · ankunft.K4#1 gtx: ungemessen (R10) — zuletzt an 4e2df19b: Deckel 139 s gerissen: Stille seit 15 s nach 146.8 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-45 63419 ms)",
+   "beleg": "Maschine: 0 — offen: ankunft.K4#1 radeon: ungemessen (R10) — zuletzt an ab2f2eed: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: POSE ego-0 63446 ms) · ankunft.K4#1 gtx: ungemessen (R10) — zuletzt an 523e3a38: Deckel 310 s gerissen: Stille seit 44.4 s nach 310 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-135 85445 ms)",
    "stationen": [
     {
      "id": "ankunft.K4#1",
@@ -247,7 +247,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10) — zuletzt an 4e2df19b: Deckel 139 s gerissen: Stille seit 15 s nach 146.8 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-45 63419 ms)",
+     "grund": "ungemessen (R10) — zuletzt an 523e3a38: Deckel 310 s gerissen: Stille seit 44.4 s nach 310 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-135 85445 ms)",
      "ungemessen": true
     }
    ]
@@ -270,7 +270,7 @@
   },
   "bauen.K1": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 72/72 Werke stehen über echte Ereignisse · werkstatt 24/24 (Eingaben 3–3) · rezeptbuch 24/24 (Eingaben 2–3) · hotbar 24/24 (Eingaben 2–2) an 6aa7a5a6 headless — offen: bauen.K1#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/band-urteil.cjs +5) — zuletzt an ab2f2eed: die Welt der Sitzung startet nicht (Halter Exit 3221226505) — der Halter starb ohne Wort, UNGEMESSEN (berichtigt 11.11.: kein Urteil über das Spiel) · bauen.K1#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/band-urteil.cjs +4) — zuletzt an 6aa7a5a6: Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 10,7 CPU-s · MsMpEng.exe 6,0 CPU-s · svchost.exe 2,0 CPU-s — 0,75 Kerne fremd im dichtesten 10-s-",
+   "beleg": "Maschine: gehalten: 72/72 Werke stehen über echte Ereignisse · werkstatt 24/24 (Eingaben 3–3) · rezeptbuch 24/24 (Eingaben 2–3) · hotbar 24/24 (Eingaben 2–2) an 6aa7a5a6 headless — offen: bauen.K1#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/band-urteil.cjs +5) — zuletzt an ab2f2eed: die Welt der Sitzung startet nicht (Halter Exit 3221226505) — der Halter starb ohne Wort, UNGEMESSEN (berichtigt 11.11.: kein Urteil über das Spiel) · bauen.K1#2 gtx: Konsum seit der Messung geändert (R6: stamm/bild-kosten.js, stamm/dirigent-ankunft.js, stamm/dirigent-takt.js +3) — zuletzt an 6aa7a5a6: Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 10,7 CPU-s · MsMpEng.exe 6,0 CPU-s · svchost.exe 2,0 CPU-s — 0,75 Kerne fremd im dichtesten 10-s-",
    "stationen": [
     {
      "id": "bauen.K1#1",
@@ -298,9 +298,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/band-urteil.cjs +4) — zuletzt an 6aa7a5a6: Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 10,7 CPU-s · MsMpEng.exe 6,0 CPU-s · svchost.exe 2,0 CPU-s — 0,75 Kerne fremd im dichtesten 10-s-",
+     "grund": "Konsum seit der Messung geändert (R6: stamm/bild-kosten.js, stamm/dirigent-ankunft.js, stamm/dirigent-takt.js +3) — zuletzt an 6aa7a5a6: Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 10,7 CPU-s · MsMpEng.exe 6,0 CPU-s · svchost.exe 2,0 CPU-s — 0,75 Kerne fremd im dichtesten 10-s-",
      "ungemessen": true,
-     "r6": "naehe"
+     "r6": "konsum"
     }
    ]
   },
@@ -718,17 +718,16 @@
   },
   "ferne.K1": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Koschmieder T/T_soll 0.91–1.03 bei 1/2/5/8 km, Uhr 0,5, 4 Azimute, K1-1 GRUEN, [linse-gpu] amd/rdna-3 an 2d5f4146 radeon · gehalten: Koschmieder T/T_soll 0.89–1.02 bei 1/2/5/8 km, Uhr 0,5, 4 Azimute, K1-1 GRUEN, [linse-gpu] nvidia/pascal an 6aa7a5a6 gtx — offen: ferne.K1#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +15) — zuletzt an 067bd771: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: band · Exit 1) · ferne.K1#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +16)",
+   "beleg": "Maschine: Koschmieder T/T_soll 0.91–1.03 bei 1/2/5/8 km, Uhr 0,5, 4 Azimute, K1-1 GRUEN, [linse-gpu] amd/rdna-3 an e699a834 radeon · gehalten: Koschmieder T/T_soll 0.89–1.02 bei 1/2/5/8 km, Uhr 0,5, 4 Azimute, K1-1 GRUEN, [linse-gpu] nvidia/pascal an 6aa7a5a6 gtx — offen: ferne.K1#2 radeon: ROT: K1-2 ROT (1 Befunde) · Farbton 8 km 1.14–10.58° (≤ 10°) · Sonnenseite Uhr 0,5/0,27 1.25/5.025 (≥ 1,2) · fernes Weiß R/B 6.248 (≥ 1,3) · [linse-gpu] amd/rdna-3 an e699a834 · ferne.K1#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +16)",
    "stationen": [
     {
      "id": "ferne.K1#1",
      "geraet": "radeon",
      "gruen": true,
      "zahl": "Koschmieder T/T_soll 0.91–1.03 bei 1/2/5/8 km, Uhr 0,5, 4 Azimute, K1-1 GRUEN, [linse-gpu] amd/rdna-3",
-     "sha": "2d5f414637a834dec1a5b816af5860709513a303",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +15) — zuletzt an 067bd771: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: band · Exit 1)",
-     "gehalten": true,
-     "r6": "naehe"
+     "sha": "e699a8343c1197102e1cd7047a56460a613bad8a",
+     "grund": null,
+     "r6": "konsum"
     },
     {
      "id": "ferne.K1#1",
@@ -744,11 +743,10 @@
      "id": "ferne.K1#2",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +15) — zuletzt an 067bd771: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: band · Exit 1)",
-     "ungemessen": true,
-     "r6": "naehe"
+     "zahl": "K1-2 ROT (1 Befunde) · Farbton 8 km 1.14–10.58° (≤ 10°) · Sonnenseite Uhr 0,5/0,27 1.25/5.025 (≥ 1,2) · fernes Weiß R/B 6.248 (≥ 1,3) · [linse-gpu] amd/rdna-3",
+     "sha": "e699a8343c1197102e1cd7047a56460a613bad8a",
+     "grund": "ROT: K1-2 ROT (1 Befunde) · Farbton 8 km 1.14–10.58° (≤ 10°) · Sonnenseite Uhr 0,5/0,27 1.25/5.025 (≥ 1,2) · fernes Weiß R/B 6.248 (≥ 1,3) · [linse-gpu] amd/rdna-3",
+     "r6": "konsum"
     },
     {
      "id": "ferne.K1#2",
@@ -763,18 +761,17 @@
    ]
   },
   "ferne.K2": {
-   "punkte": 1,
-   "beleg": "Maschine: gehalten: Restkontrast am Rand 1.3–1.7 % bei 18.4–23.1 km (≤ 2 %), 4 Azimute, K2-1 GRUEN, [linse-gpu] amd/rdna-3 an 2d5f4146 radeon · gehalten: Restkontrast am Rand 1.1–1.9 % bei 18.4–23.1 km (≤ 2 %), 4 Azimute, K2-1 GRUEN, [linse-gpu] nvidia/pascal an 6aa7a5a6 gtx · gehalten: K2-2 GRUEN · Kanten-Linie Hügel 0/0/0.47/0.47°, Gipfel 0/0/0/0.47° (< 1°) · Boden 8/12 Befehle, 43.5k/64k Dreiecke · [linse-gpu] nvidia/pascal an 4e2df19b gtx — offen: ferne.K2#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +15) — zuletzt an 067bd771: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: band · Exit 1)",
+   "punkte": 2,
+   "beleg": "Maschine: Restkontrast am Rand 1.3–1.7 % bei 18.4–23.1 km (≤ 2 %), 4 Azimute, K2-1 GRUEN, [linse-gpu] amd/rdna-3 an e699a834 radeon · gehalten: Restkontrast am Rand 1.1–1.9 % bei 18.4–23.1 km (≤ 2 %), 4 Azimute, K2-1 GRUEN, [linse-gpu] nvidia/pascal an 6aa7a5a6 gtx · K2-2 GRUEN · Kanten-Linie Hügel 0/0/0.47/0.47°, Gipfel 0/0/0/0.47° (< 1°) · Boden 8/12 Befehle, 44.1k/64k Dreiecke · [linse-gpu] amd/rdna-3 an e699a834 radeon · gehalten: K2-2 GRUEN · Kanten-Linie Hügel 0/0/0.47/0.47°, Gipfel 0/0/0/0.47° (< 1°) · Boden 8/12 Befehle, 43.5k/64k Dreiecke · [linse-gpu] nvidia/pascal an 4e2df19b gtx",
    "stationen": [
     {
      "id": "ferne.K2#1",
      "geraet": "radeon",
      "gruen": true,
      "zahl": "Restkontrast am Rand 1.3–1.7 % bei 18.4–23.1 km (≤ 2 %), 4 Azimute, K2-1 GRUEN, [linse-gpu] amd/rdna-3",
-     "sha": "2d5f414637a834dec1a5b816af5860709513a303",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +15) — zuletzt an 067bd771: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: band · Exit 1)",
-     "gehalten": true,
-     "r6": "naehe"
+     "sha": "e699a8343c1197102e1cd7047a56460a613bad8a",
+     "grund": null,
+     "r6": "konsum"
     },
     {
      "id": "ferne.K2#1",
@@ -789,12 +786,11 @@
     {
      "id": "ferne.K2#2",
      "geraet": "radeon",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +15) — zuletzt an 067bd771: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: band · Exit 1)",
-     "ungemessen": true,
-     "r6": "naehe"
+     "gruen": true,
+     "zahl": "K2-2 GRUEN · Kanten-Linie Hügel 0/0/0.47/0.47°, Gipfel 0/0/0/0.47° (< 1°) · Boden 8/12 Befehle, 44.1k/64k Dreiecke · [linse-gpu] amd/rdna-3",
+     "sha": "e699a8343c1197102e1cd7047a56460a613bad8a",
+     "grund": null,
+     "r6": "konsum"
     },
     {
      "id": "ferne.K2#2",
@@ -1425,17 +1421,16 @@
   },
   "klang.K2": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: r 0.87 bei Lag 0 (n 102), Spitze 0.87 bei -0.2 s, CV Bild 0.38 / Ohr 0.56, 53.1 fps, Klang an an 2d5f4146 radeon · gehalten: r 0.79 bei Lag 0 (n 104), Spitze 0.82 bei -0.4 s, CV Bild 0.23 / Ohr 0.58, 67 fps, Klang an an 95ba6fd6 gtx · gehalten: Ufer r 0.90 bei Lag 0 (n 270, Spitze 0.90 bei 0 s, CV Bild 0.33 / Ohr 0.42, stumm 0/265) · Regen r 1.00 bei Lag 0 (n 270, Spitze 1.00 bei -0.5 s, CV Bild 0.63 / Ohr 0.64, stumm 0/261) · Selbsttest (eingefroren) ROT an d3708675 headless",
+   "beleg": "Maschine: r 0.68 bei Lag 0 (n 102), Spitze 0.75 bei -2.2 s, CV Bild 0.31 / Ohr 0.49, 52 fps, Klang an an e699a834 radeon · gehalten: r 0.79 bei Lag 0 (n 104), Spitze 0.82 bei -0.4 s, CV Bild 0.23 / Ohr 0.58, 67 fps, Klang an an 95ba6fd6 gtx · gehalten: Ufer r 0.90 bei Lag 0 (n 270, Spitze 0.90 bei 0 s, CV Bild 0.33 / Ohr 0.42, stumm 0/265) · Regen r 1.00 bei Lag 0 (n 270, Spitze 1.00 bei -0.5 s, CV Bild 0.63 / Ohr 0.64, stumm 0/261) · Selbsttest (eingefroren) ROT an d3708675 headless",
    "stationen": [
     {
      "id": "klang.K2#1",
      "geraet": "radeon",
      "gruen": true,
-     "zahl": "r 0.87 bei Lag 0 (n 102), Spitze 0.87 bei -0.2 s, CV Bild 0.38 / Ohr 0.56, 53.1 fps, Klang an",
-     "sha": "2d5f414637a834dec1a5b816af5860709513a303",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +15) — zuletzt an 77265b04: Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 9,4 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=co",
-     "gehalten": true,
-     "r6": "naehe"
+     "zahl": "r 0.68 bei Lag 0 (n 102), Spitze 0.75 bei -2.2 s, CV Bild 0.31 / Ohr 0.49, 52 fps, Klang an",
+     "sha": "e699a8343c1197102e1cd7047a56460a613bad8a",
+     "grund": "GRÜN trotz Fremd-Last: node scripts/diag-kamera-laub.cjs --selftest 27,2 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 6,3 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 3,7 CPU-s — 1,61 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 42,6 CPU-s in 28,5 s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 5,5 CPU-s · svchost.exe 2,7 CPU-s · SearchIndexer.exe 0,3 CPU-s)",
+     "r6": "konsum"
     },
     {
      "id": "klang.K2#1",
@@ -1569,17 +1564,16 @@
   },
   "leib.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: leib.K1#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +25) — zuletzt an b269f840: Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ LATENZ1) · leib.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +25) — zuletzt an 6aa7a5a6: Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 8,6 CPU-s · MsMpEng.exe 4,7 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfj · leib.K1#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +25) — zuletzt an ab2f2eed: die Welt der Sitzung startet nicht (Halter Exit 3221226505) — der Halter starb ohne Wort, UNGEMESSEN (berichtigt 11.11.: kein Urteil über das Spiel) · leib.K1#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +25) — zuletzt an 6aa7a5a6: Deckel 90 s gerissen: Stille seit 88.6 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ LATENZ1)",
+   "beleg": "Maschine: 0 — offen: leib.K1#1 radeon: ROT: schlechtester von 1 Läufen p95 ms ego/gehen 71.8 · third/gehen 97.2 · ego/wechsel 55.1 · third/wechsel 49.3 · Bild 37.39 ms · ROT trotz Fremd-Last: node scripts/diag-altlasten.cjs --selftest 50,6 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 6,0 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 4,2 CPU-s — 1,98 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 70,1 CPU-s in 40,4 s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 7,4 CPU-s · svchost.exe 5,0 CPU-s · SearchIndexer.exe 0,3 CPU-s) — geeicht ÷ 1,111 (1 + 5,6 % je fremdem Kern × 1,98): ego/gehen p95 ms 71,8 → geeicht 64,6 (Soll ≤ 50) · third/gehen p95 ms 97,2 → geeicht 87,45 (Soll ≤ 50) an e699a834 · leib.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +25) — zuletzt an 6aa7a5a6: Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 8,6 CPU-s · MsMpEng.exe 4,7 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfj · leib.K1#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +25) — zuletzt an ab2f2eed: die Welt der Sitzung startet nicht (Halter Exit 3221226505) — der Halter starb ohne Wort, UNGEMESSEN (berichtigt 11.11.: kein Urteil über das Spiel) · leib.K1#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +25) — zuletzt an 6aa7a5a6: Deckel 90 s gerissen: Stille seit 88.6 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ LATENZ1)",
    "stationen": [
     {
      "id": "leib.K1#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +25) — zuletzt an b269f840: Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ LATENZ1)",
-     "ungemessen": true,
-     "r6": "naehe"
+     "zahl": "schlechtester von 1 Läufen p95 ms ego/gehen 71.8 · third/gehen 97.2 · ego/wechsel 55.1 · third/wechsel 49.3 · Bild 37.39 ms",
+     "sha": "e699a8343c1197102e1cd7047a56460a613bad8a",
+     "grund": "ROT: schlechtester von 1 Läufen p95 ms ego/gehen 71.8 · third/gehen 97.2 · ego/wechsel 55.1 · third/wechsel 49.3 · Bild 37.39 ms · ROT trotz Fremd-Last: node scripts/diag-altlasten.cjs --selftest 50,6 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 6,0 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 4,2 CPU-s — 1,98 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 70,1 CPU-s in 40,4 s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 7,4 CPU-s · svchost.exe 5,0 CPU-s · SearchIndexer.exe 0,3 CPU-s) — geeicht ÷ 1,111 (1 + 5,6 % je fremdem Kern × 1,98): ego/gehen p95 ms 71,8 → geeicht 64,6 (Soll ≤ 50) · third/gehen p95 ms 97,2 → geeicht 87,45 (Soll ≤ 50)",
+     "r6": "konsum"
     },
     {
      "id": "leib.K1#1",
@@ -1779,7 +1773,7 @@
   },
   "licht.K2": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Verhältnis 5.18 (5–12,5), Schatten-Anteil 0.1931 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1499 px, Uhr 0.5 sunny, [linse-gpu] amd/rdna-3 an b269f840 radeon · gehalten: Verhältnis 5.455 (5–12,5), Schatten-Anteil 0.1833 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1493 px, Uhr 0.5 sunny, [linse-gpu] nvidia/pascal an 94d9c5a6 gtx — offen: licht.K2#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +15) — zuletzt an 067bd771: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: los-5 · Exit 0) · licht.K2#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +16)",
+   "beleg": "Maschine: gehalten: Verhältnis 5.18 (5–12,5), Schatten-Anteil 0.1931 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1499 px, Uhr 0.5 sunny, [linse-gpu] amd/rdna-3 an b269f840 radeon · gehalten: Verhältnis 5.455 (5–12,5), Schatten-Anteil 0.1833 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1493 px, Uhr 0.5 sunny, [linse-gpu] nvidia/pascal an 94d9c5a6 gtx — offen: licht.K2#2 radeon: ROT: Uhr 0.5 klar (Sonne 74.2°) 5.157, Schatten-Anteil 0.1939 UNGÜLTIG (A/B 1.000, A/C 1.024, 1499 px) · Uhr 0.27 klar (Sonne 7.2°) 0.964 UNGÜLTIG (A/B 0.700, A/C 1.000, 1474 px) · Uhr 0.73 klar (Sonne 6.7°) 1.035 UNGÜLTIG (A/B 0.699, A/C 1.000, 1496 px) · Uhr 0.5 Regen (Sonne 74.2°) 1.174 UNGÜLTIG (A/B 0.712, A/C 1.005, 1499 px) · Uhr 0.27 Regen (Sonne 7.2°) 0.889 · Uhr 0.73 Regen (Sonne 6.7°) 1 · Himmel zur Sonne 1.223 (13030/13030 px, Belichtung 42.2213/42.2213, 20 m über dem Boden) · Soll klar 0,5: 5–12,5, 0,08–0,20, Himmel ≥ 1,2; klar 0,27/0,73 ≥ 2,5; Regen ≤ 1,5 · [linse-gpu] amd/rdna-3 an e699a834 · licht.K2#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +16)",
    "stationen": [
     {
      "id": "licht.K2#1",
@@ -1787,7 +1781,7 @@
      "gruen": true,
      "zahl": "Verhältnis 5.18 (5–12,5), Schatten-Anteil 0.1931 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1499 px, Uhr 0.5 sunny, [linse-gpu] amd/rdna-3",
      "sha": "b269f840a0cd83b71b9a925a2dc698edf719b966",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +15) — zuletzt an e699a834: Fremd-Last: powershell -NoProfile -Command Get-NetTCPConnection -State Listen -Err… ProcessId=$($_.Own 1,1 CPU-s · nordvpn-service.exe 0,9 CPU-s · Claude.exe 0,6 CPU-s — 0,53 Kerne fremd im dichtesten",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +15) — zuletzt an e699a834: Fremd-Last: Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 4,5 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8s",
      "gehalten": true,
      "r6": "naehe"
     },
@@ -1805,11 +1799,10 @@
      "id": "licht.K2#2",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +15) — zuletzt an 067bd771: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: los-5 · Exit 0)",
-     "ungemessen": true,
-     "r6": "naehe"
+     "zahl": "Uhr 0.5 klar (Sonne 74.2°) 5.157, Schatten-Anteil 0.1939 UNGÜLTIG (A/B 1.000, A/C 1.024, 1499 px) · Uhr 0.27 klar (Sonne 7.2°) 0.964 UNGÜLTIG (A/B 0.700, A/C 1.000, 1474 px) · Uhr 0.73 klar (Sonne 6.7°) 1.035 UNGÜLTIG (A/B 0.699, A/C 1.000, 1496 px) · Uhr 0.5 Regen (Sonne 74.2°) 1.174 UNGÜLTIG (A/B 0.712, A/C 1.005, 1499 px) · Uhr 0.27 Regen (Sonne 7.2°) 0.889 · Uhr 0.73 Regen (Sonne 6.7°) 1 · Himmel zur Sonne 1.223 (13030/13030 px, Belichtung 42.2213/42.2213, 20 m über dem Boden) · Soll klar 0,5: 5–12,5, 0,08–0,20, Himmel ≥ 1,2; klar 0,27/0,73 ≥ 2,5; Regen ≤ 1,5 · [linse-gpu] amd/rdna-3",
+     "sha": "e699a8343c1197102e1cd7047a56460a613bad8a",
+     "grund": "ROT: Uhr 0.5 klar (Sonne 74.2°) 5.157, Schatten-Anteil 0.1939 UNGÜLTIG (A/B 1.000, A/C 1.024, 1499 px) · Uhr 0.27 klar (Sonne 7.2°) 0.964 UNGÜLTIG (A/B 0.700, A/C 1.000, 1474 px) · Uhr 0.73 klar (Sonne 6.7°) 1.035 UNGÜLTIG (A/B 0.699, A/C 1.000, 1496 px) · Uhr 0.5 Regen (Sonne 74.2°) 1.174 UNGÜLTIG (A/B 0.712, A/C 1.005, 1499 px) · Uhr 0.27 Regen (Sonne 7.2°) 0.889 · Uhr 0.73 Regen (Sonne 6.7°) 1 · Himmel zur Sonne 1.223 (13030/13030 px, Belichtung 42.2213/42.2213, 20 m über dem Boden) · Soll klar 0,5: 5–12,5, 0,08–0,20, Himmel ≥ 1,2; klar 0,27/0,73 ≥ 2,5; Regen ≤ 1,5 · [linse-gpu] amd/rdna-3",
+     "r6": "konsum"
     },
     {
      "id": "licht.K2#2",
@@ -1887,17 +1880,16 @@
   },
   "licht.K5": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: größter Sprung 0.049 EV/s (Soll ≤ 0,1) · Hub klar ↔ Regen 0.70 EV · 125 s, Wörter standen · [linse-gpu] amd/rdna-3 an 2d5f4146 radeon · gehalten: größter Sprung 0.056 EV/s (Soll ≤ 0,1) · Hub klar ↔ Regen 0.94 EV · 127 s, Wörter standen · [linse-gpu] nvidia/pascal an b895650c gtx",
+   "beleg": "Maschine: größter Sprung 0.049 EV/s (Soll ≤ 0,1) · Hub klar ↔ Regen 0.70 EV · 125 s, Wörter standen · [linse-gpu] amd/rdna-3 an e699a834 radeon · gehalten: größter Sprung 0.056 EV/s (Soll ≤ 0,1) · Hub klar ↔ Regen 0.94 EV · 127 s, Wörter standen · [linse-gpu] nvidia/pascal an b895650c gtx",
    "stationen": [
     {
      "id": "licht.K5#1",
      "geraet": "radeon",
      "gruen": true,
      "zahl": "größter Sprung 0.049 EV/s (Soll ≤ 0,1) · Hub klar ↔ Regen 0.70 EV · 125 s, Wörter standen · [linse-gpu] amd/rdna-3",
-     "sha": "2d5f414637a834dec1a5b816af5860709513a303",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +13) — zuletzt an 6aa7a5a6: Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: ✅ SELBSTTEST GRÜN — jeder injizierte Täter fällt rot und wird beim Namen genannt.)",
-     "gehalten": true,
-     "r6": "naehe"
+     "sha": "e699a8343c1197102e1cd7047a56460a613bad8a",
+     "grund": "GRÜN trotz Fremd-Last: chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-22812-profil-3srnFu --no-p 26,1 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 11,6 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 6,3 CPU-s — 2,89 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 63,1 CPU-s in 44,8 s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 12,5 CPU-s · svchost.exe 5,9 CPU-s · SearchIndexer.exe 1,3 CPU-s)",
+     "r6": "konsum"
     },
     {
      "id": "licht.K5#1",
@@ -1912,17 +1904,16 @@
   },
   "lod.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: lod.K1#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +15) — zuletzt an ab2f2eed: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: auge · Exit 0) · lod.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +16) — zuletzt an 6aa7a5a6: Deckel 90 s gerissen: Stille seit 36.8 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: auge · Exit 0)",
+   "beleg": "Maschine: 0 — offen: lod.K1#1 radeon: ROT: Tafel-Pose schlechteste fimp:strauch:L2 0.2787 · Karte fimp:birke:L2 0.1295 (20138 px), fimp:buche:L2 0.1766 (10934 px), fimp:eiche:L2 0.1377 (56646 px), fimp:fichte:L2 0.1628 (106119 px), fimp:strauch:L2 0.2787 (23196 px), fimp:tanne:L2 0.1553 (154608 px) | Spielgang schlechteste fimp:buche:L2 0.2097 · Karte fimp:birke:L2 0.1830 (40067 px), fimp:buche:L2 0.2097 (11698 px), fimp:eiche:L2 0.1372 (55180 px), fimp:fichte:L2 0.1720 (106004 px), fimp:strauch:L2 0.2079 (27469 px), fimp:tanne:L2 0.1554 (132718 px) (Soll kante ≤ 0,22 je Teil-Klasse, zweiton 0) · [linse-gpu] amd/rdna-3 an e699a834 · lod.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +16) — zuletzt an 6aa7a5a6: Deckel 90 s gerissen: Stille seit 36.8 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: auge · Exit 0)",
    "stationen": [
     {
      "id": "lod.K1#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +15) — zuletzt an ab2f2eed: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: auge · Exit 0)",
-     "ungemessen": true,
-     "r6": "naehe"
+     "zahl": "Tafel-Pose schlechteste fimp:strauch:L2 0.2787 · Karte fimp:birke:L2 0.1295 (20138 px), fimp:buche:L2 0.1766 (10934 px), fimp:eiche:L2 0.1377 (56646 px), fimp:fichte:L2 0.1628 (106119 px), fimp:strauch:L2 0.2787 (23196 px), fimp:tanne:L2 0.1553 (154608 px) | Spielgang schlechteste fimp:buche:L2 0.2097 · Karte fimp:birke:L2 0.1830 (40067 px), fimp:buche:L2 0.2097 (11698 px), fimp:eiche:L2 0.1372 (55180 px), fimp:fichte:L2 0.1720 (106004 px), fimp:strauch:L2 0.2079 (27469 px), fimp:tanne:L2 0.1554 (132718 px) (Soll kante ≤ 0,22 je Teil-Klasse, zweiton 0) · [linse-gpu] amd/rdna-3",
+     "sha": "e699a8343c1197102e1cd7047a56460a613bad8a",
+     "grund": "ROT: Tafel-Pose schlechteste fimp:strauch:L2 0.2787 · Karte fimp:birke:L2 0.1295 (20138 px), fimp:buche:L2 0.1766 (10934 px), fimp:eiche:L2 0.1377 (56646 px), fimp:fichte:L2 0.1628 (106119 px), fimp:strauch:L2 0.2787 (23196 px), fimp:tanne:L2 0.1553 (154608 px) | Spielgang schlechteste fimp:buche:L2 0.2097 · Karte fimp:birke:L2 0.1830 (40067 px), fimp:buche:L2 0.2097 (11698 px), fimp:eiche:L2 0.1372 (55180 px), fimp:fichte:L2 0.1720 (106004 px), fimp:strauch:L2 0.2079 (27469 px), fimp:tanne:L2 0.1554 (132718 px) (Soll kante ≤ 0,22 je Teil-Klasse, zweiton 0) · [linse-gpu] amd/rdna-3",
+     "r6": "konsum"
     },
     {
      "id": "lod.K1#1",
@@ -1946,7 +1937,7 @@
      "gruen": true,
      "zahl": "Gehen 4 m/s: 0.0389 % Pop-Pixel je Sekunde (807 px, Soll ≤ 0,05 %), je Schritt 31*/46*/423*/55/51*/72*/51*/78* (* = Stufen-Wechsel), Laub 216–216 m, perfTarget 17 ms, [linse-gpu] amd/rdna-3",
      "sha": "b269f840a0cd83b71b9a925a2dc698edf719b966",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +15) — zuletzt an 067bd771: Messort: pop: die Treue: zwei Aufnahmen derselben Szene (Schritt 0, A) weichen in 12 Bytes ab — EINE Aufnahme je Schuss trägt hier nicht — kein Urteil, UNGEMESSEN (die Probe sah: Folge: pop: Exit 1 nc",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +15) — zuletzt an e699a834: Fremd-Last: node scripts/diag-studio-uebergabe.cjs 26,6 CPU-s · node scripts/diag-altlasten.cjs --selftest 5,4 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_p",
      "gehalten": true,
      "r6": "naehe"
     },
@@ -1995,17 +1986,16 @@
   },
   "lod.K5": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: 17 Läufe bei 30/60/144 fps, Puls und Regler ±10 % (loadScale 0–1): Abstände, Schwellen, Grenzen, Wahl und Ränder gleich, die Mutante (Regler-Term im Gesetz) wandert an 6aa7a5a6 headless — offen: lod.K5#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +15) — zuletzt an 067bd771: Deckel 43 s gerissen — beendet, UNGEMESSEN (zuletzt: umstellen · Exit 0) · lod.K5#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +13) — zuletzt an 6aa7a5a6: Deckel 45 s gerissen: Stille seit 41.1 s nach 45 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: umstellen · Exit 0)",
+   "beleg": "Maschine: gehalten: 17 Läufe bei 30/60/144 fps, Puls und Regler ±10 % (loadScale 0–1): Abstände, Schwellen, Grenzen, Wahl und Ränder gleich, die Mutante (Regler-Term im Gesetz) wandert an 6aa7a5a6 headless — offen: lod.K5#1 radeon: ROT: Baum 5.14 px · Haus 0.12 px · Tor 0.18 px · Wagen 0.03 px (Soll ≤ 1 px am Wechsel-Abstand, 1920 × 1080) · gate L2: Exemplar 135 px, [linse-gpu] amd/rdna-3 an e699a834 · lod.K5#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +13) — zuletzt an 6aa7a5a6: Deckel 45 s gerissen: Stille seit 41.1 s nach 45 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: umstellen · Exit 0)",
    "stationen": [
     {
      "id": "lod.K5#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +15) — zuletzt an 067bd771: Deckel 43 s gerissen — beendet, UNGEMESSEN (zuletzt: umstellen · Exit 0)",
-     "ungemessen": true,
-     "r6": "naehe"
+     "zahl": "Baum 5.14 px · Haus 0.12 px · Tor 0.18 px · Wagen 0.03 px (Soll ≤ 1 px am Wechsel-Abstand, 1920 × 1080) · gate L2: Exemplar 135 px, [linse-gpu] amd/rdna-3",
+     "sha": "e699a8343c1197102e1cd7047a56460a613bad8a",
+     "grund": "ROT: Baum 5.14 px · Haus 0.12 px · Tor 0.18 px · Wagen 0.03 px (Soll ≤ 1 px am Wechsel-Abstand, 1920 × 1080) · gate L2: Exemplar 135 px, [linse-gpu] amd/rdna-3",
+     "r6": "konsum"
     },
     {
      "id": "lod.K5#1",
@@ -2217,17 +2207,16 @@
   },
   "material.K2": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: boden 0.5 m glatt 0 nyquist 0.1686 (Arm 0.498), 1 m glatt 0 nyquist 0.1733 (Arm 0.998), 2 m glatt 0.0073 nyquist 0.1741 (Arm 1.996) · fels 0.5 m glatt 0 nyquist 0.1826 (Arm 0.493), 1 m glatt 0 nyquist 0.1741 (Arm 0.99), 2 m glatt 0 nyquist 0.1722 (Arm 1.93) · Soll nyquist ≥ 0,15, glatt ≤ 0,10 · [linse-gpu] amd/rdna-3 an b269f840 radeon · gehalten: boden 0.5 m glatt 0.0615 nyquist 0.1616 (Arm 0.498), 1 m glatt 0.0331 nyquist 0.1701 (Arm 0.998), 2 m glatt 0.0245 nyquist 0.1756 (Arm 1.996) · fels 0.5 m glatt 0 nyquist 0.166 (Arm 0.494), 1 m glatt 0.0691 nyquist 0.1562 (Arm 0.99), 2 m glatt 0 nyquist 0.164 (Arm 1.984) · Soll nyquist ≥ 0,15, glatt ≤ 0,10 · [linse-gpu] nvidia/pascal an 8efb6318 gtx — offen: material.K2#2: kein Werkzeug (fehlt)",
+   "beleg": "Maschine: boden 0.5 m glatt 0 nyquist 0.1686 (Arm 0.498), 1 m glatt 0 nyquist 0.1733 (Arm 0.998), 2 m glatt 0.0073 nyquist 0.1741 (Arm 1.996) · fels 0.5 m glatt 0 nyquist 0.1826 (Arm 0.493), 1 m glatt 0 nyquist 0.1741 (Arm 0.99), 2 m glatt 0 nyquist 0.1722 (Arm 1.93) · Soll nyquist ≥ 0,15, glatt ≤ 0,10 · [linse-gpu] amd/rdna-3 an e699a834 radeon · gehalten: boden 0.5 m glatt 0.0615 nyquist 0.1616 (Arm 0.498), 1 m glatt 0.0331 nyquist 0.1701 (Arm 0.998), 2 m glatt 0.0245 nyquist 0.1756 (Arm 1.996) · fels 0.5 m glatt 0 nyquist 0.166 (Arm 0.494), 1 m glatt 0.0691 nyquist 0.1562 (Arm 0.99), 2 m glatt 0 nyquist 0.164 (Arm 1.984) · Soll nyquist ≥ 0,15, glatt ≤ 0,10 · [linse-gpu] nvidia/pascal an 8efb6318 gtx — offen: material.K2#2: kein Werkzeug (fehlt)",
    "stationen": [
     {
      "id": "material.K2#1",
      "geraet": "radeon",
      "gruen": true,
      "zahl": "boden 0.5 m glatt 0 nyquist 0.1686 (Arm 0.498), 1 m glatt 0 nyquist 0.1733 (Arm 0.998), 2 m glatt 0.0073 nyquist 0.1741 (Arm 1.996) · fels 0.5 m glatt 0 nyquist 0.1826 (Arm 0.493), 1 m glatt 0 nyquist 0.1741 (Arm 0.99), 2 m glatt 0 nyquist 0.1722 (Arm 1.93) · Soll nyquist ≥ 0,15, glatt ≤ 0,10 · [linse-gpu] amd/rdna-3",
-     "sha": "b269f840a0cd83b71b9a925a2dc698edf719b966",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +15)",
-     "gehalten": true,
-     "r6": "naehe"
+     "sha": "e699a8343c1197102e1cd7047a56460a613bad8a",
+     "grund": null,
+     "r6": "konsum"
     },
     {
      "id": "material.K2#1",
@@ -2243,17 +2232,16 @@
   },
   "material.K3": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: Haus L0 0.1505 · L1/L0 1.013 · L2/L0 1.011 · Fels nur L0 (findling, basalt, sediment, zacken, geroell, kristalle), Welt-Y 0.2706 · Soll 0,95–1,05 · [linse-gpu] amd/rdna-3 an b269f840 radeon · gehalten: Haus L0 0.1592 · L1/L0 0.992 · L2/L0 0.984 · Fels nur L0 (findling, basalt, sediment, zacken, geroell, kristalle), Welt-Y 0.2389 · Soll 0,95–1,05 · [linse-gpu] nvidia/pascal an b3f9ae95 gtx · gehalten: haus@0.5 l1 1.013/l2 1.011 · birke@0.5 l1 0.996/karte 1.010 · fichte@0.5 l1 0.998/karte 0.999 · haus@0.27 l1 1.013/l2 1.011 · birke@0.27 l1 0.996/karte 1.010 · fichte@0.27 l1 0.998/karte 0.999 · Fels nur L0 · Soll 0,95–1,05 · [linse-gpu] amd/rdna-3 an b269f840 radeon · gehalten: haus@0.5 l1 1.013/l2 1.004 · birke@0.5 l1 0.992/karte 1.003 · fichte@0.5 l1 0.997/karte 0.998 · haus@0.27 l1 1.013/l2 1.004 · birke@0.27 l1 0.992/karte 1.003 · fichte@0.27 l1 0.997/karte 0.998 · Fels nur L0 · Soll 0,95–1,05 · [linse-gpu] nvidia/pascal an 039509b2 gtx",
+   "beleg": "Maschine: Haus L0 0.1512 · L1/L0 1.008 · L2/L0 1.007 · Fels nur L0 (findling, basalt, sediment, zacken, geroell, kristalle), Welt-Y 0.2706 · Soll 0,95–1,05 · [linse-gpu] amd/rdna-3 an e699a834 radeon · gehalten: Haus L0 0.1592 · L1/L0 0.992 · L2/L0 0.984 · Fels nur L0 (findling, basalt, sediment, zacken, geroell, kristalle), Welt-Y 0.2389 · Soll 0,95–1,05 · [linse-gpu] nvidia/pascal an b3f9ae95 gtx · haus@0.5 l1 1.008/l2 1.007 · birke@0.5 l1 0.995/karte 1.009 · fichte@0.5 l1 0.997/karte 0.997 · haus@0.27 l1 1.008/l2 1.007 · birke@0.27 l1 0.995/karte 1.009 · fichte@0.27 l1 0.997/karte 0.997 · Fels nur L0 · Soll 0,95–1,05 · [linse-gpu] amd/rdna-3 an e699a834 radeon · gehalten: haus@0.5 l1 1.013/l2 1.004 · birke@0.5 l1 0.992/karte 1.003 · fichte@0.5 l1 0.997/karte 0.998 · haus@0.27 l1 1.013/l2 1.004 · birke@0.27 l1 0.992/karte 1.003 · fichte@0.27 l1 0.997/karte 0.998 · Fels nur L0 · Soll 0,95–1,05 · [linse-gpu] nvidia/pascal an 039509b2 gtx",
    "stationen": [
     {
      "id": "material.K3#1",
      "geraet": "radeon",
      "gruen": true,
-     "zahl": "Haus L0 0.1505 · L1/L0 1.013 · L2/L0 1.011 · Fels nur L0 (findling, basalt, sediment, zacken, geroell, kristalle), Welt-Y 0.2706 · Soll 0,95–1,05 · [linse-gpu] amd/rdna-3",
-     "sha": "b269f840a0cd83b71b9a925a2dc698edf719b966",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +16)",
-     "gehalten": true,
-     "r6": "naehe"
+     "zahl": "Haus L0 0.1512 · L1/L0 1.008 · L2/L0 1.007 · Fels nur L0 (findling, basalt, sediment, zacken, geroell, kristalle), Welt-Y 0.2706 · Soll 0,95–1,05 · [linse-gpu] amd/rdna-3",
+     "sha": "e699a8343c1197102e1cd7047a56460a613bad8a",
+     "grund": null,
+     "r6": "konsum"
     },
     {
      "id": "material.K3#1",
@@ -2269,11 +2257,10 @@
      "id": "material.K3#2",
      "geraet": "radeon",
      "gruen": true,
-     "zahl": "haus@0.5 l1 1.013/l2 1.011 · birke@0.5 l1 0.996/karte 1.010 · fichte@0.5 l1 0.998/karte 0.999 · haus@0.27 l1 1.013/l2 1.011 · birke@0.27 l1 0.996/karte 1.010 · fichte@0.27 l1 0.998/karte 0.999 · Fels nur L0 · Soll 0,95–1,05 · [linse-gpu] amd/rdna-3",
-     "sha": "b269f840a0cd83b71b9a925a2dc698edf719b966",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +16)",
-     "gehalten": true,
-     "r6": "naehe"
+     "zahl": "haus@0.5 l1 1.008/l2 1.007 · birke@0.5 l1 0.995/karte 1.009 · fichte@0.5 l1 0.997/karte 0.997 · haus@0.27 l1 1.008/l2 1.007 · birke@0.27 l1 0.995/karte 1.009 · fichte@0.27 l1 0.997/karte 0.997 · Fels nur L0 · Soll 0,95–1,05 · [linse-gpu] amd/rdna-3",
+     "sha": "e699a8343c1197102e1cd7047a56460a613bad8a",
+     "grund": null,
+     "r6": "konsum"
     },
     {
      "id": "material.K3#2",
@@ -3027,15 +3014,15 @@
   },
   "profiband.K4": {
    "punkte": 1,
-   "beleg": "Maschine: Gehen 49 Bilder · max 92.26 ms · 93.88 % > 33 ms · Fahrt 49 Bilder · max 100.43 ms · 97.96 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 93.88 % > 33 ms | Fahrt: 1 Bild(er) > 100 ms (max 100.43), 97.96 % > 33 ms an e699a834 radeon — offen: profiband.K4#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/asset-worker-harness.cjs, spec/profiband/ratsche-quelltext.json) — zuletzt an e699a834: Fremd-Last: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 10,7 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=c · profiband.K4#2 gtx: Station seit der Messung geändert — zuletzt an dcc33615: Fremd-Last: AppHelperCap.exe 43,1 CPU-s · MsMpEng.exe 13,6 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 10,1 CPU-s — 2,02 Kerne fremd im dichteste",
+   "beleg": "Maschine: Gehen 50 Bilder · max 92.22 ms · 90.00 % > 33 ms · Fahrt 52 Bilder · max 83.64 ms · 96.15 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 90.00 % > 33 ms | Fahrt: 96.15 % > 33 ms an e699a834 radeon — offen: profiband.K4#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/asset-worker-harness.cjs, spec/profiband/ratsche-quelltext.json) — zuletzt an e699a834: Fremd-Last: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 10,3 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=c · profiband.K4#2 gtx: Station seit der Messung geändert — zuletzt an dcc33615: Fremd-Last: AppHelperCap.exe 43,1 CPU-s · MsMpEng.exe 13,6 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 10,1 CPU-s — 2,02 Kerne fremd im dichteste",
    "stationen": [
     {
      "id": "profiband.K4#1",
      "geraet": "radeon",
      "gruen": true,
-     "zahl": "Gehen 49 Bilder · max 92.26 ms · 93.88 % > 33 ms · Fahrt 49 Bilder · max 100.43 ms · 97.96 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 93.88 % > 33 ms | Fahrt: 1 Bild(er) > 100 ms (max 100.43), 97.96 % > 33 ms",
+     "zahl": "Gehen 50 Bilder · max 92.22 ms · 90.00 % > 33 ms · Fahrt 52 Bilder · max 83.64 ms · 96.15 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] amd/rdna-3 — daneben: Gehen: 90.00 % > 33 ms | Fahrt: 96.15 % > 33 ms",
      "sha": "e699a8343c1197102e1cd7047a56460a613bad8a",
-     "grund": "GRÜN trotz Fremd-Last: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 10,7 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 4,1 CPU-s · nordvpn-service.exe 1,6 CPU-s — 0,62 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 23,4 CPU-s in 47,7 s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 12,4 CPU-s · svchost.exe 3,6 CPU-s · SearchIndexer.exe 2,5 CPU-s)",
+     "grund": "GRÜN trotz Fremd-Last: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 10,3 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 4,2 CPU-s · nordvpn-service.exe 1,2 CPU-s — 0,56 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 21,4 CPU-s in 45,3 s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 10,8 CPU-s · svchost.exe 3,2 CPU-s · SearchIndexer.exe 0,7 CPU-s)",
      "r6": "konsum"
     },
     {
@@ -3053,7 +3040,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/asset-worker-harness.cjs, spec/profiband/ratsche-quelltext.json) — zuletzt an e699a834: Fremd-Last: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 10,7 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=c",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/asset-worker-harness.cjs, spec/profiband/ratsche-quelltext.json) — zuletzt an e699a834: Fremd-Last: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 10,3 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=c",
      "ungemessen": true,
      "r6": "naehe"
     },
@@ -3602,17 +3589,16 @@
   },
   "spielgang.K3": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: HUD deckt 2.86 % (1920×1080, im Spiel) · INP HUD 168 ms (50) · Menü 192 ms (20) an b269f840 radeon",
+   "beleg": "Maschine: HUD deckt 2.86 % (1920×1080, im Spiel) · INP HUD 56 ms (50) · Menü 192 ms (20) an e699a834 radeon",
    "stationen": [
     {
      "id": "spielgang.K3#1",
      "geraet": "radeon",
      "gruen": true,
-     "zahl": "HUD deckt 2.86 % (1920×1080, im Spiel) · INP HUD 168 ms (50) · Menü 192 ms (20)",
-     "sha": "b269f840a0cd83b71b9a925a2dc698edf719b966",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +15) — zuletzt an 900c28e6: Fremd-Last: MsMpEng.exe 4,4 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 3,6 CPU-s · svchost.exe 3,3 CPU-s — 1,91 Kerne fremd im dichtesten 10-s-F",
-     "gehalten": true,
-     "r6": "naehe"
+     "zahl": "HUD deckt 2.86 % (1920×1080, im Spiel) · INP HUD 56 ms (50) · Menü 192 ms (20)",
+     "sha": "e699a8343c1197102e1cd7047a56460a613bad8a",
+     "grund": "GRÜN trotz Fremd-Last: node scripts/diag-altlasten.cjs --selftest 11,9 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 1,8 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 0,9 CPU-s — 1,45 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, Radeon 890M, 24 Kerne; Σ fremd 16,8 CPU-s in 11,6 s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 2,1 CPU-s · svchost.exe 1,1 CPU-s · svchost.exe -k UnistackSvcGroup -s CDPUserSvc 0,0 CPU-s)",
+     "r6": "konsum"
     },
     {
      "id": "spielgang.K3#1",
@@ -3840,7 +3826,7 @@
      "gruen": true,
      "zahl": "Frame p95 Median 42.1 ms (42.1 · 42 · 42.2) · CPU-Takt p95 26.1 · 25.2 · 24.7 ms · die Welt steht nach 9 · 8.9 · 8.9 s · Bauten sonst 0/0/0 · 3 von 3 gültig · TAKT: _loopVoxelStreaming › _runFrameScheduler x9 | TAKT: verteilt x4 · [linse-gpu] amd/rdna-3",
      "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Station seit der Messung geändert — zuletzt an ab2f2eed: Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] amd/rdna-3)",
+     "grund": "Station seit der Messung geändert — zuletzt an e699a834: Deckel 98 s gerissen — beendet, UNGEMESSEN (zuletzt: SPRUNG 1 EXIT=0 {\"m\":1000,\"stehtS\":36.8,\"bau\":0,\"frames\":1384,\"frameMs\":{\"p50\":25.15,\"p95\":41.85,\"p99\":58.27,\"max\":142.18},\"taktMs\":{\"p50\":21.76,\"p",
      "gehalten": true
     },
     {
@@ -4805,7 +4791,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 388,
-  "konsum": 13,
+  "konsum": 28,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K1#2 radeon",
@@ -4822,7 +4808,6 @@
    "ankunft.K5#1 radeon",
    "bauen.K1#1 headless",
    "bauen.K1#2 radeon",
-   "bauen.K1#2 gtx",
    "bauen.K2#1 headless",
    "bauen.K2#2 headless",
    "bauen.K3#1 headless",
@@ -4845,13 +4830,9 @@
    "feld.K4#1 headless",
    "feld.K4#2 headless",
    "feld.K5#1 headless",
-   "ferne.K1#1 radeon",
    "ferne.K1#1 gtx",
-   "ferne.K1#2 radeon",
    "ferne.K1#2 gtx",
-   "ferne.K2#1 radeon",
    "ferne.K2#1 gtx",
-   "ferne.K2#2 radeon",
    "ferne.K2#2 gtx",
    "ferne.K3#1 radeon",
    "ferne.K4#1 radeon",
@@ -4892,7 +4873,6 @@
    "ki.K5#1 headless",
    "klang.K1#1 headless",
    "klang.K1#2 headless",
-   "klang.K2#1 radeon",
    "klang.K2#1 gtx",
    "klang.K2#2 headless",
    "klang.K3#1 headless",
@@ -4904,7 +4884,6 @@
    "klang.K5#1 headless",
    "klang.K5#2 radeon",
    "klang.K5#2 gtx",
-   "leib.K1#1 radeon",
    "leib.K1#1 gtx",
    "leib.K1#2 radeon",
    "leib.K1#2 gtx",
@@ -4918,20 +4897,16 @@
    "licht.K1#1 gtx",
    "licht.K2#1 radeon",
    "licht.K2#1 gtx",
-   "licht.K2#2 radeon",
    "licht.K2#2 gtx",
    "licht.K3#1 radeon",
    "licht.K3#1 gtx",
    "licht.K3#2 radeon",
    "licht.K3#2 gtx",
    "licht.K4#1 radeon",
-   "licht.K5#1 radeon",
-   "lod.K1#1 radeon",
    "lod.K1#1 gtx",
    "lod.K2#1 radeon",
    "lod.K2#1 gtx",
    "lod.K4#1 radeon",
-   "lod.K5#1 radeon",
    "lod.K5#1 gtx",
    "lod.K5#2 headless",
    "luftwasser.K1#1 headless",
@@ -4949,11 +4924,8 @@
    "material.K1#1 gtx",
    "material.K1#2 radeon",
    "material.K1#2 gtx",
-   "material.K2#1 radeon",
    "material.K2#1 gtx",
-   "material.K3#1 radeon",
    "material.K3#1 gtx",
-   "material.K3#2 radeon",
    "material.K3#2 gtx",
    "material.K4#1 radeon",
    "material.K5#1 radeon",
@@ -5043,7 +5015,6 @@
    "speicher.K5#1 headless",
    "speicher.K5#2 headless",
    "spielgang.K1#1 headless",
-   "spielgang.K3#1 radeon",
    "spielgang.K3#1 gtx",
    "spielgang.K4#1 headless",
    "spielgang.K4#2 headless",
@@ -5122,8 +5093,8 @@
   "ohne": 64
  },
  "kopfVoll": "e699a8343c1197102e1cd7047a56460a613bad8a",
- "zeit": "2026-11-11T12:50:41.305Z",
- "vorher": "4e2df19b",
+ "zeit": "2026-11-11T13:15:50.026Z",
+ "vorher": "e699a834",
  "pflicht": {
   "dokument": "docs/PFLICHT-OFFEN.md",
   "eintraege": [
@@ -5147,7 +5118,7 @@
      {
       "station": "lod.K1#1",
       "geraet": "radeon",
-      "zeile": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +15) — zuletzt an ab2f2eed: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: auge · Exit 0)"
+      "zeile": "ROT: Tafel-Pose schlechteste fimp:strauch:L2 0.2787 · Karte fimp:birke:L2 0.1295 (20138 px), fimp:buche:L2 0.1766 (10934 px), fimp:eiche:L2 0.1377 (56646 px), fimp:fichte:L2 0.1628 (106119 px), fimp:strauch:L2 0.2787 (23196 px), fimp:tanne:"
      },
      {
       "station": "lod.K1#1",
