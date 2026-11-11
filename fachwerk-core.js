@@ -3873,6 +3873,12 @@
     // bilinear. Ein Lese-Punkt außerhalb zählt (`mass.aussen`, im Export `trasse.aussen`; die Linse verlangt 0).
     function trasseRahmen(nH){ const R=1.5*siedlungsReich(SIEDLUNG, Math.max(1, isFinite(nH)?nH:SIEDLUNG.nHMin))+60, d=Math.max(4, Math.ceil(R/80)), m=Math.ceil(R/d);
       return {x0:-m*d, z0:-m*d, d, n:2*m+1}; }
+    // DER UMKREIS, IN DEM EIN PLAN DAS WASSER LIEST (`hoeheAusRaster` nass, die Stadt der Grammatik in `dorfLayout`): der Ring der
+    // Stadt samt ihrer Ausfallstraße — 0 für das Dorf (sein Plan liest kein Wasser, der Ort-Faden rechnet keins). Ohne Zahl
+    // die größte Klasse, die eine Epoche ohne Zahl nennt. Leser: der Wirt (`_foundryRequestSettlement` → voxel-worker `ort-raster`).
+    function wasserReich(nH){ const n=isFinite(nH)?nH:GROESSE_N.stadt, g=groesseVon(n);
+      if(g==='weiler'||g==='dorf') return 0;
+      return Math.min(195, 26+Math.sqrt(n)*8.4)+(g==='metropole'?230:g==='grossstadt'?110:70)+15; }
     function hoeheAusRaster(r){
       if(!r||!isFinite(r.x0)||!isFinite(r.z0)||!(r.d>0)||!(r.n>=2)||!r.h||r.h.length!==r.n*r.n)
         throw new Error("fachwerk: das Höhen-Raster der Trasse ist keins (x0, z0, d, n, h[n·n])");
@@ -3881,9 +3887,11 @@
         if(!(fx>=0&&fz>=0&&fx<=n-1&&fz<=n-1)){ mass.aussen++; fx=Math.max(0,Math.min(n-1,fx||0)); fz=Math.max(0,Math.min(n-1,fz||0)); }
         const i=Math.min(n-2,fx|0), j=Math.min(n-2,fz|0), u=fx-i, v=fz-j, k=i+j*n;
         return (h[k]*(1-u)+h[k+1]*u)*(1-v)+(h[k+n]*(1-u)+h[k+n+1]*u)*v; };
-      /*DAS WASSER DES RASTERS (`nass`, optional: der Ort-Faden nennt es je Zelle, voxel-worker `ort-raster`): steht am Punkt Wasser des Gesetzes? Die Zelle, in der er liegt, und — `saum` m um ihn — ihre Nachbarn. Leser: die Stadt der Grammatik (`dorfLayout`: kein Los, keine Gasse im Wasser)*/
-      const N=r.nass&&r.nass.length===n*n?r.nass:null, zelle=(x,z)=>{ const i=Math.round((x-r.x0)/d), j=Math.round((z-r.z0)/d); return i>=0&&j>=0&&i<n&&j<n&&N[i+j*n]===1; };
-      H.nass=N?(x,z,saum)=>{ const s=saum||0; return zelle(x,z)||(s>0&&(zelle(x-s,z)||zelle(x+s,z)||zelle(x,z-s)||zelle(x,z+s))); }:null;
+      /*DAS WASSER DES RASTERS (`nass`, optional: der Ort-Faden nennt es je Zelle, voxel-worker `ort-raster`): steht am Punkt Wasser des Gesetzes? Jede Zelle, deren Mitte näher liegt als `saum` + die halbe Zelle. Leser: die Stadt der Grammatik (`dorfLayout`: kein Los, keine Gasse im Wasser)*/
+      const N=r.nass&&r.nass.length===n*n?r.nass:null;
+      H.nass=N?(x,z,saum)=>{ const s=(saum||0)+d/2, i0=Math.max(0,Math.floor((x-s-r.x0)/d)), i1=Math.min(n-1,Math.ceil((x+s-r.x0)/d)), j0=Math.max(0,Math.floor((z-s-r.z0)/d)), j1=Math.min(n-1,Math.ceil((z+s-r.z0)/d));
+        for(let j=j0;j<=j1;j++) for(let i=i0;i<=i1;i++) if(N[i+j*n]===1){ const dx=r.x0+i*d-x, dz=r.z0+j*d-z; if(dx*dx+dz*dz<=s*s) return true; }   /*jede nasse Zelle im Umkreis: ihre Mitte naeher als saum + die halbe Zelle*/
+        return false; }:null;
       H.mass=mass; return H; }
     // DER FELDWEG ZWISCHEN ORTEN (fahrzeug.K2): das Wegenetz der Welt verbindet je zwei benachbarte Orte über einen Feldweg, der
     // dem Grund folgt — der günstigste Lauf von einem Punkt der Wege des einen Orts (`A`) zu einem des anderen (`B`) über das
@@ -10721,7 +10729,8 @@
         SIEDLUNG: SIEDLUNG,
         // siedlung.K2 — das Rang-Gesetz (die Zelle, die Größe, die Reichweite), die Größe je Klasse und die Mauer der Stadt
         siedlungsZelle: siedlungsZelle,
-        trasseRahmen: trasseRahmen, // siedlung.K3 — der Rahmen des Höhen-Rasters um einen Ort (der Wirt füllt ihn aus gelaende-core hoehenRaster)
+        trasseRahmen: trasseRahmen,
+        wasserReich: wasserReich, // so weit liest die Stadt der Grammatik das Wasser ihres Rasters (0: das Dorf) // siedlung.K3 — der Rahmen des Höhen-Rasters um einen Ort (der Wirt füllt ihn aus gelaende-core hoehenRaster)
         hoeheAusRaster: hoeheAusRaster, // siedlung.K3 — der EINE Leser des Rasters (Export, Labor, Linse)
         wegZwischen: wegZwischen, // fahrzeug.K2 — der Feldweg zwischen zwei Orten des Wegenetzes, dem Grund folgend (`trasseLenk`)
         wegeNetz: wegeNetz, // fahrzeug.K2 — das Wege-Netz eines Plans samt den Nähten, die es zu EINEM Netz schließen

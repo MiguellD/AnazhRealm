@@ -332,7 +332,14 @@ function nachricht(e) {
                         const [x, z] = [x0 + i * d, z0 + j * d];
                         if (Math.hypot(x, z) > msg.nass.r) continue;
                         for (let k = 0; k < 9 && !raster.nass[i + j * n]; k++)
-                            if (ortNass(msg.nass, null, msg.x + x + ((k % 3) - 1) * (d / 3), msg.z + z + (((k / 3) | 0) - 1) * (d / 3)))
+                            if (
+                                ortNass(
+                                    msg.nass,
+                                    null,
+                                    msg.x + x + ((k % 3) - 1) * (d / 3),
+                                    msg.z + z + (((k / 3) | 0) - 1) * (d / 3)
+                                )
+                            )
                                 raster.nass[i + j * n] = 1;
                     }
                 transfer.push(raster.nass.buffer);

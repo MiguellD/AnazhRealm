@@ -275,11 +275,11 @@ class AnazhRealm_siedlung_ort {
         const ort = d.ort;
         delete d.ort;
         // DAS WASSER DES RASTERS (die Stadt-Grammatik liest es, fachwerk `dorfLayout`): der Faden nennt je Zelle im Umkreis des
-        // größten Rings samt Vorstadt, ob dort das Wasser des Gesetzes steht (`nass`, das Urteil der Ort-Wahl) — seine Kacheln
+        // Plans (fachwerk `wasserReich`: der Ring der Stadt samt Vorstadt, 0 für das Dorf), ob dort das Wasser des Gesetzes steht (`nass`, das Urteil der Ort-Wahl) — seine Kacheln
         // liegen, bevor er urteilt (`_ensureHydroTilesAround`, wie die Ort-Wahl)
-        const nassR = AnazhRealm.ORT_WASSER_M;
+        const nassR = ort ? globalThis.__fachwerkCore.wasserReich(d.nH) : 0; // 0: das Dorf liest kein Wasser
         const wasser =
-            ort && this._ensureHydroTilesAround(ort.x, ort.z, nassR)
+            nassR > 0 && this._ensureHydroTilesAround(ort.x, ort.z, nassR)
                 ? Promise.all([...this._hydroBestellt.values()].map((e) => e.zusage))
                 : Promise.resolve();
         const raster = ort
@@ -290,16 +290,19 @@ class AnazhRealm_siedlung_ort {
                           x: ort.x,
                           z: ort.z,
                           rahmen: globalThis.__fachwerkCore.trasseRahmen(d.nH),
-                          nass: { W: AnazhRealm.ORT_WAHL, M: AnazhRealm.WERK_LAND_M, r: nassR },
+                          nass: nassR > 0 ? { W: AnazhRealm.ORT_WAHL, M: AnazhRealm.WERK_LAND_M, r: nassR } : undefined,
                       })
                   )
                   .then(
-                  (r) => r.raster,
-                  (e) => (
-                      this.log(`SIEDLUNG: der Export wartet auf das Höhen-Raster — ${(e && e.message) || e}`, "INFO"),
-                      false
+                      (r) => r.raster,
+                      (e) => (
+                          this.log(
+                              `SIEDLUNG: der Export wartet auf das Höhen-Raster — ${(e && e.message) || e}`,
+                              "INFO"
+                          ),
+                          false
+                      )
                   )
-              )
             : Promise.resolve(null);
         // Durch DIE EINE WORKER-SCHLANGE, sofort dran (ein deliberater Akt, reine Daten). Dieselbe EINE Frist (45 s
         // Arbeit): ohne Uhr hielte ein verlorener Export die FIFO-Uhr aller späteren Aufträge an.
@@ -3125,9 +3128,6 @@ AnazhRealm.WEGENETZ = Object.freeze({
     zugangM: 60,
     entwurfKmh: Object.freeze({ ortsdurchfahrt: 50, wohnstrasse: 30, gasse: 25, feldweg: 40 }),
 });
-// DAS WASSER IM RASTER EINES PLANS (`_foundryRequestSettlement`, voxel-worker `ort-raster`): so weit um den Ort nennt der Faden
-// das Wasser des Gesetzes je Zelle — der größte Ring (fachwerk `dorfLayout`: 195 m) samt der Ausfallstraße der Metropole (230 m)
-AnazhRealm.ORT_WASSER_M = 440;
 // DAS LAND EINES WERKS (m über dem Wasser des Gesetzes, `_fundamentLand` → `_landAt`): so hoch liegt jeder Punkt eines
 // Fundaments samt Saum und Vorplatz über dem Spiegel — die Wand jedes Werks und die Ort-Wahl (`ortTraegt` im Ort-Faden) urteilen gleich.
 AnazhRealm.WERK_LAND_M = 0.2;
@@ -3152,7 +3152,13 @@ AnazhRealm.ORT_AUSSTATTUNG = Object.freeze({
         },
     }),
     baum: Object.freeze({ ab: 31, kappe: 12 }),
-    grabstein: Object.freeze({ ab: 71, kappe: 36, bauplan: "grabstein_dorf", schicht: "gegenstaende", gier: (q) => q.th || 0 }),
+    grabstein: Object.freeze({
+        ab: 71,
+        kappe: 36,
+        bauplan: "grabstein_dorf",
+        schicht: "gegenstaende",
+        gier: (q) => q.th || 0,
+    }),
 });
 // DAS WACHSTUM DER ORTE IN DER WELT (siedlung.K4 Staffel 2, `_ortWachstumTakt`): je so viele s der Welt-Uhr rechnet ein naher
 // Ort sein Gesetz (fachwerk `wachstum`, taktfrei: ein seltenerer Takt holt nach) und zeigt, was gewachsen ist
