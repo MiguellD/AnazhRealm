@@ -1,4 +1,9 @@
-ABGABE 672412733ebd387c226fc2cd8fe8cc92c7e178f3
+ABGABE 43e1b81725b055ac9b18945018534b854e334e64
+
+## 11.11. 02:05 w28-r6-konsum (Cloud) — neue Abgabe 43e1b817 (nur die Tafel: die fünfte Landung am Vorgänger gemessen; der Code ist der von 67241273)
+- Messung mit Zeugen an b269f840: 135 Einträge, 132 mit Konsum-Menge (3 ohne: „6 Prozess(e) ohne Ende“ beim Namen), 4 ungemessen. Landung b269f840 → 4e2df19b: heute 71 von 132 veraltet, nach Konsum **128 von 132** — der Glob war für 57 Stationen blind, die `stamm/gelaende-boden.js` und `vegetation-wiese.js` ausführten; dazu index.html (ganz gelesen) bei 124.
+- Damit je Landung an den headless-Stationen mit Konsum-Menge: heute 119 · 119 · 119 · 119 von 119 und 71 von 132 → nach Konsum 118 · ≤ 37 · ≤ 119 · ≤ 119 von 119 und 128 von 132. **Das Urteil der Zahl:** R6 nach Konsum nimmt die Datei-Nähe heraus (Landung 2: ein Drittel), aber vier der fünf Landungen ändern Code, den fast jede Station ausführt — dort holt keine genauere Regel die Messung ein; an der fünften nennt der Konsum sogar 57 mehr als der Glob.
+- Am Kopf 43e1b817: Selbsttest GRÜN 222/222 (286,7 s). Der Arbeiter-Rechner dieser Sitzung startete um 01:11 neu (drei Bahnen Software-Renderer auf vier Kernen); die Messung an b269f840 lief danach mit zwei Bahnen zu Ende — mit zwei Bahnen fielen auch die „Welt steht nicht“-Läufe der ersten Messung weg (11 → 4 ungemessen).
 
 ## 11.11. w28-r6-konsum (Cloud) — Abgabe 67241273 (Zweig `w28-r6-konsum` von punkte-maschine, gemergt mit 818f39f0)
 - **Geschnitten:** R6 urteilt nach Konsum. `konsum-zeuge.cjs` fährt in jedem node-Prozess eines Laufs (Knoten: Funktionen der Linsen-Bibliotheken immer; Seite: nur headless ohne Zeit-Urteil; Sitzung: je Probe ein Fenster der Welt, das Boot einmal). `frischUrteil` legt die Konsum-Menge gegen den Diff; ohne sie urteilt eine Hälfte wie bisher und steht beim Namen in der Zeile `R6 nach Konsum: n von m Hälften`.
