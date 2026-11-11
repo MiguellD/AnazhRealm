@@ -1,7 +1,7 @@
 {
  "sha": "e6f0cf7ecd16027cf892c0409c327f267d998b7e",
  "geraet": "gtx",
- "zeit": "2026-11-11T16:13:30.099Z",
+ "zeit": "2026-11-11T16:42:26.608Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "affekt.K4#2": {
@@ -233,6 +233,85 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "ankunft.K3#1": {
+   "gruen": false,
+   "zahl": "warm Median 11.52 s (9.09 · 13.94, Zweit-Boot im warmen Browser) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.07,
+   "grund": "ROT: warm Median 11.52 s (9.09 · 13.94, Zweit-Boot im warmen Browser) · [linse-gpu] nvidia/pascal · ROT trotz Fremd-Last: OmenCap.exe 74,1 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 17,7 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 7,0 CPU-s — 1,92 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon; Σ fremd 115,0 CPU-s in 68,2 s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 22,4 CPU-s · SearchProtocolHost.exe 16,6 CPU-s · SearchIndexer.exe 15,9 CPU-s) — geeicht ÷ 1,108 (1 + 5,6 % je fremdem Kern × 1,92): warm Median s 11,52 → geeicht 10,39 (Soll ≤ 5)",
+   "mass": [
+    {
+     "wort": "warm Median s",
+     "wert": 11.515,
+     "soll": 5
+    }
+   ],
+   "gpu": "nvidia/pascal",
+   "konsum": "k9931a8c10de2",
+   "konsumN": 28,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 5
+   },
+   "konsumBoot": "k6775da4f5abb",
+   "s": 62.8,
+   "fremd": {
+    "s": 68.2,
+    "takte": 29,
+    "fremdS": 115.02,
+    "kerne": 1.686,
+    "fensterKerne": 1.92,
+    "namen": [
+     [
+      "OmenCap.exe",
+      74.14
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      17.72
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      6.98
+     ]
+    ],
+    "dienerS": 45.28,
+    "diener": [
+     [
+      "dwm.exe",
+      17.91
+     ],
+     [
+      "System",
+      16.67
+     ]
+    ],
+    "geraetS": 67.61,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      22.39
+     ],
+     [
+      "SearchProtocolHost.exe",
+      16.59
+     ],
+     [
+      "SearchIndexer.exe",
+      15.86
+     ]
+    ],
+    "eigenS": 424.44,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon"
+   },
+   "zeit": "2026-11-11T16:42:26.608Z",
+   "abdruck": "3b4659c456d4",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -242,19 +321,19 @@
   "k9931a8c10de2": "bVTbrpswEPyXPLb1cbgbpPPgXKT0oWr6CWuzNpwQiGwIUqr+ewWBhED2ybJmdme8u/67kpVB+3GGMldo648vW5WrZPVt9WOlQGYtmhPpIB9fdri+gDyBxinSwhWJRXNFc8c5kcMgSPg9KOd828GkyS+1pWkOmoiqqomtu0zykXtEFLmgIErIzkgaU2NeDKAoCGLPTWi75+z4/Ug99jmnFQLTitSgcCSJ1I08SObAxmoQSKBRfaEBzNZeHAUJ7YNxfozux/bXvJKAMn1V5yt3Hae97T3/nOPTHLAmRV7asZZMA9G5GaNdcgy05AaYFWhGgWHoMH8UOCeoorH2pQjz0sBlCaUxnWH1pSFqmhqEACbmD5UBlhrNa9LID+Qggu03fIzfu4i2ci7qBGc0QErIxocKxDoMnsYp28woRS6z4bHKgaRcL5bhhERp3ErO+c7vzptnsuNdzI7zPw9lelbAZpCiIafK1o8Kvh+5Au5ju+Wc6kXP7VPWwHFFuA7Y1Arlh0VbbKXqFgwSfWkGIvoYRN2O/FyAazifR9PSRfbYpEns37DK9HW8XKnCfrx0J+ywHK+rgTMBoU2u1ECKRSBV/G5cWizqfm3HXUyZ0zm/0fJh/sY03yzFPmNhts9amXoUHYhwrfxEXbt9WEzSDU2BGucdQM9JaD8LQ+z8odyOvkS76Mwtx4LcsLSNHWc7jtJYJW82svsNBZSnUaoj1iK69+aoN5xvN86OvdjVB8n9bpamd8PXcEFJL6ZSefeR0Awam0Ex+YH//Qc="
  },
  "sitzung": {
-  "start": "2026-11-11T16:12:49.525Z",
+  "start": "2026-11-11T16:41:38.114Z",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 7.9,
+  "bootS": 6.9,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
     "ort": null,
-    "vor": "ankunft.K1#2",
-    "s": 29.7,
-    "takte": 830,
+    "vor": "ankunft.K3#1",
+    "s": 39.7,
+    "takte": 2206,
     "chunks": 81,
     "nach": null
    }
@@ -263,20 +342,20 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 479,
-   "frameP95": 366.58,
-   "taktP95": 171.42,
-   "vramMax": 153.9,
+   "bilder": 404,
+   "frameP95": 341.27,
+   "taktP95": 180.45,
+   "vramMax": 154,
    "seiten": 5,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 94,
+   "zapfen": 100,
    "luecken": 3,
-   "letzteLuecke": "kein Renderer"
+   "letzteLuecke": "THREE is not defined"
   },
-  "fahrtS": 110.5,
-  "minuten": 1.92
+  "fahrtS": 113.7,
+  "minuten": 1.97
  }
 }
