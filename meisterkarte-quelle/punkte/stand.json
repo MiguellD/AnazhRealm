@@ -1,5 +1,5 @@
 {
- "kopf": "df6c4721",
+ "kopf": "e38e7acf",
  "je": {
   "affekt.K1": {
    "punkte": 2,
@@ -21,7 +21,7 @@
      "gruen": true,
      "zahl": "Tag first GRÜN: fällen -0.12 -4.65 dB · töten -0.03 -1.11 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.68 dB · töten -0.03 -1.12 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25)",
      "sha": "e6f0cf7ecd16027cf892c0409c327f267d998b7e",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17) — zuletzt an b0112f7b: die Fahrt riss 1800 s (in tiere.K1#2) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18) — zuletzt an b0112f7b: die Fahrt riss 1800 s (in tiere.K1#2) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -71,7 +71,7 @@
   },
   "affekt.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: affekt.K4#1 headless: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +10) · affekt.K4#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17) · affekt.K4#2 gtx: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +2) — zuletzt an 3308689f: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "beleg": "Maschine: 0 — offen: affekt.K4#1 headless: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +10) · affekt.K4#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18) · affekt.K4#2 gtx: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +2) — zuletzt an 3308689f: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
    "stationen": [
     {
      "id": "affekt.K4#1",
@@ -89,7 +89,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17)",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18)",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -271,7 +271,7 @@
   },
   "bauen.K1": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 72/72 Werke stehen über echte Ereignisse · werkstatt 24/24 (Eingaben 3–3) · rezeptbuch 24/24 (Eingaben 2–3) · hotbar 24/24 (Eingaben 2–2) an 6aa7a5a6 headless — offen: bauen.K1#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +6) — zuletzt an b0112f7b: die Fahrt riss 1800 s (in tiere.K1#2) — offen, UNGEMESSEN · bauen.K1#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, phyto-core.js +28) — zuletzt an 6aa7a5a6: Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 10,7 CPU-s · MsMpEng.exe 6,0 CPU-s · svchost.exe 2,0 CPU-s — 0,75 Kerne fremd im dichtesten 10-s-",
+   "beleg": "Maschine: gehalten: 72/72 Werke stehen über echte Ereignisse · werkstatt 24/24 (Eingaben 3–3) · rezeptbuch 24/24 (Eingaben 2–3) · hotbar 24/24 (Eingaben 2–2) an 6aa7a5a6 headless — offen: bauen.K1#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +6) — zuletzt an b0112f7b: die Fahrt riss 1800 s (in tiere.K1#2) — offen, UNGEMESSEN · bauen.K1#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, phyto-core.js +29) — zuletzt an 6aa7a5a6: Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 10,7 CPU-s · MsMpEng.exe 6,0 CPU-s · svchost.exe 2,0 CPU-s — 0,75 Kerne fremd im dichtesten 10-s-",
    "stationen": [
     {
      "id": "bauen.K1#1",
@@ -299,7 +299,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, phyto-core.js +28) — zuletzt an 6aa7a5a6: Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 10,7 CPU-s · MsMpEng.exe 6,0 CPU-s · svchost.exe 2,0 CPU-s — 0,75 Kerne fremd im dichtesten 10-s-",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, phyto-core.js +29) — zuletzt an 6aa7a5a6: Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 10,7 CPU-s · MsMpEng.exe 6,0 CPU-s · svchost.exe 2,0 CPU-s — 0,75 Kerne fremd im dichtesten 10-s-",
      "ungemessen": true,
      "r6": "konsum"
     }
@@ -445,7 +445,7 @@
   },
   "fahrzeug.K2": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: in 3 Teilen · Route 2440 m (Weg 97.8 %), gefahren 2438 m · Steckenbleiber 0 · über 0,8 · Bezug 87.2 % von 13122 Sim-Schritten (Bezug Ø 43.8 km/h, vmax 229.8 km/h) · Boden Wiese 51.3 % / Wald 19.5 % / Dorf 29.2 % · Exit 0 an e6f0cf7e radeon · gehalten: in 6 Teilen · Route 2440 m (Weg 98.2 %), gefahren 2438 m · Steckenbleiber 0 · über 0,8 · Bezug 89.3 % von 12948 Sim-Schritten (Bezug Ø 43.8 km/h, vmax 229.8 km/h) · Boden Wiese 27 % / Wald 43.4 % / Dorf 29.6 % · Exit 0 an e84fd1fb gtx — offen: fahrzeug.K2#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs +6) — zuletzt an b0112f7b: die Fahrt riss 1800 s (in tiere.K1#2) — offen, UNGEMESSEN · fahrzeug.K2#2 gtx: Linse seit der Messung geändert (R6: scripts/diag-fahr-leben.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +8) — zuletzt an 6aa7a5a6: Deckel 90 s gerissen: Stille seit 89.4 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "beleg": "Maschine: gehalten: in 3 Teilen · Route 2440 m (Weg 97.8 %), gefahren 2438 m · Steckenbleiber 0 · über 0,8 · Bezug 87.2 % von 13122 Sim-Schritten (Bezug Ø 43.8 km/h, vmax 229.8 km/h) · Boden Wiese 51.3 % / Wald 19.5 % / Dorf 29.2 % · Exit 0 an e6f0cf7e radeon · gehalten: in 6 Teilen · Route 2440 m (Weg 98.2 %), gefahren 2438 m · Steckenbleiber 0 · über 0,8 · Bezug 89.3 % von 12948 Sim-Schritten (Bezug Ø 43.8 km/h, vmax 229.8 km/h) · Boden Wiese 27 % / Wald 43.4 % / Dorf 29.6 % · Exit 0 an e84fd1fb gtx — offen: fahrzeug.K2#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/diag-fahr-leben.cjs, scripts/lib/ausgabe-aufnahme.cjs +9) — zuletzt an b0112f7b: die Fahrt riss 1800 s (in tiere.K1#2) — offen, UNGEMESSEN · fahrzeug.K2#2 gtx: Linse seit der Messung geändert (R6: scripts/diag-fahr-leben.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +8) — zuletzt an 6aa7a5a6: Deckel 90 s gerissen: Stille seit 89.4 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
    "stationen": [
     {
      "id": "fahrzeug.K2#1",
@@ -453,7 +453,7 @@
      "gruen": true,
      "zahl": "in 3 Teilen · Route 2440 m (Weg 97.8 %), gefahren 2438 m · Steckenbleiber 0 · über 0,8 · Bezug 87.2 % von 13122 Sim-Schritten (Bezug Ø 43.8 km/h, vmax 229.8 km/h) · Boden Wiese 51.3 % / Wald 19.5 % / Dorf 29.2 % · Exit 0",
      "sha": "e6f0cf7ecd16027cf892c0409c327f267d998b7e",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs +5) — zuletzt an b0112f7b: die Fahrt riss 1800 s (in tiere.K1#2) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/diag-fahr-leben.cjs, scripts/lib/ausgabe-aufnahme.cjs +8) — zuletzt an b0112f7b: die Fahrt riss 1800 s (in tiere.K1#2) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -472,7 +472,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs +6) — zuletzt an b0112f7b: die Fahrt riss 1800 s (in tiere.K1#2) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/diag-fahr-leben.cjs, scripts/lib/ausgabe-aufnahme.cjs +9) — zuletzt an b0112f7b: die Fahrt riss 1800 s (in tiere.K1#2) — offen, UNGEMESSEN",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -540,7 +540,7 @@
      "gruen": true,
      "zahl": "nach Ego → Third im Bild 3/3, Azimut 5.5/2.1/0.4°, Stufe ≤ 1.82 m · T4 Absteigen 0.31 m je Bild, Azimut nach 10 Bildern 0.7° · Hang 17.4°",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +5) — zuletzt an b0112f7b: die Fahrt riss 1800 s (in tiere.K1#2) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/diag-fahr-leben.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/fahr-proben.cjs +7) — zuletzt an b0112f7b: die Fahrt riss 1800 s (in tiere.K1#2) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -559,7 +559,7 @@
      "gruen": true,
      "zahl": "nach Ego → Third im Bild 3/3, Azimut 5.6/2.2/0.3°, Stufe ≤ 1.8 m · T4 Absteigen 0.31 m je Bild, Azimut nach 10 Bildern 0.7° · Hang 17.4°",
      "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +5) — zuletzt an b0112f7b: die Fahrt riss 1800 s (in tiere.K1#2) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/diag-fahr-leben.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/fahr-proben.cjs +7) — zuletzt an b0112f7b: die Fahrt riss 1800 s (in tiere.K1#2) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -584,7 +584,7 @@
      "gruen": true,
      "zahl": "Federung im Bild: Drift-Wank 8.417 gegen Glatt 0.331 mm, Stoß-Antwort Glatt/Hang 7.021/7.335 mm (Mutante 2.241/1.66) · Rumble Drift 1 gegen Glatt 0.002, Summen 0.55/0.526 (Mutante 0, 0.137) · Motor 66.7 Hz je 1000 Upm (klang-zensus F) · RM1–3 ✅✅✅",
      "sha": "e6f0cf7ecd16027cf892c0409c327f267d998b7e",
-     "grund": "Konsum seit der Messung geändert (R6: klang-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs +5) — zuletzt an b0112f7b: die Fahrt riss 1800 s (in tiere.K1#2) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: klang-core.js, scripts/diag-fahr-leben.cjs, scripts/lib/ausgabe-aufnahme.cjs +7) — zuletzt an b0112f7b: die Fahrt riss 1800 s (in tiere.K1#2) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -721,7 +721,7 @@
   },
   "ferne.K1": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Koschmieder T/T_soll 0.91–1.03 bei 1/2/5/8 km, Uhr 0,5, 4 Azimute, K1-1 GRUEN, [linse-gpu] amd/rdna-3 an e6f0cf7e radeon · gehalten: Koschmieder T/T_soll 0.89–1.02 bei 1/2/5/8 km, Uhr 0,5, 4 Azimute, K1-1 GRUEN, [linse-gpu] nvidia/pascal an 6aa7a5a6 gtx — offen: ferne.K1#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17) — zuletzt an b0112f7b: Deckel 92 s gerissen — beendet, UNGEMESSEN (zuletzt: band · Exit 1 · C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\b0112f7b-radeon\\ferne.K1_1.json.d\\band.json) · ferne.K1#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +19)",
+   "beleg": "Maschine: gehalten: Koschmieder T/T_soll 0.91–1.03 bei 1/2/5/8 km, Uhr 0,5, 4 Azimute, K1-1 GRUEN, [linse-gpu] amd/rdna-3 an e6f0cf7e radeon · gehalten: Koschmieder T/T_soll 0.89–1.02 bei 1/2/5/8 km, Uhr 0,5, 4 Azimute, K1-1 GRUEN, [linse-gpu] nvidia/pascal an 6aa7a5a6 gtx — offen: ferne.K1#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18) — zuletzt an b0112f7b: Deckel 92 s gerissen — beendet, UNGEMESSEN (zuletzt: band · Exit 1 · C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\b0112f7b-radeon\\ferne.K1_1.json.d\\band.json) · ferne.K1#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +19)",
    "stationen": [
     {
      "id": "ferne.K1#1",
@@ -729,7 +729,7 @@
      "gruen": true,
      "zahl": "Koschmieder T/T_soll 0.91–1.03 bei 1/2/5/8 km, Uhr 0,5, 4 Azimute, K1-1 GRUEN, [linse-gpu] amd/rdna-3",
      "sha": "e6f0cf7ecd16027cf892c0409c327f267d998b7e",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17) — zuletzt an b0112f7b: Deckel 92 s gerissen — beendet, UNGEMESSEN (zuletzt: band · Exit 1 · C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\b0112f7b-radeon\\ferne.K1_1.json.d\\band.json)",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18) — zuletzt an b0112f7b: Deckel 92 s gerissen — beendet, UNGEMESSEN (zuletzt: band · Exit 1 · C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\b0112f7b-radeon\\ferne.K1_1.json.d\\band.json)",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -749,7 +749,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17) — zuletzt an b0112f7b: Deckel 92 s gerissen — beendet, UNGEMESSEN (zuletzt: band · Exit 1 · C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\b0112f7b-radeon\\ferne.K1_1.json.d\\band.json)",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18) — zuletzt an b0112f7b: Deckel 92 s gerissen — beendet, UNGEMESSEN (zuletzt: band · Exit 1 · C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\b0112f7b-radeon\\ferne.K1_1.json.d\\band.json)",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -775,7 +775,7 @@
      "gruen": true,
      "zahl": "Restkontrast am Rand 1.3–1.7 % bei 18.4–23.1 km (≤ 2 %), 4 Azimute, K2-1 GRUEN, [linse-gpu] amd/rdna-3",
      "sha": "e6f0cf7ecd16027cf892c0409c327f267d998b7e",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17) — zuletzt an b0112f7b: Deckel 92 s gerissen — beendet, UNGEMESSEN (zuletzt: band · Exit 1 · C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\b0112f7b-radeon\\ferne.K1_1.json.d\\band.json)",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18) — zuletzt an b0112f7b: Deckel 92 s gerissen — beendet, UNGEMESSEN (zuletzt: band · Exit 1 · C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\b0112f7b-radeon\\ferne.K1_1.json.d\\band.json)",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -795,7 +795,7 @@
      "gruen": true,
      "zahl": "K2-2 GRUEN · Kanten-Linie Hügel 0/0/0.47/0.47°, Gipfel 0/0/0/0.47° (< 1°) · Boden 8/12 Befehle, 44.1k/64k Dreiecke · [linse-gpu] amd/rdna-3",
      "sha": "e6f0cf7ecd16027cf892c0409c327f267d998b7e",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17) — zuletzt an b0112f7b: Deckel 92 s gerissen — beendet, UNGEMESSEN (zuletzt: band · Exit 1 · C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\b0112f7b-radeon\\ferne.K1_1.json.d\\band.json)",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18) — zuletzt an b0112f7b: Deckel 92 s gerissen — beendet, UNGEMESSEN (zuletzt: band · Exit 1 · C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\b0112f7b-radeon\\ferne.K1_1.json.d\\band.json)",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -813,7 +813,7 @@
   },
   "ferne.K3": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: ferne.K3#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17)",
+   "beleg": "Maschine: 0 — offen: ferne.K3#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18)",
    "stationen": [
     {
      "id": "ferne.K3#1",
@@ -821,7 +821,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17)",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18)",
      "ungemessen": true,
      "r6": "konsum"
     }
@@ -837,7 +837,7 @@
      "gruen": true,
      "zahl": "Schatten-/Lichthang 0.1607 (je N·L, ohne Luft, am Pixel des Orts; Soll ≤ 0,4) aus 22/65 Orten im Bild, Auge 1500 m, Grat 5.3262 km, Sonne 5.0087° (Uhr 0.735) · Ort [-840.7,-866.4] · 0.33 s · [linse-gpu] amd/rdna-3",
      "sha": "e6f0cf7ecd16027cf892c0409c327f267d998b7e",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17) — zuletzt an b0112f7b: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Zeile NEUN ferne.K4) · Täter: NEUN-ENDE 5 gemessen, ausgelassen am Budget 8.5 s: ferne.K4, schatten.K5, schatten.K2, vegetation.",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18) — zuletzt an b0112f7b: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Zeile NEUN ferne.K4) · Täter: NEUN-ENDE 5 gemessen, ausgelassen am Budget 8.5 s: ferne.K4, schatten.K5, schatten.K2, vegetation.",
      "gehalten": true,
      "r6": "konsum"
     }
@@ -853,7 +853,7 @@
      "gruen": true,
      "zahl": "Sicht im Sturm 1559 m (Azimute 1516/1550/1559/1746, Soll 1 500 m ±15 %), [linse-gpu] amd/rdna-3",
      "sha": "e6f0cf7ecd16027cf892c0409c327f267d998b7e",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17) — zuletzt an 067bd771: die Fahrt riss 1800 s (vor ferne.K5#1) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18) — zuletzt an 067bd771: die Fahrt riss 1800 s (vor ferne.K5#1) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -947,7 +947,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17) — zuletzt an ab2f2eed: Deckel 45 s gerissen — beendet, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18) — zuletzt an ab2f2eed: Deckel 45 s gerissen — beendet, UNGEMESSEN",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -1034,7 +1034,7 @@
      "gruen": true,
      "zahl": "arm GRÜN strich 0.6081 Soll [0.4358,0.6538] · third GRÜN strich 0.5734 Soll [0.4358,0.6538]",
      "sha": "e6f0cf7ecd16027cf892c0409c327f267d998b7e",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17) — zuletzt an b0112f7b: die Fahrt riss 1800 s (in tiere.K1#2) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18) — zuletzt an b0112f7b: die Fahrt riss 1800 s (in tiere.K1#2) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -1051,7 +1051,7 @@
   },
   "haar.K2": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: haar.K2#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17) — zuletzt an b269f840: Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: BILD third 0) · haar.K2#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +19)",
+   "beleg": "Maschine: 0 — offen: haar.K2#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18) — zuletzt an b269f840: Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: BILD third 0) · haar.K2#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +19)",
    "stationen": [
     {
      "id": "haar.K2#1",
@@ -1059,7 +1059,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17) — zuletzt an b269f840: Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: BILD third 0)",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18) — zuletzt an b269f840: Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: BILD third 0)",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -1439,7 +1439,7 @@
      "gruen": true,
      "zahl": "r 0.89 bei Lag 0 (n 104), Spitze 0.91 bei 0.4 s, CV Bild 0.29 / Ohr 0.63, 59.2 fps, Klang an",
      "sha": "e6f0cf7ecd16027cf892c0409c327f267d998b7e",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17) — zuletzt an b0112f7b: Fremd-Last: chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-33312-profil-HRP1QO --no-p 91,2 CPU-s · chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-4048-profil-zLQxKS -",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18) — zuletzt an b0112f7b: Fremd-Last: chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-33312-profil-HRP1QO --no-p 91,2 CPU-s · chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-4048-profil-zLQxKS -",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -1575,7 +1575,7 @@
   },
   "leib.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: leib.K1#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17) — zuletzt an b269f840: Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ LATENZ1) · leib.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +26) — zuletzt an 6aa7a5a6: Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 8,6 CPU-s · MsMpEng.exe 4,7 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfj · leib.K1#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +4) — zuletzt an b0112f7b: die Fahrt riss 1800 s (in tiere.K1#2) — offen, UNGEMESSEN · leib.K1#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +26) — zuletzt an 6aa7a5a6: Deckel 90 s gerissen: Stille seit 88.6 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ LATENZ1)",
+   "beleg": "Maschine: 0 — offen: leib.K1#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18) — zuletzt an b269f840: Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ LATENZ1) · leib.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +26) — zuletzt an 6aa7a5a6: Fremd-Last: Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 8,6 CPU-s · MsMpEng.exe 4,7 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfj · leib.K1#2 radeon: Konsum seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs, scripts/lib/licht-linsen.cjs +4) — zuletzt an b0112f7b: die Fahrt riss 1800 s (in tiere.K1#2) — offen, UNGEMESSEN · leib.K1#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +26) — zuletzt an 6aa7a5a6: Deckel 90 s gerissen: Stille seit 88.6 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ LATENZ1)",
    "stationen": [
     {
      "id": "leib.K1#1",
@@ -1583,7 +1583,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17) — zuletzt an b269f840: Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ LATENZ1)",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18) — zuletzt an b269f840: Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ LATENZ1)",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -1787,7 +1787,7 @@
   },
   "licht.K2": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Verhältnis 5.455 (5–12,5), Schatten-Anteil 0.1833 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1493 px, Uhr 0.5 sunny, [linse-gpu] nvidia/pascal an 94d9c5a6 gtx — offen: licht.K2#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17) — zuletzt an 067bd771: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: los-5 · Exit 0) · licht.K2#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +19)",
+   "beleg": "Maschine: gehalten: Verhältnis 5.455 (5–12,5), Schatten-Anteil 0.1833 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1493 px, Uhr 0.5 sunny, [linse-gpu] nvidia/pascal an 94d9c5a6 gtx — offen: licht.K2#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18) — zuletzt an 067bd771: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: los-5 · Exit 0) · licht.K2#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +19)",
    "stationen": [
     {
      "id": "licht.K2#1",
@@ -1795,7 +1795,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17) — zuletzt an bc0a4aed: Fremd-Last: chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-29676-profil-59YKvH --no-p 50,9 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18) — zuletzt an bc0a4aed: Fremd-Last: chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-29676-profil-59YKvH --no-p 50,9 CPU-s · Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -1815,7 +1815,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17) — zuletzt an 067bd771: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: los-5 · Exit 0)",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18) — zuletzt an 067bd771: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: los-5 · Exit 0)",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -1833,7 +1833,7 @@
   },
   "licht.K3": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: fichte@0.5 0.959 · fichte@0.27 0.929 · fichte@0.05 1.023 · tanne@0.5 0.967 · tanne@0.27 1.029 · tanne@0.05 1.023 · ring@0.5 0.988 · ring@0.27 1.019 · ring@0.05 0.996 · Soll 0,9–1,1 · [linse-gpu] nvidia/pascal an 8efb6318 gtx — offen: licht.K3#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17) · licht.K3#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +19)",
+   "beleg": "Maschine: gehalten: fichte@0.5 0.959 · fichte@0.27 0.929 · fichte@0.05 1.023 · tanne@0.5 0.967 · tanne@0.27 1.029 · tanne@0.05 1.023 · ring@0.5 0.988 · ring@0.27 1.019 · ring@0.05 0.996 · Soll 0,9–1,1 · [linse-gpu] nvidia/pascal an 8efb6318 gtx — offen: licht.K3#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18) · licht.K3#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +19)",
    "stationen": [
     {
      "id": "licht.K3#1",
@@ -1861,7 +1861,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17)",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18)",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -1887,7 +1887,7 @@
      "gruen": true,
      "zahl": "Maß durchlass: r 0.9838 bei Verschiebung [-1,-3] Blöcke à 18.6722 m in 5 s (11.8093 m/s; ohne Verschiebung 0.8612; Soll r ≥ 0,6, das Muster zieht), der Zug erklärt 0.8836 der Änderung 0.0384 (≥ 0,5), Durchlass-σ 0.0728 (≥ 0,03) über 0.9569 besonnten Blöcken (≥ 0,3), Deckung [0,0.4] · Ort [-840.7,-866.4] · 0.76 s · [linse-gpu] amd/rdna-3",
      "sha": "e6f0cf7ecd16027cf892c0409c327f267d998b7e",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17)",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18)",
      "gehalten": true,
      "r6": "konsum"
     }
@@ -1903,7 +1903,7 @@
      "gruen": true,
      "zahl": "größter Sprung 0.047 EV/s (Soll ≤ 0,1) · Hub klar ↔ Regen 0.71 EV · 125 s, Wörter standen · [linse-gpu] amd/rdna-3",
      "sha": "e6f0cf7ecd16027cf892c0409c327f267d998b7e",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17) — zuletzt an 6aa7a5a6: Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: ✅ SELBSTTEST GRÜN — jeder injizierte Täter fällt rot und wird beim Namen genannt.)",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18) — zuletzt an 6aa7a5a6: Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: ✅ SELBSTTEST GRÜN — jeder injizierte Täter fällt rot und wird beim Namen genannt.)",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -1920,7 +1920,7 @@
   },
   "lod.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: lod.K1#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17) — zuletzt an ab2f2eed: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: auge · Exit 0) · lod.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +19) — zuletzt an 6aa7a5a6: Deckel 90 s gerissen: Stille seit 36.8 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: auge · Exit 0)",
+   "beleg": "Maschine: 0 — offen: lod.K1#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18) — zuletzt an ab2f2eed: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: auge · Exit 0) · lod.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +19) — zuletzt an 6aa7a5a6: Deckel 90 s gerissen: Stille seit 36.8 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: auge · Exit 0)",
    "stationen": [
     {
      "id": "lod.K1#1",
@@ -1928,7 +1928,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17) — zuletzt an ab2f2eed: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: auge · Exit 0)",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18) — zuletzt an ab2f2eed: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: auge · Exit 0)",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -1946,7 +1946,7 @@
   },
   "lod.K2": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: lod.K2#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17) — zuletzt an b0112f7b: Fremd-Last: chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-16332-profil-VPsXMU --no-p 36,8 CPU-s · chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-23232-profil-YBsJvC  · lod.K2#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +19) — zuletzt an 77265b04: Deckel 28 s gerissen — beendet, UNGEMESSEN (zuletzt: umstellen · Exit 0)",
+   "beleg": "Maschine: 0 — offen: lod.K2#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18) — zuletzt an b0112f7b: Fremd-Last: chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-16332-profil-VPsXMU --no-p 36,8 CPU-s · chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-23232-profil-YBsJvC  · lod.K2#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +19) — zuletzt an 77265b04: Deckel 28 s gerissen — beendet, UNGEMESSEN (zuletzt: umstellen · Exit 0)",
    "stationen": [
     {
      "id": "lod.K2#1",
@@ -1954,7 +1954,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17) — zuletzt an b0112f7b: Fremd-Last: chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-16332-profil-VPsXMU --no-p 36,8 CPU-s · chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-23232-profil-YBsJvC ",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18) — zuletzt an b0112f7b: Fremd-Last: chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-16332-profil-VPsXMU --no-p 36,8 CPU-s · chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-23232-profil-YBsJvC ",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -1995,7 +1995,7 @@
      "gruen": true,
      "zahl": "Luma-Sprung 1.95 % (Soll < 2 %) über 27847 px, die der Wechsel ändert (Auge 4 m; die Klassen zusammen), zweiton 0/0, Uhr 0.5 · Ort [-840.7,-866.4] · 0.84 s · [linse-gpu] amd/rdna-3",
      "sha": "e6f0cf7ecd16027cf892c0409c327f267d998b7e",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17)",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18)",
      "gehalten": true,
      "r6": "konsum"
     }
@@ -2003,7 +2003,7 @@
   },
   "lod.K5": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: 17 Läufe bei 30/60/144 fps, Puls und Regler ±10 % (loadScale 0–1): Abstände, Schwellen, Grenzen, Wahl und Ränder gleich, die Mutante (Regler-Term im Gesetz) wandert an 6aa7a5a6 headless — offen: lod.K5#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17) — zuletzt an 067bd771: Deckel 43 s gerissen — beendet, UNGEMESSEN (zuletzt: umstellen · Exit 0) · lod.K5#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +17) — zuletzt an 6aa7a5a6: Deckel 45 s gerissen: Stille seit 41.1 s nach 45 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: umstellen · Exit 0)",
+   "beleg": "Maschine: gehalten: 17 Läufe bei 30/60/144 fps, Puls und Regler ±10 % (loadScale 0–1): Abstände, Schwellen, Grenzen, Wahl und Ränder gleich, die Mutante (Regler-Term im Gesetz) wandert an 6aa7a5a6 headless — offen: lod.K5#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18) — zuletzt an 067bd771: Deckel 43 s gerissen — beendet, UNGEMESSEN (zuletzt: umstellen · Exit 0) · lod.K5#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +17) — zuletzt an 6aa7a5a6: Deckel 45 s gerissen: Stille seit 41.1 s nach 45 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: umstellen · Exit 0)",
    "stationen": [
     {
      "id": "lod.K5#1",
@@ -2011,7 +2011,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17) — zuletzt an 067bd771: Deckel 43 s gerissen — beendet, UNGEMESSEN (zuletzt: umstellen · Exit 0)",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18) — zuletzt an 067bd771: Deckel 43 s gerissen — beendet, UNGEMESSEN (zuletzt: umstellen · Exit 0)",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -2179,7 +2179,7 @@
   },
   "material.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: material.K1#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17) · material.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +18) — zuletzt an 87537d3f: Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Welt/Labor 0,9–1,1: 0/0 · im realen Band beidseits: 0/0 · echt NEIN · [linse-gpu] nvidia/pascal) · Täter: ALBEDO-TAFEL 0 Zeilen  · material.K1#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17) · material.K1#2 gtx: Linse seit der Messung geändert (R6: scripts/diag-albedo-tafel.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +21) — zuletzt an da0e790f: Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Karte Welt undefined · Labor stumm · Soll undefined ± undefined · Zeilen NICHT alle im Soll und Band · echt NEIN · [linse-gpu] n",
+   "beleg": "Maschine: 0 — offen: material.K1#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18) · material.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +18) — zuletzt an 87537d3f: Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Welt/Labor 0,9–1,1: 0/0 · im realen Band beidseits: 0/0 · echt NEIN · [linse-gpu] nvidia/pascal) · Täter: ALBEDO-TAFEL 0 Zeilen  · material.K1#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18) · material.K1#2 gtx: Linse seit der Messung geändert (R6: scripts/diag-albedo-tafel.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +21) — zuletzt an da0e790f: Frist der Probe 84 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Karte Welt undefined · Labor stumm · Soll undefined ± undefined · Zeilen NICHT alle im Soll und Band · echt NEIN · [linse-gpu] n",
    "stationen": [
     {
      "id": "material.K1#1",
@@ -2187,7 +2187,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17)",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18)",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -2207,7 +2207,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17)",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18)",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -2233,7 +2233,7 @@
      "gruen": true,
      "zahl": "boden 0.5 m glatt 0 nyquist 0.1686 (Arm 0.498), 1 m glatt 0 nyquist 0.1733 (Arm 0.998), 2 m glatt 0.0073 nyquist 0.1742 (Arm 1.996) · fels 0.5 m glatt 0 nyquist 0.1826 (Arm 0.493), 1 m glatt 0 nyquist 0.1741 (Arm 0.99), 2 m glatt 0 nyquist 0.1722 (Arm 1.93) · Soll nyquist ≥ 0,15, glatt ≤ 0,10 · [linse-gpu] amd/rdna-3",
      "sha": "e6f0cf7ecd16027cf892c0409c327f267d998b7e",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17)",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18)",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -2259,7 +2259,7 @@
      "gruen": true,
      "zahl": "Haus L0 0.1512 · L1/L0 1.008 · L2/L0 1.007 · Fels nur L0 (findling, basalt, sediment, zacken, geroell, kristalle), Welt-Y 0.2706 · Soll 0,95–1,05 · [linse-gpu] amd/rdna-3",
      "sha": "e6f0cf7ecd16027cf892c0409c327f267d998b7e",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17)",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18)",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -2279,7 +2279,7 @@
      "gruen": true,
      "zahl": "haus@0.5 l1 1.008/l2 1.007 · birke@0.5 l1 0.995/karte 1.010 · fichte@0.5 l1 0.999/karte 0.999 · haus@0.27 l1 1.008/l2 1.007 · birke@0.27 l1 0.995/karte 1.010 · fichte@0.27 l1 0.999/karte 0.999 · Fels nur L0 · Soll 0,95–1,05 · [linse-gpu] amd/rdna-3",
      "sha": "e6f0cf7ecd16027cf892c0409c327f267d998b7e",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17)",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18)",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -2305,7 +2305,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17) — zuletzt an 067bd771: die Fahrt riss 1800 s (vor ferne.K5#1) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18) — zuletzt an 067bd771: die Fahrt riss 1800 s (vor ferne.K5#1) — offen, UNGEMESSEN",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -2330,7 +2330,7 @@
      "gruen": true,
      "zahl": "3 von 4 Klassen im Band (Soll ≥ 3): eisen θ50 10.266° NEBEN dem Band, ρ 7.14 im Band — black-oxidized-steel · bronze θ50 3.308° im Band, ρ 82.51 im Band — alum-bronze 7,79°/51,4, brass 1,31°/471,3 · quarz θ50 1.114° im Band, ρ 490.16 im Band — black-obsidian 0,63°/698,5, aventurnine 1,45°/437,3 · stahl θ50 0.48° im Band, ρ 848.7 im Band — steel, ss440, chrome-steel · Sonne 74.2°, Uhr 0.5 sunny, [linse-gpu] amd/rdna-3",
      "sha": "e6f0cf7ecd16027cf892c0409c327f267d998b7e",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17) — zuletzt an 067bd771: die Fahrt riss 1800 s (vor ferne.K5#1) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18) — zuletzt an 067bd771: die Fahrt riss 1800 s (vor ferne.K5#1) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -2356,7 +2356,7 @@
      "gruen": true,
      "zahl": "Quote 81/81 = 1, Häuser ohne Bewohner 0, gegangene im Blick 17 Ego / 21 Third; Third-Bild am Dorfplatz um 08:00 (Soll 08:00) 18 Menschen im Bild, 0 gehend, 26.9 fps",
      "sha": "e6f0cf7ecd16027cf892c0409c327f267d998b7e",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs +5) — zuletzt an b0112f7b: die Fahrt riss 1800 s (in tiere.K1#2) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs +6) — zuletzt an b0112f7b: die Fahrt riss 1800 s (in tiere.K1#2) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -2391,7 +2391,7 @@
      "gruen": true,
      "zahl": "Soll-Orte alle 81/81 ≥ 0,9 (min 0.983), Wege je Tag 5–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1296 Lagen über ±2 m (max 1.31 m), Sprünge 0, Plan bit-gleich true",
      "sha": "e6f0cf7ecd16027cf892c0409c327f267d998b7e",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs +5) — zuletzt an b0112f7b: die Fahrt riss 1800 s (in tiere.K1#2) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs +6) — zuletzt an b0112f7b: die Fahrt riss 1800 s (in tiere.K1#2) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -2434,7 +2434,7 @@
   },
   "mensch.K4": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: 50 Bewohner aus 50 Samen, 8 Typen · Gestalt-Distanz min 99 px (7:28:3/7:59:3; 0 Paare unter 1 px) · Höhe 1.625–1.858 m um 1.741 · Gesicht 50 von 50 in MENSCH_SOLL · Leib/Wurf je Typ 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 (Zeilen 1700,360) · die 50: 132200 Dreiecke · Takt 1.569 ms für 1083 → 0.072 ms je 50 an 78d37554 headless — offen: mensch.K4#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17) · mensch.K4#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +18)",
+   "beleg": "Maschine: gehalten: 50 Bewohner aus 50 Samen, 8 Typen · Gestalt-Distanz min 99 px (7:28:3/7:59:3; 0 Paare unter 1 px) · Höhe 1.625–1.858 m um 1.741 · Gesicht 50 von 50 in MENSCH_SOLL · Leib/Wurf je Typ 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 1700/360 (Zeilen 1700,360) · die 50: 132200 Dreiecke · Takt 1.569 ms für 1083 → 0.072 ms je 50 an 78d37554 headless — offen: mensch.K4#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18) · mensch.K4#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +18)",
    "stationen": [
     {
      "id": "mensch.K4#1",
@@ -2442,7 +2442,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17)",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18)",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -2478,7 +2478,7 @@
      "gruen": true,
      "zahl": "gasthaus/gasthaus #419347: Kopf-Zuwendung ab 3 m 0.267 / 0 / 0 / 0 s (Vorbeigang ab 72°, als Leib im Bild true/true/true/true) · Berührung 0/0/0/0 Takte, kleinster Abstand 2 / 1.335 / 1.335 / 1.952 m (Radien 0,7) · ohne Erinnerung 1.335, Gegenprobe 1.335, nach der Gewalt 1.952 m (Furcht 1)",
      "sha": "e6f0cf7ecd16027cf892c0409c327f267d998b7e",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs +6) — zuletzt an b0112f7b: die Fahrt riss 1800 s (in tiere.K1#2) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs +7) — zuletzt an b0112f7b: die Fahrt riss 1800 s (in tiere.K1#2) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -2592,7 +2592,7 @@
      "gruen": true,
      "zahl": "first GRÜN: Wurf 6 Wölfe, umstellt 15.33 s, Furcht chaos 0.893 (Gegenlauf 0), 4 Jäger fallen, Triumph joy+hope 0.465 (Gegenlauf 0)",
      "sha": "e6f0cf7ecd16027cf892c0409c327f267d998b7e",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17) — zuletzt an b0112f7b: die Fahrt riss 1800 s (in tiere.K1#2) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18) — zuletzt an b0112f7b: die Fahrt riss 1800 s (in tiere.K1#2) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -2662,7 +2662,7 @@
   },
   "physik.K2": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: (V) Leiber 106/106 Takte ohne Durchtritt, Eindringen max 0.001 m, Spalt max 0 m (gestoßener Bär 68.95 m/s, Riese 13.52 m/s), Schmuggel durch · L8 nach 200 Schritten Bär 0 m, Wagen 0 m an 6aa7a5a6 headless — offen: physik.K2#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18) — zuletzt an 067bd771: die Fahrt riss 1800 s (vor ferne.K5#1) — offen, UNGEMESSEN · physik.K2#2 gtx: Linse seit der Messung geändert (R6: scripts/diag-kollision-bild.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +20) — zuletzt an 4e2df19b: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "beleg": "Maschine: gehalten: (V) Leiber 106/106 Takte ohne Durchtritt, Eindringen max 0.001 m, Spalt max 0 m (gestoßener Bär 68.95 m/s, Riese 13.52 m/s), Schmuggel durch · L8 nach 200 Schritten Bär 0 m, Wagen 0 m an 6aa7a5a6 headless — offen: physik.K2#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +19) — zuletzt an 067bd771: die Fahrt riss 1800 s (vor ferne.K5#1) — offen, UNGEMESSEN · physik.K2#2 gtx: Linse seit der Messung geändert (R6: scripts/diag-kollision-bild.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +20) — zuletzt an 4e2df19b: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
    "stationen": [
     {
      "id": "physik.K2#1",
@@ -2680,7 +2680,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18) — zuletzt an 067bd771: die Fahrt riss 1800 s (vor ferne.K5#1) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +19) — zuletzt an 067bd771: die Fahrt riss 1800 s (vor ferne.K5#1) — offen, UNGEMESSEN",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -3036,7 +3036,7 @@
   },
   "profiband.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: profiband.K4#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17) — zuletzt an 3308689f: Fremd-Last: chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-7992-profil-mbyk6n --no-pr 51,4 CPU-s · chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-36544-profil-ZhTpgY  · profiband.K4#1 gtx: Station seit der Messung geändert — zuletzt an 78d37554: Fremd-Last: AppHelperCap.exe 53,6 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 14,0 CPU-s · MsMpEng.exe 12,1 CPU-s — 2,21 Kerne fremd im dichteste · profiband.K4#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17) — zuletzt an bc0a4aed: Fremd-Last: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 22,1 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=c · profiband.K4#2 gtx: Station seit der Messung geändert — zuletzt an dcc33615: Fremd-Last: AppHelperCap.exe 43,1 CPU-s · MsMpEng.exe 13,6 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 10,1 CPU-s — 2,02 Kerne fremd im dichteste",
+   "beleg": "Maschine: 0 — offen: profiband.K4#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18) — zuletzt an 3308689f: Fremd-Last: chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-7992-profil-mbyk6n --no-pr 51,4 CPU-s · chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-36544-profil-ZhTpgY  · profiband.K4#1 gtx: Station seit der Messung geändert — zuletzt an 78d37554: Fremd-Last: AppHelperCap.exe 53,6 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 14,0 CPU-s · MsMpEng.exe 12,1 CPU-s — 2,21 Kerne fremd im dichteste · profiband.K4#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18) — zuletzt an bc0a4aed: Fremd-Last: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 22,1 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=c · profiband.K4#2 gtx: Station seit der Messung geändert — zuletzt an dcc33615: Fremd-Last: AppHelperCap.exe 43,1 CPU-s · MsMpEng.exe 13,6 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 10,1 CPU-s — 2,02 Kerne fremd im dichteste",
    "stationen": [
     {
      "id": "profiband.K4#1",
@@ -3044,7 +3044,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17) — zuletzt an 3308689f: Fremd-Last: chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-7992-profil-mbyk6n --no-pr 51,4 CPU-s · chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-36544-profil-ZhTpgY ",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18) — zuletzt an 3308689f: Fremd-Last: chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-7992-profil-mbyk6n --no-pr 51,4 CPU-s · chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-36544-profil-ZhTpgY ",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -3063,7 +3063,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17) — zuletzt an bc0a4aed: Fremd-Last: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 22,1 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=c",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18) — zuletzt an bc0a4aed: Fremd-Last: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 22,1 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=c",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -3080,7 +3080,7 @@
   },
   "profiband.K5": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: profiband.K5#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17) — zuletzt an b0112f7b: Fremd-Last: chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-7784-profil-MzBCQH --no-pr 35,0 CPU-s · chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-35140-profil-S1fw3e  · profiband.K5#1 gtx: Station seit der Messung geändert — zuletzt an 78d37554: Fremd-Last: AppHelperCap.exe 29,0 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 5,9 CPU-s · OmenCommandCenterBackground.exe 3,8 CPU-s — 1,84 Kerne  · profiband.K5#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17) — zuletzt an b0112f7b: Fremd-Last: chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-7784-profil-MzBCQH --no-pr 35,0 CPU-s · chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-35140-profil-S1fw3e  · profiband.K5#2 gtx: Station seit der Messung geändert — zuletzt an 78d37554: Fremd-Last: AppHelperCap.exe 29,0 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 5,9 CPU-s · OmenCommandCenterBackground.exe 3,8 CPU-s — 1,84 Kerne ",
+   "beleg": "Maschine: 0 — offen: profiband.K5#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18) — zuletzt an b0112f7b: Fremd-Last: chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-7784-profil-MzBCQH --no-pr 35,0 CPU-s · chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-35140-profil-S1fw3e  · profiband.K5#1 gtx: Station seit der Messung geändert — zuletzt an 78d37554: Fremd-Last: AppHelperCap.exe 29,0 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 5,9 CPU-s · OmenCommandCenterBackground.exe 3,8 CPU-s — 1,84 Kerne  · profiband.K5#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18) — zuletzt an b0112f7b: Fremd-Last: chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-7784-profil-MzBCQH --no-pr 35,0 CPU-s · chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-35140-profil-S1fw3e  · profiband.K5#2 gtx: Station seit der Messung geändert — zuletzt an 78d37554: Fremd-Last: AppHelperCap.exe 29,0 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 5,9 CPU-s · OmenCommandCenterBackground.exe 3,8 CPU-s — 1,84 Kerne ",
    "stationen": [
     {
      "id": "profiband.K5#1",
@@ -3088,7 +3088,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17) — zuletzt an b0112f7b: Fremd-Last: chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-7784-profil-MzBCQH --no-pr 35,0 CPU-s · chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-35140-profil-S1fw3e ",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18) — zuletzt an b0112f7b: Fremd-Last: chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-7784-profil-MzBCQH --no-pr 35,0 CPU-s · chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-35140-profil-S1fw3e ",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -3107,7 +3107,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17) — zuletzt an b0112f7b: Fremd-Last: chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-7784-profil-MzBCQH --no-pr 35,0 CPU-s · chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-35140-profil-S1fw3e ",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18) — zuletzt an b0112f7b: Fremd-Last: chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-7784-profil-MzBCQH --no-pr 35,0 CPU-s · chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-35140-profil-S1fw3e ",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -3178,7 +3178,7 @@
      "gruen": true,
      "zahl": "Maß reprojektion: unerklärt je Bild max 0.03 %, Mittel 0.00 % (Soll ≤ 0,5 %; je Rand-Pixel max 0.0048) über 15 Bilder Gang 4 m/s, Schatten im Bild 71.4 % (≥ 1 %) · Ort [-840.7,-866.4] · 0.71 s · [linse-gpu] amd/rdna-3",
      "sha": "e6f0cf7ecd16027cf892c0409c327f267d998b7e",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17) — zuletzt an b0112f7b: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Zeile NEUN schatten.K2) · Täter: NEUN-ENDE 5 gemessen, ausgelassen am Budget 8.5 s: ferne.K4, schatten.K5, schatten.K2, vegetati",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18) — zuletzt an b0112f7b: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Zeile NEUN schatten.K2) · Täter: NEUN-ENDE 5 gemessen, ausgelassen am Budget 8.5 s: ferne.K4, schatten.K5, schatten.K2, vegetati",
      "gehalten": true,
      "r6": "konsum"
     }
@@ -3194,7 +3194,7 @@
      "gruen": true,
      "zahl": "fuss Band 53.6 % des freien Bodens (frei mit/ohne 0.9982, 20 Punkte gesehen, Sicht 1) · sockel Band 34.9 % des freien Bodens (frei mit/ohne 1, 20 Punkte gesehen, Sicht 1) (Soll 30–60 %, Himmel allein; Platz [-828.7,-974.4] Grün 0) · Ort [-840.7,-866.4] · 0.73 s · [linse-gpu] amd/rdna-3",
      "sha": "e6f0cf7ecd16027cf892c0409c327f267d998b7e",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17)",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18)",
      "gehalten": true,
      "r6": "konsum"
     }
@@ -3210,7 +3210,7 @@
      "gruen": true,
      "zahl": "Gewinn 31.3 % (Wand 0.1806 gegen 0.1375 mit Boden-Albedo 0; Soll ≥ 10 %), N·L -0.2722, Sonne 74.2°, Boden 0.4395 · Ort [-840.7,-866.4] · 1.32 s · [linse-gpu] amd/rdna-3",
      "sha": "e6f0cf7ecd16027cf892c0409c327f267d998b7e",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17)",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18)",
      "gehalten": true,
      "r6": "konsum"
     }
@@ -3218,7 +3218,7 @@
   },
   "schatten.K5": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: schatten.K5#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17) — zuletzt an b0112f7b: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Zeile NEUN schatten.K5) · Täter: NEUN-ENDE 5 gemessen, ausgelassen am Budget 8.5 s: ferne.K4, schatten.K5, schatten.K2, vegetati",
+   "beleg": "Maschine: 0 — offen: schatten.K5#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18) — zuletzt an b0112f7b: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Zeile NEUN schatten.K5) · Täter: NEUN-ENDE 5 gemessen, ausgelassen am Budget 8.5 s: ferne.K4, schatten.K5, schatten.K2, vegetati",
    "stationen": [
     {
      "id": "schatten.K5#1",
@@ -3226,7 +3226,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17) — zuletzt an b0112f7b: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Zeile NEUN schatten.K5) · Täter: NEUN-ENDE 5 gemessen, ausgelassen am Budget 8.5 s: ferne.K4, schatten.K5, schatten.K2, vegetati",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18) — zuletzt an b0112f7b: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Zeile NEUN schatten.K5) · Täter: NEUN-ENDE 5 gemessen, ausgelassen am Budget 8.5 s: ferne.K4, schatten.K5, schatten.K2, vegetati",
      "ungemessen": true,
      "r6": "konsum"
     }
@@ -3234,7 +3234,7 @@
   },
   "siedlung.K1": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 1 von 8 Gängen Tür → Keller → Dachboden ganz, Hub max 0.20 m, Anti-Clip-Hub 0 an 6aa7a5a6 headless — offen: siedlung.K1#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, scripts/lib/ausgabe-aufnahme.cjs +10) — zuletzt an b0112f7b: die Fahrt riss 1800 s (in tiere.K1#2) — offen, UNGEMESSEN · siedlung.K1#2 gtx: Station seit der Messung geändert — zuletzt an 4e2df19b: Deckel 70 s gerissen: Stille seit 70 s nach 70 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN",
+   "beleg": "Maschine: gehalten: 1 von 8 Gängen Tür → Keller → Dachboden ganz, Hub max 0.20 m, Anti-Clip-Hub 0 an 6aa7a5a6 headless — offen: siedlung.K1#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, scripts/lib/ausgabe-aufnahme.cjs +11) — zuletzt an b0112f7b: die Fahrt riss 1800 s (in tiere.K1#2) — offen, UNGEMESSEN · siedlung.K1#2 gtx: Station seit der Messung geändert — zuletzt an 4e2df19b: Deckel 70 s gerissen: Stille seit 70 s nach 70 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN",
    "stationen": [
     {
      "id": "siedlung.K1#1",
@@ -3252,7 +3252,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, scripts/lib/ausgabe-aufnahme.cjs +10) — zuletzt an b0112f7b: die Fahrt riss 1800 s (in tiere.K1#2) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, scripts/lib/ausgabe-aufnahme.cjs +11) — zuletzt an b0112f7b: die Fahrt riss 1800 s (in tiere.K1#2) — offen, UNGEMESSEN",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -3543,7 +3543,7 @@
      "gruen": true,
      "zahl": "✅ (K) Reload mit kaltem Buch: das Haus mit Zahlen-id kehrt zurück 139/139 | ✅ (K) Gegenprobe: das kalte Buch blockiert beim Restore den frischen Studio-Spawn 139/139 | ✅ (W) Werke auf der Lichtung nach dem Reload, Stände 139/139 | ✅ Dichte über den Reload: Linie 502 Löcher, 0 korrupt",
      "sha": "d3708675d989fe690b916d0b798b4bd9d916c065",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +72)",
+     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +73)",
      "gehalten": true,
      "r6": "naehe"
     },
@@ -3579,7 +3579,7 @@
      "gruen": true,
      "zahl": "✅ (U) Boden-Umzug: Stände eines alten Bodens stehen auf dem neuen 7/7 | ✅ (U) Gegenprobe: Stände desselben Bodens ziehen nicht um 132/132",
      "sha": "d3708675d989fe690b916d0b798b4bd9d916c065",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +72)",
+     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +73)",
      "gehalten": true,
      "r6": "naehe"
     },
@@ -3589,7 +3589,7 @@
      "gruen": true,
      "zahl": "✅ (V) Korpus: 138 Stände 18.530.0 … 18.546.202 und 1 Kopf laden am Kopf — Bauten 695/695 · Gruben 417/417 · Inventar 402/402 · ganz 139/139 | ✅ (V) Versions-Stufe 18.546.202: ihr Stand steht im Korpus (bump-version.cjs)",
      "sha": "d3708675d989fe690b916d0b798b4bd9d916c065",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +72)",
+     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +73)",
      "gehalten": true,
      "r6": "naehe"
     }
@@ -3621,7 +3621,7 @@
      "gruen": true,
      "zahl": "HUD deckt 2.86 % (1920×1080, im Spiel) · INP HUD 48 ms (50) · Menü 128 ms (21)",
      "sha": "e6f0cf7ecd16027cf892c0409c327f267d998b7e",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17) — zuletzt an b0112f7b: Fremd-Last: node scripts/diag-haus-fern.cjs 16,6 CPU-s · chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-16332-profil-VPsXMU --no-p 13,2 CPU-s · chrome.exe --type=renderer --noerrdialo",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18) — zuletzt an b0112f7b: Fremd-Last: node scripts/diag-haus-fern.cjs 16,6 CPU-s · chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-16332-profil-VPsXMU --no-p 13,2 CPU-s · chrome.exe --type=renderer --noerrdialo",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -3851,7 +3851,7 @@
      "gruen": true,
      "zahl": "Frame p95 Median 33.77 ms (33.8 · 33.75 · 33.77) · CPU-Takt p95 30.78 · 31.85 · 33.17 ms · die Welt steht nach 35.7 · 35.8 · 44.7 s · Bauten sonst 0/0/0 · 3 von 3 gültig · TAKT: verteilt x17 | TAKT: _runFrameScheduler x4 | GC: Garbage-Collector x3 · [linse-gpu] amd/rdna-3",
      "sha": "e6f0cf7ecd16027cf892c0409c327f267d998b7e",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17) — zuletzt an b0112f7b: Deckel 161 s gerissen — beendet, UNGEMESSEN (zuletzt: SPRUNG 2 EXIT=0 {\"m\":1000,\"stehtS\":48.5,\"bau\":0,\"frames\":1535,\"frameMs\":{\"p50\":33.39,\"p95\":50.11,\"p99\":58.83,\"max\":293.01},\"taktMs\":{\"p50\":25.24,\"",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18) — zuletzt an b0112f7b: Deckel 161 s gerissen — beendet, UNGEMESSEN (zuletzt: SPRUNG 2 EXIT=0 {\"m\":1000,\"stehtS\":48.5,\"bau\":0,\"frames\":1535,\"frameMs\":{\"p50\":33.39,\"p95\":50.11,\"p99\":58.83,\"max\":293.01},\"taktMs\":{\"p50\":25.24,\"",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -3955,7 +3955,7 @@
   },
   "studios.K2": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Undo wirkt in 8/8 Studios, Redo ungeprobt (der Gang fährt nur Strg+Z) an 6aa7a5a6 headless — offen: studios.K2#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +16) — zuletzt an b0112f7b: die Fahrt riss 1800 s (in tiere.K1#2) — offen, UNGEMESSEN · studios.K2#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +2) — zuletzt an 6aa7a5a6: Deckel 90 s gerissen: Stille seit 47 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: @@ 42.9 s · neue Seite der Linse)",
+   "beleg": "Maschine: gehalten: Undo wirkt in 8/8 Studios, Redo ungeprobt (der Gang fährt nur Strg+Z) an 6aa7a5a6 headless — offen: studios.K2#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17) — zuletzt an b0112f7b: die Fahrt riss 1800 s (in tiere.K1#2) — offen, UNGEMESSEN · studios.K2#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +2) — zuletzt an 6aa7a5a6: Deckel 90 s gerissen: Stille seit 47 s nach 90 s (kein Lebenszeichen) — beendet, UNGEMESSEN (zuletzt: @@ 42.9 s · neue Seite der Linse)",
    "stationen": [
     {
      "id": "studios.K2#1",
@@ -3973,7 +3973,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +16) — zuletzt an b0112f7b: die Fahrt riss 1800 s (in tiere.K1#2) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17) — zuletzt an b0112f7b: die Fahrt riss 1800 s (in tiere.K1#2) — offen, UNGEMESSEN",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -4097,7 +4097,7 @@
   },
   "tiere.K1": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Kohäsion wandernd 1 (5 Glieder), fliehend 0.981 (min 0.8, in Flucht 0.337) an 6aa7a5a6 headless — offen: tiere.K1#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17) — zuletzt an b0112f7b: Deckel der Fahrt 1800 s gerissen nach 46 s der Probe — beendet, UNGEMESSEN (zuletzt: ✅ GRÜN — herde) · tiere.K1#2 gtx: Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +29) — zuletzt an da0e790f: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: ✅ GRÜN — herde)",
+   "beleg": "Maschine: gehalten: Kohäsion wandernd 1 (5 Glieder), fliehend 0.981 (min 0.8, in Flucht 0.337) an 6aa7a5a6 headless — offen: tiere.K1#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18) — zuletzt an b0112f7b: Deckel der Fahrt 1800 s gerissen nach 46 s der Probe — beendet, UNGEMESSEN (zuletzt: ✅ GRÜN — herde) · tiere.K1#2 gtx: Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +29) — zuletzt an da0e790f: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: ✅ GRÜN — herde)",
    "stationen": [
     {
      "id": "tiere.K1#1",
@@ -4115,7 +4115,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17) — zuletzt an b0112f7b: Deckel der Fahrt 1800 s gerissen nach 46 s der Probe — beendet, UNGEMESSEN (zuletzt: ✅ GRÜN — herde)",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18) — zuletzt an b0112f7b: Deckel der Fahrt 1800 s gerissen nach 46 s der Probe — beendet, UNGEMESSEN (zuletzt: ✅ GRÜN — herde)",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -4459,7 +4459,7 @@
      "gruen": true,
      "zahl": "wiese-third-0.5--wiese: LAI 2–5 2.97 · 5–10 2.55 · 10–20 2.82 · 20–40 gedeckt, Grund 0.005 %, Farbton 2–5 m 11.68°, nahWiese 4 Befehle / 54904 Dreiecke",
      "sha": "b0112f7b17e30914f9cac67843c59bfbb06bd31b",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17) — zuletzt an 46128b75: Deckel 40 s gerissen — beendet, UNGEMESSEN (zuletzt: SCHRITT /eval 0.0 s)",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18) — zuletzt an 46128b75: Deckel 40 s gerissen — beendet, UNGEMESSEN (zuletzt: SCHRITT /eval 0.0 s)",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -4503,7 +4503,7 @@
   },
   "vegetation.K3": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: vegetation.K3#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17) — zuletzt an b0112f7b: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Zeile NEUN vegetation.K3) · Täter: NEUN-ENDE 5 gemessen, ausgelassen am Budget 8.5 s: ferne.K4, schatten.K5, schatten.K2, vegeta",
+   "beleg": "Maschine: 0 — offen: vegetation.K3#1 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18) — zuletzt an b0112f7b: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Zeile NEUN vegetation.K3) · Täter: NEUN-ENDE 5 gemessen, ausgelassen am Budget 8.5 s: ferne.K4, schatten.K5, schatten.K2, vegeta",
    "stationen": [
     {
      "id": "vegetation.K3#1",
@@ -4511,7 +4511,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17) — zuletzt an b0112f7b: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Zeile NEUN vegetation.K3) · Täter: NEUN-ENDE 5 gemessen, ausgelassen am Budget 8.5 s: ferne.K4, schatten.K5, schatten.K2, vegeta",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18) — zuletzt an b0112f7b: die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: keine Zeile NEUN vegetation.K3) · Täter: NEUN-ENDE 5 gemessen, ausgelassen am Budget 8.5 s: ferne.K4, schatten.K5, schatten.K2, vegeta",
      "ungemessen": true,
      "r6": "konsum"
     }
@@ -4519,7 +4519,7 @@
   },
   "vegetation.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 42 Häuser des Start-Dorfs, 47/51 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 57041 px; ungemessen (ohne freies Auge) haus_skandinavisch 3-0 haupt · haus_provenzalisch 23-0 haupt · haus_italienisch 27-0 haupt · haus_provenzalisch 41-0 haupt an b3f9ae95 gtx — offen: vegetation.K4#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, phyto-core.js, scripts/lib/ausgabe-aufnahme.cjs +9) — zuletzt an b0112f7b: die Fahrt riss 1800 s (in tiere.K1#2) — offen, UNGEMESSEN · vegetation.K4#2 gtx: Station seit der Messung geändert — zuletzt an 4e2df19b: Deckel 139 s gerissen: Stille seit 137 s nach 139 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 1.9 s)",
+   "beleg": "Maschine: gehalten: 42 Häuser des Start-Dorfs, 47/51 Boxen im Bild: Halm 0 px, Boden 0 px, Büschel am Gesetz 0 Boxen; Gegenprobe 57041 px; ungemessen (ohne freies Auge) haus_skandinavisch 3-0 haupt · haus_provenzalisch 23-0 haupt · haus_italienisch 27-0 haupt · haus_provenzalisch 41-0 haupt an b3f9ae95 gtx — offen: vegetation.K4#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, phyto-core.js, scripts/lib/ausgabe-aufnahme.cjs +10) — zuletzt an b0112f7b: die Fahrt riss 1800 s (in tiere.K1#2) — offen, UNGEMESSEN · vegetation.K4#2 gtx: Station seit der Messung geändert — zuletzt an 4e2df19b: Deckel 139 s gerissen: Stille seit 137 s nach 139 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 1.9 s)",
    "stationen": [
     {
      "id": "vegetation.K4#1",
@@ -4527,7 +4527,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, phyto-core.js, scripts/lib/ausgabe-aufnahme.cjs +8) — zuletzt an b0112f7b: die Fahrt riss 1800 s (in tiere.K1#2) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, phyto-core.js, scripts/lib/ausgabe-aufnahme.cjs +9) — zuletzt an b0112f7b: die Fahrt riss 1800 s (in tiere.K1#2) — offen, UNGEMESSEN",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -4546,7 +4546,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, phyto-core.js, scripts/lib/ausgabe-aufnahme.cjs +9) — zuletzt an b0112f7b: die Fahrt riss 1800 s (in tiere.K1#2) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, phyto-core.js, scripts/lib/ausgabe-aufnahme.cjs +10) — zuletzt an b0112f7b: die Fahrt riss 1800 s (in tiere.K1#2) — offen, UNGEMESSEN",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -4563,7 +4563,7 @@
   },
   "vegetation.K5": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Krone sommer 77332 px · winter 2779 px → Winter 0.036 × Sommer an b0112f7b radeon · gehalten: Krone sommer 191951 px · winter 20671 px → Winter 0.108 × Sommer an 94d9c5a6 gtx · gehalten: Krone sommer 183690 px · winter 20823 px · fruehling 143020 px → Winter 0.113 × Sommer, Wiese LAI 2–10 m sommer 2.47 · winter 1.05 · fruehling 1.89 → Winter 0.424 × Sommer an 039509b2 gtx — offen: vegetation.K5#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17) — zuletzt an fbbeb318: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: SCHRITT /bild 15.2 s)",
+   "beleg": "Maschine: gehalten: Krone sommer 77332 px · winter 2779 px → Winter 0.036 × Sommer an b0112f7b radeon · gehalten: Krone sommer 191951 px · winter 20671 px → Winter 0.108 × Sommer an 94d9c5a6 gtx · gehalten: Krone sommer 183690 px · winter 20823 px · fruehling 143020 px → Winter 0.113 × Sommer, Wiese LAI 2–10 m sommer 2.47 · winter 1.05 · fruehling 1.89 → Winter 0.424 × Sommer an 039509b2 gtx — offen: vegetation.K5#2 radeon: Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18) — zuletzt an fbbeb318: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: SCHRITT /bild 15.2 s)",
    "stationen": [
     {
      "id": "vegetation.K5#1",
@@ -4571,7 +4571,7 @@
      "gruen": true,
      "zahl": "Krone sommer 77332 px · winter 2779 px → Winter 0.036 × Sommer",
      "sha": "b0112f7b17e30914f9cac67843c59bfbb06bd31b",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17) — zuletzt an b269f840: Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: SCHRITT /eval 0.0 s)",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18) — zuletzt an b269f840: Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: SCHRITT /eval 0.0 s)",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -4591,7 +4591,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17) — zuletzt an fbbeb318: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: SCHRITT /bild 15.2 s)",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18) — zuletzt an fbbeb318: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: SCHRITT /bild 15.2 s)",
      "ungemessen": true,
      "r6": "konsum"
     },
@@ -4643,7 +4643,7 @@
      "gruen": true,
      "zahl": "Dorf porös draußen 0.677 · innen unter dem Dach 1 · dicht 1 · Regen innen 0 / draußen 9 (n 3985/13289)",
      "sha": "e6f0cf7ecd16027cf892c0409c327f267d998b7e",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, scripts/lib/ausgabe-aufnahme.cjs +10) — zuletzt an b0112f7b: die Fahrt riss 1800 s (in tiere.K1#2) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, scripts/lib/ausgabe-aufnahme.cjs +11) — zuletzt an b0112f7b: die Fahrt riss 1800 s (in tiere.K1#2) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -4672,7 +4672,7 @@
      "gruen": true,
      "zahl": "Wiese ego porös 0.782 (n 25920) · Glanz 16 · Regenbild 0.642 · Regen 143 | third porös 0.782 (n 25867) · Glanz 16 · Regenbild 0.605 · Regen 92",
      "sha": "e6f0cf7ecd16027cf892c0409c327f267d998b7e",
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17) — zuletzt an 067bd771: die Fahrt riss 1800 s (vor ferne.K5#1) — offen, UNGEMESSEN",
+     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18) — zuletzt an 067bd771: die Fahrt riss 1800 s (vor ferne.K5#1) — offen, UNGEMESSEN",
      "gehalten": true,
      "r6": "konsum"
     },
@@ -5079,9 +5079,9 @@
   ],
   "ohne": 54
  },
- "kopfVoll": "df6c47214350ccc522d9f4c65d712609d91e25c8",
- "zeit": "2026-11-11T19:54:09.683Z",
- "vorher": "b0112f7b",
+ "kopfVoll": "e38e7acf150b7863416554cb2ea2d1fe2fa0ed9c",
+ "zeit": "2026-11-11T20:09:11.739Z",
+ "vorher": "df6c4721",
  "pflicht": {
   "dokument": "docs/PFLICHT-OFFEN.md",
   "eintraege": [
@@ -5105,7 +5105,7 @@
      {
       "station": "lod.K1#1",
       "geraet": "radeon",
-      "zeile": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17) — zuletzt an ab2f2eed: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: auge · Exit 0)"
+      "zeile": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18) — zuletzt an ab2f2eed: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: auge · Exit 0)"
      },
      {
       "station": "lod.K1#1",
@@ -5115,7 +5115,7 @@
      {
       "station": "mensch.K4#1",
       "geraet": "radeon",
-      "zeile": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17)"
+      "zeile": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18)"
      },
      {
       "station": "mensch.K4#1",
@@ -5125,7 +5125,7 @@
      {
       "station": "haar.K2#1",
       "geraet": "radeon",
-      "zeile": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +17) — zuletzt an b269f840: Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: BILD third 0)"
+      "zeile": "Konsum seit der Messung geändert (R6: fachwerk-core.js, foundry-core.js, klang-core.js +18) — zuletzt an b269f840: Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: BILD third 0)"
      },
      {
       "station": "haar.K2#1",
