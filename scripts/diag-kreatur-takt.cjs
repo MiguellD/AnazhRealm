@@ -54,7 +54,7 @@ const DAUER_S = {
     tagesbudget: 15,
     kaskade: 350,
     folgen: 42,
-    zielplan: 60,
+    zielplan: 80,
 };
 const TEIL = teilAus(argv);
 const gewaehlt = (() => {

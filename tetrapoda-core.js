@@ -1685,7 +1685,7 @@
     //      halbiert sich je halbM Weg im Quadrat (zielNaehe: 0,5 ^ (d / halbM)²) — nah schlaegt gut, fern nur, was viel besser
     //      ist. Ohne Samen gewinnt der hoechste Nutzen (das Tier: die naechste Traenke), mit Samen waehlt ein Rennen aus dem
     //      Samen im Verhaeltnis des Nutzens (Nutzen / −ln u: die Menge verteilt sich auf die Orte, wie sie wiegen, und jeder
-    //      Same waehlt bei jedem Ruf gleich). Das laufende Ziel wiegt `halten`-fach (kein Flattern zwischen zwei gleichen).
+    //      Same waehlt bei jedem Ruf gleich).
     //  (2) DER PLAN (wegBaum · wegKette · wegTeile): der Baum der kuerzesten Wege ueber einen Graphen aus Knoten und Kanten
     //      (Dijkstra 1959, binaerer Haufen), `frei(i, j)` fragt den Wirt nach der Kante (seine Wand); die Kette nennt die
     //      Knoten vom Anfang zum Ziel, die Teile sagen vorab, wohin kein Plan fuehrt (kein Ziel ohne Plan). Wer keinen Graphen
@@ -1694,7 +1694,7 @@
     //      Ankunfts-Gesetzes ueber den Rest bis zum Halt — der Leib bremst vor dem Halt, nie vor einem Punkt unterwegs. Leser:
     //      der Wirt je Tier (`_kreaturZiel`: Folgen, Pirsch, Neugier, Sammeln, Bauen, Trinken, Aas) und je Bewohner
     //      (`_bewohnerGehen`: sein Schritt der Frist, den die Fahrbahn fragt).
-    var ZIEL_GESETZ = Object.freeze({ halbM: 60, halten: 1.25 });
+    var ZIEL_GESETZ = Object.freeze({ halbM: 60 });
     function zielNaehe(d, halbM) {
         var q = d / halbM;
         return Math.pow(0.5, q * q);
@@ -1711,8 +1711,8 @@
         return ((h >>> 0) + 0.5) / 4294967296;
     }
     // drang = {Art: Drang ≥ 0}, angebote = [{x, z, bietet}], (x, z) = von wo der Weg zaehlt. opt: halbM (sonst ZIEL_GESETZ),
-    // same + wort (die Wahl des Samens), jetzt (der Index des laufenden Ziels), bietet(a, i) (das Angebot aus der Sicht dessen,
-    // der waehlt — sonst a.bietet), ohne(a, i) (nicht zu haben). Liefert {i, art, nutzen} oder null: kein Angebot stillt den Drang.
+    // same + wort (die Wahl des Samens), bietet(a, i) (das Angebot aus der Sicht dessen, der waehlt — sonst a.bietet),
+    // ohne(a, i) (nicht zu haben). Liefert {i, art, nutzen} oder null: kein Angebot stillt den Drang.
     function zielWahl(drang, angebote, x, z, opt) {
         var o = opt || {};
         var halb = o.halbM > 0 ? o.halbM : ZIEL_GESETZ.halbM;
@@ -1736,7 +1736,6 @@
             if (!(n > 0)) continue;
             n *= zielNaehe(Math.hypot(a.x - x, a.z - z), halb);
             if (o.same != null) n /= -Math.log(_zielZahl(o.same, o.wort || "", i));
-            if (i === o.jetzt) n *= ZIEL_GESETZ.halten;
             if (n > bestN) {
                 best = i;
                 bestN = n;
