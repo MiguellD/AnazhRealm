@@ -1111,10 +1111,147 @@ const signalEnde = (s) => process.exit(128 + os.constants.signals[s]);
 // DAS SICHTBARE FENSTER (Schöpfer 08./09.11.: „die GPU-Proben mit offenem Fenster, dann sehe ich, was geschieht“): LINSE_SICHTBAR=1
 // (gpu-probe.yml je Läufer) öffnet JEDEN Browser dieses Starters als Fenster — Werkbank und Gates gehen beide hier durch. Die Drossel
 // verdeckter Fenster schaltet Puppeteer selbst ab (ChromeLauncher-Vorgaben); der Weg der Welt bleibt derselbe.
+// DER TOD DER SEITE BEIM NAMEN (w28-seiten-tod — die Geburt jeder Seite, Werkbank und Linsen): stirbt ein Seiten-Prozess, schweigt
+// Puppeteer. Gemessen an einer leeren Seite (11.11., kopflos): am V8-OOM eines Arbeits-Fadens kein `error`, kein
+// Inspector.targetCrashed, kein Target.targetCrashed — nur das Abbild unter <profil>/Crashpad; am Abschuss von außen allein
+// Target.targetCrashed am Browser; und in KEINEM Fall fällt eine hängende Frage. So stand die Probe bild:gipfel-blick@0.5 stumm bis
+// an ihren Deckel (der Seiten-Prozess starb beim Wecken der Metropole am V8-OOM, 6 von 9 Läufen, GTX 1060). Die Wache hört JEDES
+// Zeichen — das Abbild (sein Grund beim Namen: Prozess-Art · „V8 javascript OOM (…)“ · Ausnahme-Code), das Ereignis des Browsers,
+// das der Seite, den Riss der Verbindung — und nennt den Tod EINMAL:
+// jede offene und jede spätere Frage an eine Seite fällt mit „ABSTURZ der Seite: <Grund>“, dann geht der Browser zu (was sonst noch
+// an ihm hängt, fällt mit ihm). Das Abbild bleibt unter <temp>/anazh-absturz liegen.
+const ABSTURZ_CODE = { 0xe0000008: "Speicher erschöpft", 0xc0000005: "Zugriffsverletzung", 0x80000003: "Abbruch mit Absicht" };
+function absturzGrund(datei) {
+    let b;
+    try {
+        b = fs.readFileSync(datei);
+    } catch {
+        return `Abbild ${path.basename(datei)} (nicht lesbar)`;
+    }
+    const t = b.toString("latin1");
+    // die Art des Prozesses aus seiner Befehlszeile (UTF-16), der Satz der V8-Wache, der Code des Ausnahme-Stroms (Minidump, Strom 6)
+    const art = ((/-\0-\0t\0y\0p\0e\0=\0((?:[a-z-]\0)+)/.exec(t) || [])[1] || "").replace(/\0/g, "") || "Prozess unbekannt";
+    const oom = (/V8 (?:javascript|process) OOM \([^)]{1,60}\)/.exec(t) || [])[0];
+    let code = null;
+    try {
+        for (let i = 0, n = b.readUInt32LE(8), d = b.readUInt32LE(12); i < n; i++)
+            if (b.readUInt32LE(d + i * 12) === 6) code = b.readUInt32LE(b.readUInt32LE(d + i * 12 + 8) + 8);
+    } catch {
+        // kein Minidump
+    }
+    let ort = datei;
+    try {
+        const ablage = path.join(os.tmpdir(), "anazh-absturz");
+        fs.mkdirSync(ablage, { recursive: true });
+        fs.copyFileSync(datei, (ort = path.join(ablage, path.basename(datei))));
+    } catch {
+        // das Abbild bleibt, wo es liegt
+    }
+    const ausnahme = code != null && `Ausnahme 0x${code.toString(16)}${ABSTURZ_CODE[code] ? ` (${ABSTURZ_CODE[code]})` : ""}`;
+    return [art, oom, ausnahme, `Abbild ${ort}`].filter(Boolean).join(" · ");
+}
+function todesWache(browser, profil) {
+    let tot = null;
+    let gewollt = false;
+    const fallen = new Set();
+    const seiten = new Set();
+    const stirb = (grund, zu = true) => {
+        if (tot || gewollt) return;
+        tot = new Error(`ABSTURZ der Seite: ${grund}`);
+        console.error(`\n❌ ${tot.message}`);
+        for (const f of fallen) f(tot);
+        fallen.clear();
+        if (zu) setTimeout(() => browser.close().catch(() => {}), 100).unref();
+    };
+    // jede Frage an eine Seite läuft gegen den Tod: sie fällt mit seinem Namen, auch wenn sie vorher gestellt war
+    const mitTod = (p) => {
+        if (tot) return p.catch(() => {}), Promise.reject(tot);
+        let fall;
+        const q = Promise.race([p, new Promise((_, nein) => fallen.add((fall = nein)))]);
+        const weg = () => fallen.delete(fall);
+        q.then(weg, weg);
+        return q;
+    };
+    // die Abbilder des Profils (Crashpad legt sie je Plattform in reports, pending oder completed): ein neues, dessen Größe steht
+    const abbilder = () => {
+        const aus = [];
+        (function geh(x) {
+            let l = [];
+            try {
+                l = fs.readdirSync(x, { withFileTypes: true });
+            } catch {
+                return;
+            }
+            for (const e of l)
+                if (e.isDirectory()) geh(path.join(x, e.name));
+                else if (e.name.endsWith(".dmp")) aus.push(path.join(x, e.name));
+        })(path.join(profil, "Crashpad"));
+        return aus;
+    };
+    const gesehen = new Map(abbilder().map((d) => [d, -1])); // ein benanntes Profil (--serie) trägt die Abbilder früherer Läufe
+    const abbild = () => {
+        for (const d of abbilder()) {
+            if (gesehen.get(d) === -1) continue;
+            let n = 0;
+            try {
+                n = fs.statSync(d).size;
+            } catch {
+                continue;
+            }
+            if (gesehen.get(d) !== n) {
+                gesehen.set(d, n); // es wächst noch
+                continue;
+            }
+            gesehen.set(d, -1);
+            const g = absturzGrund(d);
+            if (/^(renderer|Prozess unbekannt)/.test(g)) return g;
+            console.error(`[welt-boot] ABSTURZ im Browser (nicht die Seite): ${g}`);
+        }
+        return null;
+    };
+    // ein Ereignis nennt den Tod ohne Grund — das Abbild folgt binnen einer Sekunde und trägt ihn
+    const ereignis = (grund) => setTimeout(() => stirb(abbild() || abbild() || grund), 1500).unref();
+    const taufe = (page) => {
+        if (!page || seiten.has(page)) return page;
+        seiten.add(page);
+        page.once("close", () => seiten.delete(page));
+        page.on("error", (e) => ereignis(`der Browser meldet die Seite als abgestürzt (${(e && e.message) || e})`));
+        for (const m of ["evaluate", "evaluateHandle", "waitForFunction", "goto", "reload", "screenshot"]) {
+            const alt = page[m].bind(page);
+            page[m] = (...a) => mitTod(alt(...a));
+        }
+        return page;
+    };
+    const neu = browser.newPage.bind(browser);
+    browser.newPage = async (...a) => taufe(await neu(...a));
+    const alle = browser.pages.bind(browser);
+    browser.pages = async (...a) => (await alle(...a)).map(taufe);
+    // die Sitzung am Browser: sein Ereignis (ein Abschuss von außen meldet sich je nach Ziel NUR hier)
+    browser
+        .target()
+        .createCDPSession()
+        .then((s) => {
+            s.on("Target.targetCrashed", (e) => ereignis(`der Browser meldet einen Seiten-Prozess als ${e.status} (Code ${e.errorCode})`));
+            return s.send("Target.setDiscoverTargets", { discover: true });
+        })
+        .catch(() => {});
+    const uhr = setInterval(() => {
+        const g = !tot && !gewollt && abbild();
+        if (g) stirb(g);
+    }, 1000);
+    uhr.unref();
+    browser.on("disconnected", () => {
+        clearInterval(uhr);
+        stirb(abbild() || abbild() || "die Verbindung zum Browser riss (der Browser-Prozess ist fort)", false);
+    });
+    const zu = browser.close.bind(browser);
+    browser.close = (...a) => ((gewollt = true), zu(...a));
+    return browser;
+}
 async function startePuppeteer(o) {
     o.headless &&= process.env.LINSE_SICHTBAR !== "1";
     profileFegen();
-    if (o.userDataDir) return require("puppeteer").launch(o);
+    if (o.userDataDir) return todesWache(await require("puppeteer").launch(o), o.userDataDir);
     const d = tempNeu();
     const weg = () => loesche(d);
     const browser = await require("puppeteer")
@@ -1125,7 +1262,7 @@ async function startePuppeteer(o) {
     const zu = browser.close.bind(browser);
     browser.close = (...a) => zu(...a).then((x) => (process.off("exit", weg), weg(), x));
     browser.profil = d;
-    return browser;
+    return todesWache(browser, d);
 }
 
 // Der Browser über die EINE Weiche, jede Seite am Fehler-Sammler, die Linse nennt ihren Adapter.
@@ -2130,6 +2267,57 @@ async function selbsttest() {
     // die eigenen Ports der Linsen sind nie 4312/4313
     const besetzt = require("net").createServer();
     const [belegt, frei] = await eigenePorte("WELT_BOOT_NIE_GESETZT_A", "WELT_BOOT_NIE_GESETZT_B");
+    // DER TOD DER SEITE (w28-seiten-tod): drei Tode an einer leeren Seite, je ein eigener Browser des EINEN Starters — der Absturz
+    // des Seiten-Prozesses selbst, der V8-OOM eines Arbeits-Fadens (der Fall des Gipfel-Blicks: Puppeteer meldet ihn nie), der
+    // Abschuss von außen. Die Frage, die vorher hing, fällt mit dem Namen, jede spätere ebenso, die Wache spricht einmal; eine
+    // gesunde Seite, die ihren Prozess beim Navigieren wechselt, lebt.
+    const laut = [];
+    const todFall = async (name, toete, muss) => {
+        const b = await startePuppeteer({ headless: true, args: ["--js-flags=--max-old-space-size=96"] });
+        const t0 = Date.now();
+        const fehlerAus = console.error;
+        console.error = (...a) => laut.push(`${name}: ${a.join(" ").trim()}`);
+        try {
+            const p = await b.newPage();
+            await p.goto("about:blank");
+            const frage = p.evaluate(() => new Promise(() => {})).then(() => "erfüllt", (x) => x.message); // prettier-ignore
+            await toete(p, b);
+            const wort = await Promise.race([frage, sleep(40000).then(() => "STILLE nach 40 s")]);
+            const danach = await Promise.race([p.evaluate("1").then(() => "antwortet", (x) => x.message), sleep(5000).then(() => "STILLE")]); // prettier-ignore
+            const gesagt = laut.filter((z) => z.startsWith(`${name}: ❌ ABSTURZ der Seite`)).length;
+            const s = ((Date.now() - t0) / 1000).toFixed(1);
+            return [muss.test(wort) && wort === danach && gesagt === 1, `Tod der Seite (${name}): ${String(wort).slice(0, 170)} — nach ${s} s, danach dieselbe Antwort ${wort === danach}, laut ${gesagt}×`]; // prettier-ignore
+        } finally {
+            console.error = fehlerAus;
+            await b.close().catch(() => {});
+        }
+    };
+    const todWand = [
+        await todFall("Absturz", (p) => void p.goto("chrome://crash").catch(() => {}), /^ABSTURZ der Seite: (renderer|der Browser meldet)/),
+        await todFall(
+            "V8-OOM im Faden",
+            (p) => p.evaluate(() => void new Worker(URL.createObjectURL(new Blob(["const a=[];for(;;)a.push(new Array(1e5).fill(Math.random()))"])))), // prettier-ignore
+            /^ABSTURZ der Seite: (renderer · V8 javascript OOM|der Browser meldet)/
+        ),
+        await todFall(
+            "Abschuss",
+            async (p, b) => {
+                const s = await b.target().createCDPSession();
+                for (const x of (await s.send("SystemInfo.getProcessInfo")).processInfo) if (x.type === "renderer") try { process.kill(x.id); } catch { /* schon fort */ } // prettier-ignore
+            },
+            /^ABSTURZ der Seite: der Browser meldet (die Seite|einen Seiten-Prozess) als/
+        ),
+    ];
+    {
+        const b = await startePuppeteer({ headless: true });
+        const p = await b.newPage();
+        await p.goto("about:blank");
+        await server.zeige(p, undefined, "ruhig.html", "load").catch(() => {});
+        await sleep(3500);
+        const lebt = await Promise.race([p.evaluate("1 + 1").catch((x) => x.message), sleep(5000).then(() => "STILLE")]);
+        await b.close().catch(() => {});
+        todWand.push([lebt === 2, `eine gesunde Seite, die navigiert, lebt: ${lebt === 2 ? "sie antwortet" : lebt}`]);
+    }
     await new Promise((ok) => besetzt.listen(belegt, "127.0.0.1", ok));
     const t1 = Date.now();
     const start = await startProc("save-server.js", /läuft/, { PORT: String(belegt) }).then(
@@ -2199,6 +2387,7 @@ async function selbsttest() {
         ],
         [/EADDRINUSE/.test(start) && startMs < 5000, `Start auf belegtem Port: ${start} (${startMs} ms)`],
         [![belegt, frei].some((p) => p === 4312 || p === 4313) && belegt !== frei, `eigene Ports ${belegt}, ${frei}`],
+        ...todWand,
     ];
     console.log("=== STALL-AKTE SELBSTTEST (gate:welt-boot) ===");
     for (const [ok, text] of urteile) console.log(`  ${ok ? "✅" : "❌"} ${text}`);
