@@ -497,6 +497,29 @@ function ortVerdikt(m) {
 }
 const GT_SOLL_M = 60;
 
+// DIE SICHT DER POSE (Teil O, w28-stadt-grammatik — rein, reist mit `lokal` und `kasten` in die Seite): die Pose des Orts
+// (`_ortPose` {x, z, ziel}) blickt waagrecht in der Höhe des Auges `augeY` auf die Fassade `ziel` — so stellt die Probe die
+// Kamera des Spiels (gpu-probe `bild:<ort>`, Neigung 0). Je 0,25 m des Strahls liegt das Gelände (`hoehe`, die Höhe der Welt)
+// nicht über ihm und kein Grundriss (`rechtecke` {cx, cz, phi, ex, ez}, Welt) in ihm; der Bau, an dessen Wand das Ziel liegt,
+// zählt nicht. Liefert die Täter beim Namen (leer = frei). Die Abnahme des Bilds nannte beides erst am Bild der Karte
+// („Blickziel verdeckt von bauSatz in 24.17 m“ an stadt-voll, b61450be; „verdeckt von an Punkt 1 Gelände“ am Mutanten der Fassade).
+function poseSicht(pose, augeY, hoehe, rechtecke) {
+    const [dx, dz] = [pose.ziel.x - pose.x, pose.ziel.z - pose.z];
+    const d = Math.hypot(dx, dz);
+    const wand = rechtecke.filter(
+        (b) => Math.abs(kasten(b.cx, b.cz, b.phi, b.ex, b.ez, pose.ziel.x, pose.ziel.z)) > 0.05
+    );
+    let [gel, bau] = [null, null];
+    for (let s = 0.25; s < d - 0.05 && !(gel && bau); s += 0.25) {
+        const [x, z] = [pose.x + (dx * s) / d, pose.z + (dz * s) / d];
+        const h = hoehe(x, z);
+        if (!gel && h > augeY) gel = `Gelände ${(h - augeY).toFixed(2)} m über dem Auge in ${s.toFixed(2)} m`;
+        const k = bau ? -1 : wand.findIndex((b) => kasten(b.cx, b.cz, b.phi, b.ex, b.ez, x, z) < 0);
+        if (k >= 0) bau = `ein Grundriss (${wand[k].cx.toFixed(1)} ${wand[k].cz.toFixed(1)}) in ${s.toFixed(2)} m`;
+    }
+    return [gel, bau].filter(Boolean);
+}
+
 // DAS DORF-LICHT DER GASSE (K10: ≥ 4 sichtbare Quellen im Nachtbild der Gasse) — rein:
 // quellen = die brennenden Leuchtquellen des Orts mit Leib ([x, z] je Quelle, Welt), wege = die Wege des Plans ([[x, z], …]
 // je Weg, Welt), haeuser = die Grundrisse mit Dach ({cx, cz, ex, ez, phi}, Welt), hfov = der waagrechte Öffnungswinkel des
@@ -1028,6 +1051,28 @@ hauptLauf(async () => {
         );
         const u3 = ortUrteil(Object.assign(ortT([haus(-8, 8, 10)]), { roads: [] }), eben, { kappe: 4000 });
         check("Selbst-Test 11: ohne Weg erreicht keine Tür ein Ziel", u3.tuerenOk === 0 && u3.tuerenN === 1);
+        // DIE SICHT DER POSE: der freie Strahl hält; ein Kamm 3 m über dem Boden und die lange Wand eines Nachbarn (ihr Kreis mit
+        // der kleineren Halbachse erreicht den Strahl nicht) fallen je beim Namen; die Wand des Ziels selbst zählt nicht
+        const ziel = { cx: 20, cz: 0, phi: 0, ex: 3, ez: 3 };
+        const pose = { x: 0, z: 0, ziel: { x: 17, z: 0 } };
+        const kamm = (x) => (x > 8 && x < 12 ? 13 : 10);
+        const nachbar = { cx: 10, cz: 2, phi: 0, ex: 1, ez: 2.5 };
+        const [p0, p1, p2] = [
+            poseSicht(pose, 11.6, eben, [ziel]),
+            poseSicht(pose, 11.6, kamm, [ziel]),
+            poseSicht(pose, 11.6, eben, [ziel, nachbar]),
+        ];
+        check("Selbst-Test P1: der freie Strahl der Pose hält (die Wand des Ziels zählt nicht)", p0.length === 0, p0);
+        check(
+            "Selbst-Test P2: ein Kamm vor der Fassade fällt als Gelände",
+            /^Gelände 1\.40 m .* in 8\.25 m$/.test(p1[0] || ""),
+            p1
+        );
+        check(
+            "Selbst-Test P3: die lange Wand des Nachbarn fällt als Grundriss",
+            /Grundriss \(10\.0 2\.0\) in 9\.25 m/.test(p2[0] || ""),
+            p2
+        );
         const gut = {
             haeuser: 16,
             slots: 16,
@@ -3030,6 +3075,48 @@ hauptLauf(async () => {
     const MESSORT_DORF = jsonLesen("spec/profiband/haushalt.json").messorte.find((o) => o.id === "dorf").spieler;
     const O = await messeOrt("akt", null);
     const OA = await messeOrt("auto", MESSORT_DORF);
+    // DIE SICHT DER POSE AM STAMM (w28-stadt-grammatik): `_ortPose` der Welt an einer Siedlung der Bühne — Platz 20 × 8 m, ein
+    // Haus 20 m östlich auf der langen Achse, eines 30 m westlich, fern jedes Bestands (40 km) auf einer Fixture der Höhe. Eben
+    // blickt die Pose auf das nahe Haus; ein Kamm 3 m hoch zwischen ihm und dem Stand und die lange Wand eines Nachbarn (10 m
+    // östlich, 2 m neben der Achse) stellen ihn: sie blickt auf das ferne, und `poseSicht` nennt den Strahl frei. DIE MUTANTE: die
+    // Marge des Geländes so tief, dass kein Kamm sie erreicht (`SICHT_GELAENDE_M`), und die Pose blickt in den Kamm — ROT beim Namen
+    const poseO = await page.evaluate(async (src) => {
+        const [poseSicht] = new Function(src)();
+        const A = Object.getPrototypeOf(r).constructor;
+        const [ox, oz, B] = [40000, 40000, 10]; // BÜHNE: eine Siedlung der Fixture fern jedes Bestands
+        const haus = (cx, cz, ex, ez) => ({ obb: { cx, cz, phi: 0, ex, ez } });
+        const fall = (slots, kamm, marge) => {
+            const S = { key: "pose-fixture", ox, oz, plan: { platz: { cx: 0, cz: 0, phi: 0, ex: 10, ez: 4 }, slots } };
+            const hoehe = (x) => B + (kamm && x - ox > 8 && x - ox < 12 ? 3 : 0);
+            const map0 = r._bewohnerSiedlungen;
+            r._bewohnerSiedlungen = new Map([[S.key, S]]);
+            const zurueck = leihe(r, { getTerrainHeightAt: hoehe });
+            const m0 = A.SICHT_GELAENDE_M;
+            if (marge != null) A.SICHT_GELAENDE_M = marge;
+            try {
+                const P = r._ortPose([ox, oz]);
+                const rechtecke = slots.map((q) => Object.assign({}, q.obb, { cx: ox + q.obb.cx, cz: oz + q.obb.cz }));
+                return {
+                    ziel: [+(P.ziel.x - ox).toFixed(2), +(P.ziel.z - oz).toFixed(2)],
+                    taeter: poseSicht(P, hoehe(P.x, P.z) + A.EGO_AUGE_M, hoehe, rechtecke),
+                };
+            } catch (e) {
+                return { fehler: String(e.message || e) };
+            } finally {
+                A.SICHT_GELAENDE_M = m0;
+                zurueck();
+                r._bewohnerSiedlungen = map0;
+            }
+        };
+        const [nah, fern] = [haus(20, 0, 3, 3), haus(-30, 0, 3, 3)];
+        return {
+            eben: fall([nah, fern], false),
+            kamm: fall([nah, fern], true),
+            wand: fall([nah, fern, haus(10, 2, 1, 2.5)], false),
+            mutante: fall([nah, fern], true, -1e9),
+        };
+    }, `${lokal}\n${kasten}\nreturn [${poseSicht}]`);
+    console.log("  POSE-SICHT " + JSON.stringify(poseO));
     const K5 = [];
     for (const alt of [null, "vorrat"]) K5.push(await page.evaluate(vorratAmDorf, MESSORT_DORF, alt));
     const [K5b, K5bS] = K5;
@@ -3202,6 +3289,22 @@ hauptLauf(async () => {
     };
     pruefeOrt("Dorf 7/18 Gründerzeit am Hang", "Akt", O.outO, O.gtO);
     pruefeOrt(`das Auto-Dorf der Welt am Mess-Ort dorf, Zelle ${OA.outO.zelle || "?"}`, "Auto-Dorf", OA.outO, OA.gtO);
+    const poseZeile = (f) =>
+        f ? f.fehler || `Ziel ${f.ziel.join(" ")} · ${f.taeter.join(" · ") || "frei"}` : "ungemessen";
+    const zielIst = (f, x) => !!f && !f.fehler && f.ziel[0] === x && f.ziel[1] === 0;
+    check(
+        "O Pose: eben blickt sie auf das nahe Haus, Kamm und lange Wand davor lenken sie auf das ferne — der Strahl frei",
+        zielIst(poseO.eben, 17) &&
+            zielIst(poseO.kamm, -27) &&
+            zielIst(poseO.wand, -27) &&
+            ["eben", "kamm", "wand"].every((k) => poseO[k].taeter.length === 0),
+        ["eben", "kamm", "wand"].map((k) => `${k}: ${poseZeile(poseO[k])}`).join(" | ")
+    );
+    check(
+        "O Pose: Mutante — ohne die Marge des Geländes blickt sie in den Kamm, und die Sicht nennt ihn",
+        zielIst(poseO.mutante, 17) && /^Gelände 1\.40 m/.test(poseO.mutante.taeter[0] || ""),
+        poseZeile(poseO.mutante)
+    );
     console.log("  FELD-WURF IM ORT " + JSON.stringify(FW));
     check(
         // keiner sperrt der Wahl Grund (_bauFrei), Grundriss und Weg räumen ihn (die Arten aus EINER Liste, FELD_WURF)

@@ -792,19 +792,58 @@ class AnazhRealm_siedlung_ort {
             throw new Error(
                 `_ortPose: die lange Achse des Platzes ${(S.ox + pz.cx).toFixed(1)} ${(S.oz + pz.cz).toFixed(1)} liegt ganz in der Spur eines Wagens`
             );
+        // die Bauten des Plans nach ihrem Abstand vom Stand: der erste, zu dem die Sichtlinie frei ist, ist der nächste
         const bau = (p.slots || [])
             .filter((q) => q && q.obb)
-            .map((q) => ({ x: S.ox + q.obb.cx, z: S.oz + q.obb.cz, r: Math.min(q.obb.ex, q.obb.ez), obb: q.obb }));
+            .map((q) => ({ x: S.ox + q.obb.cx, z: S.oz + q.obb.cz, obb: q.obb }))
+            .map((b) => Object.assign(b, { d: Math.hypot(b.x - M.x, b.z - M.z) }))
+            .sort((a, b) => a.d - b.d);
         // die Bäume, Stände und Brunnen des Plans (ein Marktstand 8 m vor dem Auge verdeckte das Gasthaus der Stadt) und DER
         // BESTAND DER WELT um den Platz, soweit er Natur ist (`_istNatur`): der wilde Wurf steht in keinem Plan. Er ist erst
         // gebaut, wenn der Spieler am Platz steht: die Probe fragt den Blick dort ein zweites Mal. Die Hindernisse sind Kreise
         // im Grundriss (2,5 m) — was niedrig vor dem Fuß des Ziels steht, sieht erst die Abnahme
         const stuecke = [...(p.trees || []), ...(p.staende || []), ...(p.brunnen || [])];
         const wild = this._blockerUmPlatz(M.x, M.z, 80, []).filter((e) => this._istNatur(e));
-        const hinder = bau.concat(
-            stuecke.map((t) => ({ x: S.ox + t.x, z: S.oz + t.z, r: 2.5 })),
-            wild.map((e) => ({ x: e.position.x, z: e.position.z, r: 2.5 }))
-        );
+        const hinder = stuecke
+            .map((t) => ({ x: S.ox + t.x, z: S.oz + t.z, r: 2.5 }))
+            .concat(wild.map((e) => ({ x: e.position.x, z: e.position.z, r: 2.5 })));
+        // DIE SICHTLINIE IST EIN STRAHL IM RAUM (w28-stadt-grammatik): das Auge steht `EGO_AUGE_M` über dem Boden des Stands
+        // und blickt waagrecht (die Pose trägt keine Neigung) auf die Fassade. Ihn verstellt JEDER Grundriss, den er quert — als
+        // Rechteck, wie er steht (bis hier ein Kreis mit der kleineren Halbachse: die lange Wand eines Nachbarn ragte in den
+        // Strahl, „Blickziel verdeckt von bauSatz in 24.17 m“, gpu-probe b61450be), und DAS GELÄNDE, das ihn überragt: die
+        // Höhe der Welt (`getTerrainHeightAt`, der Gelände-Kern samt Erdbau) längs des Strahls bleibt `SICHT_GELAENDE_M` unter
+        // ihm — bis zur Fassade, deren Fuß sonst über dem Auge läge
+        const augeY = this.getTerrainHeightAt(M.x, M.z) + AnazhRealm.EGO_AUGE_M;
+        const querBau = (b, dx, dz) =>
+            bau.some((h) => {
+                if (h === b) return false;
+                // der Strahl M + t·(dx, dz), t ∈ (0, 1), im Rahmen des Rechtecks: Platten-Schnitt je Achse
+                const [c, s] = [Math.cos(h.obb.phi || 0), Math.sin(h.obb.phi || 0)];
+                const [u0, v0] = [(M.x - h.x) * c - (M.z - h.z) * s, (M.x - h.x) * s + (M.z - h.z) * c];
+                const [du, dv] = [dx * c - dz * s, dx * s + dz * c];
+                let [t0, t1] = [0, 1];
+                for (const [p0, dp, e] of [
+                    [u0, du, h.obb.ex],
+                    [v0, dv, h.obb.ez],
+                ]) {
+                    if (Math.abs(dp) < 1e-9) {
+                        if (Math.abs(p0) >= e) return false;
+                        continue;
+                    }
+                    const [a, z] = [(-e - p0) / dp, (e - p0) / dp];
+                    [t0, t1] = [Math.max(t0, Math.min(a, z)), Math.min(t1, Math.max(a, z))];
+                }
+                return t0 < t1;
+            });
+        const querGelaende = (d, dx, dz) => {
+            for (let w = AnazhRealm.SICHT_SCHRITT_M; w <= d; w += AnazhRealm.SICHT_SCHRITT_M)
+                if (
+                    this.getTerrainHeightAt(M.x + (dx * w) / d, M.z + (dz * w) / d) >
+                    augeY - AnazhRealm.SICHT_GELAENDE_M
+                )
+                    return true;
+            return false;
+        };
         let best = null;
         // der Kegel um die Achse weitet sich, bis ein Bau frei steht (20° · 45° · rundum): am Dorf der Zelle −4,−4 liegt
         // binnen 20° nur das Gasthaus, und seine Sichtlinie ist verstellt. DANN DER KEGEL (w27-ort-pose-voll): zuerst nur
@@ -812,13 +851,14 @@ class AnazhRealm_siedlung_ort {
         // Ziel; an der vollen Stadt hält vom Stand auf der Achse nur das Wohnhaus Süd beides frei. Kreuzt jede eine Spur (die
         // Stadt: ihr Platz liegt zwischen den Gassen, „kein Bau mit freier Sichtlinie" bei 91 Bauten), gilt der Kegel ohne sie
         for (const [kegel, spurfrei] of [0.94, 0.7, 0, 0.94, 0.7, 0].map((k, i) => [k, i < 3])) {
-            for (const b of best ? [] : bau) {
+            for (const b of bau) {
+                if (best) break;
                 const [dx, dz] = [b.x - M.x, b.z - M.z];
-                const d = Math.hypot(dx, dz);
-                if (d < 12 || Math.abs(dx * u[0] + dz * u[1]) < kegel * d || (best && d >= best.d)) continue;
+                const d = b.d;
+                if (d < 12 || Math.abs(dx * u[0] + dz * u[1]) < kegel * d) continue;
                 const quer = (h) => {
                     const t = ((h.x - M.x) * dx + (h.z - M.z) * dz) / (d * d);
-                    return h !== b && t > 0 && t < 1 && Math.hypot(M.x + dx * t - h.x, M.z + dz * t - h.z) < h.r;
+                    return t > 0 && t < 1 && Math.hypot(M.x + dx * t - h.x, M.z + dz * t - h.z) < h.r;
                 };
                 if (hinder.some(quer)) continue;
                 // DAS ZIEL IST DIE FASSADE: der Punkt, an dem die Sichtlinie in den Grundriss tritt — die Mitte liegt hinter
@@ -827,6 +867,8 @@ class AnazhRealm_siedlung_ort {
                 const [bc, bs] = [Math.cos(b.obb.phi || 0), Math.sin(b.obb.phi || 0)];
                 const k = Math.min(b.obb.ex / Math.abs(dx * bc - dz * bs), b.obb.ez / Math.abs(dx * bs + dz * bc));
                 const ziel = { x: b.x - dx * k, z: b.z - dz * k };
+                const [zx, zz, zd] = [ziel.x - M.x, ziel.z - M.z, d * (1 - k)];
+                if (querBau(b, zx, zz) || querGelaende(zd, zx, zz)) continue;
                 if (spurfrei && this._verkehrFahrbahnM(S, M, [ziel], 0)) continue;
                 best = { d, ziel };
             }
@@ -3292,3 +3334,7 @@ AnazhRealm.STRUCTURE_PLAYER_CLEAR_MARGIN = 3.5; // m über den Footprint hinaus
 // Der Satz der Welt, wenn ein Dorf nicht entstehen kann, weil das Studio-Buch noch nicht da ist (V-D8: das Log nennt den
 // Grund mit Worker-Zustand, der Spieler hört Worte).
 AnazhRealm.SIEDLUNG_KALT_SATZ = Object.freeze(["chat.befehl.dorf.kalt"]); // eine Zeile der Tafel, keine aufgelöste
+// DIE SICHTLINIE DER POSE (`_ortPose`): je `SICHT_SCHRITT_M` fragt sie die Höhe der Welt längs des Strahls, und das Gelände
+// bleibt `SICHT_GELAENDE_M` unter ihm — das Maß, um das der gebaute Boden vom Gesetz abweicht (Surface-Nets ±0,2 m, Lehre 22)
+AnazhRealm.SICHT_SCHRITT_M = 0.5;
+AnazhRealm.SICHT_GELAENDE_M = 0.25;
