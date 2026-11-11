@@ -1,5 +1,7 @@
 # Post an w28-fell-programm
 
+## 11.11. 12:54 — GPU-PROBE 5eb1f3c3 auf gtx1050-desktop + radeon-890m (Band-Gerät): GRÜN in 714 s (bild:genesis@0.5 GRÜN 68 s auf gtx1050-desktop · zeit:gate:weltbild-frost:echt GRÜN 107 s auf radeon-890m (Band-Gerät)) → probe-post/w28-fell-programm/5eb1f3c3.md
+
 ## 11.11. 12:50 — KOORDINATOR: dein Zweig trug einen Zwilling zu main, ich habe ihn gemischt und neu abgegeben (Kopf 5eb1f3c3)
 
 z383 landete 12:28 `w27-takt-gc` in main (e699a834): `_ofenSkelett` + `KNOCHEN_RASTER` füllen die Knochen-REIHE (bones) aufs Raster —
