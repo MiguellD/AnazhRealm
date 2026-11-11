@@ -21,6 +21,10 @@
 //                                                           (spec/farbe/albedo-tafel.json, Eichung 0,180; Nachzug diag-albedo-tafel.cjs --nachziehen)
 //   node scripts/werkbank.cjs licht [--uhr u] [--ist <id>]  DIE LICHT-BILANZ (18-%-Karte, je Licht, unter der Bühne zur Uhr u —
 //                                                           ohne Uhr Mittag; `--ist` in die Soll-Tafel, K5 urteilt sie mit dem Soll ihrer Uhr)
+//   node scripts/werkbank.cjs licht --tag [--kurz] [--orte genesis,wiese,wiese:third] [--eigen] [--ordner d] [--datei f.json]
+//                                                           DIE TAG-ACHSE (licht.K1): je Ort und Sicht die Uhr-Kurve aus dem Ausgabe-Pfad,
+//                                                           je Ort EINE Zeile `TAG <ort> ROT|GRUEN:` mit den sechs Zahlen des Solls
+//                                                           (gate:tag-achse:echt die Wand der Karte, gate:tag-achse:bahn die ganze Bahn)
 //   node scripts/werkbank.cjs licht --luft [--ort genesis] [--eigen] [--wetter stormy [--zug]] | --selbsttest  DIE LUFT IM BILD
 //                                                           (Koschmieder je Kanal, Farbton, Sonnenseite, fernes Weiß; Rand und Kante an
 //                                                           Hügel und Gipfel; im Wetter die Sicht, mit --zug klar → Wort → klar je Sekunde)
@@ -3051,19 +3055,21 @@ hauptLauf(async () => {
         if (o?.tabelle) endeMit(o.tabelle + "\n\n" + o.datei + "\n" + o.ordner, o.urteil === "GRUEN");
         endeMit(o);
     } else if (cmd === "licht" && hat("tag")) {
-        // DIE TAG-ACHSE (S7, W7): je Messort (`--orte`, Standard der Spawn und die Mess-Wiese) in Ego die Uhr-Kurve aus dem
-        // Ausgabe-Pfad (`__tagKurve`), ihre Nachtastung (`tagFeinUhren`) und ihr Urteil `tagKurveUrteil` (licht-linsen.cjs);
-        // `--kurz` und `--eigen` die Wand der Karte, `--ordner d` die Bilder, `--datei f.json` die Messung.
+        // DIE TAG-ACHSE (S7, W7): je Messort (`--orte`, Standard der Spawn und die Mess-Wiese in Ego; die Sicht nach dem
+        // Doppelpunkt, `wiese:third`) die Uhr-Kurve aus dem Ausgabe-Pfad (`__tagKurve`), ihre Nachtastung (`tagFeinUhren`) und ihr
+        // Urteil `tagKurveUrteil` (licht-linsen.cjs); `--kurz` und `--eigen` die Wand der Karte, `--ordner d` die Bilder,
+        // `--datei f.json` die Messung.
         const halt = await eigeneWelt();
         const welt = {};
         const kurve =(uhren, png) => evalRuf(`return await __tagKurve(${JSON.stringify({ uhren, png })});`);
         try {
-            for (const ort of String(opt("--orte", "genesis,wiese")).split(",")) {
-                await umstellen({ ort, sicht: "ego" });
+            for (const wahl of String(opt("--orte", "genesis,wiese")).split(",")) {
+                const [ort, sicht = "ego"] = wahl.split(":");
+                await umstellen({ ort, sicht });
                 const a = await kurve(hat("kurz") ? LL.TAG_UHREN_KURZ : LL.TAG_UHREN, !!opt("--ordner"));
-                const m = (welt[ort] = ergebnis(a));
+                const m = (welt[wahl] = ergebnis(a));
                 for (const z of m.zeilen || []) {
-                    if (z.png) pngDatei(path.resolve(opt("--ordner"), `tag-${ort}-${z.uhr}.png`), z.png);
+                    if (z.png) pngDatei(path.resolve(opt("--ordner"), `tag-${wahl.replace(":", "-")}-${z.uhr}.png`), z.png);
                     delete z.png;
                 }
                 const f = m.zeilen && (await kurve(LL.tagFeinUhren(m.zeilen), false)).ergebnis;
@@ -3075,6 +3081,8 @@ hauptLauf(async () => {
         dateiAb(welt);
         const u = LL.tagKurveUrteil(welt);
         console.log(JSON.stringify(u.kurven, null, 1));
+        // je Ort die sechs Zahlen und sein Urteil in EINER Zeile (der Probe-Post liest die Zeilen mit ROT/GRUEN)
+        for (const [ort, z] of Object.entries(u.zahlen)) console.log(`TAG ${ort} ${u.befunde.some((b) => b.includes(` ${ort}: `)) ? "ROT" : "GRUEN"}: ${z}`);
         urteilEnde("TAG-ACHSE", u);
     } else if (cmd === "licht" && hat("kontakt")) {
         // DER KONTAKT-SCHATTEN (schatten.K1): `kontaktSicht` an der Platte saat-s7-platte der Prüfbühne je Uhr, das Urteil `kontaktUrteil`
