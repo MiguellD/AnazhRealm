@@ -984,8 +984,9 @@ const istZeit = (sts) => sts.some((st) => st.zeit === true);
 // eines FNV-Hashes über einen festen Puffer (256 KB), (b) ALLE Kerne rechnen dasselbe gleichzeitig (worker_threads, je Kern einer, der
 // langsamste zählt) — (a) sieht, ob die Last einen Kern frisst oder den Takt senkt, (b), ob sie die Maschine sättigt. DIE RUHE je Rechner
 // und Umfeld (Sitzung · allein) ist keine Hand-Zahl: das untere Zehntel (p10, bei < 10 Fahrten der Bestwert) aller Referenzfahrten dieses
-// Rechners in den Mess-Dateien und in diesem Prozess (referenzRuhe). DIE VERLANGSAMUNG des Laufs f = max über (a), (b) von
-// max(vor, nach) ÷ Ruhe, nie unter 1 — die größtmögliche Verlangsamung, die die Umgebung der Station antat. Der Eintrag trägt
+// Rechners in seiner Ablage (messung/referenz-<host>.json, referenzRuheAus), aufgefüllt zu Beginn jedes Laufs. DIE VERLANGSAMUNG des
+// Laufs f = max über (a), (b) von max(vor, nach) ÷ Ruhe, für (a) zudem nie unter der Verdrängung Wanduhr ÷ Faden-CPU, nie unter 1 — die
+// Verlangsamung, die die Umgebung der Station antat. Der Eintrag trägt
 // `referenz: { vor, nach, ruhe, f, fEin, fAlle, schwankt, rechner, umfeld }`.
 // DAS URTEIL (fremdUrteil, an der EINEN Stelle fahreGruppe, nur an `zeit: true` — Bild-, Zahl- und Verhaltens-Stationen fallen nie an Last):
 //   f ≤ REFERENZ_RUHE_BAND → die Umgebung war ruhig: das Urteil der Station gilt wie gemessen (GRÜN, ROT, Abbruch).
@@ -1303,16 +1304,18 @@ const massRoh = (m) => (m.wert == null ? m.ab : m.wert);
 const massReisst = (m, w = massRoh(m)) => (m.richtung === "≥" ? w < m.soll : w > m.soll);
 // ───────────────────────── DIE REFERENZFAHRT (w28-referenzfahrt; das Gesetz oben) ─────────────────────────
 // DIE ARBEIT: je Faden ein fester Puffer (2^16 Wörter) und REFERENZ_RUNDEN Runden FNV-1a darüber; alle Fäden starten auf EIN Zeichen
-// (bereit → los), jeder misst nur seine Schleife; die Prüfsumme ist je Faden dieselbe (sonst rechnete nicht dieselbe Arbeit)
+// (bereit → los), jeder misst seine Schleife an der Wanduhr UND an der CPU-Zeit SEINES Fadens (process.threadCpuUsage); die Prüfsumme
+// ist je Faden dieselbe (sonst rechnete nicht dieselbe Arbeit)
 const REFERENZ_ARBEIT = [
     "const { parentPort, workerData } = require('worker_threads');",
     "const b = new Uint32Array(1 << 16); for (let i = 0; i < b.length; i++) b[i] = Math.imul(i, 2654435761) >>> 0;",
-    "parentPort.once('message', () => { const t0 = performance.now(); let h = 2166136261;",
+    "const cpu = () => { if (typeof process.threadCpuUsage !== 'function') return null; const c = process.threadCpuUsage(); return (c.user + c.system) / 1000; };",
+    "parentPort.once('message', () => { const c0 = cpu(), t0 = performance.now(); let h = 2166136261;",
     "  for (let r = 0; r < workerData; r++) for (let i = 0; i < b.length; i++) { h = Math.imul(h ^ b[i], 16777619); b[i] = h >>> 0; }",
-    "  parentPort.postMessage({ ms: performance.now() - t0, h: h >>> 0 }); });",
+    "  const c1 = cpu(); parentPort.postMessage({ ms: performance.now() - t0, cpu: c0 == null || c1 == null ? null : c1 - c0, h: h >>> 0 }); });",
     "parentPort.postMessage('bereit');",
 ].join("\n");
-// n Fäden zugleich → { ms (der langsamste), h } oder ein Wurf beim Namen (Frist 15 s, ungleiche Prüfsumme)
+// n Fäden zugleich → { ms (der langsamste), cpu (seine Faden-CPU in ms oder null), h } oder ein Wurf beim Namen (Frist 15 s, ungleiche Prüfsumme)
 function referenzLauf(n, runden = REFERENZ_RUNDEN) {
     const { Worker } = require("worker_threads");
     return new Promise((ja, nein) => {
@@ -1329,28 +1332,39 @@ function referenzLauf(n, runden = REFERENZ_RUNDEN) {
                 erg.push(m);
                 if (erg.length < n) return;
                 if (new Set(erg.map((x) => x.h)).size !== 1) return ende(nein, new Error("die Fäden rechneten verschieden (Prüfsummen " + [...new Set(erg.map((x) => x.h))].join(", ") + ")"));
-                ende(ja, { ms: Math.max(...erg.map((x) => x.ms)), h: erg[0].h });
+                const lang = erg.reduce((a, x) => (x.ms > a.ms ? x : a));
+                ende(ja, { ms: lang.ms, cpu: lang.cpu, h: erg[0].h });
             });
         }
     });
 }
-// EINE Fahrt: { ein, alle } in ms (ein Faden, alle Kerne) — oder { fehler }
+// EINE Fahrt: { ein, alle, cpuEin } in ms (ein Faden an Wanduhr und Faden-CPU, alle Kerne an der Wanduhr) — oder { fehler }
 async function referenzFahrt() {
     try {
         const a = await referenzLauf(1), b = await referenzLauf(os.cpus().length);
         if (a.h !== b.h) return { fehler: "ein Faden und alle Kerne rechneten verschieden" };
-        return { ein: +a.ms.toFixed(1), alle: +b.ms.toFixed(1) };
+        return { ein: +a.ms.toFixed(1), alle: +b.ms.toFixed(1), ...(Number.isFinite(a.cpu) ? { cpuEin: +a.cpu.toFixed(1) } : {}) };
     } catch (e) {
         return { fehler: String((e && e.message) || e).split("\n")[0].slice(0, 160) };
     }
 }
+// DIE VERDRÄNGUNG OHNE GELERNTE RUHE (der Koordinator 12.11., Frage 2): Wanduhr ÷ Faden-CPU des einen Fadens ist der Anteil der Zeit, in
+// der er nicht rechnen durfte — ein Maß, das keine Ruhe braucht. GEMESSEN 12.11. auf der Radeon (`tcpu`, je 5 Fahrten): ruhig-ish
+// Wanduhr 111–152 ms bei CPU 110–156 ms (0,97–1,02), neben 3 Brennern 0,94–1,31, neben 23 Brennern 1,24–1,32 bei Wanduhr 196–226 ms. Es
+// trägt NUR die Verdrängung: die CPU-Zeit selbst dehnt sich unter Last (der Zwilling eines Kerns, der Takt: 110 → 172 ms neben 23
+// Brennern), und Windows zählt Faden-CPU in Schritten von 15,6 ms. Am echten Werkzeug (`referenz --n 5` ruhig-ish, dann neben 3 Brennern):
+// Faden 112–181 ms bei CPU 110–172 ms; neben den Brennern verdrängt 1–1,235, f gegen die Ruhe der ersten fünf 1,146–1,612. Darum ist es eine UNTERE Schranke des Faden-f, die keine Ruhe braucht:
+// f Faden = max(gelernte Wanduhr ÷ Ruhe, Wanduhr ÷ (CPU + ein Schritt)). Für alle Kerne trägt es nicht (24 Fäden verdrängen einander
+// selbst: ruhig-ish 2,0–2,7) — dort bleibt die gelernte Ruhe allein.
+const REFERENZ_CPU_SCHRITT_MS = process.platform === "win32" ? 15.6 : 1;
+const verdraengung = (w) => (w && Number.isFinite(w.cpuEin) && w.cpuEin > 0 ? w.ein / (w.cpuEin + REFERENZ_CPU_SCHRITT_MS) : 1);
 // DER RECHNER der Referenz (Plattform, Kerne, CPU) — die Ruhe gilt je Rechner und Umfeld
 const REFERENZ_RECHNER = process.platform + " · " + os.cpus().length + " Kerne · " + String((os.cpus()[0] || {}).model || "?").trim();
 const REFERENZ_RUHE_TAGE = 14;
 const REFERENZ_RUHE_MIN = 10;
+const REFERENZ_ABLAGE_MAX = 600;
 // DIE RUHE (keine Hand-Zahl): je Komponente das untere Zehntel (p10; bei < 10 Werten der Bestwert) aller Fahrten dieses Rechners und
-// Umfelds der letzten REFERENZ_RUHE_TAGE Tage — aus den Mess-Dateien (jeder Eintrag einer Zeit-Station trägt `referenz` mit vor und
-// nach) und aus diesem Prozess; `von` nennt das Datum der Fahrt, die die Ruhe setzt. werte = [{ ein, alle, zeit }]
+// Umfelds der letzten REFERENZ_RUHE_TAGE Tage; `von` nennt das Datum der Fahrt, die die Ruhe setzt. werte = [{ ein, alle, zeit }]
 function referenzRuheAus(werte, jetzt = Date.now()) {
     const frisch = werte.filter((w) => w && Number.isFinite(w.ein) && Number.isFinite(w.alle) && !(Date.parse(w.zeit) < jetzt - REFERENZ_RUHE_TAGE * 864e5));
     if (!frisch.length) return null;
@@ -1358,56 +1372,101 @@ function referenzRuheAus(werte, jetzt = Date.now()) {
     const e = unten("ein"), a = unten("alle");
     return { ein: e.ein, alle: a.alle, n: frisch.length, von: String(e.zeit || "").slice(0, 10) };
 }
-let referenzPool = null;
-function referenzPoolLaden(mdir = path.join(DIR, "messung")) {
+// DIE ABLAGE DER FAHRTEN (der Koordinator 12.11., Frage 1 und 3: die Ruhe lernte nur aus den Einträgen der Mess-Dateien — fünf Zeit-
+// Stationen je Gerät, bis ein ROT urteilte; Kandidaten-Dateien, die aus dem Mess-Baum wandern, nahmen ihre Fahrten mit): EINE Quelle,
+// messung/referenz-<host>.json — { rechner, fahrten: [{ umfeld, ein, alle, cpuEin?, zeit }] }, je Rechner seine eigene Datei (zwei Geräte
+// schreiben nie in dieselbe), die jüngsten REFERENZ_ABLAGE_MAX. Jede Fahrt jeder Station und jede von Hand (`referenz --n`) geht hinein;
+// der Pool liest NUR die Ablagen (alle Dateien referenz-*.json, je Rechner und Umfeld) — der `referenz`-Vermerk im Eintrag ist Bericht,
+// nie Quelle. DIE AUFFÜLLUNG: `run` fährt vor der ersten Station (allein) und `fahreSitzung` nach dem Start der Welt (sitzung) so viele
+// Fahrten nach, bis REFERENZ_RUHE_MIN frische im Pool liegen (≤ 10 × 0,6 s) — die Ruhe steht in Sekunden, nie erst nach Stationen.
+const referenzAblageVon = (mdir, host = os.hostname()) => path.join(mdir, "referenz-" + String(host).replace(/[^A-Za-z0-9_-]/g, "_") + ".json");
+function referenzPoolLaden(mdir) {
     const pool = new Map();
     let dateien = [];
-    try { dateien = fs.readdirSync(mdir).filter((f) => /\.json$/.test(f)); } catch (_e) { dateien = []; } // prettier-ignore
+    try { dateien = fs.readdirSync(mdir).filter((f) => /^referenz-.+\.json$/.test(f)); } catch (_e) { dateien = []; } // prettier-ignore
     for (const f of dateien) {
-        let m;
-        try { m = JSON.parse(fs.readFileSync(path.join(mdir, f), "utf8")); } catch (_e) { continue; } // prettier-ignore
-        for (const teil of [m.je, m.ungemessen])
-            for (const e of Object.values(teil || {})) {
-                const r = e && e.referenz;
-                if (!r || !r.rechner || !r.umfeld) continue;
-                const k = r.rechner + " | " + r.umfeld;
-                if (!pool.has(k)) pool.set(k, []);
-                for (const w of [r.vor, r.nach]) if (w && Number.isFinite(w.ein)) pool.get(k).push({ ein: w.ein, alle: w.alle, zeit: e.zeit || m.zeit });
-            }
+        let a;
+        try { a = JSON.parse(fs.readFileSync(path.join(mdir, f), "utf8")); } catch (_e) { continue; } // prettier-ignore
+        for (const w of (a && a.rechner && Array.isArray(a.fahrten) ? a.fahrten : [])) {
+            if (!w || !w.umfeld || !Number.isFinite(w.ein)) continue;
+            const k = a.rechner + " | " + w.umfeld;
+            if (!pool.has(k)) pool.set(k, []);
+            pool.get(k).push(w);
+        }
     }
     return pool;
 }
-// DIE REFERENZ DER MASCHINE: fahrt() und ruhe(umfeld, [vor, nach]) — die Fahrten dieses Laufs gehen in den Pool, ehe die Ruhe fällt
-function echteReferenz() {
+// DIE REFERENZ DER MASCHINE: fahrt() · merke(umfeld, werte) legt Fahrten in Pool und Ablage · ruhe(umfeld, werte) merkt und gibt die Ruhe ·
+// auffuellen(umfeld) fährt nach, bis REFERENZ_RUHE_MIN frische im Pool liegen (Rückgabe die Zahl der nachgefahrenen). o = { mdir, ablage,
+// fahrt, rechner } — der Selbsttest stellt Ordner und Fahrt
+function echteReferenz(o = {}) {
+    const mdir = o.mdir || path.join(DIR, "messung"), ablage = o.ablage || referenzAblageVon(mdir), fahrt = o.fahrt || referenzFahrt, rechner = o.rechner || REFERENZ_RECHNER;
+    let pool = null;
+    const liste = (umfeld) => {
+        if (!pool) pool = referenzPoolLaden(mdir);
+        const k = rechner + " | " + umfeld;
+        if (!pool.has(k)) pool.set(k, []);
+        return pool.get(k);
+    };
+    const merke = (umfeld, werte) => {
+        const zeit = new Date().toISOString(), neu = werte.filter((w) => w && Number.isFinite(w.ein)).map((w) => ({ umfeld, ein: w.ein, alle: w.alle, ...(Number.isFinite(w.cpuEin) ? { cpuEin: w.cpuEin } : {}), zeit }));
+        if (!neu.length) return;
+        liste(umfeld).push(...neu);
+        let a = null;
+        try { a = JSON.parse(fs.readFileSync(ablage, "utf8")); } catch (_e) { a = null; } // prettier-ignore
+        const alt = a && a.rechner === rechner && Array.isArray(a.fahrten) ? a.fahrten : [];
+        try {
+            fs.mkdirSync(path.dirname(ablage), { recursive: true });
+            fs.writeFileSync(ablage, JSON.stringify({ rechner, fahrten: [...alt, ...neu].slice(-REFERENZ_ABLAGE_MAX) }, null, 0) + "\n");
+        } catch (e) {
+            console.log("  REFERENZ die Ablage " + ablage + " nicht schreibbar: " + String((e && e.message) || e).split("\n")[0]);
+        }
+    };
+    const frisch = (umfeld) => { const r = referenzRuheAus(liste(umfeld)); return r ? r.n : 0; }; // prettier-ignore
     return {
-        fahrt: referenzFahrt,
+        fahrt,
+        merke,
         ruhe(umfeld, werte) {
-            if (!referenzPool) referenzPool = referenzPoolLaden();
-            const k = REFERENZ_RECHNER + " | " + umfeld;
-            if (!referenzPool.has(k)) referenzPool.set(k, []);
-            const zeit = new Date().toISOString();
-            for (const w of werte) if (w && Number.isFinite(w.ein)) referenzPool.get(k).push({ ein: w.ein, alle: w.alle, zeit });
-            return referenzRuheAus(referenzPool.get(k));
+            merke(umfeld, werte);
+            return referenzRuheAus(liste(umfeld));
+        },
+        async auffuellen(umfeld) {
+            let n = 0;
+            for (let i = 0; i < REFERENZ_RUHE_MIN && frisch(umfeld) < REFERENZ_RUHE_MIN; i++) {
+                const x = await fahrt();
+                if (x.fehler) return { n, fehler: x.fehler };
+                merke(umfeld, [x]);
+                n++;
+            }
+            return { n, im: frisch(umfeld) };
         },
     };
 }
 let referenzDerMaschine = null;
 const maschinenReferenz = () => referenzDerMaschine || (referenzDerMaschine = echteReferenz());
 // die stille Referenz des Selbsttests: jede Fahrt gleich der Ruhe (f = 1) — die Läufer-Fälle urteilen ihre Mechanik
-const stilleReferenz = () => ({ fahrt: async () => ({ ein: 100, alle: 100 }), ruhe: () => ({ ein: 100, alle: 100, n: 99, von: "still" }) });
-// DER BERICHT der Referenz über eine Station: vor, nach, ruhe → f je Komponente (nie unter 1), f das größere, schwankt (vor und nach
-// weichen in einer Komponente um mehr als REFERENZ_SCHWANKT voneinander ab) — oder { fehler }
+const stilleReferenz = () => ({ fahrt: async () => ({ ein: 100, alle: 100 }), merke() {}, ruhe: () => ({ ein: 100, alle: 100, n: 99, von: "still" }), auffuellen: async () => ({ n: 0, im: 99 }) });
+// die Auffüllung eines Laufs beim Namen (run, fahreSitzung)
+async function referenzAuffuellen(umfeld) {
+    const t = Date.now(), a = await maschinenReferenz().auffuellen(umfeld);
+    if (a.n || a.fehler) console.log("  REFERENZ " + umfeld + ": " + a.n + " Fahrten nachgefahren in " + ((Date.now() - t) / 1000).toFixed(1) + " s" + (a.fehler ? " — Wurf: " + a.fehler : ", " + a.im + " im Pool"));
+    return a;
+}
+// DER BERICHT der Referenz über eine Station: vor, nach, ruhe → f je Komponente (nie unter 1; der Faden zudem nie unter seiner
+// Verdrängung), f das größere, schwankt (vor und nach weichen in einer Komponente um mehr als REFERENZ_SCHWANKT voneinander ab) — oder { fehler }
 function referenzBericht(vor, nach, ruhe, umfeld) {
     const fehl = [vor, nach].find((x) => !x || x.fehler);
     if (fehl !== undefined) return { fehler: (fehl && fehl.fehler) || "keine Fahrt", umfeld, rechner: REFERENZ_RECHNER };
     if (!ruhe) return { fehler: "keine Ruhe des Rechners", vor, nach, umfeld, rechner: REFERENZ_RECHNER };
-    // DIE RUHE LERNT: unter REFERENZ_RUHE_MIN Fahrten ist der Bestwert kein Maßstab (er könnte selbst unter Last stehen) — die Fahrten
-    // zählen in den Pool, das Urteil gilt wie ohne Referenz (GRÜN zählt, ROT UNGEMESSEN beim Grund)
+    // DIE RUHE LERNT (nur noch, wenn die Auffüllung warf): unter REFERENZ_RUHE_MIN Fahrten ist der Bestwert kein Maßstab — das Urteil gilt
+    // wie ohne Referenz (GRÜN zählt, ROT UNGEMESSEN beim Grund)
     if (ruhe.n < REFERENZ_RUHE_MIN) return { fehler: "die Ruhe des Rechners lernt (" + ruhe.n + " von " + REFERENZ_RUHE_MIN + " Fahrten)", vor, nach, ruhe, umfeld, rechner: REFERENZ_RECHNER };
     const fK = (k) => Math.max(1, Math.max(vor[k], nach[k]) / ruhe[k]);
     const sK = (k) => Math.max(vor[k], nach[k]) / Math.min(vor[k], nach[k]) - 1;
-    const fEin = +fK("ein").toFixed(3), fAlle = +fK("alle").toFixed(3);
-    return { vor, nach, ruhe, f: Math.max(fEin, fAlle), fEin, fAlle, schwankt: Math.max(sK("ein"), sK("alle")) > REFERENZ_SCHWANKT, rechner: REFERENZ_RECHNER, umfeld };
+    const vEin = Math.max(verdraengung(vor), verdraengung(nach));
+    const fEin = +Math.max(fK("ein"), vEin).toFixed(3), fAlle = +fK("alle").toFixed(3);
+    return { vor, nach, ruhe, f: Math.max(fEin, fAlle), fEin, fAlle, verdraengt: +Math.max(1, vEin).toFixed(3), schwankt: Math.max(sK("ein"), sK("alle")) > REFERENZ_SCHWANKT,
+        rechner: REFERENZ_RECHNER, umfeld };
 }
 // DER STOSS (die OMEN 11.11., Falle 8): eine Last, die mitten in der Station kam und vor der Fahrt danach ging, sieht die Referenz nie —
 // der Zeuge sieht sie: liegt die Spitze eines Takts IN der Station um mehr als REFERENZ_STOSS_KERNE über den fremden Kernen beider
@@ -1481,27 +1540,29 @@ async function fremdlastCli(o) {
     console.log(JSON.stringify(b));
     return 0;
 }
-// DIE REFERENZFAHRT VON HAND (`node punkte.cjs referenz [--n 5] [--umfeld allein|sitzung]`): n Fahrten, je die Wanduhr, Faden und alle
-// Kerne, die Streuung (max ÷ min − 1) und f gegen die Ruhe dieses Rechners aus den Mess-Dateien (die Fahrten gehen NICHT in eine Mess-Datei)
+// DIE REFERENZFAHRT VON HAND (`node punkte.cjs referenz [--n 10] [--umfeld allein|sitzung]`): n Fahrten in die Ablage dieses Rechners
+// (referenzAblageVon), je Wanduhr und Faden-CPU, die Streuung (max ÷ min − 1), die Ruhe des Pools danach und f je Fahrt gegen sie
 async function referenzCli(o) {
-    const n = Number(o.n) || 5, umfeld = o.umfeld || "allein", fahrten = [];
+    const n = Number(o.n) || 10, umfeld = o.umfeld || "allein", fahrten = [], ref = maschinenReferenz();
     for (let i = 0; i < n; i++) {
         const t = Date.now(), x = await referenzFahrt();
         if (x.fehler) {
             console.log("REFERENZ Fahrt " + (i + 1) + " warf: " + x.fehler);
             return 1;
         }
+        ref.merke(umfeld, [x]);
         fahrten.push({ ...x, wandMs: Date.now() - t });
-        console.log("  Fahrt " + (i + 1) + ": Faden " + fzW(x.ein) + " ms · alle " + os.cpus().length + " Kerne " + fzW(x.alle) + " ms · Wanduhr " + (Date.now() - t) + " ms");
+        console.log("  Fahrt " + (i + 1) + ": Faden " + fzW(x.ein) + " ms (CPU " + (x.cpuEin != null ? fzW(x.cpuEin) : "?") + " ms) · alle " + os.cpus().length + " Kerne " + fzW(x.alle) +
+            " ms · Wanduhr " + (Date.now() - t) + " ms");
     }
-    const ruhe = referenzRuheAus([...(referenzPoolLaden().get(REFERENZ_RECHNER + " | " + umfeld) || [])]);
+    const ruhe = ref.ruhe(umfeld, []);
     const streu = (k) => Math.max(...fahrten.map((x) => x[k])) / Math.min(...fahrten.map((x) => x[k])) - 1;
-    console.log("REFERENZ " + REFERENZ_RECHNER + " · " + n + " Fahrten · Streuung Faden " + fz1(100 * streu("ein")) + " %, alle " + fz1(100 * streu("alle")) + " % · Wanduhr max " +
-        Math.max(...fahrten.map((x) => x.wandMs)) + " ms · Ruhe (" + umfeld + ") " + (ruhe ? fzW(ruhe.ein) + "/" + fzW(ruhe.alle) + " ms aus " + ruhe.n + " Fahrten seit " + ruhe.von : "noch keine in den Mess-Dateien"));
-    const r0 = ruhe || referenzRuheAus(fahrten.map((x) => ({ ...x, zeit: new Date().toISOString() })));
+    console.log("REFERENZ " + REFERENZ_RECHNER + " · " + n + " Fahrten in " + path.relative(KOORD, referenzAblageVon(path.join(DIR, "messung"))) + " · Streuung Faden " +
+        fz1(100 * streu("ein")) + " %, alle " + fz1(100 * streu("alle")) + " % · Wanduhr max " + Math.max(...fahrten.map((x) => x.wandMs)) + " ms · Ruhe (" + umfeld + ") " +
+        (ruhe ? fzW(ruhe.ein) + "/" + fzW(ruhe.alle) + " ms aus " + ruhe.n + " Fahrten seit " + ruhe.von : "keine"));
     for (const [i, x] of fahrten.entries()) {
-        const r = referenzBericht(x, x, r0, umfeld);
-        console.log("  Fahrt " + (i + 1) + " f " + fzW(r.f) + " (Faden " + fzW(r.fEin) + " · alle " + fzW(r.fAlle) + ")" + (ruhe ? "" : " — gegen den Bestwert dieser Fahrten"));
+        const r = referenzBericht(x, x, ruhe, umfeld);
+        console.log("  Fahrt " + (i + 1) + (r.fehler ? " — " + r.fehler : " f " + fzW(r.f) + " (Faden " + fzW(r.fEin) + ", verdrängt " + fzW(r.verdraengt) + " · alle " + fzW(r.fAlle) + ")"));
     }
     return 0;
 }
@@ -3130,6 +3191,8 @@ async function fahreSitzung(gruppen0, ctx, melde) {
         return ja;
     };
     let zuruecksetzen = false, abbruch = false, gerissen = null, grundDa = null, grundWege = null;
+    // DIE AUFFÜLLUNG DER RUHE (die Ablage der Fahrten): mit der Welt der Sitzung, ehe die erste Zeit-Probe misst
+    if (gruppen.some(istZeit)) await referenzAuffuellen("sitzung");
     for (const g of gruppen) {
         // DAS SCHLOSS AN DER PROBEN-GRENZE: fiel es (gpu-lauf.sh endete), trägt die Sitzung nicht mehr; wartet ein CI-Job darauf, geht es
         // an ihn und kommt danach wieder — die Welt bleibt warm, das Warten zählt nie in die Fahrt
@@ -3649,6 +3712,8 @@ async function run(opt) {
     if (!GERAETE.includes(opt.geraet)) throw new Error("--geraet radeon|gtx|headless");
     // der Zeuge der Fremd-Last legt seinen Grund, ehe die erste Station misst (Windows: der PowerShell-Lauf braucht seinen ersten Takt)
     if (!opt.trocken) await maschinenZeuge().bereit();
+    // DIE AUFFÜLLUNG DER RUHE (die Ablage der Fahrten): bis REFERENZ_RUHE_MIN frische Fahrten des Umfelds „allein“ im Pool liegen
+    if (!opt.trocken) await referenzAuffuellen("allein");
     const gpuLauf = gpuLaufFuer(opt.geraet, opt.farm);
     const bahnenSoll = Number(opt.bahnen || 3);
     if (!(bahnenSoll >= 1 && bahnenSoll <= MAX_BAHNEN && Number.isInteger(bahnenSoll)))
@@ -5783,6 +5848,55 @@ async function selbsttest(o = {}) {
                 rh.ein === 110 && rh.alle === 210 && rh.n === 20 && rh3.ein === 150 && rh3.alle === 250 && rb.fEin === 1 && rb.fAlle === 1.55 && rb.f === 1.55 && rb.schwankt === false &&
                     referenzBericht({ ein: 100, alle: 100 }, { ein: 130, alle: 100 }, RUHE, "x").schwankt === true && referenzBericht(null, STILL, RUHE, "x").fehler,
                 JSON.stringify([rh, rh3, rb]));
+            // DIE ABLAGE DER FAHRTEN (der Koordinator 12.11.): der Pool liest NUR referenz-*.json — eine Kandidaten-Datei mit `referenz`-Vermerk,
+            // die aus dem Mess-Baum wandert, nimmt nichts mit; merke schreibt die eigene Ablage; die Auffüllung fährt bis REFERENZ_RUHE_MIN nach
+            {
+                const md = path.join(tmp, "referenz-ablage"), md2 = path.join(tmp, "referenz-leer");
+                fs.mkdirSync(md, { recursive: true });
+                fs.mkdirSync(md2, { recursive: true });
+                const RR = "Attrappe · 4 Kerne", jetzt = new Date().toISOString();
+                fs.writeFileSync(path.join(md, "referenz-anderer.json"), JSON.stringify({ rechner: RR, fahrten: [...Array(12)].map((_, i) => ({ umfeld: "allein", ein: 100 + i, alle: 200 + i, zeit: jetzt })) }));
+                fs.writeFileSync(path.join(md, "kandidat-gtx.json"), JSON.stringify({ je: { "a.K1#1": { referenz: { rechner: RR, umfeld: "allein", vor: { ein: 1, alle: 1 }, nach: { ein: 1, alle: 1 } }, zeit: jetzt } } }));
+                const zaehl = { n: 0 }, fahrtA = async () => (zaehl.n++, { ein: 180, alle: 150, cpuEin: 170 });
+                const ra = echteReferenz({ mdir: md, rechner: RR, ablage: path.join(md, "referenz-selbst.json"), fahrt: fahrtA });
+                const rhA = ra.ruhe("allein", []);
+                fs.rmSync(path.join(md, "kandidat-gtx.json"));
+                const rhA2 = echteReferenz({ mdir: md, rechner: RR, ablage: path.join(md, "referenz-selbst.json"), fahrt: fahrtA }).ruhe("allein", []);
+                const aufA = await ra.auffuellen("allein");
+                pruef("LAST die Ablage wird gelesen: 12 Fahrten aus referenz-anderer.json → Ruhe 101/201 aus 12 (der Vermerk einer Kandidaten-Datei zählt nie, ihr Wandern ändert nichts); ein voller Pool fährt nichts nach",
+                    rhA && rhA.n === 12 && rhA.ein === 101 && rhA.alle === 201 && rhA2 && rhA2.n === 12 && rhA2.ein === 101 && aufA.n === 0 && zaehl.n === 0, JSON.stringify([rhA, rhA2, aufA, zaehl.n]));
+                // run füllt den Pool selbst auf: vorher (leerer Pool) bleibt ein ROT 990 UNGEMESSEN, nach der Auffüllung (10 Fahrten in Sekunden,
+                // in der eigenen Ablage) urteilt es ROT trotz Last; die Mutante, deren Auffüllung nichts fährt, bleibt UNGEMESSEN
+                const zaehl2 = { n: 0 }, ablage2 = path.join(md2, "referenz-selbst.json");
+                const fahrtB = async () => (zaehl2.n++, { ein: 100, alle: 100, cpuEin: 99 });
+                const leer = echteReferenz({ mdir: md2, rechner: RR, ablage: ablage2, fahrt: fahrtB });
+                const urteil = (ref) => fremdUrteil(zeitSt, rotM(M(990, 33)), L, referenzBericht(LAST, LAST, ref.ruhe("allein", []), "allein"));
+                const vorher = urteil(leer);
+                const mutante = { ...leer, auffuellen: async () => ({ n: 0 }) };
+                await mutante.auffuellen("allein");
+                const mutUrteil = urteil(mutante);
+                const auf = await leer.auffuellen("allein");
+                const nachher = urteil(leer);
+                const datei2 = JSON.parse(fs.readFileSync(ablage2, "utf8"));
+                const quelle = run.toString() + fahreSitzung.toString();
+                pruef("LAST run füllt den Pool selbst auf: leer → ROT 990 UNGEMESSEN („keine Ruhe“); die Auffüllung fährt 10 Fahrten in die eigene Ablage, danach ROT trotz Last; die Mutante ohne Auffüllung bleibt UNGEMESSEN; run (allein) und fahreSitzung (sitzung) rufen sie",
+                    vorher.ungemessen === true && /keine Ruhe des Rechners/.test(vorher.grund) && mutUrteil.ungemessen === true && auf.n === 10 && zaehl2.n === 10 && auf.im === 10 &&
+                        datei2.rechner === RR && datei2.fahrten.length === 10 && datei2.fahrten.every((w) => w.umfeld === "allein" && w.cpuEin === 99) &&
+                        nachher.gruen === false && !nachher.ungemessen && /ROT trotz Last/.test(nachher.grund) &&
+                        quelle.includes("referenzAuffuellen(\"allein\")") && quelle.includes("referenzAuffuellen(\"sitzung\")"),
+                    JSON.stringify([vorher.grund.slice(0, 120), mutUrteil.ungemessen, auf, zaehl2.n, datei2.fahrten.length, nachher.grund.slice(0, 160)]));
+                // DIE VERDRÄNGUNG: Wanduhr 220 bei Faden-CPU 156,4 gegen eine Ruhe von 220 (unter Last gelernt) → der Faden trägt dennoch f
+                // = 220 ÷ (156,4 + ein Schritt); ohne Faden-CPU bleibt sie 1; die Mutante ohne Verdrängung urteilt dort f 1 (Ruhe → ROT wie gemessen)
+                const vor = { ein: 220, alle: 100, cpuEin: 156.4 }, rv = referenzBericht(vor, vor, { ein: 220, alle: 100, n: 20, von: "x" }, "allein");
+                const soll = +(220 / (156.4 + REFERENZ_CPU_SCHRITT_MS)).toFixed(3);
+                const ohneCpu = referenzBericht({ ein: 220, alle: 100 }, { ein: 220, alle: 100 }, { ein: 220, alle: 100, n: 20, von: "x" }, "allein");
+                const mutV = { ...rv, f: 1, fEin: 1, verdraengt: 1 };
+                const uV = fremdUrteil(zeitSt, rotM(M(40, 33)), L, rv), uM = fremdUrteil(zeitSt, rotM(M(40, 33)), L, mutV);
+                pruef("LAST die Verdrängung ohne gelernte Ruhe: Wanduhr 220 ÷ (Faden-CPU 156,4 + " + fz1(REFERENZ_CPU_SCHRITT_MS) + ") = " + fzW(soll) + " hebt den Faden über die unter Last gelernte Ruhe; ohne Faden-CPU 1; die Mutante ohne Verdrängung macht aus „unscharf“ ein ROT",
+                    rv.fEin === soll && rv.verdraengt === soll && rv.f === soll && ohneCpu.f === 1 && ohneCpu.verdraengt === 1 &&
+                        (soll > REFERENZ_RUHE_BAND ? uV.ungemessen === true && /unscharf unter Last/.test(uV.grund) && uM.gruen === false && !uM.ungemessen : true),
+                    JSON.stringify([rv, ohneCpu.f, uV.grund && uV.grund.slice(0, 120), uM.grund]));
+            }
             // DIE SPANNEN DES BERICHTS (fremdBericht): je Takt die fremden Kerne; vor und nach das Mittel der deckenden Takte, die Station ihre Spitze
             const sp = fremdBericht({ tA: 0, reihe: [[2000, 0.2], [4000, 4], [6000, 0.2]], letzt: new Map(), erst: new Map() }, 5600, 2000, null,
                 { vor: [500, 1500], station: [2100, 3900], nach: [4500, 5500] }).spannen;
