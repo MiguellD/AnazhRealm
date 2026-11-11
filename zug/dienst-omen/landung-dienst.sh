@@ -58,15 +58,35 @@ while :; do
             NAME=gtx-${K:0:8}
             [ "$r" != "$n" ] && NAME=$NAME-w$(date +%H%M) # aufgenommen: eigener Name, damit keine Zeile und keine Ausgabe doppelt heißt
             sag "landung Zwischenstand main ${K:0:8}: misst $r Stationen aus gtx-nutzen ($a) je allein ($((n - r)) tragen an diesem Kopf schon einen Eintrag, $((a - n)) profiband.* ruhen), rohe Zahl je Zeile"
-            KOPF=$K EINZELN=1 bash "$N/kandidat.sh" "$NAME" x "$REST" >>"$L" 2>&1 &
+            # DER SPRUNG (Koordinator 11.11. 14:33): landet ein Zug, während die Liste läuft, endet sie nach der laufenden Station
+            # (kandidat.sh SPRUNG) und die Schleife nimmt den jüngsten Kopf. Am 11.11. maß die GTX 6 von 32 Stationen am 523e3a38,
+            # während main seit zwei Stunden e699a834 hieß: die Züge lassen der Karte Fenster von 15–20 min, eine Liste braucht Stunden.
+            SPRUNG=$S/landung.sprung
+            rm -f "$SPRUNG"
+            KOPF=$K EINZELN=1 SPRUNG=$SPRUNG bash "$N/kandidat.sh" "$NAME" x "$REST" >>"$L" 2>&1 &
             kp=$!
+            t=0
             while kill -0 $kp 2>/dev/null; do
                 puls landung "misst main ${K:0:8} ($r Stationen): $(tail -n 1 "$N/kette-0711.log" | cut -c1-150)"
                 sleep 30
+                t=$((t + 1))
+                if [ $((t % 4)) = 0 ] && [ ! -f "$SPRUNG" ]; then
+                    git -C "$M" fetch -q origin main 2>/dev/null
+                    K2=$(git -C "$M" rev-parse origin/main)
+                    if [ -n "$K2" ] && [ "$K2" != "$K" ]; then
+                        touch "$SPRUNG"
+                        log "SPRUNG: main ${K:0:8} -> ${K2:0:8}, die Liste endet nach der laufenden Station"
+                    fi
+                fi
             done
             wait $kp
-            summe "$K" "gtx-${K:0:8}" "$BILD"
-            richte "$K"
+            if [ -f "$SPRUNG" ]; then
+                rm -f "$SPRUNG"
+                sag "landung Zwischenstand main ${K:0:8}: die Liste endete am Sprung (main ist weiter) — was gemessen war, ist gepusht; Summe und Richter fahren am jüngsten Kopf"
+            else
+                summe "$K" "gtx-${K:0:8}" "$BILD"
+                richte "$K"
+            fi
         elif [ "$n" -gt 0 ]; then
             log "main ${K:0:8}: alle $n Stationen tragen schon einen Eintrag"
             richte "$K"

@@ -37,5 +37,9 @@ teil() { local name=$1 R=$2 v=1 erst=1
     . /c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh; cpu_ruhe 2>> $L
     TEIL=$name-v$v NUR=$R node punkte-offen.cjs push $K >> $L 2>&1; echo "$(date '+%T') $name GEPUSHT (Versuch $v)" >> $L; node $N/zeile-erledigt.cjs $K $name "$R" >> $L 2>&1; return 0
   done; echo "$(date '+%T') $name AUFGEGEBEN" >> $L; }
-G=${EINZELN:+1}; G=${G:-${TEIL_N:-9}}; i=0; while [ $i -lt ${#OK[@]} ]; do T=$(IFS=,; echo "${OK[*]:$i:$G}"); teil $NAME-$((i/G+1)) "$T"; i=$((i+G)); done
+# SPRUNG=<datei> (11.11., Koordinator 14:33): liegt die Datei, endet die Liste VOR der nächsten Station — der Landungs-Dienst legt sie,
+# sobald main weiter ist (die GTX misst den jüngsten Kopf, nie stundenlang einen überholten); die laufende Station fährt zu Ende.
+G=${EINZELN:+1}; G=${G:-${TEIL_N:-9}}; i=0; while [ $i -lt ${#OK[@]} ]; do
+  [ -n "$SPRUNG" ] && [ -f "$SPRUNG" ] && { echo "$(date '+%T') $NAME SPRUNG: main ist weiter - die Liste endet nach $i von ${#OK[@]} Stationen" >> $L; break; }
+  T=$(IFS=,; echo "${OK[*]:$i:$G}"); teil $NAME-$((i/G+1)) "$T"; i=$((i+G)); done
 echo "$(date '+%T') $NAME ENDE ${K:0:8}" >> $L
