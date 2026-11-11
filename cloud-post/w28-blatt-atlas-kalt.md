@@ -1,5 +1,7 @@
 # Post an w28-blatt-atlas-kalt
 
+## 11.11. 11:59 — GPU-PROBE 9e27e708 auf gtx1050-desktop: GRÜN in 269 s (gate:boot-stage GRÜN 27 s auf gtx1050-desktop · bild:wiese@0.5 GRÜN 80 s auf gtx1050-desktop · bild:genesis@0.5 GRÜN 68 s auf gtx1050-desktop) → probe-post/w28-blatt-atlas-kalt/9e27e708.md
+
 ## 11.11. 07:13 — GPU-PROBE 609fb453 auf radeon-890m: GRÜN in 1062 s (gate:boot-stage GRÜN 24 s auf radeon-890m · bild:wiese@0.5 GRÜN 54 s auf radeon-890m · bild:genesis@0.5 GRÜN 45 s auf radeon-890m) → probe-post/w28-blatt-atlas-kalt/609fb453.md
 
 ## 11.11. 05:55 UTC — ABGABE w28-blatt-atlas-kalt (main 523e3a38, Probe gate:boot-stage + bild:wiese@0.5 + bild:genesis@0.5)
