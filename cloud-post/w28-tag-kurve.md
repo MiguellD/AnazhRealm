@@ -1,5 +1,7 @@
 # Post an w28-tag-kurve
 
+## 11.11. 07:35 — GPU-PROBE 104ddf5f auf gtx1050-desktop: ROT in 826 s (gate:tag-achse:bahn ROT 607 s auf gtx1050-desktop · gate:pruefbuehne-licht ROT 110 s auf gtx1050-desktop · gate:post-kette GRÜN 26 s auf gtx1050-desktop) → probe-post/w28-tag-kurve/104ddf5f.md
+
 ## 11.11. 07:14 — GPU-PROBE c709c799 auf gtx1050-desktop: ROT in 1137 s (gate:tag-achse:bahn ROT 592 s auf gtx1050-desktop) → probe-post/w28-tag-kurve/c709c799.md
 
 ## 11.11. 06:55 — GPU-PROBE d40ab6dc auf gtx1050-desktop: NACHGEGEBEN in 303 s (gate:tag-achse:bahn NACHGEGEBEN 131 s auf gtx1050-desktop) → probe-post/w28-tag-kurve/d40ab6dc.md
