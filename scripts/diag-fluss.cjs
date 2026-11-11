@@ -3,7 +3,10 @@
 // Die Transport-Schale (`_foundrySchale`, im Worker VOR dem Studio) trägt Platte · Konsum-Wand · Index-Verengung · Transfer.
 //
 // STATISCH (Node, über den EINEN Absenz-Helfer `stammLib.fehlt`) — die Wache des Gefallenen: der Asset-Store lebt NUR in der
-//   Schale (S2b) · kein `_foundryVariantCount` · kein Samen-Literal im Vorrat · EIN Streu-Same · keine Saison-Flip-Maschine
+//   Schale (S2b) · kein `_foundryVariantCount` · kein Samen-Literal im Vorrat · EIN Streu-Same · keine Saison-Flip-Maschine ·
+//   S9 KEIN ASYNCHRONER ABRUF IM STUDIO-FADEN: Start und Schale holen nur mit dem EINEN synchronen Abruf (`_foundryHole`),
+//   kein Kern und keine Brücke des Manifests ruft fetch oder import() — eine asynchrone Antwort an den Faden steht hinter
+//   den Skript-Stempeln der Seite an (GTX 1050 kalt, echter Renderer: das Buch 36,8 s nach der Navigation statt 4,8 s)
 // KLON-LINSE (Node, die geladene Klasse): `_foundryVariantFor` gegen das Studio-Budget auf 600 × 600 Streu-Zellen — 1/V je
 //       Gestalt, Nachbar-/Versatz-16-Gleichheit ≤ 1/V + 0,03 (das alte `h % 16` legte ein 54-m-Klon-Gitter)
 // VERHALTEN (Chromium, echter Worker + echte IndexedDB; die Schale aus dem Stamm + ein Studio-Double):
@@ -33,9 +36,16 @@ const PORT = Number(process.env.FLUSS_PORT || 4561);
 // STATISCH — die Wache des Gefallenen über den EINEN Absenz-Helfer (`stammLib.fehlt`, kommentar-frei; `wandel` färbt den
 // Stamm im Selbsttest): der Asset-Store nur in der Schale, der Streu-Same nur in `_scatterRohSame` (die Engstellen leben —
 // die Schale läuft unten im Worker, der Same in der Klon-Linse).
-function statisch(wandel) {
+// S9: fetch( und import( — außer dem Blob-Modul der Engine (`import(modul(…))`, ein Blob fragt den Code-Cache nicht)
+const ASYNC_ABRUF = /\bfetch\s*\(|\bimport\s*\(\s*(?!modul\()/;
+const FADEN_DATEIEN = [...new Set(jsonLesen("cores.manifest.json").flatMap((c) => [].concat(c.scripts || [], c.bruecke || [])))];
+function statisch(wandel, wandelDatei) {
     const F = (name, glied, re) => [name, stammLib.fehlt(glied, re, wandel), stammLib.fehlt.wo || ""];
+    const dateien = FADEN_DATEIEN.every((datei) => stammLib.fehlt(null, ASYNC_ABRUF, { datei, wandel: wandelDatei }));
+    const dateiWo = stammLib.fehlt.wo || "";
     return [
+        F("S9a der Studio-Faden holt nur synchron: kein fetch, kein import() von http in Start und Schale", ["_foundryStart", "_foundrySchale"], ASYNC_ABRUF),
+        [`S9b kein Kern und keine Brücke des Manifests ruft asynchron ab (${FADEN_DATEIEN.length} Dateien)`, FADEN_DATEIEN.length > 0 && dateien, dateiWo],
         F("S2b der Asset-Store lebt NUR in der Schale", { ausser: "_foundrySchale" }, /anazhFoundryAssets/),
         F("S4a kein _foundryVariantCount (die Varianten-Wahl liest das Studio-Budget)", null, /_foundryVariantCount/),
         F("S4b kein Samen-/Karten-Literal im Vorrat", "_foundryPrefetchLibrary", /<=\s*16\b|seeds:\s*\[1, 2/),
@@ -52,6 +62,11 @@ function statisch(wandel) {
 function schaleVon() {
     const { AnazhRealm: A } = stammLib.ladeKlasse(root);
     return A._foundrySchale.toString();
+}
+// Der EINE Abruf des Fadens, wie der Boot-Blob ihn der Schale gibt (`cfg.hole`, `AnazhRealm._foundryHole`)
+function holeVon() {
+    const { AnazhRealm: A } = stammLib.ladeKlasse(root);
+    return A._foundryHole.toString();
 }
 
 // DIE KLON-LINSE: die Varianten-Wahl des Stamms (`_foundryVariantFor` + `_foundryGestalten` +
@@ -191,7 +206,7 @@ async function verhalten(schaleSrc) {
         const page = await browser.newPage();
         await server.zeige(page, undefined, "", "load");
         return await page.evaluate(
-            async (schale, studio) => {
+            async (schale, studio, hole) => {
                 const o = location.origin;
                 const neu = (format, platte, b) => {
                     const cfg = {
@@ -204,7 +219,7 @@ async function verhalten(schaleSrc) {
                         ),
                         wirt: [o + "/kern.js"],
                     };
-                    const boot = "(function " + schale + ")(" + JSON.stringify(cfg) + ");" + studio;
+                    const boot = "(function " + schale + ")(Object.assign(" + JSON.stringify(cfg) + ", { hole: function " + hole + " }));" + studio;
                     const w = new Worker(URL.createObjectURL(new Blob([boot], { type: "text/javascript" })));
                     const warte = new Map();
                     w.onmessage = (e) => {
@@ -311,7 +326,8 @@ async function verhalten(schaleSrc) {
                 return aus;
             },
             schaleSrc.replace(/^ {4}static /, ""),
-            STUDIO
+            STUDIO,
+            holeVon()
         );
     } finally {
         await browser.close();
@@ -642,6 +658,15 @@ hauptLauf(async () => {
             bruch(t, /(\n {4}_foundryRequest\([^)]*\) \{)/, '$1\n        indexedDB.open("anazhFoundryAssets", 1);')
         ).find((g) => g[0].startsWith("S2b"));
         check("Selbst-Test 2: Haupt-Thread öffnet den Asset-Store → S2b rot", t2 && !t2[1]);
+        const s9 = (wandel, wandelDatei, k) => statisch(wandel, wandelDatei).find((g) => g[0].startsWith(k));
+        const t24a = s9((t) => bruch(t, "const text = (u) => new Promise((ok) => ok(cfg.hole(u)));", "const text = (u) => fetch(u).then((r) => r.text());"), undefined, "S9a");
+        check("Selbst-Test 24a: die Schale holt ihre Quellen per fetch → S9a rot beim Namen", t24a && !t24a[1] && /fetch/.test(t24a[2]), t24a && t24a[2]);
+        const t24b = s9((t) => bruch(t, "return import(modul(motoren[0]))", "return import(motoren[0])"), undefined, "S9a");
+        check("Selbst-Test 24b: der Start importiert die Engine von http → S9a rot beim Namen", t24b && !t24b[1] && /import/.test(t24b[2]), t24b && t24b[2]);
+        const t24c = s9(undefined, (t) => t + "\nfetch(self.location.href);\n", "S9b");
+        check("Selbst-Test 24c: ein Kern ruft fetch → S9b rot beim Namen", t24c && !t24c[1] && /fetch/.test(t24c[2]), t24c && t24c[2]);
+        const t24d = s9(undefined, undefined, "S9");
+        check("Selbst-Test 24d: der Stand ist grün (S9a)", t24d && t24d[1] === true, t24d && t24d[2]);
         // die Klon-Linse an einem gebrochenen Stamm: die Datei mit dem Anker trägt den Bruch, die Klasse lädt ihn
         const gebrochen = (alt, neu) => {
             const teile = stammLib.teileVon(root);
