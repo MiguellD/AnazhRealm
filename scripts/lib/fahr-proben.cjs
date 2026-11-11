@@ -757,6 +757,12 @@ async function probeLeben(expected) {
             await bis("verkehr: der Anfang", bereit);
             const VK = S.verkehr;
             if (!VK) throw new Error("die Stadt trägt keinen Verkehr");
+            // die Stadt ohne Wagen beim Namen (bis hier ein TypeError der Minuten-Probe: der kürzeste Weg von keinem Wagen)
+            if (!VK.wagen.length)
+                throw new Error(
+                    `die Stadt stellt keinen Wagen (Soll ${VK.zahl.soll}, ohne Platz ${VK.zahl.ohnePlatz}, ` +
+                        `Wenden ${VK.wenden.size} an ${VK.kp.filter((K) => K.ende).length} Enden, Netz ${Math.round(VK.zahl.laengeM)} m)`
+                );
             const m = {
                 leib: 0,
                 leibOrte: [],
