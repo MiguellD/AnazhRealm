@@ -1,0 +1,21 @@
+{
+ "ms": 1346,
+ "ort": "genesis",
+ "sicht": "ego",
+ "pose": null,
+ "welt": null,
+ "spieler": [
+  0,
+  0
+ ],
+ "wiese": null,
+ "takte": 94,
+ "steht": true,
+ "chunks": 81,
+ "gier": -1.5708,
+ "dorfZug": false,
+ "ortTakt": [
+  "_genesisOrt"
+ ],
+ "dorfSchwebt": null
+}

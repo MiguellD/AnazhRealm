@@ -213,6 +213,9 @@ $ C:\Program Files\nodejs\node.exe -e const tor = (function sitzungTor() {
     }
 })(tor).then(() => process.exitCode || 0, (e) => ((e && e.messort ? console.log('@@PUNKTE@@ MESSORT ' + e.messort) : 0), console.log('PROBE-FEHLER ' + String((e && e.stack) || e).split('\n').slice(0, 4).join(' | ')), 1)).then(async (c) => { await tor.ende(); process.exit(c); }); C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\c4010773-radeon\streaming.K3_1.json
 [linse-gpu] amd/rdna-3
+SPRUNG 1 EXIT=0 {"m":1000,"stehtS":36.5,"bau":0,"frames":1419,"frameMs":{"p50":25.12,"p95":41.8,"p99":58.5,"max":100.56},"taktMs":{"p50":21.59,"p95":32.25,"p99":45.89,"max":106.01},"profil":true,"ursachen":["TAKT: verteilt x13","TAKT: boden › _standSicht x3","GC: Garbage-Collector x2"]}
+SPRUNG 2 EXIT=0 {"m":1000,"stehtS":36.9,"bau":0,"frames":1431,"frameMs":{"p50":25.11,"p95":33.77,"p99":66.68,"max":1699.1},"taktMs":{"p50":22.69,"p95":32.59,"p99":55.07,"max":1681.45},"profil":true,"ursachen":["TAKT: verteilt x10","TAKT: _knotenRate › build [three.webgpu.min.js] x9","GC: Garbage-Collector x3"]}
+SPRUNG 3 EXIT=0 {"m":1000,"stehtS":50.3,"bau":0,"frames":1715,"frameMs":{"p50":25.33,"p95":41.97,"p99":58.57,"max":117.11},"taktMs":{"p50":25.46,"p95":37.86,"p99":52.5,"max":98.43},"profil":true,"ursachen":["TAKT: verteilt x37","TAKT: _knotenRate › build [three.webgpu.min.js] x5","GC: Garbage-Collector x4"]}
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3
