@@ -69,6 +69,23 @@ bereit() {
         [ "$sp" -gt 0 ] && {
             echo "$c" | grep "GPU-Probe" | head -1 | grep -q "completed success" || {
                 echo "$b ${sha:0:8}: GPU-Probe nicht GRÜN ($(echo "$c" | grep "GPU-Probe" | head -1 | cut -c1-110))" >>"$W/zug-nie-leer.wartet"
+                # NACHGEGEBEN IST KEIN URTEIL: die Probe wich einem Karten-Job der CI (oder ihr Vorfahrt-Blick scheiterte) und endet als
+                # „failure“ — niemand stieß sie neu an, der Zweig wartete für immer (11.11.: w28-stadt-grammatik 4073fb2f mit zwei
+                # GRÜNEN Bildern und einem nachgegebenen 100 min, w27-verkehr-leib 314ff351 an einem 502 der API). Sagt der Post am
+                # Kopf NACHGEGEBEN, stößt der Dienst die gefallenen Jobs der Probe neu an — je Kopf höchstens alle 20 min.
+                if git -C $R fetch -q origin "+refs/heads/koordination:refs/remotes/origin/koordination" 2>/dev/null &&
+                    git -C $R show "origin/koordination:probe-post/$b/${sha:0:8}.md" 2>/dev/null | head -1 | grep -q NACHGEGEBEN; then
+                    pm="$W/probe-neu-${sha:0:8}"
+                    if [ ! -f "$pm" ] || [ $(($(date +%s) - $(stat -c %Y "$pm"))) -gt 1200 ]; then
+                        pl=$(awk -F'\t' '$2 ~ /^GPU-Probe/ { print $1; exit }' "$W/ci-runs.tmp" 2>/dev/null)
+                        if [ -n "$pl" ]; then
+                            PT=$(printf 'protocol=https\nhost=github.com\n\n' | git -C $R credential fill 2>/dev/null | sed -n 's/^password=//p')
+                            pc=$(curl -s -o /dev/null -w "%{http_code}" -X POST -H "Authorization: Bearer $PT" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/MiguellD/AnazhRealm/actions/runs/$pl/rerun-failed-jobs")
+                            touch "$pm"
+                            echo "$(date +%H:%M) $b ${sha:0:8}: GPU-Probe NACHGEGEBEN → neu angestoßen (Lauf $pl, HTTP $pc)" >>"$L"
+                        fi
+                    fi
+                fi
                 continue
             }
         }
