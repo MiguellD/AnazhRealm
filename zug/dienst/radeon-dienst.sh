@@ -1,6 +1,6 @@
 #!/bin/bash
 # radeon-dienst.sh — die Radeon misst, ohne LLM und ohne Ende („Radeon nie leer“ 22.10.; Nachfolger von radeon-nie-leer2.sh):
-# sobald die Karte 5 min frei ist (kein GPU-Schloss, keine laufende Messung, kein CI-Job), misst sie am jüngsten main die offenen
+# sobald die Karte 2 min frei ist (bis 11.11. 5: seit ein Abbruch behält, was er maß, kostet ein früher Start nichts — das Fenster zwischen zwei Zügen ist 15–20 min) (kein GPU-Schloss, keine laufende Messung, kein CI-Job), misst sie am jüngsten main die offenen
 # Stationen (`punkte.cjs run --offen`) und pusht die Mess-Dateien nach punkte-maschine; buche-dienst.sh bucht daraus.
 # CI VOR MESSUNG (10.11.: 17:08–17:40 maß sie neben CI-Jobs, ihre ROTs flossen als „echter Fall“ in die Buchung): startet während
 # einer Messung ein Runner.Worker-Job, bricht sie ab (taskkill über den Baum) und verwirft ihre Datei.
@@ -102,7 +102,7 @@ while true; do
         f=0
         puls radeon "wartet: Karte belegt ($(head -1 "$GS/besitzer.txt" 2>/dev/null || echo CI/Messung))"
     fi
-    if [ $f -ge 5 ]; then
+    if [ $f -ge 2 ]; then
         K0=$(git -C $R ls-remote origin refs/heads/main | cut -f1)
         miss "offene Stationen" --offen
         rc=$?
@@ -118,6 +118,6 @@ while true; do
             until [ "$(git -C $R ls-remote origin refs/heads/main | cut -f1)" != "$K0" ]; do sleep 120; done
         fi
         f=0
-    elif [ $f -gt 0 ]; then puls radeon "Karte frei seit $f min — misst ab 5"; fi
+    elif [ $f -gt 0 ]; then puls radeon "Karte frei seit $f min — misst ab 2"; fi
     sleep 60
 done
