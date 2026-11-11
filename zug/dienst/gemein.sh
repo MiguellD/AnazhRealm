@@ -18,7 +18,8 @@ mkdir -p "$S" "$T/w3" "$W"
 START_SPIEL_S=2
 halter_lebt() {
     local m=$1 bild=$2 p z s
-    p=$(tr -dc 0-9 <"$m" 2>/dev/null)
+    [ -f "$m" ] || return 1
+    p=$(tr -dc 0-9 <"$m")
     [ -n "$p" ] || return 1
     z=$(tasklist //FI "PID eq $p" //NH 2>/dev/null | grep -w "$p") || return 1
     if [ -n "$bild" ]; then echo "$z" | grep -qi "$bild" || return 1; fi
