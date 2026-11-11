@@ -19,6 +19,12 @@
 // `--profil` am Zweit-Boot: die Wiederkehr, ankunft K3). `--bild`: das Bild der Kontrolle gegen dieselbe Pose nach 60 s Ruhe
 // (ankunft K2: ≤ 2 % Lücke, nichts offen im Bild). `--mutante eigenmeldung|bild`: die Schlupflöcher, ROT beim Namen.
 // Ohne `--echt` swiftshader, mit `--echt` die Hardware-GPU (1920×1080).
+// AM BILD GEZEICHNET (w28-bild-ganz): die Zeile zählt von AUSSEN (`BILD_PROBE`, unabhängig vom Term „zeichnung“ des Spiels), wer
+// im Bild des ersten Weltbilds zeichnen wollte (ein Ruf der Erst-Zeichnung mit Zug-Parametern) und nicht zeichnete (kein Zug
+// des Backends; ein Bündel, das ohne ihn versiegelte, spielt ohne ihn ab) — ROT beim Namen: „Weltbild steht, <Bürger> nicht
+// gezeichnet“. GTX 1050 an main 523e3a38: kalt 6–8 Bürger des Hauptbilds (Karten-Atlas, Fern-Ring, Ferne der Wiese), am
+// Zweit-Boot 5–11 (dazu Boden-Satz, Himmel, Sonne — ein fast schwarzes Bild). Das Bild der Kontrolle (ankunft K2) sah die
+// Klasse nie: sein Schuss ruht den Loop, und der ruhende Loop baut jedes Programm am Stück.
 // DIE SPUR (B, w4-ankunft): die Zeile fährt die EINE Spur der Hänger-Familie (CDP-Trace, CPU-Stichproben jedes Fadens) von der
 // Navigation bis zur Kontrolle und urteilt sie (`ankunftsHalter`, scripts/lib/haenger-linse.cjs): die Phasen (HTML, Skripte, DOM,
 // Buch, der Schluss jedes Terms des ersten Weltbilds, Ring, erstes Lade-Bild, Weltbild, Kontrolle — je mit der belegten Zeit des
@@ -211,6 +217,78 @@ function KALT_PROBE() {
     }, 200);
 }
 
+// (Seite) DAS BILD IST GEZEICHNET — die Zählung von außen, je Bild: jeder Ruf der Erst-Zeichnung (`_renderObjectDirect`) der
+// Welt-Szene mit Zug-Parametern gegen jeden Zug des Backends, getrennt nach Hauptbild und Wurf (jede andere Kamera). Ein Bündel,
+// das ohne einen Bürger versiegelte, spielt ohne Ruf ab: seine Fehlenden gelten in jedem Bild, in dem es läuft, bis es neu
+// aufnimmt. `amBild`: der Stand im Task des ersten Weltbilds [ms, Hauptbild, Wurf]; `ganz`: das erste Bild ab dort ohne Fehlende.
+function BILD_PROBE() {
+    const B = (window.__bildProbe = { amBild: null, ganz: null, bilder: 0, fehler: "" });
+    const wer = (o, m) => {
+        const glieder = o.isGeometrieArena && Array.isArray(o.glieder) ? o.glieder : null;
+        const n = glieder
+            ? glieder.slice(0, 3).map((g) => g.userData?.archInstanceKey || g.name || g.type).join(", ") + (glieder.length > 3 ? ` und ${glieder.length - 3} weitere` : "")
+            : o.name || o.userData?.inventar || o.userData?.archInstanceKey || o.type;
+        return `${n} (${m?.name || m?.type}_${m?.id})`;
+    };
+    let [versucht, gezogen, gelaufen, jetzt] = [new Map(), new Set(), new Set(), { haupt: [], wurf: [] }];
+    const jeBuendel = new WeakMap();
+    __weltDa((w) => w.state.rendererReady).then((r) => {
+        const [rend, P] = [r.state.renderer, Object.getPrototypeOf(r)];
+        if (rend._isHeadlessNull || typeof rend._renderObjectDirect !== "function") return (B.fehler = "kein Renderer mit Erst-Zeichnung");
+        const art = (kam) => (kam === r.state.camera ? "haupt" : "wurf");
+        const [R0, D0, N0, K0, W0] = [rend._renderObjectDirect, rend.backend.draw, rend._renderBundle, P._kontaktPassZeichne, P._weltbildSteht];
+        rend._renderObjectDirect = function (object, material, scene, camera, lightsNode, group, clip, passId) {
+            const aus = R0.call(this, object, material, scene, camera, lightsNode, group, clip, passId);
+            if (scene === r.state.scene && this._objects.get(object, material, scene, camera, lightsNode, this._currentRenderContext, clip, passId).getDrawParameters() !== null)
+                versucht.set(object.id + "|" + art(camera), [wer(object, object.material), art(camera), this._currentRenderBundle || null]);
+            return aus;
+        };
+        rend.backend.draw = function (ro, info) {
+            gezogen.add(ro.object.id + "|" + art(ro.camera));
+            return D0.call(this, ro, info);
+        };
+        rend._renderBundle = function (bundle, sceneRef, lightsNode) {
+            const rb = this._bundles.get(bundle.bundleGroup, bundle.camera, this._currentRenderContext);
+            const daten = this.backend.get(rb);
+            if (!(daten.bundleGPU !== undefined && bundle.bundleGroup.version === daten.version)) jeBuendel.set(rb, new Map());
+            gelaufen.add(rb);
+            return N0.call(this, bundle, sceneRef, lightsNode);
+        };
+        // das Ende jedes Bilds (hinter dem Render desselben Tasks, vor dem Urteil `_ankunftsBild`)
+        P._kontaktPassZeichne = function (direkt) {
+            const aus = K0.call(this, direkt);
+            const fehlt = { haupt: [], wurf: [] };
+            for (const [k, [name, a, rb]] of versucht) {
+                const zog = gezogen.has(k);
+                const m = rb && jeBuendel.get(rb);
+                if (m) zog ? m.delete(k) : m.set(k, [name, a]);
+                else if (!zog) fehlt[a].push(name);
+            }
+            for (const rb of gelaufen) for (const [name, a] of (jeBuendel.get(rb) || new Map()).values()) fehlt[a].push(name);
+            if (B.amBild && B.ganz == null && !fehlt.haupt.length && !fehlt.wurf.length) B.ganz = Math.round(performance.now());
+            [jetzt, versucht, gezogen, gelaufen] = [fehlt, new Map(), new Set(), new Set()];
+            B.bilder++;
+            return aus;
+        };
+        P._weltbildSteht = function () {
+            const aus = W0.call(this);
+            B.amBild = [Math.round(performance.now()), jetzt.haupt.slice().sort(), jetzt.wurf.slice().sort()];
+            if (!jetzt.haupt.length && !jetzt.wurf.length) B.ganz = B.amBild[0];
+            return aus;
+        };
+    });
+}
+// DAS URTEIL (rein): im Bild des ersten Weltbilds zeichnete jeder Bürger der Welt-Szene, der zeichnen wollte — sonst ROT beim
+// Namen, im Hauptbild wie im Wurf. Ohne Messung ROT (eine Sonde ohne Messung ist nie grün, Lehre 6).
+function gezeichnetUrteil(B) {
+    if (!B || !B.amBild) return { gruen: false, zeile: `AM BILD GEZEICHNET: keine Messung — die Probe sah das erste Weltbild nicht${B?.fehler ? ` (${B.fehler})` : ""}` };
+    const [t, haupt, wurf] = B.amBild;
+    const namen = [...new Set(haupt.concat(wurf.map((n) => `${n} im Wurf`)))];
+    if (!namen.length) return { gruen: true, zeile: `AM BILD GEZEICHNET: jeder Bürger des ersten Weltbilds zeichnete (${B.bilder} Bilder gezählt)` };
+    const spaet = B.ganz != null ? `${B.ganz - t} ms nach ihm` : "nicht bis zur Kontrolle";
+    return { gruen: false, zeile: `Weltbild steht, ${namen.slice(0, 6).join(" · ")}${namen.length > 6 ? ` und ${namen.length - 6} weitere` : ""} nicht gezeichnet — das ganze Bild kam ${spaet} (\`_bildWartet\`, der Term „zeichnung“)` };
+}
+
 async function kaltLauf() {
     const ECHT = ARGV.includes("--echt");
     // ohne `--echt` die EINE Weiche (K40: lokal der Hardware-Adapter, die CI swiftshader, `LINSE_GPU=software` der Rückweg),
@@ -234,6 +312,7 @@ async function kaltLauf() {
     });
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(KALT_PROBE);
+    await page.evaluateOnNewDocument(BILD_PROBE);
     // DIE MUTANTE (`--mutante eigenmeldung`, das Schlupfloch von ankunft K1): die Eigenmeldung steht ab dem Erwachen — die
     // Kontrolle von außen folgt ihr nie; `--mutante bild`: der erste Schuss endet nach 20 m, die Welt dahinter fehlt (ROT)
     const MUT = OPT("--mutante");
@@ -308,6 +387,7 @@ async function kaltLauf() {
             ohne: (st.logBuffer || []).filter((z) => /Das erste Weltbild steht ohne/.test(z)),
             sync: __haengerH.namen.filter((e) => e.art === "sync"),
             lieferung: r._foundry.lieferung,
+            bildProbe: window.__bildProbe,
         });
     });
     const liste = path.join(browser.profil || profil, "lieferung.json");
@@ -410,7 +490,9 @@ async function kaltLauf() {
     if (wechsel) console.log(`  ${wechsel.gruen ? "✅" : "❌"} ${wechsel.zeile}`);
     const nach = nachBild(out.sync, out.weltbildDa);
     console.log(`  ${nach.length ? "❌" : "✅"} synchron nach dem Bild: ${nach.join(" · ") || "keine Pipeline"}`);
-    process.exit(gut && ganz && !halter.length && !nach.length ? 0 : 1);
+    const gez = gezeichnetUrteil(out.bildProbe);
+    console.log(`  ${gez.gruen ? "✅" : "❌"} ${gez.zeile}`);
+    process.exit(gut && ganz && !halter.length && !nach.length && gez.gruen ? 0 : 1);
 }
 
 hauptLauf(async () => {
@@ -543,6 +625,10 @@ hauptLauf(async () => {
     const W = (e, d) => wechselUrteil([[0, "e", "platte", "phyto"], [0, "d", "platte", "fachwerk"]], [[0, "e", e, "phyto"], [0, "d", d, "fachwerk"]], "fachwerk").gruen; // prettier-ignore
     if (SELBSTTEST) checks.push([W("platte", "werk") && !W("werk", "werk") && !W("platte", "platte"), "SELBST-TEST: der Kern-Wechsel urteilt (fremder Neubau, alter Leser ROT)"]); // prettier-ignore
     if (SELBSTTEST) checks.push([nachBild([{ t: 9 }, { t: 1 }], 5).length === 1, "SELBST-TEST: synchron nach dem Bild ROT"]);
+    // am Bild gezeichnet: gesund GRÜN; ein wartender Bürger ROT beim Namen (Hauptbild und Wurf); ohne Messung ROT
+    const G = gezeichnetUrteil;
+    const atlas = "impostor#fimp:atlas (MeshStandardNodeMaterial_109)";
+    if (SELBSTTEST) checks.push([G({ amBild: [9, [], []], bilder: 3 }).gruen && G({ amBild: [9, [atlas], []], ganz: 2009 }).zeile.startsWith(`Weltbild steht, ${atlas} nicht gezeichnet — das ganze Bild kam 2000 ms`) && /bodenSatz im Wurf nicht gezeichnet/.test(G({ amBild: [9, [], ["bodenSatz"]] }).zeile) && !G({ amBild: [9, [atlas], []] }).gruen && !G({}).gruen && !G(null).gruen, "SELBST-TEST: am Bild gezeichnet — ein wartender Bürger ist ROT beim Namen (Hauptbild und Wurf), ohne Messung ROT"]); // prettier-ignore
     const fails = checks.filter(([pass, name]) => (console.log(`  ${pass ? "✅" : "❌"} ${name}`), !pass)).length;
     console.log(`\n${checks.length - fails}/${checks.length} Bühnen-Invarianten OK.`);
     urteilEnde(fails, "⛔ Die volle Bühne steht nicht (oder die Linse ist stumpf) — Kriterium 2 ist nicht abnehmbar.", `✅ „Volle Bühne" ist ein Prädikat — Kriterium 2 ist messbar.`);

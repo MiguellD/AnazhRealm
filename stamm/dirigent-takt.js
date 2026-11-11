@@ -61,6 +61,9 @@ class AnazhRealm_dirigent_takt {
                 // Spiel-Glied (515–1 007 ms); mit der Phase ruft es jedes Lade-Bild (24 von 210 Takten, 281 ms), das Netz
                 // jeder Takt.
                 const bild = this._gpuLeineFrei();
+                // DAS BILD ZÄHLT SICH SELBST (w28-bild-ganz): wer in DIESEM Bild zeichnen will und nicht zeichnet, trägt sich ab
+                // hier neu ein (`_erstWartet` (3)) — das erste Weltbild liest die Liste nach dem Render (`_bildWartet`)
+                if (bild) this._erstZeichnungStand().bildWartet.clear();
                 const ruht = !bild && this._ladeTakt();
                 // DER BILD-TAKT UNTER DEM LADESCHIRM teilt die EINE Frist der Aufgabe mit der Zeichnung (`_ladeFrist`)
                 this._ladeBildTakt = bild && this._ladeTakt();
