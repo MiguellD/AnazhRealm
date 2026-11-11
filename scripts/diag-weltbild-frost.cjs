@@ -530,7 +530,13 @@ hauptLauf(async () => {
 
     // S1/S2/S4 — der Seelenwechsel über den Spielerpfad (`applyPlayerSoul` bei offenem Ich: Ich-Bühne UND Welt-Leib, der
     // Mitspieler empfängt ihn) je Art↔human, Hof-Bühne 4 Seelen ×2. Zwei Durchgänge: der erste wärmt, der zweite misst die Neubauten JE DEVICE gegen die geschlossene Bühne.
-    const NEUBAU_MAX = 2;
+    // NEUBAU_MAX steht zwischen dem Rauschen und dem Rückfall. Gemessen auf der GTX 1060 am selben Spiel-Baum (main 4e2df19b):
+    // +2 Module / +1 Pipeline (z374, z377) und +3 / +2 (z379, drei Versuche in Folge am 11.11. 02:49–03:25) — EIN Programm eines
+    // fremden Erst-Zeichners der Welt im gemessenen Durchgang; der Zähler hört jedes createShaderModule des Geräts, nicht nur die
+    // Bühnen. Der Rückfall, den die Wand fängt — die GPU kompiliert JE Wechsel neu —, kostet ≥ 16 (8 Ich- und 8 Hof-Wechsel je
+    // Durchgang). Bis 11.11. stand die Schwelle auf 2, ohne Abstand zum Normalwert: z379 (kein Laufzeit-Byte geändert) fiel dreimal.
+    // Offen: das zweite Programm beim Namen (welcher Stoff zeichnet im zweiten Durchgang zum ersten Mal), Auftrag der OMEN.
+    const NEUBAU_MAX = 4;
     const ICH_TRI_MIN = 10000; // der Block-Zwilling der Bauplan-Teile trägt 5 388
     const seelen = await page.evaluate(
         async () => {
