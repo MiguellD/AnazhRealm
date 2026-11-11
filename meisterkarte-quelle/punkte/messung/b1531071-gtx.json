@@ -1,0 +1,110 @@
+{
+ "sha": "b1531071aca42251b7a3bf8bb53f70d45f581855",
+ "geraet": "gtx",
+ "zeit": "2026-11-11T23:21:24.626Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {},
+ "ungemessen": {
+  "ankunft.K4#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 139 s gerissen: Stille seit 15 s nach 145.9 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-45 62707 ms)",
+   "exit": 1,
+   "minuten": 2.43,
+   "grund": "Deckel 139 s gerissen: Stille seit 15 s nach 145.9 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-45 62707 ms)",
+   "s": 146.1,
+   "fremd": {
+    "s": 147.8,
+    "takte": 68,
+    "fremdS": 52.89,
+    "kerne": 0.358,
+    "fensterKerne": 0.461,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      23.7
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      11.59
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      4.34
+     ]
+    ],
+    "dienerS": 44.19,
+    "diener": [
+     [
+      "dwm.exe",
+      17
+     ],
+     [
+      "System",
+      14.72
+     ]
+    ],
+    "geraetS": 45.72,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      24.25
+     ],
+     [
+      "svchost.exe",
+      20.23
+     ],
+     [
+      "OmenCommandCenterBackground.exe",
+      0.56
+     ]
+    ],
+    "eigenS": 151.56,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-11T23:21:24.626Z",
+   "abdruck": "ea66260e5746",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-11T23:11:58.971Z",
+  "port": 7804,
+  "warten": 8.8,
+  "bootS": 8.2,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "genesis",
+    "vor": "ankunft.K4#1",
+    "s": 28.1,
+    "takte": 681,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 86,
+   "luecken": 8,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+  },
+  "fahrtS": 184.3,
+  "minuten": 11.96
+ }
+}
