@@ -1,6 +1,9 @@
 # zug/plan.txt — was ansteht (Koordinator schreibt, messplatz-blick zeigt): je Zeile Zustand · Was · Wer/Wo · Ziel
-# Stand 11.11. 03:10 · main 4e2df19b (z373, seit 20:58 nichts gelandet) · gebucht 215/330 · Konto 11 (Koordinator Radeon) · Woche 25 % / Fable 49 % (01:40)
-läuft   z379  w28-buehne-uhr (der Deckel der Vollen Bühne zählt Takte ab der Foundry; GTX 1050 am Zweig 6 von 6 GRÜN, an main 7 von 12 ROT)  —  Zug-Dienst  —  Kandidat ab2f2eed
+# Stand 11.11. 03:45 · main ab2f2eed (z379 w28-buehne-uhr, kein Laufzeit-Byte — die erste Landung des Kontos) · gebucht 215/330 · Konto 11 (Koordinator Radeon)
+gelandet z379 w28-buehne-uhr → main ab2f2eed  23 Beine GRÜN (erstmals echt gtx1050); echt omen fiel dreimal an Frost-Wand S2 (+3 Module statt ≤ 2, am unveränderten Spiel) — gelandet mit der Regel der Wackler ohne Täter (ZUG_WACKEL, einmalig)  —  Koordinator  —  main bewegt
+abgegeben w28-frost-rand f27c4649  Frost-Wand S2: Soll ≤ 4 statt ≤ 2 (Rauschen 2–3, Rückfall ≥ 16) — die Brücke; das zweite Programm beim Namen sucht die OMEN  —  Koordinator  —  nächster Zug (der Zug-Dienst steht bis zu seinem Code-Check)
+gelandet (pm) w28-wald-saum-pm 10c5e91c  vegetation.K1: unter cos < 0,1 urteilt der Ring die Deckung (≤ 0,0203 %), SELBSTTEST 177/177  —  GTX 1050  —  Buchung nach der nächsten Messung
+gemessen w28-wald-saum 7aa4802d (Radeon): ferne.K3#1 ROT blind (0 Kamm-Spalten am Ort −704/−880) · lod.K4#1 ROT 2,56 % (Soll < 2 %) · vegetation.K1#1 OFFEN (Deckel 40 s)  —  Koordinator  —  der Schnitt holt die zwei nicht zurück
 abgegeben w28-wand-zug 80d8cebd  die Wachstums-Wand urteilt am ZUG: er trägt sich selbst + der Überschuss der WOCHE (Schöpfer 11.11. „Ja, umbauen“; 7 Tage Prüf −9106 / Spiel +240119)  —  Koordinator  —  fährt im nächsten Zug; bis er in main steht, fällt jeder Zug ohne ihn am alten Tages-Fenster (ab 03:10 im Minus)
 abgegeben w27-ort-pose-voll 55108482 · w27-wagen-spalt baaf1721  beide lagen still im KONFLIKT gegen main (14 h · 10 h), geheilt und neu abgegeben; die Pose macht bild:stadt-voll GRÜN (an main ROT: Blickziel verdeckt)  —  Koordinator  —  Zug
 abgegeben w28-stadt-boden c79b2b2d  Belag-Gesetz der Stadt + Pose eingezogen; Probe GRÜN (stadt-voll · stadt · dorf, GTX 1050): der Platz trägt Kopfstein  —  Koordinator  —  Zug nach w28-wand-zug
