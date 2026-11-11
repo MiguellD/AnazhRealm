@@ -1489,6 +1489,12 @@ function fahreGruppe(sts, ctx) {
         // DER ZEUGE DES KONSUMS (R6 nach Konsum, konsumAn) in JEDEM node-Prozess des Laufs; die Seite trägt ihn nur, wo kein Zeit-Urteil
         // fällt und die Welt dem Lauf allein gehört (nie in der Sitzung: ihre Welt misst auch Zeit-Proben)
         const konsumOrdner = konsumAn(env, ctx.aus + ".konsum", ctx.baum, !sitz && !istZeit(sts));
+        // DER ZEUGE IST EIN LEBENSZEICHEN (11.11., Radeon unter Last: „Deckel 2 s gerissen: Stille seit 2 s nach 2 s“ an der lebenden Probe
+        // des Selbsttests — der Zeuge lud 15 ms vor ihrer ersten Zeile, auf dem ausgelasteten Gerät ein Vielfaches): jedes Ereignis im
+        // Ordner des Zeugen (`<id>.offen` beim Start eines node-Prozesses der Probe, noch einmal nach seinem Einhängen und vor seinem
+        // Abschluss) zählt an der Leine wie eine Zeile der Probe — sein eigenes Einhängen und Abschließen ist nie die Stille, an der sie fällt
+        let konsumWache = null;
+        try { konsumWache = fs.watch(konsumOrdner, { persistent: false }, () => (tLeben = Date.now())); konsumWache.on("error", () => {}); } catch (_e) { konsumWache = null; }
         try { fs.rmSync(ctx.aus, { force: true }); } catch (_e) {}
         if (zeugeDatei) try { fs.rmSync(zeugeDatei, { force: true }); } catch (_e) {}
         if (!sitz) portRaeumen(ctx.band || ctx.port);
@@ -1571,6 +1577,7 @@ function fahreGruppe(sts, ctx) {
         // Sitzung dazu das Fenster der Welt (konsumNahme) und ihr Boot — gefaltet in jeden Eintrag des Laufs (`kz`)
         const abschluss = (code, sig, ohneEnde) => {
             clearTimeout(uhr);
+            if (konsumWache) konsumWache.close();
             konsumDesLaufs(konsumOrdner, ctx.baum, tot ? null : sitz).then((kz) => urteile(code, sig, ohneEnde, kz));
         };
         const urteile = (code, sig, ohneEnde, kz) => {
@@ -6300,6 +6307,18 @@ async function selbsttest(o = {}) {
         pruef("EICH-FAHRT an derselben Leine: die lebende Probe über ihrem Grund-Deckel (2 s) misst GRÜN, eich s ≥ 4 · sek 2; der Kopf nennt die Fahrt",
             ea.gruen === true && !!ea.eich && ea.eich.sek === 2 && ea.eich.s >= 4 && ea.eich.s < 12 && !!r16.kopf.eich && r16.kopf.eich.fahrtMaxS === FAHRT_MAX_S,
             JSON.stringify([ea, r16.kopf.eich]));
+        // DER ZEUGE IST EIN LEBENSZEICHEN (R6 nach Konsum; Radeon 11.11. unter Last: die lebende Probe oben fiel „Stille seit 2 s nach
+        // 2 s“, weil der Konsum-Zeuge vor ihrer ersten Zeile lud): eine STUMME Probe, deren node-Prozess erst 0,5 s nach dem Start
+        // anläuft und 1,8 s rechnet, fällt an der Leine (Grund 2 s, Stille 2 s) nicht — das Einhängen des Zeugen (`.offen`, „bereit“) und
+        // sein Abschluss („endet“) zählen wie eine Zeile; dieselbe Stille ohne node-Prozess (die Mutante) fällt beim Namen
+        if (findeBash()) {
+            const stumm = ["bash", "-c", "sleep 0.5; exec node -e \"setTimeout(() => require('fs').writeFileSync(process.argv[1], JSON.stringify({ n: 0 })), 1800)\" \"$0\"", "{AUS}"];
+            const ohneZeugen = ["bash", "-c", "sleep 2.3; echo '{\"n\":0}' > \"$0\"", "{AUS}"];
+            const rL = await lauf([[S("a.K1", 1, { befehl: stumm, sek: 2 }, nN)], [S("b.K1", 1, { befehl: ohneZeugen, sek: 2 }, nN)]], "gut", null, null, false, { stilleS: 2 });
+            const [la, lb] = [rL.es["a.K1#1"] || {}, rL.es["b.K1#1"] || {}];
+            pruef("LEBENSZEICHEN DES ZEUGEN: die stumme Probe mit spät anlaufendem node-Prozess misst GRÜN (sein Einhängen und sein Abschluss zählen an der Leine); dieselbe Stille ohne Zeugen fällt beim Namen (Mutante)",
+                la.gruen === true && !la.ungemessen && lb.ungemessen === true && /^Deckel 2 s gerissen: Stille seit [\d.]+ s nach [\d.]+ s /.test(lb.grund || ""), JSON.stringify([la.gruen, la.zahl, la.s, lb.ungemessen, lb.grund]));
+        }
         // DIE AUSWAHL DER EICH-FAHRT (eichOffen): eine Probe mit Zahl am SHA und heutigem Abdruck fällt heraus; ohne Zahl, mit fremdem Abdruck
         // (die Probe änderte sich) oder an einem anderen SHA bleibt sie — die nächste Eich-Fahrt misst den Rest
         const [sa, sb, sc] = ["a", "b", "c"].map((n) => S(n + ".K1", 1, { befehl: ["node", n], sek: 10 }, lies));

@@ -47,9 +47,17 @@ if (KONSUM && BAUM) {
     const SEITE = process.env.PUNKTE_KONSUM_SEITE === "1";
     const ICH = process.pid + (faden.isMainThread ? "" : "-" + faden.threadId);
     const { readFileSync: lies, readdirSync: liste, writeFileSync: schreibe, existsSync: gibt } = fs;
+    // DIE LEBENSZEICHEN DES ZEUGEN (11.11., Radeon unter Last: der Selbsttest riss an der Leine „Stille seit 2 s nach 2 s“ — der Zeuge
+    // rechnete 15 ms, ehe die Probe ihre erste Zeile schrieb; nachgestellt mit einer CPU-Quote von 2,5 %: erste Zeile ohne Zeugen
+    // 1,6 s, mit ihm 2,3 s): der Läufer liest jedes Ereignis in diesem Ordner als Lebenszeichen der Probe (fahreGruppe). `<id>.offen`
+    // liegt, BEVOR der Zeuge irgendetwas anderes tut; ist er eingehängt, schreibt er es noch einmal („bereit“), und ehe sein Abschluss
+    // rechnet, ein drittes Mal („endet“) — sein eigenes Rechnen ist nie die Stille, an der eine Probe fällt. Was nicht vor der ersten
+    // Zeile der Linse stehen muss, lädt erst mit seinem ersten Gebrauch (crypto, http): 14,7 → 9 ms je node-Start
+    fs.mkdirSync(KONSUM, { recursive: true });
+    schreibe(path.join(KONSUM, ICH + ".offen"), "");
     const konsum = { js: new Map(), skripte: new Set(), geladen: new Set(), ganz: new Set(), texte: new Set(), wartend: new Set(), ziele: new Set(), browser: false, warum: {}, blind: [] };
     // DIE AUSGABE: jeder Text, den der Prozess aus der Hand gibt — trägt er einen beim Laden gelesenen Funktions-Text, zählt der als ausgeführt
-    const { createHash } = require("crypto");
+    let createHash = null;
     const gesehen = new Set();
     // (ein Bild, ein Puffer aus Zahlen trägt keinen Text: ein Uint8Array von 3 MB kostete Element für Element 0,5 s — nie durchlaufen)
     const ausgabe = (x, tiefe = 0) => {
@@ -67,7 +75,7 @@ if (KONSUM && BAUM) {
             return;
         }
         if (x.length < 13) return;
-        const k = x.length > 256 ? createHash("sha1").update(x).digest("base64") : x;
+        const k = x.length > 256 ? (createHash || (createHash = require("crypto").createHash))("sha1").update(x).digest("base64") : x;
         if (gesehen.has(k)) return;
         if (gesehen.size > 50000) gesehen.clear();
         gesehen.add(k);
@@ -259,8 +267,19 @@ if (KONSUM && BAUM) {
     // Browsers ist beim Namen (`browser`), mit dem Seiten-Zeugen trägt er die Coverage jeder Seite
     const laden = Module._load;
     const gefasst = new WeakSet();
-    Module._load = function () {
+    // DER SPÄTE HAKEN: http trägt seine Haken erst, wenn der Prozess es lädt — keine Probe zahlt sein Laden vor ihrer ersten Zeile
+    // (2,2 ms von 30 ms eines node-Starts; unter Last ein Vielfaches). War es beim Start des Zeugen schon geladen, sofort; lädt der
+    // Prozess es an Module._load vorbei (ESM, getBuiltinModule), ist er blind beim Namen (stueck). vm und child_process hängen sofort
+    // (zusammen 1 ms): Node lädt sie auch selbst (cluster hinter jedem `listen`), dort wäre der Wächter ein falscher Alarm
+    const spaet = []; // [kern, Anfrage, hake, gehakt]
+    const spaeter = (kern, anfrage, hake, sofort = false) => {
+        const e = [kern, anfrage, hake, false];
+        spaet.push(e);
+        if (sofort || (process.moduleLoadList || []).includes("NativeModule " + kern)) (e[3] = true), hake();
+    };
+    Module._load = function (anfrage) {
         const m = laden.apply(this, arguments);
+        for (const e of spaet) if (!e[3] && e[1].test(String(anfrage))) (e[3] = true), still(e[2])();
         for (const o of [m, m && m.default])
             if (o && typeof o.launch === "function" && typeof o.executablePath === "function" && !gefasst.has(o)) {
                 gefasst.add(o);
@@ -279,8 +298,6 @@ if (KONSUM && BAUM) {
     };
 
     // ── der Node-Prozess: Coverage ab hier, Text-Lesen, Verzeichnisse und gelesene Funktions-Texte
-    fs.mkdirSync(KONSUM, { recursive: true });
-    schreibe(path.join(KONSUM, ICH + ".offen"), "");
     const sitz = new (require("inspector").Session)();
     sitz.connect();
     sitz.post("Profiler.enable");
@@ -339,18 +356,22 @@ if (KONSUM && BAUM) {
         const alt = fs.promises[weg];
         fs.promises[weg] = function (_f, daten) { gib(daten); return alt.apply(this, arguments); };
     }
-    const vm = require("vm");
-    for (const weg of ["runInContext", "runInNewContext", "runInThisContext", "compileFunction"]) {
-        const alt = vm[weg];
-        vm[weg] = function (code) { gib(code); return alt.apply(this, arguments); };
-    }
-    vm.Script = new Proxy(vm.Script, { construct(Z, a, neu) { gib(a[0]); return Reflect.construct(Z, a, neu); } });
-    const http = require("http");
-    for (const K of [http.ClientRequest, http.ServerResponse])
-        for (const weg of ["write", "end"]) {
-            const alt = K.prototype[weg];
-            K.prototype[weg] = function (stueck) { if (typeof stueck === "string" || (K === http.ClientRequest && Buffer.isBuffer(stueck))) gib(stueck); return alt.apply(this, arguments); };
+    spaeter("vm", /^(node:)?vm$/, () => {
+        const vm = require("vm");
+        for (const weg of ["runInContext", "runInNewContext", "runInThisContext", "compileFunction"]) {
+            const alt = vm[weg];
+            vm[weg] = function (code) { gib(code); return alt.apply(this, arguments); };
         }
+        vm.Script = new Proxy(vm.Script, { construct(Z, a, neu) { gib(a[0]); return Reflect.construct(Z, a, neu); } });
+    }, true);
+    spaeter("_http_client", /^(node:)?https?$/, () => {
+        const http = require("http");
+        for (const K of [http.ClientRequest, http.ServerResponse])
+            for (const weg of ["write", "end"]) {
+                const alt = K.prototype[weg];
+                K.prototype[weg] = function (stueck) { if (typeof stueck === "string" || (K === http.ClientRequest && Buffer.isBuffer(stueck))) gib(stueck); return alt.apply(this, arguments); };
+            }
+    });
     if (typeof globalThis.fetch === "function") {
         const hole = globalThis.fetch;
         globalThis.fetch = function (_u, o) { if (o && o.body) gib(o.body); return hole.apply(this, arguments); };
@@ -360,6 +381,8 @@ if (KONSUM && BAUM) {
     // fallen; die geladenen Skripte, das Gelesene und die Verzeichnisse bleiben)
     const stueck = (neu) => {
         sitz.post("Profiler.takePreciseCoverage", (e, r) => r && male(r.result));
+        for (const e of spaet)
+            if (!e[3] && (process.moduleLoadList || []).includes("NativeModule " + e[0])) (e[3] = true), konsum.blind.push(e[0] + " ohne Haken des Zeugen geladen (an Module._load vorbei): was der Prozess dort ausgab, sah niemand");
         // die gelesenen Funktions-Texte an ihrem Ort im Baum: je Text EINMAL gesucht (in jedem geladenen Skript), in jedem Stück gemalt
         for (const p of konsum.skripte) eintrag(p);
         for (const t of [...konsum.texte, ...(konsum.cdpBlind ? konsum.wartend : [])]) {
@@ -389,6 +412,7 @@ if (KONSUM && BAUM) {
     function abschluss() {
         if (zu) return;
         zu = true;
+        schreibe(path.join(KONSUM, ICH + ".offen"), "endet");
         for (const z of konsum.ziele) if (!z.zu) verloren(z);
         schreibe(path.join(KONSUM, ICH + ".json"), stueck(false));
         fs.rmSync(path.join(KONSUM, ICH + ".offen"), { force: true });
@@ -423,10 +447,18 @@ if (KONSUM && BAUM) {
     if (faden.isMainThread) {
         // EIN KIND OHNE ZEUGEN: startet der Prozess node oder eine Shell mit einer Umgebung, die den Zeugen nicht trägt, läuft dort Code,
         // den niemand nennt — beim Namen (`blind`; die Faltung der Maschine verwirft dann den Konsum des Laufs, nie still klein)
-        const kp = require("child_process");
         const traegt = (env) => !env || (env.PUNKTE_KONSUM === KONSUM && /konsum-zeuge\.cjs/.test(env.NODE_OPTIONS || ""));
         const laeufer = (f) => /(^|[\\/])(node|nodejs|bash|sh|zsh|cmd|powershell|pwsh|npm|npx)(\.exe|\.cmd)?$/i.test(String(f || ""));
         const merke = (f, a) => konsum.blind.length < 8 && konsum.blind.push("ein Kind ohne Zeugen (seine Umgebung trägt ihn nicht): " + [f, ...(Array.isArray(a) ? a : [])].join(" ").slice(0, 160));
+        const bitteVor = (pid) => {
+            const bitte = path.join(KONSUM, pid + ".bitte");
+            if (!gibt(path.join(KONSUM, pid + ".offen"))) return;
+            schreibe(bitte, "");
+            for (const frist = Date.now() + 5000; gibt(bitte) && Date.now() < frist; ) Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 20);
+            fs.rmSync(bitte, { force: true });
+        };
+        spaeter("child_process", /^(node:)?child_process$/, () => {
+        const kp = require("child_process");
         const starte = kp.ChildProcess.prototype.spawn;
         kp.ChildProcess.prototype.spawn = function (o) {
             const env = o && Array.isArray(o.envPairs) ? Object.fromEntries(o.envPairs.map((x) => [x.slice(0, x.indexOf("=")), x.slice(x.indexOf("=") + 1)])) : null;
@@ -443,18 +475,12 @@ if (KONSUM && BAUM) {
                 return alt.apply(this, arguments);
             };
         }
-        const toeten = require("child_process").ChildProcess.prototype.kill;
-        const bitteVor = (pid) => {
-            const bitte = path.join(KONSUM, pid + ".bitte");
-            if (!gibt(path.join(KONSUM, pid + ".offen"))) return;
-            schreibe(bitte, "");
-            for (const frist = Date.now() + 5000; gibt(bitte) && Date.now() < frist; ) Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 20);
-            fs.rmSync(bitte, { force: true });
-        };
-        require("child_process").ChildProcess.prototype.kill = function (...a) {
+        const toeten = kp.ChildProcess.prototype.kill;
+        kp.ChildProcess.prototype.kill = function (...a) {
             if (this.pid && this.exitCode == null && a[0] !== 0) bitteVor(this.pid);
             return toeten.apply(this, a);
         };
+        }, true);
         const stoss = process.kill;
         process.kill = function (pid, sig) {
             if (pid > 0 && pid !== process.pid && sig !== 0) bitteVor(pid);
@@ -467,4 +493,5 @@ if (KONSUM && BAUM) {
             });
     }
     process.on("exit", still(abschluss));
+    schreibe(path.join(KONSUM, ICH + ".offen"), "bereit");
 }
