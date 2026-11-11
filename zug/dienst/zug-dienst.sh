@@ -55,6 +55,8 @@ bereit() {
         c=$(bash "$D/ci.sh" "$b" </dev/null 2>&1)
         echo "$c" | grep "Code-Check:" | head -1 | grep -q "completed success" || {
             echo "$b ${sha:0:8}: Code-Check nicht GRÜN ($(echo "$c" | grep "Code-Check:" | head -1 | cut -c1-80))" >>"$W/zug-nie-leer.wartet"
+            # ein ROTER Check geht sofort heim (heim.sh: der rote Text je Kopf EINMAL in cloud-post/<zweig>.md)
+            echo "$c" | grep "Code-Check:" | head -1 | grep -q "completed failure" && bash "$D/heim.sh" "$b" "$sha" </dev/null >/dev/null 2>&1
             continue
         }
         # das Bild ist Pflicht, sobald der Zweig das SPIEL berührt — auch ohne Tag im Betreff
