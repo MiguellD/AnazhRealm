@@ -707,10 +707,31 @@ async function starte() {
                             const x = k[i - 1][0] + ((k[i][0] - k[i - 1][0]) * s) / l, z = k[i - 1][1] + ((k[i][1] - k[i - 1][1]) * s) / l;
                             if (!r._aufWeg(x, z, 0)) throw new Error(`Messort ${o.ort}: die Bahn verlässt die Gasse bei ${x.toFixed(1)} ${z.toFixed(1)}`);
                         }
+                    // DIE STADT STEHT, BEVOR DIE POSE FRAGT (w27-ort-pose-voll): `_ortPose` bricht beim Namen, solange der Verkehr
+                    // einer städtischen Siedlung nicht steht — er entsteht mit ihrer Liste, wenn der Spieler naht (`_tickBewohner`,
+                    // binnen `nearM` 260 m; der Anlauf liegt 264 m vor stadt und 437 m vor stadt-voll). Der Ort tritt an den Anker
+                    // seiner Gründung, bis jede städtische Siedlung im Nah-Ring ihren Verkehr trägt. Bis hier fragte der erste Gang
+                    // vom Anlauf: die Pose kam ohne Spur (die Mitte des Platzes), dort weckte der Spieler die Stadt, und erst der
+                    // zweite Gang sah die Spur — still
+                    if (o?.ortPose) {
+                        if (g) r.state.playerMesh.position.set(g.anker[0], r._voxelSurfaceY(g.anker[0], g.anker[1]) + 1.8, g.anker[1]);
+                        const [p, nah] = [r.state.playerMesh.position, AnazhRealm.AUTO_SETTLEMENT.nearM];
+                        const schlaeft = () =>
+                            [...(r._bewohnerSiedlungen || new Map()).values()].filter(
+                                (S) => S.plan.staedtisch && !S.verkehr && Math.hypot(S.ox - p.x, S.oz - p.z) <= nah
+                            );
+                        takte += await __gebautNach(`Messort ${o.ort}: der Verkehr der Siedlung`, {
+                            fertig: () => !schlaeft().length,
+                            takt,
+                            max: 1800,
+                            warum: () => `ohne Verkehr im Nah-Ring: ${schlaeft().map((S) => S.key).join(", ")}`,
+                        });
+                    }
                     // DIE POSE AUS DEM PLAN (`ortPose`, w27-ort-pose): der Ort steht auf dem Platz seiner Siedlung und blickt auf
                     // ihren ersten freien Bau (`_ortPose`) — gerechnet hier, nie eine Zahl der Spec. IN ZWEI GÄNGEN: der Bestand der
                     // Welt um den Platz (`_blockerUmPlatz`) ist erst gebaut, wenn der Spieler dort steht — der zweite Gang
-                    // fragt den Blick am Platz neu. Ohne Siedlung, Platz oder freien Bau bricht der Stamm beim Namen
+                    // fragt den Blick am Platz neu (nur noch den Blick: die Spur steht seit dem Warten oben schon im ersten, der
+                    // Stand beider Gänge ist derselbe). Ohne Siedlung, Platz, Verkehr oder freien Bau bricht der Stamm beim Namen
                     for (let gang = o?.ortPose ? 2 : 1; gang--; ) {
                         var P = o?.ortPose && r._ortPose(g ? g.anker : [x, z]);
                         if (P) [x, z, r.state.yaw, r.state.pitch] = [P.x, P.z, P.gier, 0];

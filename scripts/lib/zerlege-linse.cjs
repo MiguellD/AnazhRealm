@@ -275,22 +275,22 @@ function belegungAuswerten(ev, { bildMs = 1000 / 60, schwelle = BELEGUNG_SCHWELL
         }
         let nt = 0;
         for (; ti < takte.length && takte[ti] < bilder[i + 1]; ti++) nt += takte[ti] >= bilder[i];
-        const ms = z.map((v) => v / 100), belegt = ms.reduce((a, b) => a + b, 0) - ms[0];
+        const ms = z.map((v) => v / 100), belegt = ms.reduce(addiere, 0) - ms[0];
         // das Spiel je Klasse (der Zeitgeber nur über dem Bild-Fenster) und über dem Boden × Takte des Bilds
         const pf = ms.map((v, k) => (k && k < TAKT && k !== GS && (k !== ZG || belegt > bildMs) ? v : 0));
-        jeBild.push({ ms, belegt, nt, ue: pf.map((v, k) => v - nt * bk[k]), spiel: pf.reduce((a, b) => a + b, 0), boden: nt * bs });
+        jeBild.push({ ms, belegt, nt, ue: pf.map((v, k) => v - nt * bk[k]), spiel: pf.reduce(addiere, 0), boden: nt * bs });
     }
     const q = (a, f) => {
         const s = [...a].sort(aufsteigend);
         return s.length ? +rang(s, f).toFixed(2) : null;
     };
-    const zahl = (a) => ({ p50: q(a, 0.5), p95: q(a, 0.95), mittel: q([a.reduce((a, b) => a + b, 0) / (a.length || 1)], 0) });
+    const zahl = (a) => ({ p50: q(a, 0.5), p95: q(a, 0.95), mittel: q([a.reduce(addiere, 0) / (a.length || 1)], 0) });
     const nb = Math.max(1, jeBild.length), summe = (i) => jeBild.reduce((s, b) => s + b.ms[i], 0);
     if (boden === "messen") {
         if (jeBild.length < 30) return { urteil: "ROT", befund: `${jeBild.length} Bilder an der Leinwand (Soll ≥ 30)` };
         const ntS = jeBild.reduce((s, b) => s + b.nt, 0), BK = ["rest", "browser", "gc", "nachrichten", "rueckruf", "lebenszyklus", "praesentation"];
         const jeTaktMs = Object.fromEntries(BK.map((k) => [k, +(summe(KL.indexOf(k)) / ntS).toFixed(3)]));
-        return { bilder: jeBild.length, jeTaktMs, summeJeTaktMs: +Object.values(jeTaktMs).reduce((a, b) => a + b, 0).toFixed(3) };
+        return { bilder: jeBild.length, jeTaktMs, summeJeTaktMs: +Object.values(jeTaktMs).reduce(addiere, 0).toFixed(3) };
     }
     const B = boden && boden.jeTaktMs ? boden : null, spiel = zahl(jeBild.map((b) => b.spiel));
     const pflicht = zahl(jeBild.map((b) => Math.max(0, b.spiel - b.boden))), rot = !(pflicht.p95 <= schwelle);
@@ -1538,7 +1538,7 @@ function zerlegeMessen(k) {
             const jePass = {};
             let stempel = 0;
             for (const [p, e] of Object.entries(je)) {
-                const s = Object.values(e).reduce((a, b) => a + b, 0) / n;
+                const s = Object.values(e).reduce(addiere, 0) / n;
                 jePass[p] = +s.toFixed(3);
                 stempel += s;
             }

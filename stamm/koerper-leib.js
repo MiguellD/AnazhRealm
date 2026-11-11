@@ -251,13 +251,20 @@ class AnazhRealm_koerper_leib {
     // Leib-Wahl als Gast des Vorbaus in ihre Szene — auf Maßstab 0 — und baut über DIE Erst-Zeichnung ohne Draw. Steht jedes
     // Teil in jedem seiner Pässe (`_vorbauFehlt`), geht er und der nächste kommt; `state._leibWarm` ist das Ereignis. true:
     // jeder Leib steht.
+    // DIE EIGENE SEELE ZUERST (w27-takt-gc-2, das Nächste zuerst wie der ganze Planer): ihr Leib ist, was die nächste Eingabe
+    // zeigt (Third, der Blick auf sich) — bis hier stand der Mensch am Ende hinter jeder Tier-Art, und sein Leib baute seine
+    // sieben Programme der Welt erst, als die Tiere standen (dorf Ego, GTX 1050 eab8e8b3: 50,5–52,3 s nach der Ankunft, die
+    // Ich-Bühne hatte dieselben Stoffe für ihr eigenes Ziel schon bei 9 s gebaut); jetzt baut er gleich nach ihr.
     _leibVorwaermen() {
         const st = this.state;
         if (st._leibWarm) return true;
         if (!st._leibVorwaermung) {
             if (!this._ofenVorratSteht) return false;
+            const offen = [...Object.keys(AnazhRealm.TETRAPODA_SOUL_MAP).map((a) => "bp_koerper_" + a), "human"];
+            const eigen = offen.indexOf((st.player && st.player.soul) || "human");
+            if (eigen > 0) offen.unshift(...offen.splice(eigen, 1));
             st._leibVorwaermung = {
-                offen: [...Object.keys(AnazhRealm.TETRAPODA_SOUL_MAP).map((a) => "bp_koerper_" + a), "human"],
+                offen,
                 leib: null,
                 takte: 0,
             };
@@ -1019,8 +1026,24 @@ class AnazhRealm_koerper_leib {
         klon.traverse((n) => {
             if (!n.isSkinnedMesh || !n.userData.__skinJoints) return;
             const bones = n.userData.__skinJoints.map((nm) => teile[nm]).filter(Boolean);
-            if (bones.length) n.bind(new THREE.Skeleton(bones), n.bindMatrix.clone());
+            if (bones.length) n.bind(AnazhRealm._ofenSkelett(bones), n.bindMatrix.clone());
         });
+    }
+    // DAS KNOCHEN-RASTER (w27-takt-gc): r184 schlüsselt den Knoten-Bau einer SkinnedMesh mit der Zahl ihrer Knochen
+    // (`getMaterialCacheKey`: `skeleton.bones.length` — der Shader legt die Knochen-Reihe mit fester Länge an), und die Haut
+    // eines Tiers bindet nur die Gelenke, die eines ihrer Primitive trägt (foundry-core `skinJoints`): die Zahl folgt dem
+    // Erbgut und der Stufe. Jeder neue Leib baute so Graph und Programm neu, obwohl er Graph, Geometrie und Stoff mit dem
+    // vorigen teilte (dorf Ego eingelaufen, GTX 1050 7ce5b9b6: 17 Knoten-Bauten in 36 s, jeder ein neuer Leib, keiner
+    // verdrängt; zwei Wölfe unterschieden sich nur in 29 ↔ 21 und 10 ↔ 7 Knochen). Jede Ofen-Bindung füllt ihr Skelett darum
+    // bis zum nächsten Vielfachen von KNOCHEN_RASTER auf — mit ihrem ERSTEN EIGENEN Gelenk, nie einem fremden Knochen: jeder
+    // Knochen der Reihe bleibt ein Gelenk des Leibs (die Kreatur-Kosten-Invariante `rZwillingKnochen` zählt jeden, der keins
+    // ist — ein Platzhalter ohne Namen färbte z370 rot). Kein skinIndex zeigt auf die Füllplätze; der Knochen-Index, `indexOf`
+    // (der erste Platz ist der echte), `__skinJoints` und jeder Leser über sie bleiben, wie sie waren.
+    static _ofenSkelett(bones) {
+        const n = Math.ceil(bones.length / AnazhRealm.KNOCHEN_RASTER) * AnazhRealm.KNOCHEN_RASTER;
+        const alle = bones.slice();
+        while (alle.length < n) alle.push(bones[0]);
+        return new THREE.Skeleton(alle);
     }
     // DIE STARR-BINDUNG (Mensch UND Tier, am EINEN Ofen-Chokepoint): jedes starre Teil (Pfote · Ohr · Lid ·
     // Kopf · Kiefer · Schwanzspitze …) hing als eigenes Mesh an seinem Gelenk — ein Draw plus ein Schatten-Draw
@@ -1132,7 +1155,7 @@ class AnazhRealm_koerper_leib {
             for (const t of teile) t.mesh.parent.remove(t.mesh);
             root.add(starr);
             starr.updateMatrixWorld(true);
-            starr.bind(new THREE.Skeleton(bones), starr.matrixWorld.clone());
+            starr.bind(AnazhRealm._ofenSkelett(bones), starr.matrixWorld.clone());
             // Die Bind-Box reist mit (wie die der Haut aus dem Assemble): Box3-Leser der Welt-Gestalt messen den
             // Klon sonst über ein frisch umgebundenes, noch nicht posiertes Skelett.
             geo.computeBoundingBox();
@@ -1196,7 +1219,7 @@ class AnazhRealm_koerper_leib {
             root.traverse((n) => {
                 if (!n.isSkinnedMesh) return;
                 n.userData.__skinJoints = skelett.skinJoints.slice();
-                n.bind(new THREE.Skeleton(bones), n.matrixWorld.clone());
+                n.bind(AnazhRealm._ofenSkelett(bones), n.matrixWorld.clone());
             });
         }
         // DIE SOHLE steht auf dem Boden, nie das Fell darunter (Integration W5-Körper): die Fell-Schalen (aSchale) reichen
@@ -2135,6 +2158,34 @@ class AnazhRealm_koerper_leib {
         const inv = new THREE.Matrix4();
         for (const m of meshes) m.boundingSphere = kugel.clone().applyMatrix4(inv.copy(m.matrixWorld).invert());
     }
+    // DAS QUER-MASS DER GESTALT (physik.K2 Staffel 2, Kollision = Bild; einmal je Vorlage, wie `tierBeinMass`): je Achse des
+    // Leibs (Becken · Rumpf-Mitte · Brust bei −0,8 · 0 · +0,8 Hüft-Höhen; ihr Abschnitt reicht bis zur halben Strecke zum
+    // Nachbarn) der Radius des Kreises um sie, der die GEZEICHNETE Gestalt dort deckt — Haut und Fell in der Bind-Pose: erst
+    // die halbe Breite des Abschnitts (die weiteste Ecke quer zur Blick-Achse), dann die fernste Ecke im Band ± dieser halben
+    // Breite / 2 längs um die Achse (das Hinterbein des Bären steht 5 cm hinter seiner Becken-Achse: der Kreis der halben
+    // Breite ließ es an einer schrägen Wand 5 mm heraus) —, JE HÜFT-HÖHE (der Leib skaliert an ihr). Der Leib des Tiers liest
+    // ihn (`_kreaturLeib`); bis hier galt für jede Gattung und Achse 0,3 × Hüft-Höhe: der Bär zeichnet 0,27–0,32 m halbe Breite
+    // bei 0,230 m Radius (an der Mauer stak seine Flanke 5,9 cm in ihr), der Hirsch 0,169 m bei 0,275 m (10 cm vor jeder Wand).
+    static _tierQuerMass(t0, f, beinL) {
+        if (t0._querMass) return t0._querMass;
+        const v = new THREE.Vector3();
+        const [breit, halb] = [[0, 0, 0], (0.8 * beinL) / f];
+        const jeEcke = (tat) =>
+            t0.root.traverse((n) => {
+                const P = n.isSkinnedMesh && n.geometry.attributes.position;
+                for (let i = 0; P && i < P.count; i++) {
+                    v.fromBufferAttribute(P, i).applyMatrix4(n.bindMatrix);
+                    const a = v.z < -halb / 2 ? 0 : v.z > halb / 2 ? 2 : 1;
+                    tat(a, Math.abs(v.x), v.z - (a - 1) * halb);
+                }
+            });
+        jeEcke((a, x) => (breit[a] = Math.max(breit[a], x)));
+        const q = breit.slice(); // mindestens die halbe Breite (die Becken-Achse des Hirschs liegt hinter seinem Leib)
+        jeEcke((a, x, dz) => Math.abs(dz) <= breit[a] / 2 && (q[a] = Math.max(q[a], Math.hypot(x, dz))));
+        if (!(q[0] > 0 && q[1] > 0 && q[2] > 0 && beinL > 0))
+            return AnazhRealm._kernPflichtBruch("leib:Gestalt ohne Quer-Maß");
+        return (t0._querMass = q.map((x) => (x * f) / beinL));
+    }
     // Der Baum-GANG konsumiert das EINE Gang-Gesetz: cpgStep + STAND_POSE + MOTION-Profile (LIVE-Buch
     // über _motionProfileName) treiben die vier Bein-KETTEN des bauTier-Baums (Lab-Ziel-Mathe direkt,
     // nicht PD-geglättet). Deterministisch (Stand-Unruhe aus t-Sinus); der CPG-Zustand wohnt an
@@ -2274,12 +2325,15 @@ class AnazhRealm_koerper_leib {
             this._ofenVorlagenBinden(group2, [t0, t1]);
             group2.userData._soulParts = parts2;
             group2.userData._gelenk = gelenk;
+            // die Hüft-Höhe der Gestalt in Metern (das Gang-Gesetz misst die Schritt-Länge an ihr)
+            const beinL = (new THREE.Vector3().setFromMatrixPosition(t0.teile.legHL.matrixWorld).y - t0.minY) * f2;
             group2.userData._tierBaum = {
                 teile,
                 tailSegs,
                 f: f2,
-                // die Hüft-Höhe der Gestalt in Metern (das Gang-Gesetz misst die Schritt-Länge an ihr)
-                beinL: (new THREE.Vector3().setFromMatrixPosition(t0.teile.legHL.matrixWorld).y - t0.minY) * f2,
+                beinL,
+                // das Quer-Maß der gezeichneten Gestalt: je Achse des Leibs der Radius, der sie dort deckt, je Hüft-Höhe
+                quer: AnazhRealm._tierQuerMass(t0, f2, beinL),
                 bein: window.__tetrapodaCore.tierBeinMass(THREE, t0, f2),
                 wrap: wrap2,
                 // das Volumen der Gestalt bei Größe 1 (m³, die Nah-Gestalt im Rahmen des Tiers) — die Masse liest es
@@ -2988,6 +3042,9 @@ AnazhRealm._landungGesetz = function () {
 // Menschen aus dem Ofen; carPhys des Wagens). Bis 0710-4 hielt STOSS zwei Studio-Größen
 // (dichteLeib 1000 über eine Kapsel aus der Hüft-Höhe — der Hirsch wog 436 kg, der Bär 255 —, dichteWagen 150).
 AnazhRealm.LEIB_KLASSEN = Object.freeze(["fell", "haut"]); // die Material-Klassen der geschlossenen Haut eines Leibs
+// DAS KNOCHEN-RASTER (`_ofenSkelett`): die Knochen-Reihe jeder Ofen-Haut ist ein Vielfaches davon — Leiber eines Graphen mit
+// 17 bis 32 Knochen teilen EIN Programm (die Reihe kostet je Füllplatz 64 B Knochen-Matrix je Bild).
+AnazhRealm.KNOCHEN_RASTER = 16;
 // DIE KOPF-KLASSE (`_kopfKlasse`, mensch-kopf und haar): gelenk = die Gelenke des Kopfs (Kopf, Augen, Iris, Lider des Rigs) ·
 // iris = das Gelenk, an dem ein Teil ohne Stoff-Klasse das Auge ist · anteil = ab diesem Anteil seiner Haut-Gewichte an ihnen
 // gehört ein Teil zum Kopf — die Werte der Teilung, die bis w4-bewohner-wache in der Werkbank stand (haar.K2)

@@ -245,14 +245,8 @@ class AnazhRealm_siedlung_ort {
             const rS = AnazhRealm.PLAYER_WALL_RADIUS;
             if (Math.abs(dx * fX + dz * fZ) < k.hl + rS && Math.abs(dx * qX + dz * qZ) < k.hw + rS) return "spieler";
         }
-        k.fX = fX;
-        k.fZ = fZ;
-        k.qX = qX;
-        k.qZ = qZ;
-        k.unten = eb.y + k.stufe;
-        k.oben = eb.y + k.dach;
-        k.schub.length = 0;
-        k.schubQuelle.length = 0;
+        // die Hülle steht, wie der Wagen dort parkt (`_fahrzeugStand`: die Ebene seiner Räder, Nick = −Steigung)
+        this._fahrHuelleStellen(k, fX, fZ, -eb.steig, eb.wank, eb.y + k.stufe, eb.y + k.dach);
         const pos = this._fahrPlatzPos || (this._fahrPlatzPos = { x: 0, z: 0 });
         pos.x = x;
         pos.z = z;
@@ -758,6 +752,15 @@ class AnazhRealm_siedlung_ort {
         if (!pz || !Number.isFinite(pz.cx))
             throw new Error(
                 `_ortPose: ${S ? "die Siedlung trägt keinen Platz im Plan" : "keine Siedlung binnen 200 m"} um ${nahe.join(" ")}`
+            );
+        // DIE SPUR MUSS STEHEN (w27-ort-pose-voll): die Spur der Wagen trägt erst der Verkehr der Siedlung (`_verkehrAnlegen`, er
+        // entsteht mit ihrer Liste, wenn der Spieler naht, `_bewohnerWerkTakt`) — vor ihm nennt `_verkehrAufSpur` jeden Punkt
+        // frei, und der Stand war still die Mitte des Platzes (an der vollen Stadt in der Spur; die Werkbank fragte vom Anlauf
+        // und bekam ihn, erst ihr zweiter Gang sah die Spur). Eine städtische Siedlung ohne ihn bricht beim Namen: wer die Pose
+        // will, wartet, bis die Stadt steht. Ein Dorf fährt keinen Verkehr und rechnet wie bisher
+        if (p.staedtisch && !S.verkehr)
+            throw new Error(
+                `_ortPose: der Verkehr der Siedlung steht noch nicht (um ${nahe.join(" ")}): die Spur der Wagen ist ungerechnet`
             );
         const [c, s] = [Math.cos(pz.phi || 0), Math.sin(pz.phi || 0)];
         const u = pz.ex >= pz.ez ? [c, -s] : [s, c];
