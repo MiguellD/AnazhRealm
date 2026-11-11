@@ -882,8 +882,30 @@ function ortWahl(msg) {
         G.ortCtx(L, (x, z) => ortNass(msg, null, x, z, L)),
         { fest: msg.fest || [] }
     );
+    // DER STEHENDE BAU VOR DEM PLAN (siedlung.K5, Lehre 25: billige Urteile zuerst): die Boxen der Bauten um die Suche
+    // (`msg.bauten`, der Wirt `_ortBauten`) — ein Ort, an dem ein Haus des Exports in einem stehenden Bau steht (fachwerk
+    // `ortImBau`: Grundriss oder Türvorplatz schneiden eine Box, deren Oberkante über dem Boden des Hauses samt der Stufe des
+    // Leibs liegt — das Urteil der Bau-Wand `_bauFrei`), fällt, bevor sein Plan entsteht; `imBau` zählt sie (der Wirt: die
+    // Wahl ist berührt). Den Boden rechnet der Faden nur, wo ein Grundriss eine Box schneidet (`ortPlan` ctx.nurBoden: die
+    // Höhen ohne den Rest des Plans; `boden` zählt die Gänge, `msBoden` ihre Zeit). Bis hier rechnete er den ganzen Plan, und
+    // erst der Wirt wies ihn ab (`_ortTraegtWirt`): C-K5 OHNE VORLAUF, nH 300 in der Zelle eines stehenden Dorfs, 35 von 47.
+    const B = msg.bauten;
+    const wand = B && B.boxen.length && msg.raster.fp ? FC.ortBauWand(msg.raster.fp, B.boxen) : null;
+    let [boden, msBoden] = [0, 0];
+    const hochAm = (o) => {
+        let y;
+        return (si) => {
+            if (y === undefined) {
+                const t1 = self.performance.now();
+                y = FC.ortPlan(plan, o, Object.assign({}, ctx, { nurBoden: true })).boden;
+                [boden, msBoden] = [boden + 1, msBoden + self.performance.now() - t1];
+            }
+            return y ? y[si] + B.stufe : Infinity; // ohne Boden (das Wasser nahm einen Slot) urteilt der Plan
+        };
+    };
     let i = 0;
     let kandidaten = 0;
+    let imBau = 0;
     for (let ring = 0; ring <= W.ringe; ring++) {
         const n = ring ? Math.ceil(2 * Math.PI * ring) : 1;
         for (let j = 0; j < n; j++, i++) {
@@ -896,9 +918,16 @@ function ortWahl(msg) {
                 wand,
                 abstandM: ring * W.schrittM,
                 kandidaten,
+                imBau,
+                boden,
+                msBoden,
                 ms: self.performance.now() - t0,
             });
             if (i !== msg.wand && FC.ortImWasser(plan, o, ctx) >= 0) continue;
+            if (i !== msg.wand && wand && FC.ortImBau(plan, o, wand, hochAm(o)) >= 0) {
+                imBau++;
+                continue;
+            }
             const k = FC.ortPlan(plan, o, ctx);
             kandidaten++;
             // grob zuerst (`grobM`: ein Kanal ist Meter breit, die nassen Orte fallen dort), das Raster der Wand am Sieger des Wirts
@@ -912,6 +941,9 @@ function ortWahl(msg) {
         v2: FC.ortPlan(plan, origin, ctx),
         abstandM: null,
         kandidaten,
+        imBau,
+        boden,
+        msBoden,
         ms: self.performance.now() - t0,
     };
 }

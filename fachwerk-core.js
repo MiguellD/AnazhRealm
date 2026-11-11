@@ -4136,7 +4136,7 @@
           for(const o of R.get(i*2097152+j)||[]){ const c=Math.cos(o.phi), s=Math.sin(o.phi), dx=x-o.cx, dz=z-o.cz;
             if(Math.hypot(Math.max(0,Math.abs(dx*c-dz*s)-o.ex),Math.max(0,Math.abs(dx*s+dz*c)-o.ez))<r) return true; }
         return false; }; }
-    function verkehrsNetz(plan, ox, oz, ohneWende){
+    function verkehrsNetz(plan, ox, oz, ohneWende, boden){
       const V=VERKEHR_GESETZ, zu=sperrenRaster(planSperren(plan,ox,oz,0),V.zelleM);
       const zuP=sperrenRaster(planSperren(plan,ox,oz,0.2),V.zelleM);
       const frei=(x,z,r)=>!zu(x,z,r);
@@ -4338,11 +4338,11 @@
           return n; };
         const rU=V.halbM+(V.parkL/2)**2/(2*R), geht=(B)=>B.every((q,i)=>!i||gang(B[i-1],q,rU));
         const e=M[M.length-1], d0=M[Math.max(0,M.length-4)], l=Math.hypot(e.x-d0.x,e.z-d0.z)||1, ux=(e.x-d0.x)/l, uz=(e.z-d0.z)/l;
-        for(let k=V.wendeAbM[0];k<=V.wendeAbM[1]&&K.wenden.length<V.wendeN;k++) for(const a of [0,0.5,-0.5,1,-1,1.5,-1.5,2,-2,2.5,-2.5]){ if(K.wenden.length>=V.wendeN) break;
-          const cx=e.x+(ux*Math.cos(a)-uz*Math.sin(a))*k, cz=e.z+(uz*Math.cos(a)+ux*Math.sin(a))*k;
-          if(K.wenden.some(w=>Math.hypot(w.x-cx,w.z-cz)<3)) continue;
+        const versuch=(cx,cz,tor)=>{                                                          /*EIN KREIS DER SUCHE (Mitte cx/cz; `tor`: die Mitte des Torplatzes): traegt er, steht seine Wende in `K.wenden`*/
+          if(K.wenden.some(w=>Math.hypot(w.x-cx,w.z-cz)<3)) return;
           // der Kreis frei: keine Sperre näher als Rf an seiner Mitte (der Abstand zur gedrehten Box)
-          const Rf=R+V.halbM+V.wendeRandM; if(zu(cx,cz,Rf)) continue;
+          const Rf=R+V.halbM+V.wendeRandM; if(zu(cx,cz,Rf)) return;
+          if(boden&&!boden.kreis(cx,cz,R)) return;                                           /*DIE HOEHE URTEILT IN DER SUCHE (`boden`, der Plan v2 `verkehrsBoden`): ein Kreis, dessen Grund die Wende nicht traegt (Wasser, Hang — das billige Urteil vor der Bahn), und unten eine Wende, deren Ring und Baender keine Flaeche der Stadt tragen, zaehlen nicht zu den `wendeN`. Bis hier nahm die Suche die ersten acht freien Kreise in 2D, die Hoehe urteilte danach nur unter ihnen: am Ende West von stadt-voll (668,5/439,4) lagen alle acht 7–21 m vom Ende am Torplatz und fielen (fuenf mit dem Ring auf dem Kern der fallenden Trasse 0,33–0,41 m tiefer, drei am Band heraus) — Wenden 3 an 4 Enden*/
           const C={x:cx,z:cz}, nR0=nahe([C],R+g2), loRing=nR0[0], hiRing=nR0[3];
           let best=null;
           for(const dreh of [1,-1]){
@@ -4363,7 +4363,7 @@
               let nah=false; for(const p of E.B){ for(const q of A.B) if((p.x-q.x)**2+(p.z-q.z)**2<g2*g2){ nah=true; break; } if(nah) break; }
               if(nah) continue;
               best={L, dreh, span, E, A}; break; } }
-          if(!best) continue;
+          if(!best) return;
           const {dreh, span, E, A}=best, ain=E.o.a, aout=A.o.a, einB=E.B, ausB=A.B, bahn=einB.slice(), m=Math.ceil(span*R);
           for(let t=1;t<m;t++){ const w=ain+dreh*span*t/m; bahn.push({x:cx+Math.cos(w)*R, z:cz+Math.sin(w)*R}); }
           bahn.push(...ausB);
@@ -4390,8 +4390,16 @@
             for(const o of [p,q]) if(!h0.P.includes(o)) h0.P.push(o); }));
           const engen=haufen.sort((a,b)=>a.i-b.i).map(({P})=>{ const c={x:0,z:0}; for(const q of P){ c.x+=q.x/P.length; c.z+=q.z/P.length; }
             let r=0; for(const q of P) r=Math.max(r,Math.hypot(q.x-c.x,q.z-c.z)); return {x:c.x, z:c.z, r:r+V.halbM}; });
-          K.wenden.push({x:cx, z:cz, r:R, frei:Rf, dreh, ain, aout, bahn, ein:einB, aus:ausB, einAb:nR-1-E.k, ausAb:A.k, L:best.L, plaetze, engen}); }
-        K.wenden.sort((p,q)=>p.L-q.L); });
+          const wn={x:cx, z:cz, r:R, frei:Rf, dreh, ain, aout, bahn, ein:einB, aus:ausB, einAb:nR-1-E.k, ausAb:A.k, L:best.L, plaetze, engen};
+          if(boden){ const b=boden.wende(wn); if(!b) return; wn.boden=b; }
+          if(tor) wn.tor=true;
+          K.wenden.push(wn); };
+        /*DIE WENDE DES TORPLATZES ZUERST (STADT_DICHTE.torplatz): das Geviert, das die Stadt am Ende der Trasse frei haelt, ist fuer den Kreis um seine Mitte gebaut — sein Ring und der Kranz der Plaetze liegen ganz in ihm. Er ist der erste Kreis der Suche und, wo er traegt, die Wende des Endes vor jeder kuerzeren Bahn: die kuerzeste lag an stadt-voll 6–7 m neben der Mitte, ihr Kranz reichte in die Lose (5 · 5 · 4 · 5 Plaetze fuer 21 Wagen, zwei ohne Platz)*/
+        for(const q of plan.zonen||[]) if(q&&q.name==='torplatz'&&Math.abs(Math.hypot(ox+q.cx-e.x,oz+q.cz-e.z)-STADT_DICHTE.torplatz.abM)<0.5) versuch(ox+q.cx,oz+q.cz,true);
+        if(!(boden&&K.wenden.length))                                                         /*traegt der Kreis des Torplatzes (das Urteil der Hoehe), steht die Wende des Endes fest: die Suche endet — der Plan zahlt je Ende EINEN Kreis statt acht samt ihrer Bahnen*/
+        for(let k=V.wendeAbM[0];k<=V.wendeAbM[1]&&K.wenden.length<V.wendeN;k++) for(const a of [0,0.5,-0.5,1,-1,1.5,-1.5,2,-2,2.5,-2.5]){ if(K.wenden.length>=V.wendeN) break;
+          versuch(e.x+(ux*Math.cos(a)-uz*Math.sin(a))*k, e.z+(uz*Math.cos(a)+ux*Math.sin(a))*k); }
+        K.wenden.sort((p,q)=>(q.tor?1:0)-(p.tor?1:0)||p.L-q.L); });
       let laenge=0; for(const s of strecken) if(s.frei) laenge+=s.laenge;
       return {kreuzungen, strecken, laenge}; }
     // DIE WENDE IST BODEN DER STADT (PFLICHT-OFFEN C, der Plan v2 `ortPlan`): je Ende des Netzes (`verkehrsNetz`) die erste Wende
@@ -4402,7 +4410,7 @@
     // eine Wende, kein Wagen fuhr. `flaeche`: die Höhe jeder Fläche der Wege und des Platzes (Kern und Saum), `kern`: nur der Kerne.
     // Rückgabe {netz, erdbau}. Leser: der Wirt (`_verkehrAnlegen`: das Netz, die Wenden, ihr Bild über den Hebel der Dörfer).
     function verkehrsBoden(plan, ox, oz, ctx, flaeche, kern){
-      const V=VERKEHR_GESETZ, N=verkehrsNetz(plan,ox,oz), erdbau=[], r6=(v)=>Math.round(v*1e6)/1e6;
+      const V=VERKEHR_GESETZ, erdbau=[], r6=(v)=>Math.round(v*1e6)/1e6;
       const land=(x,z)=>!(ctx.wasserAt&&ctx.wasserAt(x,z)), h=(x,z)=>ctx.hoeheAt(x,z);
       // DIE WEGE DES VERKEHRS je mit ihrer Zahl (ab 3000; gelaende-core erdbauY: auf EINEM Weg trägt die nächste Mitte) — ohne sie
       // trug an jedem Gelenk die spätere Strecke die Höhe ihres Anfangs, jede Rampe der Bahn war eine Treppe (stadt-voll des Worts,
@@ -4433,21 +4441,31 @@
       const bandTraegt=(A,b)=>{ const Q=A.P; for(let i=0;i<Q.length;i++){ const a=Q[Math.max(0,i-1)], c=Q[Math.min(Q.length-1,i+1)], l=Math.hypot(c.x-a.x,c.z-a.z)||1, nx=-(c.z-a.z)/l, nz=(c.x-a.x)/l;
           if(!land(Q[i].x,Q[i].z)) return false; for(const o of [-b,b]) if(!traegt(Q[i].x+nx*o,Q[i].z+nz*o,A.ys[i],V.flaecheM+V.hangMax*b)) return false;
           if(i&&Math.abs(A.ys[i]-A.ys[i-1])>V.hangMax*(A.s[i]-A.s[i-1])) return false; } return true; };
-      for(const K of N.kreuzungen){ K.wende=null; if(!K.ende) continue;
-        for(const w of K.wenden){ const pA=w.ein[0], pB=w.aus[w.aus.length-1], yA=kern(pA.x,pA.z), yB=kern(pB.x,pB.z);
-          if(yA===null||yB===null||!isFinite(yA)||!isFinite(yB)) continue;
-          const y=(yA+yB)/2, h0=h(w.x,w.z); let ok=land(w.x,w.z)&&isFinite(h0);
-          for(let a=0;a<12&&ok;a++){ const x=w.x+Math.cos(a*Math.PI/6)*w.r, z=w.z+Math.sin(a*Math.PI/6)*w.r; ok=land(x,z)&&Math.abs(h(x,z)-h0)<=V.hangMax*w.r; }
-          const bR=V.halbM+V.ringRandM/2;
-          for(let a=0;a<2*Math.PI&&ok;a+=0.5/w.r) for(const o of [-bR,0,bR]) if(!traegt(w.x+Math.cos(a)*(w.r+o),w.z+Math.sin(a)*(w.r+o),y,V.flaecheM)) ok=false;
-          const hEin=ok?aufFlaechen(w.ein,null,y,kern):null, hAus=ok?aufFlaechen(w.aus,y,null,kern):null;
-          if(!hEin||!hAus||!bandTraegt(hEin,V.halbM)||!bandTraegt(hAus,V.halbM)) continue;
+      // DAS URTEIL DER HÖHE (`boden`, der Baustein der Suche in `verkehrsNetz`): `kreis` — die Mitte und zwölf Punkte des Kreises
+      // tragen Land und liegen nicht steiler als `hangMax` (vor der Bahn: billig zuerst); `wende` — Ring, Bänder und Plätze der
+      // fertigen Wende auf den Flächen der Stadt ({plaetze, y, hEin, hAus}, sonst null). Jede Wende der Suche trägt: die erste
+      // (die kürzeste Bahn) ist die Wende des Endes.
+      const bR=V.halbM+V.ringRandM/2;
+      const boden={
+        kreis:(cx,cz,r)=>{ const h0=h(cx,cz); if(!land(cx,cz)||!isFinite(h0)) return false;
+          for(let a=0;a<12;a++){ const x=cx+Math.cos(a*Math.PI/6)*r, z=cz+Math.sin(a*Math.PI/6)*r; if(!land(x,z)||!(Math.abs(h(x,z)-h0)<=V.hangMax*r)) return false; }
+          return true; },
+        wende:(w)=>{ const pA=w.ein[0], pB=w.aus[w.aus.length-1], yA=kern(pA.x,pA.z), yB=kern(pB.x,pB.z);
+          if(yA===null||yB===null||!isFinite(yA)||!isFinite(yB)) return null;
+          const yK=kern(w.x,w.z), y=yK!==null&&isFinite(yK)?yK:(yA+yB)/2;                      /*DIE WENDE LIEGT AUF DER HOEHE IHRES RINGS: liegt ihre Mitte auf einem Kern (der Torplatz, der Platz), traegt sie dessen Hoehe, die Baender steigen vom Abzweig zu ihr (`aufFlaechen`); sonst das Mittel der Kerne am Abzweig. Bis hier immer das Mittel: der Abzweig der Wende am Torplatz liegt vor der ebenen Front der Trasse (stadt-voll: 60,07 gegen 59,82 am Ende West, 52,86 gegen 52,50 im Osten), der Ring auf der Platte fiel um 0,25–0,42 m*/
+          for(let a=0;a<2*Math.PI;a+=0.5/w.r) for(const o of [-bR,0,bR]) if(!traegt(w.x+Math.cos(a)*(w.r+o),w.z+Math.sin(a)*(w.r+o),y,V.flaecheM)) return null;
+          const hEin=aufFlaechen(w.ein,null,y,kern), hAus=aufFlaechen(w.aus,y,null,kern);
+          if(!hEin||!hAus||!bandTraegt(hEin,V.halbM)||!bandTraegt(hAus,V.halbM)) return null;
           const plaetze=w.plaetze.filter(p=>{ const fx=Math.sin(p.fahrt), fz=Math.cos(p.fahrt), hs=[];
             for(const u of [-1,0,1]) for(const v of [-1,0,1]){ const x=p.x+fx*u*V.parkL*0.5-fz*v*V.parkB*0.5, z=p.z+fz*u*V.parkL*0.5+fx*v*V.parkB*0.5;
               if(!land(x,z)||!traegt(x,z,y,V.flaecheM)) return false; hs.push(h(x,z)); }
             return Math.max(...hs)-Math.min(...hs)<=V.hangMax*V.parkL; });
-          K.wende=Object.assign({},w,{plaetze,y:r6(y),hEin,hAus}); break; }
-        const w=K.wende; if(!w) continue;
+          return {plaetze, y:r6(y), hEin, hAus}; } };
+      const N=verkehrsNetz(plan,ox,oz,false,boden);
+      for(const K of N.kreuzungen){ K.wende=null; if(!K.ende) continue;
+        if(K.wenden.length) K.wende=Object.assign({},K.wenden[0],K.wenden[0].boden);
+        for(const q of K.wenden) delete q.boden;
+        const w=K.wende; if(!w) continue; delete w.boden;
         const ring=[]; for(let a=0;a<=2*Math.PI+1e-9;a+=1/w.r) ring.push({x:w.x+Math.cos(a)*w.r, z:w.z+Math.sin(a)*w.r});
         const wr=wegN++; for(let i=1;i<ring.length;i++) trasse(ring[i-1],ring[i],w.y,2*V.halbM+V.ringRandM,wr);
         lege(w.hEin,2*V.halbM); lege(w.hAus,2*V.halbM); delete w.hEin; delete w.hAus;
@@ -8762,6 +8780,78 @@
             for (var i = 0; i < plan.slots.length; i++) if (slotImWasser(plan.slots[i], am, eingangVon, m)) return i;
         return -1;
     }
+    // STEHT EIN HAUS DES EXPORTS `plan` AM ORT `origin` SICHER IN EINEM STEHENDEN BAU (siedlung.K5, Lehre 25: das billige Urteil
+    // vor dem Plan)? Die Bau-Wand des Wirts (`_bauFrei` am Sieger, `_ortTraegtWirt`) liest den Boden des Hauses aus dem Plan v2 —
+    // darum rechnete der Faden je Kandidat einen ganzen Plan, nur damit der Wirt ihn abwies (C-K5 OHNE VORLAUF, die Stadt nH 300
+    // in der Zelle eines stehenden Dorfs: 35 von 47 Plänen). `ortBauWand` legt die Boxen des Wirts (`_ortBauten`: je Box neun
+    // Zahlen — Mitte cx, cz, Drehung phi, halbe Maße ex, ez, Oberkante `oben` (∞: der Bau ohne Boxen sperrt seinen Grundriss in
+    // jeder Höhe), der Ort seines Eintrags px, pz und dessen Reichweite) in ein Raster und trägt je Slot den Grundriss des
+    // Wirts (`fp`: ox, oz, ex, ez, wie `_ortRaster`). `ortImBau` nennt den ersten Slot, dessen Grundriss oder Türvorplatz (dieselben
+    // Rechtecke wie `_bauFrei`, je 1 cm kleiner: was hier schneidet, schneidet dort) eine Box schneidet, deren Oberkante über
+    // `hoch(si)` liegt — dem Boden des Hauses an diesem Ort samt der Stufe des Leibs (der Faden rechnet ihn erst, wenn ein
+    // Grundriss eine Box schneidet: `ortPlan` ctx.nurBoden, dieselbe Höhe wie im Plan v2) —, −1 ohne. KONSERVATIV-EXAKT: er
+    // weist nur ab, was `_bauFrei` am Plan abwiese; alles andere urteilt der Wirt am Plan wie bisher. Eine Schranke aus dem
+    // Grund unter dem Los trägt das Urteil nicht (gemessen an der Zelle −6,−6: die Hülle der stehenden Häuser ragt 1,2–2,4 m
+    // über den höchsten Grund unter dem Los, der Boden der Häuser liegt 2,2 m darunter bis 4,7 m darüber).
+    function ortBauWand(fp, boxen) {
+        var Z = 16;
+        var netz = new Map();
+        for (var b = 0; 9 * b < boxen.length; b++) {
+            var r = Math.hypot(boxen[9 * b + 3], boxen[9 * b + 4]);
+            for (var ix = Math.floor((boxen[9 * b] - r) / Z); ix <= Math.floor((boxen[9 * b] + r) / Z); ix++)
+                for (var iz = Math.floor((boxen[9 * b + 1] - r) / Z); iz <= Math.floor((boxen[9 * b + 1] + r) / Z); iz++) {
+                    var key = ix * 2097152 + iz;
+                    var lst = netz.get(key);
+                    if (!lst) netz.set(key, (lst = []));
+                    lst.push(b);
+                }
+        }
+        return { fp: fp, boxen: boxen, netz: netz, Z: Z };
+    }
+    function ortImBau(plan, origin, wand, hoch) {
+        var ox = Number(origin.x);
+        var oz = Number(origin.z);
+        var B = wand.boxen;
+        var fp = wand.fp;
+        var Z = wand.Z;
+        var T = 0.06; // der Wirt nimmt 5 cm (Berührung ist kein Überlapp), der Vor-Filter einen mehr
+        for (var si = 0; si < plan.slots.length; si++) {
+            var ex = fp[4 * si + 2];
+            var ez = fp[4 * si + 3];
+            if (!(ex > 0) || !(ez > 0)) continue;
+            var sl = plan.slots[si];
+            var phi = sl.phi || 0;
+            var c = Math.cos(phi);
+            var s = Math.sin(phi);
+            var wx = ox + sl.x;
+            var wz = oz + sl.z;
+            var fl = [{ cx: wx + fp[4 * si] * c + fp[4 * si + 1] * s, cz: wz - fp[4 * si] * s + fp[4 * si + 1] * c, phi: phi, ex: Math.max(0, ex - T), ez: Math.max(0, ez - T) }];
+            var tu = sl.tuer;
+            if (tu && isFinite(tu.x) && isFinite(tu.z) && isFinite(tu.w))
+                fl.push({ cx: wx + tu.x * c + (tu.z - 0.6) * s, cz: wz - tu.x * s + (tu.z - 0.6) * c, phi: phi, ex: Math.max(0, tu.w / 2 - 0.01), ez: 0.6 - T });
+            var R = Math.hypot(ex, ez) + Math.hypot(fp[4 * si], fp[4 * si + 1]) + 2;
+            var grenze = null;
+            for (var ix = Math.floor((wx - R) / Z); ix <= Math.floor((wx + R) / Z); ix++)
+                for (var iz = Math.floor((wz - R) / Z); iz <= Math.floor((wz + R) / Z); iz++) {
+                    var lst = wand.netz.get(ix * 2097152 + iz);
+                    if (!lst) continue;
+                    for (var q = 0; q < lst.length; q++) {
+                        var o9 = 9 * lst[q];
+                        // die Nähe des Wirts: der Eintrag der Box liegt binnen Reichweite + 8 m am Slot (`_bauFrei`)
+                        var r = R + B[o9 + 8] + 8;
+                        if (Math.abs(B[o9 + 6] - wx) > r || Math.abs(B[o9 + 7] - wz) > r) continue;
+                        var bx = { cx: B[o9], cz: B[o9 + 1], phi: B[o9 + 2], ex: B[o9 + 3], ez: B[o9 + 4] };
+                        for (var f = 0; f < fl.length; f++)
+                            if (obbSep(fl[f], bx) < 0) {
+                                if (grenze === null) grenze = hoch(si);
+                                if (B[o9 + 5] > grenze) return si;
+                                break;
+                            }
+                    }
+                }
+        }
+        return -1;
+    }
     // Liang–Barsky: das Stück [t0, t1] der Strecke a → b (im Rahmen eines Rechtecks) in |u| ≤ A, |v| ≤ B, null ohne
     function clipRechteck(a, b, A, B) {
         var t0 = 0;
@@ -8865,6 +8955,31 @@
             var dz = z - pz.cz;
             var rand = Math.max(1, hw + O.saumM);
             return Math.abs(dx * c - dz * s) <= pz.ex + rand && Math.abs(dx * s + dz * c) <= pz.ez + rand;
+        };
+        // 1a) DER TORPLATZ IST BODEN DER STADT (STADT_DICHTE.torplatz, die Zone `torplatz` des Plans; PFLICHT-OFFEN C): eine Platte
+        // auf der Höhe, mit der seine Trasse ihn erreicht — die Trasse (ab VERKEHR_GESETZ.breiteM, sie endet an ihm) liegt längs
+        // seiner Front eben auf dieser Höhe, jeder spätere Weg, der ihn berührt, trägt sie wie am Platz (`torAn`), und die Wende
+        // liegt auf EINER Fläche mit Ring, Bahn und Trasse (`verkehrsBoden`: der Torplatz ist Kern). Bis hier war er nur Belag:
+        // die Trasse fiel an ihrem Ende weiter mit dem Grund, der Ring jeder Wende am Torplatz lag auf ihrem Kern 0,33–0,41 m
+        // neben seiner Höhe (stadt-voll, Ende West) — kein Kreis trug.
+        var tore = (Array.isArray(plan.zonen) ? plan.zonen : [])
+            .filter(function (q) {
+                return q && q.name === "torplatz" && q.form === "kasten" && isFinite(q.cx) && isFinite(q.cz);
+            })
+            .map(function (q) {
+                return { q: q, y: null };
+            });
+        var torAn = function (x, z, hw) {
+            var rand = Math.max(1, hw + O.saumM);
+            for (var ti = 0; ti < tore.length; ti++) {
+                var q = tore[ti].q;
+                var c = Math.cos(q.phi || 0);
+                var s = Math.sin(q.phi || 0);
+                var dx = x - q.cx;
+                var dz = z - q.cz;
+                if (Math.abs(dx * c - dz * s) <= q.ex + rand && Math.abs(dx * s + dz * c) <= q.ez + rand) return tore[ti];
+            }
+            return null;
         };
         // 1b) DIE FREMD-SLOTS (bauen.K2 Staffel 2): ctx.fest nennt die Häuser, die ohne diesen Plan stehen — gesetzt vom Spieler,
         //    der KI, der Vorschau —, je die Platte ihres Grundrisses samt Saum aus ihrem EIGENEN Erdbau ({cx, cz, phi, ex, ez},
@@ -9169,6 +9284,7 @@
             var roh = [];
             var pin = [];
             var offen = []; // [Punkt, Kreuzung] der Kreuzungen ohne Höhe: dieser Weg gibt sie ihnen
+            var torK = []; // {t, a, b}: die Punkte a..b dieser Trasse an einem Torplatz ohne Höhe — sie gibt sie ihm
             for (k = 0; k < n; k++) {
                 sw.push(k ? sw[k - 1] + Math.hypot(pts[k].x - pts[k - 1].x, pts[k].z - pts[k - 1].z) : 0);
                 roh.push(H(pts[k].x, pts[k].z));
@@ -9182,6 +9298,16 @@
                 if (imPlatz(pts[k].x, pts[k].z, hw)) {
                     pin[k] = platzY;
                     continue;
+                }
+                // am Torplatz: seine Höhe, sobald seine Trasse sie gab (unten) — bis dahin sammelt die Trasse ihre Punkte an ihm
+                var tz = tore.length ? torAn(pts[k].x, pts[k].z, hw) : null;
+                if (tz && tz.y !== null) {
+                    pin[k] = tz.y;
+                    continue;
+                }
+                if (tz && (rd.w || 0) >= VERKEHR_GESETZ.breiteM) {
+                    if (!torK.length || torK[0].t !== tz) torK.unshift({ t: tz, a: k, b: k });
+                    torK[0].b = k;
                 }
                 var kz = inKreuzung(pts[k].x, pts[k].z);
                 if (kz < 0 && k > 0) kz = inKreuzung(pts[k - 1].x, pts[k - 1].z);
@@ -9307,6 +9433,14 @@
                 });
                 kappen();
             }
+            // DIE TRASSE ENDET EBEN (der Torplatz, oben): endet sie an ihm (ihr erster oder letzter Punkt liegt an seiner Front),
+            // trägt er die Höhe, mit der sie ihn erreicht, und sie liegt bis an ihr Ende auf ihr — fest wie am Platz
+            torK.forEach(function (o) {
+                var ein = o.b === n - 1 ? o.a : o.a === 0 ? o.b : -1;
+                if (ein < 0 || ys[ein] === null || o.t.y !== null) return;
+                o.t.y = r6(ys[ein]);
+                for (var kt = o.a; kt <= o.b; kt++) pin[kt] = ys[kt] = o.t.y;
+            });
             // zwischen zwei festen Punkten, die das Gefälle nicht verbindet (zwei Flächen, deren Höhe andere Wege setzten),
             // steigt der Weg gleichmäßig — nie eine Stufe am Rand der einen
             for (var p0 = -1, p1 = 0; p1 < n; p1++) {
@@ -9376,13 +9510,21 @@
                 ez: r6(pz.ez + O.saumM),
                 y: platzY,
             });
+        // die Platte jedes Torplatzes, dem seine Trasse die Höhe gab (samt Saum wie der Platz; ihr Kern unten in `aufWeg`)
+        var torKerne = [];
+        tore.forEach(function (t) {
+            if (t.y === null) return;
+            var tq = { art: "platte", cx: r6(ox + t.q.cx), cz: r6(oz + t.q.cz), phi: r6(t.q.phi || 0), ex: r6(t.q.ex), ez: r6(t.q.ez), y: t.y };
+            torKerne.push(tq);
+            erdbau.push(Object.assign({}, tq, { ex: r6(t.q.ex + O.saumM), ez: r6(t.q.ez + O.saumM) }));
+        });
         // DIE FLÄCHE der Wege und des Platzes, wie die Gelände-Funktion sie trägt (ctx.flaeche: der Erdbau-Term des Gesetzbuchs
         // über diesen Splats — auf einer Fläche ihre Höhe, sonst null): das Haus und die Laterne lesen die Höhe, auf die ein Fuß
         // tritt, nie eine eigene Rechnung des Erdbaus.
         var auf = ctx.flaeche(wegSaeume.concat(wegKerne, erdbau));
         // der Weg selbst (die Kerne und der Platz ohne Saum): bis an ihn reicht der Boden des Vorplatzes (`vorplatzBoden`)
         var platzKern = platzY === null ? [] : [{ art: "platte", cx: r6(ox + pz.cx), cz: r6(oz + pz.cz), phi: r6(pz.phi || 0), ex: r6(pz.ex), ez: r6(pz.ez), y: platzY }];
-        var aufWeg = ctx.flaeche(wegKerne.concat(platzKern));
+        var aufWeg = ctx.flaeche(wegKerne.concat(platzKern, torKerne));
         var hausPlatten = [];
         var vorplaetze = [];
         var aufY = function (x, z) {
@@ -9480,6 +9622,20 @@
                 }
             }
         }
+        // NUR DER BODEN (ctx.nurBoden, siedlung.K5): je Haus die Höhe, auf der es stünde — dieselbe Rechnung bis hierher (Platz,
+        // Wege-Profile, die Gasse vor der Tür), ohne Platten, Laternen, Feldwege und den Boden des Verkehrs. Leser: die Ort-Wahl
+        // im Faden (voxel-worker `ortWahl` → `ortImBau`: die Bau-Wand des Wirts vor dem ganzen Plan); `boden` null, wo das
+        // Wasser einen Slot nahm (der Plan trüge den Ort nie ganz).
+        if (ctx.nurBoden)
+            return {
+                ort: { x: ox, z: oz },
+                boden:
+                    NS !== plan.slots.length
+                        ? null
+                        : ps.map(function (q, qi) {
+                              return isFinite(q.y) ? r6(q.y) : hy[qi] !== null ? hy[qi] : r6(median(grunde[qi]));
+                          }),
+            };
         var slots = [];
         for (si = 0; si < NS; si++) {
             sl = ps[si];
@@ -9583,6 +9739,12 @@
         });
         // die Slots, die das Wasser nahm (der Leser zählt das Dorf ehrlich: geplant = stehend + im Wasser gefallen)
         if (wasserSlots) v2.wasserSlots = wasserSlots;
+        // der Torplatz trägt seine Höhe wie der Platz (`y`, absolut)
+        if (torKerne.length)
+            v2.zonen = plan.zonen.map(function (q) {
+                for (var ti = 0; ti < tore.length; ti++) if (tore[ti].q === q && tore[ti].y !== null) return Object.assign({}, q, { y: tore[ti].y });
+                return q;
+            });
         // die Feldwege weichen den Fremd-Slots wie die Gassen (sie tragen kein Profil); `fest`: die Fremd-Slots, denen ein Weg wich
         var fw0 = Array.isArray(plan.feldwege) ? plan.feldwege : [];
         if (fest.length || fw0.some(function (fw) { return fw.lauf; }))
@@ -10694,6 +10856,8 @@
         exportSettlement: exportSettlement,
         ortPlan: ortPlan, // K10 — der Plan v2 auf der Gelände-Funktion (der Wirt reicht ctx.hoeheAt)
         ortImWasser: ortImWasser, // siedlung.K5 — nimmt das Wasser am Ort ein Haus? (die Ort-Wahl ohne den Plan)
+        ortBauWand: ortBauWand, // siedlung.K5 — die stehenden Bauten des Wirts im Raster (der Ort-Faden, je Wahl einmal)
+        ortImBau: ortImBau, // siedlung.K5 — steht ein Haus am Ort sicher in einem stehenden Bau? (die Ort-Wahl ohne den Plan)
         festWeg: festWeg, // bauen.K2 — betritt ein Weg des Plans v2 die Platte eines gesetzten Hauses? (der Wirt rechnet dann neu)
         ORT_GESETZ: ORT_GESETZ,
         // DER GENESIS-ORT (Pflicht F, der Prüfplatz): die Maße, die Saat, der Plan v1 (→ `ortPlan` → Plan v2), die Zone am Punkt
