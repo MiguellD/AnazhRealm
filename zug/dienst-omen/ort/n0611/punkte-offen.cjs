@@ -4,7 +4,7 @@
 "use strict";
 const fs = require("fs"), cp = require("child_process");
 process.env.DAUER_TEST = "1";
-const { pushe, messDateien } = require("./gtx-dauer.cjs");
+const { pushe, messDateien, referenzDateien } = require("./gtx-dauer.cjs");
 const O = "C:/Users/micha/Desktop/AnazhRealm-OMEN", PM = O + "/n0611-pm";
 const [was, K] = process.argv.slice(2);
 const AUS = O + "/p3/n0611/punkte-offen-" + K.slice(0, 8) + (process.env.TEIL ? "-" + process.env.TEIL : "") + ".out";
@@ -31,5 +31,6 @@ if (was === "lauf") {
     console.log(n);
     // EINE Quelle (Koordinator Konto 11, 10.11. 22:55): die Mess-Datei geht nur noch nach punkte-maschine — derselbe Stand getrennt
     // nach koordination ließ die Buchung um 22:28 an einem both-added-Konflikt fallen
-    console.log("punkte-maschine " + pushe("punkte-maschine", messDateien(K), n, null));
+    // die Ablage der Referenzfahrten dieses Rechners reist mit (punkte-maschine 601f375a: der Pool der Ruhe liest nur sie)
+    console.log("punkte-maschine " + pushe("punkte-maschine", messDateien(K).concat(referenzDateien()), n, null));
 }

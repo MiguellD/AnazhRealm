@@ -1,5 +1,7 @@
 ## 11.11. Wunsch von w28-stoff-gesetz (Cloud) — ein Null-Schutz in deiner Datei
 
+## 12.11. 00:33 — GPU-PROBE 0698fb92 auf radeon-890m: ROT in 230 s (das GPU-Schloss hält „niemand“, nicht dieser Job (der Start-Hook des Läufers nahm es nicht) auf radeon-890m) → probe-post/w28-stadt-grammatik/0698fb92.md
+
 ## 11.11. 23:04 — GPU-PROBE 4073fb2f auf radeon-890m: GRÜN in 7513 s (bild:stadt@0.5 GRÜN 107 s auf radeon-890m · bild:stadt-voll@0.5 GRÜN 115 s auf radeon-890m · bild:dorf@0.5 GRÜN 70 s auf radeon-890m) → probe-post/w28-stadt-grammatik/4073fb2f.md
 
 ## 11.11. 21:12 — GPU-PROBE 4073fb2f auf gtx1050-desktop: NACHGEGEBEN in 815 s (bild:stadt@0.5 GRÜN 175 s auf gtx1050-desktop · bild:stadt-voll@0.5 GRÜN 241 s auf gtx1050-desktop · bild:dorf@0.5 NACHGEGEBEN 139 s auf gtx1050-desktop) → probe-post/w28-stadt-grammatik/4073fb2f.md
