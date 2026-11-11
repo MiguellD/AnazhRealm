@@ -1,0 +1,122 @@
+{
+ "sha": "e38e7acf150b7863416554cb2ea2d1fe2fa0ed9c",
+ "geraet": "gtx",
+ "zeit": "2026-11-11T21:12:39.985Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "affekt.K4#2": {
+   "gruen": false,
+   "zahl": "spieler → — (0 ms) · nexus → — (0 ms) · ROT spieler: ohne Modell (die KI der Sitzung ist aus); nexus: ohne Modell (die KI der Sitzung ist aus)",
+   "exit": 0,
+   "minuten": 0.02,
+   "grund": "ROT: spieler → — (0 ms) · nexus → — (0 ms) · ROT spieler: ohne Modell (die KI der Sitzung ist aus); nexus: ohne Modell (die KI der Sitzung ist aus)",
+   "gpu": "nvidia/pascal",
+   "konsum": "ke921171a5645",
+   "konsumN": 26,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 3
+   },
+   "konsumBoot": "k330f0daaf8d6",
+   "s": 0.2,
+   "fremd": {
+    "s": 4.7,
+    "takte": 2,
+    "fremdS": 14.2,
+    "kerne": 3.039,
+    "fensterKerne": 3.039,
+    "namen": [
+     [
+      "OmenCap.exe",
+      5.63
+     ],
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      4.45
+     ],
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      1.56
+     ]
+    ],
+    "dienerS": 3.13,
+    "diener": [
+     [
+      "dwm.exe",
+      1.17
+     ],
+     [
+      "System",
+      1.16
+     ]
+    ],
+    "geraetS": 2.58,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      1.27
+     ],
+     [
+      "svchost.exe",
+      1.14
+     ],
+     [
+      "OmenCommandCenterBackground.exe",
+      0.11
+     ]
+    ],
+    "eigenS": 8.83,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon"
+   },
+   "zeit": "2026-11-11T21:12:39.985Z",
+   "abdruck": "cf772722618e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "konsumTafel": {
+  "ke921171a5645": "fVTbbptAEP0XHptu1ua6IOVhE0dyHqo6nzC7zAIBA9oF07rqv1fc4gBW5wWEzpmZM3OYP1YNMocEHz9MVVqR9c36bhm4IDGoL6gfP4wVWftgz8CL+BiUc/7Sw6TO6sbQIhMURAnpGUmrG8yKRznQAs8LHTui3Stnp4cTddjTmlYIjCvSgMKZJGI7cCBaA1uTgEACrRoKTeAwcIKdHdEhGOenYHz9takkoIyX3bnK3oXxIOqVP63xcQbYkCIrzVxLxp5w5lqU0m7L0dCRK2BaoJ5IzPf3zJ0bXBNU0RqzKMKc2LNZRGlIV9ikbon6mhqEACbWg0oBywT1MmngetKN7kwlhzNqICWk81BchzlwE0nZ84pSZDKdBlPOe3Z3kjlfSJSGnRy90sfD4fM7fx899JPf4nk7fZNCjJrklWk+q7huYAsYTfjCOU1+bFi31iaOLfydx77Kofy4mYKpVNOBRpLU7UREF72gd/zbBtzA+TyhlLSReesVmKb32sI6tlT+YJ2kb+K4tc5Fw5mASHSm1Oxt4UkV3rNCh0VDRFU1s8ogiIWI6JWWn0J/s36w/4lDx983bQyZK93MjXvC3yk3Upfe73KNvqIuMMGFVNiHdm+gaf9jKXd8vh3oIrrNJq4ZFuSKpWnN7N0wiEMV3fnjOtS5gDKfgL4f7yEY7XFKBum7A1tITo5s8E6fpEY5Hy2aZySvdN2axRHsEbWuVNafDppCa1Iomhvk7z8=",
+  "k330f0daaf8d6": "hVRdj5swEPwvPPbqc8KXjaV7cC5R76RWzf2ENayBC4HIhtCm6n+vCJAEEqnzAkI7O7uzI/44B4h3kOLzp61KRzhfnK+OhSMSi+aI5vnTOsJZsiWHQMgeVEr5rSuLTX6oLS1yRUGVkO2RNKbGvHiOzzQWBJHnCtpuJN8+banH5QWv8mXeolCYVKQGjWMDlbjMAzEvbGwKCgk0+iw6FEfMYwtX0DO4lFvWv/7icyUFZTKd1NfuIkrEeyvlRr7M65McsCZFXtpRK04C5Y1alNL2nmOgJSfArEAzkHgYLrk/Djgn6KKxdiLCvSRwuaA0orPa9NAQfdsalAKu5kZlgGWKZtqU+UHsiweu7GCPBkgJ2WiK73EPrktSvppRijzOBmPK8eb+IubeDalzJ+5z0+FpffksP/oo/LymQq7u3bcZJGjIrrL1RcX3matADEmSNP1xx7qONnBcFS4CfrsOlW93LthK1y0YJOmhGYjoY8ACIR+I1LDfD1U6dpEH8xPYusvaJDpurMNzdNJuiLf76BwN7Amo1ORaj9lWQayjR1FosaiJqqp63JKxRClBPVpeFv3NU7lKryZ/f5cTbBbzEc5dK1OPQwcqXGhf6P6a8+oTmgJTnKwJy8jtwjPc/oy13z/f13SC9u4KpxwLcsLSNnbMbcSSSPfXa4c206y0aHYKyt1ACMNkCUzIbvNtupJvr5tozeX/0V/5gDE9mErn3c+CZtDYDIr6+pf8+w8="
+ },
+ "sitzung": {
+  "start": "2026-11-11T21:12:06.009Z",
+  "port": 7804,
+  "warten": 0.01,
+  "bootS": 5.8,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": null,
+    "vor": "affekt.K4#2",
+    "s": 26.1,
+    "takte": 780,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 28,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 34.7,
+  "minuten": 0.68
+ }
+}
