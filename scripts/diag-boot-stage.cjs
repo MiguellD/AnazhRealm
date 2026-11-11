@@ -89,6 +89,13 @@ const RUHE = (r = window.anazhRealm) =>
     window
         .__gebautNach("die Ruhe der Foundry", { fertig: () => !r._weltOffen().foundry && !r._foundry._vorrat && !r._impostorBakeQueue?.length, max: 600 })
         .then(() => r._foundry.lieferung);
+// DER DECKEL DER PUMPE (rein; läuft in der Seite) zählt Takte der BÜHNE, nie die Wanduhr eines Fadens: die Foundry bootet in Wanduhr
+// (Manifest, Engine, Kerne), ein leerer Takt kostet ~3 ms — 6000 Takte ab Pumpen-Beginn waren eine verdeckte Frist von 17–20 s (GTX 1050:
+// die Foundry steht 10–28 s nach Pumpen-Beginn, die Wand fiel an main in 7 von 12 Läufen). Bis die Foundry steht (`tBereit` 0), wartet
+// die Pumpe in Wanduhr (NIE bleibt ROT); ab dort zählt der Deckel. Wann sie kam, nennt die Zeile — über die Zeit urteilt die Kalt-Zeile.
+function pumpeWeiter(t, tBereit, ms, TAKTE = 6000, FRIST_MS = 120000) {
+    return tBereit ? t - tBereit <= TAKTE : ms < FRIST_MS;
+}
 // DER GEPFLANZTE BRUCH (--selftest): die erste Körper-Antwort nach dem Erwachen verschluckt der Haupt-Faden, ihr Leser bekommt null
 function SCHLUCK() {
     __weltDa((r) => r._foundry).then((r) => {
@@ -418,8 +425,9 @@ hauptLauf(async () => {
     const { browser, page } = await nullWelt(server, { port: PORT, frist: 300000, vor: SELBSTTEST && SCHLUCK }, 120000, "index.html", "networkidle0");
     // das erste Weltbild (der Null-Renderer setzt es beim Renderer-Bau; eine Zeit trägt nur die Kalt-Zeile, von außen)
     await page.evaluate(() => __weltDa((r) => r.state._weltbildDa));
+    await page.evaluate(`window.__pumpeWeiter = ${pumpeWeiter}`);
     const out = await page.evaluate(async (selftest, r = window.anazhRealm, st = r.state) => {
-        const o = { stage: 0 };
+        const o = { stage: 0, bereitTakt: 0 };
         // ── DER INIT BAUT NICHTS VERBORGENES (ankunft.K5, w16-lade-atem) — am ersten Weltbild, bevor eine Tafel sich zeigte und
         // bevor der Vorbau der Bedienung lief (der Null-Renderer baut ihn nie): leer sind Rezeptbuch (inventoryInitDOM), Werkstatt-
         // Liste (_renderWorkshopDOM) und Bibliothek (libraryInitDOM), und die Mammut-Art (sie liest kein Wurf des Felds) wartet noch
@@ -445,11 +453,13 @@ hauptLauf(async () => {
             };
         };
         const sichtM = () => (st.luft ? r._luftSichtM(st.playerMesh ? st.playerMesh.position.y : 0) : -1);
-        // ── PUMPEN, bis das Prädikat schließt (jeder Term steht; in Takten) ──
-        for (let t = 1; t <= 6000 && !o.stage; t++) {
+        // ── PUMPEN, bis das Prädikat schließt (jeder Term steht; in Takten) — der Deckel ist `pumpeWeiter` ──
+        const t0 = performance.now();
+        for (let t = 1; !o.stage && __pumpeWeiter(t, o.bereitTakt, performance.now() - t0); t++) {
             try {
                 r._gameLoopTick();
             } catch {}
+            if (!o.bereitTakt && r._foundry?.ready) [o.bereitTakt, o.bereitMs] = [t, performance.now() - t0];
             o.terms = terms();
             if (Object.values(o.terms).every(Boolean)) o.stage = t;
             else if (t % 5 === 0) await sleep(0);
@@ -503,7 +513,10 @@ hauptLauf(async () => {
             T.streu,
             `STREU steht — keine Region in Reichweite fehlt, wartet oder trägt eine offene Scheibe (\`_streuWartet\` ${T._streuWartet})`,
         ],
-        [T.biblio && T.impost, `BIBLIOTHEK warm (${T.biblio}) · IMPOSTOREN idle (${T.impost})`],
+        [
+            T.biblio && T.impost,
+            `BIBLIOTHEK warm (${T.biblio}) · IMPOSTOREN idle (${T.impost}) · die Foundry stand ${out.bereitTakt ? `in Takt ${out.bereitTakt}, ${(out.bereitMs / 1000).toFixed(1)} s nach Pumpen-Beginn` : "NIE"}`,
+        ],
         [!!out.stage, "die BÜHNE wurde erreicht (das Prädikat schloss)"],
         [!out.verborgen.length, `DER INIT BAUT NICHTS VERBORGENES ${out.verborgen}`],
     ];
@@ -523,6 +536,9 @@ hauptLauf(async () => {
     const W = (e, d) => wechselUrteil([[0, "e", "platte", "phyto"], [0, "d", "platte", "fachwerk"]], [[0, "e", e, "phyto"], [0, "d", d, "fachwerk"]], "fachwerk").gruen; // prettier-ignore
     if (SELBSTTEST) checks.push([W("platte", "werk") && !W("werk", "werk") && !W("platte", "platte"), "SELBST-TEST: der Kern-Wechsel urteilt (fremder Neubau, alter Leser ROT)"]); // prettier-ignore
     if (SELBSTTEST) checks.push([nachBild([{ t: 9 }, { t: 1 }], 5).length === 1, "SELBST-TEST: synchron nach dem Bild ROT"]);
+    // ohne Foundry trägt Takt 9000 nach 30 s weiter (eine Takt-Zahl als Frist fiele hier), nach der Frist nicht; mit ihr 6000 Takte ab dort
+    const P = pumpeWeiter;
+    if (SELBSTTEST) checks.push([P(9000, 0, 3e4) && !P(9000, 0, 12e4) && P(15000, 9000, 1e9) && !P(15001, 9000, 0), "SELBST-TEST: der Deckel der Pumpe zählt Takte ab der Foundry, davor die Wanduhr"]); // prettier-ignore
     const fails = checks.filter(([pass, name]) => (console.log(`  ${pass ? "✅" : "❌"} ${name}`), !pass)).length;
     console.log(`\n${checks.length - fails}/${checks.length} Bühnen-Invarianten OK.`);
     urteilEnde(fails, "⛔ Die volle Bühne steht nicht (oder die Linse ist stumpf) — Kriterium 2 ist nicht abnehmbar.", `✅ „Volle Bühne" ist ein Prädikat — Kriterium 2 ist messbar.`);
