@@ -2328,6 +2328,8 @@ class AnazhRealm_bild_himmel {
         // Mess-Wiese Ego 1920×1080, gpu-bank — EINE Welt, je Stellung neu gebaut: 8 Proben 34,2 ms, 4: 30,2, 2: 29,1, 1: 28,5
         // (0,8 ms je Probe, die Hälfte der Abruf der Karte: 8 Proben ohne ihn 30,9); ABAB je frischer Boot Kopf 4e2df19b ↔ Ecken:
         // 34,26 · 34,36 ↔ 27,08 · 26,74 ms (−7,4 ms). Der Grat-Himmel daneben (`_horizontHimmel`) kostet dort 1,0 ms.
+        // Das Bild bleibt (Schuss der Bühne am Gipfel-Blick 1920×1080, Kopf ↔ Ecken, mittlerer Luma-Abstand von 255): Mittag
+        // 0,009 · Sonne 10° 0,030 · Sonne 3,3° 0,018, p99 ≤ 0,9 — zwei Schüsse des Kopfs untereinander 0,010 · 0,015 · 0,010.
         const sichtEcke = T.varying(luftSicht(T.cameraPosition, T.positionWorld), "vLuftSicht");
         const stoff = T.mix(
             T.output.rgb.mul(durchlass(T.positionWorld)),
