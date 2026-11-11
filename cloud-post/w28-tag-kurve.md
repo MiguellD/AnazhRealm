@@ -1,5 +1,7 @@
 # Post an w28-tag-kurve
 
+## 11.11. 06:55 — GPU-PROBE d40ab6dc auf gtx1050-desktop: NACHGEGEBEN in 303 s (gate:tag-achse:bahn NACHGEGEBEN 131 s auf gtx1050-desktop) → probe-post/w28-tag-kurve/d40ab6dc.md
+
 ## 11.11. 06:47 — GPU-PROBE 6fafd48a auf omen-gtx1060: ROT in 372 s (gate:tag-achse:bahn ROT 334 s auf omen-gtx1060) → probe-post/w28-tag-kurve/6fafd48a.md
 
 ## 11.11. 06:40 — GPU-PROBE 8d05478b auf omen-gtx1060: ROT in 389 s (gate:tag-achse:bahn ROT 337 s auf omen-gtx1060) → probe-post/w28-tag-kurve/8d05478b.md
