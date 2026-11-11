@@ -539,7 +539,16 @@ class AnazhRealm_bild_kosten {
                 // DER GAST DER BEDIENUNG (spielgang.K3, `_vorbauBedienung`): was die nächste Eingabe zeigen wird (der Geist eines
                 // Hotbar-Bauplans, der Leib einer Seele), baut hier vorab ohne Draw wie die Arena — nach dem Bild, unter der Frist
                 // des Render-Aufrufs und nur, wenn die Eingabe ruht (`_eingabeRuht`); der Klick findet Knoten und Pipeline vor.
-                const gast = object.__vorbauGast === true;
+                // DER GAST DER ANKUNFT (w28-leben-vorbau, `__vorbauGast` "ankunft"): wessen Programm unter dem Ladeschirm bekannt ist
+                // und wessen Daten erst nach dem Bild kommen (die Kamm-Krone, `_kammKroneVorbau`), baut GLEICH NACH DEM BILD — er
+                // wartet auf keine ruhende Eingabe (seine Daten sind unterwegs). Vor dem Bild merkt er nur, wie jeder Vorbau: dort
+                // kostete sein Bau die Ankunft (GTX 1050 kalt, ab dem Buch gemessen, je 4 ↔ 4: mit der Pipeline unter dem Ladeschirm
+                // +0,7…+1,5 s — der GPU-Prozess übersetzt in EINER Schlange, jede Pipeline vor dem Bild verschiebt die, auf die es
+                // wartet —, nur der Knoten-Graph als letzter Bau +0,5 s: 4 von 4 Paaren später, der Haupt-Faden ist dort belegt).
+                const gastArt = object.__vorbauGast;
+                // EIN GAST NIMMT KEINEN RAUM (`_gastOhneRaum`): trägt ein Bürger die Prägung, ist das ein Bruch beim Namen, und er
+                // zeichnet wie jeder Bürger — die Ausnahme ist nie das Loch.
+                const gast = (gastArt === true || gastArt === "ankunft") && welt._gastOhneRaum(object);
                 const vorbau = gast || ro.getDrawParameters() === null;
                 const ctx = this._currentRenderContext.id;
                 const k = passId == null ? ctx : ctx + "|" + passId;
@@ -549,7 +558,7 @@ class AnazhRealm_bild_kosten {
                     const arena = gast || (object.isGeometrieArena === true && object.geometry.index !== null);
                     if (!arena || scene !== welt.state.scene) return;
                     const wahl =
-                        gast && !welt._eingabeRuht()
+                        gastArt === true && !welt._eingabeRuht()
                             ? null
                             : AnazhRealm._vorbauWahl(
                                   E,
@@ -734,8 +743,9 @@ class AnazhRealm_bild_kosten {
     static _vorbauWahl(E, arena, pass, lade, bild, frame, gast = false) {
         let merk = E.vorgemerkt.get(arena);
         if (lade) return (merk ? merk.add(pass) : E.vorgemerkt.set(arena, new Set([pass])), "merken");
-        // ein Gast der Bedienung merkt jeden Pass selbst vor, in dem er noch nicht baute (er kam nach dem Ladeschirm), und baut
-        // wie jede Erst-Zeichnung unter der Frist des Render-Aufrufs (`ERST_BAU_MS`) — sein Schutz ist die ruhende Eingabe
+        // ein Gast merkt jeden Pass selbst vor, in dem er noch nicht baute (der der Bedienung kam nach dem Ladeschirm, der der
+        // Ankunft hing schon davor und merkte dort wie jeder Vorbau), und baut wie jede Erst-Zeichnung unter der Frist des
+        // Render-Aufrufs (`ERST_BAU_MS`) — der Schutz des Gasts der Bedienung ist die ruhende Eingabe
         const vor = gast && bild ? E.vorgebaut.get(arena) : undefined;
         if (gast && bild && !(vor && vor.has(pass))) {
             if (!merk) E.vorgemerkt.set(arena, (merk = new Set()));
