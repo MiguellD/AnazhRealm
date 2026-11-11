@@ -3635,6 +3635,8 @@
         marktJeBreite: 1.3, marktTief: [12, 24], standRandM: 2.6, marktGangM: 3.2,
         wasserM: 3, zugBurgM: 24, zugKircheM: 16, zugJeLosM2: 170, zugSeite: 0.6, zugFremd: 300,
         friedhof: { tiefM: 7.5, randM: 1.4, abM: 1.5 },
+        torplatz: { abM: 14, winkel: 2, halbM: 13 }, // die Mitte `abM` vom Ende der Trasse im Winkel `winkel` (rad, neben und hinter ihm: 6 m vor dem Ende, 13 m neben der Achse), das Geviert ± halbM
+        standTrasseM: 3, // so weit hält die Reihe der Stände vom Rand jeder Trasse (VERKEHR_GESETZ.ausweichM: der Wagen umfährt den Stehenden)
     };
     // DIE VIERTEL EINES PLANS (DORF): je Los der Gründungs-Folge sein Viertel, je Bau des Loses (der Bau der Gegenwart `geb[i]`
     // und seine früheren `fr[i]`) der Bau-Typ der Zeile seines Bands — die Rolle des LOSES durch die Zeit, wie Gasthaus und
@@ -4628,7 +4630,8 @@
       if(plan.groesse==='metropole'||plan.groesse==='grossstadt'){                            // FAUBOURG-GESETZ: die Vorstadt ist selbst ein Netz
         const nq=(plan.groesse==='metropole')?5:2;
         for(let qk=0;qk<nq;qk++){ const uq=26+qk*(flen-40)/Math.max(1,nq-1)+rnd()*10, sg=(rnd()<0.5?1:-1);
-          const qx=gx+Math.cos(g2.th)*uq, qz=gz+Math.sin(g2.th)*uq, qth=g2.th+sg*Math.PI/2+(rnd()-0.5)*0.25;
+          const an=(H&&plan.kernel==='markt'&&plan.grammatik)?fp[Math.min(fp.length-1,Math.round(uq/DS))]:null;   /*DER ABZWEIG BEGINNT AN SEINER STRASSE (die Stadt der Grammatik): die Ausfallstrasse lenkt (K3), ihr Abzweig begann weiter auf der Geraden vom Tor — an stadt-voll im Westen bis 44 m neben ihr; solange jeder Zeiger die Strasse bis an ihr Ende trug, schloss die Naht des Wege-Netzes die Luecke an ihrem Ende*/
+          const qx=an?an.x:gx+Math.cos(g2.th)*uq, qz=an?an.z:gz+Math.sin(g2.th)*uq, qth=(an?an.th:g2.th)+sg*Math.PI/2+(rnd()-0.5)*0.25;
           const qp=[]; if(H){ let x=qx, z=qz, th=qth; for(let u=0;u<=40+rnd()*22;u+=DS){ th=trasseLenk(H,x,z,th,DS); qp.push({x,z,th}); x+=Math.cos(th)*DS; z+=Math.sin(th)*DS; } }
           else for(let u=0;u<=40+rnd()*22;u+=DS){ qp.push({x:qx+Math.cos(qth)*u, z:qz+Math.sin(qth)*u, th:qth}); }
           roads.push({a:-1,b:-1,pts:qp,w:lw,gen:2,vor:true}); edepth.push(8); } } } }
@@ -4640,13 +4643,23 @@
   if(!staedt||plan.kernel==='markt'){ const PW=Math.max(7,5+Math.min(nG,40)*0.30), PD=stadt?Math.max(SD.marktTief[0],Math.min(SD.marktTief[1],PW*SD.marktJeBreite)):Math.max(6,PW*0.55);   /*der Markt der Stadt ist ein Platz, kein Streifen (stadt-voll: 34 × 9,4 m → 34 × 22 m)*/
     platz={cx:0,cz:sW/2+PD/2, phi:0, ex:PW, ez:PD/2, typ:(plan.kernel==='anger'||(staedt&&plan.jahr>1840))?'gras':'weg'};   // PARK-GESETZ der Moderne brunnen.push({x:0,z:sW/2+PD/2});
     if(platz.typ==='weg'){ const MS=AUSSTATTUNG.marktstand.tritt, rS=Math.hypot(MS.ex,MS.ez), zt=plan.schnitt||plan;
-      const standFrei=(s)=>!zt.staedtisch||roads.every(rd=>{ if((rd.w||0)<VERKEHR_GESETZ.breiteM) return true; const P=rd.pts; for(let k=0;k+1<P.length;k++){ const A=P[k], B=P[k+1], dx=B.x-A.x, dz=B.z-A.z, L2=dx*dx+dz*dz; let t=L2>1e-9?((s.x-A.x)*dx+(s.z-A.z)*dz)/L2:0; t=t<0?0:t>1?1:t; if(Math.hypot(s.x-A.x-dx*t, s.z-A.z-dz*t)<rd.w/2+rS) return false; } return true; });   /*DER STAND STEHT NIE IN DER TRASSE (PFLICHT-OFFEN C): in der Stadt haelt sein Tritt (der Umkreis seines Kastens) jede Strasse ab `breiteM` frei — bis hier stand der mittlere Stand jeder Metropole auf der Achse der Strasse, die vom Markt nach Norden geht (0/10,2), und der linke 1,9 m neben ihr: ihre Spuren wichen ihm aus, bis eine Laterne die andere Seite sperrte (die Strecke fiel), oder die Strecke trug eine Enge am Markt*/
+      const standFrei=(s)=>!zt.staedtisch||roads.every(rd=>{ if((rd.w||0)<VERKEHR_GESETZ.breiteM) return true; const P=rd.pts; for(let k=0;k+1<P.length;k++){ const A=P[k], B=P[k+1], dx=B.x-A.x, dz=B.z-A.z, L2=dx*dx+dz*dz; let t=L2>1e-9?((s.x-A.x)*dx+(s.z-A.z)*dz)/L2:0; t=t<0?0:t>1?1:t; if(Math.hypot(s.x-A.x-dx*t, s.z-A.z-dz*t)<rd.w/2+rS+(stadt?SD.standTrasseM:0)) return false; } return true; });   /*DER STAND STEHT NIE IN DER TRASSE (PFLICHT-OFFEN C): in der Stadt haelt sein Tritt (der Umkreis seines Kastens) jede Strasse ab `breiteM` frei — bis hier stand der mittlere Stand jeder Metropole auf der Achse der Strasse, die vom Markt nach Norden geht (0/10,2), und der linke 1,9 m neben ihr: ihre Spuren wichen ihm aus, bis eine Laterne die andere Seite sperrte (die Strecke fiel), oder die Strecke trug eine Enge am Markt*/
       const reihen=stadt&&SG.viertel.markt.dinge.find(q=>q.art==='marktstand');                 /*DER MARKT DER STADT traegt die Staende seiner Zeile: Reihen im Raster ueber dem Platz, ausser der Trasse (bis hier zwei bis drei Staende an festen Bruchteilen des Platzes)*/
       if(reihen){ const [gx,gz]=reihen.rasterM; let zi=0;                                       /*je Reihe die Front (`th`) nach Norden oder Sueden: zwei Reihen stehen einander ueber ihrer Gasse gegenueber*/
         for(let z=platz.cz-platz.ez+SD.standRandM; z<=platz.cz+platz.ez-SD.standRandM+1e-6; z+=gz, zi++) for(let x=-PW+SD.standRandM; x<=PW-SD.standRandM+1e-6; x+=gx){ const s={x,z,th:zi%2?0:Math.PI}; if(staende.length<reihen.max&&Math.abs(z-platz.cz)>=SD.marktGangM&&standFrei(s)) staende.push(s); } }   /*die Gasse des Markts laengs seiner langen Achse bleibt frei (`marktGangM` beidseits der Mitte): wer auf dem Platz steht, sieht die Fassaden an seinen Enden — am Messort stadt fand die Pose des Orts sonst keinen Bau mit freier Sichtlinie (127 Bauten, 68 Hindernisse)*/
       else for(const s of [{x:-PW*0.45,z:sW/2+PD*0.45},{x:PW*0.45,z:sW/2+PD*0.55}].concat(nG>18?[{x:0,z:sW/2+PD*0.82}]:[])) if(standFrei(s)) staende.push(s); } }
   else brunnen.push({x:sW/2+2.4,z:sW/2+2.4});
   const platzObb= platz? {cx:platz.cx,cz:platz.cz,phi:0,ex:platz.ex,ez:platz.ez} : null;
+  const tore=[], imTor=(x,z,d)=>tore.some(f=>distPunktOBB(x,z,f)<d);                           /*DER TORPLATZ (STADT_DICHTE.torplatz): am Ende jeder Trasse der Wagen (das Blatt des Strassengraphen an einer Strasse ab VERKEHR_GESETZ.breiteM — das Tor) haelt die Stadt ein Geviert frei, neben der Strasse, auf der Seite des flacheren Grunds, nie im Wasser: kein Los, keine Gasse, keine Laterne — dort wendet und steht der Wagen (`verkehrsNetz`: der Kreis `abM` vom Ende im Winkel `winkel`, einer seiner Kandidaten). Bis hier fand die Wende ihren Kreis in der Wiese neben der Strasse; die dichte Stadt schloss beide Fronten: an stadt-voll trugen 2 von 4 Enden eine Wende, 15 von 21 Wagen einen Platz (gate:fahr-leben VK, main 4 von 4 und 20 von 20)*/
+  if(stadt){ const T=SD.torplatz, gradT=new Array(G.nodes.length).fill(0); for(const rd of roads) if(rd.a>=0&&rd.b>=0){ gradT[rd.a]++; gradT[rd.b]++; }
+    for(const rd of roads){ if(!(rd.a>=0&&rd.b>=0)||(rd.w||0)<VERKEHR_GESETZ.breiteM) continue; const P=rd.pts;
+      for(const hinten of [0,1]){ if(gradT[hinten?rd.b:rd.a]!==1||P.length<5) continue;
+        const e=hinten?P[P.length-1]:P[0], d0=hinten?P[P.length-4]:P[3], l=Math.hypot(e.x-d0.x,e.z-d0.z)||1, ux=(e.x-d0.x)/l, uz=(e.z-d0.z)/l;
+        const lage=[1,-1].map(sg=>{ const a=sg*T.winkel, x=e.x+(ux*Math.cos(a)-uz*Math.sin(a))*T.abM, z=e.z+(uz*Math.cos(a)+ux*Math.sin(a))*T.abM; return {x, z, dh:H?Math.abs(H(x,z)-H(e.x,e.z)):0}; })
+          .filter(q=>!nassAm(q.x,q.z,T.halbM)).sort((p,q)=>p.dh-q.dh)[0];
+        if(!lage) continue;
+        const f={cx:lage.x, cz:lage.z, phi:Math.atan2(-uz,ux), ex:T.halbM, ez:T.halbM};
+        tore.push(f); obbs.push({i:'torplatz',o:f}); zonen.push(zoneVon('torplatz','flaeche','kasten',f,'weg',{viertel:'tor'})); } } }
   if(stadt){                                                                                 /*GASSEN-GESETZ (STADT_DICHTE): das Gewebe im Mauerring — von jeder Strasse und Seitenstrasse zweigt je `gasseTeilung` m beidseits (versetzt) eine Fussgasse quer ab, gerade, so weit der Grund sie traegt (ueber dem Fuss ORT_GESETZ.gefaelle ist sie Treppengasse `treppe`, bis ORT_GESETZ.treppe), bis sie eine andere Strasse trifft (der Anschluss: ein Block schliesst sich) oder `gasseLangM` erreicht; von jeder Gasse zweigt ab `gasseHinterM` die Hintergasse ab. An ihnen stehen die Lose der zweiten und dritten Reihe. Bis hier trug ein Los nur die Front an Baum und Quergasse (am Hang von stadt-voll keine einzige): 119 von 307 Haeusern standen im Ring, 188 an den Ausfallstrassen davor*/
     const fuss=ORT_GESETZ.gefaelle, steil=ORT_GESETZ.treppe, nR=roads.length, K=roads.map(rd=>wegKasten(rd.pts));
     const hang=(pts)=>{ let m=0; if(H) for(let k=1;k<pts.length;k++) m=Math.max(m,Math.abs(H(pts[k].x,pts[k].z)-H(pts[k-1].x,pts[k-1].z))/Math.max(1,Math.hypot(pts[k].x-pts[k-1].x,pts[k].z-pts[k-1].z))); return m; };
@@ -4658,7 +4671,7 @@
     const nah=(x,z,ohne,d)=>{ for(let m=0;m<roads.length;m++){ if(m===ohne) continue; if(m<nR?fernKasten(x,z,K[m],d):false) continue; if(punktAuf(roads[m],x,z).d<d) return m; } return -1; };
     const gasse=(i,P,th)=>{ const rd=roads[i], cs=Math.cos(th), sn=Math.sin(th), pts=[{x:P.x,z:P.z,th}]; let x=P.x, z=P.z, durch=false;
       for(let s=DS; s<=SD.gasseLangM; s+=DS){ const nx=x+cs*DS, nz=z+sn*DS;
-        if(Math.hypot(nx,nz)>Rw-SD.mauerM||(H&&Math.abs(H(nx,nz)-H(x,z))/DS>steil)||distPunktOBB(nx,nz,platzObb)<1||nassAm(nx,nz,SD.wasserM)) break;
+        if(Math.hypot(nx,nz)>Rw-SD.mauerM||(H&&Math.abs(H(nx,nz)-H(x,z))/DS>steil)||distPunktOBB(nx,nz,platzObb)<1||nassAm(nx,nz,SD.wasserM)||imTor(nx,nz,1)) break;
         if(s>2*DS&&punktAuf(rd,nx,nz).d<s*0.6) return;                                        /*die Gasse laeuft nicht an ihrer eigenen Strasse entlang (die Kurve)*/
         const m=nah(nx,nz,i,SD.fluchtM);
         if(m>=0){ if(s<SD.gasseMinM) return; const q=punktAuf(roads[m],nx,nz); pts.push({x:q.x,z:q.z,th}); durch=true; break; }
@@ -4667,7 +4680,7 @@
       roads.push({a:-1,b:-1,pts,w:SD.gasseM,gen:2,len,quer:true,durch,gasse:true,treppe:hang(pts)>fuss}); edepth.push(edepth[i]+1); };
     const zweige=(i0,i1,ab)=>{ for(let i=i0;i<i1;i++){ const rd=roads[i]; if(rd.vor) continue; const L=(rd.pts.length-1)*DS;
       for(const sg of [1,-1]) for(let u=ab+(sg<0?SD.gasseTeilung/2:0); u<L-ab/2; u+=SD.gasseTeilung){ const P=at(rd,u);
-        if(Math.hypot(P.x,P.z)<=Rw-SD.mauerM&&distPunktOBB(P.x,P.z,platzObb)>=SD.gasseAb) gasse(i,P,P.th+sg*Math.PI/2); } } };
+        if(Math.hypot(P.x,P.z)<=Rw-SD.mauerM&&distPunktOBB(P.x,P.z,platzObb)>=SD.gasseAb&&!imTor(P.x,P.z,SD.gasseM)) gasse(i,P,P.th+sg*Math.PI/2); } } };
     zweige(0,nR,SD.gasseAb); const n1=roads.length; zweige(nR,n1,SD.gasseHinterM); }             /*die Gasse von der Strasse, dann die Hintergasse von der Gasse (sie traegt die Reihe im Blockinnern)*/
   const curs=[];
   const ordn=[...roads.keys()].sort((a,b)=>{ const qa=(roads[a].gen===2&&(roads[a].len||99)<=44)?0:1, qb=(roads[b].gen===2&&(roads[b].len||99)<=44)?0:1; return qa-qb; });   /*QUERGASSEN-VORRANG (#1): Kurzgassen setzen ZUERST — sonst frisst das Hauptstrassen-Hinterland ihr Bauland (GEMESSEN 0 Saeumer trotz len)*/
@@ -4802,9 +4815,14 @@
   for(let r=0;r<roads.length;r++){ let mx=8; const rd=roads[r];
     for(const cu of curs) if(cu.rd===r) mx=Math.max(mx,cu.cur+4);
     rd.leer=!!rd.gasse&&!rd.durch&&!curs.some(cu=>cu.rd===r&&cu.lastEnd!=null);   /*die Sackgasse der Dichte ohne ein Haus ist kein Weg*/
-    const ganz=rd.durch||(stadt&&rd.a>=0&&rd.b>=0&&gradK[rd.a]>=2&&gradK[rd.b]>=2);            /*DIE STRASSE ZWISCHEN ZWEI KNOTEN TRAEGT IHRE GANZE LAENGE (die Stadt der Grammatik): bis hier reichte jede Strasse so weit wie ihr Zeiger — im Dorf laeuft er mit jedem Versuch, in der Stadt nur mit einem Haus (der Lauf ohne Brand); an stadt-voll endeten drei Arme der Hauptstrasse 12–15 m vor ihrem Knoten, das Netz der Wagen zerfiel (672 → 255 m, 13 → 5 Plaetze an den Wenden, kein Wagen fuhr)*/
+    const ganz=rd.durch||(stadt&&rd.a>=0&&rd.b>=0&&((gradK[rd.a]>=2&&gradK[rd.b]>=2)||(rd.w||0)>=VERKEHR_GESETZ.breiteM));   /*DIE STRASSE ZWISCHEN ZWEI KNOTEN TRAEGT IHRE GANZE LAENGE (die Stadt der Grammatik), die Trasse der Wagen bis an ihr Ende (dort liegt ihr Torplatz): bis hier reichte jede Strasse so weit wie ihr Zeiger — im Dorf laeuft er mit jedem Versuch, in der Stadt nur mit einem Haus (der Lauf ohne Brand); an stadt-voll endeten drei Arme der Hauptstrasse 12–15 m vor ihrem Knoten, das Netz der Wagen zerfiel (672 → 255 m, 13 → 5 Plaetze an den Wenden, kein Wagen fuhr)*/
     rd.len=ganz?(rd.pts.length-1)*DS:Math.min(mx, rd.pts.length*DS-3); }   /*der Anschluss (`durch`) traegt seine ganze Laenge: er verbindet zwei Strassen*/
   for(let r=roads.length-1;r>=0;r--) if(roads[r].leer) roads.splice(r,1);
+  if(stadt){ const need=new Array(roads.length).fill(0);                                       /*DER ABZWEIG HAELT SEINEN STAMM (die Stadt der Grammatik): jeder Weg reicht mindestens bis zum Anfang jedes Wegs, der an ihm beginnt (ein Anschluss `durch` auch an seinem Ende) — sein Zeiger steht am letzten Haus der EIGENEN Front. An stadt-voll endete die Ausfallstrasse im Westen nach 143 von 228 m, ihre Abzweige bei 174 und 224 m hingen frei: der Fahrer des Hauses dort fand keinen Weg zu seinem Wagen (gate:fahr-leben VK „DER BAU STEHT NICHT“)*/
+    roads.forEach((m,mi)=>{ for(const S9 of (m.durch?[m.pts[0],m.pts[m.pts.length-1]]:[m.pts[0]])){ let bp=-1, bk=0, bd=DS*1.2;
+        roads.forEach((p,pi)=>{ if(pi===mi) return; for(let k=0;k<p.pts.length;k++){ const d9=Math.hypot(p.pts[k].x-S9.x,p.pts[k].z-S9.z); if(d9<bd){ bd=d9; bp=pi; bk=k; } } });
+        if(bp>=0) need[bp]=Math.max(need[bp],bk*DS); } });
+    roads.forEach((p,pi)=>{ if(need[pi]>p.len) p.len=Math.min(need[pi],(p.pts.length-1)*DS); }); }
   const sack=roads.filter(rd=>rd.gasse&&!rd.durch).length;                                   /*jede Sackgasse traegt ihr Ende als Knoten (der Graph zaehlt Bloecke, `zyklen`)*/
   const deg=new Array(G.nodes.length).fill(0); roads.forEach(e=>{ if(e.a>=0){deg[e.a]++;deg[e.b]++;} });
   const feldwege=[];
