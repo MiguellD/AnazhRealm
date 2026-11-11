@@ -418,7 +418,11 @@ hauptLauf(async () => {
     const { browser, page } = await nullWelt(server, { port: PORT, frist: 300000, vor: SELBSTTEST && SCHLUCK }, 120000, "index.html", "networkidle0");
     // das erste Weltbild (der Null-Renderer setzt es beim Renderer-Bau; eine Zeit trägt nur die Kalt-Zeile, von außen) UND das Buch
     // der Studios (`_foundryBuchOffen`): sein Faden bootet in Wanduhr, kein Takt bringt ihn — die Pumpe beginnt nach seinem Ereignis
-    await page.evaluate(() => __weltDa((r) => r.state._weltbildDa && !r._foundryBuchOffen()));
+    // wann es kam, nennt die Zeile (über die Zeit urteilt die Kalt-Zeile, nie dieses Prädikat)
+    await page.evaluate(() => __weltDa((r) => r.state._weltbildDa));
+    const tBild = Date.now();
+    await page.evaluate(() => __weltDa((r) => !r._foundryBuchOffen()));
+    const buchS = ((Date.now() - tBild) / 1000).toFixed(1);
     const out = await page.evaluate(async (selftest, r = window.anazhRealm, st = r.state) => {
         const o = { stage: 0 };
         // ── DER INIT BAUT NICHTS VERBORGENES (ankunft.K5, w16-lade-atem) — am ersten Weltbild, bevor eine Tafel sich zeigte und
@@ -518,7 +522,7 @@ hauptLauf(async () => {
             T.streu,
             `STREU steht — keine Region in Reichweite fehlt, wartet oder trägt eine offene Scheibe (\`_streuWartet\` ${T._streuWartet})`,
         ],
-        [T.biblio && T.impost, `BIBLIOTHEK warm (${T.biblio}) · IMPOSTOREN idle (${T.impost})`],
+        [T.biblio && T.impost, `BIBLIOTHEK warm (${T.biblio}) · IMPOSTOREN idle (${T.impost}) · das Buch kam ${buchS} s nach dem ersten Weltbild`],
         [!!out.stage, "die BÜHNE wurde erreicht (das Prädikat schloss)" + (out.bruch ? " — " + out.bruch : "")],
         [!out.verborgen.length, `DER INIT BAUT NICHTS VERBORGENES ${out.verborgen}`],
     ];
