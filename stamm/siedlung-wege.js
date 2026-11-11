@@ -360,7 +360,7 @@ class AnazhRealm_siedlung_wege {
     // (`zone`) bis zur Ecke ihrer Hülle.
     static _wegeFormRadius(f) {
         if (f.typ === "zone") return Math.hypot(f.q.huelle[2] - f.q.huelle[0], f.q.huelle[3] - f.q.huelle[1]) / 2;
-        return f.halb + (f.typ === "kasten" ? Math.hypot(f.ex, f.ez) : 0);
+        return f.halb + (f.saum || 0) + (f.typ === "kasten" ? Math.hypot(f.ex, f.ez) : 0);
     }
 
     // Der EINE Abstand eines Punkts zu einer Form (m, innen negativ): der gedrehte Kasten um (ax, az) mit den Halbachsen ex/ez
@@ -469,6 +469,9 @@ class AnazhRealm_siedlung_wege {
             const w = t * (Math.abs(Math.cos(f.phi || 0)) + Math.abs(Math.sin(f.phi || 0))) + rand;
             f = { ...f, ex: f.ex + w, ez: f.ez + w };
         } else rand = Math.max(f.rand !== undefined ? f.rand : AnazhRealm.WEGE_KARTE.randM, S.randMinM);
+        // DER GEMALTE SAUM (der gepflasterte Gehweg einer Gasse, `_stlWegeBuild`): der Maler deckt die Form um ihn breiter, die Form
+        // selbst bleibt die Fahrbahn — EINE gemerkte Mal-Form je Gasse
+        if (f.saum) f = f._mal || (f._mal = { ...f, halb: f.halb + f.saum, saum: 0 });
         const x0w = stufe.mitteX - S.fensterM / 2;
         const z0w = stufe.mitteZ - S.fensterM / 2;
         const ausdehnung = AnazhRealm._wegeFormRadius(f) + rand;
@@ -1329,8 +1332,21 @@ class AnazhRealm_siedlung_wege {
             box.z1 = Math.max(box.z1, f.az + r, f.bz + r);
             n++;
         };
-        const strasse = (pts, w) => {
+        // DER BELAG DER GASSE (fachwerk BELAG_GESETZ: Rang × Größe × Jahr): die Gasse trägt Kanal und Vorzeichen ihres Belags wie die
+        // Flächen des Genesis-Orts. Die FORM bleibt die Fahrbahn (`halb` = w/2: an ihr messen die Natur-Wand, die Laterne am
+        // Wegrand und der Vorplatz); das Pflaster deckt dazu den Gehweg bis zur Bauflucht als gemalten `saum` (fachwerk
+        // `gassenBreite` − w, je Seite) — der Maler und die Hülle lesen ihn, sonst niemand. Bis w28-stadt-boden malte der Wirt jede
+        // Gasse als getretene Erde (Kanal 0): die Hauptgasse der Metropole stand in Halmen (Auge 10.11., „dorf 7 300“).
+        // Eine Art, die die Karte nicht kennt, wirft laut (kein stiller Rückfall auf Erde).
+        const FC = globalThis.__fachwerkCore;
+        const belagVon = (art, wer) => {
+            const B = AnazhRealm.WEGE_KARTE.belag[art];
+            if (!B) throw new Error(`Wege-Karte: ${wer} trägt den Belag „${art}", den der Boden nicht kennt`);
+            return B;
+        };
+        const strasse = (pts, w, belag, saum) => {
             if (!Array.isArray(pts)) return;
+            const B = belagVon(belag, "eine Gasse");
             for (let i = 0; i + 1 < pts.length && n < MAX; i++) {
                 const ax = origin.x + pts[i].x;
                 const az = origin.z + pts[i].z;
@@ -1338,11 +1354,22 @@ class AnazhRealm_siedlung_wege {
                 const bz = origin.z + pts[i + 1].z;
                 if (!(Math.hypot(bx - ax, bz - az) > 0.01)) continue;
                 if (!this._landAt((ax + bx) / 2, (az + bz) / 2, 0.2)) continue; // die Wasser-Wand
-                form({ typ: "segment", kanal: 0, ax, az, bx, bz, halb: Math.max(1.2, w || 2.5) / 2 });
+                form({
+                    typ: "segment",
+                    kanal: B.kanal,
+                    wert: B.wert,
+                    ax,
+                    az,
+                    bx,
+                    bz,
+                    halb: Math.max(1.2, w || 2.5) / 2,
+                    ...(saum > 0 ? { saum } : {}),
+                });
             }
         };
-        for (const rd of plan.roads || []) strasse(rd.pts, rd.w);
-        for (const fw of plan.feldwege || []) strasse(fw.pts, fw.w);
+        for (const rd of plan.roads || [])
+            strasse(rd.pts, rd.w, FC.gassenBelag(plan, rd), (FC.gassenBreite(plan, rd) - rd.w) / 2);
+        for (const fw of plan.feldwege || []) strasse(fw.pts, fw.w, "weg", 0);
         // DIE FLÄCHEN EINES PLANS (fachwerk `zonen`, der Genesis-Ort): jede Fläche mit Belag in ihrem Kanal und Vorzeichen
         // (`WEGE_KARTE.belag`), gemalt mit dem Rand ihres Gesetzbuchs (`zone`, `genesisZoneRand`) — eine Art, die die Karte nicht
         // kennt, wirft laut (kein stiller Rückfall auf Erde). Das Wasser des Plans, das nach einer Fläche kommt, nimmt sie aus
@@ -1403,18 +1430,22 @@ class AnazhRealm_siedlung_wege {
                 zoneForm({ ...q, pts: [a, b], huelle: zh }, zh);
             }
         });
-        // Der PLATZ (Anger/Markt) — ein gedrehtes Erd-Rechteck; ein Gras-Anger bleibt Wiese: er malt keinen Boden-Kanal
-        // (`kanal` −1), und die Natur-Wand hält sein Inneres frei wie das Gesetzbuch des Dorfs (fachwerk-core: kein Baum
-        // tiefer als 1 m im Anger, `sperr` −1 statt des Stamm-Rands).
+        // Der PLATZ (Anger/Markt) — ein gedrehtes Rechteck im Belag seines Gesetzes (fachwerk `platzBelag`: Erde, oder Pflaster
+        // ab dem Markt seiner Zeit); ein Gras-Anger bleibt Wiese: er malt keinen Boden-Kanal (`kanal` −1), und die Natur-Wand
+        // hält sein Inneres frei wie das Gesetzbuch des Dorfs (fachwerk-core: kein Baum tiefer als 1 m im Anger, `sperr` −1
+        // statt des Stamm-Rands).
         const pz = plan.platz;
         if (pz && Number.isFinite(pz.cx) && Number.isFinite(pz.ex) && n < MAX) {
             const wx = origin.x + pz.cx;
             const wz = origin.z + pz.cz;
-            const anger = pz.typ === "gras";
+            const pb = FC.platzBelag(plan);
+            const anger = pb === "gras";
+            const PB = anger ? null : belagVon(pb, "der Platz");
             if (this._landAt(wx, wz, 0.2))
                 form({
                     typ: "kasten",
-                    kanal: anger ? -1 : 0,
+                    kanal: anger ? -1 : PB.kanal,
+                    ...(anger ? {} : { wert: PB.wert }),
                     ax: wx,
                     az: wz,
                     bx: wx,
@@ -1432,12 +1463,15 @@ class AnazhRealm_siedlung_wege {
         // Wege-Rebuild aus dem Export lesen dieselbe Platte; bis K66 malte der Wirt eine eigene Fläche von 1,6 m Tiefe, die Platte reichte
         // bis zur Gasse, dazwischen wuchs Wiese. Beim HOF-Haus dazu die Stufe vor der Haustür im Hof (fachwerk `eingangVon`). Die Wiese
         // (`_pfadFeldAt`) und die Natur-Wand (`_aufWeg`) lesen dieselbe Form.
-        const FC = globalThis.__fachwerkCore;
-        const kasten = (vp) => {
+        // Der Vorplatz trägt den Belag seiner Gasse (fachwerk `belagAm` an seinem Gassen-Ende): vor dem Pflaster liegt Pflaster bis an
+        // die Schwelle, vor der Erd-Gasse getretene Erde — sonst stünde je Tür ein Erd-Fleck im Kopfstein.
+        const kasten = (vp, belag) => {
             if (!vp || n >= MAX || !this._landAt(vp.cx, vp.cz, 0.2)) return;
+            const B = belagVon(belag || "weg", "ein Vorplatz");
             form({
                 typ: "kasten",
-                kanal: 0,
+                kanal: B.kanal,
+                wert: B.wert,
                 ax: vp.cx,
                 az: vp.cz,
                 bx: vp.cx,
@@ -1463,13 +1497,17 @@ class AnazhRealm_siedlung_wege {
                 const b = FC.vorplatzBoden(p);
                 const sn = Math.sin(b.phi);
                 const cs = Math.cos(b.phi);
-                kasten({
-                    cx: b.cx - (sn * RW) / 2,
-                    cz: b.cz - (cs * RW) / 2,
-                    phi: b.phi,
-                    ex: b.ex + RW,
-                    ez: b.ez + 1.5 * RW,
-                });
+                kasten(
+                    {
+                        cx: b.cx - (sn * RW) / 2,
+                        cz: b.cz - (cs * RW) / 2,
+                        phi: b.phi,
+                        ex: b.ex + RW,
+                        ez: b.ez + 1.5 * RW,
+                    },
+                    // das Gassen-Ende der Platte (plan-lokal): dort liest sie den Belag ihrer Gasse oder ihres Platzes
+                    FC.belagAm(plan, b.cx - sn * b.ez - origin.x, b.cz - cs * b.ez - origin.z, 2 * RW) || "weg"
+                );
             }
         for (const sl of plan.slots || []) {
             if (!sl.tuer || !FC.eingangVon(sl).hof) continue;

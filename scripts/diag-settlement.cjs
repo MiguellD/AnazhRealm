@@ -293,6 +293,18 @@ function erdbauMedian(v2, grund) {
 // w12-dorf-probe ruhte er, sobald nur der Null-Renderer stand: jede headless Probe am Messort dorf urteilte eine leere Welt
 // (0 Häuser nach 9000 Takten, mit Renderer 16).
 const dorfZugAmOrt = (c) => c.ohne && c.still;
+// DER BELAG DER GASSEN (w28-stadt-boden, fachwerk BELAG_GESETZ): je Gasse { i, gen, quer, soll, pflaster, erde } — das Gesetz neben
+// den gemalten Bytes ihrer Mitte und ihres Gehwegs 0,4 m vor der Bauflucht (`_wegeBelagAt`). → die Täter beim Namen: eine gepflasterte Gasse ohne Pflaster (bis
+// w28-stadt-boden malte der Wirt jede Gasse als Erde), eine Erd-Gasse mit Pflaster oder ohne Erde.
+const belagUrteil = (gassen) =>
+    (gassen || [])
+        .filter((g) =>
+            g.soll === "pflaster" ? !(g.pflaster >= 0.9 && g.gehweg >= 0.8) : !(g.pflaster <= 0.1 && g.erde >= 0.9)
+        )
+        .map(
+            (g) =>
+                `Gasse ${g.i} (gen ${g.gen}${g.quer ? " quer" : ""}): Gesetz ${g.soll}, Karte Pflaster ${g.pflaster} · Erde ${g.erde} · Gehweg ${g.gehweg}`
+        );
 
 function lokal(cx, cz, phi, x, z) {
     const [c, s] = [Math.cos(phi || 0), Math.sin(phi || 0)];
@@ -1023,6 +1035,26 @@ hauptLauf(async () => {
         );
         const u3 = ortUrteil(Object.assign(ortT([haus(-8, 8, 10)]), { roads: [] }), eben, { kappe: 4000 });
         check("Selbst-Test 11: ohne Weg erreicht keine Tür ein Ziel", u3.tuerenOk === 0 && u3.tuerenN === 1);
+        // der Belag: Gesetz = Karte hält; die Mutante des alten Wirts (Pflaster-Gasse als Erde gemalt) und Pflaster auf der
+        // Erd-Gasse fallen beim Namen
+        const gasse = (soll, pflaster, erde, gehweg = pflaster) => ({
+            i: 3,
+            gen: 0,
+            quer: false,
+            soll,
+            pflaster,
+            erde,
+            gehweg,
+        });
+        const bF = belagUrteil([gasse("pflaster", 0, 1), gasse("weg", 0.5, 1), gasse("pflaster", 1, 0, 0.2)]);
+        check(
+            "Selbst-Test 11b: der Belag — Gesetz = Karte hält; die Pflaster-Gasse in Erde, Pflaster auf der Erd-Gasse und ein Gehweg ohne Pflaster fallen beim Namen",
+            belagUrteil([gasse("pflaster", 1, 0), gasse("weg", 0, 1)]).length === 0 &&
+                bF.length === 3 &&
+                /Gehweg 0.2/.test(bF[2]) &&
+                /Gasse 3 \(gen 0\): Gesetz pflaster, Karte Pflaster 0/.test(bF[0]),
+            bF
+        );
         const gut = {
             haeuser: 16,
             slots: 16,
@@ -1516,8 +1548,7 @@ hauptLauf(async () => {
                 );
         }
         alleDs.sort(aufsteigend);
-        const mq = (q) =>
-            alleDs.length ? rang(alleDs, q) : Infinity;
+        const mq = (q) => (alleDs.length ? rang(alleDs, q) : Infinity);
         if (!Number.isFinite(FC.LICHT_MARKE_M)) lichtFehl.push("der Kern trägt kein LICHT_MARKE_M (das Soll je Meter)");
         if (!(mq(0.9) <= MARKE_P90)) lichtFehl.push(`p90 je Meter ${mq(0.9).toFixed(1)} m (Soll ≤ ${MARKE_P90} m)`);
         console.log(
@@ -2025,14 +2056,14 @@ hauptLauf(async () => {
                     st.architectures.filter((e) => e && e.position && portalArten.includes(e.type) && d2M(e) <= 30 * 30)
                         .length;
                 const ringVorher = imRing();
-                for (let t5 = 0; t5 < 30 && !wm5.genesisOrt?.steht; t5++)
-                    r._genesisOrt({ x: M5.x, y: 1, z: M5.z });
+                for (let t5 = 0; t5 < 30 && !wm5.genesisOrt?.steht; t5++) r._genesisOrt({ x: M5.x, y: 1, z: M5.z });
                 res.c.ring.stempel = !!wm5.genesisOrt?.steht;
                 res.c.ring.gebaut = imRing() - ringVorher;
                 res.c.ring.stehen = imRing();
                 const archRing = st.architectures.filter((e) => portalArten.includes(e.type)).length;
                 r._genesisOrt({ x: M5.x, y: 1, z: M5.z }); // Idempotenz: die id jedes Tors trägt
-                res.c.ring.idempotent = st.architectures.filter((e) => portalArten.includes(e.type)).length === archRing;
+                res.c.ring.idempotent =
+                    st.architectures.filter((e) => portalArten.includes(e.type)).length === archRing;
                 // Slot-Probe: jedes Tor des Plans sitzt auf seinem Slot (± 0,5 m), dem Ring-Weg R 22
                 const P5 = r._genesisPlan;
                 res.c.ring.radiusOk = P5.tore.every((t) => {
@@ -2755,6 +2786,44 @@ hauptLauf(async () => {
                                           : `${si}: Stufe`
                                 );
                         });
+                    // DER BELAG DER GASSEN (w28-stadt-boden): je Gasse des Plans das Gesetz (fachwerk `gassenBelag`: Rang × Größe ×
+                    // Jahr) neben den GEMALTEN Bytes ihrer Mitte (`_wegeBelagAt` — was Boden, Wiese und Schritt lesen); eine Mitte im
+                    // Band einer anders belegten Gasse (die Kreuzung) zählt nicht. Das Urteil fällt in `belagUrteil`.
+                    const FCb = window.__fachwerkCore;
+                    res.belag = [];
+                    if (P.ort)
+                        (P.roads || []).forEach((rd, i) => {
+                            const m = rang(rd.pts); // die Mitte der Gasse (DER EINE Rang, welt-boot)
+                            const soll = FCb.gassenBelag(P, rd);
+                            if (!m || !r._landAt(P.ort.x + m.x, P.ort.z + m.z, 0.2)) return;
+                            const kreuzt = P.roads.some(
+                                (o) =>
+                                    o !== rd &&
+                                    FCb.gassenBelag(P, o) !== soll &&
+                                    FCb.belagAm({ roads: [o], groesse: P.groesse, jahr: P.jahr }, m.x, m.z, 1.2) !==
+                                        null
+                            );
+                            if (kreuzt) return;
+                            const aus = {};
+                            r._wegeBelagAt(P.ort.x + m.x, P.ort.z + m.z, aus);
+                            const z2 = (v) => Math.round((v || 0) * 100) / 100;
+                            // und der GEHWEG (der gemalte Saum bis zur Bauflucht, fachwerk `gassenBreite`): 0,4 m vor ihr, quer zur Gasse
+                            const k = rd.pts.indexOf(m);
+                            const n2 = rd.pts[k + 1] || rd.pts[k - 1];
+                            const [dx, dz] = [n2.x - m.x, n2.z - m.z];
+                            const ab = (FCb.gassenBreite(P, rd) / 2 - 0.4) / (Math.hypot(dx, dz) || 1);
+                            const geh = {};
+                            r._wegeBelagAt(P.ort.x + m.x - dz * ab, P.ort.z + m.z + dx * ab, geh);
+                            res.belag.push({
+                                i,
+                                gen: rd.gen,
+                                quer: !!rd.quer,
+                                soll,
+                                pflaster: z2(aus.pflaster),
+                                erde: z2(aus.erde),
+                                gehweg: z2(geh.pflaster),
+                            });
+                        });
                     if (P.ort && pmW) r._tickWegeKarte(pmW.position);
                     res.vorplatzFeld = Number.isFinite(feldMin) ? Math.round(feldMin * 100) / 100 : null;
                     // DIE WAND DER TERRASSE, gezählt am Netz, das der Spieler sieht: der voxel-worker baut die Chunks um den Ort (± 60 m,
@@ -3128,6 +3197,13 @@ hauptLauf(async () => {
         if (outO.slotFehl?.length) console.log("  Slots ohne Haus: " + JSON.stringify(outO.slotFehl));
         if (outO.ortWahl?.length) console.log("  Ort-Wahl: " + outO.ortWahl.join(" | "));
         if (outO.ortMass) console.log("  ORT-WAHL-KOSTEN " + JSON.stringify(outO.ortMass));
+        const belagO = outO.belag || [];
+        const belagFehl = belagUrteil(belagO);
+        check(
+            `O ${modusName}: jede Gasse trägt in der Wege-Karte den Belag ihres Gesetzes (fachwerk BELAG_GESETZ)`,
+            belagO.length > 0 && belagFehl.length === 0,
+            `${belagO.filter((g) => g.soll === "pflaster").length} Pflaster · ${belagO.filter((g) => g.soll === "weg").length} Erde${belagFehl.length ? " — " + belagFehl.slice(0, 4).join(" | ") : ""}`
+        );
         const fehlO = ortVerdikt(m);
         check(
             `O ${modusName}: das Dorf trägt jedes Haus (alle Slots stehen)`,
