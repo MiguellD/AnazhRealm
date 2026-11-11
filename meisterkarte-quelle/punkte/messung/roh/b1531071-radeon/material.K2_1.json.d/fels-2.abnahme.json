@@ -1,0 +1,125 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.259",
+  "sha": "b1531071aca42251b7a3bf8bb53f70d45f581855"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": false,
+  "weltTakte": 40
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 0.9999999999999992,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 1,
+   "deckung": 0,
+   "taeter": {}
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "leiber": null,
+  "abstand": 2,
+  "gestalt": [
+   "felsturm 156"
+  ],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   -81.512,
+   87.899,
+   -92.335
+  ],
+  "blick": [
+   0.92574,
+   -0.24765,
+   -0.28578
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 67.1,
+  "sigma": 35.3,
+  "schwarz": 0.0006,
+  "weiss": 0
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 2 m · Luma 67.1 σ 35.3 schwarz 0.1 % weiß 0.0 % · Stand 18.546.259 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3",
+ "klasse": {
+  "ausdruck": "^formationenSatz$",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 0,
+  "toene": [
+   "formationenSatz=255/80/80"
+  ],
+  "klassen": {
+   "formationenSatz": {
+    "objekte": 17,
+    "spiegelTreue": 0.4556,
+    "spiegelEbene": 87.212,
+    "sp": [
+     433,
+     0,
+     0,
+     249454.46,
+     249454.46,
+     113663.25
+    ],
+    "zweiton": 0.0038,
+    "weiss": 0,
+    "wt": 1,
+    "wtZiel": null,
+    "bunt": 8.11,
+    "pixel": 90105,
+    "luma": 50.81,
+    "kante": 0.5616,
+    "kr": 7745,
+    "strich": 0.2566,
+    "si": 27271,
+    "bloecke": 809,
+    "glatt": 0,
+    "glattDunkel": null,
+    "nyquist": 0.1721,
+    "beta": 1.4959
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "arm": {
+   "soll": 2,
+   "ist": 1.93
+  },
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\b1531071-radeon\\material.K2_1.json.d\\fels-2.maske.png",
+  "urteil": []
+ }
+}

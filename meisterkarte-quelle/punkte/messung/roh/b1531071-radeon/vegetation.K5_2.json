@@ -1,0 +1,98 @@
+{
+ "schuesse": [
+  {
+   "n": "wiese-ego-0.5-sommer-krone",
+   "was": "krone",
+   "kamera": [
+    -280.383,
+    29.317,
+    -1044.425,
+    -280.187,
+    33.976,
+    -1030.427
+   ],
+   "pose": {
+    "kamera": [
+     -280.383,
+     29.317,
+     -1044.425
+    ],
+    "blick": [
+     0.01328,
+     0.31577,
+     0.94874
+    ]
+   },
+   "leinwand": [
+    1920,
+    1080
+   ],
+   "ok": true,
+   "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 14.75 m · Luma 79.3 σ 47.8 schwarz 0.0 % weiß 0.0 % · Stand 18.546.259 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3",
+   "pixel": 77315
+  },
+  {
+   "n": "wiese-ego-0.5-winter-krone",
+   "was": "krone",
+   "kamera": [
+    -280.383,
+    29.317,
+    -1044.425,
+    -280.187,
+    33.976,
+    -1030.427
+   ],
+   "pose": {
+    "kamera": [
+     -280.383,
+     29.317,
+     -1044.425
+    ],
+    "blick": [
+     0.01328,
+     0.31577,
+     0.94874
+    ]
+   },
+   "leinwand": [
+    1920,
+    1080
+   ],
+   "ok": true,
+   "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 14.75 m · Luma 84 σ 47.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.259 · Bühne winter sunny 0.50 · Gerät WebGPU amd rdna-3",
+   "pixel": 2787
+  },
+  {
+   "n": "wiese-ego-0.5-fruehling-krone",
+   "was": "krone",
+   "kamera": [
+    -280.383,
+    29.317,
+    -1044.425,
+    -280.187,
+    33.976,
+    -1030.427
+   ],
+   "pose": {
+    "kamera": [
+     -280.383,
+     29.317,
+     -1044.425
+    ],
+    "blick": [
+     0.01328,
+     0.31577,
+     0.94874
+    ]
+   },
+   "leinwand": [
+    1920,
+    1080
+   ],
+   "ok": true,
+   "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 14.75 m · Luma 78.8 σ 49.6 schwarz 0.0 % weiß 0.0 % · Stand 18.546.259 · Bühne spring sunny 0.50 · Gerät WebGPU amd rdna-3",
+   "pixel": 65505
+  }
+ ],
+ "fehler": "/bild: {\"ms\":5031,\"fehler\":\"ABNAHME ROT [Ziel Blickziel verdeckt von Natur baum_tanne in 46.07 m] · beweis · Sicht 0.0 % · Ziel Blickziel im Bild VERDECKT 61.46 m · Luma 83.3 σ 41.8 schwarz 0.0 % weiß 0.0 % · Stand 18.546.259 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 — die Aufnahme speichert nich"
+}
