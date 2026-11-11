@@ -71,7 +71,9 @@ frei() {
     sperre_lebt && return 1
     if [ -n "$SCHLOSS_LIB" ] && [ -f "$SCHLOSS_LIB" ]; then (. "$SCHLOSS_LIB" && gpu_frei) >>"$L" 2>&1; else [ ! -d "$GS" ] && ! ci; fi
 }
-verdr() { if [ -n "$VERDR_LOG" ] && [ -f "$VERDR_LOG" ]; then grep -ac "VERDR" "$VERDR_LOG"; else echo 0; fi; }
+# (nur die Verdrängung eines punkte-Laufs zählt — der Spiel-Baum trägt je Gerät EINEN: am 11.11. 01:14 wich ein fremder Lauf
+# `omen-hg-ub-a-gipfel` der CI, und der Schritt 87537d3f, der ROT gemessen hatte, fuhr als ABBRUCH neu)
+verdr() { if [ -n "$VERDR_LOG" ] && [ -f "$VERDR_LOG" ]; then grep -a "VERDR" "$VERDR_LOG" | grep -ac "punkte"; else echo 0; fi; }
 kurz() { git -C "$R" rev-parse "$1" | cut -c1-8; }
 
 # miss <sha40> → GRÜN | ROT | OFFEN | ABBRUCH (stdout); die Zahl der Station steht danach in $ZU/schritt.zahl
@@ -251,7 +253,12 @@ case "$1" in
         fehl=0
         pr() { if [ "$2" = "$3" ]; then echo "  GRÜN $1"; else echo "  ROT  $1 — ist „$2“, soll „$3“"; fehl=$((fehl + 1)); fi; }
         node "$WERK" selbsttest || fehl=$((fehl + 1))
-        # die Halbierung an Schein-Urteilen auf der ECHTEN Erst-Eltern-Kette 77265b04..87537d3f (48 Commits), nichts wird gepusht
+        # die Halbierung an Schein-Urteilen auf der ECHTEN Erst-Eltern-Kette 77265b04..87537d3f (48 Commits), nichts wird gepusht —
+        # in einem EIGENEN Zustand (am 11.11. 00:42 schrieb ein Schein-Lauf in Log und Schritt-Dateien eines laufenden echten)
+        ZU0=$ZU L0=$L
+        ZU=$ZU0/schein
+        L=$ZU/richter.log
+        mkdir -p "$ZU/schritte"
         export TROCKEN=1
         G0=$(git -C "$R" rev-parse --verify -q 77265b04^{commit}) && B0=$(git -C "$R" rev-parse --verify -q 87537d3f^{commit}) || { echo "  ROT  die Kette 77265b04..87537d3f fehlt im Klon $R"; exit 1; }
         mapfile -t KK < <(git -C "$R" rev-list --first-parent --reverse "$G0..$B0")
@@ -268,6 +275,7 @@ case "$1" in
         pr "MUTANTE kein Fall (der schlechte Kopf misst GRÜN): kein Täter" "$(printf '%s' "$a" | grep -c "^KEIN FALL schein.K1#1")$(printf '%s' "$a" | grep -c "TÄTER")" "10"
         a=$(RICHTER_SCHEIN_ROT_AB=$(git -C "$R" rev-parse "$G0^") halbiere schein.K1#1 "$G0" "$B0" 0 | tail -n 1)
         pr "MUTANTE das gebuchte GRÜN misst heute ROT: kein Fall der Kette, kein Täter" "$(printf '%s' "$a" | grep -c "^KEIN FALL DER KETTE schein.K1#1")$(printf '%s' "$a" | grep -c "TÄTER")" "10"
+        ZU=$ZU0 L=$L0
         if [ "$2" = echt ]; then
             # der bekannte Fall auf der Karte (OMEN-Messung 10.11.: Rückfall zwischen 77265b04 und 87537d3f) — die Zeile wird gepusht
             unset TROCKEN
