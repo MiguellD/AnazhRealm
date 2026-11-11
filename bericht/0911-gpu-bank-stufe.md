@@ -44,6 +44,12 @@ Die Zerlegung, wiese-ego: Zweig-# 1–11 etwa +2,4 ms (20,7 → 23,1, einzeln ni
 
 ## 3. Die Stelle
 
+> **Berichtigung 11.11. (Auftrag horizont-gtx, gemessen):** Dieser Abschnitt schloss die Stelle aus dem Diff der zwei Stufen-Commits,
+> er maß sie nicht. Am Kopf 4e2df19b kostet `_horizontHimmel` auf der GTX 1,0–1,2 ms (EINE Welt, der Term je Runde getauscht).
+> Der große Verbraucher desselben Zweigs ist der **Luftschatten** (`luftSicht` in `_luftEnsure`, stamm/bild-himmel.js): 8 Proben der
+> Horizont-Karte je Fragment JEDES Stoffs, 34,3 → 26,9 ms mit den Proben an den Ecken (ABAB je frischer Boot, Zweig w28-horizont-gtx).
+> Roh: `p3/n1011/hg/` auf der OMEN (lauf-2, luft-1, rest-1, abab-1).
+
 Der Term ist die **Himmels-Sicht des Grats** (ferne.K4): `_horizontHimmel` läuft je Fragment in der Bestrahlung jedes beleuchteten Stoffs.
 
 - **af060762** `stamm/bild-sicht.js:696`: `const frei = T.max(himmel.sub(wirt._horizontHimmel(T.shadowPositionWorld, n)), T.vec3(0));` steht im Knoten der Bestrahlung. Seitdem zahlt jeder Stoff je Pixel einen Abruf der Horizont-Karte und die Schleife (22,8 → 25,9 ms).

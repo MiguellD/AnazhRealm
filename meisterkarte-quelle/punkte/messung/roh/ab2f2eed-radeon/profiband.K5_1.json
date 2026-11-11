@@ -1,0 +1,133 @@
+{
+ "art": "dauer",
+ "sekunden": 29.2,
+ "schritte": [
+  [
+   "ende",
+   29.2
+  ]
+ ],
+ "offen": [],
+ "fehler": {},
+ "strom": {
+  "bloecke": 1468,
+  "bilder": 3232,
+  "seiten": 7,
+  "fehler": 0,
+  "verloren": 0
+ },
+ "dauer": {
+  "anfang": true,
+  "ende": true,
+  "torbau": {
+   "bau": true,
+   "tor": true,
+   "heim": true
+  },
+  "nacht": {
+   "nacht": 8.369000000000188e-15,
+   "mittag": 0.5000000000000087
+  },
+  "minuten": 24.37,
+  "seiten": 5,
+  "proben": 9,
+  "last": {
+   "n": 3212,
+   "frame": 75.47,
+   "p99": 117.29,
+   "max": 217.64,
+   "ueber33": 1974,
+   "ueber100": 66,
+   "takt": 57.65,
+   "vram": 143.5,
+   "gpu": 15.04,
+   "gpuN": 463,
+   "befehle": 144,
+   "dreiecke": 526234,
+   "voll": 0.034,
+   "halt": false,
+   "last": 0,
+   "sicht": [
+    1,
+    2
+   ],
+   "sichtWechsel": 64,
+   "sattel": "010",
+   "wetter": [
+    "sunny"
+   ],
+   "buehne": 0
+  },
+  "weg": 2227,
+  "gegangen": 86,
+  "fahren": true,
+  "nachtImStrom": false,
+  "anker": {
+   "a": {
+    "n": 54,
+    "frame": 58.67,
+    "p99": 67.07,
+    "max": 67.07,
+    "ueber33": 33,
+    "ueber100": 0,
+    "takt": 36.56,
+    "vram": 140.5,
+    "gpu": 15.17,
+    "gpuN": 8,
+    "befehle": 124,
+    "dreiecke": 359602,
+    "voll": 1,
+    "halt": false,
+    "last": 0.72,
+    "sicht": [
+     1
+    ],
+    "sichtWechsel": 0,
+    "sattel": "0",
+    "wetter": [
+     "sunny"
+    ],
+    "buehne": 0
+   },
+   "b": {
+    "n": 45,
+    "frame": 66.98,
+    "p99": 83.74,
+    "max": 83.74,
+    "ueber33": 32,
+    "ueber100": 0,
+    "takt": 52.46,
+    "vram": 136.7,
+    "gpu": 9.25,
+    "gpuN": 8,
+    "befehle": 116,
+    "dreiecke": 439992,
+    "voll": 1,
+    "halt": false,
+    "last": 0.43,
+    "sicht": [
+     1
+    ],
+    "sichtWechsel": 0,
+    "sattel": "0",
+    "wetter": [
+     "sunny"
+    ],
+    "buehne": 0
+   },
+   "laeufe": 2
+  },
+  "gang": [
+   "heap: +15.3 MB/min > 5 — Halter: r._foundry.cache[].children[].geometry.attributes +17.2 MB · r.state.renderer._nodes.nodeBuilderCache[].updateNodes[] +3.8 MB · r.state.creatures[].userData._tierBaum.straehnen[] +2.7 MB",
+   "buf:verwaist 0.19 MB"
+  ],
+  "heap": [
+   294.8,
+   667.2
+  ],
+  "vramGC": [
+   135.9,
+   136.7
+  ]
+ }
+}
