@@ -1637,18 +1637,32 @@ class AnazhRealm_studio_bruecke {
     }
     // DER KASTEN-ABSTAND DER BAHN zu [x0, x1] × [z0, z1] von `p` (sonst der Spieler) längs derselben Strecke: Chebyshev (die Stufe
     // eines Chunks, `_voxelChunkLodFor`) oder `euklid` (`_streuRegionInReichweite`), konvex: `_konvexMin` findet ihn.
-    _bedarfKasten(x0, x1, z0, z1, p, euklid = false) {
+    _bedarfKasten(x0, x1, z0, z1, p, euklid = false, bahn) {
         const e = p || (this.state.playerMesh && this.state.playerMesh.position);
         if (!e) return Infinity;
         const k = (x, z) => {
             const [dx, dz] = [Math.max(x0 - x, 0, x - x1), Math.max(z0 - z, 0, z - z1)];
             return euklid ? Math.hypot(dx, dz) : Math.max(dx, dz);
         };
-        const [vx, vz] = this._bedarfTempo();
+        const [vx, vz] = bahn ? [bahn.vx, bahn.vz] : this._bedarfTempo();
         if (!(vx || vz)) return k(e.x, e.z);
         const T = AnazhRealm.BEDARF.vorlaufS;
         const f = (u) => k(e.x + vx * T * u, e.z + vz * T * u);
         return Math.min(f(0), f(1), f(AnazhRealm._konvexMin(f, 0, 1)));
+    }
+    // DER ABSTAND DER STUFEN-WAHL (w28-geister-wand, der EINE Leser für den Takt `_archStufeUrteil` und die Kalt-Wahl
+    // `_foundryLodForEntry`): ein Bau, der die Grenzen seines Gesetzbuchs trägt (`grenzen`, `_archStufenGrenzen`: Haus, Tor,
+    // Ausstattung, Werk), misst zur HÜLLE seiner Blocker (`_blockerHuelle`, der Kasten seiner Gestalt in der Welt), nie zu seinem
+    // Ursprung — die Grenze einer Stufe ist der Abstand, an dem ihr Fehler einen Bildpunkt trägt (`_wechselGesetz`: der Bildpunkt
+    // misst d / f an der Fläche, die das Auge sieht). Bis hier maß die Wahl zum Ursprung: ein Haus von 13 × 8,5 m stand auf Stufe 1
+    // (Grenze 12 m), seine Wand 5,1 m vor dem Auge — die Flächen-Stufe als Schleier über Gebälk in jedem Probe-Bild (GTX 1060,
+    // Dorf: drei Häuser auf Stufe 1, Hülle 5,1 · 7,5 · 12,3 m, Ursprung 11,1 · 15,8 · 19,7 m). Eine Karten-Art und der Baum
+    // (ohne `grenzen`) messen zum Ursprung, wie ihre Maske; ein Bau ohne Blocker ist sein Punkt.
+    _stufenAbstand(entry, grenzen, auge, bahn) {
+        const h = grenzen ? entry._blockerHuelle : null;
+        return h
+            ? this._bedarfKasten(h[0], h[1], h[2], h[3], auge, true, bahn)
+            : this._bedarfAbstand(entry.position.x, entry.position.z, auge, bahn);
     }
     // DIE ZEIT BIS ZUM KASTEN (s, w14-strom-tempo): bis die Bahn (`p`, sonst der Spieler) dem Kasten auf den Chebyshev-Abstand
     // `B` nahe kommt — 0 schon dort, Infinity nicht binnen zweier Vorläufe; das Minimum (`_konvexMin`), davor die Halbierung.

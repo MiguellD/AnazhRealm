@@ -2579,7 +2579,9 @@ class AnazhRealm_stoff_instanz {
         const p = auge || this._lodAuge(); // vom Auge der Maske (K36), wie der LOD-Tick
         if (!p || !entry || !entry.position) return 1;
         if (this._imStufenVorlauf(entry)) return 1; // der Stufen-Vorlauf der Ankunft, wie der LOD-Tick
-        const d = this._bedarfAbstand(entry.position.x, entry.position.z, p); // der Abstand der Bahn (w7-rang)
+        const treeLike = !!entry._lodSpecies && Number.isFinite(entry._lodVariantIndex);
+        const G = treeLike ? null : this._archStufenGrenzen(entry);
+        const d = this._stufenAbstand(entry, G, p); // der Abstand der Bahn (w7-rang), ein Bau zu seiner Hülle
         // DIE EINE STUFEN-WAHL: der Kalt-Schätzer fragt dieselbe Wahl wie der LOD-Tick — Wahrnehmungs-Distanz aus der
         // Sichthöhe (`_lodTreeVisHeight`, 0 = roh für Nicht-Bäume), ohne Hysterese-Zustand. Vorher las er nur die rohe
         // Distanz: die Rampe setzte einen großen Baum in 40 m auf die Karte (dithernd, grau), und der LOD-Tick holte
@@ -2587,8 +2589,6 @@ class AnazhRealm_stoff_instanz {
         // ihre Grenzen (K43: Haus, Tor), fragt er sie wie der Takt — bis B2 las er dort die Baum-Distanzen 12/26 m: das
         // Ring-Tor in 11 m bestellte kalt seine L0 (Grenze 9,5 m), der Takt wechselte danach auf die L1 (Radeon kalt an
         // Genesis: 7 Tor-L0 und 9 Tor-L1 vor dem ersten Bild). In der Ankunft aus der Ferne (B2) wählt er die Grobstufe.
-        const treeLike = !!entry._lodSpecies && Number.isFinite(entry._lodVariantIndex);
-        const G = treeLike ? null : this._archStufenGrenzen(entry);
         if (G)
             return AnazhRealm._stufeNachGrenzen(
                 d * this._ankunftsFerne(),

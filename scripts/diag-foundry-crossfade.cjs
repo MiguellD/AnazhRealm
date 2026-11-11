@@ -433,10 +433,13 @@ async function runPartB() {
         // Stufen-Kette im Gesetzbuch — der Wagen [0, 1] und die Karte (KIND_POLICY.impostor), das Tor [0, 1] nach den Grenzen
         // seines Kerns (B2c `ab`, keine Karte; die 3 ist NUR-WURF und wird nie gezeigt). Eigene Orte; JEDE gezeigte Stufe (und
         // die Karte der Karten-Art) wärmt hier, der Sweep pflanzt sie neu und räumt sie.
+        // DAS HAUS (w28-geister-wand, `nurHuelle`): die Klasse des Täters trägt nur die Hüllen-Probe (unten) — ihre Kette misst
+        // gate:haus-fern am Gesetzbuch.
         res.kette = [];
-        for (const [typ, dx] of [
+        for (const [typ, dx, nurHuelle] of [
             ["fahrzeug_gt", 800],
             ["tor_drachentor", 1200],
+            ["haus_griechisch", 1600, true],
         ]) {
             const ox = px + dx,
                 oz = pz;
@@ -459,6 +462,7 @@ async function runPartB() {
                 stufen,
                 gezeigt,
                 karte,
+                nurHuelle: !!nurHuelle,
                 satzArt: !!(rec && A.BAU_SATZ[rec.kind]),
                 ort: { x: ox, y: oy, z: oz },
             });
@@ -751,6 +755,30 @@ async function runPartB() {
                     }
                     return o;
                 };
+                // DIE HÜLLE (w28-geister-wand): ein Bau mit Grenzen wählt seine Stufe am Abstand zu seiner Hülle (`_stufenAbstand`), nie zum
+                // Ursprung. Das Auge auf der Achse des Sweeps vor der Hülle (`rand` = sie reicht so weit vor den Ursprung): von fern
+                // an die Hülle bis 0,3 m diesseits (1 − h)·ab — die 0 steht; hinaus bis 0,3 m diesseits (1 + h)·ab — die 0 hält (die
+                // Hysterese bleibt); 0,3 m jenseits — die Stufe (oder gröber); die Kalt-Wahl ohne Zustand 0,3 m diesseits ab — die 0.
+                const huellenProbe = (E) => {
+                    const e = E.entry, G = r._archStufenGrenzen(e), h = e._blockerHuelle; // prettier-ignore
+                    if (!G || !h) return { ohne: !G ? "Grenzen" : "Hülle" };
+                    const g1 = G.grenzen[0], ab = g1.ab * (e.scale > 0 ? e.scale : 1), hy = g1.h > 0 ? g1.h : G.h; // prettier-ignore
+                    // die Hülle folgt der Stufe (die Flügel der Stufe 0 überstreichen ihren Kreis, `_streichHuelle`: das Drachentor
+                    // 2,75 m): jeder Schritt misst von der Hülle, die jetzt steht — `weg` = Schritt/Abstand danach/Stufe je Schritt
+                    const o = { stufe: g1.stufe, ab: +ab.toFixed(2), h: hy, rand: +(E.px - h[0]).toFixed(2), weg: [] };
+                    const an = (dh) => {
+                        pm.position.set(e._blockerHuelle[0] - dh, E.py, E.pz);
+                        for (let i = 0; i < 4; i++) r._tickArchitectureLOD(99, pm.position);
+                        o.weg.push([+dh.toFixed(2), +r._stufenAbstand(e, G, pm.position).toFixed(2), e._lodLevel].join("/"));
+                        return e._lodLevel;
+                    };
+                    o.fern = an(ab * (1 + hy) + o.rand + 2);
+                    o.nah = an(ab * (1 - hy) - 0.3);
+                    o.halt = an(ab * (1 + hy) - 0.3);
+                    o.hinaus = an(ab * (1 + hy) + 0.3);
+                    o.kalt = r._foundryLodForEntry(e, { x: e._blockerHuelle[0] - (ab - 0.3), z: E.pz });
+                    return o;
+                };
                 // Ein Lauf der Kette; `gegen` = der Täter des Selbsttests im selben Lauf: "partner" — die L1 lädt nie und die Stufe
                 // hält nicht (der Stand vor K36: die L0 dithert zu einer Stufe, die es nicht gibt); "satz" — der Bau-Satz folgt der
                 // Stufe nicht (die Marke `_bauSatzMarke` stumm: die Gruppe wechselt, ihr Bereich im Satz nie).
@@ -759,8 +787,13 @@ async function runPartB() {
                     const karte = e._occluded === true || e._bruecke === true;
                     return band ? karte && bl === 2 : karte;
                 };
+                // "ursprung" — die Wahl misst zum Ursprung des Baus (der Stand vor w28-geister-wand); "huelle" ist die Probe selbst.
                 const kettenLauf = (op, gegen) => {
                     if (gegen === "satz") r._bauSatzMarke = function () {};
+                    if (gegen === "ursprung")
+                        r._stufenAbstand = function (e, G, auge, bahn) {
+                            return this._bedarfAbstand(e.position.x, e.position.z, auge, bahn);
+                        };
                     if (gegen === "partner") {
                         r._foundryFlattenFor = function (e, p, lod) {
                             return p === op.preset && lod === 1 ? null : A.prototype._foundryFlattenFor.call(this, e, p, lod);
@@ -774,8 +807,10 @@ async function runPartB() {
                         if (!o2.instanced) r._rebuildArchitectureMesh(o2);
                         st.architectures = [o2];
                         const E = { entry: o2, px: op.ort.x, py: op.ort.y, pz: op.ort.z };
+                        if (gegen === "huelle" || gegen === "ursprung") return huellenProbe(E);
                         return gegen ? kettenSweep(E) : { voll: kettenSweep(E) };
                     } finally {
+                        delete r._stufenAbstand;
                         delete r._bauSatzMarke;
                         delete r._foundryFlattenFor;
                         delete r._lodSlotVoll;
@@ -790,6 +825,9 @@ async function runPartB() {
                 };
                 for (const op of res.kette || []) {
                     if (!op.alleWarm) continue;
+                    op.huelle = kettenLauf(op, "huelle");
+                    op.gegenUrsprung = kettenLauf(op, "ursprung");
+                    if (op.nurHuelle) continue;
                     const lauf = kettenLauf(op, null);
                     if (lauf) op.voll = lauf.voll;
                     op.gegenPartner = kettenLauf(op, "partner");
@@ -1553,6 +1591,21 @@ async function main() {
                 !!op.preset && mitPartner && op.alleWarm === true,
                 { preset: op.preset, stufen: op.stufen, gezeigt: op.gezeigt, karte: op.karte, satz: op.satzArt, warm: op.warm }
             );
+            // DIE HÜLLE (w28-geister-wand): die Karten-Art (ohne Grenzen) misst wie ihre Maske zum Ursprung und trägt keine Probe
+            const [H, HU] = [op.huelle, op.gegenUrsprung];
+            if (!op.karte) {
+                check(
+                    `KETTE DES GESETZBUCHS (${op.typ}) HÜLLE: die Stufe wählt am Abstand zur Hülle — diesseits (1 − h)·ab steht die 0, sie hält bis (1 + h)·ab, die Kalt-Wahl ebenso`,
+                    !!H && !H.ohne && H.fern >= H.stufe && H.nah === 0 && H.halt === 0 && H.hinaus >= H.stufe && H.kalt === 0,
+                    H
+                );
+                check(
+                    `KETTE Selbsttest (${op.typ}) HÜLLE: misst die Wahl zum Ursprung, nennt die Linse die Grobstufe vor der Hülle`,
+                    !!HU && !HU.ohne && HU.rand > 0.3 && (HU.nah !== 0 || HU.kalt !== 0),
+                    HU
+                );
+            }
+            if (op.nurHuelle) continue;
             if (!op.voll) {
                 check(`KETTE DES GESETZBUCHS (${op.typ}): Sweep lief`, false, "fehlt");
                 continue;

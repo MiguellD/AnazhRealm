@@ -802,10 +802,13 @@ class AnazhRealm_gelaende_kollision {
         // Körper bis zu seinem nächsten Stempel wandert (`_freiZeigen`)
         const fh = entry._streichHuelle;
         if (fh) [x0, x1, z0, z1] = [Math.min(x0, fh[0]), Math.max(x1, fh[1]), Math.min(z0, fh[2]), Math.max(z1, fh[3])];
-        entry._blockerHuelle =
+        const alt = entry._blockerHuelle;
+        const neu = (entry._blockerHuelle =
             Number.isFinite(x0) && Number.isFinite(x1) && Number.isFinite(z0) && Number.isFinite(z1)
                 ? [x0, x1, z0, z1]
-                : null;
+                : null);
+        // die Hülle ist der Abstand der Stufen-Wahl eines Baus (`_stufenAbstand`): wechselt sie, urteilt er im nächsten Gang neu
+        if (entry._stufenGrenzen && !(alt && neu && neu.every((v, i) => v === alt[i]))) this._stufeWecken(entry);
         entry._blockerZellen = this._blockerZellenEin(N.zellen, entry, x0, x1, z0, z1);
         this._blockerWacheMelden(entry._blockerHuelle, verkehr, entry);
     }

@@ -416,8 +416,10 @@ class AnazhRealm_siedlung_bauten {
         if (!this._archStufeWaehlt(entry)) return Infinity;
         const st = this.state;
         const treeLike = !!entry._lodSpecies && Number.isFinite(entry._lodVariantIndex);
-        // der Abstand der Bahn (der EINE Rang, w7-rang): die Stufe, die die Bahn binnen des Vorlaufs verlangt, steht vor ihr
-        const dist = this._bedarfAbstand(entry.position.x, entry.position.z, pm, z.bahn);
+        const grenzen = treeLike ? null : this._archStufenGrenzen(entry);
+        // der Abstand der Bahn (der EINE Rang, w7-rang): die Stufe, die die Bahn binnen des Vorlaufs verlangt, steht vor ihr —
+        // ein Bau misst zu seiner Hülle (`_stufenAbstand`)
+        const dist = this._stufenAbstand(entry, grenzen, pm, z.bahn);
         // DAS BAND MISST VOM AUGE DER MASKE (w22-pop-heil): der Partner der Stufe und ihr Halt füllen, was die Maske JETZT am Auge
         // blendet (`_lodCrossfadeMaskNode` misst `uLodAuge` zum Ursprung der Instanz) — nie den Ort der Bahn in BEDARF.vorlaufS.
         // Bis hier las die Band-Pflege den Abstand der Bahn: im Gehen (4 m/s, 12 m Vorlauf) fiel die Karte einer Birke in 20 m
@@ -447,7 +449,6 @@ class AnazhRealm_siedlung_bauten {
         const ferne = this._ankunftsFerne();
         if (ferne > 1) entry._lodAmAbstand = false;
         const zustand = entry._lodAmAbstand === true ? entry._lodLevel : undefined;
-        const grenzen = treeLike ? null : this._archStufenGrenzen(entry);
         let newLOD = grenzen
             ? AnazhRealm._stufeNachGrenzen(
                   dist * ferne,
