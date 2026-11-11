@@ -1417,10 +1417,13 @@ function fahreGruppe(sts, ctx) {
         const teileN = (st.probe && st.probe.teile) || 1, teilS = [];
         const mitS = (e) => (!sitz ? e : teileN > 1 && teilS.length ? { ...e, s: Math.max(...teilS), teile: teilS }
             : { ...e, s: +(((tEnde || Date.now()) - t0) / 1000).toFixed(1) });
-        let gegangen = false;
-        const ganz = (es) => {
+        let gegangen = false, kzLauf = null;
+        const ganz = (es0) => {
             if (gegangen) return;
             gegangen = true;
+            // KEIN STILLER RÜCKFALL: ein Eintrag mit Urteil, aber ohne Konsum-Menge (ein Lauf, der am Deckel fiel, ein Start, der warf)
+            // nennt den Grund (`konsumFehlt`) — die Buchung zählt ihn beim Namen
+            const es = es0.map((e) => (e.ungemessen || e.konsum || e.konsumFehlt ? e : { ...e, konsumFehlt: (kzLauf && kzLauf.konsumFehlt) || "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)" }));
             const tStop = tEnde || Date.now();
             zeuge.ende(fenster).then((b) => {
                 tEnde = tStop; // das Warten auf den Takt des Zeugen zählt nie in die Sekunden der Probe
@@ -1571,6 +1574,7 @@ function fahreGruppe(sts, ctx) {
             konsumDesLaufs(konsumOrdner, ctx.baum, tot ? null : sitz).then((kz) => urteile(code, sig, ohneEnde, kz));
         };
         const urteile = (code, sig, ohneEnde, kz) => {
+            kzLauf = kz;
             if (!sitz) portRaeumen(ctx.band || ctx.port);
             // die Zeugen-Zeilen gehen in die Roh-Ausgabe (die Buchung liest sie dort), die Datei fällt; in der Sitzung zeugt die
             // Werkbank der Welt (ihr Zeuge zuerst), dazu jeder node-Prozess der Probe
@@ -4011,6 +4015,9 @@ function konsumFalten(stuecke, baum, acorn = konsumAcorn(baum)) {
         }
         for (const [p, e] of js) {
             if (k[p]) continue;
+            // ein Skript, das der Lauf selbst in den Baum legte und wieder nahm (gelaende.K5#1: scripts/.k8-first.cjs), steht an keinem
+            // SHA — sein Inhalt kam aus der Linse, die ihn schrieb
+            if (!fs.existsSync(path.join(baum, p))) continue;
             const text = fs.readFileSync(path.join(baum, p), "utf8");
             if (e.len != null && text.length !== e.len) { ganz(p, "Länge"); continue; }
             const s = skriptVon(text, acorn);
