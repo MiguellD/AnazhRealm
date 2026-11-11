@@ -85,15 +85,15 @@
   "klassen": {
    "formationenSatz": {
     "objekte": 17,
-    "spiegelTreue": 0.4557,
+    "spiegelTreue": 0.4556,
     "spiegelEbene": 87.212,
     "sp": [
      433,
      0,
      0,
-     249443.41,
-     249443.41,
-     113660.49
+     249438.47,
+     249438.47,
+     113649.41
     ],
     "zweiton": 0.0038,
     "weiss": 0,
@@ -102,15 +102,15 @@
     "bunt": 8.11,
     "pixel": 90105,
     "luma": 50.81,
-    "kante": 0.5615,
-    "kr": 7747,
+    "kante": 0.5616,
+    "kr": 7745,
     "strich": 0.2566,
-    "si": 27256,
+    "si": 27271,
     "bloecke": 809,
     "glatt": 0,
     "glattDunkel": null,
     "nyquist": 0.1721,
-    "beta": 1.496
+    "beta": 1.4959
    }
   },
   "abstand": null,
