@@ -37,8 +37,14 @@ const schuesse = () => ([st.lodMaskOn, st.foundryCrossfade, st.atmosphere.treeLO
 const welt = () => ([st.lodMaskOn, st.foundryCrossfade, st.atmosphere.treeLOD] = [merk.maske, merk.band, merk.takt]);
 const boden = (x, z) => r._voxelSurfaceY(x, z);
 const fwd = new T.Vector3(0, 0, -1).applyQuaternion(cam.quaternion).setY(0).normalize();
+// DIE SCHLECHTESTE VORLAGE JE STUFE AM BAUM (w28-baum-wechsel-pm, 11.11.; Messung am Bau je Vorlage × Stufe in Welt-Metern,
+// bericht/1111-baum-wechsel/baum-fehler.cjs an main e699a834): bis hier maß die Folge am Baum nur die Weide — für die Stufe 1 die
+// BESTE Vorlage (0,20 px am Haushalt; Eiche · Birke · Buche 0,05). Die schlechtesten L1 sind das Totholz (3,43 px) und die Nadel-Arten
+// (Tanne 1,91 · Mammut 1,80 · Fichte 1,79): ihre L1 trägt die Silhouette der L0 nicht. Die Karte bleibt an der Weide (5,99 px am Bau,
+// Karst 6,04; Radeon 5,15 · GTX 5,05). Ein GRÜN an der Weide allein wäre kein GRÜN der Familie.
 const FAELLE = [
-    { kind: "tree", typ: () => r._growTreeBlueprintForSpawn("baum_weide", "lod-k5"), stufen: [1, 2] },
+    { kind: "tree", typ: () => r._growTreeBlueprintForSpawn("baum_totholz", "lod-k5"), stufen: [1] },
+    { kind: "tree", typ: () => r._growTreeBlueprintForSpawn("baum_weide", "lod-k5"), stufen: [2] },
     { kind: "haus", typ: () => "haus_modern", stufen: [1] },
     { kind: "haus", typ: () => "haus_alemannisch", stufen: [2] },
     { kind: "gate", typ: () => "tor_kathedrale", stufen: [1] },
@@ -232,7 +238,11 @@ try {
         const G = r._archStufenGrenzen(e); // null: eine Karten-Art (Baum, Wagen) wechselt an den Schwellen ihrer Maske
         for (const s of F.stufen) {
             const sk = e.scale > 0 ? e.scale : 1;
-            const d = G ? G.grenzen.find((g) => g.stufe === s).ab * sk : [D.thresh01, D.thresh12][s - 1] * Math.max(hoehe || ref, ref) / ref;
+            // DER ABSTAND DES GESETZES AM BAUM (w28-baum-wechsel-pm): die Schwelle der Maske × die Schirm-Höhe der Grenze ÷ Bezug — trägt
+            // der Spiel-Baum den Streck je Vorlage (`_baumStreck`: der Abstand aus der Zeile der Vorlage ÷ Haushalt, die Stempel der
+            // Stufen tragen Höhe × Streck), misst die Folge dort, wo der Baum wechselt; ohne ihn (main) am Haushalt wie bisher.
+            const streck = !G && F.kind === "tree" && typeof r._baumStreck === "function" ? r._baumStreck(preset)[s - 1] : 1;
+            const d = G ? G.grenzen.find((g) => g.stufe === s).ab * sk : [D.thresh01, D.thresh12][s - 1] * Math.max((hoehe || ref) * streck, ref) / ref;
             const auge = m.clone().addScaledVector(fwd, -d);
             auge.y = boden(auge.x, auge.z) + 1.7;
             const hoch = hoehe || 4;

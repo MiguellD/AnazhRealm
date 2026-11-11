@@ -137,7 +137,8 @@ function versatz(n0, ns, stufe, karte, d, F, atlas, K) {
     return summe / PEILUNG.length;
 }
 // die schlechteste Vorlage je Art und Stufe (gemessen 29.10. über alle Vorlagen, `--alle`)
-const SCHLECHTESTE = { tree: ["weide"], haus: ["modern", "alemannisch"], gate: ["kathedrale", "geisttor"], vehicle: ["limousine"], ausstattung: ["brunnen"] };
+// (w28-baum-wechsel-pm, 11.11.: am Baum je Stufe — die L1 am Totholz 3,43 px, die Karte an der Weide 5,99 px)
+const SCHLECHTESTE = { tree: ["totholz", "weide"], haus: ["modern", "alemannisch"], gate: ["kathedrale", "geisttor"], vehicle: ["limousine"], ausstattung: ["brunnen"] };
 async function fehlerAmBau(alle, nur) {
     const { runWithWorker, kanalImVm } = require(path.join(ROOT, "scripts/lib/asset-worker-harness.cjs"));
     const { dek } = require(path.join(ROOT, "scripts/lib/kronen-linse.cjs"));
@@ -173,19 +174,32 @@ async function fehlerAmBau(alle, nur) {
                 });
         for (const kind of Object.keys(SCHLECHTESTE).filter((k) => !nur || k === nur))
             for (const id of vorlagen(kind)) {
-                const n0 = netze(await build({ presetId: id, seed: 1, lod: 0, season: "summer" }), 0);
+                const b0 = await build({ presetId: id, seed: 1, lod: 0, season: "summer" });
+                const n0 = netze(b0, 0);
                 let [hi, lo, ext] = [-Infinity, Infinity, 0];
                 for (const m of n0) for (let i = 0; i < m.pos.length; i += 3) [hi, lo, ext] = [Math.max(hi, m.pos[i + 1]), Math.min(lo, m.pos[i + 1]), Math.max(ext, Math.abs(m.pos[i]), Math.abs(m.pos[i + 2]))];
                 const hoehe = hi - Math.max(0, lo);
-                for (const stufe of Object.keys(S.fehler[kind] || { 1: 0 }).map(Number)) {
+                // DIE TAFEL JE VORLAGE (w28-baum-wechsel-pm, 11.11.): seit w25-lod-pop trägt LOD_SCHIRM.fehler je Art ihre VORLAGEN
+                // (Zeile { 1, 2 }) — bis hier las die Schleife die Schlüssel der Art als Stufen und maß nichts mehr. Die Stufen einer
+                // Vorlage sind die ihrer Zeile, ohne Zeile die der Maske (Baum 1 · 2, Wagen 1). DER BAUM IN WELT-METERN: die Vorlage ×
+                // Welt-Skala (placement.scale × treeScaleMul), die Sichthöhe ohne den Hub des Schafts (`__mass`), der Abstand der Maske
+                // Schwelle × max(Höhe, Bezug) ÷ Bezug — mit Zeile nie näher als ihr Pixel-Term an der wahren Höhe; gerastert wird in
+                // Metern der Vorlage (Welt ÷ Skala). Bis hier maß der Baum in Vorlagen-Metern am Bezug der Vorlage (Weide 3,06 m).
+                const zeile = S.fehler[kind] && S.fehler[kind][id];
+                const P = buch.renderConfig.placement, ref = buch.renderConfig.lod.ref;
+                const basis = kind === "tree" && P.scale[id] ? P.scale[id] : 1;
+                const ws = basis === 1 ? 1 : basis < 1 ? basis : basis * P.treeScaleMul;
+                const mass = kind === "tree" ? b0.meshes.find((m) => m.kind === "__mass") : null;
+                const H = (hi - lo - (mass && mass.huelle && mass.huelle.schaftHub > 0 ? mass.huelle.schaftHub : 0)) * ws;
+                for (const stufe of zeile ? Object.keys(zeile).map(Number).filter((s) => zeile[s] !== undefined) : kind === "tree" ? [1, 2] : [1]) {
                     const karte = kind === "tree" && stufe === 2;
                     const ns = netze(await build({ presetId: id, seed: 1, lod: karte ? 1 : stufe, season: "summer" }), stufe);
-                    const bezug = kind === "tree" ? hoehe : 1;
                     const K = { views: KARTE.views, texel: Math.max(hoehe / KARTE.cellH, (2 * ext) / KARTE.cellW) };
-                    const gewaehlt = S.fehler[kind] ? A._wechselGesetz(kind, stufe, bezug, ZEILEN) : A._wechselGesetz("tree", stufe, buch.renderConfig.lod.ref, ZEILEN);
-                    const pixel = S.fehler[kind] ? (S.fehler[kind][stufe] * bezug * F) / S.px : Infinity;
-                    const z = { kind, id, stufe, gewaehlt, am: versatz(n0, ns, stufe, karte, gewaehlt, F, atlas, K) };
-                    z.tafel = pixel > gewaehlt * 1.001 ? null : versatz(n0, ns, stufe, karte, pixel, F, atlas, K);
+                    const haushalt = kind === "tree" ? A._wechselGesetz("tree", stufe, Math.max(H, ref), ZEILEN) : null;
+                    const gewaehlt = kind === "tree" ? (zeile ? Math.max(A._wechselGesetz(kind, stufe, H, ZEILEN, undefined, id), haushalt) : haushalt) : zeile ? A._wechselGesetz(kind, stufe, 1, ZEILEN, undefined, id) : A._wechselGesetz("tree", stufe, ref, ZEILEN);
+                    const pixel = zeile ? (zeile[stufe] * (kind === "tree" ? H : 1) * F) / S.px : Infinity;
+                    const z = { kind, id, stufe, gewaehlt, am: versatz(n0, ns, stufe, karte, gewaehlt / ws, F, atlas, K) };
+                    z.tafel = pixel > gewaehlt * 1.001 ? null : versatz(n0, ns, stufe, karte, pixel / ws, F, atlas, K);
                     zeilen.push(z);
                     console.log(`  ${kind} ${id} L${stufe}: gewählt ${nachKomma(gewaehlt, 2)} m → ${nachKomma(z.am, 2)} px` + (z.tafel == null ? " (der Haushalt hält)" : ` · Pixel-Term ${nachKomma(pixel, 2)} m → ${nachKomma(z.tafel, 2)} px`));
                 }
