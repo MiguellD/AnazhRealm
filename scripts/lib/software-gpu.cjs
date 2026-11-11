@@ -4,11 +4,12 @@
 //     Vulkan im GPU-Prozess auf swiftshader + ANGLE auf swiftshader + keine Vulkan-Oberfläche (LINUX_SWAPCHAIN).
 //   · Windows: genau diese Schalter liefern KEINEN Adapter (der Renderer fiele still auf WebGL2); dort trägt nur Dawns Schalter.
 // DIE WEICHE: lokal fährt jede Linse den HARDWARE-Adapter, die CI (env CI=true) swiftshader; `LINSE_GPU=software` ist der
-// Rückweg für Paritäts-Läufe, `LINSE_GPU=hardware` erzwingt die Karte (nur unter Windows gemessen). Jede Linse nennt ihren
-// Adapter (`adapterZeile`), damit kein Bericht ein swiftshader-Ergebnis als Radeon ausgibt.
-// DIE ZEIT-ACHSE: eine Linse OHNE Zeit-Urteil fährt lokal die Karte (auch die WebGL-Familie), eine MIT (`zeit: true`)
-// swiftshader wie die CI — ihr Band ist dort geeicht. Die WebGL-Linse auf der Karte trägt WebGL2 wie auf swiftshader.
-// Die Wand: gate:start-rezept (scripts/diag-start-rezept.cjs).
+// Rückweg für Paritäts-Läufe, `LINSE_GPU=hardware` erzwingt die Karte (nur unter Windows gemessen), `LINSE_GPU=karte` (die
+// Karten-Jobs der CI, die GPU-Probe) die Karte unter Windows. Jede Linse nennt ihren Adapter (`adapterZeile`), damit kein Bericht
+// ein swiftshader-Ergebnis als Radeon ausgibt. Die WebGL-Linse auf der Karte trägt WebGL2 wie auf swiftshader.
+// (DIE ZEIT-ACHSE — eine Zeit-Linse, `zeit: true`, fuhr auch auf der Karte swiftshader, ihr Band war dort geeicht — fiel mit
+// w27-swift-raus: die GPU-Klasse urteilt nur noch auf der Karte, die Erst-Zeichnungs-Wand dort grün, die Garage urteilt an
+// Leicht, was es tut.) Die Wand: gate:start-rezept (scripts/diag-start-rezept.cjs).
 "use strict";
 
 const path = require("path");
@@ -48,37 +49,29 @@ function hardwareWebglArgs() {
     return ["--no-sandbox", "--disable-setuid-sandbox", "--ignore-gpu-blocklist", "--disable-blink-features=WebGPU", ...OHNE_INFO_SAMMLUNG];
 }
 
-// DIE EINE WEICHE: "software" (swiftshader) oder "hardware"; `zeit`: ein ms-/fps-Urteil fährt swiftshader wie die CI, außer
-// LINSE_GPU sagt es; `karte` (der Job `echt`, K65): die Karte ohne Zeit.
-function linsenGpu(env = process.env, plattform = process.platform, { zeit = false } = {}) {
+// DIE EINE WEICHE: "software" (swiftshader) oder "hardware"; `karte` (die Karten-Jobs der CI, K65): die Karte unter Windows.
+function linsenGpu(env = process.env, plattform = process.platform) {
     if (env.LINSE_GPU === "software" || env.LINSE_GPU === "hardware") return env.LINSE_GPU;
-    if (env.LINSE_GPU === "karte") return zeit || plattform !== "win32" ? "software" : "hardware";
+    if (env.LINSE_GPU === "karte") return plattform !== "win32" ? "software" : "hardware";
     if (env.LINSE_GPU) throw new Error(`LINSE_GPU=${env.LINSE_GPU} — erlaubt sind software, hardware und karte`);
-    if (env.CI === "true" || zeit) return "software";
+    if (env.CI === "true") return "software";
     return plattform === "win32" ? "hardware" : "software";
 }
 
 // Die Schalter jeder WebGPU-Linse (welt-boot `linse`, die Werkbank, die S0-Probe).
-function linsenWebGpuArgs(env = process.env, plattform = process.platform, o = {}) {
-    return linsenGpu(env, plattform, o) === "hardware" ? echteWebGpuArgs() : softwareWebGpuArgs(plattform);
+function linsenWebGpuArgs(env = process.env, plattform = process.platform) {
+    return linsenGpu(env, plattform) === "hardware" ? echteWebGpuArgs() : softwareWebGpuArgs(plattform);
 }
 
 // Die Schalter jeder WebGL-Linse (welt-boot `webgl`).
-function linsenWebglArgs(env = process.env, plattform = process.platform, o = {}) {
-    return linsenGpu(env, plattform, o) === "hardware" ? hardwareWebglArgs() : softwareWebglArgs();
+function linsenWebglArgs(env = process.env, plattform = process.platform) {
+    return linsenGpu(env, plattform) === "hardware" ? hardwareWebglArgs() : softwareWebglArgs();
 }
 
 // Software oder Karte am GELIEFERTEN Adapter (nicht am Wunsch): swiftshader/llvmpipe/lavapipe heißen Software.
 const SOFTWARE_ADAPTER = /swiftshader|llvmpipe|lavapipe|software|subzero/i;
 function istHardwareAdapter(info) {
     return !!info && !info.fehlt && !SOFTWARE_ADAPTER.test(`${info.vendor || ""} ${info.architecture || ""} ${info.renderer || ""}`);
-}
-
-// DIE ZEIT-ZEILE (W5): eine Zeit-Linse auf der Karte ist ROT — außer `echt`, dort misst sie unter dem GPU-Schloss.
-function zeitZeile({ zeit, art, info }) {
-    if (!zeit || art === "echt" || !istHardwareAdapter(info)) return null;
-    const a = info.renderer || `${info.vendor}/${info.architecture}`;
-    return `Zeit-Linse auf dem Hardware-Adapter (${a}) — ihr Band ist auf swiftshader geeicht, die geteilte Karte fälscht die Zeit; zeit: true fährt swiftshader`;
 }
 
 // DIE ADAPTER-ZEILE: der Adapter, den der Browser WIRKLICH liefert, als erste Zeile nach dem Start (eine eigene Probe-Seite, file://);
@@ -117,7 +110,6 @@ module.exports = {
     linsenGpu,
     linsenWebGpuArgs,
     linsenWebglArgs,
-    zeitZeile,
     adapterZeile,
     istHardwareAdapter,
     LINUX_SWAPCHAIN,

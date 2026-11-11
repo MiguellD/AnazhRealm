@@ -88,7 +88,8 @@ function nahDeckungInSeite(o) {
         // wiegende Streu
         if (nm.startsWith("nahWiese:L")) return { klasse: "Streu", name: nm };
         const art = artVonStoff(mat);
-        if (nm === "streuSatz") {
+        // die Senken der Nah-Streu (`streuNah:<Art>:…`, `_streuNahSenke`; jede zeichnet in der Arena ihres Stoffs)
+        if (nm.startsWith("streuNah:")) {
             // die wiegende Nah-Streu (Blume, Farn, Gestrüpp, Schilf) ist die Boden-Schicht
             if (wiegend.has(mat)) return { klasse: "Streu", name: "Streu " + (art || "?") };
             if (art === "laub") return { klasse: "Laub", name: "Streu-Laub" };
@@ -298,8 +299,20 @@ function nahDeckungInSeite(o) {
             if (!vor(W)) return { d };
             if (!S.boden) return { d, offen: true };
             if (!vor(W0)) return { d, vor: d < L / 2 && "Boden-Schicht" };
-            let h = null;
-            const traegt = (s) => Math.hypot(s.center.x - W0.x, s.center.z - W0.z) <= s.radius + 0.25 && W0.y >= s.center.y - s.radius;
+            // EIN LEIB IST NIE FLÄCHE DER LINSE — AUCH NICHT VOR DEM ZIEL (w27-ort-pose-voll): das dritte Bild (`S.leib`, ohne
+            // Boden-Schicht und ohne Leiber, `__zielMessen`) entscheidet. Zeigt es den Punkt, standen nur Leiber davor: frei, gemeldet
+            // beim Namen des nächsten (`leib`). Sonst steht der Verdecker in ihm, und der Name fragt dort: bis hier zeichnete die
+            // Tiefe den Leib, die Namens-Suche zählte ihn nicht — an der vollen Stadt verdeckte ein Bewohner 3,7 m vor dem Auge den
+            // Fuß des Wohnhauses, und die ±10-m-Hülle einer Kiefer 3,4 m neben der Linie hieß Verdecker („Laub baum_kiefer in 3.73 m";
+            // ohne die Leiber GRÜN „frei 14.6 m")
+            if (!S.leib) return { d, offen: true };
+            const W1 = S.leib.punkt(i);
+            if (!vor(W1)) return { d, leib: leibBei(W0) };
+            // DER SATZ BEIM NAMEN (w27-ort-pose): seine Hülle ist ohne Maß, die Hüllen-Frage unten übergeht ihn — der Stamm nennt
+            // die Zelle, in deren Kasten die Fläche liegt (`_satzZelleBei`). Vorher hieß die Wand eines Hauses im Bau-Satz
+            // „fern-ring“, die einzige Hülle über ihrem Fuß (stadt, GTX 1050: „Ziel Blickziel verdeckt von fern-ring in 24.2 m“)
+            let h = r._satzZelleBei(W1, S.leib.aus);
+            const traegt = (s) => Math.hypot(s.center.x - W1.x, s.center.z - W1.z) <= s.radius + 0.25 && W1.y >= s.center.y - s.radius;
             // DAS ZIEL IM SATZ (wie `legeDreiecke`: die Zelle eines Bau-Bereichs gehört `slotEntry[i]` ihrer Gruppe): steht die Fläche
             // über der Zelle eines Eintrags des Ziels, ist sie das Ziel. Die Suche unten liest keinen Satz — ein Haus, das der
             // Bau-Satz zeichnet, fand so nie seinen Eigner, und die kleinste fremde Hülle über dem Punkt hieß Verdecker (Radeon
@@ -307,12 +320,24 @@ function nahDeckungInSeite(o) {
             for (const s of satzVon.values())
                 for (const b of s.bloecke.values())
                     if (b.zellen.some((z, k) => zielZelle(b, k) && traegt(z.huelle.getBoundingSphere(zs)))) return { d };
-            st.scene.traverseVisible((obj) => zaehlt(obj) && !S.boden.aus.has(obj) && !satzVon.has(obj) && jeInstanz(obj, traegt, (ob, k) => !(h?.rad <= bs.radius) && (h = { rad: bs.radius, obj: ob, e: eintragVon(ob, k) }))); // prettier-ignore
+            st.scene.traverseVisible((obj) => zaehlt(obj) && !S.leib.aus.has(obj) && !satzVon.has(obj) && jeInstanz(obj, traegt, (ob, k) => !(h?.rad <= bs.radius) && (h = { rad: bs.radius, obj: ob, e: eintragVon(ob, k) }))); // prettier-ignore
             if (h?.e && OHNE.has(h.e.id)) return { d };
-            return { d: W0.distanceTo(E), vor: h ? klasseVon(h.obj, Array.isArray(h.obj.material) ? h.obj.material[0] : h.obj.material, h.e).name : "Satz oder Gelände" };
+            return { d: W1.distanceTo(E), vor: h ? klasseVon(h.obj, Array.isArray(h.obj.material) ? h.obj.material[0] : h.obj.material, h.e).name : "Satz oder Gelände" };
+        };
+        // DER NAME EINES LEIBS: „Leib <klasse>" des Leibs, dessen Lage (die Instanz im Satz, sonst der Ursprung des Meshes) dem
+        // Treffer am nächsten liegt — die Klasse des Stamms (`_kopfKlasse`) ohne „-satz" (bewohner, tier …)
+        const leibBei = (W) => {
+            const [q, m4] = [new T.Vector3(), new T.Matrix4()];
+            let [best, bd] = [null, Infinity];
+            const nimm = (o) => q.distanceTo(W) < bd && ([best, bd] = [o, q.distanceTo(W)]);
+            for (const o of S.leib.leiber)
+                if (o.isInstancedMesh) for (let k = 0; k < o.count; k++) o.getMatrixAt(k, m4), q.setFromMatrixPosition(m4).applyMatrix4(o.matrixWorld), nimm(o);
+                else o.getWorldPosition(q), nimm(o);
+            return "Leib " + (best ? String(r._kopfKlasse(best)[0] || best.name || "?").replace(/-satz$/, "") : "?");
         };
         const blick = S ? punkte.map(sieht) : [];
         const i = blick.findIndex((b) => b.vor);
+        const leib = blick.filter((b) => b.leib);
         zielOut = {
             name: Z.name || "Ziel",
             imBild,
@@ -320,6 +345,10 @@ function nahDeckungInSeite(o) {
             frei: S && !blick.some((b) => b.offen) ? i < 0 : null,
             vor: i < 0 ? null : (i ? `an Punkt ${i} ` : "") + blick[i].vor,
             vorAbstand: i < 0 ? null : +blick[i].d.toFixed(2),
+            // die Punkte, vor denen NUR Leiber standen (frei, gemeldet): ihre Zahl, der nächste Abstand, sein Name
+            leiber: leib.length
+                ? ((n) => ({ n: leib.length, naechster: +n.d.toFixed(2), name: n.leib }))(leib.reduce((a, b) => (b.d < a.d ? b : a)))
+                : null,
             abstand: +Math.hypot(Z.x - E.x, Z.y - E.y, Z.z - E.z).toFixed(2),
         };
     }

@@ -1169,7 +1169,7 @@ class AnazhRealm_dirigent_ankunft {
         if (st._deferredAvatarSoul) luecke("leib", "der Spieler erhält seinen Leib", !!this._foundry);
         if (!this._foundryEnabled()) return out;
         const f = this._foundry;
-        if (!f || !f.ready || !f.recipes) {
+        if (this._foundryBuchOffen()) {
             luecke("buch", "das Buch der Studios öffnet sich", !!(f && f.worker));
             return out;
         }
@@ -1514,8 +1514,8 @@ class AnazhRealm_dirigent_ankunft {
     // über dem Boden h₀ des Texels) abzüglich (y − h₀) je kürzestem Schritt; ohne Grat 0. Der Punkt des Schattens allein ist nicht
     // der Grat: ein Berg 3 km fern wirft ihn, der Kamm 200 m vor dem Hang steht höher (Dorf, Sonne 5°: die Karte las 8,1° im
     // Median, das Gesetz 10,3°, nahe Grate bis 10° zu flach). Das verdeckte Band 0 … α über `gratRad` beidseits des Azimuts der Sonne (die Karte kennt den
-    // Horizont nur zur Sonne: der Grat gilt dort als Wand) trägt je Abtastung die Strahlung des Himmels in Richtung ω (`strahlung`:
-    // die Himmels-Sicht der Atmosphäre, `himmelFarbe`) × max(n·ω, 0) × Δω/π — der Abzug von der mittleren Strahlung der
+    // Horizont nur zur Sonne: der Grat gilt dort als Wand) trägt je Abtastung die Strahlung des Himmels in Richtung ω (die
+    // Himmels-Sicht der Atmosphäre, `himmelFarbe`) × max(n·ω, 0) × Δω/π — der Abzug von der mittleren Strahlung der
     // Bestrahlung (`_spiegelUmgebung`). Außerhalb der Karte und wo sie ruht 0. Bis ferne.K4 sah der Hang hinter dem Grat den
     // ganzen Himmel; die freie 18-%-Karte 45 m über dem Dorf verliert nichts (Himmel 0,662 ↔ 0,684). Bis w25-ferne-licht las die
     // Strahlung die Umgebung der Stoffe in der Rauheit 0,5: ihre Keule mittelte am Horizont den Boden darunter, der Grat nahm dem
@@ -1525,10 +1525,13 @@ class AnazhRealm_dirigent_ankunft {
     // des Gesetzes mit seiner Normale; die PMREM-Stufe 1 trifft die Kosinus-Bestrahlung der Tafel auf 7 %).
     // Die drei Abtastungen (−⅔, 0, +⅔ · `gratRad` um das Azimut der Sonne) laufen in EINER Schleife (wie `falte`, K17-3): die
     // Strahlung steht einmal im Programm — ausgeschrieben stand sie dreimal in jedem Stoff (Boden der Bühne S0: +9 580 Zeichen).
-    _horizontHimmel(p, n, strahlung) {
+    // Sie teilen die Höhe el: die Breite der Tafel (`himmelBreite`) und das Azimut der Sonne stehen einmal vor der Schleife, je
+    // Abtastung nur die Lage um ±⅔ · `gratRad` versetzt (bis hier je Abtastung asin, acos und atan der vollen Richtung).
+    _horizontHimmel(p, n) {
         const T = THREE.TSL;
         const K = this._horizontKarte();
         const H = AnazhRealm.HORIZONT_KARTE;
+        const A = this._atmoLutBau();
         return T.Fn(() => {
             const q = K.zuUv(p.xz).toVar();
             const t = T.texture(K.rt.texture, q).level(0).toVar();
@@ -1544,26 +1547,45 @@ class AnazhRealm_dirigent_ankunft {
                 ),
                 0
             ).toVar();
-            const el = T.atan(tanA).mul(0.5).toVar();
-            const [ce, se] = [T.cos(el).toVar(), T.sin(el).toVar()];
-            const a = L.xz.div(flach).toVar();
+            // DAS GEWICHT DES BANDS (sin α × Δω/π, 0 außerhalb der Karte, wo sie ruht und ohne Grat) VOR der Schleife: die drei
+            // Abtastungen laufen nur, wo es trägt (w20-fern-hang: sie liefen auf jedem Pixel jedes Stoffs und wurden erst am Ende
+            // genullt — gpu-bank GTX wiese-ego 22,8 → 29,9 ms). Wo es 0 ist, war das Produkt 0; wo nicht, rechnet derselbe Term.
+            // Was die Schleife liest, steht vor dem Zweig (Lehre 26): `n` baut der Stoff, die Karte und das Licht dieser Rumpf.
+            // Gemessen (Radeon 890M, gpu-bank in EINER Welt, der Term je Runde getauscht, Median aus 4): wiese-ego 27,7 → 26,6 ms
+            // (ohne Term 26,2), genesis-ego 17,3 → 16,7 ms (15,9). Mittags trägt das Band an der Wiese auf 96 % des Bodens (1 km).
+            const w = tanA
+                .div(T.sqrt(tanA.mul(tanA).add(1)))
+                .mul((2 * H.gratRad) / (3 * Math.PI))
+                .mul(AnazhRealm._imEinheitsQuadrat(q))
+                .mul(K.U.aktiv)
+                .toVar();
             const summe = T.vec3(0).toVar();
-            T.Loop(3, ({ i }) => {
-                const d = T.float(i)
-                    .sub(1)
-                    .mul((2 / 3) * H.gratRad)
+            T.If(w.greaterThan(0), () => {
+                const el = T.atan(tanA).mul(0.5).toVar();
+                const [ce, se] = [T.cos(el).toVar(), T.sin(el).toVar()];
+                const a = L.xz.div(flach).toVar();
+                const v = A.himmelBreite(el).toVar();
+                const u = T.atan(a.y, a.x)
+                    .div(2 * Math.PI)
+                    .add(1)
                     .toVar();
-                const [c, s] = [T.cos(d), T.sin(d)];
-                const dir = T.vec3(a.x.mul(c).sub(a.y.mul(s)).mul(ce), se, a.x.mul(s).add(a.y.mul(c)).mul(ce)).toVar();
-                summe.addAssign(strahlung(dir).mul(T.max(n.dot(dir), 0)));
+                T.Loop(3, ({ i }) => {
+                    const d = T.float(i)
+                        .sub(1)
+                        .mul((2 / 3) * H.gratRad)
+                        .toVar();
+                    const [c, s] = [T.cos(d), T.sin(d)];
+                    const dir = T.vec3(
+                        a.x.mul(c).sub(a.y.mul(s)).mul(ce),
+                        se,
+                        a.x.mul(s).add(a.y.mul(c)).mul(ce)
+                    ).toVar();
+                    // die Strahlung des Himmels in Richtung dir: die Himmels-Sicht der Atmosphäre (`himmelFarbe`) an ihrer Lage
+                    const tx = A.himmelTexelUv(T.vec2(u.add(d.div(2 * Math.PI)).fract(), v));
+                    summe.addAssign(A.himmelFarbe(null, tx).mul(T.max(n.dot(dir), 0)));
+                });
             });
-            return summe.mul(
-                tanA
-                    .div(T.sqrt(tanA.mul(tanA).add(1)))
-                    .mul((2 * H.gratRad) / (3 * Math.PI))
-                    .mul(AnazhRealm._imEinheitsQuadrat(q))
-                    .mul(K.U.aktiv)
-            );
+            return summe.mul(w);
         })();
     }
 

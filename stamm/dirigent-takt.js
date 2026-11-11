@@ -538,6 +538,9 @@ class AnazhRealm_dirigent_takt {
               (f.buch ? 1 : 0)
             : 0;
         o.foundry += this._foundryIngestQueue ? this._foundryIngestQueue.length : 0;
+        // … und das Buch, das sich noch öffnet (`_foundryBuchOffen`, dieselbe Antwort wie `_weltbildFehlt`): ohne Faden und Buch
+        // hat die Bibliothek noch keinen Auftrag — die Welt baut trotzdem
+        o.foundry += this._foundryBuchOffen() ? 1 : 0;
         // … samt den Nähten im Faden (w4-b-boden2): Eintritte ohne Antwort (`_bodenImFlug`) und Teile, die der Takt noch anlegt
         o.chunks =
             (st.dirtyVoxelChunks ? st.dirtyVoxelChunks.size : 0) +
@@ -1099,6 +1102,7 @@ class AnazhRealm_dirigent_takt {
         let steps = 0;
         while (st._fixedAccumulator > 0 && steps < AnazhRealm.FIXED_MAX_STEPS) {
             st._fixedPrevPos.copy(mesh.position);
+            st._stossImSchritt = false; // der Stoß gehört seinem Schritt (`_stossEreignis` setzt ihn)
             this._stepFixedSim(simTime, FIXED_DT);
             st._fixedAccumulator -= FIXED_DT;
             simTime += FIXED_DT;
@@ -1108,7 +1112,13 @@ class AnazhRealm_dirigent_takt {
         if (steps >= AnazhRealm.FIXED_MAX_STEPS && st._fixedAccumulator > 0) st._fixedAccumulator = 0;
         st._fixedSimTime = simTime;
         // der Akkumulator liegt in (−FIXED_DT, 0]: die Wanduhr steht um 1 + Rest/FIXED_DT zwischen prev und cur
-        st._fixedAlpha = FIXED_DT > 0 ? 1 + st._fixedAccumulator / FIXED_DT : 1;
+        // DER STOSS STEHT IM BILD (physik.K2 Staffel 2; Bullet klemmt die gezeichnete Lage am Treffer: `synchronizeSingleMotionState`
+        // × `getHitFraction`): trug der letzte Schritt einen Stoß der gerittenen Hülle, zeichnet jedes Bild seines Paars die
+        // Stoß-Lage (cur), nie die Sehne davor. Der Wagen liegt genau EINEN Sim-Zustand an der Wand (der Stoß wirft ihn im
+        // nächsten Schritt zurück) — die Sehne zeigte ihn dort um (1 − alpha) · Weg des Schritts davor, im Schritt danach schon
+        // fort: bei 81,67 m/s prallte er im Bild 0,10–0,22 m VOR der Mauer ab (GTX da0e790f 0,218 m, headless 0,18 @60), während
+        // Funken, Klang und Kamera-Ruck desselben Bilds schon den Stoß trugen (`_stossEreignis`).
+        st._fixedAlpha = st._stossImSchritt || !(FIXED_DT > 0) ? 1 : 1 + st._fixedAccumulator / FIXED_DT;
         return steps;
     }
 

@@ -138,7 +138,7 @@ function selbsttest() {
         }),
         standBruch: Object.assign(phase(15072, 0, 0), {
             inhaltOhneFrames: 10,
-            inhaltOhneJe: { "streuSatz stand:ohne": 50, "boden stand:ohne": 10 },
+            inhaltOhneJe: { "formationenSatz stand:ohne": 50, "boden stand:ohne": 10 },
         }),
         augeAn: true,
         auge: Object.assign(phase(0, 0, 9), { kameraFrames: 0 }),
@@ -150,13 +150,13 @@ function selbsttest() {
     };
     const klon = () => jsonKlon(gruen);
     const fehler = [];
+    // ein grüner Fall des Selbsttests: rot ist ein Fehler beim Namen
+    const gruenFall = (name, v) => (v.length && fehler.push(`${name} fällt rot: ${v.join(" · ")}`), console.log(`  ${v.length ? "❌" : "✅"} Selbsttest ${name} → ${v.join(" · ") || "grün"}`)); // prettier-ignore
     // der echte Loop unter langsamem Takt: das Licht dreht in jedem Frame (die Sonne läuft schneller als eine Stufe je Frame),
     // die Kaskaden mit Box halten ihre Wahl über den Licht-Rand — grün
     const randSonne = (arbeitFrames, lichtRand) =>
         Object.assign(sonne(arbeitFrames, 199, 0.0004), { frames: 199, sonneRad: 0.19, mitBox: true, lichtRand });
-    const v1 = urteil(Object.assign(klon(), { sonne: randSonne(40, 32) }));
-    if (v1.length) fehler.push("der grüne Befund mit Licht-Rand fällt rot: " + v1.join(" · "));
-    console.log(`  ${v1.length ? "❌" : "✅"} Selbsttest grün mit Licht-Rand → ${v1.join(" · ") || "grün"}`);
+    gruenFall("grün mit Licht-Rand", urteil(Object.assign(klon(), { sonne: randSonne(40, 32) })));
     // RUHE MIT ÄNDERUNG (K): Arbeit und Bytes in Frames mit gedrehtem Licht sind die Arbeit der Änderung — grün; die
     // Linse nennt sie (die Werkbank fällte die laufende Sonne als „schreibt ohne Änderung"). Ein Satz-Inhalt mit benanntem
     // Grund ist im echten Loop (nicht streng) eine Änderung — in der eingefrorenen Welt der Wand fällt er rot (Fall unten).
@@ -164,11 +164,7 @@ function selbsttest() {
         inhaltFrames: 3,
         inhaltJe: { boden: { frames: 3, aenderung: 3, folge: 0, bereiche: 3, keys: ["+-901,-850"] } },
     });
-    const vL = SICHT.sichtUrteil({ ruhe: loopInhalt });
-    if (vL.length) fehler.push("der echte Loop mit Inhalts-Änderung fällt rot: " + vL.join(" · "));
-    console.log(
-        `  ${vL.length ? "❌" : "✅"} Selbsttest echter Loop mit Inhalts-Änderung → ${vL.join(" · ") || "grün"}`
-    );
+    gruenFall("echter Loop mit Inhalts-Änderung", SICHT.sichtUrteil({ ruhe: loopInhalt }));
     const mitAenderung = klon();
     Object.assign(mitAenderung.ruhe, {
         arbeit: werte(800, 0, 10000),
@@ -177,9 +173,7 @@ function selbsttest() {
         bytes: werte(5291, 0, 232320),
         schreibFrames: 69,
     });
-    const v2 = urteil(mitAenderung);
-    if (v2.length) fehler.push("Ruhe mit Änderung fällt rot: " + v2.join(" · "));
-    console.log(`  ${v2.length ? "❌" : "✅"} Selbsttest Ruhe mit Änderung (Licht) → ${v2.join(" · ") || "grün"}`);
+    gruenFall("Ruhe mit Änderung (Licht)", urteil(mitAenderung));
     // DIE KLASSE JE BYTE (`sichtBytesKlasse`): der Grund des Schreibers gegen die Änderung im selben Frame — ein Satz-Inhalt
     // zählt nur mit BENANNTEM Grund (`grund`), nie über die Zähler des Spiels (Stand, Verdichten)
     const kl = (f) => SICHT.sichtBytesKlasse(f);
@@ -194,8 +188,8 @@ function selbsttest() {
         ["Stand ohne Inhalt", bytes100("boden wahl:stand haupt"), "ohne"],
         [
             "Stand-Bruch (der Satz zählt nur seinen Stand)",
-            bytes100("streuSatz wahl:stand haupt", {
-                inhalt: { streuSatz: { stand: 5, verdichtet: 0, bereiche: 0, keys: [] } },
+            bytes100("formationenSatz wahl:stand haupt", {
+                inhalt: { formationenSatz: { stand: 5, verdichtet: 0, bereiche: 0, keys: [] } },
             }),
             "ohne",
         ],
@@ -294,7 +288,7 @@ function selbsttest() {
         ["Folge (die offene Ordnung lief)", { arbeit: 57, jePass: jp, inhalt: { boden: { grund: "folge" } } }, 0],
         [
             "Stand-Bruch (der Satz zählt nur seinen Stand)",
-            { arbeit: 57, jePass: jp, inhalt: { streuSatz: { stand: 5, verdichtet: 0, bereiche: 0, keys: [] } } },
+            { arbeit: 57, jePass: jp, inhalt: { formationenSatz: { stand: 5, verdichtet: 0, bereiche: 0, keys: [] } } },
             57,
         ],
     ]) {
@@ -442,21 +436,21 @@ function selbsttest() {
         bytes: 0,
         bytesJe: {},
         bytesGrund: {},
-        warum: { "streuSatz stand": 5, "bauSatz stand": 2, "boden stand": 2 },
+        warum: { "formationenSatz stand": 5, "bauSatz stand": 2, "boden stand": 2 },
         aufrufe: { _chunkSatzAbschnitt: 16, _hoehlenSicht: 3, _hoehlenSichtLicht: 2 },
         pruefung: { _passTrifft: 12109, _hoehlenRect: 1227 },
         trifft: {},
         treffer: { _satzAbschnittSteht: 61 },
         verfehlt: { _satzAbschnittSteht: 10 },
-        neu: { "satz streuSatz|haupt": 5, "satz bauSatz|haupt": 2 },
+        neu: { "satz formationenSatz|haupt": 5, "satz bauSatz|haupt": 2 },
         jePass: { haupt: { pruefung: 13336, ecken: 9816 }, k0: { pruefung: 1736, ecken: 0 } },
         ecken: 9816,
         inhalt: {
-            streuSatz: { stand: 5, verdichtet: 0, bereiche: 0, keys: [] },
+            formationenSatz: { stand: 5, verdichtet: 0, bereiche: 0, keys: [] },
             bauSatz: { stand: 2, verdichtet: 0, bereiche: 0, keys: [] },
             boden: { stand: 1, verdichtet: 0, bereiche: 0, keys: [] },
         },
-        inhaltOhne: { "streuSatz stand:ohne": 5, "bauSatz stand:ohne": 2, "boden stand:ohne": 1 },
+        inhaltOhne: { "formationenSatz stand:ohne": 5, "bauSatz stand:ohne": 2, "boden stand:ohne": 1 },
         licht: 0,
         kamera: 0,
         tag: 0.5,
@@ -468,7 +462,7 @@ function selbsttest() {
         [
             "Stand-Churn ohne Ursache in Ruhe (der Täter der Gegenprüfung)",
             ["ruhe=", churnPhase()],
-            /RUHE: Satz-Arbeit ohne Ursache in 5 von 5 Frames — streuSatz stand:ohne ×25/,
+            /RUHE: Satz-Arbeit ohne Ursache in 5 von 5 Frames — formationenSatz stand:ohne ×25/,
         ],
         [
             "Stand-Churn ohne Ursache: die Arbeit ist Arbeit ohne Änderung",
@@ -494,7 +488,7 @@ function selbsttest() {
                     frames: 5,
                     kameraFrames: 0,
                     arbeitOhne: { frames: 5, median: 14999, max: 14999 },
-                    taeter: ["satz streuSatz|haupt ×5", "werfer regionBundle:3,4|k0 ×2"],
+                    taeter: ["satz formationenSatz|haupt ×5", "werfer regionBundle:3,4|k0 ×2"],
                 }),
             ],
             /AUGE: das Auge atmet unter dem Halt, doch die Sicht-Kette arbeitet ohne Änderung in 5 von 5 Frames \(Median 14999/,
@@ -711,7 +705,7 @@ const server = statikServer();
                 cam.position.set(ex, boden + 1.7, ez);
                 cam.lookAt(ex + Math.sin(yaw) * 100, boden + 1.7, ez - Math.cos(yaw) * 100);
                 cam.updateMatrixWorld(true);
-                kaskaden.forEach((c, i) => {
+                kaskaden.forEach((c) => {
                     const h = c.right * 0.5;
                     const cx = ex + Math.sin(yaw) * h,
                         cz = ez - Math.cos(yaw) * h;
@@ -719,7 +713,6 @@ const server = statikServer();
                     c.lookAt(cx, boden, cz);
                     c.updateMatrixWorld(true);
                     c.updateProjectionMatrix();
-                    void i;
                 });
             };
             // EIN Frame der Sicht: das Hauptbild über `_passSicht`, dann jede Kaskade mit derselben Lage wie in `_passSicht`
@@ -953,7 +946,7 @@ const server = statikServer();
             // gemessen: 0 Löcher ohne Rand in 2805 Zellen) jede neue Lage in der alten trägt — erst quer wandern die Ebenen des
             // Frustums mit dem Auge, und nur der Halt als Rand (`L.halt`) trägt die Zellen an der Kante. Scharf: ohne Weg (`bruch`
             // "weg", der Punkt bis w24) legt jedes Bild neu an, der Weg ohne seinen Rand ("rand") reißt Löcher.
-            const fahrt = async (bruch) => {
+            const fahrt = async (bruch, yaw) => {
                 const [o, u] = [
                     { bilder: 30, neu: 0, geprueft: 0, loecher: 0, namen: [] },
                     st.lodUniforms.uLodAuge.value,
@@ -964,7 +957,7 @@ const server = statikServer();
                     vergiss();
                     for (let f = 0; f <= o.bilder; f++) {
                         await sleep(33);
-                        stelle(Math.PI / 5, 0, f * 0.667);
+                        stelle(yaw, 0, f * 0.667);
                         u.copy(cam.position);
                         const g0 = genHaupt();
                         frame();
@@ -979,7 +972,15 @@ const server = statikServer();
                 }
                 return o;
             };
-            [aus.fahrt, aus.fahrtOhneWeg, aus.fahrtOhneRand] = [await fahrt(), await fahrt("weg"), await fahrt("rand")];
+            // DIE STRECKE DER FAHRT trägt eine Kante: ob der Weg ohne seinen Rand Löcher reißt, hängt daran, dass die Fahrt das
+            // Fenster einer Zelle kreuzt — der Ort entscheidet das, nicht die Linse (z353 schräg, w27-wald-kosten-heim quer: am
+            // dichteren Bestand der Mess-Wiese, heim3-w20-wald-kosten, ließ die eine Strecke π/5 ohne Rand 0 Löcher in 5788 Zellen,
+            // die Linse fiel STUMPF). Die Fahrt wählt die erste Strecke der festen Reihe (π/5 zuerst, dann je π/4 gedreht), auf der
+            // der Täter ohne Rand Löcher reißt, und misst das Gesetz und den Täter ohne Weg auf GENAU dieser Strecke.
+            let yaw, FR;
+            for (let k = 0; k < 8 && !(FR?.loecher > 0); k++) FR = await fahrt("rand", (yaw = Math.PI * (0.2 + k / 4)));
+            [aus.fahrt, aus.fahrtOhneWeg, aus.fahrtOhneRand] = [await fahrt(0, yaw), await fahrt("weg", yaw), FR];
+            aus.fahrtYaw = +(yaw / Math.PI).toFixed(2);
             aus.saetze = [...st.chunkSaetze.values()].map((x) => x.art);
             const H = s.hoehle;
             aus.hoehle = H
@@ -1043,7 +1044,7 @@ const server = statikServer();
                 `${befund.drehTreue.geprueft} geprüft, ${befund.drehTreue.loecher} Löcher ${befund.drehTreue.namen.join(", ")}`
         );
     console.log(
-        `  Fahrt, ohne Weg, ohne Rand: ${JSON.stringify([befund.fahrt, befund.fahrtOhneWeg, befund.fahrtOhneRand])}`
+        `  Fahrt (Strecke ${befund.fahrtYaw} π), ohne Weg, ohne Rand: ${JSON.stringify([befund.fahrt, befund.fahrtOhneWeg, befund.fahrtOhneRand])}`
     );
     const v = urteil(befund);
     wandEnde(

@@ -156,15 +156,17 @@ async function welt() {
             const nw = st.nahWiese;
             // eine Senke der Nah-Wiese zieht in der Wahl der GPU: bis ihre Arena sie nimmt, zählt sie 0 (`_nahWieseBestand`)
             if (nw) for (const a of nw.senken.values()) senke(a.name, a.mesh, a.mesh?.__arena ? a.anzahl : 0);
+            // die Senken der Nah-Streu ebenso (w27-takt-streu, `_nahStreuBestand`): ihr Bestand trägt jede Pflanze ihrer Blöcke
             const ns = st.nahStreu;
             if (ns)
                 for (const a of ns.senken.values()) {
                     let summe = 0;
                     for (const b of a.bloecke.values()) summe += b.n;
-                    if (summe !== a.anzahl)
-                        befunde.push({ senke: a.name, art: `Σ Blöcke ${summe} ≠ Anzahl ${a.anzahl}`, pass: "keiner", dreiecke: 0 });
-                    if (a.mesh !== undefined)
-                        befunde.push({ senke: a.name, art: "die Senke trägt eine Mesh (sie zeichnet selbst)", pass: "keiner", dreiecke: 0 });
+                    if (summe > a.anzahl)
+                        befunde.push({ senke: a.name, art: `Σ Blöcke ${summe} > Plätze ${a.anzahl}`, pass: "keiner", dreiecke: 0 });
+                    if (summe > 0 && !a.mesh)
+                        befunde.push({ senke: a.name, art: "Blöcke ohne Bestand (keine Mesh)", pass: "keiner", dreiecke: 0 });
+                    if (a.mesh) senke(a.name, a.mesh, a.mesh.__arena ? a.anzahl : 0);
                 }
             // A — jede verfolgte Senke: aus dem Graphen nur mit Abschied, im Graphen nie mit. Eine Satz-Gruppe (Welle 6,
             // `g.satz`) hängt an keinem Eltern-Knoten — der Bau-Satz ihres Stoffs zeichnet sie: ihre Senke lebt, solange die

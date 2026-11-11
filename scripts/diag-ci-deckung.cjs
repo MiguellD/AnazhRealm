@@ -1,8 +1,9 @@
 // diag-ci-deckung.cjs — DIE DECKUNGS-WAND DER CI: jede Art, einen Schritt zu verlieren, zu vervielfachen oder stumm zu
 // schalten, steht beim Namen — (G) GRUPPE · (V) FORM, KOPF, SCHLÜSSEL · (D) DOPPELT · (W)/(A)/(R)/(F) die Gegenrichtung ·
-// (S) STUMM · (K) KLASSE · (E) ECHT · (T) WAAGE · (P) PLAYTEST · (H) WEITER · (U) URTEIL (kein rotes Vorderglied verbirgt einen
-// Schritt, der Job nennt jeden roten), je Regel an ihrer Funktion erklärt. check.yml trägt die Jobs
-// puls (je Push), kopf und voll (unter VOLL_WENN) und echt; ein weiterer Job ist ROT.
+// (S) STUMM · (K) KLASSE (die volle Batterie cpu, die Karte gpu — kein swiftshader-Schritt im Zug) · (E) ECHT (die Karten: je
+// Schritt GENAU ein Bein) · (T) WAAGE · (P) PLAYTEST · (H) WEITER · (U) URTEIL (kein rotes Vorderglied verbirgt einen Schritt, der
+// Job nennt jeden roten), je Regel an ihrer Funktion erklärt. check.yml trägt die Jobs puls (je Push), kopf und voll (unter
+// VOLL_WENN) und echt (die Karten); ein weiterer Job ist ROT.
 //   node scripts/diag-ci-deckung.cjs [--selftest]     (npm run gate:ci-deckung; in npm run check)
 "use strict";
 const { execSync } = require("child_process");
@@ -35,52 +36,59 @@ const KOPF_JOB = "kopf";
 const KOPF_LAUF = /^node scripts\/ci-kopf\.cjs$/;
 const VOLL_NACH_KOPF = "needs.kopf.outputs.voll == 'ja'";
 const needsVon = (J) => [].concat(J?.needs || []);
-// (E) DIE ECHT-GRUPPE: GPU-Schritte von `voll` und die Wände der Karte (gate:…:echt) auf dem eigenen Läufer, hinter dem
-// Kopf-Richter (`echt`), nie pull_request; je Schritt eine Frist, der Job ≤ ECHT_DECKEL_MIN, sein Plan ≤ ECHT_PLAN_S (T).
+// (E) DIE KARTEN (w27-swift-raus): jede Wand der GPU-Klasse auf einem eigenen Läufer mit der echten Karte, hinter dem
+// Kopf-Richter (`echt`), nie pull_request — DREI BEINE ZUGLEICH (matrix.karte; der Läufer heißt bis zum ersten Bindestrich wie
+// seine Karte, sein Label `<karte>-gpu`, gpu-probe.yml gibt demselben Label Vorfahrt); je Schritt GENAU ein Bein und eine Frist,
+// kein Bein leer, der Job ≤ ECHT_DECKEL_MIN, der Plan je Bein ≤ ECHT_PLAN_S (T). Die Klasse jedes Schritts urteilt (K).
 const ECHT_JOB = "echt";
+// die Zug-Zweige: integ-probe (der Kandidat) und die Hälften der Bisektion (zug.cjs teile) — dort und nachts urteilen die Karten
+const ZUG_REFS = ["integ-probe", "zug-a", "zug-b"];
 const ECHT_WENN =
-    "(github.event_name == 'schedule' || (github.event_name == 'push' && github.ref == 'refs/heads/integ-probe')) && " +
-    "needs.kopf.result == 'success' && needs.kopf.outputs.echt == 'ja'";
+    "(github.event_name == 'schedule' || (github.event_name == 'push' && (" +
+    ZUG_REFS.map((z) => `github.ref == 'refs/heads/${z}'`).join(" || ") +
+    "))) && needs.kopf.result == 'success' && needs.kopf.outputs.echt == 'ja'";
 const [ECHT_DECKEL_MIN, ECHT_PLAN_S] = [45, 20 * 60];
+const ECHT_LAEUFER = ["self-hosted", "${{ matrix.karte }}-gpu"];
+// das Bein eines Karten-Schritts: `if: ${{ !cancelled() && matrix.karte == '<karte>' }}` (null: keines)
+const BEIN_RE = /^\s*(?:\$\{\{)?\s*!cancelled\(\)\s*&&\s*matrix\.karte\s*==\s*'([a-z][a-z0-9]*)'\s*(?:\}\})?\s*$/;
+const beinVon = (s) => (BEIN_RE.exec(String(s.if)) || [])[1] || null;
+const kartenVon = (doc) => [].concat(jobsVon(doc)[ECHT_JOB]?.strategy?.matrix?.karte || []);
 function echtForm(doc) {
     const E = jobsVon(doc)[ECHT_JOB];
     if (!E) return [];
-    const V = doc.jobs[VOLL_JOB] || {};
-    const gpu = new Set(
-        (V.strategy?.matrix.include || []).filter((e) => e.klasse === "gpu").map((e) => e.gruppe)
-    );
-    const soll = new Set(
-        gateSchritte(doc)
-            .filter((s) => s.job === VOLL_JOB && gpu.has(s.gruppe))
-            .map((s) => s.run)
-    );
     const v = [];
     const env = E.env || {};
+    const karten = E.strategy?.matrix?.karte;
+    if (!Array.isArray(karten) || !karten.length || new Set(karten).size !== karten.length || !karten.every((k) => /^[a-z][a-z0-9]*$/.test(k)))
+        v.push(`(E) KARTEN: „${ECHT_JOB}" matrix.karte ${JSON.stringify(karten)} ist keine Liste verschiedener Karten`);
+    if (!E.strategy || E.strategy["fail-fast"] !== false)
+        v.push(`(E) FAIL-FAST: „${ECHT_JOB}" strategy.fail-fast ist nicht false`);
     if (
-        []
-            .concat(E["runs-on"] || [])
-            .sort()
-            .join(" + ") !== "echt-gpu + self-hosted" ||
+        JSON.stringify([].concat(E["runs-on"] || [])) !== JSON.stringify(ECHT_LAEUFER) ||
         env.CI_KLASSE !== "gpu" ||
         env.LINSE_GPU !== "karte"
     )
         v.push(
-            `(E) ECHT: „${ECHT_JOB}" läuft nicht auf self-hosted + echt-gpu mit env CI_KLASSE gpu und LINSE_GPU karte`
+            `(E) ECHT: „${ECHT_JOB}" läuft nicht auf [${ECHT_LAEUFER.join(", ")}] mit env CI_KLASSE gpu und LINSE_GPU karte`
         );
     if (normWenn(E.if) !== normWenn(ECHT_WENN) || !needsVon(E).includes(KOPF_JOB))
         v.push(`(E) ECHT: „${ECHT_JOB}" läuft unter „${E.if}" statt hinter dem Kopf-Richter unter ${ECHT_WENN}`);
     if (!(Number(E["timeout-minutes"]) > 0 && Number(E["timeout-minutes"]) <= ECHT_DECKEL_MIN))
         v.push(`(E) DECKEL: „${ECHT_JOB}" timeout-minutes ${E["timeout-minutes"]} (Soll 1–${ECHT_DECKEL_MIN})`);
+    const je = new Map((Array.isArray(karten) ? karten : []).map((k) => [k, 0]));
     for (const s of gates(E)) {
-        if (!soll.has(lauf(s)) && !/^npm run gate:[a-z0-9:-]+:echt$/.test(lauf(s)))
-            v.push(
-                `(E) ECHT: „${name(s)}" ist kein Schritt der GPU-Klasse von „${VOLL_JOB}" und keine Wand der Karte (gate:…:echt)`
-            );
+        const k = beinVon(s);
+        if (!k)
+            v.push(`(E) BEIN: „${name(s)}" trägt kein Bein (if: ${s.if})`);
+        else if (!je.has(k))
+            v.push(`(E) BEIN: „${name(s)}" trägt die Karte „${k}" außerhalb der Matrix`);
+        else je.set(k, je.get(k) + 1);
         if (!(Number(s["timeout-minutes"]) > 0))
             v.push(
                 `(E) FRIST: „${name(s)}" trägt keine timeout-minutes — er hielte die Karte bis zum Job-Deckel (node scripts/ci-zeiten.cjs)`
             );
     }
+    for (const [k, n] of je) if (!n) v.push(`(E) LEER: das Bein „${k}" trägt keinen Schritt`);
     return v;
 }
 // die volle Stufe: der Kopf-Richter unter VOLL_WENN und die Batterie hinter ihm (ihr Rot hält den Merge, (S))
@@ -148,6 +156,13 @@ const AUSNAHMEN = {
             "die Karte der fernen Eiche —, und die Erst-Zeichnung des D-Blicks reißt zweimal die 600-s-Wand (lokal 369 s); " +
             "B nannte dort 1 ausgebrannten von 342 Foundry-Bauten (offen benannt). Lokal GRÜN in 549 s, D seit 3ec8844b " +
             "an der Wurzel geheilt (Feld gegen Mesh 0,99 aus der EINEN Aufnahme)",
+    },
+    "gate:studio-huelle": {
+        klasse: KLASSEN.ROT,
+        // der Gang (--engine) urteilt die Zeit nur auf der Karte (Lehre 17); die swiftshader-Fassung der vollen Batterie war ein
+        // falsches Grün und fiel mit w27-swift-raus. Selbsttest und Baum (H1–H5) fahren in npm run check, der Gang je Zweig als
+        // GPU-Probe; GPU-Proben 10.11. an main 2d5f4146: gtx1050-desktop 398 s, radeon-890m 152–173 s, omen-gtx1060 208–444 s
+        grund: "auf jeder Karte ROT an H7 (koerperstudio p95 Neubau 1,2–6,9 s > 1 s, tetrapoda 1,5 s) und H8 (GPU-ms der Leiste gegen die Bank: koerperstudio, tetrapoda, terrain) — die Heilung ist Studio-Arbeit",
     },
 };
 
@@ -288,6 +303,9 @@ function schrittStumm(datei, doc, job, j, s) {
     const vollStufe = datei === path.basename(DATEI) && (imVollenLauf(doc, job) || (job === ECHT_JOB && !echtForm(doc).length));
     if (j.if !== undefined && !IMMER.test(String(j.if)) && !vollStufe) return `der Job „${job}" läuft nur unter „${j.if}"`;
     if (an(s["continue-on-error"])) return "continue-on-error am Schritt";
+    // das Bein eines Karten-Schritts ist seine Gruppe: es läuft, wenn die Matrix die Karte trägt
+    if (job === ECHT_JOB && beinVon(s))
+        return kartenVon(doc).includes(beinVon(s)) ? null : `die Karte „${beinVon(s)}" steht in keiner Matrix (läuft nie)`;
     if (s.if !== undefined && !IMMER.test(String(s.if))) {
         const [g, M] = [gruppeVon(s), j.strategy?.matrix?.gruppe];
         if (!g) return `läuft nur unter „${s.if}"`;
@@ -377,10 +395,11 @@ function deckung(skripte, docs, ausnahmen) {
             );
     }
     // (R) je Workflow-Datei: ein Schritt, dessen Befehle alle schon ein ANDERER Schritt fährt (einen Befehl, dessen Rot
-    // dieser Schritt hält, nur ein anderer, der es AUCH hält)
+    // dieser Schritt hält, nur ein anderer, der es AUCH hält) — auch zwischen Karte und voller Batterie (seit w27-swift-raus
+    // wiederholt die Karte keinen Schritt mehr: jede Wand an GENAU einer Stelle)
     for (const s of schritte) {
-        if (!s.teile.length || s.job === ECHT_JOB) continue; // die Echt-Gruppe wiederholt GPU-Schritte mit Absicht (E)
-        const andere = schritte.filter((o) => o !== s && o.datei === s.datei && o.job !== ECHT_JOB);
+        if (!s.teile.length) continue;
+        const andere = schritte.filter((o) => o !== s && o.datei === s.datei);
         const bei = (t) => andere.find((o) => o.teile.some((x) => x.t === t.t && (t.stumm || !x.stumm)));
         if (s.teile.every((t) => bei(t))) {
             const wer = [...new Set(s.teile.map((t) => bei(t).name))];
@@ -445,24 +464,20 @@ function gateSchritte(doc) {
     const out = [];
     for (const [job, j] of Object.entries(jobsVon(doc)))
         for (const s of gates(j)) {
-            out.push({ job, name: name(s), run: lauf(s), gruppe: gruppeVon(s), wenn: s.if });
+            out.push({ job, name: name(s), run: lauf(s), gruppe: gruppeVon(s) || beinVon(s), wenn: s.if });
         }
     return out;
 }
 
-// (Z) DIE ZUG-STELLE (R6, 07.11.): die volle Batterie fährt unter der R6-Shell; jeder Selbsttest läuft nachts, auf Abruf, auf
-// main und auf einem Diff, der nur seine Linse ändert — einer, der nie mehr liefe, ist ROT beim Namen; jede Wand hat im Zug
-// genau EINE Stelle: was der echt-Job wörtlich fährt, ruht dort in der vollen Batterie.
+// (Z) DER SELBSTTEST IM ZUG (R6, 07.11.): die volle Batterie fährt unter der R6-Shell; jeder Selbsttest läuft nachts, auf
+// Abruf, auf main und auf einem Diff, der nur seine Linse ändert — einer, der nie mehr liefe, ist ROT beim Namen. (Die Zug-Stelle
+// je Wand — was der echt-Job fuhr, ruhte im Zug auf swiftshader — fiel mit w27-swift-raus: dieselbe Wand an zwei Stellen ist (D).)
 function zugStelle(doc, skripte, r6 = R6) {
     const V = jobsVon(doc)[VOLL_JOB] || {};
     if (V.defaults?.run?.shell !== R6_SHELL) return [`(Z) R6: „${VOLL_JOB}" fährt nicht unter ${R6_SHELL}`];
     const env = (e, ref = "refs/heads/main") => ({ GITHUB_ACTIONS: "1", GITHUB_EVENT_NAME: e, GITHUB_REF: ref });
     const [v, aufrufe] = [[], new Set()];
-    for (const s of gates(V)) {
-        r6.r6Text(s.run, skripte, (a) => (aufrufe.add(a), {}), []);
-        if (gates(jobsVon(doc)[ECHT_JOB] || {}).some((e) => lauf(e) === lauf(s)) && !r6.r6ZugStelle(s.run, doc, env("push", "refs/heads/integ-probe")))
-            v.push(`(Z) ZWILLING: „${name(s)}" fährt im Zug auf swiftshader UND im echt-Job`);
-    }
+    for (const s of gates(V)) r6.r6Text(s.run, skripte, (a) => (aufrufe.add(a), {}), []);
     for (const a of aufrufe) {
         const linse = (/node\s+([\w./-]+\.c?js)/.exec(a) || [])[1];
         const nie = [env("schedule"), env("workflow_dispatch"), env("push")]
@@ -478,7 +493,7 @@ function urteil(doc) {
     for (const job of Object.keys(jobsVon(doc)))
         if (!GRUPPEN_JOBS.includes(job) && job !== KOPF_JOB && job !== ECHT_JOB)
             v.push(
-                `(V) JOB: „${job}" steht außerhalb von ${GRUPPEN_JOBS.join(" und ")} (und dem Kopf-Richter „${KOPF_JOB}", der Echt-Gruppe „${ECHT_JOB}") — die Waage sähe ihn nicht`
+                `(V) JOB: „${job}" steht außerhalb von ${GRUPPEN_JOBS.join(" und ")} (und dem Kopf-Richter „${KOPF_JOB}", den Karten „${ECHT_JOB}") — die Waage sähe ihn nicht`
             );
     for (const job of GRUPPEN_JOBS) {
         const J = jobsVon(doc)[job];
@@ -501,8 +516,9 @@ function urteil(doc) {
         v.push(...gruppenUrteil(job, J));
     }
     v.push(...kopfForm(doc), ...echtForm(doc));
-    // (D) über ALLE Jobs: ein Befehl, ein Name (die Echt-Gruppe wiederholt Schritte der GPU-Klasse mit Absicht, (E))
-    const alle = gateSchritte(doc).filter((s) => s.job !== ECHT_JOB);
+    // (D) über ALLE Jobs, die Karten eingeschlossen: ein Befehl, ein Name — seit w27-swift-raus ist der Schritt der vollen
+    // Batterie neben demselben auf der Karte kein Zwilling „mit Absicht" mehr, sondern ROT beim Namen
+    const alle = gateSchritte(doc);
     const zaehle = (key) => {
         const m = new Map();
         for (const s of alle) m.set(key(s), (m.get(key(s)) || []).concat(s));
@@ -637,37 +653,37 @@ function schluesselUrteil(docs) {
     return v;
 }
 
-// (K) DIE KLASSE: jede Voll-Gruppe trägt GENAU eine Klasse (matrix.include { gruppe, klasse: cpu | gpu }) und reicht sie als
-// CI_KLASSE an die Weiche (welt-boot), die zur Laufzeit urteilt; statisch steht jeder Schritt in der Klasse seines Rezepts.
-const KLASSEN_CI = ["cpu", "gpu"];
-const CI_KLASSE_ENV = "${{ matrix.klasse }}";
+// (K) DIE KLASSE (w27-swift-raus, 10.11.; der Schöpfer: „wieso noch die Übersetzung? … geprüft am System, wo's zählt"): die volle
+// Batterie trägt die Klasse cpu (env CI_KLASSE: cpu, keine Klasse je Gruppe — bis hier zeichneten die Gruppen 15–18 auf
+// GitHub-ubuntu mit swiftshader), die Karten die Klasse gpu. Statisch steht jeder Schritt in der Klasse seines Rezepts
+// (scripts/lib/ci-klasse.cjs, die Werkbank eingeschlossen): ein Echt-Rezept in der vollen Batterie ist ein swiftshader-Schritt im
+// Zug — ROT beim Namen, seine EINE Stelle ist die Karte; ein Karten-Schritt ohne Echt-Rezept zeichnet dort nie — seine Stelle ist
+// eine CPU-Gruppe. Zur Laufzeit urteilen die Weiche (welt-boot, CI_KLASSE) und `werkbank start` dasselbe.
+const CI_KLASSE_VOLL = "cpu";
 function klassenUrteil(doc, skripte, lies) {
     const v = [];
     const J = jobsVon(doc)[VOLL_JOB];
-    if (!J) return v;
-    const M = J.strategy?.matrix || {};
-    const gruppen = Array.isArray(M.gruppe) ? M.gruppe : [];
-    const klasse = new Map();
-    for (const e of Array.isArray(M.include) ? M.include : []) {
-        if (!e || !gruppen.includes(e.gruppe)) v.push(`(K) KLASSE: matrix.include ${JSON.stringify(e)} nennt keine Gruppe der Matrix`);
-        else if (!KLASSEN_CI.includes(e.klasse))
-            v.push(`(K) KLASSE: Gruppe ${e.gruppe} trägt die Klasse „${e.klasse}" (Soll ${KLASSEN_CI.join(" oder ")})`);
-        else if (klasse.has(e.gruppe)) v.push(`(K) KLASSE: Gruppe ${e.gruppe} trägt zwei Klassen`);
-        else klasse.set(e.gruppe, e.klasse);
+    if (J) {
+        const M = J.strategy?.matrix || {};
+        if (M.include || M.klasse)
+            v.push(`(K) KLASSE: „${VOLL_JOB}" trägt eine Klasse je Gruppe — die volle Batterie ist cpu`);
+        if (!J.env || J.env.CI_KLASSE !== CI_KLASSE_VOLL)
+            v.push(`(K) KLASSE: „${VOLL_JOB}" reicht CI_KLASSE ${J.env?.CI_KLASSE} statt ${CI_KLASSE_VOLL}`);
+        for (const s of gates(J)) {
+            const k = klasseDesLaufs(s.run, skripte, lies);
+            if (k.klasse === "gpu")
+                v.push(
+                    `(K) SWIFTSHADER: „${name(s)}" (${VOLL_JOB} Gruppe ${gruppeVon(s)}) startet ein Echt-Rezept — ${k.wo}: seine Stelle ist die Karte`
+                );
+        }
     }
-    for (const g of gruppen)
-        if (!klasse.has(g))
-            v.push(`(K) KLASSE: Gruppe ${g} von „${VOLL_JOB}" trägt keine Klasse (matrix.include { gruppe: ${g}, klasse: cpu | gpu })`);
-    if (!J.env || J.env.CI_KLASSE !== CI_KLASSE_ENV)
-        v.push(`(K) KLASSE: „${VOLL_JOB}" reicht die Klasse nicht als CI_KLASSE: ${CI_KLASSE_ENV} an seine Schritte — die Weiche urteilt blind`);
-    for (const s of gates(J)) {
-        const g = gruppeVon(s);
-        if (!g) continue; // (G) urteilt
+    const E = jobsVon(doc)[ECHT_JOB];
+    for (const s of E ? gates(E) : []) {
         const k = klasseDesLaufs(s.run, skripte, lies);
-        if (klasse.get(g) === "cpu" && k.klasse === "gpu")
-            v.push(`(K) CPU-GRUPPE: „${name(s)}" (Gruppe ${g}) startet ein Echt-Rezept — ${k.wo}`);
-        if (klasse.get(g) === "gpu" && k.klasse === "cpu")
-            v.push(`(K) GPU-GRUPPE: „${name(s)}" (Gruppe ${g}) braucht keinen Echt-Renderer — er gehört in eine CPU-Gruppe`);
+        if (k.klasse === "cpu")
+            v.push(
+                `(K) KARTE: „${name(s)}" (${ECHT_JOB} ${beinVon(s)}) startet kein Echt-Rezept — seine Stelle ist „${VOLL_JOB}"`
+            );
     }
     return v;
 }
@@ -678,6 +694,9 @@ function selbsttestKlasse() {
         "lib/h.cjs": 'starteBrowser({ art: "linse", frist: 1 });',
         "b.cjs": 'const BILD = process.argv.includes("--bild");\nstarteBrowser({ art: BILD ? "linse" : "null" });',
         "s.cjs": 'const SELBST = SELBSTTEST;\nstarteBrowser({ art: SELBST ? "null" : "linse" });',
+        "w.cjs": "const tor = werkbankTor(4596);",
+        "l.cjs":
+            'async function lichtLauf() {\n    await starteBrowser({ art: ECHT ? "echt" : "linse" });\n}\nif (argv.includes("--licht")) return lichtLauf();\nstarteBrowser({ art: "standard" });',
     };
     const lies = (f) => {
         const k = Object.keys(dateien).find((d) => f.replace(/\\/g, "/").endsWith("/scripts/" + d));
@@ -689,41 +708,53 @@ function selbsttestKlasse() {
         "gate:b": "node scripts/b.cjs",
         "gate:b-bild": "node scripts/b.cjs --bild",
         "gate:s": "node scripts/s.cjs --selftest && node scripts/s.cjs",
+        "gate:s-selbst": "node scripts/s.cjs --selftest",
+        "gate:w": "node scripts/w.cjs",
+        "gate:l": "node scripts/l.cjs --selftest",
+        "gate:l-licht": "node scripts/l.cjs --licht --selftest",
+        "gate:wb": "node scripts/werkbank.cjs licht --naesse --eigen --port 4699",
     };
+    const bein = (k) => `\${{ !cancelled() && matrix.karte == '${k}' }}`;
     const doc = () => ({
         jobs: {
             voll: {
                 if: VOLL_WENN,
-                env: { CI_KLASSE: CI_KLASSE_ENV },
-                strategy: {
-                    "fail-fast": false,
-                    matrix: {
-                        gruppe: [1, 2],
-                        include: [
-                            { gruppe: 1, klasse: "cpu" },
-                            { gruppe: 2, klasse: "gpu" },
-                        ],
-                    },
-                },
+                env: { CI_KLASSE: CI_KLASSE_VOLL },
+                strategy: { "fail-fast": false, matrix: { gruppe: [1, 2] } },
                 steps: [
                     { name: "A", if: "matrix.gruppe == 1", run: "npm run gate:a" },
                     { name: "B", if: "matrix.gruppe == 1", run: "npm run gate:b" },
-                    { name: "G", if: "matrix.gruppe == 2", run: "npm run gate:g" },
-                    { name: "B-Bild", if: "matrix.gruppe == 2", run: "npm run gate:b-bild" },
-                    { name: "S", if: "matrix.gruppe == 2", run: "npm run gate:s" },
+                    { name: "S-Selbst", if: "matrix.gruppe == 2", run: "npm run gate:s-selbst" },
+                    { name: "L", if: "matrix.gruppe == 2", run: "npm run gate:l" },
+                ],
+            },
+            echt: {
+                strategy: { "fail-fast": false, matrix: { karte: ["omen", "radeon"] } },
+                steps: [
+                    { name: "G auf der Karte", if: bein("omen"), run: "npm run gate:g" },
+                    { name: "B-Bild auf der Karte", if: bein("omen"), run: "npm run gate:b-bild" },
+                    { name: "S auf der Karte", if: bein("radeon"), run: "npm run gate:s" },
+                    { name: "W auf der Karte", if: bein("radeon"), run: "npm run gate:w" },
+                    { name: "L-Licht auf der Karte", if: bein("radeon"), run: "npm run gate:l-licht" },
+                    { name: "WB auf der Karte", if: bein("radeon"), run: "npm run gate:wb" },
                 ],
             },
         },
     });
+    const E = (d) => d.jobs.echt;
+    // DER MUTANT DES AUFTRAGS: ein swiftshader-gpu-Schritt kehrt in den Zug zurück — je Weg zum Echt-Rezept einer
+    const zurueck = (i, g = 1) => (d) => V(d).steps.push({ ...E(d).steps[i], if: "matrix.gruppe == " + g });
     const faelle = [
         ["die Klassen im Lot (grün)", () => {}, null],
-        ["ein Echt-Rezept über eine lib in der CPU-Gruppe", (d) => (V(d).steps[2].if = "matrix.gruppe == 1"), /\(K\) CPU-GRUPPE: „G" \(Gruppe 1\) startet ein Echt-Rezept — scripts\/g\.cjs → scripts\/lib\/h\.cjs/],
-        ["der Schalter --bild macht den Zweig echt", (d) => (V(d).steps[3].if = "matrix.gruppe == 1"), /\(K\) CPU-GRUPPE: „B-Bild" \(Gruppe 1\)/],
-        ["ohne --selftest zeichnet der Zweig echt", (d) => (V(d).steps[4].if = "matrix.gruppe == 1"), /\(K\) CPU-GRUPPE: „S" \(Gruppe 1\)/],
-        ["ein CPU-Schritt in der GPU-Gruppe", (d) => (V(d).steps[1].if = "matrix.gruppe == 2"), /\(K\) GPU-GRUPPE: „B" \(Gruppe 2\) braucht keinen Echt-Renderer/],
-        ["eine Gruppe ohne Klasse", (d) => V(d).strategy.matrix.include.pop(), /\(K\) KLASSE: Gruppe 2 von „voll" trägt keine Klasse/],
-        ["eine fremde Klasse", (d) => (V(d).strategy.matrix.include[0].klasse = "tpu"), /\(K\) KLASSE: Gruppe 1 trägt die Klasse „tpu"/],
-        ["die Klasse reist nicht an die Schritte", (d) => delete V(d).env, /\(K\) KLASSE: „voll" reicht die Klasse nicht als CI_KLASSE/],
+        ["ein Echt-Rezept über eine lib kehrt in die volle Batterie zurück", zurueck(0), /\(K\) SWIFTSHADER: „G auf der Karte" \(voll Gruppe 1\) startet ein Echt-Rezept — scripts\/g\.cjs → scripts\/lib\/h\.cjs .*seine Stelle ist die Karte/],
+        ["der Schalter --bild macht den Zweig echt", zurueck(1, 2), /\(K\) SWIFTSHADER: „B-Bild auf der Karte" \(voll Gruppe 2\)/],
+        ["ohne --selftest zeichnet der Zweig echt", zurueck(2), /\(K\) SWIFTSHADER: „S auf der Karte" \(voll Gruppe 1\)/],
+        ["die Werkbank einer Linse (werkbankTor) in der vollen Batterie", zurueck(3), /\(K\) SWIFTSHADER: „W auf der Karte" \(voll Gruppe 1\) startet ein Echt-Rezept — scripts\/w\.cjs \(werkbankTor/],
+        ["der Lauf hinter seinem Schalter (--licht) in der vollen Batterie", zurueck(4), /\(K\) SWIFTSHADER: „L-Licht auf der Karte" \(voll Gruppe 1\)/],
+        ["die Werkbank mit eigener Welt (--eigen) in der vollen Batterie", zurueck(5), /\(K\) SWIFTSHADER: „WB auf der Karte" \(voll Gruppe 1\) startet ein Echt-Rezept — „node scripts\/werkbank\.cjs licht --naesse --eigen/],
+        ["ein CPU-Schritt (Null-Renderer) auf der Karte", (d) => E(d).steps.push({ ...V(d).steps[0], if: bein("omen") }), /\(K\) KARTE: „A" \(echt omen\) startet kein Echt-Rezept/],
+        ["die GPU-Gruppe kehrt als Klasse zurück", (d) => (V(d).strategy.matrix.include = [{ gruppe: 1, klasse: "cpu" }, { gruppe: 2, klasse: "gpu" }]), /\(K\) KLASSE: „voll" trägt eine Klasse je Gruppe/],
+        ["die Klasse reist nicht an die Schritte", (d) => delete V(d).env, /\(K\) KLASSE: „voll" reicht CI_KLASSE undefined statt cpu/],
     ];
     const f = [];
     taeterFaelle(faelle, (d) => klassenUrteil(d, skripte, lies), { fehler: f, klon: doc });
@@ -785,9 +816,8 @@ function waage(doc, zeiten, alterVon = seitKopf, sperrt = LINIE) {
                 if (z > GROSS_S) gross.add(`„${name(s)}" ${minuten(z)}`);
                 if (!groesster || z > groesster[1]) groesster = [name(s), z];
             }
-            const kl = (M.include || []).find((e) => e && e.gruppe === g);
-            const klasse = job + (kl?.klasse ? ` ${kl.klasse}` : "");
-            const wer = g === null ? job : `${job} ${g}/${gs.length}${klasse.slice(job.length)}`;
+            const klasse = job;
+            const wer = g === null ? job : `${job} ${g}/${gs.length}`;
             gruppen.push({ job, art, klasse, plan: summe, n: mein.length, groesster, wer });
             if (art === "voll" && 1.2 * summe > 60 * J["timeout-minutes"])
                 v.push(`(T) FRIST: „${wer}" trägt im langsamen Lauf ${minuten(summe)} min, timeout-minutes ${J["timeout-minutes"]} hält nicht 1,2 × davon`);
@@ -814,17 +844,23 @@ function waage(doc, zeiten, alterVon = seitKopf, sperrt = LINIE) {
                     " — die Verteilung senkt sie: node scripts/ci-zeiten.cjs"
             );
     }
-    // (E) der Plan der Echt-Gruppe: ihre Vorbereitung und die Mediane ihrer Schritte auf der Karte, höchstens ECHT_PLAN_S
+    // (E) der Plan je Karte: die Vorbereitung ihres Läufers und die Zeiten ihrer Schritte auf der Karte, je Bein höchstens
+    // ECHT_PLAN_S — die Karten laufen zugleich, das schwerste Bein ist ihr Weg (die Wanduhr unten)
     const E = jobsVon(doc)[ECHT_JOB];
     if (E) {
-        const ze = zeiten?.echt || {};
-        let plan = Number(ze.vorbereitung_s) || 0;
-        for (const s of gates(E)) plan += gewicht(s, ECHT_JOB) || 0;
-        zeilen.push(`${ECHT_JOB} ${minuten(plan)}`);
-        if (ueber(plan, ECHT_PLAN_S))
-            v.push(
-                `(T) ECHT: „${ECHT_JOB}" trägt ${minuten(plan)} min (Deckel ${minuten(ECHT_PLAN_S)} min) — ein neuer echt-Schritt zahlt mit einem gestrichenen`
-            );
+        const vb = zeiten?.echt?.vorbereitung_s || {};
+        for (const k of kartenVon(doc)) {
+            const wer = `${ECHT_JOB} ${k}`;
+            if (!(Number(vb[k]) >= 0)) v.push(`(T) ZEITEN: ${ZEITEN} trägt keine echt.vorbereitung_s.${k}`);
+            let plan = Number(vb[k]) || 0;
+            for (const s of gates(E).filter((x) => beinVon(x) === k)) plan += gewicht(s, wer) || 0;
+            zeilen.push(`${wer} ${minuten(plan)}`);
+            if (!schwerste.has(ECHT_JOB) || plan > schwerste.get(ECHT_JOB)[1]) schwerste.set(ECHT_JOB, [wer, plan]);
+            if (ueber(plan, ECHT_PLAN_S))
+                v.push(
+                    `(T) ECHT: „${wer}" trägt ${minuten(plan)} min (Deckel ${minuten(ECHT_PLAN_S)} min)`
+                );
+        }
     }
     // (T) PLÄTZE: zugleich laufen alle Jobs des vollen Laufs außer denen, auf die ein anderer wartet
     const gewartet = new Set(imLauf.flatMap(([, J]) => needsVon(J)));
@@ -835,7 +871,8 @@ function waage(doc, zeiten, alterVon = seitKopf, sperrt = LINIE) {
             `(T) PLÄTZE: ein voller Lauf fährt ${plaetze} Jobs zugleich (${zugleich.map(([j, , n]) => `${j} ${n}`).join(" · ")}) — ` +
                 `das Konto hat ${LAEUFER_PLAETZE} Läufer-Plätze: ${plaetze - LAEUFER_PLAETZE} warten auf einen freien Platz und tragen die Wanduhr doppelt`
         );
-    // die WANDUHR (benannt, nie ROT): der längste Weg — je Job seine schwerste Gruppe plus die der Jobs, auf die er wartet
+    // die WANDUHR (benannt, nie ROT): der längste Weg — je Job seine schwerste Gruppe (die Karten: ihr schwerstes Bein) plus die
+    // der Jobs, auf die er wartet; die Karten belegen keinen Platz des Kontos (eigene Läufer), ihr Weg zählt
     const weg = (job, tiefe = 0) => {
         const J = doc.jobs[job];
         const eigen = schwerste.has(job) ? schwerste.get(job)[1] : 0;
@@ -843,7 +880,7 @@ function waage(doc, zeiten, alterVon = seitKopf, sperrt = LINIE) {
         const v0 = vor.reduce((m, x) => (x[0] > m[0] ? x : m), [0, ""]);
         return [v0[0] + eigen, (v0[1] ? v0[1] + " → " : "") + (schwerste.has(job) ? schwerste.get(job)[0] : job)];
     };
-    const wege = imLauf.map(([job]) => weg(job));
+    const wege = [...imLauf.map(([job]) => job), ...(E ? [ECHT_JOB] : [])].map((job) => weg(job));
     const laengster = wege.reduce((m, x) => (x[0] > m[0] ? x : m), [0, ""]);
     const voll = [...deckel].filter(([, k]) => k.art === "voll" && k.n > 1).map(([kl, k]) => `${kl} ${minuten(k.d)}`);
     return { v, zeilen, plaetze, wanduhr: laengster, gross: [...gross], deckel: voll, alt };
@@ -936,11 +973,13 @@ function selbsttestSchluessel() {
 
 // (V) KOPF: das Urteil des Kopf-Richters (scripts/ci-kopf.cjs) gegen die Fälle
 function selbsttestKopf(urteile = kopfUrteil) {
+    // je Karte ein Bein: „echt omen (…)", „echt radeon (…)", „echt gtx1050 (…)"
+    const BEINE = ["omen", "radeon", "gtx1050"];
     const gruen = (id, event = "push", voll = ["success", "success"], echt = []) => ({
         lauf: { id, event, status: "completed", conclusion: "success", head_branch: "integ-probe" },
         jobs: [{ name: "puls 1/2", conclusion: "success" }]
-            .concat(voll.map((c, i) => ({ name: `voll ${i + 1}/2 cpu`, conclusion: c })))
-            .concat(echt.map((c) => ({ name: "echt (GPU-Wände auf der Karte)", conclusion: c }))),
+            .concat(voll.map((c, i) => ({ name: `voll ${i + 1}/2`, conclusion: c })))
+            .concat(echt.map((c, i) => ({ name: `echt ${BEINE[i]} (GPU-Wände auf der Karte)`, conclusion: c }))),
     });
     const lauf = (x, lauf) => ({ ...x, lauf: { ...x.lauf, ...lauf } });
     const laufend = lauf(gruen(1), { status: "in_progress", conclusion: null });
@@ -973,9 +1012,14 @@ function selbsttestKopf(urteile = kopfUrteil) {
         ],
         // Richter 22.10.: der Nachtlauf fuhr auf schon grünem main
         [
-            "nachts auf grünem main (Batterie und Karte stehen)",
-            fall("schedule", [gruen(1, "push", undefined, ["success"])]),
+            "nachts auf grünem main (Batterie und jede Karte stehen)",
+            fall("schedule", [gruen(1, "push", undefined, ["success", "success", "success"])]),
             (u) => u.voll === "nein" && u.echt === "nein",
+        ],
+        [
+            "nachts, ein Bein der Karten rot (alle Karten fahren)",
+            fall("schedule", [gruen(1, "push", undefined, ["success", "failure", "success"])]),
+            (u) => u.voll === "nein" && u.echt === "ja",
         ],
         [
             "nachts, der Kopf stand rot (die Batterie fährt)",
@@ -1028,42 +1072,66 @@ function selbsttest() {
             },
         },
     });
-    // (E) die Echt-Gruppe in ihrer Form: B (GPU-Klasse) auf der Karte, mit Frist
-    const echtDazu = (d, schritt = { name: "B auf der Karte", run: "npm run gate:b", "timeout-minutes": 5 }) => {
-        V(d).strategy.matrix.include = [
-            { gruppe: 1, klasse: "cpu" },
-            { gruppe: 2, klasse: "gpu" },
-        ];
-        const env = { CI_KLASSE: "gpu", LINSE_GPU: "karte" };
-        return (d.jobs.echt = {
+    // (E) die Karten in ihrer Form: zwei Beine, je Schritt genau eines (D auf omen, W auf radeon), mit Frist
+    const bein = (k) => `\${{ !cancelled() && matrix.karte == '${k}' }}`;
+    const echtDazu = (d) =>
+        (d.jobs.echt = {
             needs: KOPF_JOB,
             if: ECHT_WENN,
-            "runs-on": ["self-hosted", "echt-gpu"],
+            strategy: { "fail-fast": false, matrix: { karte: ["omen", "radeon"] } },
+            "runs-on": [...ECHT_LAEUFER],
             "timeout-minutes": 30,
-            env,
-            steps: prep(schritt),
+            env: { CI_KLASSE: "gpu", LINSE_GPU: "karte" },
+            steps: [
+                CHECKOUT,
+                { uses: "actions/setup-node@v4" },
+                { name: "Dependencies", run: "npm ci --no-audit --no-fund" },
+                { name: "D auf der Karte", if: bein("omen"), run: "npm run gate:d", "timeout-minutes": 5 },
+                { name: "W auf der Karte", if: bein("radeon"), run: "npm run gate:w", "timeout-minutes": 5 },
+            ],
         });
-    };
     const faelle = [
         [
-            "ein echt-Schritt ohne Frist",
-            (d) => delete echtDazu(d).steps[4]["timeout-minutes"],
-            /\(E\) FRIST: „B auf der Karte" trägt keine timeout-minutes/,
+            "ein Karten-Schritt ohne Frist",
+            (d) => delete echtDazu(d).steps[3]["timeout-minutes"],
+            /\(E\) FRIST: „D auf der Karte" trägt keine timeout-minutes/,
         ],
         [
-            "echt über dem Job-Deckel (150 min)",
+            "die Karten über dem Job-Deckel (150 min)",
             (d) => (echtDazu(d)["timeout-minutes"] = 150),
             /\(E\) DECKEL: „echt" timeout-minutes 150/,
         ],
         [
-            "ein CPU-Schritt (Null-Renderer) auf der Karte",
-            (d) => echtDazu(d, { name: "A auf der Karte", run: "npm run gate:a", "timeout-minutes": 5 }),
-            /\(E\) ECHT: „A auf der Karte" ist kein Schritt der GPU-Klasse/,
-        ],
-        [
-            "echt ohne das Kopf-Urteil echt",
+            "die Karten ohne das Kopf-Urteil echt",
             (d) => (echtDazu(d).if = ECHT_WENN.replace(/ && needs\.kopf\.outputs\.echt == 'ja'/, "")),
             /\(E\) ECHT: „echt" läuft unter/,
+        ],
+        [
+            "die Karten nur auf integ-probe (die Hälften der Bisektion urteilten ohne Karte)",
+            (d) =>
+                (echtDazu(d).if = ECHT_WENN.replace(/ \|\| github\.ref == 'refs\/heads\/zug-[ab]'/g, "")),
+            /\(E\) ECHT: „echt" läuft unter .*refs\/heads\/zug-a/,
+        ],
+        [
+            "ein Karten-Schritt ohne Bein (er liefe auf jeder Karte)",
+            (d) => (echtDazu(d).steps[3].if = "${{ !cancelled() }}"),
+            /\(E\) BEIN: „D auf der Karte" trägt kein Bein/,
+        ],
+        [
+            "ein Bein außerhalb der Matrix (er liefe nie)",
+            (d) => (echtDazu(d).steps[3].if = bein("gtx1050")),
+            /\(E\) BEIN: „D auf der Karte" trägt die Karte „gtx1050" außerhalb der Matrix/,
+        ],
+        ["eine Karte ohne Arbeit", (d) => echtDazu(d).strategy.matrix.karte.push("gtx1050"), /\(E\) LEER: das Bein „gtx1050"/],
+        [
+            "die Karten an einem festen Label (alle Beine auf einem Läufer)",
+            (d) => (echtDazu(d)["runs-on"] = ["self-hosted", "echt-gpu"]),
+            /\(E\) ECHT: „echt" läuft nicht auf \[self-hosted, \$\{\{ matrix\.karte \}\}-gpu\]/,
+        ],
+        [
+            "derselbe Schritt in voll und auf der Karte (der Zwilling)",
+            (d) => echtDazu(d).steps.push({ name: "B auf der Karte", if: bein("omen"), run: "npm run gate:b", "timeout-minutes": 5 }),
+            /\(D\) DOPPELT: „npm run gate:b" läuft 2× \(voll\/2, echt\/omen\)/,
         ],
         ["ohne Gruppe (er liefe N-fach)", (d) => delete V(d).steps[5].if, /\(G\) N-FACH: „B"/],
         [
@@ -1187,9 +1255,8 @@ function selbsttest() {
 function selbsttestZug() {
     const [doc, sk] = [yaml.load(ausDatei(path.join(root, DATEI))), jsonLesen("package.json").scripts];
     const leer = () => ({ code: new Map(), text: "", namen: new Set(), zeilen: [] });
-    return [
+    const z = [
         ["die echte check.yml", R6, /^$/],
-        ["der Zwilling kehrt zurück", { ...R6, r6ZugStelle: () => null }, /ZWILLING: „Ziel-Zensus/],
         ["nachts ruht ein Selbsttest", { ...R6, r6Immer: (e) => e.GITHUB_EVENT_NAME !== "schedule" && R6.r6Immer(e) }, /NIE: „node scripts\/diag-kreatur-takt.*\(schedule/],
         ["die Linse fehlt in ihrer Abhängigkeit", { ...R6, r6Urteil: (a, kx) => R6.r6Urteil(a, kx, leer) }, /NIE: „node scripts\/diag-haus-welt.*Diff scripts\/diag-haus-welt/],
     ].flatMap(([n, r6, soll]) => {
@@ -1197,6 +1264,26 @@ function selbsttestZug() {
         console.log(`  ${soll.test(u) ? "✅" : "❌"} Selbsttest „${n}" → ${u.slice(0, 240) || "grün"}`);
         return soll.test(u) ? [] : [`(Z) „${n}" fällt nicht rot beim Namen`];
     });
+    // DER SWIFTSHADER-SCHRITT IM ZUG (w27-swift-raus) an der echten check.yml: eine Wand der Karte kehrt in die volle Batterie
+    // zurück — als Zwilling neben ihrer Karten-Stelle (K)+(D), allein (K), als Klasse je Gruppe (K); die Werkbank eingeschlossen
+    const karte = (d, re) => d.jobs[ECHT_JOB].steps.find((s) => re.test(String(s.run)));
+    const zurueck = (re, ganz) => (d) => {
+        const s = karte(d, re);
+        d.jobs[VOLL_JOB].steps.splice(-1, 0, { ...s, if: WEITER + "matrix.gruppe == 3" });
+        if (ganz) d.jobs[ECHT_JOB].steps.splice(d.jobs[ECHT_JOB].steps.indexOf(s), 1);
+    };
+    const urteile = (d) => [...urteil(d), ...klassenUrteil(d, sk)];
+    const s = [
+        ["die echte check.yml (die Klassen und jede Wand an einer Stelle)", () => {}, /^$/],
+        ["der Zwilling kehrt zurück (Ziel-Zensus in voll 3 UND auf der Karte)", zurueck(/gate:ziel-zensus$/), /^(?=.*\(K\) SWIFTSHADER: „Ziel-Zensus auf der Karte[^"]*" \(voll Gruppe 3\))(?=.*\(D\) DOPPELT: „npm run gate:ziel-zensus" läuft 2× \(voll\/3, echt\/omen\))/],
+    ].flatMap(([n, tat, soll]) => {
+        const d = yaml.load(ausDatei(path.join(root, DATEI)));
+        tat(d);
+        const u = urteile(d).join(" · ");
+        console.log(`  ${soll.test(u) ? "✅" : "❌"} Selbsttest „${n}" → ${u.slice(0, 300) || "grün"}`);
+        return soll.test(u) ? [] : [`(K)/(D) „${n}" fällt nicht rot beim Namen`];
+    });
+    return z.concat(s);
 }
 
 // (T) Die Waage gegen ein Fixture.
@@ -1219,13 +1306,19 @@ function selbsttestWaage() {
         z.schritte.Kopf = { s };
     };
     const gruppen = (d, n) => (d.jobs.voll.strategy.matrix.gruppe = Array.from({ length: n }, (_, i) => i + 1));
+    // die Karten: zwei Beine, W auf omen (s Sekunden), X auf radeon (300 s), je Läufer seine Vorbereitung
     const mitEcht = (d, z, s) => {
+        const bein = (k) => `\${{ !cancelled() && matrix.karte == '${k}' }}`;
         d.jobs.echt = {
             needs: KOPF_JOB,
             if: ECHT_WENN,
-            steps: prep({ name: "W", run: "npm run gate:w:echt" }),
+            strategy: { "fail-fast": false, matrix: { karte: ["omen", "radeon"] } },
+            steps: prep(
+                { name: "W", if: bein("omen"), run: "npm run gate:w:echt" },
+                { name: "X", if: bein("radeon"), run: "npm run gate:x" }
+            ),
         };
-        [z.echt, z.schritte.W] = [{ vorbereitung_s: 100 }, { s }];
+        [z.echt, z.schritte.W, z.schritte.X] = [{ vorbereitung_s: { omen: 100, radeon: 60 } }, { s }, { s: 300 }];
     };
     // [Name, Tat an Lage und Zeiten, Soll (Regex · null: grün · Prüfung am Ergebnis), Alter der Quelle in Merges oder „wurf"]
     const B100 = (d, z) => (z.schritte.B.s = 100);
@@ -1235,7 +1328,6 @@ function selbsttestWaage() {
         // (T) FRIST: G18 trug die Kamera-Leib-Linse (p90 898 s) neben 287 s, der Deckel 20 min brach 7 Läufe ab
         ["ein Deckel, der den langsamen Läufer nicht hält", (d, z) => Object.assign(d.jobs.voll, { "timeout-minutes": 20 }) && Object.assign(z.schritte, { A: { s: 898 }, C: { s: 287 } }), /\(T\) FRIST: „voll 1\/2" trägt im langsamen Lauf 20,1 min, timeout-minutes 20 hält nicht 1,2 × davon/],
         ["eine Voll-Gruppe über dem Mittel ihrer Klasse", B100, /\(T\) WAAGE: „voll 1\/2" trägt 6,2 min \(Deckel 4,6 min = Mittel der Klasse 4,1 \+ Rand 0,5\) — der größte Schritt „A" 3,3 min — die Verteilung senkt sie/],
-        ["dieselbe Last, je Klasse eine Gruppe (die Verteilung senkt nichts: grün)", (d, z) => B100(d, z) && (d.jobs.voll.strategy.matrix.include = [{ gruppe: 1, klasse: "cpu" }, { gruppe: 2, klasse: "gpu" }]), null],
         ["der Puls über 2 min", (d, z) => d.jobs.puls.steps.push(schritt("Format", 1)) && Object.assign(z.schritte, { Lint: { s: 90 }, Format: { s: 20 } }), /\(T\) WAAGE: „puls 1\/1" trägt 2,2 min \(Deckel 2,0 min je Push\) — der größte Schritt „Lint" 1,5 min — die Verteilung senkt sie/],
         ["ein Schritt ohne Zeit", (d, z) => delete z.schritte.B, /\(T\) UNGEMESSEN: „B" \(voll\)/],
         ["die Zeiten ohne Vorbereitung", (d, z) => delete z.vorbereitung_s, /\(T\) ZEITEN/],
@@ -1250,9 +1342,10 @@ function selbsttestWaage() {
         ["der Kopf-Richter belegt keinen Platz neben der Batterie", (d, z) => mitKopf(d, z) || gruppen(d, 19), (w) => !w.v.some((x) => /PLÄTZE/.test(x))],
         ["der längste Weg über 8 min (benannt, nie ROT)", (d, z) => mitKopf(d, z, 120), (w) => !w.v.length && minuten(w.wanduhr[0]) === "8,5" && w.wanduhr[1] === "kopf → voll 1/2"],
         // (E) der Plan der Echt-Gruppe
-        ["echt im Plan (grün)", (d, z) => mitEcht(d, z, 900), null],
-        ["echt über dem Deckel", (d, z) => mitEcht(d, z, 1300), /\(T\) ECHT: „echt" trägt 23,3 min \(Deckel 20,0 min\)/],
-        ["ein echt-Schritt ohne Zeit", (d, z) => mitEcht(d, z, 900) || delete z.schritte.W, /\(T\) UNGEMESSEN: „W" \(echt\)/],
+        ["die Karten im Plan (grün)", (d, z) => mitEcht(d, z, 900), null],
+        ["ein Bein über dem Deckel", (d, z) => mitEcht(d, z, 1300), /\(T\) ECHT: „echt omen" trägt 23,3 min \(Deckel 20,0 min\)/],
+        ["ein Karten-Schritt ohne Zeit", (d, z) => mitEcht(d, z, 900) || delete z.schritte.W, /\(T\) UNGEMESSEN: „W" \(echt omen\)/],
+        ["das schwerste Bein ist der Weg der Karten (benannt, nie ROT)", (d, z) => mitKopf(d, z, 120) || mitEcht(d, z, 900), (w) => !w.v.length && w.wanduhr[1] === "kopf → echt omen" && minuten(w.wanduhr[0]) === "19,0"],
     ];
     const f = [];
     for (const [n, tat, soll, alter = 0, sperrt = true] of faelle) {

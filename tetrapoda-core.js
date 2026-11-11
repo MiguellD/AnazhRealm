@@ -1854,8 +1854,12 @@
     // jagt ruheS nicht (Woelfe brechen die meisten Jagden ab: MacNulty et al. 2007, J. Mammal. 88:595). DIE WUNDE BREMST
     // (wundTempo): der Sprint eines verwundeten Leibs faellt mit dem Anteil seines Lebens hoch wundExp — der Riss folgt, wenn
     // die Bisse eines Rudels die Beute langsamer machen als den Jaeger; darum steigt der Erfolg mit der Zahl der Jaeger
-    // (MacNulty et al. 2012, Behav. Ecol. 23:75).
-    var JAGD_GESETZ = Object.freeze({ dauerS: 45, ruheS: 120, wundExp: 1.3 });
+    // (MacNulty et al. 2012, Behav. Ecol. 23:75). DIE WUNDE BREMST UNTER-LINEAR (wundExp 0,9, w27-wagen-spalt-3): bis hier 1,3,
+    // geeicht gegen einen Leib von 0,3 Hueft-Hoehen Radius — das Maul des Wolfs verfehlte die gezeichnete Haut der Beute um das
+    // Fett dazwischen (an main 39,6 Ansaetze je Jagd, 20 von 60 Rissen). Mit dem Leib der gezeichneten Haut trifft es (24,5
+    // Ansaetze, die Beute 6,4 → 4,2 m/s): unter 1,3 rissen vier Woelfe 55 von 60; mit dem Sehen der Tiere (w27-tiere-sicht, main
+    // 2d5f4146) unter 1 noch 24 von 60 (an der Kante 0,4), unter 0,9 sind es 17 von 60 (0,8: 6).
+    var JAGD_GESETZ = Object.freeze({ dauerS: 45, ruheS: 120, wundExp: 0.9 });
     function wundTempo(hpAnteil, J) {
         var a = hpAnteil > 0 ? (hpAnteil < 1 ? hpAnteil : 1) : 0;
         return Math.pow(a, J.wundExp);
@@ -1985,15 +1989,23 @@
     // saettigt und laesst seltene Beute liegen (Holling 1959, Typ III; der Jaeger wechselt zur haeufigen, Murdoch 1969). Die
     // Kaskade folgt aus den Lesern: ohne Woelfe waechst das Rotwild bis an seine Aesung und verbeisst den Jungwuchs (Ripple &
     // Beschta 2012).
+    // DIE DICHTE (tiere.K5, VERTRAGS-AKT 09.11.): dieselbe Gemeinschaft je Revier auf einem Drittel des Lands — revierM 200 → 113
+    // (12,6 → 4,0 ha, 4 × 4 statt 7 × 7 Zellen des Rasters rasterM), kopfJeHa 8 → 25 (K je Revier bleibt: 25 × 16 × 0,25 ha =
+    // 8 × 49 × 0,26 ha), fress 0,05 → 0,016 (der Verbiss je Zelle bleibt: derselbe Bestand aest auf 16 statt 49 Zellen). Was je
+    // Revier zaehlt (beuteVoll, geburt, tod, riss je Takt), bleibt — die Bilanz, die Kaskade und ihre Baender sind die des
+    // Reviers; nur das Land je Kopf faellt. Vorher trug das Gesetz 0,72 Koepfe je ha (16 ferne Reviere, 3 Spielstunden: je
+    // Revier Hirsch 4,8 · Wolf 2,5 · Baer 1,0 · Fuchs 0,8): am Weg eines Gehers (683 m in 10 Spielminuten) ankerten 3 von 110
+    // Tieren binnen 64 m, die Mess-Wiese zaehlte 1 Sichtung; die Karte verlangt 150 Tiere im 500-m-Ring (1,9 je ha). Ein
+    // dreifaches kopfJeHa allein hob den Bestand nur um die Haelfte (1,08 je ha: der Riss haelt das Rotwild je Revier bei ~5).
     var BESTAND_GESETZ = Object.freeze({
         taktS: 10,
-        revierM: 200,
+        revierM: 113,
         rasterM: 50,
-        kopfJeHa: 8,
+        kopfJeHa: 25,
         beuteVoll: 30,
         geburt: 0.1,
         tod: 0.2,
-        fress: 0.05,
+        fress: 0.016,
         riss: 0.6,
         rissHalb: 0.1,
     });

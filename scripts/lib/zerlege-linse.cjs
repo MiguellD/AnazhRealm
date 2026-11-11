@@ -161,7 +161,7 @@ function passUhr() {
 // 0,34 bei Breite 0,03–0,04; ein einhöckriger Pass überbrückt mit 2 % seiner Werte ~0,4 σ, gefordert wären ≥ 2 σ — er
 // bleibt ganz (rein = p50, anteilOben 0, versatz 0).
 function zweiGipfel(w) {
-    const a = w.filter(Number.isFinite).sort((a, b) => a - b);
+    const a = w.filter(Number.isFinite).sort(aufsteigend);
     const q = (b, f) => (b.length ? +rang(b, f).toFixed(2) : null);
     const n = a.length, m = Math.max(1, Math.ceil(n / 50)), k = Math.floor(n / 50);
     let j = 0;
@@ -203,9 +203,19 @@ function zweiGipfelSelbsttest() {
 // HÜLLE: die Marken tragen die vergröberte Seiten-Uhr, die Grenzen des Takts sind die des rAF-Rückrufs, der sie trägt
 // (`FunctionCall`, Spur-Uhr); ein Takt ohne Hülle ist ROT. Ein Bild reicht vom Anfang eines gerenderten Takts zum nächsten.
 // Pflicht ist alles außerhalb des Takts außer Zeitgeber/Idle (vertagbar; Pflicht nur, wo die Belegung das Bild-Fenster
-// überzieht), außer dem Geschirr und außer dem BODEN des Takt-Rahmens (`browser`, die Aufgabe ohne Kind-Ereignis:
-// `BROWSER_BODEN_MS` je Takt, gemessen an einer LEEREN WebGPU-Leinwand). ROT: Pflicht p95 > 1,0 ms je Bild.
+// überzieht) und außer dem Geschirr.
+// DER BODEN DES GERÄTS (w27-belegung-boden): was ein Bild ohne Spiel trägt, misst die Linse in DERSELBEN Sitzung an einer LEEREN
+// WebGPU-Leinwand (`bodenLeinwand`: je rAF ein Klar-Pass, so groß wie die Leinwand des Spiels, dieselben Schalter, dieselbe Spur;
+// `bodenAuswerten`) — je Klasse und Takt. Das Spiel urteilt als ÜBERSCHUSS über ihm: Pflicht = Spiel − Boden × Takte des Bilds;
+// Spiel, Boden und der Überschuss je Klasse stehen im Bericht. Bis hier zog die Linse je Takt einen festen Boden des Takt-Rahmens
+// ab (`BROWSER_BODEN_MS` 0,27 ms, an der Radeon mit 120 Hz gemessen); die GTX 1050 trägt an der leeren Leinwand browser
+// 0,50–0,57, lebenszyklus 0,13–0,16 und rueckruf 0,06–0,09 ms (10.11.) — ihr ROT war der Boden des Geräts. Der feste Wert bleibt
+// nur als Rückfall-NAME: scheitert die Leer-Messung, steht die Belegung UNGEMESSEN beim Namen, nie still über 0,27.
+// DIE GRENZE DES ÜBERSCHUSSES (Entscheid des Koordinators 10.11., dieselbe Strenge wie bis hier): die alte Grenze 1,0 ms trug die
+// Klassen des leeren Rahmens außer browser mit (lebenszyklus, rueckruf, rest — an der GTX 1050 0,25–0,35 ms je Bild); der neue
+// Boden zieht sie ab, die Grenze sinkt um sie: 1,0 − 0,3 = 0,7 ms. ROT: Überschuss p95 > `BELEGUNG_SCHWELLE_MS` je Bild.
 const BROWSER_BODEN_MS = 0.27;
+const BELEGUNG_SCHWELLE_MS = 0.7;
 const BELEGUNG_SPUR = ["toplevel", "devtools.timeline", "v8", "gpu", "blink.user_timing"];
 const BELEGUNG_KLASSEN = [ // [Klasse, Muster auf den Ereignis-Namen] — die erste passende gewinnt
     ["geschirr", /^Geschirr:/], // der Lauf selbst (Skript der Werkbank, `pptr:`): beim Namen, nie Pflicht — das Spiel trägt ihn nie
@@ -216,7 +226,9 @@ const BELEGUNG_KLASSEN = [ // [Klasse, Muster auf den Ereignis-Namen] — die er
     ["lebenszyklus", /^(UpdateLayoutTree|Layout|PrePaint|Paint|Layerize|Commit|UpdateLayer|HitTest|IntersectionObserverController::computeIntersections)$/],
     ["praesentation", /GPUCanvasContext|CanvasResource|SwapBuffers|PresentFrame|SharedImage/],
 ];
-function belegungAuswerten(ev, { bildMs = 1000 / 60, schwelle = 1 } = {}) {
+// `boden`: der gemessene Boden (`bodenAuswerten`) — oder "messen": diese Spur IST die leere Leinwand, die Antwort ihr Boden je
+// Klasse und Takt (ohne Zeitgeber — vertagbar, ohne Geschirr — nie Pflicht)
+function belegungAuswerten(ev, { bildMs = 1000 / 60, schwelle = BELEGUNG_SCHWELLE_MS, boden = null } = {}) {
     const msg = (e) => (/user_timing/.test(e.cat) && e.name) || "";
     const m0 = ev.find((e) => /^anazh-/.test(msg(e)));
     if (!m0) return { urteil: "ROT", befund: "keine Takt-Marke in der Spur — der Lauf markierte nicht" };
@@ -254,6 +266,7 @@ function belegungAuswerten(ev, { bildMs = 1000 / 60, schwelle = 1 } = {}) {
     });
     if (ohneHuelle) return { urteil: "ROT", befund: `${ohneHuelle} Takte ohne Hülle (rAF-FunctionCall) in der Spur` };
     const [ZG, GS] = ["zeitgeber", "geschirr"].map((k) => KL.indexOf(k)), jeBild = [], fremdName = new Float64Array(namen.length);
+    const bk = KL.map((k) => boden?.jeTaktMs?.[k] || 0), bs = boden?.summeJeTaktMs || 0; // der Boden je Klasse und Takt
     for (let i = 0, ti = 0; i + 1 < bilder.length; i++) {
         const z = new Float64Array(KL.length);
         for (let c = zelle(bilder[i]), d = zelle(bilder[i + 1]); c < d; c++) {
@@ -262,38 +275,73 @@ function belegungAuswerten(ev, { bildMs = 1000 / 60, schwelle = 1 } = {}) {
         }
         let nt = 0;
         for (; ti < takte.length && takte[ti] < bilder[i + 1]; ti++) nt += takte[ti] >= bilder[i];
-        const ms = z.map((v) => v / 100), belegt = ms.reduce((a, b) => a + b, 0) - ms[0];
-        // die Pflicht je Klasse: der Takt-Rahmen über seinem Boden × Takte des Bilds, der Zeitgeber nur über dem Bild-Fenster
-        const pf = ms.map((v, k) => (k === 2 ? Math.max(0, v - nt * BROWSER_BODEN_MS) : k && k < TAKT && k !== GS && (k !== ZG || belegt > bildMs) ? v : 0));
-        jeBild.push({ ms, belegt, pf, pflicht: pf.reduce((a, b) => a + b, 0), nt });
+        const ms = z.map((v) => v / 100), belegt = ms.reduce(addiere, 0) - ms[0];
+        // das Spiel je Klasse (der Zeitgeber nur über dem Bild-Fenster) und über dem Boden × Takte des Bilds
+        const pf = ms.map((v, k) => (k && k < TAKT && k !== GS && (k !== ZG || belegt > bildMs) ? v : 0));
+        jeBild.push({ ms, belegt, nt, ue: pf.map((v, k) => v - nt * bk[k]), spiel: pf.reduce(addiere, 0), boden: nt * bs });
     }
     const q = (a, f) => {
-        const s = [...a].sort((a, b) => a - b);
+        const s = [...a].sort(aufsteigend);
         return s.length ? +rang(s, f).toFixed(2) : null;
     };
-    const zahl = (a) => ({ p50: q(a, 0.5), p95: q(a, 0.95), mittel: q([a.reduce((a, b) => a + b, 0) / (a.length || 1)], 0) });
-    const jeKlasse = Object.fromEntries(KL.slice(1).map((k, i) => [k, zahl(jeBild.map((b) => b.ms[i + 1]))]));
-    const pflicht = zahl(jeBild.map((b) => b.pflicht)), nb = Math.max(1, jeBild.length);
-    const anteil = KL.map((k, i) => [k, zahl(jeBild.map((b) => b.pf[i]))]).filter(([, z]) => z.mittel >= 0.05);
-    const rot = !(pflicht.p95 <= schwelle);
+    const zahl = (a) => ({ p50: q(a, 0.5), p95: q(a, 0.95), mittel: q([a.reduce(addiere, 0) / (a.length || 1)], 0) });
+    const nb = Math.max(1, jeBild.length), summe = (i) => jeBild.reduce((s, b) => s + b.ms[i], 0);
+    if (boden === "messen") {
+        if (jeBild.length < 30) return { urteil: "ROT", befund: `${jeBild.length} Bilder an der Leinwand (Soll ≥ 30)` };
+        const ntS = jeBild.reduce((s, b) => s + b.nt, 0), BK = ["rest", "browser", "gc", "nachrichten", "rueckruf", "lebenszyklus", "praesentation"];
+        const jeTaktMs = Object.fromEntries(BK.map((k) => [k, +(summe(KL.indexOf(k)) / ntS).toFixed(3)]));
+        return { bilder: jeBild.length, jeTaktMs, summeJeTaktMs: +Object.values(jeTaktMs).reduce(addiere, 0).toFixed(3) };
+    }
+    const B = boden && boden.jeTaktMs ? boden : null, spiel = zahl(jeBild.map((b) => b.spiel));
+    const pflicht = zahl(jeBild.map((b) => Math.max(0, b.spiel - b.boden))), rot = !(pflicht.p95 <= schwelle);
+    // der Überschuss je Klasse über dem Boden (Mittel, p95 nie unter 0): wer über dem Boden trägt, steht beim Namen
+    const anteil = KL.map((k, i) => [k, zahl(jeBild.map((b) => b.ue[i]))]).filter(([, x]) => x.mittel >= 0.05)
+        .sort((a, b) => b[1].mittel - a[1].mittel).map(([k, x]) => `${k} +${x.mittel} (p95 ${Math.max(0, x.p95)})`);
     return {
         bilder: jeBild.length, takteJeBild: q([jeBild.reduce((s, b) => s + b.nt, 0) / nb], 0), belegungMs: zahl(jeBild.map((b) => b.belegt)),
-        ausserTaktMs: zahl(jeBild.map((b) => b.belegt - b.ms[TAKT])), pflichtMs: pflicht, jeKlasse,
+        ausserTaktMs: zahl(jeBild.map((b) => b.belegt - b.ms[TAKT])), jeKlasse: Object.fromEntries(KL.slice(1).map((k, i) => [k, zahl(jeBild.map((b) => b.ms[i + 1]))])),
         taeterMsJeBild: [...fremdName.keys()].filter((i) => fremdName[i] >= 5 * nb).sort((a, b) => fremdName[b] - fremdName[a])
             .slice(0, 12).map((i) => `${namen[i]} ${(fremdName[i] / 100 / nb).toFixed(2)}`),
-        urteil: rot ? "ROT" : "GRÜN",
-        befund: `Pflicht außerhalb des Takts p95 ${pflicht.p95} ms ${rot ? ">" : "≤"} ${schwelle} — ` +
-            anteil.sort((a, b) => b[1].mittel - a[1].mittel).map(([k, z]) => `${k} p95 ${z.p95} (Mittel ${z.mittel})`).join(" · "),
+        spielMs: spiel, boden, bodenMs: B && zahl(jeBild.map((b) => b.boden)), pflichtMs: B && pflicht,
+        urteil: !B ? "UNGEMESSEN" : rot ? "ROT" : "GRÜN",
+        befund: !B
+            ? `der Boden des Geräts ungemessen (${boden?.fehler ? `${boden.quelle}: ${boden.fehler}` : "keine Leer-Messung in dieser Sitzung"}) — der Rückfall-Boden BROWSER_BODEN_MS ${BROWSER_BODEN_MS} ms (Radeon, 120 Hz) urteilt nicht; Spiel p95 ${spiel.p95} ms`
+            : `Pflicht über dem Boden p95 ${pflicht.p95} ms ${rot ? ">" : "≤"} ${schwelle} (Spiel p95 ${spiel.p95} · Boden ${B.summeJeTaktMs} je Takt, ${B.quelle})` +
+              (anteil.length ? ` — ${anteil.join(" · ")}` : ""),
     };
 }
-// Ihr Selbsttest (`werkbank lauf --selbsttest`, ohne Welt): eine synthetische Spur, 300 Bilder zu 16,7 ms, Takt 4 ms in seiner
-// Hülle (4,08 ms), ein fremder Faden voll Last; ohne Hülle ist er ROT. Eine Pflicht-Last je Bild (Layout 1,5 ms nach dem Takt) wird ROT beim Namen
-// „lebenszyklus", ein vertagbarer Zeitgeber (3 ms, eigene Aufgabe) bleibt GRÜN — bis das Bild-Fenster kleiner ist als die
-// Belegung; dann ist er Pflicht und ROT beim Namen „zeitgeber". Der Takt-Rahmen des Browsers über seinem Boden (1,5 ms Aufgabe
-// ohne Kind je Bild) wird ROT beim Namen „browser"; am Boden (zwei Takte je Bild, ein leerer darunter, je 0,25 ms) bleibt er GRÜN.
-// Das Geschirr (ein Werkbank-Skript, 1,5 ms je Bild außerhalb des Takts, im Zeitgeber-Fall) steht beim Namen, nie Pflicht.
+// Der Boden aus der Spur der leeren Leinwand (`belegungAuswerten` „messen"), sonst sein Grund beim Namen (`fehler`).
+function bodenAuswerten(ev, quelle = "leere WebGPU-Leinwand") {
+    const o = belegungAuswerten(ev, { boden: "messen" });
+    return Object.assign({ quelle }, o.jeTaktMs ? o : { fehler: o.befund });
+}
+// DIE LEERE LEINWAND DES BODENS (`werkbank lauf`, eine zweite Seite desselben Browsers): [w, h] wie die Leinwand des Spiels, je
+// rAF ein Klar-Pass zwischen den Marken des Laufs, bis die Seite schließt. Die Seite ist eine kleine Datei des Ursprungs der Welt
+// (ein sicherer Kontext; eine leere 404-Antwort zeigt Chromes Fehlerseite, dort fehlt navigator.gpu), ihr Inhalt fällt vorher.
+async function bodenLeinwand([w, h]) {
+    const dev = await (await navigator.gpu.requestAdapter()).requestDevice();
+    document.body.replaceChildren();
+    const ctx = document.body.appendChild(Object.assign(document.createElement("canvas"), { width: w, height: h })).getContext("webgpu");
+    ctx.configure({ device: dev, format: navigator.gpu.getPreferredCanvasFormat() });
+    const takt = () => {
+        performance.mark("anazh-takt");
+        const enc = dev.createCommandEncoder();
+        enc.beginRenderPass({ colorAttachments: [{ view: ctx.getCurrentTexture().createView(), loadOp: "clear", storeOp: "store" }] }).end();
+        dev.queue.submit([enc.finish()]);
+        performance.mark("anazh-bild");
+        requestAnimationFrame(takt);
+    };
+    requestAnimationFrame(takt);
+}
+// Ihr Selbsttest (`werkbank lauf --selbsttest`, ohne Welt): synthetische Spuren, 300 Bilder zu 16,7 ms, Takt 4 ms in seiner Hülle
+// (4,08 ms), ein fremder Faden voll Last; ohne Hülle ist er ROT. ZWEI GERÄTE — ein schnelles (der leere Rahmen) und ein langsames
+// (der Rahmen + 0,6 ms, Layout 0,3 ms, Rückruf 0,25 ms je Bild: ohne Boden selbst ROT) — je mit dem Boden seiner leeren Spur: das
+// Spiel ohne Last ist auf beiden GRÜN (Überschuss 0), mit 1,0 ms Layout auf beiden ROT beim Namen „lebenszyklus", mit 0,3 ms GRÜN;
+// ohne Leer-Messung und mit einer gescheiterten steht es UNGEMESSEN beim Namen, nie über 0,27. Zwei Takte je Bild am Boden tragen
+// ihn zweimal (Überschuss 0). Ein vertagbarer Zeitgeber (3 ms) bleibt GRÜN, bis das Bild-Fenster kleiner ist als die Belegung;
+// das Geschirr steht beim Namen, nie Pflicht.
 function belegungSelbsttest() {
-    const spur = ({ layout = 0, zeit = 0, rahmen = 0, leerTakt = false, huelle = true, rueck = 0, geschirr = 0, bildMs }) => {
+    const spur = ({ layout = 0, zeit = 0, rahmen = 0, leerTakt = false, huelle = true, rueck = 0, geschirr = 0 }) => {
         const ev = [{ pid: 2, tid: 9, ph: "X", name: "RunTask", ts: 0, dur: 1e9 }];
         const X = (name, ts, dur) => ev.push({ pid: 1, tid: 1, ph: "X", name, ts, dur });
         const M = (name, ts) => ev.push({ pid: 1, tid: 1, ph: "R", cat: "blink.user_timing", name, ts });
@@ -307,28 +355,34 @@ function belegungSelbsttest() {
         for (let a = 1000; a < 5e6; a += 16667) {
             takt(a, 4000, "anazh-bild");
             if (leerTakt) takt(a + 12000, 1000, "anazh-leer");
-            if (layout) X("Layout", a + 4200, layout);
+            if (layout) X("Layout", a + 4600 + rahmen, layout);
             if (zeit) X("RunTask", a + 8000, zeit);
             if (zeit) X("TimerFire", a + 8000, zeit);
             if (rueck) X("Receive mojo message", a + 9000, rueck);
             const d = { url: "pptr:evaluate", functionName: "warte" };
             if (geschirr) ev.push({ pid: 1, tid: 1, ph: "X", name: "FunctionCall", ts: a + 12000, dur: geschirr, args: { data: d } });
         }
-        return belegungAuswerten(ev, { bildMs });
+        return ev;
     };
-    const faelle = [{}, { layout: 1500 }, { zeit: 3000, geschirr: 1500 }, { zeit: 3000, bildMs: 7 }, { rahmen: 1500 }, { rahmen: 150, leerTakt: true }];
-    const [leer, last, zeit, ueber, rahmen, boden, nackt, rueck] = [...faelle, { huelle: false }, { rueck: 1200 }].map(spur);
-    const f = [];
-    if (leer.urteil !== "GRÜN" || leer.jeKlasse.takt.p50 !== 4.08 || leer.pflichtMs.p95 !== 0.02) f.push(`ohne Last: ${JSON.stringify(leer)}`);
-    if (nackt.urteil !== "ROT" || !/Takte ohne Hülle/.test(nackt.befund)) f.push(`Takt ohne Hülle: ${JSON.stringify(nackt)}`);
-    if (rueck.urteil !== "ROT" || !/— rueckruf p95 1\.2 /.test(rueck.befund)) f.push(`Rückruf je Bild: ${JSON.stringify(rueck)}`);
-    if (rahmen.urteil !== "ROT" || !/— browser p95 1\.33 /.test(rahmen.befund)) f.push(`Browser über dem Boden: ${JSON.stringify(rahmen)}`);
-    if (boden.urteil !== "GRÜN" || boden.takteJeBild !== 2 || boden.jeKlasse.browser.p50 !== 0.5) f.push(`Browser am Boden: ${JSON.stringify(boden)}`);
-    if (last.urteil !== "ROT" || !/— lebenszyklus p95 1\.5 /.test(last.befund) || !/^Layout 1\.50$/.test(last.taeterMsJeBild[0]))
-        f.push(`Layout je Bild: ${JSON.stringify(last)}`);
-    if (zeit.urteil !== "GRÜN" || zeit.jeKlasse.zeitgeber.p50 !== 3 || zeit.jeKlasse.geschirr.p50 !== 1.5) f.push(`Zeitgeber und Geschirr: ${JSON.stringify(zeit)}`);
-    if (ueber.urteil !== "ROT" || !/— zeitgeber p95 3 /.test(ueber.befund)) f.push(`Zeitgeber über dem Fenster: ${JSON.stringify(ueber)}`);
-    return f;
+    const langsam = { rahmen: 600, layout: 300, rueck: 250 }, auf = (o, ms) => Object.assign({}, o, { layout: (o.layout || 0) + ms });
+    const Bs = bodenAuswerten(spur({})), Bl = bodenAuswerten(spur(langsam)), mit = (o, boden, x) => belegungAuswerten(spur(o), { boden, ...x });
+    // [Fall, Urteil, Prüfung des Befunds]
+    const faelle = [["Hülle des Takts", mit({}, Bs), (o) => o.jeKlasse.takt.p50 === 4.08]];
+    for (const [g, o, B] of [["schnell", {}, Bs], ["langsam", langsam, Bl]])
+        faelle.push(
+            [`${g} ohne Last`, mit(o, B), (x) => x.urteil === "GRÜN" && x.pflichtMs.p95 === 0],
+            [`${g} mit 1,0 ms`, mit(auf(o, 1000), B), (x) => x.urteil === "ROT" && /— lebenszyklus \+1 \(p95 1\)/.test(x.befund)],
+            [`${g} mit 0,3 ms`, mit(auf(o, 300), B), (x) => x.urteil === "GRÜN" && x.pflichtMs.p95 === 0.3]
+        );
+    faelle.push(
+        ["ohne Leer-Messung", mit(langsam, null), (o) => o.urteil === "UNGEMESSEN" && /ungemessen \(keine Leer-Messung.*0\.27 ms .*urteilt nicht/.test(o.befund)],
+        ["gescheiterter Boden", mit({}, bodenAuswerten([])), (o) => o.urteil === "UNGEMESSEN" && /leere WebGPU-Leinwand: keine Takt-Marke/.test(o.befund)],
+        ["zwei Takte am Boden", mit({ rahmen: 150, leerTakt: true }, bodenAuswerten(spur({ rahmen: 150 }))), (o) => o.urteil === "GRÜN" && o.takteJeBild === 2 && o.pflichtMs.p95 === 0],
+        ["Takt ohne Hülle", mit({ huelle: false }, Bs), (o) => o.urteil === "ROT" && /Takte ohne Hülle/.test(o.befund)],
+        ["Zeitgeber und Geschirr", mit({ zeit: 3000, geschirr: 1500 }, Bs), (o) => o.urteil === "GRÜN" && o.jeKlasse.zeitgeber.p50 === 3 && o.jeKlasse.geschirr.p50 === 1.5],
+        ["Zeitgeber über dem Fenster", mit({ zeit: 3000 }, Bs, { bildMs: 7 }), (o) => o.urteil === "ROT" && /— zeitgeber \+3 /.test(o.befund)]
+    );
+    return [...(Bs.fehler || Bl.fehler ? [`Boden: ${JSON.stringify([Bs, Bl])}`] : []), ...faelle.filter(([, o, ok]) => !ok(o)).map(([f, o]) => `${f}: ${JSON.stringify(o)}`)];
 }
 
 // DIE EINE BANK-RUNDE (gpu-bank · zerlegen · die Bank der Kosten-Leiste): die Hülle trägt sie (`AnazhHuelle.bankRunde`, die Welt lädt
@@ -1484,7 +1538,7 @@ function zerlegeMessen(k) {
             const jePass = {};
             let stempel = 0;
             for (const [p, e] of Object.entries(je)) {
-                const s = Object.values(e).reduce((a, b) => a + b, 0) / n;
+                const s = Object.values(e).reduce(addiere, 0) / n;
                 jePass[p] = +s.toFixed(3);
                 stempel += s;
             }
@@ -1715,7 +1769,7 @@ function zerlegeLast(k) {
         for (let i = 0; i < 5; i++) w.push(await allein(12));
         if (rend.backend.timestampQueryPool?.render)
             await rend.resolveTimestampsAsync("render");
-        w.sort((a, b) => a - b);
+        w.sort(aufsteigend);
         return {
             an: true,
             iter,
@@ -1884,7 +1938,7 @@ function zerlegeSchalter(inv, haushalt, opt) {
 // Differenzen, der Beleg (Renders im AUS-Zustand, Haken-Treffer, Befehle der Klasse, Kollateral), Gesamt und Rest.
 function zerlegeAuswerten(roh, schalter) {
     const med = (a) => {
-        const s = a.filter(Number.isFinite).sort((a, b) => a - b);
+        const s = a.filter(Number.isFinite).sort(aufsteigend);
         if (!s.length) return null;
         const m = s.length >> 1;
         return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
@@ -2138,7 +2192,11 @@ module.exports = {
     zerlegeTabelle,
     zweiGipfelSelbsttest,
     BELEGUNG_SPUR,
+    BELEGUNG_SCHWELLE_MS,
+    BROWSER_BODEN_MS,
     belegungAuswerten,
+    bodenAuswerten,
+    bodenLeinwand,
     belegungSelbsttest,
     lauf,
     gpuBank,

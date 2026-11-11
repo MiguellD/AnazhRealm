@@ -4,8 +4,10 @@
 // Die Linse hüllt die Leser der Sicht-Kette (Prototyp-Methoden, wie die Takt-Linse) und zählt je Frame: die Pässe, die
 // Aufrufe je Leser, die geprüften KÖRPER (`_passTrifft` je Leser, `_hoehlenRect` und `_hoehlenLichtLage` je acht Ecken),
 // die Index-Bytes der Neuschreib-Linse der Sätze (`s.schreiben`) und die TREFFER (eine Wahl, deren Lage steht:
-// `_satzAbschnittSteht`). Die Instanzen der globalen Gruppen und die Büschel der Nah-Wiese wählt die GPU (`_instanzWahlGpu`,
-// w25-gpu-wahl) — die CPU prüft keine, die Linse zählt keine. Das Urteil (rein, im Selbsttest wie im Lauf):
+// `_satzAbschnittSteht`). Die Instanzen der globalen Gruppen, die Büschel der Nah-Wiese (w25-gpu-wahl) und die Pflanzen der
+// Nah-Streu (w27-takt-streu: ihr Streu-Satz fiel) wählt die GPU (`_instanzWahlGpu`) — die CPU prüft keine, die Linse zählt
+// keine; im Stand rechnet die Wahl nicht (die Linse STAND LÄDT NICHTS, gate:hitch-telemetrie Teil 1). Das Urteil (rein, im
+// Selbsttest wie im Lauf):
 // in RUHE (Kamera, Kaskaden und Welt stehen) verlangt die Sicht nach dem ersten Frame keine neue Arbeit — jede Prüfung,
 // jede Höhlen-Rechnung, jedes Byte in Ruhe ist ein Cache-Bruch; wer dreht oder geht, rechnet neu (eine Wahl, die über
 // eine neue Lage hält, wäre ein Loch).
@@ -274,7 +276,7 @@ function sichtLinse(cfg) {
             return o;
         };
     };
-    // die Index-Bytes je Satz-Familie (boden · wasser · bauSatz · streuSatz · formationenSatz), kumulativ
+    // die Index-Bytes je Satz-Familie (boden · wasser · bauSatz · formationenSatz), kumulativ
     const bytesJe = () => {
         const o = {};
         const ss = st.chunkSaetze;
@@ -285,7 +287,7 @@ function sichtLinse(cfg) {
             }
         return o;
     };
-    const bytes = () => Object.values(bytesJe()).reduce((a, b) => a + b, 0);
+    const bytes = () => Object.values(bytesJe()).reduce(addiere, 0);
     let b0 = 0,
         bj0 = {};
     // DER INHALT der Sätze je Frame — nur aus UNABHÄNGIGEN Belegen: ein Bereich kam (+), ging (−) oder
@@ -479,7 +481,7 @@ function sichtLinse(cfg) {
             for (const n of cfg.ruheLeser) ruhe += o.trifft[n] || 0;
             for (const n of ["_hoehlenSicht", "_hoehlenSichtLicht", "_chunkSatzAbschnitt"]) ruhe += o.aufrufe[n] || 0;
             o.arbeit = ruhe;
-            o.trefferSumme = Object.values(o.treffer).reduce((a, b) => a + b, 0);
+            o.trefferSumme = Object.values(o.treffer).reduce(addiere, 0);
             o.fehlt = fehlt;
             lichtOffen = lichtDreht() || lichtOffen;
             o.licht = lichtOffen;
@@ -640,12 +642,12 @@ function sichtPhase(frames, ab) {
         f.klasse = window.__sichtBytesKlasse(f);
         f.legeKlasse = window.__sichtBytesKlasse(f, "legeGrund");
     }
-    const reihe = (g) => fs.map(g).sort((a, b) => a - b);
+    const reihe = (g) => fs.map(g).sort(aufsteigend);
     const st = (g) => {
         const x = reihe(g);
         if (!x.length) return { mittel: 0, median: 0, max: 0 };
         return {
-            mittel: +(x.reduce((a, b) => a + b, 0) / x.length).toFixed(1),
+            mittel: +(x.reduce(addiere, 0) / x.length).toFixed(1),
             median: rang(x),
             max: x[x.length - 1],
         };
@@ -777,7 +779,7 @@ function sichtPhase(frames, ab) {
         aenderungFrames: fs.length - ohneAenderung.length,
         kameraFrames: fs.filter((f) => f.kamera).length,
         arbeitOhne: (() => {
-            const x = fs.map((f) => window.__sichtArbeitOhne(f)).sort((a, b) => a - b);
+            const x = fs.map((f) => window.__sichtArbeitOhne(f)).sort(aufsteigend);
             return {
                 frames: x.filter((a) => a > 0).length,
                 median: x.length ? rang(x) : 0,

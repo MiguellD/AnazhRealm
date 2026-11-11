@@ -223,7 +223,10 @@ hauptLauf(async () => {
                             mxZ = Math.max(mxZ, b.maxZ);
                         }
                         const span = Math.max(mxX - mnX, mxZ - mnZ);
-                        res.drive.huelleKern = span > 3 && Math.abs(span - (drv.huelle.noseX - drv.huelle.tailX) * sc) < 0.05;
+                        // die Länge der gezeichneten Gestalt (das Maß des Kerns am Bau, physik.K2 Staffel 2), sonst der Kern-Hülle
+                        const M = entry._gestaltMass;
+                        const L = M ? M.bug - M.heck : drv.huelle.noseX - drv.huelle.tailX;
+                        res.drive.huelleKern = span > 3 && Math.abs(span - L * sc) < 0.05;
                     }
                 } catch (eD) {
                     res.drive.donorErr = fehlerText(eD);
@@ -231,8 +234,10 @@ hauptLauf(async () => {
                 // N Fahr-Ticks: der REITER ist die horizontale Autoritaet — pm faehrt,
                 // playerVel traegt die Fahrt-Richtung (Gier-/Phasen-Quelle des Chokepoints).
                 if (r.state.playerVel) r.state.playerVel.setValue(2.4, 0, 0);
+                // der Ritt bewegt sich im Sim-Schritt (`_rittSchritt`: Lage, Gier, die Blocker), das Bild folgt im Frame-Takt
                 for (let i = 0; i < 120; i++) {
                     pm.x += 0.12;
+                    r._rittSchritt(0.05);
                     r._tickMountedMovement(0.05);
                 }
                 res.drive.dist = Math.hypot(entry.position.x - m0.x, entry.position.z - m0.z);
