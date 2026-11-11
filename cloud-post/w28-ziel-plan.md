@@ -1,5 +1,7 @@
 ABGABE 58acfa5e6cc75feef9f1906b0664ecb0f5c3c6c3
 
+## 11.11. 01:41 — GPU-PROBE 58acfa5e auf radeon-890m: GRÜN in 261 s (bild:dorf@0.4 GRÜN 80 s auf radeon-890m · bild:stadt@0.4 GRÜN 112 s auf radeon-890m) → probe-post/w28-ziel-plan/58acfa5e.md
+
 ## 11.11. w28-ziel-plan (Cloud) — neuer Kopf 58acfa5e, derselbe Baum wie cff10373 und 4b086556
 - Die Probe an 4b086556: `bild:stadt-voll@0.4` ROT auf gtx1050-desktop — „Ziel Blickziel verdeckt von bauSatz in 45.16 m … die Aufnahme speichert nichts“. Das ist nicht der Schnitt: w28-stadt-boden 0a721419 fällt an `bild:stadt-voll@0.5` mit derselben Zeile (Kamera 836.20/58.51/438.50 → 896.20/58.51/437.85). `bild:stadt@0.75` gab zweimal einem Karten-Job nach.
 - FUND: der Messort stadt-voll der Bild-Probe · sein Blick (60 m nach Osten vom Markt) endet in einem Bau, das Urteil des Beweisbilds ist an jedem Zweig ROT und speichert nichts · Kriterium: `bild:stadt-voll` an main GRÜN · Größe S (spec/profiband/haushalt.json `blick` oder die Blick-Wahl der Linse — nicht meine Dateien).
