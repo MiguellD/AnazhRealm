@@ -1,7 +1,7 @@
 {
  "sha": "4e2df19b5c5103b093818b62b5a84ababf85b493",
  "geraet": "gtx",
- "zeit": "2026-11-11T08:01:31.620Z",
+ "zeit": "2026-11-11T08:26:29.796Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "affekt.K4#2": {
@@ -1579,17 +1579,110 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "vegetation.K1#1": {
+   "gruen": false,
+   "zahl": "wiese-third-0.5--wiese: LAI 2–5 2.97 · 5–10 2.54 · 10–20 2.68 · 20–40 Grund 0.061 % > 0.020 % (Saum springt > 15 %), Farbton 2–5 m 11.87°, nahWiese 4 Befehle / 51271 Dreiecke",
+   "exit": 0,
+   "minuten": 0.72,
+   "grund": "ROT: wiese-third-0.5--wiese: LAI 2–5 2.97 · 5–10 2.54 · 10–20 2.68 · 20–40 Grund 0.061 % > 0.020 % (Saum springt > 15 %), Farbton 2–5 m 11.87°, nahWiese 4 Befehle / 51271 Dreiecke",
+   "gpu": "nvidia/pascal",
+   "s": 43,
+   "fremd": {
+    "s": 45.3,
+    "takte": 21,
+    "fremdS": 28.56,
+    "kerne": 0.631,
+    "fensterKerne": 1.219,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      9.63
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      9.5
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      2.72
+     ]
+    ],
+    "dienerS": 11.5,
+    "diener": [
+     [
+      "System",
+      4.47
+     ],
+     [
+      "dwm.exe",
+      4.45
+     ]
+    ],
+    "geraetS": 13.41,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      8.63
+     ],
+     [
+      "svchost.exe",
+      4.16
+     ],
+     [
+      "SearchIndexer.exe",
+      0.3
+     ]
+    ],
+    "eigenS": 74.91,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon"
+   },
+   "zeit": "2026-11-11T08:26:29.796Z",
+   "abdruck": "6b1dbe84a49f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-11T07:51:31.482Z",
+  "start": "2026-11-11T08:25:50.978Z",
   "port": 7804,
-  "warten": 10,
+  "warten": 0.01,
+  "bootS": 6.9,
   "grundstellungS": [],
-  "proben": 0,
+  "proben": 1,
   "freigaben": [],
-  "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
-  "minuten": 10.01
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "vegetation.K1#1",
+    "s": 30.8,
+    "takte": 541,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 46,
+   "luecken": 2,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+  },
+  "fahrtS": 81.6,
+  "minuten": 1.42
  },
  "ungemessen": {
   "ankunft.K1#1": {
