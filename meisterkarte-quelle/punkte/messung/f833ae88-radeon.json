@@ -3,32 +3,7 @@
  "geraet": "radeon",
  "zeit": "2026-11-05T00:45:05.842Z",
  "host": "MiguellD",
- "je": {
-  "gelaende.K2#2": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung startet nicht (Halter Exit 3221226505): ",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung startet nicht (Halter Exit 3221226505): ",
-   "zeit": "2026-11-05T00:38:22.688Z",
-   "abdruck": "af1a198c7eab",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session"
-  },
-  "ankunft.K2#1": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung startet nicht (Halter Exit 3221226505): ",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung startet nicht (Halter Exit 3221226505): ",
-   "zeit": "2026-11-05T00:38:22.689Z",
-   "abdruck": "d3dcf307c649",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session"
-  }
- },
+ "je": {},
  "sitzung": {
   "start": "2026-11-05T00:43:22.105Z",
   "port": 7804,
@@ -87,32 +62,29 @@
  "ungemessen": {
   "gelaende.K2#2": {
    "gruen": false,
-   "ungemessen": true,
-   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: (b)(d) 11.3 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"flu)",
-   "exit": 1,
-   "minuten": 0.76,
-   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: (b)(d) 11.3 s · Damm {\"krone\":27.79,\"saeulen\":21,\"stromauf\":[{\"d\":6,\"wasser\":24.88,\"ueberlauf\":24.3,\"fluss\":24.88},{\"d\":12,\"wasser\":24.98,\"ueberlauf\":24.38,\"flu)",
-   "s": 45.6,
-   "zeit": "2026-11-05T00:44:02.497Z",
+   "zahl": "die Welt der Sitzung startet nicht (Halter Exit 3221226505) — der Halter starb ohne Wort, UNGEMESSEN (berichtigt 11.11.: kein Urteil über das Spiel)",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung startet nicht (Halter Exit 3221226505) — der Halter starb ohne Wort, UNGEMESSEN (berichtigt 11.11.: kein Urteil über das Spiel)",
+   "zeit": "2026-11-05T00:38:22.688Z",
    "abdruck": "af1a198c7eab",
    "port": 7804,
    "bahn": "sitzung",
-   "modus": "session"
+   "modus": "session",
+   "ungemessen": true
   },
   "ankunft.K2#1": {
    "gruen": false,
-   "zahl": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 3.03 % Lücke nach 0 s OHNE Ruhe der Foundry (Frist) · offen im Bild 4 Wald-Stücke warten auf ihre Gestalt · 2 ferne Bäume werden gemalt · t(Kontrolle) kalt 12.72 s von außen (Eigenmeldung 11.70 s) · [linse-gpu] amd/rdna-3) · Täter: @@ 28.6 s · gewartet, geworfen: Protocol error (Runtime.callFunctionOn): Target closed",
-   "exit": 0,
-   "minuten": 0.48,
-   "grund": "Frist der Probe 39 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 3.03 % Lücke nach 0 s OHNE Ruhe der Foundry (Frist) · offen im Bild 4 Wald-Stücke warten auf ihre Gestalt · 2 ferne Bäume werden gemalt · t(Kontrolle) kalt 12.72 s von außen (Eigenmeldung 11.70 s) · [linse-gpu] amd/rdna-3) · Täter: @@ 28.6 s · gewartet, geworfen: Protocol error (Runtime.callFunctionOn): Target closed",
-   "gpu": "amd/rdna-3",
-   "ungemessen": true,
-   "s": 28.8,
-   "zeit": "2026-11-05T00:45:05.842Z",
+   "zahl": "die Welt der Sitzung startet nicht (Halter Exit 3221226505) — der Halter starb ohne Wort, UNGEMESSEN (berichtigt 11.11.: kein Urteil über das Spiel)",
+   "exit": null,
+   "minuten": 0,
+   "grund": "die Welt der Sitzung startet nicht (Halter Exit 3221226505) — der Halter starb ohne Wort, UNGEMESSEN (berichtigt 11.11.: kein Urteil über das Spiel)",
+   "zeit": "2026-11-05T00:38:22.689Z",
    "abdruck": "d3dcf307c649",
    "port": 7804,
    "bahn": "sitzung",
-   "modus": "session"
+   "modus": "session",
+   "ungemessen": true
   }
  }
 }
