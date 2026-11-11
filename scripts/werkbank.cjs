@@ -203,6 +203,13 @@ const SERIE = opt("--serie", process.env.WERKBANK_SERIE || "");
 // ── Client ──────────────────────────────────────────────────────────────────────────────────────
 const rufe = (weg, nutzlast) => werkbankRuf(PORT, weg, nutzlast);
 const evalRuf = (code) => rufe("/eval", { code });
+// DER NAME EINES eval-TEXTS (w28-seiten-stille): `werkbank/eval/<Name>.js` — der Name des Rufers (`name`), sonst die erste benannte
+// Funktion des Texts (die Probe der Punkte-Maschine: „return (async function startDorfInnen(o) {…})(r, T, …)"), sonst die Nummer des Rufs
+let evalNummer = 0;
+const evalName = (b) => {
+    const n = (b && b.name) || (String((b && b.code) || "").match(/\bfunction\*?\s+([A-Za-z_$][\w$]*)/) || [])[1] || "ruf-" + ++evalNummer;
+    return "werkbank/eval/" + String(n).replace(/[^\w$.-]/g, "_") + ".js";
+};
 const umstellen = (o) => rufe("/umstellen", o);
 const ergebnis = (a) => a.ergebnis || { fehler: a.fehler || "kein Ergebnis" };
 // DAS ENDE eines Befehls: die Antwort (ein Satz oder das JSON) und der Exit — 0 nur, wenn `gruen`; ein Fehler ist nie grün
@@ -1837,7 +1844,7 @@ async function starte() {
                         if (ort.wiese && !pose) {
                             wiese = await page.evaluate(
                                 (install, x, z, blick, S) => {
-                                    (0, eval)(install);
+                                    (0, eval)(install + "\n//# sourceURL=werkbank/wiese.js");
                                     const m = __wieseMessen(r, x, z, blick, S);
                                     return { messung: m, befunde: __wieseUrteil(m, S, true) };
                                 },
@@ -1953,13 +1960,17 @@ async function starte() {
                     return send(Object.assign(o, { abnahme: zeile, datei, gesamtMs: Date.now() - t0 }));
                 }
                 if (req.url === "/eval") {
+                    // DER NAME DES TEXTS (w28-seiten-stille, die Stille mit Arbeit an siedlung.K1#2 12.11.: jeder Rahmen der Probe hieß
+                    // „(ohne Datei)"): der eval-Text trägt `//# sourceURL=werkbank/eval/<Name>.js` — der Name des Rufers (`name`),
+                    // sonst die erste benannte Funktion des Texts, sonst die Nummer des Rufs. Jeder Stapel, jede Halden-Stichprobe und
+                    // jede Akte nennt so die Stelle der Probe. Der Rumpf endet auf einer eigenen Zeile: ein Text, der mit einem
+                    // Zeilen-Kommentar schließt, nimmt das Ende des Rahmens nicht mehr mit.
+                    const url = evalName(b);
                     const o = await page.evaluate(
-                        (code) =>
-                            new Function("r", "T", `return (async () => { ${code} })();`)(
-                                r,
-                                THREE
-                            ),
-                        b.code
+                        (code, url) =>
+                            new Function("r", "T", `return (async () => { ${code}\n})();\n//# sourceURL=${url}`)(r, THREE),
+                        b.code,
+                        url
                     );
                     return send({ ergebnis: o });
                 }
@@ -1970,7 +1981,8 @@ async function starte() {
                     // die Methode am AST (scripts/lib/stamm.cjs `glieder`, Lehre 12): ihr Funktions-Ausdruck mit async und Gang
                     const g = stammLib.glieder(quelle).find((x) => x.name === b.name && x.art === "method" && !x.statisch), f = g?.knoten.value;
                     if (!f) return send({ fehler: `Methode ${b.name} nicht gefunden` });
-                    const src = `(${f.async ? "async " : ""}function${f.generator ? "*" : ""} ${b.name}${quelle.slice(f.start, f.end)})`;
+                    // der getauschte Rumpf beim Namen (`werkbank/methode/<Name>.js`, wie /eval): ein Stapel nennt den Tausch, nie „(ohne Datei)"
+                    const src = `(${f.async ? "async " : ""}function${f.generator ? "*" : ""} ${b.name}${quelle.slice(f.start, f.end)})\n//# sourceURL=werkbank/methode/${String(b.name).replace(/[^\w$]/g, "_")}.js`; // prettier-ignore
                     const o = await page.evaluate(
                         (name, src, terrain) => {
                             const fn = (0, eval)(src);
@@ -2927,7 +2939,26 @@ hauptLauf(async () => {
         });
     else if (cmd === "methode")
         o = await rufe("/methode", { name: a[0], terrain: hat("terrain"), quelle: opt("--quelle") });
-    else if (cmd === "eval") o = await evalRuf(a[0]);
+    else if (cmd === "eval" && SELBST) {
+        // DER NAME DES eval-TEXTS (w28-seiten-stille, `eval --selbsttest`, ohne Welt): drei Rufer, drei Namen; derselbe Rahmen wie /eval
+        // nennt im Stapel `werkbank/eval/<Name>.js:<Zeile>` und baut auch über einem Text, der mit einem Zeilen-Kommentar endet — der
+        // alte Rahmen (`{ ${code} })();` auf EINER Zeile) brach dort mit „Unexpected end of input"
+        const f = [];
+        const soll = (b, n) => evalName(b) === n || f.push(`evalName(${JSON.stringify(b).slice(0, 70)}) = ${evalName(b)}, Soll ${n}`);
+        soll({ code: "return (async function startDorfInnen(o) { })(r, T, {})" }, "werkbank/eval/startDorfInnen.js");
+        soll({ name: "g5.js:startDorfInnen", code: "return 1" }, "werkbank/eval/g5.js_startDorfInnen.js");
+        soll({ code: "return 1 + 1" }, "werkbank/eval/ruf-1.js");
+        const code = "return (function probe() { throw new Error('stelle'); })() // ein Kommentar am Ende";
+        const stapel = await Promise.resolve()
+            .then(() => new Function("r", "T", `return (async () => { ${code}\n})();\n//# sourceURL=${evalName({ code })}`)(null, null))
+            .then(() => "kein Wurf", (e) => String(e && e.stack));
+        if (!/at probe \(werkbank\/eval\/probe\.js:\d+:\d+\)/.test(stapel)) f.push("der Stapel nennt die Stelle nicht: " + stapel.split("\n").slice(0, 2).join(" | "));
+        let alt = "baut";
+        try { new Function("r", "T", `return (async () => { ${code} })();`); } catch (e) { alt = e.message; } // prettier-ignore
+        if (alt === "baut") f.push("die Mutante (der alte Rahmen) baut über dem End-Kommentar — der Fall misst nichts");
+        selbsttestEnde(f, "der eval-Text der Werkbank trägt seinen Namen in jedem Stapel (werkbank/eval/probe.js), der alte Rahmen bricht am End-Kommentar (" + alt + ")");
+        return;
+    } else if (cmd === "eval") o = await evalRuf(a[0]);
     else if (cmd === "pop") {
         // DER POP UNTER BEWEGUNG (`popGang`) an der Mess-Wiese im Ego-Auge, 1920 × 1080 — `--eigen` in eigener Welt (`gate:pop`, der
         // Messplatz des GPU-Probe-Dienstes); die Zahl misst, der Richter ist die Station lod.K2#1. Je Schritt die Pop-Pixel, `*` ein
