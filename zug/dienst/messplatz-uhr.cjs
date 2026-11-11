@@ -499,7 +499,7 @@ const ALARM_MARKE = (T) => T.f("41;97;1", " ALARM ");
 // die Urteile neu zur Uhrzeit (die Uhr zählt zwischen den Takten weiter; der Blick zeichnet die Seite je Sekunde)
 const urteileJetzt = (U, jetzt) => U.geraete.map((l) => ({ ...l, urteil: uhrUrteil(l, jetzt) }));
 // der Zusatz des Pulses: der Halter beim Namen, oder warum die Uhr blind ist
-const pulsText = (l, jetzt) => l.halter ? `: ${belegtText(l.halter, jetzt)}` : l.zustand === "BLIND" ? `: kein Puls${l.puls && l.puls.alter != null ? ` seit ${zeitText(l.puls.alter).text}` : " (refs/puls fehlt)"}` : "";
+const pulsText = (l, jetzt) => l.halter ? `: ${belegtText(l.halter, jetzt).replace(/^belegt: /, "")} · regt vor ${zeitText(jetzt - l.halter.regt).text}` : l.zustand === "BLIND" ? `: kein Puls${l.puls && l.puls.alter != null ? ` seit ${zeitText(l.puls.alter).text}` : " (refs/puls fehlt)"}` : "";
 function kopf(U, LU, T, jetzt = sek(Date.now())) {
     const g = U ? urteileJetzt(U, jetzt).map((l) => { const z = zeitText(l.urteil.s).text; return `${l.name.replace("GTX1050", "1050")} ${l.urteil.stufe === "alarm" ? T.f("41;97;1", z) : farbeVon(T, l.urteil.stufe)(z)}`; }).join(T.grau(" · ")) : T.grau("?");
     const st = LU && LU.stau, va = LU && LU.veraltet, ep = LU && LU.engpass;
