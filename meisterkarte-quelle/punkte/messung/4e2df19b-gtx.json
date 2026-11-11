@@ -1,7 +1,7 @@
 {
  "sha": "4e2df19b5c5103b093818b62b5a84ababf85b493",
  "geraet": "gtx",
- "zeit": "2026-11-11T06:54:14.281Z",
+ "zeit": "2026-11-11T06:59:28.354Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "affekt.K4#2": {
@@ -1272,22 +1272,134 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "studios.K2#2": {
+   "gruen": false,
+   "zahl": "p95 Griff → Bild unter der Schranke in 5/8 (Gesetz-Wert höchstens 15 ms portale, Neubau höchstens 4070 ms koerperstudio, je Studio 5 Griffe) · Neuladen 8/8 · A/B 8/8",
+   "exit": 0,
+   "minuten": 2.43,
+   "grund": "ROT: p95 Griff → Bild unter der Schranke in 5/8 (Gesetz-Wert höchstens 15 ms portale, Neubau höchstens 4070 ms koerperstudio, je Studio 5 Griffe) · Neuladen 8/8 · A/B 8/8 · ROT trotz Fremd-Last: git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 49,1 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 36,7 CPU-s · node.exe scripts/diag-fachwerk-contract.cjs 33,9 CPU-s — 2,35 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon; Σ fremd 184,4 CPU-s in 149,3 s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 32,9 CPU-s · svchost.exe 19,7 CPU-s · SearchIndexer.exe 1,4 CPU-s) — geeicht ÷ 1,133 (1 + 5,6 % je fremdem Kern × 2,35): fachwerk Neubau p95 ms 1576 → geeicht 1392 (Soll ≤ 1000) · koerperstudio Neubau p95 ms 4070 → geeicht 3594 (Soll ≤ 1000)",
+   "mass": [
+    {
+     "wort": "garage Neubau p95 ms",
+     "wert": 346,
+     "soll": 1000
+    },
+    {
+     "wort": "schmiede Neubau p95 ms",
+     "wert": 48,
+     "soll": 1000
+    },
+    {
+     "wort": "portale Griff → Bild p95 ms",
+     "wert": 15,
+     "soll": 200
+    },
+    {
+     "wort": "portale Neubau p95 ms",
+     "wert": 312,
+     "soll": 1000
+    },
+    {
+     "wort": "klang Griff → Bild p95 ms",
+     "wert": 10,
+     "soll": 200
+    },
+    {
+     "wort": "fachwerk Neubau p95 ms",
+     "wert": 1576,
+     "soll": 1000
+    },
+    {
+     "wort": "koerperstudio Neubau p95 ms",
+     "wert": 4070,
+     "soll": 1000
+    },
+    {
+     "wort": "tetrapoda Neubau p95 ms",
+     "wert": 1051,
+     "soll": 1000
+    },
+    {
+     "wort": "terrain Neubau p95 ms",
+     "wert": 389,
+     "soll": 1000
+    }
+   ],
+   "gpu": "nvidia/pascal",
+   "s": 145.7,
+   "fremd": {
+    "s": 149.3,
+    "takte": 68,
+    "fremdS": 184.44,
+    "kerne": 1.235,
+    "fensterKerne": 2.353,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      49.06
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      36.66
+     ],
+     [
+      "node.exe scripts/diag-fachwerk-contract.cjs",
+      33.92
+     ]
+    ],
+    "dienerS": 65.22,
+    "diener": [
+     [
+      "dwm.exe",
+      33.58
+     ],
+     [
+      "System",
+      16.14
+     ]
+    ],
+    "geraetS": 55.34,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      32.94
+     ],
+     [
+      "svchost.exe",
+      19.69
+     ],
+     [
+      "SearchIndexer.exe",
+      1.44
+     ]
+    ],
+    "eigenS": 237.48,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon"
+   },
+   "zeit": "2026-11-11T06:59:28.354Z",
+   "abdruck": "0729922f0665",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-11T06:51:28.584Z",
+  "start": "2026-11-11T06:58:55.049Z",
   "port": 7804,
-  "warten": 2.18,
-  "bootS": 6.3,
+  "warten": 0.01,
+  "bootS": 5.9,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": "genesis",
-    "vor": "siedlung.K1#2",
-    "s": 28.1,
-    "takte": 574,
+    "ort": null,
+    "vor": "studios.K2#2",
+    "s": 26,
+    "takte": 840,
     "chunks": 81,
     "nach": null
    }
@@ -1305,12 +1417,12 @@
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 97,
+   "zapfen": 174,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 107.2,
-  "minuten": 4.03
+  "fahrtS": 179.9,
+  "minuten": 3.06
  },
  "ungemessen": {
   "ankunft.K1#1": {
