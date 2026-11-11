@@ -468,7 +468,7 @@ function spiegelPartner(m, W, H, s) {
         if (v[2] >= 0.99999) for (let k = 0; k < 3; k++) P[p * 3 + k] = C[k] + (P[p * 3 + k] - C[k]) * 1e4;
         if (m[p] === 1) ys.push(hoch(p));
     }
-    const yw = rang(ys.sort((a, b) => a - b));
+    const yw = rang(ys.sort(aufsteigend));
     const partner = new Int32Array(W * H).fill(-1),
         nah = new Float32Array(W * H).fill(Infinity);
     for (let p = 0; p < W * H; p++) {
@@ -496,7 +496,7 @@ function spiegelDaten() {
             a = S.instancedArray(tw * th, "float"),
             i = S.instanceIndex;
         r.state.renderer.compute(S.Fn(() => a.element(i).assign(S.texture(q).load(S.ivec2(S.int(i.mod(tw)), S.int(i.div(tw)))).r))().compute(tw * th));
-        const tiefe = new Float32Array(await r.state.renderer.getArrayBufferAsync(a.value));
+        const tiefe = new Float32Array(await window.__pufferLesen(a.value, "spiegelDaten Tiefe"));
         r._gpuAbschied(a.value);
         cam.updateMatrixWorld(true);
         const T = window.THREE,
@@ -1307,8 +1307,10 @@ const MASS_RECHNER = {
             const x = g[z];
             n++;
             if (typeof x !== "number" || !Number.isFinite(x)) {
-                teile.push(`${z} —`);
-                if (!arg || arg[1] < 1e9) arg = [`${z} ungemessen`, 1e9];
+                // der Grund beim Namen, wo der Kern ihn trägt (w27-mensch-k4: `augeFreiGrund` — das Auge unter 2 × 2 reinen Pixeln)
+                const grund = g[`${z}Grund`] ? ` (${g[`${z}Grund`]})` : "";
+                teile.push(`${z} —${grund}`);
+                if (!arg || arg[1] < 1e9) arg = [`${z} ungemessen${grund}`, 1e9];
                 continue;
             }
             const br = Math.max(1e-6, b[1] - b[0]);
@@ -2197,6 +2199,19 @@ function sollTafelSelbsttest(tafel, q) {
     );
     if (!(ge.ist === 0.5 && /augeFrei 0\.45/.test(ge.taeter || "")))
         v.push(`Maß gesicht: halb im Band liest ${ge.ist}, Täter ${ge.taeter}`);
+    // das Auge unaufgelöst (w27-mensch-k4): augeFrei ungemessen ist nie GRÜN, der Täter trägt den Grund des Kerns beim Namen
+    const geU = MASS_RECHNER.gesicht(
+        {
+            messung: Object.assign(stufeMe([["spieler:kopf/haut", 100]]), {
+                gesicht: { augeFrei: null, augeFreiGrund: "irisR 4 px, 0 rein < 2×2", lippeA: 6 },
+            }),
+        },
+        q,
+        [1, 1],
+        { felder: { augeFrei: [0.9, 1], lippeA: [4, 14] } }
+    );
+    if (!(geU.ist === 0.5 && /augeFrei ungemessen \(irisR 4 px, 0 rein < 2×2\)/.test(geU.taeter || "")))
+        v.push(`Maß gesicht: ein unaufgelöstes Auge liest ${geU.ist}, Täter ${geU.taeter}`);
     if (!Number.isFinite(Math.log((0 + MASS_AUFLOESUNG.zweiton) / (0 + MASS_AUFLOESUNG.zweiton))))
         v.push("Auflösung: ein Rand 0 ist unendlich");
     const faelle = [

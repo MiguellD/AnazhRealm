@@ -817,7 +817,7 @@ async function zielMessen(opt, S) {
         if (m.ziel?.frei !== null) return m;
         const aus = new Set();
         const leiber = new Set();
-        st.scene.traverseVisible((o) => (o.userData.isHydrosphere || /^(nahWiese:|streuSatz|wasserSatz|farWater|chunk-water-)/.test(r._taeterKlasse(o))) && aus.add(o)); // prettier-ignore
+        st.scene.traverseVisible((o) => (o.userData.isHydrosphere || /^(nahWiese:|streuNah:|wasserSatz|farWater|chunk-water-)/.test(r._taeterKlasse(o))) && aus.add(o)); // prettier-ignore
         if (welches === "leib") st.scene.traverseVisible((o) => (o.isSkinnedMesh || o.userData.gang) && (aus.add(o), leiber.add(o)));
         for (const o of aus) o.visible = false;
         window.__bundlesNeu();

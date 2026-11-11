@@ -611,7 +611,7 @@ const quoteUeber = (st) =>
 // ── DIE WURF-PROBE (1110-9, docs/studio-vertrag.md N5): DIE KOSTEN-REGEL DES WIRTS am Regler-Rand. Wirft die erste Stufe
 // einer Art über ihre NUR-WURF-Stufe (B2c `schatten` → eine Stufe mit `nurWurf`), nimmt der Wirt deren Zwilling nur, wo er
 // weniger Dreiecke wirft als die werfenden Teile der Stufe selbst (`_wurfVonBilligerer` in `_foundryFlattenFor`; das
-// Wurf-Recht je Teil `_teilWirft`). Die Probe liest BEIDE Regeln aus der Quelle des Stamms und richtet je Rezept × Rand
+// Wurf-Recht je Teil welt-licht.js `teilWirft`). Die Probe liest BEIDE Regeln aus ihrer Quelle und richtet je Rezept × Rand
 // das Paar aus den Bauten der Stufen-Probe (erste Stufe, NUR-WURF-Stufe; die volle Regler-Hülle jeder Art): die Regel wirft
 // nie von der teureren Stufe. Die Zeile der NUR-WURF-Stufe ist das Rezept-Maß (gate:asset-contract), am Regler-Rand
 // richtet die Regel — die Probe nennt jede Stelle, an der die Stufe selbst wirft, mit ihren Kosten.
@@ -619,7 +619,8 @@ const quoteUeber = (st) =>
 function stammRegel() {
     const s = stammLib.text(ROOT);
     const fn = (name) => ((m) => new Function(m.args, m.rumpf))(stammLib.methodeAm(s, name));
-    return { teilWirft: fn("_teilWirft"), vonBilligerer: fn("_wurfVonBilligerer") };
+    // das Wurf-Recht je Teil steht im Licht-Baustein (welt-licht.js `teilWirft`, Welt und Bühne lesen es), die Kosten-Regel im Stamm
+    return { teilWirft: fadenScope(["foundry-core.js", "welt-licht.js"]).__weltLicht.teilWirft, vonBilligerer: fn("_wurfVonBilligerer") };
 }
 function budgetVonArt(rc, art) {
     const L = rc?.lod || {};

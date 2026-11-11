@@ -296,10 +296,17 @@ function ferneWand(A) {
     let [deckung, schirm] = [1, 0];
     for (let j = R * T.je; j < (F.bis - F.saum) * T.je; j++)
         [deckung, schirm] = [j > 40 * T.je ? deckung : Math.min(deckung, T.anteil[j] * T.streck[j]), Math.max(schirm, T.anteil[j] * (j / T.je / F.fuss) ** 3)];
-    const rest = new Set();
-    for (let k = 0; k < 64; k++) if (A._wieseOrdnung((k & 7) * 0.72, (k >> 3) * 0.72) < 0.25) rest.add(k & 9);
-    const zeile = `Deckung bis 40 m ${deckung.toFixed(2)} · Schirm ${schirm.toFixed(2)}× · Restklassen ${rest.size}`;
-    return { errs: deckung < 0.99 || schirm > 2 || rest.size > 1 ? [`P-Ferne: ${zeile} (Soll 1 · ≤ 2× · 1)`] : [], deckung, schirm }; // prettier-ignore
+    // DER RANG DER ZELLE (w27-ankunft-faden): `_ortRang` ist die untere Schranke der Ordnung jedes Punkts seiner Zelle — über ihm
+    // verwirft die Ferne die Zelle vor jedem Wurf (`_nahWieseKachelBueschel`); `brueche` zählt, wo nicht
+    const [rest, W] = [new Set(), A._wortAlgebra()];
+    let brueche = 0;
+    for (let k = 0, o, u; k < 64; k++) {
+        [o, u] = [A._wieseOrdnung((k & 7) * 0.72, (k >> 3) * 0.72), W.anteil(A._ortRang(W, (k & 7) * 0.72, (k >> 3) * 0.72, A._wieseSchritt()))];
+        if (o < 0.25) rest.add(k & 9);
+        brueche += !(u <= o && o < u + 1 / 256);
+    }
+    const zeile = `Deckung bis 40 m ${deckung.toFixed(2)} · Schirm ${schirm.toFixed(2)}× · Restklassen ${rest.size} · Rang-Brüche ${brueche}`;
+    return { errs: deckung < 0.99 || schirm > 2 || rest.size > 1 || brueche ? [`P-Ferne: ${zeile} (Soll 1 · ≤ 2× · 1 · 0)`] : [], deckung, schirm }; // prettier-ignore
 }
 
 // P-GRENZE — DIE GRENZE DER STRECKUNG (w21-wiese-fern) an der echten Klasse: die Ferne der Nah-Wiese spreizt die Füße eines
@@ -1192,6 +1199,7 @@ function selbsttest() {
         t(`Deckung der Ferne: das Gesetz hält, das vor w10-wiese reißt (${alt.errs})`, !ferneWand(A).errs.length && alt.deckung < 0.99 && alt.schirm > 2);
         // die Ordnung ohne den Bayer-Rang der Zelle (die PCG allein, bis w19-saum-lai) reißt das Teil-Gitter
         t("Teil-Gitter der Ferne: die PCG allein reißt", ferneWand(klasseVon(stammLib.ersetze(st, "_ortZiehung", "if (!(schritt > 0)) return", "return"))).errs.length); // prettier-ignore
+        t("Rang der Zelle: das Wort über dem Rang reißt", ferneWand(klasseVon(stammLib.ersetze(st, "_ortRang", "h = W.shr(h, 8);", "h = W.shr(h, 0);"))).errs.some((e) => /Rang-Brüche [1-9]/.test(e))); // prettier-ignore
     }
 
     // S31 — H2b DIE FRISCHE an der Gegenprobe 1110-12 (spec/profiband/probe-1110-12.json): die Ratsche der Mess-Wiese,

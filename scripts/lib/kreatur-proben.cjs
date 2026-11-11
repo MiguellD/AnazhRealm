@@ -21,7 +21,7 @@ async function kreaturProben(r, T, opts) {
     const grad = (a) => (a * 180) / Math.PI;
     const quantil = (arr, q) => {
         if (!arr.length) return null;
-        const b = arr.slice().sort((a, b) => a - b);
+        const b = arr.slice().sort(aufsteigend);
         return b[Math.min(b.length - 1, Math.floor(q * (b.length - 1) + 0.5))];
     };
     const rund = (v, n) => +v.toFixed(n); // die Zahl der Zeile, auf n Stellen
@@ -973,7 +973,11 @@ async function kreaturProben(r, T, opts) {
             Object.assign(t, { fs: 0, fb: 0, fMin: 1, phi: [0, 0], lauf: [], weg: glieder.map(() => 0), id: [0, 0] });
             Object.assign(t, { enge: 0, engst: [Infinity] });
             const [alt, beginn] = [glieder.map((c) => c.position.clone()), []];
-            for (let k = 0; k < (art === "blick" ? 1200 : fremd.length ? 36000 : 3600); k++) {
+            // DAS WANDERN DAUERT 120 s (z353): ohne den Zug des Verbands (Täter herde-zerfall) trieb die Herde am Ort des
+            // dichteren Walds (heim2-w20-wald-kosten) in 50 s nur auf 0,916 (Soll ≥ 0,9) auseinander, an main 0,791 — die Zahl der
+            // Wanderung hing am Ort, nicht am Gesetz; der Verband hält, solange er wandert, also urteilt die Probe über 10–120 s
+            t.takte = art === "blick" ? 1200 : fremd.length ? 36000 : art === "wander" ? 7200 : 3600;
+            for (let k = 0; k < t.takte; k++) {
                 const g0 = fremd.length && [6000, 18000].find((k0) => k >= k0 && k < k0 + 3600);
                 const x = flucht ? -30 + (1.4 * k) / 60 : g0 ? -30 + (1.4 * (k - g0)) / 60 : 45;
                 const q = neben(heim.x + x, heim.z + (g0 ? (g0 > 6000 ? 42 : -12) : 0));
@@ -1019,7 +1023,7 @@ async function kreaturProben(r, T, opts) {
             n: t.n,
             wurfAnteil: rund(t.wurf, 3),
             mittel: rund(t.summe / t.bilder, 3),
-            fluchtAnteil: rund(t.fluchtTakte / (3600 * t.n), 3),
+            fluchtAnteil: rund(t.fluchtTakte / (Math.min(t.takte, 3600) * t.n), 3),
             fluchtMittel: t.fb ? rund(t.fs / t.fb, 3) : null,
             fluchtMin: t.fb ? rund(t.fMin, 3) : null,
             enge: rund(t.enge / t.bilder, 2),
@@ -1132,8 +1136,8 @@ async function kreaturProben(r, T, opts) {
             }
             alt = L;
         }
-        const zahl = (v, n = t.takte) => +(v / n).toFixed(3);
-        const aus = { glieder: zt.n, takte: t.takte, fensterM: fenster, phi: zahl(t.phi), kohaesion: zahl(t.k.reduce((m, v) => m + v), t.k.length), kohaesionMin: Math.min(...t.k), zuegeJeGlied: zahl(t.zuege), fluchtM: S.leittier.fluchtM }; // prettier-ignore
+        const zahl = (v, n = t.takte) => rund(v / n, 3);
+        const aus = { glieder: zt.n, takte: t.takte, fensterM: fenster, phi: zahl(t.phi), kohaesion: zahl(t.k.reduce(addiere), t.k.length), kohaesionMin: Math.min(...t.k), zuegeJeGlied: zahl(t.zuege), fluchtM: S.leittier.fluchtM }; // prettier-ignore
         // II: der Baum an der Mitte des Kreises, im Bild gebaut (der Spieler bei ihm); dann geht der Spieler von dort, wo das
         // Zentrum in 8 s fliegt, dem Leittier mit 5 m/s entgegen, bis es auffliegt, und steht
         pm.set(c.x, H(c.x, c.z) + 0.5, c.z);
@@ -1862,7 +1866,7 @@ async function kreaturProben(r, T, opts) {
                 (c) => c.userData._jagdZiel === "spieler" && /^(jagd|hetzen)$/.test(c.userData._motionZustand)
             );
         const luecke = (R) => {
-            const w = R.map((c) => Math.atan2(c.position.x - pm.x, c.position.z - pm.z)).sort((a, b) => a - b);
+            const w = R.map((c) => Math.atan2(c.position.x - pm.x, c.position.z - pm.z)).sort(aufsteigend);
             return grad(Math.max(...w.map((a, i) => (i + 1 < w.length ? w[i + 1] : w[0] + TAU) - a)));
         };
         // die Lücke beim ersten Biss, der den Spieler trifft (das Maul am Leib)
@@ -2217,7 +2221,7 @@ async function kreaturProben(r, T, opts) {
                 gleitAnteil: Z.lauf ? rund(Z.gleit / Z.lauf, 3) : null,
                 fernBild: Z.fernBild,
             };
-        aus2.abstandM = tiere.map((t) => +ab(t.c.position, P0).toFixed(1));
+        aus2.abstandM = tiere.map((t) => rund(ab(t.c.position, P0), 1));
         return aus2;
     });
 
@@ -2543,7 +2547,7 @@ async function kreaturProben(r, T, opts) {
                 const je = liste.map((b) => ({ wer: wer(b), ...wSpur.get(b) }));
                 const vier = (n, l) => ({ [n + "N"]: l.length, [n]: l.slice(0, 4) });
                 return {
-                    wandN: [...WG.wand.values()].reduce((a, b) => a + b, 0),
+                    wandN: [...WG.wand.values()].reduce(addiere, 0),
                     wand: [...WG.wand]
                         .sort((a, b) => b[1] - a[1])
                         .slice(0, 4)
@@ -2595,7 +2599,7 @@ async function kreaturProben(r, T, opts) {
             menge: (S) => {
                 const M = liste.filter((b) => b.leib && !b.drinnen).sort((a, b) => ab(a.leib.position, pm) - ab(b.leib.position, pm)).slice(0, 50); // prettier-ignore
                 const f = M[0].leib.userData._tierBaum.wrap.scale.x;
-                ms.sort((a, b) => a - b);
+                ms.sort(aufsteigend);
                 // die Dreiecke der Senken des EINEN Satzes der Siedlung (Leib, Wurf) — jeder Typ zeichnet in ihm
                 const dreiecke = ["leib", "wurf"].map((k) => S.satz[k].geometry.index.count / 3);
                 return {
@@ -2608,7 +2612,7 @@ async function kreaturProben(r, T, opts) {
                     })),
                     pxM: r._schirm().pxJeM / A.BEWOHNER.nahM,
                     kaskaden: A.SCHATTEN_KASKADE.texelM.length,
-                    takt: [q3(ms.reduce((a, b) => a + b, 0) / ms.length), q3(rang(ms, 0.95))],
+                    takt: [q3(ms.reduce(addiere, 0) / ms.length), q3(rang(ms, 0.95))],
                 };
             },
         });
@@ -2955,7 +2959,7 @@ async function kreaturProben(r, T, opts) {
                     Math.max(...blicke.sektor) /
                         Math.max(
                             1,
-                            blicke.sektor.reduce((a, b) => a + b, 0)
+                            blicke.sektor.reduce(addiere, 0)
                         )
                 ),
             },
@@ -3482,7 +3486,7 @@ function urteil(name, z) {
         );
         soll(
             W.mittel >= 0.9,
-            `Verband zerfällt beim Wandern: im Mittel ${W.mittel} der ${W.n} Glieder binnen ${FR} Paar-Räumen vom Mittel von 10 bis 60 s (Soll ≥ 0,9; Wurf ${W.wurfAnteil})`
+            `Verband zerfällt beim Wandern: im Mittel ${W.mittel} der ${W.n} Glieder binnen ${FR} Paar-Räumen vom Mittel von 10 bis 120 s (Soll ≥ 0,9; Wurf ${W.wurfAnteil})`
         );
         soll(
             F.fluchtMittel !== null && F.fluchtMittel >= 0.8,

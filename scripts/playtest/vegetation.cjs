@@ -299,9 +299,11 @@ async function checkBandNahStreu({ page, check }) {
             pp.copy(pmVor);
             return out;
         }
+        // die Pflanzen einer Senke: die Summe ihrer Kachel-Blöcke (`a.anzahl` zählt seit w27-takt-streu die Plätze)
+        const summe = (a) => [...a.bloecke.values()].reduce((n, b) => n + b.n, 0);
         // (5b) DER WIND (W7): jede Senke einer Art mit weichem Gewebe (Laub · Blatt-Karte · Stiel)
-        // zeichnet mit dem wiegenden Studio-Stoff (positionNode aus `_windSwayOffset`, Schlüssel-Teil |wiegt, die Höhe aus
-        // dem Satz-Attribut aWiege), eine Art aus Holz und Stein steht — Konsum am gebauten Ring, keine Art-Liste.
+        // zeichnet mit dem wiegenden Studio-Stoff (positionNode aus `_windSwayOffset`, Schlüssel-Teil |wiegt, die Höhe je Instanz
+        // aus der Welt-Naht, w27-takt-streu), eine Art aus Holz und Stein steht — Konsum am gebauten Ring, keine Art-Liste.
         const weichK = new Set(["foliage", "foliageTex", "stem"]);
         const jeArt = new Map();
         for (const a of senken.values()) {
@@ -321,8 +323,6 @@ async function checkBandNahStreu({ page, check }) {
         for (const [preset, e] of jeArt) {
             (e.weich ? out.wind.wiegend : out.wind.stehend).push(preset);
             for (const a of e.senken) {
-                const satz = st.chunkSaetze ? st.chunkSaetze.get(a.satz) : null;
-                const wiege = !!(satz?.geom.attributes.aWiege);
                 const knoten = e.weich
                     ? !!a.mat.positionNode && a.mat.positionNode !== baumK.ast && a.mat.positionNode !== baumK.laub
                     : still(a.mat);
@@ -330,27 +330,28 @@ async function checkBandNahStreu({ page, check }) {
                     ? e.weich
                         ? "wiegt nicht"
                         : "steht nicht still"
-                    : !satz
-                      ? "ohne Satz"
-                      : satz.mesh.material !== a.mat
-                        ? "Satz-Stoff fremd"
-                        : wiege !== e.weich
-                          ? "aWiege"
-                          : null;
+                    : !a.mesh
+                      ? summe(a) > 0
+                          ? "ohne Mesh"
+                          : null
+                      : a.mesh.material !== a.mat
+                        ? "Senken-Stoff fremd"
+                        : null;
                 if (grund) out.wind.verstoss.push(a.key + " (" + grund + ")");
             }
         }
-        // KONSUM: der wiegende Stoff fragt das EINE Wiegen mit der Höhe und dem Rauschen der Pflanze aus dem Satz-Attribut
-        // aWiege (x die Höhe, y das Rauschen; frisch gebaut, am Stoff-Cache vorbei; der Spion fängt das Argument)
+        // KONSUM: der wiegende Stoff fragt das EINE Wiegen mit der Höhe der Instanz (die Vorlage × die Welt-Skala aus der
+        // Welt-Naht, w27-takt-streu) und dem Charakter laengs 1,2 (frisch gebaut, am Stoff-Cache vorbei; der Spion fängt das
+        // Argument) — bis w27-takt-streu las er beides aus dem Satz-Attribut aWiege
         const wa = [...senken.values()].find((a) => weichK.has((a.mat.userData || {}).foundryKind));
-        let [hoehe, rausch] = [null, null];
+        let [hoehe, laengs] = [null, null];
         if (wa) {
             const u = wa.mat.userData,
                 mats = r._foundryMats,
                 sway = r._windSwayOffset;
             r._foundryMats = {};
             r._windSwayOffset = function (T, o) {
-                [hoehe, rausch] = [o.hoehe, o.rausch];
+                [hoehe, laengs] = [o.hoehe, o.laengs];
                 return sway.call(this, T, o);
             };
             try {
@@ -364,56 +365,56 @@ async function checkBandNahStreu({ page, check }) {
                 r._foundryMats = mats;
             }
         }
-        out.windQuelle = [hoehe, rausch].every((k, i) => k?.components === "xy"[i] && k.node.getAttributeName() === "aWiege");
+        out.windQuelle = hoehe?.isNode === true && laengs === 1.2;
         const ns = st.nahStreu;
-        // (6) DER STREU-SATZ (W7): die Draw-Einheit ist der STOFF — kein Nah-Streu-Objekt zeichnet selbst, je Stoff EIN
-        // Satz in der Szene (der stehende Stoff wirft, der wiegende nie — 1310-11), jede Senke ist ein Studio-Teil (leafKey f:…)
-        // ohne Mesh, ihre Blöcke treu (Σ n = Anzahl, je Block Identitäten und Matrizen), jeder Block mit Pflanzen ein Bereich im
-        // Satz ihres Stoffs.
-        let selbst = 0;
-        st.scene.traverse((o) => {
-            if (o.isMesh && ((o.userData && o.userData.inventar === "streu-klein") || /^streuNah:/.test(o.name || "")))
-                selbst++;
-        });
-        const stoffSaetze = new Map();
-        for (const [art, satz] of st.chunkSaetze || []) if (satz.spec.userData.streuSatz) stoffSaetze.set(art, satz);
-        const stoffe = new Set([...ns.senken.values()].map((a) => a.mat.uuid));
-        const stehtJe = new Map([...ns.senken.values()].map((a) => [a.satz, !a.wiegt]));
+        // (6) DIE SENKE ZEICHNET (W7, w27-takt-streu: die Nah-Streu wählt in der EINEN Wahl der GPU je Pflanze): jede Senke mit
+        // Pflanzen trägt EIN Mesh in der Szene mit ihrem Stoff (die stehende wirft, die wiegende nie), es trägt ihren Studio-Teil
+        // (leafKey f:…), und kein Streu-Satz lebt mehr. Die Blöcke sind treu: je Block Identitäten und Matrizen, je Block ein
+        // Bereich im Bestand ihrer Familie (`ns.bestand`, `_bestandFamilie`) mit derselben Zahl, und die Instanz am Anfang des
+        // Bereichs trägt die Matrix des Blocks (die Spalten 0–2) und den Fuß der Pflanze (Element 3 und 7).
+        r._nahStreuBestand();
+        const famVon = new Map();
+        for (const f of ns.familien.values()) for (const a of f.senken) famVon.set(a, ns.bestand.get(f.key));
+        const lebend = [...ns.senken.values()].filter((a) => summe(a) > 0);
         out.jeStoffEinSatz =
-            selbst === 0 &&
-            [...ns.senken.values()].every((a) => stoffSaetze.has(a.satz)) &&
-            new Set([...stoffSaetze.values()].map((x) => x.spec.mat.uuid)).size === stoffSaetze.size &&
-            stoffSaetze.size <= stoffe.size &&
-            [...stoffSaetze].every(
-                ([art, x]) => x.mesh.parent === st.scene && x.mesh.castShadow === (stehtJe.get(art) === true)
+            lebend.length > 0 &&
+            [...(st.chunkSaetze || []).values()].every((x) => !x.spec.userData.streuSatz) &&
+            lebend.every(
+                (a) => a.mesh?.parent === st.scene && a.mesh.material === a.mat && a.mesh.castShadow === (a.wiegt !== true)
             );
-        out.studioTeile = [...ns.senken.values()].every(
-            (a) => a.mesh === undefined && typeof a.leafKey === "string" && a.leafKey.startsWith("f:")
+        out.studioTeile = lebend.every(
+            (a) => typeof a.leafKey === "string" && a.leafKey.startsWith("f:") && a.mesh.userData.leafKey === a.leafKey
         );
-        out.tabelleDicht = [...ns.senken.values()].every((a) => {
-            let summe = 0;
+        out.tabelleDicht = lebend.every((a) => {
+            const F = famVon.get(a);
+            if (!F || a.anzahl !== F.hoch) return false;
+            const arr = a.mesh.instanceMatrix.array;
             for (const [kk, b] of a.bloecke) {
                 if (b.ids.length !== b.n || b.matrizen.length !== b.n * 16) return false;
-                const bereich = stoffSaetze.get(a.satz).bloecke.get(a.key + "@" + kk);
-                if (b.n > 0 ? !bereich || bereich.vAnzahl !== b.n * a.geo.attributes.position.count : !!bereich)
+                const fb = F.bloecke.get(kk);
+                if (!fb || fb.n !== b.n) return false;
+                if (b.n && (arr[fb.s * 16] !== b.matrizen[0] || arr[fb.s * 16 + 3] !== Math.fround(b.fuss[0]) || arr[fb.s * 16 + 7] !== Math.fround(b.fuss[1])))
                     return false;
-                summe += b.n;
             }
-            return summe === a.anzahl;
+            return true;
         });
-        // (7) Satz-Disziplin: eine gebaute Kachel entsorgen → ihre Blöcke treten aus; neu bauen → dieselben Zahlen.
+        // (7) Bestands-Disziplin: eine gebaute Kachel entsorgen → ihre Blöcke treten aus Senke und Bestand; neu bauen →
+        // dieselben Zahlen.
         const [kKey, kz] = [...ns.kacheln].find(([, k]) => k.senken.size > 0) || [];
         out.kachelMitBloecken = !!kz;
         if (kz) {
-            const vor = new Map([...ns.senken].map(([k, a]) => [k, a.anzahl]));
+            const vor = new Map([...ns.senken].map(([k, a]) => [k, summe(a)]));
             const blockN = new Map([...kz.senken].map((sk) => [sk, ns.senken.get(sk).bloecke.get(kKey).n]));
             r._nahStreuKachelEntsorgen(kz);
-            out.entsorgt = [...blockN].every(([sk, n]) => ns.senken.get(sk).anzahl === vor.get(sk) - n);
+            r._nahStreuBestand();
+            out.entsorgt = [...blockN].every(
+                ([sk, n]) => summe(ns.senken.get(sk)) === vor.get(sk) - n && !famVon.get(ns.senken.get(sk))?.bloecke.has(kKey)
+            );
             for (let i = 0; i < 300 && kz.zustand === null; i++) {
                 r._tickNahStreu();
                 if (kz.zustand === null) await sleep(50);
             }
-            out.neuGleich = [...ns.senken].every(([k, a]) => a.anzahl === vor.get(k));
+            out.neuGleich = [...ns.senken].every(([k, a]) => summe(a) === vor.get(k));
         }
         cam.position.copy(camVor);
         pp.copy(pmVor);
@@ -445,12 +446,12 @@ async function checkBandNahStreu({ page, check }) {
         JSON.stringify(res.wind)
     );
     check(
-        "Nah-Streu (W7): die Draw-Einheit ist der Stoff — je Stoff EIN Streu-Satz in der Szene, keine Senke zeichnet, der stehende Stoff wirft, der wiegende nie",
+        "Nah-Streu (W7): jede Senke mit Pflanzen zeichnet ihr EINES Mesh mit ihrem Stoff, kein Streu-Satz lebt, die stehende wirft, die wiegende nie",
         res.jeStoffEinSatz === true
     );
-    check("Nah-Streu: jede Senke ist ein Studio-Teil (leafKey f:…), Daten ohne Mesh", res.studioTeile === true);
+    check("Nah-Streu: jede Senke ist ein Studio-Teil (leafKey f:…), ihr Mesh trägt ihn", res.studioTeile === true);
     check(
-        "Nah-Streu: die Blöcke sind treu (Σ n = Anzahl, Identitäten und Matrizen je Block, je Block ein Bereich im Streu-Satz)",
+        "Nah-Streu: die Blöcke sind treu (Identitäten und Matrizen je Block, je Block ein Bereich im Bestand der Familie, die Instanz trägt Matrix und Fuß)",
         res.tabelleDicht === true
     );
     check(
@@ -458,7 +459,7 @@ async function checkBandNahStreu({ page, check }) {
         res.kachelMitBloecken === true
     );
     if (!res.kachelMitBloecken) return;
-    check("Nah-Streu: Entsorgen nimmt die Kachel-Blöcke aus den Senken", res.entsorgt === true);
+    check("Nah-Streu: Entsorgen nimmt die Kachel-Blöcke aus den Senken und dem Bestand", res.entsorgt === true);
     check("Nah-Streu: der Neubau stellt dieselben Zahlen her", res.neuGleich === true);
 }
 
@@ -490,24 +491,23 @@ async function checkBandV18133Forage({ page, check }) {
                 return n;
             };
             const before = countMat();
-            const vorher = r._streuNahBereich(pick.senke, pick.key); // der Block der Kachel in der Senke
-            const nVor = vorher.n;
-            const zahlVor = a.anzahl;
-            const satz = st.chunkSaetze.get(vorher.satz);
-            const vertsVor = satz.bloecke.has(vorher.bereich) ? satz.bloecke.get(vorher.bereich).vAnzahl : 0;
+            // der Block der Kachel in der Senke und sein Bereich im Bestand der Familie (`ns.bestand`, w27-takt-streu)
+            const F = ns.bestand?.get([...ns.familien.values()].find((f) => f.senken.includes(a))?.key);
+            const nVor = a.bloecke.get(pick.key).n;
+            const platzVor = F?.bloecke.get(pick.key)?.n;
             const ok1 = r._harvestScatterPick(pick);
             out.harvested = ok1 && countMat() - before === 1;
             out.doubleRejected = r._harvestScatterPick(pick) === false;
-            // Die Pflanze tritt aus dem Block aus: ihre Identität fehlt, der Block und die Anzahl der Senke sinken um eins,
-            // der Bereich im Streu-Satz ihres Stoffs trägt eine Pflanze weniger (sie zeichnet nie mehr).
-            const bereich = r._streuNahBereich(pick.senke, pick.key);
-            const vertsNach = satz.bloecke.has(vorher.bereich) ? satz.bloecke.get(vorher.bereich).vAnzahl : 0;
+            // Die Pflanze tritt aus dem Block aus: ihre Identität fehlt, der Block sinkt um eins, und der Bestand legt den Block
+            // neu — sein Bereich trägt eine Pflanze weniger (sie zeichnet nie mehr).
+            r._nahStreuBestand();
+            const bereich = a.bloecke.get(pick.key);
             out.ausgetreten =
                 !!bereich &&
                 !bereich.ids.includes(pick.id) &&
                 bereich.n === nVor - 1 &&
-                a.anzahl === zahlVor - 1 &&
-                vertsVor - vertsNach === a.geo.attributes.position.count;
+                platzVor === nVor &&
+                F.bloecke.get(pick.key)?.n === nVor - 1;
             // DIE TAT BLEIBT (feld.K4): die Ernte steht als Tat im worldMeta (sie reist mit jedem Save) und senkt lebendig am Ort
             const L = st.worldMeta.taten;
             const i = L.findIndex((x) => x.kachel === pick.key && x.id === pick.id);

@@ -3,7 +3,7 @@
 // Pipeline-Compiles · Upload-Bytes), nie bloße Existenz (Lehre 5), und DIE ERST-ZEICHNUNG: kein Frame trägt eine
 // synchrone Pipeline der Welt, ein Bundle-Bürger steht nach seiner fertigen Pipeline wieder in der Aufnahme, Beweis-
 // Aufnahme und Absage nennen ihren Täter — jede Probe mit ihrem Gegen-Lauf, der rot sein MUSS (die Bänder unten). Ein
-// ECHTER WebGPU-Lauf (swiftshader-Vulkan, Software-Holz kienspan): der Boot SELBST ist der Konsum-Beweis.
+// ECHTER WebGPU-Lauf (auf der Karte, Software-Holz kienspan): der Boot SELBST ist der Konsum-Beweis.
 //
 //   node scripts/diag-hitch-telemetrie.cjs --teil=1|2
 //   DIE ZWEI TEILE (je eine Welt, je eine CI-Gruppe): Teil 1 trägt den Boot-Konsum (Bänder 1–5, Konsum im Boot, Selbst-Test), die
@@ -682,11 +682,12 @@ function erstWandInstall(BUNDLE_FRAMES) {
 }
 
 hauptLauf(async () => {
-    // Echtes WebGPU auf swiftshader — die Schalter je Plattform trägt das EINE Rezept (scripts/lib/software-gpu.cjs); Band 1
-    // (LongTasks) ist auf swiftshader geeicht. Die Bau-Uhr sitzt vor dem ersten Skript der Seite: jeder Pipeline-Bau des Boots steht
-    // in ihr (die Ruhe wartet auch auf ihn). KEIN Null-Renderer — die Zähler brauchen den echten WebGPU-Pfad (Tap + Pipelines).
-    // Software-Holz (Lehre 26): auf „voll" kostet auf swiftshader ein Compile 50–70 s; die Linse prüft Zähler und Gesetz.
-    const { browser, page } = await nullWelt(server, { art: "linse", bild: true, frist: 600000, zeit: true, fenster: { width: 640, height: 360 }, vor: bauUhrInstall }, 60000, "index.html?holz=kienspan"); // prettier-ignore
+    // Echtes WebGPU an der Weiche — die Schalter je Plattform trägt das EINE Rezept (scripts/lib/software-gpu.cjs): seit
+    // w27-swift-raus auf der Karte (Radeon 890M, 10.11.: beide Teile GRÜN in 81 s; Band 1 zählt die LongTasks des Boots, ohne
+    // LongTask Existenz und Typ). Die Bau-Uhr sitzt vor dem ersten Skript der Seite: jeder Pipeline-Bau des Boots steht in ihr (die
+    // Ruhe wartet auch auf ihn). KEIN Null-Renderer — die Zähler brauchen den echten WebGPU-Pfad (Tap + Pipelines). Software-Holz
+    // (Lehre 26): die Linse prüft Zähler und Gesetz, nie den Stoff des vollen Holzes.
+    const { browser, page } = await nullWelt(server, { art: "linse", bild: true, frist: 600000, fenster: { width: 640, height: 360 }, vor: bauUhrInstall }, 60000, "index.html?holz=kienspan"); // prettier-ignore
 
     const out = await page.evaluate(async (laufzeitMs) => {
         const res = {};
@@ -815,6 +816,74 @@ hauptLauf(async () => {
             : null;
         return res;
     }, IN(1) ? LAUFZEIT_MS : 0);
+    // DER STAND LÄDT NICHTS (Lehre 25; w25-gpu-wahl-2, w27-takt-streu): die Welt steht, ihre Uhr springt je Bild 2,5 s (ein
+    // Bild über dem Kehraus: Hänger, Programm-Bau, swiftshader). Je Bild jeder Upload beim Namen seines Schreibers (das
+    // Etikett des Puffers, sonst die innersten Glieder des Stamms im Stapel). Verboten im Stand: die Wahl der GPU
+    // (`pass-wahl-*`: Lage, Aufträge, die Zahlen der Züge) und die Kopie eines Lagers der Arena (`kopie`). Die Mutanten MÜSSEN
+    // rot werden: der Kehraus der Wanduhr (jedes Lager vergisst seinen letzten Takt) nennt `kopie`, die vergessene Lage
+    // je Kamera nennt `pass-wahl-auftraege`.
+    if (IN(1) && out && !out.fatal) {
+        const stand = (mutante) =>
+            page.evaluate(async (mutante) => {
+                const st = r.state,
+                    rend = st.renderer,
+                    q = rend.backend.device.queue,
+                    A = r.constructor;
+                // erst steht die Welt (das EINE Einschwingen): Geburten sind kein Stand
+                let stehtNicht = null;
+                if (mutante === "erst")
+                    await window.__weltStehtNach(null, 1800).catch((e) => (stehtNicht = String(e && e.message).slice(0, 200)));
+                const p0 = performance.now.bind(performance);
+                let plus = 0;
+                const je = {};
+                const alt = q.writeBuffer;
+                q.writeBuffer = function (b, off, data, dOff, size) {
+                    const sz = size != null ? size * (data.BYTES_PER_ELEMENT || 1) : (data && data.byteLength) || 0;
+                    let k = b && typeof b.label === "string" && b.label.startsWith("pass-wahl") ? b.label : "";
+                    if (!k) {
+                        const namen = (new Error().stack || "").split("\n").slice(2).map((z) => (z.match(/at (?:[\w$]+\.)?([\w$]+) \(/) || [])[1]);
+                        k = namen.filter((x) => x && /^(_[a-zäöü]|kopie|schreib)/.test(x)).slice(0, 3).join("<") || "?";
+                    }
+                    je[k] = (je[k] || 0) + sz;
+                    return alt.call(this, b, off, data, dOff, size);
+                };
+                performance.now = () => p0() + plus;
+                // der Regler hält seine Stufe (die gesprungene Uhr läse er als Bild von 2,5 s und senkte `uLodPerf` — die Lage
+                // jedes Passes wechselte, kein Stand)
+                const eigen = Object.hasOwn(r, "_nexusPerfActuate");
+                const akt = r._nexusPerfActuate;
+                r._nexusPerfActuate = () => {};
+                let bilder = 0;
+                try {
+                    for (let i = 0; i < 6; i++) {
+                        if (i === 2) for (const k in je) delete je[k]; // zwei Bilder Einlauf
+                        if (mutante === "kehraus") for (const L of A.__lager ? A.__lager.values() : []) L.taktT = Infinity;
+                        if (mutante === "lage" && A.__wahlGpu) A.__wahlGpu.jeKamera = new WeakMap();
+                        plus += 2500;
+                        r._gameLoopTick(performance.now());
+                        await rend.backend.device.queue.onSubmittedWorkDone();
+                        if (i >= 2) bilder++;
+                    }
+                } finally {
+                    q.writeBuffer = alt;
+                    performance.now = p0;
+                    if (eigen) r._nexusPerfActuate = akt;
+                    else delete r._nexusPerfActuate;
+                }
+                const verboten = Object.entries(je).filter(([k]) => k.startsWith("pass-wahl") || /(^|<)kopie(<|$)/.test(k));
+                return {
+                    stehtNicht,
+                    bilder,
+                    kbJeBild: +(Object.values(je).reduce((a, b) => a + b, 0) / 1024 / Math.max(1, bilder)).toFixed(1),
+                    verboten: verboten.map(([k, b]) => `${k} ${(b / 1024 / Math.max(1, bilder)).toFixed(1)} KB`),
+                    top: Object.entries(je).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([k, b]) => `${k} ${(b / 1024 / Math.max(1, bilder)).toFixed(1)} KB`),
+                };
+            }, mutante);
+        out.stand = await stand("erst");
+        out.standKehraus = await stand("kehraus");
+        out.standLage = await stand("lage");
+        out.standDanach = await stand(null);
+    }
     // DIE ERST-ZEICHNUNG: Installation, Probe, Gegen-Lauf, Neubau, Neubau ohne Gedächtnis — je ein Aufruf
     if (out && !out.fatal) {
         // DIE FRIST GILT JE BAU, NIE JE PROBE: eine Probe ohne Sekunden-Frist — sie läuft auf der Seite als
@@ -981,6 +1050,23 @@ hauptLauf(async () => {
         `Tap=${up.tapDa} · Probe ${up.probe} von 4224 Bytes · kumuliert=${upMB.toFixed(2)} MB · EwmaProFrame=${
             up.uploadBytesEwma != null ? (up.uploadBytesEwma / 1024).toFixed(1) + " KB" : "—"
         }`
+    );
+
+    // Band 4b — DER STAND LÄDT NICHTS: kein Byte der Wahl der GPU, keine Kopie eines Lagers in vier Bildern Stand (je Bild
+    // 2,5 s), beim Namen; die beiden Mutanten MÜSSEN ihren Schreiber nennen, und danach steht der Stand wieder.
+    const leer = { verboten: [], top: [] };
+    const [sx, sk, sl, sd] = [out.stand, out.standKehraus, out.standLage, out.standDanach].map((x) => x || leer);
+    bandIn(1)(
+        !sx.stehtNicht &&
+            sx.bilder === 4 &&
+            sx.verboten.length === 0 &&
+            sd.verboten.length === 0 &&
+            sk.verboten.some((v) => /kopie/.test(v)) &&
+            sl.verboten.some((v) => /^pass-wahl-auftraege/.test(v)),
+        "STAND LÄDT NICHTS (Lehre 25)",
+        `${sx.stehtNicht ? "DIE WELT STEHT NICHT: " + sx.stehtNicht + " | " : ""}Stand ${sx.kbJeBild} KB je Bild · verboten ${sx.verboten.join(", ") || "keins"} · Top ${(sx.top || []).join(" · ")} | ` +
+            `Mutante Kehraus der Wanduhr: ${sk.verboten.join(", ") || "STUMPF (keine Kopie genannt)"} | Mutante Lage vergessen: ` +
+            `${sl.verboten.join(", ") || "STUMPF (keine Wahl genannt)"} | danach ${sd.verboten.join(", ") || "keins"}`
     );
 
     // Band 5 — der Trace trägt alle vier Zähler (dieselbe Prüf-Funktion wie der Selbst-Test).

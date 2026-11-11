@@ -44,14 +44,16 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
 - ORT: der Genesis-Ort ist EIN Plan des Ort-Gesetzes (fachwerk `GENESIS_ORT` → `genesisLayout` → `ortPlan`, der erste Auftrag
   des Voxel-Fadens; der Wirt liest ihn, `_genesisOrt`, seine Flächen sind Grundriss der Natur-Wand, ihr `belag` ein Kanal der EINEN
   Wege-Karte: `WEGE_KARTE.belag` rg8snorm — der Boden zeichnet Kopfstein aus porta `STEIN_GESETZ.kopfstein` und Rasen aus `WIESEN_GRUND`), jedes Bauwerk und jeder Dorfweg sind Grundriss gegen Natur, das Dorf EIN Plan des
-  Fachwerk-Studios auf dem Gelände-Kern (`_ortPlaene`), jeder Wurf des Felds weicht ihm (`FELD_WURF`, `_weichtDemBau`). Die Natur-Wand
+  Fachwerk-Studios auf dem Gelände-Kern (`_ortPlaene`), jeder Wurf des Felds weicht ihm (`FELD_WURF`, `_weichtDemBau`); der Wald trägt den
+  Saum am Siedlungsrand (phyto-core `forestOrt`: drinnen kahl, über `bestand.saum` steigt die Geburt; der Rand `siedlungsReich` je Plan,
+  `_ortRaender` in Wirt und Faden, der gepflanzte Wald folgt dem Plan, `_saumRaeumen`). Die Natur-Wand
   (`_naturWand`) hält Bauten und Wagen frei, der Halm der Nah-Wiese fragt ihre Hüllen (`_imWagen`, `_imGrundriss` „bau“; das Haus
   sein Erdbau), ein haltender Wagen lässt die Kacheln neu wachsen (`_wagenGrund`). Heute weicht der Halm dem fahrenden Wagen nicht.
 - GESTALT < 64 m Studio-Mesh + LOD-Kette, EIN Auge der Stufen (`_lodAuge`), jede Karte eine Schicht des EINEN Atlas, gebacken aus
   ihrer Höhen-Stufe (`_karteStufe`), je Texel ihre Tiefe (phyto-core `karteTiefe`: die Karte steht in der Tiefe ihrer Gestalt —
   gelesen an den Ecken ihres Gitters `KARTE_GITTER`, nie im Fragment: frag_depth schaltet den frühen Tiefentest ab; fern fällt das
   Gitter auf das Quad; die Clip-Tiefe geht durch die Projektion der Kamera, WebGL2 trägt [−1, 1]; die Bühne ZEICHNET ihr Ziel leer
-  (`B.leere`: r184-WebGL2 leert keine Array-Schicht ≥ 1); heute ohne Blick-Parallaxe, gate:foundry-impostor C7 misst sie), ihre Mips
+  (`B.leere`: r184-WebGL2 leert keine Array-Schicht ≥ 1); das Fragment liest jede Ansicht am Treffer ihres Reliefs, `_relief` über `KARTE_RELIEF`: die Blick-Parallaxe, gate:foundry-impostor C9), ihre Mips
   deckungstreu mit dem Saum auf JEDER Stufe, auch Stufe 0, in JEDEM Hebungs-Ring (phyto-core `karteSaumSchluessel`/`karteSaumRinge`:
   das Band der geglätteten Deckung, der Rahmen nie Umriss, Band und Zelle im Schritt `saumWeite` an der gröberen Texel-Achse — dem Maß,
   das der Schirm als Saum liest —, ein Texel mit eigener Deckung immer wählbar, Laub-Lappen, Nadel-Grate,
@@ -189,9 +191,11 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
   `npm run format:check` · `npm run atlas` (+ `--find`).
 - Lokal der Puls der berührten Methoden + playtest:fast; der Integrator fährt den VOLLEN Playtest je Merge, die volle Batterie einmal je
   Version; gemergt bei grüner Zweig-CI.
-- CI (`.github/workflows/check.yml`): Puls in 2 Gruppen je Push; die volle Batterie in 18 Gruppen (1–7 CPU, 8–18 GPU; Playtest = Gruppe 1)
-  auf integ-probe, main, nachts und bei `[ci voll]` in der Commit-Message, hinter dem Kopf-Richter; `node scripts/ci-zeiten.cjs` misst und
-  verteilt, `gate:ci-deckung` hält die Waage; `[skip ci]` überspringt beides.
+- CI (`.github/workflows/check.yml`): Puls in 2 Gruppen je Push; die volle Batterie in 18 CPU-Gruppen (Playtest = Gruppe 1) auf
+  integ-probe, main, nachts und bei `[ci voll]` in der Commit-Message, hinter dem Kopf-Richter; die GPU-Klasse fährt NUR auf der Karte
+  (Job `echt`, drei Beine zugleich: omen · radeon · gtx1050, Läufer-Label `<karte>-gpu`, je Wand GENAU eine Stelle, nie swiftshader im
+  Zug) auf integ-probe, zug-a, zug-b und nachts; `node scripts/ci-zeiten.cjs` misst und verteilt, `gate:ci-deckung` hält die Waage
+  und die Klasse ((K): ein Echt-Rezept in der vollen Batterie ist ROT beim Namen); `[skip ci]` überspringt beides.
 - GPU-Zeit nur `werkbank gpu-bank` (OMEN = GTX 1060; die Radeon 890M lokal per `werkbank --echt`), A/B bei gleicher Szene oder ≥ 4 Boots
   je Seite; Aufträge und Berichte der Messplätze leben im Zweig `koordination`, nie in main.
 - Bild-Urteile auf ECHTER GPU aus jedem Zweig (`.github/workflows/gpu-probe.yml`): die Kopf-Commit-Message trägt
