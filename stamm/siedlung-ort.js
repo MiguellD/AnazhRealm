@@ -845,6 +845,7 @@ class AnazhRealm_siedlung_ort {
             return false;
         };
         let best = null;
+        const fiel = { stueck: 0, bau: 0, gelaende: 0, spur: 0 };
         // der Kegel um die Achse weitet sich, bis ein Bau frei steht (20° · 45° · rundum): am Dorf der Zelle −4,−4 liegt
         // binnen 20° nur das Gasthaus, und seine Sichtlinie ist verstellt. DANN DER KEGEL (w27-ort-pose-voll): zuerst nur
         // Sichtlinien, die keine Spur kreuzen (`_verkehrFahrbahnM` ohne Rand, je halben Meter) — ein Wagen in ihr steht vor dem
@@ -860,7 +861,7 @@ class AnazhRealm_siedlung_ort {
                     const t = ((h.x - M.x) * dx + (h.z - M.z) * dz) / (d * d);
                     return t > 0 && t < 1 && Math.hypot(M.x + dx * t - h.x, M.z + dz * t - h.z) < h.r;
                 };
-                if (hinder.some(quer)) continue;
+                if (hinder.some(quer) && ++fiel.stueck) continue;
                 // DAS ZIEL IST DIE FASSADE: der Punkt, an dem die Sichtlinie in den Grundriss tritt — die Mitte liegt hinter
                 // der Wand, und die Abnahme nennt sie verdeckt (Mutant „Ziel = Mitte" auf pascal: dorf „verdeckt von bauSatz in
                 // 5.82 m", stadt „verdeckt von an Punkt 1 Gelände in 20.37 m")
@@ -868,14 +869,18 @@ class AnazhRealm_siedlung_ort {
                 const k = Math.min(b.obb.ex / Math.abs(dx * bc - dz * bs), b.obb.ez / Math.abs(dx * bs + dz * bc));
                 const ziel = { x: b.x - dx * k, z: b.z - dz * k };
                 const [zx, zz, zd] = [ziel.x - M.x, ziel.z - M.z, d * (1 - k)];
-                if (querBau(b, zx, zz) || querGelaende(zd, zx, zz)) continue;
-                if (spurfrei && this._verkehrFahrbahnM(S, M, [ziel], 0)) continue;
+                if (querBau(b, zx, zz) && ++fiel.bau) continue;
+                if (querGelaende(zd, zx, zz) && ++fiel.gelaende) continue;
+                if (spurfrei && this._verkehrFahrbahnM(S, M, [ziel], 0) && ++fiel.spur) continue;
                 best = { d, ziel };
             }
         }
+        // KEIN KANDIDAT IST EIN BRUCH BEIM NAMEN: welcher Ort, wie viele Bauten, woran jeder Gang fiel (über alle sechs Kegel)
         if (!best)
             throw new Error(
-                `_ortPose: kein Bau mit freier Sichtlinie vom Stand ${M.x.toFixed(1)} ${M.z.toFixed(1)} (${bau.length} Bauten, ${hinder.length - bau.length} Hindernisse)`
+                `_ortPose: kein Bau mit freier Sichtlinie vom Stand ${M.x.toFixed(1)} ${M.z.toFixed(1)} der Siedlung ${S.key || "?"} ` +
+                    `(${bau.length} Bauten, ${hinder.length} Stücke und Natur; gefallen an Stück ${fiel.stueck} · Bau ${fiel.bau} · ` +
+                    `Gelände ${fiel.gelaende} · Spur ${fiel.spur})`
             );
         return { x: M.x, z: M.z, gier: this._blickGierZu(best.ziel.x - M.x, best.ziel.z - M.z), ziel: best.ziel };
     }

@@ -2731,8 +2731,19 @@ class AnazhRealm_siedlung_bauten {
         const kugel = new THREE.Sphere();
         for (const s of this.state.chunkSaetze ? this.state.chunkSaetze.values() : []) {
             if (!s.mesh.visible || ohne.has(s.mesh)) continue;
+            // NUR DER BAU-SATZ TRÄGT SLOTS (`userData.bauSatz`, `_chunkSatzArt`): sein Bereich ist eine Instanz-Gruppe, ihr
+            // Schlüssel der des Bereichs. Boden, Wasser und Tiere legen Bereiche je Chunk, die keine Gruppe kennt — bis hier
+            // fragte jeder Bereich jedes Satzes die Gruppen, und an der Prüfbühne (kein Bau, also keine Karte der Gruppen,
+            // `_archGroupAlloc`) warf die Abnahme jedes Bilds „Cannot read properties of null“. Ein Bau-Bereich ohne seine
+            // Gruppe ist ein Bruch beim Namen, nie ein stilles „kein Eintrag“
+            const bauSatz = s.mesh.userData && s.mesh.userData.bauSatz;
             for (const b of s.bloecke.values()) {
-                const se = this.state.archInstanceGroups.get(b.key)?.slotEntry;
+                const g = bauSatz ? this.state.archInstanceGroups && this.state.archInstanceGroups.get(b.key) : null;
+                if (bauSatz && !g)
+                    throw new Error(
+                        `_satzZelleBei: der Bau-Satz ${bauSatz} trägt den Bereich ${b.key} ohne seine Instanz-Gruppe`
+                    );
+                const se = g ? g.slotEntry : null;
                 (b.zellen || []).forEach((z, i) => {
                     if (!(z.huelle.distanceToPoint(p) < 0.5) || h?.rad <= z.huelle.getBoundingSphere(kugel).radius)
                         return;

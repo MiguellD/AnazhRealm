@@ -247,6 +247,14 @@ jobs:
                       grep -h "\[linse-gpu\]" "$wl"
                       node scripts/werkbank.cjs umstellen --ort "$1" --port $W > "$OUT/umstellen-$1.json" || rc=1
                       grep -E '"(ort|sicht|spieler|fehler)"' "$OUT/umstellen-$1.json"
+                      # SCHEITERT DAS UMSTELLEN, IST SEIN FEHLER DAS URTEIL (11.11., adeeb1c3 bild:stadt): bis hier las die Zeile danach
+                      # den Blick einer Aufstellung, die keinen trug, und der Post nannte „TypeError … reading '0'“ statt des Täters
+                      if [ $rc != 0 ]; then
+                          echo "ROT umstellen --ort $1: $(sed -n 's/^ *"fehler": "\(.*\)",\{0,1\}$/\1/p' "$OUT/umstellen-$1.json" | head -n 1 | cut -c1-400)"
+                          node scripts/werkbank.cjs stop --port $W > /dev/null 2>&1
+                          wait $wb
+                          return 1
+                      fi
                       # der Blick des Orts aus `umstellen` (ein Ort mit Pose aus dem Plan, `ortPose`, trägt ihn nur dort), sonst aus der Spec
                       d=$(node -e 'const u = require(process.argv[2]), o = require("./spec/profiband/haushalt.json").messorte.find((x) => x.id === process.argv[1]); const [s, b] = [u.spieler || o.spieler, u.blick || o.blick]; console.log(Math.hypot(b[0] - s[0], b[1] - s[1]).toFixed(1))' "$1" "$(cygpath -w "$OUT/umstellen-$1.json")")
                       kam=$(node scripts/werkbank.cjs eval "for (let i = 0; i < 30; i++) r._loopCamera(performance.now() + i * 100); const c = r.state.camera; const v = c.getWorldDirection(new T.Vector3()).multiplyScalar($d).add(c.position); return [c.position.x, c.position.y, c.position.z, v.x, v.y, v.z].map((x) => x.toFixed(2)).join(' ');" --port $W | sed -n 's/.*"ergebnis": "\(.*\)".*/\1/p')

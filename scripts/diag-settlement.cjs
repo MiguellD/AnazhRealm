@@ -3085,12 +3085,19 @@ hauptLauf(async () => {
         const A = Object.getPrototypeOf(r).constructor;
         const [ox, oz, B] = [40000, 40000, 10]; // BÜHNE: eine Siedlung der Fixture fern jedes Bestands
         const haus = (cx, cz, ex, ez) => ({ obb: { cx, cz, phi: 0, ex, ez } });
-        const fall = (slots, kamm, marge) => {
+        const fall = (slots, kamm, marge, bestand) => {
             const S = { key: "pose-fixture", ox, oz, plan: { platz: { cx: 0, cz: 0, phi: 0, ex: 10, ez: 4 }, slots } };
             const hoehe = (x) => B + (kamm && x - ox > 8 && x - ox < 12 ? 3 : 0);
             const map0 = r._bewohnerSiedlungen;
             r._bewohnerSiedlungen = new Map([[S.key, S]]);
-            const zurueck = leihe(r, { getTerrainHeightAt: hoehe });
+            // DER BESTAND (`bestand`): ein gebauter Eintrag, der in keinem Plan steht, quer im Strahl zum nahen Haus — die Pose liest
+            // den Plan und das Gesetz, vom gebauten Bestand nur die Natur; „lade“ ist die Mutante, die jeden gebauten Eintrag liest
+            const fremd = { type: "haus_fixture", position: { x: ox + 10, y: B, z: oz } };
+            const zurueck = leihe(r, {
+                getTerrainHeightAt: hoehe,
+                ...(bestand && { _blockerUmPlatz: (x, z, w, out) => (out.push(fremd), out) }),
+                ...(bestand === "lade" && { _istNatur: () => true }),
+            });
             const m0 = A.SICHT_GELAENDE_M;
             if (marge != null) A.SICHT_GELAENDE_M = marge;
             try {
@@ -3114,6 +3121,8 @@ hauptLauf(async () => {
             kamm: fall([nah, fern], true),
             wand: fall([nah, fern, haus(10, 2, 1, 2.5)], false),
             mutante: fall([nah, fern], true, -1e9),
+            bestand: fall([nah, fern], false, null, "gebaut"),
+            lade: fall([nah, fern], false, null, "lade"),
         };
     }, `${lokal}\n${kasten}\nreturn [${poseSicht}]`);
     console.log("  POSE-SICHT " + JSON.stringify(poseO));
@@ -3299,6 +3308,16 @@ hauptLauf(async () => {
             zielIst(poseO.wand, -27) &&
             ["eben", "kamm", "wand"].every((k) => poseO[k].taeter.length === 0),
         ["eben", "kamm", "wand"].map((k) => `${k}: ${poseZeile(poseO[k])}`).join(" | ")
+    );
+    check(
+        "O Pose: dieselbe Pose bei leerer und bei stehender Welt — ein gebauter Eintrag außer dem Plan quer im Strahl ändert sie nicht",
+        zielIst(poseO.bestand, 17) && poseO.bestand.taeter.length === 0,
+        `leer: ${poseZeile(poseO.eben)} | gebaut: ${poseZeile(poseO.bestand)}`
+    );
+    check(
+        "O Pose: Mutante — die Pose aus dem Lade-Stand (jeder gebaute Eintrag ein Hindernis) wandert mit dem Bestand",
+        zielIst(poseO.lade, -27),
+        `Lade-Stand: ${poseZeile(poseO.lade)}`
     );
     check(
         "O Pose: Mutante — ohne die Marge des Geländes blickt sie in den Kamm, und die Sicht nennt ihn",
