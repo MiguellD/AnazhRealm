@@ -16,7 +16,7 @@
   "umstellen": {
    "exit": 0,
    "json": {
-    "ms": 876,
+    "ms": 2215,
     "ort": "wiese",
     "sicht": "ego",
     "pose": null,
@@ -46,20 +46,20 @@
      },
      "befunde": []
     },
-    "takte": 80,
+    "takte": 219,
     "steht": true,
-    "chunks": 100,
+    "chunks": 81,
     "gier": -1.9717,
     "dorfZug": false,
     "ortTakt": [],
     "dorfSchwebt": null
    },
-   "rest": "{\n \"ms\": 876,\n \"ort\": \"wiese\",\n \"sicht\": \"ego\",\n \"pose\": null,\n \"welt\": null,\n \"spieler\": [\n  -280.4,\n  -1045.6\n ],\n \"wiese\": {\n  \"messung\": {\n   \"x\": -280.4,\n   \"z\": -1045.6,\n   \"y\": 27.48,\n   \"hang\": 1.81,\n   \"rauh\": 0.14,\n   \"nass\": 0,\n   \"krone\": 0.114,\n   \"baeume\": 8,\n   \"kranz\": 0.253,\n   \"imBlick\": 0,\n   \"horizont\": 2.6,\n   \"blick\": [\n    -289.6,\n    -1049.5\n   ],\n   \"gras\": 1\n  },\n  \"befunde\": []\n },\n \"takte\": 80,\n \"steht\": true,\n \"chunks\": 100,\n \"gier\": -1.9717,\n \"dorfZug\": false,\n \"ortTakt\": [],\n \"dorfSchwebt\": null\n}\n"
+   "rest": "{\n \"ms\": 2215,\n \"ort\": \"wiese\",\n \"sicht\": \"ego\",\n \"pose\": null,\n \"welt\": null,\n \"spieler\": [\n  -280.4,\n  -1045.6\n ],\n \"wiese\": {\n  \"messung\": {\n   \"x\": -280.4,\n   \"z\": -1045.6,\n   \"y\": 27.48,\n   \"hang\": 1.81,\n   \"rauh\": 0.14,\n   \"nass\": 0,\n   \"krone\": 0.114,\n   \"baeume\": 8,\n   \"kranz\": 0.253,\n   \"imBlick\": 0,\n   \"horizont\": 2.6,\n   \"blick\": [\n    -289.6,\n    -1049.5\n   ],\n   \"gras\": 1\n  },\n  \"befunde\": []\n },\n \"takte\": 219,\n \"steht\": true,\n \"chunks\": 81,\n \"gier\": -1.9717,\n \"dorfZug\": false,\n \"ortTakt\": [],\n \"dorfSchwebt\": null\n}\n"
   },
   "kugel": {
    "exit": 0,
    "json": {
-    "ms": 7865,
+    "ms": 8665,
     "ergebnis": {
      "ende": "ok",
      "stand": {
@@ -189,7 +189,7 @@
          "n": 0
         },
         "profilNS": {
-         "-0.8": "0.1708/3",
+         "-0.8": "0.1545/3",
          "-0.6": "0.1586/537",
          "-0.4": "0.1668/1138",
          "-0.2": "0.173/1658",
@@ -324,11 +324,11 @@
          "n": 0
         },
         "profilNS": {
-         "-0.8": "0.1847/3",
+         "-0.8": "0.1655/3",
          "-0.6": "0.1734/537",
-         "-0.4": "0.1804/1138",
+         "-0.4": "0.1802/1138",
          "-0.2": "0.1838/1658",
-         "0.0": "0.2012/2116",
+         "0.0": "0.2013/2116",
          "0.2": "0.4106/2464",
          "0.4": "0.6615/2753",
          "0.6": "1.0085/2892",
@@ -383,7 +383,7 @@
          "sRGB": 107
         },
         "sonne": {
-         "Y": 0.3581,
+         "Y": 0.358,
          "n": 868
         },
         "abgewandt": {
@@ -427,7 +427,7 @@
          "-0.6": "0.1734/467",
          "-0.4": "0.18/1079",
          "-0.2": "0.1834/1584",
-         "0.0": "0.195/2022",
+         "0.0": "0.1953/2022",
          "0.2": "0.3997/2393",
          "0.4": "0.6382/2666",
          "0.6": "0.9778/2822",
@@ -607,7 +607,7 @@
      ]
     }
    },
-   "rest": "TzRn3j476qYDXviVCtOFBIpVNKURalRbvACnJmt8Ubnnkxgq6RFcmzGmKw8tmL4K3tAzS9e3tWf+VhHNc/Hy1rRLNLznx/Lrtdn9xSjp/QuT+hpWeS6zVxamzOsgLGKJDZb3zpYyuzX4kOKcC9fIMbgP91urhgBrHGYBwTkAve8b3hguPVvivmXi5Qw2fRZMNKLOWvB3FWSY1RaYoMnR3PiQiTnnCQnwDQFsoEr7NnLTuJNT23iYhudJNjk6k6mJwcVfQ2qhBnrXQ5D7pxWCkUls6+Dxo5K1gAlcILeOAjCpMnnvIyvj3yykjpZIaO/8VnottoICHFqFfa91ORo2uQwW+dH6g1zI1dxFKmFbUdxxLsFMNBQEHWQ8WD8YB6az2JwB0X0V3M55fhpCw8yWdH7rBU5MFyrOx05BhudppZlleniEx19/lNNN/2Xv33a3Ng4G98U6LaYbmMa46DHHjGz9RCn0UEXGW/W5zWLDR5amSdbILW2R+8ewYEETfFrVCOTPSD14H6pmhdNfxDVAPX2TG33NFk3LYqlHtyZav/uRMdHM5pdM67CUM3WaqspVTO2lsOGRa9clSrLGbg/OloAKzTyjCKn0xN7FvLEcJs3auJzhD0OiL2tTqIUnj1yHGJzG8xlNq6CB+fObIxherB/2sA0frPWAplIkK8nko6i2npIJQIzWq3YfPHGYkBjrYTDqM3zQx0fzjQ7KRXHURP3bZSDn8BNSQA0nPeuH8vsoGBzrchzGWiL9yanyhDKsYaSXN+pcpUCHay/0WXFulgu5NDRteh7ipZTMZXLxtu7e8W64tFAa+dynMUBTRqu5rLNuV12ZSfJVIlL9HJ/XW9NsBmIM1qeiYdaWWkrI+kzsZguW8TqYa+jg+vf1N1b78B/qg+YRxes2VGFhDz2V4cqyfW5VdUZqISYilIQT5bIuKKum+K1zmGRQzbiqnypgjiUZRHygk6HKAlsgTl1wFrxqecrjVYqma0bbMg0dE1heIP721+rFGMXUSx9cFI076wv5qPGl33Q1vm2PLXZljdB2hq3iGX3Jk+DZfWj8hs372mn39Pn9lbx8UJZ6MmVsWoXKWIOsF+JxQgIFgV7olGhdIpOMiUki51xT/2qp+sfTPX+Nw40fvdEnSeMj0izEvuoZ1rynynGCTueJNLtltayK+r3B6qYg4xW46OhiY4NLzRYnpqlLTWXCYQbmvmW7N+6s/7eYNJYhViRTT68jcjhc2JlzbukGyC5ltmcr8EPHLrr0xe26Sn9z++cHRJam6Pl4PrSKEBekqPRSxq32roZ2lodZVrb7ciuJInlnFPCOmG0llkT2BxzaQFPlfIWfFqrq/XJn9vQngGnx+9+55iZWPr/AgAA//9k8dM8AAAABklEQVQDADtGkCSoHYt3AAAAAElFTkSuQmCC\",\n    \"crop\": [\n     368,\n     308,\n     1191,\n     387\n    ]\n   }\n  ]\n }\n}\n"
+   "rest": "wqJFCppyqLUKDd4Ac7M1nijc08msFXSAlg2Y0xW9ieWhr+yB9T80uVd/ZnnOvDidbysFc0ivfD5sex6fXZPMXpK7/KEnpZFrtvMpbU5wwoYq0his/Wtg2XDm8WHFOFevkCMwX+63VwxAljjMA8IyAVj5X3DA8Otf1PMv1ykhMmmz4KRXsxZC+aukhyj0hIbPDmaExciOeckOQGmKcaGybvGv+wk3vTUJi620UmCTa7uZHpyUNHXoEqYsd7lMOTOaaVQVDL7OmjsqGQNUDZ+8cZBECZNPufV6Az6DIfJupMVMvobn23aA6IOCnEKf1LFpvnkaNrkMFvnR+oNcyNXcRSphW1HccS7BTCaYdSMRRbGj+GYz2JwB0X0V3M55fhpCw8yWdH7rBU5gFmrOx05BhudppZlleniEx19/lNNN/3nv33a3Ng4G98U6LaYbmMa46DHHjGz9RCn0UEX+AmyPq9ZbPBizgxqgdTaGv7p+AgOJGhKXEc1MtkDUg/ul6p50fQHUQ1Qb8/Udk+TddOiWOrBnan27050fDSj2TXjKgzVbK22mlI1Y2s5BxH0ylWpspyB+6OjBbCgF9hR5HR6Ys9iU6OkXfRQE58j7HFA7G11EqXw7JHjEJvbYC6zcRU8OHdmYzbwwf6pPDCN36y1QCYSj3oi6SiqrYdUIgej1Upg/nxjMaCxVsJh1Ob5oY4PZ5qdlIrjqIn7NsrBT+CmJAAaznvXj2W2XLC5VuS5DLTFe5NTZQjlWENJru9UuUqBDtbf6LJiXSwXcuQy16LvKVpOBSmy8fbuXrGueDTQ2rlcYj1nHA5Xc9nm3C67spNkqsQlerm/rrcm2AzEGS3PxEOtrLSVkfSZWEyXLWL1sNfRwfVv6u6td+A/1QfMowvW7I2gkcf+6lAleT+3qjoDlRBTUQriyRIZV9R1U7zWOSxyyEZclS9VEIeyLEJeToazJLAF5tQBa8WnXqg0Wqlktm6wIVNNbTeMt4dvf61SjF1EsfTBSWFNTcF81MyvPmjrfFue2mzLmyCRiYpYdm/yPAMVZPdWfuPmPe30e/rc3io+XigLPbkyRpSRIuYA+5VYDLGwKNgTjQqlU3SSKSFZ7Ix76lc9Xf9gqve/Qa7w7ok6TxgfkWYl9lHPtOQ/OfEJ8pNEut3SWnZF/f5AFXOQ0XrGa1CwXtBvtJXkqVnaUnOF5hu6z2r7t+6sj2eEZ3AVYkU2+fA6IofPiZU175JugORaZnO+DshBDYxPX9imp/Q/vnN2SAgIMAvdL6nP+jkaPTU3908AAAA9SURBVL3GrbZuhrZWR5nWdjuyK2nsxilhnTBay6wJbI65tICnSnkLPq3V1frkz21oz9lD0O9+55iZWPr/AQAA//+rFzVWAAAABklEQVQDAEvg0xjq7Gp4AAAAAElFTkSuQmCC\",\n    \"crop\": [\n     368,\n     308,\n     1191,\n     387\n    ]\n   }\n  ]\n }\n}\n"
   }
  },
  "dateien": {}
