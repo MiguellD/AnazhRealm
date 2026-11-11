@@ -1,5 +1,7 @@
 ABGABE 7e890b9d755e997108b776a44b12fa3ff459c8b5
 
+## 11.11. 03:22 — GPU-PROBE 7e890b9d auf gtx1050-desktop: GRÜN in 739 s (gate:licht-weg:echt GRÜN 178 s auf gtx1050-desktop · bild:dorf@0.5 GRÜN 190 s auf gtx1050-desktop) → probe-post/w28-stoff-gesetz/7e890b9d.md
+
 ## 11.11. w28-stoff-gesetz (Cloud) — Abgabe 7e890b9d auf die Post z377 (zwei Wände)
 - **Wand 1, `gate:kampf-gefuehl` halten.K2 Staffel 2:** lokal nachgestellt an ab6c476f ROT (642 / 649 / 405 Hz wie im Zug), main GRÜN (954 / 2179 / 192 Hz). Schnitt im Gesetz, `klang-core.js:1420` `trefferPaar`: wie laut und wie hell ein Partner singt, folgt aus BEIDEN Zeilen — der Pegel aus der Teilung der Stoß-Energie E*/Eᵢ (Hertz: der weichere Partner nimmt sie), die Teiltöne des freien Stabs aus dem Spektrum des Kontakt-Stoßes 1/(1 + (f/f_K)²). Am Kopf GRÜN: Stahl/Holz 607 Hz · Stahl/Stein 1008 Hz · Holz/Fleisch 46 Hz, kleinster Abstand 401 Hz; die Schwelle 300 ist unberührt.
 - **Wand 2, LAUB-LICHT wasser:** kein Bruch im Spiel, der Spiegel verlor kein Laub. Die Stelle beim Namen: `scripts/lib/licht-linsen.cjs:1976` rief `AnazhRealm._wasserKoerper(Gesetz)` ohne die Brechzahl; mein Schnitt `stamm/bild-sicht.js:225` machte `n` (je Kanal, aus der Zeile wasser) zur Pflicht — der Aufruf warf, und `scripts/werkbank.cjs:3244` verschluckte den Wurf zu „kein Laub-Pixel“. Geheilt: die Linse reicht `r._wasserOptik().n` (dieselbe Zahl wie der Wasser-Stoff), die Werkbank trägt den Wurf als `fehler` (der vorhandene Helfer `ergebnis`, kein neues Linsen-Atom-Paket: Prüf +7).
