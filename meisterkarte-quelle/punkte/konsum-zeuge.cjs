@@ -43,9 +43,9 @@ if (KONSUM && BAUM) {
     const path = require("path");
     const { fileURLToPath, pathToFileURL } = require("url");
     const Module = require("module");
-    const faden = require("worker_threads");
+    const imFaden = !!(process.abort && process.abort.disabled); // im Faden trägt process.abort die Marke `disabled` (worker_threads lädt nur dort)
     const SEITE = process.env.PUNKTE_KONSUM_SEITE === "1";
-    const ICH = process.pid + (faden.isMainThread ? "" : "-" + faden.threadId);
+    const ICH = process.pid + (imFaden ? "-" + require("worker_threads").threadId : "");
     const { readFileSync: lies, readdirSync: liste, writeFileSync: schreibe, existsSync: gibt } = fs;
     // DIE LEBENSZEICHEN DES ZEUGEN (11.11., Radeon unter Last: der Selbsttest riss an der Leine „Stille seit 2 s nach 2 s“ — der Zeuge
     // rechnete 15 ms, ehe die Probe ihre erste Zeile schrieb; nachgestellt mit einer CPU-Quote von 2,5 %: erste Zeile ohne Zeugen
@@ -268,12 +268,12 @@ if (KONSUM && BAUM) {
     const laden = Module._load;
     const gefasst = new WeakSet();
     // DER SPÄTE HAKEN: http trägt seine Haken erst, wenn der Prozess es lädt — keine Probe zahlt sein Laden vor ihrer ersten Zeile
-    // (2,2 ms von 30 ms eines node-Starts; unter Last ein Vielfaches). War es beim Start des Zeugen schon geladen, sofort; lädt der
-    // Prozess es an Module._load vorbei (ESM, getBuiltinModule), ist er blind beim Namen (stueck). vm und child_process hängen sofort
-    // (zusammen 1 ms): Node lädt sie auch selbst (cluster hinter jedem `listen`), dort wäre der Wächter ein falscher Alarm
-    const spaet = []; // [kern, Anfrage, hake, gehakt]
-    const spaeter = (kern, anfrage, hake, sofort = false) => {
-        const e = [kern, anfrage, hake, false];
+    // (2,2 ms von 30 ms eines node-Starts; unter Last ein Vielfaches). War es beim Einhängen schon geladen, sofort; lädt der
+    // Prozess es an Module._load vorbei (ESM, getBuiltinModule), ist er blind beim Namen (stueck). child_process ebenso spät (0,8 ms)
+    // — Node lädt es auch selbst (cluster hinter jedem `listen`), darum gilt sein Wächter nur, wenn ESM lief; vm hängt mit dem Schärfen
+    const spaet = []; // [kern, Anfrage, hake, gehakt, Wächter gilt nur, wenn]
+    const spaeter = (kern, anfrage, hake, sofort = false, nurWenn = null) => {
+        const e = [kern, anfrage, hake, false, nurWenn];
         spaet.push(e);
         if (sofort || (process.moduleLoadList || []).includes("NativeModule " + kern)) (e[3] = true), hake();
     };
@@ -297,20 +297,33 @@ if (KONSUM && BAUM) {
         return m;
     };
 
-    // ── der Node-Prozess: Coverage ab hier, Text-Lesen, Verzeichnisse und gelesene Funktions-Texte
-    const sitz = new (require("inspector").Session)();
-    sitz.connect();
-    sitz.post("Profiler.enable");
+    // ── der Node-Prozess: Text-Lesen und Verzeichnisse immer; die Coverage und die Ausgänge erst, WENN DER BAUM SPRICHT.
+    // DER ZEUGE WIRD SCHARF mit der ersten Datei des Spiel-Baums, die der Prozess als Modul lädt (ehe ihr Code läuft) — vorher führt er
+    // keinen Code des Baums aus, und jede Datei, die er als Text liest, zählt ohnehin ganz. Ein Prozess, der nie Baum-Code lädt (der
+    // Ruf einer Probe an die Werkbank per `node -e`, ein Hilfs-Prozess), zahlt weder Coverage noch Nahme: 19 → 3 ms je Prozess
+    // (11.11., CPU-Quote 4,5 % über den ganzen Selbsttest: jeder node-Prozess der Sitzungs-Fälle lief mit dem Zeugen ~1 s länger —
+    // „DIE TEILE“ 1,7 → 2,8 s je Teil — und zwei Fälle rissen ihren 2-s-Deckel). ESM lädt an diesem Haken vorbei: lief ESM, ohne dass
+    // der Zeuge scharf war, ist der Prozess blind beim Namen (stueck)
+    let sitz = null, scharf = false;
     const beginne = () => sitz.post("Profiler.startPreciseCoverage", { callCount: false, detailed: false });
-    beginne();
+    const schaerfe = still(() => {
+        if (scharf) return;
+        scharf = true;
+        sitz = new (require("inspector").Session)();
+        sitz.connect();
+        sitz.post("Profiler.enable");
+        beginne();
+        ausgaenge();
+        schreibe(path.join(KONSUM, ICH + ".offen"), "scharf");
+    });
     const modul = new Set();
     const geladenesModul = still((f) => {
         modul.add(f);
         const p = pfadVon(pathToFileURL(f).href);
-        if (p) konsum.skripte.add(p);
+        if (p) (konsum.skripte.add(p), schaerfe());
     });
     let ladeTiefe = 0; // > 0: der Kopf-Code eines Moduls läuft gerade
-    for (const x of [".js", ".cjs"].filter((e) => Module._extensions[e])) {
+    for (const x of Object.keys(Module._extensions).filter((e) => e !== ".json" && e !== ".node")) {
         const o = Module._extensions[x];
         Module._extensions[x] = function (m, f) {
             geladenesModul(f);
@@ -341,13 +354,15 @@ if (KONSUM && BAUM) {
         gelistet(d, o);
         return r;
     };
+    // DIE AUSGÄNGE (erst scharf: vorher gibt es keinen Funktions-Text des Baums): der gelesene Text und jeder Weg, auf dem der Prozess
+    // ihn aus der Hand gibt — eine Datei, eine vm, ein Dienst (HTTP-Rumpf, fetch), eine Antwort des eigenen Servers
+    const ausgaenge = () => {
     const textVon = Function.prototype.toString;
     Object.defineProperty(Function.prototype, "toString", { configurable: true, writable: true, value: function toString() {
         const t = textVon.call(this);
         if (t.length > 12 && !konsum.texte.has(t) && !t.endsWith("{ [native code] }")) (ladeTiefe > 0 ? konsum.wartend : konsum.texte).add(t);
         return t;
     } });
-    // DIE AUSGÄNGE des Prozesses neben der Seite: eine Datei, eine vm, ein Dienst (HTTP-Rumpf, fetch), eine Antwort des eigenen Servers
     for (const weg of ["writeFileSync", "appendFileSync", "writeFile", "appendFile"]) {
         const alt = fs[weg];
         fs[weg] = function (_f, daten) { gib(daten); return alt.apply(this, arguments); };
@@ -376,13 +391,17 @@ if (KONSUM && BAUM) {
         const hole = globalThis.fetch;
         globalThis.fetch = function (_u, o) { if (o && o.body) gib(o.body); return hole.apply(this, arguments); };
     }
+    };
 
     // EINE NAHME des Node-Prozesses → das Roh-Stück; `neu`: das Fenster schließt, die Coverage beginnt neu (die Bereiche des Fensters
     // fallen; die geladenen Skripte, das Gelesene und die Verzeichnisse bleiben)
+    const kernDa = (n) => (process.moduleLoadList || []).includes("NativeModule " + n);
     const stueck = (neu) => {
-        sitz.post("Profiler.takePreciseCoverage", (e, r) => r && male(r.result));
+        if (scharf) sitz.post("Profiler.takePreciseCoverage", (e, r) => r && male(r.result));
+        else if (kernDa("internal/modules/esm/module_job") && !konsum.blind.some((b) => /^ESM /.test(b)))
+            konsum.blind.push("ESM lief, ohne dass der Zeuge scharf war (kein Modul des Baums über require): was es aus dem Baum lud, sah niemand");
         for (const e of spaet)
-            if (!e[3] && (process.moduleLoadList || []).includes("NativeModule " + e[0])) (e[3] = true), konsum.blind.push(e[0] + " ohne Haken des Zeugen geladen (an Module._load vorbei): was der Prozess dort ausgab, sah niemand");
+            if (!e[3] && kernDa(e[0]) && (!e[4] || e[4]())) (e[3] = true), konsum.blind.push(e[0] + " ohne Haken des Zeugen geladen (an Module._load vorbei): was der Prozess dort ausgab, sah niemand");;
         // die gelesenen Funktions-Texte an ihrem Ort im Baum: je Text EINMAL gesucht (in jedem geladenen Skript), in jedem Stück gemalt
         for (const p of konsum.skripte) eintrag(p);
         for (const t of [...konsum.texte, ...(konsum.cdpBlind ? konsum.wartend : [])]) {
@@ -398,7 +417,7 @@ if (KONSUM && BAUM) {
             for (let i = 0; i < e.len; i++) if (e.an[i]) b.length && b[b.length - 1][1] === i ? b[b.length - 1][1]++ : b.push([i, i + 1]);
             if (b.length) js[p] = { len: e.len, bereiche: b };
         }
-        if (neu) {
+        if (neu && scharf) {
             sitz.post("Profiler.stopPreciseCoverage");
             beginne();
             // die gelesenen und ausgegebenen Funktions-Texte bleiben stehen: was einmal in der Seite liegt, wirkt in jedem späteren Fenster
@@ -444,7 +463,7 @@ if (KONSUM && BAUM) {
     } catch (_e) {
         // ohne Wache antwortet der Prozess keinem Ruf: der Läufer nennt ihn beim Namen (kein Fenster-Stück)
     }
-    if (faden.isMainThread) {
+    if (!imFaden) {
         // EIN KIND OHNE ZEUGEN: startet der Prozess node oder eine Shell mit einer Umgebung, die den Zeugen nicht trägt, läuft dort Code,
         // den niemand nennt — beim Namen (`blind`; die Faltung der Maschine verwirft dann den Konsum des Laufs, nie still klein)
         const traegt = (env) => !env || (env.PUNKTE_KONSUM === KONSUM && /konsum-zeuge\.cjs/.test(env.NODE_OPTIONS || ""));
@@ -480,7 +499,7 @@ if (KONSUM && BAUM) {
             if (this.pid && this.exitCode == null && a[0] !== 0) bitteVor(this.pid);
             return toeten.apply(this, a);
         };
-        }, true);
+        }, false, () => kernDa("internal/modules/esm/module_job"));
         const stoss = process.kill;
         process.kill = function (pid, sig) {
             if (pid > 0 && pid !== process.pid && sig !== 0) bitteVor(pid);
