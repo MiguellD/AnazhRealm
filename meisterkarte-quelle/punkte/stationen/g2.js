@@ -1830,6 +1830,13 @@ async function vegetationLauf() {
 // Schlupfloch der Staffel), ist er UNGEMESSEN — nie ein Nachbar-Band an seiner Stelle (bis hierher urteilte die Station 10–14 · 14–30
 // · 30–80 · 80–200 m, der Saum jenseits 40 m riss sie ROT).
 const WIESE_RINGE = [2, 5, 10, 20, 40];
+// DER FLACHE RING (w28-wald-saum-pm, Entscheid des Koordinators 11.11.): unter cos θ < WIESE_FLACH ist Nilson fast binär — EIN
+// Grund-Pixel unter 122 929 Halm-Pixeln gibt LAI 1,93 (GTX 1050, Mess-Wiese, 20–40 m, cos 0,082; 7 Pixel an Feuerstelle und Fels 1,61),
+// der Ring urteilte an einem Pixel. Dort urteilt die DECKUNG: der Grund-Anteil g / (h + g) höchstens so groß, wie LAI 1,7 ihn an der
+// Grenze cos WIESE_FLACH lässt (exp(−0,5 · 1,7 / 0,1) = 0,0203 %) — er zählt dann wie ein satter Ring (sein Sprung zum Nachbarn ist
+// ungemessen), darüber ist er ROT beim Namen seines Grund-Anteils; ein kahler Fleck von 2 % bleibt ROT.
+const WIESE_FLACH = 0.1;
+const WIESE_DECKUNG = Math.exp((-0.5 * 1.7) / WIESE_FLACH);
 const wieseRinge = (s) =>
     WIESE_RINGE.slice(0, -1).map((von, i) => {
         const bis = WIESE_RINGE[i + 1], b = s.baender || [], js = b.slice(0, -1).map((_, j) => j).filter((j) => b[j] >= von && b[j + 1] <= bis); // prettier-ignore
@@ -1843,8 +1850,10 @@ const wieseRinge = (s) =>
                 (n += v), (c += v * ((s.cos || [])[j] || 0));
             }
         const cos = n ? c / n : 0;
-        const lai = ganz && h + g && cos > 0 ? (-Math.log(Math.max(g, 0.5) / (h + g)) * cos) / 0.5 : null;
-        return { ring: von + "–" + bis, h, g, lai, satt: ganz && h > 0 && g === 0, ganz };
+        const flach = ganz && h > 0 && cos > 0 && cos < WIESE_FLACH;
+        const deckung = h + g ? g / (h + g) : null;
+        const lai = ganz && h + g && cos > 0 && !flach ? (-Math.log(Math.max(g, 0.5) / (h + g)) * cos) / 0.5 : null;
+        return { ring: von + "–" + bis, h, g, lai, satt: ganz && h > 0 && (g === 0 || (flach && deckung <= WIESE_DECKUNG)), ganz, flach, deckung };
     });
 // die Farbton-Streuung 2–5 m wie abnahme-urteil `farbtonStreuung` (σh je 2-m-Kachel ab 400 Proben, gewichtet nach Proben)
 const wieseFarbton = (s) => {
@@ -1872,7 +1881,7 @@ function wieseUrteil(s) {
     return {
         gruen: dicht && saum && ft != null && ft >= 10.7 && budget && bild,
         zahl:
-            s.n + ": LAI " + R.map((x) => x.ring + " " + (x.satt ? "satt" : x.lai == null ? (x.ganz ? "—" : "UNGEMESSEN") : x.lai.toFixed(2))).join(" · ") + (saum ? "" : " (Saum springt > 15 %)") +
+            s.n + ": LAI " + R.map((x) => x.ring + " " + (x.satt ? (x.g ? "gedeckt, Grund " + (100 * x.deckung).toFixed(3) + " %" : "satt") : x.lai == null ? (x.flach ? "Grund " + (100 * x.deckung).toFixed(3) + " % > " + (100 * WIESE_DECKUNG).toFixed(3) + " %" : x.ganz ? "—" : "UNGEMESSEN") : x.lai.toFixed(2))).join(" · ") + (saum ? "" : " (Saum springt > 15 %)") +
             (R.every((x) => x.ganz) ? "" : " (die Bänder " + (s.baender || []).join("/") + " tragen die festen Ringe nicht)") +
             ", Farbton 2–5 m " + (ft == null ? "ungemessen" : ft.toFixed(2) + "°") + ", nahWiese " + (s.budget ? s.budget[0] + " Befehle / " + s.budget[1] + " Dreiecke" : "ungezählt") +
             (bild ? "" : ", Bild/Pose WEICHT AB (" + s.leinwand.join("×") + ", ok " + s.ok + ", Pose " + posePasst(s) + ")"),
@@ -1935,6 +1944,11 @@ function wieseProben(posen) {
         { name: "Ring 5–10 m dünn", stdout: zeile({ klassen: ring(20000, [400, 8000, 0, 0]) }), gruen: false },
         { name: "Saum reißt bei 20 m", stdout: zeile({ klassen: ring(20000, [400, 0, 0, 15000]) }), gruen: false },
         { name: "Saum springt 19 %", stdout: zeile({ klassen: ring(20000, [400, 100, 0, 0]) }), gruen: false },
+        // der flache Ring (cos 0,08): drei Grund-Pixel unter 20 000 Halmen sind gedeckt (0,015 %; Nilson gäbe 1,41 und ROT),
+        // fünf nicht mehr (0,025 % > 0,0203 %), ein kahler Fleck von 2 % nie
+        { name: "20–40 m flach: 3 Grund-Pixel sind gedeckt", stdout: zeile({ klassen: ring(20000, [400, 0, 0, 3]) }), gruen: true },
+        { name: "20–40 m flach: 5 Grund-Pixel über der Deckung", stdout: zeile({ klassen: ring(20000, [400, 0, 0, 5]) }), gruen: false },
+        { name: "20–40 m flach: ein kahler Fleck von 2 %", stdout: zeile({ klassen: ring(20000, [400, 0, 0, 408]) }), gruen: false },
         { name: "5 Befehle", stdout: zeile({ budget: [5, 52000] }), gruen: false },
         { name: "Pose verschoben", stdout: zeile({ kamera: [0.5, 1.7, 0, 100, 1.7, 0] }), gruen: false },
         { name: "ein Schuss fehlt", stdout: zeile({}, posen.length - 1), gruen: false },
