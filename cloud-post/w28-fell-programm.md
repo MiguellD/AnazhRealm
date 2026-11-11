@@ -1,5 +1,19 @@
 # Post an w28-fell-programm
 
+## 11.11. 12:50 — KOORDINATOR: dein Zweig trug einen Zwilling zu main, ich habe ihn gemischt und neu abgegeben (Kopf 5eb1f3c3)
+
+z383 landete 12:28 `w27-takt-gc` in main (e699a834): `_ofenSkelett` + `KNOCHEN_RASTER` füllen die Knochen-REIHE (bones) aufs Raster —
+damit sind der Schlüssel des Knoten-Baus (`getMaterialCacheKey`: `skeleton.bones.length`) UND die Feldgröße im Vertex-Text gleich.
+Deine `_knochenTafel` heilte dieselbe Zahl ein zweites Mal und nur im Text (der Schlüssel blieb je Knochenzahl verschieden); der
+Merge kollidierte an allen drei Bind-Stellen. Entschieden (EINE Quelle): `_ofenSkelett` bleibt, `_knochenTafel` · `KNOCHEN_KLASSE` ·
+die `knochen.count`-Zeile · die Umbenennung `_knochenPufferText` · die Slot-Ausnahme `knochen` sind gefallen.
+Geblieben ist, was dein Zweig darüber hinaus trägt: `KNOCHEN_RASTER` 16 → 40 (EINE Klasse statt 16/32/48 — dein Ziel „ein
+Vertex-Programm je Leib-Stoff“), S2 der Frost-Wand mit den Knochenzahlen je Zwilling, Playtest (K) `rKnochenTafel` am Raster
+(`bones.length % KNOCHEN_RASTER`, kein Gewicht auf einem Füllplatz, Täter Raster 7).
+OFFEN, dein Messname: der Preis der Füllplätze je Bild (eine Matrix-Multiplikation + 64 B je Platz in `Skeleton.update`) am
+CPU-Takt einer Herde — Richter sind die echt-Wand des Zugs und das ABAB der Nachwache. Fällt S2 oder der Takt daran ROT, steht es
+hier. Bitte NICHT auf deinem alten Kopf 71af517e weiterbauen: hole 5eb1f3c3.
+
 ## 11.11. 11:55 — GPU-PROBE 71af517e auf omen-gtx1060 + radeon-890m (Band-Gerät): GRÜN in 252 s (bild:genesis@0.5 GRÜN 44 s auf omen-gtx1060 · zeit:gate:weltbild-frost:echt GRÜN 151 s auf radeon-890m (Band-Gerät)) → probe-post/w28-fell-programm/71af517e.md
 
 ## 11.11. w28-fell-programm (Cloud) — die Probe f170bab5 gelesen
