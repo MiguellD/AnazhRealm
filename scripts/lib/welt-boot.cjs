@@ -1,8 +1,9 @@
 // welt-boot.cjs — DER EINE WELT-BOOT jeder Linse: Server, Browser und Fehler-Sammler leben EINMAL:
 //   statikServer()   der Statik-Server der Welt (Wurzel des Repos, `/` → index.html, nie aus der Wurzel heraus)
 //   starteBrowser()  der Browser über die EINE Adapter-Weiche (Rezepte: null · webgl · linse · echt, software-gpu.cjs)
-//                    + der FEHLER-SAMMLER an jeder Seite: pageerror (auch unbehandelte Rejections), console.error,
-//                    Absturz der Seite, Trennung des Browsers ohne Abbau — jeder Fehler macht den Lauf ROT mit Namen,
+//                    + der FEHLER-SAMMLER an jeder Seite: pageerror (auch unbehandelte Rejections), console.error, der Wurf
+//                    im Takt, den die Fehler-Grenze des Loops fängt (`LOOP_WURF`), Absturz der Seite, Trennung des Browsers
+//                    ohne Abbau — jeder Fehler macht den Lauf ROT mit Namen,
 //                    nie Exit 0 (die Wache sitzt am Prozess-Ende: ein Exit 0 mit gesammeltem Fehler wird Exit 1);
 //                    eine Linse trägt KEINEN eigenen pageerror-Sammler daneben (gate:welt-boot nennt jeden Zwilling beim Namen)
 //   halteBis()       eine Taste halten, bis ihr Ereignis eintritt (nie nach der Wanduhr, gate:apparat Klinge 5)
@@ -21,13 +22,16 @@ const { linsenWebGpuArgs, linsenWebglArgs, echteWebGpuArgs, adapterZeile } = req
 const stammLib = require("./stamm.cjs");
 const { ohneKommentare, ast, wandere, zeileVon } = stammLib;
 
-// DER STILLE HAND-TAKT (`__handTakt()`, in jeder Seite): ein Bild des Loops von Hand, sein Wurf still — je Linse ein eigenes
-// `try { r._gameLoopTick(performance.now()); } catch {}` war ein Zwilling (w4-arena-welt, 39 Stellen); die Stille lebt an
-// DIESEM Chokepoint und fällt hier mit einem Schnitt.
+// DER HAND-TAKT (`__handTakt()`, in jeder Seite): ein Bild des Loops von Hand, sein Wurf bricht die Reihe nicht — je Linse ein eigenes
+// `try { r._gameLoopTick(performance.now()); } catch {}` war ein Zwilling (w4-arena-welt, 39 Stellen). Bis w28-loop-wurf lebte an
+// DIESEM Chokepoint die Stille: ein Wurf an der Fehler-Grenze des Loops vorbei verschwand ganz. Jetzt geht er an die EINE Grenze
+// (`_loopErrorBoundary`: gezählt, der EINE Melder) und ist im Sammler ROT beim Namen (`LOOP_WURF`).
 function handTakt() {
     try {
         r._gameLoopTick(performance.now());
-    } catch {}
+    } catch (e) {
+        r._loopErrorBoundary(e);
+    }
 }
 // DER EINE VERGLEICH und DIE EINE ADDITION (`xs.sort(aufsteigend)`, `xs.reduce(addiere, 0)`): in Node global, sobald welt-boot
 // lädt (wie THREE mit studioKern), in jeder Seite derselbe Text — je Linse ein eigenes `(a, b) => a - b` und `(a, b) => a + b` war ein Zwilling (w4-arena-welt).
@@ -255,7 +259,9 @@ async function streuTakte(n, ms) {
             r._gameLoopTick(performance.now());
             const pp = st.playerMesh && st.playerMesh.position;
             if (pp) r._tickScatterStreaming(pp);
-        } catch {}
+        } catch (e) {
+            r._loopErrorBoundary(e);
+        }
         await sleep(ms);
     }
 }
@@ -647,7 +653,20 @@ const KOSTEN = /^\[budget\] |BUDGET-BRUCH /;
 // Render-Lauf, danach zeichnet der Schirm direkt — als ERROR-Zeile über console.log; bis hier sah der Sammler nur console.error,
 // und jede Linse außer gate:post-kette blieb über ihm grün (gate:fern-ring meldete auf main JEDEN Frame „STOFF: die Post-Kette
 // (Render-Lauf …)", CI 41622260772). Jetzt ist er in JEDER Linse, die hier bootet, ROT beim Namen (der Selbsttest: wirft.html).
-const sammlung = { fehler: [], erwartet: null, wache: false, selbsttest: null };
+// DER GEFANGENE WURF IM TAKT BRICHT NIE STILL (w28-loop-wurf): die Fehler-Grenze des Loops (`_loopErrorBoundary`) fängt ihn, die
+// Welt läuft weiter, und der EINE Melder schreibt ihn als ERROR-Zeile über console.log — bis hier sah ihn kein Sammler (11.11.,
+// w27-ort-pose-voll: der Schritt des Verkehrs warf in JEDEM Sim-Schritt, die Stadt stand still, jede Linse blieb GRÜN). Jetzt ROT
+// beim Namen in JEDER Linse, die hier bootet (`LOOP_WURF`): je Wurf-Text EIN Fehler (der Melder meldet jeden neuen Text sofort),
+// seine Wiederholung zählt (`wuerfe`: der Zähler des Melders, er kommt je 2 s — „≥“). Ein Hand-Takt, der an der Grenze vorbei
+// wirft, geht an dieselbe Grenze (`__handTakt`, `__streuTakte`).
+const LOOP_WURF = /\[ERROR\] Loop-Frame-Fehler/;
+const sammlung = { fehler: [], erwartet: null, wache: false, selbsttest: null, wuerfe: 0 };
+// DER TÄTER, DEN DIE LINSE SELBST SETZT (`taeter(re)`): nimmt die gesammelten Fehler, die `re` trifft, aus der Liste und gibt sie
+// zurück — die Mutante einer Linse beweist so, dass der EINE Sammler sie SAH (leer = still grün), statt sie als `erwartet` zu verschweigen
+function taeter(re, t = []) {
+    sammlung.fehler = sammlung.fehler.filter((f) => !re.test(f) || !t.push(f));
+    return t;
+}
 
 function melde(art, text) {
     const t = String(text || "")
@@ -668,7 +687,7 @@ function wacheAnProzessEnde() {
     sammlung.wache = true;
     process.on("exit", (code) => {
         if (!sammlung.fehler.length) return;
-        console.log(`[welt-boot] ROT — ${sammlung.fehler.length} Fehler der Welt:`);
+        console.log(`[welt-boot] ROT — ${sammlung.fehler.length} Fehler der Welt${sammlung.wuerfe ? ` · im Takt ≥ ${sammlung.wuerfe}× gefangen` : ""}:`);
         // ❌ je Fehler: der Dienst der GPU-Probe zeigt die Zeilen mit Urteil — ein Fehler ohne Urteils-Zeichen fehlte seinem Post
         for (const f of sammlung.fehler.slice(0, 12)) console.log(`  ❌ ${f}`);
         if (code === 0) process.exitCode = 1;
@@ -683,6 +702,10 @@ function fehlerSammler(page) {
     page.on("console", (m) => {
         const t = m.text();
         if (/\[ERROR\] STOFF: die Post-Kette/.test(t)) return melde("post-kette", t);
+        if (LOOP_WURF.test(t)) {
+            const n = /(\d+)× insgesamt\)$/.exec(t);
+            return n ? (sammlung.wuerfe = Math.max(sammlung.wuerfe, n[1])) : melde("loop-wurf", t);
+        }
         if (m.type() !== "error") return;
         if (HARMLOS.test(t)) return;
         // ein Budget-Bruch ist ein KOSTEN-Urteil mit eigenem Richter (gate:asset-contract, regler-wirkt), kein Absturz der Welt
@@ -1904,11 +1927,16 @@ module.exports = {
     seitenAbbruch,
     teilAus,
     selbsttest: (name) => (sammlung.selbsttest = name),
+    taeter,
 };
 
 // DER SELBSTTEST DER STALL-AKTE (gate:welt-boot, Null-Rezept): eine JS-Schleife steht als JS-SCHLEIFE mit Namen in der Akte, ein
 // nie erfülltes Versprechen als AWAIT, ein kurzer Block (0,8 s) trägt KEINE Akte.
 async function selbsttest() {
+    // DER WURF IM TAKT (wirft.html): die Fehler-Grenze, der Melder und das Log des STAMMS selbst (`methodeAm`, nie ein abgeschriebener
+    // Satz — ändert der Stamm sein Wort, fällt der blinde Sammler hier) — sieben Würfe an der Grenze, einer am Hand-Takt vorbei
+    const S = stammLib.text(ROOT);
+    const glied = (n) => ((m) => `${n}(${m.args}){${m.rumpf}}`)(stammLib.methodeAm(S, n));
     const seiten = {
         "/ruhig.html":
             "<!doctype html><script>setTimeout(function(){var e=performance.now()+800;while(performance.now()<e){}},300)</script>",
@@ -1917,8 +1945,7 @@ async function selbsttest() {
         "/haenger.html": "<!doctype html><script>window.__nie=function(){return new Promise(function(){})}</script>",
         "/abbruch.html":
             "<!doctype html><script>__los=()=>{(async()=>{for(;;)await sleep(20)})().catch((x)=>(__wort=x.message));setTimeout(()=>{for(const e=performance.now()+6e3;performance.now()<e;);},200)}</script>",
-        "/wirft.html":
-            "<!doctype html><script>setTimeout(function(){console.log('[ERROR] STOFF: die Post-Kette');throw new Error('__seitenWurf')},50)</script>",
+        "/wirft.html": `<!doctype html><meta charset="utf-8"><script>setTimeout(function(){console.log('[ERROR] STOFF: die Post-Kette');AnazhRealm={BRUCH_BUCH_MAX:9,BRUCH_WIEDER_MS:50};anazhRealm={state:{logBuffer:[],displayedLogs:[]},flushLog(){},${["log", "_bruchMelden", "_loopErrorBoundary"].map(glied)},_gameLoopTick(){throw Error('__handWurf')}};for(i=7;i--;)r._loopErrorBoundary(Error('__taktWurf'));__handTakt();throw new Error('__seitenWurf')},50)</script>`,
     };
     const server = statikServer({ seiten });
     await server.lausche(0);
@@ -2026,9 +2053,7 @@ async function selbsttest() {
     const kontext = await browser.createBrowserContext();
     await server.zeige(await kontext.newPage(), undefined, "wirft.html", "load");
     await sleep(400);
-    const wurf = sammlung.fehler.filter((f) => f.includes("__seitenWurf"));
-    const kette = sammlung.fehler.filter((f) => f.startsWith("post-kette: "));
-    sammlung.fehler = sammlung.fehler.filter((f) => !wurf.includes(f) && !kette.includes(f));
+    const [wurf, kette, takt] = [/__seitenWurf/, /^post-kette: /, /^loop-wurf: /].map((re) => taeter(re));
     const code = fs
         .readdirSync(path.join(ROOT, "scripts"), { recursive: true })
         .map((f) => f.replace(/\\/g, "/"))
@@ -2148,6 +2173,10 @@ async function selbsttest() {
             `Seiten-Wurf: ${wurf[0] || "KEIN Fehler gesammelt — still grün"}`,
         ],
         [kette.length === 1, `Bruch der Post-Kette: ${kette[0] || "still grün"}`],
+        [
+            `${takt.map((f) => /Error: __\w+Wurf/.exec(f))}` === "Error: __taktWurf,Error: __handWurf" && sammlung.wuerfe === 7,
+            `Wurf im Takt (7 an der Grenze, 1 am Hand-Takt): ${takt.join(" · ") || "still grün"} · gezählt ${sammlung.wuerfe}`,
+        ],
         [!zwillinge.length, `eigene pageerror-Sammler neben dem EINEN: ${zwillinge.join(", ") || "keiner"}`],
         [
             !namen.length &&
