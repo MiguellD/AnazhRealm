@@ -1,7 +1,7 @@
 {
  "sha": "4e2df19b5c5103b093818b62b5a84ababf85b493",
  "geraet": "gtx",
- "zeit": "2026-11-11T05:51:21.266Z",
+ "zeit": "2026-11-11T06:36:26.997Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "affekt.K4#2": {
@@ -1275,42 +1275,14 @@
   }
  },
  "sitzung": {
-  "start": "2026-11-11T05:50:45.104Z",
+  "start": "2026-11-11T06:26:24.487Z",
   "port": 7804,
-  "warten": 0.01,
-  "bootS": 5.3,
+  "warten": 10.04,
   "grundstellungS": [],
-  "proben": 1,
+  "proben": 0,
   "freigaben": [],
-  "orte": [
-   {
-    "ort": "wiese",
-    "vor": "mensch.K4#1",
-    "s": 29.8,
-    "takte": 911,
-    "chunks": 81,
-    "nach": null
-   }
-  ],
-  "wegeTueren": [],
-  "ciBlicke": 2,
-  "strom": {
-   "datei": "strom.ndjson",
-   "bilder": 0,
-   "frameP95": null,
-   "taktP95": null,
-   "vramMax": null,
-   "seiten": 1,
-   "marken": 0,
-   "fehler": 0,
-   "verloren": 0,
-   "ortImDeckel": [],
-   "zapfen": 51,
-   "luecken": 1,
-   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
-  },
-  "fahrtS": 67.1,
-  "minuten": 1.17
+  "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+  "minuten": 10.05
  },
  "ungemessen": {
   "ankunft.K1#1": {
@@ -1590,6 +1562,19 @@
    },
    "zeit": "2026-11-11T00:52:46.999Z",
    "abdruck": "d92a3ff92ce9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "physik.K2#2": {
+   "gruen": false,
+   "zahl": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "exit": null,
+   "minuten": 0,
+   "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "ungemessen": true,
+   "zeit": "2026-11-11T06:36:26.997Z",
+   "abdruck": "cd5b4a43c492",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
