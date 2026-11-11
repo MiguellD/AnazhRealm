@@ -132,7 +132,7 @@
   },
   "ankunft.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: ankunft.K1#1 radeon: Linse seit der Messung geändert (R6: scripts/diag-boot-stage.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +8) — zuletzt an df6c4721: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestan · ankunft.K1#1 gtx: ROT: t(Kontrolle) kalt 12.03 s von außen (Eigenmeldung 11.09 s), Bild 0.01 % Lücke bis zur Ruhe, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht · [linse-gpu] nvidia/pascal · ROT trotz Fremd-Last: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 11,9 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 7,1 CPU-s · LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio 2,8 CPU-s — 0,70 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon; Σ fremd 30,1 CPU-s in 59,8 s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 20,2 CPU-s · svchost.exe 8,8 CPU-s · SearchIndexer.exe 0,6 CPU-s) — geeicht ÷ 1,039 (1 + 5,6 % je fremdem Kern × 0,70): t(Kontrolle) kalt s 12,03 → geeicht 11,57 (Soll ≤ 10) an c4010773 · ankunft.K1#2 radeon: Linse seit der Messung geändert (R6: scripts/diag-boot-stage.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +8) — zuletzt an df6c4721: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestan · ankunft.K1#2 gtx: Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/diag-boot-stage.cjs, scripts/lib/ausgabe-aufnahme.cjs +7) — zuletzt an 6aa7a5a6: Fremd-Last: MsMpEng.exe 28,9 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 19,5 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjx",
+   "beleg": "Maschine: 0 — offen: ankunft.K1#1 radeon: Linse seit der Messung geändert (R6: scripts/diag-boot-stage.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +8) — zuletzt an df6c4721: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestan · ankunft.K1#1 gtx: ROT: t(Kontrolle) kalt 12.03 s von außen (Eigenmeldung 11.09 s), Bild 0.01 % Lücke bis zur Ruhe, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht · [linse-gpu] nvidia/pascal · ROT trotz Fremd-Last: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 11,9 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 7,1 CPU-s · LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio 2,8 CPU-s — 0,70 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon; Σ fremd 30,1 CPU-s in 59,8 s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 20,2 CPU-s · svchost.exe 8,8 CPU-s · SearchIndexer.exe 0,6 CPU-s) — geeicht ÷ 1,039 (1 + 5,6 % je fremdem Kern × 0,70): t(Kontrolle) kalt s 12,03 → geeicht 11,57 (Soll ≤ 10) an c4010773 · ankunft.K1#2 radeon: Linse seit der Messung geändert (R6: scripts/diag-boot-stage.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +8) — zuletzt an df6c4721: die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: creatures · wie {\"creatures\":{\"vorher\":5,\"nachher\":5,\"fehlt\":[],\"neu\":[],\"anders\":[\"Una:verband/bestand\",\"Pyx:verband/bestan · ankunft.K1#2 gtx: ROT: t(Kontrolle) kalt 12.43 s von außen (Eigenmeldung 11.05 s), Bild 0.00 % Lücke bis zur Ruhe, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht · [linse-gpu] nvidia/pascal · ROT trotz Fremd-Last: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 14,1 CPU-s · LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio 3,1 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 2,9 CPU-s — 0,64 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon; Σ fremd 28,6 CPU-s in 61,5 s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 20,8 CPU-s · svchost.exe 8,3 CPU-s · SearchIndexer.exe 0,6 CPU-s) — geeicht ÷ 1,036 (1 + 5,6 % je fremdem Kern × 0,64): t(Kontrolle) kalt s 12,43 → geeicht 11,99 (Soll ≤ 5) an c4010773",
    "stationen": [
     {
      "id": "ankunft.K1#1",
@@ -169,10 +169,9 @@
      "id": "ankunft.K1#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/diag-boot-stage.cjs, scripts/lib/ausgabe-aufnahme.cjs +7) — zuletzt an 6aa7a5a6: Fremd-Last: MsMpEng.exe 28,9 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 19,5 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjx",
-     "ungemessen": true,
+     "zahl": "t(Kontrolle) kalt 12.43 s von außen (Eigenmeldung 11.05 s), Bild 0.00 % Lücke bis zur Ruhe, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht · [linse-gpu] nvidia/pascal",
+     "sha": "c40107736235ffeef55a39f12c530e8b33f1ea9d",
+     "grund": "ROT: t(Kontrolle) kalt 12.43 s von außen (Eigenmeldung 11.05 s), Bild 0.00 % Lücke bis zur Ruhe, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht · [linse-gpu] nvidia/pascal · ROT trotz Fremd-Last: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 14,1 CPU-s · LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio 3,1 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 2,9 CPU-s — 0,64 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon; Σ fremd 28,6 CPU-s in 61,5 s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 20,8 CPU-s · svchost.exe 8,3 CPU-s · SearchIndexer.exe 0,6 CPU-s) — geeicht ÷ 1,036 (1 + 5,6 % je fremdem Kern × 0,64): t(Kontrolle) kalt s 12,43 → geeicht 11,99 (Soll ≤ 5)",
      "r6": "konsum"
     }
    ]
@@ -4790,9 +4789,7 @@
    ]
   }
  },
- "rueckfall": [
-  "vegetation.K1#1 radeon: wiese-third-0.5--wiese: LAI 2–5 3.42 · 5–10 2.74 · 10–20 2.83 · 20–40 satt (Saum springt > 15 %), Farbton 2–5 m 11.62°, nahWiese 4 Befehle / 54904 Dreiecke an c4010773 (grün gebucht an b0112f7b)"
- ],
+ "rueckfall": [],
  "r6": {
   "haelften": 388,
   "konsum": 85,
@@ -5050,7 +5047,7 @@
   "ohne": 54
  },
  "kopfVoll": "c40107736235ffeef55a39f12c530e8b33f1ea9d",
- "zeit": "2026-11-11T22:35:33.311Z",
+ "zeit": "2026-11-11T23:03:55.100Z",
  "vorher": "c4010773",
  "pflicht": {
   "dokument": "docs/PFLICHT-OFFEN.md",
@@ -5136,7 +5133,7 @@
      {
       "station": "ankunft.K1#2",
       "geraet": "gtx",
-      "zeile": "Konsum seit der Messung geändert (R6: fachwerk-core.js, scripts/diag-boot-stage.cjs, scripts/lib/ausgabe-aufnahme.cjs +7) — zuletzt an 6aa7a5a6: Fremd-Last: MsMpEng.exe 28,9 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8s"
+      "zeile": "ROT: t(Kontrolle) kalt 12.43 s von außen (Eigenmeldung 11.05 s), Bild 0.00 % Lücke bis zur Ruhe, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht · [linse-gpu] nvidia/pa"
      }
     ],
     "ohneRichter": []
