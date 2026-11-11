@@ -5882,12 +5882,15 @@ require("./mass.cjs").massAn(module.exports, {
         return [{ wort: "INP HUD ms", wert: b.inp.hud.inpMs, soll: 200 }, { wort: "INP Menü ms", wert: b.inp.menue.inpMs, soll: 200 }];
     },
 });
-// das erste Haus je nH (siedlung.K5#1 · K5#2: derselbe Lauf, dasselbe Soll)
+// das erste Haus je nH (siedlung.K5#1 · K5#2: derselbe Lauf, dasselbe Soll). DAS AUSGEBLIEBENE HAUS (die OMEN 11.11., 3c8dce79: „nH 300
+// erstes Haus nach — (kein Haus)“ fiel unter Last als „Bedingung ohne Zahl“ UNGEMESSEN): erwachte die Zelle und kam kein Haus, hielt
+// dorfErwachen bis M.nachMs (8000 ms, probeDorf) nach dem Erwachen — sein Wert ist ≥ 8000 (`ab`, punkte.cjs massVon)
 for (const staffel of [1, 2])
     require("./mass.cjs").massAn(module.exports, {
         ["siedlung.K5#" + staffel]: (j, lauf) => [12, 300].flatMap((nh) => {
             const b = jsonBlock(teilVon(lauf, "NH" + nh)), e = b && (b.ergebnis || b);
             const ms = e && !e.fehler && e.erstes ? e.erstes.ms : null;
-            return ms != null ? [{ wort: "nH " + nh + " erstes Haus ms", wert: ms, soll: 500 }] : [];
+            if (ms != null) return [{ wort: "nH " + nh + " erstes Haus ms", wert: ms, soll: 500, cpu: true }];
+            return e && !e.fehler && e.erwacht && !e.erstes ? [{ wort: "nH " + nh + " erstes Haus ms", wert: null, ab: 8000, soll: 500, cpu: true }] : [];
         }),
     });
