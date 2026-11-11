@@ -1,7 +1,7 @@
 {
  "sha": "4e2df19b5c5103b093818b62b5a84ababf85b493",
  "geraet": "gtx",
- "zeit": "2026-11-11T07:14:43.938Z",
+ "zeit": "2026-11-11T07:19:54.709Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "affekt.K4#2": {
@@ -1384,22 +1384,87 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "studios.K4#1": {
+   "gruen": false,
+   "zahl": "0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU pascal) · garage 23.8 %/– [Differenz 0.2382 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · portale 94.3 %/– [die Welt zeichnet an der Pose L2 (die Bühne L0) · Differenz 0.9426 > 0.021 Albedo ungemess] · schmiede 26.5 %/– [Differenz 0.2653 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · fachwerk 97.4 %/– [Differenz 0.9736 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · terrain –/– [ROT: bild: {\"ms\":3839,\"fehler\":\"ABNAHME ROT [Ziel Blickziel verdeckt von Laub baum_eiche i] · koerperstudio –/– [ungemessen: das Werk ist eine Prägung (der Leib des Spielers), kein gesetzter Bau] · tetrapoda –/– [ungemessen: das Werk ist ein Wesen (eine lebende Kreatur), kein gesetzter Bau]",
+   "exit": 0,
+   "minuten": 1.37,
+   "grund": "ROT: 0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU pascal) · garage 23.8 %/– [Differenz 0.2382 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · portale 94.3 %/– [die Welt zeichnet an der Pose L2 (die Bühne L0) · Differenz 0.9426 > 0.021 Albedo ungemess] · schmiede 26.5 %/– [Differenz 0.2653 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · fachwerk 97.4 %/– [Differenz 0.9736 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · terrain –/– [ROT: bild: {\"ms\":3839,\"fehler\":\"ABNAHME ROT [Ziel Blickziel verdeckt von Laub baum_eiche i] · koerperstudio –/– [ungemessen: das Werk ist eine Prägung (der Leib des Spielers), kein gesetzter Bau] · tetrapoda –/– [ungemessen: das Werk ist ein Wesen (eine lebende Kreatur), kein gesetzter Bau]",
+   "gpu": "nvidia/pascal",
+   "s": 82.5,
+   "fremd": {
+    "s": 84,
+    "takte": 38,
+    "fremdS": 154.34,
+    "kerne": 1.836,
+    "fensterKerne": 3.107,
+    "namen": [
+     [
+      "node.exe scripts/diag-fachwerk-contract.cjs",
+      67.36
+     ],
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      27.13
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      21.77
+     ]
+    ],
+    "dienerS": 45.73,
+    "diener": [
+     [
+      "dwm.exe",
+      24.39
+     ],
+     [
+      "System",
+      15.56
+     ]
+    ],
+    "geraetS": 29.58,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      18.27
+     ],
+     [
+      "svchost.exe",
+      9.41
+     ],
+     [
+      "SearchIndexer.exe",
+      0.78
+     ]
+    ],
+    "eigenS": 220.63,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon"
+   },
+   "zeit": "2026-11-11T07:19:54.709Z",
+   "abdruck": "a576b62649d8",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-11T07:14:08.091Z",
+  "start": "2026-11-11T07:19:23.152Z",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 7.5,
+  "bootS": 5.8,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
     "ort": null,
-    "vor": "studios.K3#2",
-    "s": 26.7,
-    "takte": 834,
+    "vor": "studios.K4#1",
+    "s": 24.6,
+    "takte": 835,
     "chunks": 81,
     "nach": null
    }
@@ -1417,12 +1482,12 @@
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 176,
+   "zapfen": 100,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 183,
-  "minuten": 3.11
+  "fahrtS": 114.1,
+  "minuten": 1.95
  },
  "ungemessen": {
   "ankunft.K1#1": {
