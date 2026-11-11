@@ -1,0 +1,71 @@
+[linse-gpu] nvidia/pascal
+
+=== DIE KALT-ZEILE (leeres Profil) — echte GPU · nvidia pascal · Holz voll · V18.546.251 ===
+    0 s  blockiert   63 ms | die Seite lädt
+    1 s  blockiert  483 ms · Foundry 0 wartend · 0 im Werk | die Welt entsteht
+    2 s  blockiert  151 ms (Buch 129) · Foundry 0 wartend · 0 im Werk | der Boden wächst (1 Stücke im Bild) · der Horizont wächst (0 %) · das Licht des Orts wird gemessen · der Spieler erhält seinen Leib · das Buch der Studios öffnet sich
+    3 s  blockiert  669 ms (Buch 56 · Himmel 84 · Knoten-Bau 55 · Physik 16 · Jobs 320 · Wiese 13) · Vorrat wartet auf das erste Bild · Foundry 0 wartend · 1 im Werk | der Boden wächst (1 Stücke im Bild) · der Horizont wächst (0 %) · das Licht des Orts wird gemessen · der Spieler erhält seinen Leib · 4 Wald-Stücke warten auf ihre Gestalt
+    4 s  blockiert  938 ms (Himmel 165 · Knoten-Bau 517 · Jobs 95 · Bild 510) · Vorrat wartet auf das erste Bild · Foundry 0 wartend · 5 im Werk | der Boden wächst (17 Stücke im Bild) · der Horizont wächst (0 %) · das Licht des Orts wird gemessen · der Spieler erhält seinen Leib · 4 Wald-Stücke warten auf ihre Gestalt
+    5 s  blockiert  848 ms (Himmel 230 · Knoten-Bau 369 · Physik 6 · Jobs 115 · Wiese 11 · Bild 277 · Boden 28 · Saat 14) · Vorrat wartet auf das erste Bild · Foundry 0 wartend · 5 im Werk | der Boden wächst (15 Stücke im Bild) · der Horizont wächst (0 %) · das Licht des Orts wird gemessen · der Spieler erhält seinen Leib · 2 Wald-Böden werden bepflanzt · 4 Wald-Stücke warten auf ihre Gestalt
+    6 s  blockiert  965 ms (Himmel 77 · Knoten-Bau 232 · Jobs 353 · Wiese 9 · Bild 213 · Boden 8 · Saat 21 · Streu 118) · Vorrat wartet auf das erste Bild · Foundry 5 wartend · 5 im Werk | der Boden wächst (12 Stücke im Bild) · der Horizont wächst (22 %) · der Spieler erhält seinen Leib · 5 Wald-Böden werden bepflanzt · 2 Wald-Stücke warten auf ihre Gestalt
+    7 s  blockiert  979 ms (Knoten-Bau 186 · Physik 9 · Jobs 405 · Wiese 8 · Bild 264 · Boden 26 · Saat 180 · Streu 53) · Vorrat wartet auf das erste Bild · Foundry 5 wartend · 5 im Werk | der Boden wächst (8 Stücke im Bild) · der Horizont wächst (28 %) · 10 Bäume werden gepflanzt, 9 Wald-Böden werden bepflanzt
+    8 s  blockiert  961 ms (Knoten-Bau 262 · Jobs 417 · Wiese 9 · Bild 353 · Boden 7 · Saat 142 · Wald-Plan 5 · Gruppen-Bau 19 · Bauten 18) · Vorrat wartet auf das erste Bild · Foundry 3 wartend · 10 im Werk | der Boden wächst (2 Stücke im Bild) · der Horizont wächst (47 %) · 8 Bäume und Bauten wachsen · 15 Wald-Böden werden bepflanzt
+    9 s  blockiert  807 ms (Himmel 10 · Knoten-Bau 334 · Physik 6 · Jobs 190 · Wiese 12 · Bild 524 · Wald-Plan 32 · Gruppen-Bau 26 · Bauten 12) · Vorrat wartet auf das erste Bild · Foundry 0 wartend · 6 im Werk | der Horizont wächst (62 %) · 1 Bäume und Bauten wachsen · 16 Wald-Böden werden bepflanzt
+   10 s  blockiert  789 ms (Knoten-Bau 270 · Jobs 171 · Wiese 6 · Bild 373 · Wald-Plan 41 · Gestalt 73 · Bauten 38) · Vorrat wartet auf das erste Bild · Foundry 6 wartend · 23 im Werk | der Horizont wächst (78 %) · 209 Bäume und Bauten wachsen · 13 ferne Bäume werden gemalt
+   11 s  blockiert  887 ms (Knoten-Bau 188 · Physik 13 · Jobs 25 · Bild 223) · Vorrat wartet auf das erste Bild · Foundry 0 wartend · 22 im Werk | der Horizont wächst (86 %) · 209 Bäume und Bauten wachsen · 13 ferne Bäume werden gemalt
+   12 s  blockiert  774 ms (Knoten-Bau 374 · Jobs 204 · Bild 302 · Gruppen-Bau 40 · Bauten 9) · Vorrat wartet auf das erste Bild · Foundry 0 wartend · 10 im Werk | der Horizont wächst (94 %) · 209 Bäume und Bauten wachsen · 13 ferne Bäume werden gemalt
+   13 s  blockiert  794 ms (Himmel 5 · Knoten-Bau 179 · Jobs 573 · Wiese 333 · Bild 44 · Gruppen-Bau 19) · Vorrat wartet auf das erste Bild · Foundry 0 wartend · 6 im Werk | der Horizont wächst (95 %) · 208 Bäume und Bauten wachsen · 13 ferne Bäume werden gemalt
+   14 s  blockiert  979 ms (Knoten-Bau 146 · Physik 5 · Jobs 509 · Wiese 446 · Bild 289 · Gruppen-Bau 9 · Bauten 9) · Vorrat wartet auf das erste Bild · Foundry 0 wartend · 4 im Werk | 208 Bäume und Bauten wachsen · 13 ferne Bäume werden gemalt
+   15 s  blockiert  933 ms (Knoten-Bau 165 · Physik 14 · Jobs 462 · Wiese 144 · Bild 110 · Bauten 7) · Vorrat wartet auf das erste Bild · Foundry 0 wartend · 3 im Werk | 208 Bäume und Bauten wachsen · 13 ferne Bäume werden gemalt
+   16 s  blockiert  954 ms (Knoten-Bau 129 · Physik 8 · Jobs 301 · Wiese 10 · Bild 208 · Bauten 14) · Vorrat wartet auf das erste Bild · Foundry 0 wartend · 2 im Werk | 208 Bäume und Bauten wachsen · 13 ferne Bäume werden gemalt
+   17 s  blockiert  959 ms (Himmel 12 · Knoten-Bau 262 · Physik 9 · Jobs 569 · Wiese 16 · Bild 312 · Bauten 15) · Vorrat wartet auf das erste Bild · Foundry 0 wartend · 1 im Werk | 208 Bäume und Bauten wachsen · 12 ferne Bäume werden gemalt
+   18 s  blockiert  936 ms (Himmel 8 · Knoten-Bau 224 · Physik 8 · Jobs 509 · Wiese 11 · Bild 321 · Bauten 12) · Vorrat wartet auf das erste Bild · Foundry 0 wartend · 0 im Werk | 186 Bäume und Bauten wachsen · 8 ferne Bäume werden gemalt
+   19 s  blockiert  892 ms (Himmel 5 · Knoten-Bau 319 · Physik 7 · Jobs 400 · Wiese 9 · Bild 409 · Bauten 18) · Vorrat wartet auf das erste Bild · Foundry 0 wartend · 0 im Werk | 22 Bäume und Bauten wachsen
+   20 s  blockiert  805 ms (Knoten-Bau 570 · Physik 6 · Jobs 110 · Wiese 18 · Bild 657) · Vorrat wartet auf das erste Bild · Foundry 0 wartend · 0 im Werk | 2 Bäume und Bauten wachsen
+   21 s  blockiert  861 ms (Knoten-Bau 661 · Physik 13 · Jobs 114 · Wiese 17 · Bild 785) · Vorrat wartet auf das erste Bild · Foundry 0 wartend · 0 im Werk | 8 Programme des Bilds entstehen · 9 Bäume und Bauten wachsen
+   22 s  blockiert  671 ms (Himmel 12 · Knoten-Bau 172 · Jobs 52 · Wiese 7 · Bild 259) · Vorrat wartet auf das erste Bild · Foundry 0 wartend · 0 im Werk | 7 Programme des Bilds entstehen
+   23 s  blockiert  401 ms (Physik 8 · Jobs 301 · Wiese 133 · Bild 32 · Boden 32) · Vorrat wartet auf das erste Bild · Foundry 0 wartend · 0 im Werk | der Horizont wird geteilt · 3 Programme des Bilds entstehen
+   24 s  blockiert   37 ms (Physik 11 · Jobs 323 · Wiese 68 · Bild 39 · Boden 5) · Vorrat wartet auf das erste Bild · Foundry 0 wartend · 0 im Werk | 3 Programme des Bilds entstehen
+   25 s  blockiert    0 ms (Physik 29 · Jobs 170 · Wiese 30 · Bild 40) · Vorrat wartet auf das erste Bild · Foundry 0 wartend · 0 im Werk | 2 Programme des Bilds entstehen
+   26 s  blockiert  117 ms (Himmel 6 · Physik 24 · Jobs 184 · Wiese 29 · Bild 62) · Vorrat wartet auf das erste Bild · Foundry 0 wartend · 0 im Werk | 1 Programm des Bilds entsteht
+   27 s  blockiert  936 ms (Himmel 9 · Physik 13 · Jobs 223 · Wiese 23 · Bild 104 · Saat 24 · Streu 5 · Gruppen-Bau 23) · Vorrat bestellt · Foundry 21 wartend · 24 im Werk | 4 Wald-Stücke warten auf ihre Gestalt
+   28 s  blockiert  580 ms (Physik 6 · Jobs 71 · Wiese 22 · Bild 104 · Saat 19 · Gruppen-Bau 6) · Vorrat bestellt · Foundry 0 wartend · 23 im Werk | — die Kontrolle
+  3.1 s  das Buch der Studios ist da
+  die Klasse Pflanzen bis zur Kontrolle: 746 ms Haupt-Faden (Saat 399 · Streu 176 · Wald-Plan 84 · Gestalt 88)
+  DER HAUPT-FADEN bis zum Ende (28.18 s): belegt 21276 ms · Collector 623 · Programm 1735 · leer 3085 ms
+  die Phasen (t · Haupt-Faden belegt bis dahin): HTML da 0.46 s · 0 ms | Skripte da 1.10 s · 147 ms | DOM bereit 1.90 s · 800 ms | welt steht 2.79 s · 1691 ms | Buch da 3.06 s · 1897 ms | buch steht 3.06 s · 1897 ms | erstes Lade-Bild 4.72 s · 3280 ms | licht steht 6.89 s · 4972 ms | leib steht 7.96 s · 6013 ms | streu steht 7.96 s · 6013 ms | boden steht 9.17 s · 7161 ms | pflanzung steht 10.86 s · 8505 ms | karten steht 19.81 s · 15742 ms | bauten steht 22.14 s · 17971 ms | horizont steht 24.09 s · 18739 ms | zeichnung steht 26.87 s · 19975 ms | Weltbild 26.87 s · 19975 ms | Kontrolle 28.18 s · 21276 ms | Ring am Ziel 36.52 s · 21337 ms
+  die 10 längsten Aufgaben vor dem Ende (von 117 ≥ 50 ms):
+      4.08 s   640 ms  build [three.webgpu.min.js] vendor/three.webgpu.min.js:6 69 · build [three.webgpu.min.js] vendor/three.webgpu.min.js:6 68 · build [three.webgpu.min.js] vendor/three.webgpu.min.js:6 62
+      3.48 s   602 ms  _runFrameScheduler (verteilt) stamm/dirigent-takt.js:2072 138 · _tickFernRing (verteilt) stamm/bild-sicht.js:2779 65 · _buildPbrNodeMaterial (verteilt) stamm/stoff-material.js:827 65
+     22.66 s   577 ms  (ohne Probe) 567
+     26.95 s   513 ms  folger [koerper-core.js] koerper-core.js:6594 130 · tuchGitter [koerper-core.js] (verteilt) koerper-core.js:6333 96 · _mergeBlueprintByMaterial stamm/siedlung-bauten.js:1020 67
+     11.43 s   492 ms  (ohne Probe) 210 · (garbage collector) 116 · build [three.webgpu.min.js] vendor/three.webgpu.min.js:6 55
+      1.41 s   483 ms  _holzWahl stamm/dirigent-regler.js:449 311 · _bootAnazhRealm stamm/dirigent-ankunft.js:1939 57
+      8.42 s   381 ms  build [three.webgpu.min.js] vendor/three.webgpu.min.js:6 52 · _runFrameScheduler stamm/dirigent-takt.js:2072 52 · build [three.webgpu.min.js] vendor/three.webgpu.min.js:6 50
+      5.73 s   342 ms  build [three.webgpu.min.js] vendor/three.webgpu.min.js:6 79 · build [three.webgpu.min.js] vendor/three.webgpu.min.js:6 53
+      7.65 s   308 ms  run stamm/dirigent-takt.js:1865 55 · (anonym) [koerper-core.js:7038] koerper-core.js:7038 54 · _renderScene [three.webgpu.min.js] vendor/three.webgpu.min.js:6 51
+     13.34 s   297 ms  build [three.webgpu.min.js] vendor/three.webgpu.min.js:6 92 · _nahWieseFernTakt stamm/vegetation-wiese.js:448 51
+  die Funktionen vor dem Ende (inklusiv · selbst ms):
+     17039 ·    23  e [three.webgpu.min.js] vendor/three.webgpu.min.js:6
+     17012 ·    27  takt stamm/dirigent-takt.js:403
+     16981 ·   109  loop stamm/dirigent-takt.js:6
+      9129 ·     5  render [three.webgpu.min.js] vendor/three.webgpu.min.js:6
+      9122 ·    58  renderer._renderScene stamm/bild-kosten.js:221
+      9062 ·    45  _renderScene [three.webgpu.min.js] vendor/three.webgpu.min.js:6
+      8417 ·     3  _renderObjects [three.webgpu.min.js] vendor/three.webgpu.min.js:6
+      8415 ·     8  renderer.renderObject stamm/bild-kosten.js:398
+      8409 ·    25  renderObject [three.webgpu.min.js] vendor/three.webgpu.min.js:6
+      8402 ·    61  rend._renderObjectDirect
+      8369 ·    47  renderer._renderObjectDirect stamm/bild-kosten.js:518
+      7145 ·     7  _loopVoxelStreaming stamm/dirigent-takt.js:2111
+      7139 ·    87  _runFrameScheduler stamm/dirigent-takt.js:2072
+      7091 ·    19  zeichne stamm/bild-kosten.js:474
+      6791 ·    17  _loopRender stamm/dirigent-takt.js:2150
+  die Spur: 0 von 24287 Proben unter „(Knoten verloren)“ (verlorener ProfileChunk, Soll ≤ 5 %)
+  ❌ DIE HALTER bis zur Kontrolle: build [three.webgpu.min.js] (vendor/three.webgpu.min.js:6) hält den Haupt-Faden bis zum Ende 92 ms (bei 13.3 s; 48× ≥ 50 ms, Σ 2819 ms) · (ohne Probe) hält den Haupt-Faden bis zum Ende 567 ms (bei 22.7 s; 13× ≥ 50 ms, Σ 1775 ms) · _runFrameScheduler (stamm/dirigent-takt.js:2072) hält den Haupt-Faden bis zum Ende 80 ms (bei 8.3 s; 17× ≥ 50 ms, Σ 1006 ms) · _knotenRate (stamm/bild-kosten.js:758) hält den Haupt-Faden bis zum Ende 113 ms (bei 20.4 s; 10× ≥ 50 ms, Σ 695 ms) · _nahWieseFernTakt (stamm/vegetation-wiese.js:448) hält den Haupt-Faden bis zum Ende 92 ms (bei 14.5 s; 7× ≥ 50 ms, Σ 484 ms) · _renderScene [three.webgpu.min.js] (vendor/three.webgpu.min.js:6) hält den Haupt-Faden bis zum Ende 71 ms (bei 17.1 s; 7× ≥ 50 ms, Σ 397 ms)
+
+  ❌ t(Kontrolle) kalt 28.18 s von außen (Soll ≤ 5 s; W trug den Leib im Atem 55) · Eigenmeldung 26.87 s
+  LIEFERUNG kalt: 0 von 129 von der Platte (0.0 %) · Werk 129 · Haupt-Faden 0 · leer 0 · verschluckt 3
+  LIEFERUNG je Art: blatt-atlas 0/1 0 ms · dorf-export 0/1 0 ms · karte 0/15 939 ms
+  ✅ synchron nach dem Bild: keine Pipeline
+  ✅ AM BILD GEZEICHNET: jeder Bürger des ersten Weltbilds zeichnete (322 Bilder gezählt)
