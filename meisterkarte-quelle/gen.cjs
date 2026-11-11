@@ -39,6 +39,25 @@ function bauen() {
       });
     }
   }
+  // DIE HEBEL-TAFEL IST EINE FUNKTION DES STANDS (11.11.: 35 Hebel versprachen Punkte für Kriterien, die die Maschine schon voll
+  // gebucht hatte — die Prüfung „Σ Δ ≤ 2 − heute“ hielt die Karte rot, und die Seite blieb alt, bis jemand die Tafel von Hand
+  // nachzog). Ein Hebel bewegt, was an seinem Kriterium noch OFFEN ist, in der Reihe der Tafel; ein Hebel ohne Rest ist geerntet:
+  // er behält seine Nummer (H<n> ist ein Name), steht aber in keiner Rangliste und keiner Summe.
+  const offen = {};
+  for (const b of bereiche) b.kriterien.forEach((k, i) => (offen[b.key + ".K" + (i + 1)] = 2 - k.punkte));
+  for (const b of bereiche)
+    b.hebel = b.hebel.map((h) => {
+      const bewegt = [];
+      for (const x of h.bewegt) {
+        const [id, d] = x.split("+");
+        if (!(id in offen) || !/^[12]$/.test(d)) { bewegt.push(x); continue; } // unlesbar oder unbekannt: `pruefen` nennt es
+        const n = Math.min(Number(d), offen[id]);
+        offen[id] -= n;
+        if (n) bewegt.push(id + "+" + n);
+      }
+      const p = bewegt.reduce((s, x) => s + (Number(x.split("+")[1]) || 0), 0);
+      return { ...h, bewegt, punkte: p, p_je_tag: +(p / mitte(h.tage)).toFixed(2), ...(bewegt.length ? {} : { geerntet: true }) };
+    });
   const summe = bereiche.reduce((s, b) => s + b.punkte, 0);
   const j = {
     stand: meta.stand, kopf: meta.kopf, version: meta.version, skala: "2.0", summe, max: bereiche.length * 10,
@@ -50,6 +69,8 @@ function bauen() {
     buergschaft: meta.buergschaft,
     messschuld: meta.messschuld.map(([id, kriterium, messung, erwartung]) => ({ id, kriterium, messung, erwartung })),
     top5: [],
+    // was nach allen Hebeln offen BLEIBT: Punkte, für die die Tafel keinen Schnitt nennt (der Rest von `offen`)
+    ohneHebel: Object.entries(offen).filter(([, v]) => v > 0).map(([k, v]) => k + "+" + v),
     verlauf: [
       ...meta.verlaufAlt.map((v) => ({ skala: "1.0", max: 90, ...v })),
       { stand: meta.stand, kopf: meta.kopf, summe, max: bereiche.length * 10, skala: "2.0", was: meta.verlaufNeuWas }
@@ -64,7 +85,8 @@ function bauen() {
   return j;
 }
 
-function alleHebel(j) { const out = []; for (const b of j.bereiche) b.hebel.forEach((h, i) => out.push({ b, h, i })); return out; }
+function alleHebel(j) { const out = []; for (const b of j.bereiche) b.hebel.forEach((h, i) => h.geerntet || out.push({ b, h, i })); return out; }
+function geerntete(j) { return j.bereiche.reduce((n, b) => n + b.hebel.filter((h) => h.geerntet).length, 0); }
 function top(j, filt, n) {
   return alleHebel(j).filter((x) => filt(x.h)).sort((a, c) =>
     c.h.p_je_tag - a.h.p_je_tag || (hatPflicht(c.h.pflicht) - hatPflicht(a.h.pflicht)) || ((c.h.oeffnet || 0) - (a.h.oeffnet || 0)) || c.h.punkte - a.h.punkte).slice(0, n);
@@ -167,7 +189,7 @@ function render(j) {
     P("| | **" + esc(g.titel.split(" — ")[0]) + "** | **" + g.summe + "**/" + g.max + " | | | | | | | |");
     for (const bk of g.bereiche) {
       const b = j.bereiche.find((x) => x.key === bk);
-      const nh = [...b.hebel].filter((x) => !x.bedingt).sort((x, y) => y.p_je_tag - x.p_je_tag)[0];
+      const nh = [...b.hebel].filter((x) => !x.bedingt && !x.geerntet).sort((x, y) => y.p_je_tag - x.p_je_tag)[0];
       P("| " + idx[b.key] + " | " + esc(lang(b)) + " | **" + b.punkte + "**/10 | " + b.kriterien.map((k) => k.punkte).join(" | ") + " | " + esc(b.pfad) + " | " + (nh ? esc(nh.name.split(":")[0]) + " (+" + nh.punkte + " · " + tage(nh.tage) + " · " + de(nh.p_je_tag) + ")" : "—") + " |");
     }
   }
@@ -191,7 +213,11 @@ function render(j) {
   P("### Nach v1.0 (Feature-Stopp): die stärksten Hebel, benannt, nicht in der Reihe"); P();
   for (const x of top(j, (h) => !h.v1, 6)) P("- " + kurz(x.b) + " H" + (x.i + 1) + " — " + x.h.name + " (+" + x.h.punkte + " · " + tage(x.h.tage) + " · " + de(x.h.p_je_tag) + " P/d)");
   P();
-  P("**Was offen liegt:** alle " + alleHebel(j).length + " Hebel zusammen bewegen +" + alleHebel(j).reduce((s, x) => s + x.h.punkte, 0) + " Punkte in ≈ " + Math.round(alleHebel(j).reduce((s, x) => s + mitte(x.h.tage), 0)) + " Arbeitstagen (Mitte der Schätzungen, ohne Überlappung gerechnet); dazu die Messschuld. Die letzten Punkte jedes Bereichs verlangen das Bild auf BEIDEN Geräten in Bewegung — dort liegt die eigentliche Arbeit.");
+  P("**Was offen liegt:** " + (geerntete(j) ? geerntete(j) + " Hebel sind geerntet (die Tafel folgt dem Stand); " : "") + "alle " + alleHebel(j).length + " Hebel zusammen bewegen +" + alleHebel(j).reduce((s, x) => s + x.h.punkte, 0) + " Punkte in ≈ " + Math.round(alleHebel(j).reduce((s, x) => s + mitte(x.h.tage), 0)) + " Arbeitstagen (Mitte der Schätzungen, ohne Überlappung gerechnet); dazu die Messschuld. Die letzten Punkte jedes Bereichs verlangen das Bild auf BEIDEN Geräten in Bewegung — dort liegt die eigentliche Arbeit.");
+  if ((j.ohneHebel || []).length) {
+    P();
+    P("**Ohne Hebel:** +" + j.ohneHebel.reduce((s, x) => s + Number(x.split("+")[1]), 0) + " Punkte an " + j.ohneHebel.length + " Kriterien nennt kein Hebel der Tafel — " + bewegtText(j, j.ohneHebel) + ".");
+  }
   P(); P("---"); P();
   P("## Messschuld — erst messen, dann schneiden (kein Punkt-Gewinn)"); P();
   P("Eine Messung allein stellt den Ist fest; sie steht hier mit ihrer Erwartung und wird VOR jedem Schnitt am Ort gefahren, weil der Schnitt sein Vorher braucht. Im Verlauf heißt ein so gefundener Punkt „gemessen“, nie „Schnitt“ (R6).");
@@ -223,6 +249,7 @@ function render(j) {
       P();
       P("**Hebel** (nach Punkten je Tag)");
       [...b.hebel].map((h, i) => ({ h, i })).sort((u, v) => v.h.p_je_tag - u.h.p_je_tag).forEach(({ h, i }, r) => {
+        if (h.geerntet) return P((r + 1) + ". **H" + (i + 1) + " " + h.name + "** · geerntet (seine Kriterien stehen voll oder ein Hebel vor ihm trägt den Rest).");
         P((r + 1) + ". **H" + (i + 1) + " " + h.name + "** · " + bewegtText(j, h.bewegt) + " · " + tage(h.tage) + " · **" + de(h.p_je_tag) + " P/d** · Pflicht: " + h.pflicht + (h.v1 ? " · v1-Pfad" : " · nach v1.0") + (h.bedingt ? " · bedingt" : "") + ". *Wurzel:* " + h.wurzel);
       });
       P();
