@@ -47,8 +47,8 @@
 //        --sha: je Mess-Datei die Stationen, die am Deckel rissen, vorher ↔ am Deckel der Tafel; --schreibe legt jeden Deckel als Deckel
 //        DIESER Karte in die Deckel-Tafel (deckel.json, probeSek) — nur, wenn die Stationen danach halten
 //   node punkte.cjs selbsttest [--ohne 3c]   jeder Fall beim Namen (ohne (3c) DIE BAHNEN: sie zeugt Bash-Waisen)
-//   node punkte.cjs fremdlast [--sek 60] [--takt 2000]   DIE EICHUNG des Zeugen der Fremd-Last (fremdlastCli): die fremden Kerne über
-//        --sek Sekunden beim Namen — einmal im Leerlauf, einmal neben `npm run playtest:fast` in einer anderen Konsole
+//   node punkte.cjs fremdlast [--sek 60] [--takt 2000]   der Zeuge der Fremd-Last (fremdlastCli): die fremden Kerne über --sek Sekunden beim Namen
+//   node punkte.cjs referenz [--n 5] [--umfeld allein|sitzung]   DIE REFERENZFAHRT von Hand (referenzCli): n Fahrten, Streuung, f gegen die Ruhe
 //
 // FORMAT (stationen/g1.js .. g6.js, module.exports = [ … ]), je Eintrag:
 //   kriterium "gelaende.K2" (Bereich-Schlüssel.K<n> wie in src/gN.js) · staffel 1|2 · geraet "radeon"|"gtx"|"headless"
@@ -56,8 +56,8 @@
 //   oder "bash"; Platzhalter {PORT} {AUS} {BAUM} {KOORD}, {SEK} der Deckel des Laufs in s) · env (optional, dieselben Platzhalter) · gpu true|false (true →
 //   über gpu-lauf.sh, nie ohne Schloss) · zeit true|false (true: das Urteil fällt an der Wanduhr — ms, s, fps, p95 je Bild, Pop
 //   je s, Takt, Latenz, Sekunden bis sichtbar, oder es reißt nachweislich unter fremder Last —, die Station fährt allein, und
-//   DER ZEUGE DER FREMD-LAST urteilt sie: über FREMD_SCHWELLE_KERNE fremden Kernen nach dem GESETZ DER FREMD-LAST (ihr Maß geeicht,
-//   im Band UNGEMESSEN: Fremd-Last: <Name> <x> CPU-s), fremdZeuge · fremdUrteil; false: Bild oder Funktion, sie verträgt parallele
+//   DIE REFERENZFAHRT vor und nach ihr misst die Verlangsamung f ihrer Umgebung (ihr Maß roh ÷ f, im Band UNGEMESSEN „unscharf unter
+//   Last“), der Zeuge nennt, wer die Last war — referenzFahrt · fremdZeuge · fremdUrteil; false: Bild oder Funktion, sie verträgt parallele
 //   Bahnen und trägt den Bericht nur; je Station Pflicht) · minuten (Deckel = 2 × minuten, mindestens 2 min) · urteil (j, lauf) →
 //   { gruen, zahl } mit j = JSON aus {AUS} oder null, lauf = { exit, stdout, stderr } · mass (j, lauf, urteil) → [{ wort, wert, soll,
 //   richtung "≤"|"≥" (Vorgabe ≤), fest? }] die Zahlen, an denen das Urteil fällt, ODER ohneMass (der Grund) — genau eines an jeder
@@ -103,10 +103,10 @@
 // KEINE MESSUNG IST KEIN ROT (pm-fremdlast, Befund 08.11.: die Ratsche nahm Punkte unter fremder Last und nach dem Absturz des Messorts),
 // an derselben Stelle: (MESSORT) wirft das Messgerät vor dem Urteil der Linse — ein `muss`-Schritt, die Grundstellung, der Ortswechsel,
 // die Seite, die nicht steht —, sagt sein Läufer die EINE Marke `@@PUNKTE@@ MESSORT <grund>` (MESSORT_MARKE): UNGEMESSEN (Messort: …);
-// (FREMD-LAST) ein ROT einer Zeit-Station, neben der fremde Prozesse über FREMD_SCHWELLE_KERNE rechneten, ist UNGEMESSEN (Fremd-Last:
-// <Name> <x> CPU-s), solange die geeichte Last es erklären kann — reißt ihr Maß auch geeicht, ist es ROT (das Gesetz der Fremd-Last,
-// 10.11.) — DER ZEUGE (fremdZeuge) liest je Station jeden Prozess außerhalb des eigenen Baums, die Grund-Last des Geräts (FREMD_GERAET)
-// nie als fremd. ROT ist nur, was die Linse als Zahl gegen ihr Soll urteilt.
+// (LAST) ein ROT einer Zeit-Station, deren Referenzfahrt eine Verlangsamung f über REFERENZ_RUHE_BAND zeigt, ist UNGEMESSEN („unscharf
+// unter Last“), solange roh ÷ f das Soll hält — reißt ihr Maß auch entlastet, ist es ROT; ein GRÜN unter Last gilt (die Referenzfahrt,
+// 11.11.) — DER ZEUGE (fremdZeuge) nennt je Station jeden Prozess außerhalb des eigenen Baums beim Namen, die Grund-Last des Geräts
+// (FREMD_GERAET) nie als fremd. ROT ist nur, was die Linse als Zahl gegen ihr Soll urteilt.
 // ZWEI WÄNDE (24.10., Prüfung der Buchung 61 → 80): (PFAD) jeder `pfad`-Glob trifft am Mess-SHA und am Kopf mindestens eine
 // Datei, sonst ist die Station ROT — ein toter Glob macht R6 blind (die KAMPF-Liste nannte einen Schmiede-Kern, den es nicht gab);
 // (GPU) eine GPU-Station zählt nur, wenn ihr Lauf beweist, dass eine Linse auf der Karte zeichnete: ein Adapter eines Herstellers
@@ -191,8 +191,8 @@ const probeSek = (st, geraet) => {
 };
 // DER DECKEL IST EINE FUNKTION DES GERÄTS (10.11., Koordinator: die OMEN maß 41 veraltete Stationen am main 6aa7a5a6, 17 rissen „Deckel
 // 90 s gerissen: Stille …“ — die Tafel der GTX trug die Zahlen der Radeon und lernte nie, denn jeder Riss zählt zensiert): an der Leine
-// (fahreGruppe) ist der Grund-Deckel einer Karte nie kleiner als der der Radeon × ihr TAKT-FAKTOR (taktVon, FREMD_EICH `takt` — dieselbe
-// Eichung wie die Fremd-Last, gemessen oder nach Radeon), gekappt am Teil der Fahrt je Teil der Probe; eine Zahl der Tafel, die schon
+// (fahreGruppe) ist der Grund-Deckel einer Karte nie kleiner als der der Radeon × ihr TAKT-FAKTOR (taktVon, TAKT_KARTE `takt`, gemessen aus
+// den Mess-Dateien), gekappt am Teil der Fahrt je Teil der Probe; eine Zahl der Tafel, die schon
 // darüber liegt (die eigenen Grün-Läufe der Karte), bleibt. Die Tafel (probeSek), der Plan der Fahrt (fahrtSumme, der Anteil) und der
 // Abdruck bleiben Byte für Byte: mit dem Faktor im Plan stünde die Fahrt der GTX bei 7 394 s in 5 Teilen über dem Gesetz von 3 — die
 // Probe, die länger braucht, nimmt ihre Zeit an der Leine, und was über die Fahrt reicht, misst die Fortsetzung
@@ -503,10 +503,11 @@ function probenUrteil(stationen) {
 function massFehl(u) {
     if (!Array.isArray(u.mass)) return "das Maß ist keine Liste";
     const schief = u.mass.filter((m) => !(m && typeof m.wort === "string" && m.wort && Number.isFinite(m.soll) && (typeof m.wert === "number" || m.wert == null) &&
-        (m.richtung == null || m.richtung === "≤" || m.richtung === "≥") && (m.fest == null || m.fest === true)));
+        (m.richtung == null || m.richtung === "≤" || m.richtung === "≥") && (m.fest == null || m.fest === true) && (m.cpu == null || m.cpu === true) &&
+        (m.ab == null || (Number.isFinite(m.ab) && m.wert == null && m.richtung !== "≥"))));
     if (schief.length) return "das Maß ist schief: " + JSON.stringify(schief[0]).slice(0, 160);
     const reisst = u.gruen ? massVon(u.mass).filter((m) => massReisst(m)) : [];
-    return reisst.length ? "GRÜN mit reißendem Maß " + reisst.map((m) => m.wort + " " + m.wert + " (Soll " + (m.richtung || "≤") + " " + m.soll + ")").join(" · ") : null;
+    return reisst.length ? "GRÜN mit reißendem Maß " + reisst.map((m) => m.wort + " " + (m.wert == null ? "≥ " + m.ab : m.wert) + " (Soll " + (m.richtung || "≤") + " " + m.soll + ")").join(" · ") : null;
 }
 // die Deckel-Tafel ohne Probe: eine fremde Karte, ein Eintrag ohne Probe-Station auf seiner Karte — beim Namen (kein toter Deckel)
 function deckelWaisen(stationen, t = deckelVon()) {
@@ -966,105 +967,58 @@ const istZeit = (sts) => sts.some((st) => st.zeit === true);
 
 // ───────────────────────── DER ZEUGE DER FREMD-LAST (pm-fremdlast) ─────────────────────────
 // BEFUND 08.11. (Radeon): die Zug-Schlange fuhr lokal Statik und `playtest:fast`, während die Maschine Zeit-Stationen maß — ankunft.K2#1
-// 11,64 s (in Ruhe 10,09 s), profiband.K1#1 wiese-ego-geht 83,7 ms (in Ruhe 66,9 ms), licht.K2#1 und speicher.K4#2 (bild-diff 1,03–1,04 %
-// gegen 0,66–0,69 % in Ruhe) ROT unter Last, GRÜN in Ruhe; die Ratsche nahm gebuchte Punkte. gpu-lauf.sh wartet nur auf Runner.Worker,
-// und eine Last-Schwelle des Rechners hilft nicht: das gemessene Spiel füllt die CPU selbst. DER ZEUGE trennt darum nach dem BAUM:
-// alle FREMD_TAKT_MS liest er jeden Prozess des Rechners (Linux /proc im Läufer; Windows EIN PowerShell-Lauf über Get-CimInstance
-// Win32_Process: ProcessId, ParentProcessId, Kernel- + User-Zeit, Entstehung, die CommandLine je neuem Prozess) und rechnet den
-// EIGENEN Baum: die Nachfahren dieses Läufers (Halter, save-server, Werkbank und Chrome der Sitzung, die Probe, das Schloss, der Zeuge
-// selbst) — ein Kind nur, wenn es nach seinem Vater entstand (eine wiederbenutzte PID vererbt nie). Je Station (fahreGruppe) zählt er
-// die CPU-Sekunden jedes FREMDEN Prozesses in ihrem Fenster, beim Namen (die gekürzte Kommandozeile, kurzName). DIE DIENER
-// (FREMD_DIENER: Kernel und Kernel-Fäden, der Compositor, der Ton-Dienst, der WMI-Wirt, der dem Zeugen antwortet) arbeiten FÜR die
-// Messung — sie setzen das Fenster der Welt zusammen, spielen ihren Ton, beantworten den Zeugen —, ihre Sekunden stehen im Bericht
-// daneben, nie in der Fremd-Last; ein fremder Urheber zeigt sich immer mit eigenem Prozess (node, chrome, git, …). DIE GRUND-LAST DES
-// GERÄTS (FREMD_GERAET, 10.11.) ebenso daneben (`geraetS`, `geraet`): das Standardgerät trägt sie im Alltag.
-// DAS URTEIL (fremdUrteil, an der EINEN Stelle der Ergebnisse — fahreGruppe —, nur an `zeit: true`): trägt das dichteste
-// FREMD_FENSTER_S-Fenster der Station FREMD_SCHWELLE_KERNE fremde Kerne oder mehr, zählt ein GRÜN (trotz Last), ein ROT nur, wenn sein
-// Maß auch geeicht reißt (unten, das Gesetz der Fremd-Last (2)) — sonst UNGEMESSEN (Fremd-Last: <Name> <x> CPU-s …); ein blinder Zeuge
-// (kein Takt im Fenster, kein Weg auf der Plattform) macht jedes ROT UNGEMESSEN beim Grund: Ruhe, die niemand bezeugt, ist keine. Jede
-// Station (auch Bild) trägt den Bericht in ihrem Eintrag (`fremd`).
-// DIE SCHWELLE (die Eich-Idee: `node punkte.cjs fremdlast --sek 40` auf dem Messplatz im Leerlauf, dann dasselbe neben der Last des
-// Befunds — `npm run check:statik` und `npm run playtest:fast` im Spiel-Baum, in einer anderen Konsole —: derselbe Rechner, derselbe
-// Zeuge; FREMD_EICH trägt die Zahlen). Der Befund setzt den Effekt dieser Last auf +15 % (ankunft) bis +25 % (profiband), die eigene
-// Streuung einer Zeit-Station in Ruhe ist ≥ 3 % (Ankunft GTX 16,1–17,0 s). Bei linearem Effekt je fremdem Kern e = 0,25 / F (F = die
-// fremden Kerne der Last im dichtesten Fenster) hält T = 0,03 / e = 0,12 · F den Fehler unter der Streuung: F = 2,68 → T = 0,32, gesetzt
-// 0,3 (im Zweifel UNGEMESSEN — die Ratsche hält —, nie ein falsches ROT, das Punkte nimmt). Der Leerlauf liegt mit 0,01 dreißigfach
-// darunter, keine Ruhe-Messung fällt an ihr.
-// DIE SCHWELLE IST EINE FUNKTION DES RECHNERS (09.11.; fremdEich): 0,3 galt dem Container mit 4 Kernen, auf der Radeon (24 Kerne) trägt
-// schon die App des Koordinators ~2 fremde Kerne — an d3512932 blieben 8 Zeit-Stationen UNGEMESSEN (Claude.exe gpu-process 26–54 CPU-s,
-// MsMpEng). FREMD_EICH trägt je Rechner (Plattform, Kerne, CPU) die gemessenen Zahlen, FREMD_SCHWELLE_KERNE liest den Eintrag DIESES
-// Rechners (FREMD_HIER); der Bericht jedes Fensters trägt die Schwelle, die über ihn urteilt (`schwelle`, `eich`). GEMESSEN auf der Radeon
-// (09.11., ABAB je 4 Läufe `run --nur ankunft.K1#1` an d3512932): neben der App allein 11,05 s bei 3,24 fremden Kernen, mit einem Brenner
-// auf 6 Kernen 13,21 s bei 9,03 → +19,6 % bei ΔF 5,79, e = 3,4 % je Kern (die Regression über 10 Läufe: 3,65 %); profiband reißt unter
-// derselben Last 25/15 davon (Befund 08.11.) → e = 5,6 %, T = 0,03 / e = 0,53, gesetzt 0,5. Die Alltags-Last neben der App (F 2,1–3,9:
-// Claude.exe gpu-process + renderer, svchost, MsMpEng) verschiebt ankunft damit um 7–13 % — über der Streuung, UNGEMESSEN bleibt dort richtig.
-// Ein ungeeichter Rechner urteilt an der strengsten geeichten Schwelle (und ihrem Effekt) und sagt es im Bericht (`eich`: „ungeeicht …“).
-// DAS GESETZ DER FREMD-LAST (10.11., der Schöpfer: „Du suchst immer Ausreden statt mit den Mitteln zu arbeiten“ — auf der OMEN stand JEDE
-// Zeit-Station UNGEMESSEN, an dcc33615 alle profiband.* und ankunft.*: der HP-Dienst AppHelperCap.exe rechnete 85–95 CPU-s je Station, ~1–2
-// Kerne, immer; auf der Radeon maß Zeit nur, wer niemanden arbeiten ließ):
-//   (1) DAS GERÄT IST KEINE FREMD-LAST (FREMD_GERAET): was jedes Standardgerät dieser Art im Alltag trägt — Windows selbst (der Defender
-//       MsMpEng, sein Kern-Dienst, die Netz-Inspektion, der Dienst-Wirt svchost, der Such-Indexer samt seinen Hosts) und der Hersteller
-//       (HP: AppHelperCap und seine Insights-Geschwister, das OMEN Command Center) — ist Grund-Last wie FREMD_DIENER: das Profi-Band
-//       muss auf dem Standardgerät MIT ihr halten. Sie steht im Bericht beim Namen (`geraetS`, `geraet`), zählt nie in `fensterKerne`.
-//       Fremd bleibt, was ein Spieler nicht hätte: Claude.exe, fremde node/chrome, git, bash, CI-Runner, Compiler.
-//   (2) ROT UNTER LAST WIRD GEMESSEN, NICHT VERWORFEN (fremdUrteil): jede Zeit-Station nennt ihr Maß (`mass(j, lauf, urteil)` →
-//       [{ wort, wert, soll, richtung "≤"|"≥", fest? }], ein Feld NEBEN ihrem Urteil — nie im Abdruck: es ändert nicht, was die Station
-//       misst, nur wie die Maschine ihr ROT unter Last liest; massDerStation liest es über denselben Lauf); unter F fremden Kernen teilt die
-//       Eichung jeden Wert durch k = 1 + effekt · F (ein „≥“-Maß mal k; ein `fest`-Maß — Befehle, Dreiecke, Kopien, Minuten am Stück:
-//       die Last hebt sie nie — bleibt). Reißt ein Maß auch geeicht sein Soll, ist das ROT ein Urteil (die Last erklärt es nicht);
-//       reißt es nur ungeeicht, ist es UNGEMESSEN beim Namen mit BEIDEN Zahlen (das Band der Last); ein ROT ohne reißendes Maß (ein
-//       Abbruch, ein Bild, das unter Last nicht ganz wurde) bleibt UNGEMESSEN wie bisher. GRÜN trotz Last zählt wie seit dem 09.11.
-//       DAS MASS trägt jede Zeit-Station, deren Urteil an einer Dauer fällt (ms, s, p95 je Bild, Takt, Latenz, Belegung) oder an einem
-//       festen Bestand (Befehle, Dreiecke, Kopien, Minuten am Stück); ohne Maß (`ohneMass`: der Grund) bleiben die acht, deren Urteil ein Bild-, Zähl- oder
-//       Korrelations-Maß ohne geeichtes k spricht — ankunft.K2#1 (Lücke), klang.K2#1 (r), licht.K2#1 (Verhältnis), licht.K5#1 (EV je s),
-//       lod.K2#1 (Pop-Pixel je s), speicher.K4#2 (bild-diff), streaming.K1#1 (Lücken-Bilder), streaming.K2#1 (Anteil fertig): ihr ROT
-//       unter Last bleibt UNGEMESSEN beim Namen. Den Einklang jedes Maßes mit seinem Urteil (nie GRÜN über einem reißenden Maß) prüft
-//       massDerStation an jedem Lauf und probenUrteil an jeder Probe (massFehl); dass jede Zeit-Station genau eines trägt, FORMAT.
-//   (3) DIE OMEN (GTX 1060, i7-8750H, 12 Kerne) urteilt bis zu ihrer eigenen Messung mit der Eichung der Radeon als Näherung und sagt es
-//       („geeicht nach Radeon“); die Vorschrift ihrer Messung steht im Eintrag (`vorschrift`, fremdlastCli druckt sie). Gemessen 10.11. dort
-//       im Leerlauf (`fremdlast --sek 20`, der Koordinator): mit AppHelperCap 2,74 Kerne im Mittel, 3,54 im dichtesten Fenster; nach dem Halt
-//       des Dienstes durch den Schöpfer 0,56 / 0,63 (Claude.exe gpu-process 3,4 CPU-s, git.exe der App 2,6, Claude renderer 1,7).
+// 11,64 s (in Ruhe 10,09 s), profiband.K1#1 wiese-ego-geht 83,7 ms (in Ruhe 66,9 ms); die Ratsche nahm gebuchte Punkte. DER ZEUGE trennt
+// nach dem BAUM: alle FREMD_TAKT_MS liest er jeden Prozess des Rechners (Linux /proc; Windows EIN PowerShell-Lauf über Get-CimInstance
+// Win32_Process) und rechnet den EIGENEN Baum (die Nachfahren dieses Läufers; ein Kind nur, wenn es nach seinem Vater entstand). Je Station
+// (fahreGruppe) zählt er die CPU-Sekunden jedes FREMDEN Prozesses in ihrem Fenster, beim Namen (kurzName). DIE DIENER (FREMD_DIENER:
+// Kernel, Compositor, Ton, der WMI-Wirt des Zeugen) und DIE GRUND-LAST DES GERÄTS (FREMD_GERAET: Defender, Dienst-Wirt, Such-Indexer, der
+// Hersteller) stehen daneben. DER ZEUGE URTEILT NIE (11.11.): er nennt im Eintrag (`fremd`), WER die Last war — das Urteil spricht die
+// REFERENZFAHRT (unten).
+// DIE REFERENZFAHRT (w28-referenzfahrt, der Schöpfer 11.11.: „du killst dich selbst und Stück für Stück jeden anderen Prozess, um die Zeit
+// zu erreichen, das ist nicht professionell. Wie in einer CNC eine schnelle Referenzfahrt, die wirklich nicht lange dauern darf, und von
+// dort aus die Messung.“ — der Fall: OMEN 11.11., die Claude-App ~1 Kern (git.exe 16–23 CPU-s je Station), siedlung.K5#1 dreimal
+// UNGEMESSEN „Fremd-Last: git.exe …“, obwohl 7 048 ms gegen ≤ 500 kein Kern erklärt). Bis heute warf die Maschine jedes ROT einer
+// Zeit-Station über 0,30–0,50 fremden Kernen (eine Schwelle je Rechner, ein Effekt je Kern aus EINER ABAB-Eichung der Radeon, auf der
+// OMEN nur genähert) — die Geräte mussten Ruhe herstellen. JETZT misst jede Zeit-Station ihre Umgebung SELBST: unmittelbar VOR und NACH
+// ihr fährt die Maschine eine feste, deterministische Arbeit (referenzFahrt, je ≤ 1,5 s): (a) EIN Faden rechnet REFERENZ_RUNDEN Runden
+// eines FNV-Hashes über einen festen Puffer (256 KB), (b) ALLE Kerne rechnen dasselbe gleichzeitig (worker_threads, je Kern einer, der
+// langsamste zählt) — (a) sieht, ob die Last einen Kern frisst oder den Takt senkt, (b), ob sie die Maschine sättigt. DIE RUHE je Rechner
+// und Umfeld (Sitzung · allein) ist keine Hand-Zahl: das untere Zehntel (p10, bei < 10 Fahrten der Bestwert) aller Referenzfahrten dieses
+// Rechners in den Mess-Dateien und in diesem Prozess (referenzRuhe). DIE VERLANGSAMUNG des Laufs f = max über (a), (b) von
+// max(vor, nach) ÷ Ruhe, nie unter 1 — die größtmögliche Verlangsamung, die die Umgebung der Station antat. Der Eintrag trägt
+// `referenz: { vor, nach, ruhe, f, fEin, fAlle, schwankt, rechner, umfeld }`.
+// DAS URTEIL (fremdUrteil, an der EINEN Stelle fahreGruppe, nur an `zeit: true` — Bild-, Zahl- und Verhaltens-Stationen fallen nie an Last):
+//   f ≤ REFERENZ_RUHE_BAND → die Umgebung war ruhig: das Urteil der Station gilt wie gemessen (GRÜN, ROT, Abbruch).
+//   f darüber → GRÜN gilt (Last macht nie schneller; „GRÜN trotz Last“ mit f und Namen im Grund). ROT mit einem Maß (st.mass, Richtung
+//     „≤“ oder „≥“ — die Deklaration der Station, stationen/mass.cjs): entlastet = roh ÷ f („≥“: × f; `fest` bleibt roh) — reißt ein Maß
+//     auch entlastet, ist ROT gültig („ROT trotz Last“, beide Zahlen); reißt es nur roh, steht es im Band: UNGEMESSEN „unscharf unter Last:
+//     roh X, entlastet ≥ Y, Schwelle Z“. Schwankten vor und nach um mehr als REFERENZ_SCHWANKT (die Last kam oder ging), fährt fahreGruppe
+//     die Station EINMAL sofort neu (nie eine mutierende Probe in derselben Welt) — das einzige, was dann noch Ruhe braucht. Ein ROT ohne
+//     reißendes Maß, ohne Maß (`ohneMass`) oder nach einem Abbruch bleibt unter Last UNGEMESSEN beim Grund (der Abbruch vorn).
+//   Fehlt die Referenz (ein Wurf der Fäden) oder lernt die Ruhe noch (unter REFERENZ_RUHE_MIN Fahrten dieses Rechners und Umfelds — ihr
+//   Bestwert könnte selbst unter Last stehen), gilt GRÜN, ein ROT bleibt UNGEMESSEN beim Grund — nie ein Urteil ohne Maßstab.
+//   DER STOSS (REFERENZ_STOSS_KERNE) und DIE KARTE (REFERENZ_KARTE_FAKTOR) unten heben f, wo die CPU-Fahrten allein zu wenig sähen.
+// DAS BAND DER RUHE: die Referenz selbst streut — gemessen 12.11. 00:40 auf der Radeon (24 Kerne, `referenz --n 5` neben dem Koordinator
+// und einem Selbsttest): max ÷ min − 1 Faden 9,7 %, alle Kerne 17,0 %, Wanduhr je Fahrt 555–611 ms; REFERENZ_RUHE_BAND 1,20 liegt darüber.
+// Wärme und Turbo (die Fahrt nach einer schweren Station ist wärmer) zählen in f wie jede Verlangsamung — einseitig: nie ein falsches ROT.
+// OFFEN: die GPU-Komponente — eine Referenz der Karte verlangte einen zweiten WebGL-Kontext neben der Welt der Sitzung; sie fehlt, eine
+// Last allein auf der Karte (ein fremdes Spiel) sieht f nicht.
 const FREMD_TAKT_MS = 2000;
 const FREMD_FENSTER_S = 10;
-// je Rechner: plattform, kerne (os.cpus().length), cpu (das Modell, optional) · F die fremden Kerne im dichtesten 10-s-Fenster ·
-// effekt der relative Effekt je fremdem Kern auf der empfindlichsten Zeit-Station · schwelle = 0,03 / effekt (gerundet nach unten)
-// ABAB 09.11. an d3512932 (oben): F und Sekunden der Ankunft je Seite, der Effekt je Kern an ankunft und, mit 25/15, an profiband
-const FREMD_RADEON = { ort: "win32, Radeon 890M, 24 Kerne", plattform: "win32", kerne: 24, cpu: "AMD Ryzen AI 9 HX 370 w/ Radeon 890M", app: 3.24, brenner6: 9.03,
-    ankunftApp: 11.05, ankunftBrenner: 13.21, effektAnkunft: 0.0338, effekt: (0.0338 * 25) / 15, schwelle: 0.5, takt: 1 };
-const FREMD_EICH = [
-    // `fremdlast --sek 40`, 08.11., ef667956: die Last des Befunds gemessen, ihr Effekt aus dem Befund der Radeon (+25 % profiband)
-    { ort: "linux, 4 Kerne (Container)", plattform: "linux", kerne: 4, leerlauf: 0.01, playtestFast: 2.07, statikUndPlaytestFast: 2.68,
-        effekt: 0.25 / 2.68, schwelle: 0.3 },
-    FREMD_RADEON,
-    // DIE OMEN bis zu ihrer Messung (10.11.): Effekt und Schwelle der Radeon (Näherung — 12 statt 24 Kerne, ein fremder Kern nimmt ihr
-    // eher mehr), der Leerlauf gemessen (die dichtesten 10-s-Fenster, `fremdlast --sek 20`: mit dem HP-Dienst, nach seinem Halt). DER
-    // TAKT-FAKTOR (probeSek: der Deckel ist eine Funktion des Geräts) GEMESSEN aus allen Mess-Dateien am 10.11.: je Station, die beide Karten
-    // in der Sitzung mindestens zweimal maßen (60, die Radeon ≥ 5 s), der Median ihrer Sekunden GTX ÷ Radeon — Median 1,11, p75 1,38, p90
-    // 1,54; der Deckel nimmt das p90 (neun von zehn Proben tragen ihn; die längsten, an der Leine zensiert, stehen in keiner Zahl)
-    { ort: "win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon", plattform: "win32", kerne: 12, cpu: "Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
-        nach: FREMD_RADEON.ort, leerlaufMitHp: 3.54, leerlauf: 0.63, effekt: FREMD_RADEON.effekt, schwelle: FREMD_RADEON.schwelle, takt: 1.54, taktMedian: 1.11, taktStationen: 60,
-        vorschrift: "OMEN eichen (am Messplatz, nichts sonst startet): A `node punkte.cjs fremdlast --sek 40` in Ruhe · B dasselbe neben dem Brenner " +
-            "`node -e \"const { Worker } = require('worker_threads'); for (let i = 0; i < 4; i++) new Worker('for (;;);', { eval: true })\"` in einer zweiten Konsole · " +
-            "dann ABAB je 2 Läufe `node punkte.cjs run --sha <Kopf> --geraet gtx --nur ankunft.K1#1` ohne (A) und mit dem Brenner (B) → je Lauf t aus " +
-            "mass[0].wert und F aus fremd.fensterKerne; effekt = (t̄B / t̄A − 1) / (F̄B − F̄A) × 25/15, schwelle = 0,03 / effekt nach unten auf 0,1 — beides in diesen Eintrag" },
-];
-function fremdEich(r = { plattform: process.platform, kerne: os.cpus().length, cpu: (os.cpus()[0] || {}).model || "?" }) {
-    const e = FREMD_EICH.find((x) => x.plattform === r.plattform && x.kerne === r.kerne && (!x.cpu || x.cpu === String(r.cpu).trim()));
-    if (e) return e;
-    const streng = FREMD_EICH.reduce((a, x) => (x.schwelle < a.schwelle ? x : a));
-    return { ort: "ungeeicht (" + r.plattform + ", " + r.kerne + " Kerne, " + String(r.cpu).trim() + ") — die strengste Schwelle, " + streng.ort,
-        schwelle: streng.schwelle, effekt: streng.effekt, ungeeicht: true };
-}
-// DER TAKT-FAKTOR JE KARTE (probeSek): die Karte und ihr Rechner — die Radeon ist das Maß (1), die GTX steht an der OMEN
-const TAKT_KARTE = { radeon: FREMD_RADEON, gtx: FREMD_EICH.find((x) => /OMEN/.test(x.ort)) };
+const REFERENZ_RUNDEN = 1200;
+const REFERENZ_RUHE_BAND = 1.2;
+const REFERENZ_SCHWANKT = 0.25;
+// DER TAKT-FAKTOR JE KARTE (probeSek: der Deckel ist eine Funktion des Geräts): die Radeon ist das Maß (1). Die GTX (OMEN) GEMESSEN aus
+// allen Mess-Dateien am 10.11.: je Station, die beide Karten in der Sitzung mindestens zweimal maßen (60, die Radeon ≥ 5 s), der Median
+// ihrer Sekunden GTX ÷ Radeon — Median 1,11, p75 1,38, p90 1,54; der Deckel nimmt das p90 (neun von zehn Proben tragen ihn)
+const TAKT_KARTE = { radeon: { takt: 1 }, gtx: { takt: 1.54, taktMedian: 1.11, taktStationen: 60 } };
 const taktVon = (geraet) => (TAKT_KARTE[geraet] && TAKT_KARTE[geraet].takt) || 1;
-const FREMD_HIER = fremdEich();
-const FREMD_SCHWELLE_KERNE = FREMD_HIER.schwelle;
 const FREMD_DIENER = /^(system|registry|memory compression|secure system|dwm\.exe|csrss\.exe|audiodg\.exe|wmiprvse\.exe|xorg|xwayland|gnome-shell|kwin_x11|kwin_wayland|pipewire|pulseaudio)$/i;
 // DIE GRUND-LAST DES GERÄTS (oben, (1)): Windows (Defender, Dienst-Wirt, Such-Indexer samt seinen Hosts) und der Hersteller (HP Insights,
-// OMEN Command Center). Die Hosts des Indexers gemessen an der OMEN 6aa7a5a6 nach dem Halt des HP-Dienstes: SearchProtocolHost 36 CPU-s und
+// OMEN Command Center und OmenCap — die OMEN 11.11. nach dem Windows-Update: OmenCap.exe 36–42 CPU-s je Station, Hersteller wie
+// AppHelperCap). Die Hosts des Indexers gemessen an der OMEN 6aa7a5a6 nach dem Halt des HP-Dienstes: SearchProtocolHost 36 CPU-s und
 // SearchIndexer 23 CPU-s neben leib.K4#2 — eine Klasse mit dem Indexer, der sie startet
-const FREMD_GERAET = /^(msmpeng|mpdefendercoreservice|nissrv|svchost|searchindexer|searchprotocolhost|searchfilterhost|apphelpercap|diagscap|networkcap|sysinfocap|touchpointanalyticsclientservice|omencommandcenterbackground)\.exe$/i;
+const FREMD_GERAET = /^(msmpeng|mpdefendercoreservice|nissrv|svchost|searchindexer|searchprotocolhost|searchfilterhost|apphelpercap|diagscap|networkcap|sysinfocap|touchpointanalyticsclientservice|omencommandcenterbackground|omencap)\.exe$/i;
 const fz1 = (x) => (Math.round(x * 10) / 10).toFixed(1).replace(".", ",");
 const fz2 = (x) => (Math.round(x * 100) / 100).toFixed(2).replace(".", ",");
 // die gekürzte Kommandozeile: das Programm ohne Pfad, Pfad-Argumente auf ihre letzten zwei Glieder, lange Argumente gekappt, ≤ 90 Zeichen
@@ -1218,11 +1172,11 @@ function zeugenQuelle(taktMs) {
     }
     return { blind: "kein Zeuge auf " + process.platform + " (Linux: /proc, Windows: Get-CimInstance)", stop() {} };
 }
-// DER ZEUGE: o = { taktMs, wurzel (die PID des eigenen Baums), quelle (ersetzt zeugenQuelle — die Attrappen des Selbsttests), eich (der
-// Eintrag aus FREMD_EICH, dessen Schwelle urteilt; Vorgabe FREMD_HIER, der Selbsttest stellt seine Attrappen auf einen festen Rechner) }.
-// beginn() öffnet ein Fenster (die Station), ende(f) schließt es nach dem ersten Takt hinter seinem Ende und gibt den Bericht
+// DER ZEUGE: o = { taktMs, wurzel (die PID des eigenen Baums), quelle (ersetzt zeugenQuelle — die Attrappen des Selbsttests) }.
+// beginn() öffnet ein Fenster (die Station samt ihren Referenzfahrten), ende(f, marken) schließt es nach dem ersten Takt hinter seinem
+// Ende und gibt den Bericht; marken { vor, nach, station: [t0, t1] } nennen die Spannen, deren fremde Kerne er einzeln ausweist
 function fremdZeuge(o = {}) {
-    const taktMs = o.taktMs || FREMD_TAKT_MS, wurzel = o.wurzel || process.pid, eich = o.eich || FREMD_HIER;
+    const taktMs = o.taktMs || FREMD_TAKT_MS, wurzel = o.wurzel || process.pid;
     const q = o.quelle || zeugenQuelle(taktMs);
     const z = { blind: q.blind || null, letzter: null, offen: new Set(), warten: [], uhr: null, takte: 0 };
     const verarbeite = (S) => {
@@ -1281,11 +1235,11 @@ function fremdZeuge(o = {}) {
             z.offen.add(f);
             return f;
         },
-        async ende(f) {
+        async ende(f, marken) {
             const t1 = Date.now();
             if (z.offen.has(f)) await nach(t1);
             z.offen.delete(f);
-            return fremdBericht(f, t1, taktMs, z.blind, eich);
+            return fremdBericht(f, t1, taktMs, z.blind, marken);
         },
         stop() {
             clearInterval(z.uhr);
@@ -1296,9 +1250,9 @@ function fremdZeuge(o = {}) {
 }
 // DER BERICHT eines Fensters: s (die Spanne der Takte), fremdS, kerne (Mittel), fensterKerne (das dichteste FREMD_FENSTER_S-Fenster),
 // namen [[Name, CPU-s]] (die drei größten fremden), dienerS + diener (die zwei größten), geraetS + geraet (die Grund-Last des Geräts, die
-// drei größten), eigenS, takte, schwelle + effekt + eich (die Schwelle des Rechners, die über das Fenster urteilt, der Effekt je fremdem
-// Kern, mit dem fremdUrteil eicht, und die Eichung beim Ort) — oder blind beim Grund
-function fremdBericht(f, t1, taktMs, blindGrund, eich = FREMD_HIER) {
+// drei größten), eigenS, takte; mit marken die fremden Kerne je Spanne (`spannen`: vor und nach das Mittel der Takte, die die
+// Referenzfahrt decken, station die Spitze eines Takts in der Station) — oder blind beim Grund
+function fremdBericht(f, t1, taktMs, blindGrund, marken) {
     const r = f.reihe, tE = r.length ? r[r.length - 1][0] : null;
     if (!r.length || tE < t1 - 50 || !(tE > f.tA)) return { blind: blindGrund || (!r.length ? "kein Takt im Fenster" : "der letzte Takt liegt vor dem Ende der Station"), takte: r.length };
     const je = { fremd: new Map(), diener: new Map(), geraet: new Map(), eigen: 0 };
@@ -1323,64 +1277,190 @@ function fremdBericht(f, t1, taktMs, blindGrund, eich = FREMD_HIER) {
             if (r[i][0] > t0) fensterKerne = Math.max(fensterKerne, d / ((r[i][0] - t0) / 1000));
         }
     }
+    // je Takt [von, bis, Kerne]; eine Spanne [a, b] liest die Takte, die sie schneiden
+    const takte = r.map(([t, d], i) => [i ? r[i - 1][0] : f.tA, t, t > (i ? r[i - 1][0] : f.tA) ? d / ((t - (i ? r[i - 1][0] : f.tA)) / 1000) : 0]);
+    const schnitt = (sp) => (Array.isArray(sp) ? takte.filter(([a, b]) => b > sp[0] && a < sp[1]) : []);
+    const mittel = (sp) => { const x = schnitt(sp), dt = x.reduce((a, [v, b]) => a + (b - v), 0); return x.length && dt > 0 ? +(x.reduce((a, [v, b, k]) => a + k * (b - v), 0) / dt).toFixed(3) : null; }; // prettier-ignore
+    const spitze = (sp) => { const x = schnitt(sp); return x.length ? +Math.max(...x.map(([, , k]) => k)).toFixed(3) : null; };
+    const spannen = marken ? { vor: mittel(marken.vor), nach: mittel(marken.nach), station: spitze(marken.station) } : null;
     return { s: +s.toFixed(1), takte: r.length, fremdS: +fremdS.toFixed(2), kerne: +(fremdS / s).toFixed(3), fensterKerne: +fensterKerne.toFixed(3),
         namen: reihe(je.fremd).slice(0, 3), dienerS: +sum(je.diener).toFixed(2), diener: reihe(je.diener).slice(0, 2), geraetS: +sum(je.geraet).toFixed(2),
-        geraet: reihe(je.geraet).slice(0, 3), eigenS: +je.eigen.toFixed(2), schwelle: eich.schwelle, effekt: eich.effekt, eich: eich.ort };
+        geraet: reihe(je.geraet).slice(0, 3), eigenS: +je.eigen.toFixed(2), rechnerKerne: os.cpus().length, ...(spannen ? { spannen } : {}) };
 }
 const fremdNamen = (b) => (b.namen || []).slice(0, 3).map(([n, s]) => n + " " + fz1(s) + " CPU-s").join(" · ");
 // ein Wert beim Namen: höchstens vier geltende Ziffern, Komma
 const fzW = (x) => String(+Number(x).toPrecision(4)).replace(".", ",");
-// DAS MASS EINES ERGEBNISSES (urteilVon trägt es, fremdUrteil eicht es): nur Einträge mit Wort, endlichem Wert und Soll und der Richtung
-// „≤“ (Vorgabe) oder „≥“ — ein Wert, den die Probe nicht maß (NaN, „?“), ist kein Maß; `fest` (Befehle, Dreiecke, Kopien, Minuten am
-// Stück) eicht nie
-const massVon = (m) => (Array.isArray(m) ? m.filter((x) => x && typeof x.wort === "string" && Number.isFinite(x.wert) && Number.isFinite(x.soll) && (x.richtung == null || x.richtung === "≤" || x.richtung === "≥"))
-    .map((x) => ({ wort: x.wort, wert: x.wert, soll: x.soll, ...(x.richtung === "≥" ? { richtung: "≥" } : {}), ...(x.fest === true ? { fest: true } : {}) })) : []);
-const massReisst = (m, w = m.wert) => (m.richtung === "≥" ? w < m.soll : w > m.soll);
-// DAS URTEIL DER FREMD-LAST über ein Ergebnis der Station st (fahreGruppe): der Bericht steht in jedem Eintrag; an einer Zeit-Station
-// über der Schwelle (oder mit blindem Zeugen) urteilt das GESETZ DER FREMD-LAST (oben, (2)) — der Grund eines Abbruchs (brachAb) bleibt
-// vorn, die Sitzung liest ihn. GRÜN TROTZ LAST (Schöpfer 09.11. „1 Punkt in 12 h“): fremde Last nimmt einer Zeit-Station Rechenzeit, sie
-// macht sie nie schneller — ein GRÜN neben Last (oder neben einem blinden Zeugen) ist in Ruhe erst recht GRÜN und zählt, mit der Last im
-// Grund. ROT TROTZ LAST (10.11.): reißt ein Maß der Station auch geeicht (Wert ÷ k, k = 1 + effekt · F), erklärt die Last es nicht — ROT,
-// mit beiden Zahlen im Grund. Im Band dazwischen, ohne reißendes Maß, mit blindem Zeugen oder nach einem Abbruch UNGEMESSEN beim Namen:
-// dort könnte die Last der Täter sein. Gemessen 09.11.: die Claude-App trägt auf der Radeon 2–4 fremde Kerne, neben ihr urteilte keine
-// Zeit-Station (20 Kriterien auf 0 standen UNGEMESSEN); 10.11. auf der OMEN jede (der HP-Dienst, jetzt Grund-Last des Geräts).
-function fremdUrteil(st, e, b) {
-    const mit = { ...e, fremd: b };
+// DAS MASS EINES ERGEBNISSES (urteilVon trägt es, fremdUrteil liest es): Einträge mit Wort, endlichem Soll und der Richtung „≤“ (Vorgabe)
+// oder „≥“, dazu ENTWEDER ein endlicher Wert ODER — DAS AUSGEBLIEBENE EREIGNIS (die OMEN 11.11.: siedlung.K5#1 „nH 300 erstes Haus nach —
+// (kein Haus)“ fiel als „Bedingung ohne Zahl“ UNGEMESSEN, das härteste ROT) — `ab`: das Ereignis kam bis ab nicht, sein Wert ist ≥ ab
+// (nur an „≤“); ein Wert, den die Probe nicht maß (NaN, „?“, ohne ab), ist kein Maß. `fest` (Befehle, Dreiecke, Kopien, Minuten am Stück)
+// teilt keine Last; `cpu` (an einer GPU-Station) sagt: dieses Maß bindet die CPU, nie die Karte (unten, REFERENZ_KARTE_FAKTOR)
+const massVon = (m) => (Array.isArray(m) ? m.filter((x) => x && typeof x.wort === "string" && Number.isFinite(x.soll) && (x.richtung == null || x.richtung === "≤" || x.richtung === "≥") &&
+    (Number.isFinite(x.wert) || (x.richtung !== "≥" && Number.isFinite(x.ab))))
+    .map((x) => ({ wort: x.wort, wert: Number.isFinite(x.wert) ? x.wert : null, ...(Number.isFinite(x.wert) ? {} : { ab: x.ab }), soll: x.soll,
+        ...(x.richtung === "≥" ? { richtung: "≥" } : {}), ...(x.fest === true ? { fest: true } : {}), ...(x.cpu === true ? { cpu: true } : {}) })) : []);
+const massRoh = (m) => (m.wert == null ? m.ab : m.wert);
+const massReisst = (m, w = massRoh(m)) => (m.richtung === "≥" ? w < m.soll : w > m.soll);
+// ───────────────────────── DIE REFERENZFAHRT (w28-referenzfahrt; das Gesetz oben) ─────────────────────────
+// DIE ARBEIT: je Faden ein fester Puffer (2^16 Wörter) und REFERENZ_RUNDEN Runden FNV-1a darüber; alle Fäden starten auf EIN Zeichen
+// (bereit → los), jeder misst nur seine Schleife; die Prüfsumme ist je Faden dieselbe (sonst rechnete nicht dieselbe Arbeit)
+const REFERENZ_ARBEIT = [
+    "const { parentPort, workerData } = require('worker_threads');",
+    "const b = new Uint32Array(1 << 16); for (let i = 0; i < b.length; i++) b[i] = Math.imul(i, 2654435761) >>> 0;",
+    "parentPort.once('message', () => { const t0 = performance.now(); let h = 2166136261;",
+    "  for (let r = 0; r < workerData; r++) for (let i = 0; i < b.length; i++) { h = Math.imul(h ^ b[i], 16777619); b[i] = h >>> 0; }",
+    "  parentPort.postMessage({ ms: performance.now() - t0, h: h >>> 0 }); });",
+    "parentPort.postMessage('bereit');",
+].join("\n");
+// n Fäden zugleich → { ms (der langsamste), h } oder ein Wurf beim Namen (Frist 15 s, ungleiche Prüfsumme)
+function referenzLauf(n, runden = REFERENZ_RUNDEN) {
+    const { Worker } = require("worker_threads");
+    return new Promise((ja, nein) => {
+        const ws = [], erg = [];
+        let bereit = 0, aus = false;
+        const ende = (fn, x) => { if (aus) return; aus = true; clearTimeout(uhr); for (const w of ws) w.terminate().catch(() => {}); fn(x); }; // prettier-ignore
+        const uhr = setTimeout(() => ende(nein, new Error("die Referenzfahrt riss ihre Frist (15 s)")), 15000);
+        for (let i = 0; i < n; i++) {
+            const w = new Worker(REFERENZ_ARBEIT, { eval: true, workerData: runden });
+            ws.push(w);
+            w.on("error", (e) => ende(nein, e));
+            w.on("message", (m) => {
+                if (m === "bereit") { if (++bereit === n) for (const x of ws) x.postMessage("los"); return; } // prettier-ignore
+                erg.push(m);
+                if (erg.length < n) return;
+                if (new Set(erg.map((x) => x.h)).size !== 1) return ende(nein, new Error("die Fäden rechneten verschieden (Prüfsummen " + [...new Set(erg.map((x) => x.h))].join(", ") + ")"));
+                ende(ja, { ms: Math.max(...erg.map((x) => x.ms)), h: erg[0].h });
+            });
+        }
+    });
+}
+// EINE Fahrt: { ein, alle } in ms (ein Faden, alle Kerne) — oder { fehler }
+async function referenzFahrt() {
+    try {
+        const a = await referenzLauf(1), b = await referenzLauf(os.cpus().length);
+        if (a.h !== b.h) return { fehler: "ein Faden und alle Kerne rechneten verschieden" };
+        return { ein: +a.ms.toFixed(1), alle: +b.ms.toFixed(1) };
+    } catch (e) {
+        return { fehler: String((e && e.message) || e).split("\n")[0].slice(0, 160) };
+    }
+}
+// DER RECHNER der Referenz (Plattform, Kerne, CPU) — die Ruhe gilt je Rechner und Umfeld
+const REFERENZ_RECHNER = process.platform + " · " + os.cpus().length + " Kerne · " + String((os.cpus()[0] || {}).model || "?").trim();
+const REFERENZ_RUHE_TAGE = 14;
+const REFERENZ_RUHE_MIN = 10;
+// DIE RUHE (keine Hand-Zahl): je Komponente das untere Zehntel (p10; bei < 10 Werten der Bestwert) aller Fahrten dieses Rechners und
+// Umfelds der letzten REFERENZ_RUHE_TAGE Tage — aus den Mess-Dateien (jeder Eintrag einer Zeit-Station trägt `referenz` mit vor und
+// nach) und aus diesem Prozess; `von` nennt das Datum der Fahrt, die die Ruhe setzt. werte = [{ ein, alle, zeit }]
+function referenzRuheAus(werte, jetzt = Date.now()) {
+    const frisch = werte.filter((w) => w && Number.isFinite(w.ein) && Number.isFinite(w.alle) && !(Date.parse(w.zeit) < jetzt - REFERENZ_RUHE_TAGE * 864e5));
+    if (!frisch.length) return null;
+    const unten = (k) => { const x = [...frisch].sort((a, b) => a[k] - b[k]); return x[x.length >= 10 ? Math.floor(0.1 * (x.length - 1)) : 0]; }; // prettier-ignore
+    const e = unten("ein"), a = unten("alle");
+    return { ein: e.ein, alle: a.alle, n: frisch.length, von: String(e.zeit || "").slice(0, 10) };
+}
+let referenzPool = null;
+function referenzPoolLaden(mdir = path.join(DIR, "messung")) {
+    const pool = new Map();
+    let dateien = [];
+    try { dateien = fs.readdirSync(mdir).filter((f) => /\.json$/.test(f)); } catch (_e) { dateien = []; } // prettier-ignore
+    for (const f of dateien) {
+        let m;
+        try { m = JSON.parse(fs.readFileSync(path.join(mdir, f), "utf8")); } catch (_e) { continue; } // prettier-ignore
+        for (const teil of [m.je, m.ungemessen])
+            for (const e of Object.values(teil || {})) {
+                const r = e && e.referenz;
+                if (!r || !r.rechner || !r.umfeld) continue;
+                const k = r.rechner + " | " + r.umfeld;
+                if (!pool.has(k)) pool.set(k, []);
+                for (const w of [r.vor, r.nach]) if (w && Number.isFinite(w.ein)) pool.get(k).push({ ein: w.ein, alle: w.alle, zeit: e.zeit || m.zeit });
+            }
+    }
+    return pool;
+}
+// DIE REFERENZ DER MASCHINE: fahrt() und ruhe(umfeld, [vor, nach]) — die Fahrten dieses Laufs gehen in den Pool, ehe die Ruhe fällt
+function echteReferenz() {
+    return {
+        fahrt: referenzFahrt,
+        ruhe(umfeld, werte) {
+            if (!referenzPool) referenzPool = referenzPoolLaden();
+            const k = REFERENZ_RECHNER + " | " + umfeld;
+            if (!referenzPool.has(k)) referenzPool.set(k, []);
+            const zeit = new Date().toISOString();
+            for (const w of werte) if (w && Number.isFinite(w.ein)) referenzPool.get(k).push({ ein: w.ein, alle: w.alle, zeit });
+            return referenzRuheAus(referenzPool.get(k));
+        },
+    };
+}
+let referenzDerMaschine = null;
+const maschinenReferenz = () => referenzDerMaschine || (referenzDerMaschine = echteReferenz());
+// die stille Referenz des Selbsttests: jede Fahrt gleich der Ruhe (f = 1) — die Läufer-Fälle urteilen ihre Mechanik
+const stilleReferenz = () => ({ fahrt: async () => ({ ein: 100, alle: 100 }), ruhe: () => ({ ein: 100, alle: 100, n: 99, von: "still" }) });
+// DER BERICHT der Referenz über eine Station: vor, nach, ruhe → f je Komponente (nie unter 1), f das größere, schwankt (vor und nach
+// weichen in einer Komponente um mehr als REFERENZ_SCHWANKT voneinander ab) — oder { fehler }
+function referenzBericht(vor, nach, ruhe, umfeld) {
+    const fehl = [vor, nach].find((x) => !x || x.fehler);
+    if (fehl !== undefined) return { fehler: (fehl && fehl.fehler) || "keine Fahrt", umfeld, rechner: REFERENZ_RECHNER };
+    if (!ruhe) return { fehler: "keine Ruhe des Rechners", vor, nach, umfeld, rechner: REFERENZ_RECHNER };
+    // DIE RUHE LERNT: unter REFERENZ_RUHE_MIN Fahrten ist der Bestwert kein Maßstab (er könnte selbst unter Last stehen) — die Fahrten
+    // zählen in den Pool, das Urteil gilt wie ohne Referenz (GRÜN zählt, ROT UNGEMESSEN beim Grund)
+    if (ruhe.n < REFERENZ_RUHE_MIN) return { fehler: "die Ruhe des Rechners lernt (" + ruhe.n + " von " + REFERENZ_RUHE_MIN + " Fahrten)", vor, nach, ruhe, umfeld, rechner: REFERENZ_RECHNER };
+    const fK = (k) => Math.max(1, Math.max(vor[k], nach[k]) / ruhe[k]);
+    const sK = (k) => Math.max(vor[k], nach[k]) / Math.min(vor[k], nach[k]) - 1;
+    const fEin = +fK("ein").toFixed(3), fAlle = +fK("alle").toFixed(3);
+    return { vor, nach, ruhe, f: Math.max(fEin, fAlle), fEin, fAlle, schwankt: Math.max(sK("ein"), sK("alle")) > REFERENZ_SCHWANKT, rechner: REFERENZ_RECHNER, umfeld };
+}
+// DER STOSS (die OMEN 11.11., Falle 8): eine Last, die mitten in der Station kam und vor der Fahrt danach ging, sieht die Referenz nie —
+// der Zeuge sieht sie: liegt die Spitze eines Takts IN der Station um mehr als REFERENZ_STOSS_KERNE über den fremden Kernen beider
+// Fahrten, ist f mindestens die Teilung des Rechners in dieser Spitze: N Kerne (`rechnerKerne`), E eigene (eigenS ÷ s), F fremde →
+// max((E + F) ÷ N, 1 + F ÷ N) — über N Kernen teilt der Planer gerecht, darunter nimmt jeder fremde Kern seinen Anteil (Zwilling eines
+// Fadens, Takt). Gemessen 12.11. auf der Radeon (tore.K5#1 neben zwei fremden Chrome der Nachbar-Agenten): Spitze 11,15 Kerne, „1 + F“
+// hätte f 12,15 gesetzt — jedes ROT dort UNGEMESSEN —, die Teilung setzt 1,46
+const REFERENZ_STOSS_KERNE = 0.5;
+const stossF = (b, F) => { const N = b.rechnerKerne || os.cpus().length, E = b.s > 0 ? (b.eigenS || 0) / b.s : 0; return +Math.max((E + F) / N, 1 + F / N).toFixed(3); }; // prettier-ignore
+// DIE KARTE (Falle 2): die Referenz rechnet auf der CPU; ein fremder Klient der KARTE (der Compositor der App) teilt sie im Zeitscheiben-
+// Takt und nimmt einem Bild höchstens seine Hälfte — an einer GPU-Station gilt unter Last für jedes Maß ohne `cpu` mindestens dieser Faktor
+const REFERENZ_KARTE_FAKTOR = 2;
+// DAS URTEIL über ein Ergebnis der Station st (fahreGruppe; das Gesetz oben): b der Bericht des Zeugen (wer die Last war), r der Bericht
+// der Referenz. Jeder Eintrag einer Zeit-Station trägt beide (`fremd`, `referenz`); nur an `zeit: true` urteilt die Last
+function fremdUrteil(st, e, b, r) {
+    const mit = { ...e, fremd: b, ...(r ? { referenz: r } : {}) };
     if (st.zeit !== true || e.ungemessen) return mit;
-    const ueber = !b.blind && b.fensterKerne >= b.schwelle;
-    if (!b.blind && !ueber) return mit;
+    const sp = (!b.blind && b.spannen) || null, refK = sp ? Math.max(sp.vor || 0, sp.nach || 0) : 0;
+    const stoss = sp && sp.vor != null && sp.nach != null && sp.station != null && sp.station > refK + REFERENZ_STOSS_KERNE ? stossF(b, sp.station) : null;
+    const f = r && !r.fehler ? Math.max(r.f, stoss || 1) : null;
+    if (f != null && f <= REFERENZ_RUHE_BAND) return mit;
+    const namen = !b.blind && (b.namen || []).length ? " · fremd: " + fremdNamen(b) : "";
     const geraet = !b.blind && b.geraetS > 0 ? " · Gerät (Grund-Last, nie fremd) " + (b.geraet || []).map(([n, s]) => n + " " + fz1(s) + " CPU-s").join(" · ") : "";
-    const was = b.blind ? "Fremd-Last: der Zeuge ist blind (" + b.blind + ") — Ruhe unbezeugt"
-        : "Fremd-Last: " + fremdNamen(b) + " — " + fz2(b.fensterKerne) + " Kerne fremd im dichtesten " + FREMD_FENSTER_S + "-s-Fenster (Schwelle " +
-            fz2(b.schwelle) + ", " + b.eich + "; Σ fremd " + fz1(b.fremdS) + " CPU-s in " + fz1(b.s) + " s" + geraet + ")";
+    const was = f == null ? "Last ohne Referenz (" + ((r && r.fehler) || "keine Fahrt") + ")" + namen + geraet
+        : "Last: Referenz f " + fzW(f) + " (Faden " + fzW(r.fEin) + " · alle Kerne " + fzW(r.fAlle) + (stoss && stoss > r.f ? " · Stoß in der Station " + fz2(sp.station) + " Kerne fremd → " + fzW(stoss) : "") +
+            "; vor " + fzW(r.vor.ein) + "/" + fzW(r.vor.alle) + " ms, nach " + fzW(r.nach.ein) + "/" + fzW(r.nach.alle) + " ms, Ruhe " + fzW(r.ruhe.ein) + "/" + fzW(r.ruhe.alle) +
+            " ms seit " + r.ruhe.von + ")" + namen + geraet;
     const ab = brachAb([e]);
     if (e.gruen === true && !ab) return { ...mit, grund: (e.grund ? e.grund + " · " : "") + "GRÜN trotz " + was };
-    // die Eichung: k aus dem Effekt je fremdem Kern dieses Rechners — ohne Effekt (ein Bericht vor dem 10.11.), blind oder nach einem
-    // Abbruch eicht nichts
-    const k = !b.blind && !ab && b.effekt > 0 ? 1 + b.effekt * b.fensterKerne : null;
-    const ms = k ? massVon(e.mass) : [];
-    const geeicht = (m) => (m.fest ? m.wert : m.richtung === "≥" ? m.wert * k : m.wert / k);
-    const nenn = (m) => m.wort + " " + fzW(m.wert) + (m.fest ? " (fest)" : " → geeicht " + fzW(geeicht(m))) + " (Soll " + (m.richtung || "≤") + " " + fzW(m.soll) + ")";
-    const eichText = k ? "geeicht ÷ " + fzW(k) + " (1 + " + fz1(100 * b.effekt) + " % je fremdem Kern × " + fz2(b.fensterKerne) + ")" : "";
-    const reisst = ms.filter((m) => massReisst(m)), hart = reisst.filter((m) => massReisst(m, geeicht(m)));
-    if (hart.length) return { ...mit, grund: (e.grund ? e.grund + " · " : "") + "ROT trotz " + was + " — " + eichText + ": " + hart.slice(0, 3).map(nenn).join(" · ") };
-    const warum = !k ? "" : reisst.length ? " — im Band der Last, " + eichText + ": " + reisst.slice(0, 3).map(nenn).join(" · ")
+    const ms = f != null && !ab ? massVon(e.mass) : [];
+    // je Maß sein Teiler: f, an einer GPU-Station ohne `cpu` mindestens REFERENZ_KARTE_FAKTOR; `fest` teilt nie
+    const fM = (m) => (m.fest ? 1 : st.gpu === true && !m.cpu ? Math.max(f, REFERENZ_KARTE_FAKTOR) : f);
+    const entlastet = (m) => (m.richtung === "≥" ? massRoh(m) * fM(m) : massRoh(m) / fM(m));
+    const roh = (m) => (m.wert == null ? "≥ " + fzW(m.ab) + " (ausgeblieben)" : fzW(m.wert));
+    const nenn = (m) => m.wort + " roh " + roh(m) + (m.fest ? " (fest)" : ", entlastet " + (m.richtung === "≥" ? "≤ " : "≥ ") + fzW(entlastet(m)) + (fM(m) !== f ? " (÷ " + fzW(fM(m)) + ", Karte)" : "")) +
+        ", Schwelle " + (m.richtung || "≤") + " " + fzW(m.soll);
+    const reisst = ms.filter((m) => massReisst(m)), hart = reisst.filter((m) => massReisst(m, entlastet(m)));
+    if (hart.length) return { ...mit, grund: (e.grund ? e.grund + " · " : "") + "ROT trotz " + was + " — auch entlastet: " + hart.slice(0, 3).map(nenn).join(" · ") };
+    const warum = f == null || ab ? "" : reisst.length ? " — unscharf unter Last: " + reisst.slice(0, 3).map(nenn).join(" · ")
         : ms.length ? " — kein Maß reißt (" + ms.length + " gemessen): das ROT liegt in einer Bedingung ohne Zahl"
             : e.massFehler ? " — das Maß fehlt: " + e.massFehler : st.ohneMass ? " — ohne Maß: " + st.ohneMass
                 : Array.isArray(e.mass) ? " — kein Maß gemessen (die Probe trug keine Zahl)" : " — die Station nennt kein Maß";
     const grund = (ab ? e.grund + " · " : "") + was + warum + " — kein Urteil, UNGEMESSEN (die Probe sah: " + String(e.zahl).slice(0, 240) + ")";
-    return { ...mit, gruen: false, ungemessen: true, grund, zahl: grund };
+    // nur im Band, wenn die Last zwischen den Fahrten schwankte: EINE Wiederholung (fahreGruppe)
+    return { ...mit, gruen: false, ungemessen: true, grund, zahl: grund, ...(reisst.length && !ab && r && r.schwankt ? { wiederholen: true } : {}) };
 }
 // der EINE Zeuge des Läufers (fahreGruppe öffnet je Station ein Fenster in ihm; `run` weckt ihn vor dem ersten Lauf)
 let zeugeDerMaschine = null;
 const maschinenZeuge = () => zeugeDerMaschine || (zeugeDerMaschine = fremdZeuge());
 // der stille Zeuge des Selbsttests: jedes Fenster ohne Last (die Attrappen, das Gesetz und der Leser stehen in (5f) beim Namen)
 const stillerZeuge = () => ({ taktMs: FREMD_TAKT_MS, bereit: async () => {}, beginn: () => ({}), stop() {}, blind: null,
-    ende: async () => ({ s: 0, takte: 0, fremdS: 0, kerne: 0, fensterKerne: 0, namen: [], dienerS: 0, diener: [], geraetS: 0, geraet: [], eigenS: 0, schwelle: FREMD_SCHWELLE_KERNE,
-        effekt: FREMD_HIER.effekt, eich: FREMD_HIER.ort, still: true }) });
-// DIE EICHUNG (`node punkte.cjs fremdlast [--sek 60] [--takt 2000]`): der Zeuge über --sek Sekunden — einmal im Leerlauf, einmal neben
-// `npm run playtest:fast` in einer anderen Konsole (es ist fremd: nie ein Kind dieses Läufers); die Zahlen gehören nach FREMD_EICH — den
-// Effekt je Kern misst erst eine Zeit-Station ABAB neben einer Last mit bekannten Kernen (die Eichung der Radeon, FREMD_EICH)
+    ende: async () => ({ s: 0, takte: 0, fremdS: 0, kerne: 0, fensterKerne: 0, namen: [], dienerS: 0, diener: [], geraetS: 0, geraet: [], eigenS: 0, still: true }) });
+// DER ZEUGE ÜBER EINE SPANNE (`node punkte.cjs fremdlast [--sek 60] [--takt 2000]`): die fremden Kerne über --sek Sekunden beim Namen
 async function fremdlastCli(o) {
     const sek = Number(o.sek) || 60, z = fremdZeuge({ taktMs: Number(o.takt) || FREMD_TAKT_MS });
     await z.bereit();
@@ -1393,17 +1473,36 @@ async function fremdlastCli(o) {
         return 1;
     }
     console.log("FREMDLAST " + process.platform + " " + os.cpus().length + " Kerne · " + fz1(b.s) + " s · " + b.takte + " Takte · fremd Σ " + fz1(b.fremdS) + " CPU-s, Mittel " +
-        fz2(b.kerne) + " Kerne, dichtestes " + FREMD_FENSTER_S + "-s-Fenster " + fz2(b.fensterKerne) + " Kerne — " + (b.fensterKerne >= b.schwelle ? "ÜBER" : "unter") +
-        " der Schwelle " + fz2(b.schwelle) + " · Diener " + fz1(b.dienerS) + " CPU-s · Gerät " + fz1(b.geraetS) + " CPU-s · eigen " + fz1(b.eigenS) + " CPU-s");
+        fz2(b.kerne) + " Kerne, dichtestes " + FREMD_FENSTER_S + "-s-Fenster " + fz2(b.fensterKerne) + " Kerne · Diener " + fz1(b.dienerS) + " CPU-s · Gerät " +
+        fz1(b.geraetS) + " CPU-s · eigen " + fz1(b.eigenS) + " CPU-s");
     for (const [n, s] of b.namen) console.log("  fremd  " + fz1(s).padStart(6) + " CPU-s  " + n);
     for (const [n, s] of b.diener) console.log("  Diener " + fz1(s).padStart(6) + " CPU-s  " + n);
     for (const [n, s] of b.geraet) console.log("  Gerät  " + fz1(s).padStart(6) + " CPU-s  " + n + " (Grund-Last, nie fremd)");
-    // die Eichung DIESES Rechners daneben (FREMD_HIER): der Effekt je fremdem Kern e und die Schwelle T = 0,03 / e; ein Rechner, der nach
-    // einem anderen urteilt (die OMEN nach der Radeon), druckt die Vorschrift seiner eigenen Messung
-    console.log("  Eichung " + FREMD_HIER.ort + (FREMD_HIER.effekt ? ": Effekt je fremdem Kern " + fz1(100 * FREMD_HIER.effekt) + " % → T = 0,03 / e = " +
-        fz2(0.03 / FREMD_HIER.effekt) : "") + " · Schwelle " + fz2(FREMD_HIER.schwelle) + " Kerne");
-    if (FREMD_HIER.vorschrift) console.log("  OFFEN " + FREMD_HIER.vorschrift);
     console.log(JSON.stringify(b));
+    return 0;
+}
+// DIE REFERENZFAHRT VON HAND (`node punkte.cjs referenz [--n 5] [--umfeld allein|sitzung]`): n Fahrten, je die Wanduhr, Faden und alle
+// Kerne, die Streuung (max ÷ min − 1) und f gegen die Ruhe dieses Rechners aus den Mess-Dateien (die Fahrten gehen NICHT in eine Mess-Datei)
+async function referenzCli(o) {
+    const n = Number(o.n) || 5, umfeld = o.umfeld || "allein", fahrten = [];
+    for (let i = 0; i < n; i++) {
+        const t = Date.now(), x = await referenzFahrt();
+        if (x.fehler) {
+            console.log("REFERENZ Fahrt " + (i + 1) + " warf: " + x.fehler);
+            return 1;
+        }
+        fahrten.push({ ...x, wandMs: Date.now() - t });
+        console.log("  Fahrt " + (i + 1) + ": Faden " + fzW(x.ein) + " ms · alle " + os.cpus().length + " Kerne " + fzW(x.alle) + " ms · Wanduhr " + (Date.now() - t) + " ms");
+    }
+    const ruhe = referenzRuheAus([...(referenzPoolLaden().get(REFERENZ_RECHNER + " | " + umfeld) || [])]);
+    const streu = (k) => Math.max(...fahrten.map((x) => x[k])) / Math.min(...fahrten.map((x) => x[k])) - 1;
+    console.log("REFERENZ " + REFERENZ_RECHNER + " · " + n + " Fahrten · Streuung Faden " + fz1(100 * streu("ein")) + " %, alle " + fz1(100 * streu("alle")) + " % · Wanduhr max " +
+        Math.max(...fahrten.map((x) => x.wandMs)) + " ms · Ruhe (" + umfeld + ") " + (ruhe ? fzW(ruhe.ein) + "/" + fzW(ruhe.alle) + " ms aus " + ruhe.n + " Fahrten seit " + ruhe.von : "noch keine in den Mess-Dateien"));
+    const r0 = ruhe || referenzRuheAus(fahrten.map((x) => ({ ...x, zeit: new Date().toISOString() })));
+    for (const [i, x] of fahrten.entries()) {
+        const r = referenzBericht(x, x, r0, umfeld);
+        console.log("  Fahrt " + (i + 1) + " f " + fzW(r.f) + " (Faden " + fzW(r.fEin) + " · alle " + fzW(r.fAlle) + ")" + (ruhe ? "" : " — gegen den Bestwert dieser Fahrten"));
+    }
     return 0;
 }
 // fährt EINE Station; ctx = { baum, koord, port, band, aus, roh, geraet, bahn, plaetze, gpuLauf, bash, deckelMinS }
@@ -1419,16 +1518,30 @@ function fahreStation(st, ctx) {
 // die Arbeit der Station ist minuten − warten
 // IN DER SITZUNG (ctx.sitzung = { log, zeuge }): die Probe läuft ohne Schloss (die Sitzung hält es ganz), ohne Port-Räumen (es
 // tötete die Welt), unter ihrem eigenen Deckel probe.sek; der Zeuge ist der der Welt der Sitzung plus der eigene der Probe
-function fahreGruppe(sts, ctx) {
+// DIE WIEDERHOLUNG (die Referenzfahrt, fremdUrteil): steht ein Ergebnis im Band der Last, während vor und nach schwankten, fährt die
+// Gruppe EINMAL sofort neu — nie eine mutierende Probe in derselben Welt (sie bleibt UNGEMESSEN beim Grund); die zweite Fahrt zählt,
+// `wiederholt` nennt den Grund der ersten
+async function fahreGruppe(sts, ctx) {
+    const ohneW = (e) => { const x = { ...e }; delete x.wiederholen; return x; }; // prettier-ignore
+    const erst = await fahreGruppeEinmal(sts, ctx);
+    if (!erst.some((e) => e.wiederholen)) return erst;
+    if (ctx.sitzung && mutiertVon(sts)) return erst.map((e) => (e.wiederholen ? { ...ohneW(e), grund: e.grund + " · keine Wiederholung: die Probe mutiert die Welt" } : e));
+    const zweit = await fahreGruppeEinmal(sts, ctx);
+    return zweit.map((e, i) => ({ ...ohneW(e), wiederholt: String(erst[i].grund || erst[i].zahl).slice(0, 400) }));
+}
+function fahreGruppeEinmal(sts, ctx) {
     const st = sts[0];
     const sitz = ctx.sitzung || null;
     let tSchloss = null, tEnde = null;
-    return new Promise((ganz0) => {
+    // DER ZEUGE DER FREMD-LAST (fremdZeuge): das Fenster öffnet vor der Referenzfahrt und schließt nach der zweiten — JEDER Ausgang dieser
+    // Stelle geht durch `ganz`, dort urteilt fremdUrteil (an `zeit: true`) und jeder Eintrag trägt den Bericht `fremd` (und `referenz`)
+    const zeuge = ctx.zeuge || maschinenZeuge();
+    const fenster = zeuge.beginn();
+    // DIE REFERENZFAHRT (nur an einer Zeit-Gruppe): unmittelbar vor dem Start und nach dem Ende, die Spannen als Marken des Zeugen
+    const ref = istZeit(sts) ? ctx.referenz || maschinenReferenz() : null, marken = {};
+    const fahrt = (wo) => { const t = Date.now(); return ref.fahrt().then((x) => ((marken[wo] = [t, Date.now()]), x)); }; // prettier-ignore
+    return (ref ? fahrt("vor") : Promise.resolve(null)).then((rVor) => new Promise((ganz0) => {
         const t0 = Date.now();
-        // DER ZEUGE DER FREMD-LAST (fremdZeuge): das Fenster der Station öffnet mit ihrem Start und schließt mit ihrem Ergebnis — JEDER
-        // Ausgang dieser Stelle geht durch `ganz`, dort urteilt fremdUrteil (an `zeit: true`) und jeder Eintrag trägt den Bericht `fremd`
-        const zeuge = ctx.zeuge || maschinenZeuge();
-        const fenster = zeuge.beginn();
         // DIE SEKUNDEN DER PROBE (w4-sitzung-eichen): in der Sitzung trägt jedes Ergebnis `s`, vom Start bis zum Ende ihres Prozesses (nie
         // das Leerlaufen der Rohre danach) — die gemessene Zahl, die die Schätzung des Deckels ersetzt; `minuten` bleibt, wie es war
         // DIE TEILE (probe.teile, unten): `s` ist der längste Teil — das Gesetz der Probe gilt je Teil —, `teile` die Sekunden je Teil
@@ -1443,10 +1556,13 @@ function fahreGruppe(sts, ctx) {
             // nennt den Grund (`konsumFehlt`) — die Buchung zählt ihn beim Namen
             const es = es0.map((e) => (e.ungemessen || e.konsum || e.konsumFehlt ? e : { ...e, konsumFehlt: (kzLauf && kzLauf.konsumFehlt) || "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)" }));
             const tStop = tEnde || Date.now();
-            zeuge.ende(fenster).then((b) => {
-                tEnde = tStop; // das Warten auf den Takt des Zeugen zählt nie in die Sekunden der Probe
-                ganz0((tSchloss ? es.map((e) => ({ ...e, warten: +((tSchloss - t0) / 60000).toFixed(2) })) : es).map(mitS).map((e, i) => fremdUrteil(sts[i] || st, e, b)));
-            });
+            marken.station = [tSchloss || t0, tStop];
+            (ref ? fahrt("nach") : Promise.resolve(null)).then((rNach) => zeuge.ende(fenster, ref ? marken : undefined).then((b) => {
+                tEnde = tStop; // das Warten auf den Takt des Zeugen und die Fahrt danach zählen nie in die Sekunden der Probe
+                const umfeld = sitz ? "sitzung" : "allein";
+                const r = ref ? referenzBericht(rVor, rNach, rVor && rNach && !rVor.fehler && !rNach.fehler ? ref.ruhe(umfeld, [rVor, rNach]) : null, umfeld) : undefined;
+                ganz0((tSchloss ? es.map((e) => ({ ...e, warten: +((tSchloss - t0) / 60000).toFixed(2) })) : es).map(mitS).map((e, i) => fremdUrteil(sts[i] || st, e, b, r)));
+            }));
         };
         const min = () => +((Date.now() - t0) / 60000).toFixed(2);
         const fertig = (e) => ganz(sts.map(() => e));
@@ -1661,7 +1777,7 @@ function fahreGruppe(sts, ctx) {
             }).map((e) => (e.ungemessen ? e : { ...e, ...kz })));
         };
         starte();
-    });
+    }));
 }
 
 function baumAmSha(repo, geraet, sha) {
@@ -4673,6 +4789,7 @@ async function selbsttest(o = {}) {
     // der Zeuge der Fremd-Last ist im Selbsttest still: die Läufer-Fälle urteilen ihre Mechanik, nie die Last des Rechners — der echte
     // Zeuge und seine Attrappen stehen in (5f) beim Namen
     zeugeDerMaschine = stillerZeuge();
+    referenzDerMaschine = stilleReferenz();
     // (1) die echten Stationen gegen die Karte
     const echt = ladeGeprueft();
     deckelTafel = {}; // die echte Deckel-Tafel prüft FORMAT (ladeGeprueft); die erfundenen Stationen danach fahren ohne sie
@@ -5512,17 +5629,17 @@ async function selbsttest(o = {}) {
             fall.je["gelaende.K4"].punkte === 0 && fall.rueckfall.length === 1 && /^gelaende\.K4#1 headless: Maß 9 \(Soll ≤ 3\) an c3/.test(fall.rueckfall[0]),
             JSON.stringify([halt.je["gelaende.K4"], halt.rueckfall, fall.rueckfall]));
     }
-    // (5f) DIE FREMD-LAST (pm-fremdlast; fremdZeuge · fremdUrteil an der EINEN Stelle fahreGruppe). Die Attrappe der Welt (ihre CPU wächst
-    // mit der Wanduhr, der eigene Baum hängt an einer erfundenen Wurzel): playtest:fast 1,5 Kerne fremd neben einer Zeit-Station →
-    // UNGEMESSEN beim Namen; Diener (dwm.exe), der eigene Baum (Chrome der Sitzung) und der Erbe einer wiederbenutzten PID (älter als sein
-    // „Vater“: fremd) getrennt; ohne fremde Last GRÜN und ROT wie heute; eine Bild-Station unter Last urteilt wie heute und trägt den
-    // Bericht; ein blinder Zeuge macht nur die Zeit-Station UNGEMESSEN, ein Abbruch behält seinen Grund vorn (brachAb). Dann DAS GESETZ
-    // (fremdUrteil) an GESETZTEN Berichten um die Schwelle DIESES Rechners, mit seinen umgedrehten Zwillingen, die je an ihrem Satz fallen,
-    // und DER LESER des Windows-Zeugen (zeugenLeser) an gesetzten Zeilen: der Name aus der Kommandozeile, das Leerlauf-Konto, der eigene
-    // Baum, der Diener. Der ECHTE Zeuge der Plattform (Linux /proc, Windows PowerShell) steht als STAND-Zeile da, nie als Urteil
+    // (5f) DIE LAST (pm-fremdlast, w28-referenzfahrt; fremdZeuge nennt, referenzFahrt misst, fremdUrteil an der EINEN Stelle fahreGruppe).
+    // Die Attrappe der Welt (ihre CPU wächst mit der Wanduhr, der eigene Baum hängt an einer erfundenen Wurzel) und die Attrappe der
+    // Referenz (gesetzte Fahrten gegen eine gesetzte Ruhe): AM LÄUFER (a) eine Zeit, die unter Last f 1,8 hält → GRÜN mit Vermerk, (b) Faktor
+    // 30 über der Schwelle unter f 1,8 → ROT, (c) im Band, vor = nach → UNGEMESSEN „unscharf“ ohne Wiederholung, (d) im Band, vor ≠ nach →
+    // genau EINE Wiederholung, (e) eine Bild-Station unter Last urteilt wie gemessen (keine Fahrt), Ruhe f 1 neben 1,5 fremden Kernen → ROT
+    // wie gemessen (der Ruhe-Zwang fiel); der Zeuge trennt Diener, eigenen Baum, Erben und Gerät. Dann DAS GESETZ an gesetzten Berichten mit
+    // seinen Mutanten (darunter die alte Regel: der pauschale Wurf), DER LESER des Windows-Zeugen, die Spannen des Berichts und der ECHTE
+    // Zeuge als STAND-Zeile
     {
         const T0 = Date.now(), WZ = 4242;
-        // dazu (das Gesetz der Fremd-Last, 10.11.) weitere Prozesse [pid, Name, Kommandozeile, Kerne]: die Grund-Last des Geräts, die App
+        // dazu weitere Prozesse [pid, Name, Kommandozeile, Kerne]: die Grund-Last des Geräts, die App
         const attrappe = (rate, dazu = []) => ({
             schnapp: () => {
                 const t = Date.now(), s = (t - T0) / 1000;
@@ -5541,154 +5658,144 @@ async function selbsttest(o = {}) {
         const zeitSt = { ...st0, zeit: true, urteil: lies,
             befehl: ["node", "-e", "setTimeout(() => require('fs').writeFileSync(process.argv[1], JSON.stringify({ n: Number(process.argv[2]) })), 1500)", "{AUS}", "0"] };
         const zeugen = [];
-        // die Attrappen urteilen am festen Rechner der ersten Eichung (dem Container, 0,3), nie an dem, der den Selbsttest fährt
-        const mitZeuge = (n, quelle) => ({ ...ctx(n), zeuge: zeugen[zeugen.push(fremdZeuge({ quelle, taktMs: 300, wurzel: WZ, eich: FREMD_EICH[0] })) - 1] });
+        const RUHE = { ein: 100, alle: 100, n: 20, von: "2026-11-11" };
+        // die Referenz-Attrappe: die Fahrten der Reihe nach (die letzte wiederholt sich), z.n zählt sie
+        const refA = (folge) => { const z = { n: 0 }; return { z, fahrt: async () => folge[Math.min(z.n++, folge.length - 1)], ruhe: () => RUHE }; }; // prettier-ignore
+        const LAST = { ein: 180, alle: 150 }, STILL = { ein: 100, alle: 100 };
+        const mitZeuge = (n, quelle, referenz = refA([STILL])) => ({ ...ctx(n), referenz, zeuge: zeugen[zeugen.push(fremdZeuge({ quelle, taktMs: 300, wurzel: WZ })) - 1] });
         const rotSt = { ...zeitSt, befehl: [...zeitSt.befehl.slice(0, 4), "3"] };
-        const unter = await fahreStation(rotSt, mitZeuge("fremd-unter", attrappe(1.5)));
-        const unterGruen = await fahreStation(zeitSt, mitZeuge("fremd-unter-gruen", attrappe(1.5)));
-        const still = await fahreStation(zeitSt, mitZeuge("fremd-still", attrappe(0)));
-        const stillRot = await fahreStation(rotSt, mitZeuge("fremd-still-rot", attrappe(0)));
-        const bild = await fahreStation({ ...zeitSt, zeit: false }, mitZeuge("fremd-bild", attrappe(1.5)));
-        const blind = await fahreStation(rotSt, mitZeuge("fremd-blind", { blind: "kein Zeuge auf plan9", stop() {} }));
-        const blindGruen = await fahreStation(zeitSt, mitZeuge("fremd-blind-gruen", { blind: "kein Zeuge auf plan9", stop() {} }));
-        const blindBild = await fahreStation({ ...zeitSt, zeit: false }, mitZeuge("fremd-blind-bild", { blind: "kein Zeuge auf plan9", stop() {} }));
-        // DAS GESETZ DER FREMD-LAST am Läufer (10.11.): die Grund-Last des Geräts (der HP-Dienst 2 Kerne, der Defender 1 Kern) allein neben
-        // einer ROTEN Zeit-Station → sie urteilt; die App (Claude.exe 1,5 Kerne) neben einer Station, die ihr Maß nennt (n gegen 33): knapp
-        // darüber UNGEMESSEN mit beiden Zahlen, weit darüber ROT, darunter GRÜN — das Maß reist vom Urteil durch urteilVon in den Eintrag
-        const GERAET = [[81, "AppHelperCap.exe", "AppHelperCap.exe", 2], [82, "MsMpEng.exe", "MsMpEng.exe", 1]], APP = [[83, "Claude.exe", "Claude.exe --type=gpu-process", 1.5]];
         const massSt = (n) => ({ ...zeitSt, urteil: (j) => ({ gruen: j.n <= 33, zahl: "n " + j.n }), mass: (j) => [{ wort: "n", wert: j.n, soll: 33 }],
             befehl: [...zeitSt.befehl.slice(0, 4), String(n)] });
-        const geraetRot = await fahreStation(rotSt, mitZeuge("fremd-geraet", attrappe(0, GERAET)));
-        const appKnapp = await fahreStation(massSt(35), mitZeuge("fremd-app-knapp", attrappe(0, APP)));
-        const appWeit = await fahreStation(massSt(50), mitZeuge("fremd-app-weit", attrappe(0, APP)));
-        const appGruen = await fahreStation(massSt(30), mitZeuge("fremd-app-gruen", attrappe(0, APP)));
+        const rA = refA([LAST]), rB = refA([LAST]), rC = refA([LAST]), rD = refA([{ ein: 180, alle: 100 }, { ein: 110, alle: 100 }, { ein: 180, alle: 100 }, { ein: 110, alle: 100 }]), rE = refA([LAST]);
+        const lA = await fahreStation(massSt(30), mitZeuge("last-a", attrappe(1.5), rA));
+        const lB = await fahreStation(massSt(990), mitZeuge("last-b", attrappe(1.5), rB));
+        const lC = await fahreStation(massSt(40), mitZeuge("last-c", attrappe(1.5), rC));
+        const lD = await fahreStation(massSt(40), mitZeuge("last-d", attrappe(1.5), rD));
+        const lE = await fahreStation({ ...rotSt, zeit: false }, mitZeuge("last-e", attrappe(1.5), rE));
+        const ruhig = await fahreStation(rotSt, mitZeuge("last-ruhe", attrappe(1.5)));
+        const GERAET = [[81, "AppHelperCap.exe", "AppHelperCap.exe", 2], [82, "MsMpEng.exe", "MsMpEng.exe", 1], [84, "OmenCap.exe", "OmenCap.exe", 1]];
+        const geraetRot = await fahreStation(rotSt, mitZeuge("last-geraet", attrappe(0, GERAET)));
         zeugen.forEach((z) => z.stop());
-        const ab = fremdUrteil(zeitSt, { gruen: false, zahl: "n 0", grund: "Absturz: Signal SIGKILL · n 0" }, unter.fremd);
-        pruef("FREMD-LAST die Attrappe: playtest:fast 1,5 Kerne fremd neben einer ROTEN Zeit-Station → UNGEMESSEN beim Namen; dieselbe Last neben einer GRÜNEN → GRÜN trotz Last (die Last macht nie schneller); der Diener, der eigene Baum und der Erbe einer wiederbenutzten PID getrennt",
-            unter.ungemessen === true && unter.gruen === false &&
-            /^Fremd-Last: node scripts\/playtest\.cjs --fast \d+,\d CPU-s · erbe\.exe --alt \d+,\d CPU-s — 1,70 Kerne fremd im dichtesten 10-s-Fenster \(Schwelle 0,30, linux, 4 Kerne \(Container\); .* — kein Urteil, UNGEMESSEN \(die Probe sah: n 3\)$/.test(unter.grund) &&
-            unterGruen.gruen === true && !unterGruen.ungemessen && /GRÜN trotz Fremd-Last: node scripts\/playtest\.cjs --fast/.test(unterGruen.grund) &&
-            unter.fremd.diener[0][0] === "dwm.exe" && unter.fremd.eigenS > unter.fremd.fremdS && !unter.fremd.namen.some(([n]) => /chrome|punkte\.cjs/.test(n)),
-            JSON.stringify([unter.grund, unter.fremd]));
-        pruef("FREMD-LAST ohne fremde Last urteilt die Zeit-Station wie heute (GRÜN, ROT), eine Bild-Station unter Last urteilt wie heute und trägt den Bericht",
-            still.gruen === true && !still.ungemessen && still.zahl === "n 0" && still.fremd.fensterKerne < still.fremd.schwelle && still.fremd.namen[0][0] === "erbe.exe --alt" &&
-            stillRot.gruen === false && !stillRot.ungemessen && stillRot.grund === "ROT: n 3" &&
-            bild.gruen === true && !bild.ungemessen && bild.fremd.fensterKerne >= bild.fremd.schwelle && bild.fremd.schwelle === 0.3,
-            JSON.stringify([still, stillRot, bild].map((x) => [x.gruen, !!x.ungemessen, x.grund || x.zahl, x.fremd.fensterKerne])));
-        pruef("FREMD-LAST ein blinder Zeuge macht nur die Zeit-Station UNGEMESSEN beim Grund; ein Abbruch behält seinen Grund vorn (die Sitzung liest ihn)",
-            blind.ungemessen === true && /^Fremd-Last: der Zeuge ist blind \(kein Zeuge auf plan9\) — Ruhe unbezeugt — kein Urteil, UNGEMESSEN/.test(blind.grund) &&
-            blindGruen.gruen === true && !blindGruen.ungemessen && /GRÜN trotz Fremd-Last: der Zeuge ist blind/.test(blindGruen.grund) &&
-            blindBild.gruen === true && !blindBild.ungemessen && ab.ungemessen === true && brachAb([ab]) && /^Absturz: Signal SIGKILL · n 0 · Fremd-Last: node scripts/.test(ab.grund),
-            JSON.stringify([blind.grund, blindBild.gruen, ab.grund]));
+        pruef("LAST am Läufer (a) eine Zeit hält unter Last (Referenz f 1,8, playtest:fast 1,5 Kerne fremd) → GRÜN mit Vermerk: f, die Fahrten, die Ruhe und der Fremde beim Namen im Grund, `referenz` und `fremd` im Eintrag",
+            lA.gruen === true && !lA.ungemessen && /^GRÜN trotz Last: Referenz f 1,8 \(Faden 1,8 · alle Kerne 1,5; vor 180\/150 ms, nach 180\/150 ms, Ruhe 100\/100 ms seit 2026-11-11\) · fremd: node scripts\/playtest\.cjs --fast/.test(lA.grund) &&
+                lA.referenz.f === 1.8 && lA.referenz.schwankt === false && rA.z.n === 2 && lA.fremd.diener[0][0] === "dwm.exe" && lA.fremd.eigenS > lA.fremd.fremdS &&
+                !lA.fremd.namen.some(([n]) => /chrome|punkte\.cjs/.test(n)) && lA.fremd.spannen && lA.fremd.spannen.station > 0,
+            JSON.stringify([lA.grund, lA.referenz, lA.fremd && lA.fremd.spannen]));
+        pruef("LAST am Läufer (b) Faktor 30 über der Schwelle (n 990 gegen ≤ 33) unter f 1,8 → ROT trotz Last mit roh und entlastet",
+            lB.gruen === false && !lB.ungemessen && /^ROT: n 990 · ROT trotz Last: Referenz f 1,8 .* — auch entlastet: n roh 990, entlastet ≥ 550, Schwelle ≤ 33$/.test(lB.grund),
+            lB.grund);
+        pruef("LAST am Läufer (c) im Band (n 40 gegen ≤ 33, entlastet 22,2) unter ruhiger Last (vor = nach) → UNGEMESSEN „unscharf unter Last“, keine Wiederholung (2 Fahrten)",
+            lC.ungemessen === true && lC.gruen === false && / — unscharf unter Last: n roh 40, entlastet ≥ 22,22, Schwelle ≤ 33 — kein Urteil, UNGEMESSEN \(die Probe sah: n 40\)$/.test(lC.grund) &&
+                !lC.wiederholt && !lC.wiederholen && rC.z.n === 2,
+            JSON.stringify([lC.grund, rC.z.n]));
+        pruef("LAST am Läufer (d) im Band, vor und nach schwanken (Faden 180 ↔ 110 ms) → genau EINE Wiederholung (4 Fahrten), die zweite zählt, `wiederholt` nennt die erste",
+            lD.ungemessen === true && /unscharf unter Last/.test(lD.grund) && /unscharf unter Last/.test(lD.wiederholt || "") && !lD.wiederholen && rD.z.n === 4 && lD.referenz.schwankt === true,
+            JSON.stringify([rD.z.n, lD.wiederholt, lD.referenz]));
+        pruef("LAST am Läufer (e) eine Bild-Station unter Last urteilt wie gemessen (ROT: n 3), fährt keine Referenz und trägt den Bericht; Ruhe (f 1) neben 1,5 fremden Kernen → ROT wie gemessen (der Ruhe-Zwang fiel)",
+            lE.gruen === false && !lE.ungemessen && lE.grund === "ROT: n 3" && rE.z.n === 0 && !lE.referenz && lE.fremd.namen.length > 0 &&
+                ruhig.gruen === false && !ruhig.ungemessen && ruhig.grund === "ROT: n 3" && ruhig.referenz.f === 1 && ruhig.fremd.fensterKerne > 1,
+            JSON.stringify([lE.grund, rE.z.n, ruhig.grund, ruhig.referenz, ruhig.fremd.fensterKerne]));
         const gb = geraetRot.fremd || {};
-        pruef("FREMD-LAST DAS GERÄT IST KEINE FREMD-LAST: AppHelperCap.exe 2 Kerne und MsMpEng.exe 1 Kern allein neben einer ROTEN Zeit-Station → sie urteilt ROT (nie UNGEMESSEN); beide stehen im Bericht beim Namen als Gerät, nie als fremd",
-            geraetRot.gruen === false && !geraetRot.ungemessen && geraetRot.grund === "ROT: n 3" && gb.fensterKerne < gb.schwelle &&
-            JSON.stringify((gb.geraet || []).map(([n]) => n)) === JSON.stringify(["AppHelperCap.exe", "MsMpEng.exe"]) && gb.geraetS > gb.fremdS &&
-            !(gb.namen || []).some(([n]) => /AppHelperCap|MsMpEng/.test(n)),
+        pruef("LAST DAS GERÄT IST KEINE FREMD-LAST: AppHelperCap.exe, MsMpEng.exe und OmenCap.exe stehen im Bericht beim Namen als Gerät, nie als fremd",
+            geraetRot.gruen === false && !geraetRot.ungemessen && geraetRot.grund === "ROT: n 3" &&
+                JSON.stringify((gb.geraet || []).map(([n]) => n)) === JSON.stringify(["AppHelperCap.exe", "MsMpEng.exe", "OmenCap.exe"]) && gb.geraetS > gb.fremdS &&
+                !(gb.namen || []).some(([n]) => /AppHelperCap|MsMpEng|OmenCap/.test(n)),
             JSON.stringify([geraetRot.grund, gb]));
-        pruef("FREMD-LAST ROT UNTER LAST WIRD GEMESSEN: Claude.exe 1,5 Kerne neben einer Station mit Maß (n gegen 33, Effekt des Containers) — n 35 knapp → UNGEMESSEN mit beiden Zahlen (das Band der Last), n 50 weit → ROT trotz Last mit beiden Zahlen, n 30 → GRÜN trotz Last; das Maß steht im Eintrag",
-            appKnapp.ungemessen === true && appKnapp.gruen === false && /^Fremd-Last: Claude\.exe --type=gpu-process \d+,\d CPU-s · .* — im Band der Last, geeicht ÷ 1,1\d+ \(1 \+ 9,3 % je fremdem Kern × 1,70\): n 35 → geeicht 30,\d+ \(Soll ≤ 33\) — kein Urteil, UNGEMESSEN \(die Probe sah: n 35\)$/.test(appKnapp.grund) &&
-            appWeit.gruen === false && !appWeit.ungemessen && /^ROT: n 50 · ROT trotz Fremd-Last: Claude\.exe .* — geeicht ÷ 1,1\d+ \(.*\): n 50 → geeicht 43,\d+ \(Soll ≤ 33\)$/.test(appWeit.grund) &&
-            appGruen.gruen === true && !appGruen.ungemessen && /^GRÜN trotz Fremd-Last: Claude\.exe/.test(appGruen.grund) &&
-            JSON.stringify(appKnapp.mass) === JSON.stringify([{ wort: "n", wert: 35, soll: 33 }]) && JSON.stringify(appWeit.mass) === JSON.stringify([{ wort: "n", wert: 50, soll: 33 }]),
-            JSON.stringify([appKnapp.grund, appWeit.grund, appGruen.grund]));
-        // DAS GESETZ AN GESETZTEN EINGABEN (10.11.). Vorher urteilte hier „der echte Zeuge“: ein gestellter Busy neben einer Zeit-Station am
-        // LEBENDEN Gerät — der Fall maß den Takt des PowerShell-Laufs unter der Last des Messplatzes (2–5 Takte in 11,5 s, Soll 23: der Zeuge
-        // blind, der Fall ROT am unveränderten Kopf ac2728ff), die Wanduhr des Läufers, nie das Gesetz. Jetzt ist der Bericht GESETZT — die
-        // Last über, AN und unter der Schwelle DIESES Rechners —, jeder Satz nennt Station, Ergebnis, Last und sein Soll; die UMGEDREHTEN
-        // Gesetze (aus fremdUrteil gebaut) fallen je an ihrem Satz, und jeder Satz fällt an einem von ihnen — ein Fall, den kein falsches
-        // Gesetz rötet, bewiese nichts
-        const ATT = "punkte-fremdlast-attrappe", TF = FREMD_SCHWELLE_KERNE, hochK = Math.floor(TF) + 1, tiefK = +(TF / 2).toFixed(2);
-        const lage = (kerne) => ({ s: 10, takte: 5, fremdS: +(kerne * 10).toFixed(2), kerne, fensterKerne: kerne, namen: [["node -e " + ATT, +(kerne * 10).toFixed(2)]],
-            dienerS: 0, diener: [], eigenS: 3, schwelle: TF, eich: FREMD_HIER.ort });
-        const hoch = lage(hochK), an = lage(TF), tief = lage(tiefK);
-        const rotE = { gruen: false, zahl: "n 3", grund: "ROT: n 3" }, gruenE = { gruen: true, zahl: "n 0" }, bildSt = { ...zeitSt, zeit: false };
-        const beimNamen = (b) => "Fremd-Last: node -e " + ATT + " " + fz1(b.fremdS) + " CPU-s — " + fz2(b.fensterKerne) + " Kerne fremd im dichtesten " + FREMD_FENSTER_S +
-            "-s-Fenster (Schwelle " + fz2(TF) + ", " + FREMD_HIER.ort + "; Σ fremd " + fz1(b.fremdS) + " CPU-s in 10,0 s)";
-        const ungemessenBeimNamen = (b) => (u) => u.ungemessen === true && u.gruen === false && u.grund === beimNamen(b) + " — kein Urteil, UNGEMESSEN (die Probe sah: n 3)" && u.zahl === u.grund;
-        const wieGemessen = (e) => (u) => u.gruen === e.gruen && !u.ungemessen && u.grund === e.grund && u.zahl === e.zahl;
-        const saetze = [
-            ["Last hoch × ROT → UNGEMESSEN beim Namen", zeitSt, rotE, hoch, ungemessenBeimNamen(hoch)],
-            ["Last hoch × GRÜN → GRÜN trotz Last", zeitSt, gruenE, hoch, (u) => u.gruen === true && !u.ungemessen && u.zahl === "n 0" && u.grund === "GRÜN trotz " + beimNamen(hoch)],
-            ["Last AN der Schwelle × ROT → UNGEMESSEN beim Namen", zeitSt, rotE, an, ungemessenBeimNamen(an)],
-            ["Last niedrig × ROT → ROT", zeitSt, rotE, tief, wieGemessen(rotE)],
-            ["Last niedrig × GRÜN → GRÜN", zeitSt, gruenE, tief, wieGemessen(gruenE)],
-            ["Last hoch × ROT an einer Bild-Station → ROT", bildSt, rotE, hoch, wieGemessen(rotE)],
-        ];
-        // die Sätze, die ein Gesetz U bricht (jedes Ergebnis trägt zudem den Bericht, über den geurteilt wurde)
-        const bricht = (U) => saetze.filter(([, st, e, b, soll]) => { const u = U(st, e, b); return !(soll(u) && u.fremd === b); }).map(([n]) => n); // prettier-ignore
-        const umgedreht = {
-            "umgedreht (unter der Schwelle UNGEMESSEN, darüber wie gemessen)": (st, e, b) => ({ ...fremdUrteil(st, e, { ...b, fensterKerne: b.fensterKerne >= b.schwelle ? 0 : b.schwelle + 1 }), fremd: b }),
-            "taub (die Last urteilt nie)": (st, e, b) => ({ ...e, fremd: b }),
-            "streng (GRÜN neben Last UNGEMESSEN, das Gesetz vor dem 09.11.)": (st, e, b) => { const u = fremdUrteil(st, e, b); return /^GRÜN trotz /.test(u.grund || "") ? { ...u, gruen: false, ungemessen: true } : u; }, // prettier-ignore
-            "lasch (erst ÜBER der Schwelle)": (st, e, b) => (b.fensterKerne === b.schwelle ? { ...e, fremd: b } : fremdUrteil(st, e, b)),
-            "blind für die Art (auch die Bild-Station UNGEMESSEN)": (st, e, b) => ({ ...fremdUrteil({ ...st, zeit: true }, e, b), fremd: b }),
-        };
-        const gebrochen = bricht(fremdUrteil), faellt = Object.entries(umgedreht).map(([n, U]) => [n.split(" (")[0], bricht(U)]);
-        pruef("FREMD-LAST das Gesetz an gesetzten Eingaben (Schwelle " + fz2(TF) + " dieses Rechners, Last " + fz2(hochK) + " · " + fz2(TF) + " · " + fz2(tiefK) +
-            " Kerne): Last hoch → ROT wird UNGEMESSEN beim Namen, GRÜN bleibt GRÜN; Last an der Schwelle → UNGEMESSEN; Last niedrig → ROT bleibt ROT; die Bild-Station urteilt wie gemessen; " +
-            faellt.length + " umgedrehte Gesetze fallen je an ihrem Satz, jeder Satz an einem von ihnen",
-            gebrochen.length === 0 && faellt.every(([, s]) => s.length > 0) && saetze.every(([n]) => faellt.some(([, s]) => s.includes(n))),
-            JSON.stringify(gebrochen.length ? { gebrochen } : faellt.map(([n, s]) => n + " fällt an " + (s.length ? s.length + " (" + s[0] + ")" : "KEINEM"))));
-        // DAS GESETZ DER FREMD-LAST AN GESETZTEN EINGABEN (10.11.): ein Bericht mit der Eichung der Radeon (Schwelle 0,5, Effekt 5,6 % je Kern),
-        // 2 Kerne fremd → k = 1 + 0,0563 · 2; je Satz Station, Ergebnis (mit Maß) und sein Soll. Die umgedrehten Gesetze fallen je an ihrem Satz,
-        // jeder Satz an einem von ihnen — darunter das Gesetz bis heute (jedes ROT unter Last verworfen)
+        // DAS GESETZ AN GESETZTEN EINGABEN: je Satz Station, Ergebnis (mit Maß), Bericht des Zeugen, Bericht der Referenz und sein Soll; die
+        // MUTANTEN fallen je an ihrem Satz, jeder Satz fällt an einem von ihnen
         {
-            const R = FREMD_RADEON, F2 = 2, kR = 1 + R.effekt * F2;
-            const lageR = (kerne) => ({ s: 10, takte: 5, fremdS: kerne * 10, kerne, fensterKerne: kerne, namen: [["Claude.exe --type=gpu-process", kerne * 10]], dienerS: 0, diener: [],
-                geraetS: 20, geraet: [["AppHelperCap.exe", 20]], eigenS: 3, schwelle: R.schwelle, effekt: R.effekt, eich: R.ort });
-            const uber = lageR(F2), unter = lageR(0.3);
-            const M = (wert, soll, an = {}) => ({ wort: "Bild-p95 ms", wert, soll, ...an });
-            const rotM = (...ms) => ({ gruen: false, zahl: "Bild-p95 " + ms.map((m) => m.wert).join("/"), grund: "ROT: Bild-p95 " + ms.map((m) => m.wert).join("/"), mass: ms });
-            const g = (m) => fzW(m.richtung === "≥" ? m.wert * kR : m.wert / kR);
-            const band = (m) => (u) => u.ungemessen === true && u.gruen === false && u.zahl === u.grund &&
-                u.grund.includes(" · Gerät (Grund-Last, nie fremd) AppHelperCap.exe 20,0 CPU-s)") &&
-                u.grund.includes(" — im Band der Last, geeicht ÷ " + fzW(kR) + " (1 + 5,6 % je fremdem Kern × 2,00): " + m.wort + " " + fzW(m.wert) + " → geeicht " + g(m) + " (Soll " + (m.richtung || "≤") + " " + fzW(m.soll) + ") — kein Urteil, UNGEMESSEN");
-            const rotTrotz = (m) => (u) => u.gruen === false && !u.ungemessen && u.grund.startsWith("ROT: ") && u.grund.includes(" · ROT trotz Fremd-Last: Claude.exe") &&
-                u.grund.endsWith(m.wort + " " + fzW(m.wert) + (m.fest ? " (fest)" : " → geeicht " + g(m)) + " (Soll " + (m.richtung || "≤") + " " + fzW(m.soll) + ")");
+            const lage = (kerne, spannen) => ({ s: 10, takte: 5, fremdS: kerne * 10, kerne, fensterKerne: kerne, namen: [["Claude.exe --type=gpu-process", kerne * 10]], dienerS: 0, diener: [],
+                geraetS: 20, geraet: [["OmenCap.exe", 20]], eigenS: 3, rechnerKerne: 4, ...(spannen ? { spannen } : {}) });
+            const ref = (vor, nach = vor) => referenzBericht(vor, nach, RUHE, "allein");
+            const L = lage(1.82), L0 = lage(1.5), F18 = ref(LAST), F13 = ref({ ein: 130, alle: 110 }), F1 = ref(STILL), SCHW = ref({ ein: 180, alle: 100 }, { ein: 110, alle: 100 });
+            const STOSS = lage(8, { vor: 0, nach: 0, station: 8 });
+            const M = (wert, soll, an = {}) => ({ wort: "t ms", wert, soll, ...an });
+            const rotM = (...ms) => ({ gruen: false, zahl: "t " + ms.map((m) => massRoh(m)).join("/"), grund: "ROT: t " + ms.map((m) => massRoh(m)).join("/"), mass: ms });
+            const gpuSt = { ...zeitSt, gpu: true }, bildSt = { ...zeitSt, zeit: false };
+            const gruenT = (u) => u.gruen === true && !u.ungemessen && /^GRÜN trotz Last: Referenz f /.test(u.grund);
+            const rotT = (rest) => (u) => u.gruen === false && !u.ungemessen && u.grund.startsWith("ROT: ") && u.grund.includes(" · ROT trotz Last: Referenz f ") && u.grund.endsWith(rest);
+            const unscharf = (rest, wdh = false) => (u) => u.ungemessen === true && u.gruen === false && u.zahl === u.grund && u.grund.includes(" — unscharf unter Last: " + rest + " — kein Urteil") && !!u.wiederholen === wdh;
             const offenWeil = (text) => (u) => u.ungemessen === true && u.gruen === false && u.grund.includes(text + " — kein Urteil, UNGEMESSEN");
-            const knapp = M(35, 33), weit = M(50, 33), fest = M(210, 208, { wort: "Befehle p95", fest: true }), fpsKnapp = M(28, 30, { richtung: "≥" }), fpsWeit = M(20, 30, { richtung: "≥" });
-            const gruenM = { gruen: true, zahl: "Bild-p95 30", mass: [M(30, 33)] };
-            const ohneM = { gruen: false, zahl: "kein Bild", grund: "ROT: kein Bild" }, ohneRiss = { gruen: false, zahl: "Bild ganz? nein", grund: "ROT: Bild ganz? nein", mass: [M(30, 33)] };
-            const abbruch = { ...rotM(weit), grund: "Deckel 90 s gerissen: Stille — beendet · Bild-p95 50" };
+            const wieGemessen = (e) => (u) => u.gruen === e.gruen && !u.ungemessen && u.grund === e.grund && u.zahl === e.zahl;
+            const abbruch = { ...rotM(M(990, 33)), grund: "Deckel 90 s gerissen: Stille — beendet · t 990" };
             const S = [
-                ["2 Kerne fremd × ROT knapp (35 ms, geeicht unter 33) → UNGEMESSEN mit beiden Zahlen", rotM(knapp), uber, band(knapp)],
-                ["2 Kerne fremd × ROT weit (50 ms, geeicht über 33) → ROT trotz Last mit beiden Zahlen", rotM(weit), uber, rotTrotz(weit)],
-                ["2 Kerne fremd × zwei Maße, eines knapp, eines weit → ROT am weiten", rotM(knapp, weit), uber, rotTrotz(weit)],
-                ["2 Kerne fremd × GRÜN → GRÜN trotz Last", gruenM, uber, (u) => u.gruen === true && !u.ungemessen && /^GRÜN trotz Fremd-Last: Claude\.exe/.test(u.grund)],
-                ["2 Kerne fremd × ROT ohne Maß → UNGEMESSEN (die Station nennt kein Maß)", ohneM, uber, offenWeil(" — die Station nennt kein Maß")],
-                ["2 Kerne fremd × ROT, kein Maß reißt → UNGEMESSEN (eine Bedingung ohne Zahl)", ohneRiss, uber, offenWeil(" — kein Maß reißt (1 gemessen): das ROT liegt in einer Bedingung ohne Zahl")],
-                ["2 Kerne fremd × ROT eines festen Maßes (Befehle 210 > 208) → ROT trotz Last, ungeeicht", rotM(fest), uber, rotTrotz(fest)],
-                ["2 Kerne fremd × ROT „≥“ knapp (28 gegen ≥ 30, geeicht darüber) → UNGEMESSEN mit beiden Zahlen", rotM(fpsKnapp), uber, band(fpsKnapp)],
-                ["2 Kerne fremd × ROT „≥“ weit (20 gegen ≥ 30) → ROT trotz Last", rotM(fpsWeit), uber, rotTrotz(fpsWeit)],
-                ["2 Kerne fremd × Abbruch mit weitem Maß → UNGEMESSEN, der Abbruch vorn, nie geeicht", abbruch, uber, (u) => u.ungemessen === true && u.grund.startsWith(abbruch.grund + " · Fremd-Last: ") && !/geeicht/.test(u.grund)],
-                ["0,3 Kerne fremd (unter 0,5) × ROT knapp → ROT wie gemessen", rotM(knapp), unter, (u) => u.gruen === false && !u.ungemessen && u.grund === "ROT: Bild-p95 35"],
+                ["(a) GRÜN unter f 1,8 → GRÜN mit Vermerk", zeitSt, { gruen: true, zahl: "t 30", mass: [M(30, 33)] }, L, F18, gruenT],
+                ["(b) ROT 990 gegen ≤ 33 unter f 1,8 → ROT trotz Last", zeitSt, rotM(M(990, 33)), L, F18, rotT("t ms roh 990, entlastet ≥ 550, Schwelle ≤ 33")],
+                ["(c) ROT 40 unter f 1,8, vor = nach → UNGEMESSEN unscharf, keine Wiederholung", zeitSt, rotM(M(40, 33)), L, F18, unscharf("t ms roh 40, entlastet ≥ 22,22, Schwelle ≤ 33")],
+                ["(d) ROT 40 unter f 1,8, vor ≠ nach → UNGEMESSEN unscharf, EINE Wiederholung", zeitSt, rotM(M(40, 33)), L, SCHW, unscharf("t ms roh 40, entlastet ≥ 22,22, Schwelle ≤ 33", true)],
+                ["(e) Bild-Station ROT unter f 1,8 → ROT wie gemessen", bildSt, rotM(M(990, 33)), L, F18, wieGemessen(rotM(M(990, 33)))],
+                ["Ruhe f 1 neben 1,5 Kernen fremd → ROT 40 wie gemessen", zeitSt, rotM(M(40, 33)), L0, F1, wieGemessen(rotM(M(40, 33)))],
+                ["„≥“ 10 gegen ≥ 30 unter f 1,8 (entlastet 18) → ROT trotz Last", zeitSt, rotM(M(10, 30, { richtung: "≥" })), L, F18, rotT("t ms roh 10, entlastet ≤ 18, Schwelle ≥ 30")],
+                ["„≥“ 20 gegen ≥ 30 unter f 1,8 (entlastet 36) → UNGEMESSEN unscharf", zeitSt, rotM(M(20, 30, { richtung: "≥" })), L, F18, unscharf("t ms roh 20, entlastet ≤ 36, Schwelle ≥ 30")],
+                ["ausgeblieben (≥ 8000 gegen ≤ 500) unter f 1,8 → ROT trotz Last", zeitSt, rotM(M(null, 500, { ab: 8000 })), L, F18, rotT("t ms roh ≥ 8000 (ausgeblieben), entlastet ≥ 4444, Schwelle ≤ 500")],
+                ["GPU-Station, Maß der Karte: 50 gegen ≤ 33 unter f 1,3 → ÷ 2 (Karte) → UNGEMESSEN unscharf", gpuSt, rotM(M(50, 33)), L, F13, unscharf("t ms roh 50, entlastet ≥ 25 (÷ 2, Karte), Schwelle ≤ 33")],
+                ["GPU-Station, Maß der CPU: 50 gegen ≤ 33 unter f 1,3 → ROT trotz Last", gpuSt, rotM(M(50, 33, { cpu: true })), L, F13, rotT("t ms roh 50, entlastet ≥ 38,46, Schwelle ≤ 33")],
+                ["Stoß: f 1 an beiden Fahrten, 8 Kerne fremd IN der Station (4 Kerne, 0,3 eigen) → f max(8,3 ÷ 4, 1 + 8 ÷ 4) = 3 → 50 gegen ≤ 33 UNGEMESSEN unscharf", zeitSt, rotM(M(50, 33)), STOSS, F1, unscharf("t ms roh 50, entlastet ≥ 16,67, Schwelle ≤ 33")],
+                ["fest (Befehle 210 gegen ≤ 208) unter f 1,8 → ROT trotz Last, nie geteilt", zeitSt, rotM(M(210, 208, { fest: true })), L, F18, rotT("t ms roh 210 (fest), Schwelle ≤ 208")],
+                ["ROT ohne Maß unter f 1,8 → UNGEMESSEN (die Station nennt kein Maß)", zeitSt, { gruen: false, zahl: "kein Bild", grund: "ROT: kein Bild" }, L, F18, offenWeil(" — die Station nennt kein Maß")],
+                ["Abbruch mit weitem Maß unter f 1,8 → UNGEMESSEN, der Abbruch vorn, nie entlastet", zeitSt, abbruch, L, F18, (u) => u.ungemessen === true && u.grund.startsWith(abbruch.grund + " · Last: ") && !/entlastet/.test(u.grund)],
+                ["Referenz fehlt × ROT 990 → UNGEMESSEN beim Grund", zeitSt, rotM(M(990, 33)), L, { fehler: "die Fäden warfen" }, (u) => u.ungemessen === true && /^Last ohne Referenz \(die Fäden warfen\)/.test(u.grund)],
+                ["die Ruhe lernt (3 von 10 Fahrten) × ROT 990 → UNGEMESSEN beim Grund", zeitSt, rotM(M(990, 33)), L, referenzBericht(LAST, LAST, { ...RUHE, n: 3 }, "allein"), (u) => u.ungemessen === true && u.grund.startsWith("Last ohne Referenz (die Ruhe des Rechners lernt (3 von 10 Fahrten))") && u.referenz.vor.ein === 180],
+                ["Referenz fehlt × GRÜN → GRÜN", zeitSt, { gruen: true, zahl: "t 30", mass: [M(30, 33)] }, L, { fehler: "die Fäden warfen" }, (u) => u.gruen === true && !u.ungemessen && /^GRÜN trotz Last ohne Referenz/.test(u.grund)],
             ];
-            const bricht2 = (U) => S.filter(([, e, b, soll]) => { const u = U(zeitSt, e, b); return !(soll(u) && u.fremd === b); }).map(([n]) => n); // prettier-ignore
-            const ohneMass = (e) => { const x = { ...e }; delete x.mass; return x; };
-            const kVon = (b) => 1 + b.effekt * b.fensterKerne;
-            const umgedreht2 = {
-                "verwirft (jedes ROT unter Last UNGEMESSEN — das Gesetz bis 10.11.)": (st, e, b) => fremdUrteil(st, ohneMass(e), b),
-                "ungeeicht (das Maß am rohen Wert, k = 1)": (st, e, b) => ({ ...fremdUrteil(st, e, { ...b, effekt: 1e-9 }), fremd: b }),
-                "falsch herum (Wert × k)": (st, e, b) => ({ ...fremdUrteil(st, { ...e, mass: (e.mass || []).map((m) => ({ ...m, wert: m.richtung === "≥" ? m.wert / kVon(b) ** 2 : m.wert * kVon(b) ** 2 })) }, b), fremd: b }),
-                "fest geeicht (die Last erklärte die Befehle)": (st, e, b) => fremdUrteil(st, { ...e, mass: (e.mass || []).map((m) => ({ ...m, fest: undefined })) }, b),
-                "taub ohne Riss (ein ROT ohne reißendes Maß bleibt ROT)": (st, e, b) => (!massVon(e.mass).some((m) => massReisst(m)) ? { ...e, fremd: b } : fremdUrteil(st, e, b)),
-                "streng (GRÜN unter Last UNGEMESSEN)": (st, e, b) => { const u = fremdUrteil(st, e, b); return /^GRÜN trotz /.test(u.grund || "") ? { ...u, gruen: false, ungemessen: true } : u; }, // prettier-ignore
-                "eicht den Abbruch (sein Grund fällt)": (st, e, b) => fremdUrteil(st, brachAb([e]) ? { ...e, grund: "ROT: " + e.zahl } : e, b),
-                "eicht auch unter der Schwelle": (st, e, b) => ({ ...fremdUrteil(st, e, { ...b, fensterKerne: Math.max(b.fensterKerne, b.schwelle) }), fremd: b }),
+            const bricht = (U) => S.filter(([, st, e, b, r, soll]) => { const u = U(st, e, b, r); return !(soll(u) && u.fremd === b); }).map(([n]) => n); // prettier-ignore
+            const mitF = (r, f) => (r && !r.fehler ? { ...r, f, fEin: f, fAlle: f } : r);
+            const mutanten = {
+                "die alte Regel (pauschaler Wurf: jede Zeit-Station über 0,50 fremden Kernen UNGEMESSEN „Fremd-Last“)": (st, e, b, r) => (st.zeit === true && !b.blind && b.fensterKerne >= 0.5
+                    ? { ...e, fremd: b, referenz: r, gruen: false, ungemessen: true, grund: "Fremd-Last: " + fremdNamen(b), zahl: "Fremd-Last" } : fremdUrteil(st, e, b, r)),
+                "die Referenz liefert immer f 1": (st, e, b, r) => fremdUrteil(st, e, b, mitF(r, 1)),
+                "winkt „≥“ unter Last GRÜN durch (Last mache größer)": (st, e, b, r) => (massVon(e.mass).some((m) => m.richtung === "≥") && r && !r.fehler && r.f > REFERENZ_RUHE_BAND
+                    ? { ...e, fremd: b, referenz: r, gruen: true, grund: "GRÜN trotz Last" } : fremdUrteil(st, e, b, r)),
+                "falsch herum bei „≥“ (geteilt statt mal f)": (st, e, b, r) => fremdUrteil(st, { ...e, mass: (e.mass || []).map((m) => (m.richtung === "≥" ? { ...m, wert: m.wert / (r.f * r.f) } : m)) }, b, r),
+                "streng (GRÜN unter Last UNGEMESSEN)": (st, e, b, r) => { const u = fremdUrteil(st, e, b, r); return /^GRÜN trotz /.test(u.grund || "") ? { ...u, gruen: false, ungemessen: true } : u; }, // prettier-ignore
+                "taub für Schwankung (nie eine Wiederholung)": (st, e, b, r) => fremdUrteil(st, e, b, r && !r.fehler ? { ...r, schwankt: false } : r),
+                "blind für die Art (auch die Bild-Station urteilt die Last)": (st, e, b, r) => ({ ...fremdUrteil({ ...st, zeit: true }, e, b, r), fremd: b }),
+                "ohne ausgebliebenes Ereignis (kein ab)": (st, e, b, r) => fremdUrteil(st, { ...e, mass: (e.mass || []).filter((m) => m.wert != null) }, b, r),
+                "blind für die Karte (GPU-Station wie CPU)": (st, e, b, r) => fremdUrteil({ ...st, gpu: false }, e, b, r),
+                "Karte für jedes Maß (cpu überhört)": (st, e, b, r) => fremdUrteil(st, { ...e, mass: (e.mass || []).map((m) => { const x = { ...m }; delete x.cpu; return x; }) }, b, r), // prettier-ignore
+                "blind für den Stoß (nur die Fahrten)": (st, e, b, r) => ({ ...fremdUrteil(st, e, { ...b, spannen: undefined }, r), fremd: b }),
+                "fest geteilt": (st, e, b, r) => fremdUrteil(st, { ...e, mass: (e.mass || []).map((m) => ({ ...m, fest: undefined })) }, b, r),
+                "taub ohne Maß (ein ROT ohne Zahl bleibt ROT)": (st, e, b, r) => (!massVon(e.mass).length ? { ...e, fremd: b, referenz: r } : fremdUrteil(st, e, b, r)),
+                "entlastet den Abbruch (sein Grund fällt)": (st, e, b, r) => fremdUrteil(st, brachAb([e]) ? { ...e, grund: "ROT: " + e.zahl } : e, b, r),
+                "ohne Referenz wie Ruhe": (st, e, b, r) => fremdUrteil(st, e, b, r && r.fehler ? F1 : r),
             };
-            const gebrochen2 = bricht2(fremdUrteil), faellt2 = Object.entries(umgedreht2).map(([n, U]) => [n.split(" (")[0], bricht2(U)]);
-            pruef("FREMD-LAST DAS GESETZ (10.11.) an gesetzten Eingaben (Eichung der Radeon, 2 Kerne fremd → ÷ " + fzW(kR) + "): knapp → UNGEMESSEN mit beiden Zahlen, weit → ROT trotz Last, fest → ROT, „≥“ geeicht mal k, ohne Maß und ohne Riss UNGEMESSEN, GRÜN zählt, der Abbruch bleibt; " +
-                S.length + " Sätze, " + faellt2.length + " umgedrehte Gesetze fallen je an ihrem Satz, jeder Satz an einem von ihnen",
-                gebrochen2.length === 0 && faellt2.every(([, s]) => s.length > 0) && S.every(([n]) => faellt2.some(([, s]) => s.includes(n))),
-                JSON.stringify(gebrochen2.length ? { gebrochen: gebrochen2, beispiel: fremdUrteil(zeitSt, ...S.find(([n]) => n === gebrochen2[0]).slice(1, 3)).grund }
-                    : faellt2.map(([n, s]) => n + " fällt an " + (s.length ? s.length + " (" + s[0] + ")" : "KEINEM"))));
+            const gebrochen = bricht(fremdUrteil), faellt = Object.entries(mutanten).map(([n, U]) => [n.split(" (")[0], bricht(U)]);
+            const alt = faellt[0][1];
+            pruef("LAST DAS GESETZ an gesetzten Eingaben (Ruhe 100/100 ms, f 1,8 · 1,3 · 1 · Stoß 3): " + S.length + " Sätze, " + faellt.length +
+                " Mutanten fallen je an ihrem Satz, jeder Satz an einem von ihnen; die alte Regel fällt an (a) und (b), f ≡ 1 an (c)",
+                gebrochen.length === 0 && faellt.every(([, s]) => s.length > 0) && S.every(([n]) => faellt.some(([, s]) => s.includes(n))) &&
+                    alt.some((n) => n.startsWith("(a)")) && alt.some((n) => n.startsWith("(b)")) && faellt[1][1].some((n) => n.startsWith("(c)")),
+                JSON.stringify(gebrochen.length ? { gebrochen, beispiel: (() => { const x = S.find(([n]) => n === gebrochen[0]); return fremdUrteil(x[1], x[2], x[3], x[4]).grund; })() } // prettier-ignore
+                    : faellt.map(([n, s]) => n + " fällt an " + (s.length ? s.length + " (" + s[0] + ")" : "KEINEM"))));
+            // DAS MASS des ausgebliebenen Ereignisses: massVon trägt `ab` nur ohne Wert und nur an „≤“, massFehl rötet ein GRÜN darüber
+            const mv = massVon([M(null, 500, { ab: 8000 }), M(null, 30, { ab: 5, richtung: "≥" }), M(NaN, 500)]);
+            pruef("LAST das ausgebliebene Ereignis im Maß: `ab` an „≤“ trägt (≥ 8000), an „≥“ und ohne ab fällt es; ein GRÜN über einem ausgebliebenen Maß ist ein Widerspruch",
+                mv.length === 1 && mv[0].ab === 8000 && mv[0].wert === null && massReisst(mv[0]) && /GRÜN mit reißendem Maß t ms ≥ 8000/.test(String(massFehl({ gruen: true, mass: [M(null, 500, { ab: 8000 })] }))) &&
+                    /schief/.test(String(massFehl({ gruen: false, mass: [M(3, 500, { ab: 8000 })] }))),
+                JSON.stringify(mv));
+            // DER BERICHT DER REFERENZ: f je Komponente gegen die Ruhe, nie unter 1, schwankt über 25 %; die Ruhe aus den Fahrten (p10 ab
+            // 10 Fahrten, sonst der Bestwert, nur die letzten REFERENZ_RUHE_TAGE)
+            const alt20 = new Date(Date.now() - 20 * 864e5).toISOString(), heute = new Date().toISOString();
+            const werte = [...Array(20)].map((_, i) => ({ ein: 100 + 10 * i, alle: 200 + 10 * i, zeit: heute }));
+            const rh = referenzRuheAus([...werte, { ein: 1, alle: 1, zeit: alt20 }]), rh3 = referenzRuheAus(werte.slice(5, 8));
+            const rb = referenzBericht({ ein: 90, alle: 300 }, { ein: 95, alle: 310 }, { ein: 100, alle: 200 }, "allein");
+            pruef("LAST die Ruhe und f: p10 aus 20 Fahrten (110/210, die 20 Tage alte fällt), der Bestwert aus 3; f je Komponente (Faden 1, alle 1,55), schwankt bei > 25 %",
+                rh.ein === 110 && rh.alle === 210 && rh.n === 20 && rh3.ein === 150 && rh3.alle === 250 && rb.fEin === 1 && rb.fAlle === 1.55 && rb.f === 1.55 && rb.schwankt === false &&
+                    referenzBericht({ ein: 100, alle: 100 }, { ein: 130, alle: 100 }, RUHE, "x").schwankt === true && referenzBericht(null, STILL, RUHE, "x").fehler,
+                JSON.stringify([rh, rh3, rb]));
+            // DIE SPANNEN DES BERICHTS (fremdBericht): je Takt die fremden Kerne; vor und nach das Mittel der deckenden Takte, die Station ihre Spitze
+            const sp = fremdBericht({ tA: 0, reihe: [[2000, 0.2], [4000, 4], [6000, 0.2]], letzt: new Map(), erst: new Map() }, 5600, 2000, null,
+                { vor: [500, 1500], station: [2100, 3900], nach: [4500, 5500] }).spannen;
+            const sRadeon = stossF({ rechnerKerne: 24, s: 10, eigenS: 80 }, 11.15), sOmen = stossF({ rechnerKerne: 12, s: 10, eigenS: 60 }, 7);
+            pruef("LAST die Spannen des Zeugen: vor 0,1 · Station Spitze 2 · nach 0,1 Kerne fremd; der Stoß teilt den Rechner (Radeon 24 Kerne, 8 eigen, 11,15 fremd → 1,465; OMEN 12, 6 eigen, 7 fremd → 1,583)",
+                sp && sp.vor === 0.1 && sp.station === 2 && sp.nach === 0.1 && sRadeon === 1.465 && sOmen === 1.583, JSON.stringify([sp, sRadeon, sOmen]));
         }
         // DER LESER DES WINDOWS-ZEUGEN an gesetzten Zeilen (zeugenLeser — derselbe, der den PowerShell-Lauf liest; kein Prozess, keine
         // Wanduhr): zwei Takte, der zweite 10 s hinter dem ersten und in zwei Stücken, mitten in ihrer Zeile. Die fremde PID 77 hängt an einem
         // toten Vermittler und trägt den Namen ihrer Kommandozeile (nur der erste Takt bringt die C-Zeile), das Leerlauf-Konto (PID 0)
         // rechnet 240 Kerne und zählt nie, die Wurzel und ihr Kind (3 Kerne — derselbe Busy als eigene Station) sind eigen, System ist Diener,
-        // der HP-Dienst (AppHelperCap.exe, 2 Kerne, der Name des Win32_Process) ist Gerät (das Gesetz der Fremd-Last, 10.11.)
+        // der HP-Dienst (AppHelperCap.exe, 2 Kerne, der Name des Win32_Process) ist Gerät
+        const ATT = "punkte-fremdlast-attrappe";
         const hns = (s) => Math.round(s * 1e7);
         const zeilen = (t, s, fremdK, mitC) => ["T\t" + t,
             "P\t0\t0\t" + hns(900 + 240 * s) + "\t0\tSystem Idle Process",
@@ -5701,7 +5808,7 @@ async function selbsttest(o = {}) {
             "E", ""].join("\r\n");
         const gelesen = async (fremdK) => {
             let lies2 = null;
-            const z = fremdZeuge({ quelle: { start: (gib) => (lies2 = zeugenLeser(gib)), stop() {} }, taktMs: 500, wurzel: WZ, eich: FREMD_HIER });
+            const z = fremdZeuge({ quelle: { start: (gib) => (lies2 = zeugenLeser(gib)), stop() {} }, taktMs: 500, wurzel: WZ });
             const t = Date.now();
             lies2(zeilen(t, 0, fremdK, true));
             const f = z.beginn(), zwei = zeilen(t + 10000, 10, fremdK, false), mitte = zwei.indexOf("P\t77\t") + 9;
@@ -5711,18 +5818,12 @@ async function selbsttest(o = {}) {
             z.stop();
             return b;
         };
-        const lHoch = await gelesen(hochK), lTief = await gelesen(tiefK), NAME = "node.exe -e while(1){} " + ATT;
-        const uHoch = fremdUrteil(zeitSt, rotE, lHoch), uTief = fremdUrteil(zeitSt, rotE, lTief);
-        pruef("FREMD-LAST der Leser des Windows-Zeugen an gesetzten Zeilen (zeugenLeser, zwei Takte im Abstand von 10 s): der fremde Prozess trägt den Namen seiner Kommandozeile über den Takt hinweg, das Leerlauf-Konto zählt nie, der eigene Baum, der Diener und der HP-Dienst (Gerät) sind nie fremd; über der Schwelle wird ROT ohne Maß UNGEMESSEN mit seinem Namen, darunter bleibt ROT",
-            JSON.stringify(lHoch.namen) === JSON.stringify([[NAME, 10 * hochK]]) && lHoch.fensterKerne === hochK && lHoch.s === 10 && lHoch.takte === 1 && lHoch.eigenS === 31 &&
-            JSON.stringify(lHoch.diener) === JSON.stringify([["System", 20]]) && lHoch.schwelle === TF &&
-            JSON.stringify(lHoch.geraet) === JSON.stringify([["AppHelperCap.exe", 20]]) && lHoch.geraetS === 20 &&
-            uHoch.ungemessen === true && uHoch.grund.startsWith("Fremd-Last: " + NAME + " " + fz1(10 * hochK) + " CPU-s — " + fz2(hochK) + " Kerne fremd im dichtesten ") &&
-            JSON.stringify(lTief.namen) === JSON.stringify([[NAME, +(10 * tiefK).toFixed(2)]]) && lTief.fensterKerne === tiefK && tiefK < TF &&
-            uTief.gruen === false && !uTief.ungemessen && uTief.grund === "ROT: n 3" && uTief.fremd === lTief,
-            JSON.stringify([uHoch.grund, lHoch, lTief.fensterKerne]));
-        // DER ECHTE ZEUGE der Plattform (Linux /proc, Windows der PowerShell-Lauf) liest das lebende Gerät: ein STAND, nie ein Urteil — kein
-        // pruef, kein gestellter Busy (er wäre fremde Last für jede Messung nebenan)
+        const lHoch = await gelesen(2), NAME = "node.exe -e while(1){} " + ATT;
+        pruef("LAST der Leser des Windows-Zeugen an gesetzten Zeilen (zeugenLeser, zwei Takte im Abstand von 10 s): der fremde Prozess trägt den Namen seiner Kommandozeile über den Takt hinweg, das Leerlauf-Konto zählt nie, der eigene Baum, der Diener und der HP-Dienst (Gerät) sind nie fremd",
+            JSON.stringify(lHoch.namen) === JSON.stringify([[NAME, 20]]) && lHoch.fensterKerne === 2 && lHoch.s === 10 && lHoch.takte === 1 && lHoch.eigenS === 31 &&
+                JSON.stringify(lHoch.diener) === JSON.stringify([["System", 20]]) && JSON.stringify(lHoch.geraet) === JSON.stringify([["AppHelperCap.exe", 20]]) && lHoch.geraetS === 20,
+            JSON.stringify(lHoch));
+        // DER ECHTE ZEUGE der Plattform (Linux /proc, Windows der PowerShell-Lauf) liest das lebende Gerät: ein STAND, nie ein Urteil
         const echtZ = fremdZeuge({ taktMs: 500 });
         await echtZ.bereit();
         const echtF = echtZ.beginn();
@@ -5730,23 +5831,7 @@ async function selbsttest(o = {}) {
         const echtB = await echtZ.ende(echtF);
         echtZ.stop();
         console.log("  STAND der echte Zeuge (" + process.platform + ", Takt 500 ms, kein Urteil): " + (echtB.blind ? "blind — " + echtB.blind + " (" + echtB.takte + " Takte in 1,5 s)"
-            : fz2(echtB.fensterKerne) + " Kerne fremd im Fenster (" + echtB.takte + " Takte in " + fz1(echtB.s) + " s; Schwelle " + fz2(echtB.schwelle) + ")" + (echtB.namen.length ? " · " + fremdNamen(echtB) : "")));
-        // DIE SCHWELLE JE RECHNER (fremdEich): jeder Eintrag findet sich an seiner Plattform, seinen Kernen und seiner CPU; jede Schwelle
-        // hält den Fehler unter 3 % (schwelle · effekt ≤ 0,03); ein ungeeichter Rechner (dieselbe Plattform, andere Kerne) urteilt an der
-        // strengsten geeichten Schwelle und nennt sich „ungeeicht“; DIESER Rechner urteilt an FREMD_HIER
-        const fremder = fremdEich({ plattform: "win32", kerne: 7, cpu: "Attrappe" });
-        const strengste = Math.min(...FREMD_EICH.map((x) => x.schwelle));
-        const omen = fremdEich({ plattform: "win32", kerne: 12, cpu: "Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz " });
-        pruef("FREMD-LAST die Schwelle je Rechner (fremdEich): " + FREMD_EICH.map((x) => x.ort + " " + fz2(x.schwelle)).join(" · ") + "; hier " + FREMD_HIER.ort,
-            FREMD_EICH.every((x) => fremdEich({ plattform: x.plattform, kerne: x.kerne, cpu: x.cpu || "?" }) === x && x.schwelle * x.effekt <= 0.03 + 1e-9) &&
-            fremder.ungeeicht === true && fremder.schwelle === strengste && /^ungeeicht \(win32, 7 Kerne, Attrappe\)/.test(fremder.ort) &&
-            fremder.effekt === FREMD_EICH.find((x) => x.schwelle === strengste).effekt &&
-            FREMD_SCHWELLE_KERNE === FREMD_HIER.schwelle && fremdEich() === FREMD_HIER,
-            JSON.stringify([fremder, FREMD_HIER]));
-        pruef("FREMD-LAST DIE OMEN (GTX 1060, i7-8750H, 12 Kerne) urteilt bis zu ihrer Messung mit der Eichung der Radeon und sagt es („geeicht nach Radeon“), nie an der Schwelle des Containers; ihr Eintrag trägt die Vorschrift ihrer Messung",
-            omen !== fremder && !omen.ungeeicht && omen.nach === FREMD_RADEON.ort && omen.effekt === FREMD_RADEON.effekt && omen.schwelle === FREMD_RADEON.schwelle &&
-            /geeicht nach Radeon$/.test(omen.ort) && /fremdlast --sek 40/.test(omen.vorschrift) && /--nur ankunft\.K1#1/.test(omen.vorschrift) && omen.leerlauf === 0.63,
-            JSON.stringify(omen));
+            : fz2(echtB.fensterKerne) + " Kerne fremd im Fenster (" + echtB.takte + " Takte in " + fz1(echtB.s) + " s)" + (echtB.namen.length ? " · " + fremdNamen(echtB) : "")));
     }
     // (5m) DER MESSORT (pm-fremdlast; keinUrteil (d), die EINE Marke MESSORT_MARKE): die ECHTE Folge von schatten.K1#2 (stationen/g3.js)
     // gegen eine Werkbank-Attrappe im Baum — der muss-Schritt `buehne` wirft „Messort buehne: nach dem Wechsel steht die Seite nicht in
@@ -6958,8 +7043,9 @@ if (require.main === module) {
             process.exitCode = fehler.length ? 1 : 0;
         } else if (verb === "selbsttest") process.exitCode = await selbsttest(o);
         else if (verb === "fremdlast") process.exitCode = await fremdlastCli(o);
+        else if (verb === "referenz") process.exitCode = await referenzCli(o);
         else {
-            console.log("Verben: run --sha <sha> --geraet radeon|gtx|headless [--nur id,id] [--offen] [--eich] [--trocken] [--bahnen 3] [--port-basis 7700] [--farm <name>] · gruppen --geraet <g> [--nur id,id] · scheiben --sha <sha> --geraet headless [--jobs 12] [--offen|--nur …] · vereine --sha <voll> --geraet headless --farm <name> --teile <dir> [--scheiben <json>] [--beginn <s>] · beruehrt --basis <sha> --kopf <sha> [--json] · buchen --kopf <sha> [--trocken] · liste [--kopf <sha>] · eichtafel --geraet radeon|gtx [--sha a,b] [--schreibe] · behalte --sha <sha> --geraet <g> --bis <ISO> · selbsttest [--ohne 3c] · fremdlast [--sek 60] [--takt 2000]");
+            console.log("Verben: run --sha <sha> --geraet radeon|gtx|headless [--nur id,id] [--offen] [--eich] [--trocken] [--bahnen 3] [--port-basis 7700] [--farm <name>] · gruppen --geraet <g> [--nur id,id] · scheiben --sha <sha> --geraet headless [--jobs 12] [--offen|--nur …] · vereine --sha <voll> --geraet headless --farm <name> --teile <dir> [--scheiben <json>] [--beginn <s>] · beruehrt --basis <sha> --kopf <sha> [--json] · buchen --kopf <sha> [--trocken] · liste [--kopf <sha>] · eichtafel --geraet radeon|gtx [--sha a,b] [--schreibe] · behalte --sha <sha> --geraet <g> --bis <ISO> · selbsttest [--ohne 3c] · fremdlast [--sek 60] [--takt 2000] · referenz [--n 5] [--umfeld allein|sitzung]");
             process.exitCode = 2;
         }
     })().catch((e) => {
