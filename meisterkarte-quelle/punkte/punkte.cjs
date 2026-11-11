@@ -6308,16 +6308,17 @@ async function selbsttest(o = {}) {
             ea.gruen === true && !!ea.eich && ea.eich.sek === 2 && ea.eich.s >= 4 && ea.eich.s < 12 && !!r16.kopf.eich && r16.kopf.eich.fahrtMaxS === FAHRT_MAX_S,
             JSON.stringify([ea, r16.kopf.eich]));
         // DER ZEUGE IST EIN LEBENSZEICHEN (R6 nach Konsum; Radeon 11.11. unter Last: die lebende Probe oben fiel „Stille seit 2 s nach
-        // 2 s“, weil der Konsum-Zeuge vor ihrer ersten Zeile lud): eine STUMME Probe, deren node-Prozess erst 0,5 s nach dem Start
-        // anläuft und 1,8 s rechnet, fällt an der Leine (Grund 2 s, Stille 2 s) nicht — das Einhängen des Zeugen (`.offen`, „bereit“) und
-        // sein Abschluss („endet“) zählen wie eine Zeile; dieselbe Stille ohne node-Prozess (die Mutante) fällt beim Namen
+        // 2 s“, weil der Konsum-Zeuge vor ihrer ersten Zeile rechnete): eine STUMME Probe aus zwei node-Prozessen nacheinander (je 1,5 s)
+        // fällt an der Leine (Grund 2 s, Stille 3 s) nicht — Start und Ende jedes Prozesses meldet der Zeuge (`.offen`, „bereit“,
+        // „endet“), und jedes zählt wie eine Zeile; dieselbe Stille ohne node-Prozess (die Mutante) fällt nach 3 s beim Namen. Die
+        // Fristen tragen einen Prozess-Start von bis zu 2,7 s (das ausgelastete Mess-Gerät)
         if (findeBash()) {
-            const stumm = ["bash", "-c", "sleep 0.5; exec node -e \"setTimeout(() => require('fs').writeFileSync(process.argv[1], JSON.stringify({ n: 0 })), 1800)\" \"$0\"", "{AUS}"];
-            const ohneZeugen = ["bash", "-c", "sleep 2.3; echo '{\"n\":0}' > \"$0\"", "{AUS}"];
-            const rL = await lauf([[S("a.K1", 1, { befehl: stumm, sek: 2 }, nN)], [S("b.K1", 1, { befehl: ohneZeugen, sek: 2 }, nN)]], "gut", null, null, false, { stilleS: 2 });
+            const stumm = ["bash", "-c", "sleep 0.3; node -e \"setTimeout(() => {}, 1500)\"; exec node -e \"setTimeout(() => require('fs').writeFileSync(process.argv[1], JSON.stringify({ n: 0 })), 1500)\" \"$0\"", "{AUS}"];
+            const ohneZeugen = ["bash", "-c", "sleep 3.4; echo '{\"n\":0}' > \"$0\"", "{AUS}"];
+            const rL = await lauf([[S("a.K1", 1, { befehl: stumm, sek: 2 }, nN)], [S("b.K1", 1, { befehl: ohneZeugen, sek: 2 }, nN)]], "gut", null, null, false, { stilleS: 3 });
             const [la, lb] = [rL.es["a.K1#1"] || {}, rL.es["b.K1#1"] || {}];
-            pruef("LEBENSZEICHEN DES ZEUGEN: die stumme Probe mit spät anlaufendem node-Prozess misst GRÜN (sein Einhängen und sein Abschluss zählen an der Leine); dieselbe Stille ohne Zeugen fällt beim Namen (Mutante)",
-                la.gruen === true && !la.ungemessen && lb.ungemessen === true && /^Deckel 2 s gerissen: Stille seit [\d.]+ s nach [\d.]+ s /.test(lb.grund || ""), JSON.stringify([la.gruen, la.zahl, la.s, lb.ungemessen, lb.grund]));
+            pruef("LEBENSZEICHEN DES ZEUGEN: die stumme Probe aus zwei node-Prozessen (über 3 s ohne Zeile) misst GRÜN — Start und Ende jedes Prozesses zählen an der Leine; dieselbe Stille ohne Zeugen fällt nach 3 s beim Namen (Mutante)",
+                la.gruen === true && !la.ungemessen && la.s >= 3.2 && lb.ungemessen === true && /^Deckel 2 s gerissen: Stille seit [\d.]+ s nach [\d.]+ s /.test(lb.grund || ""), JSON.stringify([la.gruen, la.zahl, la.s, lb.ungemessen, lb.grund]));
         }
         // DIE AUSWAHL DER EICH-FAHRT (eichOffen): eine Probe mit Zahl am SHA und heutigem Abdruck fällt heraus; ohne Zahl, mit fremdem Abdruck
         // (die Probe änderte sich) oder an einem anderen SHA bleibt sie — die nächste Eich-Fahrt misst den Rest
