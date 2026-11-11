@@ -1528,7 +1528,7 @@ class AnazhRealm_bau_vorlagen {
     //            Orts), tiefe m, heiz J/kg (Heizwert), mx (die Erlöschungs-Feuchte) — die Brennstoff-Modelle von Anderson 1982:
     //            kurzes Gras (1) σ 3 500/ft, 0,034 lb/ft², Mx 12 % — die Tiefe ist die Halm-Höhe der Wiese (GRASS_BLADE_H, die
     //            der Wind beugt); Laub-Streu (9) σ 2 500/ft, 0,134 lb/ft², 0,2 ft, Mx 25 %; Heizwert 8 000 Btu/lb. Die Zünd-Wärme liest c und tZuend derselben Zeile, die Verdampfung L_v die Zeile wasser
-    //   E        Pa — die Steifigkeit, aus der ein Treffer klingt (klang trefferPaar; die Metalle lesen MAT.E der Schmiede) und die
+    //   E        Pa — die Steifigkeit, aus der ein Treffer klingt (klang trefferPaar: das Band des Kontakts und, mit ρ, der Ton √(E/ρ)), die ein Glied vor dem Knicken trägt (`_failsUnderLoad`), und die
     //            HÄRTE, aus der die Ferse auf dem Stoff schlägt (klang SCHRITT: Band und Pegel des Hertz-Kontakts)
     //   eta      der Verlustfaktor η — die DÄMPFUNG, mit der der Stoff nachklingt (klang SCHRITT: τ = 1/(π·η·f), ein Korn mit Q = 1/η)
     //   koernung m — die KÖRNUNG eines losen Bodens (null: fest): die Dicke dessen, was unter dem Fuß zerdrückt wird (klang SCHRITT:
@@ -1549,29 +1549,18 @@ class AnazhRealm_bau_vorlagen {
         if (!(leib > 0)) AnazhRealm._kernPflichtBruch("koerper:LEIB.dichteKgM3");
         const FG = AnazhRealm._fahrGesetz();
         const im = (o, k) => ({ get: () => o[k], set: (v) => (o[k] = v) });
-        const RHO = {
-            stein: 2650,
-            holz: im(sc.RHO, "holz"),
-            eisen: im(sc.MAT.eisen, "rho"),
-            bronze: im(sc.MAT.bronze, "rho"),
-            stahl: im(sc.MAT.stahl, "rho"),
-            quarz: 2650,
-            leder: 860,
-            knochen: 1900,
-            fleisch,
-            leib,
-            federn: 50,
-            schuppen: 1300,
-            glut: 400,
-            laub: 300,
-            erde: 1500,
-            kraut: 400,
-            essenz: 1000,
-            blech: FG.huelleDichte * FG.wasserRho,
-            gras: 350,
-            wasser: im(globalThis.__vehicleCore.FAHR.wasser, "rho"),
-            eis: 917,
-        };
+        // DIE PHYSIK DER ZEILE IST DAS STOFF-GESETZ (w28-stoff-gesetz, schmiede-core `STOFF_GESETZ`): Dichte, E-Modul, Streck- und
+        // Bruchfestigkeit, Brechzahl und Abbe-Zahl, Wärme, Schmelze und Dämpfung jedes Stoffs sind EIN Zugriff auf seine Zeile
+        // dort — Stahl, Eisen und Bronze folgen aus ihren Teilen (Eisen + Zementit, Kupfer + Zinn). Bis w28 standen ρ hier
+        // (RHO, 17 Zahlen) und c, T_schmelz, E und η in der Tafel SI darunter (84 Zahlen), die Metalle lasen MAT der Schmiede.
+        // Vier Dichten sind der Eintrag eines anderen Gesetzbuchs (`rhoVon` der Zeile), der Wirt verbindet sie (`verbinde`):
+        const SG = sc.STOFF_GESETZ;
+        if (!SG || !SG.zeile || !SG.SPALTEN || !SG.verbinde) AnazhRealm._kernPflichtBruch("schmiede:STOFF_GESETZ");
+        const wert = (v) => ({ get: () => v, set: (n) => (v = n) });
+        SG.verbinde("fleisch", wert(fleisch));
+        SG.verbinde("leib", wert(leib));
+        SG.verbinde("blech", wert(FG.huelleDichte * FG.wasserRho));
+        SG.verbinde("wasser", im(globalThis.__vehicleCore.FAHR.wasser, "rho"));
         // DIE HAFTUNG DES RADS (fahrzeug.K1): je Stoff, auf dem ein Rad stehen kann, μ des Reifens trocken und voll nass (`muRad`,
         // `muRadNass`; Bezug der Asphalt des Labors, μ 1) — Tafel-Werte der Reibung Reifen auf Fahrbahn: verdichtete Erde
         // 0,7/0,45, Gras 0,4/0,2, rauer Fels 0,8/0,55, Bohle 0,65/0,4, Metall 0,6/0,35, Laubstreu 0,45/0,2. Leser: der Reibkreis am
@@ -1579,8 +1568,9 @@ class AnazhRealm_bau_vorlagen {
         // Beutel, auch nicht: die Wiese unter Rad, Huf und Schritt ist EINE Zeile, gras. μ des Leibs (`mu`) und μ des Rads sind
         // zwei Paare (Huf auf Fels 0,6, Reifen auf Fels 0,8), je eine Spalte derselben Zeile.
         // DIE STEIFIGKEIT (halten.K2): E in Pa, der Elastizitäts-Modul — der Treffer klingt aus ihm (klang trefferPaar, Hertz: der
-        // Kontakt zweier Stoffe ist so kurz, wie E* = 1/(1/E₁ + 1/E₂) es erlaubt). Die Metalle lesen MAT.E der Schmiede (null
-        // hier), eine Flüssigkeit trägt ihren Kompressions-Modul. Tafel-Werte (Engineering ToolBox): Granit 50 GPa, Eiche längs
+        // Kontakt zweier Stoffe ist so kurz, wie E* = 1/(1/E₁ + 1/E₂) es erlaubt). Die Zahl steht seit w28 in der
+        // Zeile des Stoff-Gesetzes (schmiede-core; die Metalle folgen dort aus ihren Teilen), eine Flüssigkeit trägt ihren
+        // Kompressions-Modul. Tafel-Werte (Engineering ToolBox): Granit 50 GPa, Eiche längs
         // 11 GPa, Quarzglas 72 GPa, Leder 0,2 GPa, kortikaler Knochen 18 GPa, Haut und Gewebe 1 MPa, Keratin (Federn, Schuppen)
         // 2,5 GPa, Holzkohle 3 GPa, Blatt und Halm 50 MPa, verdichteter Boden 50 MPa, Aluminium (die Hülle) 70 GPa, Wasser
         // (K) 2,2 GPa, Eis 9 GPa.
@@ -1593,28 +1583,28 @@ class AnazhRealm_bau_vorlagen {
         // Stängel des Krauts 1 mm, die Brocken der Glut 3 mm, der Tropfen des Spritzers 3 mm; ein fester Stoff trägt keine.
         // prettier-ignore
         const SI = {
-            //         μ      c     T_zünd  T_schmelz  μ Rad  nass  E        η       d
-            stein:    [0.6,  790,  null,   1500,      0.8,   0.55, 5e10,    0.01,   null],
-            holz:     [0.6,  1700, 573,    null,      0.65,  0.4,  1.1e10,  0.01,   null],
-            eisen:    [0.5,  449,  null,   1811,      0.6,   0.35, null,    0.002,  null],
-            bronze:   [0.5,  380,  null,   1223,      0.6,   0.35, null,    0.001,  null],
-            stahl:    [0.5,  490,  null,   1723,      0.6,   0.35, null,    0.0003, null],
-            quarz:    [0.6,  740,  null,   1986,      0.6,   0.35, 7.2e10,  0.001,  null],
-            leder:    [0.6,  1500, 573,    null,      null,  null, 2e8,     0.1,    null],
-            knochen:  [0.5,  1300, null,   null,      null,  null, 1.8e10,  0.02,   null],
-            fleisch:  [0.5,  3500, null,   null,      null,  null, 1e6,     0.3,    null],
-            leib:     [0.5,  3500, null,   null,      null,  null, 1e6,     0.3,    null],
-            federn:   [0.4,  1500, 573,    null,      null,  null, 2.5e9,   0.1,    null],
-            schuppen: [0.4,  1500, null,   null,      null,  null, 2.5e9,   0.05,   null],
-            glut:     [0.6,  1000, 623,    null,      0.6,   0.45, 3e9,     0.05,   0.003],
-            laub:     [0.4,  1800, 523,    null,      0.45,  0.2,  5e7,     0.3,    0.000244],
-            erde:     [0.6,  800,  null,   null,      0.7,   0.45, 5e7,     0.2,    0.002],
-            kraut:    [0.4,  1800, 533,    null,      null,  null, 5e7,     0.3,    0.001],
-            essenz:   [null, 4186, null,   null,      null,  null, 2.2e9,   0.03,   0.003],
-            blech:    [0.5,  460,  null,   1723,      0.6,   0.35, 7e10,    0.001,  null],
-            gras:     [0.6,  1800, 533,    null,      0.4,   0.2,  5e7,     0.3,    0.000348],
-            wasser:   [null, 4186, null,   273.15,    null,  null, 2.2e9,   0.03,   0.003],
-            eis:      [0.05, 2050, null,   null,      null,  null, 9e9,     0.01,   null],
+            //         μ     T_zünd  μ Rad  nass  d
+            stein:    [0.6,  null,   0.8,   0.55, null],
+            holz:     [0.6,  573,    0.65,  0.4,  null],
+            eisen:    [0.5,  null,   0.6,   0.35, null],
+            bronze:   [0.5,  null,   0.6,   0.35, null],
+            stahl:    [0.5,  null,   0.6,   0.35, null],
+            quarz:    [0.6,  null,   0.6,   0.35, null],
+            leder:    [0.6,  573,    null,  null, null],
+            knochen:  [0.5,  null,   null,  null, null],
+            fleisch:  [0.5,  null,   null,  null, null],
+            leib:     [0.5,  null,   null,  null, null],
+            federn:   [0.4,  573,    null,  null, null],
+            schuppen: [0.4,  null,   null,  null, null],
+            glut:     [0.6,  623,    0.6,   0.45, 0.003],
+            laub:     [0.4,  523,    0.45,  0.2,  0.000244],
+            erde:     [0.6,  null,   0.7,   0.45, 0.002],
+            kraut:    [0.4,  533,    null,  null, 0.001],
+            essenz:   [null, null,   null,  null, 0.003],
+            blech:    [0.5,  null,   0.6,   0.35, null],
+            gras:     [0.6,  533,    0.4,   0.2,  0.000348],
+            wasser:   [null, null,   null,  null, 0.003],
+            eis:      [0.05, null,   null,  null, null],
         };
         // die Spalten L und k (oben): nur das Eis wächst im Kern; L_v des Wassers (2,257 MJ/kg) trocknet das Bett vor der Zündung
         const PHASE = { eis: { L: 334000, k: 2.2 }, wasser: { Lv: 2257000 } };
@@ -1623,7 +1613,8 @@ class AnazhRealm_bau_vorlagen {
             gras: { sigma: 11483, last: 0.166, tiefe: AnazhRealm.GRASS_BLADE_H, heiz: 18608000, mx: 0.12 },
             laub: { sigma: 8202, last: 0.654, tiefe: 0.061, heiz: 18608000, mx: 0.25 },
         };
-        // DIE OPTIK DER ZEILE (material.K5): Rauheit (r184 `roughness`, α = r²) und Metall (0 | 1) — die EINE Quelle jedes Stoffs,
+        // DIE OPTIK DER ZEILE (material.K5): Rauheit (r184 `roughness`, α = r²) und Metall (0 | 1) stehen seit w28 in der Zeile des
+        // Stoff-Gesetzes (die Spalte `rauheit`; `metall` folgt dort aus der Bindung) — die EINE Quelle jedes Stoffs,
         // der aus einer Zeile baut (`_stoffOptik` → `_buildPbrNodeMaterial`); eine Änderung wirkt sofort in jedem gebauten Stoff
         // (`_stoffOptikWirkt`). Wo eine gemessene BRDF die Klasse trägt, ist r die Form ihrer Spitze unter r184s GGX:
         // MERL (Matusik et al. 2003, 100 gemessene Stoffe), gelesen über die NBRDF-Netze von Sztrajman et al. 2021 (github
@@ -1635,13 +1626,6 @@ class AnazhRealm_bau_vorlagen {
         // r 0,135 (1,05° / 500); Blech (Lack ohne Klarlack): blue-, gold-, green-, silver-metallic-paint(2) 7,87–9,49° /
         // 10–13,3 → r 0,44 (8,77° / 11). Ohne Exemplar (MERL kennt kein rohes Holz, keinen rauen Fels, kein Leder) gilt die
         // Zahl, die die Tags bis material.K5 herleiteten. Das Soll der Kugel-Bühne (die Bänder je Klasse) trägt ihre Station.
-        // prettier-ignore
-        const OPTIK = {
-            stein: [0.85, 0], holz: [0.84, 0], eisen: [0.54, 1], bronze: [0.25, 1], stahl: [0.09, 1], quarz: [0.135, 0],
-            leder: [0.4, 0], knochen: [0.9, 0], fleisch: [0.9, 0], leib: [0.9, 0], federn: [0.9, 0], schuppen: [0.9, 0],
-            glut: [0.9, 0], laub: [0.9, 0], erde: [0.755, 0], kraut: [0.9, 0], essenz: [0.76, 0], blech: [0.44, 1],
-            gras: [0.9, 0], wasser: [0.72, 0], eis: [0.7, 0],
-        };
         // DIE ANTWORT AUF DAS ALTER (stoffe.K4, `_werkAlter` → `_alterKern`): je Stoff, der verwittert, seine SCHICHTEN — je
         // Schicht das Ziel der Fläche (lineare Albedo), die Tage, in denen Zeit und Nässe-Dosis sie 63 % dorthin tragen (null: die
         // Achse wirkt nicht), und die Lage, an der sie wächst (die Exposition, `_alterLage`: frei · nord · oben · lauf). Holz
@@ -1679,7 +1663,9 @@ class AnazhRealm_bau_vorlagen {
         const keinBauStoff = ["stahl", "blech", "leib", "gras", "wasser", "eis"];
         const make = (name, label, color, tags) => {
             const si = SI[name];
-            if (!si || !(si[7] > 0)) AnazhRealm._kernPflichtBruch("STOFF-TAFEL " + name + ": SI-Zeile mit Dämpfung η");
+            const g = SG.zeile(name);
+            if (!si || !(g.eta > 0))
+                AnazhRealm._kernPflichtBruch("STOFF-TAFEL " + name + ": Wirkungs-Spalten und Dämpfung η");
             const z = {
                 name,
                 etikett: [label],
@@ -1687,54 +1673,46 @@ class AnazhRealm_bau_vorlagen {
                 color,
                 tags: { ...AnazhRealm.MATERIAL_TAG_DEFAULTS, ...tags },
                 mu: si[0],
-                c: si[1],
-                tZuend: si[2],
-                tSchmelz: si[3],
-                muRad: si[4],
-                muRadNass: si[5],
-                eta: si[7],
-                koernung: si[8],
+                tZuend: si[1],
+                muRad: si[2],
+                muRadNass: si[3],
+                koernung: si[4],
+                bindung: g.bindung,
                 ...PHASE[name],
                 brenn: BRENN[name] ? Object.freeze(BRENN[name]) : null,
             };
-            // E ein Zugriff wie ρ: die Metalle lesen und schreiben MAT.E der Schmiede (wer die Zeile ändert, ändert Klinge, Treffer und Schritt)
-            Object.defineProperty(z, "E", {
-                enumerable: true,
-                get: () => (si[6] === null ? sc.MAT[name].E : si[6]),
-                set: (v) => {
-                    if (si[6] === null) sc.MAT[name].E = +v;
-                    else si[6] = +v;
-                },
-            });
+            // die Spalten des Gesetzes: je ein Zugriff auf die Zeile im Kern (wer sie ändert, ändert Klinge, Treffer, Schritt,
+            // Knick-Last, Brennpunkt und Spiegel); die Dichte zählt den Stoff-Stand, an dem die Gedächtnisse der Masse hängen
+            for (const k of SG.SPALTEN) {
+                const q = im(g, k);
+                Object.defineProperty(z, k, {
+                    enumerable: true,
+                    get: q.get,
+                    set: (v) => {
+                        q.set(v === null ? null : +v);
+                        if (k === "rho") AnazhRealm._stoffStand = (AnazhRealm._stoffStand || 0) + 1;
+                        if ((k === "n" || k === "abbe" || k === "rho") && (name === "wasser" || name === "eis"))
+                            welt._wasserOptikWirkt();
+                        if (k === "rauheit") welt._stoffOptikWirkt(name);
+                    },
+                });
+            }
+            if (!(z.rho > 0)) throw new Error("STOFF-ZEILE ohne Dichte: " + name);
+            // DIE SCHALLGESCHWINDIGKEIT folgt aus der Zeile (√(E/ρ), m/s): der Ton eines Treffers liest sie (klang trefferPaar)
+            Object.defineProperty(z, "schall", { enumerable: true, get: () => g.schall });
             if (keinBauStoff.includes(name)) z.bauStoff = false;
             if (ALTER[name])
                 z.alter = Object.freeze(
                     ALTER[name].map((s) => Object.freeze(Object.assign({}, s, { ziel: Object.freeze(s.ziel) })))
                 );
-            const optik = OPTIK[name];
-            if (!optik) AnazhRealm._kernPflichtBruch("STOFF-TAFEL " + name + ": die Optik (Rauheit, Metall)");
-            ["rauheit", "metall"].forEach((k, i) =>
-                Object.defineProperty(z, k, {
-                    enumerable: true,
-                    get: () => optik[i],
-                    set: (v) => {
-                        optik[i] = +v;
-                        welt._stoffOptikWirkt(name);
-                    },
-                })
-            );
-            const q = typeof RHO[name] === "object" ? RHO[name] : { wert: RHO[name] };
-            if (!q.get) {
-                if (!(q.wert > 0)) throw new Error("STOFF-ZEILE ohne Dichte: " + name);
-                q.get = () => q.wert;
-                q.set = (v) => (q.wert = v);
-            }
-            Object.defineProperty(z, "rho", {
+            if (!Number.isFinite(g.rauheit))
+                AnazhRealm._kernPflichtBruch("STOFF-TAFEL " + name + ": die Optik (Rauheit)");
+            Object.defineProperty(z, "metall", {
                 enumerable: true,
-                get: q.get,
+                get: () => g.metall,
                 set: (v) => {
-                    q.set(v);
-                    AnazhRealm._stoffStand = (AnazhRealm._stoffStand || 0) + 1;
+                    g.metall = v;
+                    welt._stoffOptikWirkt(name);
                 },
             });
             return z;
@@ -1937,13 +1915,6 @@ class AnazhRealm_bau_vorlagen {
         ];
         const out = {};
         for (const m of list) out[m.name] = AnazhRealm._etikett(m);
-        Object.defineProperty(out.eis, "tSchmelz", {
-            enumerable: true,
-            get: () => out.wasser.tSchmelz,
-            set: (v) => {
-                out.wasser.tSchmelz = v;
-            },
-        });
         return out;
     }
 

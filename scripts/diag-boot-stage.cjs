@@ -239,7 +239,9 @@ function BILD_PROBE() {
         const [R0, D0, N0, K0, W0] = [rend._renderObjectDirect, rend.backend.draw, rend._renderBundle, P._kontaktPassZeichne, P._weltbildSteht];
         rend._renderObjectDirect = function (object, material, scene, camera, lightsNode, group, clip, passId) {
             const aus = R0.call(this, object, material, scene, camera, lightsNode, group, clip, passId);
-            if (scene === r.state.scene && this._objects.get(object, material, scene, camera, lightsNode, this._currentRenderContext, clip, passId).getDrawParameters() !== null)
+            // ein Gast des Vorbaus will nichts zeichnen, er baut nur (der Gast der Ankunft steht schon unter dem Ladeschirm) — Gast ist nur,
+            // wer die Prägung trägt UND keinen Raum nimmt (Maßstab 0): ein Bürger mit Prägung zählt als Bürger
+            if (scene === r.state.scene && !(object.__vorbauGast && object.matrixWorld.determinant() === 0) && this._objects.get(object, material, scene, camera, lightsNode, this._currentRenderContext, clip, passId).getDrawParameters() !== null)
                 versucht.set(object.id + "|" + art(camera), [wer(object, object.material), art(camera), this._currentRenderBundle || null]);
             return aus;
         };

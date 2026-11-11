@@ -2162,8 +2162,8 @@ class AnazhRealm_koerper_fahrt {
     // ----- Welt-Reaktion: focusing (Brennglas im Sonnenschein) -----
 
     // DAS BRENNGLAS-GESETZ (throttled in _tickAffordances; Welle L Folge): eine focusing-Architektur bündelt die SONNE durch
-    // ihre Linse (jeder Teil, der die Tag-Sprache „transparent" trägt) in EINEN Brennpunkt je Linse — die Linsen-Mitte, um
-    // 1,5 Linsen-Radien gegen das Licht versetzt (`_brennpunkte`; die Brennweite einer Glas-Kugel, n ≈ 1,5). Erwärmt wird
+    // ihre Linse (jeder Teil, der die Tag-Sprache „transparent" trägt) in EINEN Brennpunkt je Linse — die Linsen-Mitte,
+    // um die Brennweite gegen das Licht versetzt (`_brennpunkte`; die Kugel-Linse aus der Brechzahl ihrer Stoff-Zeile). Erwärmt wird
     // nur, wessen Körper den Brennpunkt trägt (`_traegtPunkt`: Grundriss und Höhe seiner Teile), nach dem Wärme-Gesetz seines
     // Stoffs (`_brennWaerme`, stoffe.K1); außerhalb kühlt es, nachts und ohne Sonne kühlt alles. Auf halbem Weg zur
     // Zünd-Temperatur glimmt es — der Spieler hört es, ehe es brennt —,
@@ -2286,8 +2286,11 @@ class AnazhRealm_koerper_fahrt {
     }
 
     // Die Brennpunkte einer Linse in der Welt: je Teil, der die Tag-Sprache „transparent" trägt (die Schwelle der
-    // focusing-Affordanz), seine Mitte (Eintrag + gedrehter, skalierter Teil-Ort) minus Licht × 1,5 Radien (Radius r = die
-    // halbe waagrechte Ausdehnung des Teils), mit r und der Sonnenhöhe (die Leistung, `_brennWaerme`). `licht` = Richtung ZUR
+    // focusing-Affordanz), seine Mitte (Eintrag + gedrehter, skalierter Teil-Ort) minus Licht × Brennweite, mit dem Radius r
+    // (die halbe waagrechte Ausdehnung des Teils) und der Sonnenhöhe (die Leistung, `_brennWaerme`). DIE BRENNWEITE LIEST DIE
+    // BRECHZAHL DER STOFF-ZEILE (w28-stoff-gesetz): die Kugel-Linse bündelt bei f = n·r / (2·(n − 1)) hinter ihrer Mitte —
+    // Quarz (n 1,544) bei 1,42 r, Eis (1,309) bei 2,12 r, Wasser (1,333) bei 2,00 r. Bis w28 stand 1,5 r für jeden Stoff (die
+    // Glas-Kugel mit n 1,5). Ein durchsichtiger Stoff ohne Brechzahl bündelt nichts, laut beim Namen. `licht` = Richtung ZUR
     // Sonne.
     _brennpunkte(fa, licht) {
         const bp = this.state.blueprints && this.state.blueprints[fa.type];
@@ -2304,7 +2307,15 @@ class AnazhRealm_koerper_fahrt {
             const sz = part.size || { x: 1, y: 1, z: 1 };
             const sx = Math.abs(sz.x || 1);
             const r = (Math.max(sx, Math.abs(sz.z || sx)) / 2) * g;
-            const f = 1.5 * r;
+            const zeile = this._stoff(part.material, "die Linse aus „" + part.material + "“ bündelt kein Licht");
+            if (!zeile) continue;
+            if (!(zeile.n > 1)) {
+                this._bruchMelden(
+                    "STOFF-ZEILE ohne Brechzahl: die Linse aus „" + part.material + "“ bündelt kein Licht"
+                );
+                continue;
+            }
+            const f = (zeile.n * r) / (2 * (zeile.n - 1));
             const lx = (pp.x || 0) * g;
             const lz = (pp.z || 0) * g;
             out.push({
