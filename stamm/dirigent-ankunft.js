@@ -1169,7 +1169,7 @@ class AnazhRealm_dirigent_ankunft {
         if (st._deferredAvatarSoul) luecke("leib", "der Spieler erhält seinen Leib", !!this._foundry);
         if (!this._foundryEnabled()) return out;
         const f = this._foundry;
-        if (!f || !f.ready || !f.recipes) {
+        if (this._foundryBuchOffen()) {
             luecke("buch", "das Buch der Studios öffnet sich", !!(f && f.worker));
             return out;
         }

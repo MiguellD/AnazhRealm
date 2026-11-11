@@ -538,6 +538,9 @@ class AnazhRealm_dirigent_takt {
               (f.buch ? 1 : 0)
             : 0;
         o.foundry += this._foundryIngestQueue ? this._foundryIngestQueue.length : 0;
+        // … und das Buch, das sich noch öffnet (`_foundryBuchOffen`, dieselbe Antwort wie `_weltbildFehlt`): ohne Faden und Buch
+        // hat die Bibliothek noch keinen Auftrag — die Welt baut trotzdem
+        o.foundry += this._foundryBuchOffen() ? 1 : 0;
         // … samt den Nähten im Faden (w4-b-boden2): Eintritte ohne Antwort (`_bodenImFlug`) und Teile, die der Takt noch anlegt
         o.chunks =
             (st.dirtyVoxelChunks ? st.dirtyVoxelChunks.size : 0) +
