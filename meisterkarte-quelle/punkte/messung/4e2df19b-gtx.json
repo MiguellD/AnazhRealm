@@ -1,7 +1,7 @@
 {
  "sha": "4e2df19b5c5103b093818b62b5a84ababf85b493",
  "geraet": "gtx",
- "zeit": "2026-11-11T06:36:26.997Z",
+ "zeit": "2026-11-11T06:54:14.281Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "affekt.K4#2": {
@@ -1275,14 +1275,42 @@
   }
  },
  "sitzung": {
-  "start": "2026-11-11T06:26:24.487Z",
+  "start": "2026-11-11T06:51:28.584Z",
   "port": 7804,
-  "warten": 10.04,
+  "warten": 2.18,
+  "bootS": 6.3,
   "grundstellungS": [],
-  "proben": 0,
+  "proben": 1,
   "freigaben": [],
-  "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
-  "minuten": 10.05
+  "orte": [
+   {
+    "ort": "genesis",
+    "vor": "siedlung.K1#2",
+    "s": 28.1,
+    "takte": 574,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 97,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 107.2,
+  "minuten": 4.03
  },
  "ungemessen": {
   "ankunft.K1#1": {
@@ -1575,6 +1603,71 @@
    "ungemessen": true,
    "zeit": "2026-11-11T06:36:26.997Z",
    "abdruck": "cd5b4a43c492",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "siedlung.K1#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 70 s gerissen: Stille seit 70 s nach 70 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN",
+   "exit": 1,
+   "minuten": 1.17,
+   "grund": "Deckel 70 s gerissen: Stille seit 70 s nach 70 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN",
+   "s": 70.2,
+   "fremd": {
+    "s": 72.5,
+    "takte": 32,
+    "fremdS": 118.92,
+    "kerne": 1.639,
+    "fensterKerne": 2.249,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      37.05
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      23.53
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      22.92
+     ]
+    ],
+    "dienerS": 40.94,
+    "diener": [
+     [
+      "System",
+      18.88
+     ],
+     [
+      "dwm.exe",
+      14.19
+     ]
+    ],
+    "geraetS": 45.47,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      27.36
+     ],
+     [
+      "svchost.exe",
+      15
+     ],
+     [
+      "SearchIndexer.exe",
+      1.84
+     ]
+    ],
+    "eigenS": 308.56,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon"
+   },
+   "zeit": "2026-11-11T06:54:14.281Z",
+   "abdruck": "aee8fa98714b",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
