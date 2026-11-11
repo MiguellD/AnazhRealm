@@ -1,7 +1,7 @@
 {
  "sha": "c40107736235ffeef55a39f12c530e8b33f1ea9d",
  "geraet": "gtx",
- "zeit": "2026-11-11T22:49:08.028Z",
+ "zeit": "2026-11-11T22:54:18.654Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "ankunft.K1#1": {
@@ -249,19 +249,19 @@
   "kd54c369caee0": "jVRdj5swEPwvPPbqmPARjKV7cC5Rc1Kr5n7CGtaGC4HIhtCm6n+vSCAJJA+dJ4R2dnZnR/7jHCDZgcbZp61KhztfnK+OhSMSi+aIZvZpHe7MozmDkIsLqBDiW1eWmPxQW1rkkoIsIdsjaUyNeTFLzrQoDGPf47RdC7Z92VKfiSvexOu0RSExrUgNCocGMvUiH/i0sLEaJBJo1Fm0L44jP3I9Ts9gQmyjy+cvNlWSUKbjSQPluXHK31sh1uJ1Wp/mgDUp8tIOWkkaSn/QopS2jxwDLTkBZgWansQWizkLhgGnBFU01o5EmJ+GHuOUxnRSqw8NUfetQUpgcmpUBlhqNOOmURAmAX/iyg72aICUkA2mBD7z4bYkZcsJpciTrDemHG4euAnz70idO8klNx1eVtff4uMShZ+3VIjlo/s2gxQN2VW2vqoEQeRJ4H2SBNU/Hli30XqOJxduyO7XoWLz4IKtVN2CQaIPTU/EAMMo5OKJSA37fV+lEg9ZOD2BrbusjaLjJWpxjo7uhtg8RudoYE9AapMrNWRbhomKn0WhxaImsqrqYcsoSqXk1KflddHfTIulvpn8PRAjrN3pCOeulamHoUO5cFXA1eWa0+oTmgI1jtaEeex14elvf8aq131f0RHahyuccizICUvb2CG3cZTG6nK9tm8zzkqLZieh3PUEN/DZvIvIUoutXorN2zpeMfEfWHVND5jQg6lU3j0WNIPGZlDUt1fy7z8="
  },
  "sitzung": {
-  "start": "2026-11-11T22:48:32.955Z",
+  "start": "2026-11-11T22:53:46.694Z",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 7.8,
+  "bootS": 6.3,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": null,
-    "vor": "ankunft.K3#1",
-    "s": 25.5,
-    "takte": 831,
+    "ort": "genesis",
+    "vor": "ankunft.K4#1",
+    "s": 24,
+    "takte": 584,
     "chunks": 81,
     "nach": null
    }
@@ -270,20 +270,87 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 483,
-   "frameP95": 391.65,
-   "taktP95": 189.74,
-   "vramMax": 154.9,
-   "seiten": 5,
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 98,
-   "luecken": 4,
-   "letzteLuecke": "kein Renderer"
+   "zapfen": 86,
+   "luecken": 8,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
   },
-  "fahrtS": 111.1,
-  "minuten": 1.94
+  "fahrtS": 174.2,
+  "minuten": 2.99
+ },
+ "ungemessen": {
+  "ankunft.K4#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 139 s gerissen: Stille seit 15 s nach 142 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-45 60573 ms)",
+   "exit": 1,
+   "minuten": 2.37,
+   "grund": "Deckel 139 s gerissen: Stille seit 15 s nach 142 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN (zuletzt: POSE ego-45 60573 ms)",
+   "s": 142.2,
+   "fremd": {
+    "s": 145,
+    "takte": 67,
+    "fremdS": 54.02,
+    "kerne": 0.373,
+    "fensterKerne": 0.611,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      24.3
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      12.06
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      5.27
+     ]
+    ],
+    "dienerS": 41.44,
+    "diener": [
+     [
+      "dwm.exe",
+      17.39
+     ],
+     [
+      "System",
+      15.19
+     ]
+    ],
+    "geraetS": 29.97,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      15.13
+     ],
+     [
+      "svchost.exe",
+      13.38
+     ],
+     [
+      "SearchIndexer.exe",
+      0.52
+     ]
+    ],
+    "eigenS": 150.89,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon"
+   },
+   "zeit": "2026-11-11T22:54:18.654Z",
+   "abdruck": "ea66260e5746",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
  }
 }
