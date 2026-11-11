@@ -86,7 +86,7 @@ function flussBericht() {
     if (!L) return { fehler: "Linse nicht installiert" };
     const pct = (a, q) => {
         if (!a.length) return 0;
-        const s = [...a].sort((x, y) => x - y);
+        const s = [...a].sort(aufsteigend);
         return rang(s, q);
     };
     const sum = (a, k) => a.reduce((s, x) => s + (k ? x[k] : x), 0);

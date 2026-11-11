@@ -988,7 +988,7 @@ const RUECK = {
 function rueckMass(m) {
     if (!m) return null;
     const [B, R] = [m.bild, RUECK];
-    const mittel = (a) => +(a.reduce((s, x) => s + x, 0) / a.length).toFixed(3);
+    const mittel = (a) => +(a.reduce(addiere, 0) / a.length).toFixed(3);
     const st = B.map((z, i) => i).filter((i) => B[i][1] >= R.stoss && i + R.antwortBilder < B.length);
     const ausschlag = (i) =>
         Math.max(

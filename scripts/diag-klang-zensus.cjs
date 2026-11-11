@@ -638,7 +638,7 @@ async function messeOrt(page, name, ort, stubs) {
                 um.sattel = st.player.mountedArch != null;
                 // aus dem Sattel: die Stimme der Fahrt (klang:FAHRT, ihre Quellen trägt sie selbst) verklingt im nächsten Takt
                 if (sz.e) (r.dismountArchitecture(), r.removeArchitecture(sz.e, { still: true }), W.takt());
-                const med = (a) => +(rang(a.sort((x, y) => x - y)) || 0).toFixed(2);
+                const med = (a) => +(rang(a.sort(aufsteigend)) || 0).toFixed(2);
                 const laufend = W.laufend();
                 const zensus = W.zensus();
                 if (zensus) zensus.leiber.flug = { mps: med(weg), hoeheM: med(hoch) };
@@ -1313,7 +1313,7 @@ async function koerperSeite(m, mut) {
 }
 // Das Urteil (F) je Teil beim Namen und die drei Zahlen: Hz je 1000 Upm, Landung dB je m/s, Doppler je Vorbeifahrt.
 function koerperUrteil(F) {
-    const q = F.motor.map(([u, hz]) => (hz / u) * 1000).sort((a, b) => a - b);
+    const q = F.motor.map(([u, hz]) => (hz / u) * 1000).sort(aufsteigend);
     const [rot, fall] = [[], F.landung.slice(1)];
     if (q.length && (new Set(F.motor.map(([u]) => Math.round(u / 250))).size < 4 || !(q.at(-1) / q[0] <= 1.04)))
         rot.push(`F motor stumm: ${q[0]}–${q.at(-1)} Hz je 1000 Upm`);
@@ -1508,7 +1508,7 @@ async function gesehenSeite(m) {
 // Je Paar die Kreuzkorrelation in 0,5-s-Fenstern (5 Proben), Lag −3 … +3 s; grün: r bei Lag 0 ≥ Soll, n ≥ 60, CV beider ≥ 0,1, und
 // das Ohr schweigt nie, wo das Bild zeigt: höchstens 2 % der Fenster mit Bild ≥ 10 % seiner Spitze tragen ein Ohr unter 10⁻³ RMS.
 function gesehenUrteil(proben, ohr, bild) {
-    const mittel = (z) => z.reduce((x, w) => x + w, 0) / z.length;
+    const mittel = (z) => z.reduce(addiere, 0) / z.length;
     const reihe = (k) =>
         Array.from({ length: Math.floor(proben.length / 5) }, (_, i) =>
             mittel(proben.slice(5 * i, 5 * i + 5).map((p) => p[k]))

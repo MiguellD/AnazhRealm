@@ -757,7 +757,7 @@ function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
                 B[i] = L[p];
             }
             if (!voll) continue;
-            const mb = B.reduce((a, b) => a + b, 0) / 64;
+            const mb = B.reduce(addiere, 0) / 64;
             mk[0]++;
             if (B.reduce((a, b) => a + (b - mb) ** 2, 0) < 1024) mk[1]++, (mk[7] += mb < 32); // σ < 4: Σ(b − μ)² < 16 · 64
             for (let st = 0, q = 8, P = B; st < 3; st++, q >>= 1) {
