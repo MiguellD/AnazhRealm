@@ -1,7 +1,7 @@
 {
  "sha": "4e2df19b5c5103b093818b62b5a84ababf85b493",
  "geraet": "gtx",
- "zeit": "2026-11-11T00:52:46.999Z",
+ "zeit": "2026-11-11T01:35:25.252Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "affekt.K4#2": {
@@ -752,10 +752,75 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "licht.K1#1": {
+   "gruen": false,
+   "zahl": "genesis: Karte Luma 126.6, Sprung 0.550 EV, Buckel 0.52 EV, Sonne 10° -0.59 EV R/B ×0.90 | -0.48 EV R/B ×0.94, Nacht -1.69 EV Luma 58.2 · wiese: Karte Luma 126.6, Sprung 0.264 EV, Buckel 0.09 EV, Sonne 10° -0.98 EV R/B ×0.98 | -1.25 EV R/B ×0.77, Nacht -3.32 EV Luma 34.9 · Linse TAG-ACHSE ROT: REF genesis: Uhr 0 (Sonne -74.21°) 0.85 Stufen neben der REF | REF genesis: Uhr 0.01 (Sonne -74.28°) 0.85 Stufen neben der REF | REF genesis: Uhr 0.02 (Sonne -73.56°) 0.86 Stufen neben  · [linse-gpu] nvidia/pascal",
+   "exit": 1,
+   "minuten": 1.71,
+   "grund": "ROT: genesis: Karte Luma 126.6, Sprung 0.550 EV, Buckel 0.52 EV, Sonne 10° -0.59 EV R/B ×0.90 | -0.48 EV R/B ×0.94, Nacht -1.69 EV Luma 58.2 · wiese: Karte Luma 126.6, Sprung 0.264 EV, Buckel 0.09 EV, Sonne 10° -0.98 EV R/B ×0.98 | -1.25 EV R/B ×0.77, Nacht -3.32 EV Luma 34.9 · Linse TAG-ACHSE ROT: REF genesis: Uhr 0 (Sonne -74.21°) 0.85 Stufen neben der REF | REF genesis: Uhr 0.01 (Sonne -74.28°) 0.85 Stufen neben der REF | REF genesis: Uhr 0.02 (Sonne -73.56°) 0.86 Stufen neben  · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "s": 102.4,
+   "fremd": {
+    "s": 104.2,
+    "takte": 47,
+    "fremdS": 84.89,
+    "kerne": 0.815,
+    "fensterKerne": 1.68,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      26.11
+     ],
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      22.98
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      13.44
+     ]
+    ],
+    "dienerS": 49.03,
+    "diener": [
+     [
+      "System",
+      17.53
+     ],
+     [
+      "dwm.exe",
+      15.55
+     ]
+    ],
+    "geraetS": 28.28,
+    "geraet": [
+     [
+      "svchost.exe",
+      14.95
+     ],
+     [
+      "MsMpEng.exe",
+      11.81
+     ],
+     [
+      "SearchIndexer.exe",
+      0.58
+     ]
+    ],
+    "eigenS": 183.23,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon"
+   },
+   "zeit": "2026-11-11T01:35:25.252Z",
+   "abdruck": "f2bb1d6e25e9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-11T00:52:06.104Z",
+  "start": "2026-11-11T01:34:49.214Z",
   "port": 7804,
   "warten": 0.01,
   "bootS": 6.4,
@@ -764,10 +829,10 @@
   "freigaben": [],
   "orte": [
    {
-    "ort": "wiese",
-    "vor": "leib.K4#2",
-    "s": 32.9,
-    "takte": 658,
+    "ort": "genesis",
+    "vor": "licht.K1#1",
+    "s": 28.3,
+    "takte": 632,
     "chunks": 81,
     "nach": null
    }
@@ -786,18 +851,18 @@
    "verloren": 0,
    "ortImDeckel": [
     {
-     "probe": "leib.K4#2",
-     "m": 318,
+     "probe": "licht.K1#1",
+     "m": 1083,
      "ringVor": 4,
-     "ringMin": -1
+     "ringMin": 0
     }
    ],
-   "zapfen": 172,
+   "zapfen": 131,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 181.4,
-  "minuten": 3.09
+  "fahrtS": 138.1,
+  "minuten": 2.38
  },
  "ungemessen": {
   "ankunft.K1#1": {
