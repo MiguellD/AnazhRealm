@@ -21,6 +21,10 @@
 //                                                           (spec/farbe/albedo-tafel.json, Eichung 0,180; Nachzug diag-albedo-tafel.cjs --nachziehen)
 //   node scripts/werkbank.cjs licht [--uhr u] [--ist <id>]  DIE LICHT-BILANZ (18-%-Karte, je Licht, unter der Bühne zur Uhr u —
 //                                                           ohne Uhr Mittag; `--ist` in die Soll-Tafel, K5 urteilt sie mit dem Soll ihrer Uhr)
+//   node scripts/werkbank.cjs licht --tag [--kurz] [--orte genesis,wiese,wiese:third] [--eigen] [--ordner d] [--datei f.json]
+//                                                           DIE TAG-ACHSE (licht.K1): je Ort und Sicht die Uhr-Kurve aus dem Ausgabe-Pfad,
+//                                                           je Ort EINE Zeile `TAG <ort> ROT|GRUEN:` mit den sechs Zahlen des Solls
+//                                                           (gate:tag-achse:echt die Wand der Karte, gate:tag-achse:bahn die ganze Bahn)
 //   node scripts/werkbank.cjs licht --luft [--ort genesis] [--eigen] [--wetter stormy [--zug]] | --selbsttest  DIE LUFT IM BILD
 //                                                           (Koschmieder je Kanal, Farbton, Sonnenseite, fernes Weiß; Rand und Kante an
 //                                                           Hügel und Gipfel; im Wetter die Sicht, mit --zug klar → Wort → klar je Sekunde)
