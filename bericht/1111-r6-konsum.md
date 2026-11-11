@@ -40,7 +40,29 @@ Browser-Start, Boden); dort ist „alle alt“ wahr. Wo eine Landung schmal ist 
 - Die Nahme je Probe der Sitzung an der echten Werkbank (Software-Renderer, Last 10–15): 84–439 ms.
 - Der Abdruck: 3 KB je Lauf (72 Abdrücke 213 KB für 128 Einträge, 76 Abdrücke 222 KB für 135; Zwillinge und das Boot der Sitzung
   über `konsumTafel` geteilt).
-- Selbsttest 222/222 in 284,7–286,7 s (vorher 187/187 in 282,6 s auf demselben Rechner).
+- Selbsttest 223/223 in 291–295 s (vorher 187/187 in 282,6 s auf demselben Rechner).
+
+## Nachtrag 11.11. 07:40 — der Zeuge kostet die Probe nichts mehr (Post des Koordinators 06:45)
+
+**Der Befund der Radeon** (Selbsttest am Merge ROT 211/212, „EICH-FAHRT … Deckel 2 s gerissen: Stille seit 2 s nach 2 s“) ist
+nachgestellt: der ganze Selbsttest in einem CPU-Kreis mit 4,5 % Quote — Basis GRÜN an diesem Fall (3 Läufe), Kopf 43e1b817 ROT mit
+derselben Zeile, neuer Kopf GRÜN (3 Läufe). Die Wurzel: der Zeuge rechnete in JEDEM node-Prozess 19 ms (Start 9, Ende 10) vor und
+nach der Arbeit der Probe — unter der Quote 2,5 % kam ihre erste Zeile nach 2,3 s statt 1,6 s.
+
+| Schnitt | wo | gemessen |
+| --- | --- | --- |
+| der Zeuge wird erst scharf (Coverage, Ausgabe-Haken), wenn der Prozess die erste Datei des Baums als Modul lädt | konsum-zeuge.cjs `schaerfe` | ein Prozess ohne Baum-Code (der Ruf einer Probe per `node -e`): erste Zeile 329 ↔ 329 ms, Ende 1031 ↔ 1030 ms ohne ↔ mit Zeugen (vorher +12…29 ms und +24 ms) |
+| der Zeuge ist ein Lebenszeichen: `.offen` beim Start, noch einmal „bereit“, „scharf“ und „endet“ — der Läufer zählt jedes Ereignis im Ordner an der Leine wie eine Zeile | punkte.cjs `konsumWache` in fahreGruppe | Quote 2,5 %: `.offen` 1,3 s · „bereit“ 1,8 s · erste Zeile 2,1 s (alt: kein Zeichen vor 2,3 s) |
+| http, crypto und child_process laden erst mit ihrem ersten Gebrauch | konsum-zeuge.cjs `spaeter` | das Einhängen 14,7 → 8,2 ms in einem Prozess mit Baum-Code |
+
+Der Konsum bleibt derselbe (diag-kopplung an 4e2df19b: 103 Dateien, draw-zaehler 119/770, welt-boot 1380/2221 Zeilen wie zuvor; die
+echte Werkbank: Boot und zwei Fenster wie zuvor). Selbsttest am Merge mit 4b6e06aa GRÜN 223/223 (294,6 s), neu der Fall
+„LEBENSZEICHEN DES ZEUGEN“ mit Mutante.
+
+Ehrlich: unter der Quote 4,5 % reißen an der Basis selbst 3–5 Fälle (LEINE (a), DECKEL DES GERÄTS, FORTSETZUNG, einmal WELT LEBT und
+WACHE) — die Drossel ist härter als das Gerät. Am neuen Kopf reißen dieselben und in 2 von 2 Läufen „DIE TEILE“ (Teil 1 von v.K1
+2,0–2,2 s gegen den Deckel 2 s; Basis 1,1–1,8 s): zwischen zwei Proben rechnen die Nahme der Welt und die Faltung ~20 ms, die in
+einem gemeinsamen CPU-Kreis den nächsten Prozess-Start verzögern. Ein Lauf mit ESM ohne geladenes Baum-Modul ist blind beim Namen.
 
 ## Offen (mit Zahl)
 
