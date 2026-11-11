@@ -984,16 +984,12 @@ function tagKurveUrteil(welt) {
         const ref = (x) => ev(x.X, mittag.X) - stufen(x.sonne) + stufen(mittag.sonne);
         kurven[ort] = `Karte ${m.karte} · ` + alle.map((x) => `${x.uhr}:${r2(e(x))}/${r2(ref(x))}`).join(" ");
         if (!(m.karte >= S.karte[0] && m.karte <= S.karte[1])) rot("ANKER", `die 18-%-Karte mittags Luma ${m.karte}`);
-        // die Spitzen der Messung [Betrag, Uhr]: der größte Schritt, die hellste Stunde, die weiteste Stunde neben der REF
-        const spitze = { sprung: [0, 0], buckel: [-Infinity, 0], ref: [0, 0] };
-        const hoch = (k, v, uhr, betrag = v) => betrag > Math.abs(spitze[k][0]) && (spitze[k] = [v, uhr]);
+        // der Schritt zur Zeile davor (0 über eine Lücke) und die Spitze eines Maßes [Wert, Uhr]: der größte Betrag
+        const schritt = (x, a) => (a && x.uhr - a.uhr < 0.0105 ? e(x) - e(a) : 0);
+        const spitze = (f) => alle.reduce((m, x, i) => (Math.abs(f(x, alle[i - 1])) > Math.abs(m[0]) ? [f(x, alle[i - 1]), x.uhr] : m), [0, 0]);
         alle.forEach((x, i) => {
-            const a = alle[i - 1];
-            const d = a && x.uhr - a.uhr < 0.0105 ? e(x) - e(a) : 0;
-            hoch("sprung", d, x.uhr, Math.abs(d));
-            if (e(x) > spitze.buckel[0]) spitze.buckel = [e(x), x.uhr];
-            hoch("ref", ref(x), x.uhr, Math.abs(ref(x)));
-            if (Math.abs(d) > S.sprung) rot("SPRUNG", `Uhr ${a.uhr} → ${x.uhr} ${r2(d)} EV`);
+            const d = schritt(x, alle[i - 1]);
+            if (Math.abs(d) > S.sprung) rot("SPRUNG", `Uhr ${alle[i - 1].uhr} → ${x.uhr} ${r2(d)} EV`);
             if (e(x) > S.buckel) rot("BUCKEL", `Uhr ${x.uhr} (Sonne ${x.sonne}°) ${r2(e(x))} EV über dem Mittag`);
             if (Math.abs(ref(x)) > S.ref) rot("REF", `Uhr ${x.uhr} (Sonne ${x.sonne}°) ${r2(ref(x))} Stufen neben der REF`);
             if (Math.abs(ev(x.sofort, x.frisch)) > S.async) rot("ASYNC", `Uhr ${x.uhr} ${r2(ev(x.sofort, x.frisch))} EV`);
@@ -1010,18 +1006,19 @@ function tagKurveUrteil(welt) {
         if (!(e(nacht) >= S.nacht[0] && e(nacht) <= S.nacht[1] && nacht.hell >= S.nachtLuma)) rot("NACHT", `${r2(e(nacht))} EV, Luma ${nacht.hell}`);
         const n = Object.keys(m.schreiber || {});
         if (n.length !== 1) rot("SCHREIBER", n.join(", ") || "keiner");
-        // DIE SECHS ZAHLEN DES ORTS (das Soll der Karte licht.K1 in einer Zeile, wie die Station sie nennt — der Probe-Post trägt sie)
-        const sp = (k) => `${r2(spitze[k][0])} (Uhr ${spitze[k][1]})`;
+        // DIE SECHS ZAHLEN DES ORTS (das Soll der Karte licht.K1 in EINER Zeile, wie die Station sie nennt — der Probe-Post trägt sie)
+        const mit = ([v, uhr]) => `${r2(v)} (Uhr ${uhr})`;
         zahlen[ort] =
-            `Karte ${m.karte} · Sprung ${sp("sprung")} · Buckel ${sp("buckel")} · Sonne 10° ${gold.join(" | ")} · ` +
-            `Nacht ${r2(e(nacht))} EV Luma ${nacht.hell} · REF ${sp("ref")}${m.bahn ? "" : " · nur die Wand (--kurz)"}`;
+            `Karte ${m.karte} · Sprung ${mit(spitze(schritt))} · Buckel ${mit(spitze((x) => Math.max(e(x), 0)))} · Sonne 10° ${gold.join(" | ")} · ` +
+            `Nacht ${r2(e(nacht))} EV Luma ${nacht.hell} · REF ${mit(spitze(ref))}${m.bahn ? "" : " · nur die Wand (--kurz)"}`;
     }
     return { urteil: befunde.length ? "ROT" : "GRUEN", befunde, kurven, zahlen };
 }
 
-// DER SELBSTTEST DES TAG-URTEILS an GEMESSENEN Kurven (spec/farbe/tag-kurve.json): am Kopf (Mess-Wiese) steht die Wand und die
-// Staffel nennt genau ihre offenen Posten (REF um die Sonne 10°, WARM), jeder in den Kopf gespielte Täter beim Namen (der Buckel
-// des Vorhers: S7, Radeon, Uhr 0,33 +0,94 EV über dem Mittag). DIE KURVE AUS DEM GESETZ (headless): die Stufen der Welt-Kamera (`_belichtungStufen`
+// DER SELBSTTEST DES TAG-URTEILS an GEMESSENEN Kurven (spec/farbe/tag-kurve.json): am Kopf (Mess-Wiese, main ab2f2eed) steht die
+// Wand und die Staffel nennt genau ihre offenen Posten (GOLD beider Seiten, WARM abends), jeder der sechs Soll-Punkte, in den
+// Kopf gespielt, fällt beim Namen (der Buckel des Vorhers: S7, Radeon, Uhr 0,33 +0,94 EV über dem Mittag; WARM morgens; die
+// Nacht nach Luma und nach EV — der Spawn von main: 1,66 EV unter dem Mittag). DIE KURVE AUS DEM GESETZ (headless): die Stufen der Welt-Kamera (`_belichtungStufen`
 // aus dem Stamm, `ladeKlasse`) unter dem gemessenen Licht der REF gegen ihre Stufen je Knoten — die volle Adaption (Steigung 1,
 // Stufen 0) ist ROT beim Namen.
 function tagKurveSelbsttest() {
@@ -1035,7 +1032,7 @@ function tagKurveSelbsttest() {
         if (fall === "WARM") z(0.276).warm = z(0.278).warm = z(0.5).warm;
         if (fall === "REF") z(0.33).X *= 1.5;
         if (fall === "NACHT") z(0).hell = 10;
-        if (fall === "NACHT-HELL") z(0).Y *= 4;
+        if (fall === "HELL") z(0).Y *= 4;
         if (fall === "ASYNC") z(0.722).sofort *= 2;
         const m = { zeilen: alle, schreiber: { _dayNightApplyBelichtung: 1 }, karte: fall === "ANKER" ? 170 : q.karte, bahn: fall !== "WAND" };
         if (fall === "SCHREIBER") m.schreiber._tickPortalMembranes = 1;
@@ -1050,9 +1047,12 @@ function tagKurveSelbsttest() {
     };
     return [
         [kurve(T.kopf, "WAND"), ""],
-        [kurve(T.kopf).replace(/ wiese:[^,]*/g, ""), "WARM,WARM"],
+        [kurve(T.kopf).replace(/ wiese:[^,]*/g, ""), "GOLD,GOLD,WARM"],
         [kurve(T.kopf, "REF"), /REF wiese: Uhr 0\.33 /],
-        ...["ANKER", "SPRUNG", "BUCKEL", "GOLD", "NACHT", "ASYNC", "SCHREIBER", "BLIND"].map((f) => [kurve(T.kopf, f), new RegExp(`(^|,)${f} wiese`)]),
+        [kurve(T.kopf, "GOLD"), /GOLD wiese: Sonne 10° -?0\.00 EV/],
+        [kurve(T.kopf, "WARM"), /WARM wiese: Sonne 10° R\/B 7\.55 gegen 7\.55 mittags/],
+        [kurve(T.kopf, "HELL"), /NACHT wiese: -1\.36 EV/],
+        ...["ANKER", "SPRUNG", "BUCKEL", "NACHT", "ASYNC", "SCHREIBER", "BLIND"].map((f) => [kurve(T.kopf, f), new RegExp(`(^|,)${f} wiese`)]),
         [gesetz(), ""],
         [gesetz({ steigung: 1, stufen: [[10, 0], [-20, 0]] }), /GESETZ Sonne 10°/],
     ];

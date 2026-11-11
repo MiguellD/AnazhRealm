@@ -61,9 +61,9 @@ var __weltLicht = (function () {
         kurve: "NeutralToneMapping",
         zielKarte: 0.22,
         min: 0.05,
-        steigung: 0.83,
+        steigung: 0.75,
         gleitung: Object.freeze([12, 8]),
-        stufen: Object.freeze([Object.freeze([10, -0.59]), Object.freeze([0, -1.02]), Object.freeze([-20, -2.17])]),
+        stufen: Object.freeze([Object.freeze([10, -0.87]), Object.freeze([-20, -2.17])]),
         nachtGrad: -32,
     });
     // DIE GRENZGRÖSSE DER STERNE je Sonnenhöhe [Grad, Größe] (V18.530, `HIMMEL.grenzgroesse` der Welt): im hellen Tag (≥ 10°) ist

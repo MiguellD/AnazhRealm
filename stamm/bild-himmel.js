@@ -3238,16 +3238,13 @@ AnazhRealm.LEGACY_LICHT = __weltLicht.LEGACY_LICHT; // welt-licht.js — π
 // 0,22 — `kartenEichung(kurve, 0)` in scripts/lib/licht-linsen.cjs rechnet es nach). `min` ist nur die Wand gegen ein
 // entartetes Licht. `steigung` ist die Kompensations-Steigung des Tags (1 = volle Adaption, 0 = feste Blende): die Karte fällt mit
 // 1 − s des gemessenen Lichts. `stufen` sind die Knoten [Grad, Stufen] der Tag-Achse für Dämmerung und Nacht, `gleitung`
-// [oben, unten] das Band, in dem die Kamera von der Steigung auf sie gleitet. DIE EICHUNG GEGEN DAS SOLL (w28-tag-kurve): das
-// Licht der Sonne 10° liegt 3,48 EV unter dem der Zenit-Sonne (USNO, spec/farbe/tag-ref.json); s 0,83 legt die Karte dort auf
-// −0,59 Stufen, im Bild −0,75 EV (unter der Schulter gibt Neutral x − 0,04 aus: das Bild fällt 1,27-mal so steil wie die
-// Stufe) — die Mitte des Solls −0,5 … −1,0. Bis hier s 0,75: die Karte −0,87 Stufen, im Bild −1,1 EV, unter dem Soll (GTX
-// 8d05478b, Sonne 10°: Wiese Ego −0,98 | −1,24, Third −1,21 | −1,41, Genesis Third −1,09 | −0,91 EV). Unter 10° fällt die
-// Kamera über dem Horizont wie zuvor (0,043 Stufen je Grad, Knoten 0° −1,02), darunter zur Nacht (−2,17 Stufen bei −20°:
-// Mess-Wiese 3,3 EV unter dem Mittag bei Luma 35) — 0,041 Stufen je 0,72° Sonne, im Fuß der Kurve (6,25·x²), wo das Bild
-// doppelt so steil fällt wie die Stufe, 0,083 EV. `nachtGrad` (S7) ist die Tiefe der Sonne, in der das Nacht-Auge der
-// Post-Kette ganz steht (der Kanal `tag` der Tag-Achse).
-AnazhRealm.BELICHTUNG = __weltLicht.BELICHTUNG; // welt-licht.js — kurve Neutral · zielKarte 0,22 · min 0,05 · steigung 0,83 · gleitung [12, 8] · stufen [10, −0,59] [0, −1,02] [−20, −2,17] · nachtGrad −32
+// [oben, unten] das Band, in dem die Kamera von der Steigung auf sie gleitet. Gemessen an der Mess-Wiese in Ego (swiftshader,
+// je Uhr das Histogramm der Szene vor der Tonkurve): s 0,75 legt die Sonne 10° morgens und abends 0,67 EV unter den Mittag (die
+// Karte selbst −0,87 Stufen, im Bild −1,17 EV: die Wiese als Dach fällt flacher als eine waagrechte Fläche), die Nacht −2,17
+// Stufen 3,14 EV darunter bei Luma 44; die Dämmerung fällt 1,3 Stufen über 30° — unter 0,1 EV je 0,72° Sonne auch im Fuß der
+// Kurve (6,25·x²), wo das Bild doppelt so steil fällt wie die Stufe. `nachtGrad` (S7) ist die Tiefe der Sonne, in der das
+// Nacht-Auge der Post-Kette ganz steht (der Kanal `tag` der Tag-Achse).
+AnazhRealm.BELICHTUNG = __weltLicht.BELICHTUNG; // welt-licht.js — kurve Neutral · zielKarte 0,22 · min 0,05 · steigung 0,75 · gleitung [12, 8] · stufen [10, −0,87] [−20, −2,17] · nachtGrad −32
 // Mindestabstand zwischen zwei Neuzeichnungen der Umgebung (PMREM) in WELT-Zeit (`spielZeit`, ms). E0 und Tönung zeichnen sie
 // nicht mehr neu (`_umgebungLicht`), es bleiben Sonne, Mond, Medium und Höhe des Auges. Bis w4-licht-uhr 6 000 ms Wanduhr: der
 // Himmel je Einheit E0 wächst im Übergang klar → Regen mit dem Medium (0,163 → 0,335, etwa β^0,35), die Umgebung zog ihm in
