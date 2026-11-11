@@ -4098,6 +4098,70 @@ const stationen = [
         quelle: "2 = der Ort wächst in Spielzeit aus Bewohnern, wohl und lebendig (deterministisch aus Saat + Akten), das Haus des Spielers wird Kern eines Rings, sichtbar vom Hügel (nach v1.0)",
     },
 
+    // ───────── breite.siedlung — die Stadt-Grammatik im Gang durch die Gassen (Zweig w28-stadt-grammatik) ─────────
+    // gate:settlement --breite (Browser, Null-Renderer, ≤ 4 min; der Breite-Richter der Staffel Breite §5: „≥ 12 Bau-Typen aus ≥ 3
+    // Kulturen, je Viertel eine Rolle (Hafen, Markt, Friedhof, Burg), aus EINER Grammatik"): die Metropole des Messorts stadt-voll
+    // steht in der Welt („dorf 7 300" am Anker), die Probe (scripts/lib/stadt-proben.cjs) zählt nie den Plan — ein Haus zählt, wenn
+    // es als Bau an seinem Slot steht UND ein Gang zu Fuß durch jede Gasse (das Auge 1,7 m, je 9 m eine Station, beide Richtungen,
+    // die Kamera des Spiels, Sicht 60 m) seine Wand im Bild hat, kein anderer Grundriss in der Sichtlinie; ebenso Stand und Grab.
+    // Eine Kultur zählt ab 3 Häusern im Gang (ein Wahrzeichen allein ist keine Kultur der Stadt); ein Viertel trägt seine Rolle
+    // mit einem Haus im Gang, der Markt dazu mit einem Stand, der Kirchhof mit einem Grab; jedes Haus im Gang trägt sein Viertel.
+    // An main 4e2df19b ROT: 6 Bau-Typen, 2 Kulturen, kein Viertel, 1 Stand, 103 von 253 Häusern im Ring (bebaut 0,158). Am Zweig
+    // w28-stadt-grammatik 0eb797b4: 18 Bau-Typen, 4 Kulturen, Markt · Kirchhof · Burg · Handwerk · Wohnen · Vorstadt, 10 Stände,
+    // 24 Gräber, 214 von 284 im Ring (bebaut 0,311) — ROT bleibt der Hafen: die Grammatik trägt noch kein Viertel am Wasser.
+    {
+        kriterium: "breite.siedlung",
+        breite: true,
+        staffel: 1,
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-settlement.cjs", "--breite"],
+        env: { SETTLEMENT_PORT: "{PORT}" },
+        gpu: false,
+        zeit: false,
+        minuten: 4,
+        urteil: (j, lauf) => {
+            const b = jsonZeile(lauf.stdout, /^BREITE \{/);
+            if (!b || !b.typen || !b.kulturen || !b.viertel || !b.stuecke || !b.lauf || !b.ring) return { gruen: false, zahl: "keine BREITE-Zeile (Exit " + lauf.exit + ")" };
+            const typen = Object.keys(b.typen);
+            const kult = Object.keys(b.kulturen).filter((k) => b.kulturen[k] >= 3);
+            // je Viertel seine Rolle im Gang: ein Haus, dazu das Stück, das sie trägt (der Stand des Markts, das Grab des Friedhofs)
+            const rolle = { markt: "stand", kirchhof: "grab", burg: null, hafen: null };
+            const fehlt = Object.keys(rolle).filter((v) => !b.viertel[v] || (rolle[v] && !(b.stuecke[rolle[v]] && b.stuecke[rolle[v]][1] > 0)));
+            const gruen = lauf.exit === 0 && /✅ BREITE \(siedlung\)/.test(lauf.stdout) && typen.length >= 12 && kult.length >= 3 && !fehlt.length && !b.viertel.ohne;
+            return {
+                gruen,
+                zahl:
+                    typen.length + " Bau-Typen, " + kult.length + " Kulturen im Gang (" + b.lauf.gesehen + " von " + b.steht + " stehenden Häusern, " + b.slots + " Slots) · Viertel " +
+                    Object.keys(b.viertel).join(" ") + (fehlt.length ? " · ohne Rolle: " + fehlt.join(", ") : "") + (b.viertel.ohne ? " · " + b.viertel.ohne + " Häuser ohne Viertel" : "") +
+                    " · Stände " + (b.stuecke.stand || [0])[0] + ", Gräber " + (b.stuecke.grab || [0])[0] + " · im Ring " + b.ring.innen + " Häuser, bebaut " + b.ring.bebaut,
+            };
+        },
+        proben: [
+            { name: "die Stadt der Grammatik mit Hafen", gruen: true, stdout: 'BREITE {"ort":"stadt-voll","name":"Villaalto","groesse":"metropole","jahr":1238,"slots":309,"steht":300,"lauf":{"stationen":700,"laengeM":5400,"gesehen":290},"typen":{"kaufhaus":12,"kontor":4,"wohnturm":11,"kirche":1,"rathaus":1,"wohnhaus":160,"scheune":4,"kapelle":1,"patrizierhaus":43,"speicher":4,"gasthaus":1,"werkstatt":26,"gerberei":6,"schmiede":1,"torhaus":1,"backhaus":4,"burg":1,"bergfried":1},"kulturen":{"provenzalisch":137,"marokkanisch":4,"italienisch":136,"barock":2,"gotisch":3},"viertel":{"markt":18,"wohnen":148,"kirchhof":2,"handwerk":43,"vorstadt":68,"burg":3,"hafen":6},"stuecke":{"stand":[10,10],"grab":[24,24],"brunnen":[5,5]},"ring":{"R":173.2,"innen":214,"aussen":70,"bebaut":0.3106}}\n  ✅ BREITE (siedlung) die Stadt am Messort stadt-voll im Gang durch ihre Gassen\n',
+                zahl: /^18 Bau-Typen, 4 Kulturen im Gang .* im Ring 214 Häuser, bebaut 0\.3106$/ },
+            { name: "der Kopf w28-stadt-grammatik: der Hafen fehlt", gruen: false, stdout: 'BREITE {"ort":"stadt-voll","name":"Villaalto","groesse":"metropole","jahr":1238,"slots":309,"steht":284,"lauf":{"stationen":699,"laengeM":5298,"gesehen":282},"typen":{"kaufhaus":12,"kontor":4,"wohnturm":11,"kirche":1,"rathaus":1,"wohnhaus":160,"scheune":4,"kapelle":1,"patrizierhaus":43,"speicher":4,"gasthaus":1,"werkstatt":26,"gerberei":6,"schmiede":1,"torhaus":1,"backhaus":4,"burg":1,"bergfried":1},"kulturen":{"provenzalisch":137,"marokkanisch":4,"italienisch":136,"barock":2,"gotisch":3},"viertel":{"markt":18,"wohnen":148,"kirchhof":2,"handwerk":43,"vorstadt":68,"burg":3},"stuecke":{"stand":[10,10],"grab":[24,24],"brunnen":[5,5]},"ring":{"R":173.2,"innen":214,"aussen":70,"bebaut":0.3106}}\n  ❌ BREITE (siedlung) die Stadt am Messort stadt-voll im Gang durch ihre Gassen — Viertel hafen: kein Haus im Gang\n',
+                zahl: /^18 Bau-Typen, 4 Kulturen im Gang \(282 von 284 .* · ohne Rolle: hafen · / },
+            { name: "main 4e2df19b: sechs Typen, zwei Kulturen, kein Viertel", gruen: false, stdout: 'BREITE {"ort":"stadt-voll","name":"Villaalto","groesse":"metropole","jahr":1238,"slots":300,"steht":253,"lauf":{"stationen":520,"laengeM":4218,"gesehen":249},"typen":{"kirche":1,"gasthaus":1,"wohnhaus":242,"schmiede":1,"burg":1,"scheune":3},"kulturen":{"barock":1,"provenzalisch":117,"italienisch":130,"gotisch":1},"viertel":{"ohne":249},"stuecke":{"stand":[1,1],"grab":[0,0],"brunnen":[5,5]},"ring":{"R":173.2,"innen":103,"aussen":150,"bebaut":0.158}}\n  ❌ BREITE (siedlung) die Stadt am Messort stadt-voll im Gang durch ihre Gassen\n',
+                zahl: /^6 Bau-Typen, 2 Kulturen im Gang .* ohne Rolle: markt, kirchhof, burg, hafen · 249 Häuser ohne Viertel · Stände 1, Gräber 0 · im Ring 103 Häuser, bebaut 0\.158$/ },
+            { name: "die Mutante: eine Stadt aus lauter Wohnhäusern", gruen: false, stdout: 'BREITE {"ort":"stadt-voll","name":"Villaalto","groesse":"metropole","jahr":1238,"slots":309,"steht":300,"lauf":{"stationen":700,"laengeM":5400,"gesehen":290},"typen":{"wohnhaus":290},"kulturen":{"provenzalisch":137,"marokkanisch":4,"italienisch":136,"barock":2,"gotisch":3},"viertel":{"markt":18,"wohnen":148,"kirchhof":2,"handwerk":43,"vorstadt":68,"burg":3,"hafen":6},"stuecke":{"stand":[10,10],"grab":[24,24],"brunnen":[5,5]},"ring":{"R":173.2,"innen":214,"aussen":70,"bebaut":0.3106}}\n  ✅ BREITE (siedlung) die Stadt am Messort stadt-voll im Gang durch ihre Gassen\n', zahl: /^1 Bau-Typen, / },
+            { name: "der Friedhof ohne Grab", gruen: false, stdout: 'BREITE {"ort":"stadt-voll","name":"Villaalto","groesse":"metropole","jahr":1238,"slots":309,"steht":300,"lauf":{"stationen":700,"laengeM":5400,"gesehen":290},"typen":{"kaufhaus":12,"kontor":4,"wohnturm":11,"kirche":1,"rathaus":1,"wohnhaus":160,"scheune":4,"kapelle":1,"patrizierhaus":43,"speicher":4,"gasthaus":1,"werkstatt":26,"gerberei":6,"schmiede":1,"torhaus":1,"backhaus":4,"burg":1,"bergfried":1},"kulturen":{"provenzalisch":137,"marokkanisch":4,"italienisch":136,"barock":2,"gotisch":3},"viertel":{"markt":18,"wohnen":148,"kirchhof":2,"handwerk":43,"vorstadt":68,"burg":3,"hafen":6},"stuecke":{"stand":[10,10],"grab":[0,0],"brunnen":[5,5]},"ring":{"R":173.2,"innen":214,"aussen":70,"bebaut":0.3106}}\n  ✅ BREITE (siedlung) die Stadt am Messort stadt-voll im Gang durch ihre Gassen\n', zahl: /ohne Rolle: kirchhof/ },
+            { name: "die Linse bricht vor ihrer Zeile", gruen: false, stdout: "diag-settlement.cjs ABSTURZ: Error\n", zahl: /^keine BREITE-Zeile \(Exit 0\)$/ },
+        ],
+        pfad: [
+            "fachwerk-core.js",
+            "gelaende-core.js",
+            "voxel-worker.js",
+            "foundry-bruecke.js",
+            "stamm/siedlung-*.js",
+            "stamm/bau-vorlagen.js",
+            "stamm/gelaende-boden.js",
+            "scripts/diag-settlement.cjs",
+            "scripts/lib/stadt-proben.cjs",
+            "spec/profiband/haushalt.json",
+        ],
+        quelle: "BREITE siedlung = ≥ 12 Bau-Typen aus ≥ 3 Kulturen, je Viertel eine Rolle (Hafen, Markt, Friedhof, Burg), aus EINER Grammatik — gemessen als Konsum im Ego-Lauf",
+    },
+
     // ───────── leib.K1 — Taste → Leib im Bild ─────────
     {
         kriterium: "leib.K1",
