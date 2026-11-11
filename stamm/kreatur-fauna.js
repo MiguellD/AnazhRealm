@@ -207,9 +207,13 @@ class AnazhRealm_kreatur_fauna {
                 p[3 * i + 1] = krone.y + g.y;
                 p[3 * i + 2] = krone.z + g.z;
                 const v = voegel[n0 + i] || (voegel[n0 + i] = {});
-                [v.gier, v.schlag, v.sitzt] = [g.gier, 0, true];
+                // je Glied ohne Array (w27-takt-gc: die Destrukturierung baute je Vogel und Bild eines)
+                v.gier = g.gier;
+                v.schlag = 0;
+                v.sitzt = true;
                 // der Rahmen dieses Takts trägt den Sitz: fliegt der Pulk auf, fliegt jedes Glied von seinem Platz
-                const [rx, rz] = [p[3 * i] - x, p[3 * i + 2] - z];
+                const rx = p[3 * i] - x,
+                    rz = p[3 * i + 2] - z;
                 L[2 * i] = co * rx - si * rz;
                 L[2 * i + 1] = si * rx + co * rz;
             }
@@ -232,7 +236,8 @@ class AnazhRealm_kreatur_fauna {
             VG.glied(i, n, uhr, c.wurf[0], zt.gier, V, g);
             p[3 * i + 1] = y + g.y;
             const v = voegel[n0 + i] || (voegel[n0 + i] = {});
-            [v.schlag, v.sitzt] = [g.schlag, false];
+            v.schlag = g.schlag;
+            v.sitzt = false;
         }
         let paare = 0;
         if (fliegt) {
@@ -250,7 +255,8 @@ class AnazhRealm_kreatur_fauna {
             const zug = sk.zug || (sk.zug = { x: 0, z: 0, n: 0 });
             for (let i = 0; i < n; i++) {
                 for (let m = 1; m <= k; m++) {
-                    const [j, e] = [(i + 1 + (m - 1) * schritt) % n, E[m]];
+                    const j = (i + 1 + (m - 1) * schritt) % n,
+                        e = E[m];
                     e.x = p[3 * j];
                     e.z = p[3 * j + 2];
                     e.vx = W[2 * j];
@@ -417,7 +423,8 @@ class AnazhRealm_kreatur_fauna {
             const s = Math.sin(v.gier);
             for (const T of L.teile)
                 teil(v, c, s, T.groesse[0], 0, 0, T.groesse[1], T.groesse[2], T.lage[0], T.lage[1], T.lage[2]);
-            for (const seite of [1, -1]) {
+            for (let seite = 1; seite >= -1; seite -= 2) {
+                // (die Seiten ohne Array je Vogel und Bild, w27-takt-gc)
                 // der sitzende Vogel (der Schwarm auf seiner Krone) legt die Schwinge an den Leib: die Spannweite längs nach
                 // hinten, die Tiefe hoch, an der Flanke des Rumpfs
                 if (v.sitzt) {
@@ -655,18 +662,33 @@ class AnazhRealm_kreatur_fauna {
         if (!this._bluetenArten || this._bluetenArten.arten !== arten)
             this._bluetenArten = { arten, ids: new Set(arten.filter((a) => a.kind === "flower").map((a) => a.id)) };
         const memo = this._bluetenMemo || (this._bluetenMemo = new WeakMap());
+        // DIE GRUPPEN BLEIBEN (w27-takt-gc): je Senke ihr Gruppen-Schlüssel einmal (`_bluetenSchluessel`), je Gruppe und Block EINE
+        // Liste, im Bild geleert statt neu gebaut, in der Folge ihres ersten Blocks in diesem Bild (wie bisher) — vorher je Bild je
+        // Senke eine Zeichenkette, je Block zwei und eine neue Liste (GTX 1050, dorf Ego: 1 MB/s)
+        const schluessel = this._bluetenSchluessel || (this._bluetenSchluessel = new WeakMap());
         const gruppen = this._bluetenGruppen || (this._bluetenGruppen = new Map());
-        gruppen.clear();
+        const folge = this._bluetenFolge || (this._bluetenFolge = []);
+        const bild = (this._bluetenBild = (this._bluetenBild || 0) + 1);
+        if (gruppen.size > 512) gruppen.clear(); // was lange kein Bild trug, fällt
+        folge.length = 0;
         for (const a of ns.senken.values()) {
             if (!this._bluetenArten.ids.has(a.preset)) continue;
-            const g = a.key.slice(0, a.key.lastIndexOf(":"));
-            for (const [kk, b] of a.bloecke) {
-                const L = gruppen.get(g + "@" + kk);
-                if (L) L.push(a, b);
-                else gruppen.set(g + "@" + kk, [a, b]);
+            let g = schluessel.get(a);
+            if (g === undefined) schluessel.set(a, (g = a.key.slice(0, a.key.lastIndexOf(":"))));
+            let je = gruppen.get(g);
+            if (!je) gruppen.set(g, (je = new Map()));
+            for (const kk of a.bloecke.keys()) {
+                let L = je.get(kk);
+                if (!L) je.set(kk, (L = []));
+                if (L.bild !== bild) {
+                    L.length = 0;
+                    L.bild = bild;
+                    folge.push(L);
+                }
+                L.push(a, a.bloecke.get(kk));
             }
         }
-        for (const L of gruppen.values()) {
+        for (const L of folge) {
             let e = memo.get(L[1]);
             if (!e) {
                 const n = L[1].n;

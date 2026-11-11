@@ -251,13 +251,20 @@ class AnazhRealm_koerper_leib {
     // Leib-Wahl als Gast des Vorbaus in ihre Szene — auf Maßstab 0 — und baut über DIE Erst-Zeichnung ohne Draw. Steht jedes
     // Teil in jedem seiner Pässe (`_vorbauFehlt`), geht er und der nächste kommt; `state._leibWarm` ist das Ereignis. true:
     // jeder Leib steht.
+    // DIE EIGENE SEELE ZUERST (w27-takt-gc-2, das Nächste zuerst wie der ganze Planer): ihr Leib ist, was die nächste Eingabe
+    // zeigt (Third, der Blick auf sich) — bis hier stand der Mensch am Ende hinter jeder Tier-Art, und sein Leib baute seine
+    // sieben Programme der Welt erst, als die Tiere standen (dorf Ego, GTX 1050 eab8e8b3: 50,5–52,3 s nach der Ankunft, die
+    // Ich-Bühne hatte dieselben Stoffe für ihr eigenes Ziel schon bei 9 s gebaut); jetzt baut er gleich nach ihr.
     _leibVorwaermen() {
         const st = this.state;
         if (st._leibWarm) return true;
         if (!st._leibVorwaermung) {
             if (!this._ofenVorratSteht) return false;
+            const offen = [...Object.keys(AnazhRealm.TETRAPODA_SOUL_MAP).map((a) => "bp_koerper_" + a), "human"];
+            const eigen = offen.indexOf((st.player && st.player.soul) || "human");
+            if (eigen > 0) offen.unshift(...offen.splice(eigen, 1));
             st._leibVorwaermung = {
-                offen: [...Object.keys(AnazhRealm.TETRAPODA_SOUL_MAP).map((a) => "bp_koerper_" + a), "human"],
+                offen,
                 leib: null,
                 takte: 0,
             };
@@ -1019,8 +1026,24 @@ class AnazhRealm_koerper_leib {
         klon.traverse((n) => {
             if (!n.isSkinnedMesh || !n.userData.__skinJoints) return;
             const bones = n.userData.__skinJoints.map((nm) => teile[nm]).filter(Boolean);
-            if (bones.length) n.bind(new THREE.Skeleton(bones), n.bindMatrix.clone());
+            if (bones.length) n.bind(AnazhRealm._ofenSkelett(bones), n.bindMatrix.clone());
         });
+    }
+    // DAS KNOCHEN-RASTER (w27-takt-gc): r184 schlüsselt den Knoten-Bau einer SkinnedMesh mit der Zahl ihrer Knochen
+    // (`getMaterialCacheKey`: `skeleton.bones.length` — der Shader legt die Knochen-Reihe mit fester Länge an), und die Haut
+    // eines Tiers bindet nur die Gelenke, die eines ihrer Primitive trägt (foundry-core `skinJoints`): die Zahl folgt dem
+    // Erbgut und der Stufe. Jeder neue Leib baute so Graph und Programm neu, obwohl er Graph, Geometrie und Stoff mit dem
+    // vorigen teilte (dorf Ego eingelaufen, GTX 1050 7ce5b9b6: 17 Knoten-Bauten in 36 s, jeder ein neuer Leib, keiner
+    // verdrängt; zwei Wölfe unterschieden sich nur in 29 ↔ 21 und 10 ↔ 7 Knochen). Jede Ofen-Bindung füllt ihr Skelett darum
+    // bis zum nächsten Vielfachen von KNOCHEN_RASTER auf — mit ihrem ERSTEN EIGENEN Gelenk, nie einem fremden Knochen: jeder
+    // Knochen der Reihe bleibt ein Gelenk des Leibs (die Kreatur-Kosten-Invariante `rZwillingKnochen` zählt jeden, der keins
+    // ist — ein Platzhalter ohne Namen färbte z370 rot). Kein skinIndex zeigt auf die Füllplätze; der Knochen-Index, `indexOf`
+    // (der erste Platz ist der echte), `__skinJoints` und jeder Leser über sie bleiben, wie sie waren.
+    static _ofenSkelett(bones) {
+        const n = Math.ceil(bones.length / AnazhRealm.KNOCHEN_RASTER) * AnazhRealm.KNOCHEN_RASTER;
+        const alle = bones.slice();
+        while (alle.length < n) alle.push(bones[0]);
+        return new THREE.Skeleton(alle);
     }
     // DIE STARR-BINDUNG (Mensch UND Tier, am EINEN Ofen-Chokepoint): jedes starre Teil (Pfote · Ohr · Lid ·
     // Kopf · Kiefer · Schwanzspitze …) hing als eigenes Mesh an seinem Gelenk — ein Draw plus ein Schatten-Draw
@@ -1132,7 +1155,7 @@ class AnazhRealm_koerper_leib {
             for (const t of teile) t.mesh.parent.remove(t.mesh);
             root.add(starr);
             starr.updateMatrixWorld(true);
-            starr.bind(new THREE.Skeleton(bones), starr.matrixWorld.clone());
+            starr.bind(AnazhRealm._ofenSkelett(bones), starr.matrixWorld.clone());
             // Die Bind-Box reist mit (wie die der Haut aus dem Assemble): Box3-Leser der Welt-Gestalt messen den
             // Klon sonst über ein frisch umgebundenes, noch nicht posiertes Skelett.
             geo.computeBoundingBox();
@@ -1196,7 +1219,7 @@ class AnazhRealm_koerper_leib {
             root.traverse((n) => {
                 if (!n.isSkinnedMesh) return;
                 n.userData.__skinJoints = skelett.skinJoints.slice();
-                n.bind(new THREE.Skeleton(bones), n.matrixWorld.clone());
+                n.bind(AnazhRealm._ofenSkelett(bones), n.matrixWorld.clone());
             });
         }
         // DIE SOHLE steht auf dem Boden, nie das Fell darunter (Integration W5-Körper): die Fell-Schalen (aSchale) reichen
@@ -2742,11 +2765,18 @@ class AnazhRealm_koerper_leib {
     }
     // DIE EINE GESTALT-DIAL-QUELLE: liest die acht Morph-Dials des Da-Vinci-Studios LIVE
     // (f.recipes[mensch].s). Kaltes Buch → null → Avatar aus den Host-Konstanten (_buildHumanGroup).
+    // VOLL ODER NULL (w28-loop-wurf): die Prägung steht ÜBER dem Buch — ohne Buch gibt es keinen Satz, auch mit Prägung. Bis
+    // hier trug der Leser bei kaltem Buch die Prägung ALLEIN (`{height}` ohne mass/tone): der Kern brach an ihr fail-closed
+    // (`leibGroesse`, seit 4b1e4eee), der Restore eines Stands mit Mensch-Prägung rechnet die Lebenswerte vor dem Buch — die Welt
+    // erwachte nie (kein Takt, main e699a834), und die Heimat ohne Foundry warf im Takt in die Fehler-Grenze des Loops (z385:
+    // `tickPlayerBoosts` → `recomputePlayerStats`). Jetzt baut der Leib kalt aus den Konstanten, und das Buch gießt ihn EINMAL nach
+    // (`_foundryIngestBook`), mit der Prägung. gate:studio-uebergabe (K)
     _koerperStudioDials() {
         const f = this._foundry;
         const rec = f && f.recipes ? f.recipes[AnazhRealm.KOERPER_HOST_RECIPE] : null;
         const s0 = rec && rec.s;
         const s = s0 && typeof s0 === "object" ? s0 : null;
+        if (!s) return null;
         // DIE PRÄGUNG DES MENSCH-REZEPTS = VORRANG-Quelle (ws.studioOv, geschrieben vom EINEN Übergabe-Kanal und den
         // Werkstatt-Reglern): Dials und Gestalt-Wahlen ÜBER das Buch (bmDials → Mensch-Ofen-Memo-Key → bakeMenschInstance).
         // Beim Peer-Avatar-Guss FÜHRT die Prägung des SENDERS: _p2pApplyPeerSoul setzt sie transient in
@@ -2755,7 +2785,7 @@ class AnazhRealm_koerper_leib {
             this._activePeerUebergabe !== undefined && this._activePeerUebergabe !== null
                 ? this._activePeerUebergabe
                 : this._studioPraegung(AnazhRealm.KOERPER_HOST_RECIPE);
-        return ue && Object.keys(ue).length ? Object.assign({}, s || {}, ue) : s;
+        return ue && Object.keys(ue).length ? Object.assign({}, s, ue) : s;
     }
 
     // Der Mensch hängt an derselben Größen-Achse: die koerperstudio-Dials tragen den Größen-Faktor in
@@ -2988,6 +3018,9 @@ AnazhRealm._landungGesetz = function () {
 // Menschen aus dem Ofen; carPhys des Wagens). Bis 0710-4 hielt STOSS zwei Studio-Größen
 // (dichteLeib 1000 über eine Kapsel aus der Hüft-Höhe — der Hirsch wog 436 kg, der Bär 255 —, dichteWagen 150).
 AnazhRealm.LEIB_KLASSEN = Object.freeze(["fell", "haut"]); // die Material-Klassen der geschlossenen Haut eines Leibs
+// DAS KNOCHEN-RASTER (`_ofenSkelett`): die Knochen-Reihe jeder Ofen-Haut ist ein Vielfaches davon — Leiber eines Graphen mit
+// 17 bis 32 Knochen teilen EIN Programm (die Reihe kostet je Füllplatz 64 B Knochen-Matrix je Bild).
+AnazhRealm.KNOCHEN_RASTER = 16;
 // DIE KOPF-KLASSE (`_kopfKlasse`, mensch-kopf und haar): gelenk = die Gelenke des Kopfs (Kopf, Augen, Iris, Lider des Rigs) ·
 // iris = das Gelenk, an dem ein Teil ohne Stoff-Klasse das Auge ist · anteil = ab diesem Anteil seiner Haut-Gewichte an ihnen
 // gehört ein Teil zum Kopf — die Werte der Teilung, die bis w4-bewohner-wache in der Werkbank stand (haar.K2)

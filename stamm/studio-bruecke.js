@@ -162,6 +162,12 @@ class AnazhRealm_studio_bruecke {
         // ein Gesetzbuch der Bibliothek fällt im Faden beim Namen (Signatur, Auspacken, Namensraum, Laden) — laut, je Faden
         if (m.type === "buch-abgewiesen")
             this.log(`GESETZBUCH ${String(m.code).slice(0, 16)} abgewiesen: ${m.grund}`, "ERROR");
+        // die Platte eines Fadens fiel (die Schale meldet es einmal, `faellt`): er baut jede Lieferung im Studio
+        else if (m.type === "platte-fiel")
+            this.log(
+                `FOUNDRY-PLATTE ${m.teil === "karte" ? "trägt keine Karte" : "gefallen"}: ${String(m.grund).slice(0, 200)}`,
+                "ERROR"
+            );
         else if (m.type === "asset") {
             // Das Budget-Gesetz am Studio-Ausgang (W8) meldet einen Bruch LAUT — nie still.
             if (Array.isArray(m.budgetBruch) && m.budgetBruch.length)
@@ -233,6 +239,15 @@ class AnazhRealm_studio_bruecke {
         const m = f.buch;
         f.buch = null;
         if (m) this._foundryIngestBook(m);
+    }
+    // DAS BUCH ÖFFNET SICH (EINE Antwort, zwei Leser): solange der Faden nicht steht oder sein Buch nicht in der Welt liegt, ist
+    // die Bibliothek offen — dem ersten Bild sagt es `_weltbildFehlt`, jeder Linse und dem Wort „die Welt steht" `_weltOffen`.
+    // Bis w27-foundry-halter zählte `_weltOffen` die Foundry erst ab ihrem ersten Auftrag: an der GTX 1050 (HDD) erreicht die
+    // Antwort auf fetch und import den Faden 9–25 s nach dem Ruf (Chromes Code-Cache-Faden stempelt davor je geladenem Skript,
+    // 196 × ~130 ms, und beantwortet die Rückfrage des Fadens der Reihe nach) — so lange nannte die Welt sich „nichts offen".
+    _foundryBuchOffen() {
+        const f = this._foundry;
+        return this._foundryEnabled() && !(f && f.ready && f.recipes);
     }
     // Wie viele Werk-Fäden: einer je vier Kerne, höchstens FOUNDRY_WERK_FAEDEN — die Kerne
     // allein entscheiden, nie der Renderer.
@@ -730,6 +745,11 @@ class AnazhRealm_studio_bruecke {
                 const ab = (e, grund) => W.postMessage({ type: "buch-abgewiesen", code: e.code, grund });
                 const vergeben = new Set(manifest.flatMap((c) => [c.id, c.ns]).filter(Boolean));
                 const zeilen = [];
+                // DIE QUELLE EINES BUCHS HOLT KEIN ABRUF (w28-weltbild-kalt): sie liegt unter einer Blob-Adresse, und die CSP der
+                // Seite (connect-src ohne blob:) trägt im Faden weder XHR noch fetch dorthin, nur importScripts — die Schale
+                // bekommt den Text, den der Start schon hält (`texte`, über den EINEN Abruf). Bis hier fiel ihr Abruf, und
+                // die Platte des Fadens schwieg sich aus: mit einem Buch des Spielers baute jeder Boot jede Lieferung neu.
+                const texte = new Map();
                 for (const [e, quelle] of buecher) {
                     if (typeof quelle !== "string") {
                         ab(e, quelle === false ? "signatur" : "auspacken");
@@ -745,6 +765,7 @@ class AnazhRealm_studio_bruecke {
                     }
                     [id, ns[0]].forEach((n) => vergeben.add(n));
                     const u = URL.createObjectURL(new Blob([quelle], { type: "text/javascript" }));
+                    texte.set(u, quelle);
                     zeilen.push([e, { id, ns: ns[0], scripts: [u], buch: e.code }]);
                     manifest.push(zeilen[zeilen.length - 1][1]);
                 }
@@ -763,7 +784,7 @@ class AnazhRealm_studio_bruecke {
                     platte: b.platte,
                     kerne,
                     wirt: b.wirt || [],
-                    hole,
+                    hole: (u) => (texte.has(u) ? texte.get(u) : hole(u)),
                 });
                 T.ColorManagement.enabled = false;
                 W.THREE = Object.assign({}, T);
@@ -908,6 +929,15 @@ class AnazhRealm_studio_bruecke {
         const artVon = (pid) => eigner((n) => !!n.PRESETS && Object.prototype.hasOwnProperty.call(n.PRESETS, pid));
         let db = null;
         let dbTot = !cfg.platte || typeof indexedDB === "undefined";
+        // DIE PLATTE FÄLLT LAUT (w28-weltbild-kalt): eine Platte, die der Wirt will und die nicht trägt — eine Quelle, die der
+        // Faden nicht holt, eine IndexedDB, die nicht öffnet oder nicht schreibt —, meldet es EINMAL beim Namen
+        // (`platte-fiel`, der Wirt loggt ERROR, `_foundryAntwort`); der Faden baut weiter jede Lieferung im Studio. Bis hier
+        // fing ein stummes `catch` den Fall: der Faden arbeitete byte-gleich ohne Platte, und kein Lauf sagte es.
+        const faellt = (grund) => {
+            if (!dbTot) roh({ type: "platte-fiel", world: "terrain", grund: String(grund).slice(0, 200) });
+            dbTot = true;
+            return null;
+        };
         const platte = dbTot
             ? Promise.resolve(null)
             : Promise.all(kerne.map((k) => Promise.all(k.urls.map(text)).then((t) => t.join("\n"))))
@@ -923,7 +953,8 @@ class AnazhRealm_studio_bruecke {
                           return new Promise((resolve) => {
                               const req = indexedDB.open("anazhFoundryAssets", 1);
                               req.onupgradeneeded = () => req.result.createObjectStore("assets");
-                              req.onerror = () => resolve(null);
+                              req.onerror = () =>
+                                  resolve(faellt("die IndexedDB öffnet nicht — " + (req.error && req.error.message)));
                               req.onsuccess = () => {
                                   const d = req.result;
                                   const t = tx(d, "readwrite");
@@ -947,12 +978,13 @@ class AnazhRealm_studio_bruecke {
                                       };
                                   };
                                   t.oncomplete = () => resolve(d);
-                                  t.onerror = () => resolve(null);
+                                  t.onerror = () =>
+                                      resolve(faellt("der Stempel schreibt nicht — " + (t.error && t.error.message)));
                               };
                           });
                       })
                   )
-                  .catch(() => null)
+                  .catch((e) => faellt((e && e.message) || e))
                   .then((d) => {
                       db = d;
                       if (!d) dbTot = true;
@@ -977,14 +1009,17 @@ class AnazhRealm_studio_bruecke {
             if (!db || dbTot) return;
             try {
                 const t = tx(db, "readwrite");
-                t.objectStore("assets").put(wert, schluessel(l)).onerror = () => {
-                    dbTot = true; // Quota/Fehler → nur noch Studio, nie still halb
+                t.objectStore("assets").put(wert, schluessel(l)).onerror = (ev) => {
+                    // Quota/Fehler → nur noch Studio, laut und nie halb
+                    faellt(
+                        "ein Wert schreibt nicht — " + (ev && ev.target && ev.target.error && ev.target.error.message)
+                    );
                 };
                 // Der Put schließt, ohne dass dieser Faden seinen Erfolg erst abholt (er fällt mitten in einen Studio-
                 // Lauf): der nächste Lauf wartet nur einen Ereignis-Umlauf, nie die Schreib-Zeit.
                 if (typeof t.commit === "function") t.commit();
-            } catch (_e) {
-                dbTot = true;
+            } catch (e) {
+                faellt("ein Wert schreibt nicht — " + (e && e.message));
             }
         };
         // Liegt die Lieferung auf der Platte? (count statt get: der Vorrat fragt nur, nie die Bytes)
@@ -1107,7 +1142,16 @@ class AnazhRealm_studio_bruecke {
             wirt ||
             (wirt = Promise.all((cfg.wirt || []).map(text))
                 .then((t) => (t.length ? hex(t.map((s) => s.replace(/VERSION = "[^"]*"/g, "")).join("\n")) : null))
-                .catch(() => null));
+                // eine Quelle des Wirts, die der Faden nicht holt: laut beim Namen, die Platte trägt dann keine Karte
+                .catch((e) => {
+                    roh({
+                        type: "platte-fiel",
+                        world: "terrain",
+                        teil: "karte",
+                        grund: String((e && e.message) || e).slice(0, 200),
+                    });
+                    return null;
+                }));
         const karte = (m) => {
             const l = { eigner: artVon(m.presetId), rest: m.platte };
             if (m.type === "karte-ablage")

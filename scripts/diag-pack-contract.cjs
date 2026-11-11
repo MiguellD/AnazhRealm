@@ -95,7 +95,30 @@ async function selftest() {
     // … und ein Manifest, das dem Faden eine zweite Engine mitgibt (die r128-lib bis w5-pipeline), bricht beim Namen
     const z = await bootLauf(JSON.stringify(PK.readManifest(PK.ROOT).map((c) => ({ ...c, lib: ["x.js"] }))));
     check(/trägt lib/.test(z.fehler), "Täter-Manifest mit lib → ROT beim Namen");
+    // … und ein Start, der der Schale den Text des Buchs nicht reicht: ihr Abruf der Blob-Adresse fällt, die Platte fällt LAUT
+    const anker = "hole: (u) => (texte.has(u) ? texte.get(u) : hole(u)),";
+    let stand = false;
+    const stumm = await bootLauf(ausDatei(path.join(PK.ROOT, "cores.manifest.json")), {
+        buch: buchEintrag(),
+        wandel: (b) => ((stand = b.includes(anker)), b.replace(anker, "hole,")),
+    });
+    check(stand, "Selbst-Test-Anker steht im Boot-Blob: der Start reicht der Schale den Text des Buchs");
+    check(
+        stumm.posts.some((m) => m && m.type === "platte-fiel" && /blob:/.test(String(m.grund))) && stumm.stempel !== stumm.sollStempel + "\n\n" + BUCH_QUELLE,
+        "Täter-Start ohne den Text des Buchs → die Platte fällt LAUT beim Namen (platte-fiel), kein Stempel"
+    );
     urteilEnde(fails, "\n❌ SELBST-TEST ROT — der Detektor ist vakuös.", "\n✅ SELBST-TEST GRÜN — ein korruptes Pack-Artefakt wird sicher rot.");
+}
+
+// EIN GESETZBUCH DES SPIELERS, wie die Bibliothek es dem Faden reicht (`_bibliothekBuecher`: code · kanon · sig · autor): der
+// Quelltext deflate-raw in base64 im signierten Kanon, die Signatur Ed25519 über die Bytes des Kanons, der Schlüssel frisch.
+const BUCH_QUELLE = "self.__probeCore = { PRESETS: {} };";
+function buchEintrag(quelle = BUCH_QUELLE) {
+    const K = require("crypto");
+    const { publicKey, privateKey } = K.generateKeyPairSync("ed25519");
+    const kanon = JSON.stringify({ buch: require("zlib").deflateRawSync(Buffer.from(quelle, "utf8")).toString("base64") });
+    const sig = K.sign(null, Buffer.from(kanon, "utf8"), privateKey).toString("hex");
+    return { code: "probe-buch", kanon, sig, autor: Buffer.from(publicKey.export({ format: "jwk" }).x, "base64url").toString("hex") };
 }
 
 // DER BOOT ALS LAUF (B3a): die Geburt des Wirts (`_ensureAssetFoundry` der echten Klasse im vm, `ladeKlasse`) baut den
@@ -103,18 +126,22 @@ async function selftest() {
 // synchronen Abruf des Fadens liefert (`_foundryHole`, w28-foundry-frueh), Engine (das import() ihres Blob-Moduls — die
 // Engine der Welt, three r184, beim Namen), Laden und Digest mitschreibt. Das Soll kommt aus dem echten Manifest und der
 // Import-Karte von index.html; ohne Blob bei der Geburt nennt `fehler` den Täter.
-async function bootLauf(text) {
+// MIT EINEM BUCH DES SPIELERS (`buch`: ein signierter Eintrag der Bibliothek, `buchEintrag`; w28-weltbild-kalt): der Schein prüft
+// die Signatur und packt aus wie der Faden (WebCrypto, DecompressionStream), sein importScripts führt die Blob-Quelle aus, und
+// sein XMLHttpRequest wirft an einer Blob-Adresse wie die CSP der Seite — die Schale stempelt das Buch nur, wenn der Start ihr
+// den Text reicht, den er hält. `wandel` färbt den Boot-Blob (der Täter im Selbsttest).
+async function bootLauf(text, { buch = null, wandel = null } = {}) {
     const vm = require("vm");
     const { AnazhRealm: A, ctx } = stammLib.ladeKlasse(PK.ROOT);
     const g = vm.runInContext("globalThis", ctx);
-    const aus = { geburt: null, fehler: null, laden: null, stempel: null, wand: false };
+    const aus = { geburt: null, fehler: null, laden: null, stempel: null, wand: false, posts: [] };
     let blob = null;
     Object.assign(g, { indexedDB: {}, crypto: { subtle: {} }, location: { href: "http://wirt/index.html" } });
     g.document = { querySelector: () => ({ textContent: JSON.stringify({ imports: { three: "." + ENGINE_MODUL() } }) }), querySelectorAll: () => [] }; // prettier-ignore
     g.Blob = function (teile) { blob = teile.join(""); }; // prettier-ignore
     g.URL = class extends URL { static createObjectURL() { return "blob:boot"; } }; // prettier-ignore
     g.Worker = function (_u, o) { aus.geburt = o?.name || "ohne Namen"; this.postMessage = () => {}; }; // prettier-ignore
-    const wirt = Object.assign(Object.create(A.prototype), { state: {}, _foundryHelfer() {}, _stoffBruch: (w, e) => e || new Error(w) }); // prettier-ignore
+    const wirt = Object.assign(Object.create(A.prototype), { state: {}, _foundryHelfer() {}, _stoffBruch: (w, e) => e || new Error(w) }, buch ? { _bibliothekBuecher: () => [buch] } : {}); // prettier-ignore
     try { A.prototype._ensureAssetFoundry.call(wirt, true); } catch (e) { aus.fehler = e.message; } // prettier-ignore
     const echt = PK.readManifest(PK.ROOT);
     const url = (p) => new URL(p + "?v=" + A.VERSION, "http://wirt/index.html").href;
@@ -128,21 +155,35 @@ async function bootLauf(text) {
     // der Schein trägt kein fetch: ein asynchroner Abruf des Boots bricht beim Namen (`fehler`) — im Spiel stünde seine Antwort
     // hinter den Skript-Stempeln der Seite an (gate:fluss S9). Sein XMLHttpRequest antwortet synchron: das Manifest `text`,
     // je Quelle `<url>`; sein Blob trägt den Text, seine Blob-URL nennt ihn — der Lader liest daran die Datei der Engine.
-    const w = { TextEncoder, indexedDB: {}, addEventListener: (t) => ord.push(t), removeEventListener() {}, postMessage: (m) => (aus.post = m) }; // prettier-ignore
-    w.XMLHttpRequest = function () { this.open = (_m, u) => (this.u = u); this.send = () => Object.assign(this, { status: 200, responseText: /cores\.manifest\.json/.test(this.u) ? text : `<${this.u}>` }); }; // prettier-ignore
-    w.Blob = function (teile) { this.text = teile.join(""); }; // prettier-ignore
-    w.URL = class extends URL { static createObjectURL(b) { return "blob:" + b.text; } static revokeObjectURL() {} }; // prettier-ignore
-    w.setTimeout = (f) => { try { f(); } catch (e) { aus.fehler = e.message; } }; // prettier-ignore
+    // DAS EREIGNIS DES BUCHS (die Warte-Wand: nie die Wanduhr): die Schale stempelte es, die Platte fiel, es wurde abgewiesen
+    // oder der Boot brach — eines davon kommt in jedem Lauf mit Buch
+    let buchKam = null;
+    const buchEreignis = new Promise((r) => (buchKam = r));
+    const w = { TextEncoder, TextDecoder, atob, btoa, DecompressionStream, indexedDB: {}, addEventListener: (t) => ord.push(t), removeEventListener() {}, postMessage: (m) => (aus.posts.push(m), (aus.post = m), m && (m.type === "platte-fiel" || m.type === "buch-abgewiesen") && buchKam()) }; // prettier-ignore
+    const kontext = vm.createContext(w);
+    // eine Blob-Adresse holt der Schein nicht (die CSP der Seite: connect-src ohne blob:) — nur sein importScripts führt sie aus
+    w.XMLHttpRequest = function () { this.open = (_m, u) => (this.u = u); this.send = () => { if (String(this.u).startsWith("blob:")) throw new Error("NetworkError: kein Abruf von blob: (connect-src)"); Object.assign(this, { status: 200, responseText: /cores\.manifest\.json/.test(this.u) ? text : `<${this.u}>` }); }; }; // prettier-ignore
+    w.Blob = class extends Blob { constructor(teile, o) { super(teile, o); this.quelle = teile.every((x) => typeof x === "string") ? teile.join("") : null; } }; // prettier-ignore
+    w.URL = class extends URL { static createObjectURL(b) { return "blob:" + b.quelle; } static revokeObjectURL() {} }; // prettier-ignore
+    w.setTimeout = (f) => { try { f(); } catch (e) { aus.fehler = e.message; buchKam(); } }; // prettier-ignore
     // die Schale (ihr Hörer) steht vor JEDEM Laden: der Halte-Hörer der Geburt und der Kanal-Hörer der Schale (die Rufe in Folge)
-    w.importScripts = (...u) => (aus.laden = ord.length > 1 && !/nicht davor/.test(aus.laden) ? [aus.laden, ...u].filter(Boolean).join(" ") : "die Schale steht nicht davor"); // prettier-ignore
+    w.importScripts = (...u) => {
+        for (const x of u) if (String(x).startsWith("blob:")) vm.runInContext(String(x).slice(5), kontext);
+        return (aus.laden = ord.length > 1 && !/nicht davor/.test(aus.laden) ? [aus.laden, ...u].filter(Boolean).join(" ") : "die Schale steht nicht davor"); // prettier-ignore
+    };
     const st = [];
-    w.crypto = { subtle: { digest: (_a, b) => (st.push(new TextDecoder().decode(b)), (aus.stempel = st.join("\n\n")), new Promise(() => {})) } }; // prettier-ignore
+    const echtKrypto = require("crypto").webcrypto.subtle;
+    w.crypto = { subtle: { digest: (_a, b) => (st.push(new TextDecoder().decode(b)), (aus.stempel = st.join("\n\n")), st.length > echt.length && buchKam(), new Promise(() => {})), importKey: (...a) => echtKrypto.importKey(...a), verify: (...a) => echtKrypto.verify(...a) } }; // prettier-ignore
     w.self = w.globalThis = w;
     // der Lader des Scheins: das import() des Boots (das Blob-Modul der Engine) holt den Namensraum der Engine-Datei und
     // schreibt die URL mit, deren Text der Blob trägt (vm lädt Module nur unter --experimental-vm-modules)
     w.__lader = async (u) => ((aus.motor = String(u).replace(/^blob:<(.*)>$/, "$1")), ENGINE_THREE());
-    vm.runInContext(blob.replace(/\bimport\(/, "__lader("), vm.createContext(w));
+    vm.runInContext((wandel ? wandel(blob) : blob).replace(/\bimport\(/, "__lader("), kontext);
     for (let i = 0; i < 250 && !aus.fehler && (!aus.laden || st.length < echt.length); i++) await new Promise((r) => setImmediate(r)); // prettier-ignore
+    // mit Buch: Signatur und Auspacken rechnen außerhalb der Umläufe des Scheins — der Lauf wartet auf das EREIGNIS des Buchs,
+    // danach laufen die Digests des Stempels und die Meldungen des Starts aus (gezählte Umläufe)
+    if (buch && !aus.fehler) await buchEreignis;
+    for (let i = 0; buch && i < 50; i++) await new Promise((r) => setImmediate(r));
     w.postMessage({ type: "asset", meshes: [{ position: { array: new Float32Array(3) }, aWind: { array: new Float32Array(3) } }] }); // prettier-ignore
     aus.wand = !!(aus.post?.meshes[0].position && !aus.post.meshes[0].aWind);
     return aus;
@@ -188,6 +229,14 @@ async function main() {
     check(lauf.motor === lauf.sollMotor, `Boot: Engine der Welt (pipeline.K5) ${lauf.motor}`); // prettier-ignore
     check(lauf.wand, "Boot: die Konsum-Wand (FOUNDRY_LESEN) reist in die Schale — ein ungelesenes Attribut fällt vor dem Transfer");
     check(lauf.stempel === lauf.sollStempel && !labor.test(lauf.stempel), "Stempel: je Kern seine scripts · engine · bruecke (Mesh-Extraktion), keine Labor-Shell (K42)"); // prettier-ignore
+    // (b2) DER BOOT MIT EINEM BUCH DES SPIELERS (w28-weltbild-kalt): signiert, ausgepackt, geladen — die Schale stempelt seinen
+    // Text, den der Start ihr reicht (eine Blob-Adresse holt der Faden unter der CSP der Seite nie), und die Platte fällt nicht
+    const mitBuch = await bootLauf(ausDatei(path.join(PK.ROOT, "cores.manifest.json")), { buch: buchEintrag() });
+    const art = (t) => mitBuch.posts.filter((m) => m && m.type === t).length;
+    check(
+        !mitBuch.fehler && mitBuch.stempel === mitBuch.sollStempel + "\n\n" + BUCH_QUELLE && !art("platte-fiel") && !art("buch-abgewiesen"),
+        `Boot mit Buch des Spielers: die Schale stempelt den Text des Buchs, die Platte steht (${mitBuch.fehler || `platte-fiel ${art("platte-fiel")} · abgewiesen ${art("buch-abgewiesen")}`})`
+    );
     if (fails) {
         console.error(`\n❌ ROT — ${fails} statische Prüfung(en) verletzt (Browser-Teil übersprungen).`);
         process.exit(1);
