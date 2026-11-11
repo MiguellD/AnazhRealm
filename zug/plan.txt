@@ -1,5 +1,9 @@
 # zug/plan.txt — was ansteht (Koordinator schreibt, messplatz-blick zeigt): je Zeile Zustand · Was · Wer/Wo · Ziel
-# Stand 11.11. 04:50 · main ab2f2eed (z379 w28-buehne-uhr, kein Laufzeit-Byte — die erste Landung des Kontos) · gebucht 215/330 · Konto 11 (Koordinator Radeon)
+# Stand 11.11. 05:30 · main ab2f2eed (z379 w28-buehne-uhr, kein Laufzeit-Byte — die erste Landung des Kontos) · gebucht 215/330 · Konto 11 (Koordinator Radeon)
+angefragt (Cloud, Schöpfer 05:25 „Ja, Cloud“) w28-fell-programm  EIN Vertex-Programm je Fell-Stoff statt je Knochenzahl (8 Module + 8 Pipelines je Bühnen-Runde, FUND der OMEN)  —  Cloud „Fell: ein Vertex-Programm je Stoff“  —  Pflicht-Offen B; Probe zeit:gate:weltbild-frost:echt + bild:genesis@0.5
+angefragt (Cloud) w28-tag-kurve  licht.K1 0 → 2: die Tag-Kurve über die ganze Bahn (heute ROT: Sprung 0,55 EV, Buckel 0,52 EV, tiefe Sonne R/B ×0,90 statt ≥ 1,3, Nacht am Spawn −1,7 EV)  —  Cloud „Licht: die Tag-Kurve über die ganze Bahn“  —  SICHTBAR: Bilder der Probe (wiese@0.27/0.5/0.73, genesis@0.05) mit eigenem Auge vor dem Zug
+abgegeben w28-frost-waerme 8ceafbe4  das Warten der Frost-Wand rechnete NaN (`fehlt += o.isMesh && …`, seit 30.10. EIN Bild je Seele): EIN Zähler `F.ungezeichnet`, S2 +0/+0, NEUBAU_MAX zurück auf 2; GTX 1060 main 7/7 ROT ↔ Zweig 6/6 GRÜN  —  OMEN  —  Vorrang nach z380
+abgegeben w28-stoff-gesetz 7e890b9d  die Cloud hat die zwei Wände von z377 geheilt (halten.K2 im Klang-Gesetz, LAUB-LICHT wasser in der Linse), Probe GRÜN 03:22  —  Cloud „Breite Stoff“  —  bereit für den Zug
 fährt z380 seit 04:42: w28-wand-zug · w28-frost-rand · w27-foundry-halter · w27-ort-pose-voll  —  Dienst 17fabf59 (Vorrang-Liste in der Reihe ihrer Datei)  —  danach vorn: w28-foundry-frueh
 abgegeben w28-foundry-frueh 9c10af87  der Studio-Faden holt nur synchron: das Buch im echten Spiel 30,5–44,6 s → 5,8–6,4 s, erstes Weltbild kalt 41–57 s → 24–25 s (GTX 1050, HDD, 3 ↔ 3); Checks GRÜN  —  GTX 1050  —  Zug nach z380 (Vorrang)
 läuft weltbild-kalt  6 s → 24 s zerlegen (wer hält das erste Weltbild nach dem Buch), dieselbe Klasse in Voxel- und Haupt-Faden, Zweig w28-weltbild-kalt  —  GTX 1050  —  Pflicht-Offen B
