@@ -3241,7 +3241,7 @@ hauptLauf(async () => {
                 // der Sonne) — die graue Fläche im Licht der Welt gegen das Licht des Wegs
                 if (/^(panorama|feld|spiegel|wasser)\d*$/.test(art)) {
                     if (!Object.keys(welt).length) await umstellen({ ort: "dorf" }); // der Feld-Pass steht erst im Takt
-                    welt[zeile] = (await evalRuf(`return await __lichtWeg({ weg: "${art}", uhr: ${uhr} });`)).ergebnis;
+                    welt[zeile] = ergebnis(await evalRuf(`return await __lichtWeg({ weg: "${art}", uhr: ${uhr} });`)); // ein Wurf des Wegs reist als `fehler` beim Namen
                     continue;
                 }
                 const [haus, boden] = [art === "haus", art === "ring"];

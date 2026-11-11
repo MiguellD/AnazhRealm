@@ -1392,12 +1392,20 @@
     //    √(E/ρ) der Zeile (`schall`, m/s), κ die Gestalt des Körpers in 1/m (Biege-Schwingung des freien Stabs: 1,03 · Dicke /
     //    Länge²; ohne Maß des Wirts die Bezugs-Gestalt `gestalt`) —, und sie verklingt mit dem Verlustfaktor η der Zeile, τ =
     //    1/(π·η·f): Stahl (5 144 m/s, η 0,0003) singt bei 514 Hz über zwei Sekunden, Bronze tiefer (3 586 m/s), Granit klickt
-    //    73 ms, Leder (482 m/s) brummt bei 48 Hz, Gewebe (32 m/s) schwingt unter `minHz` und schweigt. Dazu der zweite
-    //    Biege-Ton des freien Stabs (× 2,756, `oberton`), der schneller fällt. Bis w28 sang ein Partner nur mit der Tag-Achse
-    //    `resoniert` und der Tonhöhe der Tag-Achsen haerte und dichte.
+    //    73 ms, Leder (482 m/s) brummt bei 48 Hz, Gewebe (32 m/s) schwingt unter `minHz` und schweigt.
+    //    WIE LAUT und WIE HELL er singt, entscheidet das PAAR, nie der Partner allein — zwei Folgen desselben Kontakts:
+    //    (1) DIE TEILUNG: zwei Federn in Reihe tragen dieselbe Kraft, die Form-Energie des Stoßes liegt im Partner i zum Anteil
+    //    E*/Eᵢ (der weichere nimmt sie) — sein Pegel ist √(E*/Eᵢ): die Klinge singt auf Stahl mit 0,71, auf Granit mit 0,44, auf
+    //    Eiche mit 0,22, im Leib gar nicht. (2) DIE ANREGUNG: ein Kraft-Stoß der Dauer T regt einen Teilton f mit der Hülle
+    //    seines Spektrums an, 1/(1 + (f/f_K)²) mit f_K = 1/(2T) dem Band des Kontakts (Halbsinus-Stoß) — die Teiltöne des freien
+    //    Stabs (`stab`: 1 · 2,756 · 5,404 · 8,933, am Stab-Ende alle gleich stark) klingen bis zum Band des Paars: Stahl auf
+    //    Granit hell bis 3 kHz, auf Eiche bis 1,8 kHz, ein weicher Schlag (44 Hz) regt keinen an. Ein Teilton unter `stillDb`
+    //    spielt nicht. Bis zur ersten Fassung von w28 sang jeder Partner in jedem Paar gleich (zwei Teiltöne, fester Pegel):
+    //    Stahl auf Holz und Stahl auf Stein lagen 7 Hz auseinander (642 / 649 Hz, gate:kampf-gefuehl halten.K2 ROT); bis w28
+    //    sang er nur mit der Tag-Achse `resoniert` und der Tonhöhe der Tag-Achsen haerte und dichte.
     //    Der Wirt reicht die zwei Zeilen seiner Stoff-Tafel ({ E in Pa, schall in m/s, eta }) und den Ausgang. ──
     // prettier-ignore
-    var TREFFER_PAAR = { kontaktHz: 700, minHz: 30, q: 1.2, kontaktSek: 0.05, gain: 1, ring: 0.04, gestalt: 0.1, oberton: [2.756, 0.5], anSek: 0.004, ringSek: 1.6 };
+    var TREFFER_PAAR = { kontaktHz: 700, minHz: 30, q: 1.2, kontaktSek: 0.05, gain: 1, ring: 0.04, gestalt: 0.1, stab: [1, 2.756, 5.404, 8.933], stillDb: -60, anSek: 0.004, ringSek: 1.6 };
     // trefferTon(zeile) → { hz, sek } | null — rein: der Ton der Zeile und die Zeit, in der seine Hülle auf 1/e fällt; null,
     // wenn die Zeile keine Schallgeschwindigkeit oder Dämpfung trägt oder ihr Ton unter `minHz` liegt.
     function trefferTon(z) {
@@ -1407,7 +1415,8 @@
         return hz < P.minHz ? null : { hz: hz, sek: 1 / (Math.PI * eta * hz) };
     }
     // trefferPaar(ctx, ausgang, a, b) → { quelle, hz, E, ton } — hz das Band des Kontakts, E die Steifigkeit E* des Paars in
-    // Pa, ton die Töne der zwei Partner in Hz (null: er schweigt).
+    // Pa, ton die Grundtöne der zwei Partner in Hz (null: er schweigt — seine Zeile trägt keinen Ton oder das Paar regt ihn
+    // nicht an).
     function trefferPaar(ctx, ausgang, a, b) {
         var P = TREFFER_PAAR, t = ctx.currentTime, E = 1 / (1 / a.E + 1 / b.E);
         var hz = Math.max(P.minHz, P.kontaktHz * Math.pow(E / 1e9, 0.4)), n = Math.max(1, Math.round(P.kontaktSek * ctx.sampleRate));
@@ -1424,23 +1433,27 @@
         g.connect(ausgang);
         src.onended = function () { try { band.disconnect(); g.disconnect(); } catch (_e) {} };
         src.start(t);
+        var still = Math.pow(10, P.stillDb / 20);
         var ton = [a, b].map(function (Z) {
-            var T = trefferTon(Z);
+            var T = trefferTon(Z), teil = Math.sqrt(E / Z.E), klingt = false;
             if (!T) return null;
-            [[1, 1], P.oberton].forEach(function (m) {
-                var o = ctx.createOscillator(), gr = ctx.createGain(), tau = T.sek / m[0];
+            P.stab.forEach(function (m) {
+                var f = T.hz * m, pegel = teil / (1 + (f / hz) * (f / hz)), tau = T.sek / m;
+                if (pegel < still || f >= ctx.sampleRate / 2) return;
+                var o = ctx.createOscillator(), gr = ctx.createGain();
                 o.type = "sine";
-                o.frequency.value = T.hz * m[0];
+                o.frequency.value = f;
                 gr.gain.setValueAtTime(0, t);
-                gr.gain.linearRampToValueAtTime(P.ring * m[1], t + P.anSek);
+                gr.gain.linearRampToValueAtTime(P.ring * pegel, t + P.anSek);
                 gr.gain.setTargetAtTime(0, t + P.anSek, tau);
                 o.connect(gr);
                 gr.connect(ausgang);
                 o.onended = function () { try { gr.disconnect(); } catch (_e) {} };
                 o.start(t);
                 o.stop(t + Math.min(P.ringSek, P.anSek + 6.9 * tau));
+                klingt = true;
             });
-            return T.hz;
+            return klingt ? T.hz : null;
         });
         return { quelle: src, hz: hz, E: E, ton: ton };
     }
