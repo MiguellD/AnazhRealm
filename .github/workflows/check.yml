@@ -136,7 +136,7 @@ jobs:
               # `gate:*` und jeder Teil dieser Statik in einem Workflow — oder steht mit Klasse und Grund in der
               # Ausnahme-Liste von scripts/diag-ci-deckung.cjs. gate:taille startet den save-server selbst (TAILLE_PORT,
               # sonst ein freier Port des Systems, welt-boot `eigenePorte`) und liest ihn mit einem Chromium. Auf integ-probe
-              # urteilt die Wachstums-Wand über den Tag (main der letzten 24 h samt Zug; braucht origin/main mit Geschichte).
+              # urteilt die Wachstums-Wand am Zug (er trägt sich selbst, dazu der Überschuss der Woche; braucht origin/main mit Geschichte).
               run: npm run check:statik
 
             - name: Streu-Wahrheit (die Studio-Arten der Nah-Streu tragen das Farb-Gesetz, ihr Stoff liest den EINEN Himmel)
