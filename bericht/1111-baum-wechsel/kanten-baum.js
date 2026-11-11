@@ -1,0 +1,283 @@
+// 2910 lod.K5 Staffel 1 — DER KANTEN-VERSATZ AM WECHSEL IM ECHTEN BILD (Seiten-Code für `werkbank eval`, r = Welt, T = THREE).
+// Je Familie und gezeigter Stufe die schlechteste Vorlage (die Fehler-Tafel LOD_SCHIRM, 29.10.): ein Exemplar 40 m voraus im Blick des
+// Messorts, das Auge des Spielers (1,7 m über dem Boden, KAM_FOV_GRAD) im Wechsel-Abstand des Gesetzes (`_wechselAbstand` · die
+// Schwellen der Masken von Baum und Wagen · `_archStufenGrenzen`), Blick auf die halbe Höhe. Ohne Blende und ohne Band (lodMaskOn, foundryCrossfade aus,
+// der LOD-Takt ruht: jede Stufe zeichnet voll, allein): je Abstand ein Schuss OHNE das Exemplar, einer mit der L0, einer mit der
+// gewählten Stufe — Ausgabe-Pfad 1920 × 1080 (`__ausgabeAufnahme`, EINE Aufnahme je Schuss). Die Maske einer Stufe = die Pixel,
+// deren Kanal sich gegen den Schuss ohne Exemplar um > 18 hebt; der Kanten-Versatz = Chamfer der Masken-Kanten (Euklid-Distanz-
+// Transformation, beidseitig gemittelt) in Bildpunkten. Die Karte bäckt die Welt (`_tickImpostorBake`), bevor sie zählt.
+// DIE LIEFERUNG IM RUHENDEN LOOP (w4-proben-tempo, 30.10.): die Foundry gibt, was ihr Faden baute, nur im Takt frei
+// (`_tickFoundryIngest`, stamm/dirigent-takt.js:307) — die Welt ruht in der Probe, und `stelle` wartete 400 × 50 ms auf eine Stufe,
+// die nie freikam: jeder Fall „Stufe nicht gestellt“ an GTX und Radeon (24a0f3ef, 715754fc, 98ef98bb), 14 × 20 s, der Eich-Deckel
+// 90 s riss (379e5f56). Jetzt bestellt die Probe je Familie L0 und jede gezeigte Stufe gleich nach dem Setzen und gibt die Lieferung
+// frei, bis jede steht — VOR dem ersten Schuss; zwischen leer, L0 und Stufe gibt sie nichts frei (die drei Schüsse sehen EINE
+// Szene). Der Schuss ist EINE Aufnahme (bis dahin drei, die letzte zählte): `__ausgabeAufnahme` beginnt Folge, Geschichte, Dither und
+// Schatten je Aufnahme neu (A8-n1), zwei Aufnahmen derselben Szene sind dasselbe Bild (G ↔ G2 der Klassen-Teilung: GTX 18 von 18
+// Läufen, Radeon 11 von 11 Tafel-Messungen mit 0 Pixeln); die TREUE nimmt die erste L0 ein zweites Mal und bricht laut an jedem Byte.
+// DAS WARTEN IM BAU-EREIGNIS (w4-stationen-schnell-a, 31.10.; GTX b4bcf19c ≥ 90 s am Eich-Deckel, „zuletzt: umstellen“ — die Folge
+// kam nie bis zur Antwort von kanten): DER TÄTER die Höhe des Baums — `for (i < 400 && (F.kind !== "tree" || Höhe == null))` wartete
+// für jedes Werk, das KEIN Baum ist, volle 400 × 50 ms (Null-Welt an der Mess-Wiese: Haus, Haus, Tor, Tor, Wagen je 20,2–20,9 s, 104 von
+// 108,5 s ohne Aufnahmen); dazu warteten Lieferung und `stelle` je bis 400 × 50 ms an der Wanduhr. Jetzt wartet jede Stelle auf ihr
+// Ereignis über das EINE Warten (`__gebautNach`, welt-boot): Takt um Takt (die Freigabe der Foundry, die Karte bäckt, ein Bild Pause für
+// den Faden), bis die Stufe steht und — nur am Baum — seine Höhe; solange die Welt baut, ohne Frist, hat sie nichts mehr offen, wirft
+// der Deckel nach 120 Takten beim Namen. Der Fall steht dann mit seinem Grund (`fehler`, das Urteil liest ihn als Bruch), die übrigen
+// messen weiter. Dieselbe Null-Welt: 4,2 s ohne Aufnahmen, alle 7 Fälle gestellt, Treue 0 Bytes.
+const st = r.state, rend = st.renderer, cam = st.camera, A = r.constructor;
+const W = 1920, H = 1080;
+rend.setAnimationLoop(null);
+window.__buehne({});
+const P0 = st.playerMesh.position.clone();
+const fov0 = cam.fov, kam0 = [cam.position.clone(), cam.quaternion.clone()];
+const merk = { maske: st.lodMaskOn, band: st.foundryCrossfade, takt: st.atmosphere && st.atmosphere.treeLOD };
+st.atmosphere = st.atmosphere || {};
+// die Schalter der Schüsse (ohne Blende, ohne Band, der LOD-Takt ruht) und die der Welt: geliefert wird nur unter denen der Welt —
+// ein Körper, den die Foundry unter `foundryCrossfade` aus konvertiert, trägt keine Stufen-Stempel (`_foundryBuildMesh`), und die
+// Nah-Streu, die ihn danach setzt, bricht laut (`_satzBlock(streuNah:stumpf:1:L1:…)`: Attribut aLodLevel fehlt, Werkbank 30.10.)
+const schuesse = () => ([st.lodMaskOn, st.foundryCrossfade, st.atmosphere.treeLOD] = [false, false, false]);
+const welt = () => ([st.lodMaskOn, st.foundryCrossfade, st.atmosphere.treeLOD] = [merk.maske, merk.band, merk.takt]);
+const boden = (x, z) => r._voxelSurfaceY(x, z);
+const fwd = new T.Vector3(0, 0, -1).applyQuaternion(cam.quaternion).setY(0).normalize();
+const K5 = window.__k5 || { arten: ["weide"], stufen: [1, 2], weit: 0 };
+const FAELLE = K5.arten.map((art) => ({ kind: "tree", typ: () => r._growTreeBlueprintForSpawn("baum_" + art, "lod-k5"), stufen: K5.stufen }));
+// DIE DECKUNG STATT DER FARBE (w26-lod-baum-pm, 09.11.; Radeon 87537d3f: Haus 1,64 px, am Bau 0,51–0,83): die Maske der Farbe (ein
+// Kanal hebt sich um > 18 vom leeren Schuss) ist nicht der Umriss — an der Alemannisch-L2 (26 m) zählte sie für die L0 37 311 Pixel, die
+// Geometrie deckt in derselben Pose 79 003 (47 %: dunkles Fachwerk vor dunklem Grund, die Laibung, der Schatten am Fuß); der Chamfer
+// mass die Ränder dieser Lücken mit. Jetzt urteilt die DECKUNG: die Tiefe der Szene des Schusses (`__spiegelDaten`, derselbe Pass,
+// dieselbe Folge der zeitlichen Auflösung — jeder Schuss beginnt sie neu) gegen die des leeren — ein Pixel deckt, wo das Exemplar vor
+// dem Grund steht. Gerechnet in den Pixeln der Szene (die EINE Skala, `SZENE_SKALA`), gemeldet in Bildpunkten der Ausgabe (× W / tw);
+// die Farbe reist als Zeugnis mit (`pxFarbe`, `pixelFarbe`).
+const schuss = async () => {
+    r._schattenAlleNeu();
+    const u8 = (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
+    const t = await window.__spiegelDaten();
+    return { u8, tiefe: t.tiefe, tw: t.tw, th: t.th };
+};
+// DER TAKT DES WARTENS: die Freigabe der Foundry (höchstens INGEST_BURST_CAP je Ruf; im ruhenden Loop gibt der Wächter ohnehin frei),
+// die Karte bäckt, ein Bild Pause — die Antwort des Fadens landet dazwischen. Nie ein Takt der Welt: der LOD-Takt stellte die Stufe um.
+const takt = async () => {
+    r._tickFoundryIngest(0.25);
+    r._tickImpostorBake();
+    await sleep(16);
+};
+const warteBau = (name, fertig) => window.__gebautNach(name, { fertig, bau: () => {}, takt });
+// DIE ANKUNFT AM AUGE (w25-treue-kanten, 09.11.; Radeon 28c74a9f: die Treue wich in 8 792 Bytes ab, an 46128b75 5 246, an 1561bf3a
+// 1 826 — kein Urteil): DER TÄTER ist die Welt, die im Schuss noch eintritt. Je Fall gemessen (Werkbank, frische Welt an der Mess-Wiese,
+// dieselben zwei Schüsse je L0): Baum L1 1 759 Bytes (die Nah-Streu baut im ersten Schuss einen neuen Satz — chunkSaetze 11 → 12,
+// satzStoffe 9 → 10, streuSatz 5 → 6 —, Schuss 2 bis 5 je 0 Bytes), Haus L1 1 626 und L2 56 697 (die L0 des Hauses tritt in Raten in
+// den Bau-Satz, `_bauSatzRate`, je Bild des Schusses ein Stück — die Geschichte mittelt das halbe Haus), Tor L1 413 232 und L2 3 037.
+// Jetzt kommt das Auge an, ehe es schießt: Takt um Takt (die Freigabe der Foundry, die Karte bäckt) folgen die Nah-Sätze der Kamera
+// (`__nahFolgt`) und jeder Bereich des Bau-Satzes tritt ganz ein (`_tickBauSatz(Infinity)`, wie jede Linse, die den Satz auf die
+// Wahrheit seiner Gruppen legt), bis Foundry, Karten, Bau-Satz, Nah-Streu und Nah-Wiese nichts offen haben (`_weltOffen`) und ein Takt am
+// Stand der Sätze nichts mehr ändert. Die Treue bleibt Byte für Byte.
+const satzStand = () => {
+    const o = r._weltOffen();
+    const nah = ((st.nahStreu && st.nahStreu.offen) | 0) + ((st.nahWiese && st.nahWiese.offen) | 0);
+    const stand = [st.chunkSaetze ? st.chunkSaetze.size : 0, st.satzStoffe ? st.satzStoffe.size : 0, st.nahStreu ? st.nahStreu.kacheln.size : 0, st.nahWiese ? st.nahWiese.kacheln.size : 0, o];
+    // offen nur, was im ruhenden Loop eintritt: die Lieferung der Foundry, die Karte, der Bau-Satz in Raten (der Chunk-Bau des Spielers
+    // ruht mit dem Loop — er stünde nie)
+    return { offen: nah + (o.foundry | 0) + (o.karten | 0) + (o.bau | 0), stand: JSON.stringify(stand) };
+};
+const ankommen = (name) => {
+    let vor = null;
+    return warteBau("lod.K5 die Ankunft " + name, () => {
+        window.__nahFolgt();
+        r._tickBauSatz(Infinity);
+        const s = satzStand();
+        const steht = !s.offen && s.stand === vor;
+        vor = s.stand;
+        return steht;
+    });
+};
+// die Lieferung der Stufen: je Stufe der Flatten der Foundry (null: lädt; false: kann nicht; sonst steht sie), am Baum dazu seine Höhe
+// (die Schwellen der Maske lesen sie) — bis jede Stufe antwortet
+const liefere = (e, stufen, F) => {
+    const p = r._foundryPresetForEntry(e);
+    return warteBau("lod.K5 Lieferung " + F.kind + " " + p + " L" + stufen.join("/"), () =>
+        stufen.every((s) => r._foundryFlattenFor(e, p, s) !== null) && (F.kind !== "tree" || r._lodTreeVisHeight(e) != null)
+    );
+};
+// die Maske der Farbe (das Zeugnis): ein Kanal hebt sich um > 18 vom leeren Schuss — in Bildpunkten der Ausgabe
+const maske = (a, b) => {
+    const m = new Uint8Array(W * H);
+    for (let p = 0, i = 0; p < W * H; p++, i += 4)
+        m[p] = Math.abs(a[i] - b[i]) > 18 || Math.abs(a[i + 1] - b[i + 1]) > 18 || Math.abs(a[i + 2] - b[i + 2]) > 18 ? 1 : 0;
+    return m;
+};
+// die Maske der Deckung (das Urteil): das Exemplar steht vor dem Grund des leeren Schusses — in Pixeln der Szene (tw × th)
+const deckung = (s, leer) => {
+    if (s.tw !== leer.tw || s.th !== leer.th) throw new Error("die Tiefe zweier Schüsse misst verschieden: " + [s.tw, s.th, leer.tw, leer.th]);
+    const m = new Uint8Array(s.tw * s.th);
+    for (let p = 0; p < m.length; p++) m[p] = s.tiefe[p] < leer.tiefe[p] ? 1 : 0;
+    return m;
+};
+const edt = (f, n) => {
+    const d = new Float64Array(n), v = new Int32Array(n), z = new Float64Array(n + 1);
+    let k = 0;
+    z[0] = -Infinity, z[1] = Infinity;
+    const s = (q, w) => (f[q] + q * q - (f[w] + w * w)) / (2 * q - 2 * w);
+    for (let q = 1; q < n; q++) {
+        let x = s(q, v[k]);
+        while (x <= z[k]) x = s(q, v[--k]);
+        k++, v[k] = q, z[k] = x, z[k + 1] = Infinity;
+    }
+    for (let q = 0, j = 0; q < n; q++) {
+        while (z[j + 1] < q) j++;
+        d[q] = (q - v[j]) ** 2 + f[v[j]];
+    }
+    return d;
+};
+// der Chamfer zweier Masken im Raster W2 × H2 (die Ausgabe: W × H, die Szene: tw × th)
+const chamfer = (a, b, W2 = W, H2 = H) => {
+    const [W, H] = [W2, H2];
+    // der Rahmen beider Masken (+ 8 px), die Kanten je Maske, die Distanz zur Kante der anderen
+    let [x0, y0, x1, y1] = [W, H, -1, -1];
+    for (let p = 0; p < W * H; p++) if (a[p] || b[p]) [x0, y0, x1, y1] = [Math.min(x0, p % W), Math.min(y0, (p / W) | 0), Math.max(x1, p % W), Math.max(y1, (p / W) | 0)];
+    if (x1 < 0) return { px: null, pixel: 0 };
+    [x0, y0, x1, y1] = [Math.max(0, x0 - 8), Math.max(0, y0 - 8), Math.min(W - 1, x1 + 8), Math.min(H - 1, y1 + 8)];
+    const w = x1 - x0 + 1, h = y1 - y0 + 1;
+    const kante = (m) => {
+        const k = new Uint8Array(w * h);
+        for (let y = 0; y < h; y++)
+            for (let x = 0; x < w; x++) {
+                const p = (y + y0) * W + x + x0;
+                if (m[p] && (!m[p - 1] || !m[p + 1] || !m[p - W] || !m[p + W])) k[y * w + x] = 1;
+            }
+        return k;
+    };
+    const abstand = (k) => {
+        const g = new Float64Array(w * h);
+        for (let x = 0; x < w; x++) {
+            const sp = edt(Float64Array.from({ length: h }, (_, y) => (k[y * w + x] ? 0 : 1e20)), h);
+            for (let y = 0; y < h; y++) g[y * w + x] = sp[y];
+        }
+        for (let y = 0; y < h; y++) {
+            const zl = edt(g.subarray(y * w, y * w + w), w);
+            for (let x = 0; x < w; x++) g[y * w + x] = Math.sqrt(zl[x]);
+        }
+        return g;
+    };
+    const [ka, kb] = [kante(a), kante(b)];
+    const mittel = (k, g) => {
+        let s = 0, n = 0;
+        for (let i = 0; i < k.length; i++) if (k[i]) (s += g[i]), n++;
+        return n ? s / n : NaN;
+    };
+    return { px: (mittel(ka, abstand(kb)) + mittel(kb, abstand(ka))) / 2, pixel: a.reduce((s, x) => s + x, 0) };
+};
+// die Stufe erzwingen: der EINE Wechsel (`_switchArchitectureLOD`), bis die Stufe dient (die Karte bäckt die Welt)
+const stelle = (e, s, d) =>
+    warteBau("lod.K5 Stufe " + e.type + " L" + s, () => {
+        [e._lodLevel, e._servedLod] = [s === 0 ? 1 : 0, undefined]; // kein Klammer-Kurzschluss: die Stufe kommt neu
+        return r._switchArchitectureLOD(e, s, d) && e._lodLevel === s;
+    });
+// DIE POSE DES SPIELS (w8-lod-wechsel, 03.11.): an der Grenze seiner Stufe 1 zeigt ein Tor die Flügel der L0 in der FERN-POSE, die
+// die Stufe im Körper trägt (K43-2, porta `TUER_GESETZ.fern`; der Takt `_tickPortalMembranes` stellt sie jenseits (1 − h)·ab, das Auge
+// steht hier AN der Grenze) — über den EINEN Schwenk-Träger `_tickTorFluegel`. Ohne ihn stand die L0 gebacken ZU neben der Stufe in der
+// Fern-Pose (Radeon 8e6262cc: Kathedrale L1 9,95 px — die Flügel, nie der Bau). Nur die Flügel: Licht und Membran des Tors hängen am
+// Eintrag, nie an der Stufe. Der Winkel steht im Fall (`pose`); ein Tor ohne ihn ist ein Bruch im Urteil.
+const pose = (e) => {
+    if (!(e.affordances && e.affordances.isPortal)) return undefined;
+    const rec = e.__k5Pose || (e.__k5Pose = { entry: e, tor: r._torGesetzFor(e) });
+    r._tickTorFluegel(rec, e, A._tuerFernAnteil());
+    return Number.isFinite(rec._fluegelWinkel) ? +rec._fluegelWinkel.toFixed(4) : null;
+};
+const grund = (x) => String((x && x.message) || x).split("\n")[0].slice(0, 300);
+// DER BODEN JEDES FALLS (w26-lod-baum-pm, 09.11.; Radeon 87537d3f „Wagen ohne Exemplar"): jeder Fall setzt sein Exemplar an DENSELBEN Ort
+// 40 m voraus. Bis hier nahm das Ende eines Falls nur die Instanz (`_archInstanceRemove`), der Eintrag blieb bis zum Ende der Folge — und
+// mit ihm die Hülle des Hauses: am Ort der Mess-Wiese fiel `_voxelSurfaceY` nach haus_modern von 28,64 auf 26,05 m (der Keller), jedes
+// spätere Exemplar stand 2,6 m tief (Alemannisch, Kathedrale und Geisttor halb im Boden, die Limousine ganz: Welt-y 25,73 unter dem
+// gezeichneten Boden, 0 Pixel in Farbe UND Tiefe). Allein in frischer Welt zeichnet sie (swiftshader: Deckung 0,005 px an 15 221 Pixeln).
+// Jetzt fällt das Exemplar nach seinem Fall GANZ (`removeArchitecture`), und jeder Fall misst den Boden seines Orts gegen den der Folge
+// (`bodenM`, `boden0`): ein Fall auf fremdem Grund ist ein Bruch beim Namen.
+const aus = { schirm: [W, H], fov: A.KAM_FOV_GRAD, faelle: [], treue: null, boden0: null };
+const neu = [];
+const weg = (e) => {
+    r.removeArchitecture(e);
+    neu.splice(neu.indexOf(e), 1);
+};
+try {
+    cam.fov = A.KAM_FOV_GRAD;
+    cam.updateProjectionMatrix();
+    st.playerMesh.visible = false;
+    for (const F of FAELLE) {
+        welt();
+        const m = P0.clone().addScaledVector(fwd, 40);
+        m.y = boden(m.x, m.z);
+        if (aus.boden0 === null) aus.boden0 = +m.y.toFixed(3);
+        const bodenM = +m.y.toFixed(3);
+        const e = r.spawnArchitecture(F.typ(), { x: m.x, y: m.y, z: m.z }, { silent: true, seed: 1 });
+        if (!e) {
+            aus.faelle.push({ kind: F.kind, bodenM, fehler: "kein Exemplar" });
+            continue;
+        }
+        neu.push(e);
+        if (!e.instanced) r._rebuildArchitectureMesh(e);
+        const preset = r._foundryPresetForEntry(e);
+        try {
+            await liefere(e, [0, ...F.stufen], F);
+        } catch (x) {
+            for (const s of F.stufen) aus.faelle.push({ kind: F.kind, preset, stufe: s, bodenM, fehler: "Lieferung: " + grund(x) });
+            weg(e);
+            continue;
+        }
+        schuesse();
+        const hoehe = F.kind === "tree" ? r._lodTreeVisHeight(e) : null;
+        const D = A.LOD_DISTANCES, ref = st.lodRef > 0 ? st.lodRef : D.lodRef;
+        const G = r._archStufenGrenzen(e); // null: eine Karten-Art (Baum, Wagen) wechselt an den Schwellen ihrer Maske
+        for (const [s, mal] of F.stufen.flatMap((s) => (K5.mal || [1]).map((m) => [s, m]))) {
+            const sk = e.scale > 0 ? e.scale : 1;
+            const d = mal * (G ? G.grenzen.find((g) => g.stufe === s).ab * sk : [D.thresh01, D.thresh12][s - 1] * Math.max(hoehe || ref, ref) / ref);
+            const auge = m.clone().addScaledVector(fwd, -d);
+            auge.y = boden(auge.x, auge.z) + 1.7;
+            const hoch = hoehe || 4;
+            cam.position.copy(auge);
+            cam.lookAt(m.x, m.y + hoch / 2, m.z);
+            cam.updateMatrixWorld(true);
+            r._archInstanceRemove(e);
+            await ankommen(F.kind + " leer");
+            const leer = await schuss();
+            try {
+                await stelle(e, 0, d);
+            } catch (x) {
+                aus.faelle.push({ kind: F.kind, preset, stufe: s, d: +d.toFixed(2), hoehe, fehler: "L0: " + grund(x) });
+                continue;
+            }
+            const winkel = pose(e);
+            await ankommen(F.kind + " L0");
+            const b0 = await schuss();
+            if (!aus.treue) {
+                // DIE TREUE (einmal je Lauf): dieselbe Szene ein zweites Mal — EINE Aufnahme je Schuss trägt nur, wenn sie Byte für Byte gleich ist
+                const b0b = await schuss();
+                let n = 0;
+                for (let i = 0; i < b0.u8.length; i++) if (b0.u8[i] !== b0b.u8[i]) n++;
+                for (let i = 0; i < b0.tiefe.length; i++) if (b0.tiefe[i] !== b0b.tiefe[i]) n++;
+                aus.treue = { fall: F.kind + " L0", bytes: n };
+                if (n) throw new Error("die Treue: zwei Aufnahmen derselben Szene (" + F.kind + " L0) weichen in " + n + " Bytes ab — EINE Aufnahme je Schuss trägt hier nicht");
+            }
+            try {
+                await stelle(e, s, d);
+            } catch (x) {
+                aus.faelle.push({ kind: F.kind, preset, stufe: s, d: +d.toFixed(2), hoehe, fehler: "L" + s + ": " + grund(x) });
+                continue;
+            }
+            pose(e);
+            await ankommen(F.kind + " L" + s);
+            const bs = await schuss();
+            // das Urteil in Bildpunkten der Ausgabe: der Chamfer der Deckung × W / tw, die Pixel × (W / tw) · (H / th)
+            const k = chamfer(deckung(b0, leer), deckung(bs, leer), leer.tw, leer.th);
+            const [sx, sy] = [W / leer.tw, H / leer.th];
+            const kf = chamfer(maske(b0.u8, leer.u8), maske(bs.u8, leer.u8));
+            const r3 = (x) => (x == null || !Number.isFinite(x) ? null : +x.toFixed(3));
+            aus.faelle.push({ kind: F.kind, preset, stufe: s, mal, d: +d.toFixed(2), hoehe, bodenM, maske: "tiefe", szene: [leer.tw, leer.th], px: k.px == null ? null : r3(k.px * (sx + sy) / 2), pixel: Math.round(k.pixel * sx * sy), pxFarbe: r3(kf.px), pixelFarbe: kf.pixel, pose: winkel, ok: true, geliefert: true });
+        }
+        weg(e);
+    }
+} finally {
+    for (const e of neu) r.removeArchitecture(e);
+    welt();
+    cam.fov = fov0;
+    cam.updateProjectionMatrix();
+    cam.position.copy(kam0[0]), cam.quaternion.copy(kam0[1]), cam.updateMatrixWorld(true);
+    st.playerMesh.visible = true;
+}
+return aus;
