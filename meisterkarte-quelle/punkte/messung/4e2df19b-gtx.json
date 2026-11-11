@@ -1,7 +1,7 @@
 {
  "sha": "4e2df19b5c5103b093818b62b5a84ababf85b493",
  "geraet": "gtx",
- "zeit": "2026-11-11T03:35:08.687Z",
+ "zeit": "2026-11-11T04:24:21.721Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "affekt.K4#2": {
@@ -1077,27 +1077,98 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "material.K1#1": {
+   "gruen": false,
+   "zahl": "Welt/Labor 0,9–1,1: 11/13 · im realen Band beidseits: 13/13 — fels 1.1072 · boden 1.1418 · echt beide Seiten · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.42,
+   "grund": "ROT: Welt/Labor 0,9–1,1: 11/13 · im realen Band beidseits: 13/13 — fels 1.1072 · boden 1.1418 · echt beide Seiten · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "s": 85.3,
+   "fremd": {
+    "s": 87.8,
+    "takte": 39,
+    "fremdS": 38.03,
+    "kerne": 0.433,
+    "fensterKerne": 0.61,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      17.63
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      8.25
+     ],
+     [
+      "explorer.exe LOADSAVEDWINDOWS",
+      3.72
+     ]
+    ],
+    "dienerS": 38.36,
+    "diener": [
+     [
+      "dwm.exe",
+      16.27
+     ],
+     [
+      "System",
+      15.22
+     ]
+    ],
+    "geraetS": 27.72,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      16.59
+     ],
+     [
+      "svchost.exe",
+      8.97
+     ],
+     [
+      "SearchIndexer.exe",
+      0.92
+     ]
+    ],
+    "eigenS": 279.98,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon"
+   },
+   "zeit": "2026-11-11T04:24:21.721Z",
+   "abdruck": "b8eb79afff76",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-11T03:34:24.434Z",
+  "start": "2026-11-11T04:23:48.831Z",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 7,
+  "bootS": 6.3,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": "wiese",
-    "vor": "lod.K5#1",
-    "s": 35.6,
-    "takte": 681,
+    "ort": "genesis",
+    "vor": "material.K1#1",
+    "s": 25.4,
+    "takte": 610,
     "chunks": 81,
     "nach": null
    }
   ],
   "wegeTueren": [],
+  "unerklaert": [
+   {
+    "probe": "material.K1#1",
+    "wie": "werke +5 (−0)"
+   }
+  ],
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
@@ -1110,12 +1181,12 @@
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 83,
+   "zapfen": 109,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 91.6,
-  "minuten": 1.59
+  "fahrtS": 119.3,
+  "minuten": 2.04
  },
  "ungemessen": {
   "ankunft.K1#1": {
