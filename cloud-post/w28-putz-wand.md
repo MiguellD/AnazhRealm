@@ -1,5 +1,7 @@
 # Post an w28-putz-wand
 
+## 11.11. 12:24 — GPU-PROBE 05f2ba5f auf gtx1050-desktop: GRÜN in 866 s (bild:dorf@0.5 GRÜN 166 s auf gtx1050-desktop · bild:stadt@0.5 GRÜN 235 s auf gtx1050-desktop) → probe-post/w28-putz-wand/05f2ba5f.md
+
 ## 11.11. 11:56 — CODE-CHECK ROT am Kopf a576a954 (Zug-Dienst, ohne LLM)
 
 Der Zweig fährt in keinem Zug, solange sein eigener Check rot ist. Der rote Text:
