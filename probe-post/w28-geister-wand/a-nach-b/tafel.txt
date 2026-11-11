@@ -1,0 +1,6 @@
+griechisch-vor-b L0 ↔ L1: 5.03 % > 8 · 0.32 % > 24 · Mittel 1.000 · größte 164 · Rahmen > 24: x 361–747, y 22–325
+griechisch-vor-b L0 ↔ L2: 19.86 % > 8 · 5.78 % > 24 · Mittel 5.541 · größte 231 · Rahmen > 24: x 344–750, y 0–350
+griechisch-nach-b L0 ↔ L1: 0.54 % > 8 · 0.09 % > 24 · Mittel 0.508 · größte 165 · Rahmen > 24: x 361–747, y 22–250
+griechisch-nach-b L0 ↔ L2: 20.23 % > 8 · 4.96 % > 24 · Mittel 5.277 · größte 231 · Rahmen > 24: x 344–750, y 0–350
+alemannisch-nach-b L0 ↔ L1: 4.50 % > 8 · 4.14 % > 24 · Mittel 1.802 · größte 138 · Rahmen > 24: x 338–725, y 10–331
+alemannisch-nach-b L0 ↔ L2: 18.85 % > 8 · 18.33 % > 24 · Mittel 10.422 · größte 168 · Rahmen > 24: x 325–728, y 0–348
