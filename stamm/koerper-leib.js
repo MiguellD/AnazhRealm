@@ -3049,9 +3049,11 @@ AnazhRealm._landungGesetz = function () {
 // Menschen aus dem Ofen; carPhys des Wagens). Bis 0710-4 hielt STOSS zwei Studio-Größen
 // (dichteLeib 1000 über eine Kapsel aus der Hüft-Höhe — der Hirsch wog 436 kg, der Bär 255 —, dichteWagen 150).
 AnazhRealm.LEIB_KLASSEN = Object.freeze(["fell", "haut"]); // die Material-Klassen der geschlossenen Haut eines Leibs
-// DAS KNOCHEN-RASTER (`_ofenSkelett`): die Knochen-Reihe jeder Ofen-Haut ist ein Vielfaches davon — Leiber eines Graphen mit
-// 17 bis 32 Knochen teilen EIN Programm (die Reihe kostet je Füllplatz 64 B Knochen-Matrix je Bild).
-AnazhRealm.KNOCHEN_RASTER = 16;
+// DAS KNOCHEN-RASTER (`_ofenSkelett`): die Knochen-Reihe jeder Ofen-Haut ist ein Vielfaches davon. EINE Klasse für jeden Leib
+// (w28-fell-programm): das größte Teil trägt 33 Knochen (Fuchs, Grobstufe) — mit 16 standen drei Klassen (16 · 32 · 48) und je
+// Leib-Stoff bis zu drei Vertex-Programme, die nur die Zahl trennt; die Frost-Wand S2 nennt jeden solchen Zwilling mit seinen
+// Knochenzahlen. Die Reihe kostet je Füllplatz 64 B Knochen-Matrix und eine Matrix-Multiplikation je Bild.
+AnazhRealm.KNOCHEN_RASTER = 40;
 // DIE KOPF-KLASSE (`_kopfKlasse`, mensch-kopf und haar): gelenk = die Gelenke des Kopfs (Kopf, Augen, Iris, Lider des Rigs) ·
 // iris = das Gelenk, an dem ein Teil ohne Stoff-Klasse das Auge ist · anteil = ab diesem Anteil seiner Haut-Gewichte an ihnen
 // gehört ein Teil zum Kopf — die Werte der Teilung, die bis w4-bewohner-wache in der Werkbank stand (haar.K2)
