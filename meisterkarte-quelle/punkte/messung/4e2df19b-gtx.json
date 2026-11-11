@@ -1,7 +1,7 @@
 {
  "sha": "4e2df19b5c5103b093818b62b5a84ababf85b493",
  "geraet": "gtx",
- "zeit": "2026-11-11T06:59:28.354Z",
+ "zeit": "2026-11-11T07:14:43.938Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "affekt.K4#2": {
@@ -1387,19 +1387,19 @@
   }
  },
  "sitzung": {
-  "start": "2026-11-11T06:58:55.049Z",
+  "start": "2026-11-11T07:14:08.091Z",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 5.9,
+  "bootS": 7.5,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
     "ort": null,
-    "vor": "studios.K2#2",
-    "s": 26,
-    "takte": 840,
+    "vor": "studios.K3#2",
+    "s": 26.7,
+    "takte": 834,
     "chunks": 81,
     "nach": null
    }
@@ -1417,12 +1417,12 @@
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 174,
+   "zapfen": 176,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 179.9,
-  "minuten": 3.06
+  "fahrtS": 183,
+  "minuten": 3.11
  },
  "ungemessen": {
   "ankunft.K1#1": {
@@ -1780,6 +1780,114 @@
    },
    "zeit": "2026-11-11T06:54:14.281Z",
    "abdruck": "aee8fa98714b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "studios.K3#2": {
+   "gruen": false,
+   "zahl": "Fremd-Last: node.exe scripts/diag-haus-fern.cjs 161,2 CPU-s · git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 50,3 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 34,7 CPU-s — 2,75 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon; Σ fremd 290,2 CPU-s in 148,6 s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 29,3 CPU-s · svchost.exe 12,4 CPU-s · SearchIndexer.exe 0,9 CPU-s) — kein Maß reißt (8 gemessen): das ROT liegt in einer Bedingung ohne Zahl — kein Urteil, UNGEMESSEN (die Probe sah: Dreiecke, Befehle, VRAM und GPU-ms ±5 % in 0/7 Mesh-Studios (0 Stufen), Klang 8/8 Orte im Quantum (Audio-Graph höchstens 0.138 ms), ohne garage L0 GPU 0.0236 ms↔Bank 7.6987 (+1), schmiede L0 GPU 0.0051 ms↔Bank 1.6771, portale L0 Bank 4.2358)",
+   "exit": 0,
+   "minuten": 2.44,
+   "grund": "Fremd-Last: node.exe scripts/diag-haus-fern.cjs 161,2 CPU-s · git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup 50,3 CPU-s · Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA 34,7 CPU-s — 2,75 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon; Σ fremd 290,2 CPU-s in 148,6 s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 29,3 CPU-s · svchost.exe 12,4 CPU-s · SearchIndexer.exe 0,9 CPU-s) — kein Maß reißt (8 gemessen): das ROT liegt in einer Bedingung ohne Zahl — kein Urteil, UNGEMESSEN (die Probe sah: Dreiecke, Befehle, VRAM und GPU-ms ±5 % in 0/7 Mesh-Studios (0 Stufen), Klang 8/8 Orte im Quantum (Audio-Graph höchstens 0.138 ms), ohne garage L0 GPU 0.0236 ms↔Bank 7.6987 (+1), schmiede L0 GPU 0.0051 ms↔Bank 1.6771, portale L0 Bank 4.2358)",
+   "mass": [
+    {
+     "wort": "Klang Ort 1 Audio-Graph ms",
+     "wert": 0.1383,
+     "soll": 2.6667
+    },
+    {
+     "wort": "Klang Ort 2 Audio-Graph ms",
+     "wert": 0.0606,
+     "soll": 2.6667
+    },
+    {
+     "wort": "Klang Ort 3 Audio-Graph ms",
+     "wert": 0.0502,
+     "soll": 2.6667
+    },
+    {
+     "wort": "Klang Ort 4 Audio-Graph ms",
+     "wert": 0.0607,
+     "soll": 2.6667
+    },
+    {
+     "wort": "Klang Ort 5 Audio-Graph ms",
+     "wert": 0.0667,
+     "soll": 2.6667
+    },
+    {
+     "wort": "Klang Ort 6 Audio-Graph ms",
+     "wert": 0.0606,
+     "soll": 2.6667
+    },
+    {
+     "wort": "Klang Ort 7 Audio-Graph ms",
+     "wert": 0.056,
+     "soll": 2.6667
+    },
+    {
+     "wort": "Klang Ort 8 Audio-Graph ms",
+     "wert": 0.0505,
+     "soll": 2.6667
+    }
+   ],
+   "gpu": "nvidia/pascal",
+   "s": 146.4,
+   "fremd": {
+    "s": 148.6,
+    "takte": 68,
+    "fremdS": 290.16,
+    "kerne": 1.953,
+    "fensterKerne": 2.753,
+    "namen": [
+     [
+      "node.exe scripts/diag-haus-fern.cjs",
+      161.19
+     ],
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      50.33
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      34.73
+     ]
+    ],
+    "dienerS": 58.25,
+    "diener": [
+     [
+      "dwm.exe",
+      33.11
+     ],
+     [
+      "System",
+      16
+     ]
+    ],
+    "geraetS": 43.94,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      29.27
+     ],
+     [
+      "svchost.exe",
+      12.41
+     ],
+     [
+      "SearchIndexer.exe",
+      0.88
+     ]
+    ],
+    "eigenS": 243.89,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon"
+   },
+   "ungemessen": true,
+   "zeit": "2026-11-11T07:14:43.938Z",
+   "abdruck": "40e20c122980",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
