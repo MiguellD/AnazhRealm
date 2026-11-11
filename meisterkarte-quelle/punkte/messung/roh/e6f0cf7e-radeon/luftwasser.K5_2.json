@@ -1,0 +1,32 @@
+{
+ "msMedian": 0.1508,
+ "msP95": 0.2303,
+ "imBildMin": 100,
+ "paare": 13105,
+ "instanzen": 500,
+ "teileJe": 5,
+ "pose": {
+  "kamera": [
+   284.87,
+   41.53,
+   388.19,
+   321.21,
+   75.87,
+   371.48
+  ],
+  "abstand": 52.7
+ },
+ "vogel": {
+  "cmd": 2,
+  "je": {
+   "haupt": 2
+  },
+  "inst": 600,
+  "dMin": 50,
+  "dMax": 560,
+  "gesamt": {
+   "cmd": 113,
+   "tris": 143070
+  }
+ }
+}

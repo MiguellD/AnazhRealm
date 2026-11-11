@@ -272,7 +272,7 @@ H.fahre(async function probeTempoGarage(H) {
     log("@@PUNKTE@@ EXIT " + g.exit);
     log("  (Welt " + (ms / 1000).toFixed(1) + " s · Garage " + g.s.toFixed(1) + " s im Fenster neben ihr)");
     return { welt: !!(welt && welt.ergebnis), garage: g };
-}); 7804 C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\e6f0cf7e-radeon\fahrzeug.K3_1.json 172
+}); 7804 C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\e6f0cf7e-radeon\fahrzeug.K3_1.json 89
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3

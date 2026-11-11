@@ -290,10 +290,19 @@ $ C:\Program Files\nodejs\node.exe -e const tor = (function sitzungTor() {
 [linse-gpu] amd/rdna-3
 @@PUNKTE@@ WELT
 {
- "fehler": "/eval: Frist 23645 ms"
+ "fehler": "/eval: Cannot set properties of undefined (setting 'w')"
 }
 @@PUNKTE@@ EXIT 1
-@@PUNKTE@@ FRIST 28 s der Probe gerissen — WELT (26.0 s)
+@@PUNKTE@@ BLICK
+{
+ "fehler": "/eval: Cannot set properties of undefined (setting 'w')"
+}
+@@PUNKTE@@ EXIT 1
+@@PUNKTE@@ FAHR
+  ❌ T4 Wechsel Third → Ego → Third in der Fahrt am Steilhang bergab: jede Stufe am Wagen, die Kamera hinter ihm, über der Fahrbahn, ohne Ruck — {"gestartet":true,"ort":[-62,-37,17.4],"stufeM":0,"band":210,"ego":[76,76],"nach10":[5.6,6.4],"abV":[9.9,8.9],"abSprung":[9.24,0.23],"abFov":[0.4,0.4,0],"stufeWer":"L1 (Band)","wiederauf":0,"ruckN":165,"ruckP95":0.003,"gleichN":438,"gleichP95":0.017,"hochN":210,"hochP05":19.975} — Täter: absteigen in voller Fahrt (9.9 · 8.9 m/s): die Kamera springt 9.24 · 0.23 m je Bild (Third · Ego, Soll ≤ 0.5)
+  ✅ T5 die Kamera atmet das Tempo (Kern und Ritt): FOV und Arm mit v, Azimut im Drift, camera.fov = Ruhe + Tempo, EIN Schreiber, Maus-Orbit zurück in 1–1,25 s — {"n":272,"zeigt":0.005,"quelle":true,"orbit":69,"rueck":1.08,"fov":{"10":5.18},"schreiber":["_kamFov"],"zoom":true,"laut":true,"kern":[],"fovMax":10,"arm":0.2,"drift":9,"knick":0.07}
+  (Ort 2.4 s · WELT 158.5 s · T5 2.8 s · BLICK 45.3 s · T4 5.1 s in der Welt der Sitzung, 214.4 s gesamt)
+@@PUNKTE@@ EXIT 1
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3
