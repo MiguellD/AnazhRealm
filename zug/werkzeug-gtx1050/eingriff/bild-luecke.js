@@ -35,7 +35,8 @@ if (P) {
         rend._renderObjectDirect = function (object, material, scene, camera, lightsNode, group, clip, passId) {
             const aus = R0.call(this, object, material, scene, camera, lightsNode, group, clip, passId);
             try {
-                if (scene === r.state.scene) {
+                // ein Gast des Vorbaus will nichts zeichnen, er baut nur — Gast ist nur, wer die Prägung trägt UND keinen Raum nimmt (Maßstab 0)
+                if (scene === r.state.scene && !(object.__vorbauGast && object.matrixWorld.determinant() === 0)) {
                     const ro = this._objects.get(object, material, scene, camera, lightsNode, this._currentRenderContext, clip, passId);
                     if (ro.getDrawParameters() !== null) {
                         const a = art(camera);
