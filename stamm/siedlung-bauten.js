@@ -1437,13 +1437,13 @@ class AnazhRealm_siedlung_bauten {
     // „vorbau:fahrzeug_gt 27,8 %", vegetation.K2#1 „vorbau:baum_eiche 14,4 %"), je Lauf der Gast, der zur Zeit des Schusses eben
     // baute; headless 39 Teile von 8 Hotbar-Gästen im Freiraum der Pose (gate:werkstatt-weg). Der Maßstab ändert keinen Schlüssel:
     // r184 `getRenderCacheKey` schlüsselt die Händigkeit nur bei det < 0, und kein Teil der 8 Geister ist gespiegelt.
-    _vorbauGast(gruppe, name) {
+    _vorbauGast(gruppe, name, art = true) {
         gruppe.name = name;
         gruppe.scale.setScalar(0);
         gruppe.traverse((o) => {
             o.frustumCulled = false;
             if (!o.isMesh) return;
-            o.__vorbauGast = true;
+            o.__vorbauGast = art; // true: der Gast der Bedienung · "ankunft": er baut schon unter dem Ladeschirm (`_vorbauWahl`)
             o.raycast = () => {};
         });
         this.state.scene.add(gruppe);

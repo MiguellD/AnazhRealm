@@ -539,7 +539,11 @@ class AnazhRealm_bild_kosten {
                 // DER GAST DER BEDIENUNG (spielgang.K3, `_vorbauBedienung`): was die nächste Eingabe zeigen wird (der Geist eines
                 // Hotbar-Bauplans, der Leib einer Seele), baut hier vorab ohne Draw wie die Arena — nach dem Bild, unter der Frist
                 // des Render-Aufrufs und nur, wenn die Eingabe ruht (`_eingabeRuht`); der Klick findet Knoten und Pipeline vor.
-                const gast = object.__vorbauGast === true;
+                // DER GAST DER ANKUNFT (w28-leben-vorbau, `__vorbauGast` "ankunft"): wessen Programm unter dem Ladeschirm bekannt ist
+                // und wessen Daten erst nach dem Bild kommen (die Kamm-Krone, `_kammKroneVorbau`), baut schon unter dem Ladeschirm
+                // — er wartet auf keine ruhende Eingabe, und er hält das Bild nie (kein Zug, kein Eintrag in `bildWartet`).
+                const gastArt = object.__vorbauGast;
+                const gast = gastArt === true || gastArt === "ankunft";
                 const vorbau = gast || ro.getDrawParameters() === null;
                 const ctx = this._currentRenderContext.id;
                 const k = passId == null ? ctx : ctx + "|" + passId;
@@ -549,7 +553,7 @@ class AnazhRealm_bild_kosten {
                     const arena = gast || (object.isGeometrieArena === true && object.geometry.index !== null);
                     if (!arena || scene !== welt.state.scene) return;
                     const wahl =
-                        gast && !welt._eingabeRuht()
+                        gastArt === true && !welt._eingabeRuht()
                             ? null
                             : AnazhRealm._vorbauWahl(
                                   E,
@@ -558,7 +562,7 @@ class AnazhRealm_bild_kosten {
                                   welt._ladeTakt(),
                                   welt.state._weltbildDa,
                                   N.nodeFrame.frameId,
-                                  gast
+                                  gast ? gastArt : false
                               );
                     if (wahl !== "bauen") {
                         // ein Gast im Bündel (der Leib) wartet wie ein Bürger ohne Bau: sein Bündel nimmt neu auf, bis er
@@ -731,17 +735,24 @@ class AnazhRealm_bild_kosten {
     // nicht im ersten Bild — unter dem Ladeschirm merkt die Erst-Zeichnung seinen Pass vor („merken"), nach dem Bild baut der
     // vorgemerkte („bauen"), höchstens EINER je Bild (jeder Pass ist ein Render-Aufruf mit eigenem Deckel); sonst null. Headless
     // kalt 01.11.: der Vorbau einer Laub-Arena hielt 169 ms Haupt-Faden vor dem Bild. Der Rufer: `_renderObjectDirect` oben.
+    // DER GAST DER ANKUNFT (w28-leben-vorbau, `gast` "ankunft"): sein PROGRAMM ist unter dem Ladeschirm bekannt, seine DATEN
+    // kommen erst nach dem Bild — er baut schon unter dem Ladeschirm („bauen" statt „merken", in Raten unter der Frist des
+    // Lade-Frames wie jeder Bau der Welt-Szene), damit der Gang sein Programm nicht mehr baut. Bis hier baute die Kamm-Krone ihr
+    // Programm (76,3 KB) erst mit ihrem ersten Netz, 4–5 s nach dem Bild (`_kammKroneVorbau`).
     static _vorbauWahl(E, arena, pass, lade, bild, frame, gast = false) {
         let merk = E.vorgemerkt.get(arena);
-        if (lade) return (merk ? merk.add(pass) : E.vorgemerkt.set(arena, new Set([pass])), "merken");
-        // ein Gast der Bedienung merkt jeden Pass selbst vor, in dem er noch nicht baute (er kam nach dem Ladeschirm), und baut
-        // wie jede Erst-Zeichnung unter der Frist des Render-Aufrufs (`ERST_BAU_MS`) — sein Schutz ist die ruhende Eingabe
-        const vor = gast && bild ? E.vorgebaut.get(arena) : undefined;
-        if (gast && bild && !(vor && vor.has(pass))) {
+        const ankunft = gast === "ankunft";
+        if (lade && !ankunft) return (merk ? merk.add(pass) : E.vorgemerkt.set(arena, new Set([pass])), "merken");
+        // ein Gast merkt jeden Pass selbst vor, in dem er noch nicht baute (der der Bedienung kam nach dem Ladeschirm), und baut
+        // wie jede Erst-Zeichnung unter der Frist des Render-Aufrufs (`ERST_BAU_MS`) — der Schutz des Gasts der Bedienung ist die
+        // ruhende Eingabe
+        const jetzt = !!bild || ankunft;
+        const vor = gast && jetzt ? E.vorgebaut.get(arena) : undefined;
+        if (gast && jetzt && !(vor && vor.has(pass))) {
             if (!merk) E.vorgemerkt.set(arena, (merk = new Set()));
             merk.add(pass);
         }
-        return bild && merk && merk.has(pass) && (gast || E.vorbauBild !== frame) ? "bauen" : null;
+        return jetzt && merk && merk.has(pass) && (gast || E.vorbauBild !== frame) ? "bauen" : null;
     }
     // DER KNOTEN-BAU IN RATEN (profiband.K2): r184 baut den Knoten-Graphen eines Render-Objekts am Stück (`NodeBuilder.build`:
     // prebuild, je Stufe setup · analyze · generate jede Shader-Stufe fragment · vertex · compute, buildCode) — 60–100 ms je
