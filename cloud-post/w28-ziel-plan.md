@@ -1,4 +1,9 @@
-ABGABE 4b0865565551932a6eed95522998c71b9e614322
+ABGABE 58acfa5e6cc75feef9f1906b0664ecb0f5c3c6c3
+
+## 11.11. w28-ziel-plan (Cloud) — neuer Kopf 58acfa5e, derselbe Baum wie cff10373 und 4b086556
+- Die Probe an 4b086556: `bild:stadt-voll@0.4` ROT auf gtx1050-desktop — „Ziel Blickziel verdeckt von bauSatz in 45.16 m … die Aufnahme speichert nichts“. Das ist nicht der Schnitt: w28-stadt-boden 0a721419 fällt an `bild:stadt-voll@0.5` mit derselben Zeile (Kamera 836.20/58.51/438.50 → 896.20/58.51/437.85). `bild:stadt@0.75` gab zweimal einem Karten-Job nach.
+- FUND: der Messort stadt-voll der Bild-Probe · sein Blick (60 m nach Osten vom Markt) endet in einem Bau, das Urteil des Beweisbilds ist an jedem Zweig ROT und speichert nichts · Kriterium: `bild:stadt-voll` an main GRÜN · Größe S (spec/profiband/haushalt.json `blick` oder die Blick-Wahl der Linse — nicht meine Dateien).
+- Darum die Proben dieses Kopfs: `[gpu-probe: bild:dorf@0.4, bild:stadt@0.4]` (9:36 Uhr, die Arbeitszeit: am Start-Dorf und an der Stadt mit 30 Häusern stehen die Leute an Schmiede, Scheune, Gasthaus, Markt und Acker statt vor ihrer Tür). Die Metropole selbst trägt die Probe `zielplan --ort stadt-voll` headless (Zahlen unten).
 
 ## 11.11. 01:34 — GPU-PROBE 4b086556 auf gtx1050-desktop: ROT in 454 s (bild:stadt-voll@0.4 ROT 301 s auf gtx1050-desktop · bild:stadt@0.75 NACHGEGEBEN 113 s auf gtx1050-desktop) → probe-post/w28-ziel-plan/4b086556.md
 
