@@ -101,6 +101,12 @@ urteilen() { # <id> <zweig@sha> … — schreibt das Urteil [<id>w], landet bei 
         infra=$((infra + 1))
         frei_geben "$@"
         echo "$(date +%H:%M) $id: der Bau starb an der MASCHINE (kein Urteil über die Zweige) — Köpfe wieder frei: $*" >>"$L"
+    elif grep -q "KANDIDAT ROT an betriebsgesetz.*WACHSTUMS-WAND" "$F" 2>/dev/null; then
+        # das Fenster des TAGES trug den Zug nicht — es rollt (z378 am 11.11.: Vorprüfung 02:07 GRÜN, Bau 02:16 ROT um 217 Atome). Das ist
+        # kein Urteil über die Zweige: die Köpfe fahren wieder, und die Vorprüfung (wand-summe) hält sie draußen, bis der Tag sie trägt
+        infra=0
+        frei_geben "$@"
+        echo "$(date +%H:%M) $id: fiel am Fenster des Tages (Wachstums-Wand, kein Urteil über die Zweige) — Köpfe wieder frei: $*" >>"$L"
     else infra=0; fi
     rm -f "$S/zug.fahrt"
 }

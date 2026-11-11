@@ -15,3 +15,22 @@ ABGABE ab6c476fd6da48a2455999c41bedfca31059139a
 - Am Kopf grün: `npm run check`, `npm run playtest:fast`, `npm run gate:welt-boot`, gate:gegenstand-stoff (--tafel, --gesetz), gate:schmiede-contract, gate:brennglas-takt, gate:klang-zensus, gate:werkstatt-weg, gate:post-kette auf swiftshader (kein „[ERROR] STOFF“); gate:ego-schatten auf swiftshader lief bei der Abgabe noch.
 - Vertrags-Akt, offen benannt: EIN Daten-Nachzug `spec/asset-contract/v1/golden/recipes.json` (flegel.fx.seil.rho 7850 → 7845,94: die Stahl-Dichte folgt der Misch-Regel), die Klingen-Goldens byte-exakt.
 - Was das Bild zeigen kann (dorf@0.5, buehne@0.5): der Spiegel von Wasser und Eis trägt den Fresnel je Kanal aus n(λ) der Zeile (+1,5 % Rot bis +4,7 % Blau gegenüber f0 0,02) — mit dem Auge kaum zu sehen; kein Regenbogen gezeichnet (offen, in der Abgabe benannt).
+
+## 11.11. 02:40 — z377 ROT an ZWEI Wänden, beide aus diesem Zweig (Koordinator) — bitte heilen und neu abgeben
+
+Der Zug z377 fuhr w28-stoff-gesetz ab6c476f allein (Kandidat c21e3587, Lauf 42929702026, Neulauf ebenso rot — kein Wackler).
+An z375/z376 (gleiche Basis main 4e2df19b, ohne diesen Zweig) standen beide Wände grün.
+
+1. **voll 9/18 · `npm run gate:kampf-gefuehl` · Q11 halten.K2 Staffel 2** („Klang und Funken aus dem Stoff-Paar am Bus“):
+   `ROT stahl/holz ≈ stahl/stein · holz/fleisch ≈ stahl/holz · holz/fleisch ≈ stahl/stein` — gemessen stahl/holz 642 Hz −30 dB
+   Funken 0 · stahl/stein 649 Hz −29 dB Funken 24 · holz/fleisch 405 Hz −41 dB. Seit der Klang die Stoff-Zeile liest, klingen die
+   Paare zu gleich (Stahl trägt beide). Die Linse will unterscheidbare Paare (scripts/diag-kampf-gefuehl.cjs:486 nennt die
+   Schwelle). Schnitt im Gesetz (der Klang des PAARS aus beiden Zeilen), nicht an der Schwelle.
+2. **echt omen · „Lichtweg auf der Karte“ · LAUB-LICHT**: `LAUB-LICHT wasser@0.5 / @0.27 / @0.05: keine Messung (kein Laub-Pixel)`.
+   Feld und Panorama stehen im Band (Karte 0,94–0,97); am Wasser findet die Linse nach deinem Fresnel je Kanal kein Laub-Pixel
+   mehr im Spiegel. Entweder der Spiegel verlor das Laub (Bruch im Spiel) oder die Linse klassiert die neue Spiegel-Farbe nicht
+   mehr als Laub (dann die Klassierung am Gesetz ausrichten, nicht aufweichen). Du hast keine GPU: bitte die Stelle im Code beim
+   Namen nennen und im Abgabe-Betreff `[gpu-probe: gate:licht-weg:echt, bild:dorf@0.5]` tragen — die Probe misst es auf der Karte.
+
+Vor der Abgabe am Kopf grün: `npm run gate:kampf-gefuehl`. Neuer Kopf mit „Abgabe w28-stoff-gesetz: …“; der Dienst nimmt ihn von selbst.
+Beachte die Wachstums-Wand des Tages: sie steht am Rand (Prüf 6923 / Spiel 13412) — Heilung möglichst ohne neue Linsen-Atome.
