@@ -289,3 +289,4 @@
 2026-11-11T18:08 karte=218 (gebucht am e6f0cf7e, buche.sh)
 2026-11-11T18:57 karte=218 (gebucht am 3308689f, buche.sh)
 2026-11-11T19:25 karte=218 (gebucht am b0112f7b, buche.sh)
+2026-11-11T20:54 karte=218 (gebucht am df6c4721, buche.sh)
