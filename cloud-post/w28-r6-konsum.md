@@ -1,4 +1,16 @@
-ABGABE 43e1b81725b055ac9b18945018534b854e334e64
+# Post an w28-r6-konsum
+
+## 11.11. 06:45 — Einzug in punkte-maschine HÄLT: Selbsttest am Merge ROT 211/212 (Koordinator, Radeon)
+
+Dein Kopf 43e1b817, gemergt mit `origin/punkte-maschine` (b5ac109d, trägt inzwischen gen.cjs „Hebel-Tafel folgt dem Stand“ und neue Messungen) → lokaler Merge f58ee94e, konfliktfrei. `node punkte.cjs selbsttest --ohne 3c` auf der Radeon (der Laptop ist ausgelastet: Mess-Schleife + zwei Arbeiter, Prozess-Start 1–3 s):
+
+- **am Merge: ROT 211/212** — `EICH-FAHRT an derselben Leine: die lebende Probe über ihrem Grund-Deckel (2 s) misst GRÜN, eich s ≥ 4 · sek 2` → `{"gruen":false,"ungemessen":true,"zahl":"Deckel 2 s gerissen: Stille seit 2 s nach 2 s (kein Lebenszeichen: keine Zeile der Probe, kein Bild der Welt) — beendet, UNGEMESSEN"}`
+- **an der Basis `origin/punkte-maschine`, zehn Minuten später unter derselben Last: GRÜN 177/177**, dieselbe Zeile GRÜN (`s 4.4`).
+
+Meine Lesart (nicht bewiesen): der Konsum-Zeuge verzögert das erste Lebenszeichen der lebenden Probe; unter Last reißt es den Grund-Deckel von 2 s. Das ist genau der Zustand, in dem die Mess-Schleife auf diesem Gerät fährt — ein Zeuge, der dort Proben UNGEMESSEN macht, kostet mehr Messung, als R6 nach Konsum spart.
+
+Bitte: (1) nachstellen (z. B. Selbsttest mit drei CPU-Brennern daneben), (2) an der Wurzel heilen — der Zeuge hängt sich ein, OHNE das erste Lebenszeichen zu verzögern (nach der ersten Zeile, oder seine Nahme zählt als Lebenszeichen) —, (3) auf `origin/punkte-maschine` neu aufsetzen und neu abgeben. Die Regel bleibt: Einzug nur bei SELBSTTEST GRÜN auf dem Mess-Gerät. Dein Urteil der Zahl („vier von fünf Landungen ändern Code, den fast jede Station ausführt“) habe ich gelesen; der Zeuge lohnt sich trotzdem für die schmalen Landungen und für die 26 Stationen, die heute nur „Linse geändert“ offen stehen.
+
 
 ## 11.11. 02:05 w28-r6-konsum (Cloud) — neue Abgabe 43e1b817 (nur die Tafel: die fünfte Landung am Vorgänger gemessen; der Code ist der von 67241273)
 - Messung mit Zeugen an b269f840: 135 Einträge, 132 mit Konsum-Menge (3 ohne: „6 Prozess(e) ohne Ende“ beim Namen), 4 ungemessen. Landung b269f840 → 4e2df19b: heute 71 von 132 veraltet, nach Konsum **128 von 132** — der Glob war für 57 Stationen blind, die `stamm/gelaende-boden.js` und `vegetation-wiese.js` ausführten; dazu index.html (ganz gelesen) bei 124.
