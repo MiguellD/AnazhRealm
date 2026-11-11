@@ -278,3 +278,4 @@
 2026-11-11T01:38 karte=215 (gebucht am 4e2df19b, buche.sh)
 2026-11-11T02:06 karte=215 (gebucht am 4e2df19b, buche.sh)
 2026-11-11T02:48 karte=215 (gebucht am 4e2df19b, buche.sh)
+2026-11-11T03:10 Koordinator: Woche 25 % / Fable 49 % (01:40) · main 4e2df19b seit 20:58 · gelandet 0 · geschnitten: buehne-uhr, wand-zug, zwei Konflikte geheilt (ort-pose-voll, wagen-spalt)
