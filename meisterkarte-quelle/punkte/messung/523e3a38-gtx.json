@@ -1,7 +1,7 @@
 {
  "sha": "523e3a3806a6450b9d05d14a2cb7744f0c7ec5b4",
  "geraet": "gtx",
- "zeit": "2026-11-11T12:55:53.729Z",
+ "zeit": "2026-11-11T13:01:37.664Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "affekt.K4#2": {
@@ -406,6 +406,72 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "fahrzeug.K2#2": {
+   "gruen": false,
+   "zahl": "C ROT: der Verkehr der Stadt 10 Uhr ❌ fahrend je Minute [null] · ohne Ziel erreicht: Wagen 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 (0 Ankünfte) · Sim-Takt 1.457 ms · bew · 23 Uhr ❌ fahrend je Minute [null] · ohne Ziel erreicht: Wagen 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 (0 Ankünfte) · Sim-Takt 1.63 ms · ohne Probe: 25°-Hang, Furt, Ego und Third — die 2 wartet auf sie",
+   "exit": 1,
+   "minuten": 3.95,
+   "grund": "ROT: C ROT: der Verkehr der Stadt 10 Uhr ❌ fahrend je Minute [null] · ohne Ziel erreicht: Wagen 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 (0 Ankünfte) · Sim-Takt 1.457 ms · bew · 23 Uhr ❌ fahrend je Minute [null] · ohne Ziel erreicht: Wagen 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 (0 Ankünfte) · Sim-Takt 1.63 ms · ohne Probe: 25°-Hang, Furt, Ego und Third — die 2 wartet auf sie",
+   "gpu": "nvidia/pascal",
+   "konsumFehlt": "die Welt antwortete nicht auf die Nahme boot (Prozess 23308)",
+   "s": 236.9,
+   "fremd": {
+    "s": 239.7,
+    "takte": 89,
+    "fremdS": 1542.92,
+    "kerne": 6.436,
+    "fensterKerne": 8.881,
+    "namen": [
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-1588-profil-DB2Cmp --no-pr",
+      565.22
+     ],
+     [
+      "chrome.exe --type=renderer --noerrdialogs --user-data-dir=anazh-11068-profil-kASpEh --no-p",
+      239.59
+     ],
+     [
+      "node.exe pw/pop.cjs n1011/fw quote/pop-alt.json",
+      159.14
+     ]
+    ],
+    "dienerS": 158.2,
+    "diener": [
+     [
+      "System",
+      85.23
+     ],
+     [
+      "dwm.exe",
+      47.61
+     ]
+    ],
+    "geraetS": 128.03,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      71.61
+     ],
+     [
+      "svchost.exe",
+      45.36
+     ],
+     [
+      "SearchIndexer.exe",
+      7.23
+     ]
+    ],
+    "eigenS": 624.3,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon"
+   },
+   "zeit": "2026-11-11T13:01:37.664Z",
+   "abdruck": "3288dc20437e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -418,19 +484,19 @@
   "kef176ddaa069": "bVTbbqMwEP2XPLbrmhDCTerDpI3UrlRt+gljMwYaApFtwm5W++8rE3KBdF646Jw5Zy7239ke5RZzevoyTT1LZw+zHzODB2KG9IH005eZpbN5NI9xmcIpOAC8OJjU5d4anpWYs4701li0lnWUP8me9nADqkrBUdRY7Ii12lJZDSApkkQmKe/W8Ljhb3wRP09plaCsYRYVnUki86MFplNga3IUxLBVvdAADuXc85KU9xEDbKLTa7eeKgmss7G7QPlekvWVr+F5is9KJMuqsjZnLZktxcIftJzGPUdjx45IRUV6IMVhOI+Ds8EpQVWtMSMRJYSMvR4/web7lqnb1CgExmLaqAKpzkmPk4ZJ5MmU/47h86er930YN6xvv7b3XdjijjSyGovzdMIwCJKbJtzVVJWyGBpXDyTfDyTSlcQ5TzoJAK+Be19d/sabk5NXgE/3zAFgBRMBU2BGmm0bYy8KKlhGC3na4hcAnn9MbZmrrYGTkYqDaORq9QibKa9RtkNNLN+3A5ECWkbuyLzfiVjc7c6WpE/xcjoeY90ejtbKlyrs1yp3Ft7u1+qgccdQ5LpUaiAlYimVG0MyXZOOKstE09gBGUUhYpbyI68vZf6Jc1jBfXzA63fZGm3PZpci9FSQqoMbvZwaPZKuKKdReX6Ei7mXcjfvdfHS6/xyA4bL/K8Rr6YZS6rYkWrTmvOBSqIsUek3J9BdUwLr7QCcowqC4LQSm9yVu/Je41G9B/iAlQd9kj1JvteNKt1FwQtsTYGVHV2dJ0hLyqA9coEt1Wy7uEL+/Qc="
  },
  "sitzung": {
-  "start": "2026-11-11T12:55:08.895Z",
+  "start": "2026-11-11T13:00:29.677Z",
   "port": 7804,
   "warten": 0.02,
-  "bootS": 11.7,
+  "bootS": 9.3,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": null,
-    "vor": "bauen.K1#2",
-    "s": 27,
-    "takte": 728,
+    "ort": "wiese",
+    "vor": "fahrzeug.K2#2",
+    "s": 52,
+    "takte": 893,
     "chunks": 81,
     "nach": null
    }
@@ -439,21 +505,28 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 2272,
-   "frameP95": 66.64,
-   "taktP95": 46.2,
-   "vramMax": 129.1,
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
-   "ortImDeckel": [],
-   "zapfen": 89,
+   "ortImDeckel": [
+    {
+     "probe": "fahrzeug.K2#2",
+     "m": 1857,
+     "ringVor": 4,
+     "ringMin": -1
+    }
+   ],
+   "zapfen": 281,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 99.2,
-  "minuten": 1.8
+  "fahrtS": 301.8,
+  "minuten": 5.22
  },
  "ungemessen": {
   "ankunft.K4#1": {
