@@ -655,6 +655,62 @@ function posenLinse() {
         parity === parityN
     );
 
+    // 7b) DIE WAND DES STILS (w28-putz-wand): malt ein Stil das Gerüst in den Stoff der Wand (H.rahmen == H.raum), baut keine Stufe
+    //     Gerüst unter der Farbe (Riegel · Streben · Zimmermann, in der Flächen-Stufe der Ständer-Ring), und die Felder stehen als
+    //     Platten in EINEM Ton: kein Teil mit der Patina je Brett, höchstens jedes fünfte im Stein-Maß (größte Fläche < 0,05 m²) —
+    //     außer der Stil zeigt Backstein. Vorher 20 Rezepte (griechisch: 61 % der L0). Selbsttest: das Fachwerk als Putz-Stil.
+    const wandBefund = (K, rezepte) => {
+        const bruch = [];
+        let n = 0;
+        for (const k of rezepte)
+            for (const stufe of [0, 1]) {
+                const nur = stufe ? { gelaende: false, innenwaende: false, treppe: false, moebel: false } : {};
+                const H = K.HAUS(THREE, K.mat, Object.assign(K.hausParams(K.PRESETS[k], null), { seed: 7, nur, flaechig: stufe }));
+                const teile = (s) => H.subsystems[s].children.filter((o) => o.isMesh);
+                if (H.rahmen !== H.raum) continue;
+                n++;
+                const ger = ["riegel", "streben", "zimmermann", "geruest"].slice(0, 3 + stufe).filter((s) => teile(s).length);
+                const gef = teile("gefache");
+                const patina = gef.filter((o) => (o.geometry.attributes.color || { array: [] }).array.some((v) => v !== 1)).length;
+                const stein = gef.filter((o) => { const d = new THREE.Box3().setFromBufferAttribute(o.geometry.attributes.position).getSize(new THREE.Vector3()).toArray().sort((x, y) => y - x); return d[0] * d[1] < 0.05; }).length; // prettier-ignore
+                const verband = H.raum !== "backstein" && (patina || stein > 0.2 * gef.length);
+                if (ger.length || verband || (H.grundriss !== "rund" && !gef.length))
+                    bruch.push(`${k} L${stufe}: Gerüst [${ger}] · Verband ${!!verband} (von ${gef.length} Wand-Teilen ${patina} mit Patina, ${stein} im Stein-Maß) unter „${H.raum}“`); // prettier-ignore
+            }
+        return { bruch, n };
+    };
+    {
+        const W = wandBefund(FC, KULTUREN);
+        check(`DIE WAND DES STILS: kein Gerüst, kein umgemalter Verband unter der Farbe (${W.n / 2} Rezepte × L0/L1)`, W.n === 40 && !W.bruch.length, W.bruch.slice(0, 3).join(" ‖ ")); // prettier-ignore
+        // SELBSTTEST ohne Quelltext: ein Fachwerk-Haus, das sich als Putz-Stil ausgibt (sein Gerüst-Stoff heißt wie sein Wand-Stoff) —
+        // die Linse nennt Gerüst und Verband beim Namen, in der L0 und in der Flächen-Stufe
+        const luege = Object.assign({}, FC, { HAUS: (...a) => { const H = FC.HAUS(...a); H.raum = H.rahmen; return H; } }); // prettier-ignore
+        const rot = wandBefund(luege, ["alemannisch"]).bruch.join(" ‖ ");
+        check("DIE WAND DES STILS SELBST-TEST: ein Fachwerk-Haus, das sich als Putz-Stil ausgibt, ist ROT beim Namen (Gerüst und Verband, L0 und L1)", /alemannisch L0: Gerüst \[riegel,streben,zimmermann\] · Verband true.*alemannisch L1: Gerüst \[riegel,streben,zimmermann,geruest\] · Verband true/.test(rot), rot.slice(0, 300)); // prettier-ignore
+    }
+
+    // 7c) DIE STUFE AM TEIL (w28-putz-wand, die Quote pipeline.K3 an ihrer Wurzel): kein Teilsystem trägt in der Flächen-Stufe
+    //     (und die Kuppel in der fernen, Marke `fern`) seine Stufe 0. Gemessen am Haus mit allen Teilen (marokkanisch mit Arkade,
+    //     Terrasse, Kuppel; Samen 1): Dreiecke der Stufe / Dreiecke der L0 je Teil gegen sein Soll. Vorher trug jedes 1,00 (die
+    //     Terrasse 0,77) — das Gerüst allein hielt die Quote, mit der glatten Wand lagen 78 von 984 Regler-Fällen über ihr, und
+    //     gate:regler-wirkt nennt nur das Höchste. Selbsttest: ein Kern, der seinen Teilen die Stufe nicht reicht.
+    const STUFE_AM_TEIL = { gefache: 0.7, fenster: 0.75, hof: 0.8, arkade: 0.8, terrasse: 0.7 }; // gemessen 0,64 · 0,63 · 0,70 · 0,68 · 0,57
+    const stufeAmTeil = (K) => {
+        const tris = (H, s) => { let n = 0; H.subsystems[s].traverse((o) => { if (o.isMesh) n += (o.geometry.index ? o.geometry.index.count : o.geometry.attributes.position.count) / 3; }); return n; }; // prettier-ignore
+        const flaeche = { nur: { gelaende: false, innenwaende: false, treppe: false, moebel: false }, flaechig: 1 };
+        const [H0, H1, H2] = [{ nur: {} }, flaeche, { nur: { fern: true } }].map((s) => K.HAUS(THREE, K.mat, Object.assign(K.hausParams(K.PRESETS.marokkanisch, { arkade: 1, terrasse: 1, kuppel: 1 }), { seed: 1 }, s))); // prettier-ignore
+        const z = Object.entries(STUFE_AM_TEIL).map(([s, soll]) => ({ s, st: 1, soll, q: tris(H1, s) / tris(H0, s) }));
+        z.push({ s: "kuppel", st: 2, soll: 0.8, q: tris(H2, "kuppel") / tris(H0, "kuppel") });
+        return { z, bruch: z.filter((x) => !(x.q <= x.soll)).map((x) => `${x.s} trägt in der Stufe ${x.st} ${x.q.toFixed(2)} seiner Stufe 0 (Soll ≤ ${x.soll})`) }; // prettier-ignore
+    };
+    {
+        const S = stufeAmTeil(FC);
+        check(`DIE STUFE AM TEIL: jedes Teil kürzt in seiner Stufe (${S.z.map((x) => `${x.s} ${x.q.toFixed(2)}`).join(" · ")})`, !S.bruch.length, S.bruch.join(" ‖ ")); // prettier-ignore
+        const taub = Object.assign({}, FC, { HAUS: (T, m, p) => FC.HAUS(T, m, Object.assign({}, p, { flaechig: 0, nur: {} })) });
+        const rot = stufeAmTeil(taub).bruch.join(" ‖ ");
+        check("DIE STUFE AM TEIL SELBST-TEST: ein Kern, der die Stufe nicht an seine Teile reicht, ist ROT beim Namen (jedes der sechs Teile)", /gefache trägt in der Stufe 1 1\.00.*fenster trägt.*hof trägt.*arkade trägt.*terrasse trägt.*kuppel trägt in der Stufe 2 1\.00/.test(rot), rot.slice(0, 300)); // prettier-ignore
+    }
+
     // 8) Goldens: einfrieren beim ersten Lauf, danach byte-exakt vergleichen.
     goldenWand(golden("haeuser"), 6, actual, check, CASES.length);
 

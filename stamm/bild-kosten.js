@@ -179,6 +179,12 @@ class AnazhRealm_bild_kosten {
                     }
                 const E = welt._erstZeichnung;
                 if (!replay && E && E.aufnehmen.delete(bundle.bundleGroup)) bundle.bundleGroup.needsUpdate = true;
+                // DAS ABSPIEL OHNE BÜRGER (`_bildWartet`): ein Bündel der Welt-Szene, das ohne einen Bürger versiegelte, spielt
+                // bis zu dessen Pipeline ohne ihn ab — in DIESEM Bild fehlt er wie in dem seiner Aufnahme
+                if (replay && E && E.offen.size > 0 && sceneRef === welt.state.scene)
+                    for (const [pipe, warten] of E.offen)
+                        if (warten.has(bundle.bundleGroup) && !E.bildWartet.has(pipe))
+                            E.bildWartet.set(pipe, { ro: null, fest: false });
                 return aus;
             };
             renderer.__anazhReplayBuchung = true;
@@ -471,8 +477,11 @@ class AnazhRealm_bild_kosten {
                 E.bau = null; // das Versprechen gehört dem Bau DIESES Aufrufs (`_erstAbsageWache`)
                 // wer auf seine Pipeline wartet, läuft durch keinen Knoten (`_renderObjectDirect`: wer nicht zeichnet …)
                 const imBau = P.get(ro).pipeline;
+                // wer in diesem Bild zeichnen will und nicht zeichnet, nennt sich der Warteschlange (`buerger`, `_bildWartet`) —
+                // der Vorbau ohne Draw (`nurBauen`) will nichts zeichnen
+                const buerger = nurBauen ? null : ro;
                 if (imBau !== undefined && !P.isReady(ro) && !E.abgesagt.has(imBau)) {
-                    welt._erstWartet(rend.backend, imBau, aufnahme !== null ? aufnahme.bundleGroup : null);
+                    welt._erstWartet(rend.backend, imBau, aufnahme !== null ? aufnahme.bundleGroup : null, buerger);
                     return false;
                 }
                 const refresh = N.needsRefresh(ro);
@@ -493,7 +502,12 @@ class AnazhRealm_bild_kosten {
                 } else P.updateForRender(ro);
                 if (nurBauen) return false;
                 if (!P.isReady(ro)) {
-                    welt._erstWartet(rend.backend, P.get(ro).pipeline, aufnahme !== null ? aufnahme.bundleGroup : null);
+                    welt._erstWartet(
+                        rend.backend,
+                        P.get(ro).pipeline,
+                        aufnahme !== null ? aufnahme.bundleGroup : null,
+                        buerger
+                    );
                     return false;
                 }
                 if (aufnahme !== null) rend.backend.get(aufnahme).renderObjects.push(ro);
@@ -525,7 +539,16 @@ class AnazhRealm_bild_kosten {
                 // DER GAST DER BEDIENUNG (spielgang.K3, `_vorbauBedienung`): was die nächste Eingabe zeigen wird (der Geist eines
                 // Hotbar-Bauplans, der Leib einer Seele), baut hier vorab ohne Draw wie die Arena — nach dem Bild, unter der Frist
                 // des Render-Aufrufs und nur, wenn die Eingabe ruht (`_eingabeRuht`); der Klick findet Knoten und Pipeline vor.
-                const gast = object.__vorbauGast === true;
+                // DER GAST DER ANKUNFT (w28-leben-vorbau, `__vorbauGast` "ankunft"): wessen Programm unter dem Ladeschirm bekannt ist
+                // und wessen Daten erst nach dem Bild kommen (die Kamm-Krone, `_kammKroneVorbau`), baut GLEICH NACH DEM BILD — er
+                // wartet auf keine ruhende Eingabe (seine Daten sind unterwegs). Vor dem Bild merkt er nur, wie jeder Vorbau: dort
+                // kostete sein Bau die Ankunft (GTX 1050 kalt, ab dem Buch gemessen, je 4 ↔ 4: mit der Pipeline unter dem Ladeschirm
+                // +0,7…+1,5 s — der GPU-Prozess übersetzt in EINER Schlange, jede Pipeline vor dem Bild verschiebt die, auf die es
+                // wartet —, nur der Knoten-Graph als letzter Bau +0,5 s: 4 von 4 Paaren später, der Haupt-Faden ist dort belegt).
+                const gastArt = object.__vorbauGast;
+                // EIN GAST NIMMT KEINEN RAUM (`_gastOhneRaum`): trägt ein Bürger die Prägung, ist das ein Bruch beim Namen, und er
+                // zeichnet wie jeder Bürger — die Ausnahme ist nie das Loch.
+                const gast = (gastArt === true || gastArt === "ankunft") && welt._gastOhneRaum(object);
                 const vorbau = gast || ro.getDrawParameters() === null;
                 const ctx = this._currentRenderContext.id;
                 const k = passId == null ? ctx : ctx + "|" + passId;
@@ -535,7 +558,7 @@ class AnazhRealm_bild_kosten {
                     const arena = gast || (object.isGeometrieArena === true && object.geometry.index !== null);
                     if (!arena || scene !== welt.state.scene) return;
                     const wahl =
-                        gast && !welt._eingabeRuht()
+                        gastArt === true && !welt._eingabeRuht()
                             ? null
                             : AnazhRealm._vorbauWahl(
                                   E,
@@ -629,7 +652,12 @@ class AnazhRealm_bild_kosten {
                     if (!welt._knotenRate(N, ro, E)) {
                         E.verschoben++;
                         if (welt._ladeTakt()) E.ladeSchuld = true;
-                        if (aufnahme !== null) welt._erstWartet(this.backend, null, aufnahme.bundleGroup);
+                        welt._erstWartet(
+                            this.backend,
+                            null,
+                            aufnahme !== null ? aufnahme.bundleGroup : null,
+                            vorbau ? null : ro
+                        );
                         return;
                     }
                 } else if (ungebaut) {
@@ -641,7 +669,12 @@ class AnazhRealm_bild_kosten {
                         E.deckel = welt._ladeTakt() ? AnazhRealm.LADE_TAKT_MS : AnazhRealm.ERST_BAU_MS;
                     } else if (E.aufrufMs >= E.deckel) {
                         E.verschoben++;
-                        if (aufnahme !== null) welt._erstWartet(this.backend, null, aufnahme.bundleGroup);
+                        welt._erstWartet(
+                            this.backend,
+                            null,
+                            aufnahme !== null ? aufnahme.bundleGroup : null,
+                            vorbau ? null : ro
+                        );
                         return;
                     }
                     bau = performance.now();
@@ -698,6 +731,7 @@ class AnazhRealm_bild_kosten {
                 gezeichnet: new WeakMap(), // Objekt → die Pässe (Render-Kontext|Pass-Kennung), in denen es schon zeichnete
                 vorgebaut: new WeakMap(), // Arena → die Pässe, in denen der Vorbau ihr Programm ohne Draw baute
                 vorgemerkt: new WeakMap(), // Arena → die Pässe ohne Draw unter dem Ladeschirm: ihr Vorbau folgt nach dem Bild
+                bildWartet: new Map(), // Pipeline bzw. Stoff → der Bürger der Welt-Szene, der in DIESEM Bild nicht zeichnete (`_bildWartet`)
                 vorbauBild: -1, // das Bild (nodeFrame.frameId) des letzten Vorbaus nach dem Bild — höchstens einer je Bild
             };
         return this._erstZeichnung;
@@ -709,8 +743,9 @@ class AnazhRealm_bild_kosten {
     static _vorbauWahl(E, arena, pass, lade, bild, frame, gast = false) {
         let merk = E.vorgemerkt.get(arena);
         if (lade) return (merk ? merk.add(pass) : E.vorgemerkt.set(arena, new Set([pass])), "merken");
-        // ein Gast der Bedienung merkt jeden Pass selbst vor, in dem er noch nicht baute (er kam nach dem Ladeschirm), und baut
-        // wie jede Erst-Zeichnung unter der Frist des Render-Aufrufs (`ERST_BAU_MS`) — sein Schutz ist die ruhende Eingabe
+        // ein Gast merkt jeden Pass selbst vor, in dem er noch nicht baute (der der Bedienung kam nach dem Ladeschirm, der der
+        // Ankunft hing schon davor und merkte dort wie jeder Vorbau), und baut wie jede Erst-Zeichnung unter der Frist des
+        // Render-Aufrufs (`ERST_BAU_MS`) — der Schutz des Gasts der Bedienung ist die ruhende Eingabe
         const vor = gast && bild ? E.vorgebaut.get(arena) : undefined;
         if (gast && bild && !(vor && vor.has(pass))) {
             if (!merk) E.vorgemerkt.set(arena, (merk = new Set()));
@@ -969,8 +1004,14 @@ class AnazhRealm_bild_kosten {
     // Der WebGL2-Rückfall kennt keine Bundles, und sein `_completeCompile` ersetzt das Datenobjekt der Pipeline (vendor
     // 6:513930 über Backend.set 6:457928) — ein Setter am alten Objekt feuerte nie, die Schlange wüchse die ganze Sitzung:
     // dort zählt der wartende Draw nur (`wartetN`), er versucht es im nächsten Aufruf selbst.
-    _erstWartet(be, pipe, bg) {
+    // (3) DAS BILD IST NICHT GANZ (w28-bild-ganz, `buerger`): ein Bürger der Welt-Szene, der in diesem Bild zeichnen WOLLTE (Zug-
+    //     Parameter, kein Vorbau ohne Draw) und nicht zeichnete, steht bis zum nächsten Bild in `bildWartet` — unter seiner
+    //     Pipeline, oder unter seinem Stoff, solange sein Knoten-Bau wartet. Der Leser ist das erste Weltbild (`_bildWartet`,
+    //     der Term „zeichnung"). Eine abgesagte Pipeline hält nichts: sie meldete sich laut (`_erstAbsageWache`).
+    _erstWartet(be, pipe, bg, buerger = null) {
         const E = this._erstZeichnung;
+        if (buerger !== null && buerger.scene === this.state.scene && !(pipe && E.abgesagt.has(pipe)))
+            E.bildWartet.set(pipe || buerger.material, { ro: buerger, fest: !pipe || be.isWebGPUBackend !== true });
         if (!pipe) {
             if (bg !== null) E.aufnehmen.add(bg);
             return;
@@ -1015,6 +1056,50 @@ class AnazhRealm_bild_kosten {
             });
         }
         if (bg !== null) bundles.add(bg);
+    }
+
+    // WER IM BILD NOCH NICHT ZEICHNETE (w28-bild-ganz) — die EINE Antwort für das erste Weltbild (`_weltbildLuecken`, der Term
+    // „zeichnung"): wie viele Programme des letzten Bilds der Welt-Szene noch ausstehen, und der erste Wartende beim Namen.
+    // Bis hier zählte jeder Term GESETZTES (der Chunk trägt ein Mesh, die Back-Schlange ist leer), nie GEZEICHNETES: der
+    // Ladeschirm wich, während Boden, Fern-Ring, Karten-Atlas, Ferne der Wiese, Himmel und Sonne auf ihre Pipeline warteten
+    // (GTX 1050, main 523e3a38, echter Renderer, je Bild von außen gezählt, 3 ↔ 3 Läufe: kalt 6–8 Bürger des Hauptbilds offen —
+    // der Karten-Atlas mit 209 von 219 Bäumen im Blick +1,7–1,8 s, die Schalen des Fern-Rings +2,4–3,5 s, das ganze Bild
+    // 3,4–4,3 s nach dem „Weltbild“; am Zweit-Boot 5–11 — dazu Boden-Satz, Himmel und Sonne: ein fast schwarzes Bild mit sechs
+    // Bäumen, das ganze 2,1–3,1 s danach). Nur der Baum auf L0/L1 fragte es für sich (`_stufeOffen`). Jetzt IST das Weltbild
+    // das ganze Bild: kalt 23,1–24,2 s (vorher „Weltbild“ 20,3–21,5 s, ganz 24,4–25,0 s), Zweit-Boot 13,6–14,6 s (12,0–13,0 s,
+    // ganz 15,0–15,7 s).
+    // DAS BILD ZÄHLT SICH SELBST: jeder Takt, der zeichnet, leert die Liste an seinem Anfang (die Phase des Takts im Loop,
+    // `bild`), sein Render trägt jeden ein, der zeichnen wollte und nicht zeichnete (`_erstWartet` (3), das Abspiel eines
+    // Bündels ohne Bürger in `_renderBundle`) — nie die Welt hinter dem Spieler (Gebot 7: wer in keinen Pass fällt, will nichts
+    // zeichnen). Zwischen zwei Bildern fällt, wessen Pipeline steht (`offen` der Warteschlange): das nächste Bild ist dann
+    // sofort fällig (`_ladeBildFaellig`). `fest` bleibt bis zum nächsten Bild: der Knoten-Bau in Raten (er macht es selbst
+    // fällig, `ladeSchuld`) und jeder Wartende des WebGL2-Rückfalls (dort führt die Warteschlange keine Pipeline).
+    _bildWartet() {
+        const E = this._erstZeichnung;
+        let n = 0;
+        let zeuge = null;
+        if (E)
+            for (const [k, b] of E.bildWartet) {
+                if (!b.fest && !E.offen.has(k)) E.bildWartet.delete(k);
+                else if (!n++) zeuge = { programm: this._bildWartetName(E, k, b) };
+            }
+        return { n, zeuge };
+    }
+    // Der Wartende beim Namen: sein Objekt (eine Arena nennt die Senken ihrer Glieder), sein Stoff, das Etikett seiner Pipeline
+    _bildWartetName(E, k, b) {
+        const etikett = String(E.namen.get(k) || "").replace("renderPipeline_", "");
+        const o = b.ro ? b.ro.object : null;
+        if (!o) return etikett || "ein Bürger im Bündel";
+        const m = b.ro.material;
+        const stoff = etikett || `${m.name || m.type}_${m.id}`;
+        const glieder = o.isGeometrieArena === true && Array.isArray(o.glieder) ? o.glieder : null;
+        const wer = glieder
+            ? glieder
+                  .slice(0, 3)
+                  .map((g) => (g.userData && g.userData.archInstanceKey) || g.name || g.type)
+                  .join(", ") + (glieder.length > 3 ? ` und ${glieder.length - 3} weitere` : "")
+            : o.name || (o.userData && (o.userData.inventar || o.userData.archInstanceKey)) || o.type;
+        return `${wer} (${stoff}${b.ro.material.isShadowPassMaterial === true ? ", Wurf" : ""})`;
     }
 
     // HEADLESS-NULL-RENDERER (opt-in via window.__anazhHeadlessNullRenderer): No-op-Hülle ohne GPU —
@@ -1504,7 +1589,12 @@ class AnazhRealm_bild_kosten {
                     });
                 this._neustart.value = neu ? 1 : 0;
                 const sprung = !!(realm.state._traaR && realm.state._traaR.sprung === true);
-                this._anlauf.value = neu || sprung ? 0 : Math.min(this._anlauf.value + 1, 1e6);
+                // UNTER DEM LADESCHIRM BEGINNT DIE GESCHICHTE MIT JEDEM BILD NEU (w28-bild-ganz): ein Lade-Bild zeigt, was schon
+                // zeichnet — die Geschichte trüge es ins erste Weltbild (GTX 1050, Zweit-Boot: der Boden zeichnete zum ersten Mal im
+                // Bild, das den Ladeschirm nahm, und die Wurzeln der Bäume und der Deckel des Fern-Rings schienen durch ihn). Das
+                // erste Bild des Spielers ist das Jetzt allein, danach läuft das Mittel an wie nach jedem Sprung.
+                const lade = realm._ladeTakt();
+                this._anlauf.value = neu || sprung || lade ? 0 : Math.min(this._anlauf.value + 1, 1e6);
                 // der Resolve liest das Ziel des letzten Frames (Bild mit Vortiefe, Gedächtnis) und schreibt in das andere,
                 // die Kette liest dieses; danach tauschen die zwei die Rolle — keine Kopie (G7)
                 const k = 1 - this._lage;
@@ -3107,45 +3197,63 @@ class AnazhRealm_bild_kosten {
             N = this.state.nahe;
         // die Lage dieses Passes (ein Sprung des Auges wählt einmal aus dem Jetzt, `_wieseAugeTakt`), verglichen ohne die Hälfte
         const F = AnazhRealm._wahlLage(L, W.lageF);
-        [F[30], F[31], F[67]] = [0, haupt ? 1 : 0, haupt && N && N.sprung ? 1 : 0];
+        F[30] = 0;
+        F[31] = haupt ? 1 : 0;
+        F[67] = haupt && N && N.sprung ? 1 : 0;
         F[27] = nw && nw.auge ? nw.auge.h : 0; // die Höhe des Auges über dem eigenen Boden (`_wieseAugeTakt`, die Ferne)
         if (haupt && N) N.sprung = false;
         const K = W.jeKamera.get(kamera) || (W.jeKamera.set(kamera, { lage: new Float32Array(76).fill(NaN) }), W.jeKamera.get(kamera)); // prettier-ignore
         let lageNeu = false;
         for (let i = 0; i < 76 && !lageNeu; i++) lageNeu = i !== 30 && K.lage[i] !== F[i];
         if (lageNeu) K.lage.set(F);
-        // je Arena: ihre Aufträge gepackt (`_wahlAuftraege`) und ihre Bindung; rechnet sie?
+        // je Arena: ihre Aufträge gepackt (`_wahlAuftraege`) und ihre Bindung; rechnet sie? DER GANG BAUT NICHTS (w27-takt-gc):
+        // die Zeilen der Prüfung (`W.rechnet`) bleiben, Puffer und Art werden ohne Array und Rückruf verglichen — vorher je Pass und
+        // Kamera je Arena zwei Arrays, ein Objekt und zwei Rückrufe, auch bei stehender Lage (GTX 1050, dorf Ego: 1,75 MB/s)
         const zustand = (N && N.zustand) || W.leerRW,
-            rechnet = [];
-        let nahe = false;
-        // die Puffer, die ihr Compute bindet: ein neuer (ein gewachsener Auftrags-Puffer trägt die Zahlen 0, eine neue Liste
-        // oder Instanz-Seite ist leer) rechnet
-        const gebunden = (a, zug, q) => [q.instanceMatrix, zug.liste, a._ind, q.aH0, q.aH0L, q.aKarte].map((x) => (x ? (be.get(x) || {}).buffer : W.leer)); // prettier-ignore
+            rechnet = W.rechnet || (W.rechnet = []);
+        let nahe = false,
+            nR = 0;
         for (let j = 0; j < arenen.length; j += 2) {
             const a = arenen[j],
                 zug = arenen[j + 1],
                 n = zug.wahl.length / 5,
-                bg0 = zug.__wahlBG;
+                bg0 = zug.__wahlBG,
+                q = a.__instanzQuelle;
             if (!zug.pack || zug.pack.length < n * 16) zug.pack = new Float32Array(Math.ceil(n * 1.5 + 4) * 16);
             const f = zug.pack,
                 alt = zug.packAlt,
                 u = zug.packU && zug.packU.buffer === f.buffer ? zug.packU : (zug.packU = new Uint32Array(f.buffer));
             AnazhRealm._wahlAuftraege(zug.wahl, f, u, 0);
             let neu = lageNeu || zug.argsNeu === true || zug.datenV !== a._datenV || !alt || alt.length !== n * 16 || zug.bindung !== zustand || !bg0 || bg0.n !== n; // prettier-ignore
-            if (!neu) neu = gebunden(a, zug, a.__instanzQuelle).some((b, k) => b !== bg0.puf[2 + k]);
+            // die Puffer, die ihr Compute bindet: ein neuer (ein gewachsener Auftrags-Puffer trägt die Zahlen 0, eine neue Liste
+            // oder Instanz-Seite ist leer) rechnet
+            for (let k = 0; !neu && k < 6; k++) {
+                const x = k === 0 ? q.instanceMatrix : k === 1 ? zug.liste : k === 2 ? a._ind : k === 3 ? q.aH0 : k === 4 ? q.aH0L : q.aKarte; // prettier-ignore
+                neu = (x ? (be.get(x) || {}).buffer : W.leer) !== bg0.puf[2 + k];
+            }
             for (let i = 0; !neu && i < n * 16; i++) neu = alt[i] !== f[i];
-            const art5 = zug.wahl.some((m, i) => i % 5 === 0 && m.__wahlFenster && m.__wahlFenster[0] === 5);
+            let art5 = false;
+            for (let i = 0; !art5 && i < zug.wahl.length; i += 5)
+                art5 = !!(zug.wahl[i].__wahlFenster && zug.wahl[i].__wahlFenster[0] === 5);
             if (art5 && neu) nahe = true;
-            rechnet.push({ a, zug, n, neu, art5 });
+            const x = rechnet[nR] || (rechnet[nR] = { a: null, zug: null, n: 0, neu: false, art5: false });
+            nR++;
+            x.a = a;
+            x.zug = zug;
+            x.n = n;
+            x.neu = neu;
+            x.art5 = art5;
         }
+        for (let i = nR; i < rechnet.length; i++) rechnet[i].a = rechnet[i].zug = null; // keine Arena über ihren Gang hinaus halten
         // die Familien der Nähe rechnen im Hauptbild zusammen, dann wechselt die Hälfte des Zustands
         if (haupt && nahe) {
-            for (const x of rechnet) if (x.art5) x.neu = true;
+            for (let i = 0; i < nR; i++) if (rechnet[i].art5) rechnet[i].neu = true;
             W.par ^= 1;
         }
         F[30] = W.par;
-        const D = rechnet.filter((x) => x.neu);
-        if (!D.length) return;
+        let D = null;
+        for (let i = 0; i < nR; i++) if (rechnet[i].neu) (D || (D = [])).push(rechnet[i]);
+        if (!D) return;
         const off = [];
         let bytes = 0;
         for (const x of D) {

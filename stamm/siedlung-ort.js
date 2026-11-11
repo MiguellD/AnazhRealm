@@ -245,14 +245,8 @@ class AnazhRealm_siedlung_ort {
             const rS = AnazhRealm.PLAYER_WALL_RADIUS;
             if (Math.abs(dx * fX + dz * fZ) < k.hl + rS && Math.abs(dx * qX + dz * qZ) < k.hw + rS) return "spieler";
         }
-        k.fX = fX;
-        k.fZ = fZ;
-        k.qX = qX;
-        k.qZ = qZ;
-        k.unten = eb.y + k.stufe;
-        k.oben = eb.y + k.dach;
-        k.schub.length = 0;
-        k.schubQuelle.length = 0;
+        // die Hülle steht, wie der Wagen dort parkt (`_fahrzeugStand`: die Ebene seiner Räder, Nick = −Steigung)
+        this._fahrHuelleStellen(k, fX, fZ, -eb.steig, eb.wank, eb.y + k.stufe, eb.y + k.dach);
         const pos = this._fahrPlatzPos || (this._fahrPlatzPos = { x: 0, z: 0 });
         pos.x = x;
         pos.z = z;
@@ -753,7 +747,8 @@ class AnazhRealm_siedlung_ort {
     // DIE POSE DES ORTS (w27-ort-pose): wo ein Auge die Siedlung `S` (`_bewohnerSiedlungen`) sieht — auf ihrem Platz, wo die
     // Menge steht und keine Wand nah ist, der Blick die lange Achse des Platzes entlang auf den nächsten Bau des Plans (erst
     // 20° neben der Achse, dann 45°, dann rundum; die Mitte des Baus ab 12 m), zu dem die Sichtlinie frei ist: kein anderer
-    // Grundriss (`obb`), Baum, Stand oder Brunnen quer in ihr. Aus dem Plan, den die Welt trägt — nie eine Zahl in der Spec (die
+    // Grundriss (`obb`), Baum, Stand oder Brunnen quer in ihr, keine Spur eines Wagens (w27-ort-pose-voll: erst der Stand aus
+    // der Spur, dann der Kegel). Aus dem Plan, den die Welt trägt — nie eine Zahl in der Spec (die
     // Spec nennt die Regel, `ortPose`; bis hier stand die Probe an Koordinaten: das Dorf bestand die Abnahme ohne ein Haus im Bild).
     // { x, z, gier, ziel: {x, z} } — ohne Siedlung, ohne Platz, ohne freien Bau bricht sie beim Namen (die Probe stünde
     // sonst an einem Ort, den keiner gerechnet hat).
@@ -771,9 +766,32 @@ class AnazhRealm_siedlung_ort {
             throw new Error(
                 `_ortPose: ${S ? "die Siedlung trägt keinen Platz im Plan" : "keine Siedlung binnen 200 m"} um ${nahe.join(" ")}`
             );
+        // DIE SPUR MUSS STEHEN (w27-ort-pose-voll): die Spur der Wagen trägt erst der Verkehr der Siedlung (`_verkehrAnlegen`, er
+        // entsteht mit ihrer Liste, wenn der Spieler naht, `_bewohnerWerkTakt`) — vor ihm nennt `_verkehrAufSpur` jeden Punkt
+        // frei, und der Stand war still die Mitte des Platzes (an der vollen Stadt in der Spur; die Werkbank fragte vom Anlauf
+        // und bekam ihn, erst ihr zweiter Gang sah die Spur). Eine städtische Siedlung ohne ihn bricht beim Namen: wer die Pose
+        // will, wartet, bis die Stadt steht. Ein Dorf fährt keinen Verkehr und rechnet wie bisher
+        if (p.staedtisch && !S.verkehr)
+            throw new Error(
+                `_ortPose: der Verkehr der Siedlung steht noch nicht (um ${nahe.join(" ")}): die Spur der Wagen ist ungerechnet`
+            );
         const [c, s] = [Math.cos(pz.phi || 0), Math.sin(pz.phi || 0)];
-        const M = { x: S.ox + pz.cx, z: S.oz + pz.cz };
         const u = pz.ex >= pz.ez ? [c, -s] : [s, c];
+        // ERST DER STAND (w27-ort-pose-voll): der Punkt der langen Achse, der der Mitte des Platzes am nächsten liegt (je 0,25 m,
+        // erst diesseits, dann jenseits) und nicht in der Spur eines Wagens — das EINE Gesetz der Straße (`_verkehrAufSpur`, mit
+        // dem Raum, den ein stehender Bewohner hält). An der vollen Stadt lag die Mitte in ihr: der Spieler hielt die Wagen an,
+        // eine Limousine stand 3,5 m vor dem Auge („Vordergrund 28.5 % näher als 8 m: fahrzeug_limousine 18.6 %"). Liegt die
+        // Mitte frei (dorf, stadt), ist sie der Stand; liegt die ganze Achse in der Spur, bricht der Stand beim Namen
+        let M = null;
+        for (let i = 0; !M && i <= 8 * Math.max(pz.ex, pz.ez); i++) {
+            const a = ((i + 1) >> 1) * (i & 1 ? 0.25 : -0.25);
+            const q = { x: S.ox + pz.cx + u[0] * a, z: S.oz + pz.cz + u[1] * a };
+            if (!this._verkehrAufSpur(S, q.x, q.z)) M = q;
+        }
+        if (!M)
+            throw new Error(
+                `_ortPose: die lange Achse des Platzes ${(S.ox + pz.cx).toFixed(1)} ${(S.oz + pz.cz).toFixed(1)} liegt ganz in der Spur eines Wagens`
+            );
         const bau = (p.slots || [])
             .filter((q) => q && q.obb)
             .map((q) => ({ x: S.ox + q.obb.cx, z: S.oz + q.obb.cz, r: Math.min(q.obb.ex, q.obb.ez), obb: q.obb }));
@@ -789,8 +807,11 @@ class AnazhRealm_siedlung_ort {
         );
         let best = null;
         // der Kegel um die Achse weitet sich, bis ein Bau frei steht (20° · 45° · rundum): am Dorf der Zelle −4,−4 liegt
-        // binnen 20° nur das Gasthaus, und seine Sichtlinie ist verstellt
-        for (const kegel of [0.94, 0.7, 0]) {
+        // binnen 20° nur das Gasthaus, und seine Sichtlinie ist verstellt. DANN DER KEGEL (w27-ort-pose-voll): zuerst nur
+        // Sichtlinien, die keine Spur kreuzen (`_verkehrFahrbahnM` ohne Rand, je halben Meter) — ein Wagen in ihr steht vor dem
+        // Ziel; an der vollen Stadt hält vom Stand auf der Achse nur das Wohnhaus Süd beides frei. Kreuzt jede eine Spur (die
+        // Stadt: ihr Platz liegt zwischen den Gassen, „kein Bau mit freier Sichtlinie" bei 91 Bauten), gilt der Kegel ohne sie
+        for (const [kegel, spurfrei] of [0.94, 0.7, 0, 0.94, 0.7, 0].map((k, i) => [k, i < 3])) {
             for (const b of best ? [] : bau) {
                 const [dx, dz] = [b.x - M.x, b.z - M.z];
                 const d = Math.hypot(dx, dz);
@@ -805,12 +826,14 @@ class AnazhRealm_siedlung_ort {
                 // 5.82 m", stadt „verdeckt von an Punkt 1 Gelände in 20.37 m")
                 const [bc, bs] = [Math.cos(b.obb.phi || 0), Math.sin(b.obb.phi || 0)];
                 const k = Math.min(b.obb.ex / Math.abs(dx * bc - dz * bs), b.obb.ez / Math.abs(dx * bs + dz * bc));
-                best = { d, ziel: { x: b.x - dx * k, z: b.z - dz * k } };
+                const ziel = { x: b.x - dx * k, z: b.z - dz * k };
+                if (spurfrei && this._verkehrFahrbahnM(S, M, [ziel], 0)) continue;
+                best = { d, ziel };
             }
         }
         if (!best)
             throw new Error(
-                `_ortPose: kein Bau mit freier Sichtlinie vom Platz ${M.x.toFixed(1)} ${M.z.toFixed(1)} (${bau.length} Bauten, ${hinder.length - bau.length} Hindernisse)`
+                `_ortPose: kein Bau mit freier Sichtlinie vom Stand ${M.x.toFixed(1)} ${M.z.toFixed(1)} (${bau.length} Bauten, ${hinder.length - bau.length} Hindernisse)`
             );
         return { x: M.x, z: M.z, gier: this._blickGierZu(best.ziel.x - M.x, best.ziel.z - M.z), ziel: best.ziel };
     }

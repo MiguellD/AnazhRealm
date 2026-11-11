@@ -11,7 +11,7 @@ const { wandEnde, argOpt, ausDatei, path, fs, jsonLesen, ROOT: root } = require(
 //   3) STAND-WAND: der CLAUDE.md-Stand bleibt ≤ 40 Zeilen (Chronik = git log, Lehre 15).
 //   4) ABSENZ-WAND: BETRIEBSGESETZ in CLAUDE.md + Pflicht-Output in champion.md — ein stilles Streichen ist rot.
 //   6) WACHSTUMS-WAND: scripts/ + spec/ wachsen höchstens um die Hälfte des Spiels, in Code-Atomen ohne Kommentare — sie
-//      urteilt am Fenster des Zugs, jeder andere Zweig druckt seinen Stand; 6b) DATEI-DECKE 4 000 Zeilen je Skript;
+//      urteilt am ZUG (er trägt sich selbst, dazu der Überschuss der Woche), jeder andere Zweig druckt seinen Stand; 6b) DATEI-DECKE 4 000 Zeilen je Skript;
 //   7) ZITAT-WAND: jede .md steht in der Karte, nennt nur Lebendes;
 //   8) STRIPPER-WAND: EIN Kommentar-Stripper (scripts/lib/stamm.cjs), EIN __codeOf (scripts/lib/welt-boot.cjs).
 // Selbsttest feuert (Lehre 1: die Linse beweist sich selbst, nie Wachsamkeit).
@@ -61,8 +61,8 @@ function archivBefund(dateien) {
 }
 
 // 6) WACHSTUMS-WAND: scripts/ + spec/ wachsen zusammen höchstens um die Hälfte des Spiel-Wachstums. Sie URTEILT am
-//    Fenster des TAGES — main der letzten 24 h samt dem Zug, am Push von integ-probe (`--grund tag` misst dasselbe Fenster
-//    vor dem Zug, `--grund <rev>` ein beliebiges); jeder andere Zweig druckt
+//    ZUG, am Push von integ-probe: er trägt sich selbst, dazu der Überschuss der WOCHE (`wachstumsStaende`; `--grund tag`
+//    misst dasselbe vor dem Zug, `--grund <rev>` ein beliebiges Fenster); jeder andere Zweig druckt
 //    seinen Stand (Prüf / Spiel / erlaubt) ohne ROT: ein Linsen-Commit vor seinem Spiel-Commit oder ein reiner Linsen-Zweig
 //    ist kein Befund, die Summe im Zug ist es. Die Decke „scripts/ sinkt nur" (+0 je Stand) fiel am 09.11.: main 02.11. →
 //    09.11. maß Prüf −2 936 bei Spiel +234 451 (erlaubt +117 225), und 01.–07.11. standen 44 ROT an ihr, 0 echt — sie
@@ -129,44 +129,47 @@ const taeterVon = (je) =>
         .map(([p, d]) => `, ${p} +${d}`)
         .join("");
 // Die Stände, an denen die Wand misst — je Stand [grund, kopf (null = Arbeitsbaum), Name, urteilt]. Ein Karten-Zweig misst
-// sich ganz ab der Merge-Basis mit origin/integ-probe und druckt den Stand (urteilt nicht). integ-probe urteilt über den TAG:
-// Grund ist der main-Stand 24 h vor dem Kopf (Erst-Eltern-Kette von origin/main, nie die der Karte — spult der Integrator
+// sich ganz ab der Merge-Basis mit origin/integ-probe und druckt den Stand (urteilt nicht). integ-probe urteilt am ZUG (unten);
+// der Grund seines Fensters ist der main-Stand FENSTER_TAGE vor dem Kopf (Erst-Eltern-Kette von origin/main, nie die der Karte — spult der Integrator
 // integ-probe auf eine Karte vor, ginge deren Kette durch fremde Commits), davon die Merge-Basis mit dem Kopf. Bis 10.11. war das
 // Fenster der eine Push: eine Linsen-Heilung brauchte Spiel-Partner im eigenen Zug und stand an der Wand, während der Tag
 // Prüf +2 223 / Spiel +11 482 maß (erlaubt 5 741) — sechs Heilungen warteten, darunter die des gemessenen Falls „reading 'size'".
 // Der Preis ist gewollt: ein Tag, der Spiel-Code streicht, senkt das Budget jedes Zugs dieses Tages. main nimmt nur den Vorlauf
 // von integ-probe, dessen jeder Push an dieser Wand stand — main misst nichts zweimal. Gesetz des Schöpfers 10.11. 19:10:
-// „Ja, Tagesfenster".
+// „Ja, Tagesfenster" — seit 11.11. die WOCHE: gemessen an main trug EIN Tag Prüf +6 042 / Spiel +13 189 (46 %), zwei Tage
+// −2 917 / +21 944, sieben Tage −9 106 / +240 119. Der Apparat schrumpft über die Woche; der eine Tag nach dem Kehraus strafte
+// jeden Zug. Die Wand fängt die Explosion (103 k → 223 k Zeilen in 15 Tagen), nicht den Tag. (Der Name `tagGrund` und das Wort
+// `--grund tag` bleiben: der Zug-Bau erkennt an ihnen, dass das Gesetz ein Fenster trägt.)
+const FENSTER_TAGE = 7;
 function tagGrund(kopf) {
-    const vor = new Date((+git(["log", "-1", "--format=%ct", kopf]).trim() - 24 * 3600) * 1000).toISOString();
+    const vor = new Date((+git(["log", "-1", "--format=%ct", kopf]).trim() - FENSTER_TAGE * 24 * 3600) * 1000).toISOString();
     const vorTag = git(["rev-list", "-1", "--first-parent", `--before=${vor}`, "origin/main"]).trim();
     return git(["merge-base", vorTag, kopf]).trim();
 }
-function wachstumsStaende(zweig, kopfRev) {
+// DER ZUG TRÄGT SICH SELBST (Schöpfer 11.11. 02:55 „Ja, umbauen", 03:00 „selber Nutzwert-Entscheide treffen"): das Fenster des Tages urteilte nach der UHR — sein Grund
+// rollt mit der Commit-Zeit des Kandidaten, und rollte eine spiel-starke Landung hinaus, kippte das Urteil ohne jede Änderung
+// (z378: Vorprüfung 02:07 GRÜN, Bau 02:16 ROT um 217 Atome, dazwischen rollte die Landung von 02:11 hinaus; ab 03:10 stand der
+// Tag im Minus, −203 bis −2 878 bis 20:58 — jeder Zug wäre gefallen). Jetzt zwei Stände: die WOCHE vor dem Zug (`tagGrund` →
+// Merge-Basis mit origin/main) misst nur ihren ÜBERSCHUSS (erlaubt − Prüf, nie unter 0); der ZUG (Merge-Basis → Kopf) urteilt:
+// sein Prüf-Wachstum ≤ die Hälfte SEINES Spiel-Wachstums + der Überschuss der Woche. Ein Minus straft keinen Zug; eine
+// Linsen-Heilung fährt mit einem Spiel-Partner oder auf dem Überschuss.
+function wachstumsStaende(zweig, kopfRev, zug = zweig === "integ-probe") {
     if (zweig === "main") return [];
-    if (zweig === "integ-probe") {
-        const grund = tagGrund("HEAD");
-        return [[grund, "HEAD", `Tag ${grund.slice(0, 8)}..HEAD`, true]];
-    }
-    return [
-        [
-            git(["merge-base", "HEAD", "origin/integ-probe"]).trim(),
-            kopfRev,
-            "Merge-Basis mit origin/integ-probe",
-            false,
-        ],
-    ];
+    const basis = git(["merge-base", kopfRev || "HEAD", zug ? "origin/main" : "origin/integ-probe"]).trim();
+    const stand = [basis, kopfRev, zug ? "Zug" : "Merge-Basis mit origin/integ-probe", zug];
+    return zug ? [[tagGrund(kopfRev || "HEAD"), basis, "Woche", false], stand] : [stand];
 }
-const erlaubtVon = (dS) => Math.floor(Math.max(0, dS) / 2);
+const erlaubtVon = (dS, ueber = 0) => Math.floor(Math.max(0, dS) / 2) + ueber;
+const ueberschussVon = (dP, dS) => Math.max(0, erlaubtVon(dS) - dP);
 // die Zeile des Stands: was die Wand am Zug sagen wird, auch wo sie nicht urteilt
-const wachstumStand = (dP, dS, name, urteilt, frei = 0, hand = "") =>
-    `${name}: Prüf ${zahl(dP)} / Spiel ${zahl(dS)} Atome · erlaubt ${erlaubtVon(dS)} · ` +
-    `${urteilt ? "urteilt" : "Stand, urteilt am Zug"} · Werkzeug-Ausgabe ${zahl(frei)} frei${hand}`;
-function wachstumBefund(dP, dS, name, urteilt, taeter = "", hand = "") {
-    const erlaubt = erlaubtVon(dS);
+const wachstumStand = (dP, dS, name, urteilt, frei = 0, hand = "", ueber = 0) =>
+    `${name}: Prüf ${zahl(dP)} / Spiel ${zahl(dS)} Atome · erlaubt ${erlaubtVon(dS, ueber)} · ` +
+    `${urteilt ? "urteilt" : name === "Woche" ? "ihr Überschuss trägt den Zug" : "Stand, urteilt am Zug"} · Werkzeug-Ausgabe ${zahl(frei)} frei${hand}`;
+function wachstumBefund(dP, dS, name, urteilt, taeter = "", hand = "", ueber = 0) {
+    const erlaubt = erlaubtVon(dS, ueber);
     if (!urteilt || dP <= erlaubt) return [];
     return [
-        `WACHSTUMS-WAND (${name}): scripts/ + spec/ +${dP} Atome bei Spiel ${dS} — erlaubt die Hälfte (${erlaubt})${taeter}${hand}`,
+        `WACHSTUMS-WAND (${name}): scripts/ + spec/ +${dP} Atome bei Spiel ${dS} — erlaubt die Hälfte + der Überschuss der Woche ${ueber} (${erlaubt})${taeter}${hand}`,
     ];
 }
 
@@ -344,9 +347,11 @@ function main() {
     const gemessen = [];
     try {
         const zweig = process.env.GITHUB_REF_NAME || git(["rev-parse", "--abbrev-ref", "HEAD"]).trim();
-        const staende = grundRev
-            ? [[grundRev === "tag" ? tagGrund(kopfRev || "HEAD") : grundRev, kopfRev, "--grund", true]]
-            : wachstumsStaende(zweig, kopfRev);
+        const staende =
+            grundRev && grundRev !== "tag"
+                ? [[grundRev, kopfRev, "--grund", true]]
+                : wachstumsStaende(zweig, kopfRev, grundRev ? true : undefined);
+        let ueber = 0;
         for (const [grund, kopf, name, urteilt] of staende) {
             const { je, frei, hand } = wachstumZwischen(
                 grund,
@@ -356,8 +361,9 @@ function main() {
             );
             const [dP, dS] = [summe(je), summe(wachstumZwischen(grund, kopf, SPIEL_PFADE).je)];
             const vonHand = hand.length ? ` · von Hand ${hand.join(", ")}` : "";
-            gemessen.push(wachstumStand(dP, dS, name, urteilt, frei, vonHand));
-            errs.push(...wachstumBefund(dP, dS, name, urteilt, taeterVon(je), vonHand));
+            gemessen.push(wachstumStand(dP, dS, name, urteilt, frei, vonHand, ueber));
+            errs.push(...wachstumBefund(dP, dS, name, urteilt, taeterVon(je), vonHand, ueber));
+            if (name === "Woche") ueber = ueberschussVon(dP, dS);
         }
         if (!staende.length)
             gemessen.push(`${zweig}: misst nichts zweimal (jeder Merge stand auf integ-probe an der Wand)`);
@@ -512,9 +518,12 @@ function main() {
     // der Zug-Kandidat über der Hälfte: ROT beim Namen des Stands und des Täters
     const zug = String(wachstumBefund(501, 1000, "--grund", true, ", scripts/y.cjs +501"));
     const zugSoll =
-        "WACHSTUMS-WAND (--grund): scripts/ + spec/ +501 Atome bei Spiel 1000 — erlaubt die Hälfte (500), scripts/y.cjs +501";
+        "WACHSTUMS-WAND (--grund): scripts/ + spec/ +501 Atome bei Spiel 1000 — erlaubt die Hälfte + der Überschuss der Woche 0 (500), scripts/y.cjs +501";
+    const mitTag = (dP, dS) => wachstumBefund(600, 1000, "Zug", true, "", "", ueberschussVon(dP, dS)).length;
     const wand = [
         wachstumBefund(600, 1000, "Zug", true).length, // +600 Prüf gegen +1000 Spiel: feuert
+        mitTag(100, 400), // derselbe Zug auf dem Überschuss der Woche (+100): schweigt
+        mitTag(6130, 11855), // ein Fenster im Minus (−203) straft nicht und trägt nicht: feuert wie ohne Fenster
         wachstumBefund(400, 1000, "Zug", true).length, // +400 gegen +1000: schweigt
         wachstumBefund(10, -500, "Zug", true).length, // die Welt schrumpft, der Apparat wächst: feuert
         wachstumBefund(-100, -300, "Zug", true).length, // beide schrumpfen: schweigt
@@ -530,7 +539,7 @@ function main() {
         fall("-a\n+a\n+h\n+b", "", tafel, frisch), // (b) eine Hand-Zeile darin: +1 beim Namen
         fall("+a", "new file mode\n", tafel), // (c) eine neue Tafel zählt voll
     ].join(" · ");
-    if (wand !== `1 · 0 · 1 · 0 · 0 Stand · rot · 0 · 0 · 1 rot · 0 · 4 rot · -4 · 0 · 1 ${tafel}:2 +1 · 1`)
+    if (wand !== `1 · 0 · 1 · 0 · 1 · 0 · 0 Stand · rot · 0 · 0 · 1 rot · 0 · 4 rot · -4 · 0 · 1 ${tafel}:2 +1 · 1`)
         errs.push(`Selbsttest der Wachstums-Wand versagt (${wand})`);
     // die Zitat-Wand: je Regel genau ein Täter beim Namen; die Chronik-Zeile, der Platzhalter und die Einheit schweigen
     const zTexte = {

@@ -1306,7 +1306,8 @@ const ENTSORGUNG_BESITZER = {
     _feldPassDispose: { arten: ["geometry", "material"], grund: "der Feld-Pass (Quad und Stoff)" },
     _fernRingDispose: { arten: ["geometry", "material"], grund: "der Fern-Ring" },
     _kammKroneBau: { arten: ["geometry"], grund: "die Kamm-Krone: ihr altes Netz beim Neubau (ferne.K3)" },
-    _kammKroneDispose: { arten: ["geometry"], grund: "die Kamm-Krone (ihr Netz, Ring-Besitz)" },
+    _kammKroneDispose: { arten: ["geometry"], grund: "die Kamm-Krone (ihr Netz und ihr Gast, Ring-Besitz)" },
+    _kammKroneVorbau: { arten: ["geometry"], grund: "der Gast der Kamm-Krone: sein leeres Dreieck, sobald das Netz zeichnete (w28-leben-vorbau)" },
     verifyComputeContribution: { arten: ["geometry", "material"], grund: "das Prüf-Mesh der Compute-Probe" },
     _tickPortalMembranes: {
         arten: ["material"],

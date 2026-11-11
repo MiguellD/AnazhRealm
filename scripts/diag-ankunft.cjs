@@ -67,6 +67,7 @@ function ladeschirmVerdict(m) {
         ["saat", "mit einem Chunk im Laub-Radius, dessen Wald noch nicht gesät ist", /bepflanzt/],
         ["horizont", "ohne den Horizont (der Fern-Ring steht nicht ganz)", /Horizont/],
         ["licht", "ohne das Licht des Orts", /Licht des Orts/],
+        ["zeichnungWartet", "mit einem Bürger des Bilds, dessen Programm noch entsteht (gesetzt, nicht gezeichnet)", /Programm/],
         ["dorfExport", "mit dem Export eines Dorfs der Ankunft unterwegs", /Dorf/],
         ["dorfSchlange", "mit den Häusern eines Dorfs der Mesh-Zone in der Schlange", /Dorf/],
         ["dorfFaellig", "mit einem fälligen, noch nicht bestellten Start-Dorf am Genesis-Ort", /Dorf/],
@@ -120,6 +121,24 @@ function ladeschirmVerdict(m) {
     if (!f.lueckeFlackert) out.push(`eine flackernde Lücke: ${ohne("lueckeFlackert")}`);
     else if (!f.lueckeFlackert.weg) out.push("eine flackernde Lücke hält den Ladeschirm ohne Grenze (kein Deckel)");
     else if (!f.lueckeFlackert.warn) out.push("eine flackernde Lücke weicht ohne Wort im Log");
+    // DAS BILD IST GEZEICHNET (w28-bild-ganz): steht die Pipeline eines Wartenden, hält er nichts mehr; kommt sie nie (der
+    // Deckel), weicht der Ladeschirm — und der EINE Melder nennt ihn beim Etikett, nie still
+    if (!f.zeichnungSteht) out.push(`ein Bürger, dessen Pipeline steht: ${ohne("zeichnungSteht")}`);
+    else if (!f.zeichnungSteht.weg) out.push("ein Bürger, dessen Pipeline steht, hält das Bild weiter (`_bildWartet` fällt ihn nicht — das Bild stünde erst mit dem nächsten Lade-Bild)");
+    if (!f.zeichnungOhneAussicht) out.push(`ein Bürger ohne Aussicht: ${ohne("zeichnungOhneAussicht")}`);
+    else if (!f.zeichnungOhneAussicht.weg) out.push("ein Bürger, dessen Programm nie kommt, hält den Spieler für immer vor der Welt (kein Deckel am Term „zeichnung“)");
+    else if (!f.zeichnungOhneAussicht.bruch) out.push("ein Bürger ohne Aussicht weicht ohne Bruch beim Namen (`_bruchMelden`: „WELTBILD NICHT GANZ … <Etikett> nicht gezeichnet“)");
+    // DAS PROGRAMM VOR DEN DATEN (w28-leben-vorbau): wessen Programm unter dem Ladeschirm bekannt ist und wessen Daten erst nach dem
+    // Bild kommen, baut es als Gast der Ankunft davor — die Kamm-Krone beim Namen; ihre Rechnung bleibt nach dem Bild
+    const kv = m.kammVorbau;
+    if (!kv) out.push("das Programm der Kamm-Krone vor den Daten: keine Probe (Vorbedingung)");
+    else {
+        if (!kv.gast) out.push("die Kamm-Krone baut ihr Programm erst nach dem Bild — ihr Takt hängt vor dem ersten Weltbild keinen Gast der Ankunft in die Welt-Szene (`_kammKroneVorbau`): ihr erstes Netz wartet im Gang auf Knoten-Bau und Pipeline");
+        else if (kv.art !== "ankunft" || !kv.stoff || kv.form !== "aDeckt,color,normal,position") out.push(`der Gast der Kamm-Krone trägt nicht ihr Programm (Art „${kv.art}“, ihr Stoff ${kv.stoff}, Form ${kv.form}) — sein Bau träfe den Schlüssel des Netzes nicht`);
+        if (kv.bestellt) out.push(`die Kamm-Krone bestellt ${kv.bestellt}-mal beim Kamm-Faden vor dem ersten Weltbild — die Rechnung gehört nach dem Bild, nur das Programm davor`);
+        if (kv.wahl !== "merken,bauen") out.push(`der Gast der Ankunft baut nicht gleich nach dem Bild („${kv.wahl}“ statt „merken,bauen“: unter dem Ladeschirm · im ersten Bild danach, \`_vorbauWahl\`) — vor dem Bild kostet sein Bau die Ankunft (GTX 1050 kalt, ab dem Buch: +0,5…+1,5 s), und baut er nie, wartet die Krone im Gang auf ihr Programm`);
+        if (kv.raum !== "gast,buerger-laut") out.push(`die Gast-Prägung allein nimmt vom Zeichnen aus („${kv.raum}“ statt „gast,buerger-laut“: der Gast der Kamm-Krone · ein Bürger mit Prägung und Maßstab 1, \`_gastOhneRaum\`) — ein echter Bürger, der die Prägung trägt, fehlte im Bild, und keine Zählung nennte ihn`);
+    }
     const g = m.weichtGanz;
     if (!g) out.push("das Weichen des Ladeschirms: kein Fall (Vorbedingung)");
     else if (!g.hidden || g.display !== "none" || g.animationen)
@@ -590,6 +609,55 @@ async function probe(arg) {
             fallMit("horizont", [window, { __anazhFernRing: true }], [st, { fernRing: { ready: false, cursor: 0, totalVerts: 1 } }]);
             // (4e') die Belichtung schrieb noch nicht aus dem Licht (S7)
             fallMit("licht", [st, { _belichtungSteht: false }]);
+            // (4e'') DAS BILD IST GEZEICHNET (w28-bild-ganz): ein Bürger der Welt-Szene wollte im letzten Bild zeichnen, seine Pipeline
+            // entsteht noch (die Warteschlange der Erst-Zeichnung trägt sie offen, `_erstWartet`) — er hält das Bild beim Etikett;
+            // steht sie, hält er nichts mehr; kommt sie nie (der Deckel), weicht der Ladeschirm mit einem Bruch beim Namen
+            if (!(r._erstZeichnungStand().bildWartet instanceof Map) || typeof r._bildWartet !== "function")
+                m.ohneFall.zeichnungWartet = m.ohneFall.zeichnungSteht = m.ohneFall.zeichnungOhneAussicht = "die Erst-Zeichnung führt keine Liste der Wartenden des Bilds (`bildWartet`, `_bildWartet`) — das Weltbild zählt Gesetztes, nie Gezeichnetes";
+            else {
+                const [EZ, pipeL] = [r._erstZeichnungStand(), { linse: "pipeline" }];
+                const an = (offen) => () => (offen && EZ.offen.set(pipeL, new Set()), EZ.namen.set(pipeL, "renderPipeline_LinseStoff_7"), EZ.bildWartet.set(pipeL, { ro: null, fest: false }));
+                const aus = () => (EZ.offen.delete(pipeL), EZ.bildWartet.delete(pipeL));
+                const bruch = () => st.logBuffer.slice(-30).filter((z) => /WELTBILD NICHT GANZ.*LinseStoff_7 nicht gezeichnet/.test(z)).length;
+                fall("zeichnungWartet", an(true), aus);
+                fall("zeichnungSteht", an(false), aus);
+                const b0 = bruch();
+                fall("zeichnungOhneAussicht", an(true), aus, () => (st._weltbildErsteFrage = performance.now() - (AnazhRealm.WELTBILD_DECKEL_MS || 60000) - 1));
+                m.faelle.zeichnungOhneAussicht.bruch = Math.max(0, bruch() - b0);
+            }
+            // (4e''') DAS PROGRAMM VOR DEN DATEN (w28-leben-vorbau): vor dem ersten Weltbild hängt der Takt der Kamm-Krone ihren Gast der
+            // Ankunft in die Welt-Szene (ihr Stoff, die Form ihres Netzes) und bestellt NICHTS beim Kamm-Faden; unter dem Ladeschirm
+            // merkt `_vorbauWahl` ihn nur (dort kostete sein Bau die Ankunft), im ersten Bild danach baut er. Der Null-Renderer trägt
+            // keine Erst-Zeichnung: die Probe leiht ihre Marke für den einen Ruf.
+            {
+                const R = st.renderer;
+                const merk = [st.kammKrone, R.__anazhErstZeichnung, st._weltbildDa, r._fernAuftrag];
+                const kv = (m.kammVorbau = { gast: false, art: null, stoff: false, form: "", bestellt: 0, wahl: "", raum: "" });
+                try {
+                    [st.kammKrone, R.__anazhErstZeichnung, st._weltbildDa] = [null, true, 0];
+                    r._fernAuftrag = () => (kv.bestellt++, new Promise(() => {}));
+                    r._kammKroneTakt({ ready: true, anchorX: 0, anchorZ: 0 });
+                    const g = st.kammKrone && st.kammKrone.gast;
+                    if (g) Object.assign(kv, { gast: g.parent === st.scene, art: g.__vorbauGast, stoff: g.material === st.kammKrone.stoff, form: Object.keys(g.geometry.attributes).sort().join(",") });
+                    // EIN GAST NIMMT KEINEN RAUM (`_gastOhneRaum`): der Gast der Kamm-Krone steht mit Maßstab 0 — ein Bürger, dem die
+                    // Prägung anhaftet (Maßstab 1), ist KEIN Gast, und der EINE Melder nennt ihn
+                    if (g && typeof r._gastOhneRaum === "function") {
+                        st.scene.updateMatrixWorld(true);
+                        const buerger = new THREE.Mesh();
+                        [buerger.name, buerger.__vorbauGast] = ["linse:buerger", true];
+                        buerger.updateMatrixWorld(true);
+                        const laut = () => st.logBuffer.slice(-30).filter((z) => /GAST MIT RAUM: linse:buerger/.test(z)).length;
+                        const l0 = laut();
+                        kv.raum = [r._gastOhneRaum(g) ? "gast" : "buerger", r._gastOhneRaum(buerger) ? "gast" : laut() > l0 ? "buerger-laut" : "buerger-still"].join(",");
+                    }
+                    const E2 = () => ({ vorgemerkt: new WeakMap(), vorgebaut: new WeakMap(), vorbauBild: -1 });
+                    kv.wahl = [[true, 0], [false, 1]].map(([lade, bild]) => String(AnazhRealm._vorbauWahl(E2(), {}, "p", lade, bild, 1, true))).join(","); // unter dem Ladeschirm · im ersten Bild danach
+                } finally {
+                    if (st.kammKrone) r._kammKroneDispose();
+                    [st.kammKrone, R.__anazhErstZeichnung, st._weltbildDa, r._fernAuftrag] = merk;
+                    if (merk[3] === Object.getPrototypeOf(r)._fernAuftrag) delete r._fernAuftrag;
+                }
+            }
             // (4f) DAS DORF: fällig, im Export oder mit Häusern in der Schlange hält es das Bild (headless trägt der Hook)
             const dorfAn = [window, { __anazhAutoSettlement: true }];
             fallMit("dorfExport", dorfAn, [r, { _autoSettlementPendingKey: "start" }]);
@@ -1737,7 +1805,7 @@ async function probe(arg) {
 hauptLauf(async () => {
     if (SELBSTTEST) {
         console.log("=== SELBST-TEST — die Ankunfts-Linse nennt ihre Täter ===");
-        const l2aTerme = ["welt", "boden", "horizont", "licht", "leib", "buch", "bauten", "pflanzung", "streu", "karten", "dorf"];
+        const l2aTerme = ["welt", "boden", "horizont", "licht", "leib", "zeichnung", "buch", "bauten", "pflanzung", "streu", "karten", "dorf"];
         // die gesunden Köpfe der Ankunft (ihre Mutanten tauschen je einen Teil)
         const koepfe = { orte: [{ wer: "die Nah-Wiese", art: "gras L1", blick: true }, { wer: "der Gesetz-Fit", art: "blume L0", blick: true }], leib: { bestellt: ["vor L1 Kopf", "nach L0"], ohneFein: true, egoRoh: true, baut: ["vor 1", "nach 0"] }, dorf: { kopf: true, export: true, kopfRang: true } };
         // der kleine Satz der Stand-Zeile (je Mutante ein Fall getauscht)
@@ -1752,6 +1820,8 @@ hauptLauf(async () => {
         const halt = (stand, t) => ({ weg: false, stand, warn: 0, terme: [t] });
         const weicht = { weg: true, stand: "", warn: 0, terme: [] };
         const hilfeGut = { unbekannt: false, fehlt: [], tastenFehlen: [], v1: true }; // die Antwort auf „hilfe“, die alles nennt
+        // der gesunde Vorbau der Kamm-Krone (w28-leben-vorbau; je Mutante ein Teil getauscht)
+        const kammGut = { gast: true, art: "ankunft", stoff: true, form: "aDeckt,color,normal,position", bestellt: 0, wahl: "merken,bauen", raum: "gast,buerger-laut" };
         const l2aFaelle = {
             ohneBoden: halt("Boden", "boden"),
             baumUngebaut: halt("Bäume und Bauten", "bauten"),
@@ -1765,6 +1835,9 @@ hauptLauf(async () => {
             saat: halt("bepflanzt", "pflanzung"),
             horizont: halt("Horizont", "horizont"),
             licht: halt("Licht des Orts", "licht"),
+            zeichnungWartet: halt("1 Programm des Bilds entsteht", "zeichnung"),
+            zeichnungSteht: weicht,
+            zeichnungOhneAussicht: { weg: true, stand: "", warn: 1, bruch: 1 },
             dorfExport: halt("Dorf", "dorf"),
             dorfSchlange: halt("Dorf", "dorf"),
             dorfFaellig: halt("Dorf", "dorf"),
@@ -1794,6 +1867,7 @@ hauptLauf(async () => {
                     wald: { ferne: 169, steht: false, zusage: true, kam: true, rest: 128 },
                     blick: { n: [4, 6], vor1: 1, geweckt: true, nach2: 1 }, takt: { lief: 4 },
                     vorrat: vr({ nachBild: 2, ende: true }),
+                    kammVorbau: kammGut,
                 },
                 [
                     ["ein Loch hinter dem Spieler hält das erste Bild", { faelle: mitFall(l2aFaelle, { baumHinten: { weg: false } }) }, "mit einem Baum hinter"],
@@ -1839,6 +1913,20 @@ hauptLauf(async () => {
                     ["das erste Weltbild ohne Dorf", { faelle: mitFall(l2aFaelle, { dorfSchlange: weicht }) }, "mit den Häusern eines"],
                     ["das fällige Start-Dorf ohne Fall", { faelle: mitFall(l2aFaelle, { dorfFaellig: undefined }), ohneFall: { dorfFaellig: "400 m" } }, "mit einem fälligen, noch"],
                     ["eine arbeitende Lücke weicht", { faelle: mitFall(l2aFaelle, { lueckeArbeitet: { weg: true } }) }, "eine arbeitende Lücke weicht"],
+                    ["gesetzt, nicht gezeichnet: der Ladeschirm weicht vor dem wartenden Bürger (w28-bild-ganz)", { faelle: mitFall(l2aFaelle, { zeichnungWartet: weicht }) }, "mit einem Bürger des Bilds"],
+                    ["der Term „zeichnung“ ohne Fall", { faelle: mitFall(l2aFaelle, { zeichnungWartet: undefined }), ohneFall: { zeichnungWartet: "keine Erst-Zeichnung" } }, "mit einem Bürger des Bilds"],
+                    ["eine stehende Pipeline hält weiter", { faelle: mitFall(l2aFaelle, { zeichnungSteht: { weg: false } }) }, "ein Bürger, dessen Pipeline steht, hält"],
+                    ["ein Bürger ohne Aussicht hält für immer", { faelle: mitFall(l2aFaelle, { zeichnungOhneAussicht: { weg: false } }) }, "ein Bürger, dessen Programm nie"],
+                    ["ein Bürger ohne Aussicht weicht still", { faelle: mitFall(l2aFaelle, { zeichnungOhneAussicht: { weg: true, bruch: 0 } }) }, "ein Bürger ohne Aussicht weicht ohne"],
+                    ["ein Bürger, der nach dem Bild erst sein Programm baut, ist ROT beim Namen (die Kamm-Krone ohne Gast, w28-leben-vorbau)", { kammVorbau: { ...kammGut, gast: false } }, "die Kamm-Krone baut ihr Programm erst nach"],
+                    ["der Gast der Ankunft baut unter dem Ladeschirm (die Ankunft zahlt seinen Bau)", { kammVorbau: { ...kammGut, wahl: "bauen,bauen" } }, "der Gast der Ankunft baut nicht gleich"],
+                    ["der Gast der Ankunft baut nie (er merkt auch nach dem Bild nur)", { kammVorbau: { ...kammGut, wahl: "merken,null" } }, "der Gast der Ankunft baut nicht gleich"],
+                    ["ein echter Bürger trägt die Gast-Prägung und rutscht als Gast durch", { kammVorbau: { ...kammGut, raum: "gast,gast" } }, "die Gast-Prägung allein nimmt vom"],
+                    ["ein Bürger mit Gast-Prägung zeichnet, aber still", { kammVorbau: { ...kammGut, raum: "gast,buerger-still" } }, "die Gast-Prägung allein nimmt vom"],
+                    ["der Gast der Kamm-Krone nimmt Raum", { kammVorbau: { ...kammGut, raum: "buerger,buerger-laut" } }, "die Gast-Prägung allein nimmt vom"],
+                    ["der Gast trägt einen fremden Stoff", { kammVorbau: { ...kammGut, stoff: false } }, "der Gast der Kamm-Krone trägt nicht"],
+                    ["die Rechnung der Krone vor dem Bild", { kammVorbau: { ...kammGut, bestellt: 1 } }, "die Kamm-Krone bestellt 1-mal"],
+                    ["der Vorbau der Kamm-Krone ohne Probe", { kammVorbau: undefined }, "das Programm der Kamm-Krone vor"],
                     ["ein Fall ohne Grund", { faelle: mitFall(l2aFaelle, { karteOffen: undefined }) }, "mit der offenen Karte eines Baums im"],
                     ["kein Ladeschirm", { imHtml: false }, "kein Ladeschirm im HTML"],
                     ["unter der UI", { zIndex: 5 }, "der Ladeschirm liegt unter"],

@@ -1489,10 +1489,12 @@ async function checkBandTierSeparation({ page, check }) {
                     az: c.position.z - leib.fz * leib.halb,
                     bx: c.position.x + leib.fx * leib.halb,
                     bz: c.position.z + leib.fz * leib.halb,
-                    r: leib.radius,
+                    rad: leib.rad.slice(),
                 };
             };
-            // der Abstand zweier Strecken in der Ebene (die Linse rechnet ihn selbst)
+            // der Abstand zweier Leiber in der Ebene (die Linse rechnet ihn selbst): je Punkt der Strecke ihr Radius dort, zwischen
+            // den drei Achsen linear (`rad`, das Quer-Maß der Gestalt — physik.K2 Staffel 2), die Kapsel ihr `r`
+            const radAn = (P, t) => (P.rad ? P.rad[1] + (P.rad[t < 0.5 ? 0 : 2] - P.rad[1]) * Math.abs(2 * t - 1) : P.r);
             const streckeAbstand = (P, Q) => {
                 let best = Infinity;
                 const N = 24;
@@ -1503,7 +1505,7 @@ async function checkBandTierSeparation({ page, check }) {
                     const uz = Q.bz - Q.az;
                     const ll = ux * ux + uz * uz;
                     const t = ll > 1e-12 ? Math.max(0, Math.min(1, ((px - Q.ax) * ux + (pz - Q.az) * uz) / ll)) : 0;
-                    best = Math.min(best, Math.hypot(px - (Q.ax + ux * t), pz - (Q.az + uz * t)));
+                    best = Math.min(best, Math.hypot(px - (Q.ax + ux * t), pz - (Q.az + uz * t)) - radAn(P, i / N) - radAn(Q, t));
                 }
                 return best;
             };
@@ -1546,7 +1548,7 @@ async function checkBandTierSeparation({ page, check }) {
                         takt(1 / 60);
                         const PA = achse(a);
                         const PB = achse(b);
-                        res.minAbstand = Math.min(res.minAbstand, streckeAbstand(PA, PB) - PA.r - PB.r);
+                        res.minAbstand = Math.min(res.minAbstand, streckeAbstand(PA, PB));
                         if (res.kontakt < 0 && vx(b) > 1e-6) {
                             res.kontakt = k;
                             res.dvZiel = vx(b);
@@ -1603,7 +1605,7 @@ async function checkBandTierSeparation({ page, check }) {
                                 bz: pmM.position.z,
                                 r: A.PLAYER_WALL_RADIUS,
                             };
-                            sp.minAbstand = Math.min(sp.minAbstand, streckeAbstand(PW, PS) - PW.r - PS.r);
+                            sp.minAbstand = Math.min(sp.minAbstand, streckeAbstand(PW, PS));
                             sp.dvSpieler = Math.max(sp.dvSpieler, Math.hypot(s.playerVel.x(), s.playerVel.z()));
                         }
                     } finally {
@@ -1889,7 +1891,7 @@ async function checkBandKreaturKosten({ page, check }) {
         const T3 = window.THREE;
         const recW = A.TETRAPODA_SOUL_MAP && A.TETRAPODA_SOUL_MAP.wolf;
         const starrZensus = (root) => {
-            const z = { meshes: 0, skins: 0, unverschmolzen: 0, ungecullt: 0, ohneKugel: 0, breit: [] };
+            const z = { meshes: 0, skins: 0, unverschmolzen: 0, ungecullt: 0, ohneKugel: 0, tafel: 0, breit: [] };
             const seen = new Set();
             root.traverse((n) => {
                 if (!n.isMesh || !n.geometry) return;
@@ -1906,6 +1908,9 @@ async function checkBandKreaturKosten({ page, check }) {
                     z.skins++;
                     if (n.frustumCulled === false) z.ungecullt++;
                     if (!n.boundingSphere) z.ohneKugel++;
+                    // (K) DAS KNOCHEN-RASTER (`_ofenSkelett`): die Reihe jeder Ofen-Haut steht in der EINEN Klasse, kein Gewicht liest einen Füllplatz
+                    const echt = new Set(n.skeleton.bones).size;
+                    if (n.skeleton.bones.length % A.KNOCHEN_RASTER || gs.attributes.skinIndex.array.some((b, i) => sw.array[i] && b >= echt)) z.tafel++;
                     return;
                 }
                 const g = n.geometry;
@@ -1926,6 +1931,10 @@ async function checkBandKreaturKosten({ page, check }) {
         o.rMensch = mfM?.nah ? starrZensus(mfM.nah) : null;
         o.checks.rWolfStarr = !!o.rWolf && o.rWolf.unverschmolzen === 0 && o.rWolf.skins >= 2;
         o.checks.rMenschStarr = !!o.rMensch && o.rMensch.unverschmolzen === 0;
+        const kl = A.KNOCHEN_RASTER;
+        A.KNOCHEN_RASTER = 7; // der Täter des Rasters: eine fremde Klasse
+        o.checks.rKnochenTafel = o.rWolf?.tafel + o.rMensch?.tafel === 0 && starrZensus(wolfT.root).tafel > 0;
+        A.KNOCHEN_RASTER = kl;
         o.checks.rKugel =
             !!o.rWolf &&
             !!o.rMensch &&
@@ -2556,7 +2565,7 @@ async function checkBandKreaturKosten({ page, check }) {
         // ── (G) DER RUHENDE LEIB (K59, Gebot 7): außer Bild, fern, ohne Zustand → grober Takt, kein Matrix-Gang ──
         // Der Null-Renderer backt kein Feld (`_tickKreaturZiegel` schweigt headless): die Probe trägt den Bake-Versuch
         // (`_kzVersuch`) wie ein ferner Leib, dessen Feld steht. Der Frustum kommt wie im Loop aus `_loopFrustumCulling`;
-        // der Matrix-Gang ist `scene.updateMatrixWorld()` wie im Render. Gezählt: volle Schritte (`_kreaturHuellenKontakt`
+        // der Matrix-Gang ist `scene.updateMatrixWorld()` wie im Render. Gezählt: volle Schritte (`_kreaturWeg`
         // je Schritt), die Zeit der Schritte (`_kreaturLaufTakt` trägt das dt), die Gänge in ein angehängtes Kind.
         o.g = (() => {
             const T3 = window.THREE;
@@ -2582,9 +2591,11 @@ async function checkBandKreaturKosten({ page, check }) {
             };
             probe.add(kind);
             const P = Object.getPrototypeOf(r);
-            r._kreaturHuellenKontakt = function (c) {
+            // je Schritt des Leibs EIN Weg (`_kreaturWeg`) — nie seine Teil-Schritte gegen die Hülle: ein schmaler Leib (das Quer-Maß
+            // der Gestalt, physik.K2 Staffel 2) teilt seinen Weg öfter, die Kadenz der KI bleibt die seiner Schritte
+            r._kreaturWeg = function (c) {
                 if (c === probe) g.schritte++;
-                return P._kreaturHuellenKontakt.apply(this, arguments);
+                return P._kreaturWeg.apply(this, arguments);
             };
             r._kreaturLaufTakt = function (c, dt) {
                 if (c === probe) g.zeit += dt;
@@ -2803,7 +2814,7 @@ async function checkBandKreaturKosten({ page, check }) {
                 g.g11 = { band: r._detailBand(400 / 43.2).aiDiv, ruht: u._ruht === true, schritte: g.schritte, ki };
                 delete r._tickCreatureTaskDirection;
             } finally {
-                delete r._kreaturHuellenKontakt;
+                delete r._kreaturWeg;
                 delete r._kreaturLaufTakt;
                 delete r._leibMatrix;
                 delete r._kzBesitztFeld;
@@ -2866,7 +2877,7 @@ async function checkBandKreaturKosten({ page, check }) {
     gruppe(`(A) die Anim-Raten-Leiter: nah ${n.voll}/100 · halb ${n.halb} · viertel ${n.viertel} · jenseits ${n.hinter}, monoton, eingefroren`, ["aVoll", "aHalb", "aViertel", "aHinter", "aFernOrdnung", "aEingefroren"]);
     gruppe("(B) jenseits der Grenze die neutrale Stance (Prämisse mid-step, Schwanz ruht, Freeze lief)", ["bMidStepPremise", "bNeutralStance", "bTailNeutral", "bFrozen"]);
     gruppe("(C) die gelenkige Grobstufe des Menschen: Vertex- und Mesh-Differenz, der EINE Schalter, der Peer-Tick nah↔fern", ["cFernGebaut", "cVertexDiff", "cMeshDiff", "cToggle", "cPeerFern", "cPeerNah"]);
-    gruppe("(R)(T)(W) Starr-Bindung je Material, Körper-Kugel, Pose in der Kugel, Zwillings-Knochen, schmal, Absenz", ["rWolfStarr", "rMenschStarr", "rKugel", "rPoseInKugel", "rZwillingKnochen", "tSchmal", "wAbsenz"]);
+    gruppe("(R)(T)(W) Starr-Bindung je Material, Körper-Kugel, Pose in der Kugel, Zwillings-Knochen, schmal, Absenz", ["rWolfStarr", "rMenschStarr", "rKugel", "rPoseInKugel", "rZwillingKnochen", "rKnochenTafel", "tSchmal", "wAbsenz"]);
     gruppe("(F) Mensch und Kopie ruhen (je mit Prämisse)", ["fMenschPraemisse", "fMenschRuhe", "fKopiePraemisse", "fKopieRuhe"]);
     // (W) je Gestalt: der Wurf-Teil der Grobstufe hält sein Soll, der Zwilling wirft den Umriss der feinen Stufe (DECKUNG IoU)
     const w = out.w || [];

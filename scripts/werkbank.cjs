@@ -21,6 +21,10 @@
 //                                                           (spec/farbe/albedo-tafel.json, Eichung 0,180; Nachzug diag-albedo-tafel.cjs --nachziehen)
 //   node scripts/werkbank.cjs licht [--uhr u] [--ist <id>]  DIE LICHT-BILANZ (18-%-Karte, je Licht, unter der Bühne zur Uhr u —
 //                                                           ohne Uhr Mittag; `--ist` in die Soll-Tafel, K5 urteilt sie mit dem Soll ihrer Uhr)
+//   node scripts/werkbank.cjs licht --tag [--kurz] [--orte genesis,wiese,wiese:third] [--eigen] [--ordner d] [--datei f.json]
+//                                                           DIE TAG-ACHSE (licht.K1): je Ort und Sicht die Uhr-Kurve aus dem Ausgabe-Pfad,
+//                                                           je Ort EINE Zeile `TAG <ort> ROT|GRUEN:` mit den sechs Zahlen des Solls
+//                                                           (gate:tag-achse:echt die Wand der Karte, gate:tag-achse:bahn die ganze Bahn)
 //   node scripts/werkbank.cjs licht --luft [--ort genesis] [--eigen] [--wetter stormy [--zug]] | --selbsttest  DIE LUFT IM BILD
 //                                                           (Koschmieder je Kanal, Farbton, Sonnenseite, fernes Weiß; Rand und Kante an
 //                                                           Hügel und Gipfel; im Wetter die Sicht, mit --zug klar → Wort → klar je Sekunde)
@@ -707,10 +711,31 @@ async function starte() {
                             const x = k[i - 1][0] + ((k[i][0] - k[i - 1][0]) * s) / l, z = k[i - 1][1] + ((k[i][1] - k[i - 1][1]) * s) / l;
                             if (!r._aufWeg(x, z, 0)) throw new Error(`Messort ${o.ort}: die Bahn verlässt die Gasse bei ${x.toFixed(1)} ${z.toFixed(1)}`);
                         }
+                    // DIE STADT STEHT, BEVOR DIE POSE FRAGT (w27-ort-pose-voll): `_ortPose` bricht beim Namen, solange der Verkehr
+                    // einer städtischen Siedlung nicht steht — er entsteht mit ihrer Liste, wenn der Spieler naht (`_tickBewohner`,
+                    // binnen `nearM` 260 m; der Anlauf liegt 264 m vor stadt und 437 m vor stadt-voll). Der Ort tritt an den Anker
+                    // seiner Gründung, bis jede städtische Siedlung im Nah-Ring ihren Verkehr trägt. Bis hier fragte der erste Gang
+                    // vom Anlauf: die Pose kam ohne Spur (die Mitte des Platzes), dort weckte der Spieler die Stadt, und erst der
+                    // zweite Gang sah die Spur — still
+                    if (o?.ortPose) {
+                        if (g) r.state.playerMesh.position.set(g.anker[0], r._voxelSurfaceY(g.anker[0], g.anker[1]) + 1.8, g.anker[1]);
+                        const [p, nah] = [r.state.playerMesh.position, AnazhRealm.AUTO_SETTLEMENT.nearM];
+                        const schlaeft = () =>
+                            [...(r._bewohnerSiedlungen || new Map()).values()].filter(
+                                (S) => S.plan.staedtisch && !S.verkehr && Math.hypot(S.ox - p.x, S.oz - p.z) <= nah
+                            );
+                        takte += await __gebautNach(`Messort ${o.ort}: der Verkehr der Siedlung`, {
+                            fertig: () => !schlaeft().length,
+                            takt,
+                            max: 1800,
+                            warum: () => `ohne Verkehr im Nah-Ring: ${schlaeft().map((S) => S.key).join(", ")}`,
+                        });
+                    }
                     // DIE POSE AUS DEM PLAN (`ortPose`, w27-ort-pose): der Ort steht auf dem Platz seiner Siedlung und blickt auf
                     // ihren ersten freien Bau (`_ortPose`) — gerechnet hier, nie eine Zahl der Spec. IN ZWEI GÄNGEN: der Bestand der
                     // Welt um den Platz (`_blockerUmPlatz`) ist erst gebaut, wenn der Spieler dort steht — der zweite Gang
-                    // fragt den Blick am Platz neu. Ohne Siedlung, Platz oder freien Bau bricht der Stamm beim Namen
+                    // fragt den Blick am Platz neu (nur noch den Blick: die Spur steht seit dem Warten oben schon im ersten, der
+                    // Stand beider Gänge ist derselbe). Ohne Siedlung, Platz, Verkehr oder freien Bau bricht der Stamm beim Namen
                     for (let gang = o?.ortPose ? 2 : 1; gang--; ) {
                         var P = o?.ortPose && r._ortPose(g ? g.anker : [x, z]);
                         if (P) [x, z, r.state.yaw, r.state.pitch] = [P.x, P.z, P.gier, 0];
@@ -946,7 +971,7 @@ async function starte() {
                     r._kopfKahl(aus);
                     bundlesNeu();
                     try {
-                        return (await __ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
+                        return (await __ausgabeAufnahme(W, H, 1, { satz: "messung", rueckstrahl: aus.length ? "halten" : null })).u8; // ohne Teil steht das Licht von unten wie in G
                     } finally {
                         for (const o of aus) zeig(o);
                         r._kopfKahl([]);
@@ -1783,8 +1808,12 @@ async function starte() {
                     // DER INHALT DES ORTS (`imBild`, w27-ort-pose): was der Ort IST, zeigt das Bild — je Klasse der Teilung ein
                     // Mindest-Anteil seiner Pixel, sonst ROT beim Namen, ungespeichert (am Dorf ohne Haus stand GRÜN, 78d37554).
                     // Der Anteil gilt der Leinwand der Klasse unten (1920 × 1080: dort zählt die Teilung, nie in `--w`/`--h`)
+                    // DIE FAMILIE EINES SCHLÜSSELS (w27-ort-pose-voll), EIN Leser für den Ausdruck und das Urteil: der Schlüssel
+                    // und jede Klasse, die mit ihm und `-` oder `_` weitergeht — `bewohner` zählt das Gedränge (`bewohner-satz`;
+                    // der Schlüssel allein sah höchstens 4 Leiber binnen 8 m), `fahrzeug` jeden Wagen (`fahrzeug_<typ>`)
+                    const familie = (k) => new RegExp(`^${k}([-_].*)?$`);
                     const inhalt = b.ort && BAND.ladeSpec(b.ort).ort.imBild;
-                    if (inhalt) b.klasse = `^(${Object.keys(inhalt).join("|")})$`;
+                    if (inhalt) b.klasse = Object.keys(inhalt).map((k) => familie(k).source).join("|");
                     if (b.klasse) {
                         await page.setViewport({ width: 1920, height: 1080, deviceScaleFactor: 1 });
                         await page.waitForFunction(() => st.renderer.domElement.clientWidth === 1920);
@@ -1792,7 +1821,8 @@ async function starte() {
                     if (b.zeit != null) await page.evaluate(`window.__boeVarianz = ${boeVarianz}`);
                     const o = await bild(Object.assign({ w: 640, h: 360, nahM: BOE.nahM, viertel: BOE.viertel }, b));
                     if (b.klasse) await page.setViewport(vp);
-                    const fehlt = Object.keys(inhalt || {}).filter((k) => !(o.klasse.klassen[k]?.pixel >= inhalt[k] * 1920 * 1080));
+                    const anteil = (k) => Object.entries(o.klasse.klassen).reduce((n, [kl, m]) => n + (familie(k).test(kl) && m.pixel), 0);
+                    const fehlt = Object.keys(inhalt || {}).filter((k) => !(anteil(k) >= inhalt[k] * 1920 * 1080));
                     if (fehlt.length) throw new Error(`ABNAHME ROT [kein ${fehlt.join(", kein ")} im Bild] · ${b.ort}: ${o.abnahme.zeile}`);
                     const datei = zeitAblage(b.datei, "bild", "png");
                     ordnerFuer(datei);
@@ -3025,19 +3055,21 @@ hauptLauf(async () => {
         if (o?.tabelle) endeMit(o.tabelle + "\n\n" + o.datei + "\n" + o.ordner, o.urteil === "GRUEN");
         endeMit(o);
     } else if (cmd === "licht" && hat("tag")) {
-        // DIE TAG-ACHSE (S7, W7): je Messort (`--orte`, Standard der Spawn und die Mess-Wiese) in Ego die Uhr-Kurve aus dem
-        // Ausgabe-Pfad (`__tagKurve`), ihre Nachtastung (`tagFeinUhren`) und ihr Urteil `tagKurveUrteil` (licht-linsen.cjs);
-        // `--kurz` und `--eigen` die Wand der Karte, `--ordner d` die Bilder, `--datei f.json` die Messung.
+        // DIE TAG-ACHSE (S7, W7): je Messort (`--orte`, Standard der Spawn und die Mess-Wiese in Ego; die Sicht nach dem
+        // Doppelpunkt, `wiese:third`) die Uhr-Kurve aus dem Ausgabe-Pfad (`__tagKurve`), ihre Nachtastung (`tagFeinUhren`) und ihr
+        // Urteil `tagKurveUrteil` (licht-linsen.cjs); `--kurz` und `--eigen` die Wand der Karte, `--ordner d` die Bilder,
+        // `--datei f.json` die Messung.
         const halt = await eigeneWelt();
         const welt = {};
         const kurve =(uhren, png) => evalRuf(`return await __tagKurve(${JSON.stringify({ uhren, png })});`);
         try {
-            for (const ort of String(opt("--orte", "genesis,wiese")).split(",")) {
-                await umstellen({ ort, sicht: "ego" });
+            for (const wahl of String(opt("--orte", "genesis,wiese")).split(",")) {
+                const [ort, sicht = "ego"] = wahl.split(":");
+                await umstellen({ ort, sicht });
                 const a = await kurve(hat("kurz") ? LL.TAG_UHREN_KURZ : LL.TAG_UHREN, !!opt("--ordner"));
-                const m = (welt[ort] = ergebnis(a));
+                const m = (welt[wahl] = ergebnis(a));
                 for (const z of m.zeilen || []) {
-                    if (z.png) pngDatei(path.resolve(opt("--ordner"), `tag-${ort}-${z.uhr}.png`), z.png);
+                    if (z.png) pngDatei(path.resolve(opt("--ordner"), `tag-${wahl.replace(":", "-")}-${z.uhr}.png`), z.png);
                     delete z.png;
                 }
                 const f = m.zeilen && (await kurve(LL.tagFeinUhren(m.zeilen), false)).ergebnis;
@@ -3049,6 +3081,8 @@ hauptLauf(async () => {
         dateiAb(welt);
         const u = LL.tagKurveUrteil(welt);
         console.log(JSON.stringify(u.kurven, null, 1));
+        // je Ort die sechs Zahlen und sein Urteil in EINER Zeile (der Probe-Post liest die Zeilen mit ROT/GRUEN)
+        for (const [ort, z] of Object.entries(u.zahlen)) console.log(`TAG ${ort} ${u.befunde.some((b) => b.includes(` ${ort}: `)) ? "ROT" : "GRUEN"}: ${z}`);
         urteilEnde("TAG-ACHSE", u);
     } else if (cmd === "licht" && hat("kontakt")) {
         // DER KONTAKT-SCHATTEN (schatten.K1): `kontaktSicht` an der Platte saat-s7-platte der Prüfbühne je Uhr, das Urteil `kontaktUrteil`
@@ -3241,7 +3275,7 @@ hauptLauf(async () => {
                 // der Sonne) — die graue Fläche im Licht der Welt gegen das Licht des Wegs
                 if (/^(panorama|feld|spiegel|wasser)\d*$/.test(art)) {
                     if (!Object.keys(welt).length) await umstellen({ ort: "dorf" }); // der Feld-Pass steht erst im Takt
-                    welt[zeile] = (await evalRuf(`return await __lichtWeg({ weg: "${art}", uhr: ${uhr} });`)).ergebnis;
+                    welt[zeile] = ergebnis(await evalRuf(`return await __lichtWeg({ weg: "${art}", uhr: ${uhr} });`)); // ein Wurf des Wegs reist als `fehler` beim Namen
                     continue;
                 }
                 const [haus, boden] = [art === "haus", art === "ring"];

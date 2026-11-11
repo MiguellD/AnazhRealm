@@ -1445,17 +1445,30 @@ class AnazhRealm_siedlung_bauten {
     // „vorbau:fahrzeug_gt 27,8 %", vegetation.K2#1 „vorbau:baum_eiche 14,4 %"), je Lauf der Gast, der zur Zeit des Schusses eben
     // baute; headless 39 Teile von 8 Hotbar-Gästen im Freiraum der Pose (gate:werkstatt-weg). Der Maßstab ändert keinen Schlüssel:
     // r184 `getRenderCacheKey` schlüsselt die Händigkeit nur bei det < 0, und kein Teil der 8 Geister ist gespiegelt.
-    _vorbauGast(gruppe, name) {
+    _vorbauGast(gruppe, name, art = true) {
         gruppe.name = name;
         gruppe.scale.setScalar(0);
         gruppe.traverse((o) => {
             o.frustumCulled = false;
             if (!o.isMesh) return;
-            o.__vorbauGast = true;
+            o.__vorbauGast = art; // true: der Gast der Bedienung · "ankunft": er baut schon unter dem Ladeschirm (`_vorbauWahl`)
             o.raycast = () => {};
         });
         this.state.scene.add(gruppe);
         return gruppe;
+    }
+
+    // EIN GAST NIMMT KEINEN RAUM — die Probe an der EINEN Stelle, die ihn vom Zeichnen ausnimmt (die Erst-Zeichnung,
+    // `_renderObjectDirect`), und jeder Zählung, die ihn ausnimmt (die Kalt-Zeile „am Bild gezeichnet“): die Prägung allein
+    // (`__vorbauGast`) genügt nie, sein Maßstab ist 0 (`_vorbauGast`). Trägt ein Objekt die Prägung und steht doch mit Maßstab
+    // in der Welt, ist es ein Bürger: ein Bruch beim Namen über den EINEN Melder, und es zeichnet — sonst fehlte es im Bild,
+    // und keine Zählung nennte es (w28-leben-vorbau: seit dem Gast der Ankunft stehen Gäste schon unter dem Ladeschirm).
+    _gastOhneRaum(o) {
+        if (o.matrixWorld.determinant() === 0) return true;
+        this._bruchMelden(
+            `GAST MIT RAUM: ${o.name || (o.parent && o.parent.name) || o.type} trägt die Gast-Prägung (\`__vorbauGast\`) und nimmt Raum — er zeichnet als Bürger`
+        );
+        return false;
     }
 
     // WAS EINEM GAST DES VORBAUS FEHLT (0: er steht): je sichtbarem Teil die Pässe, in die er gehört (das Auge und, wirft er,

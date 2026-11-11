@@ -148,6 +148,12 @@ const AUSNAHMEN = {
         grund: "der Messplatz von lod.K2#1 im GPU-Probe-Dienst, der Richter ist die Station",
     },
     "gate:laub-kante": { klasse: KLASSEN.MESS, grund: "der Messplatz von lod.K1#1 im GPU-Probe-Dienst, der Richter ist die Station" },
+    "gate:tag-achse:bahn": {
+        klasse: KLASSEN.ROT,
+        // die ganze Bahn von licht.K1 (Spawn und Mess-Wiese, Ego und Third) mit dem vollen Soll der Linse (`tagKurveUrteil`);
+        // die Wand des Zugs bleibt gate:tag-achse:echt (die Mechanik der Kamera, `TAG_WAND`), die Bahn fährt je Zweig als GPU-Probe
+        grund: "auf der Karte ROT am Soll der Szene (GTX 4e2df19b: SPRUNG und BUCKEL im Wurf der Bäume, GOLD, WARM, NACHT und REF am Genesis-Ort) — die Heilung ist licht.K1 selbst",
+    },
     "gate:arch-feld": {
         klasse: KLASSEN.FRIST,
         grund:

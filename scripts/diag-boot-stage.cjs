@@ -19,6 +19,12 @@
 // `--profil` am Zweit-Boot: die Wiederkehr, ankunft K3). `--bild`: das Bild der Kontrolle gegen dieselbe Pose nach 60 s Ruhe
 // (ankunft K2: ≤ 2 % Lücke, nichts offen im Bild). `--mutante eigenmeldung|bild`: die Schlupflöcher, ROT beim Namen.
 // Ohne `--echt` swiftshader, mit `--echt` die Hardware-GPU (1920×1080).
+// AM BILD GEZEICHNET (w28-bild-ganz): die Zeile zählt von AUSSEN (`BILD_PROBE`, unabhängig vom Term „zeichnung“ des Spiels), wer
+// im Bild des ersten Weltbilds zeichnen wollte (ein Ruf der Erst-Zeichnung mit Zug-Parametern) und nicht zeichnete (kein Zug
+// des Backends; ein Bündel, das ohne ihn versiegelte, spielt ohne ihn ab) — ROT beim Namen: „Weltbild steht, <Bürger> nicht
+// gezeichnet“. GTX 1050 an main 523e3a38: kalt 6–8 Bürger des Hauptbilds (Karten-Atlas, Fern-Ring, Ferne der Wiese), am
+// Zweit-Boot 5–11 (dazu Boden-Satz, Himmel, Sonne — ein fast schwarzes Bild). Das Bild der Kontrolle (ankunft K2) sah die
+// Klasse nie: sein Schuss ruht den Loop, und der ruhende Loop baut jedes Programm am Stück.
 // DIE SPUR (B, w4-ankunft): die Zeile fährt die EINE Spur der Hänger-Familie (CDP-Trace, CPU-Stichproben jedes Fadens) von der
 // Navigation bis zur Kontrolle und urteilt sie (`ankunftsHalter`, scripts/lib/haenger-linse.cjs): die Phasen (HTML, Skripte, DOM,
 // Buch, der Schluss jedes Terms des ersten Weltbilds, Ring, erstes Lade-Bild, Weltbild, Kontrolle — je mit der belegten Zeit des
@@ -89,13 +95,6 @@ const RUHE = (r = window.anazhRealm) =>
     window
         .__gebautNach("die Ruhe der Foundry", { fertig: () => !r._weltOffen().foundry && !r._foundry._vorrat && !r._impostorBakeQueue?.length, max: 600 })
         .then(() => r._foundry.lieferung);
-// DER DECKEL DER PUMPE (rein; läuft in der Seite) zählt Takte der BÜHNE, nie die Wanduhr eines Fadens: die Foundry bootet in Wanduhr
-// (Manifest, Engine, Kerne), ein leerer Takt kostet ~3 ms — 6000 Takte ab Pumpen-Beginn waren eine verdeckte Frist von 17–20 s (GTX 1050:
-// die Foundry steht 10–28 s nach Pumpen-Beginn, die Wand fiel an main in 7 von 12 Läufen). Bis die Foundry steht (`tBereit` 0), wartet
-// die Pumpe in Wanduhr (NIE bleibt ROT); ab dort zählt der Deckel. Wann sie kam, nennt die Zeile — über die Zeit urteilt die Kalt-Zeile.
-function pumpeWeiter(t, tBereit, ms, TAKTE = 6000, FRIST_MS = 120000) {
-    return tBereit ? t - tBereit <= TAKTE : ms < FRIST_MS;
-}
 // DER GEPFLANZTE BRUCH (--selftest): die erste Körper-Antwort nach dem Erwachen verschluckt der Haupt-Faden, ihr Leser bekommt null
 function SCHLUCK() {
     __weltDa((r) => r._foundry).then((r) => {
@@ -218,6 +217,80 @@ function KALT_PROBE() {
     }, 200);
 }
 
+// (Seite) DAS BILD IST GEZEICHNET — die Zählung von außen, je Bild: jeder Ruf der Erst-Zeichnung (`_renderObjectDirect`) der
+// Welt-Szene mit Zug-Parametern gegen jeden Zug des Backends, getrennt nach Hauptbild und Wurf (jede andere Kamera). Ein Bündel,
+// das ohne einen Bürger versiegelte, spielt ohne Ruf ab: seine Fehlenden gelten in jedem Bild, in dem es läuft, bis es neu
+// aufnimmt. `amBild`: der Stand im Task des ersten Weltbilds [ms, Hauptbild, Wurf]; `ganz`: das erste Bild ab dort ohne Fehlende.
+function BILD_PROBE() {
+    const B = (window.__bildProbe = { amBild: null, ganz: null, bilder: 0, fehler: "" });
+    const wer = (o, m) => {
+        const glieder = o.isGeometrieArena && Array.isArray(o.glieder) ? o.glieder : null;
+        const n = glieder
+            ? glieder.slice(0, 3).map((g) => g.userData?.archInstanceKey || g.name || g.type).join(", ") + (glieder.length > 3 ? ` und ${glieder.length - 3} weitere` : "")
+            : o.name || o.userData?.inventar || o.userData?.archInstanceKey || o.type;
+        return `${n} (${m?.name || m?.type}_${m?.id})`;
+    };
+    let [versucht, gezogen, gelaufen, jetzt] = [new Map(), new Set(), new Set(), { haupt: [], wurf: [] }];
+    const jeBuendel = new WeakMap();
+    __weltDa((w) => w.state.rendererReady).then((r) => {
+        const [rend, P] = [r.state.renderer, Object.getPrototypeOf(r)];
+        if (rend._isHeadlessNull || typeof rend._renderObjectDirect !== "function") return (B.fehler = "kein Renderer mit Erst-Zeichnung");
+        const art = (kam) => (kam === r.state.camera ? "haupt" : "wurf");
+        const [R0, D0, N0, K0, W0] = [rend._renderObjectDirect, rend.backend.draw, rend._renderBundle, P._kontaktPassZeichne, P._weltbildSteht];
+        rend._renderObjectDirect = function (object, material, scene, camera, lightsNode, group, clip, passId) {
+            const aus = R0.call(this, object, material, scene, camera, lightsNode, group, clip, passId);
+            // ein Gast des Vorbaus will nichts zeichnen, er baut nur (der Gast der Ankunft steht schon unter dem Ladeschirm) — Gast ist nur,
+            // wer die Prägung trägt UND keinen Raum nimmt (Maßstab 0): ein Bürger mit Prägung zählt als Bürger
+            if (scene === r.state.scene && !(object.__vorbauGast && object.matrixWorld.determinant() === 0) && this._objects.get(object, material, scene, camera, lightsNode, this._currentRenderContext, clip, passId).getDrawParameters() !== null)
+                versucht.set(object.id + "|" + art(camera), [wer(object, object.material), art(camera), this._currentRenderBundle || null]);
+            return aus;
+        };
+        rend.backend.draw = function (ro, info) {
+            gezogen.add(ro.object.id + "|" + art(ro.camera));
+            return D0.call(this, ro, info);
+        };
+        rend._renderBundle = function (bundle, sceneRef, lightsNode) {
+            const rb = this._bundles.get(bundle.bundleGroup, bundle.camera, this._currentRenderContext);
+            const daten = this.backend.get(rb);
+            if (!(daten.bundleGPU !== undefined && bundle.bundleGroup.version === daten.version)) jeBuendel.set(rb, new Map());
+            gelaufen.add(rb);
+            return N0.call(this, bundle, sceneRef, lightsNode);
+        };
+        // das Ende jedes Bilds (hinter dem Render desselben Tasks, vor dem Urteil `_ankunftsBild`)
+        P._kontaktPassZeichne = function (direkt) {
+            const aus = K0.call(this, direkt);
+            const fehlt = { haupt: [], wurf: [] };
+            for (const [k, [name, a, rb]] of versucht) {
+                const zog = gezogen.has(k);
+                const m = rb && jeBuendel.get(rb);
+                if (m) zog ? m.delete(k) : m.set(k, [name, a]);
+                else if (!zog) fehlt[a].push(name);
+            }
+            for (const rb of gelaufen) for (const [name, a] of (jeBuendel.get(rb) || new Map()).values()) fehlt[a].push(name);
+            if (B.amBild && B.ganz == null && !fehlt.haupt.length && !fehlt.wurf.length) B.ganz = Math.round(performance.now());
+            [jetzt, versucht, gezogen, gelaufen] = [fehlt, new Map(), new Set(), new Set()];
+            B.bilder++;
+            return aus;
+        };
+        P._weltbildSteht = function () {
+            const aus = W0.call(this);
+            B.amBild = [Math.round(performance.now()), jetzt.haupt.slice().sort(), jetzt.wurf.slice().sort()];
+            if (!jetzt.haupt.length && !jetzt.wurf.length) B.ganz = B.amBild[0];
+            return aus;
+        };
+    });
+}
+// DAS URTEIL (rein): im Bild des ersten Weltbilds zeichnete jeder Bürger der Welt-Szene, der zeichnen wollte — sonst ROT beim
+// Namen, im Hauptbild wie im Wurf. Ohne Messung ROT (eine Sonde ohne Messung ist nie grün, Lehre 6).
+function gezeichnetUrteil(B) {
+    if (!B || !B.amBild) return { gruen: false, zeile: `AM BILD GEZEICHNET: keine Messung — die Probe sah das erste Weltbild nicht${B?.fehler ? ` (${B.fehler})` : ""}` };
+    const [t, haupt, wurf] = B.amBild;
+    const namen = [...new Set(haupt.concat(wurf.map((n) => `${n} im Wurf`)))];
+    if (!namen.length) return { gruen: true, zeile: `AM BILD GEZEICHNET: jeder Bürger des ersten Weltbilds zeichnete (${B.bilder} Bilder gezählt)` };
+    const spaet = B.ganz != null ? `${B.ganz - t} ms nach ihm` : "nicht bis zur Kontrolle";
+    return { gruen: false, zeile: `Weltbild steht, ${namen.slice(0, 6).join(" · ")}${namen.length > 6 ? ` und ${namen.length - 6} weitere` : ""} nicht gezeichnet — das ganze Bild kam ${spaet} (\`_bildWartet\`, der Term „zeichnung“)` };
+}
+
 async function kaltLauf() {
     const ECHT = ARGV.includes("--echt");
     // ohne `--echt` die EINE Weiche (K40: lokal der Hardware-Adapter, die CI swiftshader, `LINSE_GPU=software` der Rückweg),
@@ -241,6 +314,7 @@ async function kaltLauf() {
     });
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(KALT_PROBE);
+    await page.evaluateOnNewDocument(BILD_PROBE);
     // DIE MUTANTE (`--mutante eigenmeldung`, das Schlupfloch von ankunft K1): die Eigenmeldung steht ab dem Erwachen — die
     // Kontrolle von außen folgt ihr nie; `--mutante bild`: der erste Schuss endet nach 20 m, die Welt dahinter fehlt (ROT)
     const MUT = OPT("--mutante");
@@ -315,6 +389,7 @@ async function kaltLauf() {
             ohne: (st.logBuffer || []).filter((z) => /Das erste Weltbild steht ohne/.test(z)),
             sync: __haengerH.namen.filter((e) => e.art === "sync"),
             lieferung: r._foundry.lieferung,
+            bildProbe: window.__bildProbe,
         });
     });
     const liste = path.join(browser.profil || profil, "lieferung.json");
@@ -417,17 +492,23 @@ async function kaltLauf() {
     if (wechsel) console.log(`  ${wechsel.gruen ? "✅" : "❌"} ${wechsel.zeile}`);
     const nach = nachBild(out.sync, out.weltbildDa);
     console.log(`  ${nach.length ? "❌" : "✅"} synchron nach dem Bild: ${nach.join(" · ") || "keine Pipeline"}`);
-    process.exit(gut && ganz && !halter.length && !nach.length ? 0 : 1);
+    const gez = gezeichnetUrteil(out.bildProbe);
+    console.log(`  ${gez.gruen ? "✅" : "❌"} ${gez.zeile}`);
+    process.exit(gut && ganz && !halter.length && !nach.length && gez.gruen ? 0 : 1);
 }
 
 hauptLauf(async () => {
     if (ARGV.includes("--kalt")) return kaltLauf();
     const { browser, page } = await nullWelt(server, { port: PORT, frist: 300000, vor: SELBSTTEST && SCHLUCK }, 120000, "index.html", "networkidle0");
-    // das erste Weltbild (der Null-Renderer setzt es beim Renderer-Bau; eine Zeit trägt nur die Kalt-Zeile, von außen)
+    // das erste Weltbild (der Null-Renderer setzt es beim Renderer-Bau; eine Zeit trägt nur die Kalt-Zeile, von außen) UND das Buch
+    // der Studios (`_foundryBuchOffen`): sein Faden bootet in Wanduhr, kein Takt bringt ihn — die Pumpe beginnt nach seinem Ereignis
+    // wann es kam, nennt die Zeile (über die Zeit urteilt die Kalt-Zeile, nie dieses Prädikat)
     await page.evaluate(() => __weltDa((r) => r.state._weltbildDa));
-    await page.evaluate(`window.__pumpeWeiter = ${pumpeWeiter}`);
+    const tBild = Date.now();
+    await page.evaluate(() => __weltDa((r) => !r._foundryBuchOffen()));
+    const buchS = ((Date.now() - tBild) / 1000).toFixed(1);
     const out = await page.evaluate(async (selftest, r = window.anazhRealm, st = r.state) => {
-        const o = { stage: 0, bereitTakt: 0 };
+        const o = { stage: 0 };
         // ── DER INIT BAUT NICHTS VERBORGENES (ankunft.K5, w16-lade-atem) — am ersten Weltbild, bevor eine Tafel sich zeigte und
         // bevor der Vorbau der Bedienung lief (der Null-Renderer baut ihn nie): leer sind Rezeptbuch (inventoryInitDOM), Werkstatt-
         // Liste (_renderWorkshopDOM) und Bibliothek (libraryInitDOM), und die Mammut-Art (sie liest kein Wurf des Felds) wartet noch
@@ -453,16 +534,20 @@ hauptLauf(async () => {
             };
         };
         const sichtM = () => (st.luft ? r._luftSichtM(st.playerMesh ? st.playerMesh.position.y : 0) : -1);
-        // ── PUMPEN, bis das Prädikat schließt (jeder Term steht; in Takten) — der Deckel ist `pumpeWeiter` ──
-        const t0 = performance.now();
-        for (let t = 1; !o.stage && __pumpeWeiter(t, o.bereitTakt, performance.now() - t0); t++) {
-            try {
+        // ── PUMPEN, bis das Prädikat schließt (jeder Term steht; in Takten) — am EINEN Deckel (welt-boot `__deckel`): er zählt
+        // einen Takt nur, wenn die Welt nichts mehr offen hat (`_weltOffen`), und bricht nach 6000 solchen beim Namen; wartet sie
+        // auf einen Faden, atmet jeder Takt (die Antwort landet zwischen zwei Takten), sonst jeder fünfte. Ein Wurf des Takts
+        // bricht beim Namen. Bis w27-foundry-halter zählte die Pumpe JEDEN Takt (6000 ≈ 17,5 s an der GTX 1050) gegen den Faden
+        // des Buchs, der dort 9–25 s später steht, und schluckte jeden Wurf: 7 von 12 Läufen ROT ohne Täter im Spiel.
+        try {
+            for (let t = 1, weiter = __deckel("die volle Bühne", 6000); !o.stage && weiter(); t++) {
                 r._gameLoopTick();
-            } catch {}
-            if (!o.bereitTakt && r._foundry?.ready) [o.bereitTakt, o.bereitMs] = [t, performance.now() - t0];
-            o.terms = terms();
-            if (Object.values(o.terms).every(Boolean)) o.stage = t;
-            else if (t % 5 === 0) await sleep(0);
+                o.terms = terms();
+                if (Object.values(o.terms).every(Boolean)) o.stage = t;
+                else if (t % 5 === 0 || Object.values(r._weltOffen()).some(Boolean)) await sleep(0);
+            }
+        } catch (e) {
+            [o.bruch, o.terms] = [String((e && e.message) || e).slice(0, 500), terms()];
         }
         o.terms._streuWartet = r._streuWartet(st.playerMesh ? st.playerMesh.position : null);
         Object.assign(o, {
@@ -492,6 +577,14 @@ hauptLauf(async () => {
                 t.deckelSteht = frag(true, true);
                 t.deckelWarnt = warnt() > w0;
                 [st.renderer._isHeadlessNull, st._buehneStand, r._buehneT0] = merk;
+                // das Buch, das sich noch öffnet, hält die Welt offen (`_foundryBuchOffen` → `_weltOffen`): ohne Rezepte ein
+                // Offenes mehr, mit ihnen wie zuvor — der Deckel jeder Linse liest es dort
+                const [f, vor] = [r._foundry, r._weltOffen().foundry];
+                const rz = f.recipes;
+                f.recipes = null;
+                t.buchOffen = r._foundryBuchOffen() && r._weltOffen().foundry === vor + 1;
+                f.recipes = rz;
+                t.buchZu = !r._foundryBuchOffen() && r._weltOffen().foundry === vor;
             // (W4.3, der Wachhund eines hängenden Bakes, fiel mit S2: die Karte backt synchron im Takt)
         }
         return o;
@@ -513,11 +606,8 @@ hauptLauf(async () => {
             T.streu,
             `STREU steht — keine Region in Reichweite fehlt, wartet oder trägt eine offene Scheibe (\`_streuWartet\` ${T._streuWartet})`,
         ],
-        [
-            T.biblio && T.impost,
-            `BIBLIOTHEK warm (${T.biblio}) · IMPOSTOREN idle (${T.impost}) · die Foundry stand ${out.bereitTakt ? `in Takt ${out.bereitTakt}, ${(out.bereitMs / 1000).toFixed(1)} s nach Pumpen-Beginn` : "NIE"}`,
-        ],
-        [!!out.stage, "die BÜHNE wurde erreicht (das Prädikat schloss)"],
+        [T.biblio && T.impost, `BIBLIOTHEK warm (${T.biblio}) · IMPOSTOREN idle (${T.impost}) · das Buch kam ${buchS} s nach dem ersten Weltbild`],
+        [!!out.stage, "die BÜHNE wurde erreicht (das Prädikat schloss)" + (out.bruch ? " — " + out.bruch : "")],
         [!out.verborgen.length, `DER INIT BAUT NICHTS VERBORGENES ${out.verborgen}`],
     ];
     if (SELBSTTEST)
@@ -530,15 +620,17 @@ hauptLauf(async () => {
                 s.deckelSteht && s.deckelWarnt,
                 `SELBST-TEST: der Deckel der Bühne öffnet laut — ohne Regionen-Karte hinter BUEHNE_SETTLE_CAP_MS ${s.deckelSteht ? "steht sie" : "steht sie NICHT"}, das Log ${s.deckelWarnt ? "nennt die Lücke (WARN)" : "SCHWEIGT"}`,
             ],
+            [s.buchOffen && s.buchZu, `SELBST-TEST: das Buch, das sich noch öffnet, hält die Welt offen (\`_weltOffen\`) — ohne Rezepte ${s.buchOffen ? "ein Offenes mehr" : "NICHTS offen"}, mit ihnen ${s.buchZu ? "wie zuvor" : "ANDERS als zuvor"}`],
             [out.liefer.weg === 1, `SELBST-TEST: die verschluckte Lieferung ist ROT — ${out.liefer.zeile}`]
         );
     // das Urteil des Kern-Wechsels an Bruch-Daten: gesund GRÜN, ein fremder Neubau (e) und ein alter Leser (d) ROT
     const W = (e, d) => wechselUrteil([[0, "e", "platte", "phyto"], [0, "d", "platte", "fachwerk"]], [[0, "e", e, "phyto"], [0, "d", d, "fachwerk"]], "fachwerk").gruen; // prettier-ignore
     if (SELBSTTEST) checks.push([W("platte", "werk") && !W("werk", "werk") && !W("platte", "platte"), "SELBST-TEST: der Kern-Wechsel urteilt (fremder Neubau, alter Leser ROT)"]); // prettier-ignore
     if (SELBSTTEST) checks.push([nachBild([{ t: 9 }, { t: 1 }], 5).length === 1, "SELBST-TEST: synchron nach dem Bild ROT"]);
-    // ohne Foundry trägt Takt 9000 nach 30 s weiter (eine Takt-Zahl als Frist fiele hier), nach der Frist nicht; mit ihr 6000 Takte ab dort
-    const P = pumpeWeiter;
-    if (SELBSTTEST) checks.push([P(9000, 0, 3e4) && !P(9000, 0, 12e4) && P(15000, 9000, 1e9) && !P(15001, 9000, 0), "SELBST-TEST: der Deckel der Pumpe zählt Takte ab der Foundry, davor die Wanduhr"]); // prettier-ignore
+    // am Bild gezeichnet: gesund GRÜN; ein wartender Bürger ROT beim Namen (Hauptbild und Wurf); ohne Messung ROT
+    const G = gezeichnetUrteil;
+    const atlas = "impostor#fimp:atlas (MeshStandardNodeMaterial_109)";
+    if (SELBSTTEST) checks.push([G({ amBild: [9, [], []], bilder: 3 }).gruen && G({ amBild: [9, [atlas], []], ganz: 2009 }).zeile.startsWith(`Weltbild steht, ${atlas} nicht gezeichnet — das ganze Bild kam 2000 ms`) && /bodenSatz im Wurf nicht gezeichnet/.test(G({ amBild: [9, [], ["bodenSatz"]] }).zeile) && !G({ amBild: [9, [atlas], []] }).gruen && !G({}).gruen && !G(null).gruen, "SELBST-TEST: am Bild gezeichnet — ein wartender Bürger ist ROT beim Namen (Hauptbild und Wurf), ohne Messung ROT"]); // prettier-ignore
     const fails = checks.filter(([pass, name]) => (console.log(`  ${pass ? "✅" : "❌"} ${name}`), !pass)).length;
     console.log(`\n${checks.length - fails}/${checks.length} Bühnen-Invarianten OK.`);
     urteilEnde(fails, "⛔ Die volle Bühne steht nicht (oder die Linse ist stumpf) — Kriterium 2 ist nicht abnehmbar.", `✅ „Volle Bühne" ist ein Prädikat — Kriterium 2 ist messbar.`);

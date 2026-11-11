@@ -343,7 +343,7 @@ hauptLauf(async () => {
                 await R.backend.device?.queue?.onSubmittedWorkDone?.();
                 t.push(performance.now() - a);
             }
-            return Math.round(t.sort((a, b) => a - b)[4]);
+            return Math.round(t.sort(aufsteigend)[4]);
         };
         const voll = await zeit();
         document.getElementById("leichtB").click();
