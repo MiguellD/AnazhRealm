@@ -1,0 +1,32 @@
+{
+ "sha": "b0112f7b17e30914f9cac67843c59bfbb06bd31b",
+ "geraet": "gtx",
+ "zeit": "2026-11-11T20:25:03.855Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {},
+ "ungemessen": {
+  "affekt.K4#2": {
+   "gruen": false,
+   "zahl": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "exit": null,
+   "minuten": 0,
+   "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "ungemessen": true,
+   "zeit": "2026-11-11T20:25:03.855Z",
+   "abdruck": "cf772722618e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-11T20:15:03.639Z",
+  "port": 7804,
+  "warten": 10,
+  "grundstellungS": [],
+  "proben": 0,
+  "freigaben": [],
+  "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+  "minuten": 10.01
+ }
+}
