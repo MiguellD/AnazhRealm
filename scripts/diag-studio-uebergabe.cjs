@@ -353,8 +353,26 @@ async function weltPruefen() {
         // aufräumen: die Welt verlässt die Linse ohne Prägung
         st.workshop.studioOv = {};
         res.refNachher = r._koerperStudioDials() === f.recipes.mensch.s;
+        // (K) DAS KALTE BUCH (w28-loop-wurf): die Prägung steht ÜBER dem Buch — ohne Buch trägt der EINE Leser keinen Satz, nie den
+        // halben der Prägung allein (die MUTANTE: der Kern bricht an ihm, `leibGroesse`). Bis hier erwachte kein Stand mit
+        // Mensch-Prägung (der Restore rechnet die Lebenswerte vor dem Buch: main e699a834 30 s ohne Takt, seit 4b1e4eee), und die
+        // Heimat ohne Foundry warf je Takt (z385, Portal-Konformanz). Der Stand mit der Prägung liegt für den Neu-Boot unten fest.
+        res.ohne = r.computePlayerStats().stats.hpMax;
+        werk("koerper", "mensch", { height: 1.12 });
+        const buch = leihe(f, { recipes: null });
+        res.kalt = r._koerperStudioDials();
+        const halb = leihe(r, { _koerperStudioDials: () => ({ height: 1.12 }) });
+        res.halb = await Promise.resolve().then(() => r.computePlayerStats()).then(String, fehlerText);
+        halb();
+        buch();
+        r.saveState();
+        await __stand();
         return res;
     });
+    // … und der Spielpfad: der Neu-Boot aus dem Stand erwacht (Takt), der Leib gießt am Buch 1,12 hoch nach — seine Lebenskraft
+    await page.reload();
+    const boot = await page.waitForFunction(() => r?._gameLoopTick && st.playerMesh.userData._koerperDials?.kh > AnazhRealm.PLAYER_KH * 1.1 && st.player.hpMax, { timeout: 120000 }); // prettier-ignore
+    out.boot = await boot.jsonValue();
     await browser.close();
     server.close();
     console.log("\n=== --welt — der Konsum im echten Spiel ===");
@@ -374,6 +392,11 @@ async function weltPruefen() {
     check(
         "der Restore läuft durch DENSELBEN Prüfer: height 99 → max, erfundene Farbe und fremdes Rezept fallen",
         out.restore === true
+    );
+    check(
+        "(K) kaltes Buch: kein Dial-Satz · der halbe Satz ist ROT · der Stand mit Prägung erwacht, Lebenskraft × 1,12",
+        out.kalt === null && /^KERN-PFLICHT/.test(out.halb) && Math.abs(out.boot / out.ohne - 1.12) < 0.01,
+        [out.kalt, out.halb, out.ohne, out.boot]
     );
 }
 
