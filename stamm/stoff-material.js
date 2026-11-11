@@ -2212,7 +2212,7 @@ class AnazhRealm_stoff_material {
     // je Schliere: unter der Decke fällt kein Regen — bis dahin fiel er durch jedes Dach, gate:naesse:echt sah ihn am Haus des
     // Dorfs auf der Trasse: 27 Regen-Punkte innen).
     // DIE PLÄTZE SIND EINE SCHLEIFE (w28-baum-programm, wie der Licht-Pool `_lichtPoolTerm`): die Decken laufen über `T.Loop` je
-    // Platz, ihre Werte als Reihen (`T.array`, dieselben Uniforms, EIN Schreiber `_dachTakt`) — dieselbe Rechnung in derselben
+    // Platz, ihre Werte wählt der Zähler (`_jePlatz`: dieselben Uniforms, EIN Schreiber `_dachTakt`) — dieselbe Rechnung in derselben
     // Reihenfolge (das Maximum beginnt bei 0), nur nicht ausgeschrieben: acht Plätze standen in jedem beleuchteten Programm.
     // Die Schleife steht im Zweig der Hülle (`If`), wie zuvor die Plätze: draußen zahlt kein Fragment sie.
     _offenerHimmel(T, p) {
@@ -2401,11 +2401,14 @@ class AnazhRealm_stoff_material {
     // dieselbe Rechnung in derselben Reihenfolge (die Summe beginnt bei 0, 0 + t₀ = t₀), nur nicht ausgeschrieben. Der Pool
     // steht in JEDEM beleuchteten Programm: vier ausgeschriebene Zweige trugen ~13 KB in jeden Fragment-Text, und den Text zahlt
     // jedes Programm vor dem ersten Bild in der EINEN Schlange des GPU-Prozesses. Gemessen an 3308689f (GTX 1050, je Fragment-Text
-    // allein übersetzt, drei Durchgänge, der kleinste): −6,2 KB je Programm, die zwölf Standard-Programme Σ 9,72 → 9,10 s. VOR der
-    // Schleife steht, was jeder Platz liest und nur EINMAL entsteht (in der Fn auf dem Stapel, `toVar`): die Lage und die Normale
-    // des Blicks (r184 baut eine Variable dort, wo sie zuerst gebaut wird — in der Schleife liefe die Normale des Stoffs je Platz
-    // neu), der Faktor des Wurfs und die Werte der Plätze als Reihen (`Te.array`, je Platz ein Glied: dieselben Uniforms wie
-    // zuvor, EIN Schreiber `_leuchtTakt`). Die Schleife lebt in einer Fn ohne Layout: nur in ihrem Bau hat `Loop` einen Stapel.
+    // allein übersetzt, drei Durchgänge, der kleinste; mit den Schleifen des Dach-Pools und des Kaskaden-Filters): −11,0 KB je
+    // Programm, die zwölf Standard-Programme Σ 9,78 → 8,84 s. VOR der Schleife steht, was jeder Platz liest und nur EINMAL entsteht
+    // (in der Fn auf dem Stapel, `toVar`): die Lage und die Normale des Blicks (r184 baut eine Variable dort, wo sie zuerst gebaut
+    // wird — in der Schleife liefe die Normale des Stoffs je Platz neu) und der Faktor des Wurfs. Die Werte des Platzes wählt der
+    // Zähler über eine Kette von `select` (`_jePlatz`, dieselben Uniforms, EIN Schreiber `_leuchtTakt`) — als Reihe im Speicher
+    // des Fragments (`array(...).toVar()`, der Zähler als Index) verdoppelte die Schleife die GPU-Zeit je Bild (gpu-bank GTX 1050
+    // an der Wiese 12,3 → 23,9 ms), als Uniform-Reihe (`uniformArray`) +0,7–1,0 ms GPU und +0,45 ms CPU, als Kette +0,3–0,6 ms.
+    // Die Schleife lebt in einer Fn ohne Layout: nur in ihrem Bau hat `Loop` einen Stapel.
     _lichtPoolTerm(Te, atmo, himmel) {
         const W = this._lichtWurf();
         return Te.Fn(() => {
