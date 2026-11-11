@@ -101,8 +101,21 @@ hauptLauf(async () => {
                 const at = s.key.indexOf("@");
                 return at >= 0 && !(s.key.startsWith("@s:", at));
             });
+        // DER WEG DER PROBE FOLGT DEM GESETZ (w28-baum-wechsel): die nahe Zelle springt 340 m weit — dort muss ihre Karte gelten.
+        // Ein Baum wechselt erst, wo die Zeile seiner Vorlage einen Bildpunkt trägt (`_baumStreck`): eine Weide stünde in 340 m
+        // noch als L1. Die Probe nimmt nur eine nahe Zelle, deren Karten-Grenze (samt Hysterese) diesseits von 340 m liegt.
+        const fernErreichbar = (c) => {
+            const lay = r._scatterLayerByName && r._scatterLayerByName.get(c.layer);
+            if (!lay) return false;
+            const tf = r._scatterCellTransform(c.cellX, c.cellZ, c.cellM, lay.scaleBase, lay.scaleVar);
+            const h = r._scatterSichtHoehe(lay, c.species, c.cellX, c.cellZ, c.variantIndex, tf);
+            if (h === null) return false;
+            const S = lay.kind === "tree" ? r._baumStreck(r._foundryEnabled() ? r._foundryPresetFor(c.species) : null) : [1, 1];
+            const D = r.constructor.LOD_DISTANCES;
+            return (D.thresh12 + D.hysteresis) / (h > 0 ? r._lodPerceptionDistance(1, h * S[1]) : 1) < 320;
+        };
         const sucheProbe = (nurNah) => {
-            for (const reg of map.values()) for (const c of reg.cells || []) if (c.slots && c.bpName && !b2Privat(c) && (!nurNah || c.lod < 2)) return c;
+            for (const reg of map.values()) for (const c of reg.cells || []) if (c.slots && c.bpName && !b2Privat(c) && (!nurNah || (c.lod < 2 && fernErreichbar(c)))) return c;
             return null;
         };
         // BEVORZUGT eine NAHE Zelle (lod<2 → Weg-Sprung auf die vorgewärmte
@@ -113,9 +126,10 @@ hauptLauf(async () => {
         // Hysterese-Quittieren-Pfad war; seit DAS FELD URTEILT sind sie region-
         // privat + B2-geschützt). Kurz warten, dann die NAH-Richtung an einer
         // echten Fern-Baum-Zelle proben — der STÄRKERE Beweis (echter Slot-Tausch).
+        // Die nahe Zelle ist die Kür (seit w28-baum-wechsel trägt kaum eine ihre Karte diesseits von 340 m): eine kurze Suche im
+        // Takt der Streu, ohne sie die ferne Probe — ein Bau, der dabei hängt, bricht am Stufen-Wandel darunter.
         let probe = null;
-        await window
-            .__gebautNach("eine Fern-Baum-Zelle", { fertig: () => !!(probe = sucheProbe(true)), takt: streuSchritt, max: 170 });
+        for (let i = 0; i < 40 && !(probe = sucheProbe(true)); i++) await streuSchritt();
         if (!probe) probe = sucheProbe(false);
         res.probeGefunden = !!probe;
         if (!probe) return res;
@@ -490,6 +504,89 @@ hauptLauf(async () => {
             `leckA=${out.f.leckA} leckB=${out.f.leckB}`
         );
     } else check("F: Fern-Diät-Block erreicht", false);
+
+    // ── W: DER BAUM WECHSELT AN DER ZEILE SEINER VORLAGE (lod.K5, w28-baum-wechsel). Je Baum-Vorlage des Buchs: die EINE Wahl
+    // betritt jede Stufe am Abstand des Gesetzes (`_wechselAbstand` mit Vorlage, nie näher als der Haushalt des Buchs), die
+    // Stempel jeder stehenden Stufe tragen die Schirm-Höhe ihrer Grenze (wahre Höhe × Streck), der Wind teilt genau den Streck
+    // der Karten-Grenze heraus, ein doppelt so hoher Schirm stempelt neu, und eine Baum-Vorlage ohne Zeile bricht beim Namen.
+    // DIE MUTANTE (im Lauf): fragt der Baum ohne Vorlage, hält der Haushalt — jede Vorlage, deren Zeile ihn überragt, ist ROT.
+    const w = await page.evaluate(async () => {
+        const r = await window.__weltDa();
+        const A = r.constructor, D = A.LOD_DISTANCES, f = r._foundry, ferne = r._ankunftsFerne(); // prettier-ignore
+        const ref = r.state.lodRef > 0 ? r.state.lodRef : D.lodRef;
+        const arten = Object.keys(f.recipes).filter((v) => f.recipes[v].kind === "tree");
+        const H = 2 * ref;
+        const messe = () =>
+            arten.map((v) => {
+                const z = { v };
+                try {
+                    const S = r._baumStreck(v);
+                    z.ab = [1, 2].map((s) => {
+                        let [a, b] = [0, 8000];
+                        for (let i = 0; i < 48; i++) r._chooseLODForDistance((a + b) / 2, undefined, H, S) >= s ? (b = (a + b) / 2) : (a = (a + b) / 2);
+                        return b * ferne;
+                    });
+                    z.soll = [1, 2].map((s) => Math.max(r._wechselAbstand("tree", s, H, v), ([D.thresh01, D.thresh12][s - 1] * H) / ref));
+                    z.wind = Math.max(1, r._baumZeile(v) * r._schirmJeZeileJetzt()) / S[1];
+                } catch (e) {
+                    z.bruch = String((e && e.message) || e).slice(0, 140);
+                }
+                return z;
+            });
+        const taeter = (M) => M.filter((z) => z.bruch || z.ab.some((x, i) => Math.abs(x - z.soll[i]) > 0.01 * z.soll[i])).map((z) => z.v + (z.bruch ? ": " + z.bruch : ` ${z.ab.map((x) => x.toFixed(1)).join("/")} statt ${z.soll.map((x) => x.toFixed(1)).join("/")} m`)); // prettier-ignore
+        const stempel = () => {
+            const out = { n: 0, gestreckt: 0, falsch: [] };
+            for (const [key, g] of r.state.archInstanceGroups || []) {
+                const ud = g && g.geom && g.geom.userData, Q = ud && ud._schirmQuelle && ud._schirmQuelle.userData._schirm; // prettier-ignore
+                if (!Q) continue;
+                const S = r._baumStreck(Q.vorlage);
+                out.n++, (out.gestreckt += S[1] > 1 ? 1 : 0); // prettier-ignore
+                if (Math.abs(ud._h0Tpl - Q.h0 * S[1]) > 1e-6 * ud._h0Tpl || Math.abs(ud._h0LTpl - Q.h0L * S[0]) > 1e-6 * ud._h0LTpl) out.falsch.push(key);
+            }
+            return out;
+        };
+        const res = { arten: arten.length, ferne, ist: messe() };
+        res.taeter = taeter(res.ist);
+        res.windFalsch = res.ist.filter((z) => !(Math.abs(z.wind - 1) < 1e-9)).map((z) => z.v);
+        res.ueberHaushalt = res.ist.filter((z) => !z.bruch && z.soll[1] > (D.thresh12 * H) / ref * 1.01).length;
+        res.stempel = stempel();
+        // der doppelte Schirm: der Streck folgt ihm, die Stempel der stehenden Stufen ziehen im selben Takt nach
+        const sw = r._schirm(), h0 = sw.hoehe, s0 = arten.map((v) => r._baumStreck(v)[1]); // prettier-ignore
+        try {
+            sw.hoehe = 2 * (h0 > 0 ? h0 : A.LOD_SCHIRM.zeilen);
+            r._stufenSchirm();
+            res.schirm = { stempel: stempel(), waechst: arten.every((v, i) => r._baumStreck(v)[1] >= s0[i] && (s0[i] === 1 || r._baumStreck(v)[1] > s0[i] * 1.9)) };
+        } finally {
+            sw.hoehe = h0;
+            r._stufenSchirm();
+        }
+        res.zurueck = stempel();
+        // eine Baum-Vorlage ohne Zeile: der Bruch nennt sie
+        f.recipes.__w28 = { kind: "tree" };
+        try {
+            r._baumStreck("__w28");
+            res.ohneZeile = "kein Bruch";
+        } catch (e) {
+            res.ohneZeile = String((e && e.message) || e).slice(0, 80);
+        } finally {
+            delete f.recipes.__w28;
+            r._baumStreckM = null;
+        }
+        // DIE MUTANTE: der Baum fragt ohne Vorlage
+        r._baumStreck = () => A.BAUM_OHNE_STRECK;
+        try {
+            res.mutante = taeter(messe());
+        } finally {
+            delete r._baumStreck;
+        }
+        return res;
+    });
+    check(`W: jede Baum-Vorlage des Buchs trägt ihre Zeile, die EINE Wahl betritt L1 und Karte am Abstand des Gesetzes (${w.arten} Vorlagen, ${w.ueberHaushalt} Karten jenseits des Haushalts)`, w.arten >= 9 && w.taeter.length === 0, w.taeter.join(" · ")); // prettier-ignore
+    check("W: der Wind teilt genau den Streck der Karten-Grenze heraus (Zeile × Schirm, wie der Stempel)", w.windFalsch.length === 0, w.windFalsch.join(" · "));
+    check(`W: jede stehende Baum-Stufe stempelt die Schirm-Höhe ihrer Grenzen (${w.stempel.n} Fassaden, ${w.stempel.gestreckt} gestreckt)`, w.stempel.n > 0 && w.stempel.gestreckt > 0 && w.stempel.falsch.length === 0, w.stempel.falsch.slice(0, 4).join(" · ")); // prettier-ignore
+    check("W: der doppelte Schirm streckt jede Zeile, die den Haushalt überragt, auf das Doppelte — die stehenden Stempel ziehen nach und kehren zurück", !!w.schirm && w.schirm.waechst === true && w.schirm.stempel.falsch.length === 0 && w.zurueck.falsch.length === 0, JSON.stringify([w.schirm, w.zurueck]).slice(0, 300)); // prettier-ignore
+    check("W: eine Baum-Vorlage ohne Zeile bricht beim Namen (KERN-PFLICHT), nie still der Haushalt", /KERN-PFLICHT.*LOD_SCHIRM\.fehler\.tree\.__w28/.test(w.ohneZeile), w.ohneZeile);
+    check(`W(Mutante): ohne Vorlage hält der Haushalt — ROT beim Namen (${w.mutante.length} von ${w.ueberHaushalt})`, w.mutante.length === w.ueberHaushalt && w.mutante.length > 0, w.mutante.slice(0, 3).join(" · ")); // prettier-ignore
 
     await browser.close();
     server.close();
