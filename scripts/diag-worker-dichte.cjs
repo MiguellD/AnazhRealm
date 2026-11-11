@@ -507,6 +507,20 @@ async function strom(page, urform) {
     }, urform);
 }
 
+// TEIL E — DIE SPALTE EINMAL (w27-ankunft-faden): `_terrainColumnContextIn` rechnet je Stand EINMAL (neu je Ruf: 1, 0) und trägt
+// das Gesetz des Kerns (`dichteSpalte` samt Keller, sonst NaN); ein neuer Stand (der Wasserspiegel) rechnet neu. `vergisst`
+// (Selbsttest): das Gedächtnis vergisst vor jedem Ruf — ROT beim Namen.
+const SPALTE_SOLL = "1,0,1";
+const spalteEinmal = (page, vergisst) =>
+    page.evaluate((vergisst, wl = st.waterLevel, x = st.playerMesh.position.x + 0.37, z = st.playerMesh.position.z) => {
+        const ruf = (S = r._spalten, n = S.neu, c = (vergisst && S.gen++, r._terrainColumnContextIn(x, z, {}))) =>
+            JSON.stringify({ ...__gelaendeCore.dichteSpalte(r._gelaende(), x, z, {}), keller: r._kellerLage(x, z) }) === JSON.stringify(c) ? S.neu - n : NaN; // prettier-ignore
+        st.waterLevel = wl + 0.25;
+        const neu = [ruf(), ruf()];
+        st.waterLevel = wl;
+        return neu.concat(ruf()).join();
+    }, vergisst);
+
 // Der Selbsttest: der Voxel-Faden lädt den Kern mit der Höhe + 1 cm — die Probe MUSS ihn bei Ort, Gitter, Ferne und Wald nennen.
 async function probeVerfaelscht(page, url) {
     KERN_MODUS.faden = "Höhen-Versatz";
@@ -2117,6 +2131,7 @@ hauptLauf(async () => {
     }
     let selbst = null;
     let urform = "";
+    let vergisst = "";
     for (const welt of WELTEN) {
         let weltArg = welt;
         const json = JSON.parse(liesText(BUEHNE_DATEI));
@@ -2153,6 +2168,10 @@ hauptLauf(async () => {
             }
             if (SELBSTTEST)
                 console.log(`  SELBSTTEST Strom (die Urform, Soll ROT): ${(urform = await strom(page, true))}`);
+            const sp = await spalteEinmal(page, false);
+            console.log(`    Die Spalte einmal (Teil E, \`_terrainColumnContextIn\`, neu je Ruf): ${sp} (Soll ${SPALTE_SOLL})`);
+            rot ||= sp !== SPALTE_SOLL;
+            if (SELBSTTEST) console.log(`  SELBSTTEST Spalte (vergisst, Soll ROT): ${(vergisst = await spalteEinmal(page, true))}`);
         }
         const rep = await probe(page, weltArg, !!ABDRUCK);
         rep.welt = welt;
@@ -2256,6 +2275,7 @@ hauptLauf(async () => {
             selbst.wuchs > 0 &&
             urform &&
             urform.endsWith("Reihe verzögert") &&
+            vergisst === "1,1,1" &&
             selbst.namen === "FERN-RING";
         console.log(`  SELBSTTEST Stoff des Walds: ${selbst ? selbst.wald : "?"} abweichende Zellen · Wuchs ${selbst?.wuchs} (Soll > 0)`);
         console.log(`  SELBSTTEST Höhen der Ferne: ${selbst ? selbst.ferne : "?"} abweichende Punkte (Soll > 0)`);

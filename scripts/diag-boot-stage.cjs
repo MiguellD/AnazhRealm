@@ -171,6 +171,10 @@ const KALT_KLASSEN = {
     _loopRender: "Bild",
     _runFrameScheduler: "Jobs",
     tickDayNight: "Himmel",
+    // die zwei Schnitte von w27-ankunft-faden beim Namen: der Leib im Fix-Schritt (die Spalte einmal) und die Wiese mit ihrer
+    // Ferne (die Zelle über dem Anteil), diese als Teil der Jobs
+    _loopFixedStep: "Physik",
+    _tickNahWiese: "Wiese",
 };
 const KALT_PFLANZEN = ["Streu", "Saat", "Wald-Plan", "Gestalt"];
 function KALT_PROBE() {

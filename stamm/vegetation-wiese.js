@@ -127,6 +127,7 @@ class AnazhRealm_vegetation_wiese {
         const E = this._erdbauLage();
         // die gemähten Büschel (halten.K3, `_maehen`) fehlen, bis ihre Tat heilt — Identität ist die Gitter-Zelle gi|gj
         const gemaeht = this._geerntetIn("wiese:" + tx + "," + tz);
+        const W = AnazhRealm._wortAlgebra();
         for (let gj = Math.ceil(z0 / step); gj * step < z0 + NW.kachel; gj++) {
             for (let gi = Math.ceil(x0 / step); gi * step < x0 + NW.kachel; gi++) {
                 if (gemaeht.has(gi + "|" + gj)) continue;
@@ -140,6 +141,11 @@ class AnazhRealm_vegetation_wiese {
                 };
                 const x = gi * step + (w() - 0.5) * 0.68;
                 const z = gj * step + (w() - 0.5) * 0.68;
+                // DIE ZELLE ÜBER DEM ANTEIL ZIEHT NICHTS (w27-ankunft-faden, Gesetz statt Schleife): der Rang ihrer Zelle ist die untere
+                // Schranke ihrer Ordnung (`_ortRang`) — liegt er über dem Anteil, fällt sie vor jedem weiteren Wurf und jeder Probe.
+                // Befund kalt (swiftshader, 25 s vor dem Weltbild): die Ferne zog in 600 Kacheln der Nähe jede Zelle und verwarf fast
+                // alle am Anteil — 486 von 1 191 ms der Wiese.
+                if (anteil < 1 && W.anteil(AnazhRealm._ortRang(W, x, z, step)) >= anteil) continue;
                 const wurf = w();
                 const vorlage = w() < 0.5 ? 0 : 1;
                 const sk = 0.7 + w() * 0.7;
@@ -217,12 +223,19 @@ class AnazhRealm_vegetation_wiese {
         let h = pcg(W.xor(W.lage(x), pcg(W.lage(z))));
         for (let i = 0; i < zug; i++) h = pcg(h);
         if (!(schritt > 0)) return W.anteil(h);
+        return W.anteil(AnazhRealm._ortRang(W, x, z, schritt, h));
+    }
+    // DER RANG DER ZELLE (rein, über W; w27-ankunft-faden): die oberen 8 Bit der geschichteten Ordnung — der Bayer-Rang der Zelle
+    // von (x, z) im Gitter `schritt`, über die oberen 24 Bit des Worts `h` gelegt (`_ortZiehung`). Mit h = 0 der Rang allein:
+    // `W.anteil` davon ist die untere Schranke der Ordnung jedes Punkts der Zelle — liegt sie über einem Anteil, steht dort nie
+    // ein Büschel der Ferne (`_nahWieseKachelBueschel` zieht die Zelle nicht weiter).
+    static _ortRang(W, x, z, schritt, h = 0) {
         const [gi, gj] = [W.zelle(x, schritt), W.zelle(z, schritt)];
         const [u, v] = [W.xor(gi, gj), gi];
         h = W.shr(h, 8);
         for (let k = 0; k < 4; k++)
             h = W.or(h, W.or(W.shl(W.and(W.shr(u, k), 1), 31 - 2 * k), W.shl(W.and(W.shr(v, k), 1), 30 - 2 * k)));
-        return W.anteil(h);
+        return h;
     }
     // DIE WORT-ALGEBRA der Ziehung (u32, modulo 2³²): ohne T die Zahlen der CPU, mit T die TSL-Knoten (WGSL u32). `zelle` die
     // Gitter-Zelle einer Lage (gerundet, versetzt um 2²³ — ein Vielfaches von 16: die unteren Bits bleiben die der Zelle).
