@@ -2231,12 +2231,11 @@ class AnazhRealm_stoff_material {
         return T.Fn(() => {
             const offen = T.float(1).toVar();
             T.If(drin, () => {
-                const lage = T.array(U.dachLage).toVar();
-                const mass = T.array(U.dachMass).toVar();
+                const R = this._poolReihen(U, ["dachLage", "dachMass"]);
                 const unter = T.float(0).toVar();
                 T.Loop(U.dachLage.length, ({ i: k }) => {
-                    const L = lage.element(k);
-                    const M = mass.element(k);
+                    const L = R.dachLage.element(k);
+                    const M = R.dachMass.element(k);
                     const d = p.xz.sub(L.xy);
                     const lx = d.x.mul(L.z).sub(d.y.mul(L.w)).abs();
                     const lz = d.x.mul(L.w).add(d.y.mul(L.z)).abs();
@@ -2414,20 +2413,14 @@ class AnazhRealm_stoff_material {
             Te.normalView.toVar();
             Te.positionView.toVar();
             const wurf = W.faktor.toVar();
-            const reihe = (liste) => Te.array(liste).toVar();
-            const R = {
-                lage: reihe(atmo.lichtLage),
-                farbe: reihe(atmo.lichtFarbe),
-                ersatz: reihe(atmo.lichtErsatz),
-                kern: reihe(atmo.lichtKern),
-            };
+            const R = this._poolReihen(atmo, ["lichtLage", "lichtFarbe", "lichtErsatz", "lichtKern"]);
             const summe = Te.vec3(0).toVar();
             Te.Loop(atmo.lichtLage.length, ({ i: k }) => {
                 const platz = {
-                    lage: R.lage.element(k),
-                    farbe: R.farbe.element(k),
-                    ersatz: R.ersatz.element(k),
-                    kern: R.kern.element(k),
+                    lage: R.lichtLage.element(k),
+                    farbe: R.lichtFarbe.element(k),
+                    ersatz: R.lichtErsatz.element(k),
+                    kern: R.lichtKern.element(k),
                 };
                 summe.addAssign(
                     this._lichtPlatz(Te, platz, himmel).mul(Te.mix(Te.float(1), wurf, Te.float(W.platz.equal(k))))
@@ -2435,6 +2428,25 @@ class AnazhRealm_stoff_material {
             });
             return summe;
         })();
+    }
+
+    // DIE REIHEN DER PLÄTZE (die Schleifen der Pools): je Größe EINE Uniform-Reihe (`uniformArray`, renderGroup) als BLICK auf die
+    // Uniforms der Plätze — ihre Glieder sind deren Werte (vec4: dieselben Objekte; float: gelesen je Render), der EINE Schreiber
+    // schreibt weiter die Uniforms der Plätze. Gelesen am Zähler der Schleife (`element(k)`) — KEINE Reihe im Speicher des Fragments
+    // (`array(...).toVar()`: gpu-bank GTX 1050 an der Wiese 12,28 → 23,87 ms je Bild). → { name: Reihe }
+    _poolReihen(satz, namen) {
+        const T = THREE.TSL;
+        const R = satz.__reihen || Object.defineProperty(satz, "__reihen", { value: {} }).__reihen;
+        for (const n of namen) {
+            if (R[n]) continue;
+            const liste = satz[n];
+            const vec = liste[0].value && typeof liste[0].value === "object";
+            const blick = vec
+                ? liste.map((u) => u.value)
+                : new Proxy(liste, { get: (t, p) => (typeof p === "string" && /^\d+$/.test(p) ? t[p].value : t[p]) });
+            R[n] = T.uniformArray(blick, vec ? "vec4" : "float").setGroup(T.renderGroup);
+        }
+        return R;
     }
 
     // DAS GESETZ EINES PLATZES (K11, der Rumpf der Schleife des Pools): `platz` = { lage, farbe, ersatz, kern } — Knoten des Platzes
