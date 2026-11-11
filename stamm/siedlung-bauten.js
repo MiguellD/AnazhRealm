@@ -359,7 +359,13 @@ class AnazhRealm_siedlung_bauten {
         // bleiben, als ein Gang geht (STUFEN_GANG 256 — die Verdeckung hält jede 3D-Stufe jenseits `occDist` wach), endete die
         // Runde nie. Messort stadt-voll der Stadt-Grammatik, Radeon: 349 Wache (209 Laternen, 80 Wandlaternen, 24 Grabsteine),
         // 21 Wagen, 1550 Weckrufe in 360 Takten, die längste Ruhe 0 Takte — „Fege-Takt archLod 256/355“, die Welt stand nie.
-        if (art === undefined && this._archFahrende && this._archFahrende.has(entry)) return;
+        // Seine ZUSAGE aber löst der Weckruf auch ihm (`W.zusage`: wer auf sie schläft, hält die Wahl offen): bis hier kehrte er vor
+        // ihr um, die Zusage kam und blieb gehalten — „archLod wartet (1 Zusagen, zuerst fahrzeug_limousine L2 in 87 m)“, die Welt
+        // stand an stadt und stadt-voll nie (gpu-probe 66a4c85b, Radeon, 2114 und 2639 Takte)
+        if (art === undefined && this._archFahrende && this._archFahrende.has(entry)) {
+            W.zusage.delete(entry);
+            return;
+        }
         W.zusage.delete(entry);
         W.schlaf.delete(entry);
         if (art === "weg") {
