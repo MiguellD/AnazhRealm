@@ -20,6 +20,7 @@ if %errorlevel% neq 0 (
 echo.
 echo 1/2  Start auf "Automatisch" stellen ...
 sc config HPOmenCap start= auto >nul
+sc failureflag HPOmenCap 1 >nul
 echo 2/2  Dienst HPOmenCap starten ...
 sc start HPOmenCap >nul 2>&1
 timeout /t 4 /nobreak >nul
