@@ -251,13 +251,20 @@ class AnazhRealm_koerper_leib {
     // Leib-Wahl als Gast des Vorbaus in ihre Szene — auf Maßstab 0 — und baut über DIE Erst-Zeichnung ohne Draw. Steht jedes
     // Teil in jedem seiner Pässe (`_vorbauFehlt`), geht er und der nächste kommt; `state._leibWarm` ist das Ereignis. true:
     // jeder Leib steht.
+    // DIE EIGENE SEELE ZUERST (w27-takt-gc-2, das Nächste zuerst wie der ganze Planer): ihr Leib ist, was die nächste Eingabe
+    // zeigt (Third, der Blick auf sich) — bis hier stand der Mensch am Ende hinter jeder Tier-Art, und sein Leib baute seine
+    // sieben Programme der Welt erst, als die Tiere standen (dorf Ego, GTX 1050 eab8e8b3: 50,5–52,3 s nach der Ankunft, die
+    // Ich-Bühne hatte dieselben Stoffe für ihr eigenes Ziel schon bei 9 s gebaut); jetzt baut er gleich nach ihr.
     _leibVorwaermen() {
         const st = this.state;
         if (st._leibWarm) return true;
         if (!st._leibVorwaermung) {
             if (!this._ofenVorratSteht) return false;
+            const offen = [...Object.keys(AnazhRealm.TETRAPODA_SOUL_MAP).map((a) => "bp_koerper_" + a), "human"];
+            const eigen = offen.indexOf((st.player && st.player.soul) || "human");
+            if (eigen > 0) offen.unshift(...offen.splice(eigen, 1));
             st._leibVorwaermung = {
-                offen: [...Object.keys(AnazhRealm.TETRAPODA_SOUL_MAP).map((a) => "bp_koerper_" + a), "human"],
+                offen,
                 leib: null,
                 takte: 0,
             };
