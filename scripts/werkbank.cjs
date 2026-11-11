@@ -1783,8 +1783,12 @@ async function starte() {
                     // DER INHALT DES ORTS (`imBild`, w27-ort-pose): was der Ort IST, zeigt das Bild — je Klasse der Teilung ein
                     // Mindest-Anteil seiner Pixel, sonst ROT beim Namen, ungespeichert (am Dorf ohne Haus stand GRÜN, 78d37554).
                     // Der Anteil gilt der Leinwand der Klasse unten (1920 × 1080: dort zählt die Teilung, nie in `--w`/`--h`)
+                    // DIE FAMILIE EINES SCHLÜSSELS (w27-ort-pose-voll), EIN Leser für den Ausdruck und das Urteil: der Schlüssel
+                    // und jede Klasse, die mit ihm und `-` oder `_` weitergeht — `bewohner` zählt das Gedränge (`bewohner-satz`;
+                    // der Schlüssel allein sah höchstens 4 Leiber binnen 8 m), `fahrzeug` jeden Wagen (`fahrzeug_<typ>`)
+                    const familie = (k) => new RegExp(`^${k}([-_].*)?$`);
                     const inhalt = b.ort && BAND.ladeSpec(b.ort).ort.imBild;
-                    if (inhalt) b.klasse = `^(${Object.keys(inhalt).join("|")})$`;
+                    if (inhalt) b.klasse = Object.keys(inhalt).map((k) => familie(k).source).join("|");
                     if (b.klasse) {
                         await page.setViewport({ width: 1920, height: 1080, deviceScaleFactor: 1 });
                         await page.waitForFunction(() => st.renderer.domElement.clientWidth === 1920);
@@ -1792,7 +1796,8 @@ async function starte() {
                     if (b.zeit != null) await page.evaluate(`window.__boeVarianz = ${boeVarianz}`);
                     const o = await bild(Object.assign({ w: 640, h: 360, nahM: BOE.nahM, viertel: BOE.viertel }, b));
                     if (b.klasse) await page.setViewport(vp);
-                    const fehlt = Object.keys(inhalt || {}).filter((k) => !(o.klasse.klassen[k]?.pixel >= inhalt[k] * 1920 * 1080));
+                    const anteil = (k) => Object.entries(o.klasse.klassen).reduce((n, [kl, m]) => n + (familie(k).test(kl) && m.pixel), 0);
+                    const fehlt = Object.keys(inhalt || {}).filter((k) => !(anteil(k) >= inhalt[k] * 1920 * 1080));
                     if (fehlt.length) throw new Error(`ABNAHME ROT [kein ${fehlt.join(", kein ")} im Bild] · ${b.ort}: ${o.abnahme.zeile}`);
                     const datei = zeitAblage(b.datei, "bild", "png");
                     ordnerFuer(datei);

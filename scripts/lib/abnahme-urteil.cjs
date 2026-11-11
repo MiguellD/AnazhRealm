@@ -106,7 +106,11 @@ function abnahmeUrteil(m, S) {
         );
     if (m?.ziel)
         t.push(
-            `Ziel ${m.ziel.name} ${m.ziel.imBild ? "im Bild" : "NICHT im Bild"} ${m.ziel.frei ? "frei" : "VERDECKT"} ${m.ziel.abstand} m`
+            `Ziel ${m.ziel.name} ${m.ziel.imBild ? "im Bild" : "NICHT im Bild"} ${m.ziel.frei ? "frei" : "VERDECKT"} ${m.ziel.abstand} m` +
+                // der Leib ist nie Fläche der Linse (kamera-nah `sieht`, w27-ort-pose-voll): gezählt und gemeldet, nie geurteilt
+                (m.ziel.leiber
+                    ? `, verdeckt nur von Leibern: ${m.ziel.leiber.n} Punkt${m.ziel.leiber.n > 1 ? "e" : ""}, nächster ${m.ziel.leiber.naechster} m (${m.ziel.leiber.name})`
+                    : "")
         );
     else if (m && satz === "beweis") t.push("Ziel ungenannt");
     if (m?.bild)
@@ -278,6 +282,20 @@ function abnahmeSelbsttest(fixtureDir) {
             "ziel.frei",
             "Natur stein_block",
         ],
+        // DER LEIB UND DAS LAUB (w27-ort-pose-voll): Laub vor dem Fuß des Ziels bleibt ROT beim Namen — auch wenn daneben ein Leib
+        // stand (die Punkte nur hinter Leibern sind frei, der Verdecker ist der andere)
+        [
+            "Ziel hinter Laub, ein Leib daneben",
+            (m) =>
+                Object.assign(m.ziel, {
+                    frei: false,
+                    vor: "an Punkt 1 Laub baum_kiefer",
+                    vorAbstand: 3.73,
+                    leiber: { n: 1, naechster: 3.2, name: "Leib bewohner" },
+                }),
+            "ziel.frei",
+            "verdeckt von an Punkt 1 Laub baum_kiefer in 3.73 m",
+        ],
         [
             "Kuppe im Vordergrund",
             (m) =>
@@ -323,6 +341,15 @@ function abnahmeSelbsttest(fixtureDir) {
         const r = u.rot.find((x) => x.feld === feld);
         if (u.ok || !r) v.push(`${name}: nicht ROT an ${feld} — ${u.zeile}`);
         else if (!u.zeile.includes(wort)) v.push(`${name}: ROT ohne Namen „${wort}" — ${u.zeile}`);
+    }
+    // ein Leib ALLEIN vor dem Ziel ist GRÜN, beim Namen gemeldet (w27-ort-pose-voll)
+    {
+        const m = gesund();
+        m.ziel.leiber = { n: 1, naechster: 3.76, name: "Leib bewohner" };
+        const u = abnahmeUrteil(m, SCHWELLEN);
+        const wort = "frei 6.2 m, verdeckt nur von Leibern: 1 Punkt, nächster 3.76 m (Leib bewohner)";
+        if (!u.ok) v.push(`Leib allein vor dem Ziel: fälschlich ROT — ${u.zeile}`);
+        else if (!u.zeile.includes(wort)) v.push(`Leib allein vor dem Ziel: GRÜN ohne Meldung „${wort}" — ${u.zeile}`);
     }
     // der vakuöse Fall: keine Messung, ein leeres Objekt, ein unbekannter Satz
     if (abnahmeUrteil(null, SCHWELLEN).ok) v.push("vakuös: null ist grün");
