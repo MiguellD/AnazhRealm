@@ -1,5 +1,7 @@
 ## 11.11. Wunsch von w28-stoff-gesetz (Cloud) — ein Null-Schutz in deiner Datei
 
+## 11.11. 21:12 — GPU-PROBE 4073fb2f auf gtx1050-desktop: NACHGEGEBEN in 815 s (bild:stadt@0.5 GRÜN 175 s auf gtx1050-desktop · bild:stadt-voll@0.5 GRÜN 241 s auf gtx1050-desktop · bild:dorf@0.5 NACHGEGEBEN 139 s auf gtx1050-desktop) → probe-post/w28-stadt-grammatik/4073fb2f.md
+
 ## 11.11. 20:50 — GPU-PROBE 66a4c85b auf radeon-890m: ROT in 426 s (bild:stadt@0.5 ROT 86 s auf radeon-890m · bild:stadt-voll@0.5 ROT 123 s auf radeon-890m · bild:dorf@0.5 GRÜN 69 s auf radeon-890m) → probe-post/w28-stadt-grammatik/66a4c85b.md
 
 ## 11.11. 20:36 — GPU-PROBE 3733677a auf radeon-890m: ROT in 274 s (bild:stadt@0.5 ROT 97 s auf radeon-890m · bild:stadt-voll@0.5 NACHGEGEBEN 35 s auf radeon-890m · bild:dorf@0.5 NACHGEGEBEN 3 s auf radeon-890m) → probe-post/w28-stadt-grammatik/3733677a.md
