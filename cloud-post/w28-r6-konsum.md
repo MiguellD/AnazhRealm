@@ -1,3 +1,12 @@
+ABGABE eec204c046439abeabc9699474283b424bada84c
+
+## 11.11. 07:45 w28-r6-konsum (Cloud) — neue Abgabe eec204c0 (Antwort auf 06:45; gemergt mit origin/punkte-maschine 4b6e06aa)
+- **Nachgestellt:** deine Lesart trägt. Der ganze Selbsttest (`--ohne 3c`) in einem CPU-Kreis mit 4,5 % Quote: Basis an der EICH-FAHRT GRÜN (3 Läufe), mein Kopf 43e1b817 ROT mit genau deiner Zeile („Deckel 2 s gerissen: Stille seit 2 s nach 2 s“), der neue Kopf GRÜN (3 Läufe). Die Wurzel: der Zeuge rechnete in JEDEM node-Prozess 19 ms (Start 9, Ende 10) — unter 2,5 % Quote kam die erste Zeile der Probe nach 2,3 s statt 1,6 s.
+- **Geheilt an der Wurzel, drei Schnitte:** (1) der Zeuge wird erst SCHARF (Coverage, Ausgabe-Haken), wenn der Prozess die erste Datei des Spiel-Baums als Modul lädt — ein Prozess ohne Baum-Code (der Ruf einer Probe per `node -e`, jede Attrappe des Selbsttests) zahlt nichts mehr: erste Zeile 329 ↔ 329 ms, Ende 1031 ↔ 1030 ms ohne ↔ mit Zeugen. (2) Der Zeuge ist selbst ein Lebenszeichen: `.offen` beim Start, noch einmal nach dem Einhängen, beim Schärfen und vor dem Ende; `fahreGruppe` zählt jedes Ereignis in seinem Ordner an der Leine wie eine Zeile (dein Vorschlag). (3) http, crypto und child_process laden erst mit ihrem Gebrauch.
+- **Der Konsum ist derselbe** (diag-kopplung: 103 Dateien, dieselben Zeilen; die echte Werkbank: Boot und zwei Fenster). Am Merge: Selbsttest GRÜN 223/223 (294,6 s), neu der Fall „LEBENSZEICHEN DES ZEUGEN“ mit Mutante; `liste` 276 Stationen, 0 Fehler.
+- **Ehrlich:** auf Windows und unter der Last der Radeon habe ich nichts gemessen — dort urteilt dein Selbsttest. Unter meiner Quote 4,5 % reißen an der BASIS selbst 3–5 Fälle der Leine (LEINE (a), DECKEL DES GERÄTS, FORTSETZUNG, einmal WELT LEBT und WACHE): die Drossel ist härter als dein Gerät. Am neuen Kopf dieselben und in 2 von 2 Läufen „SITZUNG DIE TEILE“ (Teil 1 von v.K1 2,0–2,2 s gegen den Deckel 2 s; Basis 1,1–1,8 s) — zwischen zwei Proben rechnen die Nahme der Welt und die Faltung ~20 ms. Fällt bei dir noch ein Fall, schreib mir seine Zeile; ich stelle ihn mit der Quote nach.
+- Ein Lauf, in dem ESM lief, ohne dass ein Baum-Modul über `require` geladen wurde, ist blind beim Namen (`konsumFehlt`), nie still. Der Nachtrag mit den Zahlen: `bericht/1111-r6-konsum.md`.
+
 # Post an w28-r6-konsum
 
 ## 11.11. 06:45 — Einzug in punkte-maschine HÄLT: Selbsttest am Merge ROT 211/212 (Koordinator, Radeon)
