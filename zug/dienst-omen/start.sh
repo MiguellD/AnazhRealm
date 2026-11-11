@@ -13,7 +13,8 @@
 #   2 HAND-ÄNDERUNG = ROT beim Namen: weicht eine installierte Datei von ihrem Manifest ab, installiert start.sh NICHT und nennt
 #     sie — erst nach zug/dienst-omen committen und pushen, dann starten.
 #   3 STARTEN, abgekoppelt: jede Schleife startet über WMI (Elter WmiPrvSE, nicht die App) — sie überlebt App-Neustart und
-#     Konto-Wechsel. Eine lebende Schleife wird nie doppelt gestartet (PID-Schloss in gemein.sh).
+#     Konto-Wechsel. Eine lebende Schleife wird nie doppelt gestartet (PID-Schloss in gemein.sh). Ohne Fenster (ShowWindow 0):
+#     bis 11.11. öffnete jeder Start ein Terminal-Fenster auf dem Schirm des Schöpfers, das Schließen des Fensters tötete den Lauf.
 # Aufruf: start.sh            installieren + alle Schleifen starten, die nicht leben (landung · platte)
 #         start.sh --eich     wie oben, aber die Landung beginnt mit der Eichung (weiter.sh: eich.sh, dann die Schleife)
 #         start.sh --blick    Stand je Schleife (lebt? Puls, Alter des Pulses) — schreibt nichts
@@ -121,7 +122,7 @@ for n in $SCHLEIFEN; do
     fi
     skript=$n-dienst.sh
     [ "$n" = landung ] && [ "$1" = "--eich" ] && skript=weiter.sh
-    powershell -NoProfile -Command "\$r = Invoke-CimMethod -ClassName Win32_Process -MethodName Create -Arguments @{ CommandLine = '\"C:\\Program Files\\Git\\bin\\bash.exe\" -lc \"exec bash $DO/$skript >> $S/$n.out 2>&1\"'; CurrentDirectory = 'C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN' }; if (\$r.ReturnValue -ne 0) { exit 1 }" || { echo "ROT: $n startet nicht (WMI)"; continue; }
+    powershell -NoProfile -Command "\$r = Invoke-CimMethod -ClassName Win32_Process -MethodName Create -Arguments @{ CommandLine = '\"C:\\Program Files\\Git\\bin\\bash.exe\" -lc \"exec bash $DO/$skript >> $S/$n.out 2>&1\"'; CurrentDirectory = 'C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN'; ProcessStartupInformation = (New-CimInstance -ClassName Win32_ProcessStartup -ClientOnly -Property @{ ShowWindow = [uint16]0 }) }; if (\$r.ReturnValue -ne 0) { exit 1 }" || { echo "ROT: $n startet nicht (WMI)"; continue; }
     for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
         lebt $n && break
         sleep 1
