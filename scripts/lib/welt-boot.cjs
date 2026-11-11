@@ -2354,7 +2354,6 @@ async function selbsttest() {
     // Profil eines toten Laufs (älter als 10 min), nie das eines lebenden oder ein junges
     const eigen = browser.profil;
     await browser.close();
-    server.close();
     // das Kind nennt sein Profil an der Marke, nie als erste Zeile: sein Feger schreibt vorher „bleibt liegen" für ein gehaltenes
     // Alt-Profil (Vollprobe 04.11. 20:06, ~2000 Alt-Profile im Temp: die Linse las die Feger-Zeile als Pfad — ROT ohne Täter)
     const [mutante, ...kinder] = ['require("fs").rmSync = () => {}; await b.close()', "throw 0", 'process.emit("SIGTERM", "SIGTERM")'].map(
@@ -2418,11 +2417,13 @@ async function selbsttest() {
         const b = await startePuppeteer({ headless: true });
         const p = await b.newPage();
         await p.goto("about:blank");
-        await server.zeige(p, undefined, "ruhig.html", "load").catch(() => {});
+        // die Fahrt beim Namen: eine Seite, die nie ankam (der Server zu, 11.11. — der Fall blieb so still grün), navigierte nie
+        const weg = await server.zeige(p, undefined, "ruhig.html", "load").then(() => "", (x) => x.message);
         await sleep(3500);
         const lebt = await Promise.race([p.evaluate("1 + 1").catch((x) => x.message), sleep(5000).then(() => "STILLE")]);
+        const da = /\/ruhig\.html$/.test(p.url());
         await b.close().catch(() => {});
-        todWand.push([lebt === 2, `eine gesunde Seite, die navigiert, lebt: ${lebt === 2 ? "sie antwortet" : lebt}`]);
+        todWand.push([lebt === 2 && da, `eine gesunde Seite, die navigiert, lebt: ${!da ? `sie kam nie an (${weg || p.url()})` : lebt === 2 ? "sie antwortet" : lebt}`]); // prettier-ignore
     }
     // DER BOOT, DER BRICHT: die offene Warte auf den ersten Takt fällt binnen Sekunden mit dem Wurf des Kerns, jede spätere Frage an die
     // Seite ebenso, die Wache spricht einmal; ein Boot, der steht, und ein Welt-Wechsel, der danach bricht, lassen die Warte leben
@@ -2434,7 +2435,10 @@ async function selbsttest() {
         try {
             const p = await b.newPage();
             const t0 = Date.now();
-            await server.zeige(p, undefined, seite, "load").catch(() => {});
+            // die Fahrt fällt nur am gebrochenen Boot selbst (die Wache nimmt jede offene Frage der Seite mit) — jeder andere Fehler
+            // der Fahrt ist ein Wurf beim Namen (11.11.: der Server war zu, beide Fälle warteten 30 s auf einer leeren Seite)
+            const fahrt = await server.zeige(p, undefined, seite, "load").then(() => "", (x) => x.message);
+            if (fahrt && !/^BOOT GEBROCHEN/.test(fahrt)) return { wort: `die Seite kam nie an: ${fahrt}`, danach: "—", s: "0.0", gesagt: 0 }; // prettier-ignore
             const wort = await Promise.race([p.waitForFunction(() => window.__takt === 1, { timeout: 30000 }).then(() => "erfüllt", (x) => x.message), sleep(35000).then(() => "STILLE nach 35 s")]); // prettier-ignore
             const s = ((Date.now() - t0) / 1000).toFixed(1);
             const danach = await Promise.race([p.evaluate("1 + 1").then(String, (x) => x.message), sleep(5000).then(() => "STILLE")]); // prettier-ignore
@@ -2449,6 +2453,7 @@ async function selbsttest() {
         todWand.push([/^BOOT GEBROCHEN: die Welt erwacht nicht, init warf — .*leibGroesse ohne height\/mass\/tone/.test(br.wort) && br.danach === "2" && br.gesagt === 1 && +br.s < 10, `Boot gebrochen (der Boot des Stamms, init wirft): ${br.wort.slice(0, 170)} — nach ${br.s} s, eine lesende Frage danach ${br.danach}, laut ${br.gesagt}×`]); // prettier-ignore
         todWand.push([sth.wort === "erfüllt" && sth.danach === "2" && sth.gesagt === 0, `Boot steht, ein Welt-Wechsel bricht danach: die Warte ${sth.wort} nach ${sth.s} s, laut ${sth.gesagt}×`]); // prettier-ignore
     }
+    server.close();
     await new Promise((ok) => besetzt.listen(belegt, "127.0.0.1", ok));
     const t1 = Date.now();
     const start = await startProc("save-server.js", /läuft/, { PORT: String(belegt) }).then(
