@@ -720,16 +720,21 @@ async function probeLeben(expected) {
                 })
             );
         const aus = {};
-        // DER STAND DES RICHTERS (w27-ort-pose-voll): der URSPRUNG DES PLANS der Stadt (`S.ox`, `S.oz`), die Kreuzung am Markt —
-        // gerechnet, nie eine Zahl der Spec (bis hier `spieler` des Messorts, 836,2/438,5: 0,28 m neben ihm; z380, 11.11.: der
-        // Zweig nahm dem Ort das Feld, die Probe las es weiter und fiel als TypeError „undefined is not iterable“). Er ist NICHT
-        // der Stand des Bildes: das Bild will freie Sicht außer der Spur (`_ortPose`), der Richter den harten Fall, den das
-        // Spiel stellt — der Spieler IN der Kreuzung, die Stadt fließt um ihn (`_verkehrUmfahren`). Liegt er außer der Bahn der
-        // Wagen, bricht die Stunde beim Namen (unten, sobald der Verkehr der Stadt steht), nie misst sie still den leichten
-        // Fall. Der fünfte Täter (`o.taeter`) steht am SELBEN Ort und nimmt der Stadt nur das Umfahren: dieselbe Minute nennt
-        // `spieler`. (Die Mitte des Platzes, 836,09/445,42, 7,2 m in +z, ist ein härterer Fall, den die Stadt nicht trägt —
-        // dort staut sie; der Fund steht im Register.)
-        const [sx, sz] = [S.ox, S.oz];
+        // DER STAND DES RICHTERS (w27-ort-pose-voll): der ANFANG DER BAHN des Messorts (`bahn[0]`, die Hauptgasse am Markt) — die
+        // EINE Zahl, die die Spec dem Ort lässt, hier gelesen, nie ein Literal. Bis hier las die Probe `spieler` (an main per
+        // Gesetz dieselbe Zahl, band-urteil: die Bahn beginnt am Spieler); z380, 11.11.: der Zweig nahm dem Ort das Feld, die
+        // Probe las es weiter und fiel als TypeError „undefined is not iterable“. Er ist NICHT der Stand des Bildes: das Bild
+        // will freie Sicht außer der Spur (`_ortPose`), der Richter den harten Fall, den das Spiel stellt — der Spieler IN der
+        // Kreuzung, die Stadt fließt um ihn (`_verkehrUmfahren`). Liegt er außer der Bahn der Wagen, bricht die Stunde beim
+        // Namen (unten, sobald der Verkehr der Stadt steht), nie misst sie still den leichten Fall. Der fünfte Täter
+        // (`o.taeter`) steht am SELBEN Ort und nimmt der Stadt nur das Umfahren: dieselbe Minute nennt `spieler`. DIE WAND
+        // SICHERT DEN RÜCKFALL AN DIESEM EINEN PUNKT: 0,28 m daneben, am Ursprung des Plans (`S.ox`/`S.oz`), staut der Tag (63
+        // statt 144 Ankünfte), auf der Mitte des Platzes (7,2 m in +z) Tag und Nacht — ein Fehler des Spiels (Pflicht C), kein
+        // Stand des Richters; der Fund steht im Register
+        const bahn0 = Array.isArray(ort.bahn) ? ort.bahn[0] : null;
+        if (!Array.isArray(bahn0) || bahn0.length !== 2 || !bahn0.every(Number.isFinite))
+            throw new Error(`Messort stadt-voll trägt keinen Anfang der Bahn (bahn[0] = ${JSON.stringify(bahn0)}): dort steht der Richter`);
+        const [sx, sz] = bahn0;
         // DER TAKT WIRFT NIE STILL: die Fehler-Grenze des Loops fängt jeden Wurf eines Bilds (`_loopErrorBoundary`, die Welt läuft
         // weiter) — die Stunde zählt die Würfe und nennt den ersten. Am 11.11. hieß die Pose in der Schleife der Stunden wie der
         // Prototyp (`P`), der gewickelte `_verkehrSchritt` unten rief `P._verkehrSchritt` an ihr: jeder Sim-Schritt warf, die
@@ -742,8 +747,8 @@ async function probeLeben(expected) {
             },
         });
         for (const stunde of o.stunden) {
-            // DER SPIELER STEHT, WO DAS SPIEL DEN HARTEN FALL STELLT: in der Kreuzung am Markt im Gedränge (oben; bis
-            // w27-ort-pose-voll die Zahl `spieler` des Messorts — das Profi-Band und die Radeon stellten ihn dorthin), vom Sprung
+            // DER SPIELER STEHT, WO DAS SPIEL DEN HARTEN FALL STELLT: in der Kreuzung am Markt im Gedränge (oben, der Anfang der
+            // Bahn des Messorts — das Profi-Band und die Radeon stellten ihn dorthin), vom Sprung
             // der Uhr an, und die Stadt fließt um ihn. Bis w13-verkehr-heil trat er an den
             // ersten freien Punkt 4 m neben jeder Trasse (seit w4-verkehr-c3: auf der Kreuzung hielt der Wagen vor ihm die Stadt) —
             // die Probe mied den Fall, den das Spiel stellt: an der Radeon stand er 0,5 m neben der Mitte der Kreuzung am Markt,
@@ -776,7 +781,7 @@ async function probeLeben(expected) {
             // Bahn eines Wagens (ohne Rand: seine Kapsel in der gefahrenen Breite) — sonst bricht die Stunde beim Namen
             if (!r._verkehrAufSpur(S, sx, sz, 0))
                 throw new Error(
-                    `verkehr: der Stand ${sx.toFixed(1)} ${sz.toFixed(1)} (der Ursprung des Plans) liegt außer der Bahn der Wagen — der Richter prüft den Spieler in ihr`
+                    `verkehr: der Stand ${sx.toFixed(1)} ${sz.toFixed(1)} (bahn[0] des Messorts) liegt außer der Bahn der Wagen — der Richter prüft den Spieler in ihr`
                 );
             [st._fixedAccumulator, st._fixedSimTime, i] = [0, 86400 * stunde, i + 8 - (i % 8)];
             for (const h of [stunde + 6, stunde]) {
