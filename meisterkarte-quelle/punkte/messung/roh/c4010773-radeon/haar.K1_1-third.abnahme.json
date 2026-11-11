@@ -1,0 +1,118 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.258",
+  "sha": "c40107736235ffeef55a39f12c530e8b33f1ea9d"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 42
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 2.46,
+   "deckung": 0,
+   "taeter": {}
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "leiber": null,
+  "abstand": 4.93,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   -278.86,
+   29.28,
+   -1039.91
+  ],
+  "blick": [
+   0,
+   -0.20274,
+   -0.97923
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 99.3,
+  "sigma": 41.7,
+  "schwarz": 0,
+  "weiss": 0
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 4.93 m · Luma 99.3 σ 41.7 schwarz 0.0 % weiß 0.0 % · Stand 18.546.258 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3",
+ "klasse": {
+  "ausdruck": "^tier:wolf$",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 0,
+  "toene": [
+   "tier:wolf=255/80/80"
+  ],
+  "klassen": {
+   "tier:wolf": {
+    "objekte": 13,
+    "spiegelTreue": -0.2582,
+    "spiegelEbene": 28.585,
+    "sp": [
+     170,
+     0,
+     0,
+     43617.48,
+     43617.48,
+     -11262.4
+    ],
+    "zweiton": 0,
+    "weiss": 0,
+    "wt": 0,
+    "wtZiel": null,
+    "bunt": 20.28,
+    "pixel": 18094,
+    "luma": 68.24,
+    "kante": 0.5308,
+    "kr": 1582,
+    "strich": 0.6838,
+    "si": 7945,
+    "bloecke": 189,
+    "glatt": 0.5397,
+    "glattDunkel": 0.0294,
+    "nyquist": 0.1111,
+    "beta": 2.6175
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\c4010773-radeon\\haar.K1_1-third.maske.png"
+ }
+}

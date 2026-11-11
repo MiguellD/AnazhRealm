@@ -1,0 +1,3138 @@
+{
+ "echt": true,
+ "boot": {
+  "art": "erst",
+  "serie": null,
+  "ladungen": 1
+ },
+ "schwelle": 50,
+ "sekunden": 51.3,
+ "takte": 1913,
+ "pipelines": {
+  "sync": 0,
+  "framesMitSync": 0,
+  "async": 4,
+  "shader": 6,
+  "jeAuftrag": {},
+  "zeiten": []
+ },
+ "knotenBau": {
+  "sync": 75,
+  "ms": 389,
+  "maxMs": 61.8,
+  "ueber16": 10,
+  "jeAuftragMs": {
+   "haupt vorwaermen:human": 354.5,
+   "k0 arena f:blume:L0": 27,
+   "k1 arena f:blume:L0": 6.9,
+   "k2 arena f:blume:L0": 0.6
+  }
+ },
+ "bildTaktMs": 26.6,
+ "frames": 1715,
+ "frameMs": {
+  "p50": 25.33,
+  "p95": 41.97,
+  "p99": 58.57,
+  "max": 117.11
+ },
+ "taktMs": {
+  "p50": 25.46,
+  "p95": 37.86,
+  "p99": 52.5,
+  "max": 98.43
+ },
+ "haengerN": 61,
+ "jeKlasse": {
+  "TAKT": 55,
+  "NEBEN": 0,
+  "GC": 4,
+  "GPU": 2
+ },
+ "jeUrsache": [
+  {
+   "ursache": "TAKT: verteilt",
+   "klasse": "TAKT",
+   "n": 37,
+   "summeMs": 2001,
+   "maxMs": 92
+  },
+  {
+   "ursache": "TAKT: _knotenRate › build [three.webgpu.min.js]",
+   "klasse": "TAKT",
+   "n": 5,
+   "summeMs": 393,
+   "maxMs": 117
+  },
+  {
+   "ursache": "GC: Garbage-Collector",
+   "klasse": "GC",
+   "n": 4,
+   "summeMs": 309,
+   "maxMs": 100
+  },
+  {
+   "ursache": "TAKT: _loopVoxelStreaming › _runFrameScheduler",
+   "klasse": "TAKT",
+   "n": 4,
+   "summeMs": 285,
+   "maxMs": 92
+  },
+  {
+   "ursache": "TAKT: renderer._renderScene › _renderScene [three.webgpu.min.js]",
+   "klasse": "TAKT",
+   "n": 3,
+   "summeMs": 159,
+   "maxMs": 59
+  },
+  {
+   "ursache": "TAKT: _vorbauBedienung › _uiVorbau",
+   "klasse": "TAKT",
+   "n": 3,
+   "summeMs": 159,
+   "maxMs": 59
+  },
+  {
+   "ursache": "GPU: Shader-Modul ×1",
+   "klasse": "GPU",
+   "n": 2,
+   "summeMs": 101,
+   "maxMs": 50
+  },
+  {
+   "ursache": "TAKT: _horizontSichtMessen › _horizontSichtAm",
+   "klasse": "TAKT",
+   "n": 1,
+   "summeMs": 75,
+   "maxMs": 75
+  },
+  {
+   "ursache": "TAKT: spalt › boden",
+   "klasse": "TAKT",
+   "n": 1,
+   "summeMs": 59,
+   "maxMs": 59
+  },
+  {
+   "ursache": "TAKT: _loopVoxelStreaming",
+   "klasse": "TAKT",
+   "n": 1,
+   "summeMs": 50,
+   "maxMs": 50
+  }
+ ],
+ "haenger": [
+  {
+   "t": 5,
+   "dt": 75.4,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 74,
+    "NEBEN": 2,
+    "GC": 0,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "tickArchitectureCulling",
+     "pct": 26
+    },
+    {
+     "name": "renderer._renderScene",
+     "pct": 25
+    },
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 22
+    }
+   ],
+   "selbst": [
+    {
+     "name": "_flussKarteMalen",
+     "pct": 6
+    },
+    {
+     "name": "_archInstanceRemove",
+     "pct": 6
+    },
+    {
+     "name": "tickArchitectureCulling",
+     "pct": 6
+    }
+   ],
+   "geraet": {
+    "texKB": 17673
+   },
+   "geraetVorher": null,
+   "pipelines": []
+  },
+  {
+   "t": 82,
+   "dt": 50.4,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 46,
+    "NEBEN": 3,
+    "GC": 3,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 38
+    },
+    {
+     "name": "renderer._renderScene",
+     "pct": 30
+    },
+    {
+     "name": "_loopWeatherAndGrowth",
+     "pct": 11
+    }
+   ],
+   "selbst": [
+    {
+     "name": "_computeWaterSheetData",
+     "pct": 7
+    },
+    {
+     "name": "_smoothWetAttr",
+     "pct": 5
+    },
+    {
+     "name": "updateMatrixWorld [three.core.min.js]",
+     "pct": 5
+    }
+   ],
+   "geraet": {
+    "texKB": 576
+   },
+   "geraetVorher": null,
+   "pipelines": []
+  },
+  {
+   "t": 182,
+   "dt": 74.9,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 69,
+    "NEBEN": 3,
+    "GC": 0,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 33
+    },
+    {
+     "name": "renderer._renderScene",
+     "pct": 23
+    },
+    {
+     "name": "_loopWeatherAndGrowth",
+     "pct": 22
+    }
+   ],
+   "selbst": [
+    {
+     "name": "_wasserNetz",
+     "pct": 5
+    },
+    {
+     "name": "_depositLife",
+     "pct": 4
+    },
+    {
+     "name": "_lebenWecken",
+     "pct": 3
+    }
+   ],
+   "geraet": {
+    "texKB": 2688
+   },
+   "geraetVorher": null,
+   "pipelines": []
+  },
+  {
+   "t": 254,
+   "dt": 50.1,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 44,
+    "NEBEN": 2,
+    "GC": 0,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "renderer._renderScene",
+     "pct": 39
+    },
+    {
+     "name": "tickFaunaLifecycle",
+     "pct": 24
+    },
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 13
+    }
+   ],
+   "selbst": [
+    {
+     "name": "_kreaturHuellenKontakt",
+     "pct": 4
+    },
+    {
+     "name": "loop",
+     "pct": 4
+    },
+    {
+     "name": "updateMatrixWorld [three.core.min.js]",
+     "pct": 4
+    }
+   ],
+   "geraet": {
+    "texKB": 2112
+   },
+   "geraetVorher": null,
+   "pipelines": []
+  },
+  {
+   "t": 349,
+   "dt": 50.2,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 47,
+    "NEBEN": 2,
+    "GC": 0,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "renderer._renderScene",
+     "pct": 38
+    },
+    {
+     "name": "tickFaunaLifecycle",
+     "pct": 22
+    },
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 18
+    }
+   ],
+   "selbst": [
+    {
+     "name": "update [three.webgpu.min.js]",
+     "pct": 6
+    },
+    {
+     "name": "_depositLife",
+     "pct": 5
+    },
+    {
+     "name": "_bestandTakt",
+     "pct": 4
+    }
+   ],
+   "geraet": {
+    "texKB": 768
+   },
+   "geraetVorher": null,
+   "pipelines": []
+  },
+  {
+   "t": 398,
+   "dt": 50.3,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 43,
+    "NEBEN": 2,
+    "GC": 0,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 31
+    },
+    {
+     "name": "renderer._renderScene",
+     "pct": 30
+    },
+    {
+     "name": "tickFaunaLifecycle",
+     "pct": 23
+    }
+   ],
+   "selbst": [
+    {
+     "name": "_depositLife",
+     "pct": 4
+    },
+    {
+     "name": "_lebenWecken",
+     "pct": 3
+    },
+    {
+     "name": "_creatureNaturalBirth",
+     "pct": 3
+    }
+   ],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": null,
+   "pipelines": []
+  },
+  {
+   "t": 443,
+   "dt": 50.1,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 50,
+    "NEBEN": 9,
+    "GC": 0,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "renderer._renderScene",
+     "pct": 35
+    },
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 22
+    },
+    {
+     "name": "tickFaunaLifecycle",
+     "pct": 20
+    }
+   ],
+   "selbst": [
+    {
+     "name": "countArchitecturesNearPlayer",
+     "pct": 6
+    },
+    {
+     "name": "_lebenWecken",
+     "pct": 5
+    },
+    {
+     "name": "affinitaet",
+     "pct": 4
+    }
+   ],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": null,
+   "pipelines": []
+  },
+  {
+   "t": 502,
+   "dt": 92.2,
+   "klasse": "TAKT",
+   "name": "_loopVoxelStreaming › _runFrameScheduler",
+   "ursache": "TAKT: _loopVoxelStreaming › _runFrameScheduler",
+   "zeiten": {
+    "TAKT": 79,
+    "NEBEN": 3,
+    "GC": 5,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 57
+    },
+    {
+     "name": "_runFrameScheduler",
+     "pct": 57
+    }
+   ],
+   "zweige": [],
+   "selbst": [
+    {
+     "name": "_flussKarteMalen",
+     "pct": 29
+    },
+    {
+     "name": "_stauFelder",
+     "pct": 8
+    },
+    {
+     "name": "_stauWorkClusters",
+     "pct": 6
+    }
+   ],
+   "geraet": {
+    "texKB": 4608
+   },
+   "geraetVorher": null,
+   "pipelines": []
+  },
+  {
+   "t": 589,
+   "dt": 58.5,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 58,
+    "NEBEN": 9,
+    "GC": 0,
+    "GPU": 1
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "renderer._renderScene",
+     "pct": 29
+    },
+    {
+     "name": "tickFaunaLifecycle",
+     "pct": 23
+    },
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 21
+    }
+   ],
+   "selbst": [
+    {
+     "name": "updateMatrixWorld [three.core.min.js]",
+     "pct": 5
+    },
+    {
+     "name": "_lebenWecken",
+     "pct": 4
+    },
+    {
+     "name": "flaeche [gelaende-core.js]",
+     "pct": 4
+    }
+   ],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": null,
+   "pipelines": []
+  },
+  {
+   "t": 657,
+   "dt": 92.1,
+   "klasse": "TAKT",
+   "name": "_loopVoxelStreaming › _runFrameScheduler",
+   "ursache": "TAKT: _loopVoxelStreaming › _runFrameScheduler",
+   "zeiten": {
+    "TAKT": 76,
+    "NEBEN": 3,
+    "GC": 4,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 55
+    },
+    {
+     "name": "_runFrameScheduler",
+     "pct": 55
+    }
+   ],
+   "zweige": [],
+   "selbst": [
+    {
+     "name": "_flussKarteMalen",
+     "pct": 34
+    },
+    {
+     "name": "_depositLife",
+     "pct": 4
+    },
+    {
+     "name": "_lebenWecken",
+     "pct": 4
+    }
+   ],
+   "geraet": {
+    "texKB": 4608
+   },
+   "geraetVorher": null,
+   "pipelines": []
+  },
+  {
+   "t": 1015,
+   "dt": 50.3,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 46,
+    "NEBEN": 4,
+    "GC": 0,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "renderer._renderScene",
+     "pct": 28
+    },
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 27
+    },
+    {
+     "name": "tickFaunaLifecycle",
+     "pct": 19
+    }
+   ],
+   "selbst": [
+    {
+     "name": "_tickPortalMembranes",
+     "pct": 8
+    },
+    {
+     "name": "_lebenWecken",
+     "pct": 5
+    },
+    {
+     "name": "updateMatrixWorld [three.core.min.js]",
+     "pct": 5
+    }
+   ],
+   "geraet": {
+    "texKB": 576
+   },
+   "geraetVorher": null,
+   "pipelines": []
+  },
+  {
+   "t": 1287,
+   "dt": 58.6,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 38,
+    "NEBEN": 2,
+    "GC": 0,
+    "GPU": 27
+   },
+   "takte": 2,
+   "ohneRender": 1,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 37
+    },
+    {
+     "name": "tickFaunaLifecycle",
+     "pct": 25
+    },
+    {
+     "name": "renderer._renderScene",
+     "pct": 20
+    }
+   ],
+   "selbst": [
+    {
+     "name": "flussRand [gelaende-core.js]",
+     "pct": 5
+    },
+    {
+     "name": "updateStatusPanel",
+     "pct": 4
+    },
+    {
+     "name": "loop",
+     "pct": 4
+    }
+   ],
+   "geraet": {
+    "texKB": 576
+   },
+   "geraetVorher": null,
+   "pipelines": []
+  },
+  {
+   "t": 1354,
+   "dt": 50.1,
+   "klasse": "TAKT",
+   "name": "renderer._renderScene › _renderScene [three.webgpu.min.js]",
+   "ursache": "TAKT: renderer._renderScene › _renderScene [three.webgpu.min.js]",
+   "zeiten": {
+    "TAKT": 47,
+    "NEBEN": 2,
+    "GC": 0,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [
+    {
+     "name": "renderer._renderScene",
+     "pct": 54
+    },
+    {
+     "name": "_renderScene [three.webgpu.min.js]",
+     "pct": 54
+    }
+   ],
+   "zweige": [],
+   "selbst": [
+    {
+     "name": "_depositLife",
+     "pct": 5
+    },
+    {
+     "name": "updateMatrixWorld [three.core.min.js]",
+     "pct": 4
+    },
+    {
+     "name": "_kaskadenWerferOben",
+     "pct": 4
+    }
+   ],
+   "geraet": {
+    "texKB": 576,
+    "bauN": 4,
+    "bauMs": 0.66
+   },
+   "geraetVorher": null,
+   "pipelines": [
+    "bau:ShadowMaterial",
+    "bau:ShadowMaterial",
+    "bau:ShadowMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 1444,
+   "dt": 58.6,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 48,
+    "NEBEN": 3,
+    "GC": 4,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "renderer._renderScene",
+     "pct": 33
+    },
+    {
+     "name": "tickFaunaLifecycle",
+     "pct": 26
+    },
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 21
+    }
+   ],
+   "selbst": [
+    {
+     "name": "_depositLife",
+     "pct": 8
+    },
+    {
+     "name": "_kreaturBestand",
+     "pct": 4
+    },
+    {
+     "name": "updateMatrixWorld [three.core.min.js]",
+     "pct": 4
+    }
+   ],
+   "geraet": {
+    "texKB": 576,
+    "bauN": 2,
+    "bauMs": 0.14
+   },
+   "geraetVorher": null,
+   "pipelines": [
+    "bau:ShadowMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 1498,
+   "dt": 58.6,
+   "klasse": "TAKT",
+   "name": "renderer._renderScene › _renderScene [three.webgpu.min.js]",
+   "ursache": "TAKT: renderer._renderScene › _renderScene [three.webgpu.min.js]",
+   "zeiten": {
+    "TAKT": 56,
+    "NEBEN": 2,
+    "GC": 0,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [
+    {
+     "name": "renderer._renderScene",
+     "pct": 50
+    },
+    {
+     "name": "_renderScene [three.webgpu.min.js]",
+     "pct": 50
+    }
+   ],
+   "zweige": [],
+   "selbst": [
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 8
+    },
+    {
+     "name": "updateMatrixWorld [three.core.min.js]",
+     "pct": 5
+    },
+    {
+     "name": "generate [three.webgpu.min.js]",
+     "pct": 5
+    }
+   ],
+   "geraet": {
+    "texKB": 512,
+    "bauN": 2,
+    "bauMs": 9.51
+   },
+   "geraetVorher": null,
+   "pipelines": [
+    "bau:ShadowMaterial",
+    "bau:ShadowMaterial"
+   ]
+  },
+  {
+   "t": 2708,
+   "dt": 50.2,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 44,
+    "NEBEN": 4,
+    "GC": 0,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "renderer._renderScene",
+     "pct": 37
+    },
+    {
+     "name": "tickFaunaLifecycle",
+     "pct": 24
+    },
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 15
+    }
+   ],
+   "selbst": [
+    {
+     "name": "_kreaturBestand",
+     "pct": 6
+    },
+    {
+     "name": "auraAt",
+     "pct": 4
+    },
+    {
+     "name": "_depositLife",
+     "pct": 4
+    }
+   ],
+   "geraet": {
+    "texKB": 576
+   },
+   "geraetVorher": null,
+   "pipelines": []
+  },
+  {
+   "t": 2757,
+   "dt": 58.6,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 50,
+    "NEBEN": 3,
+    "GC": 4,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 33
+    },
+    {
+     "name": "renderer._renderScene",
+     "pct": 23
+    },
+    {
+     "name": "tickFaunaLifecycle",
+     "pct": 20
+    }
+   ],
+   "selbst": [
+    {
+     "name": "_depositLife",
+     "pct": 6
+    },
+    {
+     "name": "_feldTod",
+     "pct": 5
+    },
+    {
+     "name": "updateMatrixWorld [three.core.min.js]",
+     "pct": 5
+    }
+   ],
+   "geraet": {
+    "texKB": 2752
+   },
+   "geraetVorher": null,
+   "pipelines": []
+  },
+  {
+   "t": 2814,
+   "dt": 50.2,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 45,
+    "NEBEN": 2,
+    "GC": 0,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "renderer._renderScene",
+     "pct": 38
+    },
+    {
+     "name": "tickFaunaLifecycle",
+     "pct": 24
+    },
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 18
+    }
+   ],
+   "selbst": [
+    {
+     "name": "_depositLife",
+     "pct": 5
+    },
+    {
+     "name": "updateMatrixWorld [three.core.min.js]",
+     "pct": 5
+    },
+    {
+     "name": "loop",
+     "pct": 4
+    }
+   ],
+   "geraet": {
+    "texKB": 576
+   },
+   "geraetVorher": null,
+   "pipelines": []
+  },
+  {
+   "t": 4005,
+   "dt": 50.3,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 37,
+    "NEBEN": 2,
+    "GC": 1,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 44
+    },
+    {
+     "name": "renderer._renderScene",
+     "pct": 28
+    },
+    {
+     "name": "updateCreatures",
+     "pct": 10
+    }
+   ],
+   "selbst": [
+    {
+     "name": "_bodenSichtChunks",
+     "pct": 10
+    },
+    {
+     "name": "_voxelChunkConfig",
+     "pct": 7
+    },
+    {
+     "name": "affinitaet",
+     "pct": 5
+    }
+   ],
+   "geraet": {
+    "texKB": 2249
+   },
+   "geraetVorher": null,
+   "pipelines": []
+  },
+  {
+   "t": 4090,
+   "dt": 58.5,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 52,
+    "NEBEN": 2,
+    "GC": 2,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "renderer._renderScene",
+     "pct": 31
+    },
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 30
+    },
+    {
+     "name": "tickPlayerBoosts",
+     "pct": 12
+    }
+   ],
+   "selbst": [
+    {
+     "name": "_wieseFernBereit",
+     "pct": 10
+    },
+    {
+     "name": "_bodenSichtChunks",
+     "pct": 8
+    },
+    {
+     "name": "_tickPortalMembranes",
+     "pct": 7
+    }
+   ],
+   "geraet": {
+    "texKB": 3584
+   },
+   "geraetVorher": null,
+   "pipelines": []
+  },
+  {
+   "t": 4233,
+   "dt": 92.1,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 33,
+    "NEBEN": 8,
+    "GC": 0,
+    "GPU": 1
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "renderer._renderScene",
+     "pct": 37
+    },
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 33
+    },
+    {
+     "name": "_loopFixedStep",
+     "pct": 16
+    }
+   ],
+   "selbst": [
+    {
+     "name": "_tritt",
+     "pct": 12
+    },
+    {
+     "name": "updateMatrixWorld [three.core.min.js]",
+     "pct": 5
+    },
+    {
+     "name": "(anonym) [stamm/vegetation-wiese.js:950]",
+     "pct": 4
+    }
+   ],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": null,
+   "pipelines": []
+  },
+  {
+   "t": 4755,
+   "dt": 75.3,
+   "klasse": "TAKT",
+   "name": "_horizontSichtMessen › _horizontSichtAm",
+   "ursache": "TAKT: _horizontSichtMessen › _horizontSichtAm",
+   "zeiten": {
+    "TAKT": 67,
+    "NEBEN": 1,
+    "GC": 3,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [
+    {
+     "name": "_applyDayNightToScene",
+     "pct": 63
+    },
+    {
+     "name": "_belichtungAusLicht",
+     "pct": 63
+    },
+    {
+     "name": "_waagrechtIrradianz",
+     "pct": 63
+    },
+    {
+     "name": "_horizontSichtImBild",
+     "pct": 63
+    },
+    {
+     "name": "_horizontSichtMessen",
+     "pct": 63
+    },
+    {
+     "name": "_horizontSichtAm",
+     "pct": 62
+    }
+   ],
+   "zweige": [],
+   "selbst": [
+    {
+     "name": "_horizontSichtAm",
+     "pct": 53
+    },
+    {
+     "name": "fn [three.core.min.js]",
+     "pct": 6
+    },
+    {
+     "name": "(anonym) [stamm/dirigent-ankunft.js:1680]",
+     "pct": 3
+    }
+   ],
+   "geraet": {
+    "texKB": 1664
+   },
+   "geraetVorher": null,
+   "pipelines": []
+  },
+  {
+   "t": 6260,
+   "dt": 50,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 30,
+    "NEBEN": 1,
+    "GC": 2,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 44
+    },
+    {
+     "name": "renderer._renderScene",
+     "pct": 37
+    },
+    {
+     "name": "updateCreatures",
+     "pct": 4
+    }
+   ],
+   "selbst": [
+    {
+     "name": "updateMatrixWorld [three.core.min.js]",
+     "pct": 6
+    },
+    {
+     "name": "flussRand [gelaende-core.js]",
+     "pct": 4
+    },
+    {
+     "name": "_bodenSichtAt",
+     "pct": 4
+    }
+   ],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": null,
+   "pipelines": []
+  },
+  {
+   "t": 9075,
+   "dt": 50.2,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 22,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 39
+    },
+    {
+     "name": "renderer._renderScene",
+     "pct": 37
+    },
+    {
+     "name": "updateCreatures",
+     "pct": 8
+    }
+   ],
+   "selbst": [
+    {
+     "name": "update [three.webgpu.min.js]",
+     "pct": 8
+    },
+    {
+     "name": "affinitaet",
+     "pct": 5
+    },
+    {
+     "name": "_nahWieseFernTakt",
+     "pct": 5
+    }
+   ],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": null,
+   "pipelines": []
+  },
+  {
+   "t": 10465,
+   "dt": 50.3,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 30,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "renderer._renderScene",
+     "pct": 37
+    },
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 29
+    },
+    {
+     "name": "updateStatusPanel",
+     "pct": 8
+    }
+   ],
+   "selbst": [
+    {
+     "name": "countArchitecturesNearPlayer",
+     "pct": 8
+    },
+    {
+     "name": "updateMatrixWorld [three.core.min.js]",
+     "pct": 8
+    },
+    {
+     "name": "_nahWieseFernTakt",
+     "pct": 4
+    }
+   ],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": null,
+   "pipelines": []
+  },
+  {
+   "t": 13219,
+   "dt": 50.5,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 43,
+    "NEBEN": 1,
+    "GC": 1,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "renderer._renderScene",
+     "pct": 40
+    },
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 29
+    },
+    {
+     "name": "_tickPortalMembranes",
+     "pct": 10
+    }
+   ],
+   "selbst": [
+    {
+     "name": "_tickPortalMembranes",
+     "pct": 8
+    },
+    {
+     "name": "updateMatrixWorld [three.core.min.js]",
+     "pct": 5
+    },
+    {
+     "name": "_nahWieseFernTakt",
+     "pct": 4
+    }
+   ],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": null,
+   "pipelines": []
+  },
+  {
+   "t": 13301,
+   "dt": 75.3,
+   "klasse": "GC",
+   "name": "Garbage-Collector",
+   "ursache": "GC: Garbage-Collector",
+   "zeiten": {
+    "TAKT": 33,
+    "NEBEN": 1,
+    "GC": 41,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": null,
+   "pipelines": []
+  },
+  {
+   "t": 14984,
+   "dt": 50.3,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 37,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "renderer._renderScene",
+     "pct": 41
+    },
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 38
+    },
+    {
+     "name": "updateCreatures",
+     "pct": 8
+    }
+   ],
+   "selbst": [
+    {
+     "name": "_nahWieseFernTakt",
+     "pct": 7
+    },
+    {
+     "name": "updateCreatures",
+     "pct": 3
+    },
+    {
+     "name": "zelle [gelaende-core.js]",
+     "pct": 3
+    }
+   ],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": null,
+   "pipelines": []
+  },
+  {
+   "t": 19850,
+   "dt": 50.1,
+   "klasse": "TAKT",
+   "name": "_loopVoxelStreaming › _runFrameScheduler",
+   "ursache": "TAKT: _loopVoxelStreaming › _runFrameScheduler",
+   "zeiten": {
+    "TAKT": 29,
+    "NEBEN": 2,
+    "GC": 0,
+    "GPU": 15
+   },
+   "takte": 2,
+   "ohneRender": 1,
+   "pfad": [
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 54
+    },
+    {
+     "name": "_runFrameScheduler",
+     "pct": 54
+    }
+   ],
+   "zweige": [],
+   "selbst": [
+    {
+     "name": "_bodenSichtChunks",
+     "pct": 8
+    },
+    {
+     "name": "_wieseFernBereit",
+     "pct": 7
+    },
+    {
+     "name": "_nahWieseFernTakt",
+     "pct": 6
+    }
+   ],
+   "geraet": {
+    "texKB": 768
+   },
+   "geraetVorher": null,
+   "pipelines": []
+  },
+  {
+   "t": 19959,
+   "dt": 50.3,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 31,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 11
+   },
+   "takte": 2,
+   "ohneRender": 1,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 46
+    },
+    {
+     "name": "renderer._renderScene",
+     "pct": 33
+    },
+    {
+     "name": "updateCreatures",
+     "pct": 7
+    }
+   ],
+   "selbst": [
+    {
+     "name": "_nahWieseFernTakt",
+     "pct": 10
+    },
+    {
+     "name": "updateMatrixWorld [three.core.min.js]",
+     "pct": 7
+    },
+    {
+     "name": "_wieseFernBereit",
+     "pct": 6
+    }
+   ],
+   "geraet": {
+    "texKB": 768
+   },
+   "geraetVorher": null,
+   "pipelines": []
+  },
+  {
+   "t": 20101,
+   "dt": 50.1,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 32,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 11
+   },
+   "takte": 2,
+   "ohneRender": 1,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 42
+    },
+    {
+     "name": "renderer._renderScene",
+     "pct": 37
+    },
+    {
+     "name": "updateCreatures",
+     "pct": 6
+    }
+   ],
+   "selbst": [
+    {
+     "name": "_bodenSichtChunks",
+     "pct": 7
+    },
+    {
+     "name": "_nahWieseFernTakt",
+     "pct": 6
+    },
+    {
+     "name": "updateMatrixWorld [three.core.min.js]",
+     "pct": 6
+    }
+   ],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": null,
+   "pipelines": []
+  },
+  {
+   "t": 22216,
+   "dt": 50.5,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 48,
+    "NEBEN": 2,
+    "GC": 0,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "renderer._renderScene",
+     "pct": 41
+    },
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 27
+    },
+    {
+     "name": "_spiegelFeldTakt",
+     "pct": 16
+    }
+   ],
+   "selbst": [
+    {
+     "name": "_blockerUmPlatz",
+     "pct": 9
+    },
+    {
+     "name": "_wieseFernBereit",
+     "pct": 6
+    },
+    {
+     "name": "writeBuffer",
+     "pct": 5
+    }
+   ],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": null,
+   "pipelines": []
+  },
+  {
+   "t": 22351,
+   "dt": 50.1,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 43,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "renderer._renderScene",
+     "pct": 43
+    },
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 25
+    },
+    {
+     "name": "_tickPortalMembranes",
+     "pct": 7
+    }
+   ],
+   "selbst": [
+    {
+     "name": "loop",
+     "pct": 6
+    },
+    {
+     "name": "_tickPortalMembranes",
+     "pct": 6
+    },
+    {
+     "name": "_bodenKartenStehen",
+     "pct": 4
+    }
+   ],
+   "geraet": {
+    "texKB": 5321
+   },
+   "geraetVorher": null,
+   "pipelines": []
+  },
+  {
+   "t": 25047,
+   "dt": 50.2,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 42,
+    "NEBEN": 1,
+    "GC": 6,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 43
+    },
+    {
+     "name": "renderer._renderScene",
+     "pct": 32
+    },
+    {
+     "name": "updateCreatures",
+     "pct": 7
+    }
+   ],
+   "selbst": [
+    {
+     "name": "_bodenSichtChunks",
+     "pct": 10
+    },
+    {
+     "name": "updateMatrixWorld [three.core.min.js]",
+     "pct": 7
+    },
+    {
+     "name": "_voxelChunkConfig",
+     "pct": 4
+    }
+   ],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": null,
+   "pipelines": []
+  },
+  {
+   "t": 25145,
+   "dt": 50.3,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 39,
+    "NEBEN": 1,
+    "GC": 1,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "renderer._renderScene",
+     "pct": 38
+    },
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 35
+    },
+    {
+     "name": "updateCreatures",
+     "pct": 9
+    }
+   ],
+   "selbst": [
+    {
+     "name": "_voxelChunkConfig",
+     "pct": 8
+    },
+    {
+     "name": "_bodenSichtChunks",
+     "pct": 8
+    },
+    {
+     "name": "updateMatrixWorld [three.core.min.js]",
+     "pct": 5
+    }
+   ],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": null,
+   "pipelines": []
+  },
+  {
+   "t": 25185,
+   "dt": 50.3,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 48,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "renderer._renderScene",
+     "pct": 42
+    },
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 33
+    },
+    {
+     "name": "updateCreatures",
+     "pct": 9
+    }
+   ],
+   "selbst": [
+    {
+     "name": "_bodenSichtChunks",
+     "pct": 7
+    },
+    {
+     "name": "updateMatrixWorld [three.core.min.js]",
+     "pct": 7
+    },
+    {
+     "name": "_wieseFernBereit",
+     "pct": 5
+    }
+   ],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": null,
+   "pipelines": []
+  },
+  {
+   "t": 25234,
+   "dt": 100.4,
+   "klasse": "GC",
+   "name": "Garbage-Collector",
+   "ursache": "GC: Garbage-Collector",
+   "zeiten": {
+    "TAKT": 36,
+    "NEBEN": 1,
+    "GC": 62,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 3584
+   },
+   "geraetVorher": null,
+   "pipelines": []
+  },
+  {
+   "t": 29970,
+   "dt": 50.6,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 40,
+    "NEBEN": 1,
+    "GC": 2,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "renderer._renderScene",
+     "pct": 45
+    },
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 28
+    },
+    {
+     "name": "updateCreatures",
+     "pct": 9
+    }
+   ],
+   "selbst": [
+    {
+     "name": "_nahWieseFernTakt",
+     "pct": 6
+    },
+    {
+     "name": "_bodenSichtChunks",
+     "pct": 6
+    },
+    {
+     "name": "_auftraege",
+     "pct": 6
+    }
+   ],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": null,
+   "pipelines": []
+  },
+  {
+   "t": 33089,
+   "dt": 50.2,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 52,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "renderer._renderScene",
+     "pct": 47
+    },
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 23
+    },
+    {
+     "name": "updateStatusPanel",
+     "pct": 8
+    }
+   ],
+   "selbst": [
+    {
+     "name": "updateMatrixWorld [three.core.min.js]",
+     "pct": 7
+    },
+    {
+     "name": "countArchitecturesNearPlayer",
+     "pct": 6
+    },
+    {
+     "name": "_bodenSichtChunks",
+     "pct": 5
+    }
+   ],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": null,
+   "pipelines": []
+  },
+  {
+   "t": 33142,
+   "dt": 50.1,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 40,
+    "NEBEN": 1,
+    "GC": 1,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "renderer._renderScene",
+     "pct": 43
+    },
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 28
+    },
+    {
+     "name": "updateCreatures",
+     "pct": 10
+    }
+   ],
+   "selbst": [
+    {
+     "name": "updateMatrixWorld [three.core.min.js]",
+     "pct": 7
+    },
+    {
+     "name": "_nahWieseFernTakt",
+     "pct": 6
+    },
+    {
+     "name": "updateCreatures",
+     "pct": 3
+    }
+   ],
+   "geraet": {
+    "texKB": 3584
+   },
+   "geraetVorher": null,
+   "pipelines": []
+  },
+  {
+   "t": 33184,
+   "dt": 50.5,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 46,
+    "NEBEN": 1,
+    "GC": 3,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "renderer._renderScene",
+     "pct": 49
+    },
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 29
+    },
+    {
+     "name": "updateCreatures",
+     "pct": 8
+    }
+   ],
+   "selbst": [
+    {
+     "name": "updateMatrixWorld [three.core.min.js]",
+     "pct": 5
+    },
+    {
+     "name": "_voxelChunkConfig",
+     "pct": 4
+    },
+    {
+     "name": "_kaskadenWerferOben",
+     "pct": 4
+    }
+   ],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": null,
+   "pipelines": []
+  },
+  {
+   "t": 33405,
+   "dt": 50.1,
+   "klasse": "TAKT",
+   "name": "_loopVoxelStreaming",
+   "ursache": "TAKT: _loopVoxelStreaming",
+   "zeiten": {
+    "TAKT": 32,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 17
+   },
+   "takte": 2,
+   "ohneRender": 1,
+   "pfad": [
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 51
+    }
+   ],
+   "zweige": [],
+   "selbst": [
+    {
+     "name": "_stauWorkClusters",
+     "pct": 8
+    },
+    {
+     "name": "_wieseFernBereit",
+     "pct": 5
+    },
+    {
+     "name": "_nahWieseFernTakt",
+     "pct": 4
+    }
+   ],
+   "geraet": {
+    "texKB": 3584
+   },
+   "geraetVorher": null,
+   "pipelines": []
+  },
+  {
+   "t": 34371,
+   "dt": 50.1,
+   "klasse": "TAKT",
+   "name": "_loopVoxelStreaming › _runFrameScheduler",
+   "ursache": "TAKT: _loopVoxelStreaming › _runFrameScheduler",
+   "zeiten": {
+    "TAKT": 43,
+    "NEBEN": 1,
+    "GC": 5,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 54
+    },
+    {
+     "name": "_runFrameScheduler",
+     "pct": 54
+    }
+   ],
+   "zweige": [],
+   "selbst": [
+    {
+     "name": "_stauWorkClusters",
+     "pct": 12
+    },
+    {
+     "name": "_wieseFernBereit",
+     "pct": 7
+    },
+    {
+     "name": "_bodenSichtChunks",
+     "pct": 4
+    }
+   ],
+   "geraet": {
+    "texKB": 2249
+   },
+   "geraetVorher": null,
+   "pipelines": []
+  },
+  {
+   "t": 35969,
+   "dt": 50.3,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 37,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "renderer._renderScene",
+     "pct": 43
+    },
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 27
+    },
+    {
+     "name": "updateStatusPanel",
+     "pct": 8
+    }
+   ],
+   "selbst": [
+    {
+     "name": "updateMatrixWorld [three.core.min.js]",
+     "pct": 8
+    },
+    {
+     "name": "countArchitecturesNearPlayer",
+     "pct": 6
+    },
+    {
+     "name": "_wieseFernBereit",
+     "pct": 5
+    }
+   ],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": null,
+   "pipelines": []
+  },
+  {
+   "t": 37829,
+   "dt": 50.3,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 37,
+    "NEBEN": 1,
+    "GC": 7,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 43
+    },
+    {
+     "name": "renderer._renderScene",
+     "pct": 28
+    },
+    {
+     "name": "updateCreatures",
+     "pct": 11
+    }
+   ],
+   "selbst": [
+    {
+     "name": "_bodenSichtChunks",
+     "pct": 10
+    },
+    {
+     "name": "_wieseFernSchranke",
+     "pct": 5
+    },
+    {
+     "name": "updateMatrixWorld [three.core.min.js]",
+     "pct": 5
+    }
+   ],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": null,
+   "pipelines": []
+  },
+  {
+   "t": 37960,
+   "dt": 58.7,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 52,
+    "NEBEN": 2,
+    "GC": 1,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "renderer._renderScene",
+     "pct": 43
+    },
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 32
+    },
+    {
+     "name": "updateCreatures",
+     "pct": 9
+    }
+   ],
+   "selbst": [
+    {
+     "name": "_bodenSichtChunks",
+     "pct": 4
+    },
+    {
+     "name": "_voxelChunkConfig",
+     "pct": 4
+    },
+    {
+     "name": "updateMatrixWorld [three.core.min.js]",
+     "pct": 4
+    }
+   ],
+   "geraet": {
+    "texKB": 3584
+   },
+   "geraetVorher": null,
+   "pipelines": []
+  },
+  {
+   "t": 38016,
+   "dt": 83.6,
+   "klasse": "GC",
+   "name": "Garbage-Collector",
+   "ursache": "GC: Garbage-Collector",
+   "zeiten": {
+    "TAKT": 41,
+    "NEBEN": 1,
+    "GC": 43,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": null,
+   "pipelines": []
+  },
+  {
+   "t": 45234,
+   "dt": 58.5,
+   "klasse": "TAKT",
+   "name": "spalt › boden",
+   "ursache": "TAKT: spalt › boden",
+   "zeiten": {
+    "TAKT": 51,
+    "NEBEN": 0,
+    "GC": 1,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [
+    {
+     "name": "_todLageFrist",
+     "pct": 67
+    },
+    {
+     "name": "_todLageSchritt",
+     "pct": 67
+    },
+    {
+     "name": "_todKippWahl",
+     "pct": 67
+    },
+    {
+     "name": "_todHebeTafel",
+     "pct": 67
+    },
+    {
+     "name": "spalt",
+     "pct": 66
+    },
+    {
+     "name": "boden",
+     "pct": 59
+    }
+   ],
+   "zweige": [],
+   "selbst": [
+    {
+     "name": "_voxelChunkConfig",
+     "pct": 15
+    },
+    {
+     "name": "_bodenSichtAt",
+     "pct": 15
+    },
+    {
+     "name": "spalt",
+     "pct": 7
+    }
+   ],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": null,
+   "pipelines": []
+  },
+  {
+   "t": 49145,
+   "dt": 50.2,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 25,
+    "NEBEN": 1,
+    "GC": 1,
+    "GPU": 16
+   },
+   "takte": 3,
+   "ohneRender": 2,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "renderer._renderScene",
+     "pct": 43
+    },
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 29
+    },
+    {
+     "name": "updateCreatures",
+     "pct": 9
+    }
+   ],
+   "selbst": [
+    {
+     "name": "_nahWieseKachelBueschel",
+     "pct": 7
+    },
+    {
+     "name": "_projectObject [three.webgpu.min.js]",
+     "pct": 5
+    },
+    {
+     "name": "loop",
+     "pct": 3
+    }
+   ],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": null,
+   "pipelines": []
+  },
+  {
+   "t": 50137,
+   "dt": 58.6,
+   "klasse": "TAKT",
+   "name": "_vorbauBedienung › _uiVorbau",
+   "ursache": "TAKT: _vorbauBedienung › _uiVorbau",
+   "zeiten": {
+    "TAKT": 58,
+    "NEBEN": 2,
+    "GC": 0,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [
+    {
+     "name": "_vorbauBedienung",
+     "pct": 71
+    },
+    {
+     "name": "_uiVorbau",
+     "pct": 71
+    }
+   ],
+   "zweige": [],
+   "selbst": [
+    {
+     "name": "_uiVorbau",
+     "pct": 71
+    },
+    {
+     "name": "updateMatrixWorld [three.core.min.js]",
+     "pct": 4
+    },
+    {
+     "name": "loop",
+     "pct": 2
+    }
+   ],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": null,
+   "pipelines": []
+  },
+  {
+   "t": 50197,
+   "dt": 50.3,
+   "klasse": "TAKT",
+   "name": "_vorbauBedienung › _uiVorbau",
+   "ursache": "TAKT: _vorbauBedienung › _uiVorbau",
+   "zeiten": {
+    "TAKT": 44,
+    "NEBEN": 3,
+    "GC": 0,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [
+    {
+     "name": "_vorbauBedienung",
+     "pct": 71
+    },
+    {
+     "name": "_uiVorbau",
+     "pct": 71
+    }
+   ],
+   "zweige": [],
+   "selbst": [
+    {
+     "name": "_uiVorbau",
+     "pct": 71
+    },
+    {
+     "name": "loop",
+     "pct": 3
+    },
+    {
+     "name": "updateMatrixWorld [three.core.min.js]",
+     "pct": 3
+    }
+   ],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": null,
+   "pipelines": []
+  },
+  {
+   "t": 50265,
+   "dt": 50.1,
+   "klasse": "TAKT",
+   "name": "_vorbauBedienung › _uiVorbau",
+   "ursache": "TAKT: _vorbauBedienung › _uiVorbau",
+   "zeiten": {
+    "TAKT": 50,
+    "NEBEN": 2,
+    "GC": 0,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [
+    {
+     "name": "_vorbauBedienung",
+     "pct": 73
+    },
+    {
+     "name": "_uiVorbau",
+     "pct": 73
+    }
+   ],
+   "zweige": [],
+   "selbst": [
+    {
+     "name": "_uiVorbau",
+     "pct": 73
+    },
+    {
+     "name": "_wahlRechnen",
+     "pct": 2
+    },
+    {
+     "name": "draw [three.webgpu.min.js]",
+     "pct": 2
+    }
+   ],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": null,
+   "pipelines": []
+  },
+  {
+   "t": 50506,
+   "dt": 50.3,
+   "klasse": "GPU",
+   "name": "Shader-Modul ×1",
+   "ursache": "GPU: Shader-Modul ×1",
+   "zeiten": {
+    "TAKT": 15,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 30
+   },
+   "takte": 4,
+   "ohneRender": 3,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512,
+    "bauN": 3,
+    "bauMs": 0.31
+   },
+   "geraetVorher": {
+    "texKB": 2048,
+    "bauN": 15,
+    "bauMs": 23.05,
+    "pipeAsync": 1,
+    "shader": 1,
+    "shaderKB": 77.86
+   },
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshPhysicalNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshPhysicalNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "async:renderPipeline_MeshStandardNodeMaterial_43",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial"
+   ]
+  },
+  {
+   "t": 50732,
+   "dt": 50.2,
+   "klasse": "GPU",
+   "name": "Shader-Modul ×1",
+   "ursache": "GPU: Shader-Modul ×1",
+   "zeiten": {
+    "TAKT": 16,
+    "NEBEN": 7,
+    "GC": 5,
+    "GPU": 18
+   },
+   "takte": 4,
+   "ohneRender": 3,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512,
+    "bauN": 2,
+    "bauMs": 0.4
+   },
+   "geraetVorher": {
+    "texKB": 2048,
+    "bauN": 11,
+    "bauMs": 28.2,
+    "pipeAsync": 1,
+    "shader": 1,
+    "shaderKB": 77.86
+   },
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshPhysicalNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshPhysicalNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "async:renderPipeline_MeshStandardNodeMaterial_44",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshPhysicalNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshPhysicalNodeMaterial"
+   ]
+  },
+  {
+   "t": 50777,
+   "dt": 92.1,
+   "klasse": "TAKT",
+   "name": "_knotenRate › build [three.webgpu.min.js]",
+   "ursache": "TAKT: _knotenRate › build [three.webgpu.min.js]",
+   "zeiten": {
+    "TAKT": 92,
+    "NEBEN": 1,
+    "GC": 1,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 66
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 66
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 66
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 66
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 65
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 60
+    }
+   ],
+   "zweige": [],
+   "selbst": [
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 33
+    },
+    {
+     "name": "getChildren [three.webgpu.min.js]",
+     "pct": 6
+    },
+    {
+     "name": "_getChildren [three.webgpu.min.js]",
+     "pct": 6
+    }
+   ],
+   "geraet": {
+    "texKB": 512,
+    "bauN": 2,
+    "bauMs": 61.77
+   },
+   "geraetVorher": null,
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshPhysicalNodeMaterial"
+   ]
+  },
+  {
+   "t": 50872,
+   "dt": 58.7,
+   "klasse": "TAKT",
+   "name": "_knotenRate › build [three.webgpu.min.js]",
+   "ursache": "TAKT: _knotenRate › build [three.webgpu.min.js]",
+   "zeiten": {
+    "TAKT": 62,
+    "NEBEN": 1,
+    "GC": 1,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [
+    {
+     "name": "analyze [three.webgpu.min.js]",
+     "pct": 54
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 54
+    },
+    {
+     "name": "analyze [three.webgpu.min.js]",
+     "pct": 54
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 54
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 52
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 51
+    }
+   ],
+   "zweige": [],
+   "selbst": [
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 29
+    },
+    {
+     "name": "analyze [three.webgpu.min.js]",
+     "pct": 12
+    },
+    {
+     "name": "_getChildren [three.webgpu.min.js]",
+     "pct": 4
+    }
+   ],
+   "geraet": {
+    "texKB": 512,
+    "bauN": 2,
+    "bauMs": 38.19
+   },
+   "geraetVorher": null,
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshPhysicalNodeMaterial"
+   ]
+  },
+  {
+   "t": 50936,
+   "dt": 50.2,
+   "klasse": "GC",
+   "name": "Garbage-Collector",
+   "ursache": "GC: Garbage-Collector",
+   "zeiten": {
+    "TAKT": 34,
+    "NEBEN": 1,
+    "GC": 40,
+    "GPU": 32
+   },
+   "takte": 2,
+   "ohneRender": 1,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 512,
+    "bauN": 2,
+    "bauMs": 0.15
+   },
+   "geraetVorher": null,
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshPhysicalNodeMaterial"
+   ]
+  },
+  {
+   "t": 51044,
+   "dt": 117.1,
+   "klasse": "TAKT",
+   "name": "_knotenRate › build [three.webgpu.min.js]",
+   "ursache": "TAKT: _knotenRate › build [three.webgpu.min.js]",
+   "zeiten": {
+    "TAKT": 55,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [
+    {
+     "name": "i [three.webgpu.min.js]",
+     "pct": 57
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 56
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 56
+    },
+    {
+     "name": "generate [three.webgpu.min.js]",
+     "pct": 56
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 56
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 56
+    }
+   ],
+   "zweige": [],
+   "selbst": [
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 17
+    },
+    {
+     "name": "generate [three.webgpu.min.js]",
+     "pct": 11
+    },
+    {
+     "name": "(anonym) [werkbank:48]",
+     "pct": 7
+    }
+   ],
+   "geraet": {
+    "texKB": 512,
+    "bauN": 2,
+    "bauMs": 26.36
+   },
+   "geraetVorher": null,
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshPhysicalNodeMaterial"
+   ]
+  },
+  {
+   "t": 51100,
+   "dt": 50.2,
+   "klasse": "TAKT",
+   "name": "renderer._renderScene › _renderScene [three.webgpu.min.js]",
+   "ursache": "TAKT: renderer._renderScene › _renderScene [three.webgpu.min.js]",
+   "zeiten": {
+    "TAKT": 25,
+    "NEBEN": 2,
+    "GC": 0,
+    "GPU": 21
+   },
+   "takte": 3,
+   "ohneRender": 2,
+   "pfad": [
+    {
+     "name": "renderer._renderScene",
+     "pct": 53
+    },
+    {
+     "name": "_renderScene [three.webgpu.min.js]",
+     "pct": 53
+    }
+   ],
+   "zweige": [],
+   "selbst": [
+    {
+     "name": "countArchitecturesNearPlayer",
+     "pct": 10
+    },
+    {
+     "name": "mark",
+     "pct": 4
+    },
+    {
+     "name": "_kaskadeHaelt",
+     "pct": 4
+    }
+   ],
+   "geraet": {
+    "pipeAsync": 1,
+    "shader": 2,
+    "shaderKB": 80.58,
+    "texKB": 512,
+    "bauN": 2,
+    "bauMs": 1.76
+   },
+   "geraetVorher": null,
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "async:renderPipeline_MeshStandardNodeMaterial_39",
+    "bau:MeshPhysicalNodeMaterial"
+   ]
+  },
+  {
+   "t": 51188,
+   "dt": 66.9,
+   "klasse": "TAKT",
+   "name": "_knotenRate › build [three.webgpu.min.js]",
+   "ursache": "TAKT: _knotenRate › build [three.webgpu.min.js]",
+   "zeiten": {
+    "TAKT": 73,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 62
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 62
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 62
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 62
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 62
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 57
+    }
+   ],
+   "zweige": [],
+   "selbst": [
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 32
+    },
+    {
+     "name": "_getChildren [three.webgpu.min.js]",
+     "pct": 7
+    },
+    {
+     "name": "getChildren [three.webgpu.min.js]",
+     "pct": 5
+    }
+   ],
+   "geraet": {
+    "texKB": 512,
+    "bauN": 1,
+    "bauMs": 49.49
+   },
+   "geraetVorher": null,
+   "pipelines": [
+    "bau:MeshPhysicalNodeMaterial"
+   ]
+  },
+  {
+   "t": 51262,
+   "dt": 58.5,
+   "klasse": "TAKT",
+   "name": "_knotenRate › build [three.webgpu.min.js]",
+   "ursache": "TAKT: _knotenRate › build [three.webgpu.min.js]",
+   "zeiten": {
+    "TAKT": 53,
+    "NEBEN": 1,
+    "GC": 0,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [
+    {
+     "name": "analyze [three.webgpu.min.js]",
+     "pct": 56
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 56
+    },
+    {
+     "name": "analyze [three.webgpu.min.js]",
+     "pct": 56
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 55
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 55
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 52
+    }
+   ],
+   "zweige": [],
+   "selbst": [
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 26
+    },
+    {
+     "name": "analyze [three.webgpu.min.js]",
+     "pct": 14
+    },
+    {
+     "name": "_getChildren [three.webgpu.min.js]",
+     "pct": 4
+    }
+   ],
+   "geraet": {
+    "texKB": 512,
+    "bauN": 1,
+    "bauMs": 33.78
+   },
+   "geraetVorher": null,
+   "pipelines": [
+    "bau:MeshPhysicalNodeMaterial"
+   ]
+  }
+ ],
+ "marken": 1913,
+ "profil": true,
+ "verlust": {
+  "n": 0,
+  "rot": false,
+  "satz": "0 von 91236 Proben unter „(Knoten verloren)“ (verlorener ProfileChunk, Soll ≤ 5 %)"
+ },
+ "probe": [],
+ "lauf": {
+  "regler": "frei",
+  "tiere": "frei",
+  "wandern": "sprung",
+  "kreaturen": 20,
+  "chunks": 81,
+  "loadScale": 0,
+  "wetter": "sunny"
+ },
+ "erst": {
+  "verschoben": 70,
+  "pipeAsync": 4,
+  "neubauN": 0,
+  "offen": 0
+ },
+ "sprung": {
+  "m": 1000,
+  "stehtS": 229542.6400000006,
+  "t0": 179206.60500000417,
+  "bau": [
+   {
+    "stellen": {},
+    "sonst": 0,
+    "rot": [],
+    "voll": false
+   },
+   {
+    "stellen": {},
+    "sonst": 0,
+    "rot": [],
+    "voll": false
+   }
+  ],
+  "offen": true
+ },
+ "befunde": [],
+ "tabelle": "HÄNGER-LINSE: 61 Frames > 50 ms in 51.3 s (1715 Frames, 1913 Takte; Frame p50/p95/p99/max 25.33/41.97/58.57/117.11 ms) — TAKT 55 · NEBEN 0 · GC 4 · GPU 2\nLauf: Regler frei · Tiere frei (20) · Wandern sprung · loadScale 0 · Chunks 81 · Wetter sunny · Proben ja (1913 Takt-Marken)\nPipelines im Lauf: 0 synchron in 0 Takten · 4 async · 6 Shader-Module\nErst-Zeichnung: 70 auf den nächsten Aufruf verschoben · 4 Pipelines asynchron · 0 offen · 0 Neubauten gezeichneter Objekte (im Frame)\nKnoten-Bau in Raten: 75 Schritte · Σ 389 ms · max 61.8 ms · 10 über 16,7 ms — je Auftrag: haupt vorwaermen:human 354.5 ms · k0 arena f:blume:L0 27 ms · k1 arena f:blume:L0 6.9 ms · k2 arena f:blume:L0 0.6 ms\n\n   n    Σ ms   max ms  Ursache\n  37    2001       92  TAKT: verteilt\n   5     393      117  TAKT: _knotenRate › build [three.webgpu.min.js]\n   4     309      100  GC: Garbage-Collector\n   4     285       92  TAKT: _loopVoxelStreaming › _runFrameScheduler\n   3     159       59  TAKT: renderer._renderScene › _renderScene [three.webgpu.min.js]\n   3     159       59  TAKT: _vorbauBedienung › _uiVorbau\n   2     101       50  GPU: Shader-Modul ×1\n   1      75       75  TAKT: _horizontSichtMessen › _horizontSichtAm\n   1      59       59  TAKT: spalt › boden\n   1      50       50  TAKT: _loopVoxelStreaming\n\nJe Hänger (t = ms seit Mess-Beginn):\n  t=5 dt=75.4 ms (1 Takte, 0 ohne Bild) [TAKT 74 · NEBEN 2] TAKT: verteilt\n      Zweige: tickArchitectureCulling 26% · renderer._renderScene 25% · _loopVoxelStreaming 22%\n      Selbst: _flussKarteMalen 6% · _archInstanceRemove 6% · tickArchitectureCulling 6%\n      Gerät: texKB 17673\n  t=82 dt=50.4 ms (1 Takte, 0 ohne Bild) [TAKT 46 · NEBEN 3 · GC 3] TAKT: verteilt\n      Zweige: _loopVoxelStreaming 38% · renderer._renderScene 30% · _loopWeatherAndGrowth 11%\n      Selbst: _computeWaterSheetData 7% · _smoothWetAttr 5% · updateMatrixWorld [three.core.min.js] 5%\n      Gerät: texKB 576\n  t=182 dt=74.9 ms (1 Takte, 0 ohne Bild) [TAKT 69 · NEBEN 3] TAKT: verteilt\n      Zweige: _loopVoxelStreaming 33% · renderer._renderScene 23% · _loopWeatherAndGrowth 22%\n      Selbst: _wasserNetz 5% · _depositLife 4% · _lebenWecken 3%\n      Gerät: texKB 2688\n  t=254 dt=50.1 ms (1 Takte, 0 ohne Bild) [TAKT 44 · NEBEN 2] TAKT: verteilt\n      Zweige: renderer._renderScene 39% · tickFaunaLifecycle 24% · _loopVoxelStreaming 13%\n      Selbst: _kreaturHuellenKontakt 4% · loop 4% · updateMatrixWorld [three.core.min.js] 4%\n      Gerät: texKB 2112\n  t=349 dt=50.2 ms (1 Takte, 0 ohne Bild) [TAKT 47 · NEBEN 2] TAKT: verteilt\n      Zweige: renderer._renderScene 38% · tickFaunaLifecycle 22% · _loopVoxelStreaming 18%\n      Selbst: update [three.webgpu.min.js] 6% · _depositLife 5% · _bestandTakt 4%\n      Gerät: texKB 768\n  t=398 dt=50.3 ms (1 Takte, 0 ohne Bild) [TAKT 43 · NEBEN 2] TAKT: verteilt\n      Zweige: _loopVoxelStreaming 31% · renderer._renderScene 30% · tickFaunaLifecycle 23%\n      Selbst: _depositLife 4% · _lebenWecken 3% · _creatureNaturalBirth 3%\n      Gerät: texKB 512\n  t=443 dt=50.1 ms (1 Takte, 0 ohne Bild) [TAKT 50 · NEBEN 9] TAKT: verteilt\n      Zweige: renderer._renderScene 35% · _loopVoxelStreaming 22% · tickFaunaLifecycle 20%\n      Selbst: countArchitecturesNearPlayer 6% · _lebenWecken 5% · affinitaet 4%\n      Gerät: texKB 512\n  t=502 dt=92.2 ms (1 Takte, 0 ohne Bild) [TAKT 79 · NEBEN 3 · GC 5] TAKT: _loopVoxelStreaming › _runFrameScheduler\n      Pfad: _loopVoxelStreaming 57% › _runFrameScheduler 57%\n      Selbst: _flussKarteMalen 29% · _stauFelder 8% · _stauWorkClusters 6%\n      Gerät: texKB 4608\n  t=589 dt=58.5 ms (1 Takte, 0 ohne Bild) [TAKT 58 · NEBEN 9 · GPU 1] TAKT: verteilt\n      Zweige: renderer._renderScene 29% · tickFaunaLifecycle 23% · _loopVoxelStreaming 21%\n      Selbst: updateMatrixWorld [three.core.min.js] 5% · _lebenWecken 4% · flaeche [gelaende-core.js] 4%\n      Gerät: texKB 512\n  t=657 dt=92.1 ms (1 Takte, 0 ohne Bild) [TAKT 76 · NEBEN 3 · GC 4] TAKT: _loopVoxelStreaming › _runFrameScheduler\n      Pfad: _loopVoxelStreaming 55% › _runFrameScheduler 55%\n      Selbst: _flussKarteMalen 34% · _depositLife 4% · _lebenWecken 4%\n      Gerät: texKB 4608\n  t=1015 dt=50.3 ms (1 Takte, 0 ohne Bild) [TAKT 46 · NEBEN 4] TAKT: verteilt\n      Zweige: renderer._renderScene 28% · _loopVoxelStreaming 27% · tickFaunaLifecycle 19%\n      Selbst: _tickPortalMembranes 8% · _lebenWecken 5% · updateMatrixWorld [three.core.min.js] 5%\n      Gerät: texKB 576\n  t=1287 dt=58.6 ms (2 Takte, 1 ohne Bild) [TAKT 38 · NEBEN 2 · GPU 27] TAKT: verteilt\n      Zweige: _loopVoxelStreaming 37% · tickFaunaLifecycle 25% · renderer._renderScene 20%\n      Selbst: flussRand [gelaende-core.js] 5% · updateStatusPanel 4% · loop 4%\n      Gerät: texKB 576\n  t=1354 dt=50.1 ms (1 Takte, 0 ohne Bild) [TAKT 47 · NEBEN 2] TAKT: renderer._renderScene › _renderScene [three.webgpu.min.js]\n      Pfad: renderer._renderScene 54% › _renderScene [three.webgpu.min.js] 54%\n      Selbst: _depositLife 5% · updateMatrixWorld [three.core.min.js] 4% · _kaskadenWerferOben 4%\n      Gerät: texKB 576 · bauN 4 · bauMs 0.66 — bau:ShadowMaterial, bau:ShadowMaterial, bau:ShadowMaterial, bau:ShadowMaterial\n  t=1444 dt=58.6 ms (1 Takte, 0 ohne Bild) [TAKT 48 · NEBEN 3 · GC 4] TAKT: verteilt\n      Zweige: renderer._renderScene 33% · tickFaunaLifecycle 26% · _loopVoxelStreaming 21%\n      Selbst: _depositLife 8% · _kreaturBestand 4% · updateMatrixWorld [three.core.min.js] 4%\n      Gerät: texKB 576 · bauN 2 · bauMs 0.14 — bau:ShadowMaterial, bau:ShadowMaterial\n  t=1498 dt=58.6 ms (1 Takte, 0 ohne Bild) [TAKT 56 · NEBEN 2] TAKT: renderer._renderScene › _renderScene [three.webgpu.min.js]\n      Pfad: renderer._renderScene 50% › _renderScene [three.webgpu.min.js] 50%\n      Selbst: build [three.webgpu.min.js] 8% · updateMatrixWorld [three.core.min.js] 5% · generate [three.webgpu.min.js] 5%\n      Gerät: texKB 512 · bauN 2 · bauMs 9.51 — bau:ShadowMaterial, bau:ShadowMaterial\n  t=2708 dt=50.2 ms (1 Takte, 0 ohne Bild) [TAKT 44 · NEBEN 4] TAKT: verteilt\n      Zweige: renderer._renderScene 37% · tickFaunaLifecycle 24% · _loopVoxelStreaming 15%\n      Selbst: _kreaturBestand 6% · auraAt 4% · _depositLife 4%\n      Gerät: texKB 576\n  t=2757 dt=58.6 ms (1 Takte, 0 ohne Bild) [TAKT 50 · NEBEN 3 · GC 4] TAKT: verteilt\n      Zweige: _loopVoxelStreaming 33% · renderer._renderScene 23% · tickFaunaLifecycle 20%\n      Selbst: _depositLife 6% · _feldTod 5% · updateMatrixWorld [three.core.min.js] 5%\n      Gerät: texKB 2752\n  t=2814 dt=50.2 ms (1 Takte, 0 ohne Bild) [TAKT 45 · NEBEN 2] TAKT: verteilt\n      Zweige: renderer._renderScene 38% · tickFaunaLifecycle 24% · _loopVoxelStreaming 18%\n      Selbst: _depositLife 5% · updateMatrixWorld [three.core.min.js] 5% · loop 4%\n      Gerät: texKB 576\n  t=4005 dt=50.3 ms (1 Takte, 0 ohne Bild) [TAKT 37 · NEBEN 2 · GC 1] TAKT: verteilt\n      Zweige: _loopVoxelStreaming 44% · renderer._renderScene 28% · updateCreatures 10%\n      Selbst: _bodenSichtChunks 10% · _voxelChunkConfig 7% · affinitaet 5%\n      Gerät: texKB 2249\n  t=4090 dt=58.5 ms (1 Takte, 0 ohne Bild) [TAKT 52 · NEBEN 2 · GC 2] TAKT: verteilt\n      Zweige: renderer._renderScene 31% · _loopVoxelStreaming 30% · tickPlayerBoosts 12%\n      Selbst: _wieseFernBereit 10% · _bodenSichtChunks 8% · _tickPortalMembranes 7%\n      Gerät: texKB 3584\n  t=4233 dt=92.1 ms (1 Takte, 0 ohne Bild) [TAKT 33 · NEBEN 8 · GPU 1] TAKT: verteilt\n      Zweige: renderer._renderScene 37% · _loopVoxelStreaming 33% · _loopFixedStep 16%\n      Selbst: _tritt 12% · updateMatrixWorld [three.core.min.js] 5% · (anonym) [stamm/vegetation-wiese.js:950] 4%\n      Gerät: texKB 512\n  t=4755 dt=75.3 ms (1 Takte, 0 ohne Bild) [TAKT 67 · NEBEN 1 · GC 3] TAKT: _horizontSichtMessen › _horizontSichtAm\n      Pfad: _applyDayNightToScene 63% › _belichtungAusLicht 63% › _waagrechtIrradianz 63% › _horizontSichtImBild 63% › _horizontSichtMessen 63% › _horizontSichtAm 62%\n      Selbst: _horizontSichtAm 53% · fn [three.core.min.js] 6% · (anonym) [stamm/dirigent-ankunft.js:1680] 3%\n      Gerät: texKB 1664\n  t=6260 dt=50 ms (1 Takte, 0 ohne Bild) [TAKT 30 · NEBEN 1 · GC 2] TAKT: verteilt\n      Zweige: _loopVoxelStreaming 44% · renderer._renderScene 37% · updateCreatures 4%\n      Selbst: updateMatrixWorld [three.core.min.js] 6% · flussRand [gelaende-core.js] 4% · _bodenSichtAt 4%\n      Gerät: texKB 512\n  t=9075 dt=50.2 ms (1 Takte, 0 ohne Bild) [TAKT 22 · NEBEN 1] TAKT: verteilt\n      Zweige: _loopVoxelStreaming 39% · renderer._renderScene 37% · updateCreatures 8%\n      Selbst: update [three.webgpu.min.js] 8% · affinitaet 5% · _nahWieseFernTakt 5%\n      Gerät: texKB 512\n  t=10465 dt=50.3 ms (1 Takte, 0 ohne Bild) [TAKT 30 · NEBEN 1] TAKT: verteilt\n      Zweige: renderer._renderScene 37% · _loopVoxelStreaming 29% · updateStatusPanel 8%\n      Selbst: countArchitecturesNearPlayer 8% · updateMatrixWorld [three.core.min.js] 8% · _nahWieseFernTakt 4%\n      Gerät: texKB 512\n  t=13219 dt=50.5 ms (1 Takte, 0 ohne Bild) [TAKT 43 · NEBEN 1 · GC 1] TAKT: verteilt\n      Zweige: renderer._renderScene 40% · _loopVoxelStreaming 29% · _tickPortalMembranes 10%\n      Selbst: _tickPortalMembranes 8% · updateMatrixWorld [three.core.min.js] 5% · _nahWieseFernTakt 4%\n      Gerät: texKB 512\n  t=13301 dt=75.3 ms (1 Takte, 0 ohne Bild) [TAKT 33 · NEBEN 1 · GC 41] GC: Garbage-Collector\n      Gerät: texKB 512\n  t=14984 dt=50.3 ms (1 Takte, 0 ohne Bild) [TAKT 37 · NEBEN 1] TAKT: verteilt\n      Zweige: renderer._renderScene 41% · _loopVoxelStreaming 38% · updateCreatures 8%\n      Selbst: _nahWieseFernTakt 7% · updateCreatures 3% · zelle [gelaende-core.js] 3%\n      Gerät: texKB 512\n  t=19850 dt=50.1 ms (2 Takte, 1 ohne Bild) [TAKT 29 · NEBEN 2 · GPU 15] TAKT: _loopVoxelStreaming › _runFrameScheduler\n      Pfad: _loopVoxelStreaming 54% › _runFrameScheduler 54%\n      Selbst: _bodenSichtChunks 8% · _wieseFernBereit 7% · _nahWieseFernTakt 6%\n      Gerät: texKB 768\n  t=19959 dt=50.3 ms (2 Takte, 1 ohne Bild) [TAKT 31 · NEBEN 1 · GPU 11] TAKT: verteilt\n      Zweige: _loopVoxelStreaming 46% · renderer._renderScene 33% · updateCreatures 7%\n      Selbst: _nahWieseFernTakt 10% · updateMatrixWorld [three.core.min.js] 7% · _wieseFernBereit 6%\n      Gerät: texKB 768\n  t=20101 dt=50.1 ms (2 Takte, 1 ohne Bild) [TAKT 32 · NEBEN 1 · GPU 11] TAKT: verteilt\n      Zweige: _loopVoxelStreaming 42% · renderer._renderScene 37% · updateCreatures 6%\n      Selbst: _bodenSichtChunks 7% · _nahWieseFernTakt 6% · updateMatrixWorld [three.core.min.js] 6%\n      Gerät: texKB 512\n  t=22216 dt=50.5 ms (1 Takte, 0 ohne Bild) [TAKT 48 · NEBEN 2] TAKT: verteilt\n      Zweige: renderer._renderScene 41% · _loopVoxelStreaming 27% · _spiegelFeldTakt 16%\n      Selbst: _blockerUmPlatz 9% · _wieseFernBereit 6% · writeBuffer 5%\n      Gerät: texKB 512\n  t=22351 dt=50.1 ms (1 Takte, 0 ohne Bild) [TAKT 43 · NEBEN 1] TAKT: verteilt\n      Zweige: renderer._renderScene 43% · _loopVoxelStreaming 25% · _tickPortalMembranes 7%\n      Selbst: loop 6% · _tickPortalMembranes 6% · _bodenKartenStehen 4%\n      Gerät: texKB 5321\n  t=25047 dt=50.2 ms (1 Takte, 0 ohne Bild) [TAKT 42 · NEBEN 1 · GC 6] TAKT: verteilt\n      Zweige: _loopVoxelStreaming 43% · renderer._renderScene 32% · updateCreatures 7%\n      Selbst: _bodenSichtChunks 10% · updateMatrixWorld [three.core.min.js] 7% · _voxelChunkConfig 4%\n      Gerät: texKB 512\n  t=25145 dt=50.3 ms (1 Takte, 0 ohne Bild) [TAKT 39 · NEBEN 1 · GC 1] TAKT: verteilt\n      Zweige: renderer._renderScene 38% · _loopVoxelStreaming 35% · updateCreatures 9%\n      Selbst: _voxelChunkConfig 8% · _bodenSichtChunks 8% · updateMatrixWorld [three.core.min.js] 5%\n      Gerät: texKB 512\n  t=25185 dt=50.3 ms (1 Takte, 0 ohne Bild) [TAKT 48 · NEBEN 1] TAKT: verteilt\n      Zweige: renderer._renderScene 42% · _loopVoxelStreaming 33% · updateCreatures 9%\n      Selbst: _bodenSichtChunks 7% · updateMatrixWorld [three.core.min.js] 7% · _wieseFernBereit 5%\n      Gerät: texKB 512\n  t=25234 dt=100.4 ms (1 Takte, 0 ohne Bild) [TAKT 36 · NEBEN 1 · GC 62] GC: Garbage-Collector\n      Gerät: texKB 3584\n  t=29970 dt=50.6 ms (1 Takte, 0 ohne Bild) [TAKT 40 · NEBEN 1 · GC 2] TAKT: verteilt\n      Zweige: renderer._renderScene 45% · _loopVoxelStreaming 28% · updateCreatures 9%\n      Selbst: _nahWieseFernTakt 6% · _bodenSichtChunks 6% · _auftraege 6%\n      Gerät: texKB 512\n  t=33089 dt=50.2 ms (1 Takte, 0 ohne Bild) [TAKT 52 · NEBEN 1] TAKT: verteilt\n      Zweige: renderer._renderScene 47% · _loopVoxelStreaming 23% · updateStatusPanel 8%\n      Selbst: updateMatrixWorld [three.core.min.js] 7% · countArchitecturesNearPlayer 6% · _bodenSichtChunks 5%\n      Gerät: texKB 512\n  t=33142 dt=50.1 ms (1 Takte, 0 ohne Bild) [TAKT 40 · NEBEN 1 · GC 1] TAKT: verteilt\n      Zweige: renderer._renderScene 43% · _loopVoxelStreaming 28% · updateCreatures 10%\n      Selbst: updateMatrixWorld [three.core.min.js] 7% · _nahWieseFernTakt 6% · updateCreatures 3%\n      Gerät: texKB 3584"
+}
