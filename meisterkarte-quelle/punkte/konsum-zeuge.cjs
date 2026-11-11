@@ -51,22 +51,41 @@ if (KONSUM && BAUM) {
     // DIE AUSGABE: jeder Text, den der Prozess aus der Hand gibt — trägt er einen beim Laden gelesenen Funktions-Text, zählt der als ausgeführt
     const { createHash } = require("crypto");
     const gesehen = new Set();
-    const ausgabe = (x) => {
+    // (ein Bild, ein Puffer aus Zahlen trägt keinen Text: ein Uint8Array von 3 MB kostete Element für Element 0,5 s — nie durchlaufen)
+    const ausgabe = (x, tiefe = 0) => {
         if (!konsum.wartend.size || x == null) return;
         if (typeof x !== "string") {
-            if (Buffer.isBuffer(x) && x.length < 4 << 20) return ausgabe(x.toString("utf8"));
-            if (Array.isArray(x)) return x.forEach(ausgabe);
-            if (typeof x === "object") for (const k of Object.keys(x)) ausgabe(x[k]);
+            if (typeof x !== "object" || tiefe > 4) return;
+            if (Buffer.isBuffer(x)) return x.length < 4 << 20 ? ausgabe(x.toString("utf8"), tiefe + 1) : undefined;
+            if (ArrayBuffer.isView(x) || x instanceof ArrayBuffer) return;
+            if (Array.isArray(x)) {
+                if (x.length <= 256) for (const y of x) ausgabe(y, tiefe + 1);
+                return;
+            }
+            const ks = Object.keys(x);
+            if (ks.length <= 256) for (const k of ks) ausgabe(x[k], tiefe + 1);
             return;
         }
         if (x.length < 13) return;
         const k = x.length > 256 ? createHash("sha1").update(x).digest("base64") : x;
         if (gesehen.has(k)) return;
+        if (gesehen.size > 50000) gesehen.clear();
         gesehen.add(k);
         for (const t of konsum.wartend) if (t.length <= x.length && x.includes(t)) (konsum.wartend.delete(t), konsum.texte.add(t));
         // ein JSON-Rumpf trägt den Text verpackt
-        if (konsum.wartend.size && /^\s*[[{]/.test(x)) try { ausgabe(JSON.parse(x)); } catch (_e) { /* kein JSON */ }
+        if (konsum.wartend.size && /^\s*[[{]/.test(x)) try { ausgabe(JSON.parse(x), tiefe + 1); } catch (_e) { /* kein JSON */ }
     };
+    // KEIN HAKEN DES ZEUGEN BRICHT DEN LAUF: wirft seine eigene Arbeit, zählt der Prozess als blind (die Faltung verwirft den Konsum
+    // beim Namen) — der Aufruf der Linse läuft unberührt weiter
+    const still = (f) => function (...a) {
+        try {
+            return f.apply(this, a);
+        } catch (e) {
+            if (konsum.blind.length < 8) konsum.blind.push("der Zeuge warf: " + String((e && e.message) || e).slice(0, 120));
+            return undefined;
+        }
+    };
+    const gib = still(ausgabe);
     // eine Datei zählt GANZ — mit dem ersten Grund beim Namen (`warum`, die Faltung zählt ihn)
     const ganz = (p, grund) => (konsum.ganz.add(p), (konsum.warum[p] = konsum.warum[p] || grund));
     const relativ = (abs) => path.relative(BAUM, abs).split(path.sep).join("/");
@@ -226,7 +245,7 @@ if (KONSUM && BAUM) {
             const s = await browser.target().createCDPSession();
             const P = Object.getPrototypeOf(s), send = P.send;
             P.send = function (methode, params) {
-                if (params && konsum.wartend.size) ausgabe(params);
+                if (params && konsum.wartend.size) gib(params);
                 return send.apply(this, arguments);
             };
             cdpGefasst = true;
@@ -268,13 +287,16 @@ if (KONSUM && BAUM) {
     const beginne = () => sitz.post("Profiler.startPreciseCoverage", { callCount: false, detailed: false });
     beginne();
     const modul = new Set();
+    const geladenesModul = still((f) => {
+        modul.add(f);
+        const p = pfadVon(pathToFileURL(f).href);
+        if (p) konsum.skripte.add(p);
+    });
     let ladeTiefe = 0; // > 0: der Kopf-Code eines Moduls läuft gerade
     for (const x of [".js", ".cjs"].filter((e) => Module._extensions[e])) {
         const o = Module._extensions[x];
         Module._extensions[x] = function (m, f) {
-            modul.add(f);
-            const p = pfadVon(pathToFileURL(f).href);
-            if (p) konsum.skripte.add(p);
+            geladenesModul(f);
             ladeTiefe++;
             try {
                 return o.apply(this, arguments);
@@ -284,17 +306,22 @@ if (KONSUM && BAUM) {
         };
     }
     const wo = (f) => (typeof f === "string" || f instanceof URL ? path.resolve(f instanceof URL ? fileURLToPath(f) : f) : null);
-    fs.readFileSync = function (f) {
-        const r = lies.apply(this, arguments);
+    const gelesen = still((f) => {
         const p = wo(f) && !modul.delete(wo(f)) && pfadVon(pathToFileURL(wo(f)).href);
         if (p) ganz(p, "gelesen");
+    });
+    fs.readFileSync = function (f) {
+        const r = lies.apply(this, arguments);
+        gelesen(f);
         return r;
     };
-    fs.readdirSync = function (d) {
-        const r = liste.apply(this, arguments);
+    const gelistet = still((d, o) => {
         const p = wo(d) && relativ(wo(d));
-        const tief = arguments[1] && arguments[1].recursive ? "**" : "";
-        if (p != null && (p === "" || imBaum(p))) konsum.geladen.add((p || ".") + "/" + tief);
+        if (p != null && (p === "" || imBaum(p))) konsum.geladen.add((p || ".") + "/" + (o && o.recursive ? "**" : ""));
+    });
+    fs.readdirSync = function (d, o) {
+        const r = liste.apply(this, arguments);
+        gelistet(d, o);
         return r;
     };
     const textVon = Function.prototype.toString;
@@ -306,27 +333,27 @@ if (KONSUM && BAUM) {
     // DIE AUSGÄNGE des Prozesses neben der Seite: eine Datei, eine vm, ein Dienst (HTTP-Rumpf, fetch), eine Antwort des eigenen Servers
     for (const weg of ["writeFileSync", "appendFileSync", "writeFile", "appendFile"]) {
         const alt = fs[weg];
-        fs[weg] = function (_f, daten) { ausgabe(daten); return alt.apply(this, arguments); };
+        fs[weg] = function (_f, daten) { gib(daten); return alt.apply(this, arguments); };
     }
     for (const weg of ["writeFile", "appendFile"]) {
         const alt = fs.promises[weg];
-        fs.promises[weg] = function (_f, daten) { ausgabe(daten); return alt.apply(this, arguments); };
+        fs.promises[weg] = function (_f, daten) { gib(daten); return alt.apply(this, arguments); };
     }
     const vm = require("vm");
     for (const weg of ["runInContext", "runInNewContext", "runInThisContext", "compileFunction"]) {
         const alt = vm[weg];
-        vm[weg] = function (code) { ausgabe(code); return alt.apply(this, arguments); };
+        vm[weg] = function (code) { gib(code); return alt.apply(this, arguments); };
     }
-    vm.Script = new Proxy(vm.Script, { construct(Z, a, neu) { ausgabe(a[0]); return Reflect.construct(Z, a, neu); } });
+    vm.Script = new Proxy(vm.Script, { construct(Z, a, neu) { gib(a[0]); return Reflect.construct(Z, a, neu); } });
     const http = require("http");
     for (const K of [http.ClientRequest, http.ServerResponse])
         for (const weg of ["write", "end"]) {
             const alt = K.prototype[weg];
-            K.prototype[weg] = function (stueck) { if (typeof stueck === "string" || (K === http.ClientRequest && Buffer.isBuffer(stueck))) ausgabe(stueck); return alt.apply(this, arguments); };
+            K.prototype[weg] = function (stueck) { if (typeof stueck === "string" || (K === http.ClientRequest && Buffer.isBuffer(stueck))) gib(stueck); return alt.apply(this, arguments); };
         }
     if (typeof globalThis.fetch === "function") {
         const hole = globalThis.fetch;
-        globalThis.fetch = function (_u, o) { if (o && o.body) ausgabe(o.body); return hole.apply(this, arguments); };
+        globalThis.fetch = function (_u, o) { if (o && o.body) gib(o.body); return hole.apply(this, arguments); };
     }
 
     // EINE NAHME des Node-Prozesses → das Roh-Stück; `neu`: das Fenster schließt, die Coverage beginnt neu (die Bereiche des Fensters
@@ -389,7 +416,7 @@ if (KONSUM && BAUM) {
         if (da.includes(ICH + ".bitte")) (abschluss(), fs.rmSync(path.join(KONSUM, ICH + ".bitte"), { force: true }));
     };
     try {
-        fs.watch(KONSUM, { persistent: false }, ruf);
+        fs.watch(KONSUM, { persistent: false }, still(ruf)).on("error", () => {});
     } catch (_e) {
         // ohne Wache antwortet der Prozess keinem Ruf: der Läufer nennt ihn beim Namen (kein Fenster-Stück)
     }
@@ -399,12 +426,12 @@ if (KONSUM && BAUM) {
         const kp = require("child_process");
         const traegt = (env) => !env || (env.PUNKTE_KONSUM === KONSUM && /konsum-zeuge\.cjs/.test(env.NODE_OPTIONS || ""));
         const laeufer = (f) => /(^|[\\/])(node|nodejs|bash|sh|zsh|cmd|powershell|pwsh|npm|npx)(\.exe|\.cmd)?$/i.test(String(f || ""));
-        const merke = (f, a) => konsum.blind.length < 8 && konsum.blind.push([f, ...(Array.isArray(a) ? a : [])].join(" ").slice(0, 160));
+        const merke = (f, a) => konsum.blind.length < 8 && konsum.blind.push("ein Kind ohne Zeugen (seine Umgebung trägt ihn nicht): " + [f, ...(Array.isArray(a) ? a : [])].join(" ").slice(0, 160));
         const starte = kp.ChildProcess.prototype.spawn;
         kp.ChildProcess.prototype.spawn = function (o) {
             const env = o && Array.isArray(o.envPairs) ? Object.fromEntries(o.envPairs.map((x) => [x.slice(0, x.indexOf("=")), x.slice(x.indexOf("=") + 1)])) : null;
             if (o && laeufer(o.file) && !traegt(env)) merke(o.file, (o.args || []).slice(1));
-            if (o) (ausgabe(o.args), ausgabe(env && Object.values(env).filter((v) => v.length > 64)));
+            if (o) (gib(o.args), gib(env && Object.values(env).filter((v) => v.length > 64)));
             return starte.apply(this, arguments);
         };
         for (const weg of ["spawnSync", "execFileSync", "execSync"]) {
@@ -412,7 +439,7 @@ if (KONSUM && BAUM) {
             kp[weg] = function (f, a, o) {
                 const opt = [a, o].find((x) => x && typeof x === "object" && !Array.isArray(x));
                 if (opt && opt.env && !traegt(opt.env) && (weg === "execSync" || opt.shell || laeufer(f))) merke(f, a);
-                ausgabe(f), ausgabe(a), opt && (ausgabe(opt.input), opt.env && ausgabe(Object.values(opt.env).filter((v) => typeof v === "string" && v.length > 64)));
+                gib(f), gib(a), opt && (gib(opt.input), opt.env && gib(Object.values(opt.env).filter((v) => typeof v === "string" && v.length > 64)));
                 return alt.apply(this, arguments);
             };
         }
@@ -435,9 +462,9 @@ if (KONSUM && BAUM) {
         };
         for (const sig of ["SIGTERM", "SIGINT"])
             process.on(sig, function fang() {
-                abschluss();
+                still(abschluss)();
                 if (process.listenerCount(sig) === 1) (process.removeListener(sig, fang), process.kill(process.pid, sig));
             });
     }
-    process.on("exit", () => abschluss());
+    process.on("exit", still(abschluss));
 }

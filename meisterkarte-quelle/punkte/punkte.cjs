@@ -3993,9 +3993,10 @@ function konsumFalten(stuecke, baum, acorn = konsumAcorn(baum)) {
         const k = {}, js = new Map(), warum = {};
         const ganz = (p, grund) => ((k[p] = "*"), (warum[p] = warum[p] || grund));
         let seite = true;
-        // ein Kind ohne Zeugen (konsum-zeuge.cjs `blind`): der Lauf führte Code aus, den niemand nennt — kein Konsum, beim Namen
+        // ein blinder Prozess (konsum-zeuge.cjs `blind`: ein Kind ohne Zeugen, ein Haken des Zeugen warf): der Lauf führte Code aus, den
+        // niemand nennt — kein Konsum, beim Namen
         const blind = stuecke.flatMap((r) => r.blind || []);
-        if (blind.length) return { konsumFehlt: "ein Kind ohne Zeugen (seine Umgebung trägt ihn nicht): " + blind[0] };
+        if (blind.length) return { konsumFehlt: blind[0] };
         for (const r of stuecke) {
             if (r.browser && !r.seite) seite = false;
             for (const p of r.ganz) ganz(p, (r.warum && r.warum[p]) || "gelesen");
