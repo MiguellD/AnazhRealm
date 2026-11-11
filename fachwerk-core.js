@@ -4798,10 +4798,12 @@
     if(g.rolle!=='kirche'&&i>0&&i%8===0){ const q=at(roads[cu.rd],Math.max(2,cu.cur-2));
       brunnen.push({x:q.x+cu.side*q.nx*(roads[cu.rd].w/2+0.6), z:q.z+cu.side*q.nz*(roads[cu.rd].w/2+0.6)}); }
   }
-  for(let r=0;r<roads.length;r++){ let mx=8;
+  const gradK=new Array(G.nodes.length).fill(0); if(stadt) for(const rd of roads) if(rd.a>=0&&rd.b>=0){ gradK[rd.a]++; gradK[rd.b]++; }
+  for(let r=0;r<roads.length;r++){ let mx=8; const rd=roads[r];
     for(const cu of curs) if(cu.rd===r) mx=Math.max(mx,cu.cur+4);
-    roads[r].leer=!!roads[r].gasse&&!roads[r].durch&&!curs.some(cu=>cu.rd===r&&cu.lastEnd!=null);   /*die Sackgasse der Dichte ohne ein Haus ist kein Weg*/
-    roads[r].len=roads[r].durch?(roads[r].pts.length-1)*DS:Math.min(mx, roads[r].pts.length*DS-3); }   /*der Anschluss (`durch`) traegt seine ganze Laenge: er verbindet zwei Strassen*/
+    rd.leer=!!rd.gasse&&!rd.durch&&!curs.some(cu=>cu.rd===r&&cu.lastEnd!=null);   /*die Sackgasse der Dichte ohne ein Haus ist kein Weg*/
+    const ganz=rd.durch||(stadt&&rd.a>=0&&rd.b>=0&&gradK[rd.a]>=2&&gradK[rd.b]>=2);            /*DIE STRASSE ZWISCHEN ZWEI KNOTEN TRAEGT IHRE GANZE LAENGE (die Stadt der Grammatik): bis hier reichte jede Strasse so weit wie ihr Zeiger — im Dorf laeuft er mit jedem Versuch, in der Stadt nur mit einem Haus (der Lauf ohne Brand); an stadt-voll endeten drei Arme der Hauptstrasse 12–15 m vor ihrem Knoten, das Netz der Wagen zerfiel (672 → 255 m, 13 → 5 Plaetze an den Wenden, kein Wagen fuhr)*/
+    rd.len=ganz?(rd.pts.length-1)*DS:Math.min(mx, rd.pts.length*DS-3); }   /*der Anschluss (`durch`) traegt seine ganze Laenge: er verbindet zwei Strassen*/
   for(let r=roads.length-1;r>=0;r--) if(roads[r].leer) roads.splice(r,1);
   const sack=roads.filter(rd=>rd.gasse&&!rd.durch).length;                                   /*jede Sackgasse traegt ihr Ende als Knoten (der Graph zaehlt Bloecke, `zyklen`)*/
   const deg=new Array(G.nodes.length).fill(0); roads.forEach(e=>{ if(e.a>=0){deg[e.a]++;deg[e.b]++;} });
