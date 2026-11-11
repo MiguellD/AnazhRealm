@@ -108,6 +108,16 @@ urteilen() { # <id> <zweig@sha> … — schreibt das Urteil [<id>w], landet bei 
     fi
     u=$(grep -E "\[${id}w\] (GELANDET|FAHRT ROT)" "$O" 2>/dev/null | tail -1)
     echo "$(date +%H:%M) $id ende: ${u:0:200}" >>"$L"
+    # DER ROTE TEXT STEHT BEIM URTEIL (z380): je rotem Job seine ❌-Zeilen in $W/zug-rot-<id>.txt, die ersten im Protokoll — der Täter
+    # ist dann lesbar, bevor jemand halbiert (rot-text.cjs)
+    case "$u" in *"FAHRT ROT"*)
+        local lauf; lauf=$(grep -oE "Lauf [0-9]+" "$F" "$O" 2>/dev/null | tail -1 | grep -oE "[0-9]+")
+        if [ -n "$lauf" ]; then
+            TOKEN=$(printf 'protocol=https\nhost=github.com\n\n' | git -C $R credential fill 2>/dev/null | sed -n 's/^password=//p') \
+                node "$D/rot-text.cjs" "$lauf" >"$W/zug-rot-$id.txt" 2>&1
+            grep -E "^ROT |❌" "$W/zug-rot-$id.txt" | head -6 | cut -c1-330 | sed "s/^/$(date +%H:%M) $id rot: /" >>"$L"
+        fi ;;
+    esac
     if grep -q "zug bau FEHLER" "$F" 2>/dev/null; then
         infra=$((infra + 1))
         frei_geben "$@"
