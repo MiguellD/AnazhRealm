@@ -707,10 +707,31 @@ async function starte() {
                             const x = k[i - 1][0] + ((k[i][0] - k[i - 1][0]) * s) / l, z = k[i - 1][1] + ((k[i][1] - k[i - 1][1]) * s) / l;
                             if (!r._aufWeg(x, z, 0)) throw new Error(`Messort ${o.ort}: die Bahn verlässt die Gasse bei ${x.toFixed(1)} ${z.toFixed(1)}`);
                         }
+                    // DIE STADT STEHT, BEVOR DIE POSE FRAGT (w27-ort-pose-voll): `_ortPose` bricht beim Namen, solange der Verkehr
+                    // einer städtischen Siedlung nicht steht — er entsteht mit ihrer Liste, wenn der Spieler naht (`_tickBewohner`,
+                    // binnen `nearM` 260 m; der Anlauf liegt 264 m vor stadt und 437 m vor stadt-voll). Der Ort tritt an den Anker
+                    // seiner Gründung, bis jede städtische Siedlung im Nah-Ring ihren Verkehr trägt. Bis hier fragte der erste Gang
+                    // vom Anlauf: die Pose kam ohne Spur (die Mitte des Platzes), dort weckte der Spieler die Stadt, und erst der
+                    // zweite Gang sah die Spur — still
+                    if (o?.ortPose) {
+                        if (g) r.state.playerMesh.position.set(g.anker[0], r._voxelSurfaceY(g.anker[0], g.anker[1]) + 1.8, g.anker[1]);
+                        const [p, nah] = [r.state.playerMesh.position, AnazhRealm.AUTO_SETTLEMENT.nearM];
+                        const schlaeft = () =>
+                            [...(r._bewohnerSiedlungen || new Map()).values()].filter(
+                                (S) => S.plan.staedtisch && !S.verkehr && Math.hypot(S.ox - p.x, S.oz - p.z) <= nah
+                            );
+                        takte += await __gebautNach(`Messort ${o.ort}: der Verkehr der Siedlung`, {
+                            fertig: () => !schlaeft().length,
+                            takt,
+                            max: 1800,
+                            warum: () => `ohne Verkehr im Nah-Ring: ${schlaeft().map((S) => S.key).join(", ")}`,
+                        });
+                    }
                     // DIE POSE AUS DEM PLAN (`ortPose`, w27-ort-pose): der Ort steht auf dem Platz seiner Siedlung und blickt auf
                     // ihren ersten freien Bau (`_ortPose`) — gerechnet hier, nie eine Zahl der Spec. IN ZWEI GÄNGEN: der Bestand der
                     // Welt um den Platz (`_blockerUmPlatz`) ist erst gebaut, wenn der Spieler dort steht — der zweite Gang
-                    // fragt den Blick am Platz neu. Ohne Siedlung, Platz oder freien Bau bricht der Stamm beim Namen
+                    // fragt den Blick am Platz neu (nur noch den Blick: die Spur steht seit dem Warten oben schon im ersten, der
+                    // Stand beider Gänge ist derselbe). Ohne Siedlung, Platz, Verkehr oder freien Bau bricht der Stamm beim Namen
                     for (let gang = o?.ortPose ? 2 : 1; gang--; ) {
                         var P = o?.ortPose && r._ortPose(g ? g.anker : [x, z]);
                         if (P) [x, z, r.state.yaw, r.state.pitch] = [P.x, P.z, P.gier, 0];
@@ -1783,8 +1804,12 @@ async function starte() {
                     // DER INHALT DES ORTS (`imBild`, w27-ort-pose): was der Ort IST, zeigt das Bild — je Klasse der Teilung ein
                     // Mindest-Anteil seiner Pixel, sonst ROT beim Namen, ungespeichert (am Dorf ohne Haus stand GRÜN, 78d37554).
                     // Der Anteil gilt der Leinwand der Klasse unten (1920 × 1080: dort zählt die Teilung, nie in `--w`/`--h`)
+                    // DIE FAMILIE EINES SCHLÜSSELS (w27-ort-pose-voll), EIN Leser für den Ausdruck und das Urteil: der Schlüssel
+                    // und jede Klasse, die mit ihm und `-` oder `_` weitergeht — `bewohner` zählt das Gedränge (`bewohner-satz`;
+                    // der Schlüssel allein sah höchstens 4 Leiber binnen 8 m), `fahrzeug` jeden Wagen (`fahrzeug_<typ>`)
+                    const familie = (k) => new RegExp(`^${k}([-_].*)?$`);
                     const inhalt = b.ort && BAND.ladeSpec(b.ort).ort.imBild;
-                    if (inhalt) b.klasse = `^(${Object.keys(inhalt).join("|")})$`;
+                    if (inhalt) b.klasse = Object.keys(inhalt).map((k) => familie(k).source).join("|");
                     if (b.klasse) {
                         await page.setViewport({ width: 1920, height: 1080, deviceScaleFactor: 1 });
                         await page.waitForFunction(() => st.renderer.domElement.clientWidth === 1920);
@@ -1792,7 +1817,8 @@ async function starte() {
                     if (b.zeit != null) await page.evaluate(`window.__boeVarianz = ${boeVarianz}`);
                     const o = await bild(Object.assign({ w: 640, h: 360, nahM: BOE.nahM, viertel: BOE.viertel }, b));
                     if (b.klasse) await page.setViewport(vp);
-                    const fehlt = Object.keys(inhalt || {}).filter((k) => !(o.klasse.klassen[k]?.pixel >= inhalt[k] * 1920 * 1080));
+                    const anteil = (k) => Object.entries(o.klasse.klassen).reduce((n, [kl, m]) => n + (familie(k).test(kl) && m.pixel), 0);
+                    const fehlt = Object.keys(inhalt || {}).filter((k) => !(anteil(k) >= inhalt[k] * 1920 * 1080));
                     if (fehlt.length) throw new Error(`ABNAHME ROT [kein ${fehlt.join(", kein ")} im Bild] · ${b.ort}: ${o.abnahme.zeile}`);
                     const datei = zeitAblage(b.datei, "bild", "png");
                     ordnerFuer(datei);

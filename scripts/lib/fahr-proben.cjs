@@ -720,13 +720,41 @@ async function probeLeben(expected) {
                 })
             );
         const aus = {};
+        // DER STAND DES RICHTERS (w27-ort-pose-voll): der ANFANG DER BAHN des Messorts (`bahn[0]`, die Hauptgasse am Markt) — die
+        // EINE Zahl, die die Spec dem Ort lässt, hier gelesen, nie ein Literal. Bis hier las die Probe `spieler` (an main per
+        // Gesetz dieselbe Zahl, band-urteil: die Bahn beginnt am Spieler); z380, 11.11.: der Zweig nahm dem Ort das Feld, die
+        // Probe las es weiter und fiel als TypeError „undefined is not iterable“. Er ist NICHT der Stand des Bildes: das Bild
+        // will freie Sicht außer der Spur (`_ortPose`), der Richter den harten Fall, den das Spiel stellt — der Spieler IN der
+        // Kreuzung, die Stadt fließt um ihn (`_verkehrUmfahren`). Liegt er außer der Bahn der Wagen, bricht die Stunde beim
+        // Namen (unten, sobald der Verkehr der Stadt steht), nie misst sie still den leichten Fall. Der fünfte Täter
+        // (`o.taeter`) steht am SELBEN Ort und nimmt der Stadt nur das Umfahren: dieselbe Minute nennt `spieler`. DIE WAND
+        // SICHERT DEN RÜCKFALL AN DIESEM EINEN PUNKT: 0,28 m daneben, am Ursprung des Plans (`S.ox`/`S.oz`), staut der Tag (63
+        // statt 144 Ankünfte), auf der Mitte des Platzes (7,2 m in +z) Tag und Nacht — ein Fehler des Spiels (Pflicht C), kein
+        // Stand des Richters; der Fund steht im Register
+        const bahn0 = Array.isArray(ort.bahn) ? ort.bahn[0] : null;
+        if (!Array.isArray(bahn0) || bahn0.length !== 2 || !bahn0.every(Number.isFinite))
+            throw new Error(`Messort stadt-voll trägt keinen Anfang der Bahn (bahn[0] = ${JSON.stringify(bahn0)}): dort steht der Richter`);
+        const [sx, sz] = bahn0;
+        // DER TAKT WIRFT NIE STILL: die Fehler-Grenze des Loops fängt jeden Wurf eines Bilds (`_loopErrorBoundary`, die Welt läuft
+        // weiter) — die Stunde zählt die Würfe und nennt den ersten. Am 11.11. hieß die Pose in der Schleife der Stunden wie der
+        // Prototyp (`P`), der gewickelte `_verkehrSchritt` unten rief `P._verkehrSchritt` an ihr: jeder Sim-Schritt warf, die
+        // Stadt stand (fahrend je Minute 0 m, 0 Ankünfte, Sim-Takt 0 ms), und der Richter nannte die Folgen statt des Wurfs
+        const wurf = [0, null];
+        const wurfAus = leihe(r, {
+            _loopErrorBoundary(e) {
+                if (!wurf[0]++) wurf[1] = String((e && e.message) || e).slice(0, 200);
+                return P._loopErrorBoundary.call(this, e);
+            },
+        });
         for (const stunde of o.stunden) {
-            // DER SPIELER STEHT, WO ER IM SPIEL STEHT: am Ort des Messorts (`spieler`, der Markt im Gedränge — das Profi-Band und die
-            // Radeon stellen ihn dorthin), vom Sprung der Uhr an, und die Stadt fließt um ihn. Bis w13-verkehr-heil trat er an den
+            // DER SPIELER STEHT, WO DAS SPIEL DEN HARTEN FALL STELLT: in der Kreuzung am Markt im Gedränge (oben, der Anfang der
+            // Bahn des Messorts — das Profi-Band und die Radeon stellten ihn dorthin), vom Sprung
+            // der Uhr an, und die Stadt fließt um ihn. Bis w13-verkehr-heil trat er an den
             // ersten freien Punkt 4 m neben jeder Trasse (seit w4-verkehr-c3: auf der Kreuzung hielt der Wagen vor ihm die Stadt) —
             // die Probe mied den Fall, den das Spiel stellt: an der Radeon stand er 0,5 m neben der Mitte der Kreuzung am Markt,
             // ihre Halter warteten auf ihn, und von 20 Wagen fuhren 15–55 s nach dem Sprung nur 9 (10 Uhr) und 8 (23 Uhr) 30 m
-            stelle(...ort.spieler, 0.2);
+            [wurf[0], wurf[1]] = [0, null];
+            stelle(sx, sz, 0.2);
             r._uhrSetzen(stunde / 24, "regler");
             // DER SPRUNG GEHT IM TAKT (`_tickBewohner`): erst ein Bild, dann die Frage — und keiner kommt mehr an. Bis pflicht.C#1 hieß
             // die Stadt vor dem ersten Bild nach dem Sprung bereit (jeder Fahrer der Stunde davor saß noch am Steuer): um 23 Uhr stand
@@ -749,6 +777,12 @@ async function probeLeben(expected) {
             // Leiber und die Stufen der Häuser nach der Wanduhr brauchten, ging in die Stadt ein: drei Läufe desselben Stands urteilten
             // dreimal anders (10 Uhr 21 m, 74 m, Stau ab Minute 3), zwei Läufe 180 s gingen 47 954 und 193 035 Schritte
             await bis("verkehr: die Stadt steht", () => bereit() && !(r._weltOffen().foundry + r._weltOffen().chunks));
+            // DER HARTE FALL IST DER FALL (die Spur trägt erst der Verkehr der Stadt, `_verkehrAufSpur`): der Stand liegt in der
+            // Bahn eines Wagens (ohne Rand: seine Kapsel in der gefahrenen Breite) — sonst bricht die Stunde beim Namen
+            if (!r._verkehrAufSpur(S, sx, sz, 0))
+                throw new Error(
+                    `verkehr: der Stand ${sx.toFixed(1)} ${sz.toFixed(1)} (bahn[0] des Messorts) liegt außer der Bahn der Wagen — der Richter prüft den Spieler in ihr`
+                );
             [st._fixedAccumulator, st._fixedSimTime, i] = [0, 86400 * stunde, i + 8 - (i % 8)];
             for (const h of [stunde + 6, stunde]) {
                 r._uhrSetzen((h % 24) / 24, "regler");
@@ -1018,8 +1052,11 @@ async function probeLeben(expected) {
                 trasse: T.tr,
                 weg60: T.w60,
                 sitz: SZ,
+                wurf: wurf.slice(),
+                stand: [+sx.toFixed(2), +sz.toFixed(2)],
             };
         }
+        wurfAus();
         return aus;
     };
     if (expected.nurKette || expected.nurRueck || expected.wegenetz || expected.verkehr) {
