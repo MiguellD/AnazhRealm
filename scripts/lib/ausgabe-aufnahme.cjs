@@ -877,6 +877,16 @@ function ausgabeAufnahme(W, H, warm, opt) {
             return m;
         };
         rend.setOutputRenderTarget(rt);
+        // DER RÜCKSTRAHL STEHT (`opt.rueckstrahl` "halten": die Schüsse einer Klassen-Teilung OHNE ihren Teil, w28-wald-saum): jeder
+        // Schuss misst den Boden seiner Szene neu (`_rueckstrahlZeichne` unter `_rueckstrahlJetzt`) — ohne den verborgenen Teil trüge
+        // O_k ein anderes Licht von unten als G, und jedes Pixel, das es liest (Stamm, Strauch, Unterseite der Krone), zählte zu dem
+        // Teil, der fehlt (`klassenTeilung`: wessen Fehlen das Pixel am stärksten ändert). Mess-Wiese, Third, Mittag, GTX 1050,
+        // b269f840: 168 „Grund“-Pixel im Ring 20–40 m, 53 % am Strahl durch Baum oder Strauch (am Merge 6afdda0a 2 059, 86 %),
+        // gehalten 7. Der Schuss zeichnet dann unter dem Boden, der steht; ein Schreiber, der ihn doch bewegt, bricht beim Namen.
+        const RL = opt?.rueckstrahl === "halten" ? st.rueckstrahlLeser : null;
+        const lichtVor = RL && [RL.an.value, ...RL.boden.value.toArray()];
+        const ruht = RL ? ["_rueckstrahlZeichne", "_rueckstrahlSprung"].map((m) => [m, Object.hasOwn(r, m), r[m]]) : [];
+        for (const [m] of ruht) r[m] = () => {};
         try {
             // Warm-Frames: der erste Frame nach dem Kamera-Umsetzen trägt die Feld-Formen noch nicht
             // (Listen-/Seiten-Upload + Pipelines).
@@ -993,6 +1003,9 @@ function ausgabeAufnahme(W, H, warm, opt) {
             rend.setOutputRenderTarget(prevOut);
             rend.setRenderTarget(prevZiel);
             rt.dispose();
+            for (const [m, eigen, alt] of ruht) eigen ? (r[m] = alt) : delete r[m];
+            if (RL && [RL.an.value, ...RL.boden.value.toArray()].some((v, i) => v !== lichtVor[i]))
+                throw new Error("die Aufnahme: der Rückstrahl des Bodens bewegte sich in einem gehaltenen Schuss — O_k trägt ein anderes Licht als G");
         }
     })();
 }

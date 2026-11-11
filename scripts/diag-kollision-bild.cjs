@@ -693,7 +693,7 @@ async function tempo(K) {
         // Ausgabe-Pfad (Lehre 5) unter der Bühne, die Blick-Wahl sucht freie Sicht auf den Bären (Lehre 17); je Klasse die Pixel
         // der Klassen-Teilung (`__klassenTeilung`: dieselbe Pose ohne die Klasse, beide ohne Schattenwurf); das Bild als PNG
         const stossBild = async (e, b) => {
-            const [W, HO, q, M] = [640, 360, b.position, { satz: "messung" }];
+            const [W, HO, q, M] = [640, 360, b.position, { satz: "messung", rueckstrahl: "halten" }]; // die Schüsse ohne Teil: das Licht von unten steht wie in G
             for (const o of [b, ...(e.instSlots || []).map(({ key }) => st.archInstanceGroups.get(key).mesh)]) o.traverse((m) => (m.castShadow = false));
             __buehne();
             pm.visible = false;
