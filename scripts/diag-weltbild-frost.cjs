@@ -1,4 +1,4 @@
-// diag-weltbild-frost.cjs — DIE FROST-WAND (gate:weltbild-frost): jede Bühne (Werkstatt · Ich · Hof · Feed) zeichnet über den
+// diag-weltbild-frost.cjs — DIE FROST-WAND (gate:weltbild-frost:echt): jede Bühne (Werkstatt · Ich · Hof · Feed) zeichnet über den
 // Welt-Renderer (`_buehneRenderer`: eine Leinwand, EIN Gerät; bis 30.10. je ein eigenes WebGPU-Backend) und teilt Geometrie
 // und Stoffe mit der Welt; das Backend-Gesetz (`_backendGesetz`: schmaler Index · Index-Wache · GPU-Wache) gilt an jedem
 // Backend. Die Chronik der Befunde steht in git.
@@ -8,8 +8,8 @@
 //   G  kein WebGPU-Validierungsfehler auf irgendeinem Device (eigener Hörer, unabhängig vom Spiel: `uncapturederror` jedes
 //      Device UND die THREE-Konsolenzeile, mit der r184 eine Validierung aus seinem offenen Pipeline-Fehler-Bereich meldet)
 //   W  die Wachen des Spiels stehen und schweigen (`_indexWache` · `_gpuWache`)
-//   B  DAS BILD FOLGT: zwei Bilder bei gedrehter Kamera unterscheiden sich in ≥ 5 % der 16×16-Blöcke (echt: der präsentierte
-//      Canvas; headless: das Rücklese-Bild der Welt-GPU)
+//   B  DAS BILD FOLGT: zwei Bilder bei gedrehter Kamera unterscheiden sich in ≥ 5 % der 16×16-Blöcke (der präsentierte
+//      Canvas)
 // Dann DIE ENTSORGUNG DER BÜHNEN (dieselbe Klasse: geteilte Geometrie und Stoffe über Renderer-Grenzen; `_disposeSoulGroup`
 // ist die EINE Regel jeder Gruppe, die Welt-Vorlagen teilt, `_ofenVorlage` sagt, was eine Gruppe besitzt):
 //   S1 der Spielerpfad (jede Tetrapoda-Art↔human; der Mitspieler empfängt jede Seele, dann sein Abschied) und die Hof-Bühne
@@ -29,19 +29,18 @@
 //      GPU-Wache des Spiels und der eigene Hörer zählen, und die Bild-Probe sagt BILD STEHT
 //   T3 ein writeBuffer von 6 Bytes → WebGPU wirft, die Puffer-Wache nennt Puffer, Länge, Aufrufer
 //
-// Zwei Wege, derselbe Prüfer:
-//   node scripts/diag-weltbild-frost.cjs          headless (swiftshader, ?holz=kienspan) — CI: der Spiel-Takt ruht, die
-//                                                 Welt-GPU zeichnet die PROBE-BÜHNE:
-//                                                 den Welt-Leib des Spielers (jede Seele des Seelenwechsels)
+// EIN Weg (bis w27-swift-raus zwei: headless auf swiftshader zeichnete die CI eine PROBE-BÜHNE mit Rücklese-Bild — der Zwilling
+// der Karte, er fiel mit ihm):
 //   node scripts/diag-weltbild-frost.cjs --echt   sichtbares Chrome auf der echten GPU: der SPIELPFAD (Ankunft · dritte
-//                                                 Person · Werkstatt · Tab · Hof) im laufenden Spiel, das Bild-Paar je Schritt
+//                                                 Person · Werkstatt · Tab · Hof) im laufenden Spiel, das Bild-Paar je Schritt —
+//                                                 die EINE Stelle im Zug (check.yml echt, gate:weltbild-frost:echt)
 //   … [--bilder <ordner>]                         legt je Bild-Paar beide Bilder ab
 //   … [--s5=leck]                                 Mutant S5: kein Einzelstück entsorgt seine Geometrie (ROT: das Konto wächst)
 // Exit 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
 const { statikServer, starteBrowser, selbsttest, hauptLauf, sleep, pruefer, argOpt, path, fs } = require("./lib/welt-boot.cjs");
 
-const ECHT = process.argv.includes("--echt");
+if (!process.argv.includes("--echt")) throw new Error("diag-weltbild-frost: nur --echt (die Karte, der Spielpfad) — die Probe-Bühne fiel mit w27-swift-raus");
 const LECK = process.argv.includes("--s5=leck"); // der Mutant von S5
 const BILDER = argOpt("--bilder", null);
 // Anteil bewegter 16×16-Blöcke der Bildmitte, ab dem das Bild der Kamera folgt: eine Drehung bewegt 40–100 %, ein stehendes
@@ -60,11 +59,7 @@ function geraeteHoerer() {
     // Täter-Probe nennt beide, wenn das Wort einer Validierung ausbleibt.
     const P = GPUDevice.prototype;
     // Was jedes Device kompiliert (am Device-Objekt gezählt): die Seelen-Probe misst so, ob die Welt-GPU neu kompiliert.
-    const zaehle = (dev, art, d) => {
-        (dev.__frostBau || (dev.__frostBau = { module: 0, pipelines: 0 }))[art]++;
-        // die Namen der Pipelines (r184: `renderPipeline_<Stoff>_<id>`) — die Seelen-Probe nennt, WAS neu baut
-        if (art === "pipelines") (dev.__frostNamen || (dev.__frostNamen = [])).push(d?.label || "?");
-    };
+    const zaehle = (dev, art) => (dev.__frostBau || (dev.__frostBau = { module: 0, pipelines: 0 }))[art]++;
     const modul = P.createShaderModule;
     P.createShaderModule = function (d) {
         zaehle(this, "module");
@@ -72,13 +67,13 @@ function geraeteHoerer() {
     };
     const pipe = P.createRenderPipeline;
     P.createRenderPipeline = function (d) {
-        zaehle(this, "pipelines", d);
+        zaehle(this, "pipelines");
         return pipe.call(this, d);
     };
     const bau = P.createRenderPipelineAsync;
     if (bau)
         P.createRenderPipelineAsync = function (d) {
-            zaehle(this, "pipelines", d);
+            zaehle(this, "pipelines");
             H.bauOffen++;
             const p = bau.call(this, d);
             p.then(
@@ -134,25 +129,42 @@ function geraeteHoerer() {
 
 // Der Prüf-Raum in der Seite: `wurzel` (was die Welt-GPU zeichnet und der Zensus liest), `zeichne(n)` (n Bilder der Welt-
 // GPU), `drehe()` (63° Gier), `leib` (der Welt-Leib, dessen Index der Täter T2 weitet), `leibWechsel()` (zeichnet ihn).
-function pruefRaum(echt) {
+function pruefRaum() {
     const T = window.THREE;
     const rend = st.renderer;
-    const F = (window.__frostWand = { echt });
+    const F = (window.__frostWand = {});
     // DAS EINE WARTEN AUF EINE BÜHNE (Werkstatt-Vorschau, Ich-, Hof-, Feed-Bühne), bis ihr Renderer `bis(Zeichnungen)` trägt:
     // der Deckel zählt einen Gang nur, wenn ihr Renderer bereit ist und ihr Gerät die eingereichte Arbeit abgegeben hat
     // (swiftshader kompiliert im GPU-Prozess, Compositor und Bühnen-Takt stehen derweil) — die Bühne urteilt in GPU-Ereignissen,
     // nie im Takt der Wanduhr (bis 25.10. zählte er je 50/200 ms, 20/180 s bis ROT); fehlt die Bühne, zählt er und nennt sie
     // die Bilder einer Bühne zählen erst, wenn jedes sichtbare Mesh in ihrem Blick gezeichnet hat (die Erst-Zeichnung baut
     // asynchron, ein Bild ohne seine Bürger ist kein Bild der Bühne)
+    // DER EINE ZÄHLER DER UNGEZEICHNETEN (w28-frost-waerme; Bühne und Welt-Leib): jedes sichtbare Mesh unter `wurzel`, das die Kamera
+    // zeichnen wird — auf einer ihrer Ebenen und in ihrem Blick (ein Mesh ohne Blick-Probe, `frustumCulled` false, immer) — und das
+    // noch in keinem Pass zeichnete. Bis hier stand an beiden Stellen `fehlt += o.isMesh && …`: für die Szene, jede Gruppe und jeden
+    // Knochen ist `isMesh` undefined, die Summe wurde NaN, und `fehlt ? 0 : bilder` las NaN als „nichts fehlt“ — das Warten dauerte
+    // seit 30.10. (446e13eb, 5d4014be) EIN Bild. Gemessen (GTX 1060, main ab2f2eed, 7 von 7 Läufen S2 ROT, +3/+2 bis +4/+3): der
+    // Wärm-Durchgang wechselte nach 50–220 ms je Seele weiter, vom Fuchs der Ich-Bühne standen 2 von 13 Meshes gezeichnet; das
+    // Schweif-Mesh (3 611 Ecken, 10 Knochen) und die Haarsträhne (192 Ecken, 3 Knochen) bauten erst im gemessenen Durchgang.
+    // Die Ebenen zählen: jeder Leib trägt eine zweite Kopf-Gruppe mit der Ebenen-Maske 4 oder 0, die keine Bühnen-Kamera (Maske 1)
+    // zeichnet — ohne die Ebenen-Probe wartete der Zähler auf sie bis zum Deckel. Der Selbsttest (S2) hält die Zahl: Gruppen 0, ein Mesh 1.
     const blick = new T.Frustum(),
         m4 = new T.Matrix4();
-    F.gezeichnet = (s) => {
-        const b = s && s.renderer && s.renderer.buehne;
-        if (!b) return 0;
-        blick.setFromProjectionMatrix(m4.multiplyMatrices(s.camera.projectionMatrix, s.camera.matrixWorldInverse));
+    F.ungezeichnet = (wurzel, k) => {
+        blick.setFromProjectionMatrix(m4.multiplyMatrices(k.projectionMatrix, k.matrixWorldInverse), k.coordinateSystem, k.reversedDepth);
         let fehlt = 0;
-        s.scene.traverseVisible((o) => (fehlt += o.isMesh && blick.intersectsObject(o) && !r._erstZeichnung.gezeichnet.get(o)));
-        return fehlt ? 0 : b.bilder;
+        wurzel.traverseVisible((o) => (fehlt += !!(o.isMesh && k.layers.test(o.layers) && !(o.frustumCulled && !blick.intersectsObject(o)) && !r._erstZeichnung.gezeichnet.get(o))));
+        return fehlt;
+    };
+    F.gezeichnet = (s) => (s?.renderer?.buehne && !F.ungezeichnet(s.scene, s.camera) ? s.renderer.buehne.bilder : 0);
+    // WER BAUT (die S2-Zeile nennt je Neubau Stoff · Ecken · Knochen · Szene, die Szene beim Namen ihres Halters im Zustand: `scene` die
+    // Welt, `ichStage`, `hofStage` …): an der INSTANZ des Backends — die Hülle von welt-boot (`stoffHaken`) hält dort das Original
+    // fest, ein Haken am Prototyp liefe nie
+    F.bauten = [];
+    const bauAlt = rend.backend.createRenderPipeline;
+    rend.backend.createRenderPipeline = function (ro) {
+        F.bauten.push([ro.material.userData.foundryKind || ro.material.type, ro.geometry.attributes.position?.count, ro.object.skeleton?.bones.length || 0, Object.keys(st).find((n) => (st[n]?.scene || st[n]) === ro.scene)].join(" · "));
+        return bauAlt.apply(this, arguments);
     };
     F.buehne = async (name, holen, bis) => {
         let fragt = false;
@@ -166,113 +178,42 @@ function pruefRaum(echt) {
     r.setCameraMode("third");
     // der Leib von JETZT: der Seelenwechsel (S1, `applyPlayerSoul`) ersetzt den Spieler-Leib, T2 weitet nie den alten
     Object.defineProperty(F, "leib", { get: () => st.playerMesh });
-    if (echt) {
-        F.wurzel = st.scene;
-        // der Leib steht GANZ im Bild, bevor die Probe weiterwechselt (das Ereignis, nie die Uhr)
-        F.leibWechsel = async () => {
-            for (let fehlt = 1, weiter = __deckel("der Leib im Bild", 100); fehlt && weiter(); ) {
-                await F.zeichne(1);
-                fehlt = 0;
-                st.playerMesh.traverseVisible(
-                    (o) => (fehlt += o.isMesh && st.camera.layers.test(o.layers) && !r._erstZeichnung.gezeichnet.get(o))
-                );
-            }
-        };
-        // n GEZEICHNETE BILDER (z133, `nodeFrame.frameId`): `info.render.calls` setzt sich je Bild zurück (r184 `info.reset`
-        // im Animations-Takt) und zählte nichts — das Bild-Paar wartete die Wanduhr, 600 ms, und der ausgelastete Läufer
-        // zeichnete darin weniger Bilder (T2-Wache 67 und 109 gegen 172–353 am Stamm). Im gefrorenen Bild des Täters T2 bewegen
-        // sich nach der Drehung die Kanten des Leibs und das Innere der Portale (ohne Drehung 0,19 % der Blöcke, mit 2,6 %;
-        // Läufer 5,68 und 8,05 %); ohne die Bühnen-Proben davor steht es nach 30 Bildern ganz (0,00 %).
-        F.zeichne = async (n) => {
-            const N = rend._nodes.nodeFrame,
-                a = N.frameId;
-            await sleep(600); // ein Bild steht mindestens 600 ms
-            for (const weiter = __deckel("ein Bild", 2400); N.frameId - a < n && weiter(); ) await sleep(50);
-        };
-        F.drehe = () => (st.yaw += 1.1);
-        F.mittag = () => {
-            st.timeOfDay = 0.5;
-            if (st.world) st.world.timeOfDay = 0.5;
-            st.pitch = -0.18;
-        };
-        return { weg: "spielpfad" };
-    }
-    rend.setAnimationLoop(null);
-    const scene = new T.Scene();
-    scene.background = new T.Color(0x6688aa);
-    scene.add(new T.HemisphereLight(0xffffff, 0x445533, 2.2));
-    const sonne = new T.DirectionalLight(0xffffff, 2.0);
-    sonne.position.set(3, 6, 4);
-    scene.add(sonne);
-    const pivot = new T.Group();
-    scene.add(pivot);
-    // headless steht der Welt-Leib selbst auf der Probe-Bühne: `applyPlayerSoul` legt den neuen in die Welt-Szene,
-    // `leibWechsel` holt ihn her
-    let traeger = F.leib;
-    pivot.add(traeger);
-    // ein Ring farbiger Kisten auf dem Drehteller: die Drehung ändert die Bildmitte sichtbar
-    for (let i = 0; i < 8; i++) {
-        const k = new T.Mesh(
-            new T.BoxGeometry(0.35, 0.5 + 0.15 * i, 0.35),
-            new T.MeshStandardNodeMaterial({ color: new T.Color().setHSL(i / 8, 0.7, 0.5) })
-        );
-        const w = (i / 8) * Math.PI * 2;
-        k.position.set(Math.cos(w) * 1.1, 0.3, Math.sin(w) * 1.1);
-        pivot.add(k);
-    }
-    // auch der Welt-Leib vor seinem ersten Spawn (`_worldgenInitPlayerPosition` zeigt ihn erst dann)
-    const zeigeAlles = (g) =>
-        g.traverse((o) => {
-            o.visible = true;
-            o.frustumCulled = false;
-        });
-    zeigeAlles(pivot);
-    const cam = new T.PerspectiveCamera(45, 16 / 9, 0.05, 100);
-    // BÜHNE: eigene Szene des Frost-Bilds
-    cam.position.set(0, 1.0, 3.0);
-    cam.lookAt(0, 0.7, 0);
-    F.wurzel = scene;
-    F.leibWechsel = () => {
-        pivot.remove(traeger);
-        pivot.add((traeger = F.leib));
-        zeigeAlles(traeger);
-        F.bildSofort();
+    F.wurzel = st.scene;
+    // der Leib steht GANZ im Bild, bevor die Probe weiterwechselt (das Ereignis, nie die Uhr)
+    F.leibWechsel = async () => {
+        for (let fehlt = 1, weiter = __deckel("der Leib im Bild", 100); fehlt && weiter(); ) {
+            await F.zeichne(1);
+            fehlt = F.ungezeichnet(st.playerMesh, st.camera);
+        }
     };
+    // n GEZEICHNETE BILDER (z133, `nodeFrame.frameId`): `info.render.calls` setzt sich je Bild zurück (r184 `info.reset`
+    // im Animations-Takt) und zählte nichts — das Bild-Paar wartete die Wanduhr, 600 ms, und der ausgelastete Läufer
+    // zeichnete darin weniger Bilder (T2-Wache 67 und 109 gegen 172–353 am Stamm). Im gefrorenen Bild des Täters T2 bewegen
+    // sich nach der Drehung die Kanten des Leibs und das Innere der Portale (ohne Drehung 0,19 % der Blöcke, mit 2,6 %;
+    // Läufer 5,68 und 8,05 %); ohne die Bühnen-Proben davor steht es nach 30 Bildern ganz (0,00 %).
     F.zeichne = async (n) => {
-        for (let i = 0; i < n; i++) F.bildSofort();
-        await rend.backend.device.queue.onSubmittedWorkDone();
-        await sleep(50);
+        const N = rend._nodes.nodeFrame,
+            a = N.frameId;
+        await sleep(600); // ein Bild steht mindestens 600 ms
+        for (const weiter = __deckel("ein Bild", 2400); N.frameId - a < n && weiter(); ) await sleep(50);
     };
-    // ein Bild ohne auf die GPU zu warten: der Knoten-Bau, die Pipeline und das Render-Objekt entstehen synchron im render()
-    // (swiftshader kompiliert synchron); das Warten teilt sich bei offener Bühne den CPU-Raster mit ihr (lokal ~1 s je Bild,
-    // der CI-Runner riss damit das 45-min-Limit)
-    F.bildSofort = () => {
-        scene.updateMatrixWorld(true);
-        rend.render(scene, cam);
+    F.drehe = () => (st.yaw += 1.1);
+    F.mittag = () => {
+        st.timeOfDay = 0.5;
+        if (st.world) st.world.timeOfDay = 0.5;
+        st.pitch = -0.18;
     };
-    // DAS BILD der Probe-Bühne: die Welt-GPU zeichnet in ein Ziel, das Ziel wird zurückgelesen (256 × 144, RGBA8, kein
-    // Zeilen-Rand); headless fehlt die WebGPU-Leinwand im Bildschirm-Schuss — ein verworfener Befehlspuffer schreibt nichts.
-    const ziel = new T.RenderTarget(256, 144);
-    F.bild = async () => {
-        scene.updateMatrixWorld(true);
-        rend.setRenderTarget(ziel);
-        rend.render(scene, cam);
-        rend.setRenderTarget(null);
-        return { d: await window.__zielLesen(ziel, 256, 144), w: 256, h: 144 };
-    };
-    F.drehe = () => (pivot.rotation.y += 1.1);
-    F.mittag = () => {};
-    return { weg: "probe-buehne" };
+    return { weg: "spielpfad" };
 }
 
 hauptLauf(async () => {
     await server.lausche(0);
     const browser = await starteBrowser({
-        art: ECHT ? "echt" : "linse",
-        headless: !ECHT,
+        art: "echt",
+        headless: false,
         frist: 1800000,
-        viewport: ECHT ? { width: 1280, height: 720, deviceScaleFactor: 1 } : { width: 640, height: 360 },
-        zusatz: ECHT ? ["--window-size=1300,820"] : [],
+        viewport: { width: 1280, height: 720, deviceScaleFactor: 1 },
+        zusatz: ["--window-size=1300,820"],
     });
     const page = await browser.newPage();
     const t0 = Date.now();
@@ -290,20 +231,19 @@ hauptLauf(async () => {
         if (/INDEX-WACHE|GPU-VALIDIERUNG/.test(t) && konsole++ < 10) console.log("  [Spiel] " + t.slice(0, 260));
     });
     await page.evaluateOnNewDocument(geraeteHoerer);
-    await server.zeige(page, 120000, `index.html${ECHT ? "" : "?holz=kienspan"}`);
+    await server.zeige(page, 120000, "index.html");
     const boot = await page.evaluate(
-        async ({ minChunks, echt }) => {
+        async ({ minChunks }) => {
             for (const weiter = __deckel("das erste Weltbild", 1200); weiter(); ) {
                 const st = r && r.state;
-                // echt urteilt B den Canvas: erst mit dem ersten Weltbild (`_weltbildDa`) weicht der Ladeschirm; headless
-                // urteilt das Rücklese-Bild der Welt-GPU, kein DOM — dort kostete das Warten 56 s und Gruppe 18 ihren 7-min-Deckel
+                // B urteilt den Canvas: erst mit dem ersten Weltbild (`_weltbildDa`) weicht der Ladeschirm
                 if (
                     st?.rendererReady &&
                     st.playerMesh &&
                     !st._deferredAvatarSoul &&
                     st.voxelChunks &&
                     st.voxelChunks.size >= minChunks &&
-                    (st._leibWarm || !echt)
+                    st._leibWarm
                 )
                     break;
                 await sleep(300);
@@ -317,19 +257,19 @@ hauptLauf(async () => {
                 warm: !!(r && st._leibWarm),
             };
         },
-        { minChunks: ECHT ? 25 : 9, echt: ECHT }
+        { minChunks: 25 }
     );
     console.log(
-        `=== DIE FROST-WAND (${ECHT ? "echte GPU" : "swiftshader, kienspan"}) — Boot ${zeit()} ${JSON.stringify(boot)} ===`
+        `=== DIE FROST-WAND (echte GPU) — Boot ${zeit()} ${JSON.stringify(boot)} ===`
     );
-    if (!boot.bereit || !boot.webgpu || (ECHT && !boot.warm)) {
+    if (!boot.bereit || !boot.webgpu || !boot.warm) {
         check("die Welt steht mit ihrem ersten Weltbild auf einem WebGPU-Backend", false, boot);
         await browser.close();
         server.close();
         process.exit(1);
     }
     if (BILDER) fs.mkdirSync(BILDER, { recursive: true });
-    const raum = await page.evaluate(pruefRaum, ECHT);
+    const raum = await page.evaluate(pruefRaum);
     console.log(`  Prüf-Raum: ${JSON.stringify(raum)}`);
 
     const zeichne = (n) => page.evaluate((n) => window.__frostWand.zeichne(n), n);
@@ -344,7 +284,7 @@ hauptLauf(async () => {
     };
     // Der Vergleich zweier Bilder in der Seite: Block-Mittel 16×16 — die zeitliche Kantenglättung zittert über einem
     // stehenden Bild Pixel für Pixel (Laub: 6 % der Pixel), ihr Block-Mittel bleibt (0,1 % der Blöcke); eine Drehung bewegt
-    // 70–97 % der Blöcke. Dazu das PNG eines Rücklese-Bilds für `--bilder`.
+    // 70–97 % der Blöcke.
     await page.evaluate(() => {
         const F = window.__frostWand;
         F.blockAnteil = (A, B) => {
@@ -380,37 +320,9 @@ hauptLauf(async () => {
             g.drawImage(bm, 0, 0);
             return { d: g.getImageData(0, 0, bm.width, bm.height).data, w: bm.width, h: bm.height };
         };
-        F.alsPng = async (B) => {
-            const c = new OffscreenCanvas(B.w, B.h);
-            const px = new Uint8ClampedArray(B.d);
-            for (let i = 3; i < px.length; i += 4) px[i] = 255;
-            c.getContext("2d").putImageData(new ImageData(px, B.w, B.h), 0, 0);
-            const u8 = new Uint8Array(await (await c.convertToBlob({ type: "image/png" })).arrayBuffer());
-            let s = "";
-            for (let i = 0; i < u8.length; i++) s += String.fromCharCode(u8[i]);
-            return btoa(s);
-        };
     });
-    // B — das Bild-Paar, dazwischen 63° Gier. Echt: der präsentierte Canvas (was der Spieler sieht). Headless: das
-    // Rücklese-Bild der Welt-GPU (F.bild — der Linux-Runner setzt die WebGPU-Leinwand nicht in den Bildschirm-Schuss).
+    // B — das Bild-Paar, dazwischen 63° Gier: der präsentierte Canvas (was der Spieler sieht).
     const bildPaar = async (tag) => {
-        if (!ECHT) {
-            const r = await page.evaluate(async (mitPng) => {
-                const F = window.__frostWand;
-                const A = await F.bild();
-                F.drehe();
-                const B = await F.bild();
-                return {
-                    anteil: F.blockAnteil(A, B),
-                    png: mitPng ? [await F.alsPng(A), await F.alsPng(B)] : null,
-                };
-            }, !!BILDER);
-            if (r.png)
-                r.png.forEach((s, i) =>
-                    fs.writeFileSync(path.join(BILDER, `${tag}-${"ab"[i]}.png`), Buffer.from(s, "base64"))
-                );
-            return r.anteil;
-        }
         await page.evaluate(() => window.__frostWand.mittag());
         await zeichne(30); // 30 gezeichnete Bilder je Schuss (`F.zeichne`), nie die Wanduhr
         const a = await schuss(BILDER && path.join(BILDER, tag + "-a.png"));
@@ -470,12 +382,10 @@ hauptLauf(async () => {
                 wachenDa: typeof r._indexWacheDraw === "function" && typeof r._gpuWacheAn === "function",
             };
         });
-    // Ein Schritt: tun, die Welt-GPU zeichnen lassen (die geteilten Gestalten im Bild), dann I · G · W — und B, wo das
-    // Bild-Paar läuft (headless: am Anfang und nach der letzten Bühne; echt: je Schritt).
-    const schritt = async (tag, tu, mitBild) => {
+    // Ein Schritt: tun, die Welt-GPU zeichnen lassen (die geteilten Gestalten im Bild), dann I · G · W · B (das Bild-Paar je Schritt).
+    const schritt = async (tag, tu) => {
         const was = tu ? await tu() : null;
-        const folgt = mitBild || ECHT ? await bildPaar(tag) : null;
-        if (folgt === null) await zeichne(ECHT ? 8 : 2);
+        const folgt = await bildPaar(tag);
         const l = await lage();
         console.log(
             `\n[${tag}] ${zeit()} · ${was ? JSON.stringify(was) + " · " : ""}${folgt === null ? "" : `Bild ${(folgt * 100).toFixed(1)} % der Blöcke bewegt · `}${l.n} Index-Puffer (${l.mensch} Mensch) · Devices ${l.devices}`
@@ -518,8 +428,8 @@ hauptLauf(async () => {
             return { bühne: wer, gezeichnet: window.__frostWand.gezeichnet(s), meshes };
         }, wer);
 
-    if (ECHT) await schritt("ankunft", null, true);
-    const start = await schritt(ECHT ? "dritte-person" : "probe-buehne", null, true);
+    await schritt("ankunft");
+    const start = await schritt("dritte-person");
     check(
         "die Welt-GPU zeichnet einen Menschen (Mensch-Indizes auf der Welt-GPU)",
         start.mensch > 0,
@@ -542,21 +452,17 @@ hauptLauf(async () => {
         await page.evaluate(() => r.toggleInventoryOverlay(false));
         return b;
     });
-    await schritt(
-        "hof-buehne",
-        async () => {
-            await page.evaluate(() => r.toggleDrawer("kreaturen"));
-            const b = await warteBuehne("hof");
-            await page.evaluate(() => r.closeAllDrawers());
-            return b;
-        },
-        true
-    );
+    await schritt("hof-buehne", async () => {
+        await page.evaluate(() => r.toggleDrawer("kreaturen"));
+        const b = await warteBuehne("hof");
+        await page.evaluate(() => r.closeAllDrawers());
+        return b;
+    });
 
     // S — DIE ENTSORGUNG DER BÜHNEN: Ich-, Hof-, Feed-Bühne, Werkstatt-Ofen und Mitspieler-Leib bauen aus denselben Vorlagen
     // wie die Welt. Die Probe zählt je Phase jede Welt-Geometrie und jeden Welt-Stoff, den ein Wechsel SELBST in die
     // Entsorgungs-Schlange legt (echt streamt die Welt nebenher), und leert die Schlange wie `_loopRender`.
-    await page.evaluate((echt) => {
+    await page.evaluate(() => {
         const F = window.__frostWand;
         const dev = st.renderer.backend.device;
         const welt = new Map();
@@ -576,16 +482,14 @@ hauptLauf(async () => {
         const E = (window.__frostEntsorgung = { phase: null, je: {}, welt: welt.size });
         // echt ruht der Spiel-Takt für die Entsorgungs-Proben (Lehre 17: sonst baut die laufende Welt nebenher neu); die Welt-GPU zeichnet über
         // `_loopRender` (Bild + Kehraus + die Entsorgungs-Schlange), die Bühnen zeichnen in ihrem eigenen Takt weiter.
-        if (echt) {
-            st.renderer.setAnimationLoop(null);
-            F.zeichneTakt = F.zeichne;
-            F.zeichne = async (n) => {
-                for (let i = 0; i < n; i++) {
-                    r._loopRender();
-                    await dev.queue.onSubmittedWorkDone();
-                }
-            };
-        }
+        st.renderer.setAnimationLoop(null);
+        F.zeichneTakt = F.zeichne;
+        F.zeichne = async (n) => {
+            for (let i = 0; i < n; i++) {
+                r._loopRender();
+                await dev.queue.onSubmittedWorkDone();
+            }
+        };
         const roh = r._queueDispose;
         r._queueDispose = function (obj) {
             const p = E.phase && (E.je[E.phase] || (E.je[E.phase] = { alle: 0, namen: [], objekte: new Set() }));
@@ -622,23 +526,11 @@ hauptLauf(async () => {
         // zeichnet `_loopRender` selbst; die Kehraus-Uhr wird zurückgesetzt, damit er in diesem Frame läuft.
         E.leeren = async () => {
             st._gpuKehrausT = 0;
-            if (echt) return F.zeichne(8);
-            const marke = r._gpuKehrausMarke();
-            await F.zeichne(1);
-            r._gpuKehraus(marke, performance.now());
-            const s = Array.from(st.pendingDisposals);
-            st.pendingDisposals.clear();
-            await dev.queue.onSubmittedWorkDone();
-            for (const o of s)
-                try {
-                    o.dispose();
-                } catch {
-                    /* wie `_loopRender` */
-                }
+            return F.zeichne(8);
         };
         E.bau = (d) => Object.assign({ module: 0, pipelines: 0 }, d && d.__frostBau);
         E.warte = (holen, c0 = F.gezeichnet(holen())) => F.buehne("ein Bild der Bühne", holen, (n) => n > c0);
-    }, ECHT);
+    });
     const entsorgtKeineWelt = (tag, b) =>
         check(
             `${tag}: keine Welt-Geometrie, kein Welt-Stoff entsorgt`,
@@ -648,10 +540,16 @@ hauptLauf(async () => {
 
     // S1/S2/S4 — der Seelenwechsel über den Spielerpfad (`applyPlayerSoul` bei offenem Ich: Ich-Bühne UND Welt-Leib, der
     // Mitspieler empfängt ihn) je Art↔human, Hof-Bühne 4 Seelen ×2. Zwei Durchgänge: der erste wärmt, der zweite misst die Neubauten JE DEVICE gegen die geschlossene Bühne.
+    // NEUBAU_MAX steht zwischen dem Rauschen und dem Rückfall. Der Rückfall, den die Wand fängt — die GPU kompiliert JE Wechsel
+    // neu —, kostet ≥ 16 (8 Ich- und 8 Hof-Wechsel je Durchgang). Das Rauschen war bis w28-frost-waerme der Rest des Wärm-Durchgangs:
+    // er wartete je Seele EIN Bild (`F.ungezeichnet` oben), was er nicht zeichnete, baute im gemessenen — GTX 1060, main ab2f2eed,
+    // 7 Läufe am 11.11.: +3 Module / +2 Pipelines bis +4 / +3 (z374 und z377 +2 / +1, z379 dreimal ROT an der Schwelle 2, darum stand
+    // sie für einen Zug auf 4). Mit dem Warten, das zählt: 6 von 6 Läufen +0 / +0 (150–185 s je Lauf). Die Schwelle 2 hält den
+    // Abstand zu beiden Seiten.
     const NEUBAU_MAX = 2;
     const ICH_TRI_MIN = 10000; // der Block-Zwilling der Bauplan-Teile trägt 5 388
     const seelen = await page.evaluate(
-        async (echt) => {
+        async () => {
             const F = window.__frostWand;
             const E = window.__frostEntsorgung;
             let tausch = 0;
@@ -697,20 +595,24 @@ hauptLauf(async () => {
                         );
                 r.closeAllDrawers();
                 await E.leeren();
-                await F.zeichne(echt ? 8 : 2);
+                await F.zeichne(8);
             };
             await durchgang();
             // das EINE Gerät (die Bühnen zeichnen auf ihm): Bauten vor und nach der Ruhe, dann der gemessene Durchgang
             const dev = st.renderer.backend.device;
             const vor = E.bau(dev);
-            await F.zeichne(echt ? 8 : 2);
+            await F.zeichne(8);
             const ruhe = E.bau(dev);
-            const n0 = (dev.__frostNamen || []).length;
+            const n0 = F.bauten.length;
             await durchgang();
             const nach = E.bau(dev),
                 d = (g) => nach[g] - ruhe[g] - (ruhe[g] - vor[g]);
             const neubau = { module: d("module"), pipelines: d("pipelines") };
-            const neu = (dev.__frostNamen || []).slice(n0, n0 + 6);
+            const neu = F.bauten.slice(n0, n0 + 6);
+            // der Selbsttest des Zählers der Ungezeichneten: Gruppen allein zählen 0 (nie NaN), ein Mesh ohne Blick-Probe, das nie
+            // zeichnete, zählt 1
+            const probe = new THREE.Group().add(new THREE.Group());
+            const zaehlerSelbst = [F.ungezeichnet(probe, st.camera), F.ungezeichnet(probe.add(Object.assign(new THREE.Mesh(), { frustumCulled: false })), st.camera)];
             const zwillinge = (codes) => codes.length - new Set(codes.map((c) => c.replace(/NodeBuffer_\d+/g, ""))).size;
             const programmZwillinge = zwillinge([...st.renderer._pipelines.programs.vertex.keys()]);
             const zwillingSelbst = zwillinge(["NodeBuffer_1", "NodeBuffer_2", "x"]);
@@ -724,14 +626,14 @@ hauptLauf(async () => {
                 ...E.bericht("seelen"),
                 programmZwillinge,
                 zwillingSelbst,
+                zaehlerSelbst,
                 leiber,
                 selbst,
                 tausch,
                 neubau,
                 neu,
             };
-        },
-        ECHT
+        }
     );
     console.log(`\n[seelenwechsel] ${zeit()} · ${JSON.stringify(seelen).slice(0, 500)}`);
     entsorgtKeineWelt("S1 Seelenwechsel (Ich, Welt-Leib und Mitspieler jede Art↔human, Hof 4 Seelen ×2, zwei Durchgänge)", seelen);
@@ -750,6 +652,7 @@ hauptLauf(async () => {
         `+${n.module} Module / +${n.pipelines} Pipelines gegen die geschlossene Bühne (Soll ≤ ${NEUBAU_MAX})${seelen.neu.length ? " — neu: " + seelen.neu.join(", ") : ""}`
     );
 
+    check("S2 Selbsttest: der Zähler der Ungezeichneten zählt 0 und 1", seelen.zaehlerSelbst + "" === "0,1", seelen.zaehlerSelbst);
     check("S2 je Gestalt EIN Programm (Welt und Bühnen: kein Zwilling, den nur NodeBuffer_<id> trennt)", seelen.programmZwillinge === 0 && seelen.zwillingSelbst === 1, `Zwillinge ${seelen.programmZwillinge} · Selbsttest ${seelen.zwillingSelbst} (Soll 1)`);
 
     // S3 — die Feed-Vorschau: Wesen-Karten (4 Seelen) und eine Rezept-Karte (Bauplan-Teile, eigene Geometrie), zweimal.
@@ -933,7 +836,7 @@ hauptLauf(async () => {
     }));
     const ruhePeers = await fenster(true);
     const heapPeersVor = await heapMB();
-    const peers = await page.evaluate(async (echt) => {
+    const peers = await page.evaluate(async () => {
         const F = window.__frostWand;
         const E = window.__frostEntsorgung;
         const leiber = [];
@@ -946,7 +849,7 @@ hauptLauf(async () => {
             };
             E.im("peers", () => r._p2pApplyPeerSoul(e));
             if (e.mesh) leiber.push(e.mesh);
-            await F.zeichne(echt ? 2 : 1);
+            await F.zeichne(2);
             spitze = Math.max(spitze, AnazhRealm._tierOfenMemo.size);
         }
         for (const m of leiber) {
@@ -955,7 +858,7 @@ hauptLauf(async () => {
         }
         await E.leeren();
         return { ...E.bericht("peers"), leiber: leiber.length, spitze, memo: AnazhRealm._tierOfenMemo.size };
-    }, ECHT);
+    });
     const heapPeersNach = await heapMB();
     ruhePeers.push(...(await fenster(false)));
     console.log(
@@ -1047,12 +950,10 @@ hauptLauf(async () => {
         const m = new T.Mesh(geo, new T.MeshBasicNodeMaterial({ color: 0xff00ff }));
         m.name = "frost-taeter-bereich";
         m.frustumCulled = false;
-        if (F.echt) {
-            const cam = st.camera;
-            m.position.copy(new T.Vector3(0, 0, -2).applyQuaternion(cam.quaternion).add(cam.position));
-        }
+        const cam = st.camera;
+        m.position.copy(new T.Vector3(0, 0, -2).applyQuaternion(cam.quaternion).add(cam.position));
         F.wurzel.add(m);
-        await F.zeichne(F.echt ? 8 : 1);
+        await F.zeichne(8);
         F.wurzel.remove(m);
         const W = r._indexWache;
         return W ? W.brueche.filter((b) => b.art === "bereich").map((b) => `${b.objekt}: ${b.detail}`) : null;

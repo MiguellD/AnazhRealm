@@ -245,12 +245,9 @@ class AnazhRealm_studio_stoff {
         // `_spiegelPass`) — ohne sie stand dort der Raum dahinter, und das Fenster spiegelte, was hinter ihm liegt. Was hinter
         // ihm liegt, zeichnet vor ihm (Opakes zuerst, Durchsichtiges von hinten) und bleibt sichtbar. Eine dünne Scheibe
         // zeichnet beide Seiten in EINEM Zug: r184 zieht einen doppelseitig-transparenten Stoff sonst zweimal (Rück-, dann
-        // Vorderseite) — gemessen +1 Befehl je Wagen über den Budget-Deckel vehicle draws 12.
-        if (R.op < 1) {
-            mat.transparent = true;
-            mat.opacity = R.op;
-            mat.forceSinglePass = true;
-        }
+        // Vorderseite) — gemessen +1 Befehl je Wagen über den Budget-Deckel vehicle draws 12. Das Gesetz steht im Licht-Baustein
+        // (welt-licht.js `durchsicht`), die Bühne jedes Studios zeichnet ihr Glas nach demselben (`buehneZeichnet`).
+        if (R.op < 1) __weltLicht.durchsicht(mat, R.op);
         if (env !== 1) mat.envMapIntensity = env;
         if (emis) {
             mat.emissive = new T.Color(emis[0], emis[1], emis[2]);

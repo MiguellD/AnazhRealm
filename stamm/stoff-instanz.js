@@ -751,6 +751,7 @@ class AnazhRealm_stoff_instanz {
                 const zug = a._zuege.get(camera);
                 if (!zug || !zug.bereit) throw new Error("GPU-WAHL: die Arena zieht ohne die Wahl ihres Passes");
                 zug.bereit = false;
+                a._wahlSicht(zug, renderer);
                 a._stapel[a._stapel.length - 1] = zug;
                 return;
             }
@@ -1409,6 +1410,22 @@ class AnazhRealm_stoff_instanz {
                 this._auftraege(zug, camera, rend, false);
                 zug.bereit = true;
                 return zug;
+            }
+            // DIE SICHT BEIM ZEICHNEN (w27-gpu-wahl-heil): die Wahl der GPU legt den Zug im Haken des Passes, vor dem Bild des Passes —
+            // die Sicht urteilt die Arena aber beim Zeichnen (`_sichtbar`, wie der Zug der CPU in `onBeforeRender`): ein Glied, das
+            // nach dem Haken verborgen wurde (die Wahl einer Linse, `__linsenZiel`), fällt hier aus dem Zug. Befund (Radeon, die
+            // Albedo-Tafel an Genesis, 900c28e6): jede Zeile zog Wiese, Kronen und Bänke der Wahl mit (Rinde 0,0807 → 0,1397, Tor
+            // 0,6493 → 0,1256) — eine Zusage der Foundry zwischen zwei Schüssen schrieb `_instanzZahl` (visible = n > 0) vor dem Haken.
+            _wahlSicht(zug, renderer) {
+                for (let j = zug.zuege.length - 1; j >= 0; j--) {
+                    const m = zug.zuege[j];
+                    if (m === this || this._sichtbar(m, renderer)) continue;
+                    const gz = zug.gpuZahl ? zug.gpuZahl.get(m) : undefined;
+                    zug.tri -= (zug.arr[zug.offs[j] / 4 - zug.seg * this._segCap * 5] / 3) * (gz === undefined ? zug.wahl[j * 5 + 2] : gz); // prettier-ignore
+                    zug.offs.splice(j, 1);
+                    zug.zuege.splice(j, 1);
+                    zug.wahl.splice(j * 5, 5);
+                }
             }
             // DER ABSCHIED: durch das Bündel (`_archBundleSceneRemove`) — wird es leer, verlässt es mit seinem Verdeckungs-
             // Proxy Szene und Register. Befund 16.10. (Prüfung, Reise Wiese → Dorf): die Arena nahm sich still aus ihrem

@@ -6,9 +6,9 @@
 //  gibt der CI und `LINSE_GPU=software` swiftshader, lokal unter Windows den Hardware-Adapter
 //   W3  keine Linse ruft das swiftshader-Rezept (`softwareWebGpuArgs`) an der Weiche vorbei — der Rückweg ist LINSE_GPU
 //   W4  jede Linse an der Weiche nennt ihren Adapter: je Aufruf von `linsenWebGpuArgs()` ein `adapterZeile(…)`
-//   W5  DIE ZEIT-ACHSE: die WebGL-Familie fährt lokal ANGLE auf der Karte (ohne navigator.gpu), die CI
-//       swiftshader; jede Zeit-Linse (ZEIT_LINSEN: ein Urteil, das auf swiftshaders Zeit geeicht ist) trägt `zeit: true`
-//       an ihrem Start und fährt so swiftshader; die Zeit-Zeile in welt-boot nennt eine Zeit-Linse auf der Karte ROT
+//   W5  DIE WEBGL-FAMILIE: sie fährt lokal ANGLE auf der Karte (ohne navigator.gpu), ohne Karte swiftshader. (Die Zeit-Achse —
+//       eine Zeit-Linse mit `zeit: true` fuhr auch auf der Karte swiftshader — fiel mit w27-swift-raus: die GPU-Klasse urteilt
+//       nur noch auf der Karte, gate:ci-deckung (K).)
 //   --selftest: ein eingeschmuggeltes Literal (auch ein eigenes Adapter-Literal) wird genannt, eine Kommentar-Erwähnung
 //   nicht; eine Linse am swiftshader-Rezept vorbei und eine Linse ohne Adapter-Zeile werden genannt
 "use strict";
@@ -22,23 +22,8 @@ const {
     linsenGpu,
     linsenWebGpuArgs,
     linsenWebglArgs,
-    zeitZeile,
     LINUX_SWAPCHAIN,
 } = require("./lib/software-gpu.cjs");
-
-// Die Zeit-Linsen an der Weiche: ihr Urteil ist auf swiftshaders Zeit geeicht (hitch Band 1 zählt LongTasks des
-// swiftshader-Boots, die Garage G10 die Bildzeit voll gegen leicht). Eine Zähl-, Bild- oder Struktur-Linse steht hier nie.
-const ZEIT_LINSEN = ["scripts/diag-hitch-telemetrie.cjs", "scripts/diag-garage-labor.cjs"];
-
-// W5 je Zeit-Linse: jeder Start an der Weiche trägt `zeit: true` — über `starteBrowser` oder die Welt der Linse (`nullWelt`,
-// welt-boot: ihre Optionen reisen zu starteBrowser)
-function zeitFunde(name, src) {
-    const code = ohneKommentare(src);
-    const starts = code.match(/(?:starteBrowser\(|nullWelt\(\w+, )\{[^}]*\}/g) || [];
-    if (!starts.length) return [`${name}: kein starteBrowser — die Zeit-Linse startet an der Weiche vorbei`];
-    const ohne = starts.filter((s) => !/\bzeit:\s*true\b/.test(s)).length;
-    return ohne ? [`${name}: ${ohne} Start(s) ohne zeit: true — die Zeit-Linse führe lokal die Karte`] : [];
-}
 
 const ROOT = path.resolve(__dirname, "..");
 const REZEPT = path.join("scripts", "lib", "software-gpu.cjs");
@@ -109,18 +94,12 @@ function wand() {
     if (linsenGpu({}, "win32") !== "hardware") w2.push("Weiche: lokal unter Windows nicht der Hardware-Adapter");
     if (!gleich(linsenWebGpuArgs({ CI: "true" }, "linux"), softwareWebGpuArgs("linux"))) w2.push("Weiche: CI-Linux nicht das swiftshader-Rezept");
     if (!gleich(linsenWebGpuArgs({}, "win32"), echteWebGpuArgs())) w2.push("Weiche: lokal nicht das Hardware-Rezept");
-    // W5: die WebGL-Familie an derselben Weiche, die Zeit-Achse fährt swiftshader, die Zeit-Zeile feuert an der Karte
+    // W5: die WebGL-Familie an derselben Weiche
     const w5 = [];
     if (!gleich(linsenWebglArgs({ CI: "true" }, "linux"), softwareWebglArgs())) w5.push("WebGL-Weiche: CI nicht swiftshader");
     if (!gleich(linsenWebglArgs({}, "win32"), hardwareWebglArgs())) w5.push("WebGL-Weiche: lokal nicht die Karte");
     if (!hardwareWebglArgs().includes("--disable-blink-features=WebGPU")) w5.push("WebGL auf der Karte trägt navigator.gpu (die Welt wählte WebGPU)");
-    if (linsenGpu({}, "win32", { zeit: true }) !== "software") w5.push("Zeit-Achse: zeit: true fährt lokal die Karte");
-    if (!zeitZeile({ zeit: true, art: "linse", info: { vendor: "amd", architecture: "rdna-3" } })) w5.push("Zeit-Zeile stumm an der Karte");
-    for (const rel of ZEIT_LINSEN) {
-        const p = path.join(ROOT, rel);
-        if (!fs.existsSync(p)) w5.push(`${rel}: fehlt — die Liste der Zeit-Linsen ist stale`);
-        else w5.push(...zeitFunde(rel, fs.readFileSync(p, "utf8")));
-    }
+    if (linsenGpu({ LINSE_GPU: "karte" }, "win32") !== "hardware") w5.push("Weiche: LINSE_GPU=karte fährt unter Windows nicht die Karte");
     return { w1, w2, w3, w4, w5 };
 }
 
@@ -131,21 +110,7 @@ if (process.argv.includes("--selftest")) {
     const vorbei = weichenFunde("vorbei.cjs", "const b = await puppeteer.launch({ args: softwareWebGpuArgs() });\nawait adapterZeile(b);");
     const stumm = weichenFunde("stumm.cjs", "const b = await puppeteer.launch({ args: linsenWebGpuArgs() });\n// await adapterZeile(b) nur im Kommentar");
     const recht = weichenFunde("recht.cjs", "const b = await puppeteer.launch({ args: linsenWebGpuArgs() });\nawait adapterZeile(b);");
-    // W5: die Zeit-Linse ohne zeit: true (auch nur im Kommentar) wird genannt, mit zeit: true still; die Zeit-Zeile
-    // feuert an der Karte, schweigt an swiftshader, auf echt (GPU-Schloss) und bei einer Zähl-Linse
-    const zeitOhne = zeitFunde("ohne.cjs", 'const b = await starteBrowser({ art: "webgl", frist: 1 }); // zeit: true');
-    const zeitMit = zeitFunde("mit.cjs", 'const b = await starteBrowser({ art: "webgl", frist: 1, zeit: true });');
-    const amd = { vendor: "amd", architecture: "rdna-3" };
-    const swift = { vendor: "webgl2", architecture: "x", renderer: "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero)), SwiftShader driver)" };
-    const zeileOk =
-        !!zeitZeile({ zeit: true, art: "linse", info: amd }) &&
-        !zeitZeile({ zeit: true, art: "webgl", info: swift }) &&
-        !zeitZeile({ zeit: true, art: "echt", info: amd }) &&
-        !zeitZeile({ zeit: false, art: "linse", info: amd });
     const ok =
-        zeitOhne.length === 1 &&
-        zeitMit.length === 0 &&
-        zeileOk &&
         rot.length === 1 &&
         adapter.length === 1 &&
         kommentar.length === 0 &&
@@ -155,15 +120,14 @@ if (process.argv.includes("--selftest")) {
     console.log(
         `${ok ? "✅" : "❌"} SELBST-TEST: Literal genannt (${rot.join(" | ") || "—"}) · eigenes Adapter-Literal genannt (${adapter.join(" | ") || "—"})` +
             ` · Kommentar still (${kommentar.length}) · am Rezept vorbei genannt (${vorbei.w3.length}) · ohne Adapter-Zeile genannt (${stumm.w4.length})` +
-            ` · rechte Linse still (${recht.w3.length + recht.w4.length})` +
-            ` · Zeit-Linse ohne zeit genannt (${zeitOhne.length}), mit still (${zeitMit.length}) · Zeit-Zeile Karte ROT, swiftshader/echt/Zähl-Linse still (${zeileOk})`
+            ` · rechte Linse still (${recht.w3.length + recht.w4.length})`
     );
     process.exit(ok ? 0 : 1);
 }
 
 const { w1, w2, w3, w4, w5 } = wand();
 if (w1.length || w2.length || w3.length || w4.length || w5.length) {
-    for (const f of w5) console.log(`❌ W5 Zeit-Achse: ${f}`);
+    for (const f of w5) console.log(`❌ W5 Weiche: ${f}`);
     for (const f of w1) console.log(`❌ W1 eigene Schalter-Liste: ${f} — nimm linsenWebGpuArgs()/echteWebGpuArgs() aus ${REZEPT_NAME}`);
     for (const f of w2) console.log(`❌ W2 Rezept: ${f}`);
     for (const f of w3) console.log(`❌ W3 am Rezept vorbei: ${f}`);
@@ -173,5 +137,5 @@ if (w1.length || w2.length || w3.length || w4.length || w5.length) {
 console.log(
     `✅ gate:start-rezept: kein Skript trägt eigene WebGPU-Schalter · jede Linse an der Weiche nennt ihren Adapter` +
         ` · Rezept Linux ${softwareWebGpuArgs("linux").length} / Windows ${softwareWebGpuArgs("win32").length} Schalter` +
-        ` · Weiche hier: ${linsenGpu()} · ${ZEIT_LINSEN.length} Zeit-Linsen fahren ${linsenGpu(process.env, process.platform, { zeit: true })}`
+        ` · Weiche hier: ${linsenGpu()}`
 );

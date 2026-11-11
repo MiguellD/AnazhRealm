@@ -174,7 +174,7 @@ function drawZensus(opts) {
                         miss(c.x, c.y, c.z);
                     } else miss(0, 0, 0);
                 };
-                if (gpu) spaet.push([k, nahe, object, ...arena.wahl.slice(j * 5 + 1, j * 5 + 5)]);
+                if (gpu) spaet.push([k, nahe, object, arena.liste, ...arena.wahl.slice(j * 5 + 1, j * 5 + 5)]);
                 else nahe(null);
                 // Die Spur je unbenanntem Erzeuger (Material × Geometrie × Pass), höchstens 24.
                 const stoff =
@@ -213,11 +213,12 @@ function drawZensus(opts) {
         } finally {
             rend._renderObjectDirect = roh;
         }
-        const lies = async (a) => new Uint32Array(await rend.getArrayBufferAsync(a));
-        for (const [k, nahe, a, erst, , arg, li] of spaet) {
-            const ind = await lies(a._ind); // je Zug: Indizes, Zahl, …, Abschnitt der Liste
+        // die Liste ist die der Kamera des Zugs (`_wahlVor`: je Kamera ihre eigene, die Quelle trägt eine Karte) — über die EINE Puffer-Lesung
+        const lies = async (a, wer) => new Uint32Array(await window.__pufferLesen(a, "draw-zaehler " + wer));
+        for (const [k, nahe, a, liste, erst, , arg, li] of spaet) {
+            const ind = await lies(a._ind, "Auftrags-Puffer"); // je Zug: Indizes, Zahl, …, Abschnitt der Liste
             zaehl[k].tris += (ind[arg - 1] / 3) * ind[arg];
-            nahe(Array.from((await lies(a.__instanzQuelle.liste)).subarray(li, li + ind[arg]), (x) => x - erst));
+            nahe(Array.from((await lies(liste, "Liste des Zugs")).subarray(li, li + ind[arg]), (x) => x - erst));
         }
         // Die Studio-Art je Foundry-Klasse (Rezept-`kind`): die Band-Wand ordnet über sie, nie über Art-Namen-Listen.
         const rezepte = r._foundry?.recipes ? r._foundry.recipes : {};

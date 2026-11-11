@@ -13,10 +13,11 @@ const { ladeSpec } = require("./band-urteil.cjs");
 // samt seinem Zustand (`dorfZug`: läuft das Auto-Dorf am Ort)
 function messort(id) {
     const o = ladeSpec(id).ort;
-    if (!o || !Array.isArray(o.spieler))
-        throw new Error(`messort: kein Messort "${id}" in spec/profiband/haushalt.json`);
-    const b = Array.isArray(o.blick) ? o.blick : o.spieler;
-    return { id, x: o.spieler[0], z: o.spieler[1], blick: { x: b[0], z: b[1] }, wiese: o.wiese || null, dorfZug: o.dorfZug };
+    // ein Ort mit Pose aus dem Plan (`ortPose`, w27-ort-pose) trägt keinen Spieler: er steht zuerst am Anlauf
+    const s = o && (o.spieler || o.anlauf);
+    if (!Array.isArray(s)) throw new Error(`messort: kein Messort "${id}" in spec/profiband/haushalt.json`);
+    const b = Array.isArray(o.blick) ? o.blick : s;
+    return { id, x: s[0], z: s[1], blick: { x: b[0], z: b[1] }, wiese: o.wiese || null, dorfZug: o.dorfZug };
 }
 
 // DIE WIESE: ein Messort der Art Wiese trägt ihr Gesetz im Haushalt (`messorte[].wiese`) — gemessen wird an EINER

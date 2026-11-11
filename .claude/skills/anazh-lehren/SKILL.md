@@ -25,8 +25,9 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
   Kugel der Hülle, `AnazhHuelle.kugel`); auf ihr zeichnen garage und schmiede, `gelaende` fährt die Welt selbst
   (`index.html?studio=gelaende`). Heute zeichnen portale · fachwerk · terrain · koerperstudio · tetrapoda mit eigenem
   r128-`WebGLRenderer` und eigenem Licht — Labor = Welt ist dort Gesetz, nicht Stand.
-- **Worker:** Foundry lädt die EINE Brücke `foundry-bruecke.js` auf der Engine der Welt (three r184 per `import()` aus ihrer
-  Import-Karte, Manifest `engine`; kein ColorManagement, die Kerne rechnen ihr FARB-GESETZ selbst; Manifest per fetch) (`get-book` 1×Boot · `build-asset(id,seed,lod,ov)` ·
+- **Worker:** Foundry lädt die EINE Brücke `foundry-bruecke.js` auf der Engine der Welt (three r184 aus ihrer
+  Import-Karte als Blob-Modul, Manifest `engine`; kein ColorManagement, die Kerne rechnen ihr FARB-GESETZ selbst; der Faden holt
+  nur synchron, `_foundryHole` — eine asynchrone Antwort steht hinter den Skript-Stempeln der Seite an, gate:fluss S9) (`get-book` 1×Boot · `build-asset(id,seed,lod,ov)` ·
   `export-settlement`; die IDB-Platte der Schale trägt jede Lieferung — build-asset · Dorf-Export · Blatt-Atlas · Karte —
   unter dem Gesetz-SHA der Kerne, die sie liest) · `voxel-worker.js`. **Server:** save-server
   (state/.bak · perf-trace · llm-proxy · vendor) · signaling (WS→WebRTC; pos · input-Lockstep · dsl · soul · vibe).
@@ -191,9 +192,11 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
   `npm run format:check` · `npm run atlas` (+ `--find`).
 - Lokal der Puls der berührten Methoden + playtest:fast; der Integrator fährt den VOLLEN Playtest je Merge, die volle Batterie einmal je
   Version; gemergt bei grüner Zweig-CI.
-- CI (`.github/workflows/check.yml`): Puls in 2 Gruppen je Push; die volle Batterie in 18 Gruppen (1–7 CPU, 8–18 GPU; Playtest = Gruppe 1)
-  auf integ-probe, main, nachts und bei `[ci voll]` in der Commit-Message, hinter dem Kopf-Richter; `node scripts/ci-zeiten.cjs` misst und
-  verteilt, `gate:ci-deckung` hält die Waage; `[skip ci]` überspringt beides.
+- CI (`.github/workflows/check.yml`): Puls in 2 Gruppen je Push; die volle Batterie in 18 CPU-Gruppen (Playtest = Gruppe 1) auf
+  integ-probe, main, nachts und bei `[ci voll]` in der Commit-Message, hinter dem Kopf-Richter; die GPU-Klasse fährt NUR auf der Karte
+  (Job `echt`, drei Beine zugleich: omen · radeon · gtx1050, Läufer-Label `<karte>-gpu`, je Wand GENAU eine Stelle, nie swiftshader im
+  Zug) auf integ-probe, zug-a, zug-b und nachts; `node scripts/ci-zeiten.cjs` misst und verteilt, `gate:ci-deckung` hält die Waage
+  und die Klasse ((K): ein Echt-Rezept in der vollen Batterie ist ROT beim Namen); `[skip ci]` überspringt beides.
 - GPU-Zeit nur `werkbank gpu-bank` (OMEN = GTX 1060; die Radeon 890M lokal per `werkbank --echt`), A/B bei gleicher Szene oder ≥ 4 Boots
   je Seite; Aufträge und Berichte der Messplätze leben im Zweig `koordination`, nie in main.
 - Bild-Urteile auf ECHTER GPU aus jedem Zweig (`.github/workflows/gpu-probe.yml`): die Kopf-Commit-Message trägt

@@ -877,22 +877,20 @@ class AnazhRealm_kreatur_verhalten {
         [h.t, h.nx, h.nz, h.cx, h.cz] = [this.state.creatureAnimationTime, nx / n, nz / n, cx, cz];
     }
 
-    // DER LEIB DES TIERS (D2, Welle L): EINE benannte Größe je Tier, gelesen von jedem Körper, der ein Tier berührt (der
-    // Hüllen-Kontakt _kreaturHuellenKontakt; der Wagen liest denselben Leib, nie einen zweiten Kreis). Drei Achsen längs
-    // der Gier bei −halb · 0 · +halb (Becken, Rumpf-Mitte, Brust: der Vierbeiner ist ~1,6 Hüft-Höhen lang — die Schnauze
-    // ragt nicht in die Wand, die Flanke darf an ihr vorbei), je Achse der halbe Rumpf als Radius (0,3·L), die Höhe vom Fuß
-    // bis zum Kopf (1,8·L). L ist die Hüft-Höhe der Gestalt (dieselbe L, an der das Gang- und das Steuer-Gesetz messen; die
-    // Art unterscheidet die Gestalt, nie ein Tag). `out` wird überschrieben (allokationsfrei im Takt).
-    // Die REICHWEITE ist die waagrechte Spanne der ganzen Gestalt um die Mitte: an den End-Achsen hängt höchstens ein Glied
-    // von Leib-Höhe (Hals mit Kopf, Rute) — halb + Höhe. Sie liest, wer wissen muss, ob eine Strecke das Tier ÜBERHAUPT
-    // erreichen kann (das Grob-Tor des Treffers, _trefferErreichbar), bevor die Gestalt selbst richtet. Gemessen über die
-    // Treffer-Glieder als räumliche Spanne vom Fuß-Ursprung (sie deckt jede Lage des Leibs), vier Gattungen × acht Größen
-    // im Spiel-Takt: Wolf 1,86 · Bär 2,00 · Hirsch 2,01 · Fuchs 2,21 L (die Rute) gegen 2,6 L (gate:kampf-gefuehl T12).
+    // DER LEIB DES TIERS (D2, Welle L): EINE benannte Größe je Tier, gelesen von jedem Körper, der ein Tier berührt (Hülle, Wagen,
+    // Leib an Leib). Drei Achsen längs der Gier bei −halb · 0 · +halb (Becken, Rumpf-Mitte, Brust), je Achse ihr Radius `rad[0..2]`
+    // — das Quer-Maß der GEZEICHNETEN Gestalt dort (`tb.quer`, physik.K2 Staffel 2; ohne Studio-Baum 0,3·L; nie der Wank am Hang),
+    // `radius` der größte, die Höhe vom Fuß bis zum Kopf (1,8·L); L die Hüft-Höhe. Die REICHWEITE (halb + Höhe: an den End-Achsen
+    // hängt höchstens ein Glied von Leib-Höhe) liest das Grob-Tor des Treffers (_trefferErreichbar); gemessen über die Treffer-Glieder
+    // im Spiel-Takt: Wolf 1,86 · Bär 2,00 · Hirsch 2,01 · Fuchs 2,21 L (die Rute) gegen 2,6 L (gate:kampf-gefuehl T12). `out` wird überschrieben.
     _kreaturLeib(creature, L, out) {
         const l = L > 0 ? L : this._kreaturHueftL(creature);
         const o = out || {};
         o.L = l;
-        o.radius = Math.max(0.12, 0.3 * l);
+        const q = creature.userData && (creature.userData._tierBaum || 0).quer;
+        const rad = o.rad || (o.rad = [0, 0, 0]);
+        for (let a = 0; a < 3; a++) rad[a] = q ? l * q[a] : Math.max(0.12, 0.3 * l);
+        o.radius = Math.max(rad[0], rad[1], rad[2]);
         o.halb = 0.8 * l;
         o.hoehe = Math.max(0.5, 1.8 * l);
         o.reichweite = o.halb + o.hoehe;
@@ -1094,7 +1092,7 @@ class AnazhRealm_kreatur_verhalten {
             t.z = K.z;
             t.hx = 0;
             t.hz = 0;
-            t.r = K.r;
+            [t.r, t.rad] = [K.r, null];
             t.y0 = K.y0;
             t.y1 = K.y1;
             t.reich = t.r;
@@ -1105,7 +1103,7 @@ class AnazhRealm_kreatur_verhalten {
         t.z = q.position.z;
         t.hx = lb.fx * lb.halb;
         t.hz = lb.fz * lb.halb;
-        t.r = lb.radius;
+        [t.r, t.rad] = [lb.radius, lb.rad];
         t.y0 = q.position.y;
         t.y1 = q.position.y + lb.hoehe;
         t.reich = lb.halb + lb.radius;
@@ -1136,7 +1134,7 @@ class AnazhRealm_kreatur_verhalten {
             b.z + b.hz,
             nah
         );
-        const tief = a.r + b.r - nah.d;
+        const tief = this._leibRadAn(a, nah.px, nah.pz) + this._leibRadAn(b, nah.qx, nah.qz) - nah.d;
         if (!(tief > 0)) return false;
         const wich = tief > 1e-4; // ein Rest unter 0,1 mm ruft keinen weiteren Gang
         let nx;
@@ -1176,6 +1174,11 @@ class AnazhRealm_kreatur_verhalten {
         }
         this._stossPaar(a.q, b.q, nx, nz);
         return wich;
+    }
+    // DER RADIUS AN DER BERÜHRUNG (x, z) eines Teils: zwischen den Achsen (`rad`) linear, s = −1 … +1; ohne `rad` sein `r` (allokationsfrei)
+    _leibRadAn(t, x, z) {
+        const s = ((x - t.x) * t.hx + (z - t.z) * t.hz) / (t.hx * t.hx + t.hz * t.hz);
+        return t.rad && Number.isFinite(s) ? t.rad[1] + (t.rad[s < 0 ? 0 : 2] - t.rad[1]) * Math.abs(s) : t.r;
     }
     // DER WEG GEGEN DIE LEIBER (je Teil-Schritt des Wegs, `_kreaturWeg`): der gehende Leib c (Index i) gegen jeden anderen in
     // seiner Reichweite — das Paar des Kontakts Leib an Leib (`_leibPaar`). Der grobe Filter liest den weitesten Raum des
@@ -1275,6 +1278,7 @@ class AnazhRealm_kreatur_verhalten {
             }
             const L = this._kreaturHueftL(c);
             this._kreaturLeib(c, L, leib);
+            if (ud._tierBaum) ud._tierBaum._gang = null; // … samt seinen Pfoten: der Gang beginnt je Schritt frisch im Lot (`tierPose`)
             ud._wandHalt = null; // der Stoß trägt den Leib, seine Wand ist die des Schritts (unten)
             ud._wandBlickGang = false; // sein Grund (unten) ist ohne Blick voraus gesetzt — der Gang blickt neu
             // der Grund, von dem dieser Schritt ausgeht — der SIM-Zustand des Stoßes (Lehre 13: was einen Körper bewegt, läuft
@@ -1438,8 +1442,7 @@ class AnazhRealm_kreatur_verhalten {
             nah = ud._huellenNah = { x: p.x, z: p.z, t, liste };
         }
         if (!nah.liste.length) return;
-        // DER LEIB (_kreaturLeib, die EINE benannte Größe): drei Achsen längs der Gier, je Achse sein Radius, die Höhe vom
-        // Fuß bis zum Kopf. Eine Achse, die der Löser schiebt, schiebt den ganzen Leib.
+        // DER LEIB (_kreaturLeib): drei Achsen längs der Gier, je Achse ihr Radius; eine Achse, die der Löser schiebt, schiebt alle
         const leib = this._kreaturLeib(creature, L, this._kreaturLeibHuelle || (this._kreaturLeibHuelle = {}));
         const radius = leib.radius;
         const halb = leib.halb;
@@ -1453,7 +1456,6 @@ class AnazhRealm_kreatur_verhalten {
         // Eine Wand hält nur, wer von AUSSEN kommt: stand die Achse schon vor dem Schritt im Kasten (geboren, gestoßen,
         // eine Boden-Stufe machte eine flache Box zur Wand), stößt der Kasten sie nicht quer durch sich hinaus — sie
         // geht frei heraus. Sonst sprang ein Tier je Frame um Meter (gemessen: Tempo-Sprünge bis 7000 m/s²).
-        const rInnen2 = 0.81 * radius * radius;
         // Kosten an Betroffene: eine Box, die der Leib weder erreicht (waagrecht jenseits halb + radius) noch in der Höhe
         // schneidet (unter der Stufe des Fußes oder über dem Kopf — der Löser würde sie als Wand übergehen), fällt vor
         // jeder Achse heraus. Reichweite und Innen-Test messen im Rahmen der gedrehten Box (`_boxAbstand2`, D5).
@@ -1468,12 +1470,13 @@ class AnazhRealm_kreatur_verhalten {
                 if (this._boxAbstand2(box, p.x, p.z) > reich2) continue;
                 for (let o = -1; o <= 1; o++) {
                     const off = o * halb;
-                    if (this._boxAbstand2(box, px0 + f0x * off, pz0 + f0z * off) < rInnen2) continue;
+                    const rA = leib.rad[o + 1]; // je Achse ihr Radius (das Quer-Maß der Gestalt dort)
+                    if (this._boxAbstand2(box, px0 + f0x * off, pz0 + f0z * off) < 0.81 * rA * rA) continue;
                     q.x = p.x + fx * off;
                     q.z = p.z + fz * off;
                     const ax = q.x,
                         az = q.z;
-                    this._resolveCapsuleVsAABB(box, q, feetY, headY, radius, -Infinity, k);
+                    this._resolveCapsuleVsAABB(box, q, feetY, headY, rA, -Infinity, k);
                     p.x += q.x - ax;
                     p.z += q.z - az;
                     if (q.x !== ax || q.z !== az)

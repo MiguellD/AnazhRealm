@@ -119,15 +119,13 @@
         },
         {
             "id": "dorf",
-            "titel": "Das Dorf der Zelle −4,−4 (S3 haus, Plan §3.3 1c): der Dorf-Zug LÄUFT (wie im Spiel) und baut das Dorf der Zelle; die Werkbank wartet beim Einschwingen, bis kein Export unterwegs ist und keine Siedlung mehr wächst (`einschwingOffen`, band-urteil). Der Spieler steht auf dem Zell-Ort, den `_autoSettlementCellInfo(−4, −4)` rechnet (−841,0/−861,1; Same 4291161376, 13 Häuser), der Blick zur Mitte des Dorfs: der Zug rückt den Plan vor den Spieler (`_siedlungsAnker`), die Ort-Wahl (`_ortWahl`) legt ihn fest; eine L0 erreicht der Zug nie — sie misst gate:haus-fern am Kern.",
+            "titel": "Das Dorf der Zelle −4,−4 (S3 haus, Plan §3.3 1c): der Dorf-Zug LÄUFT (wie im Spiel) und baut das Dorf der Zelle; die Werkbank wartet beim Einschwingen, bis kein Export unterwegs ist und keine Siedlung mehr wächst (`einschwingOffen`, band-urteil). Der Spieler kommt am Zell-Ort an, den `_autoSettlementCellInfo(−4, −4)` rechnet (`spieler` −841,0/−861,1; Same 4291161376, 13 Häuser): der Zug rückt den Plan vor ihn (`_siedlungsAnker`), die Ort-Wahl (`_ortWahl`) legt ihn fest. Dann steht er auf dem Platz des Plans, der Blick auf den ersten Bau mit freier Sichtlinie (`ortPose` „platz“: `_ortPose` rechnet die Pose in der Probe aus dem Plan, hier steht keine Zahl von ihr); eine L0 erreicht der Zug nie — sie misst gate:haus-fern am Kern.",
             "spieler": [
                 -841,
                 -861
             ],
-            "blick": [
-                -834.1,
-                -853.8
-            ],
+            "ortPose": "platz",
+            "imBild": { "bauSatz": 0.02 },
             "dorfZug": true,
             "ortTakt": [],
             "soll": [
@@ -281,19 +279,13 @@
         },
         {
             "id": "stadt",
-            "titel": "Die Stadt (Profiband K1): am Anlauf sagt der Spieler „dorf 7 120“, die Großstadt (91 Häuser im Plan) steht am Anker, der Dorf-Zug läuft; der Spieler geht die Hauptgasse nach Osten (`--wandern bahn`).",
-            "spieler": [
-                609.1,
-                419
-            ],
-            "blick": [
-                662.9,
-                421.8
-            ],
+            "titel": "Die Stadt (Profiband K1): am Anlauf sagt der Spieler „dorf 7 120“, die Großstadt (91 Häuser im Plan) steht am Anker, der Dorf-Zug läuft; der Spieler steht auf dem Platz ihres Plans, der Blick auf den ersten Bau mit freier Sichtlinie (`ortPose` „platz“, `_ortPose`), und geht die Hauptgasse nach Osten (`--wandern bahn`).",
+            "ortPose": "platz",
             "anlauf": [
                 400,
                 400
             ],
+            "imBild": { "bauSatz": 0.02 },
             "dorfZug": true,
             "ortTakt": [],
             "gruendung": {
@@ -324,19 +316,13 @@
         },
         {
             "id": "stadt-voll",
-            "titel": "Die volle Stadt (der Stadt-Gipfel): am Anlauf sagt der Spieler „dorf 7 300“, die Metropole (295 Häuser, 1092 Bewohner, Markt mit Ständen) steht am Anker; der Spieler steht am Markt im Gedränge, die Bahn ist die Hauptgasse nach Osten.",
-            "spieler": [
-                836.2,
-                438.5
-            ],
-            "blick": [
-                896.1,
-                441.7
-            ],
+            "titel": "Die volle Stadt (der Stadt-Gipfel): am Anlauf sagt der Spieler „dorf 7 300“, die Metropole (295 Häuser, 1092 Bewohner, Markt mit Ständen) steht am Anker; der Spieler steht auf der langen Achse ihres Platzes am Markt im Gedränge, außerhalb der Spur der Wagen, der Blick auf den ersten Bau mit freier Sichtlinie, die keine Spur kreuzt (`ortPose` „platz“, `_ortPose`); im Bild Bauten und die Menge (`imBild`: bauSatz und die Familie bewohner samt Gedränge); die Bahn ist die Hauptgasse nach Osten.",
+            "ortPose": "platz",
             "anlauf": [
                 400,
                 400
             ],
+            "imBild": { "bauSatz": 0.02, "bewohner": 0.01 },
             "dorfZug": true,
             "ortTakt": [],
             "gruendung": {

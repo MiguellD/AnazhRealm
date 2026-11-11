@@ -21,8 +21,8 @@ run-name: GPU-Probe ${{ github.ref_name }} ${{ github.sha }}
 # Mutanten): nie ein freier Befehl aus der Message, das Repo ist öffentlich.
 # Drei Jobs: einlass (ubuntu: eine abgewiesene Probe weckt nie eine GPU; er teilt den Ruf in die Arten gpu-probe und gpu-zeit) →
 # probe (EIN Job, je nicht leere Art ein Bein der Matrix auf [self-hosted, <label>], unter dem GPU-Schloss des Rechners, das der
-# Start-Hook des Läufers für jeden Job nimmt; je Probe ≤ 8 min, dann fällt ihr Prozessbaum; wartet ein echt-Job aus check.yml,
-# startet die Probe nicht oder gibt nach) → post (ubuntu, nach BEIDEN Beinen: probe-post/<zweig>/<sha8>.md mit den Bildern, je Probe
+# Start-Hook des Läufers für jeden Job nimmt; je Probe ≤ 8 min, dann fällt ihr Prozessbaum; wartet ein Karten-Job aus check.yml
+# auf diesen Läufer, startet die Probe nicht oder gibt nach) → post (ubuntu, nach BEIDEN Beinen: probe-post/<zweig>/<sha8>.md mit den Bildern, je Probe
 # ihr Läufer, bei zeit: „Band-Gerät“, und eine Zeile oben in cloud-post/<zweig>.md im Zweig koordination; ein Push mit GITHUB_TOKEN
 # weckt keine Läufe). Der Lauf ist rot, wenn ein Bein nicht GRÜN ist. Auslöser NUR push (nie pull_request: fremder Code auf eigenen
 # Rechnern); die Vertrauens-Wand des Hooks lässt nur push und schedule von MiguellD durch.
@@ -191,12 +191,14 @@ jobs:
                   # die Zeilen des Hooks zu diesem Job (hook.log): wie lange er auf das Schloss wartete
                   grep -a "ci-runner $GITHUB_RUN_ID/$GITHUB_RUN_ATTEMPT " "$GPU_HOOK_LOG" 2> /dev/null | tr -d '\r' | sed 's/^/- Hook /' | tee -a "$OUT/ergebnis.md"
                   echo >> "$OUT/ergebnis.md"
-                  # DIE VORFAHRT: ein CI-Job, der auf das Schloss dieses Rechners wartet (hook.log), oder ein echt-Job aus check.yml in
-                  # der Schlange — dann startet keine Probe, und eine laufende fällt samt Prozessbaum. Ein Blick, der scheitert, gibt
-                  # ebenfalls nach (laut, mit Grund): der echt-Job hält das Profi-Band.
+                  # DIE VORFAHRT: ein CI-Job, der auf das Schloss dieses Rechners wartet (hook.log), oder ein Karten-Job aus check.yml
+                  # für DIESEN Läufer in der Schlange (das Bein echt <karte>: sein Label <karte>-gpu, die Karte heißt wie der Läufer bis
+                  # zum ersten Bindestrich — omen-gtx1060 → omen-gpu) — dann startet keine Probe, und eine laufende fällt samt
+                  # Prozessbaum. Ein Blick, der scheitert, gibt ebenfalls nach (laut, mit Grund): die Karten tragen den Zug.
                   VORFAHRT_JS='
                   const h = { authorization: `Bearer ${process.env.GH_TOKEN}`, accept: "application/vnd.github+json" };
                   const a = `${process.env.GITHUB_API_URL}/repos/${process.env.GITHUB_REPOSITORY}/actions`;
+                  const karte = String(process.env.RUNNER_NAME || "").split("-")[0] + "-gpu";
                   const lies = async (u) => {
                       const r = await fetch(u, { headers: h });
                       if (!r.ok) throw new Error(`${r.status} ${u}`);
@@ -206,7 +208,7 @@ jobs:
                       for (const s of ["queued", "in_progress"])
                           for (const l of (await lies(`${a}/workflows/check.yml/runs?status=${s}&per_page=20`)).workflow_runs)
                               for (const j of (await lies(`${l.jobs_url}?per_page=100`)).jobs)
-                                  if (j.status === "queued" && j.labels.includes("echt-gpu")) return console.log(`echt-Job „${j.name}“ (Lauf ${l.id}) wartet`);
+                                  if (j.status === "queued" && j.labels.includes(karte)) return console.log(`Karten-Job „${j.name}“ (Lauf ${l.id}) wartet auf diesen Läufer (${karte})`);
                   })().catch((e) => console.log(`Vorfahrt-Blick gescheitert: ${e.message}`));'
                   vorfahrt() { if ci_wartet; then echo "ein CI-Job wartet auf das Schloss (hook.log)"; else node -e "$VORFAHRT_JS"; fi; }
                   # EIN LAUF mit Deckel und Vorfahrt: am Deckel oder bei Vorfahrt fällt der GANZE Prozessbaum (taskkill -T, wie gpu-lauf.sh:
@@ -245,12 +247,13 @@ jobs:
                       grep -h "\[linse-gpu\]" "$wl"
                       node scripts/werkbank.cjs umstellen --ort "$1" --port $W > "$OUT/umstellen-$1.json" || rc=1
                       grep -E '"(ort|sicht|spieler|fehler)"' "$OUT/umstellen-$1.json"
-                      d=$(node -e 'const o = require("./spec/profiband/haushalt.json").messorte.find((x) => x.id === process.argv[1]); console.log(Math.hypot(o.blick[0] - o.spieler[0], o.blick[1] - o.spieler[1]).toFixed(1))' "$1")
+                      # der Blick des Orts aus `umstellen` (ein Ort mit Pose aus dem Plan, `ortPose`, trägt ihn nur dort), sonst aus der Spec
+                      d=$(node -e 'const u = require(process.argv[2]), o = require("./spec/profiband/haushalt.json").messorte.find((x) => x.id === process.argv[1]); const [s, b] = [u.spieler || o.spieler, u.blick || o.blick]; console.log(Math.hypot(b[0] - s[0], b[1] - s[1]).toFixed(1))' "$1" "$(cygpath -w "$OUT/umstellen-$1.json")")
                       kam=$(node scripts/werkbank.cjs eval "for (let i = 0; i < 30; i++) r._loopCamera(performance.now() + i * 100); const c = r.state.camera; const v = c.getWorldDirection(new T.Vector3()).multiplyScalar($d).add(c.position); return [c.position.x, c.position.y, c.position.z, v.x, v.y, v.z].map((x) => x.toFixed(2)).join(' ');" --port $W | sed -n 's/.*"ergebnis": "\(.*\)".*/\1/p')
                       echo "Kamera des Spiels → Blick ($d m): ${kam:-ungelesen}"
                       [ -n "$kam" ] || rc=1
                       if [ $rc = 0 ]; then
-                          node scripts/werkbank.cjs bild $kam --wahl 0 --w 960 --h 540 --datei "$3" --port $W ${2:+--uhr "$2"} > "$OUT/bild-$1.json" || rc=1
+                          node scripts/werkbank.cjs bild $kam --wahl 0 --w 960 --h 540 --datei "$3" --port $W ${2:+--uhr "$2"} --ort "$1" > "$OUT/bild-$1.json" || rc=1
                           grep -E '"(abnahme|fehler|gesamtMs)"' "$OUT/bild-$1.json"
                           grep -q '"abnahme": "ABNAHME GRÜN' "$OUT/bild-$1.json" || rc=1
                       fi

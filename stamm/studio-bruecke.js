@@ -89,7 +89,8 @@ class AnazhRealm_studio_bruecke {
                           .concat(Object.values(module))
                     : [],
             };
-            // die Helfer des Fadens reisen als Quelltext (die Schale, die EINE Signatur-Prüfung, das Auspacken eines Buchs)
+            // die Helfer des Fadens reisen als Quelltext (die Schale, die EINE Signatur-Prüfung, das Auspacken eines Buchs,
+            // der EINE Abruf des Fadens)
             const fn = (m) => {
                 const q = m.toString();
                 return q.startsWith("async ") ? "async function " + q.slice(6) : "function " + q;
@@ -103,6 +104,7 @@ class AnazhRealm_studio_bruecke {
                     fn(AnazhRealm._foundrySchale),
                     fn(AnazhRealm._ed25519Pruefe),
                     fn(AnazhRealm._buchAuspacke),
+                    fn(AnazhRealm._foundryHole),
                 ].join(",") +
                 ");"; // die Brücke startet sich selbst (Foundry-Modus, Kanal-Hörer, ready)
             f.bootUrl = URL.createObjectURL(new Blob([boot], { type: "text/javascript" }));
@@ -160,6 +162,12 @@ class AnazhRealm_studio_bruecke {
         // ein Gesetzbuch der Bibliothek fällt im Faden beim Namen (Signatur, Auspacken, Namensraum, Laden) — laut, je Faden
         if (m.type === "buch-abgewiesen")
             this.log(`GESETZBUCH ${String(m.code).slice(0, 16)} abgewiesen: ${m.grund}`, "ERROR");
+        // die Platte eines Fadens fiel (die Schale meldet es einmal, `faellt`): er baut jede Lieferung im Studio
+        else if (m.type === "platte-fiel")
+            this.log(
+                `FOUNDRY-PLATTE ${m.teil === "karte" ? "trägt keine Karte" : "gefallen"}: ${String(m.grund).slice(0, 200)}`,
+                "ERROR"
+            );
         else if (m.type === "asset") {
             // Das Budget-Gesetz am Studio-Ausgang (W8) meldet einen Bruch LAUT — nie still.
             if (Array.isArray(m.budgetBruch) && m.budgetBruch.length)
@@ -231,6 +239,15 @@ class AnazhRealm_studio_bruecke {
         const m = f.buch;
         f.buch = null;
         if (m) this._foundryIngestBook(m);
+    }
+    // DAS BUCH ÖFFNET SICH (EINE Antwort, zwei Leser): solange der Faden nicht steht oder sein Buch nicht in der Welt liegt, ist
+    // die Bibliothek offen — dem ersten Bild sagt es `_weltbildFehlt`, jeder Linse und dem Wort „die Welt steht" `_weltOffen`.
+    // Bis w27-foundry-halter zählte `_weltOffen` die Foundry erst ab ihrem ersten Auftrag: an der GTX 1050 (HDD) erreicht die
+    // Antwort auf fetch und import den Faden 9–25 s nach dem Ruf (Chromes Code-Cache-Faden stempelt davor je geladenem Skript,
+    // 196 × ~130 ms, und beantwortet die Rückfrage des Fadens der Reihe nach) — so lange nannte die Welt sich „nichts offen".
+    _foundryBuchOffen() {
+        const f = this._foundry;
+        return this._foundryEnabled() && !(f && f.ready && f.recipes);
     }
     // Wie viele Werk-Fäden: einer je vier Kerne, höchstens FOUNDRY_WERK_FAEDEN — die Kerne
     // allein entscheiden, nie der Renderer.
@@ -608,13 +625,34 @@ class AnazhRealm_studio_bruecke {
         const f = this._foundry;
         return f && f.recipes ? f.recipes[preset] || null : null;
     }
+    // DER EINE ABRUF DES STUDIO-FADENS (w28-foundry-frueh): synchron. KEIN ABRUF DES FADENS STEHT HINTER DER SEITE AN — jede
+    // ASYNCHRONE Antwort an einen Faden (fetch, import() von http) hält Chrome, bis sein Code-Cache-Faden im Browser-Prozess
+    // ihre Rückfrage beantwortet; der arbeitet der Reihe nach und stempelt davor jedes Skript, das die Seite lud (GTX 1050,
+    // HDD, Chrome 148: 196 Nachrichten zu ~130 ms). Ein synchroner Abruf fragt dort nicht. Er läuft als Quelltext im Faden
+    // (der Boot-Blob, `_ensureAssetFoundry`); mit ihm holen der Start (`_foundryStart`: Manifest, Engine) und die
+    // Transport-Schale (`_foundrySchale`: die Quellen der Kerne für das Gesetz der Platte, die des Wirts für den Stempel der
+    // Karte) — der Faden tut bis dahin nichts anderes. Gemessen im Spiel (GTX 1050 kalt, echter Renderer, je 3 frische Läufe
+    // im Wechsel): das Buch offen 30,5–44,6 s → 5,8–6,4 s nach der Navigation, das erste Weltbild 41,3–57,1 s → 24,0–25,1 s;
+    // mit Manifest und Engine allein kamen die Quellen der Schale noch bei 26,7 s an, so lange fragte kein Körper die Platte.
+    // Die Wand: gate:fluss S9 (kein fetch, kein import() von http im Faden), gate:pack-contract fährt den Boot ohne fetch.
+    static _foundryHole(u) {
+        const x = new globalThis.XMLHttpRequest();
+        x.open("GET", u, false);
+        x.send();
+        if (x.status !== 200) throw new Error("STOFF: der Foundry-Faden holt nicht — " + u + " antwortet " + x.status);
+        return x.responseText;
+    }
     // DER START DES STUDIO-FADENS (B3a): läuft als Quelltext im Faden (der Boot-Blob, `_ensureAssetFoundry`) und greift auf
     // nichts außerhalb seines Rumpfs zu. DER FADEN RECHNET AUF DER ENGINE DER WELT (w5-pipeline, pipeline.K5): die Kerne
     // lesen `THREE` — das ist das Modul, das die Import-Karte der Welt für den Namen ihres Manifest-Felds `engine` nennt
-    // (`b.module`, aufgelöst im Haupt-Faden; three r184, dieselbe URL, derselbe Cache), geholt per `import()`; keine zweite
+    // (`b.module`, aufgelöst im Haupt-Faden; three r184, dieselbe URL, derselbe HTTP-Cache); keine zweite
     // three im Faden, kein Addon. Die Farbe trägt kein ColorManagement: die Kerne rechnen ihr FARB-GESETZ selbst (die
     // sRGB-Kurve beim Bau, wie unter r128, das keines kannte) — die Komponente ist, was der Kern setzt. Das Kern-Manifest
-    // kommt per fetch (ALLES aus cores.manifest.json, EINE Quelle, ?v= Pflicht; kein synchrones XHR). Bis Engine und
+    // (ALLES aus cores.manifest.json, EINE Quelle, ?v= Pflicht) und die Engine holt der Faden mit seinem EINEN Abruf
+    // (`hole`, `_foundryHole`: synchron); die Engine wird samt jedem relativen Import ihrer Module ein Blob-Modul (`modul`) —
+    // ein Blob-Modul fragt den Code-Cache so wenig wie der synchrone Abruf. Einzeln trägt keiner der beiden Schritte (unter
+    // dem Null-Renderer das Buch ab Navigation: Stand 22,6–29,2 s, das Manifest allein 23,6–26,6 s, die Engine allein
+    // 22,5–26,6 s), zusammen 9,2–10,1 s. Bis Engine und
     // Kerne stehen, HÄLT der Faden jede Nachricht (der erste Hörer, `halte`) und reicht sie danach in ihrer Folge weiter —
     // dann steht die Transport-Schale VOR dem Studio (ihr Kanal-Hörer zuerst) und die Kerne laden in Manifest-Folge
     // (phyto- VOR foundry-core), danach die Bücher des Spielers → die Brücke ZULETZT (K42: keine Labor-Shell im Faden); importScripts braucht ABSOLUTE URLs
@@ -629,7 +667,7 @@ class AnazhRealm_studio_bruecke {
     // wie jede des Servers, VOR der Schale: die Schale stempelt es,
     // die Brücke liest es als Zweit-Kern (Rezepte, Stufen, Budget, Regler, KIND_POLICY). Ein Buch, das fällt, fällt beim
     // Namen (`buch-abgewiesen`, der Wirt meldet es laut), nie die Welt.
-    static _foundryStart(b, schale, pruefe, auspacken) {
+    static _foundryStart(b, schale, pruefe, auspacken, hole) {
         const W = globalThis;
         const url = (p) => new URL(p + b.v, b.base).href;
         const gehalten = [];
@@ -647,12 +685,25 @@ class AnazhRealm_studio_bruecke {
                 );
             return u;
         };
-        fetch(url("cores.manifest.json"))
-            .then((r) => {
-                if (!r.ok) throw new Error("STOFF: die Foundry bootet nicht — das Kern-Manifest antwortet " + r.status);
-                return r.json();
-            })
-            .then((manifest) => {
+        // das Modul `u` als Blob-Modul, jeder relative Import darin das Blob-Modul SEINER Datei (three r184: module → core);
+        // ein Kreis ließe sich so nicht tragen und bricht beim Namen
+        const blobs = new Map();
+        const modul = (u) => {
+            if (blobs.get(u) === null)
+                throw new Error("STOFF: die Foundry bootet nicht — die Engine importiert im Kreis (" + u + ")");
+            if (!blobs.has(u)) {
+                blobs.set(u, null);
+                const q = hole(u).replace(
+                    /(\bfrom\s*|\bimport\s*)(["'])(\.{1,2}\/[^"']+)\2/g,
+                    (_, vor, a, rel) => vor + a + modul(new URL(rel, u).href) + a
+                );
+                blobs.set(u, URL.createObjectURL(new Blob([q], { type: "text/javascript" })));
+            }
+            return blobs.get(u);
+        };
+        Promise.resolve()
+            .then(() => {
+                const manifest = JSON.parse(hole(url("cores.manifest.json")));
                 if (!Array.isArray(manifest) || !manifest.length)
                     throw new Error("STOFF: die Foundry bootet nicht — das Kern-Manifest trägt keinen Kern");
                 // eine Bibliothek neben den Kernen (`lib`, bis w5-pipeline three r128 + BufferGeometryUtils) wäre eine zweite
@@ -665,7 +716,10 @@ class AnazhRealm_studio_bruecke {
                 const motoren = [...new Set(manifest.map(engine).filter(Boolean))];
                 if (motoren.length !== 1)
                     throw new Error("STOFF: die Foundry bootet nicht — " + motoren.length + " Engines im Manifest");
-                return import(motoren[0]).then((T) => [manifest, T, motoren[0]]);
+                return import(modul(motoren[0])).then((T) => {
+                    for (const u of blobs.values()) URL.revokeObjectURL(u);
+                    return [manifest, T, motoren[0]];
+                });
             })
             .then(([manifest, T, motor]) =>
                 Promise.all(
@@ -691,6 +745,11 @@ class AnazhRealm_studio_bruecke {
                 const ab = (e, grund) => W.postMessage({ type: "buch-abgewiesen", code: e.code, grund });
                 const vergeben = new Set(manifest.flatMap((c) => [c.id, c.ns]).filter(Boolean));
                 const zeilen = [];
+                // DIE QUELLE EINES BUCHS HOLT KEIN ABRUF (w28-weltbild-kalt): sie liegt unter einer Blob-Adresse, und die CSP der
+                // Seite (connect-src ohne blob:) trägt im Faden weder XHR noch fetch dorthin, nur importScripts — die Schale
+                // bekommt den Text, den der Start schon hält (`texte`, über den EINEN Abruf). Bis hier fiel ihr Abruf, und
+                // die Platte des Fadens schwieg sich aus: mit einem Buch des Spielers baute jeder Boot jede Lieferung neu.
+                const texte = new Map();
                 for (const [e, quelle] of buecher) {
                     if (typeof quelle !== "string") {
                         ab(e, quelle === false ? "signatur" : "auspacken");
@@ -706,6 +765,7 @@ class AnazhRealm_studio_bruecke {
                     }
                     [id, ns[0]].forEach((n) => vergeben.add(n));
                     const u = URL.createObjectURL(new Blob([quelle], { type: "text/javascript" }));
+                    texte.set(u, quelle);
                     zeilen.push([e, { id, ns: ns[0], scripts: [u], buch: e.code }]);
                     manifest.push(zeilen[zeilen.length - 1][1]);
                 }
@@ -724,6 +784,7 @@ class AnazhRealm_studio_bruecke {
                     platte: b.platte,
                     kerne,
                     wirt: b.wirt || [],
+                    hole: (u) => (texte.has(u) ? texte.get(u) : hole(u)),
                 });
                 T.ColorManagement.enabled = false;
                 W.THREE = Object.assign({}, T);
@@ -800,6 +861,8 @@ class AnazhRealm_studio_bruecke {
                 "STOFF: die Transport-Schale kennt die Typen der gelesenen Ecken nicht (cfg.ecken, SAISON_GESETZ typ)"
             );
         const ECKEN = new Set(cfg.ecken);
+        if (typeof cfg.hole !== "function")
+            throw new Error("STOFF: die Transport-Schale kennt den Abruf des Fadens nicht (cfg.hole, _foundryHole)");
         const roh = W.postMessage.bind(W);
         const schreibAuftrag = new Map(); // reqId (der Atlas: "blatt-atlas") → die Lieferung des Studio-Baus, der gerade läuft
         // DIE PLATTE HÄLT KEINEN FADEN. Die Studio-Fäden (Werk und Helfer, `_foundryHelfer`) teilen EINE IndexedDB. Ein
@@ -847,7 +910,9 @@ class AnazhRealm_studio_bruecke {
             crypto.subtle
                 .digest("SHA-256", new TextEncoder().encode(s))
                 .then((b) => Array.from(new Uint8Array(b), (x) => x.toString(16).padStart(2, "0")).join(""));
-        const text = (u) => fetch(u).then((r) => r.text());
+        // die Quellen holt der EINE Abruf des Fadens (`cfg.hole`, synchron): eine asynchrone Antwort stünde hinter den
+        // Skript-Stempeln der Seite an (`_foundryHole`) — und mit ihr jede Lieferung, die die Platte fragt
+        const text = (u) => new Promise((ok) => ok(cfg.hole(u)));
         const kerne = cfg.kerne || [];
         let G = null;
         const huelle = (eigner) => {
@@ -864,6 +929,15 @@ class AnazhRealm_studio_bruecke {
         const artVon = (pid) => eigner((n) => !!n.PRESETS && Object.prototype.hasOwnProperty.call(n.PRESETS, pid));
         let db = null;
         let dbTot = !cfg.platte || typeof indexedDB === "undefined";
+        // DIE PLATTE FÄLLT LAUT (w28-weltbild-kalt): eine Platte, die der Wirt will und die nicht trägt — eine Quelle, die der
+        // Faden nicht holt, eine IndexedDB, die nicht öffnet oder nicht schreibt —, meldet es EINMAL beim Namen
+        // (`platte-fiel`, der Wirt loggt ERROR, `_foundryAntwort`); der Faden baut weiter jede Lieferung im Studio. Bis hier
+        // fing ein stummes `catch` den Fall: der Faden arbeitete byte-gleich ohne Platte, und kein Lauf sagte es.
+        const faellt = (grund) => {
+            if (!dbTot) roh({ type: "platte-fiel", world: "terrain", grund: String(grund).slice(0, 200) });
+            dbTot = true;
+            return null;
+        };
         const platte = dbTot
             ? Promise.resolve(null)
             : Promise.all(kerne.map((k) => Promise.all(k.urls.map(text)).then((t) => t.join("\n"))))
@@ -879,7 +953,8 @@ class AnazhRealm_studio_bruecke {
                           return new Promise((resolve) => {
                               const req = indexedDB.open("anazhFoundryAssets", 1);
                               req.onupgradeneeded = () => req.result.createObjectStore("assets");
-                              req.onerror = () => resolve(null);
+                              req.onerror = () =>
+                                  resolve(faellt("die IndexedDB öffnet nicht — " + (req.error && req.error.message)));
                               req.onsuccess = () => {
                                   const d = req.result;
                                   const t = tx(d, "readwrite");
@@ -903,12 +978,13 @@ class AnazhRealm_studio_bruecke {
                                       };
                                   };
                                   t.oncomplete = () => resolve(d);
-                                  t.onerror = () => resolve(null);
+                                  t.onerror = () =>
+                                      resolve(faellt("der Stempel schreibt nicht — " + (t.error && t.error.message)));
                               };
                           });
                       })
                   )
-                  .catch(() => null)
+                  .catch((e) => faellt((e && e.message) || e))
                   .then((d) => {
                       db = d;
                       if (!d) dbTot = true;
@@ -933,14 +1009,17 @@ class AnazhRealm_studio_bruecke {
             if (!db || dbTot) return;
             try {
                 const t = tx(db, "readwrite");
-                t.objectStore("assets").put(wert, schluessel(l)).onerror = () => {
-                    dbTot = true; // Quota/Fehler → nur noch Studio, nie still halb
+                t.objectStore("assets").put(wert, schluessel(l)).onerror = (ev) => {
+                    // Quota/Fehler → nur noch Studio, laut und nie halb
+                    faellt(
+                        "ein Wert schreibt nicht — " + (ev && ev.target && ev.target.error && ev.target.error.message)
+                    );
                 };
                 // Der Put schließt, ohne dass dieser Faden seinen Erfolg erst abholt (er fällt mitten in einen Studio-
                 // Lauf): der nächste Lauf wartet nur einen Ereignis-Umlauf, nie die Schreib-Zeit.
                 if (typeof t.commit === "function") t.commit();
-            } catch (_e) {
-                dbTot = true;
+            } catch (e) {
+                faellt("ein Wert schreibt nicht — " + (e && e.message));
             }
         };
         // Liegt die Lieferung auf der Platte? (count statt get: der Vorrat fragt nur, nie die Bytes)
@@ -1063,7 +1142,16 @@ class AnazhRealm_studio_bruecke {
             wirt ||
             (wirt = Promise.all((cfg.wirt || []).map(text))
                 .then((t) => (t.length ? hex(t.map((s) => s.replace(/VERSION = "[^"]*"/g, "")).join("\n")) : null))
-                .catch(() => null));
+                // eine Quelle des Wirts, die der Faden nicht holt: laut beim Namen, die Platte trägt dann keine Karte
+                .catch((e) => {
+                    roh({
+                        type: "platte-fiel",
+                        world: "terrain",
+                        teil: "karte",
+                        grund: String((e && e.message) || e).slice(0, 200),
+                    });
+                    return null;
+                }));
         const karte = (m) => {
             const l = { eigner: artVon(m.presetId), rest: m.platte };
             if (m.type === "karte-ablage")
@@ -3184,19 +3272,12 @@ class AnazhRealm_studio_bruecke {
         this._weltFeldFrei(entry._ziegelSlot);
         entry._ziegelSlot = null;
     }
-    // DAS WURF-RECHT EINES GELIEFERTEN TEILS (der EINE Leser: `_foundryBuildMesh`; gate:regler-wirkt liest ihn aus der
-    // Quelle). Die Fell-Schalen werfen keinen Schatten (die Haut darunter wirft ihn — sechs Schalen wären sechs Ränder).
-    // Eine LICHTQUELLE wirft nie (Seh-Klasse glut, vom Gesetzbuch gestempelt: Glutbett und Flamme der Feuerstelle, das
-    // Herdfeuer, die Leucht-Linien der Tore) — dieselbe Regel wie `_archTeilLeuchtet` für die Wirts-Teile. Ein
-    // DURCHSICHTIGER Stoff (Scheibe, Fenster, Brunnen-Wasser; Deckkraft < 1 aus dem Gesetzbuch) wirft auch keinen: das
-    // Licht geht durch ihn, und r184 zieht einen doppelseitig-durchsichtigen Werfer im Schattenpass zweimal (der
-    // Schatten-Stoff trägt kein forceSinglePass) — gemessen am GT k0 9 -> 7 Befehle, am Brunnen 2 -> 1 (Integration W5).
+    // DAS WURF-RECHT EINES GELIEFERTEN TEILS (der Leser der Welt: `_foundryBuildMesh`): das EINE Gesetz steht im Licht-Baustein
+    // (welt-licht.js `teilWirft` — Fell-Schale, Lichtquelle und durchsichtiger Stoff werfen nie); die Bühne jedes Studios wirft
+    // nach demselben (`stoffRecht` in jedem Bild, `buehneZeichnet`). r184 zöge einen doppelseitig-durchsichtigen Werfer im
+    // Schattenpass zweimal (der Schatten-Stoff trägt kein forceSinglePass) — gemessen am GT k0 9 -> 7 Befehle, am Brunnen 2 -> 1.
     static _teilWirft(m) {
-        return (
-            m.kind !== "fellSchale" &&
-            !(m.mat && m.mat.seh === "glut") &&
-            !(m.mat && typeof m.mat.opacity === "number" && m.mat.opacity < 1)
-        );
+        return __weltLicht.teilWirft(m);
     }
     // DIE KOSTEN-REGEL DES WURFS (1110-9, docs/studio-vertrag.md N5): geworfen wird von der billigeren Stufe — wirft eine
     // gezeigte Stufe über ihre NUR-WURF-Stufe, nimmt der Wirt deren Zwilling nur, wo er WENIGER Dreiecke in die Kaskaden
