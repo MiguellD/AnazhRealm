@@ -4407,7 +4407,7 @@
         // bis zu zwanzig Gängen der Bisektion je Zelle und Stufe.
         const laeufe = (t, n) => {
             const out = [];
-            for (let j = 0; j < n; ) {
+            for (let j = 0; j < n;) {
                 let e = j + 1;
                 while (e < n && t.i0[e] === t.i0[j] && t.i1[e] === t.i1[j]) e++;
                 out.push(t.i0[j], t.i1[j], j, e);
@@ -4594,7 +4594,7 @@
         // gleicher Zelle (dieselbe Formel je Spalte wie zuvor je Texel), übereinander die ganze Zeile
         const laufX = [];
         if (quer)
-            for (let x = 0; x < w; ) {
+            for (let x = 0; x < w;) {
                 const c = Math.min(V - 1, (x / wA) | 0);
                 let e = x + 1;
                 while (e < w && Math.min(V - 1, (e / wA) | 0) === c) e++;
@@ -4604,7 +4604,19 @@
         for (let y = 0; y < h; y++) {
             if (quer)
                 for (let q = 0; q < laufX.length; q += 3) {
-                    const n = mipStufe0(rgba, d0, sa, sr, sg, sb, y * w + laufX[q], y * w + laufX[q + 1], thr, roh0, blut);
+                    const n = mipStufe0(
+                        rgba,
+                        d0,
+                        sa,
+                        sr,
+                        sg,
+                        sb,
+                        y * w + laufX[q],
+                        y * w + laufX[q + 1],
+                        thr,
+                        roh0,
+                        blut
+                    );
                     opak += n;
                     cov0[laufX[q + 2]] += n;
                 }
