@@ -29,7 +29,18 @@
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 //   node scripts/diag-foundry-crossfade.cjs [--selftest]
 "use strict";
-const { statikServer, ROOT: root, hauptLauf, nullWelt, pruefer, wandEnde, selbsttestEnde, SELBSTTEST, stammLib, vm } = require("./lib/welt-boot.cjs");
+const {
+    statikServer,
+    ROOT: root,
+    hauptLauf,
+    nullWelt,
+    pruefer,
+    wandEnde,
+    selbsttestEnde,
+    SELBSTTEST,
+    stammLib,
+    vm,
+} = require("./lib/welt-boot.cjs");
 
 const { errs, check } = pruefer();
 
@@ -48,7 +59,11 @@ vm.runInContext(
 function studioBlende(laub) {
     const mat = {};
     KLASSE.ctx.injectWind(mat, laub, false, false);
-    const sh = { uniforms: {}, vertexShader: "#include <common>\n#include <begin_vertex>", fragmentShader: "void main() {" };
+    const sh = {
+        uniforms: {},
+        vertexShader: "#include <common>\n#include <begin_vertex>",
+        fragmentShader: "void main() {",
+    };
     mat.onBeforeCompile(sh);
     const kopf = /if\(uLodMaskOn[^)]*\)/;
     const block = stammLib.rumpf(sh.fragmentShader, kopf);
@@ -58,7 +73,8 @@ function studioBlende(laub) {
         .replace(/\bdiscard\b/g, "return [false, _dh]")
         .replace(/gl_FragCoord\.xy/g, "FC")
         .replace(/\bvec2\(/g, "V(");
-    const glsl = "const uLodMaskOn = 1, V = (x, y) => [x, y], dot = (p, q) => p[0] * q[0] + p[1] * q[1], fract = (v) => v - Math.floor(v), ";
+    const glsl =
+        "const uLodMaskOn = 1, V = (x, y) => [x, y], dot = (p, q) => p[0] * q[0] + p[1] * q[1], fract = (v) => v - Math.floor(v), ";
     const glsl2 = "clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi), min = Math.min, max = Math.max;\n";
     return new Function("FC", "uDitherT", "vLod", "vLodD", "vLodDL", glsl + glsl2 + js + "\nreturn [true, _dh];");
 }
@@ -85,7 +101,14 @@ function bandSamples(cfg) {
     const lo = cfg.d0 - cfg.fade0 - 4;
     const hi = cfg.d1 + 6;
     for (let d = lo; d <= hi; d += 0.5) out.push(d);
-    for (const e of [cfg.d0 - cfg.fade0, cfg.d0 - cfg.fade0 / 2, cfg.d0, cfg.d1 - cfg.fade, cfg.d1 - cfg.fade / 2, cfg.d1])
+    for (const e of [
+        cfg.d0 - cfg.fade0,
+        cfg.d0 - cfg.fade0 / 2,
+        cfg.d0,
+        cfg.d1 - cfg.fade,
+        cfg.d1 - cfg.fade / 2,
+        cfg.d1,
+    ])
         if (!out.includes(e)) out.push(e);
     out.sort(aufsteigend);
     return out;
@@ -196,7 +219,8 @@ function fensterLinse(core, cfgs, verschiebe) {
                             }
                             const fenster = A._blendeBehaelt(K, stufe, dSmin, dSmax, q * dSmin, q * dSmax, false);
                             out.proben++;
-                            const js = out.jeStufe[stufe] || (out.jeStufe[stufe] = { proben: 0, loecher: 0, ueberschuss: 0 });
+                            const js =
+                                out.jeStufe[stufe] || (out.jeStufe[stufe] = { proben: 0, loecher: 0, ueberschuss: 0 });
                             js.proben++;
                             if (wahr && !fenster) {
                                 out.loecher++;
@@ -222,13 +246,16 @@ function wgslFenster(wgsl, L, mass) {
     const aus = A._wahlLage(L, new Float32Array(76));
     const lage = {};
     let o = 0;
-    for (const [, name, n] of wgsl.match(/struct Lage \{([^}]*)\}/)[1].matchAll(/(\w+): (?:array<vec4f, (\d+)>|vec4f)/g)) {
+    for (const [, name, n] of wgsl
+        .match(/struct Lage \{([^}]*)\}/)[1]
+        .matchAll(/(\w+): (?:array<vec4f, (\d+)>|vec4f)/g)) {
         const v = Array.from({ length: +n || 1 }, () => ({ x: aus[o++], y: aus[o++], z: aus[o++], w: aus[o++] }));
         lage[name] = n ? v : v[0];
     }
     const js = [...wgsl.matchAll(/\nfn (haelt|fenster)\(([^)]*)\) -> bool \{[\s\S]*?\n\}/g)].map(([t, n, a]) =>
         t.replace(/fn \w+\([^)]*\) -> bool/, `function ${n}(${a.replace(/: \w+/g, "")})`).replace(/\blet /g, "const ").replace(/(\d)u\b/g, "$1")); // prettier-ignore
-    if (js.length !== 2) throw new Error("PASS_WAHL_WGSL trägt `haelt` und `fenster` nicht — das Fenster der Wahl fehlt");
+    if (js.length !== 2)
+        throw new Error("PASS_WAHL_WGSL trägt `haelt` und `fenster` nicht — das Fenster der Wahl fehlt");
     const kopf = "const { max, min, abs } = Math, vec2f = (x, y) => ({ x, y }), length = (v) => Math.hypot(v.x, v.y);";
     return new Function("lage", "h0", "h0l", "karte", `${kopf}\n${js.join("\n")}\nreturn fenster;`)(lage, mass.h0, mass.h0l, mass.karte); // prettier-ignore
 }
@@ -277,22 +304,48 @@ function stufeOhneBildLinse(core, cfg, wgsl = A.PASS_WAHL_WGSL) {
 
 // ===== (5) DIE ABSENZEN DER BLENDE — [Name, Glied (null = der ganze Stamm), Anti-Muster, Täter für den Selbsttest] =====
 const ABSENZEN = [
-    ["SCHATTEN: die Foundry-Maske misst nie von cameraPosition (im Schattenpass die Licht-Kamera)", "_lodCrossfadeMaskNode", /cameraPosition/, "T.cameraPosition"],
+    [
+        "SCHATTEN: die Foundry-Maske misst nie von cameraPosition (im Schattenpass die Licht-Kamera)",
+        "_lodCrossfadeMaskNode",
+        /cameraPosition/,
+        "T.cameraPosition",
+    ],
     [
         "SCHATTEN: kein Foundry-Stoff schneidet über opacityNode aus (der r184-Schattenpass liest ihn nie; nur die Blende multipliziert)",
         "_foundryTreeMaterial",
         /mat\.opacityNode = (?!mat\.opacityNode\.mul\(_keepX\);)/,
         "mat.opacityNode = TSL.float(1)",
     ],
-    ["MASS: die Foundry-Maske misst nie zum Fragment (positionWorld.x/z)", "_lodCrossfadeMaskNode", /positionWorld\.[xz]/, "T.positionWorld.x"],
-    ["MASS: keine Blattmaske misst zum Vertex (_cam.x.sub(_pw.x))", null, /_cam\.x\.sub\(_pw\.x\)/, "_cam.x.sub(_pw.x)"],
+    [
+        "MASS: die Foundry-Maske misst nie zum Fragment (positionWorld.x/z)",
+        "_lodCrossfadeMaskNode",
+        /positionWorld\.[xz]/,
+        "T.positionWorld.x",
+    ],
+    [
+        "MASS: keine Blattmaske misst zum Vertex (_cam.x.sub(_pw.x))",
+        null,
+        /_cam\.x\.sub\(_pw\.x\)/,
+        "_cam.x.sub(_pw.x)",
+    ],
     [
         "AUGE: keine Stufen-Wahl misst vom Spieler statt vom Auge der Maske",
-        ["_tickArchitectureLOD", "_archStufeUrteil", "_switchArchitectureLOD", "_foundryLodForEntry", "_updateFoundryLodBand"],
+        [
+            "_tickArchitectureLOD",
+            "_archStufeUrteil",
+            "_switchArchitectureLOD",
+            "_foundryLodForEntry",
+            "_updateFoundryLodBand",
+        ],
         /playerMesh/,
         "this.state.playerMesh",
     ],
-    ["LAUT: kein Fehler der Blende landet still in einer Fenster-Variable", null, /__foundryCrossfadeError|__lodCrossfadeError/, "window.__lodCrossfadeError = 1"],
+    [
+        "LAUT: kein Fehler der Blende landet still in einer Fenster-Variable",
+        null,
+        /__foundryCrossfadeError|__lodCrossfadeError/,
+        "window.__lodCrossfadeError = 1",
+    ],
     ["LAUT: die Karte zeichnet nie ohne Maske weiter (if (_keepFin))", null, /if \(_keepFin\)/, "if (_keepFin) {}"],
 ];
 // der Täter am Kopf seines (ersten) Glieds — im ganzen Stamm am Kopf der Maske
@@ -339,19 +392,18 @@ async function runPartB() {
         const warm = { 0: false, 1: false, 2: false };
         const loopTakt = () => __takte(1, 120);
         const waerme = (name, e, preset, stufen, w) =>
-            window
-                .__gebautNach(name, {
-                    fertig: () => {
-                        for (const l of stufen)
-                            if (!w[l]) {
-                                const fl = r._foundryFlattenFor(e, preset, l);
-                                w[l] = !!fl?.instanceable;
-                            }
-                        return stufen.every((l) => w[l]);
-                    },
-                    takt: loopTakt,
-                    max: 1000,
-                });
+            window.__gebautNach(name, {
+                fertig: () => {
+                    for (const l of stufen)
+                        if (!w[l]) {
+                            const fl = r._foundryFlattenFor(e, preset, l);
+                            w[l] = !!fl?.instanceable;
+                        }
+                    return stufen.every((l) => w[l]);
+                },
+                takt: loopTakt,
+                max: 1000,
+            });
         await waerme(`${preset} L0–L2`, entry, preset, [0, 1, 2], warm);
         res.warm = { l0: warm[0], l1: warm[1], l2: warm[2] };
         if (!(warm[0] && warm[1] && warm[2])) return res;
@@ -390,30 +442,32 @@ async function runPartB() {
             st.camera.updateMatrixWorld(true);
             pm.position.copy(streuPm);
         };
-        await window
-            .__gebautNach("die Streu-Zellen in L1 und L2", {
-                fertig: () => {
-                    let kalt = false;
-                    for (const z of streuOrte) {
-                        const reg = streuGeburt(z, false);
-                        kalt = kalt || !reg || reg._deferredFoundry === true;
-                        for (const c of (reg && reg.cells) || []) {
-                            if (!Number.isFinite(c.dient)) continue;
-                            const L = SC.layers.find((l) => l.name === c.layer);
-                            const tf = r._scatterCellTransform(c.cellX, c.cellZ, c.cellM, L.scaleBase, L.scaleVar);
-                            const wo = { seed: r._scatterFoundrySeed(c.cellX, c.cellZ, c.variantIndex, c.species, tf), wo: tf };
-                            for (const l of [1, 2]) {
-                                const fl = r._foundryFlattenFor(wo, r._foundryPresetFor(c.species), l);
-                                kalt = kalt || !fl?.instanceable;
-                            }
+        await window.__gebautNach("die Streu-Zellen in L1 und L2", {
+            fertig: () => {
+                let kalt = false;
+                for (const z of streuOrte) {
+                    const reg = streuGeburt(z, false);
+                    kalt = kalt || !reg || reg._deferredFoundry === true;
+                    for (const c of (reg && reg.cells) || []) {
+                        if (!Number.isFinite(c.dient)) continue;
+                        const L = SC.layers.find((l) => l.name === c.layer);
+                        const tf = r._scatterCellTransform(c.cellX, c.cellZ, c.cellM, L.scaleBase, L.scaleVar);
+                        const wo = {
+                            seed: r._scatterFoundrySeed(c.cellX, c.cellZ, c.variantIndex, c.species, tf),
+                            wo: tf,
+                        };
+                        for (const l of [1, 2]) {
+                            const fl = r._foundryFlattenFor(wo, r._foundryPresetFor(c.species), l);
+                            kalt = kalt || !fl?.instanceable;
                         }
                     }
-                    streuZurueck();
-                    return !kalt;
-                },
-                takt: async () => (r._tickWaldPlan(Infinity), await loopTakt()),
-                max: 500,
-            });
+                }
+                streuZurueck();
+                return !kalt;
+            },
+            takt: async () => (r._tickWaldPlan(Infinity), await loopTakt()),
+            max: 500,
+        });
         // DER STRAUCH (kindStages [0, 1, 2], die Kette wie der Baum): Nah-Stufe L0 (aLodLevel 1), Mittel-Stufe L1
         // (aLodLevel 2) und das Billboard. Eigener Ort,
         // eigener Sweep.
@@ -608,7 +662,10 @@ async function runPartB() {
                 const e0 = E || { entry, px, py, pz };
                 const k = r._ankunftsFerne(); // der Streck der Wahrnehmung (kein Regler, lod.K5)
                 const o = { proben: 0, loecher: 0, stempelUngleich: 0, modi: {}, beispiel: null };
-                for (const raw of [4, 7, 10, 13, 16, 19, 22, 25, 28, 32, 36, 42, 48, 55, 48, 42, 36, 32, 28, 25, 22, 19, 16, 13, 10, 7, 4]) {
+                for (const raw of [
+                    4, 7, 10, 13, 16, 19, 22, 25, 28, 32, 36, 42, 48, 55, 48, 42, 36, 32, 28, 25, 22, 19, 16, 13, 10, 7,
+                    4,
+                ]) {
                     pm.position.set(e0.px - raw, e0.py, e0.pz);
                     for (let i = 0; i < 4; i++) r._tickArchitectureLOD(99, pm.position);
                     const stufen = new Map();
@@ -630,7 +687,13 @@ async function runPartB() {
                         if (m !== "frei" && !(Math.abs(e.h - visH) <= 1e-3 * Math.max(1, visH))) o.stempelUngleich++;
                     const n = lochZahl(stufen, raw, k);
                     o.loecher += n;
-                    if (n && !o.beispiel) o.beispiel = { raw, modi: [...stufen.keys()], visH: +visH.toFixed(2), stempel: [...stufen.values()].map((e) => +e.h.toFixed(2)) };
+                    if (n && !o.beispiel)
+                        o.beispiel = {
+                            raw,
+                            modi: [...stufen.keys()],
+                            visH: +visH.toFixed(2),
+                            stempel: [...stufen.values()].map((e) => +e.h.toFixed(2)),
+                        };
                 }
                 return o;
             };
@@ -722,7 +785,10 @@ async function runPartB() {
                         e.halt = e.halt || sp.hL < 0;
                         M.set(sp.modus, e);
                     };
-                    for (const raw of [1.5, 4, 7, 10, 13, 16, 19, 22, 25, 28, 32, 36, 42, 48, 55, 48, 42, 36, 32, 28, 25, 22, 19, 16, 13, 10, 7, 4, 1.5]) {
+                    for (const raw of [
+                        1.5, 4, 7, 10, 13, 16, 19, 22, 25, 28, 32, 36, 42, 48, 55, 48, 42, 36, 32, 28, 25, 22, 19, 16,
+                        13, 10, 7, 4, 1.5,
+                    ]) {
                         pm.position.set(E.px - raw, E.py, E.pz);
                         for (let i = 0; i < 4; i++) r._tickArchitectureLOD(99, pm.position);
                         r._tickBauSatz(Infinity); // der Render legt die Bereiche vor dem Zeichnen (`_tickChunkSatz`), ohne Raten
@@ -732,7 +798,13 @@ async function runPartB() {
                             if (Array.isArray(list))
                                 for (const ref of list) {
                                     const g = st.archInstanceGroups && st.archInstanceGroups.get(ref.key);
-                                    if (!g || !g.mesh || g.shadowTwin || g.mesh.layers.mask === 1 << A.SHADOW_TWIN_LAYER) continue;
+                                    if (
+                                        !g ||
+                                        !g.mesh ||
+                                        g.shadowTwin ||
+                                        g.mesh.layers.mask === 1 << A.SHADOW_TWIN_LAYER
+                                    )
+                                        continue;
                                     const spAlt = stempelVon(ref);
                                     if (spAlt) dazu(alt, spAlt);
                                     const sp = g.satz ? satzStempel(g, ref, o) : spAlt;
@@ -745,39 +817,40 @@ async function runPartB() {
                         o.proben++;
                         const visH = r._lodTreeVisHeight(E.entry);
                         for (const [m, e] of neu)
-                            if (m !== "frei" && !(Math.abs(e.h - visH) <= 1e-3 * Math.max(1, visH))) o.stempelUngleich++;
+                            if (m !== "frei" && !(Math.abs(e.h - visH) <= 1e-3 * Math.max(1, visH)))
+                                o.stempelUngleich++;
                         const n = lochZahl(neu, raw, k);
                         if (!neu.size) o.leer++;
                         o.loecher += n;
                         o.altLoecher += lochZahl(alt, raw, k);
                         if (n > 0 && !o.beispiel)
-                            o.beispiel = { raw, modi: [...neu.keys()], primaer: E.entry._lodLevel, band: Number.isFinite(E.entry._lodBandLevel) ? E.entry._lodBandLevel : null, loecher: n };
+                            o.beispiel = {
+                                raw,
+                                modi: [...neu.keys()],
+                                primaer: E.entry._lodLevel,
+                                band: Number.isFinite(E.entry._lodBandLevel) ? E.entry._lodBandLevel : null,
+                                loecher: n,
+                            };
                     }
                     return o;
                 };
                 // DIE HÜLLE (w28-geister-wand): ein Bau mit Grenzen wählt seine Stufe am Abstand zu seiner Hülle (`_stufenAbstand`), nie zum
-                // Ursprung. Das Auge auf der Achse des Sweeps vor der Hülle (`rand` = sie reicht so weit vor den Ursprung): von fern
-                // an die Hülle bis 0,3 m diesseits (1 − h)·ab — die 0 steht; hinaus bis 0,3 m diesseits (1 + h)·ab — die 0 hält (die
-                // Hysterese bleibt); 0,3 m jenseits — die Stufe (oder gröber); die Kalt-Wahl ohne Zustand 0,3 m diesseits ab — die 0.
+                // Ursprung. Das Auge auf der Achse des Sweeps vor der Hülle, die jetzt steht (sie folgt der Stufe: die Flügel der Stufe 0
+                // überstreichen ihren Kreis, das Drachentor 2,75 m): von fern bis 0,3 m diesseits (1 − h)·ab — die 0 steht; hinaus bis
+                // 0,3 m diesseits (1 + h)·ab — die 0 hält (die Hysterese bleibt); die Kalt-Wahl ohne Zustand 0,3 m diesseits ab — die 0.
+                // → [so weit reicht die Hülle vor den Ursprung, Stufe nah, Stufe im Halt, Kalt-Wahl]
                 const huellenProbe = (E) => {
-                    const e = E.entry, G = r._archStufenGrenzen(e), h = e._blockerHuelle; // prettier-ignore
-                    if (!G || !h) return { ohne: !G ? "Grenzen" : "Hülle" };
-                    const g1 = G.grenzen[0], ab = g1.ab * (e.scale > 0 ? e.scale : 1), hy = g1.h > 0 ? g1.h : G.h; // prettier-ignore
-                    // die Hülle folgt der Stufe (die Flügel der Stufe 0 überstreichen ihren Kreis, `_streichHuelle`: das Drachentor
-                    // 2,75 m): jeder Schritt misst von der Hülle, die jetzt steht — `weg` = Schritt/Abstand danach/Stufe je Schritt
-                    const o = { stufe: g1.stufe, ab: +ab.toFixed(2), h: hy, rand: +(E.px - h[0]).toFixed(2), weg: [] };
+                    const e = E.entry, G = r._archStufenGrenzen(e); // prettier-ignore
+                    if (!G || !e._blockerHuelle) return null;
+                    const g = G.grenzen[0], ab = g.ab * (e.scale > 0 ? e.scale : 1), hy = g.h > 0 ? g.h : G.h; // prettier-ignore
                     const an = (dh) => {
                         pm.position.set(e._blockerHuelle[0] - dh, E.py, E.pz);
                         for (let i = 0; i < 4; i++) r._tickArchitectureLOD(99, pm.position);
-                        o.weg.push([+dh.toFixed(2), +r._stufenAbstand(e, G, pm.position).toFixed(2), e._lodLevel].join("/"));
                         return e._lodLevel;
                     };
-                    o.fern = an(ab * (1 + hy) + o.rand + 2);
-                    o.nah = an(ab * (1 - hy) - 0.3);
-                    o.halt = an(ab * (1 + hy) - 0.3);
-                    o.hinaus = an(ab * (1 + hy) + 0.3);
-                    o.kalt = r._foundryLodForEntry(e, { x: e._blockerHuelle[0] - (ab - 0.3), z: E.pz });
-                    return o;
+                    an(ab * 2);
+                    const kalt = () => r._foundryLodForEntry(e, { x: e._blockerHuelle[0] + 0.3 - ab, z: E.pz });
+                    return [E.px - e._blockerHuelle[0], an(ab * (1 - hy) - 0.3), an(ab * (1 + hy) - 0.3), kalt()];
                 };
                 // Ein Lauf der Kette; `gegen` = der Täter des Selbsttests im selben Lauf: "partner" — die L1 lädt nie und die Stufe
                 // hält nicht (der Stand vor K36: die L0 dithert zu einer Stufe, die es nicht gibt); "satz" — der Bau-Satz folgt der
@@ -791,12 +864,12 @@ async function runPartB() {
                 const kettenLauf = (op, gegen) => {
                     if (gegen === "satz") r._bauSatzMarke = function () {};
                     if (gegen === "ursprung")
-                        r._stufenAbstand = function (e, G, auge, bahn) {
-                            return this._bedarfAbstand(e.position.x, e.position.z, auge, bahn);
-                        };
+                        r._stufenAbstand = (e, G, a, b) => r._bedarfAbstand(e.position.x, e.position.z, a, b);
                     if (gegen === "partner") {
                         r._foundryFlattenFor = function (e, p, lod) {
-                            return p === op.preset && lod === 1 ? null : A.prototype._foundryFlattenFor.call(this, e, p, lod);
+                            return p === op.preset && lod === 1
+                                ? null
+                                : A.prototype._foundryFlattenFor.call(this, e, p, lod);
                         };
                         r._lodSlotVoll = ohneHaltVoll;
                     }
@@ -818,8 +891,10 @@ async function runPartB() {
                         st.architectures = [entry];
                         // der Satz zurück auf die Wahrheit seiner Gruppen: jeder Bereich jeder Bau-Satz-Art und jede Satz-Gruppe
                         for (const [art, S] of st.chunkSaetze || [])
-                            if (st.satzStoffe && st.satzStoffe.has(art)) for (const key of S.bloecke.keys()) r._bauSatzMarke(key, art);
-                        for (const g of (st.archInstanceGroups || new Map()).values()) if (g.satz) r._bauSatzMarke(g.key, g.satz);
+                            if (st.satzStoffe && st.satzStoffe.has(art))
+                                for (const key of S.bloecke.keys()) r._bauSatzMarke(key, art);
+                        for (const g of (st.archInstanceGroups || new Map()).values())
+                            if (g.satz) r._bauSatzMarke(g.key, g.satz);
                         r._tickBauSatz(Infinity);
                     }
                 };
@@ -877,7 +952,8 @@ async function runPartB() {
                                 teile.push({
                                     karte: true,
                                     zwilling,
-                                    keep: (dh) => sicht < 0 || core.lodCrossfadeMask(d * k * kk, dh, cfgM, 2, false).keep,
+                                    keep: (dh) =>
+                                        sicht < 0 || core.lodCrossfadeMask(d * k * kk, dh, cfgM, 2, false).keep,
                                 });
                             } else if (a.aH0 && a.aH0L && a.aLodLevel && a.aLodLevel.array[0] >= 0.5) {
                                 const al = a.aLodLevel.array[0];
@@ -891,7 +967,14 @@ async function runPartB() {
                                     laub,
                                     keep: (dh) => {
                                         if (hL < 0) return true; // der Halt: die Stufe ohne Partner zeichnet voll
-                                        const z = core.lodCrossfadeMask(d * k * kS, dh, cfgM, al > 1.5 ? 1 : 0, laub, d * k * kL);
+                                        const z = core.lodCrossfadeMask(
+                                            d * k * kS,
+                                            dh,
+                                            cfgM,
+                                            al > 1.5 ? 1 : 0,
+                                            laub,
+                                            d * k * kL
+                                        );
                                         return al > 2.5 ? z.f1o < dh : z.keep;
                                     },
                                 });
@@ -932,15 +1015,19 @@ async function runPartB() {
                     const o = { proben: 0, geister: 0, loecher: 0, schatten: 0, mitZwilling: 0, beispiel: null };
                     if (art.karteLaedt)
                         r._foundryFlattenFor = function (e, p, lod) {
-                            return e === entry && lod === 2 ? null : A.prototype._foundryFlattenFor.call(this, e, p, lod);
+                            return e === entry && lod === 2
+                                ? null
+                                : A.prototype._foundryFlattenFor.call(this, e, p, lod);
                         };
                     // ohne Halt: VOLL kennt nur die Karte des Verdeckten und der Brücke (der Stand vor K36) — kein Stempel hält
-                    if (art.ohneHalt)
-                        r._lodSlotVoll = ohneHaltVoll;
+                    if (art.ohneHalt) r._lodSlotVoll = ohneHaltVoll;
                     // der Zwilling ohne Halt: sein Stempel trägt das VOLL nie (die gezeichnete Stufe hält, ihr Wurf blendet)
                     if (art.zwillingOhneHalt)
                         r._lodSlotStamp = function (g, slot, scale, voll, leaf) {
-                            const tw = !!(g && (g.shadowTwin || (g.mesh && g.mesh.layers.mask === 1 << A.SHADOW_TWIN_LAYER)));
+                            const tw = !!(
+                                g &&
+                                (g.shadowTwin || (g.mesh && g.mesh.layers.mask === 1 << A.SHADOW_TWIN_LAYER))
+                            );
                             return A.prototype._lodSlotStamp.call(this, g, slot, scale, tw ? false : voll, leaf);
                         };
                     try {
@@ -1045,11 +1132,27 @@ async function runPartB() {
                             const soll = Math.hypot(tf.x - augeSoll.x, tf.z - augeSoll.z);
                             if (!(Math.abs(dist - soll) < 1e-6)) {
                                 o.geburtFalsch++;
-                                if (o.beispiel.length < 4) o.beispiel.push({ name: "Geburt", ist: +dist.toFixed(2), soll: +soll.toFixed(2) });
+                                if (o.beispiel.length < 4)
+                                    o.beispiel.push({ name: "Geburt", ist: +dist.toFixed(2), soll: +soll.toFixed(2) });
                             }
-                            return A.prototype._scatterMaterializeCell.call(this, region, layer, salt, cx, cz, cm, tf, dist, ...rest);
+                            return A.prototype._scatterMaterializeCell.call(
+                                this,
+                                region,
+                                layer,
+                                salt,
+                                cx,
+                                cz,
+                                cm,
+                                tf,
+                                dist,
+                                ...rest
+                            );
                         };
-                        r._scatterRegion(Math.floor(px / A.SCATTER.regionM), Math.floor(pz / A.SCATTER.regionM), st.playerMesh.position);
+                        r._scatterRegion(
+                            Math.floor(px / A.SCATTER.regionM),
+                            Math.floor(pz / A.SCATTER.regionM),
+                            st.playerMesh.position
+                        );
                     } catch (e) {
                         o.err = fehlerText(e);
                     } finally {
@@ -1073,7 +1176,15 @@ async function runPartB() {
                 // Partner. Je Ort die Deckung jeder Foundry-Baum-Zelle am
                 // Auge; geurteilt wird die Zelle ohne verlangten Partner, die Zelle mit Partner zählt mit.
                 const streuLauf = (ohneHalt) => {
-                    const o = { proben: 0, geister: 0, loecher: 0, orte: 0, mitPartner: 0, mitPartnerGeister: 0, beispiel: null };
+                    const o = {
+                        proben: 0,
+                        geister: 0,
+                        loecher: 0,
+                        orte: 0,
+                        mitPartner: 0,
+                        mitPartnerGeister: 0,
+                        beispiel: null,
+                    };
                     const zwVor = zwBekannt;
                     try {
                         for (const z0 of streuOrte) {
@@ -1227,7 +1338,11 @@ async function runPartB() {
         const key = r._growTreeBlueprintForSpawn("baum_eiche", "w54-band-sweep");
         const ex = 15345,
             ez = 6789;
-        const e = r.spawnArchitecture(key, { x: ex, y: r._voxelSurfaceY(ex, ez) || 1, z: ez }, { silent: true, seed: 1 });
+        const e = r.spawnArchitecture(
+            key,
+            { x: ex, y: r._voxelSurfaceY(ex, ez) || 1, z: ez },
+            { silent: true, seed: 1 }
+        );
         if (!e) return { err: "spawnArchitecture gab null" };
         const preset = r._foundryPresetForEntry(e);
         // die Gestalt des Orts wartet auf den Plan seines Walds (K69: die Schlange des Walds plant im Takt) — die Probe
@@ -1293,7 +1408,9 @@ async function runPartB() {
         // des Bands steht nach dem nächsten Bild (`_loopRender`) in der Maske, vorher nicht (die Gegenprobe im selben Lauf).
         const D = r.constructor.LOD_DISTANCES;
         const u = st.lodUniforms;
-        const band = () => [u.uLodD0, u.uLodD1, u.uLodFade, u.uLodFade0].map((x) => x.value).join() === [D.thresh01, D.thresh12, D.fade, D.fade0].join();
+        const band = () =>
+            [u.uLodD0, u.uLodD1, u.uLodFade, u.uLodFade0].map((x) => x.value).join() ===
+            [D.thresh01, D.thresh12, D.fade, D.fade0].join();
         const d0 = D.thresh01;
         res.spiegel = { seed: band() };
         D.thresh01 = d0 + 1.5;
@@ -1311,23 +1428,33 @@ async function runPartB() {
     return { out, attrWand, gnade, kehraus, laut };
 }
 
-
 async function main() {
     if (SELBSTTEST) {
         console.log("=== SELBST-TEST: die Linse feuert auf jede Verfälschungs-Klasse ===");
         // V1: der Dither des Gesetzes verschoben (Phase + 1e-7) → die Dither-Äquivalenz MUSS feuern.
         const core1 = Object.assign({}, CORE, { lodDitherIGN: (x, y, t) => CORE.lodDitherIGN(x, y, t + 1e-7) });
-        check("Selbst-Test 1: verschobener Dither des Gesetzes → Dither-Äquivalenz feuert", buildRaster(core1, 0).mismatch > 0);
+        check(
+            "Selbst-Test 1: verschobener Dither des Gesetzes → Dither-Äquivalenz feuert",
+            buildRaster(core1, 0).mismatch > 0
+        );
         // V2: die Fern-Rampe des Gesetzes verschoben (fade × 1,25) → die Masken-Äquivalenz MUSS feuern.
         const core2 = Object.assign({}, CORE, {
-            lodCrossfadeMask: (d, dh, cfg, lod, laub, dL) => CORE.lodCrossfadeMask(d, dh, Object.assign({}, cfg, { fade: cfg.fade * 1.25 }), lod, laub, dL),
+            lodCrossfadeMask: (d, dh, cfg, lod, laub, dL) =>
+                CORE.lodCrossfadeMask(d, dh, Object.assign({}, cfg, { fade: cfg.fade * 1.25 }), lod, laub, dL),
         });
-        check("Selbst-Test 2: verschobene Fern-Rampe → Masken-Äquivalenz feuert", evaluate(core2, CFG, buildRaster(core2, 0)).keepMismatch > 0);
+        check(
+            "Selbst-Test 2: verschobene Fern-Rampe → Masken-Äquivalenz feuert",
+            evaluate(core2, CFG, buildRaster(core2, 0)).keepMismatch > 0
+        );
         // V3: jede Absenz — die echte Quelle hält sie, ihr Täter zurück am Kopf seines Glieds wird beim Namen genannt.
         for (const [name, glied, re, taeter] of ABSENZEN) {
             const heil = stammLib.fehlt(glied, re);
             const rot = !stammLib.fehlt(glied, re, mitTaeter(glied, taeter));
-            check(`Selbst-Test Absenz: „${taeter}" → ${name.split(":")[0]} nennt ihn`, heil && rot, stammLib.fehlt.wo || "");
+            check(
+                `Selbst-Test Absenz: „${taeter}" → ${name.split(":")[0]} nennt ihn`,
+                heil && rot,
+                stammLib.fehlt.wo || ""
+            );
         }
         // V4: verschobene Kanten des Fensters (je Stufe 1 m nach innen) — die Fenster-Linse MUSS Löcher nennen.
         for (const [name, fn] of [
@@ -1337,7 +1464,11 @@ async function main() {
             ["Karte ein", (K) => (K.karteEin += 1)],
         ]) {
             const v = fensterLinse(CORE, [CFG], fn);
-            check(`Selbst-Test Fenster: „${name}" 1 m nach innen → die Linse nennt Löcher`, v.loecher > 0, `${v.loecher} Löcher`);
+            check(
+                `Selbst-Test Fenster: „${name}" 1 m nach innen → die Linse nennt Löcher`,
+                v.loecher > 0,
+                `${v.loecher} Löcher`
+            );
         }
         // V5: die Weite der Gestalt (Krone der Birke 10,06 m) als Rand im Fenster des WGSL — die L1 der nahen Birke wird genannt.
         const S8 = stufeOhneBildLinse(CORE, CFG, A.PASS_WAHL_WGSL.replaceAll("lage.saum.y", "(lage.saum.y + 10.06)"));
@@ -1350,7 +1481,9 @@ async function main() {
         process.exit(0);
     }
 
-    console.log("=== W5.3 — DAS GESETZ DER BLENDE (phyto-core) GEGEN DIE STUDIO-BLENDE (foundry-core injectWind, im Lauf) ===");
+    console.log(
+        "=== W5.3 — DAS GESETZ DER BLENDE (phyto-core) GEGEN DIE STUDIO-BLENDE (foundry-core injectWind, im Lauf) ==="
+    );
     check(
         "Gesetz und Studio-Blende geladen (lodCrossfadeMask · lodDitherIGN · der Fragment-Satz für Rinde und Laub)",
         typeof CORE.lodCrossfadeMask === "function" && typeof CORE.lodDitherIGN === "function",
@@ -1378,7 +1511,10 @@ async function main() {
         }
     }
     check("Dither-Äquivalenz: lodDitherIGN == der _dh der Studio-Blende (2 uDitherT-Phasen)", totalDhMismatch === 0);
-    check("Masken-Äquivalenz: keep L0/L1 == die Studio-Blende (Rinde und Laub, beide Metriken)", totalKeepMismatch === 0);
+    check(
+        "Masken-Äquivalenz: keep L0/L1 == die Studio-Blende (Rinde und Laub, beide Metriken)",
+        totalKeepMismatch === 0
+    );
     check(
         "RINDE: keepL0 XOR keepL1 == 1 an jedem Rasterpunkt × Sample im Partitions-Band",
         agg.barkXorFail === 0 && agg.partitionSamples > 20,
@@ -1505,7 +1641,11 @@ async function main() {
     check(
         "DIE LAUTE BLENDE (Seite): ohne uLodD0 bricht der Baum-Stoff beim Namen, statt still ohne Maske zu zeichnen",
         !!laut && laut.blende === true && /uLodD0/.test(laut.bruch || ""),
-        laut ? (laut.bruch ? laut.bruch : `der Stoff entstand still (Maske ${laut.maske ? "da" : "fehlt"})`) : "keine Antwort"
+        laut
+            ? laut.bruch
+                ? laut.bruch
+                : `der Stoff entstand still (Maske ${laut.maske ? "da" : "fehlt"})`
+            : "keine Antwort"
     );
     const sp = laut?.spiegel || {};
     check(
@@ -1536,7 +1676,8 @@ async function main() {
     }
     const SW = out && out.stufenWahrheit;
     if (SW && !SW.err) {
-        const z = (o) => `${o.proben} Proben · Löcher ${o.loecher} · Stempel≠CPU ${o.stempelUngleich}${o.beispiel ? " · z. B. " + JSON.stringify(o.beispiel) : ""}`;
+        const z = (o) =>
+            `${o.proben} Proben · Löcher ${o.loecher} · Stempel≠CPU ${o.stempelUngleich}${o.beispiel ? " · z. B. " + JSON.stringify(o.beispiel) : ""}`;
         check(
             "STUFEN-WAHRHEIT: die CPU-Sichthöhe IST der Fassaden-Stempel jeder residenten Stufe (L0 = L1 = Höhen-Stufe)",
             SW.voll.proben >= 8 && SW.voll.stempelUngleich === 0,
@@ -1573,7 +1714,11 @@ async function main() {
                     !ST.voll.modi.frei,
                 ST.voll.modi
             );
-            check("STRAUCH: kein Loch, Stempel = CPU-Sichthöhe (volle Leistung)", ST.voll.loecher === 0 && ST.voll.stempelUngleich === 0, z(ST.voll));
+            check(
+                "STRAUCH: kein Loch, Stempel = CPU-Sichthöhe (volle Leistung)",
+                ST.voll.loecher === 0 && ST.voll.stempelUngleich === 0,
+                z(ST.voll)
+            );
         } else check("STRAUCH-Sweep lief", false, "fehlt");
         // DIE KETTE DES GESETZBUCHS: Wagen und Tor tragen ihre Stufen-Kette im Gesetzbuch — jede gezeigte Stufe hat
         // ihren Partner (L0 ↔ L1), beide stehen im Bild, und über den Sweep reißt kein Loch. Eine
@@ -1589,34 +1734,36 @@ async function main() {
             check(
                 `KETTE DES GESETZBUCHS (${op.typ}): jede gezeigte Stufe hat ihren Partner (L0 ↔ L1), alle warm`,
                 !!op.preset && mitPartner && op.alleWarm === true,
-                { preset: op.preset, stufen: op.stufen, gezeigt: op.gezeigt, karte: op.karte, satz: op.satzArt, warm: op.warm }
+                {
+                    preset: op.preset,
+                    stufen: op.stufen,
+                    gezeigt: op.gezeigt,
+                    karte: op.karte,
+                    satz: op.satzArt,
+                    warm: op.warm,
+                }
             );
-            // DIE HÜLLE (w28-geister-wand): die Karten-Art (ohne Grenzen) misst wie ihre Maske zum Ursprung und trägt keine Probe
-            const [H, HU] = [op.huelle, op.gegenUrsprung];
-            if (!op.karte) {
+            // DIE HÜLLE (w28-geister-wand): die Karten-Art (ohne Grenzen) misst wie ihre Maske zum Ursprung und trägt keine Probe;
+            // der Selbsttest im selben Lauf — die Wahl zum Ursprung (`gegenUrsprung`) hält die Grobstufe vor der Hülle
+            if (!op.karte)
                 check(
-                    `KETTE DES GESETZBUCHS (${op.typ}) HÜLLE: die Stufe wählt am Abstand zur Hülle — diesseits (1 − h)·ab steht die 0, sie hält bis (1 + h)·ab, die Kalt-Wahl ebenso`,
-                    !!H && !H.ohne && H.fern >= H.stufe && H.nah === 0 && H.halt === 0 && H.hinaus >= H.stufe && H.kalt === 0,
-                    H
+                    `KETTE DES GESETZBUCHS (${op.typ}) HÜLLE: die Stufe wählt am Abstand zur Hülle (0,3 m diesseits (1 − h)·ab und (1 + h)·ab steht die 0, kalt ebenso) — zum Ursprung gemessen nennt die Linse die Grobstufe`,
+                    String(op.huelle?.slice(1)) === "0,0,0" && op.gegenUrsprung?.[0] > 0.3 && op.gegenUrsprung[1] > 0,
+                    [op.huelle, op.gegenUrsprung]
                 );
-                check(
-                    `KETTE Selbsttest (${op.typ}) HÜLLE: misst die Wahl zum Ursprung, nennt die Linse die Grobstufe vor der Hülle`,
-                    !!HU && !HU.ohne && HU.rand > 0.3 && (HU.nah !== 0 || HU.kalt !== 0),
-                    HU
-                );
-            }
             if (op.nurHuelle) continue;
             if (!op.voll) {
                 check(`KETTE DES GESETZBUCHS (${op.typ}): Sweep lief`, false, "fehlt");
                 continue;
             }
             const ganz = (o) =>
-                o.proben >= 8 && o.loecher === 0 && o.leer === 0 && o.zelleFehlt === 0 && o.eckeUngleich === 0 && o.stempelUngleich === 0;
-            check(
-                `KETTE DES GESETZBUCHS (${op.typ}): kein Loch über den Sweep`,
-                ganz(op.voll),
-                zk(op.voll)
-            );
+                o.proben >= 8 &&
+                o.loecher === 0 &&
+                o.leer === 0 &&
+                o.zelleFehlt === 0 &&
+                o.eckeUngleich === 0 &&
+                o.stempelUngleich === 0;
+            check(`KETTE DES GESETZBUCHS (${op.typ}): kein Loch über den Sweep`, ganz(op.voll), zk(op.voll));
             check(
                 `KETTE DES GESETZBUCHS (${op.typ}): der Partner steht im Bild — jede gezeigte Stufe zeichnet im Sweep`,
                 g.length > 0 && g.every((s) => (op.voll.stufen[s] || 0) > 0),
@@ -1655,31 +1802,88 @@ async function main() {
     if (GB) {
         const g = (o) =>
             `${o.geister} Geister · ${o.loecher} Löcher · ${o.schatten} Schatten-Geister in ${o.proben} Proben (${o.mitZwilling} mit Zwilling)${o.beispiel ? " — z. B. " + JSON.stringify(o.beispiel) : ""}`;
-        const sauber = (o) => o.proben >= 14 && o.geister === 0 && o.loecher === 0 && o.schatten === 0 && o.mitZwilling > 0;
-        check("GEISTER-BAUM: der Partner steht — keine Instanz halb maskiert (die Linse schweigt bei der Blende)", sauber(GB.normal), g(GB.normal));
-        check("GEISTER-BAUM: die Karte bäckt — die L1 HÄLT voll statt dem Nichts zu weichen (der Täter: Stufe ohne Partner)", sauber(GB.karteLaedt), g(GB.karteLaedt));
-        check("GEISTER-BAUM: das Auge 9,6 m hinter dem Spieler — die Wahl misst vom Auge der Maske, auch ohne Halt (der Täter: Wahl vom Spieler)", sauber(GB.auge), g(GB.auge));
-        check("GEISTER-BAUM: die Wahl misst vom alten Ort (das Auge sprang, F1) — jede Stufe ohne gezeichneten Partner hält voll (der Täter: der Halt fällt, wo keiner verlangt ist)", sauber(GB.sprung), g(GB.sprung));
+        const sauber = (o) =>
+            o.proben >= 14 && o.geister === 0 && o.loecher === 0 && o.schatten === 0 && o.mitZwilling > 0;
+        check(
+            "GEISTER-BAUM: der Partner steht — keine Instanz halb maskiert (die Linse schweigt bei der Blende)",
+            sauber(GB.normal),
+            g(GB.normal)
+        );
+        check(
+            "GEISTER-BAUM: die Karte bäckt — die L1 HÄLT voll statt dem Nichts zu weichen (der Täter: Stufe ohne Partner)",
+            sauber(GB.karteLaedt),
+            g(GB.karteLaedt)
+        );
+        check(
+            "GEISTER-BAUM: das Auge 9,6 m hinter dem Spieler — die Wahl misst vom Auge der Maske, auch ohne Halt (der Täter: Wahl vom Spieler)",
+            sauber(GB.auge),
+            g(GB.auge)
+        );
+        check(
+            "GEISTER-BAUM: die Wahl misst vom alten Ort (das Auge sprang, F1) — jede Stufe ohne gezeichneten Partner hält voll (der Täter: der Halt fällt, wo keiner verlangt ist)",
+            sauber(GB.sprung),
+            g(GB.sprung)
+        );
         const gs = (o) =>
             o
                 ? `${o.geister} Geister · ${o.loecher} Löcher in ${o.proben} Streu-Zellen ohne verlangten Partner an ${o.orte} Orten (mit Partner ${o.mitPartnerGeister} Geister in ${o.mitPartner})${o.beispiel ? " — z. B. " + JSON.stringify(o.beispiel) : ""}`
                 : "fehlt";
         const SS = GB.sprungStreu;
-        check("GEISTER-BAUM sprung Streu: die Wahl vom alten Ort (die späte Scheibe, 24 m), die Maske vom Auge — jede Foundry-Streu-Zelle ohne verlangten Partner hält voll (der Täter: _scatterMaterializeCell ohne bandHalt)", !!SS && SS.proben >= 100 && SS.geister === 0 && SS.loecher === 0, gs(SS));
-        check("GEISTER-BAUM Selbsttest Streu: trägt kein Streu-Slot den Halt, zählt die Linse den Geist der Karte ohne Partner", !!GB.gegenStreu && GB.gegenStreu.geister + GB.gegenStreu.loecher > 0, gs(GB.gegenStreu));
-        check("GEISTER-BAUM Selbsttest: ohne Halt zählt die Linse den Geist vor der ungebackenen Karte", GB.gegenHalt.geister + GB.gegenHalt.loecher > 0, g(GB.gegenHalt));
-        check("GEISTER-BAUM Selbsttest: misst die Wahl vom Spieler, ohne Halt, zählt die Linse den Geist der Verfolger-Kamera", GB.gegenAuge.geister + GB.gegenAuge.loecher > 0, g(GB.gegenAuge));
-        check("GEISTER-BAUM Selbsttest: trägt der Zwilling den Halt nicht, zählt die Linse den Halbschatten unter dem vollen Baum", GB.gegenSchatten.schatten > 0, g(GB.gegenSchatten));
+        check(
+            "GEISTER-BAUM sprung Streu: die Wahl vom alten Ort (die späte Scheibe, 24 m), die Maske vom Auge — jede Foundry-Streu-Zelle ohne verlangten Partner hält voll (der Täter: _scatterMaterializeCell ohne bandHalt)",
+            !!SS && SS.proben >= 100 && SS.geister === 0 && SS.loecher === 0,
+            gs(SS)
+        );
+        check(
+            "GEISTER-BAUM Selbsttest Streu: trägt kein Streu-Slot den Halt, zählt die Linse den Geist der Karte ohne Partner",
+            !!GB.gegenStreu && GB.gegenStreu.geister + GB.gegenStreu.loecher > 0,
+            gs(GB.gegenStreu)
+        );
+        check(
+            "GEISTER-BAUM Selbsttest: ohne Halt zählt die Linse den Geist vor der ungebackenen Karte",
+            GB.gegenHalt.geister + GB.gegenHalt.loecher > 0,
+            g(GB.gegenHalt)
+        );
+        check(
+            "GEISTER-BAUM Selbsttest: misst die Wahl vom Spieler, ohne Halt, zählt die Linse den Geist der Verfolger-Kamera",
+            GB.gegenAuge.geister + GB.gegenAuge.loecher > 0,
+            g(GB.gegenAuge)
+        );
+        check(
+            "GEISTER-BAUM Selbsttest: trägt der Zwilling den Halt nicht, zählt die Linse den Halbschatten unter dem vollen Baum",
+            GB.gegenSchatten.schatten > 0,
+            g(GB.gegenSchatten)
+        );
         // (10b) das Auge vor der Setzung, im Sprung, der Sonde und bei der Geburt der Streu
-        const ga = (o) => `${o.falsch} falsche Wahlen in ${o.proben} Proben · ${o.geburtFalsch} von ${o.geburten} Geburten nicht vom Auge${o.err ? " — Fehler " + o.err : ""}${o.beispiel.length ? " — z. B. " + JSON.stringify(o.beispiel) : ""}`;
+        const ga = (o) =>
+            `${o.falsch} falsche Wahlen in ${o.proben} Proben · ${o.geburtFalsch} von ${o.geburten} Geburten nicht vom Auge${o.err ? " — Fehler " + o.err : ""}${o.beispiel.length ? " — z. B. " + JSON.stringify(o.beispiel) : ""}`;
         const AG = GB.augeGesetz;
-        check("GEISTER-BAUM Auge: ungesetzt, im Sprung und unter der Sonde wählt die Kalt-Wahl vom Auge der Stufen (der Täter: _lodAuge = die Kamera allein)", !!AG && !AG.err && AG.proben === 3 && AG.falsch === 0, ga(AG));
-        check("GEISTER-BAUM Auge: jede Streu-Geburt trägt die Distanz vom Auge (der Täter: _scatterPass wählt vom Spieler)", !!AG && !AG.err && AG.geburten > 0 && AG.geburtFalsch === 0, ga(AG));
-        check("GEISTER-BAUM Auge Selbsttest: das Auge = die Kamera allein — die Linse zählt die Wahl des ungesetzten Auges und des Sprungs", !!GB.gegenKamera && GB.gegenKamera.falsch >= 2, ga(GB.gegenKamera));
-        check("GEISTER-BAUM Auge Selbsttest: das Auge = der Spieler — die Linse zählt die Sonde und jede Geburt", !!GB.gegenSpieler && GB.gegenSpieler.falsch >= 1 && GB.gegenSpieler.geburtFalsch > 0, ga(GB.gegenSpieler));
+        check(
+            "GEISTER-BAUM Auge: ungesetzt, im Sprung und unter der Sonde wählt die Kalt-Wahl vom Auge der Stufen (der Täter: _lodAuge = die Kamera allein)",
+            !!AG && !AG.err && AG.proben === 3 && AG.falsch === 0,
+            ga(AG)
+        );
+        check(
+            "GEISTER-BAUM Auge: jede Streu-Geburt trägt die Distanz vom Auge (der Täter: _scatterPass wählt vom Spieler)",
+            !!AG && !AG.err && AG.geburten > 0 && AG.geburtFalsch === 0,
+            ga(AG)
+        );
+        check(
+            "GEISTER-BAUM Auge Selbsttest: das Auge = die Kamera allein — die Linse zählt die Wahl des ungesetzten Auges und des Sprungs",
+            !!GB.gegenKamera && GB.gegenKamera.falsch >= 2,
+            ga(GB.gegenKamera)
+        );
+        check(
+            "GEISTER-BAUM Auge Selbsttest: das Auge = der Spieler — die Linse zählt die Sonde und jede Geburt",
+            !!GB.gegenSpieler && GB.gegenSpieler.falsch >= 1 && GB.gegenSpieler.geburtFalsch > 0,
+            ga(GB.gegenSpieler)
+        );
         console.log(`  (die Geister-Linse lief ${GB.ms} ms)`);
     } else check("GEISTER-BAUM lief", false, "fehlt");
-    wandEnde(errs, "DIE STUDIO-BLENDE IST GANZ: __phytoCore.lodCrossfadeMask übersetzt die Dither-Maske byte-nah (Rinde Partition · Laub überlappend · Impostor-fin), und die CPU-Doppel-Mitgliedschaft hält im Band BEIDE Stufen resident (außerhalb exakt eine, nie 0, Slot-Bilanz dicht) — Maske + Band zusammen DEFAULT AN.");
+    wandEnde(
+        errs,
+        "DIE STUDIO-BLENDE IST GANZ: __phytoCore.lodCrossfadeMask übersetzt die Dither-Maske byte-nah (Rinde Partition · Laub überlappend · Impostor-fin), und die CPU-Doppel-Mitgliedschaft hält im Band BEIDE Stufen resident (außerhalb exakt eine, nie 0, Slot-Bilanz dicht) — Maske + Band zusammen DEFAULT AN."
+    );
 }
 
 hauptLauf(main);
