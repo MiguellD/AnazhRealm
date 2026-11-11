@@ -101,7 +101,7 @@ else
         q=${pfad#zug/dienst/}
         case "$q" in werkzeug/*) ort=artifacts/profiband/werkzeug/${q#werkzeug/} ;; *) ort=artifacts/profiband/dienst/$q ;; esac
         mkdir -p "$(dirname "$R/$ort")"
-        ist=$(git -C $R hash-object "$R/$ort" 2>/dev/null)
+        ist=$(git -C $R hash-object --no-filters "$R/$ort" 2>/dev/null)
         # der Code einer LEBENDEN Schleife wird nie unter ihr getauscht (bash liest sein Skript im Laufen): er bleibt bis --neu
         case "$q" in *-dienst.sh)
             if [ -n "$ist" ] && [ "$ist" != "$blob" ] && lebt "${q%-dienst.sh}"; then
@@ -124,7 +124,7 @@ else
             grep -q " $ort$" "$tmp" && continue
             [ -f "$R/$ort" ] || continue
             git -C $R ls-files --error-unmatch "$ort" >/dev/null 2>&1 && { git -C $R checkout -q -- "$ort" 2>/dev/null; continue; }
-            [ "$(git -C $R hash-object "$R/$ort")" = "$blob" ] && rm -f "$R/$ort" && echo "  abgelöst $ort"
+            [ "$(git -C $R hash-object --no-filters "$R/$ort")" = "$blob" ] && rm -f "$R/$ort" && echo "  abgelöst $ort"
         done < <(tail -n +2 "$MAN")
     fi
     mv "$tmp" "$MAN"
