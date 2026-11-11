@@ -1,36 +1,39 @@
-# GPU-PROBE ab6eeaf4 — NACHGEGEBEN
+# GPU-PROBE ab6eeaf4 — GRÜN
 
-Zweig `w27-traa-fenster` · Kopf ab6eeaf4f22f6fd0dc90af95b60478f087512cc3 · Läufer omen-gtx1060 · 11.11. 15:57 · Wanduhr ab Push 427 s · Lauf https://github.com/MiguellD/AnazhRealm/actions/runs/43042429895
+Zweig `w27-traa-fenster` · Kopf ab6eeaf4f22f6fd0dc90af95b60478f087512cc3 · Läufer radeon-890m · 11.11. 16:08 · Wanduhr ab Push 1047 s · Lauf https://github.com/MiguellD/AnazhRealm/actions/runs/43042429895
 
 Ruf: `bild:stadt-voll bild:dorf@0.5 gate:kamera-laub`
 
-## Läufer omen-gtx1060 — NACHGEGEBEN
+## Läufer radeon-890m — GRÜN
 
-GPU NVIDIA GeForce GTX 1060 · npm ci 43 s (package-lock 9e40b075)
-Schloss /c/Users/micha/AppData/Local/Temp/claude/gpu-schloss hält „ci-runner 43042429895/1 probe“
-- Hook 2026-11-11 15:51:04 start ci-runner 43042429895/1 probe: wartet auf Schloss von 'omen-heil-regler-wirkt-1'
-- Hook 2026-11-11 15:51:19 start ci-runner 43042429895/1 probe: Schloss genommen (refs/heads/w27-traa-fenster ab6eeaf4f22f6fd0dc90af95b60478f087512cc3 ws=C:\actions-runner\_work\AnazhRealm\AnazhRealm)
+GPU AMD Radeon(TM) 890M Graphics · node_modules bleiben (package-lock 9e40b075)
+Schloss /c/Users/micha/AppData/Local/Temp/claude/gpu-schloss hält „ci-runner 43042429895/2 probe“
+- Hook 2026-11-11 16:03:18 start ci-runner 43042429895/2 probe: wartet auf Schloss von 'punkte-radeon-sitzungpid=15216'
+- Hook 2026-11-11 16:03:33 start ci-runner 43042429895/2 probe: Schloss genommen (refs/heads/w27-traa-fenster ab6eeaf4f22f6fd0dc90af95b60478f087512cc3 ws=C:\actions-runner\_work\AnazhRealm\AnazhRealm)
 
-### bild:stadt-voll — GRÜN · 171 s · Läufer omen-gtx1060
+### bild:stadt-voll — GRÜN · 113 s · Läufer radeon-890m
 
-Adapter: [linse-gpu] nvidia/pascal
+Adapter: [linse-gpu] amd/rdna-3
 
 ```text
 Kamera des Spiels → Blick (14.6 m): 837.84 58.51 445.42 842.31 58.51 459.32
- "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 14.6 m, verdeckt nur von Leibern: 1 Punkt, nächster 3.73 m (Leib bewohner) · Luma 105.2 σ 59 schwarz 0.1 % weiß 0.0 % · Stand 18.546.252 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal",
+ "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 14.6 m, verdeckt nur von Leibern: 1 Punkt, nächster 3.7 m (Leib bewohner) · Luma 105.2 σ 59 schwarz 0.1 % weiß 0.0 % · Stand 18.546.252 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3",
 ```
 
 ![bild:stadt-voll](ab6eeaf4-stadt-voll.png)
 
-### bild:dorf@0.5 — NACHGEGEBEN · 12 s · Läufer omen-gtx1060
+### bild:dorf@0.5 — GRÜN · 59 s · Läufer radeon-890m
 
-Adapter: ungenannt (die Probe nannte keinen Browser-Adapter) · NACHGEGEBEN: Vorfahrt-Blick gescheitert: 502 https://api.github.com/repos/MiguellD/AnazhRealm/actions/runs/43039235565/jobs?per_page=100
+Adapter: [linse-gpu] amd/rdna-3
 
 ```text
-NACHGEGEBEN: Vorfahrt-Blick gescheitert: 502 https://api.github.com/repos/MiguellD/AnazhRealm/actions/runs/43039235565/jobs?per_page=100
+Kamera des Spiels → Blick (5.2 m): -704.22 39.69 -880.02 -703.03 39.69 -874.96
+ "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 5.2 m · Luma 71.2 σ 29.3 schwarz 0.7 % weiß 0.0 % · Stand 18.546.252 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3",
 ```
 
-### gate:kamera-laub — GRÜN · 140 s · Läufer omen-gtx1060
+![bild:dorf@0.5](ab6eeaf4-dorf-0.5.png)
+
+### gate:kamera-laub — GRÜN · 84 s · Läufer radeon-890m
 
 Adapter: ungenannt (die Probe nannte keinen Browser-Adapter)
 
