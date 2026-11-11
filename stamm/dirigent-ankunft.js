@@ -1738,10 +1738,30 @@ class AnazhRealm_dirigent_ankunft {
         if (gleich) return S.wert;
         return (S.wert = this._horizontSichtMessen(L));
     }
-    // Die Messung selbst (`_horizontSichtImBild` ruft sie, wenn sich ein Eingang änderte)
-    _horizontSichtMessen(L) {
-        const st = this.state;
-        const cam = st.camera;
+    // DER BODEN IM BILD (der EINE Boden des Lichtmessers: die Sonne `_horizontSichtMessen`, die Leuchtquellen `_leuchtenImBild`):
+    // je Strahl der unteren Bildhälfte (`messer`) der Punkt, an dem er den Boden des Gesetzes trifft, und seine Normale — sieben
+    // Zahlen je Punkt [x, y, z, die Normale roh (drei), ihre Länge mit dem Vorzeichen nach oben; 0 = waagrecht]. Eine Funktion der
+    // Kamera und des Gelände-Gesetzes: gleichen beide dem letzten Ruf, steht derselbe Boden (Gebot 7). Ohne Kamera null.
+    _messerBoden() {
+        const cam = this.state.camera;
+        if (!cam) return null;
+        const G = this._gelaende();
+        const S = this._messerBodenMerk || (this._messerBodenMerk = { v: [], P: [] });
+        const v = S.v;
+        let n = 0;
+        let gleich = true;
+        const merk = (x) => {
+            if (!Object.is(v[n], x)) {
+                v[n] = x;
+                gleich = false;
+            }
+            n++;
+        };
+        for (const x of [G.seed, G.baseHeight, G.waterLevel, G.erbgut, G.erdbau]) merk(x);
+        for (const x of [cam.position.x, cam.position.y, cam.position.z]) merk(x);
+        for (const x of cam.matrixWorld.elements) merk(x);
+        for (const x of cam.projectionMatrixInverse.elements) merk(x);
+        if (gleich) return S.P;
         const M = AnazhRealm.HORIZONT_KARTE.messer;
         const p = cam.position;
         const ebene = this._terrainMacroSurfaceY(p.x, p.z, true);
@@ -1758,32 +1778,78 @@ class AnazhRealm_dirigent_ankunft {
                 const [x, z] = [p.x + r.x * s, p.z + r.z * s];
                 P[i * M.zeilen + j] = [x, this._terrainMacroSurfaceY(x, z, true), z];
             }
-        // DER BODEN IM BILD IST GENEIGT: je Strahl empfängt er die Sonne mit max(N·L, 0) seiner Normale — aufgespannt von den
+        // DER BODEN IM BILD IST GENEIGT: je Strahl empfängt er das Licht mit max(N·L, 0) seiner Normale — aufgespannt von den
         // Nachbar-Strahlen (der Boden in der Teilung, in der der Messer ihn sieht; ohne Nachbarn waagrecht). Bis ferne.K4 wog der
         // Messer die Sonne mit sin h☉ (flacher Boden): beim Aufgang stieg die Sonne auf den geneigten Flächen des Bilds schneller,
         // als die Kamera sie ausglich — die Wiese sprang 0,10–0,11 EV je 0,002 der Uhr (Radeon, 0,254–0,258).
         const pt = (i, j) => (i >= 0 && i < M.spalten && j >= 0 && j < M.zeilen ? P[i * M.zeilen + j] : undefined);
         const d = (a, b) => (a && b ? [b[0] - a[0], b[1] - a[1], b[2] - a[2]] : null);
-        let [summe, zahl] = [0, 0];
+        const boden = [];
         for (let i = 0; i < M.spalten; i++)
             for (let j = 0; j < M.zeilen; j++) {
                 const q = pt(i, j);
                 if (!q) continue;
                 const u = d(q, pt(i + 1, j)) || d(pt(i - 1, j), q);
                 const w = d(q, pt(i, j + 1)) || d(pt(i, j - 1), q);
-                let nl = L.y;
-                if (u && w) {
-                    const n = [u[1] * w[2] - u[2] * w[1], u[2] * w[0] - u[0] * w[2], u[0] * w[1] - u[1] * w[0]];
-                    const l = Math.hypot(n[0], n[1], n[2]) * Math.sign(n[1] || 1);
-                    if (l) nl = Math.max(0, (n[0] * L.x + n[1] * L.y + n[2] * L.z) / l);
-                }
-                // die Sonne, die der Grat ODER der Wurf der Karten dem Boden nimmt (`_kartenWurfSicht`, w14-lod-sprung), auf
-                // der Neigung, mit der er sie empfängt
-                const [x, y, z] = q;
-                summe += this._horizontSichtAm(x, y, z, L) * this._kartenWurfSicht(x, y, z, L) * nl;
-                zahl++;
+                const k =
+                    u && w
+                        ? [u[1] * w[2] - u[2] * w[1], u[2] * w[0] - u[0] * w[2], u[0] * w[1] - u[1] * w[0]]
+                        : [0, 0, 0];
+                boden.push([q[0], q[1], q[2], k[0], k[1], k[2], Math.hypot(k[0], k[1], k[2]) * Math.sign(k[1] || 1)]);
             }
-        return zahl ? summe / zahl : this._horizontSichtAm(p.x, p.y, p.z, L) * L.y;
+        return (S.P = boden);
+    }
+
+    // Die Messung selbst (`_horizontSichtImBild` ruft sie, wenn sich ein Eingang änderte): die Sonne auf dem Boden im Bild
+    // (`_messerBoden`), die der Grat ODER der Wurf der Karten ihm nimmt (`_kartenWurfSicht`, w14-lod-sprung), auf der Neigung,
+    // mit der er sie empfängt
+    _horizontSichtMessen(L) {
+        const P = this._messerBoden();
+        let summe = 0;
+        for (const [x, y, z, n0, n1, n2, l] of P) {
+            const nl = l ? Math.max(0, (n0 * L.x + n1 * L.y + n2 * L.z) / l) : L.y;
+            summe += this._horizontSichtAm(x, y, z, L) * this._kartenWurfSicht(x, y, z, L) * nl;
+        }
+        const p = this.state.camera.position;
+        return P.length ? summe / P.length : this._horizontSichtAm(p.x, p.y, p.z, L) * L.y;
+    }
+
+    // DIE LEUCHTQUELLEN IM LICHTMESSER (licht.K1, w28-tag-kurve): die Kamera misst das Licht, das der Boden im Bild empfängt —
+    // die Sonne, den Himmel UND die Plätze des Licht-Pools (`_leuchtPool.plaetze`, der EINE Schreiber `_leuchtTakt`): je Punkt
+    // des Bodens (`_messerBoden`) Farbe × Stärke × Abfall (das EINE Punktlicht-Gesetz, fachwerk `lichtAbfall` — was
+    // `_lichtPoolTerm` je Fragment rechnet) × max(N·L, 0), gemittelt wie die Sonne; ohne Strahl auf den Boden am Auge, die
+    // Fläche nach oben. Addiert in `out` (rgb). Sie liest die RUHE der Quelle (`ruhe`: Datum × Zeitplan × Masse × Blende, ohne
+    // Flackern — eine Kamera folgt keinen 6–10 Hz) und nie den Himmels-Ersatz (das Licht des Auges ist aus der Belichtung
+    // gerechnet, `_augenLichtStaerke`: es zu messen zählte die Adaption doppelt). Bis hier maß die Kamera nur den Himmel: am
+    // Genesis-Ort (zehn wache Tore, eine Laterne) stand die Nacht 1,7 EV unter dem Mittag bei Luma 58 (Soll −3 … −5), die Sonne 10°
+    // abends 0,09 EV darunter, und der Zeitplan der Laterne riss an Dämmerung und Morgen 0,15–0,25 EV je 0,002 der Uhr (GTX 4e2df19b).
+    _leuchtenImBild(out) {
+        const pool = this._leuchtPool;
+        const cam = this.state.camera;
+        if (!pool || !pool.plaetze.length || !cam) return out;
+        let P = this._messerBoden();
+        if (!P.length) P = [[cam.position.x, cam.position.y, cam.position.z, 0, 1, 0, 1]];
+        const ab = globalThis.__fachwerkCore.lichtAbfall;
+        const L = this._leuchtAbfallL || (this._leuchtAbfallL = { reichweiteM: 0, abfall: 0, kernM: 0 });
+        for (const q of pool.plaetze) {
+            if (q.ersatz || !(q.ruhe > 0)) continue;
+            L.reichweiteM = q.reichweite;
+            L.abfall = q.abfall;
+            L.kernM = q.kern;
+            let summe = 0;
+            for (const [x, y, z, n0, n1, n2, l] of P) {
+                const [dx, dy, dz] = [q.x - x, q.y - y, q.z - z];
+                const d = Math.hypot(dx, dy, dz);
+                if (!(d < q.reichweite) || !(d > 0)) continue;
+                const nl = l ? (n0 * dx + n1 * dy + n2 * dz) / (l * d) : dy / d;
+                if (nl > 0) summe += ab(L, d) * nl;
+            }
+            const k = (q.ruhe * summe) / P.length;
+            out[0] += q.farbe[0] * k;
+            out[1] += q.farbe[1] * k;
+            out[2] += q.farbe[2] * k;
+        }
+        return out;
     }
 
     // DIE SONNEN-SICHT am Welt-Punkt `p` (Vorgabe: die Schatten-Position des Empfängers, `shadowPositionWorld` — dieselbe, die

@@ -3025,19 +3025,21 @@ hauptLauf(async () => {
         if (o?.tabelle) endeMit(o.tabelle + "\n\n" + o.datei + "\n" + o.ordner, o.urteil === "GRUEN");
         endeMit(o);
     } else if (cmd === "licht" && hat("tag")) {
-        // DIE TAG-ACHSE (S7, W7): je Messort (`--orte`, Standard der Spawn und die Mess-Wiese) in Ego die Uhr-Kurve aus dem
-        // Ausgabe-Pfad (`__tagKurve`), ihre Nachtastung (`tagFeinUhren`) und ihr Urteil `tagKurveUrteil` (licht-linsen.cjs);
-        // `--kurz` und `--eigen` die Wand der Karte, `--ordner d` die Bilder, `--datei f.json` die Messung.
+        // DIE TAG-ACHSE (S7, W7): je Messort (`--orte`, Standard der Spawn und die Mess-Wiese in Ego; die Sicht nach dem
+        // Doppelpunkt, `wiese:third`) die Uhr-Kurve aus dem Ausgabe-Pfad (`__tagKurve`), ihre Nachtastung (`tagFeinUhren`) und ihr
+        // Urteil `tagKurveUrteil` (licht-linsen.cjs); `--kurz` und `--eigen` die Wand der Karte, `--ordner d` die Bilder,
+        // `--datei f.json` die Messung.
         const halt = await eigeneWelt();
         const welt = {};
         const kurve =(uhren, png) => evalRuf(`return await __tagKurve(${JSON.stringify({ uhren, png })});`);
         try {
-            for (const ort of String(opt("--orte", "genesis,wiese")).split(",")) {
-                await umstellen({ ort, sicht: "ego" });
+            for (const wahl of String(opt("--orte", "genesis,wiese")).split(",")) {
+                const [ort, sicht = "ego"] = wahl.split(":");
+                await umstellen({ ort, sicht });
                 const a = await kurve(hat("kurz") ? LL.TAG_UHREN_KURZ : LL.TAG_UHREN, !!opt("--ordner"));
-                const m = (welt[ort] = ergebnis(a));
+                const m = (welt[wahl] = ergebnis(a));
                 for (const z of m.zeilen || []) {
-                    if (z.png) pngDatei(path.resolve(opt("--ordner"), `tag-${ort}-${z.uhr}.png`), z.png);
+                    if (z.png) pngDatei(path.resolve(opt("--ordner"), `tag-${wahl.replace(":", "-")}-${z.uhr}.png`), z.png);
                     delete z.png;
                 }
                 const f = m.zeilen && (await kurve(LL.tagFeinUhren(m.zeilen), false)).ergebnis;

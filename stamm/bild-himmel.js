@@ -1147,7 +1147,10 @@ class AnazhRealm_bild_himmel {
         // der Raten-Drossel und an der Leine vorbei — und verwirft den Boden, den der Rückstrahl unter dem alten Licht maß.
         const sprung = this._himmelSprung === true;
         this._himmelSprung = false;
-        if (sprung) this._rueckstrahlSprung();
+        if (sprung) {
+            this._rueckstrahlSprung();
+            this._leuchtTakt();
+        }
         this._atmoTakt(sunDir, moonDir, tint, sprung);
         this._dayNightApplySkybox(tint);
         this._dayNightApplyStarField(achse, tint.skyMul);
@@ -1923,6 +1926,8 @@ class AnazhRealm_bild_himmel {
         const w = this._waagrechtIrradianz(this._belichtungE || (this._belichtungE = [0, 0, 0]));
         const EA = w && this._belichtungAnker();
         if (!EA) return null;
+        // … und die Leuchtquellen auf dem Boden im Bild (`_leuchtenImBild`): die Kamera misst jedes Licht, das er empfängt
+        this._leuchtenImBild(w);
         // das Gesetz der Kamera (welt-licht.js `belichtung`) mit den Stufen am Glied der Welt (die Linsen prüfen ihren Schein dort)
         return __weltLicht.belichtung(w, EA, e, (h, q) => AnazhRealm._belichtungStufen(h, q), AnazhRealm.BELICHTUNG);
     }
@@ -2602,12 +2607,13 @@ class AnazhRealm_bild_himmel {
             return false;
         }
         // ein Schreiber außer dem Gang springt: der Himmel malt sich beim nächsten Anwenden des Tags neu (`_ensureSkyEnvironment`),
-        // und der Licht-Pool wählt im nächsten Takt neu (`_leuchtTakt`: seine Wahl liest den Zeitplan der Quellen zur Uhr — mit
-        // der Wahl der alten Stunde blendeten die Laternen des Genesis-Orts erst bis zu `wahlS` nach dem Sprung ein, mitten im
-        // Schuss: gate:tag-achse:echt SPRUNG 0,2–0,6 EV an Dämmerung und Morgen)
+        // und der Licht-Pool springt mit ihm an seinen Fixpunkt (`_leuchtTakt`: seine Wahl liest den Zeitplan der Quellen zur
+        // Uhr, jede Blende steht — mit der Wahl der alten Stunde blendeten die Laternen des Genesis-Orts erst bis zu `wahlS` nach
+        // dem Sprung ein, mitten im Schuss: gate:tag-achse:echt SPRUNG 0,2–0,6 EV an Dämmerung und Morgen; seit w28-tag-kurve
+        // misst die Kamera die Plätze, ihre Belichtung des ersten Bilds liest die der neuen Stunde)
         if (quelle !== "uhr" && v !== this.state.timeOfDay) {
             this._himmelSprung = true;
-            if (this._leuchtPool) this._leuchtPool.t = -Infinity;
+            if (this._leuchtPool) this._leuchtPool.t = this._leuchtPool.uhr = -Infinity;
         }
         // DER TAG DER WELT (feld.K4, `_weltStunde`): kreuzt die Uhr Mitternacht (der kürzere Bogen), zählt der Tag vor oder
         // zurück; das Laden setzt nur die Uhr — der Tag reist im worldMeta

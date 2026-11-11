@@ -1597,7 +1597,10 @@ class AnazhRealm {
     // Datum über die EINE Übersetzung Labor → Welt (`_laborLichtStaerke`) × Masse (die Fläche der Glut) × Flackern auf der
     // Bild-Uhr (fachwerk `lichtFlackern`) × Zeitplan (`_lichtZeitplan`) × Blende. Der Ort steht in der Welt (der Stoff rechnet
     // ihn mit der Kamera seines Renderers). Unabhängig vom Klang. Lesbar für Linsen: `_leuchtPool.plaetze` (Quelle, Welt-Ort,
-    // Stärke, Reichweite, Abfall, Kern, lineare Farbe, Himmels-Ersatz, Blende). Die Farbe aus der Farbtemperatur (`_lichtLinear`).
+    // Stärke, ihre Ruhe ohne Flackern, Reichweite, Abfall, Kern, lineare Farbe, Himmels-Ersatz, Blende). Die Farbe aus der
+    // Farbtemperatur (`_lichtLinear`). EIN SPRUNG DER UHR IST EIN SPRUNG DES LICHTS (`_uhrSetzen` stellt Wahl- und Blend-Uhr
+    // zurück, die Anwendung des Tags ruft den Takt vor der Belichtung): die Wahl liest den Zeitplan der neuen Stunde, jede Blende
+    // steht an ihrem Fixpunkt — der Lichtmesser der Kamera (`_leuchtenImBild`) liest die Plätze der Stunde, nie die der alten.
     _leuchtTakt() {
         const st = this.state;
         const atmo = st.atmoUniforms;
@@ -1691,6 +1694,8 @@ class AnazhRealm {
                 y: q.y,
                 z: q.z,
                 staerke: I,
+                // die Ruhe der Quelle (ohne Flackern): was der Lichtmesser der Kamera liest (`_leuchtenImBild`)
+                ruhe: this._laborLichtStaerke(L.staerke) * q.masse * this._lichtZeitplan(L.zeit) * pool.blende[k],
                 reichweite: L.reichweiteM,
                 abfall: L.abfall,
                 kern: L.kernM,
