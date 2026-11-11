@@ -240,6 +240,15 @@ class AnazhRealm_studio_bruecke {
         f.buch = null;
         if (m) this._foundryIngestBook(m);
     }
+    // DAS BUCH ÖFFNET SICH (EINE Antwort, zwei Leser): solange der Faden nicht steht oder sein Buch nicht in der Welt liegt, ist
+    // die Bibliothek offen — dem ersten Bild sagt es `_weltbildFehlt`, jeder Linse und dem Wort „die Welt steht" `_weltOffen`.
+    // Bis w27-foundry-halter zählte `_weltOffen` die Foundry erst ab ihrem ersten Auftrag: an der GTX 1050 (HDD) erreicht die
+    // Antwort auf fetch und import den Faden 9–25 s nach dem Ruf (Chromes Code-Cache-Faden stempelt davor je geladenem Skript,
+    // 196 × ~130 ms, und beantwortet die Rückfrage des Fadens der Reihe nach) — so lange nannte die Welt sich „nichts offen".
+    _foundryBuchOffen() {
+        const f = this._foundry;
+        return this._foundryEnabled() && !(f && f.ready && f.recipes);
+    }
     // Wie viele Werk-Fäden: einer je vier Kerne, höchstens FOUNDRY_WERK_FAEDEN — die Kerne
     // allein entscheiden, nie der Renderer.
     _foundryFaedenZahl() {
