@@ -21,8 +21,12 @@
 //   node punkte.cjs vereine --sha <voll> --geraet headless --farm <name> --teile <dir> [--scheiben scheiben.json] [--beginn <s>]
 //        die Teil-Messungen der Scheiben zur EINEN messung/<sha8>-<geraet>.json samt Roh-Ausgaben
 //   node punkte.cjs buchen --kopf <sha> [--trocken]
-//        liest alle messung/*.json, urteilt R6 (Pfad und Linse unberührt seit der Messung) und R10, schreibt stand.json
+//        liest alle messung/*.json, urteilt R6 (NACH KONSUM: der Diff seit der Messung trifft, was der Lauf ausführte oder las — eine
+//        Messung ohne Konsum-Menge urteilt nach Pfad und Linse wie bisher, gezählt beim Namen) und R10, schreibt stand.json
 //        (--trocken: dieselben Zeilen samt RÜCKFALL, stand.json bleibt unberührt)
+//   node punkte.cjs beruehrt --basis <sha> --kopf <sha> [--json]   welche Stationen berührt der Diff eines Zweigs: je Gerät die Hälften,
+//        deren Messung an der Basis frisch gilt und am Kopf nicht mehr (dasselbe Frische-Urteil wie die Buchung, R6 nach Konsum) —
+//        `nur=…` für den Zug-Dienst und den Richter nach der Landung; daneben die Hälften, die schon an der Basis offen sind
 //   node punkte.cjs liste [--kopf <sha>]   die registrierten Stationen, geprüft gegen src/gN.js und jeder pfad-Glob gegen den
 //        Kopf (sonst origin/main des Spiel-Klons)
 //   node punkte.cjs gtx-nutzen --kopf <sha>   die GTX-Stationen, deren Messung am Kopf Punkte ändern kann (nur=… für die OMEN):
@@ -83,7 +87,8 @@
 // jede auf jedem ihrer Geräte grün ist (stufen). Ein Kriterium ohne Staffel-1-Station ist ROT.
 //
 // BUCHUNG (R2 · R6 · R10): je Station und Gerät zählt die JÜNGSTE Messung, deren Abdruck (Befehl, Urteil, Pfad, Hilfen)
-// der Station gleicht und deren Pfad und Linse zwischen Mess-SHA und Kopf ohne Stempel unberührt sind (stempelDateien, linsenVon). 1 = jede
+// der Station gleicht und deren KONSUM (Abschnitt „Konsum“: was ihr Lauf ausführte und las — konsum-zeuge.cjs) zwischen Mess-SHA und
+// Kopf ohne Stempel unberührt ist; trägt die Messung keinen Konsum, ihr Pfad und ihre Linse (stempelDiff, linsenVon). 1 = jede
 // Staffel-1-Station auf mindestens einem ihrer Geräte grün · 2 = dazu jede Staffel-2-Station auf JEDEM ihrer Geräte grün ·
 // sonst 0. Ein jüngeres ROT schlägt ein älteres GRÜN.
 // DIE RATSCHE (Schöpfer 30.10.: „Tests sichern nur den Rückfall, nie den Fortschritt — das jetzige Minimum sichern und mehr
@@ -113,6 +118,7 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 const crypto = require("crypto");
+const zlib = require("zlib");
 const { spawn, spawnSync } = require("child_process");
 
 const DIR = __dirname;
@@ -858,10 +864,10 @@ function gpuWand(z) {
 }
 
 // ───────────────────────────────── git ─────────────────────────────────
-function git(args, cwd) {
+function git(args, cwd, roh = false) {
     const r = spawnSync("git", args, { cwd, encoding: "utf8", maxBuffer: 64 << 20 });
     if (r.status !== 0) throw new Error("git " + args.join(" ") + ": " + String(r.stderr || r.stdout).trim().split("\n")[0]);
-    return r.stdout.trim();
+    return roh ? r.stdout : r.stdout.trim();
 }
 function spielRepo() {
     // git < 2.31 kennt --path-format nicht und gibt es als eigene Zeile zurück (OMEN: git 2.30): die letzte Zeile, gegen KOORD aufgelöst
@@ -1411,10 +1417,13 @@ function fahreGruppe(sts, ctx) {
         const teileN = (st.probe && st.probe.teile) || 1, teilS = [];
         const mitS = (e) => (!sitz ? e : teileN > 1 && teilS.length ? { ...e, s: Math.max(...teilS), teile: teilS }
             : { ...e, s: +(((tEnde || Date.now()) - t0) / 1000).toFixed(1) });
-        let gegangen = false;
-        const ganz = (es) => {
+        let gegangen = false, kzLauf = null;
+        const ganz = (es0) => {
             if (gegangen) return;
             gegangen = true;
+            // KEIN STILLER RÜCKFALL: ein Eintrag mit Urteil, aber ohne Konsum-Menge (ein Lauf, der am Deckel fiel, ein Start, der warf)
+            // nennt den Grund (`konsumFehlt`) — die Buchung zählt ihn beim Namen
+            const es = es0.map((e) => (e.ungemessen || e.konsum || e.konsumFehlt ? e : { ...e, konsumFehlt: (kzLauf && kzLauf.konsumFehlt) || "der Lauf endete ohne Urteil seiner Linse (Deckel, Start, Wand)" }));
             const tStop = tEnde || Date.now();
             zeuge.ende(fenster).then((b) => {
                 tEnde = tStop; // das Warten auf den Takt des Zeugen zählt nie in die Sekunden der Probe
@@ -1477,6 +1486,15 @@ function fahreGruppe(sts, ctx) {
             env.PUNKTE_GPU_ZEUGE = zeugeDatei;
             env.NODE_OPTIONS = ((env.NODE_OPTIONS || "") + ' --require "' + ZEUGE_DATEI.split(path.sep).join("/") + '"').trim();
         }
+        // DER ZEUGE DES KONSUMS (R6 nach Konsum, konsumAn) in JEDEM node-Prozess des Laufs; die Seite trägt ihn nur, wo kein Zeit-Urteil
+        // fällt und die Welt dem Lauf allein gehört (nie in der Sitzung: ihre Welt misst auch Zeit-Proben)
+        const konsumOrdner = konsumAn(env, ctx.aus + ".konsum", ctx.baum, !sitz && !istZeit(sts));
+        // DER ZEUGE IST EIN LEBENSZEICHEN (11.11., Radeon unter Last: „Deckel 2 s gerissen: Stille seit 2 s nach 2 s“ an der lebenden Probe
+        // des Selbsttests — der Zeuge lud 15 ms vor ihrer ersten Zeile, auf dem ausgelasteten Gerät ein Vielfaches): jedes Ereignis im
+        // Ordner des Zeugen (`<id>.offen` beim Start eines node-Prozesses der Probe, noch einmal nach seinem Einhängen und vor seinem
+        // Abschluss) zählt an der Leine wie eine Zeile der Probe — sein eigenes Einhängen und Abschließen ist nie die Stille, an der sie fällt
+        let konsumWache = null;
+        try { konsumWache = fs.watch(konsumOrdner, { persistent: false }, () => (tLeben = Date.now())); konsumWache.on("error", () => {}); } catch (_e) { konsumWache = null; }
         try { fs.rmSync(ctx.aus, { force: true }); } catch (_e) {}
         if (zeugeDatei) try { fs.rmSync(zeugeDatei, { force: true }); } catch (_e) {}
         if (!sitz) portRaeumen(ctx.band || ctx.port);
@@ -1555,8 +1573,15 @@ function fahreGruppe(sts, ctx) {
             k.on("exit", (code, sig) => ((tE = tEnde = tE || Date.now()), setTimeout(() => ende(code, sig), 2000)));
             k.on("close", ende);
         };
+        // DER KONSUM DES LAUFS, ehe die Ports fallen: jeder noch lebende Prozess schließt auf Zuruf ab (konsumSchliessen), in der
+        // Sitzung dazu das Fenster der Welt (konsumNahme) und ihr Boot — gefaltet in jeden Eintrag des Laufs (`kz`)
         const abschluss = (code, sig, ohneEnde) => {
             clearTimeout(uhr);
+            if (konsumWache) konsumWache.close();
+            konsumDesLaufs(konsumOrdner, ctx.baum, tot ? null : sitz).then((kz) => urteile(code, sig, ohneEnde, kz));
+        };
+        const urteile = (code, sig, ohneEnde, kz) => {
+            kzLauf = kz;
             if (!sitz) portRaeumen(ctx.band || ctx.port);
             // die Zeugen-Zeilen gehen in die Roh-Ausgabe (die Buchung liest sie dort), die Datei fällt; in der Sitzung zeugt die
             // Werkbank der Welt (ihr Zeuge zuerst), dazu jeder node-Prozess der Probe
@@ -1615,7 +1640,7 @@ function fahreGruppe(sts, ctx) {
                 if (absturz) return r(absturz + " · " + u.zahl);
                 if (wand) return { gruen: false, zahl: "Wand GPU: " + wand + " · " + u.zahl, exit: code, minuten: m, grund: "Wand GPU: " + wand, ...gz };
                 return { gruen: u.gruen, zahl: u.zahl, exit: code, minuten: m, ...(u.gruen ? {} : { grund: "ROT: " + u.zahl }), ...(u.mass ? { mass: u.mass } : {}), ...(u.massFehler ? { massFehler: u.massFehler } : {}), ...gz };
-            }));
+            }).map((e) => (e.ungemessen ? e : { ...e, ...kz })));
         };
         starte();
     });
@@ -2036,7 +2061,10 @@ async function halter(o) {
     for (const d of STAND_DATEIEN) fs.rmSync(path.join(baum, d), { force: true });
     const sl = fs.openSync(o.log + ".save", "w");
     const sa = (welt ? welt.save : ["node", "save-server.js"]).map(ers);
-    const sv = spawn(exe(sa), sa.slice(1), { cwd: baum, env: { ...process.env, PORT: String(S) }, stdio: ["ignore", sl, sl], windowsHide: true });
+    // DER ZEUGE DES KONSUMS in der Welt der Sitzung (--konsum <Ordner>): save-server und Werkbank, ohne die Seite (konsumAn)
+    const kenv = (e) => (o.konsum ? (konsumUmgebung(e, path.resolve(o.konsum), baum, false), e) : e);
+    if (o.konsum) (fs.rmSync(path.resolve(o.konsum), { recursive: true, force: true }), fs.mkdirSync(path.resolve(o.konsum), { recursive: true }));
+    const sv = spawn(exe(sa), sa.slice(1), { cwd: baum, env: kenv({ ...process.env, PORT: String(S) }), stdio: ["ignore", sl, sl], windowsHide: true });
     let wb = null;
     const ab = async (code, zeile) => {
         if (zeile) console.log(zeile);
@@ -2060,8 +2088,8 @@ async function halter(o) {
     // Sitzung ohne Ort: ein Dorf wuchs vom Boot an (`dorfWaechst` in 74 % der Zapfen des Eichlaufs 00763f54, die Foundry mit seinen
     // Häusern belegt — lod.K5#1 92 s Foundry), die Grundstellung spielte es zurück; ein Ort mit Dorf-Zug stellt ihn selbst an
     const wa = (welt ? welt.werkbank : ["node", "scripts/werkbank.cjs", "start", "--echt", "--port", String(W), "--seite", "http://localhost:" + S, "--ort", "wiese"]).map(ers);
-    const env = { ...process.env, WERKBANK_PORT: String(W), PUNKTE_GPU_ZEUGE: path.resolve(o.zeuge),
-        NODE_OPTIONS: ((process.env.NODE_OPTIONS || "") + ' --require "' + ZEUGE_DATEI.split(path.sep).join("/") + '"').trim() };
+    const env = kenv({ ...process.env, WERKBANK_PORT: String(W), PUNKTE_GPU_ZEUGE: path.resolve(o.zeuge),
+        NODE_OPTIONS: ((process.env.NODE_OPTIONS || "") + ' --require "' + ZEUGE_DATEI.split(path.sep).join("/") + '"').trim() });
     wb = spawn(exe(wa), wa.slice(1), { cwd: baum, env, stdio: ["ignore", wl, wl], windowsHide: true });
     const log = () => (fs.existsSync(o.log) ? fs.readFileSync(o.log, "utf8") : "");
     for (let i = 0; !/WERKBANK bereit/.test(log()); i++) {
@@ -2155,7 +2183,7 @@ async function sitzungStarten(o) {
     return new Promise((fertig) => {
         const t0 = Date.now();
         const argv = [__filename, "halter", "--baum", o.baum, "--port", String(o.port), "--log", o.log, "--zeuge", o.zeuge, "--stop", o.stop,
-            "--eltern", String(process.pid), "--band", [].concat(o.band || o.port).join(","), ...(o.welt ? ["--welt", o.welt] : [])];
+            "--eltern", String(process.pid), "--band", [].concat(o.band || o.port).join(","), ...(o.welt ? ["--welt", o.welt] : []), ...(o.konsum ? ["--konsum", o.konsum] : [])];
         const env = { ...process.env };
         delete env.NODE_OPTIONS; // der Zeuge sitzt in der Werkbank, nie im Halter (er nennt keine Karte)
         let out = "", gemeldet = false, uhr = null;
@@ -2815,8 +2843,12 @@ async function fahreSitzung(gruppen0, ctx, melde) {
     const grund = path.join(dir, "grund.json");
     for (const f of [stop, zeuge, strom, grund]) fs.rmSync(f, { force: true });
     const kopf = { start: new Date(t0).toISOString(), port: ctx.port, warten: null, bootS: null, grundstellungS: [], proben: 0, freigaben: [] };
-    const s = await sitzungStarten({ ...ctx, log, zeuge, stop });
+    // DER KONSUM DER WELT (R6 nach Konsum): der Zeuge in save-server und Werkbank, ihr Boot als EIN Stück nach dem Start, danach je
+    // Probe ein Fenster (fahreGruppe: konsumDesLaufs)
+    const konsumWelt = { ordner: path.join(dir, "konsum-welt"), boot: null, nr: 0 };
+    const s = await sitzungStarten({ ...ctx, log, zeuge, stop, konsum: konsumWelt.ordner });
     Object.assign(kopf, { warten: s.warten, bootS: s.bootS });
+    if (s.ok) konsumWelt.boot = await konsumNahme(konsumWelt.ordner, "boot");
     const ohne = (grund, ungemessen) => ({ gruen: false, zahl: grund, exit: null, minuten: 0, grund, ...(ungemessen ? { ungemessen: true } : {}) });
     let tot = null;
     if (!s.ok) {
@@ -3034,7 +3066,7 @@ async function fahreSitzung(gruppen0, ctx, melde) {
         if (leihe.fehler) console.log("  SITZUNG die Leihe der Hänger-Linse vor " + schluessel(g[0]) + " nicht lesbar: " + leihe.fehler);
         const zeit = new Date().toISOString();
         aktuell = schluessel(g[0]);
-        const es = await fahreGruppe(g, { ...ctx, ...aus, sitzung: { log, zeuge, strom, grund, probe: aktuell, restS: restS(), anteilS: anteil(gruppen.indexOf(g)), fahrtMaxS, lebt: () => bildZuletzt } });
+        const es = await fahreGruppe(g, { ...ctx, ...aus, sitzung: { log, zeuge, strom, grund, probe: aktuell, restS: restS(), anteilS: anteil(gruppen.indexOf(g)), fahrtMaxS, lebt: () => bildZuletzt, konsumWelt } });
         if (es.some((e) => /^Deckel der Fahrt /.test(e.grund || ""))) (gerissen = "in " + aktuell), kopf.offen.push(...g.map(schluessel));
         await zapf(aktuell);
         aktuell = "(sitzung)";
@@ -3175,9 +3207,7 @@ function auswahl(opt) {
         meine = meine.filter((st) => st.probe);
     }
     if (opt.offen || opt.eich) {
-        const frisch = frischUrteil(ladeMessungen(), (s) =>
-            stempelDateien(git(["diff", "--name-only", s, sha], repo), git(["diff", "-U0", "--no-color", s, sha], repo)), hilfeText(),
-            { tot, roh: rohAus(), linsen: linsenAm(repo, sha) });
+        const frisch = frischUrteil(ladeMessungen(), (s) => standDiff(repo, s, sha), hilfeText(), { tot, roh: rohAus(), linsen: linsenAm(repo, sha), skript: skripteAm(repo) });
         meine = meine.filter((st) => frisch(st, opt.geraet).ungemessen);
     }
     if (opt.eich) {
@@ -3265,7 +3295,7 @@ function scheibenCli(opt) {
 // Eintrag trägt den Läufer (host), die Datei die Farm. teile: [{ name, m }]; erwartet: [{ nr, nur }] oder null. Rückgabe
 // { m, n, fehlt: [{ nr, ids }] } — eine Scheibe ohne Teil (ihr Läufer fiel) steht beim Namen, ihre Stationen bleiben, wie sie waren.
 function vereineMessungen(m, teile, sha, geraet, host, erwartet = null) {
-    const ziel = m && m.sha === sha ? { ...m, je: { ...m.je }, ...(m.ungemessen ? { ungemessen: { ...m.ungemessen } } : {}) }
+    const ziel = m && m.sha === sha ? { ...m, je: { ...m.je }, ...(m.ungemessen ? { ungemessen: { ...m.ungemessen } } : {}), ...(m.konsumTafel ? { konsumTafel: { ...m.konsumTafel } } : {}) }
         : { sha, geraet, zeit: null, host, je: {} };
     const gesehen = new Set();
     let n = 0;
@@ -3273,13 +3303,14 @@ function vereineMessungen(m, teile, sha, geraet, host, erwartet = null) {
         if (!t.m || t.m.sha !== sha || t.m.geraet !== geraet)
             throw new Error("Teil " + t.name + " misst " + (t.m && t.m.sha) + " " + (t.m && t.m.geraet) + " statt " + sha + " " + geraet);
         for (const [id, e] of [...Object.entries(t.m.je || {}), ...Object.entries(t.m.ungemessen || {})]) {
-            eintragen(ziel, id, { ...e, host: e.host || t.m.host || t.name });
+            eintragen(ziel, id, { ...konsumAuf(t.m, e), host: e.host || t.m.host || t.name });
             gesehen.add(id);
             n++;
         }
         if (t.m.zeit && String(t.m.zeit) > String(ziel.zeit || "")) ziel.zeit = t.m.zeit;
     }
     ziel.host = host;
+    konsumRaeumen(ziel);
     const fehlt = (erwartet || []).map((s) => ({ nr: s.nr, ids: String(s.nur).split(",").filter((id) => id && !gesehen.has(id)) })).filter((s) => s.ids.length);
     return { m: ziel, n, fehlt };
 }
@@ -3482,7 +3513,7 @@ async function run(opt) {
         });
         m.zeit = zeit;
         m.host = host;
-        fs.writeFileSync(datei, JSON.stringify(m, null, 1) + "\n");
+        fs.writeFileSync(datei, JSON.stringify(konsumRaeumen(m), null, 1) + "\n");
     };
     if (proben.length) {
         const sb = portBand(opt.portBasis || 7700, opt.geraet, MAX_BAHNEN);
@@ -3518,6 +3549,7 @@ const stationsEintrag = (e, o) => ({ ...e, zeit: o.zeit, abdruck: o.abdruck, por
 // Schloss (Exit 75, gpu-lauf.sh schwieg beim Warten) nach m.ungemessen mit Grund, NIE als ROT — frischUrteil nähme ihn sonst als
 // frische Messung, und `run --offen` mäße die Station an diesem SHA nie neu (26.10., Prüfung gpu-bahnen)
 function eintragen(m, id, e) {
+    e = konsumTafeln(m, e);
     if (e.ungemessen) {
         (m.ungemessen = m.ungemessen || {})[id] = e;
         return;
@@ -3597,7 +3629,7 @@ function frischUrteil(messungen, geaendert, hilfe = hilfeText(), opt = {}) {
     const diffCache = new Map();
     const diff = (sha) => {
         if (!diffCache.has(sha)) {
-            try { diffCache.set(sha, { dateien: geaendert(sha) }); } catch (e) { diffCache.set(sha, { fehler: e.message }); }
+            try { const d = geaendert(sha); diffCache.set(sha, Array.isArray(d) ? { dateien: d } : d); } catch (e) { diffCache.set(sha, { fehler: e.message }); }
         }
         return diffCache.get(sha);
     };
@@ -3607,6 +3639,9 @@ function frischUrteil(messungen, geaendert, hilfe = hilfeText(), opt = {}) {
         if (tot.length) return { gruen: false, ungemessen: true, tot: true, grund: pfadGrund(tot, "am Kopf") };
         const ab = abdruck(st, hilfe, g);
         let alt = 0, fremd = 0, unbekannt = 0, ohneZeugen = null, taeter = [], linse = 0, linsenTaeter = [], unlesbar = null, zuletzt = null;
+        // R6 NACH KONSUM (Abschnitt Konsum): `juengste` = die jüngste Messung der Station mit ihrem Abdruck — trägt sie den Konsum, urteilt
+        // die Hälfte nach Konsum (r6 "konsum"), sonst nach Linse und Glob (r6 "naehe", samt dem Grund `konsumFehlt`); ohne Messung null
+        let konsumAlt = 0, konsumTaeter = [], juengste = null;
         const frisch = [];
         for (const m of messungen) {
             // der jüngste Lauf ohne Messung (m.ungemessen: kein Urteil, Deckel, Schloss) nennt sich im Grund — nie still gehalten
@@ -3615,28 +3650,38 @@ function frischUrteil(messungen, geaendert, hilfe = hilfeText(), opt = {}) {
             if (m.geraet !== g || !m.je || !m.je[id]) continue;
             const e = m.je[id];
             if (e.abdruck !== ab) { fremd++; continue; }
+            // der Konsum des Eintrags aus der Tafel seiner Mess-Datei; nennt er einen Abdruck, den die Tafel nicht trägt, fehlt er beim Namen
+            const K = e.konsum ? konsumVon(e, m) : null;
+            if (!juengste || String(e.zeit) > String(juengste.zeit)) juengste = { zeit: e.zeit, konsum: !!K, konsumFehlt: e.konsum && !K ? "die Tafel der Mess-Datei trägt den Abdruck nicht" : e.konsumFehlt };
             const d = diff(m.sha);
             if (d.fehler) { unbekannt++; continue; }
-            let L;
-            try { L = new Set(opt.linsen ? opt.linsen(st, m.sha) : []); } catch (e) { unlesbar = e.message; continue; }
-            const l = d.dateien.filter((f) => L.has(f));
-            if (l.length) { linse++; linsenTaeter = l; continue; }
-            const t = d.dateien.filter((f) => !WERKZEUG_PFAD.test(f) && trifftPfad(f, st.pfad));
-            if (t.length) { alt++; taeter = t; continue; }
+            if (K) {
+                const kt = konsumTreffer(K, d, st, e.konsumSeite !== false, opt.skript ? opt.skript(m.sha) : null);
+                if (kt.length) { konsumAlt++; konsumTaeter = kt; continue; }
+            } else {
+                // ohne Konsum-Menge wie bisher: die Linse der Station (linsenVon), dann ihr Glob
+                let L;
+                try { L = new Set(opt.linsen ? opt.linsen(st, m.sha) : []); } catch (e) { unlesbar = e.message; continue; }
+                const l = d.dateien.filter((f) => L.has(f));
+                if (l.length) { linse++; linsenTaeter = l; continue; }
+                const t = d.dateien.filter((f) => !WERKZEUG_PFAD.test(f) && trifftPfad(f, st.pfad));
+                if (t.length) { alt++; taeter = t; continue; }
+            }
             // ein GRÜN einer GPU-Station trägt den Zeugen der Karte: im Eintrag (seit der Wand) oder in seiner Roh-Ausgabe
             if (st.gpu && e.gruen) {
                 const z = "gpu" in e ? { karte: e.gpu, fremd: e.gpuFremd || null, nie: e.gpuNie || 0 } : gpuZeuge(opt.roh ? opt.roh(m.sha, g, id) : "");
                 const w = gpuWand(z);
                 if (w) { ohneZeugen = w; continue; }
             }
-            frisch.push({ ...e, sha: m.sha, geraet: g });
+            frisch.push({ ...e, sha: m.sha, geraet: g, r6: K ? "konsum" : "naehe" });
         }
         frisch.sort((a, b) => String(b.zeit).localeCompare(String(a.zeit)));
-        if (frisch.length) return frisch[0];
+        const r6 = juengste ? (juengste.konsum ? { r6: "konsum" } : { r6: "naehe", ...(juengste.konsumFehlt ? { r6Grund: juengste.konsumFehlt } : {}) }) : {};
+        if (frisch.length) return { ...frisch[0], r6: frisch[0].r6 };
         // der Grund der jüngsten verworfenen Art zuerst: ein GRÜN ohne Zeugen vor dem R6 einer älteren Messung
         const nenne = (xs) => xs.slice(0, 3).join(", ") + (xs.length > 3 ? " +" + (xs.length - 3) : "");
-        const grund = ohneZeugen ? "Wand GPU: " + ohneZeugen : linse ? "Linse seit der Messung geändert (R6: " + nenne(linsenTaeter) + ")" : alt ? "Pfad seit der Messung geändert (R6: " + nenne(taeter) + ")" : unlesbar ? "Linse unlesbar — kein R6-Urteil (" + unlesbar + ")" : unbekannt ? "Mess-SHA unbekannt — kein R6-Urteil" : fremd ? "Station seit der Messung geändert" : "ungemessen (R10)";
-        return { gruen: false, ungemessen: true, grund: grund + (zuletzt ? " — zuletzt an " + String(zuletzt.sha).slice(0, 8) + ": " + String(zuletzt.grund).slice(0, 200) : "") };
+        const grund = ohneZeugen ? "Wand GPU: " + ohneZeugen : konsumAlt && r6.r6 === "konsum" ? "Konsum seit der Messung geändert (R6: " + nenne(konsumTaeter) + ")" : linse ? "Linse seit der Messung geändert (R6: " + nenne(linsenTaeter) + ")" : alt ? "Pfad seit der Messung geändert (R6: " + nenne(taeter) + ")" : unlesbar ? "Linse unlesbar — kein R6-Urteil (" + unlesbar + ")" : unbekannt ? "Mess-SHA unbekannt — kein R6-Urteil" : fremd ? "Station seit der Messung geändert" : "ungemessen (R10)";
+        return { gruen: false, ungemessen: true, ...r6, grund: grund + (zuletzt ? " — zuletzt an " + String(zuletzt.sha).slice(0, 8) + ": " + String(zuletzt.grund).slice(0, 200) : "") };
     };
 }
 
@@ -3668,7 +3713,7 @@ function buchen(kopf, stationen, messungen, geaendert, hilfe = hilfeText(), fehl
             if (!e.gruen) rueckfall.push(schluessel(st) + " " + g + ": " + (e.zahl || "ROT") + " an " + String(e.sha).slice(0, 8) + " (grün gebucht an " + v.sha.slice(0, 8) + ")");
             return e;
         }
-        return { gruen: true, zahl: v.zahl, sha: v.sha, gehalten: true, grund: e.grund };
+        return { gruen: true, zahl: v.zahl, sha: v.sha, gehalten: true, grund: e.grund, ...(e.r6 ? { r6: e.r6 } : {}) };
     };
     const je = {};
     const pflichtJe = {};
@@ -3692,12 +3737,22 @@ function buchen(kopf, stationen, messungen, geaendert, hilfe = hilfeText(), fehl
             beleg: "Maschine: " + (teile.length ? teile.join(" · ") : "0") + (offen.length ? " — offen: " + offen.join(" · ") : ""),
             // ungemessen/tot: das Frische-Urteil selbst — keine frische Messung am Kopf (tot: die Wand PFAD, eine Messung heilt sie nie)
             stationen: [s1, s2].flatMap((s) => s.r.flatMap((x) => x.je.map((y) => ({ id: schluessel(x.s), geraet: y.g, gruen: !!y.e.gruen, zahl: y.e.zahl || null, sha: y.e.sha || null, grund: y.e.grund || null,
-                ...(y.e.ungemessen ? { ungemessen: true } : {}), ...(y.e.tot ? { tot: true } : {}), ...(y.e.gehalten ? { gehalten: true } : {}),
+                ...(y.e.ungemessen ? { ungemessen: true } : {}), ...(y.e.tot ? { tot: true } : {}), ...(y.e.gehalten ? { gehalten: true } : {}), ...(y.e.r6 ? { r6: y.e.r6 } : {}),
                 ...(x.s.beide ? { beide: true } : {}) })))),
         };
     }
-    return { kopf, je, pflichtJe, rueckfall };
+    return { kopf, je, pflichtJe, rueckfall, r6: r6Zaehlung({ je, pflichtJe }) };
 }
+// DIE ZÄHLUNG VON R6 (kein stiller Rückfall): je Stations-Hälfte der Buchung, wonach ihr Frische-Urteil fiel — `konsum` (die jüngste
+// Messung trägt die Konsum-Menge), `naehe` beim Namen (sie trägt keine: Linse und Glob urteilen wie bisher), `ohne` (nie gemessen
+// oder toter Glob: kein R6-Urteil)
+function r6Zaehlung(s) {
+    const alle = [...Object.values(s.je || {}), ...Object.values(s.pflichtJe || {})].flatMap((e) => e.stationen || []);
+    const naehe = alle.filter((x) => x.r6 === "naehe").map((x) => x.id + " " + x.geraet);
+    return { haelften: alle.length, konsum: alle.filter((x) => x.r6 === "konsum").length, naehe, ohne: alle.filter((x) => !x.r6).length };
+}
+const r6Zeile = (r) => "R6 nach Konsum: " + r.konsum + " von " + r.haelften + " Hälften · ohne Konsum-Menge (R6 nach Linse und Glob wie bisher) " + r.naehe.length +
+    (r.naehe.length ? ": " + r.naehe.slice(0, 12).join(", ") + (r.naehe.length > 12 ? " +" + (r.naehe.length - 12) : "") : "") + " · ohne Messung " + r.ohne;
 
 function ladeMessungen(mdir = path.join(DIR, "messung")) {
     if (!fs.existsSync(mdir)) return [];
@@ -3716,28 +3771,386 @@ const VERSIONS_STEMPEL = [
     [/(VERSION\s*=\s*["'`])[^"'`]*(["'`])/g, "$1$2"],
 ];
 const ohneStempel = (z) => VERSIONS_STEMPEL.reduce((s, [rx, e]) => s.replace(rx, e), z);
-// namen: git diff --name-only · diffText: git diff -U0 über dieselben Stände → die Dateien, deren Bytes ohne Stempel sich änderten
-// (Werkzeug eingeschlossen — welches davon zählt, urteilt frischUrteil je Station)
-function stempelDateien(namen, diffText) {
+// namen: git diff --no-renames --name-only · diffText: git diff --no-renames -U0 über dieselben Stände → { dateien: die Dateien, deren
+// Bytes ohne Stempel sich änderten (Werkzeug eingeschlossen — welches davon zählt, urteilt frischUrteil je Station) · zeilen: je
+// Text-Datei die geänderten Zeilen am ÄLTEREN Stand [von, bis] (ein Hunk aus reinen Versions-Stempeln fällt; eine reine Einfügung
+// nach Zeile a trifft a und a + 1 — sie liegt nur dann in nie ausgeführtem Code, wenn beide Nachbarn es sind; je Hunk `nurKommentar`
+// und `ein`, kommentarHunk) · neu: angelegte und gelöschte Dateien (ein gelesenes Verzeichnis, konsumTreffer) }
+function stempelDiff(namen, diffText) {
     const je = new Map();
-    let cur = null;
+    let cur = null, h = null;
+    // je Hunk dazu: bringt er nur Zeilen-Kommentare und Leerzeilen (`nurKommentar` — ob auch die alten Zeilen welche sind, urteilt
+    // kommentarHunk am Text des Mess-SHA), ist er eine reine Einfügung (`ein`)
+    const hunkZu = () => {
+        if (h && h.weg.slice().sort().join("\n") !== h.neu.slice().sort().join("\n"))
+            cur.zeilen.push(Object.assign(h.alt, { nurKommentar: h.neu.every((z) => /^\s*(\/\/.*)?$/.test(z)), ein: h.ein }));
+        h = null;
+    };
     for (const z of String(diffText).split("\n")) {
         const m = /^diff --git a\/(.+?) b\//.exec(z);
         if (m) {
-            cur = { weg: [], neu: [], bin: false };
+            if (cur) hunkZu();
+            cur = { weg: [], neu: [], bin: false, zeilen: [], angelegt: false };
             je.set(m[1], cur);
             continue;
         }
         if (!cur || z.startsWith("+++ ") || z.startsWith("--- ")) continue;
-        if (/^Binary files /.test(z)) cur.bin = true;
-        else if (z[0] === "-") cur.weg.push(ohneStempel(z.slice(1)));
-        else if (z[0] === "+") cur.neu.push(ohneStempel(z.slice(1)));
+        const k = /^@@ -(\d+)(?:,(\d+))? /.exec(z);
+        if (k) {
+            hunkZu();
+            const [a, n] = [+k[1], k[2] == null ? 1 : +k[2]];
+            h = { weg: [], neu: [], alt: n ? [a, a + n - 1] : [Math.max(1, a), a + 1], ein: !n };
+        } else if (/^(new|deleted) file mode /.test(z)) cur.angelegt = true;
+        else if (/^Binary files /.test(z)) cur.bin = true;
+        else if (z[0] === "-" || z[0] === "+") {
+            const s = ohneStempel(z.slice(1));
+            (z[0] === "-" ? cur.weg : cur.neu).push(s);
+            if (h) (z[0] === "-" ? h.weg : h.neu).push(s);
+        }
     }
-    return String(namen).split("\n").filter(Boolean).filter((f) => {
+    if (cur) hunkZu();
+    const dateien = String(namen).split("\n").filter(Boolean).filter((f) => {
         const d = je.get(f);
         if (!d || d.bin) return true;
-        return d.weg.sort().join("\n") !== d.neu.sort().join("\n");
+        return d.weg.slice().sort().join("\n") !== d.neu.slice().sort().join("\n");
     });
+    return { dateien, zeilen: new Map(dateien.filter((f) => je.has(f) && !je.get(f).bin).map((f) => [f, je.get(f).zeilen])),
+        neu: new Set(dateien.filter((f) => je.has(f) && je.get(f).angelegt)) };
+}
+const stempelDateien = (namen, diffText) => stempelDiff(namen, diffText).dateien;
+// der Diff zweier Stände des Spiel-Klons für R6 — EINE Stelle für buchen, run --offen, plan und beruehrt
+// DAS BEFEHLS-VERZEICHNIS VON NPM (10.11.: 3 der letzten 39 Landungen änderten in package.json nur eine Skript-Zeile, und jeder Prozess
+// mit puppeteer liest package.json für dessen Einstellung): `nurNpmSkripte` nennt einen Diff, der in package.json außer `scripts` und
+// `version` nichts ändert — er trifft nur einen Lauf, in dem npm lief (der Zeuge sagt es: ":npm" im Konsum, konsumTreffer)
+const NPM_VERZEICHNIS = "package.json";
+function standDiff(repo, von, bis) {
+    const d = stempelDiff(git(["diff", "--no-renames", "--name-only", von, bis], repo), git(["diff", "--no-renames", "-U0", "--no-color", von, bis], repo));
+    // erst gelesen, wenn ein Konsum danach fragt (zwei `git show` je Mess-SHA)
+    let nur = null;
+    Object.defineProperty(d, "nurNpmSkripte", { enumerable: true, get() {
+        if (nur != null) return nur;
+        if (!d.dateien.includes(NPM_VERZEICHNIS) || d.neu.has(NPM_VERZEICHNIS)) return (nur = false);
+        try {
+            const [a, b] = [von, bis].map((s) => { const j = JSON.parse(git(["show", s + ":" + NPM_VERZEICHNIS], repo)); delete j.scripts; delete j.version; return JSON.stringify(j); });
+            return (nur = a === b);
+        } catch (_e) {
+            return (nur = false);
+        }
+    } });
+    return d;
+}
+
+// ───────────────────────────────── Konsum (R6) ─────────────────────────────────
+// R6 NACH KONSUM (10.11., Befund GROSSES BILD B2 + B6: an vier der fünf Landungen 900c28e6 … 4e2df19b machte EINE geänderte Datei der
+// Linsen-Hülle — abnahme-urteil.cjs, welt-boot.cjs — 388 von 388 Stations-Hälften alt, an der fünften 315; die Messung holt die
+// Integration nie ein). Eine Station veraltet nur, wenn sie den geänderten Code AUSFÜHRTE: der Zeuge konsum-zeuge.cjs fährt in jedem
+// node-Prozess des Laufs (Vorarbeit r6-konsum-koord, 26.10.), die Faltung legt seinen Konsum komprimiert in den Eintrag der Messung —
+// je Skript EIN Bit je Funktion des Parsers am Text des Mess-SHA ("<h>:<Bits>", skriptBits; der Kopf-Code eines geladenen Skripts zählt
+// immer) oder "*" (ganz gelesen: Daten, Dokument, Text-Scan; ein Skript ohne Coverage) und je gelesenes Verzeichnis "pfad/" ("pfad/**"
+// rekursiv). IM EINTRAG der Mess-Datei: `konsum` (der Abdruck des Laufs, sein Schlüssel in m.konsumTafel — Zwillinge teilen ihn),
+// `konsumBoot` (in der Sitzung: der Abdruck des Boots ihrer Welt, EINER für alle Proben), `konsumN` (Dateien), `konsumSeite`,
+// `konsumGanz` ({ Grund: Zahl } der ganz gezählten Dateien) — oder `konsumFehlt` (der Grund, warum der Lauf keinen trägt).
+// Eine Messung MIT Konsum ist alt, wenn der Diff seit ihr eine Zeile ändert, die der Lauf ausführte (Kopf-Code, der Rumpf einer
+// gerufenen Funktion — ein reiner Kommentar-Hunk nie, kommentarHunk), eine ganz gelesene Datei ändert (package.json nur außerhalb
+// ihres Befehls-Verzeichnisses, solange kein npm lief — standDiff), einem gelesenen Verzeichnis eine Datei gibt oder nimmt
+// oder eine im Befehl genannte Datei trifft, die der Konsum nicht als Skript trägt (ein Shell-Skript läuft ohne Zeugen). Die statische
+// require-Hülle (linsenVon) und der Glob urteilen über sie nicht mehr — AUSSER: trägt der Konsum die SEITE nicht (`konsumSeite`
+// false: eine Zeit-Station, eine Probe der Sitzung — der Zeuge misst dort nie in der Seite, konsum-zeuge.cjs), urteilt über die
+// Spiel-Dateien weiter der Glob `pfad`. KEIN STILLER RÜCKFALL: eine Messung OHNE Konsum (ältere Messung, ein hart getöteter Prozess —
+// `konsumFehlt` nennt den Grund) urteilt wie bisher nach Linse und Glob, und die Buchung zählt beim Namen, wie viele Hälften nach
+// Konsum urteilen und welche nicht (r6Zaehlung).
+const KONSUM_ZEUGE = path.join(DIR, "konsum-zeuge.cjs");
+const konsumUmgebung = (env, ordner, baum, seite) => {
+    Object.assign(env, { PUNKTE_KONSUM: ordner, PUNKTE_KONSUM_BAUM: baum,
+        NODE_OPTIONS: ((env.NODE_OPTIONS || "") + ' --require "' + KONSUM_ZEUGE.split(path.sep).join("/") + '"').trim() });
+    if (seite) env.PUNKTE_KONSUM_SEITE = "1";
+    else delete env.PUNKTE_KONSUM_SEITE;
+};
+function konsumAn(env, ordner, baum, seite) {
+    fs.rmSync(ordner, { recursive: true, force: true });
+    fs.mkdirSync(ordner, { recursive: true });
+    konsumUmgebung(env, ordner, baum, seite);
+    return ordner;
+}
+const konsumLies = (ordner, re) => fs.readdirSync(ordner).filter((f) => re.test(f)).map((f) => JSON.parse(fs.readFileSync(path.join(ordner, f), "utf8")));
+const konsumOffen = (ordner) => (fs.existsSync(ordner) ? fs.readdirSync(ordner).filter((f) => f.endsWith(".offen")).map((f) => f.slice(0, -6)) : []);
+// DER ABSCHLUSS AUF ZURUF: jeder Prozess des Laufs, der noch lebt (ein Server, den die Linse stehen ließ — das Port-Räumen tötet ihn
+// gleich hart), schreibt seinen Konsum, ehe er fällt (`<id>.bitte`, bis KONSUM_FRIST_MS); Rückgabe { stuecke } oder { fehlt }
+const KONSUM_FRIST_MS = 3000;
+async function konsumSchliessen(ordner) {
+    if (!fs.existsSync(ordner)) return { fehlt: "kein Prozess der Station trug den Zeugen" };
+    const lebend = konsumOffen(ordner).filter((id) => lebtPid(parseInt(id, 10)));
+    for (const id of lebend) fs.writeFileSync(path.join(ordner, id + ".bitte"), "");
+    for (const frist = Date.now() + KONSUM_FRIST_MS; lebend.some((id) => fs.existsSync(path.join(ordner, id + ".offen"))) && Date.now() < frist; ) await warteMs(15);
+    const offen = konsumOffen(ordner);
+    if (offen.length) return { fehlt: offen.length + " Prozess(e) ohne Ende (hart getötet oder ohne Antwort): " + offen.slice(0, 4).join(", ") };
+    const stuecke = konsumLies(ordner, /^[\d-]+\.json$/);
+    return stuecke.length ? { stuecke } : { fehlt: "kein Prozess der Station trug den Zeugen" };
+}
+// EIN FENSTER DER WELT (die Sitzung): der Ruf `nimm.<k>` an jeden lebenden Prozess der Welt, jeder antwortet mit `<id>.seg.<k>.json`
+// (was er seit der letzten Nahme ausführte); Rückgabe { stuecke } oder { fehlt } — eine Welt, die nicht antwortet, beim Namen
+async function konsumNahme(ordner, k) {
+    if (!fs.existsSync(ordner)) return { fehlt: "die Welt der Sitzung trägt keinen Zeugen" };
+    const lebend = konsumOffen(ordner).filter((id) => lebtPid(parseInt(id, 10)));
+    if (!lebend.length) return { fehlt: "kein Prozess der Welt lebt mit Zeugen" };
+    fs.writeFileSync(path.join(ordner, "nimm." + k), "");
+    const da = (id) => fs.existsSync(path.join(ordner, id + ".seg." + k + ".json"));
+    for (const frist = Date.now() + KONSUM_FRIST_MS; !lebend.every(da) && Date.now() < frist; ) await warteMs(10);
+    const stumm = lebend.filter((id) => !da(id));
+    if (stumm.length) return { fehlt: "die Welt antwortete nicht auf die Nahme " + k + " (Prozess " + stumm.join(", ") + ")" };
+    return { stuecke: lebend.map((id) => JSON.parse(fs.readFileSync(path.join(ordner, id + ".seg." + k + ".json"), "utf8"))) };
+}
+// der Konsum EINES Laufs für seine Einträge: die eigenen Prozesse, in der Sitzung (sitz.konsumWelt) dazu das Fenster der Welt bis
+// hierher, ihr Boot als eigener Abdruck (`konsumBoot`, je Sitzung EINMAL gefaltet — die Tafel der Mess-Datei teilt ihn unter allen
+// Proben) → { konsum, konsumBoot?, konsumN, konsumSeite } oder { konsumFehlt: Grund }; sitz null: ein gerissener Lauf (kein Fenster)
+async function konsumDesLaufs(ordner, baum, sitz) {
+    try {
+        const eigen = await konsumSchliessen(ordner);
+        const welt = sitz && sitz.konsumWelt;
+        if (welt && !welt.gefaltet) welt.gefaltet = welt.boot && !welt.boot.fehlt ? konsumFalten(welt.boot.stuecke, baum) : { konsumFehlt: (welt.boot && welt.boot.fehlt) || "die Welt der Sitzung trägt kein Boot-Stück" };
+        const teile = [eigen, ...(welt ? [await konsumNahme(welt.ordner, ++welt.nr)] : [])];
+        const fehlt = teile.find((x) => x.fehlt);
+        if (fehlt) return { konsumFehlt: fehlt.fehlt };
+        if (welt && welt.gefaltet.konsumFehlt) return { konsumFehlt: welt.gefaltet.konsumFehlt };
+        const k = konsumFalten(teile.flatMap((x) => x.stuecke), baum);
+        return welt && k.konsum ? { ...k, konsumBoot: welt.gefaltet.konsum, konsumSeite: k.konsumSeite && welt.gefaltet.konsumSeite } : k;
+    } catch (e) {
+        return { konsumFehlt: "Konsum: " + e.message };
+    } finally {
+        fs.rmSync(ordner, { recursive: true, force: true });
+    }
+}
+// DIE FUNKTIONEN eines Skripts aus dem Parser (acorn des Spiels, wie die Wand ANKER), in Quell-Reihenfolge (Eltern vor Kindern): je
+// Funktion [von, bis, fuehl] — `fuehl` das Zeichen, an dem die Coverage sie nennt (die Klammer ihres Rumpfs; an einem Pfeil mit
+// Ausdruck das letzte Zeichen vor dem Rumpf: es gehört ihr, nie einer Funktion darin). Alles außerhalb jeder Funktion ist der
+// KOPF-CODE des Skripts (Tafeln, Konstanten, Zuweisungen, `module.exports`, Klassen-Felder): er läuft beim Laden — V8 nennt ihn nur,
+// solange die Skript-Funktion lebt (konsum-zeuge.cjs), der Parser immer. Ein Text, den er nicht liest, wirft (die Datei zählt ganz)
+// Dazu `kom`: die Zeilen-Kommentare (//) [von, bis) und `mehr`: was über Zeilen reicht, ohne Code zu sein — Block-Kommentare und
+// Schablonen-Texte (ein `//` darin ist Inhalt, kein Kommentar): der Boden von kommentarHunk
+function funktionenVon(text, acorn) {
+    let ast = null, fehler = null, kom = [], mehr = [];
+    for (const sourceType of ["script", "module"]) {
+        try {
+            [kom, mehr] = [[], []];
+            ast = acorn.parse(text, { ecmaVersion: "latest", sourceType, allowHashBang: true, allowReturnOutsideFunction: true, allowAwaitOutsideFunction: true,
+                onComment: (block, _t, a, e) => (block ? mehr : kom).push([a, e]) });
+            break;
+        } catch (e) {
+            fehler = e;
+        }
+    }
+    if (!ast) throw fehler;
+    const fn = [];
+    const geh = (n) => {
+        if (/^(FunctionDeclaration|FunctionExpression|ArrowFunctionExpression)$/.test(n.type)) {
+            let p = n.body.start;
+            if (n.body.type !== "BlockStatement") for (p--; p > n.start && /\s/.test(text[p]); ) p--;
+            fn.push([n.start, n.end, p]);
+        } else if (n.type === "TemplateLiteral" || (n.type === "Literal" && typeof n.value === "string" && n.end - n.start > String(n.value).length + 2)) mehr.push([n.start, n.end]);
+        for (const k of astKinder(n)) geh(k);
+    };
+    geh(ast);
+    return { fn: fn.sort((x, y) => x[0] - y[0] || y[1] - x[1]), kom: new Map(kom), mehr };
+}
+// der Text eines Skripts mit seinen Funktionen, je Inhalt einmal geparst: { h (6 Hex des Texts), fn, start (Zeilen-Anfänge) } oder { fehler }
+const skriptCache = new Map();
+function skriptVon(text, acorn) {
+    // der Schlüssel über den Text mit Unix-Umbrüchen: ein Baum mit CRLF (Windows) und der Blob aus git nennen dasselbe Skript
+    const h = crypto.createHash("sha1").update(text.replace(/\r\n/g, "\n")).digest("hex") + (text.includes("\r\n") ? "r" : "");
+    if (!skriptCache.has(h)) {
+        const start = [0];
+        for (let i = 0; i < text.length; i++) if (text.charCodeAt(i) === 10) start.push(i + 1);
+        try { skriptCache.set(h, { h: h.slice(0, 6), len: text.length, ...funktionenVon(text, acorn), start, text }); } catch (e) { skriptCache.set(h, { h: h.slice(0, 6), fehler: "Parser: " + String(e.message).slice(0, 80) }); }
+    }
+    return skriptCache.get(h);
+}
+// DER ABDRUCK EINES SKRIPTS: "<h>:<Bits>" — h nennt den Text am Mess-SHA, je Funktion des Parsers EIN Bit (ausgeführt), base64 ohne
+// die leeren Bytes am Ende; der Kopf-Code zählt immer. bereiche: die ausgeführten Zeichen-Bereiche [von, bis) der Coverage
+function skriptBits(s, bereiche) {
+    const an = new Uint8Array(s.len + 1);
+    for (const [a, b] of bereiche) an.fill(1, a, Math.min(s.len, b));
+    const bits = Buffer.alloc(Math.ceil(s.fn.length / 8));
+    s.fn.forEach(([, , p], i) => { if (an[p]) bits[i >> 3] |= 1 << (i & 7); });
+    let n = bits.length;
+    while (n && !bits[n - 1]) n--;
+    return s.h + ":" + bits.subarray(0, n).toString("base64");
+}
+// die ausgeführten ZEILEN eines Abdrucks am Text (1-basiert, verschmolzen, [[von, bis]]): der Kopf-Code und der eigene Rumpf jeder
+// ausgeführten Funktion (ohne die Funktionen darin, die nie liefen). Eine Zeile zählt, sobald EIN Zeichen von ihr (samt ihrem
+// Umbruch) ausgeführt ist: unausgeführt bleibt nur das Innere einer nie gerufenen Funktion. Die Zeile hinter der letzten zählt mit
+// (Code, der ans Ende angefügt wird, ist Kopf-Code)
+function skriptZeilen(s, bitText) {
+    const bits = Buffer.from(bitText, "base64");
+    const an = new Uint8Array(s.len).fill(1);
+    s.fn.forEach(([a, b], i) => an.fill(i >> 3 < bits.length && bits[i >> 3] & (1 << (i & 7)) ? 1 : 0, a, b));
+    const sp = [];
+    for (let z = 0; z < s.start.length; z++) {
+        const bis = z + 1 < s.start.length ? s.start[z + 1] : s.len;
+        let lief = bis === s.start[z]; // die leere letzte Zeile ist Kopf-Code
+        for (let i = s.start[z]; i < bis && !lief; i++) lief = an[i] === 1;
+        if (!lief) continue;
+        if (sp.length && sp[sp.length - 1][1] === z) sp[sp.length - 1][1] = z + 1;
+        else sp.push([z + 1, z + 1]);
+    }
+    if (sp.length && sp[sp.length - 1][1] === s.start.length) sp[sp.length - 1][1]++;
+    else sp.push([s.start.length + 1, s.start.length + 1]);
+    return sp;
+}
+// DIE FALTUNG der Roh-Stücke des Zeugen ({ js: { pfad: { len, bereiche } }, skripte, geladen, ganz, warum, browser, seite }) → { konsum:
+// base64(deflateRaw(JSON { pfad: "<h>:<Bits>" | "*" })), konsumN: Dateien, konsumSeite: trägt er die Seite (kein Browser ohne Seiten-
+// Zeugen), konsumGanz: { Grund: Zahl } der ganz gezählten Dateien }; der Text jeder Datei aus dem Baum der Station (am Mess-SHA)
+function konsumFalten(stuecke, baum, acorn = konsumAcorn(baum)) {
+    try {
+        const k = {}, js = new Map(), warum = {};
+        const ganz = (p, grund) => ((k[p] = "*"), (warum[p] = warum[p] || grund));
+        let seite = true;
+        // ein blinder Prozess (konsum-zeuge.cjs `blind`: ein Kind ohne Zeugen, ein Haken des Zeugen warf): der Lauf führte Code aus, den
+        // niemand nennt — kein Konsum, beim Namen
+        const blind = stuecke.flatMap((r) => r.blind || []);
+        if (blind.length) return { konsumFehlt: blind[0] };
+        for (const r of stuecke) {
+            if (r.browser && !r.seite) seite = false;
+            for (const p of r.ganz) ganz(p, (r.warum && r.warum[p]) || "gelesen");
+            for (const p of r.geladen) ganz(p, "Verzeichnis");
+            if (r.npm) k[":npm"] = "*"; // kein Pfad: in diesem Lauf lief npm (standDiff nurNpmSkripte)
+            for (const p of r.skripte || []) if (!js.has(p)) js.set(p, { len: null, bereiche: [] });
+            for (const [p, e] of Object.entries(r.js)) {
+                const d = js.get(p) || { len: null, bereiche: [] };
+                if (d.len != null && d.len !== e.len) ganz(p, "zwei Längen");
+                js.set(p, { len: e.len, bereiche: [...d.bereiche, ...e.bereiche] });
+            }
+        }
+        for (const [p, e] of js) {
+            if (k[p]) continue;
+            // ein Skript, das der Lauf selbst in den Baum legte und wieder nahm (gelaende.K5#1: scripts/.k8-first.cjs), steht an keinem
+            // SHA — sein Inhalt kam aus der Linse, die ihn schrieb
+            if (!fs.existsSync(path.join(baum, p))) continue;
+            const text = fs.readFileSync(path.join(baum, p), "utf8");
+            if (e.len != null && text.length !== e.len) { ganz(p, "Länge"); continue; }
+            const s = skriptVon(text, acorn);
+            if (s.fehler) ganz(p, s.fehler);
+            else k[p] = skriptBits(s, e.bereiche);
+        }
+        const gruende = {};
+        for (const g of Object.values(warum)) gruende[g.replace(/ \d.*$/, "")] = (gruende[g.replace(/ \d.*$/, "")] || 0) + 1;
+        const sortiert = Object.fromEntries(Object.keys(k).sort().map((p) => [p, k[p]]));
+        return { konsum: zlib.deflateRawSync(JSON.stringify(sortiert)).toString("base64"), konsumN: Object.keys(k).length, konsumSeite: seite,
+            ...(Object.keys(gruende).length ? { konsumGanz: gruende } : {}) };
+    } catch (e) {
+        return { konsumFehlt: "Faltung: " + e.message };
+    }
+}
+// der Parser des Spiels: aus dem Baum der Station, sonst aus dem Spiel-Klon (ein Probe-Baum des Selbsttests trägt keine node_modules)
+const konsumAcorn = (baum) => {
+    try { return acornVon(baum); } catch (_e) { return acornVon(spielRepo()); }
+};
+// DIE TAFEL DER MESS-DATEI (m.konsumTafel): jeder Abdruck steht EINMAL unter seinem Schlüssel, die Einträge nennen ihn (`konsum`,
+// `konsumBoot`) — Zwillinge teilen den Lauf, die Proben einer Sitzung das Boot ihrer Welt. eintragen legt ab, konsumRaeumen nimmt, was
+// kein Eintrag mehr nennt, konsumAuf legt die Abdrücke zurück in den Eintrag (vereine: von Tafel zu Tafel)
+const KONSUM_FELDER = ["konsum", "konsumBoot"];
+const KONSUM_REF = /^k[0-9a-f]{12}$/;
+function konsumTafeln(m, e) {
+    let neu = e;
+    for (const feld of KONSUM_FELDER) {
+        const v = e[feld];
+        if (typeof v !== "string" || KONSUM_REF.test(v)) continue;
+        const h = "k" + crypto.createHash("sha1").update(v).digest("hex").slice(0, 12);
+        (m.konsumTafel = m.konsumTafel || {})[h] = v;
+        neu = { ...neu, [feld]: h };
+    }
+    return neu;
+}
+const konsumAuf = (m, e) => Object.assign({ ...e }, ...KONSUM_FELDER.filter((f) => typeof e[f] === "string" && KONSUM_REF.test(e[f]) && m.konsumTafel && m.konsumTafel[e[f]]).map((f) => ({ [f]: m.konsumTafel[e[f]] })));
+function konsumRaeumen(m) {
+    if (!m.konsumTafel) return m;
+    const genannt = new Set([...Object.values(m.je || {}), ...Object.values(m.ungemessen || {})].flatMap((e) => KONSUM_FELDER.map((f) => e[f])));
+    for (const h of Object.keys(m.konsumTafel)) if (!genannt.has(h)) delete m.konsumTafel[h];
+    if (!Object.keys(m.konsumTafel).length) delete m.konsumTafel;
+    return m;
+}
+// DER KONSUM EINES EINTRAGS e der Messung m, entfaltet: { k: { pfad: "<h>:<Bits>" | "*" }, dirs } — der Abdruck des Laufs, vereint mit
+// dem Boot seiner Sitzung (je Skript die Bits beider; zwei Texte desselben Skripts zählen ganz); null, wenn die Tafel ihn nicht trägt
+const konsumCache = new Map();
+function konsumVon(e, m) {
+    const roh = KONSUM_FELDER.filter((f) => e[f] != null).map((f) => (typeof e[f] === "string" && KONSUM_REF.test(e[f]) ? m && m.konsumTafel && m.konsumTafel[e[f]] : e[f]));
+    if (!roh.length || roh.some((x) => x == null)) return null;
+    const schluessel = roh.map((x) => (typeof x === "string" ? x : JSON.stringify(x))).join("|");
+    if (!konsumCache.has(schluessel)) {
+        const k = {};
+        for (const x of roh)
+            for (const [p, s] of Object.entries(typeof x === "string" ? JSON.parse(zlib.inflateRawSync(Buffer.from(x, "base64")).toString("utf8")) : x)) {
+                if (!(p in k)) k[p] = s;
+                else if (k[p] !== s && k[p] !== "*") {
+                    const [ha, ba] = k[p].split(":"), [hb, bb] = s === "*" ? ["*", ""] : s.split(":");
+                    if (ha !== hb) k[p] = "*";
+                    else {
+                        const [x1, x2] = [Buffer.from(ba, "base64"), Buffer.from(bb, "base64")];
+                        const o = Buffer.alloc(Math.max(x1.length, x2.length));
+                        for (let i = 0; i < o.length; i++) o[i] = (x1[i] || 0) | (x2[i] || 0);
+                        k[p] = ha + ":" + o.toString("base64");
+                    }
+                }
+            }
+        konsumCache.set(schluessel, { k, dirs: Object.keys(k).filter((p) => p.endsWith("/") || p.endsWith("/**")) });
+    }
+    return konsumCache.get(schluessel);
+}
+// die Dateien, die der Befehl oder die Umgebung einer Station beim Namen nennt (scripts/…): was davon der Konsum nicht als Skript
+// trägt (ein Shell-Skript, eine Tafel an ein fremdes Programm), zählt ganz
+const imBefehlGenannt = (st) => new Set([...(befehlVon(st).join(" ") + " " + Object.values(st.env || {}).join(" ")).matchAll(LINSE_IM_BEFEHL)].map((m) => m[1]));
+// DAS URTEIL: K = konsumVon(…) · d = { dateien, zeilen?, neu? } (ohne zeilen zählt jede konsumierte Datei ganz) · st die Station
+// (ihr Befehl, ihr Glob) · seite: der Konsum trägt die Seite · skript(f) → skriptVon des Texts von f am Mess-SHA (null: nicht lesbar —
+// die Datei zählt ganz) → die Täter (die Dateien des Diffs, die der Lauf ausführte oder las)
+function konsumTreffer(K, d, st, seite, skript) {
+    const genannt = imBefehlGenannt(st);
+    return d.dateien.filter((f) => {
+        const imDir = (p) => (p.endsWith("/**") ? p === "./**" || f.startsWith(p.slice(0, -2)) : (f.includes("/") ? f.slice(0, f.lastIndexOf("/") + 1) : "./") === p);
+        if (d.neu && d.neu.has(f) && K.dirs.some(imDir)) return true;
+        if (f === NPM_VERZEICHNIS && d.nurNpmSkripte && !K.k[":npm"]) return false;
+        const s = K.k[f];
+        if (s) {
+            if (s === "*" || !d.zeilen || !d.zeilen.has(f)) return true;
+            const q = skript ? skript(f) : null;
+            const [h, bits] = s.split(":");
+            if (!q || q.fehler || q.h !== h) return true;
+            const sp = (q.zeilen = q.zeilen || new Map()).get(bits) || q.zeilen.set(bits, skriptZeilen(q, bits)).get(bits);
+            if (d.zeilen.get(f).some((hunk) => sp.some(([x, y]) => hunk[0] <= y && x <= hunk[1]) && !kommentarHunk(q, hunk))) return true;
+        } else if (genannt.has(f)) return true;
+        return !seite && !WERKZEUG_PFAD.test(f) && trifftPfad(f, st.pfad);
+    });
+}
+// EIN KOMMENTAR FÜHRT NICHTS AUS (10.11.: der Kommentar über einer Funktion ändert sich hier mit ihr — er steht im Kopf-Code und machte
+// jeden Lader des Skripts alt, auch den, der die Funktion nie rief): ein Hunk, der nur Zeilen-Kommentare (//) und Leerzeilen bringt
+// (stempelDiff `nurKommentar`) und am Text des Mess-SHA nur solche ersetzt — oder zwischen zwei Zeilen einfügt —, ändert keinen Lauf.
+// Der Parser nennt die Kommentare (s.kom: Anfang → Ende); in einem Block-Kommentar oder Schablonen-Text (s.mehr) ist `//` Inhalt:
+// dort gilt die Regel nie. s = skriptVon am Mess-SHA, hunk = [von, bis] mit nurKommentar und ein
+function kommentarHunk(s, hunk) {
+    if (!hunk.nurKommentar || !s.kom) return false;
+    const inMehr = (p) => s.mehr.some(([a, e]) => a < p && p < e);
+    const zeile = (z) => [s.start[z - 1], z < s.start.length ? s.start[z] : s.len];
+    // die Einfügung zwischen Zeile a und a + 1: ihre Stelle (der Anfang von a + 1) liegt in keinem Block-Kommentar, keiner Schablone
+    if (hunk.ein) return hunk[1] > s.start.length ? !inMehr(s.len) : !inMehr(zeile(hunk[1])[0]);
+    for (let z = hunk[0]; z <= hunk[1]; z++) {
+        if (z > s.start.length) return false;
+        const [a, e] = zeile(z);
+        let i = a;
+        while (i < e && /\s/.test(s.text[i])) i++;
+        if (inMehr(i < e ? i : a) || (i < e && !s.kom.has(i))) return false;
+    }
+    return true;
+}
+// opt.skript der Buchung: (messSha) → (pfad) → skriptVon des Texts am Mess-SHA aus git (je Blob einmal gelesen und geparst)
+function skripteAm(repo) {
+    const acorn = acornVon(repo), je = new Map();
+    return (sha) => (f) => {
+        const k = sha + ":" + f;
+        if (!je.has(k)) {
+            let s = null;
+            try { s = skriptVon(git(["show", k], repo, true), acorn); } catch (_e) { s = null; }
+            je.set(k, s);
+        }
+        return je.get(k);
+    };
 }
 
 // DIE LINSE EINER STATION (R6 über das Werkzeug, 28.10.): jede Datei unter scripts/, die ihr Befehl oder ihre Umgebung nennt
@@ -3942,6 +4355,46 @@ function planCli(opt) {
     return p;
 }
 
+// DER ZWEITE NUTZEN DES KONSUMS (`beruehrt --basis <sha> --kopf <sha>`): welche Stationen berührt der Diff eines Zweigs? Zweimal das
+// EINE Frische-Urteil der Buchung über dieselben Messungen — an der Basis und am Kopf: BERÜHRT ist die Hälfte, deren Messung an der
+// Basis frisch gilt und am Kopf nicht mehr (der Zweig traf, was ihr Lauf ausführte oder las; ohne Konsum-Menge: ihre Linse, ihren
+// Glob); OFFEN die, die schon an der Basis keine frische Messung trägt (über sie sagt keine Messung etwas — der Richter misst sie
+// ohnehin); TOT die mit totem Glob am Kopf. anBasis/amKopf(messSha) → stempelDiff bis zum Stand; opt.basis/opt.kopf wie frischUrteil.
+// Rückgabe { je: { geraet: { haelften, beruehrt: [{ id, r6, grund }], offen: [id], tot: [id] } } }
+function beruehrt(stationen, messungen, anBasis, amKopf, hilfe = hilfeText(), opt = {}) {
+    const fb = frischUrteil(messungen, anBasis, hilfe, opt.basis || {}), fk = frischUrteil(messungen, amKopf, hilfe, opt.kopf || {});
+    const je = {};
+    for (const st of stationen)
+        for (const g of geraeteVon(st)) {
+            const z = je[g] || (je[g] = { haelften: 0, beruehrt: [], offen: [], tot: [] });
+            const id = schluessel(st), b = fb(st, g), k = fk(st, g);
+            z.haelften++;
+            if (k.tot) z.tot.push(id);
+            else if (b.ungemessen) z.offen.push(id);
+            else if (k.ungemessen) z.beruehrt.push({ id, r6: k.r6 || null, grund: k.grund });
+        }
+    return { je };
+}
+function beruehrtCli(opt) {
+    if (!opt.basis || !opt.kopf) throw new Error("beruehrt --basis <sha> --kopf <sha>");
+    const { stationen, fehler } = ladeGeprueft();
+    if (fehler.length) throw new Error("Stationen ROT:\n - " + fehler.join("\n - "));
+    const repo = spielRepo();
+    const [basis, kopf] = [voll(repo, opt.basis), voll(repo, opt.kopf)];
+    const seite = (sha) => ({ tot: ((d) => (st) => toteGlobs(st.pfad, d))(dateienAm(repo, sha)), roh: rohAus(), linsen: linsenAm(repo, sha), skript: skripteAm(repo) });
+    const r = beruehrt(stationen, ladeMessungen(), (s) => standDiff(repo, s, basis), (s) => standDiff(repo, s, kopf), hilfeText(), { basis: seite(basis), kopf: seite(kopf) });
+    Object.assign(r, { basis, kopf, dateien: standDiff(repo, basis, kopf).dateien.length });
+    if (opt.json) return (console.log(JSON.stringify(r)), r);
+    console.log("BERÜHRT " + basis.slice(0, 8) + " → " + kopf.slice(0, 8) + " · " + r.dateien + " Dateien im Diff");
+    for (const g of GERAETE.filter((x) => r.je[x])) {
+        const z = r.je[g], nk = z.beruehrt.filter((x) => x.r6 === "konsum").length;
+        console.log(g + " berührt " + z.beruehrt.length + " von " + z.haelften + " (nach Konsum " + nk + ", nach Linse und Glob " + (z.beruehrt.length - nk) + ") · nur=" + z.beruehrt.map((x) => x.id).join(","));
+        if (z.offen.length) console.log(g + " offen an der Basis " + z.offen.length + " (keine frische Messung: über sie urteilt kein Konsum) · nur=" + z.offen.join(","));
+        if (z.tot.length) console.log(g + " toter Glob am Kopf " + z.tot.length + " · " + z.tot.join(","));
+    }
+    return r;
+}
+
 function gtxNutzenCli(opt) {
     const s = buchenCli({ ...opt, trocken: true });
     const n = gtxNutzen(s);
@@ -3959,9 +4412,8 @@ function buchenCli(opt) {
     const dateien = dateienAm(repo, kopfVoll);
     // die Ratsche hält gegen die letzte Buchung (stand.json vor dem Schreiben)
     const vorher = opt.ohneRatsche ? null : liesStand();
-    const s = buchen(kopfVoll.slice(0, 8), stationen, ladeMessungen(), (sha) =>
-        stempelDateien(git(["diff", "--name-only", sha, kopfVoll], repo), git(["diff", "-U0", "--no-color", sha, kopfVoll], repo)),
-        hilfeText(), fehlt, { tot: (st) => toteGlobs(st.pfad, dateien), roh: rohAus(), linsen: linsenAm(repo, kopfVoll), vorher });
+    const s = buchen(kopfVoll.slice(0, 8), stationen, ladeMessungen(), (sha) => standDiff(repo, sha, kopfVoll),
+        hilfeText(), fehlt, { tot: (st) => toteGlobs(st.pfad, dateien), roh: rohAus(), linsen: linsenAm(repo, kopfVoll), skript: skripteAm(repo), vorher });
     s.kopfVoll = kopfVoll;
     s.zeit = new Date().toISOString();
     if (vorher) s.vorher = vorher.kopf;
@@ -3983,6 +4435,7 @@ function buchungZeigen(s, wohin) {
     for (const [k, e] of Object.entries(s.pflichtJe || {})) console.log("  " + k + " (Pflicht-Richter, ohne Punkte) · " + e.beleg);
     for (const r of s.rueckfall) console.log("  RÜCKFALL " + r);
     if (s.pflicht) for (const z of pflichtZeilen(s.pflicht)) console.log(z);
+    if (s.r6) console.log(r6Zeile(s.r6));
     const gehalten = Object.values(s.je).reduce((a, e) => a + e.stationen.filter((x) => x.gehalten).length, 0);
     console.log("Kopf " + s.kopf + " · Maschine " + Object.keys(s.je).length + " Kriterien · Σ " + Object.values(s.je).reduce((a, e) => a + e.punkte, 0) +
         (s.vorher ? " · Ratsche gegen " + s.vorher + ": gehalten " + gehalten + ", Rückfall " + s.rueckfall.length : " · ohne Ratsche") + " " + wohin);
@@ -5248,6 +5701,172 @@ async function selbsttest(o = {}) {
         w = buchen("kopf", [sl], ml, () => [], h, [], { linsen: () => { throw new Error("Linse scripts/diag-x.cjs unlesbar: x"); } });
         pruef("LINSE unlesbar → ungemessen beim Namen", w.je["gelaende.K4"].punkte === 0 && /Linse unlesbar — kein R6-Urteil/.test(radeon(w).grund), radeon(w).grund);
     }
+    // (5k) R6 NACH KONSUM (Abschnitt „Konsum“; die Linse mit ihren Mutanten): eine Station veraltet nur, wenn sie den geänderten Code
+    // AUSFÜHRTE. Ende zu Ende: der Läufer, der Zeuge in jedem node-Prozess, ein Browser mit Seite und Faden — die Linsen-Bibliothek
+    // scripts/lib/linse.cjs führt `ja` aus, reicht `inSeite` als Text an die Seite und ruft `nein` nie; beim Laden gießt sie `gegossen`
+    // und `nieGegossen` in Install-Texte, die Linse gibt nur den ersten an die Seite; die Seite führt `getan` aus und `nie` nie, der
+    // Faden `imFaden`, sie holt daten.json; ein Kind ruft `k` und wird getötet (der Zeuge bittet es vorher um den Abschluss)
+    {
+        const baum = fs.mkdtempSync(path.join(os.tmpdir(), "punkte-konsum-"));
+        const fn = (n, r) => "function " + n + "() {\n    return " + r + ";\n}\n";
+        const pp = path.join(spielRepo(), "node_modules", "puppeteer").split(path.sep).join("/");
+        const texte = {
+            "probe.html": '<!doctype html><script src="probe.js"></script>',
+            "probe.js": fn("getan", 1) + fn("nie", 2) + 'getan();\nnew Worker("faden.js").onmessage = (e) =>\n    fetch("daten.json").then((r) => r.json()).then((j) => (window.da = e.data + j.n));\n',
+            "faden.js": fn("imFaden", 5) + fn("nieFaden", 6) + "postMessage(imFaden());\n",
+            "kind.js": "exports.k = " + fn("", 1) + "exports.nie = " + fn("", 2),
+            "daten.json": '{ "n": 1 }',
+            "scripts/werk.sh": "echo 1\n",
+            "scripts/lib/linse.cjs": "const TAFEL = { soll: 1 };\n" + fn("ja", "TAFEL.soll") + fn("nein", 2) + fn("inSeite", 3) + fn("gegossen", 4) + fn("nieGegossen", 5) +
+                "const INSTALL = `window.__g = ${gegossen.toString()};`;\nconst NIE_INSTALL = `window.__n = ${nieGegossen.toString()};`;\nmodule.exports = { ja, nein, inSeite, INSTALL, NIE_INSTALL };\n",
+            "scripts/lauf.cjs": ['const http = require("http"), fs = require("fs"), path = require("path"), L = require("./lib/linse.cjs");', "L.ja();",
+                'const kind = require("child_process").spawn(process.execPath, ["-e", "require(\'./kind.js\').k(); console.log(1); setInterval(() => {}, 1000)"], { stdio: ["ignore", "pipe", "inherit"] });',
+                'kind.stdout.once("data", () => kind.kill());',
+                'const s = http.createServer((q, a) => fs.readFile(path.join(process.cwd(), q.url.slice(1)), (e, d) => a.end(e ? "" : d)));',
+                's.listen(0, "127.0.0.1", async () => {', '    const b = await require("' + pp + '").launch({ args: ["--no-sandbox"] });', "    const p = await b.newPage();",
+                '    await p.goto("http://127.0.0.1:" + s.address().port + "/probe.html");', "    await p.waitForFunction(() => window.da === 6, { timeout: 20000 });",
+                "    const drei = await p.evaluate(L.inSeite);", "    await p.evaluate(L.INSTALL);", '    const vier = await p.evaluate("window.__g()");', "    await b.close();", "    s.close();",
+                "    fs.writeFileSync(process.argv[2], JSON.stringify({ n: drei - 3 + vier - 4 }));", "});", ""].join("\n"),
+        };
+        for (const [n, x] of Object.entries(texte)) (fs.mkdirSync(path.dirname(path.join(baum, n)), { recursive: true }), fs.writeFileSync(path.join(baum, n), x));
+        const acorn = acornVon(spielRepo());
+        const sk = { ...st0, befehl: ["node", "scripts/lauf.cjs", "{AUS}"], urteil: lies, pfad: ["probe.js", "anders.js", "scripts/lib/linse.cjs"] };
+        const ek = await fahreStation(sk, { ...ctx("konsum"), baum, deckelMinS: 120 });
+        const K = ek.konsum ? konsumVon(ek, null).k : {};
+        const zeilen = (f) => (!K[f] || K[f] === "*" ? K[f] : skriptZeilen(skriptVon(texte[f], acorn), K[f].split(":")[1]).map(([x, y]) => (x === y ? x : x + "-" + y)).join(","));
+        // `nein` (Zeilen 5–7), `nieGegossen` (14–16) und `nie` fehlen bis auf die Zeile ihrer schließenden Klammer (ihr Umbruch ist Kopf-Code)
+        const soll = { "scripts/lib/linse.cjs": "1-4,7-13,16-21", "probe.js": "1-3,6-11", "faden.js": "1-3,6-9", "kind.js": "1-4,6-8", "daten.json": "*", "probe.html": "*" };
+        pruef("KONSUM Ende zu Ende: ausgeführt und gelesen, nie das Nie — die Linsen-Bibliothek im Knoten (ihr Kopf-Code, `ja`, der Text von `inSeite`, der an die Seite gegebene Install-Text; nie `nein`, nie der nur gegossene), die Seite, der Faden, das getötete Kind, die JSON; die Seite trägt er (kein Zeit-Urteil)",
+            ek.gruen && ek.konsumSeite === true && Object.entries(soll).every(([f, s]) => zeilen(f) === s) && /^1-/.test(zeilen("scripts/lauf.cjs") || ""),
+            JSON.stringify({ gruen: ek.gruen, zahl: ek.zahl, seite: ek.konsumSeite, fehlt: ek.konsumFehlt, zeilen: Object.fromEntries(Object.keys(K).map((f) => [f, zeilen(f)])) }));
+        // DIE MUTANTEN an der Buchung: (a) eine Änderung in einer ausgeführten Funktion macht die Station alt, (b) eine Änderung in einer nie
+        // ausgeführten Funktion derselben Datei lässt sie frisch, (c) eine Station ohne Konsum-Menge urteilt wie bisher und ist beim Namen gezählt
+        const skript = () => (f) => (f in texte ? skriptVon(texte[f], acorn) : null);
+        const mk = (mehr) => ({ sha: "a1", geraet: "headless", je: { "gelaende.K4#1": { gruen: true, zahl: "z", zeit: "2026-11-10T10:00:00Z", abdruck: abdruck(sk, h), ...mehr } } });
+        const mitK = mk({ konsum: ek.konsum || "", konsumSeite: ek.konsumSeite });
+        const d = (f, a, b, neu = false) => () => ({ dateien: [f], zeilen: new Map([[f, [[a, b]]]]), neu: new Set(neu ? [f] : []) });
+        const buche = (m, g, linse = []) => buchen("kopf", [sk], [m], g, h, [], { skript, linsen: () => linse });
+        const fall = (name, m, g, punkte, grund, linse) => {
+            const b = buche(m, g, linse), x = b.je["gelaende.K4"], e = x.stationen[0];
+            pruef(name, x.punkte === punkte && (!grund || grund.test(e.grund || "")), x.beleg + " · r6 " + JSON.stringify(b.r6));
+            return b;
+        };
+        fall("KONSUM (a) Änderung in `ja` (ausgeführt) → alt beim Namen der Datei → 0", mitK, d("scripts/lib/linse.cjs", 3, 3), 0, /^Konsum seit der Messung geändert \(R6: scripts\/lib\/linse\.cjs\)$/);
+        const b = fall("KONSUM (b) Änderung in `nein` (nie ausgeführt, dieselbe Datei) → frisch → 1", mitK, d("scripts/lib/linse.cjs", 6, 6), 1);
+        pruef("KONSUM die Buchung zählt die Hälfte nach Konsum", b.r6.konsum === 1 && b.r6.naehe.length === 0 && b.r6.haelften === 1 && /^R6 nach Konsum: 1 von 1 Hälften/.test(r6Zeile(b.r6)), r6Zeile(b.r6));
+        const c = fall("KONSUM (c) dieselbe Änderung an einer Messung OHNE Konsum-Menge → die Linse urteilt wie bisher → alt → 0", mk({ konsumFehlt: "1 Prozess(e) ohne Ende" }), d("scripts/lib/linse.cjs", 6, 6), 0,
+            /^Linse seit der Messung geändert \(R6: scripts\/lib\/linse\.cjs\)$/, ["scripts/lib/linse.cjs"]);
+        pruef("KONSUM (c) die Station ohne Konsum-Menge ist beim Namen gezählt", c.r6.konsum === 0 && c.r6.naehe.join() === "gelaende.K4#1 headless" && /ohne Konsum-Menge \(R6 nach Linse und Glob wie bisher\) 1: gelaende\.K4#1 headless/.test(r6Zeile(c.r6)), r6Zeile(c.r6));
+        fall("KONSUM Text von `inSeite` (an die Seite gereicht, im Knoten nie gerufen) geändert → alt → 0", mitK, d("scripts/lib/linse.cjs", 9, 9), 0, /^Konsum/);
+        fall("KONSUM Kopf-Code der Linse geändert (die Tafel, `module.exports`) → alt → 0", mitK, d("scripts/lib/linse.cjs", 19, 19), 0, /^Konsum/);
+        fall("KONSUM `gegossen` geändert (beim Laden in den Install-Text gegossen UND an die Seite gegeben) → alt → 0", mitK, d("scripts/lib/linse.cjs", 12, 12), 0, /^Konsum/);
+        fall("KONSUM `nieGegossen` geändert (beim Laden gegossen, nie ausgegeben: eine Konstante führt nichts aus) → frisch → 1", mitK, d("scripts/lib/linse.cjs", 15, 15), 1);
+        fall("KONSUM Einfügung im Rumpf von `nein` → frisch → 1", mitK, d("scripts/lib/linse.cjs", 5, 6), 1);
+        // EIN KOMMENTAR FÜHRT NICHTS AUS: ein Hunk aus Zeilen-Kommentaren im Kopf-Code lässt die Station frisch — bringt er Code, nie;
+        // in einem Schablonen-Text ist `//` Inhalt (die Mutante), dort gilt die Regel nie
+        {
+            const kt = "// der Kopf\nconst A = 1;\n// über f\n// zweite Zeile\nfunction f() {\n    return A;\n}\nconst S = `\n// Inhalt\n`;\nmodule.exports = { f, S };\n";
+            const ks = skriptVon(kt, acorn), hk = (a, b, nurKommentar, ein = false) => Object.assign([a, b], { nurKommentar, ein });
+            pruef("KONSUM EIN KOMMENTAR FÜHRT NICHTS AUS: Zeilen-Kommentare ersetzt oder eingefügt → kein Treffer; Code statt Kommentar, ein Kommentar statt Code, `//` im Schablonen-Text (Mutanten) → Treffer",
+                kommentarHunk(ks, hk(3, 4, true)) && kommentarHunk(ks, hk(2, 3, true, true)) && kommentarHunk(ks, hk(11, 12, true, true)) &&
+                !kommentarHunk(ks, hk(3, 4, false)) && !kommentarHunk(ks, hk(2, 2, true)) && !kommentarHunk(ks, hk(9, 9, true)) && !kommentarHunk(ks, hk(8, 9, true, true)),
+                JSON.stringify([[3, 4, true], [2, 3, true, true], [11, 12, true, true], [3, 4, false], [2, 2, true], [9, 9, true], [8, 9, true, true]].map((x) => kommentarHunk(ks, hk(...x)))));
+            const wk = stempelDiff("a.js", ["diff --git a/a.js b/a.js", "@@ -3,2 +3 @@", "-// über f", "-// zweite Zeile", "+// über f, neu", "@@ -6 +5 @@", "-    return A;", "+    return A + 1; // mehr"].join("\n")).zeilen.get("a.js");
+            pruef("KONSUM Diff: der Hunk nennt, ob er nur Zeilen-Kommentare bringt", wk.length === 2 && wk[0].nurKommentar === true && wk[1].nurKommentar === false && !wk[0].ein, JSON.stringify(wk.map((x) => [...x, x.nurKommentar, x.ein])));
+        }
+        fall("KONSUM Code ans Ende der Linse angefügt (Kopf-Code) → alt → 0", mitK, d("scripts/lib/linse.cjs", 20, 21), 0, /^Konsum/);
+        fall("KONSUM Seite: `nie` geändert → frisch → 1", mitK, d("probe.js", 5, 5), 1);
+        fall("KONSUM Seite: `getan` geändert → alt → 0", mitK, d("probe.js", 2, 2), 0, /^Konsum/);
+        fall("KONSUM geladene JSON geändert → alt → 0", mitK, () => ({ dateien: ["daten.json"], zeilen: new Map(), neu: new Set() }), 0, /^Konsum/);
+        fall("KONSUM nie geladene Datei im Glob geändert → frisch → 1", mitK, d("anders.js", 1, 1), 1);
+        fall("KONSUM ohne Zeilen (Liste) zählt die konsumierte Datei ganz → 0", mitK, () => ["scripts/lib/linse.cjs"], 0, /^Konsum/);
+        fall("KONSUM der Text am Mess-SHA ist nicht der gemessene (anderer Schlüssel) → die Datei zählt ganz → 0", mk({ konsum: { "scripts/lib/linse.cjs": "ffffff:" + K["scripts/lib/linse.cjs"].split(":")[1] }, konsumSeite: true }), d("scripts/lib/linse.cjs", 6, 6), 0, /^Konsum/);
+        // OHNE DIE SEITE (eine Zeit-Station, eine Probe der Sitzung): über die Spiel-Dateien urteilt weiter der Glob, über das Werkzeug der Konsum
+        const ohneSeite = mk({ konsum: ek.konsum || "", konsumSeite: false });
+        fall("KONSUM ohne Seite: eine Spiel-Datei im Glob geändert → alt nach dem Glob → 0", ohneSeite, d("anders.js", 1, 1), 0, /^Konsum seit der Messung geändert \(R6: anders\.js\)$/);
+        fall("KONSUM ohne Seite: `nein` der Linse geändert → frisch → 1", ohneSeite, d("scripts/lib/linse.cjs", 6, 6), 1);
+        // ein Shell-Skript im Befehl läuft ohne Zeugen: es zählt ganz; ein gelesenes Verzeichnis zählt, wenn eine Datei dazukommt
+        const mitSh = { ...sk, befehl: ["bash", "-c", "bash scripts/werk.sh && node scripts/lauf.cjs {AUS}"] };
+        const bSh = buchen("kopf", [mitSh], [{ sha: "a1", geraet: "headless", je: { "gelaende.K4#1": { gruen: true, zahl: "z", zeit: "2026-11-10T10:00:00Z", abdruck: abdruck(mitSh, h), konsum: ek.konsum || "", konsumSeite: true } } }],
+            d("scripts/werk.sh", 1, 1), h, [], { skript });
+        pruef("KONSUM ein im Befehl genanntes Shell-Skript (ohne Zeugen) zählt ganz → alt → 0", bSh.je["gelaende.K4"].punkte === 0 && /^Konsum seit der Messung geändert \(R6: scripts\/werk\.sh\)$/.test(bSh.je["gelaende.K4"].stationen[0].grund), bSh.je["gelaende.K4"].beleg);
+        const dir = mk({ konsum: { "worlds/": "*" }, konsumSeite: true });
+        fall("KONSUM gelesenes Verzeichnis bekommt eine Datei → alt → 0", dir, d("worlds/neu.js", 1, 1, true), 0, /^Konsum/);
+        fall("KONSUM gelesenes Verzeichnis, Unterordner bekommt eine Datei → frisch → 1", dir, d("worlds/a/neu.js", 1, 1, true), 1);
+        // package.json: eine Skript-Zeile mehr trifft nur einen Lauf, in dem npm lief
+        const pj = (npm) => mk({ konsum: { "package.json": "*", ...(npm ? { ":npm": "*" } : {}) }, konsumSeite: true });
+        const dp = (nur) => () => ({ dateien: ["package.json"], zeilen: new Map([["package.json", [[5, 5]]]]), neu: new Set(), nurNpmSkripte: nur });
+        fall("KONSUM package.json nur im Befehls-Verzeichnis `scripts` geändert, kein npm im Lauf → frisch → 1", pj(false), dp(true), 1);
+        fall("KONSUM package.json im Befehls-Verzeichnis geändert, npm lief → alt → 0", pj(true), dp(true), 0, /^Konsum/);
+        fall("KONSUM package.json außerhalb von `scripts` geändert → alt → 0", pj(false), dp(false), 0, /^Konsum/);
+        // der Diff: ein Hunk aus reinen Versions-Stempeln fällt, eine Einfügung trifft beide Nachbarn, Anlegen beim Namen
+        const wd = stempelDiff("probe.js\nneu.js", ["diff --git a/probe.js b/probe.js", "@@ -2 +2 @@", '-importScripts("a.js?v=1");', '+importScripts("a.js?v=2");',
+            "@@ -5,0 +6,2 @@", "+x();", "+y();", "diff --git a/neu.js b/neu.js", "new file mode 100644", "@@ -0,0 +1 @@", "+z();"].join("\n"));
+        pruef("KONSUM Diff: der Stempel-Hunk fällt, die Einfügung trifft 5 und 6, Anlegen beim Namen", JSON.stringify(wd.zeilen.get("probe.js")) === "[[5,6]]" && wd.neu.has("neu.js") && !wd.neu.has("probe.js"),
+            JSON.stringify([...wd.zeilen]) + " neu " + [...wd.neu]);
+        // DIE TAFEL der Mess-Datei: Zwillinge teilen EINEN Abdruck, vereine trägt ihn von Tafel zu Tafel, was kein Eintrag nennt, fällt
+        const mt = { sha: "a1", geraet: "headless", je: {} };
+        for (const id of ["a.K1#1", "a.K1#2"]) eintragen(mt, id, { gruen: true, zahl: "z", konsum: ek.konsum || "x", konsumSeite: true });
+        const ref = mt.je["a.K1#1"].konsum;
+        const v = vereineMessungen(null, [{ name: "teil-1", m: mt }], "a1", "headless", "farm").m;
+        eintragen(mt, "a.K1#1", { gruen: true, zahl: "z" });
+        eintragen(mt, "a.K1#2", { gruen: true, zahl: "z" });
+        pruef("KONSUM-TAFEL Zwillinge teilen EINEN Abdruck, die Buchung liest ihn aus der Tafel, vereine trägt ihn mit, ein Abdruck ohne Eintrag fällt",
+            KONSUM_REF.test(ref) && v.je["a.K1#2"].konsum === ref && Object.keys(v.konsumTafel).join() === ref && JSON.stringify(konsumVon(v.je["a.K1#1"], v).k) === JSON.stringify(K) &&
+            konsumVon(v.je["a.K1#1"], { konsumTafel: {} }) === null && !konsumRaeumen(mt).konsumTafel, JSON.stringify([ref, Object.keys(v.konsumTafel || {}), Object.keys(mt.konsumTafel || {})]));
+        // KEIN STILLER RÜCKFALL: ein Prozess ohne Ende (hart getötet) macht den Konsum ungültig — beim Namen, nie still klein
+        const ord = path.join(tmp, "getoetet.konsum");
+        fs.mkdirSync(ord, { recursive: true });
+        fs.writeFileSync(path.join(ord, "1.json"), JSON.stringify({ js: {}, skripte: [], geladen: [], ganz: [] }));
+        fs.writeFileSync(path.join(ord, "4194000.offen"), "");
+        const kf = await konsumDesLaufs(ord, baum, null);
+        pruef("KONSUM ein Prozess ohne Ende → keine Konsum-Menge, der Grund beim Namen", !kf.konsum && /^1 Prozess\(e\) ohne Ende \(hart getötet oder ohne Antwort\): 4194000$/.test(kf.konsumFehlt), JSON.stringify(kf));
+        // EIN KIND OHNE ZEUGEN (die Mutante: die Linse startet node mit leerer Umgebung): der Lauf trägt keinen Konsum — beim Namen
+        {
+            fs.writeFileSync(path.join(baum, "scripts", "blind.cjs"), 'require("child_process").spawnSync(process.execPath, ["-e", "require(\'./kind.js\').k()"], { env: { PATH: process.env.PATH } });\nrequire("fs").writeFileSync(process.argv[2], JSON.stringify({ n: 0 }));\n');
+            const eb = await fahreStation({ ...sk, befehl: ["node", "scripts/blind.cjs", "{AUS}"] }, { ...ctx("konsum-blind"), baum, deckelMinS: 60 });
+            pruef("KONSUM ein node-Kind mit einer Umgebung ohne den Zeugen → keine Konsum-Menge, der Grund beim Namen", eb.gruen && !eb.konsum && /^ein Kind ohne Zeugen \(seine Umgebung trägt ihn nicht\): /.test(eb.konsumFehlt || ""), JSON.stringify({ gruen: eb.gruen, fehlt: eb.konsumFehlt, konsum: !!eb.konsum }));
+        }
+        // DIE FENSTER einer lebenden Welt (die Sitzung): das Boot, dann je Probe, was SEIT der letzten Nahme lief — `ja` im ersten Fenster,
+        // `nein` im zweiten und `ja` dort nicht mehr; der Kopf-Code des geladenen Moduls steht in jedem
+        {
+            fs.writeFileSync(path.join(baum, "welt.cjs"), 'const L = require("./scripts/lib/linse.cjs");\nprocess.stdin.on("data", (d) => {\n    const w = String(d).trim();\n    if (w === "ende") process.exit(0);\n    L[w]();\n    console.log("ok " + w);\n});\nconsole.log("bereit");\n');
+            const ordner = path.join(tmp, "welt.konsum"), env = { ...process.env };
+            konsumAn(env, ordner, baum, false);
+            const welt = spawn(process.execPath, ["welt.cjs"], { cwd: baum, env, stdio: ["pipe", "pipe", "inherit"] });
+            let aus = "";
+            welt.stdout.on("data", (x) => (aus += x));
+            const bis = async (re) => { for (const frist = Date.now() + 15000; !re.test(aus) && Date.now() < frist; ) await warteMs(20); return re.test(aus); };
+            const fenster = async (k) => { const n = await konsumNahme(ordner, k); return n.fehlt ? n.fehlt : zeilenVon(konsumVon(konsumFalten(n.stuecke, baum, acorn), null).k["scripts/lib/linse.cjs"]); };
+            const zeilenVon = (s) => skriptZeilen(skriptVon(texte["scripts/lib/linse.cjs"], acorn), s.split(":")[1]).map(([x, y]) => (x === y ? x : x + "-" + y)).join(",");
+            const bereit = await bis(/^bereit$/m);
+            const boot = await fenster("boot");
+            welt.stdin.write("ja\n");
+            await bis(/^ok ja$/m);
+            const f1 = await fenster(1);
+            welt.stdin.write("nein\n");
+            await bis(/^ok nein$/m);
+            const f2 = await fenster(2);
+            welt.stdin.write("ende\n");
+            await new Promise((r) => welt.on("exit", r));
+            const stumm = await konsumNahme(ordner, 3);
+            pruef("KONSUM-FENSTER einer lebenden Welt: das Boot (nur Kopf-Code), dann je Fenster, was SEIT der letzten Nahme lief (`ja`, danach `nein` ohne `ja`); eine Welt, die endete, beim Namen",
+                bereit && boot === "1,4,7,10,13,16-21" && f1 === "1-4,7,10,13,16-21" && f2 === "1,4-7,10,13,16-21" && /kein Prozess der Welt lebt/.test(stumm.fehlt || ""), JSON.stringify({ bereit, boot, f1, f2, stumm }));
+        }
+        // DER ZWEITE NUTZEN (`beruehrt`): der Diff eines Zweigs gegen dieselbe Konsum-Menge — berührt, wer an der Basis frisch gilt und am
+        // Kopf nicht mehr; wer schon an der Basis alt ist, steht als offen (kein Urteil aus dieser Messung)
+        {
+            const s2 = { ...sk, kriterium: "gelaende.K4", staffel: 2 };
+            const m2 = { sha: "a1", geraet: "headless", je: { "gelaende.K4#1": mitK.je["gelaende.K4#1"], "gelaende.K4#2": { ...mitK.je["gelaende.K4#1"], abdruck: abdruck(s2, h), konsum: { "scripts/lib/linse.cjs": "*" } } } };
+            const keinDiff = () => ({ dateien: [], zeilen: new Map(), neu: new Set() });
+            const r = beruehrt([sk, s2], [m2], keinDiff, d("scripts/lib/linse.cjs", 6, 6), h, { basis: { skript }, kopf: { skript } });
+            const r0 = beruehrt([sk, s2], [m2], d("scripts/lib/linse.cjs", 3, 3), d("scripts/lib/linse.cjs", 3, 3), h, { basis: { skript }, kopf: { skript } });
+            pruef("BERÜHRT der Zweig ändert `nein`: die Station, die es nie ausführte, bleibt frei, die die Datei ganz las, ist berührt (nach Konsum); schon an der Basis alt → offen",
+                r.je.headless.haelften === 2 && r.je.headless.beruehrt.map((x) => x.id + " " + x.r6).join() === "gelaende.K4#2 konsum" && !r.je.headless.offen.length &&
+                r0.je.headless.offen.join() === "gelaende.K4#1,gelaende.K4#2" && !r0.je.headless.beruehrt.length, JSON.stringify([r, r0]));
+        }
+        fs.rmSync(baum, { recursive: true, force: true });
+    }
     // (6) Übergang in gen.cjs
     const stand = { kopf: "abcd1234", je: { "gelaende.K4": { punkte: 2, beleg: "Maschine: z" } } };
     const k0 = { name: "n", punkte: 1, beleg: "Hand" };
@@ -5497,6 +6116,16 @@ async function selbsttest(o = {}) {
         pruef("SITZUNG DIE SEKUNDEN DER PROBE: jedes Ergebnis einer gefahrenen Probe trägt s (Start bis Ende ihres Prozesses) — b.K1 am Deckel 2 s nach 2 s, a.K1 in Sekunden",
             ["a.K1#1", "b.K1#1", "c.K1#1", "d.K1#1", "d.K1#2"].every((id) => typeof x[id].s === "number") && x["b.K1#1"].s >= 2 && x["b.K1#1"].s < 4 && x["a.K1#1"].s < 5,
             JSON.stringify(Object.entries(x).map(([id, e]) => id + " " + e.s)));
+        // DER KONSUM IN DER SITZUNG (R6 nach Konsum): der Zeuge in save-server und Werkbank der Welt (hier die Attrappe welt-stub.cjs im Baum),
+        // je geurteilter Probe ihr Fenster der Welt und EIN Boot-Abdruck für alle; eine Probe ohne Urteil (b.K1 am Deckel) trägt keinen
+        {
+            const mit = Object.keys(x).filter((id) => !x[id].ungemessen), ohne = Object.keys(x).filter((id) => x[id].ungemessen);
+            const kv = mit.map((id) => (x[id].konsum ? konsumVon(x[id], null) : null));
+            pruef("SITZUNG DER KONSUM DER WELT: jede geurteilte Probe trägt ihr Fenster der Welt (die Werkbank im Baum) und EINEN Boot-Abdruck für alle; die Probe ohne Urteil trägt keinen",
+                ["a.K1#1", "d.K1#1", "d.K1#2"].every((id) => mit.includes(id)) && ohne.includes("b.K1#1") &&
+                mit.every((id) => typeof x[id].konsum === "string" && x[id].konsumBoot === x["a.K1#1"].konsumBoot && !x[id].konsumFehlt) && kv.every((k) => k && /^[0-9a-f]{6}:/.test(k.k["welt-stub.cjs"] || "")) &&
+                ohne.every((id) => !("konsum" in x[id])), JSON.stringify(Object.keys(x).map((id) => [id, x[id].ungemessen ? "ungemessen" : x[id].konsumFehlt || (x[id].konsum || "").length, (x[id].konsumBoot || "").length])));
+        }
         pruef("SITZUNG das Schloss EINMAL für die ganze Sitzung (zeit, die Proben nehmen es nie)",
             !gl || (schloss.length === 1 && /^punkte-radeon-sitzung zeit \d+$/.test(schloss[0])), JSON.stringify(schloss));
         pruef("SITZUNG das Format von heute: je Station gruen, zahl, exit, minuten, zeit, abdruck, port, bahn und modus \"session\"; die Zeile liest zug.cjs",
@@ -5678,6 +6307,19 @@ async function selbsttest(o = {}) {
         pruef("EICH-FAHRT an derselben Leine: die lebende Probe über ihrem Grund-Deckel (2 s) misst GRÜN, eich s ≥ 4 · sek 2; der Kopf nennt die Fahrt",
             ea.gruen === true && !!ea.eich && ea.eich.sek === 2 && ea.eich.s >= 4 && ea.eich.s < 12 && !!r16.kopf.eich && r16.kopf.eich.fahrtMaxS === FAHRT_MAX_S,
             JSON.stringify([ea, r16.kopf.eich]));
+        // DER ZEUGE IST EIN LEBENSZEICHEN (R6 nach Konsum; Radeon 11.11. unter Last: die lebende Probe oben fiel „Stille seit 2 s nach
+        // 2 s“, weil der Konsum-Zeuge vor ihrer ersten Zeile rechnete): eine STUMME Probe aus zwei node-Prozessen nacheinander (je 1,5 s)
+        // fällt an der Leine (Grund 2 s, Stille 3 s) nicht — Start und Ende jedes Prozesses meldet der Zeuge (`.offen`, „bereit“,
+        // „endet“), und jedes zählt wie eine Zeile; dieselbe Stille ohne node-Prozess (die Mutante) fällt nach 3 s beim Namen. Die
+        // Fristen tragen einen Prozess-Start von bis zu 2,7 s (das ausgelastete Mess-Gerät)
+        if (findeBash()) {
+            const stumm = ["bash", "-c", "sleep 0.3; node -e \"setTimeout(() => {}, 1500)\"; exec node -e \"setTimeout(() => require('fs').writeFileSync(process.argv[1], JSON.stringify({ n: 0 })), 1500)\" \"$0\"", "{AUS}"];
+            const ohneZeugen = ["bash", "-c", "sleep 3.4; echo '{\"n\":0}' > \"$0\"", "{AUS}"];
+            const rL = await lauf([[S("a.K1", 1, { befehl: stumm, sek: 2 }, nN)], [S("b.K1", 1, { befehl: ohneZeugen, sek: 2 }, nN)]], "gut", null, null, false, { stilleS: 3 });
+            const [la, lb] = [rL.es["a.K1#1"] || {}, rL.es["b.K1#1"] || {}];
+            pruef("LEBENSZEICHEN DES ZEUGEN: die stumme Probe aus zwei node-Prozessen (über 3 s ohne Zeile) misst GRÜN — Start und Ende jedes Prozesses zählen an der Leine; dieselbe Stille ohne Zeugen fällt nach 3 s beim Namen (Mutante)",
+                la.gruen === true && !la.ungemessen && la.s >= 3.2 && lb.ungemessen === true && /^Deckel 2 s gerissen: Stille seit [\d.]+ s nach [\d.]+ s /.test(lb.grund || ""), JSON.stringify([la.gruen, la.zahl, la.s, lb.ungemessen, lb.grund]));
+        }
         // DIE AUSWAHL DER EICH-FAHRT (eichOffen): eine Probe mit Zahl am SHA und heutigem Abdruck fällt heraus; ohne Zahl, mit fremdem Abdruck
         // (die Probe änderte sich) oder an einem anderen SHA bleibt sie — die nächste Eich-Fahrt misst den Rest
         const [sa, sb, sc] = ["a", "b", "c"].map((n) => S(n + ".K1", 1, { befehl: ["node", n], sek: 10 }, lies));
@@ -6096,6 +6738,7 @@ if (require.main === module) {
             if (o.trocken) buchungZeigen(s, "(trocken: stand.json unberührt)");
         }
         else if (verb === "gtx-nutzen") gtxNutzenCli(o);
+        else if (verb === "beruehrt") beruehrtCli(o);
         else if (verb === "eichtafel") eichtafelCli(o);
         else if (verb === "plan") planCli(o);
         else if (verb === "gruppen") for (const g of zwillingsGruppen(ladeGeprueft().stationen, o.geraet, o.nur)) console.log(g.join(","));
@@ -6123,7 +6766,7 @@ if (require.main === module) {
         } else if (verb === "selbsttest") process.exitCode = await selbsttest(o);
         else if (verb === "fremdlast") process.exitCode = await fremdlastCli(o);
         else {
-            console.log("Verben: run --sha <sha> --geraet radeon|gtx|headless [--nur id,id] [--offen] [--eich] [--trocken] [--bahnen 3] [--port-basis 7700] [--farm <name>] · gruppen --geraet <g> [--nur id,id] · scheiben --sha <sha> --geraet headless [--jobs 12] [--offen|--nur …] · vereine --sha <voll> --geraet headless --farm <name> --teile <dir> [--scheiben <json>] [--beginn <s>] · buchen --kopf <sha> [--trocken] · liste [--kopf <sha>] · eichtafel --geraet radeon|gtx [--sha a,b] [--schreibe] · selbsttest [--ohne 3c] · fremdlast [--sek 60] [--takt 2000]");
+            console.log("Verben: run --sha <sha> --geraet radeon|gtx|headless [--nur id,id] [--offen] [--eich] [--trocken] [--bahnen 3] [--port-basis 7700] [--farm <name>] · gruppen --geraet <g> [--nur id,id] · scheiben --sha <sha> --geraet headless [--jobs 12] [--offen|--nur …] · vereine --sha <voll> --geraet headless --farm <name> --teile <dir> [--scheiben <json>] [--beginn <s>] · beruehrt --basis <sha> --kopf <sha> [--json] · buchen --kopf <sha> [--trocken] · liste [--kopf <sha>] · eichtafel --geraet radeon|gtx [--sha a,b] [--schreibe] · selbsttest [--ohne 3c] · fremdlast [--sek 60] [--takt 2000]");
             process.exitCode = 2;
         }
     })().catch((e) => {
@@ -6133,7 +6776,7 @@ if (require.main === module) {
 }
 
 module.exports = { liesStand, maschinenKriterium, standPruefen, buchen, liesPflicht, pflichtBand, pflichtEintraegeAus, pruefeStationen, trifftPfad, toteGlobs, gpuZeuge, gpuWand, abdruck, fahreStation,
-    frischUrteil, stempelDateien, linsenVon, linsenAm, ladeGeprueft, ladeMessungen, spielRepo, voll, git, schluessel, geraeteVon, hilfeText,
+    frischUrteil, stempelDateien, stempelDiff, standDiff, beruehrt, konsumFalten, konsumVon, konsumTreffer, skriptVon, skriptZeilen, skripteAm, r6Zaehlung, linsenVon, linsenAm, ladeGeprueft, ladeMessungen, spielRepo, voll, git, schluessel, geraeteVon, hilfeText,
     griffeVon, toteAnker, ankerLeser, acornVon,
     // DER STROM für die Probe der Sitzung (require(process.env.PUNKTE_MASCHINE)): EIN Zapfen, EINE Marke, EIN Leser, der Ruf mit Frist
     stromZapfen, stromMarke, stromLesen, rufFrist, STROM_SPALTEN };
