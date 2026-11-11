@@ -61,6 +61,9 @@ class AnazhRealm_dirigent_takt {
                 // Spiel-Glied (515–1 007 ms); mit der Phase ruft es jedes Lade-Bild (24 von 210 Takten, 281 ms), das Netz
                 // jeder Takt.
                 const bild = this._gpuLeineFrei();
+                // DAS BILD ZÄHLT SICH SELBST (w28-bild-ganz): wer in DIESEM Bild zeichnen will und nicht zeichnet, trägt sich ab
+                // hier neu ein (`_erstWartet` (3)) — das erste Weltbild liest die Liste nach dem Render (`_bildWartet`)
+                if (bild) this._erstZeichnungStand().bildWartet.clear();
                 const ruht = !bild && this._ladeTakt();
                 // DER BILD-TAKT UNTER DEM LADESCHIRM teilt die EINE Frist der Aufgabe mit der Zeichnung (`_ladeFrist`)
                 this._ladeBildTakt = bild && this._ladeTakt();
@@ -417,12 +420,23 @@ class AnazhRealm_dirigent_takt {
     // freigibt oder baut, wartet dann auf keinen: der Wächter der Foundry hält nichts (`_foundryWaechterRuht`), und die Ankunft
     // eines Körpers platziert nichts von selbst (`_foundryRewarmColdTrees`) — die ruhende Welt ändert sich nur, wo einer fragt.
     // Der Null-Renderer kennt keinen Loop: headless ruht er nie (der Wächter lässt dort ohnehin alles durch).
+    // VOR DEM INIT DES RENDERERS KOMMT KEIN TAKT (w28-loop-vor-init): r184 legt die Bild-Schleife erst in `init()` an
+    // (`_animation`), sein `getAnimationLoop()` wirft davor (TypeError auf null) — und `setAnimationLoop` wartet auf das init. Die
+    // Lage sagt die EINE Quelle des Spiels (`state.rendererReady`, ihr Schreiber: das Ende von `renderer.init()`): davor ruht
+    // der Loop. Bis hier fragte der Stand den Vendor ungeprüft: eine Antwort der Foundry in diesem Fenster warf im Wächter
+    // (`_foundryIngestTakt` → `_foundryWaechterRuht`), die Kette der Spieler-Vorlagen riss („STOFF: die Spieler-Vorlagen …“),
+    // `_leibBereit` gab den Bau trotzdem frei, und er goss beide Stufen des Leibs im Haupt-Faden („FADEN-UMGANGEN: Guss
+    // „mensch“ …“). GTX 1050, main e6f0cf7e: in 7 von 126 Zweit-Boots kam die Vorlage 44–64 ms vor `rendererReady` — EINE
+    // Aufgabe 3,3–3,9 s (`_ofenMenschTemplate` 2 813 + 496 ms), das Weltbild 15,3–19,8 statt 12,4–15,8 s. Jeder Leser fällt mit
+    // (`_bauFristOhneEnde`, `_foundryRewarmColdTrees`). Linsen: gate:ankunft L2a (`loopVorInit`), die Kalt-Zeile von
+    // gate:boot-stage („die Ankunft bricht nicht“).
     _loopRuht() {
         // das Portal friert die Heimat ein (der Takt kehrt vor jedem Tick um): sie ruht wie ohne Bild-Schleife — der Wächter
         // hält nichts, das Bäcker-Bild baut am Stück (der Abzug der Karte für das Labor, pipeline.K2)
         if (this._portalOverlay) return true;
         const r = this.state.renderer;
-        return !!r && typeof r.getAnimationLoop === "function" && !r.getAnimationLoop();
+        if (!r || typeof r.getAnimationLoop !== "function") return false;
+        return this.state.rendererReady !== true || !r.getAnimationLoop();
     }
 
     // ═══ DAS WORT „DIE WELT STEHT" (A9) ═══
@@ -1102,6 +1116,7 @@ class AnazhRealm_dirigent_takt {
         let steps = 0;
         while (st._fixedAccumulator > 0 && steps < AnazhRealm.FIXED_MAX_STEPS) {
             st._fixedPrevPos.copy(mesh.position);
+            st._stossImSchritt = false; // der Stoß gehört seinem Schritt (`_stossEreignis` setzt ihn)
             this._stepFixedSim(simTime, FIXED_DT);
             st._fixedAccumulator -= FIXED_DT;
             simTime += FIXED_DT;
@@ -1111,7 +1126,13 @@ class AnazhRealm_dirigent_takt {
         if (steps >= AnazhRealm.FIXED_MAX_STEPS && st._fixedAccumulator > 0) st._fixedAccumulator = 0;
         st._fixedSimTime = simTime;
         // der Akkumulator liegt in (−FIXED_DT, 0]: die Wanduhr steht um 1 + Rest/FIXED_DT zwischen prev und cur
-        st._fixedAlpha = FIXED_DT > 0 ? 1 + st._fixedAccumulator / FIXED_DT : 1;
+        // DER STOSS STEHT IM BILD (physik.K2 Staffel 2; Bullet klemmt die gezeichnete Lage am Treffer: `synchronizeSingleMotionState`
+        // × `getHitFraction`): trug der letzte Schritt einen Stoß der gerittenen Hülle, zeichnet jedes Bild seines Paars die
+        // Stoß-Lage (cur), nie die Sehne davor. Der Wagen liegt genau EINEN Sim-Zustand an der Wand (der Stoß wirft ihn im
+        // nächsten Schritt zurück) — die Sehne zeigte ihn dort um (1 − alpha) · Weg des Schritts davor, im Schritt danach schon
+        // fort: bei 81,67 m/s prallte er im Bild 0,10–0,22 m VOR der Mauer ab (GTX da0e790f 0,218 m, headless 0,18 @60), während
+        // Funken, Klang und Kamera-Ruck desselben Bilds schon den Stoß trugen (`_stossEreignis`).
+        st._fixedAlpha = st._stossImSchritt || !(FIXED_DT > 0) ? 1 : 1 + st._fixedAccumulator / FIXED_DT;
         return steps;
     }
 

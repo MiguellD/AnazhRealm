@@ -613,9 +613,16 @@ hauptLauf(async () => {
             // zeichnete, zählt 1
             const probe = new THREE.Group().add(new THREE.Group());
             const zaehlerSelbst = [F.ungezeichnet(probe, st.camera), F.ungezeichnet(probe.add(Object.assign(new THREE.Mesh(), { frustumCulled: false })), st.camera)];
-            const zwillinge = (codes) => codes.length - new Set(codes.map((c) => c.replace(/NodeBuffer_\d+/g, ""))).size;
+            // ZWILLINGE: Vertex-Texte, die nur `NodeBuffer_<id>` trennt oder nur die Knochenzahl — r184 schreibt `skeleton.bones.length` als
+            // Feldgröße der Knochen-Tafel in den Text (w28-fell-programm; GTX 1060, main ab2f2eed: acht Abdrücke für 29/27/22/21/10/7/6/3).
+            // Je Gruppe gleicher Texte ihre Knochenzahlen.
+            const zwillinge = (codes) => {
+                const je = {};
+                for (const c of codes) (je[c.replace(/NodeBuffer_\d+|(?<=array< mat4x4<f32>), \d+/g, "")] ||= []).push(c.match(/array< mat4x4<f32>, (\d+)/)?.[1] || "–");
+                return Object.values(je).filter((z) => z[1]).map((z) => z.join("/")) + "";
+            };
             const programmZwillinge = zwillinge([...st.renderer._pipelines.programs.vertex.keys()]);
-            const zwillingSelbst = zwillinge(["NodeBuffer_1", "NodeBuffer_2", "x"]);
+            const zwillingSelbst = zwillinge(["NodeBuffer_1", "NodeBuffer_2", "x", "array< mat4x4<f32>, 29 >", "array< mat4x4<f32>, 3 >"]);
             st.scene.remove(peer.mesh);
             E.im("seelen", () => r._disposeSoulGroup(peer.mesh)); // der Abschied des Mitspielers
             // der Selbsttest des Urteils: die leere Bühne und der Block-Zwilling aus den Bauplan-Teilen der Wolf-Seele
@@ -653,7 +660,7 @@ hauptLauf(async () => {
     );
 
     check("S2 Selbsttest: der Zähler der Ungezeichneten zählt 0 und 1", seelen.zaehlerSelbst + "" === "0,1", seelen.zaehlerSelbst);
-    check("S2 je Gestalt EIN Programm (Welt und Bühnen: kein Zwilling, den nur NodeBuffer_<id> trennt)", seelen.programmZwillinge === 0 && seelen.zwillingSelbst === 1, `Zwillinge ${seelen.programmZwillinge} · Selbsttest ${seelen.zwillingSelbst} (Soll 1)`);
+    check("S2 je Gestalt EIN Programm (Welt und Bühnen: kein Zwilling, den nur NodeBuffer_<id> oder die Knochenzahl trennt)", seelen.programmZwillinge === "" && seelen.zwillingSelbst === "–/–,29/3", `Zwillinge ${seelen.programmZwillinge || "keine"} (je Gruppe die Knochenzahlen) · Selbsttest ${seelen.zwillingSelbst} (Soll –/–,29/3)`);
 
     // S3 — die Feed-Vorschau: Wesen-Karten (4 Seelen) und eine Rezept-Karte (Bauplan-Teile, eigene Geometrie), zweimal.
     const feed = await page.evaluate(async () => {

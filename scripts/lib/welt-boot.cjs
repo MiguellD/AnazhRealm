@@ -505,7 +505,7 @@ const ROOT = path.resolve(__dirname, "..", "..");
 // das Modul der Import-Karte der Welt (index.html `<script type="importmap">`) für das Manifest-Feld `engine`, ab der
 // Wurzel; ENGINE_THREE schweigt die Warnung von require(esm) (Node liest die typlose .js als ES-Modul — der Weg, kein Befund)
 const ENGINE_MODUL = () =>
-    JSON.parse(fs.readFileSync(path.join(ROOT, "index.html"), "utf8").match(/<script type="importmap">([\s\S]*?)<\/script>/)[1]).imports[jsonLesen("cores.manifest.json").find((c) => c.engine).engine].slice(1); // prettier-ignore
+    JSON.parse(ausDatei("index.html").match(/<script type="importmap">([\s\S]*?)<\/script>/)[1]).imports[jsonLesen("cores.manifest.json").find((c) => c.engine).engine].slice(1); // prettier-ignore
 function ENGINE_THREE() {
     const w = process.emitWarning;
     process.emitWarning = () => {};
@@ -537,7 +537,7 @@ function fadenScope(quellen) {
     sb.THREE = ENGINE_THREE();
     require("vm").createContext(sb);
     for (const f of quellen)
-        require("vm").runInContext((QUELL_TEXT[f] ||= fs.readFileSync(path.join(ROOT, f), "utf8")), sb, {
+        require("vm").runInContext((QUELL_TEXT[f] ||= ausDatei(f)), sb, {
             filename: f,
         });
     return sb;
@@ -666,6 +666,24 @@ const sammlung = { fehler: [], erwartet: null, wache: false, selbsttest: null, w
 function taeter(re, t = []) {
     sammlung.fehler = sammlung.fehler.filter((f) => !re.test(f) || !t.push(f));
     return t;
+}
+// DAS BRUCH-BUCH GEHT IN DENSELBEN SAMMLER (w28-loop-vor-init): der EINE Melder des Spiels (`_bruchMelden`) schreibt jeden Bruch
+// in sein Buch und als ERROR-Zeile über console.log — der Sammler las davon nur zwei Wörter (die Post-Kette, den Wurf im Takt).
+// Eine Linse, die das Buch der Seite zu ihrem Zeitpunkt liest (die Kalt-Zeile von gate:boot-stage: am ersten Weltbild), reicht
+// die Einträge `[Text, Zahl]` hier herein: jeder ist ROT beim Wort wie ein Wurf, ein gepflanzter fällt über `taeter(/^bruch: /)`.
+// Was der Sammler aus der Konsole schon trägt, zählt nicht doppelt. Befund 11.11. (GTX 1050, 7 von 126 Zweit-Boots): „STOFF: die
+// Spieler-Vorlagen …" und zweimal „FADEN-UMGANGEN: Guss „mensch“ …" standen vor dem Bild im Buch, der Leib goss 3,3–3,9 s im
+// Haupt-Faden, und kein Tor las es. → die neu gesammelten Zeilen
+function bruchBuch(eintraege, wann) {
+    const neu = [];
+    for (const [text, n] of eintraege || []) {
+        const kern = String(text).slice(0, 120);
+        if (sammlung.fehler.some((f) => f.includes(kern))) continue;
+        const vor = sammlung.fehler.length;
+        melde("bruch", `${wann} — ${n > 1 ? `${n}× ` : ""}${text}`);
+        if (sammlung.fehler.length > vor) neu.push(sammlung.fehler[vor]);
+    }
+    return neu;
 }
 
 function melde(art, text) {
@@ -2065,6 +2083,7 @@ module.exports = {
     teilAus,
     selbsttest: (name) => (sammlung.selbsttest = name),
     taeter,
+    bruchBuch,
 };
 
 // DER SELBSTTEST DER STALL-AKTE (gate:welt-boot, Null-Rezept): eine JS-Schleife steht als JS-SCHLEIFE mit Namen in der Akte, ein
@@ -2196,7 +2215,7 @@ async function selbsttest() {
         .map((f) => f.replace(/\\/g, "/"))
         .filter((f) => /\.cjs$/.test(f) && f !== "lib/welt-boot.cjs")
         .sort()
-        .map((f) => [f, ohneKommentare(fs.readFileSync(path.join(ROOT, "scripts", f), "utf8"))]);
+        .map((f) => [f, ohneKommentare(ausDatei("scripts/" + f))]);
     const zwillinge = code.filter(([f, c]) => f !== "werkbank.cjs" && /\.on\("pageerror"/.test(c)).map(([f]) => f);
     // DIE NAMENS-WAND: die Namen der Seiten-Werkzeuge (`CODE_OF_SEITE`) gehören welt-boot — setzt ein Skript einen selbst, nimmt es
     // der Seite das Werkzeug oder liest das Werkzeug als seinen Schalter (diag-mp-sync hielt die Pumpe an `window.__ruht`, die

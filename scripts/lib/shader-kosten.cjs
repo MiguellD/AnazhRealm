@@ -53,10 +53,14 @@ const LEICHT =
 // Prüfbühne S0 als kalte Übersetzung auf echter GPU (`S0_MS`, scripts/diag-pruefbuehne.cjs; bis 07.11. hier die Decke
 // 100 000 Zeichen — 4 Züge fielen an 100 211–122 088 Zeichen, während S0 auf der GTX in 14–15 s stand).
 // Keine Hilfs-Funktion liest eine Bindung (`bindungInFunktionMax` 0, `bindungenInFunktionen`).
+// EINE Abtastung in einer Schleife (`schleifeMax` 1: die Himmels-Tafel des Grat-Himmels, drei Durchläufe im Zweig): der
+// Luftschatten las die Horizont-Karte in einer zweiten, achtmal je Fragment JEDES Stoffs — GTX 1060, Mess-Wiese Ego 34,3 ms
+// gegen 26,9 an den Ecken (w28-horizont-gtx, `_luftEnsure`); am Kopf 4e2df19b zählt die Linse 2 und ist ROT.
 const STOFFE = Object.freeze({
     boden: Object.freeze({
         zustand: "voxelChunkMaterial",
         budget: Object.freeze({
+            schleifeMax: 1,
             rauschenMax: 2,
             ladungenMax: 90,
             probenMax: 12,

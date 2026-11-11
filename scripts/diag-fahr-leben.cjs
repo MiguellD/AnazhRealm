@@ -830,6 +830,13 @@ const wegenetzVerdict = (m) =>
 const VERKEHR = { stunden: [10, 23], sek: 600, wagen: 20, fristS: 300, fahrbahn: 0.05, weg60M: 30, raumM: 0.2 };
 const verkehrVerdict = (m) =>
     urteil([
+        // DER TAKT WARF NICHT (w27-ort-pose-voll, zuerst: jede Zahl darunter ist seine Folge): die Fehler-Grenze des Loops fing
+        // in der Stunde keinen Wurf eines Bilds [Würfe, der erste] — ungezählt ist ROT. Am 11.11. warf jeder Sim-Schritt (ein
+        // Name der Probe verdeckte den Prototyp), die Stadt stand, und der Richter las „0 Ankünfte“
+        [
+            !!m.wurf && !m.wurf[0],
+            `der Takt warf ${m.wurf ? `${m.wurf[0]}× (die Fehler-Grenze des Loops fing ihn, die Stadt der Messung stand): ${m.wurf[1]}` : "ungezählt"}`,
+        ],
         // DER RICHTER VON PFLICHT-OFFEN C (pflicht.C#1), gezählt am SOLL des Gesetzes: in jeder Probe fährt jeder Wagen des Solls
         // mit einem Bewohner am Steuer [die wenigsten, Probe, wer nicht: Nr. und Zustand], jede Probe eines Fahrenden auf der
         // Trasse der Wege-Karte [Proben, ab, Orte], in jeder vollen Minute fährt jeder ≥ `weg60M` m [der kürzeste Weg einer
@@ -981,7 +988,7 @@ const RUECK = {
 function rueckMass(m) {
     if (!m) return null;
     const [B, R] = [m.bild, RUECK];
-    const mittel = (a) => +(a.reduce((s, x) => s + x, 0) / a.length).toFixed(3);
+    const mittel = (a) => +(a.reduce(addiere, 0) / a.length).toFixed(3);
     const st = B.map((z, i) => i).filter((i) => B[i][1] >= R.stoss && i + R.antwortBilder < B.length);
     const ausschlag = (i) =>
         Math.max(
@@ -2422,8 +2429,12 @@ hauptLauf(async () => {
                 fahrbahn: { geh: 9e4, auf: 1500, anteil: 0.017 },
                 stufe: { nah: 99 },
                 netz: { verboten: ["k0 0>3 kein Bogen", "k0 2>1 kein Bogen"], ausNetz: 0, irrweg: 0 },
+                wurf: [0, null],
             };
             const brueche = [
+                // der Zweig w27-ort-pose-voll am 11.11.: jeder Sim-Schritt warf im gewickelten `_verkehrSchritt`
+                [{ wurf: [36000, "Cannot read properties of undefined (reading 'call')"] }, /der Takt warf 36000× .*reading 'call'/],
+                [{ wurf: undefined }, /der Takt warf ungezählt/],
                 [{ wenden: 3 }, /Wenden 3/],
                 [{ stufen: [{ x: 1 }] }, /Stufen/],
                 [{ wagen: 7, ohnePlatz: 13 }, /Wagen 7 von 20 \(Soll ≥ 20; ohne Platz 13/], // die Radeon 05.11.: die Stadt des Worts

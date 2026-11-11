@@ -1854,42 +1854,45 @@ class AnazhRealm_bau_buch {
             Imax = Math.max(Ix, Iz);
         return { Ix, Iz, Imin, Imax, anisotropy: Imax / Math.max(1e-6, Imin), area: A };
     }
-    // (b) VERSAGEN: knickt eine Ebene schlanker Glieder unter der LAST, die sie trägt? Euler: die kritische Spannung fällt
-    // mit dem Quadrat der Schlankheit, σ_krit = σ_ref · (λ_ref / λ)², λ_ref ∝ √(härte) (unter der Bezugs-Last
-    // `bucklingRefLoad` knickt die Stein-Säule ab 1:18). Die Last ist das Gewicht über der halben Höhe des Glieds (die
-    // Teile darüber und sein eigener oberer Teil), getragen von jedem Glied, das diese Ebene kreuzt — sie knicken, wenn sie
-    // die Summe ihrer kritischen Lasten übersteigt: ein Glied ohne Last (ein Zierstab, der Webstuhl-Pfosten) knickt nicht,
-    // die überladene Plattform schon; trägt ein gedrungenes Glied oder eine Wand die Ebene mit, knickt sie nie. Grob-Sanitäts-
-    // Richter, keine FEA.
+    // (b) VERSAGEN: knickt oder bricht eine Ebene schlanker Glieder unter der LAST, die sie trägt? Jedes Glied trägt die
+    // Spannung seiner Stoff-Zeile (schmiede `STOFF_GESETZ.tragSpannung`): das Kleinere aus seiner Streckgrenze σ_y (das
+    // gedrungene zerdrückt) und der Knick-Spannung nach EULER π²·E / (12·λ²) (das schlanke knickt, λ = Höhe / kleinste
+    // Breite), je geteilt durch die Sicherheit des Richters (`druckSicherheit`, `knickSicherheit`: Vorkrümmung, Schiefstand
+    // und Stoß eines Baus, den niemand vermessen hat). Die Last ist das GEWICHT über der halben Höhe des Glieds — die Masse der Teile darüber und
+    // seines eigenen oberen Teils aus ρ und Gestalt (`_teilMasse`) mal der Schwere der Welt —, getragen von jedem Glied, das
+    // diese Ebene kreuzt: sie versagen, wenn die Last die Summe ihrer Trag-Kräfte übersteigt. Ein Glied ohne Last (ein
+    // Zierstab, der Webstuhl-Pfosten) knickt nicht, die überladene Plattform schon; trägt ein gedrungenes Glied oder eine
+    // Wand die Ebene mit, knickt sie nie. Bis w28 las der Richter zwei Tag-Achsen (λ_ref ∝ √härte in der Klemme 8–28, Masse =
+    // Quader × dichte) unter einer Bezugs-Last von „acht Metern Stoff der dichte 1": Eisen (härte 0,75) trug kaum schlanker
+    // als Stein (0,65), obwohl sein E-Modul das Vierfache ist, und wog je Quader 1,06 Stein statt 2,97; Leder trug wie Holz.
+    // Grob-Sanitäts-Richter, keine FEA.
     _failsUnderLoad(bp) {
         const out = { buckles: false, maxSlenderness: 0, criticalSlenderness: 0, slenderPart: -1 };
         if (!bp || !Array.isArray(bp.parts) || !bp.parts.length) return out;
         const P = AnazhRealm.PHYSIS;
-        const mats = this.state.materials || {};
+        const SG = globalThis.__schmiedeCore.STOFF_GESETZ;
+        const schwere = Number.isFinite(this.state.gravity) ? Math.max(0, -this.state.gravity) : 9.81;
         const glieder = bp.parts.map((p) => {
             const ext = this._partWorldExtents(p);
-            const tags = (mats[p.material] && mats[p.material].tags) || {};
-            const s = p.size || { x: 1, y: 1, z: 1 };
             const w = Math.max(0.02, Math.min(ext.ex || 0, ext.ez || 0));
             const wmax = Math.max(0.02, Math.max(ext.ex || 0, ext.ez || 0));
             // ein WAND-/Platten-Glied (eine horizontale Dimension ≫ die andere, > wallBraceRatio) ist keine freie Säule
-            const saeule = (ext.ey || 0) >= w * 1.2 && wmax <= w * P.wallBraceRatio;
-            const lambdaRef = Math.max(
-                P.bucklingSlendernessMin,
-                Math.min(
-                    P.bucklingSlendernessMax,
-                    P.bucklingSlendernessBase * Math.sqrt(Math.max(0.05, tags.härte || 0.5) / 0.5)
-                )
-            );
+            const schlank = (ext.ey || 0) >= w * 1.2 && wmax <= w * P.wallBraceRatio;
+            const lambda = (ext.ey || 0) / w;
+            const z = schlank ? this._stoff(p.material, "das Glied aus „" + p.material + "“ trägt keine Last") : null;
+            // lebendes Gewebe (die Bindung seiner Zeile) ist kein passiver Stab: der Leib hält sich mit Tonus und Skelett
+            const saeule = schlank && !(z && z.bindung === "gewebe");
             return {
                 a: this._partWorldAABB(p),
                 saeule,
-                lambda: (ext.ey || 0) / w,
-                lambdaRef,
-                flaeche: Math.max(1e-4, (ext.ex || 0) * (ext.ez || 0)),
-                masse:
-                    Math.abs((s.x || 1) * (s.y || 1) * (s.z || 1)) *
-                    Math.max(0.05, typeof tags.dichte === "number" ? tags.dichte : 0.5),
+                lambda,
+                // die Kraft in N, die das Glied trägt: Spannung der Zeile × mittlerer Querschnitt seiner Gestalt (Volumen / Höhe —
+                // die kannelierte Säule trägt mit ihrem Stein, nicht mit ihrer Hüll-Box) / Sicherheit
+                kraft: z
+                    ? SG.tragSpannung(z, lambda, P.knickSicherheit, P.druckSicherheit) *
+                      (this._teilVolumen(p) / Math.max(1e-6, ext.ey || 0))
+                    : 0,
+                masse: this._teilMasse(p),
             };
         });
         for (let i = 0; i < glieder.length; i++) {
@@ -1902,13 +1905,15 @@ class AnazhRealm_bau_buch {
             let gedrungen = false;
             for (const t of glieder) {
                 if (!t.a || t.a.max.y <= y) continue;
-                last += t.masse * Math.min(1, (t.a.max.y - y) / Math.max(1e-6, t.a.max.y - t.a.min.y));
+                last += t.masse * schwere * Math.min(1, (t.a.max.y - y) / Math.max(1e-6, t.a.max.y - t.a.min.y));
                 if (t.a.min.y >= y) continue;
                 if (!t.saeule) gedrungen = true;
-                kritisch += P.bucklingRefLoad * (t.lambdaRef / t.lambda) ** 2 * t.flaeche;
+                kritisch += t.kraft;
             }
             if (gedrungen || last <= kritisch) continue;
             out.buckles = true;
+            out.last = last; // N: das Gewicht über der Ebene
+            out.kritisch = kritisch; // N: was ihre Glieder tragen
             out.criticalSlenderness = g.lambda * Math.sqrt(kritisch / last); // die Schlankheit, die diese Last noch trüge
         }
         return out;
@@ -2577,10 +2582,13 @@ AnazhRealm.PRODUCT_VECTOR_TAG_NORM = 3;
 // diese Schwellen kalibrieren die groben Verstöße (Kippen, Knicken). browser-justierbar.
 AnazhRealm.PHYSIS = {
     groundBandFrac: 0.15, // Ω-Φ2: das untere Höhen-Band, das als Bodenkontakt zählt
-    bucklingSlendernessBase: 16, // Ω-Φ3-b: krit. Schlankheit (height/width) bei härte 0.5 unter der Bezugs-Last
-    bucklingRefLoad: 8, //          die Bezugs-Last je Fläche: acht Meter Stoff der dichte 1 über dem Glied (die Meister-Esse braucht 6,4)
-    bucklingSlendernessMin: 8, //          Boden (ein weiches Material knickt früher)
-    bucklingSlendernessMax: 28, //          Decke (ein hartes Material trägt schlanker)
+    // Ω-Φ3-b: die Sicherheit des Knick-Richters — die Euler-Spannung der Stoff-Zeile geteilt durch sie. Geeicht am alten
+    // Anker des Richters: die frei stehende Stein-Säule trägt sich bis 1:28, unter dem Gewicht von 9,5 m Stein bis 1:18
+    // (Euler mit E 50 GPa: 124 MPa / 500 = 247 kPa).
+    knickSicherheit: 500,
+    // … und gegen das Zerdrücken: ein Glied trägt ein Zehntel der Streckgrenze seiner Zeile (die Regel der Baumeister für
+    // Mauerwerk: zulässige Pressung = Druckfestigkeit / 10) — Stein 13 MPa, Holz 5 MPa, verdichtete Erde 20 kPa.
+    druckSicherheit: 10,
     wallBraceRatio: 4, // Ω-Φ3-b: ab dieser Breite:Dicke ist ein Glied eine WAND (verstrebt), keine Säule
 };
 // Stat-Klemme am LESER (taille-spec §3): je Achse die lokale Trag-Decke = max(Built-in-Materialien
