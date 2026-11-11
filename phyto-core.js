@@ -934,6 +934,40 @@
     // Leser (Studio-Stoff, Host-Stoff) laden `mips` (Stufe 0 = `daten`) und teilen die Atlas-Farbe durch `wert`: der
     // Atlas trägt NUR den Wert um 1, die Albedo der Karte ist im Mittel die Vertex-Farbe (FARB-GESETZ) — wie die
     // Klinge. Ohne Leinwand → null.
+    // Die zwei Schleifen über die Leinwand als kleine Kerne (w28-blatt-atlas-kalt; der Grund steht an `mipBox`): das lineare
+    // Mittel der deckenden Texel der Spalten [xa, xb) — oder 1, 1, 1 — und eine Zeile der Stufe 0 (`gleich` · `leer`).
+    function atlasMittel(px, W, H, xa, xb, LIN) {
+        let n = 0,
+            s0 = 0,
+            s1 = 0,
+            s2 = 0;
+        for (let y = 0; y < H; y++)
+            for (let x = xa; x < xb; x++) {
+                const i = (y * W + x) * 4;
+                if (px[i + 3] < 128) continue;
+                n++;
+                s0 += LIN[px[i]];
+                s1 += LIN[px[i + 1]];
+                s2 += LIN[px[i + 2]];
+            }
+        return n ? [s0 / n, s1 / n, s2 / n] : [1, 1, 1];
+    }
+    function atlasZeile(px, lin, i, o, W, zelle, gleich, leer) {
+        for (let x = 0; x < W; x++, i += 4, o += 4) {
+            const a = px[i + 3];
+            if (a >= 128) {
+                const t = zelle[x] * 768;
+                lin[o] = gleich[t + px[i]];
+                lin[o + 1] = gleich[t + 256 + px[i + 1]];
+                lin[o + 2] = gleich[t + 512 + px[i + 2]];
+            } else {
+                lin[o] = leer[0];
+                lin[o + 1] = leer[1];
+                lin[o + 2] = leer[2];
+            }
+            lin[o + 3] = a;
+        }
+    }
     function bakeLeafAtlasBild(doc) {
         const cv = bakeLeafAtlasCanvas(doc);
         if (!cv) return null;
@@ -947,33 +981,22 @@
             LIN[c] = v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
         }
         const mittel = [];
-        for (let c = 0; c < 4; c++) {
-            let n = 0;
-            const sm = [0, 0, 0];
-            for (let y = 0; y < H; y++)
-                for (let x = c * Z; x < (c + 1) * Z; x++) {
-                    const i = (y * W + x) * 4;
-                    if (px[i + 3] < 128) continue;
-                    n++;
-                    for (let k = 0; k < 3; k++) sm[k] += LIN[px[i + k]];
-                }
-            mittel.push(n ? sm.map((v) => v / n) : [1, 1, 1]);
-        }
+        for (let c = 0; c < 4; c++) mittel.push(atlasMittel(px, W, H, c * Z, (c + 1) * Z, LIN));
         const wert = [0, 1, 2].map((k) => Math.min(mittel[0][k], mittel[1][k], mittel[2][k], mittel[3][k]));
-        // Stufe 0 linear in Textur-Ordnung: deckend gleichgezogen, sonst `wert`; Alpha roh.
+        // Stufe 0 linear in Textur-Ordnung: deckend gleichgezogen, sonst `wert`; Alpha roh. Das Byte eines deckenden Texels
+        // hängt nur an (Zelle, Kanal, Leinwand-Byte): die 4 · 3 · 256 Werte stehen EINMAL in der Tafel `gleich`, mit derselben
+        // Formel gerechnet, die bis w28-blatt-atlas-kalt je Texel und Kanal lief (eine Million Texel, drei Rundungen je Texel)
+        const gleich = new Uint8Array(4 * 3 * 256),
+            leer = new Uint8Array(3),
+            zelle = new Uint8Array(W);
+        for (let c = 0; c < 4; c++)
+            for (let k = 0; k < 3; k++)
+                for (let b = 0; b < 256; b++)
+                    gleich[(c * 3 + k) * 256 + b] = Math.round(Math.min(1, (LIN[b] * wert[k]) / mittel[c][k]) * 255);
+        for (let k = 0; k < 3; k++) leer[k] = Math.round(Math.min(1, wert[k]) * 255);
+        for (let x = 0; x < W; x++) zelle[x] = Math.min(3, Math.floor(x / Z));
         const lin = new Uint8Array(W * H * 4);
-        for (let y = 0; y < H; y++)
-            for (let x = 0; x < W; x++) {
-                const i = (y * W + x) * 4,
-                    o = ((H - 1 - y) * W + x) * 4,
-                    c = Math.min(3, Math.floor(x / Z));
-                const a = px[i + 3];
-                for (let k = 0; k < 3; k++)
-                    lin[o + k] = Math.round(
-                        Math.min(1, a >= 128 ? (LIN[px[i + k]] * wert[k]) / mittel[c][k] : wert[k]) * 255
-                    );
-                lin[o + 3] = a;
-            }
+        for (let y = 0; y < H; y++) atlasZeile(px, lin, y * W * 4, (H - 1 - y) * W * 4, W, zelle, gleich, leer);
         const ms = impostorMips(lin, W, H, 4, 0.5, 64, { quer: true, blut: wert, alphaRoh: true, glatt: true });
         const mips = ms.stufen.map((st) => ({ data: st.data, width: st.w, height: st.h }));
         // Unter einem Texel je Zelle: die Box (gerade Alpha), bis 1×1.
@@ -1015,14 +1038,32 @@
     // Das Labor (foundry-core) liest das BLUTENDE Bild selbst (bakeLeafAtlasBild), nie die Fracht.
     // `mitBc` false: nur rgba (wer nie BC laedt, kodiert nie). Leser: die Transport-Schale des Foundry-Workers
     // (das Buch) und der Wirt, der vor dem Buch malt (`_ensureFoliageClusterAtlas`). Ohne Bild → null.
+    // DIE TAFEL DER VORMULTIPLIKATION (w28-blatt-atlas-kalt): das vormultiplizierte Byte hängt nur an (Alpha, Farb-Byte) —
+    // 254 · 256 Werte, je Fracht EINMAL mit der Formel gerechnet, die bis dahin je Texel und Kanal lief (eine Potenz je
+    // Kanal jedes Texels mit Teil-Deckung, und jede Stufe ab 1 zweimal: für die rgba-Kette und für die BC-Kette). Kein
+    // Zustand im Kern: die Tafel lebt im Ruf (die Fracht entsteht einmal je Boot).
+    function vorTafel() {
+        const t = new Uint8Array(65536);
+        for (let a = 1; a < 255; a++)
+            for (let b = 0; b < 256; b++) t[(a << 8) | b] = linZuSrgb8((LIN_AUS_SRGB8[b] * a) / 255);
+        return t;
+    }
     function blattAtlasFracht(bild, mitBc) {
         if (!bild || !Array.isArray(bild.mips) || bild.mips.length < 2) return null;
+        const T = vorTafel();
         const vor = (m) => {
             const d = new Uint8Array(m.data);
             for (let i = 0; i < d.length; i += 4) {
                 const a = d[i + 3];
                 if (a === 255) continue;
-                for (let k = 0; k < 3; k++) d[i + k] = a ? linZuSrgb8((LIN_AUS_SRGB8[d[i + k]] * a) / 255) : 0;
+                if (a === 0) {
+                    d[i] = d[i + 1] = d[i + 2] = 0;
+                    continue;
+                }
+                const t = a << 8;
+                d[i] = T[t | d[i]];
+                d[i + 1] = T[t | d[i + 1]];
+                d[i + 2] = T[t | d[i + 2]];
             }
             return { data: d, width: m.width, height: m.height };
         };
@@ -1033,10 +1074,13 @@
             // vormultipliziert wie die rgba-Kette. Die Kette endet, bevor eine Zellzeile unter vier Blöcke fällt: der
             // Vier-Farben-Block trägt die vormultiplizierte Farbe von Texeln sehr verschiedener Deckung nicht (die 8er-Zelle
             // las 7 % zu dunkel, gate:pflanzen-nah (F)); jenseits liest die Welt die letzte Stufe — die L1 endet bei λ ≈ 3.
+            // Die vormultiplizierte Stufe ab 1 ist die der rgba-Kette (`r`, EINMAL gerechnet): der Kodierer liest sie nur.
             const bc = [];
-            for (const m of bild.mips) {
+            for (let i = 0; i < bild.mips.length; i++) {
+                const m = bild.mips[i];
                 if (m.width / 4 < 4 * KARTEN_GESETZ.minSeite || m.height < 4 * KARTEN_GESETZ.minSeite) break;
-                bc.push({ data: bc3Kodiere(vor(m).data, m.width, m.height), width: m.width, height: m.height });
+                const v = i ? r[i - 1] : vor(m);
+                bc.push({ data: bc3Kodiere(v.data, m.width, m.height), width: m.width, height: m.height });
             }
             out.bc = { format: "bc3", breite: bild.breite, hoehe: bild.hoehe, mips: bc };
         }
@@ -4355,20 +4399,54 @@
         const tx = tafel(W, nw),
             ty = tafel(H, nh);
         const A = new Float32Array(nw * nh);
+        // DIE VIERTEL (w28-blatt-atlas-kalt): die Unterproben zwischen denselben vier Texeln bilden ein Viertel (`laeufe`
+        // je Achse: [i0, i1, von, bis] — die Folgen gleicher Nachbarn in der Tafel). Decken seine vier Texel alle, decken
+        // alle seine Unterproben; deckt keiner, keine: die Probe liegt zwischen ihren vier Texeln, und die Rechnung ist
+        // exakt (S ist 2 oder 4 — die Gewichte sind Achtel, die Alpha ganze Zahlen bis 255). Nur das Viertel auf dem Umriss
+        // rechnet seine Unterproben, mit derselben Formel wie zuvor jede — bis dahin jede der S × S Proben je Texel, in
+        // bis zu zwanzig Gängen der Bisektion je Zelle und Stufe.
+        const laeufe = (t, n) => {
+            const out = [];
+            for (let j = 0; j < n; ) {
+                let e = j + 1;
+                while (e < n && t.i0[e] === t.i0[j] && t.i1[e] === t.i1[j]) e++;
+                out.push(t.i0[j], t.i1[j], j, e);
+                j = e;
+            }
+            return Int32Array.from(out);
+        };
+        const lx = laeufe(tx, W),
+            ly = laeufe(ty, H),
+            fxT = tx.f,
+            fyT = ty.f;
         const deck = (s) => {
             for (let i = 0; i < A.length; i++) A[i] = schl[i] > 0 ? Math.min(255, Math.round(schl[i] * s * 255)) : 0;
             let k = 0;
-            for (let y = 0; y < H; y++) {
-                const r0 = ty.i0[y] * nw,
-                    r1 = ty.i1[y] * nw,
-                    fy = ty.f[y];
-                for (let x = 0; x < W; x++) {
-                    const x0 = tx.i0[x],
-                        x1 = tx.i1[x],
-                        fx = tx.f[x];
-                    const a0 = A[r0 + x0] + (A[r0 + x1] - A[r0 + x0]) * fx,
-                        a1 = A[r1 + x0] + (A[r1 + x1] - A[r1 + x0]) * fx;
-                    if (a0 + (a1 - a0) * fy >= thr) k++;
+            for (let q = 0; q < ly.length; q += 4) {
+                const r0 = ly[q] * nw,
+                    r1 = ly[q + 1] * nw,
+                    ya = ly[q + 2],
+                    yb = ly[q + 3];
+                for (let p = 0; p < lx.length; p += 4) {
+                    const a = A[r0 + lx[p]],
+                        b = A[r0 + lx[p + 1]],
+                        c = A[r1 + lx[p]],
+                        d = A[r1 + lx[p + 1]];
+                    if (a >= thr) {
+                        if (b >= thr && c >= thr && d >= thr) {
+                            k += (yb - ya) * (lx[p + 3] - lx[p + 2]);
+                            continue;
+                        }
+                    } else if (b < thr && c < thr && d < thr) continue;
+                    for (let y = ya; y < yb; y++) {
+                        const fy = fyT[y];
+                        for (let x = lx[p + 2]; x < lx[p + 3]; x++) {
+                            const fx = fxT[x];
+                            const a0 = a + (b - a) * fx,
+                                a1 = c + (d - c) * fx;
+                            if (a0 + (a1 - a0) * fy >= thr) k++;
+                        }
+                    }
                 }
             }
             return k / (W * H);
@@ -4386,6 +4464,110 @@
             else hi = mid;
         }
         return Math.abs(deck(lo) - ziel) < Math.abs(deck(hi) - ziel) ? lo : hi;
+    }
+
+    // DIE KERNE DER MIP-STUFE (w28-blatt-atlas-kalt): die heißen Schleifen von impostorMips als kleine Funktionen. Der
+    // Blatt-Atlas ruft impostorMips EINMAL je Boot, kalt — als eine Funktion von 240 Zeilen lief ihre erste Stufe unoptimiert
+    // (gemessen in Node, der ganze Atlas-Auftrag: 1,0 s mit dem optimierenden Compiler, 6,4 s ohne ihn); ein kleiner Kern
+    // ist nach dem ersten Ruf optimiert, die Stufe ruft ihn je Kanal, je Ansicht und je Gang. Jeder rechnet dieselbe Folge
+    // wie die Schleife, die er ablöst (Byte-Beweis im Commit).
+    // Die Box der vier Kinder in der Folge (0,0) (1,0) (0,1) (1,1): das float32-Feld `t` rundet jede Zwischensumme, wie es
+    // sie Schritt für Schritt trug.
+    function mipBox(s, t, lw, nw, nh) {
+        for (let y = 0; y < nh; y++) {
+            const z0 = y * 2 * lw,
+                z1 = z0 + lw,
+                o0 = y * nw;
+            for (let x = 0; x < nw; x++) {
+                const o = o0 + x,
+                    a = z0 + x * 2,
+                    b = z1 + x * 2;
+                t[o] = s[a] + s[a + 1];
+                t[o] = t[o] + s[b];
+                t[o] = t[o] + s[b + 1];
+            }
+        }
+    }
+    // Der binomiale 3×3-Gang der Deckung einer Ansicht (nwA × nhA): die neun Summanden in ihrer Folge (Zeile oben · Mitte ·
+    // unten, je links · Mitte · rechts; am Rand der Ansicht geklemmt), die Gewichte 1·2·1 / 2·4·2 / 1·2·1 — dieselbe Rechnung
+    // wie die Schleife über (dy, dx) mit `Math.min/Math.max` je Nachbar, ohne ihre neun Index-Rechnungen je Texel (der größte
+    // Posten des Blatt-Atlas: kalt 280 von 970 ms). Gerechnet wird der Ausschnitt [x0, x1) × [y0, y1) der Ansicht.
+    function mipGlaette(dicht, weich, nwA, nhA, x0, x1, y0, y1) {
+        for (let iy = y0; iy < y1; iy++) {
+            const r1 = iy * nwA,
+                r0 = iy > 0 ? r1 - nwA : r1,
+                r2 = iy < nhA - 1 ? r1 + nwA : r1;
+            for (let ix = x0; ix < x1; ix++) {
+                const xa = ix > 0 ? ix - 1 : 0,
+                    xc = ix < nwA - 1 ? ix + 1 : ix;
+                let nb = 0;
+                nb += dicht[r0 + xa];
+                nb += dicht[r0 + ix] * 2;
+                nb += dicht[r0 + xc];
+                nb += dicht[r1 + xa] * 2;
+                nb += dicht[r1 + ix] * 2 * 2;
+                nb += dicht[r1 + xc] * 2;
+                nb += dicht[r2 + xa];
+                nb += dicht[r2 + ix] * 2;
+                nb += dicht[r2 + xc];
+                weich[r1 + ix] = nb / 16;
+            }
+        }
+    }
+    // Stufe 0 der Texel [von, bis): opak an der Schwelle → die Summen-Felder und das sRGB-Byte, sonst die Blut-Farbe;
+    // Rückgabe die Zahl der deckenden.
+    function mipStufe0(rgba, d0, sa, sr, sg, sb, von, bis, thr, roh0, blut) {
+        let opak = 0;
+        for (let i = von, p = von * 4; i < bis; i++, p += 4) {
+            const a = rgba[p + 3];
+            if (a >= thr) {
+                const r = rgba[p],
+                    g = rgba[p + 1],
+                    b = rgba[p + 2];
+                sa[i] = 1;
+                sr[i] = r / 255;
+                sg[i] = g / 255;
+                sb[i] = b / 255;
+                d0[p] = SRGB_AUS_LIN8[r];
+                d0[p + 1] = SRGB_AUS_LIN8[g];
+                d0[p + 2] = SRGB_AUS_LIN8[b];
+                d0[p + 3] = roh0 ? a : 255;
+                opak++;
+            } else if (blut) {
+                d0[p] = blut[0];
+                d0[p + 1] = blut[1];
+                d0[p + 2] = blut[2];
+                d0[p + 3] = roh0 ? a : 0;
+            }
+        }
+        return opak;
+    }
+    // Die Farbe jedes Texels einer Ansicht der blutenden Stufe: das Mittel seiner deckenden Kinder, sonst `blut`.
+    function mipBlutFarbe(data, ort, nA, ta, tr, tg, tb, blut) {
+        for (let i = 0; i < nA; i++) {
+            const o = ort[i],
+                p = o * 4,
+                a = ta[o];
+            if (a > 0) {
+                data[p] = linZuSrgb8(tr[o] / a);
+                data[p + 1] = linZuSrgb8(tg[o] / a);
+                data[p + 2] = linZuSrgb8(tb[o] / a);
+            } else {
+                data[p] = blut[0];
+                data[p + 1] = blut[1];
+                data[p + 2] = blut[2];
+            }
+        }
+    }
+    // Die Alpha einer Ansicht der glatten Stufe (Deckung × σ); Rückgabe die Zahl der Texel an der Schwelle.
+    function mipAlphaGlatt(data, ort, nA, schluessel, sigma, thr) {
+        let opak = 0;
+        for (let i = 0; i < nA; i++) {
+            const p = ort[i] * 4 + 3;
+            if (schluessel[i] > 0) data[p] = Math.min(255, Math.round(schluessel[i] * sigma * 255));
+            if (data[p] >= thr) opak++;
+        }
+        return opak;
     }
 
     function impostorMips(rgba, w, h, V, schwelle, nStufen, opt) {
@@ -4408,26 +4590,28 @@
         const d0 = new Uint8Array(n0 * 4);
         const cov0 = new Float64Array(V);
         let opak = 0;
-        for (let i = 0; i < n0; i++) {
-            if (rgba[i * 4 + 3] >= thr) {
-                const r = rgba[i * 4],
-                    g = rgba[i * 4 + 1],
-                    b = rgba[i * 4 + 2];
-                sa[i] = 1;
-                sr[i] = r / 255;
-                sg[i] = g / 255;
-                sb[i] = b / 255;
-                d0[i * 4] = SRGB_AUS_LIN8[r];
-                d0[i * 4 + 1] = SRGB_AUS_LIN8[g];
-                d0[i * 4 + 2] = SRGB_AUS_LIN8[b];
-                d0[i * 4 + 3] = roh0 ? rgba[i * 4 + 3] : 255;
-                opak++;
-                cov0[quer ? Math.min(V - 1, ((i % w) / wA) | 0) : Math.min(V - 1, ((i / w) | 0) / hA) | 0]++;
-            } else if (blut) {
-                d0[i * 4] = blut[0];
-                d0[i * 4 + 1] = blut[1];
-                d0[i * 4 + 2] = blut[2];
-                d0[i * 4 + 3] = roh0 ? rgba[i * 4 + 3] : 0;
+        // Stufe 0 je Lauf einer Zeile in EINER Ansicht (`mipStufe0` zählt seine deckenden Texel): nebeneinander die Läufe
+        // gleicher Zelle (dieselbe Formel je Spalte wie zuvor je Texel), übereinander die ganze Zeile
+        const laufX = [];
+        if (quer)
+            for (let x = 0; x < w; ) {
+                const c = Math.min(V - 1, (x / wA) | 0);
+                let e = x + 1;
+                while (e < w && Math.min(V - 1, (e / wA) | 0) === c) e++;
+                laufX.push(x, e, c);
+                x = e;
+            }
+        for (let y = 0; y < h; y++) {
+            if (quer)
+                for (let q = 0; q < laufX.length; q += 3) {
+                    const n = mipStufe0(rgba, d0, sa, sr, sg, sb, y * w + laufX[q], y * w + laufX[q + 1], thr, roh0, blut);
+                    opak += n;
+                    cov0[laufX[q + 2]] += n;
+                }
+            else {
+                const n = mipStufe0(rgba, d0, sa, sr, sg, sb, y * w, y * w + w, thr, roh0, blut);
+                opak += n;
+                cov0[Math.min(V - 1, y / hA) | 0] += n;
             }
         }
         for (let v = 0; v < V; v++) cov0[v] /= wA * hA;
@@ -4473,22 +4657,15 @@
                 tr = new Float32Array(n),
                 tg = new Float32Array(n),
                 tb = new Float32Array(n);
-            for (let y = 0; y < nh; y++)
-                for (let x = 0; x < nw; x++) {
-                    const o = y * nw + x;
-                    for (let dy = 0; dy < 2; dy++)
-                        for (let dx = 0; dx < 2; dx++) {
-                            const s = (y * 2 + dy) * lw + x * 2 + dx;
-                            ta[o] += sa[s];
-                            tr[o] += sr[s];
-                            tg[o] += sg[s];
-                            tb[o] += sb[s];
-                        }
-                }
+            mipBox(sa, ta, lw, nw, nh);
+            mipBox(sr, tr, lw, nw, nh);
+            mipBox(sg, tg, lw, nw, nh);
+            mipBox(sb, tb, lw, nw, nh);
             const data = new Uint8Array(n * 4);
             const nA = nwA * nhA;
-            // Texel i der Ansicht v: übereinander zusammenhängend, nebeneinander zeilenweise je Zelle
-            const tex = quer ? (v, i) => ((i / nwA) | 0) * nw + v * nwA + (i % nwA) : (v, i) => v * nA + i;
+            // Texel i der Ansicht v (`ort`): übereinander zusammenhängend, nebeneinander zeilenweise je Zelle — je Ansicht EINMAL
+            // als Tafel gerechnet, jede Schleife der Stufe liest sie (bis w28-blatt-atlas-kalt eine Division und ein Rest je Ruf)
+            const ort = new Int32Array(nA);
             const schluessel = new Float64Array(nA),
                 sortiert = new Float64Array(nA),
                 dicht = new Float64Array(nA),
@@ -4497,34 +4674,53 @@
             let opakK = 0;
             for (let v = 0; v < V; v++) {
                 let positiv = 0;
+                if (quer) {
+                    for (let y = 0, i = 0; y < nhA; y++)
+                        for (let x = 0, o = y * nw + v * nwA; x < nwA; x++) ort[i++] = o++;
+                } else for (let i = 0; i < nA; i++) ort[i] = v * nA + i;
                 // DIE DECKUNG DES TEXELS (K20, 12.10.): der Box-Anteil c seines Stufe-0-Fußabdrucks, geglättet über die
                 // Nachbarschaft (`KARTEN_GESETZ.glaette` binomiale 3×3-Gänge je Stufe — zwei Texel der Stufe, das Büschel
                 // statt des Blatts, wo das Blatt unter wenige Pixel fällt). Die Wahl hält die Büschel zusammen: ein Texel
                 // im dichten Zweig gewinnt gegen einen vereinzelten, die Lücke zwischen zwei Blättern füllt sich. Der
                 // Gleichstand über einen Orts-Hash (bis 12.10.) säte Einzel-Texel quer über die Krone: das Korn der
                 // Mittelsicht, das unter dem ½-Pixel-Versatz flimmerte (gate:pflanzen-nah (Z)).
-                for (let i = 0; i < nA; i++) dicht[i] = ta[tex(v, i)] / fuss;
+                for (let i = 0; i < nA; i++) dicht[i] = ta[ort[i]] / fuss;
                 const gaenge = karteGlaetteGaenge(k);
+                // DER RAHMEN DER DECKUNG: außerhalb von ihm und seinem Rand ist jede der neun Summen 0 — jeder Gang rechnet
+                // nur ihn, um einen Texel je Gang gewachsen; `weich` trägt außerhalb die Nullen, die der Gang schriebe
+                let ya = nhA,
+                    yb = -1,
+                    xa = nwA,
+                    xb = -1;
+                for (let iy = 0, i = 0; iy < nhA; iy++)
+                    for (let ix = 0; ix < nwA; ix++, i++)
+                        if (dicht[i] !== 0) {
+                            if (iy < ya) ya = iy;
+                            yb = iy;
+                            if (ix < xa) xa = ix;
+                            if (ix > xb) xb = ix;
+                        }
+                weich.fill(0);
                 for (let gang = 0; gang < gaenge; gang++) {
-                    for (let i = 0; i < nA; i++) {
-                        const ix = i % nwA,
-                            iy = (i / nwA) | 0;
-                        let nb = 0;
-                        for (let dy = -1; dy <= 1; dy++)
-                            for (let dx = -1; dx <= 1; dx++) {
-                                const x = Math.min(nwA - 1, Math.max(0, ix + dx)),
-                                    y = Math.min(nhA - 1, Math.max(0, iy + dy));
-                                nb += dicht[y * nwA + x] * (dx ? 1 : 2) * (dy ? 1 : 2);
-                            }
-                        weich[i] = nb / 16;
-                    }
+                    const g = gang + 1;
+                    if (yb >= 0)
+                        mipGlaette(
+                            dicht,
+                            weich,
+                            nwA,
+                            nhA,
+                            Math.max(0, xa - g),
+                            Math.min(nwA, xb + 1 + g),
+                            Math.max(0, ya - g),
+                            Math.min(nhA, yb + 1 + g)
+                        );
                     dicht.set(weich);
                 }
                 // DER SAUM (`karteSaumSchluessel`): die Wahl jeder Stufe, Stamm unter dem Kronen-Fuß geglättet
-                const c = saum ? Float64Array.from({ length: nA }, (_, i) => ta[tex(v, i)] / fuss) : null;
+                const c = saum ? Float64Array.from({ length: nA }, (_, i) => ta[ort[i]] / fuss) : null;
                 if (saum) schluessel.set(karteSaumSchluessel(c, nwA, nhA, k, saum, dicht));
                 for (let i = 0; i < nA; i++) {
-                    const s = ta[tex(v, i)];
+                    const s = ta[ort[i]];
                     // wählbar: glatt jeder Texel mit Deckung in der Nachbarschaft (er trägt die Blut-Farbe), sonst nur mit
                     // eigener (die Karte trägt die Farbe ihrer Kinder); der Gleichstand über die eigene Deckung
                     if (!saum) schluessel[i] = glatt || s > 0 ? dicht[i] + (1e-6 * s) / fuss : 0;
@@ -4536,7 +4732,7 @@
                         KARTEN_GESETZ.lappen >> k >= KARTEN_GESETZ.minSeite &&
                         schluessel[i] > 0
                     ) {
-                        const o = tex(v, i);
+                        const o = ort[i];
                         schluessel[i] *= Math.pow(
                             2,
                             KARTEN_GESETZ.saum *
@@ -4555,7 +4751,7 @@
                 const band = saum
                     ? [tr, tg, tb, ta].map((q) =>
                           karteSaumBand(
-                              Float64Array.from({ length: nA }, (_, i) => q[tex(v, i)]),
+                              Float64Array.from({ length: nA }, (_, i) => q[ort[i]]),
                               nwA,
                               nhA,
                               saumSchritt(saum.seite)
@@ -4563,19 +4759,7 @@
                       )
                     : null;
                 const M = Math.min(positiv, Math.round(cov0[v] * nA));
-                if (blut)
-                    for (let i = 0; i < nA; i++) {
-                        const o = tex(v, i);
-                        if (ta[o] > 0) {
-                            data[o * 4] = linZuSrgb8(tr[o] / ta[o]);
-                            data[o * 4 + 1] = linZuSrgb8(tg[o] / ta[o]);
-                            data[o * 4 + 2] = linZuSrgb8(tb[o] / ta[o]);
-                        } else {
-                            data[o * 4] = blut[0];
-                            data[o * 4 + 1] = blut[1];
-                            data[o * 4 + 2] = blut[2];
-                        }
-                    }
+                if (blut) mipBlutFarbe(data, ort, nA, ta, tr, tg, tb, blut);
                 if (M <= 0) continue;
                 sortiert.set(schluessel);
                 sortiert.sort();
@@ -4595,13 +4779,12 @@
                 // alte Gesetz an der Buche, Stufe 1: +0,16 %)
                 let gleich = M;
                 for (let i = 0; i < nA; i++) if (schluessel[i] > grenze) gleich--;
+                if (glatt) {
+                    opakK += mipAlphaGlatt(data, ort, nA, schluessel, sigma, thr);
+                    continue;
+                }
                 for (let i = 0; i < nA; i++) {
-                    const o = tex(v, i);
-                    if (glatt) {
-                        if (schluessel[i] > 0) data[o * 4 + 3] = Math.min(255, Math.round(schluessel[i] * sigma * 255));
-                        if (data[o * 4 + 3] >= thr) opakK++;
-                        continue;
-                    }
+                    const o = ort[i];
                     if (schluessel[i] > 0 && (schluessel[i] > grenze || (schluessel[i] === grenze && gleich-- > 0))) {
                         const eigen = ta[o] > 0;
                         [tr, tg, tb].forEach(
@@ -4633,208 +4816,291 @@
         const bw = Math.ceil(w / 4),
             bh = Math.ceil(h / 4);
         const out = new Uint8Array(bw * bh * 8);
-        const pr = new Float64Array(16),
-            pg = new Float64Array(16),
-            pb = new Float64Array(16),
-            tr = new Uint8Array(16);
-        const pal = new Float64Array(12);
-        const idx = new Uint8Array(16),
-            best = new Uint8Array(16);
-        const q565 = (r, g, b) => {
-            const R = Math.max(0, Math.min(31, Math.round((r * 31) / 255))),
-                G = Math.max(0, Math.min(63, Math.round((g * 63) / 255))),
-                B = Math.max(0, Math.min(31, Math.round((b * 31) / 255)));
-            return (R << 11) | (G << 5) | B;
-        };
-        const ex = (c, s) => {
-            const R = (c >> 11) & 31,
-                G = (c >> 5) & 63,
-                B = c & 31;
-            s[0] = (R << 3) | (R >> 2);
-            s[1] = (G << 2) | (G >> 4);
-            s[2] = (B << 3) | (B >> 2);
-        };
-        const e0 = [0, 0, 0],
-            e1 = [0, 0, 0];
-        // Palette + Indizes zu (c0, c1) im gewählten Modus; Rückgabe der Fehler-Quadratsumme (opake Texel).
-        const bewerte = (c0, c1, drei) => {
-            ex(c0, e0);
-            ex(c1, e1);
-            for (let k = 0; k < 3; k++) {
-                pal[k] = e0[k];
-                pal[3 + k] = e1[k];
-                if (drei) {
-                    pal[6 + k] = Math.floor((e0[k] + e1[k]) / 2);
-                    pal[9 + k] = 1e9;
-                } else {
-                    pal[6 + k] = Math.floor((2 * e0[k] + e1[k]) / 3);
-                    pal[9 + k] = Math.floor((e0[k] + 2 * e1[k]) / 3);
-                }
-            }
-            let sse = 0;
-            for (let j = 0; j < 16; j++) {
-                if (tr[j]) {
-                    idx[j] = 3;
-                    continue;
-                }
-                let bi = 0,
-                    bd = Infinity;
-                for (let p = 0; p < (drei ? 3 : 4); p++) {
-                    const dr = pr[j] - pal[p * 3],
-                        dg = pg[j] - pal[p * 3 + 1],
-                        db = pb[j] - pal[p * 3 + 2];
-                    const d = dr * dr + dg * dg + db * db;
-                    if (d < bd) {
-                        bd = d;
-                        bi = p;
-                    }
-                }
-                idx[j] = bi;
-                sse += bd;
-            }
-            return sse;
-        };
         for (let by = 0; by < bh; by++)
-            for (let bx = 0; bx < bw; bx++) {
-                let nO = 0,
-                    nT = 0,
-                    mr = 0,
-                    mg = 0,
-                    mb = 0;
-                for (let j = 0; j < 16; j++) {
-                    const x = Math.min(w - 1, bx * 4 + (j & 3)),
-                        y = Math.min(h - 1, by * 4 + (j >> 2));
-                    const s = (y * w + x) * 4;
-                    tr[j] = rgba[s + 3] < 128 ? 1 : 0;
-                    pr[j] = rgba[s];
-                    pg[j] = rgba[s + 1];
-                    pb[j] = rgba[s + 2];
-                    if (tr[j]) nT++;
-                    else {
-                        nO++;
-                        mr += pr[j];
-                        mg += pg[j];
-                        mb += pb[j];
-                    }
-                }
-                const o = (by * bw + bx) * 8;
-                if (nO === 0) {
-                    // ganz transparent: 3-Farben-Modus, jeder Index 3
-                    out[o] = out[o + 1] = out[o + 2] = out[o + 3] = 0;
-                    out[o + 4] = out[o + 5] = out[o + 6] = out[o + 7] = 0xff;
-                    continue;
-                }
-                mr /= nO;
-                mg /= nO;
-                mb /= nO;
-                // Hauptachse (Kovarianz, Potenz-Iteration)
-                let c00 = 0,
-                    c01 = 0,
-                    c02 = 0,
-                    c11 = 0,
-                    c12 = 0,
-                    c22 = 0;
-                for (let j = 0; j < 16; j++) {
-                    if (tr[j]) continue;
-                    const dr = pr[j] - mr,
-                        dg = pg[j] - mg,
-                        db = pb[j] - mb;
-                    c00 += dr * dr;
-                    c01 += dr * dg;
-                    c02 += dr * db;
-                    c11 += dg * dg;
-                    c12 += dg * db;
-                    c22 += db * db;
-                }
-                let ax = 0.577,
-                    ay = 0.577,
-                    az = 0.577;
-                for (let it = 0; it < 8; it++) {
-                    const qx = c00 * ax + c01 * ay + c02 * az,
-                        qy = c01 * ax + c11 * ay + c12 * az,
-                        qz = c02 * ax + c12 * ay + c22 * az;
-                    const l = Math.sqrt(qx * qx + qy * qy + qz * qz);
-                    if (l < 1e-9) break;
-                    ax = qx / l;
-                    ay = qy / l;
-                    az = qz / l;
-                }
-                let tmin = Infinity,
-                    tmax = -Infinity;
-                for (let j = 0; j < 16; j++) {
-                    if (tr[j]) continue;
-                    const t = (pr[j] - mr) * ax + (pg[j] - mg) * ay + (pb[j] - mb) * az;
-                    if (t < tmin) tmin = t;
-                    if (t > tmax) tmax = t;
-                }
-                const drei = nT > 0;
-                // Modus-Ordnung: 4 Farben c0 > c1 · 3 Farben (Transparenz) c0 ≤ c1
-                let p = q565(mr + ax * tmax, mg + ay * tmax, mb + az * tmax),
-                    q = q565(mr + ax * tmin, mg + ay * tmin, mb + az * tmin);
-                let c0 = drei ? Math.min(p, q) : Math.max(p, q),
-                    c1 = drei ? Math.max(p, q) : Math.min(p, q);
-                let bestSse = bewerte(c0, c1, drei || c0 === c1);
-                best.set(idx);
-                let b0 = c0,
-                    b1 = c1;
-                // Kleinste Quadrate: Endpunkte zu den Indizes nachziehen (zwei Runden)
-                for (let it = 0; it < 2; it++) {
-                    const g2 = drei || b0 === b1 ? 0.5 : 2 / 3,
-                        g3 = drei || b0 === b1 ? 0 : 1 / 3;
-                    let aa = 0,
-                        bb = 0,
-                        ab = 0,
-                        arR = 0,
-                        arG = 0,
-                        arB = 0,
-                        brR = 0,
-                        brG = 0,
-                        brB = 0;
-                    for (let j = 0; j < 16; j++) {
-                        if (tr[j]) continue;
-                        const ix = best[j];
-                        const al = ix === 0 ? 1 : ix === 1 ? 0 : ix === 2 ? g2 : g3,
-                            be = 1 - al;
-                        aa += al * al;
-                        bb += be * be;
-                        ab += al * be;
-                        arR += al * pr[j];
-                        arG += al * pg[j];
-                        arB += al * pb[j];
-                        brR += be * pr[j];
-                        brG += be * pg[j];
-                        brB += be * pb[j];
-                    }
-                    const det = aa * bb - ab * ab;
-                    if (Math.abs(det) < 1e-9) break;
-                    p = q565((arR * bb - brR * ab) / det, (arG * bb - brG * ab) / det, (arB * bb - brB * ab) / det);
-                    q = q565((brR * aa - arR * ab) / det, (brG * aa - arG * ab) / det, (brB * aa - arB * ab) / det);
-                    c0 = drei ? Math.min(p, q) : Math.max(p, q);
-                    c1 = drei ? Math.max(p, q) : Math.min(p, q);
-                    const sse = bewerte(c0, c1, drei || c0 === c1);
-                    if (sse < bestSse) {
-                        bestSse = sse;
-                        best.set(idx);
-                        b0 = c0;
-                        b1 = c1;
-                    } else break;
-                }
-                // c0 == c1 ohne Transparenz: der 3-Farben-Modus trägt die eine Farbe (Index 0 überall)
-                out[o] = b0 & 0xff;
-                out[o + 1] = b0 >> 8;
-                out[o + 2] = b1 & 0xff;
-                out[o + 3] = b1 >> 8;
-                let bits = 0;
-                for (let j = 15; j >= 0; j--) bits = (bits << 2) | best[j];
-                out[o + 4] = bits & 0xff;
-                out[o + 5] = (bits >>> 8) & 0xff;
-                out[o + 6] = (bits >>> 16) & 0xff;
-                out[o + 7] = (bits >>> 24) & 0xff;
-            }
+            for (let bx = 0; bx < bw; bx++) bcFarbBlock(rgba, w, h, bx, by, out, (by * bw + bx) * 8, false);
         return out;
+    }
+    // DER EINE FARB-BLOCK (w28-blatt-atlas-kalt): der Farb-Block des 4×4 (bx, by) nach `out` ab `o` — BC1 ruft ihn je Block,
+    // BC3 mit `deckend` (jeder Texel opak gelesen; bis dahin kopierte bc3Kodiere das ganze Bild, setzte die Alpha auf 255,
+    // kodierte in ein eigenes Feld und trug jeden Block einzeln um). Die Felder des Blocks stehen EINMAL (bis dahin je Bild
+    // neu, die Helfer als Funktionen im Rumpf des Kodierers): der Block ist eine kleine Funktion, die nach wenigen Rufen
+    // optimiert läuft — der Kodierer als EINE Schleife über das Bild lief im Blatt-Atlas einmal und kalt.
+    // DER EINFARBIGE BLOCK ohne Transparenz geht den kurzen Weg: sein Mittel ist die Farbe selbst (16 gleiche Bytes, die
+    // Summe exakt), die Kovarianz null, die Potenz-Iteration bricht am Start, beide Endpunkte sind q565 der Farbe, jeder
+    // Index 0, und die kleinsten Quadrate brechen an det = 0 — dasselbe Ergebnis ohne die Rechnung (`out` ist frisch).
+    const BC_PR = new Float64Array(16),
+        BC_PG = new Float64Array(16),
+        BC_PB = new Float64Array(16),
+        BC_TR = new Uint8Array(16),
+        BC_IDX = new Uint8Array(16),
+        BC_BEST = new Uint8Array(16),
+        BC_E0 = [0, 0, 0],
+        BC_E1 = [0, 0, 0];
+    function bcQ565(r, g, b) {
+        const R = Math.max(0, Math.min(31, Math.round((r * 31) / 255))),
+            G = Math.max(0, Math.min(63, Math.round((g * 63) / 255))),
+            B = Math.max(0, Math.min(31, Math.round((b * 31) / 255)));
+        return (R << 11) | (G << 5) | B;
+    }
+    function bcEx(c, s) {
+        const R = (c >> 11) & 31,
+            G = (c >> 5) & 63,
+            B = c & 31;
+        s[0] = (R << 3) | (R >> 2);
+        s[1] = (G << 2) | (G >> 4);
+        s[2] = (B << 3) | (B >> 2);
+    }
+    // Palette + Indizes zu (c0, c1) im gewählten Modus; Rückgabe der Fehler-Quadratsumme (opake Texel).
+    function bcBewerte(c0, c1, drei) {
+        const pr = BC_PR,
+            pg = BC_PG,
+            pb = BC_PB,
+            tr = BC_TR,
+            idx = BC_IDX,
+            e0 = BC_E0,
+            e1 = BC_E1;
+        bcEx(c0, e0);
+        bcEx(c1, e1);
+        // die Palette: die zwei Endpunkte, dazu die Mitte (3 Farben) oder die zwei Drittel (4 Farben)
+        const r0 = e0[0],
+            g0 = e0[1],
+            b0 = e0[2],
+            r1 = e1[0],
+            g1 = e1[1],
+            b1 = e1[2];
+        const r2 = drei ? Math.floor((r0 + r1) / 2) : Math.floor((2 * r0 + r1) / 3),
+            g2 = drei ? Math.floor((g0 + g1) / 2) : Math.floor((2 * g0 + g1) / 3),
+            b2 = drei ? Math.floor((b0 + b1) / 2) : Math.floor((2 * b0 + b1) / 3),
+            r3 = drei ? 0 : Math.floor((r0 + 2 * r1) / 3),
+            g3 = drei ? 0 : Math.floor((g0 + 2 * g1) / 3),
+            b3 = drei ? 0 : Math.floor((b0 + 2 * b1) / 3);
+        let sse = 0;
+        for (let j = 0; j < 16; j++) {
+            if (tr[j]) {
+                idx[j] = 3;
+                continue;
+            }
+            // der nächste Paletten-Eintrag, der erste bei Gleichstand (die Folge 0, 1, 2[, 3])
+            const R = pr[j],
+                G = pg[j],
+                B = pb[j];
+            let dr = R - r0,
+                dg = G - g0,
+                db = B - b0;
+            let bi = 0,
+                bd = dr * dr + dg * dg + db * db;
+            dr = R - r1;
+            dg = G - g1;
+            db = B - b1;
+            let d = dr * dr + dg * dg + db * db;
+            if (d < bd) {
+                bd = d;
+                bi = 1;
+            }
+            dr = R - r2;
+            dg = G - g2;
+            db = B - b2;
+            d = dr * dr + dg * dg + db * db;
+            if (d < bd) {
+                bd = d;
+                bi = 2;
+            }
+            if (!drei) {
+                dr = R - r3;
+                dg = G - g3;
+                db = B - b3;
+                d = dr * dr + dg * dg + db * db;
+                if (d < bd) {
+                    bd = d;
+                    bi = 3;
+                }
+            }
+            idx[j] = bi;
+            sse += bd;
+        }
+        return sse;
+    }
+    function bcFarbBlock(rgba, w, h, bx, by, out, o, deckend) {
+        const pr = BC_PR,
+            pg = BC_PG,
+            pb = BC_PB,
+            tr = BC_TR,
+            idx = BC_IDX,
+            best = BC_BEST;
+        // der Block liegt ganz im Bild: seine Texel ohne Klemmen (die Klemme am Rand ist dieselbe Adresse)
+        const innen = bx * 4 + 3 < w && by * 4 + 3 < h,
+            s0 = (by * 4 * w + bx * 4) * 4;
+        if (innen) {
+            const r0 = rgba[s0],
+                g0 = rgba[s0 + 1],
+                b0 = rgba[s0 + 2];
+            let eine = true;
+            for (let jy = 0, z = s0; eine && jy < 4; jy++, z += w * 4)
+                for (let t = z; t < z + 16; t += 4)
+                    if (rgba[t] !== r0 || rgba[t + 1] !== g0 || rgba[t + 2] !== b0 || (!deckend && rgba[t + 3] < 128)) {
+                        eine = false;
+                        break;
+                    }
+            if (eine) {
+                const c = bcQ565(r0, g0, b0);
+                out[o] = out[o + 2] = c & 0xff;
+                out[o + 1] = out[o + 3] = c >> 8;
+                out[o + 4] = out[o + 5] = out[o + 6] = out[o + 7] = 0;
+                return;
+            }
+        }
+        let nO = 0,
+            nT = 0,
+            mr = 0,
+            mg = 0,
+            mb = 0;
+        for (let j = 0; j < 16; j++) {
+            const s = innen
+                ? s0 + ((j >> 2) * w + (j & 3)) * 4
+                : (Math.min(h - 1, by * 4 + (j >> 2)) * w + Math.min(w - 1, bx * 4 + (j & 3))) * 4;
+            tr[j] = !deckend && rgba[s + 3] < 128 ? 1 : 0;
+            pr[j] = rgba[s];
+            pg[j] = rgba[s + 1];
+            pb[j] = rgba[s + 2];
+            if (tr[j]) nT++;
+            else {
+                nO++;
+                mr += pr[j];
+                mg += pg[j];
+                mb += pb[j];
+            }
+        }
+        if (nO === 0) {
+            // ganz transparent: 3-Farben-Modus, jeder Index 3
+            out[o] = out[o + 1] = out[o + 2] = out[o + 3] = 0;
+            out[o + 4] = out[o + 5] = out[o + 6] = out[o + 7] = 0xff;
+            return;
+        }
+        mr /= nO;
+        mg /= nO;
+        mb /= nO;
+        // Hauptachse (Kovarianz, Potenz-Iteration)
+        let c00 = 0,
+            c01 = 0,
+            c02 = 0,
+            c11 = 0,
+            c12 = 0,
+            c22 = 0;
+        for (let j = 0; j < 16; j++) {
+            if (tr[j]) continue;
+            const dr = pr[j] - mr,
+                dg = pg[j] - mg,
+                db = pb[j] - mb;
+            c00 += dr * dr;
+            c01 += dr * dg;
+            c02 += dr * db;
+            c11 += dg * dg;
+            c12 += dg * db;
+            c22 += db * db;
+        }
+        let ax = 0.577,
+            ay = 0.577,
+            az = 0.577;
+        for (let it = 0; it < 8; it++) {
+            const qx = c00 * ax + c01 * ay + c02 * az,
+                qy = c01 * ax + c11 * ay + c12 * az,
+                qz = c02 * ax + c12 * ay + c22 * az;
+            const l = Math.sqrt(qx * qx + qy * qy + qz * qz);
+            if (l < 1e-9) break;
+            ax = qx / l;
+            ay = qy / l;
+            az = qz / l;
+        }
+        let tmin = Infinity,
+            tmax = -Infinity;
+        for (let j = 0; j < 16; j++) {
+            if (tr[j]) continue;
+            const t = (pr[j] - mr) * ax + (pg[j] - mg) * ay + (pb[j] - mb) * az;
+            if (t < tmin) tmin = t;
+            if (t > tmax) tmax = t;
+        }
+        const drei = nT > 0;
+        // Modus-Ordnung: 4 Farben c0 > c1 · 3 Farben (Transparenz) c0 ≤ c1
+        let p = bcQ565(mr + ax * tmax, mg + ay * tmax, mb + az * tmax),
+            q = bcQ565(mr + ax * tmin, mg + ay * tmin, mb + az * tmin);
+        let c0 = drei ? Math.min(p, q) : Math.max(p, q),
+            c1 = drei ? Math.max(p, q) : Math.min(p, q);
+        let bestSse = bcBewerte(c0, c1, drei || c0 === c1);
+        best.set(idx);
+        let b0 = c0,
+            b1 = c1;
+        // Kleinste Quadrate: Endpunkte zu den Indizes nachziehen (zwei Runden)
+        for (let it = 0; it < 2; it++) {
+            const g2 = drei || b0 === b1 ? 0.5 : 2 / 3,
+                g3 = drei || b0 === b1 ? 0 : 1 / 3;
+            let aa = 0,
+                bb = 0,
+                ab = 0,
+                arR = 0,
+                arG = 0,
+                arB = 0,
+                brR = 0,
+                brG = 0,
+                brB = 0;
+            for (let j = 0; j < 16; j++) {
+                if (tr[j]) continue;
+                const ix = best[j];
+                const al = ix === 0 ? 1 : ix === 1 ? 0 : ix === 2 ? g2 : g3,
+                    be = 1 - al;
+                aa += al * al;
+                bb += be * be;
+                ab += al * be;
+                arR += al * pr[j];
+                arG += al * pg[j];
+                arB += al * pb[j];
+                brR += be * pr[j];
+                brG += be * pg[j];
+                brB += be * pb[j];
+            }
+            const det = aa * bb - ab * ab;
+            if (Math.abs(det) < 1e-9) break;
+            p = bcQ565((arR * bb - brR * ab) / det, (arG * bb - brG * ab) / det, (arB * bb - brB * ab) / det);
+            q = bcQ565((brR * aa - arR * ab) / det, (brG * aa - arG * ab) / det, (brB * aa - arB * ab) / det);
+            c0 = drei ? Math.min(p, q) : Math.max(p, q);
+            c1 = drei ? Math.max(p, q) : Math.min(p, q);
+            const sse = bcBewerte(c0, c1, drei || c0 === c1);
+            if (sse < bestSse) {
+                bestSse = sse;
+                best.set(idx);
+                b0 = c0;
+                b1 = c1;
+            } else break;
+        }
+        // c0 == c1 ohne Transparenz: der 3-Farben-Modus trägt die eine Farbe (Index 0 überall)
+        out[o] = b0 & 0xff;
+        out[o + 1] = b0 >> 8;
+        out[o + 2] = b1 & 0xff;
+        out[o + 3] = b1 >> 8;
+        let bits = 0;
+        for (let j = 15; j >= 0; j--) bits = (bits << 2) | best[j];
+        out[o + 4] = bits & 0xff;
+        out[o + 5] = (bits >>> 8) & 0xff;
+        out[o + 6] = (bits >>> 16) & 0xff;
+        out[o + 7] = (bits >>> 24) & 0xff;
     }
 
     // BC4 eines Kanals (8-Werte-Modus r0 > r1: Minimum und Maximum des Blocks als Endpunkte) — der Alpha-Block der BC3-Fracht.
+    // Die Stufen einer Runde und die besten bisher — EIN Paar Felder für jeden Block (bis w28-blatt-atlas-kalt zwei neue
+    // Felder und eine neue Funktion je Block, 175 000-mal je Atlas). `bc4Weise` weist die Stufen zu (a, b) zu und gibt die
+    // Fehler-Quadratsumme zurück.
+    const BC4_STUFE = new Uint8Array(16),
+        BC4_BESTE = new Uint8Array(16);
+    function bc4Weise(werte, a, b) {
+        let sse = 0;
+        for (let j = 0; j < 16; j++) {
+            let s = 0;
+            if (a > b) s = Math.max(0, Math.min(7, Math.round(((a - werte[j]) * 7) / (a - b))));
+            BC4_STUFE[j] = s;
+            const d = werte[j] - Math.round(((7 - s) * a + s * b) / 7);
+            sse += d * d;
+        }
+        return sse;
+    }
     function bc4Block(werte, out, o) {
         let mn = 255,
             mx = 0;
@@ -4842,24 +5108,20 @@
             if (werte[j] < mn) mn = werte[j];
             if (werte[j] > mx) mx = werte[j];
         }
+        // EIN Wert im ganzen Block: beide Endpunkte sind er, jede Stufe 0 (die Zuweisung trifft ihn ohne Fehler, keine Runde
+        // läuft) — der leere und der volle Block des Blatt-Atlas
+        if (mn === mx) {
+            out[o] = out[o + 1] = mx;
+            out[o + 2] = out[o + 3] = out[o + 4] = out[o + 5] = out[o + 6] = out[o + 7] = 0;
+            return;
+        }
         // Endpunkte: Start Maximum/Minimum, dann je Runde die Stufen zuweisen und (r0, r1) per kleinster Quadrate
         // nachziehen — das Min/Max-Paar allein ließ die Normale im Mittel 2,2° (p95 8°) kippen.
         let r0 = mx,
             r1 = mn;
-        const stufe = new Uint8Array(16),
-            beste = new Uint8Array(16);
-        const weise = (a, b) => {
-            let sse = 0;
-            for (let j = 0; j < 16; j++) {
-                let s = 0;
-                if (a > b) s = Math.max(0, Math.min(7, Math.round(((a - werte[j]) * 7) / (a - b))));
-                stufe[j] = s;
-                const d = werte[j] - Math.round(((7 - s) * a + s * b) / 7);
-                sse += d * d;
-            }
-            return sse;
-        };
-        let besteSse = weise(r0, r1);
+        const stufe = BC4_STUFE,
+            beste = BC4_BESTE;
+        let besteSse = bc4Weise(werte, r0, r1);
         beste.set(stufe);
         for (let it = 0; it < 3 && besteSse > 0 && mx > mn; it++) {
             let aa = 0,
@@ -4881,7 +5143,7 @@
             const a = Math.max(0, Math.min(255, Math.round((av * bb - bv * ab) / det))),
                 b = Math.max(0, Math.min(255, Math.round((bv * aa - av * ab) / det)));
             if (!(a > b)) break;
-            const sse = weise(a, b);
+            const sse = bc4Weise(werte, a, b);
             if (sse >= besteSse) break;
             besteSse = sse;
             beste.set(stufe);
@@ -4914,21 +5176,36 @@
     function bc3Kodiere(rgba, w, h) {
         const bw = Math.ceil(w / 4),
             bh = Math.ceil(h / 4);
-        const deckend = new Uint8Array(rgba);
-        for (let i = 3; i < deckend.length; i += 4) deckend[i] = 255;
-        const farbe = bc1Kodiere(deckend, w, h);
         const out = new Uint8Array(bw * bh * 16);
         const a = new Uint8Array(16);
+        // DER LEERE BLOCK (w28-blatt-atlas-kalt): 16 Texel 0,0,0,0 — die Farbe q565(0) und die Alpha 0 sind die Nullen, die
+        // `out` schon trägt; gelesen als 16 Worte (wo das Bild auf vier Bytes ausgerichtet liegt), statt ihn zu kodieren. Im
+        // vormultiplizierten Blatt-Atlas ist das die Mehrzahl der Blöcke.
+        const u =
+            rgba.buffer && rgba.BYTES_PER_ELEMENT === 1 && rgba.byteOffset % 4 === 0 && rgba.length >= w * h * 4
+                ? new Uint32Array(rgba.buffer, rgba.byteOffset, rgba.length >> 2)
+                : null;
         for (let by = 0; by < bh; by++)
             for (let bx = 0; bx < bw; bx++) {
-                for (let j = 0; j < 16; j++) {
-                    const x = Math.min(w - 1, bx * 4 + (j & 3)),
-                        y = Math.min(h - 1, by * 4 + (j >> 2));
-                    a[j] = rgba[(y * w + x) * 4 + 3];
+                const innen = bx * 4 + 3 < w && by * 4 + 3 < h,
+                    t0 = by * 4 * w + bx * 4;
+                if (u && innen) {
+                    let leer = true;
+                    for (let jy = 0, z = t0; leer && jy < 4; jy++, z += w)
+                        if (u[z] | u[z + 1] | u[z + 2] | u[z + 3]) leer = false;
+                    if (leer) continue;
                 }
-                const b = by * bw + bx;
-                bc4Block(a, out, b * 16);
-                out.set(farbe.subarray(b * 8, b * 8 + 8), b * 16 + 8);
+                const o = (by * bw + bx) * 16,
+                    s0 = t0 * 4 + 3;
+                bcFarbBlock(rgba, w, h, bx, by, out, o + 8, true);
+                for (let j = 0; j < 16; j++)
+                    a[j] =
+                        rgba[
+                            innen
+                                ? s0 + ((j >> 2) * w + (j & 3)) * 4
+                                : (Math.min(h - 1, by * 4 + (j >> 2)) * w + Math.min(w - 1, bx * 4 + (j & 3))) * 4 + 3
+                        ];
+                bc4Block(a, out, o);
             }
         return out;
     }
