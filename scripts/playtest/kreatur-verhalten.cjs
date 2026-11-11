@@ -1906,8 +1906,9 @@ async function checkBandKreaturKosten({ page, check }) {
                     z.skins++;
                     if (n.frustumCulled === false) z.ungecullt++;
                     if (!n.boundingSphere) z.ohneKugel++;
-                    // (K) DIE KNOCHEN-TAFEL (`_knochenTafel`): ihr Puffer steht in der Klasse, kein Gewicht liest einen freien Platz
-                    if (n.skeleton.boneMatrices.length % (16 * A.KNOCHEN_KLASSE) || gs.attributes.skinIndex.array.some((b, i) => sw.array[i] && b >= n.skeleton.bones.length)) z.tafel++;
+                    // (K) DAS KNOCHEN-RASTER (`_ofenSkelett`): die Reihe jeder Ofen-Haut steht in der EINEN Klasse, kein Gewicht liest einen Füllplatz
+                    const echt = new Set(n.skeleton.bones).size;
+                    if (n.skeleton.bones.length % A.KNOCHEN_RASTER || gs.attributes.skinIndex.array.some((b, i) => sw.array[i] && b >= echt)) z.tafel++;
                     return;
                 }
                 const g = n.geometry;
@@ -1928,10 +1929,10 @@ async function checkBandKreaturKosten({ page, check }) {
         o.rMensch = mfM?.nah ? starrZensus(mfM.nah) : null;
         o.checks.rWolfStarr = !!o.rWolf && o.rWolf.unverschmolzen === 0 && o.rWolf.skins >= 2;
         o.checks.rMenschStarr = !!o.rMensch && o.rMensch.unverschmolzen === 0;
-        const kl = A.KNOCHEN_KLASSE;
-        A.KNOCHEN_KLASSE = 7; // der Täter der Tafel: eine fremde Klasse
+        const kl = A.KNOCHEN_RASTER;
+        A.KNOCHEN_RASTER = 7; // der Täter des Rasters: eine fremde Klasse
         o.checks.rKnochenTafel = o.rWolf?.tafel + o.rMensch?.tafel === 0 && starrZensus(wolfT.root).tafel > 0;
-        A.KNOCHEN_KLASSE = kl;
+        A.KNOCHEN_RASTER = kl;
         o.checks.rKugel =
             !!o.rWolf &&
             !!o.rMensch &&

@@ -226,12 +226,17 @@ class AnazhRealm_stoff_material {
 
     // CPU-Seite der EINEN Wind-Richtung: der Kern (phyto-core `windRichtung`, ±~41° Mäander um die Grundrichtung der Saat,
     // eigener Strom Γ5). Reine Funktion (Saat, t) → Peers/Replays sehen denselben Wind. Liefert {x, z} (Einheitsvektor in XZ,
-    // wohin der Wind weht).
+    // wohin der Wind weht). EIN Wert je Uhr und Saat (w27-takt-gc): der Rauch fragt den Wind je Teilchen, hunderte Male im Bild
+    // zur selben Bild-Uhr — dasselbe Objekt, kein Neubau je Frage (die Leser schreiben es nie).
     _windDirAt(tSec) {
-        return globalThis.__phytoCore.windRichtung(
-            (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed",
-            tSec
-        );
+        const saat = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+        const M = this._windDirMerk || (this._windDirMerk = { t: NaN, saat: null, d: null });
+        if (M.t !== tSec || M.saat !== saat) {
+            M.d = globalThis.__phytoCore.windRichtung(saat, tSec);
+            M.t = tSec;
+            M.saat = saat;
+        }
+        return M.d;
     }
 
     // DER EINE WIND AM ORT (wetter.K5) — jeder Wind-Leser der Welt liest ihn (Gras und Krone über die Uniforms, Wasser,
@@ -240,15 +245,24 @@ class AnazhRealm_stoff_material {
     // −40 %, Tal-Düse bis +20 %, an der Höhe des Gesetzes ohne Detail) und die wandernde Böe am Ort (WIND_BOE, dieselben Zahlen
     // wie der Shader). `staerke` = U · Form (die Böen-Amplitude am Ort ist staerke · WIND_BOE.amp), `ms` der Wind in m/s
     // (staerke · Böe · WIND_FELD.sturmMS). t: die Wind-Uhr — das Bild liest die Bild-Uhr (A9), der Sim-Schritt seine Uhr
-    // (`state._simZeit`); der Wind ist eine reine Funktion von Saat, Wetter, Ort und t.
-    _windAt(x, z, t) {
+    // (`state._simZeit`); der Wind ist eine reine Funktion von Saat, Wetter, Ort und t. `aus`: ein Leser, der je Bild hunderte
+    // Male fragt und das Ergebnis nicht hält (der Rauch je Teilchen), gibt sein Objekt mit — es wird gefüllt statt neu gebaut.
+    _windAt(x, z, t, aus) {
         const tt = Number.isFinite(t) ? t : 0;
         const d = this._windDirAt(tt);
         const B = AnazhRealm.WIND_BOE;
         const boe = Math.sin(tt * B.omega - (x * d.x + z * d.z) * B.k) * B.amp + B.mitte;
         const form = this._windForm(x, z, d);
         const staerke = this._weatherFieldFor(this.state.weather).wind * this._windWob(tt) * form;
-        return { x: d.x, z: d.z, staerke, boe, form, ms: staerke * boe * globalThis.__phytoCore.WIND_FELD.sturmMS };
+        const ms = staerke * boe * globalThis.__phytoCore.WIND_FELD.sturmMS;
+        if (!aus) return { x: d.x, z: d.z, staerke, boe, form, ms };
+        aus.x = d.x;
+        aus.z = d.z;
+        aus.staerke = staerke;
+        aus.boe = boe;
+        aus.form = form;
+        aus.ms = ms;
+        return aus;
     }
     // DAS WIEGEN AM ORT auf der CPU (haar.K3): derselbe Versatz wie `_windSwayOffset` (WIND_WIEGEN: längs des Winds
     // sin(t·takt + 2π·ν) · laengs, quer cos(t·takt·quer + 2π·fract(256·ν))), die Weite Stärke × WEATHER_WIND_AMP × Böe des EINEN
@@ -269,17 +283,18 @@ class AnazhRealm_stoff_material {
         return 1 + 0.18 * (Math.sin(t * 0.19) * 0.6 + Math.sin(t * 0.47 + 1.3) * 0.3 + Math.sin(t * 1.13 + 3.7) * 0.1);
     }
     // Die Form des Geländes je Zelle von 16 m und 1/64 Drehung, gemerkt je Stand des Gesetzes (Saat, Erbgut, Erdbau — ein
-    // neuer Ort formt den Wind neu); der Merker gehört der Instanz.
+    // neuer Ort formt den Wind neu); der Merker gehört der Instanz. Die Frage baut nichts (w27-takt-gc): der Stand Feld für Feld
+    // verglichen, der Schlüssel eine Zahl (Zelle ±2^19 je Achse, je 16 m: ±8 400 km) — vorher je Frage ein Array, ein Rückruf
+    // und eine Zeichenkette, hunderte Male je Bild (der Rauch).
     _windForm(x, z, d) {
         const L = this._gelaende();
-        const stand = [L.seed, L.erbgut, L.erdbau];
         let M = Object.hasOwn(this, "_windFormMerk") ? this._windFormMerk : null;
-        if (!M || M.stand.some((s, i) => s !== stand[i]) || M.karte.size > 4096)
-            M = this._windFormMerk = { stand, karte: new Map() };
+        if (!M || M.seed !== L.seed || M.erbgut !== L.erbgut || M.erdbau !== L.erdbau || M.karte.size > 4096)
+            M = this._windFormMerk = { seed: L.seed, erbgut: L.erbgut, erdbau: L.erdbau, karte: new Map() };
         const ci = Math.floor(x / 16);
         const cj = Math.floor(z / 16);
         const di = (Math.round((Math.atan2(d.x, d.z) / (2 * Math.PI)) * 64) + 64) % 64;
-        const k = ci + "," + cj + "," + di;
+        const k = (ci * 1048576 + cj) * 64 + di;
         let f = M.karte.get(k);
         if (f === undefined) {
             const a = (di / 64) * 2 * Math.PI;

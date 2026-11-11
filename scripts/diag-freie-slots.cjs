@@ -31,10 +31,9 @@ const { statikServer, hauptLauf, nullWelt, wandEnde, stammLib, SELBSTTEST } = re
 
 
 // ── Q: die Quelle über den EINEN Absenz-Helfer (`stammLib.fehlt`, kommentarfrei): keine `<x>.count =`-Zuweisung, deren
-//      Empfänger keine bekannte Nicht-Instanz-Zahl ist (Inventar-Slots, drawRange, `knochen`: die Plätze der Knochen-Tafel am
-//      Skinning-Knoten, `_knochenPufferText` — z382 fiel an ihr); `mesh.count =` NUR im Chokepoint
+//      Empfänger keine bekannte Nicht-Instanz-Zahl ist (Inventar-Slots, drawRange); `mesh.count =` NUR im Chokepoint
 //      `_instanzZahl`. `q` die Wandlung des Vor-Stands, leer = der Arbeitsbaum.
-const FREMD_COUNT = /(?<![\w$.[\]])(?!(?:slot|targetSlot|inv\[existingIdx\]|z\.drawRange|mesh|knochen)\.count\s*=)[A-Za-z_$][\w$.[\]]*\.count\s*=(?!=)/;
+const FREMD_COUNT = /(?<![\w$.[\]])(?!(?:slot|targetSlot|inv\[existingIdx\]|z\.drawRange|mesh)\.count\s*=)[A-Za-z_$][\w$.[\]]*\.count\s*=(?!=)/;
 function quellBefunde(q) {
     const b = [];
     const nein = (g, re, was) => stammLib.fehlt(g, re, q) || b.push(`${stammLib.fehlt.wo}: ${was}`);
