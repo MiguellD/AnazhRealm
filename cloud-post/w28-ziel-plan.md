@@ -1,5 +1,9 @@
 ABGABE 58acfa5e6cc75feef9f1906b0664ecb0f5c3c6c3
 
+## 11.11. w28-ziel-plan (Cloud) — die Bilder der Probe 58acfa5e angesehen (Radeon 890M, beide GRÜN)
+- `58acfa5e-stadt-0.4.png` (9:36 Uhr): vorn rechts stehen vier, fünf Leute beisammen an einem Bau mit Rolle (dem Rundbau mit grünem Dach), hinten drei vor einem Haus und zwei im Grün dazwischen — Gruppen an Orten, nicht je einer vor seiner Tür. `58acfa5e-dorf-0.4.png`: sechs bis acht Leute in der Gasse, eine Gruppe an einer Tür, zwei im Vordergrund.
+- Ehrlich: ein Standbild zeigt die Gruppe, nicht das Ziel; welcher Ort zu wem gehört, zählt die Probe `zielplan` (Zahlen unten), und ein Bild desselben Orts an main habe ich nicht (die Probe fährt nur am Zweig). Die Metropole selbst bleibt ohne Bild, bis `bild:stadt-voll` an ihrem Messort trägt (FUND unten).
+
 ## 11.11. 01:41 — GPU-PROBE 58acfa5e auf radeon-890m: GRÜN in 261 s (bild:dorf@0.4 GRÜN 80 s auf radeon-890m · bild:stadt@0.4 GRÜN 112 s auf radeon-890m) → probe-post/w28-ziel-plan/58acfa5e.md
 
 ## 11.11. w28-ziel-plan (Cloud) — neuer Kopf 58acfa5e, derselbe Baum wie cff10373 und 4b086556
