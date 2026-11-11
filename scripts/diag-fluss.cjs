@@ -236,7 +236,7 @@ async function verhalten(schaleSrc) {
                             w.postMessage(msg);
                             setTimeout(() => res(null), 8000);
                         });
-                    return { w, frag };
+                    return { w, frag, warte };
                 };
                 const aus = {};
                 const bau = (w, reqId, presetId, mehr) => w.frag(Object.assign({ type: "build-asset", reqId, presetId, seed: 1, lod: 0 }, mehr)); // prettier-ignore
@@ -269,6 +269,18 @@ async function verhalten(schaleSrc) {
                 const q4 = await frage(C);
                 aus.nagel = q4?.saisons.length === 1 && q4.saisons.every((s) => s === "summer");
                 C.w.terminate();
+                // V15 DIE PLATTE FÄLLT LAUT (w28-weltbild-kalt): eine Quelle, die der Faden nicht holt (der Kern b unter /fehlt.js,
+                // 404), meldet die Schale EINMAL beim Namen (`platte-fiel`), und der Faden baut weiter im Studio — nie still
+                // ohne Platte (mit einem Gesetzbuch des Spielers fiel so die Platte jedes Boots, ohne dass ein Lauf es sagte).
+                const L = neu(5, true, "/fehlt.js");
+                const laut = await new Promise((res) => {
+                    L.warte.set("platte-fiel", res);
+                    setTimeout(() => res(null), 4000);
+                });
+                const l1 = await bau(L, "l1", "x", { platte: "x|1|0" });
+                aus.platteLaut = !!laut && String(laut.grund).includes("fehlt.js") && !!l1 && !l1.platte && l1.meshes.length === 2;
+                aus.platteLautZeile = laut ? String(laut.grund).slice(0, 90) : "keine Meldung";
+                L.w.terminate();
                 // V8 DER VORRAT: ein Vorrats-Auftrag baut einmal, schreibt die Platte und antwortet LEER; der nächste
                 // Abruf desselben Körpers kommt von der Platte, ein zweiter Vorrat baut nicht.
                 const gt = (vorrat) => ({ seed: 7, platte: "gt|7|0", vorrat });
@@ -640,6 +652,7 @@ const VERHALTEN = [
     ["V8b Vorrat ohne Platte: leere Antwort, kein Bau", "vorratOhnePlatte"],
     ["V14 die Platte hält keinen Faden: ein Werk-Faden baut zwei Körper, während ein anderer 1,5 s baut", "faden"],
     ["V9 ein Kern-Wechsel baut nur seine Leser: neuer Kern b → kb neu, ka · ihre Karte · das Dorf von der Platte", "kernWechsel"],
+    ["V15 die Platte fällt laut: eine Quelle, die der Faden nicht holt, meldet die Schale beim Namen, der Bau geht weiter", "platteLaut"],
 ];
 
 hauptLauf(async () => {
@@ -696,6 +709,9 @@ hauptLauf(async () => {
         );
         const v3 = await verhalten(ohneNagel);
         check("Selbst-Test 9: Schale ohne Saison-Nagel → V7 rot", ohneNagel !== schale && v3.nagel === false);
+        const stumm = bruch(schale, ".catch((e) => faellt((e && e.message) || e))", ".catch(() => null)");
+        const v25 = await verhalten(stumm);
+        check("Selbst-Test 25: die Schale verschluckt den Fall der Platte → V15 rot", stumm !== schale && v25.platteLaut === false, v25.platteLautZeile);
         // Das Welt-Urteil feuert auf Bruch-Daten (die Sonde selbst misst nur im Haupt-Lauf — ein Boot kostet Minuten).
         const gut = {
             G: { eiche: 2, fichte: 2, birke: 2, tanne: 2, weide: 1, mammut: 1, strauch: 1, "*": 16 },
@@ -811,7 +827,7 @@ hauptLauf(async () => {
         check(
             n,
             v[k] === true,
-            k === "faden" && v.fadenMs ? `Werk ${v.fadenMs.werk} ms · lang ${v.fadenMs.lang} ms` : k === "kernWechsel" ? v.kernWechselZeile : ""
+            k === "faden" && v.fadenMs ? `Werk ${v.fadenMs.werk} ms · lang ${v.fadenMs.lang} ms` : k === "kernWechsel" ? v.kernWechselZeile : k === "platteLaut" ? v.platteLautZeile : ""
         );
     console.log("=== FLUSS-WAND — Welt-Sonde (Null-Renderer, echter Studio-Worker, Boot + Saison-Wechsel) ===");
     const w = await welt();
