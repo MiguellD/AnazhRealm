@@ -196,8 +196,26 @@ const probeSek = (st, geraet) => {
 // darüber liegt (die eigenen Grün-Läufe der Karte), bleibt. Die Tafel (probeSek), der Plan der Fahrt (fahrtSumme, der Anteil) und der
 // Abdruck bleiben Byte für Byte: mit dem Faktor im Plan stünde die Fahrt der GTX bei 7 394 s in 5 Teilen über dem Gesetz von 3 — die
 // Probe, die länger braucht, nimmt ihre Zeit an der Leine, und was über die Fahrt reicht, misst die Fortsetzung
+// DIE LEINE LERNT AUS DEN ZAHLEN (11.11., Koordinator): der Grund-Deckel an der Leine ist nie kleiner als der Deckel, den die Reihe der
+// Station auf DIESER Karte verlangt (eichTafel → deckelAus: Grün-p90, ohne Grün-Reihe das p90 der Urteile, der jüngste Riss verdoppelt,
+// „hängt“ fällt zurück). Bis dahin stand diese Zahl nur in `eichtafel` und kam nie an: `--schreibe` fiel an der Wand der Teile (Σ Deckel
+// Radeon 6 114 s, GTX 5 978 s über 3 × 1 740 s), die Tafel blieb vom 09.11., und die volle Fahrt gibt keiner Probe mehr als ihren
+// Grund (Σ Bedarf > Fahrt: der Anteil ist der Grund-Deckel) — ankunft.K4#1 riss 7 von 7 Läufen je Karte, die Profi-Band-Proben standen
+// mit Urteilen nach 82,7 s (p90) am Deckel 90. Wie der Takt-Faktor: nur an der Leine — Tafel, Plan der Fahrt und Abdruck bleiben Byte
+// für Byte (kein Urteil wird alt, weil eine Not-Aus-Uhr wuchs). deckelGelernt: je Karte { id: s }, einmal je Prozess aus den
+// Mess-Dateien; der Selbsttest stellt es leer.
+let deckelGelernt = null;
+const gelerntVon = (geraet) => {
+    if (!deckelGelernt) deckelGelernt = {};
+    if (!deckelGelernt[geraet]) {
+        const je = (deckelGelernt[geraet] = {});
+        if (DECKEL_KARTEN.includes(geraet))
+            for (const z of eichTafel(ladeGeprueft().stationen, ladeMessungen(), geraet).zeilen) if (z.neu != null && z.neu > z.sek) for (const id of z.ids) je[id] = z.neu;
+    }
+    return deckelGelernt[geraet];
+};
 const grundDeckel = (st, geraet) => {
-    const eigen = probeSek(st, geraet), f = taktVon(geraet);
+    const eigen = Math.max(probeSek(st, geraet), (geraet && gelerntVon(geraet)[schluessel(st)]) || 0), f = taktVon(geraet);
     if (!(f > 1)) return eigen;
     return Math.max(eigen, Math.min(Math.floor((FAHRT_MAX_S - SITZUNG_BOOT_S) / teileVon(st)), Math.ceil(+(probeSek(st, "radeon") * f).toFixed(6))));
 };
@@ -2241,11 +2259,18 @@ async function sitzungStarten(o) {
         kind.stderr.on("data", lies);
         lies("");
         kind.on("error", (e) => melde({ ok: false, grund: "Halter: " + e.message }));
-        kind.on("exit", (code) => setTimeout(() => {
-            const f = (/^SITZUNG FEHLER (.*)$/m.exec(out) || [])[1];
-            melde({ ok: false, grund: "die Welt der Sitzung startet nicht" + (f ? ": " + f : " (Halter Exit " + code + "): " + out.trim().split(/\r?\n/).slice(-2).join(" | ").slice(0, 300)) });
-        }, 300));
+        kind.on("exit", (code) => setTimeout(() => melde(halterEnde(out, code)), 300));
     });
+}
+// DAS ENDE DES HALTERS VOR „SITZUNG bereit“: nennt er es (`SITZUNG FEHLER …`: die Werkbank, das Spiel am SHA startet nicht), ist es ROT
+// beim Namen — ein Spiel, das nicht startet, ist ein Urteil. STIRBT ER OHNE WORT, sagt sein Exit-Code nichts über das Spiel: UNGEMESSEN
+// (11.11., Radeon ab2f2eed 05:47: der Halter der Fortsetzung endete mit Exit 3221226505 = 0xC0000409, ein Absturz des node-Prozesses
+// ohne Zeile — 71 Stationen standen als ROT in der Mess-Datei, die Buchung hätte 215 → 188 gebucht; der Dienst weigerte sich und
+// buchte den Tag über nichts). `--offen` und die Fortsetzung messen sie neu.
+function halterEnde(out, code) {
+    const f = (/^SITZUNG FEHLER (.*)$/m.exec(out) || [])[1];
+    if (f) return { ok: false, grund: "die Welt der Sitzung startet nicht: " + f };
+    return { ok: false, ungemessen: true, grund: "die Welt der Sitzung startet nicht (Halter Exit " + code + " ohne Wort — ungemessen): " + out.trim().split(/\r?\n/).slice(-2).join(" | ").slice(0, 300) };
 }
 // legt die Stop-Datei, wartet auf das Ende des Halters, sonst fällt sein Baum; dann löst das Schloss
 async function sitzungStoppen(s, stop) {
@@ -2772,15 +2797,37 @@ function laufSekunden(ms, geraet, id) {
 }
 // der Deckel aus der Reihe: { p90, n, hoch, zensiert, neu } oder null (ohne Lauf); vorgabe = der Deckel ohne Grün-Reihe, sek = der Deckel
 // heute (DIE RUHE), teile = die Teil-Proben (der Deckel gilt je Teil)
+// DER DECKEL OHNE GRÜN-REIHE LERNT AUCH (11.11., Koordinator; die Mess-Dateien beider Karten): (a) eine Station, die ROT misst, bekommt
+// nie drei Grün-Läufe — ihr Deckel stand am langsamsten Urteil + 6 s und riss an jeder Schwankung (Radeon lod.K1#1: Urteile nach
+// 74–86 s am Deckel 90, drei Risse am 10./11.11.; lod.K5#1 30–40 s am Deckel 43; haar.K2#1, leib.K1#1, studios.K4#1 ebenso): ohne
+// Grün-Reihe trägt das p90 ihrer jüngsten GEMESSENEN Läufe denselben Faktor (der langsamste je bleibt der Boden — der schnelle
+// Fehlschlag drückt nie nach unten). (b) eine Station, die an jedem Deckel reißt, blieb für immer ungemessen: „ein Lauf an der Leine
+// trägt nie, die Leine gibt ihm in jeder Fahrt mit Rest mehr“ — die volle Fahrt hat nie Rest (Σ Bedarf > Fahrt: der Anteil ist der
+// Grund-Deckel). ankunft.K4#1 riss so 7 von 7 Läufen je Karte, leib.K4#2 an 10 · 39 · 84 · 90 · 139 s. Jetzt verdoppelt der jüngste
+// Riss den Deckel (seine Untergrenze × EICH_FAKTOR + Vorlauf), bis ein Urteil fällt — oder die Untergrenze ZENSIERT_HAENGT_S erreicht:
+// dann hängt die Probe (GTX gelaende.K2#2 lief 1 759 s mit Lebenszeichen), ihr Deckel fällt auf Vorgabe und Boden zurück, `haengt`
+// nennt es. Nur die Risse seit dem jüngsten Urteil zählen (die führenden der Reihe).
+const ZENSIERT_HAENGT_S = 300;
 function deckelAus(reihe, vorgabe, sek, teile = 1) {
     if (!reihe.length) return null;
+    const p90Von = (xs) => (xs.length >= DECKEL_GRUEN_MIN ? xs[Math.ceil(DECKEL_P * xs.length) - 1] : null);
     const gruen = reihe.filter((x) => x.gruen).slice(0, DECKEL_REIHE_N).map((x) => x.s).sort((a, b) => a - b);
-    const p90 = gruen.length >= DECKEL_GRUEN_MIN ? gruen[Math.ceil(DECKEL_P * gruen.length) - 1] : null;
+    const p90 = p90Von(gruen);
     const hoch = Math.max(0, ...reihe.filter((x) => (p90 == null ? x.gemessen : x.gruen)).map((x) => x.s));
     const boden = hoch > 0 ? Math.ceil(+hoch.toFixed(6)) + FRIST_VORLAUF_S : 0;
-    const aus = (f) => Math.ceil(+(f * p90).toFixed(6)) + FRIST_VORLAUF_S;
-    const roh = p90 == null ? Math.max(vorgabe, sek, boden) :Math.max(boden, sek >= aus(EICH_FAKTOR_MIN) && sek <= aus(EICH_FAKTOR) ? sek : aus(EICH_FAKTOR));
-    return { p90, n: gruen.length, hoch, zensiert: reihe.filter((x) => x.zensiert).length, neu: Math.min(Math.floor((FAHRT_MAX_S - SITZUNG_BOOT_S) / teile), roh) };
+    const aus = (f, p = p90) => Math.ceil(+(f * p).toFixed(6)) + FRIST_VORLAUF_S;
+    const ruhe = (p) => (sek >= aus(EICH_FAKTOR_MIN, p) && sek <= aus(EICH_FAKTOR, p) ? sek : aus(EICH_FAKTOR, p));
+    // (a) ohne Grün-Reihe: das p90 der jüngsten gemessenen Läufe
+    const p90m = p90 == null ? p90Von(reihe.filter((x) => x.gemessen).slice(0, DECKEL_REIHE_N).map((x) => x.s).sort((a, b) => a - b)) : null;
+    let roh = p90 == null ? Math.max(vorgabe, sek, boden, p90m == null ? 0 : ruhe(p90m)) : Math.max(boden, ruhe(p90));
+    // (b) die führenden Risse der Reihe (seit dem jüngsten Urteil)
+    const vorn = reihe.findIndex((x) => x.gemessen), risse = (vorn < 0 ? reihe : reihe.slice(0, vorn)).filter((x) => x.zensiert);
+    const unten = Math.max(0, ...risse.map((x) => x.s)), haengt = unten >= ZENSIERT_HAENGT_S;
+    const ausRiss = !haengt && unten > 0 && aus(EICH_FAKTOR, unten) > roh; // der Riss trägt den Deckel (sonst trägt ihn schon die Reihe oder die Vorgabe)
+    if (haengt) roh = Math.max(vorgabe, boden);
+    else if (ausRiss) roh = aus(EICH_FAKTOR, unten);
+    return { p90, n: gruen.length, hoch, zensiert: reihe.filter((x) => x.zensiert).length, ...(p90m != null ? { p90m } : {}), ...(unten > 0 ? { unten } : {}), ...(ausRiss ? { ausRiss: true } : {}), ...(haengt ? { haengt: true } : {}),
+        neu: Math.min(Math.floor((FAHRT_MAX_S - SITZUNG_BOOT_S) / teile), roh) };
 }
 // DIE TAFEL (`eichtafel`, der Leser der Zahlen): je Lauf der Sitzung sein Deckel heute, das p90 seiner Grün-Reihe und der Deckel aus ihr; Σ
 // heute ↔ aus den Zahlen und die Teile der Fahrt. ms = die Mess-Dateien (ladeMessungen)
@@ -2792,10 +2839,13 @@ function eichTafel(stationen, ms, geraet) {
     const ort = new Map(((letzte && letzte.sitzung.strom.ortImDeckel) || []).map((e) => [e.probe, e.m]));
     const zeilen = reihe.map((g) => {
         const sek = probeSek(g[0], geraet), vorgabe = Math.max(PROBE_DECKEL_S, sekRoh(g[0]));
-        const d = deckelAus(laufSekunden(ms, geraet, schluessel(g[0])), vorgabe, sek, teileVon(g[0]));
+        const d = deckelAus(g.flatMap((st) => laufSekunden(ms, geraet, schluessel(st))).sort((a, b) => b.zeit.localeCompare(a.zeit)), vorgabe, sek, teileVon(g[0]));
         const neu = d ? d.neu : null;
-        const urteil = !d ? "ohne Zahl" : d.p90 == null ? d.n + " Grün-Läufe (unter " + DECKEL_GRUEN_MIN + ") — die Vorgabe " + Math.max(vorgabe, sek) + " s" + (d.hoch ? ", nie unter dem Urteil " + d.hoch + " s" : "")
-            : neu === sek ? "trägt" : neu > sek ? "Deckel zu knapp" : "Deckel zu weit";
+        const urteil = !d ? "ohne Zahl"
+            : d.haengt ? "HÄNGT: riss noch bei " + d.unten + " s (≥ " + ZENSIERT_HAENGT_S + " s) — der Deckel fällt zurück"
+            : d.p90 == null ? d.n + " Grün-Läufe (unter " + DECKEL_GRUEN_MIN + ") — die Vorgabe " + Math.max(vorgabe, sek) + " s" + (d.hoch ? ", nie unter dem Urteil " + d.hoch + " s" : "") +
+                (d.p90m != null ? ", p90 gemessen " + d.p90m + " s" : "") + (d.ausRiss ? ", der jüngste Riss bei " + d.unten + " s verdoppelt" : "")
+            : (neu === sek ? "trägt" : neu > sek ? "Deckel zu knapp" : "Deckel zu weit") + (d.ausRiss ? " · der jüngste Riss bei " + d.unten + " s verdoppelt" : "");
         return { ids: g.map(schluessel), sek, s: d ? d.p90 : null, n: d ? d.n : 0, hoch: d ? d.hoch : null, zensiert: d ? d.zensiert : 0, neu, urteil,
             ortM: ort.get(schluessel(g[0])) || null, probeTeile: teileVon(g[0]) };
     });
@@ -2895,6 +2945,11 @@ async function fahreSitzung(gruppen0, ctx, melde) {
         return kopf;
     }
     console.log("  SITZUNG " + ctx.geraet + " · die Welt steht nach " + s.bootS + " s (Schloss nach " + s.warten + " min) · " + gruppen.length + " Proben · Welt :" + (ctx.port + 20000));
+    // DIE LEINE LERNT (grundDeckel): die Proben dieser Fahrt, deren Grund-Deckel aus ihrer Reihe über dem der Tafel steht — beim Namen
+    {
+        const gl = gruppen.map((g) => [schluessel(g[0]), probeSek(g[0], ctx.geraet), gelerntVon(ctx.geraet)[schluessel(g[0])] || 0]).filter((x) => x[2] > x[1]);
+        if (gl.length) console.log("  SITZUNG die Leine lernt aus den Zahlen: " + gl.length + " Proben über dem Deckel der Tafel — " + gl.map((x) => x[0] + " " + x[1] + " → " + x[2] + " s").join(" · "));
+    }
     // DIE UHR DER FAHRT ab dem Schloss (der Boot zählt mit, das Warten nie): reißt sie FAHRT_MAX_S (ctx.fahrtMaxS nur im Selbsttest),
     // endet die Sitzung — die laufende Probe fällt am Rest, jede folgende ist UNGEMESSEN beim Namen
     const fahrtMaxS = ctx.fahrtMaxS || FAHRT_MAX_S;
@@ -3592,6 +3647,45 @@ function eintragen(m, id, e) {
     m.je[id] = e;
     if (m.ungemessen) delete m.ungemessen[id];
     if (m.ungemessen && !Object.keys(m.ungemessen).length) delete m.ungemessen;
+}
+// WAS EIN ABGEBROCHENER LAUF GEMESSEN HAT, BLEIBT (`behalte`, 11.11., Koordinator): der Dienst der Radeon beendet die Messung, sobald
+// ein CI-Job die Karte nimmt, und verwarf bis dahin die GANZE Mess-Datei — am 11.11. dreimal (06:55 · 12:07 · 12:41), jedes Mal mit
+// fertig gemessenen Stationen (12:41: 14), denn die Züge lassen der Karte nur Fenster von 15–20 min und die volle Fahrt braucht mehr:
+// die Radeon buchte den ganzen Tag nichts. Jede Station steht nach ihrem Urteil in der Datei (melde); sauber ist, was VOR dem Job
+// endete. messungKappen: jeder Eintrag, dessen Lauf (zeit + s) nach `bisMs` endete, weicht dem Eintrag der Datei davor (`alt`, der
+// Stand im Archiv) oder fällt; Rückgabe die Ids, die dieser Lauf neu trägt (behalten), und die gekappten (verworfen).
+function messungKappen(m, alt, bisMs) {
+    const ende = (e) => Date.parse(e.zeit || "") + 1000 * (e.s > 0 ? e.s : (e.minuten || 0) * 60);
+    const altVon = (id) => (alt && alt.sha === m.sha && ((alt.je && alt.je[id]) || (alt.ungemessen && alt.ungemessen[id]))) || null;
+    const behalten = [], verworfen = [];
+    for (const id of [...Object.keys(m.je || {}), ...Object.keys(m.ungemessen || {})]) {
+        const e = (m.je && m.je[id]) || m.ungemessen[id], a = altVon(id);
+        if (a && JSON.stringify(a) === JSON.stringify(e)) continue; // dieser Lauf rührte ihn nicht an
+        if (ende(e) <= bisMs) { behalten.push(id); continue; } // NaN (ohne Zeit) ist nie sauber
+        verworfen.push(id);
+        if (m.je) delete m.je[id];
+        if (m.ungemessen) delete m.ungemessen[id];
+        if (a) (a.ungemessen ? (m.ungemessen = m.ungemessen || {}) : m.je)[id] = a;
+    }
+    if (m.ungemessen && !Object.keys(m.ungemessen).length) delete m.ungemessen;
+    return { m, behalten, verworfen };
+}
+// behalte --sha <sha> --geraet <g> --bis <ISO>: Exit 0 mit behaltenen Stationen, 3 ohne (die Datei steht dann wie im Archiv)
+function behalteCli(o) {
+    const sha = voll(spielRepo(), o.sha), datei = messDatei(sha, o.geraet), bis = Date.parse(o.bis || "");
+    if (!Number.isFinite(bis)) throw new Error("--bis <ISO-Zeit>: bis wann der Lauf allein auf der Karte war");
+    if (!fs.existsSync(datei)) { console.log("BEHALTEN 0 — keine " + path.relative(DIR, datei)); process.exitCode = 3; return; }
+    const rel = path.relative(KOORD, datei).split(path.sep).join("/");
+    const z = spawnSync("git", ["show", "HEAD:" + rel], { cwd: KOORD, encoding: "utf8", maxBuffer: 256 << 20 });
+    const alt = z.status === 0 ? JSON.parse(z.stdout) : null;
+    const r = messungKappen(JSON.parse(fs.readFileSync(datei, "utf8")), alt, bis);
+    const gruen = r.behalten.filter((id) => r.m.je && r.m.je[id] && r.m.je[id].gruen === true).length;
+    if (r.behalten.length) fs.writeFileSync(datei, JSON.stringify(r.m, null, 1) + "\n");
+    else if (alt) fs.writeFileSync(datei, z.stdout);
+    else fs.rmSync(datei, { force: true });
+    console.log("BEHALTEN " + r.behalten.length + " Station(en), " + gruen + " GRÜN (endeten vor " + new Date(bis).toISOString() + ")" +
+        (r.verworfen.length ? " · verworfen " + r.verworfen.length + ": " + r.verworfen.join(" ") : ""));
+    process.exitCode = r.behalten.length ? 0 : 3;
 }
 // DIE ZEILEN, die der Läufer zug.cjs (artifacts/profiband/werkzeug, Fortschritt nach zug/fortschritt-radeon.txt) liest: Start
 // `Punkte-Maschine: <n> Station(en) in `, Station `  GRÜN|ROT  <id> · … · Exit <c> · <min> min[ (Zwilling von <id>)]` — ein neues
@@ -4582,6 +4676,7 @@ async function selbsttest(o = {}) {
     // (1) die echten Stationen gegen die Karte
     const echt = ladeGeprueft();
     deckelTafel = {}; // die echte Deckel-Tafel prüft FORMAT (ladeGeprueft); die erfundenen Stationen danach fahren ohne sie
+    deckelGelernt = { radeon: {}, gtx: {}, headless: {} }; // ebenso ohne die gelernten Deckel der echten Mess-Dateien (grundDeckel)
     pruef("FORMAT echte Stationen gegen src/gN.js", echt.fehler.length === 0 && echt.stationen.length > 0,
         echt.stationen.length + " Stationen, " + echt.fehlt.length + " fehlt, " + echt.fehler.length + " Fehler" + (echt.fehler.length ? ": " + echt.fehler.join(" | ") : ""));
     // (1d) DER ABDRUCK TRÄGT, WAS DIE MESSUNG ERZEUGT (das Gesetz der Fremd-Last, Koordinator 10.11.: „nie, wie die Maschine ihr Ergebnis
@@ -4619,6 +4714,27 @@ async function selbsttest(o = {}) {
         pruef("SPERRE pid + Start: die neu vergebene Nummer ist verwaist (die alte Regel hielte sie), der lebende Halter und die Frage ohne Antwort halten, der tote fällt",
             Number.isFinite(start) && Math.abs(Date.now() - process.uptime() * 1000 - start) < 5000 && neuVergeben === true && alteRegel && lebend === false && tot === true && unlesbar === false,
             JSON.stringify({ start, gegenUptimeMs: Math.round(Date.now() - process.uptime() * 1000 - start), neuVergeben, lebend, tot, unlesbar }));
+    }
+    // (1k) WAS EIN ABGEBROCHENER LAUF GEMESSEN HAT, BLEIBT (messungKappen): die Station, die vor dem CI-Job endete, bleibt; die danach
+    // endete, weicht ihrem Eintrag im Archiv (oder fällt, wo es keinen gibt); was der Lauf nicht anrührte, bleibt Byte für Byte; ein
+    // Eintrag ohne Zeit ist nie sauber. Die Mutante „alles behalten“ (bis = ∞) trüge die Station neben dem Job
+    {
+        const t0 = Date.parse("2026-11-11T12:30:00.000Z"), iso = (s) => new Date(t0 + s * 1000).toISOString();
+        const alt = { sha: "x", je: { "a.K1#1": { gruen: true, zeit: iso(-9000), s: 20 }, "a.K3#1": { gruen: true, zeit: iso(-9000), s: 20 } }, ungemessen: { "a.K2#1": { ungemessen: true, grund: "alt", zeit: iso(-9000), s: 5 } } };
+        const lauf = () => ({ sha: "x", je: { "a.K1#1": { gruen: false, zeit: iso(0), s: 30 }, "a.K2#1": { gruen: true, zeit: iso(40), s: 30 }, "a.K3#1": alt.je["a.K3#1"], "a.K4#1": { gruen: true, zeit: iso(60), s: 50 }, "a.K5#1": { gruen: true, s: 1 } } });
+        const r = messungKappen(lauf(), alt, t0 + 75000), mut = messungKappen(lauf(), alt, Infinity);
+        pruef("BEHALTE ein abgebrochener Lauf: vor dem Job gemessen bleibt (auch ROT), danach weicht dem Archiv oder fällt, Unberührtes bleibt, ohne Zeit nie sauber (Mutante: alles behalten)",
+            r.behalten.join() === "a.K1#1,a.K2#1" && r.verworfen.join() === "a.K4#1,a.K5#1" && r.m.je["a.K1#1"].gruen === false && r.m.je["a.K2#1"].gruen === true && !r.m.ungemessen &&
+            r.m.je["a.K3#1"] === alt.je["a.K3#1"] && !r.m.je["a.K4#1"] && mut.behalten.includes("a.K4#1") &&
+            messungKappen(lauf(), alt, t0 + 20000).m.ungemessen["a.K2#1"].grund === "alt",
+            JSON.stringify({ behalten: r.behalten, verworfen: r.verworfen, mutante: mut.behalten }));
+    }
+    // (1h) DAS ENDE DES HALTERS (halterEnde): das genannte Ende ist ROT beim Namen, der Tod ohne Wort UNGEMESSEN beim Exit-Code
+    {
+        const he = [halterEnde("x\nSITZUNG FEHLER die Werkbank startet nicht (Exit 1): y\n", 1), halterEnde("", 3221226505), halterEnde("node: letzte Zeile\n", 3)];
+        pruef("HALTER-ENDE: `SITZUNG FEHLER …` ist ROT beim Namen; der Halter, der ohne Wort stirbt (Exit 3221226505), ist UNGEMESSEN beim Exit-Code mit seiner letzten Zeile",
+            he[0].ok === false && !he[0].ungemessen && he[0].grund === "die Welt der Sitzung startet nicht: die Werkbank startet nicht (Exit 1): y" && he[1].ungemessen === true &&
+            /Halter Exit 3221226505 ohne Wort/.test(he[1].grund) && he[2].ungemessen === true && /node: letzte Zeile$/.test(he[2].grund), JSON.stringify(he));
     }
     // (1a) DIE PROBEN: jede Station urteilt ihre Roh-Ausgaben (die Mutanten der Soll-Tafel ROT), eine falsche Probe beim Namen
     {
@@ -6395,6 +6511,24 @@ async function selbsttest(o = {}) {
             deckelAus([...Array.from({ length: 10 }, () => rr(10, true)), rr(80, true)], PROBE_DECKEL_S, 10), deckelAus([rr(30, true), rr(2, false)], PROBE_DECKEL_S, 10)];
         pruef("DECKEL (b) aus der Grün-Reihe: [2 ROT, 2 ROT, 41, 44, 48 GRÜN] → 102 s (alt 10 s) · nie unter dem höchsten Grün (80 s → 86, nie 26) · unter 3 Grün-Läufen die Vorgabe 45 s",
             db[0].neu >= 102 && db[0].p90 === 48 && db[1].neu === 86 && db[1].p90 === 10 && db[2].neu === PROBE_DECKEL_S && db[2].p90 === null, JSON.stringify(db));
+        // (c) OHNE GRÜN-REIHE (11.11.): drei ROT-Urteile 74 · 86 · 86 s am Deckel 90 → ⌈2 × 86⌉ + 6 = 178 s (alt 92: das Urteil + 6, es riss an
+        // jeder Schwankung); ein Deckel 120 in der Ruhe (101–178) bleibt. (d) DER RISS VERDOPPELT: zwei Risse bei 90 s ohne Urteil → 186 s;
+        // ein Riss VOR dem jüngsten Urteil zählt nie. (e) HÄNGT: riss noch bei 378 s (≥ ZENSIERT_HAENGT_S) → zurück auf die Vorgabe
+        const zz = (s) => ({ s, gruen: false, gemessen: false, zensiert: true, zeit: "", sha: "x" });
+        const dc = [deckelAus([rr(86, false), rr(86, false), rr(74, false)], 90, 90), deckelAus([rr(86, false), rr(86, false), rr(74, false)], 90, 120),
+            deckelAus([zz(90), zz(90)], 90, 90), deckelAus([rr(40, false), zz(90)], 90, 90), deckelAus([zz(378), zz(186), zz(90)], 90, 378)];
+        pruef("DECKEL (c–e) ohne Grün-Reihe: drei ROT-Urteile bis 86 s → 178 s (alt 92), in der Ruhe bleibt 120 · der jüngste Riss verdoppelt (90 → 186), ein Riss vor dem Urteil zählt nie · riss noch bei 378 s: HÄNGT, zurück auf 90",
+            dc[0].neu === 178 && dc[0].p90m === 86 && dc[1].neu === 120 && dc[2].neu === 186 && dc[2].unten === 90 && dc[2].ausRiss === true && !dc[0].ausRiss && dc[3].neu === 90 && !dc[3].unten && dc[4].neu === 90 && dc[4].haengt === true, JSON.stringify(dc));
+        // DIE LEINE LERNT (grundDeckel): der gelernte Deckel der Karte hebt NUR den Grund an der Leine — Tafel (probeSek), Abdruck und die
+        // andere Karte bleiben Byte für Byte; ohne gelernte Zahl der Deckel der Tafel
+        {
+            const stL = { ...S("l.K1", 1, { befehl: ["node", "l"], sek: 10 }, lies), geraet: ["radeon", "gtx"] }, ab0 = abdruck(stL, h, "radeon"), leer = deckelGelernt;
+            deckelGelernt = { radeon: { "l.K1#1": 37 }, gtx: {}, headless: {} };
+            const gl = [grundDeckel(stL, "radeon"), probeSek(stL, "radeon"), abdruck(stL, h, "radeon") === ab0, probeSek(stL, "gtx")];
+            deckelGelernt = leer;
+            pruef("LEINE LERNT: der gelernte Deckel (37 s) hebt den Grund an der Leine der Karte; Tafel 10 s und Abdruck bleiben, ohne gelernte Zahl der Deckel der Tafel",
+                gl[0] === 37 && gl[1] === 10 && gl[2] === true && gl[3] === 10 && grundDeckel(stL, "radeon") === 10, JSON.stringify(gl));
+        }
         // DIE TAFEL (eichTafel, der Leser der Zahlen) aus den Mess-Dateien JE KARTE: a die Mutante (b) auf der Radeon, ihre 300 s der GTX zählen
         // nie; b ein Grün-Lauf → die Vorgabe; c nur an der Frist gefallen → die Vorgabe (zensiert trägt nie); d ohne Lauf; e trägt (die Ruhe);
         // f zu weit; g nie unter dem höchsten Grün; h in 2 Teilen höchstens ein halber Teil der Fahrt je Teil; Zwillinge EINE Zeile.
@@ -6798,6 +6932,7 @@ if (require.main === module) {
         else if (verb === "gtx-nutzen") gtxNutzenCli(o);
         else if (verb === "beruehrt") beruehrtCli(o);
         else if (verb === "eichtafel") eichtafelCli(o);
+        else if (verb === "behalte") behalteCli(o);
         else if (verb === "plan") planCli(o);
         else if (verb === "gruppen") for (const g of zwillingsGruppen(ladeGeprueft().stationen, o.geraet, o.nur)) console.log(g.join(","));
         else if (verb === "liste") {
@@ -6824,7 +6959,7 @@ if (require.main === module) {
         } else if (verb === "selbsttest") process.exitCode = await selbsttest(o);
         else if (verb === "fremdlast") process.exitCode = await fremdlastCli(o);
         else {
-            console.log("Verben: run --sha <sha> --geraet radeon|gtx|headless [--nur id,id] [--offen] [--eich] [--trocken] [--bahnen 3] [--port-basis 7700] [--farm <name>] · gruppen --geraet <g> [--nur id,id] · scheiben --sha <sha> --geraet headless [--jobs 12] [--offen|--nur …] · vereine --sha <voll> --geraet headless --farm <name> --teile <dir> [--scheiben <json>] [--beginn <s>] · beruehrt --basis <sha> --kopf <sha> [--json] · buchen --kopf <sha> [--trocken] · liste [--kopf <sha>] · eichtafel --geraet radeon|gtx [--sha a,b] [--schreibe] · selbsttest [--ohne 3c] · fremdlast [--sek 60] [--takt 2000]");
+            console.log("Verben: run --sha <sha> --geraet radeon|gtx|headless [--nur id,id] [--offen] [--eich] [--trocken] [--bahnen 3] [--port-basis 7700] [--farm <name>] · gruppen --geraet <g> [--nur id,id] · scheiben --sha <sha> --geraet headless [--jobs 12] [--offen|--nur …] · vereine --sha <voll> --geraet headless --farm <name> --teile <dir> [--scheiben <json>] [--beginn <s>] · beruehrt --basis <sha> --kopf <sha> [--json] · buchen --kopf <sha> [--trocken] · liste [--kopf <sha>] · eichtafel --geraet radeon|gtx [--sha a,b] [--schreibe] · behalte --sha <sha> --geraet <g> --bis <ISO> · selbsttest [--ohne 3c] · fremdlast [--sek 60] [--takt 2000]");
             process.exitCode = 2;
         }
     })().catch((e) => {
