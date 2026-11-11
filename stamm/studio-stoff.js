@@ -297,7 +297,18 @@ class AnazhRealm_studio_stoff {
         const _suF =
             kind === "foliage" || kind === "foliageTex" || kind === "grass" ? this._ensureSeasonUniforms() : null;
         const _toent = kind === "grass" || jahr === true;
-        const laubFarbe0 = _toent && _suF && _suF.uSeasonMul ? vcol.mul(_suF.uSeasonMul) : vcol;
+        // DIE STEHENDE ECKE TÖNT NIE (w28-nadel-laub): die Krone der Nadel trägt den Stoff des Laubs mit der stehenden Ecke
+        // (`JAHR_STEHT`, `_foundryBuildMesh`) — sie trägt den Ton als 1 (`select`: exakt uSeasonMul oder 1, kein Mischen), jede
+        // andere Ecke eines Jahres-Stoffs tönt wie bisher (die Regel des Stoffs: dessen Ecken Laub oder Blüte tragen)
+        const _tonJeEcke =
+            jahr === true && kind !== "grass" && _suF && _suF.uSeasonMul
+                ? TSL.select(
+                      TSL.vertexStage(TSL.attribute("aType", "float")).greaterThan(AnazhRealm.JAHR_STEHT + 0.5),
+                      _suF.uSeasonMul,
+                      TSL.vec3(1)
+                  )
+                : null;
+        const laubFarbe0 = _toent && _suF && _suF.uSeasonMul ? vcol.mul(_tonJeEcke || _suF.uSeasonMul) : vcol;
         // DIE BLATT-UNTERSEITE (phyto-core BLATT_UNTERSEITE, 05.10.): die gesehene Fläche nach unten gewandt → die hellere,
         // mattere Unterseite (`_laubUnterseite`, K68-N1: die Fläche, nie die Licht-Normale). Laub und Blüte, nie Gras.
         const laubFarbe =

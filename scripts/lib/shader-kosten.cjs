@@ -56,16 +56,11 @@ const LEICHT =
 // EINE Abtastung in einer Schleife (`schleifeMax` 1: die Himmels-Tafel des Grat-Himmels, drei Durchläufe im Zweig): der
 // Luftschatten las die Horizont-Karte in einer zweiten, achtmal je Fragment JEDES Stoffs — GTX 1060, Mess-Wiese Ego 34,3 ms
 // gegen 26,9 an den Ecken (w28-horizont-gtx, `_luftEnsure`); am Kopf 4e2df19b zählt die Linse 2 und ist ROT.
-// Seit w28-baum-programm laufen die fünf Punkte des Kaskaden-Filters als Schleife (`_schattenFilter`: je Kaskade der Vergleich,
-// in der ersten dazu die Suche des Werfers) — dieselben 20 Zugriffe je Fragment wie ausgeschrieben, die Zählung sieht sie je
-// Durchlauf: 1 (Grat-Himmel) + 3 + 1 = 5 (`schleifeMax` 5). Jede WEITERE Schleife mit einem Zugriff bricht das Budget wie zuvor.
-// (Am Kopf 3308689f reißt das Budget schon ohne sie: 22 Proben > 12 und 4 781 Ops > 2 400 — die Zahlen des Bodens wuchsen über
-// die Decke, gemeldet im FUND-REGISTER; die Schleifen senken die Ops auf 4 026.)
 const STOFFE = Object.freeze({
     boden: Object.freeze({
         zustand: "voxelChunkMaterial",
         budget: Object.freeze({
-            schleifeMax: 5,
+            schleifeMax: 1,
             rauschenMax: 2,
             ladungenMax: 90,
             probenMax: 12,

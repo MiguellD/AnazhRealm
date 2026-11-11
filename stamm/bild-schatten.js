@@ -1038,12 +1038,6 @@ class AnazhRealm_bild_schatten {
     // Schirm, und die ruhende Welt glitt beim Gehen darunter durch — jeder Schritt gab dem Pixel der Krone eine andere Drehung. Die
     // Unterseite trägt es ganz: ihr direktes Licht ist der Durchlass × Schatten (`_laubLichtModell`), im Halbschatten der Blätter
     // über ihr. Ohne zeitliche Auflösung steht die Phase (Holz kienspan wirft ohnehin keinen Schatten).
-    // DIE FÜNF PUNKTE SIND EINE SCHLEIFE (w28-baum-programm): Suche und Vergleich laufen je über `T.Loop(5)` — dieselbe Rechnung
-    // in derselben Reihenfolge (die Summe beginnt bei 0, 0 + c₀ = c₀), nur nicht ausgeschrieben. Der Filter steht in JEDEM
-    // beleuchteten Programm (drei Kaskaden, die erste mit der Suche): ausgeschrieben trug er 20 Abgriffe in den Text, und den
-    // Text zahlt jedes Programm vor dem ersten Bild in der EINEN Schlange des GPU-Prozesses. Gemessen an 3308689f (GTX 1050, je
-    // Fragment-Text allein übersetzt, drei Durchgänge, der kleinste): −6,0 KB je Programm, die zwölf Standard-Programme
-    // Σ 9,76 → 9,24 s. Leser des Radius und der Tiefe bleiben Variablen VOR der Schleife (`toVar`, in der Fn auf dem Stapel).
     _schattenFilter(i) {
         const T = THREE.TSL;
         const K = AnazhRealm.SCHATTEN_KASKADE;
@@ -1064,11 +1058,10 @@ class AnazhRealm_bild_schatten {
                     .sub(K.luftM)
                     .max(0)
                     .mul(K.sonneTan * 0.5)
-                    .min(sucheM)
-                    .toVar();
+                    .min(sucheM);
                 const summe = T.float(0).toVar();
                 const zahl = T.float(0).toVar();
-                T.Loop(5, ({ i: k }) => {
+                for (let k = 0; k < 5; k++) {
                     const d = T.textureLoad(
                         depthTexture,
                         vogel(k, T.vec2(kegel).div(box)).clamp(0, 1).mul(karte).min(karte.sub(1))
@@ -1076,7 +1069,7 @@ class AnazhRealm_bild_schatten {
                     const wirft = umgekehrt ? d.greaterThan(z) : d.lessThan(z);
                     summe.addAssign(T.select(wirft, d, 0));
                     zahl.addAssign(T.select(wirft, 1, 0));
-                });
+                }
                 const abstand = z
                     .sub(summe.div(zahl.max(1)))
                     .abs()
@@ -1089,11 +1082,8 @@ class AnazhRealm_bild_schatten {
                     .sub(T.vec2(K.rampeTexel ** 2).div(karte.mul(karte)))
                     .sqrt();
             }
-            const radius = r.toVar();
-            const s = T.float(0).toVar();
-            T.Loop(5, ({ i: k }) => {
-                s.addAssign(T.texture(depthTexture, vogel(k, radius)).compare(z));
-            });
+            let s = T.texture(depthTexture, vogel(0, r)).compare(z);
+            for (let k = 1; k < 5; k++) s = s.add(T.texture(depthTexture, vogel(k, r)).compare(z));
             return s.mul(0.2);
         });
     }

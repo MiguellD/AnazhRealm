@@ -2401,13 +2401,15 @@ class AnazhRealm_stoff_material {
     // dieselbe Rechnung in derselben Reihenfolge (die Summe beginnt bei 0, 0 + t₀ = t₀), nur nicht ausgeschrieben. Der Pool
     // steht in JEDEM beleuchteten Programm: vier ausgeschriebene Zweige trugen ~13 KB in jeden Fragment-Text, und den Text zahlt
     // jedes Programm vor dem ersten Bild in der EINEN Schlange des GPU-Prozesses. Gemessen an 3308689f (GTX 1050, je Fragment-Text
-    // allein übersetzt, drei Durchgänge, der kleinste; mit den Schleifen des Dach-Pools und des Kaskaden-Filters): −11,0 KB je
-    // Programm, die zwölf Standard-Programme Σ 9,78 → 8,84 s. VOR der Schleife steht, was jeder Platz liest und nur EINMAL entsteht
-    // (in der Fn auf dem Stapel, `toVar`): die Lage und die Normale des Blicks (r184 baut eine Variable dort, wo sie zuerst gebaut
-    // wird — in der Schleife liefe die Normale des Stoffs je Platz neu) und der Faktor des Wurfs. Die Werte des Platzes wählt der
-    // Zähler über eine Kette von `select` (`_jePlatz`, dieselben Uniforms, EIN Schreiber `_leuchtTakt`) — als Reihe im Speicher
-    // des Fragments (`array(...).toVar()`, der Zähler als Index) verdoppelte die Schleife die GPU-Zeit je Bild (gpu-bank GTX 1050
-    // an der Wiese 12,3 → 23,9 ms), als Uniform-Reihe (`uniformArray`) +0,7–1,0 ms GPU und +0,45 ms CPU, als Kette +0,3–0,6 ms.
+    // allein übersetzt, drei Durchgänge, der kleinste; mit der Schleife des Dach-Pools): −5,0 KB je Programm, die zwölf
+    // Standard-Programme Σ 9,49 → 8,97 s, die GPU-Zeit je Bild gleich (gpu-bank an der Wiese 12,05–12,48 ↔ 12,22–12,35 ms). VOR der
+    // Schleife steht, was jeder Platz liest und nur EINMAL entsteht (in der Fn auf dem Stapel, `toVar`): die Lage und die Normale des
+    // Blicks (r184 baut eine Variable dort, wo sie zuerst gebaut wird — in der Schleife liefe die Normale des Stoffs je Platz neu)
+    // und der Faktor des Wurfs. Die Werte des Platzes wählt der Zähler über eine Kette von `select` (`_jePlatz`, dieselben Uniforms,
+    // EIN Schreiber `_leuchtTakt`) — als Reihe im Speicher des Fragments (`array(...).toVar()`, der Zähler als Index) verdoppelte die
+    // Schleife die GPU-Zeit je Bild (12,3 → 23,9 ms), als Uniform-Reihe (`uniformArray`) kostete sie +0,7–1,0 ms GPU und +0,45 ms
+    // CPU. NICHT als Schleife: die fünf Punkte des Kaskaden-Filters (`_schattenFilter`) — eine Schleife mit Abtastung kostete
+    // +0,35–0,47 ms GPU je Bild (der Treiber überlappt die Abgriffe nicht mehr) für −0,6 s Übersetzung; der Pool trägt keine.
     // Die Schleife lebt in einer Fn ohne Layout: nur in ihrem Bau hat `Loop` einen Stapel.
     _lichtPoolTerm(Te, atmo, himmel) {
         const W = this._lichtWurf();
