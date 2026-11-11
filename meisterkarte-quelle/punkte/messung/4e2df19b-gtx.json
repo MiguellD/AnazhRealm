@@ -1,7 +1,7 @@
 {
  "sha": "4e2df19b5c5103b093818b62b5a84ababf85b493",
  "geraet": "gtx",
- "zeit": "2026-11-11T04:24:21.721Z",
+ "zeit": "2026-11-11T05:31:49.664Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "affekt.K4#2": {
@@ -1142,22 +1142,87 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "material.K1#2": {
+   "gruen": false,
+   "zahl": "Karte Welt 0.1799 · Labor terrain 0.1799, garage 0.1799, portale 0.1799, schmiede 0.1799, fachwerk 0.1799, koerperstudio 0.1799, tetrapoda 0.1799 · Soll 0.18 ± 0.003 · Zeilen NICHT alle im Soll und Band · echt beide Seiten · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.58,
+   "grund": "ROT: Karte Welt 0.1799 · Labor terrain 0.1799, garage 0.1799, portale 0.1799, schmiede 0.1799, fachwerk 0.1799, koerperstudio 0.1799, tetrapoda 0.1799 · Soll 0.18 ± 0.003 · Zeilen NICHT alle im Soll und Band · echt beide Seiten · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "s": 94.9,
+   "fremd": {
+    "s": 97.4,
+    "takte": 43,
+    "fremdS": 126.67,
+    "kerne": 1.301,
+    "fensterKerne": 2.28,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      40.59
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      28.17
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      24.73
+     ]
+    ],
+    "dienerS": 49.8,
+    "diener": [
+     [
+      "dwm.exe",
+      19.28
+     ],
+     [
+      "System",
+      16.27
+     ]
+    ],
+    "geraetS": 50.34,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      28.95
+     ],
+     [
+      "svchost.exe",
+      18.42
+     ],
+     [
+      "SearchIndexer.exe",
+      1.23
+     ]
+    ],
+    "eigenS": 317.09,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon"
+   },
+   "zeit": "2026-11-11T05:31:49.664Z",
+   "abdruck": "18928b5b08be",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-11T04:23:48.831Z",
+  "start": "2026-11-11T05:31:10.814Z",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 6.3,
+  "bootS": 6.8,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
     "ort": "genesis",
-    "vor": "material.K1#1",
-    "s": 25.4,
-    "takte": 610,
+    "vor": "material.K1#2",
+    "s": 30.8,
+    "takte": 654,
     "chunks": 81,
     "nach": null
    }
@@ -1165,7 +1230,7 @@
   "wegeTueren": [],
   "unerklaert": [
    {
-    "probe": "material.K1#1",
+    "probe": "material.K1#2",
     "wie": "werke +5 (−0)"
    }
   ],
@@ -1181,12 +1246,12 @@
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 109,
+   "zapfen": 122,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 119.3,
-  "minuten": 2.04
+  "fahrtS": 134.6,
+  "minuten": 2.32
  },
  "ungemessen": {
   "ankunft.K1#1": {
