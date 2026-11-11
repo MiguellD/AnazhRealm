@@ -1,7 +1,7 @@
 {
  "sha": "4e2df19b5c5103b093818b62b5a84ababf85b493",
  "geraet": "gtx",
- "zeit": "2026-11-11T01:35:25.252Z",
+ "zeit": "2026-11-11T04:24:21.721Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "affekt.K4#2": {
@@ -817,27 +817,358 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "licht.K2#2": {
+   "gruen": false,
+   "zahl": "Uhr 0.5 klar (Sonne 74.2°) 5.161, Schatten-Anteil 0.1938 · Uhr 0.27 klar (Sonne 7.2°) 0.964 UNGÜLTIG (A/B 0.700, A/C 1.000, 1474 px) · Uhr 0.73 klar (Sonne 6.7°) 1.035 UNGÜLTIG (A/B 0.699, A/C 1.000, 1496 px) · Uhr 0.5 Regen (Sonne 74.2°) 1.18 UNGÜLTIG (A/B 0.712, A/C 1.011, 1499 px) · Uhr 0.27 Regen (Sonne 7.2°) 0.889 · Uhr 0.73 Regen (Sonne 6.7°) 1 · Himmel zur Sonne 1.206 (13030/13030 px, Belichtung 42.2213/42.2213, 20 m über dem Boden) · Soll klar 0,5: 5–12,5, 0,08–0,20, Himmel ≥ 1,2; klar 0,27/0,73 ≥ 2,5; Regen ≤ 1,5 · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.99,
+   "grund": "ROT: Uhr 0.5 klar (Sonne 74.2°) 5.161, Schatten-Anteil 0.1938 · Uhr 0.27 klar (Sonne 7.2°) 0.964 UNGÜLTIG (A/B 0.700, A/C 1.000, 1474 px) · Uhr 0.73 klar (Sonne 6.7°) 1.035 UNGÜLTIG (A/B 0.699, A/C 1.000, 1496 px) · Uhr 0.5 Regen (Sonne 74.2°) 1.18 UNGÜLTIG (A/B 0.712, A/C 1.011, 1499 px) · Uhr 0.27 Regen (Sonne 7.2°) 0.889 · Uhr 0.73 Regen (Sonne 6.7°) 1 · Himmel zur Sonne 1.206 (13030/13030 px, Belichtung 42.2213/42.2213, 20 m über dem Boden) · Soll klar 0,5: 5–12,5, 0,08–0,20, Himmel ≥ 1,2; klar 0,27/0,73 ≥ 2,5; Regen ≤ 1,5 · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "s": 59.5,
+   "fremd": {
+    "s": 61.6,
+    "takte": 28,
+    "fremdS": 72.84,
+    "kerne": 1.182,
+    "fensterKerne": 1.994,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      28.36
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      15.3
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      14.36
+     ]
+    ],
+    "dienerS": 20.3,
+    "diener": [
+     [
+      "dwm.exe",
+      8.17
+     ],
+     [
+      "System",
+      7.95
+     ]
+    ],
+    "geraetS": 18.64,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      11.41
+     ],
+     [
+      "svchost.exe",
+      6.05
+     ],
+     [
+      "SearchIndexer.exe",
+      0.55
+     ]
+    ],
+    "eigenS": 76.42,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon"
+   },
+   "zeit": "2026-11-11T02:56:58.499Z",
+   "abdruck": "455ca280d176",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "licht.K3#2": {
+   "gruen": false,
+   "zahl": "fichte@0.5 Karte und Gestalt teilen kein Pixel · fichte@0.27 Karte und Gestalt teilen kein Pixel · fichte@0.05 Karte und Gestalt teilen kein Pixel · tanne@0.5 Karte und Gestalt teilen kein Pixel · tanne@0.27 Karte und Gestalt teilen kein Pixel · tanne@0.05 Karte und Gestalt teilen kein Pixel · ring@0.5 0.989 · ring@0.27 1.01 · ring@0.05 0.999 · feld@0.5 0.947 · feld@0.27 0.925 · feld@0.05 0.961 · feld0@0.5 0.923 · feld0@0.27 0.94 · feld0@0.05 0.966 · feld90@0.5 0.937 · feld90@0.27 0.938 · feld90@0.05 0.974 · feld180@0.5 0.937 · feld180@0.27 0.935 · feld180@0.05 0.975 · panorama@0.5 0.944 · panorama@0.27 0.969 · panorama@0.05 0.96 · spiegel@0.5 1.056 · spiegel@0.27 0.949 · spiegel@0.05 1.003 · spiegel180@0.5 0.942 · spiegel180@0.27 0.972 · spiegel180@0.05 0.995 · wasser@0.5 0.919 · wasser@0.27 0.95 · wasser@0.05 0.941 · Soll 0,9–1,1 · [linse-gpu] nvidia/pascal",
+   "exit": 1,
+   "minuten": 1.58,
+   "grund": "ROT: fichte@0.5 Karte und Gestalt teilen kein Pixel · fichte@0.27 Karte und Gestalt teilen kein Pixel · fichte@0.05 Karte und Gestalt teilen kein Pixel · tanne@0.5 Karte und Gestalt teilen kein Pixel · tanne@0.27 Karte und Gestalt teilen kein Pixel · tanne@0.05 Karte und Gestalt teilen kein Pixel · ring@0.5 0.989 · ring@0.27 1.01 · ring@0.05 0.999 · feld@0.5 0.947 · feld@0.27 0.925 · feld@0.05 0.961 · feld0@0.5 0.923 · feld0@0.27 0.94 · feld0@0.05 0.966 · feld90@0.5 0.937 · feld90@0.27 0.938 · feld90@0.05 0.974 · feld180@0.5 0.937 · feld180@0.27 0.935 · feld180@0.05 0.975 · panorama@0.5 0.944 · panorama@0.27 0.969 · panorama@0.05 0.96 · spiegel@0.5 1.056 · spiegel@0.27 0.949 · spiegel@0.05 1.003 · spiegel180@0.5 0.942 · spiegel180@0.27 0.972 · spiegel180@0.05 0.995 · wasser@0.5 0.919 · wasser@0.27 0.95 · wasser@0.05 0.941 · Soll 0,9–1,1 · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "s": 94.8,
+   "fremd": {
+    "s": 98.4,
+    "takte": 44,
+    "fremdS": 106.02,
+    "kerne": 1.077,
+    "fensterKerne": 2.037,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      34.97
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      23.53
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      23.38
+     ]
+    ],
+    "dienerS": 41.94,
+    "diener": [
+     [
+      "dwm.exe",
+      16.73
+     ],
+     [
+      "System",
+      12.27
+     ]
+    ],
+    "geraetS": 32.83,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      17.63
+     ],
+     [
+      "svchost.exe",
+      13.61
+     ],
+     [
+      "SearchIndexer.exe",
+      0.84
+     ]
+    ],
+    "eigenS": 206.22,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon"
+   },
+   "zeit": "2026-11-11T03:07:59.133Z",
+   "abdruck": "fd08d15b7871",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "lod.K1#1": {
+   "gruen": false,
+   "zahl": "Tafel-Pose schlechteste fimp:strauch:L2 0.2593 · Karte fimp:birke:L2 0.1301 (12446 px), fimp:buche:L2 0.1918 (14157 px), fimp:eiche:L2 0.1484 (56004 px), fimp:fichte:L2 0.1659 (107090 px), fimp:strauch:L2 0.2593 (23210 px), fimp:tanne:L2 0.1505 (157134 px) | Spielgang schlechteste fimp:buche:L2 0.2274 · Karte fimp:birke:L2 0.1851 (29298 px), fimp:buche:L2 0.2274 (14528 px), fimp:eiche:L2 0.1431 (55196 px), fimp:fichte:L2 0.1742 (107246 px), fimp:strauch:L2 0.2003 (27180 px), fimp:tanne:L2 0.1512 (134736 px) · zweiton ≠ 0: fimp:fichte:L2, fimp:tanne:L2 (Soll kante ≤ 0,22 je Teil-Klasse, zweiton 0) · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.74,
+   "grund": "ROT: Tafel-Pose schlechteste fimp:strauch:L2 0.2593 · Karte fimp:birke:L2 0.1301 (12446 px), fimp:buche:L2 0.1918 (14157 px), fimp:eiche:L2 0.1484 (56004 px), fimp:fichte:L2 0.1659 (107090 px), fimp:strauch:L2 0.2593 (23210 px), fimp:tanne:L2 0.1505 (157134 px) | Spielgang schlechteste fimp:buche:L2 0.2274 · Karte fimp:birke:L2 0.1851 (29298 px), fimp:buche:L2 0.2274 (14528 px), fimp:eiche:L2 0.1431 (55196 px), fimp:fichte:L2 0.1742 (107246 px), fimp:strauch:L2 0.2003 (27180 px), fimp:tanne:L2 0.1512 (134736 px) · zweiton ≠ 0: fimp:fichte:L2, fimp:tanne:L2 (Soll kante ≤ 0,22 je Teil-Klasse, zweiton 0) · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "s": 104.4,
+   "fremd": {
+    "s": 106.9,
+    "takte": 49,
+    "fremdS": 98.53,
+    "kerne": 0.922,
+    "fensterKerne": 1.7,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      28.88
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      25.08
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      22.64
+     ]
+    ],
+    "dienerS": 35.3,
+    "diener": [
+     [
+      "dwm.exe",
+      15.89
+     ],
+     [
+      "System",
+      13.36
+     ]
+    ],
+    "geraetS": 26.69,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      16.78
+     ],
+     [
+      "svchost.exe",
+      8.5
+     ],
+     [
+      "SearchProtocolHost.exe",
+      0.59
+     ]
+    ],
+    "eigenS": 125.84,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon"
+   },
+   "zeit": "2026-11-11T03:29:14.424Z",
+   "abdruck": "13a0cc06ffb8",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "lod.K5#1": {
+   "gruen": false,
+   "zahl": "Baum 5.05 px · Haus 0.13 px · Tor 0.18 px · Wagen 0.03 px (Soll ≤ 1 px am Wechsel-Abstand, 1920 × 1080) · gate L2: Exemplar 140 px, [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.78,
+   "grund": "ROT: Baum 5.05 px · Haus 0.13 px · Tor 0.18 px · Wagen 0.03 px (Soll ≤ 1 px am Wechsel-Abstand, 1920 × 1080) · gate L2: Exemplar 140 px, [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "s": 46.7,
+   "fremd": {
+    "s": 50.2,
+    "takte": 23,
+    "fremdS": 51.25,
+    "kerne": 1.021,
+    "fensterKerne": 1.548,
+    "namen": [
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      16.52
+     ],
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      13.42
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      9.17
+     ]
+    ],
+    "dienerS": 16.5,
+    "diener": [
+     [
+      "dwm.exe",
+      6.53
+     ],
+     [
+      "System",
+      6.42
+     ]
+    ],
+    "geraetS": 16.3,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      10.98
+     ],
+     [
+      "svchost.exe",
+      4.48
+     ],
+     [
+      "SearchIndexer.exe",
+      0.38
+     ]
+    ],
+    "eigenS": 73.41,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon"
+   },
+   "zeit": "2026-11-11T03:35:08.687Z",
+   "abdruck": "ca610f2672bb",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "material.K1#1": {
+   "gruen": false,
+   "zahl": "Welt/Labor 0,9–1,1: 11/13 · im realen Band beidseits: 13/13 — fels 1.1072 · boden 1.1418 · echt beide Seiten · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 1.42,
+   "grund": "ROT: Welt/Labor 0,9–1,1: 11/13 · im realen Band beidseits: 13/13 — fels 1.1072 · boden 1.1418 · echt beide Seiten · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "s": 85.3,
+   "fremd": {
+    "s": 87.8,
+    "takte": 39,
+    "fremdS": 38.03,
+    "kerne": 0.433,
+    "fensterKerne": 0.61,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --user-data-dir=claude_pzs8sxrjxfjjc --gpu-preferences=WAAAA",
+      17.63
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      8.25
+     ],
+     [
+      "explorer.exe LOADSAVEDWINDOWS",
+      3.72
+     ]
+    ],
+    "dienerS": 38.36,
+    "diener": [
+     [
+      "dwm.exe",
+      16.27
+     ],
+     [
+      "System",
+      15.22
+     ]
+    ],
+    "geraetS": 27.72,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      16.59
+     ],
+     [
+      "svchost.exe",
+      8.97
+     ],
+     [
+      "SearchIndexer.exe",
+      0.92
+     ]
+    ],
+    "eigenS": 279.98,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon"
+   },
+   "zeit": "2026-11-11T04:24:21.721Z",
+   "abdruck": "b8eb79afff76",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-11T01:34:49.214Z",
+  "start": "2026-11-11T04:23:48.831Z",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 6.4,
+  "bootS": 6.3,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
     "ort": "genesis",
-    "vor": "licht.K1#1",
-    "s": 28.3,
-    "takte": 632,
+    "vor": "material.K1#1",
+    "s": 25.4,
+    "takte": 610,
     "chunks": 81,
     "nach": null
    }
   ],
   "wegeTueren": [],
+  "unerklaert": [
+   {
+    "probe": "material.K1#1",
+    "wie": "werke +5 (−0)"
+   }
+  ],
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
@@ -849,20 +1180,13 @@
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
-   "ortImDeckel": [
-    {
-     "probe": "licht.K1#1",
-     "m": 1083,
-     "ringVor": 4,
-     "ringMin": 0
-    }
-   ],
-   "zapfen": 131,
+   "ortImDeckel": [],
+   "zapfen": 109,
    "luecken": 0,
    "letzteLuecke": null
   },
-  "fahrtS": 138.1,
-  "minuten": 2.38
+  "fahrtS": 119.3,
+  "minuten": 2.04
  },
  "ungemessen": {
   "ankunft.K1#1": {
