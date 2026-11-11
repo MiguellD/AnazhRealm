@@ -1,7 +1,7 @@
 {
  "sha": "c40107736235ffeef55a39f12c530e8b33f1ea9d",
  "geraet": "gtx",
- "zeit": "2026-11-11T22:05:35.917Z",
+ "zeit": "2026-11-11T22:43:50.263Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "ankunft.K1#1": {
@@ -82,25 +82,105 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "ankunft.K1#2": {
+   "gruen": false,
+   "zahl": "t(Kontrolle) kalt 12.43 s von außen (Eigenmeldung 11.05 s), Bild 0.00 % Lücke bis zur Ruhe, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.96,
+   "grund": "ROT: t(Kontrolle) kalt 12.43 s von außen (Eigenmeldung 11.05 s), Bild 0.00 % Lücke bis zur Ruhe, offen im Bild 4 Wald-Stücke warten auf ihre Gestalt — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht · [linse-gpu] nvidia/pascal · ROT trotz Fremd-Last: Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf 14,1 CPU-s · LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio 3,1 CPU-s · Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork- 2,9 CPU-s — 0,64 Kerne fremd im dichtesten 10-s-Fenster (Schwelle 0,50, win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon; Σ fremd 28,6 CPU-s in 61,5 s · Gerät (Grund-Last, nie fremd) MsMpEng.exe 20,8 CPU-s · svchost.exe 8,3 CPU-s · SearchIndexer.exe 0,6 CPU-s) — geeicht ÷ 1,036 (1 + 5,6 % je fremdem Kern × 0,64): t(Kontrolle) kalt s 12,43 → geeicht 11,99 (Soll ≤ 5)",
+   "mass": [
+    {
+     "wort": "t(Kontrolle) kalt s",
+     "wert": 12.425,
+     "soll": 5
+    }
+   ],
+   "gpu": "nvidia/pascal",
+   "konsum": "kdabd4f574978",
+   "konsumN": 28,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 5
+   },
+   "konsumBoot": "k83c4e1254875",
+   "s": 56.1,
+   "fremd": {
+    "s": 61.5,
+    "takte": 27,
+    "fremdS": 28.64,
+    "kerne": 0.466,
+    "fensterKerne": 0.639,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      14.14
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      3.13
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      2.89
+     ]
+    ],
+    "dienerS": 34.13,
+    "diener": [
+     [
+      "dwm.exe",
+      15.56
+     ],
+     [
+      "System",
+      12.78
+     ]
+    ],
+    "geraetS": 30.5,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      20.78
+     ],
+     [
+      "svchost.exe",
+      8.31
+     ],
+     [
+      "SearchIndexer.exe",
+      0.59
+     ]
+    ],
+    "eigenS": 374.23,
+    "schwelle": 0.5,
+    "effekt": 0.05633333333333333,
+    "eich": "win32, GTX 1060 (OMEN), 12 Kerne — geeicht nach Radeon"
+   },
+   "zeit": "2026-11-11T22:43:50.263Z",
+   "abdruck": "201ca904c048",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
   "kbe590e8944db": "bVTLjqMwEPyXHHfG44RHbJDm4EwizRxWm/2EtmkbJgQiG8Iqq/33FQSSAOkLyKrqrnZX++9ClRbd2xGKTKOr3r5dWSzixY/F60KDShu0B9JC3r5df3wCdQCDj0gHZyQO7RntFbdiKw5hLK5BhRAfLUzZ7FQ5mmRgiCzLiriqzaRuuQdEnkkKsoD0iKS2FWZ5D2JhGPleTJud4PuXPfX5+5SWS0xKUoHGgSQTj/kQT4G1MyCRQK27Qj04Yj5bejHtgguxZ9ffP7NKEopkrC7Q3jJKurZ34n2KTzLAiuRZ4YZaKgmlP9SilDZzjoWGXADTHG1P4uv1igeDwClB57VzoyLcT0KPx5RGdII1p5rox9QgJXA5vagUsDBox0lZEKpeBN9txBC/tow2airqAEe0QApIh4sKfO7DvXHKNxNKnqm0v6ximH2wVNx/IFEaNerqsDZetrdz8buXI+6xmU/EpZCgJYfSVbcqQcA8CVfrfghBzc8Z6y6t53hyvQz5YztUfM5G40pdNWCRmFPdEzHAkLV78jUDV3A89iitPOS3bXqI3RNWkYwt5im97ixmWmGfc4udLRwJSGMzrYcdkKHS0TPLNJhX3eoOnTOWSBnTCy1uzV+4EZu52HuYqYQua2mrQXQo10sdxPrc7sTMTRe0ORoctQmryGsN1fuhi21w/X5t6Sia2WQuGebkgoWr3eDviCWRjp9sZfsiSigOPXAZ+HzV22VvNkJ8bFZbPu73a+u3TjSjM9ElPaGiJ1vqrH1MaAq1SyF/eIX//Qc=",
-  "k83c4e1254875": "jVRdj5swEPwvPPbqM+EjGEv34Fyi3kmtmvsJa1gbLgQiG0Kbqv+9IkASSB46LyC0s7M7O+KPc4BkBxqfP21VOtz54nx1LByRWDRHNM+f1uHOIlowCLnoQYUQ37qyxOSH2tIilxRkCdkeSWNqzIvn5EyLwjD2PU7bjWDbpy31mbjgVbzMWxQS04rUoHBsIFMv8oHPCxurQSKBRp1Fh+I48iPX4/QMJsQ26l9/sbmShDKdThooz41T/t4KsREv8/o0B6xJkZd21ErSUPqjFqW0vecYaMkJMCvQDCS2XC5YMA44J6iisXYiwvw09BinNKazWn1oiLptDVICk3OjMsBSo5k2jYIwCfgDV3awRwOkhGw0JfCZD9clKVvNKEWeZIMx5XjzwE2Yf0Pq3En63HR4Wl8+i48+Cj+vqRCre/dtBikasqtsfVEJgsiTwIckCap/3LGuow0cTy7dkN2uQ8XbnQu2UnULBok+NAMRAwyjkIsHIjXs90OVSjxk4fwEtu6yNomOl6jlOTq6G+LtPjpHA3sCUptcqTHbMkxU/CgKLRY1kVVVj1tGUSolpz4tL4v+Zlqs9NXk7+9igo07H+HctTL1OHQol64KuOqvOa8+oSlQ42RNWMReF57h9mesg/75vqYTtHdXOOVYkBOWtrFjbuMojVV/vXZoM81Ki2YnodwNBDfw2aKLyEqLrV6Jt9dNvGbiP7Dumh4woQdTqbz7WdAMGptBUV//kn//AQ=="
+  "k83c4e1254875": "jVRdj5swEPwvPPbqM+EjGEv34Fyi3kmtmvsJa1gbLgQiG0Kbqv+9IkASSB46LyC0s7M7O+KPc4BkBxqfP21VOtz54nx1LByRWDRHNM+f1uHOIlowCLnoQYUQ37qyxOSH2tIilxRkCdkeSWNqzIvn5EyLwjD2PU7bjWDbpy31mbjgVbzMWxQS04rUoHBsIFMv8oHPCxurQSKBRp1Fh+I48iPX4/QMJsQ26l9/sbmShDKdThooz41T/t4KsREv8/o0B6xJkZd21ErSUPqjFqW0vecYaMkJMCvQDCS2XC5YMA44J6iisXYiwvw09BinNKazWn1oiLptDVICk3OjMsBSo5k2jYIwCfgDV3awRwOkhGw0JfCZD9clKVvNKEWeZIMx5XjzwE2Yf0Pq3En63HR4Wl8+i48+Cj+vqRCre/dtBikasqtsfVEJgsiTwIckCap/3LGuow0cTy7dkN2uQ8XbnQu2UnULBok+NAMRAwyjkIsHIjXs90OVSjxk4fwEtu6yNomOl6jlOTq6G+LtPjpHA3sCUptcqTHbMkxU/CgKLRY1kVVVj1tGUSolpz4tL4v+Zlqs9NXk7+9igo07H+HctTL1OHQol64KuOqvOa8+oSlQ42RNWMReF57h9mesg/75vqYTtHdXOOVYkBOWtrFjbuMojVV/vXZoM81Ki2YnodwNBDfw2aKLyEqLrV6Jt9dNvGbiP7Dumh4woQdTqbz7WdAMGptBUV//kn//AQ==",
+  "kdabd4f574978": "bVTbjpswEP2XPLb1OuESG6R9MJtIuw9V008Ym7FhQyCyIVSp+u8VBJIAOy8g65yZM54z/rtSlUX3coIy1+jql09Xlat49W31Y6VBZS3aI+kgL59uOD6DOoLBZ6SDCxKH9oL2htuwDYcwFregQoi3DqZsfq4dTXMwRFZVTVzdZVL33COiyCUFWUJ2QtLYGvNiALEwjHwvpu1e8MP3A/X565xWSEwrUoPGkSRTj/kQz4GNMyCRQKP7QgM4Yj5bezHtgwtxYLffP4tKEsp0qi7Q3jpK+7b34nWOT3PAmhR56cZaKg2lP9ailLZLjoWWXAGzAu1A4tvthgejwDlBF41zkyLcT0OPx5RGdIY154bo59QgJXA5v6gMsDRop0lZEKpBBN8nYoxfO0ZbNRd1hBNaICVk40UFPvfh0TjlyYxS5CobLqscZx+sFfefSJRGrbo5rIvvu/u5+D3IEY9IlhNxGaRoybFy9b1KEDBPws26b0JQ83PBekgbOJ7crkP+3A4V74vRuErXLVgk5twMRAwwZN2efCzANZxOA0orD/l9m55i/wWrTKcW85Te9hYznbD3pcUuFk4EpLG51uMOyFDp6CvLtFjU/eqOnTOWShnTKy3vzV+5EclS7CPMXEKftbL1KDqU27UOYn3pdmLhpivaAg1O2oRN5HWGGvzQxy64fT92dBLtYjLXHAtyxdI1bvR3xNJIx19sZfciSiiPA3Ad+Hwz2OVgEiHeks2OT/v9SPzOiWZyJvqkZ1T0bCudd48JzaBxGRRPr/C//w=="
  },
  "sitzung": {
-  "start": "2026-11-11T21:58:27.620Z",
+  "start": "2026-11-11T22:41:27.158Z",
   "port": 7804,
-  "warten": 6.63,
-  "bootS": 5.8,
+  "warten": 1.88,
+  "bootS": 6.3,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
     "ort": null,
-    "vor": "ankunft.K1#1",
-    "s": 23.5,
+    "vor": "ankunft.K1#2",
+    "s": 23,
     "takte": 780,
     "chunks": 81,
     "nach": null
@@ -110,20 +190,20 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 403,
-   "frameP95": 333.32,
-   "taktP95": 175.46,
-   "vramMax": 148.4,
+   "bilder": 391,
+   "frameP95": 308.32,
+   "taktP95": 159.96,
+   "vramMax": 153.9,
    "seiten": 5,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 80,
-   "luecken": 4,
+   "zapfen": 79,
+   "luecken": 3,
    "letzteLuecke": "THREE is not defined"
   },
-  "fahrtS": 90,
-  "minuten": 8.22
+  "fahrtS": 89.2,
+  "minuten": 3.42
  }
 }
