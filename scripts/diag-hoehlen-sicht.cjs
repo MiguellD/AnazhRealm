@@ -206,7 +206,8 @@ function urteil(b) {
         v.push(
             "PUNKTLICHT-GESETZ: der Licht-Pool (`_lichtPoolTerm`) rechnet nicht den Abfall des Gesetzes (fachwerk `lichtAbfall`: " +
                 "(d² + k²)^(−abfall/2) mit dem Saum), oder ein zweiter Term ruft die BRDF eines Punktlichts (`_punktLichtBrdf`) — " +
-                "zwei Punktlicht-Gesetze im Stamm"
+                "zwei Punktlicht-Gesetze im Stamm —, oder der Pool schreibt seine Plätze aus statt EINER Schleife über das Gesetz " +
+                "eines Platzes (`_lichtPlatz`, w28-baum-programm: je Platz ~3 KB in jedem Programm vor dem ersten Bild)"
         );
     // (l) SZENEN-LICHT: unter freiem Himmel trägt jedes DIREKTE Licht der Szene Licht (r184 sammelt jedes sichtbare Licht in
     // den Licht-Hash jedes beleuchteten Stoffs — ein direktes Licht auf 0 rechnet trotzdem seine BRDF in jedem Fragment;
@@ -1432,9 +1433,17 @@ const server = statikServer();
                     brdf++;
                     return P._punktLichtBrdf.apply(this, arguments);
                 };
-                let term;
+                // DER POOL IST EINE SCHLEIFE (w28-baum-programm): sein Rumpf ist das Gesetz EINES Platzes (`_lichtPlatz`), die
+                // Schleife baut erst der Compiler (eine Fn) — die Linse fragt den Rumpf an jedem Platz mit dessen Uniforms
+                const platz = (k) => ({
+                    lage: atmo.lichtLage[k],
+                    farbe: atmo.lichtFarbe[k],
+                    ersatz: atmo.lichtErsatz[k],
+                    kern: atmo.lichtKern[k],
+                });
+                const terme = [];
                 try {
-                    term = r._lichtPoolTerm(Te, atmo, kh);
+                    for (let k = 0; k < atmo.lichtLage.length; k++) terme.push(r._lichtPlatz(Te, platz(k), kh));
                 } finally {
                     delete r._punktLichtBrdf;
                 }
@@ -1442,7 +1451,8 @@ const server = statikServer();
                     stoffArg.slice(0, trenn).includes(kh) &&
                     !stoffArg.slice(trenn).includes(kh) &&
                     atmo.lichtErsatz.length > 0 &&
-                    atmo.lichtErsatz.every((u) => haelt(term, u));
+                    terme.length === atmo.lichtErsatz.length &&
+                    terme.every((t, k) => haelt(t, atmo.lichtErsatz[k]) && haelt(t, kh));
                 aus.code.augenVorZweig =
                     bed.length > 0 && bed.every((c) => haelt(c, THREE.TSL.normalView) && haelt(c, THREE.TSL.positionView));
                 // das EINE Punktlicht-Gesetz: der Pool ruft die BRDF (je Platz), kein zweiter Rufer, kein nacktes 1/d — über die
@@ -1450,14 +1460,18 @@ const server = statikServer();
                 const brdfRufer = Object.getOwnPropertyNames(P).filter(
                     (n) => n !== "constructor" && typeof Object.getOwnPropertyDescriptor(P, n).value === "function" && !__fehlt(P[n], /this\._punktLichtBrdf\(/)
                 );
+                // je Platz EINE BRDF im Gesetz des Platzes, und der Pool läuft es in EINER Schleife über alle Plätze (`Loop` über
+                // `lichtLage.length`, der Rumpf `_lichtPlatz`) — ausgeschrieben stand es je Platz in jedem Programm
                 aus.code.poolGesetz =
-                    brdf >= atmo.lichtLage.length &&
+                    brdf === atmo.lichtLage.length &&
                     brdf > 0 &&
-                    __fehlt(r._lichtPoolTerm, /reciprocal\(\)/) &&
-                    brdfRufer.every((n) => n === "_lichtPoolTerm");
+                    __fehlt([r._lichtPoolTerm, r._lichtPlatz], /reciprocal\(\)/) &&
+                    !__fehlt(r._lichtPoolTerm, /\.Loop\(atmo\.lichtLage\.length\b/) &&
+                    !__fehlt(r._lichtPoolTerm, /this\._lichtPlatz\(/) &&
+                    brdfRufer.every((n) => n === "_lichtPlatz");
                 aus.code.augenTslFremd =
                     ["diffuseContribution", "specularColorBlended"].find(
-                        (n) => !__fehlt([r._lichtPoolTerm, r._punktLichtBrdf], new RegExp("\\b" + n + "\\b"))
+                        (n) => !__fehlt([r._lichtPoolTerm, r._lichtPlatz, r._punktLichtBrdf], new RegExp("\\b" + n + "\\b"))
                     ) || null;
                 m1.dispose();
                 m0.dispose();
