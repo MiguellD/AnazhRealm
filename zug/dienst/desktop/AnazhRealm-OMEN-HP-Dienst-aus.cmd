@@ -26,11 +26,11 @@ if %errorlevel% neq 0 (
 echo.
 echo 1/2  Dienst HPOmenCap stoppen ...
 rem die Wiederherstellung des Dienstes (RESTART nach 5 s, auch bei einem Ende ohne Absturz) wuerde ihn sonst gleich wieder starten
-sc failureflag HPOmenCap 0 >nul
-sc stop HPOmenCap >nul 2>&1
+sc failureflag HPOmenCap 0
+sc stop HPOmenCap
 timeout /t 10 /nobreak >nul
 echo 2/2  Start auf "Manuell" stellen ...
-sc config HPOmenCap start= demand >nul
+sc config HPOmenCap start= demand
 
 echo.
 echo STAND (so steht es jetzt):
