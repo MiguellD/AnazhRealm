@@ -364,7 +364,8 @@ async function weltDa(bed) {
     // erst das Erwachen des Boots (`erwacht`: init samt der Heimat aus dem Faden) — eine Linse, die vorher taktet, taktet
     // eine halbe Welt (der Spieler fällt, ehe die Tiere geboren sind)
     while (!r?.erwacht) await sleep(50);
-    await r.erwacht;
+    // ein Boot, der brach (`erwacht` false: init warf), taktet nie — die Warte fällt beim Namen, statt ewig zu warten (w28-seiten-tod)
+    if ((await r.erwacht) === false) throw new Error("BOOT GEBROCHEN: die Welt erwacht nicht, init warf — den Wurf nennt der Fehler-Sammler (pageerror)"); // prettier-ignore
     for (let r; !((r = window.anazhRealm) && typeof r._gameLoopTick === "function" && (!bed || bed(r)));)
         await sleep(50);
     window.__weltDaWartet = null;
@@ -1191,6 +1192,34 @@ function absturzGrund(datei) {
     const ausnahme = code != null && `Ausnahme 0x${code.toString(16)}${ABSTURZ_CODE[code] ? ` (${ABSTURZ_CODE[code]})` : ""}`;
     return [art, oom, ausnahme, `Abbild ${ort}`].filter(Boolean).join(" · ");
 }
+// DER BOOT, DER BRICHT (Koordinator 11.11.): die Seite lebt, aber die Welt erwacht nie — init wirft (der Stand mit Mensch-Prägung
+// {height 1.12} am alten Leser `_koerperStudioDials`: „leibGroesse ohne height/mass/tone", 30 s kein Takt, seit 4b1e4eee bis
+// e21a131f), das Versprechen des Boots (`anazhRealm.erwacht`, `_bootAnazhRealm`) sagt false — und jede Warte einer Linse wartete bis
+// an ihre Frist (`waitForFunction` 120 s) oder ewig (`__weltDa`). Die Seite meldet den Bruch des ERSTEN Boots ihres Dokuments (ein
+// Welt-Wechsel setzt sein eigenes Versprechen und lädt bei einem Bruch selbst neu) samt dem Wurf davor; die Wache nennt ihn: jede
+// offene und jede spätere Frage an DIESE Seite fällt mit „BOOT GEBROCHEN: <Grund>", der Browser bleibt, ein neues Dokument beginnt neu.
+function bootWacheSeite() {
+    if (window.top !== window || window.__bootWacheAn) return;
+    window.__bootWacheAn = true;
+    let grund = "";
+    const merke = (x) => {
+        const e = x && "reason" in x ? x.reason : x && x.error;
+        grund = String((e && (e.stack || e.message)) || (x && x.message) || e || "").split("\n").slice(0, 2).join(" | ");
+    };
+    window.addEventListener("unhandledrejection", merke);
+    window.addEventListener("error", merke);
+    const t0 = Date.now();
+    const sieh = setInterval(() => {
+        const e = window.anazhRealm && window.anazhRealm.erwacht;
+        if (!e && Date.now() - t0 < 6e5) return;
+        clearInterval(sieh);
+        if (e)
+            Promise.resolve(e).then((ok) => {
+                if (ok === false)
+                    setTimeout(() => typeof window.__bootBrach === "function" && window.__bootBrach(grund || "init warf ohne Grund"), 50);
+            });
+    }, 50);
+}
 function todesWache(browser, profil) {
     let tot = null;
     let gewollt = false;
@@ -1204,14 +1233,31 @@ function todesWache(browser, profil) {
         fallen.clear();
         if (zu) setTimeout(() => browser.close().catch(() => {}), 100).unref();
     };
-    // jede Frage an eine Seite läuft gegen den Tod: sie fällt mit seinem Namen, auch wenn sie vorher gestellt war
-    const mitTod = (p) => {
-        if (tot) return p.catch(() => {}), Promise.reject(tot);
+    // jede Frage an eine Seite läuft gegen den Tod (des Browsers und den gebrochenen Boot ihres Dokuments): sie fällt mit seinem
+    // Namen, auch wenn sie vorher gestellt war; nach einem gebrochenen Boot fällt jede spätere WARTE (`warte`), eine Frage, die nur
+    // liest, antwortet weiter (die Linse liest den Befund der Seite; `__weltDa` wirft dort selbst)
+    const mitTod = (p, seite, warte) => {
+        const t = tot || (warte && seite && seite.__bootTot);
+        if (t) return p.catch(() => {}), Promise.reject(t);
         let fall;
-        const q = Promise.race([p, new Promise((_, nein) => fallen.add((fall = nein)))]);
-        const weg = () => fallen.delete(fall);
+        const q = Promise.race([p, new Promise((_, nein) => (fallen.add((fall = nein)), seite && seite.__bootFallen.add(nein)))]);
+        const weg = () => (fallen.delete(fall), seite && seite.__bootFallen.delete(fall));
         q.then(weg, weg);
         return q;
+    };
+    const bootBrach = (seite, grund) => {
+        if (tot || gewollt || seite.__bootTot || sammlung.erwartet?.test(grund)) return;
+        const e = (seite.__bootTot = new Error(`BOOT GEBROCHEN: die Welt erwacht nicht, init warf — ${String(grund).slice(0, 300)}`));
+        console.error(`\n❌ ${e.message}`);
+        for (const f of seite.__bootFallen) f(e);
+        seite.__bootFallen.clear();
+    };
+    const bootWache = async (seite) => {
+        if (!seite || seite.__bootWache) return seite;
+        seite.__bootWache = true;
+        await seite.exposeFunction("__bootBrach", (g) => bootBrach(seite, g)).catch(() => {});
+        await seite.evaluateOnNewDocument(bootWacheSeite).catch(() => {});
+        return seite;
     };
     // die Abbilder des Profils (Crashpad legt sie je Plattform in reports, pending oder completed): ein neues, dessen Größe steht
     const abbilder = () => {
@@ -1255,18 +1301,22 @@ function todesWache(browser, profil) {
     const taufe = (page) => {
         if (!page || seiten.has(page)) return page;
         seiten.add(page);
+        page.__bootTot = null;
+        page.__bootFallen = new Set();
         page.once("close", () => seiten.delete(page));
         page.on("error", (e) => ereignis(`der Browser meldet die Seite als abgestürzt (${(e && e.message) || e})`));
+        // ein neues Dokument beginnt neu: die Linse lädt (goto, reload) oder die Seite navigiert selbst
+        page.on("framenavigated", (f) => f === page.mainFrame() && (page.__bootTot = null));
         for (const m of ["evaluate", "evaluateHandle", "waitForFunction", "goto", "reload", "screenshot"]) {
             const alt = page[m].bind(page);
-            page[m] = (...a) => mitTod(alt(...a));
+            page[m] = (...a) => ((m === "goto" || m === "reload") && (page.__bootTot = null), mitTod(alt(...a), page, m === "waitForFunction")); // prettier-ignore
         }
         return page;
     };
     const neu = browser.newPage.bind(browser);
-    browser.newPage = async (...a) => taufe(await neu(...a));
+    browser.newPage = async (...a) => bootWache(taufe(await neu(...a)));
     const alle = browser.pages.bind(browser);
-    browser.pages = async (...a) => (await alle(...a)).map(taufe);
+    browser.pages = async (...a) => Promise.all((await alle(...a)).map((p) => bootWache(taufe(p))));
     // die Sitzung am Browser: sein Ereignis (ein Abschuss von außen meldet sich je nach Ziel NUR hier)
     browser
         .target()
@@ -2093,12 +2143,24 @@ async function selbsttest() {
     // Satz — ändert der Stamm sein Wort, fällt der blinde Sammler hier) — sieben Würfe an der Grenze, einer am Hand-Takt vorbei
     const S = stammLib.text(ROOT);
     const glied = (n) => ((m) => `${n}(${m.args}){${m.rumpf}}`)(stammLib.methodeAm(S, n));
+    const boot = stammLib.ast(S).body.find((n) => n.type === "FunctionDeclaration" && n.id?.name === "_bootAnazhRealm");
+    if (!boot) throw new Error("der Boot des Stamms (`_bootAnazhRealm`) ist fort — die Wache des gebrochenen Boots hört nichts mehr");
+    const bootSeite = (init, danach = "") =>
+        `<!doctype html><meta charset="utf-8"><script>window.THREE={};class AnazhRealm{init(){return ${init}}_sprachWahlInit(){}_ladeschirmStand(){}_t(k,o){return k+": "+(o&&o.grund)}};${S.slice(boot.start, boot.end)};_bootAnazhRealm();${danach}</script>`;
     const seiten = {
         "/ruhig.html":
             "<!doctype html><script>setTimeout(function(){var e=performance.now()+800;while(performance.now()<e){}},300)</script>",
         "/schleife.html":
             "<!doctype html><script>function __stallSchleife(){var e=performance.now()+7000;while(performance.now()<e){}}setTimeout(__stallSchleife,300)</script>",
         "/haenger.html": "<!doctype html><script>window.__nie=function(){return new Promise(function(){})}</script>",
+        // DER BOOT, DER BRICHT (w28-seiten-tod): der ECHTE Boot des Stamms (`_bootAnazhRealm`, aus seinem Syntaxbaum — ändert der
+        // Stamm sein Versprechen, fällt die Wache hier) an einer Seite ohne Welt; init wirft den Satz des Kerns am alten Leser, oder
+        // init steht und ein Welt-Wechsel bricht danach (kein gebrochener Boot); `__takt` ist der erste Takt, auf den die Linse wartet
+        "/bricht.html": bootSeite("Promise.reject(new Error('KERN-PFLICHT: leibGroesse ohne height/mass/tone'))"),
+        "/steht.html": bootSeite(
+            "new Promise((ok) => setTimeout(ok, 300))",
+            "setTimeout(() => (anazhRealm.erwacht = Promise.resolve(false)), 1200); setTimeout(() => (window.__takt = 1), 2500);"
+        ),
         "/abbruch.html":
             "<!doctype html><script>__los=()=>{(async()=>{for(;;)await sleep(20)})().catch((x)=>(__wort=x.message));setTimeout(()=>{for(const e=performance.now()+6e3;performance.now()<e;);},200)}</script>",
         "/wirft.html": `<!doctype html><meta charset="utf-8"><script>setTimeout(function(){console.log('[ERROR] STOFF: die Post-Kette');AnazhRealm={BRUCH_BUCH_MAX:9,BRUCH_WIEDER_MS:50};anazhRealm={state:{logBuffer:[],displayedLogs:[]},flushLog(){},${["log", "_bruchMelden", "_loopErrorBoundary"].map(glied)},_gameLoopTick(){throw Error('__handWurf')}};for(i=7;i--;)r._loopErrorBoundary(Error('__taktWurf'));__handTakt();throw new Error('__seitenWurf')},50)</script>`,
@@ -2361,6 +2423,31 @@ async function selbsttest() {
         const lebt = await Promise.race([p.evaluate("1 + 1").catch((x) => x.message), sleep(5000).then(() => "STILLE")]);
         await b.close().catch(() => {});
         todWand.push([lebt === 2, `eine gesunde Seite, die navigiert, lebt: ${lebt === 2 ? "sie antwortet" : lebt}`]);
+    }
+    // DER BOOT, DER BRICHT: die offene Warte auf den ersten Takt fällt binnen Sekunden mit dem Wurf des Kerns, jede spätere Frage an die
+    // Seite ebenso, die Wache spricht einmal; ein Boot, der steht, und ein Welt-Wechsel, der danach bricht, lassen die Warte leben
+    const bootFall = async (seite) => {
+        const b = await startePuppeteer({ headless: true });
+        const fehlerAus = console.error;
+        const ab = laut.length;
+        console.error = (...a) => laut.push(`${seite}: ${a.join(" ").trim()}`);
+        try {
+            const p = await b.newPage();
+            const t0 = Date.now();
+            await server.zeige(p, undefined, seite, "load").catch(() => {});
+            const wort = await Promise.race([p.waitForFunction(() => window.__takt === 1, { timeout: 30000 }).then(() => "erfüllt", (x) => x.message), sleep(35000).then(() => "STILLE nach 35 s")]); // prettier-ignore
+            const s = ((Date.now() - t0) / 1000).toFixed(1);
+            const danach = await Promise.race([p.evaluate("1 + 1").then(String, (x) => x.message), sleep(5000).then(() => "STILLE")]); // prettier-ignore
+            return { wort, danach, s, gesagt: laut.slice(ab).filter((z) => z.includes("❌ BOOT GEBROCHEN")).length };
+        } finally {
+            console.error = fehlerAus;
+            await b.close().catch(() => {});
+        }
+    };
+    {
+        const [br, sth] = [await bootFall("bricht.html"), await bootFall("steht.html")];
+        todWand.push([/^BOOT GEBROCHEN: die Welt erwacht nicht, init warf — .*leibGroesse ohne height\/mass\/tone/.test(br.wort) && br.danach === "2" && br.gesagt === 1 && +br.s < 10, `Boot gebrochen (der Boot des Stamms, init wirft): ${br.wort.slice(0, 170)} — nach ${br.s} s, eine lesende Frage danach ${br.danach}, laut ${br.gesagt}×`]); // prettier-ignore
+        todWand.push([sth.wort === "erfüllt" && sth.danach === "2" && sth.gesagt === 0, `Boot steht, ein Welt-Wechsel bricht danach: die Warte ${sth.wort} nach ${sth.s} s, laut ${sth.gesagt}×`]); // prettier-ignore
     }
     await new Promise((ok) => besetzt.listen(belegt, "127.0.0.1", ok));
     const t1 = Date.now();
