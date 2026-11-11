@@ -2614,6 +2614,21 @@ class AnazhRealm_siedlung_ort {
         }
         return null;
     }
+    // DER ORT DES WORTS VERDRÄNGT WIE DER RANG (siedlung, die Breite der Stadt): das Rang-Gesetz der Zellen (fachwerk
+    // `siedlungsZelle`: ein Ort steht nur, wo kein höherer, der steht, in Reichweite liegt — die Summe beider `siedlungsReich`)
+    // gilt auch gegen die Stadt, die ein Wort gründete („dorf 7 300", Schlüssel `d:`): in ihrem Reich erwacht keine kleinere
+    // Zelle. Bis hier kannte die Zelle nur Zellen — am Messort stadt-voll (Radeon, 11.11.) erwachte das Dorf der Zelle 26 m
+    // neben dem Markt der Metropole, seine Ort-Wahl fand zwischen ihren Häusern Platz auf Markt und Gasse (die Bau-Wand kennt
+    // nur Bauten), und sein Zug wartete ohne Ende auf die zwei Slots unter dem Spieler („Dorf offen 2", die Welt stand nie).
+    _wortOrtVerdraengt(info) {
+        const [S, reich] = [AnazhRealm._siedlungGesetz(), AnazhRealm.Gesetz("fachwerk:siedlungsReich")];
+        for (const q of (this._bewohnerSiedlungen || new Map()).values()) {
+            const n = q.plan.slots.length;
+            if (!String(q.key).startsWith("d:") || n <= info.nH) continue;
+            if (Math.hypot(q.ox - info.x, q.oz - info.z) < reich(S, info.nH) + reich(S, n)) return true;
+        }
+        return false;
+    }
     // EINE ZELLE IM TAKT (`_tickAutoSettlement`): verworfen, im Vorlauf bereitet oder erwacht — true, wenn der Takt dabei seinen
     // EINEN Dorf-Akt getan hat.
     // DER ORT MISST AM ORT, SEIN VORLAUF IST ZEIT (w13-dorf-strom): jeder Abstand gilt dem Ort, an dem die Zelle stehen wird —
@@ -2632,6 +2647,10 @@ class AnazhRealm_siedlung_ort {
         const info = this._autoSettlementCellInfo(cx, cz);
         if (!info) {
             this._autoSettlementRejected.add(key); // Zelle trägt kein Dorf (Hash, verdrängt)
+            return false;
+        }
+        if (this._wortOrtVerdraengt(info)) {
+            this._autoSettlementRejected.add(key); // im Reich einer größeren Stadt des Worts (das Rang-Gesetz)
             return false;
         }
         const nah = A.nearM + info.mehrM; // die Stadt erwacht an ihrem Rand, das Dorf bei nearM (`mehrM` 0)
