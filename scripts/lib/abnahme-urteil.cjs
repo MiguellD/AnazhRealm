@@ -508,12 +508,18 @@ function spiegelDaten() {
 }
 
 // DAS URTEIL DER ARMLÄNGE (material.K2 Staffel 1, `werkbank bild --arm` → `klasse.urteil`): POSE — die Klasse steht im Ausgabe-Bild und
-// die Tiefe der Bildmitte trägt die Armlänge (≤ 1,5 × Soll + 0,1 m); MIKRO — je Teil-Klasse nyquist ≥ 0,15 und glatte Blöcke ≤ 10 %,
-// beim Namen mit dem Anteil der glatten Blöcke im Dunkel (`glattDunkel`: der Boden im Schatten, w26-boden-nah). Rückgabe: die Befunde
-// beim Namen, leer = grün.
+// die Tiefe der Bildmitte trägt die Armlänge (≤ 1,5 × Soll + 0,1 m); MIKRO — je Teil-Klasse ein Korn, das der Pixel TRÄGT: glatte
+// Blöcke ≤ 10 % (beim Namen mit dem Anteil im Dunkel, `glattDunkel`) und KEIN PIXEL-RAUSCHEN — die Schachbrett-Energie höchstens
+// `MIKRO.rausch` der Gradient-Energie (ein lesbarer Stein von 4–12 Pixeln 0,02–0,08, Korn mit 4,5 Pixeln Periode 0,10; je Pixel ein
+// eigener Ton — weißes Rauschen 0,33, Korn mit 1,5–2 Pixeln Periode 0,17–0,22, ein Stein von 2,5 Pixeln 0,19, das Raster 1). Bis
+// w28-stadt-grund verlangte es nyquist ≥ 0,15: die Linse belohnte das Rauschen, das sie verbieten sollte (Augen-Karte 11.11. §1F —
+// das Schachbrett hieß im Selbsttest grün). Rückgabe: die Befunde beim Namen, leer = grün.
+const MIKRO = Object.freeze({ rausch: 0.12, glatt: 0.1 });
 const armUrteil = ({ ausdruck: x, arm: a, klassen: k }) =>
     (Object.keys(k).length && a.ist > 0 && a.ist <= 1.5 * a.soll + 0.1 ? [] : [`POSE ${x}: ${Object.keys(k).length} im Bild, Mitte ${a.ist} m`]).concat(
-        Object.entries(k).filter(([, m]) => !(m.nyquist >= 0.15 && m.glatt <= 0.1)).map(([n, m]) => `MIKRO ${n}: nyquist ${m.nyquist} glatt ${m.glatt} dunkel ${m.glattDunkel}`)
+        Object.entries(k)
+            .filter(([, m]) => !(m.nyquist <= MIKRO.rausch && m.glatt <= MIKRO.glatt))
+            .map(([n, m]) => `MIKRO ${n}: ${m.nyquist > MIKRO.rausch ? "Pixel-Rauschen" : "kein Korn"} — nyquist ${m.nyquist} glatt ${m.glatt} dunkel ${m.glattDunkel}`)
     );
 
 // DIE KLASSEN-MASSE (rein, in der Seite als `__klassenMasse`): was das Bild F auf den Pixeln der Maske m zeigt (Luma = Rec. 709
@@ -739,7 +745,10 @@ function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
         [sp[0], sp[3], sp[4]] = [sp[0] + z[0], sp[3] + yy, sp[4] + yy];
         if (xx > 1e-6) sp[5] += yy * (xy / Math.sqrt(xx * yy));
     }
-    // DAS MIKRO-DETAIL (material.K2, `werkbank bild --arm`) je 8×8-Block ganz in der Klasse: `glatt` der Anteil mit Luma-σ < 4;
+    // DAS MIKRO-DETAIL (material.K2, `werkbank bild --arm`) je 8×8-Block ganz in der Klasse: `glatt` der Anteil ohne Korn ÜBER seiner
+    // Neigung im Maß seines Lichts — die Ebene des Blocks fällt heraus (ein Verlauf ist glatt), die Schwelle σ 4 gilt ab Luma 128 und
+    // fällt mit dem Mittel bis σ 1 (Weber: dasselbe Korn ist im Schatten dunkler, nie weniger Korn); bis w28-stadt-grund galt σ < 4
+    // absolut, ein Boden im Schatten mit 30 % Korn (Luma 20, σ 3) hieß glatt;
     // `nyquist` der Anteil der Schachbrett-Energie an der Gradient-Energie seiner 2×2-Zellen (k = (a−b−c+d)/4 gegen gx, gy: ein
     // Pixel-Raster 1, weißes Rauschen 1/3, eine glatte Fläche 0); `beta` die Steigung des Leistungsspektrums P ∝ f^−β aus der
     // Mittel-Pyramide (Band-Energie je Oktave ∝ f^(2−β): β = 2 + halbe Steigung von log2 E über die Stufen 0 … 2, Rauschen 0).
@@ -759,7 +768,11 @@ function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
             if (!voll) continue;
             const mb = B.reduce(addiere, 0) / 64;
             mk[0]++;
-            if (B.reduce((a, b) => a + (b - mb) ** 2, 0) < 1024) mk[1]++, (mk[7] += mb < 32); // σ < 4: Σ(b − μ)² < 16 · 64
+            // der Rest über der Ebene: Σ(b − μ)² − (Σ(b − μ)·u)²/Σu² je Achse (Σu² = 8 · 42 über das 8×8-Feld um seine Mitte)
+            let [qs, qx, qy] = [0, 0, 0];
+            for (let i = 0; i < 64; i++) (qs += (B[i] - mb) ** 2), (qx += (B[i] - mb) * ((i & 7) - 3.5)), (qy += (B[i] - mb) * ((i >> 3) - 3.5));
+            const w = Math.min(1, Math.max(0.25, mb / 128));
+            if (qs - (qx * qx + qy * qy) / 336 < 1024 * w * w) mk[1]++, (mk[7] += mb < 32); // σ < 4 · w: Rest < 16 · 64 · w²
             for (let st = 0, q = 8, P = B; st < 3; st++, q >>= 1) {
                 const Q = new Float32Array((q * q) / 4);
                 for (let i = 0; i < Q.length; i++) {
@@ -1883,9 +1896,24 @@ function sollTafelSelbsttest(tafel, q) {
             const ist = klassenMasse(rauschBild(n, b, 7919), v1, n, n).beta;
             if (!(Math.abs(ist - b) < 0.35)) v.push(`Maß Mikro: β ${b} gemessen als ${ist}`);
         }
-        // das Urteil der Armlänge: Korn (das Schachbrett) grün; ein Boden ohne Mikro-Term (der Verlauf) und eine Pose ohne Fels je ROT beim Namen
-        const ab = [{ boden: sb }, { boden: vl }, {}].map((klassen) => armUrteil({ ausdruck: "fels", arm: { soll: 1, ist: 1 }, klassen })).join("|");
-        if (ab !== "|MIKRO boden: nyquist 0 glatt 1 dunkel 0|POSE fels: 0 im Bild, Mitte 1 m") v.push(`Urteil Arm: ${ab}`);
+        // DAS URTEIL DER ARMLÄNGE (w28-stadt-grund): ein lesbarer Kopfstein (8 Pixel im Läufer-Verband, die Fuge dunkel, Bruchton ±12 %,
+        // der Kopf zur Fuge dunkler) ist grün, derselbe im Schatten (Luma ~20) und das Korn im Schatten ohne Fuge (Luma 20, zwei
+        // schräge Wellen von 8–9 Pixeln: σ 3,5 — das Maß davor nannte es glatt) ebenso; das Raster und das weiße Rauschen ROT als
+        // Pixel-Rauschen, der Verlauf ROT ohne Korn, die Pose ohne Fels ROT. DIE MUTANTE ist das Maß davor (nyquist ≥ 0,15): sie
+        // nennt das Raster grün und den Stein rot — derselbe Test muss sie fallen sehen.
+        const stein = (h) =>
+            grau((x, y) => {
+                const [xs, r] = [x + ((y >> 3) & 1) * 4, y >> 3];
+                const d = Math.min(y & 7, 7 - (y & 7), xs & 7, 7 - (xs & 7));
+                return d ? h * (0.88 + (((xs >> 3) * 73 + r * 151) % 23) / 92) * (1 - 0.25 * (1 - Math.min(1, d / 4)) ** 2) : 0.45 * h;
+            });
+        const korn = grau((x, y) => 20 + 4 * Math.sin(x * 0.7 + y * 0.3) + 3 * Math.sin(y * 0.8 - x * 0.2 + 1));
+        const faelle = [stein(130), stein(22), korn, rauschBild(n, 0, 7919)].map((b) => klassenMasse(b, v1, n, n)).concat(sb, vl);
+        const soll = ["", "", "", "Pixel-Rauschen", "Pixel-Rauschen", "kein Korn"];
+        const arm = (u, k) => u({ ausdruck: "fels", arm: { soll: 1, ist: 1 }, klassen: k }).join();
+        faelle.forEach((m, i) => (soll[i] ? !arm(armUrteil, { boden: m }).includes(soll[i]) : arm(armUrteil, { boden: m })) && v.push(`Urteil Arm ${i}: ${arm(armUrteil, { boden: m })}`));
+        if (faelle.every((m, i) => !soll[i] === (m.nyquist >= 0.15 && m.glatt <= 0.1))) v.push("Urteil Arm: die Mutante nyquist ≥ 0,15 fiel nicht");
+        if (arm(armUrteil, {}) !== "POSE fels: 0 im Bild, Mitte 1 m") v.push(`Urteil Arm Pose: ${arm(armUrteil, {})}`);
     }
     // DIE SPIEGEL-TREUE (D10, A13) geeicht an einer gebauten Welt, je Pixel per Strahl (Kamera 2 m über dem See, waagrecht, 60°;
     // rechts ein Sandstreifen 0,4 m hoch, Bäume dahinter, fern ein Ufer mit Wald, Wolken-Bänder): der ideale Spiegel (F = 1) → ≥ 0,95
