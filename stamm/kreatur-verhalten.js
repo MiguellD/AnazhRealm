@@ -225,6 +225,10 @@ class AnazhRealm_kreatur_verhalten {
         // Witterung — und merkt Ort und Flucht-Radius der stärksten (der Flucht-Zweig flieht von dort). Vorher las sie nur
         // den Spieler: ein gebissener Hirsch wanderte neben dem Wolf weiter (R-D4/K-D11).
         const von = ud._bedrohtVon || (ud._bedrohtVon = { x: 0, z: 0, r: 0 });
+        // DIE GLUT IST BEDROHUNG (w28-brand-flucht, feld.K3#2): eine glühende Zelle des Brands im noticeRadius wiegt wie ein Treffer,
+        // jedes Wesen flieht von ihr, das wilde auch. Vorher kehrte der wilde Zweig hier um, und keiner las die Glut: die Herde
+        // äste 15 m vor der Front (gate:kreatur-takt furcht (C): binnen 10 s floh 0 von 5).
+        if (this._kreaturGlutNah(creature, NAT, von)) return NAT.combatFearWariness;
         if (this._creatureTemperament(creature) === "wild") return this._creatureWarinessSpieler(creature, NAT, von);
         // DER ORT ERINNERT (Ökologie K3): die Beute wittert die Furcht des Orts wie eine Bedrohung (`_kreaturFurchtOrt`)
         const wSpieler = this._kreaturFurchtOrt(creature, NAT, von, this._creatureWarinessSpieler(creature, NAT, von));
@@ -251,6 +255,26 @@ class AnazhRealm_kreatur_verhalten {
         von.z = J.position.z;
         von.r = NAT.noticeRadius;
         return NAT.combatFearWariness;
+    }
+
+    // Die nächste glühende Zelle des Brands im noticeRadius (`_brandGlutUm`: die Blöcke des letzten Schritts, dieselben Zellen, die
+    // Licht, Rauch und Ohr lesen) → ihr Ort und der Flucht-Radius in `von`; ob eine glüht. Ohne Brand kostet die Frage nichts.
+    _kreaturGlutNah(creature, NAT, von) {
+        const bf = this.state.brandFeld;
+        if (!bf || !bf.size) return false;
+        const [x, z, R] = [creature.position.x, creature.position.z, NAT.noticeRadius];
+        let best = R * R;
+        let B = null;
+        this._brandGlutUm(x, z, R, (b) => {
+            const o = b.ort || this._brandOrt(b);
+            const d = (o.x - x) * (o.x - x) + (o.z - z) * (o.z - z);
+            if (d < best) [best, B] = [d, o];
+        });
+        if (!B) return false;
+        von.x = B.x;
+        von.z = B.z;
+        von.r = R;
+        return true;
     }
 
     // Die Wariness vor dem SPIELER (Aura-Menace × Natur × Bindung × Modus + frische Kampf-Furcht); merkt seinen Ort und
