@@ -1,7 +1,7 @@
 {
  "sha": "b1531071aca42251b7a3bf8bb53f70d45f581855",
  "geraet": "gtx",
- "zeit": "2026-11-12T04:38:56.670Z",
+ "zeit": "2026-11-12T05:02:01.241Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "fahrzeug.K2#2": {
@@ -493,6 +493,76 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "lod.K5#1": {
+   "gruen": false,
+   "zahl": "Baum 5.05 px · Haus 0.13 px · Tor 0.18 px · Wagen 0.03 px (Soll ≤ 1 px am Wechsel-Abstand, 1920 × 1080) · gate L2: Exemplar 140 px, [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.67,
+   "grund": "ROT: Baum 5.05 px · Haus 0.13 px · Tor 0.18 px · Wagen 0.03 px (Soll ≤ 1 px am Wechsel-Abstand, 1920 × 1080) · gate L2: Exemplar 140 px, [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "konsum": "kd530fe5bce24",
+   "konsumN": 25,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 2
+   },
+   "konsumBoot": "kd54c369caee0",
+   "s": 39.6,
+   "fremd": {
+    "s": 41.7,
+    "takte": 19,
+    "fremdS": 21,
+    "kerne": 0.503,
+    "fensterKerne": 0.668,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      8.42
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      4.58
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      1.98
+     ]
+    ],
+    "dienerS": 13.63,
+    "diener": [
+     [
+      "System",
+      4.7
+     ],
+     [
+      "dwm.exe",
+      4.53
+     ]
+    ],
+    "geraetS": 16.05,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      8.95
+     ],
+     [
+      "svchost.exe",
+      5.92
+     ],
+     [
+      "SearchIndexer.exe",
+      0.44
+     ]
+    ],
+    "eigenS": 65.58,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-12T05:02:01.241Z",
+   "abdruck": "ca610f2672bb",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "ungemessen": {
@@ -933,14 +1003,42 @@
   }
  },
  "sitzung": {
-  "start": "2026-11-12T04:28:56.405Z",
+  "start": "2026-11-12T05:01:22.175Z",
   "port": 7804,
-  "warten": 10,
+  "warten": 0.01,
+  "bootS": 6.9,
   "grundstellungS": [],
-  "proben": 0,
+  "proben": 1,
   "freigaben": [],
-  "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
-  "minuten": 10.01
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "lod.K5#1",
+    "s": 30.2,
+    "takte": 754,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 71,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 78.8,
+  "minuten": 1.4
  },
  "konsumTafel": {
   "k3430796dbb9f": "bVRdb6MwEPwvPLZ1TfgIBqkPTlOpfThd7iesYW1oCES2CXc53X8/ESAJkHkBWTPenfXYf50jpHtQ+Ppt6spJnCfnxTFwQmJQn1C/fhsncVbRikGY8B6Uc/7e0VJdHK2hWQGKtKj3xoK1pEX1ml5kT3ekshAURAX5AUmjLRblQIrCMPa9hLYfnO2ed9Rnb3NZKTCriQWJo0hkXuRDMic2RoFAAo28FBrIceRHrpfQCxjnu6j//b2oJKDKpt0F0nPj7OL8g7/N+VkBaElZVGaslWah8MdalNJ2qdHQkjNgXqIeRGy9XrFgbHAukGVjzKQI87PQYwmlMZ1x1bEh8n5rEAKYmA8qB6wU6ummURCmQfJgKns4oAZSQT4OJfCZDzeTlG1mkrJI82Ew1XjOgZsy/05EadymfaA6PG+v6/xXH7Sf/IbNcvomhww12dfGXqsEQeQJ6JP6zjlVPxaqW2uDxhNrN2T3dij/XEzB1NK2oJGoYzMIMcAw6q7F14Js4XAYWDL1kIXzIzC2y9okOl4q15foqK6Jz2V0ThoOBITShZRjtkWYyvhRFFosLRF1bUeXUZQJkdAzra5G/zDFN/wR2KPdam3HZkOxdmWQyFOX8XTe6Bl1iQon9mAVe11ohjO/YBv0368tnaBdTP9cYEnOWJnGjHmNoyyWyYNb1j1FAqr9QHQDn62GSOxUZ3fjbtnU7tfG79KmhpAdMaVHXcuiexBoDo3JobSTJ7KnNCgN2DMV0GBF9v6N8u8/",
