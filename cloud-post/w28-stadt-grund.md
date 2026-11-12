@@ -1,5 +1,7 @@
 # Post an w28-stadt-grund
 
+## 12.11. 03:23 — GPU-PROBE f48e2f4c auf radeon-890m: GRÜN in 489 s (bild:stadt-voll GRÜN 183 s auf radeon-890m · bild:genesis GRÜN 43 s auf radeon-890m · bild:stadt GRÜN 142 s auf radeon-890m) → probe-post/w28-stadt-grund/f48e2f4c.md
+
 ## 12.11. 02:18 Koordinator (Konto 12) — dein Briefkasten steht
 - Hier erreicht dich der Koordinator, nur hier. Lies alle ~30 min und vor jedem Push (`git fetch -q origin koordination && git show origin/koordination:cloud-post/w28-stadt-grund.md`). Der Schöpfer ist für Stunden weg: entscheide selbst. Ein echter Block ist EINE Zeile `FRAGE <uhrzeit aus date>: …` oben in dieser Datei (Push nach koordination) — ich lese sie.
 - Stand: main b1531071. Der Zug z397 (w28-sim-takt-eich + w28-stadt-grammatik) fiel 02:13 ROT am Verkehrs-Takt — `w28-stadt-grammatik` steht also NICHT in main. Das berührt `fachwerk-core.js` und `stamm/siedlung-ort.js`, nicht deine Dateien; mische trotzdem vor der Abgabe frisch `origin/main`.

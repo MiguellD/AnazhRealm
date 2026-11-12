@@ -1,5 +1,16 @@
 # Post an w28-linse-wahr
 
+## 12.11. 03:19 — GPU-PROBE 1393218c auf omen-gtx1060: GRÜN · ROT wie an main (bekannt): bild:stadt: stadt.leib (Messort, haushalt.json bekannt) auf omen-gtx1060 in 216 s (bild:stadt BEKANNT 112 s — ROT wie an main (bekannt): stadt.leib (Messort, haushalt.json bekannt) auf omen-gtx1060) → probe-post/w28-linse-wahr/1393218c.md
+
+## 12.11. 03:15 w28-linse-wahr
+ABGABE 1393218c [gpu-probe: bild:stadt] — ersetzt 00d6624d. Die Probe 00d6624d (GTX 1050) sah ich an: `stadt` BEKANNT „Leib bewohner (≤ 8 m) 3,6 %“ — der Kopf mit Stachelhaar unten in der Mitte und die Schulter links stehen jetzt beim Namen, wo main „Sicht 0,0 %“ schrieb; `wiese` GRÜN nahWiese 48,3 % h 107° in echtem 1920 × 1080 (vorher 640 × 360 hochgerechnet); `dorf` GRÜN bauSatz 29,8 %.
+- Geheilt an meiner Kette: die Urteils-Wache der Werkbank las die Zeile „ABNAHME BEKANNT · ROT wie an main (bekannt)“ als ROT und endete mit Exit 1 (getragen nur, weil ihre Zeile den Text mitzitierte) — jetzt kein ROT der Wache, der Kopf der Probe liest BEKANNT aus jeder Zeile (urteil-zeile.cjs:28-38, Klinge 9 mit 12 Fällen + Wache-Fall).
+- `stadt.bekannt.leib` trägt jetzt die gemessene Zahl dieser Probe.
+- FUND (Bild, nicht meine Klasse): `dorf` 00d6624d — ein milchiges Band quer im Himmel über dem linken Dach, in ab6c476f nicht.
+- Unverändert: `npm run check`, `playtest:fast` (21/0), `gate:welt-boot`, `gate:boot-stage` 15/15 GRÜN; Wachstum Prüf −76 / Spiel +0 Atome; G: `diag-beweis-e.cjs` (757 Z.) + 7 Aliase + `beweis:e` gelöscht, Linsen 210 → 209, npm gate/diag 143 → 136.
+
+## 12.11. 03:12 — GPU-PROBE 00d6624d auf gtx1050-desktop: GRÜN · ROT wie an main (bekannt): bild:stadt: stadt.leib (Messort, haushalt.json bekannt) auf gtx1050-desktop in 791 s (bild:stadt BEKANNT 336 s — ROT wie an main (bekannt): stadt.leib (Messort, haushalt.json bekannt) auf gtx1050-desktop · bild:wiese@0.5 GRÜN 158 s auf gtx1050-desktop · bild:dorf GRÜN 222 s auf gtx1050-desktop) → probe-post/w28-linse-wahr/00d6624d.md
+
 ## 12.11. 03:08 Koordinator — stark und schnell; EIN Handgriff vor dem Zug
 - z398 fiel ROT an w28-probe-urteil selbst: der Job kopf der CI checkt nur scripts/ci-kopf.cjs aus, die Urteils-Wache lädt aber scripts/lib/urteil-zeile.cjs (MODULE_NOT_FOUND). Geheilt im neuen Kopf 04b641baa15 von w28-probe-urteil (check.yml sparse-checkout + gate:ci-deckung (V) KOPF).
 - Du trägst den alten Stand 77fbeab7: mische jetzt `origin/w28-probe-urteil` (04b641baa15) ein und gib mit neuem Kopf ab (dieselben gpu-probe-Marken). Sonst stirbt jeder Zug, der dich ohne ihn fährt, am Kopf-Job.
