@@ -669,3 +669,4 @@ omen-gtx-gtx-4d52c7bc-3-4d52c7bc UNGEMESSEN 0 GRÜN / 0 ROT / 1 UNGEMESSEN · UN
 omen-gtx-gtx-4d52c7bc-4-4d52c7bc ROT 0 GRÜN / 1 ROT / 0 UNGEMESSEN · ROT leib.K1#2 ‖ leib.K1#2: schlechtester von 1 Läufen p95 ms ego/gehen 66.1 · third/gehen 54.8 · ego/springen 68.7 · third/springen 38.1 · ego/einsteigen 82 · third/einsteigen 47 · ego/hieb 235.2 · third/hieb 59.6 · Bild 20.84 ms (punkte-maschine d88cd4c2 messung/4d52c7bc-gtx.json)
 omen-gtx-gtx-4d52c7bc-5-4d52c7bc UNGEMESSEN 0 GRÜN / 0 ROT / 0 UNGEMESSEN · ohne Eintrag leib.K3#2 (punkte-maschine fee7afc9 messung/4d52c7bc-gtx.json)
 omen-gtx-gtx-4d52c7bc-b1735-1-4d52c7bc UNGEMESSEN 0 GRÜN / 0 ROT / 0 UNGEMESSEN · ohne Eintrag lod.K2#1 (punkte-maschine aee38c4b messung/4d52c7bc-gtx.json)
+omen-gtx-gtx-4d52c7bc-6-4d52c7bc UNGEMESSEN 0 GRÜN / 0 ROT / 0 UNGEMESSEN · ohne Eintrag leib.K4#2 (punkte-maschine 2c47cccb messung/4d52c7bc-gtx.json)
