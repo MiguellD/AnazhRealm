@@ -213,8 +213,9 @@ $ C:\Program Files\nodejs\node.exe -e const tor = (function sitzungTor() {
     }
 })(tor).then(() => process.exitCode || 0, (e) => ((e && e.messort ? console.log('@@PUNKTE@@ MESSORT ' + e.messort) : 0), console.log('PROBE-FEHLER ' + String((e && e.stack) || e).split('\n').slice(0, 4).join(' | ')), 1)).then(async (c) => { await tor.ende(); process.exit(c); }); C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\4d52c7bc-radeon\streaming.K3_1.json
 [linse-gpu] amd/rdna-3
-SPRUNG 1 EXIT=0 {"m":1000,"stehtS":91.9,"bau":0,"frames":2513,"frameMs":{"p50":33.7,"p95":50.21,"p99":66.72,"max":167.42},"taktMs":{"p50":35.23,"p95":44.95,"p99":54.15,"max":168.36},"profil":true,"ursachen":["TAKT: verteilt x130","TAKT: _runFrameScheduler x14","TAKT: _knotenRate › build [three.webgpu.min.js] x4"]}
-SPRUNG 2 EXIT=0 {"m":1000,"stehtS":89.2,"bau":0,"frames":2368,"frameMs":{"p50":34.08,"p95":50.25,"p99":58.67,"max":176.1},"taktMs":{"p50":35.11,"p95":47.01,"p99":54.07,"max":171.52},"profil":true,"ursachen":["TAKT: verteilt x195","GC: Garbage-Collector x4","GPU: GPU-Leine ohne Auftrag x4"]}
+SPRUNG 1 EXIT=0 {"m":1000,"stehtS":37.9,"bau":0,"frames":1474,"frameMs":{"p50":25.12,"p95":41.88,"p99":58.42,"max":125.52},"taktMs":{"p50":21.11,"p95":36.09,"p99":48.67,"max":129.57},"profil":true,"ursachen":["TAKT: verteilt x19","TAKT: _knotenRate › build [three.webgpu.min.js] x4","GC: Garbage-Collector x3"]}
+SPRUNG 2 EXIT=0 {"m":1000,"stehtS":40,"bau":0,"frames":1504,"frameMs":{"p50":25.14,"p95":41.74,"p99":58.04,"max":200.8},"taktMs":{"p50":23.53,"p95":34.31,"p99":47.01,"max":206.29},"profil":true,"ursachen":["TAKT: verteilt x13","TAKT: _knotenRate › build [three.webgpu.min.js] x8","GC: Garbage-Collector x3"]}
+SPRUNG 3 EXIT=0 {"m":1000,"stehtS":50,"bau":0,"frames":1798,"frameMs":{"p50":25.16,"p95":41.85,"p99":50.37,"max":108.76},"taktMs":{"p50":25.39,"p95":36.04,"p99":47.08,"max":107.99},"profil":true,"ursachen":["TAKT: verteilt x27","GC: Garbage-Collector x4","TAKT: _loopVoxelStreaming › _runFrameScheduler x2"]}
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3
