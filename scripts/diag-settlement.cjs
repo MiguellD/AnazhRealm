@@ -470,7 +470,18 @@ function poolZaehlen(pool, je, qs, rang, horizont, ausser) {
         return q ? q.rang : Infinity;
     };
     const hell = pool.filter((p) => p.staerke > 0);
-    const wartet = Math.min(Infinity, ...horizont.filter((q) => !an(q, hell.map((p) => [p.x, p.z]))).map(rangVon));
+    const wartet = Math.min(
+        Infinity,
+        ...horizont
+            .filter(
+                (q) =>
+                    !an(
+                        q,
+                        hell.map((p) => [p.x, p.z])
+                    )
+            )
+            .map(rangVon)
+    );
     const naeher = hell.filter((p) => !an(p, je) && an(p, qs) && rangVon(p) < ausser && rangVon(p) < wartet).length;
     return { poolOrt: hell.filter((p) => an(p, je)).length + naeher, poolNaeher: naeher };
 }
@@ -1224,12 +1235,31 @@ hauptLauf(async () => {
             // Wandlaterne W 20 m ohne sichtbaren Kopf; der Pool hält A, W, B, C — D wartet. W zählt, solange ihre Kugel den Kegel
             // berührt und ihr Rang vor D liegt (4 von 4); außer dem Kegel, hinter D oder als fremdes Licht zählt sie nie (3 von 4, ROT).
             {
-                const [A, B, C, D, W] = [[8, 0], [21, 0], [35, 0], [43, 0], [0, 20]];
+                const [A, B, C, D, W] = [
+                    [8, 0],
+                    [21, 0],
+                    [35, 0],
+                    [43, 0],
+                    [0, 20],
+                ];
                 const P = (q) => ({ x: q[0], z: q[1] });
                 const pool = [A, W, B, C].map((q) => ({ ...P(q), staerke: 1 }));
-                const rang = (w) => [[A, 8], [W, w], [B, 21], [C, 35], [D, 43]].map(([q, n]) => ({ ...P(q), rang: n }));
-                const zahl = (w, qs = [A, B, C, D, W]) => poolZaehlen(pool, [A, B, C, D], qs, rang(w), [A, B, C, D].map(P), POOL_AUSSER_RANG);
-                const [recht, ausser, hinter, fremd] = [zahl(20), zahl(POOL_AUSSER_RANG + 20), zahl(50), zahl(20, [A, B, C, D])];
+                const rang = (w) =>
+                    [
+                        [A, 8],
+                        [W, w],
+                        [B, 21],
+                        [C, 35],
+                        [D, 43],
+                    ].map(([q, n]) => ({ ...P(q), rang: n }));
+                const zahl = (w, qs = [A, B, C, D, W]) =>
+                    poolZaehlen(pool, [A, B, C, D], qs, rang(w), [A, B, C, D].map(P), POOL_AUSSER_RANG);
+                const [recht, ausser, hinter, fremd] = [
+                    zahl(20),
+                    zahl(POOL_AUSSER_RANG + 20),
+                    zahl(50),
+                    zahl(20, [A, B, C, D]),
+                ];
                 const rot = (n) =>
                     ortVerdikt(Object.assign({}, gut, { quellenGasse: 4, poolPlaetze: 4, poolGasse: n }))
                         .join(" · ")
@@ -1556,6 +1586,50 @@ hauptLauf(async () => {
             }
             return P[P.length - 1];
         };
+        // DER RAND DES WEGS FÜR DEN FUSS DER AUSSTATTUNG (w28-stadt-grammatik, PFLICHT-OFFEN C): die halbe Fahrbahn — an der
+        // Fahrstraße der Stadt (`staedtisch`, ab VERKEHR_GESETZ.breiteM) samt ihrem Gehweg (STADT_DICHTE.gehwegFahrM): der Raum, in
+        // den der Wagen ausschert, der einen Stehenden umfährt. Die Linse rechnet ihn aus den Zahlen des Gesetzbuchs, nie aus dem
+        // Setzer (fachwerk `wegRand`)
+        const wegRandSoll = (pl, rd) =>
+            Math.max(1.2, rd.w || 2.5) / 2 +
+            (pl.staedtisch && (rd.w || 0) >= FC.VERKEHR_GESETZ.breiteM ? FC.STADT_DICHTE.gehwegFahrM : 0);
+        const achsAbstand = (rd, x, z) => {
+            const P = rd.pts || [];
+            let b = Infinity;
+            for (let i = 0; i + 1 < P.length; i++) {
+                const [dx, dz] = [P[i + 1].x - P[i].x, P[i + 1].z - P[i].z];
+                const L2 = dx * dx + dz * dz;
+                const t = L2 > 1e-9 ? Math.max(0, Math.min(1, ((x - P[i].x) * dx + (z - P[i].z) * dz) / L2)) : 0;
+                b = Math.min(b, Math.hypot(x - P[i].x - dx * t, z - P[i].z - dz * t));
+            }
+            return b;
+        };
+        // DIE AUSSTATTUNG AN DER TRASSE: der Fuß jedes Masts neben dem Rand jedes Wegs (`weg`, wie das Dorf-Licht), die Mitte jedes
+        // Brunnens `BRUNNEN_SAUM` hinter ihm (wie `brunnenWeicht` ihn zieht) und keiner von beiden auf einem Torplatz (der Raum der
+        // Wende am Ende der Trasse) — der Täter beim Namen (Art, Ort im Plan, Weg)
+        const BRUNNEN_SAUM = 0.35;
+        const trassenRaum = (pl) => {
+            const wege = [...(pl.roads || []), ...(pl.feldwege || [])];
+            const tore = (pl.zonen || []).filter((z) => z.name === "torplatz" && z.form === "kasten");
+            const taeter = [];
+            const pruefe = (art, l, soll, tritt) => {
+                wege.forEach((rd, ri) => {
+                    const d = achsAbstand(rd, l.x, l.z) - wegRandSoll(pl, rd);
+                    if (d < soll - 0.01)
+                        taeter.push(
+                            `${art} ${l.x.toFixed(1)}/${l.z.toFixed(1)}: ${d.toFixed(2)} m neben dem Rand von Weg ${ri} (w ${rd.w}, Soll ≥ ${soll} m)`
+                        );
+                });
+                for (const z of tore)
+                    if (kasten(z.cx, z.cz, z.phi || 0, z.ex, z.ez, l.x, l.z) < tritt - 0.01)
+                        taeter.push(
+                            `${art} ${l.x.toFixed(1)}/${l.z.toFixed(1)} auf dem Torplatz ${z.cx.toFixed(1)}/${z.cz.toFixed(1)}`
+                        );
+            };
+            for (const l of pl.laternen || []) if (!l.wand) pruefe("Mast", l, trittR, trittR);
+            for (const b of pl.brunnen || []) pruefe("Brunnen", b, BRUNNEN_SAUM, FC.AUSSTATTUNG.brunnen.tritt.r);
+            return taeter;
+        };
         const dorfLicht = (pl) => {
             const L = Array.isArray(pl.laternen) ? pl.laternen : [];
             const maste = L.filter((l) => !l.wand);
@@ -1585,7 +1659,7 @@ hauptLauf(async () => {
             for (const l of maste)
                 for (const rd of [...(pl.roads || []), ...(pl.feldwege || [])]) {
                     const P = rd.pts || [];
-                    const halb = Math.max(1.2, rd.w || 2.5) / 2;
+                    const halb = wegRandSoll(pl, rd);
                     for (let i = 0; i + 1 < P.length; i++) {
                         const dx = P[i + 1].x - P[i].x;
                         const dz = P[i + 1].z - P[i].z;
@@ -1664,6 +1738,27 @@ hauptLauf(async () => {
                     `${seed}/${nH}/${epoche}: die nächste Laterne ${d.weg} m neben dem Wegrand (Soll ≥ ${trittR} m)`
                 );
         }
+        // DIE STADT DER GRAMMATIK (w28-stadt-grammatik): an ihren Fahrstraßen steht kein Mast und kein Brunnen im Gehweg, keiner auf
+        // einem Torplatz (`trassenRaum`)
+        const trassenFehl = [];
+        let trassenN = 0;
+        for (const [seed, nH] of [
+            [7, 18],
+            [7, 120],
+            [7, 300],
+            [11, 200],
+        ]) {
+            const pl = FC.exportSettlement({ seed, nH });
+            const t = trassenRaum(pl);
+            trassenN += (pl.laternen || []).filter((l) => !l.wand).length + (pl.brunnen || []).length;
+            if (!pl.staedtisch) trassenFehl.push(`${seed}/${nH}: keine Stadt (die Probe prüfte nichts)`);
+            if (t.length) trassenFehl.push(`${seed}/${nH}: ${t.length} — ${t.slice(0, 2).join(" · ")}`);
+        }
+        check(
+            `DER RAUM DER TRASSE (PFLICHT-OFFEN C): an der Fahrstraße der Stadt steht kein Mast und kein Brunnen im Gehweg (${FC.STADT_DICHTE.gehwegFahrM} m: der Raum des Wagens, der einen Stehenden umfährt) und keiner auf einem Torplatz (4 Städte, ${trassenN} Masten und Brunnen)`,
+            trassenFehl.length === 0,
+            trassenFehl.slice(0, 3).join(" · ")
+        );
         alleDs.sort(aufsteigend);
         const mq = (q) => (alleDs.length ? rang(alleDs, q) : Infinity);
         if (!Number.isFinite(FC.LICHT_MARKE_M)) lichtFehl.push("der Kern trägt kein LICHT_MARKE_M (das Soll je Meter)");
@@ -1794,7 +1889,43 @@ hauptLauf(async () => {
                 })
             );
         }
+        {
+            // DER RAUM DER TRASSE FÄNGT SEINE TÄTER: der Mast am Bordstein der Fahrstraße (der Stand bis w28-stadt-grammatik:
+            // der Fuß am Wegrand), der Brunnen 0,6 m hinter dem Bordstein (wie bis dahin gezogen) und der Brunnen auf dem Torplatz
+            // fallen beim Namen; derselbe Mast am Wegrand des Dorfs (keine Stadt, kein Gehweg der Trasse) fällt nicht
+            const st = FC.exportSettlement({ seed: 7, nH: 120 });
+            const tr = st.roads.find((rd) => rd.w >= FC.VERKEHR_GESETZ.breiteM && rd.pts.length > 4);
+            const q = tr.pts[3];
+            const neben = (rd, p, o) => ({ x: p.x - Math.sin(p.th) * o, z: p.z + Math.cos(p.th) * o, th: 0 });
+            const tor = (st.zonen || []).find((z) => z.name === "torplatz");
+            const mast = trassenRaum(Object.assign({}, st, { laternen: st.laternen.concat([neben(tr, q, tr.w / 2 + trittR + 0.05)]) })); // prettier-ignore
+            const brunnen = trassenRaum(Object.assign({}, st, { brunnen: st.brunnen.concat([neben(tr, q, tr.w / 2 + 0.6)]) })); // prettier-ignore
+            const amTor = tor ? trassenRaum(Object.assign({}, st, { brunnen: st.brunnen.concat([{ x: tor.cx, z: tor.cz }]) })) : []; // prettier-ignore
+            const dorf = FC.exportSettlement({ seed: 7, nH: 12 });
+            const dq = dorf.roads[0].pts[2];
+            const imDorf = trassenRaum(Object.assign({}, dorf, { laternen: dorf.laternen.concat([neben(dorf.roads[0], dq, dorf.roads[0].w / 2 + trittR + 0.05)]) })); // prettier-ignore
+            check(
+                "Selbst-Test 15b: der Raum der Trasse — die Stadt des Gesetzes besteht, ein Mast am Bordstein ihrer Fahrstraße, ein Brunnen 0,6 m hinter dem Bordstein und einer auf dem Torplatz fallen beim Namen; der Mast am Wegrand des Dorfs fällt nicht",
+                st.staedtisch &&
+                    !dorf.staedtisch &&
+                    trassenRaum(st).length === 0 &&
+                    mast.length > 0 &&
+                    mast.every((t) => t.startsWith("Mast")) &&
+                    brunnen.some((t) => t.startsWith("Brunnen")) &&
+                    amTor.some((t) => t.includes("auf dem Torplatz")) &&
+                    imDorf.length === 0,
+                JSON.stringify({
+                    stadt: trassenRaum(st).slice(0, 2),
+                    mast: mast[0],
+                    brunnen: brunnen[0],
+                    amTor: amTor[0],
+                    imDorf,
+                }).slice(0, 700)
+            );
+        }
     }
+    // `--nur-a`: die Pläne am Tisch (Teil A, Node ohne Karte) — der schnelle Lauf nach einem Schnitt am Setzer
+    if (process.argv.includes("--nur-a")) process.exit(errs.length ? 1 : 0);
 
     // ===== TEIL B: der lebende Kanal (Browser, foundry-ON) =====
     console.log("\n=== TEIL B: der lebende Kanal (Browser, foundry-ON, Null-Renderer) ===");
@@ -3169,7 +3300,13 @@ hauptLauf(async () => {
                             // Wandlaterne 20 m neben dem Auge (die fernste sichtbare 43 m) fiel der Akt „3 Quellen (Soll ≥ 4)“ — an main hielt
                             // dieselbe Art Wandlaterne einen Platz, nur stand das Soll dort bei 3.
                             const kegel = r
-                                ._leuchtQuellen(cam.position.x, cam.position.y, cam.position.z, LP.umkreisM, r._leuchtKegel(cam))
+                                ._leuchtQuellen(
+                                    cam.position.x,
+                                    cam.position.y,
+                                    cam.position.z,
+                                    LP.umkreisM,
+                                    r._leuchtKegel(cam)
+                                )
                                 .map((q) => ({ x: q.x, z: q.z, rang: q.rang }));
                             const gezaehlt = (0, eval)("(" + zaehlSrc + ")")(
                                 pl.map((p) => ({ x: p.x, z: p.z, staerke: p.staerke })),

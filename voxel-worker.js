@@ -927,7 +927,10 @@ function ortWahl(msg) {
                 const n = Math.ceil(2 * Math.PI * ring);
                 for (let j = 0; j < n; j++, k++) {
                     const a = (2 * Math.PI * j) / n;
-                    const o = { x: origin.x + Math.cos(a) * ring * W.schrittM, z: origin.z + Math.sin(a) * ring * W.schrittM };
+                    const o = {
+                        x: origin.x + Math.cos(a) * ring * W.schrittM,
+                        z: origin.z + Math.sin(a) * ring * W.schrittM,
+                    };
                     if (FC.platzImWasser(plan, o, ctx)) {
                         faellt.platz++;
                         continue;
