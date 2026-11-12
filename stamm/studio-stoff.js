@@ -297,7 +297,21 @@ class AnazhRealm_studio_stoff {
         const _suF =
             kind === "foliage" || kind === "foliageTex" || kind === "grass" ? this._ensureSeasonUniforms() : null;
         const _toent = kind === "grass" || jahr === true;
-        const laubFarbe0 = _toent && _suF && _suF.uSeasonMul ? vcol.mul(_suF.uSeasonMul) : vcol;
+        // DER TON JE ECKE (w28-baum-programm): jeder Teil einer Art des Jahrs trägt Ecken und den Stoff des Jahrs
+        // (`_foundryBuildMesh`, `JAHR_ARTEN`) — die Regel, die bis dahin am Stoff stand (ein Teil mit Laub- oder Blüten-Ecken tönt
+        // ganz, jeder andere nie), steht an der Ecke: es tönt jede Ecke außer der stehenden (`JAHR_STEHT`: die Nadel, der Wedel, ein
+        // Teil ohne Laub) und dem Halm (Typ 4: das Schilf, dessen Teil kein Laub trägt). `select`: exakt uSeasonMul oder 1.
+        const _halm = AnazhRealm._saisonGesetz().typ.halm;
+        const _typ = TSL.vertexStage(TSL.attribute("aType", "float"));
+        const _tonJeEcke =
+            jahr === true && kind !== "grass" && _suF && _suF.uSeasonMul
+                ? TSL.select(
+                      _typ.greaterThan(AnazhRealm.JAHR_STEHT + 0.5).and(_typ.sub(_halm).abs().greaterThan(0.5)),
+                      _suF.uSeasonMul,
+                      TSL.vec3(1)
+                  )
+                : null;
+        const laubFarbe0 = _toent && _suF && _suF.uSeasonMul ? vcol.mul(_tonJeEcke || _suF.uSeasonMul) : vcol;
         // DIE BLATT-UNTERSEITE (phyto-core BLATT_UNTERSEITE, 05.10.): die gesehene Fläche nach unten gewandt → die hellere,
         // mattere Unterseite (`_laubUnterseite`, K68-N1: die Fläche, nie die Licht-Normale). Laub und Blüte, nie Gras.
         const laubFarbe =

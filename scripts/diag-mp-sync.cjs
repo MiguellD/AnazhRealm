@@ -46,6 +46,9 @@
 //                 jeder Scheibe der Welt-Uhr denselben Wurf wie A, obwohl B's Nexus drei Regeln mehr zählte (Täter, wenn nicht:
 //                 `_worldRuleSeed` trägt die Platz-Nummer), und die Wirkung (die Erzählung im Wissen, B's Tagebuch nennt A) steht
 //                 auf beiden Seiten. Selbsttests: A sagt die Vorlage → neu ROT; B's dsl-Kanal taub → reist ROT.
+//   (i) DIE TAT DER KI REIST: A's Begleiter baut (dslRun als "llm:grok"), B trägt das Werk mit derselben Kennung; ein Gesetz der
+//                 KI (Kopf "rule") bleibt lokal. Geurteilt an der Marke (A baut danach als Spieler: trägt B sie, trug der Kanal
+//                 alles davor). Vorher 0/1 (das Tor las nur "human"), nachher 1/1. Selbsttest: das alte Tor in `_tatReist` → 0/1.
 // Dazu der Spielpfad: Seite A über den KNOPF (`#p2p-toggle`, zweiter Klick im Aufbau startet kein zweites Init, der
 // Knopf liest die EINE Absicht), Seite B über den BOOT (die gemerkte Absicht aus `p2pPersist`). A läuft nach dem
 // Ladeschirm über die Tastatur (`_stepCharacter`; A bootete zuerst, sein Ladeschirm fällt zuerst), B sieht A an dessen
@@ -919,6 +922,57 @@ hauptLauf(async () => {
                 (g.gleich("zug") ? "" : " — Täter: die Welt-Uhr reist nicht (pos.w)")
         );
         teilSim("Peers", g.A, g.B);
+
+        // ── (i) DIE TAT DER KI REIST: der Begleiter baut (`maybeAnswerWithLlm` → dslRun source "llm:grok"), B trägt das Werk mit
+        // derselben Kennung; ein Gesetz der KI (Kopf "rule") bleibt lokal. Geurteilt am Ereignis: danach baut A als Spieler (die
+        // Marke) — trägt B die Marke, trägt der Kanal alles davor. Täter, wenn ROT: das Tor `_tatReist` liest nur "human".
+        const kiTat = async (altesTor) => {
+            const wB = await pageB.evaluate(werke);
+            const a = await pageA.evaluate((alt) => {
+                if (alt) r._tatReist = (p, c) => c.source === "human";
+                const ids = () => st.architectures.map((e) => String(e.id));
+                const bau = (q, n) => {
+                    const v = ids();
+                    const name = r._studioBlueprintForWord("haus");
+                    const p = ["spawn_studio", "haus", ["at_player_forward", 18 + n * 6], 1, r._bauSame("studio:" + name)];
+                    r.dslRun(p, { source: q });
+                    return ids().filter((id) => !v.includes(id));
+                };
+                const ki = bau("llm:grok", 0);
+                const regel = r._regelAusSatz("wann immer es zufällig passt, dann erzähle Die KI denkt laut").program;
+                const H = r._regelHash({ cond: regel[1], effect: regel[2] });
+                r.dslRun(regel, { source: "llm:grok" });
+                const marke = bau("human", 1);
+                if (alt) delete r._tatReist;
+                return { ki, marke, H, regelA: st.worldRules.some((x) => r._regelHash(x) === H) };
+            }, altesTor);
+            await waitFor(pageB, (w) => st.architectures.filter((e) => e.werk).length >= w, "B trägt die Marke von A", wB + 1);
+            // das alte Tor hinterlässt bei A ein Werk, das B nie sah: A reißt es ab (der Abdruck des Reloads bleibt gleich)
+            if (altesTor) await pageA.evaluate((ki) => ki.forEach((id) => r.dslRun(["remove_architecture", id], { source: "human" })), a.ki);
+            const b = await pageB.evaluate(
+                (ki, H) => ({
+                    ki: ki.filter((id) => st.architectures.some((e) => String(e.id) === id)).length,
+                    regel: st.worldRules.some((x) => r._regelHash(x) === H),
+                }),
+                a.ki,
+                a.H
+            );
+            return { a, b };
+        };
+        const ki = await kiTat(false);
+        check(
+            "(i) die Tat der KI reist: A's Begleiter baut (llm:grok), B trägt das Werk mit derselben Kennung, das Gesetz der KI bleibt lokal",
+            ki.a.ki.length === 1 && ki.b.ki === 1 && ki.a.regelA && !ki.b.regel,
+            `Werke der KI bei B ${ki.b.ki}/${ki.a.ki.length} · Gesetz der KI bei A ${ki.a.regelA}, bei B ${ki.b.regel}` +
+                (ki.b.ki < ki.a.ki.length ? " — Täter _tatReist: das Tor liest nur \"human\"" : "") +
+                (ki.b.regel ? " — Täter _tatReist: das Gesetz der KI reist" : "")
+        );
+        const alt = await kiTat(true);
+        check(
+            "(i) Selbsttest: das alte Tor (nur \"human\") hält die Tat der KI zurück → B trägt sie nicht",
+            alt.a.ki.length === 1 && alt.b.ki === 0,
+            `Werke der KI bei B ${alt.b.ki}/${alt.a.ki.length}`
+        );
 
         // ── (h) DAS GESETZ DES SPIELERS: A schreibt es im Gespräch, B trägt es, beide würfeln gleich, die Wirkung steht bei beiden ──
         await pageB.evaluate(() => (st.dsl.nextRuleId += 3)); // B's Nexus erprobte drei Regeln mehr
