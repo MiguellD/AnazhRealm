@@ -748,6 +748,21 @@ async function probeLeben(expected) {
                 return P._loopErrorBoundary.call(this, e);
             },
         });
+        // DER BAU, AN DEN EIN WAGEN STÖSST, BEIM NAMEN (w28-stadt-grammatik): die Zahl `stoss.bau` nannte nur, dass — je Bau (Art, Same,
+        // Ort) die Stöße der Stunde (`stossBau`, die vier häufigsten), dazu jedes Ende ohne Wende (`endeOhne`)
+        const stossWer = new Map();
+        const stossAus = leihe(r, {
+            _wagenSchritt(e, ...a) {
+                const g = P._wagenSchritt.call(this, e, ...a);
+                if (g)
+                    for (const o of g)
+                        if (o && !o._verkehrWagen && !o.isObject3D && o.position) {
+                            const k = `${o.type} #${o.seed >>> 0} ${Math.round(o.position.x)}/${Math.round(o.position.z)}`;
+                            stossWer.set(k, (stossWer.get(k) || 0) + 1);
+                        }
+                return g;
+            },
+        });
         // DIE STUNDE OHNE VORGESCHICHTE (w28-verkehr-takt, mensch.K2: der Tag nach dem Sprung ist f(Same, t)): vor allen Stunden
         // springt die Uhr einmal in die erste (`zwillingS` Sekunden, der Zwilling: nur der Abdruck) — ihr Lauf danach trägt
         // seine Vorgeschichte, das Gesetz nicht: der Abdruck jedes Bilds (die Lage jedes Leibs und jedes Wagens, bitgenau) gleicht
@@ -773,6 +788,7 @@ async function probeLeben(expected) {
             // die Probe mied den Fall, den das Spiel stellt: an der Radeon stand er 0,5 m neben der Mitte der Kreuzung am Markt,
             // ihre Halter warteten auf ihn, und von 20 Wagen fuhren 15–55 s nach dem Sprung nur 9 (10 Uhr) und 8 (23 Uhr) 30 m
             [wurf[0], wurf[1]] = [0, null];
+            stossWer.clear();
             stelle(sx, sz, 0.2);
             r._uhrSetzen(stunde / 24, "regler");
             // DER SPRUNG GEHT IM TAKT (`_tickBewohner`): erst ein Bild, dann die Frage — und keiner kommt mehr an. Bis pflicht.C#1 hieß
@@ -1079,6 +1095,8 @@ async function probeLeben(expected) {
                 stufen: VK.zahl.stufen.slice(0, 6),
                 fest: VK.wagen.filter((W) => W.festOrt).map((W) => ({ ...W.festOrt, nr: W.nr })),
                 stoss: Object.fromEntries(Object.entries(VK.zahl.stoss).map(([k, v]) => [k, v - stoss0[k]])),
+                stossBau: [...stossWer].sort((a, b) => b[1] - a[1]).slice(0, 4).map(([k, n]) => `${k}: ${n}`),
+                endeOhne: VK.kp.filter((K) => K.ende && !K.wende).map((K) => [Math.round(K.x), Math.round(K.z)]),
                 beruehrt: { leib: m.leib, wagen: m.wagen, bau: m.bau, orte: m.leibOrte, bauOrte: m.bauOrte },
                 knapp: m.knapp,
                 ankunft,
@@ -1107,6 +1125,7 @@ async function probeLeben(expected) {
             };
         }
         wurfAus();
+        stossAus();
         return aus;
     };
     if (expected.nurKette || expected.nurRueck || expected.wegenetz || expected.verkehr) {
