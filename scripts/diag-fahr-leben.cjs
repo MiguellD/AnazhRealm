@@ -851,7 +851,7 @@ const TAKT_EICH = { eichN: 6000, k8: Math.round((0.05 / EICH_RUHE_MS) * 1000) };
 // (`paare` × Soll der Wagen), eine Suche des Warte-Graphen im Mittel höchstens `kreis` Schritte (die Tiefe seines Gangs). Gemessen
 // 600 s: 10 Uhr 4,17 Wagen je Blick, 3,03 Schritte je Suche, 23 Uhr 3,91 / 2,89; die Mutante 222,73 Wagen je Blick bei 0,755 ms (die Wanduhr sah sie nicht)
 const ARBEIT = { paare: 0.25, kreis: 12 };
-const VERKEHR = { stunden: [10, 23], sek: 600, wagen: 20, fristS: 300, fahrbahn: 0.05, weg60M: 30, raumM: 0.2, leibS: 20, zwillingS: 20 };
+const VERKEHR = { stunden: [10, 23], sek: 600, wagen: 20, ohrM: 40, fristS: 300, fahrbahn: 0.05, weg60M: 30, raumM: 0.2, leibS: 20, zwillingS: 20 };
 // DIE STUNDE OHNE VORGESCHICHTE (mensch.K2, w28-verkehr-takt; `vorgeschichte` in fahr-proben): die erste Stunde zuerst als
 // Zwilling (`zwillingS` Sekunden), dann ihr Lauf — jedes Bild bitgenau wie im Zwilling [Bilder beider Läufe, das erste Bild, das
 // sich trennt]. Am 11.11. (main e6f0cf7e) trennte sich 10 Uhr nach 300 Bildern Vorlauf in Bild 307 (Gehende) und 2197 (Wagen),
@@ -2656,7 +2656,7 @@ hauptLauf(async () => {
             // `--taeter` (pflicht.C#1): um 10 Uhr 130 s (zwei volle Minuten), Wagen 0 ohne Fahrer, Wagen 1 neben der Trasse, Wagen 2
             // in Wagen 3, der erste gemessene Fahrer auf dem Dach, und keiner umfährt den stehenden Spieler in der Kreuzung — jeder
             // beim Namen (der letzte als Kopf der Reihe der kürzesten Minute, `spieler`)
-            { verkehr: { ...VERKEHR, mutanteArbeit: schalter("--mutante-arbeit"), ...(STUNDE != null && { stunden: [STUNDE] }), ...(SEK != null && { sek: SEK }), ...(schalter("--platz") && { stand: "platz" }), ...(TAETER && { stunden: [10], sek: 130, taeter: 1, zwillingS: 0 }) } }, // prettier-ignore
+            { verkehr: { ...VERKEHR, mutanteArbeit: schalter("--mutante-arbeit"), mutanteSprung: schalter("--mutante-sprung"), mutanteOhr: schalter("--mutante-ohr"), ...(STUNDE != null && { stunden: [STUNDE] }), ...(SEK != null && { sek: SEK }), ...(schalter("--platz") && { stand: "platz" }), ...(TAETER && { stunden: [10], sek: 130, taeter: 1, zwillingS: 0 }) } }, // prettier-ignore
             (o) => {
                 const vg = o.verkehr && o.verkehr.vorgeschichte;
                 if (!TAETER) check("VK-V (mensch.K2) die Stunde ohne Vorgeschichte: dieselbe Saat, dasselbe Bild", !vorgeschichteVerdict(vg).length, vorgeschichteVerdict(vg).join(" · ") || JSON.stringify(vg)); // prettier-ignore

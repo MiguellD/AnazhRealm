@@ -739,7 +739,7 @@ class AnazhRealm_siedlung_ort {
     // Spec nennt die Regel, `ortPose`; bis hier stand die Probe an Koordinaten: das Dorf bestand die Abnahme ohne ein Haus im Bild).
     // { x, z, gier, ziel: {x, z} } — ohne Siedlung, ohne Platz, ohne freien Bau bricht sie beim Namen (die Probe stünde
     // sonst an einem Ort, den keiner gerechnet hat).
-    _ortPose(nahe) {
+    _ortPose(nahe, regel = "platz") {
         // die Siedlung ist die nächste binnen 200 m: die gegründete an ihrem Anker (die Ort-Wahl rückt ihn um Bruchteile
         // eines mm), das Dorf des Zugs vor seinem Zell-Ort (`_siedlungsAnker`)
         let [S, dMin] = [null, 200];
@@ -779,6 +779,20 @@ class AnazhRealm_siedlung_ort {
             throw new Error(
                 `_ortPose: die lange Achse des Platzes ${(S.ox + pz.cx).toFixed(1)} ${(S.oz + pz.cz).toFixed(1)} liegt ganz in der Spur eines Wagens`
             );
+        // DIE REGEL „trasse" (w28-verkehr-bild, PFLICHT-OFFEN C: der Verkehr im Bild): der Wagen in Fahrt, der dem Stand am nächsten
+        // fährt, 40 m seine Route voraus der erste Punkt quer zu ihr auf dem Weg und außer jeder Spur, der Blick zurück auf ihn — er
+        // fährt dem Auge entgegen, sein Fahrer am Steuer. Die Kegel sahen nie über eine Fahrbahn: „kein fahrzeug im Bild" 3/3
+        const W = regel === "trasse" && S.verkehr && S.verkehr.wagen.filter((w) => w.zustand === "faehrt" && w.F && w.F.lang - w.F.s > 60).sort((a, b) => Math.hypot(a.entry.position.x - M.x, a.entry.position.z - M.z) - Math.hypot(b.entry.position.x - M.x, b.entry.position.z - M.z))[0]; // prettier-ignore
+        for (let i = W ? W.F.i : 0, o = 2; W && o <= 10; o += 0.25) {
+            while (i + 2 < W.F.pts.length && W.F.bogen[i + 1] < W.F.s + 40) i++;
+            const [a, b, e] = [W.F.pts[i], W.F.pts[i + 1], W.entry.position];
+            const l = Math.hypot(b.x - a.x, b.z - a.z) || 1;
+            for (const q of [1, -1].map((v) => ({ x: a.x + ((b.z - a.z) / l) * o * v, z: a.z - ((b.x - a.x) / l) * o * v })))
+                if (!this._verkehrAufSpur(S, q.x, q.z) && this._aufWeg(q.x, q.z, 0))
+                    return { x: q.x, z: q.z, gier: this._blickGierZu(e.x - q.x, e.z - q.z), ziel: { x: e.x, z: e.z }, wagen: W.nr };
+        }
+        if (regel === "trasse")
+            throw new Error(`_ortPose: kein Wagen in Fahrt mit freiem Stand an seiner Trasse (${S.verkehr ? S.verkehr.wagen.length : 0} Wagen)`);
         const bau = (p.slots || [])
             .filter((q) => q && q.obb)
             .map((q) => ({ x: S.ox + q.obb.cx, z: S.oz + q.obb.cz, r: Math.min(q.obb.ex, q.obb.ez), obb: q.obb }));
