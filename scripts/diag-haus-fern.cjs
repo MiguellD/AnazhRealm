@@ -145,7 +145,8 @@ function tuerGefangen(g) {
     const h = new T.Vector3();
     for (const o of TUER_FANG) {
         const P = blattPunkte(o);
-        if (!P.length || P.filter((p) => gitter.has(mmKey(p[0], p[1], p[2]))).length < 0.9 * P.length) continue;
+        // das Gitter der Stufe liegt auf dem Byte-Raster des Kerns (buildInstance, ausRaster 1/4096): der gefangene Punkt rastert mit
+        if (!P.length || P.filter((p) => gitter.has(mmKey(...p.map((v) => Math.round(v * 4096) / 4096)))).length < 0.9 * P.length) continue;
         h.setFromMatrixPosition(o.matrixWorld);
         if (je.has(mmKey(h.x, 0, h.z))) continue;
         je.add(mmKey(h.x, 0, h.z));
