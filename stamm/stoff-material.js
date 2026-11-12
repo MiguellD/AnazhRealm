@@ -2211,17 +2211,12 @@ class AnazhRealm_stoff_material {
     // unter ihr. Leser: die Nässe der Stoffe (`_naesseHimmel`, je Fragment) und die Schliere des Regens (`_ensureRainSystem`,
     // je Schliere: unter der Decke fällt kein Regen — bis dahin fiel er durch jedes Dach, gate:naesse:echt sah ihn am Haus des
     // Dorfs auf der Trasse: 27 Regen-Punkte innen).
+    // DIE PLÄTZE SIND EINE SCHLEIFE (w28-baum-programm, wie der Licht-Pool `_lichtPoolTerm`): die Decken laufen über `T.Loop` je
+    // Platz, ihre Werte wählt der Zähler (`_jePlatz`: dieselben Uniforms, EIN Schreiber `_dachTakt`) — dieselbe Rechnung in derselben
+    // Reihenfolge (das Maximum beginnt bei 0), nur nicht ausgeschrieben: acht Plätze standen in jedem beleuchteten Programm.
+    // Die Schleife steht im Zweig der Hülle (`If`), wie zuvor die Plätze: draußen zahlt kein Fragment sie.
     _offenerHimmel(T, p) {
         const U = this._ensureAtmoUniforms();
-        let unter = T.float(0);
-        for (let k = 0; k < U.dachLage.length; k++) {
-            const L = U.dachLage[k];
-            const M = U.dachMass[k];
-            const d = p.xz.sub(L.xy);
-            const lx = d.x.mul(L.z).sub(d.y.mul(L.w)).abs();
-            const lz = d.x.mul(L.w).add(d.y.mul(L.z)).abs();
-            unter = unter.max(T.step(lx, M.x).mul(T.step(lz, M.y)).mul(T.step(p.y, M.z)));
-        }
         // DIE HÜLLE DES POOLS (naesse-kosten): die Plätze prüft nur ein Ort im Kasten um alle Decken und unter ihrer höchsten
         // Oberkante (`dachHuelle`/`dachOben`, `_dachTakt`) — draußen steht er unter offenem Himmel, ohne Decke ist der Kasten leer.
         // Gemessen GTX in EINER Welt (Wiese Ego, Regen 10 min, gpu-bank): der Pool kostete jedes nasse Fragment +0,54 ms je Bild,
@@ -2233,7 +2228,22 @@ class AnazhRealm_stoff_material {
             .and(p.z.greaterThanEqual(H.y))
             .and(p.z.lessThanEqual(H.w))
             .and(p.y.lessThanEqual(U.dachOben));
-        return T.select(drin, T.float(1).sub(unter), T.float(1));
+        return T.Fn(() => {
+            const offen = T.float(1).toVar();
+            T.If(drin, () => {
+                const unter = T.float(0).toVar();
+                T.Loop(U.dachLage.length, ({ i: k }) => {
+                    const L = AnazhRealm._jePlatz(T, U.dachLage, k);
+                    const M = AnazhRealm._jePlatz(T, U.dachMass, k);
+                    const d = p.xz.sub(L.xy);
+                    const lx = d.x.mul(L.z).sub(d.y.mul(L.w)).abs();
+                    const lz = d.x.mul(L.w).add(d.y.mul(L.z)).abs();
+                    unter.assign(unter.max(T.step(lx, M.x).mul(T.step(lz, M.y)).mul(T.step(p.y, M.z))));
+                });
+                offen.assign(T.float(1).sub(unter));
+            });
+            return offen;
+        })();
     }
 
     // DIE DECKE ÜBER DEM AUGE (je Takt, einmal auf der CPU — Lehre 14): dieselbe Regel wie `_offenerHimmel`, am Ort des Auges aus
@@ -2385,44 +2395,83 @@ class AnazhRealm_stoff_material {
     // DER WURF (schatten.K5, `_lichtWurf`): der Platz `platz` trägt den Faktor seines Würfel-Schattens — EIN Faktor je Fragment,
     // als Operand NACH dem Zweig jedes Platzes (`select(…) · mix(1, wurf, platz = k)`): r184 schreibt einen Knoten, wo er zuerst
     // gebaut wird (Lehre 26) — im Zweig des ersten Platzes läse jeder spätere Platz die ungerechnete Variable; so steht er auf
-    // der obersten Ebene des Fragments, ohne Fn-Rumpf. Außerhalb der Reichweite des Wurfs rechnet r184s Würfel-Filter nur den
-    // Vergleich mit Nah- und Fern-Ebene, keine Abtastung.
+    // der obersten Ebene des Fragments. Außerhalb der Reichweite des Wurfs rechnet r184s Würfel-Filter nur den Vergleich mit
+    // Nah- und Fern-Ebene, keine Abtastung.
+    // DIE PLÄTZE SIND EINE SCHLEIFE (w28-baum-programm): das Gesetz EINES Platzes (`_lichtPlatz`) läuft über `Te.Loop` je Platz —
+    // dieselbe Rechnung in derselben Reihenfolge (die Summe beginnt bei 0, 0 + t₀ = t₀), nur nicht ausgeschrieben. Der Pool
+    // steht in JEDEM beleuchteten Programm: vier ausgeschriebene Zweige trugen ~13 KB in jeden Fragment-Text, und den Text zahlt
+    // jedes Programm vor dem ersten Bild in der EINEN Schlange des GPU-Prozesses. Gemessen an 3308689f (GTX 1050, je Fragment-Text
+    // allein übersetzt, drei Durchgänge, der kleinste; mit der Schleife des Dach-Pools): −5,0 KB je Programm, die zwölf
+    // Standard-Programme Σ 9,49 → 8,97 s, die GPU-Zeit je Bild gleich (gpu-bank an der Wiese 12,05–12,48 ↔ 12,22–12,35 ms). VOR der
+    // Schleife steht, was jeder Platz liest und nur EINMAL entsteht (in der Fn auf dem Stapel, `toVar`): die Lage und die Normale des
+    // Blicks (r184 baut eine Variable dort, wo sie zuerst gebaut wird — in der Schleife liefe die Normale des Stoffs je Platz neu)
+    // und der Faktor des Wurfs. Die Werte des Platzes wählt der Zähler über eine Kette von `select` (`_jePlatz`, dieselben Uniforms,
+    // EIN Schreiber `_leuchtTakt`) — als Reihe im Speicher des Fragments (`array(...).toVar()`, der Zähler als Index) verdoppelte die
+    // Schleife die GPU-Zeit je Bild (12,3 → 23,9 ms), als Uniform-Reihe (`uniformArray`) kostete sie +0,7–1,0 ms GPU und +0,45 ms
+    // CPU. NICHT als Schleife: die fünf Punkte des Kaskaden-Filters (`_schattenFilter`) — eine Schleife mit Abtastung kostete
+    // +0,35–0,47 ms GPU je Bild (der Treiber überlappt die Abgriffe nicht mehr) für −0,6 s Übersetzung; der Pool trägt keine.
+    // Die Schleife lebt in einer Fn ohne Layout: nur in ihrem Bau hat `Loop` einen Stapel.
     _lichtPoolTerm(Te, atmo, himmel) {
         const W = this._lichtWurf();
+        return Te.Fn(() => {
+            Te.normalView.toVar();
+            Te.positionView.toVar();
+            const wurf = W.faktor.toVar();
+            const summe = Te.vec3(0).toVar();
+            Te.Loop(atmo.lichtLage.length, ({ i: k }) => {
+                const platz = {
+                    lage: AnazhRealm._jePlatz(Te, atmo.lichtLage, k),
+                    farbe: AnazhRealm._jePlatz(Te, atmo.lichtFarbe, k),
+                    ersatz: AnazhRealm._jePlatz(Te, atmo.lichtErsatz, k),
+                    kern: AnazhRealm._jePlatz(Te, atmo.lichtKern, k),
+                };
+                summe.addAssign(
+                    this._lichtPlatz(Te, platz, himmel).mul(Te.mix(Te.float(1), wurf, Te.float(W.platz.equal(k))))
+                );
+            });
+            return summe;
+        })();
+    }
+
+    // DIE WAHL DES PLATZES (die Schleifen der Pools): das Glied `k` (der Zähler der Schleife) einer Reihe von Uniforms als Kette
+    // von `select` — der Zähler ist in jedem Fragment derselbe, die Zweige laufen gleich; KEINE Reihe im Speicher des Fragments
+    // (`array(...).toVar()` mit dem Zähler als Index: gpu-bank GTX 1050 an der Wiese 12,28 → 23,87 ms je Bild).
+    static _jePlatz(T, reihe, k) {
+        let w = reihe[reihe.length - 1];
+        for (let j = reihe.length - 2; j >= 0; j--) w = T.select(k.equal(j), reihe[j], w);
+        return w;
+    }
+
+    // DAS GESETZ EINES PLATZES (K11, der Rumpf der Schleife des Pools): `platz` = { lage, farbe, ersatz, kern } — Knoten des Platzes
+    // (in der Schleife die Glieder der Reihen, im Selbsttest einer Linse die Uniforms eines Platzes); `himmel` die Himmels-Sicht
+    // der Fläche (der Boden: `aHimmel`) oder nichts. Der Abfall des Gesetzes, das Gewicht des Himmels-Ersatzes, die Bedingung
+    // (Reichweite, Gewicht, Fläche in ihr und ihm zugewandt — sie liest `positionView` und `normalView`) und die EINE BRDF
+    // (`_punktLichtBrdf`). → der Beitrag des Platzes ohne den Faktor des Wurfs.
+    _lichtPlatz(Te, platz, himmel) {
         const N = Te.normalView;
         const P = Te.positionView;
-        let summe = null;
-        for (let k = 0; k < atmo.lichtLage.length; k++) {
-            const lage = atmo.lichtLage[k];
-            const farbe = atmo.lichtFarbe[k];
-            const ersatz = atmo.lichtErsatz[k];
-            const kern = atmo.lichtKern[k];
-            const gewicht = himmel ? ersatz.mul(himmel).oneMinus() : ersatz.oneMinus();
-            const Lv = Te.cameraViewMatrix.mul(Te.vec4(lage.xyz, 1)).xyz.sub(P);
-            const d = Lv.length();
-            const bedingung = lage.w
-                .greaterThan(0)
-                .and(gewicht.greaterThan(0))
-                .and(d.lessThan(lage.w))
-                .and(N.dot(Lv).greaterThan(0));
-            const L = Lv.div(d);
-            const nl = N.dot(L).clamp();
-            const q = d.div(lage.w).pow2();
-            const abst = q
-                .pow2()
-                .oneMinus()
-                .clamp()
-                .pow2()
-                .mul(d.mul(d).add(kern).pow(farbe.a.mul(-0.5)));
-            const beitrag = farbe.rgb
-                .mul(nl.mul(abst).mul(gewicht))
-                .mul(this._punktLichtBrdf(Te, N, L, P.negate().normalize(), nl));
-            const term = Te.select(bedingung, beitrag, Te.vec3(0)).mul(
-                Te.mix(Te.float(1), W.faktor, Te.float(W.platz.equal(k)))
-            );
-            summe = summe ? summe.add(term) : term;
-        }
-        return summe;
+        const { lage, farbe, ersatz, kern } = platz;
+        const gewicht = himmel ? ersatz.mul(himmel).oneMinus() : ersatz.oneMinus();
+        const Lv = Te.cameraViewMatrix.mul(Te.vec4(lage.xyz, 1)).xyz.sub(P);
+        const d = Lv.length();
+        const bedingung = lage.w
+            .greaterThan(0)
+            .and(gewicht.greaterThan(0))
+            .and(d.lessThan(lage.w))
+            .and(N.dot(Lv).greaterThan(0));
+        const L = Lv.div(d);
+        const nl = N.dot(L).clamp();
+        const q = d.div(lage.w).pow2();
+        const abst = q
+            .pow2()
+            .oneMinus()
+            .clamp()
+            .pow2()
+            .mul(d.mul(d).add(kern).pow(farbe.a.mul(-0.5)));
+        const beitrag = farbe.rgb
+            .mul(nl.mul(abst).mul(gewicht))
+            .mul(this._punktLichtBrdf(Te, N, L, P.negate().normalize(), nl));
+        return Te.select(bedingung, beitrag, Te.vec3(0));
     }
 
     // DIE EINE BRDF EINES PUNKTLICHTS (K11, jeder Platz des Licht-Pools): r184s Lambert + GGX ausgeschrieben — BRDF_Lambert,
