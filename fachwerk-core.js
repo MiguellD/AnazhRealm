@@ -3925,7 +3925,12 @@
     // über den Hang (Gefälle p95 22–36 % an zwei von vier Saaten), der Erdbau glättete danach.
     function trasseLenk(H, x, z, th, DS){
       if(!H) return th;
-      const lim=ORT_GESETZ.trasse, h0=H(x,z), g=t=>Math.abs(H(x+Math.cos(t)*DS, z+Math.sin(t)*DS)-h0)/DS;
+      // DIE TRASSE LIEST DAS WASSER WIE DEN HANG (w28-stadt-grammatik, `H.nass`: nur der Plan, der Wasser liest — die Stadt): ein Schritt
+      // auf eine nasse Zelle (samt `STADT_DICHTE.wasserM`) trägt nicht, die Straße folgt dem Ufer wie der Höhenlinie; trägt keine Richtung,
+      // quert sie (die Brücke des Plans v2). Bis hier wichen Los, Scheune, Laterne und Gasse dem Wasser im Plan selbst aus, das Gerippe
+      // fragte nie: die Ort-Wahl hatte kein nasses Haus mehr abzuweisen, der Markt blieb am Ufer, seine Ost-Straße lief 42 m längs im
+      // Fluss — elf Jochfelder mit dem Fundament 0,8 m im Wasser (gate:werk-im-wasser Z, z397; an main wies die Ort-Wahl den Ort ab).
+      const lim=ORT_GESETZ.trasse, h0=H(x,z), g=t=>{ const nx=x+Math.cos(t)*DS, nz=z+Math.sin(t)*DS; return H.nass&&H.nass(nx,nz,STADT_DICHTE.wasserM)?Infinity:Math.abs(H(nx,nz)-h0)/DS; };
       let bg=g(th); if(bg<=lim) return th;
       let best=th;
       for(let k=1;k<=15;k++){ const d=k*0.1, a=g(th+d), b=g(th-d);
@@ -8912,7 +8917,7 @@
         }
         return false;
     }
-    // NIMMT DAS WASSER AM ORT `origin` EIN HAUS des Exports `plan` (siedlung.K5)? Ein Slot, den `ortPlan` über `ctx` fallen ließe
+    // NIMMT DAS WASSER AM ORT `origin` EIN HAUS ODER DEN PLATZ des Exports `plan` (siedlung.K5)? Ein Slot, den `ortPlan` über `ctx` fallen ließe
     // (`slotImWasser`: erst die Mitte jedes Hauses, dann sein ganzes Raster), −1 ohne — ohne den Plan zu rechnen. Leser: die
     // Ort-Wahl der Welt (voxel-worker `ortWahl`: ein Ort, an dem das Wasser ein Haus nimmt, trägt den Plan nie ganz).
     function ortImWasser(plan, origin, ctx) {
@@ -8923,6 +8928,19 @@
         };
         for (var m = 1; m >= 0; m--)
             for (var i = 0; i < plan.slots.length; i++) if (slotImWasser(plan.slots[i], am, eingangVon, m)) return i;
+        // DER PLATZ LIEGT NIE IM WASSER (w28-stadt-grammatik): was der Plan nicht rücken kann — sein Platz ist die Mitte seines
+        // Gerippes —, weist die Ort-Wahl ab wie das nasse Haus (5 × 5 Punkte seines Rechtecks; Rückgabe: die Zahl der Slots, kein Haus)
+        var pz = plan.platz;
+        if (pz && pz.ex > 0 && pz.ez > 0) {
+            var pc = Math.cos(pz.phi || 0);
+            var ps = Math.sin(pz.phi || 0);
+            for (var pu = -1; pu <= 1; pu += 0.5)
+                for (var pv = -1; pv <= 1; pv += 0.5) {
+                    var plx = pu * pz.ex;
+                    var plz = pv * pz.ez;
+                    if (am(pz.cx + plx * pc + plz * ps, pz.cz - plx * ps + plz * pc)) return plan.slots.length;
+                }
+        }
         return -1;
     }
     // STEHT EIN HAUS DES EXPORTS `plan` AM ORT `origin` SICHER IN EINEM STEHENDEN BAU (siedlung.K5, Lehre 25: das billige Urteil
