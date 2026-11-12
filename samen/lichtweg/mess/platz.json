@@ -1,0 +1,4477 @@
+{
+ "heute-nacht": {
+  "fall": "heute",
+  "uhr": "nacht",
+  "pose": "auge",
+  "plaetze": 4,
+  "wegwerf": 0,
+  "glas": "misch",
+  "programme": {
+   "fragment": 20,
+   "vertex": 10
+  },
+  "textBytes": {
+   "fragment": 266269,
+   "vertex": 23172
+  },
+  "groesstesFragment": 22292,
+  "knotenBau": {
+   "n": 20,
+   "ms": 154.60000000009313,
+   "knoten": 8746
+  },
+  "bau": [
+   {
+    "ms": 17,
+    "knoten": 73,
+    "stoff": "RenderPipeline",
+    "fs": 1871
+   },
+   {
+    "ms": 4.2000000001862645,
+    "knoten": 65,
+    "stoff": "Background.material",
+    "fs": 1079
+   },
+   {
+    "ms": 23.399999999906868,
+    "knoten": 755,
+    "stoff": "eisen",
+    "fs": 21803
+   },
+   {
+    "ms": 1.2999999998137355,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 870
+   },
+   {
+    "ms": 0.8000000000465661,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 871
+   },
+   {
+    "ms": 0.8000000000465661,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 872
+   },
+   {
+    "ms": 0.8000000000465661,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 871
+   },
+   {
+    "ms": 2.4000000001396984,
+    "knoten": 83,
+    "stoff": "ShadowMaterial",
+    "fs": 1088
+   },
+   {
+    "ms": 2.5,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 871
+   },
+   {
+    "ms": 12.699999999953434,
+    "knoten": 694,
+    "stoff": "putz",
+    "fs": 21738
+   },
+   {
+    "ms": 10.300000000046566,
+    "knoten": 529,
+    "stoff": "laternenglas",
+    "fs": 17799
+   },
+   {
+    "ms": 10.099999999860302,
+    "knoten": 694,
+    "stoff": "stein",
+    "fs": 21737
+   },
+   {
+    "ms": 10.199999999953434,
+    "knoten": 694,
+    "stoff": "dach",
+    "fs": 21736
+   },
+   {
+    "ms": 11.800000000046566,
+    "knoten": 716,
+    "stoff": "pflaster",
+    "fs": 22071
+   },
+   {
+    "ms": 10,
+    "knoten": 754,
+    "stoff": "laub",
+    "fs": 22292
+   },
+   {
+    "ms": 6.5,
+    "knoten": 694,
+    "stoff": "balken",
+    "fs": 21738
+   },
+   {
+    "ms": 6.899999999906868,
+    "knoten": 694,
+    "stoff": "rinde",
+    "fs": 21738
+   },
+   {
+    "ms": 6,
+    "knoten": 692,
+    "stoff": "fensterglas",
+    "fs": 21706
+   },
+   {
+    "ms": 6.7000000001862645,
+    "knoten": 719,
+    "stoff": "wasser",
+    "fs": 21841
+   },
+   {
+    "ms": 10.199999999953434,
+    "knoten": 690,
+    "stoff": "scheibe",
+    "fs": 21677
+   }
+  ],
+  "quellenMitPlatz": 4,
+  "laternenImBild": 7,
+  "laternenMitRing": 7,
+  "beleuchtend": 0,
+  "laternen": [
+   {
+    "id": 0,
+    "x": 13,
+    "z": 0,
+    "abstand": 23.097185975785013,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 2.1707499999999995,
+    "platz": false
+   },
+   {
+    "id": 1,
+    "x": 9.2,
+    "z": 9.2,
+    "abstand": 16.521501142450703,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": true
+   },
+   {
+    "id": 2,
+    "x": 0,
+    "z": 13,
+    "abstand": 7.42159012611179,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": true
+   },
+   {
+    "id": 3,
+    "x": -9.2,
+    "z": 9.2,
+    "abstand": 2.8284271247461894,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": true
+   },
+   {
+    "id": 4,
+    "x": -13,
+    "z": 0,
+    "abstand": 12.61269202034205,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": true
+   },
+   {
+    "id": 5,
+    "x": -9.2,
+    "z": -9.2,
+    "abstand": 20.497804760510327,
+    "kopfImBild": true,
+    "ringPunkte": 3,
+    "heller": 0.8311333333333332,
+    "platz": false
+   },
+   {
+    "id": 6,
+    "x": 0,
+    "z": -13,
+    "abstand": 25.24836628378161,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 0,
+    "platz": false
+   },
+   {
+    "id": 7,
+    "x": 9.2,
+    "z": -9.2,
+    "abstand": 26.174797038372617,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 0,
+    "platz": false
+   },
+   {
+    "id": 8,
+    "x": 3.2,
+    "z": -22,
+    "abstand": 34.79080338250326,
+    "kopfImBild": true,
+    "ringPunkte": 4,
+    "heller": 0,
+    "platz": false
+   },
+   {
+    "id": 9,
+    "x": -3.2,
+    "z": -31,
+    "abstand": 42.389149555045336,
+    "kopfImBild": true,
+    "ringPunkte": 3,
+    "heller": 0,
+    "platz": false
+   },
+   {
+    "id": 10,
+    "x": 3.2,
+    "z": -40,
+    "abstand": 52.24557397521823,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 0,
+    "platz": false
+   },
+   {
+    "id": 11,
+    "x": 22,
+    "z": 3.2,
+    "abstand": 30.27606315226602,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": false
+   },
+   {
+    "id": 12,
+    "x": 31,
+    "z": -3.2,
+    "abstand": 40.82401254164025,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": false
+   },
+   {
+    "id": 13,
+    "x": 40,
+    "z": 3.2,
+    "abstand": 47.873165761206984,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": false
+   }
+  ],
+  "bildMsSwiftshader": [
+   143.60000000009313,
+   182,
+   187.5
+  ],
+  "wandS": 3,
+  "fehler": [
+   "Failed to load resource: the server responded with a status of 404 (Not Found)"
+  ]
+ },
+ "heute-nacht-oben": {
+  "fall": "heute",
+  "uhr": "nacht",
+  "pose": "oben",
+  "plaetze": 4,
+  "wegwerf": 0,
+  "glas": "misch",
+  "programme": {
+   "fragment": 20,
+   "vertex": 10
+  },
+  "textBytes": {
+   "fragment": 266269,
+   "vertex": 23172
+  },
+  "groesstesFragment": 22292,
+  "knotenBau": {
+   "n": 20,
+   "ms": 153.39999999967404,
+   "knoten": 8746
+  },
+  "bau": [
+   {
+    "ms": 15.199999999953434,
+    "knoten": 73,
+    "stoff": "RenderPipeline",
+    "fs": 1871
+   },
+   {
+    "ms": 4.5,
+    "knoten": 65,
+    "stoff": "Background.material",
+    "fs": 1079
+   },
+   {
+    "ms": 26.699999999953434,
+    "knoten": 755,
+    "stoff": "balken",
+    "fs": 21802
+   },
+   {
+    "ms": 1.0999999998603016,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 870
+   },
+   {
+    "ms": 0.8999999999068677,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 871
+   },
+   {
+    "ms": 0.8000000000465661,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 872
+   },
+   {
+    "ms": 0.6999999999534339,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 871
+   },
+   {
+    "ms": 2.800000000046566,
+    "knoten": 83,
+    "stoff": "ShadowMaterial",
+    "fs": 1088
+   },
+   {
+    "ms": 0.9000000001396984,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 871
+   },
+   {
+    "ms": 9.699999999953434,
+    "knoten": 694,
+    "stoff": "dach",
+    "fs": 21736
+   },
+   {
+    "ms": 9.5,
+    "knoten": 694,
+    "stoff": "putz",
+    "fs": 21738
+   },
+   {
+    "ms": 9.899999999906868,
+    "knoten": 694,
+    "stoff": "eisen",
+    "fs": 21739
+   },
+   {
+    "ms": 5.399999999906868,
+    "knoten": 529,
+    "stoff": "laternenglas",
+    "fs": 17799
+   },
+   {
+    "ms": 6.800000000046566,
+    "knoten": 694,
+    "stoff": "stein",
+    "fs": 21737
+   },
+   {
+    "ms": 7.899999999906868,
+    "knoten": 716,
+    "stoff": "pflaster",
+    "fs": 22071
+   },
+   {
+    "ms": 8.600000000093132,
+    "knoten": 754,
+    "stoff": "laub",
+    "fs": 22292
+   },
+   {
+    "ms": 20.300000000046566,
+    "knoten": 694,
+    "stoff": "rinde",
+    "fs": 21738
+   },
+   {
+    "ms": 8,
+    "knoten": 692,
+    "stoff": "fensterglas",
+    "fs": 21706
+   },
+   {
+    "ms": 6.899999999906868,
+    "knoten": 719,
+    "stoff": "wasser",
+    "fs": 21841
+   },
+   {
+    "ms": 6.800000000046566,
+    "knoten": 690,
+    "stoff": "scheibe",
+    "fs": 21677
+   }
+  ],
+  "quellenMitPlatz": 4,
+  "laternenImBild": 14,
+  "laternenMitRing": 12,
+  "beleuchtend": 4,
+  "laternen": [
+   {
+    "id": 0,
+    "x": 13,
+    "z": 0,
+    "abstand": 40.459856648287825,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 2.873825,
+    "platz": false
+   },
+   {
+    "id": 1,
+    "x": 9.2,
+    "z": 9.2,
+    "abstand": 31.969985924300936,
+    "kopfImBild": true,
+    "ringPunkte": 6,
+    "heller": 101.59509999999999,
+    "platz": true
+   },
+   {
+    "id": 2,
+    "x": 0,
+    "z": 13,
+    "abstand": 22.203603311174515,
+    "kopfImBild": true,
+    "ringPunkte": 4,
+    "heller": 103.453,
+    "platz": true
+   },
+   {
+    "id": 3,
+    "x": -9.2,
+    "z": 9.2,
+    "abstand": 18.965231345807517,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 101.2037,
+    "platz": true
+   },
+   {
+    "id": 4,
+    "x": -13,
+    "z": 0,
+    "abstand": 26.476404589747453,
+    "kopfImBild": true,
+    "ringPunkte": 7,
+    "heller": 102.38577142857143,
+    "platz": true
+   },
+   {
+    "id": 5,
+    "x": -9.2,
+    "z": -9.2,
+    "abstand": 36.28332950543542,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 2.56215,
+    "platz": false
+   },
+   {
+    "id": 6,
+    "x": 0,
+    "z": -13,
+    "abstand": 42.95346318982906,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 0,
+    "platz": false
+   },
+   {
+    "id": 7,
+    "x": 9.2,
+    "z": -9.2,
+    "abstand": 44.4846040782651,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 0,
+    "platz": false
+   },
+   {
+    "id": 8,
+    "x": 3.2,
+    "z": -22,
+    "abstand": 52.47323127081083,
+    "kopfImBild": true,
+    "ringPunkte": 5,
+    "heller": 0,
+    "platz": false
+   },
+   {
+    "id": 9,
+    "x": -3.2,
+    "z": -31,
+    "abstand": 58.89006707416795,
+    "kopfImBild": true,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": false
+   },
+   {
+    "id": 10,
+    "x": 3.2,
+    "z": -40,
+    "abstand": 69.32128100374372,
+    "kopfImBild": true,
+    "ringPunkte": 4,
+    "heller": 0,
+    "platz": false
+   },
+   {
+    "id": 11,
+    "x": 22,
+    "z": 3.2,
+    "abstand": 46.041720211130254,
+    "kopfImBild": true,
+    "ringPunkte": 5,
+    "heller": 0,
+    "platz": false
+   },
+   {
+    "id": 12,
+    "x": 31,
+    "z": -3.2,
+    "abstand": 57.04068723288667,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 0,
+    "platz": false
+   },
+   {
+    "id": 13,
+    "x": 40,
+    "z": 3.2,
+    "abstand": 62.32046212922366,
+    "kopfImBild": true,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": false
+   }
+  ],
+  "bildMsSwiftshader": [
+   217.39999999990687,
+   193.19999999995343,
+   203.10000000009313
+  ],
+  "wandS": 4,
+  "fehler": []
+ },
+ "heute-mittag": {
+  "fall": "heute",
+  "uhr": "mittag",
+  "pose": "auge",
+  "plaetze": 4,
+  "wegwerf": 0,
+  "glas": "misch",
+  "programme": {
+   "fragment": 20,
+   "vertex": 10
+  },
+  "textBytes": {
+   "fragment": 266178,
+   "vertex": 23172
+  },
+  "groesstesFragment": 22260,
+  "knotenBau": {
+   "n": 20,
+   "ms": 133.5999999998603,
+   "knoten": 8742
+  },
+  "bau": [
+   {
+    "ms": 11.899999999906868,
+    "knoten": 73,
+    "stoff": "RenderPipeline",
+    "fs": 1871
+   },
+   {
+    "ms": 3.5999999998603016,
+    "knoten": 65,
+    "stoff": "Background.material",
+    "fs": 1077
+   },
+   {
+    "ms": 19.299999999813735,
+    "knoten": 755,
+    "stoff": "eisen",
+    "fs": 21803
+   },
+   {
+    "ms": 0.9000000001396984,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 872
+   },
+   {
+    "ms": 0.8000000000465661,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 870
+   },
+   {
+    "ms": 0.6000000000931323,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 871
+   },
+   {
+    "ms": 0.7000000001862645,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 871
+   },
+   {
+    "ms": 2,
+    "knoten": 83,
+    "stoff": "ShadowMaterial",
+    "fs": 1088
+   },
+   {
+    "ms": 0.8000000000465661,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 871
+   },
+   {
+    "ms": 7.899999999906868,
+    "knoten": 694,
+    "stoff": "putz",
+    "fs": 21738
+   },
+   {
+    "ms": 6.900000000139698,
+    "knoten": 527,
+    "stoff": "laternenglas",
+    "fs": 17773
+   },
+   {
+    "ms": 7.599999999860302,
+    "knoten": 694,
+    "stoff": "stein",
+    "fs": 21737
+   },
+   {
+    "ms": 5.399999999906868,
+    "knoten": 694,
+    "stoff": "dach",
+    "fs": 21736
+   },
+   {
+    "ms": 10.600000000093132,
+    "knoten": 716,
+    "stoff": "pflaster",
+    "fs": 22071
+   },
+   {
+    "ms": 5.899999999906868,
+    "knoten": 754,
+    "stoff": "laub",
+    "fs": 22260
+   },
+   {
+    "ms": 6.2000000001862645,
+    "knoten": 694,
+    "stoff": "balken",
+    "fs": 21738
+   },
+   {
+    "ms": 16.199999999953434,
+    "knoten": 694,
+    "stoff": "rinde",
+    "fs": 21738
+   },
+   {
+    "ms": 8.399999999906868,
+    "knoten": 690,
+    "stoff": "fensterglas",
+    "fs": 21675
+   },
+   {
+    "ms": 12.399999999906868,
+    "knoten": 719,
+    "stoff": "wasser",
+    "fs": 21841
+   },
+   {
+    "ms": 5.5,
+    "knoten": 690,
+    "stoff": "scheibe",
+    "fs": 21677
+   }
+  ],
+  "quellenMitPlatz": 0,
+  "laternenImBild": 7,
+  "laternenMitRing": 7,
+  "beleuchtend": 0,
+  "laternen": [
+   {
+    "id": 0,
+    "x": 13,
+    "z": 0,
+    "abstand": 23.097185975785013,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 0,
+    "platz": false
+   },
+   {
+    "id": 1,
+    "x": 9.2,
+    "z": 9.2,
+    "abstand": 16.521501142450703,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": false
+   },
+   {
+    "id": 2,
+    "x": 0,
+    "z": 13,
+    "abstand": 7.42159012611179,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": false
+   },
+   {
+    "id": 3,
+    "x": -9.2,
+    "z": 9.2,
+    "abstand": 2.8284271247461894,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": false
+   },
+   {
+    "id": 4,
+    "x": -13,
+    "z": 0,
+    "abstand": 12.61269202034205,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": false
+   },
+   {
+    "id": 5,
+    "x": -9.2,
+    "z": -9.2,
+    "abstand": 20.497804760510327,
+    "kopfImBild": true,
+    "ringPunkte": 3,
+    "heller": 0,
+    "platz": false
+   },
+   {
+    "id": 6,
+    "x": 0,
+    "z": -13,
+    "abstand": 25.24836628378161,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 0,
+    "platz": false
+   },
+   {
+    "id": 7,
+    "x": 9.2,
+    "z": -9.2,
+    "abstand": 26.174797038372617,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 0,
+    "platz": false
+   },
+   {
+    "id": 8,
+    "x": 3.2,
+    "z": -22,
+    "abstand": 34.79080338250326,
+    "kopfImBild": true,
+    "ringPunkte": 4,
+    "heller": 0,
+    "platz": false
+   },
+   {
+    "id": 9,
+    "x": -3.2,
+    "z": -31,
+    "abstand": 42.389149555045336,
+    "kopfImBild": true,
+    "ringPunkte": 3,
+    "heller": 0,
+    "platz": false
+   },
+   {
+    "id": 10,
+    "x": 3.2,
+    "z": -40,
+    "abstand": 52.24557397521823,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 0,
+    "platz": false
+   },
+   {
+    "id": 11,
+    "x": 22,
+    "z": 3.2,
+    "abstand": 30.27606315226602,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": false
+   },
+   {
+    "id": 12,
+    "x": 31,
+    "z": -3.2,
+    "abstand": 40.82401254164025,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": false
+   },
+   {
+    "id": 13,
+    "x": 40,
+    "z": 3.2,
+    "abstand": 47.873165761206984,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": false
+   }
+  ],
+  "bildMsSwiftshader": [
+   134.5999999998603,
+   139,
+   141
+  ],
+  "wandS": 3,
+  "fehler": []
+ },
+ "pool16-nacht": {
+  "fall": "pool16",
+  "uhr": "nacht",
+  "pose": "auge",
+  "plaetze": 16,
+  "wegwerf": 0,
+  "glas": "misch",
+  "programme": {
+   "fragment": 20,
+   "vertex": 10
+  },
+  "textBytes": {
+   "fragment": 355228,
+   "vertex": 27854
+  },
+  "groesstesFragment": 30382,
+  "knotenBau": {
+   "n": 20,
+   "ms": 140.80000000051223,
+   "knoten": 11518
+  },
+  "bau": [
+   {
+    "ms": 11.600000000093132,
+    "knoten": 73,
+    "stoff": "RenderPipeline",
+    "fs": 1871
+   },
+   {
+    "ms": 3.4000000001396984,
+    "knoten": 65,
+    "stoff": "Background.material",
+    "fs": 1079
+   },
+   {
+    "ms": 22.199999999953434,
+    "knoten": 1007,
+    "stoff": "eisen",
+    "fs": 29889
+   },
+   {
+    "ms": 0.8000000000465661,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 870
+   },
+   {
+    "ms": 0.6999999999534339,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 871
+   },
+   {
+    "ms": 0.5,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 872
+   },
+   {
+    "ms": 1.7000000001862645,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 871
+   },
+   {
+    "ms": 2.199999999953434,
+    "knoten": 83,
+    "stoff": "ShadowMaterial",
+    "fs": 1088
+   },
+   {
+    "ms": 0.5,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 871
+   },
+   {
+    "ms": 11.300000000046566,
+    "knoten": 946,
+    "stoff": "putz",
+    "fs": 29825
+   },
+   {
+    "ms": 6.399999999906868,
+    "knoten": 529,
+    "stoff": "laternenglas",
+    "fs": 17799
+   },
+   {
+    "ms": 9,
+    "knoten": 946,
+    "stoff": "stein",
+    "fs": 29824
+   },
+   {
+    "ms": 9.100000000093132,
+    "knoten": 946,
+    "stoff": "dach",
+    "fs": 29823
+   },
+   {
+    "ms": 7.5,
+    "knoten": 968,
+    "stoff": "pflaster",
+    "fs": 30158
+   },
+   {
+    "ms": 8.600000000093132,
+    "knoten": 1006,
+    "stoff": "laub",
+    "fs": 30382
+   },
+   {
+    "ms": 14.700000000186265,
+    "knoten": 946,
+    "stoff": "balken",
+    "fs": 29825
+   },
+   {
+    "ms": 7.300000000046566,
+    "knoten": 946,
+    "stoff": "rinde",
+    "fs": 29825
+   },
+   {
+    "ms": 10.799999999813735,
+    "knoten": 944,
+    "stoff": "fensterglas",
+    "fs": 29793
+   },
+   {
+    "ms": 6.5,
+    "knoten": 971,
+    "stoff": "wasser",
+    "fs": 29928
+   },
+   {
+    "ms": 6,
+    "knoten": 942,
+    "stoff": "scheibe",
+    "fs": 29764
+   }
+  ],
+  "quellenMitPlatz": 13,
+  "laternenImBild": 7,
+  "laternenMitRing": 7,
+  "beleuchtend": 6,
+  "laternen": [
+   {
+    "id": 0,
+    "x": 13,
+    "z": 0,
+    "abstand": 23.097185975785013,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 108.03840000000001,
+    "platz": true
+   },
+   {
+    "id": 1,
+    "x": 9.2,
+    "z": 9.2,
+    "abstand": 16.521501142450703,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": true
+   },
+   {
+    "id": 2,
+    "x": 0,
+    "z": 13,
+    "abstand": 7.42159012611179,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": true
+   },
+   {
+    "id": 3,
+    "x": -9.2,
+    "z": 9.2,
+    "abstand": 2.8284271247461894,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": true
+   },
+   {
+    "id": 4,
+    "x": -13,
+    "z": 0,
+    "abstand": 12.61269202034205,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": true
+   },
+   {
+    "id": 5,
+    "x": -9.2,
+    "z": -9.2,
+    "abstand": 20.497804760510327,
+    "kopfImBild": true,
+    "ringPunkte": 3,
+    "heller": 96.35173333333331,
+    "platz": true
+   },
+   {
+    "id": 6,
+    "x": 0,
+    "z": -13,
+    "abstand": 25.24836628378161,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 115.1044,
+    "platz": true
+   },
+   {
+    "id": 7,
+    "x": 9.2,
+    "z": -9.2,
+    "abstand": 26.174797038372617,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 94.096525,
+    "platz": true
+   },
+   {
+    "id": 8,
+    "x": 3.2,
+    "z": -22,
+    "abstand": 34.79080338250326,
+    "kopfImBild": true,
+    "ringPunkte": 4,
+    "heller": 105.6659,
+    "platz": true
+   },
+   {
+    "id": 9,
+    "x": -3.2,
+    "z": -31,
+    "abstand": 42.389149555045336,
+    "kopfImBild": true,
+    "ringPunkte": 3,
+    "heller": 114.95293333333332,
+    "platz": true
+   },
+   {
+    "id": 10,
+    "x": 3.2,
+    "z": -40,
+    "abstand": 52.24557397521823,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 0.862525,
+    "platz": false
+   },
+   {
+    "id": 11,
+    "x": 22,
+    "z": 3.2,
+    "abstand": 30.27606315226602,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": true
+   },
+   {
+    "id": 12,
+    "x": 31,
+    "z": -3.2,
+    "abstand": 40.82401254164025,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": true
+   },
+   {
+    "id": 13,
+    "x": 40,
+    "z": 3.2,
+    "abstand": 47.873165761206984,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": true
+   }
+  ],
+  "bildMsSwiftshader": [
+   1039.3999999999069,
+   1028.5999999998603,
+   962.6000000000931
+  ],
+  "wandS": 9,
+  "fehler": []
+ },
+ "pool16-nacht-oben": {
+  "fall": "pool16",
+  "uhr": "nacht",
+  "pose": "oben",
+  "plaetze": 16,
+  "wegwerf": 0,
+  "glas": "misch",
+  "programme": {
+   "fragment": 20,
+   "vertex": 10
+  },
+  "textBytes": {
+   "fragment": 355228,
+   "vertex": 27879
+  },
+  "groesstesFragment": 30382,
+  "knotenBau": {
+   "n": 20,
+   "ms": 162.09999999962747,
+   "knoten": 11518
+  },
+  "bau": [
+   {
+    "ms": 13,
+    "knoten": 73,
+    "stoff": "RenderPipeline",
+    "fs": 1871
+   },
+   {
+    "ms": 4.099999999860302,
+    "knoten": 65,
+    "stoff": "Background.material",
+    "fs": 1079
+   },
+   {
+    "ms": 24.699999999953434,
+    "knoten": 1007,
+    "stoff": "balken",
+    "fs": 29888
+   },
+   {
+    "ms": 1.1000000000931323,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 870
+   },
+   {
+    "ms": 0.8000000000465661,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 871
+   },
+   {
+    "ms": 0.5999999998603016,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 872
+   },
+   {
+    "ms": 0.7999999998137355,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 871
+   },
+   {
+    "ms": 2.9000000001396984,
+    "knoten": 83,
+    "stoff": "ShadowMaterial",
+    "fs": 1088
+   },
+   {
+    "ms": 1,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 871
+   },
+   {
+    "ms": 15.900000000139698,
+    "knoten": 946,
+    "stoff": "dach",
+    "fs": 29823
+   },
+   {
+    "ms": 8.5,
+    "knoten": 946,
+    "stoff": "putz",
+    "fs": 29825
+   },
+   {
+    "ms": 7.5,
+    "knoten": 946,
+    "stoff": "eisen",
+    "fs": 29826
+   },
+   {
+    "ms": 6.899999999906868,
+    "knoten": 529,
+    "stoff": "laternenglas",
+    "fs": 17799
+   },
+   {
+    "ms": 7.899999999906868,
+    "knoten": 946,
+    "stoff": "stein",
+    "fs": 29824
+   },
+   {
+    "ms": 9,
+    "knoten": 968,
+    "stoff": "pflaster",
+    "fs": 30158
+   },
+   {
+    "ms": 14.5,
+    "knoten": 1006,
+    "stoff": "laub",
+    "fs": 30382
+   },
+   {
+    "ms": 9.199999999953434,
+    "knoten": 946,
+    "stoff": "rinde",
+    "fs": 29825
+   },
+   {
+    "ms": 7.5,
+    "knoten": 944,
+    "stoff": "fensterglas",
+    "fs": 29793
+   },
+   {
+    "ms": 12.800000000046566,
+    "knoten": 971,
+    "stoff": "wasser",
+    "fs": 29928
+   },
+   {
+    "ms": 13.399999999906868,
+    "knoten": 942,
+    "stoff": "scheibe",
+    "fs": 29764
+   }
+  ],
+  "quellenMitPlatz": 9,
+  "laternenImBild": 14,
+  "laternenMitRing": 12,
+  "beleuchtend": 9,
+  "laternen": [
+   {
+    "id": 0,
+    "x": 13,
+    "z": 0,
+    "abstand": 40.459856648287825,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 108.90337499999998,
+    "platz": true
+   },
+   {
+    "id": 1,
+    "x": 9.2,
+    "z": 9.2,
+    "abstand": 31.969985924300936,
+    "kopfImBild": true,
+    "ringPunkte": 6,
+    "heller": 102.9866,
+    "platz": true
+   },
+   {
+    "id": 2,
+    "x": 0,
+    "z": 13,
+    "abstand": 22.203603311174515,
+    "kopfImBild": true,
+    "ringPunkte": 4,
+    "heller": 103.453,
+    "platz": true
+   },
+   {
+    "id": 3,
+    "x": -9.2,
+    "z": 9.2,
+    "abstand": 18.965231345807517,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 101.2037,
+    "platz": true
+   },
+   {
+    "id": 4,
+    "x": -13,
+    "z": 0,
+    "abstand": 26.476404589747453,
+    "kopfImBild": true,
+    "ringPunkte": 7,
+    "heller": 103.81337142857141,
+    "platz": true
+   },
+   {
+    "id": 5,
+    "x": -9.2,
+    "z": -9.2,
+    "abstand": 36.28332950543542,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 94.36767499999999,
+    "platz": true
+   },
+   {
+    "id": 6,
+    "x": 0,
+    "z": -13,
+    "abstand": 42.95346318982906,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 105.31747499999999,
+    "platz": true
+   },
+   {
+    "id": 7,
+    "x": 9.2,
+    "z": -9.2,
+    "abstand": 44.4846040782651,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 98.53214999999997,
+    "platz": true
+   },
+   {
+    "id": 8,
+    "x": 3.2,
+    "z": -22,
+    "abstand": 52.47323127081083,
+    "kopfImBild": true,
+    "ringPunkte": 5,
+    "heller": 3.957440000000001,
+    "platz": false
+   },
+   {
+    "id": 9,
+    "x": -3.2,
+    "z": -31,
+    "abstand": 58.89006707416795,
+    "kopfImBild": true,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": false
+   },
+   {
+    "id": 10,
+    "x": 3.2,
+    "z": -40,
+    "abstand": 69.32128100374372,
+    "kopfImBild": true,
+    "ringPunkte": 4,
+    "heller": 0,
+    "platz": false
+   },
+   {
+    "id": 11,
+    "x": 22,
+    "z": 3.2,
+    "abstand": 46.041720211130254,
+    "kopfImBild": true,
+    "ringPunkte": 5,
+    "heller": 101.00415999999998,
+    "platz": true
+   },
+   {
+    "id": 12,
+    "x": 31,
+    "z": -3.2,
+    "abstand": 57.04068723288667,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 0.7652499999999998,
+    "platz": false
+   },
+   {
+    "id": 13,
+    "x": 40,
+    "z": 3.2,
+    "abstand": 62.32046212922366,
+    "kopfImBild": true,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": false
+   }
+  ],
+  "bildMsSwiftshader": [
+   1523.8999999999069,
+   1512,
+   1531.5
+  ],
+  "wandS": 12,
+  "fehler": []
+ },
+ "pool16-mittag": {
+  "fall": "pool16",
+  "uhr": "mittag",
+  "pose": "auge",
+  "plaetze": 16,
+  "wegwerf": 0,
+  "glas": "misch",
+  "programme": {
+   "fragment": 20,
+   "vertex": 10
+  },
+  "textBytes": {
+   "fragment": 355137,
+   "vertex": 27854
+  },
+  "groesstesFragment": 30350,
+  "knotenBau": {
+   "n": 20,
+   "ms": 129.59999999962747,
+   "knoten": 11514
+  },
+  "bau": [
+   {
+    "ms": 11.5,
+    "knoten": 73,
+    "stoff": "RenderPipeline",
+    "fs": 1871
+   },
+   {
+    "ms": 3.199999999953434,
+    "knoten": 65,
+    "stoff": "Background.material",
+    "fs": 1077
+   },
+   {
+    "ms": 20.899999999906868,
+    "knoten": 1007,
+    "stoff": "eisen",
+    "fs": 29889
+   },
+   {
+    "ms": 0.9000000001396984,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 872
+   },
+   {
+    "ms": 0.5,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 870
+   },
+   {
+    "ms": 0.6000000000931323,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 871
+   },
+   {
+    "ms": 1.5999999998603016,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 871
+   },
+   {
+    "ms": 2.1000000000931323,
+    "knoten": 83,
+    "stoff": "ShadowMaterial",
+    "fs": 1088
+   },
+   {
+    "ms": 0.5999999998603016,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 871
+   },
+   {
+    "ms": 10.699999999953434,
+    "knoten": 946,
+    "stoff": "putz",
+    "fs": 29825
+   },
+   {
+    "ms": 4.800000000046566,
+    "knoten": 527,
+    "stoff": "laternenglas",
+    "fs": 17773
+   },
+   {
+    "ms": 9.100000000093132,
+    "knoten": 946,
+    "stoff": "stein",
+    "fs": 29824
+   },
+   {
+    "ms": 8.399999999906868,
+    "knoten": 946,
+    "stoff": "dach",
+    "fs": 29823
+   },
+   {
+    "ms": 7,
+    "knoten": 968,
+    "stoff": "pflaster",
+    "fs": 30158
+   },
+   {
+    "ms": 8.300000000046566,
+    "knoten": 1006,
+    "stoff": "laub",
+    "fs": 30350
+   },
+   {
+    "ms": 10.100000000093132,
+    "knoten": 946,
+    "stoff": "balken",
+    "fs": 29825
+   },
+   {
+    "ms": 6.7999999998137355,
+    "knoten": 946,
+    "stoff": "rinde",
+    "fs": 29825
+   },
+   {
+    "ms": 10.099999999860302,
+    "knoten": 942,
+    "stoff": "fensterglas",
+    "fs": 29762
+   },
+   {
+    "ms": 6.5,
+    "knoten": 971,
+    "stoff": "wasser",
+    "fs": 29928
+   },
+   {
+    "ms": 5.899999999906868,
+    "knoten": 942,
+    "stoff": "scheibe",
+    "fs": 29764
+   }
+  ],
+  "quellenMitPlatz": 0,
+  "laternenImBild": 7,
+  "laternenMitRing": 7,
+  "beleuchtend": 0,
+  "laternen": [
+   {
+    "id": 0,
+    "x": 13,
+    "z": 0,
+    "abstand": 23.097185975785013,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 0,
+    "platz": false
+   },
+   {
+    "id": 1,
+    "x": 9.2,
+    "z": 9.2,
+    "abstand": 16.521501142450703,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": false
+   },
+   {
+    "id": 2,
+    "x": 0,
+    "z": 13,
+    "abstand": 7.42159012611179,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": false
+   },
+   {
+    "id": 3,
+    "x": -9.2,
+    "z": 9.2,
+    "abstand": 2.8284271247461894,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": false
+   },
+   {
+    "id": 4,
+    "x": -13,
+    "z": 0,
+    "abstand": 12.61269202034205,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": false
+   },
+   {
+    "id": 5,
+    "x": -9.2,
+    "z": -9.2,
+    "abstand": 20.497804760510327,
+    "kopfImBild": true,
+    "ringPunkte": 3,
+    "heller": 0,
+    "platz": false
+   },
+   {
+    "id": 6,
+    "x": 0,
+    "z": -13,
+    "abstand": 25.24836628378161,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 0,
+    "platz": false
+   },
+   {
+    "id": 7,
+    "x": 9.2,
+    "z": -9.2,
+    "abstand": 26.174797038372617,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 0,
+    "platz": false
+   },
+   {
+    "id": 8,
+    "x": 3.2,
+    "z": -22,
+    "abstand": 34.79080338250326,
+    "kopfImBild": true,
+    "ringPunkte": 4,
+    "heller": 0,
+    "platz": false
+   },
+   {
+    "id": 9,
+    "x": -3.2,
+    "z": -31,
+    "abstand": 42.389149555045336,
+    "kopfImBild": true,
+    "ringPunkte": 3,
+    "heller": 0,
+    "platz": false
+   },
+   {
+    "id": 10,
+    "x": 3.2,
+    "z": -40,
+    "abstand": 52.24557397521823,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 0,
+    "platz": false
+   },
+   {
+    "id": 11,
+    "x": 22,
+    "z": 3.2,
+    "abstand": 30.27606315226602,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": false
+   },
+   {
+    "id": 12,
+    "x": 31,
+    "z": -3.2,
+    "abstand": 40.82401254164025,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": false
+   },
+   {
+    "id": 13,
+    "x": 40,
+    "z": 3.2,
+    "abstand": 47.873165761206984,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": false
+   }
+  ],
+  "bildMsSwiftshader": [
+   1016.5,
+   1040.6999999999534,
+   1116.2999999998137
+  ],
+  "wandS": 9,
+  "fehler": []
+ },
+ "pass-nacht": {
+  "fall": "pass",
+  "uhr": "nacht",
+  "pose": "auge",
+  "plaetze": 16,
+  "wegwerf": 0,
+  "glas": "misch",
+  "programme": {
+   "fragment": 20,
+   "vertex": 10
+  },
+  "textBytes": {
+   "fragment": 234208,
+   "vertex": 21845
+  },
+  "groesstesFragment": 18752,
+  "knotenBau": {
+   "n": 20,
+   "ms": 135.19999999995343,
+   "knoten": 7299
+  },
+  "bau": [
+   {
+    "ms": 25.9000000001397,
+    "knoten": 286,
+    "stoff": "RenderPipeline",
+    "fs": 7553
+   },
+   {
+    "ms": 7.199999999953434,
+    "knoten": 101,
+    "stoff": "Background.material",
+    "fs": 1899
+   },
+   {
+    "ms": 25.399999999906868,
+    "knoten": 565,
+    "stoff": "eisen",
+    "fs": 18258
+   },
+   {
+    "ms": 1.5,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 870
+   },
+   {
+    "ms": 1.1999999999534339,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 871
+   },
+   {
+    "ms": 1,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 872
+   },
+   {
+    "ms": 0.8000000000465661,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 871
+   },
+   {
+    "ms": 3.300000000046566,
+    "knoten": 83,
+    "stoff": "ShadowMaterial",
+    "fs": 1088
+   },
+   {
+    "ms": 0.5,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 871
+   },
+   {
+    "ms": 6.800000000046566,
+    "knoten": 542,
+    "stoff": "putz",
+    "fs": 18194
+   },
+   {
+    "ms": 7.5,
+    "knoten": 544,
+    "stoff": "laternenglas",
+    "fs": 18216
+   },
+   {
+    "ms": 4.899999999906868,
+    "knoten": 542,
+    "stoff": "stein",
+    "fs": 18193
+   },
+   {
+    "ms": 7.399999999906868,
+    "knoten": 542,
+    "stoff": "dach",
+    "fs": 18192
+   },
+   {
+    "ms": 5,
+    "knoten": 564,
+    "stoff": "pflaster",
+    "fs": 18527
+   },
+   {
+    "ms": 8,
+    "knoten": 601,
+    "stoff": "laub",
+    "fs": 18752
+   },
+   {
+    "ms": 4.300000000046566,
+    "knoten": 542,
+    "stoff": "balken",
+    "fs": 18194
+   },
+   {
+    "ms": 6.7000000001862645,
+    "knoten": 542,
+    "stoff": "rinde",
+    "fs": 18194
+   },
+   {
+    "ms": 5.899999999906868,
+    "knoten": 540,
+    "stoff": "fensterglas",
+    "fs": 18162
+   },
+   {
+    "ms": 5.5,
+    "knoten": 567,
+    "stoff": "wasser",
+    "fs": 18298
+   },
+   {
+    "ms": 6.399999999906868,
+    "knoten": 538,
+    "stoff": "scheibe",
+    "fs": 18133
+   }
+  ],
+  "quellenMitPlatz": 13,
+  "laternenImBild": 7,
+  "laternenMitRing": 7,
+  "beleuchtend": 6,
+  "laternen": [
+   {
+    "id": 0,
+    "x": 13,
+    "z": 0,
+    "abstand": 23.097185975785013,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 107.99312499999999,
+    "platz": true
+   },
+   {
+    "id": 1,
+    "x": 9.2,
+    "z": 9.2,
+    "abstand": 16.521501142450703,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": true
+   },
+   {
+    "id": 2,
+    "x": 0,
+    "z": 13,
+    "abstand": 7.42159012611179,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": true
+   },
+   {
+    "id": 3,
+    "x": -9.2,
+    "z": 9.2,
+    "abstand": 2.8284271247461894,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": true
+   },
+   {
+    "id": 4,
+    "x": -13,
+    "z": 0,
+    "abstand": 12.61269202034205,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": true
+   },
+   {
+    "id": 5,
+    "x": -9.2,
+    "z": -9.2,
+    "abstand": 20.497804760510327,
+    "kopfImBild": true,
+    "ringPunkte": 3,
+    "heller": 96.25506666666666,
+    "platz": true
+   },
+   {
+    "id": 6,
+    "x": 0,
+    "z": -13,
+    "abstand": 25.24836628378161,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 115.1044,
+    "platz": true
+   },
+   {
+    "id": 7,
+    "x": 9.2,
+    "z": -9.2,
+    "abstand": 26.174797038372617,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 94.007125,
+    "platz": true
+   },
+   {
+    "id": 8,
+    "x": 3.2,
+    "z": -22,
+    "abstand": 34.79080338250326,
+    "kopfImBild": true,
+    "ringPunkte": 4,
+    "heller": 105.80959999999999,
+    "platz": true
+   },
+   {
+    "id": 9,
+    "x": -3.2,
+    "z": -31,
+    "abstand": 42.389149555045336,
+    "kopfImBild": true,
+    "ringPunkte": 3,
+    "heller": 115.09466666666667,
+    "platz": true
+   },
+   {
+    "id": 10,
+    "x": 3.2,
+    "z": -40,
+    "abstand": 52.24557397521823,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 0.862525,
+    "platz": false
+   },
+   {
+    "id": 11,
+    "x": 22,
+    "z": 3.2,
+    "abstand": 30.27606315226602,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": true
+   },
+   {
+    "id": 12,
+    "x": 31,
+    "z": -3.2,
+    "abstand": 40.82401254164025,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": true
+   },
+   {
+    "id": 13,
+    "x": 40,
+    "z": 3.2,
+    "abstand": 47.873165761206984,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": true
+   }
+  ],
+  "bildMsSwiftshader": [
+   256.0999999998603,
+   252,
+   254.0999999998603
+  ],
+  "wandS": 4,
+  "fehler": []
+ },
+ "pass-nacht-oben": {
+  "fall": "pass",
+  "uhr": "nacht",
+  "pose": "oben",
+  "plaetze": 16,
+  "wegwerf": 0,
+  "glas": "misch",
+  "programme": {
+   "fragment": 20,
+   "vertex": 10
+  },
+  "textBytes": {
+   "fragment": 234208,
+   "vertex": 21845
+  },
+  "groesstesFragment": 18752,
+  "knotenBau": {
+   "n": 20,
+   "ms": 110.49999999953434,
+   "knoten": 7299
+  },
+  "bau": [
+   {
+    "ms": 20.5,
+    "knoten": 286,
+    "stoff": "RenderPipeline",
+    "fs": 7553
+   },
+   {
+    "ms": 3.8999999999068677,
+    "knoten": 101,
+    "stoff": "Background.material",
+    "fs": 1899
+   },
+   {
+    "ms": 14.899999999906868,
+    "knoten": 565,
+    "stoff": "balken",
+    "fs": 18257
+   },
+   {
+    "ms": 0.8000000000465661,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 870
+   },
+   {
+    "ms": 0.6999999999534339,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 871
+   },
+   {
+    "ms": 0.8000000000465661,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 872
+   },
+   {
+    "ms": 0.5999999998603016,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 871
+   },
+   {
+    "ms": 2.8999999999068677,
+    "knoten": 83,
+    "stoff": "ShadowMaterial",
+    "fs": 1088
+   },
+   {
+    "ms": 0.5,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 871
+   },
+   {
+    "ms": 7.2000000001862645,
+    "knoten": 542,
+    "stoff": "dach",
+    "fs": 18192
+   },
+   {
+    "ms": 7,
+    "knoten": 542,
+    "stoff": "putz",
+    "fs": 18194
+   },
+   {
+    "ms": 5.2999999998137355,
+    "knoten": 542,
+    "stoff": "eisen",
+    "fs": 18195
+   },
+   {
+    "ms": 6.800000000046566,
+    "knoten": 544,
+    "stoff": "laternenglas",
+    "fs": 18216
+   },
+   {
+    "ms": 6.699999999953434,
+    "knoten": 542,
+    "stoff": "stein",
+    "fs": 18193
+   },
+   {
+    "ms": 4.599999999860302,
+    "knoten": 564,
+    "stoff": "pflaster",
+    "fs": 18527
+   },
+   {
+    "ms": 5.5,
+    "knoten": 601,
+    "stoff": "laub",
+    "fs": 18752
+   },
+   {
+    "ms": 5.699999999953434,
+    "knoten": 542,
+    "stoff": "rinde",
+    "fs": 18194
+   },
+   {
+    "ms": 5.5,
+    "knoten": 540,
+    "stoff": "fensterglas",
+    "fs": 18162
+   },
+   {
+    "ms": 5.300000000046566,
+    "knoten": 567,
+    "stoff": "wasser",
+    "fs": 18298
+   },
+   {
+    "ms": 5.300000000046566,
+    "knoten": 538,
+    "stoff": "scheibe",
+    "fs": 18133
+   }
+  ],
+  "quellenMitPlatz": 9,
+  "laternenImBild": 14,
+  "laternenMitRing": 12,
+  "beleuchtend": 9,
+  "laternen": [
+   {
+    "id": 0,
+    "x": 13,
+    "z": 0,
+    "abstand": 40.459856648287825,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 109.02837500000001,
+    "platz": true
+   },
+   {
+    "id": 1,
+    "x": 9.2,
+    "z": 9.2,
+    "abstand": 31.969985924300936,
+    "kopfImBild": true,
+    "ringPunkte": 6,
+    "heller": 103.02289999999999,
+    "platz": true
+   },
+   {
+    "id": 2,
+    "x": 0,
+    "z": 13,
+    "abstand": 22.203603311174515,
+    "kopfImBild": true,
+    "ringPunkte": 4,
+    "heller": 103.6318,
+    "platz": true
+   },
+   {
+    "id": 3,
+    "x": -9.2,
+    "z": 9.2,
+    "abstand": 18.965231345807517,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 100.998325,
+    "platz": true
+   },
+   {
+    "id": 4,
+    "x": -13,
+    "z": 0,
+    "abstand": 26.476404589747453,
+    "kopfImBild": true,
+    "ringPunkte": 7,
+    "heller": 103.68082857142858,
+    "platz": true
+   },
+   {
+    "id": 5,
+    "x": -9.2,
+    "z": -9.2,
+    "abstand": 36.28332950543542,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 94.278275,
+    "platz": true
+   },
+   {
+    "id": 6,
+    "x": 0,
+    "z": -13,
+    "abstand": 42.95346318982906,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 104.90672500000001,
+    "platz": true
+   },
+   {
+    "id": 7,
+    "x": 9.2,
+    "z": -9.2,
+    "abstand": 44.4846040782651,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 98.14862499999998,
+    "platz": true
+   },
+   {
+    "id": 8,
+    "x": 3.2,
+    "z": -22,
+    "abstand": 52.47323127081083,
+    "kopfImBild": true,
+    "ringPunkte": 5,
+    "heller": 3.957440000000001,
+    "platz": false
+   },
+   {
+    "id": 9,
+    "x": -3.2,
+    "z": -31,
+    "abstand": 58.89006707416795,
+    "kopfImBild": true,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": false
+   },
+   {
+    "id": 10,
+    "x": 3.2,
+    "z": -40,
+    "abstand": 69.32128100374372,
+    "kopfImBild": true,
+    "ringPunkte": 4,
+    "heller": 0,
+    "platz": false
+   },
+   {
+    "id": 11,
+    "x": 22,
+    "z": 3.2,
+    "abstand": 46.041720211130254,
+    "kopfImBild": true,
+    "ringPunkte": 5,
+    "heller": 101.1472,
+    "platz": true
+   },
+   {
+    "id": 12,
+    "x": 31,
+    "z": -3.2,
+    "abstand": 57.04068723288667,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 0.7652499999999998,
+    "platz": false
+   },
+   {
+    "id": 13,
+    "x": 40,
+    "z": 3.2,
+    "abstand": 62.32046212922366,
+    "kopfImBild": true,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": false
+   }
+  ],
+  "bildMsSwiftshader": [
+   271.20000000018626,
+   239.80000000004657,
+   265.69999999995343
+  ],
+  "wandS": 3,
+  "fehler": []
+ },
+ "pass-mittag": {
+  "fall": "pass",
+  "uhr": "mittag",
+  "pose": "auge",
+  "plaetze": 16,
+  "wegwerf": 0,
+  "glas": "misch",
+  "programme": {
+   "fragment": 20,
+   "vertex": 10
+  },
+  "textBytes": {
+   "fragment": 234117,
+   "vertex": 21845
+  },
+  "groesstesFragment": 18720,
+  "knotenBau": {
+   "n": 20,
+   "ms": 116.00000000046566,
+   "knoten": 7295
+  },
+  "bau": [
+   {
+    "ms": 19.300000000046566,
+    "knoten": 286,
+    "stoff": "RenderPipeline",
+    "fs": 7553
+   },
+   {
+    "ms": 4.199999999953434,
+    "knoten": 101,
+    "stoff": "Background.material",
+    "fs": 1897
+   },
+   {
+    "ms": 13.699999999953434,
+    "knoten": 565,
+    "stoff": "eisen",
+    "fs": 18258
+   },
+   {
+    "ms": 0.8000000000465661,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 872
+   },
+   {
+    "ms": 0.7000000001862645,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 870
+   },
+   {
+    "ms": 0.5999999998603016,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 871
+   },
+   {
+    "ms": 0.6000000000931323,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 871
+   },
+   {
+    "ms": 2.9000000001396984,
+    "knoten": 83,
+    "stoff": "ShadowMaterial",
+    "fs": 1088
+   },
+   {
+    "ms": 0.6000000000931323,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 871
+   },
+   {
+    "ms": 6,
+    "knoten": 542,
+    "stoff": "putz",
+    "fs": 18194
+   },
+   {
+    "ms": 7.399999999906868,
+    "knoten": 542,
+    "stoff": "laternenglas",
+    "fs": 18190
+   },
+   {
+    "ms": 4.7999999998137355,
+    "knoten": 542,
+    "stoff": "stein",
+    "fs": 18193
+   },
+   {
+    "ms": 7,
+    "knoten": 542,
+    "stoff": "dach",
+    "fs": 18192
+   },
+   {
+    "ms": 6.900000000139698,
+    "knoten": 564,
+    "stoff": "pflaster",
+    "fs": 18527
+   },
+   {
+    "ms": 9.199999999953434,
+    "knoten": 601,
+    "stoff": "laub",
+    "fs": 18720
+   },
+   {
+    "ms": 6.600000000093132,
+    "knoten": 542,
+    "stoff": "balken",
+    "fs": 18194
+   },
+   {
+    "ms": 7,
+    "knoten": 542,
+    "stoff": "rinde",
+    "fs": 18194
+   },
+   {
+    "ms": 7.7000000001862645,
+    "knoten": 538,
+    "stoff": "fensterglas",
+    "fs": 18131
+   },
+   {
+    "ms": 5,
+    "knoten": 567,
+    "stoff": "wasser",
+    "fs": 18298
+   },
+   {
+    "ms": 5,
+    "knoten": 538,
+    "stoff": "scheibe",
+    "fs": 18133
+   }
+  ],
+  "quellenMitPlatz": 0,
+  "laternenImBild": 7,
+  "laternenMitRing": 7,
+  "beleuchtend": 0,
+  "laternen": [
+   {
+    "id": 0,
+    "x": 13,
+    "z": 0,
+    "abstand": 23.097185975785013,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 0,
+    "platz": false
+   },
+   {
+    "id": 1,
+    "x": 9.2,
+    "z": 9.2,
+    "abstand": 16.521501142450703,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": false
+   },
+   {
+    "id": 2,
+    "x": 0,
+    "z": 13,
+    "abstand": 7.42159012611179,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": false
+   },
+   {
+    "id": 3,
+    "x": -9.2,
+    "z": 9.2,
+    "abstand": 2.8284271247461894,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": false
+   },
+   {
+    "id": 4,
+    "x": -13,
+    "z": 0,
+    "abstand": 12.61269202034205,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": false
+   },
+   {
+    "id": 5,
+    "x": -9.2,
+    "z": -9.2,
+    "abstand": 20.497804760510327,
+    "kopfImBild": true,
+    "ringPunkte": 3,
+    "heller": 0,
+    "platz": false
+   },
+   {
+    "id": 6,
+    "x": 0,
+    "z": -13,
+    "abstand": 25.24836628378161,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 0,
+    "platz": false
+   },
+   {
+    "id": 7,
+    "x": 9.2,
+    "z": -9.2,
+    "abstand": 26.174797038372617,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 0,
+    "platz": false
+   },
+   {
+    "id": 8,
+    "x": 3.2,
+    "z": -22,
+    "abstand": 34.79080338250326,
+    "kopfImBild": true,
+    "ringPunkte": 4,
+    "heller": 0,
+    "platz": false
+   },
+   {
+    "id": 9,
+    "x": -3.2,
+    "z": -31,
+    "abstand": 42.389149555045336,
+    "kopfImBild": true,
+    "ringPunkte": 3,
+    "heller": 0,
+    "platz": false
+   },
+   {
+    "id": 10,
+    "x": 3.2,
+    "z": -40,
+    "abstand": 52.24557397521823,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 0,
+    "platz": false
+   },
+   {
+    "id": 11,
+    "x": 22,
+    "z": 3.2,
+    "abstand": 30.27606315226602,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": false
+   },
+   {
+    "id": 12,
+    "x": 31,
+    "z": -3.2,
+    "abstand": 40.82401254164025,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": false
+   },
+   {
+    "id": 13,
+    "x": 40,
+    "z": 3.2,
+    "abstand": 47.873165761206984,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": false
+   }
+  ],
+  "bildMsSwiftshader": [
+   244,
+   244.30000000004657,
+   258.30000000004657
+  ],
+  "wandS": 3,
+  "fehler": []
+ },
+ "pass-loch-nacht": {
+  "fall": "pass",
+  "uhr": "nacht",
+  "pose": "auge",
+  "plaetze": 16,
+  "wegwerf": 0,
+  "glas": "loch",
+  "programme": {
+   "fragment": 20,
+   "vertex": 10
+  },
+  "textBytes": {
+   "fragment": 232866,
+   "vertex": 21845
+  },
+  "groesstesFragment": 18648,
+  "knotenBau": {
+   "n": 20,
+   "ms": 127.89999999967404,
+   "knoten": 7247
+  },
+  "bau": [
+   {
+    "ms": 24.600000000093132,
+    "knoten": 286,
+    "stoff": "RenderPipeline",
+    "fs": 7553
+   },
+   {
+    "ms": 5.300000000046566,
+    "knoten": 97,
+    "stoff": "Background.material",
+    "fs": 1805
+   },
+   {
+    "ms": 18.5,
+    "knoten": 561,
+    "stoff": "eisen",
+    "fs": 18154
+   },
+   {
+    "ms": 1.2000000001862645,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 870
+   },
+   {
+    "ms": 1,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 871
+   },
+   {
+    "ms": 0.8999999999068677,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 872
+   },
+   {
+    "ms": 0.8000000000465661,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 871
+   },
+   {
+    "ms": 3.5,
+    "knoten": 83,
+    "stoff": "ShadowMaterial",
+    "fs": 1088
+   },
+   {
+    "ms": 0.5999999998603016,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 871
+   },
+   {
+    "ms": 8.100000000093132,
+    "knoten": 538,
+    "stoff": "putz",
+    "fs": 18090
+   },
+   {
+    "ms": 8.899999999906868,
+    "knoten": 540,
+    "stoff": "laternenglas",
+    "fs": 18112
+   },
+   {
+    "ms": 5.699999999953434,
+    "knoten": 538,
+    "stoff": "stein",
+    "fs": 18089
+   },
+   {
+    "ms": 7.7999999998137355,
+    "knoten": 538,
+    "stoff": "dach",
+    "fs": 18088
+   },
+   {
+    "ms": 5.699999999953434,
+    "knoten": 560,
+    "stoff": "pflaster",
+    "fs": 18423
+   },
+   {
+    "ms": 8.099999999860302,
+    "knoten": 597,
+    "stoff": "laub",
+    "fs": 18648
+   },
+   {
+    "ms": 4.900000000139698,
+    "knoten": 538,
+    "stoff": "balken",
+    "fs": 18090
+   },
+   {
+    "ms": 5.599999999860302,
+    "knoten": 538,
+    "stoff": "rinde",
+    "fs": 18090
+   },
+   {
+    "ms": 6.300000000046566,
+    "knoten": 536,
+    "stoff": "fensterglas",
+    "fs": 18058
+   },
+   {
+    "ms": 5.099999999860302,
+    "knoten": 563,
+    "stoff": "wasser",
+    "fs": 18194
+   },
+   {
+    "ms": 5.300000000046566,
+    "knoten": 534,
+    "stoff": "scheibe",
+    "fs": 18029
+   }
+  ],
+  "quellenMitPlatz": 13,
+  "laternenImBild": 7,
+  "laternenMitRing": 7,
+  "beleuchtend": 6,
+  "laternen": [
+   {
+    "id": 0,
+    "x": 13,
+    "z": 0,
+    "abstand": 23.097185975785013,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 107.99312499999999,
+    "platz": true
+   },
+   {
+    "id": 1,
+    "x": 9.2,
+    "z": 9.2,
+    "abstand": 16.521501142450703,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": true
+   },
+   {
+    "id": 2,
+    "x": 0,
+    "z": 13,
+    "abstand": 7.42159012611179,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": true
+   },
+   {
+    "id": 3,
+    "x": -9.2,
+    "z": 9.2,
+    "abstand": 2.8284271247461894,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": true
+   },
+   {
+    "id": 4,
+    "x": -13,
+    "z": 0,
+    "abstand": 12.61269202034205,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": true
+   },
+   {
+    "id": 5,
+    "x": -9.2,
+    "z": -9.2,
+    "abstand": 20.497804760510327,
+    "kopfImBild": true,
+    "ringPunkte": 3,
+    "heller": 96.25506666666666,
+    "platz": true
+   },
+   {
+    "id": 6,
+    "x": 0,
+    "z": -13,
+    "abstand": 25.24836628378161,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 115.1044,
+    "platz": true
+   },
+   {
+    "id": 7,
+    "x": 9.2,
+    "z": -9.2,
+    "abstand": 26.174797038372617,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 94.007125,
+    "platz": true
+   },
+   {
+    "id": 8,
+    "x": 3.2,
+    "z": -22,
+    "abstand": 34.79080338250326,
+    "kopfImBild": true,
+    "ringPunkte": 4,
+    "heller": 105.80959999999999,
+    "platz": true
+   },
+   {
+    "id": 9,
+    "x": -3.2,
+    "z": -31,
+    "abstand": 42.389149555045336,
+    "kopfImBild": true,
+    "ringPunkte": 3,
+    "heller": 115.09466666666667,
+    "platz": true
+   },
+   {
+    "id": 10,
+    "x": 3.2,
+    "z": -40,
+    "abstand": 52.24557397521823,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 0.862525,
+    "platz": false
+   },
+   {
+    "id": 11,
+    "x": 22,
+    "z": 3.2,
+    "abstand": 30.27606315226602,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": true
+   },
+   {
+    "id": 12,
+    "x": 31,
+    "z": -3.2,
+    "abstand": 40.82401254164025,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": true
+   },
+   {
+    "id": 13,
+    "x": 40,
+    "z": 3.2,
+    "abstand": 47.873165761206984,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": true
+   }
+  ],
+  "bildMsSwiftshader": [
+   227.60000000009313,
+   222.89999999990687,
+   217
+  ],
+  "wandS": 3,
+  "fehler": []
+ },
+ "pass-loch-nacht-oben": {
+  "fall": "pass",
+  "uhr": "nacht",
+  "pose": "oben",
+  "plaetze": 16,
+  "wegwerf": 0,
+  "glas": "loch",
+  "programme": {
+   "fragment": 20,
+   "vertex": 10
+  },
+  "textBytes": {
+   "fragment": 232866,
+   "vertex": 21845
+  },
+  "groesstesFragment": 18648,
+  "knotenBau": {
+   "n": 20,
+   "ms": 119.89999999967404,
+   "knoten": 7247
+  },
+  "bau": [
+   {
+    "ms": 19.600000000093132,
+    "knoten": 286,
+    "stoff": "RenderPipeline",
+    "fs": 7553
+   },
+   {
+    "ms": 3.5999999998603016,
+    "knoten": 97,
+    "stoff": "Background.material",
+    "fs": 1805
+   },
+   {
+    "ms": 13.799999999813735,
+    "knoten": 561,
+    "stoff": "balken",
+    "fs": 18153
+   },
+   {
+    "ms": 0.8000000000465661,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 870
+   },
+   {
+    "ms": 0.6999999999534339,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 871
+   },
+   {
+    "ms": 0.6999999999534339,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 872
+   },
+   {
+    "ms": 0.5999999998603016,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 871
+   },
+   {
+    "ms": 3,
+    "knoten": 83,
+    "stoff": "ShadowMaterial",
+    "fs": 1088
+   },
+   {
+    "ms": 0.5999999998603016,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 871
+   },
+   {
+    "ms": 6.199999999953434,
+    "knoten": 538,
+    "stoff": "dach",
+    "fs": 18088
+   },
+   {
+    "ms": 7.199999999953434,
+    "knoten": 538,
+    "stoff": "putz",
+    "fs": 18090
+   },
+   {
+    "ms": 4.5,
+    "knoten": 538,
+    "stoff": "eisen",
+    "fs": 18091
+   },
+   {
+    "ms": 9.199999999953434,
+    "knoten": 540,
+    "stoff": "laternenglas",
+    "fs": 18112
+   },
+   {
+    "ms": 7.300000000046566,
+    "knoten": 538,
+    "stoff": "stein",
+    "fs": 18089
+   },
+   {
+    "ms": 7.900000000139698,
+    "knoten": 560,
+    "stoff": "pflaster",
+    "fs": 18423
+   },
+   {
+    "ms": 7.900000000139698,
+    "knoten": 597,
+    "stoff": "laub",
+    "fs": 18648
+   },
+   {
+    "ms": 8.5,
+    "knoten": 538,
+    "stoff": "rinde",
+    "fs": 18090
+   },
+   {
+    "ms": 5.800000000046566,
+    "knoten": 536,
+    "stoff": "fensterglas",
+    "fs": 18058
+   },
+   {
+    "ms": 6.100000000093132,
+    "knoten": 563,
+    "stoff": "wasser",
+    "fs": 18194
+   },
+   {
+    "ms": 5.899999999906868,
+    "knoten": 534,
+    "stoff": "scheibe",
+    "fs": 18029
+   }
+  ],
+  "quellenMitPlatz": 9,
+  "laternenImBild": 14,
+  "laternenMitRing": 12,
+  "beleuchtend": 9,
+  "laternen": [
+   {
+    "id": 0,
+    "x": 13,
+    "z": 0,
+    "abstand": 40.459856648287825,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 109.02837500000001,
+    "platz": true
+   },
+   {
+    "id": 1,
+    "x": 9.2,
+    "z": 9.2,
+    "abstand": 31.969985924300936,
+    "kopfImBild": true,
+    "ringPunkte": 6,
+    "heller": 103.02289999999999,
+    "platz": true
+   },
+   {
+    "id": 2,
+    "x": 0,
+    "z": 13,
+    "abstand": 22.203603311174515,
+    "kopfImBild": true,
+    "ringPunkte": 4,
+    "heller": 103.6318,
+    "platz": true
+   },
+   {
+    "id": 3,
+    "x": -9.2,
+    "z": 9.2,
+    "abstand": 18.965231345807517,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 100.998325,
+    "platz": true
+   },
+   {
+    "id": 4,
+    "x": -13,
+    "z": 0,
+    "abstand": 26.476404589747453,
+    "kopfImBild": true,
+    "ringPunkte": 7,
+    "heller": 103.68082857142858,
+    "platz": true
+   },
+   {
+    "id": 5,
+    "x": -9.2,
+    "z": -9.2,
+    "abstand": 36.28332950543542,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 94.278275,
+    "platz": true
+   },
+   {
+    "id": 6,
+    "x": 0,
+    "z": -13,
+    "abstand": 42.95346318982906,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 104.90672500000001,
+    "platz": true
+   },
+   {
+    "id": 7,
+    "x": 9.2,
+    "z": -9.2,
+    "abstand": 44.4846040782651,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 98.14862499999998,
+    "platz": true
+   },
+   {
+    "id": 8,
+    "x": 3.2,
+    "z": -22,
+    "abstand": 52.47323127081083,
+    "kopfImBild": true,
+    "ringPunkte": 5,
+    "heller": 3.957440000000001,
+    "platz": false
+   },
+   {
+    "id": 9,
+    "x": -3.2,
+    "z": -31,
+    "abstand": 58.89006707416795,
+    "kopfImBild": true,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": false
+   },
+   {
+    "id": 10,
+    "x": 3.2,
+    "z": -40,
+    "abstand": 69.32128100374372,
+    "kopfImBild": true,
+    "ringPunkte": 4,
+    "heller": 0,
+    "platz": false
+   },
+   {
+    "id": 11,
+    "x": 22,
+    "z": 3.2,
+    "abstand": 46.041720211130254,
+    "kopfImBild": true,
+    "ringPunkte": 5,
+    "heller": 101.1472,
+    "platz": true
+   },
+   {
+    "id": 12,
+    "x": 31,
+    "z": -3.2,
+    "abstand": 57.04068723288667,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 0.7652499999999998,
+    "platz": false
+   },
+   {
+    "id": 13,
+    "x": 40,
+    "z": 3.2,
+    "abstand": 62.32046212922366,
+    "kopfImBild": true,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": false
+   }
+  ],
+  "bildMsSwiftshader": [
+   248.69999999995343,
+   292.80000000004657,
+   246.19999999995343
+  ],
+  "wandS": 3,
+  "fehler": []
+ },
+ "pass-loch-mittag": {
+  "fall": "pass",
+  "uhr": "mittag",
+  "pose": "auge",
+  "plaetze": 16,
+  "wegwerf": 0,
+  "glas": "loch",
+  "programme": {
+   "fragment": 20,
+   "vertex": 10
+  },
+  "textBytes": {
+   "fragment": 232775,
+   "vertex": 21845
+  },
+  "groesstesFragment": 18616,
+  "knotenBau": {
+   "n": 20,
+   "ms": 117.89999999990687,
+   "knoten": 7243
+  },
+  "bau": [
+   {
+    "ms": 19.800000000046566,
+    "knoten": 286,
+    "stoff": "RenderPipeline",
+    "fs": 7553
+   },
+   {
+    "ms": 4.699999999953434,
+    "knoten": 97,
+    "stoff": "Background.material",
+    "fs": 1803
+   },
+   {
+    "ms": 14.599999999860302,
+    "knoten": 561,
+    "stoff": "eisen",
+    "fs": 18154
+   },
+   {
+    "ms": 0.8000000000465661,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 872
+   },
+   {
+    "ms": 0.6999999999534339,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 870
+   },
+   {
+    "ms": 0.8000000000465661,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 871
+   },
+   {
+    "ms": 0.6999999999534339,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 871
+   },
+   {
+    "ms": 2,
+    "knoten": 83,
+    "stoff": "ShadowMaterial",
+    "fs": 1088
+   },
+   {
+    "ms": 0.5999999998603016,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 871
+   },
+   {
+    "ms": 10.199999999953434,
+    "knoten": 538,
+    "stoff": "putz",
+    "fs": 18090
+   },
+   {
+    "ms": 9.800000000046566,
+    "knoten": 538,
+    "stoff": "laternenglas",
+    "fs": 18086
+   },
+   {
+    "ms": 6,
+    "knoten": 538,
+    "stoff": "stein",
+    "fs": 18089
+   },
+   {
+    "ms": 7.7000000001862645,
+    "knoten": 538,
+    "stoff": "dach",
+    "fs": 18088
+   },
+   {
+    "ms": 5.199999999953434,
+    "knoten": 560,
+    "stoff": "pflaster",
+    "fs": 18423
+   },
+   {
+    "ms": 9,
+    "knoten": 597,
+    "stoff": "laub",
+    "fs": 18616
+   },
+   {
+    "ms": 4.399999999906868,
+    "knoten": 538,
+    "stoff": "balken",
+    "fs": 18090
+   },
+   {
+    "ms": 5.5,
+    "knoten": 538,
+    "stoff": "rinde",
+    "fs": 18090
+   },
+   {
+    "ms": 5.600000000093132,
+    "knoten": 534,
+    "stoff": "fensterglas",
+    "fs": 18027
+   },
+   {
+    "ms": 4.800000000046566,
+    "knoten": 563,
+    "stoff": "wasser",
+    "fs": 18194
+   },
+   {
+    "ms": 5,
+    "knoten": 534,
+    "stoff": "scheibe",
+    "fs": 18029
+   }
+  ],
+  "quellenMitPlatz": 0,
+  "laternenImBild": 7,
+  "laternenMitRing": 7,
+  "beleuchtend": 0,
+  "laternen": [
+   {
+    "id": 0,
+    "x": 13,
+    "z": 0,
+    "abstand": 23.097185975785013,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 0,
+    "platz": false
+   },
+   {
+    "id": 1,
+    "x": 9.2,
+    "z": 9.2,
+    "abstand": 16.521501142450703,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": false
+   },
+   {
+    "id": 2,
+    "x": 0,
+    "z": 13,
+    "abstand": 7.42159012611179,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": false
+   },
+   {
+    "id": 3,
+    "x": -9.2,
+    "z": 9.2,
+    "abstand": 2.8284271247461894,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": false
+   },
+   {
+    "id": 4,
+    "x": -13,
+    "z": 0,
+    "abstand": 12.61269202034205,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": false
+   },
+   {
+    "id": 5,
+    "x": -9.2,
+    "z": -9.2,
+    "abstand": 20.497804760510327,
+    "kopfImBild": true,
+    "ringPunkte": 3,
+    "heller": 0,
+    "platz": false
+   },
+   {
+    "id": 6,
+    "x": 0,
+    "z": -13,
+    "abstand": 25.24836628378161,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 0,
+    "platz": false
+   },
+   {
+    "id": 7,
+    "x": 9.2,
+    "z": -9.2,
+    "abstand": 26.174797038372617,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 0,
+    "platz": false
+   },
+   {
+    "id": 8,
+    "x": 3.2,
+    "z": -22,
+    "abstand": 34.79080338250326,
+    "kopfImBild": true,
+    "ringPunkte": 4,
+    "heller": 0,
+    "platz": false
+   },
+   {
+    "id": 9,
+    "x": -3.2,
+    "z": -31,
+    "abstand": 42.389149555045336,
+    "kopfImBild": true,
+    "ringPunkte": 3,
+    "heller": 0,
+    "platz": false
+   },
+   {
+    "id": 10,
+    "x": 3.2,
+    "z": -40,
+    "abstand": 52.24557397521823,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 0,
+    "platz": false
+   },
+   {
+    "id": 11,
+    "x": 22,
+    "z": 3.2,
+    "abstand": 30.27606315226602,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": false
+   },
+   {
+    "id": 12,
+    "x": 31,
+    "z": -3.2,
+    "abstand": 40.82401254164025,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": false
+   },
+   {
+    "id": 13,
+    "x": 40,
+    "z": 3.2,
+    "abstand": 47.873165761206984,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": false
+   }
+  ],
+  "bildMsSwiftshader": [
+   221.19999999995343,
+   275.60000000009313,
+   235.89999999990687
+  ],
+  "wandS": 3,
+  "fehler": []
+ },
+ "voll-nacht": {
+  "fall": "voll",
+  "uhr": "nacht",
+  "pose": "auge",
+  "plaetze": 16,
+  "wegwerf": 1,
+  "glas": "misch",
+  "programme": {
+   "fragment": 20,
+   "vertex": 11
+  },
+  "textBytes": {
+   "fragment": 102040,
+   "vertex": 22108
+  },
+  "groesstesFragment": 17756,
+  "knotenBau": {
+   "n": 21,
+   "ms": 96,
+   "knoten": 3914
+  },
+  "bau": [
+   {
+    "ms": 27.100000000093132,
+    "knoten": 348,
+    "stoff": "RenderPipeline",
+    "fs": 8817
+   },
+   {
+    "ms": 4.800000000046566,
+    "knoten": 101,
+    "stoff": "Background.material",
+    "fs": 1899
+   },
+   {
+    "ms": 3.6000000000931323,
+    "knoten": 131,
+    "stoff": "eisen",
+    "fs": 2522
+   },
+   {
+    "ms": 2.199999999953434,
+    "knoten": 131,
+    "stoff": "putz",
+    "fs": 2521
+   },
+   {
+    "ms": 2.199999999953434,
+    "knoten": 133,
+    "stoff": "laternenglas",
+    "fs": 2543
+   },
+   {
+    "ms": 1.8000000000465661,
+    "knoten": 131,
+    "stoff": "stein",
+    "fs": 2520
+   },
+   {
+    "ms": 1.6999999999534339,
+    "knoten": 131,
+    "stoff": "dach",
+    "fs": 2519
+   },
+   {
+    "ms": 2.699999999953434,
+    "knoten": 156,
+    "stoff": "pflaster",
+    "fs": 2891
+   },
+   {
+    "ms": 5.100000000093132,
+    "knoten": 178,
+    "stoff": "laub",
+    "fs": 2836
+   },
+   {
+    "ms": 1.8999999999068677,
+    "knoten": 131,
+    "stoff": "balken",
+    "fs": 2521
+   },
+   {
+    "ms": 1.8999999999068677,
+    "knoten": 131,
+    "stoff": "rinde",
+    "fs": 2521
+   },
+   {
+    "ms": 16.5,
+    "knoten": 548,
+    "stoff": "fensterglas",
+    "fs": 17683
+   },
+   {
+    "ms": 0.8999999999068677,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 870
+   },
+   {
+    "ms": 0.6000000000931323,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 871
+   },
+   {
+    "ms": 0.6000000000931323,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 872
+   },
+   {
+    "ms": 0.5999999998603016,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 871
+   },
+   {
+    "ms": 1.1000000000931323,
+    "knoten": 83,
+    "stoff": "ShadowMaterial",
+    "fs": 1088
+   },
+   {
+    "ms": 0.6999999999534339,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 871
+   },
+   {
+    "ms": 6.399999999906868,
+    "knoten": 552,
+    "stoff": "wasser",
+    "fs": 17756
+   },
+   {
+    "ms": 9.300000000046566,
+    "knoten": 523,
+    "stoff": "scheibe",
+    "fs": 17591
+   },
+   {
+    "ms": 4.300000000046566,
+    "knoten": 306,
+    "stoff": "RenderPipeline",
+    "fs": 9457
+   }
+  ],
+  "quellenMitPlatz": 13,
+  "laternenImBild": 7,
+  "laternenMitRing": 7,
+  "beleuchtend": 6,
+  "laternen": [
+   {
+    "id": 0,
+    "x": 13,
+    "z": 0,
+    "abstand": 23.097185975785013,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 109.348575,
+    "platz": true
+   },
+   {
+    "id": 1,
+    "x": 9.2,
+    "z": 9.2,
+    "abstand": 16.521501142450703,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": true
+   },
+   {
+    "id": 2,
+    "x": 0,
+    "z": 13,
+    "abstand": 7.42159012611179,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": true
+   },
+   {
+    "id": 3,
+    "x": -9.2,
+    "z": 9.2,
+    "abstand": 2.8284271247461894,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": true
+   },
+   {
+    "id": 4,
+    "x": -13,
+    "z": 0,
+    "abstand": 12.61269202034205,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": true
+   },
+   {
+    "id": 5,
+    "x": -9.2,
+    "z": -9.2,
+    "abstand": 20.497804760510327,
+    "kopfImBild": true,
+    "ringPunkte": 3,
+    "heller": 97.44533333333334,
+    "platz": true
+   },
+   {
+    "id": 6,
+    "x": 0,
+    "z": -13,
+    "abstand": 25.24836628378161,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 116.46164999999999,
+    "platz": true
+   },
+   {
+    "id": 7,
+    "x": 9.2,
+    "z": -9.2,
+    "abstand": 26.174797038372617,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 94.809275,
+    "platz": true
+   },
+   {
+    "id": 8,
+    "x": 3.2,
+    "z": -22,
+    "abstand": 34.79080338250326,
+    "kopfImBild": true,
+    "ringPunkte": 4,
+    "heller": 107.57695,
+    "platz": true
+   },
+   {
+    "id": 9,
+    "x": -3.2,
+    "z": -31,
+    "abstand": 42.389149555045336,
+    "kopfImBild": true,
+    "ringPunkte": 3,
+    "heller": 116.49926666666668,
+    "platz": true
+   },
+   {
+    "id": 10,
+    "x": 3.2,
+    "z": -40,
+    "abstand": 52.24557397521823,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 0.8274249999999997,
+    "platz": false
+   },
+   {
+    "id": 11,
+    "x": 22,
+    "z": 3.2,
+    "abstand": 30.27606315226602,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": true
+   },
+   {
+    "id": 12,
+    "x": 31,
+    "z": -3.2,
+    "abstand": 40.82401254164025,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": true
+   },
+   {
+    "id": 13,
+    "x": 40,
+    "z": 3.2,
+    "abstand": 47.873165761206984,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": true
+   }
+  ],
+  "bildMsSwiftshader": [
+   263,
+   248.5,
+   250.30000000004657
+  ],
+  "wandS": 3,
+  "fehler": []
+ },
+ "voll-nacht-oben": {
+  "fall": "voll",
+  "uhr": "nacht",
+  "pose": "oben",
+  "plaetze": 16,
+  "wegwerf": 1,
+  "glas": "misch",
+  "programme": {
+   "fragment": 20,
+   "vertex": 11
+  },
+  "textBytes": {
+   "fragment": 102040,
+   "vertex": 22108
+  },
+  "groesstesFragment": 17756,
+  "knotenBau": {
+   "n": 21,
+   "ms": 96.39999999990687,
+   "knoten": 3914
+  },
+  "bau": [
+   {
+    "ms": 28.699999999953434,
+    "knoten": 348,
+    "stoff": "RenderPipeline",
+    "fs": 8817
+   },
+   {
+    "ms": 5.400000000139698,
+    "knoten": 101,
+    "stoff": "Background.material",
+    "fs": 1899
+   },
+   {
+    "ms": 3.9000000001396984,
+    "knoten": 131,
+    "stoff": "balken",
+    "fs": 2521
+   },
+   {
+    "ms": 2.800000000046566,
+    "knoten": 131,
+    "stoff": "dach",
+    "fs": 2519
+   },
+   {
+    "ms": 2.300000000046566,
+    "knoten": 131,
+    "stoff": "putz",
+    "fs": 2521
+   },
+   {
+    "ms": 2.6000000000931323,
+    "knoten": 131,
+    "stoff": "eisen",
+    "fs": 2522
+   },
+   {
+    "ms": 2.2999999998137355,
+    "knoten": 133,
+    "stoff": "laternenglas",
+    "fs": 2543
+   },
+   {
+    "ms": 1.8999999999068677,
+    "knoten": 131,
+    "stoff": "stein",
+    "fs": 2520
+   },
+   {
+    "ms": 2.8999999999068677,
+    "knoten": 156,
+    "stoff": "pflaster",
+    "fs": 2891
+   },
+   {
+    "ms": 4.800000000046566,
+    "knoten": 178,
+    "stoff": "laub",
+    "fs": 2836
+   },
+   {
+    "ms": 2.3999999999068677,
+    "knoten": 131,
+    "stoff": "rinde",
+    "fs": 2521
+   },
+   {
+    "ms": 14.600000000093132,
+    "knoten": 548,
+    "stoff": "fensterglas",
+    "fs": 17683
+   },
+   {
+    "ms": 0.8999999999068677,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 870
+   },
+   {
+    "ms": 1.8000000000465661,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 871
+   },
+   {
+    "ms": 0.5,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 872
+   },
+   {
+    "ms": 0.5,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 871
+   },
+   {
+    "ms": 1,
+    "knoten": 83,
+    "stoff": "ShadowMaterial",
+    "fs": 1088
+   },
+   {
+    "ms": 0.6000000000931323,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 871
+   },
+   {
+    "ms": 7.699999999953434,
+    "knoten": 552,
+    "stoff": "wasser",
+    "fs": 17756
+   },
+   {
+    "ms": 4.899999999906868,
+    "knoten": 523,
+    "stoff": "scheibe",
+    "fs": 17591
+   },
+   {
+    "ms": 3.8999999999068677,
+    "knoten": 306,
+    "stoff": "RenderPipeline",
+    "fs": 9457
+   }
+  ],
+  "quellenMitPlatz": 9,
+  "laternenImBild": 14,
+  "laternenMitRing": 12,
+  "beleuchtend": 9,
+  "laternen": [
+   {
+    "id": 0,
+    "x": 13,
+    "z": 0,
+    "abstand": 40.459856648287825,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 109.581675,
+    "platz": true
+   },
+   {
+    "id": 1,
+    "x": 9.2,
+    "z": 9.2,
+    "abstand": 31.969985924300936,
+    "kopfImBild": true,
+    "ringPunkte": 6,
+    "heller": 103.62939999999999,
+    "platz": true
+   },
+   {
+    "id": 2,
+    "x": 0,
+    "z": 13,
+    "abstand": 22.203603311174515,
+    "kopfImBild": true,
+    "ringPunkte": 4,
+    "heller": 103.82735000000001,
+    "platz": true
+   },
+   {
+    "id": 3,
+    "x": -9.2,
+    "z": 9.2,
+    "abstand": 18.965231345807517,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 101.444175,
+    "platz": true
+   },
+   {
+    "id": 4,
+    "x": -13,
+    "z": 0,
+    "abstand": 26.476404589747453,
+    "kopfImBild": true,
+    "ringPunkte": 7,
+    "heller": 104.21157142857142,
+    "platz": true
+   },
+   {
+    "id": 5,
+    "x": -9.2,
+    "z": -9.2,
+    "abstand": 36.28332950543542,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 94.73250000000002,
+    "platz": true
+   },
+   {
+    "id": 6,
+    "x": 0,
+    "z": -13,
+    "abstand": 42.95346318982906,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 105.43345000000001,
+    "platz": true
+   },
+   {
+    "id": 7,
+    "x": 9.2,
+    "z": -9.2,
+    "abstand": 44.4846040782651,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 98.718975,
+    "platz": true
+   },
+   {
+    "id": 8,
+    "x": 3.2,
+    "z": -22,
+    "abstand": 52.47323127081083,
+    "kopfImBild": true,
+    "ringPunkte": 5,
+    "heller": 4.143800000000001,
+    "platz": false
+   },
+   {
+    "id": 9,
+    "x": -3.2,
+    "z": -31,
+    "abstand": 58.89006707416795,
+    "kopfImBild": true,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": false
+   },
+   {
+    "id": 10,
+    "x": 3.2,
+    "z": -40,
+    "abstand": 69.32128100374372,
+    "kopfImBild": true,
+    "ringPunkte": 4,
+    "heller": 0,
+    "platz": false
+   },
+   {
+    "id": 11,
+    "x": 22,
+    "z": 3.2,
+    "abstand": 46.041720211130254,
+    "kopfImBild": true,
+    "ringPunkte": 5,
+    "heller": 101.86056,
+    "platz": true
+   },
+   {
+    "id": 12,
+    "x": 31,
+    "z": -3.2,
+    "abstand": 57.04068723288667,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 0.7386749999999999,
+    "platz": false
+   },
+   {
+    "id": 13,
+    "x": 40,
+    "z": 3.2,
+    "abstand": 62.32046212922366,
+    "kopfImBild": true,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": false
+   }
+  ],
+  "bildMsSwiftshader": [
+   217.69999999995343,
+   216.4000000001397,
+   213.80000000004657
+  ],
+  "wandS": 3,
+  "fehler": []
+ },
+ "voll-mittag": {
+  "fall": "voll",
+  "uhr": "mittag",
+  "pose": "auge",
+  "plaetze": 16,
+  "wegwerf": 1,
+  "glas": "misch",
+  "programme": {
+   "fragment": 20,
+   "vertex": 11
+  },
+  "textBytes": {
+   "fragment": 101917,
+   "vertex": 22108
+  },
+  "groesstesFragment": 17756,
+  "knotenBau": {
+   "n": 21,
+   "ms": 75.9000000001397,
+   "knoten": 3910
+  },
+  "bau": [
+   {
+    "ms": 20.5,
+    "knoten": 348,
+    "stoff": "RenderPipeline",
+    "fs": 8785
+   },
+   {
+    "ms": 3.800000000046566,
+    "knoten": 101,
+    "stoff": "Background.material",
+    "fs": 1897
+   },
+   {
+    "ms": 2.7999999998137355,
+    "knoten": 131,
+    "stoff": "eisen",
+    "fs": 2522
+   },
+   {
+    "ms": 1.9000000001396984,
+    "knoten": 131,
+    "stoff": "putz",
+    "fs": 2521
+   },
+   {
+    "ms": 1.7000000001862645,
+    "knoten": 131,
+    "stoff": "laternenglas",
+    "fs": 2517
+   },
+   {
+    "ms": 1.6999999999534339,
+    "knoten": 131,
+    "stoff": "stein",
+    "fs": 2520
+   },
+   {
+    "ms": 1.3999999999068677,
+    "knoten": 131,
+    "stoff": "dach",
+    "fs": 2519
+   },
+   {
+    "ms": 2.199999999953434,
+    "knoten": 156,
+    "stoff": "pflaster",
+    "fs": 2891
+   },
+   {
+    "ms": 3.699999999953434,
+    "knoten": 178,
+    "stoff": "laub",
+    "fs": 2836
+   },
+   {
+    "ms": 2.3999999999068677,
+    "knoten": 131,
+    "stoff": "balken",
+    "fs": 2521
+   },
+   {
+    "ms": 1.5,
+    "knoten": 131,
+    "stoff": "rinde",
+    "fs": 2521
+   },
+   {
+    "ms": 13.199999999953434,
+    "knoten": 546,
+    "stoff": "fensterglas",
+    "fs": 17652
+   },
+   {
+    "ms": 0.7000000001862645,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 872
+   },
+   {
+    "ms": 0.5,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 870
+   },
+   {
+    "ms": 0.5,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 871
+   },
+   {
+    "ms": 0.6000000000931323,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 871
+   },
+   {
+    "ms": 1,
+    "knoten": 83,
+    "stoff": "ShadowMaterial",
+    "fs": 1088
+   },
+   {
+    "ms": 0.39999999990686774,
+    "knoten": 40,
+    "stoff": "ShadowMaterial",
+    "fs": 871
+   },
+   {
+    "ms": 5.199999999953434,
+    "knoten": 552,
+    "stoff": "wasser",
+    "fs": 17756
+   },
+   {
+    "ms": 6.300000000046566,
+    "knoten": 523,
+    "stoff": "scheibe",
+    "fs": 17591
+   },
+   {
+    "ms": 3.9000000001396984,
+    "knoten": 306,
+    "stoff": "RenderPipeline",
+    "fs": 9425
+   }
+  ],
+  "quellenMitPlatz": 0,
+  "laternenImBild": 7,
+  "laternenMitRing": 7,
+  "beleuchtend": 0,
+  "laternen": [
+   {
+    "id": 0,
+    "x": 13,
+    "z": 0,
+    "abstand": 23.097185975785013,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 0,
+    "platz": false
+   },
+   {
+    "id": 1,
+    "x": 9.2,
+    "z": 9.2,
+    "abstand": 16.521501142450703,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": false
+   },
+   {
+    "id": 2,
+    "x": 0,
+    "z": 13,
+    "abstand": 7.42159012611179,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": false
+   },
+   {
+    "id": 3,
+    "x": -9.2,
+    "z": 9.2,
+    "abstand": 2.8284271247461894,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": false
+   },
+   {
+    "id": 4,
+    "x": -13,
+    "z": 0,
+    "abstand": 12.61269202034205,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": false
+   },
+   {
+    "id": 5,
+    "x": -9.2,
+    "z": -9.2,
+    "abstand": 20.497804760510327,
+    "kopfImBild": true,
+    "ringPunkte": 3,
+    "heller": 0,
+    "platz": false
+   },
+   {
+    "id": 6,
+    "x": 0,
+    "z": -13,
+    "abstand": 25.24836628378161,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 0,
+    "platz": false
+   },
+   {
+    "id": 7,
+    "x": 9.2,
+    "z": -9.2,
+    "abstand": 26.174797038372617,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 0,
+    "platz": false
+   },
+   {
+    "id": 8,
+    "x": 3.2,
+    "z": -22,
+    "abstand": 34.79080338250326,
+    "kopfImBild": true,
+    "ringPunkte": 4,
+    "heller": 0,
+    "platz": false
+   },
+   {
+    "id": 9,
+    "x": -3.2,
+    "z": -31,
+    "abstand": 42.389149555045336,
+    "kopfImBild": true,
+    "ringPunkte": 3,
+    "heller": 0,
+    "platz": false
+   },
+   {
+    "id": 10,
+    "x": 3.2,
+    "z": -40,
+    "abstand": 52.24557397521823,
+    "kopfImBild": true,
+    "ringPunkte": 8,
+    "heller": 0,
+    "platz": false
+   },
+   {
+    "id": 11,
+    "x": 22,
+    "z": 3.2,
+    "abstand": 30.27606315226602,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": false
+   },
+   {
+    "id": 12,
+    "x": 31,
+    "z": -3.2,
+    "abstand": 40.82401254164025,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": false
+   },
+   {
+    "id": 13,
+    "x": 40,
+    "z": 3.2,
+    "abstand": 47.873165761206984,
+    "kopfImBild": false,
+    "ringPunkte": 0,
+    "heller": null,
+    "platz": false
+   }
+  ],
+  "bildMsSwiftshader": [
+   243.69999999995343,
+   225,
+   241.30000000004657
+  ],
+  "wandS": 3,
+  "fehler": []
+ }
+}

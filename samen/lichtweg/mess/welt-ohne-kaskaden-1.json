@@ -1,0 +1,1081 @@
+{
+ "holz": "voll",
+ "weltbildMs": 36277.40000000002,
+ "poolPlaetze": 4,
+ "moduleVorBild": {
+  "vertex": {
+   "n": 43,
+   "bytes": 250959
+  },
+  "fragment": {
+   "n": 46,
+   "bytes": 1728837
+  },
+  "compute": {
+   "n": 3,
+   "bytes": 35892
+  }
+ },
+ "moduleGesamt": {
+  "vertex": {
+   "n": 44,
+   "bytes": 272504
+  },
+  "fragment": {
+   "n": 47,
+   "bytes": 1768809
+  },
+  "compute": {
+   "n": 3,
+   "bytes": 35892
+  }
+ },
+ "programme": {
+  "vertex": 42,
+  "fragment": 43,
+  "pipelines": 45
+ },
+ "knotenBauVorBild": {
+  "n": 45,
+  "knoten": 86655,
+  "fsBytes": 1763008,
+  "vsBytes": 262977
+ },
+ "erstZeichnung": {
+  "bauN": 41,
+  "bauMs": 1437.6999999994878,
+  "neubauN": 0,
+  "verschoben": 162
+ },
+ "bau": [
+  {
+   "t": 798.0999999999767,
+   "stoff": "atmo-durchlass",
+   "objekt": "atmo-durchlass",
+   "knoten": 131,
+   "vs": 1501,
+   "fs": 2256,
+   "pool": null
+  },
+  {
+   "t": 817.7000000000698,
+   "stoff": "atmo-mehrfach",
+   "objekt": "atmo-mehrfach",
+   "knoten": 432,
+   "vs": 1557,
+   "fs": 7469,
+   "pool": null
+  },
+  {
+   "t": 1296.0999999999767,
+   "stoff": "RenderPipeline",
+   "objekt": "Render Pipeline",
+   "knoten": 719,
+   "vs": 1544,
+   "fs": 17802,
+   "pool": null
+  },
+  {
+   "t": 1328.7000000000698,
+   "stoff": "TRAA.resolve",
+   "objekt": "TRAA",
+   "knoten": 1110,
+   "vs": 1923,
+   "fs": 23340,
+   "pool": null
+  },
+  {
+   "t": 1394.5999999999767,
+   "stoff": "kontakt:verdeckung",
+   "objekt": "kontakt:verdeckung",
+   "knoten": 1573,
+   "vs": 2033,
+   "fs": 32273,
+   "pool": null
+  },
+  {
+   "t": 1398.5,
+   "stoff": "kontakt:verdeckung:glatt",
+   "objekt": "kontakt:verdeckung:glatt",
+   "knoten": 273,
+   "vs": 1566,
+   "fs": 5543,
+   "pool": null
+  },
+  {
+   "t": 1492.5999999999767,
+   "stoff": "atmo-himmel",
+   "objekt": "atmo-himmel",
+   "knoten": 697,
+   "vs": 1712,
+   "fs": 12246,
+   "pool": null
+  },
+  {
+   "t": 1494.8000000000466,
+   "stoff": "atmo-umgebung",
+   "objekt": "atmo-umgebung",
+   "knoten": 94,
+   "vs": 1396,
+   "fs": 1886,
+   "pool": null
+  },
+  {
+   "t": 1511.3000000000466,
+   "stoff": "MeshStandardNodeMaterial",
+   "objekt": "geometrie-arena",
+   "knoten": 1103,
+   "vs": 5101,
+   "fs": 28621,
+   "pool": true
+  },
+  {
+   "t": 1558.2000000000698,
+   "stoff": "MeshStandardNodeMaterial",
+   "objekt": "bodenSatz",
+   "knoten": 3883,
+   "vs": 6228,
+   "fs": 84052,
+   "pool": true
+  },
+  {
+   "t": 1661.5,
+   "stoff": "atmo-bestrahlung",
+   "objekt": "atmo-bestrahlung",
+   "knoten": 506,
+   "vs": 1600,
+   "fs": 9113,
+   "pool": null
+  },
+  {
+   "t": 1712.5999999999767,
+   "stoff": "PMREM_equirect",
+   "objekt": "Mesh",
+   "knoten": 137,
+   "vs": 1480,
+   "fs": 2266,
+   "pool": null
+  },
+  {
+   "t": 1722.5999999999767,
+   "stoff": "PMREM_ggx",
+   "objekt": "Mesh",
+   "knoten": 544,
+   "vs": 1525,
+   "fs": 9294,
+   "pool": null
+  },
+  {
+   "t": 1837.5,
+   "stoff": "welt-licht-himmel",
+   "objekt": "welt-licht-himmel",
+   "knoten": 295,
+   "vs": 1470,
+   "fs": 6748,
+   "pool": null
+  },
+  {
+   "t": 2135.9000000000233,
+   "stoff": "MeshStandardNodeMaterial",
+   "objekt": "geometrie-arena",
+   "knoten": 2180,
+   "vs": 5349,
+   "fs": 39788,
+   "pool": true
+  },
+  {
+   "t": 2507.5999999999767,
+   "stoff": "MeshStandardNodeMaterial",
+   "objekt": "bodenSatz",
+   "knoten": 4146,
+   "vs": 6486,
+   "fs": 95297,
+   "pool": true
+  },
+  {
+   "t": 2527.0999999999767,
+   "stoff": "MeshBasicNodeMaterial",
+   "objekt": "himmel",
+   "knoten": 1403,
+   "vs": 2631,
+   "fs": 30680,
+   "pool": null
+  },
+  {
+   "t": 2532.20000000007,
+   "stoff": "MeshBasicNodeMaterial",
+   "objekt": "himmel-sonne",
+   "knoten": 209,
+   "vs": 1950,
+   "fs": 4731,
+   "pool": null
+  },
+  {
+   "t": 2588,
+   "stoff": "MeshBasicNodeMaterial",
+   "objekt": "Mesh",
+   "knoten": 5000,
+   "vs": 25939,
+   "fs": 108721,
+   "pool": null
+  },
+  {
+   "t": 3773.0999999999767,
+   "stoff": "MeshStandardNodeMaterial",
+   "objekt": "geometrie-arena",
+   "knoten": 2926,
+   "vs": 15914,
+   "fs": 48069,
+   "pool": true
+  },
+  {
+   "t": 3802.5999999999767,
+   "stoff": "MeshStandardNodeMaterial",
+   "objekt": "geometrie-arena",
+   "knoten": 3137,
+   "vs": 19797,
+   "fs": 45624,
+   "pool": true
+  },
+  {
+   "t": 4138.599999999977,
+   "stoff": "MeshStandardNodeMaterial",
+   "objekt": "geometrie-arena",
+   "knoten": 2936,
+   "vs": 12751,
+   "fs": 47140,
+   "pool": true
+  },
+  {
+   "t": 4604.70000000007,
+   "stoff": "MeshStandardNodeMaterial",
+   "objekt": "bauSatz",
+   "knoten": 2287,
+   "vs": 4693,
+   "fs": 41921,
+   "pool": true
+  },
+  {
+   "t": 4631.400000000023,
+   "stoff": "MeshStandardNodeMaterial",
+   "objekt": "bauSatz",
+   "knoten": 2753,
+   "vs": 4428,
+   "fs": 55148,
+   "pool": true
+  },
+  {
+   "t": 4652.099999999977,
+   "stoff": "MeshStandardNodeMaterial",
+   "objekt": "bauSatz",
+   "knoten": 1897,
+   "vs": 3627,
+   "fs": 32610,
+   "pool": "quelle"
+  },
+  {
+   "t": 4878.5,
+   "stoff": "MeshStandardNodeMaterial",
+   "objekt": "formationenSatz",
+   "knoten": 2778,
+   "vs": 4396,
+   "fs": 55430,
+   "pool": true
+  },
+  {
+   "t": 4880.800000000047,
+   "stoff": "MeshStandardNodeMaterial",
+   "objekt": "Mesh",
+   "knoten": 5156,
+   "vs": 5502,
+   "fs": 105042,
+   "pool": true
+  },
+  {
+   "t": 5501.900000000023,
+   "stoff": "MeshStandardNodeMaterial",
+   "objekt": "geometrie-arena",
+   "knoten": 2544,
+   "vs": 9375,
+   "fs": 44243,
+   "pool": true
+  },
+  {
+   "t": 5525.900000000023,
+   "stoff": "MeshStandardNodeMaterial",
+   "objekt": "geometrie-arena",
+   "knoten": 2772,
+   "vs": 10994,
+   "fs": 47695,
+   "pool": true
+  },
+  {
+   "t": 5553.900000000023,
+   "stoff": "MeshStandardNodeMaterial",
+   "objekt": "Mesh",
+   "knoten": 5623,
+   "vs": 5570,
+   "fs": 114897,
+   "pool": true
+  },
+  {
+   "t": 5765.70000000007,
+   "stoff": "MeshBasicNodeMaterial",
+   "objekt": "Mesh",
+   "knoten": 615,
+   "vs": 3326,
+   "fs": 29497,
+   "pool": null
+  },
+  {
+   "t": 5772.400000000023,
+   "stoff": "MeshBasicNodeMaterial",
+   "objekt": "Mesh",
+   "knoten": 551,
+   "vs": 570,
+   "fs": 14440,
+   "pool": null
+  },
+  {
+   "t": 6097.599999999977,
+   "stoff": "MeshStandardNodeMaterial",
+   "objekt": "Mesh",
+   "knoten": 2446,
+   "vs": 10091,
+   "fs": 48606,
+   "pool": true
+  },
+  {
+   "t": 6242.20000000007,
+   "stoff": "MeshStandardNodeMaterial",
+   "objekt": "Mesh",
+   "knoten": 2286,
+   "vs": 8820,
+   "fs": 46710,
+   "pool": true
+  },
+  {
+   "t": 6286.900000000023,
+   "stoff": "MeshStandardNodeMaterial",
+   "objekt": "bauSatz",
+   "knoten": 1906,
+   "vs": 3627,
+   "fs": 32796,
+   "pool": "quelle"
+  },
+  {
+   "t": 6365.300000000047,
+   "stoff": "MeshBasicNodeMaterial",
+   "objekt": "Mesh",
+   "knoten": 37,
+   "vs": 479,
+   "fs": 942,
+   "pool": null
+  },
+  {
+   "t": 7365.900000000023,
+   "stoff": "spiegel:strahl",
+   "objekt": "spiegel:strahl",
+   "knoten": 3014,
+   "vs": 3581,
+   "fs": 70168,
+   "pool": null
+  },
+  {
+   "t": 7376.400000000023,
+   "stoff": "rueckstrahl:boden",
+   "objekt": "rueckstrahl:boden",
+   "knoten": 654,
+   "vs": 2150,
+   "fs": 18070,
+   "pool": null
+  },
+  {
+   "t": 15443.800000000047,
+   "stoff": "MeshStandardNodeMaterial",
+   "objekt": "geometrie-arena",
+   "knoten": 4409,
+   "vs": 23560,
+   "fs": 94740,
+   "pool": true
+  },
+  {
+   "t": 26016.900000000023,
+   "stoff": "MeshStandardNodeMaterial",
+   "objekt": "Mesh",
+   "knoten": 2061,
+   "vs": 6498,
+   "fs": 44949,
+   "pool": true
+  },
+  {
+   "t": 26038.400000000023,
+   "stoff": "MeshPhysicalNodeMaterial",
+   "objekt": "Mesh",
+   "knoten": 2109,
+   "vs": 6619,
+   "fs": 45708,
+   "pool": true
+  },
+  {
+   "t": 26053.400000000023,
+   "stoff": "MeshStandardNodeMaterial",
+   "objekt": "Mesh",
+   "knoten": 1665,
+   "vs": 5520,
+   "fs": 35040,
+   "pool": "quelle"
+  },
+  {
+   "t": 32146.20000000007,
+   "stoff": "MeshStandardNodeMaterial",
+   "objekt": "Mesh",
+   "knoten": 1665,
+   "vs": 5520,
+   "fs": 35040,
+   "pool": "quelle"
+  },
+  {
+   "t": 32159.800000000047,
+   "stoff": "MeshStandardNodeMaterial",
+   "objekt": "Mesh",
+   "knoten": 2068,
+   "vs": 6498,
+   "fs": 45045,
+   "pool": true
+  },
+  {
+   "t": 32171.900000000023,
+   "stoff": "MeshPhysicalNodeMaterial",
+   "objekt": "Mesh",
+   "knoten": 1925,
+   "vs": 6080,
+   "fs": 41312,
+   "pool": true
+  },
+  {
+   "t": 38340.59999999998,
+   "stoff": "bewohner-satz",
+   "objekt": "geometrie-arena",
+   "knoten": 2792,
+   "vs": 21545,
+   "fs": 39972,
+   "pool": true
+  }
+ ],
+ "mod": [
+  {
+   "t": 800.9000000000233,
+   "art": "vertex",
+   "n": 1501,
+   "label": "vertex_atmo-durchlass"
+  },
+  {
+   "t": 801,
+   "art": "fragment",
+   "n": 2256,
+   "label": "fragment_atmo-durchlass"
+  },
+  {
+   "t": 819,
+   "art": "vertex",
+   "n": 1557,
+   "label": "vertex_atmo-mehrfach"
+  },
+  {
+   "t": 819,
+   "art": "fragment",
+   "n": 7469,
+   "label": "fragment_atmo-mehrfach"
+  },
+  {
+   "t": 1271.5,
+   "art": "fragment",
+   "n": 297,
+   "label": "ausgabe-sonde"
+  },
+  {
+   "t": 1359.8000000000466,
+   "art": "vertex",
+   "n": 1923,
+   "label": "vertex_TRAA.resolve"
+  },
+  {
+   "t": 1359.9000000000233,
+   "art": "fragment",
+   "n": 23340,
+   "label": "fragment_TRAA.resolve"
+  },
+  {
+   "t": 1360.5,
+   "art": "vertex",
+   "n": 1544,
+   "label": "vertex_RenderPipeline"
+  },
+  {
+   "t": 1360.5,
+   "art": "fragment",
+   "n": 17802,
+   "label": "fragment_RenderPipeline"
+  },
+  {
+   "t": 1395.0999999999767,
+   "art": "vertex",
+   "n": 2033,
+   "label": "vertex_kontakt:verdeckung"
+  },
+  {
+   "t": 1395.0999999999767,
+   "art": "fragment",
+   "n": 32273,
+   "label": "fragment_kontakt:verdeckung"
+  },
+  {
+   "t": 1398.8000000000466,
+   "art": "vertex",
+   "n": 1566,
+   "label": "vertex_kontakt:verdeckung:glatt"
+  },
+  {
+   "t": 1398.8000000000466,
+   "art": "fragment",
+   "n": 5543,
+   "label": "fragment_kontakt:verdeckung:glatt"
+  },
+  {
+   "t": 1492.9000000000233,
+   "art": "vertex",
+   "n": 1712,
+   "label": "vertex_atmo-himmel"
+  },
+  {
+   "t": 1492.9000000000233,
+   "art": "fragment",
+   "n": 12246,
+   "label": "fragment_atmo-himmel"
+  },
+  {
+   "t": 1495.0999999999767,
+   "art": "vertex",
+   "n": 1396,
+   "label": "vertex_atmo-umgebung"
+  },
+  {
+   "t": 1495.0999999999767,
+   "art": "fragment",
+   "n": 1886,
+   "label": "fragment_atmo-umgebung"
+  },
+  {
+   "t": 1513.5999999999767,
+   "art": "vertex",
+   "n": 5101,
+   "label": "vertex"
+  },
+  {
+   "t": 1513.7000000000698,
+   "art": "fragment",
+   "n": 28621,
+   "label": "fragment"
+  },
+  {
+   "t": 1598.2000000000698,
+   "art": "vertex",
+   "n": 6228,
+   "label": "vertex"
+  },
+  {
+   "t": 1598.5,
+   "art": "fragment",
+   "n": 84052,
+   "label": "fragment"
+  },
+  {
+   "t": 1690.9000000000233,
+   "art": "vertex",
+   "n": 1600,
+   "label": "vertex_atmo-bestrahlung"
+  },
+  {
+   "t": 1690.9000000000233,
+   "art": "fragment",
+   "n": 9113,
+   "label": "fragment_atmo-bestrahlung"
+  },
+  {
+   "t": 1713,
+   "art": "vertex",
+   "n": 1480,
+   "label": "vertex_PMREM_equirect"
+  },
+  {
+   "t": 1713,
+   "art": "fragment",
+   "n": 2266,
+   "label": "fragment_PMREM_equirect"
+  },
+  {
+   "t": 1722.9000000000233,
+   "art": "vertex",
+   "n": 1525,
+   "label": "vertex_PMREM_ggx"
+  },
+  {
+   "t": 1722.9000000000233,
+   "art": "fragment",
+   "n": 9294,
+   "label": "fragment_PMREM_ggx"
+  },
+  {
+   "t": 1858.5999999999767,
+   "art": "vertex",
+   "n": 1470,
+   "label": "vertex_welt-licht-himmel"
+  },
+  {
+   "t": 1858.5999999999767,
+   "art": "fragment",
+   "n": 6748,
+   "label": "fragment_welt-licht-himmel"
+  },
+  {
+   "t": 2136.5,
+   "art": "vertex",
+   "n": 5349,
+   "label": "vertex"
+  },
+  {
+   "t": 2136.5999999999767,
+   "art": "fragment",
+   "n": 39788,
+   "label": "fragment"
+  },
+  {
+   "t": 2510.0999999999767,
+   "art": "vertex",
+   "n": 6486,
+   "label": "vertex"
+  },
+  {
+   "t": 2510.3000000000466,
+   "art": "fragment",
+   "n": 95297,
+   "label": "fragment"
+  },
+  {
+   "t": 2528,
+   "art": "vertex",
+   "n": 2631,
+   "label": "vertex"
+  },
+  {
+   "t": 2528,
+   "art": "fragment",
+   "n": 30680,
+   "label": "fragment"
+  },
+  {
+   "t": 2532.5999999999767,
+   "art": "vertex",
+   "n": 1950,
+   "label": "vertex"
+  },
+  {
+   "t": 2532.5999999999767,
+   "art": "fragment",
+   "n": 4731,
+   "label": "fragment"
+  },
+  {
+   "t": 2589,
+   "art": "fragment",
+   "n": 572,
+   "label": "szene:tiefenabbild"
+  },
+  {
+   "t": 2590.3000000000466,
+   "art": "vertex",
+   "n": 25939,
+   "label": "vertex"
+  },
+  {
+   "t": 2590.70000000007,
+   "art": "fragment",
+   "n": 108721,
+   "label": "fragment"
+  },
+  {
+   "t": 3177.70000000007,
+   "art": "compute",
+   "n": 6980,
+   "label": "pass-wahl"
+  },
+  {
+   "t": 3774.5,
+   "art": "vertex",
+   "n": 15914,
+   "label": "vertex"
+  },
+  {
+   "t": 3774.70000000007,
+   "art": "fragment",
+   "n": 48069,
+   "label": "fragment"
+  },
+  {
+   "t": 3804.5999999999767,
+   "art": "vertex",
+   "n": 19797,
+   "label": "vertex"
+  },
+  {
+   "t": 3804.8000000000466,
+   "art": "fragment",
+   "n": 45624,
+   "label": "fragment"
+  },
+  {
+   "t": 4002.4000000000233,
+   "art": "compute",
+   "n": 25532,
+   "label": "karte-rechner"
+  },
+  {
+   "t": 4139.300000000047,
+   "art": "vertex",
+   "n": 12751,
+   "label": "vertex"
+  },
+  {
+   "t": 4147.300000000047,
+   "art": "fragment",
+   "n": 47140,
+   "label": "fragment"
+  },
+  {
+   "t": 4216.300000000047,
+   "art": "compute",
+   "n": 3380,
+   "label": ""
+  },
+  {
+   "t": 4605.70000000007,
+   "art": "vertex",
+   "n": 4693,
+   "label": "vertex"
+  },
+  {
+   "t": 4605.800000000047,
+   "art": "fragment",
+   "n": 41921,
+   "label": "fragment"
+  },
+  {
+   "t": 4632.800000000047,
+   "art": "vertex",
+   "n": 4428,
+   "label": "vertex"
+  },
+  {
+   "t": 4633.099999999977,
+   "art": "fragment",
+   "n": 55148,
+   "label": "fragment"
+  },
+  {
+   "t": 4652.900000000023,
+   "art": "vertex",
+   "n": 3627,
+   "label": "vertex"
+  },
+  {
+   "t": 4653,
+   "art": "fragment",
+   "n": 32610,
+   "label": "fragment"
+  },
+  {
+   "t": 4879.400000000023,
+   "art": "vertex",
+   "n": 4396,
+   "label": "vertex"
+  },
+  {
+   "t": 4879.70000000007,
+   "art": "fragment",
+   "n": 55430,
+   "label": "fragment"
+  },
+  {
+   "t": 4882.5,
+   "art": "vertex",
+   "n": 5502,
+   "label": "vertex"
+  },
+  {
+   "t": 4882.70000000007,
+   "art": "fragment",
+   "n": 105042,
+   "label": "fragment"
+  },
+  {
+   "t": 5502.900000000023,
+   "art": "vertex",
+   "n": 9375,
+   "label": "vertex"
+  },
+  {
+   "t": 5503.099999999977,
+   "art": "fragment",
+   "n": 44243,
+   "label": "fragment"
+  },
+  {
+   "t": 5528.20000000007,
+   "art": "vertex",
+   "n": 10994,
+   "label": "vertex"
+  },
+  {
+   "t": 5528.400000000023,
+   "art": "fragment",
+   "n": 47695,
+   "label": "fragment"
+  },
+  {
+   "t": 5554.70000000007,
+   "art": "vertex",
+   "n": 5570,
+   "label": "vertex"
+  },
+  {
+   "t": 5555.099999999977,
+   "art": "fragment",
+   "n": 114897,
+   "label": "fragment"
+  },
+  {
+   "t": 5767,
+   "art": "vertex",
+   "n": 3326,
+   "label": "vertex"
+  },
+  {
+   "t": 5767,
+   "art": "fragment",
+   "n": 29497,
+   "label": "fragment"
+  },
+  {
+   "t": 5775.20000000007,
+   "art": "vertex",
+   "n": 570,
+   "label": "vertex"
+  },
+  {
+   "t": 5775.20000000007,
+   "art": "fragment",
+   "n": 14440,
+   "label": "fragment"
+  },
+  {
+   "t": 6107.800000000047,
+   "art": "vertex",
+   "n": 10091,
+   "label": "vertex"
+  },
+  {
+   "t": 6107.900000000023,
+   "art": "fragment",
+   "n": 48606,
+   "label": "fragment"
+  },
+  {
+   "t": 6242.800000000047,
+   "art": "vertex",
+   "n": 8820,
+   "label": "vertex"
+  },
+  {
+   "t": 6242.900000000023,
+   "art": "fragment",
+   "n": 46710,
+   "label": "fragment"
+  },
+  {
+   "t": 6291.5,
+   "art": "vertex",
+   "n": 3627,
+   "label": "vertex"
+  },
+  {
+   "t": 6291.70000000007,
+   "art": "fragment",
+   "n": 32796,
+   "label": "fragment"
+  },
+  {
+   "t": 6365.5,
+   "art": "vertex",
+   "n": 479,
+   "label": "vertex"
+  },
+  {
+   "t": 6365.5,
+   "art": "fragment",
+   "n": 942,
+   "label": "fragment"
+  },
+  {
+   "t": 7367.70000000007,
+   "art": "vertex",
+   "n": 3581,
+   "label": "vertex_spiegel:strahl"
+  },
+  {
+   "t": 7367.800000000047,
+   "art": "fragment",
+   "n": 70168,
+   "label": "fragment_spiegel:strahl"
+  },
+  {
+   "t": 7376.800000000047,
+   "art": "vertex",
+   "n": 2150,
+   "label": "vertex_rueckstrahl:boden"
+  },
+  {
+   "t": 7376.900000000023,
+   "art": "fragment",
+   "n": 18070,
+   "label": "fragment_rueckstrahl:boden"
+  },
+  {
+   "t": 15444.800000000047,
+   "art": "vertex",
+   "n": 23560,
+   "label": "vertex"
+  },
+  {
+   "t": 15445.099999999977,
+   "art": "fragment",
+   "n": 94740,
+   "label": "fragment"
+  },
+  {
+   "t": 26017.20000000007,
+   "art": "vertex",
+   "n": 6498,
+   "label": "vertex"
+  },
+  {
+   "t": 26017.400000000023,
+   "art": "fragment",
+   "n": 44949,
+   "label": "fragment"
+  },
+  {
+   "t": 26039,
+   "art": "vertex",
+   "n": 6619,
+   "label": "vertex"
+  },
+  {
+   "t": 26039.20000000007,
+   "art": "fragment",
+   "n": 45708,
+   "label": "fragment"
+  },
+  {
+   "t": 26053.800000000047,
+   "art": "vertex",
+   "n": 5520,
+   "label": "vertex"
+  },
+  {
+   "t": 26053.900000000023,
+   "art": "fragment",
+   "n": 35040,
+   "label": "fragment"
+  },
+  {
+   "t": 32160.099999999977,
+   "art": "fragment",
+   "n": 45045,
+   "label": "fragment"
+  },
+  {
+   "t": 32172.20000000007,
+   "art": "vertex",
+   "n": 6080,
+   "label": "vertex"
+  },
+  {
+   "t": 32172.20000000007,
+   "art": "fragment",
+   "n": 41312,
+   "label": "fragment"
+  },
+  {
+   "t": 38343.80000000005,
+   "art": "vertex",
+   "n": 21545,
+   "label": "vertex_bewohner-satz"
+  },
+  {
+   "t": 38343.90000000002,
+   "art": "fragment",
+   "n": 39972,
+   "label": "fragment_bewohner-satz"
+  }
+ ],
+ "fehler": [
+  "keine Attrappe: @vertex fn vs(@builtin(vertex_index) i: u32) -> @builtin(position) vec4f {\n    l",
+  "keine Attrappe: @group(0) @binding(0) var tiefe: texture_depth_2d;\n@vertex fn vs(@builtin(vertex"
+ ],
+ "fall": "ohne-kaskaden",
+ "stub": true,
+ "wandS": 41,
+ "konsole": [
+  "[AnazhRealm V18.546.264] [ERROR] BEWOHNER: das Wege-Netz von „Steintal\" zerfällt in 2 Teile (kein freier Schritt bis 25 m)",
+  "[AnazhRealm V18.546.264] [ERROR] BEWOHNER: der Ort -31.2/-163.2 erreicht keinen Weg frei",
+  "[AnazhRealm V18.546.264] [ERROR] BEWOHNER: der Ort -31.8/-163.1 erreicht keinen Weg frei",
+  "[AnazhRealm V18.546.264] [ERROR] BEWOHNER: der Ort -32.4/-163.1 erreicht keinen Weg frei",
+  "[AnazhRealm V18.546.264] [ERROR] BEWOHNER: der Ort -33.0/-163.2 erreicht keinen Weg frei",
+  "[AnazhRealm V18.546.264] [ERROR] BEWOHNER: der Ort -33.6/-163.2 erreicht keinen Weg frei",
+  "[AnazhRealm V18.546.264] [ERROR] BEWOHNER: der Ort -34.2/-163.3 erreicht keinen Weg frei",
+  "[AnazhRealm V18.546.264] [ERROR] BEWOHNER: der Ort -34.8/-163.4 erreicht keinen Weg frei",
+  "[AnazhRealm V18.546.264] [ERROR] BEWOHNER: der Ort -35.4/-163.5 erreicht keinen Weg frei",
+  "[AnazhRealm V18.546.264] [ERROR] BEWOHNER: der Ort -35.9/-163.7 erreicht keinen Weg frei",
+  "[AnazhRealm V18.546.264] [ERROR] BEWOHNER: der Ort -36.5/-163.8 erreicht keinen Weg frei",
+  "[AnazhRealm V18.546.264] [ERROR] BEWOHNER: der Ort -37.1/-164.0 erreicht keinen Weg frei",
+  "[AnazhRealm V18.546.264] [ERROR] BEWOHNER: der Ort -29.2/-162.9 erreicht keinen Weg frei",
+  "[AnazhRealm V18.546.264] [ERROR] BEWOHNER: der Ort -29.7/-162.8 erreicht keinen Weg frei",
+  "[AnazhRealm V18.546.264] [ERROR] BEWOHNER: der Ort -30.3/-162.7 erreicht keinen Weg frei",
+  "[AnazhRealm V18.546.264] [ERROR] BEWOHNER: der Ort -30.9/-162.6 erreicht keinen Weg frei",
+  "[AnazhRealm V18.546.264] [ERROR] BEWOHNER: der Ort -31.5/-162.5 erreicht keinen Weg frei",
+  "[AnazhRealm V18.546.264] [ERROR] BEWOHNER: der Ort -32.1/-162.5 erreicht keinen Weg frei",
+  "[AnazhRealm V18.546.264] [ERROR] BEWOHNER: der Ort -32.7/-162.5 erreicht keinen Weg frei",
+  "[AnazhRealm V18.546.264] [ERROR] BEWOHNER: der Ort -33.3/-162.6 erreicht keinen Weg frei",
+  "[AnazhRealm V18.546.264] [ERROR] BEWOHNER: der Ort -33.9/-162.6 erreicht keinen Weg frei",
+  "[AnazhRealm V18.546.264] [ERROR] BEWOHNER: der Ort -34.5/-162.7 erreicht keinen Weg frei",
+  "[AnazhRealm V18.546.264] [ERROR] BEWOHNER: der Ort -35.1/-162.8 erreicht keinen Weg frei",
+  "[AnazhRealm V18.546.264] [ERROR] BEWOHNER: der Ort -35.7/-163.0 erreicht keinen Weg frei",
+  "[AnazhRealm V18.546.264] [ERROR] BEWOHNER: der Ort -36.2/-163.1 erreicht keinen Weg frei",
+  "[AnazhRealm V18.546.264] [ERROR] BEWOHNER: der Ort -36.8/-163.3 erreicht keinen Weg frei",
+  "[AnazhRealm V18.546.264] [ERROR] BEWOHNER: der Ort -37.4/-163.5 erreicht keinen Weg frei",
+  "[AnazhRealm V18.546.264] [ERROR] BEWOHNER: der Ort -37.9/-163.7 erreicht keinen Weg frei",
+  "[AnazhRealm V18.546.264] [ERROR] BEWOHNER: der Ort -38.5/-164.0 erreicht keinen Weg frei",
+  "[AnazhRealm V18.546.264] [ERROR] BEWOHNER: der Ort -27.7/-162.7 erreicht keinen Weg frei",
+  "[AnazhRealm V18.546.264] [ERROR] BEWOHNER: der Ort -28.3/-162.5 erreicht keinen Weg frei",
+  "[AnazhRealm V18.546.264] [ERROR] BEWOHNER: der Ort -28.9/-162.3 erreicht keinen Weg frei",
+  "[AnazhRealm V18.546.264] [ERROR] BEWOHNER: der Ort -29.4/-162.2 erreicht keinen Weg frei",
+  "[AnazhRealm V18.546.264] [ERROR] BEWOHNER: der Ort -30.0/-162.1 erreicht keinen Weg frei",
+  "[AnazhRealm V18.546.264] [ERROR] BEWOHNER: der Ort -30.6/-162.0 erreicht keinen Weg frei",
+  "[AnazhRealm V18.546.264] [ERROR] BEWOHNER: der Ort -31.2/-162.0 erreicht keinen Weg frei",
+  "[AnazhRealm V18.546.264] [ERROR] BEWOHNER: der Ort -31.8/-161.9 erreicht keinen Weg frei",
+  "[AnazhRealm V18.546.264] [ERROR] BEWOHNER: der Ort -32.4/-161.9 erreicht keinen Weg frei",
+  "[AnazhRealm V18.546.264] [ERROR] BEWOHNER: der Ort -33.0/-161.9 erreicht keinen Weg frei",
+  "[AnazhRealm V18.546.264] [ERROR] BEWOHNER: der Ort -33.6/-162.0 erreicht keinen Weg frei"
+ ]
+}
