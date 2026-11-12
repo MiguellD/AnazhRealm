@@ -483,7 +483,16 @@ function urteilFaelle() {
     // die Wache am Prozess-Ende: ❌ bei Exit 0 wird 1, ohne ROTE Zeile bleibt 0, im Selbsttest wacht sie nicht
     const w = (z, ...a) => require("child_process").spawnSync(process.execPath, ["-e", `require(${JSON.stringify(require.resolve("./lib/urteil-zeile.cjs"))}).wache(); console.log(${JSON.stringify(z)}); process.exit(0)`, "--", ...a]).status;
     if (w("❌ zwei Zeilen ROT") !== 1 || w("GRÜN 3 von 3") !== 0 || w("❌ Mutante", "--selftest") !== 0) v.push("Klinge 9: die Urteils-Wache macht aus ❌ bei Exit 0 kein ROT");
+    // eine Linse, die ein ROTES Urteil druckt, steht unter der Wache (welt-boot lädt sie, sonst urteil-zeile selbst)
+    if (!wacheLuecken({ "x.cjs": 'console.log("❌ " + f);\nprocess.exit(0);' }).length || wacheLuecken({ "x.cjs": 'require("./lib/welt-boot.cjs");\nconsole.log("❌")' }).length)
+        v.push("Klinge 9: die Linse ohne Wache bleibt ungenannt");
     return v;
+}
+// je Linse in scripts/ (Name → Text): die ROT/❌ druckt, ohne die Wache zu laden
+function wacheLuecken(texte) {
+    return Object.entries(texte)
+        .filter(([, t]) => /❌|⛔|"[^"\n]*\bROT\b/.test(stripComments(t)) && !/require\("\.\/lib\/(?:welt-boot|urteil-zeile)\.cjs"\)/.test(t))
+        .map(([n]) => `Klinge 9: ${n} druckt ROT/❌ ohne die Urteils-Wache — require("./lib/urteil-zeile.cjs").wache()`);
 }
 
 function selftest() {
@@ -658,7 +667,8 @@ function main() {
     const param = scanParameterAnker(dateien, stammSrc);
     const tasten = scanTasten(dateien);
     const probe = probeGesetz(require("js-yaml").load(ausDatei(PROBE_DATEI))).map((e) => `${PROBE_DATEI}: ${e}`);
-    const errs = ratchet.errs.concat(anker.errs, param.errs, tasten.errs, probe, urteilFaelle());
+    const linsen = Object.fromEntries(fs.readdirSync(path.join(root, "scripts")).filter((f) => f.endsWith(".cjs")).map((f) => ["scripts/" + f, ausDatei(path.join(root, "scripts", f))]));
+    const errs = ratchet.errs.concat(anker.errs, param.errs, tasten.errs, probe, urteilFaelle(), wacheLuecken(linsen));
     // die EINE rote Liste (welt-boot rotListe) statt einer eigenen Schleife daneben
     rotListe(errs);
     if (ratchet.nT < FROZEN_TYPEOF)
@@ -669,7 +679,7 @@ function main() {
     // (__consumes + __anker installiert), Linsen ohne Parameter-Anker, Kopf-Muster, Taste nach der Wanduhr, eigenen Schneider und
     // ersten Treffer im ganzen Stamm, die Rufe am Einlass der GPU-Probe
     console.log(
-        `✅ DIE APPARAT-LINSE steht — typeof ${ratchet.nT}/${FROZEN_TYPEOF} · ${anker.entries.length} Anker · ${param.n} Linsen sauber (0 von ${tasten.n}) · GPU-Probe ${PROBE_RUFE.length} Rufe`
+        `✅ DIE APPARAT-LINSE steht — typeof ${ratchet.nT}/${FROZEN_TYPEOF} · ${anker.entries.length} Anker · ${param.n} Linsen sauber (0 von ${tasten.n}) · GPU-Probe ${PROBE_RUFE.length} Rufe · ${URTEIL_FAELLE.length} Urteils-Fälle · ${Object.keys(linsen).length} Linsen unter der Urteils-Wache`
     );
 }
 
