@@ -4561,6 +4561,8 @@ const R6_SPEICHER_MAX = 400000; // Datei-Paare im Speicher; darüber fällt, was
 const R6_RUFE_MAX = 4; // Stände der Stamm-Bibliothek, deren require-Ziele der Speicher hält
 const R6_KALT_WORT = 2000; // ab so vielen Paaren ohne Urteil nennt sich der kalte Speicher auf stderr
 const sha1Hex = (s) => crypto.createHash("sha1").update(s).digest("hex");
+// die rohe Zeile von diff-tree: Modus alt, Modus neu, Blob alt, Blob neu, Art, Pfad
+const ROH_ZEILE = /^:(\d+) (\d+) ([0-9a-f]+) ([0-9a-f]+) [A-Z]\d*\t(.+)$/;
 // DER SPEICHER: { v, zeilen: { rohe Zeile → [zählt, angelegt, Hunks | 0] }, rufe: { Stamm-Blob|acorn → { t, je: { Blob → [Ziel] |
 // { fehler } } } } } — jede Zeile die Funktion unveränderlicher Blobs; `v` bindet ihn an git, die Diff-Schalter und den Text von
 // stempelDiff samt Stempel-Tafel (ein anderer Stand rechnet alles neu). Unlesbar oder nicht schreibbar: beim Namen auf stderr, das
@@ -4581,8 +4583,7 @@ function r6Speicher(repo, ordner) {
     let schmutz = false;
     const s = {
         datei,
-        zeile: (z) => { const f = zeilen.get(z); if (f) benutzt.add(z); return f; },
-        setze: (z, f) => { zeilen.set(z, f); benutzt.add(z); schmutz = true; },
+        zeile: (z) => { const f = zeilen.get(z); if (f) benutzt.add(z); return f; },        setze: (z, f) => { zeilen.set(z, f); benutzt.add(z); schmutz = true; },
         rufeVon: (stand) => {
             const e = rufe[stand] || (rufe[stand] = { t: 0, je: {} });
             heiss.add(stand);
@@ -4664,7 +4665,7 @@ function r6Quelle(repo, kopf, messungen, stationen = [], opt = {}) {
         const eintrag = (z) => {
             let e = eintraege.get(z);
             if (!e) {
-                const m = /^:(\d+) (\d+) ([0-9a-f]+) ([0-9a-f]+) [A-Z]\d*\t(.+)$/.exec(z);
+                const m = ROH_ZEILE.exec(z);
                 if (!m) throw new Error("git diff-tree: unlesbare rohe Zeile „" + z.slice(0, 160) + "“");
                 e = { z, om: m[1], oid: m[3], pfad: m[5], f: speicher().zeile(z) || null, h: null };
                 eintraege.set(z, e);
@@ -4705,38 +4706,59 @@ function r6Quelle(repo, kopf, messungen, stationen = [], opt = {}) {
         if (baeume.length)
             liesDiff(gitMit(["diff-tree", "--stdin", "-r", "--raw", "--no-abbrev", "--no-renames"], repo, baeume.map((t) => t + " " + kopfBaum).join("\n") + "\n").toString("utf8"),
                 (t, es) => jeBaum.set(t, es));
-        // die Paare ohne Urteil: die wenigsten Bäume, die sie tragen (die kleinsten Diffs zuerst), je Prozess auf ihre Pfade begrenzt
+        // die Paare ohne Urteil. Je Prozess EINE KLASSE von Pfaden — die mit den wenigsten offenen Paaren, höchstens doppelt so viele wie
+        // der kleinste — und die wenigsten Bäume, die ihre Paare tragen (gierig: der Baum mit den meisten zuerst): eine große Datei mit
+        // drei Fassungen vergleicht git dreimal, nie je Mess-Kopf (f46b9e81, 32 Dateien in der Landung: jeder Baum über alle Pfade
+        // 88,5 s in 2 Prozessen, je Klasse 60–70 s in 6). Jedes Paar fragt git selbst: ein Urteil wird nie aus einem anderen gefolgert
         const urteil = (e, abschnitt) => {
             const r = stempelDiff(e.pfad, abschnitt);
             return [r.dateien.length ? 1 : 0, r.neu.has(e.pfad) ? 1 : 0, r.zeilen.has(e.pfad) ? r.zeilen.get(e.pfad).map((h) => [h[0], h[1], h.nurKommentar ? 1 : 0, h.ein ? 1 : 0]) : 0];
         };
-        const fehlt = (t) => jeBaum.get(t).filter((e) => !e.f);
-        let offen = baeume.filter((t) => fehlt(t).length).sort((a, b) => jeBaum.get(a).length - jeBaum.get(b).length);
-        const kalt = new Set(offen.flatMap(fehlt)).size;
-        if (kalt > R6_KALT_WORT) console.error("R6-QUELLE: " + kalt + " Datei-Paare an " + offen.length + " Mess-Köpfen ohne Urteil im Speicher (" + speicher().datei + ") — git rechnet sie jetzt einmal, danach nur noch die Paare einer Landung");
-        while (offen.length) {
-            const gruppe = [], pfade = new Set(), gedeckt = new Set();
-            let ganz = false;
-            for (const t of offen) {
-                const neu = fehlt(t).filter((e) => !gedeckt.has(e));
-                if (!neu.length) continue;
-                const p2 = new Set([...pfade, ...neu.map((e) => e.pfad)]);
-                let n = 0, lang = false;
-                for (const p of p2) if ((n += p.length + 3) > R6_PFAD_MAX || p[0] === '"') { lang = true; break; }
-                if (gruppe.length && (lang || (gruppe.length + 1) * p2.size > R6_BUDGET)) break;
-                gruppe.push(t);
-                for (const e of neu) { gedeckt.add(e); pfade.add(e.pfad); }
-                if (lang) { ganz = true; break; }
+        const offen = new Set(), traeger = new Map();
+        for (const t of baeume) for (const e of jeBaum.get(t)) if (!e.f) { offen.add(e); (traeger.get(e) || traeger.set(e, []).get(e)).push(t); }
+        if (offen.size > R6_KALT_WORT) console.error("R6-QUELLE: " + offen.size + " Datei-Paare an " + new Set([...traeger.values()].flat()).size + " Mess-Köpfen ohne Urteil im Speicher (" + speicher().datei + ") — git rechnet sie jetzt einmal, danach nur noch die Paare einer Landung");
+        const rechne = (ziele) => {
+            for (;;) {
+                const rest = [...ziele].filter((e) => !e.f);
+                if (!rest.length) return;
+                const gruppe = [], gedeckt = new Set();
+                let pfade = [];
+                const fremd = rest.find((e) => e.pfad[0] === '"');
+                if (fremd) {
+                    // ein Pfad, den git in Anführung schreibt, fährt ohne Pfad-Grenze: der ganze Diff EINES Baums, der ihn trägt
+                    gruppe.push(traeger.get(fremd)[0]);
+                    for (const e of jeBaum.get(gruppe[0])) if (!e.f && ziele.has(e)) gedeckt.add(e);
+                } else {
+                    const jePfad = new Map();
+                    for (const e of rest) jePfad.set(e.pfad, (jePfad.get(e.pfad) || 0) + 1);
+                    const reihe = [...jePfad].sort((a, b) => a[1] - b[1] || (a[0] < b[0] ? -1 : 1));
+                    const klasse = new Set([reihe[0][0]]);
+                    let lang = reihe[0][0].length + 3;
+                    for (const [p, n] of reihe.slice(1)) {
+                        if (n > 2 * reihe[0][1] || (lang += p.length + 3) > R6_PFAD_MAX) break;
+                        klasse.add(p);
+                    }
+                    const ziel = new Set(rest.filter((e) => klasse.has(e.pfad))), zahl = new Map();
+                    for (const e of ziel) for (const t of traeger.get(e)) zahl.set(t, (zahl.get(t) || 0) + 1);
+                    while (ziel.size && (!gruppe.length || (gruppe.length + 1) * klasse.size <= R6_BUDGET)) {
+                        let bester = null, meiste = 0;
+                        for (const [t, n] of zahl) if (n > meiste) { bester = t; meiste = n; }
+                        if (!bester) throw new Error("R6-Quelle: " + ziel.size + " Datei-Paare ohne Baum, der sie trägt");
+                        gruppe.push(bester);
+                        for (const e of jeBaum.get(bester)) if (ziel.delete(e)) { gedeckt.add(e); for (const t of traeger.get(e)) zahl.set(t, zahl.get(t) - 1); }
+                    }
+                    pfade = [...klasse];
+                }
+                const aus = gitMit(["--literal-pathspecs", "diff-tree", "--stdin", "-r", "--raw", "--no-abbrev", "-p", ...R6_DIFF, ...(pfade.length ? ["--", ...pfade] : [])], repo,
+                    gruppe.map((t) => t + " " + kopfBaum).join("\n") + "\n").toString("utf8");
+                liesDiff(aus, (_t, es, teile) => {
+                    for (const e of es) if (!e.f) speicher().setze(e.z, (e.f = urteil(e, (teile.get(e) || []).join("\n"))));
+                });
+                const stumm = [...gedeckt].filter((e) => !e.f);
+                if (stumm.length) throw new Error("git diff-tree: " + stumm.length + " Datei-Paare ohne Antwort, das erste „" + stumm[0].z.slice(0, 160) + "“");
             }
-            const aus = gitMit(["--literal-pathspecs", "diff-tree", "--stdin", "-r", "--raw", "--no-abbrev", "-p", ...R6_DIFF, ...(ganz ? [] : ["--", ...pfade])], repo,
-                gruppe.map((t) => t + " " + kopfBaum).join("\n") + "\n").toString("utf8");
-            liesDiff(aus, (_t, es, teile) => {
-                for (const e of es) if (!e.f) speicher().setze(e.z, (e.f = urteil(e, (teile.get(e) || []).join("\n"))));
-            });
-            const stumm = [...gedeckt].filter((e) => !e.f);
-            if (stumm.length) throw new Error("git diff-tree: " + stumm.length + " Datei-Paare ohne Antwort, das erste „" + stumm[0].z.slice(0, 160) + "“");
-            offen = offen.filter((t) => fehlt(t).length);
-        }
+        };
+        rechne(offen);
         if (eintraege.size) speicher().schreibe();
         return (L = { baumVon, kopfBaum, kopfBlobs, namen, jeBaum });
     };
@@ -6631,7 +6653,8 @@ async function selbsttest(o = {}) {
     // (5q) DIE KOSTEN VON R6 (Gebot 7, die Linse zu r6Quelle; 12.11.: ~2000 git-Prozesse je Buchung, fünf und mehr je Mess-Kopf): ein
     // echter Klon mit 10 Ständen — index.html trägt je Stand nur einen neuen Stempel, stamm/welt.js und das Befehls-Verzeichnis von npm
     // eine neue Zeile, die Linsen-Bibliothek scripts/lib/b.cjs ändert sich einmal (Stand 2) —, je Mess-Kopf zwei Mess-Dateien, dazu eine
-    // an einem Stand, den der Klon nicht kennt. Das Urteil über 3 Köpfe und über 9 Köpfe kostet DIESELBE Zahl git-Prozesse (≤ Deckel),
+    // an einem Stand, den der Klon nicht kennt. Das Urteil über 3 Köpfe und über 9 Köpfe bleibt unter DEMSELBEN Deckel an git-Prozessen
+    // (an 9 Köpfen eine Pfad-Klasse mehr: die Klassen wachsen mit dem Logarithmus der Fassungen, nie mit den Köpfen),
     // der zweite Lauf am warmen Speicher vier; die Mutante — git je Mess-Kopf gefragt, der Stand bis 12.11. — wächst mit den Köpfen
     // und reißt den Deckel (GEFANGEN); Urteil und Diff sind kalt, warm und in der Mutante Byte für Byte dieselben
     {
@@ -6687,8 +6710,8 @@ async function selbsttest(o = {}) {
         const soll3 = "frisch an 3 | Pfad seit der Messung geändert (R6: stamm/welt.js) | frisch an 3 | Mess-SHA unbekannt — kein R6-Urteil";
         const soll9 = "frisch an 8 | Linse seit der Messung geändert (R6: scripts/lib/b.cjs) | frisch an 8 | Mess-SHA unbekannt — kein R6-Urteil";
         const sollD = JSON.stringify([["package.json", "stamm/welt.js"], [["package.json", [[1, 1]]], ["stamm/welt.js", [[2, 2]]]], [], true]);
-        pruef("KOSTEN R6 kostet, was sich ändert: das Urteil über 3 und über 9 Mess-Köpfe fragt git gleich oft (≤ " + DECKEL + " Prozesse), am warmen Speicher viermal; ein Stempel allein zählt nie, der unbekannte Stand beim Namen; die Mutante (git je Mess-Kopf gefragt) reißt den Deckel",
-            !wurf && kalt3.n === kalt9.n && kalt9.n <= DECKEL && warm9.n === 4 && mut9.n > DECKEL && kalt3.u === soll3 && kalt9.u === soll9 && warm9.u === soll9 && mut9.u === soll9 &&
+        pruef("KOSTEN R6 kostet, was sich ändert: das Urteil über 3 und über 9 Mess-Köpfe fragt git unter demselben Deckel (≤ " + DECKEL + " Prozesse, höchstens einer mehr), am warmen Speicher viermal; ein Stempel allein zählt nie, der unbekannte Stand beim Namen; die Mutante (git je Mess-Kopf gefragt) reißt den Deckel",
+            !wurf && kalt3.n <= DECKEL && kalt9.n <= DECKEL && kalt9.n - kalt3.n <= 1 && warm9.n === 4 && mut9.n > DECKEL && kalt3.u === soll3 && kalt9.u === soll9 && warm9.u === soll9 && mut9.u === soll9 &&
             kalt9.d === warm9.d && kalt9.d === mut9.d && kalt9.d.split("\n")[8] === sollD,
             wurf ? "wirft: " + wurf : kalt3.dateien + " Mess-Dateien an 3 Köpfen " + kalt3.n + " git-Prozesse, " + kalt9.dateien + " an 9 Köpfen " + kalt9.n + ", warm " + warm9.n + " · Mutante " + mut9.n +
                 (mut9.n > DECKEL ? " GEFANGEN" : " ENTKOMMEN") + " · 3 Köpfe: " + kalt3.u + " · 9 Köpfe: " + kalt9.u + (kalt9.d === mut9.d && kalt9.d === warm9.d ? " · Diff je Kopf dreimal derselbe" : " · DIFF UNGLEICH") + " · Kopf 9: " + kalt9.d.split("\n")[8]);
