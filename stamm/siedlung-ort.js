@@ -800,7 +800,12 @@ class AnazhRealm_siedlung_ort {
         const [A, V] = [(this.state.playerMesh || { position: M }).position, AnazhRealm.VERKEHR];
         const kandidaten = regel !== "trasse" || !S.verkehr ? [] : S.verkehr.wagen.filter((w) => w.zustand === "faehrt" && w.F && w.entry && w.F.pts.length > 1).map((w) => [w, voraus(w)]).sort(([, a], [, b]) => Math.hypot(a.x - A.x, a.z - A.z) - Math.hypot(b.x - A.x, b.z - A.z)); // prettier-ignore
         const imBau = (q, r) => bau.some(({ x, z, obb: o }) => { const [c, s, dx, dz] = [Math.cos(o.phi || 0), Math.sin(o.phi || 0), q.x - x, q.z - z]; return Math.abs(dx * c - dz * s) < o.ex + r && Math.abs(dx * s + dz * c) < o.ez + r; }); // prettier-ignore
-        const steht = (q) => [...(p.trees || []), ...(p.staende || []), ...(p.brunnen || []), ...(p.laternen || [])].some((t) => Math.hypot(S.ox + t.x - q.x, S.oz + t.z - q.z) < 1.5) || imBau(q, V.trasseRandM) || this._blockerUmPlatz(q.x, q.z, 5, []).some((b) => this._istNatur(b)); // prettier-ignore — der wilde Baum (Laub baum_eiche 19,8 % näher als 2 m)
+        const steht = (q) =>
+            [...(p.trees || []), ...(p.staende || []), ...(p.brunnen || []), ...(p.laternen || [])].some(
+                (t) => Math.hypot(S.ox + t.x - q.x, S.oz + t.z - q.z) < 1.5
+            ) ||
+            imBau(q, V.trasseRandM) ||
+            this._blockerUmPlatz(q.x, q.z, 5, []).some((b) => this._istNatur(b)); // prettier-ignore — der wilde Baum (Laub baum_eiche 19,8 % näher als 2 m)
         // die Sichtlinie zum Wagen quert keinen Grundriss (je 5 % ihrer Länge): die Route bog hinter ein Haus (Werkbank stadt: „Blickziel
         // verdeckt von bauSatz in 5,89 m")
         const frei = (q, e) => [...Array(19)].every((_, i) => !imBau({ x: q.x + ((e.x - q.x) * (i + 1)) / 20, z: q.z + ((e.z - q.z) * (i + 1)) / 20 }, 0)); // prettier-ignore

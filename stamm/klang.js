@@ -1032,7 +1032,11 @@ class AnazhRealm_klang {
                 v: fz.vlong,
                 vmax,
                 rueckVmax: vmax * S.rueckVmax,
-                gas: imSattel ? Math.max(T.gas, fz.vlong <= S.bremsV ? T.bremse : 0) : W && W.T ? Math.max(0, W.T.gas) : 0,
+                gas: imSattel
+                    ? Math.max(T.gas, fz.vlong <= S.bremsV ? T.bremse : 0)
+                    : W && W.T
+                      ? Math.max(0, W.T.gas)
+                      : 0,
                 luft: !!fz.luft,
                 motor: imSattel || !!(W && W.b && W.b.amSteuer),
                 doppler: am.doppler,
@@ -1079,7 +1083,8 @@ class AnazhRealm_klang {
                 const e = W.entry;
                 // nur wer rollt: der Wartende an der Haltelinie schweigt (die Stimme hört das Abrollen, `fahrtImOhr`) und nähme
                 // dem Fahrenden dahinter den Platz (Linse VK: 5 von 1800 Bildern stumm, ein Wagen rollte binnen 40 m)
-                if (W.zustand !== "faehrt" || !e || !e._fahr || !(Math.abs(e._fahr.vlong) > AnazhRealm.VERKEHR.ruheMs)) continue;
+                if (W.zustand !== "faehrt" || !e || !e._fahr || !(Math.abs(e._fahr.vlong) > AnazhRealm.VERKEHR.ruheMs))
+                    continue;
                 const d = (e.position.x - p.x) ** 2 + (e.position.z - p.z) ** 2;
                 if (!(d < H * H) || (nah.length === K && d >= d2[K - 1])) continue;
                 let i = Math.min(nah.length, K - 1); // die Liste voll: der fernste fällt

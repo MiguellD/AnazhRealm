@@ -657,7 +657,14 @@ class AnazhRealm_siedlung_verkehr {
         const fz = q && e._fahr;
         const s = fz && (this._verkehrBildSim || (this._verkehrBildSim = { x: 0, y: 0, z: 0, g: 0, r: 0 }));
         const lege = (L, aus) => {
-            if (aus) [aus.x, aus.y, aus.z, aus.g, aus.r] = [e.position.x, e.position.y, e.position.z, e._rideYaw, fz.wheelAng];
+            if (aus)
+                [aus.x, aus.y, aus.z, aus.g, aus.r] = [
+                    e.position.x,
+                    e.position.y,
+                    e.position.z,
+                    e._rideYaw,
+                    fz.wheelAng,
+                ];
             [e.position.x, e.position.y, e.position.z] = [L.x, L.y, L.z]; // die Lage des Eintrags ist ein Feld-Satz, kein Vektor
             e._rideYaw = L.g;
             fz.wheelAng = L.r;
@@ -1043,7 +1050,15 @@ class AnazhRealm_siedlung_verkehr {
                 bildRuht: false,
                 bildAlt: true,
                 // das gleitende Bild (`_verkehrGleit`): die Spur der Zustände, die Uhr des Bilds, die Lage dieses Bilds, wo es steht
-                ...{ spur: null, bildD: NaN, bildR: NaN, gleit: null, gleitJetzt: null, bildOrt: null, bildSieht: false },
+                ...{
+                    spur: null,
+                    bildD: NaN,
+                    bildR: NaN,
+                    gleit: null,
+                    gleitJetzt: null,
+                    bildOrt: null,
+                    bildSieht: false,
+                },
             });
         }
     }
@@ -1461,7 +1476,7 @@ class AnazhRealm_siedlung_verkehr {
                 const Sp = W.spur || (W.spur = []);
                 const L0 = Sp[Sp.length - 1];
                 if (!L0 || L0.x !== e.position.x || L0.z !== e.position.z || L0.y !== e.position.y) Sp.length = 0;
-                if (!Sp.length) [W.bildD, W.bildR] = [NaN, NaN], this._verkehrZustand(W, Sp, 0); // die Uhr der Spur beginnt bei 0 (die Stunde ohne Vorgeschichte: nie die Uhr des Wagens, ihr Rundungsfehler trägt seine Geschichte)
+                if (!Sp.length) (([W.bildD, W.bildR] = [NaN, NaN]), this._verkehrZustand(W, Sp, 0)); // die Uhr der Spur beginnt bei 0 (die Stunde ohne Vorgeschichte: nie die Uhr des Wagens, ihr Rundungsfehler trägt seine Geschichte)
                 let gegner = null;
                 if (!(ruht && W.bildRuht && W.T.handbremse)) {
                     e._radGrob = d2 >= V.radFeinM * V.radFeinM;
