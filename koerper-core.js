@@ -416,6 +416,13 @@
             if (extra) for (var k in extra) z[k] = extra[k];
             return z;
         };
+        // JEDE ZEILE AUF EINER SCHALE LIEGT (w28-mensch-samen, KOPF_SOLL haarStachel): das krause Haar (afro) liegt auf der Kappe
+        // seines Stils und eine Lage darüber, sein Strich ist der Wurf allein (kein Kamm: `d` 0, die volle Streuung), die Spitze
+        // hebt sich um 22° (die Krause); der Knoten (dutt) liegt um seine eigene Schale gewunden, das Deckhaar des Undercut zur
+        // Seite gekämmt auf seiner Kappe. Bis hier standen diese Zeilen als Kreuz-Karten in der Normale der Schale (afro: jede
+        // Strähne, der Knoten ein Igel) — am Ofen L0 standen 61,4 % (afro) und 13,5 % (dutt) der sichtbaren Strähnen steiler als
+        // 30° über der Kopf-Haut. Frei hängen nur noch der Fall des langen Haars und die Quaste des Zopfs (unter der Kappe).
+        var KRAUS = { d: [0, 0, 0], streu: 1, faellt: 0, liegt: [HS.liegt[0], 0.05], lj: 0.04 };
         // prettier-ignore
         var STILE = {
             glatze: [],
@@ -431,8 +438,7 @@
                 nacken(400, 0.14, { r: 0.39 }),
             ],
             afro: [
-                { teil: "head", c: [0, 0.42, -0.02], r: 0.5, sc: [0.95, 0.9, 0.95], radial: 1, d: [0, 0, 0], n: Math.round(1500 * vol), l: 0.2 * len, lj: 0.1, t: 0.01 },
-                { teil: "head", c: [0, 0.42, -0.02], r: 0.56, sc: [0.95, 0.9, 0.95], radial: 1, d: [0, 0, 0], n: Math.round(700 * vol), l: 0.2 * len, lj: 0.12, t: 0.01 },
+                zi(1100, 0.1, KRAUS), zi(500, 0.1, { r: KR * 1.07, d: KRAUS.d, streu: KRAUS.streu, faellt: 0, liegt: KRAUS.liegt, lj: KRAUS.lj }),
             ],
             zopf: [
                 zi(900, 0.1, { d: [0, -0.35, -0.92] }), nacken(300, 0.09, { d: [0, -0.35, -0.92] }),
@@ -440,11 +446,10 @@
             ],
             dutt: [
                 zi(900, 0.1, { d: [0, -0.35, -0.92] }), nacken(300, 0.09, { d: [0, -0.35, -0.92] }),
-                { teil: "head", art: "knoten", c: [0, 0.81, -0.2], r: 0.2, sc: [1.1, 1.0, 0.9], d: [0, 0, 0], n: Math.round(420 * vol), l: 0.09 * len, lj: 0.06, t: 0.018 },
+                zi(420, 0.14, { c: [0, 0.81, -0.2], r: 0.2, sc: [1.1, 1.0, 0.9], d: [1, 0, 0.25], faellt: 0, lj: 0.04 }),
             ],
             undercut: [
-                zi(420, 0.03),
-                { teil: "head", c: [0, 0.58, -0.02], r: 0.4, sc: [0.9, 0.55, 0.95], d: [0.55, -0.5, -0.2], n: Math.round(550 * vol), l: 0.19 * len, lj: 0.12, t: 0.02 },
+                zi(420, 0.03), zi(550, 0.19, { d: [0.55, -0.5, -0.2], lj: 0.12 }),
             ],
         };
         // der Ton jeder Strähne (HAAR_STRICH): die Melanin-Streuung und die Wurzel — jede Zeile jedes Stils, EIN Anker für HAAR_LOOK
@@ -1229,7 +1234,7 @@
         ohrOben: [-0.02, 0.1], ohrUnten: [-0.06, 0.03], ohrLaenge: [0.23, 0.3], augenVorstand: [0.01, 0.035], augeFrei: [0.9, 1.0],
         lippeL: [-14, -4], lippeA: [4, 14], hoehleL: [-12, 0], hoehleA: [-2, 6], hautAlbedo: [0.05, 0.62],
         haarDeckung: [0.9, 1.0], kopfDreiecke: [0, 12000], haarLinie: 0.8, mundFalte: [0, 0.02],
-        brauKontrast: [8, 80], haarRahmen: [1, 1],
+        brauKontrast: [8, 80], haarRahmen: [1, 1], haarStachel: [0, 0.01],
     });
     // DIE EINE HAUT IM GUSS (w21-leib-bau, gate:mensch-anatomie LEIB, gemessen von `leibUrteil`; foundry-core `__leibHaut`, Ofen L0): nahtRing = Anteil der
     // Rand-Ecken der Kopf-Haut, die auf der Haut des Leibs liegen (der gemeinsame Ring) · nahtSpalt / nahtPose = der weiteste Abstand
@@ -2793,6 +2798,36 @@
             hy = spanne(hp, 1),
             I = haut.I,
             vorstand = -Infinity;
+        // DAS STACHELHAAR (w28-mensch-samen, KOPF_SOLL haarStachel): der Anteil der Strähnen des Haars, die näher als 60° an der
+        // Normale des Kopfs stehen — die Spitze steht um mehr als die halbe Länge der Strähne (sin 30°) höher über der Kopf-Haut
+        // als die Wurzel. Die Höhe eines Punkts: sein Abstand längs der Normale der nächsten Ecke der Kopf-Haut (samt der Kappe des
+        // Haars, wie der Ofen sie goss); die Wurzel unter der Haut zählt ab der Haut, eine begrabene Strähne sieht niemand. Die
+        // Strähne ist der Rahmen des EINEN Lesers `haarAchse`. Eine liegende Strähne (HAAR_STRICH) steht um 90° zur Normale, eine
+        // Kreuz-Karte auf der Schale (afro bis w28-mensch-samen: 1,000) in ihr.
+        var stachel = [0, 0];
+        var hoehe = function (px, py, pz) {
+            var bd = Infinity,
+                bi = 0;
+            for (var h = 0; h < haut.P.length; h += 3) {
+                var d2 = (haut.P[h] - px) * (haut.P[h] - px) + (haut.P[h + 1] - py) * (haut.P[h + 1] - py) + (haut.P[h + 2] - pz) * (haut.P[h + 2] - pz);
+                if (d2 < bd) (bd = d2), (bi = h);
+            }
+            return (px - haut.P[bi]) * haut.N[bi] + (py - haut.P[bi + 1]) * haut.N[bi + 1] + (pz - haut.P[bi + 2]) * haut.N[bi + 2];
+        };
+        L.forEach(function (x) {
+            var at = x.k === "hair" && x.o.geometry.attributes;
+            if (!at || !at.color || !at.aTon) return;
+            var r = haarAchse(x.P, at.color.array, at.aTon.array),
+                P = x.P;
+            for (var i = 0; i + 3 < at.aTon.count; i += 4) {
+                var l = r.achse[i * 2 + 1],
+                    q = 3 * i;
+                if (!(l > 0)) continue;
+                stachel[0]++;
+                if (hoehe((P[q + 6] + P[q + 9]) / 2, (P[q + 7] + P[q + 10]) / 2, (P[q + 8] + P[q + 11]) / 2) - Math.max(0, hoehe((P[q] + P[q + 3]) / 2, (P[q + 1] + P[q + 4]) / 2, (P[q + 2] + P[q + 5]) / 2)) > 0.5 * l) stachel[1]++;
+            }
+        });
+        var haarStachel = stachel[0] ? stachel[1] / stachel[0] : 0;
         von("eye").forEach(function (bp) {
             var sx = spanne(bp, 0),
                 sy = spanne(bp, 1),
@@ -2881,7 +2916,7 @@
             });
             falte = zone ? dunkel / zone : NaN;
         }
-        return { augenVorstand: vorstand, augeFrei: irisN ? frei / irisN : NaN, haarDeckung: kal ? bedeckt / kal : NaN, kopfDreiecke: tris, mundFalte: falte, haarRahmen: rahmen }; // prettier-ignore
+        return { augenVorstand: vorstand, augeFrei: irisN ? frei / irisN : NaN, haarDeckung: kal ? bedeckt / kal : NaN, kopfDreiecke: tris, mundFalte: falte, haarRahmen: rahmen, haarStachel: haarStachel }; // prettier-ignore
     }
 
     // DIE ANLAGE (w11-koerper): die Hülle des Rumpfs weicht dem ruhenden Arm. Der Arm ruht mit SEINER Hülle am Kern des Rumpfs
