@@ -5,7 +5,8 @@
 1. [Prozess · S · 0,6] Buchen am Mess-Kopf der Scheibe, danach am jüngsten Kopf — zug/dienst/buche-dienst.sh:23 `BUCHE_KOPF=$K` (Auslöser je Scheibe steht seit 85776d3a)
    erwartet: Meisterkarte 218 → 219 (lod.K2#1 GRÜN an bc0a4aed, Radeon). [K] profiband.K4#1 ist strittig: der Richter misst es 21:10 an der Radeon ROT (97 % > 33 ms, zug/richter.txt)
    Probe: Wegwerf-Klon, `punkte.cjs buchen --kopf bc0a4aed`, dann `--kopf e38e7acf`; steht an bc0a4aed nicht ≥ 219 oder fällt die Summe am jüngsten Kopf → tot · Beleg: messung/bc0a4aed-radeon.json
-2. [Prozess · S · 0,6] Blinder Neulauf bei ROT außerhalb von WACKEL_RE fällt — zug/dienst/werkzeug/zug.cjs:226-228 [K] (`rerun-failed-jobs` in urteilVon); Neulauf nur noch bei cancelled (:184-186)
+2. [GEFALLEN 12.11. an der eigenen Probe — NICHT schneiden: Actions-API, integ-probe 7 Tage: 129 Läufe mit Versuch ≥ 2, davon 38 am Ende grün; am 11.11. kamen sechs Landungen erst im Zweit-Versuch (b1531071, c4010773, bc0a4aed, b0112f7b, e6f0cf7e, 2cb2865b). Der Hebel dahinter sind die Schritte, die im Erst-Versuch wackeln.]
+   [Prozess · S · 0,6] Blinder Neulauf bei ROT außerhalb von WACKEL_RE fällt — zug/dienst/werkzeug/zug.cjs:226-228 [K] (`rerun-failed-jobs` in urteilVon); Neulauf nur noch bei cancelled (:184-186)
    erwartet: Push bis FAHRT ROT ~36 → ~26 min, ~60 min Zug-Zeit/Tag (6 Neuläufe am 11.11., 0 GRÜN) · Probe: Actions-API, run_attempt=2 der letzten 7 Tage; ≥ 2 gerettete Landungen → tot
 3. [Prozess · S · 0,65] Headless-Hälften einmal mit Konsum-Zeugen nachmessen — `zug.cjs punkte <K> --geraet headless` als eigene Hintergrund-Schleife, nicht in buche-dienst
    erwartet: r6 konsum in stand.json 85 → 210–234 [K: 85 konsum / 249 naehe nachgezählt] · Probe: `--nur` 10 Hälften von d3708675; ohne konsum oder > 20 min → tot
