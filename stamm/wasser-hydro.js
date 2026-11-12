@@ -762,7 +762,15 @@ class AnazhRealm_wasser_hydro {
     // DAS EIS (stoffe.K3): die Deckung `o.eis` (`_eisDeckung`) legt über das Wasser die gefrorene Fläche — deckend, ihr Körper
     // der Schnee der Boden-Palette im Licht des Orts, der Himmel nach dem Fresnel der Zeile eis (n 1,309; Wasser 1,333); wo sie
     // deckt, trägt dieselbe Fläche den Körper (`_eisAt`).
+    // DIE SONNE, DIE DAS WASSER SIEHT (w28-wasser-sicht): `o.sonne` ist die Sonnen-Sicht am Ort (`_sonnenSicht`: Horizont des
+    // Gelände-Gesetzes × Wurf der Wolke) — derselbe Knoten, mit dem der Leser sein Licht `o.irr` holt (`_weltLicht().at(n, null,
+    // sonne)`); der Glanz der Sonne steht nur, wo sie das Wasser trifft. Ohne sie bricht der Baustein laut (Wasser-Stoff und
+    // Fern-Ring geben sie). Bis hier glänzte die Sonne hinter dem Grat und unter der Wolke.
     _wasserBlick(TSL, WG, o) {
+        if (!o.sonne)
+            throw new Error(
+                "Wasser-Blick: ohne Sonnen-Sicht (`o.sonne`, `_sonnenSicht`) glänzt die Sonne auch im Schatten"
+            );
         const { float, vec2, vec3, vec4, normalize, reflect, max, dot, pow, clamp, texture, step, mix } = TSL;
         const HG =
             AnazhRealm.Gesetz("terrain:HIMMEL_GESETZ", null) || AnazhRealm._kernPflichtBruch("terrain:HIMMEL_GESETZ");
@@ -813,7 +821,7 @@ class AnazhRealm_wasser_hydro {
         // W10 — der Sonnen-Glitzer der Vorlage: reflect-basiert, Exponent/Gewinn aus dem Gesetz, die Sonne selbst
         // (Rayleigh-Farbe sunCol × ihre Stärke light).
         const spec = pow(max(dot(reflect(normalize(o.sunDir).negate(), o.n), o.viewDir), 0.0), float(WG.spec[0]));
-        const glanz = o.sunCol.mul(spec).mul(WG.spec[1]).mul(o.light);
+        const glanz = o.sunCol.mul(spec).mul(WG.spec[1]).mul(o.light).mul(o.sonne);
         const eigen = o.koerper
             .mul(o.irr)
             .mul(float(1.0).sub(o.T))
