@@ -1,0 +1,32 @@
+$ C:/Program Files/Git/bin/bash.exe -c set -u; A=$(cygpath -m 'C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\350e6b11-radeon\gelaende.K3_1.json'); D="${A%.json}-werk"; rm -rf "$D"; mkdir -p "$D"; SP=7804; WP=$((SP+20000)); export WERKBANK_PORT=$WP; W() { node scripts/werkbank.cjs "$@"; }; W fenster 1920 1080 > "$D/fenster.txt" 2>&1; W umstellen 1866.6 -6193.9 > "$D/umstellen.txt" 2>&1; W eval 'const s = r.state, G = -1.309;
+if (s.cameraMode !== "first") r.setCameraMode("first");
+const stell = (g, n) => { s.yaw = g; s.pitch = n; for (let i = 0; i < 30; i++) r._loopCamera(performance.now() + i * 100); return s.camera; };
+const E0 = stell(G, 0).position.clone();
+const nass = (x, z) => r._nassAt(x, z);
+const spiegel = (x, z) => r._koerperWasser(x, z, r._voxelSurfaceY(x, z));
+window.__loopBild();
+const S = await window.__spiegelDaten();
+const sieht = (p) => { const z = window.__abnahmeMessen({ ziel: { x: p.x, y: p.y, z: p.z, name: "Wasser", fuss: false }, nurZiel: true, tiefe: S }).ziel || {}; return z.imBild === true && z.frei === true; };
+let gefragt = 0, wahl = null;
+for (const w of [0, 5, -5, 10, -10, 15, -15, 20, -20, 25, -25, 30, -30, 35, -35, 40, -40, 45, -45, 50, -50]) {
+    const g = G + (w * Math.PI) / 180, dx = Math.sin(g), dz = Math.cos(g);
+    for (let d = 3; d <= 120 && !wahl; d += 2) {
+        const x = E0.x + dx * d, z = E0.z + dz * d;
+        if (!nass(x, z)) continue;
+        gefragt++;
+        const p = new T.Vector3(x, spiegel(x, z), z);
+        if (sieht(p)) wahl = { w, p };
+    }
+    if (wahl) break;
+}
+if (!wahl) return { kamera: null, wasser: { fehler: gefragt ? "kein Wasser im Bild der Ego-Pose (" + gefragt + " nasse Stellen verdeckt)" : "kein Gewässer 3–120 m im Blick", gefragt } };
+let c = s.camera;
+for (let i = 0; i < 2; i++) { const v = wahl.p.clone().sub(c.position); c = stell(Math.atan2(v.x, v.z), Math.asin(v.y / v.length())); }
+const L = wahl.p.distanceTo(c.position), t = c.position.clone().addScaledVector(c.getWorldDirection(new T.Vector3()), L);
+return { kamera: [c.position.x, c.position.y, c.position.z, t.x, t.y, t.z].map((q) => +q.toFixed(3)), wasser: { y: +spiegel(t.x, t.z).toFixed(3), nass: nass(t.x, t.z), versatz: wahl.w, gefragt } };' > "$D/kamera.txt" 2>&1; node -e 'const t = require("fs").readFileSync(process.argv[1], "utf8"); let o = {}; try { o = JSON.parse(t.slice(t.indexOf("{"))).ergebnis || {}; } catch (_e) { o = {}; } console.log((o.kamera || []).join(" ")); console.log("WASSER " + JSON.stringify(o.wasser || { fehler: t.slice(0, 300) }))' "$D/kamera.txt" > "$D/ziel.txt" 2>&1; KAM=$(head -1 "$D/ziel.txt"); echo "KAMERA $KAM"; tail -1 "$D/ziel.txt"; [ -n "$KAM" ] || exit 1; W bild $KAM --w 1920 --h 1080 --wahl 0 --fuss false --ziel Wasser --klasse '^(wasserSatz|farWater|chunk-water-[a-z]+)$' --datei "$D/wasser.png" > "$D/bild.txt" 2>&1; E=$?; echo "BILD $(tr -d '\n' < "$D/bild.txt" | cut -c1-600)"; cp "$D/wasser.abnahme.json" "$A" 2>/dev/null; exit $E
+KAMERA 1866.6 3.928 -6193.9 1815.406 1.57 -6180.183
+WASSER {"y":1.57,"nass":true,"versatz":0,"gefragt":9}
+BILD { "ms": 704, "kamera": [  1866.6,  3.93,  -6193.9 ], "hell": 90, "kontrast": 6.6, "dc": 108, "dreiecke": 465524, "klasse": {  "ausdruck": "^(wasserSatz|farWater|chunk-water-[a-z]+)$",  "schwelle": 18,  "rauschen": {   "anteil": 0,   "pixel": 0,   "max": 0  },  "misch": 0,  "toene": [   "farWater=255/80/80",   "wasserSatz=80/255/80"  ],  "klassen": {   "wasserSatz": {    "objekte": 1,    "spiegelTreue": 0.6141,    "spiegelEbene": 1.179,    "sp": [     41,     0,     0,     16145.94,     16145.94,     9914.75    ],    "zweiton": 0,    "weiss": 0.0003,    "wt": 6,    "wtZiel": null,    "bunt": 16
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3
