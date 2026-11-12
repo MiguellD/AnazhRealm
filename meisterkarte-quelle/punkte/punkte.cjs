@@ -40,7 +40,7 @@
 //        WERKBANK_PORT zurück, ohne Neuladen (`_grundstellung` des Spiels), samt der Zeichenkette der Seite (zeichnerKette); ROT nennt
 //        die Größen, die vom Grund abweichen
 //   node punkte.cjs grundprobe --baum <Spiel-Baum> [--mutante <zeile>] [--port P]   (Null-Renderer) die Grundstellung der Sitzung
-//        an einer Welt des Baums: Grund → graben, bauen, Ritt, Uhr, Brand, Regen, Ort-Takt → zurück, keine Größe weicht ab; die
+//        an einer Welt des Baums: Gang zwei Regionen weit mit einem Leib, dessen Tier dahinter ankert → Grund → graben, bauen, Ritt, Uhr, Brand, Regen, Ort-Takt → zurück, keine Größe weicht ab; die
 //        Mutante (ein Wort der GRUND_TAFEL schweigt) ist ROT beim Namen
 //   node punkte.cjs eichtafel --geraet radeon|gtx [--sha a,b] [--schreibe [--nur id,id]]   je Lauf der Sitzung: sein Deckel, das p90 seiner jüngsten
 //        Läufe aus ALLEN Mess-Dateien der Karte und der Deckel daraus (eichTafel), dazu Σ heute ↔ aus den Zahlen und die Teile der Fahrt;
@@ -2565,6 +2565,32 @@ async function grundstellung(w, datei, o = {}) {
 // Seite sie zurück (grundstellung) — keine Tat des Spiels darf sie berühren (sonst ROT beim Namen der Größe); `--mutante zeichner`: eine
 // Probe bricht sie wie der alte Strom der Wasser-Wand, der mitten im Ring warf (Renderer stumm, Post-Kette aus, ohne Faden, an der
 // Sync-Stelle „naht“) — gefangen nur, wenn genau diese fünf Größen abweichen und an Ort und Stelle zurückkehren.
+// DER GANG VOR DEM GRUND (w28-bestand-kennung; Radeon df6c4721: der Grund nach `anfang` trug fünf Leiber der Region -1,1, der Spieler
+// stand in 0,0 — jede Grundstellung danach fand `creatures` abweichend an „verband/bestand“, 116 von 124 Proben ungemessen): der
+// Spieler geht zwei Regionen weit (30 Schritte à 5 Takten), am Ort seines Aufbruchs tritt ein Leib in den Bestand und folgt ihm (sein
+// Auftrag hält ihn gezeichnet) — der Grund trägt einen Leib, dessen Tier außerhalb der nahen Regionen ankert, wie der Gang der GPU, an
+// dem der Blick die Leiber hält (der Null-Renderer hat keinen Blick: ohne Auftrag ginge jeder sofort). An main b1531071 ROT:
+// `creatures` an Ort und Stelle und nach der Tür. `--mutante bestand`: der Stand trägt wieder nur das Nahe (`_bestandReist` =
+// `_bestandNah`) — gefangen nur, wenn genau `creatures` abweicht.
+const GRUND_GANG = (mut) => `const st = r.state, pm = st.playerMesh.position, S = r._bestandSeite(), x0 = pm.x, z0 = pm.z;
+    if (${JSON.stringify(mut || null)} === "bestand") r._bestandReist = () => r._bestandNah();
+    const y = (x, z) => r._terrainMacroSurfaceY(x, z);
+    const von = r._bestandHier();
+    let t = performance.now();
+    for (let i = 1; i <= 30; i++) {
+        [pm.x, pm.y] = [x0 + (2 * S * i) / 30, y(x0 + (2 * S * i) / 30, z0) + 1];
+        for (let k = 0; k < 5; k++) r._gameLoopTick((t += 100));
+        await new Promise((f) => setTimeout(f, 0));
+    }
+    const c = r.spawnCreatureAt(x0, y(x0, z0), z0, "happy", "wesen", { precise: true });
+    if (!c) return { fehler: "kein Leib" };
+    r.assignCreatureTask(c, "follow_player", {}, { silent: true });
+    r._bestandAdoptieren();
+    const tier = c.userData._bestand;
+    if (!tier) return { fehler: "die Annahme trägt den Leib nicht" };
+    c.position.set(pm.x - 4, y(pm.x - 4, pm.z + 3) + 0.5, pm.z + 3);
+    const tierKey = r._bestandKey(tier.x, tier.z), R = r._bestandRegionen().regionen[tierKey];
+    return { von, nach: r._bestandHier(), tierKey, nah: r._bestandNah(), folgt: !!R && R.tiere.includes(tier) && !tier.zu, fern: r._bestandNah().includes(tierKey) ? 0 : 1 };`;
 async function grundProbe(o) {
     const baum = path.resolve(o.baum || "."), port = Number(o.port || 4741);
     const { statikServer, nullSeite } = require(path.join(baum, "scripts", "lib", "welt-boot.cjs"));
@@ -2581,6 +2607,8 @@ async function grundProbe(o) {
         // … und ein trauriges Tier (das Gefühls-Etikett, die Projektion, die das Speicher-Gesetz trägt — wie nach oekologie.K4#2)
         await ev("if (r.state.creatureEmotions.length) r.state.creatureEmotions[0] = \"sad\";");
         await ev("r.createBlueprint(\"grundprobe_alt\", \"Grundprobe alt\"); r.state.blueprints.grundprobe_alt.parts.push({ shape: \"box\", material: \"holz\", position: { x: 0, y: 0.5, z: 0 }, size: { x: 1, y: 1, z: 1 } });");
+        const gang = await ev(GRUND_GANG(o.mutante));
+        if (!gang || gang.fehler) throw new Error("der Gang: " + JSON.stringify(gang).slice(0, 300));
         const g = await ev(GRUND_NIMM);
         if (!g || typeof g.grund !== "string") throw new Error("kein Grund: " + JSON.stringify(g).slice(0, 300));
         const zg = await ev(zeichnerCode(null));
@@ -2634,7 +2662,7 @@ async function grundProbe(o) {
                 st.voxelWorker = null;
                 r._syncStelle = "naht";
             }
-            return { edit, bau, ritt, hand, essen, weg, wegFlaeche, uhr: st.timeOfDay, feuer: st.brandFeld ? st.brandFeld.size : 0, wetter: st.weather, tag: st.dayLengthMinutes, plan, erd, tiere, mutante: !!z || r._uhrSetzen.length === 0 || ["bauplaene", "werk", "erdbau", "wesen", "gefuehl", "weg", "zeichner"].includes(mut) };`);
+            return { edit, bau, ritt, hand, essen, weg, wegFlaeche, uhr: st.timeOfDay, feuer: st.brandFeld ? st.brandFeld.size : 0, wetter: st.weather, tag: st.dayLengthMinutes, plan, erd, tiere, mutante: !!z || r._uhrSetzen.length === 0 || ["bauplaene", "werk", "erdbau", "wesen", "gefuehl", "weg", "zeichner", "bestand"].includes(mut) };`);
         const z = await ev(grundSpielen(g));
         // die Zeichenkette zurück wie in der Sitzung (grundstellung): je abweichende Größe beim Namen, dann, was bleibt
         const zk = await ev(zeichnerCode(g.zeichner, true));
@@ -2643,8 +2671,8 @@ async function grundProbe(o) {
         const zSoll = o.mutante !== "zeichner" ? [] : ["zeichner.renderer.render", "zeichner.renderer.renderAsync"].concat(gz.postProcessingFailed ? [] : ["zeichner.postProcessingFailed"],
             gz.syncStelle === "naht" ? [] : ["zeichner.syncStelle"], gz.faden ? ["zeichner.faden"] : []);
         const zOk = !!zk && Array.isArray(zk.anders) && [...zk.anders].sort().join(" ") === [...zSoll].sort().join(" ") && zk.bleibt.length === 0;
-        const soll = !o.mutante ? [] : { uhr: ["timeOfDay"], bauplaene: ["blueprints"], werk: ["architectures"], erdbau: ["worldMeta.erdbau"], wesen: ["creatures", "creatureEmotions"], gefuehl: ["creatureEmotions"], weg: ["wege +1 [x0,z0,x1,z1/Formen]"], zeichner: [], nahrung: ["playerLeben"] }[o.mutante] || ["augenblick." + o.mutante];
-        const taten = tat.edit && tat.bau && tat.ritt && tat.hand && tat.essen &&tat.feuer > 0 && tat.wetter === "rainy" && tat.tag === 1e9 && tat.plan && tat.erd && tat.tiere && (!o.mutante || tat.mutante) && (o.mutante !== "weg" || (tat.weg > 0 && !!tat.wegFlaeche));
+        const soll = !o.mutante ? [] : { uhr: ["timeOfDay"], bauplaene: ["blueprints"], werk: ["architectures"], erdbau: ["worldMeta.erdbau"], wesen: ["creatures", "creatureEmotions"], bestand: ["creatures"], gefuehl: ["creatureEmotions"], weg: ["wege +1 [x0,z0,x1,z1/Formen]"], zeichner: [], nahrung: ["playerLeben"] }[o.mutante] || ["augenblick." + o.mutante];
+        const taten = gang.folgt && gang.fern > 0 && gang.von !== gang.nach && tat.edit && tat.bau && tat.ritt && tat.hand && tat.essen &&tat.feuer > 0 && tat.wetter === "rainy" && tat.tag === 1e9 && tat.plan && tat.erd && tat.tiere && (!o.mutante || tat.mutante) && (o.mutante !== "weg" || (tat.weg > 0 && !!tat.wegFlaeche));
         // die Wege-Linse nennt den Weg beim Rechteck seiner Fläche (6 × 66 m, 40 m neben dem Spieler; die Tat nennt sie, wie die Karte sie
         // trägt) — seine Marke nur, solange das Gedächtnis der Seite steht (ein anderes worldMeta beim Rückspielen vergisst `_stlWegeKeys`,
         // WELT_GRENZE): gefangen ist er, wenn genau DIESE neue Fläche abweicht
@@ -2680,7 +2708,7 @@ async function grundProbe(o) {
         const gruen = taten && z.ok && passt(z) && zOk && (!z2 || (z2.ok && z2.anders.length === 0));
         const wie = o.mutante ? "MUTANTE " + o.mutante + (gruen ? " ROT beim Namen" : " NICHT beim Namen gefangen") : gruen ? "GRÜN" : "ROT";
         console.log("GRUNDPROBE " + wie +
-            " · Grund " + g.n + " Größen (" + g.ms + " ms) · Taten " + JSON.stringify(tat) + " · zurück in " + z.ms + " ms, neu " + JSON.stringify(z.neu) +
+            " · Gang " + JSON.stringify(gang) + " · Grund " + g.n + " Größen (" + g.ms + " ms) · Taten " + JSON.stringify(tat) + " · zurück in " + z.ms + " ms, neu " + JSON.stringify(z.neu) +
             " · abweichend: " + (z.anders.join(" ") || "keine") + (z.ok ? "" : " · " + z.grund) + " · Soll " + (soll.join(" ") || "keine") +
             " · Zeichenkette (" + (g.zeichner.renderer ? g.zeichner.renderer.klasse : "kein Renderer") + "): abweichend " + (zk && zk.anders ? zk.anders.join(" ") || "keine" : JSON.stringify(zk)) +
             (zk && zk.anders && zk.anders.length ? " — wie " + JSON.stringify(zk.wie) + " · danach " + (zk.bleibt.join(" ") || "im Grund") : "") + " · Soll " + (zSoll.join(" ") || "keine") +
@@ -3276,8 +3304,13 @@ async function fahreSitzung(gruppen0, ctx, melde) {
                 console.log("  SITZUNG " + kopf.grund);
             }
         }
+        // DER WELT-TOD IST KEIN ENDE DER FAHRT (w28-bestand-kennung; Radeon df6c4721: die Grundstellung fand `creatures` abweichend, und
+        // 116 von 124 Proben standen „die Welt der Sitzung trägt nicht mehr — ungemessen“, bis ein Mensch neu fuhr): wie der Riss der Fahrt
+        // geht jede Probe ab dem Tod nach `kopf.offen` — die Fortsetzung (fahreFortsetzung) misst sie in einer NEUEN Sitzung mit eigenem
+        // Boot und eigenem Grund; sie endet, sobald eine Sitzung keinen offenen Lauf mehr schafft
         if (tot) {
-            await melde(g, g.map(() => ohne("die Welt der Sitzung trägt nicht mehr (" + tot + ") — ungemessen", true)), null, new Date().toISOString());
+            kopf.offen.push(...g.map(schluessel));
+            await melde(g, g.map(() => ohne("die Welt der Sitzung trägt nicht mehr (" + tot + ") — offen, UNGEMESSEN", true)), null, new Date().toISOString());
             continue;
         }
         // DER ORT (30.10.): wechselt die Probe den Messort, stellt die Sitzung EINMAL um — das Warten auf den Ring dort liegt vor dem
@@ -3420,6 +3453,9 @@ async function fahreSitzung(gruppen0, ctx, melde) {
     kopf.fahrtS = +((Date.now() - fahrt0) / 1000).toFixed(1);
     if (gerissen) {
         kopf.grund = "die Fahrt riss " + fahrtMaxS + " s " + gerissen + " — offen: " + kopf.offen.join(", ");
+        console.log("  SITZUNG " + kopf.grund);
+    } else if (tot && kopf.offen.length) {
+        kopf.grund = (kopf.grund || "die Welt trägt nicht mehr: " + tot) + " — offen: " + kopf.offen.join(", ");
         console.log("  SITZUNG " + kopf.grund);
     } else delete kopf.offen;
     console.log("  SITZUNG Fahrt " + kopf.fahrtS + " s (Soll ≤ " + fahrtMaxS + " s) · " + kopf.proben + " Proben · Grundstellung " + kopf.grundstellungS.length + "×");
@@ -6608,9 +6644,20 @@ async function selbsttest(o = {}) {
             je("a.K1#1") >= 5 && je("m.K1#1") >= 5 && je("n.K1#1") === 0 && sr.seiten.length === 1 && sr.bilder.every((b) => b.vram === 2 && b.befehle === 7 && b.voll === 1) &&
             r5.kopf.strom && r5.kopf.strom.bilder >= 8 && r5.kopf.strom.luecken === 0 && r5.kopf.strom.zapfen >= 10 && r5.kopf.strom.fehler === 0,
             JSON.stringify({ a: je("a.K1#1"), m: je("m.K1#1"), seiten: sr.seiten.length, kopf: r5.kopf.strom }));
-        const r2 = await lauf([[S("a.K1", 1, { befehl: [...ruf, "tod"], sek: 30 }, (j) => ({ gruen: !!j && j.welt === "tod", zahl: "tod" }))], [S("b.K1", 1, { befehl: [...ruf, "return 1"], sek: 30 }, warm)]], "stirbt", null);
-        pruef("SITZUNG eine Welt, die stirbt: die Sitzung startet nie neu, die übrigen Proben sind UNGEMESSEN beim Grund (nie ROT)",
-            r2.z.filter((l) => l === "start").length === 1 && r2.es["b.K1#1"].ungemessen === true && /trägt nicht mehr/.test(r2.es["b.K1#1"].grund) && /trägt nicht mehr/.test(r2.kopf.grund), JSON.stringify([r2.z, r2.es, r2.kopf]));
+        const r2g = [[S("a.K1", 1, { befehl: [...ruf, "tod"], sek: 30 }, (j) => ({ gruen: !!j && j.welt === "tod", zahl: "tod" }))], [S("b.K1", 1, { befehl: [...ruf, "return 1"], sek: 30 }, warm)]];
+        const r2 = await lauf(r2g, "stirbt", null);
+        const r2f = { es: {}, gefahren: [] };
+        const r2k = await fahreFortsetzung(r2g, r2.kopf, async (gs) => {
+            r2f.gefahren.push(gs.map((g) => schluessel(g[0])).join(","));
+            const k = await lauf(gs, "stirbt", null);
+            Object.assign(r2f.es, k.es);
+            return k.kopf;
+        });
+        pruef("SITZUNG eine Welt, die stirbt: die Sitzung startet nie neu, die übrigen Proben sind offen, UNGEMESSEN beim Grund (nie ROT) — die Fortsetzung misst sie in einer neuen Sitzung (b GRÜN), a fährt nie nach",
+            r2.z.filter((l) => l === "start").length === 1 && r2.es["b.K1#1"].ungemessen === true && /trägt nicht mehr .* — offen, UNGEMESSEN$/.test(r2.es["b.K1#1"].grund) &&
+            /trägt nicht mehr.* — offen: b.K1#1$/.test(r2.kopf.grund) && JSON.stringify(r2.kopf.offen) === "[\"b.K1#1\"]" &&
+            r2f.gefahren.join("|") === "b.K1#1" && r2f.es["b.K1#1"].gruen === true && r2k.length === 1 && !r2k[0].offen,
+            JSON.stringify([r2.z, r2.es, r2.kopf, r2f, r2k.map((k) => k.offen)]));
         // DIE WELT ENDET UNTER DER PROBE (Takt 23 GTX an 73bdf938: die Vorfahrt der OMEN nahm sie nach 7,0 min, ferne.K1#2 stand als ROT
         // „read ECONNRESET“ in der Messung): der Ruf der Probe reißt ohne Antwort, die Probe endet nicht GRÜN — das ist keine Messung
         const r12 = await lauf([[S("a.K1", 1, { befehl: [...ruf, "mord"], sek: 30 }, (j, l) => ({ gruen: !!j && j.welt === "warm", zahl: "exit " + l.exit }))],
