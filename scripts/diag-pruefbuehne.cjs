@@ -172,7 +172,7 @@ async function s4Probe(page, station, schein) {
 // selbst (`_waagrechtIrradianz`, dieselbe, die die Belichtung liest) und die Fenster-Glut des Zeitplans um Mitternacht und
 // Mittag (`atmoUniforms.fensterGlut`). DIE KLASSE (K11 Runde 2): JEDER beleuchtete Stoff trägt den Pool — der Zensus der Bauer
 // im Stamm (keine Methode baut einen beleuchteten Stoff ohne Knoten) UND jedes beleuchteten Stoffs der Szene
-// (`userData.lichtPool`); EIN Punktlicht-Gesetz (`_lichtPoolTerm` ruft `_punktLichtBrdf`, kein anderer, kein Szenen-Licht); die
+// (`userData.lichtPool`); EIN Punktlicht-Gesetz (`_lichtPlatz`, der Rumpf des Pools, ruft `_punktLichtBrdf`, kein anderer, kein Szenen-Licht); die
 // Laterne eines Plans (`laternen[]`, gehoben als Studio-Gestalt `laterne_dorf` im Hebe-Chokepoint `_spawnSettlementErlebnis`,
 // ihr Licht das Datum ihres Rezepts) leuchtet nachts und mittags nicht. Konsum-Leser: der Licht-Takt (`_leuchtTakt`) und jeder beleuchtete Stoff (`_leuchtStoff`).
 // DER HIMMEL FOLGT DEM SPRUNG misst im Bild-Lauf (`--licht`, `himmelProbe`): der Himmel lebt auf der GPU (D3).
@@ -232,7 +232,8 @@ async function s0Probe(page, station, schein) {
                 if (!__fehlt(f, /this\._punktLichtBrdf\(/)) out.brdf.push(n);
             }
             if (schein) delete P._scheinRueckfall;
-            // das EINE Punktlicht-Gesetz am Ruf: der Pool-Term rechnet jeden Platz über _punktLichtBrdf (Spion am Ruf)
+            // das EINE Punktlicht-Gesetz am Ruf: das Gesetz eines Platzes (`_lichtPlatz`, der Rumpf der Schleife des Pools —
+            // w28-baum-programm) rechnet ihn über _punktLichtBrdf (Spion am Ruf)
             const echtB = r._punktLichtBrdf;
             let brdf = 0;
             r._punktLichtBrdf = function (...x) {
@@ -240,7 +241,8 @@ async function s0Probe(page, station, schein) {
                 return echtB.apply(this, x);
             };
             try {
-                r._lichtPoolTerm(THREE.TSL, r._ensureAtmoUniforms(), null);
+                const A = r._ensureAtmoUniforms();
+                r._lichtPlatz(THREE.TSL, { lage: A.lichtLage[0], farbe: A.lichtFarbe[0], ersatz: A.lichtErsatz[0], kern: A.lichtKern[0] }, null);
             } catch {
                 /* ein Wurf nach dem Ruf entwertet den Konsum nicht */
             }
@@ -395,10 +397,10 @@ async function s0Probe(page, station, schein) {
                     `S0 Bauer ohne Pool: ${out.ohnePool.map((b) => "`" + b + "`").join(", ")} bauen einen beleuchteten Stoff ` +
                         "ohne `_leuchtStoff`"
                 );
-            if (!out.poolRuftBrdf || out.brdf.some((b) => b !== "_lichtPoolTerm"))
+            if (!out.poolRuftBrdf || out.brdf.some((b) => b !== "_lichtPlatz"))
                 out.befunde.push(
                     `S0 Punktlicht-Gesetz: die BRDF eines Punktlichts rufen ${out.brdf.map((b) => "`" + b + "`").join(", ") || "niemand"} ` +
-                        "(Soll: nur `_lichtPoolTerm`, das EINE Gesetz)"
+                        "(Soll: nur `_lichtPlatz`, das EINE Gesetz eines Platzes im Pool)"
                 );
             if (out.bauer.length)
                 out.befunde.push(
