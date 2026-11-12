@@ -615,3 +615,5 @@ omen-gtx-gtx-b1531071-14-b1531071 UNGEMESSEN 0 GRÜN / 0 ROT / 1 UNGEMESSEN · U
 omen-gtx-gtx-b1531071-15-b1531071 ROT 0 GRÜN / 1 ROT / 0 UNGEMESSEN · ROT lod.K5#1 ‖ lod.K5#1: Baum 5.05 px · Haus 0.13 px · Tor 0.18 px · Wagen 0.03 px (Soll ≤ 1 px am Wechsel-Abstand, 1920 × 1080) · gate L2: Exemplar 140 px, [linse-gpu] nvidia/pascal (punkte-maschine 716dbdc2 messung/b1531071-gtx.json)
 2026-11-12 06:04 landung Zwischenstand main b1531071: die Liste endete am Sprung (main ist weiter) — was gemessen war, ist gepusht; Summe und Richter fahren am jüngsten Kopf
 2026-11-12 06:09 landung Zwischenstand main 1b081d73: misst 31 Stationen aus gtx-nutzen (41) je allein (0 tragen an diesem Kopf schon einen Eintrag, 10 profiband.* ruhen), rohe Zahl je Zeile
+omen-gtx-gtx-1b081d73-1-1b081d73 UNGEMESSEN 0 GRÜN / 0 ROT / 1 UNGEMESSEN · UNGEMESSEN affekt.K4#2 ‖ affekt.K4#2 UNGEMESSEN roh: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten (punkte-maschine 6c0a2210 messung/1b081d73-gtx.json)
+2026-11-12 07:40 landung Zwischenstand main 1b081d73: die Liste endete am Sprung (main ist weiter) — was gemessen war, ist gepusht; Summe und Richter fahren am jüngsten Kopf
