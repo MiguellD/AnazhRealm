@@ -62,13 +62,17 @@ var __weltLicht = (function () {
     // und das Bild fällt mit dem Licht (UE: die Untergrenze der Auto-Belichtung, Min EV100). Bis w28-nacht-licht normierte sie JEDES
     // Licht auf die Karte −2,17 Stufen: die Nacht war ein abgedunkelter Tag — Wände ohne Quelle so hell wie die Gasse unter der
     // Laterne (Stadt 00 Uhr, Radeon: Wand 107 : angestrahlt 138 Luma, 1,75 : 1 linear), 00 Uhr kaum dunkler als 20 Uhr. Der Wert ist
-    // das Licht der Mitternacht, wie es bis dahin stand (Mond 0,22 im Zenit, Himmel-Boden 0,10, Nacht-Ambient 0,23 und der
-    // Nachthimmel der Tafel: E 0,68 an main b1531071, Radeon, Stadt, Sommer; headless ohne Tafel 0,39): unter dem Knoten steht die
-    // Kamera, wie sie dort stand (k 1,25) — fällt das Licht (das Ambient der Nacht, `_dayNightApplyAmbient`; der Mond tiefer am
+    // E des Vollmonds im Zenit (`MOND_E` 0,462, k 1,85) — die hellste Nacht des Gesetzes. Bis w28-nacht-bilanz stand er auf dem
+    // gemessenen Licht von main (0,68: Mond + das Sternen-Licht als Füllung E 0,30, `STERNENLICHT`); unter dem Knoten steht die
+    // Kamera — fällt das Licht (das Ambient der Nacht, `_dayNightApplyAmbient`; der Mond tiefer am
     // Himmel), fällt das Bild, und Laterne, Fenster und Feuer tragen die Nacht. Der Knoten wächst vom Ende der bürgerlichen Dämmerung
     // (`nachtKnotenGrad`, −6°: die Nacht der Tag-Achse ist ganz) bis zum Nacht-Knoten der Stufen (−20°) logarithmisch ein — in der
     // Dämmerung liest die Kamera ihr Licht wie bisher (der Himmel der Tafel trägt sie schwächer als das Licht der Nacht: Radeon
     // 05 Uhr bei −3,7° E 0,16, um Mitternacht 0,44 — ein Knoten dort machte die Dämmerung dunkler als die Nacht).
+    const MOND_STAERKE = 0.65;
+    const lumaVon = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+    // E DES VOLLMONDS IM ZENIT (Welt-Einheiten, wie `_waagrechtIrradianz`): seine Stärke × die Luma seines Tons
+    const MOND_E = MOND_STAERKE * lumaVon(KERN.ATMO_GESETZ.nacht.mond);
     const BELICHTUNG = Object.freeze({
         kurve: "NeutralToneMapping",
         zielKarte: 0.22,
@@ -76,7 +80,7 @@ var __weltLicht = (function () {
         steigung: 0.75,
         gleitung: Object.freeze([12, 8]),
         stufen: Object.freeze([Object.freeze([10, -0.87]), Object.freeze([-20, -2.17])]),
-        nachtKnotenE: 0.68,
+        nachtKnotenE: MOND_E,
         nachtKnotenGrad: -6,
         nachtGrad: -32,
     });
@@ -103,8 +107,23 @@ var __weltLicht = (function () {
         r: KERN.ATMO_GESETZ.nacht.mond[0],
         g: KERN.ATMO_GESETZ.nacht.mond[1],
         b: KERN.ATMO_GESETZ.nacht.mond[2],
-        intensity: 0.65,
+        intensity: MOND_STAERKE,
     });
+    // DAS STERNEN-LICHT (w28-nacht-bilanz) — der Nachthimmel ohne Mond (Luftleuchten und Sterne) im Maß der REF der Kamera
+    // (spec/farbe/tag-ref.json, USNO Circular 171: der Nachthimmel 0,0005 lx neben dem Vollmond, zusammen 0,397 lx): `r/g/b` der
+    // Ton des Gesetzes (`ATMO_GESETZ.nacht.himmel`, auf Luma 1), `leuchtdichte` seine Zenit-Leuchtdichte in Welt-Einheiten —
+    // E des Vollmonds im Zenit (`MOND_E`) × 0,0005 / 0,3965, durch π (die Halbkugel). Bis hier trug der Himmel die Zahl des
+    // Gesetzes als Leuchtdichte (Luma 0,095, E 0,30 neben dem Mond 0,43 — das 510-Fache dieses Maßes): GEMESSEN (Radeon, Dorf,
+    // 00 Uhr, main 3552f058, Ausgabe-Y) trug es die Wand ohne Quelle zu 72 % (0,0279 → 0,0078 ohne es; ohne die ganze Umgebung
+    // 0,0011, ohne Ambient 0,0161, ohne Himmel-Boden 0,0222, ohne Mond 0,0199) und den Himmel zu 90 % (0,0860 → 0,0082: grau
+    // statt nachtblau) — die Nacht war ein abgedunkelter Tag, den das Ambient (w28-nacht-licht, 0,23 → 0,04) nie trug. Jetzt
+    // streut im Himmel der Nacht der Mond durch das EINE Medium (blau, Rayleigh), und die Fläche ohne Quelle fällt ins Dunkel.
+    const STERNENLICHT = Object.freeze(
+        ((n) => {
+            const y = lumaVon(n);
+            return { r: n[0] / y, g: n[1] / y, b: n[2] / y, leuchtdichte: (MOND_E * 0.0005) / 0.3965 / Math.PI };
+        })(KERN.ATMO_GESETZ.nacht.himmel)
+    );
     // DIE GPU-LEINE (Welt `_gpuLeineFrei`, Bühne `buehneZeichnet`): höchstens so viele Bilder zugleich auf der GPU unterwegs — mehr
     // ist nur Eingabe-Verzug (gemessen 04.10.: 600 ms bei ≈ 10 Frames in der Schlange), nie mehr Durchsatz.
     const GPU_FRAMES_IM_FLUG = 2;
@@ -1043,9 +1062,10 @@ var __weltLicht = (function () {
         U.licht.value = E0;
         const mi = MOONLIGHT.intensity / Math.max(E0, 1e-6);
         U.mondE.value.set(MOONLIGHT.r * mi, MOONLIGHT.g * mi, MOONLIGHT.b * mi);
-        const N = G.nacht.himmel;
-        const sw = Math.max(0, Math.min(1, 1 - achse.daemmerung));
-        U.nachtE.value.set(N[0] * sw, N[1] * sw, N[2] * sw).divideScalar(Math.max(E0, 1e-6));
+        const sw = STERNENLICHT.leuchtdichte * Math.max(0, Math.min(1, 1 - achse.daemmerung));
+        U.nachtE.value
+            .set(STERNENLICHT.r * sw, STERNENLICHT.g * sw, STERNENLICHT.b * sw)
+            .divideScalar(Math.max(E0, 1e-6));
         // die Tafeln in ihre Ziele: Durchlass und Ψ_ms (das Medium), die Himmels-Sicht (die Sonne), die Umgebung, die Bestrahlung
         const vor = R.getRenderTarget();
         for (const [q, rt] of [
@@ -1237,6 +1257,7 @@ var __weltLicht = (function () {
         GRENZGROESSE,
         GPU_FRAMES_IM_FLUG,
         MOONLIGHT,
+        STERNENLICHT,
         schirmDreieck,
         umgebungRichtung,
         atmoTafeln,

@@ -1486,16 +1486,17 @@ class AnazhRealm_bild_himmel {
         return __weltLicht.e0(tint ? tint.lightIntensity : 1);
     }
 
-    // DAS STERNEN-LICHT (D3-2) jetzt: die Zenit-Leuchtdichte des Nachthimmels (`ATMO_GESETZ.nacht.himmel`, Welt-Einheiten) im
+    // DAS STERNEN-LICHT (D3-2) jetzt: die Zenit-Leuchtdichte des Nachthimmels (welt-licht.js `STERNENLICHT`: der Ton des Gesetzes
+    // im Maß der REF, 1/793 des Vollmonds — bis w28-nacht-bilanz die Zahl `ATMO_GESETZ.nacht.himmel` selbst, das 510-Fache) im
     // Maß der Nacht (1 − Dämmerung der EINEN Tag-Achse, `_tagAchse`: wie die Sterne erscheinen, erscheint ihr Licht). Bis D3-2 trug der Himmel der EINEN Atmosphäre nachts nur die Streuung des Mondes
     // (Zenit 0,009): der Himmel der Nacht war schwarz, Wiese Mitternacht Luma 4,9 (vor D3 31,7), Dämmerung 0,78 4,2 (38,1).
     _atmoSternenLicht(e) {
-        const N = this._atmoGesetz().nacht.himmel;
-        const w = Math.max(0, Math.min(1, 1 - this._tagAchse(e).daemmerung));
+        const N = __weltLicht.STERNENLICHT;
+        const w = N.leuchtdichte * Math.max(0, Math.min(1, 1 - this._tagAchse(e).daemmerung));
         const o = this._atmoNacht || (this._atmoNacht = [0, 0, 0]);
-        o[0] = N[0] * w;
-        o[1] = N[1] * w;
-        o[2] = N[2] * w;
+        o[0] = N.r * w;
+        o[1] = N.g * w;
+        o[2] = N.b * w;
         return o;
     }
 
