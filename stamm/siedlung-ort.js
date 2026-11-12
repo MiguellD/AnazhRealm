@@ -809,7 +809,10 @@ class AnazhRealm_siedlung_ort {
         // die Sichtlinie zum Wagen quert keinen Grundriss (je 5 % ihrer Länge): die Route bog hinter ein Haus (Werkbank stadt: „Blickziel
         // verdeckt von bauSatz in 5,89 m")
         const frei = (q, e) => [...Array(19)].every((_, i) => !imBau({ x: q.x + ((e.x - q.x) * (i + 1)) / 20, z: q.z + ((e.z - q.z) * (i + 1)) / 20 }, 0)); // prettier-ignore
-        for (const [W, a] of kandidaten)
+        // und in der Stadt: ein Grundriss binnen 25 m des Wagens (am Rand fuhr er auf dem Feldweg in den Wald — GPU-Probe 668486db
+        // „kein bauSatz im Bild")
+        const inStadt = (e) => bau.some((b) => Math.hypot(b.x - e.x, b.z - e.z) < 25);
+        for (const [W, a] of kandidaten.filter(([w]) => inStadt(w.entry.position)))
             for (let o = 2; o <= 12; o += 0.25) {
                 const [e, l] = [W.entry.position, Math.hypot(a.dx, a.dz) || 1];
                 for (const q of [1, -1].map((v) => ({ x: a.x + (a.dz / l) * o * v, z: a.z - (a.dx / l) * o * v })))
