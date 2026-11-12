@@ -75,10 +75,17 @@ async function menschBuehnen() {
             // DER UMSTAND DES STECKENBLEIBERS (w28-stadt-grammatik): worauf er wartet — die Leiber um ihn (2 m), die Wahl seines
             // Ausweichens (`frist`: steht er, weil keine Richtung frei ist?), die Fahrbahn unter und vor ihm und der nächste Wagen
             // der Stadt (sein Zustand, sein Tempo, wie lange er vor Leibern steht) — nur lesen, nie fragen, was reserviert
+            // die Siedlung dieser Leiber: die, deren Liste den ersten trägt (`liste` ist ein Auszug: die Leiber im Bild) — bis hier
+            // suchte der Umstand die Liste selbst, fand keine und brach an der ersten Akte (TypeError statt Steckenbleiber)
+            const siedlungDer = () => {
+                const S = [...(r._bewohnerSiedlungen || new Map()).values()].find((q) => (q.liste || []).includes(liste[0]));
+                if (!S) throw new Error("wegeMesser: die Leiber der Probe gehören keiner Siedlung der Welt");
+                return S;
+            };
             // DER PLAN UM DAS KNÄUEL (25 m um den ersten Steckenbleiber, plan-lokal am Ursprung ox/oz): Wege, Grundrisse, Laternen
             // und die Linien, die die Wagen fahren — das Maß der Enge steht im Plan
             const steckPlan = () => {
-                const S = [...(r._bewohnerSiedlungen || new Map()).values()].find((q) => q.liste === liste);
+                const S = siedlungDer();
                 const [mx, mz] = [akten[0].bei[0] - S.ox, akten[0].bei[1] - S.oz];
                 const e2 = (v) => Math.round(v * 100) / 100;
                 const nah = (q) => q && Math.hypot(q.x - mx, q.z - mz) < 25;
@@ -96,7 +103,7 @@ async function menschBuehnen() {
                 };
             };
             const umstand = (b, x, z) => {
-                const S = [...(r._bewohnerSiedlungen || new Map()).values()].find((q) => q.liste === liste);
+                const S = siedlungDer();
                 const nb = liste.filter((o) => o !== b && !o.drinnen && o.leib && ab(o.leib.position, { x, z }) < 2).length;
                 const c = b.frist && b.frist.c;
                 const W = ((S && S.verkehr && S.verkehr.wagen) || [])
