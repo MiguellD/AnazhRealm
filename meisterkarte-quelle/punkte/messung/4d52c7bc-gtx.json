@@ -1,0 +1,127 @@
+{
+ "sha": "4d52c7bc8d1c3003968935b186a1c486c39e8c5c",
+ "geraet": "gtx",
+ "zeit": "2026-11-12T15:36:04.219Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "vegetation.K4#2": {
+   "gruen": false,
+   "zahl": "43 Häuser (1 gesetzt über die Werkstatt false), 49/53 Boxen im Bild ohne Halm; Third 0 px vor 43 Häusern; Gegenprobe 0 px; Wasser see Pflanzen im Wasser 0, fluss Pflanzen im Wasser 0; je Blick Spiegel/Halm/Grund/Gegenprobe see-ego 0/0/0/12368 · see-third 0/0/0/26319 · fluss-ego 0/0/0/52552 · fluss-third 0/0/0/70835",
+   "exit": 0,
+   "minuten": 4.73,
+   "grund": "ROT: 43 Häuser (1 gesetzt über die Werkstatt false), 49/53 Boxen im Bild ohne Halm; Third 0 px vor 43 Häusern; Gegenprobe 0 px; Wasser see Pflanzen im Wasser 0, fluss Pflanzen im Wasser 0; je Blick Spiegel/Halm/Grund/Gegenprobe see-ego 0/0/0/12368 · see-third 0/0/0/26319 · fluss-ego 0/0/0/52552 · fluss-third 0/0/0/70835",
+   "gpu": "nvidia/pascal",
+   "konsum": "k9860e27b17e4",
+   "konsumN": 28,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 3
+   },
+   "konsumBoot": "k4667916c0bd7",
+   "s": 282.9,
+   "fremd": {
+    "s": 287.7,
+    "takte": 128,
+    "fremdS": 241.45,
+    "kerne": 0.839,
+    "fensterKerne": 2.278,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      64.89
+     ],
+     [
+      "git.exe -c core.quotepath=false -c safe.directory=* -c core.fsmonitor= -c branch.autoSetup",
+      63.84
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      55.05
+     ]
+    ],
+    "dienerS": 110.27,
+    "diener": [
+     [
+      "System",
+      43.58
+     ],
+     [
+      "dwm.exe",
+      38.17
+     ]
+    ],
+    "geraetS": 109.11,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      62.02
+     ],
+     [
+      "svchost.exe",
+      39.83
+     ],
+     [
+      "SearchIndexer.exe",
+      3.27
+     ]
+    ],
+    "eigenS": 898.19,
+    "rechnerKerne": 12
+   },
+   "zeit": "2026-11-12T15:36:04.219Z",
+   "abdruck": "8b5a45974dff",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "konsumTafel": {
+  "k9860e27b17e4": "dVTbbqMwEP2XPHbXNddgLPXBKZXah9V2P2FsxkBCILKh7Ga1/76CQBMgnRckdM7MmZnj+bs5gTpAho97W1cbvnnYfN9Y+EBi0XygedzbDd+4kcsg5OISVAjx3MOUKU6NpWkBGcmhtaTDsnlUA+XhBlAWkoKsID8iaU2DRTmCGIK7ZZx2L4K9f3unlO2WtFJiWpMGNE4kmXqRD3wJbG0GEgm0eig0gn03RpVyOgRLxPueTiHEsxDd09MikYQqnasMtOfEKX/7I8SLWOHTArAhZVHZqaZKQ+l7/LPQukZqoCNnwLxEM41iu3VZMAldEnTZWjsrwvw09BinNKYLbHZqib5NDVICk8uB5YBVhmaeNApCFXD6eyXgAEc0QCrIR2js+JEnr01SSl/XjZaFysfhVCMxChzF/Bkx7tTFWH18S64b+nUx3E9xjd16AzaHFA051Lb5rKJCH1zGR3rvWNG9rrqyV3kjz5NbJ2Q36hgVd3i1bjowSLJTOxIxwDDqn8jbCtzA8TiitPKQhctV2Kb33MxCntLbwULZF5O9OJScsSgnEjgsjDV//iGSBfjDwJGAzEyh9bQ/GSod3/NPB9YufKE8jHxntrNlJF3CZj/WkvvrQGRdTyfC9Z0gkJz6tPpk+Wx4ll/HPrvzZofMtWkmvaHcOjrgetChlugzmhIznHUIbuz5wOnoxCGS4PJ9S+atdis/nAvsV1HZ1k4vKY7SWPM7k+jQHCRUh+m4QCy1vhj1Pdv1HyehYhjEjZJdJ4br0yc6oaInU+uiP1W0P7w5lM31gP/7Dw==",
+  "k4667916c0bd7": "hVTbbptAFPwXPzYly9UsK+Xh2ERJKkV1PuEsnAViDNYuhMpV/72ygdhAqs4LLzNzbsP+Xh0x2WNG9++mrlZi9W31fWXwgyxD+oP0/btZiZUTOhwDAT0YADydaYkujo1hZSEZygrzA1mtbqgo75OLjBM6ay5Y9wh8d7djjG/gis3copSU1laDikYDmbqhh2JObE2Gkixs1aXoQPaciJJUsAt4DLt3NgJgC9A9PMyMJFbptGNfuXaUipcO4BEW/LRAaqyyqMxYM0kD6bnis9CyRqqxs05IeUl6XMt67XB/bHQuUGVrzKQI99LA5YKxiM242bG11K01SolczheWI1UZ6alp6AeJL9ivRQN7PJBGq8J8oEa2F7ryOiRj7Hk5aFkk+bCcahCGvp1wbyJkXdJn6Iy7+Hqhtz4UP28DsryAyTElbe1r03xWSQIPHS4G+Tmc0D0vpjLX9gadK9d2wG+64wy+0NWq6VCTlR3bQUg+BWEgIHtdkBs8HAaWSlziwfwUpjlnbhIhN1HrS4Syf2y2T6h1oqIcRWjzIFJi+wrxjPyh8WChzHSh1Hg/GSQq+io/HZWNJeu6GZiOZ/u+FMxj1edWnAggvrnK09vtTwzwo573e3GtdTM2G8i1rXyh+vPP2SfSJWU02Qk6keuhGMNyQez335eYTdAtTnYq6LytyrRmDHsUppHqT90NNtNwdaT3Eqv9+A5gJJUSAJsMdtkGnrePUczh/9gCvPXGR0rYUdeqOL8yLMfW5Fg212f2z18="
+ },
+ "sitzung": {
+  "start": "2026-11-12T15:35:27.090Z",
+  "port": 7804,
+  "warten": 0.01,
+  "bootS": 6.3,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "genesis",
+    "vor": "vegetation.K4#2",
+    "s": 28.4,
+    "takte": 611,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [
+    {
+     "probe": "vegetation.K4#2",
+     "m": 6443,
+     "ringVor": 4,
+     "ringMin": -1
+    }
+   ],
+   "zapfen": 306,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 320.6,
+  "minuten": 5.43
+ }
+}
