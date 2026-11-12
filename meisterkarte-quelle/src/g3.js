@@ -167,8 +167,8 @@ module.exports = {
         {
           name: "Mikro-Detail bis Armlänge",
           punkte: 0,
-          staffel: "1 = Boden und Fels auf 0,5/1/2 m: nyquist ≥ 0,15 und glatte Blöcke ≤ 10 % an einem Gerät · 2 = Boden, Fels, Rinde, Putz, Holz, Haut, kein Kachel-Muster (1/f^β, β 0–2,4), beide Geräte",
-          messung: "werkbank bild mit Armlängen-Schüssen (0,5 / 1 / 2 m), Tafel-Maße detail/nyquist, glatte 8×8-Blöcke (σ Luma < 4), Ego, Kamera des Spiels.",
+          staffel: "1 = Boden und Fels auf 0,5/1/2 m: ein Korn, das der Pixel trägt (das Urteil der Arm-Linse: nyquist ≤ 0,12, glatte Blöcke ≤ 10 %) an einem Gerät · 2 = Boden, Fels, Rinde, Putz, Holz, Haut, kein Kachel-Muster (1/f^β, β 0–2,4), beide Geräte",
+          messung: "werkbank bild mit Armlängen-Schüssen (0,5 / 1 / 2 m), das Urteil der Arm-Linse (`armUrteil`: Schachbrett-Energie ≤ 0,12 der Gradient-Energie, glatte 8×8-Blöcke über ihrer Neigung im Weber-Maß), Ego, Kamera des Spiels.",
           beleg: "Der Substanz-Kern trägt Korn, Kavität, Rauheit und Bump aus den Tags (`stamm/stoff-material.js:1130-1170`, `_substanceCharacter` `:1578`, Mikro-Relief `:1206`); gemessen ist nur der Boden-Satz aus 2–14 m: nyquist 0,0495, detail 0,073 (soll-tafel boden-nah, cbc222cc, veraltet).",
           schlupfloch: "Rauschen erfüllt Nyquist ohne Material: das 1/f^β-Band und das Verbot von Kachel-Mustern; ein Schuss nur auf den besten Stoff reicht nicht: je Klasse."
         },
