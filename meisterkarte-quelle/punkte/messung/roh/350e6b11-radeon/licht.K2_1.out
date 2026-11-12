@@ -76,9 +76,9 @@ $ C:\Program Files\nodejs\node.exe -e (async function folge(plan) {
 })({"name":"licht.K2#1","schritte":[{"name":"fenster","args":["fenster","1920","1080"],"muss":true},{"name":"umstellen","args":["umstellen","--ort","wiese"],"muss":true},{"name":"kugel","probe":"@KOORD@/bericht/2110-messschuld2/kugel.js","blob":"2f71153039543f9f842d56ad19ad5dc0a1fed3ef","muss":true}]}) C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\350e6b11-radeon\licht.K2_1.json C:\Users\micha\AppData\Local\Temp\claude\w3\pm
   fenster · Exit 0
   umstellen · Exit 0
-  kugel · Exit 1
+  kugel · Exit 0
 [linse-gpu] amd/rdna-3
-@@PUNKTE@@ MESSORT kugel: ❌ URTEILS-WACHE: 1 ROTE Zeile(n) bei Exit 0 — die erste: "jpg": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABKcAAAGDCAYAAAD+hXP6AAAQAElEQVR4AYT9d9xm13Xfh/5Oe/rz9jYz71TMABh0gABIgiTYe+8FJAGCFQQBkATYK9hEqlpSZFl2FMe5dnLzublxcm+c4ivFcezIN5ZsWRRFsaIQZfrMW592ztnrftd+ZiDK+eO+ete7z9l79bX22uUMqPS9D1
+FOLGE licht.K2#1: 3 Schritte
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3

@@ -5,18 +5,18 @@
   "fenster": {
    "exit": 0,
    "json": {
-    "ms": 3,
+    "ms": 2,
     "fenster": [
      1920,
      1080
     ]
    },
-   "rest": "{\n \"ms\": 3,\n \"fenster\": [\n  1920,\n  1080\n ]\n}\n"
+   "rest": "{\n \"ms\": 2,\n \"fenster\": [\n  1920,\n  1080\n ]\n}\n"
   },
   "umstellen": {
    "exit": 0,
    "json": {
-    "ms": 823,
+    "ms": 736,
     "ort": "wiese",
     "sicht": "ego",
     "pose": null,
@@ -46,20 +46,20 @@
      },
      "befunde": []
     },
-    "takte": 75,
+    "takte": 71,
     "steht": true,
-    "chunks": 89,
+    "chunks": 81,
     "gier": -1.9717,
     "dorfZug": false,
     "ortTakt": [],
     "dorfSchwebt": null
    },
-   "rest": "{\n \"ms\": 823,\n \"ort\": \"wiese\",\n \"sicht\": \"ego\",\n \"pose\": null,\n \"welt\": null,\n \"spieler\": [\n  -280.4,\n  -1045.6\n ],\n \"wiese\": {\n  \"messung\": {\n   \"x\": -280.4,\n   \"z\": -1045.6,\n   \"y\": 27.48,\n   \"hang\": 1.81,\n   \"rauh\": 0.14,\n   \"nass\": 0,\n   \"krone\": 0.114,\n   \"baeume\": 8,\n   \"kranz\": 0.253,\n   \"imBlick\": 0,\n   \"horizont\": 2.6,\n   \"blick\": [\n    -289.6,\n    -1049.5\n   ],\n   \"gras\": 1\n  },\n  \"befunde\": []\n },\n \"takte\": 75,\n \"steht\": true,\n \"chunks\": 89,\n \"gier\": -1.9717,\n \"dorfZug\": false,\n \"ortTakt\": [],\n \"dorfSchwebt\": null\n}\n"
+   "rest": "{\n \"ms\": 736,\n \"ort\": \"wiese\",\n \"sicht\": \"ego\",\n \"pose\": null,\n \"welt\": null,\n \"spieler\": [\n  -280.4,\n  -1045.6\n ],\n \"wiese\": {\n  \"messung\": {\n   \"x\": -280.4,\n   \"z\": -1045.6,\n   \"y\": 27.48,\n   \"hang\": 1.81,\n   \"rauh\": 0.14,\n   \"nass\": 0,\n   \"krone\": 0.114,\n   \"baeume\": 8,\n   \"kranz\": 0.253,\n   \"imBlick\": 0,\n   \"horizont\": 2.6,\n   \"blick\": [\n    -289.6,\n    -1049.5\n   ],\n   \"gras\": 1\n  },\n  \"befunde\": []\n },\n \"takte\": 71,\n \"steht\": true,\n \"chunks\": 81,\n \"gier\": -1.9717,\n \"dorfZug\": false,\n \"ortTakt\": [],\n \"dorfSchwebt\": null\n}\n"
   },
   "kugel": {
-   "exit": 1,
+   "exit": 0,
    "json": {
-    "ms": 8450,
+    "ms": 7829,
     "ergebnis": {
      "ende": "ok",
      "stand": {
@@ -74,7 +74,7 @@
      ],
      "u8len": 8294400,
      "kurve": 7,
-     "belicht": 0.5249,
+     "belicht": 0.5236,
      "csm": true,
      "dlWirft": true,
      "kaskaden": 3,
@@ -176,12 +176,12 @@
         ],
         "rPx": 70,
         "oben": {
-         "Y": 1.8742,
+         "Y": 1.8791,
          "n": 1507,
          "sRGB": 234
         },
         "sonne": {
-         "Y": 1.8742,
+         "Y": 1.8791,
          "n": 840
         },
         "abgewandt": {
@@ -189,16 +189,16 @@
          "n": 0
         },
         "profilNS": {
-         "-0.8": "0.1601/3",
+         "-0.8": "0.1605/3",
          "-0.6": "0.158/537",
          "-0.4": "0.1661/1138",
-         "-0.2": "0.171/1658",
-         "0.0": "0.1905/2116",
-         "0.2": "0.4046/2464",
-         "0.4": "0.6524/2753",
-         "0.6": "0.9966/2892",
-         "0.8": "1.6223/2854",
-         "1.0": "1.8742/1384"
+         "-0.2": "0.1712/1658",
+         "0.0": "0.1908/2116",
+         "0.2": "0.4017/2464",
+         "0.4": "0.6528/2753",
+         "0.6": "0.9983/2892",
+         "0.8": "1.6255/2854",
+         "1.0": "1.8791/1384"
         }
        },
        "G-sonne": {
@@ -210,12 +210,12 @@
         ],
         "rPx": 74,
         "oben": {
-         "Y": 0.3595,
+         "Y": 0.3601,
          "n": 1499,
          "sRGB": 107
         },
         "sonne": {
-         "Y": 0.3608,
+         "Y": 0.3605,
          "n": 858
         },
         "abgewandt": {
@@ -223,15 +223,15 @@
          "n": 0
         },
         "profilNS": {
-         "-0.6": "0.0414/373",
-         "-0.4": "0.0426/971",
+         "-0.6": "0.0415/373",
+         "-0.4": "0.0421/971",
          "-0.2": "0.0428/1476",
-         "0.0": "0.0465/1921",
-         "0.2": "0.0993/2280",
-         "0.4": "0.157/2574",
-         "0.6": "0.2195/2747",
-         "0.8": "0.2981/2772",
-         "1.0": "0.3595/1407"
+         "0.0": "0.0463/1921",
+         "0.2": "0.0992/2280",
+         "0.4": "0.1572/2574",
+         "0.6": "0.2198/2747",
+         "0.8": "0.2989/2772",
+         "1.0": "0.3601/1407"
         }
        },
        "G-schatten": {
@@ -243,12 +243,12 @@
         ],
         "rPx": 74,
         "oben": {
-         "Y": 0.0682,
+         "Y": 0.0684,
          "n": 1486,
          "sRGB": 30
         },
         "sonne": {
-         "Y": 0.0705,
+         "Y": 0.0707,
          "n": 868
         },
         "abgewandt": {
@@ -256,15 +256,15 @@
          "n": 0
         },
         "profilNS": {
-         "-0.6": "0.0445/348",
-         "-0.4": "0.0446/960",
-         "-0.2": "0.0454/1444",
-         "0.0": "0.0457/1894",
-         "0.2": "0.0472/2250",
+         "-0.6": "0.0436/348",
+         "-0.4": "0.0447/960",
+         "-0.2": "0.0451/1444",
+         "0.0": "0.0455/1894",
+         "0.2": "0.0467/2250",
          "0.4": "0.0502/2551",
-         "0.6": "0.0541/2730",
-         "0.8": "0.062/2757",
-         "1.0": "0.0695/1411"
+         "0.6": "0.0542/2730",
+         "0.8": "0.0615/2757",
+         "1.0": "0.0694/1411"
         }
        },
        "W-schatten": {
@@ -276,12 +276,12 @@
         ],
         "rPx": 69,
         "oben": {
-         "Y": 0.2638,
+         "Y": 0.2617,
          "n": 1485,
-         "sRGB": 90
+         "sRGB": 89
         },
         "sonne": {
-         "Y": 0.2638,
+         "Y": 0.2641,
          "n": 851
         },
         "abgewandt": {
@@ -289,15 +289,15 @@
          "n": 0
         },
         "profilNS": {
-         "-0.6": "0.1571/467",
+         "-0.6": "0.1574/467",
          "-0.4": "0.1661/1079",
-         "-0.2": "0.1705/1584",
-         "0.0": "0.1719/2022",
-         "0.2": "0.1788/2393",
-         "0.4": "0.1894/2666",
-         "0.6": "0.2112/2822",
-         "0.8": "0.242/2821",
-         "1.0": "0.2638/1395"
+         "-0.2": "0.1708/1584",
+         "0.0": "0.1721/2022",
+         "0.2": "0.1792/2393",
+         "0.4": "0.1896/2666",
+         "0.6": "0.2115/2822",
+         "0.8": "0.2422/2821",
+         "1.0": "0.2617/1395"
         }
        }
       },
@@ -311,12 +311,12 @@
         ],
         "rPx": 70,
         "oben": {
-         "Y": 1.8742,
+         "Y": 1.8791,
          "n": 1507,
          "sRGB": 234
         },
         "sonne": {
-         "Y": 1.8754,
+         "Y": 1.8791,
          "n": 840
         },
         "abgewandt": {
@@ -324,16 +324,16 @@
          "n": 0
         },
         "profilNS": {
-         "-0.8": "0.1714/3",
+         "-0.8": "0.1718/3",
          "-0.6": "0.1723/537",
-         "-0.4": "0.1796/1138",
-         "-0.2": "0.1836/1658",
-         "0.0": "0.2009/2116",
-         "0.2": "0.4111/2464",
-         "0.4": "0.659/2753",
-         "0.6": "1.0068/2892",
-         "0.8": "1.6223/2854",
-         "1.0": "1.8742/1384"
+         "-0.4": "0.1801/1138",
+         "-0.2": "0.1837/1658",
+         "0.0": "0.2002/2116",
+         "0.2": "0.4114/2464",
+         "0.4": "0.6601/2753",
+         "0.6": "1.0087/2892",
+         "0.8": "1.6265/2854",
+         "1.0": "1.8791/1384"
         }
        },
        "G-sonne": {
@@ -345,12 +345,12 @@
         ],
         "rPx": 74,
         "oben": {
-         "Y": 0.3595,
+         "Y": 0.3601,
          "n": 1499,
          "sRGB": 107
         },
         "sonne": {
-         "Y": 0.3608,
+         "Y": 0.3605,
          "n": 858
         },
         "abgewandt": {
@@ -358,15 +358,15 @@
          "n": 0
         },
         "profilNS": {
-         "-0.6": "0.0448/373",
-         "-0.4": "0.0455/971",
+         "-0.6": "0.0449/373",
+         "-0.4": "0.0451/971",
          "-0.2": "0.0458/1476",
-         "0.0": "0.049/1921",
-         "0.2": "0.1005/2280",
-         "0.4": "0.1574/2574",
-         "0.6": "0.2201/2747",
-         "0.8": "0.3011/2772",
-         "1.0": "0.3595/1407"
+         "0.0": "0.0488/1921",
+         "0.2": "0.1007/2280",
+         "0.4": "0.1578/2574",
+         "0.6": "0.22/2747",
+         "0.8": "0.2989/2772",
+         "1.0": "0.3601/1407"
         }
        },
        "G-schatten": {
@@ -378,12 +378,12 @@
         ],
         "rPx": 74,
         "oben": {
-         "Y": 0.3552,
+         "Y": 0.3561,
          "n": 1486,
          "sRGB": 106
         },
         "sonne": {
-         "Y": 0.3552,
+         "Y": 0.3561,
          "n": 868
         },
         "abgewandt": {
@@ -391,15 +391,15 @@
          "n": 0
         },
         "profilNS": {
-         "-0.6": "0.0471/348",
-         "-0.4": "0.0477/960",
-         "-0.2": "0.0488/1444",
+         "-0.6": "0.0472/348",
+         "-0.4": "0.0478/960",
+         "-0.2": "0.0485/1444",
          "0.0": "0.0516/1894",
-         "0.2": "0.1033/2250",
-         "0.4": "0.1601/2551",
-         "0.6": "0.223/2730",
-         "0.8": "0.3016/2757",
-         "1.0": "0.3552/1411"
+         "0.2": "0.1032/2250",
+         "0.4": "0.1605/2551",
+         "0.6": "0.2233/2730",
+         "0.8": "0.2992/2757",
+         "1.0": "0.3558/1411"
         }
        },
        "W-schatten": {
@@ -411,12 +411,12 @@
         ],
         "rPx": 69,
         "oben": {
-         "Y": 1.8595,
+         "Y": 1.8644,
          "n": 1485,
          "sRGB": 233
         },
         "sonne": {
-         "Y": 1.873,
+         "Y": 1.8656,
          "n": 851
         },
         "abgewandt": {
@@ -424,15 +424,15 @@
          "n": 0
         },
         "profilNS": {
-         "-0.6": "0.1718/467",
-         "-0.4": "0.1796/1079",
-         "-0.2": "0.1811/1584",
-         "0.0": "0.1945/2022",
-         "0.2": "0.4006/2393",
-         "0.4": "0.6356/2666",
-         "0.6": "0.9752/2822",
-         "0.8": "1.5827/2821",
-         "1.0": "1.8607/1395"
+         "-0.6": "0.1723/467",
+         "-0.4": "0.1798/1079",
+         "-0.2": "0.1814/1584",
+         "0.0": "0.1949/2022",
+         "0.2": "0.4013/2393",
+         "0.4": "0.6354/2666",
+         "0.6": "0.9769/2822",
+         "0.8": "1.5847/2821",
+         "1.0": "1.8644/1395"
         }
        }
       },
@@ -446,12 +446,12 @@
         ],
         "rPx": 70,
         "oben": {
-         "Y": 0.2646,
+         "Y": 0.2653,
          "n": 1507,
          "sRGB": 90
         },
         "sonne": {
-         "Y": 0.2646,
+         "Y": 0.2649,
          "n": 840
         },
         "abgewandt": {
@@ -459,16 +459,16 @@
          "n": 0
         },
         "profilNS": {
-         "-0.8": "0.0589/3",
-         "-0.6": "0.0763/537",
-         "-0.4": "0.0918/1138",
-         "-0.2": "0.1087/1658",
-         "0.0": "0.1257/2116",
-         "0.2": "0.1438/2464",
-         "0.4": "0.1673/2753",
-         "0.6": "0.1974/2892",
-         "0.8": "0.2387/2854",
-         "1.0": "0.2642/1384"
+         "-0.8": "0.0591/3",
+         "-0.6": "0.0764/537",
+         "-0.4": "0.0909/1138",
+         "-0.2": "0.1086/1658",
+         "0.0": "0.1251/2116",
+         "0.2": "0.1426/2464",
+         "0.4": "0.1674/2753",
+         "0.6": "0.1978/2892",
+         "0.8": "0.2392/2854",
+         "1.0": "0.2649/1384"
         }
        },
        "G-sonne": {
@@ -480,12 +480,12 @@
         ],
         "rPx": 74,
         "oben": {
-         "Y": 0.0682,
+         "Y": 0.0684,
          "n": 1499,
          "sRGB": 30
         },
         "sonne": {
-         "Y": 0.0708,
+         "Y": 0.071,
          "n": 858
         },
         "abgewandt": {
@@ -496,12 +496,12 @@
          "-0.6": "0.0232/373",
          "-0.4": "0.0276/971",
          "-0.2": "0.0289/1476",
-         "0.0": "0.033/1921",
+         "0.0": "0.0331/1921",
          "0.2": "0.0373/2280",
-         "0.4": "0.0422/2574",
-         "0.6": "0.049/2747",
-         "0.8": "0.0599/2772",
-         "1.0": "0.0706/1407"
+         "0.4": "0.0423/2574",
+         "0.6": "0.0491/2747",
+         "0.8": "0.0597/2772",
+         "1.0": "0.0707/1407"
         }
        },
        "G-schatten": {
@@ -513,12 +513,12 @@
         ],
         "rPx": 74,
         "oben": {
-         "Y": 0.0682,
+         "Y": 0.0683,
          "n": 1486,
          "sRGB": 30
         },
         "sonne": {
-         "Y": 0.0692,
+         "Y": 0.0694,
          "n": 868
         },
         "abgewandt": {
@@ -527,13 +527,13 @@
         },
         "profilNS": {
          "-0.6": "0.0236/348",
-         "-0.4": "0.0282/960",
+         "-0.4": "0.0283/960",
          "-0.2": "0.0322/1444",
-         "0.0": "0.0337/1894",
+         "0.0": "0.0338/1894",
          "0.2": "0.0381/2250",
-         "0.4": "0.044/2551",
+         "0.4": "0.0441/2551",
          "0.6": "0.0507/2730",
-         "0.8": "0.0602/2757",
+         "0.8": "0.0603/2757",
          "1.0": "0.0691/1411"
         }
        },
@@ -546,12 +546,12 @@
         ],
         "rPx": 69,
         "oben": {
-         "Y": 0.2599,
+         "Y": 0.2605,
          "n": 1485,
          "sRGB": 89
         },
         "sonne": {
-         "Y": 0.2599,
+         "Y": 0.2605,
          "n": 851
         },
         "abgewandt": {
@@ -559,27 +559,27 @@
          "n": 0
         },
         "profilNS": {
-         "-0.6": "0.0773/467",
-         "-0.4": "0.0921/1079",
-         "-0.2": "0.1074/1584",
-         "0.0": "0.1225/2022",
-         "0.2": "0.1409/2393",
-         "0.4": "0.1614/2666",
-         "0.6": "0.1942/2822",
-         "0.8": "0.2314/2821",
-         "1.0": "0.2599/1395"
+         "-0.6": "0.0775/467",
+         "-0.4": "0.0922/1079",
+         "-0.2": "0.1077/1584",
+         "0.0": "0.1222/2022",
+         "0.2": "0.141/2393",
+         "0.4": "0.1609/2666",
+         "0.6": "0.1945/2822",
+         "0.8": "0.232/2821",
+         "1.0": "0.2605/1395"
         }
        }
       }
      ],
      "bilanz": {
-      "verhaeltnisG_oben": 5.271,
-      "verhaeltnisW_oben": 7.105,
-      "schattenAnteilG": 0.1897,
-      "schattenAnteilW": 0.1408,
+      "verhaeltnisG_oben": 5.265,
+      "verhaeltnisW_oben": 7.18,
+      "schattenAnteilG": 0.1899,
+      "schattenAnteilW": 0.1393,
       "eigeneKugel_sonneZuAbgewandtG": null,
-      "weissZuGrau_oben_sonne": 5.213,
-      "weissZuGrau_oben_schatten": 3.868,
+      "weissZuGrau_oben_sonne": 5.218,
+      "weissZuGrau_oben_schatten": 3.826,
       "scheibeVerdecktHimmel": 0.0204
      },
      "bilder": [
@@ -607,10 +607,8 @@
      ]
     }
    },
-   "rest": "hyoz8iIyu3OS7Y4GgJfmB1gS/NTS4e2qDpHh1OTCLZb28pVQKBkCEyzTjTDDelZx+HQMb8l18+5tfK0iKORzXI28qGH3NoO8+ip67pjJrR+eH0g72ZDAhnV84VkvFt9FnewqFiPIzxa0FuFz8FDB/cTO7ggzCjtQFhA6GButHgrZGBvaWEX6lmDRSxwJobG4udfTi3eBFNyBDj0HgBQfOp5FA3aHX/ccjP2qzDyUnQJ3A6R5nkSbyyLstX2EtubPTkvZPFpbbDOiXd3TlSgBZQKuvMtJCLdDVlPPpiSHtJXSPTugkMC/rGYslXAlEpPupgL2BLkNBCrfhIYfMCthKJ4xZT7P/8PCWelcSZcnOFVrX6CujcxBpLybFvT5Zo5yOiwbKY0rImtXSFuVeRRX383F3lSYmeGQuNiFzv7A3VWcvVHWUM5m0SOeeh12tpa6Ab431lLtVHhmt69eRIdKjk8PsoCFc4E+TgNllFEHayQqNBT7vvfUe3r7/BUpzp7d0xtlepfUB4gzWr9F6B8SeupxI6IkDnxJg5DNXIq6FcsQ71+1FFxyvHboq+BwQjmReAQ0adF6Mw/FceL7W0XLe+Zn00wzvkWoFhoND3vl4pYd1PEskupqzL6DZa7sPcOteRlc0OLRaJdduVqWyMjW1BgQBKgB/1u9du6zTnv8+cXlHdlCo0EBsnpjl5glqoJQ+BkIxlinN4o/lRVDEvtJWvaZt0fvmUpodR9UQqD2t1HyWWoIdpNdG0mbCOziXXvgonGM6NQqv5JQ2HI9WsN43ZF8wYfZHYcF//FX05OtGHnsg4q+Z5A/1qaTLeKi7fkhSjAk9nmCgtnFL2/MtncqVccjfoxFzMZGN4Pnl+y8Dod9+41eYLsFEH1yrBLvISMS+08I97Xd0ZrajIpWX02B3kyqiknE8S1riktSHHBP3ooZoVHTnf0ZM/tq6zqN+hxN//xm4L8/8LAAD//wfToMMAAAAGSURBVAMAtNPCrmMfAukAAAAASUVORK5CYII=\",\n    \"crop\": [\n     368,\n     308,\n     1191,\n     387\n    ]\n   }\n  ]\n }\n}\n❌ URTEILS-WACHE: 1 ROTE Zeile(n) bei Exit 0 — die erste: \"jpg\": \"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABKcAAAGDCAYAAAD+hXP6AAAQAElEQVR4AYT9d9xm13Xfh/5Oe/rz9jYz71TMABh0gABIgiTYe+8FJAGCFQQBkATYK9hEqlpSZFl2FMe5dnLzublxcm+c4ivFcezIN5ZsWRRFsaIQZfrMW592ztnrftd+ZiDK+eO+ete7z9l79bX22uUMqPS9D15p739gj73//jW7k/adn1i1O+7fY1/+/BH74mcO29/9zlX2m79xhX3jG4fsqw+uRf (Exit wird 1; ein Vermerk heißt nie ROT/❌)\n"
+   "rest": "fiILXS8EoG2KHIlY4QVDnqGAOtTKvaeei4dVKX+7NOOUS1hmG/4TJivIgewNo9lFFHxmxSg2UHF+afBgfeZNl3osJivYxwhNIaPvfGFC6f0K8/2W/xH6GIyy/TZT5JfAOmV6S1l9DVvV3IAD6mU/VtbDXujW0+q7S9GrwW9cvOY9UmWnxQp6OLjm3IeCpB1Bm9rmwgHeAmZ4paKEVlQQkhqC+0GG2C6MKEWVmhjb2zbCVoTawOKi+IfLtZoAgd+YI5helnqkzx6fLCHGyyH/C/163ZuQiZ9xPj23Kv9Q0vL9+mjSyVre3lQwO/fPfbItWGNE6TJ4FscMJylX8hqo/UBH4BQ1uvBCzTAvwOgXe7b/zzqcO9IxxzOKw6UZi8RYLPjfWAktbABZHBgT2w1CjiaR3YGU/hAbhswVtnz0BQlk4MTi7T89Fdy8nlkQhegiQ+5xlvSB5+28aT/4ktHD2cbngfyDiA3PjAHm6gz6KmH7OzBcCRbBVF89f1djBD43F+qazWdLIf+pBaOPUPbFLuDVPUs5wXQvdsm98S8aNCYGxVBasXWIXJmiRiZUSc1CwwyYtfMbudgZ4H54X7d0E4IybVER5UQNJ9JJm/UrAcfh/ysT0IRsg9EIxzneKZ4Cl/ZsHNOa+SSm9t9ee/waxixgbZId+8etjTDooruvJW/tR/PByIEyz52SW1ybdjD4FZfX76vVQZbHLfkIC5xNk6AhgI17PUGw2wh0dkQWxaThebEs5p2tb2mAOCAkGEZv5ISdumI+xlhJfggllGSDA7cLeuFJ/dN+ui5OyqzCrr1sLy3O1KPm+Oe/eu42FUKmZwRhsJWtke6Pt0jRmf6wHBDrx0fChWo4uz1FAjXeJFZ5DZfiiDsFR2tDPu6d+VbunntTbbiXO/em2B7tWwdk3Q9Fao8Nsv8Y9cXKTRDSXZBtcBOGuJKoNR10mBADO15lcT3Dvmd+CTWRfin4mn5dU669HSllbVGJhcba3ln2NogaOXwna/VyiqnLJPavwgUHyYY7Q9g7pztASPhs1HWz8YmV2WsN5kaVFhhjdFh5feu3NIpzn+f4aK9IQEpNZRrMgWI8tgNx3VltI0u1Kw58XJxmNStOtrubOhEuaGzqyc1O0iqsdn6oFHvqQX5QqZpM9U0TrVIC5lKzLzjMQnY9Y7Wy4sajsbYZdP6j1EGhdAJfSYfkDXsRSU60Q99IL19KsuwnIvsbJ3pIctZxHOX83dOvlx0ndZOd5SVjQI6iUGtTIzvj58ldwTS7715k1++EOAQ9P6VWg4YkCCHMbJER8TA2+M1cbzQ6tCrPyxVdErlnE+yIlOeZ3L8Y18gPfwWna6c7+q5H9vU2YxuBPClr99rY/r/DwAA///I+H51AAAABklEQVQDAACLHRS+tCduAAAAAElFTkSuQmCC\",\n    \"crop\": [\n     368,\n     308,\n     1191,\n     387\n    ]\n   }\n  ]\n }\n}\n"
   }
  },
- "dateien": {},
- "fehler": "kugel: Exit 1 ANSUhEUgAABKcAAAGDCAYAAAD+hXP6AAAQAElEQVR4AYT9d9xm13Xfh/5Oe/rz9jYz71TMABh0gABIgiTYe+8FJAGCFQQBkATYK9hEqlpSZFl2FMe5dnLzublxcm+c4ivFcezIN5ZsWRRFsaIQZfrMW592ztnrftd+ZiDK+eO+ete7z9l79bX22uUMqPS9D15p739gj73//jW7k/adn1i1O+7fY1/+/BH74mcO29/9zlX2m79xhX3jG4fsqw+uRf (Exit wird 1; ein Vermerk heißt nie ROT/❌)\n",
- "messort": "kugel: ❌ URTEILS-WACHE: 1 ROTE Zeile(n) bei Exit 0 — die erste: \"jpg\": \"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABKcAAAGDCAYAAAD+hXP6AAAQAElEQVR4AYT9d9xm13Xfh/5Oe/rz9jYz71TMABh0gABIgiTYe+8FJAGCFQQBkATYK9hEqlpSZFl2FMe5dnLzublxcm+c4ivFcezIN5ZsWRRFsaIQZfrMW592ztnrftd+ZiDK+eO+ete7z9l79bX22uUMqPS9D1"
+ "dateien": {}
 }
