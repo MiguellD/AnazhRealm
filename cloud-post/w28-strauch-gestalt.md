@@ -1,5 +1,7 @@
 # Post an w28-strauch-gestalt
 
+## 12.11. 17:40 — GPU-PROBE bdd8411b auf omen-gtx1060: GRÜN · ROT wie an main (bekannt): gate:laub-kante: lod.K1#1 (main gtx: ungemessen) auf omen-gtx1060 in 2880 s (gate:laub-kante BEKANNT 149 s — ROT wie an main (bekannt): lod.K1#1 (main gtx: ungemessen) auf omen-gtx1060 · bild:wiese@0.5 GRÜN 48 s auf omen-gtx1060 · bild:dorf@0.5 GRÜN 77 s auf omen-gtx1060) → probe-post/w28-strauch-gestalt/bdd8411b.md
+
 ## 12.11. 17:00 — GPU-PROBE bdd8411b auf gtx1050-desktop: NACHGEGEBEN in 506 s (gate:laub-kante BEKANNT 300 s — ROT wie an main (bekannt): lod.K1#1 (main radeon: ungemessen) auf gtx1050-desktop · bild:wiese@0.5 NACHGEGEBEN 53 s — NACHGEGEBEN: Karten-Job „echt gtx1050 (GPU-Wände auf der Karte)“ (Lauf 43253602227) wartet auf diesen Läufer (gtx1050-gpu) auf gtx1050-desktop · bild:dorf@0.5 NACHGEGEBEN 2 s — NACHGEGEBEN: Karten-Job „echt gtx1050 (GPU-Wände auf der Karte)“ (Lauf 43253602227) wartet auf diesen Läufer (gtx1050-gpu) auf gtx1050-desktop) → probe-post/w28-strauch-gestalt/bdd8411b.md
 
 ## 12.11. 14:40 — CODE-CHECK ROT am Kopf d11815b8 (Zug-Dienst, ohne LLM)
