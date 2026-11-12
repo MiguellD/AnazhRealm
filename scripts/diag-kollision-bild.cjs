@@ -37,7 +37,9 @@
 //   (S) DER STRAUCH FÜHLT SICH AM HORST (w28-strauch-gestalt): eine Hasel 30 m nördlich der Mess-Wiese — der Leib steht LAUB_M neben
 //       ihrer Mitte (im Laub, außerhalb des Holzes) und rückt in 60 Takten höchstens EINDRING_M; er geht aus 2 m gegen die Mitte
 //       und hält am Holz (die Achse nie näher als Holz + Kapsel − EINDRING_M, nie weiter als + SPALT_M, nie hindurch);
-//       die MUTANTE (die Ruten des Skeletts als Kollision, die Regel bis w28) MUSS den Leib im Laub schieben (GEFANGEN);
+//       die MUTANTE (die Ruten des Skeletts als Kollision, die Regel bis w28) MUSS den Leib im Laub schieben (GEFANGEN); der FARN
+//       daneben (eine Art ohne verholzte Triebe, `HOLZ_AM_BODEN`) trägt keine Box, der Leib geht auf dem Boden durch seine Mitte
+//       (quer ≤ EINDRING_M), die Mutante (sein Bauplan als Kollision) MUSS ihn ablenken, halten oder klettern lassen (GEFANGEN);
 //   (P) kein Page-Error — der EINE Sammler (welt-boot) macht den Lauf ROT mit Namen.
 // `--bild` (physik.K2 Staffel 2, beide Geräte): die Welt zeichnet auf der Karte — das Linsen-Rezept von welt-boot
 // (`linsenWebGpuArgs`) nennt seinen Adapter (`[linse-gpu] <Hersteller>/…`), ein Lauf ohne Karte ist ROT (KEINE KARTE); nach dem
@@ -144,6 +146,15 @@ function strauchUrteil(S) {
         v.push(`(S) WAND AUS LUFT: ${S.wer} — der Leib hält ${S.min} m vor der Mitte, das Holz reicht ${S.holz} m`);
     if (!(S.mutante && S.mutante.laub > EINDRING_M))
         v.push(`LINSE STUMPF: (S) die Ruten als Kollision schoben den Leib im Laub nicht (${S.mutante && S.mutante.laub} m)`);
+    // der Farn: keine Box, der Leib geht auf dem Boden hindurch, quer höchstens EINDRING_M; die Mutante darf das nie
+    const frei = (F) => !!F && F.durch && !F.klettert && F.quer <= EINDRING_M;
+    const F = S.farn;
+    if (!F || F.fehler) v.push(`LEER: (S) keine Farn-Probe (${F && F.fehler})`);
+    else {
+        if (F.blocker > 0 || !frei(F))
+            v.push(`(S) FARN HÄLT: ${F.wer} — ${F.blocker} Boxen, quer ${F.quer} m, ${F.durch ? "durch" : "nicht durch"}${F.klettert ? ", klettert" : ""}`);
+        if (frei(F.mutante)) v.push("LINSE STUMPF: (S) der Farn mit seinem Bauplan als Kollision ließ den Leib frei durch");
+    }
     return v;
 }
 
@@ -195,7 +206,7 @@ function selbsttest() {
             karte: { vendor: "google" },
             schuss: { px: { wagen: 5120, gestossen: 2210 } },
         },
-        strauch: { wer: "busch_hazel@-280.4/-1075.6", wr: 0.35, breite: [0.116, 0.116], holz: 0.058, laub: 0, min: 0.408, durch: false, mutante: { breite: [1.299, 1.427], laub: 0.041 } },
+        strauch: { wer: "busch_hazel@-280.4/-1075.6", wr: 0.35, breite: [0.116, 0.116], holz: 0.058, laub: 0, min: 0.408, durch: false, mutante: { breite: [1.299, 1.427], laub: 0.041 }, farn: { wer: "farn_busch@-272.4/-1075.6", blocker: 0, quer: 0, durch: true, klettert: false, mutante: { blocker: 44, quer: 0.41, durch: false, klettert: false } } },
     };
     const fehler = urteil(gruen).map((x) => "grün: " + x);
     const klon = () => jsonKlon(gruen);
@@ -232,6 +243,10 @@ function selbsttest() {
             [(b) => (b.strauch.min = 0.9), /WAND AUS LUFT: .*hält 0.9 m/],
             [(b) => (b.strauch.mutante.laub = 0), /LINSE STUMPF: \(S\)/],
             [(b) => delete b.strauch, /LEER: \(S\)/],
+            [(b) => (b.strauch.farn.blocker = 44), /FARN HÄLT: farn_busch@-272.4\/-1075.6 — 44 Boxen/],
+            [(b) => (b.strauch.farn.klettert = true), /FARN HÄLT: .*klettert/],
+            [(b) => (b.strauch.farn.mutante = { blocker: 44, quer: 0, durch: true, klettert: false }), /LINSE STUMPF: \(S\) der Farn/],
+            [(b) => delete b.strauch.farn, /LEER: \(S\) keine Farn-Probe/],
         ].map(([tat, muss]) => [muss.source, tat, muss]),
         urteil,
         { fehler, klon }
@@ -881,6 +896,44 @@ async function strauch(K) {
         r._populateBlockerAABBs(e);
         r.removeArchitecture(e);
     }
+    // DER FARN (das Holz am Boden: eine Art ohne verholzte Triebe trägt keine Kollision) 8 m östlich der Hasel: der Leib geht aus
+    // 2 m westlich durch seine Mitte — seine Boxen, sein Versatz quer zur Bahn, ob er auf dem Boden hindurchkam (nie kletternd);
+    // die Mutante (der Bauplan als Kollision, die Regel bis w28) MUSS ihn ablenken, halten oder klettern lassen
+    const [fx, fz] = [sx + 8, sz];
+    const fKey = st.blueprints.farn_busch ? "farn_busch" : r._growTreeBlueprintForSpawn("farn_busch", "kollision-farn");
+    const f = fKey && r.spawnArchitecture(fKey, { x: fx, y: hh(fx, fz), z: fz }, { silent: true, precise: true, seed: 3 });
+    if (!f) return Object.assign(aus, { farn: { fehler: "kein Farn gesetzt (" + fKey + ")" } });
+    const durchFarn = () => {
+        r._populateBlockerAABBs(f);
+        pm.position.set(fx - 2, hh(fx - 2, fz) + A.PLAYER_FOOT_OFFSET + 0.05, fz);
+        st._fixedSimPos = null;
+        if (st.playerVel) st.playerVel.setValue(0, 0, 0);
+        st.yaw = Math.PI / 2;
+        Object.assign(halt, { vor: true, sprint: false });
+        let [quer, durch, klettert] = [0, false, false];
+        try {
+            for (let i = 0; i < 300 && !durch; i++) {
+                takt();
+                const [x, z] = [pm.position.x, pm.position.z];
+                quer = Math.max(quer, Math.abs(z - fz));
+                klettert = klettert || pm.position.y - A.PLAYER_FOOT_OFFSET > hh(x, z) + A.PLAYER_GROUND_SNAP + 0.05;
+                durch = x > fx + 1;
+            }
+        } finally {
+            Object.assign(halt, { vor: false, sprint: false });
+        }
+        return { blocker: (f.blockerAABBs || []).length, quer: +quer.toFixed(3), durch, klettert };
+    };
+    aus.farn = Object.assign({ wer: `farn_busch@${fx.toFixed(1)}/${fz.toFixed(1)}` }, durchFarn());
+    r._baumGestaltTeile = function (en) {
+        return en === f ? false : roh.call(this, en);
+    };
+    try {
+        aus.farn.mutante = durchFarn();
+    } finally {
+        r._baumGestaltTeile = roh;
+        r.removeArchitecture(f);
+    }
     return aus;
 }
 
@@ -896,8 +949,9 @@ async function strauch(K) {
         await page.evaluate(`window.lok = ${lok}; window.aussen = ${aussen}; window.zuBox = ${zuBox};`);
         const K = { mess: messort("wiese"), R: 150, SEITE_M, OBEN_ANTEIL, KOERPER_BAND_M, FEST, STRENG, exemplare: PFLICHT_EXEMPLARE };
         befund = await page.evaluate(probe, Object.assign(K, { FALL_M, HINDERNISSE, TAKTE, UEBER_VMAX, SPALT_M, BILD }));
-        befund.tempo = Object.assign(await page.evaluate(tempo, K), { karte: browser.adapter });
+        // (S) vor dem Tempo, auf der Welt der Zählung: nach dem Tempo (Ritt, Stöße, eigene Takt-Uhr) rückte der Leib im Laub 43 m
         befund.strauch = await page.evaluate(strauch, { mess: K.mess, LAUB_M });
+        befund.tempo = Object.assign(await page.evaluate(tempo, K), { karte: browser.adapter });
     } catch (e) {
         befund = { fehler: fehlerText(e) };
     }
@@ -925,6 +979,15 @@ async function strauch(K) {
                 `${SS.min} m vor der Mitte${SS.durch ? " (DURCH)" : ""} · Mutante (Ruten ${SS.mutante.breite.join(" × ")} m) im Laub ` +
                 `${SS.mutante.laub} m${SS.mutante.laub > EINDRING_M ? " → GEFANGEN" : " → ENTKOMMEN"}`
         );
+    const FF = SS.farn || {};
+    if (FF.mutante) {
+        const M = FF.mutante;
+        const gefangen = !(M.durch && !M.klettert && M.quer <= EINDRING_M);
+        console.log(
+            `  (S) Farn ${FF.wer}: ${FF.blocker} Boxen · der Leib geht ${FF.durch ? "hindurch" : "NICHT hindurch"}, quer ${FF.quer} m · ` +
+                `Mutante (Bauplan, ${M.blocker} Boxen) quer ${M.quer} m${M.klettert ? ", klettert" : ""}${M.durch ? "" : ", gehalten"}${gefangen ? " → GEFANGEN" : " → ENTKOMMEN"}`
+        );
+    }
     // das Beweisbild des Stoßes (`--bild`; KOLLISION_BILD_PNG: die Datei, in die es geht)
     if (S?.png && process.env.KOLLISION_BILD_PNG)
         pngDatei(process.env.KOLLISION_BILD_PNG, S.png);
