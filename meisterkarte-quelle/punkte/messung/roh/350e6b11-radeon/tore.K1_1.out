@@ -1,0 +1,331 @@
+$ C:\Program Files\nodejs\node.exe -e (async function seiteLauf() {
+const fs = require("fs");
+const path = require("path");
+const [aus, port, sek, artText] = process.argv.slice(1);
+const W = Number(port) + 20000;
+const WB = require(path.resolve("scripts/lib/welt-boot.cjs"));
+const t0 = Date.now();
+const uhr = () => ((Date.now() - t0) / 1000).toFixed(1);
+const H = { aus, port: Number(port), W, sek: Number(process.env.PUNKTE_PROBE_DECKEL_S) || Number(sek), WB, ende: [] };
+H.ruf = async (weg, o) => {
+const a = await WB.werkbankRuf(W, weg, o || {});
+if (!a || typeof a.fehler === "string" || a.roh !== undefined) throw new Error(weg + ": " + JSON.stringify(a).slice(0, 400));
+return a;
+};
+H.seite = async (code) => (await H.ruf("/eval", { code })).ergebnis;
+H.schritt = (n) => console.log("@@PUNKTE@@ ZEIT " + n + " " + uhr() + " s");
+H.quelle = (datei, namen, mit = {}, extra = "") => {
+const acorn = require(path.resolve("node_modules/acorn"));
+const t = fs.readFileSync(path.resolve(datei), "utf8");
+const teile = [];
+const da = new Set();
+for (const n of acorn.parse(t, { ecmaVersion: "latest", sourceType: "script", allowHashBang: true }).body) {
+const je = n.type === "FunctionDeclaration" ? [n.id.name] : n.type === "VariableDeclaration" ? n.declarations.map((d) => d.id.name) : [];
+if (!je.some((x) => namen.includes(x))) continue;
+teile.push(t.slice(n.start, n.end));
+je.forEach((x) => da.add(x));
+}
+const fehlt = namen.filter((x) => !da.has(x));
+if (fehlt.length) throw new Error(datei + " trägt " + fehlt.join(", ") + " nicht (mehr) auf der obersten Ebene");
+const k = Object.keys(mit);
+return new Function(...k, "require", teile.join("\n") + "\nreturn { " + namen.join(", ") + (extra ? ", " + extra : "") + " };")(...k.map((x) => mit[x]), require);
+};
+H.cdp = async () => {
+if (H.page) return H.page;
+const pp = require(path.resolve("node_modules/puppeteer"));
+const marke = (d) => path.join(d, "DevToolsActivePort");
+const st = await H.ruf("/status", {});
+const dirs = [st && st.boot && st.boot.profil].filter((d) => d && fs.existsSync(marke(d)));
+for (const d of dirs) {
+const [p, weg] = fs.readFileSync(marke(d), "utf8").split(/\r?\n/);
+let b = null;
+try {
+b = await pp.connect({ browserWSEndpoint: "ws://127.0.0.1:" + p + weg, defaultViewport: null, protocolTimeout: H.sek * 1000 });
+} catch (_e) {
+continue;
+}
+const alle = (await b.pages()).filter((x) => /\/index\.html/.test(x.url()));
+const seite = alle.find((x) => x.url().includes(":" + port + "/")) || (alle.length === 1 ? alle[0] : null);
+if (!seite) {
+await b.disconnect();
+continue;
+}
+Object.assign(H, { browser: b, profil: d, page: seite });
+return seite;
+}
+throw new Error("kein Browser der Sitzung: /status nennt " + (st && st.boot && st.boot.profil ? "kein DevToolsActivePort in " + st.boot.profil : "kein Profil der Werkbank"));
+};
+H.frist = (s = H.sek - 6) => {
+H.fristS = Math.max(5, s);
+return H.seite("window.__probeFrist = false; const f = performance.now() + " + H.fristS * 1000 + "; window.__probeFristAlt = window.__probeFristAlt || {}; " +
+"for (const m of [\"_gameLoopTick\", \"_loopFixedStep\"]) { const alt = r[m]; if (!(m in window.__probeFristAlt)) window.__probeFristAlt[m] = Object.prototype.hasOwnProperty.call(r, m) ? alt : null; " +
+"r[m] = function () { if (performance.now() > f) { window.__probeFrist = true; throw new Error(\"die Frist der Probe\"); } return alt.apply(this, arguments); }; } return 1;");
+};
+const log = process.env.PUNKTE_SITZUNG_LOG && fs.existsSync(process.env.PUNKTE_SITZUNG_LOG) ? fs.readFileSync(process.env.PUNKTE_SITZUNG_LOG, "utf8") : "";
+for (const z of log.split(/\r?\n/)) if (/^\[linse-gpu\] /.test(z)) console.log(z);
+let code = 0;
+try {
+if (!(H.sek > 6)) throw new Error("der Deckel des Laufs fehlt (argv „" + sek + "“: der Läufer ersetzt den Platzhalter SEK)");
+code = (await eval("(" + artText + ")")(H)) || 0;
+} catch (e) {
+console.log("@@PUNKTE@@ FEHLER " + String((e && e.stack) || e).split("\n").slice(0, 4).join(" | ").slice(0, 600));
+code = 2;
+}
+for (const f of H.ende) await Promise.resolve().then(f).catch(() => {});
+if (H.browser) await H.browser.disconnect().catch(() => {});
+const riss = await H.seite("const alt = window.__probeFristAlt || {}; for (const m of Object.keys(alt)) { if (alt[m]) r[m] = alt[m]; else delete r[m]; } " +
+"delete window.__probeFristAlt; const riss = window.__probeFrist === true; window.__probeFrist = false; return riss;").catch(() => false);
+if (riss === true) {
+console.log("@@PUNKTE@@ FRIST " + H.fristS + " s der Probe gerissen (Deckel " + H.sek + " s): jeder Takt danach warf");
+code = code || 3;
+}
+console.log("@@PUNKTE@@ PROBE " + uhr() + " s · Exit " + code);
+process.exit(code);
+})() C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\350e6b11-radeon\tore.K1_1.json 7804 123 async function toreK1Seite(H) {
+const GANG = async function toreK1Gang(o) {
+const R = window.anazhRealm;
+const jetzt = () => performance.now();
+const rahmen = () => new Promise(requestAnimationFrame);
+const warte = async (f, ms, was) => {
+const t0 = jetzt();
+for (;;) {
+if (f()) return true;
+if (jetzt() - t0 > ms) throw new Error("nach " + ms + " ms nicht: " + was);
+await rahmen();
+}
+};
+const lumaVon = (c) => (0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]) / 255;
+const schirmEl = () => document.getElementById("ladeschirm");
+if (o.schritt === "an") {
+const el = schirmEl();
+let schirmLuma = null;
+if (el) {
+const cs = getComputedStyle(el);
+const bg = cs.backgroundImage;
+const lin = bg.lastIndexOf("linear-gradient") >= 0 ? bg.slice(bg.lastIndexOf("linear-gradient")) : "";
+const c = [...lin.matchAll(/rgba?\(([^)]+)\)/g)].map((m) => m[1].split(",").map(Number)).filter((x) => x.length < 4 || x[3] >= 0.99);
+const b = (/rgba?\(([^)]+)\)/.exec(cs.backgroundColor) || [])[1];
+const bc = b ? b.split(",").map(Number) : null;
+schirmLuma = c.length ? c.reduce((s, x) => s + lumaVon(x), 0) / c.length : bc && (bc.length < 4 || bc[3] > 0) ? lumaVon(bc) : null;
+}
+window.__loop(1);
+await window.__weltDa((r) => r.state._weltbildDa > 0);
+const K = (window.__torK1 = { B: [], laeufe: [], lauf: null, halte: false, an: true, vorT: null, schirmLuma, heim: R.state.worldMeta.worldId, luecken: [] });
+const bild = () => {
+if (!K.an) return;
+const n = jetzt();
+const st = R.state;
+if (K.halte) st.verbTafel.gehalten.vor = true;
+if (K.sprint) st.verbTafel.gehalten.sprint = true;
+const s = schirmEl();
+const p = st.playerMesh ? st.playerMesh.position : null;
+const sb = s && !s.hidden ? s.querySelector("canvas") : null;
+let schirmL = null;
+if (sb && sb.width > 0 && getComputedStyle(sb).display !== "none") {
+K.kg = K.kg || Object.assign(document.createElement("canvas"), { width: 8, height: 5 }).getContext("2d", { willReadFrequently: true });
+K.kg.drawImage(sb, 0, 0, 8, 5);
+const d = K.kg.getImageData(0, 0, 8, 5).data;
+schirmL = 0;
+for (let i = 0; i < 40; i++) schirmL += lumaVon([d[4 * i], d[4 * i + 1], d[4 * i + 2]]) / 40;
+}
+K.B.push({
+t: n,
+dt: K.vorT == null ? 0 : n - K.vorT,
+nr: K.lauf ? K.lauf.nr : -1,
+welt: st.worldMeta ? st.worldMeta.worldId : null,
+tausch: !!R._weltTausch,
+schirm: s && !s.hidden ? +getComputedStyle(s).opacity : 0,
+schirmL,
+x: p ? p.x : NaN,
+z: p ? p.z : NaN,
+bmp: K.lauf && K.lauf.t0 != null ? createImageBitmap(st.renderer.domElement, { resizeWidth: 32, resizeHeight: 18 }).catch(() => null) : null,
+});
+if (K.luecken && K.lauf && s && !s.hidden && K.B.length % 10 === 0 && !R._weltTausch) {
+let l = "?";
+try { l = R._weltbildLuecken().map((x) => x.satz).join(" · "); } catch (e) { l = "!" + e.message; }
+const v = K.luecken[K.luecken.length - 1];
+if (!v || v.l !== l || v.nr !== K.lauf.nr) K.luecken.push({ nr: K.lauf.nr, t: n, l });
+}
+K.vorT = n;
+requestAnimationFrame(bild);
+};
+requestAnimationFrame(bild);
+const hol = R.obtainPortalForWorld(o.gesetz || "ferne");
+if (!hol || !hol.ok) throw new Error("obtainPortalForWorld " + JSON.stringify(hol));
+const st = R.state;
+const p = st.playerMesh.position;
+const g = st.yaw;
+const x = p.x + Math.sin(g) * 5;
+const z = p.z + Math.cos(g) * 5;
+const e = R.spawnArchitecture(hol.blueprint, { x, y: R.getTerrainHeightAt(x, z), z }, { id: "tore-k1-" + Math.round(jetzt()), precise: true, rotationY: g });
+if (!e) throw new Error("das Tor in die Ferne steht nicht");
+K.erstesTor = e.id;
+for (let i = 0; i < 30; i++) await rahmen();
+window.__loop();
+return { tor: e.id, heim: K.heim.slice(0, 8), schirmLuma };
+}
+const K = window.__torK1;
+if (!K) throw new Error("der Gang ist nicht angelegt (schritt an)");
+if (o.schritt === "lauf") {
+const vorig = K.laeufe[K.laeufe.length - 1];
+const ziel = vorig ? vorig.von : null;
+const tor = !vorig
+? (R.state.architectures || []).find((a) => a && a.id === K.erstesTor)
+: (R.state.architectures || []).find((a) => a && a.affordances && a.affordances.isPortal && a.portalMeta && a.portalMeta.weltId === ziel);
+if (!tor) {
+const F = { nr: K.laeufe.length, sicht: o.sicht, von: R.state.worldMeta.worldId, ziel, geboren: !vorig, t0: null, fehler: "kein Tor nach " + (ziel ? ziel.slice(0, 8) : "der Ferne") + " in " + R.state.worldMeta.worldId.slice(0, 8) };
+K.laeufe.push(F);
+return { nr: F.nr, von: F.von.slice(0, 8), ziel: null, ms: null, fehler: F.fehler };
+}
+window.__loop(1);
+R.setCameraMode(o.sicht);
+const p = R.state.playerMesh.position;
+const weg = () => Math.hypot(tor.position.x - p.x, tor.position.z - p.z);
+const anlauf = (an) => ((K.halte = an), (K.sprint = an), (R.state.verbTafel.gehalten.vor = an), (R.state.verbTafel.gehalten.sprint = an));
+if (weg() < 3) {
+R.state.yaw = Math.atan2(p.x - tor.position.x, p.z - tor.position.z);
+anlauf(true);
+await warte(() => weg() >= 3, 3000, "aus dem Tor getreten").catch(() => null);
+anlauf(false);
+for (let i = 0; i < 5; i++) await rahmen();
+}
+R.state.yaw = Math.atan2(tor.position.x - p.x, tor.position.z - p.z);
+const pm = tor.portalMeta || {};
+const L = { nr: K.laeufe.length, sicht: o.sicht, von: R.state.worldMeta.worldId, tor: tor.id, ziel: pm.weltId || null, geboren: !pm.weltId, t0: null };
+K.lauf = L;
+L.start = jetzt();
+const proto = Object.getPrototypeOf(R).enterPortal;
+R.enterPortal = function (e) {
+if (L.t0 == null) (L.t0 = jetzt()), (K.sprint = false), (R.state.verbTafel.gehalten.sprint = false);
+return proto.call(this, e);
+};
+K.halte = K.sprint = true;
+try {
+await warte(() => L.t0 != null, 15000, "die Apertur gekreuzt (enterPortal)");
+if (Object.prototype.hasOwnProperty.call(R, "enterPortal")) delete R.enterPortal;
+await warte(() => !R._weltTausch && R.state.worldMeta.worldId !== L.von, 60000, "die Ziel-Welt angekommen");
+L.ziel = R.state.worldMeta.worldId;
+L.ankunft = jetzt();
+const a = R.state.playerMesh.position.clone();
+await warte(() => !R._ladeschirmSteht() && Math.hypot(R.state.playerMesh.position.x - a.x, R.state.playerMesh.position.z - a.z) > 0.3, 30000, "der Spieler geht in der Ziel-Welt");
+for (let i = 0; i < 12; i++) await rahmen();
+} catch (x) {
+L.fehler = String((x && x.message) || x).split("\n")[0];
+} finally {
+if (Object.prototype.hasOwnProperty.call(R, "enterPortal")) delete R.enterPortal;
+K.halte = K.sprint = false;
+R.state.verbTafel.gehalten.vor = R.state.verbTafel.gehalten.sprint = false;
+L.ende = jetzt();
+K.lauf = null;
+K.laeufe.push(L);
+}
+for (let i = 0; i < 5; i++) await rahmen();
+window.__loop();
+return { nr: L.nr, von: L.von.slice(0, 8), ziel: L.ziel && L.ziel.slice(0, 8), ms: L.ende && L.t0 ? Math.round(L.ende - L.t0) : null, fehler: L.fehler || null };
+}
+K.an = false;
+const k = document.createElement("canvas");
+k.width = 32;
+k.height = 18;
+const gx = k.getContext("2d", { willReadFrequently: true });
+for (const f of K.B) {
+if (!f.bmp) continue;
+const bm = await f.bmp;
+f.bmp = null;
+if (!bm) continue;
+gx.clearRect(0, 0, 32, 18);
+gx.drawImage(bm, 0, 0);
+bm.close();
+const d = gx.getImageData(0, 0, 32, 18).data;
+const l = new Float32Array(576);
+let s = 0;
+for (let i = 0; i < 576; i++) s += l[i] = lumaVon([d[4 * i], d[4 * i + 1], d[4 * i + 2]]);
+f.l = l;
+f.luma = s / 576;
+}
+const SL = K.schirmLuma;
+const laeufe = K.laeufe.map((L) => {
+const z = K.B.filter((f) => f.nr === L.nr && L.t0 != null && f.t >= L.t0);
+const ankunft = z.find((f) => f.welt === L.ziel && !f.tausch && f.l);
+let t1 = null;
+let prev = null;
+for (const f of z) {
+if (ankunft && f.t > ankunft.t && f.welt === L.ziel && !f.tausch && f.schirm < 0.05 && f.l && prev &&
+Math.hypot(f.x - prev.x, f.z - prev.z) > 0.005 && Math.hypot(f.x - ankunft.x, f.z - ankunft.z) > 0.05) {
+let dsum = 0;
+for (let i = 0; i < 576; i++) dsum += Math.abs(f.l[i] - ankunft.l[i]);
+if (dsum / 576 > 0.002) {
+t1 = f;
+break;
+}
+}
+prev = f;
+}
+const bis = z.filter((f) => !t1 || f.t <= t1.t);
+const lum = bis.map((f) => (f.luma == null ? null : f.schirm * (f.schirmL != null ? f.schirmL : SL == null ? f.luma : SL) + (1 - f.schirm) * f.luma));
+const bek = lum.filter((v) => v != null);
+const dts = bis.slice(1).map((f) => f.dt);
+let wechsel = 0;
+let wo = L.von;
+for (const f of z) if (f.welt && f.welt !== wo) (wechsel++, (wo = f.welt));
+return {
+nr: L.nr,
+sicht: L.sicht === "third" ? "third" : "ego",
+geboren: L.geboren,
+von: L.von && L.von.slice(0, 8),
+ziel: L.ziel && L.ziel.slice(0, 8),
+ms: t1 ? Math.round(t1.t - L.t0) : null,
+anlaufMs: L.t0 ? Math.round(L.t0 - L.start) : null,
+ankunftMs: L.ankunft && L.t0 ? Math.round(L.ankunft - L.t0) : null,
+schirmMs: Math.round(bis.filter((f) => f.schirm >= 0.05).reduce((s, f) => s + f.dt, 0)),
+bilder: bis.length,
+lumaMin: bek.length ? +Math.min(...bek).toFixed(3) : null,
+lumaMax: bek.length ? +Math.max(...bek).toFixed(3) : null,
+dunkel: bek.filter((v) => v < 0.05).length,
+hell: bek.filter((v) => v > 0.95).length,
+ohneBild: lum.length - bek.length,
+frameMax: dts.length ? Math.round(Math.max(...dts)) : null,
+ueber100: dts.filter((v) => v > 100).length,
+wechsel,
+fehler: L.fehler || null,
+};
+});
+window.__torK1 = null;
+const daheim = R.state.worldMeta.worldId === K.heim;
+if (R.state.worldMeta.worldId !== K.heim && !R._weltTausch) {
+window.__loop(1);
+await Promise.race([R._weltWechsel(K.heim).then(() => window.__weltDa((r) => r.state._weltbildDa > 0)), new Promise((ok) => setTimeout(ok, 20000))]).catch(() => null);
+}
+window.__loop();
+const luecken = K.luecken.map((v) => { const L = K.laeufe[v.nr]; return [v.nr, L && L.t0 ? Math.round(v.t - L.t0) : null, v.l.slice(0, 160)]; }) ;
+return { luecken, schirmLuma: SL == null ? null : +SL.toFixed(3), heim: daheim, laeufe };
+};
+await H.frist();
+const lauf = (o) => H.seite("return (" + GANG + ")(" + JSON.stringify(o) + ");");
+const an = await lauf({ schritt: "an" });
+H.schritt("an " + an.tor);
+for (const sicht of ["first", "first", "third", "first", "third", "first"]) {
+const l = await lauf({ schritt: "lauf", sicht });
+H.schritt("lauf " + l.nr + " " + l.von + " → " + l.ziel + (l.fehler ? " " + l.fehler : ""));
+if (l.fehler) break;
+}
+const e = await lauf({ schritt: "ende" });
+H.schritt("ende");
+console.log("TOR_K1 " + JSON.stringify(e));
+return 0;
+}
+[linse-gpu] amd/rdna-3
+@@PUNKTE@@ ZEIT an tore-k1-53081 1.3 s
+@@PUNKTE@@ ZEIT lauf 0 3faeb68d → 6386b626 11.7 s
+@@PUNKTE@@ ZEIT lauf 1 6386b626 → 3faeb68d 19.4 s
+@@PUNKTE@@ ZEIT lauf 2 3faeb68d → 6386b626 28.7 s
+@@PUNKTE@@ ZEIT lauf 3 6386b626 → 3faeb68d 33.7 s
+@@PUNKTE@@ ZEIT lauf 4 3faeb68d → 6386b626 41.9 s
+@@PUNKTE@@ ZEIT lauf 5 6386b626 → 3faeb68d 47.4 s
+@@PUNKTE@@ ZEIT ende 49.1 s
+TOR_K1 {"luecken":[[0,3241,"der Boden wächst (14 Stücke im Bild) · der Horizont wächst (58 %) · 1 Wald-Böden werden bepflanzt · 2 Wald-Stücke warten auf ihre Gestalt"],[0,4517,"der Horizont wächst (84 %) · 2 Bäume und Bauten wachsen · 48 Bäume werden gepflanzt"],[0,5821,"6 Programme des Bilds entstehen · 45 Bäume und Bauten wachsen"],[0,6510,"2 Programme des Bilds entstehen"],[0,7540,"1 Programm des Bilds entsteht"],[0,8281,"der Horizont wird geteilt · 4 Wald-Stücke warten auf ihre Gestalt"],[1,1811,"der Boden wächst (8 Stücke im Bild) · der Horizont wächst (63 %) · 5 Bäume und Bauten wachsen · 82 Bäume werden gepflanzt · 1 Wald-Stücke warten auf ihre Gestal"],[1,3045,"5 Programme des Bilds entstehen"],[1,3940,"4 Wald-Stücke warten auf ihre Gestalt"],[2,1020,"der Boden wächst (12 Stücke im Bild) · der Horizont wächst (0 %) · das Licht des Orts wird gemessen · 4 Wald-Stücke warten auf ihre Gestalt"],[2,4724,"der Boden wächst (11 Stücke im Bild) · der Horizont wächst (35 %) · das Licht des Orts wird gemessen · 1 Wald-Böden werden bepflanzt · 3 Wald-Stücke warten auf "],[2,5804,"der Horizont wächst (91 %) · 1 Bäume und Bauten wachsen · 34 Bäume werden gepflanzt"],[2,6806,"3 Programme des Bilds entstehen"],[2,7905,"der Horizont wird geteilt · 1 Programm des Bilds entsteht · 3 Wald-Stücke warten auf ihre Gestalt"],[3,1578,"der Boden wächst (12 Stücke im Bild) · der Horizont wächst (66 %) · 5 Bäume und Bauten wachsen · 1 Wald-Stücke warten auf ihre Gestalt"],[3,2604,""],[3,3416,"der Horizont wird geteilt · 4 Wald-Stücke warten auf ihre Gestalt"],[4,2645,"der Boden wächst (17 Stücke im Bild) · der Horizont wächst (0 %) · das Licht des Orts wird gemessen · 4 Wald-Stücke warten auf ihre Gestalt"],[4,4522,"der Boden wächst (10 Stücke im Bild) · der Horizont wächst (58 %) · 2 Wald-Stücke warten auf ihre Gestalt"],[4,5677,"der Horizont wird gemalt"],[4,6611,"der Horizont wird geteilt · 4 Wald-Stücke warten auf ihre Gestalt"],[5,897,"der Boden wächst (16 Stücke im Bild) · der Horizont wächst (31 %) · das Licht des Orts wird gemessen · 1 Wald-Böden werden bepflanzt · 3 Wald-Stücke warten auf "],[5,2072,"der Horizont wächst (78 %) · 1 Bäume und Bauten wachsen · 85 Bäume werden gepflanzt"],[5,2929,"4 Programme des Bilds entstehen"],[5,3933,"4 Wald-Stücke warten auf ihre Gestalt"]],"schirmLuma":0.043,"heim":true,"laeufe":[{"nr":0,"sicht":"ego","geboren":true,"von":"3faeb68d","ziel":"6386b626","ms":8500,"anlaufMs":1056,"ankunftMs":2528,"schirmMs":8410,"bilder":180,"lumaMin":0.043,"lumaMax":0.664,"dunkel":176,"hell":0,"ohneBild":0,"frameMax":1709,"ueber100":35,"wechsel":1,"fehler":null},{"nr":1,"sicht":"ego","geboren":false,"von":"6386b626","ziel":"3faeb68d","ms":4420,"anlaufMs":2593,"ankunftMs":924,"schirmMs":4315,"bilder":53,"lumaMin":0.043,"lumaMax":0.3,"dunkel":48,"hell":0,"ohneBild":0,"frameMax":335,"ueber100":27,"wechsel":1,"fehler":null},{"nr":2,"sicht":"third","geboren":false,"von":"3faeb68d","ziel":"6386b626","ms":7725,"anlaufMs":863,"ankunftMs":1020,"schirmMs":7625,"bilder":247,"lumaMin":0.043,"lumaMax":0.737,"dunkel":242,"hell":0,"ohneBild":0,"frameMax":393,"ueber100":35,"wechsel":3,"fehler":null},{"nr":3,"sicht":"ego","geboren":false,"von":"6386b626","ziel":"3faeb68d","ms":3615,"anlaufMs":829,"ankunftMs":815,"schirmMs":3577,"bilder":48,"lumaMin":0.043,"lumaMax":0.286,"dunkel":42,"hell":0,"ohneBild":0,"frameMax":284,"ueber100":18,"wechsel":1,"fehler":null},{"nr":4,"sicht":"third","geboren":false,"von":"3faeb68d","ziel":"6386b626","ms":7029,"anlaufMs":669,"ankunftMs":926,"schirmMs":6983,"bilder":239,"lumaMin":0.043,"lumaMax":0.73,"dunkel":233,"hell":0,"ohneBild":0,"frameMax":382,"ueber100":29,"wechsel":3,"fehler":null},{"nr":5,"sicht":"ego","geboren":false,"von":"6386b626","ziel":"3faeb68d","ms":4091,"anlaufMs":727,"ankunftMs":788,"schirmMs":3955,"bilder":49,"lumaMin":0.043,"lumaMax":0.298,"dunkel":43,"hell":0,"ohneBild":0,"frameMax":302,"ueber100":23,"wechsel":1,"fehler":null}]}
+@@PUNKTE@@ PROBE 49.2 s · Exit 0
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3
+[linse-gpu] amd/rdna-3

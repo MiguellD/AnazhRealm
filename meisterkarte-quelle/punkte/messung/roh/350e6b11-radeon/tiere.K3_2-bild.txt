@@ -1,0 +1,7 @@
+{
+ "ms": 18670,
+ "fehler": "ABNAHME ROT [Ziel gang nicht gezeichnet: gang fehlt (keine Gestalt binnen 1.5 m)] · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.24 m · Luma 66.1 σ 33.3 schwarz 0.1 % weiß 0.0 % · Stand 18.546.267 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Blick-Wahl 42 Posen · ROT-Bild C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\350e6b11-radeon\\tiere.K3_2-gang-rot.png",
+ "stapel": [
+  "at IncomingMessage.<anonymous> (C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\punkte-radeon\\scripts\\werkbank.cjs:2003:46)"
+ ]
+}

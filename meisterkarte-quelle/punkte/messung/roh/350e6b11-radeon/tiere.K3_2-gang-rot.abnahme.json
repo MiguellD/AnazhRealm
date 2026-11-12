@@ -1,0 +1,741 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.267",
+  "sha": "350e6b11e9f0a8c43e16a490095ff80bfb03ec64"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 0
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 5.12,
+   "deckung": 0,
+   "taeter": {}
+  },
+  "leib": {
+   "radius": 5.12,
+   "deckung": 0,
+   "taeter": {}
+  }
+ },
+ "ziel": {
+  "name": "gang",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "leiber": null,
+  "abstand": 10.24,
+  "gestalt": [
+   "gang fehlt (keine Gestalt binnen 1.5 m)"
+  ],
+  "gezeichnet": false
+ },
+ "pose": {
+  "kamera": [
+   0.32,
+   92.31,
+   14
+  ],
+  "blick": [
+   0,
+   -0.21672,
+   0.97623
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 66.1,
+  "sigma": 33.3,
+  "schwarz": 0.0007,
+  "weiss": 0
+ },
+ "wahl": {
+  "versucht": 42,
+  "gewaehlt": null,
+  "posen": [
+   {
+    "k": 0,
+    "kamera": [
+     0.32,
+     92.31,
+     14
+    ],
+    "rot": [
+     "Ziel gang nicht gezeichnet: gang fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 6
+   },
+   {
+    "k": 35,
+    "kamera": [
+     5.863,
+     99.597,
+     20.8
+    ],
+    "rot": [
+     "Ziel gang nicht gezeichnet: gang fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 1
+   },
+   {
+    "k": 28,
+    "kamera": [
+     0.32,
+     99.59,
+     17.6
+    ],
+    "rot": [
+     "Ziel gang nicht gezeichnet: gang fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 1
+   },
+   {
+    "k": 29,
+    "kamera": [
+     1.976,
+     99.59,
+     17.818
+    ],
+    "rot": [
+     "Ziel gang nicht gezeichnet: gang fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 1
+   },
+   {
+    "k": 30,
+    "kamera": [
+     -1.336,
+     99.59,
+     17.818
+    ],
+    "rot": [
+     "Ziel gang nicht gezeichnet: gang fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 0
+   },
+   {
+    "k": 31,
+    "kamera": [
+     3.52,
+     99.59,
+     18.457
+    ],
+    "rot": [
+     "Ziel gang nicht gezeichnet: gang fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 0
+   },
+   {
+    "k": 32,
+    "kamera": [
+     -2.88,
+     99.59,
+     18.457
+    ],
+    "rot": [
+     "Ziel gang nicht gezeichnet: gang fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 0
+   },
+   {
+    "k": 33,
+    "kamera": [
+     4.845,
+     99.59,
+     19.475
+    ],
+    "rot": [
+     "Ziel gang nicht gezeichnet: gang fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 0
+   },
+   {
+    "k": 34,
+    "kamera": [
+     -4.205,
+     99.59,
+     19.475
+    ],
+    "rot": [
+     "Ziel gang nicht gezeichnet: gang fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 2
+   },
+   {
+    "k": 36,
+    "kamera": [
+     -5.223,
+     99.59,
+     20.8
+    ],
+    "rot": [
+     "Ziel gang nicht gezeichnet: gang fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 1
+   },
+   {
+    "k": 39,
+    "kamera": [
+     4.845,
+     99.59,
+     28.525
+    ],
+    "rot": [
+     "Ziel gang nicht gezeichnet: gang fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 0
+   },
+   {
+    "k": 40,
+    "kamera": [
+     -4.205,
+     99.59,
+     28.525
+    ],
+    "rot": [
+     "Ziel gang nicht gezeichnet: gang fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 0
+   },
+   {
+    "k": 41,
+    "kamera": [
+     0.32,
+     99.59,
+     30.4
+    ],
+    "rot": [
+     "Ziel gang nicht gezeichnet: gang fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 0
+   },
+   {
+    "k": 38,
+    "kamera": [
+     -6.08,
+     99.484,
+     24
+    ],
+    "rot": [
+     "Ziel gang nicht gezeichnet: gang fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 0
+   },
+   {
+    "k": 37,
+    "kamera": [
+     6.72,
+     99.389,
+     24
+    ],
+    "rot": [
+     "Ziel gang nicht gezeichnet: gang fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 0
+   },
+   {
+    "k": 21,
+    "kamera": [
+     7.248,
+     95.63,
+     20
+    ],
+    "rot": [
+     "Ziel gang nicht gezeichnet: gang fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 0
+   },
+   {
+    "k": 19,
+    "kamera": [
+     5.977,
+     95.619,
+     18.343
+    ],
+    "rot": [
+     "Ziel gang nicht gezeichnet: gang fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 0
+   },
+   {
+    "k": 22,
+    "kamera": [
+     -6.608,
+     95.618,
+     20
+    ],
+    "rot": [
+     "Ziel gang nicht gezeichnet: gang fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 0
+   },
+   {
+    "k": 14,
+    "kamera": [
+     0.32,
+     95.59,
+     16
+    ],
+    "rot": [
+     "Ziel gang nicht gezeichnet: gang fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 0
+   },
+   {
+    "k": 15,
+    "kamera": [
+     2.391,
+     95.59,
+     16.273
+    ],
+    "rot": [
+     "Ziel gang nicht gezeichnet: gang fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 0
+   },
+   {
+    "k": 16,
+    "kamera": [
+     -1.751,
+     95.59,
+     16.273
+    ],
+    "rot": [
+     "Ziel gang nicht gezeichnet: gang fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 0
+   },
+   {
+    "k": 17,
+    "kamera": [
+     4.32,
+     95.59,
+     17.072
+    ],
+    "rot": [
+     "Ziel gang nicht gezeichnet: gang fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 0
+   },
+   {
+    "k": 18,
+    "kamera": [
+     -3.68,
+     95.59,
+     17.072
+    ],
+    "rot": [
+     "Ziel gang nicht gezeichnet: gang fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 0
+   },
+   {
+    "k": 20,
+    "kamera": [
+     -5.337,
+     95.59,
+     18.343
+    ],
+    "rot": [
+     "Ziel gang nicht gezeichnet: gang fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 0
+   },
+   {
+    "k": 26,
+    "kamera": [
+     -5.337,
+     95.59,
+     29.657
+    ],
+    "rot": [
+     "Ziel gang nicht gezeichnet: gang fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 0
+   },
+   {
+    "k": 27,
+    "kamera": [
+     0.32,
+     95.59,
+     32
+    ],
+    "rot": [
+     "Ziel gang nicht gezeichnet: gang fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 0
+   },
+   {
+    "k": 25,
+    "kamera": [
+     5.977,
+     95.364,
+     29.657
+    ],
+    "rot": [
+     "Ziel gang nicht gezeichnet: gang fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 0
+   },
+   {
+    "k": 24,
+    "kamera": [
+     -7.68,
+     95.186,
+     24
+    ],
+    "rot": [
+     "Ziel gang nicht gezeichnet: gang fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 1
+   },
+   {
+    "k": 23,
+    "kamera": [
+     8.32,
+     95.052,
+     24
+    ],
+    "rot": [
+     "Ziel gang nicht gezeichnet: gang fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 0
+   },
+   {
+    "k": 1,
+    "kamera": [
+     2.908,
+     91.789,
+     14.341
+    ],
+    "rot": [
+     "Ziel gang nicht gezeichnet: gang fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 0
+   },
+   {
+    "k": 2,
+    "kamera": [
+     -2.268,
+     91.789,
+     14.341
+    ],
+    "rot": [
+     "Ziel gang nicht gezeichnet: gang fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 0
+   },
+   {
+    "k": 7,
+    "kamera": [
+     8.98,
+     91.671,
+     19
+    ],
+    "rot": [
+     "Ziel gang nicht gezeichnet: gang fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 0
+   },
+   {
+    "k": 3,
+    "kamera": [
+     5.32,
+     91.669,
+     15.34
+    ],
+    "rot": [
+     "Ziel gang nicht gezeichnet: gang fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 0
+   },
+   {
+    "k": 4,
+    "kamera": [
+     -4.68,
+     91.669,
+     15.34
+    ],
+    "rot": [
+     "Ziel gang nicht gezeichnet: gang fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 0
+   },
+   {
+    "k": 8,
+    "kamera": [
+     -8.34,
+     91.659,
+     19
+    ],
+    "rot": [
+     "Ziel gang nicht gezeichnet: gang fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 0
+   },
+   {
+    "k": 13,
+    "kamera": [
+     0.32,
+     91.59,
+     34
+    ],
+    "rot": [
+     "Ziel gang nicht gezeichnet: gang fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 0
+   },
+   {
+    "k": 6,
+    "kamera": [
+     -6.751,
+     91.529,
+     16.929
+    ],
+    "rot": [
+     "Ziel gang nicht gezeichnet: gang fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 0
+   },
+   {
+    "k": 5,
+    "kamera": [
+     7.391,
+     91.432,
+     16.929
+    ],
+    "rot": [
+     "Ziel gang nicht gezeichnet: gang fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 0
+   },
+   {
+    "k": 10,
+    "kamera": [
+     -9.68,
+     91.192,
+     24
+    ],
+    "rot": [
+     "Ziel gang nicht gezeichnet: gang fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 0
+   },
+   {
+    "k": 9,
+    "kamera": [
+     10.32,
+     91.041,
+     24
+    ],
+    "rot": [
+     "Ziel gang nicht gezeichnet: gang fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 0
+   },
+   {
+    "k": 12,
+    "kamera": [
+     -6.751,
+     90.899,
+     31.071
+    ],
+    "rot": [
+     "Ziel gang nicht gezeichnet: gang fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 0
+   },
+   {
+    "k": 11,
+    "kamera": [
+     7.391,
+     90.653,
+     31.071
+    ],
+    "rot": [
+     "Ziel gang nicht gezeichnet: gang fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 0
+   }
+  ],
+  "ms": 20
+ },
+ "ok": false,
+ "zeile": "ABNAHME ROT [Ziel gang nicht gezeichnet: gang fehlt (keine Gestalt binnen 1.5 m)] · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.24 m · Luma 66.1 σ 33.3 schwarz 0.1 % weiß 0.0 % · Stand 18.546.267 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Blick-Wahl 42 Posen",
+ "rot": [
+  {
+   "feld": "ziel.gezeichnet",
+   "grund": "Ziel gang nicht gezeichnet: gang fehlt (keine Gestalt binnen 1.5 m)"
+  }
+ ],
+ "urteil": "ROT",
+ "klasse": {
+  "ausdruck": "^tier:",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 0,
+  "toene": [
+   "tier:baer=255/80/80",
+   "tier:fuchs=80/255/80",
+   "tier:wesen=80/120/255",
+   "tier:wolf=255/220/60"
+  ],
+  "klassen": {
+   "tier:baer": {
+    "objekte": 13,
+    "spiegelTreue": 0.2373,
+    "spiegelEbene": 90.312,
+    "sp": [
+     59,
+     0,
+     0,
+     352.06,
+     352.06,
+     83.54
+    ],
+    "zweiton": 0,
+    "weiss": 0,
+    "wt": 0,
+    "wtZiel": null,
+    "bunt": 16.31,
+    "pixel": 6511,
+    "luma": 30.49,
+    "kante": 0.5226,
+    "kr": 750,
+    "inseln": 0,
+    "frei": 0,
+    "strich": 0.6885,
+    "si": 1976,
+    "bloecke": 61,
+    "glatt": 0.541,
+    "glattDunkel": 0.3939,
+    "nyquist": 0.085,
+    "beta": 2.7277
+   },
+   "tier:fuchs": {
+    "objekte": 11,
+    "spiegelTreue": null,
+    "spiegelEbene": 89.931,
+    "sp": [
+     3,
+     0,
+     0,
+     8301.69,
+     8301.69,
+     -677.39
+    ],
+    "zweiton": 0,
+    "weiss": 0,
+    "wt": 0,
+    "wtZiel": null,
+    "bunt": 27.13,
+    "pixel": 1263,
+    "luma": 55,
+    "kante": 0.3872,
+    "kr": 397,
+    "inseln": 0,
+    "frei": 0,
+    "strich": null,
+    "si": 0,
+    "bloecke": 3,
+    "glatt": 0,
+    "glattDunkel": null,
+    "nyquist": 0.0602,
+    "beta": 2.5714
+   },
+   "tier:wesen": {
+    "objekte": 11,
+    "spiegelTreue": 0.0915,
+    "spiegelEbene": 90.328,
+    "sp": [
+     19,
+     0,
+     0,
+     13.47,
+     13.47,
+     1.23
+    ],
+    "zweiton": 0,
+    "weiss": 0,
+    "wt": 0,
+    "wtZiel": null,
+    "bunt": 25.58,
+    "pixel": 3798,
+    "luma": 43.3,
+    "kante": 0.5367,
+    "kr": 548,
+    "inseln": 0,
+    "frei": 0,
+    "strich": 0.7466,
+    "si": 504,
+    "bloecke": 24,
+    "glatt": 0.25,
+    "glattDunkel": 0,
+    "nyquist": 0.0375,
+    "beta": 3.246
+   },
+   "tier:wolf": {
+    "objekte": 13,
+    "spiegelTreue": null,
+    "spiegelEbene": 90.109,
+    "sp": [
+     6,
+     0,
+     0,
+     33.26,
+     33.26,
+     5.38
+    ],
+    "zweiton": 0,
+    "weiss": 0,
+    "wt": 0,
+    "wtZiel": null,
+    "bunt": 14.68,
+    "pixel": 2856,
+    "luma": 41.12,
+    "kante": 0.464,
+    "kr": 638,
+    "inseln": 0,
+    "frei": 0,
+    "strich": 0.8629,
+    "si": 3,
+    "bloecke": 10,
+    "glatt": 0,
+    "glattDunkel": null,
+    "nyquist": 0.1157,
+    "beta": 2.3576
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\350e6b11-radeon\\tiere.K3_2-gang-rot.maske.png"
+ }
+}
