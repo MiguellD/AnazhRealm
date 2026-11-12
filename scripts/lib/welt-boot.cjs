@@ -576,6 +576,19 @@ const MIME = {
     ".woff2": "font/woff2",
 };
 
+// DER MESS-SERVER LIEFERT WIE DER ECHTE (w28-mess-server-kopf, Labor = Welt): jede Datei trägt die Köpfe des save-servers aus
+// seiner EINEN Quelle (save-server.js `statischerKopf`: ETag des Inhalts, `Cache-Control: no-cache`, COOP/COEP/CORP), die
+// frische Nachfrage bekommt 304 (`frischBeimLeser`). Bis hier sandte er weder Validator noch Regel: Chrome legte bei JEDEM Laden
+// eines Skripts einen neuen Cache-Eintrag an, und laden mehrere Fäden dieselbe URL kurz nacheinander (`voxel-worker.js?v=`: wald,
+// streu, fern, feld), blieben die späteren Anfragen in `HTTP_CACHE_OPEN_OR_CREATE_ENTRY` stehen — die Fäden starteten nie, die
+// Pflanzung des ersten Weltbilds hing, das Bild kam nach 15 s Ruhe ohne Wald. GTX 1050, kalt (Foundry-Platte gefegt, Pipelines
+// kalt), je 21 Boots: ohne Köpfe 16 hängend, mit den Köpfen des echten Servers 1. Geladen wird der echte Server als Modul (er
+// lauscht nur als Hauptprogramm), beim ersten Ruf.
+let echterKopfModul = null;
+function echterKopf() {
+    return echterKopfModul || (echterKopfModul = require(path.join(ROOT, "save-server.js")));
+}
+
 // Der Statik-Server: die Datei unter der Wurzel (`/` heißt `start`, außerhalb 403, fehlt 404); `seiten` liefert eigene Seiten
 // nach Pfad (Text, Puffer, Funktion, auch als Promise), `keinCache` setzt no-store; `wandle(pfad, daten)` ist der EINE Haken der
 // Selbsttests (null heißt 404). Ein Wurf im Haken oder in einer Seite ist 500 und ein Fehler beim Namen.
@@ -616,8 +629,23 @@ function statikServer({ root = ROOT, start = "/index.html", seiten = null, keinC
                 .then(
                     (inhalt) => {
                         if (inhalt == null) return ((res.statusCode = 404), res.end());
-                        res.setHeader("Content-Type", MIME[path.extname(fp)] || "application/octet-stream");
-                        if (keinCache) res.setHeader("Cache-Control", "no-store");
+                        const typ = MIME[path.extname(fp)] || "application/octet-stream";
+                        if (keinCache) {
+                            res.setHeader("Content-Type", typ);
+                            res.setHeader("Cache-Control", "no-store");
+                            return res.end(inhalt);
+                        }
+                        // DER KOPF DES ECHTEN SERVERS (`echterKopf`): ETag des Inhalts, `no-cache`, die Isolation — und 304 ohne
+                        // Körper für die frische Nachfrage, wie save-server.js `sendStaticFile`
+                        const { statischerKopf, frischBeimLeser } = echterKopf();
+                        const kopf = statischerKopf(inhalt, typ);
+                        if (frischBeimLeser(req, kopf.ETag)) {
+                            const ohneTyp = Object.assign({}, kopf);
+                            delete ohneTyp["Content-Type"];
+                            res.writeHead(304, ohneTyp);
+                            return res.end();
+                        }
+                        res.writeHead(200, kopf);
                         res.end(inhalt);
                     },
                     (e) => bruch(res, p, e)
