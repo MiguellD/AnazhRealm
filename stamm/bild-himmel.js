@@ -1132,11 +1132,11 @@ class AnazhRealm_bild_himmel {
         // der Winkel der Sonne in Stufen (`_sonnenWinkel`): Licht, Schatten, Himmelskörper und Luft lesen dieselbe Richtung
         const angle = this._sonnenWinkel(t);
         const sunDir = this._dayNightSunDirection(angle);
-        // Mond-Richtung aus der EINEN Quelle: `_dayNightSunDirection(angle+π)` ist exakt die Formel des
-        // sichtbaren Mond-Meshes (`_updateCelestialBodies`); −sunDir hätte eine andere z-Komponente.
+        // Mond-Richtung aus der EINEN Quelle: der Vollmond steht der Sonne gegenüber (`__weltLicht.mondRichtung` = −sunDir), sein
+        // Licht und sein Körper (`_updateCelestialBodies`) lesen dieselbe Richtung.
         // `lightDir` = der AKTIVE Himmelskörper (Sonne über dem Horizont, sonst Mond) → Richtlicht,
         // Wasser-Glitzer, Gras-Translucency; die Skybox behält sunDir (der Wolken-Glow ist Sonne).
-        const moonDir = this._dayNightSunDirection(angle + Math.PI);
+        const moonDir = sunDir.clone().negate();
         const lightDir = sunDir.y >= 0 ? sunDir : moonDir;
         // DIE EINE TAG-ACHSE (S7): jeder Anwender liest dieselben Kanäle derselben Sonnenhöhe
         const achse = this._tagAchse(sunDir.y);
@@ -1304,17 +1304,27 @@ class AnazhRealm_bild_himmel {
     // 0,5 Mittag), die auch Mond, Sterne, Godrays, Tier-Nacht, Feld-Sonne, Umwelt-Klang und das Brennglas lesen (die Welle
     // L-F schrieb sie ein zweites Mal ohne Stufen aus — die spätere Klassen-Methode hätte die Stufen still überschrieben;
     // Integration V18.536: EINE Methode, jeder Leser ruft sie mit der Tageszeit des Spiels).
+    // DIE BAHN IM JAHR (w28-nacht-licht): die Stufe hält Stunde UND Phase des Jahrs (`phase`, die der Sonnenbahn `__weltLicht.
+    // sonnenRichtung`) — das Jahr dreht das Licht wie die Uhr nur in Stufen; zwischen ihnen liest jeder Leser die Phase der Stufe.
     _sonnenWinkel(t) {
-        const w = t * Math.PI * 2 - Math.PI / 2;
-        const s = this.state._sonne || (this.state._sonne = { winkel: NaN, stufe: 0, stufen: 0 });
+        const w = __weltLicht.sonnenWinkel(t);
+        const s = this.state._sonne || (this.state._sonne = { winkel: NaN, phase: NaN, stufe: 0, stufen: 0 });
+        const p = this._sonnenPhase();
         s.stufe = this._sonnenStufe();
         if (Number.isFinite(s.winkel)) {
-            const a = this._dayNightSunDirection(s.winkel);
-            if (a.dot(this._dayNightSunDirection(w)) >= Math.cos(s.stufe)) return s.winkel;
+            const a = this._dayNightSunDirection(s.winkel, s.phase);
+            if (a.dot(this._dayNightSunDirection(w, p)) >= Math.cos(s.stufe)) return s.winkel;
         }
         s.winkel = w;
+        s.phase = p;
         s.stufen++;
         return w;
+    }
+
+    // DIE PHASE DES JAHRS der Sonnenbahn: die der EINEN Jahres-Uhr (`seasonPhase`, `_tickSeason`)
+    _sonnenPhase() {
+        const p = this.state.seasonPhase;
+        return typeof p === "number" && Number.isFinite(p) ? p : 0.375;
     }
 
     // DIE STUFE der Sonne (Bogenmaß): eine Drehung des Lichts um α verschiebt in der Karte einer Kaskade jede Schatten-Kante
@@ -1352,12 +1362,13 @@ class AnazhRealm_bild_himmel {
         return stufe;
     }
 
-    _dayNightSunDirection(angle) {
-        const sunDirX = Math.cos(angle);
-        const sunDirY = Math.sin(angle);
-        const sunDirZ = Math.sin(angle * 0.5) * 0.4;
-        const sunLen = Math.hypot(sunDirX, sunDirY, sunDirZ) || 1;
-        return new THREE.Vector3(sunDirX / sunLen, sunDirY / sunLen, sunDirZ / sunLen);
+    // DIE RICHTUNG ZUR SONNE zum Winkel der Uhr: die EINE Sonnenbahn (`__weltLicht.sonnenRichtung`, Stunde × Jahr × Breite), die
+    // Phase die der Stufe (`_sonnenWinkel`), sonst die des Jahrs jetzt
+    _dayNightSunDirection(angle, phase) {
+        const s = this.state._sonne;
+        const p = Number.isFinite(phase) ? phase : s && Number.isFinite(s.phase) ? s.phase : this._sonnenPhase();
+        const [x, y, z] = __weltLicht.sonnenRichtung(angle, p);
+        return new THREE.Vector3(x, y, z);
     }
 
     // Die Richtung ZUR Sonne jetzt (Einheitsvektor; y ≤ 0 unter dem Horizont) — dieselbe Quelle wie Licht und Skybox.
@@ -2485,13 +2496,13 @@ class AnazhRealm_bild_himmel {
         // Himmelskörper folgen der KAMERA, nicht dem Welt-Ursprung: hier nur die RICHTUNG (skyOffset)
         // setzen, `_loopRender` addiert pro Frame camera.position. An absoluten Welt-Positionen stünden sie
         // bei fernem Spieler neben/hinter ihm (vom Terrain verdeckt, Mesh ≠ `sunDir`-Lichtrichtung).
+        // die Richtung aus der EINEN Sonnenbahn (`_dayNightSunDirection`, dieselbe wie das Licht) — bis w28-nacht-licht rechneten
+        // die Körper ihre Lage in einer eigenen Kopie der Formel
+        const dir = this._dayNightSunDirection(angle);
         if (sun) {
-            const sx = Math.cos(angle) * sunDist;
-            const sy = Math.sin(angle) * sunDist;
-            const sz = Math.sin(angle * 0.5) * sunDist * 0.4;
             if (!sun.userData.skyOffset) sun.userData.skyOffset = new THREE.Vector3();
-            sun.userData.skyOffset.set(sx, sy, sz);
-            sun.visible = sy > -10; // unter Horizont ausblenden
+            sun.userData.skyOffset.copy(dir).multiplyScalar(sunDist);
+            sun.visible = sun.userData.skyOffset.y > -10; // unter Horizont ausblenden
             // Sonne dimmt mit Wetter (rainy = trüber Schein); die Scheibe leuchtet HDR (`HIMMEL.sonneLeucht`) über ihrem
             // Hof — die Ausgabe-Kette tont sie zum hellsten Punkt des Himmels.
             if (sun.material && sun.material.color) {
@@ -2500,18 +2511,14 @@ class AnazhRealm_bild_himmel {
             }
         }
         if (moon) {
-            // Mond gegenüber der Sonne
-            const moonAngle = angle + Math.PI;
-            const mx = Math.cos(moonAngle) * sunDist;
-            const my = Math.sin(moonAngle) * sunDist;
-            const mz = Math.sin(moonAngle * 0.5) * sunDist * 0.4;
+            // Mond gegenüber der Sonne (der Vollmond, `__weltLicht.mondRichtung`)
             if (!moon.userData.skyOffset) moon.userData.skyOffset = new THREE.Vector3();
-            moon.userData.skyOffset.set(mx, my, mz);
-            moon.visible = my > -10;
+            moon.userData.skyOffset.copy(dir).multiplyScalar(-sunDist);
+            moon.visible = moon.userData.skyOffset.y > -10;
             // Der Mond am Taghimmel ist BLASS: seine Leuchtdichte gegen die des Himmels (`HIMMEL.mondGegenHimmel`)
             // — nachts fast deckend, am Tag ein heller Schleier.
             if (moon.material) {
-                const hell = (achse || this._tagAchse(this._dayNightSunDirection(angle).y)).hell;
+                const hell = (achse || this._tagAchse(dir.y)).hell;
                 moon.material.opacity = 0.98 / (1 + hell / AnazhRealm.HIMMEL.mondGegenHimmel);
             }
         }

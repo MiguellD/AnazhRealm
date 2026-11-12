@@ -633,12 +633,27 @@ var __weltLicht = (function () {
     function sonnenWinkel(t) {
         return t * Math.PI * 2 - Math.PI / 2;
     }
-    function sonnenRichtung(winkel) {
-        const x = Math.cos(winkel);
-        const y = Math.sin(winkel);
-        const z = Math.sin(winkel * 0.5) * 0.4;
-        const l = Math.hypot(x, y, z) || 1;
-        return [x / l, y / l, z / l];
+    // DIE SONNENBAHN (licht.K1, w28-nacht-licht): die Richtung zur Sonne aus dem Stundenwinkel H (0 am Mittag, aus `winkel`), der
+    // Deklination δ des Jahrs (die Schiefe der Ekliptik × sin 2π·Phase — die Phase der EINEN Jahres-Uhr `seasonPhase`: 0 die
+    // Tag-und-Nacht-Gleiche des Frühlings, 0,25 die Sonnenwende des Sommers) und der Breite φ der Welt — die Koordinaten-Wandlung
+    // Äquator → Horizont der Astronomie (Meeus, „Astronomical Algorithms" Kap. 13): sin h = sin φ sin δ + cos φ cos δ cos H. Achsen
+    // der Welt: x Osten, y oben, z Süden (zum Äquator). Bis w28-nacht-licht lief die Sonne auf EINER Bahn durch jedes Jahr — Aufgang
+    // 06:00 und Untergang 18:00 auch im Hochsommer, Mitternacht 90° unter dem Horizont (die Nacht stand im Nadir der Formel
+    // `sin(w/2)·0,4`, die an Mitternacht um 0,57 sprang). Die Breite: 31,2° (Alexandria) — sie hält den Mittag des Sommers, an dem
+    // jede Linse misst (Bühne Sommer, Phase 0,375: Höhe 74,6°, vorher 74,2°), und gibt dem Sommer seine langen Tage (Aufgang 05:18,
+    // die bürgerliche Dämmerung um 05:00 bei −3,7°) und dem Winter seine kurzen.
+    const SONNEN_BAHN = Object.freeze({ breiteGrad: 31.2, schiefeGrad: 23.44, phase: 0.375 });
+    function sonnenRichtung(winkel, phase = SONNEN_BAHN.phase, B = SONNEN_BAHN) {
+        const H = winkel - Math.PI / 2;
+        const d = ((B.schiefeGrad * Math.PI) / 180) * Math.sin(2 * Math.PI * (Number.isFinite(phase) ? phase : B.phase));
+        const f = (B.breiteGrad * Math.PI) / 180;
+        const [cd, sd, cf, sf, cH] = [Math.cos(d), Math.sin(d), Math.cos(f), Math.sin(f), Math.cos(H)];
+        return [-cd * Math.sin(H), sf * sd + cf * cd * cH, sf * cd * cH - cf * sd];
+    }
+    // DER MOND steht der Sonne voll gegenüber (der Vollmond: Stundenwinkel H + π, Deklination −δ) — EINE Formel für sein Licht und
+    // seinen Körper
+    function mondRichtung(winkel, phase) {
+        return sonnenRichtung(winkel, phase).map((v) => -v);
     }
 
     // DIE EINE TAG-ACHSE (S7, W7): jede Größe des Lichts über den Tag ist EINE Funktion der Sonnenhöhe e = sin(Höhe) — die Kanäle
@@ -989,7 +1004,7 @@ var __weltLicht = (function () {
         const M = AR.medium(G, AR.betaKlar(G), ATMO_BODEN);
         const winkel = sonnenWinkel(uhr);
         const s = sonnenRichtung(winkel);
-        const m = sonnenRichtung(winkel + Math.PI);
+        const m = mondRichtung(winkel);
         const achse = tagAchse(s[1]);
         if (!(achse.nacht === 0 && achse.daemmerung === 1))
             throw new Error(
@@ -1209,6 +1224,7 @@ var __weltLicht = (function () {
         e0,
         sonnenWinkel,
         sonnenRichtung,
+        mondRichtung,
         tagAchse,
         halbZuFloat,
         zeilenSchritt,

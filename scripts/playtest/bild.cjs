@@ -1085,15 +1085,8 @@ async function checkBandV8LatePolishAnd6XContinued({ page, check }) {
             // Snap-Stabilität: Schatten-Swimming lebt NUR in der Ebene ⟂ sunDir (Texel-Grid). Der Light-Space-
             // Snap quantisiert die laterale Target-Bewegung auf ganze Texel: ~0 (gleiche Zelle) ODER ein sauberer
             // Sprung (≥~0.29 m), NIE ein Kriechen in Schritt-Höhe (~0.05 m). Bewegung entlang sunDir verschiebt
-            // keine Texel → herausprojiziert. sunDir bei t=0.3 aus der replizierten _dayNightSunDirection-Formel.
-            const _ang = 0.3 * Math.PI * 2 - Math.PI / 2;
-            let _sx = Math.cos(_ang);
-            let _sy = Math.sin(_ang);
-            let _sz = Math.sin(_ang * 0.5) * 0.4;
-            const _sl = Math.hypot(_sx, _sy, _sz) || 1;
-            _sx /= _sl;
-            _sy /= _sl;
-            _sz /= _sl;
+            // keine Texel → herausprojiziert. sunDir bei t=0.3 aus der EINEN Sonnenbahn der Welt (`_dayNightSunDirection`).
+            const { x: _sx, y: _sy, z: _sz } = r._dayNightSunDirection(r._sonnenWinkel(0.3));
             const tgtX1 = tgt.x;
             const tgtY1 = tgt.y;
             const tgtZ1 = tgt.z;
