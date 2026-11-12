@@ -3716,6 +3716,74 @@ const stationen = [
         ],
         quelle: "1 = ein Bewohner trifft ≥ 0,9 seiner Soll-Orte über 24 Spielstunden",
     },
+
+    // ── breite.mensch ── gate:kreatur-takt, die Probe zielplan an der Metropole (Null-Renderer, Messort stadt-voll des Profi-Bands,
+    // „dorf 7 300“; w28-ziel-plan, der Breite-Richter der Staffel Breite §5: „Bewohner folgen Tagesplänen mit Zielen (Arbeit,
+    // Markt, Hafen, Heimweg) — beobachtbar, je Ziel ein Ort“): ein Tag an fünf Stunden (6 · 10 · 13 · 18 · 23 Uhr), der Sprung der
+    // Uhr stellt jeden, wo sein Tag ihn sieht, dann 5 s Takt. DER RICHTER LIEST DEN PLAN, nie die Liste des Wirts und nie das
+    // Soll des Kerns (mensch.K2#1 urteilt am Soll von `tagesPlan` selbst — ein Plan „steh vor deiner Tür“ bestünde es): die Orte
+    // sind die Türen der Slots mit ihrer Rolle, der Platz, die Äcker; das Ziel jedes Bewohners fällt in den Ort, in dem es liegt,
+    // und passt zur Stunde (nachts das eigene Haus oder die Nachtschicht, zur Arbeit ein Werk-Ort — wer in einem Haus mit Rolle
+    // wohnt: ein Haus seiner Rolle —, mittags ein Werk-Ort oder der eigene Tisch, abends jeder Ort). Soll: ≥ 200 Bewohner, zu
+    // jeder Stunde ≤ 5 % ohne Ziel (das Ziel passt nicht, oder er kommt nicht voran), um 10 Uhr ≥ 50 % am Werk-Ort angekommen,
+    // und JEDE Rolle des Plans hat einen Ort, den ein Fremder am Tag erreicht (eine neue Rolle der Stadt-Grammatik ohne Besucher
+    // ist ROT beim Namen). An main 4e2df19b ROT: um 10 Uhr 63,9 % ohne Ziel (der Beruf wählte Platz, Acker oder die eigene Tür),
+    // 34,5 % am Werk-Ort, Ziel-Orte 47/58; am Zweig w28-ziel-plan 3,0 %, 89,5 %, 58/58.
+    {
+        kriterium: "breite.mensch",
+        breite: true,
+        staffel: 1,
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-kreatur-takt.cjs", "--proben", "zielplan", "--ort", "stadt-voll"],
+        env: { KREATUR_TAKT_PORT: "{PORT}" },
+        gpu: false,
+        zeit: false,
+        minuten: 4,
+        urteil: (j, lauf) => {
+            const z = probeZeile(lauf.stdout, "zielplan");
+            if (!z) return { gruen: false, zahl: "keine Zeile der Probe zielplan (Exit " + lauf.exit + ")" };
+            if (z.fehler || !z.je) return { gruen: false, zahl: "Probe-Fehler: " + (z.fehler || "kein Tag") };
+            const H = ["6", "10", "13", "18", "23"];
+            const ohne = H.map((h) => (z.je[h] && typeof z.je[h].ohne === "number" ? z.je[h].ohne : 1));
+            const am10 = (z.je["10"] || {}).am;
+            const rollen = Object.entries(z.rollen || {});
+            const leer = rollen.filter(([, v]) => !(v[0] > 0)).map(([r]) => r);
+            const gruen = z.gesamt >= 200 && ohne.every((o) => o <= 0.05) && am10 >= 0.5 && rollen.length > 0 && !leer.length;
+            const pz = (v) => Math.round(v * 1000) / 10 + " %";
+            return {
+                gruen,
+                zahl:
+                    z.gesamt + " Bewohner: ohne Ziel " + H.map((h, i) => h + " Uhr " + pz(ohne[i])).join(" · ") + ", um 10 Uhr am Werk-Ort " +
+                    pz(am10 || 0) + ", Ziel-Orte " + z.zielOrte + "/" + z.orte +
+                    (leer.length ? ", Rollen ohne Ziel-Ort: " + leer.join(", ") : rollen.length ? ", jede der " + rollen.length + " Rollen ein Ziel" : ", der Plan trägt keine Rolle"),
+            };
+        },
+        proben: [
+            { name: "der Kopf w28-ziel-plan (stadt-voll)", gruen: true, stdout: "  ✅ zielplan  {\"haeuser\":300,\"gesamt\":1083,\"je\":{\"6\":{\"am\":0.4,\"unterwegs\":0,\"ohne\":0.03,\"wer\":[]},\"10\":{\"am\":0.895,\"unterwegs\":0,\"ohne\":0.03,\"wer\":[]},\"13\":{\"am\":0.91,\"unterwegs\":0,\"ohne\":0.022,\"wer\":[]},\"18\":{\"am\":0.4,\"unterwegs\":0,\"ohne\":0.017,\"wer\":[]},\"23\":{\"am\":0.4,\"unterwegs\":0,\"ohne\":0.003,\"wer\":[]}},\"zielOrte\":58,\"orte\":58,\"rollen\":{\"kirche\":[1,1],\"gasthaus\":[1,1],\"scheune\":[6,6],\"schmiede\":[1,1],\"burg\":[1,1]},\"bruchN\":0,\"bruch\":[]}\n" },
+            { name: "main 4e2df19b: um 10 Uhr stehen zwei von drei vor ihrer Tür", gruen: false, stdout: "  ❌ zielplan  {\"haeuser\":300,\"gesamt\":1083,\"je\":{\"6\":{\"am\":0.4,\"unterwegs\":0,\"ohne\":0.03,\"wer\":[]},\"10\":{\"am\":0.345,\"unterwegs\":0,\"ohne\":0.639,\"wer\":[]},\"13\":{\"am\":0.4,\"unterwegs\":0,\"ohne\":0.489,\"wer\":[]},\"18\":{\"am\":0.4,\"unterwegs\":0,\"ohne\":0.03,\"wer\":[]},\"23\":{\"am\":0.4,\"unterwegs\":0,\"ohne\":0.003,\"wer\":[]}},\"zielOrte\":47,\"orte\":58,\"rollen\":{\"kirche\":[1,1],\"gasthaus\":[1,1],\"scheune\":[4,6],\"schmiede\":[1,1],\"burg\":[1,1]},\"bruchN\":0,\"bruch\":[]}\n" },
+            { name: "die Mutante: kein Bewohner trägt einen Plan", gruen: false, stdout: "  ❌ zielplan  {\"haeuser\":300,\"gesamt\":1083,\"je\":{\"6\":{\"am\":0.4,\"unterwegs\":0,\"ohne\":0.8,\"wer\":[]},\"10\":{\"am\":0.18,\"unterwegs\":0,\"ohne\":0.82,\"wer\":[]},\"13\":{\"am\":0.4,\"unterwegs\":0,\"ohne\":0.82,\"wer\":[]},\"18\":{\"am\":0.4,\"unterwegs\":0,\"ohne\":0.02,\"wer\":[]},\"23\":{\"am\":0.4,\"unterwegs\":0,\"ohne\":0.82,\"wer\":[]}},\"zielOrte\":1,\"orte\":58,\"rollen\":{\"kirche\":[0,1],\"gasthaus\":[0,1],\"scheune\":[0,6],\"schmiede\":[0,1],\"burg\":[0,1]},\"bruchN\":0,\"bruch\":[]}\n" },
+            { name: "jeder Plan nennt den Platz: Rollen ohne Ziel-Ort", gruen: false, stdout: "  ❌ zielplan  {\"haeuser\":300,\"gesamt\":1083,\"je\":{\"6\":{\"am\":0.4,\"unterwegs\":0,\"ohne\":0.0,\"wer\":[]},\"10\":{\"am\":0.92,\"unterwegs\":0,\"ohne\":0.04,\"wer\":[]},\"13\":{\"am\":0.4,\"unterwegs\":0,\"ohne\":0.04,\"wer\":[]},\"18\":{\"am\":0.4,\"unterwegs\":0,\"ohne\":0.0,\"wer\":[]},\"23\":{\"am\":0.4,\"unterwegs\":0,\"ohne\":0.0,\"wer\":[]}},\"zielOrte\":1,\"orte\":58,\"rollen\":{\"kirche\":[0,1],\"gasthaus\":[0,1],\"scheune\":[0,6],\"schmiede\":[1,1],\"burg\":[0,1]},\"bruchN\":0,\"bruch\":[]}\n" },
+            { name: "alle gehen, keiner kommt an (um 10 Uhr 20 % am Werk-Ort)", gruen: false, stdout: "  ❌ zielplan  {\"haeuser\":300,\"gesamt\":1083,\"je\":{\"6\":{\"am\":0.4,\"unterwegs\":0,\"ohne\":0.03,\"wer\":[]},\"10\":{\"am\":0.2,\"unterwegs\":0,\"ohne\":0.03,\"wer\":[]},\"13\":{\"am\":0.4,\"unterwegs\":0,\"ohne\":0.02,\"wer\":[]},\"18\":{\"am\":0.4,\"unterwegs\":0,\"ohne\":0.02,\"wer\":[]},\"23\":{\"am\":0.4,\"unterwegs\":0,\"ohne\":0.0,\"wer\":[]}},\"zielOrte\":58,\"orte\":58,\"rollen\":{\"kirche\":[1,1],\"gasthaus\":[1,1],\"scheune\":[6,6],\"schmiede\":[1,1],\"burg\":[1,1]},\"bruchN\":0,\"bruch\":[]}\n" },
+            { name: "ein Dorf statt der Stadt (123 Bewohner)", gruen: false, stdout: "  ❌ zielplan  {\"haeuser\":300,\"gesamt\":123,\"je\":{\"6\":{\"am\":0.4,\"unterwegs\":0,\"ohne\":0.0,\"wer\":[]},\"10\":{\"am\":0.96,\"unterwegs\":0,\"ohne\":0.03,\"wer\":[]},\"13\":{\"am\":0.4,\"unterwegs\":0,\"ohne\":0.02,\"wer\":[]},\"18\":{\"am\":0.4,\"unterwegs\":0,\"ohne\":0.0,\"wer\":[]},\"23\":{\"am\":0.4,\"unterwegs\":0,\"ohne\":0.0,\"wer\":[]}},\"zielOrte\":15,\"orte\":15,\"rollen\":{\"kirche\":[1,1],\"gasthaus\":[1,1],\"scheune\":[6,6],\"schmiede\":[1,1],\"burg\":[1,1]},\"bruchN\":0,\"bruch\":[]}\n" },
+            { name: "der Plan trägt keine Rolle (ein Ziel-Ort ohne Rollen wäre vakuös)", gruen: false, stdout: "  ❌ zielplan  {\"haeuser\":300,\"gesamt\":1083,\"je\":{\"6\":{\"am\":0.4,\"unterwegs\":0,\"ohne\":0.0,\"wer\":[]},\"10\":{\"am\":0.9,\"unterwegs\":0,\"ohne\":0.0,\"wer\":[]},\"13\":{\"am\":0.4,\"unterwegs\":0,\"ohne\":0.0,\"wer\":[]},\"18\":{\"am\":0.4,\"unterwegs\":0,\"ohne\":0.0,\"wer\":[]},\"23\":{\"am\":0.4,\"unterwegs\":0,\"ohne\":0.0,\"wer\":[]}},\"zielOrte\":1,\"orte\":1,\"rollen\":{},\"bruchN\":0,\"bruch\":[]}\n" },
+        ],
+        pfad: [
+            "stamm/siedlung-*.js",
+            "stamm/kreatur-*.js",
+            "stamm/koerper-*.js",
+            "stamm/gelaende-kollision.js",
+            "stamm/daten.js",
+            "koerper-core.js",
+            "tetrapoda-core.js",
+            "fachwerk-core.js",
+            "scripts/diag-kreatur-takt.cjs",
+            "scripts/diag-kreatur-leben.cjs",
+            "scripts/lib/kreatur-proben.cjs",
+            "scripts/lib/welt-boot.cjs",
+            "spec/profiband/haushalt.json",
+        ],
+        quelle: "BREITE mensch = Bewohner folgen Tagesplänen mit Zielen (Arbeit, Markt, Hafen, Heimweg) — beobachtbar, je Ziel ein Ort",
+    },
     {
         kriterium: "tiere.K1",
         staffel: 1,
