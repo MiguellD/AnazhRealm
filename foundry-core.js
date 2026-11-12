@@ -3113,49 +3113,52 @@ function groundCover(L, m, rk, td) {
         bare: 0,
     };
 }
-// DIE HALM-STUFEN (w4-gras-l2): je gelieferte Stufe der Anteil der Halme an der Labor-Zahl, die Segmente des Blatt-Halms und
-// seine Breite in Labor-Breiten. Eine Stufe mit `flaecheVon` trägt die Halm-FLÄCHE jener Stufe: ihre Breite folgt aus der
-// Gleichung Anteil · Profil(Segmente) · Breite = dasselbe Produkt der Mutter (`__halmProfil`, das Profil des Halm-Gesetzes) —
-// der KARTEN-HALM der L2: ein gerader Halm (EIN Dreieck) trägt die Fläche der L1-Halme, die er vertritt. Bis dahin stand die
-// L2-Breite als Zahl (7,4, w4-wiese-nah hielt damit die alte Fläche): L2 trug 61,6 % / 57,0 % der L1-Fläche (Gestalt 1 / 2),
-// an der Mess-Wiese LAI 5–10 m 1,47 · 10–14 m 1,22 gegen 2,40 im L1-Band (Radeon, Station vegetation.K1#1). Jetzt 12,65: L2
-// 10,31 → 17,55 / 12,86 → 21,93 Einheiten² (L2/L1 1,048 / 0,971) bei 61 / 66 Dreiecken (L1 16,74 / 22,58 bei 601 / 737).
+// DIE HALM-STUFEN (w28-halm-trieb): je gelieferte Stufe der Anteil der Füße an der Labor-Zahl und die STÜTZEN, an denen sie
+// die Mittellinie jedes Blatts ihres Triebs abtastet (phyto-core HALM_GESETZ.trieb · `halmLinie`; je Blatt des Triebs eine
+// Liste von Bogen-Anteilen 0 … 1, die letzte Stütze ist die Spitze — EINE Ecke). Ein Blatt ohne Stützen zeichnet die Stufe
+// nicht. Die Blatt-FLÄCHE des Büschels ist Gesetz (`trieb.flaeche` je Fuß) und verteilt sich auf die gezeichneten Blätter:
+// die Stufe trägt die Fläche über ihre Blätter, nie über die Breite eines Einzel-Halms.
+// `triebe`: der Anteil der Blatt-Füße, die ihren Trieb zeichnen (jeder Fuß wirft, die gezeichneten teilen die Fläche aller) —
+// die L1 hält damit ihre Dreiecke: der Trieb aus Bogen-Blatt (drei Abschnitte, 5 Dreiecke) und zwei jungen Blättern (je 1)
+// kostet 7, der Schritt-Halm kostete 5. Zwei Innen-Ecken statt einer: der Bogen liest als Bogen, nie als Knick (eine
+// Innen-Ecke trug 22° im Median und bis 59°; jetzt 12,5–13,9° und bis 39°). Die Stützen des Bogen-Blatts teilen die Drehung der
+// Sehnen gleich: (s1 + s2)² = 1 + s2.
+// Die L2 tastet DENSELBEN Trieb am gröbsten ab: das Bogen-Blatt als EIN Dreieck auf seiner Sehne — seine Spitze steht, wo die
+// der L1 steht. Ihre Breite folgt aus Fläche ÷ Dreiecke (121–133 mm; bis hier 138–152): schmaler wird sie nur mit mehr
+// Dreiecken (ihre Budget-Zeile trüge das Doppelte, die Ratsche des Profi-Bands nicht).
+// Bis w28-halm-trieb trug die Stufe `breite` (L1 × 3,0, L2 aus der Flächen-Gleichung × 12,65 bei fester Halm-Zahl): der Halm
+// war ein Flächen-Träger, keine Gestalt — L1 33–37 mm breit, Schlankheit 10,3–10,8, Bogen 5° (Samen-Befund 12.11., 3552f058).
 const HALM_STUFEN = Object.freeze({
-    0: Object.freeze({ anteil: 1, segmente: 10, breite: 1 }),
-    1: Object.freeze({ anteil: 0.92, segmente: 3, breite: 3.0 }),
-    2: Object.freeze({ anteil: 0.333, segmente: 1, flaecheVon: 1 }),
+    0: Object.freeze({ anteil: 1, triebe: 1, stuetzen: [[0, 0.2, 0.4, 0.6, 0.8, 1], [0, 0.6, 1], [0, 0.6, 1]] }),
+    1: Object.freeze({ anteil: 0.92, triebe: 5 / 7, stuetzen: [[0, 0.54, 0.8, 1], [0, 1], [0, 1]] }),
+    2: Object.freeze({ anteil: 0.333, triebe: 1, stuetzen: [[0, 1]] }),
 });
-// Die Fläche des linealen Halms (Breite 1 − f^spitze, HALM_GESETZ) über K gleich langen Segmenten, in Einheiten Breite ×
-// Länge: je Segment ein Trapez, das letzte endet in der Spitze (Breite 0 — EIN Dreieck). K 1: 0,5 · K 3: 0,763.
-function __halmProfil(K, spitze) {
+// Die Fläche eines linealen Blatts der Breite 1 und der Länge 1 (Breite 1 − s^spitze, HALM_GESETZ) über seinen Stützen: je
+// Abschnitt ein Trapez, der letzte endet in der Spitze (Breite 0 — EIN Dreieck). [0, 1]: 0,5 · drei gleiche Teile: 0,763.
+function __halmProfil(st, spitze) {
     let a = 0;
-    for (let s = 0; s < K; s++) a += (2 - Math.pow(s / K, spitze) - Math.pow((s + 1) / K, spitze)) / (2 * K);
+    for (let j = 0; j + 1 < st.length; j++) a += ((st[j + 1] - st[j]) * (2 - Math.pow(st[j], spitze) - Math.pow(st[j + 1], spitze))) / 2;
     return a;
-}
-// Die Breite des Blatt-Halms der Stufe (Labor-Breiten): gesetzt, oder aus der Fläche ihrer Mutter-Stufe (`flaecheVon`).
-function __halmBreite(stufe, spitze) {
-    const S = HALM_STUFEN[stufe];
-    if (!S) throw new Error("[phyto] HALM_STUFEN[" + stufe + "] fehlt");
-    if (S.flaecheVon === undefined) return S.breite;
-    const M = HALM_STUFEN[S.flaecheVon];
-    return (M.anteil * __halmProfil(M.segmente, spitze) * __halmBreite(S.flaecheVon, spitze)) / (S.anteil * __halmProfil(S.segmente, spitze));
 }
 // DIE GRASNARBE (K70, Soll-Tafel boden-nah: eine Wiese zeigt aus Augenhöhe ihren Grund erst unter dem Fuß, Grasland-LAI
 // 1,71): die Deckung ist die Blatt-Fläche je Boden-Fläche, und die Stufe trägt sie, nicht die Dreiecks-Zahl. Der Halm
-// WURZELT im Boden (bis K70 begann er eine Segment-Länge darüber: L1/L2 ein Drittel des Halms Luft am Grund), und die
-// Fernstufe L2 ist ein gerader Halm (ein Segment): ihre Breite trägt die Fläche der L1 (`HALM_STUFEN`, w4-gras-l2).
+// WURZELT im Boden (bis K70 begann er eine Segment-Länge darüber: L1/L2 ein Drittel des Halms Luft am Grund), und jede
+// Stufe trägt die Fläche des Büschels über die Blätter ihrer Triebe (`HALM_STUFEN`, w28-halm-trieb): die Fernstufe L2 ein
+// gerades Blatt je Fuß (ein Dreieck auf der Sehne des Bogen-Blatts).
 // DER HALM IST EIN GESETZ (w4-wiese-nah, phyto-core HALM_GESETZ): LINEAL und SPITZ — parallele Ränder, die Breite
-// 1 − f^spitze (bis dahin 1 − 0,86·f³: die Spitze stand 14 % breit, auf Armlänge ein schräger Messer-Schnitt; die L2 hält ihre
-// Fläche, wMul 6,5 → 7,4) —, der Querschnitt gekielt und die Adern im Stoff (uv.x zählt quer in Adern, die Mittel-Rippe bei 0),
+// 1 − f^spitze (bis dahin 1 − 0,86·f³: die Spitze stand 14 % breit, auf Armlänge ein schräger Messer-Schnitt) —, seine
+// Mittellinie ein Gesetz in Halm-Koordinaten (`halmLinie`), der Querschnitt gekielt und die Adern im Stoff (uv.x zählt quer in
+// Adern, die Mittel-Rippe bei 0),
 // die Narbe über jeder Ecke (uv.y: die Blatt-Fläche des Büschels über ihrer Höhe je Fläche seiner Raster-Zelle, das Licht in
 // der Tiefe liest der Stoff, `halmNarbe`), und die Ähre wächst aus demselben Gesetz (unten).
 function emitGrass(P) {
     const geos = [];
-    const HG = self.__phytoCore.HALM_GESETZ;
+    const HG = self.__phytoCore.HALM_GESETZ,
+        TR = HG.trieb,
+        linie = self.__phytoCore.halmLinie;
     const HS = HALM_STUFEN[__lod];
     if (!HS) throw new Error("[phyto] HALM_STUFEN[" + __lod + "] fehlt — die Stufe des Grases ohne Halm-Zeile");
     const lf = HS.anteil;
-    const wMul = __halmBreite(__lod, HG.spitze);
     const N = Math.max(3, Math.round(lerp(50, 150, P.density) * lf));
     const baseCol = vegFarbe(seasonTint).multiplyScalar(0.6),
         tipCol = vegFarbe(seasonAccent).multiplyScalar(GRAS_SPITZE_HELL);
@@ -3167,10 +3170,24 @@ function emitGrass(P) {
     if (!(ZA && Number.isInteger(ZA.aehrchen) && ZA.aehrchen >= 1 && ZA.aehrchen <= HG.aehre.aehrchen && Number.isInteger(ZA.staengel) && ZA.staengel >= 1 && ZA.staengel <= 7))
         throw new Error("[phyto] lod.budget.grass[" + __lod + "].aehre fehlt (aehrchen 1.." + HG.aehre.aehrchen + ", staengel 1..7)");
     const S = PORTAL_RENDER_CONFIG.placement.scale.gras;
+    // der Stängel der Ähre tastet seine Linie in gleichen Teilen ab (die Segmente seiner Budget-Zeile)
+    const stStaengel = Array.from({ length: ZA.staengel + 1 }, (_, j) => j / ZA.staengel);
     // DIE WIESEN-FARBE je Halm (W1): eigener Strom, fünf Würfe je Halm, gezogen vor jeder Zeile
     const WH = WIESEN_FARBE.halm,
         farbStrom = mulberry32(((Math.floor(SEED) ^ 0x3c6e) + 7) >>> 0),
         stroh = seedCol.clone().multiplyScalar(WH.stroh);
+    // DER TRIEB je Fuß (w28-halm-trieb): eigener Strom, vier Würfe je Blatt des Gesetzes (Länge, Fächer, Neigung, Bogen),
+    // gezogen vor jeder Stütze — jede Stufe ist dasselbe Individuum, und der Strom der Füße, Längen und Ähren bleibt der alte.
+    const triebStrom = mulberry32(((Math.floor(SEED) ^ 0x7e1b) + 11) >>> 0);
+    // ERST DIE WÜRFE jedes Fußes (alle Ströme in ihrer Reihe: Farbe, Fuß, Trieb, Ähre), DANN die Geometrie: die Fläche des
+    // Büschels ist die Summe über ALLE Füße, die gezeichneten Triebe teilen sie.
+    const AE = HG.aehre,
+        AKV = 3,
+        NawVoll = __lod === 0 ? 11 : __lod === 1 ? 7 : 4;
+    const fuesse = [];
+    let blattFuesse = 0,
+        flaecheAlle = 0,
+        flaecheGezeichnet = 0;
     for (let i = 0; i < N; i++) {
         const hl = WH.hell[0] + (WH.hell[1] - WH.hell[0]) * farbStrom(),
             ton = (farbStrom() - 0.5) * WH.ton;
@@ -3184,81 +3201,119 @@ function emitGrass(P) {
             bz = Math.sin(a) * rr;
         const isCulm = SH > 0 && rnd() < SH * 0.5; // Teil der Halme -> Aehrenstaengel
         const L = P.bladeLen * (isCulm ? rrange(1.25, 1.6) : rrange(0.6, 1.15)),
-            w = P.bladeW * wMul * (isCulm ? 0.5 : 0.74) * rrange(0.8, 1.1);
+            wWurf = rrange(0.8, 1.1);
         const lean = rrange(0.1, 0.4),
-            la = rnd() * 6.28,
-            bendDir = [Math.cos(la), 0, Math.sin(la)],
-            droop = isCulm ? P.droop * 0.45 : P.droop;
-        // die Adern des Halms an seinem Fuß (quer, `aderM` in der Welt-Skala) — u läuft von −nv/2 bis +nv/2
-        const nv = (w * S) / HG.aderM;
-        const K = isCulm ? ZA.staengel : HS.segmente,
-            positions = [],
-            idx = [],
-            uvs = [],
-            sway = [],
-            ctr = [],
-            typ = [],
-            col = [];
-        let p = [bx, 0, bz],
-            dir = vnorm([Math.sin(lean) * Math.cos(la), Math.cos(lean), Math.sin(lean) * Math.sin(la)]),
-            tip = p.slice();
-        for (let s = 0; s <= K; s++) {
-            const f = s / K,
-                dd = Math.pow(f, 1.8) * droop;
-            // die erste Zeile steht am Fuß (K70), jede weitere eine Segment-Länge entlang der gebogenen Richtung
-            if (s > 0) {
-                dir = vnorm(vadd(dir, vscl(bendDir, dd * 0.12)));
-                dir = vnorm(vadd(dir, [0, -dd * 0.1, 0]));
-                p = vadd(p, vscl(dir, L / K));
-            }
-            tip = p.slice();
-            const halfW = w * (1 - Math.pow(f, HG.spitze)) * 0.5,
-                rt = vnorm(vcross(dir, [0, 1, 0]));
-            // die Spitze ist EINE Ecke (die Breite 0): die Mittel-Rippe (u = 0) läuft in sie, das letzte Segment ist ein Dreieck
-            if (s < K) {
-                const cl = vadd(p, vscl(rt, -halfW)),
-                    cr = vadd(p, vscl(rt, halfW));
-                positions.push(cl[0], cl[1], cl[2], cr[0], cr[1], cr[2]);
-                uvs.push(-nv / 2, 0, nv / 2, 0); // uv.y: die Narbe, nach dem Büschel (unten)
-            } else {
-                positions.push(p[0], p[1], p[2]);
-                uvs.push(0, 0);
-            }
-            const c = baseCol.clone().lerp(tipCol, f);
-            c.r *= hl * (1 + ton);
-            c.g *= hl;
-            c.b *= hl * (1 - ton * 1.2);
-            const sf = f < 0.55 ? 0 : ((f - 0.55) / 0.45) * ((f - 0.55) / 0.45) * (3 - (2 * (f - 0.55)) / 0.45);
-            c.lerp(stroh, Math.min(1, Math.max(trk * (0.4 + 0.6 * f), spz * sf)));
-            for (let q = 0; q < (s < K ? 2 : 1); q++) {
-                const sw = Math.pow(f, 1.4) * P.windGain;
-                sway.push(sw, la * 1.3 + i, 1.1 + 0.5 * (1 - f));
-                ctr.push(bx, 0, bz);
-                typ.push(SAISON_GESETZ.typ.halm);
-                col.push(c.r, c.g, c.b);
-            }
+            la = rnd() * 6.28;
+        // die Blätter des Triebs, wie die Stufe sie zeichnet: [Richtung, θ0, Θ, Länge, relative Breite, Stützen, Platz]
+        const blaetter = [];
+        TR.blaetter.forEach((B, b) => {
+            const k = [triebStrom(), triebStrom(), triebStrom(), triebStrom()],
+                st = isCulm ? null : HS.stuetzen[b];
+            if (!st) return;
+            blaetter.push([
+                la + (b ? (b % 2 ? 1 : -1) * (TR.faecher[0] + TR.faecher[1] * k[1]) * Math.ceil(b / 2) : 0),
+                Math.max(0.03, lean * B.neigung + (k[2] - 0.5) * TR.neigungWurf),
+                P.droop * lerp(B.bogen[0], B.bogen[1], Math.pow(k[3], TR.bogenWurf)),
+                L * lerp(B.laenge[0], B.laenge[1], k[0]),
+                B.breit,
+                st,
+                b,
+            ]);
+        });
+        if (isCulm) blaetter.push([la, lean, P.droop * TR.staengel.bogen, L, 1, stStaengel, 0]);
+        const wurf = [];
+        if (isCulm) for (let k = 0; k < NawVoll; k++) wurf.push(rnd(), rrange(0.14, 0.28));
+        // die Fläche des Fußes nach dem Gesetz (Labor-Einheiten²); der Blatt-Fuß zeichnet seinen Trieb nach dem Anteil der Stufe
+        const flaeche = (P.bladeW * wWurf * L * (isCulm ? TR.staengel.flaeche : TR.flaeche)) / lf,
+            zeichnet = isCulm || Math.floor((blattFuesse + 1) * HS.triebe + 1e-9) > Math.floor(blattFuesse * HS.triebe + 1e-9);
+        if (!isCulm) {
+            blattFuesse++;
+            flaecheAlle += flaeche;
+            if (zeichnet) flaecheGezeichnet += flaeche;
         }
-        for (let s = 0; s < K; s++) {
-            const a0 = s * 2,
-                b0 = s * 2 + 1,
-                a1 = s * 2 + 2,
-                b1 = s * 2 + 3;
-            if (s < K - 1) idx.push(a0, b0, a1, b0, b1, a1);
-            else idx.push(a0, b0, a1);
+        if (zeichnet) fuesse.push({ i, hl, ton, trk, spz, bx, bz, isCulm, L, la, blaetter, wurf, flaeche });
+    }
+    if (!(flaecheGezeichnet > 0)) throw new Error("[phyto] HALM_STUFEN[" + __lod + "].triebe: kein Blatt-Fuß zeichnet seinen Trieb");
+    for (const { i, hl, ton, trk, spz, bx, bz, isCulm, L, la, blaetter, wurf, flaeche } of fuesse) {
+        // die Breite aus der Fläche: Σ Blatt-Länge × Profil × relative Breite × w0 = die Fläche des Fußes (die gezeichneten
+        // Blatt-Füße tragen die Fläche aller)
+        let nenner = 0;
+        for (const B of blaetter) nenner += B[3] * B[4] * __halmProfil(B[5], HG.spitze);
+        const w0 = (flaeche * (isCulm ? 1 : flaecheAlle / flaecheGezeichnet)) / nenner;
+        let tip = null,
+            ort = null;
+        for (const [lb, th0, TH, Lb, breit, st, b] of blaetter) {
+            const w = w0 * breit,
+                ex = [Math.cos(lb), 0, Math.sin(lb)],
+                rt = [-Math.sin(lb), 0, Math.cos(lb)],
+                fx = bx + ex[0] * TR.fuss * b,
+                fz = bz + ex[2] * TR.fuss * b;
+            // die Mittellinie des Blatts: der Ort bei Bogen-Anteil s (auch über die Spitze hinaus: die Spindel der Ähre)
+            ort = (s) => {
+                const [q, h, th] = linie(th0, TH, s);
+                return [[fx + ex[0] * q * Lb, h * Lb, fz + ex[2] * q * Lb], [ex[0] * Math.sin(th), Math.cos(th), ex[2] * Math.sin(th)]];
+            };
+            // die Adern des Blatts an seinem Fuß (quer, `aderM` in der Welt-Skala) — u läuft von −nv/2 bis +nv/2
+            const nv = (w * S) / HG.aderM,
+                K = st.length - 1,
+                positions = [],
+                idx = [],
+                uvs = [],
+                sway = [],
+                ctr = [],
+                typ = [],
+                col = [];
+            for (let s = 0; s <= K; s++) {
+                const f = st[s],
+                    p = ort(f)[0];
+                tip = p;
+                const halfW = w * (1 - Math.pow(f, HG.spitze)) * 0.5;
+                // die Spitze ist EINE Ecke (die Breite 0): die Mittel-Rippe (u = 0) läuft in sie, das letzte Segment ist ein Dreieck
+                if (s < K) {
+                    const cl = vadd(p, vscl(rt, -halfW)),
+                        cr = vadd(p, vscl(rt, halfW));
+                    positions.push(cl[0], cl[1], cl[2], cr[0], cr[1], cr[2]);
+                    uvs.push(-nv / 2, 0, nv / 2, 0); // uv.y: die Narbe, nach dem Büschel (unten)
+                } else {
+                    positions.push(p[0], p[1], p[2]);
+                    uvs.push(0, 0);
+                }
+                const c = baseCol.clone().lerp(tipCol, f);
+                c.r *= hl * (1 + ton);
+                c.g *= hl;
+                c.b *= hl * (1 - ton * 1.2);
+                const sf = f < 0.55 ? 0 : ((f - 0.55) / 0.45) * ((f - 0.55) / 0.45) * (3 - (2 * (f - 0.55)) / 0.45);
+                c.lerp(stroh, Math.min(1, Math.max(trk * (0.4 + 0.6 * f), spz * sf)));
+                for (let q = 0; q < (s < K ? 2 : 1); q++) {
+                    const sw = Math.pow(f, 1.4) * P.windGain;
+                    sway.push(sw, lb * 1.3 + i, 1.1 + 0.5 * (1 - f));
+                    ctr.push(bx, 0, bz);
+                    typ.push(SAISON_GESETZ.typ.halm);
+                    col.push(c.r, c.g, c.b);
+                }
+            }
+            for (let s = 0; s < K; s++) {
+                const a0 = s * 2,
+                    b0 = s * 2 + 1,
+                    a1 = s * 2 + 2,
+                    b1 = s * 2 + 3;
+                if (s < K - 1) idx.push(a0, b0, a1, b0, b1, a1);
+                else idx.push(a0, b0, a1);
+            }
+            const g = new THREE.BufferGeometry();
+            g.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+            g.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+            g.setIndex(idx);
+            g.computeVertexNormals();
+            g.setAttribute("aWind", new THREE.Float32BufferAttribute(sway, 3));
+            g.setAttribute("aCenter", new THREE.Float32BufferAttribute(ctr, 3));
+            g.setAttribute("aType", new THREE.Float32BufferAttribute(typ, 1));
+            g.setAttribute("color", new THREE.Float32BufferAttribute(col, 3));
+            geos.push(g);
         }
-        const g = new THREE.BufferGeometry();
-        g.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-        g.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
-        g.setIndex(idx);
-        g.computeVertexNormals();
-        g.setAttribute("aWind", new THREE.Float32BufferAttribute(sway, 3));
-        g.setAttribute("aCenter", new THREE.Float32BufferAttribute(ctr, 3));
-        g.setAttribute("aType", new THREE.Float32BufferAttribute(typ, 1));
-        g.setAttribute("color", new THREE.Float32BufferAttribute(col, 3));
-        geos.push(g);
         if (isCulm) {
             // DIE ÄHRE WÄCHST AUS DEM GRAS-GESETZ (w4-wiese-nah, HALM_GESETZ.aehre): der Stängel geht über seine Spitze als
-            // SPINDEL weiter — dieselbe Biegung (f^1,8 · Nicken, nun über f = 1 hinaus), in AKV Schritten integriert, jede Stufe
+            // SPINDEL weiter — dieselbe Mittellinie (`halmLinie`, nun über s = 1 hinaus), an AKV Stützen abgetastet, jede Stufe
             // liest dieselbe Kurve —, und an ihr sitzen die ÄHRCHEN wechselständig in zwei Zeilen (je zweites um `drehung` um die
             // Spindel gedreht: die Ähre ist nie eben), jedes um `winkel` von der Spindel abgespreizt und so lang, dass sie sich
             // decken. Die Stufe zeichnet `aehrchen` von ihnen (Budget-Zeile); sie werden länger, je weniger es sind, ihre Breite
@@ -3267,33 +3322,25 @@ function emitGrass(P) {
             // Third ein gelbes Fähnchen. STROM-ERHALT: die Würfe der Grannen (`NawVoll` × Winkel und Länge) sind gezogen wie
             // zuvor — jedes Individuum, seine Halme und jede folgende Ähre bleiben dieselben; die Länge der Ähre ist die der
             // ersten Granne, die übrigen Würfe tönen die Ährchen.
-            const AE = HG.aehre,
-                AKV = 3,
-                NawVoll = __lod === 0 ? 11 : __lod === 1 ? 7 : 4,
-                wurf = [];
-            for (let k = 0; k < NawVoll; k++) wurf.push(rnd(), rrange(0.14, 0.28));
             // die Ährchen der Stufe decken die Spindel von ihrem Fuß bis zu ihrem Ende (das letzte endet dort, in jeder Stufe)
             const awl = L * wurf[1],
                 n = ZA.aehrchen,
                 laeng = awl * Math.min(1, AE.laenge / n),
                 breit = (awl / AE.aehrchen) * AE.laenge * AE.breite;
-            // Die Spindel: AKV Schritte über f = 1 hinaus, dasselbe Gesetz wie der Stängel (Punkte sp, Richtungen sd)
-            let ad = dir.slice();
+            // Die Spindel: AKV Stützen über s = 1 hinaus auf der Linie des Stängels (Punkte sp, Richtungen sd)
             const sp = [tip.slice()],
                 sd = [];
             for (let s2 = 1; s2 <= AKV; s2++) {
-                const ddS = Math.pow(1 + (awl / L) * (s2 / AKV), 1.8) * droop;
-                ad = vnorm(vadd(ad, vscl(bendDir, ddS * 0.12)));
-                ad = vnorm(vadd(ad, [0, -ddS * 0.1, 0]));
-                sd.push(ad);
-                sp.push(vadd(sp[s2 - 1], vscl(ad, awl / AKV)));
+                const [q, d] = ort(1 + (awl / L) * (s2 / AKV));
+                sd.push(d);
+                sp.push(q);
             }
             const spindel = (t) => {
                 const x = Math.min(AKV - 1e-6, t * AKV),
                     j = Math.floor(x);
                 return [vadd(sp[j], vscl(vsub(sp[j + 1], sp[j]), x - j)), sd[j]];
             };
-            const seite0 = vnorm(vcross(dir, [0, 1, 0])),
+            const seite0 = [-Math.sin(la), 0, Math.cos(la)],
                 pg = [],
                 pi = [],
                 pc = [],
