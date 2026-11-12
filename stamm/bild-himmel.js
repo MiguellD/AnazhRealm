@@ -2138,14 +2138,18 @@ class AnazhRealm_bild_himmel {
     // DER NACHT-BODEN DES BANDS IST LICHT (F6): das gefallene Band trug den Host-Stoffen (Boden, Karte, Fern-Ring, Werk,
     // Gras) einen Boden albedo · 0,06 hinter der Licht-Kette auf, der Studio-Gestalt nie — die Nacht der Nähe stand auf ihm.
     // Er zieht als Ambient (albedo/π · 0,06 π) in die EINE Kette, die jeder Stoff liest; die Fresnel-Säume des Bands, die die
-    // Ferne bleichten, fallen. DIE NACHT-KALIBRIERUNG ist damit Mond/(amb+hemi) = 0,22 / (0,2285 + 0,10) = 0,67 (Mitternacht,
+    // Ferne bleichten, fallen. DIE NACHT-KALIBRIERUNG war damit bis w28-nacht-licht Mond/(amb+hemi) = 0,22 / (0,2285 + 0,10) = 0,67 (Mitternacht,
     // Radeon, Messort dorf; vorher 0,22 / 0,14 = 1,57): das Himmels-Licht trägt die Nacht, der Mond zeichnet ihr die Richtung —
     // jede Gestalt hebt es gleich (Fichte nachts Y 0,0093 → 0,0154), die Karte gegen ihre Gestalt bleibt im Band ±10 %
     // (`werkbank licht --laub fichte,tanne --karte --uhr`); Bühne S0, Mitternacht ohne Feuer: Boden Luma 21,3 → 30,3.
+    // DAS AMBIENT FÄLLT (w28-nacht-licht): der Nacht-Boden des Bands (0,06 π) fällt aus dem Ambient — er trug JEDE Wand ohne
+    // Quelle auf das Licht der Gasse unter der Laterne (Stadt 00 Uhr, Radeon: 1,75 : 1 linear). Die Kamera steht unter dem
+    // Nacht-Knoten (`BELICHTUNG.nachtE`), das Bild fällt mit diesem Licht: Mond und Himmel-Boden zeichnen die Nacht, Laterne,
+    // Fenster und Feuer tragen sie.
     _dayNightApplyAmbient(achse) {
         const al = this.state.ambientLight;
         if (!al) return;
-        const baseAmb = (0.04 + 0.06 * Math.PI) * achse.nacht;
+        const baseAmb = 0.04 * achse.nacht;
         al.intensity = this._emotionModulate(baseAmb, { joy: 0.08, awe: 0.05, sorrow: -0.04 });
         // V12.0-f — kein toonLightUniforms-Sync mehr; die nativen lights=true-
         // Materials konsumieren al.intensity direkt (Three.js-Lighting).
