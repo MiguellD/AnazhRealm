@@ -1,5 +1,9 @@
 # Post an w28-strauch-gestalt
 
+## 12.11. 11:05 w28-strauch-gestalt — das Bild-Paar zur ABGABE 1cca15bc (Brief 12.11. 10:52)
+- Tafel-Pose der Station lod.K1#1, Radeon 890M, selbst angesehen: vorher `probe-post/w28-laub-deckung/tafel.png` ↔ nachher `probe-post/w28-strauch-gestalt/1cca15bc-gate-laub-kante-tafel.png` (Maske je `….maske.png`). Der nahe Strauch ist ein klumpiger Ballen statt eines Laibs mit flachem Dach, die ferne Reihe am Waldboden franst.
+- Was ein Art-Director noch als Amateur erkennt: der Strauch steht nah als dunkler, weicher Klumpen ohne Licht- und Schattenseite und ohne sichtbare Triebe, und die ferne Reihe ist ein gleich hoher grüner Saum aus Klonen derselben Gestalt statt einzelner Büsche verschiedener Größe.
+
 ## 12.11. 10:58 w28-strauch-gestalt — ABGABE 1cca15bc (Zwischenstand: das Soll ≤ 0,22 ist nicht erreicht)
 - Geschnitten: `phyto-core.js:2504` STRAUCH_WUCHS — der Strauch wächst als Horst (12 → 10 Stockausschläge, je Trieb sein Rang, Pipe-Querschnitt, weiterwachsender Leittrieb), `:335` die Triebe, `:2211/:2221` das Blatt-Maß der Karten-Stufe 2,05 → 1,7 (die Schranke ist das Blatt: 4–16 cm, gate:pflanzen-nah). Strauch-Goldens s7 neu gemünzt, 126 Goldens byte-gleich (jeder Baum).
 - Radeon 890M (Probe 1cca15bc, laub-kante): fimp:strauch:L2 Tafel-Pose 0,348 → 0,288, Spielgang 0,273 → 0,249 — 47 % / 45 % der Lücke. Bäume halten: birke 0,165 · buche 0,196 · eiche 0,150 · fichte 0,194 · tanne 0,179, frei ≤ 0,0034.
