@@ -420,9 +420,9 @@ class AnazhRealm_koerper_fahrt {
             // dem Wasser aufsitzt, behielt die Schwimm-Lage (gate:fahr-leben L9 nach L10: Kopf und Schenkel verschoben)
             group.rotation.x = 0;
             group.rotation.z = 0;
-            for (const b of [rig.hips, rig.spine, rig.chest, rig.neck, rig.head]) if (b) b.rotation.set(0, 0, 0);
-            for (const side of [rig.armL, rig.armR, rig.legL, rig.legR])
-                for (const k in side) if (side[k] && side[k].rotation) side[k].rotation.set(0, 0, 0);
+            // die neutrale Pose des Kerns (koerper `leibRigNeutral`: die Arme in der Ruhe ihres Gusses — bis w28-mensch-samen
+            // stellte der Sitz jede Schulter selbst auf 0, der vorgehaltene Oberarm lag im Brustkorb)
+            AnazhRealm._leibTakt().leibRigNeutral(rig);
             // die Oberschenkel liegen auf der Sitzfläche (waagerecht nach vorn; vorher −1,3: 15° hinab, das Knie im Polster)
             rig.legL.hip.rotation.x = -Math.PI / 2;
             rig.legR.hip.rotation.x = -Math.PI / 2;
