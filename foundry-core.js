@@ -6188,7 +6188,55 @@ function __vereinigungsVolumen(netze, h) {
 // die Region, jede Ecke um `dicke` entlang der Haut-Normale gehoben, mit IDENTISCHEN Gewichten. Rückgabe { geo, wahl } (wahl = die
 // Haut-Ecken tief unter dem Stoff — in der Zone samt jedem Nachbarn: ihre Dreiecke fallen, die Haut reicht einen Ring unter den
 // Saum) oder null.
-var STOFF_SAUM = Object.freeze({ glatt: 8, saumGlatt: 2 });
+// `nachLeser`: so viele Runden glättet der Ofen an jedem Saum-Ring den SCHUB des Lesers der Gestalt (koerper leibRelief,
+// w28-leib-kanon): der Leser hebt jede Ecke um ihre Lappen und auf ihr Profil — entlang des Saums von Ecke zu Ecke verschieden,
+// der Ring wurde wellig (saumUmlauf 4,42 gegen 3). Geglättet wird der Schub, nie die Lage: der Ring davor ist glatt, und ein
+// gemittelter Ring zöge sich zusammen (die Haut träte über den Bund).
+var STOFF_SAUM = Object.freeze({ glatt: 8, saumGlatt: 2, nachLeser: 6 });
+// DER SAUM-RING GLATT: an den Ecken der Kanten, die nur ein Dreieck trägt, der Schub seit `vor` (die Lagen vor dem Leser) je
+// Runde auf die Mitte aus sich und seinen Saum-Nachbarn
+function __saumRingGlatt(geo, vor, runden) {
+    const pos = geo.attributes.position.array,
+        idx = geo.index.array,
+        m = pos.length / 3;
+    const kanten = new Map();
+    for (let t = 0; t < idx.length; t += 3)
+        for (let e = 0; e < 3; e++) {
+            const a = idx[t + e],
+                b = idx[t + ((e + 1) % 3)];
+            const k = a < b ? a * m + b : b * m + a;
+            kanten.set(k, (kanten.get(k) || 0) + 1);
+        }
+    const saum = new Map();
+    for (const [k, z] of kanten) {
+        if (z !== 1) continue;
+        const a = Math.floor(k / m),
+            b = k - a * m;
+        if (!saum.has(a)) saum.set(a, []);
+        if (!saum.has(b)) saum.set(b, []);
+        saum.get(a).push(b);
+        saum.get(b).push(a);
+    }
+    const ecken = [...saum.keys()].sort((a, b) => a - b);
+    const schub = new Float64Array(pos.length);
+    for (const v of ecken) for (let d = 0; d < 3; d++) schub[v * 3 + d] = pos[v * 3 + d] - vor[v * 3 + d];
+    for (let it = 0; it < runden; it++) {
+        const neu = new Float64Array(ecken.length * 3);
+        ecken.forEach((v, e) => {
+            const nb = saum.get(v);
+            for (let d = 0; d < 3; d++) {
+                let s = schub[v * 3 + d];
+                for (const q of nb) s += schub[q * 3 + d];
+                neu[e * 3 + d] = s / (nb.length + 1);
+            }
+        });
+        ecken.forEach((v, e) => {
+            for (let d = 0; d < 3; d++) schub[v * 3 + d] = neu[e * 3 + d];
+        });
+    }
+    for (const v of ecken) for (let d = 0; d < 3; d++) pos[v * 3 + d] = vor[v * 3 + d] + schub[v * 3 + d];
+    return ecken.length;
+}
 function __stoffAusHaut(hg, teile, zonenTeile, dicke) {
     const pa = hg.attributes.position.array,
         na = hg.attributes.normal.array,
@@ -9264,7 +9312,9 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             for (const mesh of gebauteHuellen) {
                 if (!(mesh === hautHuelle || ausHaut.has(mesh) || (mengenLeib && mesh === mengenLeib.mesh))) continue;
                 const a = mesh.geometry.attributes;
+                const vorLeser = ausHaut.has(mesh) ? Float64Array.from(a.position.array) : null;
                 kern.leibRelief(a.position.array, a.normal.array, a.skinIndex.array, a.skinWeight.array, skinJoints, lageR, dials, mesh.userData.__lage || 0);
+                if (vorLeser) __saumRingGlatt(mesh.geometry, vorLeser, STOFF_SAUM.nachLeser);
                 a.position.needsUpdate = true;
                 mesh.geometry.computeVertexNormals();
             }

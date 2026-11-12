@@ -179,6 +179,20 @@
     var CLOTH_COLORS={white:{hex:0xe8e6e0,name:'Weiß'},charcoal:{hex:0x2a2c30,name:'Anthrazit'},grey:{hex:0x6b6e73,name:'Grau'},black:{hex:0x161618,name:'Schwarz'},navy:{hex:0x233047,name:'Navy'},blue:{hex:0x3a5a8a,name:'Blau'},red:{hex:0x8f3328,name:'Rot'},green:{hex:0x3a5a3a,name:'Grün'},olive:{hex:0x57592f,name:'Oliv'},mustard:{hex:0xb8893a,name:'Senf'},burgundy:{hex:0x5a2530,name:'Bordeaux'},sand:{hex:0xc9b487,name:'Sand'},teal:{hex:0x2a6a6a,name:'Petrol'}};
     // Die Kleid-ZONEN: welcher Schnitt welche Baum-Teile hüllt (inflate = Hüllen-
     // Abstand — das Lab-Prinzip „Kleidung wird AUS der Haut extrudiert" als Zeilen).
+    // die Teile eines Glieds im Baum, beide Seiten (die Kette seiner Träger, LEIB_RELIEF.traeger — die Haut gehört dem Teil, dessen
+    // Mitte ihr am nächsten liegt): `von`…`bis` die Glieder der Kette (ohne Wort alle samt Gelenk-Kugel). Der kurze Ärmel und die
+    // kurze Hose tragen die ersten drei von vier (bis ~0,73 der Länge, wie zuvor die Mitten der Muskel-Kugeln sie schnitten),
+    // die Unterhose das erste des Schenkels (bis ~0,27)
+    function _kleidKette(glied, von, bis) {
+        var eine = function (sd) {
+            return _reliefKette(glied, sd).slice(von || 0, bis == null ? undefined : bis);
+        };
+        return eine(1)
+            .concat(eine(-1))
+            .map(function (e) {
+                return e.name;
+            });
+    }
     function kleidZonen(d) {
         d = d || {};
         var farbe = function (key, fallback) {
@@ -199,15 +213,14 @@
                 "neckBase", "clavicle1", "clavicle-1",
                 "pelvis", "glute1", "glute-1",
             ];
-            // Ärmel = die GANZE Oberarm-Muskelgruppe (deltoid+bicep+tricep+uarm
+            // Ärmel = die GANZE Oberarm-Gruppe (der Deltamuskel und die Kette des Oberarms, LEIB_RELIEF.traeger,
             // hängen alle am arm-Gelenk — eine Teil-Hülle allein ließe Haut ragen).
             if (top === "tshirt" || top === "pullover" || top === "poncho")
                 topTeile = topTeile.concat([
-                    "deltoid1", "deltoid-1", "bicep1", "bicep-1",
-                    "tricep1", "tricep-1", "uarm1", "uarm-1",
-                ]);
+                    "deltoid1", "deltoid-1",
+                ]).concat(_kleidKette("oberarm", 0, 3));
             // K45-2 (rein additiv): der Pullover trägt den LANGEN Ärmel des Labors (buildTop: Unterarm und Ellbogen dazu)
-            if (top === "pullover") topTeile = topTeile.concat(["forearm1", "forearm-1", "elbow1", "elbow-1"]);
+            if (top === "pullover") topTeile = topTeile.concat(_kleidKette("oberarm", 3), _kleidKette("unterarm"), ["elbow1", "elbow-1"]);
             // ... und der Kragen des Stoffs aus der Haut sitzt UNTER der Hals-Wurzel (Lab buildTop: neckBase ist ausgenommen —
             // die Haut-Region der Hals-Wurzel liegt als Ring um den Hals: ein Halsband statt eines Kragens; der Poncho hüllt)
             if (top !== "poncho") topTeile = topTeile.filter(function (t) { return t !== "neckBase"; });
@@ -233,11 +246,10 @@
         var bottom = d.bottom || "pants";
         if (bottom !== "none") {
             var botTeile = [
-                "pelvis", "glute1", "glute-1", "quad1", "quad-1", "vlat1", "vlat-1",
-                "adduct1", "adduct-1", "hamstring1", "hamstring-1",
-            ];
+                "pelvis", "glute1", "glute-1",
+            ].concat(_kleidKette("oberschenkel", 0, 3));
             if (bottom === "pants")
-                botTeile = botTeile.concat(["kneecap1", "kneecap-1", "calf1", "calf-1", "shin1", "shin-1"]);
+                botTeile = botTeile.concat(_kleidKette("oberschenkel", 3), _kleidKette("unterschenkel"));
             zonen.push({
                 schnitt: bottom,
                 teile: botTeile,
@@ -253,7 +265,7 @@
             // gemalten Shorts (MATERIAL_KLASSEN.shorts), dünn aus der Haut gehoben (vorher standen die Shorts-Kugeln frei)
             zonen.push({
                 schnitt: "unterhose",
-                teile: ["pelvis", "glute1", "glute-1"],
+                teile: ["pelvis", "glute1", "glute-1"].concat(_kleidKette("oberschenkel", 0, 1)),
                 hex: MATERIAL_KLASSEN.shorts.c,
                 rough: MATERIAL_KLASSEN.shorts.r,
                 webe: "cotton",
@@ -1043,8 +1055,8 @@
     // gießt — als DATEN (MESHFREI §8), gemessen an der Anthropometrie (erwachsener Mann 1,80 m). labProportionen,
     // labMorph und labLandmarks bleiben eingefroren (gate:koerper-kern); die Faktoren wirken im Bau.
     //   hand: mass skaliert jede Länge der Hand, breite zusätzlich Mittelhand, Finger-Abstand und -Dicke (vorher 1,45×
-    //     zu lang und 1,8× zu breit — die Rechen-Hand der Tour) · unterarm: Querschnitt der Unterarm-Ellipse und die
-    //     Lage ihres Bauchs (vorher 1,44× breiter als der Oberarm — die Popeye-Arme) · handgelenk: Querschnitt · fuss:
+    //     zu lang und 1,8× zu breit — die Rechen-Hand der Tour) · Unterarm und Handgelenk trägt seit w28-leib-kanon das Profil der Liste
+    //     (LEIB_RELIEF; ihre Zeilen `unterarm`, `handgelenk` fielen) · fuss:
     //     Längen-Faktor (die Ferse-bis-Zeh-Kette war 0,167 Hk statt ~0,15).
     //   kopf: mass = die Kopf-Skala (vorher 0,92: ein Sechs-Kopf-Comic-Mensch, kopfH 0,16 Hk statt 0,13), breite = die
     //     Quer-Skala (der Schädel war 1,5× zu breit) · auge: mass = Augapfel-Skala in der Kopf-Gruppe (vorher 2,3× der
@@ -1137,8 +1149,6 @@
     // prettier-ignore
     var MENSCH_GESTALT = Object.freeze({
         hand: Object.freeze({ mass: 0.67, breite: 0.8 }),
-        unterarm: Object.freeze({ breite: 0.66, tiefe: 0.8, bauch: 0.42 }),
-        handgelenk: Object.freeze({ breite: 0.72, tiefe: 0.52 }),
         fuss: Object.freeze({ laenge: 0.9 }),
         kopf: Object.freeze({ mass: 0.7, breite: 0.86 }),
         auge: Object.freeze({ mass: 0.5, abstand: 0.8, pupille: 0.55, hoehle: 1.15, zurueck: 0.03, lid: Object.freeze([0.03, 0.025]),
@@ -1152,9 +1162,8 @@
             mundTiefer: 0.035 }),
         rumpf: Object.freeze({ brustkorb: 0.52, nacken: 0.56, brust: 0.82, pecTiefer: 0.25, trapTiefer: 0.16, tiefe: 0.65, breite: 0.65, taille: 1.35, flanke: 0.6 }),
         schulter: Object.freeze({ tiefer: 0.35, hoch: 0.9, breit: 0.7, tief: 1, aussen: 0.03, gelenk: 0.82 }),
-        arm: Object.freeze({ dicke: 0.85 }),
         becken: Object.freeze({ breit: 0.72, hoch: 0.8 }),
-        bein: Object.freeze({ abstand: 0.55, dicke: 0.9 }),
+        bein: Object.freeze({ abstand: 0.55 }),
         hals: Object.freeze({ r: 0.13, tief: 0.92, unten: 0.08, inKopf: 0.12, laenge: 1.3, z: Object.freeze([-0.04, -0.01]),
             scm: Object.freeze([Object.freeze([0.04, -0.01, 0.12]), Object.freeze([0.17, 0.17, -0.05]), 0.035]) }),
         schluesselbein: Object.freeze({ innen: Object.freeze([0.07, -0.03, 0.17]), aussen: Object.freeze([0.68, -0.03, -0.03]), r: 0.035 }),
@@ -1867,7 +1876,7 @@
             charScale: { x: h * 0.93, y: h, z: h * 0.93 },
             armPose: {
                 xMul: shMod,
-                rotZ: 0.06 + p.gender * 0.05 + p.arms * 1.30,
+                rotZ: p.arms * 1.30,
                 rotX: 0.05 - p.arms * 0.05,
             },
             headPose: { ageDrop: p.age * 0.08, fwd: p.age * 0.12 },
@@ -1896,28 +1905,8 @@
                         z: b.z * (1 + totalFat * 0.2) * (1.0 + (1 - p.gender) * 0.32),
                     };
                 },
-                quad: function (b) {
-                    return { x: b.x * legM * (1 + totalFat * 0.15), y: b.y * legMY, z: b.z * legM };
-                },
-                hamstring: function (b) {
-                    return { x: b.x * legM, y: b.y, z: b.z * legM };
-                },
-                calf: function (b) {
-                    return { x: b.x * legM, y: b.y * legMY, z: b.z * legM };
-                },
-                bicep: function (b) {
-                    return { x: b.x * armM, y: b.y * armMY, z: b.z * armM };
-                },
-                tricep: function (b) {
-                    return { x: b.x * armM, y: b.y * armMY, z: b.z * armM };
-                },
-                uarm: function (b) {
-                    return { x: b.x * armM, y: b.y * armMY, z: b.z * armM };
-                },
-                forearm: function (b) {
-                    var fm = (0.70 + p.gender * 0.30) * (0.92 + effTone * 0.12);
-                    return { x: b.x * fm, y: b.y, z: b.z * fm };
-                },
+                // (die Muskeln der Glieder — quad, hamstring, calf, bicep, tricep, uarm, forearm — trugen hier bis w28-leib-kanon
+                // eigene Formeln: die Gestalt der Glieder ist das Profil der Liste, LEIB_RELIEF, skaliert von armM und legM)
                 deltoid: function (b) {
                     return { x: b.x * armM * shMod, y: b.y * armM, z: b.z * armM * shMod };
                 },
@@ -2065,8 +2054,8 @@
     // das Becken des Gesetzes in ihre Anthropometrie stellen — EINE Stelle, die Welt, Labor, Menge und Kleid lesen (sie gießen aus
     // diesem Baum). rumpf.tiefe / rumpf.breite stauchen jedes Blatt des Rumpfs (ohne Hals, Kopf, Arm) in Tiefe und Quere um die
     // Mitte, rumpf.taille weitet darin Bauch und Flanken-Muskel, rumpf.flanke rückt den Latissimus unter den Arm; becken.breit
-    // staucht Becken und Gesäß quer, becken.hoch hebt den Boden des Beckens bei festem Kamm (der Schritt); arm.dicke nimmt dem
-    // Oberarm (Bizeps, Trizeps, Kern) die Quere, bein.dicke dem Oberschenkel; schulter.gelenk (labProportionen) rückt das
+    // staucht Becken und Gesäß quer, becken.hoch hebt den Boden des Beckens bei festem Kamm (der Schritt); die Dicke der Glieder
+    // trägt das Profil der Liste (LEIB_RELIEF.traeger — arm.dicke und bein.dicke fielen); schulter.gelenk (labProportionen) rückt das
     // Schulter-Gelenk, bein.abstand das Hüft-Gelenk zur Mitte. Dazu im Statur-Gesetz (labMorph): der Brustkorb der Frau 0,92 statt
     // 0,8 der Breite des Mannes, ihre Taille 0,86 statt 0,76, der Brust-Muskel des Mannes 0,88 statt 1 (ANSUR: Brust und Taille
     // je H bei Frau und Mann fast gleich). Bis w28-leib-kanon maß der Mann am Ofen L0 Brust-Tiefe 0,214 H (Soll 0,145), Brust-
@@ -2114,14 +2103,6 @@
         skala(parts.pelvis, 1, G.becken.hoch, 1);
         [parts.waist, parts.oblique1, parts["oblique-1"]].forEach(stauche(G.rumpf.taille, 1));
         [parts.lat1, parts["lat-1"]].forEach(stauche(G.rumpf.flanke, 1));
-        ["1", "-1"].forEach(function (sd) {
-            ["bicep", "tricep", "uarm", "forearm"].forEach(function (m) {
-                skala(parts[m + sd], G.arm.dicke, 1, G.arm.dicke);
-            });
-            ["quad", "adduct", "hamstring", "vlat"].forEach(function (m) {
-                skala(parts[m + sd], G.bein.dicke, 1, G.bein.dicke);
-            });
-        });
     }
     function bauMensch(F) {
         const {H,headSeg,acromionY,nippleY,trochanterY,shoulderHW,hipHW,baseArmX,thighLen,calfLen,upperArmLen,forearmLen,skullBaseR,skullCY,skullRX,skullRY,skullRZ,eyeDist,jawW,chinW,browY,eyeY,cheekY,noseY,lipY:lipY0,chinY:chinY0,jawY:jawY0,hairlineY} = labProportionen();
@@ -2141,11 +2122,25 @@
             if (node.scale) base[name] = { x: node.scale.x, y: node.scale.y, z: node.scale.z };
             return node;
         };
+        // DIE TRÄGER DER GLIEDER (LEIB_RELIEF.traeger): die Kette eines Glieds vom Ursprung seiner Gruppe bis `ende` (dem nächsten
+        // Gelenk, im Raum der Gruppe) — jede Form mit dem Radius des Profils an ihrer Mitte, längs der Achse gestreckt; `base.r`
+        // merkt den Radius des Starts (morphAuf stellt quer den Radius des Leibs, `_reliefTraegerAuf`)
+        const RM0 = _reliefMass(null);
+        const kette = (glied, sd, gruppe, ende) => {
+            const L = Math.sqrt(ende[0] * ende[0] + ende[1] * ende[1] + ende[2] * ende[2]); // (die Wurzel ist exakt gerundet — keine Transzendente im Bau: die Plattform-Probe des Ofens)
+            _reliefKette(glied, sd).forEach((e) => {
+                const r = RM0.radius(glied, e.s) * RM0.quer;
+                const k = reg(e.name, s(r, matSkin, [1, e.halb ? (e.halb * L) / r : 1, 1]));
+                base[e.name].r = r;
+                k.position.set(ende[0] * e.s, ende[1] * e.s, ende[2] * e.s);
+                gruppe.add(k);
+            });
+        };
         const character=F.gruppe();var eyeL,eyeR,irisL,irisR,lidTL,lidTR,lidBL,lidBR,browL,browR,upperLipRef,lowerLipRef;
         const torsoG=F.gruppe();torsoG.position.set(0,trochanterY,0);character.add(torsoG);reg('torso',torsoG);
         const pelvis=reg('pelvis',s(0.7,matSkin,[1.15,1.0,0.7]));pelvis.position.set(0,trochanterY,0);character.add(pelvis);
         [-1,1].forEach(sd=>{const g=reg('glute'+(sd===1?'1':'-1'),s(0.40,matSkin,[0.82,0.8,0.82]));g.position.set(sd*0.26,trochanterY-0.1,-0.12);character.add(g);});
-        [-1,1].forEach(sd=>{const hipG=F.gruppe();hipG.position.set(sd*hipHW*MENSCH_GESTALT.bein.abstand,trochanterY,0);reg('hip'+(sd===1?'1':'-1'),hipG);const qR=0.32;const quad=reg('quad'+(sd===1?'1':'-1'),s(qR,matSkin,[0.9,thighLen/(qR*2),0.9]));quad.position.set(0,-thighLen/2,0.1);hipG.add(quad);const vL=reg('vlat'+(sd===1?'1':'-1'),s(0.16,matSkin,[0.85,thighLen/0.41,0.9]));vL.position.set(sd*0.17,-thighLen/2,0.06);hipG.add(vL);const ad2=reg('adduct'+(sd===1?'1':'-1'),s(0.17,matSkin,[0.9,thighLen/0.6,0.85]));ad2.position.set(sd*-0.2,-thighLen/2,-0.02);hipG.add(ad2);const ham=reg('hamstring'+(sd===1?'1':'-1'),s(0.20,matSkin,[1,thighLen/0.40,0.9]));ham.position.set(0,-thighLen/2,-0.2);hipG.add(ham);const knee=reg('kneecap'+(sd===1?'1':'-1'),s(0.24,matJoint,[1.05,0.75,1.05]));knee.position.set(0,-thighLen,0.05);hipG.add(knee);const kneeG=F.gruppe();kneeG.position.set(0,-thighLen,0);hipG.add(kneeG);reg('knee'+(sd===1?'1':'-1'),kneeG);const cR=0.27;const calf=reg('calf'+(sd===1?'1':'-1'),s(cR,matSkin,[1,calfLen/(cR*2),0.8]));calf.position.set(0,-calfLen/2,-0.12);kneeG.add(calf);const shin=reg('shin'+(sd===1?'1':'-1'),s(0.16,matSkin,[1,calfLen/0.36,1]));shin.position.set(0,-calfLen/2,0.1);kneeG.add(shin);const aY=-calfLen;const ankleG=F.gruppe();ankleG.position.set(0,aY,0);kneeG.add(ankleG);reg('ankle'+(sd===1?'1':'-1'),ankleG);const ankleSphere=s(0.15,matJoint,[1.1,0.5,1]);ankleG.add(ankleSphere);const foot=F.gruppe();const heel=s(0.2,matSkin,[1.2,1,1.5]);heel.position.set(0,0,-0.15);foot.add(heel);const mid=s(0.25,matSkin,[0.8,0.6,1.5]);mid.position.set(0,-0.05,0.2);foot.add(mid);for(let i=0;i<5;i++){const tX=(i-2)*0.08,tZ=0.4+(i*0.02),tR=0.06-(i*0.005);const t1=s(tR,matSkin,[1.5,0.8,1.2]);t1.position.set(tX,-0.15,tZ);foot.add(t1);const t2=s(tR*0.8,matSkin,[1.5,0.8,1.2]);t2.position.set(tX,-0.15,tZ+0.15);foot.add(t2);}foot.position.set(0,-0.1,0.1);foot.scale.z=MENSCH_GESTALT.fuss.laenge;ankleG.add(foot);hipG.rotation.z=sd*0.05;character.add(hipG);});
+        [-1,1].forEach(sd=>{const hipG=F.gruppe();hipG.position.set(sd*hipHW*MENSCH_GESTALT.bein.abstand,trochanterY,0);reg('hip'+(sd===1?'1':'-1'),hipG);kette('oberschenkel',sd,hipG,[0,-thighLen,0]);const kneeG=F.gruppe();kneeG.position.set(0,-thighLen,0);hipG.add(kneeG);reg('knee'+(sd===1?'1':'-1'),kneeG);kette('unterschenkel',sd,kneeG,[0,-calfLen,0]);const aY=-calfLen;const ankleG=F.gruppe();ankleG.position.set(0,aY,0);kneeG.add(ankleG);reg('ankle'+(sd===1?'1':'-1'),ankleG);const ankleSphere=s(0.15,matJoint,[1.1,0.5,1]);ankleG.add(ankleSphere);const foot=F.gruppe();const heel=s(0.2,matSkin,[1.2,1,1.5]);heel.position.set(0,0,-0.15);foot.add(heel);const mid=s(0.25,matSkin,[0.8,0.6,1.5]);mid.position.set(0,-0.05,0.2);foot.add(mid);for(let i=0;i<5;i++){const tX=(i-2)*0.08,tZ=0.4+(i*0.02),tR=0.06-(i*0.005);const t1=s(tR,matSkin,[1.5,0.8,1.2]);t1.position.set(tX,-0.15,tZ);foot.add(t1);const t2=s(tR*0.8,matSkin,[1.5,0.8,1.2]);t2.position.set(tX,-0.15,tZ+0.15);foot.add(t2);}foot.position.set(0,-0.1,0.1);foot.scale.z=MENSCH_GESTALT.fuss.laenge;ankleG.add(foot);hipG.rotation.z=sd*0.05;character.add(hipG);});
         const ribcage=reg('ribcage',s(1.0,matSkin,[shoulderHW,1.2*MENSCH_GESTALT.rumpf.brustkorb,0.6]));ribcage.position.set(0,nippleY-trochanterY,0);torsoG.add(ribcage);
         const waist=reg('waist',s(0.5,matSkin,[1.14,1.0,0.5]));waist.position.set(0,(nippleY+trochanterY)/2-trochanterY,0);torsoG.add(waist);
         [-1,1].forEach(sd=>{const g=F.gruppe();const t1=s(0.5,matSkin,[0.8,0.6,0.3]);t1.position.set(sd*0.7,acromionY-0.5-trochanterY,-0.1);g.add(t1);const t2=s(0.4,matSkin,[0.6,0.6,0.3]);t2.position.set(sd*0.4,acromionY-1.0-trochanterY,-0.1);g.add(t2);const t3=s(0.3,matSkin,[0.4,0.6,0.3]);t3.position.set(sd*0.1,0.5,-0.1);g.add(t3);reg('lat'+(sd===1?'1':'-1'),g);torsoG.add(g);});
@@ -2164,13 +2159,13 @@
         const nf1=reg('napeFill1',s(0.10,matSkin,[0.9,1.3,1.0]));nf1.position.set(0,5.10-trochanterY,-0.14);torsoG.add(nf1);   // HINTERHAUPT-NACKEN-FUELLER: harness-befund -- schaedelbasis hing 0.39-0.43 HINTER dem hals,
         const nf2=reg('napeFill2',s(0.08,matSkin,[0.85,1.1,0.95]));nf2.position.set(0,5.24-trochanterY,-0.15);torsoG.add(nf2);   // man sah von hinten unter den offenen schaedel ins leere. koerperfeld waechst jetzt hoch dagegen.
         [-1,1].forEach(sd=>{const z=_zylinderZwischen([sd*SB.innen[0],nSY+SB.innen[1],SB.innen[2]],[sd*SB.aussen[0],nSY+SB.aussen[1],SB.aussen[2]]);const cl=reg('clavicle'+(sd===1?'1':'-1'),c(SB.r,SB.r*0.8,z.L,matSkin));cl.position.set(z.mitte[0],z.mitte[1]-trochanterY,z.mitte[2]);cl.rotation.set(z.rot[0],z.rot[1],z.rot[2]);torsoG.add(cl);});   // w21-leib-bau: das schluesselbein liegt von der drosselgrube zur schulterhoehe (die lab-drehung kippte den y-zylinder nur 29 grad: zwei pfaehle neben dem hals)
-        [-1,1].forEach(sd=>{const armG=F.gruppe();armG.position.set(sd*baseArmX,acromionY-trochanterY,0);reg('arm'+(sd===1?'1':'-1'),armG);const delt=reg('deltoid'+(sd===1?'1':'-1'),s(0.30,matSkin,[1,1.1,1]));armG.add(delt);const bic=reg('bicep'+(sd===1?'1':'-1'),s(0.26,matSkin,[0.9,upperArmLen/0.52,1]));bic.position.set(0,-upperArmLen/2,0.1);armG.add(bic);const tri=reg('tricep'+(sd===1?'1':'-1'),s(0.27,matSkin,[0.9,upperArmLen/0.54,0.9]));tri.position.set(0,-upperArmLen/2,-0.15);armG.add(tri);const uarm=reg('uarm'+(sd===1?'1':'-1'),s(0.23,matSkin,[1.0,upperArmLen/0.46,0.96]));uarm.position.set(0,-upperArmLen/2,-0.02);armG.add(uarm);const el=s(0.165,matJoint,[1,0.75,1]);el.position.set(0,-upperArmLen,0);armG.add(el);const elbowG=F.gruppe();elbowG.position.set(0,-upperArmLen,0);armG.add(elbowG);reg('elbow'+(sd===1?'1':'-1'),elbowG);const UA=MENSCH_GESTALT.unterarm,HG=MENSCH_GESTALT.handgelenk;const fa=reg('forearm'+(sd===1?'1':'-1'),s(0.24,matSkin,[1.2*UA.breite,forearmLen/0.48,UA.tiefe]));fa.position.set(sd*0.05,-forearmLen*UA.bauch,0);elbowG.add(fa);const wY=-forearmLen;const wr=s(0.14,matSkin,[HG.breite,0.5,HG.tiefe]);wr.position.set(sd*0.05,wY,0);elbowG.add(wr);
+        [-1,1].forEach(sd=>{const armG=F.gruppe();armG.position.set(sd*baseArmX,acromionY-trochanterY,0);reg('arm'+(sd===1?'1':'-1'),armG);const delt=reg('deltoid'+(sd===1?'1':'-1'),s(0.30,matSkin,[1,1.1,1]));armG.add(delt);kette('oberarm',sd,armG,[0,-upperArmLen,0]);const elbowG=F.gruppe();elbowG.position.set(0,-upperArmLen,0);armG.add(elbowG);reg('elbow'+(sd===1?'1':'-1'),elbowG);const wY=-forearmLen;
         const hk=MENSCH_GESTALT.hand.mass,hb=MENSCH_GESTALT.hand.breite;const hand=F.gruppe();hand.userData.sd=sd;hand.userData.fingers=[];hand.userData.thumbs=[];
         const palmG=F.gruppe();hand.add(palmG);hand.userData.palmG=palmG;reg('palm'+(sd===1?'1':'-1'),palmG);
         const palm=s(0.25*hk,matSkin,[hb,1.2,0.5]);palmG.add(palm);
         for(let i=0;i<4;i++){const fX=(i-1.5)*0.12*hk*hb,fZ=(0.1-Math.abs(i-1.5)*0.05)*hk;const fG=F.gruppe();fG.position.set(fX,-0.28*hk,fZ);fG.rotation.z=(i-1.5)*0.13;reg('fA'+i+'_'+(sd===1?'1':'-1'),fG);fG.add(s(0.08*hk,matSkin,[0.9*hb,0.8,0.9]));const f1=c(0.06*hk*hb,0.05*hk*hb,0.18*hk,matSkin);f1.position.y=-0.09*hk;fG.add(f1);const jG1=F.gruppe();jG1.position.set(0,-0.18*hk,0);reg('fB'+i+'_'+(sd===1?'1':'-1'),jG1);jG1.add(s(0.05*hk*hb,matSkin,[1.0,0.8,1.0]));const f2=c(0.05*hk*hb,0.04*hk*hb,0.14*hk,matSkin);f2.position.set(0,-0.07*hk,-0.01*hk);jG1.add(f2);const jG2=F.gruppe();jG2.position.set(0,-0.14*hk,-0.02*hk);reg('fC'+i+'_'+(sd===1?'1':'-1'),jG2);jG2.add(s(0.04*hk*hb,matSkin,[1.0,0.8,1.0]));const f3=c(0.04*hk*hb,0.03*hk*hb,0.1*hk,matSkin);f3.position.set(0,-0.05*hk,-0.04*hk);jG2.add(f3);jG1.add(jG2);fG.add(jG1);palmG.add(fG);hand.userData.fingers.push({mcp:fG,pip:jG1,dip:jG2});}
         const thumbG=F.gruppe();thumbG.position.set(-sd*0.3*hk*hb,-0.15*hk,0.1*hk);thumbG.rotation.set(0,sd*0.5,sd*-1.2);reg('tA_'+(sd===1?'1':'-1'),thumbG);thumbG.add(s(0.1*hk,matSkin,[0.8,1.5,0.8]));const thumbF1=c(0.06*hk,0.05*hk,0.12*hk,matSkin);thumbF1.position.y=-0.06*hk;thumbG.add(thumbF1);const thumbJG=F.gruppe();thumbJG.position.set(0,-0.12*hk,0);reg('tB_'+(sd===1?'1':'-1'),thumbJG);thumbJG.add(s(0.06*hk,matSkin,[0.8,0.8,0.8]));const thumbTip=c(0.05*hk,0.04*hk,0.08*hk,matSkin);thumbTip.position.y=-0.04*hk;thumbJG.add(thumbTip);thumbG.add(thumbJG);palmG.add(thumbG);hand.userData.thumbs.push({mcp:thumbG,ip:thumbJG});
-        hand.position.set(sd*0.05,wY-0.3*hk,0);elbowG.add(hand);reg('hand'+(sd===1?'1':'-1'),hand);
+        hand.position.set(sd*0.05,wY-0.3*hk,0);elbowG.add(hand);kette('unterarm',sd,elbowG,[sd*0.05,wY-0.3*hk,0]);reg('hand'+(sd===1?'1':'-1'),hand);
         armG.rotation.z=sd*0.2;armG.rotation.x=0.05;armG.userData.baseRotZ=sd*0.2;armG.userData.baseRotX=0.05;torsoG.add(armG);});
         [-1,1].forEach(sd=>{const n='deltoid'+(sd===1?'1':'-1'),d=parts[n],SU=MENSCH_GESTALT.schulter;d.position.set(sd*SU.aussen,-SU.tiefer,0);d.scale.set(SU.breit,1.1*SU.hoch,SU.tief);base[n]={x:d.scale.x,y:d.scale.y,z:d.scale.z};});   // w21-leib-bau: die schulter-kappe haengt unter der schulterhoehe (die kugel um das gelenk ragte 0.34 E darueber, ueber das kinn)
         const headGroup=F.gruppe();headGroup.position.y=KL.posY-trochanterY;reg('head',headGroup);var HEAD_S=KL.S,HEAD_B=KL.B;headGroup.scale.set(HEAD_S*HEAD_B,HEAD_S,HEAD_S);base.headPosY=KL.posY;const nY=noseY-MENSCH_GESTALT.gesicht.naseTiefer,bY=browY+MENSCH_GESTALT.gesicht.brauHoch;const UG=MENSCH_GESTALT.gesicht.unten,lipY=nY+(lipY0-nY)*UG-MENSCH_GESTALT.gesicht.mundTiefer,chinY=nY+(chinY0-nY)*UG,jawY=nY+(jawY0-nY)*UG;const SH=MENSCH_GESTALT.schaedel.hoch;   // w21-leib-bau: der scheitel steht auf H, der kopf misst den kanon (_kopfLage; vorher hielt die pivot-korrektur das KINN und der kopf wuchs ueber H)
@@ -2202,6 +2197,7 @@
         [-1,1].forEach(sd=>{const g=F.gruppe();for(let i=0;i<5;i++){const b=c(0.012,0.012,0.07,matHair);b.position.set((i-2)*0.032,-Math.abs(i-2)*0.008,0);b.rotation.z=sd*0.2;g.add(b);}g.position.set(sd*aD/2,bY+0.03,0.35);g.rotation.z=sd*-0.1;headGroup.add(g);if(sd<0)browL=g;else browR=g;});
         torsoG.add(headGroup);
         _kanonAuf(parts, base, [adamsApple, nape], kugeln);
+        _reliefTraegerAuf({ parts: parts, base: base }, null);
 
         return {
             character,
@@ -2227,8 +2223,9 @@
         const baseArmX = _P.baseArmX, trochanterY = _P.trochanterY;
         const character = B.character, parts = B.parts, base = B.base;
         const M = labMorph(dials);
-        character.scale.set(M.charScale.x,M.charScale.y,M.charScale.z);const MU=M.shell;function aply(m,sc){m.scale.set(sc.x,sc.y,sc.z);return sc;}if(parts.ribcage)parts.ribcage.userData.baseScaleY=aply(parts.ribcage,MU.ribcage(base.ribcage)).y;if(parts.pelvis)aply(parts.pelvis,MU.pelvis(base.pelvis));if(parts.waist)aply(parts.waist,MU.waist(base.waist));function pair(name,fn){[-1,1].forEach(sd=>{const k=name+(sd===1?'1':'-1');if(parts[k])fn(parts[k],base[k],sd);});}if(parts.abs)parts.abs.userData.baseScaleY=aply(parts.abs,MU.abs(base.abs)).y;pair('oblique',(m,b)=>aply(m,MU.oblique(b)));pair('glute',(m,b)=>aply(m,MU.glute(b)));pair('quad',(m,b)=>{m.userData.baseScaleY=aply(m,MU.quad(b)).y;});pair('hamstring',(m,b)=>aply(m,MU.hamstring(b)));pair('calf',(m,b)=>{m.userData.baseScaleY=aply(m,MU.calf(b)).y;});pair('bicep',(m,b)=>{m.userData.baseScaleY=aply(m,MU.bicep(b)).y;});pair('tricep',(m,b)=>aply(m,MU.tricep(b)));pair('uarm',(m,b)=>aply(m,MU.uarm(b)));pair('forearm',(m,b)=>aply(m,MU.forearm(b)));pair('deltoid',(m,b)=>aply(m,MU.deltoid(b)));pair('trap',(m,b)=>aply(m,MU.trap(b)));pair('lat',(m,b)=>aply(m,MU.lat(b)));if(parts.upperBack)aply(parts.upperBack,MU.upperBack(base.upperBack));if(parts.chest){var csc=aply(parts.chest,MU.chest(base.chest));parts.chest.userData.baseScaleX=csc.x;parts.chest.userData.baseScaleY=csc.y;parts.chest.userData.baseScaleZ=csc.z;}pair('pec',(m,b)=>aply(m,MU.pec(b)));pair('breast',(m,b)=>aply(m,MU.breast(b)));if(parts.neckMain)aply(parts.neckMain,MU.neck(base.neckMain));if(parts.neckBase)aply(parts.neckBase,MU.neck(base.neckBase));pair('scm',(m,b)=>aply(m,MU.neck(b)));pair('tneck',(m,b)=>aply(m,MU.neck(b)));if(parts.jaw)aply(parts.jaw,MU.jaw(base.jaw));if(parts.chin)aply(parts.chin,MU.chin(base.chin));pair('buccal',(m,b)=>aply(m,MU.buccal(b)));pair('cheekbone',(m,b)=>aply(m,MU.cheekbone(b)));pair('masseter',(m,b)=>aply(m,MU.masseter(b)));[-1,1].forEach(sd=>{const k='arm'+(sd===1?'1':'-1');if(parts[k]){parts[k].position.x=sd*baseArmX*M.armPose.xMul;const bz=sd*M.armPose.rotZ;const bx=M.armPose.rotX;parts[k].rotation.z=bz;parts[k].rotation.x=bx;parts[k].userData.baseRotZ=bz;parts[k].userData.baseRotX=bx;}});[-1,1].forEach(sd=>{const k='hip'+(sd===1?'1':'-1');if(parts[k])parts[k].position.x=sd*_P.hipHW*MENSCH_GESTALT.bein.abstand*M.beinPose.xMul;});if(parts.head){parts.head.position.y=base.headPosY-trochanterY-M.headPose.ageDrop;parts.head.position.z=M.headPose.fwd;}
-        _armRuhe(B);
+        character.scale.set(M.charScale.x,M.charScale.y,M.charScale.z);const MU=M.shell;function aply(m,sc){m.scale.set(sc.x,sc.y,sc.z);return sc;}if(parts.ribcage)parts.ribcage.userData.baseScaleY=aply(parts.ribcage,MU.ribcage(base.ribcage)).y;if(parts.pelvis)aply(parts.pelvis,MU.pelvis(base.pelvis));if(parts.waist)aply(parts.waist,MU.waist(base.waist));function pair(name,fn){[-1,1].forEach(sd=>{const k=name+(sd===1?'1':'-1');if(parts[k])fn(parts[k],base[k],sd);});}if(parts.abs)parts.abs.userData.baseScaleY=aply(parts.abs,MU.abs(base.abs)).y;pair('oblique',(m,b)=>aply(m,MU.oblique(b)));pair('glute',(m,b)=>aply(m,MU.glute(b)));pair('deltoid',(m,b)=>aply(m,MU.deltoid(b)));pair('trap',(m,b)=>aply(m,MU.trap(b)));pair('lat',(m,b)=>aply(m,MU.lat(b)));if(parts.upperBack)aply(parts.upperBack,MU.upperBack(base.upperBack));if(parts.chest){var csc=aply(parts.chest,MU.chest(base.chest));parts.chest.userData.baseScaleX=csc.x;parts.chest.userData.baseScaleY=csc.y;parts.chest.userData.baseScaleZ=csc.z;}pair('pec',(m,b)=>aply(m,MU.pec(b)));pair('breast',(m,b)=>aply(m,MU.breast(b)));if(parts.neckMain)aply(parts.neckMain,MU.neck(base.neckMain));if(parts.neckBase)aply(parts.neckBase,MU.neck(base.neckBase));pair('scm',(m,b)=>aply(m,MU.neck(b)));pair('tneck',(m,b)=>aply(m,MU.neck(b)));if(parts.jaw)aply(parts.jaw,MU.jaw(base.jaw));if(parts.chin)aply(parts.chin,MU.chin(base.chin));pair('buccal',(m,b)=>aply(m,MU.buccal(b)));pair('cheekbone',(m,b)=>aply(m,MU.cheekbone(b)));pair('masseter',(m,b)=>aply(m,MU.masseter(b)));[-1,1].forEach(sd=>{const k='arm'+(sd===1?'1':'-1');if(parts[k]){parts[k].position.x=sd*baseArmX*M.armPose.xMul;const bz=sd*M.armPose.rotZ;const bx=M.armPose.rotX;parts[k].rotation.z=bz;parts[k].rotation.x=bx;parts[k].userData.baseRotZ=bz;parts[k].userData.baseRotX=bx;}});[-1,1].forEach(sd=>{const k='hip'+(sd===1?'1':'-1');if(parts[k])parts[k].position.x=sd*_P.hipHW*MENSCH_GESTALT.bein.abstand*M.beinPose.xMul;});if(parts.head){parts.head.position.y=base.headPosY-trochanterY-M.headPose.ageDrop;parts.head.position.z=M.headPose.fwd;}
+        _reliefTraegerAuf(B, dials);
+        _armRuhe(B, dials);
         gesichtAuf(B, dials);
         return M;
     }
@@ -2251,9 +2248,14 @@
     // das Depot obendrauf — die muskulöse Frau bei mass 1 (tone 1, gender 0) spreizte 43° (ohne Depot) bis 54° (mit), am Gitter
     // mass × tone × age × gender höchstens 21° mit der Hülle des Arms allein. Der Abstand je Punkt ist die erste Ordnung des Ellipsoids (f/|∇f|). Leser: der
     // Ofen (bakeMenschInstance: Guss, Gelenke, Bind-Pose), das Labor, die Linse (gate:koerper-kern Teil R).
+    // SEIT w28-leib-kanon MISST DIE RUHE AM PROFIL: die Kugeln des Arms sind die Träger aus der Liste (LEIB_RELIEF.traeger), die
+    // Haut des Arms liegt auf ihnen — die Luft der Ruhe ist nun, was der RUMPF über seinem Kern trägt (`_armLuft`: Haut 0,06, der Stoff
+    // beider Seiten, ein Hauch — nackt 0,07 E, im Hemd 0,134; vorher fest 0,12): Haut ruht an Haut, Stoff an Stoff. Der Arm beginnt am Lot (labMorph armPose.rotZ = arms · 1,30; der Vorhalt 0,06 + 0,05 g
+    // stellte die dicken Kugeln frei). Am Ofen L0 nackt: Abspreizung Mann 6,3° → 2,4°, Frau 11,8° → 8,9°, die Hand liegt am Schenkel.
     var ARM_RUHE = Object.freeze({
         naht: 0.25,
-        luft: 0.12,
+        depot: 0.4, // so viel vom Fett-Depot des Rumpfs (studios.K1) hält den Arm; der Rest weicht ihm (die Anlage)
+        hauch: 0.02, // die Luft zwischen den Hüllen von Arm und Rumpf (E); mit Haut und Stoff des Rumpfs die Luft der Ruhe (`_armLuft`)
         faelltAb: 0.1, // die Anlage: ein Stoff, dessen Lage so weit (E) über der Haut steht, fällt über den Arm (der Poncho 0,12; der Stoff aus der Haut ≤ 0,032)
         ueber: 0.3, // die Anlage: eine Ecke des fallenden Stoffs (der Poncho), von der aus die Mitte des Leibs um mehr als diesen Anteil IN den Arm zeigt, liegt über ihm und bleibt
         spalt: 0.02, // die Anlage: so weit (E, ~6 mm, zwei Luft-Breiten des Tuch-Gesetzes) liegt die gewichene Rumpf-Hülle über dem Arm
@@ -2302,13 +2304,26 @@
         for (; n && n !== wurzel; n = n.parent) M = _affMul(_affin(n), M);
         return M;
     }
+    // DIE LUFT DER RUHE (E): so weit hält der Träger des Arms (seine Haut liegt auf ihm) Abstand zum Kern des Rumpfs — die Haut
+    // des Rumpfs (leibHaut.dicke), der Stoff aus der Haut, den der Leib trägt (auf Rumpf und Arm je seine Lage, `kleidZonen`
+    // dicke; der fallende Stoff zählt nicht, er liegt über dem Arm), der Hauch und `depot` vom Fett-Depot des Rumpfs: nackt ruht Haut
+    // an Haut, bekleidet Stoff an Stoff, der Arm des Beleibten liegt auf der Flanke und drückt sie halb ein
+    function _armLuft(dials) {
+        var st = 0;
+        kleidZonen(dials || {}).forEach(function (z) {
+            if (z.dicke > st) st = z.dicke;
+        });
+        var fett = fettDepot(dials);
+        return MENSCH_GESTALT.leibHaut.dicke + 2 * st + ARM_RUHE.hauch + (fett && fett.d > 0 ? ARM_RUHE.depot * fett.d * fett.gelenk.torso : 0);
+    }
     var _ARM_RICHTUNG = null;
-    function _armRuhe(B) {
+    function _armRuhe(B, dials) {
         if (!B || !Array.isArray(B.kugeln)) throw new Error("morphAuf: der Baum trägt keine Kugeln (bauMensch) — die Ruhe der Arme folgt dem Gesetz");
         if (!B.kugeln.length) return; // ein Baum ohne Gestalt (die Morph-Probe der Linse): kein Kontakt
         var A = ARM_RUHE,
             P = B.parts,
             W = B.character,
+            luft = _armLuft(dials),
             i;
         ["arm1", "arm-1", "elbow1", "elbow-1", "deltoid1"].forEach(function (nm) {
             if (!P[nm]) throw new Error("morphAuf: der Arm ohne " + nm + " — die Ruhe der Arme braucht Schulter, Ellbogen und Naht");
@@ -2352,7 +2367,7 @@
         var ellipsoid = function (kg) {
             var M = _affVon(kg.n, W),
                 R = kg.r * Math.max(Math.hypot(M[0], M[1], M[2]), Math.hypot(M[3], M[4], M[5]), Math.hypot(M[6], M[7], M[8]));
-            return { li: _m3inv(M, 0, new Float64Array(9)), t: [M[9], M[10], M[11]], r: kg.r, R2: (R + A.luft) * (R + A.luft) };
+            return { li: _m3inv(M, 0, new Float64Array(9)), t: [M[9], M[10], M[11]], r: kg.r, R2: (R + luft) * (R + luft) };
         };
         var abstand = function (e, x, y, z) {
             var dx = x - e.t[0], dy = y - e.t[1], dz = z - e.t[2], L = e.li;
@@ -2382,7 +2397,7 @@
                 var e = E[k];
                 for (var p = 0; p < pkt.length; p += 3) {
                     var dx = pkt[p] - e.t[0], dy = pkt[p + 1] - e.t[1], dz = pkt[p + 2] - e.t[2];
-                    if (dx * dx + dy * dy + dz * dz < e.R2 && abstand(e, pkt[p], pkt[p + 1], pkt[p + 2]) < A.luft) return false;
+                    if (dx * dx + dy * dy + dz * dz < e.R2 && abstand(e, pkt[p], pkt[p + 1], pkt[p + 2]) < luft) return false;
                 }
             }
             return true;
@@ -3062,6 +3077,9 @@
             ["unterarm", 0.15, 60, 0.15, 40, 0.4, "Oberarmspeichenmuskel"],
             ["unterarm", 0.95, 90, 0.08, 35, 0.35, "Handgelenk außen"], ["unterarm", 0.95, -90, 0.08, 35, 0.35, "Handgelenk innen"],
             ["unterarm", 0.95, 0, 0.08, 40, -0.3, "Handgelenk flach vorn"], ["unterarm", 0.95, 180, 0.08, 40, -0.3, "Handgelenk flach hinten"],
+            // der Schenkel ist oben kein Kreis um seine Achse: quer schmaler (er endet außen an der Breite des Beckens, innen an der
+            // Mitte), in der Tiefe voll — als Kreis von 9,9 cm stand er außen 1,5 cm über das Becken (ein Kugelgelenk im Bild)
+            ["oberschenkel", 0.1, 90, 0.25, 45, -1.3, "Schenkel außen an der Hüfte"], ["oberschenkel", 0.1, -90, 0.25, 45, -1.0, "Schenkel innen am Schritt"],
             ["oberschenkel", 0.45, 10, 0.25, 50, 0.5, "Quadrizeps"], ["oberschenkel", 0.83, -50, 0.07, 28, 0.6, "Vastus medialis"],
             ["oberschenkel", 0.6, 70, 0.2, 35, 0.3, "Vastus lateralis"], ["oberschenkel", 0.45, 180, 0.25, 50, 0.4, "Beinbeuger"],
             ["oberschenkel", 0.2, -90, 0.15, 40, 0.5, "Adduktoren"], ["oberschenkel", 0.98, 0, 0.05, 26, 0.6, "Kniescheibe"],
@@ -3091,8 +3109,87 @@
         // `kappeFlach`: das Schulterdach über dem Gelenk als Anteil des Radius, der ihm fehlt (0,75: 1,55 cm über dem Gelenk), `spaltCm`: so nah tritt ein Bein an die Mitte (die
         // Schenkel liegen aneinander, nie ineinander), `hoeheCm` die Körperhöhe, an der die cm der Liste gelten. Die Delta-Kappe
         // trägt keine eigene Amplitude: sie reicht vom Gelenk bis zur halben Schulterbreite des Kanons (LEIB_SOLL.kanon breiteDeltoid).
-        regler: Object.freeze({ muskel: 0.35, fett: 0.25, tal: 1.2, kappeFlach: 0.75, kappeMaxCm: 3.4, spaltCm: 0.4, hoeheCm: 173.4 }),
+        regler: Object.freeze({ muskel: 0.35, fett: 0.25, tal: 1.2, kappeFlach: 0.75, kappeMaxCm: 3.4, spaltCm: 0.4, spaltWeichCm: 1.5, hoeheCm: 173.4 }),
+        // DIE TRÄGER DES GUSSES (der Zwilling fiel): je Glied eine Kette runder Formen AUS DEM PROFIL — `n` Glieder der Kette,
+        // jedes mit dem Radius des Profils an seiner Mitte, längs der Achse um `lappt` über seine Teilung hinaus (die Kette
+        // schließt sich zum Rundkegel). `bauMensch` gießt sie, `morphAuf` stellt sie je Leib auf denselben Radius, den der Leser
+        // nach dem Guss schreibt (`_reliefMass`) — die Ruhe der Arme und die Anlage (`_armRuhe`, `armAnlage`) messen an ihnen.
+        // Bis hier trugen Bizeps, Trizeps, Quadrizeps, Wade … als eigene Kugeln mit eigenen Zahlen den Guss (Oberarm 53 cm
+        // unter einer Haut von 32 cm): der Arm ruhte an einem Rumpf, den er nicht berührte.
+        // `schritt`: über diesem Band von s blendet der Schenkel erst ein (darüber tragen Becken und Gesäß die Hüfte). DIE BEINE
+        // BLEIBEN ZWEI: der Träger des Schenkels reicht samt Haut-Dicke und halber Verrundung des Gusses (MENSCH_GESTALT.leibHaut)
+        // höchstens an die Mitte des Leibs (`_traegerRaum`) — das Profil des Schenkels (9,9 cm) ist breiter als sein Abstand zur
+        // Mitte (8,6 cm): gegossen in voller Breite verschmolzen die Beine bis über das Knie zu EINEM Stamm, der Leser nach dem
+        // Guss hebt die Haut auf das Profil und legt die Innenseiten aneinander (`spaltCm`).
+        // `gelenk`: diese Glieder schließen an ihrem unteren Gelenk (Ellbogen, Knie, Knöchel) mit einer Kugel vom Radius des Profils —
+        // die Kappen zweier Ketten ließen am Gelenk eine Kerbe (die Haut stand dort 2 cm über ihrem Träger, und die Anlage maß sie als Hülle).
+        traeger: Object.freeze({ oberarm: 4, unterarm: 4, oberschenkel: 4, unterschenkel: 5, lappt: 1.5, schritt: Object.freeze([0.08, 0.28]), gelenk: Object.freeze(["oberarm", "oberschenkel", "unterschenkel"]) }),
     });
+    // Die Maße eines Leibs für die Liste (EINE Rechnung für den Leser nach dem Guss und für die Träger im Baum): `quer` die
+    // Einheiten des Ecken-Raums je cm quer zur Körper-Achse, `kFett`, `kTal`, `kGlied` die Skalen der Regler, `radius(glied, s)`
+    // der Radius des Glieds in cm — Muskel und Fett tragen den Bauch, das Gelenk (Ellbogen, Handgelenk, Knie, Knöchel) ist
+    // Knochen: dort wächst es nicht mit dem Muskel und nur zu 0,4 mit dem Fett.
+    function _reliefMass(dials) {
+        var d = {}, k; // prettier-ignore
+        for (k in START_PARAMS) d[k] = START_PARAMS[k];
+        for (k in dials || {}) if (typeof dials[k] === "number" && isFinite(dials[k])) d[k] = dials[k];
+        var M = labMorph(d), M0 = labMorph(START_PARAMS), R = LEIB_RELIEF.regler; // prettier-ignore
+        var kFett = 1 + R.fett * (M.totalFat - M0.totalFat),
+            kGlied = { arm: 1 + R.muskel * (M.armM / M0.armM - 1), bein: 1 + R.muskel * (M.legM / M0.legM - 1) };
+        return {
+            d: d,
+            quer: d.height / (leibMassstab() * 100 * M.charScale.x),
+            kFett: kFett,
+            kTal: Math.max(0.15, Math.min(1.3, 1 - R.tal * (M.totalFat - M0.totalFat))),
+            kGlied: kGlied,
+            radius: function (glied, s) {
+                var km = /arm$/.test(glied) ? kGlied.arm : kGlied.bein,
+                    b = glied === "oberarm" ? _reliefStufe(0.1, 0.3, s) * (1 - _reliefStufe(0.75, 1, s)) : glied === "oberschenkel" ? 1 - _reliefStufe(0.75, 1, s) : _reliefStufe(0, 0.12, s) * (1 - _reliefStufe(0.6, 0.95, s));
+                return _reliefProfil(LEIB_RELIEF.profil[glied], s) * (1 + (km - 1) * b) * (1 + (kFett - 1) * (0.4 + 0.6 * b));
+            },
+            // wie weit das Glied an s gilt (0 jenseits seines Anfangs): der Schenkel erst unter dem Schritt
+            ein: function (glied, s) {
+                var T = LEIB_RELIEF.traeger;
+                return glied === "oberschenkel" ? _reliefStufe(T.schritt[0], T.schritt[1], s) : 1;
+            },
+        };
+    }
+    // Die Kette der Träger eines Glieds: je Glied der Kette sein Name im Baum (`<glied><a…><seite>`) und sein s
+    function _reliefKette(glied, sd) {
+        var n = LEIB_RELIEF.traeger[glied], out = []; // prettier-ignore
+        // jedes Glied der Kette reicht um den halben Überstand über seine Teilung, nie über die Gelenke des Glieds hinaus (an
+        // beiden Enden schließt es als Kappe im Gelenk — was jenseits liegt, Becken, Schulter, Hand und Fuß, trägt sich selbst)
+        var ue = (LEIB_RELIEF.traeger.lappt - 1) / 2;
+        for (var i = 0; i < n; i++) {
+            var a = Math.max(0, (i - ue) / n), b = Math.min(1, (i + 1 + ue) / n); // prettier-ignore
+            out.push({ name: glied + "abcdefgh".charAt(i) + (sd === 1 ? "1" : "-1"), s: (a + b) / 2, halb: (b - a) / 2 });
+        }
+        if (LEIB_RELIEF.traeger.gelenk.indexOf(glied) >= 0) out.push({ name: glied + "z" + (sd === 1 ? "1" : "-1"), s: 1, halb: 0 });
+        return out;
+    }
+    // Der Raum eines Trägers quer (Einheiten des Baums): am Schenkel der Abstand seiner Achse zur Mitte des Leibs ohne Haut-Dicke
+    // und halbe Verrundung des Gusses — die Beine bleiben zwei; jedes andere Glied ist frei
+    function _traegerRaum(parts, glied, sd, s) {
+        if (glied !== "oberschenkel") return Infinity;
+        var k = sd === 1 ? "1" : "-1", hip = parts["hip" + k], knee = parts["knee" + k], LH = MENSCH_GESTALT.leibHaut; // prettier-ignore
+        if (!hip || !knee) return Infinity;
+        return Math.abs(hip.position.x) + Math.abs(hip.rotation.z) * s * Math.abs(knee.position.y) - LH.dicke - 0.5 * LH.blend; // (der kleine Winkel selbst statt seines Sinus)
+    }
+    // DIE TRÄGER FOLGEN DEM LEIB (Leser: bauMensch, morphAuf): jedes Glied der Kette trägt quer den Radius der Liste für diese
+    // Dials, höchstens seinen Raum
+    function _reliefTraegerAuf(B, dials) {
+        var RM = _reliefMass(dials);
+        LEIB_RELIEF.glieder.forEach(function (z) {
+            [1, -1].forEach(function (sd) {
+                _reliefKette(z[0], sd).forEach(function (e) {
+                    var n = B.parts[e.name], b = B.base[e.name]; // prettier-ignore
+                    if (!n || !b || !(b.r > 0)) return;
+                    var f = Math.min(RM.radius(z[0], e.s) * RM.quer, _traegerRaum(B.parts, z[0], sd, e.s)) / b.r;
+                    n.scale.set(f, e.halb ? b.y : f, f);
+                });
+            });
+        });
+    }
     function _reliefProfil(kn, s) {
         s = Math.max(0, Math.min(1, s));
         var i = 0;
@@ -3133,14 +3230,7 @@
     // sind keine Röhre), am Rumpf wandert sie um die Lappen entlang ihrer Normale — nie an der Naht des Kopfs (sein Gewicht
     // nimmt den Rumpf zurück). Schreibt `pos`; die Normalen rechnet der Rufer neu.
     function leibRelief(pos, nor, si, sw, skinJoints, lage, dials, auf) {
-        var d = {}, k; // prettier-ignore
-        for (k in START_PARAMS) d[k] = START_PARAMS[k];
-        for (k in dials || {}) if (typeof dials[k] === "number" && isFinite(dials[k])) d[k] = dials[k];
-        var M = labMorph(d), M0 = labMorph(START_PARAMS), R = LEIB_RELIEF.regler; // prettier-ignore
-        var quer = d.height / (leibMassstab() * 100 * M.charScale.x); // Einheiten des Ecken-Raums je cm quer zur Körper-Achse
-        var kFett = 1 + R.fett * (M.totalFat - M0.totalFat),
-            kTal = Math.max(0.15, Math.min(1.3, 1 - R.tal * (M.totalFat - M0.totalFat))),
-            kGlied = { arm: 1 + R.muskel * (M.armM / M0.armM - 1), bein: 1 + R.muskel * (M.legM / M0.legM - 1) };
+        var RM = _reliefMass(dials), d = RM.d, R = LEIB_RELIEF.regler, quer = RM.quer, kTal = RM.kTal, kGlied = RM.kGlied; // prettier-ignore
         var G = _reliefGlieder(lage),
             ji = function (n) {
                 return skinJoints.indexOf(n);
@@ -3166,14 +3256,9 @@
             }
             return a;
         };
-        G.forEach(function (g) {
-            g.km = /arm$/.test(g.name) ? kGlied.arm : kGlied.bein;
-        });
-        // der Radius an s: Muskel und Fett tragen den Bauch des Glieds, das Gelenk (Ellbogen, Handgelenk, Knie, Knöchel) ist
-        // Knochen — dort wächst es nicht mit dem Muskel und nur zu 0,4 mit dem Fett
+        // der Radius an s (cm): die EINE Rechnung der Liste (`_reliefMass`), dieselbe, auf der die Träger im Baum stehen
         var radius = function (g, s) {
-            var b = g.name === "oberarm" ? _reliefStufe(0.1, 0.3, s) * (1 - _reliefStufe(0.75, 1, s)) : g.name === "oberschenkel" ? 1 - _reliefStufe(0.75, 1, s) : _reliefStufe(0, 0.12, s) * (1 - _reliefStufe(0.6, 0.95, s));
-            return _reliefProfil(LEIB_RELIEF.profil[g.name], s) * (1 + (g.km - 1) * b) * (1 + (kFett - 1) * (0.4 + 0.6 * b));
+            return RM.radius(g.name, s);
         };
         // DIE ECKE GEHÖRT IHREM GLIED, wo dessen Kette (Arm: Schulter, Ellbogen, Hand · Bein: Hüfte, Knie, Sprung-Gelenk) sie führt:
         // die weichen Gewichte reichen weit (die Hüfte trägt 0,3 vom Unterarm, der neben ihr hängt) — linear gewogen zog das
@@ -3203,19 +3288,23 @@
         var yH = lage.hip1[1], yK = lage.head[1], n = pos.length / 3, neu = new Float64Array(pos.length), sp = R.spaltCm * quer; // prettier-ignore
         for (var i = 0; i < n; i++) {
             var p = [pos[3 * i], pos[3 * i + 1], pos[3 * i + 2]],
+                // DER STOFF TRÄGT DIE VERSCHIEBUNG DER HAUT UNTER IHM: seine Ecke liest Glied, s und θ am Punkt der Haut (um `auf`
+                // längs der Normale darunter) — am eigenen Ort gelesen wich sie im Saum der Gewichte anders als die Haut, und
+                // die Haut der Hüfte trat durch die Hose (ARM_RUHE.durch 6 am beleibten Leib)
+                ph = auf > 0 ? [p[0] - auf * nor[3 * i], p[1] - auf * nor[3 * i + 1], p[2] - auf * nor[3 * i + 2]] : p,
                 dx = 0,
                 dy = 0,
                 dz = 0,
                 i4 = 4 * i,
-                wRumpf = (1 - _reliefStufe(0.3, 0.7, gew(i4, ketten[0])) - _reliefStufe(0.3, 0.7, gew(i4, ketten[1])) - _reliefStufe(0.3, 0.7, gew(i4, ketten[2]))) * (1 - gew(i4, kopf));
+                wRumpf = (1 - _reliefStufe(0.5, 0.8, gew(i4, ketten[0])) - _reliefStufe(0.5, 0.8, gew(i4, ketten[1])) - _reliefStufe(0.5, 0.8, gew(i4, ketten[2]))) * (1 - gew(i4, kopf));
             for (var gi = 0; gi < G.length; gi++) {
                 var g = G[gi];
-                if (g.bein && g.sd * p[0] < 0) continue;
+                if (g.bein && g.sd * ph[0] < 0) continue;
                 var wk = gew(i4, g.kette);
-                if (wk < 0.3) continue;
-                var w = (_reliefStufe(0.3, 0.7, wk) * gew(i4, g.eigen)) / wk;
+                if (wk < 0.5) continue;
+                var w = (_reliefStufe(0.5, 0.8, wk) * gew(i4, g.eigen)) / wk;
                 if (w < 1e-3) continue;
-                var v = _sub(p, g.A), sl = _dot(v, g.u), s = sl / g.L; // prettier-ignore
+                var v = _sub(ph, g.A), sl = _dot(v, g.u), s = sl / g.L; // prettier-ignore
                 var q = _sub(v, _mul(g.u, sl)), r = _len(q) || 1e-6; // prettier-ignore
                 var th = (Math.atan2(_dot(q, g.el), _dot(q, g.ef)) * 180) / Math.PI,
                     dd;
@@ -3223,31 +3312,35 @@
                     var rv = _len(v) || 1e-6, hoch = -sl / rv; // prettier-ignore
                     // die Kappe ist ein Ellipsoid um das Gelenk: quer der Radius des Glieds samt Lappen, nach oben das Schulterdach
                     var rq = radius(g, 0) + summe(g.name, Math.max(-0.1, s), th), rb = radius(g, 0) * (1 - R.kappeFlach); // prettier-ignore
-                    dd = w * (quer / Math.sqrt((1 - hoch * hoch) / (rq * rq) + (hoch * hoch) / (rb * rb)) + (auf || 0) - rv);
+                    dd = w * (quer / Math.sqrt((1 - hoch * hoch) / (rq * rq) + (hoch * hoch) / (rb * rb)) - rv);
                     dx += (dd * v[0]) / rv;
                     dy += (dd * v[1]) / rv;
                     dz += (dd * v[2]) / rv;
                     continue;
                 }
-                var ein = g.name === "oberschenkel" ? _reliefStufe(0.08, 0.28, s) : g.name === "oberarm" ? 1 : 1 - _reliefStufe(1.0, 1.1, s);
-                dd = w * (ein * (radius(g, s) * quer + (auf || 0) - r) + (g.name === "oberarm" ? 1 : ein) * summe(g.name, Math.max(-0.1, Math.min(1.1, s)), th) * quer);
+                var ein = g.name === "oberschenkel" ? RM.ein(g.name, s) : g.name === "oberarm" ? 1 : 1 - _reliefStufe(1.0, 1.1, s);
+                dd = w * (ein * (radius(g, s) * quer - r) + (g.name === "oberarm" ? 1 : ein) * summe(g.name, Math.max(-0.1, Math.min(1.1, s)), th) * quer);
                 dx += (dd * q[0]) / r;
                 dy += (dd * q[1]) / r;
                 dz += (dd * q[2]) / r;
             }
             if (wRumpf > 1e-3) {
-                var a = wRumpf * summe("rumpf", (p[1] - yH) / (yK - yH), Math.abs((Math.atan2(p[0], p[2]) * 180) / Math.PI)) * quer;
+                var a = wRumpf * summe("rumpf", (ph[1] - yH) / (yK - yH), Math.abs((Math.atan2(ph[0], ph[2]) * 180) / Math.PI)) * quer;
                 dx += a * nor[3 * i];
                 dy += a * nor[3 * i + 1];
                 dz += a * nor[3 * i + 2];
             }
             // die Beine liegen aneinander, nie ineinander: keine Bein-Ecke tritt näher als der Spalt an die Mitte
-            var wb = _reliefStufe(0.3, 0.7, gew(i4, beine));
+            var wb = _reliefStufe(0.5, 0.8, gew(i4, beine));
             if (wb > 0 && p[1] < yH) {
                 var sg = p[0] < 0 ? -1 : 1, xs = sg * (p[0] + dx); // prettier-ignore
-                // (auf 2 % ihrer Tiefe gestaucht, nie eben gepresst: in EINER Ebene fände der Kollaps gleich teure Kanten, und ein ULP
-                // von hypot wählte — die Plattform-Probe des Ofens nannte zwei Fälle, wie an der Sohle des Schuhs)
-                if (xs < sp) dx += sg * wb * (sp - xs) * 0.98;
+                // WEICH an die Mitte gelegt: unter Spalt + `spaltWeichCm` rückt die Ecke auf die Kurve sp + b / (2 − (x − sp)/b) — sie
+                // läuft glatt aus der freien Fläche (Wert und Steigung 1 am Rand des Bands) und erreicht den Spalt nie. Hart
+                // an die Ebene gepresst stand am Rand der Anlage eine Knick-Kante längs des Schenkels (im Bild von vorn); und nie
+                // in EINER Ebene: dort fände der Kollaps gleich teure Kanten, ein ULP von hypot wählte (die Plattform-Probe des
+                // Ofens nannte zwei Fälle, wie an der Sohle des Schuhs) — die Kurve ist streng steigend und rational (keine Transzendente).
+                var bw = R.spaltWeichCm * quer;
+                if (xs < sp + bw) dx += sg * wb * (sp + bw / (2 - (xs - sp) / bw) - xs);
             }
             neu[3 * i] = p[0] + dx;
             neu[3 * i + 1] = p[1] + dy;
@@ -3316,7 +3409,16 @@
             });
         });
         var band = E.length < 2500 ? 4 : 1.5;
+        // (am dünnen Netz der Menge trägt ein glattes Gelenk wenige Ecken: reicht das Band nicht für 12 Fächer, weitet es sich
+        // bis 2,25-fach — das Knie der Mengen-Stufe maß seit den Trägern aus dem Profil sonst nichts)
         var umfang = function (glied, s) {
+            for (var bd = band, k = 0; k < 3; k++, bd *= 1.5) {
+                var u = umfangBand(glied, s, bd);
+                if (isFinite(u)) return u;
+            }
+            return NaN;
+        };
+        var umfangBand = function (glied, s, band) {
             var F = [], i; // prettier-ignore
             for (i = 0; i < 36; i++) F.push([0, 0]);
             K[glied].forEach(function (c) {

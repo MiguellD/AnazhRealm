@@ -427,7 +427,9 @@ if (SELBSTTEST) {
             /^nahtNormale/,
         ],
         ["L5 der gezackte Saum", (m, k, j, pa) => { for (let i = 1; /^stoff_/.test(k) && i < pa.count; i += 2) pa.setY(i, pa.getY(i) + 0.03); }, /^saumUmlauf/], // prettier-ignore
-        ["L6 die Delle im Bauch", (m, k, j, pa) => { for (let i = 0; k === "haut" && j === "mensch" && i < pa.count; i++) if (Math.hypot(pa.getX(i), pa.getY(i) - 3.9) < 0.08 && pa.getZ(i) > 0) pa.setZ(i, pa.getZ(i) - 0.1); }, /^bauchKnick/], // prettier-ignore
+        // (die Delle trifft die Ecke, die dem Punkt am nächsten liegt, und jede im Umkreis: am Netz nach den Trägern aus dem Profil
+        // lag keine Ecke mehr im Umkreis von 0,08 — der Täter traf nichts, die Probe blieb stumm)
+        ["L6 die Delle im Bauch", (m, k, j, pa) => { if (k !== "haut" || j !== "mensch") return; let bi = -1, bd = Infinity; for (let i = 0; i < pa.count; i++) { const d = Math.hypot(pa.getX(i), pa.getY(i) - 3.9); if (pa.getZ(i) > 0 && d < bd) [bd, bi] = [d, i]; } for (let i = 0; i < pa.count; i++) if (pa.getZ(i) > 0 && (i === bi || Math.hypot(pa.getX(i), pa.getY(i) - 3.9) < 0.08)) pa.setZ(i, pa.getZ(i) - 0.1); }, /^bauchKnick/], // prettier-ignore
     ])
         pruefe(name + " wird erkannt", amGuss(f), muster, "leib");
     // (L7) der Guss vor der Nacharbeit: die Dicke des Halses schwindet über der Naht nie (ihr Band unendlich) — sie stößt hinter dem Ohr
