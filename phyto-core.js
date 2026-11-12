@@ -4123,7 +4123,7 @@
         glaette: 4,
         glaetteBis: 2,
         lichtTeiler: 4,
-        saum: 1.6,
+        saum: 1.2,
         saumZelle: 2.5,
         saumBand: 8,
         saumMin: 0.02,
@@ -4221,7 +4221,8 @@
     //     Ansicht reicht), das Muster in der Zelle saumZelle · 2^k; ganz Gedecktes (g = 1) liegt 2 · saum darüber und
     //     bleibt (Lappen und Buchten nur im Band, nie ein Loch im Kern).
     //     DAS MUSTER AM STRAHL (w28-laub-deckung, lod.K1): das Texel liest das Muster, wo der Strahl von der Kronen-Mitte (die
-    //     Mitte der Ansicht, die halbe Höhe über dem Kronen-Fuß) durch es den Kreis ihrer halben Höhe schneidet — längs des
+    //     Mitte der Ansicht, die halbe Höhe über dem Kronen-Fuß) durch es die Ellipse der Krone schneidet (halbe Breite der
+    //     Ansicht, halbe Höhe über dem Fuß: die Zelle misst am Umriss der schmalen Fichte wie an dem des breiten Strauchs) — längs des
     //     Strahls steht das Muster, die Wahl ist dort eine Schwelle der Deckung: wer gewählt ist, hängt über die Deckung an der
     //     Krone, die Lappen sind Zungen und Buchten des Umrisses. Bis hier las es das Muster am eigenen Ort und führte (saum
     //     8,4 über einem Band von 0,02 bis 1): gewählt war jede Muster-Kuppe im Band, bis 24 Texel vor der Krone — Scheiben ohne
@@ -4275,7 +4276,7 @@
             else if (g[i] >= G.saumMin || c[i] > 0) {
                 const dx = X / st[0] - cx,
                     dy = Y / st[1] - cy,
-                    R = cy / Math.max(1e-3, Math.hypot(dx, dy));
+                    R = 1 / Math.max(1e-3, Math.hypot(dx / cx, dy / cy));
                 key[i] = Math.max(
                     1e-9,
                     g[i] +

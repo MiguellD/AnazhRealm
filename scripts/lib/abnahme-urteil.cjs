@@ -723,13 +723,17 @@ function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
     // die Klasse) über höchstens einen Pixel Lücke aneinander hängt (Fenster 5 × 5: die Schwelle der Teilung reißt keinen Zweig
     // ab). Er ist GETRAGEN, wenn drei Pixel jenseits seines Rands der Bildrand liegt oder ein Außen in seiner eigenen Ferne
     // (die Tiefe der Aufnahme `spiegel`: Boden, Stamm, Bau höchstens doppelt so fern wie sein nächster Pixel — der Himmel und
-    // der Hang dahinter tragen nichts; ohne Tiefe trägt nur der Bildrand), und der größte Zusammenhang der Klasse trägt immer
+    // der Hang dahinter tragen nichts, und ein Fleck, dessen eigene Tiefe der Himmel ist, hängt an nichts: die Scheiben des
+    // Saums schreiben keine; ohne Tiefe trägt nur der Bildrand), und der größte Zusammenhang der Klasse trägt immer
     // (ihr Leib). Jeder andere ist eine freie Insel: `inseln` ihre Zahl, `frei` der Anteil der Klassen-Pixel in ihnen.
     let fi = 0,
         fp = 0;
     {
         const U = (p) => (aussen ? aussen[p] !== 1 : m[p] === 1);
-        const fern = (p) => Math.hypot(sa.P[p * 3] - spiegel.auge[0], sa.P[p * 3 + 1] - spiegel.auge[1], sa.P[p * 3 + 2] - spiegel.auge[2]);
+        const fern = (p, x = p % W, y = (p - x) / W) =>
+            spiegel.tiefe[((((y + 0.5) * spiegel.th) / H) | 0) * spiegel.tw + ((((x + 0.5) * spiegel.tw) / W) | 0)] >= 0.99999
+                ? Infinity
+                : Math.hypot(sa.P[p * 3] - spiegel.auge[0], sa.P[p * 3 + 1] - spiegel.auge[1], sa.P[p * 3 + 2] - spiegel.auge[2]);
         const marke = new Uint8Array(W * H),
             stapel = new Int32Array(W * H),
             teile = [];
@@ -762,7 +766,7 @@ function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
                     else if (sa && !U(yy * W + xx)) halt = Math.min(halt, fern(yy * W + xx));
                 }
             }
-            teile.push([nu, nk, rand || (sa !== null && halt <= 2 * nah)]);
+            teile.push([nu, nk, rand || (sa !== null && halt < Infinity && halt <= 2 * nah)]);
         }
         const leib = teile.reduce((a, t) => Math.max(a, t[0]), 0);
         for (const [nu, nk, traegt] of teile) if (!traegt && nu < leib) fi++, (fp += nk);
