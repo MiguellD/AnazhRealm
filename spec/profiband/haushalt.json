@@ -288,8 +288,7 @@
                 400,
                 400
             ],
-            "imBild": { "bauSatz": 0.02, "fahrzeug": 0.005 },
-            "bekannt": { "leib": "GPU-Probe 00d6624d (GTX 1050, Spiel = main b1531071): Leib bewohner (≤ 8 m) 3,6 % — der Kopf mit Stachelhaar unten in der Bildmitte, die Schulter links; main urteilte „Sicht 0,0 %“ (Augen-Karte 11.11., P02–P19)" },
+            "imBild": { "bauSatz": 0.02, "f:(kompakt_fwd|limousine|suv)": 0.005 },
             "dorfZug": true,
             "ortTakt": [],
             "gruendung": {
@@ -412,7 +411,7 @@
         "bewohner": { "luma": [10, 245] },
         "portal-membran": { "luma": [10, 250] },
         "fern-ring": { "luma": [15, 245] },
-        "fahrzeug": { "luma": [5, 250] }
+        "f:(kompakt_fwd|limousine|suv)": { "luma": [5, 250] }
     },
     "klassen": [
         {

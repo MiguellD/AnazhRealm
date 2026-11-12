@@ -779,23 +779,34 @@ class AnazhRealm_siedlung_ort {
             throw new Error(
                 `_ortPose: die lange Achse des Platzes ${(S.ox + pz.cx).toFixed(1)} ${(S.oz + pz.cz).toFixed(1)} liegt ganz in der Spur eines Wagens`
             );
-        // DIE REGEL „trasse" (w28-verkehr-bild, PFLICHT-OFFEN C: der Verkehr im Bild): der Wagen in Fahrt, der dem Stand am nächsten
-        // fährt, 40 m seine Route voraus der erste Punkt quer zu ihr auf dem Weg und außer jeder Spur, der Blick zurück auf ihn — er
-        // fährt dem Auge entgegen, sein Fahrer am Steuer. Die Kegel sahen nie über eine Fahrbahn: „kein fahrzeug im Bild" 3/3
-        const W = regel === "trasse" && S.verkehr && S.verkehr.wagen.filter((w) => w.zustand === "faehrt" && w.F && w.F.lang - w.F.s > 60).sort((a, b) => Math.hypot(a.entry.position.x - M.x, a.entry.position.z - M.z) - Math.hypot(b.entry.position.x - M.x, b.entry.position.z - M.z))[0]; // prettier-ignore
-        for (let i = W ? W.F.i : 0, o = 2; W && o <= 10; o += 0.25) {
-            while (i + 2 < W.F.pts.length && W.F.bogen[i + 1] < W.F.s + 40) i++;
-            const [a, b, e] = [W.F.pts[i], W.F.pts[i + 1], W.entry.position];
-            const l = Math.hypot(b.x - a.x, b.z - a.z) || 1;
-            for (const q of [1, -1].map((v) => ({ x: a.x + ((b.z - a.z) / l) * o * v, z: a.z - ((b.x - a.x) / l) * o * v })))
-                if (!this._verkehrAufSpur(S, q.x, q.z) && this._aufWeg(q.x, q.z, 0))
-                    return { x: q.x, z: q.z, gier: this._blickGierZu(e.x - q.x, e.z - q.z), ziel: { x: e.x, z: e.z }, wagen: W.nr };
-        }
-        if (regel === "trasse")
-            throw new Error(`_ortPose: kein Wagen in Fahrt mit freiem Stand an seiner Trasse (${S.verkehr ? S.verkehr.wagen.length : 0} Wagen)`);
         const bau = (p.slots || [])
             .filter((q) => q && q.obb)
             .map((q) => ({ x: S.ox + q.obb.cx, z: S.oz + q.obb.cz, r: Math.min(q.obb.ex, q.obb.ez), obb: q.obb }));
+        // DIE REGEL „trasse" (w28-verkehr-bild, PFLICHT-OFFEN C: der Verkehr im Bild): je Wagen in Fahrt der Punkt seiner Route
+        // `trasseM` voraus; der dem Auge (dem Spieler, sonst dem Stand) nächste trägt den Stand — der erste Punkt quer zur Route
+        // außer jeder Spur, 3 m vor jedem Grundriss (näher füllte die Fassade den Vordergrund: 24–36 % näher als 8 m) und 1,5 m neben jedem Baum, Stand, Brunnen und jeder Laterne des
+        // Plans —, der Blick zurück auf den Wagen: er fährt dem Auge entgegen, sein Fahrer am Steuer. Die Kegel sahen nie über
+        // eine Fahrbahn: „kein fahrzeug im Bild" 3/3
+        const voraus = (w) => {
+            const [F, s] = [w.F, w.F.s + AnazhRealm.VERKEHR.trasseM];
+            let i = Math.min(F.i, F.pts.length - 2);
+            while (i + 2 < F.pts.length && F.bogen[i + 1] < s) i++;
+            const [a, b] = [F.pts[i], F.pts[i + 1]];
+            const t = Math.max(0, Math.min(1, (s - F.bogen[i]) / (F.bogen[i + 1] - F.bogen[i] || 1)));
+            return { x: a.x + (b.x - a.x) * t, z: a.z + (b.z - a.z) * t, dx: b.x - a.x, dz: b.z - a.z };
+        };
+        const A = (this.state.playerMesh || { position: M }).position;
+        const kandidaten = regel !== "trasse" || !S.verkehr ? [] : S.verkehr.wagen.filter((w) => w.zustand === "faehrt" && w.F && w.entry && w.F.pts.length > 1).map((w) => [w, voraus(w)]).sort(([, a], [, b]) => Math.hypot(a.x - A.x, a.z - A.z) - Math.hypot(b.x - A.x, b.z - A.z)); // prettier-ignore
+        const steht = (q) => [...(p.trees || []), ...(p.staende || []), ...(p.brunnen || []), ...(p.laternen || [])].some((t) => Math.hypot(S.ox + t.x - q.x, S.oz + t.z - q.z) < 1.5) || bau.some(({ x, z, obb: o }) => { const [c, s, dx, dz] = [Math.cos(o.phi || 0), Math.sin(o.phi || 0), q.x - x, q.z - z]; return Math.abs(dx * c - dz * s) < o.ex + 3 && Math.abs(dx * s + dz * c) < o.ez + 3; }); // prettier-ignore
+        for (const [W, a] of kandidaten)
+            for (let o = 2; o <= 12; o += 0.25) {
+                const [e, l] = [W.entry.position, Math.hypot(a.dx, a.dz) || 1];
+                for (const q of [1, -1].map((v) => ({ x: a.x + (a.dz / l) * o * v, z: a.z - (a.dx / l) * o * v })))
+                    if (!this._verkehrAufSpur(S, q.x, q.z) && !steht(q))
+                        return { x: q.x, z: q.z, gier: this._blickGierZu(e.x - q.x, e.z - q.z), ziel: { x: e.x, z: e.z }, wagen: W.nr }; // prettier-ignore
+            }
+        if (regel === "trasse")
+            throw new Error(`_ortPose: kein Stand an der Trasse (${kandidaten.length} Wagen in Fahrt von ${S.verkehr ? S.verkehr.wagen.length : 0})`); // prettier-ignore
         // die Bäume, Stände und Brunnen des Plans (ein Marktstand 8 m vor dem Auge verdeckte das Gasthaus der Stadt) und DER
         // BESTAND DER WELT um den Platz, soweit er Natur ist (`_istNatur`): der wilde Wurf steht in keinem Plan. Er ist erst
         // gebaut, wenn der Spieler am Platz steht: die Probe fragt den Blick dort ein zweites Mal. Die Hindernisse sind Kreise

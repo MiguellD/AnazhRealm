@@ -2226,6 +2226,7 @@ AnazhRealm.VERKEHR = Object.freeze({
     ruheMs: 0.05,
     platzBahnM: 3,
     blickNahM: 8,
+    trasseM: 30,
     bildHolen: 0.1,
     spurN: 4,
     eckeStueck: 5,

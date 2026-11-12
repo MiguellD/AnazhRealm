@@ -721,9 +721,10 @@ async function starte() {
                     if (o?.ortPose) {
                         if (g) r.state.playerMesh.position.set(g.anker[0], r._voxelSurfaceY(g.anker[0], g.anker[1]) + 1.8, g.anker[1]);
                         const [p, nah] = [r.state.playerMesh.position, AnazhRealm.AUTO_SETTLEMENT.nearM];
+                        // die Pose an der Trasse (`ortPose` „trasse“, w28-verkehr-bild) wartet, bis ein Wagen fährt
                         const schlaeft = () =>
                             [...(r._bewohnerSiedlungen || new Map()).values()].filter(
-                                (S) => S.plan.staedtisch && !S.verkehr && Math.hypot(S.ox - p.x, S.oz - p.z) <= nah
+                                (S) => S.plan.staedtisch && (!S.verkehr || (o.ortPose === "trasse" && !S.verkehr.wagen.some((W) => W.zustand === "faehrt"))) && Math.hypot(S.ox - p.x, S.oz - p.z) <= nah // prettier-ignore
                             );
                         takte += await __gebautNach(`Messort ${o.ort}: der Verkehr der Siedlung`, {
                             fertig: () => !schlaeft().length,
