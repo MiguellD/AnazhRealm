@@ -195,41 +195,13 @@ function messeKopf(sb, eingriff) {
 // Täter: `guss(g)` am Guss, oder `{ kern }` (der Kern, mit dem der Ofen gießt).
 const messeLeib = (so, taeter = () => {}) => {
     const K = taeter.kern ? taeter.kern(so.__koerperCore) : so.__koerperCore;
-    const m = so.__koerperCore.leibUrteil(
+    return so.__koerperCore.leibUrteil(
         ...[null, { dials: { top: "none", bottom: "none", shoes: "none" } }].map((ov) => {
             const g = so.BAKERS_BY_KIND.koerper(K, "mensch", 1, 0, ov);
             if (typeof taeter === "function") taeter(g);
             return g;
         })
     );
-    // DIE MENGE TRÄGT DIE HAUT DER L0 (w28-mensch-stufe, LEIB_SOLL.mengeHaut2/3): an den Dials der Vorlage (koerper `leibRaumVorlage`)
-    // die Tiefe des Rumpfs der Stufe — die Summe der Schnitte der Dreiecke in 0,74 · 0,62 · 0,50 der Höhe im Streifen |x| < 0,1 H —
-    // über der der L0 des Gesetzes. Bis hier goss die Menge ihre Muskeln ohne die Haut-Dicke der L0: jeder Durchmesser 3,6 cm dünner.
-    const K0 = so.__koerperCore;
-    const dV = { dials: K0.leibRaumVorlage(K0.START_PARAMS) };
-    const tiefe = (g) => {
-        const L = K0.gussNetze(g, false).filter((x) => x.I);
-        let [y0, y1] = [Infinity, -Infinity];
-        for (const x of L) for (let i = 1; i < x.P.length; i += 3) [y0, y1] = [Math.min(y0, x.P[i]), Math.max(y1, x.P[i])];
-        return [0.74, 0.62, 0.5].reduce((s, a) => {
-            const y = y0 + a * (y1 - y0);
-            let [za, zb] = [Infinity, -Infinity];
-            for (const { P, I } of L)
-                for (let f = 0; f < I.length; f += 3)
-                    for (let e = 0; e < 3; e++) {
-                        const [p, q] = [3 * I[f + e], 3 * I[f + ((e + 1) % 3)]];
-                        if ((P[p + 1] - y) * (P[q + 1] - y) >= 0) continue;
-                        const t = (y - P[p + 1]) / (P[q + 1] - P[p + 1]);
-                        if (Math.abs(P[p] + t * (P[q] - P[p])) > 0.1 * (y1 - y0)) continue;
-                        const z = P[p + 2] + t * (P[q + 2] - P[p + 2]);
-                        [za, zb] = [Math.min(za, z), Math.max(zb, z)];
-                    }
-            return s + (zb - za);
-        }, 0);
-    };
-    const l0 = tiefe(so.BAKERS_BY_KIND.koerper(K0, "mensch", 1, 0, dV));
-    for (const lod of [2, 3]) m["mengeHaut" + lod] = tiefe(so.BAKERS_BY_KIND.koerper(K, "mensch", 1, lod, dV)) / l0;
-    return m;
 };
 
 // DAS URTEIL DER BÄNDER (MENSCH_SOLL, KOPF_SOLL): je Maß sein Band (…Min/…Max im Band des Maßes), nicht messbar ist ROT
@@ -425,8 +397,6 @@ if (SELBSTTEST) {
     // und unter dem Mund durch die Haut des Kopfs (Überschläge, Kanten mit vier Dreiecken; gate:kamera-leib:echt K6)
     const ohneBand = (K) => ({ ...K, MENSCH_GESTALT: { ...K.MENSCH_GESTALT, leibHaut: { ...K.MENSCH_GESTALT.leibHaut, naht: { ...K.MENSCH_GESTALT.leibHaut.naht, band: 1e9 } } } }); // prettier-ignore
     pruefe("L7 die Dicke des Halses im Kopf (der Guss vor der Nacharbeit) wird erkannt", { kern: ohneBand }, /^haut(Mehrfach|Ueberschlag) /, "leib"); // prettier-ignore
-    // (L8) die Menge ohne die Haut der L0 (der Guss vor w28-mensch-stufe: die Muskeln nackt, `leibHaut.dicke` 0 im Kern der Menge)
-    pruefe("L8 die Menge ohne die Haut der L0 (jeder Durchmesser 3,6 cm dünner) wird erkannt", { kern: (K) => ({ ...K, MENSCH_GESTALT: { ...K.MENSCH_GESTALT, leibHaut: { ...K.MENSCH_GESTALT.leibHaut, dicke: 0 } } }) }, /^mengeHaut2 /, "leib"); // prettier-ignore
     // (S8) der Hals-Deckel zurück (der Bau vor der Nacharbeit: ein flacher Zylinder 0,10/0,11 × 0,05 am oberen Ende der Röhre, im Kopf
     // auf Höhe der Lippen) — sein Rand läuft als dunkle Falte von den Mundwinkeln zum Kiefer
     const mitDeckel = (K) => ({ ...K, bauMensch: (F) => {

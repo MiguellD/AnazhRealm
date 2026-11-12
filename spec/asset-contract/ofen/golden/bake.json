@@ -1882,9 +1882,9 @@
   },
   "mensch-L2|leib|mensch": {
    "meshes": 1,
-   "verts": 977,
+   "verts": 964,
    "tris": 1700,
-   "sha256": "18de96ed37020431dae052f3df0b4b85a80fbe7c4cc4fe266975dea9538565da"
+   "sha256": "8c82bcaaccfc84453dcbb4e36ad9ffb93b64ce440c0392f69d5650401be00fd8"
   },
   "mensch-L2|gelenk|mensch": {
    "sha256": "bb95e2730d1cdaf22c266a3abd6c293dd5a259ec39a98c2144136da26b7cff85"
@@ -1956,13 +1956,13 @@
    "sha256": "13f8c5ff99dd663652a0918e718b343b0c1833b1d9349874be308e97a736a8c9"
   },
   "mensch-L2|beipack": {
-   "sha256": "741ed3a5bab6fe2f108b23087b402ec087486082a44412b180f5d5d212a2fb12"
+   "sha256": "629179875535d6b4b1c6286e70f43be8e0afd1a9ad5369a1135d4f9662d5dbd7"
   },
   "mensch-L3|leib|mensch": {
    "meshes": 1,
-   "verts": 239,
+   "verts": 227,
    "tris": 360,
-   "sha256": "dca34035849858362f629753548aef3ab14603c98a828ca60706bff44422ccb9"
+   "sha256": "35598d7b5fc54df303971f5757636aaf88ac19051468dec2aec09bc1ae2cfb87"
   },
   "mensch-L3|gelenk|mensch": {
    "sha256": "bb95e2730d1cdaf22c266a3abd6c293dd5a259ec39a98c2144136da26b7cff85"
@@ -2034,7 +2034,7 @@
    "sha256": "13f8c5ff99dd663652a0918e718b343b0c1833b1d9349874be308e97a736a8c9"
   },
   "mensch-L3|beipack": {
-   "sha256": "ff1d1553c0a87b406390ccc03310cdfcdb58c4249014fc90b6edca1b22c31b09"
+   "sha256": "32f493656d52dcf96e140ab2d1c81e7f4ad4d8767828f7a613e349c6ca5c4f50"
   }
  }
 }

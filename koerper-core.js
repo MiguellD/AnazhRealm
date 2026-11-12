@@ -1252,9 +1252,6 @@
     var LEIB_SOLL = Object.freeze({
         nahtRing: [1, 1], nahtSpalt: [0, 1e-5], nahtPose: [0, 1e-5], nahtNormale: [0, 1], saumUmlauf: [0, 3], bauchKnick: [0, 25],
         bauchSplitter: [0, 0.05], hautMehrfach: [0, 0], hautUeberschlag: [0, 0],
-        // DIE MENGE TRÄGT DIE HAUT DER L0 (w28-mensch-stufe): die Tiefe des Rumpfs der Stufen 2 und 3 über der der L0 (Brust,
-        // Taille, Hüfte) — vor dem Schnitt 0,893 und 0,841 (die Muskeln ohne `leibHaut.dicke`), jetzt 1,004 und 0,990
-        mengeHaut2: [0.96, 1.04], mengeHaut3: [0.96, 1.04],
     });
 
     // DIE TÖNE DES GESICHTS (K57, KOPF_SOLL lippe/hoehle): Lippe und Augenhöhle sind die HAUT, in CIELAB verschoben

@@ -6871,18 +6871,6 @@ function __mengenPrims(kern, B, dials, matFuer, gelenkVon, vox) {
             if (!(z.dicke > 0) && !z.sohle) [p.blend, p.ext] = [MM.fall, p.ext + MM.fall - MM.blend];
         }
     }
-    // DIE HAUT DER L0 (w28-mensch-stufe — EINE Quelle der Gestalt): die Haut der Nah-Stufe liegt um `leibHaut.dicke` über den Muskeln
-    // des Leibs (`__leibHaut`: jedes Primitiv außer Kopf, Händen und Füßen, der Stoff darüber). Bis hier goss die Menge die Muskeln
-    // nackt: jeder Durchmesser der Stufen 2 und 3 stand 0,12 E (0,02 H, 3,6 cm) unter dem der L0 — Brust-Tiefe 0,205 gegen 0,227 H,
-    // Taille 0,144 gegen 0,163 H, der Unterarm um ein Drittel dünner. Dieselbe Regel, dieselbe Zahl.
-    const LH = (kern.MENSCH_GESTALT || {}).leibHaut;
-    if (!LH || !(LH.dicke >= 0)) throw new Error("MENGEN-LEIB: MENSCH_GESTALT.leibHaut fehlt (fail-closed)");
-    const ohne = [kopf, B.parts.hand1, B.parts["hand-1"], B.parts.ankle1, B.parts["ankle-1"]].filter(Boolean);
-    for (const p of prims) {
-        let frei = true;
-        for (let c = p.node; frei && c; c = c.parent) if (ohne.includes(c)) frei = false;
-        if (frei) [p.auf, p.ext] = [p.auf + LH.dicke, p.ext + LH.dicke];
-    }
     return { prims, hoehlen, zonen };
 }
 
