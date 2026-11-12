@@ -1704,7 +1704,8 @@ function fahreGruppeEinmal(sts, ctx) {
             env.NODE_OPTIONS = ((env.NODE_OPTIONS || "") + ' --require "' + ZEUGE_DATEI.split(path.sep).join("/") + '"').trim();
         }
         // DER ZEUGE DES KONSUMS (R6 nach Konsum, konsumAn) in JEDEM node-Prozess des Laufs; die Seite trägt ihn nur, wo kein Zeit-Urteil
-        // fällt und die Welt dem Lauf allein gehört (nie in der Sitzung: ihre Welt misst auch Zeit-Proben)
+        // fällt und die Welt dem Lauf allein gehört (nie in der Sitzung: ihre Welt misst auch Zeit-Proben — und ein Zeuge, der vor
+        // ihnen abschaltet, lässt die Bremse im Isolat: konsum-zeuge.cjs „DIE BREMSE BLEIBT NACH DEM STOPP“, 12.11. × 3,7–8,5)
         const konsumOrdner = konsumAn(env, ctx.aus + ".konsum", ctx.baum, !sitz && !istZeit(sts));
         // DER ZEUGE IST EIN LEBENSZEICHEN (11.11., Radeon unter Last: „Deckel 2 s gerissen: Stille seit 2 s nach 2 s“ an der lebenden Probe
         // des Selbsttests — der Zeuge lud 15 ms vor ihrer ersten Zeile, auf dem ausgelasteten Gerät ein Vielfaches): jedes Ereignis im

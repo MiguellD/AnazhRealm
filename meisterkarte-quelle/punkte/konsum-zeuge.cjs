@@ -27,6 +27,13 @@
 //     auf ruf-lastigem Code —, der Binär-Modus +15 % dort und nichts Messbares an der Last des Spiels (26.10.: 31,6 → 31,7 ms), die
 //     Wanduhr eines Boot-lastigen Laufs +7…22 %: darum trägt eine Station mit Zeit-Urteil die Seite nie (ihr Spiel-Pfad urteilt
 //     weiter nach dem Glob, `seite: false` beim Namen). Startet ein Prozess einen Browser ohne den Seiten-Zeugen, sagt er es (`browser`).
+//     DIE BREMSE BLEIBT NACH DEM STOPP (12.11., werkzeug/zeuge-bremse.cjs: der Chrome des Spiel-Klons 148.0.7778.97, je Lauf ein
+//     frischer Browser mit einer Seite, ohne und mit im Wechsel, 3 Paare, ruf-lastiger Code, je Runde das Minimum aus 60 Läufen):
+//     ohne 2,5–4,6 ms flach über 12 Runden; mit vor 3,0–3,7 → an 9,6–15,6 (× 2,9–4,2) → NACH take + stopPreciseCoverage +
+//     Profiler.disable 12,3–25,6 ms (× 3,7–8,5; sechs Runden, keine Erholung). Node 24.15 ebenso: 3,0 → an 10,8 → nach dem Stopp
+//     7,5–10,3 ms. Die „+15 %“ vom 10.11. trägt diese Messung nicht. Darum trägt die Welt der Sitzung die Seite NIE — auch nicht
+//     „je Probe an und vor Zeit-Proben ab“: ihre Seite misst die Zeit-Proben im selben Isolat (44 von 124 Proben der Radeon, zwei
+//     davon `stellung: "anfang"`), und ein Stopp gibt ihm das Tempo nicht zurück. Am Takt des Spiels selbst ist das nicht gemessen.
 // DIE FENSTER (die Welt der Sitzung lebt über viele Proben): legt der Läufer `nimm.<k>` in den Ordner, schreibt jeder lebende Prozess
 // `<id>.seg.<k>.json` — was er SEIT der letzten Nahme ausführte — und beginnt die Coverage neu (stop + start: der Binär-Modus meldet
 // eine Funktion sonst nur beim ersten Mal; gemessen an Node 22). `skripte`, `ganz`, `geladen` und jeder gelesene oder ausgegebene
