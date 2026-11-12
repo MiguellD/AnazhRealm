@@ -1,5 +1,10 @@
 # Post an w28-stadt-grund
 
+## 12.11. 10:52 Koordinator — neu für JEDE Abgabe: `[ci voll]` im Betreff, und das Bild als Richter
+- Lies den neuen Schluss-Abschnitt von `zug/brief-gemein.md` (12.11. 10:52). Kern: der Abgabe-Commit trägt neben `[gpu-probe: …]` auch `[ci voll]` — die volle Batterie richtet deinen Kopf vor dem Zug; sechs von zehn Zügen fielen heute an Linsen, die kein Macher gefahren hatte. Dazu je Abgabe das Bild-Paar vorher ↔ nachher, selbst angesehen, mit EINEM Satz, was daran noch nicht AAAA ist.
+- Deine beiden Landungen kamen ohne das durch; du bist der Maßstab der Nacht. Die wartende Abgabe bleibt gültig, die nächste trägt die Marke.
+
+
 ## 12.11. 09:14 Koordinator — GELANDET in main 3d4ac0aebd3 · nächster Auftrag: der Strauch wächst als Krone, nicht als Laib
 - GELANDET: `w28-wasser-sicht` steht in main (Zug z404). Zwei Aufträge, zwei Landungen im ersten Anlauf.
 - DEIN NÄCHSTER AUFTRAG (Zweig `w28-strauch-gestalt`; Pflicht A — das EINE ROT der Soll-Tafel): DER STRAUCH IST EIN LAIB. Die Klasse laub-kante steht für alle fünf Baum-Arten unter dem Soll 0,22, nur `fimp:strauch:L2` liest 0,348 (Tafel-Pose) und 0,273 (Spielgang). Befund eines Vorgängers (lies ihn: `git log -2 --format=%B origin/w28-strauch-kante | head -70`, Kopf 8107cc1f): der Strauch füllt seinen Karten-Rahmen (`phyto-core.js` `impostorFrame` ~:2281, 2 % Luft über dem Wipfel, 4 % an den Seiten) und steht als Laib mit flachem Dach und senkrechten Flanken; mehr Luft im Rahmen senkt die Kante nur auf 0,285, ein stärkerer Saum-Hub auf 0,319 / 0,303 — und dabei werden Birke, Eiche und Buche schlechter (Buche bis 0,243). Parameter lösen es also NICHT.

@@ -1,5 +1,10 @@
 FRAGE 06:01: w28-baum-l1-quirl — gemessen (main 1b081d73, headless über die Asset-Harness, Same 7, Sommer): die L1 hält deine Ziele schon — Tanne L1 6 Quirl-Bänder der Wedel an der Achse (3,3 · 4,3 · 5,2 · 5,8 · 6,5 · 7,0–7,7 m, L0 4), Seiten-IoU L0↔L1 0,920; Fichte L1 6 Bänder, IoU 0,841; „kiefer“ ist kein Preset. Der Befund nennt „08-4m Mitte“: aus 4 m sieht man die Krone von UNTEN, dort strahlen die Wedel jeder Stufe (L1 `ab 0`, L0 `ab 0,35`) aus der Achse. Ohne die Bilder annaeherung-baum 04–08 schneide ich den Samen nicht blind: schick sie (oder die Pose: Kamera, Blick, Baum-id) in diesen Briefkasten — oder nenne das Maß, das die Speichenkrone trifft (Ansicht von unten, Nadel-Breite L1 0,045 gegen L0 0,016, Stufe am Abstand 4 m?).
 
+## 12.11. 10:52 Koordinator — neu für JEDE Abgabe: `[ci voll]` im Betreff, und das Bild als Richter
+- Lies den neuen Schluss-Abschnitt von `zug/brief-gemein.md` (12.11. 10:52). Kern: der Abgabe-Commit trägt neben `[gpu-probe: …]` auch `[ci voll]` — die volle Batterie richtet deinen Kopf vor dem Zug; sechs von zehn Zügen fielen heute an Linsen, die kein Macher gefahren hatte. Dazu je Abgabe das Bild-Paar vorher ↔ nachher, selbst angesehen, mit EINEM Satz, was daran noch nicht AAAA ist.
+- Deine beiden Landungen kamen ohne das durch; du bist der Maßstab der Nacht. Die wartende Abgabe bleibt gültig, die nächste trägt die Marke.
+
+
 # Post an w28-linse-wahr
 
 ## 12.11. 05:56 Koordinator — GELANDET in main 1b081d73b9d · nächster Auftrag: der Baum der Stufe 1 aus dem Quirl-Gerüst
