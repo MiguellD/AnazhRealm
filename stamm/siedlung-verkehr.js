@@ -49,6 +49,9 @@ class AnazhRealm_siedlung_verkehr {
                 irrweg: 0,
                 stoss: { wagen: 0, bau: 0, leib: 0 },
                 ziele: { gesetzt: 0, erreicht: 0, laengsteS: 0 },
+                // DIE ARBEIT DES TAKTS (gezählt, nie die Wanduhr): Blicke eines Fahrers (`_verkehrFolge`), die Wagen, die er dabei
+                // prüft (die Zellen der Belegung um sein Fenster), die Suchen und die Schritte des Warte-Graphen (`_verkehrKreis`)
+                arbeit: { folge: 0, paare: 0, kreise: 0, kreis: 0 },
             },
         });
         if (!von.n) return VK;
@@ -1550,6 +1553,8 @@ class AnazhRealm_siedlung_verkehr {
                 const l = S.verkehr.belegung.get(ix * 2097152 + iz);
                 if (l) for (const O of l) kandidaten.push(O);
             }
+        const A = S.verkehr.zahl.arbeit;
+        [A.folge, A.paare] = [A.folge + 1, A.paare + kandidaten.length];
         for (const O of kandidaten) {
             if (O === W || !O.entry) continue;
             const o = O.entry;
@@ -1782,7 +1787,7 @@ class AnazhRealm_siedlung_verkehr {
         // Ort wartet, gibt ihn ab“ (w12), „der Kopf der Reihe hält sie nur, wenn seine Kette frei ist“ (5192ad31) und „der Kopf ohne
         // Platz gibt sie frei“ (e35b2c72) — jede war ein Kreis, an einer Geometrie benannt (23 Uhr: drei Wagen einer Wende 40 s; 23 Uhr
         // ab Minute 5 keiner der 20 Wagen; 10 Uhr: im Netz der vier Wenden ab Minute 1 keiner)
-        const kreis = v < 0.5 ? AnazhRealm._verkehrKreis(W) : null;
+        const kreis = v < 0.5 ? AnazhRealm._verkehrKreis(W, S.verkehr.zahl.arbeit) : null;
         W.wartet = null;
         // kreis[i] = [Wagen, Art seiner Kante zum nächsten]; der letzte wartet auf ihn selbst (kreis[0])
         const n = kreis ? kreis.length : 0;
@@ -2216,11 +2221,13 @@ AnazhRealm._verkehrReihe = function (Z, W, an) {
 
 // DER KREIS DURCH W IM WARTE-GRAPHEN (`_verkehrZonen`): die Kanten eines Wagens sind, worauf er an einem Ort wartet (`wartet`), und
 // der Wagen vor ihm, vor dem er hält (`grund` „wagen“, `wer`) — Tiefe höchstens 12. Liefert [[Wagen, Art seiner Kante], …] ab W
-// oder null. Leser: `_verkehrZonen` (wer nachgibt).
-AnazhRealm._verkehrKreis = function (W) {
+// oder null; jeder Schritt zählt in `A` (`zahl.arbeit.kreis`). Leser: `_verkehrZonen` (wer nachgibt).
+AnazhRealm._verkehrKreis = function (W, A) {
+    A.kreise++;
     const pfad = [];
     let ohne = null; // von dort führt kein Weg zu W
     const gang = (X) => {
+        A.kreis++;
         const a = X.wartet ? X.wartet.auf : null;
         const n = (a ? a.length : 0) + (X.grund === "wagen" && X.wer && X.wer.zonen ? 1 : 0);
         for (let i = 0; i < n; i++) {

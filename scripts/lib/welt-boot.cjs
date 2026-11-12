@@ -265,6 +265,24 @@ async function streuTakte(n, ms) {
         await sleep(ms);
     }
 }
+// DIE EICHUNG DES PROZESSES (`eichMs`, in der Seite `window.__eichMs`; w28-sim-takt-eich): eine feste Arbeit (`n` Schritte
+// Gleitkomma, Sinus, Wurzel und gestreuter Zugriff in 8 MB), ihre Dauer in ms. Ein Kosten-Urteil teilt die gemessene Zeit durch die
+// Eichung im SELBEN Prozess, unmittelbar neben der gemessenen Arbeit — fremde Last, Takt der CPU und Läufer treffen beide, das
+// Verhältnis bleibt. Bis hier urteilten Sim-Takt (VK) und Reifen-Takt (K8) an der Wanduhr: unter 52 % fremder Last fiel VK mit
+// 1,10–1,28 ms (Ruhe 0,52–0,70), K8 trug 4,01 statt 1,35 µs
+function eichMs(n) {
+    const a = eichMs.puffer || (eichMs.puffer = new Float64Array(1 << 20)); // 8 MB: die Arbeit liest und schreibt den Speicher wie die Sim
+    const t0 = performance.now();
+    let s = 0;
+    for (let k = 0; k < n; k++) {
+        const x = a[Math.imul(k + (s > 0 ? 1 : 0), 2654435761) >>> 12];
+        s += Math.hypot(x + k * 1e-3, 1) * Math.sin(s * 1e-6 + k);
+        a[Math.imul(k, 40503) >>> 12] = s * 1e-9;
+    }
+    const ms = performance.now() - t0;
+    eichMs.summe = (eichMs.summe || 0) + s; // die Arbeit bleibt Arbeit (kein toter Code für den Übersetzer)
+    return ms;
+}
 // DAS BILD-MUSTER DER LINSEN (`window.__MUSTER`, ms je Bild): Bilder ohne (8,3), mit einem (16,7 · 20 · 11,1) und mit zwei
 // Sim-Schritten (25 · 33,3) — bis w4-verkehr-c viermal dasselbe Literal (fahr-proben, diag-kamera-laub, diag-werk-im-wasser zweimal)
 // DER BILD-RENDERER RUHT (`window.__bildAus()`): render und renderAsync leer, die Nachbearbeitung aus — die Probe misst die Welt,
@@ -493,7 +511,7 @@ const rahmen = (b) =>
         hx: (b.maxX - b.minX) / 2,
         hz: (b.maxZ - b.minZ) / 2,
     };
-const WARTEN_SEITE = `${weltR} window.rahmen = ${rahmen}; window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.sleep = ${sleep}; window.leihe = ${leihe}; window.__fremd = ${fremd}; window.__loopBild = ${loopBild}; window.__zielLesen = ${zielLesen}; window.__pufferLesen = ${pufferLesen}; window.jsonKlon = ${jsonKlon}; window.fehlerText = ${fehlerText}; window.fehlerStapel = ${fehlerStapel}; window.__seitenTakt = ${seitenTakt}; window.__bedienung2 = ${bedienung2}; window.__takte = ${takte}; window.__streuTakte = ${streuTakte}; window.__bildAus = ${bildAus}; window.__MUSTER = [16.7, 8.3, 25, 16.7, 33.3, 11.1, 20, 16.7]; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__farben = ${farben}; window.__lin = ${lin}; window.__stand = ${stand}; window.__standJson = ${standJson}; window.__werkPutz = ${werkPutz}; window.__bautenLeer = ${bautenLeer}; window.__bautenSeit = ${bautenSeit}; window.__peersWeg = ${peersWeg}; window.__rufe = ${rufe};`;
+const WARTEN_SEITE = `${weltR} window.rahmen = ${rahmen}; window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.sleep = ${sleep}; window.leihe = ${leihe}; window.__fremd = ${fremd}; window.__loopBild = ${loopBild}; window.__zielLesen = ${zielLesen}; window.__pufferLesen = ${pufferLesen}; window.jsonKlon = ${jsonKlon}; window.fehlerText = ${fehlerText}; window.fehlerStapel = ${fehlerStapel}; window.__seitenTakt = ${seitenTakt}; window.__bedienung2 = ${bedienung2}; window.__takte = ${takte}; window.__streuTakte = ${streuTakte}; window.__bildAus = ${bildAus}; window.__MUSTER = [16.7, 8.3, 25, 16.7, 33.3, 11.1, 20, 16.7]; window.__eichMs = ${eichMs}; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__farben = ${farben}; window.__lin = ${lin}; window.__stand = ${stand}; window.__standJson = ${standJson}; window.__werkPutz = ${werkPutz}; window.__bautenLeer = ${bautenLeer}; window.__bautenSeit = ${bautenSeit}; window.__peersWeg = ${peersWeg}; window.__rufe = ${rufe};`;
 const CODE_OF_SEITE = `window.__codeOf = ((oK) => (f) => oK(String(f)))(${ohneKommentare}); window.__dokuOf = (f) => String(f); window.__fehlt = (f, re) => [].concat(f).every((g, i) => { if (typeof g !== "function") throw new Error("__fehlt: Glied " + i + " ist keine Funktion (" + typeof g + ") — die Absenz misst nichts"); re.lastIndex = 0; return !re.test(window.__codeOf(g)); }); ${WARTEN_SEITE}`;
 
 const ROOT = path.resolve(__dirname, "..", "..");
@@ -1875,6 +1893,7 @@ function frageJa() {
 }
 
 module.exports = {
+    eichMs,
     OFEN_KERNE,
     ENGINE_MODUL,
     ENGINE_THREE,

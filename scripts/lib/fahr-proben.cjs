@@ -880,6 +880,21 @@ async function probeLeben(expected) {
             const ausNetz = VK.strecken.filter(
                 (s, si) => s.fahrbar && !(VK.folge[2 * si].length && VK.folge[2 * si + 1].length)
             );
+            // DER SIM-TAKT ALS GEZÄHLTE ARBEIT (w28-verkehr-graph; Schöpfer 16.10.: Linsen urteilen Verhalten und Gesetz, nie die
+            // Wanduhr des Läufers): `VK.zahl.arbeit` zählt je Blick eines Fahrers die Wagen, die er prüft, und die Schritte des
+            // Warte-Graphen — deterministisch wie die Stunde. Die Millisekunden zählt die Probe weiter, geurteilt nur unter `zeit`
+            // (ein Band-Gerät). Die Mutante (`mutanteArbeit`): im Blick des Fahrers trägt jede Zelle der Belegung die ganze Stadt —
+            // jeder prüft jeden
+            const arbeit0 = { ...VK.zahl.arbeit };
+            if (o.mutanteArbeit)
+                r._verkehrFolge = function (...a) {
+                    VK.belegung.get = () => VK.wagen;
+                    try {
+                        return P._verkehrFolge.apply(this, a);
+                    } finally {
+                        delete VK.belegung.get;
+                    }
+                };
             r._verkehrSchritt = function (dt) {
                 const t0 = performance.now();
                 P._verkehrSchritt.call(this, dt);
@@ -1096,7 +1111,7 @@ async function probeLeben(expected) {
                             m.knapp = [+t.toFixed(2), LA[a][0].nr + "|" + LA[b][0].nr, k, ...ort2(LA[a][1]), LA[a][0].grund, LA[b][0].grund]; // prettier-ignore
                     }
             }
-            for (const n of ["_verkehrSchritt", "_verkehrUmfahren", "_wagenSchritt"]) delete r[n];
+            for (const n of ["_verkehrSchritt", "_verkehrUmfahren", "_wagenSchritt", "_verkehrFolge"]) delete r[n];
             if (zwilling) {
                 Z.abdruck = abdruck;
                 continue;
@@ -1143,6 +1158,7 @@ async function probeLeben(expected) {
                 querMax: +m.quer.toFixed(2),
                 querOrt: m.querOrt,
                 msJeSchritt: +(m.ms / Math.max(1, m.takte)).toFixed(3),
+                arbeit: Object.fromEntries(["folge", "paare", "kreise", "kreis"].map((k) => [k, VK.zahl.arbeit[k] - arbeit0[k]])),
                 stufe: SK,
                 sek: o.sek,
                 ziele: {
