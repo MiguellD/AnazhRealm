@@ -13,7 +13,15 @@ class AnazhRealm_studio_gestalt {
         if (!tab) return false;
         const preset = this._foundryPresetForEntry(entry);
         const rec = preset ? tab[preset] : null;
-        if (!rec || (rec.kind !== "tree" && rec.kind !== "shrub")) return false;
+        if (!rec || rec.panel !== "plant") return false;
+        // HOLZ IST HART (w28-strauch-gestalt, die EINE Regel jeder Pflanzen-Art, `HOLZ_IST_HART`): der Baum fühlt sich an seinem
+        // Skelett aus Stamm und Ästen, Strauch und Gestrüpp am Horst ihrer Triebe (dünne Ruten tragen nicht), das Totholz an seinem
+        // ganzen Skelett, eine Art ohne verholzte Triebe trägt keine Kollision (der Leib streift durch Farn, Blume, Gras und Schilf).
+        // Eine Art ohne Zeile bricht.
+        const holz = AnazhRealm.HOLZ_IST_HART[rec.kind];
+        if (holz === undefined)
+            return AnazhRealm._kernPflichtBruch("terrain:PHYTO_PRESETS." + preset + ".kind (" + rec.kind + ")");
+        if (holz === null) return [];
         entry._huelleWartet = false; // die eigene Frage löst die Hülle nicht erneut aus
         entry._huelleG = null;
         const g = this._foundryGestaltFor(entry, preset, AnazhRealm._studioGestaltenKern(preset));
@@ -54,9 +62,29 @@ class AnazhRealm_studio_gestalt {
                 (s) => typeof s === "string" && this._foundryPresetFor(s) === preset
             );
             teile = art ? this._growTreeBlueprintRich(art, null, { lod: 0, gestalt: { g, ov } }) : null;
+            const sk = this._lastTreeSkeleton;
             this._lastTreeSkeleton = null;
             if (!Array.isArray(teile) || !teile.length)
                 return AnazhRealm._kernPflichtBruch("terrain:skelettDerGestalt(" + k + ")");
+            // DER HORST (w28-strauch-gestalt): EIN Zylinder um die Füße der Triebe (`skelett.horst`), so hoch wie sie stehen; durch
+            // Ruten und Laub streift der Leib. Bis hier stieß er an jede Rute des Skeletts als Welt-Box: die schrägen Triebe des
+            // Horsts (bis 1,25 rad) spannten an der Hasel eine Wand aus Luft von 1,68 × 1,52 m (am Laib 0,35 m), die den Spieler je
+            // Takt 0,354 m hinausschob.
+            if (holz === "horst") {
+                const H = sk && sk.horst;
+                if (!(H && H.r > 0 && H.h > 0))
+                    return AnazhRealm._kernPflichtBruch("terrain:horstDerGestalt(" + k + ")");
+                teile = [
+                    {
+                        shape: "cylinder",
+                        material: "holz",
+                        position: { x: 0, y: H.h / 2, z: 0 },
+                        size: { x: 2 * H.r, y: H.h, z: 2 * H.r },
+                        rotation: { y: 0, z: 0 },
+                        segments: 6,
+                    },
+                ];
+            }
             this._baumGestaltMerk.set(k, teile);
         }
         return teile;
@@ -1508,3 +1536,17 @@ AnazhRealm.JAHR_STEHT = -1;
 // (`_jahrLage`, der Ton), jeder ihrer Teile trägt darum Ecken (geliefert oder stehend); der Wind webt das Jahr in Laub- und
 // Ast-Knoten (`_baumWindStoff`), der Bau-Satz trägt die Ecken des Wurfs (`BAU_WURF_JAHR_ATTR`).
 AnazhRealm.JAHR_ARTEN = Object.freeze(["foliage", "foliageTex", "schatten"]);
+// HOLZ IST HART (w28-strauch-gestalt, `_baumGestaltTeile`): je Art des Pflanzen-Kerns (PHYTO_PRESETS kind), woran sich ein Leib
+// stößt — "skelett" das verholzte Skelett der Gestalt (der Baum: Stamm und Äste — sie tragen, was oben geschieht: der Leib auf
+// dem Ast, die Luft-Sperre, das Tier; das Totholz), "horst" das Holz der Triebe am Boden (die Füße der Wurzel-Läufe, so hoch wie
+// ihre Ketten: Strauch und Gestrüpp, deren dünne Ruten nicht tragen), null keine Kollision (ohne verholzte Triebe).
+AnazhRealm.HOLZ_IST_HART = Object.freeze({
+    tree: "skelett",
+    shrub: "horst",
+    brush: "horst",
+    deadwood: "skelett",
+    fern: null,
+    flower: null,
+    grass: null,
+    reed: null,
+});
