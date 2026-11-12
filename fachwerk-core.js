@@ -4176,7 +4176,8 @@
       return {knoten:kn, kanten:kan, naehte}; }
     // ═══ DER VERKEHR (PFLICHT-OFFEN C, gesetzt 25.10.): Wagen mit Bewohnern am Steuer auf den Trassen der Stadt ═══
     // DIE MENGE (`verkehrVon`): je `hausJeWagen` Häuser einer städtischen Siedlung (Markt bis Metropole, `plan.staedtisch`) EIN
-    // Wagen, sein Fahrer ein Bewohner des Hauses floor((w + ½) · Häuser / Wagen) — gleichmäßig über den Plan; ein Dorf fährt nicht.
+    // Wagen, sein Fahrer ein Bewohner des Hauses floor((w + ½) · Häuser / Wagen) — gleichmäßig über die Lose im Ring (ohne die
+    // Vorstadt; ein Plan ohne sie: über jedes Los); ein Dorf fährt nicht.
     // DAS NETZ (`verkehrsNetz`, am Ursprung ox/oz): die Trassen, die zwei Wagen nebeneinander tragen (jede Straße ab `breiteM`:
     // die Hauptstraßen der Stadt; Punkte zweier Trassen näher als `naheM` treffen sich, und DER STOSS: das Ende einer Trasse trifft
     // das Ende einer anderen bis `stossM` — am Knoten des Straßengraphen liegen sie bis zu einem Schritt der Trasse (3 m, `strassengraph`
@@ -4205,7 +4206,16 @@
       wendeRandM: 1.2, wendeAbM: [7, 80], abzweigM: 2, abzweigFreiM: 8, wendeN: 8, parkL: 5.4, parkB: 2.3, parkRandM: 0.6, zelleM: 8, hangMax: 0.3, ringRandM: 1, flaecheM: 0.1, kreuzSpurM: 3 };
     function verkehrVon(plan){
       const sl=(plan&&plan.slots)||[], N=plan&&plan.staedtisch?Math.ceil(sl.length/VERKEHR_GESETZ.hausJeWagen):0, slots=[];
-      for(let w=0;w<N;w++) slots.push(Math.min(sl.length-1,Math.floor((w+0.5)*sl.length/N)));
+      /*DER WAGEN DER STADT GEHOERT EINEM HAUS IM RING (w28-stadt-grammatik): sein Platz liegt an der Wende am Tor, sein Fahrer geht
+        von seiner Tuer dorthin — die Vorstadt (`viertel` des Loses, STADT_GRAMMATIK) haengt je Tor an EINER Ausfallstrasse (230 m in
+        der Metropole, sie lenkt mit dem Hang), ihr Ende liegt in der Luft nah an einem anderen Tor und zu Fuss weit von ihm. Bis hier
+        fiel die Wahl gleichmaessig ueber JEDES Los: an stadt-voll trug #548012 am Ende der Ausfallstrasse des Ost-Tors (999/154)
+        Wagen 18 an der Wende des Nordost-Tors — 155 m Luft, 512 m Weg; er ging 318 s seines Morgens 414 m und kam zur Stunde 10 nie
+        ans Steuer (gate:fahr-leben VK: Wagen 18 0 m je Minute, die Stunde trennte sich von ihrem Zwilling). Ein Plan ohne Vorstadt
+        (das Dorf, jede Stadt ohne Ring, jeder Plan vor der Grammatik) waehlt wie bisher.*/
+      const ring=[]; for(let i=0;i<sl.length;i++) if(sl[i].viertel!=='vorstadt') ring.push(i);
+      const L=ring.length?ring:sl.map((_,i)=>i);
+      for(let w=0;w<N;w++) slots.push(L[Math.min(L.length-1,Math.floor((w+0.5)*L.length/N))]);
       return {n:N, slots}; }
     // die Sperren im Raster von `zM` (je Zelle die Boxen, die sie berühren): die Frage `gesperrt` an (x, z) liest nur ihre Zelle;
     // mit `r` die Frage, ob eine Box näher als r liegt (der Abstand zur gedrehten Box, je Zelle im Umkreis)

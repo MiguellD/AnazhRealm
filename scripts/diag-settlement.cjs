@@ -1881,6 +1881,49 @@ hauptLauf(async () => {
                 })
             );
         }
+        // DER WAGEN DER STADT GEHÖRT EINEM HAUS IM RING (w28-stadt-grammatik, fachwerk `verkehrVon`): kein Wagen an einem Los der
+        // Vorstadt — sie hängt je Tor an EINER Ausfallstraße, ihr Ende liegt in der Luft nah an einem anderen Tor und zu Fuß weit
+        // von ihm (stadt-voll: #548012 am Ende der Ausfallstraße des Ost-Tors trug Wagen 18 an der Wende des Nordost-Tors, 155 m
+        // Luft, 512 m Weg; gate:fahr-leben VK fiel an ihm, ohne ihn zu nennen). Den Fußweg selbst misst der Plan am Tisch nicht
+        // (der flache Plan trägt keine Wende, sie liegt erst im Plan v2 am Hang): er steht am Gerät, gate:fahr-leben VK.
+        const wagenLose = (pl, wahl) => {
+            const sl = pl.slots || [];
+            const aus = { n: wahl.length, vorstadt: [] };
+            for (const [w, i] of wahl.entries())
+                if (sl[i] && sl[i].viertel === "vorstadt") aus.vorstadt.push(`Wagen ${w}: Los #${i} ${sl[i].rolle || ""} (Vorstadt)`);
+            return aus;
+        };
+        {
+            const wagenFehl = [];
+            let [wagenN, vorLose] = [0, 0];
+            for (const [seed, nH] of [
+                [7, 120],
+                [7, 300],
+                [11, 200],
+            ]) {
+                const pl = FC.exportSettlement({ seed, nH });
+                const w = wagenLose(pl, FC.verkehrVon(pl).slots);
+                wagenN += w.n;
+                vorLose += pl.slots.filter((q) => q.viertel === "vorstadt").length;
+                if (w.vorstadt.length) wagenFehl.push(`${seed}/${nH}: ${w.vorstadt.slice(0, 2).join(" · ")}`);
+            }
+            check(
+                `DER WAGEN DER STADT GEHÖRT EINEM HAUS IM RING: kein Wagen an einem Los der Vorstadt (3 Städte, ${wagenN} Wagen, ${vorLose} Lose der Vorstadt)`,
+                wagenFehl.length === 0 && wagenN > 0 && vorLose > 0,
+                wagenFehl.slice(0, 3).join(" · ") || `${wagenN} Wagen, ${vorLose} Lose der Vorstadt (die Probe prüfte nichts)`
+            );
+            // Selbst-Test 15d: die Wahl bis w28-stadt-grammatik (gleichmäßig über JEDES Los) setzt in der Metropole des Gesetzes
+            // einen Wagen an die Vorstadt — beim Namen
+            const st = FC.exportSettlement({ seed: 7, nH: 300 });
+            const nW = FC.verkehrVon(st).n;
+            const alt = wagenLose(st, Array.from({ length: nW }, (_, w) => Math.min(st.slots.length - 1, Math.floor(((w + 0.5) * st.slots.length) / nW)))); // prettier-ignore
+            const neu = wagenLose(st, FC.verkehrVon(st).slots);
+            check(
+                "Selbst-Test 15d: der Wagen im Ring — die Wahl über jedes Los (wie bis w28-stadt-grammatik) setzt einen Wagen an die Vorstadt und fällt beim Namen, die Wahl des Gesetzes keinen",
+                alt.vorstadt.length > 0 && neu.vorstadt.length === 0 && neu.n === alt.n,
+                JSON.stringify({ alt: alt.vorstadt.slice(0, 2), wagen: nW, vorstadtLose: st.slots.filter((s) => s.viertel === "vorstadt").length }) // prettier-ignore
+            );
+        }
         alleDs.sort(aufsteigend);
         const mq = (q) => (alleDs.length ? rang(alleDs, q) : Infinity);
         if (!Number.isFinite(FC.LICHT_MARKE_M)) lichtFehl.push("der Kern trägt kein LICHT_MARKE_M (das Soll je Meter)");
