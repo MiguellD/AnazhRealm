@@ -86,10 +86,6 @@ async function checkBandWelle6G3Lebendigkeit({ page, check }) {
         r._weltUhrNimm(st.spielZeit + 45);
         r.tickDayNight(1e6 + 1);
         out.sprungNimmtTag = [+st.timeOfDay.toFixed(6), st.worldMeta ? st.worldMeta.tag - tag0 : 1];
-        // DIE SONNENBAHN LIEST DAS JAHR (w28-nacht-licht): um 06 Uhr steht die Sonne zur Sonnenwende des Sommers über, zu der des
-        // Winters unter dem Horizont, zur Tag-und-Nacht-Gleiche auf ihm
-        const w6 = __weltLicht.sonnenWinkel(0.25);
-        out.bahnJahr = [0.25, 0, 0.75].map((p) => +r._dayNightSunDirection(w6, p).y.toFixed(4));
         // DER NACHT-KNOTEN (w28-nacht-licht): unter ihm steht die Belichtung — ein Viertel seines Lichts belichtet wie er selbst
         const EK = AnazhRealm.BELICHTUNG.nachtKnotenE;
         const kb = (E) => __weltLicht.belichtung([E, E, E], 6, -0.7, null, AnazhRealm.BELICHTUNG);
@@ -177,13 +173,6 @@ async function checkBandWelle6G3Lebendigkeit({ page, check }) {
                 "(Täter: `tickDayNight` liest die Wanduhr statt `spielZeit`)",
             wave6g3Results.wanduhrHaeltTag === true && Math.abs(S[0] - 0.15) < 1e-4 && S[1] === 1,
             `Wanduhr hält ${wave6g3Results.wanduhrHaeltTag} · Sprung → Uhr ${S[0]}, Tage +${S[1]}`
-        );
-        const J = wave6g3Results.bahnJahr || [];
-        check(
-            "w28-nacht-licht: die Sonnenbahn liest das Jahr — 06 Uhr im Sommer über, im Winter unter, zur Gleiche auf dem Horizont " +
-                "(Täter: `__weltLicht.sonnenRichtung` ohne Deklination)",
-            J[0] > 0.15 && J[2] < -0.15 && Math.abs(J[1]) < 1e-3,
-            `sin h Sommer ${J[0]} · Gleiche ${J[1]} · Winter ${J[2]}`
         );
         const NK = wave6g3Results.nachtKnoten || [];
         check(
@@ -1139,7 +1128,7 @@ async function checkBandV8LatePolishAnd6XContinued({ page, check }) {
             const along = dX * _sx + dY * _sy + dZ * _sz; // Komponente entlang sunDir (harmlos)
             const latMove = Math.hypot(dX - along * _sx, dY - along * _sy, dZ - along * _sz); // ⟂ sunDir
             // der saubere Sprung ist ein Texel der Karte, wie sie JETZT steht (w28-nacht-licht: 340 m / 2048 = 0,166 m — die feste
-            // Schwelle 0,2 m stammte aus der Karte von 600 m und fing den Sprung über eine Texel-Grenze der neuen Sonnenbahn als Kriechen)
+            // Schwelle 0,2 m stammte aus der Karte von 600 m und fing einen sauberen Sprung über eine Texel-Grenze als Kriechen: 0,166 m bei der Sonne der Bahn aus Jahr × Breite)
             const sc = st.directionalLight.shadow.camera;
             const texel = (sc.right - sc.left) / st.directionalLight.shadow.mapSize.width;
             out.shadowSnapStable = latMove < 0.01 || latMove > 0.9 * texel;

@@ -1304,27 +1304,17 @@ class AnazhRealm_bild_himmel {
     // 0,5 Mittag), die auch Mond, Sterne, Godrays, Tier-Nacht, Feld-Sonne, Umwelt-Klang und das Brennglas lesen (die Welle
     // L-F schrieb sie ein zweites Mal ohne Stufen aus — die spätere Klassen-Methode hätte die Stufen still überschrieben;
     // Integration V18.536: EINE Methode, jeder Leser ruft sie mit der Tageszeit des Spiels).
-    // DIE BAHN IM JAHR (w28-nacht-licht): die Stufe hält Stunde UND Phase des Jahrs (`phase`, die der Sonnenbahn `__weltLicht.
-    // sonnenRichtung`) — das Jahr dreht das Licht wie die Uhr nur in Stufen; zwischen ihnen liest jeder Leser die Phase der Stufe.
     _sonnenWinkel(t) {
         const w = __weltLicht.sonnenWinkel(t);
-        const s = this.state._sonne || (this.state._sonne = { winkel: NaN, phase: NaN, stufe: 0, stufen: 0 });
-        const p = this._sonnenPhase();
+        const s = this.state._sonne || (this.state._sonne = { winkel: NaN, stufe: 0, stufen: 0 });
         s.stufe = this._sonnenStufe();
         if (Number.isFinite(s.winkel)) {
-            const a = this._dayNightSunDirection(s.winkel, s.phase);
-            if (a.dot(this._dayNightSunDirection(w, p)) >= Math.cos(s.stufe)) return s.winkel;
+            const a = this._dayNightSunDirection(s.winkel);
+            if (a.dot(this._dayNightSunDirection(w)) >= Math.cos(s.stufe)) return s.winkel;
         }
         s.winkel = w;
-        s.phase = p;
         s.stufen++;
         return w;
-    }
-
-    // DIE PHASE DES JAHRS der Sonnenbahn: die der EINEN Jahres-Uhr (`seasonPhase`, `_tickSeason`)
-    _sonnenPhase() {
-        const p = this.state.seasonPhase;
-        return typeof p === "number" && Number.isFinite(p) ? p : 0.375;
     }
 
     // DIE STUFE der Sonne (Bogenmaß): eine Drehung des Lichts um α verschiebt in der Karte einer Kaskade jede Schatten-Kante
@@ -1362,12 +1352,10 @@ class AnazhRealm_bild_himmel {
         return stufe;
     }
 
-    // DIE RICHTUNG ZUR SONNE zum Winkel der Uhr: die EINE Sonnenbahn (`__weltLicht.sonnenRichtung`, Stunde × Jahr × Breite), die
-    // Phase die der Stufe (`_sonnenWinkel`), sonst die des Jahrs jetzt
-    _dayNightSunDirection(angle, phase) {
-        const s = this.state._sonne;
-        const p = Number.isFinite(phase) ? phase : s && Number.isFinite(s.phase) ? s.phase : this._sonnenPhase();
-        const [x, y, z] = __weltLicht.sonnenRichtung(angle, p);
+    // DIE RICHTUNG ZUR SONNE zum Winkel der Uhr: die EINE Sonnenbahn (`__weltLicht.sonnenRichtung`, die auch die Bühne der Studios
+    // liest — bis w28-nacht-licht stand hier ihre Kopie)
+    _dayNightSunDirection(angle) {
+        const [x, y, z] = __weltLicht.sonnenRichtung(angle);
         return new THREE.Vector3(x, y, z);
     }
 
