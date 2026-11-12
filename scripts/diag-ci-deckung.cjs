@@ -598,6 +598,19 @@ function gruppenUrteil(job, J) {
     return v;
 }
 
+// die relative require-Kette des Richters, ab scripts/ci-kopf.cjs (Pfade ab der Wurzel des Repos)
+function kopfLaedt() {
+    const gesehen = new Set(["scripts/ci-kopf.cjs"]);
+    for (const f of gesehen) {
+        const text = fs.readFileSync(path.join(root, f), "utf8");
+        for (const m of text.matchAll(/require\(\s*["'](\.{1,2}\/[^"']+)["']\s*\)/g)) {
+            const z = path.posix.join(path.posix.dirname(f), m[1]);
+            if (fs.existsSync(path.join(root, z))) gesehen.add(z);
+        }
+    }
+    return [...gesehen];
+}
+
 // (V) KOPF: der Kopf-Richter vor der vollen Batterie — unter VOLL_WENN, ohne Matrix, nie stumm, EIN Schritt außer
 // checkout (scripts/ci-kopf.cjs mit id), dessen Ausgaben `voll` und `echt` der Job weiterreicht
 function kopfForm(doc) {
@@ -609,6 +622,17 @@ function kopfForm(doc) {
     if (K.strategy) v.push(`(V) KOPF: „${KOPF_JOB}" trägt eine Matrix — er richtet einmal je Lauf`);
     if (K["continue-on-error"] !== undefined && K["continue-on-error"] !== false)
         v.push(`(V) KOPF: „${KOPF_JOB}" trägt continue-on-error — ein Fehler der API ließe die Batterie still aus`);
+    // der Richter läuft in einem Teil-Checkout: jede Datei seiner relativen require-Kette steht in sparse-checkout — sonst
+    // stirbt er an MODULE_NOT_FOUND, bevor er urteilt (Lehre z398, 12.11.: die Urteils-Wache kam in ci-kopf.cjs, der Checkout nicht mit)
+    const co = (K.steps || []).find((s) => String(s.uses).startsWith("actions/checkout@"));
+    const teil = String((co && co.with && co.with["sparse-checkout"]) || "")
+        .split(/\s+/)
+        .filter(Boolean)
+        .map((p) => p.replace(/^\//, ""));
+    if (teil.length)
+        for (const f of kopfLaedt())
+            if (!teil.includes(f))
+                v.push(`(V) KOPF: der Richter lädt „${f}", der Teil-Checkout holt nur ${teil.join(" · ")} — er stürbe an MODULE_NOT_FOUND vor dem Urteil`);
     const eigen = (K.steps || []).filter((s) => !String(s.uses).startsWith("actions/checkout@"));
     const r = eigen.find((s) => KOPF_LAUF.test(lauf(s)));
     if (eigen.length !== 1 || !r)
@@ -1215,6 +1239,11 @@ function selbsttest() {
             "ein Gate im Kopf-Richter",
             (d) => d.jobs.kopf.steps.push({ name: "X", run: "npm run gate:x" }),
             /\(V\) KOPF: „kopf" trägt 2 Schritte neben checkout/,
+        ],
+        [
+            "der Teil-Checkout des Kopf-Richters ohne seine Bibliothek",
+            (d) => (d.jobs.kopf.steps[0] = { uses: "actions/checkout@v4", with: { "sparse-checkout": "scripts/ci-kopf.cjs" } }),
+            /\(V\) KOPF: der Richter lädt „scripts\/lib\/urteil-zeile\.cjs", der Teil-Checkout holt nur scripts\/ci-kopf\.cjs/,
         ],
         ["die Ausgabe nicht weitergereicht", ["jobs.kopf.outputs"], /\(V\) KOPF: „kopf" reicht outputs\.voll nicht/],
         ["der Puls wartet auf den Kopf", ["jobs.puls.needs=", KOPF_JOB], /\(V\) PULS: „puls" .*wartet auf kopf/],
