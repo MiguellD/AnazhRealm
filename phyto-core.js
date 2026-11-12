@@ -104,7 +104,8 @@
         if (weltMass && P.conifer && !(P.hd > 0)) throw new Error("[phyto] die Konifere im Welt-Maß trägt keine Schlankheit hd");
         // DER BESTAND (T2, BESTAND unten): ein Laubbaum im Bestand wächst kurze Seitenäste und trägt seine Krone hoch und schmal.
         const bestand = kroneTraegt && !frei && bestandArt(P);
-        const seitenast = bestand ? BESTAND.seitenast : 1;
+        const horst = P.basalStems > 1; // der Strauch (STRAUCH_WUCHS unten)
+        const seitenast = bestand ? BESTAND.seitenast : horst ? STRAUCH_WUCHS.seitenast : 1;
         const trunkR =
             !weltMass || kroneTraegt
                 ? trunkForm
@@ -328,16 +329,16 @@
                 // DEKURRENT: der Leittrieb verliert sich, breit spreizende Arme bilden die Kuppel
                 // (breiter als hoch — die Eiche). Die Spreizung skaliert mit der Apikaldominanz.
                 children.push({
-                    area: parentArea * 0.3,
+                    area: parentArea * (horst ? STRAUCH_WUCHS.leit[0] : 0.3),
                     bend: lerp(0.12, 0.3, 1 - P.apical),
-                    len: length * 0.6,
+                    len: length * (horst ? STRAUCH_WUCHS.leit[1] : 0.6),
                     lead: true,
                 });
                 const nLat = rnd() < 0.55 ? 3 : 2;
-                const spread = lerp(0.55, 1.05, 1 - P.apical);
+                const spread = horst ? STRAUCH_WUCHS.spreizung : lerp(0.55, 1.05, 1 - P.apical);
                 for (let i = 0; i < nLat; i++)
                     children.push({
-                        area: (parentArea * 0.7) / nLat,
+                        area: (parentArea * (horst ? 1 - STRAUCH_WUCHS.leit[0] : 0.7)) / nLat,
                         bend: spread * rrange(0.85, 1.12),
                         len: length * lerp(0.82, 0.96, P.apical) * seitenast,
                         lead: false,
@@ -359,17 +360,20 @@
             }
         };
 
-        if (P.basalStems > 1) {
-            // Strauch: mehrere basale Triebe statt eines Stamms.
+        if (horst) {
+            // DER STRAUCH (STRAUCH_WUCHS): mehrere basale Triebe statt eines Stamms, jeder nach seinem Rang ρ — innen steil
+            // und lang, außen bogig und kurz, im Querschnitt nach dem Pipe-Modell; jeder trägt seine Partie (ein Lappen).
+            const SW = STRAUCH_WUCHS;
             for (let i = 0; i < P.basalStems; i++) {
                 const a = (i / P.basalStems) * 6.28 + rnd();
-                const lean = rrange(0.12, 0.3);
+                const rang = rnd();
+                const lean = lerp(SW.neigung[0], SW.neigung[1], rang);
                 const dir = vnorm([Math.cos(a) * Math.sin(lean), Math.cos(lean), Math.sin(a) * Math.sin(lean)]);
                 grow(
                     [Math.cos(a) * trunkR * 1.5, 0, Math.sin(a) * trunkR * 1.5],
                     dir,
-                    trunkR * rrange(0.6, 0.85),
-                    P.height * 0.5,
+                    trunkR * Math.pow(1 / P.basalStems, 1 / P.delta) * rrange(SW.staerke[0], SW.staerke[1]),
+                    P.height * 0.5 * lerp(SW.laenge[0], SW.laenge[1], rang),
                     0,
                     0,
                     -1,
@@ -2176,7 +2180,7 @@
                   : lerp(0, 0.32, clamp((api - 0.25) * 1.6, 0, 1)),
             flare: isShrub ? 0.14 : lerp(0.16, 0.52, 1 - slim),
             roots: Math.round(lerp(4, 6, 1 - slim)),
-            basalStems: isShrub ? Math.round(lerp(5, 2, api / 0.22)) : 1,
+            basalStems: isShrub ? Math.round(lerp(STRAUCH_WUCHS.triebe[0], STRAUCH_WUCHS.triebe[1], api / 0.22)) : 1,
             maxDepth: Math.round(lerp(7, 10, leaf * 0.4 + slim * 0.3 + api * 0.3)),
             windGain: isCon ? lerp(0.45, 0.7, slim) : lerp(0.85, 1.3, slim * 0.5 + weep * 0.5),
         };
@@ -2274,8 +2278,26 @@
         const rezept = stufenRezept(ph.kind, stufe | 0);
         // Blatt-Stride `_lf` (Index-Ausdünnung NACH dem Wuchs, nie im Wuchs-Strom) und Blatt-Maß `ls` der Stufe:
         // Aggregation statt Ausdünnung (Wahrnehmung ~ n·s²); die Nadel-L1 trägt ihre Karten aus EINEM Blatt-Atlas.
-        const lf = rezept === 0 ? 1 : rezept === 1 ? (ph.conifer ? 0.0265 : 0.21) : 0.16,
-            ls = rezept === 0 ? 1 : rezept === 1 ? (ph.conifer ? 1.62 : 2.05) : 4.0;
+        const lf =
+                rezept === 0
+                    ? 1
+                    : rezept === 1
+                      ? ph.conifer
+                          ? 0.0265
+                          : ph.kind === "shrub"
+                            ? STRAUCH_WUCHS.blatt[0]
+                            : 0.21
+                      : 0.16,
+            ls =
+                rezept === 0
+                    ? 1
+                    : rezept === 1
+                      ? ph.conifer
+                          ? 1.62
+                          : ph.kind === "shrub"
+                            ? STRAUCH_WUCHS.blatt[1]
+                            : 2.05
+                      : 4.0;
         const lcol = hexOffsetHSL(ph.leafCol, (IR() - 0.5) * 0.05, (IR() - 0.5) * 0.1, (IR() - 0.5) * 0.08);
         const P = {
             kind: ph.kind,
@@ -2551,6 +2573,31 @@
     function bestandArt(d) {
         return !!d && !d.conifer && !d.solitaer;
     }
+    // DER WUCHS DES STRAUCHS (w28-strauch-gestalt): ein Strauch ist kein Baum ohne Stamm, er ist ein Horst aus Trieben — jeder
+    // basale Trieb trägt seine eigene Partie, die Krone liest als Lappen über einem unregelmäßigen Wipfel, belaubt bis zum Boden.
+    // `triebe` die Zahl der Stockausschläge bei api 0 … 0,22 (Hasel, Holunder: 5–15); je Trieb sein Rang ρ ∈ [0, 1) — der
+    // innere (ρ 0) steht steil und lang, der äußere bogig und kurz: `neigung` aus der Senkrechten (rad), `laenge` die erste
+    // Rute je Rang (Anteil der halben Höhe); `staerke` der Trieb nach dem Pipe-Modell (der Wurzelhals teilt seine Fläche auf
+    // die Triebe: r = trunkR · (1/N)^(1/Δ) · staerke); `leit` [Flächen-Anteil, Länge] des Leittriebs, der weiterwächst (der
+    // Laubbaum verliert ihn: 0,3 / 0,6) — der Trieb belaubt sich entlang, keine kahle Rute unter einem schwebenden Ballen;
+    // `spreizung` der Winkel seiner Seitenäste (rad; der Laubbaum 0,55–1,05 zur Kuppel), `seitenast` ihre Länge.
+    // `blatt` [Stride, Maß] der Karten-Stufe (Rezept 1, Wahrnehmung ~ n·s²): mit dem Blatt-Maß des Baums (0,21 / 2,05) maß die
+    // Karte 0,43 der Strauch-Höhe (Bäume 0,16–0,23) und schmolz jeden Lappen zur Hülle; die Schranke ist das Blatt selbst —
+    // 4–16 cm am Strauch (gate:pflanzen-nah; Hasel 5–12 cm): bei 1,7 misst es 4,2 cm (0,9 trug 2,3 cm), die Karte 0,35 der Höhe.
+    // Die Höhe des Horsts hält die des Laibs (5,0 Vorlagen-Einheiten mit den Karten), das Reisig der Mittel-Stufe ≥ 50 % ihrer
+    // Dreiecke (57 %), die Nah-Stufe trägt die Zeile ihres Budgets (6 460 / 12 000), die Mittel-Stufe 704 / 1 100.
+    // Bis hier: 4 Triebe à 0,6–0,85·trunkR, 0,12–0,3 rad, gleich lang, die Kuppel des Laubbaums — der Laib auf Beinen
+    // (gate:laub-kante fimp:strauch:L2 0,348 Tafel-Pose / 0,273 Spielgang, Soll ≤ 0,22).
+    const STRAUCH_WUCHS = Object.freeze({
+        triebe: [12, 10],
+        neigung: [0.15, 1.25],
+        laenge: [0.75, 0.35],
+        spreizung: 0.35,
+        seitenast: 0.9,
+        leit: [0.5, 0.95],
+        staerke: [0.9, 1.1],
+        blatt: [0.3, 1.7],
+    });
     // Die Gestalt des Solitärs einer Art mit V Bestand-Gestalten (V+1), 0 = die Art trägt keinen. Leser: die Ableitung
     // (`treeParams`: der Same V+1 wächst frei), der Wirt (`_foundryGestalten`, `_ortWaehlt`), gate:asset-contract (jede
     // Gestalt der Welt unter ihrer Zeile).
