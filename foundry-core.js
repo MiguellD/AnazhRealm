@@ -152,7 +152,13 @@ var WASSER_GESETZ = {
     licht: [0.86, 0.18, 0.08],          // outc *= (l0 + l1*diff + l2*whgt)
     spec: [120.0, 1.35],                // Sonnen-Glitzer pow(...,s0)*s1
     alpha: [0.55, 0.95, 0.32, 0.06],    // mix(a0,a1,depth)+fres*a2; Auslauf smoothstep(0,a3,depth)
-    schaum: { ufer: 0.26, kammA: 1.8, kammB: 2.7, sinF: 4.0, sinT: 2.8, kamm: 0.6, max: 0.85, farbe: [0.93, 0.96, 0.98], deck: 0.95 },
+    schaum: { ufer: 0.26, kammA: 1.8, kammB: 2.7, sinF: 4.0, sinT: 2.8, kamm: 0.6, max: 0.85, farbe: [0.93, 0.96, 0.98], deck: 0.95,
+        // w28-wasser-sicht (rein additiv) — DIE WEISSKAPPE: der Anteil der See, den brechende Kaemme decken, folgt dem Wind in 10 m
+        // Hoehe (U, m/s): W = monahan[0] * U^monahan[1] (Monahan & O'Muircheartaigh 1980; U 5 m/s 0,1 %, 10 m/s 1 %, 15 m/s 4 %).
+        // Die Welt legt ihn auf die hoechsten Stellen der Duenung: ueber der Schwelle q der normierten Hoehe h = Duenung / (0,5 *
+        // Summe duenung) liegt der Anteil W — q(s) = quantil[0] + quantil[1]*s + quantil[2]*s^2 mit s = sqrt(-ln W), gerechnet an der
+        // Verteilung der Duenung dieses Gesetzes (welle.duenung, drei Oktaven Wertrauschen; 0,0005 <= W <= 0,3 auf 3 % genau).
+        weisskappe: { monahan: [3.84e-6, 3.41], quantil: [-0.5372, 0.7494, -0.0996] } },
     koerperStreu: 0.1,                  // Rueckstreuung b_b (1/m) des Wasser-Koerpers (Binnensee 0,01-0,2): R = 0,33*b_b/(wK+b_b) (Welt-Leser; das Studio-GLSL liest sie nicht)
     // w12-unterwasser (rein additiv) — DER WASSER-KOERPER JE ART in 1/m, je Kanal R G B (der Leser UNTER Wasser: Welt und Studio; das GLSL liest ihn nicht).
     // wK oben ist eine Look-Zahl ueber der NORMIERTEN Tiefe depth01 des Studio-Spiegels (a3d4f188), keine Absorption je Meter.

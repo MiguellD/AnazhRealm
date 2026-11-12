@@ -1226,15 +1226,15 @@ async function wasserBild(o = {}) {
     // sonst las ihr Bogen die Tiefe des letzten Welt-Bilds, der optische Weg zerfiel, und der Ufer-Saum deckte 99 % des
     // ruhigen Flusses (B1 SCHAUM). Nur der Zug sieht die Probe als Hauptbild (jeder andere Haken der Szene bleibt fremd).
     const zugRoh = Object.getPrototypeOf(r)._tiefenAbbild;
-    const lese = async () => {
+    const lese = async (sz = szene, kam = cam) => {
         renderer.setRenderTarget(rt);
         if (typeof zugRoh === "function")
             r._tiefenAbbild = function (frame, abbild) {
-                if (frame.scene !== szene) return zugRoh.call(this, frame, abbild);
+                if (frame.scene !== sz) return zugRoh.call(this, frame, abbild);
                 const szeneAlt = st.scene,
                     kameraAlt = st.camera;
-                st.scene = szene;
-                st.camera = cam;
+                st.scene = sz;
+                st.camera = kam;
                 try {
                     return zugRoh.call(this, frame, abbild);
                 } finally {
@@ -1243,7 +1243,7 @@ async function wasserBild(o = {}) {
                 }
             };
         try {
-            renderer.render(szene, cam);
+            renderer.render(sz, kam);
         } finally {
             delete r._tiefenAbbild;
         }
@@ -1331,7 +1331,55 @@ async function wasserBild(o = {}) {
         // das Bild selbst (für den Bericht): das Render-Ziel als PNG (linear, ungetont — ein Vergleichs-Bild, kein Look)
         return { ruhig: zone(1), schnelle: zone(2), png: o.png ? __png(px, W, H) : null };
     };
-    let a, b, sturm;
+    // B8 DIE WEISSKAPPE (w28-wasser-sicht, WASSER_GESETZ.schaum.weisskappe): die offene See (aWave 1, 20 m tief, ohne Strömung)
+    // von oben, 160 × 160 m im 2-m-Gitter (die Dünung trägt der Vertex) — gezählt die Pixel, die der Schaum hebt (wie B1: über
+    // ein Achtel Weiß und 8 Stufen über demselben Bild ohne Schaum), in der Flaute (0,06) und bei Wind 0,8.
+    const MN = 81,
+        MS = 2;
+    const mPos = [],
+        mIdx = [];
+    for (let j = 0; j < MN; j++) for (let i = 0; i < MN; i++) mPos.push(OX + (i - 40) * MS, OY, OZ + 400 + (j - 40) * MS);
+    for (let j = 0; j + 1 < MN; j++)
+        for (let i = 0; i + 1 < MN; i++) {
+            const a0 = j * MN + i;
+            mIdx.push(a0, a0 + MN, a0 + 1, a0 + 1, a0 + MN, a0 + MN + 1);
+        }
+    const mGeom = new T.BufferGeometry();
+    const fuell = (n, k, v) => new T.Float32BufferAttribute(new Float32Array(n * k).fill(v), k);
+    mGeom.setAttribute("position", new T.Float32BufferAttribute(mPos, 3));
+    mGeom.setAttribute("aFlow", fuell(MN * MN, 2, 0));
+    mGeom.setAttribute("aDepth", fuell(MN * MN, 1, 20));
+    mGeom.setAttribute("aWave", fuell(MN * MN, 1, 1));
+    mGeom.setAttribute("aSlope", fuell(MN * MN, 1, 0));
+    mGeom.setIndex(mIdx);
+    const meer = new T.Mesh(mGeom, mat);
+    meer.frustumCulled = false;
+    const meerSzene = new T.Scene();
+    meerSzene.background = new T.Color(0, 0, 0);
+    meerSzene.add(meer);
+    const meerCam = new T.PerspectiveCamera(50, W / H, 0.5, 400);
+    meerCam.position.set(OX, OY + 60, OZ + 400);
+    meerCam.up.set(0, 0, -1);
+    meerCam.lookAt(OX, OY, OZ + 400);
+    meerCam.updateMatrixWorld(true);
+    const kammMess = async (wind) => {
+        U.wind.value = wind;
+        U.time.value = o.t0 || 61.3;
+        WL.forEach((u) => (u.value = u.value.clone ? u.value.setScalar(0) : 0));
+        r._weltLicht().U.ambientFarbe.value.setScalar(Math.PI);
+        U.light.value = 0;
+        U.emotion.value = -1;
+        const px0 = await lese(meerSzene, meerCam);
+        U.emotion.value = 0;
+        const px = await lese(meerSzene, meerCam);
+        let hell = 0;
+        for (let p = 0; p < W * H; p++) {
+            const l = luma709(px, p * 4);
+            if (l > 32 && l - luma709(px0, p * 4) > 8) hell++;
+        }
+        return { hellAnteil: hell / (W * H), pixel: W * H, png: o.png ? __png(px, W, H) : null };
+    };
+    let a, b, sturm, kamm;
     // B7: das Fragment-WGSL, das r184 dem Bogen baut (sein Render-Objekt mit dem Wasser-Stoff) — die Leck-Linse liest es
     const fragmente = new Set();
     const holen = renderer._objects.get;
@@ -1352,6 +1400,7 @@ async function wasserBild(o = {}) {
         b = await mess(o.t1 || 3601.7);
         if (U.wind) U.wind.value = 1.0;
         sturm = await mess(o.t0 || 61.3);
+        if (U.wind) kamm = { ruhig: await kammMess(0.06), sturm: await kammMess(0.8) };
     } finally {
         zurueck();
         if (U.wind) U.wind.value = windAlt;
@@ -1361,6 +1410,7 @@ async function wasserBild(o = {}) {
         himmelMittag(tagAlt, weltTagAlt);
         if (U.emotion) U.emotion.value = gefuehlAlt;
         geom.dispose();
+        mGeom.dispose();
         maskMat.dispose();
         rt.dispose();
     }
@@ -1380,8 +1430,15 @@ async function wasserBild(o = {}) {
         // der Sturm am ruhigen Fluss: Kanten-Dichte bei Wind 1,0 gegen 0,06 (dieselbe Uhr)
         sturmVerhaeltnis: R(a.ruhig.kantenDichte > 0 ? sturm.ruhig.kantenDichte / a.ruhig.kantenDichte : 0),
         fragmente: [...fragmente],
+        // die Weißkappe (B8): der Anteil der See, den der Schaum hebt, in der Flaute und bei Wind 0,8
+        kamm: kamm && {
+            ruhig: { hellAnteil: R(kamm.ruhig.hellAnteil, 4), pixel: kamm.ruhig.pixel },
+            sturm: { hellAnteil: R(kamm.sturm.hellAnteil, 4), pixel: kamm.sturm.pixel },
+        },
         png60: a.png,
         png3600: b.png,
+        pngKammRuhig: kamm && kamm.ruhig.png,
+        pngKammSturm: kamm && kamm.sturm.png,
     };
 }
 
