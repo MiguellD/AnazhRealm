@@ -2504,7 +2504,7 @@ class AnazhRealm_daten {
             "gestalt.geroell": ["Geröll", "Scree"],
             "gestalt.gestruepp": ["Gestrüpp", "Brushwood"],
             "gestalt.gotisch": ["Gotisch · steil", "Gothic · steep"],
-            "gestalt.grabstein": ["Grabstein · Sockel, Stele, Kreuz", "Gravestone · plinth, stele, cross"],
+            "gestalt.grabstein": ["Grabstein · Sockel, Tafel, Kreuz", "Gravestone · plinth, slab, cross"],
             "gestalt.gras": ["Gras", "Grass"],
             "gestalt.griechisch": ["Griechisch · Kykladen", "Greek · Cycladic"],
             "gestalt.grossschwert": ["Großschwert", "Greatsword"],

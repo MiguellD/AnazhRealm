@@ -2443,7 +2443,12 @@ async function kreaturProben(r, T, opts) {
         const takte = Math.round((0.1 / 24) * tagS * 10);
         const nahR = A.BEWOHNER.nahM + A.BEWOHNER.nahHystM;
         // DER SPIELER AM RAND DES PLATZES, frei von Grundrissen (Lehre 17: Achsen-Enden, Seiten, Diagonalen) — im Start-Dorf und
-        // in der Stadt; die Mitte des Platzes und die Richtung des Stands zu ihr
+        // in der Stadt; die Mitte des Platzes und die Richtung des Stands zu ihr. DAS AUGE HINTER DEM SPIELER STEHT IM FREIEN
+        // (w28-stadt-grammatik): das Third-Auge der Zählung (`blickZaehlen`: THIRD_M hinter dem Stand, vom Platz weg) liegt nie in
+        // einem Grundriss — bis hier prüfte die Wahl nur den Stand, und am Markt der Stadt-Grammatik stand das Auge des ersten
+        // freien Stands im Pfarrhaus: jeder Strahl brach an dessen Wand, „Dorfplatz 10 Uhr im Blick: 21 Ego / 0 Third“ (z397).
+        // Die Kamera des Spiels steht nie in einem Haus (ihr Arm weicht der Wand); ein Stand, dessen Auge es täte, zählt nichts.
+        const THIRD_M = 4.5;
         const amPlatz = (ox, oz, pz) => {
             const pc = { x: ox + pz.cx, z: oz + pz.cz };
             const lang = pz.ex >= pz.ez ? 0 : Math.PI / 2;
@@ -2455,10 +2460,13 @@ async function kreaturProben(r, T, opts) {
                     const [x, z] = [pc.x - Math.cos(a) * ex, pc.z + Math.sin(a) * ex];
                     const g = r._imGrundriss(x, z, 0.5);
                     if (g === "haus" || g === "bau" || !r._landAt(x, z)) continue;
+                    const l = ab(pc, { x, z }) || 1;
+                    const [ax, az] = [(pc.x - x) / l, (pc.z - z) / l];
+                    const ga = r._imGrundriss(x - ax * THIRD_M, z - az * THIRD_M, 0);
+                    if (ga === "haus" || ga === "bau") continue;
                     const h = r.getTerrainHeightAt(x, z);
                     pm.set(x, (Number.isFinite(h) ? h : pm.y) + A.PLAYER_FOOT_OFFSET, z);
-                    const l = ab(pc, { x, z }) || 1;
-                    return { pc, ax: (pc.x - x) / l, az: (pc.z - z) / l };
+                    return { pc, ax, az };
                 }
             return null;
         };
@@ -2728,7 +2736,7 @@ async function kreaturProben(r, T, opts) {
         const gezeichnet = (b) => b.visible || b.userData._satz === true || r._kzBesitztFeld(b);
         const blickZaehlen = (sicht, zaehlt) => {
             const auge = new T.Vector3(pm.x, pm.y + 0.9, pm.z);
-            if (sicht !== "ego") auge.set(pm.x - ax * 4.5, pm.y + 2.6, pm.z - az * 4.5);
+            if (sicht !== "ego") auge.set(pm.x - ax * THIRD_M, pm.y + 2.6, pm.z - az * THIRD_M);
             cam.position.copy(auge);
             cam.lookAt(pc.x, pm.y + 0.6, pc.z);
             cam.updateMatrixWorld(true);

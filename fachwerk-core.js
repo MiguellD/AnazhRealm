@@ -5186,8 +5186,14 @@
     // aus `dims`, Kamin, Grund-Datum), der Parameter-Vektor `hp` und der Rahmen `q` {x, z, phi} samt seiner Grundfläche `obb`.
     // Leser: der Export des Dorfs (`exportSettlement`, je Slot des Layouts) und das gesetzte Haus (`slotPlan`) — beide gehen
     // danach durch DENSELBEN Plan v2 (`ortPlan`: Platte, Grund, Vorplatz). `kultur`: das Rezept (ohne: hp.kultur).
+    // DIE GRUNDFLÄCHE ENDET AN DER BRANDWAND — HIER, in der EINEN Zeile (`obbAnDerBrandwand`): bis w28-stadt-grammatik schnitt nur der
+    // Export sie (und nur in der dichten Reihe), das gesetzte Haus desselben Vektors trug das rohe Rechteck seiner Hülle — die Platte
+    // seines Erdbaus lag an der gedockten Seite 0,11 m breiter als die des Dorf-Slots (gate:haus-welt W11 „byte“: seit der Markt des
+    // Drehbuch-Dorfs städtisch reiht, ist sein Keller-Haus ein Brandwand-Haus; offline 32 von 36 Brandwand-Häuser ungleich, an main
+    // 34 von 34, p3/n1211/sg/w11-klasse.cjs). Wer die Marke trägt (`hp.brandwand`, sie reist im ov), endet an seiner Wand.
     function hausSlot(B, hp, q, obb, kultur) {
-        return Object.assign(hausZeile(B, hp, q, obb, kultur), typeof hp.viertel === "string" ? { viertel: hp.viertel } : null); // das Viertel seines Loses (STADT_GRAMMATIK)
+        var o = hp.brandwand ? obbAnDerBrandwand(obb, hp.brandwand, B.ext, B.wandX) : obb;
+        return Object.assign(hausZeile(B, hp, q, o, kultur), typeof hp.viertel === "string" ? { viertel: hp.viertel } : null); // das Viertel seines Loses (STADT_GRAMMATIK)
     }
     function hausZeile(B, hp, q, obb, kultur) {
         return {
@@ -5653,8 +5659,8 @@
         // und Schmiede; ihr Licht LICHT_GESETZ.wandlaterne. Der Tritt ist der Kopf (sie hängt, kein Fuß steht im Weg).
         wandlaterne: { lab: "Wandlaterne · Arm, Glas-Kopf, Haube", gestalten: 1, siteTag: "wand", salz: 0x5ea7, tritt: { typ: "kreis", r: 0.15 }, licht: "wandlaterne" },
         // DER GRABSTEIN (STADT_GRAMMATIK, das Viertel kirchhof — rein additiv): das Grab des Friedhofs hinter der Kirche, je Same
-        // eine von drei Gestalten (die Stele mit Giebel, das Steinkreuz, die Stele mit Kopf); die Schrift-Seite ist −z
-        grabstein: { lab: "Grabstein · Sockel, Stele, Kreuz", gestalten: 3, siteTag: "friedhof", salz: 0x6c1d, tritt: { typ: "kasten", ex: 0.36, ez: 0.16 } },
+        // eine von drei Gestalten (die Tafel mit Giebel, das Steinkreuz, die Tafel mit Kopf); die Schrift-Seite ist −z
+        grabstein: { lab: "Grabstein · Sockel, Tafel, Kreuz", gestalten: 3, siteTag: "friedhof", salz: 0x6c1d, tritt: { typ: "kasten", ex: 0.36, ez: 0.16 } },
     };
     // B4 — die Regler der Ausstattung (die Werkstatt baut ihre Slider daraus, der ov-Kanal liest dieselben ids).
     var AUS_PARAMS = [
@@ -6984,8 +6990,8 @@
         });
         ausTeil(g, geo, "nagel");
     }
-    // ── DER GRABSTEIN (Front −z): der Sockel, 0,2 m im Boden, darauf je Gestalt (aus dem Samen) die Stele mit Giebel — ein
-    //    Quadrat auf der Spitze über ihrer Schulter —, das Steinkreuz oder die Stele mit schmalem Kopf; nah mit gebrochenen
+    // ── DER GRABSTEIN (Front −z): der Sockel, 0,2 m im Boden, darauf je Gestalt (aus dem Samen) die Tafel mit Giebel — ein
+    //    Quadrat auf der Spitze über ihrer Schulter —, das Steinkreuz oder die Tafel mit schmalem Kopf; nah mit gebrochenen
     //    Kanten, fern die Blöcke scharf. EIN Stoff (stein): er altert wie jeder Stein der Ausstattung (Erdsaum, Moos, Belag). ──
     function ausGrabstein(g, p, seed, stufe) {
         var m = AUS_MASS.grabstein(p.groesse),
@@ -7001,7 +7007,7 @@
         };
         grabsteinBloecke(m, art, fa).forEach(stein);
     }
-    // DIE BLÖCKE DES GRABSTEINS (EINE Form für Bau und Wurf, `ausWurf`): der Sockel, dann die Stele mit Giebel (0) oder Kopf (2)
+    // DIE BLÖCKE DES GRABSTEINS (EINE Form für Bau und Wurf, `ausWurf`): der Sockel, dann die Tafel mit Giebel (0) oder Kopf (2)
     // oder das Kreuz aus zwei Balken (1); `fa` die Fase der Kanten
     function grabsteinBloecke(m, art, fa) {
         var B = [ausSetze(ausKiste(m.sb, m.sh + 0.2, m.sd, fa), 0, (m.sh - 0.2) / 2, 0)];
@@ -7051,7 +7057,7 @@
             return { fr: 0.15 * G, fh: 0.55 * G, mr: 0.045 * G, kb: 0.26 * G, kh: kh, yL: yL, yK0: yL - kh / 2, yK1: yL + kh / 2, hb: 0.2 * G, yT: yL + kh / 2 + 0.2 * G };
         },
         grabstein: function (G) {
-            // die Stele b × h × d auf dem Sockel sb × sh × sd, das Kreuz aus Balken der Breite kb
+            // die Tafel b × h × d auf dem Sockel sb × sh × sd, das Kreuz aus Balken der Breite kb
             return { b: 0.56 * G, h: 0.92 * G, d: 0.14, sb: 0.72 * G, sh: 0.1, sd: 0.32, kb: 0.2 * G };
         },
         wandlaterne: function (G) {
@@ -8640,9 +8646,7 @@
                     Bs[i],
                     hp,
                     q,
-                    plan.norm.gap <= 0.6 && hp.brandwand
-                        ? obbAnDerBrandwand(o, hp.brandwand, ev, Bs[i].wandX)
-                        : { cx: o.cx, cz: o.cz, phi: o.phi, ex: o.ex, ez: o.ez }
+                    { cx: o.cx, cz: o.cz, phi: o.phi, ex: o.ex, ez: o.ez } // an der Brandwand schneidet `hausSlot` (die EINE Zeile)
                 )
             );
         }
