@@ -4004,17 +4004,17 @@
             const aF = WS > 0 ? Wf / WS : 0.5;
             const FxF = Fr * aF,
                 FxR = Fr - FxF + FrH;
-            // die Kraft der Vorderachse im Koerperframe: ihr Laengsanteil, die Seitenkraft gedreht um den Einschlag (der Laengsanteil
-            // der Seitenkraft in der Blende des Schritttempos, unten) — sie, nie ihr Wunsch im Rad, traegt das Budget
+            // die Kraft der Vorderachse im Koerperframe: ihr Laengsanteil, die Seitenkraft gedreht um den Einschlag — sie, nie ihr
+            // Wunsch im Rad, traegt das Budget. Unter Schritttempo ist die Seitenkraft kinematisch (die Blende lowF, unten: der
+            // gedaempfte Schlupf meldet am Stand den vollen Einschlag) und zehrt nicht am Budget — sonst nahm sie dem Antrieb
+            // rueckwaerts mit Gegenlenkung am 15°-Hang die Kraft (Limousine 3,07 → 2,91 m in 2,5 s).
             const lowF = Math.max(0, Math.min(1, 1 - Math.hypot(z.vlong, z.vlat) / G.lowBlendV));
             const sL = Math.sin(z.steer) * (1 - lowF),
                 cL = Math.cos(z.steer);
-            const kreis = (fx, fy, grenze) => {
-                const f = Math.hypot(fx, fy);
-                return f > grenze ? grenze / f : 1;
-            };
-            const kF = kreis(FxF - FlatF * sL, FlatF * cL, cap * Wf),
-                kR = kreis(FxR, FlatR, cap * Wr);
+            const fF = Math.hypot(FxF - FlatF * sL, FlatF * cL * (1 - lowF)),
+                fR = Math.hypot(FxR, FlatR * (1 - lowF));
+            const kF = fF > cap * Wf ? (cap * Wf) / fF : 1,
+                kR = fR > cap * Wr ? (cap * Wr) / fR : 1;
             FlatF *= kF;
             FlatR *= kR;
             let Fx = kF === 1 && kR === 1 ? Fr + FrH : FxF * kF + FxR * kR;
