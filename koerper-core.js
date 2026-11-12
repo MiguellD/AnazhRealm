@@ -3325,7 +3325,8 @@
                 n.scale.set((Q[0] * RM.quer) / b.r, (e.halb * Lr) / b.r, (0.5 * (Q[1] + Q[2]) * RM.quer) / b.r);
                 n.position.set(0, (e.becken ? yB : 0) + e.s * Lr, 0.5 * (Q[1] - Q[2]) * RM.quer);
             });
-            _guertelFormen(RM, gx, Lr, P.arm1.position.y, Math.abs(P.elbow1.position.y)).forEach(function (GF) {
+            // (der Gürtel steht auf der Achse der Schulter, Kehre am Oberarm: ohne Ellbogen — der Mock des Morphs — keine Achse, wie die Kappe unten)
+            if (P.elbow1) _guertelFormen(RM, gx, Lr, P.arm1.position.y, Math.abs(P.elbow1.position.y)).forEach(function (GF) {
                 [1, -1].forEach(function (sd) {
                     var n = P[GF.name + (sd === 1 ? "1" : "-1")], b = B.base[GF.name + (sd === 1 ? "1" : "-1")]; // prettier-ignore
                     if (!n || !b || !(b.r > 0)) return;

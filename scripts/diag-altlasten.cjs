@@ -899,7 +899,7 @@ const ZWILLINGE = [
         fiel: "U3 — die morph()-Dial-Mathe wohnt im Gesetzbuch (labMorph)",
     },
     {
-        fingerprint: "reg('glute'+(sd===1?'1':'-1')",
+        fingerprint: "reg('deltoid'+(sd===1?'1':'-1')", // (w28-leib-kanon Nummer 4: die Gesäß-Kugel fiel ins Profil des Rumpfs — der Abdruck des Baums ist die Kappe)
         gesetzbuch: "koerper-core.js",
         verboten: ["worlds/koerperstudio/koerperstudio.js", ...STAMM],
         fiel: "KONVERGENZ — der Da-Vinci-Teile-Baum (bauMensch) wohnt NUR im Gesetzbuch; Shell + Stamm bauen per Fabrik-Haken (kein Nachbau, nie wieder)",
