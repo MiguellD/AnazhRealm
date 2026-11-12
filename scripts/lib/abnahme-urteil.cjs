@@ -2574,7 +2574,7 @@ function sollIstAbweisung(alt, neu, q) {
 // DIE LAUB-SILHOUETTE WIE DIE STATION lod.K1#1 — der Messplatz des GPU-Probe-Dienstes (`werkbank kante`, `gate:laub-kante`; `wb` die
 // Rufe der Werkbank): frisch an der Mess-Wiese, 1920 × 1080, die Tafel-Pose der Klasse laub-kante (ihr `mass.werkzeug`), dann der
 // Spielgang der Station (Ego, 8 s auf der Bahn, das Auge zum Waldhang der Tafel, das Ziel vor dem Hang, höchstens 12 m); je Schuss die
-// Teil-Klassen ab 5 000 px mit ihrer Kante, Soll ≤ 0,22 und zweiton 0, die Bilder in die Post. Die Zahl misst, der Richter ist die Station
+// Teil-Klassen ab 5 000 px mit ihrer Kante, Soll ≤ 0,22, zweiton 0 und frei im Band der Tafel (die freie Insel), die Bilder in die Post. Die Zahl misst, der Richter ist die Station
 async function laubKanteGang({ rufe, umstellen, evalRuf, eigeneWelt, ergebnis }) {
     const lk = jsonLesen("spec/abnahme/soll-tafel.json").klassen.find((k) => k.id === "laub-kante"),
         w = lk.mass.werkzeug.split(" "),
