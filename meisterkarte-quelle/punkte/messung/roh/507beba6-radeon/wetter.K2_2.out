@@ -197,6 +197,64 @@ $ C:\Program Files\nodejs\node.exe -e const tor = (function sitzungTor() {
     fs.writeFileSync(tor.aus, JSON.stringify({ wiese }, null, 1));
 })(tor).then(() => process.exitCode || 0, (e) => ((e && e.messort ? console.log('@@PUNKTE@@ MESSORT ' + e.messort) : 0), console.log('PROBE-FEHLER ' + String((e && e.stack) || e).split('\n').slice(0, 4).join(' | ')), 1)).then(async (c) => { await tor.ende(); process.exit(c); }); C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\507beba6-radeon\wetter.K2_2.json
 [linse-gpu] amd/rdna-3
+{
+ "wiese": {
+  "ego": {
+   "ort": "wiese",
+   "haus": null,
+   "naesse": 0.909,
+   "innen": {
+    "n": 0,
+    "verhaeltnis": null,
+    "nass": null,
+    "bild": null
+   },
+   "aussen": {
+    "n": 25920,
+    "verhaeltnis": 0.779
+   },
+   "pfuetze": {
+    "n": 0,
+    "verhaeltnis": null
+   },
+   "dicht": 1,
+   "glanz": 16,
+   "regen": {
+    "innen": 0,
+    "aussen": 147,
+    "pfuetze": 0
+   },
+   "regenbild": 0.642
+  },
+  "third": {
+   "ort": "wiese",
+   "haus": null,
+   "naesse": 0.909,
+   "innen": {
+    "n": 0,
+    "verhaeltnis": null,
+    "nass": null,
+    "bild": null
+   },
+   "aussen": {
+    "n": 25897,
+    "verhaeltnis": 0.778
+   },
+   "pfuetze": {
+    "n": 0,
+    "verhaeltnis": null
+   },
+   "dicht": 1,
+   "glanz": 16,
+   "regen": {
+    "innen": 0,
+    "aussen": 94,
+    "pfuetze": 0
+   },
+   "regenbild": 0.602
+  }
+ }
+}
 
 --- gpu-zeuge ---
 [linse-gpu] amd/rdna-3

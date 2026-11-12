@@ -1,0 +1,309 @@
+$ C:\Program Files\nodejs\node.exe -e const tor = (function sitzungTor() {
+    const fs = require("fs");
+    const path = require("path");
+    const http = require("http");
+    const W = Number(process.env.WERKBANK_PORT);
+    const tor = { W, aus: process.argv[1], arg: process.argv.slice(2), browser: null, page: null };
+    // DER MESSORT (punkte.cjs keinUrteil (d)): ein Wurf der Wege, die den Ort und die Seite stellen (/umstellen, /fenster, /status,
+    // /reload), und des Anschlusses an die Seite trägt `messort` — erreicht er den Rand der Probe (torBefehl), sagt sie die EINE Marke
+    const MESSORT_WEG = /^\/(umstellen|fenster|status|reload)\b/;
+    const messort = (e, weg) => {
+        const t = e && typeof e === "object" ? String(e.message || e).replace(/\s+/g, " ") : "";
+        if (MESSORT_WEG.test(weg) && t && !e.messort) e.messort = (t.startsWith(weg) ? "" : weg + ": ") + t.slice(0, 280);
+        return e;
+    };
+    // EIN Ruf (POST JSON, mit Frist); eine Antwort { fehler: "…" } der Werkbank wirft beim Namen
+    tor.ruf = (weg, nutzlast, ms = 120000) =>
+        new Promise((ok0, nein0) => {
+            const ok = ok0, nein = (e) => nein0(messort(e, weg));
+            const q = http.request({ host: "127.0.0.1", port: W, path: weg, method: "POST", agent: false, headers: { "Content-Type": "application/json" } }, (a) => {
+                let d = "";
+                a.on("data", (c) => (d += c));
+                a.on("end", () => {
+                    let j = null;
+                    try {
+                        j = JSON.parse(d);
+                    } catch (_e) {
+                        return nein(new Error(weg + ": keine JSON-Antwort: " + d.slice(0, 200)));
+                    }
+                    if (j && typeof j.fehler === "string") return nein(new Error(weg + ": " + j.fehler.slice(0, 300)));
+                    ok(j);
+                });
+            });
+            q.on("error", nein);
+            q.setTimeout(ms, () => q.destroy(new Error(weg + ": Frist " + ms + " ms")));
+            q.end(JSON.stringify(nutzlast || {}));
+        });
+    // die Karte der Welt: die Adapter-Zeile im Log ihrer Werkbank (der Zeuge der Wand GPU steht schon in der Sitzung)
+    tor.karte = () => {
+        const f = process.env.PUNKTE_SITZUNG_LOG;
+        const t = f && fs.existsSync(f) ? fs.readFileSync(f, "utf8") : "";
+        const z = (/^\[linse-gpu\] .*$/m.exec(t) || [null])[0];
+        console.log(z || "KEINE KARTE: das Log der Sitzung nennt keinen [linse-gpu]");
+        return z;
+    };
+    // der Anschluss an die Seite der Welt ist Messort: jeder Wurf darin trägt `messort`
+    tor.seite = async () => {
+        if (tor.page) return tor.page;
+        try {
+            const s = await tor.ruf("/status", {}, 30000);
+            const profil = s && s.boot && s.boot.profil;
+            if (!profil) throw new Error("/status nennt kein Profil der Werkbank");
+            const [port, weg] = fs.readFileSync(path.join(profil, "DevToolsActivePort"), "utf8").split(/\r?\n/);
+            const puppeteer = require(path.resolve("node_modules/puppeteer"));
+            tor.browser = await puppeteer.connect({
+                browserWSEndpoint: "ws://127.0.0.1:" + port + weg,
+                defaultViewport: null,
+                protocolTimeout: 900000,
+            });
+            for (const p of await tor.browser.pages())
+                if (await p.evaluate(() => !!(window.anazhRealm && window.anazhRealm.state)).catch(() => false)) return (tor.page = p);
+            throw new Error("im Browser der Werkbank steht keine Seite mit der Welt");
+        } catch (e) {
+            throw messort(e, "/status");
+        }
+    };
+    const baum = (datei) => {
+        const text = fs.readFileSync(datei, "utf8");
+        const acorn = require(path.resolve("node_modules/acorn"));
+        const o = { ecmaVersion: "latest", sourceType: "script", allowHashBang: true, allowReturnOutsideFunction: true };
+        return { text, ast: acorn.parse(text, o) };
+    };
+    const ankern = (src, wo, anker) => {
+        for (const [a, b] of anker) {
+            const n = src.split(a).length - 1;
+            if (n !== 1) throw new Error("ANKER " + (n ? n + "-mal" : "fehlt") + " in " + wo + ": " + a.slice(0, 90));
+            src = src.replace(a, () => b);
+        }
+        return src;
+    };
+    // die Deklaration `name` auf oberster Ebene (eine Funktion: ihr Text; const: ihr Wert), jeder Anker [alt, neu] genau einmal ersetzt
+    tor.quelle = (datei, name, anker = []) => {
+        const { text, ast } = baum(datei);
+        for (const n of ast.body) {
+            if (n.type === "FunctionDeclaration" && n.id && n.id.name === name) return ankern(text.slice(n.start, n.end), datei + " " + name, anker);
+            if (n.type === "VariableDeclaration")
+                for (const d of n.declarations)
+                    if (d.id.type === "Identifier" && d.id.name === name && d.init) return ankern(text.slice(d.init.start, d.init.end), datei + " " + name, anker);
+        }
+        throw new Error(datei + ": keine Deklaration " + name + " auf oberster Ebene");
+    };
+    // DAS BÜNDEL (der Kopf dieser Funktion): die Deklarationen `namen` der obersten Ebene MIT ihrem Abschluss, in der Reihe der Quelle;
+    // `q` = { text, ast }, `gestellt` = die Namen, die die Station selbst stellt; ein Name des Moduls (require …) wirft mit der Kette
+    tor.buendel = (q, namen, gestellt, wo) => {
+        const kinder = (n) => Object.keys(n).filter((k) => k !== "type" && k !== "start" && k !== "end").flatMap((k) => (Array.isArray(n[k]) ? n[k] : [n[k]])).filter((c) => c && typeof c.type === "string");
+        const bindet = (p) =>
+            !p ? [] : p.type === "Identifier" ? [p.name] : p.type === "AssignmentPattern" ? bindet(p.left) : p.type === "RestElement" ? bindet(p.argument)
+                : p.type === "ArrayPattern" ? p.elements.flatMap(bindet) : p.type === "ObjectPattern" ? p.properties.flatMap((x) => bindet(x.type === "RestElement" ? x.argument : x.value)) : [];
+        const istFn = (n) => n.type === "FunctionDeclaration" || n.type === "FunctionExpression" || n.type === "ArrowFunctionExpression";
+        const dekl = (n) => ((n.type === "FunctionDeclaration" || n.type === "ClassDeclaration") && n.id ? [n.id.name] : n.type === "VariableDeclaration" ? n.declarations.flatMap((d) => bindet(d.id)) : []);
+        const block = (liste) => liste.filter((s) => s.type !== "VariableDeclaration" || s.kind !== "var").flatMap(dekl);
+        const vars = (n, aus = []) => {
+            if (n.type === "VariableDeclaration" && n.kind === "var") aus.push(...dekl(n));
+            for (const c of kinder(n)) if (!istFn(c)) vars(c, aus);
+            return aus;
+        };
+        // die freien Bezeichner eines Knotens: jeder Bezug, den keine Sicht darin bindet (Funktion: Parameter, var, arguments · Block: let, const, class, function · catch)
+        const frei = (wurzel) => {
+            const aus = new Set();
+            const muster = (p, sicht) => {
+                if (!p || p.type === "Identifier") return;
+                if (p.type === "AssignmentPattern") return void (muster(p.left, sicht), geh(p.right, sicht));
+                if (p.type === "RestElement") return muster(p.argument, sicht);
+                if (p.type === "ArrayPattern") return p.elements.forEach((e) => muster(e, sicht));
+                if (p.type === "ObjectPattern") return p.properties.forEach((x) => (x.type === "RestElement" ? muster(x.argument, sicht) : (x.computed && geh(x.key, sicht), muster(x.value, sicht))));
+                geh(p, sicht);
+            };
+            const geh = (n, sicht) => {
+                if (!n) return;
+                const mit = (neu) => [...sicht, new Set(neu)];
+                const t = n.type;
+                if (t === "Identifier") return void (sicht.some((s) => s.has(n.name)) || aus.add(n.name));
+                if (t === "MemberExpression") return void (geh(n.object, sicht), n.computed && geh(n.property, sicht));
+                if (t === "Property" || t === "PropertyDefinition" || t === "MethodDefinition") return void (n.computed && geh(n.key, sicht), geh(n.value, sicht));
+                if (t === "LabeledStatement") return geh(n.body, sicht);
+                if (t === "BreakStatement" || t === "ContinueStatement" || t === "MetaProperty") return;
+                if (t === "VariableDeclarator") return void (muster(n.id, sicht), geh(n.init, sicht));
+                if (istFn(n)) {
+                    const rumpf = n.body.type === "BlockStatement" ? n.body.body : null;
+                    const s = mit([...n.params.flatMap(bindet), ...(t === "ArrowFunctionExpression" ? [] : ["arguments"]), ...(t === "FunctionExpression" && n.id ? [n.id.name] : []), ...vars(n.body), ...(rumpf ? block(rumpf) : [])]);
+                    n.params.forEach((p) => muster(p, s));
+                    return void (rumpf ? rumpf.forEach((c) => geh(c, s)) : geh(n.body, s));
+                }
+                if (t === "ClassDeclaration" || t === "ClassExpression") {
+                    const s = t === "ClassExpression" && n.id ? mit([n.id.name]) : sicht;
+                    return void (geh(n.superClass, s), geh(n.body, s));
+                }
+                if (t === "BlockStatement" || t === "StaticBlock") {
+                    const s = mit(block(n.body));
+                    return n.body.forEach((c) => geh(c, s));
+                }
+                if (t === "SwitchStatement") {
+                    const s = mit(block(n.cases.flatMap((c) => c.consequent)));
+                    return void (geh(n.discriminant, sicht), n.cases.forEach((c) => (geh(c.test, s), c.consequent.forEach((x) => geh(x, s)))));
+                }
+                if (t === "ForStatement" || t === "ForInStatement" || t === "ForOfStatement") {
+                    const d = t === "ForStatement" ? n.init : n.left;
+                    const s = d && d.type === "VariableDeclaration" && d.kind !== "var" ? mit(dekl(d)) : sicht;
+                    return kinder(n).forEach((c) => geh(c, s));
+                }
+                if (t === "CatchClause") {
+                    const s = mit(bindet(n.param));
+                    return void (muster(n.param, s), geh(n.body, s));
+                }
+                kinder(n).forEach((c) => geh(c, sicht));
+            };
+            geh(wurzel, []);
+            return aus;
+        };
+        const oben = new Map();
+        for (const n of q.ast.body) for (const w of dekl(n)) oben.set(w, n);
+        const fehlt = namen.filter((x) => !oben.has(x));
+        if (fehlt.length) throw new Error(wo + ": keine Deklaration " + fehlt.join(", "));
+        const MODUL = ["require", "module", "exports", "__filename", "__dirname"];
+        const kette = new Map(namen.map((x) => [oben.get(x), [x]]));
+        for (const offen = [...kette.keys()]; offen.length; ) {
+            const n = offen.shift();
+            for (const f of frei(n)) {
+                if (gestellt.includes(f)) continue;
+                if (MODUL.includes(f))
+                    throw new Error(wo + ": " + kette.get(n).join(" → ") + " lädt mit " + f + " — das Bündel der Probe (new Function) kennt kein " + f + "; die Station stellt " +
+                        (kette.get(n).slice(1).join(" oder ") || f) + " selbst (tor.dekl(datei, namen, gestellt))");
+                const d = oben.get(f);
+                if (d && !kette.has(d)) (kette.set(d, [...kette.get(n), f]), offen.push(d));
+            }
+        }
+        return q.ast.body.filter((n) => kette.has(n)).map((n) => q.text.slice(n.start, n.end)).join("\n");
+    };
+    tor.dekl = (datei, namen, gestellt = []) => tor.buendel(baum(datei), namen, gestellt, datei);
+    tor.ende = async () => {
+        if (tor.browser) await tor.browser.disconnect().catch(() => {});
+    };
+    return tor;
+})();
+(async function fahrWelt(tor) {
+    const fs = require("fs");
+    const path = require("path");
+    const crypto = require("crypto");
+    const L = "scripts/diag-fahr-leben.cjs";
+    const P = "scripts/lib/fahr-proben.cjs";
+    const t0 = Date.now();
+    const zeit = [];
+    const datei = (rel, blob) => {
+        const roh = fs.readFileSync(path.join(process.env.K, rel));
+        const b = crypto.createHash("sha1").update("blob " + roh.length + "\0").update(roh).digest("hex");
+        if (b !== blob) throw new Error(rel + " ist Blob " + b + ", die Station kennt " + blob);
+        return roh.toString("utf8");
+    };
+    const ritt = datei("bericht/3010-heil-fahrzeug/tempo4.js", tor.arg[0]);
+    const blick = datei("bericht/2010-buendel-abab/blick.js", tor.arg[1]);
+    // die Verdikte der Linse und die Namen ihrer Zeilen T4/T5, wörtlich aus ihrem Text (je genau einmal, sonst laut)
+    const d = new Function(tor.dekl(L, ["taeter", "WECHSEL", "wechselVerdict"]) + "\nreturn { taeter, wechselVerdict };")();
+    const text = fs.readFileSync(L, "utf8");
+    const name = (k) => {
+        const m = text.match(new RegExp('"' + k + ' [^"\\n]+"', "g")) || [];
+        if (m.length !== 1) throw new Error(L + ": die Zeile " + k + " steht " + m.length + "-mal im Text (Soll 1)");
+        return JSON.parse(m[0]);
+    };
+    const F = require(path.resolve(P));
+    require(path.resolve("vehicle-core.js"));
+    const mo = require(path.resolve("scripts/lib/band-urteil.cjs")).ladeSpec("wiese").ort.spieler;
+    // probeLeben je Teil: T1/T0 (der GT geradeaus), T2 (die Suche des Hangs) und alles ab dem Pferd fallen; T5 ohne T4, T4 ohne T5
+    const KURZ = [
+        ["const gt = await gtAmStart();", "const gt = null;"],
+        ['const hangOrt = window.__weltOrt("hang", {', 'const hangOrt = 0 && window.__weltOrt("hang", {'],
+        ["        // (3) Das Pferd: der richtungs-folgende Ritt ohne Lenk-Gesetz (W in Blick-Richtung +x).\n", "        aufraeumen();\n        return res;\n"],
+    ];
+    const tempo = tor.quelle(P, "probeLeben", [...KURZ, ['const steil = window.__weltOrt("hang", { min: 17, max: 32, basis: 3, bergab: [30, 12], rMax: 800 });', "const steil = null;"]]);
+    const wechsel = tor.quelle(P, "probeLeben", [...KURZ, ["const g5 = await gtAmStart();", "const g5 = null;"], ["bilder(120, () => st._kamFovVersatz);", "0 && bilder(120, () => st._kamFovVersatz);"]]);
+    const page = await tor.seite();
+    tor.karte();
+    // die Seiten-Werkzeuge, die die Linse in ihrer Welt trägt (welt-boot CODE_OF_SEITE: `__fehlt` der FOV-Schreiber von T5 — die
+    // Werkbank legt nur WARTEN_SEITE in ihre Seite), und die Spione der Linse
+    await page.evaluate(require(path.resolve("scripts/lib/welt-boot.cjs")).CODE_OF_SEITE);
+    await page.evaluate(`window.__tempoSpion = ${F.tempoSpion}; window.__ruckJeBild = ${F.ruckJeBild};`);
+    // DIE FRIST: jeder Ruf an die Werkbank höchstens bis kurz vor den Deckel DIESES Laufs; reißt einer, endet die Probe mit der EINEN
+    // Marke (punkte.cjs FRIST_MARKE: kein Urteil, UNGEMESSEN) — nie fährt ein Teil neben einem Rumpf, der in der Seite weiterläuft
+    const deckelS = Number(process.env.PUNKTE_PROBE_DECKEL_S) || 90;
+    const rest = () => Math.max(1000, t0 + (deckelS - 2) * 1000 - Date.now());
+    const riss = (wo, e) => {
+        if (!/: Frist \d+ ms/.test(String(e))) return false;
+        console.log("@@PUNKTE@@ FRIST " + deckelS + " s der Probe gerissen — " + wo + " (" + ((Date.now() - t0) / 1000).toFixed(1) + " s)");
+        return true;
+    };
+    // WELT und BLICK: der Rumpf über die Werkbank (`/eval`), die Antwort, wie `werkbank eval` sie druckt. Danach der Takt der Welt,
+    // wie der Welt-Wechsel ihn auslegt (`_weltAbschied`: `_takt`): tempo4.js räumt seinen Fahrer mit `delete r._gameLoopTick` und
+    // nimmt der Welt damit ihr EIGENES Feld — in der Maschine geht die Grundstellung nach dem Weg des Ritts durch die Tür und legt es
+    // neu aus; hier takten T5, der Blick und T4 in derselben Welt nach ihm (lokal ohne ihn: jedes Einschwingen danach hing, „DIE WELT
+    // HÄNGT … ohne Bau-Ereignis")
+    const welt = async (wo, code) => {
+        const t = Date.now();
+        console.log("@@PUNKTE@@ " + wo);
+        const a = await tor.ruf("/eval", { code }, rest()).catch((e) => ({ fehler: String((e && e.message) || e) }));
+        console.log(JSON.stringify(a, null, 1));
+        console.log("@@PUNKTE@@ EXIT " + (a && a.ergebnis && !a.ergebnis.fehler ? 0 : 1));
+        zeit.push(wo + " " + ((Date.now() - t) / 1000).toFixed(1));
+        if (riss(wo, a && a.fehler)) return false;
+        await page.evaluate(() => {
+            const r = window.anazhRealm;
+            if (typeof r._gameLoopTick !== "function") r._gameLoopTick = r._takt;
+        });
+        return true;
+    };
+    // T5 und T4: `probeLeben` in der Seite, mit derselben Frist (null: gerissen, die Marke steht)
+    const leben = async (wo, fn) => {
+        const [t, ms] = [Date.now(), rest()];
+        let uhr = null;
+        const frist = new Promise((_ok, nein) => (uhr = setTimeout(() => nein(new Error(wo + ": Frist " + ms + " ms")), ms)));
+        const o = await Promise.race([page.evaluate("(" + fn + ")(" + JSON.stringify({ messort: mo }) + ")"), frist]).catch((e) => ({ riss: e }));
+        clearTimeout(uhr);
+        zeit.push(wo + " " + ((Date.now() - t) / 1000).toFixed(1));
+        if (o && o.riss && riss(wo, o.riss)) return null;
+        if (o && o.riss) throw o.riss;
+        return o || {};
+    };
+    // DER ORT DER PROBE (wie fahrzeug.K3#1): die Mess-Wiese — die Sitzung stellt und beruhigt sie VOR dem Deckel (punkte.cjs `probeOrt`
+    // liest den Ort aus diesem Befehl); hier findet die Probe sie stehend (der Ritt sucht seine Bahn an `__messWiese`, dem Ort selbst)
+    const t1 = Date.now();
+    const ort = await tor.ruf("/umstellen", { ort: "wiese", sicht: "ego" }, rest()).then(() => null, (e) => e);
+    zeit.push("Ort " + ((Date.now() - t1) / 1000).toFixed(1));
+    if (ort && riss("der Ort", ort.message)) return;
+    if (ort) throw ort;
+    if (!(await welt("WELT", ritt))) return;
+    const o5 = await leben("T5", tempo);
+    if (!o5 || !(await welt("BLICK", blick))) return;
+    const o4 = await leben("T4", wechsel);
+    if (!o4) return;
+    // die Zeilen der Linse (`check` von gate:fahr-leben), T4 vor T5
+    const zeilen = [];
+    const check = (n, ok, z) => zeilen.push(`  ${ok ? "✅" : "❌"} ${n}${z ? " — " + z : ""}`);
+    for (const o of [o4, o5]) if (o.err) check("Probe ohne Ausnahme", false, String(o.err).split("\n")[0]);
+    const vW = d.wechselVerdict(o4.wechsel);
+    check(name("T4"), vW.length === 0, `${JSON.stringify(o4.wechsel)}${d.taeter(vW)}`);
+    const v5 = F.tempoVerdict(o5.tempo && Object.assign(o5.tempo, F.kernTempo(globalThis.__vehicleCore)));
+    check(name("T5"), v5.length === 0, `${JSON.stringify(o5.tempo)}${d.taeter(v5)}`);
+    console.log("@@PUNKTE@@ FAHR");
+    for (const z of zeilen) console.log(z);
+    console.log("  (" + zeit.join(" s · ") + " s in der Welt der Sitzung, " + ((Date.now() - t0) / 1000).toFixed(1) + " s gesamt)");
+    console.log("@@PUNKTE@@ EXIT " + (vW.length || v5.length ? 1 : 0));
+})(tor).then(() => process.exitCode || 0, (e) => ((e && e.messort ? console.log('@@PUNKTE@@ MESSORT ' + e.messort) : 0), console.log('PROBE-FEHLER ' + String((e && e.stack) || e).split('\n').slice(0, 4).join(' | ')), 1)).then(async (c) => { await tor.ende(); process.exit(c); }); C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\507beba6-radeon\fahrzeug.K3_2.json 1cf3af98d5d09a6fc3133debf068e158d50a1401 b94fa5dd03dd4d249cefef435955dbf233102710
+[linse-gpu] amd/rdna-3
+@@PUNKTE@@ WELT
+{
+ "fehler": "/eval: Cannot set properties of undefined (setting 'w')"
+}
+@@PUNKTE@@ EXIT 1
+@@PUNKTE@@ BLICK
+{
+ "fehler": "/eval: Cannot set properties of undefined (setting 'w')"
+}
+@@PUNKTE@@ EXIT 1
+@@PUNKTE@@ FAHR
+  ✅ T4 Wechsel Third → Ego → Third in der Fahrt am Steilhang bergab: jede Stufe am Wagen, die Kamera hinter ihm, über der Fahrbahn, ohne Ruck — {"gestartet":true,"ort":[-62,-37,17.4],"stufeM":0,"band":210,"ego":[76,75],"nach10":[5.5,5.6],"abV":[8.9,8.9],"abSprung":[0.38,0.22],"abFov":[0.4,0.4,0],"stufeWer":"L1 (Band)","wiederauf":0,"ruckN":165,"ruckP95":0.003,"gleichN":422,"gleichP95":0.018,"hochN":210,"hochP05":20.181}
+  ✅ T5 die Kamera atmet das Tempo (Kern und Ritt): FOV und Arm mit v, Azimut im Drift, camera.fov = Ruhe + Tempo, EIN Schreiber, Maus-Orbit zurück in 1–1,25 s — {"n":273,"zeigt":0.005,"quelle":true,"orbit":69,"rueck":1.08,"fov":{"10":5.17},"schreiber":["_kamFov"],"zoom":true,"laut":true,"kern":[],"fovMax":10,"arm":0.2,"drift":9,"knick":0.07}
+  (Ort 2.5 s · WELT 158.9 s · T5 3.0 s · BLICK 49.6 s · T4 5.3 s in der Welt der Sitzung, 219.7 s gesamt)
+@@PUNKTE@@ EXIT 0
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3
+[linse-gpu] amd/rdna-3
