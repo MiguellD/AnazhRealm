@@ -4249,7 +4249,7 @@
   },
   "tore.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: tore.K1#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +27) — zuletzt an 3552f058: die Fahrt riss 1800 s (vor ankunft.K4#1) — offen, UNGEMESSEN · tore.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +16) — zuletzt an 4e2df19b: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "beleg": "Maschine: 0 — offen: tore.K1#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +27) — zuletzt an 3552f058: die Fahrt riss 1800 s (vor ankunft.K4#1) — offen, UNGEMESSEN · tore.K1#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs) — zuletzt an 4e2df19b: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
    "stationen": [
     {
      "id": "tore.K1#1",
@@ -4267,9 +4267,9 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +16) — zuletzt an 4e2df19b: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+     "grund": "Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs) — zuletzt an 4e2df19b: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
      "ungemessen": true,
-     "r6": "naehe"
+     "r6": "konsum"
     }
    ]
   },
@@ -4857,7 +4857,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 390,
-  "konsum": 98,
+  "konsum": 99,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K1#2 gtx",
@@ -5070,7 +5070,6 @@
    "tiere.K4#1 headless",
    "tiere.K4#2 headless",
    "tore.K1#1 radeon",
-   "tore.K1#1 gtx",
    "tore.K5#1 headless",
    "ultiversum.K1#1 headless",
    "ultiversum.K2#1 headless",
@@ -5101,8 +5100,8 @@
   "ohne": 54
  },
  "kopfVoll": "4d52c7bc8d1c3003968935b186a1c486c39e8c5c",
- "zeit": "2026-11-12T15:27:26.939Z",
- "vorher": "bf2b1a2f",
+ "zeit": "2026-11-12T15:34:01.173Z",
+ "vorher": "4d52c7bc",
  "pflicht": {
   "dokument": "docs/PFLICHT-OFFEN.md",
   "eintraege": [

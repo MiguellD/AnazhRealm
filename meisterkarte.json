@@ -7,7 +7,7 @@
   "max": 330,
   "maschine": {
     "kopf": "4d52c7bc",
-    "zeit": "2026-11-12T15:27:26.939Z",
+    "zeit": "2026-11-12T15:34:01.173Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -2970,7 +2970,7 @@
           "punkte": 0,
           "staffel": "1 = eine Zeile (Studio-Tor oder Welt-Tor) ≤ 2 s an einem Gerät · 2 = beide Zeilen im Soll (warm ≤ 1 s, kalt ≤ 2 s, Heimkehr ≤ 1 s) an beiden Geräten",
           "messung": "Spielgang-Station tor: der Spieler geht mit W in Ego und Third durch jedes Studio-Tor des Genesis-Rings und durch ein Welt-Tor in eine schon besuchte Welt (andere worldId). t beginnt am Kreuzen der Apertur (`stamm/siedlung-ort.js:757` → enterPortal) und endet bei der ersten angenommenen Eingabe, deren Wirkung im Ausgabe-Bild der Ziel-Welt sichtbar ist; kein Zwischenbild ganz schwarz oder weiß (Luma 0,05–0,95), kein Frame > 100 ms; dann Esc. Gemessen in derselben Sitzung wie E (VRAM, CPU-Takt); vorgewärmt wird nur das nächste Tor im Blick. ≥ 4 Läufe je Gerät.",
-          "beleg": "Maschine: 0 — offen: tore.K1#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +27) — zuletzt an 3552f058: die Fahrt riss 1800 s (vor ankunft.K4#1) — offen, UNGEMESSEN · tore.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs, scripts/lib/ausgabe-aufnahme.cjs +16) — zuletzt an 4e2df19b: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+          "beleg": "Maschine: 0 — offen: tore.K1#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/asset-worker-harness.cjs +27) — zuletzt an 3552f058: die Fahrt riss 1800 s (vor ankunft.K4#1) — offen, UNGEMESSEN · tore.K1#1 gtx: Konsum seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs) — zuletzt an 4e2df19b: GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
           "schlupfloch": "Die `ready`-Nachricht zählen (sie kommt vor dem Bild), auf dem Null-Renderer messen, einen Ladeschirm zeigen, der die Kontrolle meldet; oder alle acht Studio-iframes verdeckt ab der Ankunft vorbooten und die Kosten unsichtbar in B und E schieben (B55): t endet erst an einer Eingabe mit Wirkung im Bild, die Luma-Wand prüft jedes Zwischenbild, E gilt in derselben Sitzung.",
           "aenderung": "Der Durchgang zählte dreimal (Studios K5, Tore K1, Ankunft K4) mit drei Soll → EIN Heim, zwei Zeilen (V15).",
           "maschine": true
