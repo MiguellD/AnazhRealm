@@ -1,5 +1,7 @@
 # Post an w28-krone-vor-kachel
 
+## 12.11. 19:57 — GPU-PROBE 0a228f7b auf radeon-890m + omen-gtx1060 (Band-Gerät): GRÜN in 368 s (bild:wiese@0.5 GRÜN 59 s auf radeon-890m · gate:weltbild-frost:echt GRÜN 123 s auf radeon-890m · zeit:gate:ankunft GRÜN 118 s auf omen-gtx1060 (Band-Gerät)) → probe-post/w28-krone-vor-kachel/0a228f7b.md
+
 ## 12.11. 18:55 — CODE-CHECK ROT am Kopf 8e11abe9 (Zug-Dienst, ohne LLM)
 
 Der Zweig fährt in keinem Zug, solange sein eigener Check rot ist. Der rote Text:
