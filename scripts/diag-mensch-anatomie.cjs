@@ -207,8 +207,12 @@ const messeLeib = (so, taeter = () => {}) => {
 // DER KANON (w28-leib-kanon, koerper-core `leibKanon`, die Bänder LEIB_SOLL.kanon): am Ofen L0 nackt der Mann (gender 1) und die Frau
 // (gender 0) an den Start-Dials — die Maße des Rumpfs, der Schulter und der Hüfte als Anteil von H; `--kanon <ordner>` legt die
 // Umrisse vorn und seitlich als PNG ab (rot die Zehntel von H, blau die Soll-Höhen von Schulter und Schritt). Täter: `{ kern }`.
-const messeKanon = (so, taeter = {}) =>
-    Object.fromEntries(["mann", "frau"].map((gs) => [gs, so.__koerperCore.leibKanon(so.BAKERS_BY_KIND.koerper(taeter.kern ? taeter.kern(so.__koerperCore) : so.__koerperCore, "mensch", 1, 0, { dials: { top: "none", bottom: "none", shoes: "none", gender: +(gs === "mann") } }))])); // prettier-ignore
+// Die Breiten von Brust und Taille misst er wie ANSUR mit vom Leib gelösten Armen (derselbe Guss, arms 0,5).
+const messeKanon = (so, taeter = {}, K = taeter.kern ? taeter.kern(so.__koerperCore) : so.__koerperCore) =>
+    Object.fromEntries(["mann", "frau"].map((gs) => {
+        const d = { top: "none", bottom: "none", shoes: "none", gender: +(gs === "mann") };
+        return [gs, so.__koerperCore.leibKanon(...[d, { ...d, arms: 0.5 }].map((dials) => so.BAKERS_BY_KIND.koerper(K, "mensch", 1, 0, { dials })))]; // prettier-ignore
+    }));
 const urteileKanon = (so, K, S = so.__koerperCore.LEIB_SOLL.kanon) =>
     Object.entries(K).flatMap(([gs, { m }]) => Object.entries(S[gs]).flatMap(([k, s]) => (Math.abs(m[k] / s - 1) <= S.toleranz ? [] : [`kanon.${gs} ${k} ${+m[k].toFixed(4)} ${m[k] < s ? "<" : ">"} ${+(s * (1 + (m[k] < s ? -1 : 1) * S.toleranz)).toFixed(4)}`]))); // prettier-ignore
 function kanonBilder(K, ordner, S) {
@@ -443,7 +447,9 @@ if (SELBSTTEST) {
     // DIE RUHE DER ARME: der Guss ohne die Anlage (der Arm im Rumpf) und der gespreizte Arm (der Regler arms 0,5: +0,65 rad)
     pruefe("R1 der Arm im Rumpf", { kern: (K) => ({ ...K, armAnlage: () => 0 }) }, /innen/, "ruhe");
     pruefe("R2 der gespreizte Arm", { kern: (K) => ({ ...K, morphAuf: (B, d) => K.morphAuf(B, { ...d, arms: 0.5 }) }) }, /spreizGrad/, "ruhe"); // prettier-ignore
-    pruefe("R4 die Lagen des Rumpfs ohne Folge unter dem Arm (Haut und Stoff weichen gleich tief)", { kern: (K) => ({ ...K, armAnlage: (B, hu, gel) => (hu.forEach((h) => (h.lage = 0)), K.armAnlage(B, hu, gel)) }) }, /durch/, "ruhe"); // prettier-ignore
+    // (R4, seit w28-leib-kanon auf der Bühne des beleibten Rumpfs — Masse 2,5 im Gesetz —: der Kanon-Rumpf liegt an keinem Körper des
+    // Gitters unter dem Arm, ohne Täter misst dieselbe Bühne durch 0)
+    pruefe("R4 die Lagen des Rumpfs ohne Folge unter dem Arm (Haut und Stoff weichen gleich tief)", { kern: (K) => ({ ...K, morphAuf: (B, d) => K.morphAuf(B, { ...d, mass: 2.5 }), armAnlage: (B, hu, gel) => (hu.forEach((h) => (h.lage = 0)), K.armAnlage(B, hu, gel)) }) }, /durch/, "ruhe"); // prettier-ignore
     pruefe("R3 das Rig ohne die Ruhe seiner Arme (jede Schulter auf 0: der Stand der Welt vor w28-mensch-samen)", (rig) => (rig.armRuhe = [{}, {}]), /stufe":2.*innenStand/, "stand"); // prettier-ignore
     // DER KANON (w28-leib-kanon): der Brustkorb anderthalbfach tief (der Ballon-Rumpf vor w28-leib-kanon) und das Becken tief
     // hängend (der Schritt auf der Höhe der Windel)
