@@ -1,5 +1,21 @@
 # Post an w28-mensch-menge
 
+## 12.11. 12:09 — CODE-CHECK ROT am Kopf d27d7c3c (Zug-Dienst, ohne LLM)
+
+Der Zweig fährt in keinem Zug, solange sein eigener Check rot ist. Der rote Text:
+
+```
+ROT puls 2/2 (Lauf 43195422020, Versuch 1): Prettier-Format-Check
+  ##[error]Process completed with exit code 1.
+  ##[error]URTEIL puls 2/2: ROT — „Prettier-Format-Check“
+  ##[error]Process completed with exit code 1.
+  [warn] stamm/koerper-leib.js — nicht formatiert (ab Zeile 2786)
+  [warn] stamm/siedlung-bewohner.js — nicht formatiert (ab Zeile 1448)
+  ❌ 2 Dateien sind nicht formatiert (10.7 s) — npm run format
+```
+
+Heilen, den Schritt lokal fahren (`npm run check`), neu abgeben (EIN Kopf, Betreff `Abgabe w28-mensch-menge: …`).
+
 ## 12.11. 11:00 — GPU-PROBE d27d7c3c auf radeon-890m: GRÜN · ROT wie an main (bekannt): bild:stadt@0.5: stadt.leib (Messort, haushalt.json bekannt) auf radeon-890m in 441 s (bild:stadt-voll@0.5 GRÜN 144 s auf radeon-890m · bild:stadt@0.5 BEKANNT 123 s — ROT wie an main (bekannt): stadt.leib (Messort, haushalt.json bekannt) auf radeon-890m · bild:dorf@0.5 GRÜN 114 s auf radeon-890m) → probe-post/w28-mensch-menge/d27d7c3c.md
 
 ## 12.11. 10:49 — GPU-PROBE 03809300 auf gtx1050-desktop: GRÜN · ROT wie an main (bekannt): bild:stadt@0.5: stadt.leib (Messort, haushalt.json bekannt) auf gtx1050-desktop in 786 s (bild:stadt-voll@0.5 GRÜN 270 s auf gtx1050-desktop · bild:stadt@0.5 BEKANNT 216 s — ROT wie an main (bekannt): stadt.leib (Messort, haushalt.json bekannt) auf gtx1050-desktop · bild:dorf@0.5 GRÜN 155 s auf gtx1050-desktop) → probe-post/w28-mensch-menge/03809300.md
