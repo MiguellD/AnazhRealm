@@ -152,6 +152,16 @@ const LOD_PFAD = [
 ];
 
 // Der Pfad, den jedes Ausgabe-Bild liest: Szene, Stoffe, Licht, Loop, Kerne, Seite, three r184, die Werkbank und ihre Aufnahme
+// DIE ROHDATEI von material.K2#1 (die Proben): je Schuss boden/fels × 0,5/1/2 m die Klasse, wie `werkbank bild --arm` sie schreibt — `urteil`
+// die Zeilen der Arm-Linse (@K: die Klasse), null: ein Werkzeug ohne Urteil
+const k2Roh = (nyquist, urteil) => ({
+    adapter: "nvidia/pascal",
+    schritte: Object.fromEntries(
+        [["boden", "bodenSatz"], ["fels", "formationenSatz"]].flatMap(([a, kl]) =>
+            ["0.5", "1", "2"].map((d) => [a + "-" + d, { json: { klasse: { arm: { soll: +d, ist: +d }, klassen: { [kl]: { pixel: 9000, nyquist, glatt: 0 } }, ...(urteil ? { urteil: urteil.map((z) => z.replace("@K", kl)) } : {}) } } }])
+        )
+    ),
+});
 const BILD = [
     "stamm/bild-*.js",
     "stamm/stoff-*.js",
@@ -2647,14 +2657,25 @@ const stationen = [
                     }
                     // die Armlänge, die die Tiefe der Bildmitte misst: ohne `arm` kennt das Werkzeug `--arm` nicht
                     const arm = k.arm;
-                    const ok = !!arm && +arm.soll === +d && arm.ist > 0 && arm.ist <= 1.5 * d + 0.1 && m.pixel > 0 && m.nyquist >= 0.15 && m.glatt <= 0.1;
+                    // DAS URTEIL DER LINSE (w28-stadt-grund): die Station liest, was die Werkbank aus der Arm-Linse schreibt (`klasse.urteil`,
+                    // abnahme-urteil `armUrteil`: ein Korn, das der Pixel trägt — nyquist ≤ 0,12, glatte Blöcke ≤ 10 % über der Neigung),
+                    // nie eine eigene Kopie. Bis hier hieß nyquist ≥ 0,15 grün: das Pixel-Rauschen von main (0,175) bestand, ein lesbarer
+                    // Stein (0,02–0,08) fiel. Ein Werkzeug ohne Urteil (die Linse davor) ist ROT beim Namen.
+                    const u = Array.isArray(k.urteil) ? k.urteil : null;
+                    const ok = !!arm && +arm.soll === +d && arm.ist > 0 && arm.ist <= 1.5 * d + 0.1 && m.pixel > 0 && !!u && !u.length;
                     if (!ok) gruen = false;
-                    z.push(d + " m glatt " + m.glatt + " nyquist " + m.nyquist + (arm ? " (Arm " + arm.ist + ")" : " (arm fehlt)"));
+                    z.push(d + " m glatt " + m.glatt + " nyquist " + m.nyquist + (arm ? " (Arm " + arm.ist + ")" : " (arm fehlt)") + (u ? (u.length ? " — " + u.map((x) => x.split(" — ")[0]).join("; ") : "") : " — urteil fehlt"));
                 }
                 teile.push(art + " " + z.join(", "));
             }
-            return { gruen, zahl: teile.join(" · ") + " · Soll nyquist ≥ 0,15, glatt ≤ 0,10 · " + (j.adapter || "Adapter ungenannt") };
+            return { gruen, zahl: teile.join(" · ") + " · Soll das Urteil der Arm-Linse (nyquist ≤ 0,12, glatt ≤ 0,10) · " + (j.adapter || "Adapter ungenannt") };
         },
+        // die Proben (w28-stadt-grund): die Werkbank-Ausgabe je Schuss, wie `bild --arm` sie schreibt — main nennt die Linse Rauschen
+        proben: [
+            { name: "main b1531071: das Korn am Nyquist (0,175), die Linse nennt Pixel-Rauschen", j: k2Roh(0.175, ["MIKRO @K: Pixel-Rauschen — nyquist 0.175 glatt 0 dunkel null"]), gruen: false, zahl: /Pixel-Rauschen/ },
+            { name: "der lesbare Stein (nyquist 0,06), die Linse schweigt", j: k2Roh(0.06, []), gruen: true },
+            { name: "MUTANTE die Werkbank ohne Urteil der Linse", j: k2Roh(0.175, null), gruen: false, zahl: /urteil fehlt/ },
+        ],
         pfad: [
             ...BILD,
             "gelaende-core.js",
@@ -2666,7 +2687,7 @@ const stationen = [
             "phyto-core.js",
             "scripts/lib/abnahme-urteil.cjs",
         ],
-        quelle: "1 = Boden und Fels auf 0,5/1/2 m: nyquist ≥ 0,15 und glatte Blöcke ≤ 10 % an einem Gerät",
+        quelle: "1 = Boden und Fels auf 0,5/1/2 m: ein Korn, das der Pixel trägt (das Urteil der Arm-Linse: nyquist ≤ 0,12, glatte Blöcke ≤ 10 %) an einem Gerät",
     },
     {
         kriterium: "material.K3",
