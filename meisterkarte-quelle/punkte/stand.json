@@ -4026,7 +4026,7 @@
   },
   "studios.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: studios.K4#1 radeon: Linse seit der Messung geändert (R6: scripts/diag-albedo-tafel.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +29) — zuletzt an 3552f058: die Fahrt riss 1800 s (vor ankunft.K4#1) — offen, UNGEMESSEN · studios.K4#1 gtx: Konsum seit der Messung geändert (R6: koerper-core.js, stamm/bild-himmel.js, stamm/bild-kosten.js +3) — zuletzt an 87537d3f: die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen · studios.K4#2 radeon: Linse seit der Messung geändert (R6: scripts/diag-albedo-tafel.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +29) — zuletzt an 3552f058: die Fahrt riss 1800 s (vor ankunft.K4#1) — offen, UNGEMESSEN · studios.K4#2 gtx: Linse seit der Messung geändert (R6: scripts/diag-albedo-tafel.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +22) — zuletzt an 87537d3f: die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
+   "beleg": "Maschine: 0 — offen: studios.K4#1 radeon: Linse seit der Messung geändert (R6: scripts/diag-albedo-tafel.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +29) — zuletzt an 3552f058: die Fahrt riss 1800 s (vor ankunft.K4#1) — offen, UNGEMESSEN · studios.K4#1 gtx: Konsum seit der Messung geändert (R6: koerper-core.js, stamm/bild-himmel.js, stamm/bild-kosten.js +3) — zuletzt an 87537d3f: die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen · studios.K4#2 radeon: Linse seit der Messung geändert (R6: scripts/diag-albedo-tafel.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +29) — zuletzt an 3552f058: die Fahrt riss 1800 s (vor ankunft.K4#1) — offen, UNGEMESSEN · studios.K4#2 gtx: ROT: 0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU pascal) · garage 23.9 %/– [Differenz 0.2387 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · portale 94.0 %/– [die Welt zeichnet an der Pose L2 (die Bühne L0) · Differenz 0.9405 > 0.021 Albedo ungemess] · schmiede 25.9 %/– [Differenz 0.2592 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · fachwerk 97.4 %/– [Differenz 0.974 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · terrain –/– [ROT: bild: {\"ms\":6778,\"fehler\":\"ABNAHME ROT [Ziel Blickziel verdeckt von Laub baum_eiche i] · koerperstudio –/– [ungemessen: das Werk ist eine Prägung (der Leib des Spielers), kein gesetzter Bau] · tetrapoda –/– [ungemessen: das Werk ist ein Wesen (eine lebende Kreatur), kein gesetzter Bau] an bf2b1a2f",
    "stationen": [
     {
      "id": "studios.K4#1",
@@ -4062,11 +4062,10 @@
      "id": "studios.K4#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-albedo-tafel.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/asset-worker-harness.cjs +22) — zuletzt an 87537d3f: die Welt der Sitzung trägt nicht mehr (sie endete während fahrzeug.K3#1: die Werkbank :27804 nimmt keine Verbindung mehr an) — ungemessen",
-     "ungemessen": true,
-     "r6": "naehe"
+     "zahl": "0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU pascal) · garage 23.9 %/– [Differenz 0.2387 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · portale 94.0 %/– [die Welt zeichnet an der Pose L2 (die Bühne L0) · Differenz 0.9405 > 0.021 Albedo ungemess] · schmiede 25.9 %/– [Differenz 0.2592 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · fachwerk 97.4 %/– [Differenz 0.974 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · terrain –/– [ROT: bild: {\"ms\":6778,\"fehler\":\"ABNAHME ROT [Ziel Blickziel verdeckt von Laub baum_eiche i] · koerperstudio –/– [ungemessen: das Werk ist eine Prägung (der Leib des Spielers), kein gesetzter Bau] · tetrapoda –/– [ungemessen: das Werk ist ein Wesen (eine lebende Kreatur), kein gesetzter Bau]",
+     "sha": "bf2b1a2fff6d8c4c078471513908132a4ebd5757",
+     "grund": "ROT: 0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU pascal) · garage 23.9 %/– [Differenz 0.2387 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · portale 94.0 %/– [die Welt zeichnet an der Pose L2 (die Bühne L0) · Differenz 0.9405 > 0.021 Albedo ungemess] · schmiede 25.9 %/– [Differenz 0.2592 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · fachwerk 97.4 %/– [Differenz 0.974 > 0.021 Albedo ungemessen (die Differenz liegt über dem Soll)] · terrain –/– [ROT: bild: {\"ms\":6778,\"fehler\":\"ABNAHME ROT [Ziel Blickziel verdeckt von Laub baum_eiche i] · koerperstudio –/– [ungemessen: das Werk ist eine Prägung (der Leib des Spielers), kein gesetzter Bau] · tetrapoda –/– [ungemessen: das Werk ist ein Wesen (eine lebende Kreatur), kein gesetzter Bau]",
+     "r6": "konsum"
     }
    ]
   },
@@ -4855,7 +4854,7 @@
  "rueckfall": [],
  "r6": {
   "haelften": 390,
-  "konsum": 98,
+  "konsum": 99,
   "naehe": [
    "affekt.K1#1 headless",
    "affekt.K1#2 gtx",
@@ -5056,7 +5055,6 @@
    "studios.K3#1 headless",
    "studios.K4#1 radeon",
    "studios.K4#2 radeon",
-   "studios.K4#2 gtx",
    "studios.K5#1 headless",
    "studios.K5#2 headless",
    "tiere.K1#1 headless",
@@ -5099,7 +5097,7 @@
   "ohne": 54
  },
  "kopfVoll": "bf2b1a2fff6d8c4c078471513908132a4ebd5757",
- "zeit": "2026-11-12T14:25:32.301Z",
+ "zeit": "2026-11-12T14:31:53.771Z",
  "vorher": "bf2b1a2f",
  "pflicht": {
   "dokument": "docs/PFLICHT-OFFEN.md",
