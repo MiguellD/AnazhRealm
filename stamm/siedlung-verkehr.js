@@ -299,7 +299,10 @@ class AnazhRealm_siedlung_verkehr {
         };
         for (const [ki, K] of VK.kp.entries())
             if (fahrbarAn(ki).length >= 3)
-                VK.kpZone.set(ki, Object.assign(zone("kreuzung", K.x, K.z, K.r, K.konflikt || []), { arme: arme(ki, K) }));
+                VK.kpZone.set(
+                    ki,
+                    Object.assign(zone("kreuzung", K.x, K.z, K.r, K.konflikt || []), { arme: arme(ki, K) })
+                );
         // die Enge samt einer Wagenlänge davor (`engeRandM`): wer ihr entgegenkommt, wartet, wo der in ihr an ihm vorbeikommt — nur
         // wo eine gefahrene Spur sie trägt (`_verkehrSpur`): eine Enge hinter dem Abzweig der Wende fährt keiner, ihre Bahnen hinein
         // und heraus trennt das Gesetz (bis hier stand sie dort als Ort, und wer auf der Bahn hinein durch ihren Kreis fuhr, fuhr
@@ -972,6 +975,7 @@ class AnazhRealm_siedlung_verkehr {
                 umfahr: null,
                 weicht: null,
                 gesperrt: false,
+                wartet: null,
             });
             Object.assign(W, {
                 vorne: null,
@@ -1770,7 +1774,23 @@ class AnazhRealm_siedlung_verkehr {
         const V = AnazhRealm.VERKEHR;
         const F = W.F;
         const vor = F.s + W.hl;
+        // DER WARTE-GRAPH (w28-verkehr-graph; Coffman 1971: ein Stau ist ein Kreis im Graphen „wer wartet auf wen“): steht er
+        // (unter 0,5 m/s), sucht er den Kreis durch sich — seine Kanten aus dem letzten Schritt (`wartet`), die der anderen, wie sie
+        // zuletzt fragten (`_verkehrKreis`). Im Kreis gibt EINER nach, immer derselbe: der kleinste, der einen Ort hält, gibt seine
+        // Kette ab und lässt den fahren, der auf ihn wartet (`weicht`); hält keiner einen Ort, wird der kleinste Kopf einer Reihe im
+        // Kreis übergangen (`gesperrt`). Diese EINE Regel ersetzt drei Orts-Regeln: „wer hält und vor einem steht, der auf denselben
+        // Ort wartet, gibt ihn ab“ (w12), „der Kopf der Reihe hält sie nur, wenn seine Kette frei ist“ (5192ad31) und „der Kopf ohne
+        // Platz gibt sie frei“ (e35b2c72) — jede war ein Kreis, an einer Geometrie benannt (23 Uhr: drei Wagen einer Wende 40 s; 23 Uhr
+        // ab Minute 5 keiner der 20 Wagen; 10 Uhr: im Netz der vier Wenden ab Minute 1 keiner)
+        const kreis = v < 0.5 ? AnazhRealm._verkehrKreis(W) : null;
         W.wartet = null;
+        // kreis[i] = [Wagen, Art seiner Kante zum nächsten]; der letzte wartet auf ihn selbst (kreis[0])
+        const n = kreis ? kreis.length : 0;
+        const nrn = (wer) => (kreis || []).filter(wer).map(([X]) => X.nr);
+        const halter = nrn(([X]) => !!X.F && X.zonen.some((z) => z.hat && !z.weg));
+        const koepfe = nrn((_, i) => kreis[(i + n - 1) % n][1] === "kopf");
+        const gibtAb = halter.length > 0 && Math.min(...halter) === W.nr;
+        W.gesperrt = !halter.length && koepfe.length > 0 && Math.min(...koepfe) === W.nr;
         for (const z of W.zonen)
             if (!z.weg && F.s - W.hl > z.aus) {
                 [z.weg, z.hat] = [true, false];
@@ -1795,11 +1815,14 @@ class AnazhRealm_siedlung_verkehr {
                 voll.push(z);
             else break;
         }
-        // WER HÄLT UND VOR EINEM STEHT, der auf denselben Ort wartet (an der Wende der Wagen im Platz vor ihm: sein Bogen aus dem
-        // Platz führt durch dessen Platz), gibt ihn ab und lässt ihn zuerst fahren (`weicht`) — bis hier hielt der hintere den
-        // Schlüssel, der vordere wartete auf ihn (23 Uhr: drei Wagen einer Wende 40 s). Nie dem, der selbst auf ihn wartet (sein
-        // Vorderer ist er): der hätte den Schlüssel und stünde doch — in der Kreuzung der Metropole hielt so keiner ihn, 18 Wagen
-        // standen dahinter. Er gibt die ganze Kette ab, die er hält (sonst hielte er dem anderen den Ort dahinter).
+        // ER GIBT AB (der Warte-Graph oben): die ganze Kette, die er hält (sonst hielte er dem anderen den Ort dahinter), und er
+        // fragt erst wieder, wenn der, der auf ihn wartete, an keinem Ort seiner Route mehr wartet
+        if (gibtAb && voll[0].hat) {
+            for (const z of voll) z.hat = false;
+            for (const z of voll) if (!W.zonen.some((y) => y.hat && y.Z === z.Z)) AnazhRealm._verkehrLos(z.Z, W);
+            W.weicht = kreis[n - 1][0];
+        }
+        if (W.weicht && !W.zonen.some((z) => !z.weg && W.weicht.reihe.has(z.Z))) W.weicht = null;
         const rand = 2 * W.hl + V.abstandM + globalThis.__fachwerkCore.VERKEHR_GESETZ.parkL;
         if (W.letzter && W.letzter.art !== "ein" && F.lang < voll[voll.length - 1].aus + rand) W.kurz = true;
         // DER STAURAUM (jede Kette bleibt frei — wer in sie fährt, muss aus ihr hinaus können; SUMO „keep clear“): hinter ihrem Ende
@@ -1831,28 +1854,14 @@ class AnazhRealm_siedlung_verkehr {
         // dem Heck in der Kreuzung am Markt (stadt-voll 23 Uhr, Minute 2: Wagen 16 0,5 m in ihr hinter 6 und 9 vor der Enge 818/467,
         // die 0 mit dem Heck hielt, 0 hinter 18 und 4 vor der Kreuzung — derselbe Kreis wie ohne Stauraum, nur früher)
         const vorKette = (z) => z.ein - V.vorM - vor > (v * v) / (2 * V.bremsMs2);
-        const O = W.vorne && W.vorne.O;
-        if (voll[0].hat) {
-            if (
-                v < 0.5 &&
-                O &&
-                W.vorne.gap < V.abstandM + 1 &&
-                O.reihe.has(voll[0].Z) &&
-                !(O.vorne && O.vorne.O === W)
-            ) {
-                for (const z of voll) z.hat = false;
-                for (const z of voll) if (!W.zonen.some((y) => y.hat && y.Z === z.Z)) AnazhRealm._verkehrLos(z.Z, W);
-                W.weicht = O;
-            } else if (voll.every((z) => z.hat)) {
-                if (!vorKette(voll[0]) || raum(voll[voll.length - 1].aus)) return Infinity;
-                for (const z of voll) z.hat = false;
-                for (const z of voll) if (!W.zonen.some((y) => y.hat && y.Z === z.Z)) AnazhRealm._verkehrLos(z.Z, W);
-            }
+        if (voll[0].hat && voll.every((z) => z.hat)) {
+            if (!vorKette(voll[0]) || raum(voll[voll.length - 1].aus)) return Infinity;
+            for (const z of voll) z.hat = false;
+            for (const z of voll) if (!W.zonen.some((y) => y.hat && y.Z === z.Z)) AnazhRealm._verkehrLos(z.Z, W);
         }
         const j0 = voll.findIndex((z) => !z.hat);
         const kette = voll.slice(j0);
         const z0 = kette[0];
-        if (W.weicht && !W.weicht.reihe.has(z0.Z)) W.weicht = null;
         const dEin = z0.ein - V.vorM - vor;
         if (dEin > (v * v) / (2 * V.bremsMs2) + V.frageM) return Infinity;
         const halt = Math.sqrt(2 * V.bremsMs2 * Math.max(0, dEin));
@@ -1886,11 +1895,8 @@ class AnazhRealm_siedlung_verkehr {
                 z.Z.halter.every((o) => o === W || vertraeglich(z, o)) ||
                 (z.Z.art === "enge" && z.Z.richtung === z.dir));
         // der Kopf der Reihe: der erste Wartende, vor dem keiner in seiner Spur auf denselben Ort wartet (bis hier stand an der
-        // Spitze, wer zuerst fragte — auch hinter einem, der nach ihm kam: beide warteten aufeinander) und dessen Kette frei ist
-        // (`gesperrt`: einen Ort hinter dem gefragten hält ein anderer; wer nur auf den gefragten wartet, bleibt Kopf — sonst
-        // führe der Durchgang der Wende ewig vor dem Ausparkenden vorbei) — bis w12-verkehr hielt der Kopf die Reihe auch, wenn er selbst nicht
-        // konnte: um 23 Uhr wartete Wagen 5 an der Enge vor der Wende, die Wagen 18 hielt, 18 stand hinter 13, 13 hinter 15, und 15
-        // durfte nicht an der Enge an 5 vorbei — ab Minute 5 fuhr keiner der 20 Wagen der Stadt des Worts
+        // Spitze, wer zuerst fragte — auch hinter einem, der nach ihm kam: beide warteten aufeinander), außer dem, den der
+        // Warte-Graph übergeht (`gesperrt`, oben)
         const kopf = Z.warte.find((o) => o === W || (!o.gesperrt && !(o.vorder && o.vorder.O.reihe.has(Z))));
         // vor dem Kopf vorbei nur, wer ihm nicht im Weg ist (verträglich mit ihm: der Kopf wartet nie länger seinetwegen)
         if (!W.weicht && kette.every(darf) && (drinnen || !kopf || kopf === W || vertraeglich(z0, kopf)) && platz) {
@@ -1901,19 +1907,16 @@ class AnazhRealm_siedlung_verkehr {
                 z.Z.richtung = zurueck || z.Z.richtung === "hin und zurück" ? "hin und zurück" : z.dir;
             }
             AnazhRealm._verkehrReihe(Z, W, false);
-            W.gesperrt = false;
             return Infinity;
         }
-        // GESPERRT ist auch, wer hinter dem Ort keinen Platz hat (`platz`: der vor ihm steht in der Ausfahrt) — er ist nicht Kopf der
-        // Reihe, der Gegenverkehr fährt zuerst. Bis w13-verkehr-heil hielt er die Reihe: im Netz der vier Wenden (stadt-voll, 10 Uhr)
-        // wartete Wagen 12 an der Enge 818/467 auf ihren Kopf 13, 13 auf Platz hinter 3, 3 hinter 0, 0 an der Kreuzung am Markt auf
-        // ihren Kopf 16, 16 auf Platz hinter 9, 9 hinter 12 — ab Minute 1 fuhr keiner der 20 Wagen
-        W.gesperrt = !platz || !kette.slice(1).every(darf); // ein Ort HINTER dem gefragten gehört einem anderen
+        // SEINE KANTEN IM WARTE-GRAPHEN (`wartet`, gelesen im nächsten Schritt von `_verkehrKreis`): wem er weicht, wer einen Ort
+        // seiner Kette hält, der ihm nicht verträglich ist, der Kopf der Reihe vor ihm, der vor ihm, hinter dem kein Platz ist
         const wo = `${Math.round(Z.x)}/${Math.round(Z.z)}`;
-        W.wartet = { auf: [] };
-        if (W.weicht) W.wartet.auf.push([W.weicht, "weicht", wo]);
+        W.wartet = { auf: W.weicht ? [[W.weicht, "weicht", wo]] : [] };
         for (const z of kette)
-            if (!darf(z)) for (const o of z.Z.halter) if (o !== W) W.wartet.auf.push([o, "halter", wo]);
+            if (!darf(z))
+                for (const o of z.Z.halter)
+                    if (o !== W && !W.wartet.auf.some((a) => a[0] === o)) W.wartet.auf.push([o, "halter", wo]);
         if (kopf && kopf !== W && !drinnen && !vertraeglich(z0, kopf)) W.wartet.auf.push([kopf, "kopf", wo]);
         if (!platz && W.vorder) W.wartet.auf.push([W.vorder.O, "platz", wo]);
         AnazhRealm._verkehrReihe(Z, W, true);
@@ -2209,6 +2212,30 @@ AnazhRealm._verkehrReihe = function (Z, W, an) {
         W.reihe.delete(Z);
         Z.warte.splice(Z.warte.indexOf(W), 1);
     }
+};
+
+// DER KREIS DURCH W IM WARTE-GRAPHEN (`_verkehrZonen`): die Kanten eines Wagens sind, worauf er an einem Ort wartet (`wartet`), und
+// der Wagen vor ihm, vor dem er hält (`grund` „wagen“, `wer`) — Tiefe höchstens 12. Liefert [[Wagen, Art seiner Kante], …] ab W
+// oder null. Leser: `_verkehrZonen` (wer nachgibt).
+AnazhRealm._verkehrKreis = function (W) {
+    const kanten = (X) => {
+        const a = X.wartet ? X.wartet.auf : [];
+        return X.grund === "wagen" && X.wer && X.wer.zonen ? a.concat([[X.wer, "wagen"]]) : a;
+    };
+    const [pfad, ohne] = [[], new Set()]; // ohne: von dort führt kein Weg zu W
+    const gang = (X) => {
+        for (const [O, art] of kanten(X)) {
+            if (O === W) return pfad.concat([[X, art]]);
+            if (O === X || ohne.has(O) || pfad.length >= 12 || pfad.some((p) => p[0] === O)) continue;
+            pfad.push([X, art]);
+            const k = gang(O);
+            pfad.pop();
+            if (k) return k;
+            ohne.add(O);
+        }
+        return null;
+    };
+    return gang(W);
 };
 
 // LIEGT p NÄHER ALS r AN DER SPUR EINES ARMS DER KREUZUNG Z, außer dem Arm `ausser` (die Strecke, auf der er selbst fährt)? Die

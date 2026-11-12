@@ -818,7 +818,13 @@ class AnazhRealm_siedlung_ort {
             for (const b of best ? [] : bau) {
                 const [dx, dz] = [b.x - M.x, b.z - M.z];
                 const d = Math.hypot(dx, dz);
-                if (d < 12 || Math.abs(dx * u[0] + dz * u[1]) < kegel * d || (best && d >= best.d) || !trasse(dx, dz, d)) continue;
+                if (
+                    d < 12 ||
+                    Math.abs(dx * u[0] + dz * u[1]) < kegel * d ||
+                    (best && d >= best.d) ||
+                    !trasse(dx, dz, d)
+                )
+                    continue;
                 const quer = (h) => {
                     const t = ((h.x - M.x) * dx + (h.z - M.z) * dz) / (d * d);
                     return h !== b && t > 0 && t < 1 && Math.hypot(M.x + dx * t - h.x, M.z + dz * t - h.z) < h.r;

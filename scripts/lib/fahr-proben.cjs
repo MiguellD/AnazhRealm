@@ -885,7 +885,7 @@ async function probeLeben(expected) {
                 P._verkehrSchritt.call(this, dt);
                 [m.ms, m.takte] = [m.ms + performance.now() - t0, m.takte + 1];
             };
-            // PROBE: der Stoß beim Namen — wer wen, wo, wie nah die Rechtecke
+            // DER STOSS BEIM NAMEN (die ersten 12): wer wen, Bild, wo, Abstand der Rechtecke, beider Tempo, Zustand, Grund, Meter zum Spieler, Umfahrten
             const stossOrte = [];
             let kJetzt = 0;
             r._wagenSchritt = function (e, ...a) {
@@ -944,7 +944,7 @@ async function probeLeben(expected) {
                     T.w60[2] = T.min;
                 }
                 if (k % 60 === 0) {
-                    // PROBE (nur ausgeben): der Warte-Graph — je stehendem Wagen, auf wen er wartet; Kreise beim Namen
+                    // DER WARTE-GRAPH (w28-verkehr-graph): je Sekunde, auf wen jeder stehende Wagen wartet (`W.wartet` aus `_verkehrZonen`, `W.wer`), die Kreise beim Namen (`verkehrVerdict`)
                     const G = (T.graph = T.graph || { kreise: new Map(), grund: {}, steht: 0, proben: 0, leiber: {} });
                     G.proben++;
                     const kanten = new Map();

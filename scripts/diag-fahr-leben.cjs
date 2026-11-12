@@ -860,6 +860,10 @@ const verkehrVerdict = (m) =>
         // DER WAGEN VOR EINEM LEIB (w27-verkehr-leib): die Querung hält ihn ihre Dauer, wer die Bahn nicht verlässt, gibt sie frei —
         // länger als `leibS` vor DEMSELBEN Bewohner [s, Wagen, Leib, Ort, Zustand] ist der Täter beim Namen
         [!(m.leibHalt[0] > VERKEHR.leibS), `Wagen vor EINEM Leib ${JSON.stringify(m.leibHalt)} (Soll ≤ ${VERKEHR.leibS} s)`],
+        // DER WARTE-GRAPH (w28-verkehr-graph): je Sekunde, auf wen jeder stehende Wagen wartet (`W.wartet`: wem er weicht, Halter,
+        // Kopf der Reihe, Platz hinter dem Ort; `W.wer`: der Wagen vor ihm) — ein Kreis, der länger als `leibS` steht, ist der Stau
+        // beim Namen [Schlüssel, Sekunden, erste, letzte Probe, wer auf wen wo]. Ungezählt ist ROT
+        [!!m.graph && !m.graph.kreise.some((k) => k[1] > VERKEHR.leibS), `Warte-Kreis ${m.graph ? JSON.stringify(m.graph.kreise.find((k) => k[1] > VERKEHR.leibS)) : "ungezählt"}`], // prettier-ignore
         [m.sitz[0] > 0 && !m.sitz[1], `Fahrer nicht im Sitz ${JSON.stringify(m.sitz)}`],
         [m.enden >= 1 && m.wenden === m.enden, `Wenden ${m.wenden} an ${m.enden} Enden`],
         [!m.stufen.length, `Stufen der Spuren ${JSON.stringify(m.stufen)}`],
@@ -902,7 +906,7 @@ const verkehrVerdict = (m) =>
         [!m.ohneSchluessel, `ohne Schlüssel im Ort ${m.ohneSchluessel}× ${JSON.stringify(m.ohneOrte)}`],
         [
             !m.beruehrt.bau && !m.stoss.bau && !m.stoss.wagen && !m.stoss.leib,
-            `Wagen im Bau ${m.beruehrt.bau}× ${JSON.stringify(m.beruehrt.bauOrte)} · Stoß ${JSON.stringify(m.stoss)}`,
+            `Wagen im Bau ${m.beruehrt.bau}× ${JSON.stringify(m.beruehrt.bauOrte)} · Stoß ${JSON.stringify(m.stoss)}${m.stossOrte && m.stossOrte.length ? " " + JSON.stringify(m.stossOrte[0]) : ""}`,
         ],
         [
             m.querMax <= 1.5,
@@ -2446,8 +2450,12 @@ hauptLauf(async () => {
                 stufe: { nah: 99 },
                 netz: { verboten: ["k0 0>3 kein Bogen", "k0 2>1 kein Bogen"], ausNetz: 0, irrweg: 0 },
                 wurf: [0, null],
+                graph: { kreise: [] },
             };
             const brueche = [
+                // stadt-voll 10 Uhr ohne die Regel des Warte-Graphen: 8 hinter 17, 17 hinter 8, 235 s ab Bild 21900
+                [{ graph: { kreise: [["8>17", 235, 21900, 35940, "8-wagen > 17-wagen"]] } }, /Warte-Kreis \["8>17",235/],
+                [{ graph: undefined }, /Warte-Kreis ungezählt/],
                 // der Zweig w27-ort-pose-voll am 11.11.: jeder Sim-Schritt warf im gewickelten `_verkehrSchritt`
                 [{ wurf: [36000, "Cannot read properties of undefined (reading 'call')"] }, /der Takt warf 36000× .*reading 'call'/],
                 [{ wurf: undefined }, /der Takt warf ungezählt/],
