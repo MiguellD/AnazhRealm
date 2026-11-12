@@ -28,7 +28,7 @@ class AnazhRealm_vegetation_wiese {
         return Math.max(W.fern.bis + W.fern.kachel * 1.5, S.radius + S.rand + S.kachel * 1.5);
     }
 
-    // DAS BODENLICHT unter den STEHENDEN Kronen ∈ [0, 1] (1 offen, → 0 geschlossenes Dach) — das Labor-Gesetz
+    // DAS BODENLICHT unter den STEHENDEN und den ANGESAGTEN Kronen ∈ [0, 1] (1 offen, → 0 geschlossenes Dach) — das Labor-Gesetz
     // (phytogenesis `canopyLight`): je Krone des EINEN Registers (`wegeKarte.kronen`: Mitte, Radius r wie die Kronen-
     // Schüchternheit) die Deckung exp(−q), q = d² / (σ·r)² bis q < qMax, L = exp(−canopyK · Σ Deckung). Gibt den Leser
     // (x, z) → L eines Rechtecks: die Kronen, die es erreichen, sammelt er EINMAL (Lehre 25). Nah-Wiese und Nah-Streu lesen
@@ -55,6 +55,12 @@ class AnazhRealm_vegetation_wiese {
                         kronen.push(c[0], c[1], 1 / (s * s));
                     }
                 }
+        }
+        // dazu die Kronen, die in der Pflanz-Schlange kommen (`_kronenKommend`: die Krone ist Gesetz des Plans)
+        const kommend = this._kronenKommend(x0, z0, x1, z1);
+        for (let i = 0; i < kommend.length; i += 3) {
+            const s = U.kronenSigma * kommend[i + 2];
+            kronen.push(kommend[i], kommend[i + 1], 1 / (s * s));
         }
         return (x, z) => {
             let deckung = 0;

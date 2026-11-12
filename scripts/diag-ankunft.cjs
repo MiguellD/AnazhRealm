@@ -11,6 +11,8 @@
 //   LH  WAS DAS BILD NICHT LIEST (w4-ankunft-2) — vor dem ersten Weltbild wächst kein Skelett einer Baum-Hülle (die Kollision,
 //       `_baumGestaltTeile`): sie wartet beim Namen (`_huellenNach`, `_weltOffen().huellen`) und kommt nach dem Bild
 //       (`_tickHuellenNach`); unter dem Ladeschirm baut der Ring ein Stück außer Bild nur im Leerlauf (`_ringLeerlauf`).
+//       DIE KRONE VOR DER KACHEL (w28-krone-vor-kachel): das Bodenlicht liest die Krone eines Baums ab seinem Eintritt in die
+//       Pflanz-Schlange (`_kronenKommend`) — seine Landung fällt keine Kachel der Nah-Wiese, ihrer Ferne oder der Nah-Streu.
 //   L1  DAS FADENKREUZ — `#fadenkreuz` steht in der Bildmitte (dort trifft `_blickZiel`), weicht einer offenen Schublade.
 //   L2b DIE HILFE — „hilfe" / „help" / „?" nennt jedes Beispiel der EINEN Tafeln (`chatDslPatterns`, `chatSystemPatterns`,
 //       ihre `hilfe`-Sätze) und jede Taste (`KEYBINDING_LABELS`); der Satz für Unbekanntes trägt keine zweite Liste.
@@ -400,12 +402,28 @@ function dorfVerdict(m) {
 // m.h = [Skelette vor dem Bild, Hüllen-Boxen nach dem Bild ohne Leib, mit dem Leib fern, mit dem Leib nah, offen danach] ·
 // m.r = [hinten ohne Leerlauf, vorn,
 // Leerlauf-Ruf, hinten mit Leerlauf] · m.k = je Bauer der Kacheln um das Auge [vor dem Bild außer Blick, im Blick, danach außer Blick]
+// DIE KRONE VOR DER KACHEL (w28-krone-vor-kachel, Teil von LH): c.je = je Bauer [gefallen bei der Ansage, gebaut nach der Ansage,
+// gebaut nach der Landung] · c.licht = das Bodenlicht am Stamm [solange die Krone angesagt ist, wenn sie steht] · c.mutant = dasselbe
+// am gespielten Stand vor dem Schnitt. Ohne Kacheln um das Auge (`m.k` fehlt) urteilt die Zeile darüber.
+function kroneVerdict(c) {
+    if (c === false) return [];
+    if (!c || c.err || !c.je || !c.licht || !c.mutant || !c.mutant.je) return [`die Krone vor der Kachel: keine Probe${c && c.err ? " — " + c.err : ""}`];
+    const [kommend, steht] = c.licht;
+    const je = Object.entries(c.je);
+    return [
+        !(steht < 1) ? `die Krone vor der Kachel: unter der stehenden Krone ist das Bodenlicht ${steht} (die Probe ist blind)` : !(Math.abs(kommend - steht) < 1e-9) && `das Bodenlicht liest die angesagte Krone nicht: ${kommend} in der Pflanz-Schlange, ${steht} stehend (\`_kronenKommend\`)`,
+        ...je.map(([n, [, , nach]]) => nach > 0 && `${n} baut ${nach} Kacheln nach der Landung der Krone neu (\`_kroneAngesagt\`)`),
+        !je.some(([, [gefallen, gebaut]]) => gefallen > 0 && gebaut > 0) && "die Krone vor der Kachel: unter der angesagten Krone fiel und wuchs nichts (die Probe ist blind)",
+        !Object.values(c.mutant.je).some(([, , nach]) => nach > 0) && "die Krone vor der Kachel: am Stand vor dem Schnitt baut nach der Landung nichts neu (die Probe sieht den Täter nicht)",
+    ].filter(Boolean);
+}
 function huelleVerdict(m) {
     if (!m || !m.h || !m.r) return ["start"];
     const [[wuchs, ohneLeib, fern, boxen, rest], [ohne, vorn, ruf, mit]] = [m.h, m.r];
     return [
         !m.k && "die Kacheln um das Auge: keine Probe",
         ...Object.entries(m.k || {}).map(([n, [warten, los]]) => (warten ? `${n} baut ${warten} Kacheln, die warten (\`_nahKachelWartet\`)` : !los && `${n} baut nichts`)), // prettier-ignore
+        ...kroneVerdict(m.k ? m.krone || null : false),
         wuchs && "die Hülle wuchs vor dem Bild (`_baumGestaltTeile`)",
         ohneLeib && "die Hülle wuchs ohne Leib (`_huellenBedarf`)",
         fern && "die Hülle wuchs fern vom Leib (`HUELLE_BEDARF_M`)",
@@ -1071,6 +1089,83 @@ async function probe(arg) {
                 }
             } finally {
                 [delete r._nahKachelWartet, delete r._standRuht];
+            }
+        // DIE KRONE VOR DER KACHEL (w28-krone-vor-kachel): die drei Bauer der Kacheln stehen (sie gingen, bis nichts mehr wuchs), dann
+        // tritt ein Baum in die Pflanz-Schlange (der echte Schreiber `_enqueueVegetationSpawn`), am Rand der Nähe, wo seine Krone
+        // alle drei Kachel-Arten erreicht: die Ansage fällt, was unter ihr steht, EINMAL; die Bauer gehen, das Bodenlicht an seinem
+        // Stamm liest die angesagte Krone (`_bodenLichtFeld` über `_kronenKommend`); dann landet er (der echte Pflanz-Gang
+        // `_tickPendingVegSpawns` → `spawnArchitecture`), und die Bauer gehen wieder. Je Bauer [gefallen bei der Ansage, gebaut
+        // nach der Ansage, gebaut nach der Landung]: nach der Landung baut KEINE Kachel neu, und das Licht am Stamm ist vor und
+        // nach der Landung dasselbe. DIE MUTANTE in derselben Welt, der Stand vor dem Schnitt gespielt (das Licht liest nur
+        // stehende Kronen, die Ansage gilt nicht): dieselbe Folge baut nach der Landung neu — sieht die Probe das nicht, ist sie blind.
+        if (m.k)
+            try {
+                const A = r.constructor;
+                const vorbild = st.architectures.find((e) => e && r._kronenRadiusFuer(e.type, e.scale));
+                if (!vorbild) throw new Error("kein Wald-Baum in der Welt (Vorbedingung)");
+                const [art, skala] = [vorbild.type, vorbild.scale];
+                const radius = r._kronenRadiusFuer(art, skala);
+                const a = A._kronenReich(radius);
+                const auge = st.camera.position;
+                const opts = { seed: 7, silent: true, scale: skala };
+                const M = { _tickNahWiese: [nw.kacheln, A.NAH_WIESE.kachel], _nahWieseFernTakt: [nw.fern.kacheln, A.NAH_WIESE.fern.kachel], _tickNahStreu: [ns.kacheln, A.NAH_STREU.kachel] }; // prettier-ignore
+                let ort = null;
+                for (let w = 0; w < 32 && !ort; w++) {
+                    const d = A.NAH_WIESE.radius + 2 + (w >> 4) * 6;
+                    const [x, z] = [auge.x + d * Math.cos((w * Math.PI) / 8), auge.z + d * Math.sin((w * Math.PI) / 8)];
+                    const y = r._voxelSurfaceY(x, z);
+                    if (Number.isFinite(y) && r._wildnisTraegt(x, z) && !r._bodenKommtNie(x - a, z - a, x + a, z + a) && !r._naturWand(art, { x, y: y + 0.5, z }, opts)) ort = { x, y: y + 0.5, z }; // prettier-ignore
+                }
+                if (!ort) throw new Error("kein Ort am Rand der Nähe trägt einen Baum (Vorbedingung)");
+                const unterKrone = (n) => [...M[n][0].keys()].filter((key) => { const [tx, tz] = key.split(",").map(Number); const K = M[n][1]; return !((tx + 1) * K < ort.x - a || tx * K > ort.x + a || (tz + 1) * K < ort.z - a || tz * K > ort.z + a); }).length; // prettier-ignore
+                const licht = () => r._bodenLichtFeld(ort.x - 1, ort.z - 1, ort.x + 1, ort.z + 1)(ort.x, ort.z);
+                const lauf = (mutant) => {
+                    const [je, zahl, alt, gespielt] = [{}, { n: 0 }, st.pendingVegSpawns, {}];
+                    const q = (st.pendingVegSpawns = []);
+                    // die Bauer gehen, bis acht Takte lang keine Kachel mehr wuchs (höchstens 1 200 Takte)
+                    const gehen = () => {
+                        for (let i = 0, still = 0; i < 1200 && still < 8; i++) {
+                            const vor = zahl.n;
+                            [r._tickNahWiese(), r._tickNahStreu()];
+                            still = zahl.n === vor ? still + 1 : 0;
+                        }
+                    };
+                    let [baum, lichtKommend, lichtSteht] = [null, NaN, NaN];
+                    [nw.kacheln.clear(), nw.fern.kacheln.clear(), ns.kacheln.forEach((k) => r._nahStreuKachelEntsorgen(k)), ns.kacheln.clear(), (nw.fern.pruef = null)]; // prettier-ignore
+                    for (const n of Object.keys(M)) [(je[n] = [0, 0, 0]), (M[n][0].set = function (key, v) { return zahl.n++, Map.prototype.set.call(this, key, v); })]; // prettier-ignore
+                    try {
+                        r._standRuht = () => false;
+                        if (mutant) {
+                            // der Stand vor dem Schnitt: keine angesagte Krone im Licht, der Eintritt fällt nichts, die Landung fällt
+                            const [W0, N0] = [r._kronenStreuWiese, r._kronenStreuNeu];
+                            [(gespielt.n = 0), (r._kronenKommend = () => [])];
+                            r._kronenStreuWiese = function (...arg) { return gespielt.n ? W0.apply(this, arg) : undefined; }; // prettier-ignore
+                            r._kronenStreuNeu = function (...arg) { this._kroneAngesagt = null; gespielt.n++; try { return N0.apply(this, arg); } finally { gespielt.n--; } }; // prettier-ignore
+                        }
+                        gehen();
+                        const vor = Object.fromEntries(Object.keys(M).map((n) => [n, unterKrone(n)]));
+                        r._enqueueVegetationSpawn(art, { x: ort.x, y: ort.y, z: ort.z }, opts);
+                        if (q.length !== 1) throw new Error("der Wurf trat nicht in die Pflanz-Schlange (Vorbedingung)");
+                        for (const n of Object.keys(M)) je[n][0] = vor[n] - unterKrone(n);
+                        for (const n of Object.keys(M)) M[n][0].set = function (key, v) { return je[n][1]++, zahl.n++, Map.prototype.set.call(this, key, v); }; // prettier-ignore
+                        [gehen(), (lichtKommend = licht())];
+                        const menge = st.architectures.length;
+                        for (const n of Object.keys(M)) M[n][0].set = function (key, v) { return je[n][2]++, zahl.n++, Map.prototype.set.call(this, key, v); }; // prettier-ignore
+                        for (let i = 0; i < 8 && q.length; i++) r._tickPendingVegSpawns(1);
+                        baum = st.architectures.length === menge + 1 ? st.architectures[menge] : null;
+                        if (!baum) throw new Error(`der Baum landete nicht (Schlange ${q.length}, Einträge ${st.architectures.length - menge}; Vorbedingung)`);
+                        [gehen(), (lichtSteht = licht())];
+                    } finally {
+                        for (const n of Object.keys(M)) delete M[n][0].set;
+                        [delete r._standRuht, delete r._kronenKommend, delete r._kronenStreuWiese, delete r._kronenStreuNeu];
+                        if (baum) r.removeArchitecture(baum, { still: true });
+                        st.pendingVegSpawns = alt;
+                    }
+                    return { je, licht: [lichtKommend, lichtSteht] };
+                };
+                m.krone = { art, ...lauf(false), mutant: lauf(true) };
+            } catch (e) {
+                m.krone = { err: fehlerStapel(e) };
             }
         m.gestartet = true;
     } catch (e) {
@@ -2083,7 +2178,7 @@ hauptLauf(async () => {
                     ["keine EINE Formel", { durchsicht: { formel: false } }, "Durchsicht: keine EINE Formel"],
                 ],
             ],
-            ["LH", huelleVerdict, { h: [0, 0, 0, 3, 0], r: [false, true, true, true], k: { x: [0, 9] } }, [["vor dem Bild", { h: [1, 0, 0, 3, 0] }, "die Hülle wuchs vor"], ["ohne Leib", { h: [0, 3, 3, 3, 0] }, "die Hülle wuchs ohne"], ["fern", { h: [0, 0, 3, 3, 0] }, "die Hülle wuchs fern"], ["Ring", { r: [true, true, false, true] }, "der Ring baut außer"], ["wartet nie", { k: { x: [3, 9] } }, "x baut 3"], ["blind", { k: { x: [0, 0] } }, "x baut nichts"], ["ohne", { k: null }, "die Kacheln um"]]], // prettier-ignore
+            ["LH", huelleVerdict, { h: [0, 0, 0, 3, 0], r: [false, true, true, true], k: { x: [0, 9] }, krone: { je: { x: [3, 3, 0] }, licht: [0.4, 0.4], mutant: { je: { x: [0, 0, 3] }, licht: [1, 0.4] } } }, [["vor dem Bild", { h: [1, 0, 0, 3, 0] }, "die Hülle wuchs vor"], ["ohne Leib", { h: [0, 3, 3, 3, 0] }, "die Hülle wuchs ohne"], ["fern", { h: [0, 0, 3, 3, 0] }, "die Hülle wuchs fern"], ["Ring", { r: [true, true, false, true] }, "der Ring baut außer"], ["wartet nie", { k: { x: [3, 9] } }, "x baut 3"], ["blind", { k: { x: [0, 0] } }, "x baut nichts"], ["ohne", { k: null }, "die Kacheln um"], ["Landung fällt", { krone: { je: { x: [3, 3, 3] }, licht: [0.4, 0.4], mutant: { je: { x: [0, 0, 3] }, licht: [1, 0.4] } } }, "x baut 3 Kacheln nach der Landung"], ["Licht ohne Ansage", { krone: { je: { x: [3, 3, 0] }, licht: [1, 0.4], mutant: { je: { x: [0, 0, 3] }, licht: [1, 0.4] } } }, "das Bodenlicht liest die angesagte Krone nicht"], ["Krone ohne Licht", { krone: { je: { x: [3, 3, 0] }, licht: [1, 1], mutant: { je: { x: [0, 0, 3] }, licht: [1, 0.4] } } }, "die Krone vor der Kachel: unter der stehenden Krone ist das Bodenlicht 1"], ["Krone blind", { krone: { je: { x: [0, 0, 0] }, licht: [0.4, 0.4], mutant: { je: { x: [0, 0, 3] }, licht: [1, 0.4] } } }, "die Krone vor der Kachel: unter der angesagten Krone fiel"], ["Täter unsichtbar", { krone: { je: { x: [3, 3, 0] }, licht: [0.4, 0.4], mutant: { je: { x: [0, 0, 0] }, licht: [1, 0.4] } } }, "die Krone vor der Kachel: am Stand vor dem Schnitt"], ["ohne Krone-Probe", { krone: null }, "die Krone vor der Kachel: keine Probe"]]], // prettier-ignore
             ["D8", kanalVerdict, { gestartet: true, siedlungImLog: true, zeilen: ["> dorf 7", "(Welt verändert: 1× Birke)"] }, [["Siedlungs-Zahlen im Chat", { zeilen: ["Seed 7"] }, "Telemetrie im Chat"], ["rohes Programm", { zeilen: ['["spawn_studio",'] }, "Telemetrie im Chat"], ["interne id", { zeilen: ["baum_birke"] }, "interne id im Chat"], ["Ereignis-Name", { zeilen: ["op_exception"] }, "Telemetrie im Chat"]]],
             [
                 "D6",
@@ -2164,7 +2259,7 @@ hauptLauf(async () => {
             ((K) => (K?.leib ? ` · Köpfe (B5): Bild-Rang ${K.orte.filter((o) => o.blick).length}/${K.orte.length} im Blick, Leib bestellt ${K.leib.bestellt.join(" · ")}, baut ${(K.leib.baut || []).join(" · ")}, Dorf-Export mit dem Buch ${!!K.dorf.export}` : ""))(m.koepfe) +
             (m.tastenHinter ? ` · hinter dem Ladeschirm: W ${m.tastenHinter.w ? "läuft" : "ruht"}, Enter → ${m.tastenHinter.enter}, Strg+K → Omnibox ${m.tastenHinter.omnibox ? "offen" : "zu"}` : "")
     );
-    zeige("LH", "was das Bild nicht liest, hält es nicht: die Hülle am Leib, der Ring außer Bild im Leerlauf", out.huelle, huelleVerdict, (m) => `Hülle ${m.h} · Ring [hinten ohne Leerlauf, vorn, Ruf, hinten mit] ${m.r} · Kacheln ${JSON.stringify(m.k)}`); // prettier-ignore
+    zeige("LH", "was das Bild nicht liest, hält es nicht: die Hülle am Leib, der Ring außer Bild im Leerlauf", out.huelle, huelleVerdict, (m) => `Hülle ${m.h} · Ring [hinten ohne Leerlauf, vorn, Ruf, hinten mit] ${m.r} · Kacheln ${JSON.stringify(m.k)} · Krone vor der Kachel [gefallen bei der Ansage, gebaut nach der Ansage, gebaut nach der Landung] ${JSON.stringify(m.krone && m.krone.je)} · Bodenlicht am Stamm [angesagt, stehend] ${m.krone && m.krone.licht} · Mutante (Stand vor dem Schnitt) ${JSON.stringify(m.krone && m.krone.mutant && m.krone.mutant.je)} Licht ${m.krone && m.krone.mutant && m.krone.mutant.licht}`); // prettier-ignore
     zeige("L1", "das Fadenkreuz steht in der Bildmitte und weicht der Schublade", out.kreuz, kreuzVerdict, (m) => `da ${m.da} · Mitte ${m.dx}/${m.dy} px · mit Werkstatt ${m.mitSchublade} · danach ${m.nachSchublade}`);
     zeige("L2b", "„hilfe\" nennt die EINEN Tafeln und die Tasten", out.hilfe, hilfeVerdict, (m) => Object.entries(m.antworten || {}).map(([w, z]) => `„${w}": ${z.unbekannt ? "unbekannt" : `${(z.fehlt || []).length} fehlen`}`).join(" · "));
     zeige("L3", "Enter öffnet das Gespräch, Enter sendet und gibt die Welt zurück, Enter auf einem Knopf gehört dem Knopf", out.gespraech, gespraechVerdict, (m) => `Enter → ${m.enterFokus} · gesendet ${m.gesendet} · danach ${m.nachSenden} · W ${m.wNachSenden} · Esc → ${m.nachEsc} · Enter auf dem Knopf → ${m.enterAufKnopf}`);

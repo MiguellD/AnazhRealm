@@ -145,7 +145,11 @@ class AnazhRealm_siedlung_wege {
         // Die erste Krone zentriert die Karte sofort (wie die erste Siedlung), sonst läse der Neubau der Wiese noch 0.
         const pm = this.state.playerMesh;
         if (pm && wk.stufen.some((s) => !s.zentriert)) this._tickWegeKarte(pm.position);
-        this._kronenStreuWiese(x, z, radius);
+        // die Krone eines Wurfs der Pflanz-Schlange ist angesagt (`_pflanzGang`: dieselbe Mitte, derselbe Radius) — die Kacheln
+        // unter ihr lasen sie schon (`_kronenKommend`), ihre Landung fällt nichts
+        const an = this._kroneAngesagt;
+        if (an && an.x === x && an.z === z && an.radius === radius) an.traf = true;
+        else this._kronenStreuWiese(x, z, radius);
     }
 
     // Eine Krone fällt (der Baum ist gefällt, abgebaut oder seine Streu-Region entsorgt): ihr Beitrag fällt EXAKT aus
@@ -177,10 +181,57 @@ class AnazhRealm_siedlung_wege {
             ? this.state.camera.position
             : this.state.playerMesh && this.state.playerMesh.position;
         if (!mitte) return;
-        const U = AnazhRealm.UNDERGROWTH;
-        const a = radius * Math.max(AnazhRealm.LAUB_STREU.rand, U.kronenSigma * Math.sqrt(U.kronenQMax));
+        const a = AnazhRealm._kronenReich(radius);
         if (Math.hypot(x - mitte.x, z - mitte.z) - a < AnazhRealm._nahRingReich())
             this._nahWieseNeuIn(x - a, z - a, x + a, z + a, false, true);
+    }
+    // DIE REICHWEITE EINER KRONE am Boden (m): so weit reichen ihre Streu (`LAUB_STREU.rand`) oder ihr Schatten
+    // (`_bodenLichtFeld`: σ · √qMax Kronen-Radien) — die EINE Zahl für die Kacheln, die unter ihr fallen (`_kronenStreuWiese`),
+    // und die, die sie in der Pflanz-Schlange schon lesen (`_kronenKommend`).
+    static _kronenReich(radius) {
+        const U = AnazhRealm.UNDERGROWTH;
+        return radius * Math.max(AnazhRealm.LAUB_STREU.rand, U.kronenSigma * Math.sqrt(U.kronenQMax));
+    }
+
+    // DIE KRONE IST GESETZ DES PLANS (w28-krone-vor-kachel): die Kronen der Bäume, die in der Pflanz-Schlange stehen
+    // (`pendingVegSpawns`; ihr Radius `_kronenRadiusFuer`) und das Rechteck mit ihrer Reichweite (`_kronenReich`) treffen
+    // → [x, z, Radius, …]. Das Bodenlicht liest sie mit den stehenden (`_bodenLichtFeld`): ein Baum wirft sein Licht auf die
+    // Kacheln der Nah-Wiese, ihrer Ferne und der Nah-Streu, sobald sein Ort feststeht — sein Eintritt in die Schlange sagt
+    // die Krone an (`_enqueueVegetationSpawn`: was unter ihr stand, fällt EINMAL), ihre Landung fällt nichts mehr
+    // (`_kronenStreuNeu` trifft die Ansage des Pflanz-Gangs, `_kroneAngesagt`). Bis hier las das Licht nur stehende Kronen:
+    // jede Kachel, die vor ihrem Baum wuchs, fiel mit seiner Landung und baute neu — je Krone, Takt um Takt.
+    // Die Schlange trägt ihren Stempel (`regung`: ihre zwei Schreiber `_enqueueVegetationSpawn` und `_pflanzGang`); der Index
+    // ihrer Kronen (Zellen der Kronen-Karte, `_kronenZelle`) baut nur neu, wenn sie sich regte (Lehre 25).
+    _kronenKommend(x0, z0, x1, z1) {
+        const schlange = this.state.pendingVegSpawns;
+        const aus = [];
+        if (!schlange || !schlange.length) return aus;
+        let I = this._kronenKommen;
+        if (!I || I.schlange !== schlange || I.regung !== (schlange.regung | 0)) {
+            I = this._kronenKommen = { schlange, regung: schlange.regung | 0, zellen: new Map(), reich: 0 };
+            for (const wurf of schlange) {
+                const p = wurf && wurf.position;
+                const radius = p ? this._kronenRadiusFuer(wurf.name, wurf.opts && wurf.opts.scale) : null;
+                if (!radius) continue;
+                const zk = AnazhRealm._kronenZelle(p.x, p.z);
+                const zelle = I.zellen.get(zk);
+                if (zelle) zelle.push(p.x, p.z, radius);
+                else I.zellen.set(zk, [p.x, p.z, radius]);
+                I.reich = Math.max(I.reich, AnazhRealm._kronenReich(radius));
+            }
+        }
+        if (!I.zellen.size) return aus;
+        const Z = AnazhRealm.LAUB_STREU.zelleM;
+        for (let zz = Math.floor((z0 - I.reich) / Z); zz <= Math.floor((z1 + I.reich) / Z); zz++)
+            for (let xx = Math.floor((x0 - I.reich) / Z); xx <= Math.floor((x1 + I.reich) / Z); xx++) {
+                const zelle = I.zellen.get(xx + "," + zz);
+                for (let i = 0; zelle && i < zelle.length; i += 3) {
+                    const [x, z, reich] = [zelle[i], zelle[i + 1], AnazhRealm._kronenReich(zelle[i + 2])];
+                    if (x + reich < x0 || x - reich > x1 || z + reich < z0 || z - reich > z1) continue;
+                    aus.push(x, z, zelle[i + 2]);
+                }
+            }
+        return aus;
     }
 
     // Der EINE Kronen-Radius eines Wald-Baums: wie der Wald-Generator (phyto-core planForestCell) `FOREST.crown[art] ×

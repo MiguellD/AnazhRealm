@@ -1749,7 +1749,13 @@ class AnazhRealm_vegetation_baum {
             return;
         }
         if (!this.state.pendingVegSpawns) this.state.pendingVegSpawns = [];
-        this.state.pendingVegSpawns.push({ name, position, opts });
+        const queue = this.state.pendingVegSpawns;
+        queue.push({ name, position, opts });
+        queue.regung = (queue.regung | 0) + 1; // der Stempel der Schlange: der Index ihrer Kronen (`_kronenKommend`) liest ihn
+        // DIE KRONE IST ANGESAGT (w28-krone-vor-kachel): ab hier liest das Bodenlicht sie (`_bodenLichtFeld`) — die Kacheln, die
+        // schon unter ihr stehen, fallen JETZT einmal; ihre Landung fällt nichts mehr (`_pflanzGang`)
+        const krone = this._kronenRadiusFuer(name, opts.scale);
+        if (krone) this._kronenStreuWiese(position.x, position.z, krone);
     }
 
     // DIE EINE WAND „Natur weicht dem Bau" (Welle L, Q5/Q15, Entscheid D3): JEDE Quelle der Natur setzt durch sie — Wald,
@@ -2420,8 +2426,19 @@ class AnazhRealm_vegetation_baum {
             rang[k] = rang[rang.length - 1];
             queue.pop();
             rang.pop();
+            queue.regung = (queue.regung | 0) + 1; // der Wurf verließ die Schlange: der Index ihrer Kronen (`_kronenKommend`) baut neu
             if (!task) continue;
-            this._naturSetzen(task.name, task.position, task.opts);
+            // DIE ANGESAGTE KRONE LANDET: `_kronenStreuNeu` trifft die Ansage (dieselbe Mitte, derselbe Radius) und fällt nichts —
+            // die Kacheln lasen sie schon. Landet sie nicht (die Natur-Wand sagte ab, der Eintrag trägt eine andere Krone), fällt
+            // unter der Ansage, was sie las.
+            const radius = task.position ? this._kronenRadiusFuer(task.name, task.opts && task.opts.scale) : null;
+            const an = (this._kroneAngesagt = radius ? { x: task.position.x, z: task.position.z, radius, traf: false } : null);
+            try {
+                this._naturSetzen(task.name, task.position, task.opts);
+            } finally {
+                this._kroneAngesagt = null;
+            }
+            if (an && !an.traf) this._kronenStreuWiese(an.x, an.z, an.radius);
             spawned++;
         }
         return spawned;
