@@ -1558,15 +1558,15 @@
   },
   "mensch-L0|haut|hand-1": {
    "meshes": 1,
-   "verts": 2973,
-   "tris": 5950,
-   "sha256": "7b65e34152ee04db327b9fae7f66717c40bbdab42412b44ac44aa5fbc5ced12c"
+   "verts": 2979,
+   "tris": 5962,
+   "sha256": "83a0997cbae3833263a30a17eb3e80756ebd82c4a6b23f837b9c9bce7e88a7c9"
   },
   "mensch-L0|haut|hand1": {
    "meshes": 1,
-   "verts": 2938,
-   "tris": 5876,
-   "sha256": "15299d6d0ab8ae08e3ced0d7b77eab735d887f8ff818525ee1dd5ffd1b82eccd"
+   "verts": 2944,
+   "tris": 5888,
+   "sha256": "9d84e32510d4b4040d5ec6658bc29838bf4ad4764232edad544572d76e90532f"
   },
   "mensch-L0|eye|eyeL": {
    "meshes": 1,
@@ -1638,31 +1638,31 @@
    "meshes": 1,
    "verts": 3914,
    "tris": 7665,
-   "sha256": "927591f94c600aab82abac6d361c5b4e009fa2c9e9abbc6042bffbb8d7055eb0"
+   "sha256": "0d3ec4f5ff932d31e6f1d54805e0e9a69466df674132f0450e829db93fe953d0"
   },
   "mensch-L0|haut|mensch": {
    "meshes": 1,
-   "verts": 1356,
-   "tris": 2382,
-   "sha256": "59dd47722082e5e1100d8fdc986f54eaef23957efaea7e7df1bee4be054004a7"
+   "verts": 1358,
+   "tris": 2386,
+   "sha256": "ecc4cb19bfeba19b3f60eb721163cd7922dbdfc179590126845001c61504b7c7"
   },
   "mensch-L0|stoff_233047|mensch": {
    "meshes": 1,
-   "verts": 2851,
-   "tris": 5264,
-   "sha256": "e66a487d9100abed61a6f7fc0b654b4f2939d4b62d5e02ed93e27034c240e77d"
+   "verts": 2842,
+   "tris": 5248,
+   "sha256": "d54e38bf301fbbde6a8e401537d618dd705908c716231363c6756b1702115335"
   },
   "mensch-L0|stoff_2a2c30|mensch": {
    "meshes": 1,
-   "verts": 3056,
-   "tris": 5968,
-   "sha256": "fffb7fc57a4630c882dd3fa32fd88043463cfba8cc00092d073983cef3eaef07"
+   "verts": 3037,
+   "tris": 5930,
+   "sha256": "d0d8c7a6635967b7a4f9555c3f4ad87cf9d04b1ef3c1dc2b18e95f2929a03e9a"
   },
   "mensch-L0|stoff_e8e6e0|mensch": {
    "meshes": 1,
-   "verts": 947,
-   "tris": 1886,
-   "sha256": "05dd8fa32e63aa6eac050a12d63b1e18ba5b70047eb9f6ae48704ddeb624406f"
+   "verts": 952,
+   "tris": 1896,
+   "sha256": "fd4b5386a98dc2b45bbfcf53f5f55dfb69f15b78ac3834825e3588f825969187"
   },
   "mensch-L0|gelenk|mensch": {
    "sha256": "bb95e2730d1cdaf22c266a3abd6c293dd5a259ec39a98c2144136da26b7cff85"
@@ -1692,16 +1692,16 @@
    "sha256": "69af2e2e3ed781f85712a3ce383b036b7fd0a19a5436f16dd67430a38a09ff69"
   },
   "mensch-L0|gelenk|hip1": {
-   "sha256": "97269d4f3db3af8b312dec105cdd3af2e16a39c17cbe27ad913e546a96ed1dc7"
+   "sha256": "a9e54a65d7d32e3ba42b6331e7e922bd27677e8e5e9fb397de923859e5dce871"
   },
   "mensch-L0|gelenk|hip-1": {
-   "sha256": "3a683a850c50057cc41bc9b06741ac2b16d578c41df9f81257b9e54ad8b245b2"
+   "sha256": "f4d60fe8fecdf8f7c252c808f1ee8708815e1625ff0118e84ca509783ae125c3"
   },
   "mensch-L0|gelenk|knee1": {
-   "sha256": "485659e558f475a5f9f0258aab6ba8af350e569279f8cced89119d9808296e30"
+   "sha256": "c69efb00fce42b8dd2a5b67d98156fb11e240b1120b58f041753ca342416e490"
   },
   "mensch-L0|gelenk|knee-1": {
-   "sha256": "83d248b6a8a0075db3068e75b5184e0c3968327d0c3f78f602c0d8fc1c1f4a37"
+   "sha256": "8c15886de3fd96591c488f71a4c6134ebba78318bb08a4da98af576d07a6fc54"
   },
   "mensch-L0|gelenk|ankle1": {
    "sha256": "82e627b05ae985809d0f864e103b966254fa6ada0008c7c31cccbf1b57dab48e"
@@ -1734,7 +1734,7 @@
    "sha256": "40c4afe1ff4a77e6d091604cc66e839c970fc4d4d94518af6eb7fbcaf5037559"
   },
   "mensch-L0|beipack": {
-   "sha256": "05fd19fc0b8f1ad73c2e9e3ad67b04e2e56cd0289fae88043a6e1e7c3cb57f1b"
+   "sha256": "489cf7e2e058fbc0e083da28c58bf82a4e77b751278d10beee464157f49e00cc"
   },
   "mensch-L1|skin|mensch": {
    "meshes": 1,
@@ -1786,27 +1786,27 @@
   },
   "mensch-L1|haut|mensch": {
    "meshes": 1,
-   "verts": 869,
-   "tris": 1617,
-   "sha256": "a3c0bcacacb524adb252dac965f739acd38f450763faed1fa6604ee5373b3a03"
+   "verts": 874,
+   "tris": 1627,
+   "sha256": "811ac4f6c5064fc0992423b3ebc7236978041c6315661e3c32090d59533bca9e"
   },
   "mensch-L1|stoff_233047|mensch": {
    "meshes": 1,
-   "verts": 1553,
-   "tris": 2840,
-   "sha256": "5cc495714122a114f6a9f230bc2e6447ff52c3c55739df73e61df32c43686ac3"
+   "verts": 1551,
+   "tris": 2844,
+   "sha256": "1bc0c583bf458192bb689bcbd92cfe266d32a3638fb40d79f33ed9670206648d"
   },
   "mensch-L1|stoff_2a2c30|mensch": {
    "meshes": 1,
-   "verts": 1608,
+   "verts": 1610,
    "tris": 3132,
-   "sha256": "1f7c4d8626e129fb750a07bb01ba95732c1e9865d0ce8e9a5ab463c38234e4dd"
+   "sha256": "bf6c50982d88ad10b41a55f6c685101138db7e04e728efcdaf889b2970c8479e"
   },
   "mensch-L1|stoff_e8e6e0|mensch": {
    "meshes": 1,
-   "verts": 551,
-   "tris": 1094,
-   "sha256": "d77aa2879b8f995271212d781f18ab694be00fc55066a01b4fc5c33468f5526d"
+   "verts": 544,
+   "tris": 1080,
+   "sha256": "92a699ae1301dd878890f224efc63c5095b1ceac1d2a7e92772e367e6bb45e19"
   },
   "mensch-L1|gelenk|mensch": {
    "sha256": "bb95e2730d1cdaf22c266a3abd6c293dd5a259ec39a98c2144136da26b7cff85"
@@ -1836,16 +1836,16 @@
    "sha256": "69af2e2e3ed781f85712a3ce383b036b7fd0a19a5436f16dd67430a38a09ff69"
   },
   "mensch-L1|gelenk|hip1": {
-   "sha256": "97269d4f3db3af8b312dec105cdd3af2e16a39c17cbe27ad913e546a96ed1dc7"
+   "sha256": "a9e54a65d7d32e3ba42b6331e7e922bd27677e8e5e9fb397de923859e5dce871"
   },
   "mensch-L1|gelenk|hip-1": {
-   "sha256": "3a683a850c50057cc41bc9b06741ac2b16d578c41df9f81257b9e54ad8b245b2"
+   "sha256": "f4d60fe8fecdf8f7c252c808f1ee8708815e1625ff0118e84ca509783ae125c3"
   },
   "mensch-L1|gelenk|knee1": {
-   "sha256": "485659e558f475a5f9f0258aab6ba8af350e569279f8cced89119d9808296e30"
+   "sha256": "c69efb00fce42b8dd2a5b67d98156fb11e240b1120b58f041753ca342416e490"
   },
   "mensch-L1|gelenk|knee-1": {
-   "sha256": "83d248b6a8a0075db3068e75b5184e0c3968327d0c3f78f602c0d8fc1c1f4a37"
+   "sha256": "8c15886de3fd96591c488f71a4c6134ebba78318bb08a4da98af576d07a6fc54"
   },
   "mensch-L1|gelenk|ankle1": {
    "sha256": "82e627b05ae985809d0f864e103b966254fa6ada0008c7c31cccbf1b57dab48e"
@@ -1878,13 +1878,13 @@
    "sha256": "40c4afe1ff4a77e6d091604cc66e839c970fc4d4d94518af6eb7fbcaf5037559"
   },
   "mensch-L1|beipack": {
-   "sha256": "de5d66f07ebb00b05c00d0dbbbfac09cc154562264161bdaf07f342fe32b5963"
+   "sha256": "95d5d78d20cee7e75eaaa23daedee1861050c9d7b39ea9b05581d84d2b53af6c"
   },
   "mensch-L2|leib|mensch": {
    "meshes": 1,
    "verts": 968,
    "tris": 1700,
-   "sha256": "d3fd276822233b032e35d1d870edc2555f60a079435763532a8b8bb7c77bf579"
+   "sha256": "c97d819e81c85c6eeb5e7922c1a55f0d655feb210f013bd34848b1c027253111"
   },
   "mensch-L2|gelenk|mensch": {
    "sha256": "bb95e2730d1cdaf22c266a3abd6c293dd5a259ec39a98c2144136da26b7cff85"
@@ -1914,22 +1914,22 @@
    "sha256": "d98cb700ac7d77519bfccd791dd5c53bee8524322c6cf435c354ad1d5edfb183"
   },
   "mensch-L2|gelenk|hip1": {
-   "sha256": "97269d4f3db3af8b312dec105cdd3af2e16a39c17cbe27ad913e546a96ed1dc7"
+   "sha256": "96635db8c78bf39fd5182aee4bbd2695a80338d8420487c868848bcf250c300e"
   },
   "mensch-L2|gelenk|hip-1": {
-   "sha256": "3a683a850c50057cc41bc9b06741ac2b16d578c41df9f81257b9e54ad8b245b2"
+   "sha256": "9b15fdb169cdf1c8118d68b676eeb67f0a15db2aba58423bbfe3bf44524ed287"
   },
   "mensch-L2|gelenk|knee1": {
-   "sha256": "485659e558f475a5f9f0258aab6ba8af350e569279f8cced89119d9808296e30"
+   "sha256": "6f848a9fda5358c15739df14bcc825188ec4d12dc09a36f61960800f480123f6"
   },
   "mensch-L2|gelenk|knee-1": {
-   "sha256": "83d248b6a8a0075db3068e75b5184e0c3968327d0c3f78f602c0d8fc1c1f4a37"
+   "sha256": "c4b191d68cd89eafea8e8c5ef52f24b8c98db74891c74d943399e0925aeffba7"
   },
   "mensch-L2|gelenk|ankle1": {
-   "sha256": "82e627b05ae985809d0f864e103b966254fa6ada0008c7c31cccbf1b57dab48e"
+   "sha256": "c35b7ff1fcee2173a3f93fdc4e2e6d10f46c918ab9ab68e015008600e6b127fc"
   },
   "mensch-L2|gelenk|ankle-1": {
-   "sha256": "fa64d7a52ffe967afabb56d2ebc300940f06049adde8968ae6ccd84564b3f996"
+   "sha256": "4734bd0021412a1e24d8286521b1121e7d2db6365e9e1dfe0d25ab5933eb7323"
   },
   "mensch-L2|gelenk|irisL": {
    "sha256": "8696863a5b6bb2c681f50059f26c4ec3a046656d9271f6427cb07fe14cae0491"
@@ -1956,13 +1956,13 @@
    "sha256": "13f8c5ff99dd663652a0918e718b343b0c1833b1d9349874be308e97a736a8c9"
   },
   "mensch-L2|beipack": {
-   "sha256": "783eb6e4a3dbba61217dad8be2e4cb7bc24aca87e9cb23f60770d29065ad4b52"
+   "sha256": "7901dd8880332a14e7647cd571222ad54d95abf4338119dfbde631222efc39b6"
   },
   "mensch-L3|leib|mensch": {
    "meshes": 1,
-   "verts": 230,
+   "verts": 232,
    "tris": 360,
-   "sha256": "c97e4bca31d01f0864ffcbd88378b5b67d7114821cde413536b61f6bf3b1842d"
+   "sha256": "88b7f75941d73d33ae6156c44e6345320738240ba31407c6511f51ef1e18e767"
   },
   "mensch-L3|gelenk|mensch": {
    "sha256": "bb95e2730d1cdaf22c266a3abd6c293dd5a259ec39a98c2144136da26b7cff85"
@@ -1992,22 +1992,22 @@
    "sha256": "d98cb700ac7d77519bfccd791dd5c53bee8524322c6cf435c354ad1d5edfb183"
   },
   "mensch-L3|gelenk|hip1": {
-   "sha256": "97269d4f3db3af8b312dec105cdd3af2e16a39c17cbe27ad913e546a96ed1dc7"
+   "sha256": "96635db8c78bf39fd5182aee4bbd2695a80338d8420487c868848bcf250c300e"
   },
   "mensch-L3|gelenk|hip-1": {
-   "sha256": "3a683a850c50057cc41bc9b06741ac2b16d578c41df9f81257b9e54ad8b245b2"
+   "sha256": "9b15fdb169cdf1c8118d68b676eeb67f0a15db2aba58423bbfe3bf44524ed287"
   },
   "mensch-L3|gelenk|knee1": {
-   "sha256": "485659e558f475a5f9f0258aab6ba8af350e569279f8cced89119d9808296e30"
+   "sha256": "6f848a9fda5358c15739df14bcc825188ec4d12dc09a36f61960800f480123f6"
   },
   "mensch-L3|gelenk|knee-1": {
-   "sha256": "83d248b6a8a0075db3068e75b5184e0c3968327d0c3f78f602c0d8fc1c1f4a37"
+   "sha256": "c4b191d68cd89eafea8e8c5ef52f24b8c98db74891c74d943399e0925aeffba7"
   },
   "mensch-L3|gelenk|ankle1": {
-   "sha256": "82e627b05ae985809d0f864e103b966254fa6ada0008c7c31cccbf1b57dab48e"
+   "sha256": "c35b7ff1fcee2173a3f93fdc4e2e6d10f46c918ab9ab68e015008600e6b127fc"
   },
   "mensch-L3|gelenk|ankle-1": {
-   "sha256": "fa64d7a52ffe967afabb56d2ebc300940f06049adde8968ae6ccd84564b3f996"
+   "sha256": "4734bd0021412a1e24d8286521b1121e7d2db6365e9e1dfe0d25ab5933eb7323"
   },
   "mensch-L3|gelenk|irisL": {
    "sha256": "8696863a5b6bb2c681f50059f26c4ec3a046656d9271f6427cb07fe14cae0491"
@@ -2034,7 +2034,7 @@
    "sha256": "13f8c5ff99dd663652a0918e718b343b0c1833b1d9349874be308e97a736a8c9"
   },
   "mensch-L3|beipack": {
-   "sha256": "d4f75806dcbebe6b8c9caf0e5faffb31e6f21118c39d36aca31d96e499176394"
+   "sha256": "ec662bf35b0f8a3046fb0c2814f7f0d24c77820d6d10a50a232fbd60dbd30671"
   }
  }
 }
