@@ -468,10 +468,12 @@ class AnazhRealm_speicher_laden {
                 }
             }
         }
+        this._weltUhrNimm(state.spielZeit); // die Welt-Uhr des Stands (feld.K2#2)
+        // die Stunde des Stands NACH seiner Welt-Uhr: sie gehört zu ihr (der Gang der Uhr läuft an `spielZeit` und ankert hier neu,
+        // `_uhrSetzen`) — davor nähme der Sprung der Welt-Uhr sie noch einmal mit
         if (typeof state.timeOfDay === "number" && state.timeOfDay >= 0 && state.timeOfDay <= 1) {
             this._uhrSetzen(state.timeOfDay, "laden");
         }
-        this._weltUhrNimm(state.spielZeit); // die Welt-Uhr des Stands (feld.K2#2)
         // das Jahr des Stands (speicher.K4): Tönung, Schneegrenze und Pegel folgen ihm im nächsten Takt der Saison (`_tickSeason`)
         if (typeof state.seasonPhase === "number" && state.seasonPhase >= 0 && state.seasonPhase < 1) {
             // der Anker des Jahrs ist der des Stands (`saisonAnker`: Phase und Welt-Uhr als EIN Paar, feld.K2#2, `_saisonAnkerGilt`);

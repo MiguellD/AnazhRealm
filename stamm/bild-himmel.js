@@ -2531,21 +2531,30 @@ class AnazhRealm_bild_himmel {
         pin(this.state.moonMesh);
     }
 
-    // Treibt timeOfDay nach Echtzeit + dayLength; currentTime in Sekunden (performance.now()/1000).
-    // Delta aus _lastDayNightTick, gegen Sprünge (Tab-Wechsel) auf 1.0 s gekappt.
+    // DER TAG LÄUFT AN DER WELT-UHR (licht.K1, w28-nacht-licht): timeOfDay = f(Anker, spielZeit) — der Gang der Uhr liest die
+    // Spielzeit, die seit seinem letzten Schritt verging (`_uhrSpielZeit`, der Anker; jeder andere Schreiber setzt ihn neu,
+    // `_uhrSetzen`), geteilt durch die Tag-Länge. Bis w28-nacht-licht lief er an der Wanduhr (`currentTime`, auf 1 s gekappt), die
+    // Welt am Spiel-Takt (auf `TAKT_DECKEL_S` 0,1 s gekappt): unter 250-ms-Takten lief der Tag 2,5-mal so schnell wie Wetter, Leben
+    // und Wachstum, und ein Sprung der Welt-Uhr (`_weltUhrNimm`, der Stand, der Mitspieler) ließ die Stunde stehen (+900 s → +0,25 s
+    // Tag). Ein Sprung nimmt den Tag jetzt mit, auch über ganze Tage (`_uhrSetzen` zählt sie); `currentTime` drosselt nur die Anzeige.
     tickDayNight(currentTime) {
-        const last = this.state._lastDayNightTick;
-        if (!Number.isFinite(last)) {
-            this.state._lastDayNightTick = currentTime;
+        const st = this.state;
+        const anker = st._uhrSpielZeit;
+        st._uhrSpielZeit = st.spielZeit;
+        if (!Number.isFinite(anker)) {
             this._applyDayNightToScene();
             return;
         }
-        const delta = Math.min(1.0, currentTime - last); // Sekunden, gegen Tab-Sleeps
-        this.state._lastDayNightTick = currentTime;
-        const minutes = this.state.dayLengthMinutes || this.constructor.DAY_LENGTH_DEFAULT_MINUTES;
+        const minutes = st.dayLengthMinutes || this.constructor.DAY_LENGTH_DEFAULT_MINUTES;
         const cycleSeconds = Math.max(60, minutes * 60); // hard-floor 1min
-        const advance = delta / cycleSeconds; // wieviel von 0..1 in delta vergeht
-        this._uhrSetzen((this.state.timeOfDay + advance) % 1, "uhr");
+        const dz = Math.max(0, st.spielZeit - anker);
+        // ein Schritt über eine Sekunde Spielzeit kam nie aus dem Takt des Loops (er trägt höchstens `TAKT_DECKEL_S` je Takt): die
+        // Uhr sprang — der Himmel malt neu, der Licht-Pool wählt zur neuen Stunde (wie bei jedem Schreiber außer dem Gang)
+        if (dz > 1) {
+            this._himmelSprung = true;
+            if (this._leuchtPool) this._leuchtPool.t = -Infinity;
+        }
+        this._uhrSetzen(st.timeOfDay + dz / cycleSeconds, "uhr");
         // Läuft JEDEN Frame, kein Throttle: bei 10 Hz sprang die Beleuchtung in Stufen (ruckelnde Schatten);
         // die Funktion ist billig genug (Color-Lerps + Vector-Copies).
         this._applyDayNightToScene();
@@ -2610,8 +2619,12 @@ class AnazhRealm_bild_himmel {
     // aus seinem Satz, seinem Gesetz, dem Regler) und das Laden („laden") — die Welt nie (`_himmelSchreiber`; sie steht beim
     // Namen im Log). Liefert, ob die Uhr geschrieben wurde. gate:wetter-wache zählt `this.state.timeOfDay =` im Stamm: einmal.
     _uhrSetzen(t, quelle) {
-        const v = Number(t);
+        let v = Number(t);
         if (!Number.isFinite(v)) return false;
+        // der Gang reicht die Uhr UNGEFALTET (`tickDayNight`: Stunde + vergangene Tag-Bruchteile, ein Sprung der Welt-Uhr auch über
+        // ganze Tage): die ganzen Tage zählt hier der Tag der Welt, die Uhr trägt den Rest
+        const ganz = quelle === "uhr" && v >= 1 ? Math.floor(v) : 0;
+        v -= ganz;
         if (this._himmelSchreiber(quelle, "uhr") === "welt") {
             this.log(
                 `Uhr gehalten: ${quelle || "?"} wollte ${this._timeOfDayLabel(v)} — die Uhr gehört dem Spieler`,
@@ -2632,7 +2645,13 @@ class AnazhRealm_bild_himmel {
         const d = v - this.state.timeOfDay;
         const wm = this.state.worldMeta;
         const tag0 = wm ? wm.tag || 0 : 0;
-        if (quelle !== "laden" && wm && Math.abs(d) > 0.5) wm.tag = (wm.tag || 0) + (d < 0 ? 1 : -1);
+        if (quelle === "uhr") {
+            if (wm && ganz) wm.tag = tag0 + ganz;
+        } else {
+            if (quelle !== "laden" && wm && Math.abs(d) > 0.5) wm.tag = (wm.tag || 0) + (d < 0 ? 1 : -1);
+            // ein Schreiber außer dem Gang stellt die Stunde zur Welt-Uhr von JETZT: der Anker des Gangs (`tickDayNight`) folgt ihm
+            this.state._uhrSpielZeit = this.state.spielZeit;
+        }
         // DIE NÄSSE-DOSIS DER WELT (stoffe.K4, `_werkAlter`): je Spielzeit, die die Uhr vorwärts geht, der Regen des Wetter-Felds
         // des Worts (`WEATHER_FIELD[weather].rain` — der Übergang ist Bild, das Wort ist das Wetter) × die Tage, aufsummiert im
         // worldMeta (`nassTage`, reist im Stand) — ein Schreib-Akt der Uhr, nie Wanduhr; der Sprung zurück und das Laden zählen nicht
