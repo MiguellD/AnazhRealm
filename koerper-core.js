@@ -3368,17 +3368,29 @@
             // von früh bis spät am Steuer — sein Werk ist der Platz seines Wagens, das Mittag fährt er durch; DER NACHTFAHRER
             // lebt denselben Tag um `versatzH` Stunden versetzt (am Steuer von 19 bis 7 Uhr: der Wagen der Stadt fährt bei Tag
             // und bei Nacht, am Platz wechselt die Schicht)
-            fahrer: Object.freeze({ werk: Object.freeze([7, 19]), mittagAmWerk: true }),
-            nachtfahrer: Object.freeze({ werk: Object.freeze([7, 19]), mittagAmWerk: true, versatzH: 12 }),
+            fahrer: Object.freeze({ werk: Object.freeze([7, 19]), mittagAmWerk: true, haltung: false }),
+            nachtfahrer: Object.freeze({ werk: Object.freeze([7, 19]), mittagAmWerk: true, versatzH: 12, haltung: false }),
             // DIE WACHE (PFLICHT-OFFEN A, der Prüfplatz): wer am Platz Wache steht (der Wirt gibt die Rolle zwei Bewohnern, wie
             // dem Fahrer), steht von 6 bis 20 Uhr an seinem Punkt — sein Werk und sein Platz sind der Wache-Punkt, das Mittag hält
             // er durch; DER NACHTWÄCHTER lebt denselben Tag um `versatzH` Stunden versetzt (18 bis 8 Uhr) — zu jeder Stunde steht
             // einer draußen, auch um Mitternacht, wenn jeder andere drinnen schläft (`ruhe`)
-            waechter: Object.freeze({ werk: Object.freeze([6, 20]), mittagAmWerk: true }),
-            nachtwaechter: Object.freeze({ werk: Object.freeze([6, 20]), mittagAmWerk: true, versatzH: 12 }),
+            waechter: Object.freeze({ werk: Object.freeze([6, 20]), mittagAmWerk: true, haltung: false }),
+            nachtwaechter: Object.freeze({ werk: Object.freeze([6, 20]), mittagAmWerk: true, versatzH: 12, haltung: false }),
         }),
+        // DAS VERB DES LEIBS (w28-mensch-menge; Leser: der Wirt `_bewohnerGemuet` → die EINE Emotions-Brücke, gate:koerper-kern
+        // VERB): je Akt des Tags (`tagesPlan`) die Haltung, in der sein Leib steht — ein Profil der Bewegung (MOTION): bei der
+        // Arbeit über das Werk gebeugt, in der Pause und beim Besuch offen, am Abend müde; der Morgen und jede Rolle mit
+        // `haltung: false` (die Wache, der Fahrer am Steuer) stehen neutral. Bis hier schrieb der Wirt den Akt und las ihn nie:
+        // jeder Bewohner stand zu jeder Stunde in derselben Haltung.
+        haltung: Object.freeze({ arbeit: "pwalk", mittag: "showcase", besuch: "showcase", abend: "sad" }),
         berufe: Object.freeze({ markt: 0.35, feld: 0.3, hof: 0.35 }),
     });
+    // DIE HALTUNG ZUM AKT (TAGES_GESETZ.haltung): der Name des Profils der Bewegung oder null (neutral)
+    function tagesHaltung(akt, rolle) {
+        var R = TAGES_GESETZ.rollen[rolle],
+            h = R && R.haltung === false ? null : TAGES_GESETZ.haltung[akt];
+        return h && MOTION[h] ? h : null;
+    }
     // die Zahl des Samens zu einem Wort: [0, 1), rein (der Same ist eine ganze Zahl, das Wort benennt die Wende)
     function _tagZahl(same, wort) {
         var h = ((same >>> 0) ^ 0x9e3779b9) >>> 0;
@@ -7612,6 +7624,7 @@
         TAGES_GESETZ: TAGES_GESETZ,
         berufVon: berufVon,
         tagesPlan: tagesPlan,
+        tagesHaltung: tagesHaltung,
         // Die Lab-Quellen (die Shell liest DIESE eine Quelle — Aliasse):
         START_PARAMS: START_PARAMS,
         MOTION: MOTION,
