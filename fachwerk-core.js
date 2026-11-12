@@ -4475,6 +4475,9 @@
             let frei2=true;
             for(const u of [-0.5,-0.25,0,0.25,0.5]) for(const v of [-0.5,0,0.5]){ const lx=u*V.parkL, lz=v*V.parkB, px=x+tx*lx-tz*lz, pz=z+tz*lx+tx*lz;
               if(zuP(px,pz)||amWeg(px,pz,V.halbM)||nahStrecke(px,pz,einB,V.halbM)||nahStrecke(px,pz,ausB,V.halbM)||nahStrecke(px,pz,reinB,g2)||nahStrecke(px,pz,rausB,g2)) frei2=false; }
+            /*DER STAND DES FAHRERS NEBEN DEM PLATZ IST FREI (w28-stadt-grammatik): aussen am Platz (eine Wagenbreite `parkB` vom Platz fort vom Ring — dort steht sein Fahrer, der Wirt `_verkehrAnlegen`) liegt kein Grundriss und keine Spur der Trasse, auch nicht ihr Stueck zwischen Abzweig und Ende (`rein`, `raus` ganz). Bis hier pruefte der Platz nur sich selbst und die Spuren bis zum Abzweig: an stadt-voll lag der Stand am ersten Platz der Suedwest-Wende (734,3/571,6) 2 m neben dem Ende der Trasse in ihrer Spur — der Wirt rueckte ihn, und bis dahin fand der Fahrer #133030 von seinem Morgen her keinen Weg zu ihm (er stand um 10 Uhr 149 m fern am Markt, gate:fahr-leben VK-V trennte sich in Bild 0)*/
+            if(frei2) for(const u of [-0.25,0,0.25]){ const px=x+Math.cos(b)*V.parkB+tx*u*V.parkL, pz=z+Math.sin(b)*V.parkB+tz*u*V.parkL;
+              if(zuP(px,pz)||nahStrecke(px,pz,rein,g2)||nahStrecke(px,pz,raus,g2)||nahStrecke(px,pz,einB,V.halbM)||nahStrecke(px,pz,ausB,V.halbM)) frei2=false; }
             if(frei2) plaetze.push({x, z, beta:b, fahrt:Math.atan2(tx,tz)}); }
           // DIE BEGEGNUNG (`engen`): wo die Bahn hinein und die Bahn heraus einander näher kommen als zwei halbe Wagen samt dem
           // Ausscheren im Bogen — der starre Wagen schert um (parkL/2)²/(2·R) nach AUSSEN, also nur zur Bahn hin, die außerhalb
