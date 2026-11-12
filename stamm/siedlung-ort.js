@@ -784,7 +784,7 @@ class AnazhRealm_siedlung_ort {
             .map((q) => ({ x: S.ox + q.obb.cx, z: S.oz + q.obb.cz, r: Math.min(q.obb.ex, q.obb.ez), obb: q.obb }));
         // DIE REGEL „trasse" (w28-verkehr-bild, PFLICHT-OFFEN C: der Verkehr im Bild): je Wagen in Fahrt der Punkt seiner Route
         // `trasseM` voraus; der dem Auge (dem Spieler, sonst dem Stand) nächste trägt den Stand — der erste Punkt quer zur Route
-        // außer jeder Spur, 3 m vor jedem Grundriss (näher füllte die Fassade den Vordergrund: 24–36 % näher als 8 m) und 1,5 m neben jedem Baum, Stand, Brunnen und jeder Laterne des
+        // außer jeder Spur, `trasseRandM` vor jedem Grundriss (näher füllte die Fassade den Vordergrund: 24–36 % näher als 8 m) und 1,5 m neben jedem Baum, Stand, Brunnen und jeder Laterne des
         // Plans —, der Blick zurück auf den Wagen: er fährt dem Auge entgegen, sein Fahrer am Steuer. Die Kegel sahen nie über
         // eine Fahrbahn: „kein fahrzeug im Bild" 3/3
         const voraus = (w) => {
@@ -795,9 +795,9 @@ class AnazhRealm_siedlung_ort {
             const t = Math.max(0, Math.min(1, (s - F.bogen[i]) / (F.bogen[i + 1] - F.bogen[i] || 1)));
             return { x: a.x + (b.x - a.x) * t, z: a.z + (b.z - a.z) * t, dx: b.x - a.x, dz: b.z - a.z };
         };
-        const A = (this.state.playerMesh || { position: M }).position;
+        const [A, V] = [(this.state.playerMesh || { position: M }).position, AnazhRealm.VERKEHR];
         const kandidaten = regel !== "trasse" || !S.verkehr ? [] : S.verkehr.wagen.filter((w) => w.zustand === "faehrt" && w.F && w.entry && w.F.pts.length > 1).map((w) => [w, voraus(w)]).sort(([, a], [, b]) => Math.hypot(a.x - A.x, a.z - A.z) - Math.hypot(b.x - A.x, b.z - A.z)); // prettier-ignore
-        const steht = (q) => [...(p.trees || []), ...(p.staende || []), ...(p.brunnen || []), ...(p.laternen || [])].some((t) => Math.hypot(S.ox + t.x - q.x, S.oz + t.z - q.z) < 1.5) || bau.some(({ x, z, obb: o }) => { const [c, s, dx, dz] = [Math.cos(o.phi || 0), Math.sin(o.phi || 0), q.x - x, q.z - z]; return Math.abs(dx * c - dz * s) < o.ex + 3 && Math.abs(dx * s + dz * c) < o.ez + 3; }); // prettier-ignore
+        const steht = (q) => [...(p.trees || []), ...(p.staende || []), ...(p.brunnen || []), ...(p.laternen || [])].some((t) => Math.hypot(S.ox + t.x - q.x, S.oz + t.z - q.z) < 1.5) || bau.some(({ x, z, obb: o }) => { const [c, s, dx, dz] = [Math.cos(o.phi || 0), Math.sin(o.phi || 0), q.x - x, q.z - z]; return Math.abs(dx * c - dz * s) < o.ex + V.trasseRandM && Math.abs(dx * s + dz * c) < o.ez + V.trasseRandM; }); // prettier-ignore
         for (const [W, a] of kandidaten)
             for (let o = 2; o <= 12; o += 0.25) {
                 const [e, l] = [W.entry.position, Math.hypot(a.dx, a.dz) || 1];
