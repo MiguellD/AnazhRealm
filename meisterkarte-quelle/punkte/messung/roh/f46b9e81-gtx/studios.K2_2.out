@@ -1,0 +1,305 @@
+$ C:\Program Files\nodejs\node.exe -e const H = (function sitzungWerkzeug() {
+    const fs = require("fs");
+    const path = require("path");
+    const os = require("os");
+    const http = require("http");
+    const S = Number(process.argv[1]);
+    const W = S + 20000;
+    const H = { S, W, AUS: process.argv[2], FRIST_S: Number(process.argv[3]) - 6, t0: Date.now(), fs, path, teil: undefined };
+    if (!(H.FRIST_S > 0)) {
+        console.log("@@ PROBE-FEHLER der Deckel des Laufs fehlt (argv „" + process.argv[3] + "“: der Läufer ersetzt den Platzhalter SEK)");
+        process.exit(2);
+    }
+    // DIE MARKE der gerissenen Frist (punkte.cjs FRIST_MARKE), EINMAL je Probe: am Deckel der Frist (H.fahre) oder wo die Probe selbst
+    // Fälle an ihr auslässt
+    H.fristRiss = (was) => {
+        if (H.gerissen) return;
+        H.gerissen = was;
+        console.log("@@PUNKTE@@ FRIST " + H.FRIST_S + " s der Probe gerissen — " + was);
+    };
+    const abbau = [];
+    H.url = "http://localhost:" + S + "/index.html";
+    H.sek = () => +((Date.now() - H.t0) / 1000).toFixed(1);
+    H.rest = () => H.FRIST_S - (Date.now() - H.t0) / 1000;
+    H.schlaf = (ms) => new Promise((r) => setTimeout(r, ms));
+    H.zeile = (t) => console.log("@@ " + H.sek() + " s · " + t);
+    H.beimAbbau = (f) => abbau.push(f);
+    // höchstens ms warten: der Wert oder `ersatz` — ein Wurf des Wartenden (auch nach der Frist, etwa die Seite, die neu lädt) steht
+    // beim Namen in der Ausgabe, nie als unbehandelte Ablehnung, die die Probe risse
+    H.binnen = (p, ms, ersatz = null) =>
+        Promise.race([
+            Promise.resolve(p).catch((e) => (console.log("@@ " + H.sek() + " s · gewartet, geworfen: " + String((e && e.message) || e).split("\n")[0]), ersatz)),
+            H.schlaf(Math.max(0, ms)).then(() => ersatz),
+        ]);
+    // DER MESSORT (punkte.cjs keinUrteil (d)): ein Wurf der Wege, die Ort und Seite stellen (/umstellen, /fenster, /status, /reload), der
+    // Anschluss an den Browser der Sitzung und die Grundstellung tragen `messort` — erreicht er den Rand der Probe (H.fahre), sagt sie
+    // die EINE Marke
+    const MESSORT_WEG = /^\/(umstellen|fenster|status|reload)\b/;
+    H.messort = (e, weg) => {
+        const t = e && typeof e === "object" ? String(e.message || e).replace(/\s+/g, " ") : "";
+        if ((!weg || MESSORT_WEG.test(weg)) && t && !e.messort) e.messort = (!weg || t.startsWith(weg) ? "" : weg + ": ") + t.slice(0, 280);
+        return e;
+    };
+    // DIE WERKBANK der Sitzung (POST mit Frist)
+    H.wb = (weg, nutz, ms = 120000) =>
+        new Promise((ja, nein0) => {
+            const nein = (e) => nein0(H.messort(e, weg));
+            const q = http.request({ host: "127.0.0.1", port: W, path: weg, method: "POST", agent: false, headers: { "Content-Type": "application/json" } }, (r) => {
+                let d = "";
+                r.on("data", (c) => (d += c));
+                r.on("end", () => {
+                    try {
+                        ja(JSON.parse(d));
+                    } catch (_e) {
+                        nein(new Error(weg + ": " + d.slice(0, 200)));
+                    }
+                });
+            });
+            q.setTimeout(Math.max(1000, ms), () => q.destroy(new Error(weg + " ohne Antwort binnen " + Math.round(ms / 1000) + " s")));
+            q.on("error", nein);
+            q.end(JSON.stringify(nutz || {}));
+        });
+    // ein Funktionsrumpf in der Seite der Welt (r = Welt, T = THREE), wie `werkbank eval`
+    H.evalWelt = async (code, ms) => {
+        const a = await H.wb("/eval", { code }, ms);
+        if (!a || a.fehler) throw new Error("werkbank eval: " + (a && a.fehler) + " " + JSON.stringify((a && a.stapel) || []));
+        return a.ergebnis;
+    };
+    // eine frische Welt in der Sitzung (die Grundstellung der Maschine: Spielstand weg, die Seite neu)
+    H.grundstellung = () => {
+        const p = require("child_process").spawnSync(process.execPath, [process.env.PUNKTE_MASCHINE, "grundstellung"], {
+            encoding: "utf8",
+            env: process.env,
+            timeout: 240000,
+        });
+        if (p.status !== 0) throw H.messort(new Error("grundstellung: " + String((p.stdout || "") + (p.stderr || "")).trim().split(/\r?\n/).slice(-2).join(" | ")));
+    };
+    // DER BROWSER DER SITZUNG
+    H.verbinde = async () => {
+        const pp = require("puppeteer");
+        // DER ANSCHLUSS ÜBER /status (die EINE Quelle, wie proben-welt tor.seite): die Werkbank nennt das Profil ihres Browsers —
+        // bis z216 suchte die Probe werkbank-profil-<W>-* im tmp, seit w11-profil-leck trägt der Starter ein Scratch-Profil
+        const st = await H.wb("/status", {}, 30000);
+        const profil = st && st.boot && st.boot.profil;
+        const kand = [profil && path.join(profil, "DevToolsActivePort")].filter((f) => f && fs.existsSync(f));
+        const fehl = [];
+        for (const f of kand) {
+            const [port, weg] = fs.readFileSync(f, "utf8").split(/\r?\n/);
+            let b = null;
+            try {
+                b = await pp.connect({ browserWSEndpoint: "ws://127.0.0.1:" + port + weg, defaultViewport: null, protocolTimeout: 600000 });
+                const seiten = await b.pages();
+                const page = seiten.find((p) => p.url().startsWith("http://localhost:" + S + "/"));
+                if (!page) throw new Error("keine Seite der Welt (" + seiten.map((p) => p.url()).join(" ") + ")");
+                const vorher = new Set(seiten);
+                // die souveräne Geste (window.confirm des Teilens, ein Dialog beim Verlassen) nimmt die Probe an — die Werkbank hört keinen
+                const ja = (d) => d.accept().catch(() => {});
+                page.on("dialog", ja);
+                H.beimAbbau(async () => {
+                    page.off("dialog", ja);
+                    await page.keyboard.up("KeyW").catch(() => {});
+                    for (const p of await b.pages().catch(() => [])) if (!vorher.has(p)) await p.close().catch(() => {});
+                    await page.bringToFront().catch(() => {});
+                    await b.disconnect();
+                });
+                Object.assign(H, { browser: b, page });
+                return { browser: b, page };
+            } catch (e) {
+                fehl.push(path.basename(path.dirname(f)) + ": " + e.message);
+                if (b) await b.disconnect().catch(() => {});
+            }
+        }
+        throw H.messort(new Error("kein Browser der Sitzung an :" + W + " (" + (fehl.join(" · ") || (profil ? "kein DevToolsActivePort in " + profil : "/status nennt kein Profil der Werkbank")) + ")"));
+    };
+    // DIE LINSE ALS BIBLIOTHEK
+    H.linse = (datei, namen, { argv = [], ersetze = [], stumm = {} } = {}) => {
+        const Module = require("module");
+        const f = path.resolve(datei);
+        let text = fs.readFileSync(f, "utf8").replace(/\r\n/g, "\n"); // die Anker in LF, wie auch immer der Baum auscheckt
+        for (const [alt, neu] of ersetze) {
+            const n = text.split(alt).length - 1;
+            if (n !== 1) throw new Error(datei + ": der Anker „" + alt.slice(0, 70) + "“ steht " + n + "× im Text (Soll 1) — die Linse änderte sich");
+            text = text.replace(alt, () => neu);
+        }
+        const wbt = require(path.resolve("scripts/lib/welt-boot.cjs"));
+        const ersatz = Object.assign({ hauptLauf: () => {} }, stumm);
+        const alt = Object.fromEntries(Object.keys(ersatz).map((k) => [k, wbt[k]]));
+        const av = process.argv;
+        Object.assign(wbt, ersatz);
+        process.argv = [av[0], f, ...argv];
+        try {
+            const m = new Module(f, module);
+            m.filename = f;
+            m.paths = Module._nodeModulePaths(path.dirname(f));
+            m._compile(text + "\n;module.exports = { " + namen.join(", ") + " };\n", f);
+            return m.exports;
+        } finally {
+            Object.assign(wbt, alt);
+            process.argv = av;
+        }
+    };
+    // DER EREIGNIS-STROM jeder Eingabe des Spielers (pointerdown · keydown · wheel, vor jedem Hörer der Seite) — wie die Linse
+    // diag-werkstatt-weg ihn je Seite anlegt; in einer schon geladenen Seite einmal
+    H.ereignisStrom = (page) =>
+        page.evaluate(() => {
+            if (window.__eingabeStrom) return;
+            const strom = (window.__eingabeStrom = []);
+            for (const typ of ["pointerdown", "keydown", "wheel"])
+                window.addEventListener(typ, (e) => strom.push({ was: typ === "keydown" ? e.code : typ === "wheel" ? "Rad" : "Klick", echt: e.isTrusted, t: performance.now() }), {
+                    capture: true,
+                    passive: true,
+                });
+        });
+    // DIE SEITE NEU im warmen Browser: warm der Zweit-Boot (nur die Seite neu: Platte, HTTP- und Shader-Cache bleiben), kalt vorher
+    // die Herkunft leer — IndexedDB (Welten, Platte, Chunk-Netze), localStorage, Cache- und Shader-Speicher — samt HTTP-Cache des
+    // Browsers und der Stand-Dateien des save-servers (Pflicht-OFFEN B: „IDB geleert, wie nach jedem Versions-Update"). Rückgabe
+    // die Uhr ab der Navigation (die Kontrolle von außen zählt ab ihr).
+    H.lade = async (page, { kalt = false } = {}) => {
+        if (kalt) {
+            const herkunft = "http://localhost:" + S;
+            await page.goto("about:blank", { waitUntil: "load", timeout: 60000 });
+            const c = await page.target().createCDPSession();
+            try {
+                await c.send("Storage.clearDataForOrigin", { origin: herkunft, storageTypes: "all" });
+                await c.send("Network.clearBrowserCache");
+            } finally {
+                await c.detach().catch(() => {});
+            }
+            for (const d of ["anazhRealmState.json", "anazhRealmState.json.bak", "anazhRealmPerf.json"]) fs.rmSync(d, { force: true });
+        }
+        const t0 = Date.now();
+        await page.goto(H.url, { waitUntil: "domcontentloaded", timeout: 120000 });
+        return t0;
+    };
+    // DER LAUF der Probe: ihr Ergebnis ist das JSON der Ausgabe; die Frist (H.FRIST_S) baut ab und schreibt den Stand `H.teil`
+    H.fahre = (fn) => {
+        let fertig = false;
+        const ende = async (code, j) => {
+            if (fertig) return;
+            fertig = true;
+            clearTimeout(uhr);
+            if (j !== undefined)
+                try {
+                    fs.writeFileSync(H.AUS, JSON.stringify(j));
+                } catch (e) {
+                    console.log("@@ Ausgabe: " + e.message);
+                }
+            for (const f of abbau.reverse()) await H.binnen(Promise.resolve().then(f).catch((e) => console.log("@@ Abbau: " + e.message)), 15000);
+            process.exit(code);
+        };
+        const uhr = setTimeout(() => {
+            H.fristRiss("Abbau, die Ausgabe trägt den Stand bis hier");
+            ende(3, H.teil);
+        }, H.FRIST_S * 1000);
+        Promise.resolve()
+            .then(() => fn(H))
+            .then(
+                (j) => ende(0, j),
+                (e) => {
+                    if (e && e.messort) console.log("@@PUNKTE@@ MESSORT " + e.messort);
+                    console.log("@@ PROBE-FEHLER " + String((e && e.stack) || e).split("\n").slice(0, 5).join(" | "));
+                    ende(2, H.teil);
+                }
+            );
+    };
+    return H;
+})();
+H.seite = {
+
+};
+H.fahre(async function probeStudios(H) {
+    const { page, browser } = await H.verbinde();
+    const adapter = await page.evaluate(async () => {
+        const a = navigator.gpu && (await navigator.gpu.requestAdapter());
+        const i = (a && a.info) || {};
+        return a ? { vendor: i.vendor || "?", architecture: i.architecture || "?" } : { fehlt: "kein Adapter" };
+    });
+    const server = {
+        lausche: async () => server,
+        zeige: (seite, frist, rest = "index.html", warte = "domcontentloaded") =>
+            seite.goto("http://localhost:" + H.S + "/" + rest, { waitUntil: warte, timeout: frist }),
+        close: () => {},
+    };
+    // jede Seite im Fenster der Linse (starteBrowser ohne viewport: puppeteer 800 × 600) — die Zeit je Griff hängt an der Fläche.
+    // Je Studio zwei Seiten (der Besuch, das Neuladen), jede mit der Uhr der Probe: die Sekunden je Studio stehen zwischen den
+    // ⏱-Zeilen (swiftshader 6a571e3b: fachwerk 45,5 s, koerperstudio 54,9 s von 161 s — ihr Neubau 2,9–4,1 s je Griff)
+    const neueSeite = async () => {
+        H.zeile("neue Seite der Linse");
+        const p = await browser.newPage();
+        await p.setViewport({ width: 800, height: 600 });
+        return p;
+    };
+    const derSitzung = { newPage: neueSeite, close: async () => {}, adapter };
+    const L = H.linse("scripts/diag-studio-huelle.cjs", ["gang", "GRIFFE"], {
+        argv: ["--engine"],
+        stumm: { statikServer: () => server, starteBrowser: async () => derSitzung },
+        ersetze: [
+            ['const NEBENWELTEN = ["skeleton", "fluid", "translated"];', "const NEBENWELTEN = [];"],
+            ["const GRIFFE = 20;", "const GRIFFE = 5;"],
+        ],
+    });
+    await L.gang();
+    return { griffe: L.GRIFFE, adapter };
+}); 7804 C:\Users\micha\Desktop\AnazhRealm-OMEN\n0611-pm\meisterkarte-quelle\punkte\messung\roh\f46b9e81-gtx\studios.K2_2.json 1757
+=== H7 DIE SITZUNG — Saat 740400, die Zeit geurteilt (Karte)
+@@ 0.4 s · neue Seite der Linse
+@@ 5.7 s · neue Seite der Linse
+  ⏱ garage         Griff → Bild p95 Gesetz-Wert – ms · Neubau 457 ms · 5 Griffe mit Bild · Neuladen 15/15
+  garage          19 Anfragen · r184 WebGPU · Schieber 2.9 → 3.4, Strg+Z → 2.9, Strg+Umschalt+Z → 3.4, Strg+Z → 2.9, Strg+Y → 3.4, A → 2.9, B → 3.4 · Kosten [{"stufe":"0","leiste":"28424","deckel":"32000","befehle":"328","vram":"1203328","gezeichnet":"28424","befehleGezeichnet":"328","werk":"vehicle gt","werkBuehne":"4.89,1.31,2.05","werkWelt":"4.89,1.31,2.05","vramGpu":"1203328","vramDeckel":"5822681","msDeckel":"0.9635","ms":"0.0236","bank":"6.155","bankCpu":"2.4763","fertig":"1"},{"stufe":"1","leiste":"9808","deckel":"10600","befehle":"328","vram":"535392","gezeichnet":"9808","befehleGezeichnet":"328","vramGpu":"535392","vramDeckel":"1928763","msDeckel":"0.8029","ms":"0.0236","bank":"3.3846","bankCpu":"3.1667","fertig":"1"}]
+@@ 7.3 s · neue Seite der Linse
+@@ 9.9 s · neue Seite der Linse
+  ⏱ schmiede       Griff → Bild p95 Gesetz-Wert – ms · Neubau 40 ms · 5 Griffe mit Bild · Neuladen 11/11
+  schmiede        17 Anfragen · r184 WebGPU · Schieber 0.95 → 1.25, Strg+Z → 0.95, Strg+Umschalt+Z → 1.25, Strg+Z → 0.95, Strg+Y → 1.25, A → 0.95, B → 1.25 · Kosten [{"stufe":"0","leiste":"18824","deckel":"22000","befehle":"18","vram":"575196","gezeichnet":"18824","befehleGezeichnet":"18","werk":"weapon langschwert","werkBuehne":"1.23,0.24,0.05","werkWelt":"1.23,0.24,0.05","vramGpu":"575196","vramDeckel":"4003093","msDeckel":"0.5403","ms":"0.0051","bank":"0.6783","bankCpu":"0.2792","fertig":"1"}]
+@@ 10.3 s · neue Seite der Linse
+@@ 17 s · neue Seite der Linse
+  ⏱ portale        Griff → Bild p95 Gesetz-Wert 14 ms · Neubau 278 ms · 5 Griffe mit Bild · Neuladen 29/29
+  portale         16 Anfragen · fremd /worlds/terrain/lib/three-r128.min.js /worlds/terrain/lib/OrbitControls.js /worlds/terrain/lib/CopyShader.js /worlds/terrain/lib/LuminosityHighPassShader.js /worlds/terrain/lib/FXAAShader.js /worlds/terrain/lib/EffectComposer.js /worlds/terrain/lib/RenderPass.js /worlds/terrain/lib/MaskPass.js /worlds/terrain/lib/ShaderPass.js /worlds/terrain/lib/UnrealBloomPass.js · Schieber 0.95 → 1, Strg+Z → 0.95, Strg+Umschalt+Z → 1, Strg+Z → 0.95, Strg+Y → 1, A → 0.95, B → 1 · Kosten [{"stufe":"0","leiste":"18702","deckel":"76000","befehle":"517","vram":"923028","gezeichnet":"18702","befehleGezeichnet":"517","werk":"gate kathedrale","werkBuehne":"8.39,9.69,8.39","werkWelt":"8.39,9.69,8.39","vramGpu":"923028","ms":"1.6732","bank":"1.7688","bankCpu":"1.6021","vramDeckel":"13828867","msDeckel":"1.8665","fertig":"1"},{"stufe":"1","leiste":"6446","deckel":"34000","befehle":"357","vram":"374164","gezeichnet":"6446","befehleGezeichnet":"357","vramGpu":"374164","vramDeckel":"6186598","msDeckel":"0.835","ms":"0.939","bank":"1.1246","bankCpu":"1.0046","fertig":"1"},{"stufe":"2","leiste":"2738","deckel":"12500","befehle":"132","vram":"142764","gezeichnet":"2738","befehleGezeichnet":"132","vramGpu":"142764","vramDeckel":"2274485","msDeckel":"0.4817","ms":"0.3011","bank":"0.5087","bankCpu":"0.4383","fertig":"1"},{"stufe":"3","leiste":"7488","deckel":"12000","befehle":"1","vram":"275616","gezeichnet":"7488","befehleGezeichnet":"1","vramGpu":"275616","vramDeckel":"2183505","msDeckel":"0.2947","ms":"0.001","bank":"0.0617","bankCpu":"0.0167","fertig":"1"}]
+@@ 18.1 s · neue Seite der Linse
+@@ 20.9 s · neue Seite der Linse
+  ⏱ klang          Griff → Bild p95 Gesetz-Wert 11 ms · Neubau – ms · 5 Griffe mit Bild · Neuladen 7/7
+  klang            5 Anfragen · ohne three · Schieber 0.72 → 1, Strg+Z → 0.72, Strg+Umschalt+Z → 1, Strg+Z → 0.72, Strg+Y → 1, A → 0.72, B → 1 · Kosten [{"stufe":"wiese","audio":"0.1102","audioDeckel":"2.6667","stimmen":"3","fertig":"1"},{"stufe":"seeufer","audio":"0.0677","audioDeckel":"2.6667","stimmen":"4","fertig":"1"},{"stufe":"wald","audio":"0.0630","audioDeckel":"2.6667","stimmen":"3","fertig":"1"},{"stufe":"dorf","audio":"0.0557","audioDeckel":"2.6667","stimmen":"4","fertig":"1"},{"stufe":"glutArm","audio":"0.0456","audioDeckel":"2.6667","stimmen":"4","fertig":"1"},{"stufe":"fallArm","audio":"0.0545","audioDeckel":"2.6667","stimmen":"4","fertig":"1"},{"stufe":"sturm","audio":"0.0424","audioDeckel":"2.6667","stimmen":"3","fertig":"1"},{"stufe":"nacht","audio":"0.0461","audioDeckel":"2.6667","stimmen":"3","fertig":"1"}]
+@@ 21.5 s · neue Seite der Linse
+@@ 34 s · neue Seite der Linse
+  ⏱ fachwerk       Griff → Bild p95 Gesetz-Wert – ms · Neubau 816 ms · 5 Griffe mit Bild · Neuladen 28/28
+  fachwerk        10 Anfragen · fremd /worlds/terrain/lib/three-r128.min.js · Schieber 1500 → 2025, Strg+Z → 1500, Strg+Umschalt+Z → 2025, Strg+Z → 1500, Strg+Y → 2025, A → 1500, B → 2025 · Kosten [{"stufe":"0","leiste":"94454","deckel":"132000","befehle":"16","vram":"9218004","gezeichnet":"94454","befehleGezeichnet":"16","werk":"haus viktorianisch","werkBuehne":"11.16,13.93,11.48","werkWelt":"11.16,13.93,11.48","vramGpu":"9218004","ms":"0.0338","bank":"0.18","bankCpu":"0.0971","vramDeckel":"24018558","msDeckel":"3.2418","fertig":"1"},{"stufe":"1","leiste":"18062","deckel":"44000","befehle":"10","vram":"1726956","gezeichnet":"18062","befehleGezeichnet":"10","vramGpu":"1726956","vramDeckel":"8006186","msDeckel":"1.0806","ms":"0.0051","bank":"0.1712","bankCpu":"0.0796","fertig":"1"},{"stufe":"2","leiste":"1382","deckel":"7000","befehle":"8","vram":"130788","gezeichnet":"1382","befehleGezeichnet":"8","vramGpu":"130788","vramDeckel":"1273711","msDeckel":"0.3212","ms":"0","bank":"0.095","bankCpu":"0.0421","fertig":"1"},{"stufe":"3","leiste":"94","deckel":"96","befehle":"1","vram":"10164","gezeichnet":"94","befehleGezeichnet":"1","vramGpu":"10164","vramDeckel":"17468","msDeckel":"0.0803","ms":"0","bank":"0.0704","bankCpu":"0.0183","fertig":"1"}]
+@@ 37.8 s · neue Seite der Linse
+@@ 89.4 s · neue Seite der Linse
+  ⏱ koerperstudio  Griff → Bild p95 Gesetz-Wert – ms · Neubau 3746 ms · 5 Griffe mit Bild · Neuladen 8/8
+  koerperstudio   19 Anfragen · fremd /worlds/terrain/lib/three-r128.min.js /worlds/terrain/lib/OrbitControls.js /worlds/terrain/lib/CopyShader.js /worlds/terrain/lib/LuminosityHighPassShader.js /worlds/terrain/lib/FXAAShader.js /worlds/terrain/lib/EffectComposer.js /worlds/terrain/lib/RenderPass.js /worlds/terrain/lib/MaskPass.js /worlds/terrain/lib/ShaderPass.js /worlds/terrain/lib/UnrealBloomPass.js · Schieber 1 → 1.15, Strg+Z → 1, Strg+Umschalt+Z → 1.15, Strg+Z → 1, Strg+Y → 1.15, A → 1, B → 1.15 · Kosten [{"stufe":"0","leiste":"39767","deckel":"40000","befehle":"18","vram":"1694416","gezeichnet":"39767","befehleGezeichnet":"18","vramGpu":"1694416","ms":"0.0079","bank":"0.5129","bankCpu":"0.1567","vramDeckel":"7278351","msDeckel":"0.9824","fertig":"1"},{"stufe":"1","leiste":"13996","deckel":"14000","befehle":"12","vram":"743472","gezeichnet":"13996","befehleGezeichnet":"12","vramGpu":"743472","vramDeckel":"2547423","msDeckel":"0.4817","ms":"0.002","bank":"0.3471","bankCpu":"0.0946","fertig":"1"},{"stufe":"2","leiste":"1700","deckel":"1700","befehle":"1","vram":"89808","gezeichnet":"1700","befehleGezeichnet":"1","vramGpu":"89808","vramDeckel":"309330","msDeckel":"0.0803","ms":"0","bank":"0.1604","bankCpu":"0.0212","fertig":"1"},{"stufe":"3","leiste":"360","deckel":"360","befehle":"1","vram":"20664","gezeichnet":"360","befehleGezeichnet":"1","vramGpu":"20664","vramDeckel":"65505","msDeckel":"0.0803","ms":"0","bank":"0.0683","bankCpu":"0.0208","fertig":"1"}]
+@@ 100.2 s · neue Seite der Linse
+@@ 113.3 s · neue Seite der Linse
+  ⏱ tetrapoda      Griff → Bild p95 Gesetz-Wert – ms · Neubau 815 ms · 5 Griffe mit Bild · Neuladen 5/5
+  tetrapoda       18 Anfragen · fremd /worlds/terrain/lib/three-r128.min.js /worlds/terrain/lib/OrbitControls.js /worlds/terrain/lib/CopyShader.js /worlds/terrain/lib/LuminosityHighPassShader.js /worlds/terrain/lib/FXAAShader.js /worlds/terrain/lib/EffectComposer.js /worlds/terrain/lib/RenderPass.js /worlds/terrain/lib/MaskPass.js /worlds/terrain/lib/ShaderPass.js /worlds/terrain/lib/UnrealBloomPass.js · Schieber 2.4 → 4, Strg+Z → 2.4, Strg+Umschalt+Z → 4, Strg+Z → 2.4, Strg+Y → 4, A → 2.4, B → 4 · Kosten [{"stufe":"0","leiste":"54894","deckel":"62000","befehle":"29","vram":"2696696","gezeichnet":"54894","befehleGezeichnet":"29","vramGpu":"2696696","vramDeckel":"11281444","msDeckel":"1.5226","ms":"0.0225","bank":"0.4821","bankCpu":"0.2004","fertig":"1"},{"stufe":"1","leiste":"5954","deckel":"7000","befehle":"6","vram":"327200","gezeichnet":"5954","befehleGezeichnet":"6","vramGpu":"327200","vramDeckel":"1273711","msDeckel":"0.4014","ms":"0.001","bank":"0.1458","bankCpu":"0.0792","fertig":"1"}]
+@@ 116.1 s · neue Seite der Linse
+@@ 122.4 s · neue Seite der Linse
+  ⏱ terrain        Griff → Bild p95 Gesetz-Wert – ms · Neubau 351 ms · 5 Griffe mit Bild · Neuladen 11/11
+  terrain         21 Anfragen · fremd /worlds/terrain/lib/three-r128.min.js /worlds/terrain/lib/OrbitControls.js /worlds/terrain/lib/PointerLockControls.js /worlds/terrain/lib/BufferGeometryUtils.js /worlds/terrain/lib/CopyShader.js /worlds/terrain/lib/LuminosityHighPassShader.js /worlds/terrain/lib/FXAAShader.js /worlds/terrain/lib/EffectComposer.js /worlds/terrain/lib/RenderPass.js /worlds/terrain/lib/MaskPass.js /worlds/terrain/lib/ShaderPass.js /worlds/terrain/lib/UnrealBloomPass.js · Schieber 0.3 → 1, Strg+Z → 0.3, Strg+Umschalt+Z → 1, Strg+Z → 0.3, Strg+Y → 1, A → 0.3, B → 1 · Kosten [{"stufe":"0","leiste":"6710","deckel":"12000","befehle":"3","vram":"375996","gezeichnet":"6710","befehleGezeichnet":"3","werk":"tree eiche","werkBuehne":"3.25,6.37,3.31","werkWelt":"3.25,6.37,3.31","vramGpu":"375996","ms":"0.001","bank":"0.1279","bankCpu":"0.0592","vramDeckel":"2183505","msDeckel":"0.2947","fertig":"1"},{"stufe":"1","leiste":"1410","deckel":"2900","befehle":"3","vram":"107388","gezeichnet":"1410","befehleGezeichnet":"3","vramGpu":"107388","vramDeckel":"527680","msDeckel":"0.1606","ms":"0.001","bank":"0.1633","bankCpu":"0.0779","fertig":"1"},{"stufe":"2","leiste":"2","deckel":"2","befehle":"1","vram":"140","gezeichnet":"2","befehleGezeichnet":"1","vramGpu":"140","vramDeckel":"364","msDeckel":"0.0803","ms":"0","bank":"0.1042","bankCpu":"0.0287","fertig":"1"}]
+❌ H8 garage: L0 GPU-ms 0.0236 ↔ 6.155
+❌ H8 garage: L1 GPU-ms 0.0236 ↔ Bank 3.3846 CPU-gebunden
+❌ H8 schmiede: L0 GPU-ms 0.0051 ↔ 0.6783
+❌ H8 portale: L0 GPU-ms 1.6732 ↔ Bank 1.7688 CPU-gebunden
+❌ H8 portale: L1 GPU-ms 0.939 ↔ Bank 1.1246 CPU-gebunden
+❌ H8 portale: L1 GPU-ms 0.939 über dem Deckel 0.835
+❌ H8 portale: L2 GPU-ms 0.3011 ↔ 0.5087
+❌ H8 portale: L3 GPU-ms 0.001 ↔ 0.0617
+❌ H8 fachwerk: L0 GPU-ms 0.0338 ↔ 0.18
+❌ H8 fachwerk: L1 GPU-ms 0.0051 ↔ 0.1712
+❌ H8 fachwerk: L2 GPU-ms 0 ↔ 0.095
+❌ H8 fachwerk: L3 GPU-ms 0 ↔ 0.0704
+❌ H8 koerperstudio: L0 GPU-ms 0.0079 ↔ 0.5129
+❌ H8 koerperstudio: L1 GPU-ms 0.002 ↔ 0.3471
+❌ H8 koerperstudio: L2 GPU-ms 0 ↔ 0.1604
+❌ H8 koerperstudio: L3 GPU-ms 0 ↔ 0.0683
+❌ H7 koerperstudio: p95 Neubau 3746 ms > 1000 ms
+❌ H8 tetrapoda: L0 GPU-ms 0.0225 ↔ 0.4821
+❌ H8 tetrapoda: L1 GPU-ms 0.001 ↔ 0.1458
+❌ H8 terrain: L0 GPU-ms 0.001 ↔ 0.1279
+❌ H8 terrain: L1 GPU-ms 0.001 ↔ 0.1633
+❌ H8 terrain: L2 GPU-ms 0 ↔ 0.1042
+❌ DER GANG: 3 von 8 Seiten ohne fremde Engine · 8 Sitzungen
+
+--- stderr ---
+❌ URTEILS-WACHE: 23 ROTE Zeile(n) bei Exit 0 — die erste: ❌ H8 garage: L0 GPU-ms 0.0236 ↔ 6.155 (Exit wird 1; ein Vermerk heißt nie ROT/❌)
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
