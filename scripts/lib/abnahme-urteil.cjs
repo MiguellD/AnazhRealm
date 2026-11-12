@@ -758,12 +758,15 @@ function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
                         marke[q] = 1;
                         stapel[oben++] = q;
                     }
-                // der Fühler: drei Pixel weiter in den acht Richtungen
+                // der Fühler: drei Pixel weiter in den acht Richtungen, und was dort trägt, steht auch nach sechs (ein Stamm, der
+                // Boden — nie der Hof der eigenen Tiefe um den Fleck: die Tiefe der Aufnahme ist gröber als ihr Bild)
                 for (let d = 0; d < 9 && !rand; d++) {
                     if (d === 4) continue;
-                    const [xx, yy] = [x + 3 * ((d % 3) - 1), y + 3 * (((d / 3) | 0) - 1)];
+                    const [ex, ey] = [(d % 3) - 1, ((d / 3) | 0) - 1],
+                        [xx, yy, x2, y2] = [x + 3 * ex, y + 3 * ey, x + 6 * ex, y + 6 * ey];
                     if (xx < 0 || yy < 0 || xx >= W || yy >= H) rand = true;
-                    else if (sa && !U(yy * W + xx)) halt = Math.min(halt, fern(yy * W + xx));
+                    else if (sa && !U(yy * W + xx) && (x2 < 0 || y2 < 0 || x2 >= W || y2 >= H || fern(y2 * W + x2) < Infinity))
+                        halt = Math.min(halt, fern(yy * W + xx));
                 }
             }
             teile.push([nu, nk, rand || (sa !== null && halt < Infinity && halt <= 2 * nah)]);
