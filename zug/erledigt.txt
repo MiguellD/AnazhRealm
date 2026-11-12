@@ -697,3 +697,4 @@ omen-gtx-gtx-350e6b11-15-350e6b11 GRÜN 1 GRÜN / 0 ROT / 0 UNGEMESSEN · GRÜN 
 2026-11-12 21:38 landung Zwischenstand main b560adaf: misst 28 Stationen aus gtx-nutzen (38) je allein (0 tragen an diesem Kopf schon einen Eintrag, 10 profiband.* ruhen), rohe Zahl je Zeile
 omen-gtx-gtx-b560adaf-1-b560adaf ROT 0 GRÜN / 1 ROT / 0 UNGEMESSEN · ROT material.K1#1 ‖ material.K1#1: Welt/Labor 0,9–1,1: 11/13 · im realen Band beidseits: 13/13 — fels 1.1056 · boden 1.2969 · echt beide Seiten · [linse-gpu] nvidia/pascal (punkte-maschine d780c587 messung/b560adaf-gtx.json)
 2026-11-12 22:01 landung Zwischenstand main b560adaf: die Liste endete am Sprung (main ist weiter) — was gemessen war, ist gepusht; Summe und Richter fahren am jüngsten Kopf
+2026-11-12 22:03 landung Zwischenstand main 507beba6: misst 27 Stationen aus gtx-nutzen (37) je allein (0 tragen an diesem Kopf schon einen Eintrag, 10 profiband.* ruhen), rohe Zahl je Zeile
