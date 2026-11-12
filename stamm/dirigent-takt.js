@@ -133,7 +133,7 @@ class AnazhRealm_dirigent_takt {
                     this.tickStatsHud(currentTime);
 
                     // ### Tag-Nacht-Zyklus ###
-                    // timeOfDay läuft jedes Bild (seine Uhr: `_lastDayNightTick`); Lights + Skybox folgen.
+                    // timeOfDay läuft jedes Bild an der Welt-Uhr (`spielZeit`, sein Anker `_uhrSpielZeit`); Lights + Skybox folgen.
                     if (!zwischen) this.tickDayNight(currentTime);
 
                     // ### Wetter-Übergang (Welle 6.G3.b) ###

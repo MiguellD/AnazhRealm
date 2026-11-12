@@ -57,6 +57,18 @@ var __weltLicht = (function () {
     // Kompensations-Steigung des Tags (1 = volle Adaption, 0 = feste Blende), `stufen` die Knoten [Grad, Stufen] der Tag-Achse
     // für Dämmerung und Nacht, `gleitung` [oben, unten] das Band, in dem die Kamera von der Steigung auf sie gleitet; `nachtGrad`
     // (S7) die Tiefe der Sonne, in der das Nacht-Auge der Post-Kette ganz steht. Die Messungen stehen am Stamm (bild-himmel.js).
+    // DER NACHT-KNOTEN (`nachtKnotenE`, w28-nacht-licht): die weiteste Blende der Kamera — ihr Lichtmesser liest nie weniger als die
+    // Beleuchtungsstärke der Vollmond-Nacht des Gesetzes (Welt-Einheiten, wie `_waagrechtIrradianz`), darunter steht die Belichtung,
+    // und das Bild fällt mit dem Licht (UE: die Untergrenze der Auto-Belichtung, Min EV100). Bis w28-nacht-licht normierte sie JEDES
+    // Licht auf die Karte −2,17 Stufen: die Nacht war ein abgedunkelter Tag — Wände ohne Quelle so hell wie die Gasse unter der
+    // Laterne (Stadt 00 Uhr, Radeon: Wand 107 : angestrahlt 138 Luma, 1,75 : 1 linear), 00 Uhr kaum dunkler als 20 Uhr. Der Wert ist
+    // das Licht der Mitternacht, wie es bis dahin stand (Mond 0,22 im Zenit, Himmel-Boden 0,10, Nacht-Ambient 0,23 und der
+    // Nachthimmel der Tafel: E 0,68 an main b1531071, Radeon, Stadt, Sommer; headless ohne Tafel 0,39): unter dem Knoten steht die
+    // Kamera, wie sie dort stand (k 1,25) — fällt das Licht (das Ambient der Nacht, `_dayNightApplyAmbient`; der Mond tiefer am
+    // Himmel), fällt das Bild, und Laterne, Fenster und Feuer tragen die Nacht. Der Knoten wächst vom Ende der bürgerlichen Dämmerung
+    // (`nachtKnotenGrad`, −6°: die Nacht der Tag-Achse ist ganz) bis zum Nacht-Knoten der Stufen (−20°) logarithmisch ein — in der
+    // Dämmerung liest die Kamera ihr Licht wie bisher (der Himmel der Tafel trägt sie schwächer als das Licht der Nacht: Radeon
+    // 05 Uhr bei −3,7° E 0,16, um Mitternacht 0,44 — ein Knoten dort machte die Dämmerung dunkler als die Nacht).
     const BELICHTUNG = Object.freeze({
         kurve: "NeutralToneMapping",
         zielKarte: 0.22,
@@ -64,6 +76,8 @@ var __weltLicht = (function () {
         steigung: 0.75,
         gleitung: Object.freeze([12, 8]),
         stufen: Object.freeze([Object.freeze([10, -0.87]), Object.freeze([-20, -2.17])]),
+        nachtKnotenE: 0.68,
+        nachtKnotenGrad: -6,
         nachtGrad: -32,
     });
     // DIE GRENZGRÖSSE DER STERNE je Sonnenhöhe [Grad, Größe] (V18.530, `HIMMEL.grenzgroesse` der Welt): im hellen Tag (≥ 10°) ist
@@ -80,12 +94,16 @@ var __weltLicht = (function () {
         ].map((a) => Object.freeze(a))
     );
     // MONDLICHT: nachts wird das Haupt-Richtlicht zur Mondquelle — `r/g/b` der Purkinje-Hue aus dem Gesetz
-    // (`ATMO_GESETZ.nacht.mond`), `intensity` die Helligkeit; das Wetter dimmt ihn.
+    // (`ATMO_GESETZ.nacht.mond`), `intensity` die Helligkeit; das Wetter dimmt ihn. DER MOND TRÄGT DIE NACHT (w28-nacht-licht):
+    // 0,22 → 0,65, das Ambient der Nacht fiel 0,23 → 0,04 (`_dayNightApplyAmbient`) — Schlüssel und Füllung der Mondnacht: der
+    // Boden und jede Wand zum Mond stehen im Licht mit Schatten, die Wand ohne Mond und Laterne fällt zurück. Der Wert ist das
+    // gemessene Maß des lesbaren Bodens (S0 Nacht ohne das Feuer, Radeon, Luma ≥ 22: main 24,1 · Ambient 0,04 mit Mond 0,22
+    // 14,4 · 0,5 20,4 · 0,65 23,7); das Ambient allein ließ kein Fenster (Boden ≥ 22 verlangte ≥ 0,18, die Wand 3 : 1 ≤ 0,22).
     const MOONLIGHT = Object.freeze({
         r: KERN.ATMO_GESETZ.nacht.mond[0],
         g: KERN.ATMO_GESETZ.nacht.mond[1],
         b: KERN.ATMO_GESETZ.nacht.mond[2],
-        intensity: 0.22,
+        intensity: 0.65,
     });
     // DIE GPU-LEINE (Welt `_gpuLeineFrei`, Bühne `buehneZeichnet`): höchstens so viele Bilder zugleich auf der GPU unterwegs — mehr
     // ist nur Eingabe-Verzug (gemessen 04.10.: 600 ms bei ≈ 10 Frames in der Schlange), nie mehr Durchsatz.
@@ -605,10 +623,18 @@ var __weltLicht = (function () {
     // DIE BELICHTUNG AUS DEM LICHT (licht.K1, H1): `w` die Beleuchtungsstärke einer waagrechten Fläche des Orts (rgb), `EA` der
     // Anker (`belichtungAnker`), `e` der Sinus der Sonnenhöhe, `stufen` die Stufen der Kamera (die Welt reicht ihr Glied
     // `AnazhRealm._belichtungStufen`, an dem die Linsen den Schein der Kamera prüfen). → die Belichtung k: die 18-%-Karte unter
-    // dem Anker auf `zielKarte` und die Stufen der Kamera gegen ihn; `B` die Eichung (wie `belichtungStufen`).
+    // dem Anker auf `zielKarte` und die Stufen der Kamera gegen ihn; `B` die Eichung (wie `belichtungStufen`). Der Lichtmesser
+    // liest in der Nacht nie unter dem Nacht-Knoten (`nachtKnotenE`, von `nachtKnotenGrad` bis zum Nacht-Knoten der Stufen
+    // logarithmisch eingeblendet): darunter steht die Blende, das Bild fällt mit dem Licht.
     function belichtung(w, EA, e, stufen, B = BELICHTUNG) {
-        const E = Math.max(0.2126 * w[0] + 0.7152 * w[1] + 0.0722 * w[2], 1e-6);
         const h = (Math.asin(Math.max(-1, Math.min(1, e))) * 180) / Math.PI;
+        let E = Math.max(0.2126 * w[0] + 0.7152 * w[1] + 0.0722 * w[2], 1e-6);
+        const NK = B.nachtKnotenE;
+        if (NK > E) {
+            const [a, b] = [B.nachtKnotenGrad, B.stufen[B.stufen.length - 1][0]];
+            const t = Math.max(0, Math.min(1, (a - h) / (a - b)));
+            E = E ** (1 - t) * NK ** t;
+        }
         return Math.max(B.min, (B.zielKarte * 2 ** (stufen || belichtungStufen)(h, E / EA)) / ((0.18 / Math.PI) * E));
     }
 
@@ -633,12 +659,23 @@ var __weltLicht = (function () {
     function sonnenWinkel(t) {
         return t * Math.PI * 2 - Math.PI / 2;
     }
+    // DIE SONNENBAHN — die EINE Formel der Welt (Licht, Schatten, Himmelskörper, Bühne der Studios). OFFEN (w28-nacht-licht): die Bahn
+    // aus Jahr × Breite (Meeus Kap. 13, sin h = sin φ sin δ + cos φ cos δ cos H) stand gebaut und gemessen — Mittag 74,2° → 74,6°,
+    // 05 Uhr im Sommer die Dämmerung (Dorf Luma 70 → 88) — und fiel an gate:tag-achse:echt: die Sonne des Sommers geht im
+    // Nordosten auf, hinter dem Grat der Mess-Wiese (Azimut 76°) tritt sie bei 10° hervor, der Lichtmesser (`_horizontSichtImBild`,
+    // er sieht die Schatten der nahen Kronen nicht) springt 0,55 EV, das Bild 0,34 EV je Schritt der Uhr (Radeon). Sie wartet auf
+    // den Lichtmesser, der sieht, was das Bild zeigt (licht.K1, die Wurzel aus w28-tag-kurve).
     function sonnenRichtung(winkel) {
         const x = Math.cos(winkel);
         const y = Math.sin(winkel);
         const z = Math.sin(winkel * 0.5) * 0.4;
         const l = Math.hypot(x, y, z) || 1;
         return [x / l, y / l, z / l];
+    }
+    // DER MOND steht der Sonne voll gegenüber (der Vollmond) — EINE Formel für sein Licht und seinen Körper (w28-nacht-licht: der
+    // Körper rechnete seine Lage in einer eigenen Kopie mit dem Winkel + π)
+    function mondRichtung(winkel) {
+        return sonnenRichtung(winkel).map((v) => -v);
     }
 
     // DIE EINE TAG-ACHSE (S7, W7): jede Größe des Lichts über den Tag ist EINE Funktion der Sonnenhöhe e = sin(Höhe) — die Kanäle
@@ -989,7 +1026,7 @@ var __weltLicht = (function () {
         const M = AR.medium(G, AR.betaKlar(G), ATMO_BODEN);
         const winkel = sonnenWinkel(uhr);
         const s = sonnenRichtung(winkel);
-        const m = sonnenRichtung(winkel + Math.PI);
+        const m = mondRichtung(winkel);
         const achse = tagAchse(s[1]);
         if (!(achse.nacht === 0 && achse.daemmerung === 1))
             throw new Error(
@@ -1209,6 +1246,7 @@ var __weltLicht = (function () {
         e0,
         sonnenWinkel,
         sonnenRichtung,
+        mondRichtung,
         tagAchse,
         halbZuFloat,
         zeilenSchritt,
