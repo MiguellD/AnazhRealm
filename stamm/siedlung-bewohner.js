@@ -1274,15 +1274,6 @@ class AnazhRealm_siedlung_bewohner {
             // gestaffelte Takt ohne sie, und fiel eine Wende auf seinen Takt, rechnete `zielUhr` mit der Uhr seines letzten Takts
             for (const b of S.ruhend.splice(0, Math.floor(S.ruhSoll))) this._bewohnerWecken(S, b);
             S.ruhSoll -= Math.floor(S.ruhSoll);
-            // DER SPRUNG DES AUGES (w28-mensch-stufe): die Ruhe eines Kopfs gilt, solange Auge und Spieler bis zu seinem Takt höchstens
-            // `m` weit kommen (`_bewohnerRuhig`: keine Grenze, die er bis dahin kreuzt). Springt das Auge in EINEM Takt weiter (der
-            // Schnitt der Kamera, das Tor, die Pose der Bühne) oder wechselt der Schirm die Grenzen des Felds (`_feldGrenzen`: ein neues
-            // Objekt je Zeichenpuffer), ist jede Ruhe gebrochen: jeder Ruhende in diesen Takt. Bis hier wartete er auf seine Staffel —
-            // unter der Bild-Uhr der Bühne ohne Ende: Radeon, Messort stadt, fünf Posen: 9 Leiber standen 5,2–12,5 m vor dem Auge im
-            // Feld (Glieder-Kapseln diesseits der Grenze 13,2 m).
-            const sA = Math.hypot(auge.x - S.augeX, auge.z - S.augeZ, p.x - S.spX, p.z - S.spZ);
-            if (S.feldEpoche !== NF || !(sA <= S.ruheM)) for (const b of S.ruhend.splice(0)) this._bewohnerWecken(S, b);
-            [S.augeX, S.augeZ, S.spX, S.spZ, S.feldEpoche] = [auge.x, auge.z, p.x, p.z, NF];
             this._bewohnerWacheTakt(S);
             let anders = false; // eine Wahl wechselt: der Satz neu (`_bewohnerSatzSchreiben`); sonst rücken die Bewegten
             const bewegt = this._bewohnerBewegt || (this._bewohnerBewegt = []);
@@ -1535,7 +1526,7 @@ class AnazhRealm_siedlung_bewohner {
                 (b) => b.leib !== false && !(b.ruht = this._bewohnerRuhig(b, innen, m + arm, echt, NF))
             );
             for (const b of koepfe) if (b.ruht) S.ruhend.push(b);
-            [S.koepfe, S.taktUhr, S.ruheM] = [null, S.taktUhr + delta, m + arm];
+            [S.koepfe, S.taktUhr] = [null, S.taktUhr + delta];
         }
     }
 
