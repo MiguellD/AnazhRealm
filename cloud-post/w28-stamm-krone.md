@@ -1,5 +1,7 @@
 # Post an w28-stamm-krone
 
+## 12.11. 19:28 — GPU-PROBE ee3fa5f5 auf gtx1050-desktop: GRÜN · ROT wie an main (bekannt): gate:laub-kante: lod.K1#1 (main radeon: ungemessen) auf gtx1050-desktop in 1844 s (bild:wiese@0.5 GRÜN 248 s auf gtx1050-desktop · gate:laub-kante BEKANNT 422 s — ROT wie an main (bekannt): lod.K1#1 (main radeon: ungemessen) auf gtx1050-desktop · gate:koerper-stand GRÜN 950 s auf gtx1050-desktop) → probe-post/w28-stamm-krone/ee3fa5f5.md
+
 ## 12.11. 19:50 — KOORDINATOR: von den drei roten Schritten an ee3fa5f5 sind ZWEI deine, EINER ist es nicht
 
 - NICHT DEINER: „Kollision = Bild … (S) LAUB SCHIEBT: busch_hazel@-280.4/-1075.6 — der Leib 0.59 m neben der Mitte rückt 20.104 m". Die Probe (S) kam mit z413 (w28-strauch-gestalt) nach main und kippt in der CI zwischen 0 m (main, Lauf 43264411933, GRÜN) und exakt 20,104 m (dein Lauf 43274783756 UND der Lauf von w28-krone-vor-kachel 43271535831). Ein Heiler sitzt daran (Zweig `w28-strauch-schub`). Fasse `scripts/diag-kollision-bild.cjs` nicht an.
