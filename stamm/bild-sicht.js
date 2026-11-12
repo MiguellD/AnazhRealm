@@ -1209,6 +1209,10 @@ class AnazhRealm_bild_sicht {
             cameraNear,
             cameraFar,
             exp,
+            // die Weißkappe (Monahan: der Anteil ein Potenzgesetz des Winds, die Schwelle aus √(−ln W))
+            pow,
+            sqrt,
+            log,
         } = TSL;
         void mat3; // potenzielle Alternative zu modelNormalMatrix
 
@@ -1241,9 +1245,8 @@ class AnazhRealm_bild_sicht {
         // leuchtendes Königsblau. Schaum: weiß, eine diffuse Fläche.
         const koerperAlbedo = vec3(...AnazhRealm._wasserKoerper(WG, this._wasserOptik().n));
         const uFoam = uniform(new THREE.Color().setRGB(WG.schaum.farbe[0], WG.schaum.farbe[1], WG.schaum.farbe[2]));
-        // Das Licht des Orts: E/π einer waagrechten Fläche aus dem EINEN Baustein (`_weltLicht`: Sonne, Himmel, Hemi, Ambient —
-        // dieselben Quellen wie jedes Mesh), der Glanz in der Rayleigh-Sonnenfarbe (uSunCol × uLight = die Sonne selbst).
-        const licht = this._weltLicht().at(vec3(0, 1, 0));
+        // Das Licht des Orts (unten, am Ort des Fragments: `licht`) und der Glanz in der Rayleigh-Sonnenfarbe (uSunCol × uLight = die
+        // Sonne selbst).
         const uSunCol = uniform(new THREE.Color(1, 0.96, 0.85));
         const uSunDir = uniform(new THREE.Vector3(1, 1, 1).normalize());
         const uLight = uniform(1.0);
@@ -1312,10 +1315,10 @@ class AnazhRealm_bild_sicht {
         // `aWaveV` skaliert die Amplitude. Shader-only (Sheet-Daten unberührt, kein Worker-Mirror).
         const oceanSwell = Fn(([xz]) => {
             const t = uTime;
-            const w1 = vnoise(xz.mul(0.05).add(vec2(t.mul(0.06), t.mul(0.04)))).sub(0.5);
-            const w2 = vnoise(xz.mul(0.12).add(vec2(t.mul(-0.05), t.mul(0.07)))).sub(0.5);
-            const w3 = vnoise(xz.mul(0.23).add(vec2(t.mul(0.08), t.mul(-0.06)))).sub(0.5);
-            const D = AnazhRealm.WASSER_WELLE.duenung;
+            const [F, D] = [AnazhRealm.WASSER_WELLE.frequenz, AnazhRealm.WASSER_WELLE.duenung];
+            const w1 = vnoise(xz.mul(F[0]).add(vec2(t.mul(0.06), t.mul(0.04)))).sub(0.5);
+            const w2 = vnoise(xz.mul(F[1]).add(vec2(t.mul(-0.05), t.mul(0.07)))).sub(0.5);
+            const w3 = vnoise(xz.mul(F[2]).add(vec2(t.mul(0.08), t.mul(-0.06)))).sub(0.5);
             const h = w1.mul(D[0]).add(w2.mul(D[1])).add(w3.mul(D[2]));
             return vec3(float(0.0), h, float(0.0));
         });
@@ -1409,6 +1412,14 @@ class AnazhRealm_bild_sicht {
         // Bei Wasser-Mesh (nur Translation, keine Skalierung) identisch zu
         // mat3(modelMatrix) — die V8.44-Lehre.
         const vNormalWorld = normalize(modelNormalMatrix.mul(nrmFlipped));
+        // DAS LICHT DES ORTS: E/π einer waagrechten Fläche aus dem EINEN Baustein (`_weltLicht`: Sonne, Himmel, Hemi, Ambient —
+        // dieselben Quellen wie jedes Mesh), die direkte Sonne mal der SONNEN-SICHT am Ort des Wassers (`_sonnenSicht`: der
+        // Horizont des Gelände-Gesetzes × der Wurf der Wolke — dieselbe Sicht, die die Kaskaden jedem Empfänger der Welt geben).
+        // Das Wasser ist MeshBasic, kein Empfänger der Kaskaden: bis w28-wasser-sicht trug es die Sonne auch hinter dem Grat und
+        // unter der Wolke — der Glanz stand im Schatten des Ufers, der Körper hell wie in der Sonne. Glanz und Licht lesen
+        // dieselbe Sicht (`_wasserBlick` `sonne`).
+        const sonne = this._sonnenSicht(vWorldPos);
+        const licht = this._weltLicht().at(vec3(0, 1, 0), null, sonne);
 
         // === FRAGMENT-STAGE: Wasserfarbe + Foam + Spec + Fresnel-Alpha (die Luft: scene.fogNode).
         const xz = vWorldPos.xz;
@@ -1430,7 +1441,6 @@ class AnazhRealm_bild_sicht {
         const wegM = max(sceneLin.sub(fragLin), float(0.0))
             .mul(_tiefeM)
             .mul(length(cameraPosition.sub(vWorldPos)).div(_fragTiefeM));
-        const waveT = clamp(vWave.mul(0.5).add(0.5), 0.0, 1.0);
         // DER DURCHLASS (Beer-Lambert, WASSER_GESETZ.wK je Kanal): der Weg vom Grund zum Auge plus der Weg des
         // Lichts vom Spiegel zum Grund (die Säulen-Tiefe aDepth) — am Ufer scheint der Grund durch (T → 1), im
         // Tiefen deckt der Wasser-Körper (T → 0; 1 m grün 0,14).
@@ -1452,11 +1462,26 @@ class AnazhRealm_bild_sicht {
         const advB = strom(flussWegB, LAGE_B);
         // Die Wildwasser-Strähnen (0.11 ≈ 9 m, unter der Mesh-Nyquist ~3,6 m), zwei Lagen der Phase.
         const riverS1 = mix(vnoise(advA.mul(0.11)), vnoise(advB.mul(0.11)), phaseBlend);
-        // V9.49-c — Ozean-Schaumkämme (Gerstner-Crests tragen Gischt, aWave-gated); `riverness` (0 See … 1 Fluss, die
-        // taperende aFlow-Rampe 0.04→0.5) blendet sie in der Mündung aus.
-        const crest = smoothstep(0.62, 1.0, waveT).mul(aWaveV);
+        // DIE WEISSKAPPE IST DAS GESETZ (w28-wasser-sicht, WASSER_GESETZ.schaum.weisskappe): der Wind am Wasser in 10 m Höhe
+        // (U = Stärke × die Mitte der Böe × `WIND_FELD.sturmMS`, m/s — das Wind-Gesetz des Kerns) gibt den Anteil der See, den
+        // brechende Kämme decken (Monahan: W = a·U^b), die Quantil-Kurve der Dünung die Schwelle q über der normierten Höhe h
+        // (die Dünung des Orts ÷ ihr Maximum 0,5 · Σ duenung · aWave · Wind-Zeile): über q liegt genau W. Die Deckung der Kappe ist
+        // `schaum.kamm`; `aWave` (Ozean) gated, `riverness` (0 See … 1 Fluss, die taperende aFlow-Rampe 0.04→0.5) blendet sie in
+        // der Mündung aus. Bis w28-wasser-sicht schäumte jede Welle über 0,62 der Wellen-Höhe mit 0,6 — in jeder Flaute (Wind
+        // 0,06 trägt noch 75 % der Dünung): weiße Kamm-Flecken auf ruhiger See.
+        const WK = WG.schaum.weisskappe;
+        const [qa, qb, qc] = WK.quantil;
+        const uMS = uWind.mul(AnazhRealm.WIND_BOE.mitte * globalThis.__phytoCore.WIND_FELD.sturmMS).max(0.01);
+        const kappeW = pow(uMS, float(WK.monahan[1])).mul(WK.monahan[0]).clamp(1e-6, 0.3);
+        const kappeS = sqrt(log(kappeW).negate());
+        const kappeQ = float(qa).add(kappeS.mul(qb)).add(kappeS.mul(kappeS).mul(qc));
+        const duenungMax = float(0.5 * AnazhRealm.WASSER_WELLE.duenung.reduce((a, b) => a + b, 0))
+            .mul(aWaveV)
+            .mul(windF)
+            .max(1e-3);
+        const crest = smoothstep(kappeQ.sub(0.03), kappeQ.add(0.03), vWave.div(duenungMax)).mul(aWaveV);
         const riverness = smoothstep(float(0.04), float(0.5), fmag);
-        const foam = crest.mul(0.6).mul(float(1.0).sub(riverness));
+        const foam = crest.mul(WG.schaum.kamm).mul(float(1.0).sub(riverness));
 
         // Uferlinien-Schaum aus der Tiefe: ein heller Saum genau am Wasser-Rand, pro Pixel terrain-folgend.
         // Glitzer glatt (0.8 + 0.2·noise) — stärkere Speckel-Varianz machte das Band als distinkte Textur lesbar.
@@ -1510,6 +1535,7 @@ class AnazhRealm_bild_sicht {
             T,
             koerper: koerperAlbedo,
             irr: licht,
+            sonne,
             sunCol: uSunCol,
             sunDir: uSunDir,
             light: uLight,
@@ -2642,7 +2668,8 @@ class AnazhRealm_bild_sicht {
         };
         const fn = TSL.Fn(([n]) => baue({ n }));
         const fnOrt = TSL.Fn(([n, s]) => baue({ n, s }));
-        st.weltLicht = { U, himmel, stand: 0, at: (n, p) => (p ? fnOrt(n, this._sonnenSicht(p)) : fn(n)) };
+        // `s` (optional): eine Sonnen-Sicht, die der Leser schon hält (das Wasser liest sie auch für seinen Glanz) — EIN Knoten
+        st.weltLicht = { U, himmel, stand: 0, at: (n, p, s) => (s || p ? fnOrt(n, s || this._sonnenSicht(p)) : fn(n)) };
         this._weltLichtTakt();
         return st.weltLicht;
     }
@@ -3929,6 +3956,9 @@ AnazhRealm.WASSER_WELLE = (() => {
         !W ||
         !Array.isArray(W.duenung) ||
         W.duenung.length !== 3 ||
+        !Array.isArray(W.frequenz) ||
+        W.frequenz.length !== 3 ||
+        !W.frequenz.every(Number.isFinite) ||
         !Array.isArray(W.treiber) ||
         W.treiber.length !== 2 ||
         ![...W.duenung, ...W.treiber, W.oktave, W.mitte, W.kraeusel, W.kraeuselDecke, W.phase].every(Number.isFinite)

@@ -1286,6 +1286,31 @@
         ]
     },
     {
+        "warum": "DIE REIHE DER GLIEDER FOLGT DEM GRAPHEN (_configureRenderer, w28-ankunft-reihe): r184 sortiert die Glieder jeder geteilten Uniform-Gruppe nach der Geburts-Nummer ihres Knotens und schreibt die Struktur in dieser Folge ins WGSL — der Wirt lässt die Sortierung ruhen (die Reihe des Baus bleibt), am ersten Bauer des Backends",
+        "anker": [
+            {
+                "sub": "_getBindGroup(e,t){const r=t[0].groupNode;let s,i=r.shared;if(i)for(let e=1;e<t.length;e++)r!==t[e].groupNode&&(i=!1);if(i){let r=\"\";for(const e of t)if(e.isNodeUniformsGroup){e.uniforms.sort(",
+                "organ": "DIE REIHE DER GLIEDER (NodeBuilder._getBindGroup: die EINE Sortierung der Glieder, nur in geteilten Gruppen)"
+            },
+            {
+                "sub": "sortBindingGroups(){const e=this.getBindings();",
+                "organ": "DIE REIHE DER GLIEDER (sortBindingGroups ruft die Bindungen — und damit _getBindGroup)"
+            },
+            {
+                "sub": "this.sortBindingGroups();for(const t in e){this.shaderStage=t",
+                "organ": "DIE REIHE DER GLIEDER (buildCode: die Sortierung steht VOR dem Text jeder Shader-Stufe)"
+            },
+            {
+                "sub": "const r=[];for(const e of t.uniforms){const t=e.getType(),s=this.getType(this.getVectorType(t));r.push(",
+                "organ": "DIE REIHE DER GLIEDER (getUniforms schreibt die Struktur in der Folge der Glieder der Gruppe)"
+            },
+            {
+                "sub": "createNodeBuilder(e,t){return new EC(e,t)}",
+                "organ": "DIE REIHE DER GLIEDER (der Bauer des WebGPU-Backends: sein erster nennt die Klasse)"
+            }
+        ]
+    },
+    {
         "warum": "DER ZEILEN-SCHRITT EINER LESUNG: die letzte Zeile trägt kein Polster (w21-laub-unten)",
         "anker": [
             {
