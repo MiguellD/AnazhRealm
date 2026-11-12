@@ -455,6 +455,25 @@ function ortUrteil(v2, hoehe, o) {
         zellen: hz.size,
     };
 }
+// DIE PLÄTZE DES LICHT-POOLS, DIE DEM ORT GEHÖREN (O Akt, rein — dieselbe Funktion in der Seite und im Selbsttest): `pool` die
+// Plätze ({x, z, staerke}), `je` die sichtbaren Quellen der Gasse ([x, z, …]), `qs` jede brennende Quelle des Orts ([x, z]),
+// `rang` die Wahl des Pools selbst ({x, z, rang} aus `_leuchtQuellen` mit dem Sichtkegel), `horizont` die sichtbaren im Umkreis
+// des Pools, `ausser` der Rang, ab dem eine Quelle außer dem Kegel liegt. Gezählt: jeder helle Platz an einer sichtbaren Quelle,
+// dazu (`poolNaeher`) der an einer Quelle des Orts ohne sichtbaren Kopf, deren Kugel den Kegel berührt (Rang < `ausser`) und
+// deren Rang vor jeder sichtbaren liegt, die noch wartet. Ein Platz außer dem Kegel, hinter einer Wartenden oder an fremdem
+// Licht zählt nie — das Soll des Akts fällt dann ROT (Selbst-Test 16b).
+const POOL_AUSSER_RANG = 1e9; // stamm/dirigent-kern.js `_leuchtQuellen`: der Rang einer Quelle, deren Lichtkugel den Sichtkegel nicht berührt, beginnt hier
+function poolZaehlen(pool, je, qs, rang, horizont, ausser) {
+    const an = (p, l) => l.some(([x, z]) => Math.hypot(x - p.x, z - p.z) < 0.5);
+    const rangVon = (p) => {
+        const q = rang.find((c) => Math.hypot(c.x - p.x, c.z - p.z) < 0.5);
+        return q ? q.rang : Infinity;
+    };
+    const hell = pool.filter((p) => p.staerke > 0);
+    const wartet = Math.min(Infinity, ...horizont.filter((q) => !an(q, hell.map((p) => [p.x, p.z]))).map(rangVon));
+    const naeher = hell.filter((p) => !an(p, je) && an(p, qs) && rangVon(p) < ausser && rangVon(p) < wartet).length;
+    return { poolOrt: hell.filter((p) => an(p, je)).length + naeher, poolNaeher: naeher };
+}
 // Das Verdikt des Orts (rein): die Zahlen der Abnahme gegen ihr Ziel — die Liste der verfehlten Namen (leer = gehalten).
 function ortVerdikt(m) {
     const fehl = [];
@@ -1201,6 +1220,29 @@ hauptLauf(async () => {
                     /Licht-Pool der Gasse nachts 1 Quellen des Orts \(Soll ≥ 4\)/.test(vp),
                 JSON.stringify({ frei: frei.n, zu: zu.n, verdeckt: zu.verdeckt, leer: leer.n })
             );
+            // Selbst-Test 16b (`poolZaehlen`, der Rang des Pools): vier sichtbare Laternen A 8 m · B 21 m · C 35 m · D 43 m, die
+            // Wandlaterne W 20 m ohne sichtbaren Kopf; der Pool hält A, W, B, C — D wartet. W zählt, solange ihre Kugel den Kegel
+            // berührt und ihr Rang vor D liegt (4 von 4); außer dem Kegel, hinter D oder als fremdes Licht zählt sie nie (3 von 4, ROT).
+            {
+                const [A, B, C, D, W] = [[8, 0], [21, 0], [35, 0], [43, 0], [0, 20]];
+                const P = (q) => ({ x: q[0], z: q[1] });
+                const pool = [A, W, B, C].map((q) => ({ ...P(q), staerke: 1 }));
+                const rang = (w) => [[A, 8], [W, w], [B, 21], [C, 35], [D, 43]].map(([q, n]) => ({ ...P(q), rang: n }));
+                const zahl = (w, qs = [A, B, C, D, W]) => poolZaehlen(pool, [A, B, C, D], qs, rang(w), [A, B, C, D].map(P), POOL_AUSSER_RANG);
+                const [recht, ausser, hinter, fremd] = [zahl(20), zahl(POOL_AUSSER_RANG + 20), zahl(50), zahl(20, [A, B, C, D])];
+                const rot = (n) =>
+                    ortVerdikt(Object.assign({}, gut, { quellenGasse: 4, poolPlaetze: 4, poolGasse: n }))
+                        .join(" · ")
+                        .includes("Licht-Pool der Gasse nachts 3 Quellen des Orts (Soll ≥ 4)");
+                check(
+                    "Selbst-Test 16b: der Pool nach seinem Rang — die nähere Quelle des Orts im Kegel zählt, außer dem Kegel, hinter der Wartenden und fremdes Licht fallen ROT",
+                    recht.poolOrt === 4 &&
+                        recht.poolNaeher === 1 &&
+                        [ausser, hinter, fremd].every((q) => q.poolOrt === 3 && q.poolNaeher === 0 && rot(q.poolOrt)) &&
+                        !rot(recht.poolOrt),
+                    JSON.stringify({ recht, ausser, hinter, fremd })
+                );
+            }
         }
         // V7 (K10, das Brücken-Etikett): ein Weg quer über einen Fluss (die Rinne |x| < 3, 2 m tief) trägt eine Brücke von
         // Widerlager zu Widerlager, unter ihr keine Trasse und ein FREI-Splat: der Grund in der Rinne bleibt (kein Damm). Ohne
@@ -3095,7 +3137,7 @@ hauptLauf(async () => {
                 Object.assign(
                     outO.gasse,
                     await page.evaluate(
-                        (pose, je, qs) => {
+                        (pose, je, qs, zaehlSrc, ausser) => {
                             const cam = st.camera;
                             const H = (x, z) => r._terrainMacroSurfaceY(x, z, true);
                             const uhr0 = st.timeOfDay;
@@ -3119,23 +3161,29 @@ hauptLauf(async () => {
                                 ._leuchtQuellen(cam.position.x, cam.position.y, cam.position.z, LP.umkreisM, null)
                                 .filter((q) => an(q, je));
                             const imHorizont = horizont.length;
-                            // DER PLATZ AN DER NÄHEREN QUELLE DES ORTS IST KEIN VERLORENER (w28-stadt-grammatik): der Pool wählt, was dem
-                            // Auge am nächsten ins Bild leuchtet (`_leuchtQuellen` mit dem Sichtkegel: die Kugel der Reichweite, nie
-                            // der Kopf) — eine brennende Quelle des Orts ohne sichtbaren Kopf (die Wandlaterne um die Ecke), die näher
-                            // steht als jede sichtbare, die noch wartet, hält ihren Platz nach dem Gesetz des Pools. Verloren ist der
-                            // Platz an einer Quelle, die ferner steht als eine wartende sichtbare, oder die nicht des Orts ist. Bis hier
-                            // zählten nur sichtbare Köpfe: mit vier im Horizont und einer Wandlaterne 20 m neben dem Auge (die fernste
-                            // sichtbare 43 m) fiel der Akt „3 Quellen (Soll ≥ 4)“ — an main hielt dieselbe Art Wandlaterne einen Platz,
-                            // nur stand das Soll dort bei 3.
-                            const hell = pl.filter((p) => p.staerke > 0);
-                            const fern = (p) => Math.hypot(p.x - px, p.z - pz);
-                            const wartet = Math.min(Infinity, ...horizont.filter((q) => !an(q, hell.map((p) => [p.x, p.z]))).map(fern));
-                            const naeher = hell.filter((p) => !an(p, je) && an(p, qs) && fern(p) < wartet).length;
+                            // DER PLATZ NACH DEM RANG DES POOLS (w28-stadt-grammatik, `poolZaehlen`): der Pool vergibt nach dem Rang aus
+                            // `_leuchtQuellen` mit dem Sichtkegel (stamm/dirigent-kern.js: erst die Quelle, deren Lichtkugel den Kegel berührt, dann
+                            // der Abstand) — die Linse liest DENSELBEN Rang, nie ein eigenes Maß. Ein Platz an einer brennenden Quelle des Orts ohne
+                            // sichtbaren Kopf (die Wandlaterne um die Ecke) ist kein verlorener, wenn ihre Kugel den Kegel berührt und ihr Rang vor
+                            // jeder sichtbaren liegt, die noch wartet. Bis hier zählten nur sichtbare Köpfe: mit vier im Horizont und einer
+                            // Wandlaterne 20 m neben dem Auge (die fernste sichtbare 43 m) fiel der Akt „3 Quellen (Soll ≥ 4)“ — an main hielt
+                            // dieselbe Art Wandlaterne einen Platz, nur stand das Soll dort bei 3.
+                            const kegel = r
+                                ._leuchtQuellen(cam.position.x, cam.position.y, cam.position.z, LP.umkreisM, r._leuchtKegel(cam))
+                                .map((q) => ({ x: q.x, z: q.z, rang: q.rang }));
+                            const gezaehlt = (0, eval)("(" + zaehlSrc + ")")(
+                                pl.map((p) => ({ x: p.x, z: p.z, staerke: p.staerke })),
+                                je,
+                                qs,
+                                kegel,
+                                horizont.map((q) => ({ x: q.x, z: q.z })),
+                                ausser
+                            );
                             const out = {
                                 plaetze: Math.min(LP.plaetze, imHorizont),
                                 pool: pl.map((p) => [p.quelle, Math.round(p.x * 10) / 10, Math.round(p.z * 10) / 10]),
-                                poolOrt: hell.filter((p) => an(p, je)).length + naeher,
-                                poolNaeher: naeher,
+                                poolOrt: gezaehlt.poolOrt,
+                                poolNaeher: gezaehlt.poolNaeher,
                             };
                             r._uhrSetzen(uhr0, "regler");
                             cam.position.copy(cam0.p);
@@ -3147,7 +3195,9 @@ hauptLauf(async () => {
                         },
                         g.pose,
                         g.je,
-                        gi.qs
+                        gi.qs,
+                        poolZaehlen.toString(),
+                        POOL_AUSSER_RANG
                     )
                 );
         }
