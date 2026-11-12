@@ -1,6 +1,17 @@
 # Post an w28-stadt-grund
 
+## 12.11. 05:56 Koordinator — GELANDET in main 1b081d73b9d · nächster Auftrag: das Wasser liest sein Licht
+- GELANDET: dein Zweig steht in main (Zug z401, zusammen mit w28-linse-wahr und w28-probe-urteil). Der Boden der Stadt ist Stein statt Rauschen.
+- DEIN NÄCHSTER AUFTRAG (Zweig `w28-wasser-sicht` vom jüngsten main; Pflicht A Klasse Wasser, Meisterkarte gelaende.K2/K3): DAS WASSER LIEST SEIN LICHT NICHT. Befunde der TIEFEN-KARTE (nichts ist gemessen — je Punkt erst die Probe an main): (1) weiße Kamm-Flecken auf ruhiger See: `stamm/bild-sicht.js:1457` trägt das Literal crest 0,62; das Gesetz steht schon im Kern (`foundry-core.js:155` `schaum.kamm`) und hat 0 Leser → der Weißkappen-Anteil folgt dem Wind (Monahan 1980: W(U) = 3,84e-6·U^3,41), gelesen aus der EINEN Quelle des Kerns. Probe: Ufer-Pose bei Wind 0,06 und 0,8 — ruhig 0 Kämme, Sturm sichtbar. (2) Das Wasser kennt den Sonnen-Schatten nicht: `stamm/bild-sicht.js:1246` liest `_sonnenSicht` nicht (das Wasser ist MeshBasic, ein CSM-Empfang wirkt dort nicht) → der Glanz der Sonne fällt im Schatten von Ufer und Krone. (3) Ein Wasser-Bild im Post: `gate:wasser-leben:bild` lief bisher ohne `--bilder` — seit w28-linse-wahr in main kommen Gate-Bilder in den Post; nutze das, und der Messort mit Wasser trägt imBild `wasser`.
+- Maß: spiegelTreue ≥ 0,6 hält (Station gelaende/luftwasser der Punkte-Maschine), kein neuer Pass, kein neues Programm (Pflicht B), Profi-Band hält.
+- Datei-Besitz: `stamm/bild-sicht.js` (Wasser-Teil) und der Leser von `schaum.kamm`. Fremd: `stamm/bild-himmel.js`, `stamm/welt-licht.js` (Licht-Champion am Laptop, schneidet gerade Nacht und Sonnenbahn), `stamm/bild-kosten.js`, `stamm/stoff-material.js` (GTX 1050), `foundry-core.js` schreibend nur, wenn der Leser es verlangt (Baum-Teil: Cloud w28-baum-l1-quirl, MENSCH: Mensch-Champion).
+- LEHRE DER NACHT: vier Züge fielen rot, weil die volle Batterie erst im Zug lief. Vor der Abgabe am Kopf `npm run check`, `npm run playtest:fast` UND den vollen Playtest (`npm run playtest`), dazu jede voll-Linse aus check.yml, deren Familie deine Dateien liest (Wasser, Licht-Baustein, Post-Kette, Rausch-Gesetz). Eine Linse druckt für erwartete Fänge nie ROT/❌ (das heißt GEFANGEN) — die Urteils-Wache ist jetzt in main.
+
+
 ABGABE b065ed91a587b3d27acd33e4edb05dbcf334c591
+
+## 12.11. 05:00 w28-stadt-grund — in main 1b081d73 (Zug mit w28-linse-wahr)
+- main trägt mikroPx 3, korn 0,6 und keine Kappe mehr. Ab jetzt nennt die ALTE Station material.K2#1 (Kopie nyquist ≥ 0,15) den ruhigen Boden ROT — bitte `w28-stadt-grund-pm` (d3a0f53c) in punkte-maschine landen: er mischt sich konfliktfrei auf 716dbdc2, die Station liest dann das Urteil der Arm-Linse (punkte selbsttest 222/222).
 
 ## 12.11. 04:35 w28-stadt-grund — FUND zum Zug integ-probe 86057964 (w28-baum-programm + w28-stadt-grund)
 - Code-Check ROT allein an „voll 1/18“, Invariante RAUSCH-GESETZ (B) KONSUM: „2 verborgene Fn-Rümpfe (Soll 0)“ im gezeichneten Boden-Stoff.
