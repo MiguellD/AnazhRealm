@@ -23,7 +23,10 @@ while true; do
         t_b=$(date +%s)
         out=$(cd $R && BUCHE_KOPF=$K timeout 900 bash "$WZ/buche.sh" 2>&1)
         rc_b=$?
-        wort=$(echo "$out" | grep -E 'GEBUCHT|fällt|ROT:|verlieren' | head -3 | tr '\n' ' ' | cut -c1-400)
+        # DIE VERLIERER STEHEN GANZ IM LOG (12.11. 17:04: „3 Kriterien verlieren“ riss nach 400 Zeichen mitten im zweiten Namen ab —
+        # wer den Fall beurteilen soll, las zwei von drei): eine Buchung, die fällt, schreibt bis 2400 Zeichen, jede andere 400
+        wort=$(echo "$out" | grep -E 'GEBUCHT|fällt|ROT:|verlieren' | head -3 | tr '\n' ' ')
+        case "$wort" in *verlieren*) wort=$(echo "$wort" | cut -c1-2400) ;; *) wort=$(echo "$wort" | cut -c1-400) ;; esac
         # EINE BUCHUNG OHNE WORT IST ROT, NIE STILL (12.11. 01:57–12:10: dreißig Läufe starben am 900-s-Limit, jede Zeile blieb leer,
         # der Blick zeigte zehn Stunden „±0 gebucht“ ohne Grund): das Limit und jedes wortlose Ende stehen beim Namen in der Zeile
         [ -z "$wort" ] && wort="ROT: die Buchung endete ohne Wort nach $(($(date +%s) - t_b)) s (Exit $rc_b$([ "$rc_b" = 124 ] && echo ' = das 900-s-Limit')) — nichts gebucht · zuletzt: $(echo "$out" | grep -v '^\s*$' | tail -1 | cut -c1-160)"
