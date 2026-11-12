@@ -487,6 +487,8 @@ function urteilFaelle() {
     // die Wache am Prozess-Ende: ❌ bei Exit 0 wird 1, ohne ROTE Zeile bleibt 0, im Selbsttest wacht sie nicht
     const w = (z, ...a) => require("child_process").spawnSync(process.execPath, ["-e", `require(${JSON.stringify(require.resolve("./lib/urteil-zeile.cjs"))}).wache(); console.log(${JSON.stringify(z)}); process.exit(0)`, "--", ...a]).status;
     if (w("❌ zwei Zeilen ROT") !== 1 || w("GRÜN 3 von 3") !== 0 || w("❌ Mutante", "--selftest") !== 0) v.push("Klinge 9: die Urteils-Wache macht aus ❌ bei Exit 0 kein ROT");
+    // die Ratsche des Orts hat geurteilt: ihre Zeile bleibt Exit 0 (GPU-Probe 00d6624d: die Wache der Werkbank machte daraus Exit 1), ein ROT daneben nicht
+    if (w('"abnahme": "ABNAHME BEKANNT · ROT wie an main (bekannt): stadt.leib Sicht 3.6 %"') !== 0 || w('"fehler": "ABNAHME ROT [x] · ROT wie an main (bekannt): stadt.leib"') !== 1) v.push("Klinge 9: die Wache liest die Ratsche des Orts falsch"); // prettier-ignore
     // eine Linse, die ein ROTES Urteil druckt, steht unter der Wache (welt-boot lädt sie, sonst urteil-zeile selbst)
     if (!wacheLuecken({ "x.cjs": 'console.log("❌ " + f);\nprocess.exit(0);' }).length || wacheLuecken({ "x.cjs": 'require("./lib/welt-boot.cjs");\nconsole.log("❌")' }).length)
         v.push("Klinge 9: die Linse ohne Wache bleibt ungenannt");

@@ -20,8 +20,22 @@ const ZAEHLUNG_RE = /(?<![\d.,])0\s*(?:❌|ROT(?![A-Za-zÄÖÜäöüß]))|(?:→
 // die Station beim Namen: `lod.K1#1`, `haar.K2` (ohne # gilt jede Station des Kriteriums)
 const STATION_RE = /(?<![A-Za-z0-9.])([a-z][a-z0-9-]*\.K\d+(?:#\d+)?)(?![A-Za-z0-9])/;
 
+// DIE RATSCHE DES MESSORTS (w28-linse-wahr): `werkbank bild --ort` urteilt jedes ROT gegen `bekannt` seines Orts
+// (spec/profiband/haushalt.json) und schreibt „ABNAHME BEKANNT · ROT wie an main (bekannt): <ort>.<schlüssel> <grund> · …“, wenn JEDES
+// ROT dort steht — die Schlüssel sind die ersten Wörter der Glieder (`stadt.leib`, `wiese.band.nahWiese`); ein neues ROT schreibt
+// „ABNAHME ROT [...]“ und reißt wie jede Zeile. Die Zeile ist kein ROT (`istRotZeile`: sonst machte die Wache der Werkbank aus dem
+// BEKANNT einen Exit 1, GPU-Probe 00d6624d), der Kopf der Probe sammelt ihre Schlüssel aus jeder Zeile
+const ORT_BEKANNT = /ABNAHME BEKANNT · ROT wie an main \(bekannt\): /;
+const ortSchluessel = (z) =>
+    z
+        .split(ORT_BEKANNT)[1]
+        .split(" · ")
+        .map((g) => g.split(" ")[0])
+        .filter((w) => /^[a-z][a-z0-9-]*\.[A-Za-z][\w.:-]*$/.test(w));
+
 function istRotZeile(z) {
-    const s = String(z).replace(ZAEHLUNG_RE, "");
+    // die Ratsche des Orts ist kein ROT der Zeile (sie hat geurteilt: jedes ROT steht in `bekannt`) — ein ROT daneben bleibt eines
+    const s = String(z).replace(ZAEHLUNG_RE, "").replace(ORT_BEKANNT, "ABNAHME BEKANNT · ");
     return ROT_RE.test(s) && !s.includes("✅") && !/^\s*ok\s/.test(s);
 }
 
@@ -50,33 +64,21 @@ function mainStation(stand, id, geraet) {
     return rot ? { gruen: false, geraet: rot.geraet, zahl: rot.zahl } : { gruen: true, geraet: l[0].geraet, zahl: l[0].zahl };
 }
 
-// DIE RATSCHE DES MESSORTS (w28-linse-wahr): `werkbank bild --ort` urteilt jedes ROT gegen `bekannt` seines Orts
-// (spec/profiband/haushalt.json) und schreibt „ABNAHME BEKANNT · ROT wie an main (bekannt): <ort>.<schlüssel> <grund> · …“, wenn JEDES
-// ROT dort steht — die Schlüssel sind die ersten Wörter der Glieder (`stadt.leib`, `wiese.band.nahWiese`); ein neues ROT schreibt
-// „ABNAHME ROT [...]“ und reißt wie jede Zeile
-const ORT_BEKANNT = /ABNAHME BEKANNT · ROT wie an main \(bekannt\): /;
-const ortSchluessel = (z) =>
-    z
-        .split(ORT_BEKANNT)[1]
-        .split(" · ")
-        .map((g) => g.split(" ")[0])
-        .filter((w) => /^[a-z][a-z0-9-]*\.[A-Za-z][\w.:-]*$/.test(w));
-
 const GERAET = (laeufer) => (/omen|1060/i.test(laeufer || "") ? "gtx" : /radeon/i.test(laeufer || "") ? "radeon" : null);
 const ABSTURZ = /\b(?:TypeError|ReferenceError|SyntaxError|RangeError|ABSTURZ|DECKEL)\b/;
 
 function probeUrteil({ text, rc, stand, geraet }) {
     const rot = rotZeilen(text);
     const zeilen = String(text).split(/\r?\n/).map((z) => z.trim()).filter(Boolean);
-    if (!rot.length) return Number(rc) === 0 ? { u: "GRÜN", grund: "" } : { u: "ROT", grund: `Exit ${rc} ohne ROTE Zeile: ${(zeilen.at(-1) || "kein Log").slice(0, 200)}` };
     const bekannt = new Map();
+    for (const z of zeilen.filter((x) => ORT_BEKANNT.test(x))) {
+        const ids = ortSchluessel(z);
+        if (!ids.length) return { u: "ROT", grund: `${z.slice(0, 220)} — die Ratsche des Orts nennt keinen Schlüssel` };
+        for (const id of ids) bekannt.set(id, `${id} (Messort, haushalt.json bekannt)`);
+    }
+    const ende = () => ({ u: "BEKANNT", grund: `ROT wie an main (bekannt): ${[...bekannt.values()].join(" · ")}` });
+    if (!rot.length) return Number(rc) !== 0 ? { u: "ROT", grund: `Exit ${rc} ohne ROTE Zeile: ${(zeilen.at(-1) || "kein Log").slice(0, 200)}` } : bekannt.size ? ende() : { u: "GRÜN", grund: "" }; // prettier-ignore
     for (const z of rot) {
-        if (ORT_BEKANNT.test(z)) {
-            const ids = ortSchluessel(z);
-            if (!ids.length) return { u: "ROT", grund: `${z.slice(0, 220)} — die Ratsche des Orts nennt keinen Schlüssel` };
-            for (const id of ids) bekannt.set(id, `${id} (Messort, haushalt.json bekannt)`);
-            continue;
-        }
         const id = (STATION_RE.exec(z) || [])[1];
         const m = id && mainStation(stand, id, geraet);
         if (!m || m.gruen) {
@@ -87,7 +89,7 @@ function probeUrteil({ text, rc, stand, geraet }) {
     }
     const sturz = Number(rc) !== 0 && zeilen.find((z) => ABSTURZ.test(z));
     if (sturz) return { u: "ROT", grund: `Exit ${rc}: ${sturz.slice(0, 220)}` };
-    return { u: "BEKANNT", grund: `ROT wie an main (bekannt): ${[...bekannt.values()].join(" · ")}` };
+    return ende();
 }
 
 // DIE URTEILS-WACHE am Prozess-Ende (einmal je Prozess): jede gedruckte Zeile (console.log/error/warn/info) läuft durch

@@ -289,7 +289,7 @@
                 400
             ],
             "imBild": { "bauSatz": 0.02 },
-            "bekannt": { "leib": "Augen-Karte 11.11. (Radeon, main c4010773): Kopf 0,5–1 m vor der Linse (~5 %), Leiber im Vordergrund, P02–P19 — an main „Sicht 0,0 %“" },
+            "bekannt": { "leib": "GPU-Probe 00d6624d (GTX 1050, Spiel = main b1531071): Leib bewohner (≤ 8 m) 3,6 % — der Kopf mit Stachelhaar unten in der Bildmitte, die Schulter links; main urteilte „Sicht 0,0 %“ (Augen-Karte 11.11., P02–P19)" },
             "dorfZug": true,
             "ortTakt": [],
             "gruendung": {
