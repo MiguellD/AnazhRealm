@@ -30,7 +30,7 @@
 //       Kamera der Nacht 2 Stufen tiefer (seit licht.K1 trägt sie die Nacht, nicht das Sternen-Licht). Dazu DER HIMMEL FOLGT DEM SPRUNG (K10, `himmelProbe`): nach Mittag und Mitternacht über
 //       den Pfad des Spielers trägt die Umgebung den Himmel des Orts (`_himmelsBestrahlung`). Selbsttest: der Maler taub.
 //       Die Dämmerung und die Belichtung über den Tag urteilt die Tag-Achse auf der Karte (gate:tag-achse:echt). Dazu DAS
-//       BODEN-PROGRAMM (`S0_MS`): seine Pipeline entstand asynchron, auf echter GPU übersetzt es kalt ≤ 250 ms und ≤ 1,1× main.
+//       BODEN-PROGRAMM (`S0_MS`): seine Pipeline entstand asynchron, es wächst nicht (Ratsche `S0_ZEICHEN`); die Zeit ist Auskunft.
 //
 //   node scripts/diag-pruefbuehne.cjs [--json datei] [--evolutionen 60] [--wurzel dir]
 //                                                  (`--wurzel` = der Baum eines anderen Stands: vorher ↔ nachher)
@@ -842,53 +842,42 @@ const s0TonPasst = (t) => s0TonImBand(t) && t.sat <= S0_TON.satMax;
 // DER STOFF DES SCHUSSES (K17-3, die Shader-Kosten-Linse scripts/lib/shader-kosten.cjs): der Schuss zeichnet das Boden-Programm
 // (`voxelChunkMaterial`). Keine Hilfs-Funktion des Programms liest eine Bindung (`bindungInFunktionMax` 0): die Layout-Funktion
 // `wieseRelief` las den Rausch-Atlas und vererbte seinen Namen in jedes weitere Programm — auf der Bühne sagte swiftshader die
-// Pipeline ab. Der Selbsttest (Mutante c) lässt eine Hilfs-Funktion eine Bindung des gezeichneten Programms lesen.
+// Pipeline ab. Der Selbsttest (Mutante c) lässt eine Hilfs-Funktion eine Bindung des gezeichneten Programms lesen. DIE RATSCHE
+// DER GRÖSSE (`zeichenMax`, `S0_ZEICHEN`): das Programm wächst nicht — am 12.11. (main f46b9e81) 95 297 Zeichen auf Radeon 890M
+// und GTX 1060, die Decke der Stand + 5 %; sie fällt nur (schrumpft das Programm, sinkt die Zahl hier mit).
+const S0_ZEICHEN = { stand: 95297, luft: 1.05 };
 const S0_STOFF = (() => {
     const SK = require("./lib/shader-kosten.cjs");
-    return (wgsl) => SK.kostenUrteil(SK.wgslKosten(wgsl), { bindungInFunktionMax: 0 }, "S0 Boden-Programm");
+    const budget = { bindungInFunktionMax: 0, zeichenMax: Math.round(S0_ZEICHEN.stand * S0_ZEICHEN.luft) };
+    return (wgsl, name = "S0 Boden-Programm") => SK.kostenUrteil(SK.wgslKosten(wgsl), budget, name);
 })();
-// DIE ÜBERSETZUNG DES BODEN-PROGRAMMS (Regel-Inventur 07.11., Entwurf 3 — ersetzt die Decke „≤ 100 000 Zeichen", an der 4 Züge
-// fielen, während S0 auf der GTX in 14–15 s stand): gemessen wird, was der Spieler zahlt. Je Programm, das ein Schuss zeichnet,
-// (1) DER WEG seiner Pipeline (das Register `s0PipeRegister`): asynchron, wie die Erst-Zeichnung (`_renderObjectDirect`) jede
-// Pipeline der Welt anlegt — synchron übersetzt der GPU-Prozess sie, bevor er das nächste Bild zeigt; (2) auf echter GPU DIE KALTE
-// ÜBERSETZUNG: Vertex und Fragment neu (`createShaderModule`), bis die Pipeline steht (`createRenderPipelineAsync`), je Lauf eine
-// eigene Zahl im Rumpf (kein Cache von Dawn, Chrome oder Treiber trifft), `n` Läufe, wenn kein Bau der Welt mehr übersetzt; es
-// zählt der schnellste (Last legt nur zu). DIE WAND: ≤ `maxMs` (5 % der Ankunft ≤ 5 s, PFLICHT-OFFEN B) — über diesem Ziel nie
-// teurer als `relativ` × main desselben Adapters (`main`: der schnellste Lauf an main, das Höchste aus den ruhigen gpu-probe-
-// Läufen). Steht der Median der Läufe über `ruhe` × dem schnellsten, trug der Läufer fremde Last — gemessen wird EINSEITIG (Wort
-// des Schöpfers 11.11.): GRÜN unter Last gilt, über dem Soll unter Last ist die Zeit UNGEMESSEN, eine Zeile ohne Urteil, nie ein
-// Befund und nie ein ROT (`s0Last`; z409 12.11.: Radeon kalt 1111 ms, Median 1487 ms > 1,3 × 1111 — der Zug fiel 78 min an einer
-// Zeit, die die Linse selbst als ungemessen erkannte). ROT bleibt die ruhige Messung über dem Soll.
-// Gemessen 08.11. an cbe910ed + w22-ci-diaet (99 336 Zeichen), 10 Sitzungen: Radeon 890M 681–721 ms ruhig (Median/schnellster
-// 1,05–1,23; unter Last 911 ms bei 1,67), GTX 1060 1 040–1 132 ms (1,02–1,09) — beide über dem Ziel (2,9× und 4,5×). Die
-// Zeichen sind Ausgabe. Auf swiftshader urteilt die Frist des Laufs (`S0_FRIST_S`), nie eine Zeit. Der Selbsttest auf echter GPU zeichnet den K17-Fall (das Fels-Gesetz ausgeschrieben im Pixel,
-// `s0BodenMessung`; 191 751 Zeichen, Radeon +13–17 %, GTX +24 %) auf dem Vendor-Weg: (a) seine Zeit reißt die Wand gegen den
-// Boden derselben Sitzung, (b) sein Weg ist synchron.
-const S0_MS = { maxMs: 250, relativ: 1.1, ruhe: 1.3, n: 9, main: { "amd/rdna-3": 721, "nvidia/pascal": 1132 } };
-const s0Decke = (bezug) => Math.max(S0_MS.maxMs, S0_MS.relativ * bezug || 0);
-// der Läufer trug fremde Last (Median > `ruhe` × schnellster) — `null` ohne Zeiten oder in Ruhe, sonst der Satz der Last
-function s0Unruhig(p) {
-    if (!p.ms.length) return null;
-    const [ms, mitte] = [Math.min(...p.ms), rang([...p.ms].sort(aufsteigend))];
-    return mitte > S0_MS.ruhe * ms ? `Median ${mitte} ms > ${String(S0_MS.ruhe).replace(".", ",")} × schnellster ${ms} ms` : null;
+// DIE ÜBERSETZUNG DES BODEN-PROGRAMMS (Regel-Inventur 07.11., Entwurf 3; Tor-Schnitt 12.11.): IM TOR URTEILT DAS GESETZ DES
+// PROGRAMMS, NIE DIE WANDUHR (Wort des Schöpfers 16.10. und 11.11.: Linsen im Zug urteilen Verhalten und Gesetz, nie Läufer-Zeit;
+// Zeit gehört in eine Station mit Referenzfahrt derselben Sitzung). Je Programm, das ein Schuss zeichnet, urteilt (1) DER WEG
+// seiner Pipeline (das Register `s0PipeRegister`): asynchron, wie die Erst-Zeichnung (`_renderObjectDirect`) jede Pipeline der
+// Welt anlegt — synchron übersetzt der GPU-Prozess sie, bevor er das nächste Bild zeigt; dazu oben (`S0_STOFF`) die Bindung und die
+// Ratsche der Größe. (2) AUSKUNFT ohne Urteil, auf echter GPU: die kalte Übersetzung — Vertex und Fragment neu
+// (`createShaderModule`), bis die Pipeline steht (`createRenderPipelineAsync`), je Lauf eine eigene Zahl im Rumpf (kein Cache von
+// Dawn, Chrome oder Treiber trifft), `n` Läufe, wenn kein Bau der Welt mehr übersetzt; die Zeile nennt die Zeiten, den Median und
+// das Verhältnis zum K17-Fall derselben Sitzung (die Referenzfahrt: an ihr kürzt sich die Last des Läufers). Bis 12.11. urteilte
+// hier ein Zeit-Soll (≤ 250 ms, darüber ≤ 1,1 × main 721 ms Radeon / 1132 ms GTX, gesetzt 08.11. ohne Referenzfahrt): z409 fiel
+// 78 min an 1111 ms unter Last, und die Radeon maß am selben Stand 1295–1740 ms bei Median/schnellster 1,08–1,14 — gleichmäßige
+// Last sieht kein Maß einer Sitzung. Der Selbsttest auf echter GPU zeichnet den K17-Fall (das Fels-Gesetz ausgeschrieben im Pixel,
+// `s0BodenMessung`, ~188 000 Zeichen) auf dem Vendor-Weg: er fällt am Weg (synchron) und an der Ratsche.
+const S0_MS = { n: 9 };
+const s0Median = (p) => (p?.ms?.length ? rang([...p.ms].sort(aufsteigend)) : null);
+function s0BodenUrteil(name, p) {
+    return [p.weg !== "asynchron" && `${name}: die Pipeline entstand ${p.weg}, nie asynchron wie jede der Erst-Zeichnung (\`_renderObjectDirect\`)`].filter(Boolean);
 }
-// EINSEITIG: UNGEMESSEN nur, wenn die Zeit unter Last über dem Soll liegt (GRÜN unter Last gilt)
-const s0Last = (p, bezug) => (p.ms.length && Math.min(...p.ms) > s0Decke(bezug) && s0Unruhig(p)) || null;
-function s0BodenUrteil(name, p, bezug) {
-    const ms = Math.min(...p.ms);
-    return [
-        p.weg !== "asynchron" && `${name}: die Pipeline entstand ${p.weg}, nie asynchron wie jede der Erst-Zeichnung (\`_renderObjectDirect\`)`,
-        p.ms.length && !s0Last(p, bezug) && ms > s0Decke(bezug) &&
-            `${name}: kalt ${ms} ms (Soll ≤ ${Math.round(s0Decke(bezug))} ms: ${S0_MS.maxMs}, darüber ≤ ${S0_MS.relativ}× main ${bezug})`,
-    ].filter(Boolean);
-}
-// die Zeile je Programm: `fang` — ein erwarteter Fang des Selbsttests (der K17-Fall) heißt GEFANGEN, nie ROT
-const s0ZeileText = (name, p, u, bezug, fang) => {
-    const last = p.ms.length && s0Last(p, bezug);
+// die Zeile je Programm: das Urteil (Weg + Stoff: `u`) und die Zeit als Auskunft; `ref` — der K17-Fall derselben Sitzung;
+// `fang` — ein erwarteter Fang des Selbsttests heißt GEFANGEN, nie ROT
+const s0ZeileText = (name, p, u, ref, fang) => {
+    const [m, mr] = [s0Median(p), s0Median(ref)];
     const zeit = !p.ms.length
         ? "ungemessen (swiftshader)"
-        : `${p.ms.join(" · ")} ms → ${last ? `Zeit UNGEMESSEN (Last: ${last}) — kein Zeit-Urteil` : u.length ? (fang ? "GEFANGEN" : "ROT") : fang ? "nicht gefangen" : "GRÜN"}`;
-    return `  ${name}: ${p.zeichen} Zeichen WGSL · Pipeline ${p.weg} · kalt ${zeit}`;
+        : `${p.ms.join(" · ")} ms, Median ${m} ms${mr ? ` · ÷ K17 derselben Sitzung ${String((m / mr).toFixed(2)).replace(".", ",")}` : ""} (Auskunft, kein Zeit-Urteil)`;
+    const urteil = u.length ? (fang ? "GEFANGEN" : "ROT") : fang ? "nicht gefangen" : "GRÜN";
+    return `  ${name}: ${p.zeichen} Zeichen WGSL (Ratsche ≤ ${Math.round(S0_ZEICHEN.stand * S0_ZEICHEN.luft)}) · Pipeline ${p.weg} → ${urteil} · kalt ${zeit}`;
 };
 const s0Zeile = (...a) => console.log(s0ZeileText(...a));
 // DAS REGISTER DER PIPELINES (vor dem ersten Skript der Seite): je Pipeline des Geräts ihr Weg und ihr Deskriptor; `__s0Flug`
@@ -992,7 +981,7 @@ async function s0BodenMessung({ hw, selbst, n }) {
         while (window.__s0Flug > 0) await sleep(50);
         for (let i = 0; i < (hw ? n : 0); i++) for (const p of k17 ? [...progs, k17] : progs) await kalt(p);
         const aus = ({ e, fs, ms }) => ({ weg: e.weg || "am Register vorbei (die Linse ist blind)", zeichen: fs.length, ms });
-        return { programme: progs.map(aus), k17: k17 && aus(k17) };
+        return { programme: progs.map(aus), k17: k17 && { ...aus(k17), wgsl: k17.fs } };
     } catch (e) {
         return { fehler: String(e?.message || e) };
     }
@@ -1567,13 +1556,14 @@ async function lichtLauf() {
             const aus = opt("--wgsl", null);
             if (aus) fs.writeFileSync(aus.replace(/(\.wgsl)?$/, i ? `-${i + 1}.wgsl` : ".wgsl"), wgsl);
         });
-        // DIE ÜBERSETZUNG (oben `S0_MS`): je Programm Zeichen (Ausgabe), Weg und kalte Zeit gegen main desselben Adapters
+        // DIE ÜBERSETZUNG (oben `S0_MS`): je Programm das Urteil des Wegs, die Zeichen gegen die Ratsche, die Zeit als Auskunft
+        // neben dem K17-Fall derselben Sitzung
         if (boden?.fehler || !boden?.programme.length)
             befunde.push(`S0 Boden-Übersetzung: ${boden?.fehler || "kein Programm (die Linse ist blind)"}`);
         else
             boden.programme.forEach((p, i) => {
-                const u = s0BodenUrteil(`S0 Boden-Programm ${i + 1}`, p, S0_MS.main[GERAET]);
-                s0Zeile(`S0 BODEN-PROGRAMM ${i + 1}/${boden.programme.length}`, p, u, S0_MS.main[GERAET]);
+                const u = s0BodenUrteil(`S0 Boden-Programm ${i + 1}`, p);
+                s0Zeile(`S0 BODEN-PROGRAMM ${i + 1}/${boden.programme.length}`, p, u, boden.k17);
                 befunde.push(...u);
             });
     }
@@ -1622,29 +1612,32 @@ async function lichtLauf() {
         const bindRot = bind ? S0_STOFF(`${prog}\nfn s0Mutante() {\n\tlet s0 = ${bind[1]};\n}\n`) : [];
         const bindGetroffen = bindRot.some((b) => b.includes(`s0Mutante: ${bind[1]}`));
         console.log(`  SELBSTTEST S0 BODEN-PROGRAMM (c: eine Hilfs-Funktion liest eine Bindung): ${bindGetroffen ? `getroffen — ${bindRot[0].split(" — ")[0]}` : "BLIND"}`);
-        // (a) der K17-Fall reißt die Zeit gegen den Boden derselben Sitzung, (b) gezeichnet auf dem Vendor-Weg reißt er den Weg
+        // (a+b) der K17-Fall, gezeichnet auf dem Vendor-Weg: er fällt am Weg (synchron) UND an der Ratsche der Größe; die Bindung
+        // steht als Auskunft daneben (der Fall schreibt das Fels-Gesetz ohne Layout-Funktion aus — die Bindung fängt Mutante c)
         const k17 = boden?.k17;
-        const k17Bezug = k17 ? Math.min(...boden.programme[0].ms) : 0;
-        const k17Rot = k17 ? s0BodenUrteil("S0 K17-Fall", k17, k17Bezug) : [];
-        if (k17) s0Zeile("S0 K17-FALL (Selbsttest)", k17, k17Rot, k17Bezug, true);
-        // (a) unter Last (der Boden als Bezug oder der K17-Fall selbst) ist die Zeit UNGEMESSEN — kein Fang, kein BLIND; (b) urteilt
-        const k17Last = k17 && (s0Unruhig(boden.programme[0]) || s0Last(k17, k17Bezug));
-        const k17Getroffen = !HW || (k17Rot[0]?.includes("entstand synchron") && (!!k17Last || k17Rot.some((b) => b.includes("Soll ≤"))));
-        console.log(`  SELBSTTEST S0 BODEN-PROGRAMM (a+b: der K17-Fall auf dem Vendor-Weg): ${!HW ? "nur auf echter GPU" : k17Getroffen ? "getroffen — " + k17Rot.map((b) => b.split(" — ")[0]).join(" · ") + (k17Last ? ` · (a) Zeit UNGEMESSEN (Last: ${k17Last})` : "") : "BLIND " + JSON.stringify(k17 || boden)}`);
-        // (d) DIE LAST (z409, Stummel-Zeiten): unter Last über dem Soll → UNGEMESSEN, kein Befund, die Zeile urteilt nicht
-        // (`istRotZeile`); in Ruhe über dem Soll → der Befund „Soll ≤“. Die Mutante „Last macht ROT“ (das Urteil bis z409) muss fallen
+        const k17Rot = k17 ? [...s0BodenUrteil("S0 K17-Fall", k17), ...S0_STOFF(k17.wgsl || "", "S0 K17-Fall")] : [];
+        if (k17) s0Zeile("S0 K17-FALL (Selbsttest)", k17, k17Rot, null, true);
+        const k17Getroffen =
+            !HW || (k17Rot.some((b) => b.includes("entstand synchron")) && k17Rot.some((b) => b.includes("Zeichen WGSL")));
+        console.log(`  SELBSTTEST S0 BODEN-PROGRAMM (a+b: der K17-Fall auf dem Vendor-Weg, Weg und Ratsche): ${!HW ? "nur auf echter GPU" : k17Getroffen ? "GEFANGEN — " + k17Rot.map((b) => b.split(" (Budget")[0].split(" — ")[0]).join(" · ") : "BLIND " + JSON.stringify(k17 ? { ...k17, wgsl: undefined } : boden)}`);
+        // (d) ZEITEN JEDER ART ÄNDERN DEN EXIT NICHT (z409, Stummel-Zeiten): unter Last (Median 1487 > 1,3 × 1111), ruhig über dem
+        // alten Soll (1111–1170) und schnell (90–99) — dasselbe Urteil, keine Zeile ROT (`istRotZeile`). Die Mutante „Wanduhr
+        // urteilt“ (das Zeit-Soll bis 12.11.: ≤ 1,1 × main 721 ms) muss fallen
         const { istRotZeile } = require("./lib/urteil-zeile.cjs");
-        const z409 = { weg: "asynchron", zeichen: 95297, ms: [1111, 1300, 1458, 1629, 1574, 1487, 1671, 1413, 1582] };
-        const ruhig = { weg: "asynchron", zeichen: 95297, ms: [1111, 1120, 1125, 1130, 1135, 1140, 1150, 1160, 1170] };
-        const lastProbe = (urteil) => {
-            const [uL, uR] = [urteil("S0 Last-Probe", z409, 721), urteil("S0 Last-Probe", ruhig, 721)];
-            return !uL.length && !istRotZeile(s0ZeileText("S0 LAST-PROBE", z409, uL, 721)) && uR.some((b) => b.includes("Soll ≤")) &&
-                istRotZeile(`    ⛔ ${uR[0]}`);
-        };
-        const lastMutante = (n, p, b) => [...s0BodenUrteil(n, p, b), s0Unruhig(p) && `${n}: UNGEMESSEN — der Läufer stand unter Last`].filter(Boolean);
-        const lastGetroffen = lastProbe(s0BodenUrteil) && !lastProbe(lastMutante);
+        const zeiten = [
+            [1111, 1300, 1458, 1629, 1574, 1487, 1671, 1413, 1582],
+            [1111, 1120, 1125, 1130, 1135, 1140, 1150, 1160, 1170],
+            [90, 91, 92, 93, 94, 95, 96, 97, 99],
+        ].map((ms) => ({ weg: "asynchron", zeichen: S0_ZEICHEN.stand, ms }));
+        const zeitProbe = (urteil) =>
+            zeiten.every((p) => {
+                const u = urteil("S0 Zeit-Probe", p);
+                return !u.length && !istRotZeile(s0ZeileText("S0 ZEIT-PROBE", p, u, zeiten[1]));
+            });
+        const wanduhr = (n, p) => [...s0BodenUrteil(n, p), Math.min(...p.ms) > 1.1 * 721 && `${n}: kalt ${Math.min(...p.ms)} ms (Soll ≤ 793 ms)`].filter(Boolean);
+        const zeitGetroffen = zeitProbe(s0BodenUrteil) && !zeitProbe(wanduhr);
         console.log(
-            `  SELBSTTEST S0 BODEN-PROGRAMM (d: z409 unter Last über dem Soll): ${lastGetroffen ? `getroffen — ${s0ZeileText("z409", z409, [], 721).trim().split(" → ")[1]}, Exit unberührt · die Mutante „Last urteilt“ GEFANGEN` : "BLIND"}`
+            `  SELBSTTEST S0 BODEN-PROGRAMM (d: Zeiten jeder Art ändern den Exit nicht — z409 unter Last, ruhig 1111 ms, schnell 90 ms): ${zeitGetroffen ? `getroffen — kein Befund, keine Zeile urteilt · die Mutante „Wanduhr urteilt“ GEFANGEN` : "BLIND"}`
         );
         const nb = (sauber && !sauber.fehler && sauber.nah) || {};
         const vers = Object.keys(nb.versetzt || {});
@@ -1674,7 +1667,7 @@ async function lichtLauf() {
             `  SELBSTTEST S0 NACHT (die Kamera der Nacht 2 Stufen tiefer): ${kameraTreffer ? "getroffen — " + kameraTreffer.slice(0, 230) : "BLIND " + JSON.stringify(st && (st.grund || st.fehler))}`
         );
         pass =
-            pass && getroffen && farbGetroffen && tagGetroffen && bindGetroffen && k17Getroffen && lastGetroffen && nahGetroffen && liesGetroffen && wacheGetroffen;
+            pass && getroffen && farbGetroffen && tagGetroffen && bindGetroffen && k17Getroffen && zeitGetroffen && nahGetroffen && liesGetroffen && wacheGetroffen;
         const stoffTreffer = /`_mikroStoff`/.test(s0NachtUrteil({ grund: { luma: 24.6, schwarz: 0.1 } }, S0_NACHT.nacht));
         console.log(`  SELBSTTEST S0 NACHT (z352): ${stoffTreffer ? "getroffen — der Stoff" : "BLIND"}`);
         pass = pass && taubGetroffen && !!kameraTreffer && stoffTreffer;
