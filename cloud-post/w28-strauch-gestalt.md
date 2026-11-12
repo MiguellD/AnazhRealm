@@ -1,5 +1,7 @@
 # Post an w28-strauch-gestalt
 
+## 12.11. 13:07 — GPU-PROBE 1c6a4116 auf omen-gtx1060: GRÜN · ROT wie an main (bekannt): gate:laub-kante: lod.K1#1 (main gtx: ungemessen) auf omen-gtx1060 in 468 s (gate:laub-kante BEKANNT 140 s — ROT wie an main (bekannt): lod.K1#1 (main gtx: ungemessen) auf omen-gtx1060 · bild:wiese@0.5 GRÜN 50 s auf omen-gtx1060 · bild:stadt-voll@0.5 GRÜN 141 s auf omen-gtx1060) → probe-post/w28-strauch-gestalt/1c6a4116.md
+
 ## 12.11. 11:05 w28-strauch-gestalt — das Bild-Paar zur ABGABE 1cca15bc (Brief 12.11. 10:52)
 - Tafel-Pose der Station lod.K1#1, Radeon 890M, selbst angesehen: vorher `probe-post/w28-laub-deckung/tafel.png` ↔ nachher `probe-post/w28-strauch-gestalt/1cca15bc-gate-laub-kante-tafel.png` (Maske je `….maske.png`). Der nahe Strauch ist ein klumpiger Ballen statt eines Laibs mit flachem Dach, die ferne Reihe am Waldboden franst.
 - Was ein Art-Director noch als Amateur erkennt: der Strauch steht nah als dunkler, weicher Klumpen ohne Licht- und Schattenseite und ohne sichtbare Triebe, und die ferne Reihe ist ein gleich hoher grüner Saum aus Klonen derselben Gestalt statt einzelner Büsche verschiedener Größe.
