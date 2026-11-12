@@ -412,7 +412,8 @@ function dorfVerdict(m) {
 // m.r = [hinten ohne Leerlauf, vorn,
 // Leerlauf-Ruf, hinten mit Leerlauf] · m.k = je Bauer der Kacheln um das Auge [vor dem Bild außer Blick, im Blick, danach außer Blick]
 // DIE KRONE VOR DER KACHEL (w28-krone-vor-kachel, Teil von LH): c.je / c.mutant = je Bauer [gebaut, stehend, unter der Krone
-// gebaut, solange sie kam, unter ihr am Ende] · c.chunk = [Kacheln im Chunk gebaut, solange seine Pflanzung offen war, danach].
+// gebaut, solange sie kam, unter ihr am Ende] · c.chunk = [Kacheln im Chunk gebaut, solange seine Pflanzung offen war, danach] ·
+// c.ausser = Kacheln, die AUSSERHALB des Takts unter der kommenden Krone bauen (> 0: dort wartet keine).
 // Ohne Kacheln um das Auge (`m.k` fehlt) urteilt die Zeile darüber.
 function kroneVerdict(c) {
     if (c === false) return [];
@@ -429,6 +430,7 @@ function kroneVerdict(c) {
         !je.some(([, [, stehend, , nach]]) => stehend && nach) && "die Krone vor der Kachel: unter der Krone wuchs nichts (die Probe ist blind)",
         !Object.values(c.mutant).some(([gebaut, stehend]) => gebaut > stehend) && "die Krone vor der Kachel: ohne die Frage baut nichts doppelt (die Probe sieht den Täter nicht)",
         c.chunk[0] ? `im Chunk mit offener Pflanzung wachsen ${c.chunk[0]} Kacheln (\`_pflanzungOffen\`)` : !c.chunk[1] && "im gepflanzten Chunk wächst keine Kachel",
+        !(c.ausser > 0) && "außerhalb des Takts wartet die Kachel auf eine Krone, die dort nie landet (`_imTakt`: der ruhende Loop, der Playtest)",
     ].filter(Boolean);
 }
 function huelleVerdict(m) {
@@ -1157,14 +1159,15 @@ async function probe(arg) {
                         still = zahl.n === vor ? still + 1 : 0;
                     }
                 };
-                const lauf = (mutant) => {
-                    const [je, zahl, alt] = [{}, { n: 0 }, st.pendingVegSpawns];
+                // `imTakt`: die Bauer gehen wie im Takt des laufenden Loops (`_imTakt` gespielt) — nur dort wartet die Kachel
+                const lauf = (mutant, imTakt = true) => {
+                    const [je, zahl, alt, taktVor] = [{}, { n: 0 }, st.pendingVegSpawns, r._imTakt];
                     const q = (st.pendingVegSpawns = []);
                     leeren();
                     for (const n of Object.keys(M)) [(je[n] = [0, 0, 0, 0]), (M[n][0].set = function (key, v) { return je[n][0]++, zahl.n++, Map.prototype.set.call(this, key, v); })]; // prettier-ignore
                     try {
                         if (mutant) r._kroneKommt = () => false;
-                        r._standRuht = () => false;
+                        [(r._standRuht = () => false), (r._imTakt = imTakt)];
                         r._enqueueVegetationSpawn(art, { x: ort.x, y: ort.y, z: ort.z }, { scale: 1 });
                         if (q.length !== 1) throw new Error("der Wurf trat nicht in die Pflanz-Schlange");
                         gehen(zahl);
@@ -1175,19 +1178,21 @@ async function probe(arg) {
                         for (const n of Object.keys(M)) [je[n][1], je[n][3]] = [M[n][0].size, unterKrone(n)];
                     } finally {
                         for (const n of Object.keys(M)) delete M[n][0].set;
-                        [delete r._kroneKommt, delete r._standRuht, r._kronenStreuWeg("probe:krone"), (st.pendingVegSpawns = alt), (r._pflanzRegung = (r._pflanzRegung | 0) + 1)];
+                        [delete r._kroneKommt, delete r._standRuht, (r._imTakt = taktVor), r._kronenStreuWeg("probe:krone"), (st.pendingVegSpawns = alt), (r._pflanzRegung = (r._pflanzRegung | 0) + 1)];
                     }
                     return je;
                 };
-                m.krone = { art, je: lauf(false), mutant: lauf(true) };
+                // AUSSERHALB DES TAKTS (der ruhende Loop, der Playtest ruft den Bauer von Hand) arbeitet niemand die Pflanzung ab: die
+                // Kachel unter der kommenden Krone baut sofort — `ausser` zählt sie über die drei Bauer
+                m.krone = { art, je: lauf(false), mutant: lauf(true), ausser: Object.values(lauf(false, false)).reduce((s, v) => s + v[2], 0) };
                 // der Chunk unter dem Ort: seine Pflanzung offen, dann gepflanzt
                 const sp2 = r._voxelChunkConfig().span;
                 const [cx, cz] = [Math.floor(ort.x / sp2), Math.floor(ort.z / sp2)];
                 const imChunk = imKasten(cx * sp2, cz * sp2, (cx + 1) * sp2, (cz + 1) * sp2);
                 const [W, zahl, alt] = [r._waldPflanzWarten || (r._waldPflanzWarten = new Set()), { n: 0 }, st.pendingVegSpawns];
-                const war = W.has(`${cx},${cz}`);
+                const [war, taktVor] = [W.has(`${cx},${cz}`), r._imTakt];
                 try {
-                    [(st.pendingVegSpawns = []), leeren(), W.add(`${cx},${cz}`), (r._standRuht = () => false)];
+                    [(st.pendingVegSpawns = []), leeren(), W.add(`${cx},${cz}`), (r._standRuht = () => false), (r._imTakt = true)];
                     for (const n of Object.keys(M)) M[n][0].set = function (key, v) { return zahl.n++, Map.prototype.set.call(this, key, v); }; // prettier-ignore
                     gehen(zahl);
                     const offen = Object.keys(M).reduce((s, n) => s + imChunk(n), 0);
@@ -1195,7 +1200,7 @@ async function probe(arg) {
                     m.krone.chunk = [offen, Object.keys(M).reduce((s, n) => s + imChunk(n), 0)];
                 } finally {
                     for (const n of Object.keys(M)) delete M[n][0].set;
-                    [delete r._standRuht, war ? W.add(`${cx},${cz}`) : W.delete(`${cx},${cz}`), (st.pendingVegSpawns = alt)];
+                    [delete r._standRuht, (r._imTakt = taktVor), war ? W.add(`${cx},${cz}`) : W.delete(`${cx},${cz}`), (st.pendingVegSpawns = alt)];
                 }
             } catch (e) {
                 m.krone = { err: fehlerStapel(e) };
@@ -2217,7 +2222,7 @@ hauptLauf(async () => {
                     ["keine EINE Formel", { durchsicht: { formel: false } }, "Durchsicht: keine EINE Formel"],
                 ],
             ],
-            ["LH", huelleVerdict, { h: [0, 0, 0, 3, 0], r: [false, true, true, true], k: { x: [0, 9] }, krone: { je: { x: [9, 9, 0, 3] }, mutant: { x: [12, 9, 3, 3] }, chunk: [0, 5] } }, [["vor dem Bild", { h: [1, 0, 0, 3, 0] }, "die Hülle wuchs vor"], ["ohne Leib", { h: [0, 3, 3, 3, 0] }, "die Hülle wuchs ohne"], ["fern", { h: [0, 0, 3, 3, 0] }, "die Hülle wuchs fern"], ["Ring", { r: [true, true, false, true] }, "der Ring baut außer"], ["wartet nie", { k: { x: [3, 9] } }, "x baut 3"], ["blind", { k: { x: [0, 0] } }, "x baut nichts"], ["ohne", { k: null }, "die Kacheln um"], ["Krone doppelt", { krone: { je: { x: [12, 9, 0, 3] }, mutant: { x: [12, 9, 3, 3] }, chunk: [0, 5] } }, "x baut 12 Kacheln für 9"], ["unter der Krone", { krone: { je: { x: [9, 9, 3, 3] }, mutant: { x: [12, 9, 3, 3] }, chunk: [0, 5] } }, "x baut 3 Kacheln unter einer Krone"], ["wartet weiter", { krone: { je: { x: [9, 9, 0, 2] }, mutant: { x: [12, 9, 3, 3] }, chunk: [0, 5] } }, "x: unter der gelandeten Krone stehen 2"], ["Krone blind", { krone: { je: { x: [9, 9, 0, 0] }, mutant: { x: [12, 9, 0, 0] }, chunk: [0, 5] } }, "die Krone vor der Kachel: unter der Krone wuchs nichts"], ["Täter unsichtbar", { krone: { je: { x: [9, 9, 0, 3] }, mutant: { x: [9, 9, 0, 3] }, chunk: [0, 5] } }, "die Krone vor der Kachel: ohne die Frage baut nichts doppelt"], ["Chunk offen", { krone: { je: { x: [9, 9, 0, 3] }, mutant: { x: [12, 9, 3, 3] }, chunk: [4, 5] } }, "im Chunk mit offener Pflanzung wachsen 4"], ["Chunk nie", { krone: { je: { x: [9, 9, 0, 3] }, mutant: { x: [12, 9, 3, 3] }, chunk: [0, 0] } }, "im gepflanzten Chunk wächst keine"], ["ohne Krone-Probe", { krone: null }, "die Krone vor der Kachel: keine Probe"]]], // prettier-ignore
+            ["LH", huelleVerdict, { h: [0, 0, 0, 3, 0], r: [false, true, true, true], k: { x: [0, 9] }, krone: { je: { x: [9, 9, 0, 3] }, mutant: { x: [12, 9, 3, 3] }, chunk: [0, 5], ausser: 6 } }, [["vor dem Bild", { h: [1, 0, 0, 3, 0] }, "die Hülle wuchs vor"], ["ohne Leib", { h: [0, 3, 3, 3, 0] }, "die Hülle wuchs ohne"], ["fern", { h: [0, 0, 3, 3, 0] }, "die Hülle wuchs fern"], ["Ring", { r: [true, true, false, true] }, "der Ring baut außer"], ["wartet nie", { k: { x: [3, 9] } }, "x baut 3"], ["blind", { k: { x: [0, 0] } }, "x baut nichts"], ["ohne", { k: null }, "die Kacheln um"], ["Krone doppelt", { krone: { je: { x: [12, 9, 0, 3] }, mutant: { x: [12, 9, 3, 3] }, chunk: [0, 5], ausser: 6 } }, "x baut 12 Kacheln für 9"], ["unter der Krone", { krone: { je: { x: [9, 9, 3, 3] }, mutant: { x: [12, 9, 3, 3] }, chunk: [0, 5], ausser: 6 } }, "x baut 3 Kacheln unter einer Krone"], ["wartet weiter", { krone: { je: { x: [9, 9, 0, 2] }, mutant: { x: [12, 9, 3, 3] }, chunk: [0, 5], ausser: 6 } }, "x: unter der gelandeten Krone stehen 2"], ["Krone blind", { krone: { je: { x: [9, 9, 0, 0] }, mutant: { x: [12, 9, 0, 0] }, chunk: [0, 5], ausser: 6 } }, "die Krone vor der Kachel: unter der Krone wuchs nichts"], ["Täter unsichtbar", { krone: { je: { x: [9, 9, 0, 3] }, mutant: { x: [9, 9, 0, 3] }, chunk: [0, 5], ausser: 6 } }, "die Krone vor der Kachel: ohne die Frage baut nichts doppelt"], ["Chunk offen", { krone: { je: { x: [9, 9, 0, 3] }, mutant: { x: [12, 9, 3, 3] }, chunk: [4, 5], ausser: 6 } }, "im Chunk mit offener Pflanzung wachsen 4"], ["Chunk nie", { krone: { je: { x: [9, 9, 0, 3] }, mutant: { x: [12, 9, 3, 3] }, chunk: [0, 0], ausser: 6 } }, "im gepflanzten Chunk wächst keine"], ["wartet außerhalb des Takts", { krone: { je: { x: [9, 9, 0, 3] }, mutant: { x: [12, 9, 3, 3] }, chunk: [0, 5], ausser: 0 } }, "außerhalb des Takts wartet die Kachel"], ["ohne Krone-Probe", { krone: null }, "die Krone vor der Kachel: keine Probe"]]], // prettier-ignore
             ["D8", kanalVerdict, { gestartet: true, siedlungImLog: true, zeilen: ["> dorf 7", "(Welt verändert: 1× Birke)"] }, [["Siedlungs-Zahlen im Chat", { zeilen: ["Seed 7"] }, "Telemetrie im Chat"], ["rohes Programm", { zeilen: ['["spawn_studio",'] }, "Telemetrie im Chat"], ["interne id", { zeilen: ["baum_birke"] }, "interne id im Chat"], ["Ereignis-Name", { zeilen: ["op_exception"] }, "Telemetrie im Chat"]]],
             [
                 "D6",
@@ -2298,7 +2303,7 @@ hauptLauf(async () => {
             ((K) => (K?.leib ? ` · Köpfe (B5): Bild-Rang ${K.orte.filter((o) => o.blick).length}/${K.orte.length} im Blick, Leib bestellt ${K.leib.bestellt.join(" · ")}, baut ${(K.leib.baut || []).join(" · ")}, Dorf-Export mit dem Buch ${!!K.dorf.export}` : ""))(m.koepfe) +
             (m.tastenHinter ? ` · hinter dem Ladeschirm: W ${m.tastenHinter.w ? "läuft" : "ruht"}, Enter → ${m.tastenHinter.enter}, Strg+K → Omnibox ${m.tastenHinter.omnibox ? "offen" : "zu"}` : "")
     );
-    zeige("LH", "was das Bild nicht liest, hält es nicht: die Hülle am Leib, der Ring außer Bild im Leerlauf", out.huelle, huelleVerdict, (m) => `Hülle ${m.h} · Ring [hinten ohne Leerlauf, vorn, Ruf, hinten mit] ${m.r} · Kacheln ${JSON.stringify(m.k)} · Krone vor der Kachel [gebaut, stehend, unter der kommenden, unter der gelandeten] ${JSON.stringify(m.krone && m.krone.je)} · Mutante ${JSON.stringify(m.krone && m.krone.mutant)} · Chunk [offen, gepflanzt] ${JSON.stringify(m.krone && m.krone.chunk)}`); // prettier-ignore
+    zeige("LH", "was das Bild nicht liest, hält es nicht: die Hülle am Leib, der Ring außer Bild im Leerlauf", out.huelle, huelleVerdict, (m) => `Hülle ${m.h} · Ring [hinten ohne Leerlauf, vorn, Ruf, hinten mit] ${m.r} · Kacheln ${JSON.stringify(m.k)} · Krone vor der Kachel [gebaut, stehend, unter der kommenden, unter der gelandeten] ${JSON.stringify(m.krone && m.krone.je)} · Mutante ${JSON.stringify(m.krone && m.krone.mutant)} · Chunk [offen, gepflanzt] ${JSON.stringify(m.krone && m.krone.chunk)} · außerhalb des Takts unter der kommenden Krone gebaut ${m.krone && m.krone.ausser}`); // prettier-ignore
     zeige("L1", "das Fadenkreuz steht in der Bildmitte und weicht der Schublade", out.kreuz, kreuzVerdict, (m) => `da ${m.da} · Mitte ${m.dx}/${m.dy} px · mit Werkstatt ${m.mitSchublade} · danach ${m.nachSchublade}`);
     zeige("L2b", "„hilfe\" nennt die EINEN Tafeln und die Tasten", out.hilfe, hilfeVerdict, (m) => Object.entries(m.antworten || {}).map(([w, z]) => `„${w}": ${z.unbekannt ? "unbekannt" : `${(z.fehlt || []).length} fehlen`}`).join(" · "));
     zeige("L3", "Enter öffnet das Gespräch, Enter sendet und gibt die Welt zurück, Enter auf einem Knopf gehört dem Knopf", out.gespraech, gespraechVerdict, (m) => `Enter → ${m.enterFokus} · gesendet ${m.gesendet} · danach ${m.nachSenden} · W ${m.wNachSenden} · Esc → ${m.nachEsc} · Enter auf dem Knopf → ${m.enterAufKnopf}`);

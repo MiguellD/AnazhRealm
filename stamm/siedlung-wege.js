@@ -207,7 +207,12 @@ class AnazhRealm_siedlung_wege {
     // (`architectureCullingRadius`, die Lücke „pflanzung" in `_weltbildLuecken`). Die Ferne der Wiese reicht weiter (200 m): eine
     // Krone dahinter landet vielleicht erst im Nachlauf — wartete ihre Kachel auf sie, fehlte sie dem ersten Bild (GTX 1050,
     // Wiederkehr: 138 statt 152 Kacheln der Ferne am Bild); sie baut darum sofort und fällt einmal, wenn die Krone landet.
+    // DIE KACHEL WARTET NUR IM TAKT (`_imTakt`): nur der Takt des laufenden Loops arbeitet die Pflanzung ab (`_tickPendingVegSpawns`,
+    // die Saat im Planer). Ein Rufer außerhalb des Takts — der ruhende Loop, eine Linse, die Werkbank, der Playtest, der den Bauer
+    // von Hand ruft — wartete auf eine Krone, die nie landet: er baut ganz, wie jeder Leser außerhalb des Takts (`_psoVorbau`).
+    // Der volle Playtest an 8e11abe9: „Nah-Streu: der Takt baut den Ring … offen 107" nach 900 Rufen von Hand.
     _kroneKommt(x0, z0, x1, z1) {
+        if (this._imTakt !== true) return false;
         const st = this.state;
         const pm = st.playerMesh;
         const R = Number.isFinite(st.architectureCullingRadius) ? st.architectureCullingRadius : 150;
