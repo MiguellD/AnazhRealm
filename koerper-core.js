@@ -2168,7 +2168,7 @@
     // beider Seiten, ein Hauch — nackt 0,07 E, im Hemd 0,134; vorher fest 0,12): Haut ruht an Haut, Stoff an Stoff. Der Arm beginnt am Lot (labMorph armPose.rotZ = arms · 1,30; der Vorhalt 0,06 + 0,05 g
     // stellte die dicken Kugeln frei). Am Ofen L0 nackt: Abspreizung Mann 6,3° → 2,4°, Frau 11,8° → 8,9°, die Hand liegt am Schenkel.
     var ARM_RUHE = Object.freeze({
-        naht: 0.45, // (das Ende der Schulter am Oberarm, LEIB_RELIEF.profil.schulter `ende` — HEUTE ZWEI ZAHLEN, die Gleichheit hält noch keine Linse: darüber liegen Arm und Brust aneinander, die Anlage weicht erst darunter; bis Nummer 4b 0,25: sie schnitt den Keil der Achsel auf, 20 mm breit)
+        naht: 0.45, // (EINE Zahl: LEIB_RELIEF.profil.schulter `ende` liest sie — das Ende der Schulter am Oberarm; darüber liegen Arm und Brust aneinander, die Anlage weicht erst darunter. Bis Nummer 4b 0,25: sie schnitt den Keil der Achsel auf, 20 mm breit)
         depot: 0.4, // so viel vom Fett-Depot des Rumpfs (studios.K1) hält den Arm; der Rest weicht ihm (die Anlage)
         hauch: 0.02, // die Luft zwischen den Hüllen von Arm und Rumpf (E); mit Haut und Stoff des Rumpfs die Luft der Ruhe (`_armLuft`)
         faelltAb: 0.1, // die Anlage: ein Stoff, dessen Lage so weit (E) über der Haut steht, fällt über den Arm (der Poncho 0,12; der Stoff aus der Haut ≤ 0,032)
@@ -3021,10 +3021,10 @@
             // Kuppel um einen Punkt der Röhre; 318 von 801 Ecken der Zone stellte kein Schnitt (Band `seite`, das Dach, die Naht der
             // Gewichte): Stange mit Ecke (Wendung 60° auf 2,5 cm), Höcker mit Kerbe (15 mm). QUELLE UNGEPRÜFT (Richtwerte).
             schulter: Object.freeze({
-                wurzel: Object.freeze([0.35, 0.8]), kehre: 0.17, ende: 0.45, weichCm: 1.2,
+                wurzel: Object.freeze([0.35, 0.8]), kehre: 0.17, ende: ARM_RUHE.naht, weichCm: 1.2,
                 tau: [-1, -0.5, 0, 0.5, 1, 1.5],
-                mann: [[3.6, 4.6, 6.4, 6], [4, 5.2, 6.6, 6.5], [4.6, 5.8, 6.6, 6.5], [6.4, 6.4, 6.6, 6], [7.8, 6.6, 6.4, 5.7], [6.8, 6, 5.8, 5.4]],
-                frau: [[3.3, 4.2, 5.9, 5.6], [3.7, 4.8, 6.1, 6], [4.3, 5.3, 6.1, 6], [5.9, 5.8, 6.1, 5.6], [7.1, 6, 5.9, 5.4], [6.3, 5.5, 5.4, 5.1]],
+                mann: [[3.6, 4.6, 6.4, 6], [4, 5.2, 6.6, 6.5], [4.6, 5.8, 6.6, 6.5], [6, 6.4, 6.6, 6], [7.8, 6.6, 6.4, 5.7], [6.8, 6, 5.8, 5.4]],
+                frau: [[3.3, 4.2, 5.9, 5.6], [3.7, 4.8, 6.1, 6], [4.3, 5.3, 6.1, 6], [5.4, 5.8, 6.1, 5.6], [7.1, 6, 5.9, 5.4], [6.3, 5.5, 5.4, 5.1]],
             }),
         }),
         lappen: Object.freeze([
@@ -3671,7 +3671,7 @@
                 var sx = S[k][0] - S[i][0], sy = S[k][1] - S[i][1], sl = Math.sqrt(sx * sx + sy * sy) || 1e-9; // prettier-ignore
                 for (var m = i + 1; m < k; m++) {
                     var tief = ((S[m][0] - S[i][0]) * sy - (S[m][1] - S[i][1]) * sx) / sl;
-                    if (-tief * 10 > kerbe) kerbe = -tief * 10;
+                    if (tief * 10 > kerbe) kerbe = tief * 10; // (der Umriss läuft im Uhrzeigersinn: innen liegt rechts der Sehne)
                 }
             }
         // die Achsel von vorn: je Zeile unter dem Dach die offenen Zellen zwischen dem Rumpf (von der Mitte her) und dem Arm (bis zu seiner Achse)
@@ -3863,6 +3863,7 @@
             achselfalteHinten: SU.hinten,
             armKnicke: SU.knicke,
             armKnickeSicht: SU.knickeSicht,
+            schulterUmriss: SU.umriss,
             umfang: U,
             armZuHandgelenk: U.oberarm / U.handgelenk,
             schenkelZuKnie: U.oberschenkel / U.knie,
