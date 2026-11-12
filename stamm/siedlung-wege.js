@@ -838,8 +838,9 @@ class AnazhRealm_siedlung_wege {
     // Steine einer Reihe im Läufer-Verband (jede zweite um einen halben Stein versetzt). Je Pixel: der Bruchton je Stein (± `ton`),
     // der Kopf (zur Fuge hin dunkler, `kuppe`) und die Fuge als Box-Abdeckung des Pixels (die halbe Fuge in Metern, die Spanne aus
     // den Ableitungen der Welt-Lage — fern mittelt sie zu ihrem Anteil, nie zu einer Linie; dieselbe Rechnung wie `_steinStoff`);
-    // trägt der Pixel den Stein nicht mehr (unter 1,5 … 4 Pixeln je Stein), das Mittel des Musters. Die Farbe ist der Stein des
-    // Farb-Gesetzes (`STEIN_GESETZ.farbe`, linear: `_srgbHexLinear`). Leser: `_wegeBodenFarbe`. → vec3 (die Albedo)
+    // trägt der Pixel den Stein nicht mehr (unter 2,5 … 5 Pixeln je Stein über die lange Achse des Pixels), das Mittel des Musters.
+    // Die Farbe ist der Stein des Farb-Gesetzes (`STEIN_GESETZ.farbe`, linear: `_srgbHexLinear`). Leser: `_wegeBodenFarbe`. → vec3
+    // (die Albedo)
     _kopfsteinFarbe(_T, xz) {
         const K = AnazhRealm.Gesetz("porta:STEIN_GESETZ.kopfstein");
         const c = AnazhRealm._srgbHexLinear(AnazhRealm.Gesetz("porta:STEIN_GESETZ.farbe")[K.stein]);
@@ -854,7 +855,8 @@ class AnazhRealm_siedlung_wege {
         const nr = _T.floor(u);
         const fu = _T.fract(u);
         const d = _T.min(_T.min(fr, f(1).sub(fr)), _T.min(fu, f(1).sub(fu))).mul(s); // Meter zur nächsten Fuge
-        const aa = _T.fwidth(xz.x).add(_T.fwidth(xz.y)).mul(0.5).max(1e-5); // die Spanne des Pixels in Metern
+        const [wx, wz] = [_T.fwidth(xz.x), _T.fwidth(xz.y)];
+        const aa = wx.add(wz).mul(0.5).max(1e-5); // die Spanne des Pixels in Metern
         const halb = aa.mul(0.5);
         const fuge = _T
             .min(d.add(halb), f(K.fuge))
@@ -872,7 +874,11 @@ class AnazhRealm_siedlung_wege {
         // das Mittel des Musters (fern): der Ton 1, der Kopf 1 − kuppe/2 (über die Fläche des Steins), die Fuge ihr Anteil
         const anteil = 1 - (1 - (2 * K.fuge) / s) ** 2;
         const mittel = (1 - K.kuppe / 2) * (1 - (1 - K.fugeTon) * anteil);
-        const sicht = _T.smoothstep(f(1.5), f(4), f(s).div(aa));
+        // DER STEIN, DEN DER PIXEL TRÄGT (w28-stadt-grund): das Muster steht erst, wo ein Stein 2,5 … 5 Pixel über die LANGE Achse
+        // des Fußabdrucks misst (der Blick streift den Boden: in der Tiefe ist der Pixel ein Vielfaches seiner Breite). Bis hier
+        // las die Sicht die mittlere Spanne ab 1,5 Pixeln — in der Tiefe stand je Pixel ein Stein mit eigenem Bruchton (nyquist
+        // eines 2,5-Pixel-Steins 0,19 gegen 0,08 bei 4 Pixeln): das Pflaster las als Rauschen.
+        const sicht = _T.smoothstep(f(2.5), f(5), f(s).div(_T.max(wx, wz).max(1e-5)));
         return _T.vec3(c[0], c[1], c[2]).mul(_T.mix(f(mittel), muster, sicht));
     }
 
@@ -1390,7 +1396,9 @@ class AnazhRealm_siedlung_wege {
             if (!belag) return;
             const B = AnazhRealm.WEGE_KARTE.belag[belag];
             if (!B)
-                throw new Error(`Wege-Karte: die Fläche ${q.name} trägt den Belag „${belag}", den der Boden nicht kennt`);
+                throw new Error(
+                    `Wege-Karte: die Fläche ${q.name} trägt den Belag „${belag}", den der Boden nicht kennt`
+                );
             const h = q.huelle;
             const ohne = zonen
                 .slice(i + 1)

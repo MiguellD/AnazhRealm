@@ -698,11 +698,14 @@ class AnazhRealm_daten {
             Object.freeze({
                 freq: 1.1, // Mikro-Relief-Frequenz (~0.9 m Feature-Größe — Klumpen/Kiesel)
                 freq2: 2.7, // zweite Oktave (feineres Korn obendrauf)
-                // DIE OKTAVEN AM SCHIRM (material.K2, `_mikroRelief`): drei Oktaven folgen der Pixelgröße — die feinste trägt
-                // `mikroPx` × |fwidth| je Periode (|fwidth| ist 1,4–1,7 Pixel der Szene: 1 legt sie an den Nyquist der Ausgabe, die TAAU
-                // sammelt die welt-feste Oktave über den Jitter), nie feiner als `mikroMinM` (Schluff und Feinsand);
-                // jede trägt die Neigung `mikro` (gleiche Steigung je Oktave: das 1/f²-Spektrum natürlicher Bilder, Field 1987).
-                mikroPx: 1,
+                // DIE OKTAVEN AM SCHIRM (material.K2, `_mikroRelief`): drei welt-feste Oktaven, gewählt nach der Pixelgröße — die
+                // feinste trägt `mikroPx` × |fwidth| je Periode (|fwidth| ist 1,4–1,7 Pixel der Szene, die Szene 0,75 der Ausgabe: 3
+                // legt sie auf 6–7 Pixel der Ausgabe — das Korn ist ein Stein, den der Pixel trägt, nie das Raster selbst), nie feiner
+                // als `mikroMinM` (Schluff und Feinsand); jede trägt die Neigung `mikro` (gleiche Steigung je Oktave: das 1/f²-Spektrum
+                // natürlicher Bilder, Field 1987). Bis w28-stadt-grund lag sie mit 1 am Nyquist (2 Pixel der Ausgabe): je Pixel ein
+                // eigener Ton, das Korn mal 2 — Kies und Pflaster standen in jeder Weite als graues Pixel-Rauschen (Augen-Karte 11.11.
+                // §2 Nr. 9; nyquist 0,175 an der Mess-Wiese, das Maß der Arm-Linse nennt es heute Rauschen).
+                mikroPx: 3,
                 mikroMinM: 0.0005,
                 mikro: 0.15,
                 mikroHoehe: 0.75, // die Höhe der nächst gröberen Oktave je feinerer (`_mikroRelief`: das Spektrum β ≈ 1,2)
