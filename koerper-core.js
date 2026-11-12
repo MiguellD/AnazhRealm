@@ -4999,17 +4999,26 @@
             return kette("hip" + sd, "knee" + sd, "ankle" + sd, "hip", "knee", "ankle");
         };
         var r = { hips: t.mensch || null, spine: t.torso || null, chest: t.torso || null, neck: t.head || null, head: t.head || null, armL: arm("1"), armR: arm("-1"), legL: bein("1"), legR: bein("-1") };
-        r.armRuhe = [r.armL, r.armR].map(function (seite) {
-            var o = {};
-            for (var k in seite) if (seite[k]) o[k] = [seite[k].rotation.x, seite[k].rotation.y, seite[k].rotation.z];
-            return o;
-        });
+        _rigRuhe(r);
         return r;
     }
+    // DIE RUHE EINES RIGS: die Lage seiner Arm-Knochen, wenn es zum ersten Mal steht — an `leibRig` die Bind-Pose des Gusses, an
+    // jedem anderen Rig (der Rig-Probe einer Linse) die Lage, in der es zum ersten Mal neutral gestellt wird. EINE Stelle, die die
+    // Ruhe merkt; bis hier warf die neutrale Pose an einem Rig, das nicht durch `leibRig` ging, und die Emotion erreichte den Kopf
+    // nie (gate:nervensystem-labs E: sad=undefined).
+    function _rigRuhe(r) {
+        if (!Array.isArray(r.armRuhe))
+            r.armRuhe = [r.armL, r.armR].map(function (seite) {
+                var o = {};
+                for (var k in seite) if (seite[k]) o[k] = [seite[k].rotation.x, seite[k].rotation.y, seite[k].rotation.z];
+                return o;
+            });
+        return r.armRuhe;
+    }
     // DIE NEUTRALE POSE DES RIGS (absolut gesetzt vor jeder Pose — kein Drift zwischen ihnen; Welt `_animateHumanoidRig`, Labor
-    // `playPose`): Becken, Rumpf, Kopf und Beine auf 0, die Arm-Kette in der Ruhe ihres Gusses (`leibRig`). Ohne sie kein Rig.
+    // `playPose`): Becken, Rumpf, Kopf und Beine auf 0, die Arm-Kette in ihrer Ruhe (`_rigRuhe`).
     function leibRigNeutral(r) {
-        if (!Array.isArray(r.armRuhe)) throw new Error("leibRigNeutral: das Rig ohne die Ruhe seiner Arme (koerper leibRig) — fail-closed");
+        _rigRuhe(r);
         var mitte = [r.hips, r.spine, r.chest, r.neck, r.head],
             seiten = [r.armL, r.armR, r.legL, r.legR],
             i,
