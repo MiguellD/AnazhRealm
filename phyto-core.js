@@ -6377,9 +6377,24 @@
             neigungWurf: 0.25,
             bogenWurf: 1.5,
             blaetter: Object.freeze([
-                Object.freeze({ laenge: Object.freeze([0.95, 1.25]), bogen: Object.freeze([1.0, 3.9]), neigung: 1.0, breit: 1 }),
-                Object.freeze({ laenge: Object.freeze([0.5, 0.85]), bogen: Object.freeze([0.3, 1.0]), neigung: 0.6, breit: 0.8 }),
-                Object.freeze({ laenge: Object.freeze([0.6, 1.0]), bogen: Object.freeze([0.3, 1.0]), neigung: 1.6, breit: 0.8 }),
+                Object.freeze({
+                    laenge: Object.freeze([0.95, 1.25]),
+                    bogen: Object.freeze([1.0, 3.9]),
+                    neigung: 1.0,
+                    breit: 1,
+                }),
+                Object.freeze({
+                    laenge: Object.freeze([0.5, 0.85]),
+                    bogen: Object.freeze([0.3, 1.0]),
+                    neigung: 0.6,
+                    breit: 0.8,
+                }),
+                Object.freeze({
+                    laenge: Object.freeze([0.6, 1.0]),
+                    bogen: Object.freeze([0.3, 1.0]),
+                    neigung: 1.6,
+                    breit: 0.8,
+                }),
             ]),
             staengel: Object.freeze({ flaeche: 0.992, bogen: 0.18 }),
         }),
