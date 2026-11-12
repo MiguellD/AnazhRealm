@@ -17,8 +17,12 @@ class AnazhRealm_vegetation_wiese {
     // sobald das Bild steht. Bis hier baute der Lade-Takt den ganzen Ring um das Auge, die Ferne bis 200 m (~870 Kacheln à
     // 144 Boden-Proben): kalt vor der Kontrolle 7,3 s Haupt-Faden (GTX) und 7,9 s (Radeon) in `_tickNahWiese`, der größte
     // Block der Ankunft — mehr als der Knoten-Bau (3,2–3,4 s).
+    // DIE KACHEL WARTET AUF IHRE KRONE (w28-krone-vor-kachel): vor und nach dem Bild wächst sie erst, wenn über ihr keine Krone
+    // mehr kommt, die jetzt gesetzt wird (`_kroneKommt`: ein Baum der Pflanz-Schlange, ein Chunk mit offener Pflanzung) — sie
+    // liest das Licht der Kronen und fiele mit jeder, die nach ihr landet (`_kronenStreuWiese`).
     _nahKachelWartet(tx, tz, kante) {
-        return !this._blickDerAnkunft((tx + 0.5) * kante, (tz + 0.5) * kante, kante * Math.SQRT1_2);
+        if (!this._blickDerAnkunft((tx + 0.5) * kante, (tz + 0.5) * kante, kante * Math.SQRT1_2)) return true;
+        return this._kroneKommt(tx * kante, tz * kante, (tx + 1) * kante, (tz + 1) * kante);
     }
     // DIE REICHWEITE DER RINGE um die EINE Mitte: so weit stehen Kacheln der Wiese (ihre Ferne, `NAH_WIESE.fern`) oder der
     // Nah-Streu (ihr Rand-Band) — der weitere zählt (EINE Rechnung für den Neubau im Rechteck und das Licht der Kronen)
