@@ -182,7 +182,7 @@ hauptLauf(async () => {
     errs.push(...w6(z));
     const selbst = w6(out.selbst || []); // dasselbe Urteil am eigenen Täter: genau er, beim Namen, mit 17
     if (!(z.length > 4 && selbst.length === 1 && selbst[0].startsWith("W6: selbsttest:17-karten fragment trägt 17 "))) errs.push(`W6-Selbsttest: der Stoff mit 17 Karten fällt nicht beim Namen (${selbst.join(" · ") || "kein Urteil"}; ${z.length} Stoffe) — die Linse ist blind`); // prettier-ignore
-    else console.log(`  W6-Selbsttest ROT am Täter: ${selbst[0]}`);
+    else console.log(`  W6-Selbsttest GEFANGEN am Täter: ${selbst[0]}`);
     if (!(out.ohneLink > 0)) errs.push("W6: der Zensus linkt (compileAsync fragt seine Pipeline anders als mit eigener Versprechen-Liste — r184-Drift)"); // prettier-ignore
 
     require("./lib/welt-boot.cjs").wandEnde(errs, "die Kein-WebGPU-Geschichte ist BEWIESEN: der erzwungene WebGL2-Rückfall bootet eine LEBENDE, sichtbare Welt; die WGSL-Konsumenten + Bundles ruhen hinter der EINEN Backend-Wand, der Rückfall ist LAUT benannt, der Fern-Ring trägt auf CPU.");

@@ -505,7 +505,9 @@ hauptLauf(async () => {
         );
     }
     const sm = weltaktUrteil(S.schmuggel.buch);
-    console.log(`  Scharf · vorbei   ${sm.urteil}  ${sm.taeter.join(" · ")}`);
+    // der Schmuggel ist der erwartete Fang: ROT am Täter heißt die Engstelle hält — die Zeile sagt GEFANGEN, das Urteil steht in `urteil`
+    const smFang = sm.urteil === "ROT" ? "GEFANGEN" : `ENTKAM (${sm.urteil})`;
+    console.log(`  Scharf · vorbei   ${smFang}  ${sm.taeter.join(" · ")}`);
     console.log(`  Frei · Nexus      ${fz(S.frei.nexus)}`);
     console.log(
         `  KI: Prompt ${S.ki.prompt.length} Zeichen · Quelle: ${S.ops.length} Ops, ${S.ki.gruppen.Orte.length} Orte, ${S.ki.gruppen.Bedingungen.length} Bedingungen, ${S.liste ? S.liste.length : "keine"} Welt-Akte, ${FREI.length} frei; der Nexus komponiert ${Object.keys(S.nexusOps).length} Ops (${Object.keys(S.nexusOps).sort().join(" · ")})`

@@ -62,7 +62,8 @@ const PORT = Number(process.env.BOOT_STAGE_PORT || 4406);
 const ARGV = process.argv.slice(2);
 // Das Soll der Ankunft (docs/PFLICHT-OFFEN.md B, roadmap §0.v1 Schritt 1): kalt bis Kontrolle ≤ 5 s.
 // Die Kontrolle von außen (ankunft K1): die Taste trägt den Leib ≥ 0,1 m; nach 1500 Atemzügen ohne Weg hat er sie nie.
-// Das ganze Bild (ankunft K2 Staffel 1): ≤ 2 % der Pixel weichen gegen dieselbe Pose nach 60 s Ruhe um mehr als ein Achtel ab.
+// Das ganze Bild (ankunft K2 Staffel 1): in KEINER Kachel (8 × 6) weichen mehr als 2 % der Pixel gegen dieselbe Pose nach 60 s Ruhe
+// um mehr als ein Achtel ab (`lueckeKacheln`).
 const [ANKUNFT_SOLL_MS, KONTROLLE_M, KONTROLLE_DRUECKE, RUHE_MS, LUECKE_SOLL] = [5000, 0.1, 1500, 60000, 0.02];
 const KERN = require("../cores.manifest.json").find((k) => k.id === OPT("--kern-wechsel"));
 const server = statikServer({ wandle: (p, roh) => (KERN?.scripts.includes(p.slice(1)) ? roh + "//" : roh) });
@@ -74,8 +75,7 @@ async function LEIB_WEG(m) {
     return !!a && Math.hypot(p().x - a.x, p().z - a.z) >= m;
 }
 // (Seite) DER SCHUSS DER KONTROLLE: der Loop ruht, dieselbe Pose (der erste Schuss merkt die Kamera, der zweite stellt sie
-// zurück), die Bühne hält Mittag · Sonne · Sommer, der Mess-Frame wartet auf keine stehende Welt. Der zweite Schuss zählt die
-// Pixel, die gegen den ersten in einem Kanal um mehr als 32 abweichen — die Lücke. `mut`: der Schuss endet nach 20 m.
+// zurück), die Bühne hält Mittag · Sonne · Sommer, der Mess-Frame wartet auf keine stehende Welt. `mut`: der Schuss endet nach 20 m.
 async function SCHUSS(W, H, mut, r = window.anazhRealm, cam = r.state.camera) {
     const P = window.__pose || (window.__pose = [cam.position.clone(), cam.quaternion.clone()]);
     r.state.renderer.setAnimationLoop(null);
@@ -94,11 +94,24 @@ async function SCHUSS(W, H, mut, r = window.anazhRealm, cam = r.state.camera) {
         cam.updateProjectionMatrix();
         r.state.renderer.setAnimationLoop(r._gameLoopTick);
     }
-    const u = auf.u8.slice(0, W * H * 4);
-    const A = (window.__schussA = window.__schussA || u);
-    let n = 0;
-    for (let i = 0; i < u.length; i += 4) n += [0, 1, 2].some((k) => Math.abs(u[i + k] - A[i + k]) > 32);
-    return { dc: auf.info.drawCalls, dreiecke: auf.info.triangles, luecke: n / (W * H), png: __png(u, W, H) };
+    return { dc: auf.info.drawCalls, dreiecke: auf.info.triangles, png: __png(auf.u8.slice(0, W * H * 4), W, H) };
+}
+// DIE LÜCKE (rein; ankunft K2, w28-linse-wahr F der Augen-Karte): je Kachel eines nx × ny-Rasters der Anteil der Pixel, die in einem
+// Kanal um mehr als 32 abweichen — das Urteil liest das MAXIMUM, die Zeile nennt Kachel und Bildmittel. Bis hier mittelte sie über das
+// ganze Bild: am Dorf fehlten bei Kontrolle die Büsche, GRÜN „1,07 % Lücke“ (P29), ein Loch in der Bildmitte verschwand im Mittel (P27).
+function lueckeKacheln(A, B, [nx, ny] = [8, 6]) {
+    const n = new Array(nx * ny).fill(0);
+    let summe = 0;
+    for (let y = 0; y < A.H; y++)
+        for (let x = 0; x < A.W; x++) {
+            const i = (y * A.W + x) * 4;
+            if (![0, 1, 2].some((k) => Math.abs(A.u8[i + k] - B.u8[i + k]) > 32)) continue;
+            summe++;
+            n[Math.floor((y * ny) / A.H) * nx + Math.floor((x * nx) / A.W)]++;
+        }
+    const je = n.map((k, j) => k / ((Math.floor(((j % nx) + 1) * A.W / nx) - Math.floor(((j % nx) * A.W) / nx)) * (Math.floor((Math.floor(j / nx) + 1) * A.H / ny) - Math.floor((Math.floor(j / nx) * A.H) / ny)))); // prettier-ignore
+    const j = je.indexOf(Math.max(...je));
+    return { luecke: je[j], kachel: `${j % nx}/${Math.floor(j / nx)}`, mittel: summe / (A.W * A.H) };
 }
 // die Seite wartet Takt um Takt (`__gebautNach`), bis die Foundry nichts mehr offen hat (`_weltOffen`) und der Vorrat durch ist —
 // dann gilt ihre Liefer-Marke
@@ -444,8 +457,11 @@ async function kaltLauf() {
             return Object.assign(s, { png: datei });
         };
         const a = await schuss(MUT === "bild", path.resolve(bildDatei));
+        // die Ruhe streamt, nie geht: Tiere, Bewohner, Wagen und der Leib stehen (`__halten`), sonst hieße jeder Schritt eine Lücke
+        await page.evaluate(() => __halten(["tiere", "bewohner", "wagen", "leib"]));
         await sleep(RUHE_MS);
-        bild = Object.assign(await schuss(false, path.resolve(bildDatei).replace(/(\.png)?$/, "-ruhe.png")), { a });
+        const b = await schuss(false, path.resolve(bildDatei).replace(/(\.png)?$/, "-ruhe.png"));
+        bild = Object.assign(b, { a }, lueckeKacheln(...[a.png, b.png].map((f) => require("./lib/abnahme-urteil.cjs").pngLesen(fs.readFileSync(f)))));
     }
     if (tK && profilBenannt) await page.evaluate(RUHE);
     const out = await page.evaluate((r = window.anazhRealm, st = r.state) => {
@@ -572,15 +588,15 @@ async function kaltLauf() {
     const ganz = !bild || (bild.luecke <= LUECKE_SOLL && !offen.length);
     if (bild)
         console.log(
-            `  ${ganz ? "✅" : "❌"} das Bild der Kontrolle: ${(100 * bild.luecke).toFixed(2)} % Lücke nach ${RUHE_MS / 1000} s ` +
-                `(Soll ≤ ${100 * LUECKE_SOLL} %, ${bild.a.png}) · offen im Bild: ${offen.join(" · ") || "nichts"}`
+            `  ${ganz ? "✅" : "❌"} das Bild der Kontrolle: ${(100 * bild.luecke).toFixed(2)} % Lücke in Kachel ${bild.kachel} nach ${RUHE_MS / 1000} s ` +
+                `(Soll je Kachel ≤ ${100 * LUECKE_SOLL} %, Bildmittel ${(100 * bild.mittel).toFixed(2)} %, ${bild.a.png}) · offen im Bild: ${offen.join(" · ") || "nichts"}`
         );
-    // DIE LIEFER-ZEILE (pipeline.K4 Stufe 1): am Zweit-Boot urteilt sie (Exit bleibt die Ankunft)
+    // DIE LIEFER-ZEILE (pipeline.K4 Stufe 1): am Zweit-Boot urteilt sie (und trägt den Exit, unten)
     const k4 = lieferUrteil(out.lieferung, zweit);
     console.log(`  ${zweit ? (k4.gruen ? "✅ " : "❌ ") : ""}${k4.zeile}`);
     console.log(`  ${zweit ? (k4.artGruen ? "✅ " : "❌ ") : ""}${k4.artZeile}`);
     if (wechsel) console.log(`  ${wechsel.gruen ? "✅" : "❌"} ${wechsel.zeile}`);
-    // DIE PROGRAMM-ZEILE: am Zweit-Boot urteilt sie (Exit bleibt die Ankunft, wie die Liefer-Zeile)
+    // DIE PROGRAMM-ZEILE: am Zweit-Boot urteilt sie (und trägt den Exit, unten — wie die Liefer-Zeile)
     if (programm) console.log(`  ${zweit ? (programm.gruen ? "✅ " : "❌ ") : ""}${programm.zeile}`);
     const nach = nachBild(out.sync, out.weltbildDa);
     console.log(`  ${nach.length ? "❌" : "✅"} synchron nach dem Bild: ${nach.join(" · ") || "keine Pipeline"}`);
@@ -590,7 +606,10 @@ async function kaltLauf() {
     bruchBuch(out.bruch, "vor dem ersten Weltbild");
     const bru = bruchUrteil(out.bruch);
     console.log(`  ${bru.gruen ? "✅" : "❌"} ${bru.zeile}`);
-    process.exit(gut && ganz && !halter.length && !nach.length && gez.gruen && bru.gruen ? 0 : 1);
+    // jede ❌-Zeile oben ist Urteil (w28-probe-urteil, Lehre 6): die Liefer-Zeilen am Zweit-Boot und der Wechsel des Kerns tragen den
+    // Exit mit — bis dahin „Exit bleibt die Ankunft“, ❌ über Exit 0; die Programm-Zeile ebenso (w28-ankunft-reihe)
+    const liefer = !zweit || (k4.gruen && k4.artGruen && (!programm || programm.gruen));
+    process.exit(gut && ganz && !halter.length && !nach.length && gez.gruen && bru.gruen && liefer && (!wechsel || wechsel.gruen) ? 0 : 1);
 }
 
 hauptLauf(async () => {
@@ -729,6 +748,14 @@ hauptLauf(async () => {
     const karte = ["impostor#fimp:atlas_109", "25200:1fc6bf95", "133000:18bc6d70"];
     const trug = ["9184:7fe4bf62|68205:4b5043f5"];
     if (SELBSTTEST) checks.push([PU(trug, [leben], true).gruen && !PU(null, [leben], true).gruen && !PU(trug, [], true).gruen && !PU(trug, [leben], false).gruen && PU(trug, [leben, karte], true).zeile.startsWith("Die Wiederkehr verfehlt den Pipeline-Cache: 1 von 2 Pipelines tragen andere Bytes als in den Boots davor — impostor#fimp:atlas_109 (V 25200 · F 133000 B)"), "SELBST-TEST: die Programm-Zeile urteilt (gleiche Bytes GRÜN, eine fremde Pipeline ROT beim Namen, ohne Messung ROT)"]); // prettier-ignore
+    // die Lücke je Kachel: ein Busch, der fehlt (30 × 30 von 640 × 360, 0,39 % des Bilds), reißt seine Kachel (18,75 %); die Mutante
+    // (das Bildmittel von main) hält ihn GRÜN, ein gleiches Bild ist 0
+    if (SELBSTTEST) {
+        const leer = { W: 640, H: 360, u8: new Uint8Array(640 * 360 * 4) };
+        const busch = { ...leer, u8: leer.u8.map((v, i) => (Math.floor(i / 4 / 640) < 30 && (i / 4) % 640 < 30 ? 200 : v)) };
+        const L = lueckeKacheln(leer, busch);
+        checks.push([L.luecke > LUECKE_SOLL && L.kachel === "0/0" && L.mittel < LUECKE_SOLL && !(L.mittel > LUECKE_SOLL) && lueckeKacheln(leer, leer).luecke === 0, `SELBST-TEST: die Lücke je Kachel — der fehlende Busch reißt Kachel ${L.kachel} (${(100 * L.luecke).toFixed(2)} %), das Bildmittel (main, ${(100 * L.mittel).toFixed(2)} %) hielte ihn`]); // prettier-ignore
+    }
     // am Bild gezeichnet: gesund GRÜN; ein wartender Bürger ROT beim Namen (Hauptbild und Wurf); ohne Messung ROT
     const G = gezeichnetUrteil;
     const atlas = "impostor#fimp:atlas (MeshStandardNodeMaterial_109)";
