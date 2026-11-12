@@ -17,6 +17,9 @@
 // Siebte Aufgabe (Klinge 7, w22-gpu-probe, w26-probe-zeit): der Einlass der GPU-Probe lässt nur gate:, zeit:gate: und bild:
 // durch, zeit: nur auf die Band-Geräte.
 // Achte Aufgabe (Klinge 8, w27-gpu-wahl-heil): jede Linse liest einen GPU-Puffer über die EINE Puffer-Lesung, nie am Rohen.
+// Neunte Aufgabe (Klinge 9, w28-probe-urteil, Lehre 6): eine gedruckte ROTE Zeile ist Urteil — der Kopf der GPU-Probe urteilt Log UND
+// Exit über scripts/lib/urteil-zeile.cjs (ein ROT, das am gebuchten Stand schon ROT ist, steht als BEKANNT im Kopf), die Wache am
+// Prozess-Ende macht aus ❌ bei Exit 0 Exit 1; Mutanten: die alte Zeile `elif RC=0 → GRÜN`, der Kopf ohne Grund, BEKANNT still.
 //
 // Selbst-Test: --selftest beweist alle acht Klingen (kein vakuöses Grün; der Grün-Satz nennt nur die Zahl, die Klingen
 // stehen hier — Ratchet, Katalog, Parameter-Anker beim Namen, Kopf-Muster am AST, Taste nach der Wanduhr, eigener Schneider
@@ -441,6 +444,45 @@ function probeGesetz(doc) {
         const aus = require("child_process").spawnSync(process.execPath, ["-e", e.env.EINLASS_JS], { cwd: ROOT, env, encoding: "utf8" }).stdout;
         if (e.run !== 'node -e "$EINLASS_JS"' || (matrix ? aus !== `matrix=${JSON.stringify({ include: matrix })}\n` : !/^abgewiesen=.+\n$/.test(aus))) v.push(`Einlass ${m} → ${aus}`);
     }
+    // Klinge 9 (w28-probe-urteil, Lehre 6): der Kopf der Probe urteilt Log UND Exit über den EINEN Leser, nennt den Grund, und
+    // ein BEKANNTES ROT steht sichtbar im Kopf des Posts — nie der Exit allein (bis dahin: `elif [ "$RC" = 0 ]; then U=GRÜN`)
+    const lauf = doc.jobs.probe.steps.find((s) => /^Proben/.test(s.name || ""))?.run || "";
+    const post = JSON.stringify(doc.jobs.post.steps);
+    if (/\$RC"? = 0 \]; then U=GRÜN/.test(lauf) || !/node scripts\/lib\/urteil-zeile\.cjs --log "\$LOG" --rc "\$RC" --stand/.test(lauf))
+        v.push("Klinge 9: der Kopf der Probe urteilt am Exit allein — Log UND Exit über scripts/lib/urteil-zeile.cjs");
+    if (!/KOPF="\$KOPF\$\{KOPF:\+ · \}\$p \$U \$d s\$\{GRUND:\+/.test(lauf)) v.push("Klinge 9: der Kopf nennt den Grund der Probe nicht");
+    if (!/ROT wie an main \(bekannt\): \$BEK/.test(post)) v.push("Klinge 9: das BEKANNTE ROT fehlt dem Kopf des Posts");
+    return v;
+}
+
+// Klinge 9, der Leser selbst: die Fälle der Augen-Karte 11.11. (Klasse A) und ihre Nachbarn — je [Name, Log, Exit, Gerät, Urteil]
+const STAND_PROBE = { je: { lod: { stationen: [
+    { id: "lod.K1#1", geraet: "radeon", gruen: false, zahl: "Tafel-Pose schlechteste fimp:strauch:L2 0.2728" },
+    { id: "lod.K2#1", geraet: "radeon", gruen: true, zahl: "0.031" },
+    { id: "lod.K2#1", geraet: "gtx", gruen: false, zahl: null },
+] } } }; // prettier-ignore
+const URTEIL_FAELLE = [
+    ["haar-strich 452dc752: vier ❌ bei Exit 0", '❌ ROT haar-strich zweig: arm {"strich":0.4528} · Soll [0.3554; 0.533]', 0, "radeon", "ROT"],
+    ["laub-kante: lod.K1#1 ROT wie an main", 'lod.K1#1 Tafel-Pose ROT [["fimp:strauch:L2",0.28,9000,0]]\nlod.K1#1 Spielgang GRÜN []', 1, "radeon", "BEKANNT"],
+    ["pop 6ee4408f an der GTX: an main ungemessen", "lod.K2#1 ROT 0.0673 % Pop-Pixel/s (1396 px)", 0, "gtx", "BEKANNT"],
+    ["pop an der Radeon: an main GRÜN", "lod.K2#1 ROT 0.0673 % Pop-Pixel/s (1396 px)", 0, "radeon", "ROT"],
+    ["bekannt, dann ein Wurf", "lod.K1#1 Tafel-Pose ROT []\nTypeError: x is undefined", 1, "radeon", "ROT"],
+    ["Exit 1 ohne Zeile", "npm error code 1", 1, "radeon", "ROT"],
+    ["ehrlich GRÜN (bild:wiese)", ' "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 %"', 0, "gtx", "GRÜN"],
+    ["Selbsttest-Zeilen", '  ✅ Selbsttest „x" → rot: ROT y\n  ok  injizierter Zwilling → ROT an der Naht\n12 ✅ 0 ❌\nder Fall ist ROT', 0, "gtx", "GRÜN"],
+    ["ABNAHME ROT", ' "abnahme": "ABNAHME ROT · Sicht 4 %"', 1, "gtx", "ROT"],
+];
+function urteilFaelle() {
+    const U = require("./lib/urteil-zeile.cjs");
+    const v = [];
+    for (const [name, text, rc, geraet, soll] of URTEIL_FAELLE) {
+        const r = U.probeUrteil({ text, rc, stand: STAND_PROBE, geraet });
+        if (r.u !== soll || (soll !== "GRÜN" && !r.grund)) v.push(`Klinge 9: ${name} → ${r.u} (${r.grund}) statt ${soll}`);
+    }
+    if (U.probeUrteil({ text: "lod.K1#1 ROT", rc: 0, stand: null, geraet: "radeon" }).u !== "ROT") v.push("Klinge 9: ohne Stand gilt ein ROT als bekannt");
+    // die Wache am Prozess-Ende: ❌ bei Exit 0 wird 1, ohne ROTE Zeile bleibt 0, im Selbsttest wacht sie nicht
+    const w = (z, ...a) => require("child_process").spawnSync(process.execPath, ["-e", `require(${JSON.stringify(require.resolve("./lib/urteil-zeile.cjs"))}).wache(); console.log(${JSON.stringify(z)}); process.exit(0)`, "--", ...a]).status;
+    if (w("❌ zwei Zeilen ROT") !== 1 || w("GRÜN 3 von 3") !== 0 || w("❌ Mutante", "--selftest") !== 0) v.push("Klinge 9: die Urteils-Wache macht aus ❌ bei Exit 0 kein ROT");
     return v;
 }
 
@@ -580,6 +622,10 @@ function selftest() {
             ["runs-on", ["jobs.probe.runs-on=", "self-hosted"], /runs-on/],
             ["Matrix", ["jobs.probe.strategy"], /runs-on/],
             ["curl", ["jobs.einlass.steps.1.env.EINLASS_JS=", "console.log(`plan=${process.env.KOPF_NACHRICHT}`)"], /curl/],
+            // Klinge 9: die alte Zeile bis w28-probe-urteil — der Exit allein urteilt, der Kopf ohne Grund, kein BEKANNT im Post
+            ["Exit allein", (z) => { const s = z.jobs.probe.steps.find((x) => /^Proben/.test(x.name)); s.run = s.run.replace(/UG=\$\(node scripts\/lib\/urteil-zeile[\s\S]*?esac\n/, 'elif [ "$RC" = 0 ]; then U=GRÜN; else U=ROT; fi\n'); }, /Klinge 9: der Kopf der Probe urteilt am Exit allein/], // prettier-ignore
+            ["Kopf ohne Grund", (z) => { const s = z.jobs.probe.steps.find((x) => /^Proben/.test(x.name)); s.run = s.run.replace(/\$\{GRUND:\+ — \$\{GRUND:0:240\}\}/, ""); }, /Klinge 9: der Kopf nennt den Grund/], // prettier-ignore
+            ["bekannt still", (z) => { const s = z.jobs.post.steps.find((x) => /^Post/.test(x.name || "")); s.run = s.run.replace(/ROT wie an main \(bekannt\): \$BEK/, ""); }, /Klinge 9: das BEKANNTE ROT/], // prettier-ignore
         ],
         probeGesetz,
         { fehler: fails, gruen: require("js-yaml").load(ausDatei(PROBE_DATEI)) }
@@ -596,7 +642,8 @@ function selftest() {
     }
     if (!/^probe\.cjs:2 liest am Rohen/.test(e8) || e8.length !== 1 || parameterAnker(LESUNG_FREI, roh, stammFake).length || !/\(z\): Map /.test(wort)) // prettier-ignore
         fails.push("Klinge 8 nennt den rohen Leser oder den Puffer nicht");
-    urteilEnde(fails.length, "❌ SELBST-TEST: " + fails.join(" · "), "✅ SELBST-TEST: alle acht Klingen feuern");
+    fails.push(...urteilFaelle());
+    urteilEnde(fails.length, "❌ SELBST-TEST: " + fails.join(" · "), "✅ SELBST-TEST: alle neun Klingen feuern");
 }
 
 function main() {
@@ -611,7 +658,7 @@ function main() {
     const param = scanParameterAnker(dateien, stammSrc);
     const tasten = scanTasten(dateien);
     const probe = probeGesetz(require("js-yaml").load(ausDatei(PROBE_DATEI))).map((e) => `${PROBE_DATEI}: ${e}`);
-    const errs = ratchet.errs.concat(anker.errs, param.errs, tasten.errs, probe);
+    const errs = ratchet.errs.concat(anker.errs, param.errs, tasten.errs, probe, urteilFaelle());
     // die EINE rote Liste (welt-boot rotListe) statt einer eigenen Schleife daneben
     rotListe(errs);
     if (ratchet.nT < FROZEN_TYPEOF)
