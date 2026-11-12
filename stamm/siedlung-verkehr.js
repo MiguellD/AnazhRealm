@@ -2218,20 +2218,20 @@ AnazhRealm._verkehrReihe = function (Z, W, an) {
 // der Wagen vor ihm, vor dem er hält (`grund` „wagen“, `wer`) — Tiefe höchstens 12. Liefert [[Wagen, Art seiner Kante], …] ab W
 // oder null. Leser: `_verkehrZonen` (wer nachgibt).
 AnazhRealm._verkehrKreis = function (W) {
-    const kanten = (X) => {
-        const a = X.wartet ? X.wartet.auf : [];
-        return X.grund === "wagen" && X.wer && X.wer.zonen ? a.concat([[X.wer, "wagen"]]) : a;
-    };
-    const [pfad, ohne] = [[], new Set()]; // ohne: von dort führt kein Weg zu W
+    const pfad = [];
+    let ohne = null; // von dort führt kein Weg zu W
     const gang = (X) => {
-        for (const [O, art] of kanten(X)) {
+        const a = X.wartet ? X.wartet.auf : null;
+        const n = (a ? a.length : 0) + (X.grund === "wagen" && X.wer && X.wer.zonen ? 1 : 0);
+        for (let i = 0; i < n; i++) {
+            const [O, art] = a && i < a.length ? a[i] : [X.wer, "wagen"];
             if (O === W) return pfad.concat([[X, art]]);
-            if (O === X || ohne.has(O) || pfad.length >= 12 || pfad.some((p) => p[0] === O)) continue;
+            if (O === X || (ohne && ohne.has(O)) || pfad.length >= 12 || pfad.some((p) => p[0] === O)) continue;
             pfad.push([X, art]);
             const k = gang(O);
             pfad.pop();
             if (k) return k;
-            ohne.add(O);
+            (ohne || (ohne = new Set())).add(O);
         }
         return null;
     };
