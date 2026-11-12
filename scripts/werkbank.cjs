@@ -740,7 +740,7 @@ async function starte() {
                     // Stand beider Gänge ist derselbe). Ohne Siedlung, Platz, Verkehr oder freien Bau bricht der Stamm beim Namen
                     for (let gang = o?.ortPose ? 2 : 1; gang--; ) {
                         var P = o?.ortPose && r._ortPose(g ? g.anker : [x, z], o.ortPose);
-                        if (P) [x, z, r.state.yaw, r.state.pitch] = [P.x, P.z, P.gier, 0];
+                        if (P) [x, z, r.state.yaw, r.state.pitch] = [P.x, P.z, P.gier, P.nick || 0]; // der Nick der Pose (trasse: über die Dächer der Wagen, die dem Auge entgegenfahren)
                         if (o?.anlauf || P) {
                             r.state.playerMesh.position.set(x, o.dach ? o.dach + AnazhRealm.PLAYER_FOOT_OFFSET : r._voxelSurfaceY(x, z) + 1.8, z);
                             takte += await __weltStehtNach(takt);

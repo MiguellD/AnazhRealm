@@ -1196,7 +1196,8 @@ async function probeLeben(expected) {
                 arbeit: Object.fromEntries(["folge", "paare", "kreise", "kreis"].map((k) => [k, VK.zahl.arbeit[k] - arbeit0[k]])),
                 stufe: SK,
                 bildRuck: { max: RK.max, n: RK.n, ueber: RK.ueber || 0, aufgeschoben: VK.zahl.aufgeschoben || 0 },
-                ohr: { stimmen: KL.n, nah: KL.nah, stumm: KL.stumm, ms95: +(KL.ms.sort((a, b) => a - b)[Math.floor(0.95 * (KL.ms.length - 1))] || 0).toFixed(3) }, // prettier-ignore
+                // die Wanduhr der Seite rastert 0,1 ms (nicht isoliert): das p95 ist eine Stufe des Rasters, das Mittel über die Stunde nicht
+                ohr: { stimmen: KL.n, nah: KL.nah, stumm: KL.stumm, ms95: +(KL.ms.sort((a, b) => a - b)[Math.floor(0.95 * (KL.ms.length - 1))] || 0).toFixed(3), msMittel: +(KL.ms.reduce((s, x) => s + x, 0) / Math.max(1, KL.ms.length)).toFixed(4), raster: !self.crossOriginIsolated }, // prettier-ignore
                 sek: o.sek,
                 ziele: {
                     erreicht: VK.wagen.reduce((s, W) => s + W.ziele - ziele0.get(W), 0),

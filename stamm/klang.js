@@ -1045,9 +1045,16 @@ class AnazhRealm_klang {
                 stimme.stop(jetzt);
                 stimmen.delete(e);
             }
+        // DER VERKEHR IM WECHSEL (Gebot 7): die Ziele einer Stimme der Stadt (sechs Rampen je Wagen) stellt jedes zweite Bild,
+        // die Wagen im Wechsel — die Rampe der Stimme (klang:FAHRT.rampeSek) trägt den Ton dazwischen; der Sattel und der Nachlauf
+        // jedes Bild. Bis hier stellte jedes Bild alle vier: am Band-Gerät p95 0,40 ms je Bild (Soll 0,35, GTX 1060, Probe 28fe4dcf)
+        const takt = (this._fahrtTakt = (this._fahrtTakt + 1) | 0);
+        let n = 0;
         for (const [e, lage] of hoert) {
             let stimme = stimmen.get(e);
-            if (!stimme) stimmen.set(e, (stimme = kern.fahrtStimme(s.ctx, s.masterGain)));
+            const neu = !stimme;
+            if (neu) stimmen.set(e, (stimme = kern.fahrtStimme(s.ctx, s.masterGain)));
+            if (!neu && e._verkehrWagen && e.id !== (pl && pl.mountedArch) && (takt + n++) & 1) continue;
             stimme.anwenden(lage, jetzt);
             this._untertitel("fahrt", lage.motor ? "motor" : "rollen", null, 0);
         }

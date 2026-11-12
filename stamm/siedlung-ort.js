@@ -785,7 +785,9 @@ class AnazhRealm_siedlung_ort {
         // DIE REGEL „trasse" (w28-verkehr-bild, PFLICHT-OFFEN C: der Verkehr im Bild): je Wagen in Fahrt der Punkt seiner Route
         // `trasseM` voraus; der dem Auge (dem Spieler, sonst dem Stand) nächste trägt den Stand — der erste Punkt quer zur Route
         // außer jeder Spur, `trasseRandM` vor jedem Grundriss (näher füllte die Fassade den Vordergrund: 24–36 % näher als 8 m) und 1,5 m neben jedem Baum, Stand, Brunnen und jeder Laterne des
-        // Plans —, der Blick zurück auf den Wagen: er fährt dem Auge entgegen, sein Fahrer am Steuer. Die Kegel sahen nie über
+        // Plans —, der Blick zurück auf den Wagen, `trasseNick` gehoben (das Ziel liegt über den Dächern, die ihm entgegenfahren:
+        // GPU-Probe 28fe4dcf „Blickziel verdeckt von fahrzeug_limousine in 21,11 m"): er fährt dem Auge entgegen, sein Fahrer am
+        // Steuer. Die Kegel sahen nie über
         // eine Fahrbahn: „kein fahrzeug im Bild" 3/3
         const voraus = (w) => {
             const [F, s] = [w.F, w.F.s + AnazhRealm.VERKEHR.trasseM];
@@ -797,13 +799,17 @@ class AnazhRealm_siedlung_ort {
         };
         const [A, V] = [(this.state.playerMesh || { position: M }).position, AnazhRealm.VERKEHR];
         const kandidaten = regel !== "trasse" || !S.verkehr ? [] : S.verkehr.wagen.filter((w) => w.zustand === "faehrt" && w.F && w.entry && w.F.pts.length > 1).map((w) => [w, voraus(w)]).sort(([, a], [, b]) => Math.hypot(a.x - A.x, a.z - A.z) - Math.hypot(b.x - A.x, b.z - A.z)); // prettier-ignore
-        const steht = (q) => [...(p.trees || []), ...(p.staende || []), ...(p.brunnen || []), ...(p.laternen || [])].some((t) => Math.hypot(S.ox + t.x - q.x, S.oz + t.z - q.z) < 1.5) || bau.some(({ x, z, obb: o }) => { const [c, s, dx, dz] = [Math.cos(o.phi || 0), Math.sin(o.phi || 0), q.x - x, q.z - z]; return Math.abs(dx * c - dz * s) < o.ex + V.trasseRandM && Math.abs(dx * s + dz * c) < o.ez + V.trasseRandM; }); // prettier-ignore
+        const imBau = (q, r) => bau.some(({ x, z, obb: o }) => { const [c, s, dx, dz] = [Math.cos(o.phi || 0), Math.sin(o.phi || 0), q.x - x, q.z - z]; return Math.abs(dx * c - dz * s) < o.ex + r && Math.abs(dx * s + dz * c) < o.ez + r; }); // prettier-ignore
+        const steht = (q) => [...(p.trees || []), ...(p.staende || []), ...(p.brunnen || []), ...(p.laternen || [])].some((t) => Math.hypot(S.ox + t.x - q.x, S.oz + t.z - q.z) < 1.5) || imBau(q, V.trasseRandM) || this._blockerUmPlatz(q.x, q.z, 5, []).some((b) => this._istNatur(b)); // prettier-ignore — der wilde Baum (Laub baum_eiche 19,8 % näher als 2 m)
+        // die Sichtlinie zum Wagen quert keinen Grundriss (je 5 % ihrer Länge): die Route bog hinter ein Haus (Werkbank stadt: „Blickziel
+        // verdeckt von bauSatz in 5,89 m")
+        const frei = (q, e) => [...Array(19)].every((_, i) => !imBau({ x: q.x + ((e.x - q.x) * (i + 1)) / 20, z: q.z + ((e.z - q.z) * (i + 1)) / 20 }, 0)); // prettier-ignore
         for (const [W, a] of kandidaten)
             for (let o = 2; o <= 12; o += 0.25) {
                 const [e, l] = [W.entry.position, Math.hypot(a.dx, a.dz) || 1];
                 for (const q of [1, -1].map((v) => ({ x: a.x + (a.dz / l) * o * v, z: a.z - (a.dx / l) * o * v })))
-                    if (!this._verkehrAufSpur(S, q.x, q.z) && !steht(q))
-                        return { x: q.x, z: q.z, gier: this._blickGierZu(e.x - q.x, e.z - q.z), ziel: { x: e.x, z: e.z }, wagen: W.nr }; // prettier-ignore
+                    if (!this._verkehrAufSpur(S, q.x, q.z) && !steht(q) && frei(q, e))
+                        return { x: q.x, z: q.z, gier: this._blickGierZu(e.x - q.x, e.z - q.z), nick: V.trasseNick, ziel: { x: e.x, z: e.z }, wagen: W.nr }; // prettier-ignore
             }
         if (regel === "trasse")
             throw new Error(`_ortPose: kein Stand an der Trasse (${kandidaten.length} Wagen in Fahrt von ${S.verkehr ? S.verkehr.wagen.length : 0})`); // prettier-ignore
