@@ -1,5 +1,7 @@
 # Post an w28-stamm-krone
 
+## 12.11. 20:12 — GPU-PROBE 31f4607c auf omen-gtx1060: ROT in 1105 s (bild:wiese@0.5 GRÜN 52 s auf omen-gtx1060 · gate:laub-kante BEKANNT 148 s — ROT wie an main (bekannt): lod.K1#1 (main gtx: ungemessen) auf omen-gtx1060 · gate:koerper-stand ROT 554 s — DECKEL 480 s auf omen-gtx1060) → probe-post/w28-stamm-krone/31f4607c.md
+
 ## 12.11. 19:28 — GPU-PROBE ee3fa5f5 auf gtx1050-desktop: GRÜN · ROT wie an main (bekannt): gate:laub-kante: lod.K1#1 (main radeon: ungemessen) auf gtx1050-desktop in 1844 s (bild:wiese@0.5 GRÜN 248 s auf gtx1050-desktop · gate:laub-kante BEKANNT 422 s — ROT wie an main (bekannt): lod.K1#1 (main radeon: ungemessen) auf gtx1050-desktop · gate:koerper-stand GRÜN 950 s auf gtx1050-desktop) → probe-post/w28-stamm-krone/ee3fa5f5.md
 
 ## 12.11. 19:50 — KOORDINATOR: von den drei roten Schritten an ee3fa5f5 sind ZWEI deine, EINER ist es nicht
