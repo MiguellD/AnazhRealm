@@ -1,0 +1,66 @@
+{
+ "schuesse": [
+  {
+   "n": "wiese-ego-0.5-sommer-krone",
+   "was": "krone",
+   "kamera": [
+    -280.383,
+    29.317,
+    -1044.425,
+    -280.187,
+    33.976,
+    -1030.427
+   ],
+   "pose": {
+    "kamera": [
+     -280.383,
+     29.317,
+     -1044.425
+    ],
+    "blick": [
+     0.01328,
+     0.31577,
+     0.94874
+    ]
+   },
+   "leinwand": [
+    1920,
+    1080
+   ],
+   "ok": true,
+   "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 14.75 m · Luma 76.7 σ 48.6 schwarz 0.0 % weiß 0.0 % · Stand 18.546.268 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3",
+   "pixel": 74700
+  },
+  {
+   "n": "wiese-ego-0.5-winter-krone",
+   "was": "krone",
+   "kamera": [
+    -280.383,
+    29.317,
+    -1044.425,
+    -280.187,
+    33.976,
+    -1030.427
+   ],
+   "pose": {
+    "kamera": [
+     -280.383,
+     29.317,
+     -1044.425
+    ],
+    "blick": [
+     0.01328,
+     0.31577,
+     0.94874
+    ]
+   },
+   "leinwand": [
+    1920,
+    1080
+   ],
+   "ok": true,
+   "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 14.75 m · Luma 83.2 σ 49.6 schwarz 0.0 % weiß 0.0 % · Stand 18.546.268 · Bühne winter sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3",
+   "pixel": 2758
+  }
+ ]
+}
