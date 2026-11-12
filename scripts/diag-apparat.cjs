@@ -475,6 +475,15 @@ const URTEIL_FAELLE = [
     ["bild:stadt Leib wie an main", ' "abnahme": "ABNAHME BEKANNT · ROT wie an main (bekannt): stadt.leib Sicht verdeckt 4.9 % (Leib bewohner) · beweis · Sicht 4.9 %"', 0, "radeon", "BEKANNT"],
     ["bild:stadt neu neben bekannt", ' "fehler": "ABNAHME ROT [kein bauSatz im Bild: 0.1 % < 2.0 %] · ROT wie an main (bekannt): stadt.leib Sicht verdeckt 4.9 %"', 1, "radeon", "ROT"],
     ["Ratsche ohne Schlüssel", ' "abnahme": "ABNAHME BEKANNT · ROT wie an main (bekannt): Sicht verdeckt 4.9 %"', 0, "radeon", "ROT"],
+    // z399: der bestandene Fall urteilt an seinem Kopf (OK groß wie ok), der erwartete Fang heißt GEFANGEN — die ROTE Kopf-Zeile bleibt ROT
+    [
+        "OK-Kopf mit Mutante (mp-sync)",
+        "  OK   (d) Selbsttest: die alte Kappe je Frame macht (d) ROT am Gesetz\n  Scharf · roh      GEFANGEN  ROH vorbei",
+        0,
+        "gtx",
+        "GRÜN",
+    ],
+    ["ROT-Kopf (mp-sync)", "  ROT  (b) Tür: kein Rejoin geplant (enabled=false)", 0, "gtx", "ROT"],
 ];
 function urteilFaelle() {
     const U = require("./lib/urteil-zeile.cjs");

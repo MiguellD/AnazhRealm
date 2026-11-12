@@ -36,7 +36,9 @@ const ortSchluessel = (z) =>
 function istRotZeile(z) {
     // die Ratsche des Orts ist kein ROT der Zeile (sie hat geurteilt: jedes ROT steht in `bekannt`) — ein ROT daneben bleibt eines
     const s = String(z).replace(ZAEHLUNG_RE, "").replace(ORT_BEKANNT, "ABNAHME BEKANNT · ");
-    return ROT_RE.test(s) && !s.includes("✅") && !/^\s*ok\s/.test(s);
+    // die Zeile urteilt an ihrem Kopf: „ok“/„OK“ vorn ist ein bestandener Fall, auch wenn er seine Mutante ROT nennt
+    // (gate:mp-sync „OK   (d) Selbsttest: die alte Kappe je Frame macht (d) ROT am Gesetz“, z399)
+    return ROT_RE.test(s) && !s.includes("✅") && !/^\s*ok\s/i.test(s);
 }
 
 // die ROTEN Zeilen eines Texts, je mit der Folgezeile, wenn sie ein Spiegelstrich ist (rotListe: „❌ ROT — n Verletzung(en):“, „   • …“)
