@@ -7,11 +7,22 @@ class AnazhRealm_koerper_leib {
     // Das Haar der Natur: die Töne, deren Farbton im Braun-Orange liegt (≤ 50°) oder die kaum gesättigt sind (Schwarz, Grau,
     // Weiß) — die Färbe-Töne der Palette (Blau, Pink, Teal) trägt nur, wer sie im Studio wählt. Leser: die Gestalten jeder
     // Siedlung (`_bewohnerGestalten`) und jeder Bewohner (`_bewohnerGenome`). Kalter Kern → lauter Bruch (fail-closed).
-    _rollHumanoidGenome(seed) {
+    _rollHumanoidGenome(seed, pol) {
         const g = this._rollGenome(String(seed == null ? "h0" : seed), "humanoid");
         const core = typeof window !== "undefined" && window.__koerperCore;
         if (!core || !core.SKIN_TONES || !core.HAIR_COLORS || !core.CLOTH_COLORS || !core.HAAR_KAPPE)
             return AnazhRealm._kernPflichtBruch("koerper:SKIN_TONES/HAIR_COLORS/CLOTH_COLORS/HAAR_KAPPE");
+        if (typeof core.bevoelkerung !== "function") return AnazhRealm._kernPflichtBruch("koerper:bevoelkerung");
+        // DER LEIB AUS DER BEVÖLKERUNG (w28-leib-kanon, koerper `bevoelkerung` — die EINE Stelle, an der die Achsen des Samens zu
+        // Geschlecht, Statur und Höhe werden): zweigipflig im Geschlecht, die Höhe je Geschlecht, Masse und Muskel um die Mitte.
+        // `pol` (0 Mann · 1 Frau) hält die Achse des Geschlechts in seinem äußeren Viertel (die Gestalten einer Siedlung im Wechsel).
+        const sx = g.axis("sex");
+        const leib = core.bevoelkerung({
+            sex: pol == null ? sx : pol ? 0.75 + sx * 0.25 : sx * 0.25,
+            bau: [g.axis("build"), g.axis("bau")],
+            muskel: [g.axis("muscle"), g.axis("muskel"), g.axis("kraft")],
+            hoehe: [g.axis("height"), g.axis("hoehe")],
+        });
         const natur = Object.keys(core.HAIR_COLORS).filter((k) => {
             const c = core.HAIR_COLORS[k].base >>> 0;
             const r = (c >> 16) & 255,
@@ -31,14 +42,13 @@ class AnazhRealm_koerper_leib {
             return ton <= 50;
         });
         return {
-            sex: g.axis("sex"),
-            build: g.axis("build"),
-            muscle: Math.max(0, Math.min(1, g.axis("muscle") * 0.65 + g.axis("build") * 0.35)),
+            sex: leib.sex,
+            build: leib.build,
+            muscle: leib.muscle,
             headRatio: g.range("head", 0.92, 1.16),
-            // DIE KÖRPERHÖHE (mensch.K4, die EINE Quelle der Höhe jedes Bewohners): ±8 % um 0,215 (1,72 m), die Summe zweier
-            // Achsen — gehäuft um die Mitte wie die Größen einer Menge, nie über den Rand (bis mensch.K4 0,195–0,235 gleich verteilt,
-            // ±9,3 %, und die Liste trug je Person eine zweite Größe ±4 % darüber)
-            kh: 0.215 * (1 + 0.08 * (g.axis("height") + g.axis("hoehe") - 1)),
+            // DIE KÖRPERHÖHE (mensch.K4, die EINE Quelle der Höhe jedes Bewohners): die Höhe seines Geschlechts, gestreut als Glocke
+            // (koerper BEVOELKERUNG.hoehe; bis w28-leib-kanon ±8 % um 1,72 m für beide Geschlechter)
+            kh: AnazhRealm.PLAYER_KH * leib.khMul,
             skinTone: g.pick("skin", Object.keys(core.SKIN_TONES)),
             hairColor: g.pick("hair", natur),
             topColor: g.pick("top", Object.keys(core.CLOTH_COLORS)),

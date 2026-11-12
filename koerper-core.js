@@ -1716,6 +1716,40 @@
         Object.freeze({ dial: "gender", axis: "sex", base: 1, mul: -1 }),
     ]);
 
+    // DIE BEVÖLKERUNG (w28-leib-kanon; der EINE Ort, an dem die Achsen eines Samens zu den Maßen eines Leibs werden — Leser: der
+    // Genom-Roller der Welt, stamm `_rollHumanoidGenome`). Eine echte Bevölkerung ist im Körperbau ZWEIGIPFLIG: Mann und Frau, die
+    // Mitte selten (`steil`: was der Achse zum Pol fehlt, hoch `steil`) — und sie streut UNABHÄNGIG in der Höhe (je Geschlecht ihr
+    // Mittel in Einheiten der Welt-Höhe, die Summe zweier Achsen als Glocke: Standardabweichung `streu` × 0,408) und in der Statur,
+    // der Masse bei gleicher Höhe (schief: die Leichten bis `mitte`, ein langer Ast zu den Schweren, `schief` sein Exponent) und
+    // dem Muskel (die Summe dreier Achsen um `mitte`, mit der Masse leicht gebunden). Die Mitten sind die Start-Dials, an denen der
+    // Kanon steht (LEIB_SOLL.kanon). Bis w28-leib-kanon lagen Geschlecht, Masse und Muskel gleich verteilt in [0, 1): jeder dritte
+    // Leib androgyn, jeder vierte ein Athlet, die Höhe beider Geschlechter dieselbe.
+    // QUELLE UNGEPRÜFT (aus dem Gedächtnis des Koordinators, Richtwerte nach ANSUR II): Höhe Frau ÷ Mann 0,927, Streuung der
+    // Höhe 3,5–4 % je Geschlecht; `steil`, `schief` und die Streuung des Muskels sind gesetzt, nicht gemessen.
+    var BEVOELKERUNG = Object.freeze({
+        steil: 4,
+        hoehe: Object.freeze({ mann: 1.05, frau: 0.9735, streu: 0.09 }),
+        masse: Object.freeze({ mitte: 0.35, schief: 1.6 }),
+        muskel: Object.freeze({ mitte: 0.5, streu: 0.42, mitMasse: 0.12 }),
+    });
+    // a = { sex, bau: [2], muskel: [3], hoehe: [2] }, jede Achse gleich verteilt in [0, 1) → { sex, build, muscle, khMul } (die
+    // Achsen von DIAL_MAP: sex 1 ist die Frau)
+    function bevoelkerung(a) {
+        var BV = BEVOELKERUNG,
+            d = a.sex - 0.5,
+            sex = 0.5 + (d < 0 ? -0.5 : 0.5) * (1 - Math.pow(1 - 2 * Math.abs(d), BV.steil)),
+            t = a.bau[0] + a.bau[1] - 1,
+            build = t < 0 ? BV.masse.mitte * (1 + t) : BV.masse.mitte + (1 - BV.masse.mitte) * Math.pow(t, BV.masse.schief),
+            u = (a.muskel[0] + a.muskel[1] + a.muskel[2] - 1.5) / 1.5,
+            muscle = Math.max(0, Math.min(1, BV.muskel.mitte + BV.muskel.streu * u + BV.muskel.mitMasse * (build - BV.masse.mitte)));
+        return {
+            sex: sex,
+            build: build,
+            muscle: muscle,
+            khMul: (BV.hoehe.mann + (BV.hoehe.frau - BV.hoehe.mann) * sex) * (1 + BV.hoehe.streu * (a.hoehe[0] + a.hoehe[1] - 1)),
+        };
+    }
+
     // ════════════════════════════════════════════════════════════════════
     // ULTRAGUSS U3 — DAS LAB-GESETZ WIRD DIE QUELLE (verbatim aus worlds/
     // koerperstudio/koerperstudio.js gewandert; der Schöpfer formte es, es
@@ -7841,6 +7875,8 @@
         haarStreu: haarStreu,
         HAIR_COLORS: HAIR_COLORS,
         DIAL_MAP: DIAL_MAP,
+        BEVOELKERUNG: BEVOELKERUNG,
+        bevoelkerung: bevoelkerung,
         STUDIO_VERTRAG: STUDIO_VERTRAG,
         MESHFREI: MESHFREI,
         PORTAL_RENDER_CONFIG: PORTAL_RENDER_CONFIG,
