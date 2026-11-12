@@ -98,7 +98,7 @@ hauptLauf(async () => {
             st.renderer.setAnimationLoop(null);
             st.renderer.setAnimationLoop = () => {};
             // Der Takt rendert NICHT (unter swiftshader kostet ein Voll-Render mit Studio-Meshes Sekunden — wie in
-            // diag-beweis-e): der Zensus liest die CPU-Wahrheit, welcher Satz zeichnet; der Analog-Pfad bleibt offen,
+            // jeder Analog-Linse): der Zensus liest die CPU-Wahrheit, welcher Satz zeichnet; der Analog-Pfad bleibt offen,
             // denn der Renderer ist echt (kein Null-Renderer), nur sein Zeichnen ruht.
             const rend = st.renderer;
             // Geräteverlust laut ins Log (Grund + Meldung), nie still.

@@ -549,7 +549,9 @@ hauptLauf(async () => {
         );
     }
     const roh = wetterUrteil(S.roh);
-    console.log(`  Scharf · roh      ${roh.urteil}  ${roh.taeter.join(" · ")}`);
+    // der rohe Schreiber ist der erwartete Fang: ROT am Täter heißt der Spion sieht — die Zeile sagt GEFANGEN, das Urteil steht in `urteil`
+    const rohFang = roh.urteil === "ROT" ? "GEFANGEN" : `ENTKAM (${roh.urteil})`;
+    console.log(`  Scharf · roh      ${rohFang}  ${roh.taeter.join(" · ")}`);
     console.log(
         `  Würfel: Uhr-Ops in ${S.wuerfe.atome}/${S.wuerfe.n} Atomen, ${S.wuerfe.gesetze}/${S.wuerfe.n} Gesetzen, ${S.wuerfe.mutationen}/${S.wuerfe.n} Mutationen`
     );
