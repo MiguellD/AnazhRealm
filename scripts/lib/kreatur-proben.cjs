@@ -2548,7 +2548,14 @@ async function kreaturProben(r, T, opts) {
                     const da =
                         b.amSteuer || (b.drinnen ? !b.hinaus : !b.ziel || (!b.drinnenSoll && ab(P, b.ziel) < 1.5));
                     if (da || Math.hypot(x - sp.ax, z - sp.az) >= 1) Object.assign(sp, { ax: x, az: z, seit: minute });
-                    else if (minute - sp.seit >= 5 && !sp.steckt) stecken.push(wann(b));
+                    // der Steckenbleiber beim Ort (w28-stadt-grammatik): wo er steht, wohin er will und an welchem Bau — bis hier nannte
+                    // die Zeile nur Rolle, Haus und Stunde, der Täter (eine Gasse ohne Anschluss, eine Tür an der Wand) blieb zu suchen
+                    else if (minute - sp.seit >= 5 && !sp.steckt)
+                        stecken.push(
+                            `${wann(b)} bei ${x.toFixed(1)}/${z.toFixed(1)}${b.drinnen ? " drinnen" : ""}` +
+                                (b.ziel ? ` → ${b.ziel.x.toFixed(1)}/${b.ziel.z.toFixed(1)} (${ab(P, b.ziel).toFixed(1)} m${b.drinnenSoll ? ", ins Haus" : ""})` : "") +
+                                (wand ? ` an ${nameVon(wand)}` : "")
+                        );
                     // die Berührung: ein anderer Leib draußen näher als zwei Kapseln
                     const nah =
                         !b.drinnen && draus.some((q) => q !== P && Math.abs(q.x - x) < 2 * RW && ab(q, P) < 2 * RW);

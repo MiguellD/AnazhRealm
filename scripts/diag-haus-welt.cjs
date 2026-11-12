@@ -80,8 +80,9 @@ const BILD = process.argv.includes("--bild");
 //   fernstufe: die Fernstufe trägt ihre Bounding-Box statt der Solids des Gesetzbuchs (das Gesetzbuch reist über den
 //       Worker)
 //   kern: vor der ersten Studio-Stufe die geschlossene Kern-Box ohne Tür-Lücke
-//   bauwand: die Siedlung baut ohne Bau-Wand (ein Haus darf in einem bestehenden Bau stehen): die Slot-Quelle und die
-//       Ort-Wahl (`_ortTraegtWirt`) lesen dieselbe Wand — der Defekt nimmt sie beiden
+//   bauwand: die Siedlung baut ohne Bau-Wand (ein Haus darf in einem bestehenden Bau stehen): die Slot-Quelle, die
+//       Ort-Wahl (`_ortTraegtWirt`) und ihr Urteil vor dem Plan im Faden (fachwerk `ortImBau`, w28-stadt-grammatik) lesen
+//       dieselbe Wand — der Defekt nimmt sie allen dreien (mit zweien wich der Ort im Faden aus: der Selbsttest war blind, z397)
 //   stab:
 //   kletter: W10: der Stab (die Brüstung) trägt · der Spieler klettert an jeder gestreiften Wand · an keiner
 //   startslot: W10: jeder Slot des Start-Dorfs östlich seiner Mitte fällt geschlossen — das Dorf steht nicht ganz
@@ -96,7 +97,9 @@ const BILD = process.argv.includes("--bild");
 //       Erdbau eines Orts legt keinen Grund (sein Keller ist Erde)
 //   fremdkeller:
 //   waise: W9: der geschlossene Slot lässt seinen Grund liegen
-//   ausstattung: W9: der Plan stellt den Brunnen ungeprüft vor ein Haus
+//   ausstattung: W9: der Plan stellt einen Brunnen in ein Haus (in die Mitte seines ersten Loses — bis w28-stadt-grammatik
+//       legte der Defekt nur das Weichen ab: am Markt der Stadt-Grammatik stand kein ungeprüfter Brunnen mehr vor einem Haus,
+//       der Selbsttest war blind, z397)
 //   zugreload: W9: die Wiederkehr nach dem Reload reiht die offenen Slots nicht ein
 //   verblassen: W9: das Verblassen nimmt nur den Eintrag
 const DEFEKTE = require("../spec/haus-welt/defekte.json").defekte;

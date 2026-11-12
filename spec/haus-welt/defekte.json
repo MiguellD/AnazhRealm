@@ -243,6 +243,11 @@
    ],
    [
     [
+     "/voxel-worker.js",
+     "if (i !== msg.wand && wand && FC.ortImBau(plan, o, wand, hochAm(o)) >= 0) {",
+     "if (false) {"
+    ],
+    [
      "if (!this._bauFrei(wx, wz, ry,",
      "if (false && !this._bauFrei(wx, wz, ry,"
     ],
@@ -429,7 +434,7 @@
     [
      "/fachwerk-core.js",
      "        lay.brunnen = neu;\n        return aus;",
-     "        return aus;"
+     "        lay.brunnen = neu.concat(pl.filter(function (q) { return q && q.obb; }).slice(0, 1).map(function (q) { return { x: q.obb.cx, z: q.obb.cz }; }));\n        return aus;"
     ]
    ]
   ],
