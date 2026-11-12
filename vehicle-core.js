@@ -3994,12 +3994,13 @@
             if (hand) FrH = -G.handDecel * m * sgn;
             else if (!motor && dt > 0) FrH = -Math.min(G.handDecel, Math.abs(vL) / dt) * m * sgn;
             // ── DIE REIBELLIPSE (fahrzeug.K1, w28-reibellipse): EIN μ·N-Budget je Achse. Die Laengskraft verteilt sich nach der
-            //    Achslast (die Handbremse ganz hinten), und verlangen Laengs- und Seitenkraft einer Achse zusammen mehr als
-            //    cap · W, faellt der Wunsch-Vektor auf den Kreis — die Richtung bleibt, der Betrag ist μ·N (wie ein Rad am
-            //    Regelrand des ABS). Bis hier griff die Seitenkraft voll, waehrend die Laengskraft schon am vollen capL stand:
-            //    im Bogen voll gebremst trugen die Reifen 1,28 μ·g (am Kreis 1,00), und die Handbremse nahm dem Heck einen
-            //    festen Anteil (handLatMul 0,32) statt seines Budgets. Geradeaus (keine Seitenkraft) ist der Kreis der
-            //    alte Deckel capL = cap · (Wf + Wr): der Bremsweg bleibt. ──
+            //    Achslast (die Handbremse ganz hinten). Das GEREGELTE Rad (ABS, ASR) fuehrt mit der Seitenkraft: Antrieb und
+            //    Bremse nehmen den Rest des Kreises √((cap·W)² − Fy²) — der Wagen lenkt, waehrend er bremst und zieht. Die
+            //    GESPERRTE Hinterachse (Handbremse, Wasserschlag) gleitet: ihr Wunsch-Vektor faellt auf den Kreis, die Richtung
+            //    bleibt, und das Heck verliert die Seitenfuehrung im Mass seiner Sperre. Bis hier griff die Seitenkraft voll,
+            //    waehrend die Laengskraft schon am vollen capL stand: im Bogen voll gebremst trugen die Reifen 1,28–1,44 μ·g
+            //    (am Kreis 1,00), und die Handbremse nahm dem Heck einen festen Anteil (handLatMul 0,32) statt seines Budgets.
+            //    Geradeaus (keine Seitenkraft) ist der Kreis der alte Deckel capL = cap · (Wf + Wr): der Bremsweg bleibt. ──
             const WS = Wf + Wr;
             const aF = WS > 0 ? Wf / WS : 0.5;
             const FxF = Fr * aF,
@@ -4011,13 +4012,23 @@
             const lowF = Math.max(0, Math.min(1, 1 - Math.hypot(z.vlong, z.vlat) / G.lowBlendV));
             const sL = Math.sin(z.steer) * (1 - lowF),
                 cL = Math.cos(z.steer);
-            const fF = Math.hypot(FxF - FlatF * sL, FlatF * cL * (1 - lowF)),
-                fR = Math.hypot(FxR, FlatR * (1 - lowF));
-            const kF = fF > cap * Wf ? (cap * Wf) / fF : 1,
-                kR = fR > cap * Wr ? (cap * Wr) / fR : 1;
-            FlatF *= kF;
-            FlatR *= kR;
-            let Fx = kF === 1 && kR === 1 ? Fr + FrH : FxF * kF + FxR * kR;
+            const gF = cap * Wf,
+                gR = cap * Wr;
+            const yF = FlatF * cL * (1 - lowF),
+                rF = Math.sqrt(Math.max(0, gF * gF - yF * yF));
+            const xF = Math.max(FlatF * sL - rF, Math.min(FlatF * sL + rF, FxF));
+            let xR;
+            if (FrH) {
+                const fR = Math.hypot(FxR, FlatR * (1 - lowF));
+                const kR = fR > gR ? gR / fR : 1;
+                xR = FxR * kR;
+                FlatR *= kR;
+            } else {
+                const yR = FlatR * (1 - lowF),
+                    rR = Math.sqrt(Math.max(0, gR * gR - yR * yR));
+                xR = Math.max(-rR, Math.min(rR, FxR));
+            }
+            let Fx = xF === FxF && xR === FxR ? Fr + FrH : xF + xR;
             // Rollwiderstand (die Reibung der Zeit) und das Schleppmoment, STETIG im Zug: der Motor trägt zieht · Antrieb −
             // (1 − zieht) · Schlepp (Volllast ist netto, geschlossen bremst er — unter Bremse und Handbremse weiter, die Kupplung
             // bleibt; heute zusammen FAHR.rollDecel: das Ausrollen von gestern bleibt); zieht = das Gas, im Rückwärtsgang voll.
