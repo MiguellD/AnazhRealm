@@ -38,6 +38,9 @@ function taeter(t) {
             }
             zeige(z[i]);
             if (z[i + 1] && /^\s+at /.test(z[i + 1])) zeige(decodeURIComponent(z[i + 1]), "    ");
+            // EINE ❌-ZEILE, DIE MIT „:“ ENDET, IST NUR DIE ÜBERSCHRIFT (12.11. 18:55 und 19:13: „❌ KOLLISION = BILD ROT:“ ging an zwei
+            // Macher ohne die eingerückten Zeilen darunter, die den Täter nennen) — ihre eingerückten Folgezeilen gehören zum Text
+            else if (/:\s*$/.test(z[i])) for (let k = i + 1; k < z.length && k < i + 9 && /^\s{2,}\S/.test(z[k]) && !/❌|✅/.test(z[k]); k++) zeige(z[k], "    ");
             n++;
         } else if (/^(gate|check|npm run)\S* ROT \(\d+\)/.test(z[i]) || /^\[warn\] /.test(z[i])) {
             zeige(z[i]);
@@ -65,7 +68,11 @@ if (A[0] === "--selbsttest") {
     const b = taeter(log.filter((l) => !ERWARTET.test(l)).join("\n"));
     const mut = b.some((l) => /Täter bewohner-haus/.test(l));
     console.log(mut ? "✅ Mutante (ohne die Zeile des Täters): die ❌ erscheint als Rot" : "❌ Mutante: eine ❌ ohne Entwarnung blieb stumm");
-    process.exit(gut && mut ? 0 : 1);
+    // Die Überschrift mit „:“ trägt ihre eingerückten Täter-Zeilen; eine ❌ ohne „:“ zieht die Folgezeile NICHT mit (Gegenprobe)
+    const c = taeter([Z + "❌ KOLLISION = BILD ROT:", Z + "  eiche#3: Box 0,42 m, Bild 0,79 m", Z + "  birke#1: keine Box", Z + "weiter im Log", Z + "❌ kurz", Z + "  nicht meine Zeile"].join("\n"));
+    const kopf = c.some((l) => /eiche#3/.test(l)) && c.some((l) => /birke#1/.test(l)) && !c.some((l) => /weiter im Log|nicht meine Zeile/.test(l));
+    console.log(kopf ? "✅ die Überschrift mit „:“ zeigt ihre eingerückten Täter-Zeilen, die ❌ ohne „:“ keine fremde" : "❌ Überschrift:\n" + c.join("\n"));
+    process.exit(gut && mut && kopf ? 0 : 1);
 }
 const h = { Authorization: "Bearer " + process.env.TOKEN, Accept: "application/vnd.github+json" };
 const R = "https://api.github.com/repos/MiguellD/AnazhRealm";
