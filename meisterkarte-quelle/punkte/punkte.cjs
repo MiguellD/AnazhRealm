@@ -4897,13 +4897,15 @@ function r6Quelle(repo, kopf, messungen, stationen = [], opt = {}) {
             }
             speicher().schreibe();
         };
+        // JE STATION, nie je Schlüssel (12.11.: unter „<kriterium>#<staffel>“ stehen die headless- und die Karten-Hälfte einer Staffel mit
+        // je eigenem Befehl — der Schlüssel allein gab der zweiten Hälfte die Linse der zuerst gefragten, Selbsttest (5q) LINSEN-SCHLÜSSEL)
         const je = new Map();
         let vorgelaufen = false;
         return (linsen = (st, sha) => {
             if (!vorgelaufen) { vorgelaufen = true; vorlauf(); }
-            const k = schluessel(st) + "|" + sha;
-            if (!je.has(k)) je.set(k, [...new Set([...rein(st, sha), ...rein(st, kopf)])]);
-            return je.get(k);
+            const m = je.get(st) || je.set(st, new Map()).get(st);
+            if (!m.has(sha)) m.set(sha, [...new Set([...rein(st, sha), ...rein(st, kopf)])]);
+            return m.get(sha);
         });
     };
     // ── die Skripte des Konsums: je Blob einmal gelesen und geparst; der Vorlauf holt, was ein Konsum an einem geänderten Skript fragt
@@ -6667,6 +6669,8 @@ async function selbsttest(o = {}) {
             "scripts/linse.cjs": 'require("./lib/a.cjs");\n',
             "scripts/lib/a.cjs": 'module.exports = require("./b.cjs");\n',
             "scripts/lib/b.cjs": "module.exports = " + (i < 2 ? 1 : 2) + ";\n",
+            "scripts/karte.cjs": 'require("./lib/c.cjs");\n',
+            "scripts/lib/c.cjs": "module.exports = " + (i < 7 ? 1 : 2) + ";\n",
             "scripts/lib/stamm.cjs": 'exports.rufe = (t) => [...String(t).matchAll(/require\\("([^"]+)"\\)/g)].map((m) => ({ ziel: "require", args: [{ type: "Literal", value: m[1] }] }));\n',
         });
         // die zehn Stände in EINEM Prozess (fast-import)
@@ -6715,6 +6719,29 @@ async function selbsttest(o = {}) {
             kalt9.d === warm9.d && kalt9.d === mut9.d && kalt9.d.split("\n")[8] === sollD,
             wurf ? "wirft: " + wurf : kalt3.dateien + " Mess-Dateien an 3 Köpfen " + kalt3.n + " git-Prozesse, " + kalt9.dateien + " an 9 Köpfen " + kalt9.n + ", warm " + warm9.n + " · Mutante " + mut9.n +
                 (mut9.n > DECKEL ? " GEFANGEN" : " ENTKOMMEN") + " · 3 Köpfe: " + kalt3.u + " · 9 Köpfe: " + kalt9.u + (kalt9.d === mut9.d && kalt9.d === warm9.d ? " · Diff je Kopf dreimal derselbe" : " · DIFF UNGLEICH") + " · Kopf 9: " + kalt9.d.split("\n")[8]);
+        // DER LINSEN-SCHLÜSSEL (12.11., wetter.K3#2 gtx nannte an sieben Köpfen die Täter der headless-Hälfte): zwei Hälften EINER Staffel
+        // unter demselben Schlüssel — die headless-Hälfte ruft scripts/linse.cjs, die Karten-Hälfte scripts/karte.cjs, dessen Bibliothek
+        // c.cjs sich an Stand 7 ändert; beide an Stand 5 gemessen. Die headless-Hälfte bleibt frisch, die Karten-Hälfte ist alt beim Namen
+        // ihrer Datei, in jeder Reihenfolge der Frage; die Mutante (die Linse je Schlüssel gemerkt, der Stand bis 12.11.) gibt der zweiten
+        // Hälfte die Linse der ersten — die Karten-Hälfte gälte frisch (GEFANGEN)
+        if (!wurf) {
+            const hk = { ...st0, kriterium: "a.K5", befehl: ["node", "scripts/linse.cjs"], pfad: ["stamm/ruhe.js"] }, ka = { ...hk, geraet: "radeon", befehl: ["node", "scripts/karte.cjs"] };
+            const e5 = (st, g) => ({ sha: koepfe[4], geraet: g, je: { [schluessel(st)]: { gruen: true, zahl: "z", zeit: "2026-11-12T10:05:00Z", abdruck: abdruck(st, h, g) } } });
+            const ms = [e5(hk, "headless"), e5(ka, "radeon")];
+            const urteile = (reihe, mutante) => {
+                r6SpeicherJe.clear();
+                const q = r6Quelle(klon, kopf, ms, [hk, ka], { speicher: path.join(tmp, "r6-neun"), acorn: {} }), echt = q.linsenAm(), merk = new Map();
+                const jeSchluessel = (st, sha) => { const k = schluessel(st) + "|" + sha; return merk.get(k) || merk.set(k, echt(st, sha)).get(k); };
+                const f = frischUrteil(ms, q.geaendert, h, { linsen: mutante ? jeSchluessel : echt, skript: q.skript });
+                const u = new Map(reihe.map((st) => [st, f(st, st.geraet)]));
+                return [hk, ka].map((st) => (u.get(st).gruen ? "frisch" : u.get(st).grund)).join(" | ");
+            };
+            const sollS = "frisch | Linse seit der Messung geändert (R6: scripts/lib/c.cjs)";
+            const [vor, rueck, mut] = [urteile([hk, ka]), urteile([ka, hk]), urteile([hk, ka], true)];
+            pruef("LINSEN-SCHLÜSSEL die zwei Hälften einer Staffel tragen je ihre eigene Linse: die Karten-Hälfte ist alt an ihrer Bibliothek, die headless-Hälfte frisch, in jeder Reihenfolge; die Mutante (je Schlüssel gemerkt) gibt der zweiten die Linse der ersten",
+                vor === sollS && rueck === sollS && mut !== sollS, vor + " · umgekehrt gefragt: " + rueck + " · Mutante: " + mut + (mut !== sollS ? " GEFANGEN" : " ENTKOMMEN"));
+            r6SpeicherJe.clear();
+        }
         fs.rmSync(klon, { recursive: true, force: true });
     }
     // (6) Übergang in gen.cjs
