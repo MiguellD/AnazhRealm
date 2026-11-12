@@ -2142,15 +2142,14 @@ class AnazhRealm_bild_himmel {
     // Radeon, Messort dorf; vorher 0,22 / 0,14 = 1,57): das Himmels-Licht trägt die Nacht, der Mond zeichnet ihr die Richtung —
     // jede Gestalt hebt es gleich (Fichte nachts Y 0,0093 → 0,0154), die Karte gegen ihre Gestalt bleibt im Band ±10 %
     // (`werkbank licht --laub fichte,tanne --karte --uhr`); Bühne S0, Mitternacht ohne Feuer: Boden Luma 21,3 → 30,3.
-    // DAS AMBIENT FÄLLT (w28-nacht-licht): 0,23 → 0,15 — es trug jede Wand ohne Quelle beinahe auf das Licht der Laterne
+    // DAS AMBIENT FÄLLT (w28-nacht-licht): 0,23 → 0,04 — es trug jede Wand ohne Quelle beinahe auf das Licht der Laterne
     // (Stadt 00 Uhr, Radeon: die Fassade ohne Mond und Laterne 2,95 : 1 unter der angestrahlten). Die Kamera steht unter dem
-    // Nacht-Knoten (`BELICHTUNG.nachtKnotenE`), das Bild fällt mit diesem Licht. Das Fenster des Werts (Radeon, an der Wand
-    // 0,04 gemessen): über 0,22 fällt die Wand unter 3 : 1; unter 0,11 fällt der Boden der Nacht ohne das Feuer (S0, Luma ≥ 22;
-    // bei 0,04: 14,1) — das Ambient trägt beide gleich, der Himmel-Boden (0,1 · Nachthimmel, Luma 0,095) trägt kaum.
+    // Nacht-Knoten (`BELICHTUNG.nachtKnotenE`), das Bild fällt mit diesem Licht; den Boden trägt der Mond (`MOONLIGHT` 0,65,
+    // welt-licht.js) mit seinem Schatten — das Ambient trug Boden und Wand gleich, ohne Richtung.
     _dayNightApplyAmbient(achse) {
         const al = this.state.ambientLight;
         if (!al) return;
-        const baseAmb = 0.15 * achse.nacht;
+        const baseAmb = 0.04 * achse.nacht;
         al.intensity = this._emotionModulate(baseAmb, { joy: 0.08, awe: 0.05, sorrow: -0.04 });
         // V12.0-f — kein toonLightUniforms-Sync mehr; die nativen lights=true-
         // Materials konsumieren al.intensity direkt (Three.js-Lighting).
@@ -3258,7 +3257,7 @@ AnazhRealm.STERN_HELLSTE = Math.min(-1, ...AnazhRealm.HIMMEL.wandelsterne.map((w
 // gerichtete Nacht-Schattierung mit tiefen Schwärzen) statt die Nacht per Post-FX aufzuhellen.
 // `r/g/b` = HUE (Purkinje-Mond 0x9fb8dc aus dem Gesetz `ATMO_GESETZ.nacht.mond` — `_atmoSonne(e)` und das Labor lerpen
 // unter dem Horizont exakt hierher; b>r = kühl), `intensity` = Helligkeit; Wetter dimmt den Mond.
-AnazhRealm.MOONLIGHT = __weltLicht.MOONLIGHT; // welt-licht.js: der Hue aus `ATMO_GESETZ.nacht.mond`, die Helligkeit 0,22
+AnazhRealm.MOONLIGHT = __weltLicht.MOONLIGHT; // welt-licht.js: der Hue aus `ATMO_GESETZ.nacht.mond`, die Helligkeit 0,65
 // DIE TAFELN DER EINEN ATMOSPHÄRE (D3, Hillaire 2020; `_atmoLutBau`): Größen (Texel) und Marsch-Schritte. Transmittance
 // 256×64 und Ψ_ms 32×32 je Medium, die Himmels-Sicht 192×108 je Stufe der Sonne, die Umgebung 128×64 (Equirekt, PMREM).
 // mediumStufe: die Stufe des Mediums im Logarithmus der Extinktion (`_atmoMediumJetzt`) — 2 % halten den Zenit-Durchlass

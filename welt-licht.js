@@ -94,12 +94,16 @@ var __weltLicht = (function () {
         ].map((a) => Object.freeze(a))
     );
     // MONDLICHT: nachts wird das Haupt-Richtlicht zur Mondquelle — `r/g/b` der Purkinje-Hue aus dem Gesetz
-    // (`ATMO_GESETZ.nacht.mond`), `intensity` die Helligkeit; das Wetter dimmt ihn.
+    // (`ATMO_GESETZ.nacht.mond`), `intensity` die Helligkeit; das Wetter dimmt ihn. DER MOND TRÄGT DIE NACHT (w28-nacht-licht):
+    // 0,22 → 0,65, das Ambient der Nacht fiel 0,23 → 0,04 (`_dayNightApplyAmbient`) — Schlüssel und Füllung der Mondnacht: der
+    // Boden und jede Wand zum Mond stehen im Licht mit Schatten, die Wand ohne Mond und Laterne fällt zurück. Der Wert ist das
+    // gemessene Maß des lesbaren Bodens (S0 Nacht ohne das Feuer, Radeon, Luma ≥ 22: main 24,1 · Ambient 0,04 mit Mond 0,22
+    // 14,4 · 0,5 20,4 · 0,65 23,7); das Ambient allein ließ kein Fenster (Boden ≥ 22 verlangte ≥ 0,18, die Wand 3 : 1 ≤ 0,22).
     const MOONLIGHT = Object.freeze({
         r: KERN.ATMO_GESETZ.nacht.mond[0],
         g: KERN.ATMO_GESETZ.nacht.mond[1],
         b: KERN.ATMO_GESETZ.nacht.mond[2],
-        intensity: 0.22,
+        intensity: 0.65,
     });
     // DIE GPU-LEINE (Welt `_gpuLeineFrei`, Bühne `buehneZeichnet`): höchstens so viele Bilder zugleich auf der GPU unterwegs — mehr
     // ist nur Eingabe-Verzug (gemessen 04.10.: 600 ms bei ≈ 10 Frames in der Schlange), nie mehr Durchsatz.
