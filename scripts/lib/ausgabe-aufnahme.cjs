@@ -322,7 +322,7 @@ async function weltStehtWarten(max) {
     // EINE GEHALTENE TASTE (w28-linse-wahr, F): der Leib geht, der Wagen fährt — die Welt steht nie. Die Fahrt der Augen-Karte (fahrt/01)
     // brach nach der Frist bei „archLod“; der Grund ist die Taste, und ein Bild aus Bewegung schießt `werkbank bild --bewegung`
     const g = Object.entries(st.verbTafel?.gehalten || {}).filter(([, an]) => an).map(([k]) => k);
-    if (g.length) throw new Error(`DIE WELT STEHT NIE: ${g.join(", ")} gehalten — ein Bild aus Bewegung schießt \`werkbank bild --bewegung <Taste>[:s]\``);
+    if (g.length) throw new Error(`DIE WELT STEHT NIE: ${g.join(", ")} gehalten — ein Bild aus Bewegung schießt \`werkbank bild --bewegung <Taste>[:m]\``);
     const cam = st.camera;
     const [p, q, fov, uhr] = [cam.position.clone(), cam.quaternion.clone(), cam.fov, st.timeOfDay];
     const takt = async () => {
