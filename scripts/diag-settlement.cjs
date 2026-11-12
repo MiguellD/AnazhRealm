@@ -1759,6 +1759,94 @@ hauptLauf(async () => {
             trassenFehl.length === 0,
             trassenFehl.slice(0, 3).join(" · ")
         );
+        // DER PLATZ REICHT BIS ZUR BAUFLUCHT (w28-stadt-grammatik, fachwerk `platzSaum`): je Haus, das den Platz fasst (die
+        // Strecke vom nächsten Punkt seines Grundrisses zum nächsten Punkt des Platzes ≤ STADT_DICHTE.platzFassM, kein anderer
+        // Grundriss auf ihr), liegt jeder halbe Meter dieser Strecke in einer Form mit Belag — der Platz, eine Fläche des Plans
+        // (kein Rasen), ein Weg in seiner Belag-Breite (`gassenBreite`) — oder unter einem Grundriss. Was bleibt, ist Wiese
+        // zwischen den Leuten des Markts: der Täter beim Namen (Slot, Rolle, Meter)
+        const platzWiese = (pl) => {
+            const pz = pl.platz;
+            const fern = FC.STADT_DICHTE.platzFassM;
+            const nah = (o, x, z) => {
+                const [u, v] = lokal(o.cx, o.cz, o.phi, x, z);
+                const [a, b] = [Math.max(-o.ex, Math.min(o.ex, u)), Math.max(-o.ez, Math.min(o.ez, v))];
+                const [c, s] = [Math.cos(o.phi || 0), Math.sin(o.phi || 0)];
+                return [o.cx + a * c + b * s, o.cz - a * s + b * c];
+            };
+            const drin = (o, x, z) => kasten(o.cx, o.cz, o.phi, o.ex, o.ez, x, z) <= 1e-6;
+            const obbs = (pl.slots || []).map((sl) => sl.obb);
+            const belegt = (x, z) =>
+                drin(pz, x, z) ||
+                (pl.zonen || []).some(
+                    (q) => q.art === "flaeche" && q.form === "kasten" && q.belag !== "gras" && drin(q, x, z)
+                ) ||
+                (pl.roads || []).some((rd) => achsAbstand(rd, x, z) <= FC.gassenBreite(pl, rd) / 2) ||
+                obbs.some((o) => o && drin(o, x, z));
+            const aus = { haeuser: 0, wieseM: 0, streckeM: 0, taeter: [] };
+            obbs.forEach((o, i) => {
+                if (!o) return;
+                const b = nah(o, ...nah(pz, o.cx, o.cz));
+                const a = nah(pz, ...b);
+                const L = Math.hypot(b[0] - a[0], b[1] - a[1]);
+                if (!(L > 0.01) || L > fern) return;
+                let [w, n] = [0, 0];
+                for (let t = 0.25; t < L; t += 0.5) {
+                    const [x, z] = [b[0] + ((a[0] - b[0]) * t) / L, b[1] + ((a[1] - b[1]) * t) / L];
+                    if (obbs.some((q, k) => k !== i && q && drin(q, x, z))) return; // ein Nachbar steht davor: es fasst den Platz nicht
+                    n++;
+                    if (!belegt(x, z)) w++;
+                }
+                aus.haeuser++;
+                aus.wieseM += w / 2;
+                aus.streckeM += n / 2;
+                if (w) aus.taeter.push(`#${i} ${pl.slots[i].rolle || ""} ${w / 2} m Wiese von ${L.toFixed(1)} m`);
+            });
+            return aus;
+        };
+        const platzFehl = [];
+        let [platzHaeuser, platzM] = [0, 0];
+        for (const [seed, nH] of [
+            [7, 18],
+            [7, 120],
+            [7, 300],
+            [11, 200],
+        ]) {
+            const pl = FC.exportSettlement({ seed, nH });
+            const w = platzWiese(pl);
+            platzHaeuser += w.haeuser;
+            platzM += w.streckeM;
+            if (!(pl.zonen || []).some((q) => q.name === "platzsaum"))
+                platzFehl.push(`${seed}/${nH}: der Plan trägt keinen Saum des Platzes (die Probe prüfte nichts)`);
+            if (w.wieseM > 0 || !w.haeuser)
+                platzFehl.push(
+                    `${seed}/${nH}: ${w.wieseM} m Wiese von ${w.streckeM} m an ${w.haeuser} Häusern — ${w.taeter.slice(0, 2).join(" · ")}`
+                );
+        }
+        check(
+            `DER PLATZ REICHT BIS ZUR BAUFLUCHT: zwischen dem Platz der Stadt und jedem Haus, das ihn fasst (≤ ${FC.STADT_DICHTE.platzFassM} m, freie Sicht), liegt Belag — 0 m Wiese (4 Städte, ${platzHaeuser} Häuser, ${platzM} m Strecke)`,
+            platzFehl.length === 0,
+            platzFehl.slice(0, 3).join(" · ")
+        );
+        {
+            // Selbst-Test 15c: derselbe Plan ohne seinen Saum (der Stand bis w28-stadt-grammatik: „dorf 7 300“ 79 m von 313 m) fällt
+            // beim Namen; ein Saum aus Rasen ist keiner
+            const st = FC.exportSettlement({ seed: 7, nH: 300 });
+            const ohne = platzWiese(Object.assign({}, st, { zonen: st.zonen.filter((q) => q.name !== "platzsaum") }));
+            const rasen = platzWiese(Object.assign({}, st, { zonen: st.zonen.map((q) => (q.name === "platzsaum" ? Object.assign({}, q, { belag: "gras" }) : q)) })); // prettier-ignore
+            check(
+                "Selbst-Test 15c: der Platz bis zur Bauflucht — die Metropole des Gesetzes besteht (0 m), ohne ihren Saum fällt sie beim Namen, ein Saum aus Rasen ebenso",
+                platzWiese(st).wieseM === 0 &&
+                    ohne.wieseM > 20 &&
+                    ohne.taeter.length > 0 &&
+                    rasen.wieseM === ohne.wieseM,
+                JSON.stringify({
+                    mit: platzWiese(st).wieseM,
+                    ohne: `${ohne.wieseM} m von ${ohne.streckeM} m`,
+                    taeter: ohne.taeter[0],
+                    rasen: rasen.wieseM,
+                })
+            );
+        }
         alleDs.sort(aufsteigend);
         const mq = (q) => (alleDs.length ? rang(alleDs, q) : Infinity);
         if (!Number.isFinite(FC.LICHT_MARKE_M)) lichtFehl.push("der Kern trägt kein LICHT_MARKE_M (das Soll je Meter)");

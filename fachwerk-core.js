@@ -3710,6 +3710,8 @@
         // Gegenverkehr für immer gegenüber (Kreatur-Linse bewohner, „dorf 7 30“: 6 Steckenbleiber, drei bei 683/416 zwischen
         // haus_provenzalisch #918856 und der Fahrbahn, z397). 1,8 m: zwei Kapseln und 0,44 m für den Schritt, der ausweicht.
         gehwegFahrM: 1.8,
+        platzFassM: 30, // so weit fasst ein Haus den Platz: bis dahin reicht sein Belag an die Bauflucht (`platzSaum`), mit freier Sicht
+        platzFugeM: 1.5, // so weit greift der Saum eines zurückgesetzten Hauses quer über seine Flanke (der Hof zwischen zwei Nachbarn bleibt kein Halm-Streifen)
         standTrasseM: 3, // so weit hält die Reihe der Stände vom Rand jeder Trasse (VERKEHR_GESETZ.ausweichM: der Wagen umfährt den Stehenden)
         hafenM: 14, // so nah am Wasser des Rasters (vom Rand seines Grundrisses) steht ein Los des Hafens; `hafenRasterM`: der Schritt, in dem der Plan das Wasser in seinem Ring zählt (`lage.wasser`)
         hafenRasterM: 8,
@@ -8164,6 +8166,118 @@
       }
       return snaps;
     }
+    // DER PLATZ REICHT BIS ZUR BAUFLUCHT (w28-stadt-grammatik) — KONSUM BEIDSEITIG wie reihenSnap: buildDorf (Lab) und
+    // exportSettlement rufen ihn NACH dem Snap (die Grundrisse stehen). Die Stadt der Grammatik hält um ihren Platz die Trassen
+    // und ihre Gehwege frei, die Lose beginnen dahinter: zwischen dem Rand des Platzes und den Häusern, die ihn fassen, lag
+    // Wiese („dorf 7 300“ am Tisch: 79 m von 313 m der Strecken Haus → Platz, das Rathaus 26 m vom Rand, 15 m davon Halme —
+    // im Bild stadt-voll standen Halme zwischen den Leuten des Markts). Ein Haus FASST den Platz, wenn die Strecke von
+    // seinem Grundriss zum nächsten Punkt des Platzes kein anderer Grundriss schneidet und nicht länger als
+    // STADT_DICHTE.platzFassM ist. Der Saum ist Belag des Platzes (`platzBelag`; der Anger und der Park tragen keinen): je
+    // Seite des Platzes eine Fläche bis an die nächste Bauflucht dieser Seite, je Haus dahinter oder über Eck eine bis an
+    // seine Front (quer um STADT_DICHTE.platzFugeM über seine Flanken). Er steht als Zone `platzsaum` in `lay.zonen` — der
+    // Leser ist der Boden des Wirts (`_stlWegeBuild` malt jede Fläche mit Belag) und das Labor. pl: lay.pl · lay: das Layout
+    // (zonen wird ERGÄNZT) · plan: der Plan (Größe und Jahr des Belags). Rückgabe { fasser, flaechen }.
+    function platzSaum(pl, lay, plan) {
+        var pz = lay.platz,
+            SD = STADT_DICHTE,
+            aus = { fasser: 0, flaechen: 0 };
+        if (!pz || !Array.isArray(lay.zonen)) return aus; // nur die Stadt der Grammatik trägt Flächen
+        var belag = platzBelag(Object.assign({}, plan, { platz: pz }));
+        if (!belag || belag === "gras") return aus;
+        var phi = pz.phi || 0,
+            c = Math.cos(phi),
+            s = Math.sin(phi),
+            obbs = [],
+            i,
+            j;
+        for (i = 0; i < pl.length; i++) if (pl[i] && pl[i].obb && Math.abs(pl[i].obb.cx) < 5000 && Math.abs(pl[i].obb.cz) < 5000) obbs.push(pl[i].obb);
+        // in den Rahmen des Platzes (lx, lz) und zurück
+        var lok = function (x, z) {
+            return [(x - pz.cx) * c - (z - pz.cz) * s, (x - pz.cx) * s + (z - pz.cz) * c];
+        };
+        var welt = function (lx, lz) {
+            return [pz.cx + lx * c + lz * s, pz.cz - lx * s + lz * c];
+        };
+        var klemme = function (v, a, b) {
+            return v < a ? a : v > b ? b : v;
+        };
+        // je Grundriss seine Hülle im Rahmen des Platzes, sein Abstand und die freie Sicht
+        var fasser = [];
+        for (i = 0; i < obbs.length; i++) {
+            var o = obbs[i],
+                oc = Math.cos(o.phi || 0),
+                os = Math.sin(o.phi || 0),
+                h = [Infinity, Infinity, -Infinity, -Infinity];
+            for (j = 0; j < 4; j++) {
+                var ux = (j & 1 ? 1 : -1) * o.ex,
+                    uz = (j & 2 ? 1 : -1) * o.ez,
+                    q = lok(o.cx + ux * oc + uz * os, o.cz - ux * os + uz * oc);
+                h = [Math.min(h[0], q[0]), Math.min(h[1], q[1]), Math.max(h[2], q[0]), Math.max(h[3], q[1])];
+            }
+            var gx = Math.max(0, h[0] - pz.ex, -pz.ex - h[2]),
+                gz = Math.max(0, h[1] - pz.ez, -pz.ez - h[3]),
+                d = Math.hypot(gx, gz);
+            if (!(d > 0.01) || d > SD.platzFassM) continue;
+            // die Strecke vom nächsten Punkt des Grundrisses (b, am gedrehten Kasten selbst: ein Haus, das halb hinter einem
+            // anderen steht, sieht den Platz an seiner freien Ecke) zum nächsten Punkt des Platzes (a), je 0,5 m: kein anderer Grundriss
+            var mo = lok(o.cx, o.cz),
+                mp = welt(klemme(mo[0], -pz.ex, pz.ex), klemme(mo[1], -pz.ez, pz.ez)),
+                ddx = mp[0] - o.cx,
+                ddz = mp[1] - o.cz,
+                bx = klemme(ddx * oc - ddz * os, -o.ex, o.ex),
+                bz = klemme(ddx * os + ddz * oc, -o.ez, o.ez),
+                b = lok(o.cx + bx * oc + bz * os, o.cz - bx * os + bz * oc),
+                a = [klemme(b[0], -pz.ex, pz.ex), klemme(b[1], -pz.ez, pz.ez)];
+            var L = Math.hypot(b[0] - a[0], b[1] - a[1]),
+                sicht = true;
+            for (var u = 0.25; sicht && u < L; u += 0.5) {
+                var w = welt(a[0] + ((b[0] - a[0]) * u) / L, a[1] + ((b[1] - a[1]) * u) / L);
+                for (j = 0; sicht && j < obbs.length; j++) if (j !== i && distPunktOBB(w[0], w[1], obbs[j]) < 1e-6) sicht = false;
+            }
+            if (sicht) fasser.push({ h: h, gx: gx, gz: gz, a: a, b: b });
+        }
+        aus.fasser = fasser.length;
+        // die Fläche im Rahmen des Platzes [x0, z0, x1, z1] als Zone
+        var flaeche = function (x0, z0, x1, z1) {
+            if (!(x1 - x0 > 0.5) || !(z1 - z0 > 0.5)) return;
+            var m = welt((x0 + x1) / 2, (z0 + z1) / 2);
+            lay.zonen.push(zoneVon("platzsaum", "flaeche", "kasten", { cx: m[0], cz: m[1], phi: phi, ex: (x1 - x0) / 2, ez: (z1 - z0) / 2 }, belag));
+            aus.flaechen++;
+        };
+        // je Seite der Saum bis an die nächste Bauflucht dieser Seite: Ost · West · Süd · Nord im Rahmen des Platzes
+        var nah = [Infinity, Infinity, Infinity, Infinity];
+        fasser.forEach(function (f) {
+            if (f.gz === 0 && f.gx > 0) {
+                var io = f.h[0] >= pz.ex ? 0 : 1;
+                nah[io] = Math.min(nah[io], f.gx);
+            } else if (f.gx === 0 && f.gz > 0) {
+                var is = f.h[1] >= pz.ez ? 2 : 3;
+                nah[is] = Math.min(nah[is], f.gz);
+            }
+        });
+        for (i = 0; i < 4; i++) if (!isFinite(nah[i])) nah[i] = 0;
+        var F = SD.platzFugeM; // der Saum greift um die Fuge über die Ecke des Platzes: die Front, die an der Ecke beginnt, steht nicht an seiner Kante
+        flaeche(pz.ex, -pz.ez - F, pz.ex + nah[0], pz.ez + F);
+        flaeche(-pz.ex - nah[1], -pz.ez - F, -pz.ex, pz.ez + F);
+        flaeche(-pz.ex - F, pz.ez, pz.ex + F, pz.ez + nah[2]);
+        flaeche(-pz.ex - F, -pz.ez - nah[3], pz.ex + F, -pz.ez);
+        // je Haus dahinter (seine Seite trägt schon den Saum bis zur nächsten Front) oder über Eck: die Fläche um die Strecke
+        // seiner Sicht (a am Platz → b am gedrehten Kasten), um die Fuge geweitet (auch unter ihn: die Hülle eines gedrehten
+        // Hauses steht vor seiner Wand, ohne sie bliebe ein Keil Wiese an der Schwelle) — und, wo es dem Platz gegenübersteht,
+        // quer über seine ganze Front, soweit sie am Platz liegt
+        fasser.forEach(function (f) {
+            var x0 = Math.min(f.a[0], f.b[0]) - F,
+                x1 = Math.max(f.a[0], f.b[0]) + F,
+                z0 = Math.min(f.a[1], f.b[1]) - F,
+                z1 = Math.max(f.a[1], f.b[1]) + F;
+            // gegenüber steht es, wenn seine Sicht den Platz an dessen Seite trifft (b im Bereich der Seite, um die Fuge): wer ihn
+            // nur schräg an einem Nachbarn vorbei sieht, trägt nur den Streifen seiner Sicht
+            if (f.gz === 0 && Math.abs(f.b[1]) <= pz.ez + F) (z0 = Math.min(z0, Math.max(-pz.ez - F, f.h[1] - F))), (z1 = Math.max(z1, Math.min(pz.ez + F, f.h[3] + F)));
+            if (f.gx === 0 && Math.abs(f.b[0]) <= pz.ex + F) (x0 = Math.min(x0, Math.max(-pz.ex - F, f.h[0] - F))), (x1 = Math.max(x1, Math.min(pz.ex + F, f.h[2] + F)));
+            flaeche(x0, z0, x1, z1);
+        });
+        return aus;
+    }
     // DIE WANDLATERNE IM DORF (K66-2) — KONSUM BEIDSEITIG wie reihenSnap: buildDorf (Lab) und exportSettlement rufen sie NACH
     // dem Snap (die Wand steht, wo das Haus steht). Zwei Stände der Gestalt wandlaterne (Kopf `armM` vor der Wand des Kerns
     // W × D, nie vor der Traufe der Hülle): (1) die Tür von Gasthaus und Schmiede trägt sie 1,1 m neben der Tür (bis K66-2 ein
@@ -8704,6 +8818,7 @@
             mastWeicht(L.pl, L);
             brunnenWeicht(Bt, L.pl, L);
             wandLaternen(Bt, L.pl, L);
+            platzSaum(L.pl, L, p);
             return L;
         };
         var lay = teil(0, nA);
@@ -11149,6 +11264,7 @@
         // U6c — die drei gewanderten Lab-Gesetze (buildDorf + exportSettlement rufen sie)
         reihenSnap: reihenSnap,
         wandLaternen: wandLaternen,
+        platzSaum: platzSaum,
         brunnenWeicht: brunnenWeicht,
         mastWeicht: mastWeicht,
         laterneWandM: laterneWandM,
