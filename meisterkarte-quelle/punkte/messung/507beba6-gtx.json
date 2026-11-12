@@ -1,7 +1,7 @@
 {
  "sha": "507beba6648d96c624e3427c231a53d8bcd965e5",
  "geraet": "gtx",
- "zeit": "2026-11-12T22:46:34.200Z",
+ "zeit": "2026-11-12T23:01:49.286Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "material.K1#2": {
@@ -372,41 +372,28 @@
   "kcaf65a7bc851": "fZfbktsoEED/xY9JNPLdsqryII+zlWzVVCaf0IhGYoRBBcia9db++xayZI8FGl5sc7pp+gb43xmXFN+fSnsSs3T2ZfZtVkNeQYFPb0bJfsrAGSOD+oz66c3M0tlit0hgk2Z/MjfiLMuenViueW1NTDkUkbEN5SoqGxQCn/JO7csHIcFJDERCecKo0Ra56IUShMU2SeP2R5a8fn2N4+QwVhMEqYosMByUCF3uVpCOBRtTAMEIGtYZ6oVXiz3mNI27kRyz17d4GFn2nGXt9++jhQhI+rjLNVvO9zR17v/IPHnKAW0kuDSDzZxuyGqZ3gz5NqiGNroAlgL1EIrtdpGsh42OFZhojHkwkqzoZpmkcbyPR7JF3UTs49JACCRkHLASUBaoHxfdrTf5Oo3fvQ1UcEINkYSyF93PV7sluTsZx/FP31HB87IPjuwVd+t5nqweFPdtfi0uN74e7xm61lz2O7uPg58BUwJFHVXK2JsVstvu6LLLWfZycFWbFa+eV+a+vV5vSbbzTfJhd0mc/fT1FLMtaIyKuukVcY2b3SYtsl+esIXTqZdi+RKTTTo48/Xv5K+s8B2yrgYfSmqZs21XUsVEpK8VG12Q31oQ5slmz9Lnl+w4Ej5rOEVACs0ZG/JJNjnbh+qpRWEjopTtJRer+XpN0vgSy1uUFknXTZ+O53a8525lpe2w4Q3Zztk6ZWfXNPlY+oJaYIEPcYHFfrmCNO4LqBvH9fXz1zF+GK2XxgtHFzFpGjM0wH5H9ywNtG2LuiIgq+FMgD1h7JrI1+LgCnN+TEYeH9aHNvvtDg23UI15XGvFuDth4hIaU4KwD2evq5T44QeBJiJNXj7dD9XbvO1yHQBnpQUUKD3GBY268ypISn46oQiivrdCyOQl2EnoGmxMKATEKUdpfFGueYHSRiCrRrJpXqEOLNlDjYUYrrMAtlB5CzN0oTJeNLp5gcR3oCMS3xsTJKbWkJdeugoUgJJiRBT117zRvGxk5S18wyzg/Q1WSghuuPIkKjjVzJsUIAtvUqGuUUcEWyyaac6g1F4ob1Ajn2ICOZliBtEv80oj2MZZbCRMwkYHym+gwSwO8IzadacvINFeIk5RWm4DjdThelmH55W24JWU4UhFI4uIQBMweMfYqlL6dXwT4NJdHJdJrvzc3JgBO61o1bTRM+oKy2neYuElz9TI89KlHQJFf6PueghgqxiLikCVXslUFDpYgbttgugEFjUPpOf6uCW6wbwK6Ha0QGOvh3mQCo40kLgr7cyP2RkLtGC5kq4sTp9gYzU2n/CWo/G23YIxqKPyH6rVBLu4x7wXfXcNGgvWum19hkvl+fQBNnQaGnUJpOHOz0q7O+eDz63Sgpr4+v+j/+j/vGwTdE/3P5Ovktfhy4t7WP73Pw=="
  },
  "sitzung": {
-  "start": "2026-11-12T22:38:46.137Z",
+  "start": "2026-11-12T22:51:49.118Z",
   "port": 7804,
-  "warten": 7.27,
-  "bootS": 6.4,
+  "warten": 10,
   "grundstellungS": [],
-  "proben": 1,
+  "proben": 0,
   "freigaben": [],
-  "orte": [
-   {
-    "ort": null,
-    "vor": "studios.K2#2",
-    "s": 24.5,
-    "takte": 882,
-    "chunks": 81,
-    "nach": null
-   }
-  ],
-  "wegeTueren": [],
-  "ciBlicke": 2,
-  "strom": {
-   "datei": "strom.ndjson",
-   "bilder": 0,
-   "frameP95": null,
-   "taktP95": null,
-   "vramMax": null,
-   "seiten": 1,
-   "marken": 0,
-   "fehler": 0,
-   "verloren": 0,
-   "ortImDeckel": [],
-   "zapfen": 159,
-   "luecken": 0,
-   "letzteLuecke": null
-  },
-  "fahrtS": 165,
-  "minuten": 10.07
+  "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+  "minuten": 10
+ },
+ "ungemessen": {
+  "studios.K3#2": {
+   "gruen": false,
+   "zahl": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "exit": null,
+   "minuten": 0,
+   "grund": "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten",
+   "ungemessen": true,
+   "zeit": "2026-11-12T23:01:49.286Z",
+   "abdruck": "40e20c122980",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
  }
 }
