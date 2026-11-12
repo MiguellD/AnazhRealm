@@ -1,0 +1,212 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.268",
+  "sha": "507beba6648d96c624e3427c231a53d8bcd965e5"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 0
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 4.16,
+   "deckung": 0,
+   "taeter": {}
+  },
+  "leib": {
+   "radius": 4.16,
+   "deckung": 0,
+   "taeter": {}
+  }
+ },
+ "ziel": {
+  "name": "Riss",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "leiber": null,
+  "abstand": 8.33,
+  "gestalt": [
+   "tier:wolf 1",
+   "tier:wolf 2",
+   "tier:wolf 3"
+  ],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   63.93,
+   91.52,
+   -0.72
+  ],
+  "blick": [
+   -0.95944,
+   -0.27859,
+   -0.04322
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 85.2,
+  "sigma": 40.9,
+  "schwarz": 0.0048,
+  "weiss": 0
+ },
+ "wahl": {
+  "versucht": 1,
+  "gewaehlt": 0,
+  "posen": [
+   {
+    "k": 0,
+    "kamera": [
+     63.93,
+     91.52,
+     -0.72
+    ],
+    "rot": [],
+    "ms": 1213
+   }
+  ],
+  "ms": 1213
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.33 m · Luma 85.2 σ 40.9 schwarz 0.5 % weiß 0.0 % · Stand 18.546.268 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen",
+ "rot": [],
+ "urteil": "GRÜN",
+ "klasse": {
+  "ausdruck": "^tier:",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 6
+  },
+  "misch": 6,
+  "toene": [
+   "tier:bestaeuber=255/80/80",
+   "tier:wesen=80/255/80",
+   "tier:wolf=80/120/255"
+  ],
+  "klassen": {
+   "tier:bestaeuber": {
+    "objekte": 1,
+    "spiegelTreue": null,
+    "spiegelEbene": 89.844,
+    "sp": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "zweiton": 0,
+    "weiss": 0,
+    "wt": 0,
+    "wtZiel": null,
+    "bunt": 42.59,
+    "pixel": 35,
+    "luma": 109.95,
+    "kante": 0.0092,
+    "kr": 35,
+    "inseln": 0,
+    "frei": 0,
+    "strich": null,
+    "si": 0,
+    "bloecke": 0,
+    "glatt": null,
+    "glattDunkel": null,
+    "nyquist": null,
+    "beta": null
+   },
+   "tier:wesen": {
+    "objekte": 11,
+    "spiegelTreue": null,
+    "spiegelEbene": 88.947,
+    "sp": [
+     2,
+     0,
+     0,
+     11.02,
+     11.02,
+     -11.02
+    ],
+    "zweiton": 0,
+    "weiss": 0,
+    "wt": 0,
+    "wtZiel": null,
+    "bunt": 30.51,
+    "pixel": 1389,
+    "luma": 64.99,
+    "kante": 0.3725,
+    "kr": 445,
+    "inseln": 0,
+    "frei": 0,
+    "strich": 0.3086,
+    "si": 8,
+    "bloecke": 3,
+    "glatt": 0.3333,
+    "glattDunkel": 0,
+    "nyquist": 0.0658,
+    "beta": 2.8851
+   },
+   "tier:wolf": {
+    "objekte": 52,
+    "spiegelTreue": 0.4495,
+    "spiegelEbene": 89.299,
+    "sp": [
+     35,
+     0,
+     0,
+     35314.54,
+     35314.54,
+     15875.14
+    ],
+    "zweiton": 0,
+    "weiss": 0,
+    "wt": 0,
+    "wtZiel": null,
+    "bunt": 18.8,
+    "pixel": 6727,
+    "luma": 58.05,
+    "kante": 0.4185,
+    "kr": 1331,
+    "inseln": 0,
+    "frei": 0,
+    "strich": 0.4113,
+    "si": 368,
+    "bloecke": 36,
+    "glatt": 0.0833,
+    "glattDunkel": 0,
+    "nyquist": 0.129,
+    "beta": 2.1406
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\507beba6-radeon\\tiere.K2_2-wolfsrevier.maske.png"
+ }
+}

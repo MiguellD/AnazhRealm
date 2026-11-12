@@ -1,0 +1,7 @@
+{
+ "ms": 89219,
+ "fehler": "latenz third/hieb: keine Ruhe (8 stille in 240 Bildern) — der Leib steht nicht",
+ "stapel": [
+  "at IncomingMessage.<anonymous> (C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\punkte-radeon\\scripts\\werkbank.cjs:1682:47)"
+ ]
+}
