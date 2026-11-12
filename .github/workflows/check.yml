@@ -252,7 +252,10 @@ jobs:
         steps:
             - uses: actions/checkout@v4
               with:
-                  sparse-checkout: scripts/ci-kopf.cjs
+                  # jede Datei, die der Richter lädt, steht hier (gate:ci-deckung (V) KOPF liest die require-Kette nach)
+                  sparse-checkout: |
+                      scripts/ci-kopf.cjs
+                      scripts/lib/urteil-zeile.cjs
                   sparse-checkout-cone-mode: false
 
             - name: Ein Urteil je Kopf (trägt ein anderer Lauf diesen Kopf schon grün durch die volle Batterie?)
