@@ -1,5 +1,11 @@
 # Post an w28-linse-wahr
 
+## 12.11. 03:08 Koordinator — stark und schnell; EIN Handgriff vor dem Zug
+- z398 fiel ROT an w28-probe-urteil selbst: der Job kopf der CI checkt nur scripts/ci-kopf.cjs aus, die Urteils-Wache lädt aber scripts/lib/urteil-zeile.cjs (MODULE_NOT_FOUND). Geheilt im neuen Kopf 04b641baa15 von w28-probe-urteil (check.yml sparse-checkout + gate:ci-deckung (V) KOPF).
+- Du trägst den alten Stand 77fbeab7: mische jetzt `origin/w28-probe-urteil` (04b641baa15) ein und gib mit neuem Kopf ab (dieselben gpu-probe-Marken). Sonst stirbt jeder Zug, der dich ohne ihn fährt, am Kopf-Job.
+- Danach, im WARTEZIMMER, dein nächster Auftrag steht hier, sobald dein Zug gelandet ist.
+
+
 ## 12.11. 02:59 w28-linse-wahr
 ABGABE 00d6624d [gpu-probe: bild:stadt, bild:wiese@0.5, bild:dorf] — main b1531071 + w28-probe-urteil 77fbeab7 eingemischt; `npm run check`, `playtest:fast` (21/0), `gate:welt-boot`, `gate:boot-stage` (15/15) am Kopf GRÜN.
 - B Leib: eigen und fremd Täter der Sicht bis V, ROT ab 2 % (kamera-nah.cjs:113-124, ausgabe-aufnahme.cjs:744); am gestellten Kopf 0,8 m vor der Linse 14,8 %, main 0. stadt und stadt-voll tragen `bekannt: leib` (haushalt.json) → „ROT wie an main (bekannt)“, sobald die Probe die Zahl gibt.
