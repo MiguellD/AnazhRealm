@@ -1,0 +1,271 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.259",
+  "sha": "b1531071aca42251b7a3bf8bb53f70d45f581855"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": false,
+  "weltTakte": 25
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 3,
+   "deckung": 0,
+   "taeter": {}
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "leiber": null,
+  "abstand": 6,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   -286.158,
+   30.109,
+   -1047.389
+  ],
+  "blick": [
+   0.90816,
+   -0.1644,
+   0.385
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 92.9,
+  "sigma": 38,
+  "schwarz": 0,
+  "weiss": 0
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 6 m · Luma 92.9 σ 38 schwarz 0.0 % weiß 0.0 % · Stand 18.546.259 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3",
+ "klasse": {
+  "ausdruck": "^spieler:kopf/",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 127,
+  "toene": [
+   "spieler:kopf/auge=255/80/80",
+   "spieler:kopf/hair=80/255/80",
+   "spieler:kopf/haut=80/120/255",
+   "spieler:kopf/skin=255/220/60"
+  ],
+  "klassen": {
+   "spieler:kopf/auge": {
+    "objekte": 2,
+    "spiegelTreue": null,
+    "spiegelEbene": 29.204,
+    "sp": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "zweiton": 0,
+    "weiss": 0,
+    "wt": 0,
+    "wtZiel": null,
+    "bunt": 3.96,
+    "pixel": 1,
+    "luma": 22.34,
+    "kante": null,
+    "kr": 0,
+    "strich": null,
+    "si": 0,
+    "bloecke": 0,
+    "glatt": null,
+    "glattDunkel": null,
+    "nyquist": null,
+    "beta": null
+   },
+   "spieler:kopf/hair": {
+    "objekte": 2,
+    "spiegelTreue": null,
+    "spiegelEbene": 29.285,
+    "sp": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "zweiton": 0,
+    "weiss": 0.1831,
+    "wt": 26,
+    "wtZiel": null,
+    "bunt": 10.16,
+    "pixel": 142,
+    "luma": 145.79,
+    "kante": 0.1702,
+    "kr": 34,
+    "strich": null,
+    "si": 0,
+    "bloecke": 0,
+    "glatt": null,
+    "glattDunkel": null,
+    "nyquist": null,
+    "beta": null
+   },
+   "spieler:kopf/haut": {
+    "objekte": 1,
+    "spiegelTreue": null,
+    "spiegelEbene": 29.168,
+    "sp": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "zweiton": 0,
+    "weiss": 0.0029,
+    "wt": 1,
+    "wtZiel": null,
+    "bunt": 15.83,
+    "pixel": 346,
+    "luma": 36.52,
+    "kante": 0.1833,
+    "kr": 62,
+    "strich": null,
+    "si": 0,
+    "bloecke": 1,
+    "glatt": 0,
+    "glattDunkel": null,
+    "nyquist": 0.2287,
+    "beta": 0.5708
+   },
+   "spieler:kopf/skin": {
+    "objekte": 1,
+    "spiegelTreue": null,
+    "spiegelEbene": 29.221,
+    "sp": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "zweiton": 0,
+    "weiss": 0,
+    "wt": 0,
+    "wtZiel": null,
+    "bunt": 22,
+    "pixel": 1,
+    "luma": 33.37,
+    "kante": null,
+    "kr": 0,
+    "strich": null,
+    "si": 0,
+    "bloecke": 0,
+    "glatt": null,
+    "glattDunkel": null,
+    "nyquist": null,
+    "beta": null
+   }
+  },
+  "abstand": null,
+  "gesicht": {
+   "augeFrei": 1,
+   "augeFreiGrund": null,
+   "lippeL": -6.63,
+   "lippeA": 10.78,
+   "hoehleL": -3.65,
+   "hoehleA": 5.9,
+   "haarDeckung": 1,
+   "weiss": 0.2256,
+   "proben": {
+    "iris": 116,
+    "irisSicht": 116,
+    "lippe": 58,
+    "hoehle": 78,
+    "wange": 444,
+    "kalotte": 323,
+    "haarPixel": 2183
+   },
+   "zeilen": {
+    "auge": 539.3,
+    "mund": 574.6
+   },
+   "irisDecke": {},
+   "fenster": {
+    "k": 4,
+    "mitte": [
+     0.4611,
+     0.491
+    ],
+    "getragen": 180,
+    "wahl": {
+     "gen": [
+      637,
+      637,
+      637
+     ],
+     "steht": true,
+     "kaskaden": 0
+    }
+   },
+   "ungefenstert": {
+    "augeFrei": null,
+    "augeFreiGrund": "irisL 4 px, 0 rein < 2×2, irisR 4 px, 0 rein < 2×2",
+    "lippeL": -11.8,
+    "lippeA": 15.29,
+    "hoehleL": -4.87,
+    "hoehleA": 10.73,
+    "haarDeckung": 1,
+    "weiss": 0.2123,
+    "proben": {
+     "iris": 116,
+     "irisSicht": 58,
+     "lippe": 25,
+     "hoehle": 6,
+     "wange": 76,
+     "kalotte": 323,
+     "haarPixel": 142
+    },
+    "zeilen": {
+     "auge": 529.8,
+     "mund": 538.5
+    }
+   }
+  },
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\b1531071-radeon\\mensch.K4_1-third.maske.png"
+ }
+}
