@@ -25,6 +25,8 @@ WARTE=${GPU_LAUF_WARTE_S:-2700}; MAX=${GPU_LAUF_MAX_S:-3600}; T0=$(date +%s); TO
 VMAX=${GPU_LAUF_VERDRAENGT_MAX:-3}; VERDR=0; WEICH=${GPU_LAUF_WEICH_S:-0}; DLOG=${GPU_LAUF_DLOG:-/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/messplatz/dienst.log}
 [ -f "$DLOG" ] && GPU_VERWAIST_LOG=$DLOG   # die VERWAIST-Zeile (10.11.) steht auch im Dienst-Log, neben VERDRÄNGT
 worker() { tasklist -FI "IMAGENAME eq Runner.Worker.exe" 2>/dev/null | grep -qi Runner.Worker; }
+# der freie Commit des Systems in GB (physischer Speicher + Auslagerung, was noch zugesagt werden kann) — nur gelesen, wenn ein CI-Job eintrifft
+commit_frei() { local k; k=$(powershell -NoProfile -Command "(Get-CimInstance Win32_OperatingSystem).FreeVirtualMemory" 2>/dev/null | tr -dc 0-9); [ -n "$k" ] && echo "$(( k / 1048576 )),$(( k % 1048576 * 10 / 1048576 )) GB" || echo "?"; }
 versuch() { ! worker && ! ci_wartet && [ "$(ci_ruhe_rest)" -le 0 ] && mkdir "$GPU_SCHLOSS" 2>/dev/null; }
 nimm() { # $1 spätester Zeitpunkt (s) — wartet auf das Schloss und das Ende der CI-Ruhe (VOR dem Schloss, 25.10.), nimmt es, Herzschlag;
   # ein verwaistes Schloss bricht der Wartende selbst und übernimmt es sofort (gs_uebernimm, 10.11.)
@@ -62,7 +64,7 @@ while :; do
         W0=$(date +%s)
         if [ "$WEICH" -gt 0 ]; then
           echo "gpu-lauf: WEICHT - ein CI-Job wartet im Start-Hook; der Lauf misst zu Ende (hoechstens $WEICH s), die Karte geht an seiner Grenze frei" >&2
-          [ -f "$DLOG" ] && echo "$(date '+%F %T') gpu-lauf $NAME WEICHT: ein CI-Job wartet nach $(( W0 - TS )) s Lauf - misst zu Ende, hoechstens $WEICH s" >> "$DLOG"
+          [ -f "$DLOG" ] && echo "$(date '+%F %T') gpu-lauf $NAME WEICHT: ein CI-Job wartet nach $(( W0 - TS )) s Lauf - misst zu Ende, hoechstens $WEICH s · Commit frei $(commit_frei)" >> "$DLOG"
         fi
       fi
       [ $(( $(date +%s) - W0 )) -ge "$WEICH" ] && { V=1; break; }
@@ -71,7 +73,14 @@ while :; do
   done
   if [ -z "$V" ]; then
     wait $KIND; E=$?
-    [ -n "$W0" ] && [ -f "$DLOG" ] && echo "$(date '+%F %T') gpu-lauf $NAME ENDETE AN DER GRENZE: der CI-Job wartete $(( $(date +%s) - W0 )) s, der Lauf ist ganz (Exit $E)" >> "$DLOG"
+    # EIN LAUF, DEN EIN SIGNAL FAELLTE, IST NIE GANZ (12.11., Koordinator): Exit > 128 heisst gestorben (139 = Segmentation fault) —
+    # am 12.11. starb ein Lauf zweimal binnen 2 s nach dem Eintreffen eines CI-Jobs im Start-Hook (17:33:50 sg-vk-ankunft, 17:58:53
+    # sg-vk-netz-main), und diese Zeile nannte ihn „ganz (Exit 139)“. Jetzt nennt sie den Absturz beim Namen, samt dem freien Commit
+    # (die erste Spur: 3,3 von 18,9 GB frei waehrend des CI-Jobs; das Ereignisprotokoll schwieg an beiden Stellen).
+    if [ -n "$W0" ] && [ -f "$DLOG" ]; then
+      if [ "$E" -gt 128 ]; then echo "$(date '+%F %T') gpu-lauf $NAME STARB BEIM WEICHEN: Exit $E (Signal $(( E - 128 ))) $(( $(date +%s) - W0 )) s nach dem Eintreffen des CI-Jobs, nach $(( $(date +%s) - TS )) s Lauf - der Lauf ist NICHT ganz · Commit frei $(commit_frei)" >> "$DLOG"
+      else echo "$(date '+%F %T') gpu-lauf $NAME ENDETE AN DER GRENZE: der CI-Job wartete $(( $(date +%s) - W0 )) s, der Lauf ist ganz (Exit $E)" >> "$DLOG"; fi
+    fi
     exit $E
   fi
   VERDR=$(( VERDR + 1 ))
