@@ -211,6 +211,16 @@ while true; do
     B=$(vorn "$B")
     Z=""
     [ -n "$B" ] && Z=$(buendel "$B")
+    # EIN ZUG TRÄGT, WAS GLEICH BEREIT IST (12.11. z409: ein Zweig fuhr allein über 60 min, drei weitere standen Minuten vor „bereit“ —
+    # jeder Zug kostet jede Karte einen echt-Job von ~15 min; die Mess-Liste der OMEN kam an zwei Köpfen nur 5/30 und 8/31 weit).
+    # Steht genau EIN Zweig bereit und laufen für andere noch Check oder Probe, wartet der Dienst höchstens zweimal 5 min auf sie.
+    if [ -n "$Z" ] && [ "$(echo $Z | wc -w)" = 1 ] && [ ${einzel:-0} -lt 2 ] && grep -qE "queued|in_progress|angestoßen" "$W/zug-nie-leer.wartet" 2>/dev/null; then
+        einzel=$((${einzel:-0} + 1))
+        puls zug "ein Zweig bereit ($Z), $(grep -cE "queued|in_progress|angestoßen" "$W/zug-nie-leer.wartet") weitere kurz davor — wartet 5 min ($einzel/2)"
+        sleep 300
+        continue
+    fi
+    einzel=0
     if [ -z "$Z" ]; then
         puls zug "wartet auf bereite Abgaben ($(grep -c . "$W/zug-nie-leer.wartet") wartend, jüngster Zug z$n)"
         sleep 300
