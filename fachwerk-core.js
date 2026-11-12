@@ -4437,7 +4437,13 @@
           const Rf=R+V.halbM+V.wendeRandM; if(zu(cx,cz,Rf)) return;
           if(boden&&!boden.kreis(cx,cz,R)) return;                                           /*DIE HOEHE URTEILT IN DER SUCHE (`boden`, der Plan v2 `verkehrsBoden`): ein Kreis, dessen Grund die Wende nicht traegt (Wasser, Hang — das billige Urteil vor der Bahn), und unten eine Wende, deren Ring und Baender keine Flaeche der Stadt tragen, zaehlen nicht zu den `wendeN`. Bis hier nahm die Suche die ersten acht freien Kreise in 2D, die Hoehe urteilte danach nur unter ihnen: am Ende West von stadt-voll (668,5/439,4) lagen alle acht 7–21 m vom Ende am Torplatz und fielen (fuenf mit dem Ring auf dem Kern der fallenden Trasse 0,33–0,41 m tiefer, drei am Band heraus) — Wenden 3 an 4 Enden*/
           const C={x:cx,z:cz}, nR0=nahe([C],R+g2), loRing=nR0[0], hiRing=nR0[3];
-          let best=null;
+          const bogenVon=(P)=>P.map((p,i)=>{ const a=P[i-1], c=P[i+1]; if(!a||!c) return null; const t1=Math.atan2(p.z-a.z,p.x-a.x); let d=Math.atan2(c.z-p.z,c.x-p.x)-t1; d-=Math.round(d/(2*Math.PI))*2*Math.PI;
+            const k=2*d/(Math.hypot(p.x-a.x,p.z-a.z)+Math.hypot(c.x-p.x,c.z-p.z)); if(Math.abs(k)<1e-3) return null; const t=t1+d/2; return {x:p.x-Math.sin(t)/k, z:p.z+Math.cos(t)/k, R:Math.max(1/Math.abs(k),R)}; });
+          const schert=(b,q)=>b&&Math.hypot(q.x-b.x,q.z-b.z)>b.R?(V.parkL/2)**2/(2*b.R):0;
+          /*DIE BAHN OHNE BEGEGNUNG ZUERST (w28-stadt-grammatik): unter den Abzweigen eines Kreises gilt die kuerzeste Bahn, deren Weg hinein und Weg heraus einander samt dem Ausscheren nie naeher kommen als zwei halbe Wagen (dasselbe Mass wie `engen` unten) — erst wo keine so traegt, die kuerzeste mit ihrer Enge. Bis hier galt immer die kuerzeste: an stadt-voll trugen drei der vier Wenden am Torplatz eine Enge im Zulauf, die Schleife im Suedwesten (746,5/573) fasste 6 Wagen bei 7 Plaetzen, die Flotte stand vor ihr (gate:fahr-leben VK: 20 m und 28 m je Minute, Wagen an Wagen 0,09 m); main, dessen Wenden 45–61 m stadteinwaerts lagen, trug an drei von vier keine*/
+          /*der Raum der Begegnung ist der der Trasse: zwei Spuren `spurM` neben der Mitte (2,5 m fuer den Wagen von `parkB` 2,3 m: 0,2 m zwischen beiden), samt dem Ausscheren — mit zwei halben Wagen (`g2`, 2,4 m, das Mass der Enge) begegneten sich an stadt-voll um 10 und 23 Uhr Wagen 18 und 20 im Zulauf der Nordost-Wende auf 0,19 m (Soll ≥ 0,2 m)*/
+          const ohneEnge=(EB,AB)=>{ const bE=bogenVon(EB), bA=bogenVon(AB), g3=2*V.spurM; for(let i=0;i<EB.length;i++) for(let j=0;j<AB.length;j++){ const p=EB[i], q=AB[j]; if(Math.hypot(p.x-q.x,p.z-q.z)<g3+schert(bE[i],q)+schert(bA[j],p)) return false; } return true; };
+          let best=null, frei0=null;
           for(const dreh of [1,-1]){
             // die Bahnen hinein je Abzweig (k1: der Punkt der Spur hinein) und heraus (k2), ihr Maß samt dem Stück der Spur
             const eins=[], auss=[];
@@ -4445,9 +4451,9 @@
             for(const k2 of kA){ if(k2<=hiRing) continue; const u=tang(raus,k2); for(const o of uebergang(raus[k2],{x:-u.x,z:-u.z},C,R,-dreh,R)) auss.push({k:k2, o, L:o.L-cA[k2], get B(){ return this._B||(this._B=this.o.pts.reverse().concat([raus[this.k]])); }}); }
             const nP=eins.length*auss.length, LP=new Float64Array(nP), IP=[];
             for(let i=0;i<eins.length;i++) for(let j=0;j<auss.length;j++){ let span=(auss[j].o.a-eins[i].o.a)*dreh; span-=Math.floor(span/(2*Math.PI))*2*Math.PI; if(span<0.5) continue;
-              const L=eins[i].L+span*R+auss[j].L; if(best&&L>=best.L) continue; const q=i*auss.length+j; LP[q]=L; IP.push(q); }
+              const L=eins[i].L+span*R+auss[j].L; if(frei0&&L>=frei0.L) continue; const q=i*auss.length+j; LP[q]=L; IP.push(q); }
             IP.sort((p,q)=>LP[p]-LP[q]);
-            for(const q of IP){ const E=eins[(q/auss.length)|0], A=auss[q%auss.length], L=LP[q]; if(best&&best.L<=L) break;
+            for(const q of IP){ const E=eins[(q/auss.length)|0], A=auss[q%auss.length], L=LP[q]; if(frei0&&frei0.L<=L) break;
               let span=(A.o.a-E.o.a)*dreh; span-=Math.floor(span/(2*Math.PI))*2*Math.PI;
               if(E.frei===undefined){ const n=nahe(E.B,g2); E.hiA=n[3]; E.frei=!(cR[n[0]]>cR[E.k]+V.abzweigFreiM)&&geht(E.B); }
               if(!E.frei) continue;
@@ -4455,13 +4461,16 @@
               if(!A.frei||A.k<=E.hiA||E.k>=A.loR) continue;
               let nah=false; for(const p of E.B){ for(const q of A.B) if((p.x-q.x)**2+(p.z-q.z)**2<g2*g2){ nah=true; break; } if(nah) break; }
               if(nah) continue;
-              best={L, dreh, span, E, A}; break; } }
+              const c9={L, dreh, span, E, A}; if(!best||L<best.L) best=c9;
+              if(ohneEnge(E.B,A.B)){ frei0=c9; break; } } }
           if(!best) return;
+          if(frei0) best=frei0;
           const {dreh, span, E, A}=best, ain=E.o.a, aout=A.o.a, einB=E.B, ausB=A.B, bahn=einB.slice(), m=Math.ceil(span*R);
           for(let t=1;t<m;t++){ const w=ain+dreh*span*t/m; bahn.push({x:cx+Math.cos(w)*R, z:cz+Math.sin(w)*R}); }
           bahn.push(...ausB);
           const reinB=rein.slice(0,E.k+1), rausB=raus.slice(A.k);
-          const rP=R+V.halbM+V.parkRandM+V.parkB/2, plaetze=[], dA=(V.parkL+V.parkRandM)/rP;
+          /*DER KRANZ DER PLAETZE HAELT DAS AUSSCHEREN (w28-stadt-grammatik): der Wagen auf dem Ring belegt `rU` (der halbe Wagen samt dem Ausscheren des groessten im Bogen der Wende, wie die Bahn und die Enge es zaehlen), erst dahinter beginnt der Rand zum geparkten. Bis hier stand der Kranz um `halbM` + `parkRandM`: der groesste Wagen fuhr 0,6 − 0,52 = 0,08 m am geparkten vorbei — an stadt-voll um 23 Uhr Wagen 15 auf dem Ring der Suedwest-Wende 0,09 m neben Wagen 12 auf seinem Platz (gate:fahr-leben VK „Wagen an Wagen", Soll ≥ 0,2 m)*/
+          const rP=R+rU+V.parkRandM+V.parkB/2, plaetze=[], dA=(V.parkL+V.parkRandM)/rP;
           for(let w=0;w<2*Math.PI-dA/2;w+=dA){ const b=ain+dreh*w, x=cx+Math.cos(b)*rP, z=cz+Math.sin(b)*rP, tx=-Math.sin(b)*dreh, tz=Math.cos(b)*dreh;
             let frei2=true;
             for(const u of [-0.5,-0.25,0,0.25,0.5]) for(const v of [-0.5,0,0.5]){ const lx=u*V.parkL, lz=v*V.parkB, px=x+tx*lx-tz*lz, pz=z+tz*lx+tx*lz;
@@ -4474,9 +4483,7 @@
           // gereiht. Bis hier hielt die Wahl nur zwei halbe Wagen (die Kreuzung zählt das Ausscheren, `konflikt`): an der Wende
           // 908/289 von stadt-voll liefen beide Bahnen 2,42 m nebeneinander, zwei Wagen begegneten sich auf 0,08 m, und der Zug
           // sah „Wagen in Wagen" (08.11.); keine Lage der Wende 968/347 hält die Begegnung frei.
-          const bogenVon=(P)=>P.map((p,i)=>{ const a=P[i-1], c=P[i+1]; if(!a||!c) return null; const t1=Math.atan2(p.z-a.z,p.x-a.x); let d=Math.atan2(c.z-p.z,c.x-p.x)-t1; d-=Math.round(d/(2*Math.PI))*2*Math.PI;
-            const k=2*d/(Math.hypot(p.x-a.x,p.z-a.z)+Math.hypot(c.x-p.x,c.z-p.z)); if(Math.abs(k)<1e-3) return null; const t=t1+d/2; return {x:p.x-Math.sin(t)/k, z:p.z+Math.cos(t)/k, R:Math.max(1/Math.abs(k),R)}; });
-          const schert=(b,q)=>b&&Math.hypot(q.x-b.x,q.z-b.z)>b.R?(V.parkL/2)**2/(2*b.R):0, bE=bogenVon(einB), bA=bogenVon(ausB), haufen=[];
+          const bE=bogenVon(einB), bA=bogenVon(ausB), haufen=[];
           einB.forEach((p,i)=>ausB.forEach((q,j)=>{ if(Math.hypot(p.x-q.x,p.z-q.z)>=g2+schert(bE[i],q)+schert(bA[j],p)) return;
             const H=haufen.filter(h=>h.P.some(o=>Math.hypot(o.x-p.x,o.z-p.z)<2*rU||Math.hypot(o.x-q.x,o.z-q.z)<2*rU)), h0=H[0]||{P:[], i};
             if(!H.length) haufen.push(h0); for(const h of H.slice(1)){ h0.P.push(...h.P); h0.i=Math.min(h0.i,h.i); haufen.splice(haufen.indexOf(h),1); }

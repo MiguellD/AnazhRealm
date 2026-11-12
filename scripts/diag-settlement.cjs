@@ -1924,6 +1924,60 @@ hauptLauf(async () => {
                 JSON.stringify({ alt: alt.vorstadt.slice(0, 2), wagen: nW, vorstadtLose: st.slots.filter((s) => s.viertel === "vorstadt").length }) // prettier-ignore
             );
         }
+        // DIE WENDE TRÄGT KEINE BEGEGNUNG (w28-stadt-grammatik, fachwerk `verkehrsNetz`: die Bahn ohne Begegnung zuerst): die erste
+        // Wende jedes Endes (die des Torplatzes) führt hinein und heraus, ohne dass zwei Wagen einander samt dem Ausscheren näher
+        // kommen als zwei halbe Wagen (`engen` leer) — an stadt-voll trugen drei von vier eine Enge im Zulauf, die Schleife im
+        // Südwesten fasste 6 Wagen bei 7 Plätzen, die Flotte stand vor ihr (gate:fahr-leben VK 20 m und 28 m je Minute).
+        const wendeEngen = (N) => {
+            const aus = { enden: 0, wenden: 0, taeter: [] };
+            for (const K of N.kreuzungen || []) {
+                if (!K.ende) continue;
+                aus.enden++;
+                const w = (K.wenden || [])[0];
+                if (!w) continue;
+                aus.wenden++;
+                if ((w.engen || []).length)
+                    aus.taeter.push(`Ende ${K.x.toFixed(1)}/${K.z.toFixed(1)}: Wende ${w.x.toFixed(1)}/${w.z.toFixed(1)} mit ${w.engen.length} Enge(n) bei ${w.engen[0].x.toFixed(1)}/${w.engen[0].z.toFixed(1)}`);
+            }
+            return aus;
+        };
+        {
+            const engFehl = [];
+            let [enden, wenden] = [0, 0];
+            let erstes = null;
+            for (const [seed, nH] of [
+                [7, 120],
+                [7, 300],
+                [11, 200],
+            ]) {
+                const N = FC.verkehrsNetz(FC.exportSettlement({ seed, nH }), 0, 0);
+                const w = wendeEngen(N);
+                enden += w.enden;
+                wenden += w.wenden;
+                if (!erstes && w.wenden) erstes = N;
+                if (w.taeter.length) engFehl.push(`${seed}/${nH}: ${w.taeter.slice(0, 2).join(" · ")}`);
+            }
+            check(
+                `DIE WENDE TRÄGT KEINE BEGEGNUNG: die erste Wende jedes Endes führt hinein und heraus ohne Enge (3 Städte, ${wenden} Wenden an ${enden} Enden)`,
+                engFehl.length === 0 && wenden > 0,
+                engFehl.slice(0, 3).join(" · ") || `${wenden} Wenden an ${enden} Enden (die Probe prüfte nichts)`
+            );
+            // Selbst-Test 15e: dieselbe Stadt, die erste Wende eines Endes mit einer Enge in ihrer Bahn (der Stand bis
+            // w28-stadt-grammatik) — fällt beim Namen
+            const mut = erstes && {
+                kreuzungen: erstes.kreuzungen.map((K, i, L) =>
+                    K.ende && (K.wenden || []).length && L.findIndex((q) => q.ende && (q.wenden || []).length) === i
+                        ? Object.assign({}, K, { wenden: [Object.assign({}, K.wenden[0], { engen: [{ x: K.wenden[0].x, z: K.wenden[0].z, r: 3 }] })].concat(K.wenden.slice(1)) }) // prettier-ignore
+                        : K
+                ),
+            };
+            const m = mut ? wendeEngen(mut) : { taeter: [] };
+            check(
+                "Selbst-Test 15e: die Wende ohne Begegnung — die Stadt des Gesetzes besteht, dieselbe mit einer Enge in der Bahn ihrer ersten Wende fällt beim Namen",
+                !!erstes && wendeEngen(erstes).taeter.length === 0 && m.taeter.length === 1,
+                JSON.stringify({ ohne: erstes ? wendeEngen(erstes).taeter.length : null, mit: m.taeter[0] || null })
+            );
+        }
         alleDs.sort(aufsteigend);
         const mq = (q) => (alleDs.length ? rang(alleDs, q) : Infinity);
         if (!Number.isFinite(FC.LICHT_MARKE_M)) lichtFehl.push("der Kern trägt kein LICHT_MARKE_M (das Soll je Meter)");
