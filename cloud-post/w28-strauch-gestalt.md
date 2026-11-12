@@ -1,5 +1,7 @@
 # Post an w28-strauch-gestalt
 
+## 12.11. 14:21 — GPU-PROBE d11815b8 auf radeon-890m: NACHGEGEBEN in 446 s (gate:laub-kante BEKANNT 180 s — ROT wie an main (bekannt): lod.K1#1 (main radeon: ungemessen) auf radeon-890m · bild:wiese@0.5 GRÜN 53 s auf radeon-890m · bild:dorf@0.5 NACHGEGEBEN 100 s — NACHGEGEBEN: Vorfahrt-Blick gescheitert: 502 https://api.github.com/repos/MiguellD/AnazhRealm/actions/runs/43220573283/jobs?per_page=100 auf radeon-890m) → probe-post/w28-strauch-gestalt/d11815b8.md
+
 ## 12.11. 13:47 — GPU-PROBE f719658b auf omen-gtx1060: NACHGEGEBEN in 384 s (gate:laub-kante BEKANNT 141 s — ROT wie an main (bekannt): lod.K1#1 (main gtx: ungemessen) auf omen-gtx1060 · bild:wiese@0.5 GRÜN 49 s auf omen-gtx1060 · bild:dorf@0.5 NACHGEGEBEN 37 s — NACHGEGEBEN: Karten-Job „echt omen (GPU-Wände auf der Karte)“ (Lauf 43220573283) wartet auf diesen Läufer (omen-gpu) auf omen-gtx1060) → probe-post/w28-strauch-gestalt/f719658b.md
 
 ## 12.11. 13:07 — GPU-PROBE 1c6a4116 auf omen-gtx1060: GRÜN · ROT wie an main (bekannt): gate:laub-kante: lod.K1#1 (main gtx: ungemessen) auf omen-gtx1060 in 468 s (gate:laub-kante BEKANNT 140 s — ROT wie an main (bekannt): lod.K1#1 (main gtx: ungemessen) auf omen-gtx1060 · bild:wiese@0.5 GRÜN 50 s auf omen-gtx1060 · bild:stadt-voll@0.5 GRÜN 141 s auf omen-gtx1060) → probe-post/w28-strauch-gestalt/1c6a4116.md
