@@ -1897,33 +1897,23 @@ function sollTafelSelbsttest(tafel, q) {
             if (!(Math.abs(ist - b) < 0.35)) v.push(`Maß Mikro: β ${b} gemessen als ${ist}`);
         }
         // DAS URTEIL DER ARMLÄNGE (w28-stadt-grund): ein lesbarer Kopfstein (8 Pixel im Läufer-Verband, die Fuge dunkel, Bruchton ±12 %,
-        // der Kopf zur Fuge dunkler) ist grün, derselbe im Schatten (Luma ~20) ebenso; das Raster und das weiße Rauschen ROT als
+        // der Kopf zur Fuge dunkler) ist grün, derselbe im Schatten (Luma ~20) und das Korn im Schatten ohne Fuge (Luma 20, zwei
+        // schräge Wellen von 8–9 Pixeln: σ 3,5 — das Maß davor nannte es glatt) ebenso; das Raster und das weiße Rauschen ROT als
         // Pixel-Rauschen, der Verlauf ROT ohne Korn, die Pose ohne Fels ROT. DIE MUTANTE ist das Maß davor (nyquist ≥ 0,15): sie
         // nennt das Raster grün und den Stein rot — derselbe Test muss sie fallen sehen.
-        const stein = (hell) =>
-            klassenMasse(
-                grau((x, y) => {
-                    const [r, xs] = [(y / 8) | 0, x + ((y / 8) & 1) * 4];
-                    const d = Math.min(y % 8, 7 - (y % 8), xs % 8, 7 - (xs % 8));
-                    const ton = 1 + 0.12 * ((((((xs / 8) | 0) * 73 + r * 151) % 23) / 11) - 1);
-                    return d === 0 ? 0.45 * hell : hell * ton * (1 - 0.25 * (1 - Math.min(1, d / 4)) ** 2);
-                }),
-                v1,
-                n,
-                n
-            );
-        // das Korn im Schatten ohne Fuge (Luma 20, zwei schräge Wellen von 8–9 Pixeln: σ 3,5) — das Maß davor nannte es glatt
-        const korn = klassenMasse(grau((x, y) => 20 + 4 * Math.sin(x * 0.7 + y * 0.3) + 3 * Math.sin(y * 0.8 - x * 0.2 + 1)), v1, n, n);
-        const faelle = { stein: stein(130), schatten: stein(22), korn, raster: sb, rauschen: klassenMasse(rauschBild(n, 0, 7919), v1, n, n), verlauf: vl };
-        const soll = { stein: "", schatten: "", korn: "", raster: "Pixel-Rauschen", rauschen: "Pixel-Rauschen", verlauf: "kein Korn" };
-        const urteilAlt = ({ klassen: k }) => Object.values(k).filter((m) => !(m.nyquist >= 0.15 && m.glatt <= 0.1)).map(() => "MIKRO");
-        const ab = (u) => Object.entries(faelle).map(([f, m]) => [f, u({ ausdruck: "fels", arm: { soll: 1, ist: 1 }, klassen: { boden: m } }).join(" ")]);
-        for (const [f, z] of ab(armUrteil))
-            if (soll[f] ? !z.includes(`MIKRO boden: ${soll[f]}`) : z !== "") v.push(`Urteil Arm ${f}: „${z}" statt ${soll[f] || "grün"} (nyquist ${faelle[f].nyquist}, glatt ${faelle[f].glatt})`);
-        if (ab(urteilAlt).every(([f, z]) => !soll[f] === (z === "")))
-            v.push("Urteil Arm: die Mutante (das Maß nyquist ≥ 0,15, das Raster grün) fiel nicht");
-        const pose = armUrteil({ ausdruck: "fels", arm: { soll: 1, ist: 1 }, klassen: {} }).join("|");
-        if (pose !== "POSE fels: 0 im Bild, Mitte 1 m") v.push(`Urteil Arm Pose: ${pose}`);
+        const stein = (h) =>
+            grau((x, y) => {
+                const [xs, r] = [x + ((y >> 3) & 1) * 4, y >> 3];
+                const d = Math.min(y & 7, 7 - (y & 7), xs & 7, 7 - (xs & 7));
+                return d ? h * (0.88 + (((xs >> 3) * 73 + r * 151) % 23) / 92) * (1 - 0.25 * (1 - Math.min(1, d / 4)) ** 2) : 0.45 * h;
+            });
+        const korn = grau((x, y) => 20 + 4 * Math.sin(x * 0.7 + y * 0.3) + 3 * Math.sin(y * 0.8 - x * 0.2 + 1));
+        const faelle = [stein(130), stein(22), korn, rauschBild(n, 0, 7919)].map((b) => klassenMasse(b, v1, n, n)).concat(sb, vl);
+        const soll = ["", "", "", "Pixel-Rauschen", "Pixel-Rauschen", "kein Korn"];
+        const arm = (u, k) => u({ ausdruck: "fels", arm: { soll: 1, ist: 1 }, klassen: k }).join();
+        faelle.forEach((m, i) => (soll[i] ? !arm(armUrteil, { boden: m }).includes(soll[i]) : arm(armUrteil, { boden: m })) && v.push(`Urteil Arm ${i}: ${arm(armUrteil, { boden: m })}`));
+        if (faelle.every((m, i) => !soll[i] === (m.nyquist >= 0.15 && m.glatt <= 0.1))) v.push("Urteil Arm: die Mutante nyquist ≥ 0,15 fiel nicht");
+        if (arm(armUrteil, {}) !== "POSE fels: 0 im Bild, Mitte 1 m") v.push(`Urteil Arm Pose: ${arm(armUrteil, {})}`);
     }
     // DIE SPIEGEL-TREUE (D10, A13) geeicht an einer gebauten Welt, je Pixel per Strahl (Kamera 2 m über dem See, waagrecht, 60°;
     // rechts ein Sandstreifen 0,4 m hoch, Bäume dahinter, fern ein Ufer mit Wald, Wolken-Bänder): der ideale Spiegel (F = 1) → ≥ 0,95

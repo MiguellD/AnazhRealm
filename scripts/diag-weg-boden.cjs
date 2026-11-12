@@ -175,13 +175,10 @@ function probe(stoerung) {
     // 9 VOLL (w28-stadt-grund): ein Plan über der alten Kappe — 1 000 Gassen-Stücke, danach ein Platz — malt JEDE Form. Bis hier hielt
     // `_stlWegeBuild` still bei 900 (stadt-voll: der Platz, 300 Vorplätze und 47 Äcker fielen ungenannt, Wiese in Gasse und Vorplatz).
     // Die Störung `kappe` ist die alte Kappe: der Plan endet nach 900 Formen.
-    const stuecke = Array.from({ length: 1001 }, (_, i) => ({ x: -10 + i * 0.02, z: -8 }));
-    const voll = { roads: [{ pts: stoerung === "kappe" ? stuecke.slice(0, 901) : stuecke, w: 2 }] };
-    if (stoerung !== "kappe") voll.platz = { cx: 8, cz: -12, ex: 2, ez: 1.5, phi: 0, typ: "erde" };
-    const vor = wk.siedlungen.length;
-    r._stlWegeBuild(voll, o, "probe:voll", true);
-    const vb = wk.siedlungen.length > vor ? wk.siedlungen[wk.siedlungen.length - 1] : null;
-    out.voll = { formen: vb ? vb.formen.length : 0, soll: stuecke.length, platz: +kanal(o.x + 8, o.z - 12, 0).toFixed(3) };
+    const [vor, k] = [wk.siedlungen.length, stoerung === "kappe"];
+    const pts = Array.from({ length: k ? 901 : 1001 }, (_, i) => ({ x: i / 50 - 10, z: -8 }));
+    r._stlWegeBuild({ roads: [{ pts, w: 2 }], platz: k ? null : { cx: 8, cz: -12, ex: 2, ez: 1.5 } }, o, "probe:voll", true);
+    out.voll = [wk.siedlungen.length > vor ? wk.siedlungen.at(-1).formen.length : 0, +kanal(o.x + 8, o.z - 12, 0).toFixed(3)];
     A.WEGE_KARTE = randAlt;
     r._stlWegeDispose();
     return out;
@@ -299,9 +296,7 @@ function urteil(S) {
             `7 BESTAND: nach 1,6 km Ausflug steht die Eintrags-Krone ${S.bestandRegister ? "im" : "NICHT im"} Register, ` +
                 `Streu unter ihr ${S.bestandStreu} (soll > 0,5), ${S.bestandUngleich} Texel ungleich dem vollen Neumalen (soll 0)`
         );
-    const V = S.voll || {};
-    if (!(V.formen === V.soll && V.platz > 0.9))
-        rot.push(`9 VOLL: ${V.formen} von ${V.soll} Formen gemalt, der Platz nach ihnen ${V.platz} (soll jede Form, Platz > 0,9 — keine stille Kappe)`);
+    if (!(S.voll[0] === 1001 && S.voll[1] > 0.9)) rot.push(`9 VOLL: ${S.voll[0]} von 1001 Formen, der Platz danach ${S.voll[1]}`);
     const T = S.tritt;
     if (!T) rot.push("8 TRITT: nicht gemessen");
     else if (T.fehler) rot.push("8 TRITT: " + T.fehler);
@@ -355,7 +350,6 @@ hauptLauf(async () => {
             vergessenRot: vergessen.some((e) => e.startsWith("7 BESTAND")),
             trittRot: tritt.some((e) => e.startsWith("8 TRITT gelöst")),
             kappeRot: kappe.some((e) => e.startsWith("9 VOLL")),
-            kappe: kappe.find((e) => e.startsWith("9 VOLL")) || kappe[0] || "-",
             heilGruen: heil.length === 0,
             streifen: streifen[0] || "-",
             hart: hart.find((e) => e.startsWith("3 KANTE")) || hart[0] || "-",
@@ -373,7 +367,7 @@ hauptLauf(async () => {
         console.log(`  Straße: Mitte ${S.mitte} · 2,5 m außerhalb ${S.aussen} · weiche Rand-Proben ${S.kantenProben}`);
         console.log(`  Platz ${S.platz} · Acker ${S.acker} · Feldweg ${S.feldweg}`);
         console.log(`  Konsum: Boden-Shader ${S.shaderLiest} · Wiese ${JSON.stringify(S.wiese)}`);
-        console.log(`  Ecke (45°-Acker) ${S.ecke} · Weg in 300 m ${S.fernWeg} · voll ${JSON.stringify(S.voll)}`);
+        console.log(`  Ecke (45°-Acker) ${S.ecke} · Weg in 300 m ${S.fernWeg} · voll ${S.voll}`);
         console.log(
             `  Kronen-Bestand nach 1,6 km Ausflug: im Register ${S.bestandRegister} · Streu ${S.bestandStreu} · ` +
                 `${S.bestandUngleich} Texel ungleich dem vollen Neumalen`
@@ -397,7 +391,6 @@ hauptLauf(async () => {
         if (!selbst.hartRot) rot.push("SELBSTTEST: die harte Kante blieb grün");
         if (!selbst.vergessenRot) rot.push("SELBSTTEST: der vergessene Kronen-Bestand blieb grün");
         if (!selbst.trittRot) rot.push("SELBSTTEST: der alte Abbau der Trittfläche blieb grün");
-        console.log(`  Selbsttest: die stille Kappe von 900 Formen → ${selbst.kappe}`);
         if (!selbst.kappeRot) rot.push("SELBSTTEST: die stille Kappe blieb grün");
         if (!selbst.heilGruen) rot.push("SELBSTTEST: nach der Heilung nicht grün");
     }
