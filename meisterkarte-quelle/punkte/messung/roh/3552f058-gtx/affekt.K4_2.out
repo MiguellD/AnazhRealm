@@ -1,0 +1,56 @@
+$ C:\Program Files\nodejs\node.exe -e (async function warumLauf() {
+    const fs = require("fs");
+    const path = require("path");
+    const { werkbankRuf } = require(path.resolve("scripts/lib/welt-boot.cjs"));
+    const [aus, port, szene] = process.argv.slice(1);
+    const W = Number(port) + 20000;
+    const satz = "warum regnet es?";
+    let erg;
+    try {
+        const K = JSON.parse(fs.readFileSync(path.resolve("spec/abnahme/ki-korpus.json"), "utf8"));
+        const korpus = (K.saetze && K.saetze[satz]) || null;
+        for (const z of fs.readFileSync(process.env.PUNKTE_SITZUNG_LOG, "utf8").split(/\r?\n/)) if (/^\[linse-gpu\] /.test(z)) console.log(z);
+        const a = await werkbankRuf(W, "/eval", { code: "return await (" + szene + ")(r, T, " + JSON.stringify({ satz, korpus }) + ");" });
+        if (!a || a.ergebnis === undefined) throw new Error("eval: " + JSON.stringify(a).slice(0, 300));
+        erg = a.ergebnis;
+    } catch (e) {
+        erg = { fehler: String((e && e.message) || e).split("\n")[0].slice(0, 300) };
+    }
+    console.log("WARUM " + JSON.stringify(erg));
+    fs.writeFileSync(aus, JSON.stringify(erg, null, 1));
+})() C:\Users\micha\Desktop\AnazhRealm-OMEN\n0611-pm\meisterkarte-quelle\punkte\messung\roh\3552f058-gtx\affekt.K4_2.json 7804 async function warumSzene(r, T, o) {
+    const st = r.state;
+    const alt = { wort: st.wetterWort, wunsch: st.wetterWunsch, wetter: st.weather, halt: st.weatherEffectTime, llm: r.llmCall };
+    const faelle = [];
+    st.weatherEffectTime = 0;
+    try {
+        for (const fall of ["spieler", "nexus"]) {
+            st.wetterWort = null;
+            st.wetterWunsch = null;
+            r._setWeather("sunny", "auto-zug");
+            if (fall === "spieler") r._setWeather("rainy", "human");
+            else r._setWeather("rainy", "nexus"), r._setWeather("rainy", "auto-zug");
+            const wahr = { wort: st.wetterWort, wunsch: st.wetterWunsch && st.wetterWunsch.quelle, wetter: st.weather };
+            let antwort = null;
+            r.llmCall = async (...a) => (antwort = await alt.llm.apply(r, a));
+            const t0 = performance.now();
+            await r.maybeAnswerWithLlm(o.satz, () => {});
+            const fehler = antwort && antwort.error ? (Array.isArray(antwort.error) ? r._t(...antwort.error) : String(antwort.error)) : null; // eine Zeile der Tafel (w8-sprache)
+            faelle.push({ fall, wahr, llm: !!st.llm.enabled, ms: Math.round(performance.now() - t0), fehler: fehler && fehler.slice(0, 160),
+                say: antwort && typeof antwort.say === "string" ? antwort.say.slice(0, 400) : null });
+            r.llmCall = alt.llm;
+        }
+    } finally {
+        r.llmCall = alt.llm;
+        st.wetterWort = alt.wort;
+        st.wetterWunsch = alt.wunsch;
+        st.weatherEffectTime = alt.halt;
+    }
+    return { satz: o.satz, korpus: o.korpus, faelle };
+}
+[linse-gpu] nvidia/pascal
+WARUM {"satz":"warum regnet es?","korpus":{"still":1,"schreiber":{"spieler":"human","nexus":"nexus"}},"faelle":[{"fall":"spieler","wahr":{"wort":"rainy","wunsch":null,"wetter":"rainy"},"llm":false,"ms":0,"fehler":null,"say":null},{"fall":"nexus","wahr":{"wort":null,"wunsch":null,"wetter":"rainy"},"llm":false,"ms":0,"fehler":null,"say":null}]}
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
+[linse-gpu] nvidia/pascal
