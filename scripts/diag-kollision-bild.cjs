@@ -34,6 +34,10 @@
 //       0,22 m vor der Mauer ab, sein Bug und die Flanke des Bären staken 8 und 13 cm in ihr); das
 //       Tempo × 1,2 des Wagens urteilt die Station an der Zeile (vmax und Faktor stehen dort);
 //       (T) der Fuchs mit EINEM Schritt je Takt (`LEIB_TEIL` ohne Teil-Schritt) MUSS durch die Mauer;
+//   (S) DER STRAUCH FÜHLT SICH AM HORST (w28-strauch-gestalt): eine Hasel 30 m nördlich der Mess-Wiese — der Leib steht LAUB_M neben
+//       ihrer Mitte (im Laub, außerhalb des Holzes) und rückt in 60 Takten höchstens EINDRING_M; er geht aus 2 m gegen die Mitte
+//       und hält am Holz (die Achse nie näher als Holz + Kapsel − EINDRING_M, nie weiter als + SPALT_M, nie hindurch);
+//       die MUTANTE (die Ruten des Skeletts als Kollision, die Regel bis w28) MUSS den Leib im Laub schieben (GEFANGEN);
 //   (P) kein Page-Error — der EINE Sammler (welt-boot) macht den Lauf ROT mit Namen.
 // `--bild` (physik.K2 Staffel 2, beide Geräte): die Welt zeichnet auf der Karte — das Linsen-Rezept von welt-boot
 // (`linsenWebGpuArgs`) nennt seinen Adapter (`[linse-gpu] <Hersteller>/…`), ein Lauf ohne Karte ist ROT (KEINE KARTE); nach dem
@@ -126,6 +130,23 @@ function tempoUrteil(T) {
     return v;
 }
 
+// (S) Der Leib im Laub: so weit neben der Mitte des Strauchs stand die Stoff-Linse am Ufer der Mess-Wiese, als die Ruten des
+// Hasel-Horsts (1,68 × 1,52 m als Boxen) ihn je Takt 0,354 m hinausschoben (z407) — das Holz am Boden reicht 0,06–0,07 m.
+const LAUB_M = 0.59;
+// (S) Das Urteil (rein).
+function strauchUrteil(S) {
+    if (!S || S.fehler) return [`LEER: (S) keine Strauch-Probe (${S && S.fehler})`];
+    const v = [];
+    if (!(S.laub <= EINDRING_M)) v.push(`(S) LAUB SCHIEBT: ${S.wer} — der Leib ${LAUB_M} m neben der Mitte rückt ${S.laub} m`);
+    if (S.durch || !(S.min >= S.holz + S.wr - EINDRING_M))
+        v.push(`(S) DURCH DEN HORST: ${S.wer} — die Achse ${S.min} m vor der Mitte (Holz ${S.holz} m + Kapsel ${S.wr} m)`);
+    else if (!(S.min <= S.holz + S.wr + SPALT_M))
+        v.push(`(S) WAND AUS LUFT: ${S.wer} — der Leib hält ${S.min} m vor der Mitte, das Holz reicht ${S.holz} m`);
+    if (!(S.mutante && S.mutante.laub > EINDRING_M))
+        v.push(`LINSE STUMPF: (S) die Ruten als Kollision schoben den Leib im Laub nicht (${S.mutante && S.mutante.laub} m)`);
+    return v;
+}
+
 // (Q) die Absenzen der Quelle, je Zeichen ihr Verstoß
 const QUELLE = {
     torTafel: "die Tor-Hülle liest nicht `porta:TOR_HUELLE`",
@@ -151,7 +172,7 @@ function urteil(b) {
     if (!Array.isArray(b.bauten)) v.push("LEER: (K) keine Bau-Zählung");
     for (const t of b.bauten || []) v.push(`(K) DER HAUPT-THREAD BAUT: ${t}`);
     for (const k in QUELLE) if (!(b.quelle || {})[k]) v.push("(Q) QUELLE: " + QUELLE[k]);
-    return v.concat(tempoUrteil(b.tempo));
+    return v.concat(tempoUrteil(b.tempo), strauchUrteil(b.strauch));
 }
 
 function selbsttest() {
@@ -174,6 +195,7 @@ function selbsttest() {
             karte: { vendor: "google" },
             schuss: { px: { wagen: 5120, gestossen: 2210 } },
         },
+        strauch: { wer: "busch_hazel@-280.4/-1075.6", wr: 0.35, breite: [0.116, 0.116], holz: 0.058, laub: 0, min: 0.408, durch: false, mutante: { breite: [1.299, 1.427], laub: 0.041 } },
     };
     const fehler = urteil(gruen).map((x) => "grün: " + x);
     const klon = () => jsonKlon(gruen);
@@ -204,6 +226,12 @@ function selbsttest() {
             [(b) => (b.tempo.zeilen = b.tempo.zeilen.filter((z) => z.koerper !== "riese")), /ZEILE FEHLT: riese.mauer.144/],
             [(b) => (b.tempo.schmuggel.durch = false), /LINSE STUMPF: \(V\)/],
             [(b) => delete b.tempo, /LEER: \(V\)/],
+            [(b) => (b.strauch.laub = 0.354), /LAUB SCHIEBT: busch_hazel@-280.4\/-1075.6 .*rückt 0.354 m/],
+            [(b) => (b.strauch.durch = true), /DURCH DEN HORST: busch_hazel/],
+            [(b) => (b.strauch.min = 0.006), /DURCH DEN HORST: .*0.006 m vor der Mitte/],
+            [(b) => (b.strauch.min = 0.9), /WAND AUS LUFT: .*hält 0.9 m/],
+            [(b) => (b.strauch.mutante.laub = 0), /LINSE STUMPF: \(S\)/],
+            [(b) => delete b.strauch, /LEER: \(S\)/],
         ].map(([tat, muss]) => [muss.source, tat, muss]),
         urteil,
         { fehler, klon }
@@ -761,6 +789,101 @@ async function tempo(K) {
     return aus;
 }
 
+// (S) DER STRAUCH FÜHLT SICH AM HORST (w28-strauch-gestalt): der Strauch nächst der Mess-Wiese — der Leib steht LAUB_M neben seiner
+// Mitte (im Laub, außerhalb des Holzes) und rückt nicht; er geht aus 2 m gegen die Mitte und hält am Holz (nie hindurch, nie
+// vor Luft); die Mutante (die Ruten des Skeletts als Kollision, die Regel bis w28) MUSS ihn im Laub verschieben.
+async function strauch(K) {
+    const [st, A] = [r.state, AnazhRealm];
+    const pm = st.playerMesh;
+    const hh = (x, z) => r._voxelSurfaceY(x, z);
+    let tMs = performance.now();
+    const takt = () => r._gameLoopTick((tMs += 1000 / 60));
+    const tc = globalThis.__terrainCore;
+    const strauchArt = (e) => {
+        const p = e && r._foundryPresetForEntry(e);
+        return !!(p && tc.PHYTO_PRESETS[p] && tc.PHYTO_PRESETS[p].kind === "shrub");
+    };
+    // der Strauch der Probe: eine Hasel 30 m nördlich der Mess-Wiese (die Exemplare stehen 30 m südlich)
+    const [MW, sx, sz] = [K.mess, K.mess.x, K.mess.z - 30];
+    const sKey = r._growTreeBlueprintForSpawn("busch_hazel", "kollision-strauch");
+    const e = sKey && r.spawnArchitecture(sKey, { x: sx, y: hh(sx, sz), z: sz }, { silent: true, precise: true, seed: 3 });
+    if (!e || !strauchArt(e)) return { fehler: "keine Hasel als Strauch gesetzt (" + sKey + ")" };
+    const [cx, cz] = [e.position.x, e.position.z];
+    const wer = `${e._lodSpecies || e.type}@${cx.toFixed(1)}/${cz.toFixed(1)}`;
+    const stelle = (d) => {
+        pm.position.set(cx - d, hh(cx - d, cz) + A.PLAYER_FOOT_OFFSET + 0.05, cz);
+        st._fixedSimPos = null;
+        if (st.playerVel) st.playerVel.setValue(0, 0, 0);
+    };
+    // die Hülle steht (sie wächst, wenn ein Leib nah ist: `_huellenBedarf`)
+    stelle(1.5);
+    for (let i = 0; i < 240 && !(e.blockerAABBs && e.blockerAABBs.length); i++) {
+        takt();
+        stelle(1.5);
+        r._populateBlockerAABBs(e);
+    }
+    if (!(e.blockerAABBs && e.blockerAABBs.length)) return { fehler: `${wer} trägt keine Hülle` };
+    const breite = () => {
+        const B = e.blockerAABBs;
+        return [Math.max(...B.map((b) => b.maxX)) - Math.min(...B.map((b) => b.minX)), Math.max(...B.map((b) => b.maxZ)) - Math.min(...B.map((b) => b.minZ))];
+    };
+    const holz = () => Math.max(...e.blockerAABBs.map((b) => Math.max(Math.abs(b.minX - cx), Math.abs(b.maxX - cx), Math.abs(b.minZ - cz), Math.abs(b.maxZ - cz))));
+    // im Laub: LAUB_M neben der Mitte, keine Taste — wie weit rückt der Leib in 60 Takten?
+    const laub = () => {
+        stelle(K.LAUB_M);
+        const [x0, z0] = [pm.position.x, pm.position.z];
+        let weg = 0;
+        for (let i = 0; i < 60; i++) {
+            takt();
+            weg = Math.max(weg, Math.hypot(pm.position.x - x0, pm.position.z - z0));
+        }
+        return +weg.toFixed(3);
+    };
+    // gegen den Horst: aus 2 m westlich, gehend längs +x, bis der Leib an ihm hält (oder 2,5 s) — der kleinste Abstand der Achse
+    // zur Mitte, solange die Sohle auf dem Boden geht (danach klettert der Leib die Wand, Parkour: kein Durchtritt), und ob sie
+    // auf dem Boden hindurchging
+    const gang = () => {
+        stelle(2);
+        st.yaw = Math.PI / 2;
+        Object.assign(halt, { vor: true, sprint: false });
+        let [min, durch] = [Infinity, false];
+        try {
+            for (let i = 0; i < 150; i++) {
+                takt();
+                const [x, z] = [pm.position.x, pm.position.z];
+                if (pm.position.y - A.PLAYER_FOOT_OFFSET > hh(x, z) + A.PLAYER_GROUND_SNAP + 0.05) break; // er klettert
+                min = Math.min(min, Math.hypot(x - cx, z - cz));
+                if (x > cx && Math.abs(z - cz) < A.PLAYER_WALL_RADIUS) durch = true;
+            }
+        } finally {
+            Object.assign(halt, { vor: false, sprint: false });
+        }
+        return { min: +min.toFixed(3), durch };
+    };
+    const aus = { wer, wr: A.PLAYER_WALL_RADIUS, breite: breite().map((x) => +x.toFixed(3)), holz: +holz().toFixed(3) };
+    aus.laub = laub();
+    Object.assign(aus, gang());
+    // DIE MUTANTE: die Ruten des Skeletts als Kollision (bis w28-strauch-gestalt) — sie MUSS den Leib im Laub schieben
+    const roh = r._baumGestaltTeile;
+    const art = e._lodSpecies;
+    r._baumGestaltTeile = function (en) {
+        const t = roh.call(this, en);
+        if (en !== e || !Array.isArray(t)) return t;
+        const teile = this._growTreeBlueprintRich(art, null, { lod: 0, gestalt: { g: en._huelleG, ov: this._foundryGestaltOv(en.studioOv) } });
+        this._lastTreeSkeleton = null;
+        return teile;
+    };
+    try {
+        r._populateBlockerAABBs(e);
+        aus.mutante = { breite: breite().map((x) => +x.toFixed(3)), laub: laub() };
+    } finally {
+        r._baumGestaltTeile = roh;
+        r._populateBlockerAABBs(e);
+        r.removeArchitecture(e);
+    }
+    return aus;
+}
+
 (async () => {
     console.log(`=== KOLLISION = BILD — ${BILD ? "die Karte zeichnet" : "Null-Renderer"}, Mess-Wiese 150 m ===`);
     const { browser, page } = await nullWelt(server, { port: PORT, bild: BILD, art: BILD ? "linse" : "null", viewport: BILD ? { width: 640, height: 360 } : undefined, frist: BILD ? 36e5 : 9e5 }, 120000, BILD && require("./lib/software-gpu.cjs").linsenGpu() === "software" ? "index.html?holz=kienspan" : undefined); // prettier-ignore
@@ -774,6 +897,7 @@ async function tempo(K) {
         const K = { mess: messort("wiese"), R: 150, SEITE_M, OBEN_ANTEIL, KOERPER_BAND_M, FEST, STRENG, exemplare: PFLICHT_EXEMPLARE };
         befund = await page.evaluate(probe, Object.assign(K, { FALL_M, HINDERNISSE, TAKTE, UEBER_VMAX, SPALT_M, BILD }));
         befund.tempo = Object.assign(await page.evaluate(tempo, K), { karte: browser.adapter });
+        befund.strauch = await page.evaluate(strauch, { mess: K.mess, LAUB_M });
     } catch (e) {
         befund = { fehler: fehlerText(e) };
     }
@@ -794,6 +918,13 @@ async function tempo(K) {
                 (J[0].rezept ? ` · ${J[0].rezept} vmax ${J[0].vmax} m/s × ${UEBER_VMAX}` : "")
         );
     }
+    const SS = befund.strauch || {};
+    if (SS.wer)
+        console.log(
+            `  (S) Strauch ${SS.wer}: Holz ${SS.breite.join(" × ")} m · im Laub (${LAUB_M} m) rückt der Leib ${SS.laub} m · er hält ` +
+                `${SS.min} m vor der Mitte${SS.durch ? " (DURCH)" : ""} · Mutante (Ruten ${SS.mutante.breite.join(" × ")} m) im Laub ` +
+                `${SS.mutante.laub} m${SS.mutante.laub > EINDRING_M ? " → GEFANGEN" : " → ENTKOMMEN"}`
+        );
     // das Beweisbild des Stoßes (`--bild`; KOLLISION_BILD_PNG: die Datei, in die es geht)
     if (S?.png && process.env.KOLLISION_BILD_PNG)
         pngDatei(process.env.KOLLISION_BILD_PNG, S.png);

@@ -54,9 +54,29 @@ class AnazhRealm_studio_gestalt {
                 (s) => typeof s === "string" && this._foundryPresetFor(s) === preset
             );
             teile = art ? this._growTreeBlueprintRich(art, null, { lod: 0, gestalt: { g, ov } }) : null;
+            const sk = this._lastTreeSkeleton;
             this._lastTreeSkeleton = null;
             if (!Array.isArray(teile) || !teile.length)
                 return AnazhRealm._kernPflichtBruch("terrain:skelettDerGestalt(" + k + ")");
+            // DER STRAUCH FÜHLT SICH AM HORST (w28-strauch-gestalt): hart ist das Holz am Boden — EIN Zylinder um die Füße seiner
+            // Triebe (`skelett.horst`), so hoch wie sie stehen; durch Ruten und Laub streift der Leib. Bis hier stieß er an jedes
+            // Ruten-Stück als Welt-Box: die schrägen Triebe des Horsts (bis 1,25 rad) spannten an der Hasel eine Wand aus Luft von
+            // 1,68 × 1,52 m (am Laib 0,35 m), die den Spieler je Takt 0,354 m hinausschob. Der Baum fühlt sich weiter am Skelett.
+            if (rec.kind === "shrub") {
+                const H = sk && sk.horst;
+                if (!(H && H.r > 0 && H.h > 0))
+                    return AnazhRealm._kernPflichtBruch("terrain:horstDerGestalt(" + k + ")");
+                teile = [
+                    {
+                        shape: "cylinder",
+                        material: "holz",
+                        position: { x: 0, y: H.h / 2, z: 0 },
+                        size: { x: 2 * H.r, y: H.h, z: 2 * H.r },
+                        rotation: { y: 0, z: 0 },
+                        segments: 6,
+                    },
+                ];
+            }
             this._baumGestaltMerk.set(k, teile);
         }
         return teile;
