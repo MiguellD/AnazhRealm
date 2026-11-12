@@ -66,6 +66,42 @@ function standVerdict(s) {
     return out;
 }
 
+// ── A6 DIE REIBELLIPSE (fahrzeug.K1, w28-reibellipse): EIN μ·N-Budget je Achse, am Kern je Rezept. Im Bogen (20 m/s, Einschlag
+// 0,25, 1,5 s ohne Gas) voll gebremst tragen die Reifen höchstens μ·g (Rollwiderstand und Schleppmoment liegen außerhalb des
+// Reifens: abgezogen) — vorher 1,36–1,44 μ·g: die Seitenkraft griff voll neben dem vollen Längs-Deckel. Geradeaus 25 → 0 m/s
+// bremst er wie vorher: der Weg am Mitschnitt vor dem Schnitt (main b1531071) ±1 %.
+const ELLIPSE = { bogen: 1.02, weg: 0.01 };
+const ELLIPSE_WEG_VORHER = { gt: 28.73, supersport: 33.29, limousine: 28.73, kompakt_fwd: 28.73, suv: 28.73 };
+function ellipseMessung(VC) {
+    const dt = 1 / 60;
+    const m = {};
+    for (const pid of Object.keys(VC.PRESETS)) {
+        const G = VC.fahrGesetz(VC.exportDrive({ ...VC.DEFAULT_P, ...VC.presetPatch(pid) }));
+        const mug = G.maxGrip * G.grip * G.g;
+        let z = Object.assign(VC.fahrZustand(0, 0, 0), { vlong: 20 });
+        for (let i = 0; i < 90; i++) VC.fahrKraefte(z, { steer: 0.25 }, G, dt);
+        let bogen = 0;
+        for (let i = 0; i < 60 && z.vlong > 3; i++) {
+            VC.fahrKraefte(z, { steer: 0.25, brake: 1 }, G, dt);
+            bogen = Math.max(bogen, Math.hypot(z.aLong + G.reibung + G.schlepp, z.aLat) / mug);
+        }
+        z = Object.assign(VC.fahrZustand(0, 0, 0), { vlong: 25 });
+        for (let n = 0; z.vlong > 0.05 && n < 2000; n++) VC.fahrKraefte(z, { brake: 1 }, G, dt);
+        m[pid] = { bogen: Math.round(bogen * 1000) / 1000, weg: Math.round(Math.hypot(z.x, z.z) * 100) / 100 };
+    }
+    return m;
+}
+function ellipseVerdict(m) {
+    const out = [];
+    for (const [pid, w] of Object.entries(ELLIPSE_WEG_VORHER)) {
+        const e = m && m[pid];
+        if (!e) out.push(`${pid} fehlt`);
+        else if (!(e.bogen <= ELLIPSE.bogen)) out.push(`${pid} bogen ${e.bogen} μ·g`);
+        else if (!(Math.abs(e.weg / w - 1) <= ELLIPSE.weg)) out.push(`${pid} weg ${e.weg} m gegen ${w}`);
+    }
+    return out;
+}
+
 // ── Kern in Node laden (die diag-vehicle-contract-Klasse: r128-UMD + require) ──
 const VC = studioKern("vehicle-core.js", "__vehicleCore");
 function expectedFor(presetId) {
@@ -108,6 +144,17 @@ hauptLauf(async () => {
                 const v = V({ ...basis, ...b });
                 check(`Selbst-Test ${V.name} ${JSON.stringify(b)}`, v.length === Object.keys(b).length, v.join(" · "));
             }
+        // A6: die Reibellipse am Mitschnitt — gesund schweigt sie, der Bogen von main (GT 1,415 μ·g, die Seitenkraft voll neben
+        // dem Längs-Deckel) und ein Bremsweg 3 % länger nennen je ihren Täter
+        const ellipse = Object.fromEntries(Object.entries(ELLIPSE_WEG_VORHER).map(([p, w]) => [p, { bogen: 1, weg: w }]));
+        for (const [b, n] of [
+            [{}, 0],
+            [{ gt: { bogen: 1.415, weg: 28.73 } }, 1],
+            [{ suv: { bogen: 1, weg: 29.6 } }, 1],
+        ]) {
+            const v = ellipseVerdict({ ...ellipse, ...b });
+            check(`Selbst-Test ellipseVerdict ${JSON.stringify(b)}`, v.length === n, v.join(" · "));
+        }
         selbsttestEnde(errs, "die Linse feuert auf beide Verletzungs-Klassen.");
         process.exit(0);
     }
@@ -120,6 +167,14 @@ hauptLauf(async () => {
         "A5/N6.4: EIN Bewegungs-Pfad (ride.topSpeedMul/kAcc/kBrake nur in _loopPlayerMovement)",
         stammLib.fehlt({ ausser: "_loopPlayerMovement" }, /\bride\.(?:topSpeedMul|kAcc|kBrake)\b/),
         stammLib.fehlt.wo
+    );
+
+    const ell = ellipseMessung(VC);
+    const ellV = ellipseVerdict(ell);
+    check(
+        `A6: die Reibellipse — im Bogen voll gebremst ≤ ${ELLIPSE.bogen} μ·g, geradeaus der Bremsweg ±${ELLIPSE.weg * 100} %`,
+        ellV.length === 0,
+        ellV.join(" · ") || Object.entries(ell).map(([p, e]) => `${p} ${e.bogen} μ·g ${e.weg} m`).join(" · ")
     );
 
     // A2 (die Hand-Ableitung exportDrive == carPhys-Primitive) fiel in w11-fahrzeug: sie war ein Zwilling der Formel im Skript —
