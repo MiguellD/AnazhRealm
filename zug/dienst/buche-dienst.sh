@@ -20,8 +20,13 @@ while true; do
     neu=$(git -C $R log -1 --format=%H origin/punkte-maschine -- "meisterkarte-quelle/punkte/messung" 2>/dev/null)
     if [ -n "$neu" ] && [ "$K:$neu" != "$alt" ]; then
         puls buche "bucht am $k8 (Scheibe ${neu:0:8})"
+        t_b=$(date +%s)
         out=$(cd $R && BUCHE_KOPF=$K timeout 900 bash "$WZ/buche.sh" 2>&1)
+        rc_b=$?
         wort=$(echo "$out" | grep -E 'GEBUCHT|fällt|ROT:|verlieren' | head -3 | tr '\n' ' ' | cut -c1-400)
+        # EINE BUCHUNG OHNE WORT IST ROT, NIE STILL (12.11. 01:57–12:10: dreißig Läufe starben am 900-s-Limit, jede Zeile blieb leer,
+        # der Blick zeigte zehn Stunden „±0 gebucht“ ohne Grund): das Limit und jedes wortlose Ende stehen beim Namen in der Zeile
+        [ -z "$wort" ] && wort="ROT: die Buchung endete ohne Wort nach $(($(date +%s) - t_b)) s (Exit $rc_b$([ "$rc_b" = 124 ] && echo ' = das 900-s-Limit')) — nichts gebucht · zuletzt: $(echo "$out" | grep -v '^\s*$' | tail -1 | cut -c1-160)"
         echo "$(date +%H:%M) Kopf $k8 · Scheibe ${neu:0:8}: $wort" >>"$L"
         alt="$K:$neu"
         puls buche "zuletzt $k8 · ${wort:0:120}"
