@@ -1312,6 +1312,10 @@ class AnazhRealm_siedlung_wege {
     // Zäune in den Zaun-Pool — verankert am `origin`, je Form Wasser-bewacht (`_nassAt`; Fluss-Querungen
     // bleiben offen, die bruecken-Schicht reist unkonsumiert). `key` = Session-Gedächtnis (kein Doppel-Bau je Boot). `nurWege`:
     // ein neuer Plan desselben Orts (`_ortNeuRechnen`) — Zaun und Mauer stehen schon. Die Formen merken ihren Plan (`plan`).
+    // JEDE FORM DES PLANS WIRD GEMALT (w28-stadt-grund): die Kosten binden an das Fenster jeder Stufe (der Maler malt nur, was in
+    // ihm liegt, `_wegeKarteMale`), nie an eine Zahl. Bis hier hielt eine stille Kappe von 900 Formen je Plan: die Metropole von
+    // stadt-voll („dorf 7 300") trägt 1 646 Gassen- und Feldweg-Stücke, gemalt wurden die ersten 900 — ihr Platz, alle 300 Vorplätze
+    // und die 47 Äcker fielen ungenannt, 76,9 % des Grunds vor den Türen trug Wiese (Halme kniehoch in Gasse und Vorplatz).
     _stlWegeBuild(plan, origin, key, nurWege) {
         if (!plan || !origin || !this.state.scene) return 0;
         if (!this._stlWegeKeys) this._stlWegeKeys = new Set(); // Instanz-Feld (die _editSaveTimer-Klasse)
@@ -1319,7 +1323,6 @@ class AnazhRealm_siedlung_wege {
         if (key) this._stlWegeKeys.add(key);
         const wk = this._wegeKarteEnsure();
         let n = 0;
-        const MAX = plan.kappe || 900; // Kappe je Siedlung (der Boden des Verkehrs trägt keine: `_verkehrAnlegen`)
         // Die Siedlung merkt ihre Formen samt Hülle (der Fenster-Umzug verwirft ferne Siedlungen in O(1)).
         const box = { x0: Infinity, z0: Infinity, x1: -Infinity, z1: -Infinity, formen: [], plan };
         const form = (f) => {
@@ -1347,7 +1350,7 @@ class AnazhRealm_siedlung_wege {
         const strasse = (pts, w, belag, saum) => {
             if (!Array.isArray(pts)) return;
             const B = belagVon(belag, "eine Gasse");
-            for (let i = 0; i + 1 < pts.length && n < MAX; i++) {
+            for (let i = 0; i + 1 < pts.length; i++) {
                 const ax = origin.x + pts[i].x;
                 const az = origin.z + pts[i].z;
                 const bx = origin.x + pts[i + 1].x;
@@ -1375,14 +1378,19 @@ class AnazhRealm_siedlung_wege {
         // kennt, wirft laut (kein stiller Rückfall auf Erde). Das Wasser des Plans, das nach einer Fläche kommt, nimmt sie aus
         // (`ohne`: der Rasen des Ufers malt nicht in den Teich); der Rasen ist kein Weg der Natur-Wand (`sperr` −∞ — die Flächen des
         // Orts urteilt `_genesisFlaeche`).
+        // DER GRUND DES FELDS IST WIESE (w28-stadt-grund): das Feld des Orts (Zone `feld`, der Gürtel des Genesis-Orts — der Wald des
+        // Felds in Park-Gestalt) trägt den Rasen des Gras-Gesetzes; was eine Fläche des Plans erklärt (Weg, Pflaster), liegt darüber
+        // (die positive Art schlägt die negative, das Pflaster deckt), das Wasser des Plans nimmt sich aus (`ohne`), die Natur-Wand
+        // liest ihn nicht (`sperr` −∞: die Bäume des Felds stehen). Bis hier malte der Maler nur Flächen: unter dem gelichteten
+        // Feld lag der Waldboden der Geologie ohne Grün — am Genesis-Ort 19 von 100 Rasterzellen nackte Erde im Gürtel (Ankunft:
+        // das halbe Bild braune Rausch-Erde bis an die Baumreihe).
         const zonen = plan.zonen || [];
         zonen.forEach((q, i) => {
-            if (q.art !== "flaeche" || !q.belag || n >= MAX) return;
-            const B = AnazhRealm.WEGE_KARTE.belag[q.belag];
+            const belag = q.art === "feld" ? "gras" : q.art === "flaeche" ? q.belag : null;
+            if (!belag) return;
+            const B = AnazhRealm.WEGE_KARTE.belag[belag];
             if (!B)
-                throw new Error(
-                    `Wege-Karte: die Fläche ${q.name} trägt den Belag „${q.belag}", den der Boden nicht kennt`
-                );
+                throw new Error(`Wege-Karte: die Fläche ${q.name} trägt den Belag „${belag}", den der Boden nicht kennt`);
             const h = q.huelle;
             const ohne = zonen
                 .slice(i + 1)
@@ -1419,7 +1427,7 @@ class AnazhRealm_siedlung_wege {
             // Texel das stärkste — je Stück eine Form mit seiner eigenen Hülle malt dieselben Bytes. Bis hier malte das Band
             // jedes Texel seiner GANZEN Hülle gegen jedes Stück (feldweg_6: 31 Stücke über 56 × 182 m): der Genesis-Ort hielt
             // den Haupt-Faden beim ersten Zentrieren der Karte 539 ms (gate:fahr-leben, die Fahr-Bahn, Bild 20).
-            for (let j = 1; j < q.pts.length && n < MAX; j++) {
+            for (let j = 1; j < q.pts.length; j++) {
                 const [a, b] = [q.pts[j - 1], q.pts[j]];
                 const zh = [
                     Math.min(a.x, b.x) - q.w / 2,
@@ -1435,7 +1443,7 @@ class AnazhRealm_siedlung_wege {
         // hält sein Inneres frei wie das Gesetzbuch des Dorfs (fachwerk-core: kein Baum tiefer als 1 m im Anger, `sperr` −1
         // statt des Stamm-Rands).
         const pz = plan.platz;
-        if (pz && Number.isFinite(pz.cx) && Number.isFinite(pz.ex) && n < MAX) {
+        if (pz && Number.isFinite(pz.cx) && Number.isFinite(pz.ex)) {
             const wx = origin.x + pz.cx;
             const wz = origin.z + pz.cz;
             const pb = FC.platzBelag(plan);
@@ -1466,7 +1474,7 @@ class AnazhRealm_siedlung_wege {
         // Der Vorplatz trägt den Belag seiner Gasse (fachwerk `belagAm` an seinem Gassen-Ende): vor dem Pflaster liegt Pflaster bis an
         // die Schwelle, vor der Erd-Gasse getretene Erde — sonst stünde je Tür ein Erd-Fleck im Kopfstein.
         const kasten = (vp, belag) => {
-            if (!vp || n >= MAX || !this._landAt(vp.cx, vp.cz, 0.2)) return;
+            if (!vp || !this._landAt(vp.cx, vp.cz, 0.2)) return;
             const B = belagVon(belag || "weg", "ein Vorplatz");
             form({
                 typ: "kasten",
@@ -1524,7 +1532,6 @@ class AnazhRealm_siedlung_wege {
         // Die ÄCKER (felder-Schicht): je OBB ein gedrehtes Acker-Rechteck (Kanal G) — die Layout-Wahrheit des
         // Gesetzbuchs lebt im Boden.
         for (const fd of plan.felder || []) {
-            if (n >= MAX) break;
             if (!fd || !Number.isFinite(fd.cx) || !Number.isFinite(fd.ex)) continue;
             const wx = origin.x + fd.cx;
             const wz = origin.z + fd.cz;
@@ -1557,7 +1564,6 @@ class AnazhRealm_siedlung_wege {
         // ZÄUNE (fences-Schicht): je Segment ein schmaler hüfthoher Holz-Streifen aus dem Zaun-Pool (sy 0.85)
         // — bewusst KEIN Blocker, das Dorf bleibt durchlässig.
         for (const fz of plan.fences || []) {
-            if (n >= MAX) break;
             if (!fz || !Number.isFinite(fz.x0) || !Number.isFinite(fz.x1)) continue;
             const ax = origin.x + fz.x0;
             const az = origin.z + fz.z0;
