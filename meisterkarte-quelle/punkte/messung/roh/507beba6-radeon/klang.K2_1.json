@@ -1,0 +1,4 @@
+{
+ "fehler": "umstellen wiese: {\"ms\":3425,\"fehler\":\"Protocol error (Runtime.callFunctionOn): Target closed\",\"stapel\":[\"at CallbackRegistry.clear (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\node_modules\\\\puppeteer-core\\\\lib\\\\cjs\\\\puppeteer\\\\common\\\\CallbackRegistry.js:82:36)\",\"at CdpCDPSession.onClosed (C:\\\\Users\\\\micha\\\\AnazhRealm-p",
+ "sek": 3.5
+}

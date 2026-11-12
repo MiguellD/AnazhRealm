@@ -1,0 +1,1099 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.268",
+  "sha": "507beba6648d96c624e3427c231a53d8bcd965e5"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 0
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0.0035,
+   "taeter": {
+    "Formation": 0.0035
+   }
+  },
+  "leib": {
+   "radius": 8,
+   "deckung": 0,
+   "taeter": {}
+  }
+ },
+ "ziel": {
+  "name": "tanne",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "leiber": null,
+  "abstand": 16.81,
+  "gestalt": [
+   "tanne fehlt (keine Gestalt binnen 1.5 m)"
+  ],
+  "gezeichnet": false
+ },
+ "pose": {
+  "kamera": [
+   -284,
+   29.342,
+   -1042
+  ],
+  "blick": [
+   0.89213,
+   0.27704,
+   0.35686
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 85.4,
+  "sigma": 43.5,
+  "schwarz": 0,
+  "weiss": 0
+ },
+ "wahl": {
+  "versucht": 42,
+  "gewaehlt": null,
+  "posen": [
+   {
+    "k": 0,
+    "kamera": [
+     -284,
+     29.342,
+     -1042
+    ],
+    "rot": [
+     "Ziel tanne nicht gezeichnet: tanne fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 7
+   },
+   {
+    "k": 28,
+    "kamera": [
+     -278.6,
+     37.301,
+     -1039.84
+    ],
+    "rot": [
+     "Ziel tanne nicht gezeichnet: tanne fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 7
+   },
+   {
+    "k": 29,
+    "kamera": [
+     -277.279,
+     37.296,
+     -1042.194
+    ],
+    "rot": [
+     "Ziel tanne nicht gezeichnet: tanne fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 7
+   },
+   {
+    "k": 30,
+    "kamera": [
+     -279.267,
+     37.289,
+     -1037.224
+    ],
+    "rot": [
+     "Ziel tanne nicht gezeichnet: tanne fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 5
+   },
+   {
+    "k": 32,
+    "kamera": [
+     -279.234,
+     37.228,
+     -1034.526
+    ],
+    "rot": [
+     "Ziel tanne nicht gezeichnet: tanne fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 4
+   },
+   {
+    "k": 31,
+    "kamera": [
+     -275.394,
+     37.221,
+     -1044.126
+    ],
+    "rot": [
+     "Ziel tanne nicht gezeichnet: tanne fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 3
+   },
+   {
+    "k": 34,
+    "kamera": [
+     -278.504,
+     37.158,
+     -1031.927
+    ],
+    "rot": [
+     "Ziel tanne nicht gezeichnet: tanne fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 3
+   },
+   {
+    "k": 33,
+    "kamera": [
+     -273.073,
+     37.105,
+     -1045.504
+    ],
+    "rot": [
+     "Ziel tanne nicht gezeichnet: tanne fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 2
+   },
+   {
+    "k": 36,
+    "kamera": [
+     -277.126,
+     37.089,
+     -1029.606
+    ],
+    "rot": [
+     "Ziel tanne nicht gezeichnet: tanne fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 3
+   },
+   {
+    "k": 35,
+    "kamera": [
+     -270.474,
+     37.003,
+     -1046.234
+    ],
+    "rot": [
+     "Ziel tanne nicht gezeichnet: tanne fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 4
+   },
+   {
+    "k": 38,
+    "kamera": [
+     -272.84,
+     36.941,
+     -1026.4
+    ],
+    "rot": [
+     "Ziel tanne nicht gezeichnet: tanne fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 4
+   },
+   {
+    "k": 37,
+    "kamera": [
+     -265.16,
+     36.875,
+     -1045.6
+    ],
+    "rot": [
+     "Ziel tanne nicht gezeichnet: tanne fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 3
+   },
+   {
+    "k": 39,
+    "kamera": [
+     -259.496,
+     36.847,
+     -1040.073
+    ],
+    "rot": [
+     "Ziel tanne nicht gezeichnet: tanne fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 2
+   },
+   {
+    "k": 41,
+    "kamera": [
+     -259.4,
+     36.837,
+     -1032.16
+    ],
+    "rot": [
+     "Ziel tanne nicht gezeichnet: tanne fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 1
+   },
+   {
+    "k": 40,
+    "kamera": [
+     -264.927,
+     36.814,
+     -1026.496
+    ],
+    "rot": [
+     "Ziel tanne nicht gezeichnet: tanne fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 1
+   },
+   {
+    "k": 14,
+    "kamera": [
+     -281,
+     33.311,
+     -1040.8
+    ],
+    "rot": [
+     "Ziel tanne nicht gezeichnet: tanne fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 1
+   },
+   {
+    "k": 15,
+    "kamera": [
+     -279.349,
+     33.309,
+     -1043.742
+    ],
+    "rot": [
+     "Ziel tanne nicht gezeichnet: tanne fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 1
+   },
+   {
+    "k": 16,
+    "kamera": [
+     -281.833,
+     33.286,
+     -1037.531
+    ],
+    "rot": [
+     "Ziel tanne nicht gezeichnet: tanne fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 1
+   },
+   {
+    "k": 18,
+    "kamera": [
+     -281.792,
+     33.265,
+     -1034.157
+    ],
+    "rot": [
+     "Ziel tanne nicht gezeichnet: tanne fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 2
+   },
+   {
+    "k": 17,
+    "kamera": [
+     -276.992,
+     33.216,
+     -1046.157
+    ],
+    "rot": [
+     "Ziel tanne nicht gezeichnet: tanne fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 2
+   },
+   {
+    "k": 20,
+    "kamera": [
+     -280.879,
+     33.2,
+     -1030.909
+    ],
+    "rot": [
+     "Ziel tanne nicht gezeichnet: tanne fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 3
+   },
+   {
+    "k": 22,
+    "kamera": [
+     -279.157,
+     33.12,
+     -1028.008
+    ],
+    "rot": [
+     "Ziel tanne nicht gezeichnet: tanne fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 1
+   },
+   {
+    "k": 19,
+    "kamera": [
+     -274.091,
+     33.069,
+     -1047.879
+    ],
+    "rot": [
+     "Ziel tanne nicht gezeichnet: tanne fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 1
+   },
+   {
+    "k": 21,
+    "kamera": [
+     -270.843,
+     32.944,
+     -1048.792
+    ],
+    "rot": [
+     "Ziel tanne nicht gezeichnet: tanne fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 1
+   },
+   {
+    "k": 24,
+    "kamera": [
+     -273.8,
+     32.935,
+     -1024
+    ],
+    "rot": [
+     "Ziel tanne nicht gezeichnet: tanne fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 2
+   },
+   {
+    "k": 23,
+    "kamera": [
+     -264.2,
+     32.808,
+     -1048
+    ],
+    "rot": [
+     "Ziel tanne nicht gezeichnet: tanne fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 1
+   },
+   {
+    "k": 27,
+    "kamera": [
+     -257,
+     32.764,
+     -1031.2
+    ],
+    "rot": [
+     "Ziel tanne nicht gezeichnet: tanne fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 2
+   },
+   {
+    "k": 25,
+    "kamera": [
+     -257.121,
+     32.761,
+     -1041.091
+    ],
+    "rot": [
+     "Ziel tanne nicht gezeichnet: tanne fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 1
+   },
+   {
+    "k": 26,
+    "kamera": [
+     -263.909,
+     32.734,
+     -1024.121
+    ],
+    "rot": [
+     "Ziel tanne nicht gezeichnet: tanne fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 1
+   },
+   {
+    "k": 1,
+    "kamera": [
+     -281.936,
+     29.329,
+     -1045.678
+    ],
+    "rot": [
+     "Ziel tanne nicht gezeichnet: tanne fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 1
+   },
+   {
+    "k": 2,
+    "kamera": [
+     -285.042,
+     29.31,
+     -1037.913
+    ],
+    "rot": [
+     "Ziel tanne nicht gezeichnet: tanne fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 1
+   },
+   {
+    "k": 6,
+    "kamera": [
+     -283.849,
+     29.285,
+     -1029.636
+    ],
+    "rot": [
+     "Ziel tanne nicht gezeichnet: tanne fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 2
+   },
+   {
+    "k": 4,
+    "kamera": [
+     -284.99,
+     29.284,
+     -1033.696
+    ],
+    "rot": [
+     "Ziel tanne nicht gezeichnet: tanne fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 1
+   },
+   {
+    "k": 8,
+    "kamera": [
+     -281.696,
+     29.228,
+     -1026.01
+    ],
+    "rot": [
+     "Ziel tanne nicht gezeichnet: tanne fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 1
+   },
+   {
+    "k": 3,
+    "kamera": [
+     -278.99,
+     29.194,
+     -1048.696
+    ],
+    "rot": [
+     "Ziel tanne nicht gezeichnet: tanne fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 2
+   },
+   {
+    "k": 5,
+    "kamera": [
+     -275.364,
+     29.007,
+     -1050.849
+    ],
+    "rot": [
+     "Ziel tanne nicht gezeichnet: tanne fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 1
+   },
+   {
+    "k": 10,
+    "kamera": [
+     -275,
+     28.993,
+     -1021
+    ],
+    "rot": [
+     "Ziel tanne nicht gezeichnet: tanne fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 1
+   },
+   {
+    "k": 7,
+    "kamera": [
+     -271.304,
+     28.858,
+     -1051.99
+    ],
+    "rot": [
+     "Ziel tanne nicht gezeichnet: tanne fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 1
+   },
+   {
+    "k": 9,
+    "kamera": [
+     -263,
+     28.711,
+     -1051
+    ],
+    "rot": [
+     "Ziel tanne nicht gezeichnet: tanne fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 1
+   },
+   {
+    "k": 13,
+    "kamera": [
+     -254,
+     28.682,
+     -1030
+    ],
+    "rot": [
+     "Ziel tanne nicht gezeichnet: tanne fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 1
+   },
+   {
+    "k": 11,
+    "kamera": [
+     -254.151,
+     28.648,
+     -1042.364
+    ],
+    "rot": [
+     "Ziel tanne nicht gezeichnet: tanne fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 1
+   },
+   {
+    "k": 12,
+    "kamera": [
+     -262.636,
+     28.643,
+     -1021.151
+    ],
+    "rot": [
+     "Ziel tanne nicht gezeichnet: tanne fehlt (keine Gestalt binnen 1.5 m)"
+    ],
+    "ms": 1
+   }
+  ],
+  "ms": 94
+ },
+ "ok": false,
+ "zeile": "ABNAHME ROT [Ziel tanne nicht gezeichnet: tanne fehlt (keine Gestalt binnen 1.5 m)] · beweis · Sicht 0.0 % · Ziel tanne im Bild frei 16.81 m · Luma 85.4 σ 43.5 schwarz 0.0 % weiß 0.0 % · Stand 18.546.268 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3 · Blick-Wahl 42 Posen",
+ "rot": [
+  {
+   "feld": "ziel.gezeichnet",
+   "grund": "Ziel tanne nicht gezeichnet: tanne fehlt (keine Gestalt binnen 1.5 m)"
+  }
+ ],
+ "urteil": "ROT",
+ "klasse": {
+  "ausdruck": "^(f:(tanne|fichte|eiche|birke|buche|kiefer|weide|strauch|mammut)[a-z_]*:L[0-2]|fimp:[a-z_]+:L[0-2]|kronendach)$",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 95225,
+  "toene": [
+   "f:birke:L0=255/80/80",
+   "f:birke:L1=80/255/80",
+   "f:eiche:L0=80/120/255",
+   "f:eiche:L1=255/220/60",
+   "f:fichte:L0=255/80/255",
+   "f:fichte:L1=60/230/230",
+   "f:mammut:L0=255/150/40",
+   "f:mammut:L1=180/120/255",
+   "f:strauch:L1=255/80/80",
+   "f:tanne:L0=80/255/80",
+   "f:tanne:L1=80/120/255",
+   "fimp:birke:L2=255/220/60",
+   "fimp:buche:L2=255/80/255",
+   "fimp:eiche:L2=60/230/230",
+   "fimp:fichte:L2=255/150/40",
+   "fimp:karst:L2=180/120/255",
+   "fimp:strauch:L2=255/80/80",
+   "fimp:tanne:L2=80/255/80",
+   "fimp:weide:L2=80/120/255"
+  ],
+  "klassen": {
+   "f:birke:L0": {
+    "objekte": 1,
+    "spiegelTreue": null,
+    "spiegelEbene": 34.864,
+    "sp": [
+     2,
+     0,
+     0,
+     0.42,
+     0.42,
+     -0.42
+    ],
+    "zweiton": 0,
+    "weiss": 0,
+    "wt": 0,
+    "wtZiel": null,
+    "bunt": 23.91,
+    "pixel": 138936,
+    "luma": 47.83,
+    "kante": 0.1924,
+    "kr": 28416,
+    "inseln": 0,
+    "frei": 0,
+    "strich": 0.4467,
+    "si": 9235,
+    "bloecke": 594,
+    "glatt": 0.4074,
+    "glattDunkel": 0,
+    "nyquist": 0.1096,
+    "beta": 2.896
+   },
+   "f:birke:L1": {
+    "objekte": 4,
+    "spiegelTreue": 0.0932,
+    "spiegelEbene": 34.636,
+    "sp": [
+     132,
+     0,
+     0,
+     8561.74,
+     8561.74,
+     797.93
+    ],
+    "zweiton": 0,
+    "weiss": 0,
+    "wt": 0,
+    "wtZiel": null,
+    "bunt": 29.56,
+    "pixel": 80901,
+    "luma": 52.19,
+    "kante": 0.2129,
+    "kr": 3967,
+    "inseln": 0,
+    "frei": 0,
+    "strich": 0.2954,
+    "si": 28296,
+    "bloecke": 785,
+    "glatt": 0.3223,
+    "glattDunkel": 0,
+    "nyquist": 0.128,
+    "beta": 2.7127
+   },
+   "f:fichte:L0": {
+    "objekte": 2,
+    "spiegelTreue": null,
+    "spiegelEbene": 36604472,
+    "sp": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "zweiton": 0,
+    "weiss": 0.3559,
+    "wt": 5657,
+    "wtZiel": null,
+    "bunt": 8.44,
+    "pixel": 15895,
+    "luma": 118.36,
+    "kante": 0.1382,
+    "kr": 2684,
+    "inseln": 1,
+    "frei": 0.0001,
+    "strich": null,
+    "si": 0,
+    "bloecke": 10,
+    "glatt": 0,
+    "glattDunkel": null,
+    "nyquist": 0.3576,
+    "beta": 1.8722
+   },
+   "f:fichte:L1": {
+    "objekte": 4,
+    "spiegelTreue": null,
+    "spiegelEbene": 46.036,
+    "sp": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "zweiton": 0,
+    "weiss": 0.0203,
+    "wt": 2767,
+    "wtZiel": null,
+    "bunt": 16.28,
+    "pixel": 136023,
+    "luma": 50.22,
+    "kante": 0.1957,
+    "kr": 7433,
+    "inseln": 0,
+    "frei": 0,
+    "strich": 0.2471,
+    "si": 20638,
+    "bloecke": 923,
+    "glatt": 0.0553,
+    "glattDunkel": 0.7451,
+    "nyquist": 0.1579,
+    "beta": 2.3394
+   },
+   "f:strauch:L1": {
+    "objekte": 2,
+    "spiegelTreue": null,
+    "spiegelEbene": 28.044,
+    "sp": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "zweiton": 0,
+    "weiss": 0,
+    "wt": 0,
+    "wtZiel": null,
+    "bunt": 26.86,
+    "pixel": 10,
+    "luma": 61.2,
+    "kante": 0.0037,
+    "kr": 10,
+    "inseln": 0,
+    "frei": 0,
+    "strich": null,
+    "si": 0,
+    "bloecke": 0,
+    "glatt": null,
+    "glattDunkel": null,
+    "nyquist": null,
+    "beta": null
+   },
+   "f:tanne:L0": {
+    "objekte": 2,
+    "spiegelTreue": null,
+    "spiegelEbene": 35.651,
+    "sp": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "zweiton": 0,
+    "weiss": 0,
+    "wt": 0,
+    "wtZiel": null,
+    "bunt": 24.2,
+    "pixel": 371,
+    "luma": 40.97,
+    "kante": 0.051,
+    "kr": 68,
+    "inseln": 0,
+    "frei": 0,
+    "strich": null,
+    "si": 0,
+    "bloecke": 0,
+    "glatt": null,
+    "glattDunkel": null,
+    "nyquist": null,
+    "beta": null
+   },
+   "f:tanne:L1": {
+    "objekte": 6,
+    "spiegelTreue": null,
+    "spiegelEbene": 35.189,
+    "sp": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "zweiton": 0,
+    "weiss": 0,
+    "wt": 0,
+    "wtZiel": null,
+    "bunt": 21.68,
+    "pixel": 16730,
+    "luma": 34.92,
+    "kante": 0.2162,
+    "kr": 2224,
+    "inseln": 0,
+    "frei": 0,
+    "strich": 0.2412,
+    "si": 173,
+    "bloecke": 30,
+    "glatt": 0.1667,
+    "glattDunkel": 0.8,
+    "nyquist": 0.1778,
+    "beta": 2.3293
+   },
+   "fimp:birke:L2": {
+    "objekte": 1,
+    "spiegelTreue": -0.175,
+    "spiegelEbene": 32.809,
+    "sp": [
+     14,
+     0,
+     0,
+     5812.92,
+     5812.92,
+     -1017.43
+    ],
+    "zweiton": 0,
+    "weiss": 0.0005,
+    "wt": 10,
+    "wtZiel": null,
+    "bunt": 27.7,
+    "pixel": 19496,
+    "luma": 54.38,
+    "kante": 0.1855,
+    "kr": 3578,
+    "inseln": 0,
+    "frei": 0,
+    "strich": 0.3519,
+    "si": 518,
+    "bloecke": 56,
+    "glatt": 0.3929,
+    "glattDunkel": 0,
+    "nyquist": 0.1674,
+    "beta": 2.836
+   },
+   "fimp:buche:L2": {
+    "objekte": 1,
+    "spiegelTreue": null,
+    "spiegelEbene": 57.032,
+    "sp": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "zweiton": 0,
+    "weiss": 0.0409,
+    "wt": 235,
+    "wtZiel": null,
+    "bunt": 23.21,
+    "pixel": 5744,
+    "luma": 77.79,
+    "kante": 0.1685,
+    "kr": 2807,
+    "inseln": 2,
+    "frei": 0.0003,
+    "strich": null,
+    "si": 0,
+    "bloecke": 1,
+    "glatt": 1,
+    "glattDunkel": 0,
+    "nyquist": 0.2587,
+    "beta": 2.5386
+   },
+   "fimp:eiche:L2": {
+    "objekte": 1,
+    "spiegelTreue": -0.6914,
+    "spiegelEbene": 32.995,
+    "sp": [
+     37,
+     0,
+     0,
+     853.69,
+     853.69,
+     -590.26
+    ],
+    "zweiton": 0,
+    "weiss": 0,
+    "wt": 2,
+    "wtZiel": null,
+    "bunt": 29.68,
+    "pixel": 56918,
+    "luma": 54.07,
+    "kante": 0.1668,
+    "kr": 9979,
+    "inseln": 0,
+    "frei": 0,
+    "strich": 0.1919,
+    "si": 1260,
+    "bloecke": 159,
+    "glatt": 0.4088,
+    "glattDunkel": 0,
+    "nyquist": 0.1126,
+    "beta": 2.9016
+   },
+   "fimp:fichte:L2": {
+    "objekte": 1,
+    "spiegelTreue": 0.0436,
+    "spiegelEbene": 38.455,
+    "sp": [
+     70,
+     0,
+     0,
+     3144.15,
+     3144.15,
+     137.12
+    ],
+    "zweiton": 0,
+    "weiss": 0.0081,
+    "wt": 781,
+    "wtZiel": null,
+    "bunt": 17.71,
+    "pixel": 96444,
+    "luma": 52.06,
+    "kante": 0.1873,
+    "kr": 16438,
+    "inseln": 3,
+    "frei": 0.0002,
+    "strich": 0.3333,
+    "si": 7373,
+    "bloecke": 339,
+    "glatt": 0.0619,
+    "glattDunkel": 0.0952,
+    "nyquist": 0.2026,
+    "beta": 2.2125
+   },
+   "fimp:karst:L2": {
+    "objekte": 1,
+    "spiegelTreue": null,
+    "spiegelEbene": 27.131,
+    "sp": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "zweiton": 0,
+    "weiss": 0,
+    "wt": 0,
+    "wtZiel": null,
+    "bunt": 15.89,
+    "pixel": 20,
+    "luma": 44.04,
+    "kante": 0.1796,
+    "kr": 4,
+    "inseln": 0,
+    "frei": 0,
+    "strich": null,
+    "si": 0,
+    "bloecke": 0,
+    "glatt": null,
+    "glattDunkel": null,
+    "nyquist": null,
+    "beta": null
+   },
+   "fimp:strauch:L2": {
+    "objekte": 1,
+    "spiegelTreue": -0.1914,
+    "spiegelEbene": 26.158,
+    "sp": [
+     15,
+     0,
+     0,
+     909.37,
+     909.37,
+     -174.08
+    ],
+    "zweiton": 0,
+    "weiss": 0.0002,
+    "wt": 4,
+    "wtZiel": null,
+    "bunt": 26.4,
+    "pixel": 19735,
+    "luma": 50.28,
+    "kante": 0.296,
+    "kr": 3396,
+    "inseln": 0,
+    "frei": 0,
+    "strich": 0.5386,
+    "si": 170,
+    "bloecke": 55,
+    "glatt": 0.1455,
+    "glattDunkel": 0,
+    "nyquist": 0.1466,
+    "beta": 2.5881
+   },
+   "fimp:tanne:L2": {
+    "objekte": 1,
+    "spiegelTreue": 0.2828,
+    "spiegelEbene": 37.933,
+    "sp": [
+     72,
+     0,
+     0,
+     30958.49,
+     30958.49,
+     8755.35
+    ],
+    "zweiton": 0,
+    "weiss": 0.01,
+    "wt": 1401,
+    "wtZiel": null,
+    "bunt": 18.21,
+    "pixel": 140360,
+    "luma": 52.95,
+    "kante": 0.1824,
+    "kr": 18975,
+    "inseln": 7,
+    "frei": 0.0003,
+    "strich": 0.3379,
+    "si": 32622,
+    "bloecke": 877,
+    "glatt": 0.1824,
+    "glattDunkel": 0.3563,
+    "nyquist": 0.1573,
+    "beta": 2.4817
+   },
+   "fimp:weide:L2": {
+    "objekte": 1,
+    "spiegelTreue": null,
+    "spiegelEbene": 25.504,
+    "sp": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "zweiton": 0,
+    "weiss": 0,
+    "wt": 0,
+    "wtZiel": null,
+    "bunt": 26.08,
+    "pixel": 423,
+    "luma": 47.16,
+    "kante": 0.1372,
+    "kr": 55,
+    "inseln": 0,
+    "frei": 0,
+    "strich": null,
+    "si": 0,
+    "bloecke": 0,
+    "glatt": null,
+    "glattDunkel": null,
+    "nyquist": null,
+    "beta": null
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\507beba6-radeon\\lod.K1_1.json.d\\tafel-rot.maske.png"
+ }
+}
