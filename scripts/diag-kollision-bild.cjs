@@ -38,7 +38,7 @@
 //       ihrer Mitte (im Laub, außerhalb des Holzes) und rückt in 60 Takten höchstens EINDRING_M; er geht aus 2 m gegen die Mitte
 //       und hält am Holz (die Achse nie näher als Holz + Kapsel − EINDRING_M, nie weiter als + SPALT_M, nie hindurch);
 //       die MUTANTE (die Ruten des Skeletts als Kollision, die Regel bis w28) MUSS den Leib im Laub schieben (GEFANGEN); der FARN
-//       daneben (eine Art ohne verholzte Triebe, `HOLZ_AM_BODEN`) trägt keine Box, der Leib geht auf dem Boden durch seine Mitte
+//       daneben (eine Art ohne verholzte Triebe, `HOLZ_IST_HART`) trägt keine Box, der Leib geht auf dem Boden durch seine Mitte
 //       (quer ≤ EINDRING_M), die Mutante (sein Bauplan als Kollision) MUSS ihn ablenken, halten oder klettern lassen (GEFANGEN);
 //   (P) kein Page-Error — der EINE Sammler (welt-boot) macht den Lauf ROT mit Namen.
 // `--bild` (physik.K2 Staffel 2, beide Geräte): die Welt zeichnet auf der Karte — das Linsen-Rezept von welt-boot
@@ -896,7 +896,7 @@ async function strauch(K) {
         r._populateBlockerAABBs(e);
         r.removeArchitecture(e);
     }
-    // DER FARN (das Holz am Boden: eine Art ohne verholzte Triebe trägt keine Kollision) 8 m östlich der Hasel: der Leib geht aus
+    // DER FARN (Holz ist hart: eine Art ohne verholzte Triebe trägt keine Kollision) 8 m östlich der Hasel: der Leib geht aus
     // 2 m westlich durch seine Mitte — seine Boxen, sein Versatz quer zur Bahn, ob er auf dem Boden hindurchkam (nie kletternd);
     // die Mutante (der Bauplan als Kollision, die Regel bis w28) MUSS ihn ablenken, halten oder klettern lassen
     const [fx, fz] = [sx + 8, sz];
