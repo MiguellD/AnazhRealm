@@ -9046,6 +9046,7 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         }
         const stoffHuellen = [];
         const stoffAusHaut = [];
+        const ausHaut = new Set(); // die Stoffe aus der Haut (das Relief der Gestalt trägt sie wie die Haut)
         const sohlen = new Map(); // Hülle einer Zone mit Sohle → ihre Quellen (Gelände H5)
         // DER LEIB DER MENGE (mensch.K4): EINE Hülle; seine Sohle ist die Unterkante der Füße, beschuht oder bloß (Gelände H5)
         if (menge) {
@@ -9108,6 +9109,7 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
                     stoff.userData.__skinned = true;
                     stoff.userData.__huelle = true;
                     stoff.userData.__lage = dk; // die Lage über der Haut (koerper armAnlage: der Stoff weicht über der Haut)
+                    ausHaut.add(stoff);
                     B.character.add(stoff);
                     stoff.position.set(0, 0, 0);
                     gebauteHuellen.push(stoff);
@@ -9246,6 +9248,26 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             }
             pa.needsUpdate = true;
             mesh.geometry.computeVertexNormals();
+        }
+        // DAS RELIEF DER GESTALT (w28-leib-kanon, koerper LEIB_RELIEF · `leibRelief` — der EINE Leser für JEDE Stufe): in der
+        // Ruhe-Pose tritt jede Ecke der Haut, jedes Stoffs aus der Haut und des Leibs der Menge auf die Gestalt des Gesetzes —
+        // die Glieder auf ihr Profil, der Rumpf um seine Lappen; der Guss davor trägt nur die Topologie. Nah, grob (der
+        // Schatten-Zwilling der nahen) und Menge lesen dieselbe Liste: dieselbe Gestalt in jeder Stufe. Eine fallende Hülle (der
+        // Poncho) und der Schuh sind kein Glied. Ohne das Gesetz kein Mensch (fail-closed).
+        if (typeof kern.leibRelief !== "function") throw new Error("MENSCH-GUSS: koerper-Kern ohne leibRelief — die Gestalt folgt dem Gesetz (fail-closed)");
+        {
+            const lageR = {};
+            for (const [nd, nm] of nodeNameFuerHuelle) {
+                const e = tmpM.multiplyMatrices(invChar, nd.matrixWorld).elements;
+                lageR[nm] = [e[12], e[13], e[14]];
+            }
+            for (const mesh of gebauteHuellen) {
+                if (!(mesh === hautHuelle || ausHaut.has(mesh) || (mengenLeib && mesh === mengenLeib.mesh))) continue;
+                const a = mesh.geometry.attributes;
+                kern.leibRelief(a.position.array, a.normal.array, a.skinIndex.array, a.skinWeight.array, skinJoints, lageR, dials, mesh.userData.__lage || 0);
+                a.position.needsUpdate = true;
+                mesh.geometry.computeVertexNormals();
+            }
         }
         if (hautHuelle && hautImStoff) {
             const g = hautHuelle.geometry;

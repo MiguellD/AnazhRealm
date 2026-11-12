@@ -232,6 +232,15 @@ function kanonBilder(K, ordner, S) {
         }
 }
 
+// DIE GESTALT (w28-leib-kanon, koerper-core `leibFormUrteil`, die Bänder LEIB_FORM_SOLL): am Ofen nackt der Mann an den Start-Dials
+// (L0) — die VERJÜNGUNG der Glieder (Umfang Oberarm ÷ Handgelenk, Oberschenkel ÷ Knie, Wade ÷ Knöchel) und die LANDMARKEN als Tiefe
+// mit Vorzeichen in mm (Wirbel-Furche, Brustbein-Rinne, Kniekehle negativ; Kniescheibe, Ellbogen-Spitze positiv) — und an der
+// Vorlage der Menge (Stufe 2, 1 700 Dreiecke) die Verjüngung des Beins: dieselbe Liste (koerper LEIB_RELIEF), dieselbe Gestalt.
+// Am Kopf vor dem Gesetz: Arm 2,90 · Schenkel 1,12 · Wade 1,36, die Kniescheibe eine Kugel (+16,5 mm), keine Furche (−1,8 mm).
+// Täter: `{ kern }` (der Kern, mit dem der Ofen gießt).
+const messeForm = (so, taeter = {}, lod = 0, K = taeter.kern ? taeter.kern(so.__koerperCore) : so.__koerperCore) => so.__koerperCore.leibFormUrteil(so.BAKERS_BY_KIND.koerper(K, "mensch", 1, lod, { dials: { top: "none", bottom: "none", shoes: "none" } })); // prettier-ignore
+const urteileForm = (so, m, nur) => urteile(so, nur ? Object.fromEntries(nur.map((k) => [k, m[k]])) : m, "LEIB_FORM_SOLL").map((x) => (nur ? "form.menge " : "form ") + x); // prettier-ignore
+
 // DAS URTEIL DER BÄNDER (MENSCH_SOLL, KOPF_SOLL): je Maß sein Band (…Min/…Max im Band des Maßes), nicht messbar ist ROT
 function urteile(sb, m, soll = "MENSCH_SOLL") {
     const S = sb.__koerperCore[soll];
@@ -344,7 +353,7 @@ if (SELBSTTEST) {
     const pruefe = (name, verzerre, muster, kopf) => {
         const sb = kopf ? ladeOfen() : ladeWelt();
         const f =
-            kopf === "menge" ? urteileMenge(messeMenge(verzerre)) : kopf === "kanon" ? urteileKanon(sb, messeKanon(sb, verzerre)) : kopf === "schnitte" ? kopfJe(sb, verzerre.kern) : kopf === "stand" ? urteileRuhe(sb, messeStand(sb, verzerre, 1)) : kopf === "ruhe" ? urteileRuhe(sb, messeRuhe(sb, verzerre.kern)) : kopf === "leib" ? urteile(sb, messeLeib(sb, verzerre), "LEIB_SOLL") : kopf ? urteileKopf(sb, messeKopf(sb, verzerre)) : urteile(sb, messe(sb, verzerre)); // prettier-ignore
+            kopf === "menge" ? urteileMenge(messeMenge(verzerre)) : kopf === "form" ? urteileForm(sb, messeForm(sb, verzerre)) : kopf === "kanon" ? urteileKanon(sb, messeKanon(sb, verzerre)) : kopf === "schnitte" ? kopfJe(sb, verzerre.kern) : kopf === "stand" ? urteileRuhe(sb, messeStand(sb, verzerre, 1)) : kopf === "ruhe" ? urteileRuhe(sb, messeRuhe(sb, verzerre.kern)) : kopf === "leib" ? urteile(sb, messeLeib(sb, verzerre), "LEIB_SOLL") : kopf ? urteileKopf(sb, messeKopf(sb, verzerre)) : urteile(sb, messe(sb, verzerre)); // prettier-ignore
         const ok = f.some((x) => muster.test(x));
         console.log(`  ${ok ? "✅" : "❌"} ${name}${ok ? " — " + f.find((x) => muster.test(x)) : ""}`);
         if (!ok) rot++;
@@ -456,6 +465,10 @@ if (SELBSTTEST) {
     const amBau = (f) => ({ kern: (K) => ({ ...K, bauMensch: (F) => { const B = K.bauMensch(F); f(B.base, B.parts); return B; } }) }); // prettier-ignore
     pruefe("KA1 der Brustkorb anderthalbfach tief wird erkannt", amBau((b) => (b.ribcage.z *= 1.5)), /^kanon\.mann brustT /, "kanon"); // prettier-ignore
     pruefe("KA2 das Becken tief hängend wird erkannt", amBau((b, p) => ((b.pelvis.y *= 1.6), (p.pelvis.position.y -= 0.3))), /^kanon\.(mann|frau) schritt .* </, "kanon"); // prettier-ignore
+    // DIE GESTALT (w28-leib-kanon): der Guss ohne den Leser (die Kugel-Ketten: Wurst-Glieder, Kugel-Knie) und der Rumpf ohne seine
+    // Lappen (die Normale null: keine Furche)
+    pruefe("F1 der Guss ohne das Relief (die Kugel-Ketten vor w28-leib-kanon) wird erkannt", { kern: (K) => ({ ...K, leibRelief: () => {} }) }, /^form (armZuHandgelenk|schenkelZuKnie|wadeZuKnoechel|kniescheibe) /, "form"); // prettier-ignore
+    pruefe("F2 der Rumpf ohne seine Lappen (keine Wirbel-Furche) wird erkannt", { kern: (K) => ({ ...K, leibRelief: (p, n, ...r) => K.leibRelief(p, new Float32Array(n.length), ...r) }) }, /^form wirbelFurche .* > /, "form"); // prettier-ignore
     const rot0 = (K) => (h) => ({ ...K.kopfToene(h), lips: 0xaa5544 });
     pruefe(
         "S6 die rote Lippe (die alte Klassen-Farbe 0xaa5544) wird erkannt",
@@ -484,11 +497,14 @@ const ms = messeStand(so);
 zeige(Object.fromEntries(ms.map((r, i) => ["innenStand" + i, r.innenStand])));
 const mkn = messeKanon(so);
 for (const [gs, k] of Object.entries(mkn)) console.log(`  kanon.${gs}:`, Object.entries(k.m).map(([n, x]) => `${n} ${x.toFixed(3)}`).join(" · ")); // prettier-ignore
+const mf = messeForm(so), mf2 = messeForm(so, {}, 2);
+console.log("  form:", Object.entries(mf.umfang).map(([n, x]) => `${n} ${x.toFixed(1)} cm`).join(" · "), "|", Object.entries(mf).filter(([, x]) => typeof x === "number").map(([n, x]) => `${n} ${x.toFixed(2)}`).join(" · ")); // prettier-ignore
+console.log(`  form.menge: schenkelZuKnie ${mf2.schenkelZuKnie.toFixed(2)} · wadeZuKnoechel ${mf2.wadeZuKnoechel.toFixed(2)}`);
 const iKanon = process.argv.indexOf("--kanon");
 if (iKanon > 0) kanonBilder(mkn, process.argv[iKanon + 1] || "artifacts/kanon", so.__koerperCore.LEIB_SOLL.kanon);
-const fehler = urteile(sb, m).concat(urteileKopf(so, mk), urteileMenge(mm), kopfJe(so), urteileRuhe(so, mr), urteileRuhe(so, ms), urteile(so, ml, "LEIB_SOLL"), urteileKanon(so, mkn)); // prettier-ignore
+const fehler = urteile(sb, m).concat(urteileKopf(so, mk), urteileMenge(mm), kopfJe(so), urteileRuhe(so, mr), urteileRuhe(so, ms), urteile(so, ml, "LEIB_SOLL"), urteileKanon(so, mkn), urteileForm(so, mf), urteileForm(so, mf2, ["schenkelZuKnie", "wadeZuKnoechel"])); // prettier-ignore
 urteilEnde(
     fehler.length,
     `\n❌ ROT — ${fehler.length} Abweichung(en):\n  ` + fehler.join("\n  "),
-    "\n✅ GRÜN — der Mensch steht in seinen Anthropometrie-Bändern (Hand · Arm · Kopf · Gesicht · Fuß · Kanon) und in EINER Haut, die Arme hängen außerhalb des Rumpfs."
+    "\n✅ GRÜN — der Mensch steht in seinen Anthropometrie-Bändern (Hand · Arm · Kopf · Gesicht · Fuß · Kanon · Verjüngung · Landmarken) und in EINER Haut, die Arme hängen außerhalb des Rumpfs."
 );
