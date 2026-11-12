@@ -7,7 +7,7 @@
   "max": 330,
   "maschine": {
     "kopf": "350e6b11",
-    "zeit": "2026-11-12T17:54:41.962Z",
+    "zeit": "2026-11-12T18:06:09.245Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -1860,7 +1860,7 @@
           "punkte": 1,
           "staffel": "1 = klar am Mittag Verhältnis 5–12,5 und Schatten-Anteil 0,08–0,20 an einem Gerät · 2 = alle Spalten Uhr 0,5/0,27/0,73 × klar/Regen, beide Geräte",
           "messung": "Spielgang-Station Mess-Wiese: eine 18-%- und eine Weiß-Kugel als Proben-Leib über das EINE Stoff-Programm der Welt (Albedo-Zeile der Tafel; ein eigenes MeshStandardMaterial auf der Kugel ist im Selbsttest ROT); aus der Luma von Sonnen- und Schattenseite im Ausgabe-Bild Licht-Verhältnis, Schatten-Anteil und Himmels-Azimut. Soll (Liu & Jordan 1960): klar mittags 5–12,5, Schatten-Anteil 0,08–0,20, Himmel zur Sonne ≥ 1,2; Sonne 10° ≥ 2,5; bedeckt ≤ 1,5.",
-          "beleg": "Maschine: gehalten: Verhältnis 5.455 (5–12,5), Schatten-Anteil 0.1833 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1493 px, Uhr 0.5 sunny, [linse-gpu] nvidia/pascal an 94d9c5a6 gtx — offen: licht.K2#2 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, phyto-core.js, scripts/lib/abnahme-urteil.cjs +12) — zuletzt an e38e7acf: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: los-5 · Exit 0) · licht.K2#2 gtx: Konsum seit der Messung geändert (R6: foundry-core.js, index.html, scripts/lib/abnahme-urteil.cjs +15)",
+          "beleg": "Maschine: gehalten: Verhältnis 5.455 (5–12,5), Schatten-Anteil 0.1833 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1493 px, Uhr 0.5 sunny, [linse-gpu] nvidia/pascal an 94d9c5a6 gtx — offen: licht.K2#2 radeon: Konsum seit der Messung geändert (R6: koerper-core.js, phyto-core.js, scripts/lib/abnahme-urteil.cjs +12) — zuletzt an e38e7acf: Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: los-5 · Exit 0) · licht.K2#2 gtx: ROT: Uhr 0.5 klar (Sonne 74.2°) 5.098, Schatten-Anteil 0.1962 UNGÜLTIG (A/B 1.000, A/C 1.022, 1499 px) · Uhr 0.27 klar (Sonne 7.2°) 0.958 UNGÜLTIG (A/B 0.702, A/C 1.000, 1474 px) · Uhr 0.73 klar (Sonne 6.7°) 1.036 UNGÜLTIG (A/B 0.696, A/C 1.000, 1496 px) · Uhr 0.5 Regen (Sonne 74.2°) 1.18 UNGÜLTIG (A/B 0.712, A/C 1.011, 1499 px) · Uhr 0.27 Regen (Sonne 7.2°) 0.889 · Uhr 0.73 Regen (Sonne 6.7°) 1 · Himmel zur Sonne 1.205 (13030/13030 px, Belichtung 42.5824/42.5824, 20 m über dem Boden) · Soll klar 0,5: 5–12,5, 0,08–0,20, Himmel ≥ 1,2; klar 0,27/0,73 ≥ 2,5; Regen ≤ 1,5 · [linse-gpu] nvidia/pascal an 350e6b11",
           "schlupfloch": "Wer die Rechnung misst, misst sich selbst: ein Fehler hinter der Rechnung (Stoff-Antwort, Ton-Kurve, Schatten-Knoten) bliebe grün. Eine Kugel mit eigenem Stoff mäße die Probe statt der Welt (B35).",
           "aenderung": "Karte 1.0 gab Licht K1 „Mittag GRÜN“ aus der Rechnung der Belichtung → 0; die Kugel muss über den Welt-Stoff zeichnen (B35).",
           "maschine": true
@@ -4579,8 +4579,8 @@
     "art": {
       "linse": 8,
       "ungemessen": 24,
-      "rot": 0,
-      "anderes": 12
+      "rot": 1,
+      "anderes": 11
     }
   },
   "ohneHebel": [
