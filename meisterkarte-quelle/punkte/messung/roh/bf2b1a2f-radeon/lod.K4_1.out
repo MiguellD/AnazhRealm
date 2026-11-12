@@ -1,0 +1,74 @@
+$ C:\Program Files\nodejs\node.exe -e (async function neunProbe() {
+const fs = require("fs");
+const http = require("http");
+const t0 = Date.now();
+const [aus, cfg, datei, abdruck] = process.argv.slice(1);
+const seite = require(datei).neunSeite;
+const ist = require("crypto").createHash("sha1").update(String(seite)).digest("hex").slice(0, 16);
+if (ist !== abdruck) {
+console.log("NEUN-BRUCH die Seite in " + datei + " trägt den Abdruck " + ist + ", der Befehl " + abdruck);
+process.exit(1);
+}
+const C = JSON.parse(cfg);
+const rest = () => C.budgetS - (Date.now() - t0) / 1000;
+const ruf = (weg, nutz, ms) =>
+new Promise((ok, nein) => {
+const q = http.request({ host: "127.0.0.1", port: Number(process.env.WERKBANK_PORT), path: weg, method: "POST", agent: false, headers: { "Content-Type": "application/json" } }, (a) => {
+let d = "";
+a.on("data", (c) => (d += c));
+a.on("end", () => {
+let x = null;
+try {
+x = JSON.parse(d);
+} catch (_e) {
+return nein(new Error(weg + ": keine JSON-Antwort: " + d.slice(0, 200)));
+}
+if (x && typeof x.fehler === "string") return nein(new Error(weg + ": " + x.fehler.slice(0, 300)));
+ok(x);
+});
+});
+q.on("error", nein);
+q.setTimeout(ms, () => q.destroy(new Error(weg + ": Frist " + ms + " ms")));
+q.end(JSON.stringify(nutz || {}));
+});
+const log = process.env.PUNKTE_SITZUNG_LOG;
+console.log((/^\[linse-gpu\] .*$/m.exec(log && fs.existsSync(log) ? fs.readFileSync(log, "utf8") : "") || ["KEINE KARTE: das Log der Sitzung nennt keinen [linse-gpu]"])[0]);
+const j = { teile: {}, ausgelassen: [], ort: null, leinwand: {}, fehler: [] };
+const lauf = async (teil, extra) => {
+try {
+const C2 = Object.assign({}, C, extra, { teil, rest: rest() });
+const a = (await ruf("/eval", { code: "return await (" + seite + ")(r, T, " + JSON.stringify(C2) + ");" }, Math.max(30, rest() + 60) * 1000)).ergebnis;
+Object.assign(j.teile, a.teile);
+j.ausgelassen.push(...a.ausgelassen);
+j.ort = a.ort;
+j.leinwand[teil] = a.leinwand;
+} catch (e) {
+j.fehler.push(teil + ": " + String((e && e.message) || e).slice(0, 300));
+}
+};
+try {
+await ruf("/fenster", { w: 1920, h: 1080 }, 30000);
+await lauf("A", { teile: ["ferne.K3"] });
+await ruf("/fenster", { w: C.fenster[0], h: C.fenster[1] }, 30000);
+await lauf("B", { teile: [] });
+} finally {
+await ruf("/fenster", { w: 1920, h: 1080 }, 30000).catch(() => {});
+fs.writeFileSync(aus, JSON.stringify(j));
+}
+for (const [k, v] of Object.entries(j.teile)) console.log("NEUN " + k + " " + JSON.stringify(Object.assign({ ort: j.ort }, v)));
+for (const f of j.fehler) console.log("NEUN-BRUCH " + f);
+console.log("NEUN-ENDE " + Object.keys(j.teile).length + " gemessen, ausgelassen am Budget " + C.budgetS + " s: " + (j.ausgelassen.join(", ") || "keiner") + " · " + ((Date.now() - t0) / 1000).toFixed(1) + " s");
+})().then(() => process.exit(0), (e) => { console.log('PROBE-FEHLER ' + String((e && e.stack) || e).split('\n').slice(0, 4).join(' | ')); process.exit(1); }); C:\Users\micha\AppData\Local\Temp\claude\w3\pm\meisterkarte-quelle\punkte\messung\roh\bf2b1a2f-radeon\schatten.K2_1.json {"ort":["umstellen","--ort","dorf","--sicht","ego"],"budgetS":8.5,"fenster":[640,360],"kammHoch":[25,60,120],"kammStand":[[0,0]],"kammFov":60,"kammSchritt":3,"kammKroneM":52.5,"kammWarteS":10,"lodVersatz":[4,-4],"lodPixelMin":1500,"wolkeDeckung":0.4,"wolkeSek":5,"wolkeDirekt":0.25,"wolkeHoch":600,"wolkeBlock":8,"wolkeFov":70,"sonneGrad":5,"fernHoch":[1500,600,250],"fernMin":5,"fernNv":0.2,"fernOrte":5000,"fernAb":[2500,7000],"fernFov":90,"feuerM":120,"k5Versuche":3,"k5Hoch":5,"mitternacht":0,"gangMs":4,"gangBilder":20,"gangEin":4,"fleckUhr":0.56,"hangMax":0.12,"k3Gruen":0.05,"k3Feld":150,"k3Schritt":6,"waldSuchM":60,"waldRasterM":0.5,"straeuchR":0.73} C:\Users\micha\AppData\Local\Temp\claude\w3\pm/meisterkarte-quelle/punkte/stationen/g3.js e88e8c736f147e35
+[linse-gpu] amd/rdna-3
+NEUN ferne.K3 {"ort":[-840.7,-866.4],"azimutGrad":180,"hochM":25,"standM":[0,0],"spalten":639,"kamm":275,"zweiKm":261,"kohaerenz":0.3669,"kantePixel":1906,"schwankungM":6.761,"reliefM":3.1611,"stich":[[2,540,6316,null],[122,538,6316,560],[242,366,4441,568],[362,306,4250,586],[482,443,7871,559],[602,551,7871,560],[722,551,6600,552],[842,564,7207,560],[962,533,2295,540],[1082,531,2295,530],[1202,523,2295,522],[1322,512,2295,515],[1442,528,2196,523],[1562,562,7871,561],[1682,554,2101,547],[1802,547,2101,562]],"leinwand":[1920,1080],"s":1.37}
+NEUN schatten.K4 {"ort":[-840.7,-866.4],"LA":0.1755,"LB":0.1342,"n":20,"boden":0.4386,"gewinn":0.3079,"nl":-0.2722,"sonneGrad":74.2,"hubM":0.6246,"platz":[-794.7,-977.3],"hang":0.02,"s":1.88}
+NEUN schatten.K3 {"ort":[-840.7,-866.4],"je":[{"was":"fuss","band":0.5132,"frei":1,"n":20,"sicht":1},{"was":"sockel","band":0.3863,"frei":1,"n":20,"sicht":1}],"platz":[-828.7,-974.4],"hang":0.106,"gruen":0,"s":1.15}
+NEUN lod.K4 {"ort":[-840.7,-866.4],"versatzM":4,"pixel":15084,"anteil":0.0655,"lumaVor":31.29,"lumaNach":31.12,"sprung":0.0054,"zweitonVor":0,"zweitonNach":0,"uhr":0.5,"s":1.38}
+NEUN licht.K4 {"ort":[-840.7,-866.4],"mass":"durchlass","besonnt":0.9542,"mittel":0.9192,"sigma":0.0729,"r0":0.8616,"r":0.9837,"aenderung":0.0384,"erklaert":0.8825,"verschiebung":[-1,-3],"zugMS":11.8093,"deckung":[0,0.4],"sek":5,"block":[80,45],"blockM":18.6722,"s":1.52}
+NEUN ferne.K4 {"ort":[-840.7,-866.4],"sonneGrad":5.0087,"uhr":0.735,"hochM":1500,"orte":254,"imBild":[22,65],"gratKm":5.3262,"Ls":0.0045,"Ll":0.0288,"verhaeltnis":0.1575,"luft":0,"feld":1,"s":0.47}
+NEUN schatten.K5 {"ort":[-840.7,-866.4],"quelle":"glutbrunnen","abM":9.4054,"imPool":true,"uhr":0,"boden":0,"pfosten":true,"Llicht":0.0531,"Lschatten":0.0101,"kontrast":5.2776,"kontrolle":0.8563,"n":12,"s":2.84}
+NEUN-ENDE 7 gemessen, ausgelassen am Budget 8.5 s: schatten.K2, vegetation.K3 · 10.7 s
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3
+[linse-gpu] amd/rdna-3
