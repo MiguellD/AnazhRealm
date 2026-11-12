@@ -1,0 +1,656 @@
+{
+ "plan": "material.K2#1",
+ "adapter": "[linse-gpu] amd/rdna-3",
+ "schritte": {
+  "fenster": {
+   "exit": 0,
+   "json": {
+    "ms": 2,
+    "fenster": [
+     1920,
+     1080
+    ]
+   },
+   "rest": "{\n \"ms\": 2,\n \"fenster\": [\n  1920,\n  1080\n ]\n}\n"
+  },
+  "wiese": {
+   "exit": 0,
+   "json": {
+    "ms": 872,
+    "ort": "wiese",
+    "sicht": "ego",
+    "pose": null,
+    "welt": null,
+    "spieler": [
+     -280.4,
+     -1045.6
+    ],
+    "wiese": {
+     "messung": {
+      "x": -280.4,
+      "z": -1045.6,
+      "y": 27.48,
+      "hang": 1.81,
+      "rauh": 0.14,
+      "nass": 0,
+      "krone": 0.114,
+      "baeume": 8,
+      "kranz": 0.253,
+      "imBlick": 0,
+      "horizont": 2.6,
+      "blick": [
+       -289.6,
+       -1049.5
+      ],
+      "gras": 1
+     },
+     "befunde": []
+    },
+    "takte": 75,
+    "steht": true,
+    "chunks": 89,
+    "gier": -1.9717,
+    "dorfZug": false,
+    "ortTakt": [],
+    "dorfSchwebt": null
+   },
+   "rest": "{\n \"ms\": 872,\n \"ort\": \"wiese\",\n \"sicht\": \"ego\",\n \"pose\": null,\n \"welt\": null,\n \"spieler\": [\n  -280.4,\n  -1045.6\n ],\n \"wiese\": {\n  \"messung\": {\n   \"x\": -280.4,\n   \"z\": -1045.6,\n   \"y\": 27.48,\n   \"hang\": 1.81,\n   \"rauh\": 0.14,\n   \"nass\": 0,\n   \"krone\": 0.114,\n   \"baeume\": 8,\n   \"kranz\": 0.253,\n   \"imBlick\": 0,\n   \"horizont\": 2.6,\n   \"blick\": [\n    -289.6,\n    -1049.5\n   ],\n   \"gras\": 1\n  },\n  \"befunde\": []\n },\n \"takte\": 75,\n \"steht\": true,\n \"chunks\": 89,\n \"gier\": -1.9717,\n \"dorfZug\": false,\n \"ortTakt\": [],\n \"dorfSchwebt\": null\n}\n"
+  },
+  "ein-wiese": {
+   "exit": 0,
+   "json": {
+    "ms": 1267,
+    "ergebnis": 1
+   },
+   "rest": "{\n \"ms\": 1267,\n \"ergebnis\": 1\n}\n"
+  },
+  "blick": {
+   "exit": 0,
+   "json": {
+    "ms": 3,
+    "ergebnis": [
+     "first",
+     -1.971745952160997,
+     -0.75
+    ]
+   },
+   "rest": "{\n \"ms\": 3,\n \"ergebnis\": [\n  \"first\",\n  -1.971745952160997,\n  -0.75\n ]\n}\n"
+  },
+  "boden-0.5": {
+   "exit": 0,
+   "json": {
+    "ms": 337,
+    "kamera": [
+     -282.15,
+     27.96,
+     -1046.36
+    ],
+    "hell": 61.6,
+    "kontrast": 1.53,
+    "dc": 97,
+    "dreiecke": 344384,
+    "klasse": {
+     "ausdruck": "^bodenSatz$",
+     "schwelle": 18,
+     "rauschen": {
+      "anteil": 0,
+      "pixel": 0,
+      "max": 0
+     },
+     "misch": 0,
+     "toene": [
+      "bodenSatz=255/80/80"
+     ],
+     "klassen": {
+      "bodenSatz": {
+       "objekte": 1,
+       "spiegelTreue": 0.1973,
+       "spiegelEbene": 27.624,
+       "sp": [
+        1388,
+        0,
+        0,
+        614066.25,
+        614066.25,
+        121166.12
+       ],
+       "zweiton": 0,
+       "weiss": 0,
+       "wt": 0,
+       "wtZiel": null,
+       "bunt": 40.75,
+       "pixel": 407246,
+       "luma": 84.43,
+       "kante": 0.6759,
+       "kr": 5765,
+       "strich": 0.4069,
+       "si": 258947,
+       "bloecke": 5289,
+       "glatt": 0.0955,
+       "glattDunkel": 0,
+       "nyquist": 0.0708,
+       "beta": 2.6763
+      }
+     },
+     "abstand": null,
+     "gesicht": null,
+     "arm": {
+      "soll": 0.5,
+      "ist": 0.498
+     },
+     "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\bf2b1a2f-radeon\\material.K2_1.json.d\\boden-0.5.maske.png",
+     "urteil": []
+    },
+    "zeit": null,
+    "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 0.5 m · Luma 62.5 σ 23.1 schwarz 0.0 % weiß 0.0 % · Stand 18.546.265 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3",
+    "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\bf2b1a2f-radeon\\material.K2_1.json.d\\boden-0.5.png",
+    "gesamtMs": 20567
+   },
+   "rest": ": [\n  -282.15,\n  27.96,\n  -1046.36\n ],\n \"hell\": 61.6,\n \"kontrast\": 1.53,\n \"dc\": 97,\n \"dreiecke\": 344384,\n \"klasse\": {\n  \"ausdruck\": \"^bodenSatz$\",\n  \"schwelle\": 18,\n  \"rauschen\": {\n   \"anteil\": 0,\n   \"pixel\": 0,\n   \"max\": 0\n  },\n  \"misch\": 0,\n  \"toene\": [\n   \"bodenSatz=255/80/80\"\n  ],\n  \"klassen\": {\n   \"bodenSatz\": {\n    \"objekte\": 1,\n    \"spiegelTreue\": 0.1973,\n    \"spiegelEbene\": 27.624,\n    \"sp\": [\n     1388,\n     0,\n     0,\n     614066.25,\n     614066.25,\n     121166.12\n    ],\n    \"zweiton\": 0,\n    \"weiss\": 0,\n    \"wt\": 0,\n    \"wtZiel\": null,\n    \"bunt\": 40.75,\n    \"pixel\": 407246,\n    \"luma\": 84.43,\n    \"kante\": 0.6759,\n    \"kr\": 5765,\n    \"strich\": 0.4069,\n    \"si\": 258947,\n    \"bloecke\": 5289,\n    \"glatt\": 0.0955,\n    \"glattDunkel\": 0,\n    \"nyquist\": 0.0708,\n    \"beta\": 2.6763\n   }\n  },\n  \"abstand\": null,\n  \"gesicht\": null,\n  \"arm\": {\n   \"soll\": 0.5,\n   \"ist\": 0.498\n  },\n  \"maske\": \"C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\w3\\\\pm\\\\meisterkarte-quelle\\\\punkte\\\\messung\\\\roh\\\\bf2b1a2f-radeon\\\\material.K2_1.json.d\\\\boden-0.5.maske.png\",\n  \"urteil\": []\n },\n \"zeit\": null,\n \"abnahme\": \"ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 0.5 m · Luma 62.5 σ 23.1 schwarz 0.0 % weiß 0.0 % · Stand 18.546.265 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3\",\n \"datei\": \"C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\w3\\\\pm\\\\meisterkarte-quelle\\\\punkte\\\\messung\\\\roh\\\\bf2b1a2f-radeon\\\\material.K2_1.json.d\\\\boden-0.5.png\",\n \"gesamtMs\": 20567\n}\n"
+  },
+  "boden-1": {
+   "exit": 0,
+   "json": {
+    "ms": 363,
+    "kamera": [
+     -281.81,
+     28.3,
+     -1046.21
+    ],
+    "hell": 72.4,
+    "kontrast": 1.71,
+    "dc": 97,
+    "dreiecke": 373658,
+    "klasse": {
+     "ausdruck": "^bodenSatz$",
+     "schwelle": 18,
+     "rauschen": {
+      "anteil": 0,
+      "pixel": 0,
+      "max": 0
+     },
+     "misch": 0,
+     "toene": [
+      "bodenSatz=255/80/80"
+     ],
+     "klassen": {
+      "bodenSatz": {
+       "objekte": 1,
+       "spiegelTreue": -0.1969,
+       "spiegelEbene": 27.625,
+       "sp": [
+        669,
+        0,
+        0,
+        376394.63,
+        376394.63,
+        -74117.6
+       ],
+       "zweiton": 0,
+       "weiss": 0,
+       "wt": 0,
+       "wtZiel": null,
+       "bunt": 42.02,
+       "pixel": 211105,
+       "luma": 87.69,
+       "kante": 0.6627,
+       "kr": 8445,
+       "strich": 0.4505,
+       "si": 69449,
+       "bloecke": 2018,
+       "glatt": 0.0605,
+       "glattDunkel": 0,
+       "nyquist": 0.08,
+       "beta": 2.6825
+      }
+     },
+     "abstand": null,
+     "gesicht": null,
+     "arm": {
+      "soll": 1,
+      "ist": 0.998
+     },
+     "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\bf2b1a2f-radeon\\material.K2_1.json.d\\boden-1.maske.png",
+     "urteil": []
+    },
+    "zeit": null,
+    "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 1 m · Luma 85.4 σ 32.8 schwarz 0.0 % weiß 0.0 % · Stand 18.546.265 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3",
+    "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\bf2b1a2f-radeon\\material.K2_1.json.d\\boden-1.png",
+    "gesamtMs": 5328
+   },
+   "rest": "363,\n \"kamera\": [\n  -281.81,\n  28.3,\n  -1046.21\n ],\n \"hell\": 72.4,\n \"kontrast\": 1.71,\n \"dc\": 97,\n \"dreiecke\": 373658,\n \"klasse\": {\n  \"ausdruck\": \"^bodenSatz$\",\n  \"schwelle\": 18,\n  \"rauschen\": {\n   \"anteil\": 0,\n   \"pixel\": 0,\n   \"max\": 0\n  },\n  \"misch\": 0,\n  \"toene\": [\n   \"bodenSatz=255/80/80\"\n  ],\n  \"klassen\": {\n   \"bodenSatz\": {\n    \"objekte\": 1,\n    \"spiegelTreue\": -0.1969,\n    \"spiegelEbene\": 27.625,\n    \"sp\": [\n     669,\n     0,\n     0,\n     376394.63,\n     376394.63,\n     -74117.6\n    ],\n    \"zweiton\": 0,\n    \"weiss\": 0,\n    \"wt\": 0,\n    \"wtZiel\": null,\n    \"bunt\": 42.02,\n    \"pixel\": 211105,\n    \"luma\": 87.69,\n    \"kante\": 0.6627,\n    \"kr\": 8445,\n    \"strich\": 0.4505,\n    \"si\": 69449,\n    \"bloecke\": 2018,\n    \"glatt\": 0.0605,\n    \"glattDunkel\": 0,\n    \"nyquist\": 0.08,\n    \"beta\": 2.6825\n   }\n  },\n  \"abstand\": null,\n  \"gesicht\": null,\n  \"arm\": {\n   \"soll\": 1,\n   \"ist\": 0.998\n  },\n  \"maske\": \"C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\w3\\\\pm\\\\meisterkarte-quelle\\\\punkte\\\\messung\\\\roh\\\\bf2b1a2f-radeon\\\\material.K2_1.json.d\\\\boden-1.maske.png\",\n  \"urteil\": []\n },\n \"zeit\": null,\n \"abnahme\": \"ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 1 m · Luma 85.4 σ 32.8 schwarz 0.0 % weiß 0.0 % · Stand 18.546.265 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3\",\n \"datei\": \"C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\w3\\\\pm\\\\meisterkarte-quelle\\\\punkte\\\\messung\\\\roh\\\\bf2b1a2f-radeon\\\\material.K2_1.json.d\\\\boden-1.png\",\n \"gesamtMs\": 5328\n}\n"
+  },
+  "boden-2": {
+   "exit": 0,
+   "json": {
+    "ms": 516,
+    "kamera": [
+     -281.14,
+     28.98,
+     -1045.92
+    ],
+    "hell": 94,
+    "kontrast": 4.22,
+    "dc": 95,
+    "dreiecke": 389578,
+    "klasse": {
+     "ausdruck": "^bodenSatz$",
+     "schwelle": 18,
+     "rauschen": {
+      "anteil": 0,
+      "pixel": 0,
+      "max": 0
+     },
+     "misch": 0,
+     "toene": [
+      "bodenSatz=255/80/80"
+     ],
+     "klassen": {
+      "bodenSatz": {
+       "objekte": 1,
+       "spiegelTreue": -0.0244,
+       "spiegelEbene": 27.617,
+       "sp": [
+        441,
+        0,
+        0,
+        288929.92,
+        288929.92,
+        -7046.36
+       ],
+       "zweiton": 0.0001,
+       "weiss": 0,
+       "wt": 0,
+       "wtZiel": null,
+       "bunt": 40.88,
+       "pixel": 277277,
+       "luma": 86.3,
+       "kante": 0.5386,
+       "kr": 30588,
+       "strich": 0.4602,
+       "si": 36214,
+       "bloecke": 1621,
+       "glatt": 0.0709,
+       "glattDunkel": 0,
+       "nyquist": 0.0903,
+       "beta": 2.6906
+      }
+     },
+     "abstand": null,
+     "gesicht": null,
+     "arm": {
+      "soll": 2,
+      "ist": 1.996
+     },
+     "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\bf2b1a2f-radeon\\material.K2_1.json.d\\boden-2.maske.png",
+     "urteil": []
+    },
+    "zeit": null,
+    "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 2 m · Luma 108.4 σ 30.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.265 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3",
+    "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\bf2b1a2f-radeon\\material.K2_1.json.d\\boden-2.png",
+    "gesamtMs": 6546
+   },
+   "rest": "kamera\": [\n  -281.14,\n  28.98,\n  -1045.92\n ],\n \"hell\": 94,\n \"kontrast\": 4.22,\n \"dc\": 95,\n \"dreiecke\": 389578,\n \"klasse\": {\n  \"ausdruck\": \"^bodenSatz$\",\n  \"schwelle\": 18,\n  \"rauschen\": {\n   \"anteil\": 0,\n   \"pixel\": 0,\n   \"max\": 0\n  },\n  \"misch\": 0,\n  \"toene\": [\n   \"bodenSatz=255/80/80\"\n  ],\n  \"klassen\": {\n   \"bodenSatz\": {\n    \"objekte\": 1,\n    \"spiegelTreue\": -0.0244,\n    \"spiegelEbene\": 27.617,\n    \"sp\": [\n     441,\n     0,\n     0,\n     288929.92,\n     288929.92,\n     -7046.36\n    ],\n    \"zweiton\": 0.0001,\n    \"weiss\": 0,\n    \"wt\": 0,\n    \"wtZiel\": null,\n    \"bunt\": 40.88,\n    \"pixel\": 277277,\n    \"luma\": 86.3,\n    \"kante\": 0.5386,\n    \"kr\": 30588,\n    \"strich\": 0.4602,\n    \"si\": 36214,\n    \"bloecke\": 1621,\n    \"glatt\": 0.0709,\n    \"glattDunkel\": 0,\n    \"nyquist\": 0.0903,\n    \"beta\": 2.6906\n   }\n  },\n  \"abstand\": null,\n  \"gesicht\": null,\n  \"arm\": {\n   \"soll\": 2,\n   \"ist\": 1.996\n  },\n  \"maske\": \"C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\w3\\\\pm\\\\meisterkarte-quelle\\\\punkte\\\\messung\\\\roh\\\\bf2b1a2f-radeon\\\\material.K2_1.json.d\\\\boden-2.maske.png\",\n  \"urteil\": []\n },\n \"zeit\": null,\n \"abnahme\": \"ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 2 m · Luma 108.4 σ 30.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.265 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3\",\n \"datei\": \"C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\w3\\\\pm\\\\meisterkarte-quelle\\\\punkte\\\\messung\\\\roh\\\\bf2b1a2f-radeon\\\\material.K2_1.json.d\\\\boden-2.png\",\n \"gesamtMs\": 6546\n}\n"
+  },
+  "genesis": {
+   "exit": 0,
+   "json": {
+    "ms": 13144,
+    "ort": "genesis",
+    "sicht": "ego",
+    "pose": null,
+    "welt": null,
+    "spieler": [
+     0,
+     0
+    ],
+    "wiese": null,
+    "takte": 588,
+    "steht": true,
+    "chunks": 81,
+    "gier": -1.5708,
+    "dorfZug": false,
+    "ortTakt": [
+     "_genesisOrt"
+    ],
+    "dorfSchwebt": null
+   },
+   "rest": "{\n \"ms\": 13144,\n \"ort\": \"genesis\",\n \"sicht\": \"ego\",\n \"pose\": null,\n \"welt\": null,\n \"spieler\": [\n  0,\n  0\n ],\n \"wiese\": null,\n \"takte\": 588,\n \"steht\": true,\n \"chunks\": 81,\n \"gier\": -1.5708,\n \"dorfZug\": false,\n \"ortTakt\": [\n  \"_genesisOrt\"\n ],\n \"dorfSchwebt\": null\n}\n"
+  },
+  "ein-genesis": {
+   "exit": 0,
+   "json": {
+    "ms": 725,
+    "ergebnis": 1
+   },
+   "rest": "{\n \"ms\": 725,\n \"ergebnis\": 1\n}\n"
+  },
+  "fels-weit": {
+   "exit": 0,
+   "json": {
+    "ms": 19,
+    "ergebnis": [
+     0.63,
+     -80.44,
+     87.31,
+     -92.74,
+     -81.85,
+     -92.23
+    ]
+   },
+   "rest": "{\n \"ms\": 19,\n \"ergebnis\": [\n  0.63,\n  -80.44,\n  87.31,\n  -92.74,\n  -81.85,\n  -92.23\n ]\n}\n"
+  },
+  "fels-ort": {
+   "exit": 0,
+   "json": {
+    "ms": 8510,
+    "takte": 296,
+    "steht": true,
+    "spieler": [
+     -81.85,
+     -92.23
+    ],
+    "chunks": 95,
+    "gier": 1.9158,
+    "dorfZug": false,
+    "ortTakt": [],
+    "dorfSchwebt": null
+   },
+   "rest": "{\n \"ms\": 8510,\n \"takte\": 296,\n \"steht\": true,\n \"spieler\": [\n  -81.85,\n  -92.23\n ],\n \"chunks\": 95,\n \"gier\": 1.9158,\n \"dorfZug\": false,\n \"ortTakt\": [],\n \"dorfSchwebt\": null\n}\n"
+  },
+  "ein-fels": {
+   "exit": 0,
+   "json": {
+    "ms": 2491,
+    "ergebnis": 1
+   },
+   "rest": "{\n \"ms\": 2491,\n \"ergebnis\": 1\n}\n"
+  },
+  "fels-stand-0.5": {
+   "exit": 0,
+   "json": {
+    "ms": 7,
+    "ergebnis": [
+     0.63,
+     -80.44,
+     87.31,
+     -92.74,
+     -81.85,
+     -92.23
+    ]
+   },
+   "rest": "{\n \"ms\": 7,\n \"ergebnis\": [\n  0.63,\n  -80.44,\n  87.31,\n  -92.74,\n  -81.85,\n  -92.23\n ]\n}\n"
+  },
+  "ein-fels-0.5": {
+   "exit": 0,
+   "json": {
+    "ms": 1217,
+    "ergebnis": 1
+   },
+   "rest": "{\n \"ms\": 1217,\n \"ergebnis\": 1\n}\n"
+  },
+  "fels-0.5": {
+   "exit": 0,
+   "json": {
+    "ms": 785,
+    "kamera": [
+     -80.12,
+     87.53,
+     -92.76
+    ],
+    "hell": 48.4,
+    "kontrast": 5.05,
+    "dc": 102,
+    "dreiecke": 639525,
+    "klasse": {
+     "ausdruck": "^formationenSatz$",
+     "schwelle": 18,
+     "rauschen": {
+      "anteil": 0,
+      "pixel": 0,
+      "max": 0
+     },
+     "misch": 0,
+     "toene": [
+      "formationenSatz=255/80/80"
+     ],
+     "klassen": {
+      "formationenSatz": {
+       "objekte": 17,
+       "spiegelTreue": 0.2443,
+       "spiegelEbene": 87.368,
+       "sp": [
+        2849,
+        0,
+        0,
+        538971.86,
+        538971.86,
+        131676.39
+       ],
+       "zweiton": 0,
+       "weiss": 0,
+       "wt": 2,
+       "wtZiel": null,
+       "bunt": 7.63,
+       "pixel": 587655,
+       "luma": 48.93,
+       "kante": 0.3972,
+       "kr": 9269,
+       "strich": 0.583,
+       "si": 440859,
+       "bloecke": 8153,
+       "glatt": 0.0028,
+       "glattDunkel": 0.3043,
+       "nyquist": 0.0988,
+       "beta": 2.5442
+      }
+     },
+     "abstand": null,
+     "gesicht": null,
+     "arm": {
+      "soll": 0.5,
+      "ist": 0.493
+     },
+     "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\bf2b1a2f-radeon\\material.K2_1.json.d\\fels-0.5.maske.png",
+     "urteil": []
+    },
+    "zeit": null,
+    "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 0.5 m · Luma 52.9 σ 28.7 schwarz 0.0 % weiß 0.0 % · Stand 18.546.265 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3",
+    "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\bf2b1a2f-radeon\\material.K2_1.json.d\\fels-0.5.png",
+    "gesamtMs": 8275
+   },
+   "rest": "7.53,\n  -92.76\n ],\n \"hell\": 48.4,\n \"kontrast\": 5.05,\n \"dc\": 102,\n \"dreiecke\": 639525,\n \"klasse\": {\n  \"ausdruck\": \"^formationenSatz$\",\n  \"schwelle\": 18,\n  \"rauschen\": {\n   \"anteil\": 0,\n   \"pixel\": 0,\n   \"max\": 0\n  },\n  \"misch\": 0,\n  \"toene\": [\n   \"formationenSatz=255/80/80\"\n  ],\n  \"klassen\": {\n   \"formationenSatz\": {\n    \"objekte\": 17,\n    \"spiegelTreue\": 0.2443,\n    \"spiegelEbene\": 87.368,\n    \"sp\": [\n     2849,\n     0,\n     0,\n     538971.86,\n     538971.86,\n     131676.39\n    ],\n    \"zweiton\": 0,\n    \"weiss\": 0,\n    \"wt\": 2,\n    \"wtZiel\": null,\n    \"bunt\": 7.63,\n    \"pixel\": 587655,\n    \"luma\": 48.93,\n    \"kante\": 0.3972,\n    \"kr\": 9269,\n    \"strich\": 0.583,\n    \"si\": 440859,\n    \"bloecke\": 8153,\n    \"glatt\": 0.0028,\n    \"glattDunkel\": 0.3043,\n    \"nyquist\": 0.0988,\n    \"beta\": 2.5442\n   }\n  },\n  \"abstand\": null,\n  \"gesicht\": null,\n  \"arm\": {\n   \"soll\": 0.5,\n   \"ist\": 0.493\n  },\n  \"maske\": \"C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\w3\\\\pm\\\\meisterkarte-quelle\\\\punkte\\\\messung\\\\roh\\\\bf2b1a2f-radeon\\\\material.K2_1.json.d\\\\fels-0.5.maske.png\",\n  \"urteil\": []\n },\n \"zeit\": null,\n \"abnahme\": \"ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 0.5 m · Luma 52.9 σ 28.7 schwarz 0.0 % weiß 0.0 % · Stand 18.546.265 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3\",\n \"datei\": \"C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\w3\\\\pm\\\\meisterkarte-quelle\\\\punkte\\\\messung\\\\roh\\\\bf2b1a2f-radeon\\\\material.K2_1.json.d\\\\fels-0.5.png\",\n \"gesamtMs\": 8275\n}\n"
+  },
+  "fels-stand-1": {
+   "exit": 0,
+   "json": {
+    "ms": 6,
+    "ergebnis": [
+     0.63,
+     -80.44,
+     87.31,
+     -92.74,
+     -81.85,
+     -92.23
+    ]
+   },
+   "rest": "{\n \"ms\": 6,\n \"ergebnis\": [\n  0.63,\n  -80.44,\n  87.31,\n  -92.74,\n  -81.85,\n  -92.23\n ]\n}\n"
+  },
+  "ein-fels-1": {
+   "exit": 0,
+   "json": {
+    "ms": 1187,
+    "ergebnis": 1
+   },
+   "rest": "{\n \"ms\": 1187,\n \"ergebnis\": 1\n}\n"
+  },
+  "fels-1": {
+   "exit": 0,
+   "json": {
+    "ms": 808,
+    "kamera": [
+     -80.59,
+     87.65,
+     -92.62
+    ],
+    "hell": 52.5,
+    "kontrast": 4.25,
+    "dc": 100,
+    "dreiecke": 646244,
+    "klasse": {
+     "ausdruck": "^formationenSatz$",
+     "schwelle": 18,
+     "rauschen": {
+      "anteil": 0,
+      "pixel": 0,
+      "max": 0
+     },
+     "misch": 0,
+     "toene": [
+      "formationenSatz=255/80/80"
+     ],
+     "klassen": {
+      "formationenSatz": {
+       "objekte": 17,
+       "spiegelTreue": 0.1408,
+       "spiegelEbene": 87.304,
+       "sp": [
+        1635,
+        0,
+        0,
+        677561.38,
+        677561.38,
+        95371.87
+       ],
+       "zweiton": 0,
+       "weiss": 0,
+       "wt": 13,
+       "wtZiel": null,
+       "bunt": 7.43,
+       "pixel": 377465,
+       "luma": 53.03,
+       "kante": 0.4738,
+       "kr": 8861,
+       "strich": 0.462,
+       "si": 250788,
+       "bloecke": 4979,
+       "glatt": 0.0012,
+       "glattDunkel": 0.3333,
+       "nyquist": 0.0879,
+       "beta": 2.5584
+      }
+     },
+     "abstand": null,
+     "gesicht": null,
+     "arm": {
+      "soll": 1,
+      "ist": 0.99
+     },
+     "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\bf2b1a2f-radeon\\material.K2_1.json.d\\fels-1.maske.png",
+     "urteil": []
+    },
+    "zeit": null,
+    "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 1 m · Luma 61.1 σ 32.4 schwarz 0.1 % weiß 0.0 % · Stand 18.546.265 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3",
+    "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\bf2b1a2f-radeon\\material.K2_1.json.d\\fels-1.png",
+    "gesamtMs": 7710
+   },
+   "rest": "0.59,\n  87.65,\n  -92.62\n ],\n \"hell\": 52.5,\n \"kontrast\": 4.25,\n \"dc\": 100,\n \"dreiecke\": 646244,\n \"klasse\": {\n  \"ausdruck\": \"^formationenSatz$\",\n  \"schwelle\": 18,\n  \"rauschen\": {\n   \"anteil\": 0,\n   \"pixel\": 0,\n   \"max\": 0\n  },\n  \"misch\": 0,\n  \"toene\": [\n   \"formationenSatz=255/80/80\"\n  ],\n  \"klassen\": {\n   \"formationenSatz\": {\n    \"objekte\": 17,\n    \"spiegelTreue\": 0.1408,\n    \"spiegelEbene\": 87.304,\n    \"sp\": [\n     1635,\n     0,\n     0,\n     677561.38,\n     677561.38,\n     95371.87\n    ],\n    \"zweiton\": 0,\n    \"weiss\": 0,\n    \"wt\": 13,\n    \"wtZiel\": null,\n    \"bunt\": 7.43,\n    \"pixel\": 377465,\n    \"luma\": 53.03,\n    \"kante\": 0.4738,\n    \"kr\": 8861,\n    \"strich\": 0.462,\n    \"si\": 250788,\n    \"bloecke\": 4979,\n    \"glatt\": 0.0012,\n    \"glattDunkel\": 0.3333,\n    \"nyquist\": 0.0879,\n    \"beta\": 2.5584\n   }\n  },\n  \"abstand\": null,\n  \"gesicht\": null,\n  \"arm\": {\n   \"soll\": 1,\n   \"ist\": 0.99\n  },\n  \"maske\": \"C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\w3\\\\pm\\\\meisterkarte-quelle\\\\punkte\\\\messung\\\\roh\\\\bf2b1a2f-radeon\\\\material.K2_1.json.d\\\\fels-1.maske.png\",\n  \"urteil\": []\n },\n \"zeit\": null,\n \"abnahme\": \"ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 1 m · Luma 61.1 σ 32.4 schwarz 0.1 % weiß 0.0 % · Stand 18.546.265 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3\",\n \"datei\": \"C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\w3\\\\pm\\\\meisterkarte-quelle\\\\punkte\\\\messung\\\\roh\\\\bf2b1a2f-radeon\\\\material.K2_1.json.d\\\\fels-1.png\",\n \"gesamtMs\": 7710\n}\n"
+  },
+  "fels-stand-2": {
+   "exit": 0,
+   "json": {
+    "ms": 6,
+    "ergebnis": [
+     0.63,
+     -80.44,
+     87.31,
+     -92.74,
+     -81.85,
+     -92.23
+    ]
+   },
+   "rest": "{\n \"ms\": 6,\n \"ergebnis\": [\n  0.63,\n  -80.44,\n  87.31,\n  -92.74,\n  -81.85,\n  -92.23\n ]\n}\n"
+  },
+  "ein-fels-2": {
+   "exit": 0,
+   "json": {
+    "ms": 1221,
+    "ergebnis": 1
+   },
+   "rest": "{\n \"ms\": 1221,\n \"ergebnis\": 1\n}\n"
+  },
+  "fels-2": {
+   "exit": 0,
+   "json": {
+    "ms": 880,
+    "kamera": [
+     -81.51,
+     87.9,
+     -92.33
+    ],
+    "hell": 61.5,
+    "kontrast": 5.08,
+    "dc": 99,
+    "dreiecke": 623592,
+    "klasse": {
+     "ausdruck": "^formationenSatz$",
+     "schwelle": 18,
+     "rauschen": {
+      "anteil": 0,
+      "pixel": 0,
+      "max": 0
+     },
+     "misch": 0,
+     "toene": [
+      "formationenSatz=255/80/80"
+     ],
+     "klassen": {
+      "formationenSatz": {
+       "objekte": 17,
+       "spiegelTreue": 0.4464,
+       "spiegelEbene": 87.212,
+       "sp": [
+        448,
+        0,
+        0,
+        257390.33,
+        257390.33,
+        114906.02
+       ],
+       "zweiton": 0,
+       "weiss": 0.0001,
+       "wt": 12,
+       "wtZiel": null,
+       "bunt": 8.08,
+       "pixel": 90111,
+       "luma": 51.16,
+       "kante": 0.5598,
+       "kr": 7271,
+       "strich": 0.4265,
+       "si": 27740,
+       "bloecke": 830,
+       "glatt": 0.0024,
+       "glattDunkel": 1,
+       "nyquist": 0.093,
+       "beta": 2.5161
+      }
+     },
+     "abstand": null,
+     "gesicht": null,
+     "arm": {
+      "soll": 2,
+      "ist": 1.93
+     },
+     "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\bf2b1a2f-radeon\\material.K2_1.json.d\\fels-2.maske.png",
+     "urteil": []
+    },
+    "zeit": null,
+    "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 2 m · Luma 67.1 σ 35.3 schwarz 0.1 % weiß 0.0 % · Stand 18.546.265 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3",
+    "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\bf2b1a2f-radeon\\material.K2_1.json.d\\fels-2.png",
+    "gesamtMs": 7733
+   },
+   "rest": "\n  -81.51,\n  87.9,\n  -92.33\n ],\n \"hell\": 61.5,\n \"kontrast\": 5.08,\n \"dc\": 99,\n \"dreiecke\": 623592,\n \"klasse\": {\n  \"ausdruck\": \"^formationenSatz$\",\n  \"schwelle\": 18,\n  \"rauschen\": {\n   \"anteil\": 0,\n   \"pixel\": 0,\n   \"max\": 0\n  },\n  \"misch\": 0,\n  \"toene\": [\n   \"formationenSatz=255/80/80\"\n  ],\n  \"klassen\": {\n   \"formationenSatz\": {\n    \"objekte\": 17,\n    \"spiegelTreue\": 0.4464,\n    \"spiegelEbene\": 87.212,\n    \"sp\": [\n     448,\n     0,\n     0,\n     257390.33,\n     257390.33,\n     114906.02\n    ],\n    \"zweiton\": 0,\n    \"weiss\": 0.0001,\n    \"wt\": 12,\n    \"wtZiel\": null,\n    \"bunt\": 8.08,\n    \"pixel\": 90111,\n    \"luma\": 51.16,\n    \"kante\": 0.5598,\n    \"kr\": 7271,\n    \"strich\": 0.4265,\n    \"si\": 27740,\n    \"bloecke\": 830,\n    \"glatt\": 0.0024,\n    \"glattDunkel\": 1,\n    \"nyquist\": 0.093,\n    \"beta\": 2.5161\n   }\n  },\n  \"abstand\": null,\n  \"gesicht\": null,\n  \"arm\": {\n   \"soll\": 2,\n   \"ist\": 1.93\n  },\n  \"maske\": \"C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\w3\\\\pm\\\\meisterkarte-quelle\\\\punkte\\\\messung\\\\roh\\\\bf2b1a2f-radeon\\\\material.K2_1.json.d\\\\fels-2.maske.png\",\n  \"urteil\": []\n },\n \"zeit\": null,\n \"abnahme\": \"ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 2 m · Luma 67.1 σ 35.3 schwarz 0.1 % weiß 0.0 % · Stand 18.546.265 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3\",\n \"datei\": \"C:\\\\Users\\\\micha\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\w3\\\\pm\\\\meisterkarte-quelle\\\\punkte\\\\messung\\\\roh\\\\bf2b1a2f-radeon\\\\material.K2_1.json.d\\\\fels-2.png\",\n \"gesamtMs\": 7733\n}\n"
+  }
+ },
+ "dateien": {}
+}

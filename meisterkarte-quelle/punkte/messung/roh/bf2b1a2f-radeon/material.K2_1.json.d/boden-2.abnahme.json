@@ -1,0 +1,130 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.265",
+  "sha": "bf2b1a2fff6d8c4c078471513908132a4ebd5757"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 42
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 1.0000000000000222,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 1,
+   "deckung": 0,
+   "taeter": {}
+  },
+  "leib": {
+   "radius": 1,
+   "deckung": 0,
+   "taeter": {}
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "leiber": null,
+  "abstand": 2,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   -281.137,
+   28.975,
+   -1045.918
+  ],
+  "blick": [
+   -0.67714,
+   -0.67538,
+   -0.29214
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 108.4,
+  "sigma": 30.2,
+  "schwarz": 0,
+  "weiss": 0
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 2 m · Luma 108.4 σ 30.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.265 · Bühne summer sunny 0.50 Tiere gehalten · Gerät WebGPU amd rdna-3",
+ "rot": [],
+ "urteil": "GRÜN",
+ "klasse": {
+  "ausdruck": "^bodenSatz$",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 0,
+  "toene": [
+   "bodenSatz=255/80/80"
+  ],
+  "klassen": {
+   "bodenSatz": {
+    "objekte": 1,
+    "spiegelTreue": -0.0244,
+    "spiegelEbene": 27.617,
+    "sp": [
+     441,
+     0,
+     0,
+     288929.92,
+     288929.92,
+     -7046.36
+    ],
+    "zweiton": 0.0001,
+    "weiss": 0,
+    "wt": 0,
+    "wtZiel": null,
+    "bunt": 40.88,
+    "pixel": 277277,
+    "luma": 86.3,
+    "kante": 0.5386,
+    "kr": 30588,
+    "strich": 0.4602,
+    "si": 36214,
+    "bloecke": 1621,
+    "glatt": 0.0709,
+    "glattDunkel": 0,
+    "nyquist": 0.0903,
+    "beta": 2.6906
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "arm": {
+   "soll": 2,
+   "ist": 1.996
+  },
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\w3\\pm\\meisterkarte-quelle\\punkte\\messung\\roh\\bf2b1a2f-radeon\\material.K2_1.json.d\\boden-2.maske.png",
+  "urteil": []
+ }
+}
