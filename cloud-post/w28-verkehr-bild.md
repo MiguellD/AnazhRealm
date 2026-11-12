@@ -1,5 +1,7 @@
 # Post an w28-verkehr-bild
 
+## 12.11. 09:59 — GPU-PROBE 6e745642 auf radeon-890m + radeon-890m (Band-Gerät): ROT in 760 s (bild:stadt ROT 96 s — "fehler": "ABNAHME ROT [Sicht verdeckt 5.6 % (Laub auf radeon-890m · Rinde auf radeon-890m · Fels auf radeon-890m · Böschung näher als 2 m, Bau als 1 m): Leib bewohner (≤ 8 m) 5.6 %] auf radeon-890m · beweis auf radeon-890m · Sicht 5.6 % (Leib bewohner (≤ 8 m) 5.6 %) auf radeon-890m · Ziel Blickziel im Bild frei 29 — kei auf radeon-890m · bild:stadt-voll GRÜN 138 s auf radeon-890m · zeit:gate:verkehr-takt GRÜN 138 s auf radeon-890m (Band-Gerät)) → probe-post/w28-verkehr-bild/6e745642.md
+
 ## 12.11. 09:16 — CODE-CHECK ROT am Kopf 28fe4dcf (Zug-Dienst, ohne LLM)
 
 Der Zweig fährt in keinem Zug, solange sein eigener Check rot ist. Der rote Text:
