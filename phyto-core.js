@@ -6341,6 +6341,18 @@
     //   aehre      DIE ÄHRE: Ährchen wechselständig an der Spindel (zweizeilig, Lolium · Elymus), `aehrchen` die volle Zahl
     //              (die gelieferten Stufen lesen ihre Budget-Zeile), `winkel` gegen die Spindel, `laenge` je Abstand (sie decken
     //              sich), `breite` je Länge (lanzettlich 7–20 × 3–7 mm), `drehung` um die Spindel je zweitem Ährchen
+    //   trieb      DER TRIEB (w28-halm-trieb): ein Fuß trägt keinen Einzel-Halm, er trägt einen TRIEB — schmale Blätter, die
+    //              sich die Blatt-Fläche des Fußes teilen (`flaeche`: Labor-Breiten × Halm-Länge je Fuß bei Halm-Anteil 1 — die
+    //              Fläche, die die L1 bis hier trug: 0,92 × 3,0 × 0,74 × 0,763, der Stängel 0,92 × 3,0 × 0,5 × 0,719; eine
+    //              Stufe mit weniger Füßen trägt je Fuß entsprechend mehr, eine mit weniger Blättern je Blatt). Die MITTELLINIE
+    //              jedes Blatts ist Gesetz in Halm-Koordinaten (`halmLinie`): die Neigung gegen das Lot θ(s) = θ0 + Θ · s² über
+    //              dem Bogen-Anteil s — jede Stufe TASTET sie an ihren Stützen ab, keine integriert sie neu (bis hier fiel die
+    //              Biegung je SCHRITT an: K 3 las 6,7°, K 10 17,2° Bogen am selben Halm). `blaetter`: je Blatt `laenge`
+    //              [von, bis] der Halm-Länge, `bogen` [von, bis] Θ in Einheiten der Art-Biegung (droop), `neigung` × die
+    //              Fuß-Neigung des Halms, `breit` relativ; das erste ist das lange Blatt im Bogen, die weiteren die jungen,
+    //              geraden. `faecher` [Grund, Wurf] rad: wechselständig um die Richtung des Triebs; `fuss` der Abstand der
+    //              Blatt-Füße (Labor-Einheiten). `staengel`: der Ähren-Stängel ist ein Trieb aus EINEM Blatt (seine Fläche,
+    //              sein flacher Bogen), die Spindel der Ähre läuft auf DERSELBEN Linie über s = 1 hinaus.
     //   dach       DIE WIESE ALS DACH (licht.K1, w3v-licht): trägt der Pixel einen Halm oder mehr (Schirm-Meter je Pixel ab
     //              `px[1]`, die Halm-Breite der Natur 3–6 mm), lichtet die Narbe als Dach — die Normale zu `oben` nach oben, die
     //              Rauheit 1 (die Klingen streuen um sie, kein Spiegel einer Fläche); bis `px[0]` (drei Pixel je Halm: Armlänge,
@@ -6358,8 +6370,38 @@
         narbe: Object.freeze({ x: 0.7, kHimmel: 0.7 }),
         rauheit: 0.55,
         aehre: Object.freeze({ aehrchen: 16, winkel: 0.42, laenge: 1.7, breite: 0.38, drehung: 0.35 }),
+        trieb: Object.freeze({
+            flaeche: 1.559,
+            faecher: Object.freeze([0.7, 1.1]),
+            fuss: 0.015,
+            neigungWurf: 0.25,
+            bogenWurf: 1.5,
+            blaetter: Object.freeze([
+                Object.freeze({ laenge: Object.freeze([0.95, 1.25]), bogen: Object.freeze([1.0, 3.9]), neigung: 1.0, breit: 1 }),
+                Object.freeze({ laenge: Object.freeze([0.5, 0.85]), bogen: Object.freeze([0.3, 1.0]), neigung: 0.6, breit: 0.8 }),
+                Object.freeze({ laenge: Object.freeze([0.6, 1.0]), bogen: Object.freeze([0.3, 1.0]), neigung: 1.6, breit: 0.8 }),
+            ]),
+            staengel: Object.freeze({ flaeche: 0.992, bogen: 0.18 }),
+        }),
         dach: Object.freeze({ px: Object.freeze([0.001, 0.003]), oben: 0.9 }),
     });
+    // DIE MITTELLINIE DES HALMS (w28-halm-trieb, HALM_GESETZ.trieb): Ort und Neigung bei Bogen-Anteil s der Linie θ(u) = th0 +
+    // TH · u² — [quer, hoch, θ] in Blatt-Längen, quer in der Lot-Ebene der Blatt-Richtung. Simpson über 16 Teile bis s (der
+    // Fehler unter 1e-6 Blatt-Längen bis Θ 4): EIN Wert je (th0, TH, s) für jede Stufe, die Ähre liest s > 1.
+    function halmLinie(th0, TH, s) {
+        const n = 16,
+            h = s / n;
+        let x = 0,
+            y = 0;
+        for (let i = 0; i <= n; i++) {
+            const u = i * h,
+                th = th0 + TH * u * u,
+                w = i === 0 || i === n ? 1 : i % 2 ? 4 : 2;
+            x += w * Math.sin(th);
+            y += w * Math.cos(th);
+        }
+        return [(x * h) / 3, (y * h) / 3, th0 + TH * s * s];
+    }
     // Der Pixel als Filter einer Welle mit ν Perioden je Ader: exp(−π² (ν·fw)² / 2) — die Gauss-Glättung des Pixels (fw: der
     // Pixel in Adern, `fwidth` des Lesers). Eine Welle unter zwei Pixeln trägt nichts mehr: kein Flimmern in der Ferne.
     function halmFilter(A, fw, nu) {
@@ -6671,6 +6713,7 @@
         LAUB_LICHT: LAUB_LICHT, // K19 — Durchlass des Blatts (tau = T/R je Laub/Nadel) und die Vorwärts-Keule
         laubDurchlass: laubDurchlass, // K19 — DER EINE Laub-Licht-Term über einer Algebra (Welt-Stoff, Labor-Shader, Linse)
         HALM_GESETZ: HALM_GESETZ, // w4-wiese-nah — der Halm: Querschnitt, Adern, Spitze, Narbe, Cuticula, Ähre
+        halmLinie: halmLinie, // w28-halm-trieb — die Mittellinie eines Blatts (Ort und Neigung bei Bogen-Anteil s)
         halmQuer: halmQuer, // die Steigung des Querschnitts (Kiel + Rippen) über einer Algebra
         halmAder: halmAder, // der Faktor der Adern und der Mittel-Rippe auf die Albedo über einer Algebra
         halmNarbe: halmNarbe, // das Licht in der Narbe (direkt · Himmel) über einer Algebra — Halm und Boden darunter
