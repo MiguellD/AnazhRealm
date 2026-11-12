@@ -731,9 +731,12 @@ class AnazhRealm_daten {
                 mulde: 0.38,
                 kavitaet: 12,
                 krume: 0.025,
-                // das Korn je Höhe (`_mikroStoff`, colorNode): die Albedo der Mulde dunkler, der Erhebung heller (σ 29 %), mittelfrei —
-                // die Sonne liest es, das Himmels-Licht liest das Himmels-Bild
-                korn: 2.0,
+                // das Korn je Höhe (`_mikroStoff`, colorNode): die Albedo der Mulde dunkler, der Erhebung heller (σ 8,5 %), mittelfrei —
+                // die Sonne liest es, das Himmels-Licht liest das Himmels-Bild. Bis w28-stadt-grund 2,0 (σ 29 %): das Korn überdeckte den
+                // Bruchton des Steins (Kopfstein ±12 %, σ 7 %) — am Genesis-Kern stand im Bild kein Stein, nur Rauschen (Radeon,
+                // Laplace-σ 37,5 bei mikroPx 1, 21,4 bei mikroPx 3 und korn 2,0); unter σ 8,5 % trägt der Stein das Bild, das Korn
+                // seine Fläche.
+                korn: 0.6,
                 // Kipp-Stärke subtil halten: der Bump kippt die wahre Normale des Bodens (ferne.K4: keine 2.5D-Lichtung mehr)
                 // — zu stark (0.42 = 23°) gibt bimodales dot(N,L) = bolde Hell/Dunkel-Trapeze. 0.24 = 13° moduliert echtes
                 // Mikro-Relief; das Albedo-Korn trägt die feine Textur.
