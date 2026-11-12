@@ -1056,8 +1056,20 @@
     // labMorph und labLandmarks bleiben eingefroren (gate:koerper-kern); die Faktoren wirken im Bau.
     //   hand: mass skaliert jede Länge der Hand, breite zusätzlich Mittelhand, Finger-Abstand und -Dicke (vorher 1,45×
     //     zu lang und 1,8× zu breit — die Rechen-Hand der Tour) · Unterarm und Handgelenk trägt seit w28-leib-kanon das Profil der Liste
-    //     (LEIB_RELIEF; ihre Zeilen `unterarm`, `handgelenk` fielen) · fuss:
-    //     Längen-Faktor (die Ferse-bis-Zeh-Kette war 0,167 Hk statt ~0,15).
+    //     (LEIB_RELIEF; ihre Zeilen `unterarm`, `handgelenk` fielen) · fuss
+    //     (w28-leib-kanon): der Fuß ist FORM, nicht 12 Kugeln — `formen` im Raum des Knöchel-Gelenks (E; x zur Außenseite,
+    //     y hoch, z nach vorn; die Sohle liegt footBelowAnkle 0,30 unter dem Gelenk), je Zeile [Name, r, Halbachsen-Skala,
+    //     Lage, Drehung, nur bloß (die Form gehört dem bloßen Fuß: kein Schuh liest sie, die Menge färbt sie wie das Bein)]: Fessel (der Fuß schließt um das Sprunggelenk und taucht auf dessen Höhe unter die Haut des Unterschenkels — kein
+    //     Kragen, wo das Bein im Fuß steckt, und kein Stück, das beim Abrollen aus der Wade tritt), Ferse (Fersenbein), die zwei Knöchel (innen höher und weiter vorn als außen), Spann (die Rampe vom
+    //     Sprunggelenk zum Ballen), Außenrand (der fünfte Strahl liegt auf, innen steht das GEWÖLBE frei), Vorfuß (EINE Platte bis
+    //     unter die Zehen) und Großzehen-Ballen, die vier kleinen Zehen als EIN Block (außen kürzer) und die große Zehe; `auswaerts` dreht den Fuß
+    //     um das Lot (rad, der Stand zeigt leicht nach außen). Länge Ferse bis Zeh 1,0 E = 0,151 Hk (MENSCH_SOLL fuss),
+    //     Ballen-Breite 0,39 E ≈ 10 cm, Ferse 0,25 E ≈ 6,6 cm (Richtwerte UNGEPRÜFT). Bis hier: Ferse, Mittelfuß und zehn
+    //     Zehen-Perlen als rohe Kugeln, 12 480 Dreiecke nah, die große Zehe am rechten Fuß außen · fussHaut: Raster und
+    //     Verrundung der EINEN Fläche je Fuß (der Ofen gießt sie wie die Hand-Haut; 1 Einheit ≈ 0,26 m: 7,9 mm, 9 mm) ·
+    //     leibHaut.vox BLEIBT 0,06 (w28-leib-kanon, gemessen): seit dem Haushalt trägt der nackte Leib alle 17 776 Dreiecke, die
+    //     sein Raster gießt (bis hier 7 726) — ein feineres Raster (0,055: 21 156 · 0,05: 25 175) brächte an der Zeile nur 18 237
+    //     (+2,6 %), kostete den Guss 5 bis 20 % und brach bei 0,055 an der Naht des Halses (der hagere Alte: acht Ränder statt eines).
     //   kopf: mass = die Kopf-Skala (vorher 0,92: ein Sechs-Kopf-Comic-Mensch, kopfH 0,16 Hk statt 0,13), breite = die
     //     Quer-Skala (der Schädel war 1,5× zu breit) · auge: mass = Augapfel-Skala in der Kopf-Gruppe (vorher 2,3× der
     //     natürliche — die Kulleraugen), abstand = Faktor auf eyeDist = headSeg/1,618 (vorher 1,8× der Pupillen-Abstand),
@@ -1112,7 +1124,8 @@
     //     — die Falte wird dunkel und rot, nie schwarz; der Überhang (der Strahl nach oben: die Nase über der Oberlippe) wirft
     //     Schatten und nimmt alle Kanäle ganz. Bis w4-mensch-gesicht nahm die Falte alle Kanäle ganz: die Mund-Linie trug Ecken
     //     (0, 0, 0), im Bild las nur der Saum des Lichts, grau — Rot und Dunkel des Munds tauschten gegeneinander) · handHaut: Raster und
-    //     Verrundung im Körper-Raum (1 Einheit ≈ 0,29 m: 3,5 mm, 6 mm; die Welt bewegt die Finger nicht).
+    //     Verrundung im Körper-Raum (1 Einheit ≈ 0,29 m: 4,4 mm, 6 mm; die Welt bewegt die Finger nicht — bis w28-leib-kanon 3,5 mm:
+    //     die Zeile der Hand, `haushalt`, trägt 3 000 Dreiecke je Hand, das feinere Raster goss 9 984 und kostete ein Zehntel des Gusses).
     //   K57 (KOPF_SOLL): kopf.mass 0,72 → 0,75 (8,05 → 7,6 Köpfe) · auge.abstand 0,7 → 0,8 (die Lücke eine Augenbreite) ·
     //     auge.zurueck = der Augapfel tiefer in der Höhle (er stand 0,056 kH vor der Haut) · schaedel.hoch = die Kalotte
     //     höher (das Hirn über den Augen) · gesicht.unten = das Untergesicht zur Nase gestaucht (Lippe, Kiefer, Kinn; der
@@ -1149,7 +1162,19 @@
     // prettier-ignore
     var MENSCH_GESTALT = Object.freeze({
         hand: Object.freeze({ mass: 0.67, breite: 0.8 }),
-        fuss: Object.freeze({ laenge: 0.9 }),
+        // prettier-ignore
+        fuss: Object.freeze({ auswaerts: 0.09, formen: Object.freeze([
+            Object.freeze(["fessel", 0.16, Object.freeze([0.925, 1, 0.97]), Object.freeze([0, -0.06, -0.01]), null, true]),
+            Object.freeze(["ferse", 0.17, Object.freeze([0.68, 0.8, 1]), Object.freeze([0.012, -0.164, -0.135]), null]),
+            Object.freeze(["knoechelInnen", 0.09, Object.freeze([0.6, 1, 0.95]), Object.freeze([-0.103, -0.01, 0]), null]),
+            Object.freeze(["knoechelAussen", 0.1, Object.freeze([0.5, 1, 0.8]), Object.freeze([0.108, -0.05, -0.04]), null]),
+            Object.freeze(["spann", 0.3, Object.freeze([0.42, 0.35, 1]), Object.freeze([-0.012, -0.132, 0.13]), Object.freeze([0.31, 0, 0])]),
+            Object.freeze(["aussenrand", 0.3, Object.freeze([0.235, 0.2, 1]), Object.freeze([0.085, -0.24, 0.1]), Object.freeze([0, 0.06, 0])]),
+            Object.freeze(["vorfuss", 0.24, Object.freeze([0.77, 0.29, 1]), Object.freeze([0, -0.232, 0.4]), Object.freeze([0, 0.15, 0])]),
+            Object.freeze(["ballenGross", 0.11, Object.freeze([0.7, 0.64, 1]), Object.freeze([-0.1, -0.228, 0.42]), null]),
+            Object.freeze(["zehen", 0.125, Object.freeze([1, 0.38, 0.72]), Object.freeze([0.045, -0.252, 0.575]), Object.freeze([0, 0.3, 0])]),
+            Object.freeze(["grossZehe", 0.105, Object.freeze([0.6, 0.48, 1]), Object.freeze([-0.1, -0.25, 0.59]), Object.freeze([0, 0.05, 0])]),
+        ]) }),
         kopf: Object.freeze({ mass: 0.7, breite: 0.86 }),
         auge: Object.freeze({ mass: 0.5, abstand: 0.8, pupille: 0.55, hoehle: 1.15, zurueck: 0.03, lid: Object.freeze([0.03, 0.025]),
             iris: Object.freeze({ hoch: 0.8, vor: 0.09 }), schatten: Object.freeze({ saum: 0.015, tief: 0.15 }),
@@ -1171,7 +1196,11 @@
         kopfHaut: Object.freeze({ vox: 0.026, blend: 0.055, mundSpalt: 0.15, hoehleSaum: 0.8, brauSaum: Object.freeze([0.05, 0.008]),
             brauBogen: 0.04, verdeckung: Object.freeze({ schritt: 0.05, stufen: 4, staerke: 2, frei: 0.97, oben: 1,
                 kanal: Object.freeze([0.373, 1, 1]) }) }),
-        handHaut: Object.freeze({ vox: 0.012, blend: 0.02 }),
+        handHaut: Object.freeze({ vox: 0.015, blend: 0.02 }),
+        fussHaut: Object.freeze({ vox: 0.03, blend: 0.035 }),
+        // DER HAUSHALT DER NAHEN STUFE (w28-leib-kanon; Leser: der Ofen, die Zeile der Stufe): der höchste Anteil der Zeile für
+        // beide Hände und für beide Füße — der Kopf trägt KOPF_SOLL.kopfDreiecke, der Rest fällt an Haut und Stoff des Leibs
+        haushalt: Object.freeze({ hand: 0.15, fuss: 0.05 }),
     });
     // DAS FETT-DEPOT (studios.K1, der Regler mass „Masse (Fett)" — die Fülle des Leibs wie der Körper-Regler eines Character-
     // Creators): labMorph (eingefroren) wächst die Muskel-Primitive UNTER der Haut; die Hülle der Haut glättet ihr Wachsen weg
@@ -2140,7 +2169,7 @@
         const torsoG=F.gruppe();torsoG.position.set(0,trochanterY,0);character.add(torsoG);reg('torso',torsoG);
         const pelvis=reg('pelvis',s(0.7,matSkin,[1.15,1.0,0.7]));pelvis.position.set(0,trochanterY,0);character.add(pelvis);
         [-1,1].forEach(sd=>{const g=reg('glute'+(sd===1?'1':'-1'),s(0.40,matSkin,[0.82,0.8,0.82]));g.position.set(sd*0.26,trochanterY-0.1,-0.12);character.add(g);});
-        [-1,1].forEach(sd=>{const hipG=F.gruppe();hipG.position.set(sd*hipHW*MENSCH_GESTALT.bein.abstand,trochanterY,0);reg('hip'+(sd===1?'1':'-1'),hipG);kette('oberschenkel',sd,hipG,[0,-thighLen,0]);const kneeG=F.gruppe();kneeG.position.set(0,-thighLen,0);hipG.add(kneeG);reg('knee'+(sd===1?'1':'-1'),kneeG);kette('unterschenkel',sd,kneeG,[0,-calfLen,0]);const aY=-calfLen;const ankleG=F.gruppe();ankleG.position.set(0,aY,0);kneeG.add(ankleG);reg('ankle'+(sd===1?'1':'-1'),ankleG);const ankleSphere=s(0.15,matJoint,[1.1,0.5,1]);ankleG.add(ankleSphere);const foot=F.gruppe();const heel=s(0.2,matSkin,[1.2,1,1.5]);heel.position.set(0,0,-0.15);foot.add(heel);const mid=s(0.25,matSkin,[0.8,0.6,1.5]);mid.position.set(0,-0.05,0.2);foot.add(mid);for(let i=0;i<5;i++){const tX=(i-2)*0.08,tZ=0.4+(i*0.02),tR=0.06-(i*0.005);const t1=s(tR,matSkin,[1.5,0.8,1.2]);t1.position.set(tX,-0.15,tZ);foot.add(t1);const t2=s(tR*0.8,matSkin,[1.5,0.8,1.2]);t2.position.set(tX,-0.15,tZ+0.15);foot.add(t2);}foot.position.set(0,-0.1,0.1);foot.scale.z=MENSCH_GESTALT.fuss.laenge;ankleG.add(foot);hipG.rotation.z=sd*0.05;character.add(hipG);});
+        [-1,1].forEach(sd=>{const hipG=F.gruppe();hipG.position.set(sd*hipHW*MENSCH_GESTALT.bein.abstand,trochanterY,0);reg('hip'+(sd===1?'1':'-1'),hipG);kette('oberschenkel',sd,hipG,[0,-thighLen,0]);const kneeG=F.gruppe();kneeG.position.set(0,-thighLen,0);hipG.add(kneeG);reg('knee'+(sd===1?'1':'-1'),kneeG);kette('unterschenkel',sd,kneeG,[0,-calfLen,0]);const aY=-calfLen;const ankleG=F.gruppe();ankleG.position.set(0,aY,0);kneeG.add(ankleG);reg('ankle'+(sd===1?'1':'-1'),ankleG);const foot=F.gruppe();MENSCH_GESTALT.fuss.formen.forEach(f=>{const k=s(f[1],matSkin,f[2]);k.position.set(sd*f[3][0],f[3][1],f[3][2]);if(f[4])k.rotation.set(f[4][0],sd*f[4][1],sd*f[4][2]);if(f[5])k.userData.__nurBloss=true;foot.add(k);});foot.rotation.y=sd*MENSCH_GESTALT.fuss.auswaerts;ankleG.add(foot);hipG.rotation.z=sd*0.05;character.add(hipG);});
         const ribcage=reg('ribcage',s(1.0,matSkin,[shoulderHW,1.2*MENSCH_GESTALT.rumpf.brustkorb,0.6]));ribcage.position.set(0,nippleY-trochanterY,0);torsoG.add(ribcage);
         const waist=reg('waist',s(0.5,matSkin,[1.14,1.0,0.5]));waist.position.set(0,(nippleY+trochanterY)/2-trochanterY,0);torsoG.add(waist);
         [-1,1].forEach(sd=>{const g=F.gruppe();const t1=s(0.5,matSkin,[0.8,0.6,0.3]);t1.position.set(sd*0.7,acromionY-0.5-trochanterY,-0.1);g.add(t1);const t2=s(0.4,matSkin,[0.6,0.6,0.3]);t2.position.set(sd*0.4,acromionY-1.0-trochanterY,-0.1);g.add(t2);const t3=s(0.3,matSkin,[0.4,0.6,0.3]);t3.position.set(sd*0.1,0.5,-0.1);g.add(t3);reg('lat'+(sd===1?'1':'-1'),g);torsoG.add(g);});

@@ -6904,7 +6904,8 @@ function __mengenPrims(kern, B, dials, matFuer, gelenkVon, vox) {
     for (const z of zonen) for (const t of z.teile || []) if (B.parts[t] && !B.parts[t].isMesh) gruppen.add(t);
     for (const p of prims) {
         p.teil = teilVon.has(p.node) ? teilVon.get(p.node) : null;
-        for (let c = p.node.parent; p.teil === null && c; c = c.parent) if (gruppen.has(teilVon.get(c))) p.teil = teilVon.get(c);
+        // (eine Form nur des bloßen Fußes — die Fessel, koerper MENSCH_GESTALT.fuss — trägt den Teil des nächsten benannten: das Bein)
+        for (let c = p.node.userData.__nurBloss ? null : p.node.parent; p.teil === null && c; c = c.parent) if (gruppen.has(teilVon.get(c))) p.teil = teilVon.get(c);
     }
     const benannt = prims.filter((p) => p.teil !== null);
     for (const p of prims) {
@@ -9176,7 +9177,7 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
                     quellen.push(teil);
                 } else
                     teil.traverse((n2) => {
-                        if (n2.isMesh && n2.geometry && !n2.userData.__skinned) {
+                        if (n2.isMesh && n2.geometry && !n2.userData.__skinned && !n2.userData.__nurBloss) {
                             punkteVon(n2, pts, zen, animAhnH(n2));
                             quellen.push(n2);
                         }
@@ -9188,6 +9189,7 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
                 tonStempel(stoff.geometry, kern.menschTon(null, zi));
                 if (z.sohle) sohlen.set(stoff, quellen);
                 lebtInHuelle(quellen);
+                for (const q of quellen) q.userData.__imKleid = true; // (der Fuß im Schuh gießt keine Haut, unten)
                 stoffHuellen.push(stoff);
                 // DER STOFF ERBT DIE HAUT (K45-2): die Zone sagt es (`erbt`, Oberteil und Hose — der Schuh folgt dem Fuß)
                 if (z.erbt && hautHuelle) __stoffErbtHaut(hautHuelle.geometry, stoff.geometry);
@@ -9607,6 +9609,7 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             if (!hg) throw new Error("MENSCH-HAUT: die Hand-Haut lieferte keine Fläche");
             const handHaut = new THREE.Mesh(hg, matFuer("haut")); // Hand-lokal gebacken (Identität)
             handHaut.userData.__huelle = true;
+            handHaut.userData.__glied = "hand"; // der Haushalt der Stufe (unten) hält ihre Zeile
             hand.add(handHaut);
             // DIE HAND-MITTE (Integration W5-Körper): der Schwerpunkt der Hand-Haut im Hand-Raum reist im Beipack — die
             // Faust des Wirts setzt den Griff dorthin (vorher eine Welt-Konstante der alten Hand: 0,07 m daneben).
@@ -9620,6 +9623,30 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
                 mz += hp2.getZ(i);
             }
             handMitte[hn] = [mx / hp2.count, my / hp2.count, mz / hp2.count];
+        }
+        // DIE FUSS-HAUT (w28-leib-kanon, koerper MENSCH_GESTALT.fuss · fussHaut): die Formen des bloßen Fußes — Ferse, Knöchel,
+        // Spann, Außenrand, Ballen, Zehen-Block, große Zehe — werden EINE Fläche je Fuß im Raum des Knöchel-Gelenks, derselbe
+        // Guss wie die Hand-Haut. NACH den Kleid-Zonen gebaut: der Schuh liest die Formen unter ankle und nimmt sie mit
+        // (`lebtInHuelle`) — ein Fuß im Schuh gießt keine Haut. Bis hier standen 24 rohe Kugeln (12 480 Dreiecke) im Bild.
+        const FH = kern.MENSCH_GESTALT.fussHaut;
+        if (!FH || !(FH.vox > 0) || !(FH.blend > 0)) throw new Error("MENSCH-HAUT: MENSCH_GESTALT.fussHaut fehlt (fail-closed)");
+        for (const an of ["ankle1", "ankle-1"]) {
+            const kn = B.parts[an];
+            if (!kn) continue;
+            const fp = __tierPrims(kn, kn, (n) => !n.userData.__imKleid, FH.vox, FH.blend, () => null, ["skin"], true);
+            if (!fp.some((p) => !p.node.userData.__nurBloss)) {
+                for (const p of fp) p.node.userData.__nichtGiessen = true; // der Fuß lebt im Schuh — die Fessel unter Schuh und Bein
+                continue;
+            }
+            if (fp.length < 2) throw new Error("MENSCH-HAUT: der Fuß trägt keine Haut-Formen");
+            const Ff = __tierFeld(fp, FH.vox, FH.blend);
+            const fg = __huelleAusFeld(kern, Ff.f, Ff.nx, Ff.ny, Ff.nz, Ff.lo, FH.vox, 0, 0, null, null, 0);
+            if (!fg) throw new Error("MENSCH-HAUT: die Fuß-Haut lieferte keine Fläche");
+            for (const p of fp) p.node.userData.__nichtGiessen = true;
+            const fussHaut = new THREE.Mesh(fg, matFuer("haut")); // Knöchel-lokal gebacken (Identität)
+            fussHaut.userData.__huelle = true;
+            fussHaut.userData.__glied = "fuss";
+            kn.add(fussHaut);
         }
     }
     // K57: die Grobstufe trägt das Haar-Volumen als Primitiv (koerper haarKappe) — der Zwilling wirft den Umriss der
@@ -9685,50 +9712,69 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
     nodeName.set(B.character, "mensch");
     for (const n of namen) if (B.parts[n]) nodeName.set(B.parts[n], n);
     // DIE NAHE STUFE TRÄGT IHRE ZEILE (1310-15, Lehre 19, `zeilenZiel`): was nicht Hülle ist (Augen, Lider, Haar), steht fest;
-    // jede Hülle (Haut, Kleid, Schuh, Kopf- und Hand-Haut) kollabiert im SELBEN Anteil, bis die Stufe die Zeile trägt (der Leib
-    // der Menge trägt sie schon).
+    // die Hüllen (Haut, Kleid, Schuh, Kopf-, Hand- und Fuß-Haut) teilen den Rest. DER HAUSHALT (w28-leib-kanon, koerper
+    // MENSCH_GESTALT.haushalt): Hände und Füße tragen höchstens ihren Anteil der Zeile, der Kopf (Haut, Augen, Lider, Haar)
+    // höchstens KOPF_SOLL.kopfDreiecke[1] — was sie nicht nehmen, fällt an Haut und Stoff; jede Hülle ohne Deckel kollabiert im
+    // SELBEN Anteil. Bis hier teilten alle Hüllen gleich: die Hände trugen 8 626 bis 12 310 Dreiecke, die Füße 12 480 rohe,
+    // der ganze nackte Leib 7 726 (jetzt alle 17 776 seines Rasters) — und der Deckel des Kopfs schnitt NACH der Teilung (sein Rest
+    // verfiel: 38 985 von 39 995). Die Zeile ist eine Decke: reicht das Raster nicht an sie, bleibt der Guss darunter.
+    // Ohne Deckel (die Grobstufe, der Leib der Menge) bleibt die Rechnung die alte.
     {
         const ziel = zeilenZiel;
-        const huellen = [];
+        const HG = kern.MENSCH_GESTALT.haushalt;
+        if (!fein && !(HG && HG.hand > 0 && HG.fuss > 0)) throw new Error("MENSCH-GUSS: MENSCH_GESTALT.haushalt fehlt (fail-closed)");
+        const kopfZeile = !fein && kern.KOPF_SOLL && kern.KOPF_SOLL.kopfDreiecke ? kern.KOPF_SOLL.kopfDreiecke[1] : null;
+        const imKopf = new Set();
+        if (kopfZeile > 0) B.parts.head.traverse((n) => imKopf.add(n));
+        const G = { leib: { roh: 0, h: [], deckel: Infinity }, kopf: { roh: 0, h: [], deckel: Infinity }, hand: { roh: 0, h: [], deckel: fein ? Infinity : HG.hand * ziel }, fuss: { roh: 0, h: [], deckel: fein ? Infinity : HG.fuss * ziel } }; // prettier-ignore
         let festD = 0,
-            huelleD = 0;
+            kopfFest = 0;
         B.character.traverse((node) => {
             if (!node.isMesh || !node.geometry || node.userData.__nichtGiessen) return;
             const g = node.geometry;
             const d = (g.index ? g.index.count : g.attributes.position.count) / 3;
             if (node.userData.__huelle) {
-                huellen.push(node);
-                huelleD += d;
-            } else festD += d;
-        });
-        const anteil = huelleD > 0 ? (ziel - festD) / huelleD : 1;
-        if (!(anteil > 0)) throw new Error(`MENSCH-GUSS: die festen Teile (${festD} Dreiecke) tragen die Zeile ${ziel} allein`);
-        const kollabiere = (h, ziel) => {
-            const alt = h.geometry;
-            const neu = __huelleKollaps(alt, ziel);
-            if (neu !== alt) {
-                alt.dispose();
-                h.geometry = neu;
+                const gr = G[node.userData.__glied || (imKopf.has(node) ? "kopf" : "leib")];
+                gr.h.push(node);
+                gr.roh += d;
+            } else {
+                festD += d;
+                if (imKopf.has(node)) kopfFest += d;
             }
-        };
-        if (anteil < 1) for (const h of huellen) kollabiere(h, Math.floor((h.geometry.index.count / 3) * anteil));
-        // DER KOPF TRÄGT SEINE ZEILE (mensch.K4, KOPF_SOLL kopfDreiecke): in der nahen Stufe trägt der Kopf (Haut, Augen, Lider,
-        // Haar) höchstens kopfDreiecke[1] — was darüber liegt, nimmt seine Haut (die Kappe des großen Haars macht sie größer:
-        // afro, locken, lang trugen 12 146–12 440 über 12 000); jeder andere Stil bleibt byte-gleich
-        const kopfZeile = !fein && kern.KOPF_SOLL && kern.KOPF_SOLL.kopfDreiecke ? kern.KOPF_SOLL.kopfDreiecke[1] : null;
+        });
         if (kopfZeile > 0) {
-            let kopfD = 0;
-            const kopfHuellen = [];
-            B.parts.head.traverse((node) => {
-                if (!node.isMesh || !node.geometry || node.userData.__nichtGiessen) return;
-                kopfD += (node.geometry.index ? node.geometry.index.count : node.geometry.attributes.position.count) / 3;
-                if (node.userData.__huelle) kopfHuellen.push(node);
-            });
-            const hautD = kopfHuellen.reduce((a, h) => a + h.geometry.index.count / 3, 0);
-            if (kopfD > kopfZeile && hautD > 0) {
-                const k = (kopfZeile - (kopfD - hautD)) / hautD;
-                if (!(k > 0)) throw new Error(`MENSCH-GUSS: Augen, Lider und Haar (${kopfD - hautD} Dreiecke) tragen die Kopf-Zeile ${kopfZeile} allein`);
-                for (const h of kopfHuellen) kollabiere(h, Math.floor((h.geometry.index.count / 3) * k));
+            G.kopf.deckel = kopfZeile - kopfFest;
+            if (G.kopf.roh > 0 && !(G.kopf.deckel > 0)) throw new Error(`MENSCH-GUSS: Augen, Lider und Haar (${kopfFest} Dreiecke) tragen die Kopf-Zeile ${kopfZeile} allein`);
+        }
+        let rest = ziel - festD;
+        if (!(rest > 0)) throw new Error(`MENSCH-GUSS: die festen Teile (${festD} Dreiecke) tragen die Zeile ${ziel} allein`);
+        // das Wasser füllt von unten: wer mit dem gemeinsamen Anteil über seinem Deckel läge, steht am Deckel, der Rest teilt neu
+        const frei = new Set(Object.keys(G).filter((k) => G[k].roh > 0));
+        const anteilVon = {};
+        for (;;) {
+            let roh = 0;
+            for (const k of frei) roh += G[k].roh;
+            const a = roh > 0 ? rest / roh : 1;
+            let ueber = null;
+            for (const k of frei) if (a * G[k].roh > G[k].deckel && (!ueber || G[k].deckel / G[k].roh < G[ueber].deckel / G[ueber].roh)) ueber = k;
+            if (!ueber) {
+                for (const k of frei) anteilVon[k] = a;
+                break;
+            }
+            anteilVon[ueber] = G[ueber].deckel / G[ueber].roh;
+            rest -= G[ueber].deckel;
+            frei.delete(ueber);
+        }
+        for (const k in G) {
+            const an = anteilVon[k];
+            if (!(an < 1)) continue;
+            for (const h of G[k].h) {
+                const alt = h.geometry;
+                const neu = __huelleKollaps(alt, Math.floor((alt.index.count / 3) * an));
+                if (neu !== alt) {
+                    alt.dispose();
+                    h.geometry = neu;
+                }
             }
         }
     }

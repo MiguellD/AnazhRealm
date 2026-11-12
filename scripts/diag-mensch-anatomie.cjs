@@ -469,7 +469,10 @@ if (SELBSTTEST) {
     pruefe("KA2 das Becken tief hängend wird erkannt", amBau((b, p) => ((b.pelvis.y *= 1.6), (p.pelvis.position.y -= 0.3))), /^kanon\.(mann|frau) schritt .* </, "kanon"); // prettier-ignore
     // DIE GESTALT (w28-leib-kanon): der Guss ohne den Leser (die Kugel-Ketten: Wurst-Glieder, Kugel-Knie) und der Rumpf ohne seine
     // Lappen (die Normale null: keine Furche)
-    pruefe("F1 der Guss ohne das Relief (die Kugel-Ketten vor w28-leib-kanon) wird erkannt", { kern: (K) => ({ ...K, leibRelief: () => {} }) }, /^form (armZuHandgelenk|schenkelZuKnie|wadeZuKnoechel|kniescheibe) /, "form"); // prettier-ignore
+    // F1 nennt eine LANDMARKE als Zeugen (w28-leib-kanon Nummer 3): seit die Träger der Glieder aus dem Profil gießen, liegt die Verjüngung
+    // des Gusses ohne Leser nah am Band (Arm 1,49 gegen 1,65) — die Lappen aber fehlen ihm ganz, zwei Landmarken wechseln das
+    // Vorzeichen: die Kniekehle +0,85 mm (Band ≤ −1,5) und die Ellbogen-Spitze −0,21 mm (Band ≥ 1)
+    pruefe("F1 der Guss ohne das Relief (kein Lappen: Kniekehle und Ellbogen-Spitze ohne ihr Vorzeichen) wird erkannt", { kern: (K) => ({ ...K, leibRelief: () => {} }) }, /^form (kniekehle|ellbogenSpitze) /, "form"); // prettier-ignore
     pruefe("F2 der Rumpf ohne seine Lappen (keine Wirbel-Furche) wird erkannt", { kern: (K) => ({ ...K, leibRelief: (p, n, ...r) => K.leibRelief(p, new Float32Array(n.length), ...r) }) }, /^form wirbelFurche .* > /, "form"); // prettier-ignore
     const rot0 = (K) => (h) => ({ ...K.kopfToene(h), lips: 0xaa5544 });
     pruefe(
