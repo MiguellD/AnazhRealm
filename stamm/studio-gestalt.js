@@ -238,6 +238,9 @@ class AnazhRealm_studio_gestalt {
         // des Leibs, der ihn zeichnet (`_tonFaktor`)
         const ton = !!(m.aTon && m.aTon.array);
         if (ton) geo.setAttribute("aTon", new T.BufferAttribute(m.aTon.array, 1));
+        // DAS RASTER DER FUGE (w28-stoff-fuge, fachwerk FUGEN-GESETZ): u · v · Stein-Anteil · Fugen-Ton je Ecke — der Bau-Satz legt es
+        // in die vierten Komponenten seiner Ecken (`_satzFuge`); außerhalb des Satzes liest es kein Stoff (die Fläche steht im Mittelton)
+        if (m.aFuge && m.aFuge.array) geo.setAttribute("aFuge", new T.BufferAttribute(m.aFuge.array, 4));
         // DIE ECKEN DER GESTALT, wie sie geliefert sind: ihr Stoff liest Ton und Jahr an ihrem Namen (`_foundryTreeMaterial`)
         const ecken = { ton, jahr };
         if (m.index) geo.setIndex(new T.BufferAttribute(AnazhRealm._indexSchmal(m.index, vcount), 1));

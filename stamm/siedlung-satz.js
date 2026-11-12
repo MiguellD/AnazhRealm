@@ -478,6 +478,17 @@ class AnazhRealm_siedlung_satz {
             }
             attributes[name] = { array: out, itemSize: is, count: N };
         }
+        // DAS RASTER DER FUGE (`SATZ_FUGE`): die vierten Komponenten je Ecke aus `aFuge` (ohne das Feld 0), der Fugen-Ton in die Glut
+        const fu = A.aFuge && A.aFuge.itemSize === 4 ? A.aFuge.array : null;
+        for (const t of attr) {
+            const k = t[3] ? AnazhRealm.SATZ_FUGE[t[3]] : undefined;
+            if (k === undefined) continue;
+            const out = this._satzWerkbank(t[3], N, Float32Array);
+            if (fu) AnazhRealm._satzKernFuge(out, fu, v0, n, cnt, k);
+            else out.fill(0);
+            attributes[t[3]] = { array: out, itemSize: 1, count: N };
+        }
+        if (fu && attributes.aGlut) AnazhRealm._satzKernFugeTon(attributes.aGlut.array, fu, v0, n, cnt, ic, ab);
         if (bau && bau.alter) AnazhRealm._satzAlterEcken(attributes, geo, im, cnt, ab, n, bau);
         return attributes;
     }
@@ -595,6 +606,30 @@ class AnazhRealm_siedlung_satz {
     // Dieselben Zahlen `w` (Breite `is`) in jede der `N` Ecken.
     static _satzKernFuell(out, N, is, w) {
         for (let v = 0; v < N; v++) for (let c = 0; c < is; c++) out[v * is + c] = w[c];
+    }
+    // Die Kerne des Fugen-Rasters (`SATZ_FUGE`): der Platz `k` aus `aFuge` je Ecke der Instanzen; und der Fugen-Ton (24 Bit, je
+    // Kanal die Wurzel des linearen Tons in 8 Bit — fachwerk `fugeTonPacke`) × Instanz-Farbe in die Glut jeder Ecke mit Raster.
+    static _satzKernFuge(out, fu, v0, n, cnt, k) {
+        for (let j = 0; j < cnt; j++) for (let v = 0, o = j * n; v < n; v++) out[o + v] = fu[(v0 + v) * 4 + k];
+    }
+    static _satzKernFugeTon(glut, fu, v0, n, cnt, ic, ab) {
+        for (let j = 0; j < cnt; j++) {
+            const i = (ab + j) * 3;
+            const cr = ic ? ic[i] : 1,
+                cg = ic ? ic[i + 1] : 1,
+                cb = ic ? ic[i + 2] : 1;
+            for (let v = 0, o = j * n * 3; v < n; v++, o += 3) {
+                const q = (v0 + v) * 4;
+                if (!(fu[q + 2] > 0)) continue;
+                const z = fu[q + 3];
+                const r = Math.floor(z / 65536) % 256,
+                    g = Math.floor(z / 256) % 256,
+                    b = z % 256;
+                glut[o] = (r / 255) * (r / 255) * cr;
+                glut[o + 1] = (g / 255) * (g / 255) * cg;
+                glut[o + 2] = (b / 255) * (b / 255) * cb;
+            }
+        }
     }
     // KATALOG-SICHT: der EINE Sicht-Chokepoint aller Picker (Werkstatt-Liste · Rezeptbuch · Omnibox ·
     // Kreatur-Auftrag): donorOnly-Spender und Render-Varianten (grown_*, fels/kristall_var1+)
@@ -1642,13 +1677,20 @@ AnazhRealm.BAU_SATZ_STUECK = 2048;
 AnazhRealm.BAU_SATZ_ATTR = Object.freeze([
     Object.freeze(["position", 3]),
     Object.freeze(["normal", 3, "snorm8"]),
-    Object.freeze(["color", 3, "half"]),
+    Object.freeze(["color", 3, "half", "aFugeU"]),
     Object.freeze(["aLodLevel", 1]),
     Object.freeze(["aH0", 1]),
     Object.freeze(["aH0L", 1]),
-    Object.freeze(["aRegler", 3, "snorm8"]),
-    Object.freeze(["aGlut", 3, "half"]),
+    Object.freeze(["aRegler", 3, "snorm8", "aFugeA"]),
+    Object.freeze(["aGlut", 3, "half", "aFugeV"]),
 ]);
+// DAS RASTER DER FUGE IM BAU-SATZ (w28-stoff-fuge, fachwerk FUGEN-GESETZ): die Stufe 1 eines Hauses trägt je Ecke `aFuge` = u · v ·
+// Stein-Anteil · Fugen-Ton (24 Bit). Der Satz hat keinen neunten Puffer frei (WebGPU 8) — das Raster reist in den vierten
+// Komponenten, die die gepackten Formen ohnehin tragen (0 Byte): u in der Farbe, v in der Glut (beide float16), der Stein-Anteil
+// in den Reglern (snorm8; > 0 ist die Marke „diese Ecke trägt ein Raster“). Der Fugen-Ton liegt an einer solchen Ecke in den drei
+// Werten der Glut (ein Gefach glüht nie; der Satz-Stoff liest sie dort als Ton, nie als Licht: `_fugeStoff`). Eine Ecke ohne
+// Raster trägt 0 · 0 · 0 und ihre Glut wie bisher. Hier: der Name der vierten Komponente → ihr Platz in `aFuge`.
+AnazhRealm.SATZ_FUGE = Object.freeze({ aFugeU: 0, aFugeV: 1, aFugeA: 2 });
 // Die Attribute eines Stein-Satz-Bereichs (w4-genesis-tore): Lage · Normale · Farbe · Regler · Glut und das uv der Ecken — die Lage
 // im Verband des Stein-Gesetzes (porta STEIN_GESETZ, `_steinStoff`: u = Stein + Weg, v = seine Länge). Die drei Stempel der Blende
 // fehlen: ein Bau steht auf dem Null-Stempel, der Stein-Stoff blendet nie (`_foundryTreeMaterial`) — mit ihnen trüge der Satz 9

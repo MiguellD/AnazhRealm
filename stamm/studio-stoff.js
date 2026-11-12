@@ -121,6 +121,68 @@ class AnazhRealm_studio_stoff {
         for (const p of plaetze) mat[p] = g[p];
     }
 
+    // DER FUGEN-STOFF (w28-stoff-fuge, fachwerk FUGEN-GESETZ `FUGE`): die Gefach-Fläche der Stufe 1 eines Hauses trägt je Ecke ihr
+    // Raster in den vierten Komponenten des Bau-Satzes (`SATZ_FUGE`: u = Steine längs der Wand in der Farbe, v = Lagen in der Glut,
+    // der Stein-Anteil in den Reglern — > 0 ist die Marke) und den Fugen-Ton in den drei Werten der Glut. Je Pixel daraus Stein
+    // oder Fuge: die FUGE als Abdeckung des Pixels (der Kamm ± halbe Fuge um jede ganze Zahl als Integral über die Spanne des
+    // Pixels — fern mittelt er zu seinem Anteil, nie zu einer Linie; die halbe Fuge in Raster-Einheiten aus der Fuge in Metern ×
+    // dem Gradienten des Rasters in der Fläche, Ableitungen am Schirm wie `_steinStoff`), jede zweite Lage um einen halben Stein
+    // versetzt, der TON je Stein (`steinTon` des Kerns, dieselben ganzen Zahlen; über einem Stein je Pixel blendet er aus). Die
+    // Farbe der Ecke ist der Mittelton der Fläche (Anteil × Stein + Rest × Fuge): Stein = (Farbe − Rest × Fuge) ÷ Anteil.
+    // Dieselbe Rechnung trägt der Kern (`fugeDeckung`); die Stufe 0 baut denselben Verband Stein für Stein.
+    // → { farbe: vec3, raster: 0 | 1 } — ohne Raster die Farbe der Ecke unverändert.
+    _fugeStoff(T, farbe) {
+        const G = AnazhRealm.Gesetz("fachwerk:FUGE", null) || AnazhRealm._kernPflichtBruch("fachwerk:FUGE");
+        if (!(G.breiteM > 0) || !(G.ton >= 0)) throw this._stoffBruch("das Fugen-Gesetz fachwerk:FUGE trägt keine Fuge");
+        // r184 teilt Attribut-Knoten nach dem NAMEN (`_bodenStufenK`): die vierte Komponente liest ein Knoten mit eigenem Schlüssel
+        const vier = (name) => {
+            const k = T.attribute(name, "vec4");
+            k.getHash = () => name + ":vec4";
+            return k;
+        };
+        const c4 = vier("color"),
+            g4 = vier("aGlut"),
+            an = vier("aRegler").w;
+        const u = c4.w,
+            v = g4.w;
+        const raster = T.step(1 / 254, an);
+        const wp = T.positionWorld;
+        const n = T.normalize(T.normalWorldGeometry.mul(T.faceDirection));
+        const dpx = T.dFdx(wp),
+            dpy = T.dFdy(wp);
+        const r1 = T.cross(dpy, n),
+            r2 = T.cross(n, dpx);
+        const det = T.dot(dpx, r1);
+        const detS = T.select(det.abs().greaterThan(1e-12), det, T.float(1e-12));
+        const grad = (x) => r1.mul(T.dFdx(x)).add(r2.mul(T.dFdy(x))).div(detS).length(); // 1/m
+        const kamm = (x, s, j) => {
+            const F = (t) => {
+                const y = t.add(0.5);
+                const k = T.floor(y);
+                return j.mul(2.0).mul(k).add(T.clamp(y.sub(k).sub(0.5), j.negate(), j));
+            };
+            const sp = s.max(1e-5);
+            return F(x.add(sp.mul(0.5))).sub(F(x.sub(sp.mul(0.5)))).div(sp).clamp(0.0, 1.0);
+        };
+        const lage = T.floor(v);
+        const uu = u.sub(T.mod(lage, 2.0).mul(0.5));
+        const su = T.fwidth(u),
+            sv = T.fwidth(v);
+        const cu = kamm(uu, su, grad(u).mul(G.breiteM * 0.5)),
+            cv = kamm(v, sv, grad(v).mul(G.breiteM * 0.5));
+        const fuge = T.float(1.0).sub(cu.oneMinus().mul(cv.oneMinus()));
+        // der Ton des Steins: n = (i + 128)·61 + lage·97, p = n mod 239, q = (p² + n) mod 251, h = ((q² + 7p) mod 241) ÷ 241
+        const nn = T.floor(uu).add(128.0).mul(61.0).add(lage.mul(97.0));
+        const p = T.mod(nn, 239.0);
+        const q = T.mod(p.mul(p).add(nn), 251.0);
+        const h = T.mod(q.mul(q).add(p.mul(7.0)), 241.0).div(241.0);
+        const nah = T.float(1.0).sub(T.smoothstep(0.5, 1.5, T.max(su, sv)));
+        const ton = T.float(1.0).add(h.mul(2.0).sub(1.0).mul(G.ton).mul(nah));
+        const mF = g4.xyz;
+        const sF = T.vec3(farbe).sub(mF.mul(an.oneMinus())).div(an.max(1 / 254)).max(0.0);
+        return { farbe: T.mix(T.vec3(farbe), T.mix(sF.mul(ton), mF, fuge), raster), raster };
+    }
+
     // `wiegen` (true, optional): der Stoff einer weichen Boden-Art der Nah-Streu — er wiegt im EINEN Wind mit der Höhe über
     // der Wurzel in Metern (Vorlage × Welt-Skala der Instanz) und dem Rauschen der Pflanze an ihrem Fuß, also für jede
     // Studio-Skala derselbe Stoff.
@@ -277,6 +339,7 @@ class AnazhRealm_studio_stoff {
         // sie lesen — `vertexColors:true` wirkt hier NICHT (sonst weißes Laub, schwarze Koniferen).
         // `_foundryBuildGroup` garantiert das color-Attribut.
         const vcolRoh = TSL.attribute("color", "vec3");
+        let schlicht = false; // der Stoff zeichnet die Farbe seiner Ecke und sonst nichts (der letzte Zweig unten)
         // DIE FARBE FOLGT DEM SAMEN (mensch.K4): trägt die Gestalt den Ton je Ecke, ist ihre Farbe die Vorlage × das Verhältnis
         // der Palette des zeichnenden Leibs zu der seiner Gestalt (`_tonFaktor`), je Ecke im Vertex-Takt — der Leib eines
         // Bewohners zeigt seine Farben im Stoff seiner Gestalt; ohne eigene Palette (der Spieler) ist das Verhältnis 1. Die
@@ -581,6 +644,7 @@ class AnazhRealm_studio_stoff {
             // Fels/Kristall/Blume/Laub: die Vertex-Farbe (Laub/Gras × uSeasonMul), die Regler (rough/metal/flat/
             // env) sind schon oben aus `mp` gesetzt → Kristall glaenzt facettiert, Fels bleibt matt.
             mat.colorNode = TSL.vec4(laubFarbe, 1.0);
+            schlicht = true;
         }
         // DIE REGLER JE ECKE (K43-2, der EINE Satz-Stoff): Rauheit · Metall · Deckkraft aus `aRegler`, das Emissiv × Glut-Stärke
         // aus `aGlut` — vor der Blende (sie multipliziert die Deckung) und vor dem Leucht-Gesetz (es addiert den Licht-Pool
@@ -594,8 +658,16 @@ class AnazhRealm_studio_stoff {
                 mat.opacity = 1;
                 mat.colorNode = TSL.vec4(mat.colorNode.rgb, mat.colorNode.a.mul(rg.z));
             }
-            if (!(mp && typeof mp.leucht === "number" && mp.leucht > 0))
-                mat.emissiveNode = TSL.attribute("aGlut", "vec3");
+            // DAS FUGEN-GESETZ (w28-stoff-fuge, fachwerk FUGE): der deckende Bau-Stoff, der nur die Farbe seiner Ecke zeichnet (die
+            // Wand eines Hauses), zeichnet an einer Ecke mit Raster Stein und Fuge (`_fugeStoff`); ihre Glut ist dort der Fugen-Ton
+            // und leuchtet nicht. Derselbe Graph für jede Ecke dieses Stoffs — kein neues Programm (die Signatur unten bleibt).
+            let glut = TSL.attribute("aGlut", "vec3");
+            if (schlicht && kind === "unknown" && !mikro && !(R.op < 1)) {
+                const F = this._fugeStoff(TSL, mat.colorNode.rgb);
+                mat.colorNode = TSL.vec4(F.farbe, mat.colorNode.a);
+                glut = glut.mul(F.raster.oneMinus());
+            }
+            if (!(mp && typeof mp.leucht === "number" && mp.leucht > 0)) mat.emissiveNode = glut;
             mat.userData = mat.userData || {};
             mat.userData.satzSchluessel = key;
         }

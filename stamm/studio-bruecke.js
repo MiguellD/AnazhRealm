@@ -3497,7 +3497,9 @@ AnazhRealm._wortFalten = function (wort) {
 // beide Seiten gegeneinander). DIE ECKEN aCenter · aType: die Mitte jedes Blatts und sein Typ — das Laub fällt im Winter auf
 // seine Mitte (`_jahrLage`, vegetation.K5), die Ferne der Wiese streckt das Büschel um die Mitten seiner Halme (`_halmFerne`);
 // sie reisen nur an Teilen mit Laub, Blüte oder Halm (die Schale streicht sie an jedem anderen, `cfg.ecken`), aWind bleibt
-// ohne Leser.
+// ohne Leser. DAS RASTER DER FUGE aFuge (w28-stoff-fuge, fachwerk FUGEN-GESETZ): u · v · Stein-Anteil · Fugen-Ton je Ecke — nur
+// an der Stufe 1 eines Hauses, dessen Gefach den Verband als Funktion trägt; der Bau-Satz legt es in die vierten Komponenten
+// seiner Ecken (`_satzFuge`), der Satz-Stoff zeichnet daraus Stein und Fuge (`_fugeStoff`).
 AnazhRealm.FOUNDRY_LESEN = [
     "position",
     "normal",
@@ -3511,13 +3513,15 @@ AnazhRealm.FOUNDRY_LESEN = [
     "skinWeight",
     "aCenter",
     "aType",
+    "aFuge",
 ];
 // Das Transport-Format der Platte (reist als `|f<n>` im Stempel): 2 = Konsum-Wand + Uint16-Index (V18.511); 3 =
 // saisonfreie Körper-Schlüssel `<preset>|<gestalt>|<lod>[|ov:…]`, Karten `karte|…` mit `{ payload }` (V18.527); 4 = die
 // Jahres-Ecken aCenter · aType reisen an Laub und Blüte (vegetation.K5 — ein Körper der Platte 3 trüge sie nie, sein Laub
 // stünde still im Winter); 5 = dazu am Halm (w14-wiese-saum — ein Gras der Platte 4 trüge sie nie, die Ähre der Ferne
-// streckte sich weiter). Ein geändertes Format leert den Asset-Cache von selbst (wie ein Studio-Edit).
-AnazhRealm.FOUNDRY_PLATTE_FORMAT = 5;
+// streckte sich weiter); 6 = das Raster der Fuge aFuge reist an der Stufe 1 der Häuser (w28-stoff-fuge — ein Haus der Platte 5
+// trüge es nie, sein Gefach stünde im Mittelton). Ein geändertes Format leert den Asset-Cache von selbst (wie ein Studio-Edit).
+AnazhRealm.FOUNDRY_PLATTE_FORMAT = 6;
 AnazhRealm.INGEST_RATE_PER_S = 180; // Ziel-Freigaben je echter Sekunde (= 60 fps × 3 → healthy-fps byte-alt)
 AnazhRealm.INGEST_BURST_CAP = 8; // max Freigaben je EINZELFRAME (Anti-LongTask-Deckel; bei 8 fps = 64/s statt 8/s)
 // Der Horizont-Saum (m): über so viele Meter vor `SCATTER.outerM` liegen die Ränder der Karten-Dinge, je Eintrag aus
