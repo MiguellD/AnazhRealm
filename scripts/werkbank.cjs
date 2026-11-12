@@ -1908,7 +1908,8 @@ async function starte() {
                     const spec = b.ort ? BAND.ladeSpec(b.ort) : null;
                     const inhalt = spec?.ort.imBild;
                     if (b.ort && !(inhalt && Object.keys(inhalt).length)) throw new Error(`ABNAHME ROT [der Messort ${b.ort} trägt kein imBild — sein Inhalt bliebe ungefragt]`); // prettier-ignore
-                    if (inhalt) [b.klasse, b.inhalt] = [Object.keys(inhalt).map((k) => AA.inhaltFamilie(k).source).join("|"), true];
+                    // der Inhalt liest je Klasse Pixel und Farbe — die Maße der Tafel (`nurPixel` aus) nur, wo sie geschrieben wird
+                    if (inhalt) [b.klasse, b.inhalt, b.nurPixel] = [Object.keys(inhalt).map((k) => AA.inhaltFamilie(k).source).join("|"), true, !b.ist && !b.messung];
                     // DIE LEINWAND: die Klasse misst im Pixel des Schirms (1920 × 1080 wie ihre Messungen), jedes andere Bild in seinem Maß —
                     // das Fenster wie ein Spieler (`/fenster`), nie kleiner als das Bild (die Abnahme: `leinwandRot`); danach das Fenster der Sitzung
                     const vp = page.viewport();
