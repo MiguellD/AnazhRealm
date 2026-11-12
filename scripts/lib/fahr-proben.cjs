@@ -900,6 +900,50 @@ async function probeLeben(expected) {
                 P._verkehrSchritt.call(this, dt);
                 [m.ms, m.takte] = [m.ms + performance.now() - t0, m.takte + 1];
             };
+            // DAS BILD GLEITET (w28-verkehr-bild): je Bild die gezeichnete Lage jedes fahrenden Wagens im Blick (`_verkehrBild`, die
+            // gleitende Lage `_verkehrGleit`) gegen den Weg, den sein Tempo in der Zeit dieses Bilds trägt — der größte Ruck [m, Wagen,
+            // Probe, Stufe k, m/s] und die gezählten Paare. Ohne Gleiten stand der ferne Wagen k − 1 Bilder und sprang im k-ten; der
+            // nahe sprang, wo ein Bild zwei Schritte trug oder keinen (die Bilder des Musters). Die Mutante (`mutanteSprung`): das
+            // Bild zeichnet die Sim-Lage (vor dem Schnitt)
+            const RK = { max: [0], n: 0, bild: new Map(), vor: new Map() };
+            r._verkehrBild = function (e, q) {
+                P._verkehrBild.call(this, e, o.mutanteSprung ? undefined : q);
+                const L = (!o.mutanteSprung && q) || e.position;
+                RK.bild.set(e, [L.x, L.z]);
+            };
+            const bildRuck = (dt, k) => {
+                for (const W of VK.wagen) {
+                    const [e, nah] = [W.entry, A.VERKEHR.blickNahM];
+                    const L = e && RK.bild.get(e);
+                    const vor = RK.vor.get(W);
+                    const sicht = W.zustand === "faehrt" && e && e._fahr && (W.d2 < nah * nah || W.imBlick) && e._fahr.speed > 2; // prettier-ignore
+                    RK.vor.set(W, sicht && L ? L : null);
+                    if (!sicht || !vor || !L) continue;
+                    const ruck = Math.abs(Math.hypot(L[0] - vor[0], L[1] - vor[1]) - e._fahr.speed * dt);
+                    [RK.n, RK.ueber] = [RK.n + 1, (RK.ueber || 0) + (ruck > 0.05)];
+                    if (ruck > RK.max[0]) RK.max = [+ruck.toFixed(3), W.nr, k, W.k, +e._fahr.speed.toFixed(1), W.gleitJetzt ? +W.gleitJetzt.a.toFixed(2) : null, +(dt * 1000).toFixed(1), W.dtAcc > 0 ? +(W.dtAcc * 60).toFixed(1) : 0, W.spur && W.spur.length > 1 ? +((W.spur[W.spur.length - 1].t - W.spur[W.spur.length - 2].t) * 60).toFixed(1) : null]; // prettier-ignore
+                }
+            };
+            // DER VERKEHR IM OHR (w28-verkehr-bild): je Bild die Stimme der Fahrt (`_fahrtKlangTick`) an einem stillen Ausgang
+            // (OfflineAudioContext, der Klang des Spiels bleibt aus) — die Stimmen [wenigste, meiste], die Bilder, in denen ein
+            // Wagen binnen `ohrM` fährt und keine Stimme klingt (stumm), und die ms je Aufruf (p95; geurteilt nur unter `zeit`). Die
+            // Mutante (`mutanteOhr`): das Ohr hört den Verkehr nicht (vor dem Schnitt)
+            if (o.mutanteOhr) r._fahrtVerkehr = () => [];
+            const sy = st.symphony;
+            const KL = { n: [Infinity, 0], stumm: 0, nah: 0, ms: [], vor: { ctx: sy.ctx, masterGain: sy.masterGain, fahrt: sy.fahrt } };
+            const ohrCtx = new OfflineAudioContext(1, 48000, 48000);
+            Object.assign(sy, { ctx: ohrCtx, masterGain: ohrCtx.destination, fahrt: null });
+            const ohr = (k) => {
+                if (k % 2) return; // jedes zweite Bild: die Zahl, nicht jede Stimme
+                const t0 = performance.now();
+                r._fahrtKlangTick();
+                KL.ms.push(performance.now() - t0);
+                const n = sy.fahrt ? sy.fahrt.size : 0;
+                [KL.n[0], KL.n[1]] = [Math.min(KL.n[0], n), Math.max(KL.n[1], n)];
+                const p = st.playerMesh.position;
+                const nah = VK.wagen.some((W) => W.zustand === "faehrt" && W.entry && W.entry._fahr && W.entry._fahr.speed > 2 && Math.hypot(W.entry.position.x - p.x, W.entry.position.z - p.z) < o.ohrM); // prettier-ignore
+                [KL.nah, KL.stumm] = [KL.nah + nah, KL.stumm + (nah && !n)];
+            };
             const ziele0 = new Map(VK.wagen.map((W) => [W, W.ziele]));
             const stoss0 = { ...VK.zahl.stoss };
             const ort2 = (L) => [Math.round(L.x), Math.round(L.z)];
@@ -928,7 +972,9 @@ async function probeLeben(expected) {
             if (o.taeter) r._verkehrUmfahren = () => false;
             const abdruck = [];
             for (let k = 0; k < sek * 60; k++, i++) {
+                const tv = tMs;
                 frame(i);
+                if (!zwilling) bildRuck((tMs - tv) / 1000, k), ohr(k);
                 if (i % 8 === 7) await window.sleep();
                 if (k < (o.zwillingS | 0) * 60) abdruck.push(abdruckJetzt(VK));
                 if (zwilling) continue;
@@ -1071,13 +1117,16 @@ async function probeLeben(expected) {
                         hk.schub.length = hk.schubQuelle.length = 0;
                     }
                     // DER FAHRER IM SITZ (sein Leib zeigt sich am Steuer): der Sitz-Knochen (die Mitte beider Hüftgelenke) liegt in der
-                    // Kabine — über dem Bauch, unter dem Dach (`_sitzOrt`, exportDrive.huelle), in der Karosserie
+                    // Kabine — über dem Bauch, unter dem Dach (`_sitzOrt`, exportDrive.huelle), in der Karosserie, wie das Bild sie zeigt
+                    // (die gleitende Lage dieses Bilds, `_verkehrGleit`; ohne sie die Sim-Lage)
                     const rig = W.b.amSteuer && W.b.leib.visible && W.b.leib.userData.rig;
                     const so = rig && r._sitzOrt(e);
                     if (so) {
+                        const G = W.gleitJetzt;
+                        const B = G ? { x: G.x, y: G.y, z: G.z, fx: Math.sin(G.g), fz: Math.cos(G.g) } : { ...L[n], y: e.position.y }; // prettier-ignore
                         const h = V1.addVectors(rig.legL.hip.getWorldPosition(V1), rig.legR.hip.getWorldPosition(V2));
-                        const [x, y, z] = [h.x / 2 - L[n].x, h.y / 2 - e.position.y + 0.5 + (o.taeter && !SZ[0] ? 1.3 : 0), h.z / 2 - L[n].z]; // prettier-ignore
-                        const innen = y > so.bauch && y < so.dach && Math.abs(x * L[n].fx + z * L[n].fz) < W.hl && Math.abs(x * L[n].fz - z * L[n].fx) < W.hw; // prettier-ignore
+                        const [x, y, z] = [h.x / 2 - B.x, h.y / 2 - B.y + 0.5 + (o.taeter && !SZ[0] ? 1.3 : 0), h.z / 2 - B.z]; // prettier-ignore
+                        const innen = y > so.bauch && y < so.dach && Math.abs(x * B.fx + z * B.fz) < W.hl && Math.abs(x * B.fz - z * B.fx) < W.hw; // prettier-ignore
                         if (++SZ[0] && !innen && ++SZ[1] <= 6) SZ.push([W.nr, k, +y.toFixed(2), +so.dach.toFixed(2)]);
                     }
                 }
@@ -1095,7 +1144,9 @@ async function probeLeben(expected) {
                             m.knapp = [+t.toFixed(2), LA[a][0].nr + "|" + LA[b][0].nr, k, ...ort2(LA[a][1]), LA[a][0].grund, LA[b][0].grund]; // prettier-ignore
                     }
             }
-            for (const n of ["_verkehrSchritt", "_verkehrUmfahren", "_verkehrFolge"]) delete r[n];
+            for (const n of ["_verkehrSchritt", "_verkehrUmfahren", "_verkehrFolge", "_verkehrBild", "_fahrtVerkehr"]) delete r[n];
+            if (sy.fahrt) for (const s of sy.fahrt.values()) s.stop(0);
+            Object.assign(sy, KL.vor);
             if (zwilling) {
                 Z.abdruck = abdruck;
                 continue;
@@ -1144,6 +1195,9 @@ async function probeLeben(expected) {
                 msJeSchritt: +(m.ms / Math.max(1, m.takte)).toFixed(3),
                 arbeit: Object.fromEntries(["folge", "paare", "kreise", "kreis"].map((k) => [k, VK.zahl.arbeit[k] - arbeit0[k]])),
                 stufe: SK,
+                bildRuck: { max: RK.max, n: RK.n, ueber: RK.ueber || 0, aufgeschoben: VK.zahl.aufgeschoben || 0 },
+                // die Wanduhr der Seite rastert 0,1 ms (nicht isoliert): das p95 ist eine Stufe des Rasters, das Mittel über die Stunde nicht
+                ohr: { stimmen: KL.n, nah: KL.nah, stumm: KL.stumm, ms95: +(KL.ms.sort((a, b) => a - b)[Math.floor(0.95 * (KL.ms.length - 1))] || 0).toFixed(3), msMittel: +(KL.ms.reduce((s, x) => s + x, 0) / Math.max(1, KL.ms.length)).toFixed(4), raster: !self.crossOriginIsolated }, // prettier-ignore
                 sek: o.sek,
                 ziele: {
                     erreicht: VK.wagen.reduce((s, W) => s + W.ziele - ziele0.get(W), 0),
