@@ -1,7 +1,7 @@
 {
  "sha": "350e6b11e9f0a8c43e16a490095ff80bfb03ec64",
  "geraet": "gtx",
- "zeit": "2026-11-12T18:50:53.355Z",
+ "zeit": "2026-11-12T19:14:00.101Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "leib.K3#2": {
@@ -599,6 +599,128 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "bauen.K1#2": {
+   "gruen": false,
+   "zahl": "6/8 Werke in L0 im Bild (Bau-Hash = L0-Bau, ≤ 3 Eingaben) · p95 bis zum Bild werkstatt kalt 3383 · warm 904 ms (2+1) · rezeptbuch kalt null · warm null ms (0+0) · hotbar kalt 4049 · warm 1468 ms (1+2) · ROT: werkstatt p95 kalt 3383 · warm 904 ms · rezeptbuch · frieden mit Material · Haus · Third (Stufe 1) · rezeptbuch · pfad · Eiche · Third (Stufe 1) · hotbar p95 kalt 4049 · warm 1468 ms",
+   "exit": 0,
+   "minuten": 0.75,
+   "grund": "ROT: 6/8 Werke in L0 im Bild (Bau-Hash = L0-Bau, ≤ 3 Eingaben) · p95 bis zum Bild werkstatt kalt 3383 · warm 904 ms (2+1) · rezeptbuch kalt null · warm null ms (0+0) · hotbar kalt 4049 · warm 1468 ms (1+2) · ROT: werkstatt p95 kalt 3383 · warm 904 ms · rezeptbuch · frieden mit Material · Haus · Third (Stufe 1) · rezeptbuch · pfad · Eiche · Third (Stufe 1) · hotbar p95 kalt 4049 · warm 1468 ms",
+   "mass": [
+    {
+     "wort": "werkstatt p95 bis zum Bild kalt ms",
+     "wert": 3383,
+     "soll": 1000
+    },
+    {
+     "wort": "werkstatt p95 bis zum Bild warm ms",
+     "wert": 904,
+     "soll": 1000
+    },
+    {
+     "wort": "hotbar p95 bis zum Bild kalt ms",
+     "wert": 4049,
+     "soll": 1000
+    },
+    {
+     "wort": "hotbar p95 bis zum Bild warm ms",
+     "wert": 1468,
+     "soll": 1000
+    }
+   ],
+   "gpu": "nvidia/pascal",
+   "konsum": "kf2e6870d5053",
+   "konsumN": 28,
+   "konsumSeite": false,
+   "konsumGanz": {
+    "gelesen": 4
+   },
+   "konsumBoot": "k8455c2a09707",
+   "s": 44.5,
+   "fremd": {
+    "s": 47.6,
+    "takte": 21,
+    "fremdS": 24.19,
+    "kerne": 0.508,
+    "fensterKerne": 0.782,
+    "namen": [
+     [
+      "Claude.exe --type=gpu-process --gpu-recent-crash-count=0 --user-data-dir=claude_pzs8sxrjxf",
+      11.02
+     ],
+     [
+      "Claude.exe --type=renderer --user-data-dir=claude_pzs8sxrjxfjjc --standard-schemes=cowork-",
+      4.36
+     ],
+     [
+      "LightStudio-background.exe InvokerPRAID: AD2F1837.OMENLightStudio",
+      1.34
+     ]
+    ],
+    "dienerS": 21.2,
+    "diener": [
+     [
+      "System",
+      8.7
+     ],
+     [
+      "dwm.exe",
+      7.38
+     ]
+    ],
+    "geraetS": 21.98,
+    "geraet": [
+     [
+      "MsMpEng.exe",
+      11.7
+     ],
+     [
+      "svchost.exe",
+      8.06
+     ],
+     [
+      "SearchIndexer.exe",
+      1.66
+     ]
+    ],
+    "eigenS": 164.83,
+    "rechnerKerne": 12,
+    "spannen": {
+     "vor": 0.366,
+     "nach": 0.865,
+     "station": 1.184
+    }
+   },
+   "referenz": {
+    "vor": {
+     "ein": 95,
+     "alle": 220.8,
+     "cpuEin": 94
+    },
+    "nach": {
+     "ein": 93.5,
+     "alle": 267.2,
+     "cpuEin": 93
+    },
+    "ruhe": {
+     "ein": 94.1,
+     "alle": 236.1,
+     "n": 52,
+     "von": "2026-11-12"
+    },
+    "f": 1.132,
+    "fEin": 1.01,
+    "fAlle": 1.132,
+    "verdraengt": 1,
+    "schwankt": false,
+    "rechner": "win32 · 12 Kerne · Intel(R) Core(TM) i7-8750H CPU @ 2.20GHz",
+    "umfeld": "sitzung"
+   },
+   "zeit": "2026-11-12T19:14:00.101Z",
+   "abdruck": "16d0aff9ab8b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "konsumTafel": {
@@ -609,22 +731,24 @@
   "k58391fcf377c": "dVTLcqMwEPwXjpsQ8UaoKgc5uCo+pNa/MIIRYGNwSRC2vLX/vsUrNpD0RZfuntFMS3+NKyRnyPDlpOvKYMYv49nQ8ImmRvWJ6uWkDWbYoU3BZ3wE4Zy/9bREFddGk7IQBEQF+QXNVjVYlC/JIKMIdkAZ6facHp+OhNAdv2O3tigFprXZgMTZQKRO6AJbE1udgUATWjkUnciuHWGSMjKAxvx4IjM4f+O8e31dGQmo0mXHnnSsKGWHjvM93/DTArAxy6LSc80k9YXrsK9C2xqpgs68AeYlqnksQWBTb250LZBlq/WiCHVT36GMkIisuNm1NeWjNQgBVKwHlgNWGaqlaej5icfIn00DZ7igArOCfKJGlhs64n5JQsj79qJlkeTTcKpJGHpWQt2FkHTJmKEeT/F9Q90Yit+PAdluQOeQojLPtW6+qogwCFNnDOfHrg8nz46bW+l7e5POEYHl04fuKOHvW10tmw4Umtm1nYTooR/2r+GwITdwuUwsmThI/fUqdNNnbhEhJ5HBEKHsh8mOCTVvWJSzCCzqR5K9ffB4Rf5UcDFBZKqQct6f8BMZfZefDsvGFHXdTEzbtTxv2HT1NRWbDq/nR+xU9s3TGpxr1cwN+yKwpMfkGIE1+4aqxAwXcwE7clxgc2AGxN54HmKyQLdZ263AfmKVbvUc+ChMIzmuewrbYRmwDtVZQHWe/wKIhJQs5nEmSTb8XFZMOHEpf+xo15vtV0PpOH/i+8H8igm5qloW/W9Dcmh1DmVz/27//Qc=",
   "k1f27b6a9562e": "dVRdb5tAEPwvfmxLDvNhjpPysLYjJZWiuj9hD/aAGIN1B7nWVf97hQE7QLNPPMzszs0O+2d1xuSIGT28mbpaidWX1beVwXdyDOl30g9vZiVW62jNMRTwE7piALDrYIkuzo1hZSEZygrzEzmtbqgoH5IrjROuN1ww+wT88PXAGN/CvfbzFqWktHYaVDQ2kKkX+SjmwNZkKMnBVl2HDmB/HVOSCnYtvofDGxsL7A7Aty+zRhKrdKo4UJ4bp+LlN8ATPD7O8GmB1DhlUZlxZpKG0vfEbZBdcjRa54KUl6RHWzabNQ9GoXOCKltjJkO4n4YeF4zFbIbNzq2jPrZGKZHLuWE5UpWRnjaNgjAJBPu1EHDEE2l0KswHaOz6kSfvj2SMPS8fWhZJPphTDcQocBPuT4jMJn2Guvq6v2+ojxb8+BCQ7XIDJseUtHOsTXObIqNNlHriSnndduGE7LB4lbnLG3ie3Lgh/6COM3he8mrVWNTkZOd2IFJAYRQKgJcFuMHTaUCpxCMezldhmi5zkwh5idpcI5R94myfUOdCRTmS0OVhrMTudfEXvWs8OSgzXSg17k+GiYr/lx9LZePIum4G5Np3g+C66ermis8BdvB5bXUGS83XzrVuRsGh3LgqEKqPwBx9IV1SRhNfcB17PgpmVa/jwgEOUf8dHCaZYnaxtktBnWOVac0Y+DhKY9Wv2/bSX6YBs6SPEqvjeAswlkqJ77DPdizrLlfm7hmwWW0twPZob37YQ/w8GnKmhJ11rYru0rAcW5Nj2dxP7d9/",
   "kaeb56eb16ab7": "dVTJbpxAEP0XjnFws9O05EOPx5J9sDL5hGqoBgwDqBuGaKL8e8TmMTCuS13eq/VV/TUaiAtI8fFD15XBjB/GT0PDBU2N6oLq8UMbzLBDm4LP+GSEc/48wGKVN60mZS4IiAqyM5qdajEvH+ORRhHsgDLSv3B6ejgRQg9bWikwqc0WJC4kkTihC2wL7HQKAk3o5JhoBrt2hHHCyGj0yE8fZDHOnznvn542gQRUybpKTzpWlIzNvfAdPskBW7PMK73kjBNfuA77TLTPkSjozStgVqJaRhEENvWWQrcEWXZar5JQN/EdygiJyAabNp0pv4YGIYCK7cAywCpFtQ4aen7sMfJnV0ABZ1RgVpDN0MhyQ0fcmiSEvO4bLfM4m4dTzcTQs2LqrohRH0+6GezheNvQ70lPv/jNDvsN6AwSVGZR6/YziwiDMHEmQb4fBkHy9LTrSt/Km3mOCCyffqmOEv6659Wy7UGhmTbdTEQP/XC4gLcduIXzeUbJ2EHqb1eh20FzKwk5sQxGCaXfTHZSqHnFvFxIYFE/kuz5nR834IuCswkiVbmUy/6EH8vonn56LFtT1HU7I23X8jzByJVUn1Ox6Xg939sxvXNaY+RatUvBvggs6TF5GY4k3qKvqEpMcTUXsCPHBUZmwUypvMm/HcnK+t3arjkOE6t0pxfBR2ESSXbnTHtUhYCqWH4ARELKSU+n9DA460i3TXuHfnoSQ6AG4+XrkSI3i1o1nV590QHRqFrmw88hGXQ6g7K9Qf79Bw==",
-  "kee85507953b2": "dVTbbqMwEP2XPG7XNddgkPpgkkjtQ9XsJ4zNGGgIRDYEKav99xUEkgDpeUFC58ycufnvSlYazesRylyhqV+/TVWuotWv1e+VApm1qA+ko7x+m+H3CeQBUnxkGjgjMajPqK88O7AZ+BG/gnLONx1N6vxUG5rkkBJRVTUxdRdJ3mKPjCIXFEQJ2RFJo2vMi4HEEOw1i2i742z/sqeUxXNZITCpSA0KR5FInMCFaE5sTAoCCTSqTzSQXTtEmUS0B9vy/TcdwfmG8/btbRZIQJlMXXrKscKkL3/HF/wkB6xJkZdmzCkTX7hOdEu0zJFoaMkFMCtQj61Yr23mjUbnAlU0xkySMDfxHRZRGtIZNz01RD2GBiGAiXnDMsAyRT0NGni+HEywXcxHfG0D2sq5qQMcUQMpIRvkoeUGjrgXTil9XxZf5DIbGlYOwsCzJHMnwrCV123r8LK9T+3PYInfES+nYjJIUJNDZepbFhGsg8S5rvFn3K0xT/eLVpu7vUHniLXlswd3jPL3pa5SdQsaSXpqBiF66Afd3XwsyDUcjwNLSQfZ7boesHuiKpPpqjlSrftVS3/o9nWTyQXzYhSBxfxQRZtPvp2RzxqOBESqc6XGmQpfqvDZnrVY1P3dD0zbtTxPRPRCy1un3LC/sh8R87nfPmql69GsL9aW8iJ17g5psYIX1AWmOOkJ2KHjQkSHBeqx9a7fjy2doF2M8ZJj163SNGY8ijBIQhU9OeXuORVQHsZ3AkKh1HWQ+zTmfBPbWzav2Itb/sV30y50QU8o6UlXKu9eIJpBYzIoHp7wf/8B"
+  "kee85507953b2": "dVTbbqMwEP2XPG7XNddgkPpgkkjtQ9XsJ4zNGGgIRDYEKav99xUEkgDpeUFC58ycufnvSlYazesRylyhqV+/TVWuotWv1e+VApm1qA+ko7x+m+H3CeQBUnxkGjgjMajPqK88O7AZ+BG/gnLONx1N6vxUG5rkkBJRVTUxdRdJ3mKPjCIXFEQJ2RFJo2vMi4HEEOw1i2i742z/sqeUxXNZITCpSA0KR5FInMCFaE5sTAoCCTSqTzSQXTtEmUS0B9vy/TcdwfmG8/btbRZIQJlMXXrKscKkL3/HF/wkB6xJkZdmzCkTX7hOdEu0zJFoaMkFMCtQj61Yr23mjUbnAlU0xkySMDfxHRZRGtIZNz01RD2GBiGAiXnDMsAyRT0NGni+HEywXcxHfG0D2sq5qQMcUQMpIRvkoeUGjrgXTil9XxZf5DIbGlYOwsCzJHMnwrCV123r8LK9T+3PYInfES+nYjJIUJNDZepbFhGsg8S5rvFn3K0xT/eLVpu7vUHniLXlswd3jPL3pa5SdQsaSXpqBiF66Afd3XwsyDUcjwNLSQfZ7boesHuiKpPpqjlSrftVS3/o9nWTyQXzYhSBxfxQRZtPvp2RzxqOBESqc6XGmQpfqvDZnrVY1P3dD0zbtTxPRPRCy1un3LC/sh8R87nfPmql69GsL9aW8iJ17g5psYIX1AWmOOkJ2KHjQkSHBeqx9a7fjy2doF2M8ZJj163SNGY8ijBIQhU9OeXuORVQHsZ3AkKh1HWQ+zTmfBPbWzav2Itb/sV30y50QU8o6UlXKu9eIJpBYzIoHp7wf/8B",
+  "kf2e6870d5053": "dVTLbqQwEPwXjsk65o1BysGTiZQcosx+QhvaQIaBkW2G1az231e8MgGSvvhS1Y/qav+1zpAeIceHD93UVmLdWb8sDRckGtUF1cOHthLLiRwGQcLHoJzzpx6WqvJsNM1KyEmH6qgNGEM6zB/SgXb3BVSVgoKooTghaZXBsppADMEJWUK7Z84O9wdK2W5NqwRmDTEgcSaJzI08SNbAVucgkEArh0IT2HNiTLOEDsH2/PBB5+D8ifPu8XGVSECdLbv0pWvH2aDAM9/gsxLQkKqs9VwzzQLhuclnoW2NTEFHroBFhWqWIgwd5s+NrgmyarVeFGFeFrgsoTSmK2x+bon8mhqEACbWghWAdY5qmTTyg9RP6J9NA0c4oQJSQzFBY9uLXHEbklL6sh20KtNiEqeeiJFvp8xbEOMuHc3Vx/3+tqHfo+ne+S122w3oAjJU5Nho81lFRGGUuaNr33a9a3l+2Eylb+1NPFeEdsC+dMcof9nyGmk6UEjyczsR0ccg6s/kdQM2cDpNKJm6yIL1KrTpPbewkJvKcLBQ/oOyo0PJFctqJoHNglgmT298vwJfFJwIiFyVUs77E0Eq4+/802FliGgaMyEdz/Z9kdArrT9VceLherax87/L1igzNxmI0JZ+Ii/9YaTrqa6oKsxxoQU4setBQieTDLH3x/d1TxfRbVZ1LbFXqdatnk0eR1ksk29Os//HBNTH+e4hFlKOHjrku346e882A+86/t5/DH2iM6b0rBpZ9r8ILaDVBVRm8b+OkBalBnOlAlqsydG7Qf79Bw==",
+  "k8455c2a09707": "hVTbbptAFPwXHpuSNfdlpTwc21GdSlGdTzgLZ4EYg7ULoXLVf69sIDbQqvPCy8yc27C/rBMmB8zo8d3UlSWsL9ZXy+AH2Yb0B+nHd2MJy4kcjoGAHgwAvl1oiS5OjWFlIRnKCvMj2a1uqCgfk6uMEzohF6x7Br5/2DPG13DDem5RSkpru0FFo4FM3chDMSe2JkNJNrbqWnQge05MSSrYFXwL+3c2AmAD0D09zYwkVum0Y1+5qzgVLx3AMyz4aYHU2GVRmbFmkgbSc8VnoWWNVGNnn5HykvS4ljB0uD82OheosjVmUoR7aeBywVjMZtzs1Nrq3hqlRC7nC8uRqoz01DTyg8QX7OeigQMeSaNdYT5Q45UXufI2JGNstxy0LJJ8WE41CCN/lXBvImRd0mfogoft7UJvfSh+3AdkeQGTY0raPtSm+awiozBK3T6cr+tLOCHbL6Yyt/YGnSvDVcDvuuMMdktdrZoONdnZqR2E5FMQBQKy1wW5weNxYKnEJR7MT2GaS+YmEXITFV4jlP1js31C7TMV5SjCFQ9iJTavsJ2RPzQebZSZLpQa7yeDRMV/y09HZWPLum4GpuOtfF8K5rHqcytODLC9u8quu/+JAb7X836vrrVuxmYDGa6UL1R//jn7TLqkjCY7QSd2PRRjWK7Y+v33Zcsm6BYnOxd02VZlWjOGPY7SWPWn7gababg60geJ1WF8BzCWSgmAdQb7bA27zXO85fB/bADeeuMTJeyka1VcXhmWY2tyLJvbM/v7Dw=="
  },
  "sitzung": {
-  "start": "2026-11-12T18:50:20.459Z",
+  "start": "2026-11-12T19:13:26.421Z",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 6.3,
+  "bootS": 8,
   "grundstellungS": [],
   "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": "genesis",
-    "vor": "ankunft.K4#1",
-    "s": 24.7,
-    "takte": 572,
+    "ort": null,
+    "vor": "bauen.K1#2",
+    "s": 23.5,
+    "takte": 779,
     "chunks": 81,
     "nach": null
    }
@@ -633,21 +757,21 @@
   "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 0,
-   "frameP95": null,
-   "taktP95": null,
-   "vramMax": null,
+   "bilder": 2424,
+   "frameP95": 50,
+   "taktP95": 34.32,
+   "vramMax": 136.6,
    "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [],
-   "zapfen": 68,
-   "luecken": 9,
-   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+   "zapfen": 71,
+   "luecken": 0,
+   "letzteLuecke": null
   },
-  "fahrtS": 171.3,
-  "minuten": 2.95
+  "fahrtS": 78.9,
+  "minuten": 1.41
  },
  "ungemessen": {
   "leib.K4#2": {
